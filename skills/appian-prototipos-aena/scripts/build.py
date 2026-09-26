@@ -27,6 +27,73 @@ def mix_white(hex_color, pct):
     return "#%02x%02x%02x" % (f(r), f(g), f(b))
 
 
+def _lum(hex_color):
+    h = hex_color.lstrip("#")[:6]
+    c = [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    c = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+
+
+def on_color(hex_color):
+    """Texto legible sobre un color sólido (blanco o casi negro), el mismo criterio que solidFg() del runtime."""
+    L = _lum(hex_color)
+    return "#1a1a1a" if (L + 0.05) / (0.0103 + 0.05) > 1.05 / (L + 0.05) else "#ffffff"
+
+
+# perfil CSS de Appian (brand → cssProfile) → variables CSS del runtime (lo que el prototipo sabe dibujar)
+CSS_PROFILE_VARS = {
+    "negative-on-light-color": "--negative", "positive-on-light-color": "--positive", "warn-on-light-color": "--warn", "info-on-light-color": "--info",
+    "error-background-color": "--bg-negative", "success-background-color": "--bg-positive", "warn-background-color": "--bg-warn", "info-background-color": "--bg-info",
+    "negative-on-dark-color": "--negative-dark", "positive-on-dark-color": "--positive-dark", "warn-on-dark-color": "--warn-dark", "info-on-dark-color": "--info-dark",
+    "content-on-accent-color": "--accent-fg", "base-font-size": "--base-font",
+    "label-on-light-color": "--label", "instructions-on-light-color": "--instr", "placeholder-text-on-light-color": "--placeholder", "required-asterisk-on-light-color": "--req",
+    "input-box-on-light-border-color": "--input-border", "input-card-on-light-border-color": "--input-card-border", "input-on-light-background-color": "--input-bg",
+    "card-box-shadow": "--card-shadow", "card-box-semi-rounded-border-radius": "--card-radius-semi", "card-box-rounded-border-radius": "--card-radius-round",
+    "tag-standard-semi-rounded-border-radius": "--tag-radius", "tag-small-semi-rounded-border-radius": "--tag-radius-small",
+    "tooltip-background-color": "--tip-bg", "tooltip-text-color": "--tip-fg", "tooltip-border-radius": "--tip-radius", "tooltip-icon-on-light-color": "--tip-icon",
+    "button-hover-blur-radius": "--btn-glow", "pop-up-menu-on-light-background-color": "--popup-bg",
+}
+# según la forma del site (buttonShape / inputShape), qué radio del perfil se aplica
+SHAPE_RADIUS = {("buttonShape", "SEMI_ROUNDED"): ("button-semi-rounded-border-radius", "--btn-radius"), ("buttonShape", "ROUNDED"): ("button-rounded-border-radius", "--btn-radius"),
+                ("inputShape", "SEMI_ROUNDED"): ("input-box-semi-rounded-border-radius", "--input-radius")}
+
+
+def css_profile_props(brand):
+    """Propiedades del perfil CSS de la marca, en orden: [(comentario, {propiedad: valor})]."""
+    cp = brand.get("cssProfile") or {}
+    return [(g.get("comment"), g.get("properties") or {}) for g in cp.get("groups") or []]
+
+
+def css_profile_text(brand):
+    """Texto del perfil para pegar en Admin Console > Branding > CSS Profiles (propiedad: valor por línea; comentarios /* */, 26.9)."""
+    cp = brand.get("cssProfile") or {}
+    lines = [f"/* Perfil CSS «{cp.get('name', brand.get('name', ''))}» · generado por appian-prototipos-aena · Appian 26.9 */"]
+    if cp.get("typeface"):
+        lines.append(f"/* Tipografía del perfil: {cp['typeface']} */")
+    for comment, props in css_profile_props(brand):
+        lines.append("")
+        if comment:
+            lines.append(f"/* {comment} */")
+        lines += [f"{k}: {v}" for k, v in props.items()]
+    return "\n".join(lines) + "\n"
+
+
+def css_profile_vars(brand):
+    """Declaraciones CSS que aplican el perfil al prototipo, más el color de texto legible sobre cada color semántico sólido."""
+    flat = {k: v for _, props in css_profile_props(brand) for k, v in props.items()}
+    out = {var: flat[k] for k, var in CSS_PROFILE_VARS.items() if k in flat}
+    site = brand.get("site", {})
+    for (key, shape), (prop, var) in SHAPE_RADIUS.items():
+        if site.get(key, "SEMI_ROUNDED") == shape and prop in flat:
+            out[var] = flat[prop]
+    std = {"--negative": "#B2002C", "--positive": "#117C00", "--warn": "#D97706", "--info": "#115EBB"}
+    for var, dflt in std.items():  # texto sobre el color sólido (cabeceras de a!boxLayout, sellos…)
+        c = out.get(var, dflt)
+        if re.match(r"^#[0-9A-Fa-f]{6}", c):
+            out[var + "-fg"] = on_color(c)
+    return out
+
+
 def used_icons(spec, js):
     # cualquier literal del runtime que sea un nombre de icono (icon("x"), mapas de iconos por estado...)
     names = set(re.findall(r'"([a-z0-9]+(?:-[a-z0-9]+)*)"', js))
@@ -88,15 +155,18 @@ def build(spec_path, out_path, brand_id="aena", do_validate=True):
     logo = (brand_dir / site["logo"]).read_text(encoding="utf-8")
     shape = {"SQUARED": "0px", "SEMI_ROUNDED": "4px", "ROUNDED": "999px"}
     dshape = {"SQUARED": "0px", "SEMI_ROUNDED": "8px", "ROUNDED": "16px"}
+    prof = css_profile_vars(brand)
+    prof_css = "".join(f"\n  {k}: {v};" for k, v in prof.items())
     tokens = f""":root {{
   --accent: {site['accentColor']};
   --accent-tint: {mix_white(site['accentColor'], 0.10)};
+  --accent-fg: {on_color(site['accentColor'])};
   --hdr-bg: {site['backgroundColor']};
   --hdr-hl: {site['selectedPageHighlightColor']};
   --loading: {site.get('loadingBarColor', site['accentColor'])};
   --btn-radius: {shape[site.get('buttonShape', 'SEMI_ROUNDED')]};
   --input-radius: {shape[site.get('inputShape', 'SEMI_ROUNDED')].replace('999px', '4px')};
-  --dialog-radius: {dshape[site.get('dialogShape', 'SEMI_ROUNDED')]};
+  --dialog-radius: {dshape[site.get('dialogShape', 'SEMI_ROUNDED')]};{prof_css}
 }}"""
     safe = lambda o: json.dumps(o, ensure_ascii=False).replace("</", "<\\/")
     title = spec.get("app", {}).get("name", "Prototipo Appian")
@@ -120,9 +190,15 @@ def build(spec_path, out_path, brand_id="aena", do_validate=True):
     Path(out_path).write_text(html, encoding="utf-8")
     trace = Path(out_path).with_name(Path(out_path).stem + "-trazabilidad.md")
     trace.write_text(trace_markdown(spec), encoding="utf-8")
+    profile = None
+    if brand.get("cssProfile"):
+        profile = Path(out_path).with_name(Path(out_path).stem + "-perfil-css.txt")
+        profile.write_text(css_profile_text(brand), encoding="utf-8")
     kb = len(html.encode()) / 1024
     print(f"OK → {out_path} ({kb:.0f} KB, {len(spec.get('screens', []))} pantallas, {len(icons)} iconos)")
     print(f"OK → {trace}")
+    if profile:
+        print(f"OK → {profile} (perfil CSS para Admin Console › Branding › CSS Profiles)")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,1122 @@
+{
+ "description": "Propiedades de los perfiles CSS de Appian (Admin Console > Branding > CSS Profiles; capacidades avanzadas y premium). Formato: 'propiedad: valor', una por línea, en minúsculas; comentarios /* */ desde 26.9. validate.py comprueba los nombres del perfil de la marca (brand-*.json → cssProfile).",
+ "version": "26.9",
+ "source": "https://docs.appian.com/suite/help/26.9/css-properties.html",
+ "formatting": "https://docs.appian.com/suite/help/26.9/css-property-formatting.html",
+ "usage": "https://docs.appian.com/suite/help/26.9/css-property-usage.html",
+ "appianStandardColors": {
+  "negative-on-light-color": "#B2002C",
+  "negative-on-dark-color": "#FF8A8A",
+  "error-background-color": "#FDEDF0",
+  "positive-on-light-color": "#117C00",
+  "positive-on-dark-color": "#83B96A",
+  "success-background-color": "#EDF7EE",
+  "warn-on-light-color": "#D97706",
+  "warn-on-dark-color": "#FCB858",
+  "warn-background-color": "#FFF5E6",
+  "info-on-light-color": "#115EBB",
+  "info-on-dark-color": "#80B7FF",
+  "info-background-color": "#EBF4FF"
+ },
+ "count": 156,
+ "properties": [
+  {
+   "name": "negative-on-light-color",
+   "category": "Colors",
+   "css": "color",
+   "example": "#8B1A1A",
+   "affects": "Components - Box layout (applies to the label when the style parameter is set to \"ERROR\") - Button - Card layout - Gauge - KPI - Message banner - Milestone - Progress bar - Rich text - Section layout - Stamp - Tag Other - Validation text - Validation error icons in section, tab, and box layouts"
+  },
+  {
+   "name": "negative-on-dark-color",
+   "category": "Colors",
+   "css": "color",
+   "example": "#E57373",
+   "affects": "Components - Box layout (applies to the border when the style parameter is set to \"ERROR\") - Button - Card layout - Gauge - KPI - Message banner - Milestone - Progress bar - Rich text - Section layout - Stamp - Tag Other - Validation text - Validation error icons in section, tab, and box layouts"
+  },
+  {
+   "name": "error-background-color",
+   "category": "Colors",
+   "css": "background-color",
+   "example": "#F5E0E0",
+   "affects": "Components - Box layout - Card layout - Grid column - Message banner Other - Hazard news post"
+  },
+  {
+   "name": "positive-on-light-color",
+   "category": "Colors",
+   "css": "color",
+   "example": "#2E7D32",
+   "affects": "Components - Card layout - Gauge - KPI - Message banner - Milestone - Progress bar - Rich text - Section layout - Stamp - Tag"
+  },
+  {
+   "name": "positive-on-dark-color",
+   "category": "Colors",
+   "css": "color",
+   "example": "#81C784",
+   "affects": "Components - Card layout - Gauge - KPI - Message banner - Milestone - Progress bar - Rich text - Section layout - Stamp - Tag"
+  },
+  {
+   "name": "success-background-color",
+   "category": "Colors",
+   "css": "background-color",
+   "example": "#E8F5E9",
+   "affects": "Components - Box layout - Card layout - Grid column - Message banner"
+  },
+  {
+   "name": "warn-on-light-color",
+   "category": "Colors",
+   "css": "color",
+   "example": "#E65100",
+   "affects": "Components - Card layout - Gauge - Message banner - Milestone - Progress bar - Rich text - Stamp - Tag"
+  },
+  {
+   "name": "warn-on-dark-color",
+   "category": "Colors",
+   "css": "color",
+   "example": "#FFB74D",
+   "affects": "Components - Card layout - Gauge - Message banner - Milestone - Progress bar - Rich text - Stamp - Tag"
+  },
+  {
+   "name": "warn-background-color",
+   "category": "Colors",
+   "css": "background-color",
+   "example": "#FFF3E0",
+   "affects": "Components - Box layout - Card layout - Grid column - Message banner"
+  },
+  {
+   "name": "info-on-light-color",
+   "category": "Colors",
+   "css": "color",
+   "example": "#00796B",
+   "affects": "Components - Box layout - Card layout - Message banner"
+  },
+  {
+   "name": "info-on-dark-color",
+   "category": "Colors",
+   "css": "color",
+   "example": "#80CBC4",
+   "affects": "Components - Box layout - Card layout - Message banner"
+  },
+  {
+   "name": "info-background-color",
+   "category": "Colors",
+   "css": "background-color",
+   "example": "#E0F2F1",
+   "affects": "Components - Box layout - Card layout - Grid column - Message banner"
+  },
+  {
+   "name": "content-on-accent-color",
+   "category": "Colors",
+   "css": "color",
+   "example": "#FFFFFF",
+   "affects": "Components - Components that use \"ACCENT\" or \"STANDARD\" parameter values, including headings, rich text, stamps, and tags. Other - UI elements that use the accent color and don't have a component parameter to control the color, such as checkboxes, radio buttons, links, and help tooltip icons. - Text"
+  },
+  {
+   "name": "base-font-size",
+   "category": "Base Font Size",
+   "css": "font-size",
+   "example": "16px",
+   "affects": "Other - Global impact; affects all UI elements that use relative values."
+  },
+  {
+   "name": "heading-large-plus-line-height",
+   "category": "Headings",
+   "css": "line-height",
+   "example": "1.3",
+   "affects": "Components - Box Layout - Heading - Section Layout"
+  },
+  {
+   "name": "heading-large-line-height",
+   "category": "Headings",
+   "css": "line-height",
+   "example": "1.3",
+   "affects": "Components - Box Layout - Heading - Section Layout"
+  },
+  {
+   "name": "heading-medium-plus-line-height",
+   "category": "Headings",
+   "css": "line-height",
+   "example": "1.3",
+   "affects": "Components - Box Layout - Heading - Section Layout"
+  },
+  {
+   "name": "heading-medium-line-height",
+   "category": "Headings",
+   "css": "line-height",
+   "example": "1.4",
+   "affects": "Components - Box Layout - Heading - Section Layout"
+  },
+  {
+   "name": "heading-small-line-height",
+   "category": "Headings",
+   "css": "line-height",
+   "example": "1.4",
+   "affects": "Components - Box Layout - Heading - Section Layout"
+  },
+  {
+   "name": "heading-extra-small-line-height",
+   "category": "Headings",
+   "css": "line-height",
+   "example": "1.4",
+   "affects": "Components - Box Layout - Heading - Section Layout"
+  },
+  {
+   "name": "heading-large-plus-font-size",
+   "category": "Headings",
+   "css": "font-size",
+   "example": "38px",
+   "affects": "Components - Box Layout - Heading - Section Layout"
+  },
+  {
+   "name": "heading-large-font-size",
+   "category": "Headings",
+   "css": "font-size",
+   "example": "30px",
+   "affects": "Components - Box Layout - Heading - Section Layout"
+  },
+  {
+   "name": "heading-medium-plus-font-size",
+   "category": "Headings",
+   "css": "font-size",
+   "example": "24px",
+   "affects": "Components - Box Layout - Heading - Section Layout"
+  },
+  {
+   "name": "heading-medium-font-size",
+   "category": "Headings",
+   "css": "font-size",
+   "example": "20px",
+   "affects": "Components - Box Layout - Heading - Section Layout"
+  },
+  {
+   "name": "heading-small-font-size",
+   "category": "Headings",
+   "css": "font-size",
+   "example": "16px",
+   "affects": "Components - Box Layout - Heading - Section Layout"
+  },
+  {
+   "name": "heading-extra-small-font-size",
+   "category": "Headings",
+   "css": "font-size",
+   "example": "14px",
+   "affects": "Components - Box Layout - Heading - Section Layout"
+  },
+  {
+   "name": "input-on-light-background-color",
+   "category": "Inputs",
+   "css": "background-color",
+   "example": "#FAFBFF",
+   "affects": "Components - Input, selection, and picker components ( excluding the toggle component). Includes both standard and card-style checkboxes and radio buttons. - Both the toolbar and the input field box in the styled text editor component. - Search boxes for components such as read-only grids and dropdo"
+  },
+  {
+   "name": "input-on-dark-background-color",
+   "category": "Inputs",
+   "css": "background-color",
+   "example": "#1C3B3F",
+   "affects": "Components - Input, selection, and picker components ( excluding the toggle component). Includes both standard and card-style checkboxes and radio buttons. - Both the toolbar and the input field box in the styled text editor component. - Search boxes for components such as read-only grids and dropdo"
+  },
+  {
+   "name": "input-box-on-light-border-color",
+   "category": "Inputs",
+   "css": "border-color",
+   "example": "#90A4AE",
+   "affects": "Components - Input, selection, and picker components ( excluding file upload, document viewer, card choices, radio button, and checkbox components). - Search boxes for components such as read-only grids and dropdowns.",
+   "renamedFrom": "input-box-border-color",
+   "renamedIn": "26.6"
+  },
+  {
+   "name": "input-box-on-dark-border-color",
+   "category": "Inputs",
+   "css": "border-color",
+   "example": "#546E7A",
+   "affects": "Components - Input, selection, and picker components ( excluding file upload, document viewer, card choices, radio button, and checkbox components). - Search boxes for components such as read-only grids and dropdowns."
+  },
+  {
+   "name": "input-box-semi-rounded-border-radius",
+   "category": "Inputs",
+   "css": "border-radius",
+   "example": "10px",
+   "affects": "Components - Input, selection, and picker components ( excluding file upload, document viewer, card choices, radio button, and checkbox components). - Search boxes for components such as read-only grids and dropdowns."
+  },
+  {
+   "name": "input-box-border-width",
+   "category": "Inputs",
+   "css": "border-width",
+   "example": "1px",
+   "affects": "Components - Input, selection, and picker components ( excluding file upload, document viewer, card choices, radio button, and checkbox components). - Search boxes for components such as read-only grids and dropdowns."
+  },
+  {
+   "name": "input-box-padding",
+   "category": "Inputs",
+   "css": "padding",
+   "example": "12px",
+   "affects": "Components - Input, selection, and picker components ( excluding file upload, document viewer, card choices, radio button, and checkbox components). - Search boxes for components such as read-only grids and dropdowns."
+  },
+  {
+   "name": "input-card-on-light-border-color",
+   "category": "Inputs",
+   "css": "border-color",
+   "example": "#B0BEC5",
+   "affects": "Components - Card choices - Card-style checkboxes - Card-style radio buttons",
+   "renamedFrom": "input-card-border-color",
+   "renamedIn": "26.6"
+  },
+  {
+   "name": "input-card-on-dark-border-color",
+   "category": "Inputs",
+   "css": "border-color",
+   "example": "#455A64",
+   "affects": "Components - Card choices - Card-style checkboxes - Card-style radio buttons"
+  },
+  {
+   "name": "input-card-semi-rounded-border-radius",
+   "category": "Inputs",
+   "css": "border-radius",
+   "example": "10px",
+   "affects": "Components - Card choices - Card-style checkboxes - Card-style radio buttons"
+  },
+  {
+   "name": "input-card-border-width",
+   "category": "Inputs",
+   "css": "border-width",
+   "example": "2px",
+   "affects": "Components - Card choices - Card-style checkboxes - Card-style radio buttons"
+  },
+  {
+   "name": "icon-button-small-padding",
+   "category": "Buttons",
+   "css": "padding",
+   "example": "8px",
+   "affects": "Components - Button with icon but no label and size set to \"SMALL\" - Icon-only small buttons in other components, including read-only grid, record action, date picker calendar pop-up, and file upload"
+  },
+  {
+   "name": "icon-button-standard-padding",
+   "category": "Buttons",
+   "css": "padding",
+   "example": "12px",
+   "affects": "Components - Button with icon but no label and size set to \"STANDARD\" - Icon-only standard buttons in other components, including file upload"
+  },
+  {
+   "name": "icon-button-large-padding",
+   "category": "Buttons",
+   "css": "padding",
+   "example": "16px",
+   "affects": "Components - Button with icon but no label and size set to \"LARGE\" - Icon-only large buttons in other components, including file upload"
+  },
+  {
+   "name": "button-small-padding",
+   "category": "Buttons",
+   "css": "padding",
+   "example": "8px 16px",
+   "affects": "Components - Button with size set to \"SMALL\" - Small-sized buttons in other components, including read-only grid, record action, date picker calendar pop-up, file upload, and signature field"
+  },
+  {
+   "name": "button-small-min-width",
+   "category": "Buttons",
+   "css": "min-width",
+   "example": "80px",
+   "affects": "Components - Button with size set to \"SMALL\" - Small-sized buttons in other components, including read-only grid, record action, date picker calendar pop-up, file upload, and signature field"
+  },
+  {
+   "name": "button-small-font-size",
+   "category": "Buttons",
+   "css": "font-size",
+   "example": "14px",
+   "affects": "Components - Button with size set to \"SMALL\" - Small-sized buttons in other components, including read-only grid, record action, date picker calendar pop-up, file upload, and signature field"
+  },
+  {
+   "name": "button-small-font-weight",
+   "category": "Buttons",
+   "css": "font-weight",
+   "example": "600",
+   "affects": "Components - Button with size set to \"SMALL\" - Small-sized buttons in other components, including read-only grid, record action, date picker calendar pop-up, file upload, and signature field"
+  },
+  {
+   "name": "button-standard-padding",
+   "category": "Buttons",
+   "css": "padding",
+   "example": "12px 24px",
+   "affects": "Components - Button with size set to \"STANDARD\" - Standard-sized buttons in other components, including styled text editor, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-standard-min-width",
+   "category": "Buttons",
+   "css": "min-width",
+   "example": "100px",
+   "affects": "Components - Button with size set to \"STANDARD\" - Standard-sized buttons in other components, including styled text editor, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-standard-font-size",
+   "category": "Buttons",
+   "css": "font-size",
+   "example": "16px",
+   "affects": "Components - Button with size set to \"STANDARD\" - Standard-sized buttons in other components, including styled text editor, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-standard-font-weight",
+   "category": "Buttons",
+   "css": "font-weight",
+   "example": "600",
+   "affects": "Components - Button with size set to \"STANDARD\" - Standard-sized buttons in other components, including styled text editor, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-large-padding",
+   "category": "Buttons",
+   "css": "padding",
+   "example": "16px 32px",
+   "affects": "Components - Button with size set to \"LARGE\" - Large-sized buttons in other components, including record action, file upload, and signature field"
+  },
+  {
+   "name": "button-large-min-width",
+   "category": "Buttons",
+   "css": "min-width",
+   "example": "120px",
+   "affects": "Components - Button with size set to \"LARGE\" - Large-sized buttons in other components, including record action, file upload, and signature field"
+  },
+  {
+   "name": "button-large-font-size",
+   "category": "Buttons",
+   "css": "font-size",
+   "example": "18px",
+   "affects": "Components - Button with size set to \"LARGE\" - Large-sized buttons in other components, including record action, file upload, and signature field"
+  },
+  {
+   "name": "button-large-font-weight",
+   "category": "Buttons",
+   "css": "font-weight",
+   "example": "700",
+   "affects": "Components - Button with size set to \"LARGE\" - Large-sized buttons in other components, including record action, file upload, and signature field"
+  },
+  {
+   "name": "button-rounded-border-radius",
+   "category": "Buttons",
+   "css": "border-radius",
+   "example": "24px",
+   "affects": "Components - Button - Buttons in other components, including read-only grid, record action, date picker calendar pop-up, file upload, signature field, styled text editor, and wizard layout"
+  },
+  {
+   "name": "button-semi-rounded-border-radius",
+   "category": "Buttons",
+   "css": "border-radius",
+   "example": "10px",
+   "affects": "Components - Button - Buttons in other components, including read-only grid, record action, date picker calendar pop-up, file upload, signature field, styled text editor, and wizard layout"
+  },
+  {
+   "name": "button-group-gap",
+   "category": "Buttons",
+   "css": "gap",
+   "example": "12px",
+   "affects": "Components - Button array layout - Button layout - Buttons in other components, including read-only grid and wizard layout"
+  },
+  {
+   "name": "button-outline-border-width",
+   "category": "Buttons",
+   "css": "border-width",
+   "example": "2px",
+   "affects": "Components - Button with style set to \"OUTLINE\" - Outline-styled buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-solid-border-width",
+   "category": "Buttons",
+   "css": "border-width",
+   "example": "0px",
+   "affects": "Components - Button with style set to \"SOLID\" - Solid-styled buttons in other components, including read-only grid, record action, and wizard layout"
+  },
+  {
+   "name": "button-ghost-border-width",
+   "category": "Buttons",
+   "css": "border-width",
+   "example": "0px",
+   "affects": "Components - Button with style set to \"GHOST\""
+  },
+  {
+   "name": "button-hover-blur-radius",
+   "category": "Buttons",
+   "css": "box-shadow",
+   "example": "3px",
+   "affects": "Components - Button - Buttons in other components, including read-only grid, record action, date picker calendar pop-up, file upload, signature field, styled text editor, and wizard layout"
+  },
+  {
+   "name": "button-solid-accent-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "#0E3842",
+   "affects": "Components - Button with style set to \"SOLID\" and color set to \"ACCENT\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-solid-accent-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#FFFFFF",
+   "affects": "Components - Button with style set to \"SOLID\" and color set to \"ACCENT\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-solid-accent-hover-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "#1A5060",
+   "affects": "Components - Button with style set to \"SOLID\" and color set to \"ACCENT\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-solid-accent-hover-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#FFFFFF",
+   "affects": "Components - Button with style set to \"SOLID\" and color set to \"ACCENT\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-solid-secondary-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "#E0E0E0",
+   "affects": "Components - Button with style set to \"SOLID\" and color set to \"SECONDARY\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-solid-secondary-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#263238",
+   "affects": "Components - Button with style set to \"SOLID\" and color set to \"SECONDARY\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-solid-secondary-hover-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "#BDBDBD",
+   "affects": "Components - Button with style set to \"SOLID\" and color set to \"SECONDARY\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-solid-secondary-hover-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#263238",
+   "affects": "Components - Button with style set to \"SOLID\" and color set to \"SECONDARY\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-solid-negative-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "#8B1A1A",
+   "affects": "Components - Button with style set to \"SOLID\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-solid-negative-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#FFFFFF",
+   "affects": "Components - Button with style set to \"SOLID\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-solid-negative-hover-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "#A52828",
+   "affects": "Components - Button with style set to \"SOLID\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-solid-negative-hover-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#FFFFFF",
+   "affects": "Components - Button with style set to \"SOLID\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-accent-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "transparent",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"ACCENT\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-accent-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#0E3842",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"ACCENT\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-accent-border-color",
+   "category": "Buttons",
+   "css": "border-color",
+   "example": "#0E3842",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"ACCENT\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-accent-hover-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "#E8F0F2",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"ACCENT\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-accent-hover-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#0E3842",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"ACCENT\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-accent-hover-border-color",
+   "category": "Buttons",
+   "css": "border-color",
+   "example": "#0E3842",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"ACCENT\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-secondary-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "transparent",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"SECONDARY\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-secondary-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#546E7A",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"SECONDARY\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-secondary-border-color",
+   "category": "Buttons",
+   "css": "border-color",
+   "example": "#546E7A",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"SECONDARY\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-secondary-hover-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "#ECEFF1",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"SECONDARY\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-secondary-hover-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#37474F",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"SECONDARY\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-secondary-hover-border-color",
+   "category": "Buttons",
+   "css": "border-color",
+   "example": "#37474F",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"SECONDARY\" - Buttons in other components, including read-only grid, record action, file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-negative-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "transparent",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-negative-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#8B1A1A",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-negative-border-color",
+   "category": "Buttons",
+   "css": "border-color",
+   "example": "#8B1A1A",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-negative-hover-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "#F5E0E0",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-negative-hover-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#6B1414",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-outline-negative-hover-border-color",
+   "category": "Buttons",
+   "css": "border-color",
+   "example": "#6B1414",
+   "affects": "Components - Button with style set to \"OUTLINE\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-link-accent-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#0E3842",
+   "affects": "Components - Button with style set to \"LINK\" and color set to \"ACCENT\" - Buttons in other components, including date picker calendar pop-up, file upload, signature field, styled text editor, and wizard layout"
+  },
+  {
+   "name": "button-link-accent-hover-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#1A5060",
+   "affects": "Components - Button with style set to \"LINK\" and color set to \"ACCENT\" - Buttons in other components, including date picker calendar pop-up, file upload, signature field, styled text editor, and wizard layout"
+  },
+  {
+   "name": "button-link-secondary-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#546E7A",
+   "affects": "Components - Button with style set to \"LINK\" and color set to \"SECONDARY\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-link-secondary-hover-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#37474F",
+   "affects": "Components - Button with style set to \"LINK\" and color set to \"SECONDARY\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-link-negative-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#8B1A1A",
+   "affects": "Components - Button with style set to \"LINK\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-link-negative-hover-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#6B1414",
+   "affects": "Components - Button with style set to \"LINK\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-accent-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "transparent",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"ACCENT\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-accent-border-color",
+   "category": "Buttons",
+   "css": "border-color",
+   "example": "#0E3842",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"ACCENT\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-accent-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#0E3842",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"ACCENT\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-accent-hover-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "#E8F0F2",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"ACCENT\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-accent-hover-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#0E3842",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"ACCENT\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-secondary-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "transparent",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"SECONDARY\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-secondary-border-color",
+   "category": "Buttons",
+   "css": "border-color",
+   "example": "#546E7A",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"SECONDARY\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-secondary-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#546E7A",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"SECONDARY\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-secondary-hover-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "#ECEFF1",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"SECONDARY\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-secondary-hover-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#37474F",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"SECONDARY\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-negative-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "transparent",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-negative-border-color",
+   "category": "Buttons",
+   "css": "border-color",
+   "example": "#8B1A1A",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-negative-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#8B1A1A",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-negative-hover-background-color",
+   "category": "Buttons",
+   "css": "background-color",
+   "example": "#F5E0E0",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "button-ghost-negative-hover-text-color",
+   "category": "Buttons",
+   "css": "color",
+   "example": "#6B1414",
+   "affects": "Components - Button with style set to \"GHOST\" and color set to \"NEGATIVE\" - Buttons in other components, including file upload, signature field, and wizard layout"
+  },
+  {
+   "name": "label-font-weight",
+   "category": "Labels",
+   "css": "font-weight",
+   "example": "400",
+   "affects": "Components - Input, selection, picker, and browser components. - Other components that have a label and labelPosition parameter, such as rich text, image, and KPI components."
+  },
+  {
+   "name": "label-font-size",
+   "category": "Labels",
+   "css": "font-size",
+   "example": "16px",
+   "affects": "Components - Input, selection, picker, and browser components. - Other components that have a label and labelPosition parameter, such as rich text, image, and KPI components."
+  },
+  {
+   "name": "label-on-light-color",
+   "category": "Labels",
+   "css": "color",
+   "example": "#1C3B3F",
+   "affects": "Components - Input, selection, picker, and browser components. - Other components that have a label and labelPosition parameter, such as rich text, image, and KPI components."
+  },
+  {
+   "name": "label-on-dark-color",
+   "category": "Labels",
+   "css": "color",
+   "example": "#ECEFF1",
+   "affects": "Components - Input, selection, picker, and browser components. - Other components that have a label and labelPosition parameter, such as rich text, image, and KPI components."
+  },
+  {
+   "name": "card-box-shadow",
+   "category": "Cards and Boxes",
+   "css": "box-shadow",
+   "example": "0px 1px 6px rgba(0, 0, 0, 0.08)",
+   "affects": "Components - Box layout - Card layout - Card group layout - Card choice component (unselected cards only)"
+  },
+  {
+   "name": "card-box-semi-rounded-border-radius",
+   "category": "Cards and Boxes",
+   "css": "border-radius",
+   "example": "10px",
+   "affects": "Components - Box layout - Card layout - Card group layout"
+  },
+  {
+   "name": "card-box-rounded-border-radius",
+   "category": "Cards and Boxes",
+   "css": "border-radius",
+   "example": "16px",
+   "affects": "Components - Box layout - Card layout - Card group layout"
+  },
+  {
+   "name": "tag-standard-semi-rounded-border-radius",
+   "category": "Tags",
+   "css": "border-radius",
+   "example": "6px",
+   "affects": "Components - Tag"
+  },
+  {
+   "name": "tag-small-semi-rounded-border-radius",
+   "category": "Tags",
+   "css": "border-radius",
+   "example": "4px",
+   "affects": "Components - Tag"
+  },
+  {
+   "name": "tooltip-background-color",
+   "category": "Tooltips",
+   "css": "background-color",
+   "example": "#FAFBFF",
+   "affects": "Components - Components that have a tooltip , helpTooltip , caption , or selectedTooltips parameter. Other - Any other hover tooltip that displays in a site or portal page."
+  },
+  {
+   "name": "tooltip-text-color",
+   "category": "Tooltips",
+   "css": "color",
+   "example": "#37474F",
+   "affects": "Components - Components that have a tooltip , helpTooltip , caption , or selectedTooltips parameter. Other - Any other hover tooltip that displays in a site or portal page."
+  },
+  {
+   "name": "tooltip-font-size",
+   "category": "Tooltips",
+   "css": "font-size",
+   "example": "14px",
+   "affects": "Components - Components that have a tooltip , helpTooltip , caption , or selectedTooltips parameter. Other - Any other hover tooltip that displays in a site or portal page."
+  },
+  {
+   "name": "tooltip-box-shadow",
+   "category": "Tooltips",
+   "css": "box-shadow",
+   "example": "0px 2px 8px rgba(0, 0, 0, 0.25)",
+   "affects": "Components - Components that have a tooltip , helpTooltip , caption , or selectedTooltips parameter. Other - Any other hover tooltip that displays in a site or portal page."
+  },
+  {
+   "name": "tooltip-border-radius",
+   "category": "Tooltips",
+   "css": "border-radius",
+   "example": "8px",
+   "affects": "Components - Components that have a tooltip , helpTooltip , caption , or selectedTooltips parameter. Other - Any other hover tooltip that displays in a site or portal page."
+  },
+  {
+   "name": "tooltip-icon-on-light-color",
+   "category": "Tooltips",
+   "css": "fill",
+   "example": "#263238",
+   "affects": "Components - Components that have a helpTooltip parameter."
+  },
+  {
+   "name": "tooltip-icon-on-dark-color",
+   "category": "Tooltips",
+   "css": "fill",
+   "example": "#ECEFF1",
+   "affects": "Components - Components that have a helpTooltip parameter."
+  },
+  {
+   "name": "tooltip-icon-size",
+   "category": "Tooltips",
+   "css": "width / height",
+   "example": "18px",
+   "affects": "Components - Components that have a helpTooltip parameter."
+  },
+  {
+   "name": "pop-up-menu-on-light-background-color",
+   "category": "Pop-up Menus",
+   "css": "background-color",
+   "example": "#FAFBFF",
+   "affects": "Components - Components that have a box that pops up when you click or hover over them, such as date picker, signature, styled text editor, user record link, and dropdown components."
+  },
+  {
+   "name": "pop-up-menu-on-dark-background-color",
+   "category": "Pop-up Menus",
+   "css": "background-color",
+   "example": "#263238",
+   "affects": "Components - Components that have a box that pops up when you click or hover over them, such as date picker, signature, styled text editor, user record link, and dropdown components."
+  },
+  {
+   "name": "radio-button-size",
+   "category": "Radio Buttons",
+   "css": "width / height",
+   "example": "24px",
+   "affects": "Components - Radio button"
+  },
+  {
+   "name": "radio-button-unselected-border-color",
+   "category": "Radio Buttons",
+   "css": "border-color",
+   "example": "#46535E",
+   "affects": "Components - Radio button"
+  },
+  {
+   "name": "radio-button-unselected-border-width",
+   "category": "Radio Buttons",
+   "css": "border-width",
+   "example": "1px",
+   "affects": "Components - Radio button"
+  },
+  {
+   "name": "radio-button-selected-border-color",
+   "category": "Radio Buttons",
+   "css": "border-color",
+   "example": "#003C55",
+   "affects": "Components - Radio button"
+  },
+  {
+   "name": "radio-button-selected-border-width",
+   "category": "Radio Buttons",
+   "css": "border-width",
+   "example": "3px",
+   "affects": "Components - Radio button"
+  },
+  {
+   "name": "radio-button-selected-inner-circle-size",
+   "category": "Radio Buttons",
+   "css": "width / height",
+   "example": "14px",
+   "affects": "Components - Radio button"
+  },
+  {
+   "name": "radio-button-selected-inner-circle-color",
+   "category": "Radio Buttons",
+   "css": "color",
+   "example": "#003C55",
+   "affects": "Components - Radio button"
+  },
+  {
+   "name": "checkbox-size",
+   "category": "Checkboxes",
+   "css": "width / height",
+   "example": "24px",
+   "affects": "Components - Boolean checkbox - Checkbox Other - Read-only and editable grids with selection enabled"
+  },
+  {
+   "name": "checkbox-semi-rounded-border-radius",
+   "category": "Checkboxes",
+   "css": "border-radius",
+   "example": "2px",
+   "affects": "Components - Boolean checkbox - Checkbox Other - Read-only and editable grids with selection enabled"
+  },
+  {
+   "name": "checkbox-border-width",
+   "category": "Checkboxes",
+   "css": "border-width",
+   "example": "1px",
+   "affects": "Components - Boolean checkbox - Checkbox Other - Read-only and editable grids with selection enabled"
+  },
+  {
+   "name": "checkbox-unselected-border-color",
+   "category": "Checkboxes",
+   "css": "border-color",
+   "example": "#46535E",
+   "affects": "Components - Boolean checkbox - Checkbox Other - Read-only and editable grids with selection enabled"
+  },
+  {
+   "name": "checkbox-selected-border-color",
+   "category": "Checkboxes",
+   "css": "border-color",
+   "example": "#003C55",
+   "affects": "Components - Boolean checkbox - Checkbox Other - Read-only and editable grids with selection enabled"
+  },
+  {
+   "name": "checkbox-selected-background-color",
+   "category": "Checkboxes",
+   "css": "background-color",
+   "example": "#003C55",
+   "affects": "Components - Boolean checkbox - Checkbox Other - Read-only and editable grids with selection enabled"
+  },
+  {
+   "name": "checkbox-selected-check-color",
+   "category": "Checkboxes",
+   "css": "color",
+   "example": "#FFFFFF",
+   "affects": "Components - Boolean checkbox - Checkbox Other - Read-only and editable grids with selection enabled"
+  },
+  {
+   "name": "checkbox-selected-check-size",
+   "category": "Checkboxes",
+   "css": "width / height",
+   "example": "10px",
+   "affects": "Components - Boolean checkbox - Checkbox Other - Read-only and editable grids with selection enabled"
+  },
+  {
+   "name": "instructions-font-weight",
+   "category": "Instructions",
+   "css": "font-weight",
+   "example": "400",
+   "affects": "Components - Components that have an instructions parameter."
+  },
+  {
+   "name": "instructions-font-size",
+   "category": "Instructions",
+   "css": "font-size",
+   "example": "14px",
+   "affects": "Components - Components that have an instructions parameter."
+  },
+  {
+   "name": "instructions-on-light-color",
+   "category": "Instructions",
+   "css": "color",
+   "example": "#546E7A",
+   "affects": "Components - Components that have an instructions parameter."
+  },
+  {
+   "name": "instructions-on-dark-color",
+   "category": "Instructions",
+   "css": "color",
+   "example": "#B0BEC5",
+   "affects": "Components - Components that have an instructions parameter."
+  },
+  {
+   "name": "placeholder-font-weight",
+   "category": "Placeholders",
+   "css": "font-weight",
+   "example": "400",
+   "affects": "Components - Components that have a placeholder or showCharacterCount parameter. Does not affect the file upload component when dropZoneStyle is \"EXPANDED\" . - Search box text for components such as read-only grids and dropdowns."
+  },
+  {
+   "name": "placeholder-text-on-light-color",
+   "category": "Placeholders",
+   "css": "color",
+   "example": "#78909C",
+   "affects": "Components - Components that have a placeholder or showCharacterCount parameter. For the file upload component, this also affects the file icon. - Search box text and icon for components such as read-only grids and dropdowns. - Documents chat - File icon for the file upload component.",
+   "renamedFrom": "placeholder-text-color",
+   "renamedIn": "26.6"
+  },
+  {
+   "name": "placeholder-text-on-dark-color",
+   "category": "Placeholders",
+   "css": "color",
+   "example": "#B0BEC5",
+   "affects": "Components - Components that have a placeholder or showCharacterCount parameter. For the file upload component, this also affects the file icon. - Search box text and icon for components such as read-only grids and dropdowns. - Documents chat. - File icon for the file upload component."
+  },
+  {
+   "name": "placeholder-font-style",
+   "category": "Placeholders",
+   "css": "font-style",
+   "example": "normal",
+   "affects": "Components - Components that have a placeholder or showCharacterCount parameter. Does not affect the file upload component when dropZoneStyle is \"EXPANDED\" . - Search box text for components such as read-only grids and dropdowns."
+  },
+  {
+   "name": "required-asterisk-on-light-color",
+   "category": "Required Asterisks",
+   "css": "color",
+   "example": "#D32F2F",
+   "affects": "Components - Input, selection, picker, and browser components that have the required parameter set to true."
+  },
+  {
+   "name": "required-asterisk-on-dark-color",
+   "category": "Required Asterisks",
+   "css": "color",
+   "example": "#EF5350",
+   "affects": "Components - Input, selection, picker, and browser components that have the required parameter set to true."
+  },
+  {
+   "name": "required-asterisk-font-size",
+   "category": "Required Asterisks",
+   "css": "font-size",
+   "example": "16px",
+   "affects": "Components - Input, selection, picker, and browser components that have the required parameter set to true."
+  },
+  {
+   "name": "required-asterisk-font-weight",
+   "category": "Required Asterisks",
+   "css": "font-weight",
+   "example": "600",
+   "affects": "Components - Input, selection, picker, and browser components that have the required parameter set to true."
+  }
+ ]
+}

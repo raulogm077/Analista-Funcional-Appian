@@ -1,7 +1,7 @@
 {
-  "description": "Versión de Appian en la que aparece cada componente, parámetro, valor o anidación (de 24.3, la documentación más antigua publicada, a 26.9; la base del kit, 'default', sigue siendo 26.6). validate.py lo compara con app.appianVersion (si falta, 'default') y da error si el prototipo usa algo posterior. Claves: components 'a!x'; parameters 'a!x.param'; values 'a!x.param=VALOR'; placements 'a!hijo@a!padre.param'. Lo anterior a 24.3 no figura (se da por disponible).",
+  "description": "Versión de Appian en la que aparece cada componente, parámetro, valor o anidación (de 24.3, la documentación más antigua publicada, a 26.9; la base del kit, 'default', es 26.9: la versión vigente de Appian Cloud en septiembre de 2026). validate.py lo compara con app.appianVersion (si falta, 'default') y da error si el prototipo usa algo posterior. Claves: components 'a!x'; parameters 'a!x.param'; values 'a!x.param=VALOR'; placements 'a!hijo@a!padre.param'. Lo anterior a 24.3 no figura (se da por disponible).",
   "source": "Appian_Release_Notes.html y SAIL_Components.html de cada versión (https://docs.appian.com/suite/help/<versión>/…) y firmas de cada componente comparadas entre versiones. INFO en a!cardLayout no está en 25.4 y sí en 26.3 (las páginas de 26.1/26.2 ya no están publicadas): se toma 26.1, la primera versión posible. 26.7–26.9: la documentación de 26.7 y 26.8 no se publica (redirige a 26.9); la versión es la etiqueta 'Version' de cada novedad en las notas de 26.9 (https://docs.appian.com/suite/help/26.9/Appian_Release_Notes.html#interfaces) y las firmas de 26.9 comparadas con las de 26.6. a!tabLayout showDivider/dividerColor no aparecen en las notas: se toma 26.7, la versión de la orientación vertical de la que dependen sus valores por defecto.",
-  "default": "26.6",
+  "default": "26.9",
   "components": {
     "a!cardGroupLayout": "24.4",
     "a!headingField": "24.4",

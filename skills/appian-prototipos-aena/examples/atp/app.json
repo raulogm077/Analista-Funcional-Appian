@@ -5,7 +5,7 @@
   "version": "0.1",
   "language": "es",
   "today": "2026-09-24",
-  "appianVersion": "26.6",
+  "appianVersion": "26.9",
   "source": "examples/atp/ddf.md v1.1 (modo fiel de la ERS de ejemplo, FU-01) · datos ficticios"
  },
  "site": {
@@ -1510,8 +1510,9 @@
             "type": "a!kpiField",
             "primaryText": "Acuerdos vigentes",
             "icon": "handshake-o",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
             "$secondaryValue": 7,
             "secondaryText": "vs. agosto",
             "data": "recordType!ATP Acuerdo",
@@ -1531,8 +1532,9 @@
             "type": "a!kpiField",
             "primaryText": "En revisión jurídica",
             "icon": "gavel",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
             "$secondaryValue": 1,
             "secondaryText": "vs. agosto",
             "trendColor": "REVERSE",
@@ -1553,8 +1555,9 @@
             "type": "a!kpiField",
             "primaryText": "Vencen en 90 días",
             "icon": "calendar-times-o",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
             "$secondaryValue": 1,
             "secondaryText": "vs. agosto",
             "trendColor": "REVERSE",
@@ -1575,8 +1578,9 @@
             "type": "a!kpiField",
             "primaryText": "Importe comprometido",
             "icon": "eur",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
             "$secondaryValue": 215000,
             "secondaryText": "vs. agosto",
             "data": "recordType!ATP Acuerdo",
@@ -1805,6 +1809,10 @@
                 "type": "a!grouping",
                 "field": "recordType!ATP Acuerdo.fields.estado"
                },
+               "secondaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!ATP Acuerdo.fields.estado"
+               },
                "measures": [
                 {
                  "type": "a!measure",
@@ -1814,10 +1822,17 @@
                 }
                ]
               },
+              "stacking": "NORMAL",
+              "showLegend": false,
               "colorScheme": {
                "type": "a!colorSchemeCustom",
                "colors": [
-                "#1A2732"
+                "#525C65",
+                "#1A2732",
+                "#9A5200",
+                "#0E6B00",
+                "#B2002C",
+                "#B2002C"
                ]
               }
              }
@@ -4719,8 +4734,9 @@
             "type": "a!kpiField",
             "primaryText": "Acuerdos",
             "icon": "handshake-o",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
             "secondaryText": "en el filtro",
             "data": "recordType!ATP Acuerdo",
             "primaryMeasure": {
@@ -4739,8 +4755,9 @@
             "type": "a!kpiField",
             "primaryText": "Vigentes",
             "icon": "check-circle",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
             "secondaryText": "en el filtro",
             "data": "recordType!ATP Acuerdo",
             "primaryMeasure": {
@@ -4759,8 +4776,9 @@
             "type": "a!kpiField",
             "primaryText": "Importe total",
             "icon": "eur",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
             "secondaryText": "acuerdos con contenido económico",
             "data": "recordType!ATP Acuerdo",
             "primaryMeasure": {
@@ -4810,6 +4828,7 @@
               "style": "DONUT",
               "height": "SHORT",
               "showTooltips": true,
+              "showDataLabels": true,
               "config": {
                "type": "a!pieChartConfig",
                "primaryGrouping": {
@@ -4820,7 +4839,8 @@
                 {
                  "type": "a!measure",
                  "function": "COUNT",
-                 "field": "recordType!ATP Acuerdo.fields.id"
+                 "field": "recordType!ATP Acuerdo.fields.id",
+                 "label": "Acuerdos"
                 }
                ]
               },
@@ -4828,9 +4848,9 @@
                "type": "a!colorSchemeCustom",
                "colors": [
                 "#1A2732",
-                "#90CE00",
-                "#527500",
-                "#525C65"
+                "#72A300",
+                "#3D6B8C",
+                "#EC4371"
                ]
               }
              }
@@ -4880,6 +4900,10 @@
                 "type": "a!grouping",
                 "field": "recordType!ATP Acuerdo.fields.estado"
                },
+               "secondaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!ATP Acuerdo.fields.estado"
+               },
                "measures": [
                 {
                  "type": "a!measure",
@@ -4889,10 +4913,17 @@
                 }
                ]
               },
+              "stacking": "NORMAL",
+              "showLegend": false,
               "colorScheme": {
                "type": "a!colorSchemeCustom",
                "colors": [
-                "#1A2732"
+                "#525C65",
+                "#1A2732",
+                "#9A5200",
+                "#0E6B00",
+                "#B2002C",
+                "#B2002C"
                ]
               }
              }

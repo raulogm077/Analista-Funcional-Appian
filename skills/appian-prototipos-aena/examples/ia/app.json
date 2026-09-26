@@ -1680,7 +1680,7 @@
             {
              "type": "a!richTextIcon",
              "icon": "magic",
-             "color": "ACCENT",
+             "color": "#115EBB",
              "size": "MEDIUM"
             }
            ]

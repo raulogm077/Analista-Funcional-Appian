@@ -1,5 +1,5 @@
 """Genera examples/bloques/app.json: galería navegable de los bloques del kit (scripts/sail_helpers.py, references/bloques.md).
-Cada bloque aparece con su nombre, cuándo usarlo y un ejemplo real. Versión de Appian 26.6 (lo que se puede usar ya).
+Cada bloque aparece con su nombre, cuándo usarlo y un ejemplo real. Versión de Appian 26.9.
 Uso: python3 generar_app.py app.json"""
 import json, sys
 from pathlib import Path
@@ -165,12 +165,49 @@ p5 = page("ia", "Inteligencia artificial", "Solo si el análisis lo pide; si no,
 ], local={"local!valoracion": None, "local!doc": 101, "local!pagina": 3, "local!cita": "plazo máximo de 2 horas", "local!campos": campos, "local!parte": 7, "local!pag": 1, "local!resaltar": None})
 # (el chat de datos, a!dataFabricChatField, va en un panel lateral a página completa: ver examples/ia o el patrón P11)
 
-pages = [p1, p2, p3, p4, p5]
-spec = {"app": {"name": "Bloques del kit", "language": "es", "today": "2026-09-24", "appianVersion": "26.6", "source": "Galería de bloques de scripts/sail_helpers.py (datos ficticios)"},
+# ------------------------------------------------------------------ 6. Patrones nuevos del SAIL Design System 26.9
+eventos = [{"id": k + 1, "fecha": f, "hora": hh, "titulo": ti, "tipo": tp, "detalle": de} for k, (f, hh, ti, tp, de) in enumerate([
+    ("2026-09-21", "09:00", "Coordinación del plan de invierno", "Evento", "Jefaturas de operaciones de MAD y BCN"),
+    ("2026-09-23", "23:59", "Entrega del plan de invierno", "Plazo", "Documento consolidado a la Dirección de Operaciones"),
+    ("2026-09-24", "08:30", "Simulacro de evacuación T4", "Evento", "Zona de facturación, mostradores 800-990"),
+    ("2026-09-24", "12:00", "Revisión del SMS con AESA", "Evento", "Sala de juntas, edificio de servicios generales"),
+    ("2026-09-24", "14:00", "Refuerzo en filtros de seguridad", "Turno", "Dos vigilantes adicionales de 14:00 a 22:00"),
+    ("2026-09-25", "18:00", "Cierre de ofertas de limpieza", "Plazo", "Licitación de limpieza de la T2"),
+    ("2026-09-29", "10:00", "Visita de la dirección a PMI", "Evento", "Recorrido por las obras de la terminal"),
+    ("2026-09-30", "23:00", "Cierre nocturno de la pista 14L", "Evento", "Mantenimiento del balizamiento hasta las 05:00"),
+    ("2026-10-02", "09:00", "Auditoría de seguridad operacional", "Evento", "Auditoría interna anual"),
+    ("2026-10-05", "23:59", "Informe mensual de puntualidad", "Plazo", "Datos de septiembre de toda la red"),
+    ("2026-10-14", "07:00", "Turno especial puente del Pilar", "Turno", "Refuerzo de personal en BCN y MAD")])]
+tipos_trabajo = {"Mantenimiento": "#72A300", "Sistemas": "#3D6B8C", "Seguridad": "#EC4371", "Operaciones": "#1A2732"}  # tintes de la paleta de gráficos, sin rojo (rojo = negativo)
+tareas_k = [{"id": k + 1, "titulo": ti, "descripcion": de, "tipo": tp, "tipoColor": tipos_trabajo[tp], "responsable": rs, "fecha": fe, "avance": av, "estado": es} for k, (ti, de, tp, rs, fe, av, es) in enumerate([
+    ("Revisar enfriadora 2 de la sala C", "Presión de condensación alta tras la sustitución del presostato", "Mantenimiento", "Irene Vega", "2026-09-28", 0, "Pendiente"),
+    ("Actualizar el firmware de los FIDS", "Monitores de las puertas B20-B26", "Sistemas", "Hugo Romero", "2026-10-02", 0, "Pendiente"),
+    ("Formación de nuevos vigilantes", "Procedimiento de filtros y detección de objetos prohibidos", "Seguridad", "Elena Castro", "2026-09-30", 40, "En curso"),
+    ("Sustituir la guía de la cinta 7", "Pieza recibida del proveedor; montaje en turno de noche", "Mantenimiento", "Sergio Ortiz", "2026-09-26", 70, "En curso"),
+    ("Plan de invierno de BCN", "Consolidado y enviado a la Dirección de Operaciones", "Operaciones", "Javier García", "2026-09-23", 100, "Hecho")])]
+hilo = [   # comentarios de primer nivel del más reciente al más antiguo; las respuestas, en orden de llegada
+    {"id": 4, "autor": "Lucía Fernández Gil", "fecha": "2026-09-23T16:30", "texto": "¿Podemos reabrir los mostradores 812-818 mientras llegan las juntas? Hay mucha cola en la zona.", "adjuntos": [], "padre": None},
+    {"id": 1, "autor": "Rocío Sánchez Vidal", "fecha": "2026-09-22T09:15", "texto": "He colocado cubos y avisado a Limpieza para que revise la zona cada hora. Adjunto las fotos del falso techo.", "adjuntos": [{"nombre": "falso_techo_1.jpg", "tipo": "imagen", "tamano": "1,2 MB"}, {"nombre": "Parte_PT-118.pdf", "tipo": "pdf", "tamano": "240 KB"}], "padre": None},
+    {"id": 2, "autor": "Pablo Martín Ortega", "fecha": "2026-09-22T12:40", "texto": "El equipo de cubiertas viene mañana a las 8:00. Dejo la zona acotada.", "adjuntos": [], "padre": 1},
+    {"id": 3, "autor": "Andrés Moreno Pastor", "fecha": "2026-09-23T10:05", "texto": "Revisada la impermeabilización de la lucernaria: hay que sustituir dos juntas. Presupuesto en el anexo.", "adjuntos": [{"nombre": "Presupuesto_juntas.xlsx", "tipo": "excel", "tamano": "36 KB"}], "padre": 1}]
+p6 = page("patrones269", "Patrones 26.9", "Calendario, hilo de comentarios y tablero kanban del SAIL Design System de Appian 26.9", [
+    demo("calendar_month(events, sel_var, today, months, month_var)", "Ver cómo se reparten eventos y plazos en el mes; al pulsar un día, su agenda aparece a la derecha. Hoy resaltado; lo pasado, atenuado.",
+         calendar_month("local!eventos", "local!dia", "2026-09-24", months=[(2026, 9), (2026, 10)], month_var="local!mes"), card=False),
+    demo("calendar_week(events, start, today)", "Una semana en columnas para comparar días con más detalle. Cada evento lleva el color de su tipo en un tinte suave.",
+         calendar_week("local!eventos", "2026-09-21", "2026-09-24"), card=False),
+    demo("kanban(var, title, statuses, add_button)", "Seguir tareas por etapas: tipo de trabajo, responsable, fecha y avance; las flechas pasan la tarea a la columna de al lado.",
+         kanban("local!tareasK", "Tareas de la semana", add_button=secondary("Añadir tarea", icon="plus")), card=False),
+    demo("comment_thread(var, user, new_var, reply_to_var, reply_var)", "Conversación sobre un registro: comentarios con adjuntos, respuestas plegables y cuadro para responder. En una ficha, en su propia columna o al final.",
+         comment_thread("local!comentarios", "Lucía Fernández Gil", "local!nuevoComentario", "local!respondiendoA", "local!respuesta"), card=False),
+], local={"local!eventos": eventos, "local!dia": "2026-09-24", "local!mes": 1, "local!tareasK": tareas_k, "local!comentarios": hilo,
+          "local!nuevoComentario": None, "local!respondiendoA": None, "local!respuesta": None})
+
+pages = [p1, p2, p3, p4, p5, p6]
+spec = {"app": {"name": "Bloques del kit", "language": "es", "today": "2026-09-24", "appianVersion": "26.9", "source": "Galería de bloques de scripts/sail_helpers.py (datos ficticios)"},
         "site": {"displayName": "Bloques del kit", "home": "cabeceras", "user": {"name": "Lucía Fernández Gil"},
-                 "pages": [{"title": t, "icon": ic, "screen": p["id"]} for p, t, ic in zip(pages, ["Cabeceras", "Datos", "Listas", "Cards", "IA"], ["header", "tachometer", "table", "th-large", "magic"])]},
+                 "pages": [{"title": t, "icon": ic, "screen": p["id"]} for p, t, ic in zip(pages, ["Cabeceras", "Datos", "Listas", "Cards", "IA", "Patrones 26.9"], ["header", "tachometer", "table", "th-large", "magic", "calendar"])]},
         "requirements": [{"id": "B1", "title": "Catálogo de bloques de interfaz"}],
-        "maps": {"estado": ESTADO, "estadoGrid": ESTADO_G, **AI_MAPS},
+        "maps": {"estado": ESTADO, "estadoGrid": ESTADO_G, **AI_MAPS, **event_maps(), **ATTACH_MAPS},
         "data": {"incidencias": {"recordType": "AENA Incidencia", "rows": rows}},
         "screens": pages,
         "captures": [{"name": f"{k + 1:02d}-{p['id']}", "screen": p["id"]} for k, p in enumerate(pages)]}

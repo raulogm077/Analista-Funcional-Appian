@@ -6,7 +6,8 @@ Salen de los patrones del *SAIL Design System* y del catálogo *Drag & Drop Patt
 
 - Galería navegable con un ejemplo de cada bloque: `examples/bloques/` (`generar_app.py` → `app.json` → HTML).
 - Los componentes de IA en acción (agente, chat de datos en panel, documento con citas, revisión): `examples/ia/`.
-- Todos funcionan en **Appian 26.6** salvo que se indique otra versión.
+- Los 147 componentes de Appian 26.9, uno a uno: `examples/componentes/`.
+- Todos funcionan desde **Appian 26.6** salvo que se indique otra versión (§6 y §7).
 
 Uso en un `generar_app.py`:
 
@@ -28,7 +29,7 @@ sencillo. No mezcles en una pantalla dos bloques que resuelven lo mismo (p. ej. 
 | `breadcrumbs(items)` | La página está dentro de una jerarquía (Área › Lista › Registro). `items`: `[("Texto", $action), …, "Actual"]`. | Para «volver atrás» o historial de navegación. | Breadcrumbs |
 | `hero_header(title, subtitle, stats, buttons, level)` | Inicio o portada de módulo que necesita presencia: card azul marino con cifras en línea. Sustituye a `page_header`. | Páginas de trabajo diario (listados, fichas): allí, `page_header`. | Hero card header |
 | `filter_bar(filters, clear)` | 2–4 filtros que afectan a **toda** la página (informe, listado con varios bloques). | Filtros de un solo grid: usa `userFilters` y la búsqueda del propio grid. | Filter bar header |
-| `side_nav(items, var, content)` | Más de 6 secciones o etiquetas largas en 26.6. | 2–6 secciones: `a!tabLayout`. Desde 26.7: `a!tabLayout(orientation: "VERTICAL")`. | Navigation (lightweight) |
+| `side_nav(items, var, content)` | Más de 6 secciones o etiquetas largas en proyectos anteriores a 26.7. | 2–6 secciones: `a!tabLayout`. Desde 26.7: `a!tabLayout(orientation: "VERTICAL")`. | Navigation (lightweight) |
 | `inline_stats(items)` | Resumen de 2–4 cifras en una línea bajo un título. | Cifras que son el objetivo de la página: `kpi_strip`. | Inline Stats |
 | `action_banner(title, text, button, kind)` | Aviso que pide una acción concreta, con el botón dentro. | Avisos solo informativos: `a!messageBanner`. | Action Banner |
 | `empty_state(icon, title, text, button)` | Lista, grid o sección sin elementos: qué pasa y siguiente paso. | Grids: basta `emptyGridMessage` concreto. | Full page empty state |
@@ -37,7 +38,7 @@ sencillo. No mezcles en una pantalla dos bloques que resuelven lo mismo (p. ej. 
 
 | Bloque | Úsalo cuando | Detalles |
 |---|---|---|
-| `kpi_strip([kpi(…)])` | 2–4 indicadores de una página de inicio o informe. | Una card, divisores, barra verde arriba. `kpi(..., secondary=)` calcula la tendencia; `reverse=True` si bajar es bueno. |
+| `kpi_strip([kpi(…)])` | 2–4 indicadores de una página de inicio o informe. | Una card, divisores, barra verde arriba; cada KPI con su icono en un sello de color suave (iconStyle STAMP). `kpi(..., secondary=)` calcula la tendencia; `reverse=True` si bajar es bueno. En columnas estrechas: `template="COMPACT", iconStyle="ICON"`. |
 | `kpi_sparkline(text, value, cats, values)` | Importa la evolución reciente, no el detalle. | Línea `MICRO` sin ejes con `accessibilityText` que enumera los valores. |
 | `kpi_progress(text, value, pct, icon)` | Avance hacia un objetivo (plan, presupuesto). | KPI `ADJACENT` con icono en sello + barra `THIN`. Devuelve una lista (KPI + barra). |
 | `key_facts(items, extra)` | 3–6 datos clave de un registro bajo la cabecera. | Valores vacíos muestran «–». Un tag o avatar puede ser un valor. |
@@ -105,3 +106,18 @@ para capturar estados. En el visor: `$fileName`, `$pages`, `$content` (texto de 
 | 26.8 | Filtrar series desde la leyenda | `allowLegendFiltering: true` en gráficos. |
 | 26.8 | Botón de subida y de firma | `buttonStyle` `SOLID`/`OUTLINE`/`GHOST`/`LINK` + `buttonColor`. |
 | 26.9 | Celdas compuestas en grids | `a!sideBySideLayout` e imágenes múltiples dentro de `a!gridColumn`. |
+
+## 7. Patrones del SAIL Design System 26.9
+
+Fuentes: `sail/calendar.html`, `sail/comment-thread.html` y `sail/kanban.html` de la documentación de Appian 26.9. Solo SAIL de 26.6 o anterior: sirven para cualquier versión de 26.x.
+
+| Bloque | Úsalo cuando | Detalles |
+|---|---|---|
+| `calendar_month(events, sel_var, today, months, month_var)` | Importa cómo se reparten eventos y plazos a lo largo del mes (turnos, cierres, auditorías, vencimientos). | Rejilla de lunes a domingo con hasta 2 eventos por día y «+N más»; al pulsar un día, su agenda a la derecha. Hoy con tinte verde, días de otro mes en gris, eventos pasados atenuados, estado vacío. `months` + `month_var` añaden flechas de mes. Eventos: `[{fecha, hora, titulo, tipo, detalle}]`; `event_maps()` en `maps` (icono y color por tipo). |
+| `calendar_week(events, start, today)` | Comparar pocos días con más detalle (planificación de la semana). | Un día por columna con sus eventos en tarjetas del color del tipo (tinte suave); los días pasados en gris y hoy subrayado. |
+| `comment_thread(var, user, new_var, reply_to_var, reply_var)` | Conversación sobre un registro (dudas, decisiones, adjuntos) en su vista o columna de la ficha. | Comentario nuevo arriba («Publicar» se activa al escribir), comentarios con avatar, fecha, adjuntos y «Responder»; respuestas plegables. Datos: `[{id, autor, fecha, texto, adjuntos, padre}]`; `ATTACH_MAPS` en `maps`. En Appian: record type de comentarios (1:N) con `padre`. |
+| `kanban(var, title, statuses, add_button)` | El usuario mueve trabajo entre etapas (tareas de mantenimiento, acciones de un plan). | Columnas con cabecera de color (tinte + barra + recuento) y tarjetas con tipo, responsable, fecha, avance y flechas para cambiar de columna. Tareas: `[{id, titulo, descripcion, tipo, tipoColor, responsable, fecha, avance, estado}]`. Máximo 4–5 columnas. |
+| `state_chart_colors(mapa, orden)` | Gráfico de barras o columnas por estado. | Un color por estado con el mismo significado que las etiquetas; va con `secondaryGrouping` por el mismo campo, `stacking: "NORMAL"` y `showLegend: false`; con una agrupación secundaria distinta (p. ej. estado dentro de mes), `"$series": orden` fija el color de cada serie. |
+
+Técnicas del prototipo que usan: `$local` en `a!forEach` (variables de cada vuelta, como `a!localVariables`: `{"local!comentario": "fv!item"}`), `$filter` + escritura en `fv!item` (se guarda en la fila original de la lista) y `$action.prepend` / `append` (añadir un elemento evaluando sus `{expresiones}`).
+

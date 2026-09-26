@@ -31,6 +31,7 @@ SUBOBJECTS = {
     "a!sidebarTemplate", "a!cardTemplateTile", "a!cardTemplateBarTextJustified", "a!cardTemplateBarTextStacked",
     "a!chartReferenceLine", "a!validationMessage", "a!submitLink", "a!processTaskLink", "a!userRecordLink", "a!webVideo",
     "a!suggestedQuestion", "a!pageLink",
+    "a!authorizationLink", "a!newsEntryLink", "a!reportLink", "a!hierarchyBrowserFieldColumnsNode", "a!hierarchyBrowserFieldTreeNode",
 }
 
 
@@ -96,7 +97,7 @@ def load_not_in_appian(spec_dir=None):
 def load_versions():
     """Mapa de versiones de Appian (schemas/appian-versions.json): en qué versión aparece cada componente, parámetro o valor."""
     f = ROOT / "schemas" / "appian-versions.json"
-    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {"default": "26.6"}
+    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {"default": "26.9"}
 
 
 def vtuple(v):
@@ -137,16 +138,46 @@ def find_brand(brand_id, spec_dir=None):
     sys.exit(2)
 
 
+def check_css_profile(brand, rep):
+    """Perfil CSS de la marca (brand → cssProfile): nombres de propiedad de Appian 26.9, sin repetidos, en minúsculas y con valor."""
+    cp = brand.get("cssProfile")
+    if not cp:
+        return
+    f = ROOT / "schemas" / "css-profile-properties.json"
+    ref = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {"properties": []}
+    names = {p["name"] for p in ref["properties"]}
+    renamed = {p["renamedFrom"]: p["name"] for p in ref["properties"] if p.get("renamedFrom")}
+    seen = set()
+    for g in cp.get("groups") or []:
+        for k, v in (g.get("properties") or {}).items():
+            where = f"brand.cssProfile.{k}"
+            if k != k.lower():
+                rep.err(where, "los nombres de propiedad del perfil CSS van en minúsculas")
+            if k in renamed:
+                rep.err(where, f"propiedad renombrada en Appian {next(p['renamedIn'] for p in ref['properties'] if p.get('renamedFrom') == k)}: usa '{renamed[k]}'")
+            elif k.lower() not in names:
+                rep.err(where, "no es una propiedad de perfil CSS de Appian (schemas/css-profile-properties.json)")
+            if k in seen:
+                rep.err(where, "propiedad repetida: Appian rechaza el perfil")
+            seen.add(k)
+            if v is None or str(v).strip() == "":
+                rep.err(where, "propiedad sin valor")
+            elif re.search(r"\b(thin|medium|thick)\b", str(v)):
+                rep.warn(where, "evita valores descriptivos (thin, medium, thick): Appian calcula tamaños con valores concretos")
+            elif k.endswith("-font-weight") and str(v).strip() in {"100", "200", "500", "800", "900"}:
+                rep.warn(where, "Appian no admite ese peso de letra en el perfil (usa 300, 400, 600 o 700)")
+
+
 def validate(spec, brand=None, spec_dir=None):
     comps, icons, supported = load_catalog(spec_dir), load_icons(), runtime_supported()
     not_in_appian, versions = load_not_in_appian(spec_dir), load_versions()
     rep = Report()
     # versión de Appian del cliente: lo que aparece en una versión posterior es error
     app = spec.get("app") if isinstance(spec.get("app"), dict) else {}
-    declared = str(app.get("appianVersion") or versions.get("default", "26.6"))
+    declared = str(app.get("appianVersion") or versions.get("default", "26.9"))
     if vtuple(declared) is None:
-        rep.warn("app.appianVersion", f"'{declared}' no es una versión de Appian (formato 25.4): se valida contra {versions.get('default', '26.6')}")
-        declared = versions.get("default", "26.6")
+        rep.warn("app.appianVersion", f"'{declared}' no es una versión de Appian (formato 25.4): se valida contra {versions.get('default', '26.9')}")
+        declared = versions.get("default", "26.9")
     target = vtuple(declared)
 
     def newer(table, key):
@@ -165,6 +196,11 @@ def validate(spec, brand=None, spec_dir=None):
             if isinstance(st, dict):
                 brand_hex |= {x.upper() for x in (st.get("tag"), st.get("enum")) if isinstance(x, str) and x.startswith("#")}
         primary = (brand.get("components", {}).get("primaryButton") or {}).get("color")
+        # colores del perfil CSS de la marca (semánticos accesibles, textos de campos…)
+        for g in (brand.get("cssProfile") or {}).get("groups") or []:
+            brand_hex |= {v.upper()[:7] for v in (g.get("properties") or {}).values() if isinstance(v, str) and HEX.match(v)}
+        check_css_profile(brand, rep)
+        _set_brand_colors(brand)
 
     screens = spec.get("screens", [])
     bad = [i for i, s in enumerate(screens) if not isinstance(s, dict)]
@@ -346,7 +382,7 @@ INPUTS = {"a!textField", "a!paragraphField", "a!integerField", "a!floatingPointF
           "a!dropdownField", "a!multipleDropdownField", "a!radioButtonField", "a!checkboxField",
           "a!booleanCheckboxField", "a!toggleField", "a!pickerFieldUsers", "a!pickerFieldGroups", "a!pickerFieldUsersAndGroups",
           "a!pickerFieldRecords", "a!pickerFieldCustom", "a!pickerFieldDocuments", "a!pickerFieldFolders",
-          "a!fileUploadField", "a!styledTextEditorField", "a!cardChoiceField", "a!encryptedTextField"}
+          "a!pickerFieldDocumentsAndFolders", "a!fileUploadField", "a!styledTextEditorField", "a!cardChoiceField", "a!encryptedTextField"}
 RICH = {"a!richTextItem", "a!richTextIcon", "a!richTextBulletedList", "a!richTextNumberedList", "a!richTextListItem", "a!richTextImage"}
 REFERENCE_LINE_CHARTS = ("a!columnChartField", "a!barChartField", "a!lineChartField", "a!areaChartField", "a!scatterChartField")
 CARD_TEMPLATES = ("a!cardTemplateTile", "a!cardTemplateBarTextJustified", "a!cardTemplateBarTextStacked")
@@ -367,6 +403,9 @@ PARENT = {  # componente -> (tipo padre, parámetro) permitidos
     "a!chartReferenceLine": {(c, "referenceLines") for c in REFERENCE_LINE_CHARTS},
     # card-choices-component.html: plantillas de a!cardChoiceField.cardTemplate
     **{t: {("a!cardChoiceField", "cardTemplate")} for t in CARD_TEMPLATES},
+    # Columns_Browser_Node_Component.html / Tree_Browser_Node_Component.html: nodeConfigs de su navegador
+    "a!hierarchyBrowserFieldColumnsNode": {("a!hierarchyBrowserFieldColumns", "nodeConfigs")},
+    "a!hierarchyBrowserFieldTreeNode": {("a!hierarchyBrowserFieldTree", "nodeConfigs")},
 }
 PANE_PARENTS = {("a!headerContentLayout", "contents"), ("a!formLayout", "contents")}  # Pane_Layout.html (en formulario desde 25.3)
 GRID_CELL_OK = {"a!richTextDisplayField", "a!linkField", "a!tagField", "a!imageField", "a!progressBarField",
@@ -449,7 +488,7 @@ def check_placement(spec, rep, newer=None, declared=None):
 
 
 # ---------------------------------------------------------------------------
-# Calidad UX: SAIL Design System de Appian (https://docs.appian.com/suite/help/26.6/sail/guidance.html)
+# Calidad UX: SAIL Design System de Appian (https://docs.appian.com/suite/help/26.9/sail/guidance.html)
 # Avisos con el prefijo "UX · ", uno por nodo (sus problemas van juntos) o por pantalla; nunca bloquean.
 # ---------------------------------------------------------------------------
 UX = "UX · "
@@ -465,6 +504,135 @@ CONTENT_CARD_PATHS = ([_HCL], [_HCL, ("a!columnsLayout", "columns"), ("a!columnL
                       [_HCL, ("a!cardGroupLayout", "cards")])
 NUM_LABEL = re.compile(r"importe|total|n\.?º|número|cantidad|%", re.I)
 NUM_FILTER = re.compile(r"\|\s*(eur|num|pct)\b")
+
+
+# ---------------------------------------------------------------------------
+# Contraste (WCAG 2.2 AA: texto 4,5:1; texto grande, iconos y bordes de controles 3:1). Los colores con nombre se resuelven
+# con los de la marca (accentColor y perfil CSS); validate() los fija antes de revisar las pantallas.
+# ---------------------------------------------------------------------------
+_COLORS = {"STANDARD": "#222222", "SECONDARY": "#666666", "ACCENT": "#1D659C", "POSITIVE": "#117C00", "NEGATIVE": "#B2002C", "WARN": "#D97706", "INFO": "#115EBB",
+           "bg:SUCCESS": "#EDF7EE", "bg:ERROR": "#FDEDF0", "bg:WARN": "#FFF5E6", "bg:INFO": "#EBF4FF", "bg:STANDARD": "#F0F1F2", "bg:NONE": "#FFFFFF",
+           "bg:CHARCOAL_SCHEME": "#2E2E35", "bg:NAVY_SCHEME": "#0F203A", "bg:PLUM_SCHEME": "#3C2A4D", "page": "#F4F5F7"}
+
+
+def _set_brand_colors(brand):
+    site = (brand or {}).get("site", {})
+    if site.get("accentColor"):
+        _COLORS["ACCENT"] = site["accentColor"]
+        a = site["accentColor"].lstrip("#")
+        _COLORS["bg:ACCENT"] = "#" + "".join("%02x" % round(int(a[i:i + 2], 16) * 0.10 + 255 * 0.90) for i in (0, 2, 4))
+    if (brand or {}).get("palette", {}).get("pageBg"):
+        _COLORS["page"] = brand["palette"]["pageBg"]
+    flat = {k: v for g in ((brand or {}).get("cssProfile") or {}).get("groups") or [] for k, v in (g.get("properties") or {}).items()}
+    for prop, key in (("negative-on-light-color", "NEGATIVE"), ("positive-on-light-color", "POSITIVE"), ("warn-on-light-color", "WARN"), ("info-on-light-color", "INFO"),
+                      ("error-background-color", "bg:ERROR"), ("success-background-color", "bg:SUCCESS"), ("warn-background-color", "bg:WARN"), ("info-background-color", "bg:INFO")):
+        if isinstance(flat.get(prop), str) and HEX.match(flat[prop]):
+            _COLORS[key] = flat[prop]
+
+
+def _rgb(h):
+    h = h.lstrip("#")
+    return [int(h[i:i + 2], 16) for i in (0, 2, 4)], (int(h[6:8], 16) / 255 if len(h) == 8 else 1.0)
+
+
+def _over(fg, bg):
+    """Color hex (con o sin transparencia #RRGGBBAA) compuesto sobre un fondo hex opaco."""
+    (c, a), (b, _) = _rgb(fg), _rgb(bg)
+    return "#" + "".join("%02x" % round(x * a + y * (1 - a)) for x, y in zip(c, b))
+
+
+def _lum(h):
+    c = [x / 255 for x in _rgb(h)[0]]
+    c = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+
+
+def contrast(a, b):
+    la, lb = _lum(a), _lum(b)
+    return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+
+def readable(fg, bg, need=4.5):
+    """El color más parecido a fg (mezclado hacia negro o blanco) que llega al contraste pedido sobre bg."""
+    to = "#000000" if _lum(bg) > 0.18 else "#ffffff"
+    for k in range(0, 11):
+        (c, _), (t, _) = _rgb(fg), _rgb(to)
+        x = "#" + "".join("%02X" % round(u * (1 - k / 10) + v * k / 10) for u, v in zip(c, t))
+        if contrast(x, bg) >= need:
+            return x
+    return to.upper()
+
+
+def _color_hex(v):
+    if not isinstance(v, str) or EXPR.search(v):
+        return None
+    return v if HEX.match(v) else _COLORS.get(v.upper())
+
+
+def _bg_hex(anc):
+    """Fondo sobre el que se pinta un nodo: la card o caja más cercana con fondo; si no, la página."""
+    for t, p, n in reversed(anc):
+        if t == "a!cardLayout":
+            st = n.get("style", "NONE")
+            if isinstance(st, str) and EXPR.search(st):
+                return None
+            h = st if isinstance(st, str) and HEX.match(st) else _COLORS.get("bg:" + str(st).upper())
+            if st == "TRANSPARENT":
+                continue
+            if h:
+                below = _bg_hex(anc[:anc.index((t, p, n))]) or "#FFFFFF"
+                return _over(h, below)
+        elif t == "a!boxLayout":
+            return "#FFFFFF"
+        elif t in ("a!billboardLayout", "a!barOverlay", "a!columnOverlay", "a!fullOverlay", "a!chatField", "a!agentChatField"):
+            return None  # fondo de imagen o esquema propio: lo mide contrast_audit.py
+        elif t == "a!headerContentLayout":
+            bg = n.get("backgroundColor", "WHITE")
+            return bg if isinstance(bg, str) and HEX.match(bg) else _COLORS["page"] if bg == "TRANSPARENT" else _COLORS.get("bg:" + str(bg).upper(), "#FFFFFF")
+        elif t == "a!sidebarTemplate" and p == "additionalContents":
+            bg = n.get("backgroundColor", "ACCENT")
+            return bg if isinstance(bg, str) and HEX.match(bg) else "#FFFFFF" if bg == "WHITE" else _COLORS.get("bg:" + str(bg).upper(), _COLORS["ACCENT"] if bg == "ACCENT" else None)
+        elif t in ("a!formLayout", "a!wizardLayout"):
+            bg = n.get("backgroundColor", "WHITE")
+            return bg if isinstance(bg, str) and HEX.match(bg) else "#FFFFFF" if bg == "WHITE" else _COLORS["page"]
+    return "#FFFFFF"
+
+
+def _contrast_rules(nodes, add):
+    """Texto, iconos, etiquetas y sellos con color explícito que no llegan al contraste mínimo sobre su fondo."""
+    def warn(p, fg, bg, need, what):
+        r = contrast(fg, bg)
+        if r + 0.005 < need:
+            n2 = lambda x: f"{x:.2f}".rstrip("0").rstrip(".").replace(".", ",")
+            add(p, f"contraste {n2(r)}:1 de {what} {fg.upper()} sobre {bg.upper()} (mínimo {n2(need)}:1, WCAG 2.2 AA): prueba {readable(fg, bg, need)}")
+    for n, p, a in nodes:
+        t = n["type"]
+        if t in ("a!richTextItem", "a!richTextIcon", "a!headingField") and n.get("color"):
+            fg, bg = _color_hex(n["color"]), _bg_hex(a)
+            if not fg or not bg:
+                continue
+            big = (t == "a!headingField" and n.get("size", "MEDIUM_PLUS") in ("LARGE_PLUS", "LARGE", "MEDIUM_PLUS")) or (t == "a!richTextItem" and n.get("size") in ("LARGE", "LARGE_PLUS", "EXTRA_LARGE"))
+            need = 3 if t == "a!richTextIcon" or big else 4.5
+            warn(p, _over(fg, bg), bg, need, "icono" if t == "a!richTextIcon" else "texto")
+        elif t == "a!tagItem" and n.get("textColor") and n.get("backgroundColor"):
+            fg, tb, bg = _color_hex(n["textColor"]), _color_hex(n["backgroundColor"]), _bg_hex(a) or "#FFFFFF"
+            if fg and tb:
+                back = _over(tb, bg)
+                warn(p, _over(fg, back), back, 4.5, "texto de etiqueta")
+        elif t in ("a!columnChartField", "a!barChartField", "a!lineChartField", "a!areaChartField", "a!scatterChartField", "a!pieChartField") and not n.get("showDataLabels"):
+            cols = [s.get("color") for s in (n.get("series") or []) if isinstance(s, dict)]
+            cs = n.get("colorScheme")
+            if isinstance(cs, dict):
+                cols += list(cs.get("colors") or [])[:max(1, len(n.get("series") or [])) if n.get("series") else None]
+            bad = [c for c in cols if isinstance(c, str) and HEX.match(c) and contrast(_over(c, "#FFFFFF"), "#FFFFFF") < 3]
+            if bad:
+                r = contrast(_over(bad[0], "#FFFFFF"), "#FFFFFF")
+                add(p, f"color de serie {bad[0].upper()} con {r:.1f}:1 sobre blanco (mínimo 3:1, WCAG 1.4.11): no se distingue del fondo; muestre etiquetas de datos (showDataLabels) o use un color de chartColorScheme con más contraste".replace(".", ",", 1))
+        elif t == "a!stampField" and n.get("contentColor") and n.get("backgroundColor"):
+            fg, sb = _color_hex(n["contentColor"]), _color_hex(n["backgroundColor"])
+            if fg and sb:
+                back = _over(sb, _bg_hex(a) or "#FFFFFF")
+                warn(p, _over(fg, back), back, 3 if n.get("icon") else 4.5, "contenido del sello")
 
 
 def _nodes(node, where, anc=()):
@@ -513,6 +681,7 @@ def _ux_interface(iface, where, screen_type, add):
     root = iface.get("type")
     in_ = lambda anc, t, p=None: any(a[0] == t and (p is None or a[1] == p) for a in anc)
     buttons = [(n, p, a) for n, p, a in nodes if n["type"] == "a!buttonWidget"]
+    _contrast_rules(nodes, add)
 
     # --- botones (ux-buttons.html) ---
     solids = [(n, p, a) for n, p, a in buttons if n.get("style") == "SOLID"]
@@ -707,7 +876,7 @@ def ux_summary(rep):
     return f"Calidad UX: {len(ux)} aviso(s) en {len(screens)} pantalla(s)" if ux else "Calidad UX: sin avisos"
 
 
-FILTERS = {"date", "datetime", "eur", "num", "pct", "upper", "initials", "dash"}
+FILTERS = {"date", "datetime", "eur", "num", "pct", "upper", "initials", "dash", "longdate", "monthyear", "dayname", "daymonth", "time"}
 
 
 def _keys(o, acc):
@@ -749,6 +918,17 @@ def check_expressions(spec, rep):
         local_obj = s.get("local") or {}
         _keys(local_obj, fields)
         local_vars = {k.split("!", 1)[1] for k in local_obj} | glob_vars
+        # variables de cada vuelta de un a!forEach ($local, como a!localVariables dentro de la expresión)
+        def _loop_vars(o):
+            if isinstance(o, dict):
+                if o.get("type") == "a!forEach" and isinstance(o.get("$local"), dict):
+                    local_vars.update(k.split("!", 1)[1] for k in o["$local"])
+                for v in o.values():
+                    _loop_vars(v)
+            elif isinstance(o, list):
+                for v in o:
+                    _loop_vars(v)
+        _loop_vars(s)
         rec_fields = ds_fields.get(s.get("recordType"), fields)
         seen = set()
         for txt in _strings({k: v for k, v in s.items() if k not in ("id", "title_", "req", "assumptions")}, []):

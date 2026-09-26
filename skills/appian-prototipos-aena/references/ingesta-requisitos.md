@@ -97,12 +97,19 @@ Una necesidad = una pantalla. Si dos requisitos caben en la misma pantalla (list
 | Sí/No que debe contestarse | `a!radioButtonField` Sí/No | `readOnly` con mapa `siNo` |
 | Fecha / fecha y hora | `a!dateField` / `a!dateTimeField` | filtro `date` / `datetime` |
 | Entero / decimal / importe | `a!integerField` / `a!floatingPointField` | filtro `num` / `eur` |
-| Usuario / grupo | `a!pickerFieldUsers` / `a!pickerFieldGroups` | nombre + `a!imageField` AVATAR |
+| Usuario / grupo | `a!pickerFieldUsers` / `a!pickerFieldGroups`; si hay que recorrer la estructura para encontrarlo, `a!userBrowserFieldColumns` / `a!groupBrowserFieldColumns` | nombre + `a!imageField` AVATAR; línea jerárquica → `a!orgChartField` |
+| Documento o carpeta ya existente en Appian | `a!pickerFieldDocuments` / `a!pickerFieldFolders` / `a!pickerFieldDocumentsAndFolders`; explorar una biblioteca → `a!documentAndFolderBrowserFieldColumns` | `a!documentDownloadLink` / `a!documentViewerField` |
+| Jerarquía propia (aeropuerto → terminal → zona, organigrama de unidades) | `a!hierarchyBrowserFieldColumns` (selección) | `a!hierarchyBrowserFieldTree` |
+| Firma | `a!signatureField` | la firma guardada como imagen |
+| Vídeo de formación o procedimiento / página de otra herramienta | — | `a!videoField` + `a!webVideo` / `a!webContentField` |
 | Relación con otra entidad | `a!pickerFieldRecords` o `a!dropdownField` | `a!recordLink` |
 | Documento adjunto | `a!fileUploadField` | grid de documentos / `a!documentViewerField` |
 | Líneas repetibles (tabla dentro del formulario) | `a!gridLayout` + `a!forEach` sobre `local!lineas` | `a!gridField` |
 | Estado | (lo cambia el proceso) | `a!tagField` con la paleta de estados (`state_map`) + `a!milestoneField` en la franja de datos clave |
 | Alertas o avisos por registro | (los genera el proceso) | Columna `ICON` con `alert_icons` (icono con tooltip) en el listado; en la ficha, `action_banner` con la acción que las resuelve |
+| Agenda, turnos, vencimientos por fecha | — | `calendar_month` (mes con panel del día) / `calendar_week` |
+| Comentarios o conversación sobre un registro | `comment_thread` (con respuestas y adjuntos) | ídem, en su vista de la ficha |
+| Tareas o acciones que avanzan por etapas | `kanban` (flechas para cambiar de etapa) | `kanban` / grid con estado |
 
 ## 3. No inventar
 

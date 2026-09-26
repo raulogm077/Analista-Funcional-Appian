@@ -25,26 +25,30 @@ _src = [
     ("Mantenimiento de pasarelas de embarque 2026-2027", "Servicio", "PMI", "María López Arranz", "2026-04-13", 320000, "Aprobado", None, "Mantenimiento preventivo y correctivo de las 14 pasarelas del dique norte."),
     ("Señalética accesible en el edificio de llegadas", "Obra", "AGP", "Javier García Ruiz", "2026-05-14", 36500, "Cerrado", None, "Señales táctiles y en braille en los recorridos de llegadas."),
     ("Limpieza de fachadas acristaladas", "Servicio", "MAD", "Rocío Sánchez Vidal", "2026-06-15", 92000, "Rechazado", None, "Limpieza semestral de las fachadas de la T4 y la T4S."),
-    ("Ampliación del aparcamiento de empleados", "Obra", "BCN", "María López Arranz", "2026-07-16", 610000, "Borrador", None, "Nueva planta de 220 plazas en el aparcamiento de empleados de la T1."),
-    ("Sustitución de luminarias por LED en el aparcamiento P2", "Suministro", "MAD", "Javier García Ruiz", "2026-08-17", 74000, "En tramitación", None, "Cambio de 1.200 luminarias por LED con sensor de presencia."),
+    ("Ampliación del aparcamiento de empleados", "Obra", "BCN", "María López Arranz", "2026-07-16", 610000, "En tramitación", None, "Nueva planta de 220 plazas en el aparcamiento de empleados de la T1."),
+    ("Sustitución de luminarias por LED en el aparcamiento P2", "Obra", "MAD", "Javier García Ruiz", "2026-08-17", 74000, "Pendiente de aprobación", "2026-09-21", "Cambio de 1.200 luminarias por LED con sensor de presencia."),
     ("Asistencia a personas con movilidad reducida en temporada alta", "Servicio", "PMI", "Rocío Sánchez Vidal", "2026-09-10", 128000, "Pendiente de aprobación", "2026-09-18", "Refuerzo del servicio PMR de junio a septiembre."),
     ("Adquisición de escáneres de equipaje de mano", "Suministro", "AGP", "María López Arranz", "2026-01-10", 540000, "Aprobado", None, "Seis escáneres con tomografía para los filtros de seguridad."),
     ("Reparación del pavimento de la plataforma norte", "Obra", "MAD", "Javier García Ruiz", "2026-02-11", 212000, "Cerrado", None, "Reparación de juntas y losas en los puestos de estacionamiento 40 a 48."),
-    ("Consultoría de eficiencia energética", "Servicio", "SSCC", "Rocío Sánchez Vidal", "2026-03-12", 58000, "Rechazado", None, "Auditoría energética de los edificios de Servicios Centrales."),
+    ("Consultoría de eficiencia energética", "Servicio", "SSCC", "Rocío Sánchez Vidal", "2026-03-12", 58000, "Aprobado", None, "Auditoría energética de los edificios de Servicios Centrales."),
     ("Mobiliario para la zona de trabajo de tripulaciones", "Suministro", "BCN", "María López Arranz", "2026-09-22", 6000, "Borrador", None, "Mesas y sillas para la sala de tripulaciones de la T1."),
 ]
 ROWS = []
+plazo_txt = lambda d: f"Vence en {d} días" if d > 1 else "Vence mañana" if d == 1 else "Vence hoy"
 for i, (tit, tipo, uni, resp, alta, imp, est, envio, desc) in enumerate(_src, start=1):
     r = {"id": i, "codigo": f"EXP-2026-{i:04d}", "titulo": tit, "tipo": tipo, "unidad": uni, "responsable": resp, "fechaAlta": alta, "mesAlta": alta[:7],
-         "importe": imp, "estado": est, "descripcion": desc, "fechaEnvio": envio}
+         "importe": imp, "estado": est, "descripcion": desc, "fechaEnvio": envio, "fechaLimite": None, "plazo": None}
+    if envio and est == "Pendiente de aprobación":  # plazo de aprobación: 14 días desde el envío
+        lim = datetime.date.fromisoformat(envio) + datetime.timedelta(days=14)
+        r["fechaLimite"], r["plazo"] = lim.isoformat(), plazo_txt((lim - TODAY).days)
     ROWS.append(r)
 PEND = [r for r in ROWS if r["estado"] == "Pendiente de aprobación"]
 TAREAS = []
 for r in PEND:
-    vence = datetime.date.fromisoformat(r["fechaEnvio"]) + datetime.timedelta(days=14)
-    d = (vence - TODAY).days
-    TAREAS.append({"id": r["id"], "expedienteId": r["id"], "codigo": r["codigo"], "titulo": r["titulo"], "recibida": r["fechaEnvio"], "vence": vence.isoformat(),
-                   "plazo": f"Vence en {d} días" if d > 1 else "Vence mañana" if d == 1 else "Vence hoy", "urgente": d <= 3})
+    d = (datetime.date.fromisoformat(r["fechaLimite"]) - TODAY).days
+    TAREAS.append({"id": r["id"], "expedienteId": r["id"], "codigo": r["codigo"], "titulo": r["titulo"], "recibida": r["fechaEnvio"], "vence": r["fechaLimite"],
+                   "plazo": r["plazo"], "urgente": d <= 3, "dias": d})
+TAREAS.sort(key=lambda t: t["vence"])  # la que vence antes, primero
 DOCS = []
 for r in ROWS:
     for k, (nom, ico, kb) in enumerate([("Memoria_justificativa.pdf", "file-pdf-o", 420), ("Presupuesto.xlsx", "file-excel-o", 38), ("Pliego_tecnico.docx", "file-word-o", 160)][: 2 + r["id"] % 2]):
@@ -131,9 +135,9 @@ p04 = screen("asistente", "Nuevo expediente (asistente)", "form", "P04", ["RF-AL
 # ------------------------------------------------------------------ P05 Tarea de aprobación
 p05 = screen("tarea", "Aprobar expediente", "form", "P05", ["RF-APROB"], {
     "type": "a!formLayout", "contentsWidth": "WIDE", "backgroundColor": "WHITE", "showButtonDivider": True, "isButtonFooterFixed": True,
-    "titleBar": {"type": "a!headerTemplateSimple", "title": "Aprobar expediente {rv!record.codigo}", "secondaryText": "Tarea de aprobación · recibida el 20/09/2026", "stampIcon": "check-square-o", "stampColor": "ACCENT"},
+    "titleBar": {"type": "a!headerTemplateSimple", "title": "Aprobar expediente {rv!record.codigo}", "secondaryText": "Tarea de aprobación · recibida el {rv!record.fechaEnvio|date}", "stampIcon": "check-square-o", "stampColor": "ACCENT"},
     "contents": [
-        action_banner("Vence el 30/09/2026, en 6 días", "Si no se resuelve a tiempo, la tarea se escala a su responsable.", kind="WARN", icon="clock-o", marginBelow="MORE"),
+        action_banner("{rv!record.plazo}", "Plazo: {rv!record.fechaLimite|date}. Si no se resuelve a tiempo, la tarea se escala a su responsable.", kind="WARN", icon="clock-o", marginBelow="MORE"),
         {"type": "a!columnsLayout", "spacing": "SPARSE", "columns": [
             {"type": "a!columnLayout", "width": "3X", "contents": [
                 {"type": "a!sectionLayout", "label": "Datos del expediente", "labelSize": "MEDIUM", "labelHeadingTag": "H2", "labelColor": "STANDARD", "contents": field_summary(
@@ -175,17 +179,19 @@ p08 = screen("informe", "Informes", "page", "P08", ["RF-INFORME"], {"type": "a!h
         kpi("Aprobados", "check-circle", sec_text="en el filtro", data=f"recordType!{RT}", primaryMeasure={"type": "a!measure", "function": "COUNT", "field": F("id")}, **{"$filter": "and(" + FT + ", fv!row.estado = \"Aprobado\")"}),
         kpi("Importe total", "eur", sec_text="expedientes con importe", data=f"recordType!{RT}", primaryMeasure={"type": "a!measure", "function": "SUM", "field": F("importe")}, **{"$filter": FT, "$format": "eur"})]),
     {"type": "a!columnsLayout", "columns": [
-        {"type": "a!columnLayout", "contents": [section_card("Por tipo", [{"type": "a!pieChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "style": "DONUT", "height": "SHORT",
-            "config": {"type": "a!pieChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("tipo")}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id")}]},
-            "colorScheme": {"type": "a!colorSchemeCustom", "colors": [NAVY, "#90CE00", "#527500"]}}])]},
+        {"type": "a!columnLayout", "contents": [section_card("Por tipo", [{"type": "a!pieChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "style": "DONUT", "height": "SHORT", "showDataLabels": True, "$categories": TIPOS,
+            "config": {"type": "a!pieChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("tipo")}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Expedientes"}]},
+            "colorScheme": {"type": "a!colorSchemeCustom", "colors": CHART[:3]}}])]},
         {"type": "a!columnLayout", "contents": [section_card("Altas por mes", [{"type": "a!columnChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "height": "SHORT", "showDataLabels": True,
             "config": {"type": "a!columnChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("mesAlta"), "interval": "MONTH_SHORT_TEXT"}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Altas"}]},
             "colorScheme": {"type": "a!colorSchemeCustom", "colors": [NAVY]}}])]}]},
     section_card("Expedientes por estado", [
         {"type": "a!richTextDisplayField", "labelPosition": "COLLAPSED", "marginBelow": "LESS", "value": [{"type": "a!richTextItem", "text": "Pulse una barra para ver sus expedientes", "color": "SECONDARY", "size": "SMALL"}]},
         {"type": "a!barChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "height": "AUTO", "showDataLabels": True, "$categories": FASES,
-         "config": {"type": "a!barChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("estado")}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Expedientes"}],
-                    "link": chart_link("local!estadoSel", RT, "estado")}, "colorScheme": {"type": "a!colorSchemeCustom", "colors": [NAVY]}},
+         "config": {"type": "a!barChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("estado")}, "secondaryGrouping": {"type": "a!grouping", "field": F("estado")},
+                    "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Expedientes"}], "link": chart_link("local!estadoSel", RT, "estado")},
+         "stacking": "NORMAL", "showLegend": False, "colorScheme": state_chart_colors(ESTADOS, FASES),
+         "$note": "Cada barra con el color de su estado (el mismo significado que las etiquetas): agrupación secundaria por el mismo campo."},
         {"type": "a!sectionLayout", "showWhen": "a!isNotNullOrEmpty(local!estadoSel)", "label": "Expedientes en «{local!estadoSel}»", "labelSize": "SMALL", "labelHeadingTag": "H3", "labelColor": "SECONDARY", "marginAbove": "STANDARD", "contents": [
             grid(f"recordType!{RT}", "and(" + FT + ", fv!row.estado = local!estadoSel)", [gcol("Expediente", two_line("{fv!row.codigo}", "{fv!row.titulo}")), gcol("Unidad", "{fv!row.unidad}", width="NARROW"), gcol_num("Importe", "{fv!row.importe|eur|dash}", width="NARROW_PLUS")],
                  "No hay expedientes", page_size=5)]}]),
@@ -274,7 +280,8 @@ p12 = screen("revision-ia", "Revisar datos extraídos", "form", "P12", ["RF-ALTA
 # ------------------------------------------------------------------ P06 Inicio
 aprobado = sum(r["importe"] for r in ROWS if r["estado"] == "Aprobado")
 p06 = screen("inicio", "Inicio", "page", "P06", ["RF-INICIO"], {"type": "a!headerContentLayout", "backgroundColor": BG, "contents": [
-    page_header("Hola, María", "Expedientes de su unidad · 24 de septiembre de 2026", [primary("Nuevo expediente", NUEVO, "plus")]),
+    hero_header("Hola, María", "Expedientes de su unidad · jueves, 24 de septiembre de 2026", [("inbox", str(len(TAREAS)), "tareas pendientes"), ("clock-o", str(sum(1 for t in TAREAS if t["dias"] <= 7)), "vence esta semana")],
+                [primary("Nuevo expediente", NUEVO, "plus")]),
     kpi_strip([
         kpi("En tramitación", "hourglass-half", secondary=cnt("En tramitación") + 1, sec_text="frente al mes anterior", data=f"recordType!{RT}", primaryMeasure={"type": "a!measure", "function": "COUNT", "field": F("id")}, **{"$filter": "fv!row.estado = \"En tramitación\""}),
         kpi("Pendientes de aprobación", "gavel", secondary=len(PEND) + 2, sec_text="frente al mes anterior", reverse=True, data=f"recordType!{RT}", primaryMeasure={"type": "a!measure", "function": "COUNT", "field": F("id")}, **{"$filter": "fv!row.estado = \"Pendiente de aprobación\""}),
@@ -291,20 +298,27 @@ p06 = screen("inicio", "Inicio", "page", "P06", ["RF-INICIO"], {"type": "a!heade
             action_banner(f"{TAREAS[0]['codigo']}: {TAREAS[0]['plazo'].lower()}", "Si no se resuelve a tiempo, la tarea se escala a su responsable", secondary("Revisar", {"goto": "tarea", "params": {"id": TAREAS[0]["expedienteId"]}}, size="SMALL"),
                           kind="WARN", icon="clock-o", marginBelow="MORE"),
             section_card("Accesos rápidos", [{"type": "a!recordActionField", "style": "CARDS", "display": "LABEL_AND_ICON", "actions": [
-                {"type": "a!recordActionItem", "action": f"recordType!{RT}.actions.nuevo", "$label": "Nuevo expediente", "$icon": "plus", "$action": NUEVO},
-                {"type": "a!recordActionItem", "action": f"recordType!{RT}.actions.informe", "$label": "Informes", "$icon": "bar-chart", "$action": {"goto": "informe"}}]}]),
+                {"type": "a!recordActionItem", "action": f"recordType!{RT}.actions.altaDesdeSolicitud", "$label": "Alta desde solicitud escaneada", "$icon": "magic", "$action": {"goto": "revision-ia"}},
+                {"type": "a!recordActionItem", "action": f"recordType!{RT}.actions.altaRapida", "$label": "Alta rápida (una página)", "$icon": "bolt", "$action": {"goto": "formulario"}}]}],
+                **{"$note": "Otras acciones del registro; la principal («Nuevo expediente») ya está en la cabecera y no se repite."}),
             section_card("Por estado", [{"type": "a!barChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "height": "AUTO", "showDataLabels": True, "$categories": FASES,
-                "config": {"type": "a!barChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("estado")}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Expedientes"}]},
-                "colorScheme": {"type": "a!colorSchemeCustom", "colors": [NAVY]}}]),
+                "config": {"type": "a!barChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("estado")}, "secondaryGrouping": {"type": "a!grouping", "field": F("estado")},
+                           "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Expedientes"}]},
+                "stacking": "NORMAL", "showLegend": False, "colorScheme": state_chart_colors(ESTADOS, FASES)}]),
         ]},
     ]},
-]}, "P06: cabecera + franja de KPI (una card, divisores, tendencia) + 2X/1X: tareas sin paginación con plazo y «Ver todas»; a la derecha, aviso con acción, accesos rápidos y un gráfico resumen.")
+]}, "P06: cabecera de color (saludo, fecha y lo pendiente) + franja de KPI (una card, divisores, sellos de icono, tendencia) + 2X/1X: tareas sin paginación con plazo y «Ver todas»; a la derecha, aviso con acción, accesos rápidos y un gráfico resumen.")
 
 # ------------------------------------------------------------------ P02 Vista de registro
 REC = "rv!record"
 p02 = {"id": "registro", "title": "{rv!record.codigo} · {rv!record.titulo}", "type": "record", "pattern": "P02", "recordType": RT, "req": ["RF-FICHA"],
        "$note": "P02: cabecera azul marino con ≤3 acciones; Resumen = franja de datos clave + hito + aviso + 2X/1X (datos que no están en la franja / documentos recientes); las áreas 1:N en vistas.",
        "breadcrumb": {"label": "Expedientes", "goto": "listado"}, "headerBackgroundColor": NAVY,
+       "local": {"local!comentarios": [
+           {"id": 1, "autor": "Rocío Sánchez Vidal", "fecha": "2026-09-12T10:20", "texto": "Adjunto el presupuesto actualizado con las bancadas de cuatro plazas.", "adjuntos": [{"nombre": "Presupuesto_bancadas_v2.xlsx", "tipo": "excel", "tamano": "38 KB"}], "padre": None},
+           {"id": 2, "autor": "María López Arranz", "fecha": "2026-09-12T12:05", "texto": "Gracias. ¿Incluye la toma de carga USB-C en todas las plazas?", "adjuntos": [], "padre": 1},
+           {"id": 3, "autor": "Rocío Sánchez Vidal", "fecha": "2026-09-12T13:40", "texto": "Sí, en las cuatro plazas de cada bancada.", "adjuntos": [], "padre": 1}],
+                 "local!nuevoComentario": None, "local!respondiendoA": None, "local!respuesta": None},
        "recordActions": [{"type": "a!recordActionItem", "action": f"recordType!{RT}.actions.editar", "identifier": "{rv!record.id}", "$label": "Editar", "$icon": "pencil", "$action": {"dialog": "dialogo", "params": {"id": "{rv!record.id}"}}},
                          {"type": "a!recordActionItem", "action": f"recordType!{RT}.actions.cerrar", "identifier": "{rv!record.id}", "$label": "Cerrar expediente", "$icon": "lock"}],
        "views": [
@@ -320,6 +334,11 @@ p02 = {"id": "registro", "title": "{rv!record.codigo} · {rv!record.titulo}", "t
                ]}]}},
            {"id": "documentos", "label": "Documentos", "interface": {"type": "a!headerContentLayout", "backgroundColor": BG, "contents": [
                section_card("Documentos", [document_list("data!documentos", flt="fv!item.expedienteId = rv!record.id", **{"$note": "En Appian: record type de documentos relacionado con EXP Expediente (1:N)."})])]}},
+           {"id": "comentarios", "label": "Comentarios", "interface": {"type": "a!headerContentLayout", "backgroundColor": BG, "contents": [
+               {"type": "a!columnsLayout", "columns": [{"type": "a!columnLayout", "width": "WIDE_PLUS", "contents": [
+                   comment_thread("local!comentarios", "María López Arranz", "local!nuevoComentario", "local!respondiendoA", "local!respuesta",
+                                  **{"$note": "En Appian: record type de comentarios relacionado con el expediente (1:N; padre = comentario al que responde) y adjuntos como documentos."})]},
+                   {"type": "a!columnLayout", "contents": []}]}]}},
            {"id": "historial", "label": "Historial", "interface": {"type": "a!headerContentLayout", "backgroundColor": BG, "contents": [content_card([
                {"type": "a!eventHistoryListField", "labelPosition": "COLLAPSED", "eventStyle": "TIMELINE", "commentLayout": "CARD", "$events": [
                    {"event": "Enviado a aprobación", "user": "{rv!record.responsable}", "timestamp": "{rv!record.fechaAlta}T12:00:00", "comment": "Adjunto el presupuesto actualizado."},
@@ -335,9 +354,10 @@ if __name__ == "__main__":
     cat = json.loads((HERE / "catalogo-patrones.json").read_text(encoding="utf-8"))
     order = [p06, p10, p01, p09, p02, p03, p04, p05, p07, p08, p11, p12]
     cat["app"]["today"] = TODAY.isoformat()
+    cat["app"]["appianVersion"] = "26.9"  # versión vigente: las plantillas usan lo último de Appian
     cat["data"] = {"expedientes": {"recordType": RT, "rows": ROWS}, "tareas": TAREAS, "documentos": DOCS}
     cat["screens"] = [clean(s) for s in order]
-    cat["maps"] = {"estadoColor": state_map(ESTADOS), "estadoColorGrid": state_map(ESTADOS, grid=True), "estadoPaso": {e: k + 1 for k, e in enumerate(FASES)},
+    cat["maps"] = {**ATTACH_MAPS, "estadoColor": state_map(ESTADOS), "estadoColorGrid": state_map(ESTADOS, grid=True), "estadoPaso": {e: k + 1 for k, e in enumerate(FASES)},
                    "plazoColor": {"true": STATES["atencion"]["tag"], "*": STATES["neutral"]["tag"]},
                    "siNo": {"true": "Sí", "false": "No", "*": "–"}, "usuarios": {u["id"]: u["name"] for u in cat.get("users", [])}, **AI_MAPS}
     cat["site"]["pages"] = [{"title": "P06 Inicio", "icon": "home", "screen": "inicio", "includes": ["tarea"]},

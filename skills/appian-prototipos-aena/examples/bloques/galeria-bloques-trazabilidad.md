@@ -6,7 +6,7 @@ Fuente: Galería de bloques de scripts/sail_helpers.py (datos ficticios)
 
 | Requisito | Descripción | Pantallas |
 |---|---|---|
-| B1 | Catálogo de bloques de interfaz | Cabeceras y navegación, Datos e indicadores, Listas y grids, Cards, Inteligencia artificial |
+| B1 | Catálogo de bloques de interfaz | Cabeceras y navegación, Datos e indicadores, Listas y grids, Cards, Inteligencia artificial, Patrones 26.9 |
 
 ## Inventario de pantallas
 
@@ -17,3 +17,4 @@ Fuente: Galería de bloques de scripts/sail_helpers.py (datos ficticios)
 | listas | Listas y grids | page | P06 | B1 | — |
 | cards | Cards | page | P06 | B1 | — |
 | ia | Inteligencia artificial | page | P06 | B1 | — |
+| patrones269 | Patrones 26.9 | page | P06 | B1 | — |

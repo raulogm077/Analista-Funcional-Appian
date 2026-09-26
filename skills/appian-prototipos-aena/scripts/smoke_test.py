@@ -44,6 +44,9 @@ def main():
         pg.wait_for_function("window.PROTO && window.PROTO.ready")
         for s in spec["screens"]:
             pg.evaluate("([id]) => PROTO.show(id, {})", [s["id"]])
+            # componentes que el runtime no sabe pintar
+            for t in pg.evaluate("[...document.querySelectorAll('.banner .pt')].map((e) => e.textContent).filter((x) => /no soportado/.test(x))"):
+                errors.append(f"{s['id']}: {t}")
             n = clickables(pg).count()
             for i in range(n):
                 pg.evaluate("([id]) => PROTO.show(id, {})", [s["id"]])

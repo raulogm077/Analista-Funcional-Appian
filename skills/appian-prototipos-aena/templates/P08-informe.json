@@ -188,8 +188,9 @@
           "type": "a!kpiField",
           "primaryText": "Expedientes",
           "icon": "folder-open-o",
-          "template": "COMPACT",
-          "iconColor": "SECONDARY",
+          "template": "ADJACENT",
+          "iconStyle": "STAMP",
+          "iconColor": "ACCENT",
           "secondaryText": "en el filtro",
           "data": "recordType!EXP Expediente",
           "primaryMeasure": {
@@ -208,8 +209,9 @@
           "type": "a!kpiField",
           "primaryText": "Aprobados",
           "icon": "check-circle",
-          "template": "COMPACT",
-          "iconColor": "SECONDARY",
+          "template": "ADJACENT",
+          "iconStyle": "STAMP",
+          "iconColor": "ACCENT",
           "secondaryText": "en el filtro",
           "data": "recordType!EXP Expediente",
           "primaryMeasure": {
@@ -228,8 +230,9 @@
           "type": "a!kpiField",
           "primaryText": "Importe total",
           "icon": "eur",
-          "template": "COMPACT",
-          "iconColor": "SECONDARY",
+          "template": "ADJACENT",
+          "iconStyle": "STAMP",
+          "iconColor": "ACCENT",
           "secondaryText": "expedientes con importe",
           "data": "recordType!EXP Expediente",
           "primaryMeasure": {
@@ -278,6 +281,12 @@
             "$filter": "or(isnull(local!tipo), fv!row.tipo = local!tipo)",
             "style": "DONUT",
             "height": "SHORT",
+            "showDataLabels": true,
+            "$categories": [
+             "Obra",
+             "Servicio",
+             "Suministro"
+            ],
             "config": {
              "type": "a!pieChartConfig",
              "primaryGrouping": {
@@ -288,7 +297,8 @@
               {
                "type": "a!measure",
                "function": "COUNT",
-               "field": "recordType!EXP Expediente.fields.id"
+               "field": "recordType!EXP Expediente.fields.id",
+               "label": "Expedientes"
               }
              ]
             },
@@ -296,8 +306,8 @@
              "type": "a!colorSchemeCustom",
              "colors": [
               "#1A2732",
-              "#90CE00",
-              "#527500"
+              "#72A300",
+              "#3D6B8C"
              ]
             }
            }
@@ -414,6 +424,10 @@
           "type": "a!grouping",
           "field": "recordType!EXP Expediente.fields.estado"
          },
+         "secondaryGrouping": {
+          "type": "a!grouping",
+          "field": "recordType!EXP Expediente.fields.estado"
+         },
          "measures": [
           {
            "type": "a!measure",
@@ -433,12 +447,20 @@
           ]
          }
         },
+        "stacking": "NORMAL",
+        "showLegend": false,
         "colorScheme": {
          "type": "a!colorSchemeCustom",
          "colors": [
-          "#1A2732"
+          "#525C65",
+          "#1A2732",
+          "#9A5200",
+          "#0E6B00",
+          "#525C65",
+          "#B2002C"
          ]
-        }
+        },
+        "$note": "Cada barra con el color de su estado (el mismo significado que las etiquetas): agrupación secundaria por el mismo campo."
        },
        {
         "type": "a!sectionLayout",

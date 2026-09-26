@@ -6,6 +6,8 @@ import json, datetime, random, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 from sail_helpers import *  # noqa: E402,F401
+ATP_ESTADOS = {"Borrador": "neutral", "En revisión jurídica": "enCurso", "Pendiente de firma": "atencion", "Vigente": "positivo", "Vencido": "negativo", "Rechazado": "negativo"}
+ATP_FASES = ["Borrador", "En revisión jurídica", "Pendiente de firma", "Vigente", "Vencido", "Rechazado"]
 random.seed(7)
 TODAY = datetime.date(2026, 9, 24)
 
@@ -115,8 +117,9 @@ inicio = {
                               secondary("Revisar", {"goto": "acuerdos"}, size="SMALL"), kind="WARN", icon="clock-o", marginBelow="MORE"),
                 section_card("Acuerdos por estado", [{"type": "a!barChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "height": "AUTO", "showDataLabels": True,
                     "$categories": ["Borrador", "En revisión jurídica", "Pendiente de firma", "Vigente", "Vencido", "Rechazado"],
-                    "config": {"type": "a!barChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("estado")}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Acuerdos"}]},
-                    "colorScheme": {"type": "a!colorSchemeCustom", "colors": [NAVY]}}]),
+                    "config": {"type": "a!barChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("estado")}, "secondaryGrouping": {"type": "a!grouping", "field": F("estado")},
+                               "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Acuerdos"}]},
+                    "stacking": "NORMAL", "showLegend": False, "colorScheme": state_chart_colors(ATP_ESTADOS, ATP_FASES)}]),
             ]},
         ]},
     ]},
@@ -318,13 +321,14 @@ informe = {
             kpi("Importe total", "eur", sec_text="acuerdos con contenido económico", data=f"recordType!{RT}", primaryMeasure={"type": "a!measure", "function": "SUM", "field": F("importe")}, **{"$filter": FT, "$format": "eur"}),
         ]),
         {"type": "a!columnsLayout", "columns": [
-            {"type": "a!columnLayout", "contents": [section_card("Acuerdos por tipo", [{"type": "a!pieChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "style": "DONUT", "height": "SHORT", "showTooltips": True,
-                "config": {"type": "a!pieChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("tipo")}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id")}]},
-                "colorScheme": {"type": "a!colorSchemeCustom", "colors": [NAVY, "#90CE00", "#527500", "#525C65"]}}])]},
+            {"type": "a!columnLayout", "contents": [section_card("Acuerdos por tipo", [{"type": "a!pieChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "style": "DONUT", "height": "SHORT", "showTooltips": True, "showDataLabels": True,
+                "config": {"type": "a!pieChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("tipo")}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Acuerdos"}]},
+                "colorScheme": {"type": "a!colorSchemeCustom", "colors": CHART[:4]}}])]},
             {"type": "a!columnLayout", "contents": [section_card("Acuerdos por estado", [{"type": "a!columnChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "height": "SHORT", "showDataLabels": True,
                 "$categories": ["Borrador", "En revisión jurídica", "Pendiente de firma", "Vigente", "Vencido", "Rechazado"],
-                "config": {"type": "a!columnChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("estado")}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Acuerdos"}]},
-                "colorScheme": {"type": "a!colorSchemeCustom", "colors": [NAVY]}}])]},
+                "config": {"type": "a!columnChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("estado")}, "secondaryGrouping": {"type": "a!grouping", "field": F("estado")},
+                           "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Acuerdos"}]},
+                "stacking": "NORMAL", "showLegend": False, "colorScheme": state_chart_colors(ATP_ESTADOS, ATP_FASES)}])]},
         ]},
         {"type": "a!columnsLayout", "columns": [
             {"type": "a!columnLayout", "contents": [section_card("Altas por mes", [{"type": "a!lineChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": "and(" + FT + ", fv!row.fechaAlta >= \"2025-10\")", "height": "SHORT",
@@ -339,7 +343,7 @@ informe = {
 }
 
 spec = {
-    "app": {"name": "Acuerdos con Terceras Partes", "shortName": "ATP", "version": "0.1", "language": "es", "today": "2026-09-24", "appianVersion": "26.6",
+    "app": {"name": "Acuerdos con Terceras Partes", "shortName": "ATP", "version": "0.1", "language": "es", "today": "2026-09-24", "appianVersion": "26.9",
             "source": "examples/atp/ddf.md v1.1 (modo fiel de la ERS de ejemplo, FU-01) · datos ficticios"},
     "site": {"displayName": "Acuerdos con Terceras Partes", "home": "inicio", "user": {"name": "Lucía Fernández Gil"},
              "pages": [

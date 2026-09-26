@@ -3,7 +3,7 @@
   "name": "Catálogo de patrones AENA",
   "language": "es",
   "source": "Plantillas de la skill (entidad genérica «Expediente»)",
-  "appianVersion": "26.6",
+  "appianVersion": "26.9",
   "today": "2026-09-24"
  },
  "site": {
@@ -92,6 +92,13 @@
   }
  ],
  "maps": {
+  "adjuntoIcono": {
+   "pdf": "file-pdf-o",
+   "imagen": "file-image-o",
+   "word": "file-word-o",
+   "excel": "file-excel-o",
+   "*": "file-o"
+  },
   "estadoColor": {
    "Borrador": "#EEF0F2",
    "En tramitación": "#DDE7F0",
@@ -181,7 +188,9 @@
      "importe": 185000,
      "estado": "En tramitación",
      "descripcion": "Sustitución de la lámina impermeable y de los lucernarios de la T2.",
-     "fechaEnvio": null
+     "fechaEnvio": null,
+     "fechaLimite": null,
+     "plazo": null
     },
     {
      "id": 2,
@@ -195,7 +204,9 @@
      "importe": 48600,
      "estado": "Pendiente de aprobación",
      "descripcion": "Bancadas de cuatro plazas con toma de carga para las puertas B20 a B30.",
-     "fechaEnvio": "2026-09-12"
+     "fechaEnvio": "2026-09-12",
+     "fechaLimite": "2026-09-26",
+     "plazo": "Vence en 2 días"
     },
     {
      "id": 3,
@@ -209,7 +220,9 @@
      "importe": 320000,
      "estado": "Aprobado",
      "descripcion": "Mantenimiento preventivo y correctivo de las 14 pasarelas del dique norte.",
-     "fechaEnvio": null
+     "fechaEnvio": null,
+     "fechaLimite": null,
+     "plazo": null
     },
     {
      "id": 4,
@@ -223,7 +236,9 @@
      "importe": 36500,
      "estado": "Cerrado",
      "descripcion": "Señales táctiles y en braille en los recorridos de llegadas.",
-     "fechaEnvio": null
+     "fechaEnvio": null,
+     "fechaLimite": null,
+     "plazo": null
     },
     {
      "id": 5,
@@ -237,7 +252,9 @@
      "importe": 92000,
      "estado": "Rechazado",
      "descripcion": "Limpieza semestral de las fachadas de la T4 y la T4S.",
-     "fechaEnvio": null
+     "fechaEnvio": null,
+     "fechaLimite": null,
+     "plazo": null
     },
     {
      "id": 6,
@@ -249,23 +266,27 @@
      "fechaAlta": "2026-07-16",
      "mesAlta": "2026-07",
      "importe": 610000,
-     "estado": "Borrador",
+     "estado": "En tramitación",
      "descripcion": "Nueva planta de 220 plazas en el aparcamiento de empleados de la T1.",
-     "fechaEnvio": null
+     "fechaEnvio": null,
+     "fechaLimite": null,
+     "plazo": null
     },
     {
      "id": 7,
      "codigo": "EXP-2026-0007",
      "titulo": "Sustitución de luminarias por LED en el aparcamiento P2",
-     "tipo": "Suministro",
+     "tipo": "Obra",
      "unidad": "MAD",
      "responsable": "Javier García Ruiz",
      "fechaAlta": "2026-08-17",
      "mesAlta": "2026-08",
      "importe": 74000,
-     "estado": "En tramitación",
+     "estado": "Pendiente de aprobación",
      "descripcion": "Cambio de 1.200 luminarias por LED con sensor de presencia.",
-     "fechaEnvio": null
+     "fechaEnvio": "2026-09-21",
+     "fechaLimite": "2026-10-05",
+     "plazo": "Vence en 11 días"
     },
     {
      "id": 8,
@@ -279,7 +300,9 @@
      "importe": 128000,
      "estado": "Pendiente de aprobación",
      "descripcion": "Refuerzo del servicio PMR de junio a septiembre.",
-     "fechaEnvio": "2026-09-18"
+     "fechaEnvio": "2026-09-18",
+     "fechaLimite": "2026-10-02",
+     "plazo": "Vence en 8 días"
     },
     {
      "id": 9,
@@ -293,7 +316,9 @@
      "importe": 540000,
      "estado": "Aprobado",
      "descripcion": "Seis escáneres con tomografía para los filtros de seguridad.",
-     "fechaEnvio": null
+     "fechaEnvio": null,
+     "fechaLimite": null,
+     "plazo": null
     },
     {
      "id": 10,
@@ -307,7 +332,9 @@
      "importe": 212000,
      "estado": "Cerrado",
      "descripcion": "Reparación de juntas y losas en los puestos de estacionamiento 40 a 48.",
-     "fechaEnvio": null
+     "fechaEnvio": null,
+     "fechaLimite": null,
+     "plazo": null
     },
     {
      "id": 11,
@@ -319,9 +346,11 @@
      "fechaAlta": "2026-03-12",
      "mesAlta": "2026-03",
      "importe": 58000,
-     "estado": "Rechazado",
+     "estado": "Aprobado",
      "descripcion": "Auditoría energética de los edificios de Servicios Centrales.",
-     "fechaEnvio": null
+     "fechaEnvio": null,
+     "fechaLimite": null,
+     "plazo": null
     },
     {
      "id": 12,
@@ -335,7 +364,9 @@
      "importe": 6000,
      "estado": "Borrador",
      "descripcion": "Mesas y sillas para la sala de tripulaciones de la T1.",
-     "fechaEnvio": null
+     "fechaEnvio": null,
+     "fechaLimite": null,
+     "plazo": null
     }
    ]
   },
@@ -348,7 +379,8 @@
     "recibida": "2026-09-12",
     "vence": "2026-09-26",
     "plazo": "Vence en 2 días",
-    "urgente": true
+    "urgente": true,
+    "dias": 2
    },
    {
     "id": 8,
@@ -358,7 +390,19 @@
     "recibida": "2026-09-18",
     "vence": "2026-10-02",
     "plazo": "Vence en 8 días",
-    "urgente": false
+    "urgente": false,
+    "dias": 8
+   },
+   {
+    "id": 7,
+    "expedienteId": 7,
+    "codigo": "EXP-2026-0007",
+    "titulo": "Sustitución de luminarias por LED en el aparcamiento P2",
+    "recibida": "2026-09-21",
+    "vence": "2026-10-05",
+    "plazo": "Vence en 11 días",
+    "urgente": false,
+    "dias": 11
    }
   ],
   "documentos": [
@@ -583,58 +627,132 @@
    "req": [
     "RF-INICIO"
    ],
-   "$note": "P06: cabecera + franja de KPI (una card, divisores, tendencia) + 2X/1X: tareas sin paginación con plazo y «Ver todas»; a la derecha, aviso con acción, accesos rápidos y un gráfico resumen.",
+   "$note": "P06: cabecera de color (saludo, fecha y lo pendiente) + franja de KPI (una card, divisores, sellos de icono, tendencia) + 2X/1X: tareas sin paginación con plazo y «Ver todas»; a la derecha, aviso con acción, accesos rápidos y un gráfico resumen.",
    "interface": {
     "type": "a!headerContentLayout",
     "backgroundColor": "TRANSPARENT",
     "contents": [
      {
-      "type": "a!columnsLayout",
-      "alignVertical": "MIDDLE",
+      "type": "a!cardLayout",
+      "style": "#1A2732",
+      "showBorder": false,
+      "shape": "SEMI_ROUNDED",
+      "padding": "MORE",
       "marginBelow": "MORE",
-      "columns": [
+      "contents": [
        {
-        "type": "a!columnLayout",
-        "contents": [
+        "type": "a!columnsLayout",
+        "alignVertical": "MIDDLE",
+        "columns": [
          {
-          "type": "a!headingField",
-          "text": "Hola, María",
-          "size": "LARGE",
-          "headingTag": "H1",
-          "marginBelow": "EVEN_LESS"
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!headingField",
+            "text": "Hola, María",
+            "size": "LARGE",
+            "headingTag": "H1",
+            "color": "#FFFFFF",
+            "marginBelow": "EVEN_LESS"
+           },
+           {
+            "type": "a!richTextDisplayField",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Expedientes de su unidad · jueves, 24 de septiembre de 2026",
+              "color": "#FFFFFF"
+             }
+            ],
+            "marginBelow": "STANDARD"
+           },
+           {
+            "type": "a!sideBySideLayout",
+            "spacing": "SPARSE",
+            "alignVertical": "MIDDLE",
+            "marginBelow": "NONE",
+            "items": [
+             {
+              "type": "a!sideBySideItem",
+              "width": "MINIMIZE",
+              "item": {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "value": [
+                {
+                 "type": "a!richTextIcon",
+                 "icon": "inbox",
+                 "color": "#FFFFFF"
+                },
+                " ",
+                {
+                 "type": "a!richTextItem",
+                 "text": "3",
+                 "style": "STRONG",
+                 "color": "#FFFFFF"
+                },
+                " ",
+                {
+                 "type": "a!richTextItem",
+                 "text": "tareas pendientes",
+                 "color": "#FFFFFF"
+                }
+               ]
+              }
+             },
+             {
+              "type": "a!sideBySideItem",
+              "width": "MINIMIZE",
+              "item": {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "value": [
+                {
+                 "type": "a!richTextIcon",
+                 "icon": "clock-o",
+                 "color": "#FFFFFF"
+                },
+                " ",
+                {
+                 "type": "a!richTextItem",
+                 "text": "1",
+                 "style": "STRONG",
+                 "color": "#FFFFFF"
+                },
+                " ",
+                {
+                 "type": "a!richTextItem",
+                 "text": "vence esta semana",
+                 "color": "#FFFFFF"
+                }
+               ]
+              }
+             }
+            ]
+           }
+          ]
          },
          {
-          "type": "a!richTextDisplayField",
-          "labelPosition": "COLLAPSED",
-          "value": [
+          "type": "a!columnLayout",
+          "width": "AUTO",
+          "contents": [
            {
-            "type": "a!richTextItem",
-            "text": "Expedientes de su unidad · 24 de septiembre de 2026",
-            "color": "SECONDARY"
-           }
-          ],
-          "marginBelow": "NONE"
-         }
-        ]
-       },
-       {
-        "type": "a!columnLayout",
-        "width": "AUTO",
-        "contents": [
-         {
-          "type": "a!buttonArrayLayout",
-          "align": "END",
-          "marginBelow": "NONE",
-          "buttons": [
-           {
-            "type": "a!buttonWidget",
-            "label": "Nuevo expediente",
-            "style": "SOLID",
-            "color": "#90CE00",
-            "icon": "plus",
-            "$action": {
-             "goto": "asistente"
-            }
+            "type": "a!buttonArrayLayout",
+            "align": "END",
+            "marginBelow": "NONE",
+            "buttons": [
+             {
+              "type": "a!buttonWidget",
+              "label": "Nuevo expediente",
+              "style": "SOLID",
+              "color": "#90CE00",
+              "icon": "plus",
+              "$action": {
+               "goto": "asistente"
+              }
+             }
+            ]
            }
           ]
          }
@@ -666,8 +784,9 @@
             "type": "a!kpiField",
             "primaryText": "En tramitación",
             "icon": "hourglass-half",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
             "$secondaryValue": 3,
             "secondaryText": "frente al mes anterior",
             "data": "recordType!EXP Expediente",
@@ -687,9 +806,10 @@
             "type": "a!kpiField",
             "primaryText": "Pendientes de aprobación",
             "icon": "gavel",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
-            "$secondaryValue": 4,
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
+            "$secondaryValue": 5,
             "secondaryText": "frente al mes anterior",
             "trendColor": "REVERSE",
             "data": "recordType!EXP Expediente",
@@ -709,9 +829,10 @@
             "type": "a!kpiField",
             "primaryText": "Importe aprobado",
             "icon": "eur",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
-            "$secondaryValue": 770000,
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
+            "$secondaryValue": 828000,
             "secondaryText": "frente al mes anterior",
             "data": "recordType!EXP Expediente",
             "primaryMeasure": {
@@ -962,27 +1083,28 @@
               "actions": [
                {
                 "type": "a!recordActionItem",
-                "action": "recordType!EXP Expediente.actions.nuevo",
-                "$label": "Nuevo expediente",
-                "$icon": "plus",
+                "action": "recordType!EXP Expediente.actions.altaDesdeSolicitud",
+                "$label": "Alta desde solicitud escaneada",
+                "$icon": "magic",
                 "$action": {
-                 "goto": "asistente"
+                 "goto": "revision-ia"
                 }
                },
                {
                 "type": "a!recordActionItem",
-                "action": "recordType!EXP Expediente.actions.informe",
-                "$label": "Informes",
-                "$icon": "bar-chart",
+                "action": "recordType!EXP Expediente.actions.altaRapida",
+                "$label": "Alta rápida (una página)",
+                "$icon": "bolt",
                 "$action": {
-                 "goto": "informe"
+                 "goto": "formulario"
                 }
                }
               ]
              }
             ]
            }
-          ]
+          ],
+          "$note": "Otras acciones del registro; la principal («Nuevo expediente») ya está en la cabecera y no se repite."
          },
          {
           "type": "a!sectionLayout",
@@ -1020,6 +1142,10 @@
                 "type": "a!grouping",
                 "field": "recordType!EXP Expediente.fields.estado"
                },
+               "secondaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!EXP Expediente.fields.estado"
+               },
                "measures": [
                 {
                  "type": "a!measure",
@@ -1029,10 +1155,17 @@
                 }
                ]
               },
+              "stacking": "NORMAL",
+              "showLegend": false,
               "colorScheme": {
                "type": "a!colorSchemeCustom",
                "colors": [
-                "#1A2732"
+                "#525C65",
+                "#1A2732",
+                "#9A5200",
+                "#0E6B00",
+                "#525C65",
+                "#B2002C"
                ]
               }
              }
@@ -1144,7 +1277,7 @@
                 " ",
                 {
                  "type": "a!richTextItem",
-                 "text": "2",
+                 "text": "3",
                  "style": "STRONG",
                  "color": "#FFFFFF"
                 },
@@ -1172,7 +1305,7 @@
                 " ",
                 {
                  "type": "a!richTextItem",
-                 "text": "2",
+                 "text": "3",
                  "style": "STRONG",
                  "color": "#FFFFFF"
                 },
@@ -1418,14 +1551,14 @@
                 "timestamp": "2026-09-22T09:05"
                },
                {
+                "event": "Expediente EXP-2026-0007 enviado a aprobación",
+                "user": "Javier García Ruiz",
+                "timestamp": "2026-09-21T10:15"
+               },
+               {
                 "event": "Expediente EXP-2026-0008 enviado a aprobación",
                 "user": "Rocío Sánchez Vidal",
                 "timestamp": "2026-09-18T10:15"
-               },
-               {
-                "event": "Expediente EXP-2026-0002 enviado a aprobación",
-                "user": "Rocío Sánchez Vidal",
-                "timestamp": "2026-09-12T10:15"
                }
               ]
              },
@@ -1510,7 +1643,7 @@
                "value": [
                 {
                  "type": "a!richTextItem",
-                 "text": "2 expedientes esperan su aprobación",
+                 "text": "3 expedientes esperan su aprobación",
                  "style": "STRONG"
                 },
                 "\n",
@@ -2129,6 +2262,43 @@
     "goto": "listado"
    },
    "headerBackgroundColor": "#1A2732",
+   "local": {
+    "local!comentarios": [
+     {
+      "id": 1,
+      "autor": "Rocío Sánchez Vidal",
+      "fecha": "2026-09-12T10:20",
+      "texto": "Adjunto el presupuesto actualizado con las bancadas de cuatro plazas.",
+      "adjuntos": [
+       {
+        "nombre": "Presupuesto_bancadas_v2.xlsx",
+        "tipo": "excel",
+        "tamano": "38 KB"
+       }
+      ],
+      "padre": null
+     },
+     {
+      "id": 2,
+      "autor": "María López Arranz",
+      "fecha": "2026-09-12T12:05",
+      "texto": "Gracias. ¿Incluye la toma de carga USB-C en todas las plazas?",
+      "adjuntos": [],
+      "padre": 1
+     },
+     {
+      "id": 3,
+      "autor": "Rocío Sánchez Vidal",
+      "fecha": "2026-09-12T13:40",
+      "texto": "Sí, en las cuatro plazas de cada bancada.",
+      "adjuntos": [],
+      "padre": 1
+     }
+    ],
+    "local!nuevoComentario": null,
+    "local!respondiendoA": null,
+    "local!respuesta": null
+   },
    "recordActions": [
     {
      "type": "a!recordActionItem",
@@ -2353,7 +2523,7 @@
               {
                "type": "a!richTextIcon",
                "icon": "info-circle",
-               "color": "ACCENT",
+               "color": "#115EBB",
                "size": "MEDIUM"
               }
              ]
@@ -2703,6 +2873,493 @@
             "$note": "En Appian: record type de documentos relacionado con EXP Expediente (1:N)."
            }
           ]
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "id": "comentarios",
+     "label": "Comentarios",
+     "interface": {
+      "type": "a!headerContentLayout",
+      "backgroundColor": "TRANSPARENT",
+      "contents": [
+       {
+        "type": "a!columnsLayout",
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "width": "WIDE_PLUS",
+          "contents": [
+           {
+            "type": "a!sectionLayout",
+            "marginBelow": "MORE",
+            "contents": [
+             {
+              "type": "a!headingField",
+              "text": "Comentarios ({count(local!comentarios)})",
+              "headingTag": "H2",
+              "size": "MEDIUM",
+              "fontWeight": "BOLD",
+              "marginBelow": "STANDARD"
+             },
+             {
+              "type": "a!cardLayout",
+              "shape": "SEMI_ROUNDED",
+              "padding": "STANDARD",
+              "showBorder": false,
+              "showShadow": true,
+              "marginBelow": "STANDARD",
+              "contents": [
+               {
+                "type": "a!paragraphField",
+                "label": "Nuevo comentario",
+                "labelPosition": "COLLAPSED",
+                "placeholder": "Añada un comentario",
+                "height": "SHORT",
+                "value": "local!nuevoComentario",
+                "saveInto": "local!nuevoComentario"
+               },
+               {
+                "type": "a!buttonArrayLayout",
+                "align": "END",
+                "marginBelow": "NONE",
+                "buttons": [
+                 {
+                  "type": "a!buttonWidget",
+                  "label": "Publicar",
+                  "icon": "paper-plane",
+                  "style": "OUTLINE",
+                  "color": "ACCENT",
+                  "size": "SMALL",
+                  "disabled": "a!isNullOrEmpty(local!nuevoComentario)",
+                  "$action": {
+                   "prepend": {
+                    "local!comentarios": {
+                     "id": "{count(local!comentarios) + 1}",
+                     "autor": "María López Arranz",
+                     "fecha": "{now()}",
+                     "texto": "{local!nuevoComentario}",
+                     "adjuntos": [],
+                     "padre": null
+                    }
+                   },
+                   "set": {
+                    "local!nuevoComentario": null
+                   }
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "a!forEach",
+              "items": "local!comentarios",
+              "$filter": "a!isNullOrEmpty(fv!item.padre)",
+              "$local": {
+               "local!comentario": "fv!item"
+              },
+              "expression": {
+               "type": "a!cardLayout",
+               "shape": "SEMI_ROUNDED",
+               "padding": "STANDARD",
+               "showBorder": false,
+               "showShadow": true,
+               "marginBelow": "STANDARD",
+               "contents": [
+                {
+                 "type": "a!sideBySideLayout",
+                 "alignVertical": "MIDDLE",
+                 "marginBelow": "LESS",
+                 "items": [
+                  {
+                   "type": "a!sideBySideItem",
+                   "width": "MINIMIZE",
+                   "item": {
+                    "type": "a!imageField",
+                    "labelPosition": "COLLAPSED",
+                    "size": "TINY",
+                    "style": "AVATAR",
+                    "images": [
+                     {
+                      "type": "a!userImage",
+                      "user": "{fv!item.autor}"
+                     }
+                    ]
+                   }
+                  },
+                  {
+                   "type": "a!sideBySideItem",
+                   "width": "MINIMIZE",
+                   "item": {
+                    "type": "a!richTextDisplayField",
+                    "labelPosition": "COLLAPSED",
+                    "value": [
+                     {
+                      "type": "a!richTextItem",
+                      "text": "{fv!item.autor}",
+                      "style": "STRONG"
+                     }
+                    ],
+                    "marginBelow": "NONE"
+                   }
+                  },
+                  {
+                   "type": "a!sideBySideItem",
+                   "item": {
+                    "type": "a!richTextDisplayField",
+                    "labelPosition": "COLLAPSED",
+                    "value": [
+                     {
+                      "type": "a!richTextItem",
+                      "text": "{fv!item.fecha|datetime}",
+                      "size": "SMALL",
+                      "color": "#525C65"
+                     }
+                    ],
+                    "marginBelow": "NONE"
+                   }
+                  },
+                  {
+                   "type": "a!sideBySideItem",
+                   "width": "MINIMIZE",
+                   "item": {
+                    "type": "a!buttonArrayLayout",
+                    "align": "END",
+                    "marginBelow": "NONE",
+                    "buttons": [
+                     {
+                      "type": "a!buttonWidget",
+                      "label": "Responder",
+                      "icon": "reply",
+                      "style": "LINK",
+                      "color": "ACCENT",
+                      "size": "SMALL",
+                      "value": "{local!comentario.id}",
+                      "saveInto": "local!respondiendoA"
+                     }
+                    ]
+                   }
+                  }
+                 ]
+                },
+                {
+                 "type": "a!richTextDisplayField",
+                 "labelPosition": "COLLAPSED",
+                 "value": [
+                  "{fv!item.texto}"
+                 ],
+                 "marginBelow": "NONE"
+                },
+                {
+                 "type": "a!cardGroupLayout",
+                 "labelPosition": "COLLAPSED",
+                 "cardWidth": "MEDIUM",
+                 "spacing": "DENSE",
+                 "marginAbove": "LESS",
+                 "showWhen": "a!isNotNullOrEmpty(fv!item.adjuntos)",
+                 "cards": [
+                  {
+                   "type": "a!forEach",
+                   "items": "fv!item.adjuntos",
+                   "expression": {
+                    "type": "a!cardLayout",
+                    "shape": "SEMI_ROUNDED",
+                    "padding": "LESS",
+                    "borderColor": "#E9ECEF",
+                    "link": {
+                     "type": "a!documentDownloadLink",
+                     "document": "{fv!item.nombre}"
+                    },
+                    "accessibilityText": "Descargar {fv!item.nombre}",
+                    "$uxIgnore": "Patrón Comment Thread de Appian 26.9: cada adjunto es una tarjeta con borde dentro del comentario",
+                    "contents": [
+                     {
+                      "type": "a!sideBySideLayout",
+                      "alignVertical": "MIDDLE",
+                      "items": [
+                       {
+                        "type": "a!sideBySideItem",
+                        "width": "MINIMIZE",
+                        "item": {
+                         "type": "a!stampField",
+                         "icon": "{fv!item.tipo|map:adjuntoIcono}",
+                         "size": "TINY",
+                         "shape": "SQUARED",
+                         "backgroundColor": "#DDE7F0",
+                         "contentColor": "#1A2732",
+                         "accessibilityText": "{fv!item.tipo}"
+                        }
+                       },
+                       {
+                        "type": "a!sideBySideItem",
+                        "item": {
+                         "type": "a!richTextDisplayField",
+                         "labelPosition": "COLLAPSED",
+                         "value": [
+                          {
+                           "type": "a!richTextItem",
+                           "text": "{fv!item.nombre}",
+                           "style": "STRONG",
+                           "size": "SMALL"
+                          },
+                          "\n",
+                          {
+                           "type": "a!richTextItem",
+                           "text": "{fv!item.tamano}",
+                           "size": "SMALL",
+                           "color": "#525C65"
+                          }
+                         ],
+                         "marginBelow": "NONE"
+                        }
+                       }
+                      ]
+                     }
+                    ]
+                   }
+                  }
+                 ]
+                },
+                {
+                 "type": "a!sectionLayout",
+                 "label": "Respuestas ({count(wherecontains(local!comentario.id, local!comentarios.padre))})",
+                 "labelSize": "EXTRA_SMALL",
+                 "labelColor": "STANDARD",
+                 "labelHeadingTag": "H4",
+                 "isCollapsible": true,
+                 "marginAbove": "STANDARD",
+                 "marginBelow": "NONE",
+                 "showWhen": "contains(local!comentarios.padre, local!comentario.id)",
+                 "contents": [
+                  {
+                   "type": "a!forEach",
+                   "items": "local!comentarios",
+                   "$filter": "fv!item.padre = local!comentario.id",
+                   "expression": {
+                    "type": "a!cardLayout",
+                    "style": "#F4F5F7",
+                    "showBorder": false,
+                    "shape": "SEMI_ROUNDED",
+                    "padding": "STANDARD",
+                    "marginBelow": "LESS",
+                    "contents": [
+                     {
+                      "type": "a!sideBySideLayout",
+                      "alignVertical": "MIDDLE",
+                      "marginBelow": "LESS",
+                      "items": [
+                       {
+                        "type": "a!sideBySideItem",
+                        "width": "MINIMIZE",
+                        "item": {
+                         "type": "a!imageField",
+                         "labelPosition": "COLLAPSED",
+                         "size": "ICON_PLUS",
+                         "style": "AVATAR",
+                         "images": [
+                          {
+                           "type": "a!userImage",
+                           "user": "{fv!item.autor}"
+                          }
+                         ]
+                        }
+                       },
+                       {
+                        "type": "a!sideBySideItem",
+                        "width": "MINIMIZE",
+                        "item": {
+                         "type": "a!richTextDisplayField",
+                         "labelPosition": "COLLAPSED",
+                         "value": [
+                          {
+                           "type": "a!richTextItem",
+                           "text": "{fv!item.autor}",
+                           "style": "STRONG"
+                          }
+                         ],
+                         "marginBelow": "NONE"
+                        }
+                       },
+                       {
+                        "type": "a!sideBySideItem",
+                        "item": {
+                         "type": "a!richTextDisplayField",
+                         "labelPosition": "COLLAPSED",
+                         "value": [
+                          {
+                           "type": "a!richTextItem",
+                           "text": "{fv!item.fecha|datetime}",
+                           "size": "SMALL",
+                           "color": "#525C65"
+                          }
+                         ],
+                         "marginBelow": "NONE"
+                        }
+                       }
+                      ]
+                     },
+                     {
+                      "type": "a!richTextDisplayField",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       "{fv!item.texto}"
+                      ],
+                      "marginBelow": "NONE"
+                     },
+                     {
+                      "type": "a!cardGroupLayout",
+                      "labelPosition": "COLLAPSED",
+                      "cardWidth": "MEDIUM",
+                      "spacing": "DENSE",
+                      "marginAbove": "LESS",
+                      "showWhen": "a!isNotNullOrEmpty(fv!item.adjuntos)",
+                      "cards": [
+                       {
+                        "type": "a!forEach",
+                        "items": "fv!item.adjuntos",
+                        "expression": {
+                         "type": "a!cardLayout",
+                         "shape": "SEMI_ROUNDED",
+                         "padding": "LESS",
+                         "borderColor": "#E9ECEF",
+                         "link": {
+                          "type": "a!documentDownloadLink",
+                          "document": "{fv!item.nombre}"
+                         },
+                         "accessibilityText": "Descargar {fv!item.nombre}",
+                         "$uxIgnore": "Patrón Comment Thread de Appian 26.9: cada adjunto es una tarjeta con borde dentro del comentario",
+                         "contents": [
+                          {
+                           "type": "a!sideBySideLayout",
+                           "alignVertical": "MIDDLE",
+                           "items": [
+                            {
+                             "type": "a!sideBySideItem",
+                             "width": "MINIMIZE",
+                             "item": {
+                              "type": "a!stampField",
+                              "icon": "{fv!item.tipo|map:adjuntoIcono}",
+                              "size": "TINY",
+                              "shape": "SQUARED",
+                              "backgroundColor": "#DDE7F0",
+                              "contentColor": "#1A2732",
+                              "accessibilityText": "{fv!item.tipo}"
+                             }
+                            },
+                            {
+                             "type": "a!sideBySideItem",
+                             "item": {
+                              "type": "a!richTextDisplayField",
+                              "labelPosition": "COLLAPSED",
+                              "value": [
+                               {
+                                "type": "a!richTextItem",
+                                "text": "{fv!item.nombre}",
+                                "style": "STRONG",
+                                "size": "SMALL"
+                               },
+                               "\n",
+                               {
+                                "type": "a!richTextItem",
+                                "text": "{fv!item.tamano}",
+                                "size": "SMALL",
+                                "color": "#525C65"
+                               }
+                              ],
+                              "marginBelow": "NONE"
+                             }
+                            }
+                           ]
+                          }
+                         ]
+                        }
+                       }
+                      ]
+                     }
+                    ]
+                   }
+                  }
+                 ]
+                },
+                {
+                 "type": "a!cardLayout",
+                 "showWhen": "local!respondiendoA = local!comentario.id",
+                 "shape": "SEMI_ROUNDED",
+                 "padding": "STANDARD",
+                 "borderColor": "ACCENT",
+                 "marginAbove": "STANDARD",
+                 "$uxIgnore": "Cuadro de respuesta abierto: el borde de acento indica dónde se escribe",
+                 "contents": [
+                  {
+                   "type": "a!paragraphField",
+                   "label": "Respuesta a {local!comentario.autor}",
+                   "labelPosition": "COLLAPSED",
+                   "placeholder": "Escriba su respuesta",
+                   "height": "SHORT",
+                   "value": "local!respuesta",
+                   "saveInto": "local!respuesta"
+                  },
+                  {
+                   "type": "a!buttonArrayLayout",
+                   "align": "END",
+                   "marginBelow": "NONE",
+                   "buttons": [
+                    {
+                     "type": "a!buttonWidget",
+                     "label": "Cancelar",
+                     "style": "LINK",
+                     "color": "SECONDARY",
+                     "size": "SMALL",
+                     "$action": {
+                      "set": {
+                       "local!respondiendoA": null,
+                       "local!respuesta": null
+                      }
+                     }
+                    },
+                    {
+                     "type": "a!buttonWidget",
+                     "label": "Responder",
+                     "style": "OUTLINE",
+                     "color": "ACCENT",
+                     "size": "SMALL",
+                     "disabled": "a!isNullOrEmpty(local!respuesta)",
+                     "$action": {
+                      "append": {
+                       "local!comentarios": {
+                        "id": "{count(local!comentarios) + 1}",
+                        "autor": "María López Arranz",
+                        "fecha": "{now()}",
+                        "texto": "{local!respuesta}",
+                        "adjuntos": [],
+                        "padre": "{local!comentario.id}"
+                       }
+                      },
+                      "set": {
+                       "local!respuesta": null,
+                       "local!respondiendoA": null
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 ]
+                }
+               ]
+              }
+             }
+            ],
+            "$note": "En Appian: record type de comentarios relacionado con el expediente (1:N; padre = comentario al que responde) y adjuntos como documentos."
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": []
          }
         ]
        }
@@ -3479,7 +4136,7 @@
     "titleBar": {
      "type": "a!headerTemplateSimple",
      "title": "Aprobar expediente {rv!record.codigo}",
-     "secondaryText": "Tarea de aprobación · recibida el 20/09/2026",
+     "secondaryText": "Tarea de aprobación · recibida el {rv!record.fechaEnvio|date}",
      "stampIcon": "check-square-o",
      "stampColor": "ACCENT"
     },
@@ -3523,11 +4180,11 @@
            "value": [
             {
              "type": "a!richTextItem",
-             "text": "Vence el 30/09/2026, en 6 días",
+             "text": "{rv!record.plazo}",
              "style": "STRONG"
             },
             "\n",
-            "Si no se resuelve a tiempo, la tarea se escala a su responsable"
+            "Plazo: {rv!record.fechaLimite|date}. Si no se resuelve a tiempo, la tarea se escala a su responsable."
            ]
           }
          }
@@ -4147,8 +4804,9 @@
             "type": "a!kpiField",
             "primaryText": "Expedientes",
             "icon": "folder-open-o",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
             "secondaryText": "en el filtro",
             "data": "recordType!EXP Expediente",
             "primaryMeasure": {
@@ -4167,8 +4825,9 @@
             "type": "a!kpiField",
             "primaryText": "Aprobados",
             "icon": "check-circle",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
             "secondaryText": "en el filtro",
             "data": "recordType!EXP Expediente",
             "primaryMeasure": {
@@ -4187,8 +4846,9 @@
             "type": "a!kpiField",
             "primaryText": "Importe total",
             "icon": "eur",
-            "template": "COMPACT",
-            "iconColor": "SECONDARY",
+            "template": "ADJACENT",
+            "iconStyle": "STAMP",
+            "iconColor": "ACCENT",
             "secondaryText": "expedientes con importe",
             "data": "recordType!EXP Expediente",
             "primaryMeasure": {
@@ -4237,6 +4897,12 @@
               "$filter": "or(isnull(local!tipo), fv!row.tipo = local!tipo)",
               "style": "DONUT",
               "height": "SHORT",
+              "showDataLabels": true,
+              "$categories": [
+               "Obra",
+               "Servicio",
+               "Suministro"
+              ],
               "config": {
                "type": "a!pieChartConfig",
                "primaryGrouping": {
@@ -4247,7 +4913,8 @@
                 {
                  "type": "a!measure",
                  "function": "COUNT",
-                 "field": "recordType!EXP Expediente.fields.id"
+                 "field": "recordType!EXP Expediente.fields.id",
+                 "label": "Expedientes"
                 }
                ]
               },
@@ -4255,8 +4922,8 @@
                "type": "a!colorSchemeCustom",
                "colors": [
                 "#1A2732",
-                "#90CE00",
-                "#527500"
+                "#72A300",
+                "#3D6B8C"
                ]
               }
              }
@@ -4373,6 +5040,10 @@
             "type": "a!grouping",
             "field": "recordType!EXP Expediente.fields.estado"
            },
+           "secondaryGrouping": {
+            "type": "a!grouping",
+            "field": "recordType!EXP Expediente.fields.estado"
+           },
            "measures": [
             {
              "type": "a!measure",
@@ -4392,12 +5063,20 @@
             ]
            }
           },
+          "stacking": "NORMAL",
+          "showLegend": false,
           "colorScheme": {
            "type": "a!colorSchemeCustom",
            "colors": [
-            "#1A2732"
+            "#525C65",
+            "#1A2732",
+            "#9A5200",
+            "#0E6B00",
+            "#525C65",
+            "#B2002C"
            ]
-          }
+          },
+          "$note": "Cada barra con el color de su estado (el mismo significado que las etiquetas): agrupación secundaria por el mismo campo."
          },
          {
           "type": "a!sectionLayout",
@@ -4838,7 +5517,7 @@
             {
              "type": "a!richTextIcon",
              "icon": "magic",
-             "color": "ACCENT",
+             "color": "#115EBB",
              "size": "MEDIUM"
             }
            ]

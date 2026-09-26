@@ -6,58 +6,132 @@
  "req": [
   "RF-INICIO"
  ],
- "$note": "P06: cabecera + franja de KPI (una card, divisores, tendencia) + 2X/1X: tareas sin paginación con plazo y «Ver todas»; a la derecha, aviso con acción, accesos rápidos y un gráfico resumen.",
+ "$note": "P06: cabecera de color (saludo, fecha y lo pendiente) + franja de KPI (una card, divisores, sellos de icono, tendencia) + 2X/1X: tareas sin paginación con plazo y «Ver todas»; a la derecha, aviso con acción, accesos rápidos y un gráfico resumen.",
  "interface": {
   "type": "a!headerContentLayout",
   "backgroundColor": "TRANSPARENT",
   "contents": [
    {
-    "type": "a!columnsLayout",
-    "alignVertical": "MIDDLE",
+    "type": "a!cardLayout",
+    "style": "#1A2732",
+    "showBorder": false,
+    "shape": "SEMI_ROUNDED",
+    "padding": "MORE",
     "marginBelow": "MORE",
-    "columns": [
+    "contents": [
      {
-      "type": "a!columnLayout",
-      "contents": [
+      "type": "a!columnsLayout",
+      "alignVertical": "MIDDLE",
+      "columns": [
        {
-        "type": "a!headingField",
-        "text": "Hola, María",
-        "size": "LARGE",
-        "headingTag": "H1",
-        "marginBelow": "EVEN_LESS"
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!headingField",
+          "text": "Hola, María",
+          "size": "LARGE",
+          "headingTag": "H1",
+          "color": "#FFFFFF",
+          "marginBelow": "EVEN_LESS"
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextItem",
+            "text": "Expedientes de su unidad · jueves, 24 de septiembre de 2026",
+            "color": "#FFFFFF"
+           }
+          ],
+          "marginBelow": "STANDARD"
+         },
+         {
+          "type": "a!sideBySideLayout",
+          "spacing": "SPARSE",
+          "alignVertical": "MIDDLE",
+          "marginBelow": "NONE",
+          "items": [
+           {
+            "type": "a!sideBySideItem",
+            "width": "MINIMIZE",
+            "item": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextIcon",
+               "icon": "inbox",
+               "color": "#FFFFFF"
+              },
+              " ",
+              {
+               "type": "a!richTextItem",
+               "text": "3",
+               "style": "STRONG",
+               "color": "#FFFFFF"
+              },
+              " ",
+              {
+               "type": "a!richTextItem",
+               "text": "tareas pendientes",
+               "color": "#FFFFFF"
+              }
+             ]
+            }
+           },
+           {
+            "type": "a!sideBySideItem",
+            "width": "MINIMIZE",
+            "item": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextIcon",
+               "icon": "clock-o",
+               "color": "#FFFFFF"
+              },
+              " ",
+              {
+               "type": "a!richTextItem",
+               "text": "1",
+               "style": "STRONG",
+               "color": "#FFFFFF"
+              },
+              " ",
+              {
+               "type": "a!richTextItem",
+               "text": "vence esta semana",
+               "color": "#FFFFFF"
+              }
+             ]
+            }
+           }
+          ]
+         }
+        ]
        },
        {
-        "type": "a!richTextDisplayField",
-        "labelPosition": "COLLAPSED",
-        "value": [
+        "type": "a!columnLayout",
+        "width": "AUTO",
+        "contents": [
          {
-          "type": "a!richTextItem",
-          "text": "Expedientes de su unidad · 24 de septiembre de 2026",
-          "color": "SECONDARY"
-         }
-        ],
-        "marginBelow": "NONE"
-       }
-      ]
-     },
-     {
-      "type": "a!columnLayout",
-      "width": "AUTO",
-      "contents": [
-       {
-        "type": "a!buttonArrayLayout",
-        "align": "END",
-        "marginBelow": "NONE",
-        "buttons": [
-         {
-          "type": "a!buttonWidget",
-          "label": "Nuevo expediente",
-          "style": "SOLID",
-          "color": "#90CE00",
-          "icon": "plus",
-          "$action": {
-           "goto": "asistente"
-          }
+          "type": "a!buttonArrayLayout",
+          "align": "END",
+          "marginBelow": "NONE",
+          "buttons": [
+           {
+            "type": "a!buttonWidget",
+            "label": "Nuevo expediente",
+            "style": "SOLID",
+            "color": "#90CE00",
+            "icon": "plus",
+            "$action": {
+             "goto": "asistente"
+            }
+           }
+          ]
          }
         ]
        }
@@ -89,8 +163,9 @@
           "type": "a!kpiField",
           "primaryText": "En tramitación",
           "icon": "hourglass-half",
-          "template": "COMPACT",
-          "iconColor": "SECONDARY",
+          "template": "ADJACENT",
+          "iconStyle": "STAMP",
+          "iconColor": "ACCENT",
           "$secondaryValue": 3,
           "secondaryText": "frente al mes anterior",
           "data": "recordType!EXP Expediente",
@@ -110,9 +185,10 @@
           "type": "a!kpiField",
           "primaryText": "Pendientes de aprobación",
           "icon": "gavel",
-          "template": "COMPACT",
-          "iconColor": "SECONDARY",
-          "$secondaryValue": 4,
+          "template": "ADJACENT",
+          "iconStyle": "STAMP",
+          "iconColor": "ACCENT",
+          "$secondaryValue": 5,
           "secondaryText": "frente al mes anterior",
           "trendColor": "REVERSE",
           "data": "recordType!EXP Expediente",
@@ -132,9 +208,10 @@
           "type": "a!kpiField",
           "primaryText": "Importe aprobado",
           "icon": "eur",
-          "template": "COMPACT",
-          "iconColor": "SECONDARY",
-          "$secondaryValue": 770000,
+          "template": "ADJACENT",
+          "iconStyle": "STAMP",
+          "iconColor": "ACCENT",
+          "$secondaryValue": 828000,
           "secondaryText": "frente al mes anterior",
           "data": "recordType!EXP Expediente",
           "primaryMeasure": {
@@ -385,27 +462,28 @@
             "actions": [
              {
               "type": "a!recordActionItem",
-              "action": "recordType!EXP Expediente.actions.nuevo",
-              "$label": "Nuevo expediente",
-              "$icon": "plus",
+              "action": "recordType!EXP Expediente.actions.altaDesdeSolicitud",
+              "$label": "Alta desde solicitud escaneada",
+              "$icon": "magic",
               "$action": {
-               "goto": "asistente"
+               "goto": "revision-ia"
               }
              },
              {
               "type": "a!recordActionItem",
-              "action": "recordType!EXP Expediente.actions.informe",
-              "$label": "Informes",
-              "$icon": "bar-chart",
+              "action": "recordType!EXP Expediente.actions.altaRapida",
+              "$label": "Alta rápida (una página)",
+              "$icon": "bolt",
               "$action": {
-               "goto": "informe"
+               "goto": "formulario"
               }
              }
             ]
            }
           ]
          }
-        ]
+        ],
+        "$note": "Otras acciones del registro; la principal («Nuevo expediente») ya está en la cabecera y no se repite."
        },
        {
         "type": "a!sectionLayout",
@@ -443,6 +521,10 @@
               "type": "a!grouping",
               "field": "recordType!EXP Expediente.fields.estado"
              },
+             "secondaryGrouping": {
+              "type": "a!grouping",
+              "field": "recordType!EXP Expediente.fields.estado"
+             },
              "measures": [
               {
                "type": "a!measure",
@@ -452,10 +534,17 @@
               }
              ]
             },
+            "stacking": "NORMAL",
+            "showLegend": false,
             "colorScheme": {
              "type": "a!colorSchemeCustom",
              "colors": [
-              "#1A2732"
+              "#525C65",
+              "#1A2732",
+              "#9A5200",
+              "#0E6B00",
+              "#525C65",
+              "#B2002C"
              ]
             }
            }

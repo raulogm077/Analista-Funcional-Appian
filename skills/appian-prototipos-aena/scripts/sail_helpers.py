@@ -20,6 +20,8 @@ Bloques (cuándo usar cada uno: references/bloques.md; galería: examples/bloque
   formularios ... txt, par, date, dd, upload, choice_cards, cols, ro
   IA ............ ai_agent_chat, ai_data_chat, ai_suggested, ai_side_pane, ai_toggle, ai_records_chat, ai_doc_chat,
                   ai_answer, ai_citation, ai_review_grid, ai_confidence_tag, match_quality, ai_notice, ai_feedback, AI_MAPS
+  patrones 26.9 . calendar_month, calendar_week, event_maps, comment_thread, ATTACH_MAPS, kanban, KANBAN_STATES
+  color ......... state_chart_colors (gráfico con el color de cada estado), CHART (series en orden), NAVY, GREEN, STATES
   pantallas ..... dialog
 """
 import json
@@ -30,6 +32,7 @@ PRIMARY = _BRAND["components"]["primaryButton"]["color"]   # botón principal de
 GREEN = _BRAND["site"]["selectedPageHighlightColor"]        # verde AENA para barras decorativas
 NAVY = _BRAND["palette"]["navy"]                            # azul marino (cabecera de registro, sidebar)
 STATES = {k: v for k, v in _BRAND.get("states", {}).items() if isinstance(v, dict)}
+CHART = _BRAND["components"]["chartColorScheme"]              # series de gráficos en orden (3:1 sobre blanco; el lima, el último)
 BG = "TRANSPARENT"                                          # fondo de páginas con cards (gris claro en Appian)
 REC = "rv!record"
 HTML = lambda t: "".join(f"<p>{x}</p>" for x in t.split("\n\n"))  # a!styledTextEditorField guarda HTML
@@ -99,7 +102,7 @@ def action_banner(title, text=None, button=None, kind="WARN", icon=None, **kw):
     bar = {"WARN": "WARN", "INFO": "INFO", "ERROR": "NEGATIVE", "SUCCESS": "POSITIVE"}[kind]
     ic = icon or {"WARN": "exclamation-triangle", "INFO": "info-circle", "ERROR": "exclamation-circle", "SUCCESS": "check-circle"}[kind]
     txtv = [{"type": "a!richTextItem", "text": _s(title), "style": "STRONG"}] + (["\n", _s(text)] if text else [])
-    icol = {"WARN": "WARN", "INFO": "ACCENT", "ERROR": "NEGATIVE", "SUCCESS": "POSITIVE"}[kind]  # a!richTextIcon no admite INFO
+    icol = {"WARN": "WARN", "INFO": "#115EBB", "ERROR": "NEGATIVE", "SUCCESS": "POSITIVE"}[kind]  # a!richTextIcon no admite INFO: el azul informativo estándar de Appian
     items = [{"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!richTextDisplayField", "labelPosition": "COLLAPSED", "value": [{"type": "a!richTextIcon", "icon": ic, "color": icol, "size": "MEDIUM"}]}},
              {"type": "a!sideBySideItem", "item": {"type": "a!richTextDisplayField", "labelPosition": "COLLAPSED", "value": txtv}}]
     if button:
@@ -177,8 +180,10 @@ def field_summary(pairs, columns=3):
 
 
 def kpi(text, icon, value=None, secondary=None, sec_text=None, reverse=False, **kw):
-    """KPI COMPACT. value: fijo ($value) o se calcula con data + primaryMeasure (kw). secondary: valor de comparación → tendencia."""
-    k = {"type": "a!kpiField", "primaryText": text, "icon": icon, "template": "COMPACT", "iconColor": "SECONDARY"}
+    """KPI con el icono en un sello de color suave (iconStyle STAMP, ADJACENT): más visual y fácil de escanear.
+    value: fijo ($value) o se calcula con data + primaryMeasure (kw). secondary: valor de comparación → tendencia.
+    Para KPI en columnas estrechas o dentro de tarjetas pequeñas: template="COMPACT", iconStyle="ICON"."""
+    k = {"type": "a!kpiField", "primaryText": text, "icon": icon, "template": "ADJACENT", "iconStyle": "STAMP", "iconColor": "ACCENT"}
     if value is not None: k["$value"] = value
     if secondary is not None: k["$secondaryValue"] = secondary
     if sec_text: k["secondaryText"] = sec_text
@@ -216,6 +221,19 @@ def milestone(steps, active_expr, **kw):
 
 
 # ------------------------------------------------------------------ grids
+def _enum_hex(v):
+    """Color de texto/gráfico de un estado (enum de la paleta de estados) resuelto con el perfil CSS de la marca."""
+    prof = {k: x for g in (_BRAND.get("cssProfile") or {}).get("groups") or [] for k, x in (g.get("properties") or {}).items()}
+    return {"SECONDARY": _BRAND["palette"]["slate"], "POSITIVE": prof.get("positive-on-light-color", "#117C00"), "NEGATIVE": prof.get("negative-on-light-color", "#B2002C"),
+            "WARN": prof.get("warn-on-light-color", "#D97706"), "INFO": prof.get("info-on-light-color", "#115EBB"), "ACCENT": _BRAND["site"]["accentColor"]}.get(v, v)
+
+
+def state_chart_colors(mapping, order):
+    """Colores de gráfico por estado (mismo significado que las etiquetas, en tono fuerte con 3:1 o más sobre blanco).
+    mapping: {"Aprobado": "positivo", …}; order: estados en el orden de las categorías del gráfico."""
+    return {"type": "a!colorSchemeCustom", "colors": [_enum_hex(STATES[mapping.get(s, "neutral")]["enum"]) for s in order]}
+
+
 def state_map(mapping, default="neutral", grid=False):
     """Mapa estado → color de tag con la paleta semántica. mapping: {"Vigente": "positivo", ...} → {"Vigente": "#E3EFD3", ...}.
     grid=True: versión para filas de un grid (máximo dos colores no neutros): solo «atencion» y «negativo» llevan color."""
@@ -844,3 +862,247 @@ def ojo():
 
 def alerta_icon(expr="fv!row.alerta"):
     return {"type": "a!richTextDisplayField", "value": [{"type": "a!richTextIcon", "icon": "exclamation-circle", "color": "NEGATIVE", "size": "MEDIUM", "altText": "Con alerta", "caption": "Con alerta", "showWhen": expr}]}
+
+
+# ------------------------------------------------------------------ patrones del SAIL Design System 26.9: calendario, comentarios, kanban
+# Fuentes: https://docs.appian.com/suite/help/26.9/sail/calendar.html, comment-thread.html y kanban.html
+import datetime as _dt
+
+# tipo de evento → (icono, color): tonos distintos (azul, rojo, verde) para que el tinte de cada tipo se distinga; todos 4,5:1 sobre blanco
+EVENT_TYPES = {"Evento": ("calendar-day", _BRAND["palette"]["steel"]), "Plazo": ("flag", _BRAND["palette"]["red"]), "Turno": ("clock-o", _BRAND["palette"]["greenDark"])}
+GREY_TXT = _BRAND["palette"]["slate"]      # texto secundario: 4,5:1 o más sobre blanco y sobre los grises claros de la paleta
+SURFACE = _BRAND["palette"]["pageBg"]     # superficie gris suave (días de otro mes, respuestas, eventos pasados)
+LINE = _BRAND["palette"]["grayLight"]     # bordes y líneas finas
+LINE_STRONG = "#848D96"                    # líneas y elementos gráficos que deben verse: 3:1 sobre blanco y sobre el gris de página
+
+
+def _q(v):
+    return '"%s"' % v
+
+
+def _event_line(small=True):
+    """Icono de color del tipo y título del evento (fv!item) en una línea."""
+    ic = "{fv!item.tipo|map:eventoIcono}"
+    col = "{fv!item.tipo|map:eventoColor}"
+    return [{"type": "a!richTextIcon", "icon": ic, "color": col, "size": "SMALL" if small else "STANDARD"}, " ", {"type": "a!richTextItem", "text": "{fv!item.titulo}", "size": "SMALL"}]
+
+
+def event_maps(types=None):
+    """Mapas eventoIcono / eventoColor / eventoFondo para los calendarios (añadir a spec["maps"]); «(pasado)»: gris de lo ya ocurrido."""
+    t = types or EVENT_TYPES
+    return {"eventoIcono": {k: v[0] for k, v in t.items()} | {"*": "calendar-o"}, "eventoColor": {k: v[1] for k, v in t.items()} | {"(pasado)": LINE_STRONG, "*": "SECONDARY"},
+            "eventoFondo": {k: v[1] + "26" for k, v in t.items()} | {"*": SURFACE}}
+
+
+def _chip(past, text_expr="{fv!item.titulo}", time=False):
+    """Evento como «chip»: barra de color del tipo a la izquierda y tinte suave; lo pasado, en gris."""
+    txt = [{"type": "a!richTextItem", "text": text_expr, "size": "SMALL", "color": GREY_TXT if past else "STANDARD"}]
+    if time:
+        txt = [{"type": "a!richTextItem", "text": "{fv!item.hora} ", "size": "SMALL", "style": "STRONG", "color": GREY_TXT if past else "STANDARD"}] + txt
+    return {"type": "a!cardLayout", "showBorder": False, "shape": "SEMI_ROUNDED", "padding": "EVEN_LESS", "marginBelow": "EVEN_LESS",
+            "style": "NONE" if past else "{fv!item.tipo|map:eventoFondo}",  # lo pasado, sin relleno: se distingue del tinte de los próximos
+            "decorativeBarPosition": "START", "decorativeBarColor": LINE_STRONG if past else "{fv!item.tipo|map:eventoColor}",
+            "tooltip": "{fv!item.hora} · {fv!item.titulo}", "contents": [_rtd(txt, preventWrapping=True, marginBelow="NONE")]}
+
+
+def calendar_month(events, sel_var, today, months=None, month_var=None, detail=True, **kw):
+    """Calendario mensual (patrón Calendar · Month view): rejilla de semanas de lunes a domingo; cada día es una card que se pulsa
+    para ver sus eventos en el panel derecho. Hoy va resaltado, los días de otro mes en gris y lo pasado, atenuado.
+    events: referencia a la lista de eventos ("local!eventos" o "data!eventos") con fecha (AAAA-MM-DD), hora, titulo, tipo y detalle.
+    months: [(año, mes)] navegables con ‹ Hoy › (month_var guarda el índice, 1 = el primero); por defecto el mes de today.
+    Añada event_maps() a spec["maps"]."""
+    t = _dt.date.fromisoformat(today)
+    months = months or [(t.year, t.month)]
+    names = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+    grids = []
+    for k, (y, m) in enumerate(months):
+        first = _dt.date(y, m, 1)
+        start = first - _dt.timedelta(days=first.weekday())
+        rows = []
+        for w in range(6):
+            days = [start + _dt.timedelta(days=w * 7 + d) for d in range(7)]
+            if w == 5 and days[0].month != m:
+                break
+            cols_ = []
+            for d in days:
+                iso = d.isoformat()
+                cur, past = d.month == m, d < t
+                bg = "#90CE0033" if d == t else "#FFFFFF" if cur else SURFACE
+                num = {"type": "a!richTextItem", "text": str(d.day) + ("  · hoy" if d == t else ""), "style": "STRONG" if d == t else "PLAIN", "color": "STANDARD" if cur and not past else GREY_TXT}
+                cell = {"type": "a!cardLayout", "shape": "SEMI_ROUNDED", "padding": "LESS", "height": "SHORT", "style": bg,
+                        "showBorder": "{%s = %s}" % (sel_var, _q(iso)), "borderColor": "ACCENT", "borderWeight": "MEDIUM",
+                        "link": {"type": "a!dynamicLink", "value": iso, "saveInto": sel_var}, "accessibilityText": "%d de %s%s" % (d.day, names[d.month - 1], ", hoy" if d == t else ""),
+                        "contents": [_rtd(num, marginBelow="EVEN_LESS"),
+                                     {"type": "a!forEach", "items": events, "$filter": "fv!item.fecha = %s" % _q(iso), "$limit": 2, "expression": _chip(past)},
+                                     _rtd({"type": "a!richTextItem", "text": "+{count(wherecontains(%s, %s.fecha)) - 2} más" % (_q(iso), events), "size": "SMALL", "color": GREY_TXT, "style": "STRONG"},
+                                          showWhen="count(wherecontains(%s, %s.fecha)) > 2" % (_q(iso), events), marginBelow="NONE")]}
+                head = [_rtd({"type": "a!richTextItem", "text": ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"][d.weekday()], "size": "SMALL", "color": GREY_TXT, "style": "STRONG"}, align="CENTER", marginBelow="EVEN_LESS")] if w == 0 else []
+                cols_.append({"type": "a!columnLayout", "contents": head + [cell]})
+            rows.append({"type": "a!columnsLayout", "spacing": "DENSE", "marginBelow": "LESS", "stackWhen": ["NEVER"], "columns": cols_})
+        g = {"type": "a!sectionLayout", "marginBelow": "NONE", "contents": rows}
+        if len(months) > 1:
+            g["showWhen"] = "%s = %d" % (month_var, k + 1)
+        grids.append(g)
+    # cabecera: ‹ Hoy › y el mes (con varios meses, las flechas cambian de mes; en los extremos se ven en gris)
+    multi = len(months) > 1
+    def arrow(icon, cap, delta, cond):
+        on = {"type": "a!richTextIcon", "icon": icon, "size": "MEDIUM", "color": "STANDARD", "caption": cap, "altText": cap, "showWhen": cond,
+              "link": {"type": "a!dynamicLink", "value": "{%s %s 1}" % (month_var, "+" if delta > 0 else "-"), "saveInto": month_var}, "linkStyle": "STANDALONE"}
+        off = {"type": "a!richTextIcon", "icon": icon, "size": "MEDIUM", "color": LINE_STRONG, "caption": cap + " (no disponible)", "altText": cap + " (no disponible)", "showWhen": "not(%s)" % cond}
+        return {"type": "a!sideBySideItem", "width": "MINIMIZE", "item": _rtd([on, off], marginBelow="NONE")}
+    today_k = next((k + 1 for k, (y, m) in enumerate(months) if (y, m) == (t.year, t.month)), 1)
+    title = [{"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!headingField", "text": "%s de %d" % (names[m - 1].capitalize(), y), "size": "MEDIUM_PLUS", "fontWeight": "BOLD", "headingTag": "H2", "marginBelow": "NONE",
+              **({"showWhen": "%s = %d" % (month_var, k + 1)} if multi else {})}} for k, (y, m) in enumerate(months)]
+    hoy = {"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!buttonArrayLayout", "marginBelow": "NONE", "buttons": [
+        {"type": "a!buttonWidget", "label": "Hoy", "style": "OUTLINE", "color": "SECONDARY", "size": "SMALL",
+         "$action": {"set": {**({month_var: today_k} if multi else {}), sel_var: today}}}]}}
+    nav = {"type": "a!sideBySideLayout", "alignVertical": "MIDDLE", "spacing": "STANDARD", "marginBelow": "STANDARD",
+           "items": ([arrow("angle-left", "Mes anterior", -1, "%s > 1" % month_var)] if multi else []) + ([hoy] if multi else []) +
+                    ([arrow("angle-right", "Mes siguiente", 1, "%s < %d" % (month_var, len(months)))] if multi else []) + title}
+    grid_card = {"type": "a!cardLayout", "shape": "SEMI_ROUNDED", "padding": "LESS", "showBorder": False, "showShadow": True, "style": "NONE", "contents": grids}
+    if not detail:
+        s = {"type": "a!sectionLayout", "contents": [nav, grid_card], "marginBelow": "MORE"}
+        s.update(kw); return s
+    # panel del día seleccionado: eventos (pasados atenuados) o estado vacío
+    past = "todate(fv!item.fecha) < todate(%s)" % _q(today)
+    ev_card = {"type": "a!cardLayout", "marginBelow": "LESS", "padding": "STANDARD", "shape": "SEMI_ROUNDED", "showBorder": False,
+               "showShadow": "{not(%s)}" % past, "style": "{if(%s, \"%s\", \"#FFFFFF\")}" % (past, SURFACE),
+               "decorativeBarPosition": "START", "decorativeBarColor": "{if(%s, \"(pasado)\", fv!item.tipo)|map:eventoColor}" % past,
+               "contents": [{"type": "a!sideBySideLayout", "marginBelow": "LESS", "items": [
+                   {"type": "a!sideBySideItem", "item": _rtd([{"type": "a!richTextIcon", "icon": "{fv!item.tipo|map:eventoIcono}", "color": "{fv!item.tipo|map:eventoColor}"}, " ",
+                                                              {"type": "a!richTextItem", "text": "{fv!item.tipo}", "style": "STRONG", "size": "SMALL", "color": "{fv!item.tipo|map:eventoColor}"}], marginBelow="NONE")},
+                   {"type": "a!sideBySideItem", "width": "MINIMIZE", "item": _rtd({"type": "a!richTextItem", "text": "{fv!item.hora}", "size": "SMALL", "style": "STRONG", "color": "{if(%s, \"%s\", \"STANDARD\")}" % (past, GREY_TXT)}, marginBelow="NONE")}]},
+                   _rtd({"type": "a!richTextItem", "text": "{fv!item.titulo}", "style": "STRONG"}, marginBelow="EVEN_LESS"),
+                   _rtd({"type": "a!richTextItem", "text": "{fv!item.detalle}", "size": "SMALL", "color": GREY_TXT}, showWhen="a!isNotNullOrEmpty(fv!item.detalle)", marginBelow="NONE")]}
+    empty = {"type": "a!cardLayout", "shape": "SEMI_ROUNDED", "showBorder": False, "showShadow": True, "padding": "MORE", "showWhen": "not(contains(%s.fecha, %s))" % (events, sel_var), "contents": [
+        {"type": "a!stampField", "icon": "calendar-o", "size": "SMALL", "align": "CENTER", "backgroundColor": STATES["neutral"]["tag"], "contentColor": GREY_TXT, "marginBelow": "LESS"},
+        _rtd({"type": "a!richTextItem", "text": "No hay eventos ni plazos este día", "size": "SMALL", "color": GREY_TXT}, align="CENTER")]}
+    side = [{"type": "a!headingField", "headingTag": "H3", "text": "{%s|longdate}" % sel_var, "fontWeight": "SEMI_BOLD", "size": "MEDIUM_PLUS", "marginBelow": "STANDARD"},
+            {"type": "a!forEach", "items": events, "$filter": "fv!item.fecha = %s" % sel_var, "expression": ev_card}, empty]
+    c = {"type": "a!sectionLayout", "marginBelow": "MORE", "contents": [nav, {"type": "a!columnsLayout", "stackWhen": ["PHONE", "TABLET_PORTRAIT"], "columns": [
+        {"type": "a!columnLayout", "width": "2X", "contents": [grid_card]}, {"type": "a!columnLayout", "width": "1X", "contents": side}]}]}
+    c.update(kw); return c
+
+
+def calendar_week(events, start, today, **kw):
+    """Calendario semanal (patrón Calendar · Week view): un día por columna con sus eventos en tarjetas con la barra y el tinte
+    del color de su tipo; lo pasado en gris y hoy resaltado. start: lunes de la semana (AAAA-MM-DD). Para ver pocos días con más detalle."""
+    s0 = _dt.date.fromisoformat(start)
+    t = _dt.date.fromisoformat(today)
+    days = [s0 + _dt.timedelta(days=d) for d in range(7)]
+    heads, bodies = [], []
+    for day in days:
+        iso = day.isoformat()
+        past, now = day < t, day == t
+        heads.append({"type": "a!columnLayout", "contents": [
+            {"type": "a!headingField", "headingTag": "H3", "text": "{%s|dayname}" % _q(iso), "align": "CENTER", "size": "SMALL", "fontWeight": "BOLD", "marginAbove": "LESS", "marginBelow": "NONE",
+             "color": "STANDARD" if not past else GREY_TXT},
+            _rtd({"type": "a!richTextItem", "text": "{%s|daymonth}" % _q(iso) + (" · hoy" if now else ""), "size": "SMALL", "style": "STRONG" if now else "PLAIN", "color": "STANDARD" if now else GREY_TXT},
+                 align="CENTER", marginBelow="LESS")]})
+        card_ = {"type": "a!cardLayout", "marginBelow": "LESS", "shape": "SEMI_ROUNDED", "showBorder": False, "padding": "LESS",
+                 "style": "NONE" if past else "{fv!item.tipo|map:eventoFondo}",  # lo pasado, sin relleno: se distingue del tinte de los próximos
+                 "decorativeBarPosition": "START", "decorativeBarColor": LINE_STRONG if past else "{fv!item.tipo|map:eventoColor}",
+                 "contents": [_rtd([{"type": "a!richTextIcon", "icon": "{fv!item.tipo|map:eventoIcono}", "color": GREY_TXT if past else "{fv!item.tipo|map:eventoColor}"}, " ",
+                                    {"type": "a!richTextItem", "text": "{fv!item.hora}", "size": "SMALL", "style": "STRONG", "color": GREY_TXT if past else "STANDARD"}, "\n",
+                                    {"type": "a!richTextItem", "text": "{fv!item.titulo}", "size": "SMALL", "style": "STRONG" if not past else "PLAIN", "color": GREY_TXT if past else "STANDARD"}], marginBelow="NONE")]}
+        bodies.append({"type": "a!columnLayout", "contents": [{"type": "a!forEach", "items": events, "$filter": "fv!item.fecha = %s" % _q(iso), "expression": card_},
+                                                             _rtd({"type": "a!richTextItem", "text": "Sin eventos", "size": "SMALL", "color": GREY_TXT}, align="CENTER",
+                                                                  showWhen="not(contains(%s.fecha, %s))" % (events, _q(iso)), marginAbove="STANDARD")]})
+    c = {"type": "a!cardLayout", "style": "NONE", "shape": "SEMI_ROUNDED", "padding": "LESS", "showShadow": True, "showBorder": False, "marginBelow": "MORE",
+         "contents": [{"type": "a!columnsLayout", "spacing": "DENSE", "showDividers": True, "stackWhen": ["NEVER"], "marginBelow": "NONE", "columns": heads},
+                      {"type": "a!horizontalLine", "color": LINE, "marginBelow": "LESS"},
+                      {"type": "a!columnsLayout", "spacing": "DENSE", "showDividers": True, "stackWhen": ["PHONE", "TABLET_PORTRAIT"], "columns": bodies}]}
+    c.update(kw); return c
+
+
+def comment_thread(var, user, new_var, reply_to_var, reply_var, title="Comentarios", **kw):
+    """Hilo de comentarios (patrón Comment Thread · With replies and attachments): comentario nuevo arriba, cada comentario con
+    avatar, autor, fecha, texto, adjuntos y botón Responder; las respuestas se pliegan bajo su comentario.
+    var: lista de comentarios [{id, autor, fecha (AAAA-MM-DDThh:mm), texto, adjuntos: [{nombre, tipo, tamano}], padre}] (padre = id del comentario
+    al que responde). user: nombre de quien comenta. new_var / reply_var: textos en edición; reply_to_var: id del comentario al que se responde."""
+    def meta(small=False):
+        return [{"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!imageField", "labelPosition": "COLLAPSED", "size": "ICON_PLUS" if small else "TINY", "style": "AVATAR", "images": [{"type": "a!userImage", "user": "{fv!item.autor}"}]}},
+                {"type": "a!sideBySideItem", "width": "MINIMIZE", "item": _rtd({"type": "a!richTextItem", "text": "{fv!item.autor}", "style": "STRONG"}, marginBelow="NONE")},
+                {"type": "a!sideBySideItem", "item": _rtd({"type": "a!richTextItem", "text": "{fv!item.fecha|datetime}", "size": "SMALL", "color": GREY_TXT}, marginBelow="NONE")}]
+    attach = {"type": "a!cardGroupLayout", "labelPosition": "COLLAPSED", "cardWidth": "MEDIUM", "spacing": "DENSE", "marginAbove": "LESS", "showWhen": "a!isNotNullOrEmpty(fv!item.adjuntos)", "cards": [
+        {"type": "a!forEach", "items": "fv!item.adjuntos", "expression": {"type": "a!cardLayout", "shape": "SEMI_ROUNDED", "padding": "LESS", "borderColor": LINE, "link": {"type": "a!documentDownloadLink", "document": "{fv!item.nombre}"}, "accessibilityText": "Descargar {fv!item.nombre}",
+            "$uxIgnore": "Patrón Comment Thread de Appian 26.9: cada adjunto es una tarjeta con borde dentro del comentario", "contents": [
+            {"type": "a!sideBySideLayout", "alignVertical": "MIDDLE", "items": [
+                {"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!stampField", "icon": "{fv!item.tipo|map:adjuntoIcono}", "size": "TINY", "shape": "SQUARED", "backgroundColor": STATES["enCurso"]["tag"], "contentColor": NAVY, "accessibilityText": "{fv!item.tipo}"}},
+                {"type": "a!sideBySideItem", "item": _rtd([{"type": "a!richTextItem", "text": "{fv!item.nombre}", "style": "STRONG", "size": "SMALL"}, "\n", {"type": "a!richTextItem", "text": "{fv!item.tamano}", "size": "SMALL", "color": GREY_TXT}], marginBelow="NONE")}]}]}}]}
+    reply_card = {"type": "a!cardLayout", "style": SURFACE, "showBorder": False, "shape": "SEMI_ROUNDED", "padding": "STANDARD", "marginBelow": "LESS", "contents": [
+        {"type": "a!sideBySideLayout", "alignVertical": "MIDDLE", "marginBelow": "LESS", "items": meta(small=True)}, _rtd("{fv!item.texto}", marginBelow="NONE"), attach]}
+    reply_box = {"type": "a!cardLayout", "showWhen": "%s = local!comentario.id" % reply_to_var, "shape": "SEMI_ROUNDED", "padding": "STANDARD", "borderColor": "ACCENT", "marginAbove": "STANDARD",
+                 "$uxIgnore": "Cuadro de respuesta abierto: el borde de acento indica dónde se escribe", "contents": [
+        {"type": "a!paragraphField", "label": "Respuesta a {local!comentario.autor}", "labelPosition": "COLLAPSED", "placeholder": "Escriba su respuesta", "height": "SHORT", "value": reply_var, "saveInto": reply_var},
+        {"type": "a!buttonArrayLayout", "align": "END", "marginBelow": "NONE", "buttons": [
+            {"type": "a!buttonWidget", "label": "Cancelar", "style": "LINK", "color": "SECONDARY", "size": "SMALL", "$action": {"set": {reply_to_var: None, reply_var: None}}},
+            {"type": "a!buttonWidget", "label": "Responder", "style": "OUTLINE", "color": "ACCENT", "size": "SMALL", "disabled": "a!isNullOrEmpty(%s)" % reply_var,
+             "$action": {"append": {var: {"id": "{count(%s) + 1}" % var, "autor": user, "fecha": "{now()}", "texto": "{%s}" % reply_var, "adjuntos": [], "padre": "{local!comentario.id}"}}, "set": {reply_var: None, reply_to_var: None}}}]}]}
+    comment = {"type": "a!cardLayout", "shape": "SEMI_ROUNDED", "padding": "STANDARD", "showBorder": False, "showShadow": True, "marginBelow": "STANDARD", "contents": [
+        {"type": "a!sideBySideLayout", "alignVertical": "MIDDLE", "marginBelow": "LESS", "items": meta() + [
+            {"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!buttonArrayLayout", "align": "END", "marginBelow": "NONE", "buttons": [
+                {"type": "a!buttonWidget", "label": "Responder", "icon": "reply", "style": "LINK", "color": "ACCENT", "size": "SMALL", "value": "{local!comentario.id}", "saveInto": reply_to_var}]}}]},
+        _rtd("{fv!item.texto}", marginBelow="NONE"), attach,
+        {"type": "a!sectionLayout", "label": "Respuestas ({count(wherecontains(local!comentario.id, %s.padre))})" % var, "labelSize": "EXTRA_SMALL", "labelColor": "STANDARD", "labelHeadingTag": "H4",
+         "isCollapsible": True, "marginAbove": "STANDARD", "marginBelow": "NONE", "showWhen": "contains(%s.padre, local!comentario.id)" % var,
+         "contents": [{"type": "a!forEach", "items": var, "$filter": "fv!item.padre = local!comentario.id", "expression": reply_card}]},
+        reply_box]}
+    new = {"type": "a!cardLayout", "shape": "SEMI_ROUNDED", "padding": "STANDARD", "showBorder": False, "showShadow": True, "marginBelow": "STANDARD", "contents": [
+        {"type": "a!paragraphField", "label": "Nuevo comentario", "labelPosition": "COLLAPSED", "placeholder": "Añada un comentario", "height": "SHORT", "value": new_var, "saveInto": new_var},
+        {"type": "a!buttonArrayLayout", "align": "END", "marginBelow": "NONE", "buttons": [
+            {"type": "a!buttonWidget", "label": "Publicar", "icon": "paper-plane", "style": "OUTLINE", "color": "ACCENT", "size": "SMALL", "disabled": "a!isNullOrEmpty(%s)" % new_var,
+             "$action": {"prepend": {var: {"id": "{count(%s) + 1}" % var, "autor": user, "fecha": "{now()}", "texto": "{%s}" % new_var, "adjuntos": [], "padre": None}}, "set": {new_var: None}}}]}]}
+    s = {"type": "a!sectionLayout", "marginBelow": "MORE", "contents": [
+        {"type": "a!headingField", "text": "%s ({count(%s)})" % (title, var), "headingTag": "H2", "size": "MEDIUM", "fontWeight": "BOLD", "marginBelow": "STANDARD"}, new,
+        {"type": "a!forEach", "items": var, "$filter": "a!isNullOrEmpty(fv!item.padre)", "$local": {"local!comentario": "fv!item"}, "expression": comment}]}
+    s.update(kw); return s
+
+
+ATTACH_MAPS = {"adjuntoIcono": {"pdf": "file-pdf-o", "imagen": "file-image-o", "word": "file-word-o", "excel": "file-excel-o", "*": "file-o"}}
+KANBAN_STATES = [("Pendiente", GREY_TXT, STATES["neutral"]["tag"]), ("En curso", NAVY, STATES["enCurso"]["tag"]), ("Hecho", _BRAND["palette"]["greenDark"], STATES["positivo"]["tag"])]
+
+
+def kanban(var, title, statuses=None, add_button=None, **kw):
+    """Tablero kanban (patrón Kanban Board): una columna por estado con su cabecera de color (tinte + barra superior y recuento);
+    cada tarjeta muestra tipo de trabajo, título, descripción, responsable, fecha límite y avance, con flechas para pasarla de columna.
+    var: lista de tareas [{id, titulo, descripcion, tipo, tipoColor, responsable, fecha, avance, estado}]. statuses: [(estado, color, fondo)]."""
+    st = statuses or KANBAN_STATES
+    labels = [s[0] for s in st]
+    heads, bodies = [], []
+    for k, (lab, col, bg) in enumerate(st):
+        heads.append({"type": "a!columnLayout", "contents": [{"type": "a!cardLayout", "showBorder": False, "shape": "SEMI_ROUNDED", "padding": "STANDARD", "style": bg, "decorativeBarPosition": "TOP", "decorativeBarColor": col, "marginBelow": "LESS", "contents": [
+            {"type": "a!sideBySideLayout", "alignVertical": "MIDDLE", "items": [
+                {"type": "a!sideBySideItem", "item": _rtd({"type": "a!richTextItem", "text": lab, "style": "STRONG"}, marginBelow="NONE")},
+                {"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!stampField", "text": "{count(wherecontains(%s, %s.estado))}" % (_q(lab), var), "size": "EXTRA_TINY", "backgroundColor": col,
+                                                                          "accessibilityText": "{count(wherecontains(%s, %s.estado))} tareas" % (_q(lab), var)}}]}]}]})
+        prev_b = {"type": "a!buttonWidget", "icon": "arrow-left", "size": "SMALL", "style": "LINK", "color": "SECONDARY", "accessibilityText": "Pasar a %s" % labels[k - 1] if k else "Primera columna",
+                  "tooltip": "Pasar a %s" % labels[k - 1] if k else None, "disabled": k == 0}
+        next_b = {"type": "a!buttonWidget", "icon": "arrow-right", "size": "SMALL", "style": "LINK", "color": "SECONDARY", "accessibilityText": "Pasar a %s" % labels[k + 1] if k + 1 < len(st) else "Última columna",
+                  "tooltip": "Pasar a %s" % labels[k + 1] if k + 1 < len(st) else None, "disabled": k + 1 == len(st)}
+        if k: prev_b.update({"value": labels[k - 1], "saveInto": "fv!item.estado"})
+        if k + 1 < len(st): next_b.update({"value": labels[k + 1], "saveInto": "fv!item.estado"})
+        prev_b = {x: y for x, y in prev_b.items() if y is not None}
+        next_b = {x: y for x, y in next_b.items() if y is not None}
+        card_ = {"type": "a!cardLayout", "padding": "NONE", "showBorder": False, "showShadow": True, "shape": "SEMI_ROUNDED", "marginBelow": "LESS", "contents": [
+            {"type": "a!cardLayout", "showBorder": False, "padding": "STANDARD", "style": "TRANSPARENT", "contents": [
+                {"type": "a!sideBySideLayout", "alignVertical": "MIDDLE", "spacing": "NONE", "marginBelow": "LESS", "items": [
+                    {"type": "a!sideBySideItem", "item": {"type": "a!tagField", "labelPosition": "COLLAPSED", "size": "SMALL", "tags": [{"type": "a!tagItem", "text": "{fv!item.tipo}", "backgroundColor": "{fv!item.tipoColor}26", "textColor": NAVY}]}},
+                    {"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!buttonArrayLayout", "marginBelow": "NONE", "buttons": [prev_b]}},
+                    {"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!buttonArrayLayout", "marginBelow": "NONE", "buttons": [next_b]}}]},
+                _rtd([{"type": "a!richTextItem", "text": "{fv!item.titulo}", "style": "STRONG"}, "\n", {"type": "a!richTextItem", "text": "{fv!item.descripcion}", "size": "SMALL", "color": GREY_TXT}], marginBelow="STANDARD"),
+                {"type": "a!sideBySideLayout", "alignVertical": "MIDDLE", "marginBelow": "NONE", "items": [
+                    {"type": "a!sideBySideItem", "width": "MINIMIZE", "item": _rtd([{"type": "a!richTextIcon", "icon": "user-circle", "size": "SMALL", "color": "SECONDARY"}, " ", {"type": "a!richTextItem", "text": "{fv!item.responsable}", "size": "SMALL"}], marginBelow="NONE")},
+                    {"type": "a!sideBySideItem", "item": _rtd([{"type": "a!richTextIcon", "icon": "calendar-day", "size": "SMALL", "color": "SECONDARY"}, " ", {"type": "a!richTextItem", "text": "{fv!item.fecha|daymonth}", "size": "SMALL"}], marginBelow="NONE")},
+                    {"type": "a!sideBySideItem", "width": "MINIMIZE", "item": _rtd({"type": "a!richTextItem", "text": "{fv!item.avance} %", "size": "SMALL", "style": "STRONG"}, marginBelow="NONE")}]}]},
+            {"type": "a!progressBarField", "label": "Avance de la tarea", "labelPosition": "COLLAPSED", "showPercentage": False, "percentage": "{fv!item.avance}", "color": col, "style": "THIN", "marginBelow": "NONE", "accessibilityText": "Avance: {fv!item.avance} %"}]}
+        bodies.append({"type": "a!columnLayout", "contents": [{"type": "a!forEach", "items": var, "$filter": "fv!item.estado = %s" % _q(lab), "expression": card_},
+                                                              _rtd({"type": "a!richTextItem", "text": "Sin tareas", "size": "SMALL", "color": GREY_TXT}, align="CENTER", showWhen="not(contains(%s.estado, %s))" % (var, _q(lab)))]})
+    done = st[-1][0]
+    head = {"type": "a!sideBySideLayout", "alignVertical": "MIDDLE", "marginBelow": "STANDARD", "items": [
+        {"type": "a!sideBySideItem", "item": [{"type": "a!headingField", "text": title, "headingTag": "H2", "size": "MEDIUM_PLUS", "fontWeight": "BOLD", "marginBelow": "EVEN_LESS"},
+                                              _rtd({"type": "a!richTextItem", "text": "{count(wherecontains(%s, %s.estado))} de {count(%s)} tareas terminadas" % (_q(done), var, var), "size": "SMALL", "color": GREY_TXT}, marginBelow="NONE")]}] +
+        ([{"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!buttonArrayLayout", "align": "END", "marginBelow": "NONE", "buttons": [add_button]}}] if add_button else [])}
+    s = {"type": "a!sectionLayout", "marginBelow": "MORE", "contents": [head, {"type": "a!columnsLayout", "marginBelow": "NONE", "stackWhen": ["PHONE", "TABLET_PORTRAIT"], "columns": heads},
+                                                                       {"type": "a!columnsLayout", "stackWhen": ["PHONE", "TABLET_PORTRAIT"], "columns": bodies}]}
+    s.update(kw); return s

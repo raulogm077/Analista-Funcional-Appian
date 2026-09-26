@@ -12,7 +12,9 @@ El prototipo se describe en un único JSON. Regla de oro: **los nodos de interfa
   "requirements":  [ { "id": "RF-01", "title": "Indicadores en la página de inicio" } ],
   "openQuestions": [ { "id": "Q-01", "text": "¿Quién puede editar un acuerdo vigente?", "screen": "editar", "priority": "CRITICA" } ],
   "maps":  { "estadoColor": { "Vigente": "POSITIVE", "Vencido": "NEGATIVE", "*": "SECONDARY" } },
-  "users": [ { "id": "mlopez", "name": "María López Arranz" } ],
+  "users": [ { "id": "mlopez", "name": "María López Arranz", "title": "Jefa de Operaciones MAD", "supervisor": "cruiz", "groups": ["g-mad"] } ],
+  "groups": [ { "id": "g-mad", "name": "Operaciones MAD", "parent": "g-dir", "description": "Adolfo Suárez Madrid-Barajas" } ],
+  "documents": [ { "id": "f-norm", "name": "Normativa", "type": "folder" }, { "id": "d-sms", "name": "Manual_SMS_v4.pdf", "folder": "f-norm", "type": "document", "size": "2,4 MB", "modified": "2026-07-14" } ],
   "data":  { "acuerdos": { "recordType": "ATP Acuerdo", "rows": [ { "id": 1, "codigo": "ATP-2026-0001" } ] } },
   "state": { },
   "screens":  [ ... ],
@@ -24,12 +26,14 @@ El prototipo se describe en un único JSON. Regla de oro: **los nodos de interfa
 |---|---|
 | `site.pages` | Páginas del Site (máx. 10). `includes` = pantallas que marcan esa pestaña como activa (ficha, alta...). |
 | `app.today` | Fecha «de hoy» fija para `today()`/`now()`, para que demo y capturas no cambien con el día. |
-| `app.appianVersion` | Versión de Appian del entorno del cliente (por defecto `26.6`). El validador da error si se usa un componente, un parámetro o un valor posterior (`schemas/appian-versions.json`). También se usa al consultar la documentación oficial. |
+| `app.appianVersion` | Versión de Appian del entorno del cliente (por defecto `26.9`, la versión vigente). El validador da error si se usa un componente, un parámetro o un valor posterior (`schemas/appian-versions.json`). También se usa al consultar la documentación oficial. |
 | `requirements` | IDs del documento de entrada. Alimentan la matriz de cobertura. Las actividades que el documento sitúa fuera de la aplicación (otro sistema, un actor externo que no usa Appian) llevan `"outOfScope": "motivo"`: no cuentan como huecos y la trazabilidad muestra el motivo. |
 | `openQuestions` | Ambigüedades del documento, para la reunión con el cliente. `priority` opcional: `CRITICA` 🔴, `IMPORTANTE` 🟡, `MEJORA` 🟢 (misma escala que el DDF). |
 | `maps` | Tablas de traducción para `{expr\|map:nombre}` (estado → color, estado → paso del hito, booleano → Sí/No). `"*"` = valor por defecto. |
 | `data` | Datos de ejemplo por record type. **Los nombres de campo son los del record type**: documentan el modelo de datos para desarrollo. |
-| `users` | Usuarios para los pickers de usuario. |
+| `users` | Usuarios para selectores, navegadores y organigrama: `title` (cargo), `supervisor` (id de su responsable: a!orgChartField), `groups` (ids de sus grupos: navegadores de usuarios y grupos). |
+| `groups` | Grupos del entorno: `parent` (id del grupo padre) forma la jerarquía de a!groupBrowserFieldColumns y a!userBrowserFieldColumns (`rootGroup`: id o nombre del grupo). |
+| `documents` | Carpetas (`type: "folder"`) y documentos del entorno, con `folder` (carpeta que los contiene), `size` y `modified`: navegadores y selectores de documentos y carpetas (`rootFolder`, `folderFilter`). |
 
 ## Pantallas
 
@@ -72,7 +76,7 @@ Se usa la sintaxis de dominios de SAIL para que el código sea legible por desar
 |---|---|
 | `"value": "local!acuerdo.titulo"`, `"saveInto": "local!acuerdo.titulo"` | Enlace de lectura y escritura (admite rutas con puntos). |
 | `"{fv!row.codigo}"` | Interpolación en columnas de grid y `a!forEach` (`fv!item`, `fv!index`). En las plantillas de `a!cardChoiceField` (`cardTemplate: a!cardTemplateTile(...)`), cada opción es `fv!data`: `"id": "fv!data.id"`, `"primaryText": "{fv!data.texto}"`. |
-| `"{rv!record.fechaFin\|date}"` | Campo del registro con filtro. Filtros: `date`, `datetime`, `eur`, `num`, `pct`, `upper`, `initials`, `dash` («–» si está vacío; en SAIL `a!defaultValue(valor, "–")`), `map:<nombre>`. Se encadenan: `{rv!record.importe\|eur\|dash}`. |
+| `"{rv!record.fechaFin\|date}"` | Campo del registro con filtro. Filtros: `date`, `datetime`, `eur`, `num`, `pct`, `upper`, `initials`, `dash` («–» si está vacío; en SAIL `a!defaultValue(valor, "–")`), fechas en texto `longdate` («Lunes, 5 de octubre»; en SAIL `text(fecha, "dddd, d \"de\" mmmm")`), `monthyear` («Octubre de 2026»), `dayname` («Lunes»), `daymonth` («5 oct»), `time` («09:30» de una fecha y hora), `map:<nombre>`. Se encadenan: `{rv!record.importe\|eur\|dash}`. |
 | `"showWhen": "and(local!x = \"A\", not(isnull(local!y)))"` | Expresión booleana. Funciones: `and or not if isnull a!isNullOrEmpty a!isNotNullOrEmpty a!defaultValue contains len count sum index where wherecontains displayvalue today todate left search` y de listas `append difference union remove joinarray`. Operadores `= <> < > <= >= + - * / &`. `contains(lista, valor)` es pertenencia a una lista; para buscar texto dentro de un texto, `search(buscado, texto) > 0`. |
 | `"required": "local!decision <> \"APROBAR\""` | Obligatoriedad condicional. |
 | `todate(local!hasta) - todate(local!desde) > 90` | Aritmética de fechas: `todate()` convierte una fecha ISO en número de días. Las fechas sin `todate()` son texto ISO: se pueden comparar (`<`, `>=`) pero no restar. |
@@ -88,7 +92,7 @@ Se usa la sintaxis de dominios de SAIL para que el código sea legible por desar
 
 | Clave | Dónde | Uso |
 |---|---|---|
-| `$action` | botones, enlaces, `a!recordActionItem`, `a!cardLayout.link` | Navegación. Objeto o lista: `{"goto": id, "params": {...}, "view": id}`, `{"dialog": id, "params": {...}}`, `{"close": true}`, `{"back": true}`, `{"step": N}` (paso N del asistente, 1 = primero: enlaces «Editar» del paso de revisión), `{"set": {"local!x": v}}`, `{"append": {"local!l": {...}}}`, `{"remove": {"local!l": "{fv!index}"}}`. `goto`/`dialog` admiten destino dinámico `"{fv!row.pantalla}"` (bandeja de tareas que abre el formulario de cada tarea): el validador comprueba que todos los valores de ese campo en `data` son pantallas. |
+| `$action` | botones, enlaces, `a!recordActionItem`, `a!cardLayout.link` | Navegación. Objeto o lista: `{"goto": id, "params": {...}, "view": id}`, `{"dialog": id, "params": {...}}`, `{"close": true}`, `{"back": true}`, `{"step": N}` (paso N del asistente, 1 = primero: enlaces «Editar» del paso de revisión), `{"set": {"local!x": v}}`, `{"append": {"local!l": {...}}}` y `{"prepend": …}` (añaden al final o al principio evaluando las `{expresiones}` del elemento), `{"remove": {"local!l": "{fv!index}"}}`. Los cambios de variables se aplican en el orden en que se escriben (como la lista de `a!save`): `{"append": …, "set": {"local!texto": null}}` añade y después vacía el campo. `goto`/`dialog` admiten destino dinámico `"{fv!row.pantalla}"` (bandeja de tareas que abre el formulario de cada tarea): el validador comprueba que todos los valores de ese campo en `data` son pantallas. |
 | `$filter` | `a!gridField`, `a!kpiField`, gráficos, `a!forEach`, `a!eventHistoryListField` | Filtro sobre filas (`fv!row`): equivale a los `filters` de `a!recordData` / `a!queryFilter`. |
 | `$value`, `$format` | `a!kpiField` | Valor fijo si no se calcula con `data` + `primaryMeasure`. |
 | `$secondaryValue` | `a!kpiField` | Valor de comparación (mes anterior, objetivo). Con él, el KPI calcula la tendencia como Appian con `secondaryMeasure` + `trend` (`AUTO`: diferencia y %). Usa `trendColor: "REVERSE"` cuando bajar es bueno. También sirve `secondaryMeasure` con un `a!measure` que lleve `$filter`. `$trend` fija el texto de la tendencia (compatibilidad). |
@@ -98,7 +102,13 @@ Se usa la sintaxis de dominios de SAIL para que el código sea legible por desar
 | `$sessions` | `a!agentChatField` | Conversaciones anteriores del selector: texto o `{"name", "messages"}`. |
 | `$state` | chats de IA | Estado fijo para capturas: `RUNNING` (respondiendo, con Detener) o `UNAVAILABLE` (función de IA no habilitada). |
 | `$root`, `$nodes` | `a!recordKnowledgeGraph` | Registro base `{"recordType", "name", "icon"}` y relacionados `[{"recordType", "name", "icon", "parent"}]` (`parent` = `name` de otro nodo). |
+| `$tree` | navegadores (`a!*BrowserFieldColumns`, `a!hierarchyBrowserFieldTree`) | Jerarquía propia del componente en vez de `users`/`groups`/`documents` o de `firstColumnValues`: `[{"id", "label", "description", "details", "icon", "type": "user"\|"group"\|"folder"\|"document", "count", "children": [...]}]`. Con datos SAIL (`firstColumnValues` + `nodeConfigs` + `nextColumnValues`), el prototipo evalúa `fv!nodeValue` como Appian. |
+| `$icon` | `a!hierarchyBrowserField*Node` (`nodeConfigs`) | Icono del nodo en el prototipo cuando la imagen es un `a!documentImage` (en Appian, la imagen real). |
+| `$duration` | `a!webVideo` | Duración que muestra el reproductor («4:12»). |
+| `$title` | `a!webContentField` | Qué muestra la página embebida (el prototipo no la carga: enseña su dominio y un esqueleto). |
+| `$local` | `a!forEach` | Variables de cada vuelta, como `a!localVariables` dentro de la expresión: `{"local!comentario": "fv!item"}`. Con `$filter`, lo que se guarda en `fv!item` va a la fila original de la lista. |
 | `$categories` | gráficos con `config` | Orden fijo de categorías. |
+| `$series` | gráficos con `config` y `secondaryGrouping` | Orden fijo de los valores de la agrupación secundaria (una serie por valor), para que cada serie tome su color de `colorScheme` en ese orden: `state_chart_colors(mapa, orden)` + `"$series": orden`. |
 | `$label`, `$icon` | `a!recordActionItem` | En Appian vienen de la acción del record type. |
 | `$options` | pickers y listas | Opciones de ejemplo. |
 | `$events` | `a!eventHistoryListField` | Eventos de ejemplo (dataset o lista). |

@@ -21,7 +21,7 @@
   "titleBar": {
    "type": "a!headerTemplateSimple",
    "title": "Aprobar expediente {rv!record.codigo}",
-   "secondaryText": "Tarea de aprobación · recibida el 20/09/2026",
+   "secondaryText": "Tarea de aprobación · recibida el {rv!record.fechaEnvio|date}",
    "stampIcon": "check-square-o",
    "stampColor": "ACCENT"
   },
@@ -65,11 +65,11 @@
          "value": [
           {
            "type": "a!richTextItem",
-           "text": "Vence el 30/09/2026, en 6 días",
+           "text": "{rv!record.plazo}",
            "style": "STRONG"
           },
           "\n",
-          "Si no se resuelve a tiempo, la tarea se escala a su responsable"
+          "Plazo: {rv!record.fechaLimite|date}. Si no se resuelve a tiempo, la tarea se escala a su responsable."
          ]
         }
        }

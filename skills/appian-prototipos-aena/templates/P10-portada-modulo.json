@@ -95,7 +95,7 @@
               " ",
               {
                "type": "a!richTextItem",
-               "text": "2",
+               "text": "3",
                "style": "STRONG",
                "color": "#FFFFFF"
               },
@@ -123,7 +123,7 @@
               " ",
               {
                "type": "a!richTextItem",
-               "text": "2",
+               "text": "3",
                "style": "STRONG",
                "color": "#FFFFFF"
               },
@@ -369,14 +369,14 @@
               "timestamp": "2026-09-22T09:05"
              },
              {
+              "event": "Expediente EXP-2026-0007 enviado a aprobación",
+              "user": "Javier García Ruiz",
+              "timestamp": "2026-09-21T10:15"
+             },
+             {
               "event": "Expediente EXP-2026-0008 enviado a aprobación",
               "user": "Rocío Sánchez Vidal",
               "timestamp": "2026-09-18T10:15"
-             },
-             {
-              "event": "Expediente EXP-2026-0002 enviado a aprobación",
-              "user": "Rocío Sánchez Vidal",
-              "timestamp": "2026-09-12T10:15"
              }
             ]
            },
@@ -461,7 +461,7 @@
              "value": [
               {
                "type": "a!richTextItem",
-               "text": "2 expedientes esperan su aprobación",
+               "text": "3 expedientes esperan su aprobación",
                "style": "STRONG"
               },
               "\n",

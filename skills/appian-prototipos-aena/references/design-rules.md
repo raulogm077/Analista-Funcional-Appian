@@ -1,10 +1,10 @@
-# Guía de diseño UX (AENA · Appian 26.x)
+# Guía de diseño UX (AENA · Appian 26.9)
 
-Esta guía adapta el **SAIL Design System** oficial de Appian (docs.appian.com/suite/help/26.6/sail/) a la marca AENA. Sirve para que todas las pantallas se parezcan entre sí y para que el equipo pueda construirlas en Appian sin decidir nada de diseño.
+Esta guía adapta el **SAIL Design System** oficial de Appian (docs.appian.com/suite/help/26.9/sail/) a la marca AENA. Sirve para que todas las pantallas se parezcan entre sí y para que el equipo pueda construirlas en Appian sin decidir nada de diseño.
 
-El validador comprueba las reglas marcadas con ✔ y las muestra como avisos `UX ·`. Al final de la validación imprime la línea «Calidad UX: N avisos». El resto se revisa con la rúbrica (§16).
+El validador comprueba las reglas marcadas con ✔ y las muestra como avisos `UX ·`. Al final de la validación imprime la línea «Calidad UX: N avisos». El resto se revisa con la rúbrica (§17).
 
-Los bloques con los que se componen las pantallas (cabeceras, KPI, listas, grids con detalle, cards, IA…) están en `references/bloques.md`, con cuándo usar cada uno; la galería navegable está en `examples/bloques/`.
+Los bloques con los que se componen las pantallas (cabeceras, KPI, listas, grids con detalle, cards, IA, calendario, comentarios, kanban…) están en `references/bloques.md`, con cuándo usar cada uno; la galería navegable está en `examples/bloques/`. Los 147 componentes de interfaz de Appian 26.9, uno a uno y agrupados como en la documentación, están en `examples/componentes/`.
 
 ## 0. Antes de diseñar una pantalla
 
@@ -35,6 +35,17 @@ La configuración está en `assets/brand-aena.json → site` y se copia tal cual
 | Button / Input / Dialog Shape | SEMI_ROUNDED |
 | Logo | `assets/logo-aena-on-dark.svg` (símbolo + «aena», sin el lema) |
 | Tipografía | Open Sans (por defecto en Appian). AenaSansNew solo si se configura como Custom Typeface en Admin Console |
+
+### Perfil CSS de AENA (Appian 26.9, `brand-aena.json → cssProfile`)
+
+Lo que el objeto Site no alcanza (colores de estado, textos de los campos, bordes, radios, sombras, tooltips) se fija con un **perfil CSS** de Appian (Admin Console › Branding › CSS Profiles; capacidades avanzadas y premium). `build.py` lo aplica al prototipo y deja junto al HTML el fichero `<prototipo>-perfil-css.txt`, listo para pegar.
+
+- Solo lleva lo que cambia respecto a Appian: lo que no está en el perfil conserva el valor estándar.
+- Colores de estado accesibles: `warn-on-light-color: #9A5200` (el ámbar estándar de Appian, `#D97706`, se queda en 3,2:1 sobre blanco), `positive-on-light-color: #0E6B00`, `negative-on-light-color: #B2002C`, `info-on-light-color: #115EBB`, y los fondos de estado de AENA (`#FCDCDC`, `#E3EFD3`, `#FCEFCA`, `#DDE7F0`). Todos cumplen 4,5:1 sobre blanco y sobre su fondo.
+- Campos: etiqueta en azul AENA, instrucciones en `#525C65`, marcador de posición en `#6B747C` y borde `#848D96` (3:1 sobre blanco y sobre el gris de página, WCAG 1.4.11).
+- Tarjetas con sombra suave teñida de azul AENA y radio de 8 px; tooltips en azul AENA.
+- Si el cliente no tiene el nivel avanzado, el prototipo sigue siendo válido: sin perfil, Appian usa sus colores estándar y los parámetros de SAIL no cambian. Indícalo en el documento funcional.
+- No toques las propiedades de color de los botones salvo que se definan todas las de un estilo (Appian completa las que falten y el resultado cambia).
 
 - Como máximo **8 páginas de primer nivel** (Appian admite 10 ✔; con más de 8 la barra se satura). Cada página lleva icono.
 - Ordena las páginas por frecuencia de uso: primero lo que se usa a diario, al final los datos maestros.
@@ -84,26 +95,43 @@ La configuración está en `assets/brand-aena.json → site` y se copia tal cual
 - No des estilo de título a un dato: el nombre del tercero no es un H2.
 - El título de la página no cambia cuando el usuario selecciona algo en ella.
 
-## 4. Color
+## 4. Color y contraste
 
-- Paleta corta. Fuera de la cabecera, el color siempre significa algo.
+Guía de color del SAIL Design System (ux-color-overview) aplicada a AENA: **paleta corta, bloques de color en el perímetro de la página y color para resaltar lo que importa**, siempre con el mismo significado.
+
+- **Bloques de color en el perímetro**: la cabecera del site, la cabecera de la ficha (`headerBackgroundColor` azul marino) y la cabecera «hero» del inicio o de una portada (`hero_header()`). No pintes bloques de color en mitad de la página para «alegrarla».
+- **Color para resaltar**: los sellos de icono de los KPI (`kpi()`: iconStyle STAMP con el acento), la barra decorativa verde de la franja de KPI, las etiquetas de estado y las barras de un gráfico por estado. Cada color nuevo compite por la atención: pregunta qué debe ver el usuario primero.
+- **Capas con transparencia** (`#RRGGBBAA`): tintes suaves para fondos de tarjetas de estado, eventos de calendario o el día de hoy (`#90CE0033`), sin tapar lo que hay debajo.
 - **Estados**: usa la paleta semántica común de `brand-aena.json → states`, con el mismo mapa `estadoColor` en toda la app.
 
-| Categoría | Tag (fondo apagado, texto STANDARD) | Icono o texto | Ejemplos |
+| Categoría | Tag (fondo apagado, texto STANDARD) | Icono, texto o barra de gráfico | Ejemplos |
 |---|---|---|---|
-| neutral | `#EEF0F2` | SECONDARY | Borrador, cerrado, cancelado |
+| neutral | `#EEF0F2` | SECONDARY (`#525C65` en gráficos) | Borrador, cerrado, cancelado |
 | enCurso | `#DDE7F0` | `#1A2732` | En curso, en tramitación, en revisión |
-| atencion | `#FCEFCA` | WARN | Pendiente de terceros, vence pronto |
-| positivo | `#E3EFD3` | POSITIVE | Aprobado, vigente, completado |
-| negativo | `#FCDCDC` | NEGATIVE | Rechazado, vencido, alerta |
+| atencion | `#FCEFCA` | WARN (`#9A5200` con el perfil CSS) | Pendiente de terceros, vence pronto |
+| positivo | `#E3EFD3` | POSITIVE (`#0E6B00`) | Aprobado, vigente, completado |
+| negativo | `#FCDCDC` | NEGATIVE (`#B2002C`) | Rechazado, vencido, alerta |
 
 - **Tags en filas de un grid: siempre con fondo apagado** (patrón de Appian). Los colores vivos (`POSITIVE`, `NEGATIVE` sólidos) se reservan para los pocos valores que de verdad deben saltar a la vista.
 - Como máximo **dos colores no neutros por grid**: en las filas de un listado, solo **atencion** y **negativo** llevan color y el resto de estados va en neutro (`state_map(..., grid=True)`). En la ficha, un solo registro, se usa la paleta completa (`state_map(...)`). Los iconos de alerta de una columna van todos del mismo color, con `caption`.
+- **Gráficos por estado**: cada barra con el color de su estado (`state_chart_colors(mapa, orden)` + agrupación secundaria por el mismo campo, sin leyenda), el mismo significado que las etiquetas.
 - **Todo estado tiene su categoría en el mapa**: un estado sin mapear sale gris y puede esconder justo lo que pide acción.
 - **Nunca uses el color solo**: acompáñalo siempre de texto o de un icono con tooltip.
 - **El color de acento solo se usa en enlaces ✔**: un texto verde oscuro que no es un enlace parece clicable.
-- Gráficos: como máximo 5 colores y un único esquema en toda la interfaz (`chartColorScheme` de la marca). Una sola serie lleva un solo color.
-- El verde AENA `#90CE00` se usa en el botón principal, en el resaltado de navegación y en la barra decorativa de la franja de KPI. No se usa como fondo de cards ni como texto.
+- Gráficos: un único esquema en toda la interfaz (`chartColorScheme` de la marca: azul marino, verde `#72A300`, azul acero, rosa, naranja `#E07000`…; todos con 3:1 o más sobre blanco). Como máximo 5 colores; una sola serie lleva un solo color. El verde lima `#90CE00` va el último y solo con etiquetas de datos ✔.
+- El verde AENA `#90CE00` se usa en el botón principal (con texto azul marino: 8:1), en el resaltado de navegación, en la barra decorativa de la franja de KPI y como enlace sobre fondos azul marino. No se usa como fondo de cards ni como texto sobre blanco (1,9:1).
+
+### Contraste (WCAG 2.2 AA)
+
+| Qué | Mínimo | Cómo se comprueba |
+|---|---|---|
+| Texto normal | 4,5:1 | `validate.py` (aviso «UX · contraste» con un color alternativo) y `contrast_audit.py` sobre el prototipo |
+| Texto grande (24 px, o 18,66 px en negrita) | 3:1 | ídem |
+| Iconos que informan, bordes de campos, series de gráficos | 3:1 | ídem (WCAG 1.4.11) |
+
+Parejas que funcionan (medidas): texto `#1A2732` o `#525C65` sobre cualquier fondo claro de la paleta; acento `#527500` sobre blanco (5,4:1) y sobre el gris de página (4,9:1), **no** sobre los fondos de estado azul o rojo (4,2–4,3:1); blanco sobre azul marino (15:1), sobre el acento (5,4:1) y sobre los colores de estado del perfil. En fondos oscuros, los enlaces cambian de color solos (26.9) y el prototipo los pinta en verde lima.
+
+`contrast_audit.py prototipo.html app.json` mide en el navegador cada texto, marcador de posición, borde de campo y texto de gráfico de todas las pantallas (vistas de registro y pasos de asistente incluidos) con los colores del perfil CSS. Debe acabar con **0 combinaciones por debajo de AA**; el texto sobre fotos no se mide: comprueba que lleva un overlay oscuro.
 
 ## 5. Botones y acciones
 
@@ -306,7 +334,9 @@ Aquí fallan casi todos los listados. Las reglas:
 
 - Una etiqueta H por nivel y un solo H1 ✔.
 - `accessibilityText` en botones solo con icono, en mapas de calor y en KPI de color.
-- Contraste de 4,5:1: el verde `#90CE00` lleva texto oscuro (Appian lo pone solo) y nunca se usa como color de texto.
+- Contraste (§4): 4,5:1 en texto, 3:1 en texto grande, iconos que informan, bordes de campos y series de gráficos. `validate.py` avisa de los colores explícitos que no llegan y propone uno que sí; `contrast_audit.py` mide la pantalla real. El verde `#90CE00` lleva texto azul marino y nunca se usa como texto sobre blanco.
+- Los botones solo con icono llevan `accessibilityText` (se lee como nombre del botón) y `tooltip`.
+- Los navegadores, el organigrama, el calendario y el kanban se usan con teclado: cada nodo, día o tarjeta es un botón con nombre accesible.
 - `stackWhen` por defecto en columnas (PHONE). En pantallas densas, comprueba cómo se ven en tablet.
 
 ## 13. Datos de ejemplo
@@ -348,12 +378,22 @@ Solo se diseña IA si el análisis la pide. Si la propones tú, va marcada con `
 - **Barra de filtros de página** (`filter_bar()`) solo si los filtros afectan a varios bloques; los de un solo grid van en su barra (`userFilters`).
 - **Navegación secundaria**: prefiere `a!tabLayout`.
   - Horizontal con **menos de 7** pestañas y etiquetas cortas.
-  - Vertical con **más de 6**, varios niveles o etiquetas largas: en 26.6, `side_nav()`; desde 26.7, `a!tabLayout(orientation: "VERTICAL")`.
+  - Vertical con **más de 6**, varios niveles o etiquetas largas: `a!tabLayout(orientation: "VERTICAL")` (26.7); en proyectos anteriores a 26.7, `side_nav()`.
   - Sobre fondo gris con cards, la navegación vertical va sin card ni divisor alrededor.
   - Nada de navegación solo con iconos para usuarios ocasionales.
 - **Vistas de registro** para las áreas 1:N (§8); pestañas dentro de una vista solo para bloques del mismo tema.
 
-## 16. Rúbrica de revisión UX
+## 16. Patrones y componentes nuevos de Appian 26.9
+
+- **Calendario** (`calendar_month()`, `calendar_week()`): cuando importa cómo se reparten eventos y plazos en el tiempo. Mes con panel del día a la derecha para ver el detalle sin salir; semana para comparar pocos días. Tipos de evento con icono y color (`event_maps()`), hoy resaltado y lo pasado atenuado.
+- **Hilo de comentarios** (`comment_thread()`): conversación sobre un registro, en su propia vista o columna de la ficha o al final de la página. Comentario nuevo arriba, respuestas plegadas bajo su comentario, adjuntos como tarjetas.
+- **Tablero kanban** (`kanban()`): tareas por etapas cuando el usuario mueve el trabajo de una columna a otra. Como máximo 4–5 columnas; cada tarjeta con tipo, responsable, fecha y avance; «Añadir tarea» como acción del record type.
+- **Bandejas de tareas**: en Appian 26.9, `a!queryTaskList()` consulta las tareas de procesos normales y con autoescalado sin informe de procesos; el grid del prototipo (`data!tareas`) se traduce a esa consulta.
+- **Selectores y navegadores**: selector (`a!pickerField*`) cuando el usuario sabe qué busca; navegador en columnas (`a!userBrowserFieldColumns`, `a!documentAndFolderBrowserFieldColumns`…) cuando necesita recorrer una estructura; árbol (`a!hierarchyBrowserFieldTree`) para jerarquías propias de pocos niveles; `a!orgChartField` para la línea jerárquica de una persona.
+- **Contenido multimedia**: `a!videoField` para formación o procedimientos; `a!webContentField` para incrustar otra herramienta (26.9: con cámara y micrófono); `a!signatureField` con la firma de 26.8 (línea discontinua).
+- **Celdas compuestas** en grids (26.9): `a!sideBySideLayout` para juntar avatar y nombre o estado y fecha en una celda, sin añadir columnas.
+
+## 17. Rúbrica de revisión UX
 
 Aplica la rúbrica en el paso 4 de SKILL.md. Si hay agentes disponibles, que la aplique un agente distinto del que diseñó la pantalla. Puntúa cada criterio como ✅, ⚠️ o ❌ por pantalla, con el motivo.
 
@@ -375,7 +415,9 @@ Aplica la rúbrica en el paso 4 de SKILL.md. Si hay agentes disponibles, que la 
 16. Los textos van en frase con mayúscula inicial, los botones llevan verbos, los formatos de fecha e importe son correctos y los códigos siguen el formato del documento.
 17. Hay coherencia entre pantallas: mismos datos, mismos mapas de color, mismas posiciones de acciones.
 18. No hay nada que sobre: cada bloque responde a un requisito o a la tarea principal.
-19. La accesibilidad está cubierta: `accessibilityText` en iconos, contraste y color acompañado de texto o icono.
+19. La accesibilidad está cubierta: `accessibilityText` en iconos, color acompañado de texto o icono y **0 fallos en `contrast_audit.py`** (§4).
 20. La pantalla se ve bien a 1440 px y aguanta 1024 px sin columnas de 3 palabras por línea.
 21. Si hay IA: el componente responde al origen de la respuesta, está bien colocado, empieza con un estado inicial en español, avisa de la fiabilidad, muestra la fuente y deja la decisión al usuario (§14).
 22. La navegación secundaria y las cabeceras siguen §15: pestañas o navegación vertical según el número de secciones, migas solo en jerarquías.
+23. El color da vida sin ruido (§4): bloque de color en la cabecera de las páginas de entrada, KPI con sello de icono, estados con su color en etiquetas y gráficos, y nada de color sin significado.
+24. Si la pantalla usa un patrón o componente de 26.9 (calendario, comentarios, kanban, navegadores, organigrama), sigue §16 y la versión del cliente lo admite.
