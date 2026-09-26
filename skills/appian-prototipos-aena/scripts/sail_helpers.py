@@ -106,6 +106,8 @@ def action_banner(title, text=None, button=None, kind="WARN", icon=None, **kw):
     items = [{"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!richTextDisplayField", "labelPosition": "COLLAPSED", "value": [{"type": "a!richTextIcon", "icon": ic, "color": icol, "size": "MEDIUM"}]}},
              {"type": "a!sideBySideItem", "item": {"type": "a!richTextDisplayField", "labelPosition": "COLLAPSED", "value": txtv}}]
     if button:
+        if kind in ("INFO", "ERROR") and button.get("style") != "SOLID" and button.get("color", "ACCENT") == "ACCENT":
+            button = dict(button, color=NAVY)  # el verde de acento no llega a 4,5:1 sobre el fondo azul o rojo claro
         items.append({"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!buttonArrayLayout", "marginBelow": "NONE", "buttons": [button]}})
     c = {"type": "a!cardLayout", "style": kind, "showBorder": False, "padding": "STANDARD", "shape": "SEMI_ROUNDED", "decorativeBarPosition": "START", "decorativeBarColor": bar, "marginBelow": "STANDARD",
          "contents": [{"type": "a!sideBySideLayout", "alignVertical": "MIDDLE", "spacing": "STANDARD", "items": items}]}

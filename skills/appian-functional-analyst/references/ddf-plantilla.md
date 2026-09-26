@@ -4,6 +4,14 @@ El `ddf.md` sigue esta estructura y numeración; el `.docx` se genera a partir
 de él. Si la información es insuficiente para una sección, indícalo con ❓:
 nunca omitas una sección (en modo fiel, ver la tabla siguiente).
 
+**Formato que leen los scripts** (`comprobar_ddf.py`, `ddf_indice.py`, `ddf_docx.js`, el prototipo):
+- Títulos de sección: `## N. Título` (`## 8. Requisitos funcionales`). En esta plantilla, «Sección N — …» es
+  solo el título de la explicación, no el que se escribe en el `ddf.md`.
+- Fichas (RF, ACT, PAN, CU, INT, NOT): una línea en negrita `**RF-001 — Nombre**` seguida de su tabla
+  `| Campo | Contenido |`.
+- Filas (RB, S, P, D y los resúmenes de ACT, INT, NOT): el ID en la primera celda, `| RB-001 | … |`.
+- Criterios: `` `CA-PAN-03.1` **Dado** …, **cuando** …, **entonces** … ``.
+
 **Documentos grandes** (más de 5 procesos principales, o un DDF previsible de
 60+ páginas): propón dividirlo por módulo funcional antes de escribir.
 
@@ -37,7 +45,7 @@ criterios nuevos si el usuario lo pide (por ejemplo, para preparar pruebas), y v
 
 - Prefijos: `RF-001`, `RB-001`, `CU-001`, `ACT-01` (actividades del proceso),
   `S-001` (supuestos), `INT-001`, `NOT-001`, `PAN-01` (pantallas), `P-001`
-  (preguntas), `D-001` (decisiones, Sec 17). Criterios de aceptación: `CA-PAN-03.1` (pantalla), `CA-ACT-02.1`
+  (preguntas), `D-001` (decisiones, Sec 17), `R-001` (riesgos, Sec 17). Criterios de aceptación: `CA-PAN-03.1` (pantalla), `CA-ACT-02.1`
   (tarea), `CA-RF-012.1` (requisito sin pantalla ni tarea), `CA-E2E-01`
   (escenario de extremo a extremo). Las fuentes son `FU-01`… y las asigna `leer_fuentes.py`. En modo fiel se usan
   los IDs del documento base tal cual.
@@ -360,14 +368,11 @@ Cada RB debe referenciar los RFs que la activan — y cada RF mencionado en una
 RB debe a su vez incluir en su descripción la regla que aplica. Esta referencia
 cruzada RF↔RB permite a desarrollo tener todo el contexto en un único punto.
 
-| Campo | Contenido |
-|-------|-----------|
-| **ID** | RB-XXX |
-| **Descripción** | Enunciado preciso con valores concretos si se mencionaron |
-| **Cuándo aplica** | RF o evento que activa esta regla (ej: "Al ejecutar RF-003") |
-| **Efecto** | Qué ocurre cuando se cumple / no se cumple |
-| **Fuente** | Cita de la fuente (`[FU-03 00:14:32]`) y rol de quien la mencionó |
-| **Certeza** | 🔒 / ✅ / 🔶 / ⚠️ / ❓ |
+Una fila por regla:
+
+| ID | Descripción | Cuándo aplica | Efecto | Fuente | Certeza |
+|----|-------------|---------------|--------|--------|---------|
+| RB-001 | Enunciado preciso con valores concretos si se mencionaron | RF o evento que la activa («Al ejecutar RF-003») | Qué ocurre cuando se cumple / no se cumple | `[FU-03 00:14:32]` y rol de quien la mencionó | 🔒 / ✅ / 🔶 / ⚠️ / ❓ |
 
 **Ejemplo RB-007:** Si una aTRP supera 3 entregas rechazadas en el mismo
 expediente, el sistema bloquea nuevas entregas y notifica al Coordinador.
@@ -385,8 +390,8 @@ Para cada entidad:
 - *Descripción*: qué representa en el negocio
 
 **Tabla de atributos:**
-| Símbolo | Nombre | Tipo | Fuente / Base | Descripción y reglas |
-|---------|--------|------|---------------|---------------------|
+| Clave (PK/FK) | Nombre | Tipo | Fuente / Base | Descripción y reglas |
+|---------------|--------|------|---------------|---------------------|
 
 **Tabla de relaciones entre entidades:**
 | Entidad origen | Relación | Entidad destino | Cardinalidad | Notas |
@@ -527,8 +532,8 @@ probar solo sobre esta pantalla):
 - `CA-PAN-02.2` **Dado** un usuario de Consulta, **cuando** abre el listado,
   **entonces** no ve el botón «Nuevo expediente».
 
-**Capturas**: las añade el prototipo, una por línea:
-`![pie de figura](capturas/02-listado.png)`.
+**Capturas**: las añade el prototipo, una por línea y con la ruta relativa al `ddf.md`:
+`![pie de figura](prototipos/<app>/capturas/02-listado.png)`. No cuentan como cambio de la ficha.
 
 ---
 
@@ -624,6 +629,7 @@ como secuencia de tareas y estados:
 **Riesgos funcionales:**
 | ID | Descripción | Impacto | Probabilidad | Mitigación propuesta |
 |----|-------------|---------|--------------|---------------------|
+| R-001 | … | … | … | … |
 
 **Dependencias**: Sistemas, procesos o decisiones que condicionan la
 construcción o la puesta en marcha.
@@ -655,14 +661,15 @@ del análisis: el resto del `ddf.md` es el estado actual.
 - Lo nuevo, lo que completa una pieza y lo que confirma algo ⚠️ **no** lleva
   fila: basta con la cita en la pieza y la fila de la versión en la Sec 1.
 - En la primera versión (síntesis), las filas son los cambios de criterio entre
-  reuniones; se escriben con `D-?` y `unir_modulos.py` las numera por fecha.
+  reuniones, numeradas `D-001`… por fecha. Solo con módulos (`volumen-grande.md`)
+  se escriben `D-?` y `unir_modulos.py` las numera al unir.
 
 ---
 
 ## Formato del documento `.docx`
 
-Se genera con la skill `docx` a partir del `ddf.md` (mismo contenido, misma
-numeración). Para una versión nueva se actualiza el `ddf.md` y se regenera el
+Se genera con `scripts/ddf_docx.js` a partir del `ddf.md` (mismo contenido, misma
+numeración) y se revisa con la skill `docx`. Para una versión nueva se actualiza el `ddf.md` y se regenera el
 `.docx` completo: no se edita el Word a mano.
 
 - **Portada** con nombre del proyecto, cliente, versión y fecha

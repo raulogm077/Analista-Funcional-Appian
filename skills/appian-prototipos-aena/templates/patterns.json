@@ -46,13 +46,13 @@
    "when": "Tarea de usuario de un proceso: resumen de solo lectura + decisión + comentarios."
   },
   "P06": {
-   "name": "Inicio / cuadro de mando",
+   "name": "Inicio",
    "screenType": "page",
    "rootTypes": [
     "a!headerContentLayout"
    ],
    "template": "P06-inicio.json",
-   "when": "Página de inicio del site: KPIs, tareas pendientes, avisos y accesos rápidos."
+   "when": "Página de inicio del site: KPIs, tareas pendientes, avisos y accesos rápidos del usuario. Un cuadro de mando con filtros y gráficos, sin tareas ni accesos, es un P08."
   },
   "P07": {
    "name": "Diálogo de acción",
@@ -71,7 +71,7 @@
     "a!headerContentLayout"
    ],
    "template": "P08-informe.json",
-   "when": "Analítica con filtros y gráficos alimentados por record types."
+   "when": "Analítica o cuadro de mando: filtros que actualizan indicadores y gráficos alimentados por record types."
   },
   "P09": {
    "name": "Maestro-detalle",

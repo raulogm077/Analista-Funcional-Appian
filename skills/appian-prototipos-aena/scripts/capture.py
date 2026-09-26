@@ -71,11 +71,12 @@ def main():
             else:
                 pg.screenshot(path=str(f), full_page=full)
             s = byid[c["screen"]]
+            v = next((x for x in s.get("views") or [] if x.get("id") == c.get("view")), None)
             bits = []
             if "step" in c:
                 bits.append(f"paso {c['step'] + 1}")
             if c.get("view"):
-                bits.append(f"vista {c['view']}")
+                bits.append(f"vista «{v.get('label', c['view']) if v else c['view']}»")
             if c.get("showValidation"):
                 bits.append("validación mostrada")
             if c.get("state"):
@@ -83,7 +84,8 @@ def main():
             estado = c.get("caption") or (", ".join(bits) if bits else "inicial")
             titulo = pg.title().rsplit(" · ", 1)[0] or s.get("title", s["id"])
             pie = titulo + ("" if estado == "inicial" else f" ({estado})")  # el número de figura lo pone el documento
-            index.append(f"| {f.name} | {pie} | {s.get('ref', '—')} | {s.get('pattern', '')} | {', '.join(s.get('req', []))} |")
+            ref = (v or {}).get("ref") or s.get("ref", "—")  # una vista puede ser otra ficha del análisis
+            index.append(f"| {f.name} | {pie} | {ref} | {s.get('pattern', '')} | {', '.join((v or {}).get('req') or s.get('req', []))} |")
             print(f"  ✓ {f}")
         b.close()
     (out / "indice.md").write_text("\n".join(index) + "\n", encoding="utf-8")

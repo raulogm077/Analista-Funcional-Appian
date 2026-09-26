@@ -141,7 +141,7 @@ def main():
     if a.diagramas:
         texto, nd = ddf_indice.extrae_diagramas(texto, a.diagramas)
         print(f"{len(nd)} diagramas guardados en {a.diagramas}/ (renderiza con render_mermaid.py)")
-    texto = ddf_indice.aplica_derivadas(texto)
+    texto, _ = ddf_indice.aplica_derivadas(texto)
     pathlib.Path(a.o).write_text(texto, encoding="utf-8")
     print(f"{a.o}: {len(texto.splitlines())} líneas, {len(mods)} módulos, {len(decisiones)} decisiones")
 

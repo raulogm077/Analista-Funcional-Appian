@@ -2134,7 +2134,8 @@
   function recordOf(scr, params) {
     const rows = rowsOf(scr.dataset ? "data!" + scr.dataset : "recordType!" + scr.recordType);
     const id = params && params.id;
-    return rows.find((r) => String(r.id) === String(id)) || rows[0] || {};
+    if (id == null || id === "") return scr.type === "record" ? rows[0] || {} : {}; // sin id: la ficha enseña el primero (índice de pantallas); un alta o una tarea, nada
+    return rows.find((r) => String(r.id) === String(id)) || {};
   }
   function screenCtx(scr, params, extra) {
     const ctx = Object.assign({ scope: scr.id, screen: scr.id }, extra || {});
@@ -2220,6 +2221,7 @@
     if (!sc) return "";
     const t = sc.title || sc.id;
     if (t.indexOf("{") < 0) return t;
+    if (sc.ref) return sc.ref; // el nombre que da el análisis
     return sc.type === "record" && sc.recordType ? `Ficha de ${sc.recordType}` : t.replace(/\{[^}]*\}/g, "…");
   }
   function chrome() {
@@ -2243,12 +2245,13 @@
     }
     if (panel === "trace") {
       const reqs = arr(SPEC.requirements);
-      const cov = (id) => screens.filter((s) => arr(s.req).includes(id));
+      const cov = (id) => screens.filter((s) => arr(s.req).includes(id) || arr(s.views).some((v) => arr(v.req).includes(id)));
       const p = h("div", { class: "px-panel", role: "dialog", "aria-label": "Trazabilidad" }, h("h3", null, "Trazabilidad con el diseño funcional", h("button", { type: "button", style: { border: 0, background: "none", cursor: "pointer" }, "aria-label": "Cerrar", onclick: () => { panel = null; rerender(); } }, icon("times"))));
       if ((SPEC.app || {}).source) p.appendChild(h("div", { class: "meta" }, "Fuente: ", (SPEC.app || {}).source));
-      const inScope = reqs.filter((r) => !r.outOfScope);
-      p.appendChild(h("h4", null, `Requisitos (${inScope.filter((r) => cov(r.id).length).length}/${inScope.length} cubiertos` + (inScope.length < reqs.length ? `; ${reqs.length - inScope.length} fuera del prototipo)` : ")")));
-      p.appendChild(h("table", null, h("tbody", null, reqs.map((r) => { const c = cov(r.id); const out = !c.length && r.outOfScope; return h("tr", null, h("td", { class: c.length || out ? "" : "miss" }, r.id), h("td", null, r.title), h("td", null, c.length ? c.map((s) => screenLabel(s)).join(", ") : out ? h("span", { class: "meta" }, "Fuera del prototipo: " + r.outOfScope) : h("span", { class: "miss" }, "Sin pantalla"))); }))));
+      const inScope = reqs.filter((r) => !r.outOfScope && !r.noScreen);
+      const aparte = reqs.length - inScope.length;
+      p.appendChild(h("h4", null, `Requisitos (${inScope.filter((r) => cov(r.id).length).length}/${inScope.length} cubiertos` + (aparte ? `; ${aparte} sin pantalla propia o fuera del prototipo)` : ")")));
+      p.appendChild(h("table", null, h("tbody", null, reqs.map((r) => { const c = cov(r.id); const why = !c.length && (r.noScreen ? "Sin pantalla propia: " + r.noScreen : r.outOfScope ? "Fuera del prototipo: " + r.outOfScope : ""); return h("tr", null, h("td", { class: c.length || why ? "" : "miss" }, r.id), h("td", null, r.title), h("td", null, c.length ? c.map((s) => screenLabel(s)).join(", ") : why ? h("span", { class: "meta" }, why) : h("span", { class: "miss" }, "Sin pantalla"))); }))));
       const orphans = screens.filter((s) => !arr(s.req).length);
       if (orphans.length) { p.appendChild(h("h4", null, "Pantallas sin requisito")); orphans.forEach((s) => p.appendChild(h("div", { class: "meta" }, screenLabel(s)))); }
       const qs = arr(SPEC.openQuestions);
@@ -2346,6 +2349,7 @@
   function firstRecordId(scr) { const r = rowsOf(scr.dataset ? "data!" + scr.dataset : "recordType!" + scr.recordType)[0]; return r && r.id; }
   function showScreen(id, opts) {
     opts = opts || {};
+    if (opts.id != null && !opts.params) opts.params = { id: opts.id }; // atajo: show("registro", {id: 4})
     const scr = byId[id];
     if (!scr) return false;
     if ((scr.type || "page") === "dialog") {

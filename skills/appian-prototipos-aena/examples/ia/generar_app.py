@@ -147,7 +147,7 @@ novedades = {"id": "novedades", "title": "Novedades 26.7–26.9", "type": "page"
          grid("data!incidencias", None, [
              gcol("Incidencia", {"type": "a!sideBySideLayout", "alignVertical": "MIDDLE", "items": [
                  {"type": "a!sideBySideItem", "width": "MINIMIZE", "item": {"type": "a!richTextDisplayField", "value": [{"type": "a!richTextIcon", "icon": "wrench", "color": "SECONDARY"}]}},
-                 {"type": "a!sideBySideItem", "item": {"type": "a!richTextDisplayField", "value": [{"type": "a!richTextItem", "text": "{fv!row.codigo}", "style": "STRONG"}]}}]}),
+                 {"type": "a!sideBySideItem", "item": {"type": "a!richTextDisplayField", "value": [{"type": "a!richTextItem", "text": "{fv!row.codigo}", "style": "STRONG", "link": {"type": "a!recordLink", "recordType": "recordType!AENA Incidencia", "identifier": "{fv!row.id}"}, "$action": {"goto": "incidencia", "params": {"id": "{fv!row.id}"}}}]}}]}),
              gcol("Título", "{fv!row.titulo}"), gcol("Estado", tag("fv!row.estado", "estadoGrid"), width="NARROW")], "Sin incidencias", page_size=5)]},
       {"type": "a!tabItem", "label": "Estados del chat", "icon": "comments-o", "contents": [
          cols(ai_agent_chat("Respondiendo (botón Detener)", "agent!AENA_INCIDENCIAS", "Pregunte por una incidencia.", height="MEDIUM", shape="FULLY_ROUNDED", showBorder=True, showSessionPicker=False,

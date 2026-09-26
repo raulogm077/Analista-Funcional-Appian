@@ -9,14 +9,14 @@ Fuente: examples/casos/atp/ddf.md v1.1 (modo fiel de la ERS de ejemplo, FU-01) �
 | RF-01 | Indicadores en la página de inicio | Inicio |
 | RF-02 | Tareas pendientes del usuario | Inicio |
 | RF-03 | Listado con búsqueda, filtros y exportación | Acuerdos |
-| RF-04 | Acceso a la ficha desde el listado | Acuerdos, Ficha de ATP Acuerdo |
+| RF-04 | Acceso a la ficha desde el listado | Acuerdos, PAN-03 · Ficha del acuerdo |
 | RF-05 | Alta en varios pasos con resumen | Nuevo acuerdo |
 | RF-06 | Importe solo con contenido económico | Nuevo acuerdo |
 | RF-07 | Envío a revisión jurídica | Nuevo acuerdo |
-| RF-08 | Ficha: ciclo de vida, datos, documentos e historial | Ficha de ATP Acuerdo |
-| RF-09 | Editar datos y añadir documentos | Ficha de ATP Acuerdo, Editar datos generales, Añadir documento |
+| RF-08 | Ficha: ciclo de vida, datos, documentos e historial | PAN-03 · Ficha del acuerdo |
+| RF-09 | Editar datos y añadir documentos | PAN-03 · Ficha del acuerdo, Editar datos generales, Añadir documento |
 | RF-10 | Resolver la revisión jurídica | Revisar acuerdo |
-| RF-11 | Aviso de vencimiento a 90 días | Inicio, Acuerdos, Ficha de ATP Acuerdo |
+| RF-11 | Aviso de vencimiento a 90 días | Inicio, Acuerdos, PAN-03 · Ficha del acuerdo |
 | RF-12 | Informe de acuerdos | Informes |
 
 ## Inventario de pantallas
@@ -25,7 +25,7 @@ Fuente: examples/casos/atp/ddf.md v1.1 (modo fiel de la ERS de ejemplo, FU-01) �
 |---|---|---|---|---|---|
 | inicio | Inicio | page | P06 | RF-01, RF-02, RF-11 | PAN-01 · Inicio |
 | acuerdos | Acuerdos | page | P01 | RF-03, RF-04, RF-11 | PAN-02 · Listado de acuerdos |
-| acuerdo | Ficha de ATP Acuerdo | record | P02 | RF-04, RF-08, RF-09, RF-11 | PAN-03 · Ficha del acuerdo |
+| acuerdo | PAN-03 · Ficha del acuerdo | record | P02 | RF-04, RF-08, RF-09, RF-11 | PAN-03 · Ficha del acuerdo |
 | alta | Nuevo acuerdo | form | P04 | RF-05, RF-06, RF-07 | PAN-04 · Alta de acuerdo |
 | revision | Revisar acuerdo | form | P05 | RF-10 | PAN-05 · Revisión jurídica |
 | editar | Editar datos generales | dialog | P07 | RF-09 | PAN-06 · Editar datos generales |

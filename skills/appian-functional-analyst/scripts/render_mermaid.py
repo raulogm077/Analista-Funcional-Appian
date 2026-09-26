@@ -77,7 +77,7 @@ def main():
     missing = [f for f in files if not pathlib.Path(f).is_file()]
     if not files or missing:
         print("No encuentro los diagramas: " + (", ".join(missing) or " ".join(a.files)), file=sys.stderr)
-        sys.exit(2)
+        sys.exit(1)  # 2 queda para «falta un requisito» (Playwright o navegador)
     failed = 0
     with sync_playwright() as p:
         browser = launch(p)

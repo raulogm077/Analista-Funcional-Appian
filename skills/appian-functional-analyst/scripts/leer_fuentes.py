@@ -412,9 +412,15 @@ def convert(path, out_dir, fid):
             body = path.read_text(encoding="utf-8-sig", errors="replace"); kind = "Texto"
             detail = f"{body.count(chr(10)) + 1} líneas"
             turns = re.findall(r"^\[(\d{1,2}:\d{2}:\d{2})\] ([^:\n]{2,60}):\s*$", body, re.M)
+            stamps = re.findall(r"^\[(\d{1,2}:\d{2}:\d{2})\]", body, re.M)
             if len(turns) >= 5:  # transcripción exportada (Teams, Stream, Otter…) con «[hh:mm:ss] Hablante:»
                 kind = "Transcripción"
                 detail = f"{len(turns)} intervenciones, {len({s for _, s in turns})} participantes"
+            elif len(stamps) >= 5 or re.search(r"^Tipo de fuente:.*transcripci", body[:2000], re.I | re.M):
+                # transcripción automática sin hablantes («[hh:mm:ss]» en su línea): duración de la cabecera o de la última marca
+                kind = "Transcripción"
+                dur = re.search(r"^Duración[^:\n]*:\s*(\d{1,2}:\d{2}(?::\d{2})?)", body[:2000], re.I | re.M)
+                detail = f"duración {dur.group(1) if dur else (stamps[-1] if stamps else '¿?')}, sin hablantes identificados"
         m = re.search(r"(20\d{2})[-_]?(0[1-9]|1[0-2])[-_]?(0[1-9]|[12]\d|3[01])(?!\d)", path.name)
         if m and ext not in (".eml", ".msg"):  # fecha en el nombre (p. ej. grabaciones de Teams): mejor que la del fichero
             date = "-".join(m.groups())
@@ -445,6 +451,15 @@ def convert(path, out_dir, fid):
     return body, kind, detail, date
 
 
+def generated(f, out):
+    """Lo que escribe este script en la carpeta de salida (FU-xx-*.md, indice.*, adjuntos/): no es una fuente.
+    Las fuentes originales pueden estar en esa misma carpeta (leer_fuentes.py fuentes/ -o fuentes/)."""
+    f, out = f.resolve(), out.resolve()
+    if (out / "adjuntos") in f.parents:
+        return True
+    return f.parent == out and (re.match(r"FU-\d+-.*\.md$", f.name) is not None or f.name in ("indice.md", "indice.json"))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("inputs", nargs="+")
@@ -465,7 +480,7 @@ def main():
         p = pathlib.Path(inp)
         if p.is_dir():
             files += sorted(f for f in p.rglob("*") if f.is_file() and f.suffix.lower() in SUPPORTED | set(LEGACY)
-                            and out.resolve() not in f.resolve().parents)
+                            and not generated(f, out))
         elif p.is_file():
             files.append(p)
         else:
@@ -503,6 +518,9 @@ def main():
         [e["id"], e["fichero"], e["tipo"], e["detalle"], e["fecha"], e["salida"] or "—"] for e in state["fuentes"]]
     (out / "indice.md").write_text("# Fuentes del análisis\n\n" + md_table(rows) + "\n", encoding="utf-8")
     print(f"Índice: {out / 'indice.md'} ({len(state['fuentes'])} fuentes)")
+    if not state["fuentes"]:
+        print("ERROR: no se ha catalogado ninguna fuente: revisa las rutas y los formatos admitidos", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

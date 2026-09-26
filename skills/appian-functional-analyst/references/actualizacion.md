@@ -149,8 +149,10 @@ recomendación, y pregunta «¿Aplico el informe con estas decisiones?». Con cu
 Lo que decide el analista manda: si al aplicar ves un motivo para no seguirlo (una regla, una duda nueva),
 no lo cambies por tu cuenta: pregúntale.
 Sin respuesta o en una sesión desatendida: aplica lo que no requiere aprobación; lo que la requiere entra
-como ⚠️ con una pregunta 🔴 («FU-26 propone X frente a lo validado en FU-20; ¿se confirma?»), y el informe
-lo dice en su cabecera.
+como ⚠️ «pendiente de aprobación del analista», y el informe lo dice en su cabecera. Solo lleva además una
+pregunta 🔴 al cliente cuando la contradicción la tiene que resolver él (dos personas del cliente dicen cosas
+distintas, o una fuente interna cambia algo decidido con el cliente: «FU-26 propone X frente a lo validado en
+FU-20; ¿se confirma?»). Una decisión explícita del cliente no se le vuelve a preguntar.
 
 ## 6. Aplicar
 - Solo se tocan las piezas del informe. `ficha --lineas` da las líneas exactas: lee solo ese tramo

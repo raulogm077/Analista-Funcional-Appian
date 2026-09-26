@@ -385,18 +385,25 @@ def aplica_derivadas(texto):
             L[t0:(r + 1 if r is not None else t1)] = matriz16(m)
         else:
             L[ini + 1:ini + 1] = [""] + matriz16(m)
+    # Sec 7: solo si ya es la tabla derivada (módulos, volumen-grande.md) o está vacía; la escrita a mano
+    # según la plantilla (diagrama, tabla y fichas de CU con sus propios IDs) no se toca
     ini, fin = rango(7)
+    sec7 = False
     if ini is not None:
-        L[ini + 1:fin] = [""] + seccion7(m) + [""]
-    return "\n".join(L)
+        cuerpo = "\n".join(L[ini + 1:fin])
+        if "generada por `ddf_indice.py derivadas`" in cuerpo or not re.sub(r"[\s❓—-]", "", cuerpo):
+            L[ini + 1:fin] = [""] + seccion7(m) + [""]
+            sec7 = True
+    return "\n".join(L), sec7
 
 
 def c_derivadas(m, a):
     texto = pathlib.Path(a.ddf).read_text(encoding="utf-8")
-    nuevo = aplica_derivadas(texto)
+    nuevo, sec7 = aplica_derivadas(texto)
     if a.escribir:
         pathlib.Path(a.ddf).write_text(nuevo, encoding="utf-8")
-        print(f"Sec 7 y matriz de la Sec 16 regeneradas en {a.ddf}")
+        print(("Sec 7 y matriz" if sec7 else "Matriz") + f" de la Sec 16 regenerada{'s' if sec7 else ''} en {a.ddf}"
+              + ("" if sec7 else " (la Sec 7 está escrita a mano: no se toca)"))
     else:
         print("\n".join(matriz16(m)[-1:]))
         print("(usa --escribir para actualizar el fichero)")
@@ -473,7 +480,7 @@ def c_diagramas(m, a):
     if not a.escribir:
         print("(no se ha escrito nada: usa --escribir para guardar los .mmd y enlazar las imágenes que falten)")
     elif cambiados:
-        print("Renderiza solo esos: render_mermaid.py " + " ".join(f"{a.o}/{c}" for c in cambiados))
+        print("Renderiza solo esos: render_mermaid.py " + " ".join(str(pathlib.Path(a.o) / c) for c in cambiados))
 
 
 def main():

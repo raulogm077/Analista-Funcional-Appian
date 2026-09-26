@@ -9,7 +9,7 @@ Genera además <salida>-trazabilidad.md (requisitos ↔ pantallas, preguntas abi
 El HTML empieza por <title> (sin <html>/<body>) para poder publicarse como Artifact en Claude.ai
 y también abrirse directamente en un navegador.
 """
-import json, re, sys, argparse
+import base64, json, re, sys, argparse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -17,7 +17,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validate import validate, trace_markdown, find_brand, ux_summary  # noqa: E402
 from entorno import utf8_stdio  # noqa: E402
 
-FONT = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap">'
+# Open Sans (licencia SIL OFL, assets/fonts/OFL-OpenSans.txt) embebida: el prototipo y sus capturas usan la fuente
+# de la marca sin internet (las capturas bloquean la red); variable de 300 a 800, subconjuntos latin y latin-ext
+_FONTS = [("open-sans-latin-wght-normal.woff2", "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"),
+          ("open-sans-latin-ext-wght-normal.woff2", "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF")]
+FONT = "<style>" + "".join(
+    "@font-face{font-family:'Open Sans';font-style:normal;font-display:swap;font-weight:300 800;"
+    f"src:url(data:font/woff2;base64,{base64.b64encode((ROOT / 'assets' / 'fonts' / f).read_bytes()).decode()}) format('woff2');unicode-range:{r}}}"
+    for f, r in _FONTS) + "</style>"
 
 
 def mix_white(hex_color, pct):

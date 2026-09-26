@@ -38,7 +38,7 @@ Ficha de pantalla (Sec 12) → pantalla:
 | Textos literales | `instructions`, `helpTooltip`, mensajes de `$validations` y de confirmación, sin reescribirlos |
 | Criterios de aceptación | No van a la spec: son la **lista de comprobación** del paso 4. Los de presentación y validación se comprueban en el prototipo; los que dependen de algo que el prototipo no hace (integraciones, avisos, plazos) se anotan en un `$note` |
 
-Ficha de tarea (Sec 6.3) → pantalla P05:
+Ficha de tarea (Sec 6.3) → pantalla P05 si la tarea decide algo (si solo recoge datos, P03). La ficha de tarea y su ficha de pantalla de la Sec 12 describen la misma pantalla: una sola en el spec, con los dos IDs en `ref` y `req`.
 
 | En la ficha | En la spec |
 |---|---|
@@ -68,15 +68,16 @@ IDs en la spec: pide al analista que los asigne en el `ddf.md` (IDs estables) y
 | alta / solicitud / registro con ≤ 8 campos o un solo bloque | P03 Formulario |
 | alta con varios bloques, > 8 campos, documentación o pasos | P04 Asistente |
 | aprobar, validar, revisar, dar el visto bueno, resolver (por un rol) | P05 Tarea |
-| inicio, cuadro de mando, indicadores, tareas pendientes, avisos | P06 Inicio |
+| tarea que solo recoge datos (cargar un documento, completar datos del registro) | P03 Formulario, con el contexto del registro arriba o en `a!sidebarTemplate` |
+| inicio: tareas pendientes, avisos, indicadores y accesos del usuario | P06 Inicio |
 | editar, modificar, cambiar estado, adjuntar sobre un X existente | P07 Diálogo (acción de registro) |
-| informe, estadísticas, gráficos, evolución | P08 Informe |
+| informe, estadísticas, gráficos, evolución; cuadro de mando con filtros que actualizan indicadores y gráficos | P08 Informe |
 | bandeja, cola de revisión, revisar uno tras otro, triaje, clasificar pendientes | P09 Maestro-detalle |
 | portada o entrada de un módulo con varias opciones («desde aquí el usuario puede…») | P10 Portada de módulo |
 | asistente virtual, chatbot, preguntar a los datos o a un documento, resumen o borrador generado con IA | P11 Asistente de IA |
 | extracción automática de documentos (OCR, IDP), clasificación o datos propuestos por IA que alguien confirma | P12 Revisión de datos sugeridos por IA |
 
-Si el documento dice expresamente cómo es la pantalla («en un único formulario», «en varios pasos»), eso manda sobre los umbrales de la tabla.
+Si el documento dice expresamente cómo es la pantalla («en un único formulario», «en varios pasos»), eso manda sobre los umbrales de la tabla. El patrón se elige por el contenido, no por el nombre que le dé el documento (un «cuadro de mando» sin tareas ni accesos es un P08).
 
 **IA**: P11 y P12 solo cuando el análisis la pide. Si no la pide pero hay un caso claro (documentos que alguien teclea a mano, búsquedas por texto libre en muchos registros, informes que se redactan copiando datos), propónla como pantalla o bloque marcado con `$assumption` («Propuesta: …» y el beneficio) y como pregunta abierta; el flujo manual sigue existiendo. El chat de datos va en un panel lateral del listado (P01 con `ai_side_pane`); el chat de un registro, en su vista resumen (P02 con `ai_records_chat`); la búsqueda por significado, en el propio grid (`smartSearchType` + `match_quality`).
 

@@ -94,7 +94,7 @@ def main():
                 print(f"✗ Prueba de humo con errores ({name}):\n{out}")
         for name, html, spec in built if browser else []:
             # contraste WCAG 2.2 AA de lo que se ve (texto, marcadores de posición, bordes de campo, textos de gráficos)
-            code, out = run([HERE / "contrast_audit.py", html, spec, "--strict"])
+            code, out = run([HERE / "contrast_audit.py", html, spec])
             last = out.splitlines()[-1] if out else ""
             if code == 0:
                 print(f"✓ Contraste ({name}): {last.replace('Contraste: ', '')}")

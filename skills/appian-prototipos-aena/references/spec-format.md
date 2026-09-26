@@ -27,7 +27,7 @@ El prototipo se describe en un único JSON. Los ejemplos de esta página usan un
 | `site.pages` | Páginas del Site (máx. 10). `includes` = pantallas que marcan esa pestaña como activa (ficha, alta...). |
 | `app.today` | Fecha «de hoy» fija para `today()`/`now()`, para que demo y capturas no cambien con el día. |
 | `app.appianVersion` | Versión de Appian del entorno del cliente (por defecto `26.9`, la versión vigente). El validador da error si se usa un componente, un parámetro o un valor posterior (`schemas/appian-versions.json`). También se usa al consultar la documentación oficial. |
-| `requirements` | IDs del documento de entrada. Alimentan la matriz de cobertura. Las actividades que el documento sitúa fuera de la aplicación (otro sistema, un actor externo que no usa Appian) llevan `"outOfScope": "motivo"`: no cuentan como huecos y la trazabilidad muestra el motivo. |
+| `requirements` | IDs del documento de entrada. Alimentan la matriz de cobertura. Las actividades que el documento sitúa fuera de la aplicación (otro sistema, un actor externo que no usa Appian) llevan `"outOfScope": "motivo"`; los requisitos de la aplicación que no tienen pantalla propia (los hace el sistema o un robot, o son de otra iteración), `"noScreen": "motivo"`. Ninguno de los dos cuenta como hueco y la trazabilidad muestra el motivo. |
 | `openQuestions` | Ambigüedades del documento, para la reunión con el cliente. `priority` opcional: `CRITICA` 🔴, `IMPORTANTE` 🟡, `MEJORA` 🟢 (misma escala que el DDF). |
 | `maps` | Tablas de traducción para `{expr\|map:nombre}` (estado → color, estado → paso del hito, booleano → Sí/No). `"*"` = valor por defecto. |
 | `data` | Datos de ejemplo por record type. **Los nombres de campo son los del record type**: documentan el modelo de datos para desarrollo. |
@@ -46,9 +46,9 @@ El prototipo se describe en un único JSON. Los ejemplos de esta página usan un
 - `type`: `page` (página del site) · `record` (vista de registro) · `form` (formulario o tarea a página completa) · `dialog` (acción en diálogo).
 - `pattern`: obligatorio, uno de `templates/patterns.json`. El validador comprueba el tipo y el componente raíz.
 - `req`: requisitos que cubre. `assumptions`: supuestos a nivel de pantalla.
-- `ref`: dónde está definida en el documento de entrada (p. ej. `"PAN-02 · Listado de expedientes"`, el ID de la ficha en la Sec 12 del `ddf.md`). Sale en la trazabilidad y en el índice de capturas para saber bajo qué ficha va cada imagen.
+- `ref`: dónde está definida en el documento de entrada (p. ej. `"PAN-02 · Listado de expedientes"`, el ID de la ficha en la Sec 12 del `ddf.md`). Sale en la trazabilidad y en el índice de capturas para saber bajo qué ficha va cada imagen. Una vista de registro que es otra ficha del análisis lleva su propio `ref` (y `req`).
 - `local`: variables locales iniciales (se reinician al entrar). Admiten `{rv!record.campo}` para precargar desde el registro.
-- `recordType` (en `record`, y opcional en `form`/`dialog`): la pantalla recibe `rv!record` = fila de `data` con `id = params.id`.
+- `recordType` (en `record`, y opcional en `form`/`dialog`): la pantalla recibe `rv!record` = fila de `data` con `id = params.id`. Sin `id`, un `form` o `dialog` recibe un registro vacío (un alta no sale rellena con otro registro) y una `record`, el primero (para abrirla desde el índice).
 - `openFrom` (en `dialog`): pantalla sobre la que se abre en el índice y en las capturas.
 
 Pantalla de registro:

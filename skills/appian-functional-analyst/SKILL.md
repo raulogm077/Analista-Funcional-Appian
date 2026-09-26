@@ -87,7 +87,9 @@ Elige el modo por la fuente principal y dilo al usuario al empezar:
 | **Ficha suelta** | El usuario explica una pantalla o un diálogo (texto o voz, a menudo con una captura) y quiere sus requisitos redactados | La ficha de pantalla de la Sec 12 en el chat. Si hay un `ddf.md` del proyecto, se añade o actualiza en él con su PAN-xx |
 
 Un DF con reuniones posteriores es fiel + actualización: primero el extracto del
-DF y después los cambios de las reuniones, cada uno con su fuente.
+DF y después los cambios de las reuniones, cada uno con su fuente. Una aplicación
+ya construida que se explica en demos o traspasos, sin DF, es síntesis: lo que se
+ve funcionando es ✅ con su minuto; pide capturas de la aplicación si las hay.
 
 El `ddf.md` es **la fuente de verdad**: el `.docx` se genera a partir de él y el
 prototipo (`appian-prototipos-aena`) lo lee directamente.
@@ -101,7 +103,9 @@ python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o fuentes/
 Lee `references/ingesta-fuentes.md` antes de extraer: cómo citar, qué sacar de
 transcripciones, correos, diagramas y documentos, jerarquía entre fuentes y
 contradicciones. Lee **todas** las fuentes antes de escribir: las reuniones
-posteriores suelen cambiar lo anterior. Si el usuario las pasa de una en una,
+posteriores suelen cambiar lo anterior. Si una transcripción es ilegible (otro
+idioma, ruido), no la leas entera: mira el principio, anótala en la Sec 1 como no
+utilizable y sigue. Si el usuario las pasa de una en una,
 di cuántas llevas y pregunta si hay más. Con una sola transcripción, extrae lo
 que haya y marca ❓ el resto: un análisis con gaps documentados es más útil que
 esperar información que puede no llegar.
@@ -150,8 +154,11 @@ BPM (Sec 6), casos de uso si hay ≥3 actores o ≥6 CU (Sec 7), entidad-relaci�
 ```bash
 python3 <skill>/scripts/render_mermaid.py diagramas/*.mmd
 ```
-Salida 1 = error de sintaxis (corrige y repite); 2 = falta un requisito (dilo y
-aplica el fallback). Revisa cada PNG con Read antes de incrustarlo.
+Salida 1 = error de sintaxis o fichero que no existe (corrige y repite); 2 = falta
+un requisito (dilo y aplica el fallback). Revisa cada PNG con Read antes de
+incrustarlo. Sin Word (análisis solo para el prototipo), el diagrama se queda como
+bloque Mermaid en el `ddf.md`, sin enlace a PNG: valida la sintaxis con
+`render_mermaid.py diagramas/*.mmd --check`.
 
 ### 5. DDF en Word (modo síntesis)
 Salta este paso en modo fiel y cuando el análisis sea solo para un prototipo y el

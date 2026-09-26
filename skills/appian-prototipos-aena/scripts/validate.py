@@ -363,9 +363,9 @@ def validate(spec, brand=None, spec_dir=None):
         check_target(f"captures[{i}]", c.get("screen"), "captura")
     check_expressions(spec, rep)
     check_placement(spec, rep, newer, declared)
-    covered = {r for s in screens for r in (s.get("req") or [])}
+    covered = {r for s in screens for r in (s.get("req") or [])} | {r for s in screens for v in (s.get("views") or []) for r in (v.get("req") or [])}
     for r in spec.get("requirements", []):
-        if r["id"] not in covered and not r.get("outOfScope"):
+        if r["id"] not in covered and not r.get("outOfScope") and not r.get("noScreen"):
             rep.warn("cobertura", f"requisito {r['id']} ({r.get('title', '')}) sin pantalla")
     check_ux(spec, rep)
     return rep
@@ -492,6 +492,7 @@ def check_placement(spec, rep, newer=None, declared=None):
 # Avisos con el prefijo "UX · ", uno por nodo (sus problemas van juntos) o por pantalla; nunca bloquean.
 # ---------------------------------------------------------------------------
 UX = "UX · "
+ANALYSIS_ID = re.compile(r"\b(?:RF|RB|PAN|ACT|CU|INT|NOT)-\d+\b")
 # ux-accessibility.html: etiqueta de sección -> H por defecto; heading-component.html: tamaño -> H por defecto
 SECTION_TAG = {"LARGE_PLUS": "H1", "LARGE": "H1", "MEDIUM_PLUS": "H2", "MEDIUM": "H2", "SMALL": "H3", "EXTRA_SMALL": "H4"}
 HEADING_TAG = {"LARGE_PLUS": "H1", "LARGE": "H2", "MEDIUM_PLUS": "H3", "MEDIUM": "H4", "SMALL": "H5", "EXTRA_SMALL": "H6"}
@@ -670,7 +671,7 @@ def _has_border(n):
     return n.get("showBorder", True) is True  # por defecto true en a!cardLayout y a!boxLayout; una expresión no se evalúa
 
 
-def _ux_interface(iface, where, screen_type, add):
+def _ux_interface(iface, where, screen_type, add, record_sources=frozenset()):
     """Reglas de una interfaz (pantalla o vista de registro). add(ruta, mensaje) acumula los problemas por nodo.
     Devuelve las rutas de sus nodos en orden de documento (para emitir los avisos en ese orden)."""
     nodes = list(_nodes(iface, where))
@@ -753,6 +754,11 @@ def _ux_interface(iface, where, screen_type, add):
     # --- grids (ux-grids.html, tabular-data-display.html) ---
     grids = [(n, p) for n, p, a in nodes if n["type"] == "a!gridField"]
     for n, p in grids:
+        cols = n.get("columns") if isinstance(n.get("columns"), list) else []
+        if n.get("data") in record_sources and cols and not n.get("selectable") and isinstance(cols[0], dict):
+            first = json.dumps(cols[0].get("value"), ensure_ascii=False)
+            if not any(k in first for k in ('"link"', "a!recordLink", "a!dynamicLink", "a!linkField", '"$action"')):
+                add(p, "la primera columna enlaza a la ficha del registro (a!recordLink): el listado es la entrada a la ficha")
         if not n.get("emptyGridMessage"):
             add(p, "define emptyGridMessage (mensaje concreto de vacío)")
         if not n.get("rowHeader"):
@@ -777,6 +783,14 @@ def _ux_interface(iface, where, screen_type, add):
         numeric = bool(NUM_FILTER.search(txt)) or (bool(NUM_LABEL.search(str(n.get("label") or ""))) and not is_link and "|date" not in txt)
         if numeric and n.get("align", "START") != "END":
             add(p, "cifras alineadas a la derecha (align END)")
+
+    # --- textos: los IDs del análisis (RF-, RB-, PAN-…) solo en los mensajes de validación ---
+    for n, p, a in nodes:
+        for k in ("label", "instructions", "placeholder", "tooltip", "helpTooltip", "primaryText", "secondaryText", "text", "caption"):
+            v = n.get(k)
+            if isinstance(v, str) and ANALYSIS_ID.search(v):
+                add(p, f"«{ANALYSIS_ID.search(v).group(0)}» en un texto visible ({k}): los IDs del análisis no se muestran al usuario (solo en mensajes de validación)")
+                break
 
     # --- navegación y estructura ---
     for n, p, a in nodes:
@@ -846,6 +860,9 @@ def _ux_interface(iface, where, screen_type, add):
 
 def check_ux(spec, rep):
     """Avisos de calidad UX según el SAIL Design System (prefijo 'UX · '). Uno por nodo, con todos sus problemas."""
+    rts = {s.get("recordType") for s in spec.get("screens", []) if isinstance(s, dict) and s.get("type") == "record"}
+    record_sources = {f"recordType!{r}" for r in rts if r} | {f"data!{k}" for k, d in (spec.get("data") or {}).items()
+                                                             if isinstance(d, dict) and d.get("recordType") in rts}
     for s in [x for x in spec.get("screens", []) if isinstance(x, dict)]:
         where, st = f"screen '{s.get('id')}'", s.get("type", "page")
         issues, order = {}, [where]
@@ -861,9 +878,9 @@ def check_ux(spec, rep):
                 add(where, "máximo 3 acciones de registro en la cabecera")
             for i, v in enumerate(views):
                 if isinstance(v, dict) and isinstance(v.get("interface"), dict):
-                    order += _ux_interface(v["interface"], f"{where}.views[{i}]", st, add)
+                    order += _ux_interface(v["interface"], f"{where}.views[{i}]", st, add, record_sources)
         elif isinstance(s.get("interface"), dict):
-            order += _ux_interface(s["interface"], where, st, add)
+            order += _ux_interface(s["interface"], where, st, add, record_sources)
         pos = {p: i for i, p in enumerate(order)}
         for path in sorted(issues, key=lambda p: pos.get(p, len(pos))):
             rep.warn(path, UX + "; ".join(issues[path]))
@@ -957,6 +974,8 @@ def check_expressions(spec, rep):
 def display_title(s):
     t = s.get("title", s.get("id", ""))
     if "{" in t:
+        if s.get("ref"):  # «PAN-04 · Ficha del expediente»: el nombre que da el análisis
+            return s["ref"]
         return f"Ficha de {s['recordType']}" if s.get("recordType") and s.get("type") == "record" else re.sub(r"\{[^}]*\}", "…", t)
     return t
 
@@ -968,8 +987,9 @@ def trace_markdown(spec):
         out += [f"Fuente: {spec['app']['source']}", ""]
     out += ["## Requisitos → pantallas", "", "| Requisito | Descripción | Pantallas |", "|---|---|---|"]
     for r in spec.get("requirements", []):
-        cov = [display_title(s) for s in screens if r["id"] in (s.get("req") or [])]
-        cell = ", ".join(cov) if cov else (f"_Fuera del prototipo: {r['outOfScope']}_" if r.get("outOfScope") else "**SIN PANTALLA**")
+        cov = [display_title(s) for s in screens if r["id"] in (s.get("req") or []) or any(r["id"] in (v.get("req") or []) for v in (s.get("views") or []))]
+        cell = ", ".join(cov) if cov else (f"_Sin pantalla propia: {r['noScreen']}_" if r.get("noScreen") else
+                                          f"_Fuera del prototipo: {r['outOfScope']}_" if r.get("outOfScope") else "**SIN PANTALLA**")
         out.append(f"| {r['id']} | {r.get('title', '')} | {cell} |")
     out += ["", "## Inventario de pantallas", "", "| Id | Pantalla | Tipo | Patrón | Requisitos | Referencia en el documento |", "|---|---|---|---|---|---|"]
     for s in screens:

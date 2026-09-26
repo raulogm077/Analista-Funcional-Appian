@@ -2273,7 +2273,18 @@
                  {
                   "type": "a!richTextItem",
                   "text": "{fv!row.codigo}",
-                  "style": "STRONG"
+                  "style": "STRONG",
+                  "link": {
+                   "type": "a!recordLink",
+                   "recordType": "recordType!AENA Incidencia",
+                   "identifier": "{fv!row.id}"
+                  },
+                  "$action": {
+                   "goto": "incidencia",
+                   "params": {
+                    "id": "{fv!row.id}"
+                   }
+                  }
                  }
                 ]
                }

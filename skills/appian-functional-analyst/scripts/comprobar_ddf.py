@@ -9,7 +9,7 @@ Uso:
 Comprueba:
   - IDs definidos dos veces; criterios definidos más de una vez o citados sin existir;
   - RF vigentes sin criterio en «Se verifica en»;
-  - piezas vigentes que remiten a una pieza anulada; decisiones (D-xxx) y respuestas que citan IDs inexistentes;
+  - piezas vigentes que remiten a una pieza anulada; IDs citados en cualquier parte que no están definidos;
   - con --fuentes: citas [FU-xx hh:mm:ss] cuyo minuto no es el de una intervención (--corregir-citas las
     lleva a la intervención anterior) y nombres de participantes que aparezcan en el documento;
   - con --anterior: ningún ID ha desaparecido (se tacha, no se borra), la versión sube y tiene su fila en
@@ -47,6 +47,8 @@ def anulada(m, pid):
 def comprobar_base(m):
     cnt = collections.Counter(p.tipo for p in m.piezas.values())
     print("  " + " · ".join(f"{t}: {cnt[t]}" for t in ["ACT", "PAN", "RF", "RB", "CA", "INT", "NOT", "P", "D"] if cnt[t]))
+    secs = {mm.group(1) for l in m.lineas if (mm := dm.RX_SECCION.match(l))}
+    informe("las 17 secciones, con título «## N. Título»", [str(n) for n in range(1, 18) if str(n) not in secs])
     informe("IDs definidos una sola vez", [f"{i} (l.{n})" for i, n in m.duplicados])
     texto = "\n".join(m.lineas)
     citados = {x for x in dm.ids_en(texto) if re.match(r"CA-(PAN|ACT|RF)-", x)}
@@ -67,22 +69,26 @@ def comprobar_base(m):
                 if r != p.id and anulada(m, r) and f"~~{r}~~" not in l and "anulad" not in dm.normaliza(l):
                     malas.append(f"{p.id}→{r} (l.{p.ini + k + 1})")
     informe("ninguna pieza vigente remite a una anulada", sorted(set(malas)))
-    rotas = []
-    for p in m.por_tipo("D") + m.por_tipo("P"):
-        for r in dm.ids_en(m.texto(p.id)):
+    rotas = collections.defaultdict(list)
+    for k, l in enumerate(m.lineas):
+        for r in dm.ids_en(l):
             if dm.tipo_de(r) in ("RF", "RB", "PAN", "ACT", "P", "D", "INT", "NOT") and r not in m.piezas:
-                rotas.append(f"{p.id}→{r}")
-    informe("decisiones y preguntas citan IDs que existen", sorted(set(rotas)))
+                rotas[r].append(k + 1)
+    informe("IDs citados que están definidos", sorted(f"{r} (l.{', '.join(map(str, ls[:3]))})" for r, ls in rotas.items()))
 
 
 def comprobar_fuentes(m, carpeta, ruta, corregir):
-    src, nombres = {}, set()
+    src, nombres, sin_nombres = {}, set(), []
     for f in pathlib.Path(carpeta).glob("FU-*.md"):
         txt = f.read_text(encoding="utf-8")
         src[f.name[3:5]] = sorted(set(re.findall(r"^\[(\d{2}:\d{2}:\d{2})\]", txt, re.M)))
         mm = re.search(r"Participantes: (.*)", txt)
         if mm:
-            nombres |= {n.strip() for n in mm.group(1).split(";") if n.strip()}
+            nombres |= {n.strip() for n in mm.group(1).split(";") if n.strip() and "identificad" not in n}
+        # hablantes de las transcripciones con «[hh:mm:ss] Nombre Apellido:»
+        nombres |= {n.strip() for n in re.findall(r"^\[\d{1,2}:\d{2}:\d{2}\] ([^:\n]{3,60}):\s*$", txt, re.M)}
+        if not mm or "identificad" in mm.group(1):
+            sin_nombres.append(f.name[:5])
     texto = "\n".join(m.lineas)
     malas = sorted({f"FU-{x} {y}" for x, y in re.findall(r"FU-(\d\d) (\d\d:\d\d:\d\d)", texto)
                     if src.get(x) and y not in src[x]})
@@ -99,6 +105,9 @@ def comprobar_fuentes(m, carpeta, ruta, corregir):
     else:
         informe("citas con minuto de una intervención real", malas)
     informe("sin nombres de participantes", sorted(n for n in nombres if n in texto))
+    if sin_nombres:
+        print(f"· {', '.join(sorted(sin_nombres))}: sin participantes identificados en la fuente; "
+              "revisa a mano que el documento no cite a personas por su nombre (roles, no personas)")
 
 
 def comprobar_anterior(m, ruta_ant):
@@ -111,7 +120,8 @@ def comprobar_anterior(m, ruta_ant):
         informe("la versión nueva tiene su fila en el control de versiones", [] if fila else [f"v{vn[0]}.{vn[1]}"])
     informe("ningún ID ha desaparecido (lo que ya no vale se tacha)",
             sorted(i for i in ant.piezas if i not in m.piezas))
-    norm = lambda s: re.sub(r"\s+", " ", s).strip()
+    # las capturas del prototipo que se añaden a las fichas (![pie](…png)) no son un cambio funcional
+    norm = lambda s: re.sub(r"\s+", " ", re.sub(r"(?m)^.*!\[[^\]]*\]\([^)]+\.png\).*$|^\*\*Capturas\*\*.*$", "", s)).strip()
     nuevas = sorted(i for i in m.piezas if i not in ant.piezas)
     comunes = [i for i in m.piezas if i in ant.piezas]
     modif = sorted(i for i in comunes if norm(m.texto(i)) != norm(ant.texto(i)))

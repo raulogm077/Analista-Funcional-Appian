@@ -193,7 +193,7 @@ p08 = screen("informe", "Informes", "page", "P08", ["RF-INFORME"], {"type": "a!h
          "stacking": "NORMAL", "showLegend": False, "colorScheme": state_chart_colors(ESTADOS, FASES),
          "$note": "Cada barra con el color de su estado (el mismo significado que las etiquetas): agrupación secundaria por el mismo campo."},
         {"type": "a!sectionLayout", "showWhen": "a!isNotNullOrEmpty(local!estadoSel)", "label": "Expedientes en «{local!estadoSel}»", "labelSize": "SMALL", "labelHeadingTag": "H3", "labelColor": "SECONDARY", "marginAbove": "STANDARD", "contents": [
-            grid(f"recordType!{RT}", "and(" + FT + ", fv!row.estado = local!estadoSel)", [gcol("Expediente", two_line("{fv!row.codigo}", "{fv!row.titulo}")), gcol("Unidad", "{fv!row.unidad}", width="NARROW"), gcol_num("Importe", "{fv!row.importe|eur|dash}", width="NARROW_PLUS")],
+            grid(f"recordType!{RT}", "and(" + FT + ", fv!row.estado = local!estadoSel)", [gcol("Expediente", two_line("{fv!row.codigo}", "{fv!row.titulo}", {"type": "a!recordLink", "recordType": f"recordType!{RT}", "identifier": "{fv!row.id}"})), gcol("Unidad", "{fv!row.unidad}", width="NARROW"), gcol_num("Importe", "{fv!row.importe|eur|dash}", width="NARROW_PLUS")],
                  "No hay expedientes", page_size=5)]}]),
 ]}, "P08: filtros de página en una barra, franja de KPI calculados con los filtros, gráficos en cards con título H2 encima y un gráfico que profundiza a sus registros (chart_link).",
     local={"local!tipo": None, "local!unidad": None, "local!estadoSel": None})

@@ -5108,7 +5108,13 @@
                 {
                  "type": "a!richTextItem",
                  "text": "{fv!row.codigo}",
-                 "style": "STRONG"
+                 "style": "STRONG",
+                 "link": {
+                  "type": "a!recordLink",
+                  "recordType": "recordType!EXP Expediente",
+                  "identifier": "{fv!row.id}"
+                 },
+                 "linkStyle": "STANDALONE"
                 },
                 "\n",
                 {

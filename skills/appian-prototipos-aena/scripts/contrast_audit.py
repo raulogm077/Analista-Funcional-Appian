@@ -8,8 +8,8 @@ Auditoría de contraste (WCAG 2.2 AA) del prototipo: abre cada pantalla y mide e
   sobre el fondo real. No mide texto sobre imágenes (billboards con foto): lo cuenta aparte.
 - No cuenta lo inactivo (botones deshabilitados, campos disabled): WCAG lo exime.
 
-Uso:  python3 contrast_audit.py prototipo.html app.json [--screens id1,id2] [--json informe.json] [--strict]
-Sale con 1 si hay fallos y --strict. Requiere Playwright y un navegador, como smoke_test.py.
+Uso:  python3 contrast_audit.py prototipo.html app.json [--screens id1,id2] [--json informe.json]
+Sale con 1 si hay fallos. Requiere Playwright y un navegador, como smoke_test.py.
 """
 import json, sys, argparse
 from pathlib import Path
@@ -88,7 +88,7 @@ def main():
     ap.add_argument("spec")
     ap.add_argument("--screens", default=None)
     ap.add_argument("--json", default=None)
-    ap.add_argument("--strict", action="store_true")
+    ap.add_argument("--strict", action="store_true", help=argparse.SUPPRESS)  # compatibilidad: ya es el comportamiento por defecto
     a = ap.parse_args()
     utf8_stdio()
     spec = json.loads(Path(a.spec).read_text(encoding="utf-8"))
@@ -130,7 +130,7 @@ def main():
     print(f"\nContraste: {len(ids)} pantallas, {total} combinación(es) de color por debajo de WCAG 2.2 AA" + (f"; {imgs} texto(s) sobre imagen no medidos" if imgs else ""))
     if a.json:
         Path(a.json).write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
-    sys.exit(1 if total and a.strict else 0)
+    sys.exit(1 if total else 0)
 
 
 if __name__ == "__main__":
