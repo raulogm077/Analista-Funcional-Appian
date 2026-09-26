@@ -1,0 +1,16 @@
+{
+  "name": "appian-analisis-funcional",
+  "owner": {
+    "name": "Raúl Gómez Moya"
+  },
+  "metadata": {
+    "description": "Plugin de análisis funcional y prototipos Appian del equipo."
+  },
+  "plugins": [
+    {
+      "name": "appian-analisis-funcional",
+      "source": "./",
+      "description": "Análisis funcional y prototipos navegables Appian (AENA)."
+    }
+  ]
+}

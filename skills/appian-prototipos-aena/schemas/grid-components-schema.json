@@ -1,0 +1,851 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "SAIL Grid Components - Grid, column, and data presentation components. Verified against docs.appian.com 26.5.",
+  "version": "2.5.0",
+  "components": {
+    "a!gridField": {
+      "category": "data",
+      "parameters": {
+        "label": {
+          "type": "Text",
+          "description": "Text to display as the grid label"
+        },
+        "labelPosition": {
+          "validValues": [
+            "ABOVE",
+            "ADJACENT",
+            "COLLAPSED",
+            "JUSTIFIED"
+          ],
+          "description": "Determines where the label appears. Default: ABOVE."
+        },
+        "instructions": {
+          "type": "Text",
+          "description": "Supplemental text about this grid"
+        },
+        "helpTooltip": {
+          "type": "Text",
+          "description": "Help icon with tooltip text (max 500 characters). Not shown when labelPosition is COLLAPSED."
+        },
+        "emptyGridMessage": {
+          "type": "Text",
+          "description": "Text to display when no data is available. Default: 'No items available'."
+        },
+        "data": {
+          "type": "RecordType reference, a!recordData(), List of Map/Dictionary, DataSubset, or PortalReportDataSubset",
+          "description": "The data to display. Use recordType! or a!recordData() for records functionality (user filters, export). Other sources: a!queryEntity() with pagingInfo: fv!pagingInfo (must set fetchTotalCount: true), a!queryProcessAnalytics(), a DataSubset, a list of Map/Dictionary, or an array."
+        },
+        "columns": {
+          "type": "List of a!gridColumn"
+        },
+        "pageSize": {
+          "type": "Integer",
+          "description": "Maximum number of rows to display at a time. Default: 10."
+        },
+        "pagingSaveInto": {
+          "type": "Save Array",
+          "description": "Variables updated only when the user invokes a paging action. Reference current paging with fv!pagingInfo."
+        },
+        "initialSorts": {
+          "type": "List of SortInfo",
+          "description": "Sorts applied on initial load only; the first sort shows the active-sort arrow"
+        },
+        "secondarySorts": {
+          "type": "List of SortInfo",
+          "description": "Sorts applied after every user interaction, in the order listed; no active-sort indicator"
+        },
+        "selectable": {
+          "type": "Boolean",
+          "description": "Determines if grid rows are selectable. Required to enable selection functionality. Default: false."
+        },
+        "selectionStyle": {
+          "type": "Text",
+          "validValues": [
+            "CHECKBOX",
+            "ROW_HIGHLIGHT",
+            "CHECKBOX_SUBTLE_HIGHLIGHT",
+            "SUBTLE_HIGHLIGHT"
+          ],
+          "description": "Style applied when a row is selected. CHECKBOX (default) displays a selection column. CHECKBOX_SUBTLE_HIGHLIGHT displays a selection column and applies a light blue highlight to the selected row. SUBTLE_HIGHLIGHT applies a light blue highlight without a selection column. ROW_HIGHLIGHT applies a solid blue highlight without a selection column. On Appian Mobile the grid always uses CHECKBOX. SUBTLE_HIGHLIGHT and ROW_HIGHLIGHT give no visual feedback when selection is disabled via disableRowSelectionWhen."
+        },
+        "selectionValue": {
+          "type": "Text Array or Integer Array",
+          "description": "Identifiers of the rows that should appear as selected (supports pre-selection)"
+        },
+        "selectionSaveInto": {
+          "type": "Save Array",
+          "description": "Variables updated with selected identifiers when the user changes selections. Reference rows selected/deselected in the most recent interaction with fv!selectedRows and fv!deselectedRows."
+        },
+        "selectionRequired": {
+          "type": "Boolean",
+          "description": "Determines if a selection is required to submit the form. Default: false."
+        },
+        "selectionRequiredMessage": {
+          "type": "Text",
+          "description": "Custom message to display when a selection is required and not provided"
+        },
+        "maxSelections": {
+          "type": "Integer",
+          "description": "Maximum number of items the user can select; once reached, row selection is disabled"
+        },
+        "showSelectionCount": {
+          "type": "Text",
+          "validValues": [
+            "AUTO",
+            "ON",
+            "OFF"
+          ],
+          "description": "When the number of selected items displays below the grid. AUTO (default) shows the count if maxSelections > 1."
+        },
+        "disableRowSelectionWhen": {
+          "type": "Boolean",
+          "description": "Evaluated once per row to disable selection. Reference fields with fv!row (record data: fv!row[recordType!X.fields.y]) or fv!identifier. Default: false."
+        },
+        "validations": {
+          "type": "List of Variant",
+          "description": "Validation errors displayed below the grid, configured with a!validationMessage(). Reference the current page of data using fv!currentPage."
+        },
+        "validationGroup": {
+          "type": "Text",
+          "description": "Requiredness only evaluated when a button in the same validation group is pressed. No spaces allowed."
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "description": "Determines whether the component is displayed. Default: true."
+        },
+        "height": {
+          "validValues": [
+            "SHORT",
+            "SHORT_PLUS",
+            "MEDIUM",
+            "MEDIUM_PLUS",
+            "TALL",
+            "TALL_PLUS",
+            "EXTRA_TALL",
+            "AUTO"
+          ],
+          "description": "Grid height. Default: AUTO. All heights besides AUTO have fixed headers that remain visible when scrolling."
+        },
+        "spacing": {
+          "validValues": [
+            "STANDARD",
+            "DENSE"
+          ],
+          "description": "Spacing within grid cells. Auto default: STANDARD in browsers, DENSE in Appian Mobile."
+        },
+        "borderStyle": {
+          "validValues": [
+            "LIGHT",
+            "LIGHT_WITH_OUTER_BORDERS",
+            "STANDARD"
+          ],
+          "description": "Determines the grid border style. LIGHT (default) displays row borders. LIGHT_WITH_OUTER_BORDERS displays row and outer borders. STANDARD displays all borders."
+        },
+        "shadeAlternateRows": {
+          "type": "Boolean",
+          "description": "Determines whether alternate rows are shaded. Default: false."
+        },
+        "rowHeader": {
+          "type": "Integer",
+          "description": "Index of the column to use as the row header for screen readers. Accessibility only; no visible change."
+        },
+        "accessibilityText": {
+          "type": "Text",
+          "description": "Additional text announced by screen readers; produces no visible change"
+        },
+        "refreshAlways": {
+          "type": "Boolean",
+          "description": "When true, grid data is refreshed after each user interaction and each interval refresh. Default: false."
+        },
+        "refreshAfter": {
+          "type": "List of Text",
+          "recordDataOnly": true,
+          "validValues": [
+            "RECORD_ACTION"
+          ],
+          "description": "Refreshes grid data each time a specified action completes"
+        },
+        "refreshInterval": {
+          "type": "Number (Decimal)",
+          "validValues": [
+            "0.5",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "10",
+            "30",
+            "60"
+          ],
+          "description": "How often grid data gets refreshed, in minutes. Null means no interval refresh."
+        },
+        "refreshOnReferencedVarChange": {
+          "type": "Boolean",
+          "description": "When true, grid data refreshes each time any variable referenced in the data parameter changes. Default: true."
+        },
+        "refreshOnVarChange": {
+          "type": "Any Type",
+          "description": "Refreshes grid data when these specific variables change (single variable or list), even if not referenced in data"
+        },
+        "showSearchBox": {
+          "type": "Boolean",
+          "recordDataOnly": true,
+          "description": "Shows built-in record search box above grid. Only works when data parameter uses recordType! or a!recordData(). Changing this value resets existing user-saved filters. Default: true. NEVER use with local! data."
+        },
+        "showRefreshButton": {
+          "type": "Boolean",
+          "recordDataOnly": true,
+          "description": "Shows refresh button to manually refresh data. Only works when data parameter uses recordType! or a!recordData(). Default: true. NEVER use with local! data."
+        },
+        "showExportButton": {
+          "type": "Boolean",
+          "recordDataOnly": true,
+          "description": "Shows export-to-Excel button. Only works when data parameter uses recordType! or a!recordData(). Doesn't apply to Appian Mobile. Default: false."
+        },
+        "userFilters": {
+          "type": "List of Record Filter Reference",
+          "recordDataOnly": true,
+          "description": "User filter references from the record type (e.g., recordType!Case.filters.status). Displayed above grid next to search box. Supports list filters (dropdown selection) and date range filters. Only works with record data source. Changing this value removes existing user-saved filters."
+        },
+        "recordActions": {
+          "type": "List of a!recordActionItem",
+          "recordDataOnly": true,
+          "description": "Record actions to display above grid, configured with a!recordActionItem(). If you use fv!identifier in the identifier parameter, also configure grid selection. Only works when data parameter uses recordType! or a!recordData()."
+        },
+        "loadDataAsync": {
+          "type": "Boolean",
+          "recordDataOnly": true,
+          "description": "Load grid data and filters independently from rest of interface. Only works with record data source. Default: false."
+        },
+        "openActionsIn": {
+          "type": "Text",
+          "validValues": [
+            "DIALOG",
+            "NEW_TAB",
+            "SAME_TAB"
+          ],
+          "description": "Determines how record actions open. Default: DIALOG."
+        },
+        "actionsDisplay": {
+          "type": "Text",
+          "validValues": [
+            "LABEL_AND_ICON",
+            "LABEL",
+            "ICON"
+          ],
+          "description": "Determines which details show for record actions. Default: LABEL_AND_ICON."
+        },
+        "actionsStyle": {
+          "type": "Text",
+          "validValues": [
+            "TOOLBAR",
+            "TOOLBAR_PRIMARY"
+          ],
+          "description": "Determines how actions display above the grid. Default: TOOLBAR."
+        },
+        "pagingControls": {
+          "type": "Text",
+          "recordDataOnly": true,
+          "validValues": [
+            "STANDARD",
+            "ROW_COUNT"
+          ],
+          "description": "Determines if the paging includes the total row count. Only applies when the source is a record type. STANDARD (default) may improve performance because it doesn't query the total row count. ROW_COUNT displays the total count and start/end controls; recommended for small datasets."
+        },
+        "showManageFiltersMenu": {
+          "type": "Boolean",
+          "recordDataOnly": true,
+          "description": "Determines if the Manage Filters menu displays above the grid. The menu only displays if the search box or user filters are visible. Only applies when a record type is used as the source in the data parameter. Default: true."
+        },
+        "similarityScoreThreshold": {
+          "type": "Decimal",
+          "recordDataOnly": true,
+          "description": "Minimum match quality required to return a record using semantic (smart) search in the default search box. Only available when showSearchBox is true (record data source). Default: 1, which limits the search box to traditional keyword matches; values less than 1 enable both keyword and semantic search. Does not apply to lexical search."
+        }
+      },
+      "description": "Read-only data grid with sorting, paging, selection, search, and record actions"
+    },
+    "a!gridColumn": {
+      "category": "data",
+      "parameters": {
+        "label": {
+          "type": "Text",
+          "description": "Text to display as the column header"
+        },
+        "value": {
+          "type": "Any Type",
+          "description": "Value to display in each cell, evaluated once per row. Can be text, a!imageField(), a!linkField(), a!richTextDisplayField(), a!tagField(), a!buttonArrayLayout(), a!recordActionField(), or a!progressBarField(). Reference fields with fv!row (record data: fv!row[recordType!X.fields.y]) or fv!identifier."
+        },
+        "sortField": {
+          "type": "Any Type",
+          "description": "Field used to sort the grid when this column header is selected. Record data must use the recordType! domain."
+        },
+        "width": {
+          "validValues": [
+            "AUTO",
+            "ICON",
+            "ICON_PLUS",
+            "NARROW",
+            "NARROW_PLUS",
+            "MEDIUM",
+            "MEDIUM_PLUS",
+            "WIDE",
+            "1X",
+            "2X",
+            "3X",
+            "4X",
+            "5X",
+            "6X",
+            "7X",
+            "8X",
+            "9X",
+            "10X"
+          ]
+        },
+        "align": {
+          "validValues": [
+            "START",
+            "CENTER",
+            "END"
+          ],
+          "description": "Alignment for the header label and all values within the column. Default: START."
+        },
+        "backgroundColor": {
+          "validValues": [
+            "NONE",
+            "ACCENT",
+            "SUCCESS",
+            "INFO",
+            "WARN",
+            "ERROR"
+          ],
+          "acceptsHexColors": true,
+          "supportsTransparency": true,
+          "description": "Cell background color. Default: NONE. Accepts any valid hex color, optionally with two extra transparency digits (00 more transparent to FF less transparent). Use fv!row to set color per cell value."
+        },
+        "helpTooltip": {
+          "type": "Text",
+          "description": "Help icon in the column header with tooltip text"
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "description": "Determines whether the column is displayed. Default: true."
+        },
+        "accessibilityText": {
+          "type": "Text",
+          "description": "Additional text announced by screen readers; pair with backgroundColor"
+        },
+        "exportWhen": {
+          "type": "Boolean",
+          "description": "Whether the column is included on export; defaults to showWhen"
+        }
+      },
+      "description": "Column definition for read-only grid with advanced display and export options"
+    },
+    "a!pagingInfo": {
+      "category": "data",
+      "parameters": {
+        "startIndex": {
+          "type": "Integer",
+          "required": true,
+          "description": "Index at which to start returning values. Valid values are greater than zero."
+        },
+        "batchSize": {
+          "type": "Integer",
+          "required": true,
+          "description": "Number of items to return. With records, valid values are 0 to 5000. With an entity, values >= -1 (-1 returns all)."
+        },
+        "sort": {
+          "type": "List of a!sortInfo",
+          "description": "Null, empty array, or array of SortInfo where field is a field name, dot notation for a nested field, a recordType! field reference, or a grouping/measure alias"
+        }
+      },
+      "description": "Defines paging information for data queries"
+    },
+    "a!queryRecordType": {
+      "category": "data",
+      "parameters": {
+        "recordType": {
+          "type": "RecordType",
+          "required": true,
+          "description": "Record type referenced directly from the recordType! domain, e.g. recordType!Case"
+        },
+        "fields": {
+          "type": "List of Field References, a!selectionFields(), or a!aggregationFields()",
+          "description": "Fields to retrieve. Selection: list of recordType! field references or a!selectionFields() to return all fields from the record type and related record types. Aggregation: a!aggregationFields(). When null, only the primary key field is returned."
+        },
+        "filters": {
+          "type": "List of a!queryFilter or a single a!queryLogicalExpression",
+          "description": "Additional filters applied to the record set; queries also inherit the record type's default filters"
+        },
+        "pagingInfo": {
+          "type": "a!pagingInfo",
+          "required": true,
+          "description": "Paging and sorting configuration applied when retrieving the record data"
+        },
+        "fetchTotalCount": {
+          "type": "Boolean",
+          "description": "When true, also runs the query that retrieves the total row count into the resulting datasubset's totalCount. Skipping it can improve performance. Default: false."
+        },
+        "relatedRecordData": {
+          "type": "List of a!relatedRecordData",
+          "description": "When selecting one-to-many related record data, use a!relatedRecordData() to filter, sort, and limit the related record sets. Not supported when performing an aggregation."
+        }
+      },
+      "description": "Query record type data with filtering, aggregation, and sorting"
+    },
+    "a!recordData": {
+      "category": "data",
+      "parameters": {
+        "recordType": {
+          "type": "RecordType",
+          "required": true,
+          "description": "Record type reference configured using the recordType! domain"
+        },
+        "filters": {
+          "type": "List of a!queryFilter or a single a!queryLogicalExpression",
+          "description": "Additional filters applied together with an AND operation; queries also inherit record-level security and default filters"
+        },
+        "relatedRecordData": {
+          "type": "List of a!relatedRecordData",
+          "description": "Filter, sort, and limit one-to-many related record sets. Only supported when a!recordData() is used in a read-only grid."
+        },
+        "fields": {
+          "type": "List of Field References or a!selectionFields()",
+          "description": "Fields to retrieve in a read-only grid. When null, only the fields referenced in the grid's columns parameter are retrieved."
+        }
+      },
+      "specialNote": "ONLY use directly in a!gridField data parameter or chart data parameter - NEVER in local variables",
+      "description": "Defines record data source for grids and charts"
+    },
+    "a!relatedRecordData": {
+      "category": "data",
+      "parameters": {
+        "relationship": {
+          "type": "Record Type Relationship",
+          "required": true,
+          "description": "A one-to-many record type relationship reference using recordType! domain notation"
+        },
+        "filters": {
+          "type": "Any Type (queryFilter or list of queryFilters)",
+          "description": "Filters applied to related records, combined with AND logic. Field references must start from the related record type."
+        },
+        "sort": {
+          "type": "List of a!sortInfo",
+          "description": "Sort order for related records using fields referenced from the related record type"
+        },
+        "limit": {
+          "type": "Number (Integer)",
+          "description": "Maximum related records to return per base record. Max 100 (default 10) in a!queryRecordType()/a!recordData(); max 250 (default 100) in a!queryRecordByIdentifier()."
+        }
+      },
+      "specialNote": "ONLY works with ONE-TO-MANY relationships. Cannot be used in aggregations or records-powered charts. Requires data sync enabled.",
+      "description": "References a one-to-many relationship and allows filtering, sorting, and limiting of the related record set"
+    },
+    "a!aggregationFields": {
+      "category": "data",
+      "parameters": {
+        "groupings": {
+          "type": "List of a!grouping",
+          "description": "Fields to group by"
+        },
+        "measures": {
+          "type": "List of a!measure",
+          "description": "Calculations to perform"
+        }
+      },
+      "description": "Defines grouping and measure fields for data aggregation"
+    },
+    "a!measure": {
+      "category": "data",
+      "parameters": {
+        "function": {
+          "type": "Text",
+          "required": true,
+          "validValues": [
+            "COUNT",
+            "SUM",
+            "AVG",
+            "MIN",
+            "MAX",
+            "DISTINCT_COUNT"
+          ]
+        },
+        "field": {
+          "type": "Field Reference",
+          "required": true,
+          "description": "Record field or related record field to use in the calculation, using the recordType! domain"
+        },
+        "alias": {
+          "type": "Text",
+          "required": true,
+          "description": "Short name to reference the measure result elsewhere in the chart configuration or a!queryRecordType() (e.g. in sortInfo)"
+        },
+        "label": {
+          "type": "Text",
+          "description": "Text to display in the legend or tooltip when the measure is used in a chart (only displays with a single grouping on bar, column, or line charts). Ignored in a!queryRecordType()."
+        },
+        "filters": {
+          "type": "List of a!queryFilter",
+          "description": "A single logical expression or list of query filters to filter the record set for this measure. Field references start from the record type being aggregated."
+        },
+        "formatValue": {
+          "type": "Text",
+          "validValues": [
+            "AUTO",
+            "INTEGER",
+            "DECIMAL",
+            "DOLLAR",
+            "EURO",
+            "POUND",
+            "YEN",
+            "SWISS_FRANC"
+          ],
+          "description": "Display format for the measure value. Only applies in records-powered charts. AUTO is the default. Also accepts a custom format defined with text(), referencing the unformatted result via fv!value. Display only; does not affect calculations."
+        }
+      },
+      "description": "Defines a measure calculation for aggregated data"
+    },
+    "a!grouping": {
+      "category": "data",
+      "parameters": {
+        "field": {
+          "type": "Field Reference",
+          "required": true,
+          "description": "Record field or related record field to group by, using the recordType! domain"
+        },
+        "alias": {
+          "type": "Text",
+          "required": true,
+          "description": "Short name to reference the grouping result elsewhere in the chart configuration or a!queryRecordType() (e.g. in sortInfo)"
+        },
+        "interval": {
+          "type": "Text",
+          "validValues": [
+            "AUTO",
+            "YEAR",
+            "MONTH_OF_YEAR",
+            "MONTH_OF_YEAR_SHORT_TEXT",
+            "MONTH_OF_YEAR_TEXT",
+            "MONTH_TEXT",
+            "MONTH_SHORT_TEXT",
+            "MONTH_DATE",
+            "DATE",
+            "DATE_SHORT_TEXT",
+            "DATE_TEXT",
+            "DAY_OF_MONTH",
+            "HOUR_OF_DAY",
+            "HOUR",
+            "MINUTE_OF_HOUR",
+            "MINUTE"
+          ],
+          "description": "Date or time interval to group by. Only usable when the field is of type Date, Date and Time, or Time. Default: AUTO."
+        },
+        "formatValue": {
+          "type": "Any Type",
+          "description": "Display value for the grouping value. Only applies when the grouping is used in a chart; evaluated once per returned value. Reference the unformatted result via fv!value. Display only; does not affect calculations."
+        }
+      },
+      "description": "Defines a grouping field for data aggregation"
+    },
+    "a!queryFilter": {
+      "category": "data",
+      "parameters": {
+        "field": {
+          "type": "Field Reference",
+          "required": true,
+          "description": "Field or relationship to filter. Record data: use the recordType! domain. Data store entity: use the field name in quotes, e.g. \"department\"."
+        },
+        "operator": {
+          "type": "Text",
+          "required": true,
+          "validValues": [
+            "=",
+            "<>",
+            ">",
+            ">=",
+            "<",
+            "<=",
+            "between",
+            "in",
+            "not in",
+            "is null",
+            "not null",
+            "starts with",
+            "not starts with",
+            "ends with",
+            "not ends with",
+            "includes",
+            "not includes",
+            "search",
+            "semantic search",
+            "lexical search"
+          ],
+          "description": "Filter operator to apply. 'semantic search' and 'lexical search' (26.3+) enable AI-powered/keyword document search on supported fields; 'search' performs a smart search on synced record types."
+        },
+        "value": {
+          "type": "Any Type",
+          "description": "Value to compare to the field. Optional when operator is 'is null' or 'not null'. The filter is ignored if value is empty or null and the operator is neither 'is null' nor 'not null'."
+        },
+        "applyWhen": {
+          "type": "Boolean",
+          "description": "When false, the filter is not evaluated. Default: true."
+        }
+      },
+      "description": "Defines a filter condition for record queries"
+    },
+    "a!queryLogicalExpression": {
+      "category": "data",
+      "parameters": {
+        "operator": {
+          "type": "Text",
+          "required": true,
+          "validValues": [
+            "AND",
+            "OR",
+            "AND_ALL"
+          ],
+          "description": "Operation applied to the set filters. AND_ALL is only valid when filtering on multiple fields from a one-to-many relationship."
+        },
+        "filters": {
+          "type": "List of a!queryFilter",
+          "description": "List of QueryFilters to combine using the operator. Provide filters, logicalExpressions, or both."
+        },
+        "logicalExpressions": {
+          "type": "List of a!queryLogicalExpression",
+          "description": "Nested logical expressions to combine using the operator"
+        },
+        "ignoreFiltersWithEmptyValues": {
+          "type": "Boolean",
+          "description": "Whether to ignore filters whose value parameter is empty. With nested logical expressions, this must have the same value for every logical expression. Default: false."
+        }
+      },
+      "description": "Combines query filters and/or nested logical expressions with AND/OR/AND_ALL logic"
+    },
+    "a!gridLayout": {
+      "category": "data",
+      "parameters": {
+        "label": {
+          "type": "Text",
+          "description": "Text to display as the grid label"
+        },
+        "instructions": {
+          "type": "Text",
+          "description": "Supplemental text about this grid"
+        },
+        "headerCells": {
+          "type": "List of a!gridLayoutHeaderCell"
+        },
+        "columnConfigs": {
+          "type": "List of a!gridLayoutColumnConfig"
+        },
+        "rows": {
+          "type": "List of a!gridRowLayout"
+        },
+        "emptyGridMessage": {
+          "type": "Text",
+          "description": "Text to display when no data is available. Default: 'No items available'."
+        },
+        "helpTooltip": {
+          "type": "Text",
+          "description": "Help icon with tooltip text (max 500 characters). Not shown when labelPosition is COLLAPSED."
+        },
+        "height": {
+          "validValues": [
+            "SHORT",
+            "SHORT_PLUS",
+            "MEDIUM",
+            "MEDIUM_PLUS",
+            "TALL",
+            "TALL_PLUS",
+            "EXTRA_TALL",
+            "AUTO"
+          ],
+          "description": "Grid height. Default: AUTO. All heights besides AUTO have fixed headers that remain visible when scrolling."
+        },
+        "spacing": {
+          "validValues": [
+            "STANDARD",
+            "DENSE"
+          ],
+          "description": "Spacing within grid cells. Auto default: STANDARD in browsers, DENSE in Appian Mobile."
+        },
+        "borderStyle": {
+          "validValues": [
+            "LIGHT",
+            "LIGHT_WITH_OUTER_BORDERS",
+            "STANDARD"
+          ],
+          "description": "Grid border style. STANDARD (default) displays all borders. LIGHT displays row borders. LIGHT_WITH_OUTER_BORDERS displays row and outer borders. NOTE: unlike a!gridField (default LIGHT), the editable grid default is STANDARD."
+        },
+        "selectable": {
+          "type": "Boolean",
+          "description": "Determines if the selection column is displayed. Default: false."
+        },
+        "selectionValue": {
+          "type": "List of Variant",
+          "description": "Identifiers of selected rows (matches the id parameter of a!gridRowLayout)"
+        },
+        "selectionSaveInto": {
+          "type": "List of Save",
+          "description": "Variables updated with the selected identifiers when the user changes selections"
+        },
+        "selectionStyle": {
+          "type": "Text",
+          "validValues": [
+            "CHECKBOX",
+            "ROW_HIGHLIGHT",
+            "CHECKBOX_SUBTLE_HIGHLIGHT",
+            "SUBTLE_HIGHLIGHT"
+          ],
+          "description": "Style when a row is selected. Default: CHECKBOX. On Appian Mobile, CHECKBOX is always used."
+        },
+        "selectionDisabled": {
+          "type": "Boolean",
+          "description": "Determines if selection is disabled on all rows. Default: false."
+        },
+        "selectionRequired": {
+          "type": "Boolean",
+          "description": "Determines if a selection is required to submit the form. Default: false."
+        },
+        "addRowLink": {
+          "type": "Any Type (Link)",
+          "description": "Link for adding a row to the grid; create with a!dynamicLink()"
+        },
+        "totalCount": {
+          "type": "Integer",
+          "description": "Number of rows of data displayed in the grid"
+        },
+        "shadeAlternateRows": {
+          "type": "Boolean",
+          "description": "Determines whether alternate rows are shaded. Default: true (unlike a!gridField, which defaults to false)."
+        },
+        "rowHeader": {
+          "type": "Integer",
+          "description": "Index of the column to use as the row header for screen readers. Accessibility only; no visible change."
+        },
+        "labelPosition": {
+          "validValues": [
+            "ABOVE",
+            "ADJACENT",
+            "COLLAPSED",
+            "JUSTIFIED"
+          ],
+          "description": "Determines where the label appears. Default: ABOVE."
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "description": "Determines whether the component is displayed. Default: true."
+        },
+        "accessibilityText": {
+          "type": "Text",
+          "description": "Additional text announced by screen readers; produces no visible change"
+        },
+        "validations": {
+          "type": "List of Variant",
+          "description": "Validation errors to display below the grid (text or a!validationMessage())"
+        },
+        "validationGroup": {
+          "type": "Text",
+          "description": "Requiredness only evaluated when a button in the same validation group is pressed. No spaces allowed."
+        },
+        "allowRowReordering": {
+          "type": "Boolean",
+          "description": "Determines if grid rows can be reordered by dragging and dropping (browser only). Default: false."
+        },
+        "rowOrderTooltip": {
+          "type": "Boolean",
+          "description": "Whether a tooltip with row reordering keyboard shortcuts is shown in the row order column header. Default: true."
+        },
+        "rowOrderData": {
+          "type": "Any Type",
+          "description": "Local variable or rule input pointing to the list of data updated when rows are reordered (e.g. a record type query result or a list of maps)"
+        },
+        "rowOrderField": {
+          "type": "Any Type",
+          "description": "Field in rowOrderData that stores the updated index of a reordered row. Record type: an Integer field reference (recordType!X.fields.orderIndex). Map: the key name, e.g. \"orderIndex\"."
+        }
+      },
+      "specialNote": "For inline editing - use a!gridField for read-only display. NOTE: a!gridLayout has NO saveInto and NO rowDeletions parameter; implement row deletion with a rich text icon + a!dynamicLink inside a column.",
+      "description": "Editable grid with inline editing"
+    },
+    "a!gridLayoutHeaderCell": {
+      "category": "data",
+      "parameters": {
+        "label": {
+          "type": "Text",
+          "description": "Text to display as the column header"
+        },
+        "helpTooltip": {
+          "type": "Text",
+          "description": "Help icon with tooltip text"
+        },
+        "align": {
+          "type": "Text",
+          "validValues": [
+            "LEFT",
+            "CENTER",
+            "RIGHT"
+          ],
+          "description": "Header label alignment (note: LEFT/RIGHT, not START/END like a!gridColumn)"
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "description": "Determines whether the header cell is displayed. Default: true."
+        }
+      },
+      "description": "Column header for an editable grid (a!gridLayout headerCells parameter)"
+    },
+    "a!gridLayoutColumnConfig": {
+      "category": "data",
+      "parameters": {
+        "width": {
+          "type": "Text",
+          "validValues": [
+            "DISTRIBUTE",
+            "ICON",
+            "ICON_PLUS",
+            "NARROW",
+            "NARROW_PLUS",
+            "MEDIUM",
+            "MEDIUM_PLUS",
+            "WIDE"
+          ],
+          "description": "Column width. Default: DISTRIBUTE (proportional, sized by weight). No numeric/pixel widths and no 1X-10X values (those belong to a!gridColumn)."
+        },
+        "weight": {
+          "type": "Integer",
+          "description": "How wide DISTRIBUTE columns are relative to each other. Valid values: integers 1 (default) to 10."
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "description": "Determines whether the column configuration is displayed. Default: true."
+        }
+      },
+      "description": "Column width configuration for an editable grid (a!gridLayout columnConfigs parameter)"
+    },
+    "a!gridRowLayout": {
+      "category": "data",
+      "parameters": {
+        "contents": {
+          "type": "List of Variant",
+          "description": "Components to display in the grid cells (one per column). Supported: Barcode, Buttons, Checkbox, Boolean Checkbox, Date, Date & Time, Dropdown, Decimal, Encrypted Text, File Upload, Image, Integer, Link, Multiple Dropdown, Paragraph, Pickers, Progress Bar, Radio Buttons, Record Action Field, Rich Text Display, Tags, and Text."
+        },
+        "id": {
+          "type": "Any Type",
+          "description": "Value that uniquely identifies this row for selection"
+        },
+        "selectionDisabled": {
+          "type": "Boolean",
+          "description": "When selection is enabled, determines if the selection checkbox is disabled for this row. Default: false."
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "description": "Determines whether the row is displayed. Default: true."
+        }
+      },
+      "description": "A row of editable components inside a!gridLayout (rows parameter)"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+flowchart LR
+  A([Inicio]) --> B[Registrar solicitud]
+  B --> C{¿Completa?}
+  C -- Sí --> D([Fin])
+  C -- No --> B

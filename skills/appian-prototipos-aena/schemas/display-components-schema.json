@@ -1,0 +1,1575 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "SAIL Display Components - Read-only display and visualization components",
+  "version": "3.1.1",
+  "sharedParameters": {
+    "allDisplayFields": {
+      "description": "Parameters common to most display field components (excludes headingField, horizontalLine, messageBanner which have specialized parameter sets)",
+      "label": {
+        "type": "Text",
+        "description": "Text to display as the field label"
+      },
+      "labelPosition": {
+        "type": "Text",
+        "validValues": [
+          "ABOVE",
+          "ADJACENT",
+          "JUSTIFIED",
+          "COLLAPSED"
+        ],
+        "default": "ABOVE",
+        "description": "Determines where the label appears. When set to COLLAPSED, the label is hidden and space is not reserved."
+      },
+      "instructions": {
+        "type": "Text",
+        "description": "Supplemental text about this field (displayed below the component)"
+      },
+      "helpTooltip": {
+        "type": "Text",
+        "description": "Displays a help icon with the specified text as a tooltip (max 500 characters). Hidden when labelPosition is COLLAPSED."
+      },
+      "showWhen": {
+        "type": "Boolean",
+        "default": true,
+        "description": "Determines whether the component is displayed on the interface. When false, the component is not evaluated."
+      },
+      "accessibilityText": {
+        "type": "Text",
+        "description": "Additional text to be announced by screen readers. Used to provide context for users using assistive technology. Not displayed visually."
+      },
+      "marginAbove": {
+        "type": "Text",
+        "validValues": [
+          "NONE",
+          "EVEN_LESS",
+          "LESS",
+          "STANDARD",
+          "MORE",
+          "EVEN_MORE"
+        ],
+        "default": "NONE"
+      },
+      "marginBelow": {
+        "type": "Text",
+        "validValues": [
+          "NONE",
+          "EVEN_LESS",
+          "LESS",
+          "STANDARD",
+          "MORE",
+          "EVEN_MORE"
+        ],
+        "default": "STANDARD"
+      }
+    },
+    "leftCenterRightAlignment": {
+      "description": "Alignment parameter using LEFT/CENTER/RIGHT values (used by richTextDisplayField, linkField)",
+      "align": {
+        "type": "Text",
+        "validValues": [
+          "LEFT",
+          "CENTER",
+          "RIGHT"
+        ],
+        "description": "Horizontal alignment of content within the component"
+      }
+    },
+    "startCenterEndAlignment": {
+      "description": "Alignment parameter using START/CENTER/END values (used by stampField, tagField, recordActionField, imageField, gaugeField)",
+      "align": {
+        "type": "Text",
+        "validValues": [
+          "START",
+          "CENTER",
+          "END"
+        ],
+        "description": "Horizontal alignment of content within the component"
+      }
+    },
+    "colorWithTransparency": {
+      "description": "Color parameter that accepts enumerated values or hex colors with optional transparency",
+      "color": {
+        "type": "Text",
+        "acceptsHexColors": true,
+        "supportsTransparency": true,
+        "description": "Color of the component. Accepts enumerated values or 6-digit hex (#RRGGBB) or 8-digit hex with transparency (#RRGGBBAA where AA is 00-FF)"
+      }
+    }
+  },
+  "components": {
+    "a!richTextDisplayField": {
+      "category": "display",
+      "inherits": [
+        "allDisplayFields",
+        "leftCenterRightAlignment"
+      ],
+      "parameters": {
+        "value": {
+          "type": "Any Type",
+          "validation": "Can only contain plain text strings, a!richTextItem, a!richTextIcon, a!richTextBulletedList, a!richTextNumberedList, a!richTextImage, a!richTextListItem (inside lists), or a!richTextHeader (deprecated)"
+        },
+        "preventWrapping": {
+          "type": "Boolean",
+          "default": false
+        },
+        "tooltip": {
+          "type": "Text",
+          "description": "Text displayed on mouseover/tap of the rich text content"
+        }
+      },
+      "description": "Formatted text display with styles, links, lists"
+    },
+    "a!stampField": {
+      "category": "display",
+      "inherits": [
+        "allDisplayFields",
+        "startCenterEndAlignment"
+      ],
+      "parameters": {
+        "text": {
+          "type": "Text",
+          "description": "Text to display in the stamp (typically 1-2 characters for initials)"
+        },
+        "icon": {
+          "type": "Text",
+          "description": "Icon to display in the stamp (valid icon identifiers)"
+        },
+        "backgroundColor": {
+          "type": "Text",
+          "validValues": [
+            "ACCENT",
+            "POSITIVE",
+            "NEGATIVE",
+            "SECONDARY",
+            "TRANSPARENT"
+          ],
+          "acceptsHexColors": true,
+          "supportsTransparency": true,
+          "default": "ACCENT",
+          "description": "Background color. If TRANSPARENT, the circle border takes the content color and the fill is transparent. Hex accepts transparency suffix (00-FF)."
+        },
+        "contentColor": {
+          "type": "Text",
+          "validValues": [
+            "STANDARD",
+            "ACCENT",
+            "POSITIVE",
+            "NEGATIVE"
+          ],
+          "acceptsHexColors": true,
+          "default": "STANDARD"
+        },
+        "size": {
+          "type": "Text",
+          "validValues": [
+            "TINY",
+            "SMALL",
+            "MEDIUM",
+            "LARGE"
+          ],
+          "default": "MEDIUM"
+        },
+        "shape": {
+          "type": "Text",
+          "validValues": [
+            "ROUNDED",
+            "SEMI_ROUNDED",
+            "SQUARED"
+          ],
+          "default": "ROUNDED"
+        },
+        "link": {
+          "type": "Any Type",
+          "description": "Link component to make the stamp clickable (accepts various link functions)"
+        },
+        "tooltip": {
+          "type": "Text",
+          "description": "Text displayed on mouseover/tap of the stamp"
+        }
+      },
+      "description": "Icon and/or text on colored background"
+    },
+    "a!headingField": {
+      "category": "display",
+      "note": "Does NOT inherit allDisplayFields - headings do not have label, instructions, helpTooltip, or accessibilityText",
+      "parameters": {
+        "text": {
+          "type": "Text",
+          "description": "Text to display in the heading"
+        },
+        "size": {
+          "type": "Text",
+          "validValues": [
+            "LARGE_PLUS",
+            "LARGE",
+            "MEDIUM_PLUS",
+            "MEDIUM",
+            "SMALL",
+            "EXTRA_SMALL"
+          ],
+          "default": "MEDIUM_PLUS"
+        },
+        "headingTag": {
+          "type": "Text",
+          "validValues": [
+            "H1",
+            "H2",
+            "H3",
+            "H4",
+            "H5",
+            "H6"
+          ],
+          "description": "Accessibility heading tag for screen readers (produces no visible change)"
+        },
+        "color": {
+          "type": "Text",
+          "validValues": [
+            "ACCENT",
+            "STANDARD",
+            "SECONDARY"
+          ],
+          "acceptsHexColors": true,
+          "default": "STANDARD"
+        },
+        "fontWeight": {
+          "type": "Text",
+          "validValues": [
+            "LIGHT",
+            "REGULAR",
+            "SEMI_BOLD",
+            "BOLD"
+          ],
+          "default": "REGULAR"
+        },
+        "link": {
+          "type": "Any Type",
+          "description": "Link component to make the heading clickable (if more than one link is provided, only the first will be used)"
+        },
+        "align": {
+          "type": "Text",
+          "validValues": [
+            "START",
+            "CENTER",
+            "END"
+          ],
+          "default": "START"
+        },
+        "preventWrapping": {
+          "type": "Boolean",
+          "default": false,
+          "description": "When true, the heading will truncate to a single line"
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "default": true
+        },
+        "marginAbove": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "EVEN_LESS",
+            "LESS",
+            "STANDARD",
+            "MORE",
+            "EVEN_MORE"
+          ],
+          "default": "NONE"
+        },
+        "marginBelow": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "EVEN_LESS",
+            "LESS",
+            "STANDARD",
+            "MORE",
+            "EVEN_MORE"
+          ],
+          "default": "MORE"
+        }
+      },
+      "description": "Styled heading text with accessibility support"
+    },
+    "a!progressBarField": {
+      "category": "display",
+      "inherits": [
+        "allDisplayFields"
+      ],
+      "parameters": {
+        "percentage": {
+          "type": "Integer",
+          "description": "Percentage value to display (0-100)"
+        },
+        "color": {
+          "type": "Text",
+          "validValues": [
+            "ACCENT",
+            "POSITIVE",
+            "NEGATIVE",
+            "WARN"
+          ],
+          "acceptsHexColors": true,
+          "supportsTransparency": true,
+          "default": "ACCENT"
+        },
+        "style": {
+          "type": "Text",
+          "validValues": [
+            "THIN",
+            "THICK"
+          ],
+          "default": "THIN"
+        },
+        "showPercentage": {
+          "type": "Boolean",
+          "default": true
+        }
+      },
+      "description": "Progress bar showing completion percentage"
+    },
+    "a!tagField": {
+      "category": "display",
+      "inherits": [
+        "allDisplayFields",
+        "startCenterEndAlignment"
+      ],
+      "parameters": {
+        "tags": {
+          "type": "List of Variant",
+          "description": "Array of tag items created with a!tagItem()"
+        },
+        "size": {
+          "type": "Text",
+          "validValues": [
+            "SMALL",
+            "STANDARD"
+          ],
+          "default": "STANDARD"
+        }
+      },
+      "description": "Colored text labels for highlighting attributes"
+    },
+    "a!linkField": {
+      "category": "display",
+      "inherits": [
+        "allDisplayFields",
+        "leftCenterRightAlignment"
+      ],
+      "note": "EXCEPTION: a!linkField does NOT support marginAbove/marginBelow (not in 26.5 docs) despite inheriting allDisplayFields. Doc recommends using align only inside grid layouts.",
+      "parameters": {
+        "links": {
+          "type": "Any Type",
+          "description": "Array of link components to display. Create links with a!authorizationLink(), a!documentDownloadLink(), a!dynamicLink(), a!newsEntryLink(), a!processTaskLink(), a!recordLink(), a!reportLink(), a!startProcessLink(), a!submitLink(), a!userRecordLink(), or a!safeLink()"
+        }
+      },
+      "description": "Displays a list of clickable links"
+    },
+    "a!recordActionField": {
+      "category": "display",
+      "inherits": [
+        "startCenterEndAlignment"
+      ],
+      "note": "Does NOT inherit allDisplayFields - specialized component without label/instructions/helpTooltip",
+      "parameters": {
+        "actions": {
+          "type": "List of a!recordActionItem",
+          "description": "Record action items to display"
+        },
+        "style": {
+          "type": "Text",
+          "validValues": [
+            "TOOLBAR",
+            "LINKS",
+            "CARDS",
+            "SIDEBAR",
+            "CALL_TO_ACTION",
+            "MENU",
+            "MENU_ICON",
+            "TOOLBAR_PRIMARY",
+            "SIDEBAR_PRIMARY"
+          ],
+          "default": "TOOLBAR"
+        },
+        "display": {
+          "type": "Text",
+          "validValues": [
+            "LABEL_AND_ICON",
+            "LABEL",
+            "ICON"
+          ],
+          "default": "LABEL_AND_ICON"
+        },
+        "openActionsIn": {
+          "type": "Text",
+          "validValues": [
+            "DIALOG",
+            "NEW_TAB",
+            "SAME_TAB"
+          ],
+          "default": "DIALOG",
+          "description": "Determines how actions open. Does not apply to Appian Mobile."
+        },
+        "securityOnDemand": {
+          "type": "Boolean",
+          "default": true,
+          "description": "Determines when record action security is evaluated for MENU and MENU_ICON styles. By default (true), security is evaluated when the user clicks the action; when false, on interface load."
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "default": true
+        },
+        "accessibilityText": {
+          "type": "Text"
+        }
+      },
+      "description": "Displays record actions in various configurable styles"
+    },
+    "a!imageField": {
+      "category": "display",
+      "inherits": [
+        "allDisplayFields",
+        "startCenterEndAlignment"
+      ],
+      "parameters": {
+        "images": {
+          "type": "Any Type",
+          "description": "Array of images to display, created with a!webImage(), a!userImage(), or a!documentImage()"
+        },
+        "size": {
+          "type": "Text",
+          "validValues": [
+            "ICON",
+            "ICON_PLUS",
+            "TINY",
+            "EXTRA_SMALL",
+            "SMALL",
+            "SMALL_PLUS",
+            "MEDIUM",
+            "MEDIUM_PLUS",
+            "LARGE",
+            "LARGE_PLUS",
+            "EXTRA_LARGE",
+            "FIT",
+            "GALLERY"
+          ],
+          "default": "MEDIUM"
+        },
+        "style": {
+          "type": "Text",
+          "validValues": [
+            "STANDARD",
+            "AVATAR"
+          ],
+          "default": "STANDARD"
+        },
+        "isThumbnail": {
+          "type": "Boolean",
+          "default": false,
+          "description": "When true, clicking the image opens an enlarged view"
+        }
+      },
+      "description": "Image display from documents or web"
+    },
+    "a!gaugeField": {
+      "category": "display",
+      "inherits": [
+        "allDisplayFields",
+        "startCenterEndAlignment"
+      ],
+      "parameters": {
+        "percentage": {
+          "type": "Decimal",
+          "description": "Percentage value to display (0-100)"
+        },
+        "primaryText": {
+          "type": "Text",
+          "description": "Text to display in the center of the gauge"
+        },
+        "secondaryText": {
+          "type": "Text",
+          "description": "Text to display below the primaryText"
+        },
+        "color": {
+          "type": "Text",
+          "validValues": [
+            "ACCENT",
+            "POSITIVE",
+            "NEGATIVE",
+            "WARN"
+          ],
+          "acceptsHexColors": true,
+          "supportsTransparency": true,
+          "default": "ACCENT",
+          "description": "Gauge fill color. The percentage can be accessed in the expression via fv!percentage."
+        },
+        "size": {
+          "type": "Text",
+          "validValues": [
+            "SMALL",
+            "MEDIUM",
+            "LARGE"
+          ],
+          "default": "MEDIUM"
+        },
+        "tooltip": {
+          "type": "Text",
+          "description": "Text displayed on mouseover/tap of the gauge"
+        }
+      },
+      "description": "Circular progress indicator"
+    },
+    "a!milestoneField": {
+      "category": "display",
+      "inherits": [
+        "allDisplayFields"
+      ],
+      "parameters": {
+        "steps": {
+          "type": "List of Text",
+          "description": "Array of text labels for each milestone step"
+        },
+        "active": {
+          "type": "Integer",
+          "description": "Index of the current step (1-based). When null, all steps are in the future. When -1, all steps are completed."
+        },
+        "orientation": {
+          "type": "Text",
+          "validValues": [
+            "HORIZONTAL",
+            "VERTICAL"
+          ],
+          "default": "HORIZONTAL"
+        },
+        "stepStyle": {
+          "type": "Text",
+          "validValues": [
+            "LINE",
+            "CHEVRON",
+            "DOT"
+          ],
+          "default": "LINE",
+          "description": "Style of the milestone steps. Appian Mobile always uses the default LINE style."
+        },
+        "color": {
+          "type": "Text",
+          "validValues": [
+            "ACCENT",
+            "POSITIVE",
+            "NEGATIVE",
+            "WARN"
+          ],
+          "acceptsHexColors": true,
+          "supportsTransparency": true,
+          "default": "ACCENT"
+        },
+        "links": {
+          "type": "List of Variant",
+          "description": "Array of link components for each milestone step"
+        }
+      },
+      "description": "Process step indicator"
+    },
+    "a!horizontalLine": {
+      "category": "display",
+      "note": "Does NOT inherit allDisplayFields - specialized component without label/instructions/helpTooltip/accessibilityText. It DOES support showWhen.",
+      "parameters": {
+        "showWhen": {
+          "type": "Boolean",
+          "default": true,
+          "description": "Determines whether the component is displayed on the interface. When false, the component is hidden and is not evaluated."
+        },
+        "color": {
+          "type": "Text",
+          "validValues": [
+            "SECONDARY",
+            "STANDARD",
+            "ACCENT"
+          ],
+          "acceptsHexColors": true,
+          "supportsTransparency": true,
+          "default": "SECONDARY"
+        },
+        "weight": {
+          "type": "Text",
+          "validValues": [
+            "THIN",
+            "MEDIUM",
+            "THICK"
+          ],
+          "default": "THIN"
+        },
+        "style": {
+          "type": "Text",
+          "validValues": [
+            "SOLID",
+            "DOT",
+            "DASH"
+          ],
+          "default": "SOLID"
+        },
+        "marginAbove": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "EVEN_LESS",
+            "LESS",
+            "STANDARD",
+            "MORE",
+            "EVEN_MORE"
+          ],
+          "default": "NONE"
+        },
+        "marginBelow": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "EVEN_LESS",
+            "LESS",
+            "STANDARD",
+            "MORE",
+            "EVEN_MORE"
+          ],
+          "default": "STANDARD"
+        }
+      },
+      "description": "Horizontal divider line"
+    },
+    "a!documentViewerField": {
+      "category": "display",
+      "inherits": [
+        "allDisplayFields"
+      ],
+      "parameters": {
+        "document": {
+          "type": "Any Type",
+          "description": "The document to view. Provide a document (Document type) or an integer document ID. For external documents managed by a record type, provide the entire record."
+        },
+        "height": {
+          "type": "Text",
+          "validValues": [
+            "SHORT",
+            "MEDIUM",
+            "TALL"
+          ],
+          "default": "MEDIUM"
+        },
+        "altText": {
+          "type": "Text",
+          "description": "Alternate text for screen readers; used as download link label on mobile"
+        },
+        "disabled": {
+          "type": "Boolean",
+          "default": false,
+          "description": "Prevents user interaction when true"
+        },
+        "initialPageDisplay": {
+          "type": "Integer",
+          "description": "Page number to display when the document opens (defaults to page 1)"
+        },
+        "highlightedText": {
+          "type": "Text",
+          "description": "Text to highlight in the document (first occurrence, case-insensitive; Chrome/Firefox only)"
+        }
+      },
+      "description": "Displays a document using the web browser's built-in document viewer"
+    },
+    "a!timeDisplay": {
+      "category": "display",
+      "inherits": [
+        "allDisplayFields"
+      ],
+      "note": "EXCEPTION: a!timeDisplay does NOT support marginAbove/marginBelow (not in 26.5 docs) despite inheriting allDisplayFields.",
+      "parameters": {
+        "value": {
+          "type": "Time",
+          "description": "Time value to display (displays in user's timezone)"
+        }
+      },
+      "description": "Displays a single time (hour, minute, second) in read-only format"
+    },
+    "a!messageBanner": {
+      "category": "display",
+      "note": "Does NOT inherit allDisplayFields - specialized component without label/instructions/helpTooltip",
+      "parameters": {
+        "primaryText": {
+          "type": "Text",
+          "description": "Text to display on the first line inside the banner"
+        },
+        "secondaryText": {
+          "type": "Text",
+          "description": "Text to display beneath the primary text inside the banner"
+        },
+        "backgroundColor": {
+          "type": "Text",
+          "validValues": [
+            "INFO",
+            "SUCCESS",
+            "WARN",
+            "ERROR"
+          ],
+          "acceptsHexColors": true,
+          "supportsTransparency": true,
+          "default": "INFO",
+          "description": "Background color of the banner"
+        },
+        "highlightColor": {
+          "type": "Text",
+          "validValues": [
+            "INFO",
+            "POSITIVE",
+            "WARN",
+            "NEGATIVE"
+          ],
+          "acceptsHexColors": true,
+          "default": "INFO",
+          "description": "Color of the decorative bar and icon"
+        },
+        "icon": {
+          "type": "Text",
+          "description": "Valid Appian icon name (e.g., 'info-circle', 'check-circle'). Decorative only, not announced by screen readers."
+        },
+        "showDecorativeBar": {
+          "type": "Boolean",
+          "default": true,
+          "description": "Controls visibility of the decorative bar"
+        },
+        "shape": {
+          "type": "Text",
+          "validValues": [
+            "SQUARED",
+            "SEMI_ROUNDED",
+            "ROUNDED"
+          ],
+          "default": "SQUARED"
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "default": true,
+          "description": "When false, banner is not displayed or announced"
+        },
+        "announceBehavior": {
+          "type": "Text",
+          "validValues": [
+            "DISPLAY_ONLY",
+            "DISPLAY_AND_ANNOUNCE",
+            "ANNOUNCE_ONLY"
+          ],
+          "default": "DISPLAY_ONLY",
+          "description": "Controls screen reader announcement behavior. Note: Appian Mobile always uses DISPLAY_ONLY."
+        },
+        "accessibilityText": {
+          "type": "Text",
+          "description": "Additional text announced by screen readers (not displayed visually)"
+        },
+        "marginAbove": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "EVEN_LESS",
+            "LESS",
+            "STANDARD",
+            "MORE",
+            "EVEN_MORE"
+          ],
+          "default": "NONE"
+        },
+        "marginBelow": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "EVEN_LESS",
+            "LESS",
+            "STANDARD",
+            "MORE",
+            "EVEN_MORE"
+          ],
+          "default": "STANDARD"
+        }
+      },
+      "description": "Displays a message banner with configurable styling"
+    },
+    "a!gaugeFraction": {
+      "category": "helper",
+      "description": "Displays text in fractional format for use within a!gaugeField's primaryText parameter. Numerator is calculated automatically from the parent gauge's percentage; only the denominator is configured.",
+      "parameters": {
+        "denominator": {
+          "type": "Integer",
+          "description": "Value displayed as the bottom of the fraction. Cannot be negative.",
+          "default": 100
+        }
+      },
+      "specialNote": "Use only inside a!gaugeField(primaryText: a!gaugeFraction(...)). Captures the percentage value from its parent gauge automatically.",
+      "documentationUrl": "https://docs.appian.com/suite/help/latest/Gauge_Fraction_Component.html"
+    },
+    "a!gaugeIcon": {
+      "category": "helper",
+      "description": "Displays an icon for use within a!gaugeField's primaryText parameter.",
+      "parameters": {
+        "icon": {
+          "type": "Text",
+          "description": "Icon to display. Use any valid icon key (validate via rich-text-icon-aliases.md)."
+        },
+        "altText": {
+          "type": "Text",
+          "description": "Alternate text shown in hover tooltip and read by screen readers."
+        },
+        "color": {
+          "type": "Text",
+          "description": "Icon color. Valid: hex or ACCENT/POSITIVE/NEGATIVE. Access parent percentage via fv!percentage. Defaults to the gauge field's color.",
+          "validValues": [
+            "ACCENT",
+            "POSITIVE",
+            "NEGATIVE"
+          ],
+          "acceptsHexColors": true
+        }
+      },
+      "specialNote": "Use only inside a!gaugeField(primaryText: a!gaugeIcon(...)). Defaults to the gauge field's color when 'color' is not specified.",
+      "documentationUrl": "https://docs.appian.com/suite/help/latest/Gauge_Icon_Component.html"
+    },
+    "a!gaugePercentage": {
+      "category": "helper",
+      "description": "Displays the gauge's configured percentage as an integer for use within a!gaugeField's primaryText parameter. Takes no parameters.",
+      "parameters": {},
+      "specialNote": "Use only inside a!gaugeField(primaryText: a!gaugePercentage()). Captures the percentage from its parent gauge and displays it as an integer (rounded).",
+      "documentationUrl": "https://docs.appian.com/suite/help/latest/Gauge_Percentage_Component.html"
+    },
+    "a!kpiField": {
+      "category": "display",
+      "note": "Does NOT inherit allDisplayFields - no label, labelPosition, instructions, marginAbove, or marginBelow parameters.",
+      "parameters": {
+        "data": {
+          "type": "Any Type",
+          "description": "Reference to the record type used as the source of the KPI. Can accept a!recordData() or a record type reference."
+        },
+        "primaryMeasure": {
+          "type": "Measure",
+          "description": "Determines the numerical values shown in the KPI, configured using a!measure(). By default, a count of records is displayed."
+        },
+        "primaryText": {
+          "type": "Text",
+          "description": "The main text to identify or describe the primary measure."
+        },
+        "icon": {
+          "type": "Text",
+          "description": "Icon to display next to the primary text (any valid Appian icon key)."
+        },
+        "helpTooltip": {
+          "type": "Text",
+          "description": "Displays a help icon with the specified text as a tooltip (max 500 characters)."
+        },
+        "align": {
+          "type": "Text",
+          "validValues": [
+            "START",
+            "CENTER",
+            "END"
+          ],
+          "default": "START",
+          "description": "Determines alignment of text on the KPI."
+        },
+        "accessibilityText": {
+          "type": "Text",
+          "description": "Additional text to be announced by screen readers. Produces no visible change."
+        },
+        "tooltip": {
+          "type": "Text",
+          "description": "Text shown on hover (web) or long press (mobile). Can use fv!primaryMeasure and fv!secondaryMeasure in the expression."
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "default": true
+        },
+        "secondaryMeasure": {
+          "type": "Measure",
+          "description": "Defines the numerical calculations for the KPI's trend elements, configured using a!measure(). Required for trends."
+        },
+        "trend": {
+          "type": "Text",
+          "validValues": [
+            "AUTO",
+            "DIFFERENCE",
+            "PERCENTAGE",
+            "NONE"
+          ],
+          "default": "AUTO",
+          "description": "Defines the trend calculation between primary and secondary measures. Ignored if no secondaryMeasure is provided."
+        },
+        "trendFormat": {
+          "type": "Text",
+          "validValues": [
+            "AUTO",
+            "INTEGER",
+            "DECIMAL",
+            "DOLLAR",
+            "EURO",
+            "POUND",
+            "YEN",
+            "SWISS_FRANC"
+          ],
+          "default": "AUTO",
+          "description": "Display format for the trend value. Also accepts a custom format defined with text(), referencing the unformatted result via fv!value. Display-only; does not affect calculations."
+        },
+        "trendIcon": {
+          "type": "Text",
+          "default": "AUTO",
+          "description": "Icon to display next to the trend. Valid values: any valid expression, AUTO (default), or NONE."
+        },
+        "trendColor": {
+          "type": "Text",
+          "validValues": [
+            "AUTO",
+            "STANDARD",
+            "ACCENT",
+            "POSITIVE",
+            "NEGATIVE",
+            "SECONDARY",
+            "REVERSE"
+          ],
+          "acceptsHexColors": true,
+          "default": "AUTO",
+          "description": "Color applied to the trend and its icon. Can be computed with fv!primaryMeasure and fv!secondaryMeasure. REVERSE flips positive/negative when an upward trend is bad."
+        },
+        "secondaryText": {
+          "type": "Text",
+          "description": "Text placed next to the trend to identify, explain, or provide more information about the data."
+        },
+        "iconColor": {
+          "type": "Text",
+          "validValues": [
+            "STANDARD",
+            "ACCENT",
+            "POSITIVE",
+            "NEGATIVE",
+            "SECONDARY"
+          ],
+          "acceptsHexColors": true,
+          "default": "STANDARD"
+        },
+        "primaryTextColor": {
+          "type": "Text",
+          "validValues": [
+            "STANDARD",
+            "ACCENT",
+            "POSITIVE",
+            "NEGATIVE",
+            "SECONDARY"
+          ],
+          "acceptsHexColors": true,
+          "default": "STANDARD"
+        },
+        "primaryMeasureColor": {
+          "type": "Text",
+          "validValues": [
+            "STANDARD",
+            "ACCENT",
+            "POSITIVE",
+            "NEGATIVE",
+            "SECONDARY"
+          ],
+          "acceptsHexColors": true,
+          "default": "STANDARD"
+        },
+        "secondaryTextColor": {
+          "type": "Text",
+          "validValues": [
+            "STANDARD",
+            "ACCENT",
+            "POSITIVE",
+            "NEGATIVE",
+            "SECONDARY"
+          ],
+          "acceptsHexColors": true,
+          "default": "STANDARD"
+        },
+        "iconStyle": {
+          "type": "Text",
+          "validValues": [
+            "ICON",
+            "STAMP"
+          ],
+          "default": "ICON",
+          "description": "Determines the kind of image shown next to the KPI value and text."
+        },
+        "template": {
+          "type": "Text",
+          "validValues": [
+            "COMPACT",
+            "ADJACENT",
+            "STACKED"
+          ],
+          "default": "COMPACT",
+          "description": "Defines the template used to display the KPI elements."
+        },
+        "refreshAlways": {
+          "type": "Boolean",
+          "default": false,
+          "description": "When true, KPI data is refreshed after each user interaction and each interval refresh."
+        },
+        "refreshInterval": {
+          "type": "Decimal",
+          "validValues": [
+            0.5,
+            1,
+            2,
+            3,
+            4,
+            5,
+            10,
+            30,
+            60
+          ],
+          "description": "How often KPI data gets refreshed in minutes. When null, KPI data is not refreshed on an interval."
+        },
+        "refreshOnReferencedVarChange": {
+          "type": "Boolean",
+          "default": true,
+          "description": "When true, KPI data is refreshed each time the value of any variable referenced in the data parameter is updated."
+        },
+        "refreshOnVarChange": {
+          "type": "Any Type",
+          "description": "Refreshes KPI data each time any of these specific variables change. Accepts a single variable or a list of variables."
+        },
+        "refreshAfter": {
+          "type": "List of Text",
+          "validValues": [
+            "RECORD_ACTION"
+          ],
+          "description": "Refreshes KPI data each time a specified event completes."
+        },
+        "size": {
+          "type": "Text",
+          "validValues": [
+            "SMALL",
+            "STANDARD",
+            "LARGE"
+          ],
+          "default": "STANDARD"
+        },
+        "primaryTextStyle": {
+          "type": "Text",
+          "validValues": [
+            "PLAIN",
+            "EMPHASIS",
+            "STRONG"
+          ],
+          "default": "PLAIN"
+        },
+        "loadDataAsync": {
+          "type": "Boolean",
+          "default": false,
+          "description": "When a record type is the data source, set true to load KPI data in the background (placeholder shown). If the data is reused elsewhere, use a!asyncVariable() instead. Do NOT use now() in the KPI when true or it fails to load. Ignored (loads synchronously) in offline mobile and portals."
+        }
+      },
+      "specialNote": "The data parameter requires a record type reference or a!recordData() - local variables/maps are NOT a valid data source. For static mockups without record types, build KPIs with the manual card+richText pattern (see ui-guidelines/patterns/kpis.md Option B) and convert to a!kpiField in Phase 2. INCOMPATIBLE with Offline Mobile; compatible with Portals.",
+      "documentationUrl": "https://docs.appian.com/suite/help/26.5/KPI_Component.html"
+    },
+    "a!videoField": {
+      "category": "display",
+      "description": "Creates a Video component. Supports videos via a!webVideo() for web URLs. Cannot display videos stored as Appian documents.",
+      "inherits": [],
+      "parameters": {
+        "label": {
+          "type": "Text"
+        },
+        "labelPosition": {
+          "type": "Text",
+          "validValues": [
+            "ABOVE",
+            "ADJACENT",
+            "COLLAPSED",
+            "JUSTIFIED"
+          ],
+          "default": "ABOVE"
+        },
+        "instructions": {
+          "type": "Text"
+        },
+        "videos": {
+          "type": "Any Type",
+          "description": "Array of videos. Build each with a!webVideo(source:..., altText:...).",
+          "required": true
+        },
+        "helpTooltip": {
+          "type": "Text",
+          "description": "Max 500 characters. Hidden when labelPosition is COLLAPSED."
+        },
+        "accessibilityText": {
+          "type": "Text"
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "default": true
+        },
+        "marginAbove": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "EVEN_LESS",
+            "LESS",
+            "STANDARD",
+            "MORE",
+            "EVEN_MORE"
+          ],
+          "default": "NONE"
+        },
+        "marginBelow": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "EVEN_LESS",
+            "LESS",
+            "STANDARD",
+            "MORE",
+            "EVEN_MORE"
+          ],
+          "default": "STANDARD"
+        }
+      },
+      "specialNote": "INCOMPATIBLE with Portals AND Offline Mobile. Supported formats vary by device/browser (WebM/Ogg on Chrome/Firefox; MP4/3gp/mov/mpv on iOS; MP4/3gp/webm/mkv on Android). For videos requiring auth, set up SSO between Appian and the host server. NO 'size' parameter — sizing is automatic.",
+      "documentationUrl": "https://docs.appian.com/suite/help/latest/Video_Component.html"
+    },
+    "a!webContentField": {
+      "category": "display",
+      "description": "Displays content inline from an external source (iframe-style). External content only — Appian internal interfaces or URLs are not supported.",
+      "inherits": [],
+      "parameters": {
+        "label": {
+          "type": "Text"
+        },
+        "labelPosition": {
+          "type": "Text",
+          "validValues": [
+            "ABOVE",
+            "ADJACENT",
+            "COLLAPSED",
+            "JUSTIFIED"
+          ],
+          "default": "ABOVE"
+        },
+        "instructions": {
+          "type": "Text"
+        },
+        "helpTooltip": {
+          "type": "Text",
+          "description": "Max 500 characters. Hidden when labelPosition is COLLAPSED."
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "default": true
+        },
+        "source": {
+          "type": "Safe URI",
+          "description": "Location of the external content.",
+          "required": true
+        },
+        "showBorder": {
+          "type": "Boolean",
+          "description": "When true, an outer border is shown around the frame.",
+          "default": false
+        },
+        "height": {
+          "type": "Text",
+          "description": "Frame height.",
+          "validValues": [
+            "SHORT",
+            "MEDIUM",
+            "TALL"
+          ],
+          "default": "MEDIUM"
+        },
+        "altText": {
+          "type": "Text",
+          "description": "Alternative text for assistive tech, also shown if source fails to load."
+        },
+        "disabled": {
+          "type": "Boolean",
+          "description": "When true, prevents user interaction with the web content.",
+          "default": false
+        },
+        "accessibilityText": {
+          "type": "Text"
+        },
+        "marginAbove": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "EVEN_LESS",
+            "LESS",
+            "STANDARD",
+            "MORE",
+            "EVEN_MORE"
+          ],
+          "default": "NONE"
+        },
+        "marginBelow": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "EVEN_LESS",
+            "LESS",
+            "STANDARD",
+            "MORE",
+            "EVEN_MORE"
+          ],
+          "default": "STANDARD"
+        }
+      },
+      "specialNote": "Compatible with Portals; INCOMPATIBLE with Offline Mobile. Safari displays as inline link instead of an embedded frame (memory protection). Pages with X-Frame-Options blocking won't load. Don't put credentials/tokens/PII in the source URL.",
+      "documentationUrl": "https://docs.appian.com/suite/help/latest/Web_Content_Component.html"
+    },
+    "a!chatField": {
+      "category": "display",
+      "description": "Interactive chat interface that lets users send and receive messages in real time. Core building block for AI chat experiences. Requires Appian advanced/premium capability tiers; usage limits may apply. Supports US English text only.",
+      "inherits": [],
+      "parameters": {
+        "title": {
+          "type": "Text",
+          "description": "Content to display above the chat. Create using plain text or components and layouts."
+        },
+        "helpTooltip": {
+          "type": "Text",
+          "description": "Displays a help icon with the specified text as a tooltip. The icon only shows when the title is in plain text."
+        },
+        "messages": {
+          "type": "Any Type",
+          "description": "A single a!chatMessage or list of a!chatMessage objects to display in the chat. Each message must be constructed using a!chatMessage(). The messageContent within each message can be plain text (default styling) or any component (renders directly)."
+        },
+        "height": {
+          "type": "Text",
+          "validValues": [
+            "EXTRA_SHORT",
+            "SHORT",
+            "SHORT_PLUS",
+            "MEDIUM",
+            "MEDIUM_PLUS",
+            "TALL",
+            "TALL_PLUS",
+            "EXTRA_TALL",
+            "AUTO"
+          ],
+          "default": "AUTO"
+        },
+        "shape": {
+          "type": "Text",
+          "validValues": [
+            "SQUARED",
+            "SEMI_ROUNDED",
+            "ROUNDED"
+          ],
+          "default": "SQUARED"
+        },
+        "saveInto": {
+          "type": "List of Save",
+          "description": "One or more variables that are updated when the user sends a message. Use a!save() to save a modified or alternative value to a variable."
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "default": true
+        },
+        "placeholder": {
+          "type": "Text",
+          "description": "Text to display in the field when it is empty. Does not display if the field is read only."
+        },
+        "showBorder": {
+          "type": "Boolean",
+          "default": false,
+          "description": "Determines whether the component has an outer border."
+        },
+        "streamingUuid": {
+          "type": "Text",
+          "description": "The UUID returned from a!callLanguageModel that links the chatField component to the streaming response."
+        },
+        "streamingSaveInto": {
+          "type": "List of Save",
+          "description": "One or more variables updated periodically with the partial streaming response. The saved value is a map with Content, isDone, and Error keys."
+        },
+        "backgroundColor": {
+          "type": "Text",
+          "validValues": [
+            "WHITE",
+            "STANDARD",
+            "TRANSPARENT",
+            "CHARCOAL_SCHEME",
+            "NAVY_SCHEME",
+            "PLUM_SCHEME"
+          ],
+          "acceptsHexColors": true,
+          "supportsTransparency": false,
+          "default": "WHITE",
+          "description": "Determines the background color. Valid values: any valid hex color (without transparency) or the enumerated values."
+        }
+      },
+      "specialNote": "INCOMPATIBLE with Portals, Offline Mobile, and Process Autoscaling. Must be configured in expression mode (no design view pane). You manage chat state/history yourself; pair with a!callLanguageModel() in saveInto (or your own integration rule). Streaming is only supported for plain-text LLM output with default styling. See ui-guidelines/components/chat-field-instructions.md.",
+      "documentationUrl": "https://docs.appian.com/suite/help/26.5/Chat_Component.html"
+    },
+    "a!chatMessage": {
+      "category": "helper",
+      "description": "Creates a ChatMessage object for use in the messages parameter of a!chatField. Requires Appian advanced/premium capability tiers.",
+      "parameters": {
+        "messageContent": {
+          "type": "Any Type",
+          "description": "The message you want to display in a!chatField. Accepts plain text (default styling) or any Appian component/layout (e.g. a!cardLayout, a!richTextDisplayField) for custom formatting."
+        },
+        "role": {
+          "type": "Text",
+          "validValues": [
+            "USER",
+            "ASSISTANT"
+          ],
+          "description": "The user type that sent the message. USER = end user; ASSISTANT = AI model."
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "default": true,
+          "description": "Determines whether the message is displayed. When false, the message is hidden and not evaluated."
+        }
+      },
+      "specialNote": "Use only inside the messages parameter of a!chatField(). Custom-component messageContent does not support streaming.",
+      "documentationUrl": "https://docs.appian.com/suite/help/26.5/fnc_chat_message.html"
+    },
+    "a!eventHistoryListField": {
+      "category": "display",
+      "description": "Displays the event history for one or more record types. Requires record events configured on the record type (Event History record type recommended). Records-powered component — CANNOT be simulated with a!map() local data in mockups.",
+      "inherits": [],
+      "parameters": {
+        "label": {
+          "type": "Text",
+          "description": "Text to display as the list label."
+        },
+        "labelPosition": {
+          "type": "Text",
+          "validValues": [
+            "ABOVE",
+            "ADJACENT",
+            "COLLAPSED",
+            "JUSTIFIED"
+          ],
+          "default": "ABOVE"
+        },
+        "instructions": {
+          "type": "Text",
+          "description": "Supplemental text about this list."
+        },
+        "helpTooltip": {
+          "type": "Text",
+          "description": "Displays a help icon with the specified text as a tooltip (max 500 characters). Hidden when labelPosition is COLLAPSED."
+        },
+        "emptyListMessage": {
+          "type": "Text",
+          "default": "No events to display",
+          "description": "Text to display in the list when no data is available."
+        },
+        "eventData": {
+          "type": "List of Event Data",
+          "description": "The record event data that populates the list, created using one or more instances of a!eventData(). Maximum of five a!eventData() instances."
+        },
+        "eventStyle": {
+          "type": "Text",
+          "validValues": [
+            "PREVIEW_LIST",
+            "FULL_LIST",
+            "TIMELINE",
+            "LIST_WITH_COMMENTS"
+          ],
+          "default": "PREVIEW_LIST",
+          "description": "Determines how the component displays. LIST_WITH_COMMENTS enables top-level comments and threaded conversations (requires collaboration enabled in the record events configuration)."
+        },
+        "formatTimestamp": {
+          "type": "Text",
+          "validValues": [
+            "DATE",
+            "DATE_TIME",
+            "DATE_TIME_TIMEZONE"
+          ],
+          "default": "DATE_TIME",
+          "description": "Determines how the component formats the event data timestamp."
+        },
+        "displayUser": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "INITIALS",
+            "IMAGE"
+          ],
+          "default": "INITIALS",
+          "description": "Determines if and how to display user avatars."
+        },
+        "displayUserColorScheme": {
+          "type": "Any Type",
+          "validValues": [
+            "PARACHUTE",
+            "VIBRANT",
+            "CLASSIC"
+          ],
+          "default": "PARACHUTE",
+          "description": "Color scheme for user avatars when no profile picture is available. Also accepts a!colorSchemeCustom()."
+        },
+        "previewListPageSize": {
+          "type": "Integer",
+          "default": 5,
+          "description": "Max rows per page of the initial list when eventStyle is PREVIEW_LIST. Valid values 1-10."
+        },
+        "pageSize": {
+          "type": "Integer",
+          "default": 10,
+          "description": "Max rows per page when eventStyle is FULL_LIST or TIMELINE (or in the View More dialog for PREVIEW_LIST). Valid values 1-100."
+        },
+        "showWhen": {
+          "type": "Boolean",
+          "default": true
+        },
+        "refreshAlways": {
+          "type": "Boolean",
+          "default": false,
+          "description": "When true, eventData is refreshed after each user interaction and each interval refresh."
+        },
+        "refreshAfter": {
+          "type": "List of Text",
+          "validValues": [
+            "RECORD_ACTION"
+          ],
+          "description": "Refreshes eventData each time a specified action completes."
+        },
+        "refreshInterval": {
+          "type": "Decimal",
+          "validValues": [
+            0.5,
+            1,
+            2,
+            3,
+            4,
+            5,
+            10,
+            30,
+            60
+          ],
+          "description": "How often data gets refreshed in minutes. When null, eventData is not refreshed on an interval."
+        },
+        "refreshOnReferencedVarChange": {
+          "type": "Boolean",
+          "default": true,
+          "description": "When true, data refreshes each time any variable referenced in eventData is updated."
+        },
+        "refreshOnVarChange": {
+          "type": "Any Type",
+          "description": "Refreshes data each time any of these specific variables change. Single variable or list of variables."
+        },
+        "userFilters": {
+          "type": "List of Variant",
+          "description": "List of user filter references configured with the recordType! domain. Only filters defined on the record type used in eventData. Only applies when there is a single a!eventData() instance."
+        },
+        "eventFilters": {
+          "type": "List of Text",
+          "validValues": [
+            "USER",
+            "EVENT_TYPE",
+            "DATE_RANGE"
+          ],
+          "description": "Determines which out-of-the-box component filters to show."
+        },
+        "collapseDetailsByDefault": {
+          "type": "Boolean",
+          "default": true,
+          "description": "Determines if event details are collapsed when the interface first loads."
+        },
+        "showSearchBox": {
+          "type": "Boolean",
+          "default": true,
+          "description": "Determines if the record search box should be shown."
+        },
+        "showReverseSortButton": {
+          "type": "Boolean",
+          "default": true,
+          "description": "Determines if the list should include a button to reverse the event data sort."
+        },
+        "commentLayout": {
+          "type": "Text",
+          "validValues": [
+            "LIST",
+            "CARD"
+          ],
+          "default": "CARD",
+          "description": "If top-level comments are enabled, determines whether to display events in a list or card view."
+        },
+        "mentionableUsers": {
+          "type": "Text",
+          "description": "If top-level comments are enabled, a constant specifying the group of users who can be mentioned in comments. Mentioned users receive email notifications."
+        },
+        "commentCardColor": {
+          "type": "Text",
+          "validValues": [
+            "STANDARD"
+          ],
+          "acceptsHexColors": true,
+          "default": "STANDARD",
+          "description": "Color applied to the comment background for list and card layouts. Any valid hex color or STANDARD."
+        },
+        "notificationUrl": {
+          "type": "Text",
+          "description": "URL the user is directed to from the comment notification email. Accepts a!urlForRecord()."
+        }
+      },
+      "specialNote": "PHASE 2 / FUNCTIONAL ONLY: requires record events configured on the record type (Event History record type + Event Type Lookup). NOT allowed inside a!sideBySideItem. INCOMPATIBLE with Portals and Offline Mobile. In mockups, build a visual placeholder (card with richText timeline/comments) with a /* TODO-DATA-MODEL */ comment instead. See ui-guidelines/components/record-events-instructions.md.",
+      "documentationUrl": "https://docs.appian.com/suite/help/26.5/Event_History_List_Component.html"
+    },
+    "a!eventData": {
+      "category": "helper",
+      "description": "Determines the event data to display for a single record type in the Event History List component. Use only in the eventData parameter of a!eventHistoryListField (max five instances).",
+      "parameters": {
+        "recordType": {
+          "type": "Record Type",
+          "description": "A reference to a record type, configured using the recordType! domain. If you configured record events, use the Event History record type."
+        },
+        "filters": {
+          "type": "Any Type",
+          "description": "A single logical expression or a list of query filters (combined with AND) to apply additional filters to the record set. Use only record fields or related record fields from the referenced record type."
+        },
+        "timestamp": {
+          "type": "Record Field",
+          "description": "A record field of type Date and Time, Date, or Time that displays when the event occurred. Events are sorted descending by this field. E.g. recordType!Order Event History.fields.timestamp."
+        },
+        "user": {
+          "type": "Any Type",
+          "description": "A record field of type User that displays who completed the event. E.g. recordType!Order Event History.fields.user."
+        },
+        "eventTypeName": {
+          "type": "Any Type",
+          "description": "A record field of type Text that displays the type of event. Must use the fv!data prefix, e.g. fv!data[recordType!Order Event History.relationships.eventType.fields.name]."
+        },
+        "details": {
+          "type": "Text",
+          "description": "Any additional information about the event. Must use the fv!data prefix, e.g. fv!data[recordType!Order Event History.fields.details]."
+        },
+        "recordTypeForTag": {
+          "type": "Record Type",
+          "description": "The record type linked in the tag for an event."
+        },
+        "recordIdentifier": {
+          "type": "Record Field",
+          "description": "A record field containing the record identifier associated with each event; configures the link in a tag. Typically the common field between base and event history record types."
+        },
+        "comment": {
+          "type": "Record Field",
+          "description": "A record field of type Text that displays the comment. E.g. recordType!Order Event History.fields.comment."
+        },
+        "allowUsersToComment": {
+          "type": "Boolean",
+          "default": false,
+          "description": "Determines if users can add top-level comments. Requires eventStyle: LIST_WITH_COMMENTS on the parent component and top-level comments enabled in the record events configuration."
+        },
+        "baseRecordIdForComment": {
+          "type": "Any Type",
+          "description": "The identifier of the specific record in the base record type used to link comments and subscribers to a record. Must match the primary key data type, e.g. ri!order[recordType!Order.fields.Id]."
+        },
+        "allowUsersToReply": {
+          "type": "Boolean",
+          "default": false,
+          "description": "Determines if users can start threaded conversations. Requires a Reply Thread record type in the record events configuration. Max 500 items per thread."
+        }
+      },
+      "specialNote": "Use only inside a!eventHistoryListField(eventData: ...). Specifically meant for an Event History record type generated by the record events configuration.",
+      "documentationUrl": "https://docs.appian.com/suite/help/26.5/Event_Data_Component.html"
+    }
+  }
+}

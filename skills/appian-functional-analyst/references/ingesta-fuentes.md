@@ -1,0 +1,123 @@
+# Lectura de fuentes
+
+Cómo convertir las fuentes del proyecto en hechos citables para el `ddf.md`.
+
+## 1. Catalogar
+
+```bash
+python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o fuentes/
+```
+
+- Cada fuente recibe un ID estable `FU-01`, `FU-02`… y un `.md` con marcas de
+  posición. `fuentes/indice.md` es la tabla que va a la Sec 1 del DDF.
+- En iteraciones, ejecútalo con las fuentes nuevas sobre la **misma carpeta**
+  `fuentes/`: las ya catalogadas conservan su ID y las nuevas se numeran a
+  continuación. Nunca renumeres a mano.
+- Lo que el script no puede leer queda en el índice con el motivo:
+  - PDF sin `pdftotext` ni `pypdf`, o escaneado: léelo con la herramienta Read.
+  - `.msg` sin el paquete `extract-msg`: pide el correo como `.eml` (Outlook:
+    Archivo → Guardar como) o PDF. No intentes instalar `extract-msg`: en muchos
+    equipos no compila.
+  - Imágenes: revísalas con Read.
+- Texto pegado en el chat: guárdalo como `.txt` con un nombre descriptivo
+  (`reunion-2026-09-03.txt`) y catalógalo igual, para que también tenga ID.
+
+## 2. Citar
+
+Cada hecho del `ddf.md` lleva su fuente entre corchetes:
+
+| Fuente | Cita |
+|---|---|
+| Transcripción | `[FU-03 00:14:32]` (minuto de la intervención) |
+| Presentación | `[FU-01 diap. 40]` |
+| PDF / Word paginado | `[FU-06 p. 12]` |
+| Word o texto sin paginar | `[FU-01 §4]` (apartado) o `[FU-01 RF-05]` (ID del documento) |
+| Correo | `[FU-04]` (el índice ya da fecha y asunto) |
+| Diagrama | `[FU-10 «Revisar expediente»]` (nombre del elemento) |
+| Inferencia | `[inferido de FU-03, FU-10]` y certeza 🔶 |
+
+Quien lea el DDF debe poder ir de cualquier regla a la frase exacta que la
+justifica.
+
+## 3. Qué extraer de cada tipo
+
+### Transcripciones de reuniones
+- **Separa decisiones de conversación.** Una decisión tiene marca explícita
+  («decidimos», «queda así», «entonces lo hacemos…», «vale, eso sí») o es la
+  última palabra de quien tiene autoridad sobre el tema. Lo que se discute sin
+  cerrar va a Sec 17 como pregunta, no a requisitos.
+- **Personas → roles.** Construye una tabla hablante → rol a partir de lo que
+  se dice («como jefe de servicio…») y usa el rol en todo el documento. Los
+  nombres reales solo aparecen en la Sec 1 (asistentes) y solo si el usuario lo
+  quiere.
+- Las intervenciones de usuarios operativos suelen revelar excepciones
+  (rechazos, urgencias, casos raros) que los responsables no mencionan: son
+  caminos alternativos en Sec 6.
+- Con varias reuniones, lee todas antes de escribir y agrupa por tema, no por
+  reunión. El criterio evoluciona: queda la última decisión, pero el cambio se
+  registra (ver §4).
+
+### Correos
+- Ordena el hilo por fecha y lee solo el texto nuevo de cada mensaje: el texto
+  citado ya está en el mensaje anterior.
+- Un correo que confirma o cambia algo dicho en reunión es **más fuerte** que la
+  reunión (es una confirmación por escrito): actualiza el hecho y cita ambas
+  fuentes.
+- Los adjuntos quedan en `fuentes/adjuntos/FU-xx/`. Si son relevantes (plantillas,
+  listados de campos, capturas), catalógalos también.
+
+### Diagramas de flujo (BPMN, draw.io, Visio, imágenes)
+- Actividades → pasos del proceso (Sec 6) y tareas de usuario (candidatas a
+  pantalla de tarea). Carriles → actores (Sec 5). Decisiones → reglas de negocio
+  (Sec 9) y caminos alternativos.
+- Marca en Sec 6 qué actividades **no ocurren en la aplicación** (las hace otro
+  sistema, un organismo externo o se hacen en papel): es el `outOfScope` del
+  prototipo.
+- De Visio solo se extraen los textos. Si el flujo importa, pide una exportación
+  a PDF o PNG y revísala con Read.
+
+### Diseño funcional o ERS existente (modo fiel)
+- **Extrae, no reinterpretes.** Conserva los IDs y la numeración del documento
+  (actividades, requisitos, pantallas), los nombres de campos y los textos
+  literales: etiquetas, botones, tooltips, mensajes de error y de confirmación.
+- Cada ficha de pantalla (Sec 12) cita su diapositiva o página. Si la diapositiva
+  tiene imágenes de la pantalla (el `.md` de la fuente lo indica), mírala antes
+  de completar la ficha:
+  - Entorno con LibreOffice y poppler (Claude en la nube los tiene):
+    `soffice --headless --convert-to pdf doc.pptx` y
+    `pdftoppm -f N -l N -png -r 80 doc.pdf diap`; luego Read del PNG.
+  - Sin esas herramientas: pide al usuario el documento exportado a PDF y usa
+    Read con `pages`.
+- **Imagen de pantalla frente a texto**: la imagen completa lo que el texto no
+  dice (textos de botones, columnas, iconos, valores de ejemplo, tooltips
+  visibles) y eso se incorpora a la ficha citando la diapositiva. Si la imagen
+  contradice al texto, manda el texto (la imagen suele ser un diseño anterior) y
+  la discrepancia va a Sec 17 con las dos citas.
+- Las incoherencias internas del documento (un campo que cambia de nombre entre
+  diapositivas, un estado que no aparece en el ciclo de vida) van a Sec 17 con
+  las dos citas. No las corrijas por tu cuenta.
+
+### Hojas de cálculo
+- Suelen ser catálogos de campos, listas de valores o datos maestros: van al
+  modelo de datos (Sec 10) y a los valores de los desplegables.
+
+## 4. Jerarquía entre fuentes y contradicciones
+
+1. Documento aprobado y versionado por el cliente (DF, ERS).
+2. Confirmación posterior por escrito (correo del responsable).
+3. Decisión posterior en reunión.
+4. Decisión anterior en reunión.
+
+La fuente de mayor rango y más reciente fija el valor del DDF, pero **ninguna
+contradicción se resuelve en silencio**: fila en el Registro de decisiones de la
+Sec 17 (qué se decide, cuándo, qué había antes, con las dos citas) o, si no está
+cerrada, regla marcada ⚠️ y pregunta 🔴 si afecta al diseño. Lo 🔒 validado por el
+cliente solo cambia con el visto bueno del analista (`actualizacion.md`).
+
+## 5. Confidencialidad
+
+- La carpeta `fuentes/` contiene información del cliente: no se publica ni se
+  comparte fuera del equipo del proyecto.
+- No copies al `ddf.md` correos, teléfonos ni datos personales de las fuentes.
+- No envíes contenido de las fuentes a servicios externos para verlo o
+  convertirlo (conversores online, renderizadores públicos de diagramas).

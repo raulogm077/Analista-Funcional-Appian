@@ -1,0 +1,128 @@
+{
+  "id": "aena",
+  "name": "Aena",
+  "source": "Logotipo y paleta extraídos de www.aena.es (assets/images/logo_aena_es.svg y assets/css/main.css), septiembre 2026",
+  "site": {
+    "_comment": "Propiedades reales del objeto Site de Appian. El equipo de desarrollo las copia tal cual en el Site.",
+    "navigationLayout": "HEADER_BAR",
+    "headerBarStyle": "MERCURY",
+    "backgroundColor": "#1A2732",
+    "selectedPageHighlightColor": "#90CE00",
+    "accentColor": "#527500",
+    "loadingBarColor": "#90CE00",
+    "buttonShape": "SEMI_ROUNDED",
+    "inputShape": "SEMI_ROUNDED",
+    "dialogShape": "SEMI_ROUNDED",
+    "useUppercase": false,
+    "showUserMenu": true,
+    "logo": "logo-aena-on-dark.svg",
+    "logoAltText": "Aena"
+  },
+  "typeface": {
+    "prototype": "Open Sans",
+    "appian": "Open Sans es la tipografía por defecto de Appian en web. Si AENA quiere su tipografía corporativa (AenaSansNew, WOFF2 alojada en aena.es), se configura como Custom Typeface en Admin Console > Branding > Typefaces y aplica a todos los sites del entorno."
+  },
+  "palette": {
+    "_comment": "Colores corporativos para usar como hex en parámetros SAIL que aceptan hex (color de botón, decorativeBar vía cardLayout style/hex, stamps, charts).",
+    "navy": "#1A2732",
+    "green": "#90CE00",
+    "greenDark": "#527500",
+    "greenMid": "#72A300",
+    "slate": "#525C65",
+    "grayLight": "#E9ECEF",
+    "pink": "#EC4371",
+    "red": "#D11447",
+    "orange": "#FF9F2F",
+    "pageBg": "#F4F5F7",
+    "white": "#FFFFFF"
+  },
+  "components": {
+    "_comment": "Convenciones de uso de la marca en componentes SAIL (ver references/design-rules.md, basada en el SAIL Design System de Appian)",
+    "primaryButton": {
+      "style": "SOLID",
+      "color": "#90CE00",
+      "_uso": "Un único botón SOLID por pantalla: la acción más frecuente"
+    },
+    "secondaryButton": {
+      "style": "OUTLINE",
+      "color": "ACCENT"
+    },
+    "destructiveButton": {
+      "style": "GHOST",
+      "color": "NEGATIVE",
+      "_uso": "Borrar o cancelar algo guardado; siempre con confirmHeader/confirmMessage"
+    },
+    "chartColorScheme": [
+      "#1A2732",
+      "#90CE00",
+      "#527500",
+      "#525C65",
+      "#72A300",
+      "#9D9D9C",
+      "#EC4371",
+      "#FF9F2F"
+    ],
+    "toolbarButton": {
+      "style": "OUTLINE",
+      "color": "SECONDARY",
+      "size": "SMALL",
+      "_uso": "Acciones sobre una parte del contenido (encima de un grid, dentro de una card)"
+    },
+    "contentCard": {
+      "style": "NONE",
+      "showBorder": false,
+      "showShadow": true,
+      "shape": "SEMI_ROUNDED",
+      "padding": "STANDARD",
+      "_uso": "Cards de contenido sobre fondo gris (headerContentLayout TRANSPARENT). Sobre fondo blanco: showBorder true y sin sombra"
+    },
+    "pageBackground": {
+      "cardPages": "TRANSPARENT",
+      "forms": "WHITE"
+    }
+  },
+  "appianSemanticApprox": {
+    "_comment": "Appian no publica los hex de sus colores semánticos: el prototipo usa aproximaciones visuales. En SAIL se usan SIEMPRE los enumerados (POSITIVE, NEGATIVE...), nunca estos hex.",
+    "POSITIVE": "#117C00",
+    "NEGATIVE": "#C8102E",
+    "WARN": "#B35C00",
+    "INFO": "#1664C0",
+    "SECONDARY": "#666666",
+    "STANDARD": "#222222",
+    "bgPositive": "#E8F5E3",
+    "bgNegative": "#FCE8EA",
+    "bgWarn": "#FFF4E0",
+    "bgInfo": "#E6F0FA",
+    "CHARCOAL_SCHEME": "#2E2E35",
+    "NAVY_SCHEME": "#0F203A",
+    "PLUM_SCHEME": "#3C2A4D"
+  },
+  "states": {
+    "_comment": "Paleta semántica de estados, común a toda la app. Tags en filas: fondo apagado (hex) y texto STANDARD, como el patrón de Appian. Iconos y textos: el enumerado. Máximo dos colores no neutros por grid; nunca el color solo (siempre con texto o icono).",
+    "neutral": {
+      "tag": "#EEF0F2",
+      "enum": "SECONDARY",
+      "uso": "Borrador, cerrado, cancelado, sin iniciar"
+    },
+    "enCurso": {
+      "tag": "#DDE7F0",
+      "enum": "#1A2732",
+      "uso": "En curso, en tramitación, en revisión"
+    },
+    "atencion": {
+      "tag": "#FCEFCA",
+      "enum": "WARN",
+      "uso": "Pendiente de otro, vence pronto, requiere atención"
+    },
+    "positivo": {
+      "tag": "#E3EFD3",
+      "enum": "POSITIVE",
+      "uso": "Aprobado, vigente, completado"
+    },
+    "negativo": {
+      "tag": "#FCDCDC",
+      "enum": "NEGATIVE",
+      "uso": "Rechazado, vencido, error, alerta"
+    }
+  }
+}

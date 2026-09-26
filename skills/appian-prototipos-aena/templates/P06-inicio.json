@@ -1,0 +1,472 @@
+{
+ "id": "inicio",
+ "title": "Inicio",
+ "type": "page",
+ "pattern": "P06",
+ "req": [
+  "RF-INICIO"
+ ],
+ "$note": "P06: cabecera + franja de KPI (una card, divisores, tendencia) + 2X/1X: tareas sin paginación con plazo y «Ver todas»; a la derecha, aviso con acción, accesos rápidos y un gráfico resumen.",
+ "interface": {
+  "type": "a!headerContentLayout",
+  "backgroundColor": "TRANSPARENT",
+  "contents": [
+   {
+    "type": "a!columnsLayout",
+    "alignVertical": "MIDDLE",
+    "marginBelow": "MORE",
+    "columns": [
+     {
+      "type": "a!columnLayout",
+      "contents": [
+       {
+        "type": "a!headingField",
+        "text": "Hola, María",
+        "size": "LARGE",
+        "headingTag": "H1",
+        "marginBelow": "EVEN_LESS"
+       },
+       {
+        "type": "a!richTextDisplayField",
+        "labelPosition": "COLLAPSED",
+        "value": [
+         {
+          "type": "a!richTextItem",
+          "text": "Expedientes de su unidad · 24 de septiembre de 2026",
+          "color": "SECONDARY"
+         }
+        ],
+        "marginBelow": "NONE"
+       }
+      ]
+     },
+     {
+      "type": "a!columnLayout",
+      "width": "AUTO",
+      "contents": [
+       {
+        "type": "a!buttonArrayLayout",
+        "align": "END",
+        "marginBelow": "NONE",
+        "buttons": [
+         {
+          "type": "a!buttonWidget",
+          "label": "Nuevo expediente",
+          "style": "SOLID",
+          "color": "#90CE00",
+          "icon": "plus",
+          "$action": {
+           "goto": "asistente"
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "a!cardLayout",
+    "style": "NONE",
+    "showBorder": false,
+    "showShadow": true,
+    "shape": "SEMI_ROUNDED",
+    "padding": "STANDARD",
+    "contents": [
+     {
+      "type": "a!columnsLayout",
+      "showDividers": true,
+      "spacing": "SPARSE",
+      "stackWhen": [
+       "PHONE",
+       "TABLET_PORTRAIT"
+      ],
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!kpiField",
+          "primaryText": "En tramitación",
+          "icon": "hourglass-half",
+          "template": "COMPACT",
+          "iconColor": "SECONDARY",
+          "$secondaryValue": 3,
+          "secondaryText": "frente al mes anterior",
+          "data": "recordType!EXP Expediente",
+          "primaryMeasure": {
+           "type": "a!measure",
+           "function": "COUNT",
+           "field": "recordType!EXP Expediente.fields.id"
+          },
+          "$filter": "fv!row.estado = \"En tramitación\""
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!kpiField",
+          "primaryText": "Pendientes de aprobación",
+          "icon": "gavel",
+          "template": "COMPACT",
+          "iconColor": "SECONDARY",
+          "$secondaryValue": 4,
+          "secondaryText": "frente al mes anterior",
+          "trendColor": "REVERSE",
+          "data": "recordType!EXP Expediente",
+          "primaryMeasure": {
+           "type": "a!measure",
+           "function": "COUNT",
+           "field": "recordType!EXP Expediente.fields.id"
+          },
+          "$filter": "fv!row.estado = \"Pendiente de aprobación\""
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!kpiField",
+          "primaryText": "Importe aprobado",
+          "icon": "eur",
+          "template": "COMPACT",
+          "iconColor": "SECONDARY",
+          "$secondaryValue": 770000,
+          "secondaryText": "frente al mes anterior",
+          "data": "recordType!EXP Expediente",
+          "primaryMeasure": {
+           "type": "a!measure",
+           "function": "SUM",
+           "field": "recordType!EXP Expediente.fields.importe"
+          },
+          "$filter": "fv!row.estado = \"Aprobado\"",
+          "$format": "eur"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "decorativeBarPosition": "TOP",
+    "decorativeBarColor": "#90CE00",
+    "marginBelow": "MORE"
+   },
+   {
+    "type": "a!columnsLayout",
+    "columns": [
+     {
+      "type": "a!columnLayout",
+      "width": "2X",
+      "contents": [
+       {
+        "type": "a!sectionLayout",
+        "label": "Mis tareas",
+        "labelSize": "MEDIUM",
+        "labelHeadingTag": "H2",
+        "labelColor": "STANDARD",
+        "marginBelow": "MORE",
+        "contents": [
+         {
+          "type": "a!cardLayout",
+          "style": "NONE",
+          "showBorder": false,
+          "showShadow": true,
+          "shape": "SEMI_ROUNDED",
+          "padding": "STANDARD",
+          "contents": [
+           {
+            "type": "a!gridField",
+            "labelPosition": "COLLAPSED",
+            "data": "data!tareas",
+            "borderStyle": "LIGHT",
+            "shadeAlternateRows": false,
+            "spacing": "STANDARD",
+            "pageSize": 10,
+            "rowHeader": 1,
+            "emptyGridMessage": "No tiene tareas pendientes",
+            "columns": [
+             {
+              "type": "a!gridColumn",
+              "label": "Tarea",
+              "value": {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "value": [
+                {
+                 "type": "a!richTextItem",
+                 "text": "Aprobar {fv!row.codigo}",
+                 "style": "STRONG",
+                 "link": {
+                  "type": "a!dynamicLink",
+                  "$action": {
+                   "goto": "tarea",
+                   "params": {
+                    "id": "{fv!row.expedienteId}"
+                   }
+                  }
+                 },
+                 "linkStyle": "STANDALONE"
+                },
+                "\n",
+                {
+                 "type": "a!richTextItem",
+                 "text": "{fv!row.titulo}",
+                 "color": "SECONDARY",
+                 "size": "SMALL"
+                }
+               ]
+              }
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Recibida",
+              "value": "{fv!row.recibida|date}",
+              "width": "NARROW"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Plazo",
+              "value": {
+               "type": "a!tagField",
+               "labelPosition": "COLLAPSED",
+               "size": "SMALL",
+               "tags": [
+                {
+                 "type": "a!tagItem",
+                 "text": "{fv!row.plazo}",
+                 "backgroundColor": "{fv!row.urgente|map:plazoColor}"
+                }
+               ]
+              },
+              "width": "NARROW_PLUS"
+             }
+            ],
+            "$note": "En Appian: record type de tareas o a!queryProcessAnalytics. 5–10 tareas sin paginación."
+           },
+           {
+            "type": "a!richTextDisplayField",
+            "labelPosition": "COLLAPSED",
+            "align": "RIGHT",
+            "marginAbove": "LESS",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Ver todas",
+              "link": {
+               "type": "a!dynamicLink",
+               "$action": {
+                "goto": "maestro"
+               }
+              },
+              "linkStyle": "STANDALONE",
+              "style": "STRONG"
+             },
+             " ",
+             {
+              "type": "a!richTextIcon",
+              "icon": "arrow-right",
+              "color": "ACCENT",
+              "link": {
+               "type": "a!dynamicLink",
+               "$action": {
+                "goto": "maestro"
+               }
+              },
+              "altText": "Ver todas"
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!columnLayout",
+      "contents": [
+       {
+        "type": "a!cardLayout",
+        "style": "WARN",
+        "showBorder": false,
+        "padding": "STANDARD",
+        "shape": "SEMI_ROUNDED",
+        "decorativeBarPosition": "START",
+        "decorativeBarColor": "WARN",
+        "marginBelow": "MORE",
+        "contents": [
+         {
+          "type": "a!sideBySideLayout",
+          "alignVertical": "MIDDLE",
+          "spacing": "STANDARD",
+          "items": [
+           {
+            "type": "a!sideBySideItem",
+            "width": "MINIMIZE",
+            "item": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextIcon",
+               "icon": "clock-o",
+               "color": "WARN",
+               "size": "MEDIUM"
+              }
+             ]
+            }
+           },
+           {
+            "type": "a!sideBySideItem",
+            "item": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextItem",
+               "text": "EXP-2026-0002: vence en 2 días",
+               "style": "STRONG"
+              },
+              "\n",
+              "Si no se resuelve a tiempo, la tarea se escala a su responsable"
+             ]
+            }
+           },
+           {
+            "type": "a!sideBySideItem",
+            "width": "MINIMIZE",
+            "item": {
+             "type": "a!buttonArrayLayout",
+             "marginBelow": "NONE",
+             "buttons": [
+              {
+               "type": "a!buttonWidget",
+               "label": "Revisar",
+               "style": "OUTLINE",
+               "color": "ACCENT",
+               "$action": {
+                "goto": "tarea",
+                "params": {
+                 "id": 2
+                }
+               },
+               "size": "SMALL"
+              }
+             ]
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!sectionLayout",
+        "label": "Accesos rápidos",
+        "labelSize": "MEDIUM",
+        "labelHeadingTag": "H2",
+        "labelColor": "STANDARD",
+        "marginBelow": "MORE",
+        "contents": [
+         {
+          "type": "a!cardLayout",
+          "style": "NONE",
+          "showBorder": false,
+          "showShadow": true,
+          "shape": "SEMI_ROUNDED",
+          "padding": "STANDARD",
+          "contents": [
+           {
+            "type": "a!recordActionField",
+            "style": "CARDS",
+            "display": "LABEL_AND_ICON",
+            "actions": [
+             {
+              "type": "a!recordActionItem",
+              "action": "recordType!EXP Expediente.actions.nuevo",
+              "$label": "Nuevo expediente",
+              "$icon": "plus",
+              "$action": {
+               "goto": "asistente"
+              }
+             },
+             {
+              "type": "a!recordActionItem",
+              "action": "recordType!EXP Expediente.actions.informe",
+              "$label": "Informes",
+              "$icon": "bar-chart",
+              "$action": {
+               "goto": "informe"
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!sectionLayout",
+        "label": "Por estado",
+        "labelSize": "MEDIUM",
+        "labelHeadingTag": "H2",
+        "labelColor": "STANDARD",
+        "marginBelow": "MORE",
+        "contents": [
+         {
+          "type": "a!cardLayout",
+          "style": "NONE",
+          "showBorder": false,
+          "showShadow": true,
+          "shape": "SEMI_ROUNDED",
+          "padding": "STANDARD",
+          "contents": [
+           {
+            "type": "a!barChartField",
+            "labelPosition": "COLLAPSED",
+            "data": "recordType!EXP Expediente",
+            "height": "AUTO",
+            "showDataLabels": true,
+            "$categories": [
+             "Borrador",
+             "En tramitación",
+             "Pendiente de aprobación",
+             "Aprobado",
+             "Cerrado",
+             "Rechazado"
+            ],
+            "config": {
+             "type": "a!barChartConfig",
+             "primaryGrouping": {
+              "type": "a!grouping",
+              "field": "recordType!EXP Expediente.fields.estado"
+             },
+             "measures": [
+              {
+               "type": "a!measure",
+               "function": "COUNT",
+               "field": "recordType!EXP Expediente.fields.id",
+               "label": "Expedientes"
+              }
+             ]
+            },
+            "colorScheme": {
+             "type": "a!colorSchemeCustom",
+             "colors": [
+              "#1A2732"
+             ]
+            }
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

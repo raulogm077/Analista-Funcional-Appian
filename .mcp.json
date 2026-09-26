@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "appian-docs": {
+      "type": "http",
+      "url": "https://appian-docs-public.mcp.kapa.ai"
+    }
+  }
+}

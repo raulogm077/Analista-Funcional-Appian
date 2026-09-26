@@ -1,0 +1,815 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "SAIL Chart Components - Chart types and chart configuration components. Verified against docs.appian.com 26.5.",
+  "version": "3.1.0",
+  "sharedParameters": {
+    "allChartFields": {
+      "description": "Parameters common to all chart field components. NOTE: chart fields do NOT support marginAbove/marginBelow.",
+      "label": {
+        "type": "Text",
+        "description": "Text to display as the field label"
+      },
+      "labelPosition": {
+        "type": "Text",
+        "validValues": [
+          "ABOVE",
+          "ADJACENT",
+          "JUSTIFIED",
+          "COLLAPSED"
+        ],
+        "default": "ABOVE",
+        "description": "Determines where the label appears. When set to COLLAPSED, the label is hidden and space is not reserved."
+      },
+      "instructions": {
+        "type": "Text",
+        "description": "Supplemental text about this field (displayed below the chart)"
+      },
+      "helpTooltip": {
+        "type": "Text",
+        "description": "Displays a help icon with the specified text as a tooltip (max 500 characters). Hidden when labelPosition is COLLAPSED."
+      },
+      "showWhen": {
+        "type": "Boolean",
+        "default": true,
+        "description": "Determines whether the component is displayed on the interface. When false, the component is not evaluated."
+      },
+      "accessibilityText": {
+        "type": "Text",
+        "description": "Additional text to be announced by screen readers. Used only for accessibility; produces no visible change."
+      }
+    },
+    "chartDataSource": {
+      "description": "Parameters for chart data configuration. Use either categories/series OR data/config approach (not both). Scatter charts are the exception: they have no config parameter (groupings/measures go directly on the field).",
+      "data": {
+        "type": "Any Type",
+        "description": "Reference to a synced record type or unsynced database-backed record type, or a!recordData(), for record-powered charts."
+      },
+      "config": {
+        "type": "Chart Config",
+        "description": "Chart configuration function (e.g., a!columnChartConfig(), a!pieChartConfig()). Used with record data. NOT available on a!scatterChartField."
+      }
+    },
+    "chartAxes": {
+      "description": "Axis configuration for charts with X and Y axes (column, bar, line, area; scatter additionally supports xAxisMin/xAxisMax)",
+      "xAxisTitle": {
+        "type": "Text",
+        "description": "Title for the X-axis"
+      },
+      "yAxisTitle": {
+        "type": "Text",
+        "description": "Title for the Y-axis"
+      },
+      "yAxisMin": {
+        "type": "Number (Decimal)",
+        "description": "Minimum displayed point on the vertical axis"
+      },
+      "yAxisMax": {
+        "type": "Number (Decimal)",
+        "description": "Maximum displayed point on the vertical axis"
+      },
+      "xAxisStyle": {
+        "type": "Text",
+        "validValues": [
+          "STANDARD",
+          "NONE"
+        ],
+        "default": "STANDARD",
+        "description": "Determines how to display the labels and axis separators for the X-axis"
+      },
+      "yAxisStyle": {
+        "type": "Text",
+        "validValues": [
+          "STANDARD",
+          "MINIMAL",
+          "NONE"
+        ],
+        "default": "STANDARD",
+        "description": "Determines how to display the labels, axis separators, and grid lines for the Y-axis"
+      },
+      "allowDecimalAxisLabels": {
+        "type": "Boolean",
+        "default": false,
+        "description": "Allows dependent values to display as decimal numbers instead of integers"
+      }
+    },
+    "chartDisplay": {
+      "description": "Common display options for charts. Exceptions: a!pieChartField has NO showLegend (use seriesLabelStyle) and its showTooltips defaults to false.",
+      "showLegend": {
+        "type": "Boolean",
+        "default": true,
+        "description": "Determines whether the color legend is displayed below the chart"
+      },
+      "showDataLabels": {
+        "type": "Boolean",
+        "default": false,
+        "description": "Determines if data values are displayed on the chart"
+      },
+      "showTooltips": {
+        "type": "Boolean",
+        "default": true,
+        "description": "Determines whether tooltips display the data value on hover (pie chart default is false)"
+      },
+      "allowImageDownload": {
+        "type": "Boolean",
+        "default": false,
+        "description": "Shows download button to save chart as image"
+      }
+    },
+    "chartRefresh": {
+      "description": "Auto-refresh parameters for charts with dynamic data",
+      "refreshAlways": {
+        "type": "Boolean",
+        "default": false,
+        "description": "Refreshes chart after every user interaction and at each refresh interval"
+      },
+      "refreshAfter": {
+        "type": "List of Text",
+        "validValues": [
+          "RECORD_ACTION"
+        ],
+        "description": "Refreshes chart after specified events occur"
+      },
+      "refreshInterval": {
+        "type": "Number (Decimal)",
+        "validValues": [
+          "0.5",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "10",
+          "30",
+          "60"
+        ],
+        "description": "Time-based refresh interval in minutes. Null means no automatic refresh."
+      },
+      "refreshOnReferencedVarChange": {
+        "type": "Boolean",
+        "default": true,
+        "description": "Refreshes chart when variables referenced in data parameter change"
+      },
+      "refreshOnVarChange": {
+        "type": "Any Type",
+        "description": "Single variable or list of variables that trigger chart refresh when changed"
+      },
+      "loadDataAsync": {
+        "type": "Boolean",
+        "default": false,
+        "description": "Allows the interface to load without waiting for chart data. Chart displays loading indicator until data loads. Only applies when a record type is the data source."
+      }
+    }
+  },
+  "components": {
+    "a!columnChartField": {
+      "category": "chart",
+      "inherits": [
+        "allChartFields",
+        "chartDataSource",
+        "chartAxes",
+        "chartDisplay",
+        "chartRefresh"
+      ],
+      "parameters": {
+        "categories": {
+          "type": "List of Text",
+          "description": "Text array to display on the X-axis next to each column. Required when not using data/config approach."
+        },
+        "series": {
+          "type": "List of ChartSeries",
+          "description": "Array of data series created with a!chartSeries(). Multiple series create grouped or stacked bars. Required when not using data/config approach."
+        },
+        "height": {
+          "type": "Text",
+          "validValues": [
+            "MICRO",
+            "SHORT",
+            "MEDIUM",
+            "TALL"
+          ],
+          "default": "MEDIUM"
+        },
+        "colorScheme": {
+          "type": "Any Type",
+          "validValues": [
+            "CLASSIC",
+            "MIDNIGHT",
+            "OCEAN",
+            "MOSS",
+            "BERRY",
+            "PARACHUTE",
+            "RAINFOREST",
+            "SUNSET"
+          ],
+          "default": "RAINFOREST",
+          "description": "Color palette for chart. Accepts enumerated values or custom scheme via a!colorSchemeCustom()."
+        },
+        "stacking": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "NORMAL",
+            "PERCENT_TO_TOTAL"
+          ],
+          "default": "NONE",
+          "description": "NONE: grouped bars; NORMAL: stacked bars with values; PERCENT_TO_TOTAL: stacked bars as percentages"
+        },
+        "referenceLines": {
+          "type": "List of Variant",
+          "description": "Array of reference lines created with a!chartReferenceLine()"
+        }
+      },
+      "description": "Vertical bars for data changes over time",
+      "notes": [
+        "Use categories/series OR data/config (not both)",
+        "Multiple series with stacking NONE produces grouped bars",
+        "Multiple series with stacking NORMAL produces single stacked bar per category",
+        "Record-powered charts: dataLimit default 100, max 5,000 data points",
+        "Incompatible with offline mobile, process reports, and autoscaling"
+      ]
+    },
+    "a!pieChartField": {
+      "category": "chart",
+      "inherits": [
+        "allChartFields",
+        "chartDataSource",
+        "chartDisplay",
+        "chartRefresh"
+      ],
+      "parameters": {
+        "series": {
+          "type": "List of PieChartSeries",
+          "description": "Array of data slices created with a!chartSeries(). Required when not using data/config approach."
+        },
+        "height": {
+          "type": "Text",
+          "validValues": [
+            "SHORT",
+            "MEDIUM",
+            "TALL"
+          ],
+          "default": "MEDIUM"
+        },
+        "showAsPercentage": {
+          "type": "Boolean",
+          "default": false,
+          "description": "Displays values as percentages instead of raw numbers"
+        },
+        "showTooltips": {
+          "type": "Boolean",
+          "default": false,
+          "description": "Determines if a tooltip displays the data value for a pie slice. Default: false (unlike other chart types, which default to true)."
+        },
+        "style": {
+          "type": "Text",
+          "validValues": [
+            "PIE",
+            "DONUT"
+          ],
+          "default": "PIE",
+          "description": "PIE: full circle; DONUT: circle with center cutout"
+        },
+        "seriesLabelStyle": {
+          "type": "Text",
+          "validValues": [
+            "ON_CHART",
+            "LEGEND",
+            "NONE"
+          ],
+          "default": "ON_CHART",
+          "description": "Determines where series labels are displayed"
+        },
+        "colorScheme": {
+          "type": "Any Type",
+          "validValues": [
+            "CLASSIC",
+            "MIDNIGHT",
+            "OCEAN",
+            "MOSS",
+            "BERRY",
+            "PARACHUTE",
+            "RAINFOREST",
+            "SUNSET"
+          ],
+          "default": "RAINFOREST",
+          "description": "Color palette for chart. Accepts enumerated values or custom scheme via a!colorSchemeCustom()."
+        }
+      },
+      "description": "Circular slices for parts of a whole",
+      "notes": [
+        "Use series OR data/config (not both)",
+        "DONUT style creates ring chart with empty center",
+        "Record-powered charts: dataLimit default 100, max 5,000 data points"
+      ],
+      "_notes": "Per Appian docs (verified 26.5), pieChartField does NOT accept showLegend despite the schema's chartDisplay inheritance. Use seriesLabelStyle: 'LEGEND' | 'ON_CHART' | 'NONE' for legend control. The inherited showDataLabels (default false) and allowImageDownload ARE accepted; showTooltips is accepted but defaults to FALSE for pie charts. There is no stacking, no axes, and no MICRO height."
+    },
+    "a!lineChartField": {
+      "category": "chart",
+      "inherits": [
+        "allChartFields",
+        "chartDataSource",
+        "chartAxes",
+        "chartDisplay",
+        "chartRefresh"
+      ],
+      "parameters": {
+        "categories": {
+          "type": "List of Variant",
+          "description": "Text, Date, or Date and Time array to display on the X-axis below each data point. Sort Date/DateTime arrays before using them as categories. Required when not using data/config approach."
+        },
+        "series": {
+          "type": "List of ChartSeries",
+          "description": "Array of data series created with a!chartSeries(). Each series creates a separate line. Required when not using data/config approach."
+        },
+        "height": {
+          "type": "Text",
+          "validValues": [
+            "MICRO",
+            "SHORT",
+            "MEDIUM",
+            "TALL"
+          ],
+          "default": "MEDIUM"
+        },
+        "colorScheme": {
+          "type": "Any Type",
+          "validValues": [
+            "CLASSIC",
+            "MIDNIGHT",
+            "OCEAN",
+            "MOSS",
+            "BERRY",
+            "PARACHUTE",
+            "RAINFOREST",
+            "SUNSET"
+          ],
+          "default": "RAINFOREST",
+          "description": "Color palette for chart. Accepts enumerated values or custom scheme via a!colorSchemeCustom()."
+        },
+        "referenceLines": {
+          "type": "List of Variant",
+          "description": "Array of reference lines created with a!chartReferenceLine()"
+        },
+        "connectNulls": {
+          "type": "Boolean",
+          "default": false,
+          "description": "When true, connects points across null data values; when false, creates gaps in the line"
+        }
+      },
+      "description": "Connected points for trends over time",
+      "notes": [
+        "Use categories/series OR data/config (not both)",
+        "connectNulls=false creates gaps for missing data points",
+        "Record-powered charts: dataLimit default 100, max 5,000 data points"
+      ]
+    },
+    "a!barChartField": {
+      "category": "chart",
+      "inherits": [
+        "allChartFields",
+        "chartDataSource",
+        "chartAxes",
+        "chartDisplay",
+        "chartRefresh"
+      ],
+      "parameters": {
+        "categories": {
+          "type": "List of Text",
+          "description": "Text array to display next to each bar. Required when not using data/config approach."
+        },
+        "series": {
+          "type": "List of ChartSeries",
+          "description": "Array of data series created with a!chartSeries(). Multiple series create grouped or stacked bars. Required when not using data/config approach."
+        },
+        "height": {
+          "type": "Text",
+          "validValues": [
+            "MICRO",
+            "SHORT",
+            "MEDIUM",
+            "TALL",
+            "AUTO"
+          ],
+          "default": "AUTO",
+          "description": "AUTO (default) adjusts height based on number of categories"
+        },
+        "colorScheme": {
+          "type": "Any Type",
+          "validValues": [
+            "CLASSIC",
+            "MIDNIGHT",
+            "OCEAN",
+            "MOSS",
+            "BERRY",
+            "PARACHUTE",
+            "RAINFOREST",
+            "SUNSET"
+          ],
+          "default": "RAINFOREST",
+          "description": "Color palette for chart. Accepts enumerated values or custom scheme via a!colorSchemeCustom()."
+        },
+        "stacking": {
+          "type": "Text",
+          "validValues": [
+            "NONE",
+            "NORMAL",
+            "PERCENT_TO_TOTAL"
+          ],
+          "default": "NONE",
+          "description": "NONE: grouped bars; NORMAL: stacked bars with values; PERCENT_TO_TOTAL: stacked bars as percentages"
+        },
+        "referenceLines": {
+          "type": "List of Variant",
+          "description": "Array of reference lines created with a!chartReferenceLine()"
+        }
+      },
+      "description": "Horizontal bars for values at same time point",
+      "notes": [
+        "Use categories/series OR data/config (not both)",
+        "Bar chart is the only chart whose default height is AUTO",
+        "Record-powered charts: dataLimit default 100, max 5,000 data points"
+      ]
+    },
+    "a!areaChartField": {
+      "category": "chart",
+      "inherits": [
+        "allChartFields",
+        "chartDataSource",
+        "chartAxes",
+        "chartDisplay",
+        "chartRefresh"
+      ],
+      "parameters": {
+        "categories": {
+          "type": "List of Variant",
+          "description": "Text, Date, or Date and Time array to display on the X-axis below each data point. Sort Date/DateTime arrays before using them as categories. Required when not using data/config approach."
+        },
+        "series": {
+          "type": "List of ChartSeries",
+          "description": "Array of data series created with a!chartSeries(). Each series creates a separate shaded area. Required when not using data/config approach."
+        },
+        "height": {
+          "type": "Text",
+          "validValues": [
+            "MICRO",
+            "SHORT",
+            "MEDIUM",
+            "TALL"
+          ],
+          "default": "MEDIUM"
+        },
+        "colorScheme": {
+          "type": "Any Type",
+          "validValues": [
+            "CLASSIC",
+            "MIDNIGHT",
+            "OCEAN",
+            "MOSS",
+            "BERRY",
+            "PARACHUTE",
+            "RAINFOREST",
+            "SUNSET"
+          ],
+          "default": "RAINFOREST",
+          "description": "Color palette for chart. Accepts enumerated values or custom scheme via a!colorSchemeCustom()."
+        },
+        "stacking": {
+          "type": "Text",
+          "validValues": [
+            "NORMAL",
+            "PERCENT_TO_TOTAL",
+            "NONE"
+          ],
+          "default": "NORMAL",
+          "description": "NORMAL: stacked areas; PERCENT_TO_TOTAL: stacked as percentages; NONE: overlapping areas"
+        },
+        "connectNulls": {
+          "type": "Boolean",
+          "default": false,
+          "description": "When true, connects the area across null points; when false, renders a gap on either side of the null"
+        },
+        "referenceLines": {
+          "type": "List of Variant",
+          "description": "Array of reference lines created with a!chartReferenceLine()"
+        }
+      },
+      "description": "Area chart with shaded regions between line and axis",
+      "notes": [
+        "Use categories/series OR data/config (not both)",
+        "Default stacking is NORMAL (unlike column/bar which default to NONE)",
+        "Record-powered charts: dataLimit default 100, max 5,000 data points"
+      ]
+    },
+    "a!scatterChartField": {
+      "category": "chart",
+      "inherits": [
+        "allChartFields",
+        "chartDisplay",
+        "chartRefresh"
+      ],
+      "parameters": {
+        "data": {
+          "type": "Any Type",
+          "required": true,
+          "description": "Reference to a synced record type or unsynced database-backed record type. Accepts a!recordData() or a record type reference. Scatter charts ONLY work with record data."
+        },
+        "primaryGrouping": {
+          "type": "Grouping",
+          "description": "Defines the field labels to display on the points in the chart, configured using a!grouping()"
+        },
+        "secondaryGrouping": {
+          "type": "Grouping",
+          "description": "Optional second grouping configured using a!grouping(); displays a color legend when used"
+        },
+        "xAxisMeasure": {
+          "type": "Measure",
+          "description": "Numerical calculation for the X-axis, configured using a!measure()"
+        },
+        "yAxisMeasure": {
+          "type": "Measure",
+          "description": "Numerical calculation for the Y-axis, configured using a!measure()"
+        },
+        "sort": {
+          "type": "SortInfo",
+          "description": "a!sortInfo() sort; use the alias of any grouping or measure, or a record field reference"
+        },
+        "dataLimit": {
+          "type": "Integer",
+          "description": "Maximum number of data points to display. Default: 5000. Valid values: 1-5000 (unlike other chart configs whose default is 100)."
+        },
+        "link": {
+          "type": "Any Type",
+          "description": "Link to execute when a user selects a data point. Use fv!selection for selection context; create with a!dynamicLink()."
+        },
+        "xAxisTitle": {
+          "type": "Text",
+          "description": "Title for the horizontal axis"
+        },
+        "yAxisTitle": {
+          "type": "Text",
+          "description": "Title for the vertical axis"
+        },
+        "xAxisMin": {
+          "type": "Number (Decimal)",
+          "description": "Minimum displayed point on the horizontal axis"
+        },
+        "xAxisMax": {
+          "type": "Number (Decimal)",
+          "description": "Maximum displayed point on the horizontal axis"
+        },
+        "yAxisMin": {
+          "type": "Number (Decimal)",
+          "description": "Minimum displayed point on the vertical axis"
+        },
+        "yAxisMax": {
+          "type": "Number (Decimal)",
+          "description": "Maximum displayed point on the vertical axis"
+        },
+        "xAxisStyle": {
+          "type": "Text",
+          "validValues": [
+            "STANDARD",
+            "NONE"
+          ],
+          "default": "STANDARD"
+        },
+        "yAxisStyle": {
+          "type": "Text",
+          "validValues": [
+            "STANDARD",
+            "MINIMAL",
+            "NONE"
+          ],
+          "default": "STANDARD"
+        },
+        "allowDecimalAxisLabels": {
+          "type": "Boolean",
+          "default": false,
+          "description": "Allows values to display as decimal numbers instead of integers"
+        },
+        "referenceLines": {
+          "type": "List of Variant",
+          "description": "Array of reference lines created with a!chartReferenceLine()"
+        },
+        "height": {
+          "type": "Text",
+          "validValues": [
+            "SHORT",
+            "MEDIUM",
+            "TALL"
+          ],
+          "default": "MEDIUM",
+          "description": "Chart height. No MICRO size for scatter charts."
+        },
+        "colorScheme": {
+          "type": "Any Type",
+          "validValues": [
+            "CLASSIC",
+            "MIDNIGHT",
+            "OCEAN",
+            "MOSS",
+            "BERRY",
+            "PARACHUTE",
+            "RAINFOREST",
+            "SUNSET"
+          ],
+          "default": "RAINFOREST",
+          "description": "Color palette for chart. Accepts enumerated values or custom scheme via a!colorSchemeCustom()."
+        }
+      },
+      "description": "Points showing relationship between two numerical values",
+      "notes": [
+        "Scatter charts ONLY work with record data (recordType! reference or a!recordData) - cannot use categories/series approach",
+        "There is NO config parameter and NO a!scatterChartConfig function: set primaryGrouping, xAxisMeasure, and yAxisMeasure directly on the field",
+        "showLegend only applies when a secondaryGrouping is used",
+        "dataLimit default 5000 (max 5000)"
+      ]
+    },
+    "a!columnChartConfig": {
+      "category": "chart-config",
+      "parameters": {
+        "primaryGrouping": {
+          "type": "Grouping",
+          "description": "Primary grouping created with a!grouping(). Determines X-axis categories."
+        },
+        "secondaryGrouping": {
+          "type": "Grouping",
+          "description": "Secondary grouping created with a!grouping(). Creates grouped or stacked series."
+        },
+        "measures": {
+          "type": "List of Measure",
+          "description": "Array of measures created with a!measure(). If no measure is provided, a count of records is shown."
+        },
+        "sort": {
+          "type": "SortInfo",
+          "description": "Sort configuration created with a!sortInfo(). Use the alias of any grouping or measure, or a record field reference."
+        },
+        "dataLimit": {
+          "type": "Integer",
+          "description": "Maximum number of data points to display. Default: 100. Valid values: 1-5000."
+        },
+        "link": {
+          "type": "Any Type",
+          "description": "Link to execute when chart element is clicked. Use fv!selection for selection context; create with a!dynamicLink()."
+        },
+        "showIntervalsWithNoData": {
+          "type": "Boolean",
+          "description": "When true, the axis displays date/time values that have no data (e.g., show February even if empty). Only available when a Date, Time, or Date and Time field is the primary grouping. Default: false."
+        }
+      },
+      "description": "Configuration for column chart with record data"
+    },
+    "a!barChartConfig": {
+      "category": "chart-config",
+      "parameters": {
+        "primaryGrouping": {
+          "type": "Grouping",
+          "description": "Primary grouping created with a!grouping(). Determines Y-axis categories."
+        },
+        "secondaryGrouping": {
+          "type": "Grouping",
+          "description": "Secondary grouping created with a!grouping(). Creates grouped or stacked series."
+        },
+        "measures": {
+          "type": "List of Measure",
+          "description": "Array of measures created with a!measure(). If no measure is provided, a count of records is shown."
+        },
+        "sort": {
+          "type": "SortInfo",
+          "description": "Sort configuration created with a!sortInfo(). Use the alias of any grouping or measure, or a record field reference."
+        },
+        "dataLimit": {
+          "type": "Integer",
+          "description": "Maximum number of data points to display. Default: 100. Valid values: 1-5000."
+        },
+        "link": {
+          "type": "Any Type",
+          "description": "Link to execute when chart element is clicked. Use fv!selection for selection context; create with a!dynamicLink()."
+        },
+        "showIntervalsWithNoData": {
+          "type": "Boolean",
+          "description": "When true, the axis displays date/time values that have no data. Only available when a Date, Time, or Date and Time field is the primary grouping. Default: false."
+        }
+      },
+      "description": "Configuration for bar chart with record data"
+    },
+    "a!lineChartConfig": {
+      "category": "chart-config",
+      "parameters": {
+        "primaryGrouping": {
+          "type": "Grouping",
+          "description": "Primary grouping created with a!grouping(). Determines X-axis categories."
+        },
+        "secondaryGrouping": {
+          "type": "Grouping",
+          "description": "Secondary grouping created with a!grouping(). Creates multiple lines."
+        },
+        "measures": {
+          "type": "List of Measure",
+          "description": "Array of measures created with a!measure(). If no measure is provided, a count of records is shown."
+        },
+        "sort": {
+          "type": "SortInfo",
+          "description": "Sort configuration created with a!sortInfo(). Use the alias of any grouping or measure, or a record field reference."
+        },
+        "dataLimit": {
+          "type": "Integer",
+          "description": "Maximum number of data points to display. Default: 100. Valid values: 1-5000."
+        },
+        "link": {
+          "type": "Any Type",
+          "description": "Link to execute when chart element is clicked. Use fv!selection for selection context; create with a!dynamicLink()."
+        },
+        "showIntervalsWithNoData": {
+          "type": "Boolean",
+          "description": "When true, the axis displays date/time values that have no data. Only available when a Date, Time, or Date and Time field is the primary grouping. Default: false."
+        }
+      },
+      "description": "Configuration for line chart with record data"
+    },
+    "a!areaChartConfig": {
+      "category": "chart-config",
+      "parameters": {
+        "primaryGrouping": {
+          "type": "Grouping",
+          "description": "Primary grouping created with a!grouping(). Determines X-axis categories."
+        },
+        "secondaryGrouping": {
+          "type": "Grouping",
+          "description": "Secondary grouping created with a!grouping(). Creates multiple areas."
+        },
+        "measures": {
+          "type": "List of Measure",
+          "description": "Array of measures created with a!measure(). If no measure is provided, a count of records is shown."
+        },
+        "sort": {
+          "type": "List of SortInfo",
+          "description": "Sort configuration created with a!sortInfo(). Use the alias of any grouping or measure, or a record field reference."
+        },
+        "dataLimit": {
+          "type": "Integer",
+          "description": "Maximum number of data points to display. Default: 100. Valid values: 1-5000."
+        },
+        "link": {
+          "type": "Any Type",
+          "description": "Link to execute when chart element is clicked. Use fv!selection for selection context; create with a!dynamicLink()."
+        },
+        "showIntervalsWithNoData": {
+          "type": "Boolean",
+          "description": "When true, the axis displays date/time values that have no data. Only available when a Date, Time, or Date and Time field is the primary grouping. Default: false."
+        }
+      },
+      "description": "Configuration for area chart with record data. Only applies when a record type is the source in the data parameter."
+    },
+    "a!pieChartConfig": {
+      "category": "chart-config",
+      "parameters": {
+        "primaryGrouping": {
+          "type": "Grouping",
+          "description": "Primary grouping created with a!grouping(). Determines pie slices."
+        },
+        "measures": {
+          "type": "List of Measure",
+          "description": "Array of measures created with a!measure(). If no measure is provided, a count of records is shown."
+        },
+        "sort": {
+          "type": "SortInfo",
+          "description": "Sort configuration created with a!sortInfo(). Use the alias of any grouping or measure, or a record field reference."
+        },
+        "dataLimit": {
+          "type": "Integer",
+          "description": "Maximum number of data points to display. Default: 100. Valid values: 1-5000."
+        },
+        "link": {
+          "type": "Any Type",
+          "description": "Link to execute when chart element is clicked. Use fv!selection for selection context; create with a!dynamicLink()."
+        }
+      },
+      "description": "Configuration for pie chart with record data",
+      "notes": [
+        "Pie charts do not support secondaryGrouping or showIntervalsWithNoData"
+      ]
+    },
+    "a!scatterChartConfig": {
+      "category": "chart-config",
+      "deprecated": true,
+      "status": "UNVERIFIED - NOT FOUND IN APPIAN DOCS",
+      "description": "DO NOT USE. This function does not exist in the Appian documentation (verified against 26.5, 25.4, 25.2, and 24.4 - no doc page and zero references). a!scatterChartField has NO config parameter: configure scatter charts by setting primaryGrouping, secondaryGrouping, xAxisMeasure, yAxisMeasure, sort, dataLimit, and link directly on a!scatterChartField. The previously documented xAxisField/yAxisField parameters are likewise not part of any official Appian API.",
+      "parameters": {},
+      "notes": [
+        "Kept only as a tombstone so generators do not reinvent it; see a!scatterChartField for the correct 26.5 scatter chart API"
+      ]
+    },
+    "a!colorSchemeCustom": {
+      "description": "Defines a custom list of colors to apply to any chart.",
+      "documentationUrl": "https://docs.appian.com/suite/help/26.5/Chart_Custom_Color_Scheme_Component.html",
+      "parameters": {
+        "colors": {
+          "type": "List of Text",
+          "description": "List of colors to use in the custom color scheme. Valid values: any valid hex colors, optionally with two extra transparency digits (00 more transparent to FF less transparent). Maximum colors allowed: 12. Example: { \"#FF0000\", \"#00FF00\", \"#0000FF\" }."
+        }
+      },
+      "_notes": "Use as the value of a chart's colorScheme parameter when the named schemes (CLASSIC, OCEAN, etc.) don't fit. Example: colorScheme: a!colorSchemeCustom(colors: { \"#3FB8AF\", \"#A9D78A\" })."
+    }
+  }
+}

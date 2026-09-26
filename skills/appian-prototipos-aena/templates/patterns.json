@@ -1,0 +1,115 @@
+{
+ "description": "Catálogo cerrado de patrones de pantalla. Cada pantalla del prototipo declara uno. validate.py comprueba screenType y componente raíz.",
+ "patterns": {
+  "P01": {
+   "name": "Listado de registros",
+   "screenType": "page",
+   "rootTypes": [
+    "a!headerContentLayout",
+    "a!paneLayout"
+   ],
+   "template": "P01-listado.json",
+   "when": "Consultar, buscar y filtrar una entidad (acuerdos, expedientes, terceros...). Punto de entrada a la vista de registro. Con asistente de datos: a!paneLayout con el listado en un pane AUTO y el chat en un pane lateral que se muestra u oculta."
+  },
+  "P02": {
+   "name": "Vista de registro",
+   "screenType": "record",
+   "rootTypes": [],
+   "template": "P02-vista-registro.json",
+   "when": "Ficha de una entidad: cabecera con acciones de registro y vistas (Resumen, Documentos, Historial...)."
+  },
+  "P03": {
+   "name": "Formulario de página",
+   "screenType": "form",
+   "rootTypes": [
+    "a!formLayout"
+   ],
+   "template": "P03-formulario.json",
+   "when": "Alta o edición con pocos bloques que cabe en una sola página (formulario de inicio de proceso)."
+  },
+  "P04": {
+   "name": "Asistente por pasos",
+   "screenType": "form",
+   "rootTypes": [
+    "a!wizardLayout"
+   ],
+   "template": "P04-asistente.json",
+   "when": "Alta larga que se divide en pasos con validación por paso y resumen final."
+  },
+  "P05": {
+   "name": "Tarea de aprobación",
+   "screenType": "form",
+   "rootTypes": [
+    "a!formLayout"
+   ],
+   "template": "P05-tarea-aprobacion.json",
+   "when": "Tarea de usuario de un proceso: resumen de solo lectura + decisión + comentarios."
+  },
+  "P06": {
+   "name": "Inicio / cuadro de mando",
+   "screenType": "page",
+   "rootTypes": [
+    "a!headerContentLayout"
+   ],
+   "template": "P06-inicio.json",
+   "when": "Página de inicio del site: KPIs, tareas pendientes, avisos y accesos rápidos."
+  },
+  "P07": {
+   "name": "Diálogo de acción",
+   "screenType": "dialog",
+   "rootTypes": [
+    "a!formLayout",
+    "a!wizardLayout"
+   ],
+   "template": "P07-dialogo.json",
+   "when": "Acción de registro corta abierta en diálogo (editar, cambiar estado, añadir documento)."
+  },
+  "P08": {
+   "name": "Informe",
+   "screenType": "page",
+   "rootTypes": [
+    "a!headerContentLayout"
+   ],
+   "template": "P08-informe.json",
+   "when": "Analítica con filtros y gráficos alimentados por record types."
+  },
+  "P09": {
+   "name": "Maestro-detalle",
+   "screenType": "page",
+   "rootTypes": [
+    "a!headerContentLayout",
+    "a!paneLayout"
+   ],
+   "template": "P09-maestro-detalle.json",
+   "when": "Revisar muchos elementos uno tras otro sin cambiar de página: lista a la izquierda (selección) y detalle del elemento seleccionado a la derecha (bandejas, colas de revisión, incidencias)."
+  },
+  "P10": {
+   "name": "Portada de módulo",
+   "screenType": "page",
+   "rootTypes": [
+    "a!headerContentLayout"
+   ],
+   "template": "P10-portada-modulo.json",
+   "when": "Entrada a un área funcional con varias opciones: cabecera con banner, accesos como cards-botón, avisos y actividad reciente."
+  },
+  "P11": {
+   "name": "Asistente de IA",
+   "screenType": "page",
+   "rootTypes": [
+    "a!headerContentLayout",
+    "a!paneLayout"
+   ],
+   "template": "P11-asistente-ia.json",
+   "when": "Conversar con un agente o chat de IA: a página completa, junto a un documento (visor con citas) o junto a la propuesta que el usuario revisa antes de guardar. Solo si el análisis lo pide o como propuesta marcada con $assumption."
+  },
+  "P12": {
+   "name": "Revisión de datos sugeridos por IA",
+   "screenType": "form",
+   "rootTypes": [
+    "a!formLayout"
+   ],
+   "template": "P12-revision-ia.json",
+   "when": "El usuario revisa, corrige y confirma datos que ha rellenado la IA (extracción de documentos, clasificación): origen y confianza por dato, fuente consultable y guardado bloqueado hasta revisar los de confianza baja."
+  }
+ }
+}

@@ -1,0 +1,350 @@
+{
+ "id": "revision-ia",
+ "title": "Revisar datos extraídos",
+ "type": "form",
+ "pattern": "P12",
+ "req": [
+  "RF-ALTA"
+ ],
+ "$note": "P12: datos que ha rellenado la IA con origen y confianza; la fuente al lado (visor que salta a la página y resalta el valor); editar un dato lo marca como editado y revisado; Guardar bloqueado hasta revisar los de confianza baja. La IA nunca guarda: guarda el usuario.",
+ "local": {
+  "local!campos": [
+   {
+    "campo": "Unidad",
+    "valor": "AGP",
+    "confianza": "ALTA",
+    "origen": "IA",
+    "revisado": true,
+    "pagina": 1
+   },
+   {
+    "campo": "Tipo",
+    "valor": "Servicio",
+    "confianza": "ALTA",
+    "origen": "IA",
+    "revisado": true,
+    "pagina": 1
+   },
+   {
+    "campo": "Fecha de inicio",
+    "valor": "01/10/2026",
+    "confianza": "MEDIA",
+    "origen": "IA",
+    "revisado": true,
+    "pagina": 2
+   },
+   {
+    "campo": "Importe",
+    "valor": "12.400,00 €",
+    "confianza": "BAJA",
+    "origen": "IA",
+    "revisado": false,
+    "pagina": 3
+   },
+   {
+    "campo": "Responsable",
+    "valor": "Javier García",
+    "confianza": "BAJA",
+    "origen": "IA",
+    "revisado": false,
+    "pagina": 3
+   }
+  ],
+  "local!doc": 13,
+  "local!pagina": 1,
+  "local!cita": null
+ },
+ "interface": {
+  "type": "a!formLayout",
+  "titleBar": "Revisar datos extraídos de la solicitud",
+  "contentsWidth": "FULL",
+  "backgroundColor": "WHITE",
+  "showButtonDivider": true,
+  "isButtonFooterFixed": true,
+  "contents": [
+   {
+    "type": "a!cardLayout",
+    "style": "INFO",
+    "showBorder": false,
+    "padding": "STANDARD",
+    "shape": "SEMI_ROUNDED",
+    "decorativeBarPosition": "START",
+    "decorativeBarColor": "INFO",
+    "marginBelow": "MORE",
+    "contents": [
+     {
+      "type": "a!sideBySideLayout",
+      "alignVertical": "MIDDLE",
+      "spacing": "STANDARD",
+      "items": [
+       {
+        "type": "a!sideBySideItem",
+        "width": "MINIMIZE",
+        "item": {
+         "type": "a!richTextDisplayField",
+         "labelPosition": "COLLAPSED",
+         "value": [
+          {
+           "type": "a!richTextIcon",
+           "icon": "magic",
+           "color": "ACCENT",
+           "size": "MEDIUM"
+          }
+         ]
+        }
+       },
+       {
+        "type": "a!sideBySideItem",
+        "item": {
+         "type": "a!richTextDisplayField",
+         "labelPosition": "COLLAPSED",
+         "value": [
+          {
+           "type": "a!richTextItem",
+           "text": "Revise los datos con confianza baja",
+           "style": "STRONG"
+          },
+          "\n",
+          "La IA ha rellenado 5 campos a partir de la solicitud escaneada. Pulse «Página N» para ver de dónde sale cada dato."
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "a!columnsLayout",
+    "columns": [
+     {
+      "type": "a!columnLayout",
+      "width": "3X",
+      "contents": [
+       {
+        "type": "a!gridLayout",
+        "label": "Datos sugeridos",
+        "labelPosition": "COLLAPSED",
+        "borderStyle": "LIGHT",
+        "shadeAlternateRows": false,
+        "headerCells": [
+         {
+          "type": "a!gridLayoutHeaderCell",
+          "label": "Campo"
+         },
+         {
+          "type": "a!gridLayoutHeaderCell",
+          "label": "Valor"
+         },
+         {
+          "type": "a!gridLayoutHeaderCell",
+          "label": "Origen"
+         },
+         {
+          "type": "a!gridLayoutHeaderCell",
+          "label": "Confianza"
+         },
+         {
+          "type": "a!gridLayoutHeaderCell",
+          "label": "Revisado"
+         }
+        ],
+        "columnConfigs": [
+         {
+          "type": "a!gridLayoutColumnConfig",
+          "width": "NARROW_PLUS"
+         },
+         {
+          "type": "a!gridLayoutColumnConfig"
+         },
+         {
+          "type": "a!gridLayoutColumnConfig",
+          "width": "NARROW_PLUS"
+         },
+         {
+          "type": "a!gridLayoutColumnConfig",
+          "width": "NARROW_PLUS"
+         },
+         {
+          "type": "a!gridLayoutColumnConfig",
+          "width": "NARROW_PLUS"
+         }
+        ],
+        "rows": [
+         {
+          "type": "a!forEach",
+          "items": "local!campos",
+          "expression": {
+           "type": "a!gridRowLayout",
+           "contents": [
+            {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextItem",
+               "text": "{fv!item.campo}",
+               "style": "STRONG"
+              },
+              "\n",
+              {
+               "type": "a!richTextItem",
+               "text": "Página {fv!item.pagina}",
+               "size": "SMALL",
+               "linkStyle": "STANDALONE",
+               "link": {
+                "type": "a!dynamicLink",
+                "saveInto": [
+                 {
+                  "type": "a!save",
+                  "target": "local!pagina",
+                  "value": "{fv!item.pagina}"
+                 },
+                 {
+                  "type": "a!save",
+                  "target": "local!cita",
+                  "value": "{fv!item.valor}"
+                 }
+                ]
+               }
+              }
+             ]
+            },
+            {
+             "type": "a!textField",
+             "label": "{fv!item.campo}",
+             "value": "fv!item.valor",
+             "saveInto": [
+              "fv!item.valor",
+              {
+               "type": "a!save",
+               "target": "fv!item.origen",
+               "value": "EDITADO"
+              },
+              {
+               "type": "a!save",
+               "target": "fv!item.revisado",
+               "value": true
+              }
+             ]
+            },
+            {
+             "type": "a!tagField",
+             "size": "SMALL",
+             "tags": [
+              {
+               "type": "a!tagItem",
+               "text": "{fv!item.origen|map:origenTexto}",
+               "backgroundColor": "#EEF0F2"
+              }
+             ]
+            },
+            {
+             "type": "a!tagField",
+             "labelPosition": "COLLAPSED",
+             "size": "SMALL",
+             "tags": [
+              {
+               "type": "a!tagItem",
+               "text": "{fv!item.confianza|map:confianzaTexto}",
+               "backgroundColor": "{fv!item.confianza|map:confianzaColor}"
+              }
+             ]
+            },
+            {
+             "type": "a!booleanCheckboxField",
+             "choiceLabel": "Revisado",
+             "value": "fv!item.revisado",
+             "saveInto": "fv!item.revisado",
+             "showWhen": "fv!item.confianza = \"BAJA\""
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "type": "a!richTextDisplayField",
+        "labelPosition": "COLLAPSED",
+        "marginBelow": "LESS",
+        "value": [
+         {
+          "type": "a!richTextIcon",
+          "icon": "info-circle",
+          "color": "SECONDARY"
+         },
+         " ",
+         {
+          "type": "a!richTextItem",
+          "text": "El botón Guardar se activa cuando estén revisados los datos de confianza baja.",
+          "color": "SECONDARY",
+          "size": "SMALL"
+         }
+        ],
+        "marginAbove": "STANDARD"
+       }
+      ]
+     },
+     {
+      "type": "a!columnLayout",
+      "width": "2X",
+      "contents": [
+       {
+        "type": "a!documentViewerField",
+        "label": "Solicitud escaneada",
+        "labelPosition": "COLLAPSED",
+        "document": "local!doc",
+        "height": "TALL",
+        "initialPageDisplay": "local!pagina",
+        "highlightedText": "local!cita",
+        "altText": "Solicitud escaneada",
+        "$fileName": "Solicitud_EXP-2026-0013.pdf",
+        "$pages": 3,
+        "$content": [
+         [
+          "Solicitud de expediente",
+          "Unidad solicitante: AGP",
+          "Tipo de expediente: Servicio"
+         ],
+         [
+          "Fecha prevista de inicio: 01/10/2026"
+         ],
+         [
+          "Importe estimado: 12.400,00 €",
+          "Responsable: Javier García"
+         ]
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "buttons": {
+   "type": "a!buttonLayout",
+   "primaryButtons": [
+    {
+     "type": "a!buttonWidget",
+     "label": "Guardar datos",
+     "style": "SOLID",
+     "color": "#90CE00",
+     "$action": {
+      "goto": "listado"
+     },
+     "submit": true,
+     "disabled": "contains(local!campos.revisado, false)"
+    }
+   ],
+   "secondaryButtons": [
+    {
+     "type": "a!buttonWidget",
+     "label": "Cancelar",
+     "style": "OUTLINE",
+     "color": "ACCENT",
+     "$action": {
+      "goto": "listado"
+     }
+    }
+   ]
+  }
+ }
+}

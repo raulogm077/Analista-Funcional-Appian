@@ -1,0 +1,380 @@
+{
+ "id": "tarea",
+ "title": "Aprobar expediente",
+ "type": "form",
+ "pattern": "P05",
+ "req": [
+  "RF-APROB"
+ ],
+ "$note": "P05: resumen de solo lectura (etiqueta encima, valor grande) + documento + decisión en card con choice cards; comentario obligatorio si no se aprueba; pie fijo.",
+ "recordType": "EXP Expediente",
+ "local": {
+  "local!decision": null,
+  "local!comentarios": null
+ },
+ "interface": {
+  "type": "a!formLayout",
+  "contentsWidth": "WIDE",
+  "backgroundColor": "WHITE",
+  "showButtonDivider": true,
+  "isButtonFooterFixed": true,
+  "titleBar": {
+   "type": "a!headerTemplateSimple",
+   "title": "Aprobar expediente {rv!record.codigo}",
+   "secondaryText": "Tarea de aprobación · recibida el 20/09/2026",
+   "stampIcon": "check-square-o",
+   "stampColor": "ACCENT"
+  },
+  "contents": [
+   {
+    "type": "a!cardLayout",
+    "style": "WARN",
+    "showBorder": false,
+    "padding": "STANDARD",
+    "shape": "SEMI_ROUNDED",
+    "decorativeBarPosition": "START",
+    "decorativeBarColor": "WARN",
+    "marginBelow": "MORE",
+    "contents": [
+     {
+      "type": "a!sideBySideLayout",
+      "alignVertical": "MIDDLE",
+      "spacing": "STANDARD",
+      "items": [
+       {
+        "type": "a!sideBySideItem",
+        "width": "MINIMIZE",
+        "item": {
+         "type": "a!richTextDisplayField",
+         "labelPosition": "COLLAPSED",
+         "value": [
+          {
+           "type": "a!richTextIcon",
+           "icon": "clock-o",
+           "color": "WARN",
+           "size": "MEDIUM"
+          }
+         ]
+        }
+       },
+       {
+        "type": "a!sideBySideItem",
+        "item": {
+         "type": "a!richTextDisplayField",
+         "labelPosition": "COLLAPSED",
+         "value": [
+          {
+           "type": "a!richTextItem",
+           "text": "Vence el 30/09/2026, en 6 días",
+           "style": "STRONG"
+          },
+          "\n",
+          "Si no se resuelve a tiempo, la tarea se escala a su responsable"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "a!columnsLayout",
+    "spacing": "SPARSE",
+    "columns": [
+     {
+      "type": "a!columnLayout",
+      "width": "3X",
+      "contents": [
+       {
+        "type": "a!sectionLayout",
+        "label": "Datos del expediente",
+        "labelSize": "MEDIUM",
+        "labelHeadingTag": "H2",
+        "labelColor": "STANDARD",
+        "contents": [
+         {
+          "type": "a!richTextDisplayField",
+          "label": "Título",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextItem",
+            "text": "Título",
+            "color": "SECONDARY",
+            "size": "SMALL"
+           },
+           "\n",
+           {
+            "type": "a!richTextItem",
+            "text": "{rv!record.titulo|dash}",
+            "size": "MEDIUM"
+           }
+          ],
+          "marginBelow": "STANDARD"
+         },
+         {
+          "type": "a!columnsLayout",
+          "marginBelow": "STANDARD",
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Tipo",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Tipo",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.tipo|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Unidad",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Unidad",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.unidad|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Importe",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Importe",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.importe|eur|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "type": "a!columnsLayout",
+          "marginBelow": "STANDARD",
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Responsable",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Responsable",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.responsable|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Alta",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Alta",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.fechaAlta|date|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": []
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!sectionLayout",
+        "label": "Documentación",
+        "labelSize": "MEDIUM",
+        "labelHeadingTag": "H2",
+        "labelColor": "STANDARD",
+        "marginBelow": "NONE",
+        "contents": [
+         {
+          "type": "a!documentViewerField",
+          "labelPosition": "COLLAPSED",
+          "$fileName": "{rv!record.codigo}_memoria.pdf",
+          "height": "SHORT"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!columnLayout",
+      "width": "2X",
+      "contents": [
+       {
+        "type": "a!cardLayout",
+        "showBorder": true,
+        "shape": "SEMI_ROUNDED",
+        "padding": "MORE",
+        "borderColor": "STANDARD",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "label": "Decisión",
+          "labelSize": "MEDIUM",
+          "labelHeadingTag": "H2",
+          "labelColor": "STANDARD",
+          "contents": [
+           {
+            "type": "a!cardChoiceField",
+            "label": "Resultado",
+            "data": [
+             {
+              "id": "APROBAR",
+              "texto": "Aprobar",
+              "detalle": "El expediente pasa a «Aprobado»",
+              "icono": "check-circle",
+              "color": "POSITIVE"
+             },
+             {
+              "id": "DEVOLVER",
+              "texto": "Devolver para cambios",
+              "detalle": "El gestor recibe los comentarios",
+              "icono": "undo",
+              "color": "#B35C00"
+             },
+             {
+              "id": "RECHAZAR",
+              "texto": "Rechazar",
+              "detalle": "El expediente queda «Rechazado»",
+              "icono": "times-circle",
+              "color": "NEGATIVE"
+             }
+            ],
+            "cardTemplate": {
+             "type": "a!cardTemplateBarTextStacked",
+             "id": "fv!data.id",
+             "primaryText": "{fv!data.texto}",
+             "icon": "{fv!data.icono}",
+             "secondaryText": "{fv!data.detalle}",
+             "iconColor": "{fv!data.color}"
+            },
+            "value": "local!decision",
+            "saveInto": "local!decision",
+            "maxSelections": 1,
+            "labelPosition": "COLLAPSED",
+            "required": true,
+            "requiredMessage": "Indique el resultado"
+           },
+           {
+            "type": "a!paragraphField",
+            "label": "Comentarios",
+            "value": "local!comentarios",
+            "saveInto": "local!comentarios",
+            "height": "MEDIUM",
+            "required": "and(a!isNotNullOrEmpty(local!decision), local!decision <> \"APROBAR\")",
+            "instructions": "Obligatorios si no se aprueba"
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "buttons": {
+   "type": "a!buttonLayout",
+   "primaryButtons": [
+    {
+     "type": "a!buttonWidget",
+     "label": "Enviar decisión",
+     "style": "SOLID",
+     "color": "#90CE00",
+     "$action": {
+      "goto": "inicio"
+     },
+     "submit": true
+    }
+   ],
+   "secondaryButtons": [
+    {
+     "type": "a!buttonWidget",
+     "label": "Cancelar",
+     "style": "OUTLINE",
+     "color": "ACCENT",
+     "$action": {
+      "back": true
+     }
+    }
+   ]
+  }
+ }
+}

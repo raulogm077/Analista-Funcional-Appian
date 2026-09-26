@@ -1,0 +1,121 @@
+{
+ "id": "dialogo",
+ "title": "Editar expediente {rv!record.codigo}",
+ "type": "dialog",
+ "pattern": "P07",
+ "req": [
+  "RF-EDIT"
+ ],
+ "interface": {
+  "type": "a!formLayout",
+  "titleBar": "Editar expediente {rv!record.codigo}",
+  "contentsWidth": "NARROW",
+  "contents": [
+   {
+    "type": "a!textField",
+    "label": "Título",
+    "value": "local!titulo",
+    "saveInto": "local!titulo",
+    "required": true,
+    "characterLimit": 200
+   },
+   {
+    "type": "a!columnsLayout",
+    "columns": [
+     {
+      "type": "a!columnLayout",
+      "contents": [
+       {
+        "type": "a!dropdownField",
+        "label": "Tipo",
+        "placeholder": "Seleccione",
+        "choiceLabels": [
+         "Obra",
+         "Servicio",
+         "Suministro"
+        ],
+        "choiceValues": [
+         "Obra",
+         "Servicio",
+         "Suministro"
+        ],
+        "value": "local!tipo",
+        "saveInto": "local!tipo",
+        "required": true
+       }
+      ]
+     },
+     {
+      "type": "a!columnLayout",
+      "contents": [
+       {
+        "type": "a!dropdownField",
+        "label": "Unidad",
+        "placeholder": "Seleccione",
+        "choiceLabels": [
+         "MAD",
+         "BCN",
+         "PMI",
+         "AGP",
+         "SSCC"
+        ],
+        "choiceValues": [
+         "MAD",
+         "BCN",
+         "PMI",
+         "AGP",
+         "SSCC"
+        ],
+        "value": "local!unidad",
+        "saveInto": "local!unidad",
+        "required": true
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "a!paragraphField",
+    "label": "Descripción",
+    "value": "local!descripcion",
+    "saveInto": "local!descripcion",
+    "height": "SHORT"
+   }
+  ],
+  "buttons": {
+   "type": "a!buttonLayout",
+   "primaryButtons": [
+    {
+     "type": "a!buttonWidget",
+     "label": "Guardar",
+     "style": "SOLID",
+     "color": "#90CE00",
+     "$action": {
+      "close": true
+     },
+     "submit": true
+    }
+   ],
+   "secondaryButtons": [
+    {
+     "type": "a!buttonWidget",
+     "label": "Cancelar",
+     "style": "OUTLINE",
+     "color": "ACCENT",
+     "$action": {
+      "close": true
+     }
+    }
+   ]
+  }
+ },
+ "openFrom": "registro",
+ "recordType": "EXP Expediente",
+ "local": {
+  "local!titulo": "{rv!record.titulo}",
+  "local!tipo": "{rv!record.tipo}",
+  "local!unidad": "{rv!record.unidad}",
+  "local!descripcion": "{rv!record.descripcion}"
+ },
+ "$note": "P07: acción corta de registro en diálogo NARROW: solo los campos de la acción, Cancelar a la izquierda y la acción a la derecha."
+}

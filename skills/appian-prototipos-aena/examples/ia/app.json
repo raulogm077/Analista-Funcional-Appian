@@ -1,0 +1,2466 @@
+{
+ "app": {
+  "name": "Galería IA",
+  "language": "es",
+  "today": "2026-09-24",
+  "appianVersion": "26.9"
+ },
+ "site": {
+  "displayName": "Galería IA",
+  "home": "asistente",
+  "user": {
+   "name": "Lucía Fernández Gil"
+  },
+  "pages": [
+   {
+    "title": "Asistente",
+    "icon": "magic",
+    "screen": "asistente"
+   },
+   {
+    "title": "Incidencias",
+    "icon": "wrench",
+    "screen": "incidencias",
+    "includes": [
+     "incidencia"
+    ]
+   },
+   {
+    "title": "Pliego",
+    "icon": "file-text-o",
+    "screen": "documento"
+   },
+   {
+    "title": "Revisión",
+    "icon": "check-square-o",
+    "screen": "revision"
+   },
+   {
+    "title": "26.7–26.9",
+    "icon": "star",
+    "screen": "novedades"
+   }
+  ]
+ },
+ "requirements": [
+  {
+   "id": "R1",
+   "title": "Galería de componentes de IA"
+  }
+ ],
+ "maps": {
+  "estado": {
+   "Pendiente": "#FCEFCA",
+   "En curso": "#DDE7F0",
+   "Cerrada": "#E3EFD3",
+   "*": "#EEF0F2"
+  },
+  "estadoPaso": {
+   "Pendiente": 1,
+   "En curso": 2,
+   "Cerrada": -1
+  },
+  "estadoGrid": {
+   "Pendiente": "#FCEFCA",
+   "En curso": "#EEF0F2",
+   "Cerrada": "#EEF0F2",
+   "*": "#EEF0F2"
+  },
+  "confianzaTexto": {
+   "ALTA": "Confianza alta",
+   "MEDIA": "Confianza media",
+   "BAJA": "Confianza baja",
+   "*": "Sin sugerencia"
+  },
+  "confianzaColor": {
+   "ALTA": "#EEF0F2",
+   "MEDIA": "#EEF0F2",
+   "BAJA": "#FCEFCA",
+   "*": "#EEF0F2"
+  },
+  "origenTexto": {
+   "IA": "Sugerido por IA",
+   "EDITADO": "Editado",
+   "USUARIO": "Introducido",
+   "*": "Sin valor"
+  }
+ },
+ "data": {
+  "incidencias": {
+   "recordType": "AENA Incidencia",
+   "rows": [
+    {
+     "id": 1,
+     "codigo": "INC-2026-0412",
+     "titulo": "Fuga de agua en el falso techo de la zona de facturación",
+     "area": "Mantenimiento",
+     "aeropuerto": "MAD",
+     "estado": "En curso",
+     "prioridad": "Alta",
+     "descripcion": "Goteo continuo sobre los mostradores 812-818; se han colocado cubos y se ha acotado la zona.",
+     "fecha": "2026-09-11",
+     "responsable": "Pablo Martín Ortega"
+    },
+    {
+     "id": 2,
+     "codigo": "INC-2026-0415",
+     "titulo": "Escalera mecánica detenida en el acceso a la T4S",
+     "area": "Mantenimiento",
+     "aeropuerto": "MAD",
+     "estado": "Pendiente",
+     "prioridad": "Alta",
+     "descripcion": "La escalera 4S-03 se detiene al arrancar; posible fallo del freno de servicio.",
+     "fecha": "2026-09-12",
+     "responsable": "Javier García Ruiz"
+    },
+    {
+     "id": 3,
+     "codigo": "INC-2026-0418",
+     "titulo": "Cola excesiva en el filtro de seguridad norte",
+     "area": "Operaciones",
+     "aeropuerto": "BCN",
+     "estado": "Cerrada",
+     "prioridad": "Media",
+     "descripcion": "Tiempo de espera de 38 minutos entre las 6:00 y las 7:30 por falta de personal.",
+     "fecha": "2026-09-13",
+     "responsable": "Andrés Moreno Pastor"
+    },
+    {
+     "id": 4,
+     "codigo": "INC-2026-0421",
+     "titulo": "Pantallas de información de vuelos sin datos en la puerta B22",
+     "area": "Sistemas",
+     "aeropuerto": "BCN",
+     "estado": "En curso",
+     "prioridad": "Media",
+     "descripcion": "Los monitores FIDS de la puerta B22 muestran la pantalla en negro desde el cambio de turno.",
+     "fecha": "2026-09-14",
+     "responsable": "Rocío Sánchez Vidal"
+    },
+    {
+     "id": 5,
+     "codigo": "INC-2026-0423",
+     "titulo": "Humedad y moho en los aseos de llegadas",
+     "area": "Limpieza",
+     "aeropuerto": "PMI",
+     "estado": "Pendiente",
+     "prioridad": "Baja",
+     "descripcion": "Olor persistente y manchas de humedad en la pared del aseo de caballeros.",
+     "fecha": "2026-09-15",
+     "responsable": "Pablo Martín Ortega"
+    },
+    {
+     "id": 6,
+     "codigo": "INC-2026-0426",
+     "titulo": "Avería del sistema de climatización en la sala de embarque C",
+     "area": "Mantenimiento",
+     "aeropuerto": "AGP",
+     "estado": "En curso",
+     "prioridad": "Alta",
+     "descripcion": "Temperatura de 29 °C en la sala; la enfriadora 2 da alarma de alta presión.",
+     "fecha": "2026-09-16",
+     "responsable": "Javier García Ruiz"
+    },
+    {
+     "id": 7,
+     "codigo": "INC-2026-0430",
+     "titulo": "Pérdida de equipajes en la cinta de recogida 7",
+     "area": "Operaciones",
+     "aeropuerto": "MAD",
+     "estado": "Cerrada",
+     "prioridad": "Media",
+     "descripcion": "Maletas atascadas en la curva de la cinta 7; revisada la guía lateral.",
+     "fecha": "2026-09-17",
+     "responsable": "Andrés Moreno Pastor"
+    },
+    {
+     "id": 8,
+     "codigo": "INC-2026-0433",
+     "titulo": "Fallo de la red wifi de pasajeros en la terminal 2",
+     "area": "Sistemas",
+     "aeropuerto": "BCN",
+     "estado": "Pendiente",
+     "prioridad": "Media",
+     "descripcion": "Los pasajeros no reciben la página de acceso; el controlador inalámbrico se reinicia cada hora.",
+     "fecha": "2026-09-18",
+     "responsable": "Rocío Sánchez Vidal"
+    },
+    {
+     "id": 9,
+     "codigo": "INC-2026-0436",
+     "titulo": "Filtración de agua en la cubierta del aparcamiento P1",
+     "area": "Mantenimiento",
+     "aeropuerto": "PMI",
+     "estado": "Pendiente",
+     "prioridad": "Media",
+     "descripcion": "Tras la lluvia aparecen charcos en la planta -1 junto a los pilares 14 y 15.",
+     "fecha": "2026-09-19",
+     "responsable": "Pablo Martín Ortega"
+    },
+    {
+     "id": 10,
+     "codigo": "INC-2026-0439",
+     "titulo": "Puerta automática bloqueada en la salida de llegadas",
+     "area": "Mantenimiento",
+     "aeropuerto": "AGP",
+     "estado": "Cerrada",
+     "prioridad": "Alta",
+     "descripcion": "La puerta de doble hoja no abre por un sensor sucio; se limpió y se probó.",
+     "fecha": "2026-09-20",
+     "responsable": "Javier García Ruiz"
+    }
+   ]
+  },
+  "ventas": [
+   {
+    "id": 0,
+    "mes": "2026-06",
+    "area": "Mantenimiento",
+    "n": 12
+   },
+   {
+    "id": 1,
+    "mes": "2026-06",
+    "area": "Sistemas",
+    "n": 7
+   },
+   {
+    "id": 2,
+    "mes": "2026-06",
+    "area": "Operaciones",
+    "n": 5
+   },
+   {
+    "id": 3,
+    "mes": "2026-07",
+    "area": "Mantenimiento",
+    "n": 12
+   },
+   {
+    "id": 4,
+    "mes": "2026-07",
+    "area": "Sistemas",
+    "n": 7
+   },
+   {
+    "id": 5,
+    "mes": "2026-07",
+    "area": "Operaciones",
+    "n": 5
+   },
+   {
+    "id": 6,
+    "mes": "2026-08",
+    "area": "Mantenimiento",
+    "n": 12
+   },
+   {
+    "id": 7,
+    "mes": "2026-08",
+    "area": "Sistemas",
+    "n": 7
+   },
+   {
+    "id": 8,
+    "mes": "2026-08",
+    "area": "Operaciones",
+    "n": 5
+   }
+  ]
+ },
+ "screens": [
+  {
+   "id": "asistente",
+   "title": "Asistente de incidencias",
+   "type": "page",
+   "pattern": "P11",
+   "req": [
+    "R1"
+   ],
+   "local": {
+    "local!propuesta": null,
+    "local!valoracion": null
+   },
+   "interface": {
+    "type": "a!headerContentLayout",
+    "backgroundColor": "TRANSPARENT",
+    "contents": [
+     {
+      "type": "a!columnsLayout",
+      "alignVertical": "MIDDLE",
+      "marginBelow": "MORE",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!headingField",
+          "text": "Partes de trabajo",
+          "size": "LARGE",
+          "headingTag": "H1",
+          "marginBelow": "EVEN_LESS"
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextItem",
+            "text": "Pida al asistente que prepare el parte de una incidencia y revíselo antes de guardarlo",
+            "color": "SECONDARY"
+           }
+          ],
+          "marginBelow": "NONE"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!columnsLayout",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!cardLayout",
+          "style": "NONE",
+          "showBorder": false,
+          "showShadow": true,
+          "shape": "SEMI_ROUNDED",
+          "padding": "NONE",
+          "contents": [
+           {
+            "type": "a!agentChatField",
+            "title": "Asistente de incidencias",
+            "agent": "agent!AENA_INCIDENCIAS",
+            "welcomeMessage": "Puedo buscar incidencias, resumir su historial y preparar el parte de trabajo para que usted lo revise.\n\nPor ejemplo: «¿Qué incidencias de climatización hay abiertas en AGP?»",
+            "placeholder": "Pregunte por una incidencia o pida un parte de trabajo",
+            "height": "TALL",
+            "inputs": {
+             "usuario": "loggedInUser()"
+            },
+            "outputsSaveInto": [
+             {
+              "type": "a!save",
+              "target": "local!propuesta",
+              "value": "save!value.parte"
+             }
+            ],
+            "$sessions": [
+             {
+              "name": "Incidencias abiertas de climatización en AGP",
+              "messages": [
+               {
+                "role": "USER",
+                "text": "Incidencias abiertas de climatización en AGP"
+               },
+               {
+                "role": "TOOL",
+                "tool": "Buscar incidencias",
+                "text": "1 resultado"
+               },
+               {
+                "role": "ASSISTANT",
+                "text": "Hay **1 incidencia abierta**: INC-2026-0426, avería de la enfriadora 2 en la sala de embarque C (prioridad alta)."
+               }
+              ]
+             },
+             "Resumen semanal de Mantenimiento en MAD"
+            ],
+            "$replies": [
+             {
+              "text": "He preparado el **parte de trabajo** para la INC-2026-0426:\n\n- Revisar la presión de condensación de la enfriadora 2\n- Limpiar el condensador y comprobar el ventilador\n- Medir la temperatura de la sala tras la intervención\n\nLo tiene a la derecha para revisarlo antes de guardarlo.",
+              "tools": [
+               {
+                "tool": "Consultar incidencia",
+                "text": "INC-2026-0426",
+                "input": {
+                 "codigo": "INC-2026-0426"
+                },
+                "output": {
+                 "estado": "En curso",
+                 "equipo": "Enfriadora 2"
+                }
+               },
+               {
+                "tool": "Generar parte de trabajo",
+                "input": {
+                 "plantilla": "Climatización"
+                },
+                "output": {
+                 "tareas": 3
+                }
+               }
+              ],
+              "outputs": {
+               "parte": {
+                "incidencia": "INC-2026-0426",
+                "equipo": "Enfriadora 2 · Sala de embarque C",
+                "tareas": "Revisar la presión de condensación; limpiar el condensador y comprobar el ventilador; medir la temperatura de la sala",
+                "horas": 3
+               }
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ],
+        "width": "AUTO"
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "label": "Parte propuesto",
+          "labelSize": "MEDIUM",
+          "labelHeadingTag": "H2",
+          "labelColor": "STANDARD",
+          "contents": [
+           {
+            "type": "a!cardLayout",
+            "style": "STANDARD",
+            "showBorder": false,
+            "padding": "MORE",
+            "shape": "SEMI_ROUNDED",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "labelPosition": "COLLAPSED",
+              "align": "CENTER",
+              "value": [
+               {
+                "type": "a!richTextIcon",
+                "icon": "magic",
+                "size": "LARGE",
+                "color": "SECONDARY"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "Aún no hay parte propuesto",
+                "size": "MEDIUM_PLUS"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "Pida al asistente que prepare el parte de una incidencia",
+                "color": "SECONDARY"
+               }
+              ]
+             }
+            ],
+            "showWhen": "a!isNullOrEmpty(local!propuesta)"
+           },
+           {
+            "type": "a!cardLayout",
+            "style": "NONE",
+            "showBorder": false,
+            "showShadow": true,
+            "shape": "SEMI_ROUNDED",
+            "padding": "STANDARD",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "labelPosition": "COLLAPSED",
+              "marginBelow": "LESS",
+              "value": [
+               {
+                "type": "a!richTextIcon",
+                "icon": "info-circle",
+                "color": "SECONDARY"
+               },
+               " ",
+               {
+                "type": "a!richTextItem",
+                "text": "Borrador generado con IA: revíselo antes de guardarlo",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               }
+              ]
+             },
+             {
+              "type": "a!textField",
+              "label": "Incidencia",
+              "labelPosition": "ABOVE",
+              "value": "{local!propuesta.incidencia}",
+              "readOnly": true
+             },
+             {
+              "type": "a!textField",
+              "label": "Equipo",
+              "labelPosition": "ABOVE",
+              "value": "{local!propuesta.equipo}",
+              "readOnly": true
+             },
+             {
+              "type": "a!paragraphField",
+              "label": "Tareas",
+              "value": "local!propuesta.tareas",
+              "saveInto": "local!propuesta.tareas",
+              "height": "SHORT"
+             },
+             {
+              "type": "a!columnsLayout",
+              "columns": [
+               {
+                "type": "a!columnLayout",
+                "contents": [
+                 {
+                  "type": "a!integerField",
+                  "label": "Horas estimadas",
+                  "value": "local!propuesta.horas",
+                  "saveInto": "local!propuesta.horas"
+                 }
+                ]
+               },
+               {
+                "type": "a!columnLayout",
+                "contents": []
+               }
+              ]
+             },
+             {
+              "type": "a!richTextDisplayField",
+              "labelPosition": "COLLAPSED",
+              "marginBelow": "STANDARD",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "¿Le ha resultado útil?  ",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               {
+                "type": "a!richTextIcon",
+                "icon": "thumbs-o-up",
+                "color": "{if(local!valoracion = \"UTIL\", \"ACCENT\", \"SECONDARY\")}",
+                "size": "MEDIUM",
+                "altText": "Útil",
+                "caption": "Útil",
+                "link": {
+                 "type": "a!dynamicLink",
+                 "saveInto": [
+                  {
+                   "type": "a!save",
+                   "target": "local!valoracion",
+                   "value": "UTIL"
+                  }
+                 ]
+                }
+               },
+               "  ",
+               {
+                "type": "a!richTextIcon",
+                "icon": "thumbs-o-down",
+                "color": "{if(local!valoracion = \"NO_UTIL\", \"ACCENT\", \"SECONDARY\")}",
+                "size": "MEDIUM",
+                "altText": "No útil",
+                "caption": "No útil",
+                "link": {
+                 "type": "a!dynamicLink",
+                 "saveInto": [
+                  {
+                   "type": "a!save",
+                   "target": "local!valoracion",
+                   "value": "NO_UTIL"
+                  }
+                 ]
+                }
+               },
+               {
+                "type": "a!richTextItem",
+                "text": "   Gracias por su valoración",
+                "color": "SECONDARY",
+                "size": "SMALL",
+                "showWhen": "a!isNotNullOrEmpty(local!valoracion)"
+               }
+              ]
+             },
+             {
+              "type": "a!buttonArrayLayout",
+              "align": "END",
+              "marginBelow": "NONE",
+              "buttons": [
+               {
+                "type": "a!buttonWidget",
+                "label": "Descartar",
+                "style": "OUTLINE",
+                "color": "ACCENT",
+                "$action": {
+                 "set": {
+                  "local!propuesta": null
+                 }
+                }
+               },
+               {
+                "type": "a!buttonWidget",
+                "label": "Guardar parte",
+                "style": "SOLID",
+                "color": "#90CE00"
+               }
+              ]
+             }
+            ],
+            "showWhen": "a!isNotNullOrEmpty(local!propuesta)"
+           }
+          ]
+         }
+        ],
+        "width": "MEDIUM_PLUS"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "incidencias",
+   "title": "Incidencias",
+   "type": "page",
+   "pattern": "P01",
+   "req": [
+    "R1"
+   ],
+   "chrome": true,
+   "local": {
+    "local!asistente": true
+   },
+   "interface": {
+    "type": "a!paneLayout",
+    "panes": [
+     {
+      "type": "a!pane",
+      "width": "AUTO",
+      "backgroundColor": "TRANSPARENT",
+      "contents": [
+       {
+        "type": "a!columnsLayout",
+        "alignVertical": "MIDDLE",
+        "marginBelow": "MORE",
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!headingField",
+            "text": "Incidencias",
+            "size": "LARGE",
+            "headingTag": "H1",
+            "marginBelow": "EVEN_LESS"
+           },
+           {
+            "type": "a!richTextDisplayField",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Busque por significado: «goteras», «no funciona el aire»…",
+              "color": "SECONDARY"
+             }
+            ],
+            "marginBelow": "NONE"
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "width": "AUTO",
+          "contents": [
+           {
+            "type": "a!buttonArrayLayout",
+            "align": "END",
+            "marginBelow": "NONE",
+            "buttons": [
+             {
+              "type": "a!buttonWidget",
+              "label": "{if(local!asistente, \"Ocultar asistente\", \"Asistente\")}",
+              "icon": "magic",
+              "style": "OUTLINE",
+              "color": "ACCENT",
+              "size": "SMALL",
+              "saveInto": [
+               {
+                "type": "a!save",
+                "target": "local!asistente",
+                "value": "{not(local!asistente)}"
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!cardLayout",
+        "style": "NONE",
+        "showBorder": false,
+        "showShadow": true,
+        "shape": "SEMI_ROUNDED",
+        "padding": "STANDARD",
+        "contents": [
+         {
+          "type": "a!gridField",
+          "labelPosition": "COLLAPSED",
+          "data": "data!incidencias",
+          "borderStyle": "LIGHT",
+          "shadeAlternateRows": false,
+          "spacing": "STANDARD",
+          "pageSize": 10,
+          "rowHeader": 1,
+          "emptyGridMessage": "No hay incidencias que coincidan con la búsqueda",
+          "columns": [
+           {
+            "type": "a!gridColumn",
+            "label": "Incidencia",
+            "value": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextItem",
+               "text": "{fv!row.codigo}",
+               "style": "STRONG",
+               "link": {
+                "type": "a!dynamicLink",
+                "$action": {
+                 "goto": "incidencia",
+                 "params": {
+                  "id": "{fv!row.id}"
+                 }
+                }
+               },
+               "linkStyle": "STANDALONE"
+              },
+              "\n",
+              {
+               "type": "a!richTextItem",
+               "text": "{fv!row.aeropuerto} · {fv!row.area}",
+               "color": "SECONDARY",
+               "size": "SMALL"
+              }
+             ]
+            },
+            "width": "MEDIUM"
+           },
+           {
+            "type": "a!gridColumn",
+            "label": "Descripción",
+            "value": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextItem",
+               "text": "{fv!row.titulo}"
+              },
+              "\n",
+              {
+               "type": "a!richTextItem",
+               "text": "{fv!row.descripcion}",
+               "color": "SECONDARY",
+               "size": "SMALL"
+              }
+             ]
+            }
+           },
+           {
+            "type": "a!gridColumn",
+            "label": "Estado",
+            "value": {
+             "type": "a!tagField",
+             "labelPosition": "COLLAPSED",
+             "size": "SMALL",
+             "tags": [
+              {
+               "type": "a!tagItem",
+               "text": "{fv!row.estado}",
+               "backgroundColor": "{fv!row.estado|map:estadoGrid}"
+              }
+             ]
+            },
+            "width": "NARROW"
+           },
+           {
+            "type": "a!gridColumn",
+            "label": "Coincidencia",
+            "value": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextIcon",
+               "icon": "{if(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore] >= 0, \"circle\", \"circle-o\")}",
+               "color": "{if(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore] >= 0, \"ACCENT\", \"SECONDARY\")}",
+               "size": "SMALL",
+               "showWhen": "a!isNotNullOrEmpty(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore])"
+              },
+              {
+               "type": "a!richTextIcon",
+               "icon": "{if(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore] >= 0.6, \"circle\", \"circle-o\")}",
+               "color": "{if(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore] >= 0.6, \"ACCENT\", \"SECONDARY\")}",
+               "size": "SMALL",
+               "showWhen": "a!isNotNullOrEmpty(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore])"
+              },
+              {
+               "type": "a!richTextIcon",
+               "icon": "{if(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore] >= 0.8, \"circle\", \"circle-o\")}",
+               "color": "{if(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore] >= 0.8, \"ACCENT\", \"SECONDARY\")}",
+               "size": "SMALL",
+               "showWhen": "a!isNotNullOrEmpty(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore])"
+              },
+              "  ",
+              {
+               "type": "a!richTextItem",
+               "text": "{if(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore] >= 1, \"Exacta\", if(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore] >= 0.8, \"Alta\", if(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore] >= 0.6, \"Media\", \"Baja\")))}",
+               "color": "SECONDARY",
+               "size": "SMALL",
+               "showWhen": "a!isNotNullOrEmpty(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore])"
+              },
+              {
+               "type": "a!richTextItem",
+               "text": "–",
+               "color": "SECONDARY",
+               "showWhen": "not(a!isNotNullOrEmpty(fv!row[recordType!AENA Incidencia.searchResults.allSearchFields.similarityScore]))"
+              }
+             ]
+            },
+            "width": "NARROW_PLUS",
+            "helpTooltip": "Calidad de la coincidencia con la búsqueda"
+           }
+          ],
+          "showSearchBox": true,
+          "smartSearchType": "SEMANTIC",
+          "similarityScoreThreshold": 0.5
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!pane",
+      "width": "MEDIUM",
+      "padding": "NONE",
+      "showWhen": "local!asistente",
+      "contents": [
+       {
+        "type": "a!dataFabricChatField",
+        "title": "Pregunte a sus datos",
+        "recordTypes": [
+         "recordType!AENA Incidencia"
+        ],
+        "suggestedQuestions": [
+         {
+          "type": "a!suggestedQuestion",
+          "iconName": "list",
+          "iconColor": "ACCENT",
+          "question": "¿Cuántas incidencias hay pendientes por aeropuerto?"
+         },
+         {
+          "type": "a!suggestedQuestion",
+          "iconName": "bar-chart",
+          "iconColor": "ACCENT",
+          "question": "¿Qué área acumula más incidencias de prioridad alta?"
+         },
+         {
+          "type": "a!suggestedQuestion",
+          "iconName": "file-text-o",
+          "iconColor": "ACCENT",
+          "question": "Resume las incidencias abiertas de Mantenimiento"
+         }
+        ],
+        "$replies": [
+         "Hay **5 incidencias pendientes**:\n\n- MAD: 1\n- BCN: 1\n- PMI: 2\n- AGP: 1",
+         "**Mantenimiento** acumula 4 de las 5 incidencias de prioridad alta."
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "incidencia",
+   "title": "{rv!record.codigo} · {rv!record.titulo}",
+   "type": "record",
+   "pattern": "P02",
+   "recordType": "AENA Incidencia",
+   "req": [
+    "R1"
+   ],
+   "breadcrumb": {
+    "label": "Incidencias",
+    "goto": "incidencias"
+   },
+   "headerBackgroundColor": "#1A2732",
+   "views": [
+    {
+     "id": "resumen",
+     "label": "Resumen",
+     "interface": {
+      "type": "a!headerContentLayout",
+      "backgroundColor": "TRANSPARENT",
+      "contents": [
+       {
+        "type": "a!cardLayout",
+        "style": "NONE",
+        "showBorder": false,
+        "showShadow": true,
+        "shape": "SEMI_ROUNDED",
+        "padding": "STANDARD",
+        "contents": [
+         {
+          "type": "a!columnsLayout",
+          "showDividers": true,
+          "spacing": "SPARSE",
+          "alignVertical": "TOP",
+          "stackWhen": [
+           "PHONE",
+           "TABLET_PORTRAIT"
+          ],
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "labelPosition": "COLLAPSED",
+              "marginBelow": "EVEN_LESS",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Estado",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               }
+              ]
+             },
+             {
+              "type": "a!tagField",
+              "labelPosition": "COLLAPSED",
+              "size": "SMALL",
+              "tags": [
+               {
+                "type": "a!tagItem",
+                "text": "{rv!record.estado}",
+                "backgroundColor": "{rv!record.estado|map:estado}"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Prioridad",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Prioridad",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.prioridad|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Aeropuerto",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Aeropuerto",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.aeropuerto|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Área",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Área",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.area|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           }
+          ],
+          "marginBelow": "STANDARD"
+         },
+         {
+          "type": "a!milestoneField",
+          "labelPosition": "COLLAPSED",
+          "steps": [
+           "Pendiente",
+           "En curso",
+           "Cerrada"
+          ],
+          "active": "{rv!record.estado|map:estadoPaso}",
+          "stepStyle": "LINE",
+          "color": "ACCENT"
+         }
+        ],
+        "marginBelow": "MORE"
+       },
+       {
+        "type": "a!columnsLayout",
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!sectionLayout",
+            "label": "Datos de la incidencia",
+            "labelSize": "MEDIUM",
+            "labelHeadingTag": "H2",
+            "labelColor": "STANDARD",
+            "marginBelow": "MORE",
+            "contents": [
+             {
+              "type": "a!cardLayout",
+              "style": "NONE",
+              "showBorder": false,
+              "showShadow": true,
+              "shape": "SEMI_ROUNDED",
+              "padding": "STANDARD",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "label": "Descripción",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextItem",
+                  "text": "Descripción",
+                  "color": "SECONDARY",
+                  "size": "SMALL"
+                 },
+                 "\n",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{rv!record.descripcion|dash}",
+                  "size": "MEDIUM"
+                 }
+                ],
+                "marginBelow": "STANDARD"
+               },
+               {
+                "type": "a!columnsLayout",
+                "marginBelow": "STANDARD",
+                "columns": [
+                 {
+                  "type": "a!columnLayout",
+                  "contents": [
+                   {
+                    "type": "a!richTextDisplayField",
+                    "label": "Comunicada",
+                    "labelPosition": "COLLAPSED",
+                    "value": [
+                     {
+                      "type": "a!richTextItem",
+                      "text": "Comunicada",
+                      "color": "SECONDARY",
+                      "size": "SMALL"
+                     },
+                     "\n",
+                     {
+                      "type": "a!richTextItem",
+                      "text": "{rv!record.fecha|date|dash}",
+                      "size": "MEDIUM"
+                     }
+                    ],
+                    "marginBelow": "NONE"
+                   }
+                  ]
+                 },
+                 {
+                  "type": "a!columnLayout",
+                  "contents": [
+                   {
+                    "type": "a!richTextDisplayField",
+                    "label": "Responsable",
+                    "labelPosition": "COLLAPSED",
+                    "value": [
+                     {
+                      "type": "a!richTextItem",
+                      "text": "Responsable",
+                      "color": "SECONDARY",
+                      "size": "SMALL"
+                     },
+                     "\n",
+                     {
+                      "type": "a!richTextItem",
+                      "text": "{rv!record.responsable|dash}",
+                      "size": "MEDIUM"
+                     }
+                    ],
+                    "marginBelow": "NONE"
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ],
+          "width": "AUTO"
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!sectionLayout",
+            "label": "Pregunte por esta incidencia",
+            "labelSize": "MEDIUM",
+            "labelHeadingTag": "H2",
+            "labelColor": "STANDARD",
+            "contents": [
+             {
+              "type": "a!recordsChatField",
+              "label": "Asistente",
+              "labelPosition": "COLLAPSED",
+              "recordType": "recordType!AENA Incidencia",
+              "identifier": "rv!record.id",
+              "initialMessage": "Hola. Puedo responder preguntas sobre esta incidencia: su historial, el equipo afectado o incidencias parecidas.",
+              "suggestedQuestions": [
+               "¿Qué se ha hecho hasta ahora?",
+               "¿Hay incidencias parecidas en otros aeropuertos?"
+              ],
+              "height": "MEDIUM",
+              "buttonStyle": "PRIMARY",
+              "$replies": [
+               "Se acotó la zona y se colocaron cubos. Está **pendiente la visita del equipo de cubiertas**, prevista para mañana a las 8:00."
+              ]
+             },
+             {
+              "type": "a!richTextDisplayField",
+              "labelPosition": "COLLAPSED",
+              "marginBelow": "LESS",
+              "value": [
+               {
+                "type": "a!richTextIcon",
+                "icon": "info-circle",
+                "color": "SECONDARY"
+               },
+               " ",
+               {
+                "type": "a!richTextItem",
+                "text": "Respuestas generadas con IA: compruébelas antes de usarlas",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               }
+              ],
+              "marginAbove": "LESS"
+             }
+            ]
+           }
+          ],
+          "width": "MEDIUM_PLUS"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "id": "historial",
+     "label": "Historial",
+     "interface": {
+      "type": "a!headerContentLayout",
+      "backgroundColor": "TRANSPARENT",
+      "contents": [
+       {
+        "type": "a!cardLayout",
+        "style": "NONE",
+        "showBorder": false,
+        "showShadow": true,
+        "shape": "SEMI_ROUNDED",
+        "padding": "MORE",
+        "contents": [
+         {
+          "type": "a!eventHistoryListField",
+          "labelPosition": "COLLAPSED",
+          "eventStyle": "TIMELINE",
+          "$events": [
+           {
+            "event": "Asignada al equipo de cubiertas",
+            "user": "{rv!record.responsable}",
+            "timestamp": "{rv!record.fecha}T11:20"
+           },
+           {
+            "event": "Incidencia comunicada",
+            "user": "Centro de control",
+            "timestamp": "{rv!record.fecha}T08:40"
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "documento",
+   "title": "Consultar pliego",
+   "type": "page",
+   "pattern": "P11",
+   "req": [
+    "R1"
+   ],
+   "local": {
+    "local!doc": 101,
+    "local!pagina": 3,
+    "local!cita": "plazo máximo de 2 horas",
+    "local!v1": null
+   },
+   "interface": {
+    "type": "a!headerContentLayout",
+    "backgroundColor": "TRANSPARENT",
+    "contents": [
+     {
+      "type": "a!columnsLayout",
+      "alignVertical": "MIDDLE",
+      "marginBelow": "MORE",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!headingField",
+          "text": "Consultar pliego de climatización",
+          "size": "LARGE",
+          "headingTag": "H1",
+          "marginBelow": "EVEN_LESS"
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextItem",
+            "text": "Las respuestas indican la página de la que salen; pulse la cita para verla en el documento",
+            "color": "SECONDARY"
+           }
+          ],
+          "marginBelow": "NONE"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!columnsLayout",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "width": "MEDIUM_PLUS",
+        "contents": [
+         {
+          "type": "a!chatField",
+          "title": "Pregunte al pliego",
+          "height": "EXTRA_TALL",
+          "showBorder": true,
+          "shape": "SEMI_ROUNDED",
+          "placeholder": "Pregunte por el contenido del documento",
+          "messages": [
+           {
+            "type": "a!chatMessage",
+            "role": "USER",
+            "messageContent": "¿En cuánto tiempo hay que atender una avería crítica?"
+           },
+           {
+            "type": "a!chatMessage",
+            "role": "ASSISTANT",
+            "messageContent": {
+             "type": "a!cardLayout",
+             "style": "STANDARD",
+             "showBorder": false,
+             "shape": "SEMI_ROUNDED",
+             "padding": "STANDARD",
+             "contents": [
+              {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "marginBelow": "LESS",
+               "value": [
+                "En un ",
+                {
+                 "type": "a!richTextItem",
+                 "text": "plazo máximo de 2 horas",
+                 "style": "STRONG"
+                },
+                " desde el aviso. Las no críticas, en 24 horas."
+               ]
+              },
+              {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "marginBelow": "LESS",
+               "value": [
+                {
+                 "type": "a!richTextItem",
+                 "text": "Fuentes: ",
+                 "color": "SECONDARY",
+                 "size": "SMALL",
+                 "style": "STRONG"
+                },
+                {
+                 "type": "a!richTextIcon",
+                 "icon": "quote-left",
+                 "color": "SECONDARY"
+                },
+                " ",
+                {
+                 "type": "a!richTextItem",
+                 "text": "p. 3 · «plazo máximo de 2 horas»",
+                 "size": "SMALL",
+                 "linkStyle": "STANDALONE",
+                 "link": {
+                  "type": "a!dynamicLink",
+                  "saveInto": [
+                   {
+                    "type": "a!save",
+                    "target": "local!pagina",
+                    "value": 3
+                   },
+                   {
+                    "type": "a!save",
+                    "target": "local!cita",
+                    "value": "plazo máximo de 2 horas"
+                   }
+                  ]
+                 }
+                }
+               ]
+              },
+              {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "marginBelow": "NONE",
+               "value": [
+                {
+                 "type": "a!richTextItem",
+                 "text": "¿Le ha resultado útil?  ",
+                 "color": "SECONDARY",
+                 "size": "SMALL"
+                },
+                {
+                 "type": "a!richTextIcon",
+                 "icon": "thumbs-o-up",
+                 "color": "{if(local!v1 = \"UTIL\", \"ACCENT\", \"SECONDARY\")}",
+                 "size": "MEDIUM",
+                 "altText": "Útil",
+                 "caption": "Útil",
+                 "link": {
+                  "type": "a!dynamicLink",
+                  "saveInto": [
+                   {
+                    "type": "a!save",
+                    "target": "local!v1",
+                    "value": "UTIL"
+                   }
+                  ]
+                 }
+                },
+                "  ",
+                {
+                 "type": "a!richTextIcon",
+                 "icon": "thumbs-o-down",
+                 "color": "{if(local!v1 = \"NO_UTIL\", \"ACCENT\", \"SECONDARY\")}",
+                 "size": "MEDIUM",
+                 "altText": "No útil",
+                 "caption": "No útil",
+                 "link": {
+                  "type": "a!dynamicLink",
+                  "saveInto": [
+                   {
+                    "type": "a!save",
+                    "target": "local!v1",
+                    "value": "NO_UTIL"
+                   }
+                  ]
+                 }
+                },
+                {
+                 "type": "a!richTextItem",
+                 "text": "   Gracias por su valoración",
+                 "color": "SECONDARY",
+                 "size": "SMALL",
+                 "showWhen": "a!isNotNullOrEmpty(local!v1)"
+                }
+               ]
+              }
+             ]
+            }
+           }
+          ],
+          "$replies": [
+           {
+            "content": {
+             "type": "a!cardLayout",
+             "style": "STANDARD",
+             "showBorder": false,
+             "shape": "SEMI_ROUNDED",
+             "padding": "STANDARD",
+             "contents": [
+              {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "marginBelow": "LESS",
+               "value": [
+                "Cada hora de retraso en una avería crítica supone un ",
+                {
+                 "type": "a!richTextItem",
+                 "text": "0,5 % de la facturación mensual",
+                 "style": "STRONG"
+                },
+                ", con un máximo del 10 % anual."
+               ]
+              },
+              {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "marginBelow": "NONE",
+               "value": [
+                {
+                 "type": "a!richTextItem",
+                 "text": "Fuentes: ",
+                 "color": "SECONDARY",
+                 "size": "SMALL",
+                 "style": "STRONG"
+                },
+                {
+                 "type": "a!richTextIcon",
+                 "icon": "quote-left",
+                 "color": "SECONDARY"
+                },
+                " ",
+                {
+                 "type": "a!richTextItem",
+                 "text": "p. 4 · «0,5 % de la facturación mensual»",
+                 "size": "SMALL",
+                 "linkStyle": "STANDALONE",
+                 "link": {
+                  "type": "a!dynamicLink",
+                  "saveInto": [
+                   {
+                    "type": "a!save",
+                    "target": "local!pagina",
+                    "value": 4
+                   },
+                   {
+                    "type": "a!save",
+                    "target": "local!cita",
+                    "value": "0,5 % de la facturación mensual"
+                   }
+                  ]
+                 }
+                }
+               ]
+              }
+             ]
+            },
+            "$action": {
+             "set": {
+              "local!pagina": 4,
+              "local!cita": "0,5 % de la facturación mensual"
+             }
+            }
+           }
+          ]
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "labelPosition": "COLLAPSED",
+          "marginBelow": "LESS",
+          "value": [
+           {
+            "type": "a!richTextIcon",
+            "icon": "info-circle",
+            "color": "SECONDARY"
+           },
+           " ",
+           {
+            "type": "a!richTextItem",
+            "text": "Respuestas generadas con IA: compruébelas antes de usarlas",
+            "color": "SECONDARY",
+            "size": "SMALL"
+           }
+          ],
+          "marginAbove": "LESS"
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!documentViewerField",
+          "label": "Pliego_climatizacion_2026.pdf",
+          "labelPosition": "COLLAPSED",
+          "document": "local!doc",
+          "height": "TALL",
+          "initialPageDisplay": "local!pagina",
+          "highlightedText": "local!cita",
+          "altText": "Pliego_climatizacion_2026.pdf",
+          "$fileName": "Pliego_climatizacion_2026.pdf",
+          "$pages": 6,
+          "$content": [
+           [
+            "1. Objeto",
+            "El presente pliego regula el servicio de mantenimiento preventivo y correctivo de las instalaciones de climatización de las terminales."
+           ],
+           [
+            "2. Alcance",
+            "Incluye enfriadoras, unidades de tratamiento de aire, fancoils y el sistema de control centralizado.",
+            "Quedan excluidas las instalaciones de los locales comerciales."
+           ],
+           [
+            "3. Niveles de servicio",
+            "Las averías críticas deberán atenderse en un plazo máximo de 2 horas desde el aviso.",
+            "Las averías no críticas se atenderán en un plazo de 24 horas.",
+            "El incumplimiento reiterado de los plazos dará lugar a penalizaciones."
+           ],
+           [
+            "4. Penalizaciones",
+            "Cada hora de retraso en una avería crítica supone una penalización del 0,5 % de la facturación mensual.",
+            "El importe máximo de las penalizaciones será del 10 % anual."
+           ],
+           [
+            "5. Personal",
+            "El adjudicatario dispondrá de un técnico de guardia 24 horas los 365 días del año."
+           ],
+           [
+            "6. Duración",
+            "El contrato tendrá una duración de dos años prorrogables por un año más."
+           ]
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "revision",
+   "title": "Revisar datos extraídos",
+   "type": "form",
+   "pattern": "P12",
+   "req": [
+    "R1"
+   ],
+   "local": {
+    "local!campos": [
+     {
+      "campo": "Aeropuerto",
+      "valor": "AGP",
+      "confianza": "ALTA",
+      "origen": "IA",
+      "revisado": true,
+      "pagina": 1
+     },
+     {
+      "campo": "Equipo afectado",
+      "valor": "Enfriadora 2",
+      "confianza": "ALTA",
+      "origen": "IA",
+      "revisado": true,
+      "pagina": 1
+     },
+     {
+      "campo": "Fecha del aviso",
+      "valor": "22/09/2026",
+      "confianza": "MEDIA",
+      "origen": "IA",
+      "revisado": true,
+      "pagina": 2
+     },
+     {
+      "campo": "Importe estimado",
+      "valor": "1.850,00 €",
+      "confianza": "BAJA",
+      "origen": "IA",
+      "revisado": false,
+      "pagina": 2
+     },
+     {
+      "campo": "Proveedor",
+      "valor": "Clima Sur S.L.",
+      "confianza": "BAJA",
+      "origen": "IA",
+      "revisado": false,
+      "pagina": 3
+     }
+    ],
+    "local!doc": 7,
+    "local!pagina": 1,
+    "local!cita": null
+   },
+   "interface": {
+    "type": "a!formLayout",
+    "titleBar": "Revisar datos extraídos del parte",
+    "contentsWidth": "FULL",
+    "backgroundColor": "WHITE",
+    "showButtonDivider": true,
+    "isButtonFooterFixed": true,
+    "contents": [
+     {
+      "type": "a!cardLayout",
+      "style": "INFO",
+      "showBorder": false,
+      "padding": "STANDARD",
+      "shape": "SEMI_ROUNDED",
+      "decorativeBarPosition": "START",
+      "decorativeBarColor": "INFO",
+      "marginBelow": "MORE",
+      "contents": [
+       {
+        "type": "a!sideBySideLayout",
+        "alignVertical": "MIDDLE",
+        "spacing": "STANDARD",
+        "items": [
+         {
+          "type": "a!sideBySideItem",
+          "width": "MINIMIZE",
+          "item": {
+           "type": "a!richTextDisplayField",
+           "labelPosition": "COLLAPSED",
+           "value": [
+            {
+             "type": "a!richTextIcon",
+             "icon": "magic",
+             "color": "ACCENT",
+             "size": "MEDIUM"
+            }
+           ]
+          }
+         },
+         {
+          "type": "a!sideBySideItem",
+          "item": {
+           "type": "a!richTextDisplayField",
+           "labelPosition": "COLLAPSED",
+           "value": [
+            {
+             "type": "a!richTextItem",
+             "text": "Revise los datos con confianza baja",
+             "style": "STRONG"
+            },
+            "\n",
+            "La IA ha rellenado 5 campos a partir del parte escaneado. Pulse «Página N» para ver de dónde sale cada dato."
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!columnsLayout",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!gridLayout",
+          "label": "Datos sugeridos",
+          "labelPosition": "COLLAPSED",
+          "borderStyle": "LIGHT",
+          "shadeAlternateRows": false,
+          "headerCells": [
+           {
+            "type": "a!gridLayoutHeaderCell",
+            "label": "Campo"
+           },
+           {
+            "type": "a!gridLayoutHeaderCell",
+            "label": "Valor"
+           },
+           {
+            "type": "a!gridLayoutHeaderCell",
+            "label": "Origen"
+           },
+           {
+            "type": "a!gridLayoutHeaderCell",
+            "label": "Confianza"
+           },
+           {
+            "type": "a!gridLayoutHeaderCell",
+            "label": "Revisado"
+           }
+          ],
+          "columnConfigs": [
+           {
+            "type": "a!gridLayoutColumnConfig",
+            "width": "NARROW_PLUS"
+           },
+           {
+            "type": "a!gridLayoutColumnConfig"
+           },
+           {
+            "type": "a!gridLayoutColumnConfig",
+            "width": "NARROW_PLUS"
+           },
+           {
+            "type": "a!gridLayoutColumnConfig",
+            "width": "NARROW_PLUS"
+           },
+           {
+            "type": "a!gridLayoutColumnConfig",
+            "width": "NARROW_PLUS"
+           }
+          ],
+          "rows": [
+           {
+            "type": "a!forEach",
+            "items": "local!campos",
+            "expression": {
+             "type": "a!gridRowLayout",
+             "contents": [
+              {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "value": [
+                {
+                 "type": "a!richTextItem",
+                 "text": "{fv!item.campo}",
+                 "style": "STRONG"
+                },
+                "\n",
+                {
+                 "type": "a!richTextItem",
+                 "text": "Página {fv!item.pagina}",
+                 "size": "SMALL",
+                 "linkStyle": "STANDALONE",
+                 "link": {
+                  "type": "a!dynamicLink",
+                  "saveInto": [
+                   {
+                    "type": "a!save",
+                    "target": "local!pagina",
+                    "value": "{fv!item.pagina}"
+                   },
+                   {
+                    "type": "a!save",
+                    "target": "local!cita",
+                    "value": "{fv!item.valor}"
+                   }
+                  ]
+                 }
+                }
+               ]
+              },
+              {
+               "type": "a!textField",
+               "label": "{fv!item.campo}",
+               "value": "fv!item.valor",
+               "saveInto": [
+                "fv!item.valor",
+                {
+                 "type": "a!save",
+                 "target": "fv!item.origen",
+                 "value": "EDITADO"
+                },
+                {
+                 "type": "a!save",
+                 "target": "fv!item.revisado",
+                 "value": true
+                }
+               ]
+              },
+              {
+               "type": "a!tagField",
+               "size": "SMALL",
+               "tags": [
+                {
+                 "type": "a!tagItem",
+                 "text": "{fv!item.origen|map:origenTexto}",
+                 "backgroundColor": "#EEF0F2"
+                }
+               ]
+              },
+              {
+               "type": "a!tagField",
+               "labelPosition": "COLLAPSED",
+               "size": "SMALL",
+               "tags": [
+                {
+                 "type": "a!tagItem",
+                 "text": "{fv!item.confianza|map:confianzaTexto}",
+                 "backgroundColor": "{fv!item.confianza|map:confianzaColor}"
+                }
+               ]
+              },
+              {
+               "type": "a!booleanCheckboxField",
+               "choiceLabel": "Revisado",
+               "value": "fv!item.revisado",
+               "saveInto": "fv!item.revisado",
+               "showWhen": "fv!item.confianza = \"BAJA\""
+              }
+             ]
+            }
+           }
+          ]
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "labelPosition": "COLLAPSED",
+          "marginBelow": "LESS",
+          "value": [
+           {
+            "type": "a!richTextIcon",
+            "icon": "info-circle",
+            "color": "SECONDARY"
+           },
+           " ",
+           {
+            "type": "a!richTextItem",
+            "text": "El botón Guardar se activa cuando estén revisados los datos de confianza baja",
+            "color": "SECONDARY",
+            "size": "SMALL"
+           }
+          ],
+          "marginAbove": "STANDARD"
+         }
+        ],
+        "width": "3X"
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!documentViewerField",
+          "label": "Parte escaneado",
+          "labelPosition": "COLLAPSED",
+          "document": "local!doc",
+          "height": "TALL",
+          "initialPageDisplay": "local!pagina",
+          "highlightedText": "local!cita",
+          "altText": "Parte de trabajo escaneado",
+          "$fileName": "Parte_PT-2026-118.pdf",
+          "$pages": 3,
+          "$content": [
+           [
+            "Parte de trabajo PT-2026-118",
+            "Aeropuerto: AGP",
+            "Equipo afectado: Enfriadora 2"
+           ],
+           [
+            "Fecha del aviso: 22/09/2026",
+            "Importe estimado: 1.850,00 €"
+           ],
+           [
+            "Proveedor: Clima Sur S.L.",
+            "Firma del técnico"
+           ]
+          ]
+         }
+        ],
+        "width": "2X"
+       }
+      ]
+     }
+    ],
+    "buttons": {
+     "type": "a!buttonLayout",
+     "primaryButtons": [
+      {
+       "type": "a!buttonWidget",
+       "label": "Guardar datos",
+       "style": "SOLID",
+       "color": "#90CE00",
+       "disabled": "contains(local!campos.revisado, false)"
+      }
+     ],
+     "secondaryButtons": [
+      {
+       "type": "a!buttonWidget",
+       "label": "Cancelar",
+       "style": "OUTLINE",
+       "color": "ACCENT"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "novedades",
+   "title": "Novedades 26.7–26.9",
+   "type": "page",
+   "pattern": "P06",
+   "req": [
+    "R1"
+   ],
+   "local": {
+    "local!doc": null,
+    "local!tab": 1
+   },
+   "interface": {
+    "type": "a!headerContentLayout",
+    "backgroundColor": "TRANSPARENT",
+    "contents": [
+     {
+      "type": "a!columnsLayout",
+      "alignVertical": "MIDDLE",
+      "marginBelow": "MORE",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!headingField",
+          "text": "Novedades de Appian 26.7–26.9",
+          "size": "LARGE",
+          "headingTag": "H1",
+          "marginBelow": "EVEN_LESS"
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextItem",
+            "text": "Parámetros visuales nuevos que el prototipo ya dibuja",
+            "color": "SECONDARY"
+           }
+          ],
+          "marginBelow": "NONE"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!tabLayout",
+      "orientation": "VERTICAL",
+      "selectedTab": "local!tab",
+      "tabs": [
+       {
+        "type": "a!tabItem",
+        "label": "Contenedores",
+        "icon": "square-o",
+        "contents": [
+         {
+          "type": "a!columnsLayout",
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!boxLayout",
+              "label": "Caja con borde de acento",
+              "style": "STANDARD",
+              "borderColor": "ACCENT",
+              "borderWeight": "MEDIUM",
+              "labelFontWeight": "BOLD",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "value": [
+                 {
+                  "type": "a!richTextItem",
+                  "text": "Texto ligero (LIGHT) ",
+                  "style": "LIGHT"
+                 },
+                 {
+                  "type": "a!richTextItem",
+                  "text": "y seminegrita (SEMI_BOLD)",
+                  "style": "SEMI_BOLD"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!sectionLayout",
+              "label": "Sección con etiqueta LIGHT",
+              "labelSize": "MEDIUM",
+              "labelHeadingTag": "H2",
+              "labelColor": "STANDARD",
+              "marginBelow": "MORE",
+              "contents": [
+               {
+                "type": "a!cardLayout",
+                "style": "NONE",
+                "showBorder": true,
+                "showShadow": false,
+                "shape": "SEMI_ROUNDED",
+                "padding": "STANDARD",
+                "contents": [
+                 {
+                  "type": "a!richTextDisplayField",
+                  "value": [
+                   "Card con borde grueso de 26.7 (borderWeight THICK)."
+                  ]
+                 }
+                ],
+                "borderWeight": "THICK",
+                "borderColor": "#527500"
+               }
+              ],
+              "labelFontWeight": "LIGHT"
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!tabItem",
+        "label": "Indicadores y subida",
+        "icon": "tachometer",
+        "contents": [
+         {
+          "type": "a!columnsLayout",
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!gaugeField",
+              "label": "Fracción",
+              "percentage": 72,
+              "primaryText": {
+               "type": "a!gaugeFraction",
+               "denominator": 25
+              },
+              "secondaryText": "partes cerrados"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!gaugeField",
+              "label": "Icono",
+              "percentage": 100,
+              "color": "POSITIVE",
+              "primaryText": {
+               "type": "a!gaugeIcon",
+               "icon": "check",
+               "altText": "Completado"
+              },
+              "secondaryText": "Completado"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!gaugeField",
+              "label": "Porcentaje",
+              "percentage": 38,
+              "primaryText": {
+               "type": "a!gaugePercentage"
+              },
+              "secondaryText": "del plan anual"
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "type": "a!fileUploadField",
+          "label": "Adjuntar parte (zona amplia, botón GHOST)",
+          "value": "local!doc",
+          "saveInto": "local!doc",
+          "dropZoneStyle": "EXPANDED",
+          "buttonStyle": "GHOST",
+          "buttonColor": "ACCENT",
+          "marginAbove": "STANDARD"
+         },
+         {
+          "type": "a!linkField",
+          "label": "Enlace a una página del site (a!pageLink)",
+          "links": [
+           {
+            "type": "a!pageLink",
+            "label": "Ir a Incidencias",
+            "page": "sitePage!AENA_INCIDENCIAS.pages.incidencias"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!tabItem",
+        "label": "Gráfico y grafo",
+        "icon": "sitemap",
+        "contents": [
+         {
+          "type": "a!columnChartField",
+          "label": "Incidencias por mes y área (pulse la leyenda para filtrar)",
+          "data": "data!ventas",
+          "allowLegendFiltering": true,
+          "height": "SHORT",
+          "config": {
+           "type": "a!columnChartConfig",
+           "primaryGrouping": {
+            "type": "a!grouping",
+            "field": "mes",
+            "interval": "MONTH_SHORT_TEXT"
+           },
+           "secondaryGrouping": {
+            "type": "a!grouping",
+            "field": "area"
+           },
+           "measures": [
+            {
+             "type": "a!measure",
+             "function": "SUM",
+             "field": "n"
+            }
+           ]
+          }
+         },
+         {
+          "type": "a!recordKnowledgeGraph",
+          "label": "Relaciones de la incidencia",
+          "recordType": "recordType!AENA Incidencia",
+          "recordIdentifier": 6,
+          "relationshipLevel": 2,
+          "height": "MEDIUM",
+          "$root": {
+           "recordType": "Incidencia",
+           "name": "INC-2026-0426",
+           "icon": "wrench"
+          },
+          "$nodes": [
+           {
+            "recordType": "Aeropuerto",
+            "name": "AGP",
+            "icon": "plane"
+           },
+           {
+            "recordType": "Equipo",
+            "name": "Enfriadora 2",
+            "icon": "cog"
+           },
+           {
+            "recordType": "Parte de trabajo",
+            "name": "PT-2026-118",
+            "icon": "file-text-o"
+           },
+           {
+            "recordType": "Proveedor",
+            "name": "Clima Sur S.L.",
+            "icon": "building",
+            "parent": "PT-2026-118"
+           },
+           {
+            "recordType": "Técnico",
+            "name": "Rocío Sánchez",
+            "icon": "user",
+            "parent": "PT-2026-118"
+           },
+           {
+            "recordType": "Incidencia",
+            "name": "INC-2026-0301",
+            "icon": "wrench",
+            "parent": "Enfriadora 2"
+           },
+           {
+            "recordType": "Responsable",
+            "name": "Pablo Martín",
+            "icon": "user"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!tabItem",
+        "label": "Celdas compuestas",
+        "icon": "table",
+        "contents": [
+         {
+          "type": "a!gridField",
+          "labelPosition": "COLLAPSED",
+          "data": "data!incidencias",
+          "borderStyle": "LIGHT",
+          "shadeAlternateRows": false,
+          "spacing": "STANDARD",
+          "pageSize": 5,
+          "rowHeader": 1,
+          "emptyGridMessage": "Sin incidencias",
+          "columns": [
+           {
+            "type": "a!gridColumn",
+            "label": "Incidencia",
+            "value": {
+             "type": "a!sideBySideLayout",
+             "alignVertical": "MIDDLE",
+             "items": [
+              {
+               "type": "a!sideBySideItem",
+               "width": "MINIMIZE",
+               "item": {
+                "type": "a!richTextDisplayField",
+                "value": [
+                 {
+                  "type": "a!richTextIcon",
+                  "icon": "wrench",
+                  "color": "SECONDARY"
+                 }
+                ]
+               }
+              },
+              {
+               "type": "a!sideBySideItem",
+               "item": {
+                "type": "a!richTextDisplayField",
+                "value": [
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{fv!row.codigo}",
+                  "style": "STRONG"
+                 }
+                ]
+               }
+              }
+             ]
+            }
+           },
+           {
+            "type": "a!gridColumn",
+            "label": "Título",
+            "value": "{fv!row.titulo}"
+           },
+           {
+            "type": "a!gridColumn",
+            "label": "Estado",
+            "value": {
+             "type": "a!tagField",
+             "labelPosition": "COLLAPSED",
+             "size": "SMALL",
+             "tags": [
+              {
+               "type": "a!tagItem",
+               "text": "{fv!row.estado}",
+               "backgroundColor": "{fv!row.estado|map:estadoGrid}"
+              }
+             ]
+            },
+            "width": "NARROW"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!tabItem",
+        "label": "Estados del chat",
+        "icon": "comments-o",
+        "contents": [
+         {
+          "type": "a!columnsLayout",
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!agentChatField",
+              "title": "Respondiendo (botón Detener)",
+              "agent": "agent!AENA_INCIDENCIAS",
+              "welcomeMessage": "Pregunte por una incidencia.",
+              "placeholder": "Escriba su pregunta",
+              "height": "MEDIUM",
+              "shape": "FULLY_ROUNDED",
+              "showBorder": true,
+              "showSessionPicker": false,
+              "$messages": [
+               {
+                "role": "USER",
+                "text": "Resume la INC-2026-0426"
+               },
+               {
+                "role": "TOOL",
+                "tool": "Consultar incidencia",
+                "text": "INC-2026-0426"
+               }
+              ],
+              "$state": "RUNNING"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!agentChatField",
+              "title": "Función no habilitada",
+              "agent": "agent!AENA_INCIDENCIAS",
+              "welcomeMessage": "Pregunte por una incidencia.",
+              "placeholder": "Escriba su pregunta",
+              "height": "MEDIUM",
+              "shape": "SEMI_ROUNDED",
+              "showBorder": true,
+              "$state": "UNAVAILABLE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!agentChatField",
+              "title": "Modo depuración (solo en desarrollo)",
+              "agent": "agent!AENA_INCIDENCIAS",
+              "welcomeMessage": "Pregunte por una incidencia.",
+              "placeholder": "Escriba su pregunta",
+              "height": "MEDIUM",
+              "showBorder": true,
+              "debugMode": true,
+              "showSessionPicker": false,
+              "$uxIgnore": "Muestra cómo se ve el modo de depuración; en pantallas de usuario va desactivado.",
+              "$messages": [
+               {
+                "role": "USER",
+                "text": "¿Quién es el técnico?"
+               },
+               {
+                "role": "TOOL",
+                "tool": "Consultar parte",
+                "input": {
+                 "parte": "PT-2026-118"
+                },
+                "output": {
+                 "tecnico": "Rocío Sánchez"
+                }
+               },
+               {
+                "role": "ASSISTANT",
+                "text": "Rocío Sánchez."
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "captures": [
+  {
+   "name": "01-asistente",
+   "screen": "asistente"
+  },
+  {
+   "name": "02-incidencias",
+   "screen": "incidencias"
+  },
+  {
+   "name": "03-ficha",
+   "screen": "incidencia",
+   "params": {
+    "id": 1
+   }
+  },
+  {
+   "name": "04-documento",
+   "screen": "documento"
+  },
+  {
+   "name": "05-revision",
+   "screen": "revision"
+  },
+  {
+   "name": "06-novedades",
+   "screen": "novedades"
+  },
+  {
+   "name": "06-novedades-2",
+   "screen": "novedades",
+   "state": {
+    "local!tab": 2
+   }
+  },
+  {
+   "name": "06-novedades-3",
+   "screen": "novedades",
+   "state": {
+    "local!tab": 3
+   }
+  },
+  {
+   "name": "06-novedades-4",
+   "screen": "novedades",
+   "state": {
+    "local!tab": 4
+   }
+  },
+  {
+   "name": "06-novedades-5",
+   "screen": "novedades",
+   "state": {
+    "local!tab": 5
+   }
+  }
+ ]
+}

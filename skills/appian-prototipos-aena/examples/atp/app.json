@@ -1,0 +1,5150 @@
+{
+ "app": {
+  "name": "Acuerdos con Terceras Partes",
+  "shortName": "ATP",
+  "version": "0.1",
+  "language": "es",
+  "today": "2026-09-24",
+  "appianVersion": "26.6",
+  "source": "examples/atp/ddf.md v1.1 (modo fiel de la ERS de ejemplo, FU-01) · datos ficticios"
+ },
+ "site": {
+  "displayName": "Acuerdos con Terceras Partes",
+  "home": "inicio",
+  "user": {
+   "name": "Lucía Fernández Gil"
+  },
+  "pages": [
+   {
+    "title": "Inicio",
+    "icon": "home",
+    "screen": "inicio",
+    "includes": [
+     "revision"
+    ]
+   },
+   {
+    "title": "Acuerdos",
+    "icon": "handshake-o",
+    "screen": "acuerdos",
+    "includes": [
+     "acuerdo",
+     "alta"
+    ]
+   },
+   {
+    "title": "Informes",
+    "icon": "bar-chart",
+    "screen": "informes"
+   }
+  ]
+ },
+ "requirements": [
+  {
+   "id": "RF-01",
+   "title": "Indicadores en la página de inicio"
+  },
+  {
+   "id": "RF-02",
+   "title": "Tareas pendientes del usuario"
+  },
+  {
+   "id": "RF-03",
+   "title": "Listado con búsqueda, filtros y exportación"
+  },
+  {
+   "id": "RF-04",
+   "title": "Acceso a la ficha desde el listado"
+  },
+  {
+   "id": "RF-05",
+   "title": "Alta en varios pasos con resumen"
+  },
+  {
+   "id": "RF-06",
+   "title": "Importe solo con contenido económico"
+  },
+  {
+   "id": "RF-07",
+   "title": "Envío a revisión jurídica"
+  },
+  {
+   "id": "RF-08",
+   "title": "Ficha: ciclo de vida, datos, documentos e historial"
+  },
+  {
+   "id": "RF-09",
+   "title": "Editar datos y añadir documentos"
+  },
+  {
+   "id": "RF-10",
+   "title": "Resolver la revisión jurídica"
+  },
+  {
+   "id": "RF-11",
+   "title": "Aviso de vencimiento a 90 días"
+  },
+  {
+   "id": "RF-12",
+   "title": "Informe de acuerdos"
+  }
+ ],
+ "openQuestions": [
+  {
+   "id": "P-006",
+   "text": "¿Quién puede editar un acuerdo en estado «Vigente»? La ERS solo habla del gestor en el alta.",
+   "screen": "editar",
+   "priority": "IMPORTANTE"
+  },
+  {
+   "id": "P-001",
+   "text": "¿Quién pasa el acuerdo a «Pendiente de firma», «Vigente» y «Vencido»? ¿La firma se registra en la aplicación (fecha, firmantes) o solo se adjunta el PDF firmado?",
+   "screen": "acuerdo",
+   "priority": "CRITICA"
+  },
+  {
+   "id": "P-007",
+   "text": "¿«Devolver para cambios» genera una tarea al gestor o el acuerdo vuelve a Borrador sin tarea?",
+   "screen": "revision",
+   "priority": "CRITICA"
+  }
+ ],
+ "maps": {
+  "estadoColor": {
+   "Borrador": "#EEF0F2",
+   "En revisión jurídica": "#DDE7F0",
+   "Pendiente de firma": "#FCEFCA",
+   "Vigente": "#E3EFD3",
+   "Vencido": "#FCDCDC",
+   "Rechazado": "#FCDCDC",
+   "*": "#EEF0F2"
+  },
+  "estadoColorGrid": {
+   "Borrador": "#EEF0F2",
+   "En revisión jurídica": "#EEF0F2",
+   "Pendiente de firma": "#FCEFCA",
+   "Vigente": "#EEF0F2",
+   "Vencido": "#FCDCDC",
+   "Rechazado": "#FCDCDC",
+   "*": "#EEF0F2"
+  },
+  "plazoColor": {
+   "true": "#FCEFCA",
+   "*": "#EEF0F2"
+  },
+  "estadoPaso": {
+   "Borrador": 1,
+   "En revisión jurídica": 2,
+   "Pendiente de firma": 3,
+   "Vigente": 4,
+   "Vencido": 5,
+   "Rechazado": 2
+  },
+  "siNo": {
+   "true": "Sí",
+   "false": "No",
+   "*": "No"
+  },
+  "usuarios": {
+   "mlopez": "María López Arranz",
+   "jgarcia": "Javier García Ruiz",
+   "rsanchez": "Rocío Sánchez Vidal",
+   "pmartin": "Pablo Martín Ortega",
+   "lfernandez": "Lucía Fernández Gil",
+   "amoreno": "Andrés Moreno Pastor"
+  }
+ },
+ "users": [
+  {
+   "id": "mlopez",
+   "name": "María López Arranz"
+  },
+  {
+   "id": "jgarcia",
+   "name": "Javier García Ruiz"
+  },
+  {
+   "id": "rsanchez",
+   "name": "Rocío Sánchez Vidal"
+  },
+  {
+   "id": "pmartin",
+   "name": "Pablo Martín Ortega"
+  },
+  {
+   "id": "lfernandez",
+   "name": "Lucía Fernández Gil"
+  },
+  {
+   "id": "amoreno",
+   "name": "Andrés Moreno Pastor"
+  }
+ ],
+ "data": {
+  "acuerdos": {
+   "recordType": "ATP Acuerdo",
+   "rows": [
+    {
+     "id": 1,
+     "codigo": "ATP-2025-0001",
+     "titulo": "Convenio de colaboración para formación en seguridad aeroportuaria",
+     "tipo": "Convenio",
+     "tercero": "Universidad Politécnica de Madrid",
+     "cif": "Q2818015F",
+     "tipoTercero": "Universidad o centro de investigación",
+     "aeropuerto": "MAD",
+     "responsable": "María López Arranz",
+     "responsableId": "mlopez",
+     "fechaInicio": "2025-03-01",
+     "fechaFin": "2027-02-28",
+     "prorroga": true,
+     "conImporte": false,
+     "importe": null,
+     "contraprestacion": null,
+     "estado": "Vigente",
+     "fechaAlta": "2025-01-20",
+     "mesAlta": "2025-01",
+     "diasParaVencer": 157
+    },
+    {
+     "id": 2,
+     "codigo": "ATP-2026-0002",
+     "titulo": "Acuerdo de confidencialidad proyecto biometría en filtros",
+     "tipo": "Acuerdo de confidencialidad",
+     "tercero": "Veridas Digital Authentication",
+     "cif": "B71330001",
+     "tipoTercero": "Empresa privada",
+     "aeropuerto": "BCN",
+     "responsable": "Javier García Ruiz",
+     "responsableId": "jgarcia",
+     "fechaInicio": "2026-02-15",
+     "fechaFin": "2026-11-30",
+     "prorroga": false,
+     "conImporte": false,
+     "importe": null,
+     "contraprestacion": null,
+     "estado": "Vigente",
+     "fechaAlta": "2026-02-02",
+     "mesAlta": "2026-02",
+     "diasParaVencer": 67
+    },
+    {
+     "id": 3,
+     "codigo": "ATP-2024-0003",
+     "titulo": "Protocolo general de actuación con el Ayuntamiento de El Prat",
+     "tipo": "Protocolo general de actuación",
+     "tercero": "Ajuntament del Prat de Llobregat",
+     "cif": "P0816800A",
+     "tipoTercero": "Administración pública",
+     "aeropuerto": "BCN",
+     "responsable": "Rocío Sánchez Vidal",
+     "responsableId": "rsanchez",
+     "fechaInicio": "2024-06-01",
+     "fechaFin": "2026-12-15",
+     "prorroga": false,
+     "conImporte": false,
+     "importe": null,
+     "contraprestacion": null,
+     "estado": "Vigente",
+     "fechaAlta": "2024-05-10",
+     "mesAlta": "2024-05",
+     "diasParaVencer": 82
+    },
+    {
+     "id": 4,
+     "codigo": "ATP-2025-0004",
+     "titulo": "Contrato de colaboración para la promoción turística de Canarias",
+     "tipo": "Contrato de colaboración",
+     "tercero": "Turismo de Canarias S.A.",
+     "cif": "A35077817",
+     "tipoTercero": "Administración pública",
+     "aeropuerto": "LPA",
+     "responsable": "Pablo Martín Ortega",
+     "responsableId": "pmartin",
+     "fechaInicio": "2026-01-01",
+     "fechaFin": "2026-12-31",
+     "prorroga": true,
+     "conImporte": true,
+     "importe": 180000,
+     "contraprestacion": "Cesión de espacios y difusión institucional",
+     "estado": "Vigente",
+     "fechaAlta": "2025-11-18",
+     "mesAlta": "2025-11",
+     "diasParaVencer": 98
+    },
+    {
+     "id": 5,
+     "codigo": "ATP-2026-0005",
+     "titulo": "Convenio de prácticas para grado en ingeniería aeroespacial",
+     "tipo": "Convenio",
+     "tercero": "Universidad de Sevilla",
+     "cif": "Q4118001I",
+     "tipoTercero": "Universidad o centro de investigación",
+     "aeropuerto": "SVQ",
+     "responsable": "Lucía Fernández Gil",
+     "responsableId": "lfernandez",
+     "fechaInicio": "2026-10-01",
+     "fechaFin": "2028-09-30",
+     "prorroga": true,
+     "conImporte": false,
+     "importe": null,
+     "contraprestacion": null,
+     "estado": "Pendiente de firma",
+     "fechaAlta": "2026-07-28",
+     "mesAlta": "2026-07",
+     "diasParaVencer": 737
+    },
+    {
+     "id": 6,
+     "codigo": "ATP-2026-0006",
+     "titulo": "Acuerdo de colaboración en eficiencia energética de terminales",
+     "tipo": "Contrato de colaboración",
+     "tercero": "Iberdrola Clientes S.A.U.",
+     "cif": "A95758389",
+     "tipoTercero": "Empresa privada",
+     "aeropuerto": "SSCC",
+     "responsable": "Andrés Moreno Pastor",
+     "responsableId": "amoreno",
+     "fechaInicio": "2026-11-01",
+     "fechaFin": "2029-10-31",
+     "prorroga": false,
+     "conImporte": true,
+     "importe": 420000,
+     "contraprestacion": "Cesión de espacios y difusión institucional",
+     "estado": "En revisión jurídica",
+     "fechaAlta": "2026-09-02",
+     "mesAlta": "2026-09",
+     "diasParaVencer": 1133
+    },
+    {
+     "id": 7,
+     "codigo": "ATP-2023-0007",
+     "titulo": "Protocolo de coordinación de emergencias con la Comunidad de Madrid",
+     "tipo": "Protocolo general de actuación",
+     "tercero": "Comunidad de Madrid · ASEM112",
+     "cif": "S7800001E",
+     "tipoTercero": "Administración pública",
+     "aeropuerto": "MAD",
+     "responsable": "María López Arranz",
+     "responsableId": "mlopez",
+     "fechaInicio": "2023-04-01",
+     "fechaFin": "2026-03-31",
+     "prorroga": false,
+     "conImporte": false,
+     "importe": null,
+     "contraprestacion": null,
+     "estado": "Vencido",
+     "fechaAlta": "2023-03-02",
+     "mesAlta": "2023-03",
+     "diasParaVencer": -177
+    },
+    {
+     "id": 8,
+     "codigo": "ATP-2026-0008",
+     "titulo": "Acuerdo de confidencialidad licitación de handling",
+     "tipo": "Acuerdo de confidencialidad",
+     "tercero": "Groundforce Cargo S.L.",
+     "cif": "B84527977",
+     "tipoTercero": "Empresa privada",
+     "aeropuerto": "SSCC",
+     "responsable": "Javier García Ruiz",
+     "responsableId": "jgarcia",
+     "fechaInicio": "2026-09-10",
+     "fechaFin": "2027-09-09",
+     "prorroga": false,
+     "conImporte": false,
+     "importe": null,
+     "contraprestacion": null,
+     "estado": "En revisión jurídica",
+     "fechaAlta": "2026-09-12",
+     "mesAlta": "2026-09",
+     "diasParaVencer": 350
+    },
+    {
+     "id": 9,
+     "codigo": "ATP-2026-0009",
+     "titulo": "Convenio de patrocinio del festival de cine de Málaga",
+     "tipo": "Convenio",
+     "tercero": "Festival de Málaga",
+     "cif": "P2906700F",
+     "tipoTercero": "Administración pública",
+     "aeropuerto": "AGP",
+     "responsable": "Pablo Martín Ortega",
+     "responsableId": "pmartin",
+     "fechaInicio": "2026-02-01",
+     "fechaFin": "2026-10-31",
+     "prorroga": false,
+     "conImporte": true,
+     "importe": 35000,
+     "contraprestacion": "Cesión de espacios y difusión institucional",
+     "estado": "Vigente",
+     "fechaAlta": "2026-01-12",
+     "mesAlta": "2026-01",
+     "diasParaVencer": 37
+    },
+    {
+     "id": 10,
+     "codigo": "ATP-2026-0010",
+     "titulo": "Contrato de colaboración para movilidad eléctrica en aparcamientos",
+     "tipo": "Contrato de colaboración",
+     "tercero": "Zunder Charging S.L.",
+     "cif": "B42812727",
+     "tipoTercero": "Empresa privada",
+     "aeropuerto": "VLC",
+     "responsable": "Rocío Sánchez Vidal",
+     "responsableId": "rsanchez",
+     "fechaInicio": "2026-12-01",
+     "fechaFin": "2030-11-30",
+     "prorroga": true,
+     "conImporte": true,
+     "importe": 96000,
+     "contraprestacion": "Cesión de espacios y difusión institucional",
+     "estado": "Borrador",
+     "fechaAlta": "2026-09-18",
+     "mesAlta": "2026-09",
+     "diasParaVencer": 1528
+    },
+    {
+     "id": 11,
+     "codigo": "ATP-2025-0011",
+     "titulo": "Convenio con la Guardia Civil para el control de fronteras",
+     "tipo": "Convenio",
+     "tercero": "Dirección General de la Guardia Civil",
+     "cif": "S2816003D",
+     "tipoTercero": "Administración pública",
+     "aeropuerto": "PMI",
+     "responsable": "Andrés Moreno Pastor",
+     "responsableId": "amoreno",
+     "fechaInicio": "2025-07-01",
+     "fechaFin": "2027-06-30",
+     "prorroga": true,
+     "conImporte": false,
+     "importe": null,
+     "contraprestacion": null,
+     "estado": "Vigente",
+     "fechaAlta": "2025-06-05",
+     "mesAlta": "2025-06",
+     "diasParaVencer": 279
+    },
+    {
+     "id": 12,
+     "codigo": "ATP-2026-0012",
+     "titulo": "Acuerdo de confidencialidad sobre datos de tráfico",
+     "tipo": "Acuerdo de confidencialidad",
+     "tercero": "Cirium Data Services Ltd.",
+     "cif": "N0073581E",
+     "tipoTercero": "Empresa privada",
+     "aeropuerto": "SSCC",
+     "responsable": "Lucía Fernández Gil",
+     "responsableId": "lfernandez",
+     "fechaInicio": "2026-06-01",
+     "fechaFin": "2027-05-31",
+     "prorroga": false,
+     "conImporte": false,
+     "importe": null,
+     "contraprestacion": null,
+     "estado": "Rechazado",
+     "fechaAlta": "2026-05-20",
+     "mesAlta": "2026-05",
+     "diasParaVencer": 249
+    },
+    {
+     "id": 13,
+     "codigo": "ATP-2026-0013",
+     "titulo": "Convenio de investigación sobre ruido en entornos aeroportuarios",
+     "tipo": "Convenio",
+     "tercero": "CSIC · Instituto de Acústica",
+     "cif": "Q2818002D",
+     "tipoTercero": "Universidad o centro de investigación",
+     "aeropuerto": "MAD",
+     "responsable": "María López Arranz",
+     "responsableId": "mlopez",
+     "fechaInicio": "2026-04-01",
+     "fechaFin": "2028-03-31",
+     "prorroga": false,
+     "conImporte": true,
+     "importe": 64000,
+     "contraprestacion": "Cesión de espacios y difusión institucional",
+     "estado": "Vigente",
+     "fechaAlta": "2026-03-03",
+     "mesAlta": "2026-03",
+     "diasParaVencer": 554
+    },
+    {
+     "id": 14,
+     "codigo": "ATP-2026-0014",
+     "titulo": "Contrato de colaboración de accesibilidad PMR",
+     "tipo": "Contrato de colaboración",
+     "tercero": "Fundación ONCE",
+     "cif": "G78661923",
+     "tipoTercero": "Otro",
+     "aeropuerto": "BIO",
+     "responsable": "Javier García Ruiz",
+     "responsableId": "jgarcia",
+     "fechaInicio": "2026-10-15",
+     "fechaFin": "2027-10-14",
+     "prorroga": true,
+     "conImporte": true,
+     "importe": 22000,
+     "contraprestacion": "Cesión de espacios y difusión institucional",
+     "estado": "En revisión jurídica",
+     "fechaAlta": "2026-09-20",
+     "mesAlta": "2026-09",
+     "diasParaVencer": 385
+    },
+    {
+     "id": 15,
+     "codigo": "ATP-2025-0015",
+     "titulo": "Protocolo con Renfe para intermodalidad tren-avión",
+     "tipo": "Protocolo general de actuación",
+     "tercero": "Renfe Viajeros S.M.E. S.A.",
+     "cif": "A86868189",
+     "tipoTercero": "Administración pública",
+     "aeropuerto": "MAD",
+     "responsable": "Pablo Martín Ortega",
+     "responsableId": "pmartin",
+     "fechaInicio": "2025-10-01",
+     "fechaFin": "2027-09-30",
+     "prorroga": true,
+     "conImporte": false,
+     "importe": null,
+     "contraprestacion": null,
+     "estado": "Vigente",
+     "fechaAlta": "2025-09-08",
+     "mesAlta": "2025-09",
+     "diasParaVencer": 371
+    },
+    {
+     "id": 16,
+     "codigo": "ATP-2026-0016",
+     "titulo": "Acuerdo de confidencialidad piloto de drones de inspección",
+     "tipo": "Acuerdo de confidencialidad",
+     "tercero": "Arbórea Intellbird S.L.",
+     "cif": "B37534129",
+     "tipoTercero": "Empresa privada",
+     "aeropuerto": "SVQ",
+     "responsable": "Rocío Sánchez Vidal",
+     "responsableId": "rsanchez",
+     "fechaInicio": "2026-08-01",
+     "fechaFin": "2027-01-31",
+     "prorroga": false,
+     "conImporte": false,
+     "importe": null,
+     "contraprestacion": null,
+     "estado": "Pendiente de firma",
+     "fechaAlta": "2026-07-15",
+     "mesAlta": "2026-07",
+     "diasParaVencer": 129
+    }
+   ]
+  },
+  "tareas": {
+   "recordType": "ATP Tarea",
+   "rows": [
+    {
+     "id": 1,
+     "tarea": "Revisar acuerdo",
+     "acuerdoId": 6,
+     "codigo": "ATP-2026-0006",
+     "titulo": "Acuerdo de colaboración en eficiencia energética de terminales",
+     "recibida": "2026-09-02",
+     "vence": "2026-09-26",
+     "prioridad": "Alta",
+     "plazo": "Vence en 2 días",
+     "urgente": true
+    },
+    {
+     "id": 2,
+     "tarea": "Revisar acuerdo",
+     "acuerdoId": 8,
+     "codigo": "ATP-2026-0008",
+     "titulo": "Acuerdo de confidencialidad licitación de handling",
+     "recibida": "2026-09-12",
+     "vence": "2026-09-30",
+     "prioridad": "Media",
+     "plazo": "Vence en 6 días",
+     "urgente": false
+    },
+    {
+     "id": 3,
+     "tarea": "Revisar acuerdo",
+     "acuerdoId": 14,
+     "codigo": "ATP-2026-0014",
+     "titulo": "Contrato de colaboración de accesibilidad PMR",
+     "recibida": "2026-09-20",
+     "vence": "2026-10-06",
+     "prioridad": "Baja",
+     "plazo": "Vence en 12 días",
+     "urgente": false
+    }
+   ]
+  },
+  "documentos": {
+   "recordType": "ATP Documento",
+   "rows": [
+    {
+     "id": 1,
+     "acuerdoId": 1,
+     "nombre": "ATP-2025-0001_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "María López Arranz",
+     "fecha": "2025-01-20",
+     "tamano": "1,5 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 2,
+     "acuerdoId": 1,
+     "nombre": "ATP-2025-0001_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "María López Arranz",
+     "fecha": "2025-01-20",
+     "tamano": "797 KB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 3,
+     "acuerdoId": 1,
+     "nombre": "ATP-2025-0001_acuerdo_firmado.pdf",
+     "tipo": "Acuerdo firmado",
+     "subidoPor": "María López Arranz",
+     "fecha": "2025-01-20",
+     "tamano": "1,8 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 4,
+     "acuerdoId": 2,
+     "nombre": "ATP-2026-0002_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Javier García Ruiz",
+     "fecha": "2026-02-02",
+     "tamano": "377 KB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 5,
+     "acuerdoId": 2,
+     "nombre": "ATP-2026-0002_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Javier García Ruiz",
+     "fecha": "2026-02-02",
+     "tamano": "476 KB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 6,
+     "acuerdoId": 2,
+     "nombre": "ATP-2026-0002_acuerdo_firmado.pdf",
+     "tipo": "Acuerdo firmado",
+     "subidoPor": "Javier García Ruiz",
+     "fecha": "2026-02-02",
+     "tamano": "2,3 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 7,
+     "acuerdoId": 3,
+     "nombre": "ATP-2024-0003_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Rocío Sánchez Vidal",
+     "fecha": "2024-05-10",
+     "tamano": "565 KB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 8,
+     "acuerdoId": 3,
+     "nombre": "ATP-2024-0003_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Rocío Sánchez Vidal",
+     "fecha": "2024-05-10",
+     "tamano": "1,6 MB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 9,
+     "acuerdoId": 3,
+     "nombre": "ATP-2024-0003_acuerdo_firmado.pdf",
+     "tipo": "Acuerdo firmado",
+     "subidoPor": "Rocío Sánchez Vidal",
+     "fecha": "2024-05-10",
+     "tamano": "417 KB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 10,
+     "acuerdoId": 4,
+     "nombre": "ATP-2025-0004_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Pablo Martín Ortega",
+     "fecha": "2025-11-18",
+     "tamano": "2,2 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 11,
+     "acuerdoId": 4,
+     "nombre": "ATP-2025-0004_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Pablo Martín Ortega",
+     "fecha": "2025-11-18",
+     "tamano": "1,0 MB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 12,
+     "acuerdoId": 4,
+     "nombre": "ATP-2025-0004_acuerdo_firmado.pdf",
+     "tipo": "Acuerdo firmado",
+     "subidoPor": "Pablo Martín Ortega",
+     "fecha": "2025-11-18",
+     "tamano": "333 KB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 13,
+     "acuerdoId": 5,
+     "nombre": "ATP-2026-0005_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Lucía Fernández Gil",
+     "fecha": "2026-07-28",
+     "tamano": "532 KB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 14,
+     "acuerdoId": 5,
+     "nombre": "ATP-2026-0005_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Lucía Fernández Gil",
+     "fecha": "2026-07-28",
+     "tamano": "1,9 MB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 15,
+     "acuerdoId": 6,
+     "nombre": "ATP-2026-0006_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Andrés Moreno Pastor",
+     "fecha": "2026-09-02",
+     "tamano": "1,8 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 16,
+     "acuerdoId": 6,
+     "nombre": "ATP-2026-0006_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Andrés Moreno Pastor",
+     "fecha": "2026-09-02",
+     "tamano": "466 KB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 17,
+     "acuerdoId": 7,
+     "nombre": "ATP-2023-0007_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "María López Arranz",
+     "fecha": "2023-03-02",
+     "tamano": "1,1 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 18,
+     "acuerdoId": 7,
+     "nombre": "ATP-2023-0007_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "María López Arranz",
+     "fecha": "2023-03-02",
+     "tamano": "551 KB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 19,
+     "acuerdoId": 7,
+     "nombre": "ATP-2023-0007_acuerdo_firmado.pdf",
+     "tipo": "Acuerdo firmado",
+     "subidoPor": "María López Arranz",
+     "fecha": "2023-03-02",
+     "tamano": "1,9 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 20,
+     "acuerdoId": 8,
+     "nombre": "ATP-2026-0008_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Javier García Ruiz",
+     "fecha": "2026-09-12",
+     "tamano": "422 KB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 21,
+     "acuerdoId": 8,
+     "nombre": "ATP-2026-0008_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Javier García Ruiz",
+     "fecha": "2026-09-12",
+     "tamano": "687 KB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 22,
+     "acuerdoId": 9,
+     "nombre": "ATP-2026-0009_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Pablo Martín Ortega",
+     "fecha": "2026-01-12",
+     "tamano": "1,1 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 23,
+     "acuerdoId": 9,
+     "nombre": "ATP-2026-0009_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Pablo Martín Ortega",
+     "fecha": "2026-01-12",
+     "tamano": "433 KB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 24,
+     "acuerdoId": 9,
+     "nombre": "ATP-2026-0009_acuerdo_firmado.pdf",
+     "tipo": "Acuerdo firmado",
+     "subidoPor": "Pablo Martín Ortega",
+     "fecha": "2026-01-12",
+     "tamano": "1,8 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 25,
+     "acuerdoId": 10,
+     "nombre": "ATP-2026-0010_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Rocío Sánchez Vidal",
+     "fecha": "2026-09-18",
+     "tamano": "383 KB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 26,
+     "acuerdoId": 10,
+     "nombre": "ATP-2026-0010_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Rocío Sánchez Vidal",
+     "fecha": "2026-09-18",
+     "tamano": "1,1 MB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 27,
+     "acuerdoId": 11,
+     "nombre": "ATP-2025-0011_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Andrés Moreno Pastor",
+     "fecha": "2025-06-05",
+     "tamano": "370 KB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 28,
+     "acuerdoId": 11,
+     "nombre": "ATP-2025-0011_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Andrés Moreno Pastor",
+     "fecha": "2025-06-05",
+     "tamano": "725 KB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 29,
+     "acuerdoId": 11,
+     "nombre": "ATP-2025-0011_acuerdo_firmado.pdf",
+     "tipo": "Acuerdo firmado",
+     "subidoPor": "Andrés Moreno Pastor",
+     "fecha": "2025-06-05",
+     "tamano": "1,3 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 30,
+     "acuerdoId": 12,
+     "nombre": "ATP-2026-0012_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Lucía Fernández Gil",
+     "fecha": "2026-05-20",
+     "tamano": "1,9 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 31,
+     "acuerdoId": 12,
+     "nombre": "ATP-2026-0012_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Lucía Fernández Gil",
+     "fecha": "2026-05-20",
+     "tamano": "770 KB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 32,
+     "acuerdoId": 13,
+     "nombre": "ATP-2026-0013_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "María López Arranz",
+     "fecha": "2026-03-03",
+     "tamano": "2,3 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 33,
+     "acuerdoId": 13,
+     "nombre": "ATP-2026-0013_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "María López Arranz",
+     "fecha": "2026-03-03",
+     "tamano": "662 KB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 34,
+     "acuerdoId": 13,
+     "nombre": "ATP-2026-0013_acuerdo_firmado.pdf",
+     "tipo": "Acuerdo firmado",
+     "subidoPor": "María López Arranz",
+     "fecha": "2026-03-03",
+     "tamano": "1,4 MB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 35,
+     "acuerdoId": 14,
+     "nombre": "ATP-2026-0014_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Javier García Ruiz",
+     "fecha": "2026-09-20",
+     "tamano": "920 KB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 36,
+     "acuerdoId": 14,
+     "nombre": "ATP-2026-0014_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Javier García Ruiz",
+     "fecha": "2026-09-20",
+     "tamano": "602 KB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 37,
+     "acuerdoId": 15,
+     "nombre": "ATP-2025-0015_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Pablo Martín Ortega",
+     "fecha": "2025-09-08",
+     "tamano": "949 KB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 38,
+     "acuerdoId": 15,
+     "nombre": "ATP-2025-0015_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Pablo Martín Ortega",
+     "fecha": "2025-09-08",
+     "tamano": "1,7 MB",
+     "icono": "file-word-o"
+    },
+    {
+     "id": 39,
+     "acuerdoId": 15,
+     "nombre": "ATP-2025-0015_acuerdo_firmado.pdf",
+     "tipo": "Acuerdo firmado",
+     "subidoPor": "Pablo Martín Ortega",
+     "fecha": "2025-09-08",
+     "tamano": "579 KB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 40,
+     "acuerdoId": 16,
+     "nombre": "ATP-2026-0016_texto_acuerdo.pdf",
+     "tipo": "Texto del acuerdo",
+     "subidoPor": "Rocío Sánchez Vidal",
+     "fecha": "2026-07-15",
+     "tamano": "437 KB",
+     "icono": "file-pdf-o"
+    },
+    {
+     "id": 41,
+     "acuerdoId": 16,
+     "nombre": "ATP-2026-0016_memoria_justificativa.docx",
+     "tipo": "Memoria justificativa",
+     "subidoPor": "Rocío Sánchez Vidal",
+     "fecha": "2026-07-15",
+     "tamano": "424 KB",
+     "icono": "file-word-o"
+    }
+   ]
+  },
+  "eventos": {
+   "recordType": "ATP Evento",
+   "rows": [
+    {
+     "acuerdoId": 1,
+     "event": "Acuerdo firmado",
+     "user": "María López Arranz",
+     "timestamp": "2025-03-01T10:00:00",
+     "details": "Estado: Vigente",
+     "comment": null
+    },
+    {
+     "acuerdoId": 1,
+     "event": "Aprobado por Asesoría Jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2025-01-20T17:05:00",
+     "details": null,
+     "comment": "Conforme. Revisada la cláusula de protección de datos."
+    },
+    {
+     "acuerdoId": 1,
+     "event": "Enviado a revisión jurídica",
+     "user": "María López Arranz",
+     "timestamp": "2025-01-20T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 1,
+     "event": "Acuerdo creado",
+     "user": "María López Arranz",
+     "timestamp": "2025-01-20T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 2,
+     "event": "Acuerdo firmado",
+     "user": "Javier García Ruiz",
+     "timestamp": "2026-02-15T10:00:00",
+     "details": "Estado: Vigente",
+     "comment": null
+    },
+    {
+     "acuerdoId": 2,
+     "event": "Aprobado por Asesoría Jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2026-02-02T17:05:00",
+     "details": null,
+     "comment": "Conforme. Revisada la cláusula de protección de datos."
+    },
+    {
+     "acuerdoId": 2,
+     "event": "Enviado a revisión jurídica",
+     "user": "Javier García Ruiz",
+     "timestamp": "2026-02-02T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 2,
+     "event": "Acuerdo creado",
+     "user": "Javier García Ruiz",
+     "timestamp": "2026-02-02T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 3,
+     "event": "Acuerdo firmado",
+     "user": "Rocío Sánchez Vidal",
+     "timestamp": "2024-06-01T10:00:00",
+     "details": "Estado: Vigente",
+     "comment": null
+    },
+    {
+     "acuerdoId": 3,
+     "event": "Aprobado por Asesoría Jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2024-05-10T17:05:00",
+     "details": null,
+     "comment": "Conforme. Revisada la cláusula de protección de datos."
+    },
+    {
+     "acuerdoId": 3,
+     "event": "Enviado a revisión jurídica",
+     "user": "Rocío Sánchez Vidal",
+     "timestamp": "2024-05-10T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 3,
+     "event": "Acuerdo creado",
+     "user": "Rocío Sánchez Vidal",
+     "timestamp": "2024-05-10T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 4,
+     "event": "Acuerdo firmado",
+     "user": "Pablo Martín Ortega",
+     "timestamp": "2026-01-01T10:00:00",
+     "details": "Estado: Vigente",
+     "comment": null
+    },
+    {
+     "acuerdoId": 4,
+     "event": "Aprobado por Asesoría Jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2025-11-18T17:05:00",
+     "details": null,
+     "comment": "Conforme. Revisada la cláusula de protección de datos."
+    },
+    {
+     "acuerdoId": 4,
+     "event": "Enviado a revisión jurídica",
+     "user": "Pablo Martín Ortega",
+     "timestamp": "2025-11-18T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 4,
+     "event": "Acuerdo creado",
+     "user": "Pablo Martín Ortega",
+     "timestamp": "2025-11-18T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 5,
+     "event": "Aprobado por Asesoría Jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2026-07-28T17:05:00",
+     "details": null,
+     "comment": "Conforme. Revisada la cláusula de protección de datos."
+    },
+    {
+     "acuerdoId": 5,
+     "event": "Enviado a revisión jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2026-07-28T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 5,
+     "event": "Acuerdo creado",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2026-07-28T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 6,
+     "event": "Enviado a revisión jurídica",
+     "user": "Andrés Moreno Pastor",
+     "timestamp": "2026-09-02T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 6,
+     "event": "Acuerdo creado",
+     "user": "Andrés Moreno Pastor",
+     "timestamp": "2026-09-02T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 7,
+     "event": "Acuerdo firmado",
+     "user": "María López Arranz",
+     "timestamp": "2023-04-01T10:00:00",
+     "details": "Estado: Vigente",
+     "comment": null
+    },
+    {
+     "acuerdoId": 7,
+     "event": "Aprobado por Asesoría Jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2023-03-02T17:05:00",
+     "details": null,
+     "comment": "Conforme. Revisada la cláusula de protección de datos."
+    },
+    {
+     "acuerdoId": 7,
+     "event": "Enviado a revisión jurídica",
+     "user": "María López Arranz",
+     "timestamp": "2023-03-02T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 7,
+     "event": "Acuerdo creado",
+     "user": "María López Arranz",
+     "timestamp": "2023-03-02T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 8,
+     "event": "Enviado a revisión jurídica",
+     "user": "Javier García Ruiz",
+     "timestamp": "2026-09-12T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 8,
+     "event": "Acuerdo creado",
+     "user": "Javier García Ruiz",
+     "timestamp": "2026-09-12T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 9,
+     "event": "Acuerdo firmado",
+     "user": "Pablo Martín Ortega",
+     "timestamp": "2026-02-01T10:00:00",
+     "details": "Estado: Vigente",
+     "comment": null
+    },
+    {
+     "acuerdoId": 9,
+     "event": "Aprobado por Asesoría Jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2026-01-12T17:05:00",
+     "details": null,
+     "comment": "Conforme. Revisada la cláusula de protección de datos."
+    },
+    {
+     "acuerdoId": 9,
+     "event": "Enviado a revisión jurídica",
+     "user": "Pablo Martín Ortega",
+     "timestamp": "2026-01-12T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 9,
+     "event": "Acuerdo creado",
+     "user": "Pablo Martín Ortega",
+     "timestamp": "2026-01-12T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 10,
+     "event": "Acuerdo creado",
+     "user": "Rocío Sánchez Vidal",
+     "timestamp": "2026-09-18T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 11,
+     "event": "Acuerdo firmado",
+     "user": "Andrés Moreno Pastor",
+     "timestamp": "2025-07-01T10:00:00",
+     "details": "Estado: Vigente",
+     "comment": null
+    },
+    {
+     "acuerdoId": 11,
+     "event": "Aprobado por Asesoría Jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2025-06-05T17:05:00",
+     "details": null,
+     "comment": "Conforme. Revisada la cláusula de protección de datos."
+    },
+    {
+     "acuerdoId": 11,
+     "event": "Enviado a revisión jurídica",
+     "user": "Andrés Moreno Pastor",
+     "timestamp": "2025-06-05T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 11,
+     "event": "Acuerdo creado",
+     "user": "Andrés Moreno Pastor",
+     "timestamp": "2025-06-05T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 12,
+     "event": "Rechazado por Asesoría Jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2026-05-20T17:05:00",
+     "details": null,
+     "comment": "El objeto del acuerdo requiere licitación pública."
+    },
+    {
+     "acuerdoId": 12,
+     "event": "Enviado a revisión jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2026-05-20T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 12,
+     "event": "Acuerdo creado",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2026-05-20T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 13,
+     "event": "Acuerdo firmado",
+     "user": "María López Arranz",
+     "timestamp": "2026-04-01T10:00:00",
+     "details": "Estado: Vigente",
+     "comment": null
+    },
+    {
+     "acuerdoId": 13,
+     "event": "Aprobado por Asesoría Jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2026-03-03T17:05:00",
+     "details": null,
+     "comment": "Conforme. Revisada la cláusula de protección de datos."
+    },
+    {
+     "acuerdoId": 13,
+     "event": "Enviado a revisión jurídica",
+     "user": "María López Arranz",
+     "timestamp": "2026-03-03T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 13,
+     "event": "Acuerdo creado",
+     "user": "María López Arranz",
+     "timestamp": "2026-03-03T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 14,
+     "event": "Enviado a revisión jurídica",
+     "user": "Javier García Ruiz",
+     "timestamp": "2026-09-20T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 14,
+     "event": "Acuerdo creado",
+     "user": "Javier García Ruiz",
+     "timestamp": "2026-09-20T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 15,
+     "event": "Acuerdo firmado",
+     "user": "Pablo Martín Ortega",
+     "timestamp": "2025-10-01T10:00:00",
+     "details": "Estado: Vigente",
+     "comment": null
+    },
+    {
+     "acuerdoId": 15,
+     "event": "Aprobado por Asesoría Jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2025-09-08T17:05:00",
+     "details": null,
+     "comment": "Conforme. Revisada la cláusula de protección de datos."
+    },
+    {
+     "acuerdoId": 15,
+     "event": "Enviado a revisión jurídica",
+     "user": "Pablo Martín Ortega",
+     "timestamp": "2025-09-08T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 15,
+     "event": "Acuerdo creado",
+     "user": "Pablo Martín Ortega",
+     "timestamp": "2025-09-08T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    },
+    {
+     "acuerdoId": 16,
+     "event": "Aprobado por Asesoría Jurídica",
+     "user": "Lucía Fernández Gil",
+     "timestamp": "2026-07-15T17:05:00",
+     "details": null,
+     "comment": "Conforme. Revisada la cláusula de protección de datos."
+    },
+    {
+     "acuerdoId": 16,
+     "event": "Enviado a revisión jurídica",
+     "user": "Rocío Sánchez Vidal",
+     "timestamp": "2026-07-15T12:40:00",
+     "details": null,
+     "comment": null
+    },
+    {
+     "acuerdoId": 16,
+     "event": "Acuerdo creado",
+     "user": "Rocío Sánchez Vidal",
+     "timestamp": "2026-07-15T09:14:00",
+     "details": "Alta en estado Borrador",
+     "comment": null
+    }
+   ]
+  }
+ },
+ "screens": [
+  {
+   "id": "inicio",
+   "title": "Inicio",
+   "type": "page",
+   "pattern": "P06",
+   "ref": "PAN-01 · Inicio",
+   "req": [
+    "RF-01",
+    "RF-02",
+    "RF-11"
+   ],
+   "interface": {
+    "type": "a!headerContentLayout",
+    "backgroundColor": "TRANSPARENT",
+    "contents": [
+     {
+      "type": "a!columnsLayout",
+      "alignVertical": "MIDDLE",
+      "marginBelow": "MORE",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!headingField",
+          "text": "Hola, Lucía",
+          "size": "LARGE",
+          "headingTag": "H1",
+          "marginBelow": "EVEN_LESS"
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextItem",
+            "text": "Acuerdos con terceras partes · 24 de septiembre de 2026",
+            "color": "SECONDARY"
+           }
+          ],
+          "marginBelow": "NONE"
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "width": "AUTO",
+        "contents": [
+         {
+          "type": "a!buttonArrayLayout",
+          "align": "END",
+          "marginBelow": "NONE",
+          "buttons": [
+           {
+            "type": "a!buttonWidget",
+            "label": "Nuevo acuerdo",
+            "style": "SOLID",
+            "color": "#90CE00",
+            "icon": "plus",
+            "$action": {
+             "goto": "alta"
+            }
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!cardLayout",
+      "style": "NONE",
+      "showBorder": false,
+      "showShadow": true,
+      "shape": "SEMI_ROUNDED",
+      "padding": "STANDARD",
+      "contents": [
+       {
+        "type": "a!columnsLayout",
+        "showDividers": true,
+        "spacing": "SPARSE",
+        "stackWhen": [
+         "PHONE",
+         "TABLET_PORTRAIT"
+        ],
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!kpiField",
+            "primaryText": "Acuerdos vigentes",
+            "icon": "handshake-o",
+            "template": "COMPACT",
+            "iconColor": "SECONDARY",
+            "$secondaryValue": 7,
+            "secondaryText": "vs. agosto",
+            "data": "recordType!ATP Acuerdo",
+            "primaryMeasure": {
+             "type": "a!measure",
+             "function": "COUNT",
+             "field": "recordType!ATP Acuerdo.fields.id"
+            },
+            "$filter": "fv!row.estado = \"Vigente\""
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!kpiField",
+            "primaryText": "En revisión jurídica",
+            "icon": "gavel",
+            "template": "COMPACT",
+            "iconColor": "SECONDARY",
+            "$secondaryValue": 1,
+            "secondaryText": "vs. agosto",
+            "trendColor": "REVERSE",
+            "data": "recordType!ATP Acuerdo",
+            "primaryMeasure": {
+             "type": "a!measure",
+             "function": "COUNT",
+             "field": "recordType!ATP Acuerdo.fields.id"
+            },
+            "$filter": "fv!row.estado = \"En revisión jurídica\""
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!kpiField",
+            "primaryText": "Vencen en 90 días",
+            "icon": "calendar-times-o",
+            "template": "COMPACT",
+            "iconColor": "SECONDARY",
+            "$secondaryValue": 1,
+            "secondaryText": "vs. agosto",
+            "trendColor": "REVERSE",
+            "data": "recordType!ATP Acuerdo",
+            "primaryMeasure": {
+             "type": "a!measure",
+             "function": "COUNT",
+             "field": "recordType!ATP Acuerdo.fields.id"
+            },
+            "$filter": "and(fv!row.estado = \"Vigente\", fv!row.diasParaVencer <= 90, fv!row.diasParaVencer >= 0)"
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!kpiField",
+            "primaryText": "Importe comprometido",
+            "icon": "eur",
+            "template": "COMPACT",
+            "iconColor": "SECONDARY",
+            "$secondaryValue": 215000,
+            "secondaryText": "vs. agosto",
+            "data": "recordType!ATP Acuerdo",
+            "primaryMeasure": {
+             "type": "a!measure",
+             "function": "SUM",
+             "field": "recordType!ATP Acuerdo.fields.importe"
+            },
+            "$filter": "fv!row.estado = \"Vigente\"",
+            "$format": "eur"
+           }
+          ]
+         }
+        ]
+       }
+      ],
+      "decorativeBarPosition": "TOP",
+      "decorativeBarColor": "#90CE00",
+      "marginBelow": "MORE"
+     },
+     {
+      "type": "a!columnsLayout",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "width": "2X",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "label": "Mis tareas",
+          "labelSize": "MEDIUM",
+          "labelHeadingTag": "H2",
+          "labelColor": "STANDARD",
+          "marginBelow": "MORE",
+          "contents": [
+           {
+            "type": "a!cardLayout",
+            "style": "NONE",
+            "showBorder": false,
+            "showShadow": true,
+            "shape": "SEMI_ROUNDED",
+            "padding": "NONE",
+            "contents": [
+             {
+              "type": "a!gridField",
+              "labelPosition": "COLLAPSED",
+              "data": "data!tareas",
+              "borderStyle": "LIGHT",
+              "shadeAlternateRows": false,
+              "spacing": "STANDARD",
+              "pageSize": 10,
+              "rowHeader": 1,
+              "emptyGridMessage": "No tiene tareas pendientes",
+              "columns": [
+               {
+                "type": "a!gridColumn",
+                "label": "Tarea",
+                "value": {
+                 "type": "a!richTextDisplayField",
+                 "labelPosition": "COLLAPSED",
+                 "value": [
+                  {
+                   "type": "a!richTextItem",
+                   "text": "{fv!row.tarea} {fv!row.codigo}",
+                   "style": "STRONG",
+                   "link": {
+                    "type": "a!dynamicLink",
+                    "$action": {
+                     "goto": "revision",
+                     "params": {
+                      "id": "{fv!row.acuerdoId}"
+                     }
+                    }
+                   },
+                   "linkStyle": "STANDALONE"
+                  },
+                  "\n",
+                  {
+                   "type": "a!richTextItem",
+                   "text": "{fv!row.titulo}",
+                   "color": "SECONDARY",
+                   "size": "SMALL"
+                  }
+                 ]
+                }
+               },
+               {
+                "type": "a!gridColumn",
+                "label": "Recibida",
+                "value": "{fv!row.recibida|date}",
+                "width": "NARROW"
+               },
+               {
+                "type": "a!gridColumn",
+                "label": "Plazo",
+                "value": {
+                 "type": "a!tagField",
+                 "labelPosition": "COLLAPSED",
+                 "size": "SMALL",
+                 "tags": [
+                  {
+                   "type": "a!tagItem",
+                   "text": "{fv!row.plazo}",
+                   "backgroundColor": "{fv!row.urgente|map:plazoColor}"
+                  }
+                 ]
+                },
+                "width": "NARROW_PLUS"
+               }
+              ],
+              "$note": "En Appian: a!gridField sobre el record type de tareas o a!queryProcessAnalytics. Lista de 5–10 tareas sin paginación."
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!cardLayout",
+          "style": "WARN",
+          "showBorder": false,
+          "padding": "STANDARD",
+          "shape": "SEMI_ROUNDED",
+          "decorativeBarPosition": "START",
+          "decorativeBarColor": "WARN",
+          "marginBelow": "MORE",
+          "contents": [
+           {
+            "type": "a!sideBySideLayout",
+            "alignVertical": "MIDDLE",
+            "spacing": "STANDARD",
+            "items": [
+             {
+              "type": "a!sideBySideItem",
+              "width": "MINIMIZE",
+              "item": {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "value": [
+                {
+                 "type": "a!richTextIcon",
+                 "icon": "clock-o",
+                 "color": "WARN",
+                 "size": "MEDIUM"
+                }
+               ]
+              }
+             },
+             {
+              "type": "a!sideBySideItem",
+              "item": {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "value": [
+                {
+                 "type": "a!richTextItem",
+                 "text": "3 acuerdos vencen en los próximos 90 días",
+                 "style": "STRONG"
+                },
+                "\n",
+                "Revise si deben renovarse antes de su vencimiento"
+               ]
+              }
+             },
+             {
+              "type": "a!sideBySideItem",
+              "width": "MINIMIZE",
+              "item": {
+               "type": "a!buttonArrayLayout",
+               "marginBelow": "NONE",
+               "buttons": [
+                {
+                 "type": "a!buttonWidget",
+                 "label": "Revisar",
+                 "style": "OUTLINE",
+                 "color": "ACCENT",
+                 "$action": {
+                  "goto": "acuerdos"
+                 },
+                 "size": "SMALL"
+                }
+               ]
+              }
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "type": "a!sectionLayout",
+          "label": "Acuerdos por estado",
+          "labelSize": "MEDIUM",
+          "labelHeadingTag": "H2",
+          "labelColor": "STANDARD",
+          "marginBelow": "MORE",
+          "contents": [
+           {
+            "type": "a!cardLayout",
+            "style": "NONE",
+            "showBorder": false,
+            "showShadow": true,
+            "shape": "SEMI_ROUNDED",
+            "padding": "STANDARD",
+            "contents": [
+             {
+              "type": "a!barChartField",
+              "labelPosition": "COLLAPSED",
+              "data": "recordType!ATP Acuerdo",
+              "height": "AUTO",
+              "showDataLabels": true,
+              "$categories": [
+               "Borrador",
+               "En revisión jurídica",
+               "Pendiente de firma",
+               "Vigente",
+               "Vencido",
+               "Rechazado"
+              ],
+              "config": {
+               "type": "a!barChartConfig",
+               "primaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!ATP Acuerdo.fields.estado"
+               },
+               "measures": [
+                {
+                 "type": "a!measure",
+                 "function": "COUNT",
+                 "field": "recordType!ATP Acuerdo.fields.id",
+                 "label": "Acuerdos"
+                }
+               ]
+              },
+              "colorScheme": {
+               "type": "a!colorSchemeCustom",
+               "colors": [
+                "#1A2732"
+               ]
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "acuerdos",
+   "title": "Acuerdos",
+   "type": "page",
+   "pattern": "P01",
+   "ref": "PAN-02 · Listado de acuerdos",
+   "req": [
+    "RF-03",
+    "RF-04",
+    "RF-11"
+   ],
+   "interface": {
+    "type": "a!headerContentLayout",
+    "backgroundColor": "TRANSPARENT",
+    "contents": [
+     {
+      "type": "a!columnsLayout",
+      "alignVertical": "MIDDLE",
+      "marginBelow": "MORE",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!headingField",
+          "text": "Acuerdos",
+          "size": "LARGE",
+          "headingTag": "H1",
+          "marginBelow": "EVEN_LESS"
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextItem",
+            "text": "Acuerdos con terceras partes de todos los aeropuertos y Servicios Centrales",
+            "color": "SECONDARY"
+           }
+          ],
+          "marginBelow": "NONE"
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "width": "AUTO",
+        "contents": [
+         {
+          "type": "a!buttonArrayLayout",
+          "align": "END",
+          "marginBelow": "NONE",
+          "buttons": [
+           {
+            "type": "a!buttonWidget",
+            "label": "Nuevo acuerdo",
+            "style": "SOLID",
+            "color": "#90CE00",
+            "icon": "plus",
+            "$action": {
+             "goto": "alta"
+            }
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!messageBanner",
+      "backgroundColor": "SUCCESS",
+      "highlightColor": "POSITIVE",
+      "shape": "SEMI_ROUNDED",
+      "showWhen": "a!isNotNullOrEmpty(ri!mensaje)",
+      "primaryText": "{ri!mensaje}",
+      "secondaryText": "Asesoría Jurídica ha recibido la tarea de revisión.",
+      "marginBelow": "STANDARD"
+     },
+     {
+      "type": "a!cardLayout",
+      "style": "NONE",
+      "showBorder": false,
+      "showShadow": true,
+      "shape": "SEMI_ROUNDED",
+      "padding": "STANDARD",
+      "contents": [
+       {
+        "type": "a!gridField",
+        "labelPosition": "COLLAPSED",
+        "data": "recordType!ATP Acuerdo",
+        "borderStyle": "LIGHT",
+        "shadeAlternateRows": false,
+        "spacing": "STANDARD",
+        "pageSize": 25,
+        "rowHeader": 1,
+        "emptyGridMessage": "No hay acuerdos que cumplan los filtros",
+        "columns": [
+         {
+          "type": "a!gridColumn",
+          "label": "Acuerdo",
+          "value": {
+           "type": "a!richTextDisplayField",
+           "labelPosition": "COLLAPSED",
+           "value": [
+            {
+             "type": "a!richTextItem",
+             "text": "{fv!row.codigo}",
+             "style": "STRONG",
+             "link": {
+              "type": "a!recordLink",
+              "recordType": "recordType!ATP Acuerdo",
+              "identifier": "{fv!row.id}"
+             },
+             "linkStyle": "STANDALONE"
+            },
+            "\n",
+            {
+             "type": "a!richTextItem",
+             "text": "{fv!row.titulo}",
+             "color": "SECONDARY",
+             "size": "SMALL"
+            }
+           ]
+          },
+          "sortField": "recordType!ATP Acuerdo.fields.codigo",
+          "width": "4X"
+         },
+         {
+          "type": "a!gridColumn",
+          "label": "Tercero",
+          "value": {
+           "type": "a!richTextDisplayField",
+           "labelPosition": "COLLAPSED",
+           "value": [
+            {
+             "type": "a!richTextItem",
+             "text": "{fv!row.tercero}"
+            },
+            "\n",
+            {
+             "type": "a!richTextItem",
+             "text": "{fv!row.tipoTercero}",
+             "color": "SECONDARY",
+             "size": "SMALL"
+            }
+           ]
+          },
+          "sortField": "recordType!ATP Acuerdo.fields.tercero",
+          "width": "3X"
+         },
+         {
+          "type": "a!gridColumn",
+          "label": "Tipo",
+          "value": "{fv!row.tipo}",
+          "sortField": "recordType!ATP Acuerdo.fields.tipo",
+          "width": "2X"
+         },
+         {
+          "type": "a!gridColumn",
+          "label": "Aeropuerto",
+          "value": "{fv!row.aeropuerto}",
+          "sortField": "recordType!ATP Acuerdo.fields.aeropuerto",
+          "width": "NARROW"
+         },
+         {
+          "type": "a!gridColumn",
+          "label": "Fin",
+          "value": "{fv!row.fechaFin|date}",
+          "sortField": "recordType!ATP Acuerdo.fields.fechaFin",
+          "width": "NARROW"
+         },
+         {
+          "type": "a!gridColumn",
+          "label": "Estado",
+          "value": {
+           "type": "a!tagField",
+           "labelPosition": "COLLAPSED",
+           "size": "SMALL",
+           "tags": [
+            {
+             "type": "a!tagItem",
+             "text": "{fv!row.estado}",
+             "backgroundColor": "{fv!row.estado|map:estadoColorGrid}"
+            }
+           ]
+          },
+          "sortField": "recordType!ATP Acuerdo.fields.estado",
+          "width": "NARROW_PLUS"
+         },
+         {
+          "type": "a!gridColumn",
+          "label": "Aviso",
+          "value": {
+           "type": "a!richTextDisplayField",
+           "labelPosition": "COLLAPSED",
+           "value": [
+            {
+             "type": "a!richTextIcon",
+             "icon": "clock-o",
+             "color": "WARN",
+             "caption": "Vence en {fv!row.diasParaVencer} días",
+             "altText": "Vence en {fv!row.diasParaVencer} días",
+             "showWhen": "and(fv!row.estado = \"Vigente\", fv!row.diasParaVencer <= 90, fv!row.diasParaVencer >= 0)"
+            },
+            " "
+           ]
+          },
+          "width": "ICON",
+          "align": "CENTER"
+         }
+        ],
+        "showSearchBox": true,
+        "showExportButton": true,
+        "userFilters": [
+         "recordType!ATP Acuerdo.filters.estado",
+         "recordType!ATP Acuerdo.filters.tipo",
+         "recordType!ATP Acuerdo.filters.aeropuerto"
+        ],
+        "initialSorts": [
+         {
+          "type": "a!sortInfo",
+          "field": "recordType!ATP Acuerdo.fields.fechaAlta",
+          "ascending": false
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "acuerdo",
+   "title": "{rv!record.codigo} · {rv!record.titulo}",
+   "type": "record",
+   "pattern": "P02",
+   "ref": "PAN-03 · Ficha del acuerdo",
+   "recordType": "ATP Acuerdo",
+   "req": [
+    "RF-04",
+    "RF-08",
+    "RF-09",
+    "RF-11"
+   ],
+   "breadcrumb": {
+    "label": "Acuerdos",
+    "goto": "acuerdos"
+   },
+   "headerBackgroundColor": "#1A2732",
+   "recordActions": [
+    {
+     "type": "a!recordActionItem",
+     "action": "recordType!ATP Acuerdo.actions.editarDatosGenerales",
+     "identifier": "{rv!record.id}",
+     "$label": "Editar datos",
+     "$icon": "pencil",
+     "$action": {
+      "dialog": "editar",
+      "params": {
+       "id": "{rv!record.id}"
+      }
+     }
+    },
+    {
+     "type": "a!recordActionItem",
+     "action": "recordType!ATP Acuerdo.actions.anadirDocumento",
+     "identifier": "{rv!record.id}",
+     "$label": "Añadir documento",
+     "$icon": "paperclip",
+     "$action": {
+      "dialog": "documento",
+      "params": {
+       "id": "{rv!record.id}"
+      }
+     }
+    }
+   ],
+   "views": [
+    {
+     "id": "resumen",
+     "label": "Resumen",
+     "interface": {
+      "type": "a!headerContentLayout",
+      "backgroundColor": "TRANSPARENT",
+      "contents": [
+       {
+        "type": "a!cardLayout",
+        "style": "NONE",
+        "showBorder": false,
+        "showShadow": true,
+        "shape": "SEMI_ROUNDED",
+        "padding": "STANDARD",
+        "contents": [
+         {
+          "type": "a!columnsLayout",
+          "showDividers": true,
+          "spacing": "SPARSE",
+          "alignVertical": "TOP",
+          "stackWhen": [
+           "PHONE",
+           "TABLET_PORTRAIT"
+          ],
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "labelPosition": "COLLAPSED",
+              "marginBelow": "EVEN_LESS",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Estado",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               }
+              ]
+             },
+             {
+              "type": "a!tagField",
+              "labelPosition": "COLLAPSED",
+              "size": "STANDARD",
+              "tags": [
+               {
+                "type": "a!tagItem",
+                "text": "{rv!record.estado}",
+                "backgroundColor": "{rv!record.estado|map:estadoColor}"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Vigencia",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Vigencia",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.fechaInicio|date} – {rv!record.fechaFin|date}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Tercero",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Tercero",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.tercero|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Importe",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Importe",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.importe|eur|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Responsable",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Responsable",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.responsable|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           }
+          ],
+          "marginBelow": "STANDARD"
+         },
+         {
+          "type": "a!milestoneField",
+          "labelPosition": "COLLAPSED",
+          "steps": [
+           "Borrador",
+           "En revisión jurídica",
+           "Pendiente de firma",
+           "Vigente",
+           "Vencido"
+          ],
+          "active": "{rv!record.estado|map:estadoPaso}",
+          "stepStyle": "LINE",
+          "color": "ACCENT"
+         }
+        ],
+        "marginBelow": "MORE"
+       },
+       {
+        "type": "a!cardLayout",
+        "style": "WARN",
+        "showBorder": false,
+        "padding": "STANDARD",
+        "shape": "SEMI_ROUNDED",
+        "decorativeBarPosition": "START",
+        "decorativeBarColor": "WARN",
+        "marginBelow": "MORE",
+        "contents": [
+         {
+          "type": "a!sideBySideLayout",
+          "alignVertical": "MIDDLE",
+          "spacing": "STANDARD",
+          "items": [
+           {
+            "type": "a!sideBySideItem",
+            "width": "MINIMIZE",
+            "item": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextIcon",
+               "icon": "clock-o",
+               "color": "WARN",
+               "size": "MEDIUM"
+              }
+             ]
+            }
+           },
+           {
+            "type": "a!sideBySideItem",
+            "item": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextItem",
+               "text": "Este acuerdo vence en {rv!record.diasParaVencer} días",
+               "style": "STRONG"
+              },
+              "\n",
+              "Valore la renovación antes del {rv!record.fechaFin|date}"
+             ]
+            }
+           }
+          ]
+         }
+        ],
+        "showWhen": "and(rv!record.estado = \"Vigente\", rv!record.diasParaVencer <= 90)"
+       },
+       {
+        "type": "a!columnsLayout",
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "width": "2X",
+          "contents": [
+           {
+            "type": "a!sectionLayout",
+            "label": "Datos del acuerdo",
+            "labelSize": "MEDIUM",
+            "labelHeadingTag": "H2",
+            "labelColor": "STANDARD",
+            "marginBelow": "MORE",
+            "contents": [
+             {
+              "type": "a!cardLayout",
+              "style": "NONE",
+              "showBorder": false,
+              "showShadow": true,
+              "shape": "SEMI_ROUNDED",
+              "padding": "STANDARD",
+              "contents": [
+               {
+                "type": "a!sectionLayout",
+                "label": "DATOS GENERALES",
+                "labelSize": "SMALL",
+                "labelHeadingTag": "H3",
+                "labelColor": "SECONDARY",
+                "marginBelow": "STANDARD",
+                "contents": [
+                 {
+                  "type": "a!columnsLayout",
+                  "marginBelow": "STANDARD",
+                  "columns": [
+                   {
+                    "type": "a!columnLayout",
+                    "contents": [
+                     {
+                      "type": "a!richTextDisplayField",
+                      "label": "Código",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       {
+                        "type": "a!richTextItem",
+                        "text": "Código",
+                        "color": "SECONDARY",
+                        "size": "SMALL"
+                       },
+                       "\n",
+                       {
+                        "type": "a!richTextItem",
+                        "text": "{rv!record.codigo|dash}",
+                        "size": "MEDIUM"
+                       }
+                      ],
+                      "marginBelow": "NONE"
+                     }
+                    ]
+                   },
+                   {
+                    "type": "a!columnLayout",
+                    "contents": [
+                     {
+                      "type": "a!richTextDisplayField",
+                      "label": "Tipo de acuerdo",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       {
+                        "type": "a!richTextItem",
+                        "text": "Tipo de acuerdo",
+                        "color": "SECONDARY",
+                        "size": "SMALL"
+                       },
+                       "\n",
+                       {
+                        "type": "a!richTextItem",
+                        "text": "{rv!record.tipo|dash}",
+                        "size": "MEDIUM"
+                       }
+                      ],
+                      "marginBelow": "NONE"
+                     }
+                    ]
+                   },
+                   {
+                    "type": "a!columnLayout",
+                    "contents": [
+                     {
+                      "type": "a!richTextDisplayField",
+                      "label": "Aeropuerto / unidad",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       {
+                        "type": "a!richTextItem",
+                        "text": "Aeropuerto / unidad",
+                        "color": "SECONDARY",
+                        "size": "SMALL"
+                       },
+                       "\n",
+                       {
+                        "type": "a!richTextItem",
+                        "text": "{rv!record.aeropuerto|dash}",
+                        "size": "MEDIUM"
+                       }
+                      ],
+                      "marginBelow": "NONE"
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "type": "a!richTextDisplayField",
+                  "label": "Título",
+                  "labelPosition": "COLLAPSED",
+                  "value": [
+                   {
+                    "type": "a!richTextItem",
+                    "text": "Título",
+                    "color": "SECONDARY",
+                    "size": "SMALL"
+                   },
+                   "\n",
+                   {
+                    "type": "a!richTextItem",
+                    "text": "{rv!record.titulo|dash}",
+                    "size": "MEDIUM"
+                   }
+                  ],
+                  "marginBelow": "STANDARD"
+                 },
+                 {
+                  "type": "a!columnsLayout",
+                  "marginBelow": "STANDARD",
+                  "columns": [
+                   {
+                    "type": "a!columnLayout",
+                    "contents": [
+                     {
+                      "type": "a!richTextDisplayField",
+                      "label": "Fecha de inicio",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       {
+                        "type": "a!richTextItem",
+                        "text": "Fecha de inicio",
+                        "color": "SECONDARY",
+                        "size": "SMALL"
+                       },
+                       "\n",
+                       {
+                        "type": "a!richTextItem",
+                        "text": "{rv!record.fechaInicio|date|dash}",
+                        "size": "MEDIUM"
+                       }
+                      ],
+                      "marginBelow": "NONE"
+                     }
+                    ]
+                   },
+                   {
+                    "type": "a!columnLayout",
+                    "contents": [
+                     {
+                      "type": "a!richTextDisplayField",
+                      "label": "Fecha de fin",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       {
+                        "type": "a!richTextItem",
+                        "text": "Fecha de fin",
+                        "color": "SECONDARY",
+                        "size": "SMALL"
+                       },
+                       "\n",
+                       {
+                        "type": "a!richTextItem",
+                        "text": "{rv!record.fechaFin|date|dash}",
+                        "size": "MEDIUM"
+                       }
+                      ],
+                      "marginBelow": "NONE"
+                     }
+                    ]
+                   },
+                   {
+                    "type": "a!columnLayout",
+                    "contents": [
+                     {
+                      "type": "a!richTextDisplayField",
+                      "label": "Prórroga automática",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       {
+                        "type": "a!richTextItem",
+                        "text": "Prórroga automática",
+                        "color": "SECONDARY",
+                        "size": "SMALL"
+                       },
+                       "\n",
+                       {
+                        "type": "a!richTextItem",
+                        "text": "{rv!record.prorroga|map:siNo|dash}",
+                        "size": "MEDIUM"
+                       }
+                      ],
+                      "marginBelow": "NONE"
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
+               },
+               {
+                "type": "a!sectionLayout",
+                "label": "TERCERO",
+                "labelSize": "SMALL",
+                "labelHeadingTag": "H3",
+                "labelColor": "SECONDARY",
+                "marginBelow": "STANDARD",
+                "contents": [
+                 {
+                  "type": "a!columnsLayout",
+                  "marginBelow": "STANDARD",
+                  "columns": [
+                   {
+                    "type": "a!columnLayout",
+                    "contents": [
+                     {
+                      "type": "a!richTextDisplayField",
+                      "label": "Razón social",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       {
+                        "type": "a!richTextItem",
+                        "text": "Razón social",
+                        "color": "SECONDARY",
+                        "size": "SMALL"
+                       },
+                       "\n",
+                       {
+                        "type": "a!richTextItem",
+                        "text": "{rv!record.tercero|dash}",
+                        "size": "MEDIUM"
+                       }
+                      ],
+                      "marginBelow": "NONE"
+                     }
+                    ]
+                   },
+                   {
+                    "type": "a!columnLayout",
+                    "contents": [
+                     {
+                      "type": "a!richTextDisplayField",
+                      "label": "CIF/NIF",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       {
+                        "type": "a!richTextItem",
+                        "text": "CIF/NIF",
+                        "color": "SECONDARY",
+                        "size": "SMALL"
+                       },
+                       "\n",
+                       {
+                        "type": "a!richTextItem",
+                        "text": "{rv!record.cif|dash}",
+                        "size": "MEDIUM"
+                       }
+                      ],
+                      "marginBelow": "NONE"
+                     }
+                    ]
+                   },
+                   {
+                    "type": "a!columnLayout",
+                    "contents": [
+                     {
+                      "type": "a!richTextDisplayField",
+                      "label": "Tipo de tercero",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       {
+                        "type": "a!richTextItem",
+                        "text": "Tipo de tercero",
+                        "color": "SECONDARY",
+                        "size": "SMALL"
+                       },
+                       "\n",
+                       {
+                        "type": "a!richTextItem",
+                        "text": "{rv!record.tipoTercero|dash}",
+                        "size": "MEDIUM"
+                       }
+                      ],
+                      "marginBelow": "NONE"
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
+               },
+               {
+                "type": "a!sectionLayout",
+                "label": "CONDICIONES ECONÓMICAS",
+                "labelSize": "SMALL",
+                "labelHeadingTag": "H3",
+                "labelColor": "SECONDARY",
+                "marginBelow": "NONE",
+                "contents": [
+                 {
+                  "type": "a!columnsLayout",
+                  "marginBelow": "STANDARD",
+                  "columns": [
+                   {
+                    "type": "a!columnLayout",
+                    "contents": [
+                     {
+                      "type": "a!richTextDisplayField",
+                      "label": "Contenido económico",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       {
+                        "type": "a!richTextItem",
+                        "text": "Contenido económico",
+                        "color": "SECONDARY",
+                        "size": "SMALL"
+                       },
+                       "\n",
+                       {
+                        "type": "a!richTextItem",
+                        "text": "{rv!record.conImporte|map:siNo|dash}",
+                        "size": "MEDIUM"
+                       }
+                      ],
+                      "marginBelow": "NONE"
+                     }
+                    ]
+                   },
+                   {
+                    "type": "a!columnLayout",
+                    "contents": [
+                     {
+                      "type": "a!richTextDisplayField",
+                      "label": "Importe",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       {
+                        "type": "a!richTextItem",
+                        "text": "Importe",
+                        "color": "SECONDARY",
+                        "size": "SMALL"
+                       },
+                       "\n",
+                       {
+                        "type": "a!richTextItem",
+                        "text": "{rv!record.importe|eur|dash}",
+                        "size": "MEDIUM"
+                       }
+                      ],
+                      "marginBelow": "NONE"
+                     }
+                    ]
+                   },
+                   {
+                    "type": "a!columnLayout",
+                    "contents": [
+                     {
+                      "type": "a!richTextDisplayField",
+                      "label": "Contraprestación",
+                      "labelPosition": "COLLAPSED",
+                      "value": [
+                       {
+                        "type": "a!richTextItem",
+                        "text": "Contraprestación",
+                        "color": "SECONDARY",
+                        "size": "SMALL"
+                       },
+                       "\n",
+                       {
+                        "type": "a!richTextItem",
+                        "text": "{rv!record.contraprestacion|dash}",
+                        "size": "MEDIUM"
+                       }
+                      ],
+                      "marginBelow": "NONE"
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!sectionLayout",
+            "label": "Responsable",
+            "labelSize": "MEDIUM",
+            "labelHeadingTag": "H2",
+            "labelColor": "STANDARD",
+            "marginBelow": "MORE",
+            "contents": [
+             {
+              "type": "a!cardLayout",
+              "style": "NONE",
+              "showBorder": false,
+              "showShadow": true,
+              "shape": "SEMI_ROUNDED",
+              "padding": "STANDARD",
+              "contents": [
+               {
+                "type": "a!sideBySideLayout",
+                "alignVertical": "MIDDLE",
+                "items": [
+                 {
+                  "type": "a!sideBySideItem",
+                  "width": "MINIMIZE",
+                  "item": {
+                   "type": "a!imageField",
+                   "labelPosition": "COLLAPSED",
+                   "size": "TINY",
+                   "style": "AVATAR",
+                   "images": [
+                    {
+                     "type": "a!userImage",
+                     "user": "{rv!record.responsable}"
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "type": "a!sideBySideItem",
+                  "item": {
+                   "type": "a!richTextDisplayField",
+                   "labelPosition": "COLLAPSED",
+                   "value": [
+                    {
+                     "type": "a!richTextItem",
+                     "text": "{rv!record.responsable}",
+                     "style": "STRONG"
+                    },
+                    "\n",
+                    {
+                     "type": "a!richTextItem",
+                     "text": "Unidad promotora · {rv!record.aeropuerto}",
+                     "color": "SECONDARY",
+                     "size": "SMALL"
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "a!sectionLayout",
+            "label": "Documentos recientes",
+            "labelSize": "MEDIUM",
+            "labelHeadingTag": "H2",
+            "labelColor": "STANDARD",
+            "marginBelow": "MORE",
+            "contents": [
+             {
+              "type": "a!cardLayout",
+              "style": "NONE",
+              "showBorder": false,
+              "showShadow": true,
+              "shape": "SEMI_ROUNDED",
+              "padding": "STANDARD",
+              "contents": [
+               {
+                "type": "a!forEach",
+                "items": "data!documentos",
+                "$filter": "fv!item.acuerdoId = rv!record.id",
+                "$limit": 3,
+                "expression": {
+                 "type": "a!richTextDisplayField",
+                 "labelPosition": "COLLAPSED",
+                 "marginBelow": "LESS",
+                 "value": [
+                  {
+                   "type": "a!richTextIcon",
+                   "icon": "{fv!item.icono}",
+                   "color": "SECONDARY",
+                   "size": "MEDIUM"
+                  },
+                  "  ",
+                  {
+                   "type": "a!richTextItem",
+                   "text": "{fv!item.nombre}",
+                   "link": {
+                    "type": "a!dynamicLink",
+                    "$action": {
+                     "goto": "acuerdo",
+                     "params": {
+                      "id": "{rv!record.id}"
+                     },
+                     "view": "documentos"
+                    }
+                   },
+                   "linkStyle": "STANDALONE"
+                  },
+                  "\n",
+                  {
+                   "type": "a!richTextItem",
+                   "text": "{fv!item.tipo} · {fv!item.fecha|date}",
+                   "color": "SECONDARY",
+                   "size": "SMALL"
+                  }
+                 ]
+                }
+               },
+               {
+                "type": "a!richTextDisplayField",
+                "labelPosition": "COLLAPSED",
+                "align": "RIGHT",
+                "marginAbove": "LESS",
+                "value": [
+                 {
+                  "type": "a!richTextItem",
+                  "text": "Ver todos los documentos",
+                  "link": {
+                   "type": "a!dynamicLink",
+                   "$action": {
+                    "goto": "acuerdo",
+                    "params": {
+                     "id": "{rv!record.id}"
+                    },
+                    "view": "documentos"
+                   }
+                  },
+                  "linkStyle": "STANDALONE",
+                  "style": "STRONG"
+                 },
+                 " ",
+                 {
+                  "type": "a!richTextIcon",
+                  "icon": "arrow-right",
+                  "color": "ACCENT",
+                  "link": {
+                   "type": "a!dynamicLink",
+                   "$action": {
+                    "goto": "acuerdo",
+                    "params": {
+                     "id": "{rv!record.id}"
+                    },
+                    "view": "documentos"
+                   }
+                  },
+                  "altText": "Ver todos los documentos"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "id": "documentos",
+     "label": "Documentos",
+     "interface": {
+      "type": "a!headerContentLayout",
+      "backgroundColor": "TRANSPARENT",
+      "contents": [
+       {
+        "type": "a!cardLayout",
+        "style": "NONE",
+        "showBorder": false,
+        "showShadow": true,
+        "shape": "SEMI_ROUNDED",
+        "padding": "NONE",
+        "contents": [
+         {
+          "type": "a!gridField",
+          "labelPosition": "COLLAPSED",
+          "data": "data!documentos",
+          "borderStyle": "LIGHT",
+          "shadeAlternateRows": false,
+          "spacing": "STANDARD",
+          "pageSize": 10,
+          "rowHeader": 1,
+          "emptyGridMessage": "El acuerdo no tiene documentos",
+          "columns": [
+           {
+            "type": "a!gridColumn",
+            "label": "Documento",
+            "value": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextIcon",
+               "icon": "{fv!row.icono}",
+               "color": "SECONDARY",
+               "size": "MEDIUM"
+              },
+              "  ",
+              {
+               "type": "a!richTextItem",
+               "text": "{fv!row.nombre}",
+               "link": {
+                "type": "a!dynamicLink"
+               },
+               "linkStyle": "STANDALONE",
+               "style": "STRONG"
+              },
+              "\n",
+              {
+               "type": "a!richTextItem",
+               "text": "{fv!row.tipo}",
+               "color": "SECONDARY",
+               "size": "SMALL"
+              }
+             ]
+            },
+            "width": "5X"
+           },
+           {
+            "type": "a!gridColumn",
+            "label": "Subido por",
+            "value": "{fv!row.subidoPor}",
+            "width": "3X"
+           },
+           {
+            "type": "a!gridColumn",
+            "label": "Fecha",
+            "value": "{fv!row.fecha|date}",
+            "width": "NARROW"
+           },
+           {
+            "type": "a!gridColumn",
+            "label": "Tamaño",
+            "value": "{fv!row.tamano}",
+            "align": "END",
+            "width": "NARROW"
+           }
+          ],
+          "$filter": "fv!row.acuerdoId = rv!record.id",
+          "$note": "En Appian: record type de documentos relacionado con ATP Acuerdo (relación uno a muchos)."
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "id": "historial",
+     "label": "Historial",
+     "interface": {
+      "type": "a!headerContentLayout",
+      "backgroundColor": "TRANSPARENT",
+      "contents": [
+       {
+        "type": "a!cardLayout",
+        "style": "NONE",
+        "showBorder": false,
+        "showShadow": true,
+        "shape": "SEMI_ROUNDED",
+        "padding": "MORE",
+        "contents": [
+         {
+          "type": "a!eventHistoryListField",
+          "labelPosition": "COLLAPSED",
+          "eventStyle": "TIMELINE",
+          "commentLayout": "CARD",
+          "$events": "data!eventos",
+          "$filter": "fv!row.acuerdoId = rv!record.id",
+          "$note": "En Appian: a!eventHistoryListField con a!eventData sobre el record type de eventos de ATP Acuerdo (record events)."
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "alta",
+   "title": "Nuevo acuerdo",
+   "type": "form",
+   "pattern": "P04",
+   "ref": "PAN-04 · Alta de acuerdo",
+   "req": [
+    "RF-05",
+    "RF-06",
+    "RF-07"
+   ],
+   "local": {
+    "local!acuerdo": {
+     "titulo": null,
+     "tipo": null,
+     "aeropuerto": null,
+     "responsable": null,
+     "fechaInicio": null,
+     "fechaFin": null,
+     "prorroga": false,
+     "tercero": null,
+     "cif": null,
+     "tipoTercero": null,
+     "conImporte": null,
+     "importe": null,
+     "contraprestacion": null,
+     "docs": [],
+     "observaciones": null
+    }
+   },
+   "assumptions": [
+    "El código ATP-AAAA-NNNN lo genera el proceso al enviar; no se muestra en el alta."
+   ],
+   "interface": {
+    "type": "a!wizardLayout",
+    "style": "DOT_VERTICAL",
+    "contentsWidth": "MEDIUM",
+    "showButtonDivider": true,
+    "backgroundColor": "WHITE",
+    "titleBar": {
+     "type": "a!sidebarTemplate",
+     "title": "Nuevo acuerdo",
+     "secondaryText": "Alta de un acuerdo con una tercera parte",
+     "backgroundColor": "#1A2732",
+     "width": "NARROW_PLUS",
+     "additionalContents": [
+      {
+       "type": "a!richTextDisplayField",
+       "labelPosition": "COLLAPSED",
+       "value": [
+        {
+         "type": "a!richTextIcon",
+         "icon": "info-circle",
+         "color": "#90CE00"
+        },
+        " ",
+        {
+         "type": "a!richTextItem",
+         "text": "Al enviar, Asesoría Jurídica recibe una tarea de revisión.",
+         "size": "SMALL",
+         "color": "#FFFFFF"
+        }
+       ]
+      }
+     ]
+    },
+    "steps": [
+     {
+      "type": "a!wizardStep",
+      "label": "Datos generales",
+      "contents": [
+       {
+        "type": "a!textField",
+        "label": "Título",
+        "value": "local!acuerdo.titulo",
+        "saveInto": "local!acuerdo.titulo",
+        "required": true,
+        "characterLimit": 200,
+        "showCharacterCount": true
+       },
+       {
+        "type": "a!cardChoiceField",
+        "label": "Tipo de acuerdo",
+        "data": [
+         {
+          "id": "Convenio",
+          "texto": "Convenio",
+          "icono": "handshake-o"
+         },
+         {
+          "id": "Contrato de colaboración",
+          "texto": "Contrato de colaboración",
+          "icono": "file-text-o"
+         },
+         {
+          "id": "Acuerdo de confidencialidad",
+          "texto": "Acuerdo de confidencialidad",
+          "icono": "lock"
+         },
+         {
+          "id": "Protocolo general de actuación",
+          "texto": "Protocolo general de actuación",
+          "icono": "sitemap"
+         }
+        ],
+        "cardTemplate": {
+         "type": "a!cardTemplateBarTextStacked",
+         "id": "fv!data.id",
+         "primaryText": "{fv!data.texto}",
+         "icon": "{fv!data.icono}"
+        },
+        "value": "local!acuerdo.tipo",
+        "saveInto": "local!acuerdo.tipo",
+        "maxSelections": 1,
+        "required": true
+       },
+       {
+        "type": "a!columnsLayout",
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!dropdownField",
+            "label": "Aeropuerto / unidad",
+            "placeholder": "Seleccione",
+            "choiceLabels": [
+             "Servicios Centrales",
+             "Adolfo Suárez Madrid-Barajas (MAD)",
+             "Josep Tarradellas Barcelona-El Prat (BCN)",
+             "Palma de Mallorca (PMI)",
+             "Málaga-Costa del Sol (AGP)",
+             "Gran Canaria (LPA)",
+             "Sevilla (SVQ)",
+             "Valencia (VLC)",
+             "Bilbao (BIO)"
+            ],
+            "choiceValues": [
+             "SSCC",
+             "MAD",
+             "BCN",
+             "PMI",
+             "AGP",
+             "LPA",
+             "SVQ",
+             "VLC",
+             "BIO"
+            ],
+            "value": "local!acuerdo.aeropuerto",
+            "saveInto": "local!acuerdo.aeropuerto",
+            "required": true
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!pickerFieldUsers",
+            "label": "Responsable AENA",
+            "maxSelections": 1,
+            "value": "local!acuerdo.responsable",
+            "saveInto": "local!acuerdo.responsable",
+            "required": true
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!columnsLayout",
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!dateField",
+            "label": "Fecha de inicio",
+            "value": "local!acuerdo.fechaInicio",
+            "saveInto": "local!acuerdo.fechaInicio",
+            "required": true
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!dateField",
+            "label": "Fecha de fin",
+            "value": "local!acuerdo.fechaFin",
+            "saveInto": "local!acuerdo.fechaFin",
+            "required": true,
+            "$validations": [
+             {
+              "when": "and(a!isNotNullOrEmpty(local!acuerdo.fechaFin), a!isNotNullOrEmpty(local!acuerdo.fechaInicio), local!acuerdo.fechaFin <= local!acuerdo.fechaInicio)",
+              "message": "La fecha de fin debe ser posterior a la fecha de inicio (RN-01)"
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!booleanCheckboxField",
+        "choiceLabel": "Prórroga automática al vencimiento",
+        "value": "local!acuerdo.prorroga",
+        "saveInto": "local!acuerdo.prorroga"
+       }
+      ]
+     },
+     {
+      "type": "a!wizardStep",
+      "label": "Tercero",
+      "contents": [
+       {
+        "type": "a!textField",
+        "label": "Razón social del tercero",
+        "value": "local!acuerdo.tercero",
+        "saveInto": "local!acuerdo.tercero",
+        "required": true
+       },
+       {
+        "type": "a!columnsLayout",
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!textField",
+            "label": "CIF/NIF",
+            "value": "local!acuerdo.cif",
+            "saveInto": "local!acuerdo.cif",
+            "required": true,
+            "$assumption": "La ERS no indica si el CIF se valida contra un servicio externo (AEAT). Se asume validación solo de formato."
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": []
+         }
+        ]
+       },
+       {
+        "type": "a!radioButtonField",
+        "label": "Tipo de tercero",
+        "choiceLabels": [
+         "Empresa privada",
+         "Administración pública",
+         "Universidad o centro de investigación",
+         "Otro"
+        ],
+        "choiceValues": [
+         "Empresa privada",
+         "Administración pública",
+         "Universidad o centro de investigación",
+         "Otro"
+        ],
+        "value": "local!acuerdo.tipoTercero",
+        "saveInto": "local!acuerdo.tipoTercero",
+        "required": true,
+        "choiceLayout": "STACKED"
+       }
+      ]
+     },
+     {
+      "type": "a!wizardStep",
+      "label": "Condiciones económicas",
+      "contents": [
+       {
+        "type": "a!radioButtonField",
+        "label": "¿El acuerdo tiene contenido económico?",
+        "choiceLabels": [
+         "Sí",
+         "No"
+        ],
+        "choiceValues": [
+         true,
+         false
+        ],
+        "value": "local!acuerdo.conImporte",
+        "saveInto": "local!acuerdo.conImporte",
+        "required": true,
+        "choiceLayout": "COMPACT"
+       },
+       {
+        "type": "a!columnsLayout",
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!floatingPointField",
+            "label": "Importe (€)",
+            "value": "local!acuerdo.importe",
+            "saveInto": "local!acuerdo.importe",
+            "required": true,
+            "instructions": "Importe total sin IVA para toda la vigencia"
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": []
+         }
+        ],
+        "showWhen": "local!acuerdo.conImporte"
+       },
+       {
+        "type": "a!paragraphField",
+        "label": "Contraprestación",
+        "value": "local!acuerdo.contraprestacion",
+        "saveInto": "local!acuerdo.contraprestacion",
+        "height": "SHORT",
+        "showWhen": "local!acuerdo.conImporte"
+       }
+      ]
+     },
+     {
+      "type": "a!wizardStep",
+      "label": "Documentación",
+      "contents": [
+       {
+        "type": "a!fileUploadField",
+        "label": "Texto del acuerdo",
+        "value": "local!acuerdo.docs",
+        "saveInto": "local!acuerdo.docs",
+        "required": true,
+        "maxSelections": 5,
+        "instructions": "PDF o DOCX, máximo 10 MB por fichero",
+        "$note": "En Appian: target = constante de carpeta de documentos ATP; validar extensión con fv!files."
+       },
+       {
+        "type": "a!paragraphField",
+        "label": "Observaciones para Asesoría Jurídica",
+        "value": "local!acuerdo.observaciones",
+        "saveInto": "local!acuerdo.observaciones",
+        "height": "SHORT"
+       }
+      ]
+     },
+     {
+      "type": "a!wizardStep",
+      "label": "Revisión",
+      "contents": [
+       {
+        "type": "a!messageBanner",
+        "backgroundColor": "INFO",
+        "highlightColor": "INFO",
+        "shape": "SEMI_ROUNDED",
+        "primaryText": "Revise los datos antes de enviar",
+        "secondaryText": "Al enviar, el acuerdo pasará a «En revisión jurídica» y no podrá editarse hasta que Asesoría Jurídica lo resuelva.",
+        "marginBelow": "MORE"
+       },
+       {
+        "type": "a!sectionLayout",
+        "marginBelow": "MORE",
+        "contents": [
+         {
+          "type": "a!sideBySideLayout",
+          "alignVertical": "MIDDLE",
+          "marginBelow": "LESS",
+          "items": [
+           {
+            "type": "a!sideBySideItem",
+            "item": {
+             "type": "a!headingField",
+             "text": "DATOS GENERALES",
+             "size": "SMALL",
+             "headingTag": "H3",
+             "color": "SECONDARY",
+             "fontWeight": "BOLD",
+             "marginBelow": "NONE"
+            }
+           },
+           {
+            "type": "a!sideBySideItem",
+            "width": "MINIMIZE",
+            "item": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextIcon",
+               "icon": "pencil",
+               "color": "ACCENT"
+              },
+              " ",
+              {
+               "type": "a!richTextItem",
+               "text": "Editar",
+               "link": {
+                "type": "a!dynamicLink",
+                "$action": {
+                 "step": 1
+                }
+               },
+               "linkStyle": "STANDALONE",
+               "style": "STRONG"
+              }
+             ]
+            }
+           }
+          ]
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "label": "Título",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextItem",
+            "text": "Título",
+            "color": "SECONDARY",
+            "size": "SMALL"
+           },
+           "\n",
+           {
+            "type": "a!richTextItem",
+            "text": "{local!acuerdo.titulo|dash}",
+            "size": "MEDIUM"
+           }
+          ],
+          "marginBelow": "STANDARD"
+         },
+         {
+          "type": "a!columnsLayout",
+          "marginBelow": "STANDARD",
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Tipo de acuerdo",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Tipo de acuerdo",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{local!acuerdo.tipo|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Aeropuerto / unidad",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Aeropuerto / unidad",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{local!acuerdo.aeropuerto|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "type": "a!columnsLayout",
+          "marginBelow": "STANDARD",
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Responsable AENA",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Responsable AENA",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{local!acuerdo.responsable|map:usuarios|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Vigencia",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Vigencia",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{local!acuerdo.fechaInicio|date} – {local!acuerdo.fechaFin|date}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "type": "a!columnsLayout",
+          "marginBelow": "STANDARD",
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Prórroga automática",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Prórroga automática",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{local!acuerdo.prorroga|map:siNo|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": []
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!sectionLayout",
+        "marginBelow": "MORE",
+        "contents": [
+         {
+          "type": "a!sideBySideLayout",
+          "alignVertical": "MIDDLE",
+          "marginBelow": "LESS",
+          "items": [
+           {
+            "type": "a!sideBySideItem",
+            "item": {
+             "type": "a!headingField",
+             "text": "TERCERO",
+             "size": "SMALL",
+             "headingTag": "H3",
+             "color": "SECONDARY",
+             "fontWeight": "BOLD",
+             "marginBelow": "NONE"
+            }
+           },
+           {
+            "type": "a!sideBySideItem",
+            "width": "MINIMIZE",
+            "item": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextIcon",
+               "icon": "pencil",
+               "color": "ACCENT"
+              },
+              " ",
+              {
+               "type": "a!richTextItem",
+               "text": "Editar",
+               "link": {
+                "type": "a!dynamicLink",
+                "$action": {
+                 "step": 2
+                }
+               },
+               "linkStyle": "STANDALONE",
+               "style": "STRONG"
+              }
+             ]
+            }
+           }
+          ]
+         },
+         {
+          "type": "a!columnsLayout",
+          "marginBelow": "STANDARD",
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Razón social",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Razón social",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{local!acuerdo.tercero|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "CIF/NIF",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "CIF/NIF",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{local!acuerdo.cif|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "type": "a!columnsLayout",
+          "marginBelow": "STANDARD",
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Tipo de tercero",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Tipo de tercero",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{local!acuerdo.tipoTercero|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": []
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!sectionLayout",
+        "marginBelow": "MORE",
+        "contents": [
+         {
+          "type": "a!sideBySideLayout",
+          "alignVertical": "MIDDLE",
+          "marginBelow": "LESS",
+          "items": [
+           {
+            "type": "a!sideBySideItem",
+            "item": {
+             "type": "a!headingField",
+             "text": "CONDICIONES ECONÓMICAS",
+             "size": "SMALL",
+             "headingTag": "H3",
+             "color": "SECONDARY",
+             "fontWeight": "BOLD",
+             "marginBelow": "NONE"
+            }
+           },
+           {
+            "type": "a!sideBySideItem",
+            "width": "MINIMIZE",
+            "item": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextIcon",
+               "icon": "pencil",
+               "color": "ACCENT"
+              },
+              " ",
+              {
+               "type": "a!richTextItem",
+               "text": "Editar",
+               "link": {
+                "type": "a!dynamicLink",
+                "$action": {
+                 "step": 3
+                }
+               },
+               "linkStyle": "STANDALONE",
+               "style": "STRONG"
+              }
+             ]
+            }
+           }
+          ]
+         },
+         {
+          "type": "a!columnsLayout",
+          "marginBelow": "STANDARD",
+          "columns": [
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Contenido económico",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Contenido económico",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{local!acuerdo.conImporte|map:siNo|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           },
+           {
+            "type": "a!columnLayout",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Importe",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Importe",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{local!acuerdo.importe|eur|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "NONE"
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "label": "Contraprestación",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextItem",
+            "text": "Contraprestación",
+            "color": "SECONDARY",
+            "size": "SMALL"
+           },
+           "\n",
+           {
+            "type": "a!richTextItem",
+            "text": "{local!acuerdo.contraprestacion|dash}",
+            "size": "MEDIUM"
+           }
+          ],
+          "marginBelow": "STANDARD"
+         }
+        ]
+       },
+       {
+        "type": "a!sectionLayout",
+        "marginBelow": "MORE",
+        "contents": [
+         {
+          "type": "a!sideBySideLayout",
+          "alignVertical": "MIDDLE",
+          "marginBelow": "LESS",
+          "items": [
+           {
+            "type": "a!sideBySideItem",
+            "item": {
+             "type": "a!headingField",
+             "text": "DOCUMENTACIÓN",
+             "size": "SMALL",
+             "headingTag": "H3",
+             "color": "SECONDARY",
+             "fontWeight": "BOLD",
+             "marginBelow": "NONE"
+            }
+           },
+           {
+            "type": "a!sideBySideItem",
+            "width": "MINIMIZE",
+            "item": {
+             "type": "a!richTextDisplayField",
+             "labelPosition": "COLLAPSED",
+             "value": [
+              {
+               "type": "a!richTextIcon",
+               "icon": "pencil",
+               "color": "ACCENT"
+              },
+              " ",
+              {
+               "type": "a!richTextItem",
+               "text": "Editar",
+               "link": {
+                "type": "a!dynamicLink",
+                "$action": {
+                 "step": 4
+                }
+               },
+               "linkStyle": "STANDALONE",
+               "style": "STRONG"
+              }
+             ]
+            }
+           }
+          ]
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "label": "Texto del acuerdo",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextItem",
+            "text": "Texto del acuerdo",
+            "color": "SECONDARY",
+            "size": "SMALL"
+           },
+           "\n",
+           {
+            "type": "a!richTextItem",
+            "text": "{local!acuerdo.docs.name|dash}",
+            "size": "MEDIUM"
+           }
+          ],
+          "marginBelow": "STANDARD"
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "label": "Observaciones para Asesoría Jurídica",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextItem",
+            "text": "Observaciones para Asesoría Jurídica",
+            "color": "SECONDARY",
+            "size": "SMALL"
+           },
+           "\n",
+           {
+            "type": "a!richTextItem",
+            "text": "{local!acuerdo.observaciones|dash}",
+            "size": "MEDIUM"
+           }
+          ],
+          "marginBelow": "STANDARD"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "secondaryButtons": [
+     {
+      "type": "a!buttonWidget",
+      "label": "Cancelar",
+      "style": "OUTLINE",
+      "color": "ACCENT",
+      "$action": {
+       "goto": "acuerdos"
+      },
+      "confirmHeader": "¿Descartar el alta?",
+      "confirmMessage": "Se perderán los datos introducidos.",
+      "confirmButtonLabel": "Descartar",
+      "cancelButtonLabel": "Seguir editando"
+     }
+    ],
+    "primaryButtons": [
+     {
+      "type": "a!buttonWidget",
+      "label": "Enviar a revisión",
+      "style": "SOLID",
+      "color": "#90CE00",
+      "$action": {
+       "goto": "acuerdos",
+       "params": {
+        "mensaje": "Acuerdo ATP-2026-0017 enviado a revisión jurídica"
+       }
+      },
+      "submit": true
+     }
+    ]
+   }
+  },
+  {
+   "id": "revision",
+   "title": "Revisar acuerdo",
+   "type": "form",
+   "pattern": "P05",
+   "ref": "PAN-05 · Revisión jurídica",
+   "req": [
+    "RF-10"
+   ],
+   "recordType": "ATP Acuerdo",
+   "local": {
+    "local!decision": null,
+    "local!comentarios": null
+   },
+   "interface": {
+    "type": "a!formLayout",
+    "contentsWidth": "WIDE",
+    "backgroundColor": "WHITE",
+    "showButtonDivider": true,
+    "isButtonFooterFixed": true,
+    "titleBar": {
+     "type": "a!headerTemplateSimple",
+     "title": "Revisar acuerdo {rv!record.codigo}",
+     "secondaryText": "Tarea de Asesoría Jurídica · recibida el 02/09/2026",
+     "stampIcon": "gavel",
+     "stampColor": "ACCENT"
+    },
+    "contents": [
+     {
+      "type": "a!cardLayout",
+      "style": "WARN",
+      "showBorder": false,
+      "padding": "STANDARD",
+      "shape": "SEMI_ROUNDED",
+      "decorativeBarPosition": "START",
+      "decorativeBarColor": "WARN",
+      "marginBelow": "MORE",
+      "contents": [
+       {
+        "type": "a!sideBySideLayout",
+        "alignVertical": "MIDDLE",
+        "spacing": "STANDARD",
+        "items": [
+         {
+          "type": "a!sideBySideItem",
+          "width": "MINIMIZE",
+          "item": {
+           "type": "a!richTextDisplayField",
+           "labelPosition": "COLLAPSED",
+           "value": [
+            {
+             "type": "a!richTextIcon",
+             "icon": "clock-o",
+             "color": "WARN",
+             "size": "MEDIUM"
+            }
+           ]
+          }
+         },
+         {
+          "type": "a!sideBySideItem",
+          "item": {
+           "type": "a!richTextDisplayField",
+           "labelPosition": "COLLAPSED",
+           "value": [
+            {
+             "type": "a!richTextItem",
+             "text": "Vence el 26/09/2026, en 2 días",
+             "style": "STRONG"
+            },
+            "\n",
+            "Si no se resuelve a tiempo, la tarea se escala a la jefatura de Asesoría Jurídica"
+           ]
+          }
+         }
+        ]
+       }
+      ],
+      "$assumption": "El escalado por plazo no está en la ERS; se muestra solo el vencimiento de la tarea."
+     },
+     {
+      "type": "a!columnsLayout",
+      "spacing": "SPARSE",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "width": "3X",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "label": "Datos del acuerdo",
+          "labelSize": "MEDIUM",
+          "labelHeadingTag": "H2",
+          "labelColor": "STANDARD",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "label": "Título",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Título",
+              "color": "SECONDARY",
+              "size": "SMALL"
+             },
+             "\n",
+             {
+              "type": "a!richTextItem",
+              "text": "{rv!record.titulo|dash}",
+              "size": "MEDIUM"
+             }
+            ],
+            "marginBelow": "STANDARD"
+           },
+           {
+            "type": "a!columnsLayout",
+            "marginBelow": "STANDARD",
+            "columns": [
+             {
+              "type": "a!columnLayout",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "label": "Tipo de acuerdo",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextItem",
+                  "text": "Tipo de acuerdo",
+                  "color": "SECONDARY",
+                  "size": "SMALL"
+                 },
+                 "\n",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{rv!record.tipo|dash}",
+                  "size": "MEDIUM"
+                 }
+                ],
+                "marginBelow": "NONE"
+               }
+              ]
+             },
+             {
+              "type": "a!columnLayout",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "label": "Tercero",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextItem",
+                  "text": "Tercero",
+                  "color": "SECONDARY",
+                  "size": "SMALL"
+                 },
+                 "\n",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{rv!record.tercero} ({rv!record.cif})",
+                  "size": "MEDIUM"
+                 }
+                ],
+                "marginBelow": "NONE"
+               }
+              ]
+             },
+             {
+              "type": "a!columnLayout",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "label": "Vigencia",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextItem",
+                  "text": "Vigencia",
+                  "color": "SECONDARY",
+                  "size": "SMALL"
+                 },
+                 "\n",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{rv!record.fechaInicio|date} – {rv!record.fechaFin|date}",
+                  "size": "MEDIUM"
+                 }
+                ],
+                "marginBelow": "NONE"
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "a!columnsLayout",
+            "marginBelow": "STANDARD",
+            "columns": [
+             {
+              "type": "a!columnLayout",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "label": "Importe",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextItem",
+                  "text": "Importe",
+                  "color": "SECONDARY",
+                  "size": "SMALL"
+                 },
+                 "\n",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{rv!record.importe|eur|dash}",
+                  "size": "MEDIUM"
+                 }
+                ],
+                "marginBelow": "NONE"
+               }
+              ]
+             },
+             {
+              "type": "a!columnLayout",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "label": "Responsable AENA",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextItem",
+                  "text": "Responsable AENA",
+                  "color": "SECONDARY",
+                  "size": "SMALL"
+                 },
+                 "\n",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{rv!record.responsable|dash}",
+                  "size": "MEDIUM"
+                 }
+                ],
+                "marginBelow": "NONE"
+               }
+              ]
+             },
+             {
+              "type": "a!columnLayout",
+              "contents": []
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "type": "a!sectionLayout",
+          "label": "Texto del acuerdo",
+          "labelSize": "MEDIUM",
+          "labelHeadingTag": "H2",
+          "labelColor": "STANDARD",
+          "marginBelow": "NONE",
+          "contents": [
+           {
+            "type": "a!documentViewerField",
+            "labelPosition": "COLLAPSED",
+            "$fileName": "{rv!record.codigo}_texto_acuerdo.pdf",
+            "height": "SHORT"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "width": "2X",
+        "contents": [
+         {
+          "type": "a!cardLayout",
+          "showBorder": true,
+          "shape": "SEMI_ROUNDED",
+          "padding": "MORE",
+          "borderColor": "STANDARD",
+          "contents": [
+           {
+            "type": "a!sectionLayout",
+            "label": "Decisión",
+            "labelSize": "MEDIUM",
+            "labelHeadingTag": "H2",
+            "labelColor": "STANDARD",
+            "contents": [
+             {
+              "type": "a!cardChoiceField",
+              "label": "Resultado de la revisión",
+              "data": [
+               {
+                "id": "APROBAR",
+                "texto": "Aprobar",
+                "detalle": "El acuerdo pasa a «Pendiente de firma»",
+                "icono": "check-circle",
+                "color": "POSITIVE"
+               },
+               {
+                "id": "DEVOLVER",
+                "texto": "Devolver para cambios",
+                "detalle": "El gestor recibe los comentarios",
+                "icono": "undo",
+                "color": "#FF9F2F"
+               },
+               {
+                "id": "RECHAZAR",
+                "texto": "Rechazar",
+                "detalle": "El acuerdo queda «Rechazado»",
+                "icono": "times-circle",
+                "color": "NEGATIVE"
+               }
+              ],
+              "cardTemplate": {
+               "type": "a!cardTemplateBarTextStacked",
+               "id": "fv!data.id",
+               "primaryText": "{fv!data.texto}",
+               "icon": "{fv!data.icono}",
+               "secondaryText": "{fv!data.detalle}",
+               "iconColor": "{fv!data.color}"
+              },
+              "value": "local!decision",
+              "saveInto": "local!decision",
+              "maxSelections": 1,
+              "labelPosition": "COLLAPSED",
+              "required": true,
+              "requiredMessage": "Indique el resultado de la revisión"
+             },
+             {
+              "type": "a!paragraphField",
+              "label": "Comentarios",
+              "value": "local!comentarios",
+              "saveInto": "local!comentarios",
+              "height": "MEDIUM",
+              "required": "and(a!isNotNullOrEmpty(local!decision), local!decision <> \"APROBAR\")",
+              "instructions": "Obligatorios si no se aprueba",
+              "$note": "RF-10: comentario obligatorio al devolver o rechazar."
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "buttons": {
+     "type": "a!buttonLayout",
+     "primaryButtons": [
+      {
+       "type": "a!buttonWidget",
+       "label": "Enviar decisión",
+       "style": "SOLID",
+       "color": "#90CE00",
+       "$action": {
+        "goto": "inicio"
+       },
+       "submit": true
+      }
+     ],
+     "secondaryButtons": [
+      {
+       "type": "a!buttonWidget",
+       "label": "Cancelar",
+       "style": "OUTLINE",
+       "color": "ACCENT",
+       "$action": {
+        "back": true
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "editar",
+   "title": "Editar datos generales",
+   "type": "dialog",
+   "pattern": "P07",
+   "req": [
+    "RF-09"
+   ],
+   "ref": "PAN-06 · Editar datos generales",
+   "interface": {
+    "type": "a!formLayout",
+    "titleBar": "Editar datos generales",
+    "contentsWidth": "NARROW",
+    "contents": [
+     {
+      "type": "a!textField",
+      "label": "Título",
+      "value": "local!titulo",
+      "saveInto": "local!titulo",
+      "required": true,
+      "characterLimit": 200,
+      "showCharacterCount": true
+     },
+     {
+      "type": "a!columnsLayout",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!dateField",
+          "label": "Fecha de inicio",
+          "value": "local!ini",
+          "saveInto": "local!ini",
+          "required": true
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!dateField",
+          "label": "Fecha de fin",
+          "value": "local!fin",
+          "saveInto": "local!fin",
+          "required": true
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!pickerFieldUsers",
+      "label": "Responsable AENA",
+      "maxSelections": 1,
+      "value": "local!resp",
+      "saveInto": "local!resp",
+      "required": true
+     },
+     {
+      "type": "a!booleanCheckboxField",
+      "choiceLabel": "Prórroga automática al vencimiento",
+      "value": "local!prorroga",
+      "saveInto": "local!prorroga"
+     }
+    ],
+    "buttons": {
+     "type": "a!buttonLayout",
+     "primaryButtons": [
+      {
+       "type": "a!buttonWidget",
+       "label": "Guardar",
+       "style": "SOLID",
+       "color": "#90CE00",
+       "$action": {
+        "close": true
+       },
+       "submit": true
+      }
+     ],
+     "secondaryButtons": [
+      {
+       "type": "a!buttonWidget",
+       "label": "Cancelar",
+       "style": "OUTLINE",
+       "color": "ACCENT",
+       "$action": {
+        "close": true
+       }
+      }
+     ]
+    }
+   },
+   "openFrom": "acuerdo",
+   "recordType": "ATP Acuerdo",
+   "local": {
+    "local!titulo": "{rv!record.titulo}",
+    "local!ini": "{rv!record.fechaInicio}",
+    "local!fin": "{rv!record.fechaFin}",
+    "local!resp": "{rv!record.responsableId}",
+    "local!prorroga": "{rv!record.prorroga}"
+   }
+  },
+  {
+   "id": "documento",
+   "title": "Añadir documento",
+   "type": "dialog",
+   "pattern": "P07",
+   "req": [
+    "RF-09"
+   ],
+   "ref": "PAN-07 · Añadir documento",
+   "interface": {
+    "type": "a!formLayout",
+    "titleBar": "Añadir documento",
+    "contentsWidth": "NARROW",
+    "contents": [
+     {
+      "type": "a!dropdownField",
+      "label": "Tipo de documento",
+      "placeholder": "Seleccione",
+      "choiceLabels": [
+       "Texto del acuerdo",
+       "Memoria justificativa",
+       "Informe jurídico",
+       "Acuerdo firmado",
+       "Otro"
+      ],
+      "choiceValues": [
+       "Texto del acuerdo",
+       "Memoria justificativa",
+       "Informe jurídico",
+       "Acuerdo firmado",
+       "Otro"
+      ],
+      "value": "local!tipoDoc",
+      "saveInto": "local!tipoDoc",
+      "required": true
+     },
+     {
+      "type": "a!fileUploadField",
+      "label": "Fichero",
+      "value": "local!ficheros",
+      "saveInto": "local!ficheros",
+      "required": true,
+      "maxSelections": 1,
+      "instructions": "PDF o DOCX, máximo 10 MB",
+      "$note": "RN-02: formatos y tamaño máximo."
+     }
+    ],
+    "buttons": {
+     "type": "a!buttonLayout",
+     "primaryButtons": [
+      {
+       "type": "a!buttonWidget",
+       "label": "Añadir",
+       "style": "SOLID",
+       "color": "#90CE00",
+       "$action": {
+        "close": true
+       },
+       "submit": true
+      }
+     ],
+     "secondaryButtons": [
+      {
+       "type": "a!buttonWidget",
+       "label": "Cancelar",
+       "style": "OUTLINE",
+       "color": "ACCENT",
+       "$action": {
+        "close": true
+       }
+      }
+     ]
+    }
+   },
+   "openFrom": "acuerdo",
+   "recordType": "ATP Acuerdo",
+   "local": {
+    "local!tipoDoc": null,
+    "local!ficheros": []
+   }
+  },
+  {
+   "id": "informes",
+   "title": "Informes",
+   "type": "page",
+   "pattern": "P08",
+   "ref": "PAN-08 · Informe de acuerdos",
+   "req": [
+    "RF-12"
+   ],
+   "local": {
+    "local!tipo": null
+   },
+   "interface": {
+    "type": "a!headerContentLayout",
+    "backgroundColor": "TRANSPARENT",
+    "contents": [
+     {
+      "type": "a!columnsLayout",
+      "alignVertical": "MIDDLE",
+      "marginBelow": "MORE",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!headingField",
+          "text": "Informes",
+          "size": "LARGE",
+          "headingTag": "H1",
+          "marginBelow": "EVEN_LESS"
+         },
+         {
+          "type": "a!richTextDisplayField",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextItem",
+            "text": "Evolución y distribución de los acuerdos con terceras partes",
+            "color": "SECONDARY"
+           }
+          ],
+          "marginBelow": "NONE"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!cardLayout",
+      "style": "NONE",
+      "showBorder": false,
+      "showShadow": true,
+      "shape": "SEMI_ROUNDED",
+      "padding": "STANDARD",
+      "contents": [
+       {
+        "type": "a!columnsLayout",
+        "alignVertical": "BOTTOM",
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "width": "MEDIUM",
+          "contents": [
+           {
+            "type": "a!dropdownField",
+            "label": "Tipo de acuerdo",
+            "placeholder": "Todos los tipos",
+            "choiceLabels": [
+             "Convenio",
+             "Contrato de colaboración",
+             "Acuerdo de confidencialidad",
+             "Protocolo general de actuación"
+            ],
+            "choiceValues": [
+             "Convenio",
+             "Contrato de colaboración",
+             "Acuerdo de confidencialidad",
+             "Protocolo general de actuación"
+            ],
+            "value": "local!tipo",
+            "saveInto": "local!tipo",
+            "marginBelow": "NONE"
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!buttonArrayLayout",
+            "marginBelow": "NONE",
+            "buttons": [
+             {
+              "type": "a!buttonWidget",
+              "label": "Quitar filtro",
+              "style": "LINK",
+              "showWhen": "a!isNotNullOrEmpty(local!tipo)",
+              "saveInto": [
+               {
+                "type": "a!save",
+                "target": "local!tipo",
+                "value": null
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ],
+      "marginBelow": "MORE"
+     },
+     {
+      "type": "a!cardLayout",
+      "style": "NONE",
+      "showBorder": false,
+      "showShadow": true,
+      "shape": "SEMI_ROUNDED",
+      "padding": "STANDARD",
+      "contents": [
+       {
+        "type": "a!columnsLayout",
+        "showDividers": true,
+        "spacing": "SPARSE",
+        "stackWhen": [
+         "PHONE",
+         "TABLET_PORTRAIT"
+        ],
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!kpiField",
+            "primaryText": "Acuerdos",
+            "icon": "handshake-o",
+            "template": "COMPACT",
+            "iconColor": "SECONDARY",
+            "secondaryText": "en el filtro",
+            "data": "recordType!ATP Acuerdo",
+            "primaryMeasure": {
+             "type": "a!measure",
+             "function": "COUNT",
+             "field": "recordType!ATP Acuerdo.fields.id"
+            },
+            "$filter": "or(isnull(local!tipo), fv!row.tipo = local!tipo)"
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!kpiField",
+            "primaryText": "Vigentes",
+            "icon": "check-circle",
+            "template": "COMPACT",
+            "iconColor": "SECONDARY",
+            "secondaryText": "en el filtro",
+            "data": "recordType!ATP Acuerdo",
+            "primaryMeasure": {
+             "type": "a!measure",
+             "function": "COUNT",
+             "field": "recordType!ATP Acuerdo.fields.id"
+            },
+            "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), fv!row.estado = \"Vigente\")"
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!kpiField",
+            "primaryText": "Importe total",
+            "icon": "eur",
+            "template": "COMPACT",
+            "iconColor": "SECONDARY",
+            "secondaryText": "acuerdos con contenido económico",
+            "data": "recordType!ATP Acuerdo",
+            "primaryMeasure": {
+             "type": "a!measure",
+             "function": "SUM",
+             "field": "recordType!ATP Acuerdo.fields.importe"
+            },
+            "$filter": "or(isnull(local!tipo), fv!row.tipo = local!tipo)",
+            "$format": "eur"
+           }
+          ]
+         }
+        ]
+       }
+      ],
+      "decorativeBarPosition": "TOP",
+      "decorativeBarColor": "#90CE00",
+      "marginBelow": "MORE"
+     },
+     {
+      "type": "a!columnsLayout",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "label": "Acuerdos por tipo",
+          "labelSize": "MEDIUM",
+          "labelHeadingTag": "H2",
+          "labelColor": "STANDARD",
+          "marginBelow": "MORE",
+          "contents": [
+           {
+            "type": "a!cardLayout",
+            "style": "NONE",
+            "showBorder": false,
+            "showShadow": true,
+            "shape": "SEMI_ROUNDED",
+            "padding": "STANDARD",
+            "contents": [
+             {
+              "type": "a!pieChartField",
+              "labelPosition": "COLLAPSED",
+              "data": "recordType!ATP Acuerdo",
+              "$filter": "or(isnull(local!tipo), fv!row.tipo = local!tipo)",
+              "style": "DONUT",
+              "height": "SHORT",
+              "showTooltips": true,
+              "config": {
+               "type": "a!pieChartConfig",
+               "primaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!ATP Acuerdo.fields.tipo"
+               },
+               "measures": [
+                {
+                 "type": "a!measure",
+                 "function": "COUNT",
+                 "field": "recordType!ATP Acuerdo.fields.id"
+                }
+               ]
+              },
+              "colorScheme": {
+               "type": "a!colorSchemeCustom",
+               "colors": [
+                "#1A2732",
+                "#90CE00",
+                "#527500",
+                "#525C65"
+               ]
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "label": "Acuerdos por estado",
+          "labelSize": "MEDIUM",
+          "labelHeadingTag": "H2",
+          "labelColor": "STANDARD",
+          "marginBelow": "MORE",
+          "contents": [
+           {
+            "type": "a!cardLayout",
+            "style": "NONE",
+            "showBorder": false,
+            "showShadow": true,
+            "shape": "SEMI_ROUNDED",
+            "padding": "STANDARD",
+            "contents": [
+             {
+              "type": "a!columnChartField",
+              "labelPosition": "COLLAPSED",
+              "data": "recordType!ATP Acuerdo",
+              "$filter": "or(isnull(local!tipo), fv!row.tipo = local!tipo)",
+              "height": "SHORT",
+              "showDataLabels": true,
+              "$categories": [
+               "Borrador",
+               "En revisión jurídica",
+               "Pendiente de firma",
+               "Vigente",
+               "Vencido",
+               "Rechazado"
+              ],
+              "config": {
+               "type": "a!columnChartConfig",
+               "primaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!ATP Acuerdo.fields.estado"
+               },
+               "measures": [
+                {
+                 "type": "a!measure",
+                 "function": "COUNT",
+                 "field": "recordType!ATP Acuerdo.fields.id",
+                 "label": "Acuerdos"
+                }
+               ]
+              },
+              "colorScheme": {
+               "type": "a!colorSchemeCustom",
+               "colors": [
+                "#1A2732"
+               ]
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!columnsLayout",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "label": "Altas por mes",
+          "labelSize": "MEDIUM",
+          "labelHeadingTag": "H2",
+          "labelColor": "STANDARD",
+          "marginBelow": "MORE",
+          "contents": [
+           {
+            "type": "a!cardLayout",
+            "style": "NONE",
+            "showBorder": false,
+            "showShadow": true,
+            "shape": "SEMI_ROUNDED",
+            "padding": "STANDARD",
+            "contents": [
+             {
+              "type": "a!lineChartField",
+              "labelPosition": "COLLAPSED",
+              "data": "recordType!ATP Acuerdo",
+              "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), fv!row.fechaAlta >= \"2025-10\")",
+              "height": "SHORT",
+              "config": {
+               "type": "a!lineChartConfig",
+               "primaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!ATP Acuerdo.fields.mesAlta",
+                "interval": "MONTH_SHORT_TEXT"
+               },
+               "measures": [
+                {
+                 "type": "a!measure",
+                 "function": "COUNT",
+                 "field": "recordType!ATP Acuerdo.fields.id",
+                 "label": "Altas"
+                }
+               ]
+              },
+              "referenceLines": [
+               {
+                "type": "a!chartReferenceLine",
+                "label": "Media: 1,6",
+                "value": 1.6,
+                "color": "BLUEGRAY",
+                "style": "DASH"
+               }
+              ],
+              "colorScheme": {
+               "type": "a!colorSchemeCustom",
+               "colors": [
+                "#527500"
+               ]
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "label": "Importe por aeropuerto",
+          "labelSize": "MEDIUM",
+          "labelHeadingTag": "H2",
+          "labelColor": "STANDARD",
+          "marginBelow": "MORE",
+          "contents": [
+           {
+            "type": "a!cardLayout",
+            "style": "NONE",
+            "showBorder": false,
+            "showShadow": true,
+            "shape": "SEMI_ROUNDED",
+            "padding": "STANDARD",
+            "contents": [
+             {
+              "type": "a!barChartField",
+              "labelPosition": "COLLAPSED",
+              "data": "recordType!ATP Acuerdo",
+              "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), fv!row.conImporte)",
+              "height": "AUTO",
+              "showDataLabels": true,
+              "xAxisTitle": "Importe (€)",
+              "config": {
+               "type": "a!barChartConfig",
+               "primaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!ATP Acuerdo.fields.aeropuerto"
+               },
+               "measures": [
+                {
+                 "type": "a!measure",
+                 "function": "SUM",
+                 "field": "recordType!ATP Acuerdo.fields.importe",
+                 "label": "Importe"
+                }
+               ]
+              },
+              "colorScheme": {
+               "type": "a!colorSchemeCustom",
+               "colors": [
+                "#527500"
+               ]
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "captures": [
+  {
+   "name": "01-inicio",
+   "screen": "inicio"
+  },
+  {
+   "name": "02-listado-acuerdos",
+   "screen": "acuerdos"
+  },
+  {
+   "name": "03-ficha-resumen",
+   "screen": "acuerdo",
+   "params": {
+    "id": 3
+   }
+  },
+  {
+   "name": "04-ficha-documentos",
+   "screen": "acuerdo",
+   "params": {
+    "id": 3
+   },
+   "view": "documentos"
+  },
+  {
+   "name": "05-ficha-historial",
+   "screen": "acuerdo",
+   "params": {
+    "id": 4
+   },
+   "view": "historial"
+  },
+  {
+   "name": "06-alta-paso1-errores",
+   "screen": "alta",
+   "step": 0,
+   "showValidation": true
+  },
+  {
+   "name": "06b-alta-revision",
+   "screen": "alta",
+   "step": 4,
+   "state": {
+    "local!acuerdo": {
+     "titulo": "Contrato de colaboración para movilidad eléctrica en aparcamientos",
+     "tipo": "Contrato de colaboración",
+     "aeropuerto": "VLC",
+     "fechaInicio": "2026-12-01",
+     "fechaFin": "2030-11-30",
+     "prorroga": true,
+     "tercero": "Zunder Charging S.L.",
+     "cif": "B42812727",
+     "tipoTercero": "Empresa privada",
+     "conImporte": true,
+     "importe": 96000,
+     "contraprestacion": "Cesión de espacios para puntos de recarga",
+     "responsable": [
+      "rsanchez"
+     ],
+     "docs": [
+      {
+       "name": "Borrador contrato movilidad eléctrica.pdf",
+       "size": "412 KB"
+      }
+     ],
+     "observaciones": "Revisar la cláusula de responsabilidad por daños en las instalaciones."
+    }
+   }
+  },
+  {
+   "name": "07-alta-paso3-con-importe",
+   "screen": "alta",
+   "step": 2,
+   "state": {
+    "local!acuerdo": {
+     "conImporte": true,
+     "importe": 96000,
+     "contraprestacion": "Cesión de espacios para puntos de recarga"
+    }
+   }
+  },
+  {
+   "name": "08-revision-juridica",
+   "screen": "revision",
+   "params": {
+    "id": 6
+   },
+   "state": {
+    "local!decision": "DEVOLVER"
+   }
+  },
+  {
+   "name": "09-dialogo-editar",
+   "screen": "editar",
+   "hostParams": {
+    "id": 3
+   },
+   "params": {
+    "id": 3
+   }
+  },
+  {
+   "name": "10-dialogo-documento",
+   "screen": "documento",
+   "hostParams": {
+    "id": 3
+   },
+   "params": {
+    "id": 3
+   }
+  },
+  {
+   "name": "11-informes",
+   "screen": "informes"
+  }
+ ]
+}
