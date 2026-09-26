@@ -28,10 +28,6 @@ genérico de expedientes para enseñar el formato; no se copian sus nombres, est
 ni roles.
 
 `<skill>` = la carpeta de este fichero. En Windows usa `python` en vez de `python3`.
-Si `<skill>/scripts/` no existe, la skill se instaló sin sus ficheros (solo el SKILL.md: una skill suelta
-o una versión anterior al plugin). Sigue con los fallbacks de la tabla siguiente y avisa al usuario de que
-instale el plugin completo `appian-analisis-funcional.plugin` y retire las skills sueltas; no busques los
-scripts en artefactos, enlaces ni internet.
 
 ## Requisitos del entorno
 
@@ -159,9 +155,9 @@ aplica el fallback). Revisa cada PNG con Read antes de incrustarlo.
 
 ### 5. DDF en Word (modo síntesis)
 Salta este paso en modo fiel y cuando el análisis sea solo para un prototipo y el
-usuario no pida el Word.
+usuario no pida el Word. Antes, el `ddf.md` tiene que pasar la comprobación del
+paso 6.
 ```bash
-python3 <skill>/scripts/comprobar_ddf.py ddf.md --fuentes fuentes/   # 0 problemas antes de seguir
 node <skill>/scripts/ddf_docx.js ddf.md -o DDF-<proyecto>-vX.Y.docx
 ```
 `ddf_docx.js` genera portada, índice, encabezado, pie con confidencialidad,
@@ -171,13 +167,17 @@ nuevas se regenera entero desde el `ddf.md`. Revisa el resultado con la skill
 `docx` (convertir a PDF y mirar algunas páginas).
 
 ### 6. Verificar
+En todos los modos, también cuando no hay Word:
+```bash
+python3 <skill>/scripts/comprobar_ddf.py ddf.md --fuentes fuentes/   # 0 problemas antes de entregar
+```
 Recorre el checklist final de `references/ddf-plantilla.md` (las casillas
 marcadas «síntesis» no aplican en modo fiel). Además:
 - La matriz de cobertura (Sec 16) no tiene RF MUST sin criterio, y ningún criterio está escrito en dos sitios.
 - Toda transición del diagrama de estados está en la tabla de transiciones y coincide con los estados de entrada y salida de las fichas de tarea.
 - Ningún ID ha cambiado respecto a la versión anterior (modo actualización).
-- Abre el `.docx` resultante (conviértelo a PDF o léelo con pandoc) y comprueba
-  que las imágenes, tablas e índice están.
+- Si hay `.docx`, ábrelo (conviértelo a PDF o léelo con pandoc) y comprueba que
+  las imágenes, tablas e índice están.
 
 ### 7. Entregar
 - Claude (web / escritorio): envía el `.docx` (si lo hay) y el `ddf.md` con

@@ -17,11 +17,7 @@ Convierte un documento de requisitos o de diseño funcional en un **prototipo na
 ## Flujo
 
 ### 0. Kit y requisitos
-`KIT` = la carpeta de este SKILL.md (la «base directory» que indica la herramienta al cargar la skill): scripts, runtime, schemas, plantillas, marca y ejemplos vienen dentro del plugin. Todos los comandos usan `python3 $KIT/scripts/...` (en Windows, `python`) y las rutas `references/`, `templates/`, `examples/` son relativas a `$KIT`.
-
-**Antes de nada, comprueba que el kit está**: `ls "$KIT/scripts/build.py"`.
-- Si no está junto al SKILL.md, búscalo una sola vez fuera de la papelera de plugins: `find / -path "*/appian-prototipos-aena/scripts/build.py" -not -path "*/.trash/*" -not -path "/proc/*" 2>/dev/null` (en Windows, `where /r %USERPROFILE% build.py` y quédate con la ruta que acabe en `appian-prototipos-aena\scripts\build.py`). Si hay varias, usa la que esté junto al SKILL.md que has cargado o, si no, la más reciente.
-- Si no aparece, la skill está instalada **sin su kit**: solo el SKILL.md (una skill suelta creada o copiada a mano, o una versión anterior al plugin). **Para** y díselo al usuario en una frase: hay que instalar el plugin completo `appian-analisis-funcional.plugin` y retirar las skills sueltas `appian-prototipos-aena` y `appian-functional-analyst`. No busques el kit en artefactos, enlaces ni internet, ni lo reconstruyas: sin él no se puede validar ni construir un prototipo fiel.
+`KIT` = la carpeta de este SKILL.md: scripts, runtime, schemas, plantillas, marca y ejemplos vienen dentro del plugin. Todos los comandos usan `python3 $KIT/scripts/...` (en Windows, `python`) y las rutas `references/`, `templates/`, `examples/` son relativas a `$KIT`.
 
 | Para | Necesita | Si falta |
 |---|---|---|
@@ -109,7 +105,7 @@ Sin Playwright o sin navegador (los scripts salen con código 2 y dicen qué fal
 - **Desarrollo**: **Inspector** (tecla `I`) muestra el componente SAIL y sus parámetros al pasar el ratón y al hacer clic; los supuestos aparecen con borde naranja.
 
 ## Documentación oficial de Appian (opcional)
-El plugin incluye el **MCP público de documentación de Appian** (`appian-docs`, herramienta `search_appian_docs_public_knowledge_sources`). La primera vez pide iniciar sesión con Google o GitHub y tiene un límite de 300 consultas al día por persona. Úsalo cuando haya dudas de Appian:
+El plugin incluye el **MCP público de documentación de Appian** (`appian-docs`: sus herramientas empiezan por `mcp__appian-docs__`). La primera vez pide iniciar sesión con Google o GitHub y tiene un límite de 300 consultas al día por persona. Úsalo cuando haya dudas de Appian:
 - si un componente, parámetro o valor existe en la versión del cliente (`app.appianVersion`);
 - qué admite de verdad un Site, un record type o una acción de registro antes de prometerlo en una pantalla;
 - el contenido de los `$note` para desarrollo.
