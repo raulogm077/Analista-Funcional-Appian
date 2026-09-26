@@ -21,6 +21,12 @@ sirve a tres públicos: negocio (validar qué se construye), QA (probarlo) y
 desarrollo Appian (diseñarlo). Terminología Appian sin explicaciones básicas:
 Process Models, Record Types, Interfaces, Expression Rules, Sites, Portals.
 
+Sirve para cualquier proceso (acuerdos con terceros, medioambiente, servidumbres,
+informes, expedientes…): actores, entidades, estados y reglas salen solo de las
+fuentes del proyecto. Los ejemplos de `references/ddf-plantilla.md` usan un dominio
+genérico de expedientes para enseñar el formato; no se copian sus nombres, estados
+ni roles.
+
 `<skill>` = la carpeta de este fichero. En Windows usa `python` en vez de `python3`.
 
 ## Requisitos del entorno

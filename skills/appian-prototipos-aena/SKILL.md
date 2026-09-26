@@ -10,13 +10,14 @@ Convierte un documento de requisitos o de diseño funcional en un **prototipo na
 - **Replicable en Appian**: cada pantalla es un árbol de funciones SAIL reales (`a!cardLayout`, `a!gridField`, `a!wizardLayout`...) con sus parámetros y valores válidos. El validador rechaza cualquier cosa que no exista en SAIL.
 - **Marca AENA**: configuración real del objeto Site (colores, logo, formas) y perfil CSS de Appian 26.9 (colores de estado accesibles, campos, tarjetas, tooltips) en `assets/brand-aena.json`.
 - **Catálogo completo de Appian 26.9**: los 147 componentes de interfaz (navegadores, organigrama, vídeo, contenido web, firma, chats de IA…) se validan y se pintan con su aspecto real; `examples/componentes/` los enseña todos, agrupados como en la documentación de Appian.
-- **Patrón repetible y UX cuidada**: toda pantalla declara uno de los 8 patrones de `templates/patterns.json` y sigue `references/design-rules.md`, que es la guía de diseño: el SAIL Design System oficial de Appian adaptado a AENA. El validador avisa de lo que la incumple (`UX ·`).
+- **Genérica para cualquier proceso**: acuerdos con terceros, medioambiente, servidumbres, informes, expedientes… El kit no sabe de ningún dominio: entidades, roles, estados, códigos, textos, reglas y datos salen siempre del `ddf.md` del proyecto. Las plantillas y los ejemplos enseñan técnica (cómo se resuelve una pantalla), nunca un dominio que copiar (`examples/README.md`).
+- **Patrón repetible y UX cuidada**: toda pantalla declara uno de los 12 patrones de `templates/patterns.json` y sigue `references/design-rules.md`, que es la guía de diseño: el SAIL Design System oficial de Appian adaptado a AENA. El validador avisa de lo que la incumple (`UX ·`).
 - **Tres usos**: demo en reunión con cliente (navegación, validaciones, diálogos), capturas PNG para el documento funcional y referencia para desarrollo (inspector SAIL + `app.json` + trazabilidad).
 
 ## Flujo
 
 ### 0. Kit y requisitos
-`KIT` = la carpeta de este SKILL.md: scripts, runtime, schemas, plantillas, marca y ejemplo vienen con el plugin. Todos los comandos usan `python3 $KIT/scripts/...` (en Windows, `python`) y las rutas `references/`, `templates/`, `examples/` son relativas a `$KIT`.
+`KIT` = la carpeta de este SKILL.md: scripts, runtime, schemas, plantillas, marca y ejemplos vienen con el plugin. Todos los comandos usan `python3 $KIT/scripts/...` (en Windows, `python`) y las rutas `references/`, `templates/`, `examples/` son relativas a `$KIT`.
 
 | Para | Necesita | Si falta |
 |---|---|---|
@@ -54,8 +55,8 @@ En las fichas, decide qué áreas 1:N son vistas (máximo 7) y qué datos van en
 - **Lee `references/design-rules.md` antes de escribir la primera pantalla**: fondo y cards, jerarquía de títulos, paleta de estados, botones, estructura por patrón, grids y ficha. Formato: `references/spec-format.md`. Componentes y equivalencias: `references/componentes.md`.
 - Usuarios, grupos y documentos de ejemplo (`users` con cargo y responsable, `groups`, `documents`) alimentan selectores, navegadores y organigrama (`references/spec-format.md`).
 - `app.appianVersion`: la versión de Appian del cliente (por defecto `26.9`, la versión vigente). El validador da error si una pantalla usa un componente, un parámetro o un valor más nuevos (`schemas/appian-versions.json`).
-- Parte siempre de la plantilla del patrón (`templates/PNN-*.json`) y adapta textos, campos y datos. Hay 12: P01 listado, P02 vista de registro, P03 formulario, P04 asistente, P05 tarea de aprobación, P06 inicio, P07 diálogo, P08 informe, P09 maestro-detalle, P10 portada de módulo, P11 asistente de IA y P12 revisión de datos sugeridos por IA (`templates/patterns.json` dice cuándo usar cada uno). `templates/catalogo-patrones.json` los reúne en una app construible (galería para enseñar al equipo o al cliente); se regenera con `templates/generar_plantillas.py`. `examples/bloques/` es la galería de bloques (con los patrones de 26.9: calendario, hilo de comentarios y kanban), `examples/ia/` la de componentes de IA y `examples/componentes/` la de los 147 componentes de Appian 26.9 (dónde ver cómo se configura cada uno). `examples/atp/` es el recorrido completo: `examples/ers-atp-ejemplo.md` (fuente) → `ddf.md` (análisis en modo fiel) → `generar_app.py` → `app.json` y prototipo.
-- Datos de ejemplo realistas del dominio, 10–20 filas en la entidad principal, todos los estados representados, mismos datos en todas las pantallas. Fija `app.today` para que las fechas relativas no cambien entre demos.
+- Parte siempre de la plantilla del patrón (`templates/PNN-*.json`) y sustituye sus textos, campos, estados y datos (un dominio genérico de expedientes) por los del proyecto. Hay 12: P01 listado, P02 vista de registro, P03 formulario, P04 asistente, P05 tarea de aprobación, P06 inicio, P07 diálogo, P08 informe, P09 maestro-detalle, P10 portada de módulo, P11 asistente de IA y P12 revisión de datos sugeridos por IA (`templates/patterns.json` dice cuándo usar cada uno). `templates/catalogo-patrones.json` los reúne en una app construible (galería para enseñar al equipo o al cliente); se regenera con `templates/generar_plantillas.py`. `examples/bloques/` es la galería de bloques (con los patrones de 26.9: calendario, hilo de comentarios y kanban), `examples/ia/` la de componentes de IA y `examples/componentes/` la de los 147 componentes de Appian 26.9 (dónde ver cómo se configura cada uno). `examples/casos/<proceso>/` son recorridos completos, uno por proceso y todos al mismo nivel (documento de entrada → `ddf.md` → `generar_app.py` → `app.json` y prototipo); `examples/README.md` los lista y explica cómo añadir otro.
+- Datos de ejemplo realistas del dominio del proyecto (el del `ddf.md`, nunca el de una plantilla o un ejemplo), 10–20 filas en la entidad principal, todos los estados representados, mismos datos en todas las pantallas. Fija `app.today` para que las fechas relativas no cambien entre demos.
 - Cada pantalla lleva `req` con los IDs que cubre. Lo que el documento no define va con `$assumption`; las dudas, a `openQuestions`. Las actividades que el documento sitúa fuera de la aplicación (otro sistema, actores externos) van en `requirements` con `outOfScope` y el motivo.
 - Define `captures` con los estados que el documento funcional necesita (errores de validación, pasos del asistente, diálogos, vistas de registro).
 - Escribe el JSON con un script Python en vez de a mano, importando `scripts/sail_helpers.py` (`sys.path.insert(0, r"<KIT>/scripts")` con la ruta real, en cadena `r"..."` para que funcione con rutas de Windows; `from sail_helpers import *`). Los helpers ya aplican la guía:
@@ -69,7 +70,7 @@ En las fichas, decide qué áreas 1:N son vistas (máximo 7) y qué datos van en
   - IA: `ai_agent_chat`, `ai_side_pane` + `ai_toggle` + `ai_data_chat`, `ai_records_chat`, `ai_doc_chat` + `ai_answer` + `ai_citation`, `ai_review_grid`, `match_quality`, `ai_notice`, `ai_feedback` (con `AI_MAPS` en `maps`);
   - diálogos P07: `dialog`.
 
-  `examples/atp/generar_app.py` los usa en las 8 pantallas de un caso completo; `references/bloques.md` dice cuándo usar cada bloque.
+  Los `generar_app.py` de `examples/casos/` los usan en casos completos; `references/bloques.md` dice cuándo usar cada bloque.
 - **IA solo si el análisis la pide.** Si crees que aporta (resumir, extraer datos de documentos, buscar por significado, preguntar a los datos), propónla con `$assumption` («Propuesta: …») y el beneficio, sin quitar el flujo manual. Reglas en `design-rules.md` §14.
 
 ### 3. Validar y construir
@@ -86,7 +87,7 @@ python3 $KIT/scripts/smoke_test.py prototipo-<app>.html app.json      # pulsa to
 python3 $KIT/scripts/contrast_audit.py prototipo-<app>.html app.json  # contraste WCAG 2.2 AA de cada texto, campo y gráfico: debe dar 0
 python3 $KIT/scripts/capture.py prototipo-<app>.html app.json -o capturas/
 ```
-Revisa **visualmente** las capturas (Read sobre los PNG): textos cortados, columnas desalineadas, pantallas vacías, datos incoherentes. Después pasa la **rúbrica UX** (`references/design-rules.md` §17): 24 criterios, marcados ✅, ⚠️ o ❌ por pantalla. Si puedes lanzar agentes, que la aplique uno que no haya diseñado las pantallas, con las capturas y la guía como única entrada. Corrige lo marcado con ❌. Después recorre los **criterios de aceptación** de cada ficha de pantalla y de tarea del `ddf.md` (`CA-PAN-…`, `CA-ACT-…`) y comprueba en el prototipo los que se pueden ver (validaciones, visibilidad, botones, textos, estados). Corrige el `app.json` y repite. Para flujos críticos (alta con validaciones, decisión de una tarea) haz además una prueba dirigida con Playwright rellenando campos y pulsando botones, usando esos criterios como casos.
+Revisa **visualmente** las capturas (Read sobre los PNG): textos cortados, columnas desalineadas, pantallas vacías, datos incoherentes. Después pasa la **rúbrica UX** (`references/design-rules.md` §17): 25 criterios, marcados ✅, ⚠️ o ❌ por pantalla. Si puedes lanzar agentes, que la aplique uno que no haya diseñado las pantallas, con las capturas y la guía como única entrada. Corrige lo marcado con ❌. Después recorre los **criterios de aceptación** de cada ficha de pantalla y de tarea del `ddf.md` (`CA-PAN-…`, `CA-ACT-…`) y comprueba en el prototipo los que se pueden ver (validaciones, visibilidad, botones, textos, estados). Corrige el `app.json` y repite. Para flujos críticos (alta con validaciones, decisión de una tarea) haz además una prueba dirigida con Playwright rellenando campos y pulsando botones, usando esos criterios como casos.
 
 Sin Playwright o sin navegador (los scripts salen con código 2 y dicen qué falta): valida, construye y revisa al menos el HTML generado.
 
@@ -127,7 +128,7 @@ Si el validador rechaza algo que la documentación confirma para esa versión, c
 - Anidaciones que Appian no admite (el validador las detecta): botones fuera de `a!buttonArrayLayout`/`a!buttonLayout`, `a!formLayout` o `a!headerContentLayout` anidados, cards o grids dentro de `a!sideBySideItem`, campos editables o layouts en columnas de `a!gridField`, `a!tabLayout` dentro de side-by-side o grids.
 - Valores de enumerado mal escritos (`"PRIMARY"`, `"END"` en celdas de `a!gridLayoutHeaderCell`, que usa LEFT/CENTER/RIGHT): el validador indica los permitidos.
 - `showWhen`, `required` y `disabled` en texto son expresiones SAIL (`"local!x = \"A\""`); el texto a mostrar usa interpolación (`"Vence el {rv!record.fechaFin|date}"`).
-- Enlaces a variables anidadas: `"value": "local!acuerdo.titulo"` con el mismo `saveInto`.
+- Enlaces a variables anidadas: `"value": "local!exp.titulo"` con el mismo `saveInto`.
 - Diálogos en `captures`: indica `hostParams` para abrirlos sobre el registro correcto.
 - Precarga de formularios de edición: `local` con `"{rv!record.campo}"`, no `value` apuntando al registro.
 - Restar fechas: `todate(b) - todate(a)`; sin `todate()` las fechas son texto y la resta no funciona.

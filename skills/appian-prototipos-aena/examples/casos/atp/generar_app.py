@@ -1,10 +1,10 @@
-"""Genera examples/atp/app.json. Uso: python3 generar_app.py app.json
+"""Genera examples/casos/atp/app.json (caso de ejemplo: un proceso más, no un modelo de dominio). Uso: python3 generar_app.py app.json
 Ejemplo de cómo escribir specs grandes con los helpers del kit (scripts/sail_helpers.py) y la guía de diseño
 (references/design-rules.md): páginas con cards blancas sobre fondo gris, franja de KPI, franja de datos clave,
 grids consolidados, paleta semántica de estados, asistente con barra lateral y decisión con cards."""
 import json, datetime, random, sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
 from sail_helpers import *  # noqa: E402,F401
 ATP_ESTADOS = {"Borrador": "neutral", "En revisión jurídica": "enCurso", "Pendiente de firma": "atencion", "Vigente": "positivo", "Vencido": "negativo", "Rechazado": "negativo"}
 ATP_FASES = ["Borrador", "En revisión jurídica", "Pendiente de firma", "Vigente", "Vencido", "Rechazado"]
@@ -344,7 +344,7 @@ informe = {
 
 spec = {
     "app": {"name": "Acuerdos con Terceras Partes", "shortName": "ATP", "version": "0.1", "language": "es", "today": "2026-09-24", "appianVersion": "26.9",
-            "source": "examples/atp/ddf.md v1.1 (modo fiel de la ERS de ejemplo, FU-01) · datos ficticios"},
+            "source": "examples/casos/atp/ddf.md v1.1 (modo fiel de la ERS de ejemplo, FU-01) · datos ficticios"},
     "site": {"displayName": "Acuerdos con Terceras Partes", "home": "inicio", "user": {"name": "Lucía Fernández Gil"},
              "pages": [
                  {"title": "Inicio", "icon": "home", "screen": "inicio", "includes": ["revision"]},

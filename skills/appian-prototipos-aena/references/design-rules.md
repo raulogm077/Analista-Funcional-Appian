@@ -92,7 +92,7 @@ Lo que el objeto Site no alcanza (colores de estado, textos de los campos, borde
 | Etiqueta de dato en un resumen | texto SMALL | — | SECONDARY |
 
 - La etiqueta H corresponde al tamaño ✔ (LARGE → H1, MEDIUM → H2, SMALL → H3).
-- No des estilo de título a un dato: el nombre del tercero no es un H2.
+- No des estilo de título a un dato: el nombre de una persona o de una empresa no es un H2.
 - El título de la página no cambia cuando el usuario selecciona algo en ella.
 
 ## 4. Color y contraste
@@ -323,11 +323,11 @@ Aquí fallan casi todos los listados. Las reglas:
 
 ## 11. Textos y formatos
 
-- En español, con mayúscula solo en la primera palabra («Nuevo acuerdo»).
+- En español, con mayúscula solo en la primera palabra («Nuevo expediente»).
 - Los mensajes de una sola frase no llevan punto final.
-- Mensajes de vacío concretos: «No hay acuerdos que cumplan los filtros».
+- Mensajes de vacío concretos, con el nombre de la entidad del proyecto: «No hay expedientes que cumplan los filtros».
 - Fechas dd/mm/aaaa; importes `1.234,56 €` (filtros `date` y `eur`); separador de miles en las cifras, salvo en los identificadores.
-- Códigos con el formato del documento (ATP-AAAA-NNNN).
+- Códigos con el formato que fija el documento del proyecto (p. ej., `XXX-AAAA-NNNN`); si no lo fija, uno así, con prefijo propio, y un `$assumption`.
 - Los campos de solo lectura no llevan asterisco de obligatorio.
 
 ## 12. Accesibilidad
@@ -341,7 +341,7 @@ Aquí fallan casi todos los listados. Las reglas:
 
 ## 13. Datos de ejemplo
 
-- Realistas y del dominio: aeropuertos por código IATA, terceros verosímiles, importes creíbles. Nunca «Lorem ipsum» ni «Test 1».
+- Realistas y del dominio del proyecto (el del `ddf.md`, no el de un ejemplo del kit): aeropuertos por código IATA, personas y empresas verosímiles, importes creíbles. Nunca «Lorem ipsum» ni «Test 1».
 - 10–20 filas en la entidad principal, con todos los estados representados.
 - Coherencia entre pantallas: el mismo registro muestra los mismos datos en el listado, la ficha, la tarea y las capturas.
 - Personas ficticias. Nunca datos personales reales de empleados de AENA.
@@ -421,3 +421,4 @@ Aplica la rúbrica en el paso 4 de SKILL.md. Si hay agentes disponibles, que la 
 22. La navegación secundaria y las cabeceras siguen §15: pestañas o navegación vertical según el número de secciones, migas solo en jerarquías.
 23. El color da vida sin ruido (§4): bloque de color en la cabecera de las páginas de entrada, KPI con sello de icono, estados con su color en etiquetas y gráficos, y nada de color sin significado.
 24. Si la pantalla usa un patrón o componente de 26.9 (calendario, comentarios, kanban, navegadores, organigrama), sigue §16 y la versión del cliente lo admite.
+25. Todo es del proceso del proyecto: entidades, roles, estados, códigos, textos y datos salen de su `ddf.md`; no queda nada de una plantilla ni de un ejemplo del kit (nombres, códigos como `EXP-`, estados o roles de otro proceso).

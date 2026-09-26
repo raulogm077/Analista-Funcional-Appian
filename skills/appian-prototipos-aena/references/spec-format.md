@@ -1,21 +1,21 @@
 # Formato del app spec (`app.json`)
 
-El prototipo se describe en un único JSON. Regla de oro: **los nodos de interfaz son funciones SAIL reales con sus parámetros reales** (`"type": "a!cardLayout"`, `"padding": "MORE"`...). Todo lo que existe solo para el prototipo empieza por `$` y el equipo de desarrollo sabe que no se traslada a SAIL.
+El prototipo se describe en un único JSON. Los ejemplos de esta página usan un dominio genérico y ficticio (expedientes de una unidad, el mismo que las plantillas); en un proyecto, nombres, campos, estados y datos salen de su `ddf.md`. Regla de oro: **los nodos de interfaz son funciones SAIL reales con sus parámetros reales** (`"type": "a!cardLayout"`, `"padding": "MORE"`...). Todo lo que existe solo para el prototipo empieza por `$` y el equipo de desarrollo sabe que no se traslada a SAIL.
 
 ## Estructura raíz
 
 ```json
 {
-  "app":   { "name": "Acuerdos con Terceras Partes", "language": "es", "source": "DDF OP_ATP v1.2 (15/09/2026)", "today": "2026-09-24", "appianVersion": "25.4" },
+  "app":   { "name": "Gestión de expedientes", "language": "es", "source": "ddf.md v1.2 (15/09/2026)", "today": "2026-09-24", "appianVersion": "26.9" },
   "site":  { "displayName": "...", "home": "inicio", "user": { "name": "Lucía Fernández Gil" },
              "pages": [ { "title": "Inicio", "icon": "home", "screen": "inicio", "includes": ["revision"] } ] },
   "requirements":  [ { "id": "RF-01", "title": "Indicadores en la página de inicio" } ],
-  "openQuestions": [ { "id": "Q-01", "text": "¿Quién puede editar un acuerdo vigente?", "screen": "editar", "priority": "CRITICA" } ],
-  "maps":  { "estadoColor": { "Vigente": "POSITIVE", "Vencido": "NEGATIVE", "*": "SECONDARY" } },
+  "openQuestions": [ { "id": "Q-01", "text": "¿Quién puede editar un expediente aprobado?", "screen": "editar", "priority": "CRITICA" } ],
+  "maps":  { "estadoColor": { "Aprobado": "POSITIVE", "Rechazado": "NEGATIVE", "*": "SECONDARY" } },
   "users": [ { "id": "mlopez", "name": "María López Arranz", "title": "Jefa de Operaciones MAD", "supervisor": "cruiz", "groups": ["g-mad"] } ],
   "groups": [ { "id": "g-mad", "name": "Operaciones MAD", "parent": "g-dir", "description": "Adolfo Suárez Madrid-Barajas" } ],
   "documents": [ { "id": "f-norm", "name": "Normativa", "type": "folder" }, { "id": "d-sms", "name": "Manual_SMS_v4.pdf", "folder": "f-norm", "type": "document", "size": "2,4 MB", "modified": "2026-07-14" } ],
-  "data":  { "acuerdos": { "recordType": "ATP Acuerdo", "rows": [ { "id": 1, "codigo": "ATP-2026-0001" } ] } },
+  "data":  { "expedientes": { "recordType": "EXP Expediente", "rows": [ { "id": 1, "codigo": "EXP-2026-0001" } ] } },
   "state": { },
   "screens":  [ ... ],
   "captures": [ ... ]
@@ -38,7 +38,7 @@ El prototipo se describe en un único JSON. Regla de oro: **los nodos de interfa
 ## Pantallas
 
 ```json
-{ "id": "acuerdos", "title": "Acuerdos", "type": "page", "pattern": "P01",
+{ "id": "listado", "title": "Expedientes", "type": "page", "pattern": "P01",
   "req": ["RF-03", "RF-04"], "assumptions": ["..."], "local": { "local!filtro": null },
   "interface": { "type": "a!headerContentLayout", "contents": [ ... ] } }
 ```
@@ -46,7 +46,7 @@ El prototipo se describe en un único JSON. Regla de oro: **los nodos de interfa
 - `type`: `page` (página del site) · `record` (vista de registro) · `form` (formulario o tarea a página completa) · `dialog` (acción en diálogo).
 - `pattern`: obligatorio, uno de `templates/patterns.json`. El validador comprueba el tipo y el componente raíz.
 - `req`: requisitos que cubre. `assumptions`: supuestos a nivel de pantalla.
-- `ref`: dónde está definida en el documento de entrada (p. ej. `"PAN-02 · Listado de acuerdos"`, el ID de la ficha en la Sec 12 del `ddf.md`). Sale en la trazabilidad y en el índice de capturas para saber bajo qué ficha va cada imagen.
+- `ref`: dónde está definida en el documento de entrada (p. ej. `"PAN-02 · Listado de expedientes"`, el ID de la ficha en la Sec 12 del `ddf.md`). Sale en la trazabilidad y en el índice de capturas para saber bajo qué ficha va cada imagen.
 - `local`: variables locales iniciales (se reinician al entrar). Admiten `{rv!record.campo}` para precargar desde el registro.
 - `recordType` (en `record`, y opcional en `form`/`dialog`): la pantalla recibe `rv!record` = fila de `data` con `id = params.id`.
 - `openFrom` (en `dialog`): pantalla sobre la que se abre en el índice y en las capturas.
@@ -54,10 +54,10 @@ El prototipo se describe en un único JSON. Regla de oro: **los nodos de interfa
 Pantalla de registro:
 
 ```json
-{ "id": "acuerdo", "type": "record", "pattern": "P02", "recordType": "ATP Acuerdo",
+{ "id": "registro", "type": "record", "pattern": "P02", "recordType": "EXP Expediente",
   "title": "{rv!record.codigo} · {rv!record.titulo}",
-  "breadcrumb": { "label": "Acuerdos", "goto": "acuerdos" },
-  "recordActions": [ { "type": "a!recordActionItem", "action": "recordType!ATP Acuerdo.actions.editar",
+  "breadcrumb": { "label": "Expedientes", "goto": "listado" },
+  "recordActions": [ { "type": "a!recordActionItem", "action": "recordType!EXP Expediente.actions.editar",
                        "identifier": "{rv!record.id}", "$label": "Editar datos", "$icon": "pencil",
                        "$action": { "dialog": "editar", "params": { "id": "{rv!record.id}" } } } ],
   "views": [ { "id": "resumen", "label": "Resumen", "interface": { ... } } ] }
@@ -74,7 +74,7 @@ Se usa la sintaxis de dominios de SAIL para que el código sea legible por desar
 
 | Escribes | Significa |
 |---|---|
-| `"value": "local!acuerdo.titulo"`, `"saveInto": "local!acuerdo.titulo"` | Enlace de lectura y escritura (admite rutas con puntos). |
+| `"value": "local!exp.titulo"`, `"saveInto": "local!exp.titulo"` | Enlace de lectura y escritura (admite rutas con puntos). |
 | `"{fv!row.codigo}"` | Interpolación en columnas de grid y `a!forEach` (`fv!item`, `fv!index`). En las plantillas de `a!cardChoiceField` (`cardTemplate: a!cardTemplateTile(...)`), cada opción es `fv!data`: `"id": "fv!data.id"`, `"primaryText": "{fv!data.texto}"`. |
 | `"{rv!record.fechaFin\|date}"` | Campo del registro con filtro. Filtros: `date`, `datetime`, `eur`, `num`, `pct`, `upper`, `initials`, `dash` («–» si está vacío; en SAIL `a!defaultValue(valor, "–")`), fechas en texto `longdate` («Lunes, 5 de octubre»; en SAIL `text(fecha, "dddd, d \"de\" mmmm")`), `monthyear` («Octubre de 2026»), `dayname` («Lunes»), `daymonth` («5 oct»), `time` («09:30» de una fecha y hora), `map:<nombre>`. Se encadenan: `{rv!record.importe\|eur\|dash}`. |
 | `"showWhen": "and(local!x = \"A\", not(isnull(local!y)))"` | Expresión booleana. Funciones: `and or not if isnull a!isNullOrEmpty a!isNotNullOrEmpty a!defaultValue contains len count sum index where wherecontains displayvalue today todate left search` y de listas `append difference union remove joinarray`. Operadores `= <> < > <= >= + - * / &`. `contains(lista, valor)` es pertenencia a una lista; para buscar texto dentro de un texto, `search(buscado, texto) > 0`. |
@@ -86,7 +86,7 @@ Se usa la sintaxis de dominios de SAIL para que el código sea legible por desar
 | `fv!row[recordType!X.fields.campo]` | Referencia de campo de registro (SAIL real): equivale a `fv!row.campo`. `fv!row[recordType!X.searchResults.allSearchFields.similarityScore]` es la puntuación de la búsqueda inteligente (solo para ordenar o para `match_quality`). |
 | `fv!selection[recordType!X.fields.campo]` | En el `link` de la configuración de un gráfico de registros: valor de la agrupación pulsada (drilldown, helper `chart_link`). |
 | `fv!percentage` | En `a!gaugeField`: porcentaje actual (colores por tramo). |
-| `"data": "recordType!ATP Acuerdo"` en grids, KPIs y gráficos | Se resuelve al dataset con ese `recordType`. |
+| `"data": "recordType!EXP Expediente"` en grids, KPIs y gráficos | Se resuelve al dataset con ese `recordType`. |
 
 ## Parámetros solo de prototipo (`$`)
 
@@ -132,9 +132,9 @@ Las acciones no modifican `data`: tras «Guardar» o «Enviar decisión» el reg
 ```json
 "captures": [
   { "name": "01-inicio", "screen": "inicio" },
-  { "name": "03-ficha-documentos", "screen": "acuerdo", "params": { "id": 3 }, "view": "documentos" },
+  { "name": "03-ficha-documentos", "screen": "registro", "params": { "id": 3 }, "view": "documentos" },
   { "name": "06-alta-errores", "screen": "alta", "step": 0, "showValidation": true },
-  { "name": "07-alta-importe", "screen": "alta", "step": 2, "state": { "local!acuerdo": { "conImporte": true } } },
+  { "name": "07-alta-importe", "screen": "alta", "step": 2, "state": { "local!exp": { "conImporte": true } } },
   { "name": "09-dialogo-editar", "screen": "editar", "hostParams": { "id": 3 }, "params": { "id": 3 } }
 ]
 ```

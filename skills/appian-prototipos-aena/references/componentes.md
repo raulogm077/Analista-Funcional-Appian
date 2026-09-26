@@ -41,7 +41,7 @@ La fuente de verdad de nombres, parámetros y valores válidos son los schemas d
 
 1. Activar **Inspector** (botón de la barra o tecla `I`): cada componente se recuadra; al pasar el ratón se ve `a!componente(parámetros clave)` y al hacer clic, todos sus parámetros SAIL y, aparte, los `$` del prototipo, las notas (`$note`) y los supuestos (`$assumption`).
 2. El `app.json` es la especificación: la interfaz de cada pantalla es un árbol de funciones SAIL con sus parámetros. Traducirlo a SAIL es mecánico (`{"type": "a!cardLayout", "padding": "MORE"}` → `a!cardLayout(padding: "MORE")`).
-3. `data` describe los record types de ejemplo: nombres de campo, tipos de valor y relaciones (`acuerdoId`).
+3. `data` describe los record types de ejemplo: nombres de campo, tipos de valor y relaciones (`expedienteId` en la entidad hija).
 4. `brand-aena.json → site` es la configuración del objeto Site.
 
 ## Equivalencias del prototipo que en Appian se resuelven de otra forma

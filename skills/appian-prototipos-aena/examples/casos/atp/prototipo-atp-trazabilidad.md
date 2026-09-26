@@ -1,6 +1,6 @@
 # Trazabilidad del prototipo · Acuerdos con Terceras Partes
 
-Fuente: examples/atp/ddf.md v1.1 (modo fiel de la ERS de ejemplo, FU-01) · datos ficticios
+Fuente: examples/casos/atp/ddf.md v1.1 (modo fiel de la ERS de ejemplo, FU-01) · datos ficticios
 
 ## Requisitos → pantallas
 

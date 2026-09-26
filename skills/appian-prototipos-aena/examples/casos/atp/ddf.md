@@ -12,7 +12,7 @@
 
 | ID | Fichero | Tipo | Fecha |
 |---|---|---|---|
-| FU-01 | ../ers-atp-ejemplo.md | ERS (texto) | 2026-09-25 |
+| FU-01 | ers-ejemplo.md | ERS (texto) | 2026-09-25 |
 
 **Control de versiones**
 

@@ -157,7 +157,7 @@ Para cada actor, una tabla que combina descripción funcional y permisos:
 
 | Rol | Descripción | Participa en | Crea | Consulta | Edita | Aprueba / Ejecuta | Nivel de acceso |
 |-----|-------------|--------------|------|----------|-------|-------------------|-----------------|
-| Revisor jurídico | Asesoría Jurídica | ACT-02; PAN-01, PAN-05 | — | Acuerdos | — | Resuelve la revisión | Grupo «Asesoría Jurídica» |
+| Aprobador | Responsable de la unidad | ACT-02; PAN-01, PAN-05 | — | Expedientes | — | Resuelve la aprobación | Grupo «Responsables de unidad» |
 
 «Participa en» lista las actividades (Sec 6) y pantallas (Sec 12) de cada rol:
 con ella queda claro qué hace cada actor dentro del proceso antes de leer el
@@ -244,14 +244,14 @@ Una ficha por cada **tarea de usuario** (y por cada tarea de sistema con más de
 una salida). Todo lo que haya que explicar de un punto del flujo va aquí, no
 dentro del diagrama.
 
-**ACT-02 — Resolver la revisión jurídica**
+**ACT-02 — Resolver la aprobación**
 
 | Campo | Detalle |
 |-------|---------|
-| **Actor** | Revisor jurídico (grupo o rol) |
+| **Actor** | Aprobador (grupo o rol) |
 | **Pantalla** | PAN-05 |
 | **Disparador** | Qué crea la tarea (ACT anterior, fecha, evento) |
-| **Estado de entrada** | «En revisión jurídica» |
+| **Estado de entrada** | «Pendiente de aprobación» |
 | **Plazo / escalado** | Si lo hay (NOT-xxx), o «—» |
 | **Fuente** | [FU-01 diap. 30] |
 
@@ -259,14 +259,14 @@ dentro del diagrama.
 
 | Opción | Condición para poder elegirla | Estado de salida | Siguiente | Aviso |
 |--------|-------------------------------|------------------|-----------|-------|
-| «Aprobar» | — | «Pendiente de firma» | ACT-03 | NOT-002 al gestor |
+| «Aprobar» | — | «Aprobado» | ACT-03 | NOT-002 al gestor |
 | «Devolver» | Comentario obligatorio | «Borrador» | ACT-01 | NOT-003 al gestor |
 | «Rechazar» | Comentario obligatorio | «Rechazado» | Fin | NOT-004 al gestor |
 
 **Criterio mínimo de aceptación** (qué debe cumplirse para dar la tarea por
 validada; uno por opción como mínimo):
-- `CA-ACT-02.1` **Dado** un acuerdo en «En revisión jurídica», **cuando** el revisor
-  pulsa «Aprobar», **entonces** el acuerdo pasa a «Pendiente de firma», la tarea
+- `CA-ACT-02.1` **Dado** un expediente en «Pendiente de aprobación», **cuando** el
+  aprobador pulsa «Aprobar», **entonces** el expediente pasa a «Aprobado», la tarea
   desaparece de su bandeja y se crea ACT-03.
 - `CA-ACT-02.2` **Dado** …, **cuando** pulsa «Devolver» sin comentario, **entonces**
   no se envía la decisión y se muestra «…».
@@ -463,7 +463,7 @@ cuanto más concreta, menos supuestos. Lo que no se sepa se marca ❓ en la
 celda, no se inventa. Los apartados que no apliquen (una pantalla sin filtros)
 se omiten.
 
-**PAN-02 — Listado de acuerdos** (en modo fiel, el nombre y el ID del documento)
+**PAN-02 — Listado de expedientes** (en modo fiel, el nombre y el ID del documento)
 
 | Campo | Detalle |
 |-------|---------|
@@ -501,8 +501,8 @@ usuario puede ordenar.
 
 | Acción (texto literal) | Quién la ve / cuándo está activa | Qué pasa después | Confirmación (texto literal) |
 |------------------------|----------------------------------|------------------|------------------------------|
-| «Nuevo acuerdo» | Gestor de acuerdos | Abre PAN-04 | — |
-| «Eliminar» | Gestor, solo en «Borrador» | Elimina el acuerdo y vuelve al listado con el aviso «…» | «¿Desea eliminar el acuerdo? Esta acción no se puede deshacer.» |
+| «Nuevo expediente» | Gestor de expedientes | Abre PAN-04 | — |
+| «Eliminar» | Gestor, solo en «Borrador» | Elimina el expediente y vuelve al listado con el aviso «…» | «¿Desea eliminar el expediente? Esta acción no se puede deshacer.» |
 
 **Toda acción que borre o anule algo lleva confirmación con su texto literal**;
 si la fuente no lo da, se marca ❓ y va a Sec 17, no se inventa.
@@ -512,8 +512,8 @@ RB-xxx):
 1. Validaciones de formato y longitud, con el mensaje literal.
 2. Cálculos automáticos (qué se calcula, cuándo y a partir de qué).
 3. Visibilidad por rol, enumerada:
-   - Gestor de acuerdos: ve todo; «Editar» activo en «Borrador».
-   - Consulta: solo acuerdos «Vigente»; sin acciones.
+   - Gestor de expedientes: ve todo; «Editar» activo en «Borrador».
+   - Consulta: solo expedientes «Aprobado»; sin acciones.
 4. Lógica con varios escenarios: «Caso A: condición → efecto», «Caso B: …».
 
 **Textos literales**: tooltips (y qué los muestra), avisos, mensajes de
@@ -521,11 +521,11 @@ error y de confirmación que no estén ya en las tablas anteriores.
 
 **Criterios de aceptación** (funcionales y de presentación; cada uno se puede
 probar solo sobre esta pantalla):
-- `CA-PAN-02.1` **Dado** un gestor en el listado, **cuando** filtra por «Vigente» y
-  «Vencido», **entonces** solo ve acuerdos en esos estados y el contador
+- `CA-PAN-02.1` **Dado** un gestor en el listado, **cuando** filtra por «Aprobado» y
+  «Rechazado», **entonces** solo ve expedientes en esos estados y el contador
   muestra su número.
 - `CA-PAN-02.2` **Dado** un usuario de Consulta, **cuando** abre el listado,
-  **entonces** no ve el botón «Nuevo acuerdo».
+  **entonces** no ve el botón «Nuevo expediente».
 
 **Capturas**: las añade el prototipo, una por línea:
 `![pie de figura](capturas/02-listado.png)`.
@@ -614,8 +614,8 @@ como pregunta 🟡 (o 🔴 si bloquea el diseño).
 principal del proceso (camino feliz y cada rechazo o excepción relevante),
 como secuencia de tareas y estados:
 
-- `CA-E2E-01` Alta aprobada: ACT-01 («Borrador») → ACT-02 «Aprobar» («Pendiente de
-  firma») → ACT-03 («Vigente»). Se valida con CA-ACT-01.1, CA-ACT-02.1 y CA-ACT-03.1.
+- `CA-E2E-01` Alta aprobada: ACT-01 («Borrador») → ACT-02 «Aprobar» («Aprobado»)
+  → ACT-03 («Cerrado»). Se valida con CA-ACT-01.1, CA-ACT-02.1 y CA-ACT-03.1.
 
 ---
 

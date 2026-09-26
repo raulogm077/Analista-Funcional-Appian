@@ -9,7 +9,7 @@
     "a!paneLayout"
    ],
    "template": "P01-listado.json",
-   "when": "Consultar, buscar y filtrar una entidad (acuerdos, expedientes, terceros...). Punto de entrada a la vista de registro. Con asistente de datos: a!paneLayout con el listado en un pane AUTO y el chat en un pane lateral que se muestra u oculta."
+   "when": "Consultar, buscar y filtrar una entidad (expedientes, solicitudes, incidencias, contratos...). Punto de entrada a la vista de registro. Con asistente de datos: a!paneLayout con el listado en un pane AUTO y el chat en un pane lateral que se muestra u oculta."
   },
   "P02": {
    "name": "Vista de registro",

@@ -45,7 +45,7 @@ Ficha de tarea (Sec 6.3) → pantalla P05:
 | Actor, estado de entrada | Tarea en la bandeja del rol; la vista de la tarea muestra el registro en ese estado |
 | Opciones | `a!cardChoiceField` con `a!cardTemplateBarTextStacked` en la card «Decisión» (patrón P05, helper `choice_cards`): texto literal de cada opción, su estado de salida como texto secundario e icono de color (aprobar POSITIVE, devolver naranja, rechazar NEGATIVE). «Enviar decisión» las envía |
 | Condición de cada opción | `required` condicional o `$validations` (p. ej. comentario obligatorio al devolver) |
-| Estado de salida y siguiente | `$action`: vuelta a la bandeja o al registro con un banner («El acuerdo ha pasado a «Pendiente de firma»») |
+| Estado de salida y siguiente | `$action`: vuelta a la bandeja o al registro con un banner («El expediente ha pasado a «Aprobado»») |
 | Criterio mínimo de aceptación | Lista de comprobación del paso 4, como los de pantalla |
 
 Nivel de certeza del análisis:

@@ -3,8 +3,9 @@
 
 Uso:  python3 selftest.py
 
-1. Valida y construye el catálogo de patrones y el ejemplo ATP en una carpeta temporal.
-2. Si hay Playwright y un navegador, pasa la prueba de humo sobre el catálogo.
+1. Valida y construye, en una carpeta temporal, el catálogo de patrones, cada caso de ejemplo
+   (examples/casos/<proceso>/app.json: los que haya) y las galerías.
+2. Si hay Playwright y un navegador, pasa la prueba de humo y la auditoría de contraste a todo lo construido.
 Sale con 0 si validar y construir funcionan (lo imprescindible); la prueba de humo y
 las capturas son opcionales y se informa de lo que falta para tenerlas.
 """
@@ -56,8 +57,9 @@ def main():
         sys.exit(1)
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp)
-        cases = [("catálogo de patrones", ROOT / "templates" / "catalogo-patrones.json"),
-                 ("ejemplo ATP", ROOT / "examples" / "atp" / "app.json"),
+        # los casos de ejemplo (un proceso cada uno, ninguno por encima de otro) se descubren solos
+        casos = [(f"caso de ejemplo «{p.parent.name}»", p) for p in sorted((ROOT / "examples" / "casos").glob("*/app.json"))]
+        cases = [("catálogo de patrones", ROOT / "templates" / "catalogo-patrones.json"), *casos,
                  ("galería de bloques", ROOT / "examples" / "bloques" / "app.json"),
                  ("galería de IA (26.9)", ROOT / "examples" / "ia" / "app.json"),
                  ("galería de componentes (26.9)", ROOT / "examples" / "componentes" / "app.json")]
@@ -69,7 +71,7 @@ def main():
             print(f"✓ Catálogo de Appian {cat['version']}: {len(funcs)} componentes en schemas, runtime y galería")
         built = []  # (nombre, html, spec) de lo que se ha construido
         for name, spec in cases:
-            html = tmp / (spec.parent.name + ".html")
+            html = tmp / (spec.parent.name + ".html")  # nombres de carpeta únicos: templates, <proceso>, bloques, ia, componentes
             code, out = run([HERE / "build.py", spec, "-o", html])
             if code == 0 and html.exists():
                 print(f"✓ Validar y construir: {name}")
