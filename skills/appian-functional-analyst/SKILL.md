@@ -28,6 +28,10 @@ genérico de expedientes para enseñar el formato; no se copian sus nombres, est
 ni roles.
 
 `<skill>` = la carpeta de este fichero. En Windows usa `python` en vez de `python3`.
+Si `<skill>/scripts/` no existe, la skill se instaló sin sus ficheros (solo el SKILL.md: una skill suelta
+o una versión anterior al plugin). Sigue con los fallbacks de la tabla siguiente y avisa al usuario de que
+instale el plugin completo `appian-analisis-funcional.plugin` y retire las skills sueltas; no busques los
+scripts en artefactos, enlaces ni internet.
 
 ## Requisitos del entorno
 

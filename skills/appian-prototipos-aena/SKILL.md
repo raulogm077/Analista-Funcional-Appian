@@ -17,7 +17,11 @@ Convierte un documento de requisitos o de diseño funcional en un **prototipo na
 ## Flujo
 
 ### 0. Kit y requisitos
-`KIT` = la carpeta de este SKILL.md: scripts, runtime, schemas, plantillas, marca y ejemplos vienen con el plugin. Todos los comandos usan `python3 $KIT/scripts/...` (en Windows, `python`) y las rutas `references/`, `templates/`, `examples/` son relativas a `$KIT`.
+`KIT` = la carpeta de este SKILL.md (la «base directory» que indica la herramienta al cargar la skill): scripts, runtime, schemas, plantillas, marca y ejemplos vienen dentro del plugin. Todos los comandos usan `python3 $KIT/scripts/...` (en Windows, `python`) y las rutas `references/`, `templates/`, `examples/` son relativas a `$KIT`.
+
+**Antes de nada, comprueba que el kit está**: `ls "$KIT/scripts/build.py"`.
+- Si no está junto al SKILL.md, búscalo una sola vez fuera de la papelera de plugins: `find / -path "*/appian-prototipos-aena/scripts/build.py" -not -path "*/.trash/*" -not -path "/proc/*" 2>/dev/null` (en Windows, `where /r %USERPROFILE% build.py` y quédate con la ruta que acabe en `appian-prototipos-aena\scripts\build.py`). Si hay varias, usa la que esté junto al SKILL.md que has cargado o, si no, la más reciente.
+- Si no aparece, la skill está instalada **sin su kit**: solo el SKILL.md (una skill suelta creada o copiada a mano, o una versión anterior al plugin). **Para** y díselo al usuario en una frase: hay que instalar el plugin completo `appian-analisis-funcional.plugin` y retirar las skills sueltas `appian-prototipos-aena` y `appian-functional-analyst`. No busques el kit en artefactos, enlaces ni internet, ni lo reconstruyas: sin él no se puede validar ni construir un prototipo fiel.
 
 | Para | Necesita | Si falta |
 |---|---|---|
