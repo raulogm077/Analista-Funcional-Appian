@@ -19,7 +19,7 @@ es un extracto estructurado, no un documento nuevo. No se genera `.docx`.
 | 5 Actores | Sí |
 | 6 Procesos | Actividades con su ID literal, estados de entrada y salida y si ocurren en la aplicación; fichas de las tareas de usuario; sin diagrama |
 | 7 Casos de uso | «Ver documento base» salvo que los defina |
-| 8 Requisitos | Los del documento, con su ID literal |
+| 8 Requisitos | Los del documento, con su ID literal; en ficha o en una tabla `ID · Requisito · Se verifica en · Fuente` |
 | 9 Reglas | Sí, con cita |
 | 10 Datos | Sí (entidades, campos, tipos, obligatoriedad, listas de valores) |
 | 11 Estados | Sí |

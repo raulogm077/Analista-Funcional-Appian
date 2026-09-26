@@ -246,6 +246,20 @@ class Modelo:
         p = self.piezas[pid]
         return p.frag if p.frag else "\n".join(self.bloque(pid))
 
+    def campo(self, pid, nombre):
+        """Valor de un campo de la pieza: fila «| **Nombre** | valor |» de su ficha o, si la pieza es
+        una fila de tabla (p. ej. RF en tabla en modo fiel), la celda de la columna con ese nombre."""
+        mm = re.search(rf"\|\s*\*\*{re.escape(nombre)}\*\*\s*\|([^\n]*?)\|\s*$", self.texto(pid), re.M)
+        if mm:
+            return mm.group(1).strip()
+        p = self.piezas.get(pid)
+        if p and p.forma == "fila" and p.cabecera:
+            cols = [normaliza(c) for c in _celdas(p.cabecera)]
+            cel = _celdas(self.lineas[p.ini])
+            if normaliza(nombre) in cols and cols.index(normaliza(nombre)) < len(cel):
+                return cel[cols.index(normaliza(nombre))]
+        return ""
+
     def raiz(self, pid):
         """La ficha a la que pertenece un criterio (o la propia pieza)."""
         p = self.piezas.get(pid)

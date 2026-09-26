@@ -55,8 +55,7 @@ def comprobar_base(m):
     for p in m.por_tipo("RF"):
         if p.anulada:
             continue
-        v = re.search(r"Se verifica en\*\*\s*\|([^\n]*)", m.texto(p.id))
-        if not v or "CA-" not in v.group(1):
+        if "CA-" not in m.campo(p.id, "Se verifica en"):  # ficha vertical o fila de tabla con esa columna
             sin.append(p.id)
     informe("RF vigentes con criterio en «Se verifica en»", sorted(sin))
     malas = []

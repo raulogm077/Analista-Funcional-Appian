@@ -319,8 +319,7 @@ def c_grafo(m, a):
 
 # ------------------------------------------------ secciones derivadas (7 y 16)
 def _campo(m, pid, nombre):
-    mm = re.search(rf"\|\s*\*\*{nombre}\*\*\s*\|([^\n]*?)\|\s*$", m.texto(pid), re.M)
-    return mm.group(1).strip() if mm else ""
+    return m.campo(pid, nombre)
 
 
 def seccion7(m):
