@@ -71,8 +71,9 @@ def test_inventory_fields(built):
     assert by["PM_REV"]["userTaskCount"] == 1
     assert by["PM_ALTA"]["subProcessCount"] == 1 and by["PM_ALTA"]["startFormInterface"] == "DEM_SolicitudForm"
     assert by["PM_ALTA"]["usage"]["executions"] == 120
+    assert by["PM_HUERF"]["slug"] == "DEM_Utilidad_Huerfana"
     assert by["PM_HUERF"]["usage"]["executions"] == 0
-    assert by["C_TOKEN"]["maskedSecret"] is True and by["C_TOKEN"]["value"] == "sk***"
+    assert by["C_TOKEN"]["maskedSecret"] is True and by["C_TOKEN"]["value"] == "***"
     assert "P4ssw0rd" not in json.dumps(inv)
     assert by["CS_ERP"]["baseUrl"] == "https://svc_erp:***@erp.example.org/api"
     assert by["INT_ERP"]["method"] == "POST" and by["INT_ERP"]["connectedSystemRef"] == "DEM_CS_ERP"
@@ -86,6 +87,16 @@ def test_inventory_fields(built):
     for o in by.values():
         if o.get("path"):
             assert (built.out / o["path"]).exists()
+
+
+def test_raw_files_have_no_secrets(built):
+    raw = built.interm() / "mcp_raw"
+    blob = "\n".join(p.read_text(encoding="utf-8") for p in raw.rglob("*.json"))
+    assert "P4ssw0rd" not in blob and "sk_live_51Hc9" not in blob
+    assert "=cons!DEM_ERP_API_TOKEN" in blob                 # las referencias no se enmascaran
+    inv = built.load("inventory.json")
+    tok = next(o for o in inv["objects"]["constant"] if o["name"] == "DEM_ERP_API_TOKEN")
+    assert tok["maskedSecret"] is True
 
 
 def test_build_summary_unchanged_contract(built):

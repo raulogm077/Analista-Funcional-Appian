@@ -78,6 +78,46 @@ def is_transient(error: str | None) -> bool:
                           error or ""))
 
 
+MASK = "***ENMASCARADO***"
+_URL_CRED = re.compile(r"(https?://)([^/@\s:]+):([^/@\s]+)@")
+_STRONG_SECRET = re.compile(
+    r"(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]{8,}|AKIA[0-9A-Z]{16}|(?i:bearer)\s+[A-Za-z0-9._~+/=-]{16,}"
+    r"|-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----"
+    r"|eyJ[\w-]{10,}\.eyJ[\w-]{10,}\.[\w-]+|gh[pousr]_[A-Za-z0-9]{36,}|xox[abps]-[A-Za-z0-9-]{10,}")
+_SECRET_KEY = re.compile(r"(?i)^(password|passwd|pwd|secret|client_?secret|api_?key|apikey|access_?token|"
+                         r"refresh_?token|token|private_?key|credentials?)$")
+SECRET_NAME = re.compile(r"(?i)(token|secret|passw|pwd|api[_\-]?key|credential|private[_\-]?key)")
+
+
+def _is_reference(v: str) -> bool:
+    """Una expresion que referencia un secreto (=cons!X, ri!y) no es el secreto."""
+    return v.startswith("=") or re.search(r"\b(cons|ri|pv|rule|local)!", v) is not None
+
+
+def mask_secrets(data: Any, counter: list, secret_values: bool = False) -> Any:
+    """Enmascara credenciales antes de escribir a disco: URLs con usuario:clave, tokens con formato
+    conocido, claves de tipo password/secret/token y, en constantes con nombre de secreto, su valor."""
+    if isinstance(data, dict):
+        out = {}
+        for k, v in data.items():
+            if isinstance(v, str) and v and not _is_reference(v) and (
+                    _SECRET_KEY.match(str(k)) or (secret_values and str(k).lower() == "value")):
+                out[k] = MASK
+                counter[0] += 1
+            else:
+                out[k] = mask_secrets(v, counter, secret_values)
+        return out
+    if isinstance(data, list):
+        return [mask_secrets(x, counter, secret_values) for x in data]
+    if isinstance(data, str):
+        s = _URL_CRED.sub(lambda m: m.group(1) + m.group(2) + ":***@", data)
+        s = _STRONG_SECRET.sub(MASK, s)
+        if s != data:
+            counter[0] += 1
+        return s
+    return data
+
+
 def eprint(*a):
     print(*a, file=sys.stderr, flush=True)
 
@@ -708,7 +748,12 @@ class Extractor:
             if obj:
                 meta.update({"objectUuid": obj["uuid"], "objectName": obj.get("name"), "objectType": obj["type"],
                              "mcpType": obj.get("mcpType")})
-            f.write_text(json.dumps({"_meta": meta, "response": res.data}, ensure_ascii=False, indent=1, default=str),
+            masked = [0]
+            secret_ctx = bool(obj and obj.get("type") == "constant" and SECRET_NAME.search(obj.get("name") or ""))
+            safe_data = mask_secrets(res.data, masked, secret_ctx)
+            if masked[0]:
+                meta["maskedSecrets"] = masked[0]
+            f.write_text(json.dumps({"_meta": meta, "response": safe_data}, ensure_ascii=False, indent=1, default=str),
                          encoding="utf-8")
         return res
 

@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import unicodedata
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -38,6 +39,13 @@ DATE_RX = re.compile(r"^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?)?")
 
 
 # --------------------------------------------------------------------------- utilidades
+
+def slugify(name: str | None) -> str:
+    """Nombre de fichero estable para documentos por objeto: sin acentos, solo [A-Za-z0-9_-]."""
+    s = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode("ascii")
+    s = re.sub(r"[^A-Za-z0-9_-]+", "_", s).strip("_")
+    return s or "sin_nombre"
+
 
 def load(p: Path) -> Any:
     return json.loads(p.read_text(encoding="utf-8"))
@@ -167,9 +175,9 @@ def enrich_by_type(o: dict, defn: Any, name_by_uuid: dict):
         o["typeRef"] = pick(defn, ("type", "constantType", "dataType", "valueType", "objectType"))
         o["isArray"] = bool(find_key(defn, ("isArray", "multiple"), want=(bool,)))
         secret = bool(SECRET_NAME.search(o.get("name") or "")) or bool(
-            isinstance(value, str) and SECRET_VALUE.search(value))
+            isinstance(value, str) and (SECRET_VALUE.search(value) or "***ENMASCARADO***" in value))
         if secret:
-            o["value"], o["maskedSecret"] = (value[:2] + "***") if isinstance(value, str) else "***", True
+            o["value"], o["maskedSecret"] = "***", True
         elif value is not None:
             o["value"] = mask_url(value) if isinstance(value, str) else value
             if isinstance(o["value"], str):
@@ -257,12 +265,17 @@ def enrich_roles(o: dict, files: list[dict], app_group_uuids: set[str], name_by_
             total = find_key(data, ("totalCount", "total", "totalResults", "count", "executions"), want=(int, float))
             lst = primary_list(data)
             failed = find_key(data, ("failed", "errors", "errorCount", "failedCount"), want=(int, float))
+            sample = None
             if failed is None and lst:
                 failed = sum(1 for it in lst if isinstance(it, dict)
                              and re.search(r"(?i)exception|error|fail", str(pick(it, ("status", "state")) or "")))
+                if isinstance(total, (int, float)) and total > len(lst):
+                    sample = len(lst)
             ds = sorted(dates_in(data))
             o["usage"] = {"executions": int(total) if isinstance(total, (int, float)) else len(lst),
                           "lastExecution": ds[-1] if ds else None, "failed": failed, "source": f["tool"]}
+            if sample:
+                o["usage"]["failedInSampleOf"] = sample
         elif r == "versions":
             lst = [x for x in primary_list(data) if isinstance(x, dict)]
             if lst:
@@ -374,6 +387,7 @@ def main(out_dir: str) -> int:
         o["detail"] = "full" if defn_file else "none"
         o["path"] = rel_file(defn_file) if defn_file else (rel(folder, root) if folder.exists() else None)
         o["evidenceRef"] = f"mcp:{o['type']}/{o.get('name')}"
+        o["slug"] = slugify(o.get("name"))
         o["files"] = [{"tool": f["tool"], "role": f["role"], "ok": f["ok"], "path": rel_file(f)} for f in files]
         if defn_file:
             enrich_by_type(o, unwrap(defn_file["response"]), name_by_uuid)
