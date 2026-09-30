@@ -1,226 +1,122 @@
-# Guía de objetos Appian
+# Guía de objetos Appian: dónde está cada dato y cómo valorarlo
 
-Patrones para identificar tipos de objetos Appian en artefactos exportados. Úsalo en Fase 1 (inventario) y Fase 4 (técnica).
+Complementa `references/lectura-mcp-raw.md` (cómo leer los ficheros). Aquí: **qué buscar en cada tipo de objeto** y heurísticas para valorar criticidad, deuda y actores.
 
-## Estructura típica de un export Appian
+## Dónde está cada dato
 
-Un export Appian descomprimido suele tener:
+Los campos citados son los habituales en las definiciones del Dev MCP (según la skill oficial de Appian). Si en tu versión se llaman de otra forma, búscalos por sentido.
 
-- Una carpeta raíz con nombre tipo `<NombreApp>_App.zip` (descomprimida o no).
-- Dentro, una estructura por tipo de objeto o un único `application.xml` con todos los objetos referenciados por UUID.
-- `import-customization-file*.properties` (ICF) — valores por entorno.
-- A veces XSDs en `cdt/`, XMLs de procesos en `process-model/`, etc.
+| Tipo | Dato | Dónde |
+|---|---|---|
+| Aplicación | Prefijo, descripción, objetos por defecto | Fichero de aplicación en `mcp_raw/_app/` |
+| Record type | Origen, tabla | `sourceType`, `tableName` (también en el inventario) |
+| | Campos | `fields[]`: `fieldName`, `fieldType`, `isPrimaryKey`, `length` |
+| | Relaciones | `relationships[]`: `relationshipName`, `relationshipType`, record destino, campos origen/destino |
+| | Vistas y acciones | `views[]` (interfaz de cada vista), `actions[]` (`actionType`, `processModelUuid`, `visibilityExpr`, `contextExpr`) |
+| | Filtros de usuario | `userFilters[]` o similar |
+| Interfaz | Entradas | `inputs[]` |
+| | Lógica y componentes | `expression` (SAIL). Pantalla renderizada en el fichero con rol `screen` |
+| Expression rule | Entradas y lógica | `inputs[]`, `expression` |
+| Constante | Tipo y valor | `type`, `value` (enmascarado en el inventario si parece secreto) |
+| Process model | Nodos y flujo | `nodes[]` (`id`, `type`, `name`, `connections`, `assignment`, `data`, `forms`, `decision`) |
+| | Variables | `processVariables[]` (`isParameter`) |
+| | Formulario de inicio | `startForm.interfaceUuid`, `inputMap` |
+| | Temporizador | Configuración del nodo de inicio (`schedule` en el inventario) |
+| | Grupo iniciador | `securityGroupName` (`initiatorGroup` en el inventario) |
+| | Uso real | Fichero con rol `history` (`usage` en el inventario) |
+| Site | Páginas | `pages[]`: `name`, `targetUuid`, `visibilityExpr`; URL en `webAddressIdentifier` |
+| Integración | Llamada | Método, ruta relativa, cabeceras, cuerpo (SAIL), connected system, si modifica datos |
+| Connected system | Destino y autenticación | Tipo, URL base, tipo de autenticación (nunca credenciales) |
+| Web API | Endpoint | Método, alias de URL, `expression` (qué hace) |
+| Grupo | Jerarquía y miembros | Padre en la definición; miembros en el fichero con rol `members` |
+| Cualquiera | Quién lo usa | Ficheros con rol `dependents` (con *breadcrumb*) y aristas del grafo |
+| | Historial de cambios | Fichero con rol `versions` |
+| | Avisos de la plataforma | Fichero con rol `validation` |
 
-Si solo tienes un `.zip`, descomprime antes de analizar:
+### Tipos de nodo más comunes
 
-```bash
-unzip -d <destino> <export>.zip
-```
-
-## Reconocimiento por XML
-
-Cada tipo de objeto Appian tiene tags raíz característicos. Identifica el tipo desde el primer elemento del XML.
-
-| Tipo de objeto Appian | Patrón típico en XML / contenido |
+| Id de esquema | Nodo |
 |---|---|
-| **Application** | `<application>`, `<applicationDefinition>` |
-| **Site** | `<site>`, `<sitePage>` |
-| **Portal** | `<portal>`, `<portalPage>` |
-| **Record Type** | `<recordType>`, `<recordSource>`, `<sourceType>BUSINESS_DATA_OR_DATABASE`, `<recordFieldList>` |
-| **Record Action** | `<recordAction>`, `<actionStartFormType>` |
-| **Record View** | `<recordView>`, `<viewDefinition>` |
-| **Interface** | `<interface>`, `<interfaceDefinition>`, contenido SAIL con `a!sectionLayout`, `a!formLayout`, `a!localVariables` |
-| **Expression Rule** | `<expressionRule>`, `<ruleInputs>`, código SAIL/expresión |
-| **Decision** | `<decision>`, `<decisionTable>`, `<inputs>`, `<outputs>`, `<rules>` |
-| **Process Model** | `<processModel>` o `.bpmn`. Contiene `<startEvent>`, `<userInputTask>`, `<scriptTask>`, `<gateway>`, `<endEvent>`, `<flow>` |
-| **Constant** | `<constant>`, `<value>`, `<typeRef>` |
-| **Data Store** | `<dataStore>`, `<jndi>`, `<entities>` |
-| **CDT (Custom Data Type)** | `.xsd`, `<xsd:complexType>`, `<xsd:element>` |
-| **Connected System** | `<connectedSystem>`, `<connectedSystemType>` (HTTP, OAuth, JDBC, etc.) |
-| **Integration** | `<integration>`, referencia a `<connectedSystem>` |
-| **Web API** | `<webApi>`, `<httpMethod>`, `<endpointPath>` |
-| **Group** | `<group>`, `<groupType>`, `<members>` |
-| **Folder** | `<folder>`, `<parentFolder>` |
-| **Document** | `<document>` con `<documentVersion>` |
-| **Plugin** | `<plugin>`, suele venir como `.jar` con manifest |
+| `core.0` | Inicio |
+| `core.1` | Fin |
+| `core.4` | Pasarela exclusiva (XOR) |
+| `internal.16` | Script task |
+| `internal.17` | User input task |
+| `internal3.write_records_to_source_23r3` | Write Records |
+| `internal3.sendemail3` | Send E-Mail |
+| `internal3.integration` | Call Integration |
 
-## Búsquedas útiles con grep/glob
+Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/dev-mcp-skills). Para cualquier otro id, usa el catálogo de tipos de nodo de `mcp_raw/_env/` (si existe) o el Docs MCP.
 
-Una vez tienes la estructura, usa estos patrones para detectar objetos masivamente:
+### Referencias en SAIL
 
-```bash
-# Process models
-find . -name '*.xml' -exec grep -l '<processModel\b' {} \;
-# o por extensión BPMN
-find . -name '*.bpmn'
-
-# Interfaces
-find . -name '*.xml' -exec grep -l '<interface\b\|a!formLayout\|a!sectionLayout' {} \;
-
-# Expression rules
-find . -name '*.xml' -exec grep -l '<expressionRule\b' {} \;
-
-# Records
-find . -name '*.xml' -exec grep -l '<recordType\b' {} \;
-
-# Constants
-find . -name '*.xml' -exec grep -l '<constant\b' {} \;
-
-# Connected systems
-find . -name '*.xml' -exec grep -l '<connectedSystem\b' {} \;
-
-# Integrations
-find . -name '*.xml' -exec grep -l '<integration\b' {} \;
-
-# Web APIs
-find . -name '*.xml' -exec grep -l '<webApi\b' {} \;
-
-# Sites
-find . -name '*.xml' -exec grep -l '<site\b' {} \;
-
-# CDTs (XSDs)
-find . -name '*.xsd'
-
-# Data Stores
-find . -name '*.xml' -exec grep -l '<dataStore\b' {} \;
-
-# ICF
-find . -name 'import-customization-file*.properties'
-find . -name '*.icf'
-find . -name '*.properties'
-```
-
-## Detección de dependencias entre objetos
-
-Patrones de referencia entre objetos en SAIL/expresiones:
-
-| Patrón | Significa |
+| Forma | Qué referencia |
 |---|---|
-| `rule!<nombre>(...)` | Invocación a expression rule. |
-| `cons!<nombre>` | Uso de constant. |
-| `recordType!<nombre>` | Uso de record type. |
-| `<nombre>.<campo>` sobre un CDT | Uso de un campo de CDT. |
-| `a!startProcess(processModel: ..., ...)` | Lanzamiento de process model desde SAIL. |
-| `<processModel uuid="..."/>` dentro de otro process model | Subproceso. |
-| `<connectedSystemRef>...</connectedSystemRef>` en integración | Vínculo integration → connected system. |
-| Tabla `<jndi>` + nombre de tabla en data store | Vínculo data store → BBDD. |
-
-Para extraer todas las referencias a expression rules de un proyecto:
-
-```bash
-grep -rohE 'rule![A-Za-z0-9_]+' <ruta> | sort -u
-```
-
-Para referencias a constants:
-
-```bash
-grep -rohE 'cons![A-Za-z0-9_]+' <ruta> | sort -u
-```
-
-Para referencias a record types:
-
-```bash
-grep -rohE 'recordType![A-Za-z0-9_]+' <ruta> | sort -u
-```
-
-Cruza estas listas con los objetos detectados en el inventario:
-
-- **Referenciado pero no encontrado** → dependencia externa o falta de paquete (🔴 riesgo de deployment).
-- **Encontrado pero no referenciado** → potencial huérfano (🟡 pendiente).
+| `rule!NOMBRE(...)` | Expression rule, interfaz, integración o decisión |
+| `cons!NOMBRE` | Constante |
+| `recordType!{uuid}Nombre.fields.{uuid}campo` | Record type y campo |
+| `a!startProcess(processModel: ...)` | Process model (a menudo a través de una constante) |
+| `a!queryRecordType`, `a!writeRecords` | Lectura y escritura de records |
+| `a!queryEntity`, `a!writeToDataStoreEntity` | Lectura y escritura de data stores (modelo antiguo) |
 
 ## Heurísticas de criticidad
 
 Un objeto es **crítico** cuando cumple varios de estos criterios:
 
-- Referenciado por >5 objetos distintos.
-- Aparece en sites/portals como punto de entrada.
-- Maneja decisiones de negocio importantes (process model con muchas ramas).
-- Lee/escribe en tablas centrales del modelo de datos.
+- Referenciado por más de 5 objetos distintos (hub en `graph.json`).
+- Es punto de entrada: página de site, acción de record, Web API, temporizador.
+- Tiene **mucho uso real** (`usage.executions` alto).
+- Maneja decisiones de negocio importantes (process model con muchas pasarelas).
+- Lee o escribe entidades centrales del modelo de datos.
 - Está conectado a integraciones externas.
 - Tiene lógica de seguridad (permisos, validación de roles).
-- Su naming sugiere centralidad (`*_Main_*`, `*_Master_*`, `*_Core_*`).
 
-Marca estos objetos en la matriz de trazabilidad con criticidad **Alta** o **Crítica**.
+Márcalos con criticidad **Alta** o **Crítica**.
 
 ## Heurísticas de complejidad y deuda
 
-Indicadores de deuda técnica en objetos individuales:
-
 | Indicador | Cómo medirlo |
 |---|---|
-| Expression rule grande | Líneas del XML > 200; muchos `if`/`choose` anidados. |
-| Interface grande | XML con >500 líneas o >30 componentes SAIL. |
-| Process model complejo | >30 nodos, >5 gateways, anidamientos profundos de subprocesos. |
-| Lógica de negocio en interface | Cálculos pesados con `a!localVariables` que deberían ser regla. |
-| Hardcoding | Strings con URLs (`http://`, `https://`), emails, ids de grupo numéricos, valores tipo "PROD"/"DEV" en literal. |
-| Duplicidad | Reglas con nombres parecidos (Levenshtein bajo) y XML similar. |
-| Sin descripción | Objeto sin elemento de descripción o con descripción vacía. |
-| Naming inconsistente | Mezcla de `camelCase`/`snake_case`/`PascalCase` en el mismo módulo. |
+| Expression rule grande | `sailLines` > 200; muchos `if`/`choose` anidados. |
+| Interfaz grande | `sailBytes` > 80 KB o más de ~30 componentes. |
+| Process model complejo | Más de 30 nodos (Appian recomienda no pasar de 50), más de 5 pasarelas, subprocesos muy anidados. |
+| Lógica de negocio en la interfaz | Cálculos pesados en `a!localVariables` que deberían ser regla. |
+| Valores *hardcodeados* | URLs, emails, identificadores de grupo, valores tipo "PROD"/"DEV" en literales. |
+| Duplicidad | Reglas con nombres parecidos y SAIL similar. |
+| Sin descripción | `description` vacía. |
+| Naming inconsistente | Mezcla de estilos en el mismo módulo. |
+| Avisos de validación | `validationIssues` no vacío. |
+| Sin uso | `usage.executions = 0` con historial disponible. |
 
-## Configuración por entorno (ICF)
-
-Los `import-customization-file*.properties` siguen este formato:
-
-```properties
-# Constante por entorno
-constant.<uuid_o_nombre>=<valor>
-
-# Connected system credentials/URL por entorno
-connectedSystem.<uuid_o_nombre>.<propiedad>=<valor>
-
-# Otras propiedades de objetos
-<tipo>.<id>.<propiedad>=<valor>
-```
-
-Procésalos para:
-
-- Identificar qué cambia entre entornos.
-- Detectar secretos (passwords, tokens, API keys) — ver `security-rules.md`.
-- Listar URLs externas.
+Para las alternativas actuales de cada patrón, ver `references/modernization-guide.md`.
 
 ## Roles típicos en aplicaciones Appian
 
-Para inferir actores cuando el grupo no lo aclara, busca naming típico:
+Para inferir actores cuando el grupo no lo aclara:
 
 | Grupo típico | Rol funcional |
 |---|---|
-| `*_Admin*`, `*_Admins*` | Administradores. |
-| `*_Manager*` | Gestor / supervisor. |
-| `*_Approver*` | Aprobador en flujos de aprobación. |
-| `*_Viewer*`, `*_ReadOnly*` | Consulta sin edición. |
-| `*_Initiator*`, `*_Requestor*` | Quien arranca un proceso. |
-| `*_Operator*`, `*_User*` | Usuario operativo. |
-| `All Users`, `Everyone`, `Public` | 🔴 Atención: posible exposición pública. |
+| `*Admin*`, `*Administrators` | Administradores. |
+| `*Manager*`, `*Gestor*` | Gestor / supervisor. |
+| `*Approver*`, `*Revisor*` | Aprobador en flujos de aprobación. |
+| `*Viewer*`, `*ReadOnly*`, `*Consulta*` | Consulta sin edición. |
+| `*Initiator*`, `*Requestor*`, `*Solicitante*` | Quien arranca un proceso. |
+| `*Operator*`, `*Users` | Usuario operativo. |
+| `All Users`, `Everyone`, `Public` | 🔴 Atención: posible exposición amplia. |
 
-Cuando un objeto está accesible por `Public` o por un grupo demasiado amplio, regístralo como riesgo de seguridad.
+## Informes y cuadros de mando
 
-## Reportes y dashboards
+Suelen estar como páginas de site con interfaces de gráficos (`a!barChartField`, `a!pieChartField`, `a!gridField`, KPIs) o como vistas de record. Si se usan record types sincronizados, valora Process HQ (ver `modernization-guide.md`).
 
-En Appian moderno suelen estar como:
+## Cuándo marcar algo como pendiente
 
-- **Sites** con páginas de dashboard.
-- **Interfaces** que combinan `a!chartField`, `a!gridField`, `a!barChartField`.
-- **Records** con record views configuradas como dashboards.
+Marca 🟡 (no ✅) cuando:
 
-Detéctalos por uso intensivo de `chart`, `kpiField`, `grid` y por estar en sitios con nombres tipo `Dashboard`, `Report`, `Analytics`.
+- La definición del objeto no está disponible (`detail: "none"`).
+- El propósito de negocio no está claro y no hay descripción.
+- Hay valores que dependen del entorno y no se ven los de producción.
+- Un process model no se invoca desde ningún sitio visible (puede tener un disparador externo).
+- La seguridad por objeto no está disponible y la conclusión depende de ella.
+- Un grupo no tiene miembros según la extracción.
 
-## Process HQ / Data Fabric
-
-Si aparecen artefactos con nombres tipo `dataModel/`, `dataPipeline/`, `recordType` con `<dataFabricEnabled>true</dataFabricEnabled>`, márcalo como uso de Data Fabric / Process HQ y documenta:
-
-- Qué records están en Data Fabric.
-- Qué relaciones se han definido.
-- Qué reportes se han generado.
-
-## Cuándo marcar algo como "pendiente"
-
-Marca como 🟡 pendiente de validación, no como confirmado, cuando:
-
-- El XML del objeto está pero el objeto referenciado no.
-- El objeto existe pero su propósito de negocio no es claro y no hay descripción.
-- Hay configuración por entorno pero no se ve qué valores reales se usan en producción.
-- Hay process models con start events que no parecen invocarse desde ningún lado visible (puede haber un trigger externo no exportado).
-- Hay integraciones cuyo destino real (URL) está en ICF y no en el código.
-- Hay grupos definidos pero sin miembros visibles.
-
-Cada pendiente debe llevar **responsable sugerido** (funcional / técnico Appian / DBA / responsable del sistema externo).
+Cada pendiente lleva **responsable sugerido** (funcional, técnico Appian, DBA o responsable del sistema externo).

@@ -4,7 +4,7 @@ build_summary.py - Consolida inventory.json + graph.json + hallazgos en un summa
 normalizado que consumen los publishers PDF/Dashboard.
 
 Uso:
-  python3 build_summary.py <ruta_doc_generada>
+  python3 build_summary.py <carpeta_salida>
 
 Lee:
   <ruta>/_intermedio/inventory.json
@@ -236,6 +236,6 @@ def main(doc_root: str) -> int:
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Uso: python3 build_summary.py <ruta_doc_generada>", file=sys.stderr)
+        print("Uso: python3 build_summary.py <carpeta_salida>", file=sys.stderr)
         sys.exit(2)
     sys.exit(main(sys.argv[1]))

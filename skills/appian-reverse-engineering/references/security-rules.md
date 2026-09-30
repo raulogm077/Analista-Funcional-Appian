@@ -4,7 +4,7 @@ Detección y enmascarado de secretos antes de escribir cualquier documento o dat
 
 ## Principio
 
-Los artefactos Appian (especialmente ICFs y connected systems) pueden contener:
+Las definiciones extraídas de Appian (especialmente connected systems, integraciones y constantes) pueden contener:
 
 - Contraseñas en claro.
 - Tokens / API keys.
@@ -16,7 +16,7 @@ Los artefactos Appian (especialmente ICFs y connected systems) pueden contener:
 
 ## Patrones de detección (regex orientativos)
 
-Aplica búsquedas como estas al inicio de la Fase 6 y antes de poblar la web:
+`scripts/detect_secrets.sh` aplica estos patrones. Ejecútalo sobre `_intermedio/mcp_raw/` justo después de la extracción (fase 3), para saber qué hay que enmascarar, y sobre los entregables al final:
 
 | Tipo | Patrón |
 |---|---|
@@ -59,9 +59,9 @@ Usa `scripts/detect_secrets.sh` para hacer este barrido de forma estandarizada.
    - **Evidencia**: ruta del fichero, **sin** el valor; opcionalmente número de línea y nombre de la propiedad.
    - **Impacto**: Alto (potencial exposición de credenciales).
    - **Prioridad**: Crítica si está en una rama/repo público; Alta en cualquier caso.
-   - **Recomendación**: rotar la credencial, mover a un vault o gestor de secretos, usar variables de entorno / ICF cifrado.
+   - **Recomendación**: rotar la credencial y moverla a la autenticación del connected system (valores por entorno), nunca a una constante de texto.
    - **Responsable sugerido**: Tech lead Appian + responsable de seguridad.
-4. En la web, en la sección de Riesgos, muestra "Secreto detectado en `<ruta>`" sin exponer el valor.
+4. En los documentos, en la sección de Riesgos, muestra "Secreto detectado en `mcp:<tipo>/<nombre>`" sin exponer el valor.
 
 ## Falsos positivos comunes
 
@@ -81,7 +81,7 @@ Detéctalos y márcalos también:
 - Connected systems con autenticación `None` apuntando a APIs externas.
 - Web APIs con seguridad débil (sin autenticación, accesibles públicamente).
 - Process models que envían emails con datos sensibles a destinatarios externos.
-- Constants/ICFs con URLs internas expuestas que no deberían serlo.
+- Constantes con URLs internas o de otro entorno (p. ej. un host de desarrollo en producción).
 - SQL en data stores con concatenación de variables (posible SQL injection).
 - Expression rules que reciben input de usuario sin validación.
 
@@ -99,7 +99,7 @@ Los entregables son Markdown plano que se renderiza en visores variados (GitHub,
 Antes de devolver la respuesta:
 
 ```bash
-bash scripts/detect_secrets.sh <ruta_export>/_doc_generada/
+bash scripts/detect_secrets.sh <salida>/*.md <salida>/08-procesos-bpmn <salida>/diagrams
 ```
 
-Si encuentra algún match en los entregables (no en los originales analizados), **detente y enmascara antes de continuar**.
+Si encuentra algún match en los entregables (no en `_intermedio/`, que no se comparte), **detente y enmascara antes de continuar**.

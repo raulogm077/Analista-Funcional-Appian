@@ -1,293 +1,183 @@
 ---
 name: appian-reverse-engineering
-description: Reingenieria inversa de aplicaciones Appian a partir de su carpeta exportada. Produce 11 documentos Markdown (funcional, arquitectura, modelo de datos, seguridad, integraciones, APIs, batches, BPMN por process model, valor adicional, inventario, resumen ejecutivo) mas diagramas SVG y BPMN 2.0 validados. Opcionalmente (preguntando antes) un PDF maquetado o un dashboard web. Funciona offline sobre el export desempaquetado. Usala siempre que el usuario apunte a una carpeta con un export Appian (formato Haul con applicationHaul, processModelHaul, recordTypeHaul, siteHaul, contentHaul, etc. o formato antiguo con application.xml), mencione documentar, hacer onboarding, reingenieria inversa o entender una app Appian heredada, pase XMLs de objetos Appian (records, CDTs, process models, integrations, web APIs, interfaces, expression rules), o pida un diagrama BPMN, modelo ER o mapa de integraciones de Appian, aunque no diga literalmente reingenieria inversa.
+description: Reingeniería inversa de aplicaciones Appian leyendo el entorno en vivo por MCP (Appian Dev MCP, en solo lectura; opcionalmente Appian MCP Server y Appian Docs MCP). Genera documentación funcional y técnica para que alguien nuevo entienda cómo está hecha la aplicación (funcional, arquitectura, modelo de datos, seguridad, integraciones, APIs, batches, BPMN por proceso, pantallas, reglas de negocio, inventario) y documentación para reconstruirla y modernizarla (especificación de requisitos independiente de la implementación, diagnóstico de obsolescencia y antipatrones con fuentes oficiales, arquitectura objetivo y plan de migración). Úsala cuando el usuario quiera documentar, entender, hacer onboarding, auditar, reconstruir, refactorizar o modernizar una aplicación Appian existente, o pida su BPMN, modelo de datos, mapa de integraciones, pantallas o reglas de negocio, aunque no diga «reingeniería inversa». No es para crear ni modificar objetos Appian.
 ---
 
-# Appian Reverse Engineering
+# Appian Reverse Engineering (Dev MCP)
 
-Reconstruye documentación funcional, técnica y de arquitectura útil a partir de un **export de aplicación Appian** descomprimido (paquete del Application Designer). El objetivo no es inventariar: es producir documentación que permita a un consultor nuevo entender qué hace la app, cómo está construida, qué integraciones tiene, qué procesos ejecuta y qué riesgos arrastra.
+Lee una aplicación Appian **en vivo y en solo lectura** a través del Appian Dev MCP y produce dos bloques de documentación:
 
-Genera **11 entregables Markdown** y **diagramas** (Mermaid SVG para arquitectura/datos, BPMN 2.0 XML para procesos) en una carpeta de salida única dentro del propio export.
+- **A. Entender cómo está hecha** (onboarding y mantenimiento): `00`–`11` e `INVENTARIO`.
+- **B. Reconstruirla y modernizarla**: `12-especificacion-reconstruccion.md` y `13-modernizacion-refactor.md`.
 
----
+Todo con evidencia verificable (`mcp:<tipo>/<nombre>#<ubicación>`) y sin inventar: lo que no se puede obtener se dice.
 
-## Argumentos esperados
+## Principios de funcionamiento
 
-```
-[ruta_export_appian] [idioma] [salida]
-```
+- **Solo lectura, siempre.** La extracción la hace `scripts/devmcp_extract.py`, que arranca su propia instancia del Dev MCP con `LCP_TOOL_MODE=readonly` forzado y aplica la política de `scripts/devmcp_policy.json` (bloquea escritura, interacción, evaluación de lógica y lectura de filas de negocio). **No llames tú a herramientas de escritura del Dev MCP** aunque estén en la sesión.
+- **Sin herramientas fijas.** El extractor usa todas las herramientas de lectura que ofrezca el catálogo del servidor en cada momento, clasificándolas por su firma. Cuando Appian actualiza el Dev MCP, las herramientas nuevas se aprovechan solas.
+- **Extracción por script, análisis por agentes.** El script vuelca todo a disco (miles de llamadas sin pasar por el contexto). Los subagentes leen esos ficheros.
+- **Tres MCP.** Dev MCP es obligatorio. Appian MCP Server (volúmenes) y Docs MCP (documentación oficial) son opcionales: si faltan, se indica qué se pierde y se sigue.
 
-| Argumento | Obligatorio | Default | Significado |
-|---|---|---|---|
-| `ruta_export_appian` | Sí | — | Carpeta del export Appian descomprimido. Si el usuario no la indica, **pregúntala antes de empezar**. |
-| `idioma` | No | `español` | Idioma de salida. |
-| `salida` | No | `{ruta_export_appian}/_doc_generada/` | Carpeta de salida. |
+## Cómo ejecutar los scripts
 
-Si la ruta no se proporciona o no parece un export Appian válido, **detente y pregunta** antes de generar nada.
+Desde la **carpeta de trabajo del usuario** (donde está su configuración MCP, p. ej. `.mcp.json`), con la ruta absoluta de esta skill:
 
----
-
-## Cuándo activarse
-
-- Carpeta con export Appian descomprimido o `.zip` (formato Haul moderno o `application.xml` antiguo).
-- Mención de: documentar app Appian, onboarding, reingeniería inversa, "qué hace esta app", entender app Appian heredada, generar BPMN / modelo de datos / mapa de integraciones.
-- Carpetas con sufijos típicos: `processModel/`, `recordType/`, `site/`, `content/`, `group/`, `connectedSystem/`, `datatype/`, `application/`, `.xsd` de CDTs, `import-customization-file`.
-
----
-
-## Arquitectura de subagentes (patrón Anthropic)
-
-Esta skill **delega trabajo a 6 subagentes especializados** definidos en `agents/`. Cada agente es un fichero `.md` con instrucciones para un rol concreto — el mismo patrón que usa el `skill-creator` oficial de Anthropic.
-
-**Por qué subagentes y no un único Claude haciendo todo:**
-
-- **Especialización**: cada agente carga sólo el contexto que necesita. `data-modeler` no lee `bpmn-mapping.md`; `process-modeler` no lee reglas de seguridad. Mejor calidad por agente.
-- **Paralelismo**: 3 de los 4 agentes de Fase 4 pueden ejecutarse en paralelo (sin dependencias mutuas).
-- **Context window pequeño**: cada subagente trabaja con sólo su parcela; el orquestador principal mantiene el plano general.
-- **Mantenibilidad**: SKILL.md mantiene la visión global; los agentes encapsulan el "cómo" de cada parcela.
-
-### Cómo invocar a un subagente — patrón obligatorio
-
-**En Claude Code / entornos con Agent tool nativa:**
-
-```
-Agent({
-  description: "Generate {entregable}",
-  subagent_type: "general-purpose",
-  prompt: {contenido de agents/{rol}.md} + 
-          "\n\nInputs:\n- Export path: {ruta}\n- Output path: {ruta_salida}\n- Read inventory.json: {ruta}" +
-          "\n\nReport back: paths of generated files + count of validation warnings."
-})
+```bash
+uv run --with "mcp>=1.2,<2" python "<carpeta-de-esta-skill>/scripts/devmcp_extract.py" <subcomando> [opciones]
+python3 "<carpeta-de-esta-skill>/scripts/build_model.py" <salida>
 ```
 
-Lanza los subagentes **en paralelo** en un único turno (multiple Agent calls en el mismo mensaje) cuando no haya dependencias.
+`uv` ya es requisito del Dev MCP. Añade `--json` para salida legible por máquina. Códigos de salida en la cabecera de `devmcp_extract.py`.
 
-**En Claude.ai (sin Agent tool nativa):**
+## Argumentos
 
-Lee `agents/{rol}.md` y aplica sus instrucciones tú mismo, secuencialmente. Resultado funcionalmente equivalente, sólo más lento.
-
-### Mapa de subagentes
-
-| Subagente | Genera | Dependencias |
+| Argumento | Obligatorio | Por defecto |
 |---|---|---|
-| `agents/interface-analyzer.md` | `01-funcional.md`, `02-arquitectura.md` | Fase 3 (grafo). Va **primero** — los demás lo citan. |
-| `agents/data-modeler.md` | `03-modelo-datos.md` + ERs por subdominio | Fase 3 (grafo). Puede ir en paralelo con security/process. |
-| `agents/integration-security-analyzer.md` | `04-seguridad-grupos.md`, `05-integraciones-consumidas.md`, `06-apis-expuestas.md` | Fase 3 (grafo). Puede ir en paralelo con data/process. |
-| `agents/process-modeler.md` | `08-procesos-bpmn/*` (BPMN 2.0 + Mermaid + MD por PM) | Fase 3 (grafo). Necesita conocer integraciones para etiquetar nodos — lánzalo **después** o en paralelo con integration-security-analyzer si el grafo ya identifica integraciones. |
-| `agents/pdf-publisher.md` | `EXPORT.pdf` (opcional) | Todos los `.md` finalizados + `summary.json`. |
-| `agents/dashboard-publisher.md` | `dashboard/index.html` (opcional) | Todos los `.md` finalizados + `summary.json`. |
-
-**Documentos generados directamente por el orquestador (sin subagente):**
-- `INVENTARIO.md` (Fase 2)
-- `07-batches.md` y `09-valor-adicional.md` (Fase 4, agregaciones del trabajo de los agentes)
-- `00-resumen-ejecutivo.md` (Fase 6)
-- `_intermedio/summary.json` (Fase 6.5, consumido por publishers)
+| Aplicación (nombre, prefijo o uuid) | Sí; si no lo da, se elige de la lista en la fase 0 | — |
+| Idioma | No | español |
+| Carpeta de salida | No | `./appian-docs/<PREFIJO>/` |
 
 ---
 
-## Flujo de trabajo (Fase 0 + 7 fases base + 2 fases opcionales)
+## Flujo de trabajo
 
-Detalle operativo en `references/analysis-workflow.md`. Aquí el esqueleto.
+Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una lista de tareas con las fases y ve marcándolas.
 
-### Fase 0 — Elicitación de salidas (OBLIGATORIA antes de Fase 1)
+### Fase 0 — Preflight de los 3 MCP (obligatoria)
 
-Antes de empezar a generar nada, **pregunta al usuario qué formato(s) de salida quiere**. Las salidas Markdown siempre se generan; PDF y Dashboard son opcionales.
+1. Ejecuta `devmcp_extract.py doctor --json`.
+2. Comprueba en la sesión:
+   - **Docs MCP**: busca una herramienta de búsqueda en la documentación de Appian (ver `references/docs-mcp-usage.md`). Si existe, haz **una** consulta de prueba corta; cuenta para el tope.
+   - **Appian MCP Server**: si `doctor` dice `no_configurado` pero en la sesión hay herramientas del data fabric de Appian, márcalo «disponible en sesión».
+3. Muestra al usuario esta tabla (una fila por MCP): **estado · qué se pierde si falta · cómo activarlo** (sección correspondiente de `references/devmcp-setup.md`).
+4. Si el Dev MCP no está `ok`: explica el paso concreto de `devmcp-setup.md` que falta y **detente**.
+5. Con el Dev MCP `ok`:
+   - Confirma la aplicación. Si no la ha dado, muéstrale las apps de `doctor` y pregunta.
+   - Pregunta los formatos adicionales, igual que antes: *«Además de los documentos Markdown, ¿quieres 📄 PDF maquetado, 🖥️ dashboard web, o solo los .md?»*. Sin respuesta explícita: solo Markdown.
+   - Indica el entorno (`url` de `doctor`): el uso real de procesos solo es representativo en producción. Todo es lectura, sea cual sea el entorno.
+6. Guarda la salida de `doctor` en `<salida>/_intermedio/preflight.json` (con tus comprobaciones de sesión añadidas) y las preferencias en `_intermedio/output_preferences.json`.
 
-Patrón de pregunta (adapta al idioma):
+### Fase 1 — Plan de extracción
 
-```
-"Voy a documentar la app Appian. Además de los 11 documentos Markdown
-que siempre genero, ¿quieres alguna salida adicional?
+`devmcp_extract.py plan --app <app> --out <salida>`. Resume al usuario: objetos por tipo, herramientas que se usarán y excluidas (con motivo) y llamadas estimadas. Si `needsConfirmation` es `true`, pide confirmación antes de seguir.
 
-  1. 📄 PDF profesional — un único PDF maquetado con portada, índice,
-     secciones temáticas, diagramas embebidos y resumen ejecutivo.
-  2. 🖥️ Dashboard web interactivo — single-file HTML autocontenido con
-     métricas, buscador, gráficos navegables y filtros.
-  3. 📁 Sólo los .md (más rápido).
+### Fase 2 — Extracción
 
-Puedes elegir varias. Si dudas, recomiendo sólo .md primero."
-```
+1. `devmcp_extract.py extract --app <app> --out <salida>` (añade `--yes` si el usuario confirmó un plan grande). Es reanudable: si se corta, repítelo.
+2. Revisa `extraction_report.json`. Si fallan más del 20 % de las llamadas de definición, díselo al usuario antes de seguir.
+3. Data fabric (opcional, `references/data-fabric.md`): `devmcp_extract.py datafabric --out <salida>` si hay servidor en la configuración; si solo está en la sesión, hazlo desde la sesión; si no, sáltalo.
 
-**Reglas duras:**
-- **No asumas.** Sin respuesta explícita → solo Markdown.
-- **Confirma coste** si la app es grande (más de 50 PMs o más de 100 interfaces): PDF/Dashboard añaden 30-90s y tokens extra.
-- Guarda elección en `_intermedio/output_preferences.json`:
-  ```json
-  { "markdown": true, "pdf": false, "dashboard": false, "askedAt": "{ISO}" }
-  ```
+### Fase 3 — Modelo
 
-### Fase 1 — Validar export
+1. `build_model.py <salida>` → `inventory.json` y `graph.json`.
+2. `bash scripts/detect_secrets.sh <salida>/_intermedio/mcp_raw`: lo que salga hay que enmascararlo en los entregables. **No muestres los valores.**
 
-Acepta el **formato real *Haul*** (carpetas `application/`, `processModel/`, `recordType/`, `site/`, `content/`, `group/`, `connectedSystem/`, `datatype/`) o el **formato antiguo** con `application.xml` en raíz. Valida con `python3 scripts/parse_export.py --check {ruta}`.
+### Fase 4 — Análisis con subagentes
 
-### Fase 2 — Inventariar
+Lee antes `references/execution-principles.md`. Cada subagente recibe:
 
-Recorre carpetas y XMLs → `INVENTARIO.md`. Usa `scripts/inventory.sh` para barrido bruto y `scripts/parse_export.py --inventory` para inventariado estructurado (genera `_intermedio/inventory.json`). Ejecuta `scripts/detect_secrets.sh` en paralelo — los hallazgos van a riesgos de `09-valor-adicional.md`.
+- el contenido de `agents/<rol>.md`;
+- la carpeta de salida;
+- si el Docs MCP está disponible y cuántas consultas le quedan (tope global de 30);
+- el entorno y la versión si se conoce.
 
-### Fase 3 — Grafo de dependencias
+| Paso | Subagente | Genera |
+|---|---|---|
+| 4.1 | `interface-analyzer` | `01-funcional.md`, `02-arquitectura.md` |
+| 4.2 (en paralelo, un solo turno) | `data-modeler` | `03-modelo-datos.md` |
+| | `integration-security-analyzer` | `04`, `05`, `06` |
+| | `process-modeler` | `08-procesos-bpmn/` |
+| | `ui-rules-analyzer` | `10-pantallas.md`, `11-reglas-negocio.md` |
+| 4.3 | orquestador | `07-batches.md`, `09-valor-adicional.md` |
+| 4.4 | `rebuild-architect` | `12-especificacion-reconstruccion.md`, `13-modernizacion-refactor.md` |
 
-`scripts/parse_export.py --graph` genera `_intermedio/graph.json` a partir de referencias SAIL/XML (`rule!`, `cons!`, `recordType!`, `a!startProcess`, `connectedSystemRef`, etc.). Es el insumo principal de la Fase 4.
+**Patrón de invocación** (Claude Code): `Agent({description, subagent_type: "general-purpose", prompt: <agents/rol.md> + entradas})`, varios en el mismo mensaje cuando van en paralelo. Sin herramienta de subagentes: aplica tú mismo cada `agents/<rol>.md` en el mismo orden.
 
-### Fase 4 — Generar entregables vía subagentes en paralelo
+### Fase 5 — Diagramas
 
-**Patrón Anthropic — Sequential workflow orchestration + paralelismo:**
+Cada bloque Mermaid pasa `scripts/validate_mermaid.py`, que admite los tipos A, B y C de `references/mermaid-rules.md`. `scripts/render_diagrams.sh --batch <salida>` genera los SVG si hay `mmdc`. Si un diagrama falla 3 veces, sustitúyelo por una tabla. Los `.bpmn` se entregan como XML.
 
-**Paso 4.1** — Lanza **interface-analyzer** primero (los demás lo citan):
+### Fase 6 — Resumen, inventario y guía
 
-```
-Agent({
-  description: "Producir 01-funcional + 02-arquitectura",
-  subagent_type: "general-purpose",
-  prompt: {contenido de agents/interface-analyzer.md} + inputs
-})
-```
+El orquestador escribe:
 
-**Paso 4.2** — Cuando interface-analyzer termina, lanza los **3 agentes restantes EN PARALELO** (un único turno con 3 Agent calls):
+- `00-resumen-ejecutivo.md`, al final porque depende de todo lo anterior. Incluye el veredicto de 13 y el uso real.
+- `INVENTARIO.md`, con la cobertura de la extracción.
+- `LEEME.md`, con la guía de lectura por perfil y lo que no se pudo obtener.
 
-```
-Agent({ ..., prompt: {agents/data-modeler.md} + inputs })
-Agent({ ..., prompt: {agents/integration-security-analyzer.md} + inputs })
-Agent({ ..., prompt: {agents/process-modeler.md} + inputs })
-```
+Usa las plantillas de `assets/markdown-templates/`.
 
-**Paso 4.3** — Cuando los 3 terminan, el orquestador escribe `07-batches.md` y `09-valor-adicional.md` directamente (agregaciones).
+### Fase 6.5 — summary.json
 
-### Fase 5 — Renderizar diagramas con Iterative Refinement
+`python3 scripts/build_summary.py <salida>` → `_intermedio/summary.json` (lo usan los publicadores).
 
-**Patrón Anthropic — Iterative refinement**: cada bloque Mermaid se valida, si falla se refina, se re-valida; hasta 3 iteraciones máximo. Tras la 3ª, se sustituye por tabla equivalente.
+### Fase 7 — Publicación opcional
 
-1. `scripts/render_diagrams.sh --batch {ruta}/_doc_generada/` → renderiza `.mmd` a `.svg` con `mmdc`.
-2. Para cada `.mmd` que falle render: ejecutar `scripts/validate_mermaid.py` para identificar issue, refinar el bloque, re-validar.
-3. Si tras 3 iteraciones aún falla → sustituir por tabla equivalente con la misma información.
-4. `.bpmn` XML se entregan tal cual (no se renderizan a SVG aquí — Camunda Modeler / draw.io / demo.bpmn.io los renderizan al abrir).
+Según `output_preferences.json`: `agents/pdf-publisher.md` → `EXPORT.pdf`; `agents/dashboard-publisher.md` → `dashboard/index.html`. Pueden ir en paralelo.
 
-### Fase 6 — Resumen ejecutivo
+### Fase 8 — Validación y respuesta
 
-`00-resumen-ejecutivo.md` con: volumen por tipo, riesgos top, integraciones críticas, procesos críticos, pendientes principales. **Se escribe al final** porque depende del resto.
-
-### Fase 6.5 — Consolidar summary.json
-
-`python3 scripts/build_summary.py {ruta_salida}` produce `_intermedio/summary.json` (inventario + grafo + métricas + hallazgos normalizados). **Siempre se genera** — es barato y los publishers lo consumen.
-
-### Fase 7 — Publicación opcional según `output_preferences.json`
-
-- Si `pdf: true` → `Agent({ ..., prompt: {agents/pdf-publisher.md} })` → `EXPORT.pdf`.
-- Si `dashboard: true` → `Agent({ ..., prompt: {agents/dashboard-publisher.md} })` → `dashboard/index.html`.
-- Si ambos false → saltar.
-
-Estos dos publishers también pueden ir **en paralelo** si ambos están solicitados.
-
-### Fase 8 — Respuesta final
-
-Devolver al usuario la plantilla literal de `references/response-format.md`. No añadas saludos ni comentarios.
+Pasa la validación final (abajo) y responde con la plantilla de `references/response-format.md`.
 
 ---
 
-## Recursos de la skill
-
-Carga estos archivos cuando los necesites — **no todos a la vez**. Sigue progressive disclosure.
-
-| Archivo | Cuándo leerlo |
-|---|---|
-| `references/execution-principles.md` | **Antes de Fase 4**. Lectura obligatoria. 10 principios + reglas de presentación + status labels. |
-| `references/response-format.md` | **Al final**. Plantilla literal de la respuesta al usuario + criterios de aceptación. |
-| `references/analysis-workflow.md` | Al inicio. Detalle operativo de las 8 fases con checklists. |
-| `references/appian-objects-guide.md` | Antes de Fase 2 (cómo reconocer cada objeto Appian) y durante Fase 4. |
-| `references/bpmn-mapping.md` | Antes de invocar `process-modeler`. Estrategia híbrida BPMN XML + Mermaid Tipo C. Mapeo Appian → BPMN 2.0. |
-| `references/mermaid-rules.md` | Antes de generar **cualquier** diagrama Mermaid. Tipos A, B, C. |
-| `references/security-rules.md` | Al inicio de Fase 2 y antes de escribir cualquier documento. Patrones de detección y enmascarado. |
-| `references/presentation-rules.md` | Antes de Fase 4. 10 reglas operativas de distribución y legibilidad. |
-| `agents/interface-analyzer.md` | Como prompt del subagente de Fase 4.1. |
-| `agents/data-modeler.md` | Como prompt del subagente de Fase 4.2. |
-| `agents/integration-security-analyzer.md` | Como prompt del subagente de Fase 4.2. |
-| `agents/process-modeler.md` | Como prompt del subagente de Fase 4.2. |
-| `agents/pdf-publisher.md` | Como prompt del subagente de Fase 7 (si `pdf: true`). |
-| `agents/dashboard-publisher.md` | Como prompt del subagente de Fase 7 (si `dashboard: true`). |
-| `assets/markdown-templates/*.md` | Como base de cada documento de la Fase 4. **Cópialos** a `_doc_generada/` y rellénalos con datos reales. |
-| `scripts/inventory.sh` | Fase 2. Primer barrido bruto. |
-| `scripts/parse_export.py` | Fase 2-3. Inventariado estructurado + grafo. Soporta formato Haul y antiguo. |
-| `scripts/build_summary.py` | Fase 6.5. Consolida `summary.json`. |
-| `scripts/detect_secrets.sh` | Fase 2 y antes de escribir documentos. |
-| `scripts/render_diagrams.sh` | Fase 5. Renderiza `.mmd` → `.svg` con `mmdc`. |
-| `scripts/validate_mermaid.py` | Después de cada bloque Mermaid, antes de escribirlo. |
-
----
-
-## Estructura de salida (11 entregables)
-
-Todo en `{ruta_export}/_doc_generada/`:
+## Entregables
 
 ```
-_doc_generada/
+<salida>/
+├── LEEME.md
 ├── 00-resumen-ejecutivo.md
-├── 01-funcional.md
-├── 02-arquitectura.md            (+ diagrams/arquitectura.svg)
-├── 03-modelo-datos.md            (+ diagrams/modelo-datos.svg)
-├── 04-seguridad-grupos.md
-├── 05-integraciones-consumidas.md
-├── 06-apis-expuestas.md
-├── 07-batches.md
-├── 08-procesos-bpmn/             (un .bpmn + .mmd + .md por PM)
-│   ├── indice.md
-│   ├── {PM_1}.bpmn / .mmd / .md
-│   └── ...
-├── 09-valor-adicional.md
-└── INVENTARIO.md
+├── 01-funcional.md                 ┐
+├── 02-arquitectura.md              │
+├── 03-modelo-datos.md              │
+├── 04-seguridad-grupos.md          │  A. Cómo está hecha
+├── 05-integraciones-consumidas.md  │     (onboarding y mantenimiento)
+├── 06-apis-expuestas.md            │
+├── 07-batches.md                   │
+├── 08-procesos-bpmn/  (.bpmn + .mmd + .md por proceso, indice.md)
+├── 09-valor-adicional.md           │
+├── 10-pantallas.md                 │
+├── 11-reglas-negocio.md            ┘
+├── 12-especificacion-reconstruccion.md  ┐ B. Reconstruir y
+├── 13-modernizacion-refactor.md         ┘    modernizar
+├── INVENTARIO.md
+├── diagrams/
+└── _intermedio/   (datos en bruto: NO compartir)
 ```
 
-Resumen rápido por documento (detalle en `references/analysis-workflow.md`):
+## Recursos (cárgalos cuando toque, no todos a la vez)
 
-| Doc | Contiene |
+| Archivo | Cuándo |
 |---|---|
-| `00-resumen-ejecutivo.md` | Hallazgos clave: volumen, integraciones críticas, procesos críticos, riesgos top, pendientes. |
-| `01-funcional.md` | 3 niveles: **Pitch** · **Overview** · **Detalle por flujo**. Lenguaje de negocio, sin jerga Appian. |
-| `02-arquitectura.md` | Arquitectura **de esta app concreta**. Diagrama Mermaid con nodos = objetos reales, agrupados por capas. |
-| `03-modelo-datos.md` | Diagrama ER + tabla por Record Type + tabla por CDT. Cobertura 100%. |
-| `04-seguridad-grupos.md` | Árbol jerárquico de groups + tabla por objeto sensible + matriz RACI grupos↔capacidades. |
-| `05-integraciones-consumidas.md` | Por Integration: endpoint, método, auth (enmascarada), request/response, callers. |
-| `06-apis-expuestas.md` | Por Web API: URL pública, método, auth, body, qué hace, grupos autorizados, caso de uso. |
-| `07-batches.md` | Process models con start event temporal: nombre, frecuencia + cron, próximas ejecuciones, procesos hijos. |
-| `08-procesos-bpmn/` | BPMN 2.0 por process model + `indice.md` con relaciones. |
-| `09-valor-adicional.md` | **Sólo secciones con hallazgos reales**: constantes, expression rules reutilizables, decisions, sites, plugins, emails, errores, huérfanos, glosario, métricas, riesgos. |
-| `INVENTARIO.md` | Tabla por categoría: nombre técnico, nombre visible, ruta XML/XSD, confianza, observaciones. |
+| `references/devmcp-setup.md` | Fase 0, si falta o falla algún MCP. |
+| `references/analysis-workflow.md` | Al empezar: checklists por fase. |
+| `references/lectura-mcp-raw.md` | Antes de la fase 4 (y lo leen todos los subagentes). |
+| `references/execution-principles.md` | Antes de la fase 4. |
+| `references/docs-mcp-usage.md` | Si hay Docs MCP. |
+| `references/data-fabric.md` | Fase 2, paso 3. |
+| `references/modernization-guide.md` | Lo usa `rebuild-architect`. |
+| `references/appian-objects-guide.md` | Dónde está cada dato y heurísticas. |
+| `references/bpmn-mapping.md`, `mermaid-rules.md`, `presentation-rules.md` | Al generar diagramas y documentos. |
+| `references/security-rules.md` | Fase 3 y antes de escribir documentos. |
+| `references/response-format.md` | Fase 8. |
+| `agents/*.md` | Como prompt de cada subagente. |
+| `assets/markdown-templates/*.md` | Base de cada documento. |
+| `scripts/devmcp_extract.py`, `devmcp_policy.json` | Fases 0–2. |
+| `scripts/build_model.py`, `build_summary.py` | Fases 3 y 6.5. |
+| `scripts/detect_secrets.sh`, `validate_mermaid.py`, `render_diagrams.sh` | Fases 3, 5 y 8. |
 
----
+## Validación final (antes de responder)
 
-## Dependencias opcionales
+1. Existen los 16 entregables. Los que no aplican llevan su frase de «no aplica» (p. ej. 07 sin batches).
+2. `08-procesos-bpmn/` tiene `.bpmn`/`.mmd`/`.md` por cada process model y `indice.md` los lista todos.
+3. Todos los diagramas pasan `validate_mermaid.py` o están sustituidos por tabla.
+4. `bash scripts/detect_secrets.sh <salida>/*.md <salida>/08-procesos-bpmn <salida>/diagrams` no encuentra nada.
+5. No quedan placeholders (`{{`, `TBD`, `xxx`, `lorem`).
+6. Cada conclusión importante tiene evidencia `mcp:...` o está marcada como pendiente con responsable.
+7. `INVENTARIO.md` cubre el 100 % de `inventory.json`.
+8. Todos los `PAN-xxx` y `RN-xxx` aparecen en la trazabilidad de `12`, y cada `MOD-xxx` de `13` tiene evidencia y fuente (o está marcado como heurística).
+9. `LEEME.md` dice qué no estuvo disponible (MCP opcionales, tipos sin definición, seguridad por objeto).
+10. No se ha escrito nada fuera de `<salida>/`.
 
-Comprueba al inicio de Fase 5 con `scripts/render_diagrams.sh --check`.
-
-| Herramienta | Para | Si falta |
-|---|---|---|
-| `xmllint` | Validar `.bpmn` + parseo XML rápido | Usa Python `xml.etree.ElementTree`. |
-| `@mermaid-js/mermaid-cli` (`mmdc`) | Renderizar `.mmd` → `.svg` | Deja `.mmd` embebido en `.md`. GitHub/VSCode lo renderizan al vuelo. |
-| `unzip` | Descomprimir export `.zip` | Pide al usuario que lo descomprima. |
-
-**BPMN se entrega como XML siempre**, sin renderizar a SVG en la skill. El usuario los abre en Camunda Modeler, draw.io, demo.bpmn.io o Signavio.
-
----
-
-## Validación final (antes de devolver respuesta)
-
-1. Existen los 11 ficheros en `{ruta}/_doc_generada/`.
-2. `08-procesos-bpmn/` tiene un `.bpmn`/`.mmd`/`.md` por process model + `indice.md` los lista todos.
-3. Cada diagrama Mermaid pasó por `scripts/validate_mermaid.py`. Los rechazados están sustituidos por tabla.
-4. `scripts/detect_secrets.sh` no encuentra secretos sin enmascarar en los entregables.
-5. No hay placeholders ni texto genérico (`lorem ipsum`, `TBD`, `xxx`).
-6. No has escrito nada fuera de `{ruta}/_doc_generada/`.
-7. Cada conclusión importante tiene `Evidencia: {ruta}#{fragmento}` o está marcada como pendiente con responsable.
-8. Las secciones de `09-valor-adicional.md` sin contenido real están **omitidas**, no incluidas vacías.
-
-**Si alguna validación falla**, fíjala y re-valida antes de cerrar. No devuelvas respuesta con validaciones rotas.
-
----
-
-## Resumen — qué hace bien la skill
-
-- **No inventa**: cada hallazgo va con evidencia (ruta + fragmento) y status (✅/🔵/🟡/🔴).
-- **Subagentes especializados**: 6 agentes en `agents/`, 3 en paralelo en Fase 4.
-- **Iterative Refinement** en diagramas: validar → refinar → re-validar → fallback a tabla.
-- **Progressive disclosure**: SKILL.md sólo orquesta; los detalles están en `references/`.
-- **Degradación elegante**: sin `mmdc`, embebe `.mmd`. Sin `xmllint`, usa Python.
-- **Trazabilidad**: cada documento enlaza al XML/XSD del que se extrajo.
-- **Cero relleno**: secciones vacías se omiten; nunca placeholders.
+Si algo falla, corrígelo y vuelve a validar antes de responder.

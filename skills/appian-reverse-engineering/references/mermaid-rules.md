@@ -150,7 +150,7 @@ Antes de escribir un diagrama, aplica este procedimiento (o usa `scripts/validat
 9. **Valida que no hay nodos duplicados** (mismo ID, etiquetas distintas).
 10. **Valida límites de tamaño** por tipo:
     - Tipo A (`flowchart`): ≤ 30 nodos.
-    - Tipo B (`erDiagram`): **sin techo absoluto**, pero si un solo diagrama queda ilegible (más de ~15-30 entidades), **particiona por subdominio** y añade un mapa de subdominios como índice navegable. Nunca omitas entidades — el inventario en tablas debe seguir cubriendo el 100% del export.
+    - Tipo B (`erDiagram`): **sin techo absoluto**, pero si un solo diagrama queda ilegible (más de ~15-30 entidades), **particiona por subdominio** y añade un mapa de subdominios como índice navegable. Nunca omitas entidades — el inventario en tablas debe seguir cubriendo el 100% de la aplicación.
     - Tipo C (`flowchart` BPMN-styled): ≤ 25 nodos por proceso. Si excede, partir en sub-procesos / call activities.
     Si un diagrama Tipo A o C excede el límite, divide o convierte a tabla.
 
@@ -322,7 +322,7 @@ mmdc -i diagrama.mmd -o diagrama.svg -t neutral -b transparent
 
 Si `mmdc` no está disponible:
 
-- Deja el `.mmd` en `_doc_generada/diagrams/` o `_doc_generada/08-procesos-bpmn/`.
+- Deja el `.mmd` en `<salida>/diagrams/` o `<salida>/08-procesos-bpmn/`.
 - Embebe el contenido también dentro del Markdown asociado en un bloque ` ```mermaid` para que GitHub/VSCode/preview Markdown lo renderice on-the-fly.
 - Registra el pendiente para listarlo en la respuesta final.
 

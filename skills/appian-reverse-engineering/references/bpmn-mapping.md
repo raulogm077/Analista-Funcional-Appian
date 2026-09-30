@@ -6,7 +6,7 @@ Guía para traducir process models nativos de Appian a notación **BPMN 2.0 est�
 
 ## Estrategia híbrida: doble entrega por process model
 
-Por cada process model del export, Claude genera **dos artefactos**:
+Por cada process model de la aplicación, Claude genera **dos artefactos**:
 
 | Artefacto | Para qué | Tooling necesario | Resultado |
 |---|---|---|---|
@@ -32,33 +32,35 @@ Por cada process model del export, Claude genera **dos artefactos**:
 
 ## Tabla de mapeo (Appian → BPMN 2.0)
 
+> La columna «Elemento Appian» indica el id de esquema del nodo (`type` en la definición extraída) cuando se conoce. Si aparece un id que no está en la tabla, identifícalo por su nombre o por el catálogo de tipos de nodo (`mcp_raw/_env/`) o el Docs MCP.
+
 | Elemento Appian | Elemento BPMN 2.0 | Tag XML BPMN | Mermaid Tipo C |
 |---|---|---|---|
-| Start Node (vacío) | Start Event (none) | `<bpmn:startEvent>` | `Start((Inicio)):::startNode` |
-| Start Node `<startType>message</startType>` | Message Start Event | `<bpmn:startEvent>` con `<bpmn:messageEventDefinition>` | `Start((✉ Inicio)):::startNode` |
-| Start Node con `<recurrence>` / timer | Timer Start Event | `<bpmn:startEvent>` con `<bpmn:timerEventDefinition>` | `Start((⏰ Inicio)):::startNode` |
-| User Input Task | User Task | `<bpmn:userTask>` | `T1[👤 Texto]:::userTask` |
-| Script Task | Script Task | `<bpmn:scriptTask>` | `T1[📜 Texto]:::scriptTask` |
+| Start Node (vacío) — `core.0` | Start Event (none) | `<bpmn:startEvent>` | `Start((Inicio)):::startNode` |
+| Start Node de mensaje (`startType: message`) | Message Start Event | `<bpmn:startEvent>` con `<bpmn:messageEventDefinition>` | `Start((✉ Inicio)):::startNode` |
+| Start Node con temporizador (`startType: timer`, `schedule`) | Timer Start Event | `<bpmn:startEvent>` con `<bpmn:timerEventDefinition>` | `Start((⏰ Inicio)):::startNode` |
+| User Input Task — `internal.17` | User Task | `<bpmn:userTask>` | `T1[👤 Texto]:::userTask` |
+| Script Task — `internal.16` | Script Task | `<bpmn:scriptTask>` | `T1[📜 Texto]:::scriptTask` |
 | Smart service: Write to Data Store Entity | Service Task | `<bpmn:serviceTask>` | `T1[💾 Escribir CDT]:::dataTask` |
-| Smart service: Write Records | Service Task | `<bpmn:serviceTask>` | `T1[📋 Escribir RT]:::dataTask` |
+| Smart service: Write Records — `internal3.write_records_to_source_23r3` | Service Task | `<bpmn:serviceTask>` | `T1[📋 Escribir RT]:::dataTask` |
 | Smart service: Query Records / Query DB | Service Task | `<bpmn:serviceTask>` | `T1[🔍 Consultar]:::queryTask` |
-| Smart service: Call Integration | Service Task | `<bpmn:serviceTask>` | `T1[🔌 Llamar X]:::serviceTask` |
+| Smart service: Call Integration — `internal3.integration` | Service Task | `<bpmn:serviceTask>` | `T1[🔌 Llamar X]:::serviceTask` |
 | Smart service: Send Message | Throw Message Event | `<bpmn:intermediateThrowEvent>` con `<bpmn:messageEventDefinition>` | `T1[📤 Enviar]:::sendTask` |
 | Smart service: Receive Message | Receive Task | `<bpmn:receiveTask>` | `T1[📥 Recibir]:::receiveTask` |
-| Smart service: Send Email | Send Task | `<bpmn:sendTask>` | `T1[📧 Email]:::sendTask` |
+| Smart service: Send Email — `internal3.sendemail3` | Send Task | `<bpmn:sendTask>` | `T1[📧 Email]:::sendTask` |
 | Sub-Process node | Call Activity | `<bpmn:callActivity calledElement="..."/>` | `S1[➡️ PM_Sub]:::callActivity` |
-| Gateway exclusivo (XOR) | Exclusive Gateway | `<bpmn:exclusiveGateway>` | `G1{¿condición?}:::gateway` |
+| Gateway exclusivo (XOR) — `core.4` | Exclusive Gateway | `<bpmn:exclusiveGateway>` | `G1{¿condición?}:::gateway` |
 | Gateway paralelo (AND) | Parallel Gateway | `<bpmn:parallelGateway>` | `G1{+ AND}:::gateway` |
 | Gateway inclusivo (OR) | Inclusive Gateway | `<bpmn:inclusiveGateway>` | `G1{O OR}:::gateway` |
-| End Node (vacío) | End Event (none) | `<bpmn:endEvent>` | `End(((Fin))):::endNode` |
-| End Node `<endType>terminate</endType>` | Terminate End Event | `<bpmn:endEvent>` con `<bpmn:terminateEventDefinition>` | `End(((⊗ Fin term))):::endNodeTerm` |
+| End Node (vacío) — `core.1` | End Event (none) | `<bpmn:endEvent>` | `End(((Fin))):::endNode` |
+| End Node con terminación | Terminate End Event | `<bpmn:endEvent>` con `<bpmn:terminateEventDefinition>` | `End(((⊗ Fin term))):::endNodeTerm` |
 | Exception flow / Alert | Boundary Error Event | `<bpmn:boundaryEvent>` con `<bpmn:errorEventDefinition>` | flecha `-.->|⚠ error|` |
 
 ---
 
 ## Lanes y pools
 
-- **Lanes** = actores internos (grupos Appian). Una lane por cada grupo distinto que aparece en `assignees` de las user tasks del PM.
+- **Lanes** = actores internos (grupos Appian). Una lane por cada grupo distinto que aparece en `assignment.assignees` de las user tasks del PM.
 - **Pools** = sistemas externos. Un pool por cada Connected System distinto referenciado por `Call Integration`.
 - Si solo hay **1 lane y 0 pools externos**, omitir `<laneSet>` y `<collaboration>` en el `.bpmn` y omitir `subgraph` en el `.mmd` — el diagrama queda más limpio.
 - Añadir una lane `Sistema` para nodos sin asignación humana (service tasks, gateways, start/end events que no son del usuario).
@@ -186,21 +188,21 @@ Especificación completa del Tipo C en `references/mermaid-rules.md`.
 
 ## Reglas para construir los dos artefactos por process model
 
-Sigue este orden mecánico para cada `<pm>` del export:
+Sigue este orden mecánico para cada process model:
 
-1. **Detectar actores (lanes)**: lee `assignees` o `assigneesExpression` de cada `userInput` task. Una lane por grupo distinto. Añade una lane `Sistema` para nodos sin asignación humana.
+1. **Detectar actores (lanes)**: lee `assignment.assignees` (grupos o expresiones) de cada user task. Una lane por grupo distinto. Añade una lane `Sistema` para nodos sin asignación humana.
 
-2. **Detectar sistemas externos (pools)**: lee `<connectedSystem>` de cada `Call Integration`. Cada Connected System externo va en su propio pool. La interacción se modela como `messageFlow` cruzado (BPMN) o flecha cruzando subgraphs (Mermaid).
+2. **Detectar sistemas externos (pools)**: resuelve la integración de cada `Call Integration` y su `connectedSystemRef` en el inventario. Cada Connected System externo va en su propio pool. La interacción se modela como `messageFlow` cruzado (BPMN) o flecha cruzando subgraphs (Mermaid).
 
-3. **Recorrer nodos del XML** (`<pm:node>`) en orden topológico siguiendo `<pm:flow source="..." target="..."/>`.
+3. **Recorrer los nodos** (`nodes[]`) en orden topológico siguiendo `connections` de cada nodo.
 
 4. **Aplicar mapeo** de la tabla a cada nodo, generando ambos artefactos en paralelo.
 
-5. **Nombrar cada nodo** con su nombre visible (`@name` o `<displayName>`):
+5. **Nombrar cada nodo** con su nombre visible (`name`):
    - En BPMN XML: escapar entidades especiales (`&gt;`, `&lt;`, `&amp;`).
    - En Mermaid Tipo C: usar `gt`/`lt` en lugar de `>`/`<`, sin comillas dobles internas.
 
-6. **Conectar nodos** siguiendo `<pm:flow>`. Si el flow tiene `<condition>`:
+6. **Conectar nodos** siguiendo `connections`. En las pasarelas, `decision.conditions[]` da la condición de cada salida y `defaultPath` la salida por defecto:
    - En BPMN XML: `<bpmn:sequenceFlow name="<condición humana>">`.
    - En Mermaid Tipo C: etiqueta en el conector con `-->|"texto"|`.
 
@@ -208,7 +210,7 @@ Sigue este orden mecánico para cada `<pm>` del export:
    - En BPMN XML: `<bpmn:boundaryEvent>` con `<bpmn:errorEventDefinition>` adjunto a la actividad.
    - En Mermaid Tipo C: flecha punteada `-.->|"⚠ error"|` al manejador.
 
-8. **Sub-Process** (`<pm:node type="subProcess">`) → en BPMN `<bpmn:callActivity calledElement="<PM_hijo>"/>`; en Mermaid `S1[➡️ <PM_hijo>]:::callActivity`. Enlazar al diagrama hijo desde `08-procesos-bpmn/indice.md`.
+8. **Sub-Process** (nodo cuyo `data` referencia otro process model) → en BPMN `<bpmn:callActivity calledElement="<PM_hijo>"/>`; en Mermaid `S1[➡️ <PM_hijo>]:::callActivity`. Enlazar al diagrama hijo desde `08-procesos-bpmn/indice.md`.
 
 9. **Validación**:
    - BPMN XML: si hay `xmllint`, `xmllint --noout <PM>.bpmn` no debe dar errores.

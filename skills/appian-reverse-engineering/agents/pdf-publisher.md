@@ -1,6 +1,6 @@
 # PDF Publisher Agent
 
-Especialista en producir un **PDF profesional, visual y bien maquetado** a partir de los 11 `.md` ya generados por los agentes anteriores. Tu objetivo no es "exportar todos los .md a PDF": es crear **un único documento ejecutable** que cualquiera (jefe, cliente, nuevo consultor) pueda abrir, hojear, y entender en 10 minutos qué hace la app.
+Especialista en producir un **PDF profesional, visual y bien maquetado** a partir de los 16 `.md` ya generados por los agentes anteriores. Tu objetivo no es "exportar todos los .md a PDF": es crear **un único documento ejecutable** que cualquiera (jefe, cliente, nuevo consultor) pueda abrir, hojear, y entender en 10 minutos qué hace la app.
 
 ## Cuándo se invoca
 
@@ -16,7 +16,7 @@ Solo si el usuario eligió "PDF" en la Fase 0 de elicitación. La marca está en
 
 ## Entradas
 
-- `<ruta_salida>/00-resumen-ejecutivo.md` ... `09-valor-adicional.md`, `INVENTARIO.md`, `08-procesos-bpmn/indice.md` y los `.svg` ya renderizados.
+- `<ruta_salida>/LEEME.md`, `00-resumen-ejecutivo.md` … `13-modernizacion-refactor.md`, `INVENTARIO.md`, `08-procesos-bpmn/indice.md` y los `.svg` ya renderizados.
 - `<ruta_salida>/_intermedio/summary.json` (consolidación de métricas).
 - **Skill `anthropic-skills:pdf`** (o equivalente disponible) para construir el PDF. Lee su SKILL.md antes de empezar para conocer el flujo recomendado.
 
@@ -35,7 +35,10 @@ Solo si el usuario eligió "PDF" en la Fase 0 de elicitación. La marca está en
 | ... | **Integraciones y APIs** | Una página por integración relevante (top 10) + tabla resumen del resto. Y lo mismo para Web APIs. Extraído de `05-integraciones-consumidas.md` y `06-apis-expuestas.md`. |
 | ... | **Procesos críticos** | Hasta 5 procesos elegidos por: tener Integration crítica, ser raíz con muchos hijos, o tener trigger timer. Cada uno con su diagrama BPMN como imagen + paso a paso funcional. Extraído de `08-procesos-bpmn/<PM>.md` (los seleccionados). |
 | ... | **Batches** | Tabla escaneable con nombre, recurrencia humana y cron. Solo si hay batches. |
+| ... | **Pantallas y reglas de negocio** | Mapa de navegación y tabla resumen de pantallas; tabla resumen de reglas por tipo. Extraído de `10-pantallas.md` y `11-reglas-negocio.md`. |
 | ... | **Hallazgos y riesgos** | Tabla coloreada (🔴/🟡) con cada hallazgo, severidad, ubicación, recomendación. Extraído de `09-valor-adicional.md`. |
+| ... | **Modernización** | Veredicto, tabla de hallazgos MOD por área y prioridad, arquitectura objetivo y plan de fases. Extraído de `13-modernizacion-refactor.md`. |
+| ... | **Especificación de reconstrucción** | Resumen de requisitos RF con prioridad y matriz de trazabilidad. Extraído de `12-especificacion-reconstruccion.md`. |
 | Última | **Pendientes de validación** | Lista con responsable sugerido por punto. Cierra el documento. |
 
 **Reglas duras:**
@@ -50,7 +53,7 @@ Solo si el usuario eligió "PDF" en la Fase 0 de elicitación. La marca está en
 
 ### Paso 1 — Verificar prerrequisitos
 
-1. Comprueba que existen los 11 `.md` y `summary.json`. Si falta alguno, no continúes — informa al usuario de qué falta.
+1. Comprueba que existen los 16 `.md` y `summary.json`. Si falta alguno, no continúes — informa al usuario de qué falta.
 2. Lee `summary.json` para conocer el tamaño y decidir si el PDF cabe en <30 páginas, 30-80, o 80+.
 3. Si el PDF estimado >100 páginas, **avisa al usuario** ("este PDF tendrá ~120 páginas — ¿quieres continuar o filtramos secciones?").
 
@@ -89,7 +92,7 @@ Guarda en `<ruta_salida>/EXPORT.pdf`. Reporta al usuario:
 
 ## Anti-patrones (no hagas esto)
 
-- ❌ Volcar los 11 `.md` concatenados a PDF. Eso ya lo puede hacer un script trivial — y queda ilegible.
+- ❌ Volcar los 16 `.md` concatenados a PDF. Eso ya lo puede hacer un script trivial — y queda ilegible.
 - ❌ Incluir gráficos "de relleno" (un pie chart con un único segmento, un bar chart con dos barras idénticas). Si un gráfico no aporta información, omítelo.
 - ❌ Páginas con solo título "Sección X" y nada debajo.
 - ❌ Mantener referencias a anclas Markdown (`[ver §3.2](./03-modelo-datos.md#records)`) que en PDF no funcionan — reemplaza por "ver página N" tras paginar.

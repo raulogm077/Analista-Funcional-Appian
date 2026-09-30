@@ -11,12 +11,12 @@ Aplican a cada `.md`, cada diagrama, cada celda de tabla.
 1. **No inventar.** Si un dato no aparece en los artefactos, márcalo `⚠️ no determinado` y explica por qué. Nunca completes con suposiciones plausibles.
 
 2. **Etiqueta cada afirmación con su estado**:
-   - ✅ **Confirmado** por artefactos (con evidencia: ruta + fragmento).
+   - ✅ **Confirmado** por la definición extraída (con evidencia `mcp:<tipo>/<nombre>#<ubicación>`).
    - 🔵 **Inferido** razonablemente (explica la evidencia parcial).
    - 🟡 **Pendiente** de validación con responsable funcional/técnico.
    - 🔴 **Riesgo** detectado.
 
-3. **Trazabilidad obligatoria**: cada afirmación enlaza al archivo XML/XSD del que se extrajo (ruta relativa al export). Evidencia mínima: `<ruta>#<fragmento>` o `<ruta>:<línea>` + nivel de confianza.
+3. **Trazabilidad obligatoria**: cada afirmación enlaza al objeto del que se extrajo. Evidencia mínima: `mcp:<tipo>/<nombre>#<ubicación>` (ruta dentro de la definición o *breadcrumb* de dependencias) + nivel de confianza. Si viene de la documentación oficial: `Fuente: <URL>`. Detalle en `references/lectura-mcp-raw.md`.
 
 4. **Cero relleno**: si una sección no tiene contenido real, **omítela**. Nunca dejes `<TODO>`, `<placeholder>`, `xxx`, `lorem ipsum`, "TBD" o equivalentes.
 
@@ -84,7 +84,7 @@ Cada process model produce **3 ficheros** en lugar de uno:
 
 ## 4. Reglas específicas para modelo de datos (`03-modelo-datos.md`)
 
-- **Cobertura del 100%**: el catálogo (tablas) **siempre** incluye todos los records y CDTs del export, sin excepción. Los modelos grandes no se truncan: se particionan visualmente.
+- **Cobertura del 100%**: el catálogo (tablas) **siempre** incluye todos los records y CDTs de la aplicación, sin excepción. Los modelos grandes no se truncan: se particionan visualmente.
 - **Estrategia de diagramas según tamaño** (guía de legibilidad, no techo arbitrario):
   - Hasta ~15 entidades: un único `erDiagram` global (`diagrams/modelo-datos.svg`).
   - Entre ~15 y ~30 entidades: diagrama global resumido con entidades clave + relaciones principales, **más** diagramas de detalle por subdominio.
@@ -98,6 +98,6 @@ Cada process model produce **3 ficheros** en lugar de uno:
 
 - **Cada celda/campo** debe tener: valor real **o** marcador explícito de pendiente con motivo. Nunca `<TODO>`, `<placeholder>`, `xxx`, `lorem ipsum`.
 - Si una sección no tiene evidencia, escribe: *"No se ha encontrado evidencia suficiente en los artefactos analizados. Pendiente de validación con [rol sugerido]."* — esto es información útil, no un fallo.
-- Estructura de evidencia: `Evidencia: <ruta>#<fragmento o línea> — Confianza: alta/media/baja`.
+- Estructura de evidencia: `Evidencia: mcp:<tipo>/<nombre>#<ubicación> — Confianza: alta/media/baja`.
 - Etiquetas de estado consistentes en toda la salida: ✅ Confirmado · 🔵 Inferido · 🟡 Pendiente · 🔴 Riesgo.
 - Enlaces internos entre documentos con anclas Markdown (`[ver §3.2 Records](./03-modelo-datos.md#records)`) para no duplicar.

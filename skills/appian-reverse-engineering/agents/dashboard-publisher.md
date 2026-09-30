@@ -78,7 +78,7 @@ Antes de insertar **cualquier** visualización:
 
 - **Cada tab debe tener contenido.** Si un tab no tiene datos (p.ej. "Integraciones" en una app sin Connected Systems), **se oculta** — no se muestra un tab vacío con "No hay integraciones".
 - **Búsqueda global rápida**: indexar nombres + descripciones + paths en cliente. Sin backend.
-- **Detalles bajo demanda**: el `.md` completo de cada objeto se carga al click via `fetch()` (todos los `.md` se copian a `dashboard/docs/`), no se mete todo de golpe en el DOM.
+- **Detalles bajo demanda**: el `.md` de cada documento se inyecta en el HTML como texto (en un `<script type="text/markdown">` por documento) y se renderiza al abrirlo con marked.js. **No uses `fetch()`**: falla al abrir el fichero con `file://`.
 - **Accesibilidad mínima**: contraste WCAG AA, tab navigation, aria-labels en botones.
 
 ## Proceso
@@ -93,20 +93,23 @@ Antes de insertar **cualquier** visualización:
 
 Antes de empezar a escribir HTML, mapear desde `summary.json` qué pasa a qué tab. Esto evita HTML "estructurado pero sin datos detrás".
 
+Contrato real de `summary.json` (lo genera `scripts/build_summary.py`):
+
 ```
 summary.json
-├── meta {name, version, generatedAt, confidence}
+├── meta {appName, appPrefix, appDescription, appUuid, source, generatedAt, confidence}
 ├── counts {processModel: 84, interface: 70, ...}
-├── critical {processes: [], integrations: [], risks: []}
-├── tabs:
-│   ├── architecture (svg path, layers breakdown)
-│   ├── dataModel (svg paths, records[], cdts[])
-│   ├── processes (list[])
-│   ├── integrations (list[])
-│   ├── security (groups tree, matrix)
-│   └── findings (list[])
-└── pending []
+├── totals {objects, nodes, edges, hubs, orphans}
+├── layerBreakdown {Presentacion, Logica, Datos, Integracion, Seguridad}
+├── hubs [{name, type, inDegree}]
+├── criticalProcesses [{id, name, score, calledBy, callsIntegrations, isBatch, userTaskCount, executions}]
+├── integrations [{name, method, endpoint, connectedSystemRef}]
+├── risks [{severity, category, title, evidence[]}]
+├── findingsFromMd [{severity, text}]
+└── objects {tipo: [{name, description, uuid, type, mcpType, path}]}
 ```
+
+Las pestañas se construyen a partir de estos campos y de los `.md` (arquitectura, modelo de datos, procesos, integraciones, seguridad, pantallas, reglas, modernización, hallazgos). No hay campos `tabs` ni `pending`: los pendientes salen de `12-especificacion-reconstruccion.md` (preguntas abiertas).
 
 ### Paso 3 — Generar el HTML single-file (caso por defecto)
 
@@ -159,7 +162,7 @@ Solo bloques con código de salida 0 se insertan. Los rechazados → tabla equiv
 
 ### Paso 5 — Copiar los .md a dashboard/docs/
 
-Los detalles bajo demanda los carga el cliente via `fetch('./docs/01-funcional.md')`. Copia los 11 .md (+ los `08-procesos-bpmn/<PM>.md`) a `dashboard/docs/`. Renderizado client-side con marked.js (CDN).
+Inyecta los 16 `.md` (+ los `08-procesos-bpmn/<PM>.md`) en el HTML como bloques `<script type="text/markdown" id="doc-…">`. Renderizado en el cliente con marked.js (CDN) al abrir cada documento. No uses `fetch()` (falla con `file://`).
 
 ### Paso 6 — Validación visual final
 
@@ -173,7 +176,7 @@ Los detalles bajo demanda los carga el cliente via `fetch('./docs/01-funcional.m
 
 ### Paso 7 — Entregar
 
-Salida: `<ruta_salida>/dashboard/index.html` + `dashboard/docs/*.md` + `dashboard/diagrams/*.svg`.
+Salida: `<ruta_salida>/dashboard/index.html` + `dashboard/diagrams/*.svg`.
 
 Reporta al usuario:
 - ruta del dashboard
@@ -195,7 +198,6 @@ Reporta al usuario:
 ## Salida
 
 - `<ruta_salida>/dashboard/index.html`
-- `<ruta_salida>/dashboard/docs/*.md` (copias de los .md de _doc_generada)
 - `<ruta_salida>/dashboard/diagrams/*.svg`
 
 ## Validación final

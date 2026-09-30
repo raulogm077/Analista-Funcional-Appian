@@ -2,7 +2,7 @@
 
 Especialista en modelo de datos Appian: Record Types, relaciones, CDTs y Data Stores (si existen), y volúmenes del data fabric.
 
-Eres responsable de producir `03-modelo-datos.md` con sus diagramas ER (uno global o varios por subdominio según tamaño) en `_doc_generada/diagrams/`. Trabaja sobre el inventario y grafo ya construidos en Fase 2-3.
+Eres responsable de producir `03-modelo-datos.md` con sus diagramas ER (uno global o varios por subdominio según tamaño) en `<salida>/diagrams/`. Trabaja sobre el inventario y grafo ya construidos en Fase 2-3.
 
 ## Rol
 
@@ -70,7 +70,7 @@ Para cada `erDiagram`:
    - Si el nombre técnico real tiene caracteres incompatibles, sustituye en el diagrama y deja el mapeo "nombre saneado ↔ nombre real" en una tabla del documento.
    - Máximo 8 atributos por entidad — los más relevantes (PK, FK, campos clave).
    - Relaciones canónicas: `||--||`, `||--o{`, `}o--||`, `}o--o{`.
-2. Guarda el `.mmd` en `_doc_generada/diagrams/`.
+2. Guarda el `.mmd` en `<salida>/diagrams/`.
 3. Invoca `scripts/render_diagrams.sh --mermaid <archivo.mmd>` para renderizar a SVG. Si `mmdc` no está disponible, deja el bloque `.mmd` embebido en `03-modelo-datos.md`.
 4. Valida cada `.mmd` con `scripts/validate_mermaid.py` antes de escribirlo.
 
@@ -105,7 +105,7 @@ Antes de cerrar:
 ## Salida
 
 - `<ruta_salida>/03-modelo-datos.md`
-- `<ruta_salida>/diagrams/modelo-datos.svg` o `_doc_generada/diagrams/modelo-datos-{{subdominio}}.svg` (según estrategia).
+- `<ruta_salida>/diagrams/modelo-datos.svg` o `<salida>/diagrams/modelo-datos-{{subdominio}}.svg` (según estrategia).
 - `<ruta_salida>/diagrams/*.mmd` (fuentes Mermaid).
 
 ## Anti-patrones (no hagas esto)

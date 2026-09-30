@@ -1,6 +1,6 @@
 # Reglas de presentación
 
-> Reglas obligatorias para la **distribución y legibilidad** de cada entregable. Léelas antes de escribir cualquier `.md` de `_doc_generada/`. El objetivo no es generar documentos densos, sino documentos que se **lean en cascada** según el interés del lector.
+> Reglas obligatorias para la **distribución y legibilidad** de cada entregable. Léelas antes de escribir cualquier `.md` de `<salida>/`. El objetivo no es generar documentos densos, sino documentos que se **lean en cascada** según el interés del lector.
 
 ---
 
@@ -113,7 +113,7 @@ Cada ficha de Detalle (sección `### <Elemento>` en el bloque Detalle) sigue **s
 **Detalle / Notas relevantes** (si aplica, 3-5 líneas):
 - ...
 
-**Evidencia**: `<ruta_xml>#<fragmento>` · **Estado**: ✅/🔵/🟡/🔴
+**Evidencia**: `mcp:<tipo>/<nombre>#<ubicación>` · **Estado**: ✅/🔵/🟡/🔴
 ```
 
 No mezcles tabla de ficha con prosa larga en medio. La tabla compacta los datos; la prosa va en "Detalle / Notas" claramente separado.
@@ -144,7 +144,7 @@ Toda la documentación usa esta paleta de 4 estados, **siempre estos emojis, sie
 
 | Emoji | Significado |
 |---|---|
-| ✅ | Confirmado por evidencia explícita en el export |
+| ✅ | Confirmado por evidencia explícita en la definición extraída |
 | 🔵 | Inferido razonablemente (evidencia indirecta) |
 | 🟡 | Pendiente de validación con responsable funcional/técnico |
 | 🔴 | Riesgo detectado / anti-patrón / requiere atención |
@@ -229,4 +229,4 @@ Antes de escribir el `.md` a disco, verifica:
 - [ ] Cero secciones vacías. Si no hay contenido para una sección, omitirla.
 - [ ] Cero placeholders sin rellenar (`<TODO>`, `xxx`, `lorem`).
 - [ ] Enlaces a otros documentos en lugar de duplicar fichas.
-- [ ] Cada ficha de Detalle tiene **evidencia** (ruta + fragmento).
+- [ ] Cada ficha de Detalle tiene **evidencia** (`mcp:<tipo>/<nombre>#<ubicación>`).
