@@ -30,7 +30,7 @@ Lee `_intermedio/inventory.json` y extrae:
 - Los CDTs y Data Stores de la app: si `detail` es `none`, su definición no está disponible por Dev MCP → documenta nombre y dependencias y márcalos 🟡.
 - Si existe `datafabric.json`: referencia SQL, nº de campos visibles y **recuento de filas** de cada record type sincronizado.
 
-Si falta cualquier dato, **no inventes**: marca `⚠️ no disponible en la extracción — pendiente de validación con DBA/funcional`.
+Si falta cualquier dato, **no inventes**: marca `🟡 no disponible en la extracción — pendiente de validación con DBA/funcional`.
 
 ### Paso 2 — Detectar relaciones
 

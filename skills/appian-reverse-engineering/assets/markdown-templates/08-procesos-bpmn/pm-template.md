@@ -117,7 +117,7 @@ El `.bpmn` contiene la semántica BPMN 2.0 completa (lanes, pools, message flows
 | `Task_Form` | grupo `Operator` (`{{regla_asignacion}}`) | {{tiempo o "ninguno"}} | {{notificación o "ninguna"}} |
 | `Task_Approve` | grupo `Approver` | {{tiempo}} | {{notificación}} |
 
-## ⚠️ Manejo de excepciones
+## 🧯 Manejo de excepciones
 
 | Excepción detectada | Cómo se maneja | Riesgo |
 |---|---|---|

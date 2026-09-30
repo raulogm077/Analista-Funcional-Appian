@@ -8,7 +8,7 @@ Documento de **lectura obligatoria** antes de la Fase 4 (generación de entregab
 
 Aplican a cada `.md`, cada diagrama, cada celda de tabla.
 
-1. **No inventar.** Si un dato no aparece en los artefactos, márcalo `⚠️ no determinado` y explica por qué. Nunca completes con suposiciones plausibles.
+1. **No inventar.** Si un dato no aparece en los artefactos, márcalo `🟡 no determinado` y explica por qué. Nunca completes con suposiciones plausibles.
 
 2. **Etiqueta cada afirmación con su estado**:
    - ✅ **Confirmado** por la definición extraída (con evidencia `mcp:<tipo>/<nombre>#<ubicación>`).
@@ -40,6 +40,8 @@ La documentación es **inservible** si no se puede leer fácilmente. Aplica a **
 
 ### 2.1 Estructura uniforme de cada documento
 
+> **Precedencia.** Si dos instrucciones chocan, manda en este orden: (1) el fichero de rol del agente, (2) la plantilla del documento en `assets/markdown-templates/`, (3) esta estructura general, (4) `presentation-rules.md` (estilo). Esta estructura es la forma concreta de la «cascada» TL;DR → Vista → Detalle de `presentation-rules.md`: TL;DR = punto 1; Vista = puntos 2 a 4; Detalle = punto 5; Hallazgos al final.
+
 Todos los `.md` siguen la misma jerarquía para que sean **escaneables**:
 
 1. **🎯 TL;DR** — Resumen ejecutivo en 2-4 frases al inicio. Sin tablas, sin diagramas. Lo que verá quien solo lea las primeras líneas.
@@ -54,7 +56,7 @@ Todos los `.md` siguen la misma jerarquía para que sean **escaneables**:
 - **Una idea por celda.** Si una celda de tabla excede 80 caracteres, divide en columnas o saca a una subsección.
 - **Tablas resumen antes que detalle.** Nadie lee una pared de fichas. La tabla resumen permite encontrar el objeto, el detalle responde la pregunta concreta.
 - **Diagramas con TL;DR adyacente.** Antes o después de cada diagrama, una frase que explique qué se está viendo y qué hallazgo esperar.
-- **Iconos como pistas visuales.** Usa emojis consistentes en cabeceras: 🎯 TL;DR · 📊 Volumen · 🗺️ Mapa · 📋 Catálogo · 🔍 Hallazgos · ⚠️ Riesgos · 👥 Actores · 🔌 Integraciones · 💾 Datos · 📐 BPMN profesional · 🖼 Preview. Sin abusar — uno por sección, no más.
+- **Iconos como pistas visuales.** Usa emojis consistentes en cabeceras: 🎯 TL;DR · 📊 Volumen · 🗺️ Mapa · 📋 Catálogo · 🔍 Hallazgos · 👥 Actores · 🔌 Integraciones · 💾 Datos · 📐 BPMN profesional · 🖼 Preview. Sin abusar — uno por sección, no más.
 - **Status labels uniformes en todo el documento**: ✅ Confirmado · 🔵 Inferido · 🟡 Pendiente · 🔴 Riesgo. Nunca mezcles con otras (✓/✗/⚡/etc).
 - **Detalles colapsables**: si el detalle por entrada es largo y repetitivo (CDTs con muchos campos, process models con muchos nodos), considera presentar en tabla compacta con columna "ver detalle" que enlaza al `.md` hermano.
 
@@ -98,6 +100,6 @@ Cada process model produce **3 ficheros** en lugar de uno:
 
 - **Cada celda/campo** debe tener: valor real **o** marcador explícito de pendiente con motivo. Nunca `<TODO>`, `<placeholder>`, `xxx`, `lorem ipsum`.
 - Si una sección no tiene evidencia, escribe: *"No se ha encontrado evidencia suficiente en los artefactos analizados. Pendiente de validación con [rol sugerido]."* — esto es información útil, no un fallo.
-- Estructura de evidencia: `Evidencia: mcp:<tipo>/<nombre>#<ubicación> — Confianza: alta/media/baja`.
+- Estructura de evidencia: `Evidencia: mcp:<tipo>/<nombre>[@<rol>]#<ubicación>` (formato completo en `lectura-mcp-raw.md`). El nivel de confianza lo expresa el estado (✅/🔵/🟡/🔴); no añadas otra escala.
 - Etiquetas de estado consistentes en toda la salida: ✅ Confirmado · 🔵 Inferido · 🟡 Pendiente · 🔴 Riesgo.
 - Enlaces internos entre documentos con anclas Markdown (`[ver §3.2 Records](./03-modelo-datos.md#records)`) para no duplicar.

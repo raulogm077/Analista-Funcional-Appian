@@ -31,7 +31,7 @@ No lo consultes para cosas que ya dicen `references/` o la propia definición de
 
 Antes de consultar, lee los ficheros `_intermedio/docs_cache/*.json` (uno por agente). Si la pregunta, o una equivalente, ya está respondida, reutilízala.
 
-Después de consultar, añade la entrada a **tu** fichero (`_intermedio/docs_cache/<nombre-del-agente>.json`), para no pisar el de otros agentes que trabajan en paralelo:
+Después de consultar, añade la entrada a **tu** fichero (`_intermedio/docs_cache/<nombre-del-agente>.json`, un **array JSON** de entradas), para no pisar el de otros agentes que trabajan en paralelo:
 
 ```json
 {"query": "…", "askedAt": "2026-09-30T10:00:00Z", "answer": "resumen en 1-3 frases", "urls": ["https://docs.appian.com/..."]}

@@ -38,6 +38,14 @@ def test_type_c_lanes():
     assert vm(ok.replace("EndOk", "end")).returncode == 1
 
 
+def test_type_a_layers_limit_30():
+    nodes = "\n".join(f'    N{i}["Objeto {i}"]' for i in range(1, 29))
+    ok = f'flowchart LR\n  subgraph CP["Presentación"]\n{nodes}\n  end\n  N1 --> N2\n'
+    p = vm(ok)
+    assert p.returncode == 0 and "BPMN" not in p.stderr                 # 28 nodos por capas: válido, sin aviso BPMN
+    assert vm(ok + "  N29 --> N30\n  N31 --> N1\n").returncode == 1     # 31 nodos: supera el límite de tipo A
+
+
 def test_type_a_still_sanitized():
     p = vm('flowchart TD\n  A["Uno"] --> B["Dos"]\n')
     assert p.returncode == 0 and "N1" in p.stdout

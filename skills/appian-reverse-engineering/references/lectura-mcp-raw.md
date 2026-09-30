@@ -36,7 +36,7 @@ Si un objeto tiene `detail: "none"`, no hubo herramienta que devolviera su defin
 
 `build_model.py` ya ha calculado, cuando la respuesta lo permitía:
 
-- **Process model:** `nodeCount`, `userTaskCount`, `subProcessCount`, `startType` (`none`/`timer`/`message`), `hasRecurrence`, `schedule` (configuración del temporizador tal cual), `startFormInterface`, `initiatorGroup`, `usage` (`executions`, `lastExecution`, `failed`).
+- **Process model:** `nodeCount`, `userTaskCount`, `subProcessCount`, `startType` (`none`/`timer`/`message`), `hasRecurrence`, `schedule` (configuración del temporizador tal cual), `startFormInterface`, `initiatorGroup` (ver «Quién puede iniciar un process model»), `usage` (`executions`, `lastExecution`, `failed`). Si `usage.failedInSampleOf` existe, `failed` se contó solo sobre esa muestra de instancias, no sobre el total: escríbelo así («3 fallos en las últimas 50 ejecuciones»), nunca como tasa global.
 - **Interfaz, regla, Web API, integración:** `sailBytes`, `sailLines`.
 - **Constante:** `value` (enmascarado si parece secreto, con `maskedSecret: true`), `typeRef`, `valueRef`.
 - **Integración:** `method`, `endpoint`, `connectedSystemRef`, `modifiesData`.
@@ -44,7 +44,7 @@ Si un objeto tiene `detail: "none"`, no hubo herramienta que devolviera su defin
 - **Web API:** `method`, `endpointPath`.
 - **Record type:** `fieldCount`, `sourceType`, `tableName`, `urlStub`, `relationshipCount`.
 - **Site:** `pageCount`, `urlStub`. **Grupo:** `parentGroup`, `memberGroups`, `userCount`.
-- **Cualquiera:** `versions` (`count`, `lastModifiedOn`, `lastModifiedBy`), `validationIssues`, `screen`, `extraTools`.
+- **Cualquiera:** `slug` (nombre sin espacios ni tildes; úsalo para nombrar ficheros por objeto, p. ej. `08-procesos-bpmn/<slug>.md`), `versions` (`count`, `lastModifiedOn`, `lastModifiedBy`), `validationIssues`, `screen`, `extraTools`.
 
 Son una ayuda: ante la duda, **la fuente es el fichero `definition`**.
 
@@ -54,17 +54,28 @@ Son una ayuda: ante la duda, **la fuente es el fichero `definition`**.
 - Process models: cada nodo suele tener `id`, `type` (id de esquema, p. ej. `core.0` inicio, `core.1` fin, `core.4` XOR, `internal.16` script task, `internal.17` user input task, `internal3.write_records_to_source_23r3` write records, `internal3.sendemail3` email, `internal3.integration` call integration), `name`, `connections` (ids destino), `assignment`, `data`, `forms` y `decision` (condiciones de las pasarelas). Si aparece un tipo de nodo que no reconoces, búscalo en `mcp_raw/_env/` (catálogo de tipos de nodo, si existe) o consúltalo en el Docs MCP.
 - Las referencias a record types en SAIL tienen la forma `recordType!{uuid}Nombre.fields.{uuid}campo`. Traduce siempre a nombres legibles con `inventory.json`.
 - Los uuids no se muestran al lector salvo en `INVENTARIO.md`.
+- **Definición frente a pantalla (`screen`).** La definición de una interfaz solo contiene su propio SAIL; el árbol renderizado incluye también lo que aportan las interfaces hijas. Si un componente o texto solo aparece en el render, cítalo con `@screen` y atribúyelo a la interfaz hija cuando puedas identificarla. Si definición y render no coinciden (p. ej. un campo que el render no muestra porque depende de una condición), manda la definición y explica la condición.
+
+## Quién puede iniciar un process model
+
+Según la documentación oficial, para iniciar un process model hace falta **al menos el permiso Initiator**; Administrator, Editor, Manager y Viewer también pueden iniciarlo, y **Deny** no puede hacer nada. Los procesos que arranca un temporizador o que se lanzan como subproceso se ejecutan como el usuario que desplegó el process model. Fuente: https://docs.appian.com/suite/help/26.6/process-model-object.html#process-model-security
+
+- `initiatorGroup` es el grupo de seguridad que devuelve la definición del process model. **No indica el nivel de permiso.** Escribe «grupo de seguridad del process model: X», no «solo X puede iniciarlo».
+- Si algún fichero `other` trae el role map, los que pueden iniciar son la unión de los grupos con cualquier rol distinto de Deny. Si no hay role map, dilo: «role map no disponible por Dev MCP; se muestra el grupo de seguridad de la definición» 🟡.
+- Si el process model lo lanza una acción de record o `a!startProcess`, la visibilidad de esa acción es un segundo filtro: documenta ambos.
 
 ## Formato de evidencia
 
 Toda afirmación importante lleva evidencia verificable:
 
 ```
-Evidencia: mcp:<tipo>/<nombre>#<ubicación>
+Evidencia: mcp:<tipo>/<nombre>[@<rol>]#<ubicación>
 ```
 
-- `<ubicación>` es una ruta dentro de la definición (`nodes[3].decision`, `pages[2].visibilityExpr`, `fields.importe`) o el *breadcrumb* de dependencias (`Interface Definition: Line 19`).
-- Ejemplos: `mcp:processModel/DEM Alta Solicitud#nodes[2]`, `mcp:interface/DEM_SolicitudForm#expression (línea 4)`.
+- `<tipo>` es el tipo del inventario (`processModel`, `interface`, `recordType`…) y `<nombre>` el nombre legible del objeto.
+- `@<rol>` indica de qué fichero sale cuando **no** es la definición: `@dependents`, `@history`, `@versions`, `@validation`, `@screen`, `@members`, `@other:<herramienta>`. Sin `@`, se entiende `definition`.
+- `<ubicación>` es una ruta dentro de la respuesta (`pages[2].visibilityExpr`, `fields.importe`) o el *breadcrumb* de dependencias (`Interface Definition: Line 19`). En process models identifica los nodos por su id, no por su posición en la lista: `nodes[id=3].decision`.
+- Ejemplos: `mcp:processModel/DEM Alta Solicitud#nodes[id=2]`, `mcp:interface/DEM_SolicitudForm#expression (línea 4)`, `mcp:processModel/DEM Alta Solicitud@history#totalCount`, `mcp:interface/DEM_SolicitudForm@screen#contents[0]`.
 - Si la conclusión viene de un documento oficial: `Fuente: <URL de docs.appian.com>`.
 - Si es inferida, márcala 🔵 y explica en una línea de qué se infiere.
 
@@ -81,3 +92,4 @@ Dilo explícitamente en el documento afectado, en lugar de rellenar huecos:
 
 - `mcp_raw` puede contener nombres de usuario (historial, versiones, miembros de grupos). En los entregables, **no listes usuarios**: da recuentos o roles. Solo `09-valor-adicional.md` puede citar el último autor de cambios cuando sea relevante para el mantenimiento.
 - Nunca copies valores de secretos. Sigue `references/security-rules.md`.
+- `mcp_raw` ya llega con los secretos enmascarados (`***ENMASCARADO***`, `usuario:***@`); `_meta.maskedSecrets` dice cuántos se taparon en cada fichero. Aun así, no vuelques definiciones completas al terminal ni a los entregables: cita la ubicación.

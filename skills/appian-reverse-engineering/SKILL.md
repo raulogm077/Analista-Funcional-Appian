@@ -77,7 +77,8 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 Lee antes `references/execution-principles.md`. Cada subagente recibe:
 
-- el contenido de `agents/<rol>.md`;
+- el contenido de `agents/<rol>.md`, o su ruta absoluta con la orden de leerlo entero antes de empezar (si el subagente puede leer ficheros);
+- la ruta de la skill, para que abra `references/` y `assets/` que cite su fichero;
 - la carpeta de salida;
 - si el Docs MCP está disponible y cuántas consultas le quedan (tope global de 30);
 - el entorno y la versión si se conoce.

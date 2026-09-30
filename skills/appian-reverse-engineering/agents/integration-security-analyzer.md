@@ -77,6 +77,8 @@ Si alguna herramienta devuelve la seguridad por objeto (role maps), úsala. Si n
 
 | Objeto | Tipo | Viewer | Editor | Administrator | Initiator | Deny |
 
+Para process models, la columna Initiator no es «solo quien tiene Initiator»: puede iniciarlo cualquier rol salvo Deny (Administrator, Editor, Manager, Viewer, Initiator). Si solo tienes `initiatorGroup`, ponlo como «grupo de seguridad» sin asignarle columna y márcalo 🟡. Fuente: https://docs.appian.com/suite/help/26.6/process-model-object.html#process-model-security (detalle en `references/lectura-mcp-raw.md`).
+
 Una fila por objeto. Lista corta de grupos por celda (no más de 4 por celda; si hay más, "5 grupos: ver `INVENTARIO.md`").
 
 **Hallazgos a destacar**:

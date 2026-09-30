@@ -59,7 +59,7 @@ Cada caso de uso tiene:
 Los actores son los grupos Appian que tienen permisos sobre entry points o que aparecen en `assignees` de user tasks:
 
 - **Grupos con acceso a sites/pages** → "Operadores del site".
-- **Grupo iniciador de cada process model** (`initiatorGroup` en el inventario) y, si alguna herramienta devuelve role maps (ficheros con rol `other`), grupos con permiso sobre records y acciones → "Pueden iniciar la action X".
+- **Grupo de seguridad de cada process model** (`initiatorGroup` en el inventario) y, si alguna herramienta devuelve role maps (ficheros con rol `other`), grupos con cualquier rol salvo Deny → "Pueden iniciar la action X". `initiatorGroup` no dice el nivel de permiso: sigue «Quién puede iniciar un process model» en `references/lectura-mcp-raw.md`.
 - **Grupos en la asignación de las user tasks** (`assignment.assignees` del nodo) → "Aprueban / gestionan tareas tipo X".
 - **Grupos en expresiones de visibilidad** de páginas y acciones (`a!isUserMemberOfGroup(..., cons!GRUPO)`) → "Acceden a la página X".
 - **Grupos administradores de objetos críticos** → "Administradores funcionales".
@@ -102,7 +102,7 @@ Estructura obligatoria:
 
 2. **📊 Volumen**: tabla con conteos por capa.
 
-3. **🗺️ Diagrama de arquitectura**: Mermaid Tipo A con los objetos reales y sus relaciones, agrupados visualmente por capa con etiquetas/notas (no `subgraph` porque las reglas de Tipo A no lo permiten):
+3. **🗺️ Diagrama de arquitectura**: Mermaid Tipo A con los objetos reales y sus relaciones, agrupados por capa con un `subgraph` por capa (permitido en Tipo A solo para esto; ver `mermaid-rules.md`):
    - **Presentación**: Sites, Pages, Interfaces, Record Views.
    - **Lógica**: Process Models clave, Expression Rules más conectadas, Decisions.
    - **Datos**: Record Types, CDTs, Data Stores.
@@ -126,7 +126,7 @@ Estructura obligatoria:
 - [ ] Cada caso de uso documentado tiene evidencia (entry point + PM destino verificables en `inventory.json`).
 - [ ] El diagrama de arquitectura pasa `validate_mermaid.py`.
 - [ ] Cada objeto mencionado existe en el inventario (no inventes nombres).
-- [ ] El lenguaje del `01-funcional.md` no tiene jerga Appian (busca y elimina menciones a "Process Model", "Record Type", "SAIL", "smart service" salvo en la línea "Implementado en").
+- [ ] El lenguaje del `01-funcional.md` no tiene jerga Appian (Process Model, Record Type, SAIL, smart service, Site, Interface/interfaz, Web API, Expression Rule, Constant, CDT…) **salvo** en las líneas «Implementado en» y «Evidencia», que son técnicas por definición.
 - [ ] Cada ficha o caso de uso tiene estado (✅/🔵/🟡/🔴).
 
 ## Salida

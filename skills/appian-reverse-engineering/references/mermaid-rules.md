@@ -21,7 +21,7 @@ Solo se permiten estos tres tipos. Cada uno tiene reglas específicas; las **reg
    - `-->|"Etiqueta"|` flecha con etiqueta (etiqueta entre comillas dobles).
 4. **IDs**: solo `N1`, `N2`, `N3`, … (letra mayúscula N + número).
 5. **Etiquetas**: siempre entre comillas dobles, máximo 50 caracteres, sin saltos de línea, sin comillas dobles internas (reemplazar por simples).
-6. **Sin `classDef`**, sin `subgraph`, sin colores. Diagrama estructural sobrio.
+6. **Sin `classDef`** ni colores. `subgraph` **solo** para agrupar por capa en diagramas de arquitectura (`subgraph CP["Presentación"] … end`); con `subgraph` el validador no renombra los IDs, así que usa ya `N1`, `N2`…
 7. **Máximo 30 nodos** por diagrama. Si excede, particionar.
 
 ---
@@ -125,6 +125,22 @@ Subtipo de `flowchart LR` con shapes, iconos y `classDef` específicos para emul
 
 ---
 
+## Nombres de ficheros de diagramas
+
+Todos en `<salida>/diagrams/` salvo los de procesos:
+
+| Documento | Fichero |
+|---|---|
+| 01 | `flujo-general.mmd` |
+| 02 | `arquitectura.mmd` (partido: `arquitectura-<capa>.mmd`) |
+| 03 | `modelo-datos.mmd`, `modelo-datos-<subdominio>.mmd`, `modelo-datos-subdominios.mmd` |
+| 04 | `grupos.mmd` |
+| 10 / 11 | `navegacion.mmd`, `estados-<entidad>.mmd` |
+| 13 | `arquitectura-objetivo.mmd` |
+| 08 | `08-procesos-bpmn/<slug>.mmd` (`slug` del inventario) |
+
+Nombres en minúsculas, sin acentos ni espacios. El `.svg` lleva el mismo nombre.
+
 ## Reglas comunes a los tres tipos
 
 - **No HTML** dentro de etiquetas (`<br>`, `<b>`, etc.).
@@ -149,7 +165,7 @@ Antes de escribir un diagrama, aplica este procedimiento (o usa `scripts/validat
 8. **Valida que cada flecha referencia nodos existentes**. Si no, rechaza.
 9. **Valida que no hay nodos duplicados** (mismo ID, etiquetas distintas).
 10. **Valida límites de tamaño** por tipo:
-    - Tipo A (`flowchart`): ≤ 30 nodos.
+    - Tipo A (`flowchart`): ≤ 30 nodos, también cuando va agrupado por capas con `subgraph` (sin `classDef`).
     - Tipo B (`erDiagram`): **sin techo absoluto**, pero si un solo diagrama queda ilegible (más de ~15-30 entidades), **particiona por subdominio** y añade un mapa de subdominios como índice navegable. Nunca omitas entidades — el inventario en tablas debe seguir cubriendo el 100% de la aplicación.
     - Tipo C (`flowchart` BPMN-styled): ≤ 25 nodos por proceso. Si excede, partir en sub-procesos / call activities.
     Si un diagrama Tipo A o C excede el límite, divide o convierte a tabla.

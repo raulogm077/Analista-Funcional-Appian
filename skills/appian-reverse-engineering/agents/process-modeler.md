@@ -116,7 +116,7 @@ Usa `assets/markdown-templates/08-procesos-bpmn/pm-template.md` como base. Estru
 5. **🔁 Paso a paso del flujo**: narrativa funcional en lenguaje de negocio. Cada paso menciona qué nodo BPMN lo implementa.
 6. **🔌 Integraciones y data stores que toca**: tablas.
 7. **👥 Asignación de tareas**: tabla por user task con asignación, SLA, escalation.
-8. **⚠️ Manejo de excepciones**: tabla.
+8. **🧯 Manejo de excepciones**: tabla.
 9. **🔍 Hallazgos**: solo si hay riesgos o patrones notables.
 10. **📁 Ficheros relacionados**: enlaces a `.bpmn`, `.svg`, `.mmd` y evidencia de la definición (`mcp:processModel/<nombre>`).
 
@@ -144,10 +144,12 @@ Después de procesar todos los PMs, genera el índice con:
 
 ## Salida
 
-- `<ruta_salida>/08-procesos-bpmn/<PM>.bpmn` (uno por process model)
-- `<ruta_salida>/08-procesos-bpmn/<PM>.mmd` (uno por process model)
-- `<ruta_salida>/08-procesos-bpmn/<PM>.svg` (si `mmdc` disponible)
-- `<ruta_salida>/08-procesos-bpmn/<PM>.md` (uno por process model)
+- `<ruta_salida>/08-procesos-bpmn/<slug>.bpmn` (uno por process model)
+- `<ruta_salida>/08-procesos-bpmn/<slug>.mmd` (uno por process model)
+- `<ruta_salida>/08-procesos-bpmn/<slug>.svg` (si `mmdc` disponible)
+- `<ruta_salida>/08-procesos-bpmn/<slug>.md` (uno por process model)
+
+`<slug>` es el campo `slug` del process model en `inventory.json` (nombre sin acentos ni espacios). Los demás agentes enlazan con ese mismo nombre.
 - `<ruta_salida>/08-procesos-bpmn/indice.md`
 
 ## Anti-patrones (no hagas esto)

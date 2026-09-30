@@ -6,7 +6,11 @@
 
 # Arquitectura de la aplicación
 
-> Esta sección describe la arquitectura **de esta aplicación concreta**, no la arquitectura genérica de Appian. Cada nodo es un objeto real de la aplicación.
+> **TL;DR**: {{2-3 frases: cómo está montada la app. P. ej. "Un site con 3 páginas lleva a interfaces que leen el record RT_Solicitud; el proceso DEM Alta Solicitud orquesta el alta, llama al ERP y lanza la revisión como subproceso."}}
+>
+> **Volumen**: {{N objetos: N interfaces, N process models, N expression rules, N record types, N integraciones…}}. {{Datos: N filas en RT_X y N en RT_Y (recuento del data fabric) — o "recuentos no disponibles (Appian MCP Server no configurado)"}}. {{Uso: N ejecuciones del proceso principal (historial) — o "historial no disponible"}}.
+
+Esta sección describe la arquitectura **de esta aplicación concreta**, no la arquitectura genérica de Appian. Cada nodo es un objeto real de la aplicación.
 
 ## Diagrama general
 
@@ -14,23 +18,24 @@
 
 ```mermaid
 flowchart LR
-  %% Presentación
-  N1["(Site) {{site_principal}}"]
-  N2["(Page) {{page_dashboard}}"]
-  N3["(Interface) {{interface_principal}}"]
-
-  %% Lógica
-  N4["(Process Model) {{pm_central}}"]
-  N5["(Expression Rule) {{rule_clave}}"]
-
-  %% Datos
-  N6["(Record) {{record_principal}}"]
-  N7["(CDT) {{cdt_principal}}"]
-  N8["(Data Store) {{datastore}}"]
-
-  %% Integración
-  N9["(Integration) {{integration_clave}}"]
-  N10["(Connected System) {{cs}}"]
+  subgraph CP["Presentación"]
+    N1["(Site) {{site_principal}}"]
+    N2["(Page) {{page_dashboard}}"]
+    N3["(Interface) {{interface_principal}}"]
+  end
+  subgraph CL["Lógica"]
+    N4["(Process Model) {{pm_central}}"]
+    N5["(Expression Rule) {{rule_clave}}"]
+  end
+  subgraph CD["Datos"]
+    N6["(Record) {{record_principal}}"]
+    N7["(CDT) {{cdt_principal}}"]
+    N8["(Data Store) {{datastore}}"]
+  end
+  subgraph CI["Integración"]
+    N9["(Integration) {{integration_clave}}"]
+    N10["(Connected System) {{cs}}"]
+  end
 
   N1 --> N2
   N2 --> N3
@@ -112,4 +117,4 @@ Detalle completo en [05-integraciones-consumidas.md](./05-integraciones-consumid
 - {{Nota 2}}
 - {{Nota 3}}
 
-> Estado: ✅/🔵 — Evidencia: grafo de dependencias en `_graph.json` (Fase 3).
+> Estado: ✅/🔵 — Evidencia: grafo de dependencias en `_intermedio/graph.json`.

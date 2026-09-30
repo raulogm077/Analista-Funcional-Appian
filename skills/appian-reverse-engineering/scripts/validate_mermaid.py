@@ -249,8 +249,11 @@ def validate_er(diagram_text: str) -> Tuple[str, List[str]]:
     return diagram_text.strip() + "\n", warnings
 
 
-def validate_type_c(diagram_text: str) -> Tuple[str, List[str]]:
-    """Tipo C: flowchart BPMN con carriles (subgraph) y classDef. Valida y devuelve sin cambios."""
+def validate_type_c(diagram_text: str, max_nodes: int = MAX_NODES_C, layered: bool = False) -> Tuple[str, List[str]]:
+    """Tipo C: flowchart BPMN con carriles (subgraph) y classDef. Valida y devuelve sin cambios.
+
+    Con layered=True valida un tipo A agrupado por capas (subgraph sin classDef): límite de tipo A.
+    """
     warnings: List[str] = []
     lines = [ln.rstrip() for ln in diagram_text.strip().splitlines() if ln.strip()]
     header = lines[0].strip()
@@ -290,10 +293,10 @@ def validate_type_c(diagram_text: str) -> Tuple[str, List[str]]:
     if depth != 0:
         raise ValueError("Número de 'subgraph' y 'end' no cuadra.")
     node_ids -= {"subgraph", "classDef", "class", "style"}
-    if len(node_ids) > MAX_NODES_C:
-        raise ValueError(f"{len(node_ids)} nodos superan el máximo de {MAX_NODES_C} del tipo C: "
-                         "parte el proceso en subprocesos.")
-    if "classDef" not in diagram_text:
+    if len(node_ids) > max_nodes:
+        what = "del tipo A por capas: parte por capa" if layered else "del tipo C: parte el proceso en subprocesos"
+        raise ValueError(f"{len(node_ids)} nodos superan el máximo de {max_nodes} {what}.")
+    if not layered and "classDef" not in diagram_text:
         warnings.append("Tipo C sin classDef: los nodos no tendrán el estilo BPMN.")
     return diagram_text.strip() + "\n", warnings
 
@@ -303,8 +306,12 @@ def validate(diagram_text: str) -> Tuple[str, List[str]]:
     first = next((ln.strip() for ln in diagram_text.splitlines() if ln.strip()), "")
     if first == "erDiagram":
         return validate_er(diagram_text)
-    if first.startswith(("flowchart", "graph")) and re.search(r"^\s*(subgraph\b|classDef\b)", diagram_text, re.M):
-        return validate_type_c(diagram_text)
+    if first.startswith(("flowchart", "graph")):
+        has_class = re.search(r"^\s*classDef\b", diagram_text, re.M)
+        if has_class:
+            return validate_type_c(diagram_text)
+        if re.search(r"^\s*subgraph\b", diagram_text, re.M):
+            return validate_type_c(diagram_text, max_nodes=MAX_NODES, layered=True)
     return sanitize(diagram_text)
 
 

@@ -6,6 +6,8 @@
 
 ## Regla 1: principio de cascada (TL;DR → vista → detalle)
 
+> La estructura concreta de cada documento está en `execution-principles.md` §2.1, que también fija la precedencia entre rol, plantilla y estas reglas.
+
 Todo entregable se estructura en **tres niveles de profundidad**, en este orden estricto:
 
 | Nivel | Para quién | Qué contiene | Longitud máxima |
