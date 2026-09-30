@@ -106,7 +106,7 @@ def app_objects():
 def dependents_of(uuid: str):
     o = obj_for(uuid)
     if o["objType"] not in fixture.DEPENDENTS_SUPPORTED:
-        raise ValueError(f"Dependency analysis is not supported for type {o['type']}")
+        raise ValueError(f"Dependency analysis is not supported for type {o['objType']}")
     tkey = KEY_BY_UUID[uuid]
     out = []
     for src, dst, crumb in fixture.REFS:
@@ -136,7 +136,7 @@ def versions_of(uuid: str):
 def validate(uuid: str):
     o = obj_for(uuid)
     if o["objType"] not in ("INTERFACE", "FREEFORM_RULE", "WEB_API", "PROCESS_MODEL", "RECORD_TYPE"):
-        raise ValueError(f"Validation not supported for {o['type']}")
+        raise ValueError(f"Validation not supported for {o['objType']}")
     issues = fixture.VALIDATION_ISSUES.get(o["key"], [])
     return {"valid": not any(i["severity"] == "ERROR" for i in issues), "issues": issues}
 

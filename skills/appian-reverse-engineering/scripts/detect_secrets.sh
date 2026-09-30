@@ -24,14 +24,12 @@ scan() {
   local pattern="$2"
   shift 2
   # -I: ignora binarios. -n: número de línea. -E: regex extendida.
+  # Solo se imprime fichero:línea. El contenido de la línea NUNCA se muestra.
   grep -rIEn --exclude-dir='.git' --exclude-dir='node_modules' \
     -- "$pattern" "$@" 2>/dev/null \
-    | sed -E 's/(:[0-9]+:).{0,40}(password|passwd|pwd|secret|token|bearer|api[_-]?key|apikey)["'"'"']?[[:space:]]*[:=][[:space:]]*.*$/\1 [VALOR ENMASCARADO] propiedad detectada: \2/i' \
-    | sed -E 's/(:[0-9]+:).*https?:\/\/[^\/[:space:]:]+:[^@[:space:]]+@.*$/\1 [VALOR ENMASCARADO] URL con credenciales detectada/' \
-    | sed -E 's/(:[0-9]+:).*-----BEGIN.*PRIVATE KEY.*$/\1 [VALOR ENMASCARADO] private key PEM detectada/' \
-    | while IFS= read -r line; do
-        printf '| %s | %s |\n' "$label" "$line" >> "$tmp"
-        found=1
+    | sed -E 's/^(.*:[0-9]+):.*$/\1/' \
+    | while IFS= read -r loc; do
+        printf '| %s | %s [VALOR ENMASCARADO] |\n' "$label" "$loc" >> "$tmp"
       done
 }
 
