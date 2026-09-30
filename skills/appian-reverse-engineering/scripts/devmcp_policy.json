@@ -1,0 +1,341 @@
+{
+  "_doc": [
+    "Politica de seguridad y de clasificacion de herramientas del Dev MCP.",
+    "No contiene una lista de herramientas: son reglas sobre verbos y patrones de nombre.",
+    "Se aplica a CUALQUIER herramienta que ofrezca el catalogo del servidor en cada ejecucion.",
+    "Los tokens se obtienen partiendo el nombre (camelCase o snake_case), en minusculas y en singular.",
+    "Editable: si una herramienta nueva queda mal clasificada, ajusta estas reglas, no el codigo."
+  ],
+  "writeVerbs": [
+    "create",
+    "update",
+    "delete",
+    "insert",
+    "remove",
+    "add",
+    "set",
+    "put",
+    "post",
+    "patch",
+    "edit",
+    "modify",
+    "change",
+    "replace",
+    "rename",
+    "move",
+    "copy",
+    "clone",
+    "duplicate",
+    "save",
+    "write",
+    "import",
+    "export",
+    "deploy",
+    "publish",
+    "start",
+    "run",
+    "execute",
+    "invoke",
+    "trigger",
+    "call",
+    "send",
+    "submit",
+    "approve",
+    "reject",
+    "reassign",
+    "assign",
+    "unassign",
+    "complete",
+    "cancel",
+    "abort",
+    "kill",
+    "pause",
+    "resume",
+    "restart",
+    "retry",
+    "schedule",
+    "enable",
+    "disable",
+    "activate",
+    "deactivate",
+    "grant",
+    "revoke",
+    "lock",
+    "unlock",
+    "restore",
+    "reset",
+    "purge",
+    "clear",
+    "archive",
+    "upload",
+    "attach",
+    "detach",
+    "register",
+    "unregister",
+    "install",
+    "uninstall",
+    "configure",
+    "apply",
+    "merge",
+    "sync",
+    "refresh",
+    "regenerate",
+    "generate",
+    "migrate",
+    "upsert",
+    "bulk",
+    "provision",
+    "rotate"
+  ],
+  "interactionTokens": [
+    "click",
+    "press",
+    "tap",
+    "interact",
+    "submit"
+  ],
+  "evaluationVerbs": [
+    "test",
+    "evaluate",
+    "eval",
+    "simulate",
+    "preview",
+    "render",
+    "debug",
+    "dry"
+  ],
+  "readVerbs": [
+    "get",
+    "list",
+    "search",
+    "find",
+    "describe",
+    "read",
+    "fetch",
+    "view",
+    "show",
+    "lookup",
+    "count",
+    "validate",
+    "check",
+    "inspect",
+    "analyze",
+    "explain",
+    "resolve",
+    "browse",
+    "retrieve"
+  ],
+  "allowExceptions": [
+    {
+      "pattern": "(?i)^(test|render|preview)[A-Za-z]*Interface[A-Za-z]*$",
+      "role": "screen",
+      "reason": "Renderiza una interfaz con entradas vacias para obtener su arbol de componentes. No hace clic ni envia formularios."
+    }
+  ],
+  "excludePatterns": [
+    {
+      "pattern": "(?i)record(data|rows?)|rows$|sqlquery|querydata",
+      "reason": "Lee filas de datos de negocio (fuera del alcance: solo metadatos y recuentos)."
+    },
+    {
+      "pattern": "(?i)^(list|get|search|find|describe)(all)?users?(detail|details|profile)?$",
+      "reason": "Datos personales de usuarios."
+    },
+    {
+      "pattern": "(?i)(password|secret|credential|token)s?$",
+      "reason": "Credenciales."
+    }
+  ],
+  "roles": [
+    {
+      "role": "validation",
+      "tokens": [
+        "validate",
+        "validation",
+        "lint",
+        "health"
+      ]
+    },
+    {
+      "role": "dependents",
+      "tokens": [
+        "dependent",
+        "usage",
+        "impact",
+        "caller",
+        "whereused",
+        "referrer"
+      ]
+    },
+    {
+      "role": "dependencies",
+      "tokens": [
+        "dependency",
+        "dependencie",
+        "precedent",
+        "outgoing"
+      ]
+    },
+    {
+      "role": "versions",
+      "tokens": [
+        "version",
+        "revision"
+      ]
+    },
+    {
+      "role": "history",
+      "tokens": [
+        "history",
+        "instance",
+        "execution",
+        "audit",
+        "run"
+      ]
+    },
+    {
+      "role": "members",
+      "tokens": [
+        "member",
+        "membership"
+      ]
+    }
+  ],
+  "definitionVerbs": [
+    "get",
+    "describe",
+    "read",
+    "fetch",
+    "show",
+    "view",
+    "retrieve"
+  ],
+  "definitionSuffixes": [
+    "definition",
+    "detail",
+    "config",
+    "configuration",
+    "info",
+    "full",
+    "design",
+    "object"
+  ],
+  "typeSynonyms": {
+    "expressionRule": [
+      "freeform rule",
+      "expression rule",
+      "rule"
+    ],
+    "integration": [
+      "outbound integration",
+      "integration"
+    ],
+    "cdt": [
+      "data type",
+      "datatype",
+      "cdt",
+      "custom data type"
+    ],
+    "folder": [
+      "rule folder",
+      "folder",
+      "content folder"
+    ],
+    "processModelFolder": [
+      "process model folder"
+    ],
+    "webApi": [
+      "web api",
+      "webapi"
+    ],
+    "dataStore": [
+      "data store",
+      "datastore"
+    ],
+    "decision": [
+      "decision",
+      "decision table"
+    ],
+    "knowledgeCenter": [
+      "knowledge center",
+      "community knowledge center"
+    ],
+    "application": [
+      "application",
+      "app"
+    ]
+  },
+  "listContainerKeys": [
+    "item",
+    "object",
+    "result",
+    "data",
+    "content",
+    "value",
+    "entry",
+    "record",
+    "response",
+    "list",
+    "page"
+  ],
+  "genericToolsSkipTypes": [
+    "application",
+    "folder",
+    "processModelFolder",
+    "knowledgeCenter",
+    "document"
+  ],
+  "pagination": {
+    "offsetParams": [
+      "startindex",
+      "offset",
+      "start",
+      "skip",
+      "from"
+    ],
+    "sizeParams": [
+      "batchsize",
+      "limit",
+      "pagesize",
+      "maxresults",
+      "size",
+      "maxitems"
+    ],
+    "cursorParams": [
+      "cursor",
+      "pagetoken",
+      "nextpagetoken",
+      "after",
+      "continuationtoken",
+      "nextcursor"
+    ],
+    "pageParams": [
+      "page",
+      "pagenumber"
+    ],
+    "totalKeys": [
+      "totalcount",
+      "total",
+      "totalresults",
+      "totalitems",
+      "totalsize"
+    ],
+    "cursorKeys": [
+      "nextcursor",
+      "nextpagetoken",
+      "cursor",
+      "next",
+      "continuationtoken"
+    ],
+    "maxPages": 50,
+    "maxItems": 5000,
+    "noPaginateRoles": [
+      "history",
+      "versions"
+    ]
+  },
+  "adaptiveDisable": {
+    "probeCalls": 3
+  },
+  "confirmAboveCalls": 1500
+}
