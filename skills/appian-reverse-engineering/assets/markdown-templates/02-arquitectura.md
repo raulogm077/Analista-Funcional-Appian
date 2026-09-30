@@ -6,7 +6,7 @@
 
 # Arquitectura de la aplicación
 
-> Esta sección describe la arquitectura **de esta aplicación concreta**, no la arquitectura genérica de Appian. Cada nodo es un objeto real del export.
+> Esta sección describe la arquitectura **de esta aplicación concreta**, no la arquitectura genérica de Appian. Cada nodo es un objeto real de la aplicación.
 
 ## Diagrama general
 
@@ -74,7 +74,7 @@ Record Types, CDTs, Data Stores, tablas.
 | Objeto | Tipo | Fuente | Detalle |
 |---|---|---|---|
 | `{{record_1}}` | Record Type | DB / Service / Process / Expression | CDT `{{cdt}}`, tabla `{{tabla}}` |
-| `{{cdt_1}}` | CDT | `.xsd` | mapeado a tabla `{{tabla}}` |
+| `{{cdt_1}}` | CDT | — | mapeado a tabla `{{tabla}}` (si la definición está disponible) |
 | `{{ds_1}}` | Data Store | JNDI `{{jndi}}` | entidades: `{{lista}}` |
 
 Detalle completo en [03-modelo-datos.md](./03-modelo-datos.md).

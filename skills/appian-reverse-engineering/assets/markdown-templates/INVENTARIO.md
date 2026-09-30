@@ -1,163 +1,122 @@
 <!--
   Plantilla INVENTARIO — Inventario completo por tipo de objeto
-  Debe cubrir el 100% de los objetos del export.
-  Generar en Fase 2 a partir de `scripts/parse_export.py --inventory`.
+  Debe cubrir el 100% de los objetos de la aplicación (inventory.json).
+  Lo genera el orquestador en la fase 6 a partir de _intermedio/inventory.json y extraction_report.json.
+  Una sección por tipo presente en counts, incluidos tipos que la skill no conozca (se listan igual).
 -->
 
 # Inventario de la aplicación
 
-**Aplicación:** {{nombre_visible}} (`{{nombre_tecnico}}`)
-**Ruta del export:** `{{ruta_export}}`
+**Aplicación:** {{nombre_visible}} (prefijo `{{prefijo}}`, uuid `{{uuid_app}}`)
+**Fuente:** Appian Dev MCP · entorno `{{url_entorno}}` · extraído el {{fecha_extraccion}} (solo lectura)
 **Fecha de análisis:** {{fecha_iso}}
 
 ## Conteo por tipo
 
-| Tipo de objeto | Cantidad |
-|---|---|
-| Application | 1 |
-| Sites | {{N}} |
-| Pages / Portals | {{N}} |
-| Record Types | {{N}} |
-| Record Views | {{N}} |
-| Record Actions | {{N}} |
-| Related Actions | {{N}} |
-| Interfaces | {{N}} |
-| Expression Rules | {{N}} |
-| Decisions | {{N}} |
-| Process Models | {{N}} |
-| Constants | {{N}} |
-| Data Stores | {{N}} |
-| CDTs (XSDs) | {{N}} |
-| Connected Systems | {{N}} |
-| Integrations | {{N}} |
-| Web APIs | {{N}} |
-| Groups | {{N}} |
-| Group Types | {{N}} |
-| Folders (Rules / Documents) | {{N}} |
-| Documents | {{N}} |
-| Knowledge Centers | {{N}} |
-| Plugins | {{N}} |
-| ICF files | {{N}} |
-| **Total** | **{{TOTAL}}** |
+> Una fila por clave de `counts` en `inventory.json`, con el nombre legible del tipo.
+
+| Tipo de objeto | Cantidad | Con definición | Sin definición (🟡) |
+|---|---|---|---|
+| {{Record Types}} | {{N}} | {{N}} | {{N}} |
+| {{Interfaces}} | {{N}} | {{N}} | {{N}} |
+| {{...}} | | | |
+| **Total** | **{{TOTAL}}** | | |
 
 ## Records / Record Types
 
-| Nombre técnico | Nombre visible | UUID | Ruta | Descripción | UpdatedOn / By |
-|---|---|---|---|---|---|
-| `{{rt_1}}` | {{visible}} | `{{uuid}}` | `{{ruta}}` | {{desc}} | `{{date}}` / `{{user}}` |
+| Nombre | Origen de datos | Tabla | Campos | Filas (data fabric) | Descripción | Última modificación |
+|---|---|---|---|---|---|---|
+| `{{rt_1}}` | {{sourceType}} | `{{tableName}}` | {{fieldCount}} | {{count o —}} | {{desc}} | {{lastModifiedOn}} |
 
 ## CDTs
 
-| Nombre | Namespace | Tabla mapeada | Campos | Ruta |
-|---|---|---|---|---|
-| `{{cdt_1}}` | `{{namespace}}` | `{{tabla_o_vacio}}` | {{n_campos}} | `{{ruta_xsd}}` |
+| Nombre | Definición | Usado por |
+|---|---|---|
+| `{{cdt_1}}` | ✅ / 🟡 no disponible por Dev MCP | {{objetos que lo referencian}} |
 
 ## Process Models
 
-| Nombre técnico | Nombre visible | UUID | Trigger | Subprocesos | Ruta |
+| Nombre | Inicio | Nodos | Tareas humanas | Ejecuciones reales | Última ejecución |
 |---|---|---|---|---|---|
-| `{{pm_1}}` | {{visible}} | `{{uuid}}` | none/timer/message | {{n}} | `{{ruta}}` |
+| `{{pm_1}}` | none/timer/message | {{n}} | {{n}} | {{N o —}} | {{fecha o —}} |
 
 ## Interfaces
 
-| Nombre técnico | UUID | Ruta | Descripción |
-|---|---|---|---|
-| `{{if_1}}` | `{{uuid}}` | `{{ruta}}` | {{desc}} |
+| Nombre | Pantalla (`PAN-xxx`) | Tamaño SAIL | Avisos de validación | Descripción |
+|---|---|---|---|---|
+| `{{if_1}}` | {{PAN-001 o —}} | {{sailBytes}} | {{N}} | {{desc}} |
 
 ## Expression Rules
 
-| Nombre técnico | UUID | Ruta | Descripción |
+| Nombre | Tamaño SAIL | Llamada por | Descripción |
 |---|---|---|---|
-| `{{rule_1}}` | `{{uuid}}` | `{{ruta}}` | {{desc}} |
+| `{{rule_1}}` | {{sailBytes}} | {{N objetos}} | {{desc}} |
 
 ## Decisions
 
-| Nombre técnico | UUID | Ruta | Descripción |
-|---|---|---|---|
-| `{{decision_1}}` | `{{uuid}}` | `{{ruta}}` | {{desc}} |
+| Nombre | Definición | Descripción |
+|---|---|---|
+| `{{decision_1}}` | ✅ / 🟡 | {{desc}} |
 
 ## Integrations
 
-| Nombre técnico | Nombre visible | Método | Endpoint enmascarado | Connected System | Ruta |
-|---|---|---|---|---|---|
-| `{{int_1}}` | {{visible}} | {{verb}} | `{{url}}` | `{{cs}}` | `{{ruta}}` |
+| Nombre | Método | Endpoint (enmascarado) | Connected System | Modifica datos |
+|---|---|---|---|---|
+| `{{int_1}}` | {{verb}} | `{{endpoint}}` | `{{cs}}` | Sí/No |
 
 ## Connected Systems
 
-| Nombre técnico | Tipo | Base URL enmascarada | Auth | Ruta |
-|---|---|---|---|---|
-| `{{cs_1}}` | HTTP/OAuth/SAP/… | `{{url}}` | {{auth_type}} | `{{ruta}}` |
+| Nombre | Tipo | Base URL (enmascarada) | Autenticación |
+|---|---|---|---|
+| `{{cs_1}}` | HTTP/OAuth/… | `{{url}}` | {{auth_type}} |
 
 ## Web APIs
 
-| Nombre técnico | Método | Endpoint Path | Ruta |
+| Nombre | Método | Endpoint | Descripción |
 |---|---|---|---|
-| `{{wa_1}}` | {{verb}} | `/suite/webapi/{{path}}` | `{{ruta}}` |
+| `{{wa_1}}` | {{verb}} | `/suite/webapi/{{path}}` | {{desc}} |
 
 ## Sites
 
-| Nombre técnico | Nombre visible | Páginas | Ruta |
-|---|---|---|---|
-| `{{site_1}}` | {{visible}} | {{n}} | `{{ruta}}` |
+| Nombre | URL | Páginas |
+|---|---|---|
+| `{{site_1}}` | `/sites/{{urlStub}}` | {{n}} |
 
 ## Groups
 
-| Nombre técnico | Tipo | Grupo padre | Ruta |
-|---|---|---|---|
-| `{{grupo_1}}` | Custom/System | `{{padre_o_vacio}}` | `{{ruta}}` |
+| Nombre | Tipo | Padre | Grupos miembro | Nº de usuarios |
+|---|---|---|---|---|
+| `{{grupo_1}}` | {{groupType}} | `{{padre_o_vacio}}` | {{lista}} | {{userCount}} |
 
 ## Constants
 
-| Nombre técnico | Tipo Appian | Valor (o 🔒 enmascarado) | Ruta |
+| Nombre | Tipo | Valor | Referencia |
 |---|---|---|---|
-| `{{cons_1}}` | TEXT/URL/GROUP/USER/… | `{{valor_o_secret}}` | `{{ruta}}` |
+| `{{cons_1}}` | TEXT/GROUP/PROCESS_MODEL/… | `{{valor_o_🔒}}` | {{valueRef o —}} |
 
-## Data Stores
+## Otros tipos
 
-| Nombre técnico | JNDI | Entidades | Ruta |
-|---|---|---|---|
-| `{{ds_1}}` | `{{jndi}}` | {{lista_cdts}} | `{{ruta}}` |
+> Un apartado por cada tipo restante de `counts` (carpetas, documentos, agentes de IA, tipos nuevos…), con nombre y descripción.
 
-## Folders / Documents / Knowledge Centers
-
-| Nombre | Tipo | Padre | Ruta |
-|---|---|---|---|
-| `{{f_1}}` | Folder | `{{padre}}` | `{{ruta}}` |
-| `{{d_1}}` | Document | `{{folder}}` | `{{ruta}}` |
-| `{{kc_1}}` | Knowledge Center | — | `{{ruta}}` |
-
-## Plugins / Smart services personalizados
-
-| Plugin | Smart services | Functions | CS types | Versión | Ruta |
-|---|---|---|---|---|---|
-| `{{plugin_1}}` | {{lista}} | {{lista}} | {{lista}} | `{{ver}}` | `{{ruta}}` |
-
-## ICF (configuración por entorno)
-
-| Fichero | Tamaño | Notas |
-|---|---|---|
-| `import-customization-file-{{env}}.properties` | {{KB}} | {{n_overrides}} overrides |
-
-## Consistencia con `application.xml`
-
-Verificación cruzada: cada UUID declarado en `application.xml` debe corresponder a un XML del export, y viceversa.
+## Cobertura de la extracción
 
 | Métrica | Valor |
 |---|---|
-| UUIDs declarados en `application.xml` | {{N}} |
-| Objetos físicos encontrados en el export | {{N}} |
-| Declarados sin archivo (faltan en el export) | {{N}} → ver lista abajo |
-| Archivos sin declarar en `application.xml` | {{N}} → ver lista abajo |
+| Objetos listados por la aplicación | {{N}} |
+| Objetos con definición | {{N}} |
+| Objetos sin definición (tipo sin herramienta o error) | {{N}} |
+| Herramientas del Dev MCP usadas | {{N}} (ver `extraction_report.json`) |
+| Herramientas excluidas por seguridad | {{N}} |
+| Llamadas con error | {{N}} |
+| Herramientas desactivadas por tipo tras fallar | {{lista tipo/herramienta}} |
+| Appian MCP Server (volúmenes) | disponible / no disponible |
+| Docs MCP | disponible / no disponible |
 
-### Declarados sin archivo
+### Objetos sin definición
 
-{{Lista de UUIDs que aparecen en `application.xml` pero no tienen un XML correspondiente. Si está vacío, escribir "Ninguno".}}
-
-### Archivos sin declarar
-
-{{Lista de XMLs encontrados que no están en `application.xml`. Si está vacío, escribir "Ninguno".}}
+{{Lista `nombre (tipo) — motivo`. Si está vacía, escribir "Ninguno".}}
 
 ## Notas del inventario
 
-- {{Cualquier anomalía detectada al inventariar: namespaces inconsistentes, XMLs malformados que se ignoraron, etc.}}
-- {{Si todos los conteos son consistentes, escribir: "Inventario consistente. 100% de los objetos cubiertos."}}
+- {{Anomalías: tipos desconocidos, errores de extracción relevantes, objetos externos a la aplicación referenciados.}}
+- {{Si todo cuadra, escribir: "Inventario consistente. 100% de los objetos cubiertos."}}

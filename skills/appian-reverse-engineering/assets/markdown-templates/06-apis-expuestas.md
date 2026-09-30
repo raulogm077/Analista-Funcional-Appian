@@ -24,7 +24,7 @@
 | Método HTTP | GET / POST / PUT / PATCH / DELETE |
 | Autenticación | {{NONE / BASIC / API_KEY / autenticación por grupo Appian}} |
 | Grupos autorizados | `{{grupo_1}}`, `{{grupo_2}}` |
-| Estado | ✅/🔵 — Evidencia: `{{ruta_xml}}` |
+| Estado | ✅/🔵 — Evidencia: `mcp:webApi/{{nombre}}` |
 
 **Parámetros**
 
@@ -37,7 +37,7 @@
 **Body esperado (POST/PUT/PATCH)**
 
 ```{{lenguaje}}
-{{Estructura esperada del request body. Inferida del SAIL en <expression>.
+{{Estructura esperada del request body. Inferida del SAIL de la definición.
 Si solo hay un único tipo aceptado, mostrar; si admite variantes, listar todas.}}
 ```
 
@@ -50,7 +50,7 @@ Ejemplo:
 }
 ```
 
-**Qué hace al invocarse** (del SAIL en `<expression>`)
+**Qué hace al invocarse** (del SAIL de la definición)
 
 {{Descripción en prosa breve. Ejemplo: "Recibe un payload con datos del expediente, valida los campos obligatorios contra la regla `rule!{{validador}}`, y lanza el process model `PM_CrearExpediente` con esos datos. Devuelve el ID del expediente creado y un código HTTP 201."}}
 
@@ -80,7 +80,7 @@ Ejemplo:
 
 {{Quién la llama y para qué. Si es un cliente externo, qué cliente. Si es otro proceso interno, referenciar el caso de uso de `01-funcional.md`.}}
 
-> Estado: ✅/🔵/🟡 — Evidencia: `{{ruta_xml}}`
+> Estado: ✅/🔵/🟡 — Evidencia: `mcp:webApi/{{nombre}}`
 
 ---
 
@@ -93,7 +93,7 @@ Ejemplo:
 - 🔴 **Web APIs con autorización `All Users` o sin grupo explícito**: {{lista o "ninguna"}}.
 - 🔴 **Web APIs sin validación de entrada visible** en el SAIL: {{lista o "ninguna"}}.
 - 🟡 **Web APIs que no devuelven códigos HTTP explícitos** (siempre 200): {{lista}}.
-- 🟡 **Web APIs cuyo process model destino no parece existir** en el export: {{lista}}.
+- 🟡 **Web APIs cuyo process model destino no parece existir** en la aplicación: {{lista}}.
 
 ## Resumen rápido
 

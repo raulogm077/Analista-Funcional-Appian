@@ -8,14 +8,14 @@
 
 > Process models que se disparan solos por temporizador o recurrencia, sin intervención humana.
 
-> Si el export no contiene ningún process model con start event temporal, este documento debe contener exactamente: "No se han detectado procesos recurrentes en el export." y omitir el resto de secciones.
+> Si la aplicación no contiene ningún process model con start event temporal, este documento debe contener exactamente: "No se han detectado procesos recurrentes en la aplicación." y omitir el resto de secciones.
 
 ## Resumen
 
-| Process Model | Frecuencia humana | Cron equivalente | Próxima ejecución | Volumetría estimada |
+| Process Model | Frecuencia humana | Cron equivalente | Ejecuciones reales | Última ejecución |
 |---|---|---|---|---|
-| `{{pm_batch_1}}` | {{Cada lunes a las 08:00}} | `0 8 * * 1` | {{ISO_date}} | {{filas/llamadas estimadas}} |
-| `{{pm_batch_2}}` | {{Cada hora en horario laboral}} | `0 9-18 * * 1-5` | {{ISO_date}} | {{}} |
+| `{{pm_batch_1}}` | {{Cada lunes a las 08:00}} | `0 8 * * 1` | {{N o «sin historial»}} | {{ISO_date}} |
+| `{{pm_batch_2}}` | {{Cada hora en horario laboral}} | `0 9-18 * * 1-5` | {{}} | {{}} |
 
 ## Detalle por batch
 
@@ -25,11 +25,12 @@
 |---|---|
 | Propósito funcional | {{para qué se ejecuta este batch}} |
 | Trigger | Timer Start Event |
-| Frecuencia (lenguaje humano) | {{traducción de `<recurrence>` a algo legible}} |
+| Frecuencia (lenguaje humano) | {{traducción de la configuración del temporizador (`schedule` en el inventario) a algo legible}} |
 | Cron equivalente | `{{cron}}` o "No traducible directamente a cron — `{{razón}}`" |
-| Próximas 3 ejecuciones | {{Si se puede calcular: lista. Si no: "No determinable desde el export."}} |
+| Próximas 3 ejecuciones | {{Si se puede calcular: lista. Si no: "No determinable con los datos extraídos."}} |
+| Uso real | {{ejecuciones, última ejecución y fallos (`usage`), o «sin historial disponible»}} |
 | Owner / responsable | {{grupo o "no determinado"}} |
-| Estado | ✅/🔵 — Evidencia: `{{ruta_xml}}#start-node` |
+| Estado | ✅/🔵 — Evidencia: `mcp:processModel/{{nombre}}#nodes[0]` |
 
 **Qué hace (paso a paso funcional)**
 
@@ -58,16 +59,16 @@ Si no hay paginación visible, marcar como 🟡 riesgo y derivar a `09-valor-adi
 
 | Indicador | Valor | Fuente |
 |---|---|---|
-| Batch size | `{{N}}` | `{{ruta}}#nodo` |
-| Paginación | Sí / No | `{{ruta}}` |
-| Filtro de fecha | Sí ({{campo}}) / No | `{{ruta}}` |
+| Batch size | `{{N}}` | `mcp:processModel/{{nombre}}#nodes[{{i}}]` |
+| Paginación | Sí / No | `mcp:...` |
+| Filtro de fecha | Sí ({{campo}}) / No | `mcp:...` |
 
 **Manejo de errores**
 
 - {{exception flow detectado / alert / retry}} — {{evidencia}}
 - {{Si no hay manejo, marcar como 🔴 y mover a `09-valor-adicional.md`.}}
 
-> Estado: ✅/🔵/🟡 — Evidencia: `{{ruta_xml}}`
+> Estado: ✅/🔵/🟡 — Evidencia: `mcp:processModel/{{nombre}}`
 
 ---
 

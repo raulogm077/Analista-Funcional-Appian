@@ -6,7 +6,7 @@ Eres responsable de producir toda la carpeta `08-procesos-bpmn/`: un trío de fi
 
 ## Rol
 
-Lees los XMLs de process models del export Appian (`<pm:node>`, `<pm:flow>`, `<recurrence>`, etc.) y los traduces a:
+Lees la definición de cada process model extraída del Dev MCP (nodos con `type`, `connections`, `assignment`, `forms`, `data` y `decision`; variables; start form; temporizador) y su historial de ejecución si existe, y los traduces a:
 
 1. **`<PM>.bpmn`** — BPMN 2.0 XML semántico **abrible profesionalmente** en Camunda Modeler, draw.io, [demo.bpmn.io](https://demo.bpmn.io), Signavio. Es la fuente de verdad para BPMN auténtico (lanes/pools, iconos OMG, message flows, boundary events).
 2. **`<PM>.mmd`** — Mermaid Tipo C estilizado (vista preliminar embebida en el `.md`).
@@ -16,36 +16,40 @@ Tu prioridad es producir **BPMN 2.0 correcto** (que abra sin errores en herramie
 
 ## Entradas
 
-- `<ruta_export>/` — export Appian.
-- `<ruta_salida>/_intermedio/inventory.json` — para resolver UUIDs de subprocesos, integraciones, data stores.
-- `<ruta_salida>/_intermedio/graph.json` — para padres/hijos y callers.
+- `<ruta_salida>/_intermedio/inventory.json` — inventario (con `files` por objeto y campos derivados).
+- `<ruta_salida>/_intermedio/graph.json` — grafo de dependencias (aristas con `origin` y `evidence`).
+- `<ruta_salida>/_intermedio/mcp_raw/` — respuestas del Dev MCP por objeto y herramienta.
+- `references/lectura-mcp-raw.md` — **lectura obligatoria**: roles de los ficheros, campos derivados, formato de evidencia y qué no está disponible por Dev MCP.
+- `references/docs-mcp-usage.md` — cuándo y cómo consultar la documentación oficial (Docs MCP), con caché y tope de consultas.
+- `inventory.json` también sirve para resolver uuids de subprocesos, integraciones, interfaces y record types a nombres.
 - `assets/markdown-templates/08-procesos-bpmn/pm-template.md` — plantilla por PM.
 - `assets/markdown-templates/08-procesos-bpmn/indice.md` — plantilla del índice.
 - `references/bpmn-mapping.md` — tabla de mapeo Appian → BPMN y plantilla BPMN XML.
 - `references/mermaid-rules.md` — sección Tipo C (BPMN-styled).
-- `references/appian-objects-guide.md` — sección Process Models.
+- `references/appian-objects-guide.md` — ids de tipos de nodo y heurísticas.
 
 ## Proceso
 
 Para **cada** process model del inventario:
 
-### Paso 1 — Parsear el XML del PM
+### Paso 1 — Interpretar la definición del PM
 
-Extrae del `<processModel>`:
+Abre el fichero con rol `definition` del process model (`path` en el inventario) y extrae:
 
-- **Nodos** (`<pm:node>` o similar): para cada uno captura `id`, `type` (`start`, `userInput`, `script`, `subProcess`, `gateway`, `end`, `callIntegration`, `writeDataStore`, etc.), `name`, propiedades.
-- **Flujos** (`<pm:flow>`): `source`, `target`, `condition` si tiene.
-- **Process variables** (`<pm:processVariables>`): nombre, tipo, si es input/output.
-- **Start type**: `none`, `timer` (con `<recurrence>`), `message`.
-- **End type** de cada end node: `none`, `terminate`, `message`.
-- **Asignación de tareas**: en cada `userInput` busca `assignees` o `assigneesExpression`.
-- **Subprocesos**: en cada `subProcess` resuelve el `processModelUuid` contra el inventario.
-- **Integraciones**: en cada `callIntegration` resuelve el `integrationRef`.
-- **Data stores tocados**: en `writeDataStore`/`writeRecords`/`query` extrae los CDTs/RTs referenciados.
+- **Nodos** (`nodes[]`): `id`, `type` (id de esquema: `core.0` inicio, `core.1` fin, `core.4` XOR, `internal.16` script task, `internal.17` user input task, `internal3.write_records_to_source_23r3` write records, `internal3.sendemail3` email, `internal3.integration` call integration…), `name` y su configuración (`assignment`, `data`, `forms`). Si un tipo no lo reconoces, consulta el catálogo de tipos de nodo en `mcp_raw/_env/` o el Docs MCP.
+- **Flujos**: `connections` de cada nodo (ids destino). En las pasarelas, `decision.conditions[]` (expresión y `targetNodeId`) y `defaultPath`.
+- **Process variables** (`processVariables[]`): nombre, tipo, si es parámetro.
+- **Start type**: usa `startType` y `schedule` del inventario; el temporizador está en la configuración del nodo de inicio. Start form: `startForm.interfaceUuid`.
+- **End type** de cada nodo de fin (terminate si la configuración lo indica).
+- **Asignación de tareas**: `assignment.attended` y `assignment.assignees` (grupos o expresiones) de cada user task; formulario en `forms.interfaceUuid`.
+- **Subprocesos**: uuid de process model en `data` del nodo → resuélvelo con el inventario (también son aristas `subProcess` del grafo).
+- **Integraciones**: uuid de integración en `data` del nodo (aristas `integrationCall`).
+- **Datos tocados**: record types referenciados en las entradas de Write Records o en consultas (`recordType!{uuid}...`).
+- **Uso real** (`usage` del inventario): ejecuciones totales, última ejecución y fallos.
 
 ### Paso 2 — Detectar lanes y pools
 
-- **Lanes** = actores internos. Una lane por cada grupo Appian distinto que aparezca en `assignees` de las user tasks. Añade una lane `Sistema` para los nodos sin asignación humana (service tasks, gateways, start/end).
+- **Lanes** = actores internos. Una lane por cada grupo Appian distinto que aparezca en `assignment.assignees` de las user tasks. Añade una lane `Sistema` para los nodos sin asignación humana (service tasks, gateways, start/end).
 - **Pools** = sistemas externos. Un pool por cada Connected System distinto referenciado por las `callIntegration`. La interacción se modela como `<bpmn:messageFlow>` cruzado.
 
 Regla práctica: si solo hay 1 lane y 0 pools externos, **no añadas** `<laneSet>` ni `<collaboration>` — el diagrama queda más limpio.
@@ -106,7 +110,7 @@ El `.bpmn` se entrega **siempre** tal cual — no requiere render del lado de la
 Usa `assets/markdown-templates/08-procesos-bpmn/pm-template.md` como base. Estructura:
 
 1. **🎯 TL;DR** (1 frase): qué problema de negocio resuelve. Sin jerga Appian.
-2. **📋 Datos clave**: tabla con trigger, frecuencia (si timer), actores, sistemas externos, subprocesos, callers, integraciones, data stores, contadores (user tasks, service tasks, gateways), estado.
+2. **📋 Datos clave**: tabla con trigger, frecuencia (si timer), actores, sistemas externos, subprocesos, callers, integraciones, data stores, contadores (user tasks, service tasks, gateways), **uso real** (ejecuciones, última, fallos; o «sin historial disponible»), estado.
 3. **🖼 Diagrama (vista preliminar)**: enlace al `.svg` o bloque Mermaid embebido si no se pudo renderizar.
 4. **📐 Diagrama BPMN profesional**: instrucciones de cómo abrir el `.bpmn` en Camunda Modeler / draw.io / demo.bpmn.io.
 5. **🔁 Paso a paso del flujo**: narrativa funcional en lenguaje de negocio. Cada paso menciona qué nodo BPMN lo implementa.
@@ -114,7 +118,7 @@ Usa `assets/markdown-templates/08-procesos-bpmn/pm-template.md` como base. Estru
 7. **👥 Asignación de tareas**: tabla por user task con asignación, SLA, escalation.
 8. **⚠️ Manejo de excepciones**: tabla.
 9. **🔍 Hallazgos**: solo si hay riesgos o patrones notables.
-10. **📁 Ficheros relacionados**: enlaces a `.bpmn`, `.svg`, `.mmd`, y al XML original.
+10. **📁 Ficheros relacionados**: enlaces a `.bpmn`, `.svg`, `.mmd` y evidencia de la definición (`mcp:processModel/<nombre>`).
 
 ### Paso 7 — Generar `indice.md`
 

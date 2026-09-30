@@ -39,7 +39,7 @@ flowchart LR
 - **Raíz**: invocado desde sites, web APIs, related actions o batches.
 - **Hijo**: invocado solo desde otros process models (sub-process o `a!startProcess`).
 - **Compartido**: invocado por varios padres (hub funcional).
-- **Huérfano**: sin caller detectado en el export — pendiente de validación con el equipo.
+- **Huérfano**: sin caller detectado — pendiente de validación con el equipo (mirar también el uso real).
 
 ## Vista — Tabla de procesos
 

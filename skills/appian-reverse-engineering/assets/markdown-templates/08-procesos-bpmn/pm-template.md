@@ -29,7 +29,8 @@
 | Service tasks | {{N}} |
 | Gateways | {{N}} |
 | Complejidad estimada | Baja / Media / Alta |
-| Estado | ✅ Confirmado · Evidencia: `{{ruta_xml}}` |
+| Uso real | {{ejecuciones · última ejecución · fallos, o «sin historial disponible»}} |
+| Estado | ✅ Confirmado · Evidencia: `mcp:processModel/{{nombre}}` |
 
 ## 🖼 Diagrama (vista preliminar)
 
@@ -137,4 +138,4 @@ El `.bpmn` contiene la semántica BPMN 2.0 completa (lanes, pools, message flows
 - Diagrama BPMN profesional: [`{{PM}}.bpmn`](./{{PM}}.bpmn)
 - Vista preliminar SVG: [`{{PM}}.svg`](./{{PM}}.svg)
 - Fuente Mermaid: [`{{PM}}.mmd`](./{{PM}}.mmd)
-- XML original Appian: `../{{ruta_relativa_pm_xml}}`
+- Definición extraída: `mcp:processModel/{{nombre}}` (fichero local en `_intermedio/mcp_raw/`, no compartir)

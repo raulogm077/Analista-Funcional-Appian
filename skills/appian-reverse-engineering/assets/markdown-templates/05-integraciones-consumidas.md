@@ -5,7 +5,7 @@
 
 # Integraciones consumidas
 
-> Cada Integration object y cada Connected System del export, con su contrato técnico y quién la invoca.
+> Cada Integration object y cada Connected System de la aplicación, con su contrato técnico y quién la invoca.
 
 ## Resumen
 
@@ -26,9 +26,9 @@
 | Tipo | HTTP / OAuth 2.0 / Salesforce / SAP / JDBC / plugin custom — `{{tipo_exacto}}` |
 | Base URL | `{{url_enmascarada_si_lleva_credenciales}}` |
 | Auth type | NONE / BASIC / OAUTH2_CLIENT_CREDENTIALS / OAUTH2_AUTH_CODE / API_KEY |
-| Credenciales | 🔒 Enmascaradas (referenciadas desde ICF: `{{clave_icf}}`) |
+| Credenciales | 🔒 Enmascaradas (tipo de autenticación: {{auth_type}}; los valores por entorno no están disponibles por Dev MCP) |
 | Timeout | {{timeout_o_default}} |
-| Estado | ✅/🔵/🟡 — Evidencia: `{{ruta_xml}}` |
+| Estado | ✅/🔵/🟡 — Evidencia: `mcp:connectedSystem/{{nombre}}` |
 
 **Propósito (inferido):** {{qué sistema externo es y qué se intercambia con él}}
 
@@ -52,7 +52,7 @@
 | Connected System | `{{cs_asociado}}` |
 | Método HTTP | GET / POST / PUT / PATCH / DELETE |
 | Endpoint | `{{base_url_enmascarada}}{{path}}` |
-| Estado | ✅/🔵 — Evidencia: `{{ruta_xml}}` |
+| Estado | ✅/🔵 — Evidencia: `mcp:integration/{{nombre}}` |
 
 **Parámetros**
 
@@ -66,7 +66,7 @@
 **Request body**
 
 ```{{lenguaje_o_pseudocódigo}}
-{{Estructura extraída de <requestBody>/<expression> del Integration XML.
+{{Estructura extraída del SAIL de la definición de la integración (cuerpo, cabeceras, parámetros).
 Si es SAIL, mostrar la forma del payload, no el SAIL crudo.
 Si hay valores que parecen secretos, enmascararlos.}}
 ```
@@ -96,7 +96,7 @@ Si hay valores que parecen secretos, enmascararlos.}}
 
 {{Repetir.}}
 
-## Configuración por entorno (ICF)
+## Configuración por entorno
 
 > Overrides de URL, credenciales y otros parámetros por entorno.
 
@@ -106,7 +106,7 @@ Si hay valores que parecen secretos, enmascararlos.}}
 | `{{cs_1}}` | clientId | 🔒 | 🔒 | 🔒 | Enmascarados |
 | `{{cs_1}}` | clientSecret | 🔒 | 🔒 | 🔒 | Enmascarados |
 
-> Si solo hay un ICF, mostrar solo la columna correspondiente. Si no hay ICF, omitir esta sección.
+> Los import customization files no están disponibles por Dev MCP. Listar los valores que **deben** parametrizarse por entorno (URLs, credenciales, identificadores) y marcar 🔴 los que apunten a otro entorno distinto del extraído.
 
 ## Hallazgos
 
@@ -120,5 +120,5 @@ Si hay valores que parecen secretos, enmascararlos.}}
 - Total Integrations: {{N}}
 - Total Connected Systems: {{N}}
 - Sistemas externos distintos: {{N}} ({{lista corta}})
-- Integraciones sin caller detectado en el export (🟡 huérfanas): {{N}}
+- Integraciones sin caller detectado (🟡 huérfanas): {{N}}
 - Integraciones con secretos enmascarados: {{N}}

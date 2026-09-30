@@ -11,7 +11,7 @@
 
 ## Constantes y configuración por entorno
 
-> Solo si hay constantes con prefijo DEV/PRE/PRO o cubiertas por ICF.
+> Solo si hay constantes con prefijo DEV/PRE/PRO o con valores que dependen del entorno (URLs, identificadores).
 
 | Constant | Tipo | Valor por entorno | Usada por | Notas |
 |---|---|---|---|---|
@@ -99,13 +99,13 @@
 
 ## Objetos huérfanos
 
-> Declarados en el export pero **sin referencias entrantes** detectadas. Candidatos a limpieza. Validar antes de borrar (pueden invocarse desde fuera del export).
+> Objetos de la aplicación **sin referencias entrantes** detectadas (y, en process models, sin ejecuciones reales si hay historial). Candidatos a limpieza. Validar antes de borrar (pueden invocarse desde fuera de la aplicación).
 
 | Objeto | Tipo | Ruta | Última modificación |
 |---|---|---|---|
-| `{{obj_1}}` | Expression Rule | `{{ruta}}` | `{{updatedOn}}` |
-| `{{obj_2}}` | Process Model | `{{ruta}}` | `{{updatedOn}}` |
-| `{{obj_3}}` | Constant | `{{ruta}}` | `{{updatedOn}}` |
+| `{{obj_1}}` | Expression Rule | `mcp:expressionRule/{{nombre}}` | `{{lastModifiedOn}}` |
+| `{{obj_2}}` | Process Model | `mcp:processModel/{{nombre}}` | `{{lastModifiedOn}}` |
+| `{{obj_3}}` | Constant | `mcp:constant/{{nombre}}` | `{{lastModifiedOn}}` |
 
 **Recomendación:** validar con el equipo funcional si son legítimamente externos o eliminables.
 
@@ -133,7 +133,7 @@
 
 | # | Riesgo | Severidad | Dónde | Recomendación |
 |---|---|---|---|---|
-| 1 | URLs / IDs hardcodeados | 🔴 | `{{ruta_1}}`, `{{ruta_2}}` | Mover a constants con ICF |
+| 1 | URLs / IDs hardcodeados | 🔴 | `mcp:...`, `mcp:...` | Mover a connected systems o constantes parametrizadas por entorno |
 | 2 | Expression rules >200 líneas | 🟡 | `{{rule_X}}` | Refactor en utilidades |
 | 3 | Queries sin paginación | 🔴 | `{{rule_o_pm}}` | Añadir `pagingInfo` |
 | 4 | Integraciones sin manejo de error | 🔴 | `{{int_X}}` | Wrapper con retry / fallback |
@@ -146,9 +146,9 @@
 
 ## Versionado
 
-> Última modificación por objeto si el export trae `@updatedOn` / `@updatedBy`.
+> Última modificación por objeto si hubo herramienta de versiones (`versions` en el inventario).
 
-| Objeto | Tipo | updatedOn | updatedBy |
+| Objeto | Tipo | Última modificación | Versiones |
 |---|---|---|---|
 | `{{obj_1}}` | {{tipo}} | `{{fecha}}` | `{{usuario}}` |
 

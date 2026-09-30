@@ -66,7 +66,7 @@ flowchart LR
 
 **Reglas de negocio aplicadas:**
 
-- {{regla_1}} — {{evidencia: ruta del XML / expression rule}}
+- {{regla_1}} — {{evidencia: mcp:<tipo>/<nombre>#<ubicación>}}
 - {{regla_2}}
 
 **Notificaciones / outputs:**
@@ -84,7 +84,7 @@ flowchart LR
 
 - {{excepción_1}} — {{cuándo aplica}}
 
-> Estado: ✅/🔵/🟡 — Evidencia: `{{ruta}}#{{fragmento}}`
+> Estado: ✅/🔵/🟡 — Evidencia: `mcp:{{tipo}}/{{nombre}}#{{ubicacion}}`
 
 ### 3.2 {{caso_de_uso_2}}
 
@@ -94,8 +94,8 @@ flowchart LR
 
 {{Lista breve de casos de uso menos críticos, una frase cada uno.}}
 
-## 4. Casos NO cubiertos en el export (pendientes de validación)
+## 4. Casos no cubiertos por la extracción (pendientes de validación)
 
 {{Si detectas en grupos / records / interfaces nombres que sugieren funcionalidades para las que no encuentras los objetos: listarlos como pendientes.}}
 
-- 🟡 {{caso_sospechado}} — Indicio: {{nombre/descripción}}. No se encuentra el proceso/site que lo implemente en el export. Responsable sugerido: funcional Appian.
+- 🟡 {{caso_sospechado}} — Indicio: {{nombre/descripción}}. No se encuentra el proceso/site que lo implemente en la aplicación. Responsable sugerido: funcional Appian.

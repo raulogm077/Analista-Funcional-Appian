@@ -10,7 +10,7 @@
 # Resumen ejecutivo
 
 **Aplicación:** {{nombre_visible_aplicacion}} (`{{nombre_tecnico_aplicacion}}`)
-**Ruta fuente:** `{{ruta_export}}`
+**Fuente:** Appian Dev MCP · entorno `{{url_entorno}}` · extraído el {{fecha_extraccion}} (solo lectura)
 **Fecha de análisis:** {{fecha_iso}}
 **Versión de Appian detectada:** {{version_o_no_determinada}}
 **Idioma de la documentación:** {{idioma}}
@@ -19,9 +19,9 @@
 
 {{Pitch funcional en lenguaje de negocio: qué problema resuelve la app, para quién y qué valor aporta. Sin jerga Appian.}}
 
-> Estado: ✅/🔵 — Evidencia: `{{ruta_app_xml}}#description` y `{{otra_ruta}}`
+> Estado: ✅/🔵 — Evidencia: `mcp:application/{{nombre}}#description` y `{{otra_evidencia}}`
 
-## Volumen del export
+## Volumen de la aplicación
 
 | Tipo de objeto | Cantidad |
 |---|---|
@@ -65,9 +65,23 @@ Detalle: ver `06-apis-expuestas.md`.
 
 ## Procesos batch / recurrentes
 
-{{Listar batches con frecuencia humana, o decir explícitamente "No se han detectado procesos recurrentes en el export".}}
+{{Listar batches con frecuencia humana, o decir explícitamente "No se han detectado procesos recurrentes en la aplicación".}}
 
 Detalle: ver `07-batches.md`.
+
+## Modernización (resumen de 13)
+
+**Veredicto:** {{Mantener y mejorar · Refactorizar por fases · Reconstruir}} — {{una frase de justificación}}.
+
+| Hallazgos de modernización | Alta | Media | Baja |
+|---|---|---|---|
+| {{N}} | {{n}} | {{n}} | {{n}} |
+
+Principales: {{MOD-xxx, MOD-yyy (título corto)}}. Detalle en `13-modernizacion-refactor.md`; requisitos para reconstruir en `12-especificacion-reconstruccion.md`.
+
+## Uso real
+
+{{Si hubo historial de ejecución: procesos más usados, procesos sin ejecuciones. Si no: "Sin historial de ejecución disponible".}}
 
 ## Riesgos principales (top 5)
 
@@ -81,8 +95,8 @@ Detalle: ver `09-valor-adicional.md` → sección Riesgos / code smells.
 
 {{N objetos declarados pero no referenciados.}} Top 5:
 
-- `{{obj_1}}` ({{tipo}}) — {{ruta}}
-- `{{obj_2}}` ({{tipo}}) — {{ruta}}
+- `{{obj_1}}` ({{tipo}}) — `mcp:{{tipo}}/{{nombre}}`
+- `{{obj_2}}` ({{tipo}}) — `mcp:{{tipo}}/{{nombre}}`
 
 Detalle: ver `09-valor-adicional.md` → sección Objetos huérfanos.
 

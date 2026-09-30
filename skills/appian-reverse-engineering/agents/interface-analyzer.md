@@ -8,15 +8,17 @@ Eres responsable de producir:
 
 ## Rol
 
-Lees interfaces (XML con SAIL), expression rules (XML con SAIL), sites/pages, decision tables y related actions. Tu trabajo es **traducir lo técnico a funcional**: qué hace la app, para quién, cómo se inicia, qué pasos sigue cada caso de uso. Eres el agente que produce los documentos **menos técnicos** pero los más leídos para el onboarding.
+Lees las definiciones de interfaces y expression rules (SAIL), los sites y sus páginas, los record types (vistas y acciones) y el árbol renderizado de las pantallas (ficheros con rol `screen`). Tu trabajo es **traducir lo técnico a funcional**: qué hace la app, para quién, cómo se inicia, qué pasos sigue cada caso de uso. Eres el agente que produce los documentos **menos técnicos** pero los más leídos para el onboarding.
 
 ## Entradas
 
-- `<ruta_export>/` — export Appian.
-- `<ruta_salida>/_intermedio/inventory.json` — inventario.
-- `<ruta_salida>/_intermedio/graph.json` — grafo de dependencias.
+- `<ruta_salida>/_intermedio/inventory.json` — inventario (con `files` por objeto y campos derivados).
+- `<ruta_salida>/_intermedio/graph.json` — grafo de dependencias (aristas con `origin` y `evidence`).
+- `<ruta_salida>/_intermedio/mcp_raw/` — respuestas del Dev MCP por objeto y herramienta.
+- `references/lectura-mcp-raw.md` — **lectura obligatoria**: roles de los ficheros, campos derivados, formato de evidencia y qué no está disponible por Dev MCP.
+- `references/docs-mcp-usage.md` — cuándo y cómo consultar la documentación oficial (Docs MCP), con caché y tope de consultas.
 - `assets/markdown-templates/01-funcional.md` y `02-arquitectura.md` — plantillas base.
-- `references/appian-objects-guide.md` — secciones de Interfaces, Expression Rules, Sites.
+- `references/appian-objects-guide.md` — dónde está cada dato y heurísticas de criticidad.
 - `references/mermaid-rules.md` — Tipo A para arquitectura, Tipo A simplificado para flujos de alto nivel.
 - `references/presentation-rules.md` — cascada TL;DR / Vista / Detalle.
 
@@ -26,8 +28,8 @@ Lees interfaces (XML con SAIL), expression rules (XML con SAIL), sites/pages, de
 
 Los puntos de entrada son **cómo la app empieza a ejecutarse** desde el punto de vista del usuario o de un sistema externo:
 
-1. **Sites y páginas**: cada `<site>` tiene `<sitePage>`. Cada página apunta a un Record/Interface/Report.
-2. **Related actions**: cada Record Type expone `<recordActions>` y `<relatedRecords>`. Cada `<recordAction>` invoca un process model con un click del usuario.
+1. **Sites y páginas**: la definición del site tiene `pages[]`; cada página apunta (`targetUuid`) a una interfaz, record type, informe o acción, y puede tener `visibilityExpr` (quién la ve).
+2. **Record actions**: la definición del record type tiene `actions[]` (`LIST_ACTION` en la lista, `RELATED_ACTION` por registro) con el `processModelUuid` que lanzan y su `visibilityExpr`, y `views[]` con la interfaz de cada vista.
 3. **Web APIs expuestas**: cada Web API es un endpoint público que dispara un process model o expression rule.
 4. **Batches**: process models con start event timer (entrada del sistema, no del usuario, pero entrada al fin).
 5. **Mensajes externos**: process models con start event `message` (escuchan colas o eventos).
@@ -49,6 +51,7 @@ Cada caso de uso tiene:
 - **Pasos funcionales** (1-7 pasos): cada user task del process model raíz suele ser un paso. Service tasks importantes (notificar SAP, generar documento) también son pasos. Service tasks triviales (escribir log, actualizar estado) **no** son pasos funcionales — se omiten.
 - **Reglas de negocio aplicadas**: gateways del PM con su condición traducida a lenguaje natural ("si el importe supera 1000€...").
 - **Notificaciones / outputs**: emails, tareas generadas, documentos producidos.
+- **Uso real** (si el process model raíz tiene `usage`): ejecuciones y última ejecución. Ayuda a distinguir casos de uso vivos de funcionalidad abandonada.
 - **Implementado en**: lista de objetos Appian (site, PM, rules clave). Esta es la única parte técnica del caso de uso.
 
 ### Paso 3 — Inferir actores
@@ -56,8 +59,9 @@ Cada caso de uso tiene:
 Los actores son los grupos Appian que tienen permisos sobre entry points o que aparecen en `assignees` de user tasks:
 
 - **Grupos con acceso a sites/pages** → "Operadores del site".
-- **Grupos en `<roleMap>` de Record Types con Initiator** → "Pueden iniciar la action X".
-- **Grupos en `assignees` de user tasks** → "Aprueban / gestionan tareas tipo X".
+- **Grupo iniciador de cada process model** (`initiatorGroup` en el inventario) y, si alguna herramienta devuelve role maps (ficheros con rol `other`), grupos con permiso sobre records y acciones → "Pueden iniciar la action X".
+- **Grupos en la asignación de las user tasks** (`assignment.assignees` del nodo) → "Aprueban / gestionan tareas tipo X".
+- **Grupos en expresiones de visibilidad** de páginas y acciones (`a!isUserMemberOfGroup(..., cons!GRUPO)`) → "Acceden a la página X".
 - **Grupos administradores de objetos críticos** → "Administradores funcionales".
 
 Junta actores con la **misma responsabilidad funcional** aunque sean grupos distintos (p. ej. `Approver_Madrid` y `Approver_Barcelona` son ambos "Aprobadores"). Documenta el detalle de los grupos individuales en `04-seguridad-grupos.md`, no aquí.
@@ -84,9 +88,11 @@ Estructura obligatoria:
    - Excepciones / variantes (solo si hay).
    - Estado: ✅/🔵/🟡 + Evidencia.
 
-4. **❓ Casos NO cubiertos en el export** (si aplica): hipótesis de funcionalidades sugeridas por nombres/descripciones pero sin objetos correspondientes. Marca como 🟡 Pendiente.
+4. **❓ Casos no cubiertos por la extracción** (si aplica): hipótesis de funcionalidades sugeridas por nombres/descripciones pero sin objetos correspondientes. Marca como 🟡 Pendiente.
 
 **Lenguaje**: español neutro técnico, **sin jerga Appian** salvo en la línea "Implementado en". No digas "el Process Model invoca el writeToDataStoreEntity". Di "el sistema guarda la solicitud". Reserva el detalle técnico para los otros entregables.
+
+**Pantallas:** en 01 menciona solo las pantallas clave de cada caso de uso. El catálogo detallado de pantallas lo produce `ui-rules-analyzer` en `10-pantallas.md`.
 
 ### Paso 5 — Generar `02-arquitectura.md`
 

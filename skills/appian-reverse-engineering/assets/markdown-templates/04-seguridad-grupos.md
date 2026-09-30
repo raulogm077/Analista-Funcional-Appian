@@ -9,7 +9,7 @@
 
 ## Árbol jerárquico de grupos
 
-> Construido a partir de `<parentGroup>` y `<memberGroups>` en cada `<group>`.
+> Construido a partir de `parentGroup`, `memberGroups` y las aristas `memberGroup` del grafo. Se indica el número de usuarios de cada grupo, nunca sus nombres.
 
 ```mermaid
 flowchart TD
@@ -34,7 +34,7 @@ flowchart TD
 
 ## Matriz de seguridad por objeto sensible
 
-> Una fila por objeto sensible: Sites, Interfaces, Process Models, Records, Folders, Web APIs. Fuente: `rolemap.xml` y `<roleMap>` en cada XML.
+> Una fila por objeto sensible: Sites, Interfaces, Process Models, Records, Folders, Web APIs. Fuente: seguridad por objeto si alguna herramienta del Dev MCP la devuelve; si no, lo verificable (iniciadores de procesos, visibilidad de páginas y acciones, asignación de tareas). Indicar cuál se ha usado.
 
 | Objeto | Tipo | Viewer | Editor | Administrator | Initiator | Deny |
 |---|---|---|---|---|---|---|
@@ -70,17 +70,17 @@ Leyenda: **R** Responsable · **A** Aprueba · **C** Consultado · **I** Informa
 
 | Tipo | Patrón detectado | Dónde | Comportamiento |
 |---|---|---|---|
-| Visibilidad condicional | `a!isUserMemberOfGroup(loggedInUser(), cons!GRUPO_X)` | `{{ruta_interface}}#fragmento` | El bloque solo es visible para `GRUPO_X` |
-| Asignación dinámica | `assignToExpression: rule!{{rule}}` | `{{ruta_pm}}#nodo` | Tarea asignada según expression rule |
-| Bypass de seguridad | `if(loggedInUserHasRole("..."), ...)` | `{{ruta}}` | 🟡 Validar comportamiento |
+| Visibilidad condicional | `a!isUserMemberOfGroup(loggedInUser(), cons!GRUPO_X)` | `mcp:interface/{{nombre}}#{{ubicacion}}` | El bloque solo es visible para `GRUPO_X` |
+| Asignación dinámica | `assignToExpression: rule!{{rule}}` | `mcp:processModel/{{nombre}}#nodes[{{i}}]` | Tarea asignada según expression rule |
+| Bypass de seguridad | `if(loggedInUserHasRole("..."), ...)` | `mcp:{{tipo}}/{{nombre}}` | 🟡 Validar comportamiento |
 
 > Si no hay reglas embebidas relevantes, escribir: "No se han detectado reglas de seguridad embebidas en SAIL".
 
 ## Grupos sin miembros visibles
 
-> Los exports a veces no incluyen miembros por privacidad. Documentar lista sin asumir que están vacíos en producción.
+> Según los miembros devueltos por el Dev MCP. Si no hubo herramienta de miembros, indicarlo y no asumir que están vacíos.
 
-- `{{grupo_X}}` — Sin miembros en el export. Confirmar con el administrador funcional.
+- `{{grupo_X}}` — Sin miembros. Confirmar con el administrador funcional.
 
 ## Resumen rápido
 
@@ -88,5 +88,5 @@ Leyenda: **R** Responsable · **A** Aprueba · **C** Consultado · **I** Informa
 - Grupos custom: {{N}}
 - Grupos system: {{N}}
 - Profundidad máxima del árbol: {{N}}
-- Objetos sensibles con `rolemap`: {{N}}
+- Objetos sensibles con seguridad verificada: {{N}}
 - Riesgos de seguridad detectados: {{N}} (ver `09-valor-adicional.md`)

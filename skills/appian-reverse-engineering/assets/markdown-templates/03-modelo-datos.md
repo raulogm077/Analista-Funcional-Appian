@@ -119,7 +119,7 @@ erDiagram
 | Data Fabric | Sí / No |
 | Total vistas | {{N}} |
 | Total acciones | {{N}} |
-| Estado | ✅/🔵 — Evidencia: `{{ruta}}` |
+| Estado | ✅/🔵 — Evidencia: `mcp:recordType/{{nombre}}` |
 
 **Campos clave**
 
@@ -166,17 +166,17 @@ erDiagram
 | Campo | Valor |
 |---|---|
 | Namespace | `{{ns}}` |
-| Fichero | `{{ruta_xsd}}` |
+| Definición | ✅ disponible / 🟡 no disponible por Dev MCP |
 | Mapeo BBDD | Sí (tabla `{{tabla}}`) / No |
 | Anotaciones JPA | {{lista_clave}} |
 | Total campos | {{N}} |
 
 **Campos**
 
-| Nombre | Tipo XSD | Columna BBDD | PK/FK | Comentario |
+| Nombre | Tipo | Columna BBDD | PK/FK | Comentario |
 |---|---|---|---|---|
-| `id` | xsd:long | id | PK | — |
-| `{{campo_2}}` | xsd:string | {{col}} | — | {{descripción}} |
+| `id` | Number (Integer) | id | PK | — |
+| `{{campo_2}}` | Text | {{col}} | — | {{descripción}} |
 
 **Relaciones declaradas**
 
