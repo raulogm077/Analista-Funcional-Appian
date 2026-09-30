@@ -163,16 +163,18 @@ render_mermaid() {
   fi
 
   local mmdc_env=""
+  local errf
+  errf=$(mktemp)
   if [ -n "$CHROME_HOME" ]; then
     mmdc_env="HOME=$CHROME_HOME"
   fi
 
-  if env $mmdc_env mmdc -i "$in" -o "$out" -t "$theme" -b "$bg" -p "$PUPPETEER_CONFIG_TMP" 2>/tmp/mmdc.err; then
+  if env $mmdc_env mmdc -i "$in" -o "$out" -t "$theme" -b "$bg" -p "$PUPPETEER_CONFIG_TMP" 2>"$errf"; then
     echo "  ✓ $in → $out (tema: $theme)"
     return 0
   else
     echo "  ✗ Falló render de $in:" >&2
-    sed 's/^/      /' /tmp/mmdc.err >&2
+    sed 's/^/      /' "$errf" >&2
     write_pending "$in" "$out" "mmdc falló. Revisa la sintaxis Mermaid o usa GitHub/VSCode preview."
     return 1
   fi

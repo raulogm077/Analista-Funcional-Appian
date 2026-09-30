@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
 validate_mermaid.py — Valida y sanea un diagrama Mermaid según las reglas
-del skill appian-reverse-engineering.
+del skill appian-reverse-engineering (references/mermaid-rules.md).
+
+Tipos admitidos:
+  A  flowchart TD/LR sin subgraph ni classDef  -> se sanea (IDs N1..Nn, etiquetas limpias)
+  B  erDiagram                                  -> se valida y se devuelve sin cambios
+  C  flowchart con subgraph (carriles) y classDef -> se valida y se devuelve sin cambios
 
 Uso:
     python validate_mermaid.py <fichero.mmd>
@@ -192,6 +197,117 @@ def sanitize(diagram_text: str) -> Tuple[str, List[str]]:
     return "\n".join(out_lines) + "\n", warnings
 
 
+MAX_NODES_C = 25
+RE_ER_ENTITY = re.compile(r"^(?:[A-Z][A-Za-z0-9]*|[A-Z][A-Z0-9_]*)$")
+RE_ER_REL = re.compile(
+    r'^(?P<a>[A-Za-z][A-Za-z0-9_]*)\s+(?P<card>[|}o][|o]--[|o][|{o]|[|}o][|o]\.\.[|o][|{o])\s+'
+    r'(?P<b>[A-Za-z][A-Za-z0-9_]*)\s*:\s*(?P<label>"[^"]*"|\S+)$')
+RE_ER_ATTR = re.compile(r'^[A-Za-z][A-Za-z0-9_\[\]()]*\s+[A-Za-z_][A-Za-z0-9_]*(\s+(PK|FK|UK)(\s*,\s*(PK|FK|UK))*)?(\s+"[^"]*")?$')
+RE_C_NODE = re.compile(
+    r'(?<![A-Za-z0-9_])(?P<id>[A-Za-z][A-Za-z0-9_]*)\s*'
+    r'(?=\(\(\(|\(\(|\(\[|\[\[|\[/|\[\(|\[|\{\{|\{|\(|>)')
+
+
+def validate_er(diagram_text: str) -> Tuple[str, List[str]]:
+    """Tipo B: valida la sintaxis del subconjunto erDiagram y devuelve el texto sin cambios."""
+    warnings: List[str] = []
+    lines = [ln.strip() for ln in diagram_text.strip().splitlines() if ln.strip()]
+    if not lines or lines[0] != "erDiagram":
+        raise ValueError("Un diagrama de tipo B debe empezar por 'erDiagram'.")
+    entities: set[str] = set()
+    depth, current = 0, None
+    for i, ln in enumerate(lines[1:], 2):
+        if ln.startswith("%%"):
+            continue
+        if depth == 0:
+            m = re.match(r"^([A-Za-z][A-Za-z0-9_]*)\s*\{$", ln)
+            if m:
+                current, depth = m.group(1), 1
+                entities.add(current)
+                continue
+            m = RE_ER_REL.match(ln)
+            if m:
+                entities.update((m.group("a"), m.group("b")))
+                continue
+            raise ValueError(f"Línea {i} no válida en erDiagram: '{ln}'")
+        if ln == "}":
+            depth, current = 0, None
+            continue
+        if not RE_ER_ATTR.match(ln):
+            raise ValueError(f"Atributo no válido en la entidad {current} (línea {i}): '{ln}'")
+    if depth != 0:
+        raise ValueError("Llave '{' sin cerrar en erDiagram.")
+    bad = sorted(e for e in entities if not RE_ER_ENTITY.match(e))
+    if bad:
+        raise ValueError("Entidades con nombre no permitido (usa PascalCase o SCREAMING_SNAKE_CASE): " + ", ".join(bad))
+    if not entities:
+        raise ValueError("erDiagram sin entidades.")
+    if len(entities) > 30:
+        warnings.append(f"{len(entities)} entidades: valora partir por subdominio (mermaid-rules.md).")
+    if re.search(r"<[^>]+>", diagram_text):
+        raise ValueError("HTML no permitido en erDiagram.")
+    return diagram_text.strip() + "\n", warnings
+
+
+def validate_type_c(diagram_text: str) -> Tuple[str, List[str]]:
+    """Tipo C: flowchart BPMN con carriles (subgraph) y classDef. Valida y devuelve sin cambios."""
+    warnings: List[str] = []
+    lines = [ln.rstrip() for ln in diagram_text.strip().splitlines() if ln.strip()]
+    header = lines[0].strip()
+    if header not in ALLOWED_HEADERS:
+        raise ValueError(f"Cabecera no permitida en tipo C: '{header}'.")
+    depth, node_ids = 0, set()
+    for i, raw in enumerate(lines[1:], 2):
+        ln = raw.strip()
+        if ln.startswith("%%"):
+            continue
+        if re.match(r"^subgraph\b", ln):
+            depth += 1
+            m = re.match(r'^subgraph\s+([A-Za-z][A-Za-z0-9_]*)', ln)
+            if not m:
+                raise ValueError(f"subgraph sin ID válido (línea {i}): '{ln}'")
+            continue
+        if ln == "end":
+            depth -= 1
+            if depth < 0:
+                raise ValueError(f"'end' sin subgraph abierto (línea {i}).")
+            continue
+        if ln.startswith(("classDef ", "class ", "style ", "linkStyle ", "direction ")):
+            continue
+        if "fa:fa-" in ln:
+            raise ValueError(f"Iconos FontAwesome no permitidos (línea {i}).")
+        if re.search(r"<(?!br\s*/?>)[^>]+>", ln):
+            raise ValueError(f"HTML no permitido (línea {i}).")
+        for m in RE_C_NODE.finditer(re.sub(r'"[^"]*"', '""', ln)):
+            nid = m.group("id")
+            if nid.lower() == "end":
+                raise ValueError(f"'end' no puede usarse como ID de nodo (línea {i}).")
+            if nid[0] in ("o", "x"):
+                raise ValueError(f"ID '{nid}' empieza por 'o' o 'x' minúscula (línea {i}).")
+            node_ids.add(nid)
+        for m in RE_EDGE.finditer(re.sub(r'"[^"]*"', '""', ln)):
+            node_ids.update((m.group("src"), m.group("dst")))
+    if depth != 0:
+        raise ValueError("Número de 'subgraph' y 'end' no cuadra.")
+    node_ids -= {"subgraph", "classDef", "class", "style"}
+    if len(node_ids) > MAX_NODES_C:
+        raise ValueError(f"{len(node_ids)} nodos superan el máximo de {MAX_NODES_C} del tipo C: "
+                         "parte el proceso en subprocesos.")
+    if "classDef" not in diagram_text:
+        warnings.append("Tipo C sin classDef: los nodos no tendrán el estilo BPMN.")
+    return diagram_text.strip() + "\n", warnings
+
+
+def validate(diagram_text: str) -> Tuple[str, List[str]]:
+    """Detecta el tipo (A, B o C) y aplica la validación correspondiente."""
+    first = next((ln.strip() for ln in diagram_text.splitlines() if ln.strip()), "")
+    if first == "erDiagram":
+        return validate_er(diagram_text)
+    if first.startswith(("flowchart", "graph")) and re.search(r"^\s*(subgraph\b|classDef\b)", diagram_text, re.M):
+        return validate_type_c(diagram_text)
+    return sanitize(diagram_text)
+
+
 def extract_mermaid_blocks(md_text: str) -> List[str]:
     """Extrae bloques ```mermaid ... ``` de un texto Markdown."""
     return re.findall(r"```mermaid\s*\n(.*?)```", md_text, flags=re.DOTALL)
@@ -227,7 +343,7 @@ def main() -> int:
     overall_ok = True
     for idx, diag in enumerate(diagrams, 1):
         try:
-            clean, warns = sanitize(diag)
+            clean, warns = validate(diag)
         except ValueError as e:
             print(f"[rechazado] Diagrama #{idx}: {e}", file=sys.stderr)
             print(

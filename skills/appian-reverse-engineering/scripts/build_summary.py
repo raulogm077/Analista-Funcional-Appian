@@ -104,6 +104,7 @@ def main(doc_root: str) -> int:
                 "callsIntegrations": pm_calls_integrations.get(pm_id, 0),
                 "isBatch": bool(pm.get("hasRecurrence")),
                 "userTaskCount": pm.get("userTaskCount", 0),
+                "executions": (pm.get("usage") or {}).get("executions"),
             })
     critical_processes.sort(key=lambda x: -x["score"])
     critical_processes = critical_processes[:10]
@@ -138,6 +139,24 @@ def main(doc_root: str) -> int:
             "title": f"{len(pms_silent)} process models sin tareas humanas ni recurrencia (posibles utilities o huerfanos)",
             "evidence": [p.get("name") for p in pms_silent[:5]],
         })
+    # Process models sin ejecuciones reales (solo si hay historial de uso)
+    pms_unused = [p for p in pm_objs if isinstance(p.get("usage"), dict) and p["usage"].get("executions") == 0]
+    if pms_unused:
+        risks.append({
+            "severity": "medium",
+            "category": "maintainability",
+            "title": f"{len(pms_unused)} process models sin ninguna ejecucion registrada (posible codigo muerto)",
+            "evidence": [p.get("name") for p in pms_unused[:5]],
+        })
+    # Objetos con avisos de validacion de la plataforma
+    invalid = [o for objs in objects.values() for o in objs if o.get("validationIssues")]
+    if invalid:
+        risks.append({
+            "severity": "medium",
+            "category": "maintainability",
+            "title": f"{len(invalid)} objetos con avisos de validacion de Appian (funciones obsoletas, errores de expresion)",
+            "evidence": [f"{o.get('name')}: {o['validationIssues'][0]}" for o in invalid[:5]],
+        })
     # Interfaces muy grandes
     big_interfaces = sorted(
         [i for i in objects.get("interface", []) if i.get("sailBytes", 0) > 80000],
@@ -153,7 +172,8 @@ def main(doc_root: str) -> int:
 
     # Hallazgos desde los .md generados (si existen)
     md_findings: list[dict] = []
-    severity_map = {"🔴": "high", "🟡": "medium", "🔵": "low"}
+    # 🔵 significa "inferido" (estado de la evidencia), no una severidad: no se incluye.
+    severity_map = {"🔴": "high", "🟡": "medium"}
     for md_name in ["09-valor-adicional.md", "04-seguridad-grupos.md", "05-integraciones-consumidas.md"]:
         md_path = root / md_name
         if md_path.exists():
@@ -175,6 +195,7 @@ def main(doc_root: str) -> int:
             "appPrefix": app_meta.get("prefix"),
             "appDescription": app_meta.get("description"),
             "appUuid": app_meta.get("uuid"),
+            "source": inv.get("source"),
             "generatedAt": datetime.now(timezone.utc).isoformat(),
             "confidence": confidence,
         },
@@ -194,7 +215,7 @@ def main(doc_root: str) -> int:
         "findingsFromMd": md_findings,
         "objects": {
             t: [
-                {k: o.get(k) for k in ("name", "description", "uuid", "type", "haulType")
+                {k: o.get(k) for k in ("name", "description", "uuid", "type", "mcpType", "path")
                  if o.get(k) is not None}
                 for o in objs
             ]

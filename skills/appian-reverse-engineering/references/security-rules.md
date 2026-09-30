@@ -36,7 +36,7 @@ Aplica búsquedas como estas al inicio de la Fase 6 y antes de poblar la web:
 
 ```bash
 # Patrones genéricos
-grep -rIEn "(?i)(password|passwd|pwd|secret|api[_-]?key|apikey|token|bearer)[[:space:]]*[:=]" <ruta> 2>/dev/null
+grep -rIiEn "(password|passwd|pwd|secret|api[_-]?key|apikey|token|bearer)[[:space:]]*[:=]" <ruta> 2>/dev/null
 
 # Credenciales en URL
 grep -rIEn "https?://[^/[:space:]:]+:[^@[:space:]]+@" <ruta> 2>/dev/null
@@ -54,7 +54,7 @@ Usa `scripts/detect_secrets.sh` para hacer este barrido de forma estandarizada.
 
 1. **No copies el valor** a ningún documento ni dato de la web.
 2. **Enmascáralo** consistentemente como `***ENMASCARADO***` o `[REDACTED]`.
-3. Crea una entrada en `05_riesgos_deuda_tecnica.md` con:
+3. Crea una entrada en `09-valor-adicional.md` (sección Riesgos) y en `13-modernizacion-refactor.md` (área Seguridad) con:
    - **Tipo**: Seguridad — Secreto expuesto.
    - **Evidencia**: ruta del fichero, **sin** el valor; opcionalmente número de línea y nombre de la propiedad.
    - **Impacto**: Alto (potencial exposición de credenciales).
