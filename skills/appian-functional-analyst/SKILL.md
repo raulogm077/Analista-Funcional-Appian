@@ -38,11 +38,12 @@ ni roles.
 | PDF | `pdftotext` (poppler) o `pip install pypdf` | Read lee PDF directamente |
 | Correos `.msg` | Nada fiable: el paquete `extract-msg` suele fallar al instalar | Pide el correo como `.eml` o PDF |
 | Ver diapositivas o páginas de un DF | LibreOffice (`soffice`) y poppler (`pdftoppm`) | Pide el documento en PDF y usa Read con `pages` |
-| Diagramas (`render_mermaid.py`) | `pip install playwright` (versión actual) + un navegador: `python -m playwright install chromium`, o Chrome / Edge ya instalados | Fallback de `references/mermaid-diagrams.md` |
+| Diagramas (`render_mermaid.py` y la skill `appian-diagramas-bpmn`) | `pip install playwright` (versión actual) + un navegador: `python -m playwright install chromium`, o Chrome / Edge ya instalados | Fallback de `references/mermaid-diagrams.md` |
 | DDF en Word (`ddf_docx.js`) | Node.js con el paquete `docx` (`npm install docx`); para revisarlo, LibreOffice o la skill `docx` (Claude la trae; en Claude Code, plugin `document-skills` del repositorio `anthropics/skills`) | Entrega el `ddf.md` y avisa |
 
-En Claude (web / escritorio) todo esto ya está en el entorno. Mermaid va
-incluido en la skill (`assets/`): no hace falta internet para los diagramas.
+En Claude (web / escritorio) todo esto ya está en el entorno. Mermaid y el visor
+de draw.io van incluidos en el plugin (skill `appian-diagramas-bpmn`, `assets/`): no hace falta internet
+para los diagramas.
 
 ## Principios
 
@@ -148,9 +149,11 @@ redacción: `references/ddf-plantilla.md`. Reglas que más se olvidan:
 Para documentos grandes, escribe por secciones y guarda al terminar cada una.
 
 ### 4. Diagramas (modo síntesis)
-BPM (Sec 6), casos de uso si hay ≥3 actores o ≥6 CU (Sec 7), entidad-relación si
-≥2 entidades tienen atributos (Sec 10), estados por entidad con ≥3 estados
-(Sec 11). Convenciones, plantillas y workflow: `references/mermaid-diagrams.md`.
+El flujo del proceso (Sec 6) lo dibuja la skill `appian-diagramas-bpmn` en draw.io (editable a mano,
+también en una reunión): lee su `SKILL.md`, describe el proceso en su formato y usa `diagrama.py crear`;
+en el `ddf.md` va la imagen `![Flujo — …](diagramas/<proceso>.png)`. En Mermaid: casos de uso si hay
+≥3 actores o ≥6 CU (Sec 7), entidad-relación si ≥2 entidades tienen atributos (Sec 10), estados por
+entidad con ≥3 estados (Sec 11). Convenciones, plantillas y workflow: `references/mermaid-diagrams.md`.
 ```bash
 python3 <skill>/scripts/render_mermaid.py diagramas/*.mmd
 ```

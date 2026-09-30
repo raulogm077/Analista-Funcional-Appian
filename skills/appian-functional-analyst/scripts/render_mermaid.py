@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Valida y renderiza diagramas Mermaid sin internet.
 
-Usa el mermaid.min.js incluido en la skill (assets/) y un navegador headless:
+Usa el mermaid.min.js de la skill appian-diagramas-bpmn (assets/) y un navegador headless:
 el Chromium de Playwright si está instalado, o Chrome / Edge del sistema.
 El contenido del diagrama no sale del equipo.
 
@@ -16,7 +16,7 @@ Código de salida: 0 todo OK, 1 algún diagrama con error de sintaxis, 2 falta u
 import argparse, glob, json, pathlib, sys
 
 HERE = pathlib.Path(__file__).resolve().parent
-MERMAID_JS = HERE.parent / "assets" / "mermaid.min.js"
+MERMAID_JS = HERE.parents[1] / "appian-diagramas-bpmn" / "assets" / "mermaid.min.js"  # el motor lo aporta la skill de diagramas
 
 PAGE = """<!doctype html><html><head><meta charset="utf-8">
 <style>body{margin:0;background:#fff}#out{display:inline-block;padding:16px}</style></head>
@@ -64,7 +64,7 @@ def main():
         stream.reconfigure(encoding="utf-8", errors="replace")
 
     if not MERMAID_JS.exists():
-        print(f"Falta {MERMAID_JS} (viene con la skill).", file=sys.stderr)
+        print(f"Falta {MERMAID_JS} (viene con la skill appian-diagramas-bpmn del plugin).", file=sys.stderr)
         sys.exit(2)
     try:
         from playwright.sync_api import sync_playwright

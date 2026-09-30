@@ -188,30 +188,30 @@ de validación necesarias.
 
 Esta es la sección central del documento.
 
-#### 6.1 Diagrama BPM (Mermaid)
+#### 6.1 Diagrama del proceso (BPMN en draw.io)
 
-**GENERA EL DIAGRAMA PRIMERO, antes de escribir la descripción textual.**
+**Genera el diagrama primero, antes de escribir la descripción textual.** Lo dibuja la skill
+`appian-diagramas-bpmn` (lee su `SKILL.md`): describe el proceso en su formato JSON, con un carril por
+rol y los mismos `ACT-nn` que la tabla de actividades, y ejecuta `diagrama.py crear … -o diagramas/`.
+Quedan `diagramas/<proceso>.drawio` (editable en draw.io, también durante una reunión con el cliente),
+`.png` y `.json`.
 
-**Tipo**: `flowchart LR`
-**Referencia de sintaxis**: Lee `mermaid-diagrams.md` (sección
-"Flowchart BPM") para los classDef de colores, nomenclatura BPMN y un ejemplo
-completo antes de generar el Mermaid.
+En el `ddf.md`, bajo 6.1, solo la imagen con su pie y la nota:
 
-Si el proceso tiene más de 15 nodos, dividir en subprocesos y generar un
-diagrama por subproceso.
+```
+![Flujo — <proceso>](diagramas/<proceso>.png)
 
-##### Escribir → validar y renderizar → incrustar
+Diagrama vX.Y — Pendiente de validación con el cliente
+```
 
-Sigue el workflow de `mermaid-diagrams.md` («Workflow general»): el `.mmd` en
-`diagramas/bpm-<proceso>.mmd` y en el bloque ```` ```mermaid ```` del `ddf.md`,
-`scripts/render_mermaid.py` para validarlo y obtener el PNG, y el PNG
-incrustado en el docx con pie de figura y la nota
-`Diagrama vX.Y — Pendiente de validación con el cliente`.
+Con más de 20 tareas, divide en subprocesos: un diagrama por subproceso.
 
-**En el docx el diagrama va como imagen**, no como código: el cliente que abra
-el documento tiene que ver el flujo de un vistazo. Si no hay navegador para
-renderizar, aplica el fallback de la referencia (código en monoespaciado y punto
-🟡 en Sec 17); nunca uses webs públicas para verlo.
+Si alguien ha editado el `.drawio` a mano (por ejemplo, en una reunión), antes de tocar la Sec 6 ejecuta
+`diagrama.py comparar diagramas/<proceso>.drawio`: lleva cada cambio a la tabla de actividades y a las fichas
+y después acéptalos con `--aceptar`.
+
+Sin navegador para generar el PNG, el `.drawio` se entrega igual (se abre en draw.io) y queda un punto 🟡 en la
+Sec 17. Nunca uses webs públicas para verlo.
 
 #### 6.2 Descripción del flujo por proceso / subproceso
 
@@ -293,7 +293,7 @@ visual actor↔CU usando `flowchart LR` adaptado (Mermaid no tiene tipo nativo
 de Use Case Diagram). Si solo hay 1-2 actores y 2-3 CUs, la tabla siguiente
 basta — no fuerces el diagrama.
 
-Sigue el mismo workflow validar → renderizar → incrustar de la Sección 6.1.
+Sigue el workflow validar → renderizar → incrustar de `mermaid-diagrams.md`.
 Las convenciones de actores (círculo), CUs (elipse) y conexiones están en
 `mermaid-diagrams.md` (sección "Diagrama de casos de uso"). Guarda
 el diagrama como `diagramas/cu.mmd` y, después de la imagen, añade pie de figura.
@@ -412,7 +412,7 @@ entidades están en ❓ (sin atributos), omite el diagrama y declara en su lugar
 "Modelo de datos pendiente de sesión específica — el erDiagram se generará
 cuando los atributos estén definidos."
 
-Sigue el workflow validar → renderizar → incrustar de la Sección 6.1. Las
+Sigue el workflow validar → renderizar → incrustar de `mermaid-diagrams.md`. Las
 convenciones de cardinalidad, atributos PK/FK y un ejemplo completo están en
 `mermaid-diagrams.md` (sección "erDiagram"). Guarda el diagrama como
 `diagramas/er.mmd` y añade pie de figura debajo.
@@ -447,7 +447,7 @@ Para cada entidad con **3 o más estados**, genera un `stateDiagram-v2` que
 muestre el ciclo de vida completo. Una entidad con solo 1-2 estados no
 necesita diagrama — la tabla basta.
 
-Sigue el workflow validar → renderizar → incrustar de la Sección 6.1. Las
+Sigue el workflow validar → renderizar → incrustar de `mermaid-diagrams.md`. Las
 convenciones (estados de negocio, transiciones con actor, estados finales por
 cada cierre distinto) y un ejemplo completo están en
 `mermaid-diagrams.md` (sección "stateDiagram-v2"). Guarda cada
@@ -711,6 +711,6 @@ aunque la información sea mínima, escribe lo que hay y marca los gaps:
 - [ ] Sec 16 — Matriz de cobertura sin RF MUST sin criterio; escenarios de extremo a extremo (síntesis)
 - [ ] Ningún criterio de aceptación aparece escrito en dos sitios; estados de las fichas de tarea = transiciones de la Sec 11
 - [ ] Sec 17 — Riesgos, dependencias y preguntas pendientes clasificadas 🔴🟡🟢
-- [ ] Todos los diagramas pasaron `render_mermaid.py` sin error y se revisó cada PNG; ninguno quedó como código sin renderizar (salvo fallback documentado en Sec 17) (síntesis)
+- [ ] El proceso pasó `diagrama.py` y los diagramas Mermaid pasaron `render_mermaid.py` sin error y se revisó cada PNG; ninguno quedó como código sin renderizar (salvo fallback documentado en Sec 17) (síntesis)
 - [ ] Todo RF, RB, campo y pantalla cita su fuente; ningún ID se ha renumerado respecto a la versión anterior
 - [ ] Sec 17 — Registro de decisiones con los cambios de criterio; ninguna pieza vigente remite a una pieza anulada (`comprobar_ddf.py`)

@@ -8,6 +8,7 @@ transcripciones · correos · actas · diagramas de flujo · DF / ERS del client
         │
         ▼  appian-functional-analyst
 fuentes/ (FU-01, FU-02…)  →  ddf.md  (+ DDF .docx con diagramas, en modo síntesis)
+        │        └──► appian-diagramas-bpmn: proceso en draw.io (.drawio editable) + PNG
         │
         ▼  appian-prototipos-aena
 prototipo HTML navegable (marca AENA) · capturas PNG con pie de figura · trazabilidad
@@ -25,6 +26,7 @@ casos y las plantillas del plugin son ejemplos de técnica, todos al mismo nivel
 | Componente | Para qué |
 |---|---|
 | Skill `appian-functional-analyst` | Lee y cataloga las fuentes, detecta decisiones y contradicciones, y escribe el análisis (`ddf.md`) y el DDF en Word. Tres modos: **síntesis** (reuniones, correos), **fiel** (ya hay un DF o ERS: extracto literal, sin Word) y **actualización** (cada reunión o correo nuevo se encaja en el análisis con un informe de impacto que aprueba el analista, registro de decisiones e IDs estables) |
+| Skill `appian-diagramas-bpmn` | Dibuja y mantiene los diagramas de proceso en draw.io con notación BPMN y carriles por perfil: se crean desde una descripción del proceso, se actualizan por cambios respetando lo que se haya colocado a mano, se pueden editar en draw.io durante una reunión (después dice qué cambió y da código a lo nuevo), generan el PNG del documento sin internet y se exportan a BPMN 2.0. La usan el analista y la ingeniería inversa |
 | Skill `appian-prototipos-aena` | Convierte el `ddf.md` en un prototipo navegable con los 147 componentes de interfaz de Appian 26.9, 12 patrones de pantalla, un catálogo de bloques con su guía de uso, componentes de IA de Appian, validaciones, diálogos, auditoría de contraste, perfil CSS de la marca y capturas para el documento |
 | MCP `appian-docs` | Búsqueda en la documentación oficial de Appian (servidor público de Appian alojado en Kapa) |
 
@@ -40,11 +42,15 @@ funciona en este equipo», o ejecuta desde la carpeta del plugin:
 
 ```bash
 python skills/appian-prototipos-aena/scripts/selftest.py
+python skills/appian-diagramas-bpmn/scripts/selftest.py
 python skills/appian-functional-analyst/scripts/render_mermaid.py --check skills/appian-functional-analyst/assets/prueba.mmd
 ```
 
-Nada de lo anterior envía información del cliente fuera del equipo: Mermaid va
-incluido en el plugin y los diagramas se dibujan con el navegador local.
+Nada de lo anterior envía información del cliente fuera del equipo: Mermaid
+(licencia MIT) y el visor de draw.io (licencia Apache 2.0) van incluidos en el plugin
+y los diagramas se dibujan con el navegador local. Para editar un `.drawio` a mano
+sirve draw.io Desktop, app.diagrams.net (no sube el fichero) o la integración de
+draw.io con SharePoint y OneDrive.
 
 **Correos de Outlook (.msg)**: el paquete `extract-msg` no instala en muchos
 equipos. Lo fiable es guardar el correo como `.eml` (Archivo → Guardar como) o
@@ -101,6 +107,7 @@ prototipo es un árbol SAIL real y sirve de punto de partida para ese paso.
 
 | Versión | Cambios |
 |---|---|
+| 0.6.0-alpha.1 | **Skill nueva `appian-diagramas-bpmn`**: diagramas de proceso en draw.io con las formas BPMN de draw.io (eventos, puertas, tareas de usuario, de sistema y manuales, subprocesos) y un carril por perfil. `diagrama.py crear` coloca los pasos con el motor de carriles de Mermaid y escribe `.drawio`, PNG y `.json` (el proceso que conoce el análisis); `actualizar` aplica una lista corta de cambios, recoloca todo si nadie ha movido nada y, si se colocó a mano, lo respeta y pone lo nuevo junto a su paso anterior; `comparar` dice qué se cambió a mano en draw.io (también en ficheros comprimidos o con formas básicas), da código a lo añadido y con `--aceptar` lo incorpora; `leer` devuelve el proceso en JSON para no leer XML; `bpmn` exporta BPMN 2.0 con posiciones (se abre en Camunda Modeler o bpmn.io). PNG sin conexión con el visor de draw.io incluido. El analista dibuja con ella el flujo de la Sec 6 (los demás diagramas siguen en Mermaid, cuyo motor pasa a esta skill). Prueba automática `selftest.py` |
 | 0.5.0-beta.6 | **Probado de punta a punta con transcripciones reales de dos procesos** (síntesis, actualización con una reunión nueva y prototipo de 8 pantallas cada uno; material sin incorporar al plugin). Analista: `leer_fuentes.py` ya no da «0 fuentes» sin avisar cuando las fuentes están en la propia carpeta de salida (y sale con error si no cataloga ninguna), y reconoce las transcripciones `.txt` con marcas `[hh:mm:ss]` y su duración; la plantilla dice el formato exacto que leen los scripts (títulos `## N. Título`, reglas de negocio en filas) y `comprobar_ddf.py` avisa si faltan secciones con ese título, de IDs citados que no existen en ningún sitio, de fuentes sin participantes identificados (la comprobación de nombres no las cubre) y ya no toma las capturas del prototipo como cambios de las fichas; `ddf_indice.py derivadas` no reescribe una Sec 7 hecha a mano ni reutiliza IDs de casos de uso; instrucciones para diagramas sin Word, aplicaciones ya construidas que se explican en demos, transcripciones ilegibles y aprobaciones en modo desatendido (una decisión explícita del cliente no se le vuelve a preguntar). Prototipos: la fuente Open Sans va dentro del HTML (licencia OFL): capturas con la fuente de la marca y sin depender de internet; se corrige el espaciado raro de las etiquetas en las capturas; un alta con record type abierta sin `id` ya no sale rellena con otro registro; `action_banner` informativo o de error con botón llega al contraste AA; `contrast_audit.py` sale con error si hay fallos; pies de captura y trazabilidad con el nombre de la vista y el `ref` de la ficha (también por vista); `noScreen` para requisitos sin pantalla propia; el validador avisa si la primera columna de un listado no enlaza a la ficha o si un texto visible muestra IDs del análisis; instrucciones: partir del código de cada patrón en `generar_plantillas.py`, tareas de captura de datos → P03, cuadro de mando → P08, API `PROTO.show` para la prueba dirigida y ruta de las capturas en el `ddf.md` |
 | 0.5.0-beta.5 | **Coherencia y dependencias revisadas**. Auditoría de las dos skills: todo fichero, carpeta, script y parámetro que citan existe dentro del plugin; no hay rutas de un equipo concreto ni enlaces a artefactos; las dependencias externas son solo las documentadas y opcionales (Playwright y navegador para capturas, pypdf/poppler para PDF, Node con `docx` para el Word, Open Sans de Google Fonts, MCP de documentación). Correcciones: la comprobación del `ddf.md` (`comprobar_ddf.py`) pasa al paso de verificación, porque estaba dentro del paso del Word y se saltaba cuando solo se pedía el `ddf.md`; `comprobar_ddf.py` y `ddf_indice.py` leen «Se verifica en» también de los RF en tabla (modo fiel), con lo que el caso de ejemplo pasa su propia comprobación; el nombre de la herramienta del MCP de documentación ya no se fija (cambia en el servidor). README: qué hacer si alguien tiene la skill suelta de antes del plugin («el kit de la skill no está disponible») |
 | 0.5.0-beta.4 | **Plugin genérico para cualquier proceso**. ATP deja de ser el modelo: su recorrido completo pasa a `examples/casos/atp/`, un caso más al mismo nivel que los que se añadan (medioambiente, servidumbres, informes…), y `examples/README.md` explica qué enseña cada ejemplo y cómo añadir un caso. `selftest.py` descubre solo los casos de `examples/casos/` y les pasa validación, construcción, prueba de humo y contraste. Los ejemplos de la documentación (formato del spec, reglas de textos, plantilla del DDF del analista) usan un dominio genérico y ficticio de expedientes, el mismo que las plantillas, y el formato del spec pasa a Appian 26.9. Las dos skills dicen explícitamente que el dominio sale del `ddf.md` del proyecto y la rúbrica UX suma el criterio 25: nada de restos de plantillas o ejemplos |

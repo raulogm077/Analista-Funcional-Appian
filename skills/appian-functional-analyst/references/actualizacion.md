@@ -170,9 +170,11 @@ FU-20; ¿se confirma?»). Una decisión explícita del cliente no se le vuelve a
   citaban se corrigen o dicen explícitamente que ya no aplica.
 - **Criterios**: si cambia el comportamiento, se reescribe el criterio (mismo ID) o se añade el siguiente
   `.n`; nunca se deja un criterio que contradiga la pieza.
-- **Diagramas**: si cambia un flujo o un estado, se edita su bloque Mermaid; `ddf_indice.py diagramas
-  ddf.md -o diagramas` dice cuáles han cambiado (sin escribir nada) y con `--escribir` los guarda; se
-  renderizan solo esos con `render_mermaid.py`.
+- **Diagramas**: si cambia el proceso, se pasan solo los cambios a `diagrama.py actualizar
+  diagramas/<proceso>.drawio cambios.json` (skill `appian-diagramas-bpmn`), que respeta lo colocado a mano y
+  regenera el PNG; si se niega es que alguien editó el `.drawio`: `diagrama.py comparar` primero. Si cambia un
+  estado u otro diagrama Mermaid, se edita su bloque; `ddf_indice.py diagramas ddf.md -o diagramas` dice cuáles
+  han cambiado (sin escribir nada) y con `--escribir` los guarda; se renderizan solo esos con `render_mermaid.py`.
 - **Sec 1**: FU-26 en la tabla de fuentes; «Versión:» sube 0.1; fila del control de versiones
   `| v1.4 | fecha | Incorpora FU-26 (impacto/FU-26.md) | FU-26 | IDs afectados |`.
 - **Registro de decisiones**: filas D nuevas al final, con el siguiente ID.

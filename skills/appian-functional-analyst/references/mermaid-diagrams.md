@@ -1,13 +1,14 @@
 # Diagramas Mermaid para el DDF
 
-Esta referencia cubre los **4 tipos de diagrama** que usamos en el DDF y el
+Esta referencia cubre los **3 tipos de diagrama Mermaid** del DDF (el flujo del proceso de la
+Sección 6 lo dibuja la skill `appian-diagramas-bpmn` en draw.io) y el
 **workflow de validación + render a PNG** para incrustarlos en el `.docx`.
 
 Lee la sección que necesites según el diagrama a generar:
 
 - [Workflow general](#workflow-general-escribir--validar-y-renderizar--incrustar) — cómo
-  validar el Mermaid y obtener el PNG (válido para los 4 tipos).
-- [1. Flowchart BPM](#1-flowchart-bpm-sección-6) — Sección 6 del DDF.
+  validar el Mermaid y obtener el PNG (válido para los 3 tipos).
+- [1. Flujo del proceso](#1-flujo-del-proceso-sección-6-no-es-mermaid) — Sección 6: skill `appian-diagramas-bpmn`.
 - [2. Diagrama de casos de uso](#2-diagrama-de-casos-de-uso-sección-7) — Sección 7.
 - [3. erDiagram (modelo de datos)](#3-erdiagram-modelo-de-datos-sección-10) — Sección 10.
 - [4. stateDiagram-v2 (ciclo de vida)](#4-statediagram-v2-ciclo-de-vida-sección-11) — Sección 11.
@@ -24,8 +25,7 @@ servicios externos** (mermaid.live, mermaid.ink, kroki…).
 
 Guarda cada diagrama en `diagramas/<nombre>.mmd` dentro de la carpeta de trabajo
 del análisis (no en `/tmp`) y copia el mismo código en el bloque ```` ```mermaid ````
-de la sección correspondiente del `ddf.md`. Nombres: `bpm-<proceso>`, `cu`,
-`er`, `estados-<entidad>`.
+de la sección correspondiente del `ddf.md`. Nombres: `cu`, `er`, `estados-<entidad>`.
 
 ### Paso 2 — Validar y renderizar a PNG
 
@@ -58,7 +58,7 @@ renderizar (requisito: Playwright + navegador)». Añade en Sec 17 un punto
 Justo después de cada bloque ```` ```mermaid ````, una línea con su imagen:
 
 ```
-![Flujo — Ciclo del informe](diagramas/bpm-informe.png)
+![Modelo de datos](diagramas/er.png)
 ```
 
 `scripts/ddf_docx.js` sustituye el bloque por la imagen al generar el Word y la
@@ -67,70 +67,12 @@ numera como `Figura N — pie`. Si el PNG no existe, deja el código con el avis
 
 ---
 
-## 1. Flowchart BPM (Sección 6)
+## 1. Flujo del proceso (Sección 6): no es Mermaid
 
-Usa este tipo para el **flujo de proceso end-to-end** y subprocesos. El criterio
-de división es: si supera 15 nodos, parte en subprocesos y genera un diagrama
-por subproceso.
-
-### Codificación de colores (classDef obligatorio)
-
-```
-classDef inicio fill:#388E3C,color:#fff,stroke:#2E7D32
-classDef tarea fill:#1565C0,color:#fff,stroke:#0D47A1
-classDef notif fill:#F57C00,color:#fff,stroke:#E65100
-classDef sistema fill:#7B1FA2,color:#fff,stroke:#4A148C
-```
-
-| Estilo | Forma Mermaid | Uso |
-|--------|--------------|-----|
-| `:::inicio` (verde) | `(("Inicio: descripción"))` | Eventos de inicio y fin |
-| `:::tarea` (azul) | `["Verbo + objeto"]` | Tareas manuales de usuario |
-| `:::notif` (naranja) | `[/"Notif: destinatario — hecho"/]` | Notificaciones / mensajes |
-| `:::sistema` (morado) | `[["Sistema: acción"]]` | Tareas automáticas / integraciones |
-| Sin estilo | `{"¿Pregunta?"}` | Gateways de decisión |
-
-### Nomenclatura BPMN
-
-- **Tareas**: ID de la actividad + infinitivo + objeto — ✅ "ACT-01 · Registrar solicitud" / ❌ "El usuario registra". El ID enlaza cada caja con su fila de la tabla de actividades y su ficha de tarea (Sec 6.3)
-- **Gateways**: pregunta cerrada — ✅ "¿Documentación completa?" / ❌ "Documentación completa"
-- **Inicio**: `"Inicio: [hecho desencadenante]"`
-- **Fin**: `"Fin: [resultado de negocio]"` — un nodo por cada resultado posible
-- Toda salida de gateway lleva etiqueta: `-->|"Sí"|`, `-->|"No"|`, `-->|"Aprobado"|`
-- Todo camino tiene cierre explícito (sin finales implícitos)
-- **Sin comentarios dentro del diagrama**: nada de `note`, cajas de texto
-  explicativas ni etiquetas largas. El diagrama solo muestra actividades,
-  decisiones y salidas; todo lo que haya que explicar de un punto del flujo va
-  en la ficha de esa actividad (Sec 6.3). Así el flujo se puede leer y
-  actualizar como texto sin mezclar explicación y estructura
-
-### Plantilla completa
-
-```mermaid
-flowchart LR
-  classDef inicio fill:#388E3C,color:#fff,stroke:#2E7D32
-  classDef tarea fill:#1565C0,color:#fff,stroke:#0D47A1
-  classDef notif fill:#F57C00,color:#fff,stroke:#E65100
-  classDef sistema fill:#7B1FA2,color:#fff,stroke:#4A148C
-
-  A(("Inicio: Solicitud recibida")):::inicio
-  B["ACT-01 · Registrar solicitud"]:::tarea
-  C{"¿Documentación completa?"}
-  D[/"Notif: Solicitante — Documentación incompleta"/]:::notif
-  E["ACT-02 · Validar solicitud"]:::tarea
-  F{"¿Aprobado?"}
-  G[["ACT-03 · Sistema: Registrar en ERP"]]:::sistema
-  H[/"Notif: Solicitante — Solicitud aprobada"/]:::notif
-  Z(("Fin: Expediente cerrado")):::inicio
-  ZZ(("Fin: Solicitud rechazada")):::inicio
-
-  A --> B --> C
-  C -->|"Sí"| E
-  C -->|"No"| D --> B
-  E --> F
-  F -->|"Aprobado"| G --> H --> Z
-  F -->|"Rechazado"| ZZ
-```
+El diagrama del proceso lo dibuja la skill `appian-diagramas-bpmn` en draw.io, con carriles y
+formas BPMN, y se puede editar a mano (también en una reunión con el cliente). Formato,
+órdenes y convenciones: su `SKILL.md`. En el `ddf.md` va solo la imagen:
+`![Flujo — <proceso>](diagramas/<proceso>.png)`.
 
 ---
 
@@ -326,7 +268,7 @@ puede tener flechas "huérfanas" sin explicación textual.
 
 | Sección DDF | Tipo Mermaid | Cuándo incluir | Cuándo omitir |
 |-------------|--------------|----------------|---------------|
-| 6 — Flujo BPM | `flowchart LR` | Siempre. Es la sección central. | Nunca: si no hay flujo, falta info crítica. |
+| 6 — Flujo BPM | draw.io (skill `appian-diagramas-bpmn`) | Siempre. Es la sección central. | Nunca: si no hay flujo, falta info crítica. |
 | 7 — Casos de uso | `flowchart LR` (actor↔CU) | Cuando hay ≥3 actores o ≥6 CUs. | Si solo hay 1 actor y 2 CUs, la tabla basta. |
 | 10 — Modelo de datos | `erDiagram` | Cuando ≥2 entidades tienen atributos definidos. | Si todas las entidades están en ❓. |
 | 11 — Estados | `stateDiagram-v2` | Cuando una entidad tiene ≥3 estados. | Entidades sin ciclo de vida (catálogos, etc.). |
