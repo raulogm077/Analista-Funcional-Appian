@@ -91,6 +91,12 @@ def main(doc_root: str) -> int:
                              "executions": (pm.get("usage") or {}).get("executions")})
     critical.sort(key=lambda x: -(x["score"] or 0))
 
+    # Uso real: procesos con historial de ejecuciones, de más a menos usados
+    usage = sorted(({"name": pm.get("name"), **{k: (pm.get("usage") or {}).get(k)
+                                                 for k in ("executions", "lastExecution", "failed", "failedInSampleOf")}}
+                    for pm in objects.get("processModel", []) if isinstance(pm.get("usage"), dict)),
+                   key=lambda u: -(u["executions"] or 0))[:10]
+
     # Secretos: objetos con valores enmascarados en la extracción
     secret_objs = [o for o in all_objs if o.get("maskedSecrets") or o.get("maskedSecret")]
 
@@ -134,6 +140,7 @@ def main(doc_root: str) -> int:
         },
         "hubs": [{"name": h.get("name"), "type": h.get("type"), "inDegree": h.get("in")} for h in graph.get("hubs", [])[:10]],
         "criticalProcesses": critical,
+        "usage": usage,
         "integrations": [{"name": it.get("name"), "method": it.get("method"), "connectedSystemRef": it.get("connectedSystemRef")}
                          for it in objects.get("integration", [])],
         "secrets": {"count": len(secret_objs), "objects": [o.get("name") for o in secret_objs]},

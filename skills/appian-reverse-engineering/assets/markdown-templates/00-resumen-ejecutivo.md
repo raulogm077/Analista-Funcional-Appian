@@ -15,7 +15,7 @@
     Secretos ............ secrets {count, objects}; tratamiento: los H-SEG de findings
     Modernización ....... modernization {verdict, strategy} (vienen de 13; si son null, falta
                           <trabajo>/modernizacion.json: corrígelo antes de escribir 00)
-    Uso real ............ criticalProcesses[].executions y signals[type=processModelsWithoutExecutions]
+    Uso real ............ usage (top por ejecuciones; failedInSampleOf = fallos en una muestra) y signals[type=processModelsWithoutExecutions]
   Certeza: verificado ✅ · inferido 🔵 · pendiente ❓. En 00 los hallazgos se citan por ID, sin columna de severidad.
 -->
 
@@ -75,7 +75,7 @@ Diagnóstico y plan en [13](./13-modernizacion-refactor.md), requisitos para rec
 ## Uso real
 
 {{Si meta.environment.isProduction no es true: «El entorno {{no es de producción / no consta como producción}}: las ejecuciones son orientativas y no sirven para decidir qué se usa.»}}
-{{Ejecuciones de los procesos críticos (tabla de arriba) y N process models sin ejecuciones: `a`, `b`. O «La extracción no trae historial de ejecuciones.»}}
+{{Los 3-5 procesos más ejecutados (usage: nombre, ejecuciones, última ejecución; fallos «en las últimas N» si hay failedInSampleOf) y N process models sin ejecuciones: `a`, `b`. O «La extracción no trae historial de ejecuciones.»}}
 
 ## Cobertura y límites
 

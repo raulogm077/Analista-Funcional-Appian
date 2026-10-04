@@ -130,6 +130,7 @@ def test_build_summary_contract(built):
     assert {"DEM_ERP_API_TOKEN", "DEM_CS_ERP"} <= set(s["secrets"]["objects"])
     assert any(x["type"] == "processModelsWithoutExecutions" for x in s["signals"])
     assert s["findings"] == []                                        # sin registro todavia
+    assert s["usage"][0]["name"] == "DEM Alta Solicitud" and s["usage"][0]["executions"] == 120
 
 
 def test_annex(built):

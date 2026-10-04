@@ -85,6 +85,7 @@ Lee antes `references/execution-principles.md`. Cada subagente recibe:
 - la carpeta de salida y la de trabajo;
 - si el Docs MCP está disponible y cuántas consultas le quedan (tope global de 30);
 - el entorno, si es producción y la versión si se conocen;
+- solo a process-modeler: si la sesión ofrece la skill `appian-diagramas-bpmn` (plugin appian-analisis-funcional), cárgala y pásale su carpeta para dibujar los procesos en draw.io editable; si no, usa su vía propia (`.bpmn` + Mermaid);
 - la orden de no crear tareas en tu lista y de terminar con un informe breve: ficheros generados, consultas al Docs MCP, choques entre instrucciones y «Para otras áreas».
 
 Todos escriben sus hallazgos en su documento y en `<trabajo>/hallazgos/<agente>.json` (`references/execution-principles.md`, «Registro de hallazgos»).
@@ -106,7 +107,7 @@ Todos escriben sus hallazgos en su documento y en `<trabajo>/hallazgos/<agente>.
 
 ### Fase 5 — Diagramas
 
-Cada bloque Mermaid pasa `scripts/validate_mermaid.py`, que admite los tipos A, B y C de `references/mermaid-rules.md`. `scripts/render_diagrams.sh --batch <salida>` genera los SVG si hay `mmdc` y avisa de los que son demasiado anchos (rehazlos). Si un diagrama falla 3 veces, sustitúyelo por una tabla. Los `.bpmn` llevan coordenadas de dibujo: `python3 scripts/bpmn_layout.py <salida>/08-procesos-bpmn` (lo ejecuta process-modeler; repítelo si alguien toca un `.bpmn`).
+Cada bloque Mermaid pasa `scripts/validate_mermaid.py`, que admite los tipos A, B y C de `references/mermaid-rules.md`. `scripts/render_diagrams.sh --batch <salida>` genera los SVG si hay `mmdc` y avisa de los que son demasiado anchos (rehazlos). Si un diagrama falla 3 veces, sustitúyelo por una tabla. Los `.bpmn` llevan coordenadas de dibujo: en la vía propia, `python3 scripts/bpmn_layout.py <salida>/08-procesos-bpmn` (lo ejecuta process-modeler; repítelo si alguien toca un `.bpmn` de esa vía); en la vía draw.io las trae la exportación de `appian-diagramas-bpmn` y no se pasa `bpmn_layout.py`.
 
 ### Fase 6 — Coherencia, resumen, inventario y guía
 
@@ -140,7 +141,7 @@ Pasa la validación final (abajo) y responde con la plantilla de `references/res
 ├── 05-integraciones-consumidas.md  │     (onboarding y mantenimiento)
 ├── 06-apis-expuestas.md            │
 ├── 07-batches.md                   │
-├── 08-procesos-bpmn/  (.bpmn + .mmd + .md por proceso, indice.md)
+├── 08-procesos-bpmn/  (por proceso: .md + .bpmn + .mmd/.svg, o .drawio/.png en la vía draw.io; indice.md)
 ├── 09-valor-adicional.md           │
 ├── 10-pantallas.md                 │
 ├── 11-reglas-negocio.md            ┘
@@ -179,7 +180,7 @@ appian-docs/_trabajo/<PREFIJO>/   = <trabajo>: datos en bruto, NO compartir
 ## Validación final (antes de responder)
 
 1. Existen los 17 documentos (`LEEME`, `00`–`14`, `INVENTARIO`), `anexo/indice.md` y `diagrams/`. Los que no aplican llevan su frase de «no aplica» (p. ej. 07 sin batches).
-2. `08-procesos-bpmn/` tiene `.bpmn`/`.mmd`/`.md` por cada process model, `indice.md` los lista todos y cada `.bpmn` tiene `bpmndi:BPMNDiagram`.
+2. `08-procesos-bpmn/` tiene por cada process model su `.md`, su `.bpmn` (con `bpmndi:BPMNDiagram`) y su diagrama (`.svg`/`.mmd`, o `.png`/`.drawio`), e `indice.md` los lista todos.
 3. Todos los diagramas pasan `validate_mermaid.py` (o están sustituidos por tabla) y ninguno superó el aviso de ancho.
 4. `bash scripts/detect_secrets.sh <salida>` no encuentra nada.
 5. No quedan placeholders (`{{`, `TBD`, `TODO`, `lorem`) ni marcas fuera de la paleta (`🔴`, `🟡`, `⚠️`).

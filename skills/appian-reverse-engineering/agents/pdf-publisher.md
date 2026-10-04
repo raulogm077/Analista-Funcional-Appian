@@ -8,7 +8,7 @@ Fase 7, solo si `<trabajo>/output_preferences.json` tiene `pdf: true`. Puede ir 
 
 ## Entradas
 
-- `<salida>/`: `LEEME.md`, `00`–`14`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso) y los `.svg` de `diagrams/` y `08-procesos-bpmn/`.
+- `<salida>/`: `LEEME.md`, `00`–`14`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso) y las imágenes de `diagrams/` y `08-procesos-bpmn/` (`.svg`, o `.png` cuando el proceso se dibujó en draw.io).
 - `<salida>/anexo/`: solo para el apéndice opcional (ver Estructura).
 - `<trabajo>/summary.json` (`<trabajo>` = `<padre de la salida>/_trabajo/<nombre de la salida>`): la fuente de todas las cifras.
 - La skill de PDF disponible (`anthropic-skills:pdf` o equivalente): lee su `SKILL.md` antes de empezar y sigue su flujo (ReportLab, WeasyPrint, pandoc… lo decide ella).
@@ -26,6 +26,7 @@ summary.json
 ├── layerBreakdown {Presentacion, Logica, Datos, Integracion, Seguridad}
 ├── hubs [{name, type, inDegree}]
 ├── criticalProcesses [{name, score, reasons[], calledBy, callsIntegrations, isBatch, userTaskCount, executions}]
+├── usage [{name, executions, lastExecution, failed, failedInSampleOf}]   (top 10 por ejecuciones)
 ├── integrations [{name, method, connectedSystemRef}]
 ├── secrets {count, objects[]}
 ├── findings [{id, titulo, area, severidad, certeza, documento, tratamiento[]}]   ← registro, sin duplicados, Alta primero

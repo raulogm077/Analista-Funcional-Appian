@@ -192,24 +192,11 @@ render_mermaid() {
 # ------------------------------------------------------------
 
 write_pending() {
-  local in="$1"
-  local out="$2"
-  local msg="$3"
-  local pending="${in}.render-pending.txt"
-  cat > "$pending" <<EOF
-Render pendiente para: $in
-Salida esperada: $out
-Motivo: $msg
-
-Cómo resolver:
-  - Si falta mmdc: instala con:  npm install -g @mermaid-js/mermaid-cli
-  - Reintentar:                 $(basename "$0") --mermaid $in $out
-  - Alternativa: el bloque mermaid sigue embebido en el .md asociado;
-    GitHub, VSCode y la mayoría de previewers Markdown lo renderizan al vuelo.
-
-Generado por render_diagrams.sh
-EOF
-  echo "  ⚠ Render pendiente. Marcador escrito en $pending"
+  # Solo avisa: no escribe ficheros junto al diagrama (la salida solo lleva entregables).
+  local in="$1" out="$2" msg="$3"
+  echo "  ⚠ Render pendiente de $in → $out: $msg" >&2
+  echo "    Instala mmdc (npm install -g @mermaid-js/mermaid-cli) y repite: $(basename "$0") --mermaid $in $out" >&2
+  echo "    Mientras tanto, el documento lleva el bloque mermaid embebido." >&2
 }
 
 # ------------------------------------------------------------

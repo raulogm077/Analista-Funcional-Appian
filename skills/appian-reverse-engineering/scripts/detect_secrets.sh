@@ -56,7 +56,7 @@ if [ -s "$tmp" ]; then
   echo '|---|---|'
   cat "$tmp"
   echo
-  echo "**Acción:** documentar como riesgo de seguridad en \`09-valor-adicional.md\` (sección Riesgos) sin reproducir los valores. Recomendar rotación inmediata y movimiento a vault / variables seguras."
+  echo "**Acción:** si es la extracción, registra un hallazgo H-SEG (área secretos, severidad Alta) en 04 sin reproducir el valor y recomienda rotarlo y moverlo a la autenticación del connected system. Si es un entregable, enmascáralo antes de seguir."
   exit 1
 else
   echo "## Sin coincidencias"

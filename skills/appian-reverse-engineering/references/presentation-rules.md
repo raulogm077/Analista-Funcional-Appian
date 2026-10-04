@@ -30,7 +30,8 @@ Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no e
 ```
 
 - El TL;DR es el **único** resumen del documento. No añadas «Resumen rápido», «Resumen» ni otro TL;DR más abajo.
-- La plantilla puede concretar el nombre de una sección («Vista: mapa de procesos») o subdividirla, pero no cambiar el orden.
+- La plantilla puede concretar el nombre de una sección («Vista: mapa de procesos») o subdividirla (`## Detalle: requisitos`, `## Detalle: datos`…), pero no cambiar el orden.
+- Los documentos sin área propietaria de hallazgos (`12`, `13`, `14`) no tienen sección Hallazgos ni «Hallazgos:» en el TL;DR; citan los IDs donde los tratan. `09` añade «Registro de hallazgos» tras sus Hallazgos.
 - Encabezados sin emojis.
 - `00-resumen-ejecutivo.md`, `LEEME.md` e `INVENTARIO.md` tienen su propia estructura en la plantilla; también empiezan por el TL;DR.
 
@@ -52,7 +53,7 @@ Los diagramas se leen al ancho de una página: más de ~1600 px de ancho es ileg
 | Columnas por tabla | ≤ 8 |
 | Filas por tabla de la Vista | ≤ 15 (si hay más, parte por tipo o subdominio). No aplica al catálogo completo del Detalle, al registro de hallazgos de 09 ni a INVENTARIO. |
 | Caracteres por celda | ≤ 100, salvo la columna Evidencia |
-| Nodos por diagrama Tipo A (flowchart, también por capas) | ≤ 30 |
+| Nodos por diagrama Tipo A (flowchart, también por capas) | ≤ 30 y sin aviso de ancho del render (en la práctica, unos 15: agrupa o parte) |
 | Entidades por diagrama Tipo B (erDiagram) | sin techo fijo; por legibilidad, parte por subdominio a partir de ~15 (ver `mermaid-rules.md`) |
 | Nodos por diagrama Tipo C (proceso) | ≤ 25 |
 

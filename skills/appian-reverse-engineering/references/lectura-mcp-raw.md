@@ -62,7 +62,9 @@ Son una ayuda: ante la duda, **la fuente es el fichero `definition`**.
 
 ## Quién puede iniciar un process model
 
-Según la documentación oficial, para iniciar un process model hace falta **al menos el permiso Initiator**; Administrator, Editor, Manager y Viewer también pueden iniciarlo, y **Deny** no puede hacer nada. Los procesos que arranca un temporizador o que se lanzan como subproceso se ejecutan como el usuario que desplegó el process model. Fuente: https://docs.appian.com/suite/help/26.6/process-model-object.html#process-model-security
+Según la documentación oficial, para iniciar un process model hace falta **al menos el permiso Initiator**; Administrator, Editor, Manager y Viewer también pueden iniciarlo, y **Deny** no puede hacer nada. Fuente: https://docs.appian.com/suite/help/26.6/process-model-object.html#process-model-security
+
+Los procesos que arranca un temporizador o que se lanzan como subproceso se ejecutan como el usuario que desplegó el process model. Fuente: https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#insufficient-object-permissions
 
 - **Si hay role map** (algún fichero `other` lo trae), es la fuente: pueden iniciar los grupos con cualquier rol distinto de Deny (Administrator, Editor, Manager, Viewer o Initiator).
 - **`initiatorGroup`** es el grupo de seguridad que trae la definición del process model; no dice el nivel de permiso ni si sigue en el role map. Con role map, menciónalo solo si no coincide («la definición declara X, que no figura en el role map»). Sin role map, escribe «grupo de seguridad declarado: X; role map no disponible» ❓, nunca «solo X puede iniciarlo».

@@ -34,7 +34,7 @@ Cada área tiene un documento propietario y un prefijo para los IDs de sus halla
 | APIs expuestas | `06-apis-expuestas.md` | integration-security-analyzer | `H-API` |
 | Batches | `07-batches.md` | orquestador | `H-BAT` |
 | Procesos | `08-procesos-bpmn/<slug>.md` | process-modeler | `H-PRO` |
-| Mantenimiento, validación de la plataforma, versionado, métricas | `09-valor-adicional.md` | orquestador | `H-GEN` |
+| Mantenimiento, validación de la plataforma, versionado, métricas, procesos sin ejecuciones (área `uso`) | `09-valor-adicional.md` | orquestador | `H-GEN` |
 | Pantallas | `10-pantallas.md` | ui-rules-analyzer | `H-UI` |
 | Reglas de negocio | `11-reglas-negocio.md` | ui-rules-analyzer | `H-RN` |
 
@@ -83,5 +83,5 @@ Antes de escribir `00`, el orquestador lee todos los documentos y:
 1. **Contradicciones** (una cifra, un comportamiento o un hecho distinto según el documento): comprueba en `<trabajo>/` cuál es correcto y **corrige el documento equivocado** en su sitio. Prohibido dejar notas del tipo «X todavía dice…» o «esto matiza a…».
 2. **Duplicados**: si dos propietarios registraron lo mismo, pon `duplicadoDe` en el JSON del que no es propietario y sustituye en su documento la fila por una línea que enlace el ID canónico.
 3. **Severidad repetida**: fuera del documento propietario, una mención a un hallazgo lleva su ID y no su severidad.
-4. **«Para otras áreas»** de los informes: si el propietario no lo recogió, regístralo tú con el prefijo del área y el siguiente número libre en `orquestador.json`, y añade su fila en la sección Hallazgos del documento propietario.
+4. **«Para otras áreas»** de los informes: si el propietario no lo recogió, regístralo tú con el prefijo del área y el siguiente número libre en `orquestador.json`, y añade su fila en la sección Hallazgos del documento propietario. Si venía de rebuild-architect (un MOD con «Resuelve: —»), añade el nuevo ID a ese MOD en `<trabajo>/modernizacion.json` y en su ficha de `13`.
 5. Vuelve a ejecutar `build_registry.py` y corrige lo que reporte.

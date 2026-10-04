@@ -16,7 +16,7 @@ Fase 7, solo si `<trabajo>/output_preferences.json` tiene `dashboard: true`. Pue
 ## Entradas
 
 - `<trabajo>/summary.json` (`<trabajo>` = `<padre de la salida>/_trabajo/<nombre de la salida>`): fuente de los datos estructurados.
-- `<salida>/`: `LEEME.md`, `00`–`14`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso), `diagrams/*.svg` y `08-procesos-bpmn/*.svg`.
+- `<salida>/`: `LEEME.md`, `00`–`14`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso), `diagrams/*.svg` y `08-procesos-bpmn/*.svg` (o `*.png` cuando el proceso se dibujó en draw.io).
 - `<salida>/anexo/`: no se inyecta (es grande); se enlaza (ver Contenido).
 - Opcionales: la skill `anthropic-skills:web-artifacts-builder` (solo para apps muy grandes) y una herramienta MCP de validación de Mermaid (`validate_and_render_mermaid_diagram`), si están en la sesión.
 
@@ -33,6 +33,7 @@ summary.json
 ├── layerBreakdown {Presentacion, Logica, Datos, Integracion, Seguridad}
 ├── hubs [{name, type, inDegree}]
 ├── criticalProcesses [{name, score, reasons[], calledBy, callsIntegrations, isBatch, userTaskCount, executions}]
+├── usage [{name, executions, lastExecution, failed, failedInSampleOf}]   (top 10 por ejecuciones)
 ├── integrations [{name, method, connectedSystemRef}]
 ├── secrets {count, objects[]}
 ├── findings [{id, titulo, area, severidad, certeza, documento, tratamiento[]}]   ← registro, sin duplicados, Alta primero
