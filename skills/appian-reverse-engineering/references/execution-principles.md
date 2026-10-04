@@ -1,105 +1,87 @@
-# Principios de ejecución y reglas de presentación
+# Principios de ejecución
 
-Documento de **lectura obligatoria** antes de la Fase 4 (generación de entregables) y antes de invocar cualquier subagente. Concentra los criterios no negociables que aplican a TODOS los entregables y a TODOS los agentes.
-
----
-
-## 1. Principios de ejecución (no negociables)
-
-Aplican a cada `.md`, cada diagrama, cada celda de tabla.
-
-1. **No inventar.** Si un dato no aparece en los artefactos, márcalo `🟡 no determinado` y explica por qué. Nunca completes con suposiciones plausibles.
-
-2. **Etiqueta cada afirmación con su estado**:
-   - ✅ **Confirmado** por la definición extraída (con evidencia `mcp:<tipo>/<nombre>#<ubicación>`).
-   - 🔵 **Inferido** razonablemente (explica la evidencia parcial).
-   - 🟡 **Pendiente** de validación con responsable funcional/técnico.
-   - 🔴 **Riesgo** detectado.
-
-3. **Trazabilidad obligatoria**: cada afirmación enlaza al objeto del que se extrajo. Evidencia mínima: `mcp:<tipo>/<nombre>#<ubicación>` (ruta dentro de la definición o *breadcrumb* de dependencias) + nivel de confianza. Si viene de la documentación oficial: `Fuente: <URL>`. Detalle en `references/lectura-mcp-raw.md`.
-
-4. **Cero relleno**: si una sección no tiene contenido real, **omítela**. Nunca dejes `<TODO>`, `<placeholder>`, `xxx`, `lorem ipsum`, "TBD" o equivalentes.
-
-5. **Cero duplicación**: cada hallazgo se documenta una sola vez; se referencia con anclas Markdown.
-
-6. **Nombres reales** (técnico + visible) en cada referencia, nunca placeholders.
-
-7. **Conocimiento accionable > listados**. Cualquier objeto listado debe estar conectado a una funcionalidad y a una recomendación de uso/mantenimiento.
-
-8. **Seguridad por defecto.** Detecta y enmascara secretos, tokens, passwords, URLs con credenciales embebidas, claves API antes de escribir nada. Documéntalos como riesgo (sin exponer el valor). Ver `references/security-rules.md`.
-
-9. **Diagramas robustos.** Mermaid debe pasar las reglas de `references/mermaid-rules.md`. BPMN debe seguir el mapeo de `references/bpmn-mapping.md`. Si no se pueden sanear/renderizar, sustituye por tabla equivalente.
-
-10. **Idioma**: español neutro técnico salvo que el usuario pida otro.
+Lectura obligatoria antes de la fase 4 y para todos los subagentes. Concentra los criterios no negociables. El formato de los documentos está en `references/presentation-rules.md`; cómo leer los datos, en `references/lectura-mcp-raw.md`.
 
 ---
 
-## 2. Reglas de presentación (cómo distribuir la información)
+## 1. Principios
 
-La documentación es **inservible** si no se puede leer fácilmente. Aplica a **cada** entregable.
-
-### 2.1 Estructura uniforme de cada documento
-
-> **Precedencia.** Si dos instrucciones chocan, manda en este orden: (1) el fichero de rol del agente, (2) la plantilla del documento en `assets/markdown-templates/`, (3) esta estructura general, (4) `presentation-rules.md` (estilo). Esta estructura es la forma concreta de la «cascada» TL;DR → Vista → Detalle de `presentation-rules.md`: TL;DR = punto 1; Vista = puntos 2 a 4; Detalle = punto 5; Hallazgos al final.
-
-Todos los `.md` siguen la misma jerarquía para que sean **escaneables**:
-
-1. **🎯 TL;DR** — Resumen ejecutivo en 2-4 frases al inicio. Sin tablas, sin diagramas. Lo que verá quien solo lea las primeras líneas.
-2. **📊 Volumen / cifras clave** — Tabla pequeña (≤ 8 filas) con los números que sitúan el documento.
-3. **🗺️ Vista global** (si aplica) — Un único diagrama o tabla resumen que permite navegar al detalle.
-4. **📋 Catálogo en tabla resumen** — **Antes** del detalle individual, una tabla escaneable con una fila por objeto: nombre, atributos clave (≤ 6 columnas), estado, link a su detalle.
-5. **Detalle por objeto** — Subsecciones con estructura **idéntica** (mismos campos en el mismo orden) para todas las entradas del mismo tipo. Convierte el detalle en algo escaneable, no en prosa libre.
-6. **🔍 Hallazgos** — Solo si los hay. Lista corta, accionable, con severidad (🔴/🟡/✅) y evidencia.
-
-### 2.2 Reglas duras de presentación
-
-- **Una idea por celda.** Si una celda de tabla excede 80 caracteres, divide en columnas o saca a una subsección.
-- **Tablas resumen antes que detalle.** Nadie lee una pared de fichas. La tabla resumen permite encontrar el objeto, el detalle responde la pregunta concreta.
-- **Diagramas con TL;DR adyacente.** Antes o después de cada diagrama, una frase que explique qué se está viendo y qué hallazgo esperar.
-- **Iconos como pistas visuales.** Usa emojis consistentes en cabeceras: 🎯 TL;DR · 📊 Volumen · 🗺️ Mapa · 📋 Catálogo · 🔍 Hallazgos · 👥 Actores · 🔌 Integraciones · 💾 Datos · 📐 BPMN profesional · 🖼 Preview. Sin abusar — uno por sección, no más.
-- **Status labels uniformes en todo el documento**: ✅ Confirmado · 🔵 Inferido · 🟡 Pendiente · 🔴 Riesgo. Nunca mezcles con otras (✓/✗/⚡/etc).
-- **Detalles colapsables**: si el detalle por entrada es largo y repetitivo (CDTs con muchos campos, process models con muchos nodos), considera presentar en tabla compacta con columna "ver detalle" que enlaza al `.md` hermano.
-
-### 2.3 Límites de tamaño de diagramas (criterio: legibilidad, no número arbitrario)
-
-- `flowchart` Tipo A: ≤ 30 nodos.
-- `erDiagram` Tipo B: **sin techo absoluto**. Los modelos de datos en proyectos Appian pueden ser muy grandes; truncarlos es peor que mostrarlos. Aplica criterio de legibilidad:
-  - Hasta ~15 entidades: un único diagrama global está bien.
-  - Entre ~15-30 entidades: global resumido + diagramas por subdominio.
-  - >30 entidades: obligatorio siempre por subdominios.
-- `flowchart` Tipo C (BPMN preview): ≤ 25 nodos. Si excede, partir en sub-procesos/call activities.
+1. **No inventar.** Lo que no está en los datos no se completa con suposiciones plausibles: se marca ❓ y se dice qué falta.
+2. **Certeza en cada afirmación importante**: ✅ verificado, 🔵 inferido (di de qué), ❓ pendiente (di quién valida). Ver `presentation-rules.md`, Regla 7.
+3. **Dato ausente no es defecto.** Que un campo no aparezca en la respuesta no prueba que no esté configurado: el Dev MCP no devuelve toda la configuración (p. ej. pestañas de excepciones y alertas de los nodos, seguridad de las acciones de record, destinatarios de correo, entradas de algunos nodos, variables de algunos procesos). Solo es ✅ si la respuesta muestra el campo vacío o nulo de forma explícita, o si otra fuente lo corrobora (render, validación de la plataforma, dependencias). Si no, la afirmación es ❓ «no lo devuelve la extracción», y un hallazgo basado en ella lleva certeza ❓ (o 🔵 con indicios) y una pregunta para validarlo. Lo mismo con muestras: una muestra de ejecuciones no sirve para afirmar nada sobre el total ni sobre quién las ejecutó si sus datos son uniformes o incoherentes.
+4. **Trazabilidad.** Cada afirmación importante lleva `Evidencia: mcp:<tipo>/<nombre>[@<rol>]#<ubicación>` (formato en `lectura-mcp-raw.md`); lo que viene de la documentación oficial, `Fuente: <URL>`.
+5. **Cero relleno.** Sin placeholders ni secciones vacías.
+6. **Cada cosa en un sitio.** Un objeto tiene una ficha y un hallazgo tiene un ID, en su documento propietario; el resto enlaza (tabla de propietarios abajo).
+7. **Nombres reales** (técnico y visible), nunca genéricos.
+8. **Accionable.** Todo objeto listado se conecta con lo que hace para el negocio o con lo que hay que hacer con él.
+9. **Seguridad.** Ningún secreto, credencial ni usuario en los entregables (`references/security-rules.md` y `presentation-rules.md`, Regla 8).
+10. **Diagramas que pasan el validador** (`references/mermaid-rules.md`); si no, tabla equivalente. Los `.bpmn` siguen `references/bpmn-mapping.md`.
+11. **Idioma**: español técnico neutro salvo que el usuario pida otro.
 
 ---
 
-## 3. Reglas específicas para procesos (carpeta `08-procesos-bpmn/`)
+## 2. Documentos propietarios
 
-Cada process model produce **3 ficheros** en lugar de uno:
+Cada área tiene un documento propietario y un prefijo para los IDs de sus hallazgos. Solo el propietario registra hallazgos de su área.
 
-- `<PM>.bpmn` — **BPMN 2.0 XML profesional** abrible en Camunda Modeler, draw.io, bpmn.io demo, Signavio. Es la **fuente de verdad** para BPMN auténtico (lanes/pools, iconos OMG, message flows, boundary events).
-- `<PM>.mmd` — **Mermaid Tipo C** estilizado con shapes BPMN, iconos emoji, colores estándar y lanes como `subgraph`. Es la vista preliminar embebida en el Markdown.
-- `<PM>.svg` — render del `.mmd` con `mmdc` si está disponible. Si no, el `.mmd` queda embebido en `<PM>.md` y GitHub/VSCode lo renderizan on-the-fly.
-- `<PM>.md` — Documento siguiendo `assets/markdown-templates/08-procesos-bpmn/pm-template.md`: TL;DR, diagrama, paso a paso funcional, integraciones tocadas, asignación de tareas, manejo de excepciones, hallazgos.
+| Área | Documento | Autor | Prefijo |
+|---|---|---|---|
+| Funcional: casos de uso, funcionalidades ausentes | `01-funcional.md` | interface-analyzer | `H-FUN` |
+| Arquitectura: acoplamientos, hubs, objetos huérfanos | `02-arquitectura.md` | interface-analyzer | `H-ARQ` |
+| Datos: record types, CDTs, relaciones, volúmenes | `03-modelo-datos.md` | data-modeler | `H-DAT` |
+| Seguridad, grupos y secretos | `04-seguridad-grupos.md` | integration-security-analyzer | `H-SEG` |
+| Integraciones consumidas | `05-integraciones-consumidas.md` | integration-security-analyzer | `H-INT` |
+| APIs expuestas | `06-apis-expuestas.md` | integration-security-analyzer | `H-API` |
+| Batches | `07-batches.md` | orquestador | `H-BAT` |
+| Procesos | `08-procesos-bpmn/<slug>.md` | process-modeler | `H-PRO` |
+| Mantenimiento, validación de la plataforma, versionado, métricas | `09-valor-adicional.md` | orquestador | `H-GEN` |
+| Pantallas | `10-pantallas.md` | ui-rules-analyzer | `H-UI` |
+| Reglas de negocio | `11-reglas-negocio.md` | ui-rules-analyzer | `H-RN` |
 
-`indice.md` es una tabla escaneable con una fila por PM y enlaces a los 3 ficheros. **No** apiles el detalle de cada PM en el índice — el índice es navegación, los `<PM>.md` son contenido.
-
----
-
-## 4. Reglas específicas para modelo de datos (`03-modelo-datos.md`)
-
-- **Cobertura del 100%**: el catálogo (tablas) **siempre** incluye todos los records y CDTs de la aplicación, sin excepción. Los modelos grandes no se truncan: se particionan visualmente.
-- **Estrategia de diagramas según tamaño** (guía de legibilidad, no techo arbitrario):
-  - Hasta ~15 entidades: un único `erDiagram` global (`diagrams/modelo-datos.svg`).
-  - Entre ~15 y ~30 entidades: diagrama global resumido con entidades clave + relaciones principales, **más** diagramas de detalle por subdominio.
-  - Más de ~30 entidades: obligatorio siempre partir en sub-diagramas por subdominio funcional (`diagrams/modelo-datos-{{subdominio}}.svg`). Añadir un "mapa de subdominios" como índice navegable.
-- **Criterio de subdominio**: agrupar entidades que se referencian entre sí o que comparten contexto funcional. Cada subdominio suele tener 8-15 entidades.
-- Cada Record Type tiene su **ficha estructurada** con los mismos campos en el mismo orden — escaneable por columnas, no por prosa libre.
+Si al analizar tu área ves algo de otra (p. ej. ui-rules-analyzer nota que un proceso ignora «Cancelar»), descríbelo en una frase **sin severidad** donde tu documento lo necesite, enlaza el documento propietario y menciónalo en tu informe final bajo «Para otras áreas». El orquestador decide en la pasada de coherencia.
 
 ---
 
-## 5. Regla de oro de generación de salida
+## 3. Registro de hallazgos
 
-- **Cada celda/campo** debe tener: valor real **o** marcador explícito de pendiente con motivo. Nunca `<TODO>`, `<placeholder>`, `xxx`, `lorem ipsum`.
-- Si una sección no tiene evidencia, escribe: *"No se ha encontrado evidencia suficiente en los artefactos analizados. Pendiente de validación con [rol sugerido]."* — esto es información útil, no un fallo.
-- Estructura de evidencia: `Evidencia: mcp:<tipo>/<nombre>[@<rol>]#<ubicación>` (formato completo en `lectura-mcp-raw.md`). El nivel de confianza lo expresa el estado (✅/🔵/🟡/🔴); no añadas otra escala.
-- Etiquetas de estado consistentes en toda la salida: ✅ Confirmado · 🔵 Inferido · 🟡 Pendiente · 🔴 Riesgo.
-- Enlaces internos entre documentos con anclas Markdown (`[ver §3.2 Records](./03-modelo-datos.md#records)`) para no duplicar.
+Un hallazgo es algo que hay que corregir, decidir o vigilar. Cada propietario los registra en dos sitios:
+
+1. En su documento, sección `## Hallazgos`:
+
+   ```markdown
+   | ID | Hallazgo | Severidad | Certeza | Evidencia |
+   |---|---|---|---|---|
+   | H-PRO-01 | «Cancelar» no anula el alta | Alta | ✅ | `mcp:processModel/DEM Alta Solicitud#nodes[id=1].connections` |
+   ```
+
+   Si un hallazgo Alta necesita explicación, añade debajo una línea con su impacto y la recomendación.
+
+2. En `<trabajo>/hallazgos/<agente>.json` (el orquestador usa `orquestador.json`), una lista con un objeto por hallazgo:
+
+   ```json
+   [{"id": "H-PRO-01", "titulo": "«Cancelar» no anula el alta", "area": "procesos",
+     "severidad": "Alta", "certeza": "verificado", "objetos": ["DEM Alta Solicitud"],
+     "documento": "08-procesos-bpmn/DEM_Alta_Solicitud.md#hallazgos",
+     "evidencia": "mcp:processModel/DEM Alta Solicitud#nodes[id=1].connections",
+     "impacto": "Una solicitud cancelada se registra igualmente.", "recomendacion": "Pasarela tras el inicio que compruebe la cancelación."}]
+   ```
+
+   - `id`: prefijo del área + número de dos cifras, sin huecos (`H-PRO-01`, `H-PRO-02`…).
+   - `area`: funcional, arquitectura, datos, seguridad, secretos, integraciones, apis, batches, procesos, pantallas, reglas, mantenimiento, rendimiento o uso.
+   - `severidad`: Alta, Media o Baja. `certeza`: verificado, inferido o pendiente.
+   - `documento`: ruta relativa a `<salida>` (con ancla si quieres).
+   - `duplicadoDe` (solo lo pone el orquestador): ID canónico cuando dos entradas son el mismo hallazgo.
+
+`scripts/build_registry.py` valida estos ficheros, une el tratamiento que propone `13` (MOD y PQ que lo resuelven) y genera la tabla del registro en `09-valor-adicional.md`. El resto de documentos citan el hallazgo por su ID y no repiten su severidad.
+
+---
+
+## 4. Pasada de coherencia (orquestador, fase 6)
+
+Antes de escribir `00`, el orquestador lee todos los documentos y:
+
+1. **Contradicciones** (una cifra, un comportamiento o un hecho distinto según el documento): comprueba en `<trabajo>/` cuál es correcto y **corrige el documento equivocado** en su sitio. Prohibido dejar notas del tipo «X todavía dice…» o «esto matiza a…».
+2. **Duplicados**: si dos propietarios registraron lo mismo, pon `duplicadoDe` en el JSON del que no es propietario y sustituye en su documento la fila por una línea que enlace el ID canónico.
+3. **Severidad repetida**: fuera del documento propietario, una mención a un hallazgo lleva su ID y no su severidad.
+4. **«Para otras áreas»** de los informes: si el propietario no lo recogió, regístralo tú con el prefijo del área y el siguiente número libre en `orquestador.json`, y añade su fila en la sección Hallazgos del documento propietario.
+5. Vuelve a ejecutar `build_registry.py` y corrige lo que reporte.

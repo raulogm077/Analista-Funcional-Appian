@@ -1,234 +1,150 @@
 # Reglas de presentación
 
-> Reglas obligatorias para la **distribución y legibilidad** de cada entregable. Léelas antes de escribir cualquier `.md` de `<salida>/`. El objetivo no es generar documentos densos, sino documentos que se **lean en cascada** según el interés del lector.
+Cómo se escribe **cada** entregable de `<salida>/`. Son la única fuente de estructura y estilo: las plantillas de `assets/markdown-templates/` las concretan para cada documento y los ficheros de agente dicen **qué** analizar, no cómo maquetar.
+
+**Precedencia** (si aun así algo choca): la **plantilla** manda en la estructura del documento; el **fichero del agente** manda en el contenido y el criterio de análisis; estas reglas mandan en el estilo y los límites. Si encuentras un choque, aplica este orden y anótalo en tu informe al orquestador.
 
 ---
 
-## Regla 1: principio de cascada (TL;DR → vista → detalle)
+## Regla 1: esqueleto único
 
-> La estructura concreta de cada documento está en `execution-principles.md` §2.1, que también fija la precedencia entre rol, plantilla y estas reglas.
-
-Todo entregable se estructura en **tres niveles de profundidad**, en este orden estricto:
-
-| Nivel | Para quién | Qué contiene | Longitud máxima |
-|---|---|---|---|
-| **TL;DR** (arriba del todo) | Lector que solo quiere saber qué hay aquí | 3-5 líneas en prosa o bullets cortos | ≤ 5 líneas |
-| **Vista** (después del TL;DR) | Lector que quiere el panorama | Diagrama principal + tabla resumen 1 fila por elemento | ≤ ½ pantalla |
-| **Detalle** (al pie) | Lector que necesita la ficha técnica | Subsecciones por elemento con todos los datos | sin límite |
-
-**Prohibido**: empezar un documento con una tabla de 50 filas. Si lo necesitas, ponla en la sección Detalle al final, no al principio.
-
-**Patrón canónico al inicio de cada `.md`:**
+Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no escribas «ninguno» ni «no aplica»); si la ausencia es un dato relevante, dilo en una frase del TL;DR.
 
 ```markdown
 # <Título>
 
-> **TL;DR**: <una frase sobre qué hace este documento>.
-> Contenido: <N elementos / N hallazgos>. <Riesgo principal o ninguno>.
-> <Recomendación de lectura: "Leer la Vista; bajar al Detalle solo si X.">
+> **TL;DR**: <2-3 frases: qué es y lo más importante que debe saber el lector>.
+> **Volumen**: <cifras que sitúan el documento>. **Hallazgos**: <N (Alta: n)> — principales: [H-PRO-01](#hallazgos), … (o «sin hallazgos»).
 
 ## Vista
-
-[Diagrama]
-
-[Tabla resumen: 1 fila por elemento, máximo 10 columnas, columnas escaneables]
+<diagrama principal (si aporta) + tabla resumen con una fila por elemento>
 
 ## Detalle
+<una ficha por elemento, todas con la misma estructura>
 
-### <Elemento 1>
-...
+## Hallazgos
+<solo los del área de este documento (ver execution-principles.md, «Registro de hallazgos»)>
+
+## Cobertura y límites
+<1-5 líneas: qué no se pudo obtener o verificar y por qué>
 ```
 
----
+- El TL;DR es el **único** resumen del documento. No añadas «Resumen rápido», «Resumen» ni otro TL;DR más abajo.
+- La plantilla puede concretar el nombre de una sección («Vista: mapa de procesos») o subdividirla, pero no cambiar el orden.
+- Encabezados sin emojis.
+- `00-resumen-ejecutivo.md`, `LEEME.md` e `INVENTARIO.md` tienen su propia estructura en la plantilla; también empiezan por el TL;DR.
 
-## Regla 2: diagrama antes que tabla, tabla antes que prosa
+## Regla 2: diagrama, luego tabla, luego prosa
 
-El lector procesa información visual antes que tabular antes que prosaica. En cada sección:
+Si hay relaciones, diagrama; si hay N elementos comparables, tabla; el matiz, en prosa breve. Cada diagrama lleva una frase que dice qué muestra.
 
-1. Si hay relación entre elementos, **diagrama** primero.
-2. Si hay comparación entre N elementos, **tabla** después.
-3. Si hay matiz / contexto, **prosa breve** después.
+Un diagrama aparece **una sola vez** por documento:
 
-Ejemplos:
+- si existe el `.svg`: `![<qué muestra>](diagrams/<nombre>.svg)` y debajo `Fuente: [<nombre>.mmd](diagrams/<nombre>.mmd)`;
+- si no se pudo renderizar: el bloque ` ```mermaid ` embebido (idéntico al `.mmd`).
 
-- **Arquitectura**: diagrama (objetos + relaciones) → tabla por capa (1 fila por objeto) → notas.
-- **Modelo de datos**: ER diagram → tabla por record/CDT → notas.
-- **Seguridad**: árbol de grupos → matriz objeto×grupo → reglas en SAIL.
-- **Procesos**: BPMN diagram → tabla 1 fila por nodo → ficha por nodo.
+Los diagramas se leen al ancho de una página: más de ~1600 px de ancho es ilegible (el render avisa). Usa `flowchart TD`, pocas cajas por fila y etiquetas de arista solo si aportan; si no cabe, parte el diagrama. Nombres de fichero en `references/mermaid-rules.md`.
 
----
-
-## Regla 3: una idea por tabla, una idea por diagrama
-
-Si una tabla necesita 12+ columnas, la dividiste mal. Si un diagrama necesita 30+ nodos, lo dividiste mal.
-
-**Límites duros:**
+## Regla 3: límites
 
 | Elemento | Límite |
 |---|---|
 | Columnas por tabla | ≤ 8 |
-| Filas por tabla en sección "Vista" (resumen) | ≤ 15 |
-| Nodos por diagrama Tipo A (flowchart) | ≤ 30 |
-| Entidades por diagrama Tipo B (erDiagram) | sin techo, criterio de legibilidad — ver `references/mermaid-rules.md` Tipo B |
-| Nodos por diagrama Tipo C (BPMN-styled) | ≤ 25 |
-
-Si excedes, particiona por subdominio / lane / tipo. Cada partición es un sub-diagrama / sub-tabla con título descriptivo. El documento gana un **índice de sub-vistas** al inicio.
-
----
+| Filas por tabla de la Vista | ≤ 15 (si hay más, parte por tipo o subdominio). No aplica al catálogo completo del Detalle, al registro de hallazgos de 09 ni a INVENTARIO. |
+| Caracteres por celda | ≤ 100, salvo la columna Evidencia |
+| Nodos por diagrama Tipo A (flowchart, también por capas) | ≤ 30 |
+| Entidades por diagrama Tipo B (erDiagram) | sin techo fijo; por legibilidad, parte por subdominio a partir de ~15 (ver `mermaid-rules.md`) |
+| Nodos por diagrama Tipo C (proceso) | ≤ 25 |
 
 ## Regla 4: tablas escaneables
 
-Las tablas se leen verticalmente columna a columna. Para que sean escaneables:
-
-- **Columna 1 es siempre el identificador** del elemento (nombre técnico).
-- **Columnas con respuesta corta** (Sí/No, valor numérico, etiqueta de una palabra) van pegadas a la izquierda.
-- **Columnas con respuesta larga** (descripción, callers, notas) van a la derecha.
-- **Estados** con emoji-color en una columna corta (✅/🔵/🟡/🔴).
-- **Nunca** texto de >100 caracteres dentro de una celda. Si es necesario, ese campo va en la ficha de Detalle, no en la tabla.
-
-Ejemplo correcto:
-
-| Process Model | Trigger | Lanes | Pools externos | Críticos | Diagrama |
-|---|---|---|---|---|---|
-| `PM_Gestion` | manual | 2 | 1 (SAP) | 🔴 | [ver](./PM_Gestion.svg) |
-| `PM_Batch` | timer | 0 | 0 | 🟡 | [ver](./PM_Batch.svg) |
-
-Ejemplo **incorrecto** (no escaneable):
-
-| Process Model | Descripción detallada | Quién lo llama desde el frontend y backend, incluyendo procesos hermanos | ... |
-
----
+- Columna 1: el identificador del elemento (nombre técnico).
+- Columnas de respuesta corta (Sí/No, número, etiqueta) a la izquierda; las largas a la derecha.
+- Certeza con su marca (Regla 7) en una columna corta; severidad con la palabra (Alta/Media/Baja).
+- Sí/No en texto: no uses ✔, ✗ ni similares.
 
 ## Regla 5: fichas de Detalle uniformes
 
-Cada ficha de Detalle (sección `### <Elemento>` en el bloque Detalle) sigue **siempre** esta estructura:
+Todas las fichas de un mismo tipo tienen los mismos campos en el mismo orden:
 
 ```markdown
-### `<nombre_tecnico>` — <nombre_visible>
+### <nombre técnico> — <nombre visible>
 
-**TL;DR de la ficha** (1 línea): qué es y para qué sirve.
+<1 línea: qué es y para qué sirve>
 
 | Campo | Valor |
 |---|---|
-| ... ficha técnica con 5-10 campos clave ... |
+| … 5-10 campos clave … |
 
-**Detalle / Notas relevantes** (si aplica, 3-5 líneas):
-- ...
+<Notas (si aplica, 3-5 líneas)>
 
-**Evidencia**: `mcp:<tipo>/<nombre>#<ubicación>` · **Estado**: ✅/🔵/🟡/🔴
+Evidencia: `mcp:<tipo>/<nombre>[@<rol>]#<ubicación>` · Certeza: ✅/🔵/❓
 ```
 
-No mezcles tabla de ficha con prosa larga en medio. La tabla compacta los datos; la prosa va en "Detalle / Notas" claramente separado.
+Si el documento tiene más de 5 fichas, el Detalle empieza con un índice de enlaces a ellas.
 
----
+## Regla 6: enlaces, no copias
 
-## Regla 6: índice navegable cuando haya >5 fichas de Detalle
-
-Si la sección Detalle de un documento tiene más de 5 fichas, añade un **índice navegable** al principio de la sección con anclas markdown:
+Cada cosa se documenta una vez, en su documento propietario (ver `execution-principles.md`), y desde los demás se enlaza:
 
 ```markdown
-## Detalle
-
-Saltar a:
-- [`PM_GestionExpedientes`](#pm_gestionexpedientes--gesti%C3%B3n-de-expedientes)
-- [`PM_NotificarCliente`](#pm_notificarcliente)
-- [`PM_ArchivarExpediente`](#pm_archivarexpediente)
-- ... (12 más)
+La integración `INT_SAP_Crear` la llama `PM_GestionExpedientes` ([ficha](./05-integraciones-consumidas.md#int_sap_crear--sap-crear-expediente)).
 ```
 
-Los visualizadores Markdown (GitHub, VSCode, Obsidian, IntelliJ) generan anclas automáticamente desde los `### <título>`. Comprobar que los `#` en la URL coinciden con la versión lowercased + dashed del título.
+No dupliques fichas. `00-resumen-ejecutivo.md` cita lo clave en una línea y enlaza.
 
----
+## Regla 7: marcas
 
-## Regla 7: emojis de estado consistentes
+**Certeza** (de una afirmación o un hallazgo), siempre estas tres:
 
-Toda la documentación usa esta paleta de 4 estados, **siempre estos emojis, siempre con este significado**:
-
-| Emoji | Significado |
+| Marca | Significado |
 |---|---|
-| ✅ | Confirmado por evidencia explícita en la definición extraída |
-| 🔵 | Inferido razonablemente (evidencia indirecta) |
-| 🟡 | Pendiente de validación con responsable funcional/técnico |
-| 🔴 | Riesgo detectado / anti-patrón / requiere atención |
+| ✅ | Verificado: la definición o la respuesta lo muestra directamente. |
+| 🔵 | Inferido: se deduce de evidencia indirecta; di en una línea de qué. |
+| ❓ | Pendiente: depende de un dato que la extracción no trae o de validarlo con negocio; di quién debe validarlo. |
 
-No añadas otros emojis de estado (⚠️, ❗, ✔️, ☑️, etc.). La paleta de 4 es suficiente y evita ruido.
+**Severidad** (solo de hallazgos), con palabra: **Alta** (rompe un requisito de negocio o de seguridad, pierde datos o expone credenciales: actuar ya), **Media** (degrada mantenimiento, rendimiento o control: planificar), **Baja** (mejora o higiene).
 
-Los emojis **temáticos** sí están permitidos en etiquetas de diagramas Tipo C BPMN (👤 user task, 🔌 integración, 💾 datastore, etc.) — son parte de la convención de notación.
+No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). Una buena práctica se dice con palabras («buena práctica»), no con ✅. Los emojis temáticos de los diagramas Tipo C (👤, 🔌, 💾…) son parte de la notación y sí se usan.
 
----
+## Regla 8: lo que el lector no debe ver
 
-## Regla 8: enlaces internos, no copia
+- **Usuarios**: ningún nombre de usuario en ningún entregable. Usa recuentos o el rol: «una cuenta personal del grupo DEM Gestores», «una cuenta de servicio».
+- **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts, códigos internos de patrones (`DAT-02`) ni «heurística de la skill». Nombra la buena práctica y su fuente oficial.
+- **Notas de parche**: nunca «01 todavía dice…», «esto matiza a…», «corrige lo que dice X». Si otro documento está mal, se corrige ese documento (pasada de coherencia de la fase 6).
+- **`<trabajo>/`**: los entregables no lo enlazan (no se comparte). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
 
-Cada hallazgo se documenta **una vez** en su documento canónico, y se referencia desde otros con enlace Markdown:
+## Regla 9: longitud
 
-```markdown
-La Integration `INT_SAP_Crear` es llamada por `PM_GestionExpedientes`.
-Detalle en [05-integraciones-consumidas.md#int_sap_crear](./05-integraciones-consumidas.md#int_sap_crear--sap-crear-expediente).
-```
+Objetivo de longitud; si un documento dobla el máximo, está mal estructurado. «1 pantalla» ≈ 50 líneas. En apps pequeñas (menos de ~50 objetos) apunta al objetivo, no al máximo.
 
-**Prohibido**: duplicar la ficha técnica de un objeto en dos documentos. Si se referencia desde otro, enlace al original.
-
-**Excepción**: el `00-resumen-ejecutivo.md` sí menciona objetos clave brevemente, pero siempre con enlace al documento de detalle.
-
----
-
-## Regla 9: longitud máxima por documento
-
-Cada entregable tiene un objetivo de longitud razonable. Si excede el doble, está mal estructurado.
-
-| Entregable | Objetivo | Máximo razonable |
+| Entregable | Objetivo | Máximo |
 |---|---|---|
-| `00-resumen-ejecutivo.md` | 1-2 pantallas | 3 pantallas |
-| `01-funcional.md` | 3-5 pantallas | 10 pantallas (procesos = casos de uso × pasos) |
-| `02-arquitectura.md` | 2-3 pantallas | 5 pantallas |
-| `03-modelo-datos.md` | depende del nº records/CDTs | 1 pantalla por record/CDT en Detalle |
-| `04-seguridad-grupos.md` | 2-3 pantallas | 5 pantallas |
-| `05-integraciones-consumidas.md` | 1 pantalla por integración + resumen | sin límite |
-| `06-apis-expuestas.md` | 1 pantalla por web API + resumen | sin límite |
-| `07-batches.md` | 1 pantalla por batch + resumen | 5 pantallas |
-| `08-procesos-bpmn/<PM>.md` | 1 pantalla (TL;DR + diagrama + tabla) | 3 pantallas |
-| `08-procesos-bpmn/indice.md` | 1-2 pantallas | 3 pantallas |
-| `09-valor-adicional.md` | depende de los hallazgos | sin límite, pero con índice |
-| `INVENTARIO.md` | 1 tabla por categoría | sin límite |
+| `LEEME.md` | 1 pantalla | 2 |
+| `00-resumen-ejecutivo.md` | 1-2 pantallas | 3 |
+| `01-funcional.md` | 3-5 | 10 |
+| `02-arquitectura.md` | 2-3 | 5 |
+| `03-modelo-datos.md` | 1 + ½ por entidad | 1 por entidad |
+| `04-seguridad-grupos.md` | 2-3 | 5 |
+| `05`, `06` | resumen + ½ por integración o API | 1 por integración o API |
+| `07-batches.md` | ½ por batch + resumen | 5 |
+| `08-procesos-bpmn/<PM>.md` | 1 | 3 |
+| `08-procesos-bpmn/indice.md` | 1 | 2 |
+| `09-valor-adicional.md` | según hallazgos | con índice |
+| `10-pantallas.md`, `11-reglas-negocio.md` | ½ por pantalla o regla | 1 por pantalla o regla |
+| `12-especificacion-reconstruccion.md` | 3-6 | 12 |
+| `13-modernizacion-refactor.md` | 3-6 | 12 |
+| `14-diseno-objetivo.md` | 4-8 | 15 |
+| `INVENTARIO.md` | una tabla por tipo | sin límite |
 
-"1 pantalla" ≈ 50 líneas Markdown ≈ unas 1000 palabras visibles.
+## Checklist antes de escribir cada documento
 
----
-
-## Regla 10: bloques de "Resumen rápido" al final de cada documento
-
-Cada `.md` cierra con una sección `## Resumen rápido` (≤ 10 líneas, bullets cortos) que enumera los hallazgos clave **del documento**, para que el lector que ojea cierre con un mental model claro.
-
-Ejemplo en `05-integraciones-consumidas.md`:
-
-```markdown
-## Resumen rápido
-
-- Total Integrations: 12 · Total Connected Systems: 4.
-- Sistemas externos: SAP ERP, Salesforce, Microsoft Graph, custom REST.
-- 3 integraciones sin manejo de error explícito 🔴.
-- 1 integración con timeout muy alto (60s) 🟡.
-- 2 integraciones con secretos detectados y enmascarados ✅.
-- Top caller: `PM_GestionExpedientes` (4 integraciones).
-```
-
-Es el equivalente al TL;DR pero al pie, ya con cifras concretas tras leer el documento.
-
----
-
-## Checklist antes de cerrar cada documento
-
-Antes de escribir el `.md` a disco, verifica:
-
-- [ ] Tiene **TL;DR** al inicio (≤ 5 líneas).
-- [ ] Tiene **Vista** con diagrama y tabla resumen escaneables.
-- [ ] Tiene **Detalle** al pie con fichas uniformes.
-- [ ] Tiene **Resumen rápido** al final con cifras concretas.
-- [ ] Ninguna tabla excede 8 columnas o 15 filas en la Vista.
-- [ ] Ningún diagrama excede el límite por tipo (Tipo A 30, B 12, C 25).
-- [ ] Si hay >5 fichas de Detalle, añadir índice navegable.
-- [ ] Emojis de estado de la paleta de 4 (✅/🔵/🟡/🔴).
-- [ ] Cero secciones vacías. Si no hay contenido para una sección, omitirla.
-- [ ] Cero placeholders sin rellenar (`<TODO>`, `xxx`, `lorem`).
-- [ ] Enlaces a otros documentos en lugar de duplicar fichas.
-- [ ] Cada ficha de Detalle tiene **evidencia** (`mcp:<tipo>/<nombre>#<ubicación>`).
+- [ ] Empieza por el TL;DR (≤ 5 líneas) y no hay otro resumen.
+- [ ] Orden Vista → Detalle → Hallazgos → Cobertura; sin secciones vacías.
+- [ ] Tablas ≤ 8 columnas; Vista ≤ 15 filas; celdas ≤ 100 caracteres (salvo Evidencia).
+- [ ] Cada diagrama una sola vez y legible al ancho de página.
+- [ ] Solo ✅/🔵/❓ como certeza y Alta/Media/Baja como severidad.
+- [ ] Hallazgos solo de tu área, con ID del registro.
+- [ ] Sin usuarios, sin referencias a la skill, sin notas de parche, sin enlaces a `<trabajo>/`.
+- [ ] Sin placeholders (`{{`, `TODO`, `TBD`, `xxx`, `lorem`).
+- [ ] Cada ficha con evidencia y certeza.
