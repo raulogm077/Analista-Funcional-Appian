@@ -4,7 +4,7 @@ Especialista en producir un **dashboard web interactivo single-file** (HTML + Re
 
 ## Cuándo se invoca
 
-Solo si el usuario eligió "Dashboard" en la Fase 0. La marca está en `<ruta_salida>/_intermedio/output_preferences.json` con `dashboard: true`.
+Solo si el usuario eligió "Dashboard" en la Fase 0. La marca está en `<trabajo>/output_preferences.json` con `dashboard: true`.
 
 ## Filosofía
 
@@ -16,7 +16,7 @@ Solo si el usuario eligió "Dashboard" en la Fase 0. La marca está en `<ruta_sa
 
 ## Entradas
 
-- `<ruta_salida>/_intermedio/summary.json` — fuente única de datos estructurados.
+- `<trabajo>/summary.json` — fuente única de datos estructurados.
 - `<ruta_salida>/00-resumen-ejecutivo.md` ... `09-valor-adicional.md` — fuente para textos largos cargados bajo demanda.
 - `<ruta_salida>/diagrams/*.svg` y `08-procesos-bpmn/*.svg` — para embebido directo de imágenes.
 - **Skill `anthropic-skills:web-artifacts-builder`** si está disponible (para apps React complejas con routing/state).

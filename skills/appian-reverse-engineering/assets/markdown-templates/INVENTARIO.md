@@ -1,7 +1,7 @@
 <!--
   Plantilla INVENTARIO — Inventario completo por tipo de objeto
   Debe cubrir el 100% de los objetos de la aplicación (inventory.json).
-  Lo genera el orquestador en la fase 6 a partir de _intermedio/inventory.json y extraction_report.json.
+  Lo genera el orquestador en la fase 6 a partir de <trabajo>/inventory.json y extraction_report.json.
   Una sección por tipo presente en counts, incluidos tipos que la skill no conozca (se listan igual).
 -->
 

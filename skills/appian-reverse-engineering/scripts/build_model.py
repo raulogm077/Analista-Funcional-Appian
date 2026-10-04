@@ -4,8 +4,8 @@
 Uso:
   python3 scripts/build_model.py <carpeta_salida>
 
-Lee   <salida>/_intermedio/mcp_raw/ (lo escribe devmcp_extract.py)
-Crea  <salida>/_intermedio/inventory.json y graph.json
+Lee   <trabajo>/mcp_raw/ (lo escribe devmcp_extract.py); <trabajo> = <padre>/_trabajo/<nombre de salida>
+Crea  <trabajo>/inventory.json y graph.json (rutas "path" relativas a <trabajo>)
 
 No depende de nombres de herramientas: cada fichero lleva en _meta.role el papel que le asigno la
 politica (definition, dependents, dependencies, versions, history, validation, screen, members, other)
@@ -22,6 +22,9 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from rutas import work_dir  # noqa: E402
 
 UUID_KEYS = ("uuid", "objectUuid", "designObjectUuid", "guid", "id", "objectId")
 NAME_KEYS = ("name", "objectName", "displayName", "label", "title")
@@ -358,9 +361,9 @@ class Edges:
 
 def main(out_dir: str) -> int:
     global _ROOT
-    root = Path(out_dir).resolve()
-    _ROOT = root
-    interm = root / "_intermedio"
+    interm = work_dir(out_dir)
+    root = interm
+    _ROOT = interm
     raw = interm / "mcp_raw"
     if not (raw / "_objects.json").exists():
         print(f"ERROR: falta {raw / '_objects.json'} (ejecuta antes devmcp_extract.py extract)", file=sys.stderr)

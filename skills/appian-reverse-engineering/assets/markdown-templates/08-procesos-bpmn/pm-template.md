@@ -138,4 +138,4 @@ El `.bpmn` contiene la semántica BPMN 2.0 completa (lanes, pools, message flows
 - Diagrama BPMN profesional: [`{{PM}}.bpmn`](./{{PM}}.bpmn)
 - Vista preliminar SVG: [`{{PM}}.svg`](./{{PM}}.svg)
 - Fuente Mermaid: [`{{PM}}.mmd`](./{{PM}}.mmd)
-- Definición extraída: `mcp:processModel/{{nombre}}` (fichero local en `_intermedio/mcp_raw/`, no compartir)
+- Definición extraída: `mcp:processModel/{{nombre}}` (fichero local en `<trabajo>/mcp_raw/`, no compartir)

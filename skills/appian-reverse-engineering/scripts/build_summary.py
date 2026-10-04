@@ -7,12 +7,12 @@ Uso:
   python3 build_summary.py <carpeta_salida>
 
 Lee:
-  <ruta>/_intermedio/inventory.json
-  <ruta>/_intermedio/graph.json
+  <trabajo>/inventory.json   (<trabajo> = <padre>/_trabajo/<nombre de ruta>)
+  <trabajo>/graph.json
   <ruta>/<seccion>.md  (opcional; si existen, extrae hallazgos top)
 
 Escribe:
-  <ruta>/_intermedio/summary.json
+  <trabajo>/summary.json
 """
 from __future__ import annotations
 
@@ -23,6 +23,9 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from rutas import work_dir  # noqa: E402
 
 
 def load_json(p: Path) -> dict:
@@ -54,7 +57,7 @@ def extract_findings_from_md(md_text: str, severity_emojis: dict[str, str]) -> l
 
 def main(doc_root: str) -> int:
     root = Path(doc_root).resolve()
-    interm = root / "_intermedio"
+    interm = work_dir(root)
     if not interm.exists():
         print(f"ERROR: no existe {interm}", file=sys.stderr)
         return 2

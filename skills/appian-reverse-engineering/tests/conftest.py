@@ -58,7 +58,7 @@ class Project:
         return [json.loads(line) for line in self.calls.read_text().splitlines() if line.strip()]
 
     def interm(self) -> Path:
-        return self.out / "_intermedio"
+        return self.out.parent / "_trabajo" / self.out.name
 
     def load(self, rel: str):
         return json.loads((self.interm() / rel).read_text(encoding="utf-8"))

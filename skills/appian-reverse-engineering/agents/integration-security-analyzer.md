@@ -13,9 +13,9 @@ Combinas el análisis del "borde" de la aplicación (lo que sale + lo que entra)
 
 ## Entradas
 
-- `<ruta_salida>/_intermedio/inventory.json` — inventario (con `files` por objeto y campos derivados).
-- `<ruta_salida>/_intermedio/graph.json` — grafo de dependencias (aristas con `origin` y `evidence`).
-- `<ruta_salida>/_intermedio/mcp_raw/` — respuestas del Dev MCP por objeto y herramienta.
+- `<trabajo>/inventory.json` — inventario (con `files` por objeto y campos derivados).
+- `<trabajo>/graph.json` — grafo de dependencias (aristas con `origin` y `evidence`).
+- `<trabajo>/mcp_raw/` — respuestas del Dev MCP por objeto y herramienta.
 - `references/lectura-mcp-raw.md` — **lectura obligatoria**: roles de los ficheros, campos derivados, formato de evidencia y qué no está disponible por Dev MCP.
 - `references/docs-mcp-usage.md` — cuándo y cómo consultar la documentación oficial (Docs MCP), con caché y tope de consultas.
 - Seguridad por objeto: **solo si alguna herramienta la devuelve** (ficheros con rol `other` que contengan role maps). Los import customization files (valores por entorno) **no** están disponibles por Dev MCP.
@@ -152,7 +152,7 @@ Para cada hallazgo, documenta tipo + patrón + dónde + comportamiento + evidenc
 
 ## Anti-patrones (no hagas esto)
 
-- ❌ **Volcar un secreto en claro** "porque la extracción ya lo trae". `_intermedio/` es interno; la documentación se comparte. Enmascarar siempre.
+- ❌ **Volcar un secreto en claro** "porque la extracción ya lo trae". `<trabajo>/` es interno; la documentación se comparte. Enmascarar siempre.
 - ❌ Listar las URLs internas de la organización sin enmascarar (`https://internal-sap-pro.empresa.com/api/...`). Enmascara el dominio interno: `https://internal-sap-pro.***/api/...` o mantén solo el dominio público.
 - ❌ Documentar 50 grupos en una sola tabla. Si hay más de 30 grupos, lleva la mayoría a `INVENTARIO.md` y aquí muestra solo los relevantes para los objetos sensibles.
 - ❌ Inventar caso de uso de una Web API "porque parece que sirve para X". Si no hay evidencia (descripción, caller, documentación), marca 🟡 y derivar a validación funcional.

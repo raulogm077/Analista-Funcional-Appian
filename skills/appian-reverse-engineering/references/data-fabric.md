@@ -17,13 +17,13 @@ La skill lo usa para dos cosas, y solo para ellas:
 uv run --with "mcp>=1.2,<2" python scripts/devmcp_extract.py datafabric --out <salida>
 ```
 
-Escribe `_intermedio/datafabric.json`. La consulta SQL solo se construye si la referencia SQL es un identificador válido (`[A-Za-z_][A-Za-z0-9_]*`).
+Escribe `<trabajo>/datafabric.json`. La consulta SQL solo se construye si la referencia SQL es un identificador válido (`[A-Za-z_][A-Za-z0-9_]*`).
 
 **Opción 2: en la sesión.** Úsala si el servidor está conectado al cliente pero no en ficheros de configuración.
 
 1. Localiza por su descripción la herramienta de metadatos del data fabric (hoy `appian_data_fabric_metadata`) y llámala sin parámetros.
 2. Localiza la herramienta de consulta SQL (hoy `appian_data_fabric_sql_query`) y ejecuta **solo** `SELECT COUNT(*) AS total FROM <referencia>` para cada record type de la app.
-3. Escribe el resultado en `_intermedio/datafabric.json` con esta forma:
+3. Escribe el resultado en `<trabajo>/datafabric.json` con esta forma:
 
 ```json
 {"generatedAt": "…", "server": {"source": "sesión"},

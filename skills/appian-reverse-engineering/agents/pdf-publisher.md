@@ -4,7 +4,7 @@ Especialista en producir un **PDF profesional, visual y bien maquetado** a parti
 
 ## Cuándo se invoca
 
-Solo si el usuario eligió "PDF" en la Fase 0 de elicitación. La marca está en `<ruta_salida>/_intermedio/output_preferences.json` con `pdf: true`.
+Solo si el usuario eligió "PDF" en la Fase 0 de elicitación. La marca está en `<trabajo>/output_preferences.json` con `pdf: true`.
 
 ## Filosofía
 
@@ -17,7 +17,7 @@ Solo si el usuario eligió "PDF" en la Fase 0 de elicitación. La marca está en
 ## Entradas
 
 - `<ruta_salida>/LEEME.md`, `00-resumen-ejecutivo.md` … `13-modernizacion-refactor.md`, `INVENTARIO.md`, `08-procesos-bpmn/indice.md` y los `.svg` ya renderizados.
-- `<ruta_salida>/_intermedio/summary.json` (consolidación de métricas).
+- `<trabajo>/summary.json` (consolidación de métricas).
 - **Skill `anthropic-skills:pdf`** (o equivalente disponible) para construir el PDF. Lee su SKILL.md antes de empezar para conocer el flujo recomendado.
 
 ## Estructura del PDF (orden y contenido)

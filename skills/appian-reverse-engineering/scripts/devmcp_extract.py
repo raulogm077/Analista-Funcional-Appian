@@ -11,7 +11,7 @@ Subcomandos:
   doctor      Estado de los 3 MCP: Dev MCP (obligatorio), Appian MCP Server y Docs MCP (opcionales).
   apps        Lista las aplicaciones visibles para el usuario del Dev MCP.
   plan        Catalogo + clasificacion + objetos de la app + estimacion de llamadas. No llama por objeto.
-  extract     Ejecuta el plan y vuelca las respuestas en <out>/_intermedio/mcp_raw/.
+  extract     Ejecuta el plan y vuelca las respuestas en <padre de out>/_trabajo/<app>/mcp_raw/.
   datafabric  Metadatos y COUNT(*) por record type de la app a traves del Appian MCP Server.
 
 Codigos de salida:
@@ -33,6 +33,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from rutas import work_dir  # noqa: E402
 
 EXIT_OK, EXIT_USAGE, EXIT_NO_CONFIG, EXIT_AMBIGUOUS, EXIT_START, EXIT_NO_APPS, EXIT_APP, EXIT_NO_MCPSERVER = \
     0, 2, 11, 12, 13, 14, 15, 16
@@ -606,7 +609,7 @@ class Extractor:
         self.refresh, self.retries, self.retry_delay = refresh, retries, retry_delay
         self.only = re.compile(only) if only else None
         self.skip = re.compile(skip) if skip else None
-        self.raw = (out / "_intermedio" / "mcp_raw") if out else None
+        self.raw = (work_dir(out) / "mcp_raw") if out else None
         self.stats = defaultdict(lambda: defaultdict(int))
         self.errors: list[dict] = []
         self.disabled: list[dict] = []
@@ -998,7 +1001,7 @@ async def cmd_plan_or_extract(args, execute: bool) -> int:
                 app_obj, objects, groups = await prepare(ex, args)
             except SystemExit as se:
                 return int(se.code)
-            interm = out / "_intermedio"
+            interm = work_dir(out)
             write_json(interm / "mcp_catalog.json", catalog_json(ex))
             plan = plan_json(ex, app_obj, objects, groups)
             write_json(interm / "extraction_plan.json", plan)
@@ -1131,7 +1134,7 @@ async def cmd_doctor(args) -> int:
                           "detail": "No aparece en los ficheros de configuracion. Puede estar anadido desde la interfaz "
                                     "del cliente: la skill lo comprueba desde la sesion."})
     if args.out:
-        write_json(Path(args.out).resolve() / "_intermedio" / "preflight.json", report)
+        write_json(work_dir(args.out) / "preflight.json", report)
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
@@ -1149,7 +1152,7 @@ async def cmd_doctor(args) -> int:
 
 async def cmd_datafabric(args) -> int:
     out = Path(args.out).resolve()
-    objs_file = out / "_intermedio" / "mcp_raw" / "_objects.json"
+    objs_file = work_dir(out) / "mcp_raw" / "_objects.json"
     if not objs_file.exists():
         eprint("Falta _objects.json: ejecuta antes 'extract'.")
         return EXIT_USAGE
@@ -1213,7 +1216,7 @@ async def cmd_datafabric(args) -> int:
     except Exception as ex_:
         eprint(f"Appian MCP Server no disponible: {type(ex_).__name__}: {ex_}")
         return EXIT_NO_MCPSERVER
-    write_json(out / "_intermedio" / "datafabric.json", result)
+    write_json(work_dir(out) / "datafabric.json", result)
     print(f"Data fabric: {len(result['recordTypes'])} record types con metadatos, "
           f"{sum(1 for x in result['recordTypes'] if x['count'] is not None)} con recuento.")
     return EXIT_OK

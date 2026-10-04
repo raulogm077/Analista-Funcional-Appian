@@ -38,6 +38,8 @@ python3 "<carpeta-de-esta-skill>/scripts/build_model.py" <salida>
 | Idioma | No | español |
 | Carpeta de salida | No | `./appian-docs/<PREFIJO>/` |
 
+**Dos carpetas.** `<salida>` (p. ej. `appian-docs/DEM/`) solo tiene entregables y se puede compartir. Los datos de trabajo (respuestas en bruto, inventario, grafo, cachés, resumen) van en `<trabajo>` = `appian-docs/_trabajo/<PREFIJO>/`, que los scripts deducen de `<salida>`. **`<trabajo>` no se comparte**: tiene usuarios, hosts y definiciones completas.
+
 ---
 
 ## Flujo de trabajo
@@ -56,7 +58,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
    - Confirma la aplicación. Si no la ha dado, muéstrale las apps de `doctor` y pregunta.
    - Pregunta los formatos adicionales, igual que antes: *«Además de los documentos Markdown, ¿quieres 📄 PDF maquetado, 🖥️ dashboard web, o solo los .md?»*. Sin respuesta explícita: solo Markdown.
    - Indica el entorno (`url` de `doctor`): el uso real de procesos solo es representativo en producción. Todo es lectura, sea cual sea el entorno.
-6. Guarda la salida de `doctor` en `<salida>/_intermedio/preflight.json` (con tus comprobaciones de sesión añadidas) y las preferencias en `_intermedio/output_preferences.json`.
+6. Guarda la salida de `doctor` en `<trabajo>/preflight.json` (con tus comprobaciones de sesión añadidas) y las preferencias en `<trabajo>/output_preferences.json`.
 
 ### Fase 1 — Plan de extracción
 
@@ -71,7 +73,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 ### Fase 3 — Modelo
 
 1. `build_model.py <salida>` → `inventory.json` y `graph.json`.
-2. `bash scripts/detect_secrets.sh <salida>/_intermedio/mcp_raw`: lo que salga hay que enmascararlo en los entregables. **No muestres los valores.**
+2. `bash scripts/detect_secrets.sh <trabajo>/mcp_raw`: lo que salga hay que enmascararlo en los entregables. **No muestres los valores.**
 
 ### Fase 4 — Análisis con subagentes
 
@@ -111,7 +113,7 @@ Usa las plantillas de `assets/markdown-templates/`.
 
 ### Fase 6.5 — summary.json
 
-`python3 scripts/build_summary.py <salida>` → `_intermedio/summary.json` (lo usan los publicadores).
+`python3 scripts/build_summary.py <salida>` → `<trabajo>/summary.json` (lo usan los publicadores).
 
 ### Fase 7 — Publicación opcional
 
@@ -143,8 +145,9 @@ Pasa la validación final (abajo) y responde con la plantilla de `references/res
 ├── 12-especificacion-reconstruccion.md  ┐ B. Reconstruir y
 ├── 13-modernizacion-refactor.md         ┘    modernizar
 ├── INVENTARIO.md
-├── diagrams/
-└── _intermedio/   (datos en bruto: NO compartir)
+└── diagrams/
+
+appian-docs/_trabajo/<PREFIJO>/   = <trabajo>: datos en bruto, NO compartir
 ```
 
 ## Recursos (cárgalos cuando toque, no todos a la vez)
@@ -179,6 +182,6 @@ Pasa la validación final (abajo) y responde con la plantilla de `references/res
 7. `INVENTARIO.md` cubre el 100 % de `inventory.json`.
 8. Todos los `PAN-xxx` y `RN-xxx` aparecen en la trazabilidad de `12`, y cada `MOD-xxx` de `13` tiene evidencia y fuente (o está marcado como heurística).
 9. `LEEME.md` dice qué no estuvo disponible (MCP opcionales, tipos sin definición, seguridad por objeto).
-10. No se ha escrito nada fuera de `<salida>/`.
+10. No se ha escrito nada fuera de `<salida>/` y `<trabajo>/`, y `<salida>/` no contiene datos en bruto.
 
 Si algo falla, corrígelo y vuelve a validar antes de responder.

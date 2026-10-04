@@ -15,7 +15,7 @@ Eres el último agente de análisis: trabajas sobre los documentos ya generados,
 ## Entradas
 
 - Documentos ya generados: `01`–`11` (en especial `01-funcional.md`, `03-modelo-datos.md`, `04`–`06`, `08-procesos-bpmn/indice.md`, `10-pantallas.md`, `11-reglas-negocio.md`) y `09-valor-adicional.md` si existe.
-- `<ruta_salida>/_intermedio/inventory.json`, `graph.json`, `datafabric.json` (opcional), `extraction_report.json`.
+- `<trabajo>/inventory.json`, `graph.json`, `datafabric.json` (opcional), `extraction_report.json`.
 - `references/lectura-mcp-raw.md`.
 - `references/modernization-guide.md` — **lectura obligatoria**: catálogo de patrones a detectar, alternativas actuales y fuentes oficiales.
 - `references/docs-mcp-usage.md` — cómo verificar cada recomendación contra la documentación de la versión del entorno.

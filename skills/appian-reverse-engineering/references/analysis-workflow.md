@@ -64,7 +64,7 @@ Detalle operativo de las fases de `SKILL.md`. Marca cada casilla en la lista de 
 - [ ] 4.2 en paralelo: `data-modeler` (03), `integration-security-analyzer` (04–06), `process-modeler` (08), `ui-rules-analyzer` (10–11).
 - [ ] 4.3 orquestador → 07 y 09 (plantillas; datos de `inventory.json`, `graph.json` y los documentos anteriores).
 - [ ] 4.4 `rebuild-architect` → 12, 13.
-- [ ] Consultas al Docs MCP contadas (`_intermedio/docs_cache/*.json`) ≤ 30.
+- [ ] Consultas al Docs MCP contadas (`<trabajo>/docs_cache/*.json`) ≤ 30.
 
 **07-batches (orquestador):** process models con `startType: timer`. Por cada uno: frecuencia legible desde `schedule`, cron equivalente si es traducible, uso real (`usage`), qué hace (del `.md` de 08) y qué toca. Sin batches: la frase exacta de la plantilla.
 

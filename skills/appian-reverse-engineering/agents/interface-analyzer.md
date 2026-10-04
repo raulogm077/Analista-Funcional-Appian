@@ -12,9 +12,9 @@ Lees las definiciones de interfaces y expression rules (SAIL), los sites y sus p
 
 ## Entradas
 
-- `<ruta_salida>/_intermedio/inventory.json` — inventario (con `files` por objeto y campos derivados).
-- `<ruta_salida>/_intermedio/graph.json` — grafo de dependencias (aristas con `origin` y `evidence`).
-- `<ruta_salida>/_intermedio/mcp_raw/` — respuestas del Dev MCP por objeto y herramienta.
+- `<trabajo>/inventory.json` — inventario (con `files` por objeto y campos derivados).
+- `<trabajo>/graph.json` — grafo de dependencias (aristas con `origin` y `evidence`).
+- `<trabajo>/mcp_raw/` — respuestas del Dev MCP por objeto y herramienta.
 - `references/lectura-mcp-raw.md` — **lectura obligatoria**: roles de los ficheros, campos derivados, formato de evidencia y qué no está disponible por Dev MCP.
 - `references/docs-mcp-usage.md` — cuándo y cómo consultar la documentación oficial (Docs MCP), con caché y tope de consultas.
 - `assets/markdown-templates/01-funcional.md` y `02-arquitectura.md` — plantillas base.

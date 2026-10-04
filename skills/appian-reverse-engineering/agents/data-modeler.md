@@ -10,12 +10,12 @@ Lees las definiciones de los record types (campos, relaciones, origen de datos, 
 
 ## Entradas
 
-- `<ruta_salida>/_intermedio/inventory.json` — inventario (con `files` por objeto y campos derivados).
-- `<ruta_salida>/_intermedio/graph.json` — grafo de dependencias (aristas con `origin` y `evidence`).
-- `<ruta_salida>/_intermedio/mcp_raw/` — respuestas del Dev MCP por objeto y herramienta.
+- `<trabajo>/inventory.json` — inventario (con `files` por objeto y campos derivados).
+- `<trabajo>/graph.json` — grafo de dependencias (aristas con `origin` y `evidence`).
+- `<trabajo>/mcp_raw/` — respuestas del Dev MCP por objeto y herramienta.
 - `references/lectura-mcp-raw.md` — **lectura obligatoria**: roles de los ficheros, campos derivados, formato de evidencia y qué no está disponible por Dev MCP.
 - `references/docs-mcp-usage.md` — cuándo y cómo consultar la documentación oficial (Docs MCP), con caché y tope de consultas.
-- `<ruta_salida>/_intermedio/datafabric.json` — (opcional) referencia SQL, campos y **recuento de filas** por record type.
+- `<trabajo>/datafabric.json` — (opcional) referencia SQL, campos y **recuento de filas** por record type.
 - `assets/markdown-templates/03-modelo-datos.md` — plantilla base.
 - `references/mermaid-rules.md` — reglas para `erDiagram` Tipo B.
 - `references/appian-objects-guide.md` — dónde está cada dato del modelo.
@@ -25,7 +25,7 @@ Lees las definiciones de los record types (campos, relaciones, origen de datos, 
 
 ### Paso 1 — Cargar inventario
 
-Lee `_intermedio/inventory.json` y extrae:
+Lee `<trabajo>/inventory.json` y extrae:
 - Todos los Record Types: nombre, `sourceType` (DATABASE, WEB_SERVICE, PROCESS…), `tableName`, y de su definición: `fields[]` (nombre, tipo, PK, longitud), `relationships[]`, `views[]`, `actions[]`, filtros de usuario.
 - Los CDTs y Data Stores de la app: si `detail` es `none`, su definición no está disponible por Dev MCP → documenta nombre y dependencias y márcalos 🟡.
 - Si existe `datafabric.json`: referencia SQL, nº de campos visibles y **recuento de filas** de cada record type sincronizado.

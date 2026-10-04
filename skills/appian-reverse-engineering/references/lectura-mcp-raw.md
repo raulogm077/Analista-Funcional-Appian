@@ -1,20 +1,22 @@
 # Cómo leer los datos extraídos del Dev MCP
 
-Guía común para todos los subagentes. **Léela antes de abrir ningún fichero de `_intermedio/`.**
+Guía común para todos los subagentes. **Léela antes de abrir ningún fichero de `<trabajo>/`.**
 
 La skill no lee un export: la aplicación se ha extraído en vivo del entorno Appian con `scripts/devmcp_extract.py`, en modo solo lectura. Las herramientas del Dev MCP cambian entre versiones, así que **no busques herramientas concretas por nombre**. Trabaja con los roles y con el contenido.
 
 ## Ficheros de partida
 
+`<trabajo>` es la carpeta de datos de trabajo: `<padre de la salida>/_trabajo/<nombre de la salida>` (p. ej. `appian-docs/_trabajo/DEM/` para la salida `appian-docs/DEM/`). No se comparte y los entregables no deben enlazarla.
+
 | Fichero | Qué contiene | Úsalo para |
 |---|---|---|
-| `_intermedio/inventory.json` | Todos los objetos de la app, agrupados por tipo. Cada objeto trae `name`, `uuid`, `type`, `mcpType`, `description`, `detail`, `path` (su definición), `files` (todas sus respuestas, con rol) y campos derivados (ver abajo). | Punto de partida y control de cobertura (100%). |
-| `_intermedio/graph.json` | Nodos y aristas `{source, target, refType, origin, evidence}`. `origin` = `dependents`/`dependencies` (análisis de dependencias de Appian, fiable), `uuid`/`name`/`literal` (referencia encontrada en la definición), `derived` (deducida, p. ej. `a!startProcess` vía constante). | Quién llama a quién, callers, hubs, huérfanos. |
-| `_intermedio/mcp_raw/<tipo>/<uuid>/<herramienta>.json` | Respuesta tal cual de cada herramienta para ese objeto: `{"_meta": {tool, role, ok, error, ...}, "response": ...}`. | El detalle: SAIL, nodos, campos, páginas, pantallas… |
-| `_intermedio/mcp_raw/_app/*.json`, `_env/*.json` | Llamadas de aplicación (definición de la app, listados) y de entorno (catálogos de tipos de nodo, etc.). | Contexto general. |
-| `_intermedio/extraction_report.json` | Herramientas usadas y excluidas, errores, herramientas desactivadas por tipo, servidor y entorno (`server.url`). | Sección de cobertura y limitaciones. |
-| `_intermedio/datafabric.json` (opcional) | Metadatos del data fabric y `count` por record type (Appian MCP Server). | Volúmenes en 03 y en 12. |
-| `_intermedio/preflight.json` | Estado de los 3 MCP al empezar. | Sección de cobertura. |
+| `<trabajo>/inventory.json` | Todos los objetos de la app, agrupados por tipo. Cada objeto trae `name`, `uuid`, `type`, `mcpType`, `description`, `detail`, `path` (su definición), `files` (todas sus respuestas, con rol) y campos derivados (ver abajo). | Punto de partida y control de cobertura (100%). |
+| `<trabajo>/graph.json` | Nodos y aristas `{source, target, refType, origin, evidence}`. `origin` = `dependents`/`dependencies` (análisis de dependencias de Appian, fiable), `uuid`/`name`/`literal` (referencia encontrada en la definición), `derived` (deducida, p. ej. `a!startProcess` vía constante). | Quién llama a quién, callers, hubs, huérfanos. |
+| `<trabajo>/mcp_raw/<tipo>/<uuid>/<herramienta>.json` | Respuesta tal cual de cada herramienta para ese objeto: `{"_meta": {tool, role, ok, error, ...}, "response": ...}`. | El detalle: SAIL, nodos, campos, páginas, pantallas… |
+| `<trabajo>/mcp_raw/_app/*.json`, `_env/*.json` | Llamadas de aplicación (definición de la app, listados) y de entorno (catálogos de tipos de nodo, etc.). | Contexto general. |
+| `<trabajo>/extraction_report.json` | Herramientas usadas y excluidas, errores, herramientas desactivadas por tipo, servidor y entorno (`server.url`). | Sección de cobertura y limitaciones. |
+| `<trabajo>/datafabric.json` (opcional) | Metadatos del data fabric y `count` por record type (Appian MCP Server). | Volúmenes en 03 y en 12. |
+| `<trabajo>/preflight.json` | Estado de los 3 MCP al empezar. | Sección de cobertura. |
 
 ## Roles de los ficheros (`_meta.role`)
 

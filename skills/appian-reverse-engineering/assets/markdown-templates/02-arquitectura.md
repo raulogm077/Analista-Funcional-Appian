@@ -117,4 +117,4 @@ Detalle completo en [05-integraciones-consumidas.md](./05-integraciones-consumid
 - {{Nota 2}}
 - {{Nota 3}}
 
-> Estado: ✅/🔵 — Evidencia: grafo de dependencias en `_intermedio/graph.json`.
+> Estado: ✅/🔵 — Evidencia: grafo de dependencias en `<trabajo>/graph.json`.

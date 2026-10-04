@@ -16,7 +16,7 @@ Las definiciones extraídas de Appian (especialmente connected systems, integrac
 
 ## Patrones de detección (regex orientativos)
 
-`scripts/detect_secrets.sh` aplica estos patrones. Ejecútalo sobre `_intermedio/mcp_raw/` justo después de la extracción (fase 3), para saber qué hay que enmascarar, y sobre los entregables al final:
+`scripts/detect_secrets.sh` aplica estos patrones. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3), para saber qué hay que enmascarar, y sobre los entregables al final:
 
 | Tipo | Patrón |
 |---|---|
@@ -102,4 +102,4 @@ Antes de devolver la respuesta:
 bash scripts/detect_secrets.sh <salida>/*.md <salida>/08-procesos-bpmn <salida>/diagrams
 ```
 
-Si encuentra algún match en los entregables (no en `_intermedio/`, que no se comparte), **detente y enmascara antes de continuar**.
+Si encuentra algún match en los entregables (no en `<trabajo>/`, que no se comparte), **detente y enmascara antes de continuar**.

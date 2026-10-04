@@ -55,4 +55,4 @@
 |---|---|
 | {{término de negocio o Appian}} | {{definición breve}} |
 
-> La carpeta `_intermedio/` contiene datos en bruto de la aplicación. No la compartas.
+> La carpeta `<trabajo>/` contiene datos en bruto de la aplicación. No la compartas.

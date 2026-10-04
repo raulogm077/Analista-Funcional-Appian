@@ -44,7 +44,7 @@ Plantilla de la respuesta que devuelve la skill **al terminar** todas las fases.
 - 📄 PDF: `<salida>/EXPORT.pdf` (si se pidió)
 - 🖥️ Dashboard: `<salida>/dashboard/index.html` (si se pidió)
 
-> `_intermedio/` contiene datos en bruto de la aplicación: no la compartas.
+> `<trabajo>/` contiene datos en bruto de la aplicación: no la compartas.
 ```
 
 ---

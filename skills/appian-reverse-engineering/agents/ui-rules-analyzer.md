@@ -12,7 +12,7 @@ Los otros agentes describen **cómo está hecha** la aplicación. Tú extraes **
 
 ## Entradas
 
-- `<ruta_salida>/_intermedio/inventory.json`, `graph.json` y `mcp_raw/`.
+- `<trabajo>/inventory.json`, `graph.json` y `mcp_raw/`.
 - `references/lectura-mcp-raw.md` — **lectura obligatoria**.
 - `references/docs-mcp-usage.md` — para confirmar el comportamiento de funciones o componentes que no conozcas.
 - `<ruta_salida>/01-funcional.md` — casos de uso y actores (ya generado por interface-analyzer). Úsalo para nombrar pantallas y reglas con el vocabulario de negocio.
