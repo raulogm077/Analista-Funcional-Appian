@@ -279,10 +279,6 @@
     "page"
   ],
   "genericToolsSkipTypes": [
-    "application",
-    "folder",
-    "processModelFolder",
-    "knowledgeCenter",
     "document"
   ],
   "pagination": {

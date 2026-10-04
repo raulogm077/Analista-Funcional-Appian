@@ -145,7 +145,8 @@ def read_object_files(folder: Path) -> list[dict]:
             continue
         meta = d.get("_meta", {})
         out.append({"file": f, "tool": meta.get("tool", f.stem), "role": meta.get("role", "other"),
-                    "ok": bool(meta.get("ok")), "error": meta.get("error"), "response": d.get("response")})
+                    "ok": bool(meta.get("ok")), "error": meta.get("error"), "response": d.get("response"),
+                    "maskedSecrets": int(meta.get("maskedSecrets") or 0)})
     return out
 
 
@@ -395,6 +396,9 @@ def main(out_dir: str) -> int:
         if defn_file:
             enrich_by_type(o, unwrap(defn_file["response"]), name_by_uuid)
         enrich_roles(o, files, group_uuids, name_by_uuid)
+        masked = sum(f["maskedSecrets"] for f in files)
+        if masked:
+            o["maskedSecrets"] = masked
         o.pop("sources", None)
     app_files = sorted((raw / "_app").glob("*.json")) if (raw / "_app").exists() else []
     app_obj = {"type": "application", "name": app.get("name"), "uuid": app["uuid"], "prefix": app.get("prefix"),
@@ -491,6 +495,7 @@ def main(out_dir: str) -> int:
                and not o.get("hasRecurrence")][:50]
     hubs = sorted(({"id": u, "name": name_by_uuid.get(u), "type": type_of.get(u), "in": n}
                    for u, n in indeg.items() if n >= 5 and u in type_of), key=lambda h: -h["in"])[:30]
+    set_criticality(objs, edge_list)
     graph = {"nodes": nodes, "edges": edge_list,
              "stats": {"nodeCount": len(nodes), "edgeCount": len(edge_list), "orphanCount": len(orphans),
                        "hubCount": len(hubs), "externalNodes": len(external),
@@ -503,6 +508,37 @@ def main(out_dir: str) -> int:
     print(f"graph.json: {len(nodes)} nodos, {len(edge_list)} aristas {dict(Counter(e['origin'] for e in edge_list))}, "
           f"{len(orphans)} huerfanos, {len(hubs)} hubs")
     return 0
+
+
+def set_criticality(objs: list[dict], edge_list: list[dict]) -> None:
+    """Criticidad de cada process model, una sola fórmula para todos los documentos:
+    2 por cada objeto que lo lanza (acción, interfaz, subproceso), 3 por cada integración que llama,
+    5 si es batch y 2 si tiene tareas humanas. Crítico si suma 3 o más."""
+    callers, integ = defaultdict(set), defaultdict(set)
+    for e in edge_list:
+        if e["refType"] in ("startProcess", "subProcess"):
+            callers[e["target"]].add(e["source"])
+        if e["refType"] == "integrationCall":
+            integ[e["source"]].add(e["target"])
+    for o in objs:
+        if o["type"] != "processModel":
+            continue
+        u = o["uuid"]
+        reasons, score = [], 0
+        if callers[u]:
+            score += 2 * len(callers[u])
+            reasons.append(f"lo lanzan {len(callers[u])} objetos")
+        if integ[u]:
+            score += 3 * len(integ[u])
+            reasons.append(f"llama a {len(integ[u])} integraciones")
+        if o.get("hasRecurrence"):
+            score += 5
+            reasons.append("batch programado")
+        if o.get("userTaskCount"):
+            score += 2
+            reasons.append(f"{o['userTaskCount']} tareas humanas")
+        o["criticality"] = {"score": score, "critical": score >= 3, "reasons": reasons,
+                            "calledBy": len(callers[u]), "callsIntegrations": len(integ[u])}
 
 
 def canon_ext(t: str | None) -> str:

@@ -168,7 +168,7 @@ def test_new_tool_is_used_without_code_changes(project):
     _extract(project)
     raw = project.interm() / "mcp_raw"
     files = list(raw.glob("*/*/describeSecurityRoleMap.json"))
-    assert len(files) == 31                                 # todos los objetos salvo carpetas
+    assert len(files) == 33                                 # todos los objetos, carpetas incluidas
 
 
 def test_resume_makes_no_new_calls(project):

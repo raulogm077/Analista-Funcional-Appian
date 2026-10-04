@@ -75,7 +75,7 @@ def test_inventory_fields(built):
     assert by["PM_HUERF"]["usage"]["executions"] == 0
     assert by["C_TOKEN"]["maskedSecret"] is True and by["C_TOKEN"]["value"] == "***"
     assert "P4ssw0rd" not in json.dumps(inv)
-    assert by["CS_ERP"]["baseUrl"] == "https://svc_erp:***@erp.example.org/api"
+    assert by["CS_ERP"]["baseUrl"] == "https://***:***@erp.example.org/api"
     assert by["INT_ERP"]["method"] == "POST" and by["INT_ERP"]["connectedSystemRef"] == "DEM_CS_ERP"
     assert by["I_DASH"]["sailBytes"] > 100
     assert any("deprecated" in m for m in by["I_ADMIN"]["validationIssues"])
@@ -106,12 +106,27 @@ def test_raw_files_have_no_secrets(built):
     assert tok["maskedSecret"] is True
 
 
-def test_build_summary_unchanged_contract(built):
+def test_criticality_and_secrets(built):
+    inv = built.load("inventory.json")
+    by = {KEY_BY_UUID.get(o["uuid"]): o for objs in inv["objects"].values() for o in objs}
+    alta = by["PM_ALTA"]["criticality"]
+    assert alta["critical"] and alta["callsIntegrations"] == 1 and alta["calledBy"] >= 2
+    assert by["PM_BATCH"]["criticality"]["critical"]                 # batch programado
+    assert by["PM_REV"]["criticality"]["critical"]                   # subproceso con tarea humana
+    assert not by["PM_HUERF"]["criticality"]["critical"]
+    assert by["C_TOKEN"]["maskedSecrets"] >= 1 and by["CS_ERP"]["maskedSecrets"] >= 1
+
+
+def test_build_summary_contract(built):
     p = subprocess.run([sys.executable, str(BUILD_SUMMARY), str(built.out)], capture_output=True, text=True)
     assert p.returncode == 0, p.stderr
     s = built.load("summary.json")
     crit = {c["name"]: c for c in s["criticalProcesses"]}
     assert crit["DEM Alta Solicitud"]["callsIntegrations"] == 1 and crit["DEM Alta Solicitud"]["calledBy"] >= 2
     assert crit["DEM Batch Recordatorios"]["isBatch"] is True
-    assert s["meta"]["appPrefix"] == "DEM"
-    assert any(r["category"] == "security" for r in s["risks"])
+    assert "DEM Utilidad Huérfana" not in crit
+    assert s["meta"]["appPrefix"] == "DEM" and s["meta"]["confidence"] in ("Alto", "Medio", "Bajo")
+    assert s["meta"]["confidenceBasis"] and s["secrets"]["count"] == 2
+    assert {"DEM_ERP_API_TOKEN", "DEM_CS_ERP"} <= set(s["secrets"]["objects"])
+    assert any(x["type"] == "processModelsWithoutExecutions" for x in s["signals"])
+    assert s["findings"] == []                                        # sin registro todavia

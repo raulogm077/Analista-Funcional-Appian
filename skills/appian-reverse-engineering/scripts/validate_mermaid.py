@@ -5,8 +5,9 @@ del skill appian-reverse-engineering (references/mermaid-rules.md).
 
 Tipos admitidos:
   A  flowchart TD/LR sin subgraph ni classDef  -> se sanea (IDs N1..Nn, etiquetas limpias)
+  A  flowchart agrupado por capas (subgraph sin classDef) -> se valida (<= 30 nodos) sin cambios
   B  erDiagram                                  -> se valida y se devuelve sin cambios
-  C  flowchart con subgraph (carriles) y classDef -> se valida y se devuelve sin cambios
+  C  flowchart con subgraph (carriles) y classDef -> se valida (<= 25 nodos) sin cambios
 
 Uso:
     python validate_mermaid.py <fichero.mmd>

@@ -2,9 +2,9 @@
 # render_diagrams.sh — Render de diagramas Mermaid (Tipos A/B/C) a SVG.
 #
 # Estrategia para procesos BPMN (carpeta 08-procesos-bpmn/):
-#   - El .bpmn XML semántico (sin layout DI) SIEMPRE se genera por Claude.
-#     Se entrega tal cual: el usuario lo abre en Camunda Modeler, draw.io,
-#     bpmn.io o Signavio para vista BPMN profesional con layout automático.
+#   - El .bpmn lo escribe el agente (semántico) y scripts/bpmn_layout.py le
+#     añade las coordenadas de dibujo (DI) para que se abra en Camunda
+#     Modeler y bpmn.io. Este script no lo toca.
 #   - El .mmd Tipo C (BPMN-styled con shapes, iconos y colores) es la VISTA
 #     PRELIMINAR embebida en el .md. Se renderiza con mmdc a .svg.
 #
@@ -20,7 +20,7 @@
 #
 #   render_diagrams.sh --batch <carpeta>
 #       Renderiza todos los .mmd de la carpeta (recursivo).
-#       Los .bpmn se entregan sin renderizar (son fuente para Camunda/draw.io).
+#       Los .bpmn no se tocan (los prepara bpmn_layout.py).
 #
 # Códigos de salida:
 #   0  todo OK
@@ -66,7 +66,11 @@ if [ -z "$CHROME_HOME" ]; then
   done
 fi
 
-cleanup() { rm -f "$PUPPETEER_CONFIG_TMP"; }
+# Etiquetas como texto SVG, no HTML (foreignObject): asi se ven en Word, PDF, Confluence y visores de imagen.
+MERMAID_CONFIG_TMP="$(mktemp -t mermaid-config-XXXXXX.json)"
+echo '{"htmlLabels": false, "flowchart": {"htmlLabels": false}}' > "$MERMAID_CONFIG_TMP"
+
+cleanup() { rm -f "$PUPPETEER_CONFIG_TMP" "$MERMAID_CONFIG_TMP"; }
 trap cleanup EXIT
 
 # ------------------------------------------------------------
@@ -106,11 +110,9 @@ cmd_check() {
     echo "    (GitHub/VSCode/preview Markdown los renderizan al vuelo)."
   fi
   echo ""
-  echo "  BPMN 2.0 XML (siempre se genera, no requiere render)"
-  echo "    ✓ Los .bpmn semánticos se entregan tal cual."
-  echo "      Abre en: Camunda Modeler, draw.io, bpmn.io, Signavio."
-  echo "      Estas herramientas calculan el layout automáticamente y muestran"
-  echo "      iconos BPMN auténticos (círculos start/end, rombos gateway, etc.)."
+  echo "  BPMN 2.0 XML"
+  echo "    ✓ Los .bpmn llevan coordenadas de dibujo (scripts/bpmn_layout.py)."
+  echo "      Se abren en Camunda Modeler y bpmn.io."
   echo ""
   echo "  Utilidades complementarias"
   if [ "$HAS_XMLLINT" -eq 1 ]; then
@@ -169,8 +171,13 @@ render_mermaid() {
     mmdc_env="HOME=$CHROME_HOME"
   fi
 
-  if env $mmdc_env mmdc -i "$in" -o "$out" -t "$theme" -b "$bg" -p "$PUPPETEER_CONFIG_TMP" 2>"$errf"; then
+  if env $mmdc_env mmdc -i "$in" -o "$out" -t "$theme" -b "$bg" -c "$MERMAID_CONFIG_TMP" -p "$PUPPETEER_CONFIG_TMP" 2>"$errf"; then
     echo "  ✓ $in → $out (tema: $theme)"
+    local w
+    w=$(grep -o 'viewBox="[^"]*"' "$out" | head -1 | awk '{print int($3)}')
+    if [ -n "$w" ] && [ "$w" -gt 1600 ]; then
+      echo "  ⚠ $out mide ${w}px de ancho: ilegible a ancho de página. Usa TD, menos nodos por fila o parte el diagrama." >&2
+    fi
     return 0
   else
     echo "  ✗ Falló render de $in:" >&2
@@ -229,7 +236,7 @@ cmd_batch() {
   echo ""
   echo "Resumen batch:"
   echo "  Mermaid (.mmd):  $total ficheros, $ok renderizados, $pending pendientes."
-  echo "  BPMN (.bpmn):    $bpmn_count ficheros entregados como fuente (abre en Camunda/draw.io)."
+  echo "  BPMN (.bpmn):    $bpmn_count ficheros (se abren en Camunda Modeler y bpmn.io)."
 
   if [ "$pending" -gt 0 ]; then return 1; fi
   return 0

@@ -113,7 +113,7 @@ def mask_secrets(data: Any, counter: list, secret_values: bool = False) -> Any:
     if isinstance(data, list):
         return [mask_secrets(x, counter, secret_values) for x in data]
     if isinstance(data, str):
-        s = _URL_CRED.sub(lambda m: m.group(1) + m.group(2) + ":***@", data)
+        s = _URL_CRED.sub(lambda m: m.group(1) + "***:***@", data)
         s = _STRONG_SECRET.sub(MASK, s)
         if s != data:
             counter[0] += 1

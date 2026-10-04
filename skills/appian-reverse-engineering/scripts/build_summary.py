@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """
-build_summary.py - Consolida inventory.json + graph.json + hallazgos en un summary.json
-normalizado que consumen los publishers PDF/Dashboard.
+build_summary.py - Consolida inventario, grafo, extracción y registro de hallazgos en summary.json,
+la fuente de cifras de 00-resumen-ejecutivo.md y de los publicadores (PDF y dashboard).
 
 Uso:
   python3 build_summary.py <carpeta_salida>
 
-Lee:
-  <trabajo>/inventory.json   (<trabajo> = <padre>/_trabajo/<nombre de ruta>)
-  <trabajo>/graph.json
-  <ruta>/<seccion>.md  (opcional; si existen, extrae hallazgos top)
+Lee (en <trabajo> = <padre>/_trabajo/<nombre de salida>):
+  inventory.json, graph.json, extraction_report.json, preflight.json y registro.json (si existen)
 
 Escribe:
   <trabajo>/summary.json
@@ -17,12 +15,9 @@ Escribe:
 from __future__ import annotations
 
 import json
-import re
 import sys
-from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from rutas import work_dir  # noqa: E402
@@ -34,25 +29,25 @@ def load_json(p: Path) -> dict:
     return json.loads(p.read_text(encoding="utf-8"))
 
 
-def confidence_label(orphan_ratio: float, parse_errors: int, has_application: bool) -> str:
-    if not has_application or orphan_ratio > 0.8:
-        return "Bajo"
-    if orphan_ratio > 0.5 or parse_errors > 5:
-        return "Medio"
-    return "Alto"
+NIVELES = ("Bajo", "Medio", "Alto")
 
 
-def extract_findings_from_md(md_text: str, severity_emojis: dict[str, str]) -> list[dict]:
-    """Busca lineas con emoji de severidad (rojo/amarillo) y extrae el hallazgo."""
-    findings = []
-    for line in md_text.splitlines():
-        for emoji, severity in severity_emojis.items():
-            if emoji in line:
-                cleaned = re.sub(r"^[\s\-\*\d\.]+", "", line).strip()
-                if len(cleaned) > 20 and len(cleaned) < 300:
-                    findings.append({"severity": severity, "text": cleaned[:280]})
-                break
-    return findings
+def confidence(coverage: float, error_ratio: float, verified_ratio: float | None) -> tuple[str, list[str]]:
+    """Nivel de confianza de la documentación y por qué. Una sola fórmula para 00 y los publicadores:
+    parte de la cobertura de definiciones y de los fallos de extracción; baja un nivel si menos de la
+    mitad de los hallazgos están verificados."""
+    if coverage >= 0.9 and error_ratio <= 0.1:
+        nivel = 2
+    elif coverage >= 0.7 and error_ratio <= 0.25:
+        nivel = 1
+    else:
+        nivel = 0
+    motivos = [f"definiciones obtenidas: {coverage:.0%}", f"llamadas fallidas: {error_ratio:.0%}"]
+    if verified_ratio is not None:
+        motivos.append(f"hallazgos verificados: {verified_ratio:.0%}")
+        if verified_ratio < 0.5 and nivel > 0:
+            nivel -= 1
+    return NIVELES[nivel], motivos
 
 
 def main(doc_root: str) -> int:
@@ -61,184 +56,107 @@ def main(doc_root: str) -> int:
     if not interm.exists():
         print(f"ERROR: no existe {interm}", file=sys.stderr)
         return 2
-
     inv = load_json(interm / "inventory.json")
     graph = load_json(interm / "graph.json")
+    report = load_json(interm / "extraction_report.json")
+    preflight = load_json(interm / "preflight.json")
+    registro = load_json(interm / "registro.json")
 
     counts = inv.get("counts", {})
     objects = inv.get("objects", {})
-
-    # Meta de la app
-    app_list = objects.get("application", [])
-    app_meta = app_list[0] if app_list else {}
-
-    # Hubs ordenados
-    hubs = graph.get("hubs", [])[:10]
+    app_meta = (objects.get("application") or [{}])[0]
+    all_objs = [o for t, objs in objects.items() if t != "application" for o in objs]
 
     # Confianza
-    total_nodes = graph.get("stats", {}).get("nodeCount", 0) or 1
-    orphan_count = graph.get("stats", {}).get("orphanCount", 0)
-    orphan_ratio = orphan_count / total_nodes if total_nodes else 0
-    parse_errors = inv.get("parseErrors", 0)
-    confidence = confidence_label(orphan_ratio, parse_errors, bool(app_list))
+    with_def = sum(1 for o in all_objs if o.get("detail") == "full")
+    coverage = with_def / len(all_objs) if all_objs else 0.0
+    stats = [v for v in (report.get("callStats") or {}).values() if isinstance(v, dict)]
+    failed = sum(v.get("failed", 0) for v in stats)
+    calls = failed + sum(v.get("ok", 0) for v in stats)
+    error_ratio = failed / calls if calls else 0.0
+    orden = {"Alta": 0, "Media": 1, "Baja": 2}
+    vivos = sorted((h for h in registro.get("hallazgos", []) if not h.get("duplicadoDe")),
+                   key=lambda h: (orden.get(h.get("severidad"), 9), h.get("id", "")))
+    verified_ratio = (sum(1 for h in vivos if h.get("certeza") == "verificado") / len(vivos)) if vivos else None
+    nivel, motivos = confidence(coverage, error_ratio, verified_ratio)
 
-    # Procesos criticos: PMs con mas grado entrante o que llaman integraciones
-    pm_objs = objects.get("processModel", [])
-    pm_by_id = {p.get("uuid") or f"processModel::{p.get('name')}": p for p in pm_objs}
-    edges = graph.get("edges", [])
-    pm_indegree = Counter()
-    pm_calls_integrations = Counter()
-    for e in edges:
-        if e["target"] in pm_by_id and e["refType"] in ("startProcess", "subProcess"):
-            pm_indegree[e["target"]] += 1
-        if e["source"] in pm_by_id and e["refType"] == "integrationCall":
-            pm_calls_integrations[e["source"]] += 1
-    critical_processes = []
-    for pm_id, pm in pm_by_id.items():
-        score = pm_indegree.get(pm_id, 0) * 2 + pm_calls_integrations.get(pm_id, 0) * 3
-        if pm.get("hasRecurrence"):
-            score += 5
-        if score >= 3:
-            critical_processes.append({
-                "id": pm_id,
-                "name": pm.get("name"),
-                "score": score,
-                "calledBy": pm_indegree.get(pm_id, 0),
-                "callsIntegrations": pm_calls_integrations.get(pm_id, 0),
-                "isBatch": bool(pm.get("hasRecurrence")),
-                "userTaskCount": pm.get("userTaskCount", 0),
-                "executions": (pm.get("usage") or {}).get("executions"),
-            })
-    critical_processes.sort(key=lambda x: -x["score"])
-    critical_processes = critical_processes[:10]
+    # Procesos críticos: la criticidad la calcula build_model.py (misma fórmula para todos)
+    critical = []
+    for pm in objects.get("processModel", []):
+        c = pm.get("criticality") or {}
+        if c.get("critical"):
+            critical.append({"name": pm.get("name"), "score": c.get("score"), "reasons": c.get("reasons", []),
+                             "calledBy": c.get("calledBy", 0), "callsIntegrations": c.get("callsIntegrations", 0),
+                             "isBatch": bool(pm.get("hasRecurrence")), "userTaskCount": pm.get("userTaskCount", 0),
+                             "executions": (pm.get("usage") or {}).get("executions")})
+    critical.sort(key=lambda x: -(x["score"] or 0))
 
-    # Integraciones por sistema externo
-    integrations = []
-    for it in objects.get("integration", []):
-        integrations.append({
-            "name": it.get("name"),
-            "method": it.get("method"),
-            "endpoint": it.get("endpoint"),
-            "connectedSystemRef": it.get("connectedSystemRef"),
-        })
+    # Secretos: objetos con valores enmascarados en la extracción
+    secret_objs = [o for o in all_objs if o.get("maskedSecrets") or o.get("maskedSecret")]
 
-    # Riesgos basicos detectables sin LLM
-    risks = []
-    # Constants que parecen secretos
-    masked_constants = [c for c in objects.get("constant", []) if c.get("maskedSecret")]
-    if masked_constants:
-        risks.append({
-            "severity": "high",
-            "category": "security",
-            "title": f"{len(masked_constants)} constantes parecen contener secretos",
-            "evidence": [c.get("name") for c in masked_constants[:5]],
-        })
-    # PMs sin user tasks ni recurrencia (huerfanos posibles)
-    pms_silent = [p for p in pm_objs if not p.get("hasRecurrence") and (p.get("userTaskCount", 0) == 0)]
-    if len(pms_silent) > 10:
-        risks.append({
-            "severity": "medium",
-            "category": "complexity",
-            "title": f"{len(pms_silent)} process models sin tareas humanas ni recurrencia (posibles utilities o huerfanos)",
-            "evidence": [p.get("name") for p in pms_silent[:5]],
-        })
-    # Process models sin ejecuciones reales (solo si hay historial de uso)
-    pms_unused = [p for p in pm_objs if isinstance(p.get("usage"), dict) and p["usage"].get("executions") == 0]
-    if pms_unused:
-        risks.append({
-            "severity": "medium",
-            "category": "maintainability",
-            "title": f"{len(pms_unused)} process models sin ninguna ejecucion registrada (posible codigo muerto)",
-            "evidence": [p.get("name") for p in pms_unused[:5]],
-        })
-    # Objetos con avisos de validacion de la plataforma
-    invalid = [o for objs in objects.values() for o in objs if o.get("validationIssues")]
+    # Señales objetivas para el registro (el orquestador decide si son hallazgos)
+    signals = []
+    unused = [p.get("name") for p in objects.get("processModel", [])
+              if isinstance(p.get("usage"), dict) and p["usage"].get("executions") == 0]
+    if unused:
+        signals.append({"type": "processModelsWithoutExecutions", "objects": unused})
+    invalid = [o.get("name") for o in all_objs if o.get("validationIssues")]
     if invalid:
-        risks.append({
-            "severity": "medium",
-            "category": "maintainability",
-            "title": f"{len(invalid)} objetos con avisos de validacion de Appian (funciones obsoletas, errores de expresion)",
-            "evidence": [f"{o.get('name')}: {o['validationIssues'][0]}" for o in invalid[:5]],
-        })
-    # Interfaces muy grandes
-    big_interfaces = sorted(
-        [i for i in objects.get("interface", []) if i.get("sailBytes", 0) > 80000],
-        key=lambda x: -x.get("sailBytes", 0)
-    )[:5]
-    if big_interfaces:
-        risks.append({
-            "severity": "medium",
-            "category": "maintainability",
-            "title": f"{len(big_interfaces)} interfaces muy grandes (>80KB de SAIL) - dificiles de mantener",
-            "evidence": [f"{i.get('name')} ({i.get('sailBytes', 0)//1024}KB)" for i in big_interfaces],
-        })
+        signals.append({"type": "validationIssues", "objects": invalid})
+    big = [i.get("name") for i in objects.get("interface", []) if i.get("sailBytes", 0) > 80000]
+    if big:
+        signals.append({"type": "largeInterfaces", "objects": big})
+    orphans = {o for o in graph.get("orphans", [])}
+    if orphans:
+        signals.append({"type": "orphans", "objects": [o.get("name") for o in all_objs if o.get("uuid") in orphans]})
 
-    # Hallazgos desde los .md generados (si existen)
-    md_findings: list[dict] = []
-    # 🔵 significa "inferido" (estado de la evidencia), no una severidad: no se incluye.
-    severity_map = {"🔴": "high", "🟡": "medium"}
-    for md_name in ["09-valor-adicional.md", "04-seguridad-grupos.md", "05-integraciones-consumidas.md"]:
-        md_path = root / md_name
-        if md_path.exists():
-            md_findings.extend(extract_findings_from_md(md_path.read_text(encoding="utf-8"), severity_map))
-    md_findings = md_findings[:30]
-
-    # Layered architecture breakdown
-    layer_breakdown = {
-        "Presentacion": counts.get("site", 0) + counts.get("interface", 0),
-        "Logica": counts.get("processModel", 0) + counts.get("expressionRule", 0) + counts.get("decision", 0),
-        "Datos": counts.get("recordType", 0) + counts.get("cdt", 0),
-        "Integracion": counts.get("integration", 0) + counts.get("connectedSystem", 0) + counts.get("webApi", 0),
-        "Seguridad": counts.get("group", 0),
-    }
-
+    env = preflight.get("environment") or {}
     summary = {
         "meta": {
-            "appName": app_meta.get("name", "?"),
-            "appPrefix": app_meta.get("prefix"),
-            "appDescription": app_meta.get("description"),
-            "appUuid": app_meta.get("uuid"),
+            "appName": app_meta.get("name", "?"), "appPrefix": app_meta.get("prefix"),
+            "appDescription": app_meta.get("description"), "appUuid": app_meta.get("uuid"),
             "source": inv.get("source"),
-            "generatedAt": datetime.now(timezone.utc).isoformat(),
-            "confidence": confidence,
+            "environment": {"url": (inv.get("source") or {}).get("url") or env.get("url"),
+                            "isProduction": env.get("isProduction"), "appianVersion": env.get("appianVersion")},
+            "generatedAt": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "confidence": nivel, "confidenceBasis": motivos,
         },
         "counts": counts,
-        "totals": {
-            "objects": sum(counts.values()),
-            "nodes": total_nodes,
-            "edges": graph.get("stats", {}).get("edgeCount", 0),
-            "hubs": len(hubs),
-            "orphans": orphan_count,
+        "totals": {"objects": len(all_objs), "withDefinition": with_def,
+                   "edges": graph.get("stats", {}).get("edgeCount", 0),
+                   "hubs": len(graph.get("hubs", [])), "orphans": len(orphans)},
+        "layerBreakdown": {
+            "Presentacion": counts.get("site", 0) + counts.get("interface", 0),
+            "Logica": counts.get("processModel", 0) + counts.get("expressionRule", 0) + counts.get("decision", 0),
+            "Datos": counts.get("recordType", 0) + counts.get("cdt", 0),
+            "Integracion": counts.get("integration", 0) + counts.get("connectedSystem", 0) + counts.get("webApi", 0),
+            "Seguridad": counts.get("group", 0),
         },
-        "layerBreakdown": layer_breakdown,
-        "hubs": [{"name": h.get("name"), "type": h.get("type"), "inDegree": h.get("in")} for h in hubs],
-        "criticalProcesses": critical_processes,
-        "integrations": integrations,
-        "risks": risks,
-        "findingsFromMd": md_findings,
-        "objects": {
-            t: [
-                {k: o.get(k) for k in ("name", "description", "uuid", "type", "mcpType", "path")
-                 if o.get(k) is not None}
-                for o in objs
-            ]
-            for t, objs in objects.items()
-        },
+        "hubs": [{"name": h.get("name"), "type": h.get("type"), "inDegree": h.get("in")} for h in graph.get("hubs", [])[:10]],
+        "criticalProcesses": critical,
+        "integrations": [{"name": it.get("name"), "method": it.get("method"), "connectedSystemRef": it.get("connectedSystemRef")}
+                         for it in objects.get("integration", [])],
+        "secrets": {"count": len(secret_objs), "objects": [o.get("name") for o in secret_objs]},
+        "findings": [{k: h.get(k) for k in ("id", "titulo", "area", "severidad", "certeza", "documento", "tratamiento")}
+                     for h in vivos],
+        "findingsBySeverity": registro.get("porSeveridad", {}),
+        "findingsByCertainty": registro.get("porCerteza", {}),
+        "modernization": {"verdict": registro.get("veredicto"), "strategy": registro.get("estrategia")},
+        "signals": signals,
+        "objects": {t: [{k: o.get(k) for k in ("name", "uuid", "type", "mcpType", "slug") if o.get(k) is not None}
+                        for o in objs] for t, objs in objects.items()},
     }
-
     out_path = interm / "summary.json"
     out_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
-    print(f"Summary escrito en {out_path}")
-    print(f"  App: {summary['meta']['appName']}")
-    print(f"  Objetos: {summary['totals']['objects']}")
-    print(f"  Confianza: {summary['meta']['confidence']}")
-    print(f"  Procesos criticos: {len(critical_processes)}")
-    print(f"  Riesgos detectados: {len(risks)}")
+    print(f"summary.json: {summary['meta']['appName']}, {len(all_objs)} objetos, confianza {nivel} ({'; '.join(motivos)}), "
+          f"{len(critical)} procesos críticos, {len(vivos)} hallazgos, {len(secret_objs)} objetos con secretos")
+    if not registro:
+        print("AVISO: no hay registro.json (ejecuta build_registry.py antes)", file=sys.stderr)
     return 0
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Uso: python3 build_summary.py <carpeta_salida>", file=sys.stderr)
+    if len(sys.argv) != 2:
+        print(__doc__, file=sys.stderr)
         sys.exit(2)
     sys.exit(main(sys.argv[1]))
