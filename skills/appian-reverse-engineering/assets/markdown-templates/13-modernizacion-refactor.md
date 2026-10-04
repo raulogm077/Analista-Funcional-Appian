@@ -1,77 +1,96 @@
 <!--
-  Plantilla 13 — Modernización y refactorización (agente rebuild-architect)
-  Cada hallazgo con evidencia (objeto real) y fuente oficial (o marcado como heurística).
+  Plantilla 13 — Modernización y refactorización (rebuild-architect).
+  Estructura: TL;DR → Vista → Detalle → Cobertura y límites. Sin sección Hallazgos: los hallazgos están en sus documentos
+  propietarios y en el registro de 09; aquí se citan por su ID, sin severidad.
+  Alcance: diagnóstico, estrategia, arquitectura objetivo de alto nivel, plan por fases y decisiones. El diseño detallado
+  (modelo de datos, procesos, pantallas, catálogo de objetos y correspondencia actual → objetivo) está en 14-diseno-objetivo.md.
+  Diagrama obligatorio: arquitectura-objetivo (flowchart TD por capas). Los {{marcadores}} se sustituyen y los comentarios se borran.
 -->
 
 # Modernización y refactorización
 
-> Diagnóstico técnico de la aplicación frente a las funcionalidades y buenas prácticas actuales de Appian, y propuesta para llevarla a un diseño moderno.
+> **TL;DR**: Veredicto: **{{Mantener y mejorar · Refactorizar por fases · Reconstruir}}**, con estrategia de **{{reconstrucción limpia · refactor in situ · mixta}}**. {{1-2 frases: por qué (hallazgos, tamaño, uso real) y qué se hace primero}}.
+> **Volumen**: {{N}} actuaciones (prioridad Alta: {{n}}) que tratan {{N}} de los {{N}} hallazgos del registro, en {{N}} fases; {{N}} decisiones pendientes.
 
-## TL;DR y veredicto
+## Vista
 
-**Veredicto:** {{Mantener y mejorar · Refactorizar por fases · Reconstruir}}
+| Decisión | Elección | Por qué |
+|---|---|---|
+| Veredicto | {{Refactorizar por fases}} | {{Hallazgos Alta en el alta y la revisión; modelo de datos ya actual}} |
+| Estrategia | {{Refactor in situ}} | {{Los objetos actuales siguen el diseño recomendado; cambiar en la app es más barato}} |
 
-{{Justificación en 3-5 frases: número y gravedad de hallazgos, tamaño, uso real.}}
+{{1-2 líneas: por qué no las otras dos estrategias.}}
 
-| Área | Hallazgos | Alta | Media | Baja |
-|---|---|---|---|---|
-| Datos | {{N}} | {{n}} | {{n}} | {{n}} |
-| Procesos | | | | |
-| Interfaces | | | | |
-| Integraciones | | | | |
-| Seguridad | | | | |
-| Operación | | | | |
+| MOD | Actuación | Área | Prioridad | Esfuerzo | Resuelve |
+|---|---|---|---|---|---|
+| [MOD-001](#mod-001--{{ancla}}) | {{Guardar los datos del formulario de alta}} | {{Interfaces}} | {{Alta}} | {{S}} | {{H-UI-01, H-PRO-02}} |
 
-**Versión de Appian del entorno:** {{versión o «no determinada»}}. Recomendaciones verificadas con el Docs MCP: {{sí / no (sin verificar para la versión)}}.
+Prioridad: Alta · Media · Baja. Esfuerzo por persona: S (de horas a 2 días) · M (3-10 días) · L (más de 2 semanas).
 
-## 1. Diagnóstico
+<!-- Más de 15 MOD: una tabla por área (### Datos, ### Procesos, ### Interfaces, ### Integraciones, ### Seguridad, ### Operación). -->
 
-### MOD-001 — {{título}}
+## Detalle: diagnóstico
+
+<!-- Más de 5 fichas: empieza con un índice de enlaces a ellas. Si un MOD no resuelve ningún hallazgo registrado: «Resuelve: —». -->
+
+### MOD-001 — {{actuación}}
+
+{{1 línea: qué cambia y para qué.}}
 
 | Campo | Valor |
 |---|---|
-| Área | {{Datos}} |
-| Qué hay | {{hecho observable, nº de objetos}} — Evidencia: `mcp:{{tipo}}/{{nombre}}#{{ubicacion}}` |
-| Problema | {{Obsoleto / Antipatrón / Diseño mejorable / Deuda}}: {{impacto}} |
-| Recomendación | {{funcionalidad o práctica actual}} |
-| Fuente | {{URL de docs.appian.com}} · {{o «[heurística de la skill]»}} |
-| Esfuerzo | {{S/M/L}} — {{justificación}} |
-| Prioridad | {{Alta/Media/Baja}} |
+| Área | {{Datos · Procesos · Interfaces · Integraciones · Seguridad · Operación}} |
+| Qué hay | {{hecho observable y nº de objetos afectados}} |
+| Resuelve | [H-UI-01](./10-pantallas.md#hallazgos), [H-PRO-02](./08-procesos-bpmn/{{slug}}.md#hallazgos) |
+| Problema | {{Obsoleto · Antipatrón · Diseño mejorable · Deuda}}: {{impacto}} |
+| Recomendación | {{práctica o funcionalidad actual de Appian}} |
+| Fuente | {{URL de docs.appian.com · «criterio de diseño, sin fuente oficial de Appian»}} |
+| Esfuerzo | {{S · M · L}} — {{justificación en una línea}} |
+| Prioridad | {{Alta · Media · Baja}} |
 
-## 2. Oportunidades
+Evidencia: `mcp:{{tipo}}/{{nombre}}#{{ubicación}}` · Certeza: ✅
 
-| Capacidad | Necesidad que resuelve en esta app | Fuente |
+## Detalle: oportunidades
+
+<!-- Solo si alguna capacidad resuelve una necesidad observada en esta app. -->
+
+| Capacidad | Necesidad observada en esta app | Fuente |
 |---|---|---|
-| {{Process HQ}} | {{…}} | {{URL}} |
+| {{Process HQ}} | {{Los recuentos por estado se calculan a mano en el panel}} | {{URL de docs.appian.com}} |
 
-## 3. Arquitectura objetivo
+## Detalle: arquitectura objetivo
 
-```mermaid
-flowchart TD
-  N1["{{Capa}}"] --> N2["{{Capa}}"]
-```
+{{Frase: qué muestra el diagrama.}}
 
-**Principios de diseño:** {{…}}
+![Arquitectura objetivo por capas](diagrams/arquitectura-objetivo.svg)
 
-## 4. Correspondencia objeto actual → propuesto
+Fuente: [arquitectura-objetivo.mmd](diagrams/arquitectura-objetivo.mmd)
 
-| Actual | Tipo | Propuesta | Motivo | Acción |
-|---|---|---|---|---|
-| `{{objeto}}` | {{tipo}} | {{objeto propuesto}} | MOD-xxx / RF-xxx | Mantener / Sustituir / Fusionar / Eliminar / Nuevo |
+<!-- Sin SVG: sustituye las dos líneas anteriores por el bloque mermaid idéntico a arquitectura-objetivo.mmd (flowchart TD, subgraph por capa, ≤ 30 nodos). -->
 
-## 5. Plan de migración
+**Principios de diseño**
+
+- {{Principio}} ({{MOD-00N · RF-00N}})
+
+El diseño detallado (modelo de datos objetivo, procesos y pantallas objetivo, catálogo de objetos con su nomenclatura y correspondencia objeto actual → objetivo) está en [14-diseno-objetivo.md](./14-diseno-objetivo.md).
+
+## Detalle: plan por fases
 
 | Fase | Objetivo | Incluye | Depende de | Riesgos y mitigación |
 |---|---|---|---|---|
-| 0 | {{Mejoras sin refactorizar}} | {{MOD-xxx}} | — | {{…}} |
-| 1 | {{…}} | | | |
+| 0 | {{Contención y mejoras sin refactorizar}} | {{MOD-002, MOD-005}} | — | {{…}} |
+| 1 | {{…}} | {{MOD-001}} | {{Fase 0}} | {{…}} |
 
-**Estrategia de datos:** {{coexistencia / migración}}
+**Estrategia de datos**: {{coexistencia · migración}} — {{por qué}}.
 
-**Estrategia de pruebas:** los criterios de aceptación de `12-especificacion-reconstruccion.md` son la prueba de equivalencia funcional.
+**Estrategia de pruebas**: los criterios de aceptación de [12-especificacion-reconstruccion.md](./12-especificacion-reconstruccion.md) son la prueba: los (equivalente) demuestran que no se pierde nada; los (corrección) y (objetivo), el cambio.
 
-## 6. Decisiones pendientes
+## Detalle: decisiones pendientes
 
-| ID | Decisión | Opciones | Quién |
-|---|---|---|---|
-| DEC-001 | {{…}} | {{…}} | {{Arquitectura / Negocio}} |
+| ID | Decisión | Opciones | Recomendación | Quién |
+|---|---|---|---|---|
+| DEC-001 | {{…}} | {{A · B}} | {{A, porque …}} | {{Arquitectura · Negocio}} |
+
+## Cobertura y límites
+
+{{1-5 líneas: versión de Appian (o «no determinada: se usó la documentación más reciente»); si las recomendaciones se verificaron en el Docs MCP; patrones revisados sin aparición; señales que no se pudieron comprobar porque la extracción no trae su configuración.}}

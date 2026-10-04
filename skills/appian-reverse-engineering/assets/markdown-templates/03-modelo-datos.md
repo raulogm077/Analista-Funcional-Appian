@@ -1,214 +1,134 @@
 <!--
-  Plantilla 03 — Modelo de datos
-  Sigue las reglas de `references/presentation-rules.md`:
-    1. TL;DR arriba
-    2. Vista (ER global o índice de subdominios) en el medio
-    3. Detalle al pie
-
-  ESTRATEGIA DE PARTICIONAMIENTO (criterio: legibilidad, no número arbitrario):
-    - Hasta ~15 entidades: UN ER global con todas. Suficiente.
-    - Entre ~15-30: UN ER global con las entidades más conectadas (hubs) + sub-ER por subdominio para el resto.
-    - Más de ~30: obligatorio sub-ER por subdominio (cada uno ~8-15 entidades). El ER global pasa a ser un "mapa de subdominios" muy resumido.
-
-  REGLA INVARIABLE: el catálogo en tablas DEBE incluir el 100% de records y CDTs sin truncar.
-  La partición afecta solo a los diagramas visuales, no al inventario.
+  Plantilla 03 — Modelo de datos (agente data-modeler). Borra estos comentarios en el documento final.
+  Partición de los diagramas (criterio: legibilidad):
+    - Hasta ~15 entidades: un único ER, sin subdominios.
+    - ~15-30: un ER con las entidades más conectadas + un ER por subdominio.
+    - Más de ~30: mapa de subdominios + un ER por subdominio.
+  El catálogo (tablas y fichas) cubre el 100 % de records y CDTs; la partición solo afecta a los diagramas.
+  Diagramas: si existe el .svg, imagen + «Fuente»; si no, el bloque mermaid idéntico al .mmd.
+  Secciones, columnas o filas sin contenido: se omiten (p. ej. sin CDTs no hay tabla de CDTs; sin data stores, no
+  hay sección de data stores; sin recuentos, no hay columna «Filas»). Lo que la extracción no trae se dice una vez
+  en «Cobertura y límites», no con ❓ en cada celda.
 -->
 
 # Modelo de datos
 
-> **TL;DR**: {{N records, N CDTs, N data stores}}. {{Relación principal: p.ej. "El núcleo es RT_Expediente, conectado a RT_Cliente, RT_Documento y RT_Estado"}}.
-> Particionado en **{{N}} subdominios** para legibilidad: {{lista corta de subdominios}}.
-> Leer la Vista; bajar al Detalle solo para fichas de records/CDTs específicos.
+> **TL;DR**: {{2-3 frases: núcleo del modelo, p. ej. «El núcleo es DEM Solicitud, relacionado con DEM Cliente y DEM Documento; todo está sincronizado salvo el catálogo de estados»}}.
+> **Volumen**: {{n}} record types, {{n}} CDTs, {{n}} data stores{{; n filas en total (recuento del data fabric)}}{{; n subdominios}}. **Hallazgos**: {{N (Alta: n)}} — principales: [H-DAT-01](#hallazgos) (o «sin hallazgos»).
 
-## Vista — Diagrama ER global
+## Vista
 
-> **Si la app tiene hasta ~15 entidades**: muestra todas. **Si tiene más**: muestra las entidades más conectadas (hubs) + sus relaciones principales. Las entidades secundarias están en los sub-diagramas por subdominio (abajo).
+{{Una frase: qué muestra el diagrama, p. ej. «Record types y sus relaciones declaradas».}}
 
-> SVG renderizado: `diagrams/modelo-datos.svg`. Si no se pudo renderizar, el bloque Mermaid embebido funciona en GitHub/VSCode/preview Markdown.
+![{{qué muestra}}](diagrams/modelo-datos.svg)
 
+Fuente: [modelo-datos.mmd](diagrams/modelo-datos.mmd)
+
+<!-- Sin SVG:
 ```mermaid
 erDiagram
-  {{ENTIDAD_HUB_1}} ||--o{ {{ENTIDAD_HUB_2}} : "{{relación}}"
-  {{ENTIDAD_HUB_1}} ||--|| {{ENTIDAD_HUB_3}} : "{{relación}}"
-  {{ENTIDAD_HUB_1}} }o--|| {{ENTIDAD_HUB_4}} : "{{relación}}"
-  {{ENTIDAD_HUB_1}} {
-    string id PK
-    string {{campo_clave_1}}
-    string {{campo_FK_clave}} FK
-  }
-  {{ENTIDAD_HUB_2}} {
-    string id PK
-    string {{campo_FK}} FK
-  }
-  {{ENTIDAD_HUB_3}} {
-    string id PK
-    string nombre
-  }
-  {{ENTIDAD_HUB_4}} {
-    string id PK
-    string descripcion
+  DEM_SOLICITUD }o--|| DEM_CLIENTE : "pertenece a"
+  DEM_SOLICITUD ||--o{ DEM_DOCUMENTO : "tiene"
+  DEM_SOLICITUD {
+    int id PK
+    string titulo
+    int idCliente FK
   }
 ```
+-->
 
-## Vista — Sub-diagramas por subdominio
-
-> Cuando la app tiene muchas entidades (típicamente >15), generar **un sub-diagrama por subdominio funcional**. Cada subdominio suele agrupar 8-15 entidades relacionadas. El subdominio se infiere del prefijo de los records (`RT_Expediente_*`, `RT_Cliente_*`, etc.) o de los casos de uso de `01-funcional.md`. Si una entidad pertenece a más de un subdominio, aparece en el principal y se referencia desde los otros.
-
-### Subdominio `{{nombre_subdominio_1}}` ({{N}} entidades)
-
-```mermaid
-erDiagram
-  {{ENTIDAD_1}} ||--o{ {{ENTIDAD_2}} : "..."
-  ...
-```
-
-### Subdominio `{{nombre_subdominio_2}}` ({{N}} entidades)
-
-```mermaid
-erDiagram
-  ...
-```
-
-> Si la app tiene pocas entidades (~15 o menos), el ER global ya las contiene todas — omitir esta sección de sub-diagramas.
-
-## Vista — Tabla resumen de records
-
-> Una fila por Record Type. Solo columnas escaneables. Detalle ampliado en la sección "Detalle por Record Type".
-
-| Record Type | Visible | Fuente | CDT asociado | Tabla BBDD | Vistas | Acciones | Estado |
-|---|---|---|---|---|---|---|---|
-| `{{RT_1}}` | {{visible}} | DB | `{{cdt}}` | `{{tabla}}` | {{N}} | {{N}} | ✅ |
-| `{{RT_2}}` | {{visible}} | Expression | — | — | {{N}} | {{N}} | 🔵 |
-
-## Vista — Tabla resumen de CDTs
-
-| CDT | Namespace | Tabla mapeada | Campos | Usado por |
-|---|---|---|---|---|
-| `{{CDT_1}}` | `{{ns}}` | `{{tabla}}` | {{N}} | `{{lista}}` |
-| `{{CDT_2}}` | `{{ns}}` | — | {{N}} | `{{lista}}` |
-
-## Vista — Mapeo de nombres saneados (si aplica)
-
-> Si algún nombre técnico tiene caracteres no compatibles con `erDiagram` (espacios, acentos, guiones), se sustituye en el diagrama. Mapeo:
-
-| Nombre técnico real | Nombre en el diagrama |
+<!-- Solo si se sustituyó algún nombre en el diagrama: -->
+| Nombre real | Nombre en el diagrama |
 |---|---|
-| `{{Record real con acento}}` | `{{ENTIDAD_SANEADA}}` |
+| `{{DEM Solicitud}}` | `{{DEM_SOLICITUD}}` |
 
-> Si no hay sustituciones, omitir.
+<!-- Con más de ~15 entidades: tras el ER (o el mapa de subdominios), una subsección por subdominio con su ER
+     y su tabla resumen: ### Subdominio {{nombre}} ({{n}} entidades) + imagen modelo-datos-{{subdominio}}.svg + Fuente. -->
 
----
+### Record types
 
-## Detalle por Record Type
+| Record type | Origen | Sincronizado | Tabla o fuente | Campos | Relaciones | Filas |
+|---|---|---|---|---|---|---|
+| [`{{DEM Solicitud}}`](#{{ancla}}) | Base de datos | Sí 🔵 | `{{dem_solicitud}}` | {{12}} | {{3}} | {{1.234}} |
+| [`{{DEM Estado}}`](#{{ancla}}) | Base de datos | No ✅ | `{{dem_estado}}` | {{3}} | {{0}} | — |
 
-> Una ficha por Record Type. Saltar a:
-{{índice navegable cuando haya >5 records}}
+<!-- Origen: el de la definición (`sourceType`), en palabras (Base de datos, Servicio web, Proceso…).
+     Sincronizado: «Sí ✅/No ✅» si la definición lo dice; «Sí 🔵» si solo consta por figurar en el data fabric;
+     «❓» si no consta (si no consta para ninguno, quita la columna y dilo en «Cobertura y límites»).
+     Filas: recuento del data fabric. Más de 15 records: una tabla por subdominio. -->
 
-### `{{RT_1}}` — {{nombre_visible}}
+### CDTs
 
-**TL;DR**: {{una línea funcional: qué representa este record y para qué se usa}}.
+| CDT | Campos | Tabla mapeada | Lo usan | Definición |
+|---|---|---|---|---|
+| [`{{DEM_Solicitud_CDT}}`](#{{ancla}}) | {{8}} | `{{dem_solicitud}}` | {{2 procesos, 1 interfaz}} | Disponible |
+
+## Detalle
+
+<!-- Índice si hay más de 5 fichas (agrupado por subdominio si los hay): - [DEM Solicitud](#…) · … -->
+
+### `{{DEM Solicitud}}` — {{Solicitud}}
+
+{{1 línea: qué representa y para qué se usa.}}
 
 | Campo | Valor |
 |---|---|
-| Nombre técnico | `{{RT_1}}` |
-| Nombre visible | {{visible}} |
-| Fuente | DB / Service / Process / Expression |
-| CDT asociado | `{{CDT}}` |
-| Tabla BBDD | `{{tabla_o_vacio}}` |
-| Data Source | `{{datasource_id}}` |
-| Data Fabric | Sí / No |
-| Total vistas | {{N}} |
-| Total acciones | {{N}} |
-| Estado | ✅/🔵 — Evidencia: `mcp:recordType/{{nombre}}` |
+| Origen | {{Base de datos, tabla `dem_solicitud`}} |
+| Sincronizado | {{Sí 🔵: figura en los metadatos del data fabric}} |
+| Filas | {{1.234 (recuento del data fabric)}} |
+| Campos | {{12; clave `id`}} |
+| Vistas | {{Resumen (`DEM_Resumen`), Historial (`DEM_Historial`)}} |
+| Acciones | {{Nueva solicitud → `DEM Alta Solicitud` (lista); Editar → `DEM Editar` (por registro)}} |
+| Lo usan | {{4 interfaces y 2 procesos ([02](./02-arquitectura.md))}} |
 
 **Campos clave**
 
-| Campo | Tipo | Visible | Key | Notas |
+| Campo | Tipo | Clave | Notas |
+|---|---|---|---|
+| `id` | Número (entero) | PK | — |
+| `{{idCliente}}` | Número (entero) | FK | {{Enlace con DEM Cliente}} |
+| `{{importe}}` | Decimal | — | {{Importe solicitado}} |
+
+**Relaciones**
+
+| Relación | Tipo | Destino | Campo de enlace | Certeza |
 |---|---|---|---|---|
-| `id` | long | Sí | Sí | PK |
-| `{{campo_2}}` | string | Sí | No | {{descripción breve}} |
+| `{{cliente}}` | Muchos a uno | `{{DEM Cliente}}` | `{{idCliente}}` | ✅ |
+| `{{documentos}}` | Uno a muchos | `{{DEM Documento}}` | {{no lo devuelve la extracción}} | 🔵 |
 
-**Record Views**
+Evidencia: `mcp:recordType/{{nombre}}#{{fields}}` · Certeza: ✅/🔵/❓ · [Definición completa](anexo/recordType/{{slug}}.md)
 
-| Vista | Interface asociada | Campos mostrados |
-|---|---|---|
-| `{{vista_1}}` | `{{interface}}` | {{lista breve}} |
+### `{{DEM_Solicitud_CDT}}`
 
-**Record Actions**
-
-| Action | Process Model destino | Grupos que la pueden invocar |
-|---|---|---|
-| `{{action_1}}` | `{{PM_destino}}` | `{{grupos}}` |
-
-**Related Records**
-
-- → `{{RT_Otro}}` vía `{{join_descripción}}`.
-
-**Notas relevantes** (si aplica):
-- {{nota_1}}
-
----
-
-### `{{RT_2}}`
-
-{{Repetir.}}
-
----
-
-## Detalle por CDT
-
-> Saltar a: {{índice navegable cuando haya >5 CDTs}}
-
-### `{{CDT_1}}`
-
-**TL;DR**: {{para qué se usa este CDT}}.
+{{1 línea: para qué se usa.}}
 
 | Campo | Valor |
 |---|---|
-| Namespace | `{{ns}}` |
-| Definición | ✅ disponible / 🟡 no disponible por Dev MCP |
-| Mapeo BBDD | Sí (tabla `{{tabla}}`) / No |
-| Anotaciones JPA | {{lista_clave}} |
-| Total campos | {{N}} |
+| Namespace | `{{urn:com:appian:types:DEM}}` |
+| Definición | {{Disponible / no la devuelve la extracción ❓}} |
+| Tabla mapeada | `{{dem_solicitud}}` |
+| Campos | {{8}} |
+| Lo usan | {{`DEM Alta Solicitud` (variable de proceso), `DEM_SolicitudForm`}} |
 
-**Campos**
+<!-- Tabla de campos solo si la definición está disponible: | Campo | Tipo | Clave | Notas | -->
 
-| Nombre | Tipo | Columna BBDD | PK/FK | Comentario |
+Evidencia: `mcp:cdt/{{nombre}}{{@dependents}}#{{ubicación}}` · Certeza: ✅/🔵/❓
+
+### Data stores
+
+| Data store | Entidades | Lo usan |
+|---|---|---|
+| `{{DEM_DS}}` | `{{DEM_Solicitud_CDT}}` | {{`DEM Alta Solicitud`}} |
+
+## Hallazgos
+
+| ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| `id` | Number (Integer) | id | PK | — |
-| `{{campo_2}}` | Text | {{col}} | — | {{descripción}} |
+| H-DAT-01 | {{DEM Documento se consulta por `idSolicitud` pero no tiene relación declarada con DEM Solicitud}} | Baja | 🔵 | `mcp:expressionRule/{{nombre}}#expression (línea {{n}})` |
 
-**Relaciones declaradas**
+{{Para cada hallazgo ❓ o 🔵: de qué se deduce y qué lo confirmaría.}}
 
-- `{{campo_FK}}` → CDT `{{CDT_Otro}}` (`@ManyToOne`)
+## Cobertura y límites
 
-**Dónde se usa**
-- Records: {{lista}}
-- Process Variables: {{lista}}
-- Interfaces: {{lista}}
-
----
-
-### `{{CDT_2}}`
-
-{{Repetir.}}
-
----
-
-## Detalle de Data Stores
-
-| Data Store | JNDI / Data Source | Entidades configuradas | Estado |
-|---|---|---|---|
-| `{{DS_1}}` | `{{jndi}}` | `{{lista_CDTs}}` | ✅ |
-
----
-
-## Resumen rápido
-
-- Total Record Types: {{N}} · CDTs: {{N}} · Data Stores: {{N}}.
-- Records con Data Fabric: {{N}}.
-- Records sin CDT asociado (views derivadas o calculadas): {{N}}.
-- CDTs sin Record asociado (modelo interno): {{N}}.
-- Subdominios identificados: {{lista}}.
-- Hubs del modelo (entidades con más relaciones): `{{top_3}}`.
-- Hallazgos: {{N riesgos / N pendientes}}.
+- {{Lo que la extracción no trae, una vez: p. ej. «La definición no incluye nulabilidad, longitudes, índices, data source, filtros de usuario ni seguridad por fila».}}
+- {{Recuentos: «volúmenes no disponibles: Appian MCP Server no configurado», o qué record types no figuran en el data fabric y por qué puede ser.}}

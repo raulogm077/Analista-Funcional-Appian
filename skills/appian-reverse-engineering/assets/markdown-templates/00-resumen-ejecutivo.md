@@ -1,117 +1,84 @@
 <!--
-  Plantilla 00 — Resumen ejecutivo
-  Generar AL FINAL (consume datos de las demás plantillas).
-  Reemplaza todos los {{placeholders}} con datos reales.
-  Si no hay evidencia para una sección, escribe explícitamente:
-    "No se ha encontrado evidencia suficiente. Pendiente de validación con [rol]."
-  No dejes placeholders sin rellenar.
+  Plantilla 00 — Resumen ejecutivo (orquestador, fase 6, después de la pasada de coherencia).
+  Fuente única de cifras: <trabajo>/summary.json (build_summary.py, ejecutado después de build_registry.py).
+  No recalcules ni copies cifras de otros documentos: si summary.json contradice un documento, corrige el
+  documento en la pasada de coherencia y vuelve a generar summary.json.
+  Objetivo 1-2 pantallas, máximo 3. Sin usuarios. Las secciones sin datos se omiten.
+
+  De dónde sale cada dato:
+    Confianza ........... meta.confidence + meta.confidenceBasis (unidos por «; »)
+    Entorno ............. meta.environment {url, isProduction, appianVersion}; fecha: meta.source.extractedAt
+    Cifras .............. counts, totals, layerBreakdown
+    Procesos críticos ... criticalProcesses (ya ordenados; máx. 5). Enlace: slug de objects.processModel
+    Hallazgos ........... findingsBySeverity, findingsByCertainty y findings de severidad Alta
+                          (si no hay Alta: los Media, máx. 5, y dilo en el TL;DR)
+    Secretos ............ secrets {count, objects}; tratamiento: los H-SEG de findings
+    Modernización ....... modernization {verdict, strategy} (vienen de 13; si son null, falta
+                          <trabajo>/modernizacion.json: corrígelo antes de escribir 00)
+    Uso real ............ criticalProcesses[].executions y signals[type=processModelsWithoutExecutions]
+  Certeza: verificado ✅ · inferido 🔵 · pendiente ❓. En 00 los hallazgos se citan por ID, sin columna de severidad.
 -->
 
-# Resumen ejecutivo
+# {{meta.appName}}: resumen ejecutivo
 
-**Aplicación:** {{nombre_visible_aplicacion}} (`{{nombre_tecnico_aplicacion}}`)
-**Fuente:** Appian Dev MCP · entorno `{{url_entorno}}` · extraído el {{fecha_extraccion}} (solo lectura)
-**Fecha de análisis:** {{fecha_iso}}
-**Versión de Appian detectada:** {{version_o_no_determinada}}
-**Idioma de la documentación:** {{idioma}}
+> **TL;DR**: {{Qué hace la aplicación y para quién, en lenguaje de negocio, 1-2 frases}}. {{Lo más importante: el hallazgo Alta principal o el veredicto en una frase}}.
+> **Volumen**: {{totals.objects}} objetos ({{n}} process models, {{n}} interfaces, {{n}} record types). **Hallazgos**: {{N}} (Alta: {{findingsBySeverity.Alta}}) — principales: [{{H-SEG-01}}](./04-seguridad-grupos.md#hallazgos), [{{H-PRO-02}}](./08-procesos-bpmn/{{slug}}.md#hallazgos). **Veredicto**: {{modernization.verdict}}.
 
-## Pitch (1 párrafo)
-
-{{Pitch funcional en lenguaje de negocio: qué problema resuelve la app, para quién y qué valor aporta. Sin jerga Appian.}}
-
-> Estado: ✅/🔵 — Evidencia: `mcp:application/{{nombre}}#description` y `{{otra_evidencia}}`
-
-## Volumen de la aplicación
-
-| Tipo de objeto | Cantidad |
+| Dato | Valor |
 |---|---|
-| Records / Record Types | {{n_records}} |
-| CDTs | {{n_cdts}} |
-| Process Models | {{n_pm}} |
-| Interfaces | {{n_interfaces}} |
-| Expression Rules | {{n_rules}} |
-| Decisions | {{n_decisions}} |
-| Integrations | {{n_integrations}} |
-| Connected Systems | {{n_cs}} |
-| Web APIs | {{n_webapis}} |
-| Sites | {{n_sites}} |
-| Groups | {{n_groups}} |
-| Constants | {{n_constants}} |
-| Data Stores | {{n_datastores}} |
-| Documents / Folders | {{n_documents}} |
+| Aplicación | `{{meta.appName}}` · prefijo `{{meta.appPrefix}}` |
+| Entorno | `{{meta.environment.url}}` ({{producción / no productivo / no consta si es producción}}) |
+| Versión de Appian | {{meta.environment.appianVersion o «no determinada»}} |
+| Extracción | {{AAAA-MM-DD de meta.source.extractedAt}}, en solo lectura |
+| Confianza de la documentación | **{{meta.confidence}}**: {{meta.confidenceBasis}} |
 
-## Procesos críticos (top 3–5)
+## La aplicación en cifras
 
-| Process Model | Por qué es crítico | Trigger | Subprocesos | Integraciones |
-|---|---|---|---|---|
-| `{{pm_name_1}}` | {{razón}} | {{trigger}} | {{n}} | {{integraciones}} |
-| `{{pm_name_2}}` | {{razón}} | {{trigger}} | {{n}} | {{integraciones}} |
-
-Detalle: ver `08-procesos-bpmn/indice.md`.
-
-## Integraciones críticas (top 3–5)
-
-| Integration | Sistema externo | Método | Endpoint enmascarado | Callers |
-|---|---|---|---|---|
-| `{{int_1}}` | {{sistema}} | {{verb}} | `{{url_enmascarada}}` | {{quien_la_llama}} |
-
-Detalle: ver `05-integraciones-consumidas.md`.
-
-## APIs expuestas (resumen)
-
-{{N APIs expuestas. Caso de uso principal: ...}}
-
-Detalle: ver `06-apis-expuestas.md`.
-
-## Procesos batch / recurrentes
-
-{{Listar batches con frecuencia humana, o decir explícitamente "No se han detectado procesos recurrentes en la aplicación".}}
-
-Detalle: ver `07-batches.md`.
-
-## Modernización (resumen de 13)
-
-**Veredicto:** {{Mantener y mejorar · Refactorizar por fases · Reconstruir}} — {{una frase de justificación}}.
-
-| Hallazgos de modernización | Alta | Media | Baja |
+| Capa | Objetos | Qué incluye | Dónde |
 |---|---|---|---|
-| {{N}} | {{n}} | {{n}} | {{n}} |
+| Presentación | {{layerBreakdown.Presentacion}} | {{n}} sites, {{n}} interfaces | [10](./10-pantallas.md) |
+| Lógica | {{layerBreakdown.Logica}} | {{n}} process models ({{n}} programados), {{n}} reglas, {{n}} decisiones | [08](./08-procesos-bpmn/indice.md), [11](./11-reglas-negocio.md) |
+| Datos | {{layerBreakdown.Datos}} | {{n}} record types, {{n}} CDTs | [03](./03-modelo-datos.md) |
+| Integración | {{layerBreakdown.Integracion}} | {{n}} integraciones, {{n}} connected systems, {{n}} Web APIs | [05](./05-integraciones-consumidas.md), [06](./06-apis-expuestas.md) |
+| Seguridad | {{layerBreakdown.Seguridad}} | {{n}} grupos | [04](./04-seguridad-grupos.md) |
 
-Principales: {{MOD-xxx, MOD-yyy (título corto)}}. Detalle en `13-modernizacion-refactor.md`; requisitos para reconstruir en `12-especificacion-reconstruccion.md`.
+{{totals.withDefinition}} de {{totals.objects}} objetos con definición ([INVENTARIO](./INVENTARIO.md)) · {{totals.hubs}} objetos muy reutilizados y {{totals.orphans}} sin referencias ([02](./02-arquitectura.md)).
+
+## Procesos críticos
+
+Criterio único para toda la documentación: cuántos objetos lo lanzan, a cuántas integraciones llama, si es programado y si tiene tareas humanas.
+
+| Proceso | Por qué es crítico | Programado | Ejecuciones |
+|---|---|---|---|
+| [`{{name}}`](./08-procesos-bpmn/{{slug}}.md) | {{reasons, unidas por «, »}} | Sí/No | {{executions o «—»}} |
+
+{{Si hay más de 5: «Hay N procesos críticos; el resto, en el [índice de procesos](./08-procesos-bpmn/indice.md).»}}
+
+## Hallazgos principales
+
+{{N}} hallazgos: Alta {{n}} · Media {{n}} · Baja {{n}}; verificados {{n}}, inferidos {{n}}, pendientes de validar {{n}}. Registro completo en [09](./09-valor-adicional.md#registro-de-hallazgos).
+
+| ID | Hallazgo | Área | Certeza | Tratamiento |
+|---|---|---|---|---|
+| [{{H-SEG-01}}](./{{documento}}) | {{titulo}} | {{area}} | ✅ | {{MOD-003 o «—»}} |
+
+## Secretos
+
+La extracción enmascaró valores con aspecto de secreto en {{secrets.count}} objetos: `{{objeto 1}}`, `{{objeto 2}}`. Ningún valor aparece en esta documentación. Tratamiento: [{{H-SEG-02}}](./04-seguridad-grupos.md#hallazgos).
+
+## Modernización
+
+**Veredicto:** {{modernization.verdict}}. **Estrategia:** {{modernization.strategy}}.
+
+Diagnóstico y plan en [13](./13-modernizacion-refactor.md), requisitos para reconstruirla en [12](./12-especificacion-reconstruccion.md) y diseño objetivo en [14](./14-diseno-objetivo.md).
 
 ## Uso real
 
-{{Si hubo historial de ejecución: procesos más usados, procesos sin ejecuciones. Si no: "Sin historial de ejecución disponible".}}
+{{Si meta.environment.isProduction no es true: «El entorno {{no es de producción / no consta como producción}}: las ejecuciones son orientativas y no sirven para decidir qué se usa.»}}
+{{Ejecuciones de los procesos críticos (tabla de arriba) y N process models sin ejecuciones: `a`, `b`. O «La extracción no trae historial de ejecuciones.»}}
 
-## Riesgos principales (top 5)
+## Cobertura y límites
 
-1. 🔴 {{riesgo_1}} — {{evidencia + impacto + recomendación}}
-2. 🔴 {{riesgo_2}} — {{...}}
-3. 🟡 {{riesgo_3}} — {{...}}
+{{1-3 líneas: lo que falta y cambia las conclusiones (p. ej. «sin volúmenes de datos», «sin role maps»). La lista completa está en [LEEME](./LEEME.md).}}
 
-Detalle: ver `09-valor-adicional.md` → sección Riesgos / code smells.
-
-## Objetos huérfanos
-
-{{N objetos declarados pero no referenciados.}} Top 5:
-
-- `{{obj_1}}` ({{tipo}}) — `mcp:{{tipo}}/{{nombre}}`
-- `{{obj_2}}` ({{tipo}}) — `mcp:{{tipo}}/{{nombre}}`
-
-Detalle: ver `09-valor-adicional.md` → sección Objetos huérfanos.
-
-## Pendientes de validación principales
-
-- 🟡 {{pendiente_1}} — Responsable sugerido: {{rol}}
-- 🟡 {{pendiente_2}} — Responsable sugerido: {{rol}}
-
-## Nivel de confianza global
-
-**{{Alto | Medio | Bajo}}** — {{justificación}}
-
-## Cómo seguir
-
-1. Abrir [01-funcional.md](./01-funcional.md) para entender qué hace la app.
-2. Abrir [02-arquitectura.md](./02-arquitectura.md) para ver objetos y relaciones.
-3. Revisar [08-procesos-bpmn/indice.md](./08-procesos-bpmn/indice.md) para los procesos clave.
-4. Para mantenimiento, mirar [09-valor-adicional.md](./09-valor-adicional.md) sección Riesgos / Huérfanos.
+Guía de lectura por perfil: [LEEME.md](./LEEME.md).

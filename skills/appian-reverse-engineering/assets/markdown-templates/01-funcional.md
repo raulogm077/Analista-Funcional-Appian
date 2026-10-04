@@ -1,101 +1,94 @@
 <!--
-  Plantilla 01 — Explicación funcional
-  Lenguaje de negocio, SIN jerga Appian.
-  Tres niveles obligatorios: Pitch · Overview · Detalle por flujo.
-  Reemplaza todos los {{placeholders}} con datos reales.
+  Plantilla 01 — Explicación funcional (agente interface-analyzer). Borra estos comentarios en el documento final.
+  Lenguaje de negocio: sin jerga Appian salvo en las filas «Implementado en» y en las líneas «Evidencia».
+  Comportamiento que es defecto de otra área (procesos, pantallas, datos, seguridad): se describe en lenguaje de
+  negocio, sin severidad, con enlace al documento propietario. Aquí solo hay hallazgos H-FUN.
+  Diagrama: si existe el .svg, imagen + «Fuente»; si no, el bloque mermaid idéntico al .mmd (flowchart TD, ≤ 10 nodos).
+  Secciones sin contenido: se omiten. Fichas: todas con los mismos campos; un campo que no aplica a ningún caso
+  de uso se quita de todas (y, si es un dato que falta, se dice en «Cobertura y límites»).
 -->
 
 # Explicación funcional
 
-> Este documento describe **qué hace** la aplicación desde el punto de vista del negocio. No menciona objetos Appian salvo en bloques explícitos de "Implementado en".
+> **TL;DR**: {{2-3 frases: qué problema de negocio resuelve la aplicación, para quién y cuál es su caso de uso central}}.
+> **Volumen**: {{N}} casos de uso, {{N}} actores, {{N}} puntos de entrada ({{n}} páginas, {{n}} acciones, {{n}} automáticos). **Hallazgos**: {{N (Alta: n)}} — principales: [H-FUN-01](#hallazgos) (o «sin hallazgos»).
 
-## 1. Pitch
+## Vista
 
-{{Un párrafo. Qué problema resuelve la app, para quién, y qué valor aporta. Tono ejecutivo.}}
+{{Una frase: qué muestra el diagrama, p. ej. «Quién inicia cada caso de uso y qué obtiene».}}
 
-## 2. Overview (≈1 página)
+![{{qué muestra}}](diagrams/flujo-general.svg)
 
-### Procesos funcionales principales
+Fuente: [flujo-general.mmd](diagrams/flujo-general.mmd)
 
-{{Listado de 3–7 procesos de negocio principales que la app soporta. Para cada uno, una frase que explique qué hace y para quién.}}
+<!-- Sin SVG:
+```mermaid
+flowchart TD
+  N1["Gestor"]
+  N2["Registrar solicitud"]
+  N3["Solicitud registrada y en revisión"]
+  N1 --> N2
+  N2 --> N3
+```
+-->
 
-1. **{{proceso_1}}** — {{descripción de negocio}}.
-2. **{{proceso_2}}** — {{...}}.
-3. **{{proceso_3}}** — {{...}}.
+### Casos de uso
+
+| Caso de uso | Quién lo inicia | Cómo empieza | Uso real | Certeza |
+|---|---|---|---|---|
+| [{{Registrar solicitud}}](#{{ancla}}) | {{Gestor}} | {{Botón «Nueva solicitud» del listado}} | {{N ejecuciones, última dd/mm/aaaa}} | ✅ |
+| [{{Revisión diaria}}](#{{ancla}}) | Sistema | {{Automático, cada día a las 06:00}} | {{N ejecuciones}} | 🔵 |
 
 ### Actores
 
-| Actor | Descripción del rol | Acciones principales en la app |
-|---|---|---|
-| {{actor_1}} | {{descripción}} | {{qué puede hacer}} |
-| {{actor_2}} | {{descripción}} | {{qué puede hacer}} |
+| Actor | Grupos | Qué hace en la aplicación | Certeza |
+|---|---|---|---|
+| {{Gestor}} | `{{grupo}}` ([04](./04-seguridad-grupos.md)) | {{Registra solicitudes y consulta su estado}} | ✅ |
+| Sistema | — | {{Revisa a diario las solicitudes pendientes}} | ✅ |
 
-> Cómo se infieren los actores: nombres de grupos (`{{grupo_1}}`, `{{grupo_2}}`), asignaciones de tareas en process models, descripciones de roles.
+{{Una línea: de dónde salen los actores (role map, asignación de tareas, visibilidad de páginas, expresiones de seguridad).}}
 
-### Flujo general (vista de alto nivel)
+## Detalle
 
-```mermaid
-flowchart LR
-  N1["(Actor) {{actor_1}}"]
-  N2["{{proceso_1}}"]
-  N3["{{proceso_2}}"]
-  N4["{{salida_o_resultado}}"]
-  N1 --> N2
-  N2 --> N3
-  N3 --> N4
-```
+<!-- Índice si hay más de 5 casos de uso: - [Registrar solicitud](#registrar-solicitud) · … -->
 
-> Diagrama saneado según `references/mermaid-rules.md`.
+### {{Registrar solicitud}}
 
-## 3. Detalle por flujo funcional
+{{1 línea: qué consigue el negocio con este caso de uso.}}
 
-> Una subsección por caso de uso. Deriva del recorrido del grafo desde puntos de entrada (sites, related actions, web APIs públicas) hacia los process models que lanzan.
+| Campo | Valor |
+|---|---|
+| Quién lo inicia | {{Gestor}} |
+| Cómo lo inicia | {{Página «Solicitudes» del portal de gestión → botón «Nueva solicitud»}} |
+| Qué consigue | {{La solicitud queda registrada y pasa a revisión}} |
+| Resultados y avisos | {{Correo al solicitante · tarea de revisión para el revisor}} |
+| Uso real | {{N ejecuciones, última dd/mm/aaaa}} |
+| Implementado en | {{Site `X` → página `Y` · acción `Z` de `Record` · proceso `PM` · interfaz `IF`}} |
 
-### 3.1 {{caso_de_uso_1}}
+**Paso a paso**
 
-**Quién lo inicia:** {{actor}}
-**Cómo lo inicia:** {{site/page · related action · web API · timer}}
-**Qué consigue:** {{resultado de negocio}}
+1. {{El gestor rellena el formulario con el título y el importe.}}
+2. {{Si el importe supera 1.000 €, la solicitud va a aprobación del director; si no, se registra directamente.}}
+3. {{El sistema guarda la solicitud y avisa al solicitante.}}
 
-**Paso a paso:**
+**A tener en cuenta**
 
-1. {{paso 1 en lenguaje funcional, p. ej. "El gestor accede al listado de expedientes desde el site Gestión."}}
-2. {{paso 2}}
-3. {{paso 3}}
-4. {{paso final}}
+- {{Comportamiento actual relevante, en lenguaje de negocio, p. ej. «Cancelar en el formulario no anula el alta: la solicitud se registra igualmente» ([proceso](./08-procesos-bpmn/{{slug}}.md)).}}
 
-**Reglas de negocio aplicadas:**
+Evidencia: `mcp:{{tipo}}/{{nombre}}#{{ubicación}}` · Certeza: ✅/🔵/❓
 
-- {{regla_1}} — {{evidencia: mcp:<tipo>/<nombre>#<ubicación>}}
-- {{regla_2}}
+### {{Siguiente caso de uso}}
 
-**Notificaciones / outputs:**
+{{Misma ficha, con los mismos campos y en el mismo orden.}}
 
-- {{email · tarea generada · notificación · documento}}
+## Hallazgos
 
-**Implementado en (referencia técnica):**
+| ID | Hallazgo | Severidad | Certeza | Evidencia |
+|---|---|---|---|---|
+| H-FUN-01 | {{Las solicitudes no se pueden anular aunque existe el estado «Anulada»}} | Media | 🔵 | `mcp:{{tipo}}/{{nombre}}#{{ubicación}}` |
 
-- Site: `{{site_name}}` → Página `{{page_name}}`
-- Process Model: `{{pm_name}}`
-- Related action: `{{action_name}}` sobre `{{record_type}}`
-- Expression Rules clave: `{{rule_1}}`, `{{rule_2}}`
+{{Para cada hallazgo ❓: la pregunta que lo resuelve y a quién hacerla.}}
 
-**Excepciones / variantes:**
+## Cobertura y límites
 
-- {{excepción_1}} — {{cuándo aplica}}
-
-> Estado: ✅/🔵/🟡 — Evidencia: `mcp:{{tipo}}/{{nombre}}#{{ubicacion}}`
-
-### 3.2 {{caso_de_uso_2}}
-
-{{Repite la estructura para cada caso de uso identificado.}}
-
-### 3.N Casos de uso secundarios
-
-{{Lista breve de casos de uso menos críticos, una frase cada uno.}}
-
-## 4. Casos no cubiertos por la extracción (pendientes de validación)
-
-{{Si detectas en grupos / records / interfaces nombres que sugieren funcionalidades para las que no encuentras los objetos: listarlos como pendientes.}}
-
-- 🟡 {{caso_sospechado}} — Indicio: {{nombre/descripción}}. No se encuentra el proceso/site que lo implemente en la aplicación. Responsable sugerido: funcional Appian.
+- {{Qué no se pudo obtener o verificar y por qué, p. ej. «Sin historial de ejecuciones: el uso real no se puede medir» o «Role map no disponible: actores deducidos de tareas y visibilidad de páginas».}}

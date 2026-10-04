@@ -1,91 +1,55 @@
 <!--
-  Plantilla 07 — Procesos batch / recurrentes
-  Process models con start event temporal o recurrente.
-  Frecuencia humana + cron + próximas N ejecuciones si calculable.
+  Plantilla 07 — Procesos programados (orquestador, paso 4.3).
+  Qué analizar y criterios de los hallazgos: references/analysis-workflow.md, «Guía de 07».
+  Proceso programado = process model con inicio por temporizador (`startType: timer` en el inventario).
+  Sin procesos programados, el documento es solo el título y esta línea:
+    > **TL;DR**: La aplicación no tiene procesos programados: ningún process model se inicia por temporizador.
+  Hallazgos: solo H-BAT, en la tabla de Hallazgos y en <trabajo>/hallazgos/orquestador.json. La severidad
+  solo aparece en esa tabla; en las fichas se cita el ID.
 -->
 
-# Procesos batch / recurrentes
+# Procesos programados
 
-> Process models que se disparan solos por temporizador o recurrencia, sin intervención humana.
+> **TL;DR**: {{N}} process models se lanzan solos por temporizador: {{resumen de frecuencias, p. ej. «uno diario y uno cada hora»}}. {{Lo más importante: qué mantienen al día o el hallazgo principal}}.
+> **Volumen**: {{N}} procesos programados · {{N}} ejecuciones registradas{{, orientativas: el entorno no consta como producción}}. **Hallazgos**: {{N (Alta: n)}} — principales: [H-BAT-01](#hallazgos), … (o «sin hallazgos»).
 
-> Si la aplicación no contiene ningún process model con start event temporal, este documento debe contener exactamente: "No se han detectado procesos recurrentes en la aplicación." y omitir el resto de secciones.
+## Vista
 
-## Resumen
+| Proceso | Frecuencia | Zona horaria | Próxima ejecución | Ejecuciones | Última | Certeza |
+|---|---|---|---|---|---|---|
+| [`{{nombre}}`](#{{ancla-de-la-ficha}}) | {{Cada lunes a las 08:00}} | {{Europe/Madrid}} | {{2026-10-06 08:00}} | {{N o «—»}} | {{AAAA-MM-DD o «—»}} | ✅ |
 
-| Process Model | Frecuencia humana | Cron equivalente | Ejecuciones reales | Última ejecución |
-|---|---|---|---|---|
-| `{{pm_batch_1}}` | {{Cada lunes a las 08:00}} | `0 8 * * 1` | {{N o «sin historial»}} | {{ISO_date}} |
-| `{{pm_batch_2}}` | {{Cada hora en horario laboral}} | `0 9-18 * * 1-5` | {{}} | {{}} |
+## Detalle
 
-## Detalle por batch
+La zona horaria de una recurrencia es la que fija el temporizador; por defecto, la del process model (`pp!timezone`). Fuente: https://docs.appian.com/suite/help/26.6/Intermediate_Event_-_Timer.html#configuring-the-time-zone-used
 
-### `{{pm_NombreTecnico_1}}` — {{nombre_visible}}
+Un proceso que arranca un temporizador se ejecuta con la cuenta del usuario que desplegó el process model. Fuente: https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors
+
+### {{nombre técnico}} — {{nombre visible}}
+
+{{1 línea: qué hace y para qué}}. Proceso completo: [08-procesos-bpmn/{{slug}}.md](./08-procesos-bpmn/{{slug}}.md).
 
 | Campo | Valor |
 |---|---|
-| Propósito funcional | {{para qué se ejecuta este batch}} |
-| Trigger | Timer Start Event |
-| Frecuencia (lenguaje humano) | {{traducción de la configuración del temporizador (`schedule` en el inventario) a algo legible}} |
-| Cron equivalente | `{{cron}}` o "No traducible directamente a cron — `{{razón}}`" |
-| Próximas 3 ejecuciones | {{Si se puede calcular: lista. Si no: "No determinable con los datos extraídos."}} |
-| Uso real | {{ejecuciones, última ejecución y fallos (`usage`), o «sin historial disponible»}} |
-| Owner / responsable | {{grupo o "no determinado"}} |
-| Estado | ✅/🔵 — Evidencia: `mcp:processModel/{{nombre}}#nodes[0]` |
+| Frecuencia | {{configuración del temporizador en lenguaje natural}} |
+| Zona horaria | {{la del temporizador, la del process model si usa `pp!timezone`, o ❓ si no consta}} |
+| Cron equivalente | `{{0 8 * * 1}}` o «no traducible: {{motivo}}» |
+| Próximas 3 ejecuciones | {{fecha hora; fecha hora; fecha hora}} (desde la extracción, {{AAAA-MM-DD}}, en {{zona}}) |
+| Cuenta de ejecución | {{la de quien desplegó el modelo: «cuenta de servicio del grupo X», o ❓ si no consta}} |
+| Uso real | {{N ejecuciones, última AAAA-MM-DD; «3 fallos en las últimas 50 ejecuciones»}} |
+| Qué toca | {{records que lee o escribe, integraciones y subprocesos, con enlace a su ficha}} |
+| Volumen por ejecución | {{consulta de origen y tamaño de lote (`batchSize`), o ❓ si la definición no lo muestra}} |
+| Manejo de errores | {{lo que muestre la definición, o ❓ «no lo devuelve la extracción»}} |
+| Hallazgos | {{H-BAT-01, … (omite la fila si no tiene)}} |
 
-**Qué hace (paso a paso funcional)**
-
-1. {{paso 1}}
-2. {{paso 2}}
-3. {{paso 3}}
-
-**Procesos hijos que dispara**
-
-| Subproceso | Asíncrono / síncrono | Notas |
-|---|---|---|
-| `{{PM_hijo_1}}` | sync | {{notas}} |
-| `{{PM_hijo_2}}` | async | {{notas}} |
-
-**Data stores / integraciones que toca**
-
-| Objeto | Operación |
-|---|---|
-| `{{record/datastore}}` | lectura / escritura |
-| `{{integration}}` | llamada saliente |
-
-**Volumetría esperada (inferida)**
-
-{{Si el process model tiene `a!queryEntity` con `pagingInfo`, indicar el tamaño de batch.
-Si no hay paginación visible, marcar como 🟡 riesgo y derivar a `09-valor-adicional.md`.}}
-
-| Indicador | Valor | Fuente |
-|---|---|---|
-| Batch size | `{{N}}` | `mcp:processModel/{{nombre}}#nodes[{{i}}]` |
-| Paginación | Sí / No | `mcp:...` |
-| Filtro de fecha | Sí ({{campo}}) / No | `mcp:...` |
-
-**Manejo de errores**
-
-- {{exception flow detectado / alert / retry}} — {{evidencia}}
-- {{Si no hay manejo, marcar como 🔴 y mover a `09-valor-adicional.md`.}}
-
-> Estado: ✅/🔵/🟡 — Evidencia: `mcp:processModel/{{nombre}}`
-
----
-
-### `{{pm_NombreTecnico_2}}`
-
-{{Repetir.}}
+Evidencia: `mcp:processModel/{{nombre}}#nodes[id={{N}}]` · Certeza: ✅/🔵/❓
 
 ## Hallazgos
 
-- 🔴 **Batches que llaman a `a!queryEntity` sin paginación**: {{lista}}.
-- 🔴 **Batches sin manejo de errores explícito**: {{lista}}.
-- 🟡 **Batches con frecuencia muy alta** (intra-horaria) que podrían saturar BBDD o sistemas externos: {{lista}}.
-- 🟡 **Batches cuya frecuencia no es traducible a cron** (p. ej. recurrencias con condiciones de calendario laboral): {{lista}}.
-- 🟡 **Batches que usan `fn!loggedInUser()` o variables de contexto humano**: 🔴 anti-patrón. {{lista}}.
+| ID | Hallazgo | Severidad | Certeza | Evidencia |
+|---|---|---|---|---|
+| H-BAT-01 | {{Lee todos los registros en cada ejecución, sin tamaño de lote}} | {{Alta/Media/Baja}} | ✅ | `mcp:processModel/{{nombre}}#nodes[id={{N}}].data` |
 
-## Resumen rápido
+## Cobertura y límites
 
-- Total batches detectados: {{N}}
-- Frecuencia diaria: {{N}} · semanal: {{N}} · mensual: {{N}} · ad-hoc: {{N}}
-- Riesgos top: {{breve}}
+{{1-5 líneas: p. ej. «La extracción no devuelve las pestañas de excepciones y alertas de los nodos», «sin historial de ejecuciones», «el entorno no consta como producción».}}

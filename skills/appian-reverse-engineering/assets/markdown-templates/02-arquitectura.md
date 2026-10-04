@@ -1,120 +1,114 @@
 <!--
-  Plantilla 02 — Arquitectura de la aplicación
-  NO documentar la arquitectura genérica de Appian. SOLO los objetos REALES de esta app y sus relaciones.
-  Reemplaza todos los {{placeholders}}.
+  Plantilla 02 — Arquitectura de la aplicación (agente interface-analyzer). Borra estos comentarios en el documento final.
+  Solo los objetos reales de esta aplicación y sus relaciones; nada de la arquitectura genérica de Appian.
+  Capas (las mismas en el diagrama y en las tablas):
+    Entrada y presentación: sites, páginas, interfaces, vistas y acciones de record, Web APIs (entradas desde otros sistemas).
+    Lógica: process models, expression rules, decisiones.
+    Datos: record types, CDTs, data stores.
+    Integración: sistemas conectados e integraciones (llamadas salientes).
+    Transversal: constantes y utilidades que usan varias capas (solo en tablas).
+  Diagrama: si existe el .svg, imagen + «Fuente»; si no, el bloque mermaid idéntico al .mmd. Si se partió por capas,
+  una imagen por fichero arquitectura-<capa>.svg.
+  Secciones sin contenido: se omiten.
 -->
 
 # Arquitectura de la aplicación
 
-> **TL;DR**: {{2-3 frases: cómo está montada la app. P. ej. "Un site con 3 páginas lleva a interfaces que leen el record RT_Solicitud; el proceso DEM Alta Solicitud orquesta el alta, llama al ERP y lanza la revisión como subproceso."}}
->
-> **Volumen**: {{N objetos: N interfaces, N process models, N expression rules, N record types, N integraciones…}}. {{Datos: N filas en RT_X y N en RT_Y (recuento del data fabric) — o "recuentos no disponibles (Appian MCP Server no configurado)"}}. {{Uso: N ejecuciones del proceso principal (historial) — o "historial no disponible"}}.
+> **TL;DR**: {{2-3 frases: cómo está montada la aplicación, p. ej. «Un site con 3 páginas lleva a interfaces que leen el record DEM Solicitud; el proceso DEM Alta Solicitud orquesta el alta, llama al ERP y lanza la revisión como subproceso.»}}
+> **Volumen**: {{N}} objetos: {{n}} interfaces, {{n}} process models, {{n}} expression rules, {{n}} record types, {{n}} integraciones… **Hallazgos**: {{N (Alta: n)}} — principales: [H-ARQ-01](#hallazgos) (o «sin hallazgos»).
 
-Esta sección describe la arquitectura **de esta aplicación concreta**, no la arquitectura genérica de Appian. Cada nodo es un objeto real de la aplicación.
+## Vista
 
-## Diagrama general
+{{Una frase: qué muestra el diagrama, p. ej. «Objetos clave por capa y quién llama a quién».}}
 
-> Render del SVG en `diagrams/arquitectura.svg`. Si no se renderizó, se conserva el bloque Mermaid embebido aquí.
+![{{qué muestra}}](diagrams/arquitectura.svg)
 
+Fuente: [arquitectura.mmd](diagrams/arquitectura.mmd)
+
+<!-- Sin SVG (flowchart TD, un subgraph por capa, ≤ 30 nodos; un nodo puede agrupar objetos del mismo papel):
 ```mermaid
-flowchart LR
-  subgraph CP["Presentación"]
-    N1["(Site) {{site_principal}}"]
-    N2["(Page) {{page_dashboard}}"]
-    N3["(Interface) {{interface_principal}}"]
+flowchart TD
+  subgraph CP["Entrada y presentación"]
+    N1["(Site) DEM Gestión"]
+    N2["(Interfaces) listado y detalle, 3"]
+    N3["(Web API) DEM_api_alta"]
   end
   subgraph CL["Lógica"]
-    N4["(Process Model) {{pm_central}}"]
-    N5["(Expression Rule) {{rule_clave}}"]
+    N4["(Proceso) DEM Alta Solicitud"]
   end
   subgraph CD["Datos"]
-    N6["(Record) {{record_principal}}"]
-    N7["(CDT) {{cdt_principal}}"]
-    N8["(Data Store) {{datastore}}"]
+    N5["(Record) DEM Solicitud"]
   end
   subgraph CI["Integración"]
-    N9["(Integration) {{integration_clave}}"]
-    N10["(Connected System) {{cs}}"]
+    N6["(Integración) DEM_INT_ERP"]
   end
-
   N1 --> N2
-  N2 --> N3
+  N2 --> N4
   N3 --> N4
-  N3 --> N6
   N4 --> N5
-  N4 --> N8
-  N4 --> N9
-  N6 --> N7
-  N7 --> N8
-  N9 --> N10
+  N4 --> N6
 ```
+-->
 
-> Diagrama saneado según `references/mermaid-rules.md`. Si la densidad supera los 30 nodos, está partido en sub-diagramas por capa abajo.
+| Capa | Objetos | Núcleo |
+|---|---|---|
+| Entrada y presentación | {{n: 1 site, 6 interfaces, 1 Web API}} | `{{site}}`, `{{interfaz principal}}` |
+| Lógica | {{n: 3 process models, 5 expression rules}} | `{{proceso central}}` |
+| Datos | {{n: 2 record types}} | `{{record central}}` |
+| Integración | {{n: 1 sistema conectado, 2 integraciones}} | `{{integración}}` |
+| Transversal | {{n: 8 constantes}} | `{{constante o regla más usada}}` |
 
-## Capa de Presentación
+## Detalle
 
-Objetos cara al usuario: sites, pages, interfaces, record views.
+Los objetos más relevantes de cada capa; la lista completa está en [INVENTARIO.md](./INVENTARIO.md). «Ref. entrantes» son las referencias que recibe el objeto en el grafo de dependencias, que suma las del análisis de dependencias de Appian y las encontradas en las definiciones; por eso puede superar el número de dependientes que muestra Appian.
 
-| Objeto | Tipo | Descripción funcional | Apunta a |
-|---|---|---|---|
-| `{{site_1}}` | Site | {{para qué es este site}} | `{{record/interface_destino}}` |
-| `{{page_1}}` | Page | {{qué muestra}} | `{{contenido}}` |
-| `{{interface_1}}` | Interface | {{qué pantalla representa}} | usa `{{rule}}`, lee `{{record}}` |
-| `{{recordView_1}}` | Record View | {{qué vista de record}} | `{{record}}` |
+### Entrada y presentación
 
-## Capa de Lógica
+| Objeto | Tipo | Qué hace | Usa | Ref. entrantes | Ficha |
+|---|---|---|---|---|---|
+| `{{site}}` | Site | {{Portal de los gestores: listado y alta de solicitudes}} | `{{interfaz}}`, `{{record}}` | {{n}} | [anexo](anexo/site/{{slug}}.md) |
+| `{{interfaz}}` | Interfaz | {{Formulario de alta}} | `{{regla}}`, `{{record}}` | {{n}} | [10](./10-pantallas.md) |
+| `{{webApi}}` | Web API | {{Alta de solicitudes desde el ERP}} | `{{proceso}}` | {{n}} | [06](./06-apis-expuestas.md) |
 
-Process models, expression rules, decisions.
+### Lógica
 
-| Objeto | Tipo | Descripción funcional | Llama a |
-|---|---|---|---|
-| `{{pm_1}}` | Process Model | {{qué hace}} | `{{subprocs/rules/integraciones}}` |
-| `{{rule_1}}` | Expression Rule | {{qué calcula/devuelve}} | `{{otras rules / records}}` |
-| `{{decision_1}}` | Decision | {{qué decide}} | — |
+| Objeto | Tipo | Qué hace | Usa | Ref. entrantes | Ficha |
+|---|---|---|---|---|---|
+| `{{proceso}}` | Process model | {{Registra la solicitud y la envía a revisión}} | `{{subproceso}}`, `{{integración}}` | {{n}} | [08](./08-procesos-bpmn/{{slug}}.md) |
+| `{{regla}}` | Expression rule | {{Devuelve las solicitudes pendientes}} | `{{record}}` | {{n}} | [anexo](anexo/expressionRule/{{slug}}.md) |
 
-## Capa de Datos
+### Datos
 
-Record Types, CDTs, Data Stores, tablas.
+| Objeto | Tipo | Qué hace | Usa | Ref. entrantes | Ficha |
+|---|---|---|---|---|---|
+| `{{record}}` | Record type | {{Solicitudes; tabla `dem_solicitud`}} | `{{record relacionado}}` | {{n}} | [03](./03-modelo-datos.md) |
 
-| Objeto | Tipo | Fuente | Detalle |
-|---|---|---|---|
-| `{{record_1}}` | Record Type | DB / Service / Process / Expression | CDT `{{cdt}}`, tabla `{{tabla}}` |
-| `{{cdt_1}}` | CDT | — | mapeado a tabla `{{tabla}}` (si la definición está disponible) |
-| `{{ds_1}}` | Data Store | JNDI `{{jndi}}` | entidades: `{{lista}}` |
+### Integración
 
-Detalle completo en [03-modelo-datos.md](./03-modelo-datos.md).
+| Objeto | Tipo | Qué hace | Usa | Ref. entrantes | Ficha |
+|---|---|---|---|---|---|
+| `{{integración}}` | Integración | {{Crea el expediente en el ERP}} | `{{sistema conectado}}` | {{n}} | [05](./05-integraciones-consumidas.md) |
 
-## Capa de Integración
+### Transversal
 
-Connected Systems, Integrations, Web APIs.
+| Objeto | Tipo | Qué hace | Usa | Ref. entrantes | Ficha |
+|---|---|---|---|---|---|
+| `{{constante}}` | Constante | {{Grupo de gestores, usado en la visibilidad de páginas}} | — | {{n}} | [anexo](anexo/constant/{{slug}}.md) |
 
-| Objeto | Tipo | Sistema externo | Sentido |
-|---|---|---|---|
-| `{{cs_1}}` | Connected System | {{SAP/Salesforce/…}} | saliente |
-| `{{int_1}}` | Integration | usa `{{cs_1}}` | saliente |
-| `{{webapi_1}}` | Web API | — | entrante |
+### Notas para el mantenimiento
 
-Detalle completo en [05-integraciones-consumidas.md](./05-integraciones-consumidas.md) y [06-apis-expuestas.md](./06-apis-expuestas.md).
+- {{Lo que hay que saber para no romper nada, con evidencia, p. ej. «Toda escritura en DEM Solicitud pasa por el proceso DEM Persistir; no hay escrituras desde interfaces» (`mcp:…`).}}
+- {{Buena práctica observada, dicha con palabras, p. ej. «Las llamadas al ERP están encapsuladas en una sola integración».}}
 
-## Acoplamientos / patrones detectados
+## Hallazgos
 
-- {{Patrón_1, p. ej. "Process model X delega en Y vía sub-process, y Y vuelve a X vía start-process. Acoplamiento bidireccional 🟡."}}
-- {{Patrón_2, p. ej. "Todos los procesos de la app pasan por el record `RT_Auditoria` para escribir histórico."}}
-- {{Patrón_3, p. ej. "Integraciones encapsuladas en expression rules `INT_*`. Buen patrón ✅."}}
+| ID | Hallazgo | Severidad | Certeza | Evidencia |
+|---|---|---|---|---|
+| H-ARQ-01 | {{`DEM_getSolicitudes` (320 líneas) recibe 12 referencias: un cambio afecta a todas las pantallas}} | Media | ✅ | `graph:hubs` |
+| H-ARQ-02 | {{`DEM_Old_Form` sin referencias entrantes: posible objeto sin uso}} | Baja | 🔵 | `graph:orphans` |
 
-## Objetos transversales (cross-cutting)
+{{Para cada hallazgo ❓ o 🔵: de qué se deduce y qué lo confirmaría.}}
 
-{{Constantes, expression rules o records que son usados por muchos objetos y conviene conocer al entrar al proyecto.}}
+## Cobertura y límites
 
-| Objeto | Tipo | Veces referenciado | Propósito |
-|---|---|---|---|
-| `{{shared_1}}` | Constant | {{n}} | {{para qué se usa}} |
-| `{{shared_2}}` | Expression Rule | {{n}} | {{para qué se usa}} |
-
-## Notas de arquitectura
-
-- {{Nota 1: cosas que conviene saber para no romper algo. P. ej. "Toda escritura a `RT_Expediente` pasa por el process model `PM_Expediente_Persistir`, no escribir directo."}}
-- {{Nota 2}}
-- {{Nota 3}}
-
-> Estado: ✅/🔵 — Evidencia: grafo de dependencias en `<trabajo>/graph.json`.
+- {{Qué no se pudo obtener o verificar, p. ej. «Pocas referencias del análisis de dependencias de Appian: las relaciones salen sobre todo de las definiciones (🔵)».}}

@@ -1,122 +1,135 @@
 <!--
-  Plantilla INVENTARIO — Inventario completo por tipo de objeto
-  Debe cubrir el 100% de los objetos de la aplicación (inventory.json).
-  Lo genera el orquestador en la fase 6 a partir de <trabajo>/inventory.json y extraction_report.json.
-  Una sección por tipo presente en counts, incluidos tipos que la skill no conozca (se listan igual).
+  Plantilla INVENTARIO — Todos los objetos de la aplicación (orquestador, fase 6).
+  Fuentes: <trabajo>/inventory.json (objetos y campos derivados), graph.json («Llamado por»: aristas entrantes),
+  extraction_report.json y preflight.json (cobertura). Cubre el 100 % de inventory.json.
+  Una sección por tipo presente en `counts` (también los que esta plantilla no prevé, en «Otros tipos»);
+  omite las secciones de tipos sin objetos. Sin límite de filas; ≤ 8 columnas y celdas ≤ 100 caracteres.
+  - uuid: tal cual, entre comillas invertidas (INVENTARIO y anexo/ son los únicos sitios con uuids).
+  - Ficha: [anexo](./anexo/<tipo>/<slug>.md) si el objeto tiene definición (`detail: "full"`); si no, «—».
+  - Descripción: la `description` de Appian, literal y recortada a 100 caracteres. Si la extracción no la trae,
+    «—». Nunca un resumen tuyo en esta columna.
+  - Sin usuarios: los grupos dan recuentos (`userCount`), nunca nombres.
 -->
 
 # Inventario de la aplicación
 
-**Aplicación:** {{nombre_visible}} (prefijo `{{prefijo}}`, uuid `{{uuid_app}}`)
-**Fuente:** Appian Dev MCP · entorno `{{url_entorno}}` · extraído el {{fecha_extraccion}} (solo lectura)
-**Fecha de análisis:** {{fecha_iso}}
+> **TL;DR**: {{N}} objetos de {{N}} tipos; {{N}} ({{%}}) con definición. Cada objeto con definición enlaza su ficha del anexo, con la definición original.
+> **Volumen**: {{n}} process models · {{n}} interfaces · {{n}} reglas · {{n}} record types · {{n}} otros. {{N}} objetos sin definición (ver [Cobertura](#cobertura-de-la-extracción)).
+
+**Aplicación:** {{nombre visible}} (prefijo `{{prefijo}}`, uuid `{{uuid de la aplicación}}`)
+**Fuente:** entorno `{{url}}`, extraído el {{AAAA-MM-DD}} en solo lectura
+
+Cómo leer las tablas:
+
+- **Ficha**: la definición original del objeto en el [anexo](./anexo/indice.md). «—»: la extracción no trajo su definición.
+- **Descripción**: la que tiene el objeto en Appian. «—»: la extracción no trae descripción (puede no tenerla o el Dev MCP no devolverla para ese tipo).
+- **Llamado por**: objetos que lo referencian según el grafo de la aplicación. Puede ser mayor que lo que muestra la herramienta de dependientes de Appian, porque también cuenta las referencias encontradas en las definiciones.
 
 ## Conteo por tipo
 
-> Una fila por clave de `counts` en `inventory.json`, con el nombre legible del tipo.
-
-| Tipo de objeto | Cantidad | Con definición | Sin definición (🟡) |
+| Tipo | Objetos | Con definición | Sin definición |
 |---|---|---|---|
-| {{Record Types}} | {{N}} | {{N}} | {{N}} |
+| {{Record types}} | {{N}} | {{N}} | {{N}} |
 | {{Interfaces}} | {{N}} | {{N}} | {{N}} |
-| {{...}} | | | |
-| **Total** | **{{TOTAL}}** | | |
+| **Total** | **{{N}}** | **{{N}}** | **{{N}}** |
 
-## Records / Record Types
+## Record types
 
-| Nombre | Origen de datos | Tabla | Campos | Filas (data fabric) | Descripción | Última modificación |
-|---|---|---|---|---|---|---|
-| `{{rt_1}}` | {{sourceType}} | `{{tableName}}` | {{fieldCount}} | {{count o —}} | {{desc}} | {{lastModifiedOn}} |
+| Nombre | uuid | Origen | Tabla | Campos | Filas | Descripción | Ficha |
+|---|---|---|---|---|---|---|---|
+| `{{nombre}}` | `{{uuid}}` | {{sourceType}} | `{{tableName}}` | {{fieldCount}} | {{count de data fabric o «—»}} | {{descripción o «—»}} | [anexo](./anexo/recordType/{{slug}}.md) |
 
 ## CDTs
 
-| Nombre | Definición | Usado por |
-|---|---|---|
-| `{{cdt_1}}` | ✅ / 🟡 no disponible por Dev MCP | {{objetos que lo referencian}} |
+| Nombre | uuid | Llamado por | Descripción | Ficha |
+|---|---|---|---|---|
+| `{{nombre}}` | `{{uuid}}` | {{N}} | {{descripción o «—»}} | {{[anexo](./anexo/cdt/{{slug}}.md) o «—»}} |
 
-## Process Models
+## Process models
 
-| Nombre | Inicio | Nodos | Tareas humanas | Ejecuciones reales | Última ejecución |
-|---|---|---|---|---|---|
-| `{{pm_1}}` | none/timer/message | {{n}} | {{n}} | {{N o —}} | {{fecha o —}} |
+| Nombre | uuid | Inicio | Nodos | Tareas humanas | Ejecuciones | Descripción | Ficha |
+|---|---|---|---|---|---|---|---|
+| `{{nombre}}` | `{{uuid}}` | {{Manual / Temporizador / Mensaje}} | {{N}} | {{N}} | {{N o «—»}} | {{descripción o «—»}} | [anexo](./anexo/processModel/{{slug}}.md) |
 
 ## Interfaces
 
-| Nombre | Pantalla (`PAN-xxx`) | Tamaño SAIL | Avisos de validación | Descripción |
+| Nombre | uuid | Pantalla | Líneas | Avisos de validación | Descripción | Ficha |
+|---|---|---|---|---|---|---|
+| `{{nombre}}` | `{{uuid}}` | {{PAN-001 o «—»}} | {{sailLines}} | {{N}} | {{descripción o «—»}} | [anexo](./anexo/interface/{{slug}}.md) |
+
+## Expression rules
+
+| Nombre | uuid | Líneas | Llamado por | Descripción | Ficha |
+|---|---|---|---|---|---|
+| `{{nombre}}` | `{{uuid}}` | {{sailLines}} | {{N}} | {{descripción o «—»}} | [anexo](./anexo/expressionRule/{{slug}}.md) |
+
+## Decisiones
+
+| Nombre | uuid | Llamado por | Descripción | Ficha |
 |---|---|---|---|---|
-| `{{if_1}}` | {{PAN-001 o —}} | {{sailBytes}} | {{N}} | {{desc}} |
+| `{{nombre}}` | `{{uuid}}` | {{N}} | {{descripción o «—»}} | {{[anexo](./anexo/decision/{{slug}}.md) o «—»}} |
 
-## Expression Rules
+## Integraciones
 
-| Nombre | Tamaño SAIL | Llamada por | Descripción |
-|---|---|---|---|
-| `{{rule_1}}` | {{sailBytes}} | {{N objetos}} | {{desc}} |
+| Nombre | uuid | Método | Endpoint | Connected system | Modifica datos | Ficha |
+|---|---|---|---|---|---|---|
+| `{{nombre}}` | `{{uuid}}` | {{GET}} | `{{ruta relativa, sin credenciales}}` | `{{connected system}}` | {{Sí / No / «—»}} | [anexo](./anexo/integration/{{slug}}.md) |
 
-## Decisions
+## Connected systems
 
-| Nombre | Definición | Descripción |
-|---|---|---|
-| `{{decision_1}}` | ✅ / 🟡 | {{desc}} |
-
-## Integrations
-
-| Nombre | Método | Endpoint (enmascarado) | Connected System | Modifica datos |
-|---|---|---|---|---|
-| `{{int_1}}` | {{verb}} | `{{endpoint}}` | `{{cs}}` | Sí/No |
-
-## Connected Systems
-
-| Nombre | Tipo | Base URL (enmascarada) | Autenticación |
-|---|---|---|---|
-| `{{cs_1}}` | HTTP/OAuth/… | `{{url}}` | {{auth_type}} |
+| Nombre | uuid | Tipo | URL base | Autenticación | Ficha |
+|---|---|---|---|---|---|
+| `{{nombre}}` | `{{uuid}}` | {{csType}} | `{{URL base, sin credenciales}}` | {{authType o «—»}} | [anexo](./anexo/connectedSystem/{{slug}}.md) |
 
 ## Web APIs
 
-| Nombre | Método | Endpoint | Descripción |
-|---|---|---|---|
-| `{{wa_1}}` | {{verb}} | `/suite/webapi/{{path}}` | {{desc}} |
+| Nombre | uuid | Método | Endpoint | Descripción | Ficha |
+|---|---|---|---|---|---|
+| `{{nombre}}` | `{{uuid}}` | {{POST}} | `/suite/webapi/{{endpointPath}}` | {{descripción o «—»}} | [anexo](./anexo/webApi/{{slug}}.md) |
 
 ## Sites
 
-| Nombre | URL | Páginas |
-|---|---|---|
-| `{{site_1}}` | `/sites/{{urlStub}}` | {{n}} |
-
-## Groups
-
-| Nombre | Tipo | Padre | Grupos miembro | Nº de usuarios |
+| Nombre | uuid | URL | Páginas | Ficha |
 |---|---|---|---|---|
-| `{{grupo_1}}` | {{groupType}} | `{{padre_o_vacio}}` | {{lista}} | {{userCount}} |
+| `{{nombre}}` | `{{uuid}}` | `/sites/{{urlStub}}` | {{pageCount}} | [anexo](./anexo/site/{{slug}}.md) |
 
-## Constants
+## Grupos
 
-| Nombre | Tipo | Valor | Referencia |
-|---|---|---|---|
-| `{{cons_1}}` | TEXT/GROUP/PROCESS_MODEL/… | `{{valor_o_🔒}}` | {{valueRef o —}} |
+| Nombre | uuid | Tipo | Grupo padre | Grupos miembro | Usuarios directos | Ficha |
+|---|---|---|---|---|---|---|
+| `{{nombre}}` | `{{uuid}}` | {{groupType}} | `{{padre}}` o «—» | {{lista o «—»}} | {{userCount}} | [anexo](./anexo/group/{{slug}}.md) |
+
+## Constantes
+
+| Nombre | uuid | Tipo | Valor | Referencia | Ficha |
+|---|---|---|---|---|---|
+| `{{nombre}}` | `{{uuid}}` | {{typeRef}} | `{{valor}}` o «enmascarado» | {{valueRef o «—»}} | [anexo](./anexo/constant/{{slug}}.md) |
 
 ## Otros tipos
 
-> Un apartado por cada tipo restante de `counts` (carpetas, documentos, agentes de IA, tipos nuevos…), con nombre y descripción.
+Una tabla por cada tipo restante de `counts` (carpetas, documentos, agentes de IA, tipos nuevos…):
+
+| Nombre | uuid | Descripción | Ficha |
+|---|---|---|---|
+| `{{nombre}}` | `{{uuid}}` | {{descripción o «—»}} | {{[anexo](./anexo/{{tipo}}/{{slug}}.md) o «—»}} |
 
 ## Cobertura de la extracción
 
 | Métrica | Valor |
 |---|---|
-| Objetos listados por la aplicación | {{N}} |
-| Objetos con definición | {{N}} |
-| Objetos sin definición (tipo sin herramienta o error) | {{N}} |
-| Herramientas del Dev MCP usadas | {{N}} (ver `extraction_report.json`) |
+| Objetos de la aplicación | {{N}} |
+| Con definición | {{N}} ({{%}}) |
+| Herramientas del Dev MCP usadas | {{N}} |
 | Herramientas excluidas por seguridad | {{N}} |
 | Llamadas con error | {{N}} |
-| Herramientas desactivadas por tipo tras fallar | {{lista tipo/herramienta}} |
-| Appian MCP Server (volúmenes) | disponible / no disponible |
-| Docs MCP | disponible / no disponible |
+| Herramientas desactivadas para un tipo tras fallar | {{tipo: herramienta, … o «ninguna»}} |
+| Appian MCP Server (volúmenes) | {{Disponible / No disponible}} |
+| Docs MCP (documentación oficial) | {{Disponible / No disponible}} |
 
 ### Objetos sin definición
 
-{{Lista `nombre (tipo) — motivo`. Si está vacía, escribir "Ninguno".}}
+| Objeto | Tipo | Motivo |
+|---|---|---|
+| `{{nombre}}` | {{tipo}} | {{el Dev MCP no tiene herramienta de definición para este tipo / la llamada falló}} |
 
-## Notas del inventario
-
-- {{Anomalías: tipos desconocidos, errores de extracción relevantes, objetos externos a la aplicación referenciados.}}
-- {{Si todo cuadra, escribir: "Inventario consistente. 100% de los objetos cubiertos."}}
+{{Anomalías, si las hay, en 1-3 líneas: tipos desconocidos, objetos de otras aplicaciones referenciados, errores de extracción relevantes.}}

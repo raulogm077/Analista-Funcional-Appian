@@ -1,141 +1,89 @@
 <!--
-  Plantilla 08 — Process model individual
-  Cada PM se documenta en su propio .md hermano del .bpmn / .svg.
-  Estructura: TL;DR · Diagramas (preview + profesional) · Detalle estructurado · Hallazgos.
-  Claude DEBE generar uno de estos por cada process model identificado en Fase 2.
+  Plantilla de 08-procesos-bpmn/<slug>.md, uno por process model. Este comentario no se copia.
+  Sustituye los {{marcadores}} y omite las filas y secciones que queden vacías.
+  Diagrama: la variante de la vía con la que se dibujó (vía propia: .svg + .mmd; vía draw.io: .png + .drawio).
+  Sin imagen renderizada: el bloque mermaid del .mmd en lugar de la imagen.
 -->
 
-# {{PM_NombreTecnico}} — {{nombre_visible}}
+# {{nombre del process model}}
 
-## 🎯 TL;DR
+> **TL;DR**: {{qué resultado de negocio produce, quién lo inicia y cómo (formulario, acción de record, temporizador, subproceso) y qué deja escrito o a quién avisa}}.
+> **Volumen**: {{N}} nodos ({{n}} tareas de personas, {{n}} automáticas, {{n}} pasarelas) · {{«120 ejecuciones, última el 2026-09-30» o «sin ejecuciones registradas»}}. **Hallazgos**: {{2 (Alta: 1) — principales: [H-PRO-01](#hallazgos)}} o «sin hallazgos».
 
-> Una frase: qué problema de negocio resuelve este proceso. Sin jerga Appian.
+## Vista
 
-{{Ejemplo: "Gestiona el alta y aprobación de expedientes administrativos, con escalado al gestor cuando el importe supera 1000€ y notificación final a SAP para registro contable."}}
+{{Una frase: qué muestra el diagrama (carriles, decisiones principales).}}
 
-## 📋 Datos clave
+![Diagrama del proceso {{nombre}}](./{{slug}}.svg)
+
+Fuente: [{{slug}}.mmd](./{{slug}}.mmd) · BPMN 2.0: [{{slug}}.bpmn](./{{slug}}.bpmn) (se abre en Camunda Modeler o en bpmn.io)
+
+<!-- Vía draw.io, en lugar de las dos líneas anteriores:
+![Diagrama del proceso {{nombre}}](./{{slug}}.png)
+
+Fuente editable: [{{slug}}.drawio](./{{slug}}.drawio) (draw.io) · BPMN 2.0: [{{slug}}.bpmn](./{{slug}}.bpmn) (se abre en Camunda Modeler o en bpmn.io)
+-->
 
 | Atributo | Valor |
 |---|---|
-| Trigger | manual / web API / timer / mensaje |
-| Frecuencia (si timer) | {{cron + lenguaje humano}} |
-| Actores (lanes) | `{{Operator}}`, `{{Approver}}` |
-| Sistemas externos (pools) | {{SAP}}, {{Salesforce}} o "ninguno" |
-| Subprocesos invocados | {{lista de PMs hijos}} |
-| Process models que lo invocan | {{lista de PMs padres}} |
-| Integraciones consumidas | {{lista}} |
-| Data Stores tocados | {{lista de RTs/CDTs}} |
-| User tasks | {{N}} |
-| Service tasks | {{N}} |
-| Gateways | {{N}} |
-| Complejidad estimada | Baja / Media / Alta |
-| Uso real | {{ejecuciones · última ejecución · fallos, o «sin historial disponible»}} |
-| Estado | ✅ Confirmado · Evidencia: `mcp:processModel/{{nombre}}` |
+| Inicio | {{formulario [`interfaz`](../10-pantallas.md#ancla) · acción de record · temporizador · subproceso}} |
+| Frecuencia | {{solo con temporizador: «cada día a las 08:00 (Europe/Madrid)»}} |
+| Quién puede iniciarlo | {{grupos según el role map, o «grupo de seguridad declarado: X; role map no disponible» ❓}} |
+| Carriles | {{grupos asignados}} · Sistema |
+| Lo invocan | {{[proceso padre](./slug-padre.md), interfaz, acción de record}} o «sin invocador detectado» |
+| Subprocesos | {{[proceso hijo](./slug-hijo.md)}} |
+| Sistemas externos | {{sistema}} vía [`{{integración}}`](../05-integraciones-consumidas.md#ancla) |
+| Datos que escribe | [`{{record type}}`](../03-modelo-datos.md#ancla) |
+| Crítico | {{Sí/No}} ({{motivos de la criticidad}}) |
+| Definición | [anexo](../anexo/processModel/{{slug}}.md) · Evidencia: `mcp:processModel/{{nombre}}` · Certeza: ✅ |
 
-## 🖼 Diagrama (vista preliminar)
+## Detalle
 
-> Vista preliminar Mermaid Tipo C. Para BPMN profesional auténtico, abrir [`{{PM}}.bpmn`](./{{PM}}.bpmn) en Camunda Modeler, draw.io o [bpmn.io](https://demo.bpmn.io).
+### Paso a paso
 
-![Diagrama de proceso]({{PM}}.svg)
+{{Lenguaje de negocio. Cada paso cita su nodo; en la vía draw.io, también su código (ACT-01, GW-01, EV-01).}}
 
-> Si el SVG no se renderizó: bloque Mermaid embebido aquí (GitHub/VSCode lo renderizan on-the-fly):
+1. **{{Qué pasa}}** — {{inicio · tarea de `grupo` · tarea automática · fin}}, `nodes[id={{N}}]`.
+2. **{{¿Pregunta de la decisión?}}** — pasarela, `nodes[id={{N}}]`:
+   - {{condición}} → paso {{n}}.
+   - En otro caso → paso {{n}}.
+3. **{{Qué pasa}}** — {{…}}, `nodes[id={{N}}]`.
 
-```mermaid
-flowchart LR
-  subgraph LO["👥 Operator"]
-    Start((Inicio)):::startNode
-    Form[👤 Rellenar formulario]:::userTask
-    Save[💾 Guardar solicitud]:::dataTask
-  end
-  subgraph LA["👥 Approver"]
-    Gate{¿Importe gt 1000€?}:::gateway
-    Approve[👤 Aprobación gestor]:::userTask
-  end
-  subgraph LS["⚙️ Sistema"]
-    Notify[🔌 Notificar SAP]:::serviceTask
-    EndOk(((Fin cerrada))):::endNode
-    EndKo(((⊗ Rechazada))):::endNodeTerm
-  end
+### Tareas de personas
 
-  Start --> Form --> Save --> Gate
-  Gate -->|"Sí"| Approve
-  Gate -->|"No"| Notify
-  Approve -->|"Aprobada"| Notify
-  Approve -->|"Rechazada"| EndKo
-  Notify --> EndOk
-
-  classDef startNode fill:#a8e6cf,stroke:#02631a,stroke-width:2px,color:#000
-  classDef endNode fill:#ffd3b6,stroke:#7c2d12,stroke-width:3px,color:#000
-  classDef endNodeTerm fill:#ffaaa5,stroke:#7c2d12,stroke-width:4px,color:#000
-  classDef userTask fill:#fff4d2,stroke:#9c6900,stroke-width:2px,color:#000
-  classDef serviceTask fill:#d0e7ff,stroke:#0050a2,stroke-width:2px,color:#000
-  classDef dataTask fill:#d0e7ff,stroke:#0050a2,stroke-width:2px,color:#000
-  classDef gateway fill:#fff8a5,stroke:#9c8a00,stroke-width:2px,color:#000
-```
-
-## 📐 Diagrama BPMN profesional
-
-Para abrir el `.bpmn` en una herramienta BPMN profesional:
-
-- **Camunda Modeler** (desktop, gratis): File → Open → `{{PM}}.bpmn`
-- **bpmn.io demo** (web): subir `{{PM}}.bpmn` a https://demo.bpmn.io
-- **draw.io** (web/desktop): File → Import from → Device → seleccionar `{{PM}}.bpmn`
-
-El `.bpmn` contiene la semántica BPMN 2.0 completa (lanes, pools, message flows, boundary events, sequence flows con condiciones). El preview SVG es una simplificación visual.
-
-## 🔁 Paso a paso del flujo
-
-> Narrativa funcional en lenguaje de negocio. Sin jerga Appian salvo donde marquemos "implementado como".
-
-1. **{{Paso 1 funcional}}** — implementado como `(Inicio) {{nombre_node}}`.
-2. **{{Paso 2 funcional}}** — implementado como `[UserTask] {{nombre_node}}` asignado a `{{grupo}}`.
-3. **{{Paso 3 funcional}}** — implementado como `[ServiceTask·DataStore] {{nombre_node}}` que escribe en `{{RT}}`.
-4. **{{Decisión}}** — implementado como Gateway exclusivo: `{{condición}}`.
-   - Rama "Sí" → {{descripción}}.
-   - Rama "No" → {{descripción}}.
-5. **{{Paso N}}** — implementado como `(Fin) {{nombre_node}}`.
-
-## 🔌 Integraciones y data stores que toca
-
-### Integraciones consumidas
-
-| Integration | Sistema externo | Operación | Nodo |
+| Tarea | Asignada a | Formulario | Evidencia |
 |---|---|---|---|
-| `{{int_1}}` | {{SAP}} | POST /expedientes | `Task_NotifySap` |
+| {{nombre}} | grupo `{{grupo}}` · {{rol de la expresión}} 🔵 | [`{{interfaz}}`](../10-pantallas.md#ancla) | `mcp:processModel/{{nombre}}#nodes[id={{N}}].assignment` |
 
-### Data stores tocados
+### Datos, integraciones y avisos
 
-| Record Type / CDT | Operación | Nodo | Detalle |
+| Nodo | Acción | Objeto | Evidencia |
 |---|---|---|---|
-| `{{RT_Expediente}}` | escritura | `Task_Save` | Guarda registro inicial |
-| `{{RT_Aprobacion}}` | escritura | `Task_Approve` | Registra decisión |
+| {{nombre}} | Escribe | [`{{record type}}`](../03-modelo-datos.md#ancla) | `mcp:processModel/{{nombre}}#nodes[id={{N}}].data` |
+| {{nombre}} | Llama | [`{{integración}}`](../05-integraciones-consumidas.md#ancla) | `mcp:processModel/{{nombre}}#nodes[id={{N}}].data` |
+| {{nombre}} | Envía correo | destinatarios ❓ (no los devuelve la extracción) | `mcp:processModel/{{nombre}}#nodes[id={{N}}]` |
+| {{nombre}} | Lanza subproceso | [{{proceso hijo}}](./slug-hijo.md) | `mcp:processModel/{{nombre}}#nodes[id={{N}}].data` |
 
-## 👥 Asignación de tareas
+### Parámetros
 
-| User Task | Asignación | SLA | Escalation |
-|---|---|---|---|
-| `Task_Form` | grupo `Operator` (`{{regla_asignacion}}`) | {{tiempo o "ninguno"}} | {{notificación o "ninguna"}} |
-| `Task_Approve` | grupo `Approver` | {{tiempo}} | {{notificación}} |
+{{Solo si el proceso recibe datos de quien lo lanza.}}
 
-## 🧯 Manejo de excepciones
-
-| Excepción detectada | Cómo se maneja | Riesgo |
+| Variable | Tipo | Para qué |
 |---|---|---|
-| {{tipo_excepcion}} | {{boundary event / alert node / sin manejo}} | 🔴/🟡/✅ |
+| `{{variable}}` | {{tipo}} | {{qué lleva}} |
 
-> Si no hay manejo, marcar 🔴 y derivar a `09-valor-adicional.md` → Riesgos.
+## Hallazgos
 
-## 🔍 Hallazgos sobre este proceso
+| ID | Hallazgo | Severidad | Certeza | Evidencia |
+|---|---|---|---|---|
+| H-PRO-01 | {{qué hay que corregir, decidir o vigilar}} | {{Alta/Media/Baja}} | {{✅/🔵/❓}} | `mcp:processModel/{{nombre}}#nodes[id={{N}}]` |
 
-> Solo si hay algo no trivial. Si no, omite esta sección.
+{{Para un hallazgo Alta: una línea con su impacto y la recomendación.}}
 
-- 🔴 {{Riesgo concreto identificado}}.
-- 🟡 {{Posible mejora}}.
-- 🔵 {{Patrón notable}}.
+{{Lo que corresponde a otra área: una frase sin severidad con el enlace a su documento.}}
 
-## 📁 Ficheros relacionados
+## Cobertura y límites
 
-- Diagrama BPMN profesional: [`{{PM}}.bpmn`](./{{PM}}.bpmn)
-- Vista preliminar SVG: [`{{PM}}.svg`](./{{PM}}.svg)
-- Fuente Mermaid: [`{{PM}}.mmd`](./{{PM}}.mmd)
-- Definición extraída: `mcp:processModel/{{nombre}}` (fichero local en `<trabajo>/mcp_raw/`, no compartir)
+- Excepciones, alertas y escalados de los nodos: la extracción no los devuelve; pendiente de validar en el diseñador de procesos ❓.
+- {{Otros datos no devueltos que afecten a este proceso: destinatarios de correo, entradas de un nodo, role map}} ❓.
+- {{Ejecuciones: entorno y si es producción; si la muestra es uniforme, que no permite saber qué cuenta lo ejecuta ni a qué hora. Los procesos de temporizador y los subprocesos se ejecutan como el usuario que desplegó el modelo.}}

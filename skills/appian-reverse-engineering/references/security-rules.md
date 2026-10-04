@@ -1,22 +1,16 @@
 # Reglas de seguridad
 
-Detección y enmascarado de secretos antes de escribir cualquier documento o dato en la web.
+Cómo tratar secretos, credenciales, hosts y usuarios antes de escribir cualquier entregable o la web. Es la única regla sobre estos datos: las plantillas y los agentes la aplican, no la redefinen.
 
 ## Principio
 
-Las definiciones extraídas de Appian (especialmente connected systems, integraciones y constantes) pueden contener:
+Las definiciones extraídas (connected systems, integraciones, constantes, Web APIs) pueden contener contraseñas, tokens o API keys, certificados privados, URLs con credenciales embebidas (`https://user:pass@host`) y cadenas de conexión con contraseña. La extracción ya enmascara lo que reconoce (`***ENMASCARADO***`, `https://***:***@host`), pero algo puede escaparse.
 
-- Contraseñas en claro.
-- Tokens / API keys.
-- Certificados privados.
-- URLs con credenciales embebidas (`https://user:pass@host`).
-- Strings de conexión a BBDD con contraseña.
+**Nunca** se reproducen en los entregables, ni en claro ni enmascarados: se dice dónde están (objeto y propiedad) y se registran como hallazgo.
 
-**Nunca** los reproduzcas en los documentos ni en la web. Detéctalos, enmascáralos y regístralos como **riesgo de seguridad** (sin exponer el valor).
+## Patrones de detección
 
-## Patrones de detección (regex orientativos)
-
-`scripts/detect_secrets.sh` aplica estos patrones. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3), para saber qué hay que enmascarar, y sobre los entregables al final:
+`scripts/detect_secrets.sh` aplica estos patrones (orientativos). Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3), para saber qué hay que tratar, y sobre los entregables al final. Solo imprime fichero y línea, nunca el valor.
 
 | Tipo | Patrón |
 |---|---|
@@ -26,73 +20,74 @@ Las definiciones extraídas de Appian (especialmente connected systems, integrac
 | Credenciales en URL | `https?://[^/\s:]+:[^@\s]+@[^\s]+` |
 | String de conexión JDBC | `jdbc:[a-z]+://[^?\s]+\?[^\s]*password=[^&\s]+` |
 | AWS access key | `AKIA[0-9A-Z]{16}` |
-| Private key PEM | `-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----` |
+| Private key PEM | `-----BEGIN (RSA \|EC \|OPENSSH \|DSA )?PRIVATE KEY-----` |
 | GitHub PAT | `gh[pousr]_[A-Za-z0-9]{36,}` |
 | Slack token | `xox[abps]-[A-Za-z0-9-]{10,}` |
-| JWT (sospechoso si está hardcoded) | `eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+` |
-| Base64 sospechoso (>40 chars en property name `password`/`secret`/`key`) | combinar el nombre de propiedad con el valor |
+| JWT (sospechoso si está en un literal) | `eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+` |
 
-## Búsqueda recomendada en la carpeta
+Una URL ya enmascarada por completo (`https://***:***@host`) no cuenta como coincidencia, pero indica que la definición lleva credenciales embebidas: es un hallazgo y tampoco se escribe así en un entregable (tabla siguiente).
 
-```bash
-# Patrones genéricos
-grep -rIiEn "(password|passwd|pwd|secret|api[_-]?key|apikey|token|bearer)[[:space:]]*[:=]" <ruta> 2>/dev/null
+## Cómo se escribe cada dato en los entregables
 
-# Credenciales en URL
-grep -rIEn "https?://[^/[:space:]:]+:[^@[:space:]]+@" <ruta> 2>/dev/null
+| Dato | Cómo se escribe |
+|---|---|
+| Secreto (contraseña, token, clave, certificado) | No se escribe; se dice dónde está («la cabecera `Authorization` usa `CON_SAP_TOKEN`»). En un payload: `***`. |
+| URL con credenciales embebidas | La URL sin ellas y «la URL base lleva credenciales embebidas (enmascaradas)». Nunca `***:***@`. |
+| Usuario de una credencial (Basic, cuenta de servicio) | No se escribe: es dato sensible. «Usuario y contraseña en el connected system». |
+| Host de un servicio externo o público | Se escribe, porque sirve para reconstruir la integración: `https://api.proveedor.com/v1`. |
+| Host interno | Se sustituye por `‹host interno›` y se conserva la ruta: `https://‹host interno›/sap/api`. |
+| Cadena de conexión (JDBC) | Tipo de base de datos y host según los criterios anteriores; sin usuario ni contraseña. |
+| Usuarios de Appian (miembros, versiones, ejecuciones) | Nunca. Recuentos o rol (`presentation-rules.md`, Regla 8). |
 
-# Private keys
-grep -rIEln "BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY" <ruta> 2>/dev/null
+**Host interno** es una IP privada (`10.*`, `172.16.*`–`172.31.*`, `192.168.*`, `127.*`), `localhost`, un nombre acabado en `.local`, `.internal`, `.corp` o `.intra`, o un nombre sin dominio (`sapprd01`). Cualquier otro nombre con dominio se muestra.
 
-# Cadenas JDBC
-grep -rIEn "jdbc:[a-z]+://[^[:space:]?]+\?[^[:space:]]*password=" <ruta> 2>/dev/null
-```
+## Acción ante un secreto
 
-Usa `scripts/detect_secrets.sh` para hacer este barrido de forma estandarizada.
-
-## Acción ante un secreto detectado
-
-1. **No copies el valor** a ningún documento ni dato de la web.
-2. **Enmascáralo** consistentemente como `***ENMASCARADO***` o `[REDACTED]`.
-3. Crea una entrada en `09-valor-adicional.md` (sección Riesgos) y en `13-modernizacion-refactor.md` (área Seguridad) con:
-   - **Tipo**: Seguridad — Secreto expuesto.
-   - **Evidencia**: ruta del fichero, **sin** el valor; opcionalmente número de línea y nombre de la propiedad.
-   - **Impacto**: Alto (potencial exposición de credenciales).
-   - **Prioridad**: Crítica si está en una rama/repo público; Alta en cualquier caso.
-   - **Recomendación**: rotar la credencial y moverla a la autenticación del connected system (valores por entorno), nunca a una constante de texto.
-   - **Responsable sugerido**: Tech lead Appian + responsable de seguridad.
-4. En los documentos, en la sección de Riesgos, muestra "Secreto detectado en `mcp:<tipo>/<nombre>`" sin exponer el valor.
+1. **No copies el valor** a ningún documento, informe, terminal ni dato de la web.
+2. **Descarta los falsos positivos** (abajo).
+3. **Regístralo como hallazgo de seguridad.** Lo registra `integration-security-analyzer`, propietario del área; si lo ve otro agente, lo cuenta en «Para otras áreas» de su informe.
+   - ID `H-SEG-NN`, `"area": "secretos"`, severidad **Alta**.
+   - Certeza: ✅ si la definición lo contiene (aunque la extracción lo enmascarara); ❓ si dudas de que sea un secreto real, con la pregunta para el responsable de seguridad.
+   - Fila en la sección Hallazgos de `04-seguridad-grupos.md` y una línea debajo de la tabla con su impacto y la recomendación.
+   - Entrada en `<trabajo>/hallazgos/integration-security-analyzer.json` con `impacto` y `recomendacion`.
+   - Evidencia: `mcp:<tipo>/<nombre>#<propiedad>`, sin el valor.
+4. **Recomendación habitual**: rotar la credencial y moverla a un campo cifrado del connected system o de la integración (valor introducido directamente, que Appian cifra y no exporta), con su valor por entorno en el fichero de personalización de importación; nunca a una constante ni a una expresión. Fuente: https://docs.appian.com/suite/help/26.6/Integration_Object.html#encrypted-values
+5. El registro de `09-valor-adicional.md` lo genera `scripts/build_registry.py` a partir del JSON, y `13` lo trata con sus MOD. Nadie añade el secreto a mano en 09 ni en 13.
 
 ## Falsos positivos comunes
 
-Antes de marcar como secreto, descarta:
+Antes de registrar un secreto, descarta:
 
-- **Ejemplos en documentación** o README explícitamente marcados como ejemplo.
-- **Valores de prueba** en ficheros `test*` con contraseñas tipo `password123` (igualmente, regístralos como mala práctica si están en repo de producción).
-- **Variables placeholder** del tipo `${SECRET_NAME}`, `<<PUT_TOKEN_HERE>>`, `<your-token>`.
+- Placeholders: `${SECRET_NAME}`, `<<PUT_TOKEN_HERE>>`, `<your-token>`.
+- Textos de ayuda, descripciones o etiquetas que solo nombran la palabra («Introduzca su password»).
+- Constantes o campos con nombre de secreto pero sin valor.
 
-Si dudas, regístralo como pendiente de validación con responsable de seguridad.
+Un valor enmascarado por la extracción (`***ENMASCARADO***`, `***:***@`) **no** es falso positivo: la definición contiene un secreto. Si dudas, regístralo con certeza ❓ y la pregunta.
 
-## Otros patrones de riesgo de seguridad (sin ser secretos)
+## Otros riesgos de seguridad (sin ser secretos)
 
-Detéctalos y márcalos también:
+Detéctalos y regístralos en el documento propietario. Un riesgo que depende de un dato que la extracción no trae (seguridad de acciones de record, destinatarios de correo, role maps) no es ✅: es ❓ «no lo devuelve la extracción», con la pregunta para validarlo (`execution-principles.md`, principio 3).
 
-- Objetos Appian con seguridad `Public` o accesibles a `All Users` cuando manejan datos sensibles.
-- Connected systems con autenticación `None` apuntando a APIs externas.
-- Web APIs con seguridad débil (sin autenticación, accesibles públicamente).
-- Process models que envían emails con datos sensibles a destinatarios externos.
-- Constantes con URLs internas o de otro entorno (p. ej. un host de desarrollo en producción).
-- SQL en data stores con concatenación de variables (posible SQL injection).
-- Expression rules que reciben input de usuario sin validación.
+| Riesgo | Registro |
+|---|---|
+| Objeto con un grupo de alcance amplio en su role map y datos sensibles | `H-SEG` (04) |
+| Grupo de sistema usado para dar permisos a objetos de la aplicación | `H-SEG` (04) |
+| Proceso que envía correo con datos sensibles a destinatarios externos | `H-SEG` (04) |
+| SQL construido concatenando variables o entrada de usuario sin validar usada en consultas | `H-SEG` (04) |
+| Connected system con autenticación None contra una API externa | `H-INT` (05) |
+| URL o constante que apunta a otro entorno (p. ej. un host de desarrollo en producción) | `H-INT` (05) |
+| Web API que puede llamar un grupo de alcance amplio, o sin validación de entrada visible | `H-API` (06) |
+
+**Grupo de alcance amplio**: un grupo de sistema (p. ej. Application Users) o uno que agrupa a todos los usuarios de la aplicación. Appian no trae un grupo «All Users», «Everyone» ni «Public»: el nombre no prueba el alcance; decide por sus subgrupos y miembros (✅) o por nombre y descripción (🔵). Appian recomienda no usar grupos de sistema para dar seguridad a objetos de una aplicación, sino sus grupos de seguridad por defecto. Fuente: https://docs.appian.com/suite/help/26.6/System_Groups.html
 
 ## Política para Markdown
 
-Los entregables son Markdown plano que se renderiza en visores variados (GitHub, VSCode, herramientas internas). Para evitar fugas de información o ejecución no deseada:
+Los entregables son Markdown plano que se abre en visores variados (GitHub, VS Code, herramientas internas):
 
-- **No incluir bloques HTML crudos** (`<script>`, `<iframe>`, `<style>`) en los entregables.
-- **No incluir URLs con credenciales embebidas** (`https://user:pass@host`). Enmascarar siempre.
-- **No incluir tokens / secretos** en bloques de código, ni siquiera como ejemplo. Sustituir por `🔒` o `***`.
-- **Diagramas Mermaid** se sanean previamente con `scripts/validate_mermaid.py` antes de escribirse (ver `mermaid-rules.md`).
+- **Sin bloques HTML crudos** (`<script>`, `<iframe>`, `<style>`).
+- **Sin URLs con credenciales**, ni enmascaradas (tabla de arriba).
+- **Sin tokens ni secretos** en bloques de código, ni siquiera de ejemplo: `***`.
+- **Diagramas Mermaid** saneados con `scripts/validate_mermaid.py` antes de escribirse (`mermaid-rules.md`).
 
 ## Comprobación final
 
@@ -102,4 +97,4 @@ Antes de devolver la respuesta:
 bash scripts/detect_secrets.sh <salida>/*.md <salida>/08-procesos-bpmn <salida>/diagrams
 ```
 
-Si encuentra algún match en los entregables (no en `<trabajo>/`, que no se comparte), **detente y enmascara antes de continuar**.
+Si encuentra algo en los entregables (no en `<trabajo>/`, que no se comparte), **detente y corrígelo** con la tabla «Cómo se escribe cada dato» antes de continuar.

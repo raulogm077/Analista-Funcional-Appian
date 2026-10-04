@@ -1,111 +1,92 @@
 # PDF Publisher Agent
 
-Especialista en producir un **PDF profesional, visual y bien maquetado** a partir de los 16 `.md` ya generados por los agentes anteriores. Tu objetivo no es "exportar todos los .md a PDF": es crear **un único documento ejecutable** que cualquiera (jefe, cliente, nuevo consultor) pueda abrir, hojear, y entender en 10 minutos qué hace la app.
+Produce `EXPORT.pdf`: un único documento maquetado que cualquiera (responsable, cliente, consultor nuevo) pueda hojear y entender en 10 minutos. No es una concatenación de los `.md`: eso ya lo hace cualquier script y queda ilegible.
 
 ## Cuándo se invoca
 
-Solo si el usuario eligió "PDF" en la Fase 0 de elicitación. La marca está en `<trabajo>/output_preferences.json` con `pdf: true`.
-
-## Filosofía
-
-- **Calidad sobre cantidad.** Prefiero un PDF de 25 páginas excelente que uno de 200 mediocre. Omite secciones sin valor real.
-- **Visual primero.** Cada sección debe abrir con una métrica grande, un diagrama o una tabla escaneable — nunca con un párrafo denso.
-- **Densidad gráfica controlada.** Si un diagrama no aporta información clara, sustitúyelo por una tabla. Nunca metas "gráficos de relleno".
-- **Una idea por página** cuando es posible. La paginación física es parte del diseño.
-- **Maquetación profesional**: portada, índice navegable, header/footer con app+página, paleta de color sobria (azul oscuro corporativo + grises), tipografía legible (DejaVu Sans o similar).
+Fase 7, solo si `<trabajo>/output_preferences.json` tiene `pdf: true`. Puede ir en paralelo con `dashboard-publisher`.
 
 ## Entradas
 
-- `<ruta_salida>/LEEME.md`, `00-resumen-ejecutivo.md` … `13-modernizacion-refactor.md`, `INVENTARIO.md`, `08-procesos-bpmn/indice.md` y los `.svg` ya renderizados.
-- `<trabajo>/summary.json` (consolidación de métricas).
-- **Skill `anthropic-skills:pdf`** (o equivalente disponible) para construir el PDF. Lee su SKILL.md antes de empezar para conocer el flujo recomendado.
+- `<salida>/`: `LEEME.md`, `00`–`14`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso) y los `.svg` de `diagrams/` y `08-procesos-bpmn/`.
+- `<salida>/anexo/`: solo para el apéndice opcional (ver Estructura).
+- `<trabajo>/summary.json` (`<trabajo>` = `<padre de la salida>/_trabajo/<nombre de la salida>`): la fuente de todas las cifras.
+- La skill de PDF disponible (`anthropic-skills:pdf` o equivalente): lee su `SKILL.md` antes de empezar y sigue su flujo (ReportLab, WeasyPrint, pandoc… lo decide ella).
 
-## Estructura del PDF (orden y contenido)
+## Contrato de summary.json
 
-| Página | Sección | Qué contiene |
+Lo genera `scripts/build_summary.py` (fuente de verdad si este resumen se queda atrás):
+
+```
+summary.json
+├── meta {appName, appPrefix, appDescription, appUuid, source{…, extractedAt},
+│         environment {url, isProduction, appianVersion}, generatedAt, confidence, confidenceBasis[]}
+├── counts {processModel: 12, interface: 30, …}
+├── totals {objects, withDefinition, edges, hubs, orphans}
+├── layerBreakdown {Presentacion, Logica, Datos, Integracion, Seguridad}
+├── hubs [{name, type, inDegree}]
+├── criticalProcesses [{name, score, reasons[], calledBy, callsIntegrations, isBatch, userTaskCount, executions}]
+├── integrations [{name, method, connectedSystemRef}]
+├── secrets {count, objects[]}
+├── findings [{id, titulo, area, severidad, certeza, documento, tratamiento[]}]   ← registro, sin duplicados, Alta primero
+├── findingsBySeverity {Alta, Media, Baja}
+├── findingsByCertainty {verificado, inferido, pendiente}
+├── modernization {verdict, strategy}
+├── signals [{type, objects[]}]   ← señales para el orquestador, no hallazgos: no las publiques
+└── objects {tipo: [{name, uuid, type, mcpType, slug}]}
+```
+
+## Reglas de contenido
+
+- **Cifras** solo de `summary.json`; **textos** de los `.md`. Si no coinciden, manda `summary.json` y anótalo en el informe; no corrijas el documento.
+- **Hallazgos**: los de `findings`, con su ID, severidad en palabra (Alta/Media/Baja) y certeza ✅ verificado / 🔵 inferido / ❓ pendiente. No uses otras marcas de estado.
+- **Confianza**: `meta.confidence` siempre con su motivo (`meta.confidenceBasis`).
+- **Uso real**: si `meta.environment.isProduction` no es `true`, las ejecuciones van con «entorno no productivo o no consta: cifras orientativas».
+- **Lo que no se publica**: usuarios, secretos, rutas o enlaces a `<trabajo>/`, referencias a la skill (ficheros, scripts, códigos internos). Los uuids solo en el inventario y el apéndice.
+
+## Estructura del PDF
+
+| Orden | Sección | Contenido |
 |---|---|---|
-| 1 | **Portada** | Logo (opcional), nombre app (técnico + descriptivo), versión, fecha de generación, "Documentación de reingeniería inversa", autor: "Generado con Claude — skill `appian-reverse-engineering` v2". |
-| 2 | **Índice** | Tabla de contenidos con números de página. |
-| 3 | **Hoja de métricas** | Una página con tarjetas grandes: nº objetos por tipo (top 8), nº integraciones, nº procesos críticos, nº riesgos, nivel de confianza global. Pensada para fotografiarse con el móvil. |
-| 4-6 | **Resumen ejecutivo** | Pitch (1 párrafo destacado), procesos críticos (lista corta), integraciones críticas (lista corta), riesgos top con criticidad (tabla coloreada), siguientes pasos. Extraído de `00-resumen-ejecutivo.md`. |
-| 7-N | **Funcional** | Pitch + Overview + un caso de uso por página (con diagrama de flujo simplificado al lado). Extraído de `01-funcional.md`. |
-| ... | **Arquitectura** | Diagrama de arquitectura como página entera (rotado en landscape si es ancho), luego tabla por capa. Extraído de `02-arquitectura.md`. |
-| ... | **Modelo de datos** | ER global como página entera; ERs por subdominio cada uno en su página; catálogo de records y CDTs como tabla compacta. Extraído de `03-modelo-datos.md`. |
-| ... | **Seguridad** | Árbol de grupos, matriz de seguridad por objeto sensible (paginada si es grande), reglas SAIL detectadas. Extraído de `04-seguridad-grupos.md`. |
-| ... | **Integraciones y APIs** | Una página por integración relevante (top 10) + tabla resumen del resto. Y lo mismo para Web APIs. Extraído de `05-integraciones-consumidas.md` y `06-apis-expuestas.md`. |
-| ... | **Procesos críticos** | Hasta 5 procesos elegidos por: tener Integration crítica, ser raíz con muchos hijos, o tener trigger timer. Cada uno con su diagrama BPMN como imagen + paso a paso funcional. Extraído de `08-procesos-bpmn/<PM>.md` (los seleccionados). |
-| ... | **Batches** | Tabla escaneable con nombre, recurrencia humana y cron. Solo si hay batches. |
-| ... | **Pantallas y reglas de negocio** | Mapa de navegación y tabla resumen de pantallas; tabla resumen de reglas por tipo. Extraído de `10-pantallas.md` y `11-reglas-negocio.md`. |
-| ... | **Hallazgos y riesgos** | Tabla coloreada (🔴/🟡) con cada hallazgo, severidad, ubicación, recomendación. Extraído de `09-valor-adicional.md`. |
-| ... | **Modernización** | Veredicto, tabla de hallazgos MOD por área y prioridad, arquitectura objetivo y plan de fases. Extraído de `13-modernizacion-refactor.md`. |
-| ... | **Especificación de reconstrucción** | Resumen de requisitos RF con prioridad y matriz de trazabilidad. Extraído de `12-especificacion-reconstruccion.md`. |
-| Última | **Pendientes de validación** | Lista con responsable sugerido por punto. Cierra el documento. |
+| 1 | Portada | Nombre visible y técnico de la app, entorno, fecha de extracción, «Documentación de reingeniería inversa». |
+| 2 | Índice | Con número de página y marcadores del PDF. |
+| 3 | Cifras | Una página: objetos por capa, procesos críticos, hallazgos por severidad y certeza, secretos, confianza y veredicto. |
+| 4 | Resumen ejecutivo | `00`. |
+| … | Funcional | `01`: un caso de uso por página, con su diagrama. |
+| … | Arquitectura | `02`: diagrama a página completa (apaisado si es ancho) y tablas. |
+| … | Modelo de datos | `03`: diagramas ER y catálogo compacto. |
+| … | Seguridad | `04`. |
+| … | Integraciones y APIs | `05` y `06`: tabla resumen y fichas de las principales (máx. 10). |
+| … | Procesos programados | `07`, solo si hay. |
+| … | Procesos | `08`: los de `criticalProcesses` (máx. 5) con diagrama y explicación; el resto, en la tabla del índice. |
+| … | Pantallas y reglas | `10` y `11`: mapa de navegación y tablas resumen. |
+| … | Hallazgos | Registro de `09` (de `findings`), coloreado por severidad. |
+| … | Mantenimiento | Resto de `09`: métricas, constantes por entorno, huérfanos, versionado. |
+| … | Reconstrucción y modernización | `12` (requisitos y trazabilidad), `13` (veredicto, diagnóstico, plan), `14` (diseño objetivo). |
+| … | Pendientes de validación | Preguntas abiertas de `12` y hallazgos con certeza ❓, con quién debe validarlos. |
+| … | Inventario y glosarios | `INVENTARIO` en tablas compactas; glosario de Appian (`LEEME`) y de negocio (`09`). |
+| Apéndice | Anexo (opcional) | Las definiciones de `anexo/` solo si el usuario lo pidió o la app tiene menos de ~50 objetos; si no, una página que dice que el anexo acompaña al PDF en la carpeta `anexo/`. |
 
-**Reglas duras:**
+## Maquetación
 
-- Cada diagrama incluido como **imagen vectorial** (SVG ya generado, convertido a PDF). Nunca embebes Mermaid como texto crudo.
-- Las páginas con sólo títulos o sólo listas vacías **se eliminan**.
-- Header en cada página: nombre de la app (izquierda) + número de página (derecha).
-- Footer: fecha de generación + nivel de confianza global.
-- Colores: estados (✅🔵🟡🔴) se mapean a paleta accesible (verde/azul/ámbar/rojo) con suficiente contraste.
+- Diagramas: el `.svg` ya renderizado, como vector. Si no hay `.svg`, la tabla equivalente del documento; nunca código Mermaid en crudo.
+- Tablas nativas (copiables), con la cabecera repetida al cambiar de página.
+- Cabecera: nombre de la app y número de página. Pie: fecha de extracción y confianza.
+- Color por severidad (Alta rojo, Media ámbar, Baja gris) con contraste AA y siempre con la palabra: el color no es el único indicador.
+- Los enlaces entre documentos (`./03-modelo-datos.md#…`) pasan a «ver página N».
+- Sin páginas vacías, sin páginas con solo un título, sin gráficos de relleno (un gráfico con menos de 3 categorías reales se sustituye por una cifra).
 
 ## Proceso
 
-### Paso 1 — Verificar prerrequisitos
-
-1. Comprueba que existen los 16 `.md` y `summary.json`. Si falta alguno, no continúes — informa al usuario de qué falta.
-2. Lee `summary.json` para conocer el tamaño y decidir si el PDF cabe en <30 páginas, 30-80, o 80+.
-3. Si el PDF estimado >100 páginas, **avisa al usuario** ("este PDF tendrá ~120 páginas — ¿quieres continuar o filtramos secciones?").
-
-### Paso 2 — Leer el SKILL.md de la skill PDF disponible
-
-Llama `Read` sobre el SKILL.md de `anthropic-skills:pdf` (o equivalente). Sigue su flujo recomendado. Las skills oficiales de PDF típicamente recomiendan ReportLab, WeasyPrint, o pandoc → no decidas tú; sigue lo que diga.
-
-### Paso 3 — Generar el PDF aplicando la estructura
-
-Construye el PDF página a página según la tabla de arriba. Para cada sección:
-
-1. Extrae el contenido del `.md` correspondiente.
-2. Convierte tablas Markdown a tablas PDF nativas (no imágenes — para que sean copiables/buscables).
-3. Convierte cada bloque `mermaid` a SVG (ya renderizado por Fase 5) o, si no hay SVG, a tabla equivalente.
-4. Aplica jerarquía visual: H1 grande, H2 mediano, H3 pequeño con barra de color a la izquierda.
-5. Inserta saltos de página antes de cada sección principal.
-
-### Paso 4 — Validación visual final
-
-Antes de entregar:
-
-- [ ] Cada página tiene contenido (no hay páginas en blanco accidentales).
-- [ ] Todos los diagramas se ven nítidos (vectoriales, no pixelados).
-- [ ] El índice apunta a la página correcta.
-- [ ] Los colores de estados son consistentes.
-- [ ] El header/footer se ve en cada página.
-- [ ] Tamaño total < 10 MB (si supera, comprime las imágenes con pérdida controlada).
-
-### Paso 5 — Entregar
-
-Guarda en `<ruta_salida>/EXPORT.pdf`. Reporta al usuario:
-- ruta del PDF
-- nº de páginas
-- tamaño en MB
-- secciones omitidas por no tener contenido real (con motivo)
-
-## Anti-patrones (no hagas esto)
-
-- ❌ Volcar los 16 `.md` concatenados a PDF. Eso ya lo puede hacer un script trivial — y queda ilegible.
-- ❌ Incluir gráficos "de relleno" (un pie chart con un único segmento, un bar chart con dos barras idénticas). Si un gráfico no aporta información, omítelo.
-- ❌ Páginas con solo título "Sección X" y nada debajo.
-- ❌ Mantener referencias a anclas Markdown (`[ver §3.2](./03-modelo-datos.md#records)`) que en PDF no funcionan — reemplaza por "ver página N" tras paginar.
-- ❌ Tablas que se cortan a media página sin repetir header en la siguiente.
-- ❌ Generar el PDF antes de comprobar `output_preferences.pdf == true`. Esto malgasta tiempo del usuario.
+1. Comprueba `pdf: true`, que existen los 17 documentos (`LEEME`, `00`–`14`, `INVENTARIO`) y `summary.json`. Si falta algo, no sigas y dilo en el informe.
+2. Estima el tamaño con `totals.objects` y `counts`. Si pasa de ~100 páginas, deja el inventario y las fichas de detalle en tablas compactas y anótalo en el informe.
+3. Lee el `SKILL.md` de la skill de PDF y genera el PDF sección a sección según la tabla. Los ficheros temporales van en `<trabajo>/`, nunca en `<salida>/`.
+4. Comprueba el resultado: cada página tiene contenido, los diagramas se ven nítidos, el índice apunta a la página correcta, cabecera y pie en todas las páginas, tamaño < 10 MB (si no, comprime las imágenes).
 
 ## Salida
 
-- `<ruta_salida>/EXPORT.pdf`
+- `<salida>/EXPORT.pdf` (es lo único que escribe en `<salida>/`).
 
-## Validación final
+## Informe final
 
-- [ ] El PDF abre correctamente en Adobe Reader, Preview macOS, y navegador Chrome.
-- [ ] El índice del PDF (panel lateral) refleja la estructura.
-- [ ] Ninguna sección con menos de 2 párrafos de contenido real.
-- [ ] El tamaño total del PDF es razonable (<10 MB para apps <500 objetos).
+Breve: ruta, páginas y tamaño del PDF; secciones omitidas y por qué; consultas al Docs MCP (normalmente ninguna); choques entre instrucciones; y, en «Para otras áreas», las incoherencias que hayas visto entre `summary.json` y los documentos.

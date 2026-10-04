@@ -1,6 +1,6 @@
 # Metadatos y recuentos del data fabric (Appian MCP Server)
 
-El **Appian MCP Server** es distinto del Dev MCP: lo activa un administrador en el Admin Console (Appian 26.6+, tiers *advanced* y *premium*) y se conecta a `<URL del entorno>/mcp` con la API key de una cuenta de servicio con rol Designer. Es **opcional**.
+El **Appian MCP Server** es distinto del Dev MCP: lo activa un administrador en el Admin Console (Appian 26.6+, solo Appian Cloud, tiers *advanced* y *premium*) y se conecta a `<URL del entorno>/mcp` con la API key de una cuenta de servicio con rol Designer. Es **opcional**.
 
 La skill lo usa para dos cosas, y solo para ellas:
 
@@ -31,11 +31,16 @@ Escribe `<trabajo>/datafabric.json`. La consulta SQL solo se construye si la ref
  "unmatchedRecordTypes": ["…"]}
 ```
 
-**Opción 3: no disponible.** No hay `datafabric.json`. Los documentos lo indican en una línea («volúmenes no disponibles: Appian MCP Server no configurado») y los requisitos de volumen de `12` pasan a «Preguntas abiertas».
+**Opción 3: no disponible.** No hay `datafabric.json`. Los documentos afectados lo dicen en una línea de su «Cobertura y límites» («volúmenes no disponibles: Appian MCP Server no configurado») y los requisitos de volumen de `12` pasan a «Preguntas abiertas». La falta de volúmenes no es un hallazgo.
+
+## Cómo se usan los recuentos
+
+- Un record type sin `count` (en `unmatchedRecordTypes` o porque falló la consulta) tiene volumen ❓, nunca 0.
+- Un recuento obtenido es ✅, con la salvedad de seguridad que se explica abajo.
 
 ## Limitaciones (documentación oficial)
 
-- No se pueden consultar record types no sincronizados, *legacy* ni con seguridad a nivel de registro basada en una expresión. Aparecen en `unmatchedRecordTypes` y el hallazgo DAT-04 de `modernization-guide.md` puede aplicar.
-- Los resultados se filtran por la seguridad de la cuenta de servicio: si un recuento parece bajo, puede ser por permisos. Indícalo como supuesto.
+- No se pueden consultar record types no sincronizados, *legacy* ni con seguridad a nivel de registro basada en una expresión. Aparecen en `unmatchedRecordTypes`; la seguridad por expresión es un patrón de `modernization-guide.md` que `13` recoge como `MOD-` con su fuente oficial (los documentos no citan el código interno del patrón).
+- Los resultados se filtran por la seguridad de la cuenta de servicio: si un recuento parece bajo, puede ser por permisos. Márcalo 🔵 y dilo.
 
-Fuente: [MCP System Tools Reference](https://docs.appian.com/suite/help/26.6/mcp-system-tools.html) · [Appian MCP Server Security](https://docs.appian.com/suite/help/26.6/mcp-server-security.html)
+Fuente: [MCP System Tools Reference](https://docs.appian.com/suite/help/26.6/mcp-system-tools.html#data-fabric-tools) · [Appian MCP Server – limitaciones](https://docs.appian.com/suite/help/26.6/appian-mcp-server.html#limitations) · [Appian MCP Server Security](https://docs.appian.com/suite/help/26.6/mcp-server-security.html)

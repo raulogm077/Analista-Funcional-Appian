@@ -1,58 +1,90 @@
 <!--
-  Plantilla LEEME — Guía de lectura de la documentación (la genera el orquestador al final)
+  Plantilla LEEME — Guía de lectura (orquestador, fase 6, lo último que se escribe). Objetivo 1 pantalla, máximo 2.
+  - Columna IDs: el rango real de esta ejecución (p. ej. PAN-001…PAN-006, H-SEG-01…H-SEG-04); «—» si no tiene.
+  - «Qué no incluye»: las tres primeras líneas van siempre; añade las de esta ejecución (omite las que no apliquen).
+  - Celdas ≤ 100 caracteres. Un solo TL;DR. Sin usuarios.
 -->
 
-# {{Nombre de la aplicación}} — Documentación de reingeniería
+# {{Nombre visible de la aplicación}}: documentación de reingeniería
 
-**Generada el** {{fecha}} a partir del entorno `{{url_entorno}}` (lectura en vivo con Appian Dev MCP, sin cambios en la aplicación).
+> **TL;DR**: Documentación de `{{nombre técnico}}` obtenida leyendo el entorno `{{url}}` el {{AAAA-MM-DD}}, en solo lectura: la aplicación no se modificó. Empieza por [00-resumen-ejecutivo.md](./00-resumen-ejecutivo.md) y sigue la ruta de tu perfil.
+> **Volumen**: {{N}} objetos · {{N}} procesos · {{N}} pantallas · {{N}} hallazgos (Alta: {{n}}).
 
 ## Por dónde empezar
 
-| Si eres… | Lee en este orden |
+| Perfil | Ruta de lectura |
 |---|---|
-| **Nuevo en el proyecto** y quieres entender la aplicación | `00-resumen-ejecutivo` → `01-funcional` → `10-pantallas` → `02-arquitectura` → `08-procesos-bpmn/indice` → `03-modelo-datos` |
-| **Desarrollador** que va a mantenerla | `02-arquitectura` → `03-modelo-datos` → `08-procesos-bpmn` → `05`/`06` integraciones → `04-seguridad-grupos` → `09-valor-adicional` → `INVENTARIO` |
-| **Arquitecto o responsable** de reconstruirla o modernizarla | `00-resumen-ejecutivo` → `13-modernizacion-refactor` → `12-especificacion-reconstruccion` → `11-reglas-negocio` → `10-pantallas` |
-| **Negocio**, para validar | `01-funcional` → `11-reglas-negocio` → `12-especificacion-reconstruccion` (preguntas abiertas y funcionalidad candidata a no migrar) |
+| Nuevo en el proyecto | 00 → 01 → 10 → 02 → 08 (índice) → 03 |
+| Desarrollador que la mantiene | 02 → 03 → 08 → 05 y 06 → 04 → 07 → 09 → INVENTARIO → anexo/ |
+| Arquitecto que la reconstruye o moderniza | 00 → 13 → 12 → 14 → 11 → 10 → anexo/ |
+| Negocio, para validar | 01 → 11 → 12 (preguntas abiertas y funcionalidad candidata a no migrar) |
+| Auditoría o seguridad | 04 → 06 → 05 → 09 (registro de hallazgos) |
 
 ## Contenido
 
-| Documento | Qué contiene |
-|---|---|
-| `00-resumen-ejecutivo.md` | Hallazgos clave, riesgos y veredicto de modernización. |
-| `01-funcional.md` | Qué hace la aplicación, para quién y casos de uso. |
-| `02-arquitectura.md` | Cómo está construida: capas, objetos principales y acoplamientos. |
-| `03-modelo-datos.md` | Entidades, relaciones y volúmenes. |
-| `04-seguridad-grupos.md` | Grupos, permisos y reglas de seguridad. |
-| `05-integraciones-consumidas.md` | Sistemas externos a los que llama. |
-| `06-apis-expuestas.md` | APIs que ofrece a otros sistemas. |
-| `07-batches.md` | Procesos programados. |
-| `08-procesos-bpmn/` | Cada proceso en BPMN 2.0 y su explicación. |
-| `09-valor-adicional.md` | Constantes, reglas reutilizables, huérfanos, métricas y riesgos técnicos. |
-| `10-pantallas.md` | Catálogo de pantallas (`PAN-xxx`). |
-| `11-reglas-negocio.md` | Catálogo de reglas de negocio (`RN-xxx`). |
-| `12-especificacion-reconstruccion.md` | Requisitos para reconstruirla (`RF-xxx`), con criterios de aceptación y trazabilidad. |
-| `13-modernizacion-refactor.md` | Diagnóstico (`MOD-xxx`), arquitectura objetivo y plan de migración. |
-| `INVENTARIO.md` | Todos los objetos y cobertura de la extracción. |
+| Documento | Qué contiene | IDs |
+|---|---|---|
+| [00-resumen-ejecutivo.md](./00-resumen-ejecutivo.md) | Cifras, procesos críticos, hallazgos principales y veredicto | — |
+| [01-funcional.md](./01-funcional.md) | Qué hace, para quién y casos de uso | {{H-FUN-01…H-FUN-02}} |
+| [02-arquitectura.md](./02-arquitectura.md) | Capas, objetos principales, acoplamientos y huérfanos | {{H-ARQ-01…H-ARQ-03}} |
+| [03-modelo-datos.md](./03-modelo-datos.md) | Entidades, relaciones y volúmenes | {{H-DAT-01…H-DAT-04}} |
+| [04-seguridad-grupos.md](./04-seguridad-grupos.md) | Grupos, permisos y secretos | {{H-SEG-01…H-SEG-03}} |
+| [05-integraciones-consumidas.md](./05-integraciones-consumidas.md) | Sistemas externos a los que llama | {{H-INT-01…H-INT-02}} |
+| [06-apis-expuestas.md](./06-apis-expuestas.md) | APIs que ofrece a otros sistemas | {{H-API-01}} |
+| [07-batches.md](./07-batches.md) | Procesos programados | {{H-BAT-01}} |
+| [08-procesos-bpmn/indice.md](./08-procesos-bpmn/indice.md) | Cada proceso en BPMN 2.0 (abre en bpmn.io o Camunda) y su explicación | {{H-PRO-01…H-PRO-05}} |
+| [09-valor-adicional.md](./09-valor-adicional.md) | Métricas, constantes, huérfanos, versionado, glosario y registro de hallazgos | {{H-GEN-01…H-GEN-02}} |
+| [10-pantallas.md](./10-pantallas.md) | Catálogo de pantallas | {{PAN-001…PAN-006}} |
+| [11-reglas-negocio.md](./11-reglas-negocio.md) | Catálogo de reglas de negocio | {{RN-001…RN-012}} |
+| [12-especificacion-reconstruccion.md](./12-especificacion-reconstruccion.md) | Requisitos para reconstruirla, criterios de aceptación y trazabilidad | {{RF-001…RF-010, PQ-001…PQ-004}} |
+| [13-modernizacion-refactor.md](./13-modernizacion-refactor.md) | Diagnóstico, estrategia y plan de migración | {{MOD-001…MOD-008}} |
+| [14-diseno-objetivo.md](./14-diseno-objetivo.md) | Cómo construirla: datos, procesos, pantallas e integraciones | — |
+| [INVENTARIO.md](./INVENTARIO.md) | Todos los objetos, con uuid, y cobertura de la extracción | — |
+| [anexo/indice.md](./anexo/indice.md) | Definición original de cada objeto: código numerado por líneas, sin usuarios | — |
 
 ## Cómo leer las marcas
 
 | Marca | Significado |
 |---|---|
-| ✅ | Confirmado con la definición del objeto. |
-| 🔵 | Inferido (se explica de qué). |
-| 🟡 | Pendiente de validar o dato no disponible. |
-| 🔴 | Riesgo. |
-| `mcp:tipo/nombre#ubicación` | Evidencia: objeto y lugar de la definición donde se comprueba. |
+| ✅ | Verificado: la definición o la respuesta de Appian lo muestra. |
+| 🔵 | Inferido de evidencia indirecta; el documento dice de qué. |
+| ❓ | Pendiente: dato que la extracción no trae o que debe validar negocio. |
+| Alta · Media · Baja | Severidad de un hallazgo: actuar ya · planificar · mejora o higiene. |
+| `H-<ÁREA>-NN` | Hallazgo. Todos están en el registro de [09](./09-valor-adicional.md#registro-de-hallazgos). |
+| `mcp:tipo/nombre#ubicación` | Evidencia: objeto y punto de su definición (en anexo/) donde se comprueba. |
 
-## Qué no incluye esta documentación
+Que la extracción no traiga un dato no significa que falte en la aplicación: por eso se marca ❓ y no se trata como defecto.
 
-{{Lista de lo que no estuvo disponible en esta ejecución: tipos sin definición, seguridad por objeto, valores por entorno, volúmenes (si no había Appian MCP Server), verificación con documentación oficial (si no había Docs MCP), historial (si no había herramienta).}}
+## Qué no incluye
 
-## Glosario
+- Datos de negocio: no se leyó ninguna fila, solo metadatos y recuentos.
+- Valores de otros entornos: solo los de `{{url}}`; los demás están en el paquete de despliegue.
+- Configuración que el Dev MCP no devuelve (excepciones y alertas de nodos, destinatarios de correo, seguridad de acciones de record): marcada ❓.
+- {{Definición de N CDTs y N decisiones: el Dev MCP no la devuelve (ver INVENTARIO).}}
+- {{Seguridad por objeto (role maps): no disponible.}}
+- {{Volúmenes de datos: Appian MCP Server no disponible.}}
+- {{Verificación con la documentación oficial: Docs MCP no disponible; las fuentes de 13 no están verificadas para la versión.}}
+- {{Uso real: el entorno no consta como producción; las ejecuciones son orientativas.}}
+
+## Glosario de Appian
 
 | Término | Significado |
 |---|---|
-| {{término de negocio o Appian}} | {{definición breve}} |
+| Record type | Entidad de datos: campos, relaciones, vistas y acciones sobre una tabla u otra fuente. |
+| CDT | Tipo de datos personalizado: estructura de datos para procesos, reglas e interfaces. |
+| Process model | Flujo de trabajo: tareas de usuario, pasos automáticos y decisiones. |
+| Interfaz | Pantalla o componente de pantalla. |
+| SAIL | Lenguaje de expresiones de Appian con el que se escriben interfaces y reglas. |
+| Expression rule | Función reutilizable escrita en SAIL. |
+| Decisión | Reglas de negocio expresadas como tabla de decisión. |
+| Constante | Valor con nombre (texto, número, grupo, documento…) que usan otros objetos. |
+| Integración | Llamada a un sistema externo, normalmente a través de un connected system. |
+| Connected system | Conexión y autenticación con un sistema externo. |
+| Web API | Endpoint HTTP que la aplicación ofrece a otros sistemas. |
+| Site | Aplicación web para el usuario final, organizada en páginas. |
+| Grupo | Conjunto de usuarios; base de la seguridad y de la asignación de tareas. |
+| Data fabric | Capa de datos de Appian construida con record types y sus relaciones. |
 
-> La carpeta `<trabajo>/` contiene datos en bruto de la aplicación. No la compartas.
+El vocabulario del negocio está en el [glosario de 09](./09-valor-adicional.md#glosario-de-negocio).
+
+> Los datos de trabajo de la extracción (`{{appian-docs/_trabajo/PREFIJO/}}`) contienen definiciones completas, hosts y usuarios: no se comparten y no viajan con esta documentación.

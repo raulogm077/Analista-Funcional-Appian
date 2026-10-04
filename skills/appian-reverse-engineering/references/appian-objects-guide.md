@@ -1,6 +1,6 @@
 # Guía de objetos Appian: dónde está cada dato y cómo valorarlo
 
-Complementa `references/lectura-mcp-raw.md` (cómo leer los ficheros). Aquí: **qué buscar en cada tipo de objeto** y heurísticas para valorar criticidad, deuda y actores.
+Complementa `references/lectura-mcp-raw.md` (cómo leer los ficheros). Aquí: **qué buscar en cada tipo de objeto** y criterios para valorar importancia, deuda y actores. La certeza (✅/🔵/❓) y la severidad de los hallazgos (Alta/Media/Baja) siguen `presentation-rules.md`, Regla 7.
 
 ## Dónde está cada dato
 
@@ -59,40 +59,37 @@ Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/
 | `a!queryRecordType`, `a!writeRecords` | Lectura y escritura de records |
 | `a!queryEntity`, `a!writeToDataStoreEntity` | Lectura y escritura de data stores (modelo antiguo) |
 
-## Heurísticas de criticidad
+## Importancia de un objeto
 
-Un objeto es **crítico** cuando cumple varios de estos criterios:
+- **Process models**: «proceso crítico» es solo el que marca `criticality` en el inventario (una única fórmula para todos los documentos, ver `lectura-mcp-raw.md`). No la recalcules ni la sustituyas por otra.
+- **Resto de objetos**: estos criterios ayudan a decidir qué describir con más detalle y qué priorizar en 12 y 13. No son una etiqueta: la severidad solo se da a hallazgos.
+  - Lo referencian 5 o más objetos (hub en `graph.json`).
+  - Es punto de entrada: página de site, acción de record, Web API, temporizador.
+  - Tiene mucho uso real (`usage.executions` alto, en producción).
+  - Lee o escribe entidades centrales del modelo de datos.
+  - Llama a integraciones externas.
+  - Tiene lógica de seguridad (permisos, comprobación de grupos).
 
-- Referenciado por más de 5 objetos distintos (hub en `graph.json`).
-- Es punto de entrada: página de site, acción de record, Web API, temporizador.
-- Tiene **mucho uso real** (`usage.executions` alto).
-- Maneja decisiones de negocio importantes (process model con muchas pasarelas).
-- Lee o escribe entidades centrales del modelo de datos.
-- Está conectado a integraciones externas.
-- Tiene lógica de seguridad (permisos, validación de roles).
-
-Márcalos con criticidad **Alta** o **Crítica**.
-
-## Heurísticas de complejidad y deuda
+## Indicadores de complejidad y deuda
 
 | Indicador | Cómo medirlo |
 |---|---|
 | Expression rule grande | `sailLines` > 200; muchos `if`/`choose` anidados. |
 | Interfaz grande | `sailBytes` > 80 KB o más de ~30 componentes. |
-| Process model complejo | Más de 30 nodos (Appian recomienda no pasar de 50), más de 5 pasarelas, subprocesos muy anidados. |
+| Process model complejo | Más de 50 nodos o más de 100 variables de proceso (recomendaciones de diseño de Appian, [fuente](https://docs.appian.com/suite/help/26.6/appian-recommendations.html#process-model-design-guidance)); muchas pasarelas o subprocesos muy anidados. |
 | Lógica de negocio en la interfaz | Cálculos pesados en `a!localVariables` que deberían ser regla. |
 | Valores *hardcodeados* | URLs, emails, identificadores de grupo, valores tipo "PROD"/"DEV" en literales. |
 | Duplicidad | Reglas con nombres parecidos y SAIL similar. |
-| Sin descripción | `description` vacía. |
+| Sin descripción | `description` vacía en la respuesta. Si la respuesta no trae el campo, no es indicio (dato ausente no es defecto). |
 | Naming inconsistente | Mezcla de estilos en el mismo módulo. |
 | Avisos de validación | `validationIssues` no vacío. |
-| Sin uso | `usage.executions = 0` con historial disponible. |
+| Sin uso | `usage.executions = 0` con historial disponible y en un entorno de producción. |
 
 Para las alternativas actuales de cada patrón, ver `references/modernization-guide.md`.
 
 ## Roles típicos en aplicaciones Appian
 
-Para inferir actores cuando el grupo no lo aclara:
+Para inferir actores cuando el grupo no lo aclara (es una inferencia: 🔵, con el nombre del grupo como evidencia):
 
 | Grupo típico | Rol funcional |
 |---|---|
@@ -102,7 +99,7 @@ Para inferir actores cuando el grupo no lo aclara:
 | `*Viewer*`, `*ReadOnly*`, `*Consulta*` | Consulta sin edición. |
 | `*Initiator*`, `*Requestor*`, `*Solicitante*` | Quien arranca un proceso. |
 | `*Operator*`, `*Users` | Usuario operativo. |
-| `All Users`, `Everyone`, `Public` | 🔴 Atención: posible exposición amplia. |
+| `All Users`, `Everyone`, `Public` | Posible exposición amplia: lo valora `04-seguridad-grupos.md`. |
 
 ## Informes y cuadros de mando
 
@@ -110,13 +107,14 @@ Suelen estar como páginas de site con interfaces de gráficos (`a!barChartField
 
 ## Cuándo marcar algo como pendiente
 
-Marca 🟡 (no ✅) cuando:
+Marca ❓ (no ✅) cuando la conclusión depende de un dato que la extracción no trae: su ausencia no prueba que falte en la aplicación (`execution-principles.md`, principio 3). Por ejemplo:
 
 - La definición del objeto no está disponible (`detail: "none"`).
 - El propósito de negocio no está claro y no hay descripción.
 - Hay valores que dependen del entorno y no se ven los de producción.
 - Un process model no se invoca desde ningún sitio visible (puede tener un disparador externo).
 - La seguridad por objeto no está disponible y la conclusión depende de ella.
-- Un grupo no tiene miembros según la extracción.
+- Un grupo no tiene miembros según la extracción (la herramienta puede no devolverlos todos).
+- Falta configuración que el Dev MCP no siempre devuelve: excepciones y alertas de nodos, destinatarios de correo, seguridad de acciones de record.
 
 Cada pendiente lleva **responsable sugerido** (funcional, técnico Appian, DBA o responsable del sistema externo).

@@ -5,7 +5,19 @@ El Docs MCP es el servidor público de documentación de Appian (`https://appian
 ## Límites
 
 - **300 consultas al día y 60 por minuto** (límite del servicio). La skill se impone un tope de **30 consultas por ejecución** entre todos los agentes.
-- Requiere OAuth (Google o GitHub) en el cliente: el script de preflight no puede comprobarlo; se comprueba desde la sesión con una consulta de prueba (fase 0).
+- Requiere OAuth (Google o GitHub) en el cliente: el script de preflight no puede comprobarlo; se comprueba desde la sesión con una consulta de prueba (fase 0). El orquestador apunta esa consulta en `<trabajo>/docs_cache/orquestador.json` y cuenta para el tope.
+
+Reparto orientativo del tope (el orquestador dice a cada subagente cuántas le quedan; lo que uno no gaste puede pasar a otro):
+
+| Quién | Consultas |
+|---|---|
+| Preflight (fase 0) | 1 |
+| `interface-analyzer` (4.1) | 4 |
+| Cada uno de los 4 agentes de 4.2 | 4 (16 en total) |
+| Orquestador (07, 09 y pasada de coherencia) | 2 |
+| `rebuild-architect` (4.4) | 5 |
+| `target-designer` (4.5) | 2 |
+| **Total** | **30** |
 
 ## Cómo localizar la herramienta
 
@@ -31,13 +43,13 @@ No lo consultes para cosas que ya dicen `references/` o la propia definición de
 
 Antes de consultar, lee los ficheros `<trabajo>/docs_cache/*.json` (uno por agente). Si la pregunta, o una equivalente, ya está respondida, reutilízala.
 
-Después de consultar, añade la entrada a **tu** fichero (`<trabajo>/docs_cache/<nombre-del-agente>.json`, un **array JSON** de entradas), para no pisar el de otros agentes que trabajan en paralelo:
+Después de consultar, añade la entrada a **tu** fichero (`<trabajo>/docs_cache/<nombre-del-agente>.json`, un **array JSON** de entradas; el orquestador usa `orquestador.json`), para no pisar el de otros agentes que trabajan en paralelo:
 
 ```json
 {"query": "…", "askedAt": "2026-09-30T10:00:00Z", "answer": "resumen en 1-3 frases", "urls": ["https://docs.appian.com/..."]}
 ```
 
-El orquestador suma las consultas de todos los ficheros para respetar el tope.
+El orquestador suma las consultas de todos los ficheros para respetar el tope. Cada agente dice en su informe final cuántas hizo.
 
 ## Cómo citarlo
 

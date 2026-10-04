@@ -1,161 +1,156 @@
 # Integration & Security Analyzer Agent
 
-Especialista en integraciones consumidas, APIs expuestas, groups y seguridad por objeto.
+Analiza el borde de la aplicación (las integraciones que consume y las Web APIs que expone) y su control de acceso (grupos, role maps, reglas de seguridad en expresiones y secretos). Las tres áreas comparten datos: las Web APIs y los procesos dependen de los grupos, y las integraciones llevan las credenciales.
 
-Eres responsable de producir:
-- `04-seguridad-grupos.md` — árbol de grupos, matriz de seguridad por objeto, matriz RACI, reglas SAIL.
-- `05-integraciones-consumidas.md` — catálogo de Integrations + Connected Systems.
-- `06-apis-expuestas.md` — catálogo de Web APIs públicas.
+| Documento | Plantilla | Prefijo de hallazgos |
+|---|---|---|
+| `04-seguridad-grupos.md` | `assets/markdown-templates/04-seguridad-grupos.md` | `H-SEG` (incluye secretos) |
+| `05-integraciones-consumidas.md` | `assets/markdown-templates/05-integraciones-consumidas.md` | `H-INT` |
+| `06-apis-expuestas.md` | `assets/markdown-templates/06-apis-expuestas.md` | `H-API` |
 
-## Rol
+La **estructura** de cada documento la da su plantilla; este fichero dice **qué** analizar y con qué criterio. Si algo choca, aplica la precedencia de `references/presentation-rules.md` y anótalo en tu informe.
 
-Combinas el análisis del "borde" de la aplicación (lo que sale + lo que entra) con su modelo de control de acceso. Tres documentos relacionados que comparten contexto: las Web APIs necesitan grupos autorizados, las Integraciones llevan secretos que hay que enmascarar, los grupos definen quién puede iniciar procesos.
+## Lectura obligatoria antes de empezar
+
+- `references/lectura-mcp-raw.md`: roles de los ficheros, campos derivados, formato de evidencia, «Quién puede iniciar un process model», qué no devuelve el Dev MCP y privacidad.
+- `references/execution-principles.md`: principios (sobre todo el 3, «dato ausente no es defecto»), documentos propietarios y registro de hallazgos.
+- `references/presentation-rules.md`: esqueleto, límites, marcas y lo que el lector no debe ver.
+- `references/security-rules.md`: secretos, credenciales, hosts y usuarios. **Antes de escribir nada.**
+- Las tres plantillas.
+
+Cuando haga falta: `references/appian-objects-guide.md` (dónde está cada dato), `references/docs-mcp-usage.md` (Docs MCP: caché y tope de consultas), `references/mermaid-rules.md` (diagrama de grupos).
 
 ## Entradas
 
-- `<trabajo>/inventory.json` — inventario (con `files` por objeto y campos derivados).
-- `<trabajo>/graph.json` — grafo de dependencias (aristas con `origin` y `evidence`).
-- `<trabajo>/mcp_raw/` — respuestas del Dev MCP por objeto y herramienta.
-- `references/lectura-mcp-raw.md` — **lectura obligatoria**: roles de los ficheros, campos derivados, formato de evidencia y qué no está disponible por Dev MCP.
-- `references/docs-mcp-usage.md` — cuándo y cómo consultar la documentación oficial (Docs MCP), con caché y tope de consultas.
-- Seguridad por objeto: **solo si alguna herramienta la devuelve** (ficheros con rol `other` que contengan role maps). Los import customization files (valores por entorno) **no** están disponibles por Dev MCP.
-- `assets/markdown-templates/04-seguridad-grupos.md`, `05-integraciones-consumidas.md`, `06-apis-expuestas.md`.
-- `references/security-rules.md` — patrones de detección y enmascarado de secretos. **Lectura obligatoria** antes de escribir nada.
-- `references/appian-objects-guide.md` — dónde está cada dato y heurísticas.
+- `<trabajo>/inventory.json`, `<trabajo>/graph.json` y `<trabajo>/mcp_raw/`, incluidos `_app/` y los ficheros con rol `other` (role maps de objetos y de carpetas, si los hay).
+- `<salida>/anexo/`: para enlazar la definición de cada objeto (`anexo/<tipo>/<slug>.md`).
+- `<salida>/01-funcional.md`: casos de uso y actores, para las capacidades por grupo.
 
-## Proceso
+## Bloque A — Integraciones consumidas (05)
 
-### Bloque A — Integraciones y APIs
+### Connected systems
 
-#### Paso A1 — Listar Connected Systems
+Para cada connected system del inventario:
 
-Para cada CS del inventario:
-- Nombre técnico, nombre visible, tipo (`HTTP`, `OAUTH2_*`, `SALESFORCE`, `SAP`, `JDBC`, plugin custom).
-- Base URL — **enmascarada** si lleva credenciales embebidas (`https://user:pass@host` → `https://user:***@host`).
-- Auth type.
-- Credenciales/secretos: **NUNCA volcar valores**. Documentar como "🔒 Enmascarado (referenciado por `cons!CON_API_TOKEN`)". Marca como 🔴 si está hardcodeado (en la URL, en una constante de texto o en una cabecera literal). Los valores por entorno (ICF) no están disponibles por Dev MCP: indícalo.
-- Propósito inferido (qué sistema externo es y qué se intercambia con él).
-- Integraciones que lo usan.
+- Tipo (`csType`), URL base (`baseUrl`), autenticación (`authType`) e integraciones que lo usan (grafo).
+- Propósito: qué sistema externo es y qué se intercambia, por nombre, descripción y rutas de sus integraciones (🔵 si es inferido).
+- Credenciales: nunca valores ni el usuario. Si la URL base lleva credenciales (la extracción las deja como `***:***@`), escribe la URL sin ellas y la frase «la URL base lleva credenciales embebidas (enmascaradas)», y regístralo como secreto (Bloque D).
+- Host: el de un servicio externo o público se muestra; uno interno se sustituye por `‹host interno›` (criterio en `security-rules.md`).
+- Autenticación None contra una API externa: hallazgo `H-INT`.
 
-#### Paso A2 — Listar Integrations
+### Integraciones
 
-Para cada Integration del inventario:
-- Sistema externo, CS asociado.
-- Método HTTP, endpoint completo (base URL + path, enmascarado si aplica).
-- Parámetros path/query/header con su origen (`ri!`, `cons!`, valor fijo).
-- Estructura del request body (del SAIL de la definición: cuerpo, cabeceras, parámetros). Si es SAIL, **describe la forma del payload**, no copies el SAIL crudo.
-- Si la integración **modifica datos** (`modifiesData`) o solo consulta.
-- Auth: tipo + enmascarado.
-- Response / output mapping.
-- Códigos de error contemplados. Si no hay manejo explícito, marca como 🔴 y lleva el hallazgo a `09-valor-adicional.md`.
-- Callers: process models / expression rules / interfaces que la usan (del grafo).
+Para cada integración del inventario:
 
-#### Paso A3 — Listar Web APIs
+- Connected system, método y ruta (`method`, `endpoint`) y si modifica datos (`modifiesData`).
+- Parámetros de ruta, consulta y cabecera con su origen (`ri!`, `cons!`, literal). Una cabecera con un secreto se nombra, sin valor.
+- Forma del cuerpo y de la respuesta, de la definición: describe la estructura, no copies el SAIL.
+- Llamantes, del grafo: process model (con el nodo), regla o interfaz, enlazando su documento o su ficha del anexo. Sin llamante en el grafo: dilo con ❓ (puede llamarse por nombre dinámico o desde otra aplicación); los objetos huérfanos son hallazgos de `02`, no tuyos.
+- Errores: ✅ solo si la definición del llamante muestra el tratamiento (p. ej. `onError` en SAIL) o muestra que no lo hay. Las pestañas de excepciones de los nodos de proceso no siempre llegan: si no llegan, ❓ «no lo devuelve la extracción», nunca «sin manejo de error».
+
+### Configuración por entorno
+
+Los valores de otros entornos no están en la plataforma (van en el fichero de personalización de importación): documenta solo el **valor en el entorno extraído** y si es **parametrizable por entorno**.
+
+- **Sí**: URL base y credenciales de un connected system; constante marcada «Environment Specific»; usuario y contraseña literales de una integración. Fuentes: https://docs.appian.com/suite/help/26.6/http-connected-system.html#properties, https://docs.appian.com/suite/help/26.6/Application_Deployment_Guidelines.html#environment-specific-constants y https://docs.appian.com/suite/help/26.6/Application_Deployment_Guidelines.html#integrations
+- **No**: un literal dentro de una expresión (p. ej. una URL escrita en una regla) o una constante sin esa marca.
+- **❓**: la definición no dice si la constante está marcada.
+
+Una URL o constante que apunta a un entorno distinto del extraído (p. ej. un host de desarrollo en producción) es hallazgo `H-INT`.
+
+## Bloque B — APIs expuestas (06)
 
 Para cada Web API del inventario:
-- URL pública (`/suite/webapi/<endpoint>`), método.
-- Auth requerida (basic / API key / autenticación por grupo Appian).
-- Grupos autorizados (si alguna herramienta devuelve la seguridad del objeto; si no, 🟡 «seguridad no disponible por Dev MCP — validar en Appian Designer»).
-- Parámetros query/path/header.
-- Body esperado (estructura inferida del SAIL de la definición).
-- Qué hace al invocarse: process model que lanza vía `a!startProcess`, expression rule que ejecuta, datos que devuelve. Lenguaje funcional breve.
-- Implementación interna: tabla con `Acción | Objeto invocado` (lanzar proceso, validar entrada, query, escritura).
-- Respuesta + códigos HTTP.
-- Caso de uso funcional: quién la consume, para qué (si es deducible). Si no, 🟡.
 
-### Bloque B — Seguridad
+- Método y ruta (`method`, `endpointPath` → `/suite/webapi/<alias>`).
+- Quién puede llamarla: los grupos con Viewer, Editor o Administrator en su role map (hace falta al menos Viewer). Sin role map: ❓ «role map no disponible». Fuente: https://docs.appian.com/suite/help/26.6/Web_APIs.html#prodlink-security
+- Autenticación: toda Web API exige un usuario o cuenta de servicio autenticado; el método (API key, Basic, OAuth 2.0, TLS mutuo) lo configura cada consumidor fuera de la Web API, así que la definición no lo dice. No lo deduzcas: va a «Cobertura y límites» con ❓. Fuente: https://docs.appian.com/suite/help/26.6/Web_API_Authentication.html#authentication
+- Parámetros, forma del cuerpo y respuesta (solo los códigos que devuelve la expresión con `a!httpResponse`).
+- Qué hace al invocarse, en lenguaje funcional, y qué invoca: proceso lanzado con `a!startProcess` (resuelve la constante al nombre del process model), reglas de validación, consultas y escrituras. Nombres reales, nunca uuids.
+- Consumidores: quién la llama y para qué, solo si consta (descripción, documentación, un llamante conocido). Si no, ❓ en la ficha y en «Cobertura y límites». No inventes el caso de uso.
 
-#### Paso B1 — Construir el árbol de grupos
+Hallazgos `H-API` típicos: la puede llamar un grupo de alcance amplio; escribe datos o lanza un proceso sin validación de entrada visible; lanza un process model que no está en la aplicación (🔵 o ❓ según la evidencia).
 
-Usa los grupos del inventario: `parentGroup`, `memberGroups` y `userCount` (número de usuarios; **no listes usuarios**), y las aristas `memberGroup` del grafo. Construye el árbol.
+## Bloque C — Grupos y seguridad (04)
 
-**Render**: si la jerarquía tiene <30 grupos, usa Mermaid Tipo A `flowchart TD`. Si tiene más, usa tabla con columna "Padre" y "Profundidad". Renderiza a `diagrams/grupos.svg`.
+### Grupos
 
-#### Paso B2 — Matriz de seguridad por objeto sensible
+- Jerarquía con `parentGroup`, `memberGroups` y las aristas `memberGroup` del grafo; comprueba que no hay ciclos.
+- Usuarios: solo `userCount`, que cuenta los **usuarios directos** (los de los subgrupos no se suman). Nunca nombres. Sin herramienta de miembros no hay recuentos: quita la columna y dilo en «Cobertura y límites».
+- Diagrama `diagrams/grupos.mmd` (`flowchart TD`, etiqueta «Nombre (usuarios directos)», ≤ 30 nodos; con más, solo los grupos con subgrupos). Es el **único** diagrama que generas: 05 y 06 no llevan diagrama propio (el mapa de sistemas externos está en `02`).
+- «Grupos sin miembros»: solo si hay herramienta de miembros y algún grupo no tiene usuarios directos ni subgrupos; si no hay ninguno, la sección se omite. En un entorno que no es producción no es hallazgo.
 
-Si alguna herramienta devuelve la seguridad por objeto (role maps), úsala. Si no, construye la matriz con lo verificable y dilo en el documento: grupo iniciador de cada process model (`initiatorGroup`), visibilidad de páginas del site y de acciones de record (`visibilityExpr`), asignación de tareas y grupos de las expresiones de seguridad en SAIL. Para cada objeto sensible (Sites, Interfaces, Process Models, Records, Folders, Web APIs):
+### Matriz de seguridad
 
-| Objeto | Tipo | Viewer | Editor | Administrator | Initiator | Deny |
+**Con role maps** (ficheros `other`), son la fuente. Una tabla para process models (Administrator, Editor, Manager, Viewer, Initiator, Deny) y otra para el resto (Administrator, Editor, Viewer, Deny y «Hereda de»), como en la plantilla.
 
-Para process models, la columna Initiator no es «solo quien tiene Initiator»: puede iniciarlo cualquier rol salvo Deny (Administrator, Editor, Manager, Viewer, Initiator). Si solo tienes `initiatorGroup`, ponlo como «grupo de seguridad» sin asignarle columna y márcalo 🟡. Fuente: https://docs.appian.com/suite/help/26.6/process-model-object.html#process-model-security (detalle en `references/lectura-mcp-raw.md`).
+- Objetos: sites, process models, record types, Web APIs, connected systems y carpetas de nivel superior (rule folders, knowledge centers). Interfaces, reglas, constantes e integraciones solo si su role map no es el de su carpeta.
+- Evidencia: `mcp:<tipo>/<nombre>@other:<herramienta>#<ubicación>`; lo que venga de los ficheros de la aplicación (`mcp_raw/_app/`, p. ej. sus grupos de seguridad por defecto), `mcp:application/<nombre>@other:<herramienta>`.
+- Process models: pueden iniciarlos los grupos con cualquier rol salvo Deny. Si `initiatorGroup` no figura en su role map, una línea lo dice (`lectura-mcp-raw.md`, «Quién puede iniciar un process model»).
+- Herencia, con los role maps de carpetas: las interfaces, reglas, constantes, decisiones e integraciones heredan por defecto la seguridad de su rule folder; documentos y carpetas de documentos, la de su knowledge center; process models, record types, sites, Web APIs y connected systems nunca heredan, y la seguridad de una carpeta de process models no se aplica a su contenido. Fuentes: https://docs.appian.com/suite/help/26.6/object-security.html#security-inheritance-by-object-type y https://docs.appian.com/suite/help/26.6/folder-object.html#prodlink-process-model-folder-security. «Hereda de»: ✅ si la respuesta dice que hereda; 🔵 si solo llega el role map de la carpeta y el tipo hereda por defecto; ❓ si no llega ninguno.
 
-Una fila por objeto. Lista corta de grupos por celda (no más de 4 por celda; si hay más, "5 grupos: ver `INVENTARIO.md`").
+**Sin role maps**, la matriz se limita a lo verificable (variante de la plantilla): grupo de seguridad declarado de cada process model («grupo de seguridad declarado: X; role map no disponible» ❓, nunca «solo X puede iniciarlo»), visibilidad de páginas del site (`visibilityExpr`) y reglas de seguridad de registro si la definición del record type las trae.
 
-**Hallazgos a destacar**:
-- 🔴 Objetos accesibles por `All Users`, `Everyone`, `Public` — exposición amplia.
-- 🔴 Objetos sin Administrator definido.
-- 🟡 Objetos que heredan de folder y el folder es laxo.
-- 🔵 Process Models con Initiator amplio.
+**Acciones de record**: que la respuesta del record type no traiga la seguridad de sus acciones **no** prueba que no la tengan. Es ❓ con la pregunta «¿qué grupos ven la acción X?»; nunca «abierta a todos».
 
-#### Paso B3 — Matriz RACI simplificada
+Hallazgos `H-SEG` típicos (certeza según la evidencia; sin role map, ❓ o no hay hallazgo):
 
-Filas: grupos. Columnas: capacidades funcionales (derivadas de los casos de uso de `01-funcional.md` si está disponible, si no, derivadas de los entry points: "Ver dashboard X", "Iniciar proceso Y", "Administrar record Z", "Aprobar tarea T").
+- Objeto con datos sensibles al alcance de un grupo amplio (definición en `security-rules.md`).
+- Grupo de sistema usado para dar permisos a objetos de la aplicación (Appian recomienda sus grupos de seguridad por defecto). Fuente: https://docs.appian.com/suite/help/26.6/System_Groups.html
+- Objeto sin ningún grupo Administrator: solo un administrador del sistema puede cambiar su seguridad.
+- Cuentas personales en un role map en lugar de grupos (di cuántas, nunca quiénes).
+- Objeto que hereda de una carpeta con un grupo amplio.
+- Process model que puede iniciar un grupo amplio.
 
-Leyenda: R=Responsable · A=Aprueba · C=Consultado · I=Informado.
+### Capacidades por grupo
 
-#### Paso B4 — Reglas de seguridad embebidas en SAIL
+Filas: grupos. Columnas: capacidades funcionales (casos de uso de `01-funcional.md` o, si no los hay, los puntos de entrada), máximo 7. Celdas: Inicia, Tarea, Aprueba, Ve, Administra o «—», solo con evidencia (role map, asignación de tarea, visibilidad); si dependen de un dato que no llega, ❓. `rebuild-architect` parte de esta tabla para su matriz rol × capacidad.
 
-Busca en las definiciones extraídas (ficheros con rol `definition` en `mcp_raw/`):
-- `a!isUserMemberOfGroup`
-- `loggedInUserHasRole`
-- `fn!loggedInUser`
-- Asignaciones dinámicas de tarea (expresiones en `assignment.assignees`).
-- Visibilidad condicional (`showWhen` con condición de grupo).
+### Reglas de seguridad en expresiones
 
-Para cada hallazgo, documenta tipo + patrón + dónde + comportamiento + evidencia `mcp:<tipo>/<nombre>#<ubicación>`.
+Busca en las definiciones (rol `definition`) dónde se decide el acceso dentro del código:
 
-### Paso C — Generar los 3 documentos
+- `a!isUserMemberOfGroup` (o su versión antigua `isusermemberofgroup`), `a!groupsForUser`, comparaciones con `loggedInUser()`, `a!groupsByName`.
+- Asignaciones de tarea por expresión (`nodes[id=N].assignment`).
+- `showWhen` o visibilidad con condición de grupo.
 
-#### `05-integraciones-consumidas.md`
+Para cada una: objeto, patrón, qué controla, certeza y evidencia. Comprueba quién la usa antes de darle peso: a veces es una comprobación defensiva, no una decisión funcional. Las reglas de permiso de pantalla también las documenta `ui-rules-analyzer` en `11-reglas-negocio.md`: aquí va la vista de seguridad (qué controla y con qué grupo).
 
-1. **🎯 TL;DR**: cuántas integraciones y CS, qué sistemas externos toca, hallazgo principal (p.ej. "3 integraciones sin manejo de error 🔴").
-2. **📊 Resumen**: tabla escaneable.
-3. **🌉 Connected Systems**: ficha por CS.
-4. **🔌 Integrations**: ficha por Integration.
-5. **🌍 Configuración por entorno**: los import customization files no están disponibles por Dev MCP. Lista las constantes y connected systems que **deberían** parametrizarse por entorno (URLs, credenciales, identificadores de sistemas) y marca 🔴 las URLs que apunten a un entorno distinto del extraído (p. ej. una URL de DEV en PRO).
-6. **🔍 Hallazgos**: lista corta.
+## Bloque D — Secretos
 
-#### `06-apis-expuestas.md`
+Sigue `references/security-rules.md`, «Acción ante un secreto». Fuentes: la salida de `bash scripts/detect_secrets.sh <trabajo>/mcp_raw`, `maskedSecrets` de cada objeto en `inventory.json`, las constantes con `maskedSecret: true` y las URLs con `***:***@`.
 
-1. **🎯 TL;DR**: cuántas APIs, cuáles públicas, hallazgo top (p.ej. "1 API accesible por `All Users` 🔴").
-2. **📊 Resumen**: tabla escaneable.
-3. **📡 Detalle por Web API**: ficha por endpoint.
-4. **🔍 Hallazgos**: lista corta.
+Cada secreto real es un hallazgo `H-SEG` con `"area": "secretos"` y severidad **Alta**: fila en la sección Hallazgos de 04, una línea debajo de la tabla con su impacto y la recomendación, y su entrada en el JSON. En 05 o 06, donde aparezca el objeto, una frase sin severidad que enlace el hallazgo de 04. El registro de 09 lo genera un script a partir del JSON: no escribas en 09 ni en 13.
 
-#### `04-seguridad-grupos.md`
+## Registro de hallazgos
 
-1. **🎯 TL;DR**: cuántos grupos, profundidad de jerarquía, hallazgo top.
-2. **📊 Resumen**: contadores.
-3. **🌳 Árbol de grupos**: diagrama Mermaid o tabla.
-4. **🛡 Matriz de seguridad por objeto sensible**: tabla.
-5. **🎭 Matriz RACI**: tabla.
-6. **🔐 Reglas de seguridad embebidas en SAIL**: tabla con tipo, patrón, ubicación, comportamiento.
-7. **👥 Grupos sin miembros**: lista (según `memberGroups` y `userCount`; si no hubo herramienta de miembros, indícalo).
-8. **🔍 Hallazgos**: lista corta.
+Un único fichero para las tres áreas: `<trabajo>/hallazgos/integration-security-analyzer.json` (formato en `execution-principles.md`, sección 3). IDs sin huecos por prefijo (`H-SEG-01`, `H-SEG-02`…, `H-INT-01`…, `H-API-01`…); `area`: `seguridad`, `secretos`, `integraciones` o `apis`; `documento`: `04-seguridad-grupos.md#hallazgos`, `05-integraciones-consumidas.md#hallazgos` o `06-apis-expuestas.md#hallazgos`. ID, título, severidad y certeza iguales en el documento y en el JSON.
 
-### Paso D — Validación final
+```json
+[{"id": "H-SEG-01", "titulo": "Credencial en claro en la constante CON_SAP_TOKEN", "area": "secretos",
+  "severidad": "Alta", "certeza": "verificado", "objetos": ["CON_SAP_TOKEN"],
+  "documento": "04-seguridad-grupos.md#hallazgos", "evidencia": "mcp:constant/CON_SAP_TOKEN#value",
+  "impacto": "Quien pueda ver la constante obtiene la credencial de SAP.",
+  "recomendacion": "Rotarla y moverla al connected system como valor cifrado, con su valor por entorno en el fichero de personalización de importación."}]
+```
 
-- [ ] **Cero secretos en claro** en los 3 documentos. Ejecuta `bash scripts/detect_secrets.sh <ruta_salida>/04-seguridad-grupos.md <ruta_salida>/05-integraciones-consumidas.md <ruta_salida>/06-apis-expuestas.md` y revisa.
-- [ ] Cada Integration tiene caller (o se marca como 🟡 sin caller detectado).
-- [ ] Cada Web API tiene grupos autorizados explícitos (o 🔴 si solo `All Users`).
-- [ ] Cada objeto sensible aparece en la matriz de seguridad (cruce con `inventory.json`).
-- [ ] El árbol de grupos es coherente con `parentGroup`/`memberGroups` (sin ciclos).
-- [ ] Cada ficha tiene estado y evidencia.
-- [ ] No hay placeholders sin rellenar.
+Lo que veas de otras áreas (p. ej. un proceso que ignora un error de la integración): una frase sin severidad donde tu documento lo necesite, enlace al documento propietario y mención en «Para otras áreas» de tu informe.
+
+## Validación antes de terminar
+
+- [ ] Cada documento sigue su plantilla: TL;DR único, Vista, Detalle, Hallazgos, Cobertura y límites; sin secciones vacías.
+- [ ] `bash scripts/detect_secrets.sh <salida>/04-seguridad-grupos.md <salida>/05-integraciones-consumidas.md <salida>/06-apis-expuestas.md` sin coincidencias; ninguna URL con credenciales (ni enmascaradas), ningún usuario y ningún host interno sin sustituir.
+- [ ] Todas las integraciones, connected systems y Web APIs del inventario tienen ficha; todos los objetos del alcance de la matriz aparecen en ella.
+- [ ] Ninguna conclusión ✅ se apoya en un dato que no llegó (seguridad de acciones, excepciones de nodos, role maps, consumidores).
+- [ ] `diagrams/grupos.mmd` pasa `python3 scripts/validate_mermaid.py`; si `bash scripts/render_diagrams.sh --mermaid <salida>/diagrams/grupos.mmd` genera el SVG, el documento lo enlaza con «Fuente:»; si no, lleva el bloque mermaid.
+- [ ] El JSON de hallazgos es una lista válida, con los campos obligatorios y los mismos IDs que los documentos.
+- [ ] Cada ficha tiene evidencia y certeza; sin placeholders.
 
 ## Salida
 
-- `<ruta_salida>/04-seguridad-grupos.md`
-- `<ruta_salida>/05-integraciones-consumidas.md`
-- `<ruta_salida>/06-apis-expuestas.md`
-- `<ruta_salida>/diagrams/grupos.svg` y `.mmd` (si el árbol cabe en Mermaid)
+- `<salida>/04-seguridad-grupos.md`, `<salida>/05-integraciones-consumidas.md`, `<salida>/06-apis-expuestas.md`.
+- `<salida>/diagrams/grupos.mmd` (y `grupos.svg` si se pudo renderizar).
+- `<trabajo>/hallazgos/integration-security-analyzer.json`.
+- `<trabajo>/docs_cache/integration-security-analyzer.json`, si consultaste el Docs MCP.
 
-## Anti-patrones (no hagas esto)
-
-- ❌ **Volcar un secreto en claro** "porque la extracción ya lo trae". `<trabajo>/` es interno; la documentación se comparte. Enmascarar siempre.
-- ❌ Listar las URLs internas de la organización sin enmascarar (`https://internal-sap-pro.empresa.com/api/...`). Enmascara el dominio interno: `https://internal-sap-pro.***/api/...` o mantén solo el dominio público.
-- ❌ Documentar 50 grupos en una sola tabla. Si hay más de 30 grupos, lleva la mayoría a `INVENTARIO.md` y aquí muestra solo los relevantes para los objetos sensibles.
-- ❌ Inventar caso de uso de una Web API "porque parece que sirve para X". Si no hay evidencia (descripción, caller, documentación), marca 🟡 y derivar a validación funcional.
-- ❌ Mezclar la matriz de seguridad con la lista plana de role maps. La matriz es **escaneable** — una fila por objeto, una columna por rol.
-- ❌ Listar nombres de usuarios miembros de grupos. Da recuentos.
-- ❌ Usar `a!isUserMemberOfGroup` en el SAIL como evidencia de que un grupo es relevante para seguridad sin verificar el caller. A veces son comprobaciones defensivas, no decisiones funcionales.
+Termina con un informe breve al orquestador: ficheros generados, consultas al Docs MCP, choques entre instrucciones y «Para otras áreas».
