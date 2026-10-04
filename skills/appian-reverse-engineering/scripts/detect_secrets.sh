@@ -36,7 +36,8 @@ scan() {
 scan "Password/Secret/Token en propiedad" '(^|[^A-Za-z0-9_])(password|passwd|pwd|secret|api[_-]?key|apikey|token|bearer)["'"'"']?[[:space:]]*[:=][[:space:]]*"?[^[:space:]"*]{4,}' "$@"
 scan "Token de API con prefijo conocido"  '(sk|pk|rk)_(live|test)_[A-Za-z0-9]{8,}' "$@"
 scan "Cabecera Authorization con valor"   '[Bb]earer[[:space:]]+[A-Za-z0-9._~+/-]{16,}' "$@"
-scan "URL con credenciales embebidas"     'https?://[^/[:space:]:]+:[^@[:space:]]+@[^[:space:]]+' "$@"
+# Una URL ya enmascarada por completo (https://***:***@host) no es un secreto; con usuario visible, sí cuenta.
+scan "URL con credenciales embebidas"     'https?://([^/[:space:]:*][^/[:space:]:]*|[*]+[^/[:space:]:*][^/[:space:]:]*):[^@[:space:]]+@[^[:space:]]+' "$@"
 scan "JDBC connection string con password" 'jdbc:[a-z]+://[^[:space:]?]+\?[^[:space:]]*password=[^&[:space:]]+' "$@"
 scan "Private key PEM"                    'BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY' "$@"
 scan "AWS access key id"                  'AKIA[0-9A-Z]{16}' "$@"

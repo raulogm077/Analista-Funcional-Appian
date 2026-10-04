@@ -130,3 +130,22 @@ def test_build_summary_contract(built):
     assert {"DEM_ERP_API_TOKEN", "DEM_CS_ERP"} <= set(s["secrets"]["objects"])
     assert any(x["type"] == "processModelsWithoutExecutions" for x in s["signals"])
     assert s["findings"] == []                                        # sin registro todavia
+
+
+def test_annex(built):
+    annex_py = Path(BUILD_MODEL).parent / "build_annex.py"
+    run = lambda: subprocess.run([sys.executable, str(annex_py), str(built.out)], capture_output=True, text=True)
+    p = run()
+    assert p.returncode == 0, p.stderr
+    anexo = built.out / "anexo"
+    form = (anexo / "interface" / "DEM_SolicitudForm.md").read_text(encoding="utf-8")
+    assert "\n1  =a!formLayout" in form or "\n 1  =a!formLayout" in form          # líneas numeradas
+    assert "recordType!DEM Solicitud.fields.titulo" in form and "recordType!{" not in form
+    assert "| 3 | `internal3.subprocess` |" in (anexo / "processModel" / "DEM_Alta_Solicitud.md").read_text(encoding="utf-8")
+    blob = "\n".join(f.read_text(encoding="utf-8") for f in anexo.rglob("*.md"))
+    for leak in ("marta.ruiz", "ana.garcia", "admin.dem", "P4ssw0rd", "sk_live_51Hc9", "svc_erp"):
+        assert leak not in blob, leak
+    assert "[DEM_SolicitudForm.md](./interface/DEM_SolicitudForm.md)" in (anexo / "indice.md").read_text(encoding="utf-8")
+    assert run().returncode == 0                                   # repetible
+    (anexo / "indice.md").write_text("mío")                        # un anexo ajeno no se borra
+    assert run().returncode == 2 and (anexo / "interface").exists()
