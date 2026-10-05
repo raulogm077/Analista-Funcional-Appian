@@ -83,9 +83,9 @@ def estado(a):
     pan = sorted(p.id for p in m.vigentes("PAN"))
     sin_cap = [p for p in pan if not re.search(r"!\[[^\]]*\]\([^)]+\)", m.texto(p))]
     print(f"Pantallas: {len(pan)}" + (f"; sin captura: {', '.join(sin_cap)}" if sin_cap else ""))
-    conf = [f[0] for f in tabla(texto, "Pantallas confirmadas") if f and f[0]]
+    conf = [p for p in pan if m.piezas[p].estado == "🔒"]
     if conf:
-        print(f"Pantallas confirmadas (no se cambian sin el visto bueno del analista): {', '.join(conf)}")
+        print(f"Pantallas validadas por el cliente (🔒; no se cambian sin el visto bueno del analista): {', '.join(conf)}")
         print(f"  para el prototipo: --confirmadas {','.join(conf)}")
     if "T" in m.docs:
         tv = m.version("T")

@@ -1,7 +1,7 @@
 {
   "name": "appian-analisis-funcional",
-  "version": "0.6.0-alpha.2",
-  "description": "Análisis funcional y propuesta de pantallas para aplicaciones Appian: de transcripciones, correos, diagramas de flujo o un diseño funcional existente al análisis en Markdown y el DDF en Word, con diagramas de proceso BPMN editables en draw.io, y de ahí a un prototipo navegable con marca AENA (guía UX basada en el SAIL Design System de Appian) y capturas para el documento.",
+  "version": "0.6.0-beta.1",
+  "description": "Análisis funcional de aplicaciones Appian: de reuniones, correos o un DF existente al diseño funcional que valida el cliente (DF en Word) y a la especificación técnica para construir con buenas prácticas, con procesos BPMN editables en draw.io y un prototipo navegable con marca AENA.",
   "author": {
     "name": "Raúl Gómez Moya"
   },

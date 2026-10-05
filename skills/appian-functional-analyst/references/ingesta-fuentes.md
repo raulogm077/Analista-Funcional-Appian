@@ -35,10 +35,11 @@ Cada hecho del análisis lleva su fuente. En `funcional.md` va en el comentario 
 | Word o texto sin paginar | `[FU-01 §4]` (apartado) o `[FU-01 RF-05]` (ID del documento) |
 | Correo | `[FU-04]` (el índice ya da fecha y asunto) |
 | Diagrama | `[FU-10 «Revisar expediente»]` (nombre del elemento) |
+| Comentario al DF devuelto | `[FU-12 C3]` (número que le da `leer_fuentes.py`) |
 | Inferencia | `FU-03, FU-10` con el estado 🔶 |
 
-Quien lea el análisis debe poder ir de cualquier regla a la frase exacta que la
-justifica.
+Dentro de un comentario o de una celda de tabla van sin corchetes (`FU-03 00:14:32`). Quien lea el
+análisis debe poder ir de cualquier regla a la frase exacta que la justifica.
 
 ## 3. Qué extraer de cada tipo
 

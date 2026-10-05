@@ -14,7 +14,8 @@ leerse deprisa y sin dudas. `comprobar.py` avisa de lo que incumple esta guía.
 - **Una sola vez.** Lo que ya está escrito se cita por su ID («ver HU-07»), no se repite. Si dos sitios
   dicen lo mismo, uno sobra.
 - **Sin relleno.** Nada de introducciones que anuncian lo que viene ni de cierres que lo resumen.
-- **Negrita** solo en los títulos de ficha. Sin emojis en el texto del DF.
+- **Negrita** solo en los títulos de ficha y en los nombres de campo de una ficha vertical. Sin emojis en el
+  texto del DF.
 - **En el DF, nada de Appian.** El cliente lee «la lista de solicitudes», no «el record list». Los
   objetos de Appian se nombran en la especificación técnica.
 

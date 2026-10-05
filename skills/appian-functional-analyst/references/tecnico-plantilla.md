@@ -6,9 +6,11 @@ Ejemplo completo: `ejemplos/autorizaciones/analisis/tecnico.md`.
 
 ## Cómo se escribe
 
-- Cabecera `# <Proyecto> — Especificación técnica` y `Versión: x.y`, la misma que el funcional.
-- Apartados `## N. Título` con los números de abajo. Los nombres de los objetos, en español y con las
-  convenciones del apartado 1. Las fuentes se citan a la vista (`FU-03 00:14:32`).
+- Cabecera `# <Proyecto> — Especificación técnica` y `Versión: x.y · Estado: en curso`, con la misma versión
+  que el funcional. Pasa a `Estado: completo` cuando se entrega para construir: desde entonces, `comprobar.py`
+  trata como error lo que falte (una pantalla sin su interfaz, un paso sin su nodo, un criterio sin prueba).
+- Apartados `## N. Título` con los números de abajo; si uno no aplica, «No aplica: <motivo>». Los
+  nombres de los objetos, en español y con las convenciones del apartado 1. Las fuentes se citan a la vista (`FU-03 00:14:32`).
 - **Cada cosa en un sitio.** El comportamiento y los criterios están en las historias; la composición de
   cada pantalla, en el prototipo. Aquí se remite a ellos.
 - **Fuera:** lo que la skill oficial de Appian resuelve siempre igual (UUID, nombre de columna desde el
@@ -19,8 +21,8 @@ Ejemplo completo: `ejemplos/autorizaciones/analisis/tecnico.md`.
 
 La especificación aplica `appian-best-practices` en su modo de orientar. No se carga su SKILL.md: antes de
 escribir un apartado se abre solo la sección que dice la tabla, con
-`python3 ../appian-best-practices/scripts/seccion.py <doc> <sección>` desde la carpeta de esta skill
-(sin número de sección, lista los títulos del doc).
+`python3 <skill>/../appian-best-practices/scripts/seccion.py <doc> <sección>` (sin número de sección,
+lista los títulos del doc).
 
 | Apartado | Abre en appian-best-practices |
 |---|---|
@@ -106,11 +108,13 @@ constantes `Constante · Valor · Cambia por entorno`.
 ### 7. Interfaces y acciones
 Tabla `Pantalla · Qué es en Appian · Guarda con · Notas`, una fila por PAN: página de site (y de qué tipo),
 vista de registro, acción de registro, formulario de tarea o de inicio. Filtros de usuario, búsqueda,
-exportación y acciones de registro con quién las ve. La composición: «ver prototipo, pantalla <id>».
+exportación y acciones de registro con quién las ve. Los filtros por defecto y los contadores trabajan sobre
+conjuntos acotados (BP 05 §2–3). La composición: «ver prototipo, pantalla <id>».
 
 ### 8. Procesos
 Por process model, la tabla de nodos `Nodo · Qué hace · Asignado a · Plazo y escalado · Escribe · Evento`,
-y después la cancelación y el archivado. Cómo se parte el proceso en modelos y subprocesos es una DT.
+con el `ACT-nn` del paso en el nodo que lo hace, y después la cancelación y el archivado. Todo paso que ocurre
+en la aplicación tiene su nodo o dice qué lo hace. Cómo se parte el proceso en modelos y subprocesos es una DT.
 
 ### 9. Avisos
 Tabla `Aviso · Cómo se hace · Remitente y respuesta · Plantilla`. Un aviso que no se puede perder es una

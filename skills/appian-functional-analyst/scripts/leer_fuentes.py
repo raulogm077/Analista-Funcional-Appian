@@ -558,8 +558,12 @@ def main():
         entry = {"id": fid, "fichero": f.name, "tipo": kind, "detalle": detail, "fecha": date, "hash": h,
                  "salida": f"{fid}-{slug(f.name)}.md" if body is not None else ""}
         if body is not None:
+            gente = ""
+            if kind == "Transcripción":  # para que comprobar.py vigile que sus nombres no pasan al análisis
+                nombres = sorted({x.strip() for x in re.findall(r"^\[\d{1,2}:\d{2}:\d{2}\] ([^:\n\[\]]{2,60}):", body, re.M)})
+                gente = f"- Participantes: {'; '.join(nombres) if nombres else 'sin identificar'}\n"
             (out / entry["salida"]).write_text(
-                f"# {fid} · {f.name}\n\n- Tipo: {kind}\n- Detalle: {detail}\n- Fecha: {date}\n\n---\n\n{body}\n",
+                f"# {fid} · {f.name}\n\n- Tipo: {kind}\n- Detalle: {detail}\n- Fecha: {date}\n{gente}\n---\n\n{body}\n",
                 encoding="utf-8")
         if old:
             state["fuentes"][state["fuentes"].index(old)] = entry

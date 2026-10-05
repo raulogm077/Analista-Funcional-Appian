@@ -1,6 +1,6 @@
 # {proyecto} — Especificación técnica
 
-Versión: 0.1
+Versión: 0.1 · Estado: en curso
 
 ## 0. Entorno
 

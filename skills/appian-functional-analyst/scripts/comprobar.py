@@ -37,7 +37,9 @@ PRIORIDADES = ("imprescindible", "deseable")
 TIPOS_D = ("CAMBIA", "ANULA", "VALIDA", "RESPONDE", "ALCANCE+", "ALCANCE−", "ALCANCE-")
 TERMINOS_APPIAN = [r"record types?", r"record lists?", r"process models?", r"\bsail\b", r"expression rules?",
                    r"reglas? de expresi[oó]n", r"smart services?", r"data stores?", r"\bcdts?\b", r"\ba![a-z]\w*",
-                   r"appian designer", r"record actions?", r"interface objects?", r"\bdesigner\b"]
+                   r"appian designer", r"record actions?", r"interface objects?", r"\bdesigner\b",
+                   r"vistas? de registro", r"acci[oó]n(es)? de registro", r"listas? de registros", r"tipos? de registro",
+                   r"modelos? de proceso", r"\bsites?\b", r"\bportal(es)? de appian", r"grupos? de appian"]
 VAGAS = ["rápido", "rápidamente", "pronto", "en breve", "periódicamente", "frecuentemente", "a tiempo", "muchos",
          "muchas", "varios", "varias", "gran volumen", "gran cantidad"]
 
@@ -67,8 +69,12 @@ def visible(l):
     return re.sub(r"`[^`]*`", "", l)
 
 
-def nombres(texto):
-    return [x.strip() for x in re.split(r",| y |;|/", mo.sin_comentarios(texto)) if x.strip()]
+def nombres(texto, conocidos=()):
+    """Nombres de una celda: la celda entera si es un nombre conocido; si no, la lista separada por comas."""
+    t = mo.sin_comentarios(texto).strip()
+    if mo.normaliza(t) in conocidos:
+        return [t]
+    return [x.strip() for x in re.split(r",|;", t) if x.strip()]
 
 
 def clave_pid(pid):
@@ -122,14 +128,14 @@ def perfiles(m):
 def comprobar_completo(m):
     pf = {mo.normaliza(x) for x in perfiles(m)}
     informe("funcional §2: tabla de perfiles («| Perfil | …»)", [] if pf else ["falta"])
-    sin_campos, perfil_mal, pan_mal, prio_mal, sin_ca, sin_como = [], [], [], [], [], []
+    sin_campos, perfil_mal, pan_mal, prio_mal, sin_ca, sin_como, otro_perfil = [], [], [], [], [], [], []
     usados = set()
     for p in m.vigentes("HU"):
         c = m.campos(p.id)
         if not all(c.get(k) for k in ("perfil", "pantalla", "prioridad")):
             sin_campos.append(p.id)
             continue
-        for x in nombres(c["perfil"]):
+        for x in nombres(c["perfil"], pf):
             usados.add(mo.normaliza(x))
             if pf and mo.normaliza(x) not in pf:
                 perfil_mal.append(f"{p.id} «{x}»")
@@ -139,6 +145,10 @@ def comprobar_completo(m):
             prio_mal.append(f"{p.id} «{c['prioridad']}»")
         if not [h for h in p.hijos if not anulada(m, h)]:
             sin_ca.append(p.id)
+        for paso in mo.ids_en(c.get("paso", "")):
+            quien = m.campos(paso).get("quien", "") if paso in m.piezas else ""
+            if quien and not any(mo.normaliza(x) in mo.normaliza(quien) for x in nombres(c["perfil"], pf)):
+                otro_perfil.append(f"{p.id} ({paso}: {mo.sin_comentarios(quien).strip()})")
         if not re.search(r"^Como .+ quiero .+ para ", m.texto(p.id), re.M):
             sin_como.append(p.id)
     informe("historias con la tabla Perfil · Pantalla · Paso · Prioridad", sin_campos)
@@ -147,6 +157,7 @@ def comprobar_completo(m):
     informe("prioridad «Imprescindible» o «Deseable»", prio_mal)
     informe("historias con criterios («Se acepta si:»)", sin_ca)
     informe("historias con «Como… quiero… para…»", sin_como, grave=False)
+    informe("el perfil de cada historia es quien hace su paso", otro_perfil, grave=False)
     informe("perfiles de §2 que tienen alguna historia", sorted(x for x in perfiles(m) if mo.normaliza(x) not in usados),
             grave=False)
 
@@ -265,7 +276,7 @@ def comprobar_redaccion(m):
                         propias = re.findall(r"\w+", mo.RX_ID.sub(" ", nf).replace("pan-", " "))
                         if len([w for w in propias if not w.isdigit()]) >= 10:  # una lista de IDs no es una frase
                             vistas[" ".join(re.findall(r"\w+", nf))].append(i + 1)
-                        if not re.search(r"\d", f):
+                        if not re.search(r"\d", f) and not l.startswith("|"):
                             for v in VAGAS:
                                 if re.search(rf"(?<!\w){re.escape(mo.normaliza(v))}(?!\w)", nf):
                                     vagas.append(f"l.{i + 1} «{v}»")
@@ -308,6 +319,9 @@ def comprobar_tecnico(m):
         print("· técnico: sin empezar (sin decisiones ni modelo de datos); se comprueba cuando lo esté")
         return
     T = m.docs["T"]
+    est = re.search(r"Estado:\s*([^·\n]+)", "\n".join(T.lineas[:12]))
+    completo = bool(est) and mo.normaliza(est.group(1)).strip().startswith("completo")
+    print(f"  técnico {'completo: lo que falta es error' if completo else 'en curso: lo que falta es aviso'}")
     # datos ↔ campos
     df = datos_df(m)
     nombres_df = {k[1] for k in df}
@@ -321,7 +335,7 @@ def comprobar_tecnico(m):
             uso = f[iu] if iu < len(f) else ""
             nu = mo.normaliza(uso)
             if nu.startswith("funcional"):
-                for x in nombres(uso.split(":", 1)[1] if ":" in uso else ""):
+                for x in nombres(uso.split(":", 1)[1] if ":" in uso else "", nombres_df):
                     usados.add(mo.normaliza(x))
                     if mo.normaliza(x) not in nombres_df:
                         sin_dato.append(f"{f[0]} → «{x}»")
@@ -330,22 +344,35 @@ def comprobar_tecnico(m):
     informe("técnico §3: cada campo con «Uso: Funcional: <dato del DF>» o «Técnico: para qué»", sin_uso)
     informe("técnico §3: los campos funcionales remiten a un dato de funcional §6", sin_dato)
     informe("funcional §6: cada dato tiene su campo en técnico §3",
-            sorted(v for k, v in df.items() if k[1] not in usados))
+            sorted(v for k, v in df.items() if k[1] not in usados), grave=completo)
 
     def falta_en(seccion, ids):
         rango = T.seccion(seccion)
         texto = "\n".join(T.lineas[rango[0]:rango[1]]) if rango else ""
         citados = mo.ids_en(texto)
         return sorted((x for x in ids if x not in citados), key=clave_pid)
-    informe("técnico §7: cada pantalla", falta_en("7", [p.id for p in m.vigentes("PAN")]))
-    informe("técnico §9: cada aviso", falta_en("9", [p.id for p in m.vigentes("AV")]))
-    informe("técnico §10: cada relación con otro sistema", falta_en("10", [p.id for p in m.vigentes("INT")]))
+    informe("técnico §7: cada pantalla", falta_en("7", [p.id for p in m.vigentes("PAN")]), grave=completo)
+    en_app = [p.id for p in m.vigentes("ACT")
+              if "fuera de la aplicacion" not in mo.normaliza(m.campos(p.id).get("pantalla", ""))]
+    informe("técnico §8: cada paso que ocurre en la aplicación", falta_en("8", en_app), grave=completo)
+    informe("técnico §9: cada aviso", falta_en("9", [p.id for p in m.vigentes("AV")]), grave=completo)
+    informe("técnico §10: cada relación con otro sistema", falta_en("10", [p.id for p in m.vigentes("INT")]),
+            grave=completo)
+    citadas_t = mo.ids_en(mo.sin_comentarios("\n".join(T.lineas)))
+    informe("técnico: cada regla común aplicada en algún apartado",
+            sorted((p.id for p in m.vigentes("RB") if p.id not in citadas_t), key=clave_pid), grave=completo)
     informe("técnico §14: cada criterio de aceptación",
-            falta_en("14", [p.id for p in m.por_tipo("CA") if not anulada(m, p.id)]))
+            falta_en("14", [p.id for p in m.por_tipo("CA") if not anulada(m, p.id)]), grave=completo)
     informe("técnico §14: cada escenario", falta_en("14", [p.id for p in m.vigentes("ESC")]), grave=False)
     r4 = T.seccion("4")
     t4 = mo.normaliza("\n".join(T.lineas[r4[0]:r4[1]])) if r4 else ""
-    informe("técnico §4: cada perfil con su grupo", [x for x in perfiles(m) if mo.normaliza(x) not in t4])
+    informe("técnico §4: cada perfil con su grupo", [x for x in perfiles(m) if mo.normaliza(x) not in t4],
+            grave=completo)
+    vacios = []
+    for clave, titulo, ini, fin in T.secciones:
+        if clave.isdigit() and int(clave) <= 14 and not any(l.strip() for l in T.lineas[ini + 1:fin]):
+            vacios.append(f"§{clave}")
+    informe("técnico: apartados con contenido («No aplica: …» si no aplica)", vacios, grave=completo)
     # decisiones técnicas
     sin_porque, sin_verif, sin_verificado = [], [], []
     for p in m.vigentes("DT"):
@@ -390,11 +417,10 @@ def comprobar_fuentes(m, carpeta, corregir):
         txt = f.read_text(encoding="utf-8")
         num = re.match(r"FU-(\d+)", f.name).group(1)
         src[num] = sorted(set(re.findall(r"^\[(\d{2}:\d{2}:\d{2})\]", txt, re.M)))
-        mm = re.search(r"Participantes: (.*)", txt)
-        if mm:
-            gente |= {n.strip() for n in mm.group(1).split(";") if n.strip() and "identificad" not in n}
-        gente |= {n.strip() for n in re.findall(r"^\[\d{1,2}:\d{2}:\d{2}\] ([^:\n]{3,60}):\s*$", txt, re.M)}
-        if not mm or "identificad" in mm.group(1):
+        mm = re.search(r"^- Participantes: (.*)$", txt, re.M)
+        if mm and "sin identificar" not in mm.group(1):
+            gente |= {n.strip() for n in mm.group(1).split(";") if n.strip()}
+        elif src[num]:
             sin_gente.append(f.name[:5])
     rx = re.compile(r"FU-(\d+) (\d\d:\d\d:\d\d)")
     malas = []
@@ -413,10 +439,30 @@ def comprobar_fuentes(m, carpeta, corregir):
         print(f"· {len(set(malas))} citas llevadas a la intervención anterior: {sorted(set(malas))[:10]}")
     else:
         informe("citas con el minuto de una intervención real", sorted(set(malas)))
+    # nombres de personas: el completo es error; el nombre de pila suelto, aviso (puede ser otra cosa)
     todo = "\n".join("\n".join(D.lineas) for D in m.docs.values())
-    informe("sin nombres de participantes", sorted(n for n in gente if n in todo))
+    completos = sorted(n for n in gente if re.search(rf"(?<!\w){re.escape(n)}(?!\w)", todo))
+    pila = sorted({n.split()[0] for n in gente if len(n.split()) > 1 and n not in completos
+                   and len(n.split()[0]) > 2 and re.search(rf"(?<!\w){re.escape(n.split()[0])}(?!\w)", todo)})
+    informe("sin nombres de participantes", completos)
+    informe("sin nombres de pila de participantes (revisa si es una persona)", pila, grave=False)
     if sin_gente:
-        print(f"· {', '.join(sorted(sin_gente))}: sin participantes identificados; revisa a mano que no salgan nombres")
+        print(f"· {', '.join(sorted(sin_gente))}: transcripción sin participantes identificados; revisa a mano que no salgan nombres")
+    # cada tramo de 10 minutos con conversación tiene alguna cita en el análisis o en la nota de la fuente
+    notas = m.raiz / "notas"
+    citas = collections.defaultdict(set)
+    seg = lambda h: sum(int(x) * f for x, f in zip(h.split(":"), (3600, 60, 1))) // 600
+    textos = [todo] + [f.read_text(encoding="utf-8") for f in notas.glob("FU-*.md")] if notas.is_dir() else [todo]
+    for tx in textos:
+        for x, y in rx.findall(tx):
+            citas[x].add(seg(y))
+    huecos = []
+    for num, marcas in src.items():
+        habla = collections.Counter(seg(h) for h in marcas)
+        huecos += [f"FU-{num} {s * 10:02d}–{s * 10 + 10:02d} min" for s, n in sorted(habla.items())
+                   if n >= 5 and s not in citas[num]]
+    informe("cada tramo de 10 minutos de cada reunión tiene alguna cita (en el análisis o en su nota)", huecos,
+            grave=False)
 
 
 # ------------------------------------------------------------------ versión anterior e impacto
@@ -488,7 +534,7 @@ def comprobar_informe_previo(m, ruta_imp, carpeta_fuentes):
             else:
                 pre, num = x.rsplit("-", 1)
                 previo = f"{pre}-{int(num) - 1:0{len(num)}d}"
-                ok = previo in m.piezas or previo in aceptados
+                ok = previo in m.piezas or previo in aceptados or (int(num) == 1 and not m.por_tipo(mo.tipo_de(x)))
             if ok:
                 aceptados.add(x)
                 cambio = True
@@ -549,14 +595,13 @@ def comprobar_impacto(m, ant, ruta_imp, cambios):
             sorted(i for i in set(modif) | set(anul) if m.raiz_de(i) in sin_cambios and m.raiz_de(i) not in declarado))
     aprobado = set()
     for f in puntos:
-        req = mo.normaliza(f.get("requiere", ""))
-        dec = f.get("decision", "")
-        if req and req not in ("—", "-", "no") and "✗" not in dec and "⚠" not in dec:
+        if "✔" in f.get("decision", ""):
             for col in ("encaja en", "cambio propuesto"):
                 aprobado |= {m.raiz_de(x) for x in mo.ids_en(f.get(col, ""))}
-    pierden = sorted(i for i in m.piezas if i in ant.piezas and ant.piezas[i].estado == "🔒"
-                     and m.piezas[i].estado != "🔒" and m.raiz_de(i) not in aprobado)
-    informe("lo 🔒 que cambia pasó por un punto aprobado", pierden)
+    sin_coment = lambda t: normaliza_pieza(mo.sin_comentarios(t))
+    tocadas = [i for i in m.piezas if i in ant.piezas and ant.piezas[i].estado == "🔒" and
+               (m.piezas[i].estado != "🔒" or sin_coment(m.texto(i)) != sin_coment(ant.texto(i)))]
+    informe("lo 🔒 que cambia pasó por un punto aprobado (✔)", sorted(i for i in tocadas if m.raiz_de(i) not in aprobado))
 
 
 def main():

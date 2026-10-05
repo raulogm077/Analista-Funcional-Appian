@@ -76,7 +76,7 @@ datos. El paso y su ficha describen la misma pantalla: una sola en el spec.
 
 ### 0.3 §6 → `data`
 
-- Un dataset por entidad (`### 6.n`). Con técnico §3, el `recordType` y los campos con sus nombres reales
+- Un dataset por entidad (`### 6.n`, salvo «Listas de valores»). Con técnico §3, el `recordType` y los campos con sus nombres reales
   (columna «Campo»; el dato del funcional está en «Uso»). Sin técnico, `recordType` con el prefijo del
   proyecto y la entidad (`EXP Expediente`), y cada campo con el nombre del dato en camelCase español
   («Fecha de inicio» → `fechaInicio`). Son provisionales: los fija la especificación técnica.

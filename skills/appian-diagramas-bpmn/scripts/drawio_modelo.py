@@ -43,7 +43,7 @@ ESTILO = {
     "manual": _TK + "taskMarker=manual;fillColor=#ffffff;",
     "subproceso": _TK + "taskMarker=abstract;isLoopSub=1;fillColor=#ffffff;",
 }
-ESTILO_CARRIL = ("swimlane;horizontal=0;startSize=40;html=1;fontSize=12;fontStyle=1;fillColor=#f4f5f7;"
+ESTILO_CARRIL = ("swimlane;horizontal=0;startSize=40;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;fillColor=#f4f5f7;"
                  "swimlaneFillColor=#ffffff;strokeColor=#b8bec5;")
 ESTILO_FLUJO = ("edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#4a5563;endArrow=block;"
                 "endFill=1;labelBackgroundColor=#ffffff;")

@@ -1,6 +1,6 @@
 # Solicitudes de autorización — Especificación técnica
 
-Versión: 1.1
+Versión: 1.1 · Estado: completo
 
 ## 0. Entorno
 
@@ -175,16 +175,16 @@ Las transiciones de funcional 3.2. Cada una la hace un process model (§8); ning
 
 ## 8. Procesos
 
-**AUT Tramitar Solicitud** (uno por solicitud, desde el envío hasta la resolución)
+**AUT Tramitar Solicitud** (uno por solicitud, desde el envío hasta la resolución). Lo inicia la acción de registro «Nueva solicitud» al enviar (ACT-01). El informe técnico (ACT-03) se redacta en la vista de la solicitud con una acción de registro, fuera del proceso, y el nodo «Esperar informe» comprueba que esté terminado.
 
 | Nodo | Qué hace | Asignado a | Plazo y escalado | Escribe | Evento |
 |---|---|---|---|---|---|
-| Revisar documentación | Tarea PAN-04 | `AUT_GRUPO_TECNICOS` | 5 días hábiles; al vencer, aviso al responsable | estadoId, comentarioSubsanacion | Devolución o paso a informe |
-| Subsanar | Tarea PAN-03 | Grupo de la unidad | 10 días hábiles (PC-02) | Datos de la solicitud | Reenvío |
-| Pedir informe | Correo AV-02 | — | — | — | — |
-| Esperar informe | Subproceso `AUT Esperar Informe` con temporizador recurrente | — | Cada 10 días hábiles, AV-03 (DT-03) | fechaUltimoRecordatorio | — |
-| Resolver | Tarea PAN-05 | `AUT_GRUPO_RESPONSABLES` | 5 días hábiles | resolucion, motivo, estadoId | Resolución |
-| Generar autorización | DOC-01 desde plantilla | — | — | Documento | — |
+| Revisar documentación (ACT-02) | Tarea PAN-04 | `AUT_GRUPO_TECNICOS` | 5 días hábiles; al vencer, aviso al responsable | estadoId, comentarioSubsanacion | Devolución o paso a informe |
+| Subsanar (ACT-06) | Tarea PAN-03 | Grupo de la unidad | 10 días hábiles (PC-02) | Datos de la solicitud | Reenvío |
+| Pedir informe (ACT-02, opción completa) | Correo AV-02 | — | — | — | — |
+| Esperar informe (ACT-08) | Subproceso `AUT Esperar Informe` con temporizador recurrente | — | Cada 10 días hábiles, AV-03 (DT-03) | fechaUltimoRecordatorio | — |
+| Resolver (ACT-05) | Tarea PAN-05 | `AUT_GRUPO_RESPONSABLES` | 5 días hábiles | resolucion, motivo, estadoId | Resolución |
+| Generar autorización (ACT-07) | DOC-01 desde plantilla | — | — | Documento | — |
 
 Cancelación: no se contempla en esta fase. Archivado de procesos: 7 días después de terminar (BP 03 §9).
 

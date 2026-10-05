@@ -112,6 +112,48 @@ Versión 1.2: HU-07.1 a 30 MB · PC-04 nuevo · técnico §14 con 35 MB
         c, out = corre(S / "comprobar.py", p, "--anterior", p / "versiones" / "v1.1", "--impacto", informe)
         ok("detecta un cambio que el informe no declara", c == 1 and "cada cambio está declarado" in out and "HU-06" in out, out)
 
+        # 4b. Lo validado (🔒) solo cambia con un punto aprobado
+        v = tmp / "validado"
+        shutil.copytree(EJEMPLO, v)
+        fv, tv, dv = v / "analisis" / "funcional.md", v / "analisis" / "tecnico.md", v / "analisis" / "decisiones.md"
+        editar(fv, "**PAN-01 — Solicitudes** <!-- ✅ FU-02 00:08:15 -->", "**PAN-01 — Solicitudes** <!-- 🔒 FU-02 00:08:15; FU-03 00:20:00 -->")
+        corre(S / "proyecto.py", "copia", v)
+        for x in (fv, tv):
+            editar(x, "Versión: 1.1", "Versión: 1.2")
+        editar(dv, "| 1.1 | 2026-09-24 | Plazos en días hábiles; recordatorio al organismo; se quita la urgencia | FU-03 | Analista, 2026-09-24 |",
+               "| 1.1 | 2026-09-24 | Plazos en días hábiles; recordatorio al organismo; se quita la urgencia | FU-03 | Analista, 2026-09-24 |\n| 1.2 | 2026-10-02 | Lista sin descarga | FU-05 | — |")
+        editar(fv, "| Descargar | Descargar la lista filtrada en Excel | Consulta |", "| Descargar | Descargar la lista filtrada en CSV | Consulta |")
+        (v / "impacto").mkdir()
+        inf = v / "impacto" / "FU-05.md"
+        plantilla_inf = """# Impacto de FU-05 · 2026-10-02
+Análisis base: versión 1.1 · Estado: aplicado en 1.2
+
+## Puntos
+| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión |
+|---|---|---|---|---|---|---|---|
+| 1 | CAMBIA | La descarga es en CSV [FU-05 00:01:00] | PAN-01 | PAN-01 descarga en CSV | — | Sí (🔒) | {d} |
+
+## Aplicado
+Versión 1.2: PAN-01
+"""
+        inf.write_text(plantilla_inf.format(d="Pendiente"), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", v, "--anterior", v / "versiones" / "v1.1", "--impacto", inf)
+        ok("una pieza 🔒 que cambia con el punto pendiente es error", c == 1 and "✗ lo 🔒 que cambia" in out, out)
+        inf.write_text(plantilla_inf.format(d="✔"), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", v, "--anterior", v / "versiones" / "v1.1", "--impacto", inf)
+        ok("con el punto aprobado (✔) pasa", "✓ lo 🔒 que cambia" in out, out)
+
+        # 4c. La primera decisión de un proyecto (D-01) es un ID nuevo válido
+        inf0 = nuevo / "impacto" / "FU-01.md"
+        inf0.write_text("""# Impacto de FU-01
+## Puntos
+| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión |
+|---|---|---|---|---|---|---|---|
+| 1 | NUEVO | Alta de solicitudes | nuevo en funcional §4 | HU-01 y D-01 | — | — | ✔ |
+""", encoding="utf-8")
+        c, out = corre(S / "comprobar.py", nuevo, "--impacto", inf0)
+        ok("acepta HU-01 y D-01 como primeros IDs nuevos", "✓ los IDs del informe existen" in out, out)
+
         # 5. DF limpio y coherencia con el técnico
         q = tmp / "sucio"
         shutil.copytree(EJEMPLO, q)
@@ -166,6 +208,13 @@ Se acepta si:
         indice = (tmp / "fuentes" / "indice.md").read_text(encoding="utf-8") if (tmp / "fuentes" / "indice.md").exists() else ""
         ok("leer_fuentes.py cataloga transcripción, texto y Word",
            c == 0 and "Transcripción" in indice and "| Texto |" in indice and "Documento Word" in indice, out + indice)
+        tr = next((x for x in (tmp / "fuentes").glob("FU-*-reunion-*.md")), None)
+        ok("la transcripción lleva sus participantes", tr is not None and "- Participantes: Persona 0; Persona 1" in tr.read_text(encoding="utf-8"))
+        w = tmp / "con-nombres"
+        shutil.copytree(EJEMPLO, w)
+        editar(w / "analisis" / "funcional.md", "Lee los dos informes y resuelve.", "Lee los dos informes y resuelve, como pidió Persona 1.")
+        c, out = corre(S / "comprobar.py", w, "--fuentes", tmp / "fuentes")
+        ok("detecta el nombre de un participante en el análisis", "✗ sin nombres de participantes" in out and "Persona 1" in out, out)
         fu = next((x for x in (tmp / "fuentes").glob("FU-*-df-revisado.md")), None)
         txt = fu.read_text(encoding="utf-8") if fu else ""
         ok("leer_fuentes.py saca los comentarios del Word con su historia",
@@ -180,9 +229,10 @@ Se acepta si:
             else:
                 ok("df_docx.js genera el DF", r.returncode == 0 and (tmp / "df.docx").exists(), r.stdout + r.stderr)
                 if (tmp / "df.docx").exists():
-                    xml = zipfile.ZipFile(tmp / "df.docx").read("word/document.xml").decode("utf-8")
+                    xml = zipfile.ZipFile(tmp / "df.docx").read("word/document.xml").decode("utf-8").replace("\u2011", "-")
                     ok("el DF no enseña fuentes, anuladas ni respondidas",
-                       "FU-0" not in xml and "HU-11" not in xml and "PC-03" not in xml and "PC-01" in xml)
+                       "FU-0" not in xml and "HU-11" not in xml and "PC-03" not in xml and "PC-01" in xml
+                       and "indice.py" not in xml and "Analista, 2026" not in xml)
         else:
             print("· DF en Word: no hay Node.js; no se prueba")
 

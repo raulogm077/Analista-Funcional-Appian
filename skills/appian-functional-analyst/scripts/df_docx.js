@@ -17,10 +17,16 @@
  */
 const fs = require("fs");
 const path = require("path");
-let D;
-try { D = require("docx"); } catch (e) {
-  console.error("Falta el paquete docx de Node: npm install docx"); process.exit(2);
+// docx se busca junto al script, en la carpeta de trabajo y en los paquetes globales de npm
+function cargarDocx() {
+  const { createRequire } = require("module");
+  const sitios = [__filename, path.join(process.cwd(), "x.js")];
+  try { sitios.push(path.join(require("child_process").execSync("npm root -g", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(), "x.js")); } catch (e) { /* sin npm */ }
+  for (const s of sitios) { try { return createRequire(s)("docx"); } catch (e) { /* siguiente */ } }
+  console.error("Falta el paquete docx de Node. Instálalo en la carpeta de trabajo (npm install docx) o para todo el equipo (npm install -g docx).");
+  process.exit(2);
 }
+const D = cargarDocx();
 const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType,
   ImageRun, AlignmentType, TableOfContents, Header, Footer, PageNumber, LevelFormat, BorderStyle, PageBreak,
   PageOrientation } = D;
@@ -44,6 +50,9 @@ const cliente = (proyecto.match(/Cliente:\s*([^·\n]+)/) || [, ""])[1].trim();
 const version = (funcional.match(/Versi[oó]n:\s*v?([\d.]+)/) || [, "0.1"])[1];
 const estadoDoc = (funcional.match(/Estado:\s*([^·\n]+)/) || [, "borrador"])[1].trim();
 const slug = titulo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "");
+// fecha de la versión (fila de Versiones en decisiones.md) o, si no está, la de hoy
+const filaVersion = decisiones.split("\n").find((l) => new RegExp(`^\\|\\s*v?${version.replace(".", "\\.")}\\s*\\|`).test(l));
+const fechaVersion = filaVersion ? filaVersion.split("|")[2].trim().split("-").reverse().join("/") : new Date().toLocaleDateString("es-ES");
 const out = opt("-o", path.join(raiz, "entregables", `DF-${slug}-v${version}.docx`));
 
 // Lo que no ve el cliente
@@ -72,8 +81,10 @@ function control() {
   const celdas = (l) => l.replace(/^\||\|\s*$/g, "").split("|").map((c) => c.trim());
   if (!filas.length) return "";
   const cab = celdas(filas[0]).map((c) => c.toLowerCase());
-  const usar = cab.map((c, i) => (c === "fuentes" ? -1 : i)).filter((i) => i >= 0);
-  const t = filas.map((l) => "| " + usar.map((i) => celdas(l)[i] || "").join(" | ") + " |");
+  const usar = cab.map((c, i) => (["fuentes", "aprobación", "aprobacion"].includes(c) ? -1 : i)).filter((i) => i >= 0);
+  const entregadas = filas.slice(1).filter((l) => parseFloat(celdas(l)[0].replace(/^v/, "")) >= 1);
+  if (!entregadas.length) return "";
+  const t = [filas[0], ...entregadas].map((l) => "| " + usar.map((i) => celdas(l)[i] || "").join(" | ") + " |");
   t.splice(1, 0, "|" + usar.map(() => "---").join("|") + "|");
   return `## Control del documento\n\nEstado: ${estadoDoc}.\n\n${t.join("\n")}\n`;
 }
@@ -84,6 +95,7 @@ const FONT = "Calibri", MONO = "Consolas";
 const PAGE_W = 11906, MARGIN = 1134, CONTENT_W = PAGE_W - 2 * MARGIN; // A4, márgenes 2 cm
 
 function runs(text, base = {}) {
+  text = text.replace(/\b([A-Z]{2,4})-(\d)/g, "$1\u2011$2"); // los IDs (PAN-02) no se parten al final de la línea
   // **negrita**, *cursiva*, `código`; enlaces [t](u) → t
   text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
   const out = [];
@@ -235,11 +247,10 @@ const portada = [
   new Paragraph({ spacing: { after: 400 }, children: [new TextRun({ text: titulo, bold: true, size: 48, color: "1F3864" })] }),
   new Paragraph({ children: [new TextRun({ text: cliente ? `Cliente: ${cliente}` : "", size: 24 })] }),
   new Paragraph({ children: [new TextRun({ text: `Versión ${version} · ${estadoDoc}`, size: 24 })] }),
-  new Paragraph({ children: [new TextRun({ text: `Fecha: ${new Date().toLocaleDateString("es-ES")}`, size: 24 })] }),
+  new Paragraph({ children: [new TextRun({ text: `Fecha: ${fechaVersion}`, size: 24 })] }),
   new Paragraph({ children: [new PageBreak()] }),
   new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Índice")] }),
   new TableOfContents("Índice", { hyperlink: true, headingStyleRange: "1-3" }),
-  new Paragraph({ children: runs("*(Si el índice aparece vacío, en Word: clic derecho sobre él → Actualizar campos.)*", { size: 16, color: "808080" }) }),
 ];
 
 const doc = new Document({

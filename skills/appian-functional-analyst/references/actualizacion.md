@@ -88,7 +88,7 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
 
 4. **Requiere aprobación** si: CAMBIA o ANULA algo 🔒; es ALCANCE+ o ALCANCE−; una fuente interna cambia
    algo decidido con el cliente; dos personas del cliente dicen cosas distintas; o el cambio obliga a
-   rediseñar una pantalla confirmada (`proyecto.md`) o construida. Los retoques (un texto, una columna, el
+   rediseñar una pantalla validada por el cliente (🔒) o construida. Los retoques (un texto, una columna, el
    orden) no la requieren.
 
 ## 4. Informe de impacto: `impacto/FU-04.md`
@@ -167,8 +167,8 @@ Tiene que salir sin errores: ningún ID desaparecido, la versión sube y tiene s
 resultado, cada cambio declarado en el informe, nada marcado «sin cambios» que haya cambiado y nada 🔒
 cambiado sin un punto aprobado. Después:
 - el Word, si ya se había entregado un DF (`df_docx.js`);
-- el prototipo: solo las pantallas afectadas, con `appian-prototipos-aena`. Las confirmadas en
-  `proyecto.md` no se tocan sin el visto bueno del analista.
+- el prototipo: solo las pantallas afectadas, con `appian-prototipos-aena`. Las validadas por
+  el cliente (🔒) no se tocan sin el visto bueno del analista.
 
 ## 8. Entregar
 En pocas líneas: versión, puntos por tipo, lo que cambió de verdad (CAMBIA, ANULA, alcance), pendientes

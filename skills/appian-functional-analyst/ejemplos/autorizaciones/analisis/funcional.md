@@ -82,7 +82,7 @@ El organismo emite el informe en su sede electrónica. El técnico lo adjunta a 
 
 | Quién | Empieza cuando | Pantalla | Plazo |
 |---|---|---|---|
-| La aplicación | Pasan 10 días hábiles sin informe del organismo | — | Cada 10 días hábiles |
+| Aplicación | Pasan 10 días hábiles sin informe del organismo | — | Cada 10 días hábiles |
 
 Envía el recordatorio al organismo y avisa al técnico (AV-03). Se repite mientras el informe no llegue.
 
@@ -100,7 +100,7 @@ Lee los dos informes y resuelve.
 
 | Quién | Empieza cuando | Pantalla | Plazo |
 |---|---|---|---|
-| La aplicación | El responsable resuelve favorable | — | Inmediato |
+| Aplicación | El responsable resuelve favorable | — | Inmediato |
 
 Genera la autorización en PDF (DOC-01), la guarda en la solicitud y avisa a la unidad (AV-04). La solicitud pasa a «Autorizada».
 
@@ -118,15 +118,15 @@ Genera la autorización en PDF (DOC-01), la guarda en la solicitud y avisa a la 
 | Autorizada | Resuelta favorable, con la autorización emitida |
 | Denegada | Resuelta desfavorable |
 
-| De | A | Quién | Cuándo |
+| De | A | Quién | Paso |
 |---|---|---|---|
-| Borrador | En revisión | Unidad solicitante | Al enviarla (ACT-01) |
-| En revisión | Pendiente de subsanar | Técnico de la unidad gestora | Al devolverla (ACT-02) |
-| Pendiente de subsanar | En revisión | Unidad solicitante | Al reenviarla (ACT-06) |
-| En revisión | En informe | Técnico de la unidad gestora | Al darla por completa (ACT-02) |
-| En informe | Pendiente de resolver | La aplicación | Cuando están los dos informes |
-| Pendiente de resolver | Autorizada | Responsable de la unidad | Al resolver favorable (ACT-05) |
-| Pendiente de resolver | Denegada | Responsable de la unidad | Al resolver desfavorable (ACT-05) |
+| Borrador | En revisión | Unidad solicitante | ACT-01 |
+| En revisión | Pendiente de subsanar | Técnico de la unidad gestora | ACT-02 |
+| Pendiente de subsanar | En revisión | Unidad solicitante | ACT-06 |
+| En revisión | En informe | Técnico de la unidad gestora | ACT-02 |
+| En informe | Pendiente de resolver | Aplicación | ACT-03 y ACT-04 terminados |
+| Pendiente de resolver | Autorizada | Responsable de la unidad | ACT-05 |
+| Pendiente de resolver | Denegada | Responsable de la unidad | ACT-05 |
 
 ### 3.3 Escenarios
 
@@ -244,7 +244,7 @@ Se acepta si:
 
 | Perfil | Pantalla | Paso | Prioridad |
 |---|---|---|---|
-| Técnico de la unidad gestora | PAN-02 | ACT-04 | Imprescindible |
+| Técnico de la unidad gestora | PAN-02 | — | Imprescindible |
 
 Como técnico, quiero adjuntar el informe del organismo cuando llega para que se pare el recordatorio y la solicitud avance.
 
@@ -414,7 +414,7 @@ Una solicitud tiene uno o más documentos; cada documento es de una sola solicit
 
 | ID | Qué es | Quién lo genera o lo sube | Cuándo | Formato |
 |---|---|---|---|---|
-| DOC-01 | Autorización | La aplicación | Al resolver favorable | PDF con los datos de la solicitud <!-- ✅ FU-01 00:26:10 --> |
+| DOC-01 | Autorización | Aplicación | Al resolver favorable | PDF con los datos de la solicitud <!-- ✅ FU-01 00:26:10 --> |
 | DOC-02 | Lista de solicitudes | Consulta | Cuando la descarga | Excel con los filtros aplicados <!-- ✅ FU-02 00:09:00 --> |
 
 ## 9. Relación con otros sistemas
@@ -443,7 +443,7 @@ Una solicitud tiene uno o más documentos; cada documento es de una sola solicit
 
 ## Anexo. Quién puede hacer qué
 
-Se genera a partir de las pantallas (apartado 5) con `indice.py derivadas`; no se edita a mano.
+<!-- Lo genera indice.py derivadas a partir de las pantallas (apartado 5); no se edita a mano. -->
 
 | Pantalla y parte | Unidad solicitante | Técnico de la unidad gestora | Responsable de la unidad | Consulta |
 |---|---|---|---|---|

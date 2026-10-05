@@ -34,7 +34,7 @@ ejemplos (`ejemplos/autorizaciones/`) enseñan el formato con un caso ficticio; 
 | PDF | `pdftotext` o `pip install pypdf` | Read lee el PDF |
 | Correos `.msg` | Nada fiable | Pide el correo como `.eml` o PDF |
 | Diagramas y su PNG | `pip install playwright` y un navegador (el de Playwright, Chrome o Edge) | Se entrega el `.drawio` o el `.mmd` sin imagen y se dice |
-| DF en Word | Node.js con `npm install docx` | Se entrega el `funcional.md` y se dice |
+| DF en Word | Node.js con el paquete `docx` (`npm install docx` en la carpeta de trabajo o `npm install -g docx`) | Se entrega el `funcional.md` y se dice |
 
 En Claude (web o escritorio) todo esto ya está.
 
@@ -56,7 +56,7 @@ En Claude (web o escritorio) todo esto ya está.
 ## La carpeta del proyecto
 
 ```
-<p>/proyecto.md      estado, fuentes procesadas, pantallas confirmadas, siguiente paso
+<p>/proyecto.md      estado, fuentes procesadas, DF entregado, siguiente paso
 <p>/fuentes/         FU-nn.md e indice.md (leer_fuentes.py)
 <p>/notas/           una nota por fuente
 <p>/impacto/         un informe por fuente nueva
@@ -101,8 +101,8 @@ Di el modo al empezar.
 4. **Diagramas.** Lee el `SKILL.md` de `appian-diagramas-bpmn`, describe cada proceso en su formato JSON en
    `analisis/diagramas/<proceso>.json`, con un carril por perfil y los mismos `ACT-nn`, y ejecuta su
    `diagrama.py crear`. Los estados, con `mermaid-diagrams.md`.
-5. **Prototipo.** Lo hace `appian-prototipos-aena` a partir del funcional. Pone las capturas en las fichas
-   de pantalla.
+5. **Prototipo**, si se pide (suele ser con la primera versión del funcional, para validar las pantallas).
+   Lo hace `appian-prototipos-aena` a partir del funcional y pone las capturas en las fichas de pantalla.
 6. **Técnico.** Escribe `analisis/tecnico.md` con `tecnico-plantilla.md` cuando el funcional esté estable
    (normalmente tras la primera validación) o cuando se pida. El Entorno (§0) y las Convenciones (§1) se
    rellenan antes, en cuanto se sepan.
@@ -112,14 +112,16 @@ Di el modo al empezar.
    python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/
    ```
    Sin errores antes de entregar. Revisa los avisos: los de redacción se corrigen casi siempre.
-8. **DF en Word** (síntesis y evolutivo):
+8. **DF en Word** (síntesis y evolutivo; si el análisis es solo para un prototipo, cuando se pida). La
+   primera entrega es la versión 1.0: sube la versión del funcional y del técnico y añade su fila en
+   `decisiones.md`.
    ```bash
    node <skill>/scripts/df_docx.js <p>          # entregables/DF-<proyecto>-v<versión>.docx
    ```
-   Ábrelo (conviértelo a PDF y mira algunas páginas) antes de entregarlo. Apunta en `proyecto.md` la
-   versión entregada.
-9. **Entregar.** Envía el Word y el `funcional.md` (SendUserFile en Claude). En pocas líneas: modo,
-   historias, pantallas, pendientes de confirmar con el cliente y siguiente paso.
+   Ábrelo (conviértelo a PDF y mira algunas páginas) antes de entregarlo.
+9. **Entregar.** Actualiza `proyecto.md` (fuentes procesadas, DF entregado y siguiente paso) y envía el Word
+   y el `funcional.md` (SendUserFile en Claude). En pocas líneas: modo, historias, pantallas, pendientes de
+   confirmar con el cliente y siguiente paso.
 
 Para buscar en el análisis sin leerlo entero: `indice.py` (`resumen`, `buscar`, `ficha`, `impacto`,
 `seccion`, `siguientes`).
@@ -132,7 +134,8 @@ Para buscar en el análisis sin leerlo entero: `indice.py` (`resumen`, `buscar`,
    pantalla es otra ficha.
 3. Lo que falte (quién ve una acción, el texto de una confirmación) se pregunta antes de cerrar; los
    detalles menores, con la opción más razonable dicha en el texto.
-4. Entrégala en el chat. Si el proyecto tiene análisis, añádela con sus IDs siguientes y sube la versión.
+4. Entrégala en el chat. Si el proyecto ya tiene análisis, la explicación es una fuente más: guárdala como
+   `.txt`, catalógala y sigue `actualizacion.md`.
 
 ## Comentarios del cliente al DF
 
@@ -146,7 +149,7 @@ Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `a
 - Vale lo que diga la documentación de la versión del entorno del proyecto (va en la URL: `/help/26.6/`). Si solo lo dice una versión posterior, se avisa de que puede no estar disponible.
 - Lo que se escribe a partir de la respuesta lleva su URL, en la forma `/latest/`.
 - Sin el MCP, se consulta docs.appian.com con WebFetch o WebSearch. Si tampoco se puede, se escribe «sin verificar» y la duda pasa a pendientes.
-- Qué conviene hacer (qué mecanismo elegir, cómo diseñarlo) no es una duda de documentación: se consulta en `appian-best-practices`, solo la sección que toca. Esa skill está junto a esta, y `python3 ../appian-best-practices/scripts/seccion.py 02 4.8` imprime solo §4.8 del doc 02.
+- Qué conviene hacer (qué mecanismo elegir, cómo diseñarlo) no es una duda de documentación: se consulta en `appian-best-practices`, solo la sección que toca. Esa skill está junto a esta: `python3 <esta skill>/../appian-best-practices/scripts/seccion.py 02 4.8` imprime solo §4.8 del doc 02.
 
 **En el análisis**, las dudas típicas son si la versión o el tier del cliente permiten algo que pide el DF
 y los límites que afectan a una decisión técnica. Su URL va en el «Por qué» o en el «Verificado» de la DT;

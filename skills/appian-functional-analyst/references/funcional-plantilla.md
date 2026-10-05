@@ -54,12 +54,15 @@ Por cada proceso, `### 3.n <Proceso>`:
 - La imagen del diagrama, `![Proceso de …](diagramas/<proceso>.png)`, que dibuja `appian-diagramas-bpmn`.
 - Una ficha por paso, con el mismo `ACT-nn` que el diagrama. Tabla `Quién · Empieza cuando · Pantalla ·
   Plazo` y un párrafo con lo que hace. Si decide algo, una línea por opción y adónde lleva. Los plazos y
-  los avisos (AV-nn) van en el paso. En «Pantalla», `PAN-nn`, «—» si lo hace la aplicación o «Fuera de la
+  los avisos (AV-nn) van en el paso, y solo ahí: las historias y los escenarios citan el paso en vez de
+  repetir la cifra. En «Quién», el perfil, «Aplicación» si es automático (el mismo nombre que su carril en el
+  diagrama) o el organismo de fuera. En «Pantalla», `PAN-nn`, «—» si lo hace la aplicación o «Fuera de la
   aplicación».
 
 Después de los procesos:
-- **Estados**: tabla `Estado · Qué significa` y tabla `De · A · Quién · Cuándo`. Con 3 o más estados, el
-  diagrama de estados (`mermaid-diagrams.md`).
+- **Estados**: tabla `Estado · Qué significa` y tabla `De · A · Quién · Paso`, donde «Paso» es el ACT que
+  hace el cambio (lo que pasa en él ya está en su ficha). Con 3 o más estados, el diagrama de estados
+  (`mermaid-diagrams.md`).
 - **Escenarios**: de 3 a 6 fichas `ESC-nn`, cada una contada como una historia corta con un caso concreto
   (quién, qué pide, qué pasa) y la línea `Pasos: ACT-01, ACT-02…`. Uno por camino: el normal, una
   devolución, un rechazo, un plazo vencido. Son lo que mejor entiende el cliente y después sirven de
@@ -88,6 +91,8 @@ Una ficha `PAN-nn` por pantalla, vista o diálogo:
 - Tabla `Parte · Qué permite · Quién`.
 - `Historias: HU-04, HU-05.`
 
+Cuando el cliente valida una pantalla, pasa a 🔒: el prototipo ya no la cambia sin el visto bueno del analista.
+
 Lo que hace cada parte está en las historias. Cómo está compuesta (componentes, columnas, campos) está en
 el prototipo. Aquí no se repite.
 
@@ -101,13 +106,13 @@ Por entidad de negocio, `### 6.n <Entidad>`:
 Al final, `### 6.n Listas de valores`: `Lista · Valores · Quién la mantiene`.
 
 ### 7. Avisos
-Tabla `ID · Cuándo · A quién · Qué dice · Cómo llega`. «Cómo llega»: correo, tarea o los dos.
+Tabla con IDs `AV-nn`: `ID · Cuándo · A quién · Qué dice · Cómo llega`. «Cómo llega»: correo, tarea o los dos.
 
 ### 8. Documentos e informes
-Tabla `ID · Qué es · Quién lo genera o lo sube · Cuándo · Formato`. Si no hay, «No hay.».
+Tabla con IDs `DOC-nn`: `ID · Qué es · Quién lo genera o lo sube · Cuándo · Formato`. Si no hay, «No hay.».
 
 ### 9. Relación con otros sistemas
-Tabla `ID · Sistema · Qué se intercambia · Cuándo · Si falla`. Si no hay, «No hay.».
+Tabla con IDs `INT-nn`: `ID · Sistema · Qué se intercambia · Cuándo · Si falla`. Si no hay, «No hay.».
 
 ### 10. Condiciones de uso
 Una línea por tema, en lenguaje del cliente: personas que la usan y cuántas a la vez, volumen y
@@ -116,7 +121,7 @@ accesibilidad, móvil, personas de fuera de la organización, quién mantiene la
 naturales. Lo que no se sabe es un PC. De aquí sale el apartado Entorno de la especificación técnica.
 
 ### 11. Pendiente de confirmar
-Tabla `ID · Pregunta · Opciones · A quién · Afecta a`. Una pregunta por fila, cerrada y con opciones
+Tabla con IDs `PC-nn`: `ID · Pregunta · Opciones · A quién · Afecta a`. Una pregunta por fila, cerrada y con opciones
 cuando se puede. Lo respondido se tacha con la decisión que lo responde. El Word solo enseña las abiertas.
 
 ### Anexo. Quién puede hacer qué

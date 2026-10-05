@@ -12,6 +12,7 @@ Uso:
 - Sin --escribir solo dice qué haría. Después: indice.py derivadas --escribir y comprobar.py.
 """
 import argparse
+import glob
 import pathlib
 import re
 import sys
@@ -63,7 +64,8 @@ def main():
     m = mo.Proyecto(a.proyecto)
     textos = {d: list(m.docs[d].lineas) for d in m.docs}
     decisiones = []
-    for ruta in a.modulos:
+    rutas = [x for r in a.modulos for x in (sorted(glob.glob(r)) if glob.has_magic(r) else [r])]  # también en PowerShell y cmd
+    for ruta in rutas:
         nombre = pathlib.Path(ruta).stem
         doc = "T" if "tecnico" in mo.normaliza(nombre) else "F"
         if doc not in textos:

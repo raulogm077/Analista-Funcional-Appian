@@ -32,7 +32,7 @@ Convierte el análisis funcional de un proyecto en un **prototipo navegable de l
 En Claude (web / escritorio) todo está en el entorno. En un equipo nuevo, `python3 $KIT/scripts/selftest.py` dice qué funciona y qué falta (valida y construye en segundos; la prueba de humo y el contraste de los ejemplos tardan un par de minutos).
 
 ### 1. Entrada: el análisis funcional (`analisis/funcional.md`)
-El prototipo parte de `<p>/analisis/funcional.md`, el diseño funcional que escribe **`appian-functional-analyst`** (en este mismo plugin); `<p>` es la carpeta del proyecto. Si hay `analisis/tecnico.md`, se usa también: versión de Appian, record types y campos, y capa de seguridad de cada perfil. Si el proyecto ya existe, empieza por `python3 $KIT/../appian-functional-analyst/scripts/proyecto.py estado <p>`: versión, pantallas sin captura y pantallas confirmadas.
+El prototipo parte de `<p>/analisis/funcional.md`, el diseño funcional que escribe **`appian-functional-analyst`** (en este mismo plugin); `<p>` es la carpeta del proyecto. Si hay `analisis/tecnico.md`, se usa también: versión de Appian, record types y campos, y capa de seguridad de cada perfil. Si el proyecto ya existe, empieza por `python3 $KIT/../appian-functional-analyst/scripts/proyecto.py estado <p>`: versión, pantallas sin captura y pantallas validadas por el cliente.
 
 | El usuario da… | Antes del prototipo |
 |---|---|
@@ -87,7 +87,7 @@ En las fichas, decide qué áreas 1:N son vistas (máximo 7) y qué datos van en
 python3 $KIT/scripts/validate.py app.json          # 0 errores obligatorio; revisa los avisos
 python3 $KIT/scripts/build.py app.json -o prototipo-<app>.html
 ```
-El validador termina con la línea «Calidad UX: N avisos». Resuelve los avisos `UX ·` (también los de contraste, que traen un color alternativo) y, si alguno está justificado, explica el motivo en un `$uxIgnore`. Las pantallas confirmadas por el cliente se listan en `proyecto.md` del proyecto (`proyecto.py estado <p>` las imprime con el `--confirmadas` listo) y no se cambian sin el visto bueno del analista: antes de cambiar el prototipo se guarda una copia `app-vX.Y.json` y se valida con `--anterior app-vX.Y.json --confirmadas PAN-02,PAN-05` (error si cambia una de esas pantallas o un diálogo que abre). `build.py` valida de nuevo, genera un único HTML autocontenido (runtime, marca, fuente Open Sans, iconos y logo embebidos: se abre sin internet), `prototipo-<app>-trazabilidad.md` (requisitos ↔ pantallas, preguntas abiertas, supuestos) y `prototipo-<app>-perfil-css.txt` (perfil CSS de AENA para Admin Console › Branding › CSS Profiles; `design-rules.md` §1). Nunca edites el HTML generado: cambia el `app.json` y reconstruye.
+El validador termina con la línea «Calidad UX: N avisos». Resuelve los avisos `UX ·` (también los de contraste, que traen un color alternativo) y, si alguno está justificado, explica el motivo en un `$uxIgnore`. Las pantallas que el cliente ha validado (fichas PAN con 🔒 en el funcional; `proyecto.py estado <p>` las imprime con el `--confirmadas` listo) y no se cambian sin el visto bueno del analista: antes de cambiar el prototipo se guarda una copia `app-vX.Y.json` y se valida con `--anterior app-vX.Y.json --confirmadas PAN-02,PAN-05` (error si cambia una de esas pantallas o un diálogo que abre). `build.py` valida de nuevo, genera un único HTML autocontenido (runtime, marca, fuente Open Sans, iconos y logo embebidos: se abre sin internet), `prototipo-<app>-trazabilidad.md` (requisitos ↔ pantallas, preguntas abiertas, supuestos) y `prototipo-<app>-perfil-css.txt` (perfil CSS de AENA para Admin Console › Branding › CSS Profiles; `design-rules.md` §1). Nunca edites el HTML generado: cambia el `app.json` y reconstruye.
 
 ### 4. Demostrar que funciona
 Si hay Playwright y un navegador (ver paso 0):
@@ -120,7 +120,7 @@ Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `a
 - Vale lo que diga la documentación de la versión del entorno del proyecto (va en la URL: `/help/26.6/`). Si solo lo dice una versión posterior, se avisa de que puede no estar disponible.
 - Lo que se escribe a partir de la respuesta lleva su URL, en la forma `/latest/`.
 - Sin el MCP, se consulta docs.appian.com con WebFetch o WebSearch. Si tampoco se puede, se escribe «sin verificar» y la duda pasa a pendientes.
-- Qué conviene hacer (qué mecanismo elegir, cómo diseñarlo) no es una duda de documentación: se consulta en `appian-best-practices`, solo la sección que toca. Esa skill está junto a esta, y `python3 ../appian-best-practices/scripts/seccion.py 02 4.8` imprime solo §4.8 del doc 02.
+- Qué conviene hacer (qué mecanismo elegir, cómo diseñarlo) no es una duda de documentación: se consulta en `appian-best-practices`, solo la sección que toca. Esa skill está junto a esta: `python3 <esta skill>/../appian-best-practices/scripts/seccion.py 02 4.8` imprime solo §4.8 del doc 02.
 
 **En el prototipo**, las dudas típicas son si un componente, parámetro o valor existe en `app.appianVersion`, qué admite de verdad un Site, un record type o una acción de registro antes de enseñarlo en una pantalla, y qué poner en los `$note` para desarrollo. Lo que quede sin verificar va a `openQuestions` o a un `$note`.
 

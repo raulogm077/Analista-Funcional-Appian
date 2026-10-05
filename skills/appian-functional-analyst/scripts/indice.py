@@ -329,11 +329,15 @@ def anexo(m):
             c = mo.celdas(l) if l.startswith("|") else []
             if len(c) < 3 or mo.normaliza(c[0]) in ("parte", "") or set(c[0]) <= set("-: "):
                 continue
-            quien = mo.normaliza(mo.sin_comentarios(c[2]))
-            marcas = ["✔" if "todos" in quien or mo.normaliza(x) in quien else "" for x in pf]
+            quien = mo.normaliza(mo.sin_comentarios(c[2])).strip()
+            lista = {x.strip() for x in re.split(r",|;", re.sub(r"^todos\s*(menos|salvo|excepto)?", "", quien)) if x.strip()}
+            if quien.startswith("todos"):
+                marcas = ["" if mo.normaliza(x) in lista else "✔" for x in pf]
+            else:
+                marcas = ["✔" if mo.normaliza(x) in lista else "" for x in pf]
             filas.append(f"| {p.id} {p.titulo} · {c[0]} | " + " | ".join(marcas) + " |")
     return [TITULO_ANEXO, "",
-            "Se genera a partir de las pantallas (apartado 5) con `indice.py derivadas`; no se edita a mano.", "",
+            "<!-- Lo genera indice.py derivadas a partir de las pantallas (apartado 5); no se edita a mano. -->", "",
             "| Pantalla y parte | " + " | ".join(pf) + " |", "|---|" + "---|" * len(pf)] + filas
 
 

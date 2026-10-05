@@ -1,6 +1,6 @@
 ---
 name: appian-diagramas-bpmn
-description: Dibuja y mantiene los diagramas de proceso BPMN del proyecto en draw.io (fichero .drawio editable, con carriles por perfil) y su PNG para el documento, sin conexión. Úsala para crear o cambiar el diagrama de un proceso, revisar qué se cambió a mano en draw.io (por ejemplo, en una reunión con el usuario), leer un .drawio o exportar un proceso a BPMN 2.0. La usan appian-functional-analyst (procesos del análisis) y appian-reverse-engineering (procesos de una aplicación existente). No decide qué contiene el proceso; dibuja lo que le pasan.
+description: Dibuja y mantiene los diagramas de proceso BPMN del proyecto en draw.io (fichero .drawio editable, con carriles por perfil) y su PNG para el documento, sin conexión. Úsala para crear o cambiar el diagrama de un proceso, revisar qué se cambió a mano en draw.io (por ejemplo, en una reunión con el usuario), leer un .drawio o exportar un proceso a BPMN 2.0. La usan appian-functional-analyst (procesos del análisis) y appian-reverse-engineering (procesos de una aplicación existente). No decide qué contiene el proceso: si sale de reuniones o documentos, primero lo describe appian-functional-analyst.
 ---
 
 # Diagramas de proceso BPMN
@@ -15,7 +15,7 @@ Van juntos en la misma carpeta (`analisis/diagramas/` o la que indique quien lla
 |---|---|
 | `X.drawio` | El diagrama. Se abre y se edita en draw.io |
 | `X.png` | La imagen para el documento. La regenera la herramienta |
-| `X.json` | El proceso que conoce el análisis. Lo escribe la herramienta: no se edita a mano |
+| `X.json` | El proceso que conoce el análisis. La primera vez puede ser el propio JSON que se pasa a `crear`; después lo mantiene la herramienta y no se edita a mano: los cambios van con `actualizar` |
 | `X.bpmn` | Solo si se exporta con `bpmn` |
 
 ## Formato del proceso
@@ -25,7 +25,7 @@ Es un JSON con un paso y un flujo por línea:
 ```json
 {
   "proceso": "Solicitud de autorización",
-  "carriles": ["Unidad solicitante", "Técnico", "Sistema"],
+  "carriles": ["Unidad solicitante", "Técnico", "Aplicación"],
   "pasos": [
     {"id": "EV-01", "tipo": "inicio", "carril": "Unidad solicitante", "nombre": "Necesidad de autorización"},
     {"id": "ACT-01", "tipo": "tarea", "carril": "Unidad solicitante", "nombre": "Registrar solicitud"},
@@ -56,7 +56,7 @@ Es un JSON con un paso y un flujo por línea:
 
 **Códigos.** Son estables: no se renumeran ni se reutilizan. El `ACT-nn` de cada tarea es el mismo que el de su paso en el documento. En el dibujo solo se ve el nombre.
 
-**Carriles.** Son los perfiles, de arriba abajo en el orden de la lista. Lo automático va en un carril «Sistema» y un organismo externo es un carril más.
+**Carriles.** Son los perfiles, de arriba abajo en el orden de la lista. Lo automático va en un carril «Aplicación» y un organismo externo es un carril más.
 
 **Posición.** `"posicion": [x, y]` en un paso es opcional. Solo la usa ingeniería inversa, cuando lee de Appian dónde está cada nodo, y tiene que venir en todos los pasos para que se use.
 
@@ -150,7 +150,7 @@ Mientras haya cambios hechos a mano sin aceptar, `actualizar` se niega a tocar e
 - **Puertas exclusivas:** una pregunta cerrada («¿Completa?») y cada salida con su etiqueta.
 - **Inicio y fin:** un inicio por proceso y un fin por cada resultado de negocio («Solicitud denegada», «Autorización emitida»).
 - **Plazos:** un `temporizador` unido a la tarea que vigila con un flujo discontinuo. Al exportar a BPMN pasa a ser un evento de borde de esa tarea.
-- **Avisos:** un `mensaje` en el carril «Sistema».
+- **Avisos:** un `mensaje` en el carril «Aplicación». Si después del aviso no pasa nada más, la rama acaba en un `fin`.
 - **Tamaño:** con más de 20 tareas, se parte en subprocesos. El proceso principal usa `subproceso` y cada subproceso tiene su diagrama.
 - **Notas:** las explicaciones van en el paso a paso del documento. Una nota que se deje en el dibujo sale en el PNG: bórrala en draw.io si no debe verla el cliente.
 

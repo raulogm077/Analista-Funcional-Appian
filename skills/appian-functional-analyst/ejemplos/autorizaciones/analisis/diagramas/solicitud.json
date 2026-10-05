@@ -1,6 +1,6 @@
 {
   "proceso": "Solicitud de autorización",
-  "carriles": ["Unidad solicitante", "Técnico de la unidad gestora", "Responsable de la unidad", "Organismo externo", "Sistema"],
+  "carriles": ["Unidad solicitante", "Técnico de la unidad gestora", "Responsable de la unidad", "Organismo externo", "Aplicación"],
   "pasos": [
     {"id": "EV-01", "tipo": "inicio", "carril": "Unidad solicitante", "nombre": "Necesidad de autorización"},
     {"id": "ACT-01", "tipo": "tarea", "carril": "Unidad solicitante", "nombre": "Registrar solicitud"},
@@ -10,15 +10,15 @@
     {"id": "GW-02", "tipo": "paralela", "carril": "Técnico de la unidad gestora", "nombre": ""},
     {"id": "ACT-03", "tipo": "tarea", "carril": "Técnico de la unidad gestora", "nombre": "Elaborar informe técnico"},
     {"id": "ACT-04", "tipo": "tarea", "carril": "Organismo externo", "nombre": "Emitir informe preceptivo"},
-    {"id": "EV-02", "tipo": "temporizador", "carril": "Sistema", "nombre": "10 días sin respuesta"},
-    {"id": "ACT-08", "tipo": "sistema", "carril": "Sistema", "nombre": "Reclamar informe"},
+    {"id": "EV-02", "tipo": "temporizador", "carril": "Aplicación", "nombre": "10 días sin respuesta"},
+    {"id": "ACT-08", "tipo": "sistema", "carril": "Aplicación", "nombre": "Reclamar informe"},
     {"id": "GW-03", "tipo": "paralela", "carril": "Técnico de la unidad gestora", "nombre": ""},
     {"id": "ACT-05", "tipo": "tarea", "carril": "Responsable de la unidad", "nombre": "Resolver solicitud"},
     {"id": "GW-04", "tipo": "exclusiva", "carril": "Responsable de la unidad", "nombre": "¿Resolución?"},
     {"id": "EV-03", "tipo": "fin", "carril": "Responsable de la unidad", "nombre": "Solicitud denegada"},
-    {"id": "ACT-07", "tipo": "sistema", "carril": "Sistema", "nombre": "Generar autorización"},
-    {"id": "EV-04", "tipo": "mensaje", "carril": "Sistema", "nombre": "Aviso a la unidad solicitante"},
-    {"id": "EV-05", "tipo": "fin", "carril": "Sistema", "nombre": "Autorización emitida"}
+    {"id": "ACT-07", "tipo": "sistema", "carril": "Aplicación", "nombre": "Generar autorización"},
+    {"id": "EV-04", "tipo": "mensaje", "carril": "Aplicación", "nombre": "Aviso a la unidad solicitante"},
+    {"id": "EV-05", "tipo": "fin", "carril": "Aplicación", "nombre": "Autorización emitida"}
   ],
   "flujos": [
     {"de": "EV-01", "a": "ACT-01"},

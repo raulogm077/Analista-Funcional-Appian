@@ -103,7 +103,7 @@ def main():
         check(sidecar["colocacion"]["modo"] == "manual", "comparar --aceptar: la colocación pasa a manual")
         # 4. actualizar respetando lo movido a mano
         (tmp / "c2.json").write_text(json.dumps({"cambios": [
-            {"poner": {"id": "ACT-12", "tipo": "sistema", "carril": "Sistema", "nombre": "Calcular tasa"}},
+            {"poner": {"id": "ACT-12", "tipo": "sistema", "carril": "Aplicación", "nombre": "Calcular tasa"}},
             {"quitar_flujo": {"de": "ACT-11", "a": "ACT-02"}}, {"flujo": {"de": "ACT-11", "a": "ACT-12"}},
             {"flujo": {"de": "ACT-12", "a": "ACT-02"}}, {"poner": {"id": "ACT-08", "tipo": "tarea"}}]}), encoding="utf-8")
         out = run("actualizar", d, tmp / "c2.json")
@@ -136,15 +136,15 @@ def main():
         t = ET.parse(pag); extra = ET.SubElement(t.getroot(), "diagram", {"id": "p2", "name": "Página-2"})
         ET.SubElement(ET.SubElement(ET.SubElement(extra, "mxGraphModel"), "root"), "mxCell", {"id": "0"})
         t.write(pag, encoding="utf-8")
-        (tmp / "c3.json").write_text(json.dumps({"cambios": [{"renombrar_carril": ["Sistema", "Plataforma"]},
+        (tmp / "c3.json").write_text(json.dumps({"cambios": [{"renombrar_carril": ["Aplicación", "Plataforma"]},
                                                               {"poner": {"id": "ACT-01", "nombre": "Registrar la solicitud"}}]}), encoding="utf-8")
         out = run("actualizar", pag, tmp / "c3.json")
         check("Página-2" in pag.read_text(encoding="utf-8"), "actualizar: conserva las demás páginas del fichero")
-        check("carril renombrado: «Sistema» → «Plataforma»" in out and "cambia de carril" not in out,
+        check("carril renombrado: «Aplicación» → «Plataforma»" in out and "cambia de carril" not in out,
               "actualizar: un carril renombrado se informa en una línea")
         (tmp / "c4.json").write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-99", "nombre": "Solo nombre"}}]}), encoding="utf-8")
         check("le falta: tipo, carril" in run("actualizar", pag, tmp / "c4.json", esperado=1), "actualizar: paso nuevo incompleto")
-        (tmp / "c5.json").write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-98", "tipo": "tarea", "carril": "Sistemas", "nombre": "x"}}]}), encoding="utf-8")
+        (tmp / "c5.json").write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-98", "tipo": "tarea", "carril": "Aplicaciones", "nombre": "x"}}]}), encoding="utf-8")
         check("no existe" in run("actualizar", pag, tmp / "c5.json", esperado=1), "actualizar: carril inexistente es un error")
         run("bpmn", pag)
         bb = (pag.with_suffix(".bpmn")).read_text(encoding="utf-8")

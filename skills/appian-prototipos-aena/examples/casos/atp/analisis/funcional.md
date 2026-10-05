@@ -501,7 +501,7 @@ No hay: la ERS no menciona ninguno. <!-- ✅ FU-01 -->
 
 ## Anexo. Quién puede hacer qué
 
-Se genera a partir de las pantallas (apartado 5) con `indice.py derivadas`; no se edita a mano.
+<!-- Lo genera indice.py derivadas a partir de las pantallas (apartado 5); no se edita a mano. -->
 
 | Pantalla y parte | Gestor de acuerdos | Revisor jurídico | Consulta |
 |---|---|---|---|
