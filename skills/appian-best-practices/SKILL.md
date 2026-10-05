@@ -1,6 +1,6 @@
 ---
 name: appian-best-practices
-description: Official Appian best practices, solution-design decisions and quality gates for designing, building, reviewing and debugging Appian applications. Use when orienting or designing an Appian solution or architecture, and when creating, changing, reviewing or debugging record types, data models, relationships, sync, record events, SAIL interfaces, expression rules, decisions, process models, integrations, Web APIs, sites, security, performance, deployment packages, test cases, translations, offline forms, AI agents, AI skills or document extraction — through an MCP server or in Appian Designer. Also use when diagnosing an Appian error or production symptom, or maintaining a live application (runbooks and known issues from Appian's Community Knowledge Base). Use before any write operation against an Appian environment and before declaring an object finished.
+description: Official Appian best practices, solution-design decisions and quality gates for designing, building, reviewing and debugging Appian applications. Use when orienting or designing an Appian solution or architecture, and when creating, changing, reviewing or debugging record types, data models, relationships, sync, record events, SAIL interfaces, expression rules, decisions, process models, integrations, Web APIs, sites, security, performance, deployment packages, test cases, translations, offline forms, AI agents, AI skills or document extraction — via an MCP server or in Appian Designer. Also use when diagnosing an Appian error or production symptom, or maintaining a live application (runbooks and known issues from Appian's Community Knowledge Base). Use before any write to an Appian environment and before declaring an object finished. Not for functional analysis, user stories, process diagrams or prototypes: the plugin's analyst, diagram and prototype skills lead those and read these references.
 ---
 
 # Appian development best practices
@@ -50,6 +50,8 @@ owner. The table is in `10`; its point is that a matter of style can't consume a
 ## Routing by Domain
 
 Paths relative to this skill. **Open only what the task touches**; a typical change touches 1–3 docs.
+To read one section instead of a whole doc: `python3 scripts/seccion.py 06` lists its headings and
+`python3 scripts/seccion.py 06 5.3` prints §5.3.
 
 | You are going to… | Read |
 |---|---|
@@ -81,6 +83,8 @@ find out **only what the task needs**, in this order, stopping as soon as you ha
 1. **What is already in context** (what the user said, files already read). Don't re-query it.
 2. **Project instructions and documentation**, if they exist: `CLAUDE.md`/`AGENTS.md`, README,
    specification, architecture decisions, functional design. Don't assume they exist or how they're named.
+   In a project of this plugin they are `analisis/tecnico.md` (*Entorno*, *Convenciones* and the `DT-nn`
+   decisions) and `analisis/funcional.md` (the approved requirements `HU-nn` and process steps `P-nn`).
 3. **The real objects**, when the implementation matters more than the documentation (see *Tools*).
 
 What you almost always need before creating an object: **the naming convention** and **where it fits**
@@ -198,6 +202,7 @@ quality. Both are needed. If something is left unverified, **say so** — don't 
 | Source | Wins on | Because |
 |---|---|---|
 | **Official documentation** (`docs.appian.com`, documentation MCP) | Everything, for the environment's version | It is the platform's own account of itself |
+| **Approved requirements and the project's `DT-nn` decisions** (`analisis/funcional.md`, `analisis/tecnico.md`) | What the application must do, and the design choices already made with their reasons | Doc 10 *Hierarchy when requirements conflict*, levels 2–3: they never win over security or platform validity — if one breaks them, say so and propose a new decision |
 | **Official Appian skill** ([`dev-mcp-skills`](https://github.com/appian/dev-mcp-skills/)) | Naming (where the project has no convention of its own), both sides of a relationship, creation order, UUID handling, dependency-ordered change planning (`change-planning.md`), post-change verification (`change-review.md`), query recipes (`query-record-type-patterns.md`), null handling (`null-safety-patterns.md`) and accessibility audits | It is the vendor's account of how its own API behaves |
 | **Appian Community Knowledge Base** (Solution Engineering KB, Appian Max) | Field-proven patterns, known issues and their workarounds, Appian Cloud operations | Written by Appian's own support and delivery teams — but dated: check *Affected Versions* and the review date, and the docs win on conflict (doc 13 §11) |
 | **These `references/`** | Solution decisions, quality gates, outcomes and evidence, when something is finished | That is what this skill is for |

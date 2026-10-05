@@ -135,17 +135,21 @@ Source: https://docs.appian.com/suite/help/latest/sites_object.html#navigation-b
 Source: https://docs.appian.com/suite/help/latest/sites_object.html#branding · https://docs.appian.com/suite/help/latest/sail/ux-site-branding.html · https://docs.appian.com/suite/help/latest/css-profile-typefaces.html
 
 ### 3.3 Header styles aren't just aesthetic: they change what's shown
-- ✅ When choosing a header bar, take into account the **functional** differences between styles, not
-  just the look:
-  - **Helium** — shows the **page names next to their icons** in the bar.
-  - **Mercury** (default) and **Oxygen** — designed for **a single page**: they **don't show the page
-    name** in the bar.
-  - **Mercury** also **doesn't show the page icon on web** (only on Appian Mobile).
-- **Why:** if the site has several named pages, Mercury/Oxygen leave them unlabeled and confusing; for
-  navigation with visible names, use Helium. Choose the style based on how many pages there are and
-  whether you need to see their names, not on blind visual preference.
+- ✅ When choosing the navigation bar, take into account the **functional** differences, not just the look:
 
-Source: https://docs.appian.com/suite/help/latest/Sites.html#navigation-bar
+  | Header bar style | Page names | Icons |
+  |---|---|---|
+  | **Helium** (sites only) | Always shown | Required, above each page name |
+  | **Mercury** (default) | Only when the site has more than one page | Not shown |
+  | **Oxygen** | Only when the site has more than one page | Not shown |
+
+  The **Sidebar** layout has no styles and always shows the icon next to each page title.
+- ❌ Don't design pages around an icon that the chosen style won't show (Mercury, Oxygen).
+- **Why:** with Mercury or Oxygen a single-page site shows no page name; when names must always be visible
+  and icons help to tell pages apart, use Helium, and for many pages or page groups, the sidebar. Layout
+  and style don't apply to Appian Mobile.
+
+Source: https://docs.appian.com/suite/help/latest/sail/ux-site-branding.html#style-header-bar-only · https://docs.appian.com/suite/help/latest/sail/ux-site-branding.html#layout
 
 ### 3.4 The Accent Color must be accessible, not just corporate
 - ✅ Choose the Accent Color with **sufficient contrast**: a minimum of **4.5:1** against the bar's
