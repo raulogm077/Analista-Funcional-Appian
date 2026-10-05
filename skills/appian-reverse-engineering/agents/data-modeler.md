@@ -10,6 +10,8 @@ Lees las definiciones de los record types (campos, relaciones, origen, tabla, vi
 
 ## Entradas
 
+`<skill>` es la carpeta de la skill; `<salida>` y `<trabajo>`, las que te pasa el orquestador.
+
 - `<trabajo>/inventory.json`, `<trabajo>/graph.json` y `<trabajo>/mcp_raw/`: inventario, grafo de dependencias y respuestas del Dev MCP.
 - `<trabajo>/datafabric.json` (opcional): referencia SQL, campos, relaciones y recuento de filas por record type (ver `references/data-fabric.md`).
 - `<salida>/anexo/<tipo>/<slug>.md`: definición legible de cada objeto; enlázala desde cada ficha.
@@ -38,7 +40,7 @@ No inventes lo que falte. Lo que la extracción no trae para ningún objeto (nul
 
 - **Declaradas** en `relationships[]` (tipo, record destino, campos de enlace): ✅, en el ER y en la tabla de relaciones de la ficha.
 - **Declaradas sin el campo de enlace en la respuesta**: dibuja la relación y la FK en el ER; en la tabla, «Campo de enlace: no lo devuelve la extracción» y certeza 🔵.
-- **Inferidas** (un campo `idCliente` que coincide con la PK de otro record, o una consulta en SAIL que filtra un record por un campo de otro): solo en la tabla de relaciones de la ficha, con 🔵 y de qué se deduce; no en el ER. Si el modelo las necesita y no están declaradas, puede ser un hallazgo `H-DAT`.
+- **Inferidas** (un campo `idCliente` que coincide con la PK de otro record, o una consulta en SAIL que filtra un record por un campo de otro): solo en la tabla de relaciones de la ficha, con 🔵 y de qué se deduce («según su nombre» si solo lo dice el nombre del campo); no en el ER. Si el modelo las necesita y no están declaradas, puede ser un hallazgo `H-DAT`.
 - No inventes relaciones sin declaración ni evidencia de uso.
 
 ### Paso 3. Sincronización y volúmenes
@@ -72,7 +74,7 @@ Para cada `erDiagram` (reglas de `mermaid-rules.md`):
 2. Como mucho 8 atributos por entidad: PK, FK y campos clave.
 3. Relaciones con la notación canónica (`||--||`, `||--o{`, `}o--||`, `}o--o{`).
 4. Los CDTs que no usa ningún record ni proceso no van al ER, solo al catálogo.
-5. Valida con `scripts/validate_mermaid.py`, guarda el `.mmd` y renderiza con `scripts/render_diagrams.sh --mermaid`. Si avisa de ancho, quita atributos o parte por subdominio. Sin `mmdc`, el bloque mermaid va embebido.
+5. Guarda el `.mmd`, valídalo con `python3 <skill>/scripts/validate_mermaid.py <fichero>.mmd` y renderízalo con `bash <skill>/scripts/render_diagrams.sh --mermaid <fichero>.mmd <fichero>.svg`. Si avisa de ancho, quita atributos o parte por subdominio. Sin `mmdc`, el bloque mermaid va embebido.
 
 ### Paso 6. `03-modelo-datos.md`
 
@@ -82,7 +84,7 @@ Estructura, orden de secciones, columnas y campos de las fichas: los de la plant
 - **Fichas compactas** (objetivo: ½ pantalla por entidad): campos clave, no todos; la lista completa está en el anexo, que se enlaza.
 - **Acciones de record**: proceso que lanza y tipo (lista o por registro). Quién puede usarlas es de `04-seguridad-grupos.md`: enlázalo. Si la respuesta no trae la seguridad de las acciones, es ❓ en «Cobertura y límites», no «sin seguridad».
 - **Hallazgos `H-DAT`**: problemas del modelo que se ven en las definiciones: relaciones que se usan pero no están declaradas, tipos distintos entre un campo y el que enlaza, un record type y un CDT sobre la misma tabla con campos o tipos que no coinciden, entidades duplicadas. Cada uno con evidencia y, si es 🔵 o ❓, qué lo confirmaría.
-- **Otras áreas**: un CDT o record sin uso es un objeto huérfano (área de arquitectura, `02-arquitectura.md`); la seguridad de records y acciones es de `04`. Menciónalo en una frase sin severidad, enlaza el documento y apúntalo en «Para otras áreas».
+- **Otras áreas**: un CDT o record sin uso es un objeto huérfano: cita el `H-ARQ` que los agrupa en `02-arquitectura.md` (ya escrito) y enlaza la lista única de 09 (`09-valor-adicional.md`, «Objetos huérfanos»), sin repetirla. La seguridad de records y acciones es de `04`. Menciónalo en una frase sin severidad, enlaza el documento y apúntalo en «Para otras áreas».
 
 ### Paso 7. Hallazgos
 
@@ -94,7 +96,7 @@ Regístralos como dice `execution-principles.md` §3: tabla en la sección Halla
 - [ ] Cada entidad está en un solo subdominio y tiene una sola ficha.
 - [ ] Las relaciones declaradas están en el ER con notación canónica; las inferidas, solo en las fichas con 🔵.
 - [ ] Cada diagrama pasa `validate_mermaid.py`, se renderizó sin aviso de ancho y aparece una sola vez.
-- [ ] Cada ficha tiene evidencia y certeza (✅/🔵/❓).
+- [ ] Cada ficha tiene evidencia y certeza (✅/🔵/❓); cada evidencia enlaza su ficha del anexo.
 - [ ] Checklist de `presentation-rules.md` superado (TL;DR único, orden de secciones, sin placeholders, sin usuarios ni referencias a la skill ni a `<trabajo>/`).
 - [ ] El JSON de hallazgos coincide con la tabla del documento.
 

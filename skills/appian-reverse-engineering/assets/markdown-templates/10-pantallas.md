@@ -2,6 +2,9 @@
   Plantilla 10 — Catálogo de pantallas (ui-rules-analyzer).
   Estructura: TL;DR → Vista → Detalle → Hallazgos → Cobertura y límites. Las secciones sin contenido se omiten.
   Pantallas PAN-001…; hallazgos H-UI-01…. Los {{marcadores}} se sustituyen y los comentarios se borran.
+  Ninguna pantalla se recorta ni se omite por longitud. Evidencia: siempre enlazada a la ficha del objeto en el anexo.
+  Interfaces que no son pantalla ni las usa ninguna pantalla: no se catalogan aquí; la lista de objetos huérfanos
+  es la de 09 (ver «Cobertura y límites»).
 -->
 
 # Catálogo de pantallas
@@ -41,7 +44,7 @@ Certeza: ✅ la definición y el render coinciden · 🔵 solo de la definición
 | Tipo | {{Página · Vista de registro · Formulario de inicio · Tarea}} |
 | Quién la ve | {{actor o grupo}} · {{condición de visibilidad o «sin condición»}} |
 | Cómo se llega | {{site › página · acción de registro · tarea de un proceso}} |
-| Implementado en | [`{{interfaz}}`](anexo/interface/{{slug}}.md){{ + interfaces hijas y reglas}} |
+| Implementado en | [`{{interfaz}}`](./anexo/interface/{{slug}}.md){{ + interfaces hijas y reglas}} |
 | Guarda | {{qué datos guarda y dónde, o «nada: solo consulta»}} |
 
 **Datos**
@@ -63,24 +66,17 @@ Certeza: ✅ la definición y el render coinciden · 🔵 solo de la definición
 
 {{Notas (si aplica, 3-5 líneas): diferencias entre definición y render; comportamiento de otra área en una frase con enlace a su documento, sin severidad; hallazgos de esta pantalla por su ID.}}
 
-Evidencia: `mcp:interface/{{nombre}}#expression (línea {{N}})`, `mcp:site/{{nombre}}#pages[{{i}}]` · Certeza: ✅
-
-### Interfaces sin punto de entrada
-
-<!-- Solo si hay alguna. Interfaces que no son pantalla ni las usa ninguna pantalla. El hallazgo de código muerto es de 02. -->
-
-| Interfaz | Quién la referencia | Lectura | Evidencia |
-|---|---|---|---|
-| `{{interfaz}}` | {{nadie}} | {{Candidata a código muerto, ver [02](./02-arquitectura.md#hallazgos)}} | `graph:orphans` |
+Evidencia: [`mcp:interface/{{nombre}}#expression (línea {{N}})`](./anexo/interface/{{slug}}.md), [`mcp:site/{{nombre}}#pages[{{i}}]`](./anexo/site/{{slug}}.md) · Certeza: ✅
 
 ## Hallazgos
 
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| H-UI-01 | {{El alta no guarda lo que el usuario escribe}} | {{Alta}} | ✅ | `mcp:interface/{{nombre}}#expression (líneas {{2-5}})` |
+| H-UI-01 | {{El alta no guarda lo que el usuario escribe}} | {{Alta}} | ✅ | [`mcp:interface/{{nombre}}#expression (líneas {{2-5}})`](./anexo/interface/{{slug}}.md) |
 
 {{Debajo de cada hallazgo Alta, si hace falta: una línea con su impacto y la recomendación.}}
 
 ## Cobertura y límites
 
 {{1-5 líneas: pantallas sin render, configuración de listas de record que no devuelve la extracción, mapeos de formularios no disponibles… Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}
+{{Si hay interfaces sin punto de entrada: «N interfaces no son pantalla ni las usa ninguna pantalla: ver la lista de objetos huérfanos de [09](./09-valor-adicional.md#objetos-huérfanos) ([H-ARQ-NN](./02-arquitectura.md#hallazgos))». Las que usa otro objeto que no es pantalla, por su nombre y con quién las usa.}}

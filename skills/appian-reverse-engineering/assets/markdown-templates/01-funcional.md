@@ -6,6 +6,10 @@
   Diagrama: si existe el .svg, imagen + «Fuente»; si no, el bloque mermaid idéntico al .mmd (flowchart TD, ≤ 10 nodos).
   Secciones sin contenido: se omiten. Fichas: todas con los mismos campos; un campo que no aplica a ningún caso
   de uso se quita de todas (y, si es un dato que falta, se dice en «Cobertura y límites»).
+  Longitud: 1 pantalla + ½ por caso de uso. Ningún caso de uso se recorta ni se omite; con más de ~15, el Detalle se
+  parte por área (`## Detalle: <área>`) con un índice de áreas tras la Vista.
+  Uso real: si el entorno no consta como producción, la marca «orientativo (ver LEEME)» en la cabecera de la columna.
+  Evidencia: siempre enlazada a la ficha del objeto en el anexo.
 -->
 
 # Explicación funcional
@@ -75,7 +79,7 @@ flowchart TD
 
 - {{Comportamiento actual relevante, en lenguaje de negocio, p. ej. «Cancelar en el formulario no anula el alta: la solicitud se registra igualmente» ([proceso](./08-procesos-bpmn/{{slug}}.md)).}}
 
-Evidencia: `mcp:{{tipo}}/{{nombre}}#{{ubicación}}` · Certeza: ✅/🔵/❓
+Evidencia: [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.md) · Certeza: ✅/🔵/❓
 
 ### {{Siguiente caso de uso}}
 
@@ -85,7 +89,7 @@ Evidencia: `mcp:{{tipo}}/{{nombre}}#{{ubicación}}` · Certeza: ✅/🔵/❓
 
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| H-FUN-01 | {{Las solicitudes no se pueden anular aunque existe el estado «Anulada»}} | Media | 🔵 | `mcp:{{tipo}}/{{nombre}}#{{ubicación}}` |
+| H-FUN-01 | {{Las solicitudes no se pueden anular aunque existe el estado «Anulada»}} | Media | 🔵 | [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.md) |
 
 {{Para cada hallazgo ❓: la pregunta que lo resuelve y a quién hacerla.}}
 

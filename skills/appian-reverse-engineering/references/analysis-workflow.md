@@ -4,8 +4,8 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 **Convenciones**
 
-- `<salida>` = `./appian-docs/<PREFIJO>/` salvo que el usuario indique otra; `<trabajo>` = `appian-docs/_trabajo/<PREFIJO>/` (datos en bruto: no se comparte y ningún entregable lo enlaza).
-- Scripts: `uv run --with "mcp>=1.2,<2" python <skill>/scripts/devmcp_extract.py …` desde la carpeta de trabajo del usuario; los demás, `python3 <skill>/scripts/<script>.py <salida>`.
+- `<salida>` = `./appian-docs/<PREFIJO>/` salvo que el usuario indique otra; `<trabajo>` = `appian-docs/_trabajo/<PREFIJO>/` (datos en bruto, con un `.gitignore` con `*`: no se comparte ni se sube a un repositorio, y ningún entregable lo enlaza).
+- Scripts, desde la carpeta del usuario (donde está su `.mcp.json`): `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" …`; los demás, `python3 <skill>/scripts/<script>.py <salida>`. `<skill>` es la carpeta de la skill.
 - Evidencia: `mcp:<tipo>/<nombre>[@<rol>]#<ubicación>`, con los nodos de proceso como `nodes[id=N]` (`lectura-mcp-raw.md`).
 - Hallazgos: ID con el prefijo del área, tabla en el documento propietario y `<trabajo>/hallazgos/<agente>.json` (`execution-principles.md`, secciones 2 y 3).
 
@@ -13,13 +13,13 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 ## Fase 0 — Preflight
 
-- [ ] `doctor --json` ejecutado.
+- [ ] `doctor --json` ejecutado. Con `appsNote` (más de 50 apps), la del usuario buscada con `apps --json`.
 - [ ] Docs MCP: herramienta localizada y una consulta de prueba, apuntada en `<trabajo>/docs_cache/orquestador.json` (cuenta para el tope de 30).
 - [ ] Appian MCP Server: estado según `doctor`, o «disponible en sesión» si sus herramientas están en la sesión.
 - [ ] Tabla de estado mostrada al usuario (estado · qué se pierde · cómo activarlo).
 - [ ] Si el Dev MCP no está `ok`: mostrado el paso de `devmcp-setup.md` que falta y **parada**.
-- [ ] En una sola pregunta: aplicación, formatos adicionales y si el entorno es producción (con su versión de Appian, si la sabe).
-- [ ] `preflight.json` (con `environment: {url, isProduction, appianVersion}`) y `output_preferences.json` guardados.
+- [ ] En una sola pregunta: aplicación, formatos adicionales, objetivo (entender, modernizar o reconstruir; por defecto, modernizar) y si el entorno es producción (con su versión de Appian, si la sabe).
+- [ ] `preflight.json` (con `environment: {url, isProduction, appianVersion}`) y `output_preferences.json` (`pdf`, `dashboard`, `objetivo`; formato en `SKILL.md`) guardados.
 
 **Qué pierde el usuario sin cada MCP opcional**
 
@@ -39,8 +39,8 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 ## Fase 2 — Extracción
 
 - [ ] `extract` terminado. Si se corta, repetirlo: reanuda desde lo descargado.
-- [ ] `extraction_report.json` revisado: `errorCount`, `disabledAfterProbe`, `toolsExcluded`.
-- [ ] Si fallan más del 20 % de las definiciones: avisado al usuario antes de seguir.
+- [ ] `extraction_report.json` revisado: `errorCount`, `disabledAfterProbe`, `toolsExcluded`, `callStatsByRole`.
+- [ ] Si en `callStatsByRole.definition` fallan más del 20 % de las llamadas: avisado al usuario antes de seguir.
 - [ ] Data fabric: `datafabric.json` generado (script o sesión, ver `data-fabric.md`) o anotado como no disponible.
 
 **Errores típicos**
@@ -56,7 +56,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 - [ ] `build_model.py <salida>` sin errores; revisada la línea de resumen (objetos, aristas por origen, huérfanos, hubs).
 - [ ] `build_annex.py <salida>` → `<salida>/anexo/` (`indice.md` y `<tipo>/<slug>.md` por objeto con definición).
-- [ ] `detect_secrets.sh <trabajo>/mcp_raw`: anotado qué tipos de secreto hay y en qué objetos, sin copiar valores.
+- [ ] `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw`: anotado qué tipos de secreto hay y en qué objetos, sin copiar valores.
 - [ ] Si `graph.json` tiene pocas aristas de origen `dependents` (la herramienta de dependencias no estaba o falló), las conclusiones sobre quién llama a quién llevan 🔵.
 
 ## Fase 4 — Análisis
@@ -66,8 +66,8 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 - [ ] 4.2 en paralelo, en un solo turno: `data-modeler` (03), `integration-security-analyzer` (04–06), `process-modeler` (08), `ui-rules-analyzer` (10, 11).
 - [ ] Cada agente dejó `<trabajo>/hallazgos/<agente>.json` y su informe; sus «Para otras áreas» y choques, anotados para la fase 6.
 - [ ] 4.3 orquestador: `build_summary.py <salida>` para ver `signals` → `07` y `09` con sus plantillas y las guías de abajo → hallazgos `H-BAT` y `H-GEN` en `<trabajo>/hallazgos/orquestador.json` → `build_registry.py <salida>` sin errores (lo que reporte se corrige en el JSON del agente que corresponda).
-- [ ] 4.4 `rebuild-architect` → 12, 13 y `<trabajo>/modernizacion.json` (veredicto, estrategia y los `MOD-`/`PQ-` que tratan cada hallazgo).
-- [ ] 4.5 `target-designer` → 14.
+- [ ] 4.4 `rebuild-architect` (recibe el `objetivo`) → 12, 13 y `<trabajo>/modernizacion.json` (veredicto, estrategia y los `MOD-`/`PQ-` que tratan cada hallazgo).
+- [ ] 4.5 `target-designer` (recibe el `objetivo`) → 14.
 - [ ] Consultas al Docs MCP (suma de `<trabajo>/docs_cache/*.json`) ≤ 30.
 
 ### Guía de 07 (procesos programados)
@@ -87,7 +87,7 @@ Hallazgos `H-BAT` (severidad orientativa; ajústala al impacto real). Los fallos
 | Situación | Severidad | Certeza |
 |---|---|---|
 | Lee sin tamaño de lote y la definición lo muestra | Media | ✅ |
-| Programado y sin ejecuciones en un entorno de producción | Media (¿sigue activo?) | ✅ |
+| Programado y sin ejecuciones | No es H-BAT: cita el H-GEN de 09 (dueño de los procesos sin ejecuciones) | — |
 | Usa `loggedInUser()`: no hay una persona detrás ([fuente](https://docs.appian.com/suite/help/26.6/fnc_people_loggedinuser.html)) | Media | ✅ |
 | Intervalo de menos de una hora sobre integraciones o escrituras | Baja (vigilar) | ✅ |
 | Sin manejo de errores | Solo si la definición muestra que no lo hay; si no, no es hallazgo (❓ en la ficha) | ✅ |
@@ -97,7 +97,7 @@ Hallazgos `H-BAT` (severidad orientativa; ajústala al impacto real). Los fallos
 Solo las subsecciones con contenido. Hallazgos propios: `H-GEN` (áreas mantenimiento, rendimiento o uso). Lo que sea de otra área se enlaza por su ID; si el propietario no lo registró, anótalo para la pasada de coherencia.
 
 - **Métricas** (Vista): de `inventory.json` (`counts`, `sailLines`, `sailBytes`, `nodeCount`, `validationIssues`, `usage`).
-- **Constantes por entorno y secretos**: constantes con URLs, hosts, identificadores o interruptores de entorno (`DEV`/`PRE`/`PRO`). Los valores con secreto (`maskedSecret`, `maskedSecrets`, `detect_secrets.sh`) no se repiten: se enlaza el `H-SEG` de 04.
+- **Constantes por entorno y secretos**: constantes con URLs, hosts, identificadores o interruptores de entorno (`DEV`/`PRE`/`PRO`). Los valores con secreto (`maskedSecret`, `maskedSecrets`, `detect_secrets.py`) no se repiten: se enlaza el `H-SEG` de 04.
 - **Reglas reutilizables**: los hubs de `graph.json` (5 o más objetos que los referencian) de tipo expression rule o decisión: qué hacen, entradas, salida y nº de llamadores. Los hubs como problema de arquitectura son `H-ARQ` de 02.
 - **Huérfanos**: `graph.orphans` (ya excluye puntos de entrada y procesos programados) y, si el entorno es producción, los process models sin ejecuciones (`signals`). Aquí va la lista para limpieza; el hallazgo de arquitectura es de 02.
 - **Avisos de validación**: `validationIssues`; un `H-GEN` por tipo de aviso, agrupando objetos.
@@ -116,15 +116,15 @@ Hallazgos `H-GEN` (severidad orientativa):
 
 ## Fase 5 — Diagramas
 
-- [ ] Cada `.mmd` pasa `validate_mermaid.py`.
-- [ ] `render_diagrams.sh --check`; con `mmdc`, `render_diagrams.sh --batch <salida>`. Los que avise por ancho (más de ~1600 px) se rehacen: `flowchart TD`, menos cajas por fila o partidos en dos.
+- [ ] Cada `.mmd` pasa `python3 <skill>/scripts/validate_mermaid.py <fichero.mmd>`.
+- [ ] `bash <skill>/scripts/render_diagrams.sh --check`; con `mmdc`, `bash <skill>/scripts/render_diagrams.sh --batch <salida>`. Los que avise por ancho (más de ~1600 px) se rehacen: `flowchart TD`, menos cajas por fila o partidos en dos.
 - [ ] Un diagrama que falla 3 veces se sustituye por su tabla equivalente.
 - [ ] `bpmn_layout.py <salida>/08-procesos-bpmn` ejecutado (lo hace `process-modeler`; repítelo si alguien tocó un `.bpmn`).
 - [ ] Cada diagrama aparece una sola vez en su documento: SVG con «Fuente: [x.mmd](…)», o el bloque mermaid si no hay SVG.
 
 ## Fase 6 — Coherencia, resumen, inventario y guía
 
-- [ ] Pasada de coherencia (`execution-principles.md`, sección 4): contradicciones corregidas en su documento, duplicados marcados con `duplicadoDe`, severidades fuera del propietario quitadas, «Para otras áreas» registrados. Sin notas de parche.
+- [ ] Pasada de coherencia (`execution-principles.md`, sección 4): contradicciones corregidas en su documento, duplicados marcados con `duplicadoDe`, severidades fuera del propietario quitadas, «Para otras áreas» registrados, «Preguntas nuevas» de target-designer dadas de alta como `PQ-` en 12 y en `modernizacion.json`, menciones a otras áreas en 01–11 con el ID canónico y su enlace. Sin notas de parche.
 - [ ] `build_registry.py <salida>` sin errores (ahora con el tratamiento de 13).
 - [ ] `build_summary.py <salida>` → `<trabajo>/summary.json`.
 - [ ] `00-resumen-ejecutivo.md` con su plantilla: todas las cifras de `summary.json` (confianza con su motivo, procesos críticos, hallazgos Alta, secretos, veredicto y estrategia, uso real con aviso de entorno).

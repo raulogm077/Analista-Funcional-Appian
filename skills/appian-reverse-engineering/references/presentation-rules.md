@@ -79,10 +79,10 @@ Todas las fichas de un mismo tipo tienen los mismos campos en el mismo orden:
 
 <Notas (si aplica, 3-5 líneas)>
 
-Evidencia: [`mcp:<tipo>/<nombre>[@<rol>]#<ubicación>`](anexo/<tipo>/<slug>.md) · Certeza: ✅/🔵/❓
+Evidencia: [`mcp:<tipo>/<nombre>[@<rol>]#<ubicación>`](./anexo/<tipo>/<slug>.md) · Certeza: ✅/🔵/❓
 ```
 
-La evidencia enlaza la ficha del objeto en el anexo (ruta relativa al documento: `../anexo/…` desde `08-procesos-bpmn/`), para que el lector la compruebe.
+Toda evidencia, en las fichas y en las columnas «Evidencia» de las tablas (también las de Hallazgos), enlaza la ficha del objeto en el anexo para que el lector la compruebe: `` [`mcp:<tipo>/<nombre>#<ubicación>`](./anexo/<tipo>/<slug>.md) ``; las de `graph:`, `./anexo/grafo.md`. Desde `08-procesos-bpmn/`, `../anexo/…`. Con el enlace en la evidencia, la ficha no repite otro «Definición» al anexo.
 
 Si el documento tiene más de 5 fichas, el Detalle empieza con un índice de enlaces a ellas.
 
@@ -112,22 +112,24 @@ No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). Una buena p
 
 ## Regla 8: lo que el lector no debe ver
 
-- **Usuarios**: ningún nombre de usuario en ningún entregable. Usa recuentos o el rol: «una cuenta personal del grupo DEM Gestores», «una cuenta de servicio».
+- **Usuarios**: ningún nombre de usuario en ningún entregable. Usa recuentos o el rol: «una cuenta personal del grupo DEM Gestores», «una cuenta de servicio». Una constante de tipo Usuario o un usuario escrito en el código se escribe «una cuenta de ‹grupo›», con el nombre de su grupo si se conoce (p. ej. «una cuenta de DEM Gestores»), o «una cuenta personal»; un correo personal, `‹correo›` (literal).
 - **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts, códigos internos de patrones (`DAT-02`) ni «heurística de la skill». Nombra la buena práctica y su fuente oficial.
 - **Notas de parche**: nunca «01 todavía dice…», «esto matiza a…», «corrige lo que dice X». Si otro documento está mal, se corrige ese documento (pasada de coherencia de la fase 6).
 - **`<trabajo>/`**: los entregables no lo enlazan ni escriben su ruta (no se comparte). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
-- **Valores evaluados en un render**: el render de una interfaz puede traer datos reales (recuentos, filas de una tabla). Describe la estructura («un indicador de solicitudes pendientes»), nunca sus valores.
-- **Limitaciones globales** (entorno no productivo, versión no determinada, muestra de ejecuciones, configuración que el Dev MCP no devuelve): se explican una vez en `LEEME.md`. Cada documento cita en su «Cobertura y límites» solo las que cambian lo que dice, en una línea.
+- **Render de una interfaz**: se guarda sin valores (‹valor›), porque al evaluarla Appian puede traer datos reales. Describe la estructura («un indicador de solicitudes pendientes»), nunca valores.
+- **Limitaciones globales** (entorno no productivo, versión no determinada, muestra de ejecuciones, configuración que el Dev MCP no devuelve): se explican una vez en `LEEME.md`. Cada documento cita en su «Cobertura y límites» solo las que cambian lo que dice, en una línea. Donde una cifra dependa de ellas (p. ej. ejecuciones en un entorno que no consta como producción), no repitas la explicación: usa la marca corta «orientativo (ver [LEEME](./LEEME.md))» (`../LEEME.md` desde `08-procesos-bpmn/`), una vez por tabla o sección (p. ej. en la cabecera de la columna).
 
 ## Regla 9: longitud
 
-Objetivo de longitud; si un documento dobla el máximo, está mal estructurado. «1 pantalla» ≈ 50 líneas. En apps pequeñas (menos de ~50 objetos) apunta al objetivo, no al máximo.
+Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal estructurado. «1 pantalla» ≈ 50 líneas. En apps pequeñas (menos de ~50 objetos) apunta al objetivo, no al máximo.
+
+**El objetivo crece con el contenido.** Nunca se recorta ni se omite un caso de uso, RF, RN, MOD, pantalla u otra ficha para cumplir la longitud: lo que se acorta es cada ficha. En `01`, `12`, `13` y `14`, por encima de unas 15 fichas el documento se parte por área (subdominio, actor o módulo): un `## Detalle: <área>` por área, entre la Vista y los Hallazgos (Regla 1), y tras la Vista un índice de áreas con enlaces a sus fichas.
 
 | Entregable | Objetivo | Máximo |
 |---|---|---|
-| `LEEME.md` | 1 pantalla | 2 |
+| `LEEME.md` | 1-2 pantallas | 3 |
 | `00-resumen-ejecutivo.md` | 1-2 pantallas | 3 |
-| `01-funcional.md` | 3-5 | 10 |
+| `01-funcional.md` | 1 + ½ por caso de uso | 1 + 1 por caso de uso |
 | `02-arquitectura.md` | 2-3 | 5 |
 | `03-modelo-datos.md` | 1 + ½ por entidad | 1 por entidad |
 | `04-seguridad-grupos.md` | 2-3 | 5 |
@@ -137,9 +139,9 @@ Objetivo de longitud; si un documento dobla el máximo, está mal estructurado. 
 | `08-procesos-bpmn/indice.md` | 1 | 2 |
 | `09-valor-adicional.md` | según hallazgos | con índice |
 | `10-pantallas.md`, `11-reglas-negocio.md` | ½ por pantalla o regla | 1 por pantalla o regla |
-| `12-especificacion-reconstruccion.md` | 3-6 | 12 |
-| `13-modernizacion-refactor.md` | 3-6 | 12 |
-| `14-diseno-objetivo.md` | 4-8 | 15 |
+| `12-especificacion-reconstruccion.md` | 1 + ½ por RF | 1 + 1 por RF |
+| `13-modernizacion-refactor.md` | 1 + ⅓ por MOD | 1 + ⅔ por MOD |
+| `14-diseno-objetivo.md` | 2 + ½ por elemento que cambia | 2 + 1 por elemento que cambia |
 | `INVENTARIO.md` | una tabla por tipo | sin límite |
 
 ## Checklist antes de escribir cada documento
@@ -152,4 +154,5 @@ Objetivo de longitud; si un documento dobla el máximo, está mal estructurado. 
 - [ ] Hallazgos solo de tu área, con ID del registro.
 - [ ] Sin usuarios, sin referencias a la skill, sin notas de parche, sin enlaces a `<trabajo>/`.
 - [ ] Sin placeholders (`{{`, `TODO`, `TBD`, `xxx`, `lorem`).
-- [ ] Cada ficha con evidencia y certeza.
+- [ ] Cada ficha con evidencia y certeza; cada evidencia enlaza su ficha del anexo.
+- [ ] Ninguna ficha recortada u omitida por longitud.

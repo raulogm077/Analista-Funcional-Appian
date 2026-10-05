@@ -14,21 +14,21 @@ Todo con evidencia verificable (`mcp:<tipo>/<nombre>#<ubicación>`), certeza exp
 
 ## Principios de funcionamiento
 
-- **Solo lectura, siempre.** La extracción la hace `scripts/devmcp_extract.py`, que arranca su propia instancia del Dev MCP con `LCP_TOOL_MODE=readonly` forzado y aplica la política de `scripts/devmcp_policy.json` (bloquea escritura, interacción, evaluación de lógica y lectura de filas de negocio). **No llames tú a herramientas de escritura del Dev MCP** aunque estén en la sesión.
+- **Solo lectura, siempre.** La extracción la hace `scripts/devmcp_extract.py`, que arranca su propia instancia del Dev MCP con `LCP_TOOL_MODE=readonly` forzado y aplica la política de `scripts/devmcp_policy.json`: bloquea escritura, interacción, evaluación de lógica y lectura de datos (filas de record, SQL, variables de procesos, datos de tareas, usuarios y credenciales). La única evaluación permitida es el render de interfaces con entradas vacías, la versión segura del recorrido del site: Appian evalúa la interfaz en el servidor (puede ejecutar sus consultas de lectura) y la respuesta se guarda ya sin valores (estructura y etiquetas; los valores son `‹valor›`). **No llames tú a herramientas de escritura del Dev MCP** aunque estén en la sesión.
 - **Sin herramientas fijas.** El extractor usa todas las herramientas de lectura que ofrezca el catálogo del servidor en cada momento, clasificándolas por su firma. Cuando Appian actualiza el Dev MCP, las herramientas nuevas se aprovechan solas.
 - **Extracción por script, análisis por agentes.** El script vuelca todo a disco (miles de llamadas sin pasar por el contexto). Los subagentes leen esos ficheros.
 - **Tres MCP, y solo esos.** Dev MCP es obligatorio. Appian MCP Server (volúmenes) y Docs MCP (documentación oficial) son opcionales: si faltan, se indica qué se pierde y se sigue. Ningún otro conector o servidor MCP de la sesión (finanzas, presentaciones, diseño, bases de datos…) interviene: no los llames, no los listes en el preflight y no pidas autorizarlos. El Appian MCP Server es el del mismo entorno que el Dev MCP (`<URL del entorno>/mcp`); el Docs MCP, el de la documentación de Appian.
 
 ## Cómo ejecutar los scripts
 
-Desde la **carpeta de trabajo del usuario** (donde está su configuración MCP, p. ej. `.mcp.json`), con la ruta absoluta de esta skill:
+Desde la **carpeta del usuario** (donde está su configuración MCP, p. ej. `.mcp.json`), con la ruta absoluta de esta skill (`<skill>`):
 
 ```bash
-uv run --with "mcp>=1.2,<2" python "<carpeta-de-esta-skill>/scripts/devmcp_extract.py" <subcomando> [opciones]
-python3 "<carpeta-de-esta-skill>/scripts/build_model.py" <salida>
+uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" <subcomando> [opciones]
+python3 "<skill>/scripts/build_model.py" <salida>
 ```
 
-`uv` ya es requisito del Dev MCP. Añade `--json` para salida legible por máquina. Códigos de salida en la cabecera de `devmcp_extract.py`.
+`uv` ya es requisito del Dev MCP; `--no-project` evita que adopte el `pyproject.toml` que pueda haber en la carpeta del usuario. `doctor`, `apps` y `plan` admiten `--json` (salida legible por máquina). Códigos de salida en la cabecera de `devmcp_extract.py`.
 
 ## Argumentos
 
@@ -38,7 +38,7 @@ python3 "<carpeta-de-esta-skill>/scripts/build_model.py" <salida>
 | Idioma | No | español |
 | Carpeta de salida | No | `./appian-docs/<PREFIJO>/` |
 
-**Dos carpetas.** `<salida>` (p. ej. `appian-docs/DEM/`) solo tiene entregables y se puede compartir. Los datos de trabajo (respuestas en bruto, inventario, grafo, cachés, resumen) van en `<trabajo>` = `appian-docs/_trabajo/<PREFIJO>/`, que los scripts deducen de `<salida>`. **`<trabajo>` no se comparte**: tiene usuarios, hosts y definiciones completas.
+**Dos carpetas.** `<salida>` (p. ej. `appian-docs/DEM/`) solo tiene entregables y se puede compartir. Los datos de trabajo (respuestas en bruto, inventario, grafo, cachés, resumen) van en `<trabajo>` = `appian-docs/_trabajo/<PREFIJO>/`, que los scripts deducen de `<salida>`. **`<trabajo>` no se comparte ni se sube a un repositorio** (lleva un `.gitignore` con `*`): tiene usuarios, hosts y definiciones completas.
 
 ---
 
@@ -48,7 +48,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 ### Fase 0 — Preflight de los 3 MCP (obligatoria)
 
-1. Ejecuta `devmcp_extract.py doctor --json`.
+1. Ejecuta `devmcp_extract.py doctor --json`. Si trae `appsNote` (más de 50 apps), busca la del usuario con `apps --json`.
 2. Comprueba en la sesión:
    - **Docs MCP**: busca una herramienta de búsqueda en la documentación de Appian (ver `references/docs-mcp-usage.md`). Si existe, haz **una** consulta de prueba corta; cuenta para el tope.
    - **Appian MCP Server**: si `doctor` dice `no_configurado` pero en la sesión hay herramientas del data fabric de Appian, márcalo «disponible en sesión».
@@ -57,8 +57,9 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 5. Con el Dev MCP `ok`, en una sola pregunta:
    - la aplicación, si no la ha dado (muéstrale las apps de `doctor`);
    - los formatos adicionales: *«Además de los documentos Markdown, ¿quieres 📄 PDF maquetado, 🖥️ dashboard web, o solo los .md?»* (sin respuesta: solo Markdown);
+   - el objetivo, si no lo ha dicho: *«¿Quieres solo entender la aplicación, modernizarla sobre la actual o reconstruirla desde cero?»* (sin respuesta: modernizar). La documentación de B se genera siempre; el objetivo orienta la estrategia;
    - si el entorno (`url` de `doctor`) es producción y su versión de Appian, si la sabe: el uso real de procesos solo es representativo en producción. Todo es lectura, sea cual sea el entorno.
-6. Guarda en `<trabajo>/preflight.json` la salida de `doctor` con tus comprobaciones de sesión (`docsMcp.status: "operativo"` si respondió la consulta de prueba) y `environment: {url, isProduction, appianVersion}` (`null` lo que no se sepa). Las preferencias, en `<trabajo>/output_preferences.json`. Apunta la consulta de prueba del Docs MCP en `<trabajo>/docs_cache/orquestador.json`.
+6. Guarda en `<trabajo>/preflight.json` la salida de `doctor` con tus comprobaciones de sesión (`docsMcp.status: "operativo"` si respondió la consulta de prueba) y `environment: {url, isProduction, appianVersion}` (`null` lo que no se sepa). Las preferencias, en `<trabajo>/output_preferences.json`, con este formato: `{"pdf": true|false, "dashboard": true|false, "objetivo": "entender"|"modernizar"|"reconstruir"}`. Apunta la consulta de prueba del Docs MCP en `<trabajo>/docs_cache/orquestador.json`.
 
 ### Fase 1 — Plan de extracción
 
@@ -67,21 +68,21 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 ### Fase 2 — Extracción
 
 1. `devmcp_extract.py extract --app <app> --out <salida>` (añade `--yes` si el usuario confirmó un plan grande). Es reanudable: si se corta, repítelo.
-2. Revisa `extraction_report.json`. Si fallan más del 20 % de las llamadas de definición, díselo al usuario antes de seguir.
+2. Revisa `extraction_report.json`. Si en `callStatsByRole.definition` las fallidas (`failed`) pasan del 20 % del total (`ok` + `failed`), díselo al usuario antes de seguir.
 3. Data fabric (opcional, `references/data-fabric.md`): `devmcp_extract.py datafabric --out <salida>` si hay servidor en la configuración; si solo está en la sesión, hazlo desde la sesión; si no, sáltalo.
 
 ### Fase 3 — Modelo y anexo
 
 1. `build_model.py <salida>` → `inventory.json` y `graph.json` (con la criticidad de cada proceso).
-2. `python3 scripts/build_annex.py <salida>` → `anexo/`: por objeto, la definición legible y el resto de respuestas (role map, dependientes, validación, ejecuciones, versiones), con los usuarios sustituidos por sus grupos; y `anexo/grafo.md`. Repítelo si cambia `<trabajo>/`.
-3. `bash scripts/detect_secrets.sh <trabajo>/mcp_raw`: lo que salga hay que enmascararlo en los entregables. **No muestres los valores.**
+2. `python3 <skill>/scripts/build_annex.py <salida>` → `anexo/`: por objeto, la definición legible y el resto de respuestas (role map, dependientes, validación, ejecuciones, versiones, render sin valores), con los usuarios sustituidos por sus grupos y los correos por `‹correo›`; y `anexo/grafo.md`. Repítelo si cambia `<trabajo>/`.
+3. `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw` (o `bash <skill>/scripts/detect_secrets.sh`, que lo llama): lo que salga hay que enmascararlo en los entregables. No cuenta referencias (`cons!`, `=ri!…`) ni valores ya enmascarados. **No muestres los valores.**
 
 ### Fase 4 — Análisis con subagentes
 
 Lee antes `references/execution-principles.md`. Cada subagente recibe:
 
 - el contenido de `agents/<rol>.md`, o su ruta absoluta con la orden de leerlo entero antes de empezar (si el subagente puede leer ficheros);
-- la ruta de la skill, para que abra `references/` y `assets/` que cite su fichero;
+- la ruta de la skill (`<skill>`), para abrir los `references/` y `assets/` que cite su fichero y ejecutar los `scripts/`;
 - la carpeta de salida y la de trabajo;
 - si el Docs MCP está disponible y cuántas consultas le quedan (tope global de 30);
 - el entorno, si es producción y la versión si se conocen;
@@ -101,18 +102,20 @@ Todos escriben sus hallazgos en su documento y en `<trabajo>/hallazgos/<agente>.
 | 4.4 | `rebuild-architect` | `12-especificacion-reconstruccion.md`, `13-modernizacion-refactor.md`, `<trabajo>/modernizacion.json` |
 | 4.5 | `target-designer` | `14-diseno-objetivo.md` |
 
-**Paso 4.3 (orquestador).** `python3 scripts/build_summary.py <salida>` para ver `signals` (procesos sin ejecuciones, avisos de validación, interfaces grandes, huérfanos). Escribe `07` y `09` con sus plantillas (guía en `references/analysis-workflow.md`) y tus hallazgos `H-BAT`/`H-GEN` en `<trabajo>/hallazgos/orquestador.json`. Después `python3 scripts/build_registry.py <salida>`: valida todos los hallazgos y escribe la tabla del registro en `09`. Corrige lo que reporte (en el JSON del agente que corresponda).
+**Paso 4.3 (orquestador).** `python3 <skill>/scripts/build_summary.py <salida>` para ver `signals` (procesos sin ejecuciones, avisos de validación, interfaces grandes, huérfanos). Escribe `07` y `09` con sus plantillas (guía en `references/analysis-workflow.md`) y tus hallazgos `H-BAT`/`H-GEN` en `<trabajo>/hallazgos/orquestador.json`. Después `python3 <skill>/scripts/build_registry.py <salida>`: valida todos los hallazgos y escribe la tabla del registro en `09`. Corrige lo que reporte (en el JSON del agente que corresponda).
+
+**Pasos 4.4 y 4.5.** `rebuild-architect` y `target-designer` reciben además el objetivo del usuario (`objetivo` de `output_preferences.json`).
 
 **Patrón de invocación** (Claude Code): `Agent({description, subagent_type: "general-purpose", prompt: <agents/rol.md> + entradas})`, varios en el mismo mensaje cuando van en paralelo. Sin herramienta de subagentes: aplica tú mismo cada `agents/<rol>.md` en el mismo orden.
 
 ### Fase 5 — Diagramas
 
-Cada bloque Mermaid pasa `scripts/validate_mermaid.py`, que admite los tipos A, B y C de `references/mermaid-rules.md`. `scripts/render_diagrams.sh --batch <salida>` genera los SVG si hay `mmdc` y avisa de los que son demasiado anchos (rehazlos). Si un diagrama falla 3 veces, sustitúyelo por una tabla. Los `.bpmn` de 08 llevan coordenadas de dibujo: `python3 scripts/bpmn_layout.py <salida>/08-procesos-bpmn` (lo ejecuta process-modeler; repítelo si alguien toca un `.bpmn`). En la vía draw.io la imagen sale de `appian-diagramas-bpmn`, pero el `.bpmn` es el propio.
+Cada bloque Mermaid pasa `python3 <skill>/scripts/validate_mermaid.py <fichero.mmd>`, que admite los tipos A, B y C de `references/mermaid-rules.md`. `bash <skill>/scripts/render_diagrams.sh --batch <salida>` genera los SVG si hay `mmdc` y avisa de los que son demasiado anchos (rehazlos). Si un diagrama falla 3 veces, sustitúyelo por una tabla. Los `.bpmn` de 08 llevan coordenadas de dibujo: `python3 <skill>/scripts/bpmn_layout.py <salida>/08-procesos-bpmn` (lo ejecuta process-modeler; repítelo si alguien toca un `.bpmn`). En la vía draw.io la imagen sale de `appian-diagramas-bpmn`, pero el `.bpmn` es el propio.
 
 ### Fase 6 — Coherencia, resumen, inventario y guía
 
-1. **Pasada de coherencia** (`references/execution-principles.md`, sección 4): corrige en su sitio las contradicciones entre documentos, fusiona duplicados y quita severidades repetidas. Nada de notas de parche.
-2. `python3 scripts/build_registry.py <salida>` (ahora con el tratamiento de 13) y `python3 scripts/build_summary.py <salida>` → `<trabajo>/summary.json`, la fuente de las cifras de `00` y de los publicadores.
+1. **Pasada de coherencia** (`references/execution-principles.md`, sección 4): corrige en su sitio las contradicciones entre documentos, fusiona duplicados y quita severidades repetidas. Da de alta como `PQ-`, en `12` y en `<trabajo>/modernizacion.json`, las «Preguntas nuevas» del informe de target-designer. Completa en `01`–`11` las menciones a otras áreas con el ID canónico del hallazgo y su enlace. Nada de notas de parche.
+2. `python3 <skill>/scripts/build_registry.py <salida>` (ahora con el tratamiento de 13) y `python3 <skill>/scripts/build_summary.py <salida>` → `<trabajo>/summary.json`, la fuente de las cifras de `00` y de los publicadores.
 3. Escribe con sus plantillas:
    - `00-resumen-ejecutivo.md`: cifras, confianza y su motivo, procesos críticos y hallazgos principales de `summary.json`; veredicto y estrategia de 13; uso real.
    - `INVENTARIO.md`: todos los objetos con su uuid y enlace al anexo, y la cobertura de la extracción.
@@ -120,7 +123,7 @@ Cada bloque Mermaid pasa `scripts/validate_mermaid.py`, que admite los tipos A, 
 
 ### Fase 7 — Publicación opcional
 
-Según `output_preferences.json`: `agents/pdf-publisher.md` → `EXPORT.pdf`; `agents/dashboard-publisher.md` → `dashboard/index.html`. Pueden ir en paralelo.
+Según `output_preferences.json` (`pdf`, `dashboard`): `agents/pdf-publisher.md` → `EXPORT.pdf`; `agents/dashboard-publisher.md` → `dashboard/index.html`. Pueden ir en paralelo. Cada publicador recibe `<skill>`, `<salida>` y `<trabajo>`.
 
 ### Fase 8 — Validación y respuesta
 
@@ -175,16 +178,16 @@ appian-docs/_trabajo/<PREFIJO>/   = <trabajo>: datos en bruto, NO compartir
 | `scripts/devmcp_extract.py`, `devmcp_policy.json` | Fases 0–2. |
 | `scripts/build_model.py`, `build_annex.py` | Fase 3. |
 | `scripts/build_registry.py`, `build_summary.py` | Fases 4.3 y 6. |
-| `scripts/detect_secrets.sh`, `validate_mermaid.py`, `render_diagrams.sh`, `bpmn_layout.py` | Fases 3, 4, 5 y 8. |
+| `scripts/detect_secrets.py` (o `.sh`), `validate_mermaid.py`, `render_diagrams.sh`, `bpmn_layout.py` | Fases 3, 4, 5 y 8. |
 
 ## Validación final (antes de responder)
 
 1. Existen los 17 documentos (`LEEME`, `00`–`14`, `INVENTARIO`), `anexo/indice.md` y `diagrams/`. Los que no aplican llevan su frase de «no aplica» (p. ej. 07 sin batches).
-2. `08-procesos-bpmn/` tiene por cada process model su `.md`, su `.bpmn` (con `bpmndi:BPMNDiagram`) y su diagrama (`.svg`/`.mmd`, o `.png`/`.drawio` con su `.json`, que es la especificación del dibujo y no datos en bruto), e `indice.md` los lista todos.
-3. Todos los diagramas pasan `validate_mermaid.py` (o están sustituidos por tabla) y ninguno superó el aviso de ancho.
-4. `bash scripts/detect_secrets.sh <salida>` no encuentra nada.
+2. `08-procesos-bpmn/` tiene por cada process model su `.md`, su `.bpmn` (con `bpmndi:BPMNDiagram`) y su diagrama (`.svg`/`.mmd`, o `.png`/`.drawio` con su `.json`, que es la especificación del dibujo y no datos en bruto), e `indice.md` los lista todos. Un proceso de más de 25 nodos se parte en `<slug>-1.mmd`, `<slug>-2.mmd`…: se admite `<slug>(-N)?.mmd` y `.svg`.
+3. Todos los diagramas pasan `python3 <skill>/scripts/validate_mermaid.py` (o están sustituidos por tabla) y ninguno superó el aviso de ancho.
+4. `python3 <skill>/scripts/detect_secrets.py <salida>` no encuentra nada en toda la carpeta, incluidos `anexo/` y `dashboard/`. Si encuentra algo en un entregable generado (`anexo/`, `dashboard/`), no lo edites a mano: corrige la causa y regenéralo.
 5. No quedan placeholders (`{{`, `TBD`, `TODO`, `lorem`) ni marcas fuera de la paleta (`🔴`, `🟡`, `⚠️`).
-6. Ningún usuario en los entregables: busca en `<salida>` los identificadores de los ficheros `members`, `versions` e `history` de `mcp_raw`.
+6. Ningún usuario en los entregables: busca en `<salida>` los identificadores de los ficheros `members`, `versions` e `history` de `mcp_raw`, y las direcciones de correo (`[\w.+-]+@[\w-]+\.`): ninguna personal (se escriben `‹correo›`).
 7. `build_registry.py` termina sin errores y cada hallazgo de los documentos tiene su ID en el registro de 09.
 8. `INVENTARIO.md` cubre el 100 % de `inventory.json`.
 9. Todos los `PAN-` y `RN-` aparecen en la trazabilidad de `12`; cada `MOD-` de `13` tiene evidencia y fuente; cada entidad, proceso y pantalla de `14` enlaza los RF, RN o MOD de los que sale.

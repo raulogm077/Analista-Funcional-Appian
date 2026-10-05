@@ -2,6 +2,9 @@
   Plantilla 04 — Seguridad y grupos. Autor: integration-security-analyzer. Prefijo de hallazgos: H-SEG (incluye secretos).
   Los comentarios son instrucciones: no se copian al documento. Las secciones sin contenido se omiten.
   Objetivo: 2-3 pantallas (máximo 5).
+  Usuarios: nunca nombres. Cuentas personales en un role map: cuántas, no quiénes. Una constante de tipo Usuario o un
+  usuario escrito en el código: «una cuenta de ‹grupo›» o «una cuenta personal»; un correo personal: ‹correo›.
+  Evidencia: siempre enlazada a la ficha del objeto en el anexo.
 -->
 
 # Seguridad y grupos
@@ -62,7 +65,7 @@ Otros objetos. Las interfaces, reglas, constantes e integraciones heredan por de
 | `{{DEM_SolicitudForm}}` | Interfaz | `{{DEM Administrators}}` | — | `{{DEM Users}}` | — | `{{DEM Rules}}` | 🔵 |
 | `{{DEM Solicitudes}}` | Site | `{{DEM Administrators}}` | — | `{{DEM Users}}` | — | — | ✅ |
 
-Evidencia: el role map de cada objeto (p. ej. `mcp:site/{{DEM Solicitudes}}@other:{{herramienta}}#roleMap`) y la seguridad de la aplicación (`mcp:application/{{DEM}}@other:{{herramienta}}`). Detalle de cada objeto en su ficha del anexo (p. ej. [DEM Solicitudes](anexo/site/{{DEM_Solicitudes}}.md)).
+Evidencia: el role map de cada objeto (p. ej. [`mcp:site/{{DEM Solicitudes}}@other:{{herramienta}}#roleMap`](./anexo/site/{{slug}}.md)) y la seguridad de la aplicación ([`mcp:application/{{DEM}}@other:{{herramienta}}`](./anexo/application/{{slug}}.md)).
 
 <!-- Variante sin role maps: sustituye a las dos tablas anteriores. -->
 
@@ -70,8 +73,8 @@ No se obtuvieron role maps: la matriz recoge solo lo que la definición de cada 
 
 | Objeto | Tipo | Quién accede según la definición | Certeza | Evidencia |
 |---|---|---|---|---|
-| `{{DEM Alta Solicitud}}` | Process model | Grupo de seguridad declarado: `{{DEM Gestores}}`; role map no disponible | ❓ | `mcp:processModel/{{DEM Alta Solicitud}}#securityGroupName` |
-| `{{DEM Solicitudes}}` — página «{{Bandeja}}» | Página de site | `{{DEM Gestores}}` (expresión de visibilidad) | ✅ | `mcp:site/{{DEM Solicitudes}}#pages[1].visibilityExpr` |
+| `{{DEM Alta Solicitud}}` | Process model | Grupo de seguridad declarado: `{{DEM Gestores}}`; role map no disponible | ❓ | [`mcp:processModel/{{DEM Alta Solicitud}}#securityGroupName`](./anexo/processModel/{{slug}}.md) |
+| `{{DEM Solicitudes}}` — página «{{Bandeja}}» | Página de site | `{{DEM Gestores}}` (expresión de visibilidad) | ✅ | [`mcp:site/{{DEM Solicitudes}}#pages[1].visibilityExpr`](./anexo/site/{{slug}}.md) |
 | `{{DEM Solicitud}}` — acción «{{Nueva solicitud}}» | Acción de record | No la devuelve la extracción. ¿Qué grupos ven la acción? | ❓ | — |
 
 ### Capacidades por grupo
@@ -98,8 +101,8 @@ No se obtuvieron role maps: la matriz recoge solo lo que la definición de cada 
 
 | Objeto | Patrón | Qué controla | Certeza | Evidencia |
 |---|---|---|---|---|
-| `{{DEM_SolicitudForm}}` | `a!isUserMemberOfGroup(loggedInUser(), cons!{{DEM_GRP_GESTORES}})` | {{La sección «Resolución» solo la ve DEM Gestores}} | ✅ | `mcp:interface/{{DEM_SolicitudForm}}#expression (línea {{12}})` |
-| `{{DEM Alta Solicitud}}` | Asignación por expresión `rule!{{DEM_AsignarRevisor}}` | {{La tarea «Revisar» va al grupo que devuelve la regla}} | ✅ | `mcp:processModel/{{DEM Alta Solicitud}}#nodes[id={{3}}].assignment` |
+| `{{DEM_SolicitudForm}}` | `a!isUserMemberOfGroup(loggedInUser(), cons!{{DEM_GRP_GESTORES}})` | {{La sección «Resolución» solo la ve DEM Gestores}} | ✅ | [`mcp:interface/{{DEM_SolicitudForm}}#expression (línea {{12}})`](./anexo/interface/{{slug}}.md) |
+| `{{DEM Alta Solicitud}}` | Asignación por expresión `rule!{{DEM_AsignarRevisor}}` | {{La tarea «Revisar» va al grupo que devuelve la regla}} | ✅ | [`mcp:processModel/{{DEM Alta Solicitud}}#nodes[id={{3}}].assignment`](./anexo/processModel/{{slug}}.md) |
 
 ### Grupos sin miembros
 
@@ -114,8 +117,8 @@ No se obtuvieron role maps: la matriz recoge solo lo que la definición de cada 
 
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| H-SEG-01 | {{Credencial en claro en la constante CON_SAP_TOKEN}} | Alta | ✅ | `mcp:constant/{{CON_SAP_TOKEN}}#value` |
-| H-SEG-02 | {{DEM Users (todos los usuarios de la aplicación) puede ver el site de administración}} | Media | ✅ | `mcp:site/{{DEM Admin}}@other:{{herramienta}}#roleMap` |
+| H-SEG-01 | {{Credencial en claro en la constante CON_SAP_TOKEN}} | Alta | ✅ | [`mcp:constant/{{CON_SAP_TOKEN}}#value`](./anexo/constant/{{slug}}.md) |
+| H-SEG-02 | {{DEM Users (todos los usuarios de la aplicación) puede ver el site de administración}} | Media | ✅ | [`mcp:site/{{DEM Admin}}@other:{{herramienta}}#roleMap`](./anexo/site/{{slug}}.md) |
 
 **H-SEG-01** — Impacto: {{quien pueda ver la constante obtiene la credencial de SAP}}. Recomendación: {{rotarla y moverla al connected system como valor cifrado, con su valor por entorno en el fichero de personalización de importación}}.
 

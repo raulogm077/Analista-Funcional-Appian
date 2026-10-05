@@ -10,6 +10,8 @@ Eres el propietario de dos áreas de hallazgos: **pantallas** (`H-UI`, en 10) y 
 
 ## Entradas
 
+`<skill>` es la carpeta de la skill; `<salida>` y `<trabajo>`, las que te pasa el orquestador.
+
 - **Lectura obligatoria, entera, antes de empezar**: `references/lectura-mcp-raw.md`, `references/execution-principles.md` y `references/presentation-rules.md`.
 - `<trabajo>/inventory.json`, `graph.json` y `mcp_raw/`.
 - `<salida>/anexo/<tipo>/<slug>.md`: expresiones con número de línea. Las evidencias «línea N» citan esa numeración y las fichas enlazan el anexo.
@@ -31,7 +33,7 @@ Eres el propietario de dos áreas de hallazgos: **pantallas** (`H-UI`, en 10) y 
 
 **Duplicidad y contradicción.** Duplicidad: la misma regla con la misma lógica en varios sitios (se anota en el campo «Duplicidades» de su ficha). Contradicción: dos reglas que no pueden cumplirse a la vez o que deciden distinto lo mismo (van a la tabla de contradicciones de 11; el campo «Duplicidades» no las cubre).
 
-**Valor hardcodeado.** Literal de negocio escrito en una expresión o en una configuración (un estado, un umbral, un nombre o id de grupo, un correo, una URL) que debería ser una constante o un dato. No lo son la configuración de un temporizador ni un objeto elegido por referencia en la configuración (p. ej. el grupo asignado a una tarea).
+**Valor hardcodeado.** Literal de negocio escrito en una expresión o en una configuración (un estado, un umbral, un nombre o id de grupo, un correo, una URL) que debería ser una constante o un dato. No lo son la configuración de un temporizador ni un objeto elegido por referencia en la configuración (p. ej. el grupo asignado a una tarea). Si el literal es un usuario (o una constante de tipo Usuario), escribe «una cuenta de ‹grupo›» o «una cuenta personal»; si es un correo personal, `‹correo›`; nunca el valor (`presentation-rules.md`, Regla 8).
 
 **Medir el efecto real.** Un hallazgo describe lo que pasa **hoy**. Si un desplegable de estados no guarda, hoy no hay riesgo de que el usuario «elija cualquier estado»: el problema real es que el campo no guarda (H-UI). El riesgo de elegir cualquier estado es del diseño previsto: regístralo como pregunta abierta (severidad Baja, certeza ❓, con la pregunta en la recomendación).
 
@@ -53,7 +55,7 @@ Localízalas desde sus puntos de entrada, no listando todas las interfaces:
 
 Numera `PAN-001`, `PAN-002`… en el orden natural de navegación: primero las páginas del site, después los formularios por caso de uso.
 
-Las interfaces sin punto de entrada que tampoco usa ninguna pantalla van a la tabla breve de 10 (se omite si no hay). Si son candidatas a código muerto, el hallazgo es de `02-arquitectura.md` (objetos huérfanos): enlázalo sin severidad.
+Las interfaces sin punto de entrada que tampoco usa ninguna pantalla no se catalogan en 10: di cuántas en una línea, cita el `H-ARQ` de huérfanos de `02-arquitectura.md` (ya escrito) y enlaza la lista única de 09 (`09-valor-adicional.md`, «Objetos huérfanos»). Si alguna no es huérfana (la usa otro objeto que no es pantalla), nómbrala en esa línea con quién la usa.
 
 ### Paso 2 — Describir cada pantalla
 
@@ -83,8 +85,9 @@ Numera `RN-001`… y rellena la ficha de la plantilla:
 
 - el enunciado se entiende sin saber Appian («Una solicitud solo se aprueba si el revisor elige “Aprobar”»);
 - regla y parámetro van separados: «el importe máximo es 1000» es el parámetro de la regla «las solicitudes por encima del importe máximo requieren aprobación»;
-- si la regla vive en un proceso sin ejecuciones (`usage.executions = 0`), dilo en sus notas para que negocio decida si se mantiene;
-- si puedes deducir los estados de la entidad principal y sus transiciones, dibuja su ciclo de vida (Vista de 11).
+- certeza (`execution-principles.md`, principio 4): una regla que solo se deduce del nombre de un nodo, objeto o variable es 🔵 «según su nombre»; una regla no es ✅ si un parámetro de su enunciado es ❓ (p. ej. el umbral está en una constante cuyo valor no llegó): lleva la certeza más baja;
+- si la regla vive en un proceso sin ejecuciones (`usage.executions = 0`), dilo en sus notas para que negocio decida si se mantiene (el hallazgo es `H-GEN` de 09);
+- si puedes deducir los estados de la entidad principal y sus transiciones, dibuja su ciclo de vida (Vista de 11). 11 es la fuente del ciclo de vida **actual** (estados y transiciones de hoy, con su evidencia); el **objetivo** es de `14-diseno-objetivo.md`, que enlaza aquí para el actual.
 
 ### Paso 5 — Hallazgos
 
@@ -94,13 +97,13 @@ Registra solo los de tus dos áreas, con la tabla de la plantilla y en `<trabajo
 - **H-RN** (11): contradicciones entre reglas, valores hardcodeados, reglas que solo se comprueban en la pantalla aunque haya otra vía de entrada, reglas sin definir (p. ej. qué es «pendiente»).
 - Severidad según `presentation-rules.md`, Regla 7, aplicada al efecto de hoy (criterio «Medir el efecto real»).
 
-**Lo de otras áreas no es tuyo.** Un proceso que ignora «Cancelar» es de `08-procesos-bpmn/` (H-PRO); quién puede hacer qué, de `04-seguridad-grupos.md` (H-SEG); un objeto huérfano, de `02-arquitectura.md` (H-ARQ). Descríbelo en una frase **sin severidad** donde tu documento lo necesite, enlaza el documento propietario y anótalo en «Para otras áreas» de tu informe.
+**Lo de otras áreas no es tuyo.** Un proceso que ignora «Cancelar» es de `08-procesos-bpmn/` (H-PRO); quién puede hacer qué, de `04-seguridad-grupos.md` (H-SEG); un objeto huérfano, de `02-arquitectura.md` (H-ARQ, con la lista en 09). Descríbelo en una frase **sin severidad** donde tu documento lo necesite, enlaza el documento propietario y anótalo en «Para otras áreas» de tu informe.
 
 ### Paso 6 — Diagramas
 
 - `diagrams/navegacion.mmd`: pantallas y procesos a los que llevan las acciones; `flowchart TD`, ≤ 30 nodos, etiquetas de arista solo si aportan.
 - `diagrams/estados-<entidad>.mmd`, si hay ciclo de vida.
-- Valida cada uno con `scripts/validate_mermaid.py` y renderízalo con `scripts/render_diagrams.sh --mermaid` si hay `mmdc`. En el documento, imagen + «Fuente: …» si existe el `.svg`; si no, el bloque ` ```mermaid ` (`presentation-rules.md`, Regla 2).
+- Valida cada uno con `python3 <skill>/scripts/validate_mermaid.py <fichero>.mmd` y renderízalo con `bash <skill>/scripts/render_diagrams.sh --mermaid <fichero>.mmd <fichero>.svg` si hay `mmdc`. En el documento, imagen + «Fuente: …» si existe el `.svg`; si no, el bloque ` ```mermaid ` (`presentation-rules.md`, Regla 2).
 
 ### Paso 7 — Comprobación final
 
@@ -108,7 +111,7 @@ Registra solo los de tus dos áreas, con la tabla de la plantilla y en `<trabajo
 - [ ] Toda pasarela con condición tiene su `RN-` o una línea en «Cobertura y límites» que diga por qué no es de negocio.
 - [ ] Ninguna afirmación sobre lo que guarda un formulario sin comprobar su `saveInto`.
 - [ ] Ningún enunciado de regla en SAIL; identificadores únicos y sin huecos.
-- [ ] Cada ficha con evidencia y certeza; hallazgos solo `H-UI` y `H-RN`, también en el JSON.
+- [ ] Cada ficha con evidencia (enlazada a su ficha del anexo) y certeza; ninguna RN ✅ con un parámetro ❓; hallazgos solo `H-UI` y `H-RN`, también en el JSON.
 - [ ] Documentos conformes al checklist de `presentation-rules.md`.
 
 ## Salida

@@ -8,15 +8,18 @@
   De dónde sale cada dato:
     Confianza ........... meta.confidence + meta.confidenceBasis (unidos por «; »)
     Entorno ............. meta.environment {url, isProduction, appianVersion}; fecha: meta.source.extractedAt
-    Cifras .............. counts, totals, layerBreakdown
+    Cifras .............. counts, totals, layerBreakdown (sus 6 claves, en el orden y con los nombres de 02)
     Procesos críticos ... criticalProcesses (ya ordenados; máx. 5). Enlace: slug de objects.processModel
     Hallazgos ........... findingsBySeverity, findingsByCertainty y findings de severidad Alta
                           (si no hay Alta: los Media, máx. 5, y dilo en el TL;DR)
     Secretos ............ secrets {count, objects}; tratamiento: los H-SEG de findings
     Modernización ....... modernization {verdict, strategy} (vienen de 13; si son null, falta
                           <trabajo>/modernizacion.json: corrígelo antes de escribir 00)
-    Uso real ............ usage (top por ejecuciones; failedInSampleOf = fallos en una muestra) y signals[type=processModelsWithoutExecutions]
+    Uso real ............ usage (top por ejecuciones; failedInSampleOf = fallos en una muestra) y signals[type=processModelsWithoutExecutions].
+                          Los fallos citan su H-PRO (08); los procesos sin ejecuciones, su H-GEN (09).
   Certeza: verificado ✅ · inferido 🔵 · pendiente ❓. En 00 los hallazgos se citan por ID, sin columna de severidad.
+  Limitaciones globales (entorno no productivo, muestra de ejecuciones…): no se explican aquí; las cifras afectadas
+  llevan la marca «orientativo (ver LEEME)».
 -->
 
 # {{meta.appName}}: resumen ejecutivo
@@ -34,15 +37,18 @@
 
 ## La aplicación en cifras
 
+<!-- Las 6 claves de layerBreakdown, con estos nombres y en este orden (los de 02). Una capa con 0 objetos se omite. -->
+
 | Capa | Objetos | Qué incluye | Dónde |
 |---|---|---|---|
-| Presentación | {{layerBreakdown.Presentacion}} | {{n}} sites, {{n}} interfaces | [10](./10-pantallas.md) |
-| Lógica | {{layerBreakdown.Logica}} | {{n}} process models ({{n}} programados), {{n}} reglas, {{n}} decisiones | [08](./08-procesos-bpmn/indice.md), [11](./11-reglas-negocio.md) |
-| Datos | {{layerBreakdown.Datos}} | {{n}} record types, {{n}} CDTs | [03](./03-modelo-datos.md) |
-| Integración | {{layerBreakdown.Integracion}} | {{n}} integraciones, {{n}} connected systems, {{n}} Web APIs | [05](./05-integraciones-consumidas.md), [06](./06-apis-expuestas.md) |
-| Seguridad | {{layerBreakdown.Seguridad}} | {{n}} grupos | [04](./04-seguridad-grupos.md) |
+| Entrada y presentación | {{layerBreakdown["Entrada y presentación"]}} | {{n}} sites, {{n}} interfaces, {{n}} Web APIs | [10](./10-pantallas.md), [06](./06-apis-expuestas.md) |
+| Lógica | {{layerBreakdown["Lógica"]}} | {{n}} process models ({{n}} programados), {{n}} reglas, {{n}} decisiones, {{n}} agentes de IA | [08](./08-procesos-bpmn/indice.md), [11](./11-reglas-negocio.md) |
+| Datos | {{layerBreakdown["Datos"]}} | {{n}} record types, {{n}} CDTs, {{n}} data stores | [03](./03-modelo-datos.md) |
+| Integración | {{layerBreakdown["Integración"]}} | {{n}} integraciones, {{n}} connected systems | [05](./05-integraciones-consumidas.md) |
+| Transversal | {{layerBreakdown["Transversal"]}} | {{n}} constantes | [02](./02-arquitectura.md), [09](./09-valor-adicional.md#constantes-por-entorno-y-secretos) |
+| Seguridad | {{layerBreakdown["Seguridad"]}} | {{n}} grupos | [04](./04-seguridad-grupos.md) |
 
-{{totals.withDefinition}} de {{totals.objects}} objetos con definición ([INVENTARIO](./INVENTARIO.md)) · {{totals.hubs}} objetos muy reutilizados y {{totals.orphans}} sin referencias ([02](./02-arquitectura.md)).
+{{totals.withDefinition}} de {{totals.objects}} objetos con definición ([INVENTARIO](./INVENTARIO.md)){{; fuera de las capas: n carpetas, n …}} · {{totals.hubs}} objetos muy reutilizados ([02](./02-arquitectura.md)) y {{totals.orphans}} sin referencias ([lista en 09](./09-valor-adicional.md#objetos-huérfanos)).
 
 ## Procesos críticos
 
@@ -74,8 +80,8 @@ Diagnóstico y plan en [13](./13-modernizacion-refactor.md), requisitos para rec
 
 ## Uso real
 
-{{Si meta.environment.isProduction no es true: «El entorno {{no es de producción / no consta como producción}}: las ejecuciones son orientativas y no sirven para decidir qué se usa.»}}
-{{Los 3-5 procesos más ejecutados (usage: nombre, ejecuciones, última ejecución; fallos «en las últimas N» si hay failedInSampleOf) y N process models sin ejecuciones: `a`, `b`. O «La extracción no trae historial de ejecuciones.»}}
+{{Los 3-5 procesos más ejecutados (usage: nombre, ejecuciones, última ejecución; fallos «en las últimas N» si hay failedInSampleOf, con su H-PRO) y N process models sin ejecuciones: `a`, `b` ([H-GEN-NN](./09-valor-adicional.md#hallazgos)). O «La extracción no trae historial de ejecuciones.»}}
+{{Si meta.environment.isProduction no es true: la marca «orientativo (ver [LEEME](./LEEME.md))» en la cabecera de la columna de ejecuciones (o tras la cifra, si va en texto), sin más explicación.}}
 
 ## Cobertura y límites
 

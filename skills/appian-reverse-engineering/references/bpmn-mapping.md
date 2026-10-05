@@ -13,7 +13,9 @@ Cómo traducir un process model de Appian a BPMN 2.0 y a su diagrama. Lo usa pro
 
 `<slug>` es el del process model en `inventory.json`. Cómo se recorre cada vía, en `agents/process-modeler.md`.
 
-El `.bpmn` es BPMN 2.0 estándar con coordenadas de dibujo (BPMN DI). Se abre en **Camunda Modeler** (Archivo → Abrir) y en **bpmn.io** (arrastrar el fichero a https://demo.bpmn.io). Estas herramientas no calculan el dibujo: sin DI no muestran nada. Por eso el agente escribe el XML semántico y `scripts/bpmn_layout.py` añade el resto. Es así también cuando la imagen se dibuja en draw.io: el `.bpmn` sale siempre de aquí, porque lleva datos de Appian que el dibujo no tiene (la expresión del temporizador, el proceso llamado, las condiciones de las pasarelas y el id de cada nodo).
+**Procesos de más de 25 nodos** (vía propia): el diagrama Mermaid se parte en tramos del flujo, `<slug>-1.mmd`, `<slug>-2.mmd`… (con su `.svg`), y el `.md` los muestra en orden, cada uno con una frase que dice qué pasos cubre; el `.bpmn` sigue siendo uno y completo. No inventes subprocesos para partirlo.
+
+El `.bpmn` es BPMN 2.0 estándar con coordenadas de dibujo (BPMN DI). Se abre en **Camunda Modeler** (Archivo → Abrir) y en **bpmn.io** (arrastrar el fichero a https://demo.bpmn.io). Estas herramientas no calculan el dibujo: sin DI no muestran nada. Por eso el agente escribe el XML semántico y `<skill>/scripts/bpmn_layout.py` añade el resto. Es así también cuando la imagen se dibuja en draw.io: el `.bpmn` sale siempre de aquí, porque lleva datos de Appian que el dibujo no tiene (la expresión del temporizador, el proceso llamado, las condiciones de las pasarelas y el id de cada nodo).
 
 ---
 
@@ -48,7 +50,7 @@ El `.bpmn` es BPMN 2.0 estándar con coordenadas de dibujo (BPMN DI). Se abre en
 Igual en las dos vías:
 
 - **Un carril por grupo** asignado a tareas de personas (`assignment.assignees` de tipo grupo), con el nombre del grupo.
-- **Asignaciones que no son un grupo**: al iniciador del proceso → carril «Iniciador»; a una expresión o regla → el rol que se deduzca de ella (🔵) o «Asignación por expresión» (❓); a un usuario concreto → «Cuenta personal», nunca su nombre.
+- **Asignaciones que no son un grupo**: al iniciador del proceso → carril «Iniciador»; a una expresión o regla → el rol que se deduzca de ella (🔵) o «Asignación por expresión» (❓); a un usuario concreto o a una constante de tipo Usuario → «Cuenta de ‹grupo›» si se conoce su grupo o «Cuenta personal», nunca su nombre.
 - **«Sistema»** para todo lo desatendido: scripts, escritura de records, integraciones, correos y subprocesos.
 - El **inicio** va en el carril del primer nodo; si el proceso arranca con un formulario de inicio, en el carril de quien lo rellena («Iniciador», o el grupo si solo puede iniciarlo uno). Cada **pasarela** y cada **fin**, en el carril del nodo que tienen antes; si tienen varios en carriles distintos, en «Sistema».
 - Orden: los grupos según aparecen en el flujo y «Sistema» al final.

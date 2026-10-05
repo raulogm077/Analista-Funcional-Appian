@@ -22,6 +22,7 @@ Fuente de esta guía: [Appian Developer MCP Servers](https://docs.appian.com/sui
   - Mac/Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
   - Windows (PowerShell): `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
 - El Dev MCP tiene **soporte de comunidad**: Appian Support no atiende incidencias sobre él.
+- Los scripts de la skill son Python, salvo `render_diagrams.sh`, que necesita bash: en Windows, Git Bash, el mismo que usa Claude Code. En Windows, si `python3` no existe, usa `python`.
 
 ### Instalación
 
@@ -76,8 +77,10 @@ Fuente de esta guía: [Appian Developer MCP Servers](https://docs.appian.com/sui
 
 ### Comprobación
 
+Desde la carpeta donde está tu `.mcp.json`, con la ruta absoluta de la skill (`<skill>`):
+
 ```bash
-uv run --with "mcp>=1.2,<2" python <carpeta-de-la-skill>/scripts/devmcp_extract.py doctor
+uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor
 ```
 
 Debe mostrar `Dev MCP ... ok` y el número de aplicaciones visibles.

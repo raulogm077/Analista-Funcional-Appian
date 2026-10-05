@@ -13,7 +13,7 @@ Para cada objeto:
   - en los process models, una tabla de nodos;
   - la definición completa en JSON;
   - el resto de respuestas de la plataforma (role map, dependientes, validación, ejecuciones, versiones, miembros…),
-    que es lo que citan las evidencias «@rol». El render (@screen) no se incluye: puede contener datos reales.
+    que es lo que citan las evidencias «@rol». El render (@screen) va sin valores (‹valor›): puede traer datos reales.
 Además, anexo/grafo.md con todas las referencias entre objetos (evidencias «graph:»).
 Los secretos ya vienen enmascarados de la extracción; aquí además las URLs pierden sus credenciales, los hosts
 internos se ocultan y cada usuario se sustituye por los grupos de la aplicación a los que pertenece

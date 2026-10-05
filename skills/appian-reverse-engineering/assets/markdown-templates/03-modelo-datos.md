@@ -96,7 +96,7 @@ erDiagram
 | `{{cliente}}` | Muchos a uno | `{{DEM Cliente}}` | `{{idCliente}}` | ✅ |
 | `{{documentos}}` | Uno a muchos | `{{DEM Documento}}` | {{no lo devuelve la extracción}} | 🔵 |
 
-Evidencia: `mcp:recordType/{{nombre}}#{{fields}}` · Certeza: ✅/🔵/❓ · [Definición completa](anexo/recordType/{{slug}}.md)
+Evidencia: [`mcp:recordType/{{nombre}}#{{fields}}`](./anexo/recordType/{{slug}}.md) · Certeza: ✅/🔵/❓
 
 ### `{{DEM_Solicitud_CDT}}`
 
@@ -112,7 +112,7 @@ Evidencia: `mcp:recordType/{{nombre}}#{{fields}}` · Certeza: ✅/🔵/❓ · [D
 
 <!-- Tabla de campos solo si la definición está disponible: | Campo | Tipo | Clave | Notas | -->
 
-Evidencia: `mcp:cdt/{{nombre}}{{@dependents}}#{{ubicación}}` · Certeza: ✅/🔵/❓
+Evidencia: [`mcp:cdt/{{nombre}}{{@dependents}}#{{ubicación}}`](./anexo/cdt/{{slug}}.md) · Certeza: ✅/🔵/❓
 
 ### Data stores
 
@@ -124,7 +124,7 @@ Evidencia: `mcp:cdt/{{nombre}}{{@dependents}}#{{ubicación}}` · Certeza: ✅/�
 
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| H-DAT-01 | {{DEM Documento se consulta por `idSolicitud` pero no tiene relación declarada con DEM Solicitud}} | Baja | 🔵 | `mcp:expressionRule/{{nombre}}#expression (línea {{n}})` |
+| H-DAT-01 | {{DEM Documento se consulta por `idSolicitud` pero no tiene relación declarada con DEM Solicitud}} | Baja | 🔵 | [`mcp:expressionRule/{{nombre}}#expression (línea {{n}})`](./anexo/expressionRule/{{slug}}.md) |
 
 {{Para cada hallazgo ❓ o 🔵: de qué se deduce y qué lo confirmaría.}}
 

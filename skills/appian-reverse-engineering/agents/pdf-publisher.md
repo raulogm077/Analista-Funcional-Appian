@@ -43,7 +43,7 @@ summary.json
 - **Cifras** solo de `summary.json`; **textos** de los `.md`. Si no coinciden, manda `summary.json` y anótalo en el informe; no corrijas el documento.
 - **Hallazgos**: los de `findings`, con su ID, severidad en palabra (Alta/Media/Baja) y certeza ✅ verificado / 🔵 inferido / ❓ pendiente. No uses otras marcas de estado.
 - **Confianza**: `meta.confidence` siempre con su motivo (`meta.confidenceBasis`).
-- **Uso real**: si `meta.environment.isProduction` no es `true`, las ejecuciones van con «entorno no productivo o no consta: cifras orientativas».
+- **Uso real**: si `meta.environment.isProduction` no es `true`, las ejecuciones van con la marca «orientativo (ver LEEME)».
 - **Lo que no se publica**: usuarios, secretos, rutas o enlaces a `<trabajo>/`, referencias a la skill (ficheros, scripts, códigos internos). Los uuids solo en el inventario y el apéndice.
 
 ## Estructura del PDF

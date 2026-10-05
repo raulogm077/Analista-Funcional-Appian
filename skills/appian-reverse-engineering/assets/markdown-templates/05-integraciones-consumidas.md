@@ -18,7 +18,7 @@
   Integraciones sin connected system: «—» en esa columna. Connected systems sin integraciones: una línea debajo de la tabla.
 -->
 
-Qué llama la aplicación hacia fuera. El mapa con los sistemas externos está en [02-arquitectura.md](./02-arquitectura.md).
+Qué llama la aplicación hacia fuera. El mapa con los sistemas externos está en [02-arquitectura.md](./02-arquitectura.md#vista).
 
 | Integración | Connected system | Sistema externo | Método | Modifica datos | Llamantes | Certeza |
 |---|---|---|---|---|---|---|
@@ -45,7 +45,7 @@ Qué llama la aplicación hacia fuera. El mapa con los sistemas externos está e
 
 <!-- Si la URL base lleva credenciales embebidas, añade: «La URL base lleva credenciales embebidas (enmascaradas).» y regístralo como H-SEG en 04. -->
 
-Evidencia: `mcp:connectedSystem/{{CS_SAP}}#baseUrl` · Certeza: ✅ · [Definición](anexo/connectedSystem/{{CS_SAP}}.md)
+Evidencia: [`mcp:connectedSystem/{{CS_SAP}}#baseUrl`](./anexo/connectedSystem/{{slug}}.md) · Certeza: ✅
 
 ### Integraciones
 
@@ -70,7 +70,7 @@ Forma del cuerpo (de la definición, sin valores):
 {"expediente": "texto", "solicitante": "texto", "importe": "decimal"}
 ```
 
-Evidencia: `mcp:integration/{{INT_SAP_Crear}}#expression (líneas {{3-18}})` · Certeza: ✅ · [Definición](anexo/integration/{{INT_SAP_Crear}}.md)
+Evidencia: [`mcp:integration/{{INT_SAP_Crear}}#expression (líneas {{3-18}})`](./anexo/integration/{{slug}}.md) · Certeza: ✅
 
 <!--
   Errores: ✅ solo si la definición del llamante muestra el tratamiento (p. ej. onError en SAIL) o muestra que no lo hay.
@@ -98,8 +98,8 @@ Evidencia: `mcp:integration/{{INT_SAP_Crear}}#expression (líneas {{3-18}})` · 
 
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| H-INT-01 | {{La URL de Catastro es literal en una regla y no cambia por entorno}} | Media | ✅ | `mcp:expressionRule/{{DEM_UrlCatastro}}#expression (línea 2)` |
-| H-INT-02 | {{CS_Catastro usa autenticación None contra una API externa}} | Media | ✅ | `mcp:connectedSystem/{{CS_Catastro}}#authType` |
+| H-INT-01 | {{La URL de Catastro es literal en una regla y no cambia por entorno}} | Media | ✅ | [`mcp:expressionRule/{{DEM_UrlCatastro}}#expression (línea 2)`](./anexo/expressionRule/{{slug}}.md) |
+| H-INT-02 | {{CS_Catastro usa autenticación None contra una API externa}} | Media | ✅ | [`mcp:connectedSystem/{{CS_Catastro}}#authType`](./anexo/connectedSystem/{{slug}}.md) |
 
 <!--
   Solo hallazgos de integraciones. Un secreto o una URL con credenciales es H-SEG (04): aquí, una frase sin severidad con enlace a 04.

@@ -17,7 +17,7 @@ Los campos citados son los habituales en las definiciones del Dev MCP (según la
 | Interfaz | Entradas | `inputs[]` |
 | | Lógica y componentes | `expression` (SAIL). Pantalla renderizada en el fichero con rol `screen` |
 | Expression rule | Entradas y lógica | `inputs[]`, `expression` |
-| Constante | Tipo y valor | `type`, `value` (enmascarado en el inventario si parece secreto) |
+| Constante | Tipo y valor | `type`, `value` (enmascarado en el inventario si parece secreto). Un valor de tipo Usuario o un correo personal no se copia (`presentation-rules.md`, Regla 8) |
 | Process model | Nodos y flujo | `nodes[]` (`id`, `type`, `name`, `connections`, `assignment`, `data`, `forms`, `decision`) |
 | | Variables | `processVariables[]` (`isParameter`) |
 | | Formulario de inicio | `startForm.interfaceUuid`, `inputMap` |
@@ -30,6 +30,7 @@ Los campos citados son los habituales en las definiciones del Dev MCP (según la
 | Web API | Endpoint | Método, alias de URL, `expression` (qué hace) |
 | Grupo | Jerarquía y miembros | Padre en la definición; miembros en el fichero con rol `members` |
 | Cualquiera | Quién lo usa | Ficheros con rol `dependents` (con *breadcrumb*) y aristas del grafo |
+| | Objetos de otras aplicaciones | Nodos con `external: true` en `graph.json` (los cuenta `stats.externalNodes`): los referencia la aplicación pero no están en ella |
 | | Historial de cambios | Fichero con rol `versions` |
 | | Avisos de la plataforma | Fichero con rol `validation` |
 
@@ -46,7 +47,7 @@ Los campos citados son los habituales en las definiciones del Dev MCP (según la
 | `internal3.sendemail3` | Send E-Mail |
 | `internal3.integration` | Call Integration |
 
-Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/dev-mcp-skills). Para cualquier otro id, usa el catálogo de tipos de nodo de `mcp_raw/_env/` (si existe) o el Docs MCP.
+Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/dev-mcp-skills). Para cualquier otro id, usa el catálogo de tipos de nodo de `mcp_raw/_env/` (si existe) o el Docs MCP. Un nodo, una función o un componente que no está en la documentación de Appian puede venir de un plug-in: es una dependencia externa (`02-arquitectura.md`), porque los plug-ins se instalan en el entorno, no en la aplicación, y no salen en sus precedentes. Fuente: https://docs.appian.com/suite/help/26.6/prepare-deployment-packages.html#add-plugins
 
 ### Referencias en SAIL
 
@@ -89,7 +90,7 @@ Para las alternativas actuales de cada patrón, ver `references/modernization-gu
 
 ## Roles típicos en aplicaciones Appian
 
-Para inferir actores cuando el grupo no lo aclara (es una inferencia: 🔵, con el nombre del grupo como evidencia):
+Para inferir actores cuando el grupo no lo aclara (es una inferencia: 🔵 «según su nombre», con el nombre del grupo como evidencia):
 
 | Grupo típico | Rol funcional |
 |---|---|

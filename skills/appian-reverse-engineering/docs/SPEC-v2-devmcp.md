@@ -1,5 +1,7 @@
 # Spec — `appian-reverse-engineering` v2: fuente Appian Dev MCP
 
+> **Documento histórico.** Es el diseño inicial de la v2 y no se mantiene: lo vigente está en `SKILL.md` y `references/`. Las rutas `_intermedio/` y `_intermedio/docs_cache.json` son hoy `_trabajo/<PREFIJO>/` y `_trabajo/<PREFIJO>/docs_cache/<agente>.json`.
+
 **Estado:** aprobada (con cambio del 01-10: uso dirigido por catálogo) · **Fecha:** 2026-09-30
 
 ---

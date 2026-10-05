@@ -2,6 +2,8 @@
   Plantilla de 08-procesos-bpmn/indice.md. Este comentario no se copia.
   Sustituye los {{marcadores}} y omite las secciones que queden vacías.
   «Crítico» es criticality.critical del inventario (no se recalcula).
+  «Ejecuciones»: si el entorno no consta como producción, «orientativo (ver LEEME)» en la cabecera, sin más explicación.
+  Evidencia: siempre enlazada a la ficha del proceso en el anexo (../anexo/processModel/<slug>.md).
 -->
 
 # Procesos — índice
@@ -21,7 +23,7 @@ Fuente: [mapa-procesos.mmd](../diagrams/mapa-procesos.mmd)
 
 Cada proceso tiene su documento (paso a paso, tareas, datos y hallazgos) y su diagrama BPMN 2.0 (`.bpmn`), que se abre en Camunda Modeler o en bpmn.io.
 
-| Proceso | Inicio | Crítico | Ejecuciones | Invocado por | Subprocesos e integraciones | Hallazgos | BPMN |
+| Proceso | Inicio | Crítico | Ejecuciones{{, orientativo (ver [LEEME](../LEEME.md))}} | Invocado por | Subprocesos e integraciones | Hallazgos | BPMN |
 |---|---|---|---|---|---|---|---|
 | [{{nombre}}](./{{slug}}.md) | Formulario de inicio | Sí | 120 | [`{{interfaz}}`](../10-pantallas.md#ancla) | [{{hijo}}](./slug-hijo.md), `{{integración}}` | H-PRO-01, H-PRO-02 | [.bpmn](./{{slug}}.bpmn) |
 | [{{nombre}}](./{{slug}}.md) | Temporizador diario | No | 0 | — | — | — | [.bpmn](./{{slug}}.bpmn) |
@@ -47,10 +49,11 @@ Cada proceso tiene su documento (paso a paso, tareas, datos y hallazgos) y su di
 
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| H-PRO-01 | {{qué hay que corregir, decidir o vigilar}} | {{Alta/Media/Baja}} | {{✅/🔵/❓}} | `mcp:processModel/{{nombre}}#nodes[id={{N}}]` |
+| H-PRO-01 | {{qué hay que corregir, decidir o vigilar}} | {{Alta/Media/Baja}} | {{✅/🔵/❓}} | [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](../anexo/processModel/{{slug}}.md) |
 
 ## Cobertura y límites
 
 - Excepciones, alertas y escalados de los nodos: la extracción no los devuelve ([LEEME](../LEEME.md)); cada proceso dice dónde importa ❓.
 - {{Uso real: una línea con lo que la muestra no permite concluir en estos procesos; el entorno y la muestra, en [LEEME](../LEEME.md).}}
 - {{Diagramas sin imagen (se muestra el bloque mermaid): lista de procesos}}.
+- {{Diagramas partidos en tramos por pasar de 25 nodos: lista de procesos (su `.bpmn` está completo)}}.

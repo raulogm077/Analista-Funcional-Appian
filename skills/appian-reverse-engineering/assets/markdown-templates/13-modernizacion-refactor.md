@@ -1,9 +1,12 @@
 <!--
   Plantilla 13 — Modernización y refactorización (rebuild-architect).
   Estructura: TL;DR → Vista → Detalle → Cobertura y límites. Sin sección Hallazgos: los hallazgos están en sus documentos
-  propietarios y en el registro de 09; aquí se citan por su ID, sin severidad.
+  propietarios y en el registro de 09; aquí se citan por su ID, sin severidad, y se enlazan en lugar de volver a explicarlos.
   Alcance: diagnóstico, estrategia, arquitectura objetivo de alto nivel, plan por fases y decisiones. El diseño detallado
   (modelo de datos, procesos, pantallas, catálogo de objetos y correspondencia actual → objetivo) está en 14-diseno-objetivo.md.
+  Evidencia con el enlace a su ficha del anexo: [`mcp:<tipo>/<nombre>#<ubicación>`](./anexo/<tipo>/<slug>.md).
+  Cifras de uso de un entorno que no consta como producción: marca corta «orientativo (ver LEEME)», sin explicar la limitación.
+  Longitud: crece con los MOD (Regla 9 de presentation-rules); nunca se recorta un MOD para cumplirla.
   Diagrama obligatorio: arquitectura-objetivo (flowchart TD por capas). Los {{marcadores}} se sustituyen y los comentarios se borran.
 -->
 
@@ -24,6 +27,7 @@
 | MOD | Actuación | Área | Prioridad | Esfuerzo | Resuelve |
 |---|---|---|---|---|---|
 | [MOD-001](#mod-001--{{ancla}}) | {{Guardar los datos del formulario de alta}} | {{Interfaces}} | {{Alta}} | {{S}} | {{H-UI-01, H-PRO-02}} |
+| [MOD-007](#actuaciones-menores) | {{Una sola comprobación de administrador}} | {{Seguridad}} | Baja | S | {{H-RN-05}} |
 
 Prioridad: Alta · Media · Baja. Esfuerzo por persona: S (de horas a 2 días) · M (3-10 días) · L (más de 2 semanas).
 
@@ -31,7 +35,12 @@ Prioridad: Alta · Media · Baja. Esfuerzo por persona: S (de horas a 2 días) �
 
 ## Detalle: diagnóstico
 
-<!-- Más de 5 fichas: empieza con un índice de enlaces a ellas. Si un MOD no resuelve ningún hallazgo registrado: «Resuelve: —». -->
+<!-- Ficha completa solo para los MOD de prioridad Alta o Media, o de esfuerzo M o L. Los de prioridad Baja y esfuerzo S
+     van como fila de «Actuaciones menores», al final de esta sección.
+     Más de 5 fichas: empieza con un índice de enlaces a ellas.
+     Más de unas 15 fichas: un «## Detalle: <área>» por área (datos, procesos, interfaces, integraciones, seguridad,
+     operación) con sus fichas, y tras la Vista un índice de áreas con enlaces (presentation-rules.md, Regla 9).
+     Objetos huérfanos: el MOD cita su H-ARQ y enlaza la lista de 09 (./09-valor-adicional.md#objetos-huérfanos); no la copia. -->
 
 ### MOD-001 — {{actuación}}
 
@@ -40,15 +49,25 @@ Prioridad: Alta · Media · Baja. Esfuerzo por persona: S (de horas a 2 días) �
 | Campo | Valor |
 |---|---|
 | Área | {{Datos · Procesos · Interfaces · Integraciones · Seguridad · Operación}} |
-| Qué hay | {{hecho observable y nº de objetos afectados}} |
 | Resuelve | [H-UI-01](./10-pantallas.md#hallazgos), [H-PRO-02](./08-procesos-bpmn/{{slug}}.md#hallazgos) |
-| Problema | {{Obsoleto · Antipatrón · Diseño mejorable · Deuda}}: {{impacto}} |
+| Qué hay | {{nº de objetos afectados (el problema, en el hallazgo); con «Resuelve: —», el hecho observable}} |
+| Problema | {{Obsoleto · Antipatrón · Diseño mejorable · Deuda}}{{; impacto en una línea solo con «Resuelve: —»}} |
 | Recomendación | {{práctica o funcionalidad actual de Appian}} |
 | Fuente | {{URL de docs.appian.com · «criterio de diseño, sin fuente oficial de Appian»}} |
 | Esfuerzo | {{S · M · L}} — {{justificación en una línea}} |
 | Prioridad | {{Alta · Media · Baja}} |
 
-Evidencia: `mcp:{{tipo}}/{{nombre}}#{{ubicación}}` · Certeza: ✅
+{{Notas (si aplica, ≤ 3 líneas): cómo se aplica la recomendación y sus riesgos; no repitas el hallazgo.}}
+
+Evidencia: [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.md) · Certeza: ✅
+
+### Actuaciones menores
+
+Prioridad Baja y esfuerzo S.
+
+| MOD | Actuación | Resuelve | Recomendación | Fuente | Evidencia |
+|---|---|---|---|---|---|
+| MOD-007 | {{Una sola comprobación de administrador}} | [H-RN-05](./11-reglas-negocio.md#hallazgos) | {{Llamar a la regla común}} | {{Criterio de diseño, sin fuente oficial de Appian}} | [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.md) |
 
 ## Detalle: oportunidades
 

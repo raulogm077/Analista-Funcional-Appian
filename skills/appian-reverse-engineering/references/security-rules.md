@@ -10,14 +10,14 @@ Las definiciones extraídas (connected systems, integraciones, constantes, Web A
 
 ## Patrones de detección
 
-`scripts/detect_secrets.sh` aplica estos patrones (orientativos). Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3), para saber qué hay que tratar, y sobre los entregables al final. Solo imprime fichero y línea, nunca el valor.
+`python3 <skill>/scripts/detect_secrets.py <ruta>` aplica estos patrones (orientativos); `bash <skill>/scripts/detect_secrets.sh <ruta>` hace lo mismo. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3), para saber qué hay que tratar, y sobre toda `<salida>/` al final. Solo imprime fichero y línea, nunca el valor. No cuenta las referencias (`=cons!X`, `ri!`, `pv!`, `rule!`, `local!`), los valores ya enmascarados ni las claves que describen el secreto sin serlo (`tokenUrl`, `passwordPolicy`).
 
 | Tipo | Patrón |
 |---|---|
-| Password en propiedades | `(?i)(password\|passwd\|pwd)\s*[:=]\s*[^\s]+` |
-| API key | `(?i)(api[_-]?key\|apikey)\s*[:=]\s*[^\s]+` |
-| Secret/token | `(?i)(secret\|token\|bearer)\s*[:=]\s*[^\s]+` |
-| Credenciales en URL | `https?://[^/\s:]+:[^@\s]+@[^\s]+` |
+| Clave de secreto con valor | Una clave que contiene `password`, `passwd`, `pwd`, `secret`, `api_key`/`apikey`, `token` o `credential` (también `sapPassword`, `authToken`), seguida de `:` o `=` y un valor |
+| Token de API con prefijo conocido | `(sk\|pk\|rk)_(live\|test)_[A-Za-z0-9]{8,}` |
+| Cabecera Authorization con valor | `(?i)bearer\s+[A-Za-z0-9._~+/-]{16,}` |
+| Credenciales en URL | `https?://usuario:clave@host` |
 | String de conexión JDBC | `jdbc:[a-z]+://[^?\s]+\?[^\s]*password=[^&\s]+` |
 | AWS access key | `AKIA[0-9A-Z]{16}` |
 | Private key PEM | `-----BEGIN (RSA \|EC \|OPENSSH \|DSA )?PRIVATE KEY-----` |
@@ -38,6 +38,8 @@ Una URL ya enmascarada por completo (`https://***:***@host`) no cuenta como coin
 | Host interno | Se sustituye por `‹host interno›` y se conserva la ruta: `https://‹host interno›/sap/api`. |
 | Cadena de conexión (JDBC) | Tipo de base de datos y host según los criterios anteriores; sin usuario ni contraseña. |
 | Usuarios de Appian (miembros, versiones, ejecuciones) | Nunca. Recuentos o rol (`presentation-rules.md`, Regla 8). |
+| Constante de tipo Usuario o usuario escrito en el código | «una cuenta de ‹grupo›» si se conoce su grupo (p. ej. «una cuenta de DEM Gestores»); si no, «una cuenta personal». |
+| Dirección de correo personal | `‹correo›`. |
 
 **Host interno** es una IP privada (`10.*`, `172.16.*`–`172.31.*`, `192.168.*`, `127.*`), `localhost`, un nombre acabado en `.local`, `.internal`, `.corp` o `.intra`, o un nombre sin dominio (`sapprd01`). Cualquier otro nombre con dominio se muestra.
 
@@ -89,14 +91,17 @@ Los entregables son Markdown plano que se abre en visores variados (GitHub, VS C
 - **Sin bloques HTML crudos** (`<script>`, `<iframe>`, `<style>`).
 - **Sin URLs con credenciales**, ni enmascaradas (tabla de arriba).
 - **Sin tokens ni secretos** en bloques de código, ni siquiera de ejemplo: `***`.
-- **Diagramas Mermaid** saneados con `scripts/validate_mermaid.py` antes de escribirse (`mermaid-rules.md`).
+- **Diagramas Mermaid** saneados con `python3 <skill>/scripts/validate_mermaid.py` antes de escribirse (`mermaid-rules.md`).
 
 ## Comprobación final
 
 Antes de devolver la respuesta:
 
 ```bash
-bash scripts/detect_secrets.sh <salida>/*.md <salida>/08-procesos-bpmn <salida>/diagrams
+python3 <skill>/scripts/detect_secrets.py <salida>
 ```
 
-Si encuentra algo en los entregables (no en `<trabajo>/`, que no se comparte), **detente y corrígelo** con la tabla «Cómo se escribe cada dato» antes de continuar.
+Recorre toda la carpeta, incluidos `anexo/` y `dashboard/`. Si encuentra algo (no en `<trabajo>/`, que no se comparte), **detente**:
+
+- En un documento que escribe un agente (`00`–`14`, `08-procesos-bpmn/`, `LEEME`, `INVENTARIO`): corrígelo con la tabla «Cómo se escribe cada dato».
+- En un entregable generado (`anexo/`, `dashboard/`): no lo edites a mano. Corrige la causa (el enmascarado de la extracción o del anexo, o el documento de origen) y vuelve a generarlo.

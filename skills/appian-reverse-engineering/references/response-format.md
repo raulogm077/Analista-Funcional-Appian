@@ -47,7 +47,7 @@ Plantilla de la respuesta que devuelve la skill **al terminar** todas las fases 
 - 📄 PDF: `<salida>/EXPORT.pdf` (si se pidió)
 - 🖥️ Dashboard: `<salida>/dashboard/index.html` (si se pidió)
 
-> `appian-docs/_trabajo/<PREFIJO>/` tiene los datos en bruto de la extracción (usuarios, hosts, definiciones completas): no la compartas; no forma parte de la documentación.
+> `appian-docs/_trabajo/<PREFIJO>/` tiene los datos en bruto de la extracción (usuarios, hosts, definiciones completas): no la compartas ni la subas a un repositorio (lleva un `.gitignore` con `*`); no forma parte de la documentación.
 ```
 
 ---

@@ -5,10 +5,10 @@ Catálogo que usa `rebuild-architect` para el diagnóstico y la propuesta de `13
 **Reglas de uso**
 
 1. Las URLs apuntan a la documentación de Appian 26.6, revisada el 2026-09-30. Antes de recomendar, **confirma en el Docs MCP** para la versión del entorno (`references/docs-mcp-usage.md`). Si no puedes, añade «(sin verificar para la versión del entorno)».
-2. Un patrón solo se reporta si hay **evidencia en objetos concretos**. Nada de recomendaciones genéricas.
+2. Un patrón solo se reporta si hay **evidencia en objetos concretos**. Nada de recomendaciones genéricas. Una señal que solo se ve en el nombre (p. ej. una tabla `*_HIST`) es 🔵 «según su nombre» hasta verla en la definición (`execution-principles.md`, principio 4).
 3. **Los códigos de esta guía (`DAT-02`, `PRO-09`…) son internos.** En los documentos se nombra la práctica («record types sincronizados», «acciones de record») y se da su URL oficial; el código no aparece nunca.
 4. Las entradas marcadas **[sin fuente oficial]** son criterios de diseño de esta guía, no de Appian. En el documento, su fuente se escribe «criterio de diseño, sin fuente oficial de Appian».
-5. **Dato ausente no es defecto** (`execution-principles.md`, principio 3). Las señales marcadas «(si la extracción la trae)» dependen de configuración que el Dev MCP no siempre devuelve: si no aparece, la señal no se cumple; como mucho, da lugar a una pregunta abierta (PQ).
+5. **Dato ausente no es defecto** (`execution-principles.md`, principio 3). Las señales marcadas «(si la extracción la trae)» dependen de configuración que el Dev MCP no siempre devuelve: si no aparece, la señal no se cumple; como mucho, da lugar a una pregunta abierta (PQ) si afecta a la reconstrucción.
 6. La lista no es cerrada. Si encuentras otro patrón, trátalo igual: evidencia, fuente y el hallazgo del registro que resuelve.
 
 ---
@@ -28,7 +28,7 @@ Catálogo que usa `rebuild-architect` para el diagnóstico y la propuesta de `13
 | Estrategia | Qué es | Cuándo conviene |
 |---|---|---|
 | Reconstrucción limpia | Aplicación nueva junto a la actual; se migran los datos y se retira la antigua al final. | Reconstruir, o cuando el modelo de datos o la nomenclatura impiden evolucionar la actual. |
-| Refactor in situ | Se modifican los objetos de la aplicación actual, versión a versión. | Mantener y mejorar, o refactorizar sobre una base ya actual. |
+| Refactor in situ | Se modifican los objetos de la aplicación actual, versión a versión. | Mantener y mejorar, o refactorizar sobre una base ya actual. Nunca si el usuario pidió reconstruir. |
 | Mixta | Núcleo nuevo (p. ej. modelo de datos y procesos) y se conservan partes válidas (integraciones, grupos). | Base aprovechable en unas capas y no en otras. |
 
 **Prioridad** de una actuación (MOD): **Alta** (resuelve hallazgos Alta o desbloquea otras fases), **Media** (resuelve hallazgos Media o reduce un riesgo de mantenimiento relevante), **Baja** (higiene). No se usan otras etiquetas («Crítica», «Urgente»…).

@@ -7,7 +7,12 @@
   sin severidad.
   El registro de hallazgos lo escribe build_registry.py entre los dos marcadores: no los cambies ni escribas
   dentro. Omite las subsecciones del Detalle sin contenido (y su entrada del índice).
-  Sin usuarios: el versionado da fechas, recuentos y tipo de cuenta.
+  Sin usuarios: el versionado da fechas, recuentos y tipo de cuenta. Una constante de tipo Usuario: «una cuenta de
+  ‹grupo›» o «una cuenta personal»; un correo personal: ‹correo›.
+  Un solo dueño por señal: process models sin ejecuciones → H-GEN (aquí); la lista de objetos huérfanos es solo
+  la de este documento (02 tiene el H-ARQ y los demás la enlazan).
+  Si el entorno no consta como producción, las cifras de uso llevan «orientativo (ver LEEME)», sin más explicación.
+  Evidencia: siempre enlazada a la ficha del objeto en el anexo.
 -->
 
 # Información de valor adicional
@@ -25,7 +30,7 @@
 | Expression rules de más de 200 líneas | {{N}} |
 | Interfaces de más de 80 KB de expresión | {{N}} |
 | Objetos con avisos de validación de la plataforma | {{N}} |
-| Process models sin ejecuciones | {{N}}{{ (orientativo: el entorno no consta como producción)}} |
+| Process models sin ejecuciones | {{N}}{{, orientativo (ver [LEEME](./LEEME.md))}} |
 
 Appian recomienda dividir en subprocesos los process models de más de 50 nodos. Fuente: https://docs.appian.com/suite/help/26.6/appian-recommendations.html#process-model-design-guidance
 
@@ -44,7 +49,7 @@ Constantes cuyo valor depende del entorno (URLs, hosts, identificadores, interru
 
 | Constante | Tipo | Valor en este entorno | Usada por | Certeza |
 |---|---|---|---|---|
-| `{{constante}}` | {{Texto}} | `{{valor sin credenciales}}` | {{N}} objetos | 🔵 |
+| `{{constante}}` | {{Texto}} | `{{valor sin credenciales ni usuarios}}` | {{N}} objetos | 🔵 |
 
 La extracción enmascaró valores con aspecto de secreto en {{N}} objetos; su tratamiento está en [{{H-SEG-02}}](./04-seguridad-grupos.md#hallazgos).
 
@@ -60,7 +65,7 @@ Expression rules y decisiones que usan 5 o más objetos: un cambio en ellas afec
 
 ### Objetos huérfanos
 
-Objetos sin ninguna referencia entrante en la aplicación{{, y process models sin ejecuciones en producción}}. Son candidatos a retirar, no código muerto seguro: pueden usarse desde fuera de la aplicación. El hallazgo de arquitectura es [{{H-ARQ-03}}](./02-arquitectura.md#hallazgos).
+Objetos sin ninguna referencia entrante en la aplicación{{, y process models sin ejecuciones en producción}}. Son candidatos a retirar, no código muerto seguro: pueden usarse desde fuera de la aplicación. El hallazgo de arquitectura es [{{H-ARQ-02}}](./02-arquitectura.md#hallazgos){{; el de los procesos sin ejecuciones, [H-GEN-NN](#hallazgos)}}.
 
 | Objeto | Tipo | Última modificación | Ejecuciones | Ficha |
 |---|---|---|---|---|
@@ -104,7 +109,7 @@ Mantenimiento, validación de la plataforma, versionado, métricas y uso. Los de
 
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| H-GEN-01 | {{Función obsoleta en 3 interfaces}} | {{Alta/Media/Baja}} | ✅ | `mcp:interface/{{nombre}}@validation#{{ubicación}}` |
+| H-GEN-01 | {{Función obsoleta en 3 interfaces}} | {{Alta/Media/Baja}} | ✅ | [`mcp:interface/{{nombre}}@validation#{{ubicación}}`](./anexo/interface/{{slug}}.md) |
 
 ## Registro de hallazgos
 

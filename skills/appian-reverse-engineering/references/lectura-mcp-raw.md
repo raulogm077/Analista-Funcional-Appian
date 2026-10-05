@@ -6,15 +6,15 @@ La skill no lee un export: la aplicación se ha extraído en vivo del entorno Ap
 
 ## Ficheros de partida
 
-`<trabajo>` es la carpeta de datos de trabajo: `<padre de la salida>/_trabajo/<nombre de la salida>` (p. ej. `appian-docs/_trabajo/DEM/` para la salida `appian-docs/DEM/`). No se comparte y los entregables no deben enlazarla.
+`<trabajo>` es la carpeta de datos de trabajo: `<padre de la salida>/_trabajo/<nombre de la salida>` (p. ej. `appian-docs/_trabajo/DEM/` para la salida `appian-docs/DEM/`). Lleva un `.gitignore` con `*`: no se comparte ni se sube a un repositorio, y los entregables no deben enlazarla.
 
 | Fichero | Qué contiene | Úsalo para |
 |---|---|---|
 | `<trabajo>/inventory.json` | Todos los objetos de la app, agrupados por tipo. Cada objeto trae `name`, `uuid`, `type`, `mcpType`, `description`, `detail`, `path` (su definición), `files` (todas sus respuestas, con rol) y campos derivados (ver abajo). | Punto de partida y control de cobertura (100%). |
 | `<trabajo>/graph.json` | Nodos y aristas `{source, target, refType, origin, evidence}`. `origin` = `dependents`/`dependencies` (análisis de dependencias de Appian, fiable), `uuid`/`name`/`literal` (referencia encontrada en la definición), `derived` (deducida, p. ej. `a!startProcess` vía constante). | Quién llama a quién, callers, hubs, huérfanos. |
-| `<trabajo>/mcp_raw/<tipo>/<uuid>/<herramienta>.json` | Respuesta tal cual de cada herramienta para ese objeto: `{"_meta": {tool, role, ok, error, ...}, "response": ...}`. | El detalle: SAIL, nodos, campos, páginas, pantallas… |
+| `<trabajo>/mcp_raw/<tipo>/<uuid>/<herramienta>.json` | Respuesta de cada herramienta para ese objeto, con los secretos enmascarados (y el render, sin valores): `{"_meta": {tool, role, ok, error, ...}, "response": ...}`. | El detalle: SAIL, nodos, campos, páginas, pantallas… |
 | `<trabajo>/mcp_raw/_app/*.json`, `_env/*.json` | Llamadas de aplicación (definición de la app, listados) y de entorno (catálogos de tipos de nodo, etc.). | Contexto general. |
-| `<trabajo>/extraction_report.json` | Herramientas usadas y excluidas, errores, herramientas desactivadas por tipo, servidor y entorno (`server.url`). | Sección de cobertura y limitaciones. |
+| `<trabajo>/extraction_report.json` | Herramientas usadas y excluidas, llamadas correctas y fallidas por rol (`callStatsByRole`), errores, herramientas desactivadas por tipo, servidor y entorno (`server.url`). | Sección de cobertura y limitaciones. |
 | `<trabajo>/datafabric.json` (opcional) | Metadatos del data fabric y `count` por record type (Appian MCP Server). | Volúmenes en 03 y en 12. |
 | `<trabajo>/preflight.json` | Estado de los 3 MCP al empezar y el entorno (`environment.url`, `isProduction`, `appianVersion` si se conocen). | Cobertura; interpretar el uso real. |
 | `<salida>/anexo/<tipo>/<slug>.md` | La definición de cada objeto legible: expresiones con número de línea, nodos de los procesos y JSON completo, sin usuarios. | Citar líneas y enlazar el detalle desde los documentos. |
@@ -29,7 +29,7 @@ La skill no lee un export: la aplicación se ha extraído en vivo del entorno Ap
 | `history` | Ejecuciones reales del process model (total, última, fallos). En los documentos llámalo «ejecuciones». | 07, 08, 12 (prioridad), 13 (código muerto) |
 | `versions` | Historial de versiones (cuándo y por quién; los usuarios no se citan). En los documentos llámalo «versiones». | 09 (versionado), 13 |
 | `validation` | Avisos de validación de la plataforma (funciones obsoletas, errores). | 09, 13 |
-| `screen` | Árbol de componentes de la interfaz renderizada con entradas vacías. Puede traer datos reales evaluados: no copies sus valores. No se publica en el anexo. | 10 (pantallas), 01 |
+| `screen` | Árbol de componentes de la interfaz renderizada con entradas vacías: la única evaluación que permite la política. Appian la evalúa en el servidor (puede ejecutar sus consultas de lectura) y se guarda ya sin valores: estructura y etiquetas; los valores son `‹valor›`. Así aparece en el anexo. | 10 (pantallas), 01 |
 | `members` | Miembros de un grupo (grupos y usuarios). | 04 |
 | `other` | Cualquier otra herramienta (p. ej. una nueva que haya añadido Appian). **Ábrela y aprovecha lo que aporte**: seguridad, métricas, configuración… | Donde encaje |
 
@@ -88,7 +88,7 @@ Evidencia: mcp:<tipo>/<nombre>[@<rol>]#<ubicación>
 - Ejemplos: `mcp:processModel/DEM Alta Solicitud#nodes[id=2]`, `mcp:interface/DEM_SolicitudForm#expression (línea 4)`, `mcp:processModel/DEM Alta Solicitud@history#totalCount`, `mcp:interface/DEM_SolicitudForm@screen#contents[0]`.
 - Si la conclusión viene de un documento oficial: `Fuente: <URL de docs.appian.com>`.
 - Si es inferida, márcala 🔵 y explica en una línea de qué se infiere.
-- El lector encuentra cada objeto en `anexo/<tipo>/<slug>.md`: la definición (con «línea N» numerada) y el resto de respuestas (`@dependents`, `@history`, `@versions`, `@validation`, `@members`, `@other`), con los usuarios sustituidos por sus grupos; las respuestas fallidas aparecen como «No disponible» con su error. `@screen` aparece sin valores (estructura y etiquetas). La aplicación tiene su ficha en `anexo/application/` y las referencias `graph:` están en `anexo/grafo.md`. Enlaza la ficha del anexo en la evidencia (`presentation-rules.md`, Regla 5).
+- El lector encuentra cada objeto en `anexo/<tipo>/<slug>.md`: la definición (con «línea N» numerada) y el resto de respuestas (`@dependents`, `@history`, `@versions`, `@validation`, `@members`, `@other`), con los usuarios sustituidos por sus grupos; las respuestas fallidas aparecen como «No disponible» con su error. `@screen` aparece sin valores (estructura y etiquetas; los valores, `‹valor›`). La aplicación tiene su ficha en `anexo/application/` y las referencias `graph:` están en `anexo/grafo.md`. Enlaza la ficha del anexo en la evidencia (`presentation-rules.md`, Regla 5).
 
 ## Qué no está disponible por Dev MCP
 
@@ -99,7 +99,7 @@ Dilo explícitamente en el documento afectado, en lugar de rellenar huecos:
 - **Seguridad por objeto (role maps)**: solo si alguna herramienta la devuelve (revisa ficheros `other`). Si no, limita la matriz a lo verificable: grupo de seguridad de cada process model, visibilidad de páginas, asignaciones de tareas y expresiones de seguridad en SAIL.
 - **Configuración que el Dev MCP no siempre devuelve**: pestañas de excepciones, alertas y escalados de los nodos; destinatarios y contenido de correos; entradas y salidas de algunos nodos y subprocesos; seguridad de las acciones de record; filtros y columnas de las listas de record. Su ausencia es ❓, no un defecto (`execution-principles.md`, principio 3).
 - **Versión de Appian y si el entorno es producción**: solo si constan en `preflight.json`. Si no, «no determinada» y las cifras de uso son orientativas.
-- **Datos de negocio**: nunca se leen filas. Solo hay metadatos y recuentos (`datafabric.json`).
+- **Datos de negocio**: nunca se leen filas, variables de procesos ni datos de tareas. Solo hay metadatos y recuentos (`datafabric.json`).
 
 ## Privacidad
 

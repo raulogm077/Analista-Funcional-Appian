@@ -1,6 +1,6 @@
 # Reglas obligatorias para Mermaid
 
-Todos los diagramas Mermaid generados deben pasar estas reglas antes de escribirse (`scripts/validate_mermaid.py` las comprueba). Si un diagrama no puede sanearse, **sustitúyelo por una tabla equivalente**.
+Todos los diagramas Mermaid generados deben pasar estas reglas antes de escribirse (las comprueba `python3 <skill>/scripts/validate_mermaid.py <fichero.mmd>`). Si un diagrama no puede sanearse, **sustitúyelo por una tabla equivalente**.
 
 ## Ancho: legible a ancho de página
 
@@ -166,7 +166,7 @@ Nombres en minúsculas, sin acentos ni espacios (salvo `<slug>`, que es el del i
 
 ## Algoritmo de saneamiento (Tipo A y C)
 
-Antes de escribir un diagrama, aplica este procedimiento (o usa `scripts/validate_mermaid.py`):
+Antes de escribir un diagrama, aplica este procedimiento (o usa `python3 <skill>/scripts/validate_mermaid.py`):
 
 1. **Verifica cabecera**: primera línea no vacía debe ser `flowchart TD/LR` (Tipo A/C) o `erDiagram` (Tipo B). Si no, rechaza.
 2. **Renombra IDs** según las reglas de cada tipo, manteniendo un mapa para reemplazar referencias.
@@ -180,7 +180,7 @@ Antes de escribir un diagrama, aplica este procedimiento (o usa `scripts/validat
 10. **Valida límites de tamaño** por tipo:
     - Tipo A (`flowchart`): ≤ 30 nodos, también cuando va agrupado por capas con `subgraph` (sin `classDef`).
     - Tipo B (`erDiagram`): **sin techo absoluto**, pero si un solo diagrama queda ilegible (más de ~15-30 entidades), **particiona por subdominio** y añade un mapa de subdominios como índice navegable. Nunca omitas entidades — el inventario en tablas debe seguir cubriendo el 100% de la aplicación.
-    - Tipo C (diagrama de proceso): ≤ 25 nodos. Si excede, partir en tramos del flujo.
+    - Tipo C (diagrama de proceso): ≤ 25 nodos. Si excede, partir en tramos del flujo: `<slug>-1.mmd`, `<slug>-2.mmd`…, cada uno con su `.svg`.
     Si un diagrama Tipo A o C excede el límite, divide o convierte a tabla.
 
 Si el saneamiento no puede completarse limpiamente, no escribas el diagrama: emite una tabla alternativa con la misma información.
@@ -348,8 +348,8 @@ Bien: `¿Importe gt 1000€?` (el `>` rompe el parseo de Mermaid en algunos cont
 
 Los `.mmd` saneados se renderizan a `.svg` con `@mermaid-js/mermaid-cli` (`npm install -g @mermaid-js/mermaid-cli`) a través de `scripts/render_diagrams.sh`, que además avisa de los diagramas demasiado anchos:
 
-- **Fichero a fichero**: el agente que escribe un diagrama lo renderiza en cuanto lo escribe (`render_diagrams.sh --mermaid <f.mmd> <f.svg>`), para comprobar que se dibuja y que cabe.
-- **En lote**: en la fase 5 el orquestador vuelve a renderizar todo (`render_diagrams.sh --batch <salida>`), lo que recoge los cambios posteriores.
+- **Fichero a fichero**: el agente que escribe un diagrama lo renderiza en cuanto lo escribe (`bash <skill>/scripts/render_diagrams.sh --mermaid <f.mmd> <f.svg>`), para comprobar que se dibuja y que cabe.
+- **En lote**: en la fase 5 el orquestador vuelve a renderizar todo (`bash <skill>/scripts/render_diagrams.sh --batch <salida>`), lo que recoge los cambios posteriores.
 
 Las dos cosas son correctas y se complementan.
 
@@ -364,4 +364,4 @@ Si `mmdc` no está disponible:
 Cada process model de `08-procesos-bpmn/` tiene:
 
 1. **`.bpmn`**: BPMN 2.0 con coordenadas de dibujo, que se abre en Camunda Modeler y bpmn.io. Lo escribe el agente sin coordenadas y `scripts/bpmn_layout.py` las añade, también en la vía draw.io (lleva datos de Appian que el dibujo no tiene). Ver `bpmn-mapping.md`.
-2. **Imagen para el documento**: en la vía propia, el `.mmd` de tipo C y su `.svg`; en la vía draw.io, el `.png` de esa skill (no hay `.mmd`).
+2. **Imagen para el documento**: en la vía propia, el `.mmd` de tipo C y su `.svg`; en la vía draw.io, el `.png` de esa skill (no hay `.mmd`). Un proceso de más de 25 nodos se parte en `<slug>-1.mmd`, `<slug>-2.mmd`…, así que la validación final admite `<slug>(-N)?.mmd` y `.svg`.
