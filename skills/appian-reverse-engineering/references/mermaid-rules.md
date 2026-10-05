@@ -363,5 +363,5 @@ Si `mmdc` no está disponible:
 
 Cada process model de `08-procesos-bpmn/` tiene:
 
-1. **`.bpmn`**: BPMN 2.0 con coordenadas de dibujo, que se abre en Camunda Modeler y bpmn.io. Lo escribe el agente sin coordenadas y `scripts/bpmn_layout.py` las añade, también en la vía draw.io (la exportación BPMN de esa skill simplifica). Ver `bpmn-mapping.md`.
+1. **`.bpmn`**: BPMN 2.0 con coordenadas de dibujo, que se abre en Camunda Modeler y bpmn.io. Lo escribe el agente sin coordenadas y `scripts/bpmn_layout.py` las añade, también en la vía draw.io (lleva datos de Appian que el dibujo no tiene). Ver `bpmn-mapping.md`.
 2. **Imagen para el documento**: en la vía propia, el `.mmd` de tipo C y su `.svg`; en la vía draw.io, el `.png` de esa skill (no hay `.mmd`).

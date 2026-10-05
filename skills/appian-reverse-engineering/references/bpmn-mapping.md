@@ -13,7 +13,7 @@ Cómo traducir un process model de Appian a BPMN 2.0 y a su diagrama. Lo usa pro
 
 `<slug>` es el del process model en `inventory.json`. Cómo se recorre cada vía, en `agents/process-modeler.md`.
 
-El `.bpmn` es BPMN 2.0 estándar con coordenadas de dibujo (BPMN DI). Se abre en **Camunda Modeler** (Archivo → Abrir) y en **bpmn.io** (arrastrar el fichero a https://demo.bpmn.io). Estas herramientas no calculan el dibujo: sin DI no muestran nada. Por eso el agente escribe el XML semántico y `scripts/bpmn_layout.py` añade el resto. Es así también cuando la imagen se dibuja en draw.io: la exportación BPMN de esa skill simplifica (sin temporizador de inicio ni llamada a proceso), así que el `.bpmn` sale siempre de aquí.
+El `.bpmn` es BPMN 2.0 estándar con coordenadas de dibujo (BPMN DI). Se abre en **Camunda Modeler** (Archivo → Abrir) y en **bpmn.io** (arrastrar el fichero a https://demo.bpmn.io). Estas herramientas no calculan el dibujo: sin DI no muestran nada. Por eso el agente escribe el XML semántico y `scripts/bpmn_layout.py` añade el resto. Es así también cuando la imagen se dibuja en draw.io: el `.bpmn` sale siempre de aquí, porque lleva datos de Appian que el dibujo no tiene (la expresión del temporizador, el proceso llamado, las condiciones de las pasarelas y el id de cada nodo).
 
 ---
 
@@ -24,16 +24,16 @@ El `.bpmn` es BPMN 2.0 estándar con coordenadas de dibujo (BPMN DI). Se abre en
 | `type` | Nodo Appian | BPMN 2.0 | Mermaid | JSON draw.io |
 |---|---|---|---|---|
 | `core.0` | Inicio | `startEvent` | `Start1((Inicio)):::startNode` | `inicio` (EV) |
-| `core.0`, `startType: timer` | Inicio programado | `startEvent` + `timerEventDefinition` (ver «Temporizador») | `Start1((⏰ Inicio)):::startNode` | `inicio`, con la frecuencia en el nombre |
-| `core.0`, `startType: message` | Inicio por mensaje | `startEvent` + `messageEventDefinition` | `Start1((✉ Inicio)):::startNode` | `inicio` |
+| `core.0`, `startType: timer` | Inicio programado | `startEvent` + `timerEventDefinition` (ver «Temporizador») | `Start1((⏰ Inicio)):::startNode` | `inicio_temporizador`, con la frecuencia en el nombre |
+| `core.0`, `startType: message` | Inicio por mensaje | `startEvent` + `messageEventDefinition` | `Start1((✉ Inicio)):::startNode` | `inicio_mensaje` |
 | `core.1` | Fin | `endEvent` (+ `terminateEventDefinition` si la configuración lo indica) | `End5(((Fin))):::endNode` o `:::endNodeTerm` | `fin` (EV) |
 | `core.4` | Pasarela exclusiva (XOR) | `exclusiveGateway` | `G3{¿Aprobada?}:::gateway` | `exclusiva` (GW) |
-| `internal.16` | Script task | `scriptTask` (también si consulta datos) | `T2[📜 …]:::scriptTask` | `sistema` (ACT) |
+| `internal.16` | Script task | `scriptTask` (también si consulta datos) | `T2[📜 …]:::scriptTask` | `script` (ACT) |
 | `internal.17` | User input task | `userTask` | `T2[👤 …]:::userTask` | `tarea` (ACT) |
 | `internal3.write_records_to_source_23r3` | Write Records | `serviceTask` «[Records] …» | `T2[📋 …]:::dataTask` | `sistema` (ACT) |
 | `internal3.sendemail3` | Send E-Mail | `sendTask` | `T2[📧 …]:::sendTask` | `mensaje` (EV) |
-| `internal3.integration` | Call Integration | `serviceTask` «[Integración] …» + `messageFlow` al sistema externo | `T2[🔌 …]:::serviceTask` | `sistema` (ACT), en «Sistema»; el nombre cita el sistema externo |
-| `internal3.subprocess` | Subproceso | `callActivity`, `calledElement` = id del proceso llamado | `S2[➡️ …]:::callActivity` | `subproceso` (ACT) |
+| `internal3.integration` | Call Integration | `serviceTask` «[Integración] …» + `messageFlow` al sistema externo | `T2[🔌 …]:::serviceTask` | `sistema` (ACT), en «Sistema», + flujo al sistema externo de `externos` |
+| `internal3.subprocess` | Subproceso | `callActivity`, `calledElement` = id del proceso llamado | `S2[➡️ …]:::callActivity` | `llamada` (ACT) |
 | (ver catálogo) | Pasarela paralela / inclusiva | `parallelGateway` / `inclusiveGateway` | `G3{+}` / `G3{O}`, `:::gateway` | `paralela` / `inclusiva` (GW) |
 | (ver catálogo) | Write to Data Store Entity | `serviceTask` «[Data store] …» | `T2[💾 …]:::dataTask` | `sistema` (ACT) |
 
@@ -56,7 +56,7 @@ Igual en las dos vías:
 Sistemas externos (uno por connected system de las integraciones que llama el proceso):
 
 - **Vía propia**: un `participant` sin `processRef` (pool caja negra) llamado `<sistema> (<connected system>)`, y un `messageFlow` desde la tarea de integración hasta él con la operación como `name`. Con participantes externos, el `.bpmn` lleva `collaboration` con un `participant` para el proceso (`processRef`) más los externos.
-- **Vía draw.io**: esa skill no tiene flujos de mensaje. La tarea de integración va en «Sistema» y nombra el sistema externo; el sistema externo solo tiene carril propio si en el proceso hace algo visible (un evento de mensaje que responde).
+- **Vía draw.io**: el sistema externo va en `externos` con el mismo nombre, y un flujo desde la tarea de integración hasta él (flujo de mensaje) con la operación como `etiqueta`. Si la versión instalada de esa skill no admite `externos` (`validar` lo rechaza), la tarea de integración nombra el sistema externo y se explica en el `.md`.
 - **Diagrama Mermaid**: un `subgraph` con un solo nodo `:::external` y flecha discontinua desde la tarea de integración (ver `mermaid-rules.md`).
 
 Si el único carril sería «Sistema» y no hay sistemas externos, el `.bpmn` va sin `laneSet` ni `collaboration` y el Mermaid sin `subgraph`.

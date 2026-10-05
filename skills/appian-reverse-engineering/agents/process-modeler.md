@@ -57,7 +57,7 @@ No son tuyos: quién puede iniciar y la seguridad (`04-seguridad-grupos.md`), la
 
 ## Diagramas
 
-Cada process model tiene su `.bpmn` y una imagen para el documento. El `.bpmn` sale siempre de la vía propia (pasos 1 y 4), porque es el que conserva lo propio de Appian: temporizador de inicio, llamada a proceso, tareas de script, flujo por defecto y sistemas externos. La imagen sale de la vía draw.io si el orquestador te pasa la carpeta de la skill `appian-diagramas-bpmn` (dibujo editable para trabajar con negocio); si no, de la vía propia (Mermaid). En los dos casos, el diagrama señala el punto de cada hallazgo Alta del proceso (p. ej. «cancel no se consulta»): en draw.io, en la etiqueta del flujo o del paso afectado (su JSON no admite notas); en Mermaid, con una nota; en el `.bpmn`, con `documentation` en ese elemento.
+Cada process model tiene su `.bpmn` y una imagen para el documento. El `.bpmn` sale siempre de la vía propia (pasos 1 y 4): lleva datos de Appian que el dibujo no tiene (la expresión del temporizador, el proceso llamado, las condiciones de las pasarelas y el id de cada nodo) y es igual con o sin esa skill. La imagen sale de la vía draw.io si el orquestador te pasa la carpeta de la skill `appian-diagramas-bpmn` (dibujo editable para trabajar con negocio); si no, de la vía propia (Mermaid). En los dos casos, el diagrama señala el punto de cada hallazgo Alta del proceso (p. ej. «cancel no se consulta»): en draw.io, con una nota unida al paso (`notas`); en Mermaid, con una nota; en el `.bpmn`, con `documentation` en ese elemento.
 
 ### Vía propia (por defecto)
 
@@ -76,12 +76,15 @@ Lee antes la `SKILL.md` de esa skill (`<diagramas>` es su carpeta): formato del 
 
 1. Escribe `<trabajo>/procesos/<slug>.json` con la columna «JSON draw.io» de `bpmn-mapping.md`:
    - `proceso`: el nombre del process model.
-   - `carriles`: los grupos asignados y «Sistema», en ese orden. Las tareas de integración y las desatendidas van en «Sistema» (esta vía no tiene flujos de mensaje; el sistema externo se nombra en la tarea y se explica en el `.md`). Un sistema externo solo tiene carril propio si en el proceso hace algo visible, por ejemplo un evento de mensaje que responde. Los fines van en el carril del resultado de negocio.
-   - `pasos`: un código estable por tipo (`EV-01`, `ACT-01`, `GW-01`…), numerado en el orden de los `id` de los nodos Appian, con el `nombre` del nodo. `posicion` solo si la definición trae las coordenadas de los nodos, y entonces en todos los pasos.
-   - `flujos`: los de `connections`; las salidas de cada pasarela con `etiqueta` (la condición).
+   - `carriles`: los grupos asignados y «Sistema», en ese orden. Las tareas de integración y las desatendidas van en «Sistema». Los fines van en el carril del resultado de negocio.
+   - `externos`: un sistema externo por connected system que llama el proceso, con el nombre de `bpmn-mapping.md` («Sistemas externos»).
+   - `pasos`: un código estable por tipo (`EV-01`, `ACT-01`, `GW-01`…), numerado en el orden de los `id` de los nodos Appian, con el `nombre` del nodo y el tipo de la tabla de mapeo (`inicio_temporizador`, `script`, `llamada`…). `posicion` solo si la definición trae las coordenadas de los nodos, y entonces en todos los pasos.
+   - `flujos`: los de `connections`; las salidas de cada pasarela con `etiqueta` (la condición) y la salida por defecto con `"defecto": true`; uno de cada tarea de integración a su sistema externo, con la operación como `etiqueta`.
+   - `notas`: una por hallazgo Alta del proceso, en su paso, con la frase corta del hallazgo y su ID.
+   - Si `validar` rechaza un tipo, `externos` o `notas` (versión anterior de esa skill), usa los tipos básicos (`inicio`, `sistema`, `subproceso`), quita lo que rechace y dilo en tu informe.
 2. `python3 <diagramas>/scripts/diagrama.py crear <trabajo>/procesos/<slug>.json -o <salida>/08-procesos-bpmn/` → `.drawio`, `.png` y `.json`. Corrige los avisos de validación (salidas sin etiqueta, pasos sin entrada o salida). Si el `.drawio` ya existe de una ejecución anterior, usa `diagrama.py actualizar <slug>.drawio <trabajo>/procesos/<slug>.json`, que respeta lo editado a mano; si se niega porque hay cambios manuales sin aceptar, déjalo y dilo en tu informe. Nunca `--forzar` ni `--recolocar`.
-3. No uses `diagrama.py bpmn`: su exportación simplifica (sin temporizador de inicio, subproceso embebido en vez de llamada a proceso, sin tareas de script). El `.bpmn` es el de la vía propia.
-4. Una etiqueta corta entre dos tareas puede solaparse en el dibujo: revisa el `.png` y, si pasa, alarga el nombre del paso con `actualizar` y dilo en tu informe.
+3. No uses `diagrama.py bpmn`: el `.bpmn` es el de la vía propia.
+4. Mira cada `.png`: si algo se pisa o no se lee, dilo en tu informe.
 
 Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz las imágenes por la vía propia (Mermaid) y dilo en tu informe.
 
