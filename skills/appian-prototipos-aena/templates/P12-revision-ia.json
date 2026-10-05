@@ -6,7 +6,7 @@
  "req": [
   "RF-ALTA"
  ],
- "$note": "P12: datos que ha rellenado la IA con origen y confianza; la fuente al lado (visor que salta a la página y resalta el valor); editar un dato lo marca como editado y revisado; Guardar bloqueado hasta revisar los de confianza baja. La IA nunca guarda: guarda el usuario.",
+ "$note": "P12: datos que ha rellenado la IA con origen y confianza; la fuente al lado (visor que salta a la página y resalta el valor); editar un dato lo marca como editado y revisado; Guardar valida y, si queda algún dato de confianza baja sin revisar, el mensaje del formulario dice qué falta (nunca un botón desactivado sin explicación). La IA nunca guarda: guarda el usuario.",
  "local": {
   "local!campos": [
    {
@@ -275,7 +275,7 @@
          " ",
          {
           "type": "a!richTextItem",
-          "text": "El botón Guardar se activa cuando estén revisados los datos de confianza baja.",
+          "text": "Al guardar se comprueba que estén revisados los datos de confianza baja.",
           "color": "SECONDARY",
           "size": "SMALL"
          }
@@ -319,6 +319,14 @@
     ]
    }
   ],
+  "validations": [
+   {
+    "type": "a!validationMessage",
+    "message": "Revise los datos de confianza baja: marque «Revisado» o corrija el valor",
+    "validateAfter": "SUBMIT",
+    "showWhen": "contains(local!campos.revisado, false)"
+   }
+  ],
   "buttons": {
    "type": "a!buttonLayout",
    "primaryButtons": [
@@ -330,8 +338,7 @@
      "$action": {
       "goto": "listado"
      },
-     "submit": true,
-     "disabled": "contains(local!campos.revisado, false)"
+     "submit": true
     }
    ],
    "secondaryButtons": [

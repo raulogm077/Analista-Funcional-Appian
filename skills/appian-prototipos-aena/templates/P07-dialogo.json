@@ -6,10 +6,11 @@
  "req": [
   "RF-EDIT"
  ],
+ "$dialogWidth": "NARROW",
  "interface": {
   "type": "a!formLayout",
   "titleBar": "Editar expediente {rv!record.codigo}",
-  "contentsWidth": "NARROW",
+  "contentsWidth": "FULL",
   "contents": [
    {
     "type": "a!textField",
@@ -117,5 +118,5 @@
   "local!unidad": "{rv!record.unidad}",
   "local!descripcion": "{rv!record.descripcion}"
  },
- "$note": "P07: acción corta de registro en diálogo NARROW: solo los campos de la acción, Cancelar a la izquierda y la acción a la derecha."
+ "$note": "P07: acción corta de registro en diálogo: solo los campos de la acción, en una columna; formulario a contentsWidth FULL y el ancho del cuadro ($dialogWidth NARROW) es la Dialog Width de la acción de registro. Cancelar a la izquierda y la acción a la derecha."
 }

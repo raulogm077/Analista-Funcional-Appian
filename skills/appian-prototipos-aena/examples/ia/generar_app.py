@@ -122,7 +122,7 @@ revision = {"id": "revision", "title": "Revisar datos extraídos", "type": "form
     "buttons": bl(primary("Guardar datos", disabled="contains(local!campos.revisado, false)"), [secondary("Cancelar")])}}
 # ------------------------------------------------------------------ 6. Novedades 26.7–26.9
 ventas = [{"id": i, "mes": m, "area": a, "n": n} for i, (m, a, n) in enumerate([(m, a, n) for m in ["2026-06", "2026-07", "2026-08"] for a, n in [("Mantenimiento", 12), ("Sistemas", 7), ("Operaciones", 5)]])]
-novedades = {"id": "novedades", "title": "Novedades 26.7–26.9", "type": "page", "pattern": "P06", "req": ["R1"], "local": {"local!doc": None, "local!tab": 1},
+novedades = {"id": "novedades", "title": "Novedades 26.7–26.9", "type": "page", "pattern": "P06", "req": ["R1"], "local": {"local!doc": None, "local!tab": 1, "local!tablaGrafico": False},
   "interface": {"type": "a!headerContentLayout", "backgroundColor": BG, "contents": [
     page_header("Novedades de Appian 26.7–26.9", "Parámetros visuales nuevos que el prototipo ya dibuja"),
     {"type": "a!tabLayout", "orientation": "VERTICAL", "selectedTab": "local!tab", "tabs": [
@@ -136,8 +136,8 @@ novedades = {"id": "novedades", "title": "Novedades 26.7–26.9", "type": "page"
          {"type": "a!fileUploadField", "label": "Adjuntar parte (zona amplia, botón GHOST)", "value": "local!doc", "saveInto": "local!doc", "dropZoneStyle": "EXPANDED", "buttonStyle": "GHOST", "buttonColor": "ACCENT", "marginAbove": "STANDARD"},
          {"type": "a!linkField", "label": "Enlace a una página del site (a!pageLink)", "links": [{"type": "a!pageLink", "label": "Ir a Incidencias", "page": "sitePage!AENA_INCIDENCIAS.pages.incidencias"}]}]},
       {"type": "a!tabItem", "label": "Gráfico y grafo", "icon": "sitemap", "contents": [
-         {"type": "a!columnChartField", "label": "Incidencias por mes y área (pulse la leyenda para filtrar)", "data": "data!ventas", "allowLegendFiltering": True, "height": "SHORT",
-          "config": {"type": "a!columnChartConfig", "primaryGrouping": {"type": "a!grouping", "field": "mes", "interval": "MONTH_SHORT_TEXT"}, "secondaryGrouping": {"type": "a!grouping", "field": "area"}, "measures": [{"type": "a!measure", "function": "SUM", "field": "n"}]}},
+         chart_table("local!tablaGrafico", {"type": "a!columnChartField", "label": "Incidencias por mes y área (pulse la leyenda para filtrar)", "data": "data!ventas", "allowLegendFiltering": True, "height": "SHORT",
+          "config": {"type": "a!columnChartConfig", "primaryGrouping": {"type": "a!grouping", "field": "mes", "interval": "MONTH_SHORT_TEXT"}, "secondaryGrouping": {"type": "a!grouping", "field": "area"}, "measures": [{"type": "a!measure", "function": "SUM", "field": "n"}]}}, "Mes", value_labels=["Mantenimiento", "Sistemas", "Operaciones"]),
          {"type": "a!recordKnowledgeGraph", "label": "Relaciones de la incidencia", "recordType": "recordType!AENA Incidencia", "recordIdentifier": 6, "relationshipLevel": 2, "height": "MEDIUM",
           "$root": {"recordType": "Incidencia", "name": "INC-2026-0426", "icon": "wrench"},
           "$nodes": [{"recordType": "Aeropuerto", "name": "AGP", "icon": "plane"}, {"recordType": "Equipo", "name": "Enfriadora 2", "icon": "cog"}, {"recordType": "Parte de trabajo", "name": "PT-2026-118", "icon": "file-text-o"},

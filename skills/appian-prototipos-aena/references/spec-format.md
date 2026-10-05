@@ -26,7 +26,7 @@ El prototipo se describe en un único JSON. Los ejemplos de esta página usan un
 |---|---|
 | `site.pages` | Páginas del Site (máx. 10). `includes` = pantallas que marcan esa pestaña como activa (ficha, alta...). |
 | `app.today` | Fecha «de hoy» fija para `today()`/`now()`, para que demo y capturas no cambien con el día. |
-| `app.appianVersion` | Versión de Appian del entorno del cliente (por defecto `26.9`, la versión vigente). El validador da error si se usa un componente, un parámetro o un valor posterior (`schemas/appian-versions.json`). También se usa al consultar la documentación oficial. |
+| `app.appianVersion` | Versión de Appian del entorno: la del apartado «0. Entorno» de `analisis/tecnico.md` del proyecto; si no existe, `26.9` con `"$assumption"` en `app` y una pregunta abierta. El validador da error si se usa un componente, un parámetro o un valor posterior (`schemas/appian-versions.json`). También se usa al consultar la documentación oficial. |
 | `requirements` | IDs del documento de entrada. Alimentan la matriz de cobertura. Las actividades que el documento sitúa fuera de la aplicación (otro sistema, un actor externo que no usa Appian) llevan `"outOfScope": "motivo"`; los requisitos de la aplicación que no tienen pantalla propia (los hace el sistema o un robot, o son de otra iteración), `"noScreen": "motivo"`. Ninguno de los dos cuenta como hueco y la trazabilidad muestra el motivo. |
 | `openQuestions` | Ambigüedades del documento, para la reunión con el cliente. `priority` opcional: `CRITICA` 🔴, `IMPORTANTE` 🟡, `MEJORA` 🟢 (misma escala que el DDF). |
 | `maps` | Tablas de traducción para `{expr\|map:nombre}` (estado → color, estado → paso del hito, booleano → Sí/No). `"*"` = valor por defecto. |
@@ -50,6 +50,7 @@ El prototipo se describe en un único JSON. Los ejemplos de esta página usan un
 - `local`: variables locales iniciales (se reinician al entrar). Admiten `{rv!record.campo}` para precargar desde el registro.
 - `recordType` (en `record`, y opcional en `form`/`dialog`): la pantalla recibe `rv!record` = fila de `data` con `id = params.id`. Sin `id`, un `form` o `dialog` recibe un registro vacío (un alta no sale rellena con otro registro) y una `record`, el primero (para abrirla desde el índice).
 - `openFrom` (en `dialog`): pantalla sobre la que se abre en el índice y en las capturas.
+- `$dialogWidth` (en `dialog`): ancho del cuadro en el prototipo (`EXTRA_NARROW`, `NARROW`, `MEDIUM`, `MEDIUM_PLUS`, `WIDE`, `FULL`). En Appian es la Dialog Width de la acción de registro; el formulario o asistente del diálogo va a `contentsWidth: "FULL"`.
 
 Pantalla de registro:
 
@@ -108,6 +109,7 @@ Se usa la sintaxis de dominios de SAIL para que el código sea legible por desar
 | `$title` | `a!webContentField` | Qué muestra la página embebida (el prototipo no la carga: enseña su dominio y un esqueleto). |
 | `$local` | `a!forEach` | Variables de cada vuelta, como `a!localVariables` dentro de la expresión: `{"local!comentario": "fv!item"}`. Con `$filter`, lo que se guarda en `fv!item` va a la fila original de la lista. |
 | `$categories` | gráficos con `config` | Orden fijo de categorías. |
+| `$chart` | `a!gridField` | Tabla alternativa de un gráfico (la genera `chart_table()`): una fila por categoría con `categoria` y una columna por serie (`s1`, `s2`…), con los mismos datos y filtros que el gráfico. En Appian, el grid consulta el record type con la misma agregación. |
 | `$series` | gráficos con `config` y `secondaryGrouping` | Orden fijo de los valores de la agrupación secundaria (una serie por valor), para que cada serie tome su color de `colorScheme` en ese orden: `state_chart_colors(mapa, orden)` + `"$series": orden`. |
 | `$label`, `$icon` | `a!recordActionItem` | En Appian vienen de la acción del record type. |
 | `$options` | pickers y listas | Opciones de ejemplo. |
@@ -117,11 +119,11 @@ Se usa la sintaxis de dominios de SAIL para que el código sea legible por desar
 | `$validations` | campos | `[{ "when": expr, "message": "..." }]` validación en vivo (reglas de negocio). |
 | `$note` | cualquiera | Nota para desarrollo, visible en el inspector. |
 | `$assumption` | cualquiera | Supuesto no respaldado por el documento: borde naranja en el inspector y listado en la trazabilidad. |
-| `$uxIgnore` | cualquiera | Desviación deliberada de la guía, con su motivo: silencia los avisos `UX ·` de ese nodo (p. ej. una galería que enseña `debugMode`). Úsalo poco: el motivo lo lee quien revisa. |
+| `$uxIgnore` | cualquiera | Desviación deliberada de la guía, con su motivo: silencia los avisos `UX ·` de ese nodo (p. ej. una galería que enseña `debugMode`); en una pantalla, el de pantalla a la que no se llega. Úsalo poco: el motivo lo lee quien revisa. |
 
 ## Botones de envío y validación
 
-Un `a!buttonWidget` con `"submit": true` valida los campos `required` visibles de la pantalla (o del paso del asistente) y las `$validations` activas antes de ejecutar su `$action`, y muestra *Se requiere un valor* igual que Appian. Lo mismo hace «Siguiente» en cada paso del asistente. `confirmHeader` / `confirmMessage` abren el diálogo de confirmación nativo.
+Un `a!buttonWidget` con `"submit": true` valida los campos `required` visibles de la pantalla (o del paso del asistente), las `$validations` activas y las `validations` visibles del formulario, la sección o el paso (`a!validationMessage` con `showWhen`) antes de ejecutar su `$action`, y muestra *Se requiere un valor* igual que Appian. Lo mismo hace «Siguiente» en cada paso del asistente. `confirmHeader` / `confirmMessage` abren el diálogo de confirmación nativo.
 
 ## Los datos de ejemplo no cambian
 

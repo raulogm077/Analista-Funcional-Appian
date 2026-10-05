@@ -81,7 +81,9 @@ p01 = screen("listado", "Expedientes", "page", "P01", ["RF-LIST"], {"type": "a!h
         userFilters=[f"recordType!{RT}.filters.estado", f"recordType!{RT}.filters.tipo", f"recordType!{RT}.filters.unidad"],
         initialSorts=[{"type": "a!sortInfo", "field": F("fechaAlta"), "ascending": False}])]),
 ]}, "P01: cabecera con la acción principal + grid en una card: ≤7 columnas consolidadas (código + título en la 1.ª, enlace a la ficha), cifras a la derecha, "
-    "estado como tag (en grids solo atención y negativo llevan color), filtros de usuario y búsqueda. Con asistente de datos: ai_side_pane (references/bloques.md).")
+    "estado como tag (en grids solo atención y negativo llevan color), filtros de usuario y búsqueda. Con asistente de datos: ai_side_pane (references/bloques.md). "
+    "Página del site: si basta con buscar, filtrar y abrir la ficha, en Appian es una página de tipo Record List (la lista configurada en el record type, "
+    "con sus filtros, búsqueda, exportación y acciones de lista), no una interfaz (BP 09 §1.3); el prototipo la pinta igual y app.json no declara el tipo de página.")
 
 # ------------------------------------------------------------------ P03 Formulario de una página
 p03 = screen("formulario", "Nuevo expediente (una página)", "form", "P03", ["RF-ALTA"], {
@@ -130,7 +132,7 @@ p04 = screen("asistente", "Nuevo expediente (asistente)", "form", "P04", ["RF-AL
     "primaryButtons": [primary("Crear expediente", {"goto": "listado"}, submit=True)]},
     "P04: barra lateral con el hito vertical (DOT_VERTICAL si hay más de 5 pasos o con sidebar; MINIMAL si 1–2), un tema por paso, "
     "revisión final con «Editar» por bloque ($action.step) y confirmación al cancelar.",
-    local={"local!exp": {"titulo": None, "tipo": None, "responsable": None, "conImporte": None, "importe": None, "docs": []}})
+    local={"local!exp": {"titulo": None, "tipo": None, "responsable": None, "conImporte": True, "importe": None, "docs": []}})
 
 # ------------------------------------------------------------------ P05 Tarea de aprobación
 p05 = screen("tarea", "Aprobar expediente", "form", "P05", ["RF-APROB"], {
@@ -166,10 +168,22 @@ p07 = dialog("dialogo", "Editar expediente {rv!record.codigo}", [
 ], bl(primary("Guardar", {"close": True}, submit=True)), ["RF-EDIT"], None, openFrom="registro", recordType=RT,
     local={"local!titulo": "{rv!record.titulo}", "local!tipo": "{rv!record.tipo}", "local!unidad": "{rv!record.unidad}", "local!descripcion": "{rv!record.descripcion}"})
 p07.pop("ref")
-p07["$note"] = "P07: acción corta de registro en diálogo NARROW: solo los campos de la acción, Cancelar a la izquierda y la acción a la derecha."
+p07["$note"] = ("P07: acción corta de registro en diálogo: solo los campos de la acción, en una columna; formulario a contentsWidth FULL y el ancho del cuadro "
+                "($dialogWidth NARROW) es la Dialog Width de la acción de registro. Cancelar a la izquierda y la acción a la derecha.")
 
 # ------------------------------------------------------------------ P08 Informe
-FT = "or(isnull(local!tipo), fv!row.tipo = local!tipo)"
+FT = "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), or(isnull(local!unidad), fv!row.unidad = local!unidad))"
+G_MES = {"type": "a!columnChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "height": "SHORT", "showDataLabels": True,
+         "config": {"type": "a!columnChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("mesAlta"), "interval": "MONTH_SHORT_TEXT"}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Altas"}]},
+         "colorScheme": {"type": "a!colorSchemeCustom", "colors": [NAVY]}}
+G_TIPO = {"type": "a!pieChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "style": "DONUT", "height": "SHORT", "showDataLabels": True, "$categories": TIPOS,
+          "config": {"type": "a!pieChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("tipo")}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Expedientes"}]},
+          "colorScheme": {"type": "a!colorSchemeCustom", "colors": CHART[:3]}}
+G_ESTADO = {"type": "a!barChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "height": "AUTO", "showDataLabels": True, "$categories": FASES,
+            "config": {"type": "a!barChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("estado")}, "secondaryGrouping": {"type": "a!grouping", "field": F("estado")},
+                       "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Expedientes"}], "link": chart_link("local!estadoSel", RT, "estado")},
+            "stacking": "NORMAL", "showLegend": False, "colorScheme": state_chart_colors(ESTADOS, FASES),
+            "$note": "Cada barra con el color de su estado (el mismo significado que las etiquetas): agrupación secundaria por el mismo campo."}
 p08 = screen("informe", "Informes", "page", "P08", ["RF-INFORME"], {"type": "a!headerContentLayout", "backgroundColor": BG, "contents": [
     page_header("Informes", "Distribución y evolución de los expedientes"),
     content_card([filter_bar([dd("Tipo", TIPOS, "local!tipo", placeholder="Todos los tipos", marginBelow="NONE"), dd("Unidad", UNIDADES, "local!unidad", placeholder="Todas las unidades", marginBelow="NONE"), []],
@@ -178,25 +192,19 @@ p08 = screen("informe", "Informes", "page", "P08", ["RF-INFORME"], {"type": "a!h
         kpi("Expedientes", "folder-open-o", sec_text="en el filtro", data=f"recordType!{RT}", primaryMeasure={"type": "a!measure", "function": "COUNT", "field": F("id")}, **{"$filter": FT}),
         kpi("Aprobados", "check-circle", sec_text="en el filtro", data=f"recordType!{RT}", primaryMeasure={"type": "a!measure", "function": "COUNT", "field": F("id")}, **{"$filter": "and(" + FT + ", fv!row.estado = \"Aprobado\")"}),
         kpi("Importe total", "eur", sec_text="expedientes con importe", data=f"recordType!{RT}", primaryMeasure={"type": "a!measure", "function": "SUM", "field": F("importe")}, **{"$filter": FT, "$format": "eur"})]),
+    section_card("Altas por mes", [chart_table("local!tablaMes", G_MES, "Mes")]),
     {"type": "a!columnsLayout", "columns": [
-        {"type": "a!columnLayout", "contents": [section_card("Por tipo", [{"type": "a!pieChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "style": "DONUT", "height": "SHORT", "showDataLabels": True, "$categories": TIPOS,
-            "config": {"type": "a!pieChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("tipo")}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Expedientes"}]},
-            "colorScheme": {"type": "a!colorSchemeCustom", "colors": CHART[:3]}}])]},
-        {"type": "a!columnLayout", "contents": [section_card("Altas por mes", [{"type": "a!columnChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "height": "SHORT", "showDataLabels": True,
-            "config": {"type": "a!columnChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("mesAlta"), "interval": "MONTH_SHORT_TEXT"}, "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Altas"}]},
-            "colorScheme": {"type": "a!colorSchemeCustom", "colors": [NAVY]}}])]}]},
-    section_card("Expedientes por estado", [
-        {"type": "a!richTextDisplayField", "labelPosition": "COLLAPSED", "marginBelow": "LESS", "value": [{"type": "a!richTextItem", "text": "Pulse una barra para ver sus expedientes", "color": "SECONDARY", "size": "SMALL"}]},
-        {"type": "a!barChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "$filter": FT, "height": "AUTO", "showDataLabels": True, "$categories": FASES,
-         "config": {"type": "a!barChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("estado")}, "secondaryGrouping": {"type": "a!grouping", "field": F("estado")},
-                    "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Expedientes"}], "link": chart_link("local!estadoSel", RT, "estado")},
-         "stacking": "NORMAL", "showLegend": False, "colorScheme": state_chart_colors(ESTADOS, FASES),
-         "$note": "Cada barra con el color de su estado (el mismo significado que las etiquetas): agrupación secundaria por el mismo campo."},
-        {"type": "a!sectionLayout", "showWhen": "a!isNotNullOrEmpty(local!estadoSel)", "label": "Expedientes en «{local!estadoSel}»", "labelSize": "SMALL", "labelHeadingTag": "H3", "labelColor": "SECONDARY", "marginAbove": "STANDARD", "contents": [
-            grid(f"recordType!{RT}", "and(" + FT + ", fv!row.estado = local!estadoSel)", [gcol("Expediente", two_line("{fv!row.codigo}", "{fv!row.titulo}", {"type": "a!recordLink", "recordType": f"recordType!{RT}", "identifier": "{fv!row.id}"})), gcol("Unidad", "{fv!row.unidad}", width="NARROW"), gcol_num("Importe", "{fv!row.importe|eur|dash}", width="NARROW_PLUS")],
-                 "No hay expedientes", page_size=5)]}]),
-]}, "P08: filtros de página en una barra, franja de KPI calculados con los filtros, gráficos en cards con título H2 encima y un gráfico que profundiza a sus registros (chart_link).",
-    local={"local!tipo": None, "local!unidad": None, "local!estadoSel": None})
+        {"type": "a!columnLayout", "contents": [section_card("Por tipo", [chart_table("local!tablaTipo", G_TIPO, "Tipo")])]},
+        {"type": "a!columnLayout", "contents": [section_card("Expedientes por estado", [
+            {"type": "a!richTextDisplayField", "labelPosition": "COLLAPSED", "marginBelow": "LESS", "showWhen": "not(local!tablaEstado)",
+             "value": [{"type": "a!richTextItem", "text": "Pulse una barra para ver sus expedientes", "color": "SECONDARY", "size": "SMALL"}]},
+            chart_table("local!tablaEstado", G_ESTADO, "Estado"),
+            {"type": "a!sectionLayout", "showWhen": "a!isNotNullOrEmpty(local!estadoSel)", "label": "Expedientes en «{local!estadoSel}»", "labelSize": "SMALL", "labelHeadingTag": "H3", "labelColor": "SECONDARY", "marginAbove": "STANDARD", "contents": [
+                grid(f"recordType!{RT}", "and(" + FT + ", fv!row.estado = local!estadoSel)", [gcol("Expediente", two_line("{fv!row.codigo}", "{fv!row.titulo}", {"type": "a!recordLink", "recordType": f"recordType!{RT}", "identifier": "{fv!row.id}"})), gcol("Unidad", "{fv!row.unidad}", width="NARROW"), gcol_num("Importe", "{fv!row.importe|eur|dash}", width="NARROW_PLUS")],
+                     "No hay expedientes", page_size=5)]}])]}]},
+]}, "P08: filtros de página en una barra y franja de KPI calculados con los filtros. Un gráfico con más de 7 puntos va solo, a todo el ancho y arriba; "
+    "los pequeños, en parejas. Cada gráfico con su tabla alternativa (chart_table: enlace «Ver como tabla») y uno que profundiza a sus registros (chart_link).",
+    local={"local!tipo": None, "local!unidad": None, "local!estadoSel": None, "local!tablaMes": False, "local!tablaTipo": False, "local!tablaEstado": False})
 
 # ------------------------------------------------------------------ P09 Maestro-detalle
 p09 = screen("maestro", "Bandeja de revisión", "page", "P09", ["RF-APROB"], {"type": "a!headerContentLayout", "backgroundColor": BG, "contents": [
@@ -267,14 +275,16 @@ p12 = screen("revision-ia", "Revisar datos extraídos", "form", "P12", ["RF-ALTA
         action_banner("Revise los datos con confianza baja", "La IA ha rellenado 5 campos a partir de la solicitud escaneada. Pulse «Página N» para ver de dónde sale cada dato.", kind="INFO", icon="magic", marginBelow="MORE"),
         {"type": "a!columnsLayout", "columns": [
             {"type": "a!columnLayout", "width": "3X", "contents": [ai_review_grid("local!campos", page_var="local!pagina", quote_var="local!cita"),
-                                                                   ai_notice("El botón Guardar se activa cuando estén revisados los datos de confianza baja.", marginAbove="STANDARD")]},
+                                                                   ai_notice("Al guardar se comprueba que estén revisados los datos de confianza baja.", marginAbove="STANDARD")]},
             {"type": "a!columnLayout", "width": "2X", "contents": [{"type": "a!documentViewerField", "label": "Solicitud escaneada", "labelPosition": "COLLAPSED", "document": "local!doc", "height": "TALL",
                                                                     "initialPageDisplay": "local!pagina", "highlightedText": "local!cita", "altText": "Solicitud escaneada", "$fileName": "Solicitud_EXP-2026-0013.pdf", "$pages": 3,
                                                                     "$content": [["Solicitud de expediente", "Unidad solicitante: AGP", "Tipo de expediente: Servicio"], ["Fecha prevista de inicio: 01/10/2026"], ["Importe estimado: 12.400,00 €", "Responsable: Javier García"]]}]}]},
     ],
-    "buttons": bl(primary("Guardar datos", {"goto": "listado"}, submit=True, disabled="contains(local!campos.revisado, false)"), [secondary("Cancelar", {"goto": "listado"})])},
+    "validations": [ai_review_validation("local!campos")],
+    "buttons": bl(primary("Guardar datos", {"goto": "listado"}, submit=True), [secondary("Cancelar", {"goto": "listado"})])},
     "P12: datos que ha rellenado la IA con origen y confianza; la fuente al lado (visor que salta a la página y resalta el valor); editar un dato lo marca como editado "
-    "y revisado; Guardar bloqueado hasta revisar los de confianza baja. La IA nunca guarda: guarda el usuario.",
+    "y revisado; Guardar valida y, si queda algún dato de confianza baja sin revisar, el mensaje del formulario dice qué falta (nunca un botón desactivado sin explicación). "
+    "La IA nunca guarda: guarda el usuario.",
     local={"local!campos": campos, "local!doc": 13, "local!pagina": 1, "local!cita": None})
 
 # ------------------------------------------------------------------ P06 Inicio
@@ -301,13 +311,14 @@ p06 = screen("inicio", "Inicio", "page", "P06", ["RF-INICIO"], {"type": "a!heade
                 {"type": "a!recordActionItem", "action": f"recordType!{RT}.actions.altaDesdeSolicitud", "$label": "Alta desde solicitud escaneada", "$icon": "magic", "$action": {"goto": "revision-ia"}},
                 {"type": "a!recordActionItem", "action": f"recordType!{RT}.actions.altaRapida", "$label": "Alta rápida (una página)", "$icon": "bolt", "$action": {"goto": "formulario"}}]}],
                 **{"$note": "Otras acciones del registro; la principal («Nuevo expediente») ya está en la cabecera y no se repite."}),
-            section_card("Por estado", [{"type": "a!barChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "height": "AUTO", "showDataLabels": True, "$categories": FASES,
+            section_card("Por estado", [chart_table("local!tablaEstado", {"type": "a!barChartField", "labelPosition": "COLLAPSED", "data": f"recordType!{RT}", "height": "AUTO", "showDataLabels": True, "$categories": FASES,
                 "config": {"type": "a!barChartConfig", "primaryGrouping": {"type": "a!grouping", "field": F("estado")}, "secondaryGrouping": {"type": "a!grouping", "field": F("estado")},
                            "measures": [{"type": "a!measure", "function": "COUNT", "field": F("id"), "label": "Expedientes"}]},
-                "stacking": "NORMAL", "showLegend": False, "colorScheme": state_chart_colors(ESTADOS, FASES)}]),
+                "stacking": "NORMAL", "showLegend": False, "colorScheme": state_chart_colors(ESTADOS, FASES)}, "Estado")]),
         ]},
     ]},
-]}, "P06: cabecera de color (saludo, fecha y lo pendiente) + franja de KPI (una card, divisores, sellos de icono, tendencia) + 2X/1X: tareas sin paginación con plazo y «Ver todas»; a la derecha, aviso con acción, accesos rápidos y un gráfico resumen.")
+]}, "P06: cabecera de color (saludo, fecha y lo pendiente) + franja de KPI (una card, divisores, sellos de icono, tendencia) + 2X/1X: tareas sin paginación con plazo y «Ver todas»; "
+    "a la derecha, aviso con acción, accesos rápidos y un gráfico resumen con su tabla alternativa.", local={"local!tablaEstado": False})
 
 # ------------------------------------------------------------------ P02 Vista de registro
 REC = "rv!record"
@@ -320,7 +331,8 @@ p02 = {"id": "registro", "title": "{rv!record.codigo} · {rv!record.titulo}", "t
            {"id": 3, "autor": "Rocío Sánchez Vidal", "fecha": "2026-09-12T13:40", "texto": "Sí, en las cuatro plazas de cada bancada.", "adjuntos": [], "padre": 1}],
                  "local!nuevoComentario": None, "local!respondiendoA": None, "local!respuesta": None},
        "recordActions": [{"type": "a!recordActionItem", "action": f"recordType!{RT}.actions.editar", "identifier": "{rv!record.id}", "$label": "Editar", "$icon": "pencil", "$action": {"dialog": "dialogo", "params": {"id": "{rv!record.id}"}}},
-                         {"type": "a!recordActionItem", "action": f"recordType!{RT}.actions.cerrar", "identifier": "{rv!record.id}", "$label": "Cerrar expediente", "$icon": "lock"}],
+                         por_perfil({"type": "a!recordActionItem", "action": f"recordType!{RT}.actions.cerrar", "identifier": "{rv!record.id}", "$label": "Cerrar expediente", "$icon": "lock"},
+                                    "el responsable de la unidad", "accion")],
        "views": [
            {"id": "resumen", "label": "Resumen", "interface": {"type": "a!headerContentLayout", "backgroundColor": BG, "contents": [
                key_facts([("Estado", tag("rv!record.estado", "estadoColor")), ("Tipo", "{rv!record.tipo}"), ("Unidad", "{rv!record.unidad}"), ("Importe", "{rv!record.importe|eur}"), ("Responsable", "{rv!record.responsable}")],

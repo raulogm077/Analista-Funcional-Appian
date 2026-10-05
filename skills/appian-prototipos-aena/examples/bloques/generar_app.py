@@ -104,9 +104,9 @@ p3 = page("listas", "Listas y grids", "Consultar, seleccionar y profundizar", [
                    [{"type": "a!forEach", "items": "data!incidencias", "$filter": "fv!item.id = local!abierta", "expression": {"type": "a!sectionLayout", "contents": [
                        {"type": "a!headingField", "text": "{fv!item.codigo} · {fv!item.titulo}", "size": "MEDIUM_PLUS", "headingTag": "H3", "marginBelow": "LESS"}, {"type": "a!richTextDisplayField", "labelPosition": "COLLAPSED", "value": ["{fv!item.descripcion}"]}]}}], "Volver a las incidencias")),
     demo("chart_link (drilldown de gráfico)", "Informe en el que se pulsa una barra para ver sus registros debajo.",
-         [{"type": "a!columnChartField", "label": "Incidencias por área (pulse una barra)", "data": "data!incidencias", "height": "SHORT",
+         [chart_table("local!tablaArea", {"type": "a!columnChartField", "label": "Incidencias por área (pulse una barra)", "data": "data!incidencias", "height": "SHORT",
            "config": {"type": "a!columnChartConfig", "primaryGrouping": {"type": "a!grouping", "field": "recordType!AENA Incidencia.fields.area"}, "measures": [{"type": "a!measure", "function": "COUNT", "field": "recordType!AENA Incidencia.fields.id", "label": "Incidencias"}],
-                      "link": chart_link("local!areaSel", "AENA Incidencia", "area")}},
+                      "link": chart_link("local!areaSel", "AENA Incidencia", "area")}}, "Área"),
           {"type": "a!sectionLayout", "showWhen": "a!isNotNullOrEmpty(local!areaSel)", "label": "Incidencias de {local!areaSel}", "labelSize": "SMALL", "labelHeadingTag": "H3", "labelColor": "SECONDARY", "contents": [
               {"type": "a!richTextDisplayField", "labelPosition": "COLLAPSED", "align": "RIGHT", "marginBelow": "LESS", "value": [{"type": "a!richTextIcon", "icon": "times", "color": "ACCENT"}, " ", {"type": "a!richTextItem", "text": "Quitar selección", "style": "STRONG", "linkStyle": "STANDALONE", "link": {"type": "a!dynamicLink", "saveInto": [{"type": "a!save", "target": "local!areaSel", "value": None}]}}]},
               grid("data!incidencias", "fv!row.area = local!areaSel", cols_inc, "No hay incidencias", page_size=5)]}]),
@@ -118,7 +118,7 @@ p3 = page("listas", "Listas y grids", "Consultar, seleccionar y profundizar", [
          dual_picklist("local!areas", "local!areasSel", "local!marcaIzq", "local!marcaDer", "Áreas disponibles", "Áreas asignadas"), card=False),
     demo("dynamic_inputs", "Lista de valores de longitud variable (correos, matrículas, referencias).",
          dynamic_inputs("local!correos", "Correos de aviso", "Añadir otro correo", placeholder="nombre@aena.es")),
-], local={"local!sel": [6], "local!marcadas": [2, 5], "local!abierta": None, "local!areaSel": None, "local!abiertos": [], "local!docs": docs, "local!buscarDoc": None,
+], local={"local!sel": [6], "local!marcadas": [2, 5], "local!abierta": None, "local!areaSel": None, "local!tablaArea": False, "local!abiertos": [], "local!docs": docs, "local!buscarDoc": None,
           "local!comentarios": comentarios, "local!areas": AREAS, "local!areasSel": ["Mantenimiento", "Sistemas"], "local!marcaIzq": None, "local!marcaDer": None, "local!correos": ["guardia.mad@aena.es", ""]})
 
 # ------------------------------------------------------------------ 4. Cards

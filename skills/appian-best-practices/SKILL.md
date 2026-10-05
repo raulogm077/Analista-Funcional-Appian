@@ -84,7 +84,7 @@ find out **only what the task needs**, in this order, stopping as soon as you ha
 2. **Project instructions and documentation**, if they exist: `CLAUDE.md`/`AGENTS.md`, README,
    specification, architecture decisions, functional design. Don't assume they exist or how they're named.
    In a project of this plugin they are `analisis/tecnico.md` (*Entorno*, *Convenciones* and the `DT-nn`
-   decisions) and `analisis/funcional.md` (the approved requirements `HU-nn` and process steps `P-nn`).
+   decisions) and `analisis/funcional.md` (the approved requirements `HU-nn` and process steps `ACT-nn`).
 3. **The real objects**, when the implementation matters more than the documentation (see *Tools*).
 
 What you almost always need before creating an object: **the naming convention** and **where it fits**

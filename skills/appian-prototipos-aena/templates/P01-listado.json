@@ -6,7 +6,7 @@
  "req": [
   "RF-LIST"
  ],
- "$note": "P01: cabecera con la acción principal + grid en una card: ≤7 columnas consolidadas (código + título en la 1.ª, enlace a la ficha), cifras a la derecha, estado como tag (en grids solo atención y negativo llevan color), filtros de usuario y búsqueda. Con asistente de datos: ai_side_pane (references/bloques.md).",
+ "$note": "P01: cabecera con la acción principal + grid en una card: ≤7 columnas consolidadas (código + título en la 1.ª, enlace a la ficha), cifras a la derecha, estado como tag (en grids solo atención y negativo llevan color), filtros de usuario y búsqueda. Con asistente de datos: ai_side_pane (references/bloques.md). Página del site: si basta con buscar, filtrar y abrir la ficha, en Appian es una página de tipo Record List (la lista configurada en el record type, con sus filtros, búsqueda, exportación y acciones de lista), no una interfaz (BP 09 §1.3); el prototipo la pinta igual y app.json no declara el tipo de página.",
  "interface": {
   "type": "a!headerContentLayout",
   "backgroundColor": "TRANSPARENT",

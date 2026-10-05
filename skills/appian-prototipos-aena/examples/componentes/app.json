@@ -5063,7 +5063,15 @@
    "req": [
     "C1"
    ],
-   "local": {},
+   "local": {
+    "local!tablaColumnas": false,
+    "local!tablaBarras": false,
+    "local!tablaPuntualidad": false,
+    "local!tablaPasajeros": false,
+    "local!tablaArea": false,
+    "local!tablaAnillo": false,
+    "local!tablaDispersion": false
+   },
    "interface": {
     "type": "a!headerContentLayout",
     "backgroundColor": "TRANSPARENT",
@@ -5131,48 +5139,166 @@
         "padding": "STANDARD",
         "contents": [
          {
-          "type": "a!columnChartField",
-          "label": "Incidencias por área y estado",
-          "data": "data!incidencias",
-          "stacking": "NORMAL",
-          "showDataLabels": true,
-          "height": "MEDIUM",
-          "colorScheme": {
-           "type": "a!colorSchemeCustom",
-           "colors": [
-            "#9A5200",
-            "#1A2732",
-            "#525C65"
-           ]
-          },
-          "allowLegendFiltering": true,
-          "$series": [
-           "Pendiente",
-           "En curso",
-           "Cerrada"
-          ],
-          "config": {
-           "type": "a!columnChartConfig",
-           "primaryGrouping": {
-            "type": "a!grouping",
-            "field": "recordType!AENA Incidencia.fields.area",
-            "alias": "area"
+          "type": "a!sectionLayout",
+          "marginBelow": "NONE",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextIcon",
+              "icon": "{if(local!tablaColumnas, \"bar-chart\", \"table\")}",
+              "color": "ACCENT"
+             },
+             " ",
+             {
+              "type": "a!richTextItem",
+              "text": "{if(local!tablaColumnas, \"Ver como gráfico\", \"Ver como tabla\")}",
+              "link": {
+               "type": "a!dynamicLink",
+               "saveInto": [
+                {
+                 "type": "a!save",
+                 "target": "local!tablaColumnas",
+                 "value": "{not(local!tablaColumnas)}"
+                }
+               ]
+              },
+              "linkStyle": "STANDALONE",
+              "style": "STRONG"
+             }
+            ],
+            "align": "RIGHT",
+            "marginBelow": "LESS"
            },
-           "secondaryGrouping": {
-            "type": "a!grouping",
-            "field": "recordType!AENA Incidencia.fields.estado",
-            "alias": "estado"
+           {
+            "type": "a!columnChartField",
+            "label": "Incidencias por área y estado",
+            "data": "data!incidencias",
+            "stacking": "NORMAL",
+            "showDataLabels": true,
+            "height": "MEDIUM",
+            "colorScheme": {
+             "type": "a!colorSchemeCustom",
+             "colors": [
+              "#9A5200",
+              "#1A2732",
+              "#525C65"
+             ]
+            },
+            "allowLegendFiltering": true,
+            "$series": [
+             "Pendiente",
+             "En curso",
+             "Cerrada"
+            ],
+            "config": {
+             "type": "a!columnChartConfig",
+             "primaryGrouping": {
+              "type": "a!grouping",
+              "field": "recordType!AENA Incidencia.fields.area",
+              "alias": "area"
+             },
+             "secondaryGrouping": {
+              "type": "a!grouping",
+              "field": "recordType!AENA Incidencia.fields.estado",
+              "alias": "estado"
+             },
+             "measures": [
+              {
+               "type": "a!measure",
+               "function": "COUNT",
+               "field": "recordType!AENA Incidencia.fields.id",
+               "alias": "total",
+               "label": "Incidencias"
+              }
+             ]
+            },
+            "showWhen": "not(local!tablaColumnas)"
            },
-           "measures": [
-            {
-             "type": "a!measure",
-             "function": "COUNT",
-             "field": "recordType!AENA Incidencia.fields.id",
-             "alias": "total",
-             "label": "Incidencias"
-            }
-           ]
-          }
+           {
+            "type": "a!gridField",
+            "labelPosition": "COLLAPSED",
+            "borderStyle": "LIGHT",
+            "shadeAlternateRows": false,
+            "spacing": "STANDARD",
+            "pageSize": 20,
+            "rowHeader": 1,
+            "emptyGridMessage": "No hay datos que mostrar",
+            "columns": [
+             {
+              "type": "a!gridColumn",
+              "label": "Área",
+              "value": "{fv!row.categoria}"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Pendiente",
+              "value": "{fv!row.s1|num}",
+              "align": "END"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "En curso",
+              "value": "{fv!row.s2|num}",
+              "align": "END"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Cerrada",
+              "value": "{fv!row.s3|num}",
+              "align": "END"
+             }
+            ],
+            "$chart": {
+             "type": "a!columnChartField",
+             "label": "Incidencias por área y estado",
+             "data": "data!incidencias",
+             "stacking": "NORMAL",
+             "showDataLabels": true,
+             "height": "MEDIUM",
+             "colorScheme": {
+              "type": "a!colorSchemeCustom",
+              "colors": [
+               "#9A5200",
+               "#1A2732",
+               "#525C65"
+              ]
+             },
+             "allowLegendFiltering": true,
+             "$series": [
+              "Pendiente",
+              "En curso",
+              "Cerrada"
+             ],
+             "config": {
+              "type": "a!columnChartConfig",
+              "primaryGrouping": {
+               "type": "a!grouping",
+               "field": "recordType!AENA Incidencia.fields.area",
+               "alias": "area"
+              },
+              "secondaryGrouping": {
+               "type": "a!grouping",
+               "field": "recordType!AENA Incidencia.fields.estado",
+               "alias": "estado"
+              },
+              "measures": [
+               {
+                "type": "a!measure",
+                "function": "COUNT",
+                "field": "recordType!AENA Incidencia.fields.id",
+                "alias": "total",
+                "label": "Incidencias"
+               }
+              ]
+             }
+            },
+            "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+            "showWhen": "local!tablaColumnas"
+           }
+          ]
          }
         ]
        }
@@ -5210,47 +5336,154 @@
         "padding": "STANDARD",
         "contents": [
          {
-          "type": "a!barChartField",
-          "label": "Coste de reparación por aeropuerto (€)",
-          "data": "data!incidencias",
-          "showDataLabels": true,
-          "height": "SHORT",
-          "colorScheme": {
-           "type": "a!colorSchemeCustom",
-           "colors": [
-            "#1A2732",
-            "#72A300",
-            "#3D6B8C",
-            "#EC4371",
-            "#E07000",
-            "#527500"
-           ]
-          },
-          "config": {
-           "type": "a!barChartConfig",
-           "primaryGrouping": {
-            "type": "a!grouping",
-            "field": "recordType!AENA Incidencia.fields.aeropuerto",
-            "alias": "aeropuerto"
-           },
-           "measures": [
-            {
-             "type": "a!measure",
-             "function": "SUM",
-             "field": "recordType!AENA Incidencia.fields.coste",
-             "alias": "coste",
-             "label": "Coste",
-             "formatValue": "EURO"
-            }
-           ]
-          },
-          "referenceLines": [
+          "type": "a!sectionLayout",
+          "marginBelow": "NONE",
+          "contents": [
            {
-            "type": "a!chartReferenceLine",
-            "label": "Presupuesto mensual",
-            "value": 2500,
-            "color": "RED",
-            "style": "DASH"
+            "type": "a!richTextDisplayField",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextIcon",
+              "icon": "{if(local!tablaBarras, \"bar-chart\", \"table\")}",
+              "color": "ACCENT"
+             },
+             " ",
+             {
+              "type": "a!richTextItem",
+              "text": "{if(local!tablaBarras, \"Ver como gráfico\", \"Ver como tabla\")}",
+              "link": {
+               "type": "a!dynamicLink",
+               "saveInto": [
+                {
+                 "type": "a!save",
+                 "target": "local!tablaBarras",
+                 "value": "{not(local!tablaBarras)}"
+                }
+               ]
+              },
+              "linkStyle": "STANDALONE",
+              "style": "STRONG"
+             }
+            ],
+            "align": "RIGHT",
+            "marginBelow": "LESS"
+           },
+           {
+            "type": "a!barChartField",
+            "label": "Coste de reparación por aeropuerto (€)",
+            "data": "data!incidencias",
+            "showDataLabels": true,
+            "height": "SHORT",
+            "colorScheme": {
+             "type": "a!colorSchemeCustom",
+             "colors": [
+              "#1A2732",
+              "#72A300",
+              "#3D6B8C",
+              "#EC4371",
+              "#E07000",
+              "#527500"
+             ]
+            },
+            "config": {
+             "type": "a!barChartConfig",
+             "primaryGrouping": {
+              "type": "a!grouping",
+              "field": "recordType!AENA Incidencia.fields.aeropuerto",
+              "alias": "aeropuerto"
+             },
+             "measures": [
+              {
+               "type": "a!measure",
+               "function": "SUM",
+               "field": "recordType!AENA Incidencia.fields.coste",
+               "alias": "coste",
+               "label": "Coste",
+               "formatValue": "EURO"
+              }
+             ]
+            },
+            "referenceLines": [
+             {
+              "type": "a!chartReferenceLine",
+              "label": "Presupuesto mensual",
+              "value": 2500,
+              "color": "RED",
+              "style": "DASH"
+             }
+            ],
+            "showWhen": "not(local!tablaBarras)"
+           },
+           {
+            "type": "a!gridField",
+            "labelPosition": "COLLAPSED",
+            "borderStyle": "LIGHT",
+            "shadeAlternateRows": false,
+            "spacing": "STANDARD",
+            "pageSize": 20,
+            "rowHeader": 1,
+            "emptyGridMessage": "No hay datos que mostrar",
+            "columns": [
+             {
+              "type": "a!gridColumn",
+              "label": "Aeropuerto",
+              "value": "{fv!row.categoria}"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Coste",
+              "value": "{fv!row.s1|eur}",
+              "align": "END"
+             }
+            ],
+            "$chart": {
+             "type": "a!barChartField",
+             "label": "Coste de reparación por aeropuerto (€)",
+             "data": "data!incidencias",
+             "showDataLabels": true,
+             "height": "SHORT",
+             "colorScheme": {
+              "type": "a!colorSchemeCustom",
+              "colors": [
+               "#1A2732",
+               "#72A300",
+               "#3D6B8C",
+               "#EC4371",
+               "#E07000",
+               "#527500"
+              ]
+             },
+             "config": {
+              "type": "a!barChartConfig",
+              "primaryGrouping": {
+               "type": "a!grouping",
+               "field": "recordType!AENA Incidencia.fields.aeropuerto",
+               "alias": "aeropuerto"
+              },
+              "measures": [
+               {
+                "type": "a!measure",
+                "function": "SUM",
+                "field": "recordType!AENA Incidencia.fields.coste",
+                "alias": "coste",
+                "label": "Coste",
+                "formatValue": "EURO"
+               }
+              ]
+             },
+             "referenceLines": [
+              {
+               "type": "a!chartReferenceLine",
+               "label": "Presupuesto mensual",
+               "value": 2500,
+               "color": "RED",
+               "style": "DASH"
+              }
+             ]
+            },
+            "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+            "showWhen": "local!tablaBarras"
            }
           ]
          }
@@ -5296,54 +5529,174 @@
             "type": "a!columnLayout",
             "contents": [
              {
-              "type": "a!lineChartField",
-              "label": "Puntualidad en salidas (%)",
-              "categories": [
-               "Abr",
-               "May",
-               "Jun",
-               "Jul",
-               "Ago",
-               "Sep"
-              ],
-              "yAxisMin": 80,
-              "yAxisMax": 100,
-              "height": "SHORT",
-              "series": [
+              "type": "a!sectionLayout",
+              "marginBelow": "NONE",
+              "contents": [
                {
-                "type": "a!chartSeries",
-                "label": "MAD",
-                "data": [
-                 91.2,
-                 90.4,
-                 88.1,
-                 86.9,
-                 87.5,
-                 92.3
+                "type": "a!richTextDisplayField",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextIcon",
+                  "icon": "{if(local!tablaPuntualidad, \"bar-chart\", \"table\")}",
+                  "color": "ACCENT"
+                 },
+                 " ",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{if(local!tablaPuntualidad, \"Ver como gráfico\", \"Ver como tabla\")}",
+                  "link": {
+                   "type": "a!dynamicLink",
+                   "saveInto": [
+                    {
+                     "type": "a!save",
+                     "target": "local!tablaPuntualidad",
+                     "value": "{not(local!tablaPuntualidad)}"
+                    }
+                   ]
+                  },
+                  "linkStyle": "STANDALONE",
+                  "style": "STRONG"
+                 }
                 ],
-                "color": "#1A2732"
+                "align": "RIGHT",
+                "marginBelow": "LESS"
                },
                {
-                "type": "a!chartSeries",
-                "label": "BCN",
-                "data": [
-                 89.8,
-                 89.1,
-                 87.4,
-                 85.2,
-                 86.0,
-                 90.7
+                "type": "a!lineChartField",
+                "label": "Puntualidad en salidas (%)",
+                "categories": [
+                 "Abr",
+                 "May",
+                 "Jun",
+                 "Jul",
+                 "Ago",
+                 "Sep"
                 ],
-                "color": "#527500"
-               }
-              ],
-              "referenceLines": [
+                "yAxisMin": 80,
+                "yAxisMax": 100,
+                "height": "SHORT",
+                "series": [
+                 {
+                  "type": "a!chartSeries",
+                  "label": "MAD",
+                  "data": [
+                   91.2,
+                   90.4,
+                   88.1,
+                   86.9,
+                   87.5,
+                   92.3
+                  ],
+                  "color": "#1A2732"
+                 },
+                 {
+                  "type": "a!chartSeries",
+                  "label": "BCN",
+                  "data": [
+                   89.8,
+                   89.1,
+                   87.4,
+                   85.2,
+                   86.0,
+                   90.7
+                  ],
+                  "color": "#527500"
+                 }
+                ],
+                "referenceLines": [
+                 {
+                  "type": "a!chartReferenceLine",
+                  "label": "Objetivo 90 %",
+                  "value": 90,
+                  "color": "GOLD",
+                  "style": "SHORTDASH"
+                 }
+                ],
+                "showWhen": "not(local!tablaPuntualidad)"
+               },
                {
-                "type": "a!chartReferenceLine",
-                "label": "Objetivo 90 %",
-                "value": 90,
-                "color": "GOLD",
-                "style": "SHORTDASH"
+                "type": "a!gridField",
+                "labelPosition": "COLLAPSED",
+                "borderStyle": "LIGHT",
+                "shadeAlternateRows": false,
+                "spacing": "STANDARD",
+                "pageSize": 20,
+                "rowHeader": 1,
+                "emptyGridMessage": "No hay datos que mostrar",
+                "columns": [
+                 {
+                  "type": "a!gridColumn",
+                  "label": "Mes",
+                  "value": "{fv!row.categoria}"
+                 },
+                 {
+                  "type": "a!gridColumn",
+                  "label": "MAD",
+                  "value": "{fv!row.s1|num}",
+                  "align": "END"
+                 },
+                 {
+                  "type": "a!gridColumn",
+                  "label": "BCN",
+                  "value": "{fv!row.s2|num}",
+                  "align": "END"
+                 }
+                ],
+                "$chart": {
+                 "type": "a!lineChartField",
+                 "label": "Puntualidad en salidas (%)",
+                 "categories": [
+                  "Abr",
+                  "May",
+                  "Jun",
+                  "Jul",
+                  "Ago",
+                  "Sep"
+                 ],
+                 "yAxisMin": 80,
+                 "yAxisMax": 100,
+                 "height": "SHORT",
+                 "series": [
+                  {
+                   "type": "a!chartSeries",
+                   "label": "MAD",
+                   "data": [
+                    91.2,
+                    90.4,
+                    88.1,
+                    86.9,
+                    87.5,
+                    92.3
+                   ],
+                   "color": "#1A2732"
+                  },
+                  {
+                   "type": "a!chartSeries",
+                   "label": "BCN",
+                   "data": [
+                    89.8,
+                    89.1,
+                    87.4,
+                    85.2,
+                    86.0,
+                    90.7
+                   ],
+                   "color": "#527500"
+                  }
+                 ],
+                 "referenceLines": [
+                  {
+                   "type": "a!chartReferenceLine",
+                   "label": "Objetivo 90 %",
+                   "value": 90,
+                   "color": "GOLD",
+                   "style": "SHORTDASH"
+                  }
+                 ]
+                },
+                "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+                "showWhen": "local!tablaPuntualidad"
                }
               ]
              }
@@ -5353,43 +5706,156 @@
             "type": "a!columnLayout",
             "contents": [
              {
-              "type": "a!lineChartField",
-              "label": "Pasajeros por mes (millones)",
-              "data": "data!pasajeros",
-              "height": "SHORT",
-              "colorScheme": {
-               "type": "a!colorSchemeCustom",
-               "colors": [
-                "#1A2732",
-                "#72A300",
-                "#3D6B8C",
-                "#EC4371",
-                "#E07000",
-                "#527500"
-               ]
-              },
-              "config": {
-               "type": "a!lineChartConfig",
-               "primaryGrouping": {
-                "type": "a!grouping",
-                "field": "mes",
-                "alias": "mes"
+              "type": "a!sectionLayout",
+              "marginBelow": "NONE",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextIcon",
+                  "icon": "{if(local!tablaPasajeros, \"bar-chart\", \"table\")}",
+                  "color": "ACCENT"
+                 },
+                 " ",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{if(local!tablaPasajeros, \"Ver como gráfico\", \"Ver como tabla\")}",
+                  "link": {
+                   "type": "a!dynamicLink",
+                   "saveInto": [
+                    {
+                     "type": "a!save",
+                     "target": "local!tablaPasajeros",
+                     "value": "{not(local!tablaPasajeros)}"
+                    }
+                   ]
+                  },
+                  "linkStyle": "STANDALONE",
+                  "style": "STRONG"
+                 }
+                ],
+                "align": "RIGHT",
+                "marginBelow": "LESS"
                },
-               "secondaryGrouping": {
-                "type": "a!grouping",
-                "field": "aeropuerto",
-                "alias": "aeropuerto"
+               {
+                "type": "a!lineChartField",
+                "label": "Pasajeros por mes (millones)",
+                "data": "data!pasajeros",
+                "height": "SHORT",
+                "colorScheme": {
+                 "type": "a!colorSchemeCustom",
+                 "colors": [
+                  "#1A2732",
+                  "#72A300",
+                  "#3D6B8C",
+                  "#EC4371",
+                  "#E07000",
+                  "#527500"
+                 ]
+                },
+                "config": {
+                 "type": "a!lineChartConfig",
+                 "primaryGrouping": {
+                  "type": "a!grouping",
+                  "field": "mes",
+                  "alias": "mes"
+                 },
+                 "secondaryGrouping": {
+                  "type": "a!grouping",
+                  "field": "aeropuerto",
+                  "alias": "aeropuerto"
+                 },
+                 "measures": [
+                  {
+                   "type": "a!measure",
+                   "function": "SUM",
+                   "field": "pax",
+                   "alias": "pax",
+                   "label": "Pasajeros"
+                  }
+                 ]
+                },
+                "showWhen": "not(local!tablaPasajeros)"
                },
-               "measures": [
-                {
-                 "type": "a!measure",
-                 "function": "SUM",
-                 "field": "pax",
-                 "alias": "pax",
-                 "label": "Pasajeros"
-                }
-               ]
-              }
+               {
+                "type": "a!gridField",
+                "labelPosition": "COLLAPSED",
+                "borderStyle": "LIGHT",
+                "shadeAlternateRows": false,
+                "spacing": "STANDARD",
+                "pageSize": 20,
+                "rowHeader": 1,
+                "emptyGridMessage": "No hay datos que mostrar",
+                "columns": [
+                 {
+                  "type": "a!gridColumn",
+                  "label": "Mes",
+                  "value": "{fv!row.categoria}"
+                 },
+                 {
+                  "type": "a!gridColumn",
+                  "label": "MAD",
+                  "value": "{fv!row.s1|num}",
+                  "align": "END"
+                 },
+                 {
+                  "type": "a!gridColumn",
+                  "label": "BCN",
+                  "value": "{fv!row.s2|num}",
+                  "align": "END"
+                 },
+                 {
+                  "type": "a!gridColumn",
+                  "label": "PMI",
+                  "value": "{fv!row.s3|num}",
+                  "align": "END"
+                 }
+                ],
+                "$chart": {
+                 "type": "a!lineChartField",
+                 "label": "Pasajeros por mes (millones)",
+                 "data": "data!pasajeros",
+                 "height": "SHORT",
+                 "colorScheme": {
+                  "type": "a!colorSchemeCustom",
+                  "colors": [
+                   "#1A2732",
+                   "#72A300",
+                   "#3D6B8C",
+                   "#EC4371",
+                   "#E07000",
+                   "#527500"
+                  ]
+                 },
+                 "config": {
+                  "type": "a!lineChartConfig",
+                  "primaryGrouping": {
+                   "type": "a!grouping",
+                   "field": "mes",
+                   "alias": "mes"
+                  },
+                  "secondaryGrouping": {
+                   "type": "a!grouping",
+                   "field": "aeropuerto",
+                   "alias": "aeropuerto"
+                  },
+                  "measures": [
+                   {
+                    "type": "a!measure",
+                    "function": "SUM",
+                    "field": "pax",
+                    "alias": "pax",
+                    "label": "Pasajeros"
+                   }
+                  ]
+                 }
+                },
+                "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+                "showWhen": "local!tablaPasajeros"
+               }
+              ]
              }
             ]
            }
@@ -5437,44 +5903,158 @@
             "type": "a!columnLayout",
             "contents": [
              {
-              "type": "a!areaChartField",
-              "label": "Pasajeros acumulados por aeropuerto (millones)",
-              "data": "data!pasajeros",
-              "stacking": "NORMAL",
-              "height": "SHORT",
-              "colorScheme": {
-               "type": "a!colorSchemeCustom",
-               "colors": [
-                "#1A2732",
-                "#72A300",
-                "#3D6B8C",
-                "#EC4371",
-                "#E07000",
-                "#527500"
-               ]
-              },
-              "config": {
-               "type": "a!areaChartConfig",
-               "primaryGrouping": {
-                "type": "a!grouping",
-                "field": "mes",
-                "alias": "mes"
+              "type": "a!sectionLayout",
+              "marginBelow": "NONE",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextIcon",
+                  "icon": "{if(local!tablaArea, \"bar-chart\", \"table\")}",
+                  "color": "ACCENT"
+                 },
+                 " ",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{if(local!tablaArea, \"Ver como gráfico\", \"Ver como tabla\")}",
+                  "link": {
+                   "type": "a!dynamicLink",
+                   "saveInto": [
+                    {
+                     "type": "a!save",
+                     "target": "local!tablaArea",
+                     "value": "{not(local!tablaArea)}"
+                    }
+                   ]
+                  },
+                  "linkStyle": "STANDALONE",
+                  "style": "STRONG"
+                 }
+                ],
+                "align": "RIGHT",
+                "marginBelow": "LESS"
                },
-               "secondaryGrouping": {
-                "type": "a!grouping",
-                "field": "aeropuerto",
-                "alias": "aeropuerto"
+               {
+                "type": "a!areaChartField",
+                "label": "Pasajeros acumulados por aeropuerto (millones)",
+                "data": "data!pasajeros",
+                "stacking": "NORMAL",
+                "height": "SHORT",
+                "colorScheme": {
+                 "type": "a!colorSchemeCustom",
+                 "colors": [
+                  "#1A2732",
+                  "#72A300",
+                  "#3D6B8C",
+                  "#EC4371",
+                  "#E07000",
+                  "#527500"
+                 ]
+                },
+                "config": {
+                 "type": "a!areaChartConfig",
+                 "primaryGrouping": {
+                  "type": "a!grouping",
+                  "field": "mes",
+                  "alias": "mes"
+                 },
+                 "secondaryGrouping": {
+                  "type": "a!grouping",
+                  "field": "aeropuerto",
+                  "alias": "aeropuerto"
+                 },
+                 "measures": [
+                  {
+                   "type": "a!measure",
+                   "function": "SUM",
+                   "field": "pax",
+                   "alias": "pax",
+                   "label": "Pasajeros"
+                  }
+                 ]
+                },
+                "showWhen": "not(local!tablaArea)"
                },
-               "measures": [
-                {
-                 "type": "a!measure",
-                 "function": "SUM",
-                 "field": "pax",
-                 "alias": "pax",
-                 "label": "Pasajeros"
-                }
-               ]
-              }
+               {
+                "type": "a!gridField",
+                "labelPosition": "COLLAPSED",
+                "borderStyle": "LIGHT",
+                "shadeAlternateRows": false,
+                "spacing": "STANDARD",
+                "pageSize": 20,
+                "rowHeader": 1,
+                "emptyGridMessage": "No hay datos que mostrar",
+                "columns": [
+                 {
+                  "type": "a!gridColumn",
+                  "label": "Mes",
+                  "value": "{fv!row.categoria}"
+                 },
+                 {
+                  "type": "a!gridColumn",
+                  "label": "MAD",
+                  "value": "{fv!row.s1|num}",
+                  "align": "END"
+                 },
+                 {
+                  "type": "a!gridColumn",
+                  "label": "BCN",
+                  "value": "{fv!row.s2|num}",
+                  "align": "END"
+                 },
+                 {
+                  "type": "a!gridColumn",
+                  "label": "PMI",
+                  "value": "{fv!row.s3|num}",
+                  "align": "END"
+                 }
+                ],
+                "$chart": {
+                 "type": "a!areaChartField",
+                 "label": "Pasajeros acumulados por aeropuerto (millones)",
+                 "data": "data!pasajeros",
+                 "stacking": "NORMAL",
+                 "height": "SHORT",
+                 "colorScheme": {
+                  "type": "a!colorSchemeCustom",
+                  "colors": [
+                   "#1A2732",
+                   "#72A300",
+                   "#3D6B8C",
+                   "#EC4371",
+                   "#E07000",
+                   "#527500"
+                  ]
+                 },
+                 "config": {
+                  "type": "a!areaChartConfig",
+                  "primaryGrouping": {
+                   "type": "a!grouping",
+                   "field": "mes",
+                   "alias": "mes"
+                  },
+                  "secondaryGrouping": {
+                   "type": "a!grouping",
+                   "field": "aeropuerto",
+                   "alias": "aeropuerto"
+                  },
+                  "measures": [
+                   {
+                    "type": "a!measure",
+                    "function": "SUM",
+                    "field": "pax",
+                    "alias": "pax",
+                    "label": "Pasajeros"
+                   }
+                  ]
+                 }
+                },
+                "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+                "showWhen": "local!tablaArea"
+               }
+              ]
              }
             ]
            },
@@ -5482,42 +6062,142 @@
             "type": "a!columnLayout",
             "contents": [
              {
-              "type": "a!pieChartField",
-              "label": "Incidencias por estado",
-              "data": "data!incidencias",
-              "style": "DONUT",
-              "seriesLabelStyle": "LEGEND",
-              "showDataLabels": true,
-              "height": "SHORT",
-              "colorScheme": {
-               "type": "a!colorSchemeCustom",
-               "colors": [
-                "#9A5200",
-                "#1A2732",
-                "#525C65"
-               ]
-              },
-              "$categories": [
-               "Pendiente",
-               "En curso",
-               "Cerrada"
-              ],
-              "config": {
-               "type": "a!pieChartConfig",
-               "primaryGrouping": {
-                "type": "a!grouping",
-                "field": "recordType!AENA Incidencia.fields.estado",
-                "alias": "estado"
+              "type": "a!sectionLayout",
+              "marginBelow": "NONE",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextIcon",
+                  "icon": "{if(local!tablaAnillo, \"bar-chart\", \"table\")}",
+                  "color": "ACCENT"
+                 },
+                 " ",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{if(local!tablaAnillo, \"Ver como gráfico\", \"Ver como tabla\")}",
+                  "link": {
+                   "type": "a!dynamicLink",
+                   "saveInto": [
+                    {
+                     "type": "a!save",
+                     "target": "local!tablaAnillo",
+                     "value": "{not(local!tablaAnillo)}"
+                    }
+                   ]
+                  },
+                  "linkStyle": "STANDALONE",
+                  "style": "STRONG"
+                 }
+                ],
+                "align": "RIGHT",
+                "marginBelow": "LESS"
                },
-               "measures": [
-                {
-                 "type": "a!measure",
-                 "function": "COUNT",
-                 "field": "recordType!AENA Incidencia.fields.id",
-                 "alias": "total"
-                }
-               ]
-              }
+               {
+                "type": "a!pieChartField",
+                "label": "Incidencias por estado",
+                "data": "data!incidencias",
+                "style": "DONUT",
+                "seriesLabelStyle": "LEGEND",
+                "showDataLabels": true,
+                "height": "SHORT",
+                "colorScheme": {
+                 "type": "a!colorSchemeCustom",
+                 "colors": [
+                  "#9A5200",
+                  "#1A2732",
+                  "#525C65"
+                 ]
+                },
+                "$categories": [
+                 "Pendiente",
+                 "En curso",
+                 "Cerrada"
+                ],
+                "config": {
+                 "type": "a!pieChartConfig",
+                 "primaryGrouping": {
+                  "type": "a!grouping",
+                  "field": "recordType!AENA Incidencia.fields.estado",
+                  "alias": "estado"
+                 },
+                 "measures": [
+                  {
+                   "type": "a!measure",
+                   "function": "COUNT",
+                   "field": "recordType!AENA Incidencia.fields.id",
+                   "alias": "total"
+                  }
+                 ]
+                },
+                "showWhen": "not(local!tablaAnillo)"
+               },
+               {
+                "type": "a!gridField",
+                "labelPosition": "COLLAPSED",
+                "borderStyle": "LIGHT",
+                "shadeAlternateRows": false,
+                "spacing": "STANDARD",
+                "pageSize": 20,
+                "rowHeader": 1,
+                "emptyGridMessage": "No hay datos que mostrar",
+                "columns": [
+                 {
+                  "type": "a!gridColumn",
+                  "label": "Estado",
+                  "value": "{fv!row.categoria}"
+                 },
+                 {
+                  "type": "a!gridColumn",
+                  "label": "Incidencias",
+                  "value": "{fv!row.s1|num}",
+                  "align": "END"
+                 }
+                ],
+                "$chart": {
+                 "type": "a!pieChartField",
+                 "label": "Incidencias por estado",
+                 "data": "data!incidencias",
+                 "style": "DONUT",
+                 "seriesLabelStyle": "LEGEND",
+                 "showDataLabels": true,
+                 "height": "SHORT",
+                 "colorScheme": {
+                  "type": "a!colorSchemeCustom",
+                  "colors": [
+                   "#9A5200",
+                   "#1A2732",
+                   "#525C65"
+                  ]
+                 },
+                 "$categories": [
+                  "Pendiente",
+                  "En curso",
+                  "Cerrada"
+                 ],
+                 "config": {
+                  "type": "a!pieChartConfig",
+                  "primaryGrouping": {
+                   "type": "a!grouping",
+                   "field": "recordType!AENA Incidencia.fields.estado",
+                   "alias": "estado"
+                  },
+                  "measures": [
+                   {
+                    "type": "a!measure",
+                    "function": "COUNT",
+                    "field": "recordType!AENA Incidencia.fields.id",
+                    "alias": "total"
+                   }
+                  ]
+                 }
+                },
+                "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+                "showWhen": "local!tablaAnillo"
+               }
+              ]
              }
             ]
            }
@@ -5559,45 +6239,134 @@
         "padding": "STANDARD",
         "contents": [
          {
-          "type": "a!scatterChartField",
-          "label": "Horas frente a coste por incidencia",
-          "data": "data!incidencias",
-          "height": "SHORT",
-          "colorScheme": {
-           "type": "a!colorSchemeCustom",
-           "colors": [
-            "#1A2732",
-            "#72A300",
-            "#3D6B8C",
-            "#EC4371",
-            "#E07000",
-            "#527500"
-           ]
-          },
-          "xAxisTitle": "Horas de trabajo",
-          "yAxisTitle": "Coste (€)",
-          "primaryGrouping": {
-           "type": "a!grouping",
-           "field": "recordType!AENA Incidencia.fields.codigo",
-           "alias": "codigo"
-          },
-          "secondaryGrouping": {
-           "type": "a!grouping",
-           "field": "recordType!AENA Incidencia.fields.area",
-           "alias": "area"
-          },
-          "xAxisMeasure": {
-           "type": "a!measure",
-           "function": "SUM",
-           "field": "recordType!AENA Incidencia.fields.horas",
-           "alias": "horas"
-          },
-          "yAxisMeasure": {
-           "type": "a!measure",
-           "function": "SUM",
-           "field": "recordType!AENA Incidencia.fields.coste",
-           "alias": "coste"
-          }
+          "type": "a!sectionLayout",
+          "marginBelow": "NONE",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextIcon",
+              "icon": "{if(local!tablaDispersion, \"bar-chart\", \"table\")}",
+              "color": "ACCENT"
+             },
+             " ",
+             {
+              "type": "a!richTextItem",
+              "text": "{if(local!tablaDispersion, \"Ver como gráfico\", \"Ver como tabla\")}",
+              "link": {
+               "type": "a!dynamicLink",
+               "saveInto": [
+                {
+                 "type": "a!save",
+                 "target": "local!tablaDispersion",
+                 "value": "{not(local!tablaDispersion)}"
+                }
+               ]
+              },
+              "linkStyle": "STANDALONE",
+              "style": "STRONG"
+             }
+            ],
+            "align": "RIGHT",
+            "marginBelow": "LESS"
+           },
+           {
+            "type": "a!scatterChartField",
+            "label": "Horas frente a coste por incidencia",
+            "data": "data!incidencias",
+            "height": "SHORT",
+            "colorScheme": {
+             "type": "a!colorSchemeCustom",
+             "colors": [
+              "#1A2732",
+              "#72A300",
+              "#3D6B8C",
+              "#EC4371",
+              "#E07000",
+              "#527500"
+             ]
+            },
+            "xAxisTitle": "Horas de trabajo",
+            "yAxisTitle": "Coste (€)",
+            "primaryGrouping": {
+             "type": "a!grouping",
+             "field": "recordType!AENA Incidencia.fields.codigo",
+             "alias": "codigo"
+            },
+            "secondaryGrouping": {
+             "type": "a!grouping",
+             "field": "recordType!AENA Incidencia.fields.area",
+             "alias": "area"
+            },
+            "xAxisMeasure": {
+             "type": "a!measure",
+             "function": "SUM",
+             "field": "recordType!AENA Incidencia.fields.horas",
+             "alias": "horas"
+            },
+            "yAxisMeasure": {
+             "type": "a!measure",
+             "function": "SUM",
+             "field": "recordType!AENA Incidencia.fields.coste",
+             "alias": "coste"
+            },
+            "showWhen": "not(local!tablaDispersion)"
+           },
+           {
+            "type": "a!gridField",
+            "labelPosition": "COLLAPSED",
+            "data": "data!incidencias",
+            "borderStyle": "LIGHT",
+            "shadeAlternateRows": false,
+            "spacing": "STANDARD",
+            "pageSize": 10,
+            "rowHeader": 1,
+            "emptyGridMessage": "No hay incidencias",
+            "columns": [
+             {
+              "type": "a!gridColumn",
+              "label": "Incidencia",
+              "value": {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "value": [
+                {
+                 "type": "a!richTextItem",
+                 "text": "{fv!row.codigo}",
+                 "style": "STRONG",
+                 "link": {
+                  "type": "a!recordLink",
+                  "recordType": "recordType!AENA Incidencia",
+                  "identifier": "{fv!row.id}"
+                 },
+                 "linkStyle": "STANDALONE"
+                }
+               ]
+              }
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Área",
+              "value": "{fv!row.area}"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Horas",
+              "value": "{fv!row.horas|num}",
+              "align": "END"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Coste",
+              "value": "{fv!row.coste|eur}",
+              "align": "END"
+             }
+            ],
+            "showWhen": "local!tablaDispersion"
+           }
+          ]
          }
         ]
        }
@@ -7813,9 +8582,10 @@
     "C1"
    ],
    "openFrom": "diseno",
+   "$dialogWidth": "NARROW",
    "interface": {
     "type": "a!formLayout",
-    "contentsWidth": "NARROW",
+    "contentsWidth": "FULL",
     "titleBar": {
      "type": "a!headerTemplateFull",
      "title": "IB3166 · Madrid → Roma",
@@ -7946,9 +8716,10 @@
     "C1"
    ],
    "openFrom": "diseno",
+   "$dialogWidth": "NARROW",
    "interface": {
     "type": "a!formLayout",
-    "contentsWidth": "NARROW",
+    "contentsWidth": "FULL",
     "titleBar": {
      "type": "a!headerTemplateImage",
      "title": "Terminal T4",

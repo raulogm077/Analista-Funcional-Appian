@@ -6,7 +6,10 @@
  "req": [
   "RF-INICIO"
  ],
- "$note": "P06: cabecera de color (saludo, fecha y lo pendiente) + franja de KPI (una card, divisores, sellos de icono, tendencia) + 2X/1X: tareas sin paginación con plazo y «Ver todas»; a la derecha, aviso con acción, accesos rápidos y un gráfico resumen.",
+ "$note": "P06: cabecera de color (saludo, fecha y lo pendiente) + franja de KPI (una card, divisores, sellos de icono, tendencia) + 2X/1X: tareas sin paginación con plazo y «Ver todas»; a la derecha, aviso con acción, accesos rápidos y un gráfico resumen con su tabla alternativa.",
+ "local": {
+  "local!tablaEstado": false
+ },
  "interface": {
   "type": "a!headerContentLayout",
   "backgroundColor": "TRANSPARENT",
@@ -502,51 +505,160 @@
           "padding": "STANDARD",
           "contents": [
            {
-            "type": "a!barChartField",
-            "labelPosition": "COLLAPSED",
-            "data": "recordType!EXP Expediente",
-            "height": "AUTO",
-            "showDataLabels": true,
-            "$categories": [
-             "Borrador",
-             "En tramitación",
-             "Pendiente de aprobación",
-             "Aprobado",
-             "Cerrado",
-             "Rechazado"
-            ],
-            "config": {
-             "type": "a!barChartConfig",
-             "primaryGrouping": {
-              "type": "a!grouping",
-              "field": "recordType!EXP Expediente.fields.estado"
+            "type": "a!sectionLayout",
+            "marginBelow": "NONE",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextIcon",
+                "icon": "{if(local!tablaEstado, \"bar-chart\", \"table\")}",
+                "color": "ACCENT"
+               },
+               " ",
+               {
+                "type": "a!richTextItem",
+                "text": "{if(local!tablaEstado, \"Ver como gráfico\", \"Ver como tabla\")}",
+                "link": {
+                 "type": "a!dynamicLink",
+                 "saveInto": [
+                  {
+                   "type": "a!save",
+                   "target": "local!tablaEstado",
+                   "value": "{not(local!tablaEstado)}"
+                  }
+                 ]
+                },
+                "linkStyle": "STANDALONE",
+                "style": "STRONG"
+               }
+              ],
+              "align": "RIGHT",
+              "marginBelow": "LESS"
              },
-             "secondaryGrouping": {
-              "type": "a!grouping",
-              "field": "recordType!EXP Expediente.fields.estado"
+             {
+              "type": "a!barChartField",
+              "labelPosition": "COLLAPSED",
+              "data": "recordType!EXP Expediente",
+              "height": "AUTO",
+              "showDataLabels": true,
+              "$categories": [
+               "Borrador",
+               "En tramitación",
+               "Pendiente de aprobación",
+               "Aprobado",
+               "Cerrado",
+               "Rechazado"
+              ],
+              "config": {
+               "type": "a!barChartConfig",
+               "primaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!EXP Expediente.fields.estado"
+               },
+               "secondaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!EXP Expediente.fields.estado"
+               },
+               "measures": [
+                {
+                 "type": "a!measure",
+                 "function": "COUNT",
+                 "field": "recordType!EXP Expediente.fields.id",
+                 "label": "Expedientes"
+                }
+               ]
+              },
+              "stacking": "NORMAL",
+              "showLegend": false,
+              "colorScheme": {
+               "type": "a!colorSchemeCustom",
+               "colors": [
+                "#525C65",
+                "#1A2732",
+                "#9A5200",
+                "#0E6B00",
+                "#525C65",
+                "#B2002C"
+               ]
+              },
+              "showWhen": "not(local!tablaEstado)"
              },
-             "measures": [
-              {
-               "type": "a!measure",
-               "function": "COUNT",
-               "field": "recordType!EXP Expediente.fields.id",
-               "label": "Expedientes"
-              }
-             ]
-            },
-            "stacking": "NORMAL",
-            "showLegend": false,
-            "colorScheme": {
-             "type": "a!colorSchemeCustom",
-             "colors": [
-              "#525C65",
-              "#1A2732",
-              "#9A5200",
-              "#0E6B00",
-              "#525C65",
-              "#B2002C"
-             ]
-            }
+             {
+              "type": "a!gridField",
+              "labelPosition": "COLLAPSED",
+              "borderStyle": "LIGHT",
+              "shadeAlternateRows": false,
+              "spacing": "STANDARD",
+              "pageSize": 20,
+              "rowHeader": 1,
+              "emptyGridMessage": "No hay datos que mostrar",
+              "columns": [
+               {
+                "type": "a!gridColumn",
+                "label": "Estado",
+                "value": "{fv!row.categoria}"
+               },
+               {
+                "type": "a!gridColumn",
+                "label": "Expedientes",
+                "value": "{fv!row.s1|num}",
+                "align": "END"
+               }
+              ],
+              "$chart": {
+               "type": "a!barChartField",
+               "labelPosition": "COLLAPSED",
+               "data": "recordType!EXP Expediente",
+               "height": "AUTO",
+               "showDataLabels": true,
+               "$categories": [
+                "Borrador",
+                "En tramitación",
+                "Pendiente de aprobación",
+                "Aprobado",
+                "Cerrado",
+                "Rechazado"
+               ],
+               "config": {
+                "type": "a!barChartConfig",
+                "primaryGrouping": {
+                 "type": "a!grouping",
+                 "field": "recordType!EXP Expediente.fields.estado"
+                },
+                "secondaryGrouping": {
+                 "type": "a!grouping",
+                 "field": "recordType!EXP Expediente.fields.estado"
+                },
+                "measures": [
+                 {
+                  "type": "a!measure",
+                  "function": "COUNT",
+                  "field": "recordType!EXP Expediente.fields.id",
+                  "label": "Expedientes"
+                 }
+                ]
+               },
+               "stacking": "NORMAL",
+               "showLegend": false,
+               "colorScheme": {
+                "type": "a!colorSchemeCustom",
+                "colors": [
+                 "#525C65",
+                 "#1A2732",
+                 "#9A5200",
+                 "#0E6B00",
+                 "#525C65",
+                 "#B2002C"
+                ]
+               }
+              },
+              "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+              "showWhen": "local!tablaEstado"
+             }
+            ]
            }
           ]
          }

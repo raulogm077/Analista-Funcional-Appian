@@ -3099,6 +3099,7 @@
     ],
     "local!abierta": null,
     "local!areaSel": null,
+    "local!tablaArea": false,
     "local!abiertos": [],
     "local!docs": [
      {
@@ -3763,35 +3764,128 @@
         "padding": "STANDARD",
         "contents": [
          {
-          "type": "a!columnChartField",
-          "label": "Incidencias por área (pulse una barra)",
-          "data": "data!incidencias",
-          "height": "SHORT",
-          "config": {
-           "type": "a!columnChartConfig",
-           "primaryGrouping": {
-            "type": "a!grouping",
-            "field": "recordType!AENA Incidencia.fields.area"
-           },
-           "measures": [
-            {
-             "type": "a!measure",
-             "function": "COUNT",
-             "field": "recordType!AENA Incidencia.fields.id",
-             "label": "Incidencias"
-            }
-           ],
-           "link": {
-            "type": "a!dynamicLink",
-            "saveInto": [
+          "type": "a!sectionLayout",
+          "marginBelow": "NONE",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "labelPosition": "COLLAPSED",
+            "value": [
              {
-              "type": "a!save",
-              "target": "local!areaSel",
-              "value": "{fv!selection[recordType!AENA Incidencia.fields.area]}"
+              "type": "a!richTextIcon",
+              "icon": "{if(local!tablaArea, \"bar-chart\", \"table\")}",
+              "color": "ACCENT"
+             },
+             " ",
+             {
+              "type": "a!richTextItem",
+              "text": "{if(local!tablaArea, \"Ver como gráfico\", \"Ver como tabla\")}",
+              "link": {
+               "type": "a!dynamicLink",
+               "saveInto": [
+                {
+                 "type": "a!save",
+                 "target": "local!tablaArea",
+                 "value": "{not(local!tablaArea)}"
+                }
+               ]
+              },
+              "linkStyle": "STANDALONE",
+              "style": "STRONG"
              }
-            ]
+            ],
+            "align": "RIGHT",
+            "marginBelow": "LESS"
+           },
+           {
+            "type": "a!columnChartField",
+            "label": "Incidencias por área (pulse una barra)",
+            "data": "data!incidencias",
+            "height": "SHORT",
+            "config": {
+             "type": "a!columnChartConfig",
+             "primaryGrouping": {
+              "type": "a!grouping",
+              "field": "recordType!AENA Incidencia.fields.area"
+             },
+             "measures": [
+              {
+               "type": "a!measure",
+               "function": "COUNT",
+               "field": "recordType!AENA Incidencia.fields.id",
+               "label": "Incidencias"
+              }
+             ],
+             "link": {
+              "type": "a!dynamicLink",
+              "saveInto": [
+               {
+                "type": "a!save",
+                "target": "local!areaSel",
+                "value": "{fv!selection[recordType!AENA Incidencia.fields.area]}"
+               }
+              ]
+             }
+            },
+            "showWhen": "not(local!tablaArea)"
+           },
+           {
+            "type": "a!gridField",
+            "labelPosition": "COLLAPSED",
+            "borderStyle": "LIGHT",
+            "shadeAlternateRows": false,
+            "spacing": "STANDARD",
+            "pageSize": 20,
+            "rowHeader": 1,
+            "emptyGridMessage": "No hay datos que mostrar",
+            "columns": [
+             {
+              "type": "a!gridColumn",
+              "label": "Área",
+              "value": "{fv!row.categoria}"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Incidencias",
+              "value": "{fv!row.s1|num}",
+              "align": "END"
+             }
+            ],
+            "$chart": {
+             "type": "a!columnChartField",
+             "label": "Incidencias por área (pulse una barra)",
+             "data": "data!incidencias",
+             "height": "SHORT",
+             "config": {
+              "type": "a!columnChartConfig",
+              "primaryGrouping": {
+               "type": "a!grouping",
+               "field": "recordType!AENA Incidencia.fields.area"
+              },
+              "measures": [
+               {
+                "type": "a!measure",
+                "function": "COUNT",
+                "field": "recordType!AENA Incidencia.fields.id",
+                "label": "Incidencias"
+               }
+              ],
+              "link": {
+               "type": "a!dynamicLink",
+               "saveInto": [
+                {
+                 "type": "a!save",
+                 "target": "local!areaSel",
+                 "value": "{fv!selection[recordType!AENA Incidencia.fields.area]}"
+                }
+               ]
+              }
+             }
+            },
+            "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+            "showWhen": "local!tablaArea"
            }
-          }
+          ]
          },
          {
           "type": "a!sectionLayout",

@@ -1714,9 +1714,12 @@
       h("div", { class: "page-pad" }, h("div", { class: `form w-${w}` }, tbFull ? null : tbEl, stack(n.contents, ctx, ctx.key + ".c"), formVal, btns)));
   };
   function valMsg(v, ctx) { return v && typeof v === "object" ? interp(v.message || "", ctx) : interp(v, ctx); }
-  // validaciones de formulario, sección o asistente: tras pulsar un botón que valida o, con a!validationMessage(validateAfter: "REFRESH"), en cuanto se cumplen
+  // validaciones de formulario, sección o asistente: tras pulsar un botón que valida o, con a!validationMessage(validateAfter: "REFRESH"), en cuanto se cumplen.
+  // Como en Appian, una validación activa impide enviar (aunque todavía no se vea).
   function vmsgs(list, ctx, style) {
-    return arr(list).filter((v) => v && visible(v, ctx) && (invalid[ctx.scope] || (typeof v === "object" && up(P(v, "validateAfter", ctx, "SUBMIT")) === "REFRESH")))
+    const on = arr(list).filter((v) => v && visible(v, ctx) && String(valMsg(v, ctx)).trim() !== "");
+    on.forEach(() => VALS.push({ scope: ctx.scope }));
+    return on.filter((v) => invalid[ctx.scope] || (typeof v === "object" && up(P(v, "validateAfter", ctx, "SUBMIT")) === "REFRESH"))
       .map((v) => h("div", { class: "ferr", style }, icon("exclamation-circle"), valMsg(v, ctx)));
   }
   R["a!headerContentLayout"] = (n, ctx) => {
@@ -1773,7 +1776,7 @@
     const k = "grid:" + ctx.key;
     const st = UI[k] || (UI[k] = { page: 0, q: "", sort: null, desc: false, filters: {} });
     if (st.sort == null && n.initialSorts) { const s0 = arr(n.initialSorts)[0]; if (s0) { st.sort = fieldOf(s0.field); st.desc = s0.ascending === false; } }
-    let rows = n.$rows ? rowsOf(n.$rows) : typeof n.data === "string" ? rowsOf(n.data) : arr(n.data);
+    let rows = n.$chart ? chartRows(n.$chart, ctx) : n.$rows ? rowsOf(n.$rows) : typeof n.data === "string" ? rowsOf(n.data) : arr(n.data);
     if (n.$filter) rows = rows.filter((r) => truthy(evalExpr(n.$filter, Object.assign({}, ctx, { row: r }))));
     const ufs = arr(n.userFilters).map((u) => (typeof u === "string" ? { field: fieldOf(u), label: fieldOf(u).replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().replace(/^./, (c) => c.toUpperCase()) } : u));
     for (const f in st.filters) if (st.filters[f] != null) rows = rows.filter((r) => String(r[f]) === String(st.filters[f]));
@@ -1799,7 +1802,7 @@
       const inp = h("input", { class: "inp", id: "f-" + ctx.key + "-q", placeholder: T.search, "aria-label": T.search, value: st.q, onchange: (e) => { st.q = e.target.value; st.page = 0; schedule(); } });
       tb.appendChild(h("div", { class: "search" }, icon("search"), inp));
     }
-    const allRows = n.$rows ? rowsOf(n.$rows) : typeof n.data === "string" ? rowsOf(n.data) : arr(n.data);
+    const allRows = n.$chart ? chartRows(n.$chart, ctx) : n.$rows ? rowsOf(n.$rows) : typeof n.data === "string" ? rowsOf(n.data) : arr(n.data);
     const ufTxt = (v) => (v === true ? "Sí" : v === false ? "No" : String(v));
     ufs.forEach((f) => {
       const vals = [...new Set(allRows.map((r) => r[f.field]).filter((v) => v != null))].sort();
@@ -1939,6 +1942,25 @@
       ? sv2.map((sv) => ({ label: sv, data: cats.map((c) => measureOf(ms[0], rows.filter((r) => r[g1] === c && r[g2] === sv))), color: null }))
       : ms.map((m) => ({ label: m.label || (up(m.function) === "COUNT" ? "Total" : fieldOf(m.field)), data: cats.map((c) => measureOf(m, rows.filter((r) => r[g1] === c))), color: null }));
     return { cats: cats.map(catLabel), raw: cats, g1, series };
+  }
+  // filas de la tabla alternativa de un gráfico ($chart en a!gridField, helper chart_table): una por categoría, con la categoría
+  // y una columna por serie (s1, s2…); con la agrupación secundaria igual a la principal (colores por estado), una sola columna
+  function chartRows(c, ctx) {
+    let cats, series;
+    if (c.data && c.config) {
+      const a = aggregate(c, ctx);
+      const g2 = c.config.secondaryGrouping ? fieldOf(c.config.secondaryGrouping.field) : null;
+      cats = a.cats;
+      series = g2 && g2 === a.g1 ? [{ data: cats.map((x, i) => a.series.reduce((t, s) => t + (Number(s.data[i]) || 0), 0)) }] : a.series;
+    } else if (c.type === "a!pieChartField") {
+      const ss = arr(c.series).filter((s) => visible(s, ctx));
+      cats = ss.map((s) => P(s, "label", ctx, ""));
+      series = [{ data: ss.map((s) => Number(P(s, "data", ctx, 0)) || 0) }];
+    } else {
+      cats = arr(P(c, "categories", ctx, []));
+      series = chartSeries(c, ctx);
+    }
+    return cats.map((cat, i) => { const r = { id: i + 1, categoria: cat }; series.forEach((s, j) => { r["s" + (j + 1)] = arr(s.data)[i]; }); return r; });
   }
   function chartSeries(n, ctx) { if (n.data && n.config) return aggregate(n, ctx).series; return arr(n.series).filter((s) => visible(s, ctx)).map((s) => ({ label: P(s, "label", ctx, ""), data: arr(P(s, "data", ctx, [])).map(Number), color: s.color ? hexOf(P(s, "color", ctx)) || color(P(s, "color", ctx)) : null, links: arr(s.links) })); }
   const nice = (m) => { if (m <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(m))); const f = m / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; };
@@ -2172,7 +2194,9 @@
     const ifc = scr.interface || {};
     let footer = null;
     const ctx = screenCtx(scr, d.params, { inDialog: true, dialogFooter: (f) => (footer = f) });
-    const w = up(ifc.contentsWidth || (ifc.type === "a!wizardLayout" ? "MEDIUM" : "NARROW"));
+    // ancho del cuadro: el de la acción de registro (Dialog Width, $dialogWidth); el formulario va a FULL dentro
+    const cw = up(ifc.contentsWidth || "");
+    const w = up(scr.$dialogWidth || (cw && cw !== "FULL" ? cw : ifc.type === "a!wizardLayout" ? "MEDIUM" : "NARROW"));
     const body = render(ifc, ctx, scr.id);
     if (!footer && ifc.buttons) {
       const b = render(ifc.buttons, ctx, scr.id + ".btn");
@@ -2205,7 +2229,12 @@
     const pages = arr(site.pages);
     const curScr = byId[route.screen] || {};
     const curPage = pages.find((p) => p.screen === route.screen || (p.pages || []).some((x) => x.screen === route.screen)) || pages.find((p) => arr(p.includes).includes(route.screen) || arr(p.includes).includes(curScr.recordType));
-    const nav = h("nav", { class: "site-nav", "aria-label": "Páginas del site" }, pages.map((p) => h("button", { type: "button", class: p === curPage ? "sel" : "", "aria-current": p === curPage ? "page" : null, onclick: () => { if (!inspector) { hist.length = 0; route = null; go(p.screen || (p.pages && p.pages[0].screen)); rerender(); } } }, site.showPageIcons !== false && p.icon ? icon(p.icon) : null, p.title)));
+    // estilo de la barra (ux-site-branding.html#style-header-bar-only): Helium pinta el icono encima del nombre; Mercury y Oxygen no pintan
+    // iconos en web y solo pintan los nombres si hay más de una página; la barra lateral (SIDEBAR) siempre lleva icono
+    const bs = BRAND.site || {}, lay = up(bs.navigationLayout || "HEADER_BAR"), hstyle = up(bs.headerBarStyle || "MERCURY");
+    const withIcons = site.showPageIcons !== false && (lay === "SIDEBAR" || hstyle === "HELIUM");
+    const withNames = lay === "SIDEBAR" || hstyle === "HELIUM" || pages.length > 1;
+    const nav = h("nav", { class: "site-nav" + (hstyle === "HELIUM" && lay !== "SIDEBAR" ? " helium" : ""), "aria-label": "Páginas del site" }, withNames ? pages.map((p) => h("button", { type: "button", class: p === curPage ? "sel" : "", "aria-current": p === curPage ? "page" : null, onclick: () => { if (!inspector) { hist.length = 0; route = null; go(p.screen || (p.pages && p.pages[0].screen)); rerender(); } } }, withIcons && p.icon ? icon(p.icon) : null, p.title)) : []);
     const user = site.user || { name: "Usuario" };
     const hdr = h("header", { class: "site-hdr", "data-sail": "Site · header bar", "data-k": "site" },
       h("div", { class: "site-brand" }, h("span", { html: LOGO, style: { display: "inline-flex" } }), site.displayName ? h("span", { class: "dn" }, site.displayName) : null),
@@ -2258,6 +2287,7 @@
       const PRI = { CRITICA: ["🔴", 0], IMPORTANTE: ["🟡", 1], MEJORA: ["🟢", 2] };
       if (qs.length) { p.appendChild(h("h4", null, `Preguntas abiertas (${qs.length})`)); qs.slice().sort((a, b) => ((PRI[a.priority] || [0, 3])[1]) - ((PRI[b.priority] || [0, 3])[1])).forEach((q) => p.appendChild(h("div", { class: "q" }, h("strong", null, `${PRI[q.priority] ? PRI[q.priority][0] + " " : ""}${q.id} `), q.text, q.screen ? h("div", { class: "meta", style: { padding: 0 } }, "Pantalla: " + (screenLabel(byId[q.screen]) || q.screen)) : null))); }
       const asum = [];
+      if (SPEC.app && SPEC.app.$assumption) asum.push([{ title: "Aplicación" }, SPEC.app.$assumption]); // p. ej. la versión de Appian supuesta
       screens.forEach((s) => arr(s.assumptions).forEach((a) => asum.push([s, a])));
       screens.forEach((s) => (function walk(o) { if (!o || typeof o !== "object") return; if (o.$assumption) asum.push([s, o.$assumption]); for (const k in o) if (k !== "$assumption") walk(o[k]); })(s.interface || s.views));
       if (asum.length) { p.appendChild(h("h4", null, `Supuestos a validar (${asum.length})`)); asum.forEach(([s, a]) => p.appendChild(h("div", { class: "q", style: { borderColor: "#0078d4", background: "#f0f6fc" } }, a, h("div", { class: "meta", style: { padding: 0 } }, screenLabel(s))))); }

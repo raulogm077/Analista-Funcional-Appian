@@ -59,6 +59,7 @@ sencillo. No mezcles en una pantalla dos bloques que resuelven lo mismo (p. ej. 
 | `grid_with_selection(data, sel_var, columns, empty, label_expr, …, action)` | Elegir varias filas para una acción en bloque; el panel lista lo elegido y el botón se activa al elegir. | Una sola fila: acción en la ficha. |
 | `drilldown(var, grid, detail)` + `drill_link` | El detalle no cabe al lado: sustituye al grid y «Volver» arriba a la izquierda. | Nunca pongas el detalle **debajo** del grid. |
 | `chart_link(var, recordType, field)` en `config.link` | Informe en el que se pulsa una barra para ver sus registros (el grid filtra por `var`). | Gráficos decorativos o de un solo valor. |
+| `chart_table(var, chart, cat_label)` | Siempre que hay un gráfico: «Ver como tabla» alterna el gráfico y una tabla con sus mismas categorías, medidas y filtros (alternativa accesible, también del drilldown). | Minigráfico de un KPI (`kpi_sparkline`): ya lleva su texto en `accessibilityText`. |
 | `more_less(text_expr, var)` | Descripciones de longitud desigual en un grid. | Textos cortos: se muestran enteros. |
 | `document_list(items, search_var)` | Biblioteca de documentos con buscador. | Pocos documentos en una ficha: `doc_line`. |
 | `comments(items)` | Notas o conversación sobre un caso (más reciente primero). | Historial automático: `a!eventHistoryListField`. |

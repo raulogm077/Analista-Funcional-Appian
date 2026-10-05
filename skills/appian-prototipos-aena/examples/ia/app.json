@@ -1945,7 +1945,8 @@
    ],
    "local": {
     "local!doc": null,
-    "local!tab": 1
+    "local!tab": 1,
+    "local!tablaGrafico": false
    },
    "interface": {
     "type": "a!headerContentLayout",
@@ -2148,30 +2149,130 @@
         "icon": "sitemap",
         "contents": [
          {
-          "type": "a!columnChartField",
-          "label": "Incidencias por mes y área (pulse la leyenda para filtrar)",
-          "data": "data!ventas",
-          "allowLegendFiltering": true,
-          "height": "SHORT",
-          "config": {
-           "type": "a!columnChartConfig",
-           "primaryGrouping": {
-            "type": "a!grouping",
-            "field": "mes",
-            "interval": "MONTH_SHORT_TEXT"
+          "type": "a!sectionLayout",
+          "marginBelow": "NONE",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextIcon",
+              "icon": "{if(local!tablaGrafico, \"bar-chart\", \"table\")}",
+              "color": "ACCENT"
+             },
+             " ",
+             {
+              "type": "a!richTextItem",
+              "text": "{if(local!tablaGrafico, \"Ver como gráfico\", \"Ver como tabla\")}",
+              "link": {
+               "type": "a!dynamicLink",
+               "saveInto": [
+                {
+                 "type": "a!save",
+                 "target": "local!tablaGrafico",
+                 "value": "{not(local!tablaGrafico)}"
+                }
+               ]
+              },
+              "linkStyle": "STANDALONE",
+              "style": "STRONG"
+             }
+            ],
+            "align": "RIGHT",
+            "marginBelow": "LESS"
            },
-           "secondaryGrouping": {
-            "type": "a!grouping",
-            "field": "area"
+           {
+            "type": "a!columnChartField",
+            "label": "Incidencias por mes y área (pulse la leyenda para filtrar)",
+            "data": "data!ventas",
+            "allowLegendFiltering": true,
+            "height": "SHORT",
+            "config": {
+             "type": "a!columnChartConfig",
+             "primaryGrouping": {
+              "type": "a!grouping",
+              "field": "mes",
+              "interval": "MONTH_SHORT_TEXT"
+             },
+             "secondaryGrouping": {
+              "type": "a!grouping",
+              "field": "area"
+             },
+             "measures": [
+              {
+               "type": "a!measure",
+               "function": "SUM",
+               "field": "n"
+              }
+             ]
+            },
+            "showWhen": "not(local!tablaGrafico)"
            },
-           "measures": [
-            {
-             "type": "a!measure",
-             "function": "SUM",
-             "field": "n"
-            }
-           ]
-          }
+           {
+            "type": "a!gridField",
+            "labelPosition": "COLLAPSED",
+            "borderStyle": "LIGHT",
+            "shadeAlternateRows": false,
+            "spacing": "STANDARD",
+            "pageSize": 20,
+            "rowHeader": 1,
+            "emptyGridMessage": "No hay datos que mostrar",
+            "columns": [
+             {
+              "type": "a!gridColumn",
+              "label": "Mes",
+              "value": "{fv!row.categoria}"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Mantenimiento",
+              "value": "{fv!row.s1|num}",
+              "align": "END"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Sistemas",
+              "value": "{fv!row.s2|num}",
+              "align": "END"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Operaciones",
+              "value": "{fv!row.s3|num}",
+              "align": "END"
+             }
+            ],
+            "$chart": {
+             "type": "a!columnChartField",
+             "label": "Incidencias por mes y área (pulse la leyenda para filtrar)",
+             "data": "data!ventas",
+             "allowLegendFiltering": true,
+             "height": "SHORT",
+             "config": {
+              "type": "a!columnChartConfig",
+              "primaryGrouping": {
+               "type": "a!grouping",
+               "field": "mes",
+               "interval": "MONTH_SHORT_TEXT"
+              },
+              "secondaryGrouping": {
+               "type": "a!grouping",
+               "field": "area"
+              },
+              "measures": [
+               {
+                "type": "a!measure",
+                "function": "SUM",
+                "field": "n"
+               }
+              ]
+             }
+            },
+            "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+            "showWhen": "local!tablaGrafico"
+           }
+          ]
          },
          {
           "type": "a!recordKnowledgeGraph",

@@ -5,8 +5,9 @@ el catálogo de iconos de Appian, la integridad de navegación, las reglas del p
 la versión de Appian del cliente (app.appianVersion, schemas/appian-versions.json) y la guía UX
 del SAIL Design System (avisos «UX · »).
 
-Uso:  python3 validate.py app.json [--brand aena] [--quiet]
-Sale con código 1 si hay errores. Los avisos no bloquean.
+Uso:  python3 validate.py app.json [--brand aena] [--quiet] [--anterior app-v1.2.json --confirmadas PAN-02,PAN-05]
+Sale con código 1 si hay errores. Los avisos no bloquean. Con --anterior y --confirmadas, cambiar una pantalla confirmada
+por el cliente (su 'ref' lleva uno de esos IDs) o un diálogo que abre es error.
 """
 import json, re, sys, argparse
 from pathlib import Path
@@ -18,6 +19,7 @@ EXPR = re.compile(r"[{}!(]")
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$")
 ICON_KEYS = {"icon", "stampIcon", "labelIcon", "$icon"}
 SCREEN_TYPES = {"page", "record", "form", "dialog"}
+DIALOG_WIDTHS = ("EXTRA_NARROW", "NARROW", "MEDIUM", "MEDIUM_PLUS", "WIDE", "FULL")  # $dialogWidth: ancho del cuadro en el prototipo
 # Funciones SAIL que no se pintan solas: las consume su componente padre
 SUBOBJECTS = {
     "a!richTextItem", "a!richTextIcon", "a!richTextBulletedList", "a!richTextNumberedList", "a!richTextListItem", "a!richTextImage",
@@ -345,6 +347,8 @@ def validate(spec, brand=None, spec_dir=None):
             walk(s.get("interface"), where)
         if st == "dialog" and s.get("openFrom"):
             check_target(where, s["openFrom"], "openFrom")
+        if s.get("$dialogWidth") is not None and (st != "dialog" or s["$dialogWidth"] not in DIALOG_WIDTHS):
+            rep.err(where, f"$dialogWidth solo en diálogos y con uno de: {', '.join(DIALOG_WIDTHS)}")
 
     for i, p in enumerate(spec.get("site", {}).get("pages", [])):
         if p.get("screen"):
@@ -492,7 +496,14 @@ def check_placement(spec, rep, newer=None, declared=None):
 # Avisos con el prefijo "UX · ", uno por nodo (sus problemas van juntos) o por pantalla; nunca bloquean.
 # ---------------------------------------------------------------------------
 UX = "UX · "
-ANALYSIS_ID = re.compile(r"\b(?:RF|RB|PAN|ACT|CU|INT|NOT)-\d+\b")
+# IDs del análisis (ddf.md de appian-functional-analyst): RF-01, RB-004, HU-03, HU-03.2, PAN-02… Un código del dominio con año
+# (DOC-2026-0001) no es un ID del análisis: tras el número no puede venir «-dígito».
+ANALYSIS_ID = re.compile(r"\b(?:RF|RB|PAN|ACT|CU|INT|NOT|HU|AV|DOC|PC|ESC|DT|PT)-\d+(?:\.\d+)?\b(?!-\d)")
+CHARTS = ("a!columnChartField", "a!barChartField", "a!lineChartField", "a!areaChartField", "a!pieChartField", "a!scatterChartField")
+DESTRUCTIVE = re.compile(r"^\s*(borrar|eliminar|suprimir|anular|dar de baja)\b", re.I)  # pérdida real de datos (BP 02 §4.9)
+LINK_TYPES = {"a!dynamicLink", "a!recordLink", "a!safeLink", "a!startProcessLink", "a!submitLink", "a!processTaskLink", "a!documentDownloadLink",
+              "a!userRecordLink", "a!authorizationLink", "a!newsEntryLink", "a!reportLink"}
+VAR = re.compile(r"\b(?:local|ri)!\w+")
 # ux-accessibility.html: etiqueta de sección -> H por defecto; heading-component.html: tamaño -> H por defecto
 SECTION_TAG = {"LARGE_PLUS": "H1", "LARGE": "H1", "MEDIUM_PLUS": "H2", "MEDIUM": "H2", "SMALL": "H3", "EXTRA_SMALL": "H4"}
 HEADING_TAG = {"LARGE_PLUS": "H1", "LARGE": "H2", "MEDIUM_PLUS": "H3", "MEDIUM": "H4", "SMALL": "H5", "EXTRA_SMALL": "H6"}
@@ -671,8 +682,80 @@ def _has_border(n):
     return n.get("showBorder", True) is True  # por defecto true en a!cardLayout y a!boxLayout; una expresión no se evalúa
 
 
-def _ux_interface(iface, where, screen_type, add, record_sources=frozenset()):
+def _initial(scr, spec, ref):
+    """Valor inicial de «local!a.b» en 'local' de la pantalla o en 'state' de la app: (encontrado, valor)."""
+    m = re.fullmatch(r"\s*((?:local|ri)!\w+)((?:\.\w+)*)\s*", str(ref))
+    if not m:
+        return False, None
+    pool = {**((spec or {}).get("state") or {}), **((scr or {}).get("local") or {})}
+    if m.group(1) not in pool:
+        return False, None
+    v = pool[m.group(1)]
+    for k in [x for x in m.group(2).split(".") if x]:
+        if not isinstance(v, dict) or k not in v:
+            return True, None
+        v = v[k]
+    return True, v
+
+
+def _rows(spec, source):
+    """Filas de ejemplo de 'recordType!X…' o 'data!x' (para contar las categorías de un gráfico)."""
+    data = (spec or {}).get("data") or {}
+    if not isinstance(source, str):
+        return None
+    if source.startswith("data!"):
+        d = data.get(source[5:])
+    else:
+        rt = source.replace("recordType!", "").split(".")[0]
+        d = next((x for x in data.values() if isinstance(x, dict) and x.get("recordType") == rt), None)
+    return d.get("rows", []) if isinstance(d, dict) else d if isinstance(d, list) else None
+
+
+def _chart_points(n, spec):
+    """Número de categorías o puntos de un gráfico: categories, $categories, la agrupación principal sobre los datos de ejemplo
+    o la serie más larga. None si no se puede saber."""
+    for k in ("categories", "$categories"):
+        if isinstance(n.get(k), list):
+            return len(n[k])
+    cfg = n.get("config") if isinstance(n.get("config"), dict) else {}
+    grp = cfg.get("primaryGrouping") if isinstance(cfg.get("primaryGrouping"), dict) else {}
+    rows = _rows(spec, n.get("data"))
+    if grp.get("field") and rows is not None:
+        f = str(grp["field"]).split(".")[-1]
+        cut = 7 if "MONTH" in str(grp.get("interval", "")).upper() else 4 if "YEAR" in str(grp.get("interval", "")).upper() else None
+        return len({str(r.get(f))[:cut] if cut else r.get(f) for r in rows if isinstance(r, dict) and r.get(f) is not None})
+    lens = [len(s["data"]) for s in (n.get("series") or []) if isinstance(s, dict) and isinstance(s.get("data"), list)]
+    return max(lens) if lens else None
+
+
+def _cond_vars(n, anc):
+    """Variables de los showWhen del nodo y de sus antecesores (conmutador gráfico ↔ tabla)."""
+    return {v for x in [n] + [a[2] for a in anc] for v in VAR.findall(str(x.get("showWhen") or ""))}
+
+
+def _cell_actions(value):
+    """Acciones de una celda de grid: botones y enlaces distintos; las condicionadas (showWhen) se asumen alternativas y cuentan como una."""
+    fixed, cond = set(), False
+    for n, p, a in _nodes(value, "c"):
+        found = []
+        if n["type"] == "a!buttonWidget":
+            found.append(json.dumps(n, sort_keys=True, ensure_ascii=False))
+        lk = n.get("link")
+        if isinstance(lk, dict) and lk.get("type") in LINK_TYPES:
+            found.append(json.dumps(lk, sort_keys=True, ensure_ascii=False))
+        for lk in (n.get("links") if n["type"] == "a!linkField" and isinstance(n.get("links"), list) else []):
+            if isinstance(lk, dict):
+                found.append(json.dumps(lk, sort_keys=True, ensure_ascii=False))
+        if found and (n.get("showWhen") is not None or any(x[2].get("showWhen") is not None for x in a)):
+            cond = True
+        elif found:
+            fixed.update(found)
+    return len(fixed) + (1 if cond else 0)
+
+
+def _ux_interface(iface, where, screen_type, add, record_sources=frozenset(), scr=None, spec=None):
     """Reglas de una interfaz (pantalla o vista de registro). add(ruta, mensaje) acumula los problemas por nodo.
+    scr / spec: la pantalla y la app (valores iniciales de las variables y datos de ejemplo de los gráficos).
     Devuelve las rutas de sus nodos en orden de documento (para emitir los avisos en ese orden)."""
     nodes = list(_nodes(iface, where))
     # desviación deliberada y justificada: "$uxIgnore": "motivo" en un nodo silencia sus avisos UX (el motivo queda en el spec)
@@ -702,6 +785,8 @@ def _ux_interface(iface, where, screen_type, add, record_sources=frozenset()):
             add(p, "acción destructiva: usa style GHOST con color NEGATIVE (nunca SOLID)")
         if not n.get("label") and not n.get("accessibilityText"):
             add(p, "botón solo con icono sin accessibilityText: los lectores de pantalla no sabrán qué hace")
+        if (n.get("color") == "NEGATIVE" or DESTRUCTIVE.search(str(n.get("label") or ""))) and not (n.get("confirmHeader") or n.get("confirmMessage")):
+            add(p, "acción destructiva sin confirmación: añade confirmHeader (el objeto) y confirmMessage (la consecuencia), BP 02 §4.9")
 
     # --- cards y boxes (ux-card-layout.html, ux-box-layout.html, ux-avoiding-clutter.html) ---
     for n, p, a in nodes:
@@ -766,6 +851,12 @@ def _ux_interface(iface, where, screen_type, add, record_sources=frozenset()):
         ps = n.get("pageSize")
         if (isinstance(ps, int) or (isinstance(ps, str) and ps.isdigit())) and int(ps) > 50:
             add(p, f"pageSize {ps}: la guía usa 5–10 junto a otro contenido, 25 si hay dudas y 50 como máximo")
+        if len(cols) > 7 and all(isinstance(c, dict) and c.get("type") == "a!gridColumn" for c in cols):
+            add(p, f"{len(cols)} columnas: la guía admite 7 (consolida con two_line o lleva lo secundario a la ficha)")
+        for c in cols:
+            if isinstance(c, dict) and _cell_actions(c.get("value")) > 1:
+                add(p, f"más de una acción en la celda de «{c.get('label') or 'sin título'}»: una por celda, o una barra de herramientas encima del grid (BP 02 §5.4)")
+                break
     styles = [(str(n.get("borderStyle", "LIGHT")), str(n.get("spacing", "STANDARD"))) for n, p in grids]
     for (n, p), st in zip(grids, styles):
         if st != styles[0]:
@@ -795,8 +886,9 @@ def _ux_interface(iface, where, screen_type, add, record_sources=frozenset()):
     # --- navegación y estructura ---
     for n, p, a in nodes:
         t = n["type"]
-        if t == "a!tabLayout" and isinstance(n.get("tabs"), list) and len(n["tabs"]) > 7:
-            add(p, f"{len(n['tabs'])} pestañas: la guía admite 5–7 (agrupa contenido o usa secciones)")
+        # secondary-navigation.html: horizontal con menos de 7; vertical (a!tabLayout orientation VERTICAL, 26.7) con más de 6, sin límite
+        if t == "a!tabLayout" and isinstance(n.get("tabs"), list) and len(n["tabs"]) > 6 and str(n.get("orientation", "HORIZONTAL")) == "HORIZONTAL":
+            add(p, f"{len(n['tabs'])} pestañas horizontales: con más de 6 usa orientation VERTICAL (26.7+; antes, side_nav) o agrupa contenido")
         if t == "a!wizardLayout" and isinstance(n.get("steps"), list):
             k, style = len(n["steps"]), str(n.get("style", "DOT_VERTICAL"))
             if k > 5 and style.endswith("_HORIZONTAL"):
@@ -851,6 +943,38 @@ def _ux_interface(iface, where, screen_type, add, record_sources=frozenset()):
             for m in re.findall(r"\{([^{}]*similarityScore[^{}]*)\}", str(x or "")):
                 if not re.match(r"\s*(if|a!match|choose|displayvalue)\s*\(", m):
                     add(p, "puntuación de similitud visible: no muestres el número; ordena por relevancia o usa la calidad en palabras (match_quality)")
+    # --- campos: etiqueta siempre (BP 02 §9.3) y radio con una opción marcada (BP 02 §4.8, ux-inputs.html) ---
+    for n, p, a in nodes:
+        t = n["type"]
+        if t in INPUTS and not str(n.get("label") or "").strip() and not (t in ("a!booleanCheckboxField", "a!toggleField") and n.get("choiceLabel")):
+            add(p, "campo sin label: los lectores de pantalla lo leen; si no debe verse, labelPosition COLLAPSED con la etiqueta (BP 02 §9.3)")
+        if t == "a!radioButtonField" and isinstance(n.get("choiceLabels"), list) and 1 <= len(n["choiceLabels"]) < 5 \
+                and not n.get("readOnly") and n.get("disabled") in (None, False):
+            found, val = _initial(scr, spec, n.get("value"))
+            if found and val in (None, "", []):
+                add(p, "radio sin opción marcada: marca por defecto la más habitual (BP 02 §4.8); si el usuario debe decidir sin sugerencia, justifícalo con $uxIgnore")
+    # --- gráficos: tabla alternativa (BP 02 §9.5) y uno por fila si tienen más de 7 puntos (BP 02 §5A.3) ---
+    grid_vars = [_cond_vars(n, a) for n, p, a in nodes if n["type"] in ("a!gridField", "a!gridLayout")]
+    for n, p, a in nodes:
+        if n["type"] not in CHARTS or (n.get("height") == "MICRO" and n.get("accessibilityText")):  # minigráfico con su texto equivalente
+            continue
+        cv = _cond_vars(n, a)
+        if not any(cv & g for g in grid_vars):
+            add(p, "gráfico sin tabla alternativa: conmutador gráfico ↔ tabla con los mismos datos (chart_table), BP 02 §9.5")
+        k = _chart_points(n, spec)
+        shared = any(t == "a!columnsLayout" and pm == "columns" and len([c for c in (x.get("columns") or []) if isinstance(c, dict) and c.get("contents")]) > 1
+                     for t, pm, x in a) or any(t == "a!sideBySideLayout" and len(x.get("items") or []) > 1 for t, pm, x in a)
+        if k and k > 7 and shared:
+            add(p, f"gráfico de {k} puntos o categorías en una fila compartida: con más de 7 va solo, a todo el ancho (BP 02 §5A.3)")
+    # --- título de la pantalla (H1) y diálogos a ancho FULL (ux-form-layout.html#use-full-width-when-displaying-forms-in-dialogs) ---
+    rp = f"{where}<{root}>"
+    if screen_type == "page" and not h1:
+        add(rp, "pantalla sin título H1: empieza por la cabecera de página (page_header o hero_header)")
+    if screen_type in ("form", "dialog") and root in ("a!formLayout", "a!wizardLayout") and not iface.get("titleBar") and not h1:
+        add(rp, "formulario sin título: titleBar con el verbo de la acción")
+    if screen_type == "dialog" and root in ("a!formLayout", "a!wizardLayout") and "contentsWidth" in iface \
+            and not EXPR.search(str(iface["contentsWidth"])) and str(iface["contentsWidth"]) != "FULL":
+        add(rp, f"diálogo con contentsWidth {iface['contentsWidth']}: un formulario o asistente en diálogo va a FULL; el ancho del cuadro lo fija la acción de registro ($dialogWidth en el prototipo)")
     if screen_type == "form" and root == "a!formLayout" and str(iface.get("contentsWidth", "")) in ("WIDE", "FULL"):
         # las tablas (grid editable o de solo lectura) y los layouts de columnas o paneles justifican el ancho
         if not any(n["type"] in ("a!paneLayout", "a!columnsLayout", "a!gridLayout", "a!gridField") for n, p, a in _nodes(iface.get("contents"), where)):
@@ -858,11 +982,65 @@ def _ux_interface(iface, where, screen_type, add, record_sources=frozenset()):
     return [p for n, p, a in nodes]
 
 
+def _targets(o, datasets):
+    """Pantallas a las que se llega desde o: $action.goto/dialog (también dinámicos, con los valores de los datos), migas
+    y a!recordLink (a la vista del record type)."""
+    out, rts = set(), set()
+
+    def walk(x):
+        if isinstance(x, dict):
+            acts = x.get("$action")
+            for ac in (acts if isinstance(acts, list) else [acts] if isinstance(acts, dict) else []):
+                for k in ("goto", "dialog"):
+                    sid = ac.get(k)
+                    m = re.fullmatch(r"\{(?:fv!row|fv!item|rv!record)\.(\w+)\}", str(sid)) if sid else None
+                    if m:
+                        out.update(r.get(m.group(1)) for d in datasets.values() for r in (d.get("rows", []) if isinstance(d, dict) else d if isinstance(d, list) else [])
+                                   if isinstance(r, dict) and r.get(m.group(1)))
+                    elif sid:
+                        out.add(sid)
+            if x.get("type") == "a!recordLink" and isinstance(x.get("recordType"), str):
+                rts.add(x["recordType"].replace("recordType!", "").split(".")[0])
+            for k, v in x.items():
+                if k != "$action":
+                    walk(v)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v)
+    walk(o)
+    if isinstance(o, dict) and isinstance(o.get("breadcrumb"), dict) and o["breadcrumb"].get("goto"):
+        out.add(o["breadcrumb"]["goto"])
+    return out, rts
+
+
+def reachable(spec):
+    """Pantallas a las que se llega navegando desde la página de inicio y las páginas del site. Las tareas de aprobación (P05)
+    llegan por la bandeja de tareas de Appian aunque el prototipo no las enlace."""
+    screens = [s for s in spec.get("screens", []) if isinstance(s, dict)]
+    byid = {s.get("id"): s for s in screens}
+    site = spec.get("site") or {}
+    todo = [site.get("home")] + [x.get("screen") for p in site.get("pages") or [] for x in [p] + list(p.get("pages") or []) if isinstance(x, dict)]
+    todo += [s.get("id") for s in screens if s.get("pattern") == "P05"]
+    seen = set()
+    while todo:
+        sid = todo.pop()
+        if sid in seen or sid not in byid:
+            continue
+        seen.add(sid)
+        ids, rts = _targets(byid[sid], spec.get("data") or {})
+        todo += list(ids) + [s.get("id") for s in screens if s.get("type") == "record" and s.get("recordType") in rts]
+    return seen
+
+
 def check_ux(spec, rep):
     """Avisos de calidad UX según el SAIL Design System (prefijo 'UX · '). Uno por nodo, con todos sus problemas."""
     rts = {s.get("recordType") for s in spec.get("screens", []) if isinstance(s, dict) and s.get("type") == "record"}
     record_sources = {f"recordType!{r}" for r in rts if r} | {f"data!{k}" for k, d in (spec.get("data") or {}).items()
                                                              if isinstance(d, dict) and d.get("recordType") in rts}
+    pages = (spec.get("site") or {}).get("pages") or []
+    if 8 < len(pages) <= 10:  # ux-site-branding.html#organizing-pages-and-page-groups (BP 09 §2.1)
+        rep.warn("site.pages", UX + f"{len(pages)} páginas de primer nivel: la guía admite 8 (agrupa en grupos de páginas o lleva lo poco usado a una portada)")
+    reach = reachable(spec)
     for s in [x for x in spec.get("screens", []) if isinstance(x, dict)]:
         where, st = f"screen '{s.get('id')}'", s.get("type", "page")
         issues, order = {}, [where]
@@ -870,6 +1048,8 @@ def check_ux(spec, rep):
         def add(path, msg):
             if msg not in issues.setdefault(path, []):
                 issues[path].append(msg)
+        if s.get("id") not in reach and not s.get("$uxIgnore"):
+            add(where, "no se llega a esta pantalla: ninguna página, $action (goto o dialog), acción de registro, enlace a registro ni tarea la abre")
         if st == "record":
             views = s.get("views") or []
             if len(views) > 7:
@@ -878,9 +1058,9 @@ def check_ux(spec, rep):
                 add(where, "máximo 3 acciones de registro en la cabecera")
             for i, v in enumerate(views):
                 if isinstance(v, dict) and isinstance(v.get("interface"), dict):
-                    order += _ux_interface(v["interface"], f"{where}.views[{i}]", st, add, record_sources)
+                    order += _ux_interface(v["interface"], f"{where}.views[{i}]", st, add, record_sources, s, spec)
         elif isinstance(s.get("interface"), dict):
-            order += _ux_interface(s["interface"], where, st, add, record_sources)
+            order += _ux_interface(s["interface"], where, st, add, record_sources, s, spec)
         pos = {p: i for i, p in enumerate(order)}
         for path in sorted(issues, key=lambda p: pos.get(p, len(pos))):
             rep.warn(path, UX + "; ".join(issues[path]))
@@ -929,6 +1109,8 @@ def check_expressions(spec, rep):
     for d in (spec.get("data") or {}).values():
         if isinstance(d, dict) and d.get("recordType"):
             ds_fields[d["recordType"]] = _keys(d.get("rows", []), set())
+    if '"$chart"' in json.dumps(spec.get("screens", [])):  # tablas alternativas de gráficos (chart_table): categoría y una columna por serie
+        fields |= {"categoria"} | {f"s{i}" for i in range(1, 21)}
     glob_vars = {k.split("!", 1)[1] for k in (spec.get("state") or {})}
     for s in [x for x in spec.get("screens", []) if isinstance(x, dict)]:
         where = f"screen '{s.get('id')}'"
@@ -1000,7 +1182,7 @@ def trace_markdown(spec):
         qs = sorted(qs, key=lambda q: pri.get(q.get("priority"), ("", 3))[1])
         out += ["", "## Preguntas abiertas para el cliente", ""]
         out += [f"- {pri.get(q.get('priority'), ('',))[0]} **{q['id']}** {q['text']}".replace("-  **", "- **") + (f" _(pantalla: {q['screen']})_" if q.get("screen") else "") for q in qs]
-    asum = []
+    asum = [({"title": "Aplicación"}, spec["app"]["$assumption"])] if isinstance(spec.get("app"), dict) and spec["app"].get("$assumption") else []
 
     def walk(o, s):
         if isinstance(o, dict):
@@ -1021,17 +1203,61 @@ def trace_markdown(spec):
     return "\n".join(out) + "\n"
 
 
+def check_confirmed(spec, previous, ids, rep, prev_name="el app.json anterior"):
+    """Pantallas confirmadas por el cliente (IDs del análisis en su 'ref', p. ej. PAN-02): error si la pantalla o un diálogo que
+    abre ha cambiado respecto al app.json anterior (JSON normalizado) o ha desaparecido."""
+    def screens(s):
+        return {x.get("id"): x for x in s.get("screens", []) if isinstance(x, dict)}
+    cur, old = screens(spec), screens(previous)
+    norm = lambda o: json.dumps(o, sort_keys=True, ensure_ascii=False)
+
+    def dialogs(sid, pool, seen):
+        """La pantalla y los diálogos que abre (y los que abren estos)."""
+        if sid in seen or sid not in pool:
+            return seen
+        seen.add(sid)
+        for d in _targets(pool[sid], {})[0]:
+            if pool.get(d, {}).get("type") == "dialog":
+                dialogs(d, pool, seen)
+        return seen
+    for cid in ids:
+        pat = re.compile(rf"(?<![\w-]){re.escape(cid)}(?![\w]|\.\d)")
+        hit = lambda pool: [k for k, x in pool.items() if pat.search(str(x.get("ref") or ""))]
+        now, before = hit(cur), hit(old)
+        if not now and not before:
+            rep.warn("--confirmadas", f"ninguna pantalla tiene {cid} en su 'ref'")
+        for sid in before:
+            if sid not in cur:
+                rep.err(f"screen '{sid}'", f"pantalla confirmada por el cliente ({cid}) eliminada respecto a {prev_name}: no se cambia sin el visto bueno del analista")
+        for sid in now:
+            if sid not in old:
+                rep.err(f"screen '{sid}'", f"pantalla confirmada por el cliente ({cid}) que no estaba en {prev_name}: no se cambia sin el visto bueno del analista")
+                continue
+            for d in sorted(dialogs(sid, cur, set()) | dialogs(sid, old, set())):
+                if norm(cur.get(d)) != norm(old.get(d)):
+                    what = "la pantalla" if d == sid else f"el diálogo '{d}' que abre"
+                    rep.err(f"screen '{sid}'", f"pantalla confirmada por el cliente ({cid}): {what} ha cambiado respecto a {prev_name}; "
+                                               "no se cambia sin el visto bueno del analista")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("spec")
     ap.add_argument("--brand", default="aena")
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument("--anterior", help="app.json de la versión anterior (copia app-vX.Y.json) para comparar las pantallas confirmadas")
+    ap.add_argument("--confirmadas", help="IDs del análisis de las pantallas confirmadas por el cliente, separados por comas (PAN-02,PAN-05)")
     a = ap.parse_args()
+    if bool(a.anterior) != bool(a.confirmadas):
+        ap.error("--anterior y --confirmadas van juntas")
     utf8_stdio()
     spec = json.loads(Path(a.spec).read_text(encoding="utf-8"))
     spec_dir = Path(a.spec).resolve().parent
     brand, _ = find_brand(a.brand, spec_dir)
     rep = validate(spec, brand, spec_dir)
+    if a.anterior:
+        prev = json.loads(Path(a.anterior).read_text(encoding="utf-8"))
+        check_confirmed(spec, prev, [x.strip() for x in a.confirmadas.split(",") if x.strip()], rep, Path(a.anterior).name)
     for line in rep.errors + ([] if a.quiet else rep.warnings):
         print(line)
     print(f"\n{len(rep.errors)} error(es), {len(rep.warnings)} aviso(s)")

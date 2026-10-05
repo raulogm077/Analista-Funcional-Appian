@@ -69,7 +69,8 @@
    "action": "recordType!EXP Expediente.actions.cerrar",
    "identifier": "{rv!record.id}",
    "$label": "Cerrar expediente",
-   "$icon": "lock"
+   "$icon": "lock",
+   "$note": "Solo para el responsable de la unidad. En Appian: seguridad de acción de registro (y permiso Initiator en el modelo de proceso)."
   }
  ],
  "views": [

@@ -9,7 +9,7 @@
     "a!paneLayout"
    ],
    "template": "P01-listado.json",
-   "when": "Consultar, buscar y filtrar una entidad (expedientes, solicitudes, incidencias, contratos...). Punto de entrada a la vista de registro. Con asistente de datos: a!paneLayout con el listado en un pane AUTO y el chat en un pane lateral que se muestra u oculta."
+   "when": "Consultar, buscar y filtrar una entidad (expedientes, solicitudes, incidencias, contratos...). Punto de entrada a la vista de registro. Si basta la lista del record type, en Appian es una página Record List. Con asistente de datos: a!paneLayout con el listado en un pane AUTO y el chat en un pane lateral que se muestra u oculta."
   },
   "P02": {
    "name": "Vista de registro",
@@ -109,7 +109,7 @@
     "a!formLayout"
    ],
    "template": "P12-revision-ia.json",
-   "when": "El usuario revisa, corrige y confirma datos que ha rellenado la IA (extracción de documentos, clasificación): origen y confianza por dato, fuente consultable y guardado bloqueado hasta revisar los de confianza baja."
+   "when": "El usuario revisa, corrige y confirma datos que ha rellenado la IA (extracción de documentos, clasificación): origen y confianza por dato, fuente consultable y un guardado que valida y dice qué datos de confianza baja faltan por revisar."
   }
  }
 }

@@ -73,6 +73,7 @@ svg.ic { width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em; 
 .site-nav button { background: none; border: 0; color: var(--hdr-fg); opacity: .85; padding: 0 14px; cursor: pointer; font-size: 14px; font-weight: 600; border-bottom: 4px solid transparent; border-top: 4px solid transparent; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
 .site-nav button:hover { opacity: 1; background: rgba(255,255,255,.06); }
 .site-nav button.sel { opacity: 1; border-bottom-color: var(--hdr-hl); }
+.site-nav.helium button { flex-direction: column; justify-content: center; gap: 2px; font-size: 13px; }
 .site-user { display: flex; align-items: center; gap: 14px; }
 .site-user .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--hdr-hl); color: var(--hdr-bg); font-weight: 700; font-size: 13px; display: grid; place-items: center; }
 .site-user .uname { font-size: 13px; opacity: .9; }
@@ -574,7 +575,7 @@ th.gw-NARROW { min-width: 100px; } th.gw-NARROW_PLUS { min-width: 140px; } th.gw
 /* ---------- Dialogs ---------- */
 .dlg-bg { position: fixed; inset: 0; background: rgba(20,25,30,.55); z-index: 80; display: flex; align-items: flex-start; justify-content: center; padding: 48px 16px; overflow: auto; }
 .dlg { background: #fff; border-radius: var(--dialog-radius); width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,.3); display: flex; flex-direction: column; max-height: calc(100vh - 96px); }
-.dlg.w-EXTRA_NARROW { max-width: 460px; } .dlg.w-NARROW { max-width: 640px; } .dlg.w-MEDIUM { max-width: 900px; } .dlg.w-WIDE { max-width: 1200px; } .dlg.w-FULL { max-width: 1400px; }
+.dlg.w-EXTRA_NARROW { max-width: 460px; } .dlg.w-NARROW { max-width: 640px; } .dlg.w-MEDIUM { max-width: 900px; } .dlg.w-MEDIUM_PLUS { max-width: 1040px; } .dlg.w-WIDE { max-width: 1200px; } .dlg.w-FULL { max-width: 1400px; }
 .dlg-h { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
 .dlg-h h2 { margin: 0; font-size: 20px; font-weight: 600; flex: 1; }
 .dlg-h .x { border: 0; background: none; cursor: pointer; font-size: 18px; color: var(--text-2); padding: 4px; }

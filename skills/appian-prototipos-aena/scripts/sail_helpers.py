@@ -14,15 +14,15 @@ Bloques (cuándo usar cada uno: references/bloques.md; galería: examples/bloque
   datos ......... key_facts, field_summary, kpi, kpi_strip, kpi_sparkline, kpi_progress, two_line, doc_line, milestone,
                   duration, stamp_steps, checklist, leaderboard, user_list
   listas/grids .. grid, gcol, gcol_num, gcol_link, tag, state_map, alert_icons, grid_with_detail, grid_with_selection,
-                  drilldown, drill_link, chart_link, more_less, document_list, comments, dual_picklist, dynamic_inputs
+                  drilldown, drill_link, chart_link, chart_table, more_less, document_list, comments, dual_picklist, dynamic_inputs
   cards ......... cards_as_buttons, cards_as_info, call_to_action, choice_cards
   botones ....... primary, secondary, danger, tool_button, bl
   formularios ... txt, par, date, dd, upload, choice_cards, cols, ro
   IA ............ ai_agent_chat, ai_data_chat, ai_suggested, ai_side_pane, ai_toggle, ai_records_chat, ai_doc_chat,
-                  ai_answer, ai_citation, ai_review_grid, ai_confidence_tag, match_quality, ai_notice, ai_feedback, AI_MAPS
+                  ai_answer, ai_citation, ai_review_grid, ai_review_validation, ai_confidence_tag, match_quality, ai_notice, ai_feedback, AI_MAPS
   patrones 26.9 . calendar_month, calendar_week, event_maps, comment_thread, ATTACH_MAPS, kanban, KANBAN_STATES
   color ......... state_chart_colors (gráfico con el color de cada estado), CHART (series en orden), NAVY, GREEN, STATES
-  pantallas ..... dialog
+  pantallas ..... dialog, por_perfil (visibilidad por perfil con su capa de seguridad, CAPAS)
 """
 import json
 from pathlib import Path
@@ -297,7 +297,10 @@ def secondary(label, action=None, icon=None, **kw):
 
 
 def danger(label, action=None, confirm=None, icon=None, **kw):
-    """Destructiva: GHOST + NEGATIVE, con confirmación (confirm = (cabecera, mensaje))."""
+    """Destructiva (pérdida real de datos: borrar, anular sin vuelta atrás): GHOST + NEGATIVE con confirmación obligatoria.
+    confirm = (cabecera con el objeto, mensaje con la consecuencia). Cancelar algo que se puede retomar no es destructiva: secondary()."""
+    if not confirm and not (kw.get("confirmHeader") and kw.get("confirmMessage")):
+        raise ValueError(f"danger(«{label}»): falta confirm=(cabecera, mensaje); una acción destructiva siempre pide confirmación")
     b = {"type": "a!buttonWidget", "label": label, "style": "GHOST", "color": "NEGATIVE"}
     if icon: b["icon"] = icon
     if confirm: b["confirmHeader"], b["confirmMessage"] = confirm
@@ -395,12 +398,31 @@ def clean(o):
 
 # ------------------------------------------------------------------ pantallas
 def dialog(sid, title, contents, buttons, req, ref, width="NARROW", openFrom=None, recordType=None, **kw):
-    """Diálogo P07: formulario de una columna; el ancho del diálogo se ajusta al contenido."""
-    d = {"id": sid, "title": title, "type": "dialog", "pattern": "P07", "req": req, "ref": ref,
-         "interface": {"type": "a!formLayout", "titleBar": title, "contentsWidth": width, "contents": contents, "buttons": buttons}}
+    """Diálogo P07: formulario de una columna con contentsWidth FULL (ocupa el cuadro). El ancho del cuadro se ajusta al contenido
+    y lo fija la acción de registro (Dialog Width en el record type): width → $dialogWidth (NARROW, MEDIUM, MEDIUM_PLUS, WIDE)."""
+    d = {"id": sid, "title": title, "type": "dialog", "pattern": "P07", "req": req, "ref": ref, "$dialogWidth": width,
+         "interface": {"type": "a!formLayout", "titleBar": title, "contentsWidth": "FULL", "contents": contents, "buttons": buttons}}
     if openFrom: d["openFrom"] = openFrom
     if recordType: d["recordType"] = recordType
     d.update(kw); return d
+
+
+# capa de seguridad de Appian que aplica «solo lo ve un perfil» (appian-best-practices 06 §5)
+CAPAS = {"registro": "seguridad de registro del record type (qué filas ve)",
+         "campo": "seguridad de campo del record type; en la interfaz, showWhen con a!doesUserHaveAccess() (sin acceso, el campo sale vacío)",
+         "vista": "seguridad de vista de registro",
+         "accion": "seguridad de acción de registro (y permiso Initiator en el modelo de proceso)",
+         "interfaz": "visibilidad de interfaz (showWhen con a!isUserMemberOfGroup()): solo oculta, no protege; los datos se protegen en el record type"}
+
+
+def por_perfil(node, perfil, capa, cuando=None):
+    """Lo que solo ve un perfil: $note con el perfil y la capa de seguridad de Appian que lo aplica (CAPAS: registro, campo, vista,
+    accion, interfaz). cuando: showWhen del prototipo para enseñarlo oculto en la demo (p. ej. "ri!perfil = \\"GESTOR\\"")."""
+    n = dict(node)
+    nota = "Solo para %s. En Appian: %s." % (perfil, CAPAS[capa])
+    n["$note"] = (n["$note"] + " " + nota) if n.get("$note") else nota
+    if cuando: n["showWhen"] = cuando
+    return n
 
 
 # ------------------------------------------------------------------ bloques (patrones de Appian, references/bloques.md)
@@ -657,6 +679,32 @@ def chart_link(var, record_type, field):
     return {"type": "a!dynamicLink", "saveInto": [{"type": "a!save", "target": var, "value": "{fv!selection[recordType!%s.fields.%s]}" % (record_type, field)}]}
 
 
+def chart_table(var, chart, cat_label="Categoría", value_labels=None, fmt="num", table=None, **kw):
+    """Gráfico con su alternativa accesible (receta «Configure a Chart to Grid Toggle», BP 02 §9.5): un enlace alterna el gráfico y
+    una tabla con los mismos datos. var: variable booleana declarada en 'local' (false = gráfico). La tabla sale del propio gráfico
+    ($chart: mismas categorías, medidas y filtros); table sustituye a la generada (gráficos de dispersión o tablas propias)."""
+    if table is None:
+        cfg = chart.get("config") or {}
+        ms, g1, g2 = cfg.get("measures") or [], (cfg.get("primaryGrouping") or {}).get("field"), (cfg.get("secondaryGrouping") or {}).get("field")
+        if value_labels is None and g2 and g2 != g1:
+            value_labels = chart.get("$series")  # una columna por valor de la agrupación secundaria
+            if not value_labels:
+                raise ValueError("chart_table: con agrupación secundaria, pasa value_labels o $series en el gráfico")
+        elif value_labels is None:
+            value_labels = ([ms[0].get("label") or "Total"] if g2 else [m.get("label") or "Total" for m in ms]) if ms else \
+                ["Valor"] if chart.get("type") == "a!pieChartField" else [s.get("label") or "Valor" for s in chart.get("series") or []]
+        src ={k: v for k, v in chart.items() if k not in ("showWhen", "$note", "$assumption", "$uxIgnore")}
+        table = grid(None, None, [gcol(cat_label, "{fv!row.categoria}")] + [gcol_num(lb, "{fv!row.s%d|%s}" % (k + 1, fmt)) for k, lb in enumerate(value_labels)],
+                     "No hay datos que mostrar", page_size=20, **{"$chart": src, "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields "
+                                                                  "(la misma agrupación, medidas y filtros que el gráfico)."})
+        table.pop("data")
+    sw = lambda n, cond: {**n, "showWhen": cond}
+    link = _rtd([{"type": "a!richTextIcon", "icon": "{if(%s, \"bar-chart\", \"table\")}" % var, "color": "ACCENT"}, " ",
+                 _link("{if(%s, \"Ver como gráfico\", \"Ver como tabla\")}" % var, saves=[(var, "{not(%s)}" % var)], style="STRONG")], align="RIGHT", marginBelow="LESS")
+    s = {"type": "a!sectionLayout", "marginBelow": "NONE", "contents": [link, sw(chart, "not(%s)" % var), sw(table, var)]}
+    s.update(kw); return s
+
+
 def grid_with_selection(data, sel_var, columns, empty, label_expr, panel_title="Seleccionados", action=None, **kw):
     """Selección múltiple con panel de lo seleccionado (patrón Grid with Selection) y la acción sobre ellos."""
     g = grid(data, None, columns, empty, selectable=True, selectionStyle="CHECKBOX", selectionValue=sel_var, selectionSaveInto=sel_var)
@@ -835,7 +883,8 @@ def ai_confidence_tag(expr):
 def ai_review_grid(var, source_page="fv!item.pagina", page_var=None, quote_var=None):
     """Revisión de datos sugeridos por IA (P12): campo, valor editable, origen (Sugerido por IA / Editado), confianza y
     casilla «Revisado» en los de confianza baja. Editar un valor lo marca como editado y revisado. var: lista de
-    {campo, valor, confianza ALTA|MEDIA|BAJA, origen IA|EDITADO, revisado, pagina}. Guardar: disabled = contains(var.revisado, false).
+    {campo, valor, confianza ALTA|MEDIA|BAJA, origen IA|EDITADO, revisado, pagina}. Guardar valida: ai_review_validation(var) en
+    validations del formulario (dice qué falta; nunca un botón desactivado sin explicación).
     page_var/quote_var: «Página N» pasa a ser un enlace que lleva el visor de la fuente a esa página y resalta el valor."""
     pg = {"type": "a!richTextItem", "text": "Página {%s}" % source_page, "size": "SMALL", "color": "SECONDARY"}
     if page_var:
@@ -850,6 +899,12 @@ def ai_review_grid(var, source_page="fv!item.pagina", page_var=None, quote_var=N
                 {"type": "a!tagField", "size": "SMALL", "tags": [{"type": "a!tagItem", "text": "{fv!item.origen|map:origenTexto}", "backgroundColor": STATES["neutral"]["tag"]}]},
                 ai_confidence_tag("fv!item.confianza"),
                 {"type": "a!booleanCheckboxField", "choiceLabel": "Revisado", "value": "fv!item.revisado", "saveInto": "fv!item.revisado", "showWhen": "fv!item.confianza = \"BAJA\""}]}}]}
+
+
+def ai_review_validation(var, message="Revise los datos de confianza baja: marque «Revisado» o corrija el valor"):
+    """Validación del formulario de revisión (P12): al pulsar Guardar, si queda algún dato de confianza baja sin revisar,
+    el mensaje dice qué falta (a!validationMessage en validations de a!formLayout, receta de validaciones de formulario)."""
+    return {"type": "a!validationMessage", "message": message, "validateAfter": "SUBMIT", "showWhen": "contains(%s.revisado, false)" % var}
 
 
 AI_MAPS = {"confianzaTexto": {"ALTA": "Confianza alta", "MEDIA": "Confianza media", "BAJA": "Confianza baja", "*": "Sin sugerencia"},

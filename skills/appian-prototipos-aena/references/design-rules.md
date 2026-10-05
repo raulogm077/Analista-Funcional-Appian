@@ -47,7 +47,8 @@ Lo que el objeto Site no alcanza (colores de estado, textos de los campos, borde
 - Si el cliente no tiene el nivel avanzado, el prototipo sigue siendo válido: sin perfil, Appian usa sus colores estándar y los parámetros de SAIL no cambian. Indícalo en el documento funcional.
 - No toques las propiedades de color de los botones salvo que se definan todas las de un estilo (Appian completa las que falten y el resultado cambia).
 
-- Como máximo **8 páginas de primer nivel** (Appian admite 10 ✔; con más de 8 la barra se satura). Cada página lleva icono.
+- Como máximo **8 páginas de primer nivel** ✔ (Appian admite 10 ✔; con más de 8 la barra se satura).
+- **Iconos y nombres de página** (ux-site-branding#style-header-bar-only): con MERCURY, la barra de AENA, y con OXYGEN no se ven iconos de página en web, y el nombre de la página solo aparece si hay más de una. HELIUM pinta el icono encima del nombre y la barra lateral (SIDEBAR) lo pinta siempre. Ninguna página depende de su icono para entenderse; el prototipo pinta la barra como Appian.
 - Ordena las páginas por frecuencia de uso: primero lo que se usa a diario, al final los datos maestros.
 
 ## 2. Fondo de página, cards y secciones
@@ -86,7 +87,7 @@ Lo que el objeto Site no alcanza (colores de estado, textos de los campos, borde
 
 | Elemento | Tamaño | Etiqueta | Color |
 |---|---|---|---|
-| Título de página (uno por pantalla ✔) | `a!headingField` LARGE o sección LARGE | H1 | STANDARD |
+| Título de página (uno y solo uno por pantalla ✔) | `a!headingField` LARGE o sección LARGE | H1 | STANDARD |
 | Sección principal | MEDIUM | H2 | STANDARD (las secciones son ACCENT por defecto en Appian: pon `labelColor: "STANDARD"`) |
 | Subsección o grupo de datos | SMALL, EN MAYÚSCULAS | H3 | SECONDARY |
 | Etiqueta de dato en un resumen | texto SMALL | — | SECONDARY |
@@ -139,13 +140,14 @@ Parejas que funcionan (medidas): texto `#1A2732` o `#525C65` sobre cualquier fon
 |---|---|
 | Acción principal (la más frecuente) | `style: "SOLID"`, `color: "#90CE00"`. **Una sola por pantalla ✔** |
 | Resto de acciones | `style: "OUTLINE"`, `color: "ACCENT"` (es el valor por defecto) |
-| Destructiva (borrar o cancelar algo guardado) | `style: "GHOST"`, `color: "NEGATIVE"` y `confirmHeader`/`confirmMessage` ✔. Nunca SOLID |
+| Destructiva (pérdida real de datos: borrar, anular sin vuelta atrás) | `style: "GHOST"`, `color: "NEGATIVE"` y `confirmHeader`/`confirmMessage` ✔ (helper `danger()`, que la exige). Nunca SOLID |
 | Barra de herramientas encima de un grid o dentro de una card | `size: "SMALL"`, `style: "OUTLINE"`, `color: "SECONDARY"` (helper `tool_button()`) |
 | Botón solo con icono | `accessibilityText` obligatorio ✔ |
 
+- Cancelar, cerrar o archivar algo que se puede retomar no es destructivo: botón normal y, si se pierde trabajo sin guardar, confirmación.
 - **Pie de formulario**: los botones de envío a la derecha, con el principal SOLID; «Anterior» y «Cancelar» a la izquierda, en ese orden. Siempre hay un «Cancelar».
 - **Los botones llevan un verbo**, y ese verbo coincide con el título del formulario: «Enviar a revisión» abre «Enviar a revisión»; nunca «Aceptar».
-- Un botón que no está disponible en ese momento se **desactiva**, no se oculta.
+- Un botón que no está disponible en ese momento se **desactiva**, no se oculta, y la pantalla dice por qué. Si lo que falta es un dato del formulario, el botón queda activo y valida con un mensaje.
 - **Acciones de registro en la cabecera**:
   - Como máximo 3 atajos ✔, con títulos cortos. El resto van en la vista o en un menú (`MENU`).
   - Estilo `TOOLBAR_PRIMARY` si hay una acción principal clara; `TOOLBAR` si no la hay.
@@ -166,7 +168,7 @@ Parejas que funcionan (medidas): texto `#1A2732` o `#525C65` sobre cualquier fon
 | P04 Asistente | `a!wizardLayout` | Ver abajo |
 | P05 Tarea de aprobación | `a!formLayout` WIDE o `a!paneLayout` dentro del form | Ver abajo |
 | P06 Inicio | `a!headerContentLayout` TRANSPARENT | Ver abajo |
-| P07 Diálogo | `a!formLayout`, título en `titleBar` | Ver abajo |
+| P07 Diálogo | `a!formLayout` (o `a!wizardLayout`) `contentsWidth: "FULL"`, título en `titleBar` | Ver abajo |
 | P08 Informe | `a!headerContentLayout` TRANSPARENT | Ver abajo |
 | P09 Maestro-detalle | `a!headerContentLayout` TRANSPARENT | Ver abajo |
 | P10 Portada de módulo | `a!headerContentLayout` TRANSPARENT | Ver abajo |
@@ -181,6 +183,7 @@ Parejas que funcionan (medidas): texto `#1A2732` o `#525C65` sobre cualquier fon
   - de 25 a 50 filas en un listado a página completa, y 5–10 cuando el grid comparte la página;
   - como máximo **7 columnas** (§7).
 - Con asistente de datos (si el análisis lo pide): `a!paneLayout` con el listado en un pane `AUTO` y el chat de datos en un pane lateral que se muestra u oculta (`ai_side_pane()` + `ai_toggle()`).
+- **Página Record List**: si el listado solo sirve para buscar, filtrar y abrir la ficha, en Appian es una página del site de tipo Record List (la lista configurada en el record type, con búsqueda, filtros de usuario, exportación y acciones de lista), no una interfaz con un grid (BP 09 §1.3, BP 01 §9). Interfaz solo si lleva algo más (aviso de acción, KPI, asistente de datos). `app.json` no declara el tipo de página: dilo en el `$note` de la pantalla.
 
 **P03 Formulario**
 - `a!headerTemplateSimple` o `a!headerTemplateFull` con el verbo de la acción.
@@ -203,11 +206,12 @@ Parejas que funcionan (medidas): texto `#1A2732` o `#525C65` sobre cualquier fon
 - **Franja de KPI**: 2–4 `a!kpiField` en **una sola card** con `columnsLayout(showDividers: true, spacing: "SPARSE")`, sombra y barra decorativa TOP verde. Cada KPI lleva tendencia (`secondaryMeasure` o `$secondaryValue`) y usa `trendColor: "REVERSE"` cuando bajar es bueno.
 - En columnas 2X / 1X:
   - a la izquierda, «Mis tareas»: 5–10 filas **sin paginación**, con el enlace «Ver todas» y el plazo como tag;
-  - a la derecha, avisos o accesos rápidos (`a!recordActionField` CARDS o cards enlazadas) y un gráfico resumen SHORT.
+  - a la derecha, avisos o accesos rápidos (`a!recordActionField` CARDS o cards enlazadas) y un gráfico resumen SHORT con su tabla (`chart_table()`).
 
 **P07 Diálogo**
 - Título con el verbo de la acción.
-- De 2 a 6 campos en una columna. El ancho del diálogo se ajusta al contenido: `NARROW` para pocos campos.
+- De 2 a 6 campos en una columna, con `contentsWidth: "FULL"` ✔: el formulario ocupa el cuadro. El ancho del cuadro lo fija la acción de registro (Dialog Width, en el record type) y se ajusta a lo que se escribe; en el prototipo, `$dialogWidth` (`NARROW` para pocos campos; helper `dialog()`).
+- Un asistente en diálogo lleva altura fija, nunca «Auto»: saltaría de un paso a otro.
 - «Guardar» SOLID + «Cancelar».
 - Si el diálogo es largo, fija la barra de título y los botones (`isTitleBarFixed`, `isButtonFooterFixed`).
 
@@ -215,8 +219,10 @@ Parejas que funcionan (medidas): texto `#1A2732` o `#525C65` sobre cualquier fon
 - Cabecera.
 - **Barra de filtros de página** (una card con 2–4 desplegables en fila) si los filtros afectan a todos los gráficos.
 - Franja de KPI.
-- Gráficos en cards de dos en dos, `height: "SHORT"` o `"MEDIUM"`, con `referenceLines` para objetivos o umbrales y `showDataLabels` cuando hay pocas barras.
-- Drilldown: un clic en una categoría muestra el grid filtrado debajo del gráfico (`config.link` con `chart_link()`; el grid filtra por la variable).
+- Gráficos en cards, `height: "SHORT"` o `"MEDIUM"`, con `referenceLines` para objetivos o umbrales y `showDataLabels` cuando hay pocas barras.
+- **Más de 7 puntos o categorías: solo en la fila ✔**, a todo el ancho y por encima de las filas de dos. Los pequeños, de dos en dos para compararlos (BP 02 §5A.3).
+- **Cada gráfico con su tabla ✔**: «Ver como tabla» alterna el gráfico y una tabla con los mismos datos (`chart_table()`, BP 02 §9.5).
+- Drilldown: un clic en una categoría muestra el grid filtrado debajo del gráfico (`config.link` con `chart_link()`; el grid filtra por la variable). El drilldown no se usa con teclado: la tabla del gráfico sigue siendo obligatoria.
 
 **P09 Maestro-detalle**
 - Para revisar muchos elementos uno tras otro sin cambiar de página (bandejas, colas de revisión).
@@ -237,13 +243,13 @@ Parejas que funcionan (medidas): texto `#1A2732` o `#525C65` sobre cualquier fon
 - Aviso INFO que explica qué ha rellenado la IA y qué hay que revisar.
 - `ai_review_grid()`: campo, valor editable, origen («Sugerido por IA» / «Editado»), confianza y casilla «Revisado» en los de confianza baja; al editar un valor queda marcado como editado y revisado.
 - La fuente al lado: `a!documentViewerField` que salta a la página del dato y lo resalta al pulsar «Página N».
-- «Guardar» desactivado mientras quede algún dato de confianza baja sin revisar.
+- «Guardar» valida: si queda algún dato de confianza baja sin revisar, el formulario lo dice con un mensaje (`ai_review_validation()` en `validations`). Nunca un botón desactivado sin explicación.
 
 ## 7. Grids
 
 Aquí fallan casi todos los listados. Las reglas:
 
-- **Columnas**: como máximo **7** en un listado. Si hay más datos:
+- **Columnas**: como máximo **7** en un listado ✔. Si hay más datos:
   - **Consolidar columnas**: una celda con una línea principal y otra SECONDARY SMALL debajo (código + título; persona + unidad; paso + fase). Es el helper `two_line()`. Como máximo 2–3 líneas por celda.
   - Mover lo secundario a la ficha. El listado sirve para encontrar, la ficha para leer.
 - **La primera columna** va alineada a la izquierda y lleva el enlace a la ficha (`a!recordLink`). Configura `rowHeader: 1` ✔.
@@ -252,6 +258,7 @@ Aquí fallan casi todos los listados. Las reglas:
   - Texto y fechas a la izquierda.
   - Una columna de solo iconos va centrada, con ancho `ICON`.
 - **Anchos**: `AUTO` por defecto. Para las columnas cortas (fechas, códigos, estados), `NARROW` o `NARROW_PLUS`. Si el texto se parte en más de 2 líneas, sobran columnas.
+- **Acciones**: una por celda ✔. Si hay varias, en una barra de herramientas encima del grid (`TOOLBAR`) o con `a!recordActionField` de solo icono en su columna (BP 02 §5.4).
 - **Estados**: un tag con el mapa de la paleta semántica. **Alertas**: iconos en una columna `ICON` con `caption` (tooltip), nunca un icono rojo suelto sin explicación.
 - **Celdas vacías**: «–». Nunca «N/A» ni una celda en blanco.
 - **Estilo**:
@@ -295,10 +302,10 @@ Aquí fallan casi todos los listados. Las reglas:
   - Bloques que se rellenan en cualquier orden: `a!tabLayout` dentro del form.
   - Todo visible a la vez: secciones.
   - Dos columnas largas con scroll propio: `a!paneLayout` dentro del form.
-- **Etiquetas**: siempre `ABOVE` en los campos editables ✔. En los de solo lectura, `ABOVE` en resúmenes y `ADJACENT` solo en listas cortas. No mezcles posiciones en una misma card. El placeholder no sustituye a la etiqueta.
+- **Etiquetas**: todo campo lleva `label` ✔; si no debe verse, `labelPosition: "COLLAPSED"` (el lector de pantalla la lee). Siempre `ABOVE` en los campos editables ✔. En los de solo lectura, `ABOVE` en resúmenes y `ADJACENT` solo en listas cortas. No mezcles posiciones en una misma card. El placeholder no sustituye a la etiqueta.
 - El ancho de cada campo se ajusta a lo que se espera escribir: fechas y códigos en pareja con `a!columnsLayout`; textos largos a ancho completo.
 - **Elegir la forma de selección**:
-  - 2–3 opciones: `a!radioButtonField` COMPACT.
+  - 2–3 opciones: `a!radioButtonField` COMPACT, con la opción más habitual marcada ✔ (BP 02 §4.8). Sin opción marcada solo si el usuario debe decidir sin sugerencia (una decisión de aprobación), con `$uxIgnore`.
   - Hasta 6 opciones que necesitan explicación o icono: `a!cardChoiceField` (Tile o BarTextStacked).
   - Más de 5 opciones: `a!dropdownField`.
   - Muchas o con búsqueda: picker.
@@ -364,7 +371,7 @@ Solo se diseña IA si el análisis la pide. Si la propones tú, va marcada con `
 3. **Estado inicial en español, concreto** ✔: título contextual (nunca el de por defecto ni el mismo texto que el H1), `welcomeMessage` o `initialMessage` que diga qué puede hacer y hasta 3 preguntas sugeridas que sepa responder donde el componente las admite (chat de datos y de registro). El chat del agente no tiene preguntas sugeridas: pon un ejemplo de pregunta en el `welcomeMessage`.
 4. **Fiabilidad**: junto a toda salida de IA, un aviso breve para comprobarla (`ai_notice()`). No uses el chat para cifras que exigen exactitud.
 5. **La fuente, siempre que se pueda**: cita con la página que abre el visor y resalta el texto (`ai_citation()`); en extracción, «Página N» por dato.
-6. **La IA propone, el usuario decide**: lo que devuelve (`outputsSaveInto`, extracción, clasificación) rellena campos editables; guardar o enviar es una acción del usuario. Marca el origen («Sugerido por IA», «Editado») y bloquea el guardado mientras haya datos de confianza baja sin revisar.
+6. **La IA propone, el usuario decide**: lo que devuelve (`outputsSaveInto`, extracción, clasificación) rellena campos editables; guardar o enviar es una acción del usuario. Marca el origen («Sugerido por IA», «Editado») y valida al guardar: un mensaje dice qué datos de confianza baja faltan por revisar.
 7. **Nunca muestres la puntuación de similitud** ✔: ordena por relevancia y, si hace falta, la calidad en palabras (`match_quality()`).
 8. **`debugMode` desactivado** ✔ en pantallas de usuario: las entradas y salidas de las herramientas solo sirven al desarrollador.
 9. **Control**: el usuario puede detener una respuesta (26.7) y seguir en la misma conversación; el selector de conversaciones solo si el caso de uso tiene varias.
@@ -377,8 +384,8 @@ Solo se diseña IA si el análisis la pide. Si la propones tú, va marcada con `
 - **Cabecera**: `page_header()` en páginas de trabajo; `hero_header()` solo en inicio o portada de módulo; migas (`crumbs`) cuando la página está dentro de una jerarquía, nunca como historial.
 - **Barra de filtros de página** (`filter_bar()`) solo si los filtros afectan a varios bloques; los de un solo grid van en su barra (`userFilters`).
 - **Navegación secundaria**: prefiere `a!tabLayout`.
-  - Horizontal con **menos de 7** pestañas y etiquetas cortas.
-  - Vertical con **más de 6**, varios niveles o etiquetas largas: `a!tabLayout(orientation: "VERTICAL")` (26.7); en proyectos anteriores a 26.7, `side_nav()`.
+  - Horizontal con **menos de 7** pestañas ✔ y etiquetas cortas.
+  - Vertical con **más de 6**, varios niveles o etiquetas largas: `a!tabLayout(orientation: "VERTICAL")` (26.7), sin límite de pestañas (secondary-navigation, ux-tab-layout); en proyectos anteriores a 26.7, `side_nav()`.
   - Sobre fondo gris con cards, la navegación vertical va sin card ni divisor alrededor.
   - Nada de navegación solo con iconos para usuarios ocasionales.
 - **Vistas de registro** para las áreas 1:N (§8); pestañas dentro de una vista solo para bloques del mismo tema.
@@ -399,18 +406,18 @@ Aplica la rúbrica en el paso 4 de SKILL.md. Si hay agentes disponibles, que la 
 
 1. La tarea principal se identifica en 3 segundos y está arriba a la izquierda.
 2. Hay un solo H1 y la jerarquía de títulos es coherente (§3).
-3. Hay como máximo un botón SOLID, las acciones destructivas van en GHOST rojo con confirmación y los botones llevan verbos.
+3. Hay como máximo un botón SOLID, solo la pérdida real de datos va en GHOST rojo, siempre con confirmación, y los botones llevan verbos.
 4. Las cards de contenido son blancas y llevan borde o sombra según el fondo; no hay cards con borde anidadas.
 5. El color tiene significado: la paleta de estados es común, hay como máximo dos colores no neutros por grid y el acento solo aparece en enlaces.
-6. Los grids tienen ≤7 columnas, ningún texto se parte en más de 2 líneas, las cifras van a la derecha, las celdas vacías llevan «–» y el primer campo enlaza a la ficha.
+6. Los grids tienen ≤7 columnas y una acción por celda, ningún texto se parte en más de 2 líneas, las cifras van a la derecha, las celdas vacías llevan «–» y el primer campo enlaza a la ficha.
 7. Los filtros están en la barra del grid (≤4) o en una barra de página; no hay una card-formulario de filtros.
 8. La ficha tiene una cabecera con ≤3 acciones, una franja de datos clave y un hito; las áreas 1:N van en vistas, no en acordeones.
 9. Los datos de la ficha se leen como resumen: etiqueta encima y 2–3 columnas, sin columnas estrechas de valores.
-10. Los formularios van en una columna estrecha con etiquetas encima y la selección adecuada (cards, radio, desplegable, toggle).
+10. Los formularios van en una columna estrecha con etiqueta en cada campo y la selección adecuada (cards, radio con una opción marcada, desplegable, toggle); los diálogos, a FULL.
 11. El asistente usa un estilo acorde al número de pasos y tiene un paso de revisión con «Editar».
 12. La tarea muestra el plazo destacado, el documento visible y una decisión con color e icono.
 13. El inicio muestra los KPI en una franja con tendencia, las tareas sin paginación con «Ver todas» y accesos rápidos.
-14. Los gráficos tienen ≤5 colores, un solo esquema, líneas de referencia si hay un objetivo y etiquetas si hay pocas barras.
+14. Los gráficos tienen su tabla alternativa, ≤5 colores, un solo esquema, líneas de referencia si hay un objetivo y etiquetas si hay pocas barras; con más de 7 puntos van solos en la fila.
 15. Hay estados vacíos diseñados y avisos de acción con el botón dentro.
 16. Los textos van en frase con mayúscula inicial, los botones llevan verbos, los formatos de fecha e importe son correctos y los códigos siguen el formato del documento.
 17. Hay coherencia entre pantallas: mismos datos, mismos mapas de color, mismas posiciones de acciones.
@@ -422,3 +429,24 @@ Aplica la rúbrica en el paso 4 de SKILL.md. Si hay agentes disponibles, que la 
 23. El color da vida sin ruido (§4): bloque de color en la cabecera de las páginas de entrada, KPI con sello de icono, estados con su color en etiquetas y gráficos, y nada de color sin significado.
 24. Si la pantalla usa un patrón o componente de 26.9 (calendario, comentarios, kanban, navegadores, organigrama), sigue §16 y la versión del cliente lo admite.
 25. Todo es del proceso del proyecto: entidades, roles, estados, códigos, textos y datos salen de su `ddf.md`; no queda nada de una plantilla ni de un ejemplo del kit (nombres, códigos como `EXP-`, estados o roles de otro proceso).
+
+## 18. Doctrina Appian
+
+Si esta guía y appian-best-practices no coinciden, manda appian-best-practices; avisa para corregir la guía.
+
+Reglas de pantalla que se aplican siempre (✔: las comprueba el validador). Detalle y motivo en la sección citada de `appian-best-practices` (`scripts/seccion.py 02 4.9`).
+
+- Un solo botón SOLID; la pérdida real de datos, GHOST + NEGATIVE con confirmación ✔ (BP 02 §4.9).
+- En un flujo secuencial, lo que aún no se puede usar se desactiva, no se oculta (BP 02 §4.7).
+- Una regla de varios campos se valida en el formulario o la sección, con mensaje (BP 02 §4.1).
+- Selección por número de opciones; radio con una opción marcada ✔ (BP 02 §4.8).
+- Formulario o asistente en diálogo a FULL ✔, título y botones fijos si hay scroll (BP 02 §4.5, §4.6).
+- Grids: cabecera de fila ✔, una acción por celda ✔, 50 filas como máximo ✔ (BP 02 §5.4–5.6).
+- Gráficos: tabla alternativa ✔, solos en la fila con más de 7 puntos ✔, ≤5 colores (BP 02 §9.5, §5A.3, §5A.2).
+- Todo campo con label ✔; títulos con etiqueta H real y un H1 por pantalla ✔ (BP 02 §9.3, §9.6).
+- El color nunca va solo: texto o icono con él (BP 02 §9.2).
+- Sin datos, un estado vacío con mensaje (BP 02 §7.3).
+- Site: ≤8 páginas de primer nivel ✔; con MERCURY no hay iconos de página (BP 09 §2.1, §3.3).
+- El listado de una entidad es una página Record List si basta (BP 09 §1.3).
+- Pestañas horizontales hasta 6; con más, verticales ✔ (BP 09 §4.2).
+- Lo que solo ve un perfil lleva `$note` con la capa de seguridad que lo aplica: registro, vista, acción de registro, campo o visibilidad de interfaz, que solo oculta (`por_perfil()`; BP 06 §5, BP 09 §7.3).
