@@ -64,7 +64,7 @@ Son una ayuda: ante la duda, **la fuente es el fichero `definition`**.
 
 Según la documentación oficial, para iniciar un process model hace falta **al menos el permiso Initiator**; Administrator, Editor, Manager y Viewer también pueden iniciarlo, y **Deny** no puede hacer nada. Fuente: https://docs.appian.com/suite/help/26.6/process-model-object.html#process-model-security
 
-Los procesos que arranca un temporizador o que se lanzan como subproceso se ejecutan como el usuario que desplegó el process model. Fuente: https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#insufficient-object-permissions
+Los procesos que arranca un temporizador o que se lanzan como subproceso se ejecutan como el usuario que desplegó el process model. Fuente: https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors
 
 Cada nodo desatendido se ejecuta como quien inició el proceso o como su diseñador, según su pestaña Asignación, que la extracción no trae: es ❓ salvo que la definición lo muestre. Fuente: https://docs.appian.com/suite/help/26.6/Process_Node_and_Smart_Service_Properties.html#assignment-tab
 
