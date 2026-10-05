@@ -1,73 +1,110 @@
-# Del análisis funcional (`ddf.md`) al inventario de pantallas
+# Del análisis funcional al inventario de pantallas
 
-La entrada es el `ddf.md` de `appian-functional-analyst` (modo síntesis, fiel o
-actualización; ver SKILL.md, paso 1). Esta fase produce el **inventario de
-pantallas**, que se confirma antes de escribir el `app.json`. La lectura de las
-fuentes originales ya la ha hecho el analista: aquí no se vuelve a interpretar
-el documento del cliente, se traduce el análisis a pantallas.
+La entrada es `<p>/analisis/funcional.md`, que escribe `appian-functional-analyst` (SKILL.md, paso 1).
+Su formato está en `references/funcional-plantilla.md` de esa skill. Si existe `analisis/tecnico.md`,
+se usan además su §0, §3 y §4. Esta fase produce el **inventario de pantallas**, que se confirma antes de
+escribir el `app.json`. Las fuentes ya las ha leído el analista: aquí no se reinterpreta lo que dijo el
+cliente, se traduce el funcional a pantallas.
 
-## 0. Sección del `ddf.md` → spec
+## 0. Apartado del funcional → spec
 
-| Sección | Va a |
+| Apartado | Va a |
 |---|---|
-| Sec 1 Fuentes y versión | `app.source` («DF BPM-GI-011-2 v1.04 (FU-01); reunión 03/09 (FU-02)»; versión del análisis) |
-| Sec 3 Alcance | Qué módulos entran en el prototipo; lo excluido no se prototipa |
-| Sec 5 Actores | Usuario de ejemplo del site (el rol protagonista de la demo), quién ve cada pantalla (`$note`), roles de las tareas P05 |
-| Sec 6 Actividades y fichas de tarea (6.3) | Una pantalla P05 por cada tarea de usuario que decide algo (ver abajo); las actividades marcadas «En la aplicación: No» van a `requirements` con `outOfScope: "<motivo>"` |
-| Sec 8 Requisitos | `requirements` con el ID y el nombre **literales**, y `req` de cada pantalla |
-| Sec 9 Reglas | `$validations`, `required` / `showWhen` condicionales; el mensaje cita la regla («(RB-004)») |
-| Sec 10 Modelo de datos | `data`: un dataset por entidad con el nombre de su Record Type y **sus atributos como nombres de campo**; relaciones 1..N como campo `<entidad>Id`; listas de valores → desplegables y datos de ejemplo |
-| Sec 11 Estados | `maps.estadoColor`, `maps.estadoPaso`, `a!milestoneField` |
-| **Sec 12 Pantallas** | **Una pantalla (o diálogo) por ficha**, ver abajo |
-| Sec 15 KPIs e informes | P06 (KPIs) y P08 (informes) |
-| Sec 17 Preguntas 🔴🟡🟢 | `openQuestions` con `priority` (`CRITICA`, `IMPORTANTE`, `MEJORA`) |
+| Cabecera (`Versión: 1.2 · Estado: …`) | `app.source` («analisis/funcional.md v1.2») |
+| §1 Objetivo y alcance | Qué entra en el prototipo; lo que queda fuera no se prototipa. Los términos, tal cual, en los textos de pantalla |
+| §2 Perfiles | Un grupo de ejemplo por perfil en `groups` y personas ficticias en `users`. `site.user`: una persona del perfil protagonista de la demo, el que más pasos tiene en §3 salvo que el usuario diga otro |
+| §3 Pasos `ACT-nn` | Todos a `requirements` con su ID y título. Según su «Pantalla»: `PAN-nn` → esa pantalla lleva el paso en `req` (§0.2); «Fuera de la aplicación» → `outOfScope` con quién lo hace; «—» (lo hace la aplicación) → `noScreen`; sin decidir → `noScreen` con su PC |
+| §3 Estados | `maps.estadoColor` con la paleta (`state_map`), `maps.estadoPaso` y el hito (`milestone`). Todos los estados, presentes en los datos de ejemplo |
+| §3 Escenarios `ESC-nn` | Recorridos de la prueba dirigida (SKILL.md, paso 4) y guion de la demo. Sus casos concretos, como filas de los datos de ejemplo |
+| §4 Historias `HU-nn` | `requirements` con el ID y el título **literales**; `req` de la pantalla que dice su «Pantalla». Con «—», `noScreen` y el motivo |
+| §4 Criterios `HU-nn.m` | No van al spec: son la lista de comprobación del paso 4 |
+| §4 Reglas `RB-nn` | `$validations` con el mensaje literal del criterio, `required` y `showWhen` condicionales. Una regla que no se ve en pantalla, en un `$note` |
+| §5 Pantallas `PAN-nn` | Una pantalla o diálogo por ficha (§0.1) |
+| §6 Información | `data` (§0.3) y lo que muestra cada pantalla («Dónde se ve») |
+| §7 Avisos `AV-nn` | Lo que se ve: la tarea en la bandeja, un banner tras enviar. El correo, en un `$note` del botón que lo dispara |
+| §8 Documentos `DOC-nn` | Lo que se sube → `a!fileUploadField` con formato y tamaño en `instructions`. Lo que genera la aplicación → enlace o visor en la ficha, con `$note`. La descarga de una lista → `showExportButton` |
+| §9 Otros sistemas `INT-nn` | Los datos que llegan de fuera, en solo lectura y con `$note`. La integración no se pinta |
+| §10 Condiciones de uso | Móvil (`stackWhen`), idiomas, accesibilidad |
+| §11 `PC-nn` abiertos | `openQuestions`: `id` el PC, `text` la pregunta y sus opciones, `screen` la pantalla que corresponde a «Afecta a». Los tachados no van |
+| Técnico §0 | `app.appianVersion` (`spec-format.md`) |
+| Técnico §3 y §4 | Nombres de record types y campos (§0.3) y capa de seguridad de cada parte (§0.1) |
 
-Ficha de pantalla (Sec 12) → pantalla:
+### 0.1 Ficha `PAN-nn` → pantalla
 
 | En la ficha | En la spec |
 |---|---|
-| ID y nombre (PAN-xx, o el del DF) | `title` y `ref` (`"PAN-03 · Búsqueda de estudios"`); el `ref` enlaza cada captura con su ficha |
-| Tipo y propósito | `type` de la pantalla y patrón (§1) |
-| Se abre desde | Página del site, botón con `$action.goto`, `recordActions`, tarea |
-| Organización | Secciones (`a!sectionLayout`), pestañas, pasos del asistente, tabla agrupada. En una ficha, **cada área 1:N con volumen propio** (documentación, comunicaciones, planificación, historial…) es una **vista del registro** (máximo 7; las áreas pequeñas se agrupan). Nunca una pila de secciones plegables en el resumen (guía §8) |
-| Campos | Campos o columnas en ese orden; tipo → componente (§2); obligatorio → `required`; no editable o calculado → `readOnly`; valor por defecto → valor inicial en `local`; «si está vacío» → lo que muestra la celda o el campo (por defecto «–», filtro `dash`). **Listados con más de 7 columnas**: consolida en celdas de dos líneas (`two_line`: código + título, tipología + aeropuerto, paso + fase) sin perder ningún dato. Si aun así sobran, propón llevarlas a la ficha con un `$assumption` y una pregunta abierta para validarlo con el cliente; no las elimines sin decirlo |
-| Filtros | Filtros del listado → hasta 4 `userFilters` en la barra del grid, más el buscador. Los filtros predefinidos que se usan a diario («mis informes», «con alertas») → **vistas guardadas** con `a!tabLayout` y el recuento en la etiqueta. Filtros de página que afectan a varios bloques (informes) → barra de filtros en una card (desplegables en fila). Valor por defecto → `local` inicial. No hagas una card-formulario de 8 desplegables encima del grid |
-| Ordenación | `initialSorts` del `a!gridField` y `sortField` en las columnas ordenables |
-| Acciones | Botones o acciones de registro con el **texto literal**; «quién la ve» → `showWhen`; «cuándo está activa» → `disabled`; «qué pasa después» → `$action` (`goto`, `dialog`, banner con `params`); confirmación → `confirmHeader` / `confirmMessage` literal |
-| Reglas de la pantalla | `$validations` con el mensaje literal, `required` / `showWhen` condicionales; visibilidad por perfil → `por_perfil()`: `$note` con el perfil y la capa de seguridad de Appian que lo aplica (registro, vista, acción de registro, campo o visibilidad de interfaz; guía §18) y `showWhen` si la demo debe enseñarlo oculto; cada «Caso A/B» visible en el prototipo → su condición y efecto (banner, campo, botón) |
-| Textos literales | `instructions`, `helpTooltip`, mensajes de `$validations` y de confirmación, sin reescribirlos |
-| Criterios de aceptación | No van a la spec: son la **lista de comprobación** del paso 4. Los de presentación y validación se comprueban en el prototipo; los que dependen de algo que el prototipo no hace (integraciones, avisos, plazos) se anotan en un `$note` |
+| `**PAN-04 — Revisar documentación**` | `ref: "PAN-04 · Revisar documentación"`, literal. Enlaza cada captura con su ficha. `title`, el que verá el usuario |
+| Para qué sirve, quién entra, desde dónde se abre | `type` y patrón (§1). Página del site (`site.pages`), botón con `$action`, `recordActions` o tarea |
+| Cada fila de «Parte» | Una sección, bloque, paso o vista, en el orden de la tabla. En una ficha de registro, cada parte 1:N con volumen propio (documentos, comunicaciones, historial) es una **vista** (máximo 7; las pequeñas se agrupan), nunca una pila de secciones plegables (guía §8) |
+| «Qué permite» | Los campos y acciones de esa parte |
+| «Quién»: Todos | Sin restricción |
+| «Quién»: uno o varios perfiles | `por_perfil(nodo, perfil, capa)`: `$note` con el perfil y la capa de seguridad que lo aplica. La capa, de técnico §4; sin técnico, la que corresponde según la guía §18 (registro, campo, vista, acción o interfaz). `showWhen` solo si la demo debe enseñarlo oculto |
+| `Historias: HU-04, HU-05.` | `req`, más el `ACT-nn` si es la pantalla de un paso |
+| La captura | La pone el prototipo (SKILL.md, paso 5) |
 
-Ficha de tarea (Sec 6.3) → pantalla P05 si la tarea decide algo (si solo recoge datos, P03). La ficha de tarea y su ficha de pantalla de la Sec 12 describen la misma pantalla: una sola en el spec, con los dos IDs en `ref` y `req`.
+La ficha no dice cómo se compone la pantalla. Eso sale de las historias y de §6:
 
-| En la ficha | En la spec |
+| De | En la spec |
 |---|---|
-| Actor, estado de entrada | Tarea en la bandeja del rol; la vista de la tarea muestra el registro en ese estado |
-| Opciones | `a!cardChoiceField` con `a!cardTemplateBarTextStacked` en la card «Decisión» (patrón P05, helper `choice_cards`): texto literal de cada opción, su estado de salida como texto secundario e icono de color (aprobar POSITIVE, devolver naranja, rechazar NEGATIVE). «Enviar decisión» las envía |
-| Condición de cada opción | `required` condicional o `$validations` (p. ej. comentario obligatorio al devolver) |
-| Estado de salida y siguiente | `$action`: vuelta a la bandeja o al registro con un banner («El expediente ha pasado a «Aprobado»») |
-| Criterio mínimo de aceptación | Lista de comprobación del paso 4, como los de pantalla |
+| §6 «Dónde se ve» | Qué datos lleva cada pantalla. «No se muestra» → solo en `data` |
+| §6 «Formato» | Componente (§2), `characterLimit`, filtro de presentación (`date`, `eur`) |
+| §6 «Obligatorio» | «Sí» → `required`; condicional («Si es desfavorable») → `required` con su expresión; «Automático» → `readOnly`, o fuera del alta |
+| Descripción y criterios de la historia | Columnas, filtros y orden de los listados. Acciones con su texto literal: quién la ve → `showWhen`, cuándo está activa → `disabled`, qué pasa después → `$action`, confirmación → `confirmHeader` / `confirmMessage` literales. Los textos entre comillas → `instructions`, `helpTooltip`, mensajes de `$validations` y banners, sin reescribirlos |
 
-Nivel de certeza del análisis:
-- ✅ Confirmado / 🔶 Inferencia → se prototipa sin marca.
-- ⚠️ Pendiente de validación → se prototipa y se marca con `$assumption` («⚠️ RB-007 pendiente de validación»), para que el cliente lo vea en la reunión.
-- ❓ No definido → no se inventa: se deja el hueco mínimo con `$assumption` y se añade a `openQuestions`.
-- 🔒 Validado → como ✅. Lo tachado (`~~RF-007~~ … Anulado por D-xxx`) no se construye; una pregunta tachada («Respondida») no va a `openQuestions`.
-- Tras una actualización del análisis, el informe de impacto (`impacto/FU-xx.md`) lista las «Pantallas afectadas»: se regeneran solo esas y se vuelven a capturar.
+- **Listados con más de 7 columnas**: consolida en celdas de dos líneas (`two_line`: código + título,
+  tipología + aeropuerto, paso + fase) sin perder ningún dato. Si aun así sobran, propón llevarlas a la
+  ficha con un `$assumption` y una pregunta abierta; no las quites sin decirlo.
+- **Filtros**: hasta 4 `userFilters` en la barra del grid, más el buscador. Los filtros predefinidos de uso
+  diario («mis informes», «con alertas») → vistas guardadas con `a!tabLayout` y el recuento en la
+  etiqueta. Los de página que afectan a varios bloques (informes) → barra de filtros en una card. Nunca una
+  card-formulario de 8 desplegables encima del grid. Valor por defecto → `local` inicial.
+- **Ordenación**: `initialSorts` del `a!gridField` y `sortField` en las columnas ordenables.
 
-Si el análisis no numera algo que el prototipo necesita referenciar, no inventes
-IDs en la spec: pide al analista que los asigne en el `ddf.md` (IDs estables) y
-úsalos.
+### 0.2 Paso `ACT-nn` con pantalla → tarea
+
+El `PAN-nn` de un paso es la pantalla donde su perfil lo hace. Si el paso llega como tarea (la ficha dice
+«Tarea de…» o técnico §7 dice formulario de tarea), es un P05 si decide algo y un P03 si solo recoge
+datos. El paso y su ficha describen la misma pantalla: una sola en el spec.
+
+| En el paso | En la spec |
+|---|---|
+| «Quién» y «Empieza cuando» | Tarea en la bandeja del perfil; enseña el registro en el estado en que llega |
+| Cada opción («- Aprobar: …») | `a!cardChoiceField` con `a!cardTemplateBarTextStacked` en la card «Decisión» (P05, helper `choice_cards`): texto literal, estado de salida como texto secundario e icono de color (aprobar POSITIVE, devolver naranja, rechazar NEGATIVE). «Enviar decisión» la envía |
+| Condición de una opción | `required` condicional o `$validations` (comentario obligatorio al devolver) |
+| Adónde lleva | `$action`: vuelta a la bandeja o al registro con un banner («El expediente ha pasado a «Aprobado»») |
+| «Plazo» | Banner de vencimiento arriba de la tarea |
+
+### 0.3 §6 → `data`
+
+- Un dataset por entidad (`### 6.n`). Con técnico §3, el `recordType` y los campos con sus nombres reales
+  (columna «Campo»; el dato del funcional está en «Uso»). Sin técnico, `recordType` con el prefijo del
+  proyecto y la entidad (`EXP Expediente`), y cada campo con el nombre del dato en camelCase español
+  («Fecha de inicio» → `fechaInicio`). Son provisionales: los fija la especificación técnica.
+- La relación que dice la frase final de cada entidad → campo `<entidad>Id` en la hija.
+- Listas de valores → opciones de desplegables, radios o cards, y valores de los datos.
+- Lo que el prototipo no sabe calcular (días hasta el vencimiento), precalculado en los datos
+  (`spec-format.md`).
+
+### 0.4 Estado de cada pieza
+
+El comentario de trazabilidad de cada ficha o fila (`<!-- ✅ FU-03 00:14:32 -->`) dice cómo se prototipa:
+
+- 🔒 ✅ 🔶 → sin marca.
+- ⚠️ → se prototipa y lleva un `$assumption` que cita su PC («Pendiente: PC-04»), para que el cliente lo
+  vea en la reunión.
+- ❓ → no se inventa: hueco mínimo con `$assumption`. Su PC ya está en `openQuestions`.
+- «(pendiente: PC-04)» dentro de una frase → lo mismo, solo para esa parte.
+- Tachado (`**~~HU-11~~ — …** Anulada por D-02`) → no se construye. Un criterio tachado no se comprueba.
 
 ## 1. Asignar patrón a cada pantalla
 
-| El documento dice… | Patrón |
+| La ficha o la historia dice… | Patrón |
 |---|---|
 | consultar, listar, buscar, filtrar, exportar X | P01 Listado |
 | ficha, detalle, consultar un X, ver el expediente | P02 Vista de registro |
 | alta / solicitud / registro con ≤ 8 campos o un solo bloque | P03 Formulario |
 | alta con varios bloques, > 8 campos, documentación o pasos | P04 Asistente |
-| aprobar, validar, revisar, dar el visto bueno, resolver (por un rol) | P05 Tarea |
+| aprobar, validar, revisar, dar el visto bueno, resolver (por un perfil) | P05 Tarea |
 | tarea que solo recoge datos (cargar un documento, completar datos del registro) | P03 Formulario, con el contexto del registro arriba o en `a!sidebarTemplate` |
 | inicio: tareas pendientes, avisos, indicadores y accesos del usuario | P06 Inicio |
 | editar, modificar, cambiar estado, adjuntar sobre un X existente | P07 Diálogo (acción de registro) |
@@ -77,15 +114,15 @@ IDs en la spec: pide al analista que los asigne en el `ddf.md` (IDs estables) y
 | asistente virtual, chatbot, preguntar a los datos o a un documento, resumen o borrador generado con IA | P11 Asistente de IA |
 | extracción automática de documentos (OCR, IDP), clasificación o datos propuestos por IA que alguien confirma | P12 Revisión de datos sugeridos por IA |
 
-Si el documento dice expresamente cómo es la pantalla («en un único formulario», «en varios pasos»), eso manda sobre los umbrales de la tabla. El patrón se elige por el contenido, no por el nombre que le dé el documento (un «cuadro de mando» sin tareas ni accesos es un P08).
+Si el funcional dice expresamente cómo es la pantalla («en un único formulario», «por pasos»), eso manda sobre los umbrales de la tabla. El patrón se elige por el contenido, no por el nombre (un «cuadro de mando» sin tareas ni accesos es un P08).
 
-**IA**: P11 y P12 solo cuando el análisis la pide. Si no la pide pero hay un caso claro (documentos que alguien teclea a mano, búsquedas por texto libre en muchos registros, informes que se redactan copiando datos), propónla como pantalla o bloque marcado con `$assumption` («Propuesta: …» y el beneficio) y como pregunta abierta; el flujo manual sigue existiendo. El chat de datos va en un panel lateral del listado (P01 con `ai_side_pane`); el chat de un registro, en su vista resumen (P02 con `ai_records_chat`); la búsqueda por significado, en el propio grid (`smartSearchType` + `match_quality`).
+**IA**: P11 y P12 solo cuando el funcional la pide. Si no la pide pero hay un caso claro (documentos que alguien teclea a mano, búsquedas por texto libre en muchos registros, informes que se redactan copiando datos), propónla como pantalla o bloque marcado con `$assumption` («Propuesta: …» y el beneficio) y como pregunta abierta; el flujo manual sigue existiendo. El chat de datos va en un panel lateral del listado (P01 con `ai_side_pane`); el chat de un registro, en su vista resumen (P02 con `ai_records_chat`); la búsqueda por significado, en el propio grid (`smartSearchType` + `match_quality`).
 
-Una necesidad = una pantalla. Si dos requisitos caben en la misma pantalla (listado + exportar), comparten pantalla y ambos IDs van en `req`.
+Una necesidad, una pantalla. Si dos historias caben en la misma (listado + exportar), comparten pantalla y las dos van en `req`.
 
-## 2. Tipo de dato → componente SAIL
+## 2. Formato del dato → componente SAIL
 
-| En el documento | Editable | Solo lectura |
+| Formato en §6 | Editable | Solo lectura |
 |---|---|---|
 | Texto corto (longitud N) | `a!textField` + `characterLimit: N` | `a!textField readOnly` |
 | Texto largo / observaciones | `a!paragraphField` | `a!textField readOnly` o `a!richTextDisplayField` |
@@ -98,7 +135,7 @@ Una necesidad = una pantalla. Si dos requisitos caben en la misma pantalla (list
 | Sí/No que debe contestarse | `a!radioButtonField` Sí/No | `readOnly` con mapa `siNo` |
 | Fecha / fecha y hora | `a!dateField` / `a!dateTimeField` | filtro `date` / `datetime` |
 | Entero / decimal / importe | `a!integerField` / `a!floatingPointField` | filtro `num` / `eur` |
-| Usuario / grupo | `a!pickerFieldUsers` / `a!pickerFieldGroups`; si hay que recorrer la estructura para encontrarlo, `a!userBrowserFieldColumns` / `a!groupBrowserFieldColumns` | nombre + `a!imageField` AVATAR; línea jerárquica → `a!orgChartField` |
+| Persona / grupo | `a!pickerFieldUsers` / `a!pickerFieldGroups`; si hay que recorrer la estructura para encontrarlo, `a!userBrowserFieldColumns` / `a!groupBrowserFieldColumns` | nombre + `a!imageField` AVATAR; línea jerárquica → `a!orgChartField` |
 | Documento o carpeta ya existente en Appian | `a!pickerFieldDocuments` / `a!pickerFieldFolders` / `a!pickerFieldDocumentsAndFolders`; explorar una biblioteca → `a!documentAndFolderBrowserFieldColumns` | `a!documentDownloadLink` / `a!documentViewerField` |
 | Jerarquía propia (aeropuerto → terminal → zona, organigrama de unidades) | `a!hierarchyBrowserFieldColumns` (selección) | `a!hierarchyBrowserFieldTree` |
 | Firma | `a!signatureField` | la firma guardada como imagen |
@@ -114,15 +151,20 @@ Una necesidad = una pantalla. Si dos requisitos caben en la misma pantalla (list
 
 ## 3. No inventar
 
-- No añadir campos, estados, roles ni pantallas que el documento no pida.
-- Cuando una pantalla necesita algo que el documento no define (qué columnas lleva el listado, qué ve el usuario tras enviar), elegir lo mínimo razonable y marcarlo con `$assumption` en el componente o en `assumptions` de la pantalla.
-- Contradicciones y huecos → `openQuestions` con la pantalla afectada. Son el orden del día de la reunión con AENA.
+- No añadir campos, estados, perfiles ni pantallas que el funcional no tenga.
+- Si una pantalla necesita algo que el funcional no define (qué ve el usuario tras enviar, el orden de la
+  lista), elegir lo mínimo razonable y marcarlo con `$assumption` en el componente o en `assumptions` de la
+  pantalla.
+- Si el prototipo necesita referenciar algo que el funcional no numera (un diálogo sin ficha PAN), no se
+  inventa el ID: el analista añade la ficha con el siguiente libre (`indice.py siguientes`).
+- Contradicciones y huecos nuevos → `openQuestions` con un ID provisional `Q-nn` y la pantalla afectada.
+  Vuelven al analista, que los convierte en PC (SKILL.md, paso 5).
 
 ## 4. Checkpoint con el usuario
 
 Antes de escribir el `app.json`, presentar en un solo mensaje:
 
-1. Inventario: tabla `Id · Pantalla · Patrón · Tarea principal · Requisitos` (el brief de diseño de SKILL.md, paso 1).
+1. Inventario: tabla `Id · Pantalla · Patrón · Tarea principal · Historias` (el brief de diseño de SKILL.md, paso 1).
 2. Navegación: páginas del site y desde dónde se abre cada pantalla.
 3. Preguntas abiertas y supuestos.
 

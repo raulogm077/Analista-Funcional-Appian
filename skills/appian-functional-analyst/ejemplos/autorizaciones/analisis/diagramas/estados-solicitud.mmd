@@ -1,0 +1,16 @@
+stateDiagram-v2
+    direction LR
+    [*] --> Borrador
+    Borrador --> EnRevision: Unidad envía
+    EnRevision --> PendienteSubsanar: Técnico devuelve
+    PendienteSubsanar --> EnRevision: Unidad reenvía
+    EnRevision --> EnInforme: Técnico la da por completa
+    EnInforme --> PendienteResolver: Están los dos informes
+    PendienteResolver --> Autorizada: Favorable
+    PendienteResolver --> Denegada: Desfavorable
+    Autorizada --> [*]
+    Denegada --> [*]
+    EnRevision: En revisión
+    PendienteSubsanar: Pendiente de subsanar
+    EnInforme: En informe
+    PendienteResolver: Pendiente de resolver

@@ -348,7 +348,7 @@ Aquí fallan casi todos los listados. Las reglas:
 
 ## 13. Datos de ejemplo
 
-- Realistas y del dominio del proyecto (el del `ddf.md`, no el de un ejemplo del kit): aeropuertos por código IATA, personas y empresas verosímiles, importes creíbles. Nunca «Lorem ipsum» ni «Test 1».
+- Realistas y del dominio del proyecto (el de su análisis funcional, no el de un ejemplo del kit): aeropuertos por código IATA, personas y empresas verosímiles, importes creíbles. Nunca «Lorem ipsum» ni «Test 1».
 - 10–20 filas en la entidad principal, con todos los estados representados.
 - Coherencia entre pantallas: el mismo registro muestra los mismos datos en el listado, la ficha, la tarea y las capturas.
 - Personas ficticias. Nunca datos personales reales de empleados de AENA.
@@ -428,7 +428,7 @@ Aplica la rúbrica en el paso 4 de SKILL.md. Si hay agentes disponibles, que la 
 22. La navegación secundaria y las cabeceras siguen §15: pestañas o navegación vertical según el número de secciones, migas solo en jerarquías.
 23. El color da vida sin ruido (§4): bloque de color en la cabecera de las páginas de entrada, KPI con sello de icono, estados con su color en etiquetas y gráficos, y nada de color sin significado.
 24. Si la pantalla usa un patrón o componente de 26.9 (calendario, comentarios, kanban, navegadores, organigrama), sigue §16 y la versión del cliente lo admite.
-25. Todo es del proceso del proyecto: entidades, roles, estados, códigos, textos y datos salen de su `ddf.md`; no queda nada de una plantilla ni de un ejemplo del kit (nombres, códigos como `EXP-`, estados o roles de otro proceso).
+25. Todo es del proceso del proyecto: entidades, perfiles, estados, códigos, textos y datos salen de su análisis funcional; no queda nada de una plantilla ni de un ejemplo del kit (nombres, códigos como `EXP-`, estados o roles de otro proceso).
 
 ## 18. Doctrina Appian
 

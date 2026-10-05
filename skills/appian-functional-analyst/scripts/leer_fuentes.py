@@ -119,7 +119,62 @@ def read_docx(path):
         elif tag == "tbl":
             rows = [[ptext(tc) for tc in tr.findall("w:tc", NS)] for tr in el.findall("w:tr", NS)]
             out.append(md_table(rows))
-    return "\n\n".join(out), f"{paras} párrafos"
+    notas, n_com, n_cambios = docx_revision(z, body, styles)
+    detalle = f"{paras} párrafos" + (f", {n_com} comentarios" if n_com else "") + (f", {n_cambios} cambios marcados" if n_cambios else "")
+    return "\n\n".join(out + notas), detalle
+
+
+RX_PIEZA = re.compile(r"^~*((?:ACT|ESC|HU|RB|PAN|AV|DOC|INT|PC|DT|PT)-\d+)")
+
+
+def docx_revision(z, body, styles):
+    """Comentarios y cambios marcados de un Word (por ejemplo, el DF que devuelve el cliente revisado), cada uno
+    con el texto al que se refiere y la pieza (HU-07, PAN-03…) o el apartado donde está."""
+    w = f"{{{NS['w']}}}"
+    textos = {}
+    if "word/comments.xml" in z.namelist():
+        for c in ET.fromstring(z.read("word/comments.xml")).findall("w:comment", NS):
+            t = "\n".join("".join(x.text or "" for x in p.iter(f"{w}t")) for p in c.findall("w:p", NS)).strip()
+            textos[c.get(f"{w}id")] = (c.get(f"{w}author", ""), (c.get(f"{w}date") or "")[:10], t)
+    ancla, donde, abiertos = {}, {}, set()
+    cambios, titulo, pieza = [], "", ""
+    for p in body.iter(f"{w}p"):
+        texto_p = "".join(x.text or "" for x in p.iter(f"{w}t")).strip()
+        ps = p.find("w:pPr/w:pStyle", NS)
+        if texto_p and ps is not None and re.match(r"(heading|título|titulo|encabezado)", styles.get(ps.get(f"{w}val"), "")):
+            titulo, pieza = texto_p, ""
+        mp = RX_PIEZA.match(texto_p)
+        if mp:
+            pieza = mp.group(1)
+        lugar = titulo[:70] if pieza and titulo.startswith(pieza) else " · ".join(x for x in (pieza, titulo[:60]) if x)
+        for el in p.iter():
+            tag = el.tag.split("}")[1]
+            if tag == "commentRangeStart":
+                abiertos.add(el.get(f"{w}id"))
+                donde.setdefault(el.get(f"{w}id"), lugar)
+            elif tag == "commentRangeEnd":
+                abiertos.discard(el.get(f"{w}id"))
+            elif tag == "commentReference":
+                donde.setdefault(el.get(f"{w}id"), lugar)
+            elif tag == "t":
+                for i in abiertos:
+                    ancla[i] = ancla.get(i, "") + (el.text or "")
+            elif tag in ("ins", "del"):
+                t = "".join(x.text or "" for x in el.iter() if x.tag.split("}")[1] in ("t", "delText")).strip()
+                if t:
+                    cambios.append(f"- {'Añade' if tag == 'ins' else 'Quita'} «{t}» · {el.get(f'{w}author', '')} · "
+                                   f"{(el.get(f'{w}date') or '')[:10]} · en {lugar or 'el principio'}: «{texto_p[:120]}»")
+    notas = []
+    if textos:
+        notas.append("## Comentarios del documento")
+        for i, (autor, fecha, t) in textos.items():
+            a = re.sub(r"\s+", " ", ancla.get(i, "")).strip()
+            notas.append(f"- **C{int(i) + 1 if i.isdigit() else i}** · {autor} · {fecha} · en {donde.get(i) or 'el documento'}"
+                         + (f" · sobre «{a[:200]}»" if a else "") + f": {t}")
+    if cambios:
+        notas.append("\n## Cambios marcados\n")
+        notas += cambios
+    return ["\n".join(notas[:1] + [""] + notas[1:])] if notas else [], len(textos), len(cambios)
 
 
 def read_pptx(path):
@@ -421,9 +476,6 @@ def convert(path, out_dir, fid):
                 kind = "Transcripción"
                 dur = re.search(r"^Duración[^:\n]*:\s*(\d{1,2}:\d{2}(?::\d{2})?)", body[:2000], re.I | re.M)
                 detail = f"duración {dur.group(1) if dur else (stamps[-1] if stamps else '¿?')}, sin hablantes identificados"
-        m = re.search(r"(20\d{2})[-_]?(0[1-9]|1[0-2])[-_]?(0[1-9]|[12]\d|3[01])(?!\d)", path.name)
-        if m and ext not in (".eml", ".msg"):  # fecha en el nombre (p. ej. grabaciones de Teams): mejor que la del fichero
-            date = "-".join(m.groups())
         elif ext == ".docx":
             body, detail = read_docx(path); kind = "Documento Word"
         elif ext == ".pptx":
@@ -448,6 +500,9 @@ def convert(path, out_dir, fid):
             body, detail, kind = None, "imagen: revísala visualmente con Read", "Imagen"
     except Exception as e:  # noqa: BLE001 - un fichero dañado no debe parar el resto
         body, detail, kind = None, f"no leído: {type(e).__name__}: {e}", ext[1:].upper()
+    m = re.search(r"(20\d{2})[-_]?(0[1-9]|1[0-2])[-_]?(0[1-9]|[12]\d|3[01])(?!\d)", path.name)
+    if m and ext not in (".eml", ".msg"):  # fecha en el nombre (p. ej. grabaciones de Teams): mejor que la del fichero
+        date = "-".join(m.groups())
     return body, kind, detail, date
 
 

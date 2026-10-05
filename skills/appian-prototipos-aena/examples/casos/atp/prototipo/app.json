@@ -6,7 +6,8 @@
   "language": "es",
   "today": "2026-09-24",
   "appianVersion": "26.9",
-  "source": "examples/casos/atp/ddf.md v1.1 (modo fiel de la ERS de ejemplo, FU-01) · datos ficticios"
+  "$assumption": "Versión de Appian sin confirmar: el análisis no tiene especificación técnica (técnico §0). Se prototipa con 26.9.",
+  "source": "analisis/funcional.md v1.0 (modo fiel de la ERS de ejemplo, FU-01) · datos ficticios"
  },
  "site": {
   "displayName": "Acuerdos con Terceras Partes",
@@ -41,72 +42,147 @@
  },
  "requirements": [
   {
-   "id": "RF-01",
-   "title": "Indicadores en la página de inicio"
+   "id": "HU-01",
+   "title": "Ver los indicadores de la cartera"
   },
   {
-   "id": "RF-02",
-   "title": "Tareas pendientes del usuario"
+   "id": "HU-02",
+   "title": "Ver mis tareas pendientes"
   },
   {
-   "id": "RF-03",
-   "title": "Listado con búsqueda, filtros y exportación"
+   "id": "HU-03",
+   "title": "Buscar, filtrar y exportar acuerdos"
   },
   {
-   "id": "RF-04",
-   "title": "Acceso a la ficha desde el listado"
+   "id": "HU-04",
+   "title": "Abrir la ficha desde la lista"
   },
   {
-   "id": "RF-05",
-   "title": "Alta en varios pasos con resumen"
+   "id": "HU-05",
+   "title": "Dar de alta un acuerdo por pasos"
   },
   {
-   "id": "RF-06",
-   "title": "Importe solo con contenido económico"
+   "id": "HU-06",
+   "title": "Pedir el importe solo si hay contenido económico"
   },
   {
-   "id": "RF-07",
-   "title": "Envío a revisión jurídica"
+   "id": "HU-07",
+   "title": "Enviar el acuerdo a revisión jurídica"
   },
   {
-   "id": "RF-08",
-   "title": "Ficha: ciclo de vida, datos, documentos e historial"
+   "id": "HU-08",
+   "title": "Consultar la ficha del acuerdo"
   },
   {
-   "id": "RF-09",
-   "title": "Editar datos y añadir documentos"
+   "id": "HU-09",
+   "title": "Editar los datos generales y añadir documentos"
   },
   {
-   "id": "RF-10",
+   "id": "HU-10",
    "title": "Resolver la revisión jurídica"
   },
   {
-   "id": "RF-11",
-   "title": "Aviso de vencimiento a 90 días"
+   "id": "HU-11",
+   "title": "Avisar del vencimiento en la ficha"
   },
   {
-   "id": "RF-12",
-   "title": "Informe de acuerdos"
+   "id": "HU-12",
+   "title": "Consultar el informe de acuerdos"
+  },
+  {
+   "id": "ACT-01",
+   "title": "Dar de alta el acuerdo"
+  },
+  {
+   "id": "ACT-02",
+   "title": "Resolver la revisión jurídica"
+  },
+  {
+   "id": "ACT-03",
+   "title": "Firmar el acuerdo",
+   "noScreen": "Pantalla por decidir (PC-01)"
   }
  ],
  "openQuestions": [
   {
-   "id": "P-006",
-   "text": "¿Quién puede editar un acuerdo en estado «Vigente»? La ERS solo habla del gestor en el alta.",
-   "screen": "editar",
-   "priority": "IMPORTANTE"
+   "id": "PC-01",
+   "text": "¿Cómo se registra la firma y quién pasa el acuerdo a «Pendiente de firma», «Vigente» y «Vencido»? (Se registran la fecha y los firmantes / Solo se adjunta el acuerdo firmado / La firma queda fuera de la aplicación)",
+   "screen": "revision"
   },
   {
-   "id": "P-001",
-   "text": "¿Quién pasa el acuerdo a «Pendiente de firma», «Vigente» y «Vencido»? ¿La firma se registra en la aplicación (fecha, firmantes) o solo se adjunta el PDF firmado?",
-   "screen": "acuerdo",
-   "priority": "CRITICA"
+   "id": "PC-02",
+   "text": "¿Qué columnas tiene la lista de acuerdos? (Código, título, tercero, tipo, aeropuerto, fecha de fin y estado / Otras)",
+   "screen": "acuerdos"
   },
   {
-   "id": "P-007",
-   "text": "¿«Devolver para cambios» genera una tarea al gestor o el acuerdo vuelve a Borrador sin tarea?",
-   "screen": "revision",
-   "priority": "CRITICA"
+   "id": "PC-03",
+   "text": "¿Consulta ve solo los acuerdos vigentes también en la lista y en la ficha? (Sí, en todas las pantallas / En la lista ve todos)",
+   "screen": "acuerdos"
+  },
+  {
+   "id": "PC-04",
+   "text": "¿Qué cambios recoge el historial del acuerdo? (Solo los cambios de estado / También cada cambio de dato)",
+   "screen": "acuerdo"
+  },
+  {
+   "id": "PC-05",
+   "text": "¿Quién ve los indicadores de inicio y el informe? (Todos los perfiles / Solo el gestor y el revisor)",
+   "screen": "inicio"
+  },
+  {
+   "id": "PC-06",
+   "text": "¿En qué estados puede el gestor editar los datos generales? (Solo antes de enviarlo a revisión / En cualquier estado salvo «Rechazado»)",
+   "screen": "editar"
+  },
+  {
+   "id": "PC-07",
+   "text": "Al devolver para cambios, ¿el gestor recibe una tarea para corregir y reenviar el acuerdo? (Sí, una tarea / No: el acuerdo vuelve a «Borrador» sin tarea)",
+   "screen": "revision"
+  },
+  {
+   "id": "PC-08",
+   "text": "¿Cada filtro de la lista admite un valor o más de uno, y en qué orden sale la lista? (Un valor por filtro / Más de uno)",
+   "screen": "acuerdos"
+  },
+  {
+   "id": "PC-09",
+   "text": "¿Qué dicen los mensajes de RB-01 y RB-02, el aviso de vencimiento y la tarea de revisión? (Los que propone el prototipo / Otros)",
+   "screen": "alta"
+  },
+  {
+   "id": "PC-10",
+   "text": "¿Hay plazo para resolver la revisión jurídica y qué pasa si vence? (Sin plazo / Un plazo en días hábiles con aviso al vencer)",
+   "screen": "revision"
+  },
+  {
+   "id": "PC-11",
+   "text": "¿Qué avisos llegan también por correo? (Ninguno / La tarea de revisión / También la decisión al gestor)"
+  },
+  {
+   "id": "PC-12",
+   "text": "¿Cuántos acuerdos se registran al año y cuántos años se conservan?"
+  },
+  {
+   "id": "PC-13",
+   "text": "¿Quién mantiene las listas de tipos de acuerdo, tipos de tercero y aeropuertos? (Asesoría Jurídica / Un administrador de la aplicación)"
+  },
+  {
+   "id": "PC-14",
+   "text": "¿Cuántas personas usan la aplicación, cuántas a la vez y en qué horario?"
+  },
+  {
+   "id": "PC-15",
+   "text": "¿Qué se guarda de cada documento además del fichero? (El tipo de documento, quién lo sube y la fecha / Solo el fichero)",
+   "screen": "documento"
+  },
+  {
+   "id": "PC-16",
+   "text": "¿El importe comprometido suma solo los acuerdos vigentes o también los pendientes de firma? (Solo vigentes / Vigentes y pendientes de firma)",
+   "screen": "inicio"
+  },
+  {
+   "id": "Q-01",
+   "text": "¿Qué versión de Appian tiene el entorno? Va en técnico §0; el prototipo usa 26.9."
   }
  ],
  "maps": {
@@ -150,34 +226,92 @@
    "jgarcia": "Javier García Ruiz",
    "rsanchez": "Rocío Sánchez Vidal",
    "pmartin": "Pablo Martín Ortega",
+   "amoreno": "Andrés Moreno Pastor",
    "lfernandez": "Lucía Fernández Gil",
-   "amoreno": "Andrés Moreno Pastor"
+   "cnavarro": "Carmen Navarro Sanz"
   }
  },
  "users": [
   {
    "id": "mlopez",
-   "name": "María López Arranz"
+   "name": "María López Arranz",
+   "title": "Gestora de acuerdos · Madrid-Barajas",
+   "groups": [
+    "g-gestores"
+   ]
   },
   {
    "id": "jgarcia",
-   "name": "Javier García Ruiz"
+   "name": "Javier García Ruiz",
+   "title": "Gestor de acuerdos · Servicios Centrales",
+   "groups": [
+    "g-gestores"
+   ]
   },
   {
    "id": "rsanchez",
-   "name": "Rocío Sánchez Vidal"
+   "name": "Rocío Sánchez Vidal",
+   "title": "Gestora de acuerdos · Barcelona-El Prat",
+   "groups": [
+    "g-gestores"
+   ]
   },
   {
    "id": "pmartin",
-   "name": "Pablo Martín Ortega"
-  },
-  {
-   "id": "lfernandez",
-   "name": "Lucía Fernández Gil"
+   "name": "Pablo Martín Ortega",
+   "title": "Gestor de acuerdos · Canarias y Málaga",
+   "groups": [
+    "g-gestores"
+   ]
   },
   {
    "id": "amoreno",
-   "name": "Andrés Moreno Pastor"
+   "name": "Andrés Moreno Pastor",
+   "title": "Gestor de acuerdos · Sevilla, Palma y Bilbao",
+   "groups": [
+    "g-gestores"
+   ]
+  },
+  {
+   "id": "lfernandez",
+   "name": "Lucía Fernández Gil",
+   "title": "Letrada · Asesoría Jurídica",
+   "groups": [
+    "g-juridica"
+   ]
+  },
+  {
+   "id": "cnavarro",
+   "name": "Carmen Navarro Sanz",
+   "title": "Auditoría interna",
+   "groups": [
+    "g-consulta"
+   ]
+  }
+ ],
+ "groups": [
+  {
+   "id": "g-atp",
+   "name": "Acuerdos con terceras partes",
+   "description": "Todas las personas de la aplicación"
+  },
+  {
+   "id": "g-gestores",
+   "name": "Gestores de acuerdos",
+   "parent": "g-atp",
+   "description": "Perfil Gestor de acuerdos (unidades promotoras)"
+  },
+  {
+   "id": "g-juridica",
+   "name": "Asesoría Jurídica",
+   "parent": "g-atp",
+   "description": "Perfil Revisor jurídico"
+  },
+  {
+   "id": "g-consulta",
+   "name": "Consulta",
+   "parent": "g-atp",
+   "description": "Perfil Consulta"
   }
  ],
  "data": {
@@ -188,17 +322,16 @@
      "id": 1,
      "codigo": "ATP-2025-0001",
      "titulo": "Convenio de colaboración para formación en seguridad aeroportuaria",
-     "tipo": "Convenio",
-     "tercero": "Universidad Politécnica de Madrid",
-     "cif": "Q2818015F",
+     "tipoAcuerdo": "Convenio",
+     "tercero": "Universidad Politécnica del Tajo",
+     "cifNifTercero": "Q2899101C",
      "tipoTercero": "Universidad o centro de investigación",
-     "aeropuerto": "MAD",
-     "responsable": "María López Arranz",
-     "responsableId": "mlopez",
+     "aeropuertoUnidad": "MAD",
+     "responsableAena": "mlopez",
      "fechaInicio": "2025-03-01",
      "fechaFin": "2027-02-28",
-     "prorroga": true,
-     "conImporte": false,
+     "prorrogaAutomatica": true,
+     "contenidoEconomico": false,
      "importe": null,
      "contraprestacion": null,
      "estado": "Vigente",
@@ -209,18 +342,17 @@
     {
      "id": 2,
      "codigo": "ATP-2026-0002",
-     "titulo": "Acuerdo de confidencialidad proyecto biometría en filtros",
-     "tipo": "Acuerdo de confidencialidad",
-     "tercero": "Veridas Digital Authentication",
-     "cif": "B71330001",
+     "titulo": "Acuerdo de confidencialidad del proyecto de biometría en filtros",
+     "tipoAcuerdo": "Acuerdo de confidencialidad",
+     "tercero": "Biometrix Identidad Digital S.L.",
+     "cifNifTercero": "B71990102",
      "tipoTercero": "Empresa privada",
-     "aeropuerto": "BCN",
-     "responsable": "Javier García Ruiz",
-     "responsableId": "jgarcia",
+     "aeropuertoUnidad": "BCN",
+     "responsableAena": "jgarcia",
      "fechaInicio": "2026-02-15",
      "fechaFin": "2026-11-30",
-     "prorroga": false,
-     "conImporte": false,
+     "prorrogaAutomatica": false,
+     "contenidoEconomico": false,
      "importe": null,
      "contraprestacion": null,
      "estado": "Vigente",
@@ -231,18 +363,17 @@
     {
      "id": 3,
      "codigo": "ATP-2024-0003",
-     "titulo": "Protocolo general de actuación con el Ayuntamiento de El Prat",
-     "tipo": "Protocolo general de actuación",
-     "tercero": "Ajuntament del Prat de Llobregat",
-     "cif": "P0816800A",
+     "titulo": "Protocolo general de actuación con el Ayuntamiento de Vilamar",
+     "tipoAcuerdo": "Protocolo general de actuación",
+     "tercero": "Ayuntamiento de Vilamar de Llobregat",
+     "cifNifTercero": "P0899103D",
      "tipoTercero": "Administración pública",
-     "aeropuerto": "BCN",
-     "responsable": "Rocío Sánchez Vidal",
-     "responsableId": "rsanchez",
+     "aeropuertoUnidad": "BCN",
+     "responsableAena": "rsanchez",
      "fechaInicio": "2024-06-01",
      "fechaFin": "2026-12-15",
-     "prorroga": false,
-     "conImporte": false,
+     "prorrogaAutomatica": false,
+     "contenidoEconomico": false,
      "importe": null,
      "contraprestacion": null,
      "estado": "Vigente",
@@ -254,17 +385,16 @@
      "id": 4,
      "codigo": "ATP-2025-0004",
      "titulo": "Contrato de colaboración para la promoción turística de Canarias",
-     "tipo": "Contrato de colaboración",
-     "tercero": "Turismo de Canarias S.A.",
-     "cif": "A35077817",
+     "tipoAcuerdo": "Contrato de colaboración",
+     "tercero": "Consorcio Turístico Atlántico",
+     "cifNifTercero": "S3599104E",
      "tipoTercero": "Administración pública",
-     "aeropuerto": "LPA",
-     "responsable": "Pablo Martín Ortega",
-     "responsableId": "pmartin",
+     "aeropuertoUnidad": "LPA",
+     "responsableAena": "pmartin",
      "fechaInicio": "2026-01-01",
      "fechaFin": "2026-12-31",
-     "prorroga": true,
-     "conImporte": true,
+     "prorrogaAutomatica": true,
+     "contenidoEconomico": true,
      "importe": 180000,
      "contraprestacion": "Cesión de espacios y difusión institucional",
      "estado": "Vigente",
@@ -275,18 +405,17 @@
     {
      "id": 5,
      "codigo": "ATP-2026-0005",
-     "titulo": "Convenio de prácticas para grado en ingeniería aeroespacial",
-     "tipo": "Convenio",
-     "tercero": "Universidad de Sevilla",
-     "cif": "Q4118001I",
+     "titulo": "Convenio de prácticas para el grado en ingeniería aeroespacial",
+     "tipoAcuerdo": "Convenio",
+     "tercero": "Universidad de la Vega del Guadalquivir",
+     "cifNifTercero": "Q4199105F",
      "tipoTercero": "Universidad o centro de investigación",
-     "aeropuerto": "SVQ",
-     "responsable": "Lucía Fernández Gil",
-     "responsableId": "lfernandez",
+     "aeropuertoUnidad": "SVQ",
+     "responsableAena": "amoreno",
      "fechaInicio": "2026-10-01",
      "fechaFin": "2028-09-30",
-     "prorroga": true,
-     "conImporte": false,
+     "prorrogaAutomatica": true,
+     "contenidoEconomico": false,
      "importe": null,
      "contraprestacion": null,
      "estado": "Pendiente de firma",
@@ -297,18 +426,17 @@
     {
      "id": 6,
      "codigo": "ATP-2026-0006",
-     "titulo": "Acuerdo de colaboración en eficiencia energética de terminales",
-     "tipo": "Contrato de colaboración",
-     "tercero": "Iberdrola Clientes S.A.U.",
-     "cif": "A95758389",
+     "titulo": "Contrato de colaboración en eficiencia energética de las terminales",
+     "tipoAcuerdo": "Contrato de colaboración",
+     "tercero": "Energía Verde Terminales S.A.",
+     "cifNifTercero": "A95990106",
      "tipoTercero": "Empresa privada",
-     "aeropuerto": "SSCC",
-     "responsable": "Andrés Moreno Pastor",
-     "responsableId": "amoreno",
+     "aeropuertoUnidad": "SSCC",
+     "responsableAena": "amoreno",
      "fechaInicio": "2026-11-01",
      "fechaFin": "2029-10-31",
-     "prorroga": false,
-     "conImporte": true,
+     "prorrogaAutomatica": false,
+     "contenidoEconomico": true,
      "importe": 420000,
      "contraprestacion": "Cesión de espacios y difusión institucional",
      "estado": "En revisión jurídica",
@@ -319,18 +447,17 @@
     {
      "id": 7,
      "codigo": "ATP-2023-0007",
-     "titulo": "Protocolo de coordinación de emergencias con la Comunidad de Madrid",
-     "tipo": "Protocolo general de actuación",
-     "tercero": "Comunidad de Madrid · ASEM112",
-     "cif": "S7800001E",
+     "titulo": "Protocolo de coordinación de emergencias con la agencia regional",
+     "tipoAcuerdo": "Protocolo general de actuación",
+     "tercero": "Agencia Regional de Emergencias del Centro",
+     "cifNifTercero": "S7899107G",
      "tipoTercero": "Administración pública",
-     "aeropuerto": "MAD",
-     "responsable": "María López Arranz",
-     "responsableId": "mlopez",
+     "aeropuertoUnidad": "MAD",
+     "responsableAena": "mlopez",
      "fechaInicio": "2023-04-01",
      "fechaFin": "2026-03-31",
-     "prorroga": false,
-     "conImporte": false,
+     "prorrogaAutomatica": false,
+     "contenidoEconomico": false,
      "importe": null,
      "contraprestacion": null,
      "estado": "Vencido",
@@ -341,18 +468,17 @@
     {
      "id": 8,
      "codigo": "ATP-2026-0008",
-     "titulo": "Acuerdo de confidencialidad licitación de handling",
-     "tipo": "Acuerdo de confidencialidad",
-     "tercero": "Groundforce Cargo S.L.",
-     "cif": "B84527977",
+     "titulo": "Acuerdo de confidencialidad de la licitación de handling",
+     "tipoAcuerdo": "Acuerdo de confidencialidad",
+     "tercero": "Handling Peninsular Cargo S.L.",
+     "cifNifTercero": "B84990108",
      "tipoTercero": "Empresa privada",
-     "aeropuerto": "SSCC",
-     "responsable": "Javier García Ruiz",
-     "responsableId": "jgarcia",
+     "aeropuertoUnidad": "SSCC",
+     "responsableAena": "jgarcia",
      "fechaInicio": "2026-09-10",
      "fechaFin": "2027-09-09",
-     "prorroga": false,
-     "conImporte": false,
+     "prorrogaAutomatica": false,
+     "contenidoEconomico": false,
      "importe": null,
      "contraprestacion": null,
      "estado": "En revisión jurídica",
@@ -363,18 +489,17 @@
     {
      "id": 9,
      "codigo": "ATP-2026-0009",
-     "titulo": "Convenio de patrocinio del festival de cine de Málaga",
-     "tipo": "Convenio",
-     "tercero": "Festival de Málaga",
-     "cif": "P2906700F",
-     "tipoTercero": "Administración pública",
-     "aeropuerto": "AGP",
-     "responsable": "Pablo Martín Ortega",
-     "responsableId": "pmartin",
+     "titulo": "Convenio de patrocinio de un festival de cine",
+     "tipoAcuerdo": "Convenio",
+     "tercero": "Fundación Festival de Cine del Sur",
+     "cifNifTercero": "G2999109I",
+     "tipoTercero": "Otro",
+     "aeropuertoUnidad": "AGP",
+     "responsableAena": "pmartin",
      "fechaInicio": "2026-02-01",
      "fechaFin": "2026-10-31",
-     "prorroga": false,
-     "conImporte": true,
+     "prorrogaAutomatica": false,
+     "contenidoEconomico": true,
      "importe": 35000,
      "contraprestacion": "Cesión de espacios y difusión institucional",
      "estado": "Vigente",
@@ -386,17 +511,16 @@
      "id": 10,
      "codigo": "ATP-2026-0010",
      "titulo": "Contrato de colaboración para movilidad eléctrica en aparcamientos",
-     "tipo": "Contrato de colaboración",
-     "tercero": "Zunder Charging S.L.",
-     "cif": "B42812727",
+     "tipoAcuerdo": "Contrato de colaboración",
+     "tercero": "Recarga Urbana Movilidad S.L.",
+     "cifNifTercero": "B42990110",
      "tipoTercero": "Empresa privada",
-     "aeropuerto": "VLC",
-     "responsable": "Rocío Sánchez Vidal",
-     "responsableId": "rsanchez",
+     "aeropuertoUnidad": "VLC",
+     "responsableAena": "rsanchez",
      "fechaInicio": "2026-12-01",
      "fechaFin": "2030-11-30",
-     "prorroga": true,
-     "conImporte": true,
+     "prorrogaAutomatica": true,
+     "contenidoEconomico": true,
      "importe": 96000,
      "contraprestacion": "Cesión de espacios y difusión institucional",
      "estado": "Borrador",
@@ -407,18 +531,17 @@
     {
      "id": 11,
      "codigo": "ATP-2025-0011",
-     "titulo": "Convenio con la Guardia Civil para el control de fronteras",
-     "tipo": "Convenio",
-     "tercero": "Dirección General de la Guardia Civil",
-     "cif": "S2816003D",
+     "titulo": "Convenio de colaboración en el control de accesos",
+     "tipoAcuerdo": "Convenio",
+     "tercero": "Jefatura Insular de Seguridad de Baleares",
+     "cifNifTercero": "S0799111K",
      "tipoTercero": "Administración pública",
-     "aeropuerto": "PMI",
-     "responsable": "Andrés Moreno Pastor",
-     "responsableId": "amoreno",
+     "aeropuertoUnidad": "PMI",
+     "responsableAena": "amoreno",
      "fechaInicio": "2025-07-01",
      "fechaFin": "2027-06-30",
-     "prorroga": true,
-     "conImporte": false,
+     "prorrogaAutomatica": true,
+     "contenidoEconomico": false,
      "importe": null,
      "contraprestacion": null,
      "estado": "Vigente",
@@ -430,17 +553,16 @@
      "id": 12,
      "codigo": "ATP-2026-0012",
      "titulo": "Acuerdo de confidencialidad sobre datos de tráfico",
-     "tipo": "Acuerdo de confidencialidad",
-     "tercero": "Cirium Data Services Ltd.",
-     "cif": "N0073581E",
+     "tipoAcuerdo": "Acuerdo de confidencialidad",
+     "tercero": "Tráfico Aéreo Analytics Ltd.",
+     "cifNifTercero": "N0099112L",
      "tipoTercero": "Empresa privada",
-     "aeropuerto": "SSCC",
-     "responsable": "Lucía Fernández Gil",
-     "responsableId": "lfernandez",
+     "aeropuertoUnidad": "SSCC",
+     "responsableAena": "jgarcia",
      "fechaInicio": "2026-06-01",
      "fechaFin": "2027-05-31",
-     "prorroga": false,
-     "conImporte": false,
+     "prorrogaAutomatica": false,
+     "contenidoEconomico": false,
      "importe": null,
      "contraprestacion": null,
      "estado": "Rechazado",
@@ -452,17 +574,16 @@
      "id": 13,
      "codigo": "ATP-2026-0013",
      "titulo": "Convenio de investigación sobre ruido en entornos aeroportuarios",
-     "tipo": "Convenio",
-     "tercero": "CSIC · Instituto de Acústica",
-     "cif": "Q2818002D",
+     "tipoAcuerdo": "Convenio",
+     "tercero": "Centro de Investigación en Acústica Ambiental",
+     "cifNifTercero": "Q2899113M",
      "tipoTercero": "Universidad o centro de investigación",
-     "aeropuerto": "MAD",
-     "responsable": "María López Arranz",
-     "responsableId": "mlopez",
+     "aeropuertoUnidad": "MAD",
+     "responsableAena": "mlopez",
      "fechaInicio": "2026-04-01",
      "fechaFin": "2028-03-31",
-     "prorroga": false,
-     "conImporte": true,
+     "prorrogaAutomatica": false,
+     "contenidoEconomico": true,
      "importe": 64000,
      "contraprestacion": "Cesión de espacios y difusión institucional",
      "estado": "Vigente",
@@ -473,18 +594,17 @@
     {
      "id": 14,
      "codigo": "ATP-2026-0014",
-     "titulo": "Contrato de colaboración de accesibilidad PMR",
-     "tipo": "Contrato de colaboración",
-     "tercero": "Fundación ONCE",
-     "cif": "G78661923",
+     "titulo": "Contrato de colaboración de accesibilidad para personas con movilidad reducida",
+     "tipoAcuerdo": "Contrato de colaboración",
+     "tercero": "Fundación Accesibilidad Universal",
+     "cifNifTercero": "G78990114",
      "tipoTercero": "Otro",
-     "aeropuerto": "BIO",
-     "responsable": "Javier García Ruiz",
-     "responsableId": "jgarcia",
+     "aeropuertoUnidad": "BIO",
+     "responsableAena": "jgarcia",
      "fechaInicio": "2026-10-15",
      "fechaFin": "2027-10-14",
-     "prorroga": true,
-     "conImporte": true,
+     "prorrogaAutomatica": true,
+     "contenidoEconomico": true,
      "importe": 22000,
      "contraprestacion": "Cesión de espacios y difusión institucional",
      "estado": "En revisión jurídica",
@@ -495,18 +615,17 @@
     {
      "id": 15,
      "codigo": "ATP-2025-0015",
-     "titulo": "Protocolo con Renfe para intermodalidad tren-avión",
-     "tipo": "Protocolo general de actuación",
-     "tercero": "Renfe Viajeros S.M.E. S.A.",
-     "cif": "A86868189",
-     "tipoTercero": "Administración pública",
-     "aeropuerto": "MAD",
-     "responsable": "Pablo Martín Ortega",
-     "responsableId": "pmartin",
+     "titulo": "Protocolo para la intermodalidad tren-avión",
+     "tipoAcuerdo": "Protocolo general de actuación",
+     "tercero": "Ferrocarriles Interurbanos S.A.",
+     "cifNifTercero": "A86990115",
+     "tipoTercero": "Empresa privada",
+     "aeropuertoUnidad": "MAD",
+     "responsableAena": "pmartin",
      "fechaInicio": "2025-10-01",
      "fechaFin": "2027-09-30",
-     "prorroga": true,
-     "conImporte": false,
+     "prorrogaAutomatica": true,
+     "contenidoEconomico": false,
      "importe": null,
      "contraprestacion": null,
      "estado": "Vigente",
@@ -517,18 +636,17 @@
     {
      "id": 16,
      "codigo": "ATP-2026-0016",
-     "titulo": "Acuerdo de confidencialidad piloto de drones de inspección",
-     "tipo": "Acuerdo de confidencialidad",
-     "tercero": "Arbórea Intellbird S.L.",
-     "cif": "B37534129",
+     "titulo": "Acuerdo de confidencialidad del piloto de drones de inspección",
+     "tipoAcuerdo": "Acuerdo de confidencialidad",
+     "tercero": "Drones de Inspección Técnica S.L.",
+     "cifNifTercero": "B37990116",
      "tipoTercero": "Empresa privada",
-     "aeropuerto": "SVQ",
-     "responsable": "Rocío Sánchez Vidal",
-     "responsableId": "rsanchez",
+     "aeropuertoUnidad": "SVQ",
+     "responsableAena": "rsanchez",
      "fechaInicio": "2026-08-01",
      "fechaFin": "2027-01-31",
-     "prorroga": false,
-     "conImporte": false,
+     "prorrogaAutomatica": false,
+     "contenidoEconomico": false,
      "importe": null,
      "contraprestacion": null,
      "estado": "Pendiente de firma",
@@ -546,10 +664,9 @@
      "tarea": "Revisar acuerdo",
      "acuerdoId": 6,
      "codigo": "ATP-2026-0006",
-     "titulo": "Acuerdo de colaboración en eficiencia energética de terminales",
+     "titulo": "Contrato de colaboración en eficiencia energética de las terminales",
      "recibida": "2026-09-02",
      "vence": "2026-09-26",
-     "prioridad": "Alta",
      "plazo": "Vence en 2 días",
      "urgente": true
     },
@@ -558,10 +675,9 @@
      "tarea": "Revisar acuerdo",
      "acuerdoId": 8,
      "codigo": "ATP-2026-0008",
-     "titulo": "Acuerdo de confidencialidad licitación de handling",
+     "titulo": "Acuerdo de confidencialidad de la licitación de handling",
      "recibida": "2026-09-12",
      "vence": "2026-09-30",
-     "prioridad": "Media",
      "plazo": "Vence en 6 días",
      "urgente": false
     },
@@ -570,10 +686,9 @@
      "tarea": "Revisar acuerdo",
      "acuerdoId": 14,
      "codigo": "ATP-2026-0014",
-     "titulo": "Contrato de colaboración de accesibilidad PMR",
+     "titulo": "Contrato de colaboración de accesibilidad para personas con movilidad reducida",
      "recibida": "2026-09-20",
      "vence": "2026-10-06",
-     "prioridad": "Baja",
      "plazo": "Vence en 12 días",
      "urgente": false
     }
@@ -707,7 +822,7 @@
      "acuerdoId": 5,
      "nombre": "ATP-2026-0005_texto_acuerdo.pdf",
      "tipo": "Texto del acuerdo",
-     "subidoPor": "Lucía Fernández Gil",
+     "subidoPor": "Andrés Moreno Pastor",
      "fecha": "2026-07-28",
      "tamano": "532 KB",
      "icono": "file-pdf-o"
@@ -717,7 +832,7 @@
      "acuerdoId": 5,
      "nombre": "ATP-2026-0005_memoria_justificativa.docx",
      "tipo": "Memoria justificativa",
-     "subidoPor": "Lucía Fernández Gil",
+     "subidoPor": "Andrés Moreno Pastor",
      "fecha": "2026-07-28",
      "tamano": "1,9 MB",
      "icono": "file-word-o"
@@ -877,7 +992,7 @@
      "acuerdoId": 12,
      "nombre": "ATP-2026-0012_texto_acuerdo.pdf",
      "tipo": "Texto del acuerdo",
-     "subidoPor": "Lucía Fernández Gil",
+     "subidoPor": "Javier García Ruiz",
      "fecha": "2026-05-20",
      "tamano": "1,9 MB",
      "icono": "file-pdf-o"
@@ -887,7 +1002,7 @@
      "acuerdoId": 12,
      "nombre": "ATP-2026-0012_memoria_justificativa.docx",
      "tipo": "Memoria justificativa",
-     "subidoPor": "Lucía Fernández Gil",
+     "subidoPor": "Javier García Ruiz",
      "fecha": "2026-05-20",
      "tamano": "770 KB",
      "icono": "file-word-o"
@@ -1136,7 +1251,7 @@
     {
      "acuerdoId": 5,
      "event": "Enviado a revisión jurídica",
-     "user": "Lucía Fernández Gil",
+     "user": "Andrés Moreno Pastor",
      "timestamp": "2026-07-28T12:40:00",
      "details": null,
      "comment": null
@@ -1144,7 +1259,7 @@
     {
      "acuerdoId": 5,
      "event": "Acuerdo creado",
-     "user": "Lucía Fernández Gil",
+     "user": "Andrés Moreno Pastor",
      "timestamp": "2026-07-28T09:14:00",
      "details": "Alta en estado Borrador",
      "comment": null
@@ -1296,7 +1411,7 @@
     {
      "acuerdoId": 12,
      "event": "Enviado a revisión jurídica",
-     "user": "Lucía Fernández Gil",
+     "user": "Javier García Ruiz",
      "timestamp": "2026-05-20T12:40:00",
      "details": null,
      "comment": null
@@ -1304,7 +1419,7 @@
     {
      "acuerdoId": 12,
      "event": "Acuerdo creado",
-     "user": "Lucía Fernández Gil",
+     "user": "Javier García Ruiz",
      "timestamp": "2026-05-20T09:14:00",
      "details": "Alta en estado Borrador",
      "comment": null
@@ -1424,10 +1539,12 @@
    "pattern": "P06",
    "ref": "PAN-01 · Inicio",
    "req": [
-    "RF-01",
-    "RF-02",
-    "RF-11"
+    "HU-01",
+    "HU-02"
    ],
+   "local": {
+    "local!tablaEstado": false
+   },
    "interface": {
     "type": "a!headerContentLayout",
     "backgroundColor": "TRANSPARENT",
@@ -1478,7 +1595,8 @@
             "icon": "plus",
             "$action": {
              "goto": "alta"
-            }
+            },
+            "$note": "Solo para Gestor de acuerdos. En Appian: seguridad de acción de registro (y permiso Initiator en el modelo de proceso)."
            }
           ]
          }
@@ -1590,7 +1708,8 @@
              "field": "recordType!ATP Acuerdo.fields.importe"
             },
             "$filter": "fv!row.estado = \"Vigente\"",
-            "$format": "eur"
+            "$format": "eur",
+            "$assumption": "Pendiente: PC-16. Suma los acuerdos vigentes."
            }
           ]
          }
@@ -1599,7 +1718,9 @@
       ],
       "decorativeBarPosition": "TOP",
       "decorativeBarColor": "#90CE00",
-      "marginBelow": "MORE"
+      "marginBelow": "MORE",
+      "$assumption": "Pendiente: PC-05. Si Consulta también ve los indicadores.",
+      "$note": "Solo para Gestor de acuerdos y Revisor jurídico. En Appian: visibilidad de interfaz (showWhen con a!isUserMemberOfGroup()): solo oculta, no protege; los datos se protegen en el record type."
      },
      {
       "type": "a!columnsLayout",
@@ -1771,7 +1892,8 @@
              }
             ]
            }
-          ]
+          ],
+          "$assumption": "Propuesta: aviso con acceso a la lista. PAN-01 solo pide el indicador."
          },
          {
           "type": "a!sectionLayout",
@@ -1790,55 +1912,165 @@
             "padding": "STANDARD",
             "contents": [
              {
-              "type": "a!barChartField",
-              "labelPosition": "COLLAPSED",
-              "data": "recordType!ATP Acuerdo",
-              "height": "AUTO",
-              "showDataLabels": true,
-              "$categories": [
-               "Borrador",
-               "En revisión jurídica",
-               "Pendiente de firma",
-               "Vigente",
-               "Vencido",
-               "Rechazado"
-              ],
-              "config": {
-               "type": "a!barChartConfig",
-               "primaryGrouping": {
-                "type": "a!grouping",
-                "field": "recordType!ATP Acuerdo.fields.estado"
+              "type": "a!sectionLayout",
+              "marginBelow": "NONE",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextIcon",
+                  "icon": "{if(local!tablaEstado, \"bar-chart\", \"table\")}",
+                  "color": "ACCENT"
+                 },
+                 " ",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{if(local!tablaEstado, \"Ver como gráfico\", \"Ver como tabla\")}",
+                  "link": {
+                   "type": "a!dynamicLink",
+                   "saveInto": [
+                    {
+                     "type": "a!save",
+                     "target": "local!tablaEstado",
+                     "value": "{not(local!tablaEstado)}"
+                    }
+                   ]
+                  },
+                  "linkStyle": "STANDALONE",
+                  "style": "STRONG"
+                 }
+                ],
+                "align": "RIGHT",
+                "marginBelow": "LESS"
                },
-               "secondaryGrouping": {
-                "type": "a!grouping",
-                "field": "recordType!ATP Acuerdo.fields.estado"
+               {
+                "type": "a!barChartField",
+                "labelPosition": "COLLAPSED",
+                "data": "recordType!ATP Acuerdo",
+                "height": "AUTO",
+                "showDataLabels": true,
+                "$categories": [
+                 "Borrador",
+                 "En revisión jurídica",
+                 "Pendiente de firma",
+                 "Vigente",
+                 "Vencido",
+                 "Rechazado"
+                ],
+                "config": {
+                 "type": "a!barChartConfig",
+                 "primaryGrouping": {
+                  "type": "a!grouping",
+                  "field": "recordType!ATP Acuerdo.fields.estado"
+                 },
+                 "secondaryGrouping": {
+                  "type": "a!grouping",
+                  "field": "recordType!ATP Acuerdo.fields.estado"
+                 },
+                 "measures": [
+                  {
+                   "type": "a!measure",
+                   "function": "COUNT",
+                   "field": "recordType!ATP Acuerdo.fields.id",
+                   "label": "Acuerdos"
+                  }
+                 ]
+                },
+                "stacking": "NORMAL",
+                "showLegend": false,
+                "colorScheme": {
+                 "type": "a!colorSchemeCustom",
+                 "colors": [
+                  "#525C65",
+                  "#1A2732",
+                  "#9A5200",
+                  "#0E6B00",
+                  "#B2002C",
+                  "#B2002C"
+                 ]
+                },
+                "showWhen": "not(local!tablaEstado)"
                },
-               "measures": [
-                {
-                 "type": "a!measure",
-                 "function": "COUNT",
-                 "field": "recordType!ATP Acuerdo.fields.id",
-                 "label": "Acuerdos"
-                }
-               ]
-              },
-              "stacking": "NORMAL",
-              "showLegend": false,
-              "colorScheme": {
-               "type": "a!colorSchemeCustom",
-               "colors": [
-                "#525C65",
-                "#1A2732",
-                "#9A5200",
-                "#0E6B00",
-                "#B2002C",
-                "#B2002C"
-               ]
-              }
+               {
+                "type": "a!gridField",
+                "labelPosition": "COLLAPSED",
+                "borderStyle": "LIGHT",
+                "shadeAlternateRows": false,
+                "spacing": "STANDARD",
+                "pageSize": 20,
+                "rowHeader": 1,
+                "emptyGridMessage": "No hay datos que mostrar",
+                "columns": [
+                 {
+                  "type": "a!gridColumn",
+                  "label": "Estado",
+                  "value": "{fv!row.categoria}"
+                 },
+                 {
+                  "type": "a!gridColumn",
+                  "label": "Acuerdos",
+                  "value": "{fv!row.s1|num}",
+                  "align": "END"
+                 }
+                ],
+                "$chart": {
+                 "type": "a!barChartField",
+                 "labelPosition": "COLLAPSED",
+                 "data": "recordType!ATP Acuerdo",
+                 "height": "AUTO",
+                 "showDataLabels": true,
+                 "$categories": [
+                  "Borrador",
+                  "En revisión jurídica",
+                  "Pendiente de firma",
+                  "Vigente",
+                  "Vencido",
+                  "Rechazado"
+                 ],
+                 "config": {
+                  "type": "a!barChartConfig",
+                  "primaryGrouping": {
+                   "type": "a!grouping",
+                   "field": "recordType!ATP Acuerdo.fields.estado"
+                  },
+                  "secondaryGrouping": {
+                   "type": "a!grouping",
+                   "field": "recordType!ATP Acuerdo.fields.estado"
+                  },
+                  "measures": [
+                   {
+                    "type": "a!measure",
+                    "function": "COUNT",
+                    "field": "recordType!ATP Acuerdo.fields.id",
+                    "label": "Acuerdos"
+                   }
+                  ]
+                 },
+                 "stacking": "NORMAL",
+                 "showLegend": false,
+                 "colorScheme": {
+                  "type": "a!colorSchemeCustom",
+                  "colors": [
+                   "#525C65",
+                   "#1A2732",
+                   "#9A5200",
+                   "#0E6B00",
+                   "#B2002C",
+                   "#B2002C"
+                  ]
+                 }
+                },
+                "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+                "showWhen": "local!tablaEstado"
+               }
+              ]
              }
             ]
            }
-          ]
+          ],
+          "$assumption": "Propuesta: resumen por estado. PAN-01 no lo pide."
          }
         ]
        }
@@ -1852,11 +2084,10 @@
    "title": "Acuerdos",
    "type": "page",
    "pattern": "P01",
-   "ref": "PAN-02 · Listado de acuerdos",
+   "ref": "PAN-02 · Acuerdos",
    "req": [
-    "RF-03",
-    "RF-04",
-    "RF-11"
+    "HU-03",
+    "HU-04"
    ],
    "interface": {
     "type": "a!headerContentLayout",
@@ -1908,7 +2139,8 @@
             "icon": "plus",
             "$action": {
              "goto": "alta"
-            }
+            },
+            "$note": "Solo para Gestor de acuerdos. En Appian: seguridad de acción de registro (y permiso Initiator en el modelo de proceso)."
            }
           ]
          }
@@ -2001,15 +2233,15 @@
          {
           "type": "a!gridColumn",
           "label": "Tipo",
-          "value": "{fv!row.tipo}",
-          "sortField": "recordType!ATP Acuerdo.fields.tipo",
+          "value": "{fv!row.tipoAcuerdo}",
+          "sortField": "recordType!ATP Acuerdo.fields.tipoAcuerdo",
           "width": "2X"
          },
          {
           "type": "a!gridColumn",
           "label": "Aeropuerto",
-          "value": "{fv!row.aeropuerto}",
-          "sortField": "recordType!ATP Acuerdo.fields.aeropuerto",
+          "value": "{fv!row.aeropuertoUnidad}",
+          "sortField": "recordType!ATP Acuerdo.fields.aeropuertoUnidad",
           "width": "NARROW"
          },
          {
@@ -2050,21 +2282,28 @@
              "color": "WARN",
              "caption": "Vence en {fv!row.diasParaVencer} días",
              "altText": "Vence en {fv!row.diasParaVencer} días",
-             "showWhen": "and(fv!row.estado = \"Vigente\", fv!row.diasParaVencer <= 90, fv!row.diasParaVencer >= 0)"
+             "showWhen": "and(fv!row.estado = \"Vigente\", fv!row.diasParaVencer < 90, fv!row.diasParaVencer >= 0)"
             },
             " "
            ]
           },
           "width": "ICON",
-          "align": "CENTER"
+          "align": "CENTER",
+          "$assumption": "Propuesta: aviso de vencimiento también en la lista. HU-11 lo pide en la ficha."
          }
         ],
         "showSearchBox": true,
         "showExportButton": true,
         "userFilters": [
          "recordType!ATP Acuerdo.filters.estado",
-         "recordType!ATP Acuerdo.filters.tipo",
-         "recordType!ATP Acuerdo.filters.aeropuerto"
+         {
+          "field": "tipoAcuerdo",
+          "label": "Tipo de acuerdo"
+         },
+         {
+          "field": "aeropuertoUnidad",
+          "label": "Aeropuerto o unidad"
+         }
         ],
         "initialSorts": [
          {
@@ -2072,7 +2311,9 @@
           "field": "recordType!ATP Acuerdo.fields.fechaAlta",
           "ascending": false
          }
-        ]
+        ],
+        "$assumption": "Pendiente: PC-02 (columnas) y PC-08 (un valor por filtro; orden por fecha de alta).",
+        "$note": "RB-03: Consulta solo ve los vigentes. En Appian: seguridad de registro del record type (qué filas ve)."
        }
       ]
      }
@@ -2087,10 +2328,9 @@
    "ref": "PAN-03 · Ficha del acuerdo",
    "recordType": "ATP Acuerdo",
    "req": [
-    "RF-04",
-    "RF-08",
-    "RF-09",
-    "RF-11"
+    "HU-08",
+    "HU-09",
+    "HU-11"
    ],
    "breadcrumb": {
     "label": "Acuerdos",
@@ -2102,14 +2342,15 @@
      "type": "a!recordActionItem",
      "action": "recordType!ATP Acuerdo.actions.editarDatosGenerales",
      "identifier": "{rv!record.id}",
-     "$label": "Editar datos",
+     "$label": "Editar datos generales",
      "$icon": "pencil",
      "$action": {
       "dialog": "editar",
       "params": {
        "id": "{rv!record.id}"
       }
-     }
+     },
+     "$note": "Solo para Gestor de acuerdos. En Appian: seguridad de acción de registro (y permiso Initiator en el modelo de proceso)."
     },
     {
      "type": "a!recordActionItem",
@@ -2122,7 +2363,8 @@
       "params": {
        "id": "{rv!record.id}"
       }
-     }
+     },
+     "$note": "Solo para Gestor de acuerdos. En Appian: seguridad de acción de registro (y permiso Initiator en el modelo de proceso)."
     }
    ],
    "views": [
@@ -2262,19 +2504,19 @@
             "contents": [
              {
               "type": "a!richTextDisplayField",
-              "label": "Responsable",
+              "label": "Responsable AENA",
               "labelPosition": "COLLAPSED",
               "value": [
                {
                 "type": "a!richTextItem",
-                "text": "Responsable",
+                "text": "Responsable AENA",
                 "color": "SECONDARY",
                 "size": "SMALL"
                },
                "\n",
                {
                 "type": "a!richTextItem",
-                "text": "{rv!record.responsable|dash}",
+                "text": "{rv!record.responsableAena|map:usuarios|dash}",
                 "size": "MEDIUM"
                }
               ],
@@ -2352,7 +2594,8 @@
           ]
          }
         ],
-        "showWhen": "and(rv!record.estado = \"Vigente\", rv!record.diasParaVencer <= 90)"
+        "showWhen": "and(rv!record.estado = \"Vigente\", rv!record.diasParaVencer < 90)",
+        "$assumption": "Pendiente: PC-09. Texto del aviso."
        },
        {
         "type": "a!columnsLayout",
@@ -2431,7 +2674,7 @@
                        "\n",
                        {
                         "type": "a!richTextItem",
-                        "text": "{rv!record.tipo|dash}",
+                        "text": "{rv!record.tipoAcuerdo|dash}",
                         "size": "MEDIUM"
                        }
                       ],
@@ -2444,19 +2687,19 @@
                     "contents": [
                      {
                       "type": "a!richTextDisplayField",
-                      "label": "Aeropuerto / unidad",
+                      "label": "Aeropuerto o unidad",
                       "labelPosition": "COLLAPSED",
                       "value": [
                        {
                         "type": "a!richTextItem",
-                        "text": "Aeropuerto / unidad",
+                        "text": "Aeropuerto o unidad",
                         "color": "SECONDARY",
                         "size": "SMALL"
                        },
                        "\n",
                        {
                         "type": "a!richTextItem",
-                        "text": "{rv!record.aeropuerto|dash}",
+                        "text": "{rv!record.aeropuertoUnidad|dash}",
                         "size": "MEDIUM"
                        }
                       ],
@@ -2557,7 +2800,7 @@
                        "\n",
                        {
                         "type": "a!richTextItem",
-                        "text": "{rv!record.prorroga|map:siNo|dash}",
+                        "text": "{rv!record.prorrogaAutomatica|map:siNo|dash}",
                         "size": "MEDIUM"
                        }
                       ],
@@ -2623,7 +2866,7 @@
                        "\n",
                        {
                         "type": "a!richTextItem",
-                        "text": "{rv!record.cif|dash}",
+                        "text": "{rv!record.cifNifTercero|dash}",
                         "size": "MEDIUM"
                        }
                       ],
@@ -2689,7 +2932,7 @@
                        "\n",
                        {
                         "type": "a!richTextItem",
-                        "text": "{rv!record.conImporte|map:siNo|dash}",
+                        "text": "{rv!record.contenidoEconomico|map:siNo|dash}",
                         "size": "MEDIUM"
                        }
                       ],
@@ -2762,7 +3005,7 @@
           "contents": [
            {
             "type": "a!sectionLayout",
-            "label": "Responsable",
+            "label": "Responsable AENA",
             "labelSize": "MEDIUM",
             "labelHeadingTag": "H2",
             "labelColor": "STANDARD",
@@ -2791,7 +3034,7 @@
                    "images": [
                     {
                      "type": "a!userImage",
-                     "user": "{rv!record.responsable}"
+                     "user": "{rv!record.responsableAena}"
                     }
                    ]
                   }
@@ -2804,13 +3047,13 @@
                    "value": [
                     {
                      "type": "a!richTextItem",
-                     "text": "{rv!record.responsable}",
+                     "text": "{rv!record.responsableAena|map:usuarios}",
                      "style": "STRONG"
                     },
                     "\n",
                     {
                      "type": "a!richTextItem",
-                     "text": "Unidad promotora · {rv!record.aeropuerto}",
+                     "text": "Unidad promotora · {rv!record.aeropuertoUnidad}",
                      "color": "SECONDARY",
                      "size": "SMALL"
                     }
@@ -3014,7 +3257,8 @@
            }
           ],
           "$filter": "fv!row.acuerdoId = rv!record.id",
-          "$note": "En Appian: record type de documentos relacionado con ATP Acuerdo (relación uno a muchos)."
+          "$note": "En Appian: record type de documentos relacionado con ATP Acuerdo (relación uno a muchos).",
+          "$assumption": "Pendiente: PC-15. Tipo, quién lo sube y fecha de cada documento."
          }
         ]
        }
@@ -3043,7 +3287,8 @@
           "commentLayout": "CARD",
           "$events": "data!eventos",
           "$filter": "fv!row.acuerdoId = rv!record.id",
-          "$note": "En Appian: a!eventHistoryListField con a!eventData sobre el record type de eventos de ATP Acuerdo (record events)."
+          "$note": "En Appian: a!eventHistoryListField con a!eventData sobre el record type de eventos de ATP Acuerdo (record events).",
+          "$assumption": "Pendiente: PC-04. Se muestran los cambios de estado."
          }
         ]
        }
@@ -3059,31 +3304,31 @@
    "pattern": "P04",
    "ref": "PAN-04 · Alta de acuerdo",
    "req": [
-    "RF-05",
-    "RF-06",
-    "RF-07"
+    "HU-05",
+    "HU-06",
+    "HU-07",
+    "ACT-01"
    ],
    "local": {
     "local!acuerdo": {
      "titulo": null,
-     "tipo": null,
-     "aeropuerto": null,
-     "responsable": null,
+     "tipoAcuerdo": null,
+     "aeropuertoUnidad": null,
+     "responsableAena": null,
      "fechaInicio": null,
      "fechaFin": null,
-     "prorroga": false,
+     "prorrogaAutomatica": false,
      "tercero": null,
-     "cif": null,
-     "tipoTercero": null,
-     "conImporte": null,
+     "cifNifTercero": null,
+     "tipoTercero": "Empresa privada",
+     "contenidoEconomico": false,
      "importe": null,
      "contraprestacion": null,
-     "docs": [],
-     "observaciones": null
+     "docs": []
     }
    },
    "assumptions": [
-    "El código ATP-AAAA-NNNN lo genera el proceso al enviar; no se muestra en el alta."
+    "El código ATP-AAAA-NNNN lo pone la aplicación al enviar (HU-07.2); no se muestra en el alta."
    ],
    "interface": {
     "type": "a!wizardLayout",
@@ -3163,8 +3408,8 @@
          "primaryText": "{fv!data.texto}",
          "icon": "{fv!data.icono}"
         },
-        "value": "local!acuerdo.tipo",
-        "saveInto": "local!acuerdo.tipo",
+        "value": "local!acuerdo.tipoAcuerdo",
+        "saveInto": "local!acuerdo.tipoAcuerdo",
         "maxSelections": 1,
         "required": true
        },
@@ -3176,7 +3421,7 @@
           "contents": [
            {
             "type": "a!dropdownField",
-            "label": "Aeropuerto / unidad",
+            "label": "Aeropuerto o unidad",
             "placeholder": "Seleccione",
             "choiceLabels": [
              "Servicios Centrales",
@@ -3200,8 +3445,8 @@
              "VLC",
              "BIO"
             ],
-            "value": "local!acuerdo.aeropuerto",
-            "saveInto": "local!acuerdo.aeropuerto",
+            "value": "local!acuerdo.aeropuertoUnidad",
+            "saveInto": "local!acuerdo.aeropuertoUnidad",
             "required": true
            }
           ]
@@ -3213,8 +3458,8 @@
             "type": "a!pickerFieldUsers",
             "label": "Responsable AENA",
             "maxSelections": 1,
-            "value": "local!acuerdo.responsable",
-            "saveInto": "local!acuerdo.responsable",
+            "value": "local!acuerdo.responsableAena",
+            "saveInto": "local!acuerdo.responsableAena",
             "required": true
            }
           ]
@@ -3248,9 +3493,10 @@
             "$validations": [
              {
               "when": "and(a!isNotNullOrEmpty(local!acuerdo.fechaFin), a!isNotNullOrEmpty(local!acuerdo.fechaInicio), local!acuerdo.fechaFin <= local!acuerdo.fechaInicio)",
-              "message": "La fecha de fin debe ser posterior a la fecha de inicio (RN-01)"
+              "message": "La fecha de fin debe ser posterior a la fecha de inicio"
              }
-            ]
+            ],
+            "$note": "RB-01. Texto del mensaje pendiente: PC-09."
            }
           ]
          }
@@ -3259,8 +3505,8 @@
        {
         "type": "a!booleanCheckboxField",
         "choiceLabel": "Prórroga automática al vencimiento",
-        "value": "local!acuerdo.prorroga",
-        "saveInto": "local!acuerdo.prorroga"
+        "value": "local!acuerdo.prorrogaAutomatica",
+        "saveInto": "local!acuerdo.prorrogaAutomatica"
        }
       ]
      },
@@ -3283,11 +3529,10 @@
           "contents": [
            {
             "type": "a!textField",
-            "label": "CIF/NIF",
-            "value": "local!acuerdo.cif",
-            "saveInto": "local!acuerdo.cif",
-            "required": true,
-            "$assumption": "La ERS no indica si el CIF se valida contra un servicio externo (AEAT). Se asume validación solo de formato."
+            "label": "CIF/NIF del tercero",
+            "value": "local!acuerdo.cifNifTercero",
+            "saveInto": "local!acuerdo.cifNifTercero",
+            "required": true
            }
           ]
          },
@@ -3334,8 +3579,8 @@
          true,
          false
         ],
-        "value": "local!acuerdo.conImporte",
-        "saveInto": "local!acuerdo.conImporte",
+        "value": "local!acuerdo.contenidoEconomico",
+        "saveInto": "local!acuerdo.contenidoEconomico",
         "required": true,
         "choiceLayout": "COMPACT"
        },
@@ -3350,8 +3595,7 @@
             "label": "Importe (€)",
             "value": "local!acuerdo.importe",
             "saveInto": "local!acuerdo.importe",
-            "required": true,
-            "instructions": "Importe total sin IVA para toda la vigencia"
+            "required": true
            }
           ]
          },
@@ -3360,15 +3604,14 @@
           "contents": []
          }
         ],
-        "showWhen": "local!acuerdo.conImporte"
+        "showWhen": "local!acuerdo.contenidoEconomico"
        },
        {
         "type": "a!paragraphField",
         "label": "Contraprestación",
         "value": "local!acuerdo.contraprestacion",
         "saveInto": "local!acuerdo.contraprestacion",
-        "height": "SHORT",
-        "showWhen": "local!acuerdo.conImporte"
+        "height": "SHORT"
        }
       ]
      },
@@ -3378,26 +3621,18 @@
       "contents": [
        {
         "type": "a!fileUploadField",
-        "label": "Texto del acuerdo",
+        "label": "Documentos del acuerdo",
         "value": "local!acuerdo.docs",
         "saveInto": "local!acuerdo.docs",
-        "required": true,
         "maxSelections": 5,
         "instructions": "PDF o DOCX, máximo 10 MB por fichero",
-        "$note": "En Appian: target = constante de carpeta de documentos ATP; validar extensión con fv!files."
-       },
-       {
-        "type": "a!paragraphField",
-        "label": "Observaciones para Asesoría Jurídica",
-        "value": "local!acuerdo.observaciones",
-        "saveInto": "local!acuerdo.observaciones",
-        "height": "SHORT"
+        "$note": "RB-02: PDF o DOCX, 10 MB como máximo. En Appian: validar extensión y tamaño con fv!files."
        }
       ]
      },
      {
       "type": "a!wizardStep",
-      "label": "Revisión",
+      "label": "Resumen",
       "contents": [
        {
         "type": "a!messageBanner",
@@ -3405,7 +3640,7 @@
         "highlightColor": "INFO",
         "shape": "SEMI_ROUNDED",
         "primaryText": "Revise los datos antes de enviar",
-        "secondaryText": "Al enviar, el acuerdo pasará a «En revisión jurídica» y no podrá editarse hasta que Asesoría Jurídica lo resuelva.",
+        "secondaryText": "Al enviar, el acuerdo pasará a «En revisión jurídica» y Asesoría Jurídica recibirá la tarea de revisarlo.",
         "marginBelow": "MORE"
        },
        {
@@ -3500,7 +3735,7 @@
                "\n",
                {
                 "type": "a!richTextItem",
-                "text": "{local!acuerdo.tipo|dash}",
+                "text": "{local!acuerdo.tipoAcuerdo|dash}",
                 "size": "MEDIUM"
                }
               ],
@@ -3513,19 +3748,19 @@
             "contents": [
              {
               "type": "a!richTextDisplayField",
-              "label": "Aeropuerto / unidad",
+              "label": "Aeropuerto o unidad",
               "labelPosition": "COLLAPSED",
               "value": [
                {
                 "type": "a!richTextItem",
-                "text": "Aeropuerto / unidad",
+                "text": "Aeropuerto o unidad",
                 "color": "SECONDARY",
                 "size": "SMALL"
                },
                "\n",
                {
                 "type": "a!richTextItem",
-                "text": "{local!acuerdo.aeropuerto|dash}",
+                "text": "{local!acuerdo.aeropuertoUnidad|dash}",
                 "size": "MEDIUM"
                }
               ],
@@ -3556,7 +3791,7 @@
                "\n",
                {
                 "type": "a!richTextItem",
-                "text": "{local!acuerdo.responsable|map:usuarios|dash}",
+                "text": "{local!acuerdo.responsableAena|map:usuarios|dash}",
                 "size": "MEDIUM"
                }
               ],
@@ -3612,7 +3847,7 @@
                "\n",
                {
                 "type": "a!richTextItem",
-                "text": "{local!acuerdo.prorroga|map:siNo|dash}",
+                "text": "{local!acuerdo.prorrogaAutomatica|map:siNo|dash}",
                 "size": "MEDIUM"
                }
               ],
@@ -3725,7 +3960,7 @@
                "\n",
                {
                 "type": "a!richTextItem",
-                "text": "{local!acuerdo.cif|dash}",
+                "text": "{local!acuerdo.cifNifTercero|dash}",
                 "size": "MEDIUM"
                }
               ],
@@ -3844,7 +4079,7 @@
                "\n",
                {
                 "type": "a!richTextItem",
-                "text": "{local!acuerdo.conImporte|map:siNo|dash}",
+                "text": "{local!acuerdo.contenidoEconomico|map:siNo|dash}",
                 "size": "MEDIUM"
                }
               ],
@@ -3954,12 +4189,12 @@
          },
          {
           "type": "a!richTextDisplayField",
-          "label": "Texto del acuerdo",
+          "label": "Documentos del acuerdo",
           "labelPosition": "COLLAPSED",
           "value": [
            {
             "type": "a!richTextItem",
-            "text": "Texto del acuerdo",
+            "text": "Documentos del acuerdo",
             "color": "SECONDARY",
             "size": "SMALL"
            },
@@ -3967,26 +4202,6 @@
            {
             "type": "a!richTextItem",
             "text": "{local!acuerdo.docs.name|dash}",
-            "size": "MEDIUM"
-           }
-          ],
-          "marginBelow": "STANDARD"
-         },
-         {
-          "type": "a!richTextDisplayField",
-          "label": "Observaciones para Asesoría Jurídica",
-          "labelPosition": "COLLAPSED",
-          "value": [
-           {
-            "type": "a!richTextItem",
-            "text": "Observaciones para Asesoría Jurídica",
-            "color": "SECONDARY",
-            "size": "SMALL"
-           },
-           "\n",
-           {
-            "type": "a!richTextItem",
-            "text": "{local!acuerdo.observaciones|dash}",
             "size": "MEDIUM"
            }
           ],
@@ -4024,7 +4239,8 @@
         "mensaje": "Acuerdo ATP-2026-0017 enviado a revisión jurídica"
        }
       },
-      "submit": true
+      "submit": true,
+      "$note": "HU-07.1: el acuerdo pasa a «En revisión jurídica» y Asesoría Jurídica recibe la tarea (AV-01; correo pendiente: PC-11)."
      }
     ]
    }
@@ -4036,7 +4252,8 @@
    "pattern": "P05",
    "ref": "PAN-05 · Revisión jurídica",
    "req": [
-    "RF-10"
+    "HU-10",
+    "ACT-02"
    ],
    "recordType": "ATP Acuerdo",
    "local": {
@@ -4100,14 +4317,14 @@
              "style": "STRONG"
             },
             "\n",
-            "Si no se resuelve a tiempo, la tarea se escala a la jefatura de Asesoría Jurídica"
+            "Resuelva la revisión antes de esa fecha"
            ]
           }
          }
         ]
        }
       ],
-      "$assumption": "El escalado por plazo no está en la ERS; se muestra solo el vencimiento de la tarea."
+      "$assumption": "Pendiente: PC-10. Plazo de la revisión y qué pasa si vence."
      },
      {
       "type": "a!columnsLayout",
@@ -4165,7 +4382,7 @@
                  "\n",
                  {
                   "type": "a!richTextItem",
-                  "text": "{rv!record.tipo|dash}",
+                  "text": "{rv!record.tipoAcuerdo|dash}",
                   "size": "MEDIUM"
                  }
                 ],
@@ -4190,7 +4407,7 @@
                  "\n",
                  {
                   "type": "a!richTextItem",
-                  "text": "{rv!record.tercero} ({rv!record.cif})",
+                  "text": "{rv!record.tercero} ({rv!record.cifNifTercero})",
                   "size": "MEDIUM"
                  }
                 ],
@@ -4271,7 +4488,7 @@
                  "\n",
                  {
                   "type": "a!richTextItem",
-                  "text": "{rv!record.responsable|dash}",
+                  "text": "{rv!record.responsableAena|map:usuarios|dash}",
                   "size": "MEDIUM"
                  }
                 ],
@@ -4362,7 +4579,8 @@
               "maxSelections": 1,
               "labelPosition": "COLLAPSED",
               "required": true,
-              "requiredMessage": "Indique el resultado de la revisión"
+              "requiredMessage": "Indique el resultado de la revisión",
+              "$assumption": "Pendiente: PC-01 (qué pasa tras aprobar) y PC-07 (cómo vuelve al gestor al devolver)."
              },
              {
               "type": "a!paragraphField",
@@ -4372,7 +4590,7 @@
               "height": "MEDIUM",
               "required": "and(a!isNotNullOrEmpty(local!decision), local!decision <> \"APROBAR\")",
               "instructions": "Obligatorios si no se aprueba",
-              "$note": "RF-10: comentario obligatorio al devolver o rechazar."
+              "$note": "HU-10.2: comentario obligatorio al devolver o rechazar."
              }
             ]
            }
@@ -4417,13 +4635,14 @@
    "type": "dialog",
    "pattern": "P07",
    "req": [
-    "RF-09"
+    "HU-09"
    ],
    "ref": "PAN-06 · Editar datos generales",
+   "$dialogWidth": "MEDIUM",
    "interface": {
     "type": "a!formLayout",
     "titleBar": "Editar datos generales",
-    "contentsWidth": "NARROW",
+    "contentsWidth": "FULL",
     "contents": [
      {
       "type": "a!textField",
@@ -4433,6 +4652,79 @@
       "required": true,
       "characterLimit": 200,
       "showCharacterCount": true
+     },
+     {
+      "type": "a!columnsLayout",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!dropdownField",
+          "label": "Tipo de acuerdo",
+          "placeholder": "Seleccione",
+          "choiceLabels": [
+           "Convenio",
+           "Contrato de colaboración",
+           "Acuerdo de confidencialidad",
+           "Protocolo general de actuación"
+          ],
+          "choiceValues": [
+           "Convenio",
+           "Contrato de colaboración",
+           "Acuerdo de confidencialidad",
+           "Protocolo general de actuación"
+          ],
+          "value": "local!tipo",
+          "saveInto": "local!tipo",
+          "required": true
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!dropdownField",
+          "label": "Aeropuerto o unidad",
+          "placeholder": "Seleccione",
+          "choiceLabels": [
+           "Servicios Centrales",
+           "Adolfo Suárez Madrid-Barajas (MAD)",
+           "Josep Tarradellas Barcelona-El Prat (BCN)",
+           "Palma de Mallorca (PMI)",
+           "Málaga-Costa del Sol (AGP)",
+           "Gran Canaria (LPA)",
+           "Sevilla (SVQ)",
+           "Valencia (VLC)",
+           "Bilbao (BIO)"
+          ],
+          "choiceValues": [
+           "SSCC",
+           "MAD",
+           "BCN",
+           "PMI",
+           "AGP",
+           "LPA",
+           "SVQ",
+           "VLC",
+           "BIO"
+          ],
+          "value": "local!apt",
+          "saveInto": "local!apt",
+          "required": true
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!pickerFieldUsers",
+      "label": "Responsable AENA",
+      "maxSelections": 1,
+      "value": "local!resp",
+      "saveInto": "local!resp",
+      "required": true
      },
      {
       "type": "a!columnsLayout",
@@ -4457,19 +4749,18 @@
           "label": "Fecha de fin",
           "value": "local!fin",
           "saveInto": "local!fin",
-          "required": true
+          "required": true,
+          "$validations": [
+           {
+            "when": "and(a!isNotNullOrEmpty(local!fin), a!isNotNullOrEmpty(local!ini), local!fin <= local!ini)",
+            "message": "La fecha de fin debe ser posterior a la fecha de inicio"
+           }
+          ],
+          "$note": "RB-01. Texto del mensaje pendiente: PC-09."
          }
         ]
        }
       ]
-     },
-     {
-      "type": "a!pickerFieldUsers",
-      "label": "Responsable AENA",
-      "maxSelections": 1,
-      "value": "local!resp",
-      "saveInto": "local!resp",
-      "required": true
      },
      {
       "type": "a!booleanCheckboxField",
@@ -4509,11 +4800,16 @@
    "recordType": "ATP Acuerdo",
    "local": {
     "local!titulo": "{rv!record.titulo}",
+    "local!tipo": "{rv!record.tipoAcuerdo}",
+    "local!apt": "{rv!record.aeropuertoUnidad}",
+    "local!resp": "{rv!record.responsableAena}",
     "local!ini": "{rv!record.fechaInicio}",
     "local!fin": "{rv!record.fechaFin}",
-    "local!resp": "{rv!record.responsableId}",
-    "local!prorroga": "{rv!record.prorroga}"
-   }
+    "local!prorroga": "{rv!record.prorrogaAutomatica}"
+   },
+   "assumptions": [
+    "Pendiente: PC-06. En qué estados se pueden editar los datos generales."
+   ]
   },
   {
    "id": "documento",
@@ -4521,13 +4817,14 @@
    "type": "dialog",
    "pattern": "P07",
    "req": [
-    "RF-09"
+    "HU-09"
    ],
    "ref": "PAN-07 · Añadir documento",
+   "$dialogWidth": "NARROW",
    "interface": {
     "type": "a!formLayout",
     "titleBar": "Añadir documento",
-    "contentsWidth": "NARROW",
+    "contentsWidth": "FULL",
     "contents": [
      {
       "type": "a!dropdownField",
@@ -4549,7 +4846,8 @@
       ],
       "value": "local!tipoDoc",
       "saveInto": "local!tipoDoc",
-      "required": true
+      "required": true,
+      "$assumption": "Pendiente: PC-15. Si se guarda el tipo de cada documento y qué tipos hay."
      },
      {
       "type": "a!fileUploadField",
@@ -4559,7 +4857,7 @@
       "required": true,
       "maxSelections": 1,
       "instructions": "PDF o DOCX, máximo 10 MB",
-      "$note": "RN-02: formatos y tamaño máximo."
+      "$note": "RB-02: PDF o DOCX, 10 MB como máximo. En Appian: validar extensión y tamaño con fv!files."
      }
     ],
     "buttons": {
@@ -4603,10 +4901,14 @@
    "pattern": "P08",
    "ref": "PAN-08 · Informe de acuerdos",
    "req": [
-    "RF-12"
+    "HU-12"
    ],
    "local": {
-    "local!tipo": null
+    "local!tipo": null,
+    "local!tablaMes": false,
+    "local!tablaTipo": false,
+    "local!tablaEstado": false,
+    "local!tablaImporte": false
    },
    "interface": {
     "type": "a!headerContentLayout",
@@ -4708,7 +5010,8 @@
         ]
        }
       ],
-      "marginBelow": "MORE"
+      "marginBelow": "MORE",
+      "$assumption": "Propuesta: filtrar el informe por tipo de acuerdo. PAN-08 no lo pide."
      },
      {
       "type": "a!cardLayout",
@@ -4744,7 +5047,7 @@
              "function": "COUNT",
              "field": "recordType!ATP Acuerdo.fields.id"
             },
-            "$filter": "or(isnull(local!tipo), fv!row.tipo = local!tipo)"
+            "$filter": "or(isnull(local!tipo), fv!row.tipoAcuerdo = local!tipo)"
            }
           ]
          },
@@ -4765,7 +5068,7 @@
              "function": "COUNT",
              "field": "recordType!ATP Acuerdo.fields.id"
             },
-            "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), fv!row.estado = \"Vigente\")"
+            "$filter": "and(or(isnull(local!tipo), fv!row.tipoAcuerdo = local!tipo), fv!row.estado = \"Vigente\")"
            }
           ]
          },
@@ -4786,7 +5089,7 @@
              "function": "SUM",
              "field": "recordType!ATP Acuerdo.fields.importe"
             },
-            "$filter": "or(isnull(local!tipo), fv!row.tipo = local!tipo)",
+            "$filter": "or(isnull(local!tipo), fv!row.tipoAcuerdo = local!tipo)",
             "$format": "eur"
            }
           ]
@@ -4796,7 +5099,166 @@
       ],
       "decorativeBarPosition": "TOP",
       "decorativeBarColor": "#90CE00",
-      "marginBelow": "MORE"
+      "marginBelow": "MORE",
+      "$assumption": "Propuesta: totales del filtro. PAN-08 no los pide."
+     },
+     {
+      "type": "a!sectionLayout",
+      "label": "Altas por mes",
+      "labelSize": "MEDIUM",
+      "labelHeadingTag": "H2",
+      "labelColor": "STANDARD",
+      "marginBelow": "MORE",
+      "contents": [
+       {
+        "type": "a!cardLayout",
+        "style": "NONE",
+        "showBorder": false,
+        "showShadow": true,
+        "shape": "SEMI_ROUNDED",
+        "padding": "STANDARD",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "marginBelow": "NONE",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextIcon",
+              "icon": "{if(local!tablaMes, \"bar-chart\", \"table\")}",
+              "color": "ACCENT"
+             },
+             " ",
+             {
+              "type": "a!richTextItem",
+              "text": "{if(local!tablaMes, \"Ver como gráfico\", \"Ver como tabla\")}",
+              "link": {
+               "type": "a!dynamicLink",
+               "saveInto": [
+                {
+                 "type": "a!save",
+                 "target": "local!tablaMes",
+                 "value": "{not(local!tablaMes)}"
+                }
+               ]
+              },
+              "linkStyle": "STANDALONE",
+              "style": "STRONG"
+             }
+            ],
+            "align": "RIGHT",
+            "marginBelow": "LESS"
+           },
+           {
+            "type": "a!lineChartField",
+            "labelPosition": "COLLAPSED",
+            "data": "recordType!ATP Acuerdo",
+            "$filter": "and(or(isnull(local!tipo), fv!row.tipoAcuerdo = local!tipo), fv!row.fechaAlta >= \"2025-10\")",
+            "height": "SHORT",
+            "config": {
+             "type": "a!lineChartConfig",
+             "primaryGrouping": {
+              "type": "a!grouping",
+              "field": "recordType!ATP Acuerdo.fields.mesAlta",
+              "interval": "MONTH_SHORT_TEXT"
+             },
+             "measures": [
+              {
+               "type": "a!measure",
+               "function": "COUNT",
+               "field": "recordType!ATP Acuerdo.fields.id",
+               "label": "Altas"
+              }
+             ]
+            },
+            "referenceLines": [
+             {
+              "type": "a!chartReferenceLine",
+              "label": "Media: 1,6",
+              "value": 1.6,
+              "color": "BLUEGRAY",
+              "style": "DASH"
+             }
+            ],
+            "colorScheme": {
+             "type": "a!colorSchemeCustom",
+             "colors": [
+              "#527500"
+             ]
+            },
+            "showWhen": "not(local!tablaMes)"
+           },
+           {
+            "type": "a!gridField",
+            "labelPosition": "COLLAPSED",
+            "borderStyle": "LIGHT",
+            "shadeAlternateRows": false,
+            "spacing": "STANDARD",
+            "pageSize": 20,
+            "rowHeader": 1,
+            "emptyGridMessage": "No hay datos que mostrar",
+            "columns": [
+             {
+              "type": "a!gridColumn",
+              "label": "Mes",
+              "value": "{fv!row.categoria}"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Altas",
+              "value": "{fv!row.s1|num}",
+              "align": "END"
+             }
+            ],
+            "$chart": {
+             "type": "a!lineChartField",
+             "labelPosition": "COLLAPSED",
+             "data": "recordType!ATP Acuerdo",
+             "$filter": "and(or(isnull(local!tipo), fv!row.tipoAcuerdo = local!tipo), fv!row.fechaAlta >= \"2025-10\")",
+             "height": "SHORT",
+             "config": {
+              "type": "a!lineChartConfig",
+              "primaryGrouping": {
+               "type": "a!grouping",
+               "field": "recordType!ATP Acuerdo.fields.mesAlta",
+               "interval": "MONTH_SHORT_TEXT"
+              },
+              "measures": [
+               {
+                "type": "a!measure",
+                "function": "COUNT",
+                "field": "recordType!ATP Acuerdo.fields.id",
+                "label": "Altas"
+               }
+              ]
+             },
+             "referenceLines": [
+              {
+               "type": "a!chartReferenceLine",
+               "label": "Media: 1,6",
+               "value": 1.6,
+               "color": "BLUEGRAY",
+               "style": "DASH"
+              }
+             ],
+             "colorScheme": {
+              "type": "a!colorSchemeCustom",
+              "colors": [
+               "#527500"
+              ]
+             }
+            },
+            "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+            "showWhen": "local!tablaMes"
+           }
+          ]
+         }
+        ]
+       }
+      ]
      },
      {
       "type": "a!columnsLayout",
@@ -4821,38 +5283,146 @@
             "padding": "STANDARD",
             "contents": [
              {
-              "type": "a!pieChartField",
-              "labelPosition": "COLLAPSED",
-              "data": "recordType!ATP Acuerdo",
-              "$filter": "or(isnull(local!tipo), fv!row.tipo = local!tipo)",
-              "style": "DONUT",
-              "height": "SHORT",
-              "showTooltips": true,
-              "showDataLabels": true,
-              "config": {
-               "type": "a!pieChartConfig",
-               "primaryGrouping": {
-                "type": "a!grouping",
-                "field": "recordType!ATP Acuerdo.fields.tipo"
+              "type": "a!sectionLayout",
+              "marginBelow": "NONE",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextIcon",
+                  "icon": "{if(local!tablaTipo, \"bar-chart\", \"table\")}",
+                  "color": "ACCENT"
+                 },
+                 " ",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{if(local!tablaTipo, \"Ver como gráfico\", \"Ver como tabla\")}",
+                  "link": {
+                   "type": "a!dynamicLink",
+                   "saveInto": [
+                    {
+                     "type": "a!save",
+                     "target": "local!tablaTipo",
+                     "value": "{not(local!tablaTipo)}"
+                    }
+                   ]
+                  },
+                  "linkStyle": "STANDALONE",
+                  "style": "STRONG"
+                 }
+                ],
+                "align": "RIGHT",
+                "marginBelow": "LESS"
                },
-               "measures": [
-                {
-                 "type": "a!measure",
-                 "function": "COUNT",
-                 "field": "recordType!ATP Acuerdo.fields.id",
-                 "label": "Acuerdos"
-                }
-               ]
-              },
-              "colorScheme": {
-               "type": "a!colorSchemeCustom",
-               "colors": [
-                "#1A2732",
-                "#72A300",
-                "#3D6B8C",
-                "#EC4371"
-               ]
-              }
+               {
+                "type": "a!pieChartField",
+                "labelPosition": "COLLAPSED",
+                "data": "recordType!ATP Acuerdo",
+                "$filter": "or(isnull(local!tipo), fv!row.tipoAcuerdo = local!tipo)",
+                "style": "DONUT",
+                "height": "SHORT",
+                "showTooltips": true,
+                "showDataLabels": true,
+                "$categories": [
+                 "Convenio",
+                 "Contrato de colaboración",
+                 "Acuerdo de confidencialidad",
+                 "Protocolo general de actuación"
+                ],
+                "config": {
+                 "type": "a!pieChartConfig",
+                 "primaryGrouping": {
+                  "type": "a!grouping",
+                  "field": "recordType!ATP Acuerdo.fields.tipoAcuerdo"
+                 },
+                 "measures": [
+                  {
+                   "type": "a!measure",
+                   "function": "COUNT",
+                   "field": "recordType!ATP Acuerdo.fields.id",
+                   "label": "Acuerdos"
+                  }
+                 ]
+                },
+                "colorScheme": {
+                 "type": "a!colorSchemeCustom",
+                 "colors": [
+                  "#1A2732",
+                  "#72A300",
+                  "#3D6B8C",
+                  "#EC4371"
+                 ]
+                },
+                "showWhen": "not(local!tablaTipo)"
+               },
+               {
+                "type": "a!gridField",
+                "labelPosition": "COLLAPSED",
+                "borderStyle": "LIGHT",
+                "shadeAlternateRows": false,
+                "spacing": "STANDARD",
+                "pageSize": 20,
+                "rowHeader": 1,
+                "emptyGridMessage": "No hay datos que mostrar",
+                "columns": [
+                 {
+                  "type": "a!gridColumn",
+                  "label": "Tipo de acuerdo",
+                  "value": "{fv!row.categoria}"
+                 },
+                 {
+                  "type": "a!gridColumn",
+                  "label": "Acuerdos",
+                  "value": "{fv!row.s1|num}",
+                  "align": "END"
+                 }
+                ],
+                "$chart": {
+                 "type": "a!pieChartField",
+                 "labelPosition": "COLLAPSED",
+                 "data": "recordType!ATP Acuerdo",
+                 "$filter": "or(isnull(local!tipo), fv!row.tipoAcuerdo = local!tipo)",
+                 "style": "DONUT",
+                 "height": "SHORT",
+                 "showTooltips": true,
+                 "showDataLabels": true,
+                 "$categories": [
+                  "Convenio",
+                  "Contrato de colaboración",
+                  "Acuerdo de confidencialidad",
+                  "Protocolo general de actuación"
+                 ],
+                 "config": {
+                  "type": "a!pieChartConfig",
+                  "primaryGrouping": {
+                   "type": "a!grouping",
+                   "field": "recordType!ATP Acuerdo.fields.tipoAcuerdo"
+                  },
+                  "measures": [
+                   {
+                    "type": "a!measure",
+                    "function": "COUNT",
+                    "field": "recordType!ATP Acuerdo.fields.id",
+                    "label": "Acuerdos"
+                   }
+                  ]
+                 },
+                 "colorScheme": {
+                  "type": "a!colorSchemeCustom",
+                  "colors": [
+                   "#1A2732",
+                   "#72A300",
+                   "#3D6B8C",
+                   "#EC4371"
+                  ]
+                 }
+                },
+                "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+                "showWhen": "local!tablaTipo"
+               }
+              ]
              }
             ]
            }
@@ -4880,52 +5450,162 @@
             "padding": "STANDARD",
             "contents": [
              {
-              "type": "a!columnChartField",
-              "labelPosition": "COLLAPSED",
-              "data": "recordType!ATP Acuerdo",
-              "$filter": "or(isnull(local!tipo), fv!row.tipo = local!tipo)",
-              "height": "SHORT",
-              "showDataLabels": true,
-              "$categories": [
-               "Borrador",
-               "En revisión jurídica",
-               "Pendiente de firma",
-               "Vigente",
-               "Vencido",
-               "Rechazado"
-              ],
-              "config": {
-               "type": "a!columnChartConfig",
-               "primaryGrouping": {
-                "type": "a!grouping",
-                "field": "recordType!ATP Acuerdo.fields.estado"
+              "type": "a!sectionLayout",
+              "marginBelow": "NONE",
+              "contents": [
+               {
+                "type": "a!richTextDisplayField",
+                "labelPosition": "COLLAPSED",
+                "value": [
+                 {
+                  "type": "a!richTextIcon",
+                  "icon": "{if(local!tablaEstado, \"bar-chart\", \"table\")}",
+                  "color": "ACCENT"
+                 },
+                 " ",
+                 {
+                  "type": "a!richTextItem",
+                  "text": "{if(local!tablaEstado, \"Ver como gráfico\", \"Ver como tabla\")}",
+                  "link": {
+                   "type": "a!dynamicLink",
+                   "saveInto": [
+                    {
+                     "type": "a!save",
+                     "target": "local!tablaEstado",
+                     "value": "{not(local!tablaEstado)}"
+                    }
+                   ]
+                  },
+                  "linkStyle": "STANDALONE",
+                  "style": "STRONG"
+                 }
+                ],
+                "align": "RIGHT",
+                "marginBelow": "LESS"
                },
-               "secondaryGrouping": {
-                "type": "a!grouping",
-                "field": "recordType!ATP Acuerdo.fields.estado"
+               {
+                "type": "a!columnChartField",
+                "labelPosition": "COLLAPSED",
+                "data": "recordType!ATP Acuerdo",
+                "height": "SHORT",
+                "showDataLabels": true,
+                "$categories": [
+                 "Borrador",
+                 "En revisión jurídica",
+                 "Pendiente de firma",
+                 "Vigente",
+                 "Vencido",
+                 "Rechazado"
+                ],
+                "config": {
+                 "type": "a!columnChartConfig",
+                 "primaryGrouping": {
+                  "type": "a!grouping",
+                  "field": "recordType!ATP Acuerdo.fields.estado"
+                 },
+                 "secondaryGrouping": {
+                  "type": "a!grouping",
+                  "field": "recordType!ATP Acuerdo.fields.estado"
+                 },
+                 "measures": [
+                  {
+                   "type": "a!measure",
+                   "function": "COUNT",
+                   "field": "recordType!ATP Acuerdo.fields.id",
+                   "label": "Acuerdos"
+                  }
+                 ]
+                },
+                "stacking": "NORMAL",
+                "showLegend": false,
+                "colorScheme": {
+                 "type": "a!colorSchemeCustom",
+                 "colors": [
+                  "#525C65",
+                  "#1A2732",
+                  "#9A5200",
+                  "#0E6B00",
+                  "#B2002C",
+                  "#B2002C"
+                 ]
+                },
+                "$filter": "or(isnull(local!tipo), fv!row.tipoAcuerdo = local!tipo)",
+                "showWhen": "not(local!tablaEstado)"
                },
-               "measures": [
-                {
-                 "type": "a!measure",
-                 "function": "COUNT",
-                 "field": "recordType!ATP Acuerdo.fields.id",
-                 "label": "Acuerdos"
-                }
-               ]
-              },
-              "stacking": "NORMAL",
-              "showLegend": false,
-              "colorScheme": {
-               "type": "a!colorSchemeCustom",
-               "colors": [
-                "#525C65",
-                "#1A2732",
-                "#9A5200",
-                "#0E6B00",
-                "#B2002C",
-                "#B2002C"
-               ]
-              }
+               {
+                "type": "a!gridField",
+                "labelPosition": "COLLAPSED",
+                "borderStyle": "LIGHT",
+                "shadeAlternateRows": false,
+                "spacing": "STANDARD",
+                "pageSize": 20,
+                "rowHeader": 1,
+                "emptyGridMessage": "No hay datos que mostrar",
+                "columns": [
+                 {
+                  "type": "a!gridColumn",
+                  "label": "Estado",
+                  "value": "{fv!row.categoria}"
+                 },
+                 {
+                  "type": "a!gridColumn",
+                  "label": "Acuerdos",
+                  "value": "{fv!row.s1|num}",
+                  "align": "END"
+                 }
+                ],
+                "$chart": {
+                 "type": "a!columnChartField",
+                 "labelPosition": "COLLAPSED",
+                 "data": "recordType!ATP Acuerdo",
+                 "height": "SHORT",
+                 "showDataLabels": true,
+                 "$categories": [
+                  "Borrador",
+                  "En revisión jurídica",
+                  "Pendiente de firma",
+                  "Vigente",
+                  "Vencido",
+                  "Rechazado"
+                 ],
+                 "config": {
+                  "type": "a!columnChartConfig",
+                  "primaryGrouping": {
+                   "type": "a!grouping",
+                   "field": "recordType!ATP Acuerdo.fields.estado"
+                  },
+                  "secondaryGrouping": {
+                   "type": "a!grouping",
+                   "field": "recordType!ATP Acuerdo.fields.estado"
+                  },
+                  "measures": [
+                   {
+                    "type": "a!measure",
+                    "function": "COUNT",
+                    "field": "recordType!ATP Acuerdo.fields.id",
+                    "label": "Acuerdos"
+                   }
+                  ]
+                 },
+                 "stacking": "NORMAL",
+                 "showLegend": false,
+                 "colorScheme": {
+                  "type": "a!colorSchemeCustom",
+                  "colors": [
+                   "#525C65",
+                   "#1A2732",
+                   "#9A5200",
+                   "#0E6B00",
+                   "#B2002C",
+                   "#B2002C"
+                  ]
+                 },
+                 "$filter": "or(isnull(local!tipo), fv!row.tipoAcuerdo = local!tipo)"
+                },
+                "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+                "showWhen": "local!tablaEstado"
+               }
+              ]
              }
             ]
            }
@@ -4936,121 +5616,140 @@
       ]
      },
      {
-      "type": "a!columnsLayout",
-      "columns": [
+      "type": "a!sectionLayout",
+      "label": "Importe por aeropuerto",
+      "labelSize": "MEDIUM",
+      "labelHeadingTag": "H2",
+      "labelColor": "STANDARD",
+      "marginBelow": "MORE",
+      "contents": [
        {
-        "type": "a!columnLayout",
+        "type": "a!cardLayout",
+        "style": "NONE",
+        "showBorder": false,
+        "showShadow": true,
+        "shape": "SEMI_ROUNDED",
+        "padding": "STANDARD",
         "contents": [
          {
           "type": "a!sectionLayout",
-          "label": "Altas por mes",
-          "labelSize": "MEDIUM",
-          "labelHeadingTag": "H2",
-          "labelColor": "STANDARD",
-          "marginBelow": "MORE",
+          "marginBelow": "NONE",
           "contents": [
            {
-            "type": "a!cardLayout",
-            "style": "NONE",
-            "showBorder": false,
-            "showShadow": true,
-            "shape": "SEMI_ROUNDED",
-            "padding": "STANDARD",
-            "contents": [
+            "type": "a!richTextDisplayField",
+            "labelPosition": "COLLAPSED",
+            "value": [
              {
-              "type": "a!lineChartField",
-              "labelPosition": "COLLAPSED",
-              "data": "recordType!ATP Acuerdo",
-              "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), fv!row.fechaAlta >= \"2025-10\")",
-              "height": "SHORT",
-              "config": {
-               "type": "a!lineChartConfig",
-               "primaryGrouping": {
-                "type": "a!grouping",
-                "field": "recordType!ATP Acuerdo.fields.mesAlta",
-                "interval": "MONTH_SHORT_TEXT"
-               },
-               "measures": [
+              "type": "a!richTextIcon",
+              "icon": "{if(local!tablaImporte, \"bar-chart\", \"table\")}",
+              "color": "ACCENT"
+             },
+             " ",
+             {
+              "type": "a!richTextItem",
+              "text": "{if(local!tablaImporte, \"Ver como gráfico\", \"Ver como tabla\")}",
+              "link": {
+               "type": "a!dynamicLink",
+               "saveInto": [
                 {
-                 "type": "a!measure",
-                 "function": "COUNT",
-                 "field": "recordType!ATP Acuerdo.fields.id",
-                 "label": "Altas"
+                 "type": "a!save",
+                 "target": "local!tablaImporte",
+                 "value": "{not(local!tablaImporte)}"
                 }
                ]
               },
-              "referenceLines": [
+              "linkStyle": "STANDALONE",
+              "style": "STRONG"
+             }
+            ],
+            "align": "RIGHT",
+            "marginBelow": "LESS"
+           },
+           {
+            "type": "a!barChartField",
+            "labelPosition": "COLLAPSED",
+            "data": "recordType!ATP Acuerdo",
+            "$filter": "and(or(isnull(local!tipo), fv!row.tipoAcuerdo = local!tipo), fv!row.contenidoEconomico)",
+            "height": "AUTO",
+            "showDataLabels": true,
+            "xAxisTitle": "Importe (€)",
+            "config": {
+             "type": "a!barChartConfig",
+             "primaryGrouping": {
+              "type": "a!grouping",
+              "field": "recordType!ATP Acuerdo.fields.aeropuertoUnidad"
+             },
+             "measures": [
+              {
+               "type": "a!measure",
+               "function": "SUM",
+               "field": "recordType!ATP Acuerdo.fields.importe",
+               "label": "Importe"
+              }
+             ]
+            },
+            "colorScheme": {
+             "type": "a!colorSchemeCustom",
+             "colors": [
+              "#527500"
+             ]
+            },
+            "showWhen": "not(local!tablaImporte)"
+           },
+           {
+            "type": "a!gridField",
+            "labelPosition": "COLLAPSED",
+            "borderStyle": "LIGHT",
+            "shadeAlternateRows": false,
+            "spacing": "STANDARD",
+            "pageSize": 20,
+            "rowHeader": 1,
+            "emptyGridMessage": "No hay datos que mostrar",
+            "columns": [
+             {
+              "type": "a!gridColumn",
+              "label": "Aeropuerto o unidad",
+              "value": "{fv!row.categoria}"
+             },
+             {
+              "type": "a!gridColumn",
+              "label": "Importe",
+              "value": "{fv!row.s1|eur}",
+              "align": "END"
+             }
+            ],
+            "$chart": {
+             "type": "a!barChartField",
+             "labelPosition": "COLLAPSED",
+             "data": "recordType!ATP Acuerdo",
+             "$filter": "and(or(isnull(local!tipo), fv!row.tipoAcuerdo = local!tipo), fv!row.contenidoEconomico)",
+             "height": "AUTO",
+             "showDataLabels": true,
+             "xAxisTitle": "Importe (€)",
+             "config": {
+              "type": "a!barChartConfig",
+              "primaryGrouping": {
+               "type": "a!grouping",
+               "field": "recordType!ATP Acuerdo.fields.aeropuertoUnidad"
+              },
+              "measures": [
                {
-                "type": "a!chartReferenceLine",
-                "label": "Media: 1,6",
-                "value": 1.6,
-                "color": "BLUEGRAY",
-                "style": "DASH"
+                "type": "a!measure",
+                "function": "SUM",
+                "field": "recordType!ATP Acuerdo.fields.importe",
+                "label": "Importe"
                }
-              ],
-              "colorScheme": {
-               "type": "a!colorSchemeCustom",
-               "colors": [
-                "#527500"
-               ]
-              }
+              ]
+             },
+             "colorScheme": {
+              "type": "a!colorSchemeCustom",
+              "colors": [
+               "#527500"
+              ]
              }
-            ]
-           }
-          ]
-         }
-        ]
-       },
-       {
-        "type": "a!columnLayout",
-        "contents": [
-         {
-          "type": "a!sectionLayout",
-          "label": "Importe por aeropuerto",
-          "labelSize": "MEDIUM",
-          "labelHeadingTag": "H2",
-          "labelColor": "STANDARD",
-          "marginBelow": "MORE",
-          "contents": [
-           {
-            "type": "a!cardLayout",
-            "style": "NONE",
-            "showBorder": false,
-            "showShadow": true,
-            "shape": "SEMI_ROUNDED",
-            "padding": "STANDARD",
-            "contents": [
-             {
-              "type": "a!barChartField",
-              "labelPosition": "COLLAPSED",
-              "data": "recordType!ATP Acuerdo",
-              "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), fv!row.conImporte)",
-              "height": "AUTO",
-              "showDataLabels": true,
-              "xAxisTitle": "Importe (€)",
-              "config": {
-               "type": "a!barChartConfig",
-               "primaryGrouping": {
-                "type": "a!grouping",
-                "field": "recordType!ATP Acuerdo.fields.aeropuerto"
-               },
-               "measures": [
-                {
-                 "type": "a!measure",
-                 "function": "SUM",
-                 "field": "recordType!ATP Acuerdo.fields.importe",
-                 "label": "Importe"
-                }
-               ]
-              },
-              "colorScheme": {
-               "type": "a!colorSchemeCustom",
-               "colors": [
-                "#527500"
-               ]
-              }
-             }
-            ]
+            },
+            "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+            "showWhen": "local!tablaImporte"
            }
           ]
          }
@@ -5068,7 +5767,7 @@
    "screen": "inicio"
   },
   {
-   "name": "02-listado-acuerdos",
+   "name": "02-acuerdos",
    "screen": "acuerdos"
   },
   {
@@ -5095,66 +5794,69 @@
    "view": "historial"
   },
   {
-   "name": "06-alta-paso1-errores",
+   "name": "06-alta-errores",
    "screen": "alta",
    "step": 0,
    "showValidation": true
   },
   {
-   "name": "06b-alta-revision",
-   "screen": "alta",
-   "step": 4,
-   "state": {
-    "local!acuerdo": {
-     "titulo": "Contrato de colaboración para movilidad eléctrica en aparcamientos",
-     "tipo": "Contrato de colaboración",
-     "aeropuerto": "VLC",
-     "fechaInicio": "2026-12-01",
-     "fechaFin": "2030-11-30",
-     "prorroga": true,
-     "tercero": "Zunder Charging S.L.",
-     "cif": "B42812727",
-     "tipoTercero": "Empresa privada",
-     "conImporte": true,
-     "importe": 96000,
-     "contraprestacion": "Cesión de espacios para puntos de recarga",
-     "responsable": [
-      "rsanchez"
-     ],
-     "docs": [
-      {
-       "name": "Borrador contrato movilidad eléctrica.pdf",
-       "size": "412 KB"
-      }
-     ],
-     "observaciones": "Revisar la cláusula de responsabilidad por daños en las instalaciones."
-    }
-   }
-  },
-  {
-   "name": "07-alta-paso3-con-importe",
+   "name": "07-alta-importe",
    "screen": "alta",
    "step": 2,
+   "caption": "paso 3, con contenido económico",
    "state": {
     "local!acuerdo": {
-     "conImporte": true,
+     "contenidoEconomico": true,
      "importe": 96000,
      "contraprestacion": "Cesión de espacios para puntos de recarga"
     }
    }
   },
   {
-   "name": "08-revision-juridica",
+   "name": "08-alta-resumen",
+   "screen": "alta",
+   "step": 4,
+   "caption": "paso 5, resumen antes de enviar",
+   "state": {
+    "local!acuerdo": {
+     "titulo": "Contrato de colaboración para movilidad eléctrica en aparcamientos",
+     "tipoAcuerdo": "Contrato de colaboración",
+     "aeropuertoUnidad": "VLC",
+     "responsableAena": [
+      "rsanchez"
+     ],
+     "fechaInicio": "2026-12-01",
+     "fechaFin": "2030-11-30",
+     "prorrogaAutomatica": true,
+     "tercero": "Recarga Urbana Movilidad S.L.",
+     "cifNifTercero": "B42990110",
+     "tipoTercero": "Empresa privada",
+     "contenidoEconomico": true,
+     "importe": 96000,
+     "contraprestacion": "Cesión de espacios para puntos de recarga",
+     "docs": [
+      {
+       "name": "Borrador contrato movilidad eléctrica.pdf",
+       "size": "412 KB"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "09-revision-devolver",
    "screen": "revision",
    "params": {
     "id": 6
    },
+   "caption": "devolver para cambios",
    "state": {
-    "local!decision": "DEVOLVER"
+    "local!decision": "DEVOLVER",
+    "local!comentarios": "Justifique el importe en la memoria."
    }
   },
   {
-   "name": "09-dialogo-editar",
+   "name": "10-editar",
    "screen": "editar",
    "hostParams": {
     "id": 3
@@ -5164,7 +5866,7 @@
    }
   },
   {
-   "name": "10-dialogo-documento",
+   "name": "11-documento",
    "screen": "documento",
    "hostParams": {
     "id": 3
@@ -5174,7 +5876,7 @@
    }
   },
   {
-   "name": "11-informes",
+   "name": "12-informe",
    "screen": "informes"
   }
  ]

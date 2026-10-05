@@ -1,16 +1,16 @@
 # Formato del app spec (`app.json`)
 
-El prototipo se describe en un único JSON. Los ejemplos de esta página usan un dominio genérico y ficticio (expedientes de una unidad, el mismo que las plantillas); en un proyecto, nombres, campos, estados y datos salen de su `ddf.md`. Regla de oro: **los nodos de interfaz son funciones SAIL reales con sus parámetros reales** (`"type": "a!cardLayout"`, `"padding": "MORE"`...). Todo lo que existe solo para el prototipo empieza por `$` y el equipo de desarrollo sabe que no se traslada a SAIL.
+El prototipo se describe en un único JSON. Los ejemplos de esta página usan un dominio genérico y ficticio (expedientes de una unidad, el mismo que las plantillas); en un proyecto, nombres, campos, estados y datos salen de su análisis funcional (`ingesta-requisitos.md`). Regla de oro: **los nodos de interfaz son funciones SAIL reales con sus parámetros reales** (`"type": "a!cardLayout"`, `"padding": "MORE"`...). Todo lo que existe solo para el prototipo empieza por `$` y el equipo de desarrollo sabe que no se traslada a SAIL.
 
 ## Estructura raíz
 
 ```json
 {
-  "app":   { "name": "Gestión de expedientes", "language": "es", "source": "ddf.md v1.2 (15/09/2026)", "today": "2026-09-24", "appianVersion": "26.9" },
+  "app":   { "name": "Gestión de expedientes", "language": "es", "source": "analisis/funcional.md v1.2", "today": "2026-09-24", "appianVersion": "26.9" },
   "site":  { "displayName": "...", "home": "inicio", "user": { "name": "Lucía Fernández Gil" },
              "pages": [ { "title": "Inicio", "icon": "home", "screen": "inicio", "includes": ["revision"] } ] },
-  "requirements":  [ { "id": "RF-01", "title": "Indicadores en la página de inicio" } ],
-  "openQuestions": [ { "id": "Q-01", "text": "¿Quién puede editar un expediente aprobado?", "screen": "editar", "priority": "CRITICA" } ],
+  "requirements":  [ { "id": "HU-01", "title": "Ver los indicadores de inicio" }, { "id": "ACT-04", "title": "Emitir informe", "outOfScope": "Lo hace el organismo externo" } ],
+  "openQuestions": [ { "id": "PC-03", "text": "¿Quién puede editar un expediente aprobado? (Solo el gestor / También el responsable)", "screen": "editar" } ],
   "maps":  { "estadoColor": { "Aprobado": "POSITIVE", "Rechazado": "NEGATIVE", "*": "SECONDARY" } },
   "users": [ { "id": "mlopez", "name": "María López Arranz", "title": "Jefa de Operaciones MAD", "supervisor": "cruiz", "groups": ["g-mad"] } ],
   "groups": [ { "id": "g-mad", "name": "Operaciones MAD", "parent": "g-dir", "description": "Adolfo Suárez Madrid-Barajas" } ],
@@ -27,8 +27,8 @@ El prototipo se describe en un único JSON. Los ejemplos de esta página usan un
 | `site.pages` | Páginas del Site (máx. 10). `includes` = pantallas que marcan esa pestaña como activa (ficha, alta...). |
 | `app.today` | Fecha «de hoy» fija para `today()`/`now()`, para que demo y capturas no cambien con el día. |
 | `app.appianVersion` | Versión de Appian del entorno: la del apartado «0. Entorno» de `analisis/tecnico.md` del proyecto; si no existe, `26.9` con `"$assumption"` en `app` y una pregunta abierta. El validador da error si se usa un componente, un parámetro o un valor posterior (`schemas/appian-versions.json`). También se usa al consultar la documentación oficial. |
-| `requirements` | IDs del documento de entrada. Alimentan la matriz de cobertura. Las actividades que el documento sitúa fuera de la aplicación (otro sistema, un actor externo que no usa Appian) llevan `"outOfScope": "motivo"`; los requisitos de la aplicación que no tienen pantalla propia (los hace el sistema o un robot, o son de otra iteración), `"noScreen": "motivo"`. Ninguno de los dos cuenta como hueco y la trazabilidad muestra el motivo. |
-| `openQuestions` | Ambigüedades del documento, para la reunión con el cliente. `priority` opcional: `CRITICA` 🔴, `IMPORTANTE` 🟡, `MEJORA` 🟢 (misma escala que el DDF). |
+| `requirements` | Historias (`HU-nn`) y pasos (`ACT-nn`) del funcional, con el ID y el título literales. Alimentan la matriz de cobertura. Los pasos «Fuera de la aplicación» llevan `"outOfScope": "motivo"`; lo que no tiene pantalla propia (un paso que hace la aplicación, una historia de otra iteración), `"noScreen": "motivo"`. Ninguno de los dos cuenta como hueco y la trazabilidad muestra el motivo. |
+| `openQuestions` | Los `PC-nn` abiertos del funcional y las dudas nuevas del prototipo (`Q-nn` hasta que el analista les dé un PC), para la reunión con el cliente. `priority` opcional (`CRITICA` 🔴, `IMPORTANTE` 🟡, `MEJORA` 🟢): el funcional no la da. |
 | `maps` | Tablas de traducción para `{expr\|map:nombre}` (estado → color, estado → paso del hito, booleano → Sí/No). `"*"` = valor por defecto. |
 | `data` | Datos de ejemplo por record type. **Los nombres de campo son los del record type**: documentan el modelo de datos para desarrollo. |
 | `users` | Usuarios para selectores, navegadores y organigrama: `title` (cargo), `supervisor` (id de su responsable: a!orgChartField), `groups` (ids de sus grupos: navegadores de usuarios y grupos). |
@@ -39,14 +39,14 @@ El prototipo se describe en un único JSON. Los ejemplos de esta página usan un
 
 ```json
 { "id": "listado", "title": "Expedientes", "type": "page", "pattern": "P01",
-  "req": ["RF-03", "RF-04"], "assumptions": ["..."], "local": { "local!filtro": null },
+  "req": ["HU-02", "HU-03"], "assumptions": ["..."], "local": { "local!filtro": null },
   "interface": { "type": "a!headerContentLayout", "contents": [ ... ] } }
 ```
 
 - `type`: `page` (página del site) · `record` (vista de registro) · `form` (formulario o tarea a página completa) · `dialog` (acción en diálogo).
 - `pattern`: obligatorio, uno de `templates/patterns.json`. El validador comprueba el tipo y el componente raíz.
 - `req`: requisitos que cubre. `assumptions`: supuestos a nivel de pantalla.
-- `ref`: dónde está definida en el documento de entrada (p. ej. `"PAN-02 · Listado de expedientes"`, el ID de la ficha en la Sec 12 del `ddf.md`). Sale en la trazabilidad y en el índice de capturas para saber bajo qué ficha va cada imagen. Una vista de registro que es otra ficha del análisis lleva su propio `ref` (y `req`).
+- `ref`: su ficha en el funcional, con el ID y el título (`"PAN-02 · Expedientes"`). Sale en la trazabilidad y en el índice de capturas para saber bajo qué ficha va cada imagen. Una vista de registro que es otra ficha del análisis lleva su propio `ref` (y `req`).
 - `local`: variables locales iniciales (se reinician al entrar). Admiten `{rv!record.campo}` para precargar desde el registro.
 - `recordType` (en `record`, y opcional en `form`/`dialog`): la pantalla recibe `rv!record` = fila de `data` con `id = params.id`. Sin `id`, un `form` o `dialog` recibe un registro vacío (un alta no sale rellena con otro registro) y una `record`, el primero (para abrirla desde el índice).
 - `openFrom` (en `dialog`): pantalla sobre la que se abre en el índice y en las capturas.

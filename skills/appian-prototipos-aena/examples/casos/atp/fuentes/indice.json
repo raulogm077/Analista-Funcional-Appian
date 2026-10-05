@@ -1,0 +1,13 @@
+{
+ "fuentes": [
+  {
+   "id": "FU-01",
+   "fichero": "ers-ejemplo.md",
+   "tipo": "Texto",
+   "detalle": "48 líneas",
+   "fecha": "2026-09-26",
+   "hash": "02543a55d45238cef9cc8fd270bfae13e2cac02c",
+   "salida": "FU-01-ers-ejemplo.md"
+  }
+ ]
+}

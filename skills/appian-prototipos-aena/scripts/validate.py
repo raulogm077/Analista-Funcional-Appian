@@ -496,7 +496,8 @@ def check_placement(spec, rep, newer=None, declared=None):
 # Avisos con el prefijo "UX · ", uno por nodo (sus problemas van juntos) o por pantalla; nunca bloquean.
 # ---------------------------------------------------------------------------
 UX = "UX · "
-# IDs del análisis (ddf.md de appian-functional-analyst): RF-01, RB-004, HU-03, HU-03.2, PAN-02… Un código del dominio con año
+# IDs del análisis (analisis/funcional.md y tecnico.md de appian-functional-analyst): HU-03, HU-03.2, ACT-01, ESC-02, RB-04, PAN-02,
+# AV-01, DOC-01, INT-01, PC-03, DT-01, PT-01; y los del formato anterior (RF-01, CU-02, NOT-01). Un código del dominio con año
 # (DOC-2026-0001) no es un ID del análisis: tras el número no puede venir «-dígito».
 ANALYSIS_ID = re.compile(r"\b(?:RF|RB|PAN|ACT|CU|INT|NOT|HU|AV|DOC|PC|ESC|DT|PT)-\d+(?:\.\d+)?\b(?!-\d)")
 CHARTS = ("a!columnChartField", "a!barChartField", "a!lineChartField", "a!areaChartField", "a!pieChartField", "a!scatterChartField")
@@ -875,7 +876,7 @@ def _ux_interface(iface, where, screen_type, add, record_sources=frozenset(), sc
         if numeric and n.get("align", "START") != "END":
             add(p, "cifras alineadas a la derecha (align END)")
 
-    # --- textos: los IDs del análisis (RF-, RB-, PAN-…) solo en los mensajes de validación ---
+    # --- textos: los IDs del análisis (HU-, RB-, PAN-…) solo en los mensajes de validación ---
     for n, p, a in nodes:
         for k in ("label", "instructions", "placeholder", "tooltip", "helpTooltip", "primaryText", "secondaryText", "text", "caption"):
             v = n.get(k)

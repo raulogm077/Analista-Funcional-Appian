@@ -9,12 +9,13 @@ Uso:
 - Oculta la barra del prototipo (modo captura).
 - Por defecto captura la página completa (formularios largos incluidos). --viewport limita a 1440x900;
   en una captura concreta, "full": false hace lo mismo.
-- Escribe capturas/indice.md con la lista de figuras, pantalla, patrón y requisitos, listo para pegar.
+- Escribe capturas/indice.md: cada figura con su pie, su ficha PAN (el 'ref' de la pantalla) y la línea que la enlaza
+  en esa ficha de analisis/funcional.md (ruta relativa desde analisis/, con el prototipo en <proyecto>/prototipo/).
 - Informa de errores de JavaScript de la página (si hay alguno, sale con código 1).
 Requiere Playwright para Python (pip install playwright) y un navegador: el Chromium de Playwright
 (playwright install chromium) o Chrome / Edge ya instalados.
 """
-import json, sys, argparse
+import json, os, re, sys, argparse
 from pathlib import Path
 from entorno import utf8_stdio, sync_playwright, launch_browser
 
@@ -36,9 +37,10 @@ def main():
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     errors = []
+    analisis = out.resolve().parent.parent / "analisis"  # <proyecto>/prototipo/capturas → <proyecto>/analisis
     index = [f"# Capturas · {spec.get('app', {}).get('name', '')}", "",
-             "Pie de figura listo para pegar en el documento funcional; «Referencia» indica bajo qué ficha va cada imagen.", "",
-             "| Fichero | Pie de figura | Referencia | Patrón | Requisitos |", "|---|---|---|---|---|"]
+             "«Ficha»: bajo qué ficha PAN de analisis/funcional.md va cada imagen. «Para la ficha»: la línea que se pega debajo de su título.", "",
+             "| Fichero | Pie de figura | Ficha | Para la ficha | Patrón | Requisitos |", "|---|---|---|---|---|---|"]
     with sync_playwright() as p:
         b = launch_browser(p)
         pg = b.new_page(viewport={"width": a.width, "height": a.height}, device_scale_factor=1)
@@ -85,7 +87,11 @@ def main():
             titulo = pg.title().rsplit(" · ", 1)[0] or s.get("title", s["id"])
             pie = titulo + ("" if estado == "inicial" else f" ({estado})")  # el número de figura lo pone el documento
             ref = (v or {}).get("ref") or s.get("ref", "—")  # una vista puede ser otra ficha del análisis
-            index.append(f"| {f.name} | {pie} | {ref} | {s.get('pattern', '')} | {', '.join((v or {}).get('req') or s.get('req', []))} |")
+            m = re.match(r"\s*([A-Z]+-\d+)\s*·?\s*(.*)", ref)
+            ruta = os.path.relpath(f.resolve(), analisis).replace(os.sep, "/")
+            alt = f"{m.group(1)} {m.group(2)}".strip() + ("" if estado == "inicial" else f" ({estado})") if m else ""
+            enlace = f"`![{alt}]({ruta})`" if m else "—"
+            index.append(f"| {f.name} | {pie} | {ref} | {enlace} | {s.get('pattern', '')} | {', '.join((v or {}).get('req') or s.get('req', []))} |")
             print(f"  ✓ {f}")
         b.close()
     (out / "indice.md").write_text("\n".join(index) + "\n", encoding="utf-8")

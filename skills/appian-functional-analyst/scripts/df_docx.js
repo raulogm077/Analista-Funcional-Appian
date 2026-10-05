@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /*
- * Genera el DDF en Word (.docx) a partir del ddf.md.
+ * Genera el DF en Word (.docx) a partir del análisis de un proyecto.
  *
- * Uso: node ddf_docx.js ddf.md -o DDF-<proyecto>-v1.0.docx [--titulo "…"] [--cliente AENA] [--version v1.0]
+ * Uso: node df_docx.js <carpeta del proyecto> [-o entregables/DF-<proyecto>-v1.1.docx]
  *
- * - Portada, índice (se actualiza al abrir en Word: «Actualizar tabla»), encabezado y pie con
- *   confidencialidad, versión y número de página.
- * - Markdown admitido: títulos #…#####, párrafos con **negrita**, *cursiva* y `código`, listas
- *   (- y 1.), tablas, citas (>) como recuadro, líneas ---, imágenes ![pie](ruta.png).
- * - Los bloques ```mermaid se omiten si les sigue su imagen (el PNG de render_mermaid.py); si no,
- *   se incluye el código en monoespaciado con el aviso «Diagrama pendiente de renderizar».
- * - Figuras numeradas: «Figura N — pie», en el orden del documento.
- * - Callouts: párrafos que empiezan por ⚠️, 🔴 o contienen «CONTRADICCIÓN» van en recuadro de color.
+ * Lee analisis/funcional.md (el contenido), analisis/decisiones.md (control del documento) y proyecto.md
+ * (cliente). Lo que no ve el cliente se queda fuera: comentarios <!-- … --> (fuentes y estados), piezas,
+ * filas y criterios tachados (anulados o respondidos). Las fichas (**HU-07 — …**) salen como títulos de
+ * cuarto nivel.
+ *
+ * Portada, control del documento, índice (se actualiza al abrir en Word), encabezado y pie con
+ * confidencialidad, versión y número de página. Markdown admitido: títulos, párrafos con **negrita**,
+ * *cursiva* y `código`, listas, tablas, citas (>), imágenes ![pie](ruta.png) con figuras numeradas.
  *
  * Requiere Node.js y el paquete docx (npm install docx si no está).
  */
@@ -27,15 +27,58 @@ const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, Tab
 
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
-const src = args.find((a, i) => !a.startsWith("--") && !(i > 0 && args[i - 1].startsWith("-")) && a !== "-o");
-if (!src) { console.error("Uso: node ddf_docx.js ddf.md -o salida.docx"); process.exit(2); }
-const out = opt("-o", src.replace(/\.md$/, ".docx"));
-const md = fs.readFileSync(src, "utf8").replace(/\r\n/g, "\n");
-const base = path.dirname(path.resolve(src));
-const firstH1 = (md.match(/^# (.+)$/m) || [, "Documento de Diseño Funcional"])[1];
-const titulo = opt("--titulo", firstH1);
-const cliente = opt("--cliente", (md.match(/^- Cliente: (.+)$/m) || [, ""])[1]);
-const version = opt("--version", ((md.match(/^- Versión: (v[\d.]+)/m) || [, "v1.0"])[1]));
+const src = args.find((a, i) => !a.startsWith("-") && !(i > 0 && args[i - 1].startsWith("-")));
+if (!src) { console.error("Uso: node df_docx.js <carpeta del proyecto> [-o salida.docx]"); process.exit(2); }
+let analisis = path.resolve(src);
+if (fs.statSync(analisis).isFile()) analisis = path.dirname(analisis);
+if (fs.existsSync(path.join(analisis, "analisis"))) analisis = path.join(analisis, "analisis");
+const raiz = path.basename(analisis) === "analisis" ? path.dirname(analisis) : analisis;
+const leer = (f) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n") : "");
+const funcional = leer(path.join(analisis, "funcional.md"));
+if (!funcional) { console.error(`No encuentro ${path.join(analisis, "funcional.md")}`); process.exit(2); }
+const decisiones = leer(path.join(analisis, "decisiones.md"));
+const proyecto = leer(path.join(raiz, "proyecto.md"));
+const base = analisis;
+const titulo = ((funcional.match(/^# (.+)$/m) || [, "Diseño funcional"])[1]).replace(/\s+—\s+Diseño funcional\s*$/, "");
+const cliente = (proyecto.match(/Cliente:\s*([^·\n]+)/) || [, ""])[1].trim();
+const version = (funcional.match(/Versi[oó]n:\s*v?([\d.]+)/) || [, "0.1"])[1];
+const estadoDoc = (funcional.match(/Estado:\s*([^·\n]+)/) || [, "borrador"])[1].trim();
+const slug = titulo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "");
+const out = opt("-o", path.join(raiz, "entregables", `DF-${slug}-v${version}.docx`));
+
+// Lo que no ve el cliente
+function limpiar(md) {
+  md = md.replace(/<!--[\s\S]*?-->/g, "");
+  const L = md.split("\n"), res = [];
+  let saltar = false;
+  for (const l of L) {
+    if (/^\*\*~~[A-Z]+-\d+~~/.test(l)) { saltar = true; continue; }          // ficha anulada
+    if (saltar && (/^#/.test(l) || /^\*\*[A-Z]+-\d+ — /.test(l))) saltar = false;
+    if (saltar) continue;
+    if (/^\|\s*~~/.test(l)) continue;                                           // fila tachada
+    if (/^\s*[-*]\s+~~/.test(l)) continue;                                      // criterio tachado
+    if (/^Versi[oó]n:/.test(l)) continue;                                       // va en la portada
+    let x = l.replace(/`((?:HU|ACT|ESC|PAN|AV|DOC|INT|PC|RB)-[\d.]+)`/g, "$1");
+    const f = x.match(/^\*\*((?:ACT|ESC|HU|PAN)-\d+ — .+?)\*\*\s*$/);
+    res.push(f ? `#### ${f[1]}` : x.replace(/\s+$/, ""));
+  }
+  return res.join("\n").replace(/\n{3,}/g, "\n\n");
+}
+
+// Control del documento, desde la tabla «Versiones» de decisiones.md (sin la columna de fuentes)
+function control() {
+  const m = decisiones.match(/^## Versiones\s*$([\s\S]*?)(?=^## |$(?![\s\S]))/m);
+  const filas = m ? m[1].split("\n").filter((l) => /^\|/.test(l) && !/^\|[\s:|-]+\|?\s*$/.test(l)) : [];
+  const celdas = (l) => l.replace(/^\||\|\s*$/g, "").split("|").map((c) => c.trim());
+  if (!filas.length) return "";
+  const cab = celdas(filas[0]).map((c) => c.toLowerCase());
+  const usar = cab.map((c, i) => (c === "fuentes" ? -1 : i)).filter((i) => i >= 0);
+  const t = filas.map((l) => "| " + usar.map((i) => celdas(l)[i] || "").join(" | ") + " |");
+  t.splice(1, 0, "|" + usar.map(() => "---").join("|") + "|");
+  return `## Control del documento\n\nEstado: ${estadoDoc}.\n\n${t.join("\n")}\n`;
+}
+
+const md = control() + "\n" + limpiar(funcional).replace(/^# .+$/m, "");
 
 const FONT = "Calibri", MONO = "Consolas";
 const PAGE_W = 11906, MARGIN = 1134, CONTENT_W = PAGE_W - 2 * MARGIN; // A4, márgenes 2 cm
@@ -144,9 +187,8 @@ while (i < L.length) {
   }
   let m;
   if ((m = l.match(/^(#{1,6}) (.+)$/))) {
-    if (m[1].length === 1 && !skippedFirstH1) { skippedFirstH1 = true; i++; continue; } // va en la portada
     const lvl = Math.min(m[1].length, 6);
-    if (lvl === 2 && body.length) body.push(new Paragraph({ children: [new PageBreak()] }));
+    if (lvl === 2 && /^(Anexo|Control del documento)/.test(m[2]) && body.length) body.push(new Paragraph({ children: [new PageBreak()] }));
     body.push(new Paragraph({ heading: HL[lvl], keepNext: true, children: runs(m[2].replace(/\*\*/g, "")) }));
     i++; continue;
   }
@@ -189,10 +231,10 @@ while (i < L.length) {
 }
 
 const portada = [
-  new Paragraph({ spacing: { before: 3000, after: 300 }, children: [new TextRun({ text: "Documento de Diseño Funcional", size: 28, color: "595959" })] }),
-  new Paragraph({ spacing: { after: 400 }, children: [new TextRun({ text: titulo.replace(/^DDF\s*·\s*/, ""), bold: true, size: 48, color: "1F3864" })] }),
-  new Paragraph({ children: [new TextRun({ text: `Cliente: ${cliente}`, size: 24 })] }),
-  new Paragraph({ children: [new TextRun({ text: `Versión: ${version} — Borrador para validación`, size: 24 })] }),
+  new Paragraph({ spacing: { before: 3000, after: 300 }, children: [new TextRun({ text: "Diseño funcional", size: 28, color: "595959" })] }),
+  new Paragraph({ spacing: { after: 400 }, children: [new TextRun({ text: titulo, bold: true, size: 48, color: "1F3864" })] }),
+  new Paragraph({ children: [new TextRun({ text: cliente ? `Cliente: ${cliente}` : "", size: 24 })] }),
+  new Paragraph({ children: [new TextRun({ text: `Versión ${version} · ${estadoDoc}`, size: 24 })] }),
   new Paragraph({ children: [new TextRun({ text: `Fecha: ${new Date().toLocaleDateString("es-ES")}`, size: 24 })] }),
   new Paragraph({ children: [new PageBreak()] }),
   new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Índice")] }),
@@ -224,7 +266,7 @@ const doc = new Document({
     properties: { page: { size: { width: PAGE_W, height: 16838, orientation: PageOrientation.PORTRAIT }, margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN } } },
     headers: { default: new Header({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: titulo, size: 16, color: "808080" })] })] }) },
     footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [
-      new TextRun({ text: `Confidencial · ${cliente} · ${version} · Página `, size: 16, color: "808080" }),
+      new TextRun({ text: `Confidencial · ${cliente ? cliente + " · " : ""}versión ${version} · Página `, size: 16, color: "808080" }),
       new TextRun({ children: [PageNumber.CURRENT], size: 16, color: "808080" }),
       new TextRun({ text: " de ", size: 16, color: "808080" }),
       new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: "808080" }),
@@ -234,6 +276,7 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then((buf) => {
+  fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, buf);
   console.log(`OK ${out} (${(buf.length / 1024 / 1024).toFixed(1)} MB, ${fig} figuras${missing ? `, ${missing} imágenes no encontradas` : ""})`);
   process.exit(missing ? 1 : 0);

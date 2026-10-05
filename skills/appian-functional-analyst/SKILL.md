@@ -1,229 +1,165 @@
 ---
 name: appian-functional-analyst
-description: >
-  Analista funcional senior de Appian BPM. Convierte las fuentes de un proyecto
-  (transcripciones de reuniones con cliente, correos, actas, notas, diagramas de
-  flujo BPMN/draw.io/Visio, o un diseño funcional/ERS ya existente) en el análisis
-  funcional en Markdown (ddf.md) y, en modo síntesis, en el Documento de Diseño
-  Funcional (DDF) en Word con diagramas. Úsala cuando el usuario pase
-  transcripciones, correos o documentación de reuniones, pida levantar requisitos,
-  un análisis o diseño funcional, entender qué quiere el cliente, actualizar un
-  DDF con una reunión o un correo nuevos, o redactar los requisitos de una
-  pantalla que explica (con o sin captura). Para maquetas o prototipos navegables
-  de pantallas, usa appian-prototipos-aena (que parte de este análisis); para
-  código SAIL, appian-sail-generator.
+description: Analista funcional de Appian. Convierte las fuentes de un proyecto (transcripciones de reuniones, correos, actas, notas, diagramas de flujo, un DF o ERS del cliente, o la descripción de una aplicación existente) en su análisis, el diseño funcional que valida el cliente (DF en Word con proceso, historias de usuario, pantallas y escenarios) y la especificación técnica para construir en Appian con buenas prácticas. Úsala para levantar requisitos, escribir o actualizar un análisis o un DF, incorporar una reunión, un correo o los comentarios del cliente al DF, redactar las historias de una pantalla que alguien explica o preparar la especificación técnica. No dibuja procesos (appian-diagramas-bpmn), no hace prototipos (appian-prototipos-aena), no construye ni revisa objetos en un entorno (appian-best-practices) y no audita aplicaciones existentes (appian-reverse-engineering).
 ---
 
-# Analista funcional senior · Appian BPM
+# Analista funcional · Appian
 
-Convierte lo que el cliente ha dicho y escrito en un análisis funcional que
-sirve a tres públicos: negocio (validar qué se construye), QA (probarlo) y
-desarrollo Appian (diseñarlo). Terminología Appian sin explicaciones básicas:
-Process Models, Record Types, Interfaces, Expression Rules, Sites, Portals.
+Convierte lo que el cliente dice y escribe en dos documentos con una sola fuente:
+- **el diseño funcional** (`analisis/funcional.md`), que el cliente valida y del que sale el DF en Word;
+- **la especificación técnica** (`analisis/tecnico.md`), con todo lo necesario para construir con el MCP de
+  desarrollo de Appian sin preguntar ni suponer.
 
-Sirve para cualquier proceso (acuerdos con terceros, medioambiente, servidumbres,
-informes, expedientes…): actores, entidades, estados y reglas salen solo de las
-fuentes del proyecto. Los ejemplos de `references/ddf-plantilla.md` usan un dominio
-genérico de expedientes para enseñar el formato; no se copian sus nombres, estados
-ni roles.
+Sirve para cualquier proceso: perfiles, datos, estados y reglas salen de las fuentes del proyecto. Los
+ejemplos (`ejemplos/autorizaciones/`) enseñan el formato con un caso ficticio; no se copian sus nombres.
 
-`<skill>` = la carpeta de este fichero. En Windows usa `python` en vez de `python3`.
+`<skill>` es la carpeta de este fichero y `<p>`, la del proyecto. En Windows, `python` en vez de `python3`.
 
-## Requisitos del entorno
+## Qué hace y qué no
+
+| Esta skill | Lo hace otra |
+|---|---|
+| Lee las fuentes, decide qué contiene el análisis y lo mantiene reunión a reunión | — |
+| Describe cada proceso (pasos, carriles, decisiones) | Lo dibuja `appian-diagramas-bpmn` |
+| Dice qué hace cada pantalla y quién la usa | La compone y la captura `appian-prototipos-aena` |
+| Diseña la solución técnica aplicando buenas prácticas | La doctrina está en `appian-best-practices`, que se consulta por secciones |
+| Usa la descripción de una aplicación existente como fuente (`as-is/`) | La escribe `appian-reverse-engineering` |
+| — | Construir o revisar objetos en un entorno: `appian-best-practices` con el MCP de desarrollo |
+
+## Requisitos
 
 | Para | Necesita | Si falta |
 |---|---|---|
-| Leer fuentes (`leer_fuentes.py`) | Python 3.9+ | Lee los ficheros con Read (no abre .docx ni .pptx) |
-| Consultar y comprobar el análisis (`ddf_indice.py`, `comprobar_ddf.py`, `unir_modulos.py`) | Python 3.9+ (sin paquetes) | Busca con grep en el `ddf.md` y revisa a mano |
-| PDF | `pdftotext` (poppler) o `pip install pypdf` | Read lee PDF directamente |
-| Correos `.msg` | Nada fiable: el paquete `extract-msg` suele fallar al instalar | Pide el correo como `.eml` o PDF |
-| Ver diapositivas o páginas de un DF | LibreOffice (`soffice`) y poppler (`pdftoppm`) | Pide el documento en PDF y usa Read con `pages` |
-| Diagramas (`render_mermaid.py` y la skill `appian-diagramas-bpmn`) | `pip install playwright` (versión actual) + un navegador: `python -m playwright install chromium`, o Chrome / Edge ya instalados | Fallback de `references/mermaid-diagrams.md` |
-| DDF en Word (`ddf_docx.js`) | Node.js con el paquete `docx` (`npm install docx`); para revisarlo, LibreOffice o la skill `docx` (Claude la trae; en Claude Code, plugin `document-skills` del repositorio `anthropics/skills`) | Entrega el `ddf.md` y avisa |
+| Scripts de análisis | Python 3.9+, sin paquetes | Imprescindible |
+| PDF | `pdftotext` o `pip install pypdf` | Read lee el PDF |
+| Correos `.msg` | Nada fiable | Pide el correo como `.eml` o PDF |
+| Diagramas y su PNG | `pip install playwright` y un navegador (el de Playwright, Chrome o Edge) | Se entrega el `.drawio` o el `.mmd` sin imagen y se dice |
+| DF en Word | Node.js con `npm install docx` | Se entrega el `funcional.md` y se dice |
 
-En Claude (web / escritorio) todo esto ya está en el entorno. Mermaid y el visor
-de draw.io van incluidos en el plugin (skill `appian-diagramas-bpmn`, `assets/`): no hace falta internet
-para los diagramas.
+En Claude (web o escritorio) todo esto ya está.
 
 ## Principios
 
-- **No inventar.** Lo que las fuentes no dicen no se escribe. Cada afirmación
-  lleva su nivel de certeza y su fuente (`[FU-03 00:14:32]`, `[FU-01 diap. 40]`):
+- **No inventar.** Lo que las fuentes no dicen no se escribe: se pregunta (PC). Cada pieza lleva su estado
+  y su fuente en un comentario de trazabilidad (`funcional-plantilla.md`). Lo validado por el cliente (🔒)
+  solo cambia con el visto bueno del analista.
+- **Una sola vez.** Cada cosa vive en un sitio y los demás la citan por su ID: el comportamiento en las
+  historias, la composición de las pantallas en el prototipo, el cómo en la especificación técnica.
+- **Escrito para leerse.** Frases cortas, concretas, con las palabras del cliente y sin relleno
+  (`redaccion.md`). El DF no habla de Appian.
+- **Contradicciones a la vista.** Ninguna se resuelve en silencio: se registra la decisión
+  (`decisiones.md`) o se pregunta (PC).
+- **Confidencialidad.** Las fuentes y el análisis son del cliente: no se publican ni se envían a servicios
+  externos (conversores, renderizadores públicos de diagramas). Los nombres de las personas solo están en
+  las notas de las fuentes.
 
-  | | |
-  |---|---|
-  | 🔒 | Validado: el cliente lo confirmó por escrito (correo, acta aprobada) o en la revisión del DDF; se cita esa fuente |
-  | ✅ | Decidido: dicho explícitamente en una fuente (fuente y minuto/página) |
-  | 🔶 | Inferencia razonable: derivado del flujo; el hecho base está en las fuentes |
-  | ⚠️ | Pendiente: propuesta del analista, o hablado sin cerrar |
-  | ❓ | No definido: información insuficiente |
+## La carpeta del proyecto
 
-  Lo que deja de valer no se borra: se tacha el ID y se dice qué decisión lo
-  anuló (`~~RF-007~~ … Anulado por D-012`). Lo 🔒 solo cambia con el visto
-  bueno del analista (`references/actualizacion.md`).
+```
+<p>/proyecto.md      estado, fuentes procesadas, pantallas confirmadas, siguiente paso
+<p>/fuentes/         FU-nn.md e indice.md (leer_fuentes.py)
+<p>/notas/           una nota por fuente
+<p>/impacto/         un informe por fuente nueva
+<p>/as-is/           la aplicación existente (ingeniería inversa)
+<p>/analisis/        funcional.md, tecnico.md, decisiones.md y diagramas/
+<p>/prototipo/       el prototipo y sus capturas (skill de prototipos)
+<p>/entregables/     el DF en Word
+<p>/versiones/       copia del análisis antes de cada cambio
+```
 
-- **Lenguaje concreto y verificable.** Nada de «se gestionará adecuadamente»:
-  quién hace qué, cuándo y con qué resultado.
-- **Terminología del cliente.** Si dice «expediente», es «expediente» en todo el
-  documento.
-- **Gap documentado > supuesto silencioso.** Cada vacío crítico se señala.
-- **Contradicciones: documentar, no resolver en silencio.** Tabla comparativa
-  («FU-02 dice X / FU-05 dice Y»), versión que se asume y por qué, regla marcada ⚠️
-  y pregunta 🔴 en Sec 17. En el docx, callout **⚠️ CONTRADICCIÓN DETECTADA**.
-- **Roles, no personas.** Los nombres del cliente solo en la tabla de asistentes
-  (Sec 1) y si el usuario lo quiere.
-- **Confidencialidad.** Las fuentes y el análisis son información del cliente: no
-  se envían a servicios externos (conversores online, renderizadores públicos de
-  diagramas) ni se publican.
+Formatos: `funcional-plantilla.md`, `tecnico-plantilla.md` y la cabecera de `decisiones.md` en
+`assets/plantillas/`. `proyecto.py estado <p>` dice en qué punto está el proyecto: empieza siempre por ahí
+si el proyecto ya existe.
 
 ## Modos
 
-Elige el modo por la fuente principal y dilo al usuario al empezar:
-
-| Modo | Cuándo | Salida |
+| Modo | Cuándo | Qué sale |
 |---|---|---|
-| **Síntesis** | Transcripciones, correos, notas, diagramas de flujo sueltos | `ddf.md` completo (17 secciones) + DDF `.docx` con diagramas (salvo que el análisis sea solo para un prototipo y el usuario no pida el Word) |
-| **Fiel** | Ya hay un diseño funcional o una ERS del cliente | `ddf.md` extraído sin reinterpretar (IDs, nombres y textos literales). **Sin `.docx`**: el documento oficial es el del cliente |
-| **Actualización** | Existe un `ddf.md` y llegan fuentes nuevas (la reunión de la semana, un correo, comentarios del cliente) | Informe de impacto (`impacto/FU-xx.md`) que aprueba el analista; el mismo `ddf.md` actualizado, versión +0.1, registro de decisiones; `.docx` regenerado si lo había. Procedimiento: `references/actualizacion.md` |
-| **Ficha suelta** | El usuario explica una pantalla o un diálogo (texto o voz, a menudo con una captura) y quiere sus requisitos redactados | La ficha de pantalla de la Sec 12 en el chat. Si hay un `ddf.md` del proyecto, se añade o actualiza en él con su PAN-xx |
+| **Síntesis** | Reuniones, correos, notas | Funcional y diagramas; el técnico cuando el funcional esté estable o se pida; DF en Word |
+| **Fiel** | Hay un DF o una ERS del cliente | Funcional extraído sin reinterpretar (el ID del cliente va en la trazabilidad) y técnico; sin Word: el documento oficial es el del cliente |
+| **Evolutivo** | Hay que cambiar una aplicación existente | Como síntesis, con `as-is/` como fuente; el técnico marca cada objeto Nuevo, Modifica o Existe |
+| **Actualización** | Ya hay análisis y llega una reunión, un correo o los comentarios al DF | Informe de impacto y cambios puntuales: `actualizacion.md` |
+| **Pantalla suelta** | Alguien explica una pantalla, con o sin captura | La ficha PAN y sus historias, en el chat y en el funcional si existe |
 
-Un DF con reuniones posteriores es fiel + actualización: primero el extracto del
-DF y después los cambios de las reuniones, cada uno con su fuente. Una aplicación
-ya construida que se explica en demos o traspasos, sin DF, es síntesis: lo que se
-ve funcionando es ✅ con su minuto; pide capturas de la aplicación si las hay.
+Di el modo al empezar.
 
-El `ddf.md` es **la fuente de verdad**: el `.docx` se genera a partir de él y el
-prototipo (`appian-prototipos-aena`) lo lee directamente.
+## Proyecto nuevo
 
-## Flujo
+1. **Carpeta y fuentes.**
+   ```bash
+   python3 <skill>/scripts/proyecto.py iniciar <p> --nombre "…" --cliente "…"
+   python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o <p>/fuentes/
+   ```
+   Lee `ingesta-fuentes.md` y después **todas** las fuentes antes de escribir: las reuniones posteriores
+   cambian lo anterior. Con muchas fuentes o más de 5 procesos, `volumen-grande.md`.
+2. **Checkpoint.** En un solo mensaje, una o dos líneas por punto: modo y fuentes, problema, perfiles,
+   procesos, reglas clave, contradicciones y lo que falta. Termina con «¿Es correcto o ajusto algo antes de
+   escribir?». Con cualquier confirmación, sigue. Si el usuario no está, sigue con la lectura más razonable
+   y deja las dudas como PC.
+3. **Funcional.** Escribe `analisis/funcional.md` con `funcional-plantilla.md`, apartado a apartado,
+   guardando al terminar cada uno. Las preguntas de condiciones de uso (§10) se hacen desde el principio.
+4. **Diagramas.** Lee el `SKILL.md` de `appian-diagramas-bpmn`, describe cada proceso en su formato JSON en
+   `analisis/diagramas/<proceso>.json`, con un carril por perfil y los mismos `ACT-nn`, y ejecuta su
+   `diagrama.py crear`. Los estados, con `mermaid-diagrams.md`.
+5. **Prototipo.** Lo hace `appian-prototipos-aena` a partir del funcional. Pone las capturas en las fichas
+   de pantalla.
+6. **Técnico.** Escribe `analisis/tecnico.md` con `tecnico-plantilla.md` cuando el funcional esté estable
+   (normalmente tras la primera validación) o cuando se pida. El Entorno (§0) y las Convenciones (§1) se
+   rellenan antes, en cuanto se sepan.
+7. **Comprobar.**
+   ```bash
+   python3 <skill>/scripts/indice.py derivadas <p> --escribir   # anexo «Quién puede hacer qué»
+   python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/
+   ```
+   Sin errores antes de entregar. Revisa los avisos: los de redacción se corrigen casi siempre.
+8. **DF en Word** (síntesis y evolutivo):
+   ```bash
+   node <skill>/scripts/df_docx.js <p>          # entregables/DF-<proyecto>-v<versión>.docx
+   ```
+   Ábrelo (conviértelo a PDF y mira algunas páginas) antes de entregarlo. Apunta en `proyecto.md` la
+   versión entregada.
+9. **Entregar.** Envía el Word y el `funcional.md` (SendUserFile en Claude). En pocas líneas: modo,
+   historias, pantallas, pendientes de confirmar con el cliente y siguiente paso.
 
-### 1. Catalogar y leer las fuentes
-```bash
-python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o fuentes/
-```
-Lee `references/ingesta-fuentes.md` antes de extraer: cómo citar, qué sacar de
-transcripciones, correos, diagramas y documentos, jerarquía entre fuentes y
-contradicciones. Lee **todas** las fuentes antes de escribir: las reuniones
-posteriores suelen cambiar lo anterior. Si una transcripción es ilegible (otro
-idioma, ruido), no la leas entera: mira el principio, anótala en la Sec 1 como no
-utilizable y sigue. Si el usuario las pasa de una en una,
-di cuántas llevas y pregunta si hay más. Con una sola transcripción, extrae lo
-que haya y marca ❓ el resto: un análisis con gaps documentados es más útil que
-esperar información que puede no llegar.
+Para buscar en el análisis sin leerlo entero: `indice.py` (`resumen`, `buscar`, `ficha`, `impacto`,
+`seccion`, `siguientes`).
 
-**Muchas fuentes o aplicación grande** (más de ~5 reuniones largas o más de 5
-procesos): sigue `references/volumen-grande.md` (una nota por fuente, módulos
-con rangos de IDs propios, unión y comprobación).
+## Pantalla suelta
 
-### 2. Checkpoint con el usuario
-Antes de escribir el análisis, presenta en un solo mensaje (1-2 líneas por punto):
-1. Modo y fuentes (IDs)
-2. Problema central
-3. Actores y roles
-4. Procesos críticos (con nombre); en modo fiel, número de actividades y pantallas
-5. Reglas de negocio clave
-6. Contradicciones detectadas
-7. Gaps críticos
+1. Si hay captura, mírala antes de escribir: textos, columnas, botones y valores que no se han dicho. Si
+   contradice lo explicado, manda lo explicado y se anota.
+2. Escribe la ficha PAN y sus historias con el formato del funcional. Un diálogo que se abre desde la
+   pantalla es otra ficha.
+3. Lo que falte (quién ve una acción, el texto de una confirmación) se pregunta antes de cerrar; los
+   detalles menores, con la opción más razonable dicha en el texto.
+4. Entrégala en el chat. Si el proyecto tiene análisis, añádela con sus IDs siguientes y sube la versión.
 
-Termina con «¿Es correcto este resumen o hay algo que ajustar antes de generar
-el análisis?». Con cualquier confirmación («sí», «adelante», «dale»), sigue sin
-más preguntas. Si el usuario pidió ir directo o no está presente, sigue con la
-lectura más razonable y deja las dudas en Sec 17.
+## Comentarios del cliente al DF
 
-### 3. Escribir el `ddf.md`
-Estructura, contenido de cada sección, modo fiel, IDs estables y reglas de
-redacción: `references/ddf-plantilla.md`. Reglas que más se olvidan:
-- Un ID nunca se renumera ni se reutiliza (lo anulado se tacha y se queda).
-- Cada RF, RB, campo y pantalla cita su fuente.
-- Pantallas (Sec 12) y tareas (Sec 6.3) son fichas autocontenidas con sus
-  propios criterios de aceptación; la Sec 8 solo remite a ellos. Un criterio se
-  escribe en un único sitio.
-- La ficha de pantalla lleva «se abre desde», campos con origen y valor si está
-  vacío, filtros (única o múltiple, por defecto), ordenación, acciones con qué
-  pasa después y textos literales. Todo borrado lleva confirmación con su texto
-  (si falta, se pregunta).
-- La ficha de tarea lleva estado de entrada, todas las opciones con su estado
-  de salida y siguiente tarea, y el criterio mínimo para darla por validada.
-- La Sec 6 marca qué actividades no ocurren en la aplicación y por qué.
+El Word devuelto es una fuente más: se cataloga con `leer_fuentes.py`, que saca cada comentario y cada
+cambio marcado con la historia o el apartado donde está, y se sigue `actualizacion.md`.
 
-Para documentos grandes, escribe por secciones y guarda al terminar cada una.
+## Dudas de Appian
 
-### 4. Diagramas (modo síntesis)
-El flujo del proceso (Sec 6) lo dibuja la skill `appian-diagramas-bpmn` en draw.io (editable a mano,
-también en una reunión): lee su `SKILL.md`, describe el proceso en su formato y usa `diagrama.py crear`;
-en el `ddf.md` va la imagen `![Flujo — …](diagramas/<proceso>.png)`. En Mermaid: casos de uso si hay
-≥3 actores o ≥6 CU (Sec 7), entidad-relación si ≥2 entidades tienen atributos (Sec 10), estados por
-entidad con ≥3 estados (Sec 11). Convenciones, plantillas y workflow: `references/mermaid-diagrams.md`.
-```bash
-python3 <skill>/scripts/render_mermaid.py diagramas/*.mmd
-```
-Salida 1 = error de sintaxis o fichero que no existe (corrige y repite); 2 = falta
-un requisito (dilo y aplica el fallback). Revisa cada PNG con Read antes de
-incrustarlo. Sin Word (análisis solo para el prototipo), el diagrama se queda como
-bloque Mermaid en el `ddf.md`, sin enlace a PNG: valida la sintaxis con
-`render_mermaid.py diagramas/*.mmd --check`.
+Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `appian-docs` (sus herramientas empiezan por `mcp__appian-docs__`) antes de escribirlo, nunca de memoria: si existe un componente, una función, un parámetro o un objeto, qué admite, sus límites, si depende de la licencia y desde qué versión.
+- Una duda por consulta, escrita como una frase completa.
+- Vale lo que diga la documentación de la versión del entorno del proyecto (va en la URL: `/help/26.6/`). Si solo lo dice una versión posterior, se avisa de que puede no estar disponible.
+- Lo que se escribe a partir de la respuesta lleva su URL, en la forma `/latest/`.
+- Sin el MCP, se consulta docs.appian.com con WebFetch o WebSearch. Si tampoco se puede, se escribe «sin verificar» y la duda pasa a pendientes.
+- Qué conviene hacer (qué mecanismo elegir, cómo diseñarlo) no es una duda de documentación: se consulta en `appian-best-practices`, solo la sección que toca. Esa skill está junto a esta, y `python3 ../appian-best-practices/scripts/seccion.py 02 4.8` imprime solo §4.8 del doc 02.
 
-### 5. DDF en Word (modo síntesis)
-Salta este paso en modo fiel y cuando el análisis sea solo para un prototipo y el
-usuario no pida el Word. Antes, el `ddf.md` tiene que pasar la comprobación del
-paso 6.
-```bash
-node <skill>/scripts/ddf_docx.js ddf.md -o DDF-<proyecto>-vX.Y.docx
-```
-`ddf_docx.js` genera portada, índice, encabezado, pie con confidencialidad,
-versión y página, tablas, callouts y figuras numeradas: cada bloque Mermaid del
-`ddf.md` va seguido de su imagen `![pie](diagramas/<nombre>.png)`. En versiones
-nuevas se regenera entero desde el `ddf.md`. Revisa el resultado con la skill
-`docx` (convertir a PDF y mirar algunas páginas).
+**En el análisis**, las dudas típicas son si la versión o el tier del cliente permiten algo que pide el DF
+y los límites que afectan a una decisión técnica. Su URL va en el «Por qué» o en el «Verificado» de la DT;
+lo que quede sin verificar es un PT, o un PC si cambia lo que se promete al cliente.
 
-### 6. Verificar
-En todos los modos, también cuando no hay Word:
-```bash
-python3 <skill>/scripts/comprobar_ddf.py ddf.md --fuentes fuentes/   # 0 problemas antes de entregar
-```
-Recorre el checklist final de `references/ddf-plantilla.md` (las casillas
-marcadas «síntesis» no aplican en modo fiel). Además:
-- La matriz de cobertura (Sec 16) no tiene RF MUST sin criterio, y ningún criterio está escrito en dos sitios.
-- Toda transición del diagrama de estados está en la tabla de transiciones y coincide con los estados de entrada y salida de las fichas de tarea.
-- Ningún ID ha cambiado respecto a la versión anterior (modo actualización).
-- Si hay `.docx`, ábrelo (conviértelo a PDF o léelo con pandoc) y comprueba que
-  las imágenes, tablas e índice están.
+## Referencias
 
-### 7. Entregar
-- Claude (web / escritorio): envía el `.docx` (si lo hay) y el `ddf.md` con
-  SendUserFile. Claude Code: déjalos en la carpeta del análisis junto a
-  `fuentes/` y `diagramas/`.
-- Resume en pocas líneas: modo, fuentes, número de RF/RB/pantallas, preguntas 🔴
-  abiertas.
-- Siguiente paso natural: un prototipo navegable de las pantallas de la Sec 12
-  con `appian-prototipos-aena`.
-
-## Ficha suelta
-Cuando alguien explica una pantalla y solo quiere su redacción:
-1. Si hay captura, mírala antes de escribir: textos de botones, columnas,
-   iconos, tooltips y valores que no se hayan dicho. Si contradice lo explicado,
-   manda lo explicado y se anota la discrepancia.
-2. Escribe la ficha con el formato de la Sec 12 de `references/ddf-plantilla.md`
-   (omite los apartados que no apliquen). Un diálogo que se abre desde la
-   pantalla es otra ficha: aquí solo «abre [nombre]».
-3. Lo que falte (rol que ve una acción, texto de una confirmación de borrado,
-   selección única o múltiple de un filtro) se pregunta antes de cerrar la
-   ficha; no se inventa. Detalles menores: la opción más razonable, dicha en el
-   texto.
-4. Entrégala en el chat. Si el proyecto tiene `ddf.md`, añádela o actualízala
-   con su PAN-xx y sube la versión.
-
-## Revisiones y actualizaciones
-Cada fuente nueva (reunión, correo, comentarios del cliente al DDF) sigue
-`references/actualizacion.md`:
-1. Catalogarla (`leer_fuentes.py`, continúa la numeración) y escribir su nota.
-2. Partirla en puntos, encontrar dónde encaja cada uno (`ddf_indice.py buscar` y
-   `ficha`: nunca leer el `ddf.md` entero), clasificarlo (NUEVO, COMPLETA,
-   CONFIRMA, VALIDA, CAMBIA, ANULA, RESPONDE, ALCANCE±) y sacar sus dependencias
-   (`ddf_indice.py impacto`).
-3. Informe de impacto `impacto/FU-xx.md`; el analista aprueba los puntos que
-   tocan algo 🔒, el alcance o contradicen al cliente.
-4. Aplicar solo lo aprobado (IDs nunca borrados: lo anulado se tacha), registro
-   de decisiones, versión +0.1, `ddf_indice.py derivadas --escribir`.
-5. `comprobar_ddf.py ddf.md --fuentes fuentes/ --anterior ddf-vX.Y.md --impacto
-   impacto/FU-xx.md` sin problemas; Word y pantallas afectadas del prototipo.
+| Fichero | Cuándo |
+|---|---|
+| `references/ingesta-fuentes.md` | Antes de leer las fuentes |
+| `references/funcional-plantilla.md` | Al escribir el funcional |
+| `references/tecnico-plantilla.md` | Al escribir el técnico (con la ruta a buenas prácticas de cada apartado) |
+| `references/redaccion.md` | Al escribir cualquiera de los dos |
+| `references/actualizacion.md` | Con cada fuente nueva |
+| `references/volumen-grande.md` | Muchas fuentes o muchos procesos |
+| `references/mermaid-diagrams.md` | Diagramas de estados y de datos |
