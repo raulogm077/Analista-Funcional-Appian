@@ -2,7 +2,7 @@
 """build_annex.py - Anexo de definiciones: el código y la configuración originales, legibles y sin datos sensibles.
 
 Uso:
-  python3 scripts/build_annex.py <carpeta_salida>
+  python3 <skill>/scripts/build_annex.py <carpeta_salida>
 
 Lee   <trabajo>/inventory.json y las definiciones de <trabajo>/mcp_raw/
 Crea  <salida>/anexo/indice.md y <salida>/anexo/<tipo>/<slug>.md (uno por objeto con definición)

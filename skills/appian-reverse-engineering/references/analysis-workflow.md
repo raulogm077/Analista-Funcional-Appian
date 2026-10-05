@@ -99,7 +99,7 @@ Solo las subsecciones con contenido. Hallazgos propios: `H-GEN` (áreas mantenim
 - **Métricas** (Vista): de `inventory.json` (`counts`, `sailLines`, `sailBytes`, `nodeCount`, `validationIssues`, `usage`).
 - **Constantes por entorno y secretos**: constantes con URLs, hosts, identificadores o interruptores de entorno (`DEV`/`PRE`/`PRO`). Los valores con secreto (`maskedSecret`, `maskedSecrets`, `detect_secrets.py`) no se repiten: se enlaza el `H-SEG` de 04.
 - **Reglas reutilizables**: los hubs de `graph.json` (5 o más objetos que los referencian) de tipo expression rule o decisión: qué hacen, entradas, salida y nº de llamadores. Los hubs como problema de arquitectura son `H-ARQ` de 02.
-- **Huérfanos**: `graph.orphans` (ya excluye puntos de entrada y procesos programados) y, si el entorno es producción, los process models sin ejecuciones (`signals`). Aquí va la lista para limpieza; el hallazgo de arquitectura es de 02.
+- **Huérfanos**: `graph.orphans` (ya excluye puntos de entrada y procesos programados) y, solo si el entorno es producción, los process models sin ejecuciones (`signals`). Aquí va la lista para limpieza; el hallazgo de arquitectura es de 02.
 - **Avisos de validación**: `validationIssues`; un `H-GEN` por tipo de aviso, agrupando objetos.
 - **Versionado**: `versions` (`count`, `lastModifiedOn`, `lastModifiedBy`). El autor nunca se escribe: clasifícalo como cuenta personal, de servicio o «tipo no determinado» y busca su grupo en los ficheros `members` de `mcp_raw`. Cuenta de servicio solo si su grupo o su nombre lo indican claramente (🔵).
 - **Glosario de negocio**: términos de nombres y descripciones de records, campos, procesos y pantallas; ✅ si sale de una descripción de Appian, 🔵 si se deduce del nombre.
@@ -112,7 +112,7 @@ Hallazgos `H-GEN` (severidad orientativa):
 | Constante con un valor de otro entorno o fijo que debería variar por entorno | Media | ✅ o 🔵 |
 | Process model de más de 50 nodos ([fuente](https://docs.appian.com/suite/help/26.6/appian-recommendations.html#process-model-design-guidance)) | Media | ✅ |
 | Expression rule de más de 200 líneas o interfaz de más de 80 KB | Baja | ✅ |
-| Process models sin ejecuciones en un entorno de producción | Baja (candidatos a retirar) | ✅ |
+| Process models sin ejecuciones (`signals`) | Baja (candidatos a retirar) | ✅ en producción; 🔵 «orientativo (ver LEEME)» si no consta como producción |
 
 ## Fase 5 — Diagramas
 

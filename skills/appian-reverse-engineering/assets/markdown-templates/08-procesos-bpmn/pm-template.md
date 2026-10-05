@@ -34,14 +34,14 @@ Fuente editable: [{{slug}}.drawio](./{{slug}}.drawio) (draw.io) · BPMN 2.0: [{{
 
 | Atributo | Valor |
 |---|---|
-| Inicio | {{formulario [`interfaz`](../10-pantallas.md#ancla) · acción de record · temporizador · subproceso}} |
+| Inicio | {{formulario [`interfaz`](../10-pantallas.md#{{ancla}}) · acción de record · temporizador · subproceso}} |
 | Frecuencia | {{solo con temporizador: «cada día a las 08:00 (Europe/Madrid)»}} |
 | Quién puede iniciarlo | {{grupos según el role map, o «grupo de seguridad declarado: X; role map no disponible» ❓}} |
 | Carriles | {{grupos asignados}} · Sistema |
 | Lo invocan | {{[proceso padre](./slug-padre.md), interfaz, acción de record}} o «sin invocador detectado» |
-| Subprocesos | {{[proceso hijo](./slug-hijo.md)}} |
-| Sistemas externos | {{sistema}} vía [`{{integración}}`](../05-integraciones-consumidas.md#ancla) |
-| Datos que escribe | [`{{record type}}`](../03-modelo-datos.md#ancla) |
+| Subprocesos | {{[proceso hijo](./{{slug-hijo}}.md)}} |
+| Sistemas externos | {{sistema}} vía [`{{integración}}`](../05-integraciones-consumidas.md#{{ancla}}) |
+| Datos que escribe | [`{{record type}}`](../03-modelo-datos.md#{{ancla}}) |
 | Crítico | {{Sí/No}} ({{motivos de la criticidad}}) |
 | Definición | [`mcp:processModel/{{nombre}}`](../anexo/processModel/{{slug}}.md) · Certeza: ✅ |
 
@@ -61,16 +61,16 @@ Fuente editable: [{{slug}}.drawio](./{{slug}}.drawio) (draw.io) · BPMN 2.0: [{{
 
 | Tarea | Asignada a | Formulario | Evidencia |
 |---|---|---|---|
-| {{nombre}} | grupo `{{grupo}}` · {{rol de la expresión}} 🔵 | [`{{interfaz}}`](../10-pantallas.md#ancla) | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].assignment`](../anexo/processModel/{{slug}}.md) |
+| {{nombre}} | grupo `{{grupo}}` · {{rol de la expresión}} 🔵 | [`{{interfaz}}`](../10-pantallas.md#{{ancla}}) | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].assignment`](../anexo/processModel/{{slug}}.md) |
 
 ### Datos, integraciones y avisos
 
 | Nodo | Acción | Objeto | Evidencia |
 |---|---|---|---|
-| {{nombre}} | Escribe | [`{{record type}}`](../03-modelo-datos.md#ancla) | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].data`](../anexo/processModel/{{slug}}.md) |
-| {{nombre}} | Llama | [`{{integración}}`](../05-integraciones-consumidas.md#ancla) | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].data`](../anexo/processModel/{{slug}}.md) |
+| {{nombre}} | Escribe | [`{{record type}}`](../03-modelo-datos.md#{{ancla}}) | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].data`](../anexo/processModel/{{slug}}.md) |
+| {{nombre}} | Llama | [`{{integración}}`](../05-integraciones-consumidas.md#{{ancla}}) | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].data`](../anexo/processModel/{{slug}}.md) |
 | {{nombre}} | Envía correo | destinatarios ❓ (no los devuelve la extracción) | [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](../anexo/processModel/{{slug}}.md) |
-| {{nombre}} | Lanza subproceso | [{{proceso hijo}}](./slug-hijo.md) | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].data`](../anexo/processModel/{{slug}}.md) |
+| {{nombre}} | Lanza subproceso | [{{proceso hijo}}](./{{slug-hijo}}.md) | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].data`](../anexo/processModel/{{slug}}.md) |
 
 ### Parámetros
 

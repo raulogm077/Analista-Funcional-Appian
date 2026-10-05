@@ -6,9 +6,11 @@
   Lo que no cambia: en el catálogo, con el enlace a su ficha del anexo. Los objetos huérfanos no se listan: se cita su H-ARQ o se enlaza 09.
   Cifras de uso o volumen de un entorno que no consta como producción: marca corta «orientativo (ver LEEME)».
   Longitud: crece con los elementos que cambian (Regla 9 de presentation-rules); nunca se recorta uno para cumplirla.
-  Más de unas 15 fichas: las fichas de datos, procesos y pantallas se agrupan por área («### <área>» dentro de cada
-  «## Detalle: …») y tras la Vista va un índice de áreas con enlaces (presentation-rules.md, Regla 9).
+  Más de unas 15 fichas: un «## Detalle: <área>» por área, con sus fichas de datos, procesos y pantallas en «###»,
+  e índice de áreas tras la Vista (presentation-rules.md, Regla 9). Ciclo de vida, integraciones y seguridad, catálogo
+  y correspondencia siguen como «## Detalle: …».
   Diagramas: objetivo-datos (erDiagram); objetivo-<slug> y objetivo-navegacion solo si cambian. Los {{marcadores}} se sustituyen y los comentarios se borran.
+  Dependencias externas: enlaza 02-arquitectura.md#dependencias-externas; si 02 no tiene esa sección, «Ninguna detectada» con enlace a 02-arquitectura.md#cobertura-y-límites.
 -->
 
 # Diseño objetivo

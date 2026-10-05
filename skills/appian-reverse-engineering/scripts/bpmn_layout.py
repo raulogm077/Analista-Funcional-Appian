@@ -8,7 +8,7 @@ Camunda Modeler y bpmn.io (bpmn-js) solo dibujan lo que tiene coordenadas (BPMN 
      <bpmndi:BPMNDiagram> (sustituye el que hubiera, así que se puede repetir).
 
 Uso:
-  python3 scripts/bpmn_layout.py <fichero.bpmn | carpeta> [...]
+  python3 <skill>/scripts/bpmn_layout.py <fichero.bpmn | carpeta> [...]
 
 Solo librería estándar. Salida: 0 bien, 1 algún fichero no se pudo procesar, 2 uso.
 """

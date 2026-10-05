@@ -2,7 +2,7 @@
 """build_registry.py - Registro único de hallazgos.
 
 Uso:
-  python3 scripts/build_registry.py <carpeta_salida>
+  python3 <skill>/scripts/build_registry.py <carpeta_salida>
 
 Lee   <trabajo>/hallazgos/*.json      (un fichero por autor: lista de hallazgos)
       <trabajo>/modernizacion.json    (opcional, lo escribe rebuild-architect: MOD y PQ con los hallazgos que tratan)

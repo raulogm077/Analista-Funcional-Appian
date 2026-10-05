@@ -46,6 +46,7 @@ Si al analizar tu área ves algo de otra (p. ej. ui-rules-analyzer nota que un p
 
 - Process model sin ejecuciones: `H-GEN` (09). 07 y 02 citan el ID.
 - Instancias fallidas o detenidas en la muestra de ejecuciones: `H-PRO` (08). 07 y 00 citan el ID.
+- Process model de más de 50 nodos: `H-GEN` (09). 08 y 02 citan el ID.
 - Objetos huérfanos: la lista es una sola, en 09 («Objetos huérfanos»); el hallazgo es `H-ARQ` (02). 03, 10 y los demás citan `H-ARQ`/`H-GEN` o enlazan esa lista, sin repetirla.
 
 ---
@@ -59,7 +60,7 @@ Un hallazgo es algo que hay que corregir, decidir o vigilar. Cada propietario lo
    ```markdown
    | ID | Hallazgo | Severidad | Certeza | Evidencia |
    |---|---|---|---|---|
-   | H-PRO-01 | «Cancelar» no anula el alta | Alta | ✅ | `mcp:processModel/DEM Alta Solicitud#nodes[id=1].connections` |
+   | H-PRO-01 | «Cancelar» no anula el alta | Alta | ✅ | [`mcp:processModel/DEM Alta Solicitud#nodes[id=1].connections`](../anexo/processModel/DEM_Alta_Solicitud.md) |
    ```
 
    Si un hallazgo Alta necesita explicación, añade debajo una línea con su impacto y la recomendación.

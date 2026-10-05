@@ -48,7 +48,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 ### Fase 0 — Preflight de los 3 MCP (obligatoria)
 
-1. Ejecuta `devmcp_extract.py doctor --json`. Si trae `appsNote` (más de 50 apps), busca la del usuario con `apps --json`.
+1. Ejecuta `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor --json`. Si trae `appsNote` (más de 50 apps), busca la del usuario con `apps --json`.
 2. Comprueba en la sesión:
    - **Docs MCP**: busca una herramienta de búsqueda en la documentación de Appian (ver `references/docs-mcp-usage.md`). Si existe, haz **una** consulta de prueba corta; cuenta para el tope.
    - **Appian MCP Server**: si `doctor` dice `no_configurado` pero en la sesión hay herramientas del data fabric de Appian, márcalo «disponible en sesión».
@@ -63,19 +63,19 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 ### Fase 1 — Plan de extracción
 
-`devmcp_extract.py plan --app <app> --out <salida>`. Resume al usuario: objetos por tipo, herramientas que se usarán y excluidas (con motivo) y llamadas estimadas. Si `needsConfirmation` es `true`, pide confirmación antes de seguir.
+`uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" plan --app <app> --out <salida>`. Resume al usuario: objetos por tipo, herramientas que se usarán y excluidas (con motivo) y llamadas estimadas. Si `needsConfirmation` es `true`, pide confirmación antes de seguir.
 
 ### Fase 2 — Extracción
 
-1. `devmcp_extract.py extract --app <app> --out <salida>` (añade `--yes` si el usuario confirmó un plan grande). Es reanudable: si se corta, repítelo.
+1. `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <app> --out <salida>` (añade `--yes` si el usuario confirmó un plan grande). Es reanudable: si se corta, repítelo.
 2. Revisa `extraction_report.json`. Si en `callStatsByRole.definition` las fallidas (`failed`) pasan del 20 % del total (`ok` + `failed`), díselo al usuario antes de seguir.
-3. Data fabric (opcional, `references/data-fabric.md`): `devmcp_extract.py datafabric --out <salida>` si hay servidor en la configuración; si solo está en la sesión, hazlo desde la sesión; si no, sáltalo.
+3. Data fabric (opcional, `references/data-fabric.md`): `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" datafabric --out <salida>` si hay servidor en la configuración; si solo está en la sesión, hazlo desde la sesión; si no, sáltalo.
 
 ### Fase 3 — Modelo y anexo
 
-1. `build_model.py <salida>` → `inventory.json` y `graph.json` (con la criticidad de cada proceso).
+1. `python3 <skill>/scripts/build_model.py <salida>` → `inventory.json` y `graph.json` (con la criticidad de cada proceso).
 2. `python3 <skill>/scripts/build_annex.py <salida>` → `anexo/`: por objeto, la definición legible y el resto de respuestas (role map, dependientes, validación, ejecuciones, versiones, render sin valores), con los usuarios sustituidos por sus grupos y los correos por `‹correo›`; y `anexo/grafo.md`. Repítelo si cambia `<trabajo>/`.
-3. `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw` (o `bash <skill>/scripts/detect_secrets.sh`, que lo llama): lo que salga hay que enmascararlo en los entregables. No cuenta referencias (`cons!`, `=ri!…`) ni valores ya enmascarados. **No muestres los valores.**
+3. `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw` (o `bash <skill>/scripts/detect_secrets.sh`, que lo llama): lo que salga no puede aparecer en los entregables: se dice dónde está (`references/security-rules.md`, «Cómo se escribe cada dato»). No cuenta referencias (`cons!`, `=ri!…`) ni valores ya enmascarados. **No muestres los valores.**
 
 ### Fase 4 — Análisis con subagentes
 

@@ -2,7 +2,7 @@
 """build_model.py - Convierte las respuestas del Dev MCP (mcp_raw) en inventory.json y graph.json.
 
 Uso:
-  python3 scripts/build_model.py <carpeta_salida>
+  python3 <skill>/scripts/build_model.py <carpeta_salida>
 
 Lee   <trabajo>/mcp_raw/ (lo escribe devmcp_extract.py); <trabajo> = <padre>/_trabajo/<nombre de salida>
 Crea  <trabajo>/inventory.json y graph.json (rutas "path" relativas a <trabajo>)

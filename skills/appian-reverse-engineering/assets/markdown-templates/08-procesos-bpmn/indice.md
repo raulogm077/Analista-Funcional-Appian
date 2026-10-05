@@ -25,7 +25,7 @@ Cada proceso tiene su documento (paso a paso, tareas, datos y hallazgos) y su di
 
 | Proceso | Inicio | Crítico | Ejecuciones{{, orientativo (ver [LEEME](../LEEME.md))}} | Invocado por | Subprocesos e integraciones | Hallazgos | BPMN |
 |---|---|---|---|---|---|---|---|
-| [{{nombre}}](./{{slug}}.md) | Formulario de inicio | Sí | 120 | [`{{interfaz}}`](../10-pantallas.md#ancla) | [{{hijo}}](./slug-hijo.md), `{{integración}}` | H-PRO-01, H-PRO-02 | [.bpmn](./{{slug}}.bpmn) |
+| [{{nombre}}](./{{slug}}.md) | Formulario de inicio | Sí | 120 | [`{{interfaz}}`](../10-pantallas.md#{{ancla}}) | [{{hijo}}](./{{slug-hijo}}.md), `{{integración}}` | H-PRO-01, H-PRO-02 | [.bpmn](./{{slug}}.bpmn) |
 | [{{nombre}}](./{{slug}}.md) | Temporizador diario | No | 0 | — | — | — | [.bpmn](./{{slug}}.bpmn) |
 
 ### Cómo leer los diagramas

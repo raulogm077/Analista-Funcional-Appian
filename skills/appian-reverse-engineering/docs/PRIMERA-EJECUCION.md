@@ -36,7 +36,7 @@ uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.
 
 - [ ] `extraction_report.json`: en `callStatsByRole.definition`, menos del 20 % de llamadas fallidas; mira el motivo de las herramientas desactivadas.
 - [ ] Abre 2 o 3 respuestas de `mcp_raw/` (una interfaz, un process model, un record type) y comprueba que traen la definición.
-- [ ] `python3 "<skill>/scripts/detect_secrets.py" appian-docs/_trabajo/<prefijo>/mcp_raw`: si algo sale, que esté enmascarado en los entregables.
+- [ ] `python3 "<skill>/scripts/detect_secrets.py" appian-docs/_trabajo/<prefijo>/mcp_raw`: si algo sale, los entregables dicen dónde está sin reproducirlo.
 
 ## 4. Documentación
 

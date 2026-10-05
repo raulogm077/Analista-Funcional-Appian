@@ -5,7 +5,8 @@ No contiene nombres de herramientas: lee el catalogo del servidor en cada ejecuc
 herramienta por su firma y aplica la politica de scripts/devmcp_policy.json.
 
 Ejecucion (uv instala el SDK MCP al vuelo; uv ya es requisito del Dev MCP):
-  uv run --with "mcp>=1.2,<2" python scripts/devmcp_extract.py <subcomando> [opciones]
+  uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" <subcomando> [opciones]
+  (desde la carpeta del usuario, donde esta su .mcp.json; <skill> es la carpeta de la skill)
 
 Subcomandos:
   doctor      Estado de los 3 MCP: Dev MCP (obligatorio), Appian MCP Server y Docs MCP (opcionales).
@@ -589,7 +590,7 @@ class Extractor:
         self.refresh, self.retries, self.retry_delay = refresh, retries, retry_delay
         self.only = re.compile(only) if only else None
         self.skip = re.compile(skip) if skip else None
-        self.raw = (work_dir(out) / "mcp_raw") if out else None
+        self.raw = (work_dir(out, crear=True) / "mcp_raw") if out else None
         self.stats = defaultdict(lambda: defaultdict(int))
         self.errors: list[dict] = []
         self.disabled: list[dict] = []
@@ -984,7 +985,7 @@ async def cmd_plan_or_extract(args, execute: bool) -> int:
                 app_obj, objects, groups = await prepare(ex, args)
             except SystemExit as se:
                 return int(se.code)
-            interm = work_dir(out)
+            interm = work_dir(out, crear=True)
             write_json(interm / "mcp_catalog.json", catalog_json(ex))
             plan = plan_json(ex, app_obj, objects, groups)
             write_json(interm / "extraction_plan.json", plan)
@@ -1013,7 +1014,6 @@ async def cmd_plan_or_extract(args, execute: bool) -> int:
                 "errors": ex.errors[:300], "errorCount": len(ex.errors),
             }
             write_json(interm / "extraction_report.json", report)
-            (interm / ".gitignore").write_text("# Datos de trabajo: no se versionan ni se comparten\n*\n", encoding="utf-8")
             (interm / "LEEME.md").write_text(
                 "# Datos intermedios\n\nEsta carpeta contiene definiciones en bruto de la aplicacion (URLs, valores de "
                 "constantes, nombres de usuario del historial). **No la compartas.** Los entregables de la carpeta "
@@ -1157,7 +1157,7 @@ async def cmd_doctor(args) -> int:
                           "detail": "No aparece en los ficheros de configuracion. Puede estar anadido desde la interfaz "
                                     "del cliente: la skill lo comprueba desde la sesion."})
     if args.out:
-        write_json(work_dir(args.out) / "preflight.json", report)
+        write_json(work_dir(args.out, crear=True) / "preflight.json", report)
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
@@ -1242,7 +1242,7 @@ async def cmd_datafabric(args) -> int:
     except Exception as ex_:
         eprint(f"Appian MCP Server no disponible: {type(ex_).__name__}: {ex_}")
         return EXIT_NO_MCPSERVER
-    write_json(work_dir(out) / "datafabric.json", result)
+    write_json(work_dir(out, crear=True) / "datafabric.json", result)
     print(f"Data fabric: {len(result['recordTypes'])} record types con metadatos, "
           f"{sum(1 for x in result['recordTypes'] if x['count'] is not None)} con recuento.")
     return EXIT_OK

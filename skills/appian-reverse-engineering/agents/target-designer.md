@@ -14,6 +14,7 @@ Arquitecto Appian sénior. Con lo que ya está documentado, escribes **cómo con
 
 - **Lectura obligatoria, entera, antes de empezar**: `references/lectura-mcp-raw.md`, `references/execution-principles.md`, `references/presentation-rules.md` y `references/modernization-guide.md`.
 - `12-especificacion-reconstruccion.md`, `13-modernizacion-refactor.md` y `<trabajo>/modernizacion.json` (veredicto, estrategia, MOD y PQ).
+- `<trabajo>/output_preferences.json`: `objetivo` (`entender`, `modernizar` o `reconstruir`). El diseño y el orden de construcción en una aplicación nueva se escriben siempre; con `reconstruir`, la correspondencia parte de una aplicación nueva (estrategia limpia o mixta de 13).
 - `02` («Dependencias externas»), `03`, `04`, `05`, `06`, `08-procesos-bpmn/`, `09` (objetos huérfanos), `10`, `11` y el `anexo/` para el detalle de lo actual; `<trabajo>/inventory.json` y `datafabric.json` (volúmenes).
 - `references/docs-mcp-usage.md`: confirma en la documentación las funcionalidades que propongas (tope orientativo: 2 consultas; reutiliza la caché).
 - `assets/markdown-templates/14-diseno-objetivo.md`: la **estructura** del documento. Este fichero dice qué decidir y con qué criterio.

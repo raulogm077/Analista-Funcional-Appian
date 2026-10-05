@@ -6,6 +6,7 @@
   Cifras de uso de un entorno que no consta como producción: marca corta «orientativo (ver LEEME)», sin explicar la limitación.
   Longitud: crece con los RF (Regla 9 de presentation-rules); nunca se recorta un RF para cumplirla.
   Sin diagrama obligatorio. Los {{marcadores}} se sustituyen y los comentarios se borran.
+  Dependencias externas: enlaza 02-arquitectura.md#dependencias-externas; si 02 no tiene esa sección, «Ninguna detectada» con enlace a 02-arquitectura.md#cobertura-y-límites.
 -->
 
 # Especificación para reconstruir la aplicación
@@ -17,7 +18,7 @@
 
 {{Contexto y objetivos de negocio en 2-4 líneas, a partir de 01-funcional.md.}}
 
-Cada paso y cada criterio de aceptación lleva una etiqueta: **(equivalente)** reproduce lo que hoy hace la aplicación, verificado o inferido; **(corrección: H-…)** corrige un hallazgo registrado; **(objetivo)** es un comportamiento nuevo, o uno actual sin confirmar, que valida una PQ o una DEC.
+Cada paso y cada criterio de aceptación lleva una etiqueta: **(equivalente)** reproduce lo que hoy hace la aplicación, verificado o inferido de forma explícita (no solo por un nombre); **(corrección: H-…)** corrige un hallazgo registrado; **(objetivo)** es un comportamiento nuevo, o uno actual sin confirmar, que valida una PQ o una DEC.
 
 | Actor | Responsabilidad | Requisitos |
 |---|---|---|

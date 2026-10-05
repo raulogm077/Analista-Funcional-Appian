@@ -87,3 +87,9 @@ def test_slugs_que_chocan():
     build_model.desambiguar_slugs(objs)
     assert objs[0]["slug"].lower() != objs[1]["slug"].lower()
     assert objs[2]["slug"] == "DEM_Alta"
+
+
+def test_detector_ignora_prosa(tmp_path):
+    f = tmp_path / "04.md"
+    f.write_text("Secretos: ninguno detectado\nPara secretos: área de seguridad\n", encoding="utf-8")
+    assert subprocess.run([sys.executable, str(SCRIPTS / "detect_secrets.py"), str(f)], capture_output=True).returncode == 0

@@ -50,7 +50,7 @@ Registra lo que haya que corregir, decidir o vigilar en el flujo de un proceso. 
 - nodos inalcanzables, caminos sin fin o bucles sin salida;
 - una tarea de persona sin asignación clara;
 - instancias fallidas o detenidas en la muestra de ejecuciones (paso 8);
-- un proceso de más de 25 nodos, difícil de mantener.
+- un proceso de más de 50 nodos no es tuyo: es el `H-GEN` de 09 (recomendación de Appian); cítalo.
 
 Cada hallazgo va en dos sitios (formato en `execution-principles.md`, «Registro de hallazgos»): una fila en la sección Hallazgos del `<slug>.md` (o del `indice.md` si afecta a varios procesos) y una entrada en `<trabajo>/hallazgos/process-modeler.json`, con `area: "procesos"` e IDs `H-PRO-01`, `H-PRO-02`… sin huecos. Si se basa en algo que la extracción no devuelve, certeza ❓ (o 🔵 con indicios) y la pregunta para validarlo.
 

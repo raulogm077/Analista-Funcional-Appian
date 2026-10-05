@@ -246,3 +246,10 @@ def test_datafabric_counts(project, http_server):
     df = project.load("datafabric.json")
     counts = {r["name"]: r["count"] for r in df["recordTypes"]}
     assert counts == {"DEM Solicitud": 152, "DEM Estado": 4}
+
+
+def test_gitignore_desde_el_plan(project):
+    """La carpeta de trabajo lleva su .gitignore desde la primera escritura, no solo al final de la extracción."""
+    project.add_devmcp()
+    project.run("plan", "--app", "DEM", "--out", str(project.out), check=0)
+    assert (project.interm() / ".gitignore").read_text(encoding="utf-8").strip().endswith("*")
