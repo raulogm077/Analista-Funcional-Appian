@@ -9,7 +9,7 @@ Cómo traducir un process model de Appian a BPMN 2.0 y a su diagrama. Lo usa pro
 | Vía | Ficheros en `08-procesos-bpmn/` | Imagen del `.md` |
 |---|---|---|
 | Propia (por defecto) | `<slug>.bpmn`, `<slug>.mmd`, `<slug>.svg`, `<slug>.md` | `<slug>.svg`; sin render, el bloque mermaid |
-| draw.io (si el orquestador pasa la skill `appian-diagramas-bpmn`) | `<slug>.drawio`, `<slug>.png`, `<slug>.json`, `<slug>.bpmn`, `<slug>.md` | `<slug>.png` |
+| draw.io (si el orquestador pasa la skill `appian-diagramas-bpmn`) | `<slug>.drawio`, `<slug>.png`, `<slug>.json`, `<slug>.md`, y el `<slug>.bpmn` de la vía propia | `<slug>.png` |
 
 `<slug>` es el del process model en `inventory.json`. Cómo se recorre cada vía, en `agents/process-modeler.md`.
 
@@ -32,7 +32,7 @@ El `.bpmn` es BPMN 2.0 estándar con coordenadas de dibujo (BPMN DI). Se abre en
 | `internal.17` | User input task | `userTask` | `T2[👤 …]:::userTask` | `tarea` (ACT) |
 | `internal3.write_records_to_source_23r3` | Write Records | `serviceTask` «[Records] …» | `T2[📋 …]:::dataTask` | `sistema` (ACT) |
 | `internal3.sendemail3` | Send E-Mail | `sendTask` | `T2[📧 …]:::sendTask` | `mensaje` (EV) |
-| `internal3.integration` | Call Integration | `serviceTask` «[Integración] …» + `messageFlow` al sistema externo | `T2[🔌 …]:::serviceTask` | `sistema` (ACT), en el carril del sistema externo |
+| `internal3.integration` | Call Integration | `serviceTask` «[Integración] …» + `messageFlow` al sistema externo | `T2[🔌 …]:::serviceTask` | `sistema` (ACT), en «Sistema»; el nombre cita el sistema externo |
 | `internal3.subprocess` | Subproceso | `callActivity`, `calledElement` = id del proceso llamado | `S2[➡️ …]:::callActivity` | `subproceso` (ACT) |
 | (ver catálogo) | Pasarela paralela / inclusiva | `parallelGateway` / `inclusiveGateway` | `G3{+}` / `G3{O}`, `:::gateway` | `paralela` / `inclusiva` (GW) |
 | (ver catálogo) | Write to Data Store Entity | `serviceTask` «[Data store] …» | `T2[💾 …]:::dataTask` | `sistema` (ACT) |

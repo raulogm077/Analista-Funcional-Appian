@@ -57,7 +57,7 @@ No son tuyos: quién puede iniciar y la seguridad (`04-seguridad-grupos.md`), la
 
 ## Diagramas
 
-Cada process model tiene su `.bpmn` y una imagen para el documento. El `.bpmn` sale siempre de la vía propia (pasos 1 y 4), porque es el que conserva lo propio de Appian: temporizador de inicio, llamada a proceso, tareas de script, flujo por defecto y sistemas externos. La imagen sale de la vía draw.io si el orquestador te pasa la carpeta de la skill `appian-diagramas-bpmn` (dibujo editable para trabajar con negocio); si no, de la vía propia (Mermaid). En los dos casos, el diagrama señala con una nota el punto de cada hallazgo Alta del proceso (p. ej. «cancel no se consulta»).
+Cada process model tiene su `.bpmn` y una imagen para el documento. El `.bpmn` sale siempre de la vía propia (pasos 1 y 4), porque es el que conserva lo propio de Appian: temporizador de inicio, llamada a proceso, tareas de script, flujo por defecto y sistemas externos. La imagen sale de la vía draw.io si el orquestador te pasa la carpeta de la skill `appian-diagramas-bpmn` (dibujo editable para trabajar con negocio); si no, de la vía propia (Mermaid). En los dos casos, el diagrama señala el punto de cada hallazgo Alta del proceso (p. ej. «cancel no se consulta»): en draw.io, en la etiqueta del flujo o del paso afectado (su JSON no admite notas); en Mermaid, con una nota; en el `.bpmn`, con `documentation` en ese elemento.
 
 ### Vía propia (por defecto)
 
@@ -98,7 +98,7 @@ Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz la
 - [ ] Cada `.mmd` pasa `validate_mermaid.py` y ninguno superó el aviso de ancho.
 - [ ] `indice.md` lista todos los procesos y el mapa refleja las aristas `subProcess` y `startProcess`.
 - [ ] Un solo TL;DR por documento; solo ✅/🔵/❓ como certeza y Alta/Media/Baja como severidad (solo en hallazgos).
-- [ ] Cada fila de Hallazgos está en `process-modeler.json` y al revés.
+- [ ] Cada fila de Hallazgos está en `process-modeler.json` (o en `orquestador.json` si la añadió el orquestador) y al revés.
 - [ ] Sin usuarios, sin referencias a la skill ni a `<trabajo>/`, sin `{{`, `TODO` ni `TBD`.
 
 ## Salida

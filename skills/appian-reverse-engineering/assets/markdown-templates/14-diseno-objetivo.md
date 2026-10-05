@@ -46,11 +46,11 @@ Relaciones: {{N:1 con Estado (estadoId)}}. {{Eventos de record, filtros o seguri
 
 {{1 línea: propósito (RF-00N) y disparador.}}
 
+<!-- Si el proceso cambia de forma: imagen objetivo-<slug>.png con «Editable: [objetivo-<slug>.drawio](…)» (vía draw.io), o imagen objetivo-<slug>.svg + «Fuente» (Mermaid). Si se mantiene igual: «Sin cambios de forma: ver [ficha actual](./08-procesos-bpmn/<slug>.md)». -->
+
 | Paso | Actor | Qué hace | Errores | Cambia respecto al actual |
 |---|---|---|---|---|
 | 1 | {{Gestor}} | {{Rellena el formulario de alta (PAN-002)}} | — | {{Ahora guarda todos los campos (MOD-001, H-UI-01)}} |
-
-<!-- Si el proceso cambia de forma: imagen objetivo-<slug>.png con «Editable: [objetivo-<slug>.drawio](…) · BPMN: [objetivo-<slug>.bpmn](…)» (vía draw.io), o imagen objetivo-<slug>.svg + «Fuente» (Mermaid). Si se mantiene igual: «Sin cambios de forma: ver [ficha actual](./08-procesos-bpmn/<slug>.md)». -->
 
 ## Detalle: ciclo de vida
 
