@@ -5,7 +5,7 @@
   Una sección por tipo presente en `counts` (también los que esta plantilla no prevé, en «Otros tipos»);
   omite las secciones de tipos sin objetos. Sin límite de filas; ≤ 8 columnas y celdas ≤ 100 caracteres.
   - uuid: tal cual, entre comillas invertidas (INVENTARIO y anexo/ son los únicos sitios con uuids).
-  - Ficha: [anexo](./anexo/<tipo>/<slug>.md) si el objeto tiene definición (`detail: "full"`); si no, «—».
+  - Ficha: [anexo](./anexo/<tipo>/<slug>.md) si existe ese fichero (el anexo lo crea para todo objeto con alguna respuesta, aunque no tenga definición); si no, «—».
   - Descripción: la `description` de Appian, literal y recortada a 100 caracteres. Si la extracción no la trae,
     «—». Nunca un resumen tuyo en esta columna.
   - Sin usuarios: los grupos dan recuentos (`userCount`), nunca nombres.
@@ -21,7 +21,7 @@
 
 Cómo leer las tablas:
 
-- **Ficha**: la definición original del objeto en el [anexo](./anexo/indice.md). «—»: la extracción no trajo su definición.
+- **Ficha**: la definición original del objeto y el resto de respuestas de la plataforma en el [anexo](./anexo/indice.md). «—»: la extracción no trajo nada de ese objeto.
 - **Descripción**: la que tiene el objeto en Appian. «—»: la extracción no trae descripción (puede no tenerla o el Dev MCP no devolverla para ese tipo).
 - **Llamado por**: objetos que lo referencian según el grafo de la aplicación. Puede ser mayor que lo que muestra la herramienta de dependientes de Appian, porque también cuenta las referencias encontradas en las definiciones.
 

@@ -130,11 +130,13 @@ def main(doc_root: str) -> int:
         "totals": {"objects": len(all_objs), "withDefinition": with_def,
                    "edges": graph.get("stats", {}).get("edgeCount", 0),
                    "hubs": len(graph.get("hubs", [])), "orphans": len(orphans)},
+        # Las mismas capas que 02-arquitectura.md
         "layerBreakdown": {
-            "Presentacion": counts.get("site", 0) + counts.get("interface", 0),
-            "Logica": counts.get("processModel", 0) + counts.get("expressionRule", 0) + counts.get("decision", 0),
-            "Datos": counts.get("recordType", 0) + counts.get("cdt", 0),
-            "Integracion": counts.get("integration", 0) + counts.get("connectedSystem", 0) + counts.get("webApi", 0),
+            "Entrada y presentación": sum(counts.get(t, 0) for t in ("site", "interface", "webApi")),
+            "Lógica": sum(counts.get(t, 0) for t in ("processModel", "expressionRule", "decision", "aiAgent")),
+            "Datos": sum(counts.get(t, 0) for t in ("recordType", "cdt", "dataStore")),
+            "Integración": sum(counts.get(t, 0) for t in ("integration", "connectedSystem")),
+            "Transversal": counts.get("constant", 0),
             "Seguridad": counts.get("group", 0),
         },
         "hubs": [{"name": h.get("name"), "type": h.get("type"), "inDegree": h.get("in")} for h in graph.get("hubs", [])[:10]],

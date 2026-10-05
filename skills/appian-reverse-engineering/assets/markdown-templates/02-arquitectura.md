@@ -3,10 +3,11 @@
   Solo los objetos reales de esta aplicación y sus relaciones; nada de la arquitectura genérica de Appian.
   Capas (las mismas en el diagrama y en las tablas):
     Entrada y presentación: sites, páginas, interfaces, vistas y acciones de record, Web APIs (entradas desde otros sistemas).
-    Lógica: process models, expression rules, decisiones.
+    Lógica: process models, expression rules, decisiones, agentes de IA.
     Datos: record types, CDTs, data stores.
     Integración: sistemas conectados e integraciones (llamadas salientes).
-    Transversal: constantes y utilidades que usan varias capas (solo en tablas).
+    Transversal: constantes y utilidades que usan varias capas (solo en tablas). Grupos y carpetas, en 04 e INVENTARIO.
+    Son las mismas capas que layerBreakdown de summary.json (las cifras de 00).
   Diagrama: si existe el .svg, imagen + «Fuente»; si no, el bloque mermaid idéntico al .mmd. Si se partió por capas,
   una imagen por fichero arquitectura-<capa>.svg.
   Secciones sin contenido: se omiten.

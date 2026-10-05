@@ -24,7 +24,7 @@ summary.json
 │         coverage {withDefinition, objects, ratio, excludes}}
 ├── counts {processModel: 12, interface: 30, …}
 ├── totals {objects, withDefinition, edges, hubs, orphans}
-├── layerBreakdown {Presentacion, Logica, Datos, Integracion, Seguridad}
+├── layerBreakdown {«Entrada y presentación», «Lógica», «Datos», «Integración», «Transversal», «Seguridad»}   (las capas de 02)
 ├── hubs [{name, type, inDegree}]
 ├── criticalProcesses [{name, score, reasons[], calledBy, callsIntegrations, isBatch, userTaskCount, executions}]
 ├── usage [{name, executions, lastExecution, failed, failedInSampleOf}]   (top 10 por ejecuciones)

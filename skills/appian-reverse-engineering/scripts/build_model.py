@@ -527,16 +527,18 @@ def set_criticality(objs: list[dict], edge_list: list[dict]) -> None:
         reasons, score = [], 0
         if callers[u]:
             score += 2 * len(callers[u])
-            reasons.append(f"lo lanzan {len(callers[u])} objetos")
+            n = len(callers[u])
+            reasons.append(f"lo lanza 1 objeto" if n == 1 else f"lo lanzan {n} objetos")
         if integ[u]:
             score += 3 * len(integ[u])
-            reasons.append(f"llama a {len(integ[u])} integraciones")
+            n = len(integ[u])
+            reasons.append("llama a 1 integración" if n == 1 else f"llama a {n} integraciones")
         if o.get("hasRecurrence"):
             score += 5
             reasons.append("batch programado")
         if o.get("userTaskCount"):
             score += 2
-            reasons.append(f"{o['userTaskCount']} tareas humanas")
+            reasons.append("1 tarea humana" if o["userTaskCount"] == 1 else f"{o['userTaskCount']} tareas humanas")
         o["criticality"] = {"score": score, "critical": score >= 3, "reasons": reasons,
                             "calledBy": len(callers[u]), "callsIntegrations": len(integ[u])}
 
