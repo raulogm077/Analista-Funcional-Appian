@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from rutas import work_dir  # noqa: E402
@@ -1077,9 +1078,35 @@ def http_candidates(args, predicate) -> list[tuple[Path, str, dict]]:
     return [e for e in server_entries(Path.cwd(), args.config or []) if is_http(e[2]) and predicate(e[2])]
 
 
-def is_appian_mcp_server(entry: dict) -> bool:
-    url = str(entry.get("url", "")).rstrip("/").lower()
-    return url.endswith("/mcp") and "appian-docs" not in url and "kapa.ai" not in url
+def is_appian_mcp_server(entry: dict, host: str) -> bool:
+    """El Appian MCP Server del entorno es <URL del entorno>/mcp: mismo host que el Dev MCP y ruta /mcp.
+    Que la URL termine en /mcp no basta: muchos conectores ajenos a Appian también terminan así."""
+    u = urlparse(str(entry.get("url", "")))
+    return (u.hostname or "").lower() == host and u.path.rstrip("/") == "/mcp"
+
+
+def env_host(args) -> str | None:
+    """Host del entorno Appian según la configuración del Dev MCP (LCP_URL), sin arrancarlo."""
+    choice, _code, _msg = choose_devmcp(args)
+    url = server_info(choice).get("url") if choice else ""
+    host = urlparse(url).hostname if url else None
+    return host.lower() if host else None
+
+
+def appian_mcp_candidates(args) -> tuple[list[tuple[Path, str, dict]], str]:
+    """Solo el Appian MCP Server del mismo entorno que el Dev MCP, o el que se nombre con --mcp-server-name.
+    Nunca otro servidor de la configuración."""
+    http = [e for e in server_entries(Path.cwd(), args.config or []) if is_http(e[2])]
+    if args.mcp_server_name:
+        cands = [e for e in http if e[1] == args.mcp_server_name]
+        return cands, ("" if cands else f"No hay ningun servidor http llamado '{args.mcp_server_name}' en la configuracion.")
+    host = env_host(args)
+    if not host:
+        return [], ("Sin la configuracion del Dev MCP no se sabe cual es el entorno: "
+                    "indica el Appian MCP Server con --mcp-server-name.")
+    cands = [e for e in http if is_appian_mcp_server(e[2], host)]
+    return cands, ("" if cands else f"No hay ningun servidor http 'https://{host}/mcp' en la configuracion. "
+                                    "Sin el no habra metadatos ni recuentos del data fabric.")
 
 
 async def cmd_doctor(args) -> int:
@@ -1112,11 +1139,9 @@ async def cmd_doctor(args) -> int:
             code = EXIT_START
         report["devMcp"] = dev
     # 2. Appian MCP Server (opcional)
-    cands = http_candidates(args, is_appian_mcp_server)
+    cands, why = appian_mcp_candidates(args)
     if not cands:
-        report["appianMcpServer"] = {"status": "no_configurado",
-                                     "detail": "No hay ningun servidor http '<entorno>/mcp' en la configuracion. "
-                                               "Sin el no habra metadatos ni recuentos del data fabric."}
+        report["appianMcpServer"] = {"status": "no_configurado", "detail": why}
     else:
         f, n, e = cands[0]
         headers = expand_vars(e.get("headers") or {}, dict(os.environ))
@@ -1158,9 +1183,9 @@ async def cmd_datafabric(args) -> int:
         return EXIT_USAGE
     objs = json.loads(objs_file.read_text(encoding="utf-8"))
     rts = [o for o in objs["objects"] if o["type"] == "recordType"]
-    cands = http_candidates(args, is_appian_mcp_server)
+    cands, why = appian_mcp_candidates(args)
     if not cands:
-        eprint("Appian MCP Server no configurado.")
+        eprint(f"Appian MCP Server no configurado. {why}")
         return EXIT_NO_MCPSERVER
     f, n, e = cands[0]
     headers = expand_vars(e.get("headers") or {}, dict(os.environ))
@@ -1237,6 +1262,8 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--call-timeout", type=float, default=120)
         sp.add_argument("--login-timeout", type=float, default=600,
                         help="Tiempo maximo para el primer acceso (puede abrir el navegador para SSO).")
+        sp.add_argument("--mcp-server-name",
+                        help="Nombre del Appian MCP Server en la configuracion, si no esta en <entorno>/mcp.")
         sp.add_argument("--json", action="store_true")
 
     sp = sub.add_parser("doctor")

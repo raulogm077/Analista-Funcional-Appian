@@ -84,8 +84,13 @@ def test_doctor_ambiguous(project):
     project.run("doctor", "--json", "--server-name", "appian-test-user", check=0)
 
 
+def env_of(url: str) -> str:
+    """URL del entorno (LCP_URL) cuyo Appian MCP Server es `url` (<entorno>/mcp)."""
+    return url.rsplit("/mcp", 1)[0]
+
+
 def test_doctor_three_mcps(project, http_server):
-    project.add_devmcp()
+    project.add_devmcp(LCP_URL=env_of(http_server))
     project.add_http("appian-mcp", http_server, {"Authorization": "Bearer ${APPIAN_KEY:-dummy}"})
     project.add_http("appian-public-docs", "https://appian-docs-public.mcp.kapa.ai")
     rep = json.loads(project.run("doctor", "--json", check=0).stdout)
@@ -206,8 +211,35 @@ def test_confirmation_threshold(project, tmp_path):
     _extract(project, "--policy", str(pfile), "--yes", check=0)
 
 
-def test_datafabric_counts(project, http_server):
+def test_doctor_ignores_foreign_mcp_servers(project, http_server):
+    """Un servidor que termina en /mcp pero no es del entorno del Dev MCP no se toma por el Appian MCP Server."""
+    project.add_devmcp()  # entorno demo.appiancloud.com
+    project.add_http("alphavantage", "https://mcp.alphavantage.co/mcp")
+    project.add_http("otro-entorno", http_server)
+    rep = json.loads(project.run("doctor", "--json", check=0).stdout)
+    assert rep["appianMcpServer"]["status"] == "no_configurado"
+    assert "demo.appiancloud.com/mcp" in rep["appianMcpServer"]["detail"]
+
+
+def test_datafabric_ignores_foreign_mcp_servers(project, http_server):
     project.add_devmcp()
+    project.add_http("otro-entorno", http_server, {"Authorization": "Bearer dummy"})
+    _extract(project)
+    p = project.run("datafabric", "--out", str(project.out), check=16)
+    assert "demo.appiancloud.com/mcp" in p.stderr
+    assert not (project.interm() / "datafabric.json").exists()
+
+
+def test_datafabric_explicit_server_name(project, http_server):
+    project.add_devmcp()
+    project.add_http("appian-mcp", http_server, {"Authorization": "Bearer dummy"})
+    _extract(project)
+    project.run("datafabric", "--out", str(project.out), "--mcp-server-name", "appian-mcp", check=0)
+    assert project.load("datafabric.json")["recordTypes"]
+
+
+def test_datafabric_counts(project, http_server):
+    project.add_devmcp(LCP_URL=env_of(http_server))
     project.add_http("appian-mcp", http_server, {"Authorization": "Bearer dummy"})
     _extract(project)
     project.run("datafabric", "--out", str(project.out), check=0)

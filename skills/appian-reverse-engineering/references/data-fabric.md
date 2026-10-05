@@ -11,17 +11,17 @@ La skill lo usa para dos cosas, y solo para ellas:
 
 ## Cómo se obtiene
 
-**Opción 1: script (preferente).** Si la configuración MCP del proyecto tiene un servidor HTTP cuya URL termina en `/mcp`:
+**Opción 1: script (preferente).** Si la configuración MCP del proyecto tiene un servidor HTTP en `<URL del entorno>/mcp`, con el mismo host que el `LCP_URL` del Dev MCP (que la URL termine en `/mcp` no basta: muchos conectores ajenos a Appian también terminan así):
 
 ```bash
 uv run --with "mcp>=1.2,<2" python scripts/devmcp_extract.py datafabric --out <salida>
 ```
 
-Escribe `<trabajo>/datafabric.json`. La consulta SQL solo se construye si la referencia SQL es un identificador válido (`[A-Za-z_][A-Za-z0-9_]*`).
+Si el servidor tiene otra URL, nómbralo: `--mcp-server-name <nombre en la configuración>`. Escribe `<trabajo>/datafabric.json`. La consulta SQL solo se construye si la referencia SQL es un identificador válido (`[A-Za-z_][A-Za-z0-9_]*`).
 
 **Opción 2: en la sesión.** Úsala si el servidor está conectado al cliente pero no en ficheros de configuración.
 
-1. Localiza por su descripción la herramienta de metadatos del data fabric (hoy `appian_data_fabric_metadata`) y llámala sin parámetros.
+1. Usa solo un servidor de Appian del mismo entorno (su nombre o URL lo identifican; ante la duda, pregunta). Localiza por su descripción la herramienta de metadatos del data fabric (hoy `appian_data_fabric_metadata`) y llámala sin parámetros.
 2. Localiza la herramienta de consulta SQL (hoy `appian_data_fabric_sql_query`) y ejecuta **solo** `SELECT COUNT(*) AS total FROM <referencia>` para cada record type de la app.
 3. Escribe el resultado en `<trabajo>/datafabric.json` con esta forma:
 

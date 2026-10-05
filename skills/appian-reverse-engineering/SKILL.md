@@ -17,7 +17,7 @@ Todo con evidencia verificable (`mcp:<tipo>/<nombre>#<ubicación>`), certeza exp
 - **Solo lectura, siempre.** La extracción la hace `scripts/devmcp_extract.py`, que arranca su propia instancia del Dev MCP con `LCP_TOOL_MODE=readonly` forzado y aplica la política de `scripts/devmcp_policy.json` (bloquea escritura, interacción, evaluación de lógica y lectura de filas de negocio). **No llames tú a herramientas de escritura del Dev MCP** aunque estén en la sesión.
 - **Sin herramientas fijas.** El extractor usa todas las herramientas de lectura que ofrezca el catálogo del servidor en cada momento, clasificándolas por su firma. Cuando Appian actualiza el Dev MCP, las herramientas nuevas se aprovechan solas.
 - **Extracción por script, análisis por agentes.** El script vuelca todo a disco (miles de llamadas sin pasar por el contexto). Los subagentes leen esos ficheros.
-- **Tres MCP.** Dev MCP es obligatorio. Appian MCP Server (volúmenes) y Docs MCP (documentación oficial) son opcionales: si faltan, se indica qué se pierde y se sigue.
+- **Tres MCP, y solo esos.** Dev MCP es obligatorio. Appian MCP Server (volúmenes) y Docs MCP (documentación oficial) son opcionales: si faltan, se indica qué se pierde y se sigue. Ningún otro conector o servidor MCP de la sesión (finanzas, presentaciones, diseño, bases de datos…) interviene: no los llames, no los listes en el preflight y no pidas autorizarlos. El Appian MCP Server es el del mismo entorno que el Dev MCP (`<URL del entorno>/mcp`); el Docs MCP, el de la documentación de Appian.
 
 ## Cómo ejecutar los scripts
 
