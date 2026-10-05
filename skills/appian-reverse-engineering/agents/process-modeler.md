@@ -70,6 +70,8 @@ Ficheros en `<salida>/08-procesos-bpmn/`: `<slug>.bpmn`, `<slug>.mmd` y `<slug>.
 
 ### Vía draw.io (opcional)
 
+
+En esta vía, las tareas de integración y las desatendidas van en el carril «Sistema»; un sistema externo solo tiene carril propio si en el proceso hace algo visible (por ejemplo, un evento de mensaje que responde). Los fines van en el carril del resultado de negocio, no en el de un sistema externo.
 Ficheros en `<salida>/08-procesos-bpmn/`: `<slug>.drawio` (editable en draw.io), `<slug>.png` (la imagen del documento), `<slug>.json` (el proceso tal como lo conoce esa skill; lo escribe ella y no se edita) y `<slug>.bpmn`. No hay `.mmd` ni `.svg`.
 
 Lee antes la `SKILL.md` de esa skill (`<diagramas>` es su carpeta): formato del JSON, órdenes, avisos y límites. Después, por cada proceso:

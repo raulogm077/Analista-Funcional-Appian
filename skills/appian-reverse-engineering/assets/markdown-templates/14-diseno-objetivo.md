@@ -7,7 +7,7 @@
 
 # Diseño objetivo
 
-> **TL;DR**: {{1-2 frases: cómo queda la aplicación con la estrategia de 13 (reconstrucción limpia · refactor in situ · mixta) y la decisión de diseño que más cambia}}.
+> **TL;DR**: {{1-2 frases: cómo es la aplicación objetivo y la decisión de diseño que más cambia; la estrategia de 13 (reconstrucción limpia · refactor in situ · mixta) solo afecta a la migración}}.
 > **Volumen**: {{N}} entidades, {{N}} procesos, {{N}} pantallas, {{N}} integraciones; {{N}} objetos nuevos, {{N}} que cambian, {{N}} que se eliminan; {{N}} elementos condicionados a PQ o DEC.
 
 ## Vista
@@ -78,15 +78,19 @@ Acciones: {{Enviar → crea la solicitud y lanza la revisión (RF-001) · Cancel
 
 Nomenclatura: {{regla aplicada}} (fuente: {{URL de la guía oficial de nombres de Appian}}).
 
-| Objeto objetivo | Tipo | Propósito | Sale de | Origen |
-|---|---|---|---|---|
-| {{DEM_SolicitudForm}} | {{Interfaz}} | {{Alta de solicitud}} | {{PAN-002, MOD-001}} | {{actual, cambia · nuevo}} |
+| Objeto objetivo | Tipo | Propósito | Sale de |
+|---|---|---|---|
+| {{DEM_SolicitudForm}} | {{Interfaz}} | {{Alta de solicitud}} | {{PAN-002, MOD-001}} |
 
-<!-- Objetos actuales que se eliminan o se sustituyen: -->
+## Detalle: correspondencia y migración
 
-| Objeto actual | Destino | Motivo |
-|---|---|---|
-| {{DEM Utilidad Huérfana}} | {{Se elimina}} | {{Sin ejecuciones ni referencias (MOD-00N) ❓ validar}} |
+{{1 línea: estrategia de 13 y qué significa aquí.}}
+
+| Objeto actual | Objeto objetivo | Qué pasa | Motivo |
+|---|---|---|---|
+| {{DEM_SolicitudForm}} | {{DEM_SolicitudForm}} | {{Se mantiene y cambia · Se sustituye · Se elimina · Nuevo}} | {{MOD-001}} |
+
+{{Migración de datos: qué se conserva, qué se transforma y en qué fase de 13.}}
 
 ## Cobertura y límites
 

@@ -113,7 +113,9 @@ No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). Una buena p
 - **Usuarios**: ningún nombre de usuario en ningún entregable. Usa recuentos o el rol: «una cuenta personal del grupo DEM Gestores», «una cuenta de servicio».
 - **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts, códigos internos de patrones (`DAT-02`) ni «heurística de la skill». Nombra la buena práctica y su fuente oficial.
 - **Notas de parche**: nunca «01 todavía dice…», «esto matiza a…», «corrige lo que dice X». Si otro documento está mal, se corrige ese documento (pasada de coherencia de la fase 6).
-- **`<trabajo>/`**: los entregables no lo enlazan (no se comparte). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
+- **`<trabajo>/`**: los entregables no lo enlazan ni escriben su ruta (no se comparte). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
+- **Valores evaluados en un render**: el render de una interfaz puede traer datos reales (recuentos, filas de una tabla). Describe la estructura («un indicador de solicitudes pendientes»), nunca sus valores.
+- **Limitaciones globales** (entorno no productivo, versión no determinada, muestra de ejecuciones, configuración que el Dev MCP no devuelve): se explican una vez en `LEEME.md`. Cada documento cita en su «Cobertura y límites» solo las que cambian lo que dice, en una línea.
 
 ## Regla 9: longitud
 

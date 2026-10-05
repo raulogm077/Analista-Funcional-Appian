@@ -55,7 +55,7 @@ Escribe para alguien que **no conoce la aplicación actual ni Appian**. Los nomb
 4. **Integraciones como contratos**: sistema, operación, sentido, datos, disparador y tratamiento de errores observado (si la extracción no lo trae, ❓).
 5. **Automatismos**: procesos programados y notificaciones, con su frecuencia y uso real.
 6. **Seguridad**: matriz de requisitos por rol con Sí/No; si el permiso necesario difiere del actual, la celda lleva la etiqueta (corrección: H-…).
-7. **Requisitos no funcionales `RNF-001`…**: solo los que tienen evidencia (volúmenes, frecuencia de uso, plazos de temporizadores, auditoría). Lo demás, PQ.
+7. **Requisitos no funcionales `RNF-001`…**: con evidencia (volúmenes, frecuencia de uso, plazos de temporizadores, auditoría). Cubre siempre estas categorías: entornos y despliegue, rendimiento y volumen, disponibilidad, auditoría y trazabilidad, retención de datos, accesibilidad e idioma. La que no tenga evidencia queda como PQ.
 8. **Funcionalidad candidata a no migrar**: procesos sin ejecuciones, interfaces sin punto de entrada, objetos huérfanos; siempre como propuesta a validar.
 9. **Preguntas abiertas `PQ-001`…**: para negocio y para IT, con los hallazgos que las originan.
 10. **Matriz de trazabilidad** `RF | RN | PAN | Proceso | Objetos actuales`.
@@ -70,7 +70,7 @@ Escribe para alguien que **no conoce la aplicación actual ni Appian**. Los nomb
 
 ### Paso 4 — Propuesta (13)
 
-1. **Veredicto** (Mantener y mejorar, Refactorizar por fases o Reconstruir) y **estrategia** (reconstrucción limpia, refactor in situ o mixta), con las definiciones de la guía. Decide la estrategia de forma explícita, di por qué y por qué no las otras dos. Si depende de negocio, regístrala también como `DEC`.
+1. **Veredicto** (Mantener y mejorar, Refactorizar por fases o Reconstruir) y **estrategia** (reconstrucción limpia, refactor in situ o mixta), con las definiciones de la guía. Decide la estrategia de forma explícita, di por qué y por qué no las otras dos. Si depende de negocio, regístrala también como `DEC`. La justificación no puede apoyarse en algo inferido sin decirlo (márcalo 🔵) y debe cuadrar con los MOD (si un MOD rehace una parte, no digas que nada se rehace).
 2. **Oportunidades** (data fabric, Process HQ, eventos de record, AI skills, agentes, portals, Appian MCP Server…) solo si resuelven una necesidad observada en la app, cada una con fuente.
 3. **Arquitectura objetivo de alto nivel**: diagrama por capas y 3-5 principios de diseño ligados a MOD o RF. Remite a 14 para el diseño detallado.
 4. **Plan por fases**: fase 0 sin refactorizar (contención y mejoras que no cambian el diseño; si hay CDTs, record types sincronizados sobre las tablas existentes, según la guía oficial); fases siguientes por área o caso de uso, con dependencias, riesgos y mitigación; estrategia de datos (coexistencia o migración); estrategia de pruebas (los criterios de 12).

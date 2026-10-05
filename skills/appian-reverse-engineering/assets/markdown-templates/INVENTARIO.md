@@ -13,7 +13,7 @@
 
 # Inventario de la aplicación
 
-> **TL;DR**: {{N}} objetos de {{N}} tipos; {{N}} ({{%}}) con definición. Cada objeto con definición enlaza su ficha del anexo, con la definición original.
+> **TL;DR**: {{N}} objetos de {{N}} tipos; {{N}} de {{N}} ({{%}}, sin contar carpetas: `meta.coverage` de summary.json) con definición. Cada objeto con definición enlaza su ficha del anexo, con la definición original.
 > **Volumen**: {{n}} process models · {{n}} interfaces · {{n}} reglas · {{n}} record types · {{n}} otros. {{N}} objetos sin definición (ver [Cobertura](#cobertura-de-la-extracción)).
 
 **Aplicación:** {{nombre visible}} (prefijo `{{prefijo}}`, uuid `{{uuid de la aplicación}}`)

@@ -30,6 +30,8 @@ Cada proceso tiene su documento (paso a paso, tareas, datos y hallazgos) y su di
 
 {{Solo si los diagramas son los .svg de la vía propia; los .png de draw.io usan la notación BPMN estándar.}}
 
+{{Vía draw.io: «Cada proceso tiene su `.drawio` (se abre y se edita en draw.io), su `.png` (la imagen del documento), su `.json` (la descripción del dibujo que mantiene la herramienta; no se edita a mano) y su `.bpmn` (para Camunda Modeler o bpmn.io).»}}
+
 | Forma | Significa |
 |---|---|
 | Círculo verde (⏰ temporizador, ✉ mensaje) | Inicio |

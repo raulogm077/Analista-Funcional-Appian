@@ -34,14 +34,18 @@ NIVELES = ("Bajo", "Medio", "Alto")
 
 def confidence(coverage: float, verified_ratio: float | None) -> tuple[str, list[str]]:
     """Nivel de confianza de la documentación y por qué. Una sola fórmula para 00 y los publicadores.
-    La base es la cobertura de definiciones (sin contar carpetas, que no tienen definición propia).
-    Baja un nivel si menos de un tercio de los hallazgos están verificados. Las llamadas que el servidor no
-    admite para un tipo (p. ej. dependencias de un agente de IA) no cuentan: no son fallos de la extracción."""
+    Alto: definiciones de al menos el 90 % de los objetos (sin carpetas) y, si hay hallazgos, al menos la mitad
+    verificados. Medio: definiciones de al menos el 70 %. Bajo: el resto. Baja un nivel más si menos de un tercio
+    de los hallazgos están verificados. Las llamadas que el servidor no admite para un tipo (p. ej. dependencias de
+    un agente de IA) no cuentan: no son fallos de la extracción."""
     nivel = 2 if coverage >= 0.9 else 1 if coverage >= 0.7 else 0
     motivos = [f"definiciones obtenidas: {coverage:.0%} de los objetos (sin carpetas)"]
     if verified_ratio is not None:
         motivos.append(f"hallazgos verificados: {verified_ratio:.0%}")
-        if verified_ratio < 1 / 3 and nivel > 0:
+        if nivel == 2 and verified_ratio < 0.5:
+            nivel = 1
+            motivos.append("no llega a Alto: menos de la mitad de los hallazgos están verificados")
+        elif verified_ratio < 1 / 3 and nivel > 0:
             nivel -= 1
             motivos.append("baja un nivel: menos de un tercio de los hallazgos están verificados")
     return NIVELES[nivel], motivos
@@ -119,6 +123,8 @@ def main(doc_root: str) -> int:
                             "isProduction": env.get("isProduction"), "appianVersion": env.get("appianVersion")},
             "generatedAt": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
             "confidence": nivel, "confidenceBasis": motivos,
+            "coverage": {"withDefinition": sum(1 for o in designed if o.get("detail") == "full"),
+                         "objects": len(designed), "ratio": round(coverage, 3), "excludes": "carpetas"},
         },
         "counts": counts,
         "totals": {"objects": len(all_objs), "withDefinition": with_def,

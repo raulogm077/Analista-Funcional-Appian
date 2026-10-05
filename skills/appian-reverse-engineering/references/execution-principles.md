@@ -8,15 +8,16 @@ Lectura obligatoria antes de la fase 4 y para todos los subagentes. Concentra lo
 
 1. **No inventar.** Lo que no está en los datos no se completa con suposiciones plausibles: se marca ❓ y se dice qué falta.
 2. **Certeza en cada afirmación importante**: ✅ verificado, 🔵 inferido (di de qué), ❓ pendiente (di quién valida). Ver `presentation-rules.md`, Regla 7.
-3. **Dato ausente no es defecto.** Que un campo no aparezca en la respuesta no prueba que no esté configurado: el Dev MCP no devuelve toda la configuración (p. ej. pestañas de excepciones y alertas de los nodos, seguridad de las acciones de record, destinatarios de correo, entradas de algunos nodos, variables de algunos procesos). Solo es ✅ si la respuesta muestra el campo vacío o nulo de forma explícita, o si otra fuente lo corrobora (render, validación de la plataforma, dependencias). Si no, la afirmación es ❓ «no lo devuelve la extracción», y un hallazgo basado en ella lleva certeza ❓ (o 🔵 con indicios) y una pregunta para validarlo. Lo mismo con muestras: una muestra de ejecuciones no sirve para afirmar nada sobre el total ni sobre quién las ejecutó si sus datos son uniformes o incoherentes.
-4. **Trazabilidad.** Cada afirmación importante lleva `Evidencia: mcp:<tipo>/<nombre>[@<rol>]#<ubicación>` (formato en `lectura-mcp-raw.md`); lo que viene de la documentación oficial, `Fuente: <URL>`.
-5. **Cero relleno.** Sin placeholders ni secciones vacías.
-6. **Cada cosa en un sitio.** Un objeto tiene una ficha y un hallazgo tiene un ID, en su documento propietario; el resto enlaza (tabla de propietarios abajo).
-7. **Nombres reales** (técnico y visible), nunca genéricos.
-8. **Accionable.** Todo objeto listado se conecta con lo que hace para el negocio o con lo que hay que hacer con él.
-9. **Seguridad.** Ningún secreto, credencial ni usuario en los entregables (`references/security-rules.md` y `presentation-rules.md`, Regla 8).
-10. **Diagramas que pasan el validador** (`references/mermaid-rules.md`); si no, tabla equivalente. Los `.bpmn` siguen `references/bpmn-mapping.md`.
-11. **Idioma**: español técnico neutro salvo que el usuario pida otro.
+3. **Dato ausente no es defecto.** Que un campo no aparezca en la respuesta no prueba que no esté configurado: el Dev MCP no devuelve toda la configuración (p. ej. pestañas de excepciones y alertas de los nodos, seguridad de las acciones de record, destinatarios de correo, entradas de algunos nodos, variables de algunos procesos). Solo es ✅ si la respuesta muestra el campo vacío o nulo de forma explícita, o si otra fuente lo corrobora (render, validación de la plataforma, dependencias). Si no, la afirmación es ❓ «no lo devuelve la extracción», y un hallazgo basado en ella lleva certeza ❓ (o 🔵 con indicios) y una pregunta para validarlo. Una muestra de ejecuciones no da cifras globales y sus datos uniformes (la misma hora en todas) pueden ser un artefacto; pero lo que sí dice se usa como indicio y se contrasta: fechas posteriores a un despliegue, el grupo de la cuenta iniciadora, estados.
+4. **Contraevidencia.** Antes de registrar un hallazgo Alta inferido (🔵), crúzalo con lo que podría desmentirlo: ejecuciones (fechas frente a versiones, grupo del iniciador), render de las interfaces, recuentos del data fabric y validación de la plataforma. Si algo lo contradice, dilo en la explicación del hallazgo y añade la pregunta que lo resuelve; si la contradicción pesa, baja la severidad o la certeza.
+5. **Trazabilidad.** Cada afirmación importante lleva `Evidencia: mcp:<tipo>/<nombre>[@<rol>]#<ubicación>` (formato en `lectura-mcp-raw.md`); lo que viene de la documentación oficial, `Fuente: <URL>`.
+6. **Cero relleno.** Sin placeholders ni secciones vacías.
+7. **Cada cosa en un sitio.** Un objeto tiene una ficha y un hallazgo tiene un ID, en su documento propietario; el resto enlaza (tabla de propietarios abajo).
+8. **Nombres reales** (técnico y visible), nunca genéricos.
+9. **Accionable.** Todo objeto listado se conecta con lo que hace para el negocio o con lo que hay que hacer con él.
+10. **Seguridad.** Ningún secreto, credencial ni usuario en los entregables (`references/security-rules.md` y `presentation-rules.md`, Regla 8).
+11. **Diagramas que pasan el validador** (`references/mermaid-rules.md`); si no, tabla equivalente. Los `.bpmn` siguen `references/bpmn-mapping.md`.
+12. **Idioma**: español técnico neutro salvo que el usuario pida otro.
 
 ---
 
@@ -71,6 +72,8 @@ Un hallazgo es algo que hay que corregir, decidir o vigilar. Cada propietario lo
    - `severidad`: Alta, Media o Baja. `certeza`: verificado, inferido o pendiente.
    - `documento`: ruta relativa a `<salida>` (con ancla si quieres).
    - `duplicadoDe` (solo lo pone el orquestador): ID canónico cuando dos entradas son el mismo hallazgo.
+
+**La certeza viaja con el hallazgo.** Un hallazgo 🔵 o ❓ conserva su marca, o se redacta en condicional («probablemente», «la definición indica»), allí donde se resuma: TL;DR, 00, tablas de reglas y requisitos. Un hallazgo se explica solo en su documento propietario; en los demás, una línea con su ID.
 
 `scripts/build_registry.py` valida estos ficheros, une el tratamiento que propone `13` (MOD y PQ que lo resuelven) y genera la tabla del registro en `09-valor-adicional.md`. El resto de documentos citan el hallazgo por su ID y no repiten su severidad.
 

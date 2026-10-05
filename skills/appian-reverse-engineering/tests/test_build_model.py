@@ -127,6 +127,7 @@ def test_build_summary_contract(built):
     assert "DEM Utilidad Huérfana" not in crit
     assert s["meta"]["appPrefix"] == "DEM" and s["meta"]["confidence"] in ("Alto", "Medio", "Bajo")
     assert s["meta"]["confidenceBasis"] and s["secrets"]["count"] == 2
+    assert s["meta"]["coverage"]["objects"] == 31 and s["meta"]["coverage"]["withDefinition"] == 29
     assert {"DEM_ERP_API_TOKEN", "DEM_CS_ERP"} <= set(s["secrets"]["objects"])
     assert any(x["type"] == "processModelsWithoutExecutions" for x in s["signals"])
     assert s["findings"] == []                                        # sin registro todavia
@@ -149,6 +150,13 @@ def test_annex(built):
     erp = (anexo / "connectedSystem" / "DEM_CS_ERP.md").read_text(encoding="utf-8")
     assert "https://erp.example.org/api" in erp and "credenciales embebidas" in erp
     assert "[DEM_SolicitudForm.md](./interface/DEM_SolicitudForm.md)" in (anexo / "indice.md").read_text(encoding="utf-8")
+    alta = (anexo / "processModel" / "DEM_Alta_Solicitud.md").read_text(encoding="utf-8")
+    assert "## Ejecuciones (@history)" in alta and "## Quién lo usa (@dependents)" in alta
+    assert "‹usuario de DEM" in alta                                    # el usuario se sustituye por sus grupos
+    assert "@screen" not in "".join(l for l in blob.splitlines() if l.startswith("## "))   # el render no se publica
+    assert "La extracción no trae la definición" in (anexo / "cdt" / "DEM_SolicitudDTO.md").read_text(encoding="utf-8")
+    grafo = (anexo / "grafo.md").read_text(encoding="utf-8")
+    assert "| DEM Alta Solicitud | subProcess | DEM Revisar Solicitud | dependents |" in grafo
     assert run().returncode == 0                                   # repetible
     (anexo / "indice.md").write_text("mío")                        # un anexo ajeno no se borra
     assert run().returncode == 2 and (anexo / "interface").exists()

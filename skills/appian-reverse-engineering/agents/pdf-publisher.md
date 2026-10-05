@@ -20,7 +20,8 @@ Lo genera `scripts/build_summary.py` (fuente de verdad si este resumen se queda 
 ```
 summary.json
 ├── meta {appName, appPrefix, appDescription, appUuid, source{…, extractedAt},
-│         environment {url, isProduction, appianVersion}, generatedAt, confidence, confidenceBasis[]}
+│         environment {url, isProduction, appianVersion}, generatedAt, confidence, confidenceBasis[],
+│         coverage {withDefinition, objects, ratio, excludes}}
 ├── counts {processModel: 12, interface: 30, …}
 ├── totals {objects, withDefinition, edges, hubs, orphans}
 ├── layerBreakdown {Presentacion, Logica, Datos, Integracion, Seguridad}

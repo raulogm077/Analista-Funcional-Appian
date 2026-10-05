@@ -19,18 +19,20 @@ Arquitecto Appian sénior. Con lo que ya está documentado, escribes **cómo con
 
 ## Criterios
 
-**Según la estrategia de 13.**
-- *Refactor in situ*: el diseño es el estado final de los objetos actuales; la correspondencia dice qué se mantiene, qué cambia y qué se elimina.
-- *Reconstrucción limpia*: catálogo nuevo con la nomenclatura recomendada; la correspondencia dice de qué objeto actual sale cada uno (o «nuevo»).
-- *Mixta*: indica por área cuál aplica.
+**El objetivo no depende de la estrategia.** Datos, procesos, pantallas, integraciones, seguridad y catálogo describen la aplicación como debe quedar, con la nomenclatura oficial, como si se construyera desde cero: así sirve para reconstruirla. La estrategia de 13 solo decide la sección final de correspondencia y migración:
+- *Refactor in situ*: qué objeto actual se mantiene, cambia o se elimina para llegar al objetivo.
+- *Reconstrucción limpia*: de qué objeto actual sale cada objeto objetivo (o «nuevo») y cómo se migran los datos.
+- *Mixta*: lo anterior, por área.
 
 **Datos.** Una tabla por entidad: campo, tipo, obligatorio, regla o validación (RN), origen (campo actual o nuevo) y para qué RF. Relaciones con cardinalidad. Record types sincronizados, eventos de record, filtros y seguridad por fila solo si los pide un RF, una RN o un MOD. Si la extracción no trajo un detalle del modelo actual (longitudes, nulos), el diseño lo decide y lo dice; no lo presentes como heredado.
 
-**Procesos.** Uno por proceso objetivo: propósito (RF), disparador, pasos con su actor, tratamiento de errores y qué cambia respecto al actual (MOD, H-). Diagrama solo si el proceso cambia de forma (`objetivo-<slug>`); si se mantiene igual, enlaza su ficha de 08.
+**Procesos.** Uno por proceso objetivo: propósito (RF), disparador, pasos con su actor, tratamiento de errores y qué cambia respecto al actual (MOD, H-). Diagrama solo si el proceso cambia de forma (`objetivo-<slug>`); si se mantiene igual, enlaza su ficha de 08. Si el orquestador te pasa la carpeta de la skill `appian-diagramas-bpmn`, dibuja cada proceso objetivo también con ella (`diagrams/objetivo-<slug>.drawio`, `.png` y `.bpmn`), para que se pueda trabajar en draw.io con negocio; los flujos que dependen de una PQ o DEC llevan su etiqueta.
 
 **Pantallas.** Una por PAN: actor, componentes con el campo de datos al que se vinculan y su validación (RN), acciones y a dónde llevan. Un mapa de navegación objetivo si la navegación cambia (`objetivo-navegacion`).
 
-**Integraciones y seguridad.** Contrato de cada integración (operación, entradas y salidas, autenticación del connected system sin valores, errores y reintentos). Grupos por rol y permisos por tipo de objeto con mínimo privilegio, y quién inicia cada acción.
+**Integraciones y seguridad.** Contrato de cada integración (operación, entradas y salidas, autenticación del connected system sin valores, errores y reintentos). Grupos por rol y permisos por tipo de objeto con mínimo privilegio, y quién inicia cada acción. Para cada proceso y subproceso, con qué cuenta se ejecutan sus nodos desatendidos (iniciador o diseñador) y que el role map lo permita.
+
+**Coherencia con lo actual.** Cada comportamiento que el diseño conserva debe existir hoy con certeza ✅ o 🔵 explícita; si depende de un ❓ (p. ej. si un subproceso es síncrono), el diseño lo decide y lo dice, no lo da por heredado. Revisa también tus propias expresiones de ejemplo contra la documentación de la función.
 
 **Nomenclatura.** Sigue la guía oficial de nombres de objetos de Appian (confírmala en el Docs MCP y cita la URL); no inventes una convención propia.
 

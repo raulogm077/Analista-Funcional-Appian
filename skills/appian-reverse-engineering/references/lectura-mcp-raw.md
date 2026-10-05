@@ -29,7 +29,7 @@ La skill no lee un export: la aplicación se ha extraído en vivo del entorno Ap
 | `history` | Ejecuciones reales del process model (total, última, fallos). En los documentos llámalo «ejecuciones». | 07, 08, 12 (prioridad), 13 (código muerto) |
 | `versions` | Historial de versiones (cuándo y por quién; los usuarios no se citan). En los documentos llámalo «versiones». | 09 (versionado), 13 |
 | `validation` | Avisos de validación de la plataforma (funciones obsoletas, errores). | 09, 13 |
-| `screen` | Árbol de componentes de la interfaz renderizada con entradas vacías. | 10 (pantallas), 01 |
+| `screen` | Árbol de componentes de la interfaz renderizada con entradas vacías. Puede traer datos reales evaluados: no copies sus valores. No se publica en el anexo. | 10 (pantallas), 01 |
 | `members` | Miembros de un grupo (grupos y usuarios). | 04 |
 | `other` | Cualquier otra herramienta (p. ej. una nueva que haya añadido Appian). **Ábrela y aprovecha lo que aporte**: seguridad, métricas, configuración… | Donde encaje |
 
@@ -66,6 +66,10 @@ Según la documentación oficial, para iniciar un process model hace falta **al 
 
 Los procesos que arranca un temporizador o que se lanzan como subproceso se ejecutan como el usuario que desplegó el process model. Fuente: https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#insufficient-object-permissions
 
+Cada nodo desatendido se ejecuta como quien inició el proceso o como su diseñador, según su pestaña Asignación, que la extracción no trae: es ❓ salvo que la definición lo muestre. Fuente: https://docs.appian.com/suite/help/26.6/Process_Node_and_Smart_Service_Properties.html#assignment-tab
+
+El iniciador que registran las ejecuciones es un dato: dalo por su grupo («una cuenta de DEM Users»), nunca por su nombre, y no lo confundas con la cuenta de despliegue si no coinciden; si no cuadran, dilo como ❓.
+
 - **Si hay role map** (algún fichero `other` lo trae), es la fuente: pueden iniciar los grupos con cualquier rol distinto de Deny (Administrator, Editor, Manager, Viewer o Initiator).
 - **`initiatorGroup`** es el grupo de seguridad que trae la definición del process model; no dice el nivel de permiso ni si sigue en el role map. Con role map, menciónalo solo si no coincide («la definición declara X, que no figura en el role map»). Sin role map, escribe «grupo de seguridad declarado: X; role map no disponible» ❓, nunca «solo X puede iniciarlo».
 - Si el process model lo lanza una acción de record o `a!startProcess`, la seguridad de esa acción es un segundo filtro. La respuesta de los record types no siempre trae la seguridad de sus acciones: si no aparece, es ❓ (no «sin seguridad»).
@@ -84,7 +88,7 @@ Evidencia: mcp:<tipo>/<nombre>[@<rol>]#<ubicación>
 - Ejemplos: `mcp:processModel/DEM Alta Solicitud#nodes[id=2]`, `mcp:interface/DEM_SolicitudForm#expression (línea 4)`, `mcp:processModel/DEM Alta Solicitud@history#totalCount`, `mcp:interface/DEM_SolicitudForm@screen#contents[0]`.
 - Si la conclusión viene de un documento oficial: `Fuente: <URL de docs.appian.com>`.
 - Si es inferida, márcala 🔵 y explica en una línea de qué se infiere.
-- El lector encuentra cada objeto en `anexo/<tipo>/<slug>.md`; «línea N» es la numeración de los bloques de expresiones del anexo. Cuando ayude, enlaza la ficha del anexo.
+- El lector encuentra cada objeto en `anexo/<tipo>/<slug>.md`: la definición (con «línea N» numerada) y el resto de respuestas (`@dependents`, `@history`, `@versions`, `@validation`, `@members`, `@other`), con los usuarios sustituidos por sus grupos. Las referencias `graph:` están en `anexo/grafo.md`. `@screen` no se publica: si una conclusión solo sale del render, dilo en el texto. Cuando ayude, enlaza la ficha del anexo.
 
 ## Qué no está disponible por Dev MCP
 

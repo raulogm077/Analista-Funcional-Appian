@@ -73,7 +73,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 ### Fase 3 — Modelo y anexo
 
 1. `build_model.py <salida>` → `inventory.json` y `graph.json` (con la criticidad de cada proceso).
-2. `python3 scripts/build_annex.py <salida>` → `anexo/`: la definición de cada objeto legible, sin usuarios.
+2. `python3 scripts/build_annex.py <salida>` → `anexo/`: por objeto, la definición legible y el resto de respuestas (role map, dependientes, validación, ejecuciones, versiones), con los usuarios sustituidos por sus grupos; y `anexo/grafo.md`. Repítelo si cambia `<trabajo>/`.
 3. `bash scripts/detect_secrets.sh <trabajo>/mcp_raw`: lo que salga hay que enmascararlo en los entregables. **No muestres los valores.**
 
 ### Fase 4 — Análisis con subagentes
@@ -85,7 +85,7 @@ Lee antes `references/execution-principles.md`. Cada subagente recibe:
 - la carpeta de salida y la de trabajo;
 - si el Docs MCP está disponible y cuántas consultas le quedan (tope global de 30);
 - el entorno, si es producción y la versión si se conocen;
-- solo a process-modeler: si la sesión ofrece la skill `appian-diagramas-bpmn` (plugin appian-analisis-funcional), cárgala y pásale su carpeta para dibujar los procesos en draw.io editable; si no, usa su vía propia (`.bpmn` + Mermaid);
+- a process-modeler y target-designer: si la sesión ofrece la skill `appian-diagramas-bpmn` (plugin appian-analisis-funcional), cárgala y pásales su carpeta para dibujar los procesos en draw.io editable; si no, usan su vía propia (`.bpmn` + Mermaid);
 - la orden de no crear tareas en tu lista y de terminar con un informe breve: ficheros generados, consultas al Docs MCP, choques entre instrucciones y «Para otras áreas».
 
 Todos escriben sus hallazgos en su documento y en `<trabajo>/hallazgos/<agente>.json` (`references/execution-principles.md`, «Registro de hallazgos»).
