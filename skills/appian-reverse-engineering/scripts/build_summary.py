@@ -7,7 +7,7 @@ Uso:
   python3 build_summary.py <carpeta_salida>
 
 Lee (en <trabajo> = <padre>/_trabajo/<nombre de salida>):
-  inventory.json, graph.json, extraction_report.json, preflight.json y registro.json (si existen)
+  inventory.json, graph.json, preflight.json y registro.json (si existen)
 
 Escribe:
   <trabajo>/summary.json
@@ -32,21 +32,18 @@ def load_json(p: Path) -> dict:
 NIVELES = ("Bajo", "Medio", "Alto")
 
 
-def confidence(coverage: float, error_ratio: float, verified_ratio: float | None) -> tuple[str, list[str]]:
-    """Nivel de confianza de la documentación y por qué. Una sola fórmula para 00 y los publicadores:
-    parte de la cobertura de definiciones y de los fallos de extracción; baja un nivel si menos de la
-    mitad de los hallazgos están verificados."""
-    if coverage >= 0.9 and error_ratio <= 0.1:
-        nivel = 2
-    elif coverage >= 0.7 and error_ratio <= 0.25:
-        nivel = 1
-    else:
-        nivel = 0
-    motivos = [f"definiciones obtenidas: {coverage:.0%}", f"llamadas fallidas: {error_ratio:.0%}"]
+def confidence(coverage: float, verified_ratio: float | None) -> tuple[str, list[str]]:
+    """Nivel de confianza de la documentación y por qué. Una sola fórmula para 00 y los publicadores.
+    La base es la cobertura de definiciones (sin contar carpetas, que no tienen definición propia).
+    Baja un nivel si menos de un tercio de los hallazgos están verificados. Las llamadas que el servidor no
+    admite para un tipo (p. ej. dependencias de un agente de IA) no cuentan: no son fallos de la extracción."""
+    nivel = 2 if coverage >= 0.9 else 1 if coverage >= 0.7 else 0
+    motivos = [f"definiciones obtenidas: {coverage:.0%} de los objetos (sin carpetas)"]
     if verified_ratio is not None:
         motivos.append(f"hallazgos verificados: {verified_ratio:.0%}")
-        if verified_ratio < 0.5 and nivel > 0:
+        if verified_ratio < 1 / 3 and nivel > 0:
             nivel -= 1
+            motivos.append("baja un nivel: menos de un tercio de los hallazgos están verificados")
     return NIVELES[nivel], motivos
 
 
@@ -58,7 +55,6 @@ def main(doc_root: str) -> int:
         return 2
     inv = load_json(interm / "inventory.json")
     graph = load_json(interm / "graph.json")
-    report = load_json(interm / "extraction_report.json")
     preflight = load_json(interm / "preflight.json")
     registro = load_json(interm / "registro.json")
 
@@ -69,16 +65,13 @@ def main(doc_root: str) -> int:
 
     # Confianza
     with_def = sum(1 for o in all_objs if o.get("detail") == "full")
-    coverage = with_def / len(all_objs) if all_objs else 0.0
-    stats = [v for v in (report.get("callStats") or {}).values() if isinstance(v, dict)]
-    failed = sum(v.get("failed", 0) for v in stats)
-    calls = failed + sum(v.get("ok", 0) for v in stats)
-    error_ratio = failed / calls if calls else 0.0
+    designed = [o for o in all_objs if o.get("type") not in ("folder", "processModelFolder", "knowledgeCenter")]
+    coverage = sum(1 for o in designed if o.get("detail") == "full") / len(designed) if designed else 0.0
     orden = {"Alta": 0, "Media": 1, "Baja": 2}
     vivos = sorted((h for h in registro.get("hallazgos", []) if not h.get("duplicadoDe")),
                    key=lambda h: (orden.get(h.get("severidad"), 9), h.get("id", "")))
     verified_ratio = (sum(1 for h in vivos if h.get("certeza") == "verificado") / len(vivos)) if vivos else None
-    nivel, motivos = confidence(coverage, error_ratio, verified_ratio)
+    nivel, motivos = confidence(coverage, verified_ratio)
 
     # Procesos críticos: la criticidad la calcula build_model.py (misma fórmula para todos)
     critical = []

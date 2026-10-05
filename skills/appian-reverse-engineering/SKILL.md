@@ -141,7 +141,7 @@ Pasa la validación final (abajo) y responde con la plantilla de `references/res
 ├── 05-integraciones-consumidas.md  │     (onboarding y mantenimiento)
 ├── 06-apis-expuestas.md            │
 ├── 07-batches.md                   │
-├── 08-procesos-bpmn/  (por proceso: .md + .bpmn + .mmd/.svg, o .drawio/.png en la vía draw.io; indice.md)
+├── 08-procesos-bpmn/  (por proceso: .md + .bpmn + .mmd/.svg, o .drawio/.png/.json en la vía draw.io; indice.md)
 ├── 09-valor-adicional.md           │
 ├── 10-pantallas.md                 │
 ├── 11-reglas-negocio.md            ┘
@@ -180,7 +180,7 @@ appian-docs/_trabajo/<PREFIJO>/   = <trabajo>: datos en bruto, NO compartir
 ## Validación final (antes de responder)
 
 1. Existen los 17 documentos (`LEEME`, `00`–`14`, `INVENTARIO`), `anexo/indice.md` y `diagrams/`. Los que no aplican llevan su frase de «no aplica» (p. ej. 07 sin batches).
-2. `08-procesos-bpmn/` tiene por cada process model su `.md`, su `.bpmn` (con `bpmndi:BPMNDiagram`) y su diagrama (`.svg`/`.mmd`, o `.png`/`.drawio`), e `indice.md` los lista todos.
+2. `08-procesos-bpmn/` tiene por cada process model su `.md`, su `.bpmn` (con `bpmndi:BPMNDiagram`) y su diagrama (`.svg`/`.mmd`, o `.png`/`.drawio` con su `.json`, que es la especificación del dibujo y no datos en bruto), e `indice.md` los lista todos.
 3. Todos los diagramas pasan `validate_mermaid.py` (o están sustituidos por tabla) y ninguno superó el aviso de ancho.
 4. `bash scripts/detect_secrets.sh <salida>` no encuentra nada.
 5. No quedan placeholders (`{{`, `TBD`, `TODO`, `lorem`) ni marcas fuera de la paleta (`🔴`, `🟡`, `⚠️`).

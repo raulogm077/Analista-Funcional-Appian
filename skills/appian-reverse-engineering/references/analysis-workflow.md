@@ -82,11 +82,10 @@ Proceso programado = process model con `startType: timer` en `inventory.json`. P
 - **Volumen por ejecución**: identifica la consulta de origen (`a!queryRecordType`, `a!queryEntity`, una regla…; no supongas cuál) y su tamaño de lote (`pagingInfo`/`batchSize`). Cita el nodo: `nodes[id=N]`.
 - **Manejo de errores**: lo que muestre la definición. El Dev MCP no devuelve las pestañas de excepciones y alertas de los nodos: su ausencia es ❓ «no lo devuelve la extracción», no «sin manejo de errores».
 
-Hallazgos `H-BAT` (severidad orientativa; ajústala al impacto real):
+Hallazgos `H-BAT` (severidad orientativa; ajústala al impacto real). Los fallos de ejecución y los defectos del flujo de un batch son del proceso (`H-PRO`, en 08): 07 los cita por su ID.
 
 | Situación | Severidad | Certeza |
 |---|---|---|
-| Fallos en las ejecuciones | Alta si se pierden datos o se incumple un plazo de negocio; si no, Media | ✅ (cita la muestra) |
 | Lee sin tamaño de lote y la definición lo muestra | Media | ✅ |
 | Programado y sin ejecuciones en un entorno de producción | Media (¿sigue activo?) | ✅ |
 | Usa `loggedInUser()`: no hay una persona detrás ([fuente](https://docs.appian.com/suite/help/26.6/fnc_people_loggedinuser.html)) | Media | ✅ |

@@ -49,7 +49,7 @@ Cómo leer las tablas:
 
 | Nombre | uuid | Inicio | Nodos | Tareas humanas | Ejecuciones | Descripción | Ficha |
 |---|---|---|---|---|---|---|---|
-| `{{nombre}}` | `{{uuid}}` | {{Manual / Temporizador / Mensaje}} | {{N}} | {{N}} | {{N o «—»}} | {{descripción o «—»}} | [anexo](./anexo/processModel/{{slug}}.md) |
+| `{{nombre}}` | `{{uuid}}` | {{Manual / Temporizador / Mensaje / Subproceso}} | {{N}} | {{N}} | {{N o «—»}} | {{descripción o «—»}} | [anexo](./anexo/processModel/{{slug}}.md) |
 
 ## Interfaces
 
