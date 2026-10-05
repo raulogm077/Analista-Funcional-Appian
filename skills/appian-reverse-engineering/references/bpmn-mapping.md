@@ -50,7 +50,7 @@ Igual en las dos vías:
 - **Un carril por grupo** asignado a tareas de personas (`assignment.assignees` de tipo grupo), con el nombre del grupo.
 - **Asignaciones que no son un grupo**: al iniciador del proceso → carril «Iniciador»; a una expresión o regla → el rol que se deduzca de ella (🔵) o «Asignación por expresión» (❓); a un usuario concreto → «Cuenta personal», nunca su nombre.
 - **«Sistema»** para todo lo desatendido: scripts, escritura de records, integraciones, correos y subprocesos.
-- El **inicio** va en el carril del primer nodo; cada **pasarela** y cada **fin**, en el del nodo que tienen antes.
+- El **inicio** va en el carril del primer nodo; si el proceso arranca con un formulario de inicio, en el carril de quien lo rellena («Iniciador», o el grupo si solo puede iniciarlo uno). Cada **pasarela** y cada **fin**, en el carril del nodo que tienen antes; si tienen varios en carriles distintos, en «Sistema».
 - Orden: los grupos según aparecen en el flujo y «Sistema» al final.
 
 Sistemas externos (uno por connected system de las integraciones que llama el proceso):
@@ -59,7 +59,7 @@ Sistemas externos (uno por connected system de las integraciones que llama el pr
 - **Vía draw.io**: el sistema externo va en `externos` con el mismo nombre, y un flujo desde la tarea de integración hasta él (flujo de mensaje) con la operación como `etiqueta`. Si la versión instalada de esa skill no admite `externos` (`validar` lo rechaza), la tarea de integración nombra el sistema externo y se explica en el `.md`.
 - **Diagrama Mermaid**: un `subgraph` con un solo nodo `:::external` y flecha discontinua desde la tarea de integración (ver `mermaid-rules.md`).
 
-Si el único carril sería «Sistema» y no hay sistemas externos, el `.bpmn` va sin `laneSet` ni `collaboration` y el Mermaid sin `subgraph`.
+Si el único carril sería «Sistema», el `.bpmn` va sin `laneSet` y el Mermaid sin `subgraph` para él; con sistemas externos, el `.bpmn` lleva igualmente `collaboration` con sus participantes.
 
 ---
 

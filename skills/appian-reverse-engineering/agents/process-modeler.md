@@ -76,7 +76,7 @@ Lee antes la `SKILL.md` de esa skill (`<diagramas>` es su carpeta): formato del 
 
 1. Escribe `<trabajo>/procesos/<slug>.json` con la columna «JSON draw.io» de `bpmn-mapping.md`:
    - `proceso`: el nombre del process model.
-   - `carriles`: los grupos asignados y «Sistema», en ese orden. Las tareas de integración y las desatendidas van en «Sistema». Los fines van en el carril del resultado de negocio.
+   - `carriles`: los grupos asignados y «Sistema», en ese orden. Inicio, pasarelas y fines, en el carril que dice `bpmn-mapping.md` («Carriles y participantes»).
    - `externos`: un sistema externo por connected system que llama el proceso, con el nombre de `bpmn-mapping.md` («Sistemas externos»).
    - `pasos`: un código estable por tipo (`EV-01`, `ACT-01`, `GW-01`…), numerado en el orden de los `id` de los nodos Appian, con el `nombre` del nodo y el tipo de la tabla de mapeo (`inicio_temporizador`, `script`, `llamada`…). `posicion` solo si la definición trae las coordenadas de los nodos, y entonces en todos los pasos.
    - `flujos`: los de `connections`; las salidas de cada pasarela con `etiqueta` (la condición) y la salida por defecto con `"defecto": true`; uno de cada tarea de integración a su sistema externo, con la operación como `etiqueta`.

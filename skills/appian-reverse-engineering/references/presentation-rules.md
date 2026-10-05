@@ -52,7 +52,7 @@ Los diagramas se leen al ancho de una página: más de ~1600 px de ancho es ileg
 |---|---|
 | Columnas por tabla | ≤ 8 |
 | Filas por tabla de la Vista | ≤ 15 (si hay más, parte por tipo o subdominio). No aplica al catálogo completo del Detalle, al registro de hallazgos de 09 ni a INVENTARIO. |
-| Caracteres por celda | ≤ 100, salvo la columna Evidencia |
+| Caracteres por celda | ≤ 100 de texto visible (sin contar la sintaxis de los enlaces), salvo la columna Evidencia |
 | Nodos por diagrama Tipo A (flowchart, también por capas) | ≤ 30 y sin aviso de ancho del render (en la práctica, unos 15: agrupa o parte) |
 | Entidades por diagrama Tipo B (erDiagram) | sin techo fijo; por legibilidad, parte por subdominio a partir de ~15 (ver `mermaid-rules.md`) |
 | Nodos por diagrama Tipo C (proceso) | ≤ 25 |

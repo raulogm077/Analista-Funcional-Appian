@@ -28,9 +28,7 @@ Cada proceso tiene su documento (paso a paso, tareas, datos y hallazgos) y su di
 
 ### Cómo leer los diagramas
 
-{{Solo si los diagramas son los .svg de la vía propia; los .png de draw.io usan la notación BPMN estándar.}}
-
-{{Vía draw.io: «Cada proceso tiene su `.drawio` (se abre y se edita en draw.io), su `.png` (la imagen del documento), su `.json` (la descripción del dibujo que mantiene la herramienta; no se edita a mano) y su `.bpmn` (para Camunda Modeler o bpmn.io).»}}
+{{Vía propia (.svg): la tabla de formas de abajo. Vía draw.io (.png): sin la tabla, porque los dibujos usan la notación BPMN estándar; en su lugar, esta frase: «Cada proceso tiene su `.drawio` (se abre y se edita en draw.io), su `.png` (la imagen del documento), su `.json` (la descripción del dibujo que mantiene la herramienta; no se edita a mano) y su `.bpmn` (para Camunda Modeler o bpmn.io).»}}
 
 | Forma | Significa |
 |---|---|
