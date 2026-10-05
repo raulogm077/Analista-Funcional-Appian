@@ -1,6 +1,6 @@
 ---
 name: appian-prototipos-aena
-description: "Crea prototipos navegables (maquetas, mockups) de aplicaciones Appian con la marca AENA, con componentes SAIL reales, patrones de pantalla repetibles y capturas PNG para el documento funcional. Úsala siempre que se pida un prototipo, maqueta, mockup o propuesta de pantallas navegable, sea cual sea el material de partida (primero obtiene el análisis ddf.md con appian-functional-analyst), o capturas de pantallas del prototipo para el documento funcional. No redacta requisitos ni construye en Appian: parte del análisis de appian-functional-analyst."
+description: "Crea prototipos navegables (maquetas, mockups) de aplicaciones Appian con la marca AENA, con componentes SAIL reales, patrones de pantalla repetibles y capturas PNG para el documento funcional. Úsala siempre que se pida un prototipo, maqueta, mockup o propuesta de pantallas navegable, sea cual sea el material de partida (primero obtiene el análisis ddf.md con appian-functional-analyst), o capturas de pantallas del prototipo para el documento funcional. No redacta requisitos ni construye en Appian: parte del análisis de appian-functional-analyst. Para código SAIL suelto, appian-sail-generator."
 ---
 
 # Prototipos Appian · AENA

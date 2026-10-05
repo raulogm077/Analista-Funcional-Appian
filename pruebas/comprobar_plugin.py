@@ -26,6 +26,7 @@ SKILLS = RAIZ / "skills"
 # Skills que se citan y no están en el plugin, con el motivo.
 EXTERNAS = {
     "appian-reverse-engineering": "skill de ingeniería inversa, se incorporará al plugin",
+    "appian-sail-generator": "skill aparte para escribir código SAIL suelto",
 }
 # Nombres que empiezan por appian- y no son skills.
 NO_SKILLS = {"appian-docs", "appian-dev", "appian-analisis-funcional"}

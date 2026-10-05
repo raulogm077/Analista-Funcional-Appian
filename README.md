@@ -101,6 +101,9 @@ entrada es la especificación técnica (`analisis/tecnico.md`) y el `app.json` d
 prototipo, que es un árbol SAIL real; buenas prácticas pide además la skill oficial
 `dev-mcp-skills` antes de escribir en un entorno.
 
+**No se incluye `appian-sail-generator`**, la skill para escribir código SAIL suelto:
+va aparte.
+
 ## Confidencialidad
 
 - `fuentes/`, `ddf.md` y los prototipos contienen información del cliente: no se

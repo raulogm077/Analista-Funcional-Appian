@@ -1,6 +1,6 @@
 # Componentes: qué se pinta y cómo se traslada a Appian
 
-La fuente de verdad de nombres, parámetros y valores válidos son los schemas de `schemas/` más `schemas/prototype-extensions.json`. `validate.py` rechaza cualquier componente, parámetro o valor que no exista en SAIL, cualquier icono que no esté en `schemas/icon-aliases.md` y las anidaciones que Appian no admite (layouts raíz anidados, botones fuera de su layout, layouts o grids en `a!sideBySideItem`, campos editables en columnas de `a!gridField` — y, antes de 26.9, `a!sideBySideLayout` en celdas de grid —, `a!tabLayout` en side-by-side o grids, cabeceras de `a!headerContentLayout` que no sean card o billboard, hijos no válidos de `a!richTextDisplayField`).
+La fuente de verdad de nombres, parámetros y valores válidos son los schemas de `schemas/` (los mismos que usa la skill appian-sail-generator) más `schemas/prototype-extensions.json`. `validate.py` rechaza cualquier componente, parámetro o valor que no exista en SAIL, cualquier icono que no esté en `schemas/icon-aliases.md` y las anidaciones que Appian no admite (layouts raíz anidados, botones fuera de su layout, layouts o grids en `a!sideBySideItem`, campos editables en columnas de `a!gridField` — y, antes de 26.9, `a!sideBySideLayout` en celdas de grid —, `a!tabLayout` en side-by-side o grids, cabeceras de `a!headerContentLayout` que no sean card o billboard, hijos no válidos de `a!richTextDisplayField`).
 
 ## Se renderizan con aspecto Appian: los 147 componentes de Appian 26.9
 
