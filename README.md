@@ -21,15 +21,22 @@ informes, expedientes…): el dominio sale siempre de las fuentes del proyecto. 
 casos y las plantillas del plugin son ejemplos de técnica, todos al mismo nivel
 (`skills/appian-prototipos-aena/examples/README.md`).
 
-## Qué incluye
+## Qué hace cada skill
 
-| Componente | Para qué |
-|---|---|
-| Skill `appian-functional-analyst` | Lee y cataloga las fuentes, detecta decisiones y contradicciones, y escribe el análisis (`ddf.md`) y el DDF en Word. Tres modos: **síntesis** (reuniones, correos), **fiel** (ya hay un DF o ERS: extracto literal, sin Word) y **actualización** (cada reunión o correo nuevo se encaja en el análisis con un informe de impacto que aprueba el analista, registro de decisiones e IDs estables) |
-| Skill `appian-diagramas-bpmn` | Dibuja y mantiene los diagramas de proceso en draw.io con notación BPMN y carriles por perfil: se crean desde una descripción del proceso, se actualizan por cambios respetando lo que se haya colocado a mano, se pueden editar en draw.io durante una reunión (después dice qué cambió y da código a lo nuevo), generan el PNG del documento sin internet y se exportan a BPMN 2.0. La usan el analista y la ingeniería inversa |
-| Skill `appian-best-practices` | Buenas prácticas oficiales de Appian para orientar y revisar soluciones: mapa de decisiones (qué mecanismo para qué necesidad), referencias por dominio (modelo de datos, interfaces, procesos, reglas, rendimiento, seguridad, integraciones, ALM, sites, IA), quality gates y runbooks de mantenimiento de la Knowledge Base de Appian Community. Contrastada con la documentación de 26.3 y 26.6 y las notas de versión hasta 26.9; consulta el MCP `appian-docs` cuando una duda cambia la recomendación |
-| Skill `appian-prototipos-aena` | Convierte el `ddf.md` en un prototipo navegable con los 147 componentes de interfaz de Appian 26.9, 12 patrones de pantalla, un catálogo de bloques con su guía de uso, componentes de IA de Appian, validaciones, diálogos, auditoría de contraste, perfil CSS de la marca y capturas para el documento |
-| MCP `appian-docs` | Búsqueda en la documentación oficial de Appian (servidor público de Appian alojado en Kapa) |
+Cada petición entra por una sola skill. Las demás se usan desde ella, y se pasan el trabajo en ficheros con un formato fijo.
+
+| Skill | Se ocupa de | No hace | Usa |
+|---|---|---|---|
+| `appian-functional-analyst` | Leer las fuentes del proyecto y escribir el análisis funcional (`analisis/funcional.md`), del que sale el DF en Word para el cliente, y la especificación técnica para construir (`analisis/tecnico.md`). Encajar cada reunión, correo o comentario nuevo en lo que ya hay | Dibujar procesos, hacer prototipos, construir o revisar objetos de Appian, auditar una aplicación existente | La skill de diagramas para los procesos; buenas prácticas para orientar la solución (`00` y la sección que decide); el MCP de documentación |
+| `appian-diagramas-bpmn` | Dibujar los procesos en draw.io con notación BPMN y un carril por perfil: `.drawio` editable, PNG para el documento y BPMN 2.0. Decir qué se cambió a mano en una reunión | Decidir qué pasos tiene un proceso | Nada |
+| `appian-prototipos-aena` | Las pantallas: patrón, componentes de Appian, marca AENA, navegación, validaciones, capturas para el documento y trazabilidad con los requisitos | Redactar requisitos, decidir el modelo de datos o la seguridad, construir en Appian | El análisis como entrada; buenas prácticas para las reglas de pantalla (`02` y `09`); el MCP de documentación |
+| `appian-best-practices` | Cómo se hace bien en Appian: decisiones de solución, reglas por dominio, quality gates y runbooks de mantenimiento. Es la entrada para construir, revisar o diagnosticar objetos | Análisis funcional, diagramas y prototipos | El MCP de documentación; la skill oficial [`dev-mcp-skills`](https://github.com/appian/dev-mcp-skills/) antes de escribir en un entorno |
+
+**MCP `appian-docs`**: la documentación oficial de Appian (servidor público de Appian alojado en Kapa). Lo que una skill no sepa con certeza de Appian se le pregunta antes de escribirlo, y lo que se escribe lleva la URL. Qué conviene hacer no es una duda de documentación: eso es de buenas prácticas.
+
+**Ingeniería inversa** (`appian-reverse-engineering`, se incorporará): lee una aplicación existente conectándose al entorno por MCP y deja su descripción y su auditoría en `as-is/`. La auditoría usa buenas prácticas en modo revisión y los procesos se dibujan con la skill de diagramas.
+
+`python3 pruebas/comprobar_plugin.py` comprueba que todo esto se cumple: nombres y descripciones de las skills, ficheros y rutas que se citan entre ellas, servidores MCP, la regla de dudas de Appian y la versión.
 
 ## Requisitos
 
@@ -89,12 +96,10 @@ las skills consultan docs.appian.com por la web.
 
 **No se incluye el Appian Dev MCP** (lectura y escritura de objetos de diseño):
 se instala en local por persona (Python 3.13, `uv`, ruta propia y el plug-in
-instalado en el entorno Appian por un administrador) y sirve para construir, no
-para analizar ni proponer pantallas.
-
-**No se incluye `appian-sail-generator`**: este plugin es de análisis y propuesta;
-el paso a construcción (SAIL real) va en un plugin aparte. El `app.json` del
-prototipo es un árbol SAIL real y sirve de punto de partida para ese paso.
+instalado en el entorno Appian por un administrador). Para construir con él, la
+entrada es la especificación técnica (`analisis/tecnico.md`) y el `app.json` del
+prototipo, que es un árbol SAIL real; buenas prácticas pide además la skill oficial
+`dev-mcp-skills` antes de escribir en un entorno.
 
 ## Confidencialidad
 

@@ -1,6 +1,6 @@
 ---
 name: appian-prototipos-aena
-description: "Crea prototipos navegables (maquetas, mockups) de aplicaciones Appian con la marca AENA, con componentes SAIL reales, patrones de pantalla repetibles y capturas PNG para el documento funcional. Úsala siempre que se pida un prototipo, maqueta, mockup o propuesta de pantallas navegable, sea cual sea el material de partida (primero obtiene el análisis ddf.md con appian-functional-analyst), o capturas de pantallas del prototipo para el documento funcional. No genera código SAIL (para eso, appian-sail-generator)."
+description: "Crea prototipos navegables (maquetas, mockups) de aplicaciones Appian con la marca AENA, con componentes SAIL reales, patrones de pantalla repetibles y capturas PNG para el documento funcional. Úsala siempre que se pida un prototipo, maqueta, mockup o propuesta de pantallas navegable, sea cual sea el material de partida (primero obtiene el análisis ddf.md con appian-functional-analyst), o capturas de pantallas del prototipo para el documento funcional. No redacta requisitos ni construye en Appian: parte del análisis de appian-functional-analyst."
 ---
 
 # Prototipos Appian · AENA
@@ -13,6 +13,11 @@ Convierte un documento de requisitos o de diseño funcional en un **prototipo na
 - **Genérica para cualquier proceso**: acuerdos con terceros, medioambiente, servidumbres, informes, expedientes… El kit no sabe de ningún dominio: entidades, roles, estados, códigos, textos, reglas y datos salen siempre del `ddf.md` del proyecto. Las plantillas y los ejemplos enseñan técnica (cómo se resuelve una pantalla), nunca un dominio que copiar (`examples/README.md`).
 - **Patrón repetible y UX cuidada**: toda pantalla declara uno de los 12 patrones de `templates/patterns.json` y sigue `references/design-rules.md`, que es la guía de diseño: el SAIL Design System oficial de Appian adaptado a AENA. El validador avisa de lo que la incumple (`UX ·`).
 - **Tres usos**: demo en reunión con cliente (navegación, validaciones, diálogos), capturas PNG para el documento funcional y referencia para desarrollo (inspector SAIL + `app.json` + trazabilidad).
+
+**Qué no hace:**
+- No redacta requisitos. Lo que el análisis no dice va a `openQuestions` o a un `$assumption`, y el analista lo pregunta.
+- No decide el modelo de datos ni la seguridad. Marca qué ve cada perfil y la especificación técnica dice cómo lo aplica Appian.
+- No construye en Appian. El `app.json` es la referencia de pantalla para quien construye.
 
 ## Flujo
 
@@ -103,13 +108,18 @@ Sin Playwright o sin navegador (los scripts salen con código 2 y dicen qué fal
 - **Documento funcional**: `capturas/*.png` + `capturas/indice.md` (pie de figura listo para pegar, referencia a la ficha del documento, patrón y requisitos). En capturas la barra del prototipo no aparece.
 - **Desarrollo**: **Inspector** (tecla `I`) muestra el componente SAIL y sus parámetros al pasar el ratón y al hacer clic; los supuestos aparecen con borde naranja.
 
-## Documentación oficial de Appian (opcional)
-El plugin incluye el **MCP público de documentación de Appian** (`appian-docs`: sus herramientas empiezan por `mcp__appian-docs__`). La primera vez pide iniciar sesión con Google o GitHub y tiene un límite de 300 consultas al día por persona. Úsalo cuando haya dudas de Appian:
-- si un componente, parámetro o valor existe en la versión del cliente (`app.appianVersion`);
-- qué admite de verdad un Site, un record type o una acción de registro antes de prometerlo en una pantalla;
-- el contenido de los `$note` para desarrollo.
+## Dudas de Appian
 
-Si el validador rechaza algo que la documentación confirma para esa versión, créalo en un `prototype-extensions.json` **junto al `app.json`** (mismo formato que `schemas/prototype-extensions.json`: los parámetros y valores se fusionan con los del componente) con la URL en `source`. validate y build lo leen automáticamente. No edites la carpeta del plugin: puede ser de solo lectura y se sobrescribe al actualizar. Díselo al usuario para que se incorpore al plugin. Sin el MCP (no conectado o sin consultas), consulta docs.appian.com con WebFetch/WebSearch; si tampoco es posible, quédate con los schemas y anota la duda en `openQuestions` o en un `$note`. La documentación complementa al validador, no lo sustituye.
+Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `appian-docs` (sus herramientas empiezan por `mcp__appian-docs__`) antes de escribirlo, nunca de memoria: si existe un componente, una función, un parámetro o un objeto, qué admite, sus límites, si depende de la licencia y desde qué versión.
+- Una duda por consulta, escrita como una frase completa.
+- Vale lo que diga la documentación de la versión del entorno del proyecto (va en la URL: `/help/26.6/`). Si solo lo dice una versión posterior, se avisa de que puede no estar disponible.
+- Lo que se escribe a partir de la respuesta lleva su URL, en la forma `/latest/`.
+- Sin el MCP, se consulta docs.appian.com con WebFetch o WebSearch. Si tampoco se puede, se escribe «sin verificar» y la duda pasa a pendientes.
+- Qué conviene hacer (qué mecanismo elegir, cómo diseñarlo) no es una duda de documentación: se consulta en `appian-best-practices`, solo la sección que toca. Esa skill está junto a esta, y `python3 ../appian-best-practices/scripts/seccion.py 02 4.8` imprime solo §4.8 del doc 02.
+
+**En el prototipo**, las dudas típicas son si un componente, parámetro o valor existe en `app.appianVersion`, qué admite de verdad un Site, un record type o una acción de registro antes de enseñarlo en una pantalla, y qué poner en los `$note` para desarrollo. Lo que quede sin verificar va a `openQuestions` o a un `$note`.
+
+**Si el validador rechaza algo que la documentación confirma** para esa versión, créalo en un `prototype-extensions.json` junto al `app.json` (mismo formato que `schemas/prototype-extensions.json`: los parámetros y valores se fusionan con los del componente) con la URL en `source`. validate y build lo leen automáticamente. No edites la carpeta del plugin: puede ser de solo lectura y se sobrescribe al actualizar. Díselo al usuario para que se incorpore al plugin. La documentación complementa al validador, no lo sustituye.
 
 ## Reglas que no se negocian
 - Solo funciones y parámetros SAIL reales; lo exclusivo del prototipo empieza por `$`. Nada de CSS, HTML ni componentes inventados.
