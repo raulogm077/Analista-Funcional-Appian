@@ -47,7 +47,7 @@ EOF
 # antigua (131.x es la habitual de @mermaid-js/mermaid-cli; 148.x es de otros
 # tooling más nuevo y mmdc no la reconoce). Si solo hay una, esa.
 CHROME_HOME=""
-for candidate in "/home/claude" "$HOME" "/root" "/tmp"; do
+for candidate in "${PUPPETEER_CACHE_DIR:+${PUPPETEER_CACHE_DIR%/.cache/puppeteer}}" "$HOME" "/root" "/tmp"; do
   if [ -d "$candidate/.cache/puppeteer/chrome-headless-shell" ]; then
     # Verificar que tenga al menos una versión instalada
     if ls "$candidate/.cache/puppeteer/chrome-headless-shell/"linux-131.* >/dev/null 2>&1; then
@@ -58,7 +58,7 @@ for candidate in "/home/claude" "$HOME" "/root" "/tmp"; do
 done
 # Si no encontramos la 131.x, caemos a cualquier cache disponible
 if [ -z "$CHROME_HOME" ]; then
-  for candidate in "$HOME" "/home/claude" "/root"; do
+  for candidate in "$HOME" "/root"; do
     if [ -d "$candidate/.cache/puppeteer/chrome-headless-shell" ]; then
       CHROME_HOME="$candidate"
       break

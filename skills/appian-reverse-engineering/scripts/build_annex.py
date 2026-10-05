@@ -30,11 +30,14 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from privacidad import mask_text, redact_screen  # noqa: E402
 from rutas import work_dir  # noqa: E402
 
 MARCA = "<!-- anexo generado por build_annex.py -->"
-USER_KEY = re.compile(r"(?i)^(user(name|id)?|login|initiator|startedby|starter|(created|modified|updated|lastmodified|published|saved)by|"
-                      r"author|owner|creator|modifier|assignee|usuario)$")
+USER_KEY = re.compile(r"(?i)^(user(name|id)?|login|initiator|startedby|starter|author|owner|creator|modifier|assignee|usuario|"
+                      r"displayname|fullname|firstname|lastname|e-?mail|mail|"
+                      r".*(by|byuser|user|username|userid|fullname|displayname|email|author|owner|creator|modifier))$")
+EMAIL = re.compile(r"[\w.+-]+@[\w-]+(\.[\w-]+)+")
 CODE_HINT = re.compile(r"a!|rule!|cons!|local!|ri!|fv!|pv!|recordType!|\bif\(|=\s*\{")
 UUID_REF = re.compile(r"(?<=[!.])\{[^{}\s]{8,}\}")
 USER_PH = "‹usuario›"
@@ -148,13 +151,16 @@ def scrub(x, users: dict[str, str], notes: set[str] | None = None, names: dict[s
     notes = set() if notes is None else notes
     names = names or {}
     if isinstance(x, dict):
-        is_user = str(x.get("type", x.get("kind", ""))).lower() == "user"
+        # un objeto de usuario (por su tipo o por tener usuario o correo): no queda ningún texto suyo
+        is_user = str(x.get("type", x.get("kind", ""))).lower() == "user" or any(k.lower() == "username" for k in x)
+        ident = next((str(x[k]).strip() for k in ("username", "userName", "name", "id", "value") if isinstance(x.get(k), str)), "")
+        propia = users.get(ident, USER_PH) if is_user else USER_PH
         out = {}
         for k, v in x.items():
             if USER_KEY.match(k) and isinstance(v, (str, int)):
-                out[k] = users.get(str(v).strip(), USER_PH)
-            elif is_user and k in ("name", "value", "username", "id") and isinstance(v, str):
-                out[k] = users.get(v.strip(), USER_PH)
+                out[k] = users.get(str(v).strip(), propia)
+            elif is_user and isinstance(v, str) and k not in ("type", "kind"):
+                out[k] = users.get(v.strip(), propia)
             elif isinstance(v, str) and v not in names:
                 out[k] = scrub_text(v, users, notes, k)
             else:
@@ -170,29 +176,15 @@ def scrub(x, users: dict[str, str], notes: set[str] | None = None, names: dict[s
 
 
 def scrub_text(x: str, users: dict[str, str], notes: set[str], key: str = "") -> str:
+    x = mask_text(x, [0])          # literales de autenticación y tokens que se hubieran escapado
     x = sensitive(x, notes, key)
+    if EMAIL.search(x):
+        x = EMAIL.sub("‹correo›", x)
+        notes.add("Las direcciones de correo se muestran como ‹correo›.")
     for u, label in users.items():
         if u in x:
             x = re.sub(rf"(?<![\w.]){re.escape(u)}(?![\w])", label, x)
     return x
-
-
-SCREEN_KEEP = {"type", "label", "title", "heading", "columns", "instructions", "placeholder", "tooltip",
-               "buttonLabel", "componentType", "caption", "labels"}
-
-
-def redact_screen(x, key: str = ""):
-    """Render de una interfaz: conserva la estructura y las etiquetas; los valores (que pueden ser datos reales
-    evaluados: recuentos, filas) se sustituyen por ‹valor›."""
-    if isinstance(x, dict):
-        return {k: redact_screen(v, k) for k, v in x.items()}
-    if isinstance(x, list):
-        if key in SCREEN_KEEP and all(isinstance(v, str) for v in x):
-            return x
-        return [redact_screen(v, key) for v in x]
-    if isinstance(x, str) and key in SCREEN_KEEP:
-        return x
-    return "‹valor›" if x not in (None, "", [], {}) else x
 
 
 def history_summary(data, users: dict[str, str]) -> str:

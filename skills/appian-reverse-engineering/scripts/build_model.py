@@ -50,6 +50,17 @@ def slugify(name: str | None) -> str:
     return s or "sin_nombre"
 
 
+def desambiguar_slugs(objs: list[dict]) -> None:
+    """Dos objetos del mismo tipo con el mismo slug (sin distinguir mayúsculas, como en Windows) se pisarían en
+    el anexo y en 08: a los dos se les añade el principio de su uuid."""
+    vistos: dict[tuple[str, str], int] = defaultdict(int)
+    for o in objs:
+        vistos[(o["type"], o["slug"].lower())] += 1
+    for o in objs:
+        if vistos[(o["type"], o["slug"].lower())] > 1:
+            o["slug"] = f'{o["slug"]}_{re.sub(r"[^A-Za-z0-9]", "", o["uuid"])[:8]}'
+
+
 def load(p: Path) -> Any:
     return json.loads(p.read_text(encoding="utf-8"))
 
@@ -406,6 +417,7 @@ def main(out_dir: str) -> int:
                "path": rel(app_files[0], root) if app_files else None, "evidenceRef": f"mcp:application/{app.get('name')}",
                "files": [{"tool": f.stem, "role": "app", "path": rel(f, root)} for f in app_files]}
     inv_objects: dict[str, list] = defaultdict(list)
+    desambiguar_slugs(objs)
     inv_objects["application"].append(app_obj)
     for o in objs:
         inv_objects[o["type"]].append(o)

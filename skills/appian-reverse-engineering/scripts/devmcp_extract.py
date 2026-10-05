@@ -82,44 +82,8 @@ def is_transient(error: str | None) -> bool:
                           error or ""))
 
 
-MASK = "***ENMASCARADO***"
-_URL_CRED = re.compile(r"(https?://)([^/@\s:]+):([^/@\s]+)@")
-_STRONG_SECRET = re.compile(
-    r"(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]{8,}|AKIA[0-9A-Z]{16}|(?i:bearer)\s+[A-Za-z0-9._~+/=-]{16,}"
-    r"|-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----"
-    r"|eyJ[\w-]{10,}\.eyJ[\w-]{10,}\.[\w-]+|gh[pousr]_[A-Za-z0-9]{36,}|xox[abps]-[A-Za-z0-9-]{10,}")
-_SECRET_KEY = re.compile(r"(?i)^(password|passwd|pwd|secret|client_?secret|api_?key|apikey|access_?token|"
-                         r"refresh_?token|token|private_?key|credentials?)$")
-SECRET_NAME = re.compile(r"(?i)(token|secret|passw|pwd|api[_\-]?key|credential|private[_\-]?key)")
-
-
-def _is_reference(v: str) -> bool:
-    """Una expresion que referencia un secreto (=cons!X, ri!y) no es el secreto."""
-    return v.startswith("=") or re.search(r"\b(cons|ri|pv|rule|local)!", v) is not None
-
-
-def mask_secrets(data: Any, counter: list, secret_values: bool = False) -> Any:
-    """Enmascara credenciales antes de escribir a disco: URLs con usuario:clave, tokens con formato
-    conocido, claves de tipo password/secret/token y, en constantes con nombre de secreto, su valor."""
-    if isinstance(data, dict):
-        out = {}
-        for k, v in data.items():
-            if isinstance(v, str) and v and not _is_reference(v) and (
-                    _SECRET_KEY.match(str(k)) or (secret_values and str(k).lower() == "value")):
-                out[k] = MASK
-                counter[0] += 1
-            else:
-                out[k] = mask_secrets(v, counter, secret_values)
-        return out
-    if isinstance(data, list):
-        return [mask_secrets(x, counter, secret_values) for x in data]
-    if isinstance(data, str):
-        s = _URL_CRED.sub(lambda m: m.group(1) + "***:***@", data)
-        s = _STRONG_SECRET.sub(MASK, s)
-        if s != data:
-            counter[0] += 1
-        return s
-    return data
+# Secretos y render de interfaces: mismas reglas que el anexo (privacidad.py)
+from privacidad import MASK, SECRET_NAME, is_reference as _is_reference, mask_secrets, redact_screen  # noqa: E402,F401
 
 
 def eprint(*a):
@@ -152,6 +116,7 @@ class Policy:
         self.read = set(d["readVerbs"])
         self.exceptions = [(re.compile(x["pattern"]), x["role"], x["reason"]) for x in d["allowExceptions"]]
         self.excludes = [(re.compile(x["pattern"]), x["reason"]) for x in d["excludePatterns"]]
+        self.exclude_tokens = d.get("excludeTokens", [])
         self.roles = [(r["role"], set(r["tokens"])) for r in d["roles"]]
         self.def_verbs = set(d["definitionVerbs"])
         self.def_suffixes = set(d["definitionSuffixes"])
@@ -168,9 +133,20 @@ class Policy:
         return bool((toks and toks[0] in self.write) or self.interaction.intersection(toks)
                     or (ann is not None and getattr(ann, "destructiveHint", None) is True))
 
+    def excluded_by_tokens(self, toks: list[str]) -> str | None:
+        """Reglas por palabras del nombre, escriba como se escriba (queryRecordType, list_record_data…)."""
+        ts = set(toks)
+        for r in self.exclude_tokens:
+            if (set(r.get("all", [])) <= ts and (not r.get("any") or ts & set(r["any"]))
+                    and not ts & set(r.get("none", [])) and (not r.get("first") or (toks and toks[0] in r["first"]))
+                    and (not r.get("last") or (toks and toks[-1] in r["last"]))):
+                return r["reason"]
+        return None
+
     def safety(self, name: str, ann, trusted: bool) -> tuple[bool, str, str | None]:
         toks = tokens(name)
         first = toks[0] if toks else ""
+        unido = "".join(t.capitalize() for t in toks)   # list_record_data → ListRecordData: las reglas valen igual
         if ann is not None and getattr(ann, "destructiveHint", None) is True:
             return False, "El servidor la declara destructiva (destructiveHint).", None
         if first in self.write:
@@ -178,11 +154,14 @@ class Policy:
         hit = self.interaction.intersection(toks)
         if hit:
             return False, f"Interaccion con la interfaz ('{sorted(hit)[0]}').", None
+        motivo = self.excluded_by_tokens(toks)
+        if motivo:
+            return False, motivo, None
         for rx, reason in self.excludes:
-            if rx.search(name):
+            if rx.search(name) or rx.search(unido):
                 return False, reason, None
         for rx, role, reason in self.exceptions:
-            if rx.search(name):
+            if rx.search(name) or rx.search(unido):
                 return True, reason, role
         if first in self.evaluation:
             return False, f"Evalua o prueba logica ('{first}'): puede ejecutar integraciones o efectos reales.", None
@@ -755,6 +734,8 @@ class Extractor:
             masked = [0]
             secret_ctx = bool(obj and obj.get("type") == "constant" and SECRET_NAME.search(obj.get("name") or ""))
             safe_data = mask_secrets(res.data, masked, secret_ctx)
+            if ti.role == "screen":   # el render evalúa la interfaz: los valores pueden ser datos reales
+                safe_data = redact_screen(safe_data)
             if masked[0]:
                 meta["maskedSecrets"] = masked[0]
             f.write_text(json.dumps({"_meta": meta, "response": safe_data}, ensure_ascii=False, indent=1, default=str),
@@ -993,6 +974,7 @@ async def cmd_plan_or_extract(args, execute: bool) -> int:
         return code
     policy = Policy(args.policy)
     t0 = time.monotonic()
+    inicio = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     try:
         async with sess:
             ex = Extractor(sess, policy, out, concurrency=args.concurrency, refresh=args.refresh,
@@ -1008,7 +990,7 @@ async def cmd_plan_or_extract(args, execute: bool) -> int:
             write_json(interm / "extraction_plan.json", plan)
             write_json(interm / "mcp_raw" / "_objects.json", {"application": app_obj, "objects": objects})
             if not execute:
-                print_plan(plan)
+                print(json.dumps(plan, ensure_ascii=False, indent=1)) if args.json else print_plan(plan)
                 return EXIT_OK
             if plan["needsConfirmation"] and not args.yes:
                 print_plan(plan)
@@ -1017,7 +999,7 @@ async def cmd_plan_or_extract(args, execute: bool) -> int:
             await ex.env_calls()
             await asyncio.gather(*(ex.run_group(ti, t, objs) for ti, t, objs in groups))
             report = {
-                "startedAt": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+                "startedAt": inicio,
                 "durationSeconds": round(time.monotonic() - t0, 1),
                 "server": server_info(choice), "trustedMode": ex.trusted,
                 "app": app_obj, "objectCount": len(objects), "objectsByType": plan["objectsByType"],
@@ -1026,10 +1008,12 @@ async def cmd_plan_or_extract(args, execute: bool) -> int:
                 "toolsManual": [{"name": t.name, "reason": t.scope_reason} for t in ex.tools
                                 if t.allowed and t.scope == "manual"],
                 "callStats": {k: dict(v) for k, v in sorted(ex.stats.items())},
+                "callStatsByRole": por_rol(ex),
                 "disabledAfterProbe": ex.disabled,
                 "errors": ex.errors[:300], "errorCount": len(ex.errors),
             }
             write_json(interm / "extraction_report.json", report)
+            (interm / ".gitignore").write_text("# Datos de trabajo: no se versionan ni se comparten\n*\n", encoding="utf-8")
             (interm / "LEEME.md").write_text(
                 "# Datos intermedios\n\nEsta carpeta contiene definiciones en bruto de la aplicacion (URLs, valores de "
                 "constantes, nombres de usuario del historial). **No la compartas.** Los entregables de la carpeta "
@@ -1044,6 +1028,17 @@ async def cmd_plan_or_extract(args, execute: bool) -> int:
         return EXIT_START
 
 
+def por_rol(ex) -> dict:
+    """Llamadas correctas y fallidas por rol (definition, dependents…): el umbral de la fase 2 se mira en definition."""
+    rol = {t.name: t.role for t in ex.tools}
+    out: dict[str, dict[str, int]] = {}
+    for name, st in ex.stats.items():
+        r = out.setdefault(rol.get(name) or "other", {"ok": 0, "failed": 0})
+        r["ok"] += st.get("ok", 0) + st.get("cached", 0)
+        r["failed"] += st.get("failed", 0)
+    return out
+
+
 def print_plan(plan: dict):
     print(f"Aplicacion: {plan['app'].get('name')} [{plan['app'].get('uuid')}]")
     print(f"Objetos: {plan['objectCount']}  " + ", ".join(f"{k}={v}" for k, v in plan["objectsByType"].items()))
@@ -1055,12 +1050,13 @@ def print_plan(plan: dict):
         print(f"  {mark}{t['name']:40} {t['scope']:7} {t['role']:12}{calls}  {t['reason']}")
 
 
-async def probe_http_server(url: str, headers: dict, timeout: float) -> dict:
+async def probe_http_server(url: str, headers: dict, timeout: float, policy: "Policy") -> dict:
     info = {"url": url, "reachable": False}
     try:
         async with McpSession(http_url=url, headers=headers, login_timeout=timeout, call_timeout=timeout) as s:
             tools = await s.list_tools()
             info.update({"reachable": True, "toolCount": len(tools), "tools": [t.name for t in tools]})
+            tools = [t for t in tools if not policy.is_writeish(t.name, getattr(t, "annotations", None))]
             meta = next((t for t in tools if "metadata" in tokens(t.name)
                          and not (t.inputSchema or {}).get("required")), None)
             if meta:
@@ -1129,6 +1125,8 @@ async def cmd_doctor(args) -> int:
                             "excludedTools": sum(1 for t in ex.tools if not t.allowed),
                             "trustedMode": ex.trusted, "appsVisible": len(apps),
                             "apps": [{"name": a["name"], "prefix": a.get("prefix"), "uuid": a["uuid"]} for a in apps][:50]})
+                if len(apps) > 50:
+                    dev["appsNote"] = f"Se muestran 50 de {len(apps)}: la lista completa, con 'apps --json'."
                 if not ex.trusted:
                     dev["warning"] = ("El servidor expone herramientas de escritura aunque se pidio readonly. "
                                       "La politica las bloquea y solo se usan herramientas de lectura evidentes.")
@@ -1145,7 +1143,7 @@ async def cmd_doctor(args) -> int:
     else:
         f, n, e = cands[0]
         headers = expand_vars(e.get("headers") or {}, dict(os.environ))
-        info = await probe_http_server(e["url"], headers, min(args.login_timeout, 60))
+        info = await probe_http_server(e["url"], headers, min(args.login_timeout, 60), Policy(args.policy))
         info.update({"configFile": str(f), "serverName": n})
         info["status"] = "ok" if info.get("reachable") else "error"
         report["appianMcpServer"] = info
@@ -1194,6 +1192,9 @@ async def cmd_datafabric(args) -> int:
     try:
         async with McpSession(http_url=e["url"], headers=headers, login_timeout=60, call_timeout=60) as s:
             tools = await s.list_tools()
+            pol = Policy(args.policy)
+            tools = [t for t in tools if not pol.is_writeish(t.name, getattr(t, "annotations", None))]
+            tools.sort(key=lambda t: not {"data", "fabric"} <= set(tokens(t.name)))   # las del data fabric, primero
             meta = next((t for t in tools if "metadata" in tokens(t.name)), None)
             sql = next((t for t in tools if {"sql", "query"} & set(tokens(t.name))
                         and any("query" in tokens(p) or "sql" in tokens(p)
