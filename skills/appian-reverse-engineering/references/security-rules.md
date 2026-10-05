@@ -41,6 +41,8 @@ Una URL ya enmascarada por completo (`https://***:***@host`) no cuenta como coin
 
 **Host interno** es una IP privada (`10.*`, `172.16.*`–`172.31.*`, `192.168.*`, `127.*`), `localhost`, un nombre acabado en `.local`, `.internal`, `.corp` o `.intra`, o un nombre sin dominio (`sapprd01`). Cualquier otro nombre con dominio se muestra.
 
+El valor de una constante o de un connected system se ve desde el diseño de Appian y en los paquetes de despliegue; un usuario final no lo ve desde el portal aunque tenga Viewer. Describe el impacto así: «visible para quien tenga acceso de diseño a la aplicación y en cualquier exportación del paquete».
+
 ## Acción ante un secreto
 
 1. **No copies el valor** a ningún documento, informe, terminal ni dato de la web.

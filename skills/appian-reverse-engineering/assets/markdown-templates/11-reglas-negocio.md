@@ -72,4 +72,4 @@ Evidencia: `mcp:{{tipo}}/{{nombre}}#{{ubicación}}` · Certeza: ✅
 
 ## Cobertura y límites
 
-{{1-5 líneas: pasarelas que no son reglas de negocio y por qué, decisiones sin definición disponible, reglas de procesos sin ejecuciones…}}
+{{1-5 líneas: pasarelas que no son reglas de negocio y por qué, decisiones sin definición disponible, reglas de procesos sin ejecuciones… Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}

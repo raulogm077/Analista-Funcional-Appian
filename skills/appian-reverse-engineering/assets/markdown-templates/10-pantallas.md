@@ -83,4 +83,4 @@ Evidencia: `mcp:interface/{{nombre}}#expression (línea {{N}})`, `mcp:site/{{nom
 
 ## Cobertura y límites
 
-{{1-5 líneas: pantallas sin render, configuración de listas de record que no devuelve la extracción, mapeos de formularios no disponibles…}}
+{{1-5 líneas: pantallas sin render, configuración de listas de record que no devuelve la extracción, mapeos de formularios no disponibles… Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}

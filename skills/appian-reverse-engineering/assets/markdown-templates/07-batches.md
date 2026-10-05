@@ -52,4 +52,4 @@ Evidencia: `mcp:processModel/{{nombre}}#nodes[id={{N}}]` · Certeza: ✅/🔵/�
 
 ## Cobertura y límites
 
-{{1-5 líneas: p. ej. «La extracción no devuelve las pestañas de excepciones y alertas de los nodos», «sin historial de ejecuciones», «el entorno no consta como producción».}}
+{{1-5 líneas: p. ej. «sin historial de ejecuciones de DEM_Batch_X», «la consulta no fija lote: el volumen real por ejecución es ❓». Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}

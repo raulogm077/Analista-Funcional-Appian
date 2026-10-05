@@ -26,7 +26,7 @@ Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no e
 <solo los del área de este documento (ver execution-principles.md, «Registro de hallazgos»)>
 
 ## Cobertura y límites
-<1-5 líneas: qué no se pudo obtener o verificar y por qué>
+<1-5 líneas: qué no se pudo obtener o verificar en este documento y por qué. Lo global está en LEEME (Regla 8)>
 ```
 
 - El TL;DR es el **único** resumen del documento. No añadas «Resumen rápido», «Resumen» ni otro TL;DR más abajo.
@@ -79,8 +79,10 @@ Todas las fichas de un mismo tipo tienen los mismos campos en el mismo orden:
 
 <Notas (si aplica, 3-5 líneas)>
 
-Evidencia: `mcp:<tipo>/<nombre>[@<rol>]#<ubicación>` · Certeza: ✅/🔵/❓
+Evidencia: [`mcp:<tipo>/<nombre>[@<rol>]#<ubicación>`](anexo/<tipo>/<slug>.md) · Certeza: ✅/🔵/❓
 ```
+
+La evidencia enlaza la ficha del objeto en el anexo (ruta relativa al documento: `../anexo/…` desde `08-procesos-bpmn/`), para que el lector la compruebe.
 
 Si el documento tiene más de 5 fichas, el Detalle empieza con un índice de enlaces a ellas.
 

@@ -116,4 +116,4 @@ Todos los hallazgos de la documentación, de mayor a menor severidad, con el doc
 
 ## Cobertura y límites
 
-{{1-5 líneas: p. ej. «sin historial de versiones para los CDTs», «solo se ven los valores de las constantes de este entorno».}}
+{{1-5 líneas: p. ej. «sin historial de versiones para los CDTs», «solo se ven los valores de las constantes de este entorno». Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}

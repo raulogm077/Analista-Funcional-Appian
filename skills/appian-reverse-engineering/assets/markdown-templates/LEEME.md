@@ -1,7 +1,8 @@
 <!--
   Plantilla LEEME — Guía de lectura (orquestador, fase 6, lo último que se escribe). Objetivo 1 pantalla, máximo 2.
   - Columna IDs: el rango real de esta ejecución (p. ej. PAN-001…PAN-006, H-SEG-01…H-SEG-04); «—» si no tiene.
-  - «Qué no incluye»: las tres primeras líneas van siempre; añade las de esta ejecución (omite las que no apliquen).
+  - «Qué no incluye»: las tres primeras líneas van siempre; añade las de esta ejecución que de verdad falten (omite las que no apliquen: si hubo role maps o MCP opcionales, no van aquí).
+  - Las limitaciones globales (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) se explican aquí una vez; los demás documentos no las repiten.
   - Celdas ≤ 100 caracteres. Un solo TL;DR. Sin usuarios.
 -->
 
@@ -64,7 +65,8 @@ Que la extracción no traiga un dato no significa que falte en la aplicación: p
 - {{Seguridad por objeto (role maps): no disponible.}}
 - {{Volúmenes de datos: Appian MCP Server no disponible.}}
 - {{Verificación con la documentación oficial: Docs MCP no disponible; las fuentes de 13 no están verificadas para la versión.}}
-- {{Uso real: el entorno no consta como producción; las ejecuciones son orientativas.}}
+- {{Versión de Appian: no determinada; las recomendaciones usan la documentación más reciente.}}
+- {{Uso real: el entorno no consta como producción y la muestra son las últimas N ejecuciones de cada proceso; las cifras son orientativas{{; la muestra es uniforme (mismo iniciador y hora), así que no dice quién usa cada proceso ni cuándo}}.}}
 
 ## Glosario de Appian
 
@@ -87,4 +89,4 @@ Que la extracción no traiga un dato no significa que falte en la aplicación: p
 
 El vocabulario del negocio está en el [glosario de 09](./09-valor-adicional.md#glosario-de-negocio).
 
-> Los datos de trabajo de la extracción se guardan aparte, en la carpeta de trabajo que está junto a esta, y no viajan con esta documentación: contienen definiciones completas, hosts y usuarios.
+> Los datos de trabajo de la extracción se guardan aparte, en la carpeta de trabajo que está junto a esta, y no viajan con esta documentación: contienen las respuestas sin filtrar, con usuarios y hosts internos.

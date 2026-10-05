@@ -57,7 +57,7 @@ No son tuyos: quién puede iniciar y la seguridad (`04-seguridad-grupos.md`), la
 
 ## Diagramas
 
-Cada process model tiene su `.bpmn` y una imagen para el documento, por una de estas dos vías. Usa la vía draw.io solo si el orquestador te pasa la carpeta de la skill `appian-diagramas-bpmn`; si no, la vía propia.
+Cada process model tiene su `.bpmn` y una imagen para el documento. El `.bpmn` sale siempre de la vía propia (pasos 1 y 4), porque es el que conserva lo propio de Appian: temporizador de inicio, llamada a proceso, tareas de script, flujo por defecto y sistemas externos. La imagen sale de la vía draw.io si el orquestador te pasa la carpeta de la skill `appian-diagramas-bpmn` (dibujo editable para trabajar con negocio); si no, de la vía propia (Mermaid). En los dos casos, el diagrama señala con una nota el punto de cada hallazgo Alta del proceso (p. ej. «cancel no se consulta»).
 
 ### Vía propia (por defecto)
 
@@ -70,7 +70,7 @@ Ficheros en `<salida>/08-procesos-bpmn/`: `<slug>.bpmn`, `<slug>.mmd` y `<slug>.
 
 ### Vía draw.io (opcional)
 
-Ficheros en `<salida>/08-procesos-bpmn/`: `<slug>.drawio` (editable en draw.io), `<slug>.png` (la imagen del documento), `<slug>.json` (el proceso tal como lo conoce esa skill; lo escribe ella y no se edita) y `<slug>.bpmn`. No hay `.mmd` ni `.svg`.
+Ficheros en `<salida>/08-procesos-bpmn/`: `<slug>.drawio` (editable en draw.io), `<slug>.png` (la imagen del documento) y `<slug>.json` (el proceso tal como lo conoce esa skill; lo escribe ella, no se edita y hace falta para actualizar el dibujo). El `<slug>.bpmn` sale de la vía propia (pasos 1 y 4). No hay `.mmd` ni `.svg`.
 
 Lee antes la `SKILL.md` de esa skill (`<diagramas>` es su carpeta): formato del JSON, órdenes, avisos y límites. Después, por cada proceso:
 
@@ -80,11 +80,10 @@ Lee antes la `SKILL.md` de esa skill (`<diagramas>` es su carpeta): formato del 
    - `pasos`: un código estable por tipo (`EV-01`, `ACT-01`, `GW-01`…), numerado en el orden de los `id` de los nodos Appian, con el `nombre` del nodo. `posicion` solo si la definición trae las coordenadas de los nodos, y entonces en todos los pasos.
    - `flujos`: los de `connections`; las salidas de cada pasarela con `etiqueta` (la condición).
 2. `python3 <diagramas>/scripts/diagrama.py crear <trabajo>/procesos/<slug>.json -o <salida>/08-procesos-bpmn/` → `.drawio`, `.png` y `.json`. Corrige los avisos de validación (salidas sin etiqueta, pasos sin entrada o salida). Si el `.drawio` ya existe de una ejecución anterior, usa `diagrama.py actualizar <slug>.drawio <trabajo>/procesos/<slug>.json`, que respeta lo editado a mano; si se niega porque hay cambios manuales sin aceptar, déjalo y dilo en tu informe. Nunca `--forzar` ni `--recolocar`.
-3. `python3 <diagramas>/scripts/diagrama.py bpmn <salida>/08-procesos-bpmn/<slug>.drawio` → `<slug>.bpmn`, ya con DI. No le pases `bpmn_layout.py`: sustituiría las posiciones del dibujo.
+3. No uses `diagrama.py bpmn`: su exportación simplifica (sin temporizador de inicio, subproceso embebido en vez de llamada a proceso, sin tareas de script). El `.bpmn` es el de la vía propia.
+4. Una etiqueta corta entre dos tareas puede solaparse en el dibujo: revisa el `.png` y, si pasa, alarga el nombre del paso con `actualizar` y dilo en tu informe.
 
-El `.bpmn` de esta vía es más simple (tareas de persona y de sistema, subprocesos como `subProcess`, sin temporizador de inicio ni pools externos): el temporizador y los sistemas externos se explican en el `.md`.
-
-Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz todos los procesos por la vía propia y dilo en tu informe. Si falla un proceso concreto y no lo puedes corregir, ese va por la vía propia (`bpmn_layout.py <salida>/08-procesos-bpmn/<slug>.bpmn`, solo ese fichero).
+Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz las imágenes por la vía propia (Mermaid) y dilo en tu informe.
 
 ## Documentos
 
@@ -95,7 +94,7 @@ Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz to
 
 ## Comprobación antes de terminar
 
-- [ ] Cada process model del inventario tiene `<slug>.md`, `<slug>.bpmn` con `bpmndi:BPMNDiagram` y su diagrama (`.mmd` + `.svg`, o `.drawio` + `.png`).
+- [ ] Cada process model del inventario tiene `<slug>.md`, `<slug>.bpmn` (vía propia, con `bpmndi:BPMNDiagram`) y su diagrama (`.mmd` + `.svg`, o `.drawio` + `.png`).
 - [ ] Cada `.mmd` pasa `validate_mermaid.py` y ninguno superó el aviso de ancho.
 - [ ] `indice.md` lista todos los procesos y el mapa refleja las aristas `subProcess` y `startProcess`.
 - [ ] Un solo TL;DR por documento; solo ✅/🔵/❓ como certeza y Alta/Media/Baja como severidad (solo en hallazgos).

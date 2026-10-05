@@ -119,4 +119,4 @@ Qué rol puede ejecutar cada requisito. Si el permiso necesario difiere del actu
 
 ## Cobertura y límites
 
-{{1-5 líneas: qué no se pudo especificar y por qué (p. ej. configuración de la lista de registros no disponible; uso real orientativo si el entorno no es producción).}}
+{{1-5 líneas: qué no se pudo especificar y por qué (p. ej. configuración de la lista de registros no disponible). Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}

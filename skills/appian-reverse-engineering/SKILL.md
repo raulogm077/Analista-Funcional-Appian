@@ -107,7 +107,7 @@ Todos escriben sus hallazgos en su documento y en `<trabajo>/hallazgos/<agente>.
 
 ### Fase 5 — Diagramas
 
-Cada bloque Mermaid pasa `scripts/validate_mermaid.py`, que admite los tipos A, B y C de `references/mermaid-rules.md`. `scripts/render_diagrams.sh --batch <salida>` genera los SVG si hay `mmdc` y avisa de los que son demasiado anchos (rehazlos). Si un diagrama falla 3 veces, sustitúyelo por una tabla. Los `.bpmn` llevan coordenadas de dibujo: en la vía propia, `python3 scripts/bpmn_layout.py <salida>/08-procesos-bpmn` (lo ejecuta process-modeler; repítelo si alguien toca un `.bpmn` de esa vía); en la vía draw.io las trae la exportación de `appian-diagramas-bpmn` y no se pasa `bpmn_layout.py`.
+Cada bloque Mermaid pasa `scripts/validate_mermaid.py`, que admite los tipos A, B y C de `references/mermaid-rules.md`. `scripts/render_diagrams.sh --batch <salida>` genera los SVG si hay `mmdc` y avisa de los que son demasiado anchos (rehazlos). Si un diagrama falla 3 veces, sustitúyelo por una tabla. Los `.bpmn` de 08 llevan coordenadas de dibujo: `python3 scripts/bpmn_layout.py <salida>/08-procesos-bpmn` (lo ejecuta process-modeler; repítelo si alguien toca un `.bpmn`). En la vía draw.io la imagen sale de `appian-diagramas-bpmn`, pero el `.bpmn` es el propio.
 
 ### Fase 6 — Coherencia, resumen, inventario y guía
 

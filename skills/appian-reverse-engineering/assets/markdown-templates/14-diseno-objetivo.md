@@ -52,6 +52,14 @@ Relaciones: {{N:1 con Estado (estadoId)}}. {{Eventos de record, filtros o seguri
 
 <!-- Si el proceso cambia de forma: imagen objetivo-<slug>.png con «Editable: [objetivo-<slug>.drawio](…) · BPMN: [objetivo-<slug>.bpmn](…)» (vía draw.io), o imagen objetivo-<slug>.svg + «Fuente» (Mermaid). Si se mantiene igual: «Sin cambios de forma: ver [ficha actual](./08-procesos-bpmn/<slug>.md)». -->
 
+## Detalle: ciclo de vida
+
+{{Solo si la entidad principal tiene estados. Frase: qué estados tiene hoy y cuáles tendrá.}}
+
+| Estado | Entra por (evento) | Lo escribe | Sale hacia | Hoy |
+|---|---|---|---|---|
+| {{Enviada}} | {{Alta (RF-001)}} | {{DEM Alta Solicitud}} | {{Aprobada · Rechazada}} | {{Existe · No existe · ❓ (PQ-001)}} |
+
 ## Detalle: pantallas
 
 ### PAN-00N — {{pantalla}}
@@ -92,6 +100,18 @@ Nomenclatura: {{regla aplicada}} (fuente: {{URL de la guía oficial de nombres d
 
 {{Migración de datos: qué se conserva, qué se transforma y en qué fase de 13.}}
 
+### Si se reconstruye en una aplicación nueva
+
+{{Siempre, sea cual sea la estrategia: lo que haría falta para construir este diseño en una aplicación nueva y retirar la actual.}}
+
+| Tema | Qué hacer |
+|---|---|
+| Datos | {{Migrar las N solicitudes y el catálogo; transformaciones; verificación por recuento}} |
+| Corte | {{Cuándo se cambia y qué pasa con las tareas y procesos en curso}} |
+| Contratos externos | {{Mantener el alias de la Web API y el contrato con el ERP, o versionarlos}} |
+| Seguridad | {{Grupos y cuentas de servicio nuevos; quién los crea}} |
+| Retirada | {{Cómo se apaga la aplicación actual (permisos, temporizadores, objetos)}} |
+
 ## Cobertura y límites
 
-{{1-5 líneas: elementos condicionados a PQ o DEC (con sus IDs), detalles del modelo actual que la extracción no trajo y que este diseño decide, funcionalidades confirmadas o no en la documentación de la versión del entorno.}}
+{{1-5 líneas: elementos condicionados a PQ o DEC (con sus IDs), detalles del modelo actual que la extracción no trajo y que este diseño decide, funcionalidades confirmadas o no en la documentación de la versión del entorno. Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}

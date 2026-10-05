@@ -93,4 +93,4 @@ El diseño detallado (modelo de datos objetivo, procesos y pantallas objetivo, c
 
 ## Cobertura y límites
 
-{{1-5 líneas: versión de Appian (o «no determinada: se usó la documentación más reciente»); si las recomendaciones se verificaron en el Docs MCP; patrones revisados sin aparición; señales que no se pudieron comprobar porque la extracción no trae su configuración.}}
+{{1-5 líneas: recomendaciones no verificadas en el Docs MCP (con sus IDs); patrones revisados sin aparición; señales que no se pudieron comprobar porque la extracción no trae su configuración. Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}

@@ -84,6 +84,6 @@ Fuente editable: [{{slug}}.drawio](./{{slug}}.drawio) (draw.io) · BPMN 2.0: [{{
 
 ## Cobertura y límites
 
-- Excepciones, alertas y escalados de los nodos: la extracción no los devuelve; pendiente de validar en el diseñador de procesos ❓.
-- {{Otros datos no devueltos que afecten a este proceso: destinatarios de correo, entradas de un nodo, role map}} ❓.
-- {{Ejecuciones: entorno y si es producción; si la muestra es uniforme, que no permite saber qué cuenta lo ejecuta ni a qué hora. Los procesos de temporizador y los subprocesos se ejecutan como el usuario que desplegó el modelo.}}
+- {{Datos no devueltos que cambian lo que dice este proceso: p. ej. «sin la pestaña de excepciones de Notificar ERP, no se sabe si un fallo detiene el proceso», destinatarios de correo, entradas de un nodo}} ❓.
+- {{Ejecuciones: solo lo propio de este proceso (fallos en la muestra, ninguna ejecución). Si es de temporizador o subproceso, se ejecuta como el usuario que desplegó el modelo.}}
+{{Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}

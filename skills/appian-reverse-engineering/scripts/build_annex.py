@@ -46,10 +46,11 @@ INTERNAL_HOST = re.compile(r"^(10\.\d+\.\d+\.\d+|127\.\d+\.\d+\.\d+|192\.168\.\d
                            r"|localhost|[^.]+|.+\.(local|internal|corp|intra))$", re.I)
 
 
-def sensitive(text: str, notes: set[str]) -> str:
+def sensitive(text: str, notes: set[str], key: str = "") -> str:
     """Quita credenciales de las URLs, deja los secretos como *** y oculta los hosts internos."""
     if URL_CREDS.search(text):
-        notes.add("Se han retirado las credenciales embebidas en una URL.")
+        donde = f" de `{key}`" if key else ""
+        notes.add(f"La URL{donde} llevaba credenciales embebidas (usuario y contraseña): se han retirado.")
         text = URL_CREDS.sub(r"\1", text)
     text = MASKED.sub("***", text)
 
@@ -63,12 +64,14 @@ TIPOS = {"interface": "Interfaz", "expressionRule": "Regla de expresión", "proc
          "recordType": "Record type", "integration": "Integración", "connectedSystem": "Connected system",
          "webApi": "Web API", "constant": "Constante", "site": "Site", "group": "Grupo", "decision": "Decisión",
          "cdt": "Tipo de datos (CDT)", "aiAgent": "Agente de IA", "folder": "Carpeta", "document": "Documento",
-         "dataStore": "Data store", "application": "Aplicación"}
+         "dataStore": "Data store", "application": "Aplicación", "processModelFolder": "Carpeta de procesos",
+         "knowledgeCenter": "Centro de conocimiento"}
 
 
 ROLES = {"dependents": "Quién lo usa (@dependents)", "dependencies": "Qué usa (@dependencies)",
          "validation": "Validación de la plataforma (@validation)", "history": "Ejecuciones (@history)",
-         "versions": "Versiones (@versions)", "members": "Miembros (@members)", "other": "Otras respuestas (@other)"}
+         "versions": "Versiones (@versions)", "members": "Miembros (@members)",
+         "screen": "Render de la interfaz, sin valores (@screen)", "other": "Otras respuestas (@other)"}
 
 
 def load(p: Path):
@@ -152,6 +155,8 @@ def scrub(x, users: dict[str, str], notes: set[str] | None = None, names: dict[s
                 out[k] = users.get(str(v).strip(), USER_PH)
             elif is_user and k in ("name", "value", "username", "id") and isinstance(v, str):
                 out[k] = users.get(v.strip(), USER_PH)
+            elif isinstance(v, str) and v not in names:
+                out[k] = scrub_text(v, users, notes, k)
             else:
                 out[k] = scrub(v, users, notes, names)
         return out
@@ -160,12 +165,60 @@ def scrub(x, users: dict[str, str], notes: set[str] | None = None, names: dict[s
     if isinstance(x, str):
         if x in names:
             return f"{x} ‹{names[x]}›"
-        x = sensitive(x, notes)
-        for u, label in users.items():
-            if u in x:
-                x = re.sub(rf"(?<![\w.]){re.escape(u)}(?![\w])", label, x)
-        return x
+        return scrub_text(x, users, notes)
     return x
+
+
+def scrub_text(x: str, users: dict[str, str], notes: set[str], key: str = "") -> str:
+    x = sensitive(x, notes, key)
+    for u, label in users.items():
+        if u in x:
+            x = re.sub(rf"(?<![\w.]){re.escape(u)}(?![\w])", label, x)
+    return x
+
+
+SCREEN_KEEP = {"type", "label", "title", "heading", "columns", "instructions", "placeholder", "tooltip",
+               "buttonLabel", "componentType", "caption", "labels"}
+
+
+def redact_screen(x, key: str = ""):
+    """Render de una interfaz: conserva la estructura y las etiquetas; los valores (que pueden ser datos reales
+    evaluados: recuentos, filas) se sustituyen por ‹valor›."""
+    if isinstance(x, dict):
+        return {k: redact_screen(v, k) for k, v in x.items()}
+    if isinstance(x, list):
+        if key in SCREEN_KEEP and all(isinstance(v, str) for v in x):
+            return x
+        return [redact_screen(v, key) for v in x]
+    if isinstance(x, str) and key in SCREEN_KEEP:
+        return x
+    return "‹valor›" if x not in (None, "", [], {}) else x
+
+
+def history_summary(data, users: dict[str, str]) -> str:
+    """Una línea con lo que dicen las ejecuciones: total, estados, fechas y grupo de quien las inicia."""
+    lst = data if isinstance(data, list) else next((v for v in (data.values() if isinstance(data, dict) else [])
+                                                    if isinstance(v, list)), None)
+    if not isinstance(lst, list) or not lst:
+        return ""
+    total = next((data.get(k) for k in ("totalCount", "total", "count") if isinstance(data, dict) and isinstance(data.get(k), int)), None)
+    estados, fechas, inic = defaultdict(int), [], defaultdict(int)
+    for it in lst:
+        if not isinstance(it, dict):
+            continue
+        estados[str(it.get("status") or it.get("state") or "?")] += 1
+        for k, v in it.items():
+            if isinstance(v, str) and re.match(r"\d{4}-\d{2}-\d{2}", v) and "time" in k.lower():
+                fechas.append(v[:16])
+            if USER_KEY.match(k) and isinstance(v, str):
+                inic[v if v.startswith("‹") else users.get(v, USER_PH)] += 1
+    partes = [f"{len(lst)} instancias en la muestra" + (f" de {total}" if total else "")]
+    partes.append("estados: " + ", ".join(f"{k} {n}" for k, n in sorted(estados.items())))
+    if fechas:
+        partes.append(f"inicio entre {min(fechas)} y {max(fechas)}")
+    if inic:
+        partes.append("iniciadas por: " + ", ".join(f"{k} ({n})" for k, n in sorted(inic.items())))
+    return "Resumen: " + "; ".join(partes) + "."
 
 
 def extract_code(x) -> tuple[object, list[tuple[str, str]]]:
@@ -192,6 +245,23 @@ def numbered(code: str) -> str:
     return "\n".join(f"{i:>{w}}  {line}" for i, line in enumerate(lines, 1))
 
 
+NODE_NAMES: dict[str, str] = {}
+
+
+def load_node_names(raw: Path) -> None:
+    """Nombres de los tipos de nodo desde el catálogo de entorno, si la extracción lo trae."""
+    for f in (raw / "_env").glob("*.json") if (raw / "_env").exists() else []:
+        try:
+            data = unwrap(load(f).get("response"))
+        except Exception:  # noqa: BLE001
+            continue
+        for v in (data.values() if isinstance(data, dict) else [data]):
+            if isinstance(v, list):
+                for it in v:
+                    if isinstance(it, dict) and it.get("id") and (it.get("name") or it.get("label")):
+                        NODE_NAMES[str(it["id"])] = str(it.get("name") or it.get("label"))
+
+
 def node_table(defn) -> list[str]:
     nodes = defn.get("nodes") if isinstance(defn, dict) else None
     if not isinstance(nodes, list) or not nodes:
@@ -205,7 +275,9 @@ def node_table(defn) -> list[str]:
             conns = ", ".join(str(c.get("target", c.get("id", c)) if isinstance(c, dict) else c) for c in conns)
         pick = lambda *ks: next((n[k] for k in ks if n.get(k) not in (None, "")), "")  # noqa: E731
         name = str(pick("name", "objectName", "label")).replace("|", "/")
-        rows.append(f"| {pick('id', 'nodeId')} | `{pick('type', 'objectType', 'nodeType')}` | {name} | {conns or '—'} |")
+        tipo = str(pick("type", "objectType", "nodeType"))
+        tipo_txt = f"{NODE_NAMES[tipo]} (`{tipo}`)" if tipo in NODE_NAMES else f"`{tipo}`"
+        rows.append(f"| {pick('id', 'nodeId')} | {tipo_txt} | {name} | {conns or '—'} |")
     return rows + [""]
 
 
@@ -226,13 +298,14 @@ def main(salida_dir: str) -> int:
         shutil.rmtree(anexo)
     users = user_labels(users_seen(trabajo / "mcp_raw"), trabajo, inv)
     names = {o["uuid"]: o.get("name") for objs in inv.get("objects", {}).values() for o in objs if o.get("uuid")}
+    load_node_names(trabajo / "mcp_raw")
     por_tipo: dict[str, list] = defaultdict(list)
     fecha = (inv.get("source") or {}).get("extractedAt") or inv.get("generatedAt") or ""
     for tipo, objs in inv.get("objects", {}).items():
         if tipo == "application":
             continue
         for o in objs:
-            extra = [f for f in o.get("files", []) if f.get("ok") and f.get("role") in ROLES]
+            extra = [f for f in o.get("files", []) if f.get("role") in ROLES]
             resp = None
             if o.get("detail") == "full" and o.get("path"):
                 try:
@@ -245,12 +318,12 @@ def main(salida_dir: str) -> int:
             body, blocks = extract_code(scrub(resp, users, notes, names)) if resp is not None else (None, [])
             slug = o.get("slug") or re.sub(r"[^A-Za-z0-9_-]", "_", o.get("name", "objeto"))
             rel = Path(tipo) / f"{slug}.md"
-            lines = [MARCA, f"# {o.get('name')}", "",
+            head = [MARCA, f"# {o.get('name')}", "",
                      f"> {TIPOS.get(tipo, tipo)}. Definición tal como la devolvió el entorno (solo lectura)"
                      f"{', ' + fecha[:10] if fecha else ''}. Secretos enmascarados (***); cada usuario aparece como los grupos "
                      "de la aplicación a los que pertenece."
-                     + "".join(" " + n for n in sorted(notes)), ""]
-            lines += node_table(body if isinstance(body, dict) else {})
+                     ]
+            lines = node_table(body if isinstance(body, dict) else {})
             if blocks:
                 lines += ["## Expresiones", ""]
                 for i, (path, code) in enumerate(blocks, 1):
@@ -261,14 +334,40 @@ def main(salida_dir: str) -> int:
                 lines += ["La extracción no trae la definición de este objeto.", ""]
             for f in sorted(extra, key=lambda f: (list(ROLES).index(f["role"]), f.get("tool", ""))):
                 try:
-                    data = unwrap(load(trabajo / f["path"]).get("response"))
+                    raw = load(trabajo / f["path"])
                 except Exception:  # noqa: BLE001
                     continue
-                lines += [f"## {ROLES[f['role']]}: `{f.get('tool')}`", "", "```json",
-                          json.dumps(scrub(data, users, notes, names), ensure_ascii=False, indent=2), "```", ""]
+                titulo = f"## {ROLES[f['role']]}: `{f.get('tool')}`"
+                if not f.get("ok"):
+                    err = scrub_text(str((raw.get("_meta") or {}).get("error") or "sin detalle"), users, notes)[:300]
+                    lines += [titulo, "", f"No disponible: la plataforma respondió con un error ({err}).", ""]
+                    continue
+                data = unwrap(raw.get("response"))
+                data = redact_screen(data) if f["role"] == "screen" else scrub(data, users, notes, names)
+                resumen = history_summary(data, users) if f["role"] == "history" else ""
+                lines += [titulo, ""] + ([resumen, ""] if resumen else []) + \
+                         ["```json", json.dumps(data, ensure_ascii=False, indent=2), "```", ""]
+            head[-1] += "".join(" " + n for n in sorted(notes))
             (anexo / tipo).mkdir(parents=True, exist_ok=True)
-            (anexo / rel).write_text("\n".join(lines), encoding="utf-8")
+            (anexo / rel).write_text("\n".join(head + [""] + lines), encoding="utf-8")
             por_tipo[tipo].append((o.get("name"), rel.as_posix()))
+    app = (inv.get("objects", {}).get("application") or [{}])[0]
+    app_files = sorted((trabajo / "mcp_raw" / "_app").glob("*.json")) if (trabajo / "mcp_raw" / "_app").exists() else []
+    if app_files:
+        notes = set()
+        al = []
+        for f in app_files:
+            try:
+                data = unwrap(load(f).get("response"))
+            except Exception:  # noqa: BLE001
+                continue
+            al += [f"## `{f.stem}`", "", "```json", json.dumps(scrub(data, users, notes, names), ensure_ascii=False, indent=2), "```", ""]
+        slug = app.get("prefix") or re.sub(r"[^A-Za-z0-9_-]", "_", str(app.get("name", "aplicacion")))
+        (anexo / "application").mkdir(parents=True, exist_ok=True)
+        (anexo / "application" / f"{slug}.md").write_text("\n".join(
+            [MARCA, f"# {app.get('name')}", "", "> Aplicación: respuestas de la plataforma sobre la aplicación (evidencias "
+             "«mcp:application/…@other:<herramienta>»)." + "".join(" " + n for n in sorted(notes)), ""] + al), encoding="utf-8")
+        por_tipo["application"].append((app.get("name"), f"application/{slug}.md"))
     anexo.mkdir(parents=True, exist_ok=True)
     idx = [MARCA, "# Anexo: definiciones originales", "",
            "> El código y la configuración de cada objeto tal como están en el entorno, para consultar el detalle sin "
@@ -279,7 +378,7 @@ def main(salida_dir: str) -> int:
         idx += [f"| {n} | [{Path(r).name}](./{r}) |" for n, r in sorted(por_tipo[tipo], key=lambda x: str(x[0]).lower())]
         idx.append("")
     idx += ["Las referencias entre objetos (evidencias «graph:») están en [grafo.md](./grafo.md). "
-            "El render de las interfaces (evidencias «@screen») no se incluye porque puede contener datos reales.", ""]
+            "El render de las interfaces (evidencias «@screen») se incluye sin valores (‹valor›), porque puede contener datos reales.", ""]
     (anexo / "indice.md").write_text("\n".join(idx), encoding="utf-8")
     graph_path = trabajo / "graph.json"
     if graph_path.exists():

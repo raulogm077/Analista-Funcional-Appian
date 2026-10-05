@@ -53,6 +53,6 @@ Cada proceso tiene su documento (paso a paso, tareas, datos y hallazgos) y su di
 
 ## Cobertura y límites
 
-- Excepciones, alertas y escalados de los nodos: la extracción no los devuelve; pendiente de validar en cada proceso ❓.
-- {{Uso real: entorno y si es producción; qué permite y qué no la muestra de ejecuciones.}}
+- Excepciones, alertas y escalados de los nodos: la extracción no los devuelve ([LEEME](../LEEME.md)); cada proceso dice dónde importa ❓.
+- {{Uso real: una línea con lo que la muestra no permite concluir en estos procesos; el entorno y la muestra, en [LEEME](../LEEME.md).}}
 - {{Diagramas sin imagen (se muestra el bloque mermaid): lista de procesos}}.

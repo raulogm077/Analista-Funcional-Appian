@@ -143,7 +143,8 @@ def test_annex(built):
     form = (anexo / "interface" / "DEM_SolicitudForm.md").read_text(encoding="utf-8")
     assert "\n1  =a!formLayout" in form or "\n 1  =a!formLayout" in form          # líneas numeradas
     assert "recordType!DEM Solicitud.fields.titulo" in form and "recordType!{" not in form
-    assert "| 3 | `internal3.subprocess` |" in (anexo / "processModel" / "DEM_Alta_Solicitud.md").read_text(encoding="utf-8")
+    alta_txt = (anexo / "processModel" / "DEM_Alta_Solicitud.md").read_text(encoding="utf-8")
+    assert "| 3 | Sub-Process (`internal3.subprocess`) |" in alta_txt or "| 3 | `internal3.subprocess` |" in alta_txt
     blob = "\n".join(f.read_text(encoding="utf-8") for f in anexo.rglob("*.md"))
     for leak in ("marta.ruiz", "ana.garcia", "admin.dem", "P4ssw0rd", "sk_live_51Hc9", "svc_erp", "***:***@", "ENMASCARADO"):
         assert leak not in blob, leak
@@ -153,7 +154,13 @@ def test_annex(built):
     alta = (anexo / "processModel" / "DEM_Alta_Solicitud.md").read_text(encoding="utf-8")
     assert "## Ejecuciones (@history)" in alta and "## Quién lo usa (@dependents)" in alta
     assert "‹usuario de DEM" in alta                                    # el usuario se sustituye por sus grupos
-    assert "@screen" not in "".join(l for l in blob.splitlines() if l.startswith("## "))   # el render no se publica
+    dash = (anexo / "interface" / "DEM_Dashboard.md").read_text(encoding="utf-8")
+    assert "(@screen)" in dash and "‹valor›" in dash and '"12"' not in dash and '"40"' not in dash   # render sin valores
+    if '"instances"' in alta:                                       # variante con instancias: resumen por grupo
+        assert "Resumen: 20 instancias en la muestra" in alta and "iniciadas por: ‹usuario de DEM" in alta
+    assert "No disponible: la plataforma respondió con un error" in (anexo / "cdt" / "DEM_SolicitudDTO.md").read_text(encoding="utf-8")
+    assert "credenciales embebidas" in (anexo / "connectedSystem" / "DEM_CS_ERP.md").read_text(encoding="utf-8")
+    assert (anexo / "application" / "DEM.md").exists()
     assert "La extracción no trae la definición" in (anexo / "cdt" / "DEM_SolicitudDTO.md").read_text(encoding="utf-8")
     grafo = (anexo / "grafo.md").read_text(encoding="utf-8")
     assert "| DEM Alta Solicitud | subProcess | DEM Revisar Solicitud | dependents |" in grafo

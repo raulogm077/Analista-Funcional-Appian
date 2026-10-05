@@ -91,4 +91,4 @@ Evidencia: `mcp:{{tipo}}/{{nombre}}#{{ubicación}}` · Certeza: ✅/🔵/❓
 
 ## Cobertura y límites
 
-- {{Qué no se pudo obtener o verificar y por qué, p. ej. «Sin historial de ejecuciones: el uso real no se puede medir» o «Role map no disponible: actores deducidos de tareas y visibilidad de páginas».}}
+- {{Qué no se pudo obtener o verificar y por qué, p. ej. «Sin historial de ejecuciones: el uso real no se puede medir» o «Role map no disponible: actores deducidos de tareas y visibilidad de páginas». Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}

@@ -13,7 +13,7 @@ Cómo traducir un process model de Appian a BPMN 2.0 y a su diagrama. Lo usa pro
 
 `<slug>` es el del process model en `inventory.json`. Cómo se recorre cada vía, en `agents/process-modeler.md`.
 
-El `.bpmn` es BPMN 2.0 estándar con coordenadas de dibujo (BPMN DI). Se abre en **Camunda Modeler** (Archivo → Abrir) y en **bpmn.io** (arrastrar el fichero a https://demo.bpmn.io). Estas herramientas no calculan el dibujo: sin DI no muestran nada. Por eso, en la vía propia, el agente escribe el XML semántico y `scripts/bpmn_layout.py` añade el resto; en la vía draw.io, el `.bpmn` lo exporta esa skill con las posiciones del dibujo.
+El `.bpmn` es BPMN 2.0 estándar con coordenadas de dibujo (BPMN DI). Se abre en **Camunda Modeler** (Archivo → Abrir) y en **bpmn.io** (arrastrar el fichero a https://demo.bpmn.io). Estas herramientas no calculan el dibujo: sin DI no muestran nada. Por eso el agente escribe el XML semántico y `scripts/bpmn_layout.py` añade el resto. Es así también cuando la imagen se dibuja en draw.io: la exportación BPMN de esa skill simplifica (sin temporizador de inicio ni llamada a proceso), así que el `.bpmn` sale siempre de aquí.
 
 ---
 
@@ -151,5 +151,5 @@ Reglas:
 Después:
 
 1. `xmllint --noout <slug>.bpmn`, si está disponible.
-2. `python3 <skill>/scripts/bpmn_layout.py <salida>/08-procesos-bpmn` (o un fichero concreto). Completa `incoming`/`outgoing`, crea la colaboración y el pool si hay carriles sin ellos, dibuja de izquierda a derecha con un carril por lane y los sistemas externos como pools debajo, y escribe el `<bpmndi:BPMNDiagram>`. Se puede repetir: sustituye el DI anterior. No lo pases a un `.bpmn` de la vía draw.io: sustituiría las posiciones del dibujo.
+2. `python3 <skill>/scripts/bpmn_layout.py <salida>/08-procesos-bpmn` (o un fichero concreto). Completa `incoming`/`outgoing`, crea la colaboración y el pool si hay carriles sin ellos, dibuja de izquierda a derecha con un carril por lane y los sistemas externos como pools debajo, y escribe el `<bpmndi:BPMNDiagram>`. Se puede repetir: sustituye el DI anterior.
 3. Cada `.bpmn` tiene `bpmndi:BPMNDiagram`.

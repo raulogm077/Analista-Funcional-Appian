@@ -36,6 +36,10 @@ Arquitecto Appian sénior. Con lo que ya está documentado, escribes **cómo con
 
 **Nomenclatura.** Sigue la guía oficial de nombres de objetos de Appian (confírmala en el Docs MCP y cita la URL); no inventes una convención propia.
 
+**Ciclo de vida.** Si la entidad principal tiene estados, una tabla de transiciones objetivo (estado, evento que entra, proceso que lo escribe, siguientes) y, al lado, si existe hoy. Una sola fuente para los estados: 11, 12 y 13 enlazan aquí.
+
+**Reconstrucción en una aplicación nueva.** Siempre, sea cual sea la estrategia: migración de datos, corte (tareas y procesos en curso), contratos externos (alias de Web API, integraciones), cuentas y grupos nuevos, y retirada de la aplicación actual.
+
 **Orden de construcción.** Coherente con las fases de 13: datos y seguridad base, reglas, integraciones, interfaces, procesos y pruebas (los criterios de aceptación de 12).
 
 **Proporción.** En apps grandes, diseña en detalle lo que cambia y lo de prioridad Alta; lo que se mantiene igual va en el catálogo con su enlace al documento actual. Longitud orientativa en `presentation-rules.md`, Regla 9.

@@ -88,7 +88,7 @@ Evidencia: mcp:<tipo>/<nombre>[@<rol>]#<ubicación>
 - Ejemplos: `mcp:processModel/DEM Alta Solicitud#nodes[id=2]`, `mcp:interface/DEM_SolicitudForm#expression (línea 4)`, `mcp:processModel/DEM Alta Solicitud@history#totalCount`, `mcp:interface/DEM_SolicitudForm@screen#contents[0]`.
 - Si la conclusión viene de un documento oficial: `Fuente: <URL de docs.appian.com>`.
 - Si es inferida, márcala 🔵 y explica en una línea de qué se infiere.
-- El lector encuentra cada objeto en `anexo/<tipo>/<slug>.md`: la definición (con «línea N» numerada) y el resto de respuestas (`@dependents`, `@history`, `@versions`, `@validation`, `@members`, `@other`), con los usuarios sustituidos por sus grupos. Las referencias `graph:` están en `anexo/grafo.md`. `@screen` no se publica: si una conclusión solo sale del render, dilo en el texto. Cuando ayude, enlaza la ficha del anexo.
+- El lector encuentra cada objeto en `anexo/<tipo>/<slug>.md`: la definición (con «línea N» numerada) y el resto de respuestas (`@dependents`, `@history`, `@versions`, `@validation`, `@members`, `@other`), con los usuarios sustituidos por sus grupos; las respuestas fallidas aparecen como «No disponible» con su error. `@screen` aparece sin valores (estructura y etiquetas). La aplicación tiene su ficha en `anexo/application/` y las referencias `graph:` están en `anexo/grafo.md`. Enlaza la ficha del anexo en la evidencia (`presentation-rules.md`, Regla 5).
 
 ## Qué no está disponible por Dev MCP
 
