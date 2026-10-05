@@ -144,8 +144,10 @@ def test_annex(built):
     assert "recordType!DEM Solicitud.fields.titulo" in form and "recordType!{" not in form
     assert "| 3 | `internal3.subprocess` |" in (anexo / "processModel" / "DEM_Alta_Solicitud.md").read_text(encoding="utf-8")
     blob = "\n".join(f.read_text(encoding="utf-8") for f in anexo.rglob("*.md"))
-    for leak in ("marta.ruiz", "ana.garcia", "admin.dem", "P4ssw0rd", "sk_live_51Hc9", "svc_erp"):
+    for leak in ("marta.ruiz", "ana.garcia", "admin.dem", "P4ssw0rd", "sk_live_51Hc9", "svc_erp", "***:***@", "ENMASCARADO"):
         assert leak not in blob, leak
+    erp = (anexo / "connectedSystem" / "DEM_CS_ERP.md").read_text(encoding="utf-8")
+    assert "https://erp.example.org/api" in erp and "credenciales embebidas" in erp
     assert "[DEM_SolicitudForm.md](./interface/DEM_SolicitudForm.md)" in (anexo / "indice.md").read_text(encoding="utf-8")
     assert run().returncode == 0                                   # repetible
     (anexo / "indice.md").write_text("mío")                        # un anexo ajeno no se borra

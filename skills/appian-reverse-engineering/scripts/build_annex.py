@@ -34,6 +34,27 @@ USER_KEY = re.compile(r"(?i)^(user(name|id)?|login|initiator|startedby|starter|(
 CODE_HINT = re.compile(r"a!|rule!|cons!|local!|ri!|fv!|pv!|recordType!|\bif\(|=\s*\{")
 UUID_REF = re.compile(r"(?<=[!.])\{[^{}\s]{8,}\}")
 USER_PH = "‹usuario›"
+# Cómo se escriben los datos sensibles en un entregable (references/security-rules.md):
+URL_CREDS = re.compile(r"(https?://)\*+:\*+@")                 # credenciales ya enmascaradas: se retiran
+MASKED = re.compile(r"\*\*\*ENMASCARADO\*\*\*")
+URL_HOST = re.compile(r"(https?://)([^/\s:'\"?#]+)")
+INTERNAL_HOST = re.compile(r"^(10\.\d+\.\d+\.\d+|127\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+"
+                           r"|localhost|[^.]+|.+\.(local|internal|corp|intra))$", re.I)
+
+
+def sensitive(text: str, notes: set[str]) -> str:
+    """Quita credenciales de las URLs, deja los secretos como *** y oculta los hosts internos."""
+    if URL_CREDS.search(text):
+        notes.add("Se han retirado las credenciales embebidas en una URL.")
+        text = URL_CREDS.sub(r"\1", text)
+    text = MASKED.sub("***", text)
+
+    def host(m):
+        if INTERNAL_HOST.match(m.group(2)):
+            notes.add("Los hosts internos se muestran como ‹host interno›.")
+            return m.group(1) + "‹host interno›"
+        return m.group(0)
+    return URL_HOST.sub(host, text)
 TIPOS = {"interface": "Interfaz", "expressionRule": "Regla de expresión", "processModel": "Modelo de proceso",
          "recordType": "Record type", "integration": "Integración", "connectedSystem": "Connected system",
          "webApi": "Web API", "constant": "Constante", "site": "Site", "group": "Grupo", "decision": "Decisión",
@@ -76,7 +97,8 @@ def users_seen(raw: Path) -> set[str]:
     return {u for u in found if u != USER_PH}
 
 
-def scrub(x, users: set[str]):
+def scrub(x, users: set[str], notes: set[str] | None = None):
+    notes = set() if notes is None else notes
     if isinstance(x, dict):
         is_user = str(x.get("type", x.get("kind", ""))).lower() == "user"
         out = {}
@@ -86,11 +108,12 @@ def scrub(x, users: set[str]):
             elif is_user and k in ("name", "value", "username", "id") and isinstance(v, str):
                 out[k] = USER_PH
             else:
-                out[k] = scrub(v, users)
+                out[k] = scrub(v, users, notes)
         return out
     if isinstance(x, list):
-        return [scrub(v, users) for v in x]
+        return [scrub(v, users, notes) for v in x]
     if isinstance(x, str):
+        x = sensitive(x, notes)
         for u in users:
             if u in x:
                 x = re.sub(rf"(?<![\w.]){re.escape(u)}(?![\w])", USER_PH, x)
@@ -168,13 +191,15 @@ def main(salida_dir: str) -> int:
                 resp = unwrap(load(src).get("response"))
             except Exception:  # noqa: BLE001
                 continue
-            clean = scrub(resp, users)
+            notes: set[str] = set()
+            clean = scrub(resp, users, notes)
             body, blocks = extract_code(clean)
             slug = o.get("slug") or re.sub(r"[^A-Za-z0-9_-]", "_", o.get("name", "objeto"))
             rel = Path(tipo) / f"{slug}.md"
             lines = [MARCA, f"# {o.get('name')}", "",
                      f"> {TIPOS.get(tipo, tipo)}. Definición tal como la devolvió el entorno (solo lectura)"
-                     f"{', ' + fecha[:10] if fecha else ''}. Secretos enmascarados y usuarios omitidos.", ""]
+                     f"{', ' + fecha[:10] if fecha else ''}. Secretos enmascarados (***) y usuarios omitidos."
+                     + "".join(" " + n for n in sorted(notes)), ""]
             lines += node_table(body if isinstance(body, dict) else {})
             if blocks:
                 lines += ["## Expresiones", ""]
