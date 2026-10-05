@@ -70,15 +70,13 @@ Ficheros en `<salida>/08-procesos-bpmn/`: `<slug>.bpmn`, `<slug>.mmd` y `<slug>.
 
 ### Vía draw.io (opcional)
 
-
-En esta vía, las tareas de integración y las desatendidas van en el carril «Sistema»; un sistema externo solo tiene carril propio si en el proceso hace algo visible (por ejemplo, un evento de mensaje que responde). Los fines van en el carril del resultado de negocio, no en el de un sistema externo.
 Ficheros en `<salida>/08-procesos-bpmn/`: `<slug>.drawio` (editable en draw.io), `<slug>.png` (la imagen del documento), `<slug>.json` (el proceso tal como lo conoce esa skill; lo escribe ella y no se edita) y `<slug>.bpmn`. No hay `.mmd` ni `.svg`.
 
 Lee antes la `SKILL.md` de esa skill (`<diagramas>` es su carpeta): formato del JSON, órdenes, avisos y límites. Después, por cada proceso:
 
 1. Escribe `<trabajo>/procesos/<slug>.json` con la columna «JSON draw.io» de `bpmn-mapping.md`:
    - `proceso`: el nombre del process model.
-   - `carriles`: los grupos asignados, «Sistema» y un carril por sistema externo, en ese orden (esta vía no tiene flujos de mensaje: la tarea de integración va en el carril de su sistema).
+   - `carriles`: los grupos asignados y «Sistema», en ese orden. Las tareas de integración y las desatendidas van en «Sistema» (esta vía no tiene flujos de mensaje; el sistema externo se nombra en la tarea y se explica en el `.md`). Un sistema externo solo tiene carril propio si en el proceso hace algo visible, por ejemplo un evento de mensaje que responde. Los fines van en el carril del resultado de negocio.
    - `pasos`: un código estable por tipo (`EV-01`, `ACT-01`, `GW-01`…), numerado en el orden de los `id` de los nodos Appian, con el `nombre` del nodo. `posicion` solo si la definición trae las coordenadas de los nodos, y entonces en todos los pasos.
    - `flujos`: los de `connections`; las salidas de cada pasarela con `etiqueta` (la condición).
 2. `python3 <diagramas>/scripts/diagrama.py crear <trabajo>/procesos/<slug>.json -o <salida>/08-procesos-bpmn/` → `.drawio`, `.png` y `.json`. Corrige los avisos de validación (salidas sin etiqueta, pasos sin entrada o salida). Si el `.drawio` ya existe de una ejecución anterior, usa `diagrama.py actualizar <slug>.drawio <trabajo>/procesos/<slug>.json`, que respeta lo editado a mano; si se niega porque hay cambios manuales sin aceptar, déjalo y dilo en tu informe. Nunca `--forzar` ni `--recolocar`.

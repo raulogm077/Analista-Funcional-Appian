@@ -56,7 +56,7 @@ Igual en las dos vías:
 Sistemas externos (uno por connected system de las integraciones que llama el proceso):
 
 - **Vía propia**: un `participant` sin `processRef` (pool caja negra) llamado `<sistema> (<connected system>)`, y un `messageFlow` desde la tarea de integración hasta él con la operación como `name`. Con participantes externos, el `.bpmn` lleva `collaboration` con un `participant` para el proceso (`processRef`) más los externos.
-- **Vía draw.io**: esa skill no tiene flujos de mensaje; cada sistema externo es un carril más, debajo de «Sistema», y la tarea de integración va en él.
+- **Vía draw.io**: esa skill no tiene flujos de mensaje. La tarea de integración va en «Sistema» y nombra el sistema externo; el sistema externo solo tiene carril propio si en el proceso hace algo visible (un evento de mensaje que responde).
 - **Diagrama Mermaid**: un `subgraph` con un solo nodo `:::external` y flecha discontinua desde la tarea de integración (ver `mermaid-rules.md`).
 
 Si el único carril sería «Sistema» y no hay sistemas externos, el `.bpmn` va sin `laneSet` ni `collaboration` y el Mermaid sin `subgraph`.
