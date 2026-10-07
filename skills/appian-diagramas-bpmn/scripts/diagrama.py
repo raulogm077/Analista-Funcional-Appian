@@ -17,6 +17,7 @@ import argparse, json, os, pathlib, sys, tempfile
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import colocacion  # noqa: E402
 import drawio_modelo as dm  # noqa: E402
 import navegador  # noqa: E402
 
@@ -35,6 +36,10 @@ def _json_compacto(proc):
     partes = [f'  "proceso": {linea(proc.get("proceso", ""))}', f'  "carriles": {linea(proc["carriles"])}']
     partes.append('  "pasos": [\n' + ",\n".join("    " + linea(p) for p in proc["pasos"]) + "\n  ]")
     partes.append('  "flujos": [\n' + ",\n".join("    " + linea(f) for f in proc["flujos"]) + "\n  ]")
+    if proc.get("externos"):
+        partes.append(f'  "externos": {linea(proc["externos"])}')
+    if proc.get("notas"):
+        partes.append('  "notas": [\n' + ",\n".join("    " + linea(n) for n in proc["notas"]) + "\n  ]")
     if proc.get("colocacion"):
         partes.append(f'  "colocacion": {linea(proc["colocacion"])}')
     return "{\n" + ",\n".join(partes) + "\n}\n"
@@ -55,8 +60,15 @@ def _limpio(proc, geo=None):
             g["etiqueta"] = f["etiqueta"]
         if f.get("discontinuo"):
             g["discontinuo"] = True
+        if f.get("defecto"):
+            g["defecto"] = True
         flujos.append(g)
-    return {"proceso": proc.get("proceso", ""), "carriles": list(proc["carriles"]), "pasos": pasos, "flujos": flujos}
+    out = {"proceso": proc.get("proceso", ""), "carriles": list(proc["carriles"]), "pasos": pasos, "flujos": flujos}
+    if proc.get("externos"):
+        out["externos"] = list(proc["externos"])
+    if proc.get("notas"):
+        out["notas"] = [{"paso": n["paso"], "texto": n.get("texto", "")} for n in proc["notas"]]
+    return out
 
 
 def _escribir_json(proc, ruta, drawio=None, automatica=False):
@@ -82,10 +94,20 @@ def _informe_validacion(proc):
     return not err
 
 
+ANCHO_PNG_MAX = 3200   # px del PNG: más no se aprecia en un documento y solo pesa
+
+
 def _png(drawio):
     f = dm.Fichero(str(drawio))
     png = pathlib.Path(drawio).with_suffix(".png")
-    navegador.pintar_png(f.xml_modelo(), png)
+    _, geo, _ = f.leer()
+    ancho = max([x + w for _, _, x, w, _ in geo["carriles"].values()] +
+                [x + w for _, _, x, w, _ in geo.get("externos", {}).values()] + [1])
+    aviso = colocacion.aviso_ancho(ancho)
+    if aviso:
+        print(f"aviso: {aviso}")
+    escala = max(0.75, min(2.0, ANCHO_PNG_MAX / (ancho + 24)))   # nítido en un documento, sin pesar de más
+    navegador.pintar_png(f.xml_modelo(), png, escala=escala)
     return png
 
 
@@ -116,6 +138,15 @@ def _geometria_por_posiciones(proc):
     return geo
 
 
+def _colocar(proc, posiciones=True):
+    """Geometría completa: la del motor (o la de las posiciones dadas) ajustada para que nada se pise."""
+    if posiciones and all(p.get("posicion") for p in proc["pasos"]):
+        geo = _geometria_por_posiciones(proc)
+    else:
+        geo = navegador.colocar(proc, dm.EVENTOS, dm.PUERTAS, dm.CABECERA)
+    return colocacion.ajustar(proc, geo, dm.TAM, dm.EVENTOS, dm.PUERTAS, dm.CABECERA)
+
+
 def crear(a):
     proc = dm.cargar_json(a.proceso)
     if not _informe_validacion(proc):
@@ -129,10 +160,7 @@ def crear(a):
         print(f"ERROR: {destino} ya existe. Para cambiarlo usa «actualizar» (respeta lo editado a mano) "
               "o repite con --forzar para rehacerlo entero.", file=sys.stderr)
         return 1
-    if all(p.get("posicion") for p in proc["pasos"]):
-        geo = _geometria_por_posiciones(proc)
-    else:
-        geo = navegador.colocar(proc, dm.EVENTOS, dm.PUERTAS, dm.CABECERA)
+    geo = _colocar(proc)
     drawio, png, js = _rutas(destino)
     dm.escribir_drawio(proc, geo, drawio)
     _escribir_json(proc, js, drawio, automatica=True)
@@ -192,10 +220,18 @@ class Editor:
         y, h, x, w, _ = self.geo["carriles"][nombre]
         return x, y, w, h
 
+    def ref(self, nombre):
+        """Id de la celda de un paso o de un participante externo."""
+        e = self.geo.get("externos", {}).get(nombre)
+        return e[4] if e else nombre
+
+    def _externos_ids(self):
+        return {g[4] for g in self.geo.get("externos", {}).values()}
+
     # -- operaciones de geometría global
     def desplazar_derecha(self, desde_x, dx):
         """Hace sitio: todo lo que está a la derecha de desde_x se mueve dx; los carriles se ensanchan."""
-        carriles = {g[4] for g in self.geo["carriles"].values()}
+        carriles = {g[4] for g in self.geo["carriles"].values()} | self._externos_ids()
         for el, cell in self.f.celdas():
             cid = el.get("id")
             g = cell.find("mxGeometry")
@@ -249,6 +285,8 @@ class Editor:
             estilo = ultimo.get("style") or dm.ESTILO_CARRIL
         else:
             padre, gx, gy, w, estilo = "1", 0.0, 0.0, 800.0, dm.ESTILO_CARRIL
+        if self.geo.get("externos"):   # los participantes externos, debajo de los carriles, bajan para hacer sitio
+            self.desplazar_abajo(gy, dm.ALTO_CARRIL)
         nuevo_id = self._id_libre("carril-")
         cell = ET.SubElement(self.f.root, "mxCell", {"id": nuevo_id, "value": nombre, "style": estilo, "vertex": "1", "parent": padre})
         ET.SubElement(cell, "mxGeometry", {"x": f"{gx:.0f}", "y": f"{gy:.0f}", "width": f"{w:.0f}",
@@ -280,8 +318,12 @@ class Editor:
         return f"{prefijo}{n}"
 
     def quitar_paso(self, pid):
+        notas = set(self.geo.get("ids_nota", []))
         quitar = {pid} | {el.get("id") for el, cell in self.f.celdas()
                           if cell.get("source") == pid or cell.get("target") == pid or cell.get("parent") == pid}
+        quitar |= {cell.get("source") for el, cell in self.f.celdas()   # sus notas
+                   if cell.get("target") == pid and cell.get("source") in notas}
+        quitar |= {cell.get("target") for el, cell in self.f.celdas() if cell.get("source") == pid and cell.get("target") in notas}
         for el, cell in list(self.f.celdas()):
             if el.get("id") in quitar:
                 self.f.root.remove(el)
@@ -384,8 +426,76 @@ class Editor:
                     return False
         return True
 
+    # -- participantes externos y notas
+    def anadir_externo(self, nombre):
+        cajas = [(y, h, x, w) for y, h, x, w, _ in list(self.geo["carriles"].values()) + list(self.geo.get("externos", {}).values())]
+        y = max((a + b for a, b, _, _ in cajas), default=0) + colocacion.EXTERNO_HUECO
+        x = min((c for _, _, c, _ in cajas), default=0)
+        w = max((c + d for _, _, c, d in cajas), default=800) - x
+        cell = ET.SubElement(self.f.root, "mxCell", {"id": self._id_libre("externo-"), "value": nombre, "style": dm.ESTILO_EXTERNO,
+                                                     "vertex": "1", "parent": "1"})
+        ET.SubElement(cell, "mxGeometry", {"x": f"{x:.0f}", "y": f"{y:.0f}", "width": f"{w:.0f}",
+                                           "height": str(colocacion.EXTERNO_ALTO), "as": "geometry"})
+        self.recargar()
+
+    def quitar_externo(self, nombre):
+        cid = self.ref(nombre)
+        for el, cell in list(self.f.celdas()):
+            if el.get("id") == cid or cell.get("source") == cid or cell.get("target") == cid:
+                self.f.root.remove(el)
+        self.recargar()
+
+    def anadir_nota(self, n):
+        """Una nota nueva encima de su paso (debajo si no cabe en el carril), unida a él."""
+        paso = next(q for q in self.proc["pasos"] if q["id"] == n["paso"])
+        cx, cy = self.centro(n["paso"])
+        _, h = dm.TAM[paso["tipo"]]
+        alto = colocacion.alto_nota(n.get("texto"))
+        lx, ly = self._origen(self.carril_id(paso["carril"]))
+        x, y, w, hc = self.carril_caja(paso["carril"])
+        arriba = cy - h / 2 - colocacion.NOTA_HUECO - alto >= y + 4
+        ny = cy - h / 2 - colocacion.NOTA_HUECO - alto if arriba else cy + h / 2 + colocacion.NOTA_HUECO
+        nid = self._id_libre("NOTA-")
+        cell = ET.SubElement(self.f.root, "mxCell", {"id": nid, "value": n.get("texto", ""), "style": dm.ESTILO_NOTA,
+                                                     "vertex": "1", "parent": self.carril_id(paso["carril"])})
+        ET.SubElement(cell, "mxGeometry", {"x": f"{cx - lx - colocacion.NOTA_ANCHO / 2:.0f}", "y": f"{ny - ly:.0f}",
+                                           "width": str(colocacion.NOTA_ANCHO), "height": f"{alto:.0f}", "as": "geometry"})
+        e = ET.SubElement(self.f.root, "mxCell", {"id": self._id_libre("A"), "value": "", "edge": "1", "parent": "1",
+                                                  "style": dm.ESTILO_ASOCIACION + dm.entrada_asociacion("arriba" if arriba else "abajo"),
+                                                  "source": nid, "target": n["paso"]})
+        ET.SubElement(e, "mxGeometry", {"relative": "1", "as": "geometry"})
+        self.recargar()
+
+    def quitar_nota(self, n):
+        for nid, actual in zip(self.geo.get("ids_nota", []), self.proc.get("notas", [])):
+            if actual == n:
+                for el, cell in list(self.f.celdas()):
+                    if el.get("id") == nid or nid in (cell.get("source"), cell.get("target")):
+                        self.f.root.remove(el)
+                self.recargar()
+                return
+
+    def reajustar_mensajes(self):
+        """Los flujos de mensaje, en vertical entre su paso y su participante (tras mover o ensanchar)."""
+        ext = {g[4]: g for g in self.geo.get("externos", {}).values()}
+        for el, cell in self.f.celdas():
+            s, t = cell.get("source"), cell.get("target")
+            if cell.get("edge") != "1" or (s not in ext and t not in ext):
+                continue
+            paso, pool = (s, ext[t]) if t in ext else (t, ext[s])
+            if paso in ext:
+                continue
+            cx, _ = self.centro(paso)
+            rel = (cx - pool[2]) / pool[3] if pool[3] else 0.5
+            base = ";".join(x for x in (cell.get("style") or "").split(";")
+                            if x and not x.startswith(("exitX", "exitY", "exitDx", "exitDy", "entryX", "entryY", "entryDx", "entryDy")))
+            puntos = (f"exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX={rel:.4f};entryY=0;entryDx=0;entryDy=0;" if t in ext else
+                      f"exitX={rel:.4f};exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;")
+            cell.set("style", base + ";" + puntos)
+
     # -- flujos
     def quitar_flujo(self, de, a):
+        de, a = self.ref(de), self.ref(a)
         for el, cell in list(self.f.celdas()):
             if cell.get("edge") == "1" and cell.get("source") == de and cell.get("target") == a:
                 hijos = [e for e, c in self.f.celdas() if c.get("parent") == el.get("id")]
@@ -395,24 +505,32 @@ class Editor:
                 return
 
     def poner_flujo(self, f):
+        de, a = self.ref(f["de"]), self.ref(f["a"])
+        mensaje = de in self._externos_ids() or a in self._externos_ids()
         for el, cell in self.f.celdas():
-            if cell.get("edge") == "1" and cell.get("source") == f["de"] and cell.get("target") == f["a"]:
+            if cell.get("edge") == "1" and cell.get("source") == de and cell.get("target") == a:
                 for e, c in list(self.f.celdas()):  # etiquetas sueltas del flujo: se sustituyen por la etiqueta
                     if c.get("parent") == el.get("id") and c.get("vertex") == "1":
                         self.f.root.remove(e)
                 self.f.poner_etiqueta(el, cell, f.get("etiqueta", ""))
+                if mensaje:
+                    return
                 estilo = dm._estilo(cell.get("style"))
                 if bool(f.get("discontinuo")) != (estilo.get("dashed") == "1"):
                     base = ";".join(t for t in (cell.get("style") or "").split(";") if t and not t.startswith("dashed="))
                     cell.set("style", base + (";dashed=1;" if f.get("discontinuo") else ";"))
+                if bool(f.get("defecto")) != (estilo.get("startArrow") == "dash"):
+                    base = ";".join(t for t in (cell.get("style") or "").split(";")
+                                    if t and not t.startswith(("startArrow=", "startFill=", "startSize=")))
+                    cell.set("style", base + ";" + (dm.DEFECTO if f.get("defecto") else ""))
                 return
         n = 1
         usados = {el.get("id") for el, _ in self.f.celdas()}
         while f"F{n:02d}" in usados:
             n += 1
-        cell = ET.SubElement(self.f.root, "mxCell", {"id": f"F{n:02d}", "value": f.get("etiqueta", ""),
-                                                     "style": dm.ESTILO_FLUJO + ("dashed=1;" if f.get("discontinuo") else ""),
-                                                     "edge": "1", "parent": "1", "source": f["de"], "target": f["a"]})
+        estilo = dm.ESTILO_MENSAJE if mensaje else dm.estilo_flujo(f)
+        cell = ET.SubElement(self.f.root, "mxCell", {"id": f"F{n:02d}", "value": f.get("etiqueta", ""), "style": estilo,
+                                                     "edge": "1", "parent": "1", "source": de, "target": a})
         ET.SubElement(cell, "mxGeometry", {"relative": "1", "as": "geometry"})
 
     # -- ids
@@ -456,11 +574,19 @@ def aplicar(editor, nuevo):
                     p["carril"] = gemelo
     for c in anadidos:
         editor.anadir_carril(c)
+    # participantes externos: los quitados se van con sus flujos de mensaje; los nuevos, debajo de todo
+    ext_n = list(nuevo.get("externos") or [])
+    for e in actual.get("externos") or []:
+        if e not in ext_n:
+            editor.quitar_externo(e)
+    for e in ext_n:
+        if e not in (actual.get("externos") or []):
+            editor.anadir_externo(e)
     # 2. flujos que desaparecen y pasos que desaparecen
     clave = lambda f: (f["de"], f["a"])
     fn = {clave(f): f for f in nuevo["flujos"]}
     for f in actual["flujos"]:
-        if clave(f) not in fn and f["de"] in pn and f["a"] in pn:
+        if clave(f) not in fn and (f["de"] in pn or f["de"] in ext_n) and (f["a"] in pn or f["a"] in ext_n):
             editor.quitar_flujo(f["de"], f["a"])
     for pid in pa:
         if pid not in pn:
@@ -482,8 +608,18 @@ def aplicar(editor, nuevo):
     fa = {clave(f): f for f in actual["flujos"]}
     for k, f in fn.items():
         g = fa.get(k)
-        if g is None or (g.get("etiqueta", "") or "") != (f.get("etiqueta", "") or "") or bool(g.get("discontinuo")) != bool(f.get("discontinuo")):
+        if g is None or any((g.get(c) or "") != (f.get(c) or "") for c in ("etiqueta", "discontinuo", "defecto")):
             editor.poner_flujo(f)
+    editor.recargar()
+    # notas: las quitadas y las nuevas (encima de su paso)
+    notas_n = [{"paso": n["paso"], "texto": n.get("texto", "")} for n in nuevo.get("notas") or []]
+    for n in list(editor.proc.get("notas") or []):
+        if n not in notas_n:
+            editor.quitar_nota(n)
+    for n in notas_n:
+        if n not in (editor.proc.get("notas") or []):
+            editor.anadir_nota(n)
+    editor.reajustar_mensajes()
     editor.recargar()
     # 6. carriles vacíos
     for c in quitados:
@@ -504,7 +640,7 @@ def recolocar(editor, nuevo, drawio):
     antes = {el.get("id"): cell.get("style") for el, cell in editor.f.celdas()}
     tipos_antes = {p["id"]: p["tipo"] for p in editor.proc["pasos"]}
     carril_estilo = {n: antes.get(g[4]) for n, g in editor.geo["carriles"].items()}
-    geo = navegador.colocar(nuevo, dm.EVENTOS, dm.PUERTAS, dm.CABECERA)
+    geo = _colocar(nuevo, posiciones=False)
     with tempfile.TemporaryDirectory() as tmp:
         limpio = pathlib.Path(tmp) / "nuevo.drawio"
         dm.escribir_drawio(nuevo, geo, limpio)
@@ -521,7 +657,7 @@ def recolocar(editor, nuevo, drawio):
     for el, cell in f.celdas():
         cid = el.get("id")
         if cid in tipos_antes and any(p["id"] == cid and p["tipo"] == tipos_antes[cid] for p in nuevo["pasos"]) and antes.get(cid):
-            cell.set("style", antes[cid])
+            cell.set("style", dm.con_lado(antes[cid], geo["etiquetas"].get(cid)))   # el lado de la etiqueta es el nuevo
         if cell.get("vertex") == "1" and "swimlane" in (cell.get("style") or ""):
             ids_carril[cell.get("value")] = cell
     for nombre, cell in ids_carril.items():
