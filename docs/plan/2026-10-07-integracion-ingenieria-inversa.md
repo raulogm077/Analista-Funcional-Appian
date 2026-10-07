@@ -108,11 +108,11 @@ Lo que el diseño implica y ninguna prueba de tarea cubriría sola. Cada línea 
     `generar_app.py` de las galerías. Y `README.md`;
   - `docs/ingenieria-inversa/SPEC-v2-devmcp.md`: las dos líneas que citan una aplicación del cliente, sin su nombre.
 
-- [ ] **Paso 1: pruebas que fallan.** En `comprobar_plugin.py`, con copias temporales del plugin: una skill con
+- [x] **Paso 1: pruebas que fallan.** En `comprobar_plugin.py`, con copias temporales del plugin: una skill con
   `ejemplos/x/proyecto.md` da error, y otra con `tests/` también; `--completo --plugin <copia sin pruebas/>` pasa las
   pruebas del repositorio a esa copia. → FALLA.
-- [ ] **Paso 2:** mover, borrar y ajustar.
-- [ ] **Paso 3:** `python3 pruebas/comprobar_plugin.py --completo` en verde, con las mismas pruebas que antes salvo las
+- [x] **Paso 2:** mover, borrar y ajustar.
+- [x] **Paso 3:** `python3 pruebas/comprobar_plugin.py --completo` en verde, con las mismas pruebas que antes salvo las
   del caso borrado, que sustituye el prototipo de `autorizaciones`. `CLAUDE.md`, con los comandos nuevos. Commit
   «F2: las skills, sin proyectos ni pruebas dentro».
 

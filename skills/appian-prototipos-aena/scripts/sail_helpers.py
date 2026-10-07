@@ -8,7 +8,7 @@ Cada función devuelve el dict del componente SAIL con los valores de la guía (
 adaptado a AENA); los **kw sobrescriben o añaden parámetros SAIL reales. Nada de lo que devuelven es exclusivo
 del prototipo salvo los parámetros que empiezan por $.
 
-Bloques (cuándo usar cada uno: references/bloques.md; galería: examples/bloques/):
+Bloques (cuándo usar cada uno: references/bloques.md; galería: galerias/bloques/):
   página ........ page_header, breadcrumbs, hero_header, filter_bar, side_nav, content_card, section_card, subsection,
                   action_banner, empty_state, link_all, inline_stats
   datos ......... key_facts, field_summary, kpi, kpi_strip, kpi_sparkline, kpi_progress, two_line, doc_line, milestone,

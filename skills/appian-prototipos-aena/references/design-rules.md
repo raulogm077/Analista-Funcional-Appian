@@ -4,7 +4,7 @@ Esta guía adapta el **SAIL Design System** oficial de Appian (docs.appian.com/s
 
 El validador comprueba las reglas marcadas con ✔ y las muestra como avisos `UX ·`. Al final de la validación imprime la línea «Calidad UX: N avisos». El resto se revisa con la rúbrica (§17).
 
-Los bloques con los que se componen las pantallas (cabeceras, KPI, listas, grids con detalle, cards, IA, calendario, comentarios, kanban…) están en `references/bloques.md`, con cuándo usar cada uno; la galería navegable está en `examples/bloques/`. Los 147 componentes de interfaz de Appian 26.9, uno a uno y agrupados como en la documentación, están en `examples/componentes/`.
+Los bloques con los que se componen las pantallas (cabeceras, KPI, listas, grids con detalle, cards, IA, calendario, comentarios, kanban…) están en `references/bloques.md`, con cuándo usar cada uno; la galería navegable está en `galerias/bloques/`. Los 147 componentes de interfaz de Appian 26.9, uno a uno y agrupados como en la documentación, están en `galerias/componentes/`.
 
 ## 0. Antes de diseñar una pantalla
 

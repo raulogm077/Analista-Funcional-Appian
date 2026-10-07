@@ -20,9 +20,10 @@ Cada reunión, correo o comentario del cliente al DF se incorpora con un informe
 el analista: solo cambia lo afectado, en el funcional, el técnico, los diagramas y las pantallas.
 
 Sirve para cualquier proceso (acuerdos con terceros, medioambiente, servidumbres,
-informes, expedientes…): el dominio sale siempre de las fuentes del proyecto. Los
-casos y las plantillas del plugin son ejemplos de técnica, todos al mismo nivel
-(`skills/appian-prototipos-aena/examples/README.md`).
+informes, expedientes…): el dominio sale siempre de las fuentes del proyecto. Las
+plantillas y las galerías del plugin enseñan técnica, no un dominio
+(`skills/appian-prototipos-aena/galerias/README.md`), y el plugin no lleva ningún
+proyecto, tampoco de ejemplo.
 
 ## Qué hace cada skill
 
@@ -39,7 +40,7 @@ Cada petición entra por una sola skill. Las demás se usan desde ella, y se pas
 
 **Ingeniería inversa** (`appian-reverse-engineering`, se incorporará): lee una aplicación existente conectándose al entorno por MCP y deja su descripción y su auditoría en `as-is/`. La auditoría usa buenas prácticas en modo revisión y los procesos se dibujan con la skill de diagramas.
 
-`pruebas/comprobar_plugin.py` comprueba que todo esto se cumple: nombres y descripciones de las skills, ficheros y rutas que se citan entre ellas, servidores MCP, la regla de dudas de Appian y la versión.
+`pruebas/comprobar_plugin.py` comprueba que todo esto se cumple: nombres y descripciones de las skills, ficheros y rutas que se citan entre ellas, servidores MCP, la regla de dudas de Appian y la versión. También, que ninguna skill lleve pruebas, ejemplos ni un proyecto: las pruebas de cada skill y sus datos ficticios están en `pruebas/<skill>/`, que no va en el paquete.
 
 ## Requisitos
 
@@ -48,15 +49,17 @@ Cada petición entra por una sola skill. Las demás se usan desde ella, y se pas
 | **Claude (web o escritorio, sesiones en la nube)** | Nada: Python, Playwright, navegador, Node con `docx` y LibreOffice ya están |
 | **Claude Code** en el equipo | **Python 3.9+** (en Windows, el comando es `python`). Para diagramas, prueba de humo y capturas: `pip install playwright` (versión actual) y un navegador (`python -m playwright install chromium`, o Chrome / Edge ya instalados: no hace falta descargar nada más). Para el DF en Word: Node.js con el paquete `docx` (`npm install docx` en la carpeta de trabajo o `npm install -g docx`); LibreOffice para revisarlo. Opcional: `pdftotext` o `pip install pypdf` para PDF; LibreOffice y poppler para ver diapositivas de un DF |
 
-Comprobación rápida en un equipo nuevo: pide a Claude «comprueba que el plugin
-funciona en este equipo», o ejecuta desde la carpeta del plugin:
+Comprobación en un equipo nuevo: pide a Claude «comprueba que el plugin funciona
+en este equipo» con el repositorio del plugin abierto, o ejecuta desde él:
 
 ```bash
 python pruebas/comprobar_plugin.py --completo
 ```
 
-Comprueba que las skills encajan entre sí y pasa la prueba automática de cada una (`selftest.py` del
-analista, de los diagramas y de los prototipos; esta última tarda un par de minutos).
+Comprueba que las skills encajan entre sí y pasa las pruebas de cada una, que están en `pruebas/<skill>/`:
+el `selftest.py` del analista, de los diagramas y de los prototipos (este tarda un par de minutos) y las de
+ingeniería inversa, con pytest y `mcp` (si faltan y hay `uv`, los trae él). Con `--plugin <carpeta>` pasa
+esas pruebas a otra copia del plugin, por ejemplo la que se instala con el paquete, que no las lleva.
 
 Nada de lo anterior envía información del cliente fuera del equipo: Mermaid
 (licencia MIT) y el visor de draw.io (licencia Apache 2.0) van incluidos en el plugin

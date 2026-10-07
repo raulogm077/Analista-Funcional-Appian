@@ -4,7 +4,7 @@ La fuente de verdad de nombres, parámetros y valores válidos son los schemas d
 
 ## Se renderizan con aspecto Appian: los 147 componentes de Appian 26.9
 
-`schemas/catalogo-appian.json` lista las 147 funciones de interfaz de Appian 26.9 por categoría, como la documentación (docs.appian.com/suite/help/26.9/SAIL_Components.html). `selftest.py` comprueba que todas están en los schemas, que el runtime las pinta (o las consume su componente padre) y que aparecen en la galería `examples/componentes/`, donde se ve cómo se configura cada una.
+`schemas/catalogo-appian.json` lista las 147 funciones de interfaz de Appian 26.9 por categoría, como la documentación (docs.appian.com/suite/help/26.9/SAIL_Components.html). La prueba del plugin comprueba que todas están en los schemas, que el runtime las pinta (o las consume su componente padre) y que aparecen en la galería `galerias/componentes/`, donde se ve cómo se configura cada una.
 
 **Plantillas de nivel superior y barras de título**: a!headerContentLayout, a!formLayout (barra de título y botonera fijas, divisores, fondo, validaciones con a!validationMessage, también `validateAfter: "REFRESH"`), a!wizardLayout + a!wizardStep (DOT, LINE, CHEVRON horizontales y verticales, MINIMAL), a!paneLayout + a!pane (también dentro de a!formLayout; cada panel se desplaza por separado), a!headerTemplateSimple, a!headerTemplateFull, a!headerTemplateImage (también como cabecera de diálogo a todo el ancho) y a!sidebarTemplate.
 

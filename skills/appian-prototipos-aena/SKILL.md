@@ -9,8 +9,8 @@ Convierte el análisis funcional de un proyecto en un **prototipo navegable de l
 
 - **Replicable en Appian**: cada pantalla es un árbol de funciones SAIL reales (`a!cardLayout`, `a!gridField`, `a!wizardLayout`...) con sus parámetros y valores válidos. El validador rechaza cualquier cosa que no exista en SAIL.
 - **Marca AENA**: configuración real del objeto Site (colores, logo, formas) y perfil CSS de Appian 26.9 (colores de estado accesibles, campos, tarjetas, tooltips) en `assets/brand-aena.json`.
-- **Catálogo completo de Appian 26.9**: los 147 componentes de interfaz (navegadores, organigrama, vídeo, contenido web, firma, chats de IA…) se validan y se pintan con su aspecto real; `examples/componentes/` los enseña todos, agrupados como en la documentación de Appian.
-- **Genérica para cualquier proceso**: acuerdos con terceros, medioambiente, servidumbres, informes, expedientes… El kit no sabe de ningún dominio: entidades, perfiles, estados, códigos, textos, reglas y datos salen siempre del análisis funcional del proyecto. Las plantillas y los ejemplos enseñan técnica (cómo se resuelve una pantalla), nunca un dominio que copiar (`examples/README.md`).
+- **Catálogo completo de Appian 26.9**: los 147 componentes de interfaz (navegadores, organigrama, vídeo, contenido web, firma, chats de IA…) se validan y se pintan con su aspecto real; `galerias/componentes/` los enseña todos, agrupados como en la documentación de Appian.
+- **Genérica para cualquier proceso**: acuerdos con terceros, medioambiente, servidumbres, informes, expedientes… El kit no sabe de ningún dominio: entidades, perfiles, estados, códigos, textos, reglas y datos salen siempre del análisis funcional del proyecto. Las plantillas y las galerías enseñan técnica (cómo se resuelve una pantalla), nunca un dominio que copiar (`galerias/README.md`).
 - **Patrón repetible y UX cuidada**: toda pantalla declara uno de los 12 patrones de `templates/patterns.json` y sigue `references/design-rules.md`, que es la guía de diseño: el SAIL Design System oficial de Appian adaptado a AENA. El validador avisa de lo que la incumple (`UX ·`).
 - **Tres usos**: demo en reunión con cliente (navegación, validaciones, diálogos), capturas PNG para el documento funcional y referencia para desarrollo (inspector SAIL + `app.json` + trazabilidad).
 
@@ -22,14 +22,14 @@ Convierte el análisis funcional de un proyecto en un **prototipo navegable de l
 ## Flujo
 
 ### 0. Kit y requisitos
-`KIT` = la carpeta de este SKILL.md: scripts, runtime, schemas, plantillas, marca y ejemplos vienen dentro del plugin. Todos los comandos usan `python3 $KIT/scripts/...` (en Windows, `python`) y las rutas `references/`, `templates/`, `examples/` son relativas a `$KIT`.
+`KIT` = la carpeta de este SKILL.md: scripts, runtime, schemas, plantillas, marca y galerías vienen dentro del plugin. Todos los comandos usan `python3 $KIT/scripts/...` (en Windows, `python`) y las rutas `references/`, `templates/`, `galerias/` son relativas a `$KIT`.
 
 | Para | Necesita | Si falta |
 |---|---|---|
 | Validar y construir | Python 3.9+ (solo biblioteca estándar) | Imprescindible |
 | Prueba de humo y capturas | `pip install playwright` (versión actual) + un navegador: `python -m playwright install chromium`, o Chrome / Edge ya instalados | Valida, construye y revisa el HTML generado |
 
-En Claude (web / escritorio) todo está en el entorno. En un equipo nuevo, `python3 $KIT/scripts/selftest.py` dice qué funciona y qué falta (valida y construye en segundos; la prueba de humo y el contraste de los ejemplos tardan un par de minutos).
+En Claude (web / escritorio) todo está en el entorno. En un equipo nuevo, validar y construir no necesitan nada más; la prueba de humo, el contraste y las capturas piden Playwright y un navegador (paso 4).
 
 ### 1. Entrada: el análisis funcional (`analisis/funcional.md`)
 El prototipo parte de `<p>/analisis/funcional.md`, el diseño funcional que escribe **`appian-functional-analyst`** (en este mismo plugin); `<p>` es la carpeta del proyecto. Si hay `analisis/tecnico.md`, se usa también: versión de Appian, record types y campos, y capa de seguridad de cada perfil. Si el proyecto ya existe, empieza por `python3 $KIT/../appian-functional-analyst/scripts/proyecto.py estado <p>`: versión, pantallas sin captura y pantallas validadas por el cliente.
@@ -63,7 +63,7 @@ En las fichas, decide qué áreas 1:N son vistas (máximo 7) y qué datos van en
 - **Lee `references/design-rules.md` antes de escribir la primera pantalla**: fondo y cards, jerarquía de títulos, paleta de estados, botones, estructura por patrón, grids y ficha. Formato: `references/spec-format.md`. Componentes y equivalencias: `references/componentes.md`.
 - Usuarios, grupos y documentos de ejemplo (`users` con cargo y responsable, `groups`, `documents`) alimentan selectores, navegadores y organigrama (`references/spec-format.md`).
 - `app.appianVersion`: la versión de Appian del entorno, del apartado «0. Entorno» de `analisis/tecnico.md` del proyecto. Si no existe, `26.9` con un `"$assumption"` en `app` y una pregunta abierta para confirmarla. El validador da error si una pantalla usa un componente, un parámetro o un valor más nuevos (`schemas/appian-versions.json`).
-- Parte siempre del patrón de la pantalla: `templates/PNN-*.json` enseña el resultado y `templates/generar_plantillas.py`, el código con los helpers que lo produce. Copia de ahí la pantalla de ese patrón y sustituye sus textos, campos, estados y datos (un dominio genérico de expedientes) por los del proyecto. Hay 12: P01 listado, P02 vista de registro, P03 formulario, P04 asistente, P05 tarea de aprobación, P06 inicio, P07 diálogo, P08 informe, P09 maestro-detalle, P10 portada de módulo, P11 asistente de IA y P12 revisión de datos sugeridos por IA (`templates/patterns.json` dice cuándo usar cada uno). `templates/catalogo-patrones.json` los reúne en una app construible (galería para enseñar al equipo o al cliente); se regenera con `templates/generar_plantillas.py`. `examples/bloques/` es la galería de bloques (con los patrones de 26.9: calendario, hilo de comentarios y kanban), `examples/ia/` la de componentes de IA y `examples/componentes/` la de los 147 componentes de Appian 26.9 (dónde ver cómo se configura cada uno). `examples/casos/<proceso>/` son proyectos completos, uno por proceso y todos al mismo nivel (fuente → `analisis/funcional.md` → `prototipo/` con su `generar_app.py`, el prototipo y las capturas enlazadas en el funcional); `examples/README.md` los lista y explica cómo añadir otro.
+- Parte siempre del patrón de la pantalla: `templates/PNN-*.json` enseña el resultado y `templates/generar_plantillas.py`, el código con los helpers que lo produce. Copia de ahí la pantalla de ese patrón y sustituye sus textos, campos, estados y datos (un dominio genérico de expedientes) por los del proyecto. Hay 12: P01 listado, P02 vista de registro, P03 formulario, P04 asistente, P05 tarea de aprobación, P06 inicio, P07 diálogo, P08 informe, P09 maestro-detalle, P10 portada de módulo, P11 asistente de IA y P12 revisión de datos sugeridos por IA (`templates/patterns.json` dice cuándo usar cada uno). `templates/catalogo-patrones.json` los reúne en una app construible (galería para enseñar al equipo o al cliente); se regenera con `templates/generar_plantillas.py`. `galerias/bloques/` es la galería de bloques (con los patrones de 26.9: calendario, hilo de comentarios y kanban), `galerias/ia/` la de componentes de IA y `galerias/componentes/` la de los 147 componentes de Appian 26.9 (dónde ver cómo se configura cada uno); `galerias/README.md` las describe.
 - Datos de ejemplo realistas del dominio del proyecto (el del funcional, nunca el de una plantilla o un ejemplo), 10–20 filas en la entidad principal, todos los estados representados, los casos de los escenarios y los mismos datos en todas las pantallas. Fija `app.today` para que las fechas relativas no cambien entre demos.
 - Cada pantalla lleva en `ref` su ficha PAN y en `req` las historias y el paso que cubre. Lo que el funcional no define va con `$assumption`; las dudas, a `openQuestions`.
 - Define `captures` con los estados que el documento funcional necesita (errores de validación, pasos del asistente, diálogos, vistas de registro).
@@ -79,7 +79,7 @@ En las fichas, decide qué áreas 1:N son vistas (máximo 7) y qué datos van en
   - diálogos P07: `dialog` (formulario a FULL; el ancho del cuadro, en `$dialogWidth`);
   - visibilidad por perfil: `por_perfil` (`$note` con la capa de seguridad de Appian que lo aplica).
 
-  Los `generar_app.py` de `examples/casos/` los usan en casos completos; `references/bloques.md` dice cuándo usar cada bloque.
+  Los `generar_app.py` de `galerias/` los usan en pantallas completas; `references/bloques.md` dice cuándo usar cada bloque.
 - **IA solo si el análisis la pide.** Si crees que aporta (resumir, extraer datos de documentos, buscar por significado, preguntar a los datos), propónla con `$assumption` («Propuesta: …») y el beneficio, sin quitar el flujo manual. Reglas en `design-rules.md` §14.
 
 ### 3. Validar y construir

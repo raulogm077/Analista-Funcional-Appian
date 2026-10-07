@@ -1,26 +1,40 @@
 #!/usr/bin/env python3
-"""Comprueba que las skills del plugin encajan entre sí.
+"""Comprueba que las skills del plugin encajan entre sí y que cada una lleva solo lo que usa al trabajar.
 
-    python3 pruebas/comprobar_plugin.py              # comprobaciones estáticas (segundos)
-    python3 pruebas/comprobar_plugin.py --completo   # además, la prueba automática de cada skill
+    python3 pruebas/comprobar_plugin.py                                 # comprobaciones estáticas (segundos)
+    python3 pruebas/comprobar_plugin.py --completo                      # además, las pruebas de cada skill
+    python3 pruebas/comprobar_plugin.py --completo --plugin <carpeta>   # lo mismo, sobre otra copia del plugin
 
 Qué mira:
 - cada SKILL.md: nombre igual a su carpeta, descripción de 1024 caracteres como mucho y que diga qué no hace;
+- que ninguna skill lleve pruebas (tests/, selftest.py), ejemplos (ejemplos/, examples/) ni una carpeta con forma de
+  proyecto (proyecto.md, fuentes/, analisis/, as-is/, refactorizacion/ o prototipo/): van en pruebas/<skill>/;
 - que las skills que se citan existan en el plugin (o estén en EXTERNAS);
 - que existan los ficheros que cita cada SKILL.md y las rutas de una skill a otra;
 - que los servidores MCP que se citan estén en .mcp.json;
 - que la regla «Dudas de Appian» esté, igual, en las skills de REGLA_DOCS;
 - que no haya frases largas repetidas entre SKILL.md;
 - que la versión de plugin.json sea la última del README.
+Con --completo pasa además las pruebas de pruebas/ (cada selftest.py y, con pytest, las de ingeniería inversa) al
+plugin que se comprueba, que reciben en PLUGIN_A_PROBAR, y prueba el propio comprobador con una copia temporal.
+Con --plugin <carpeta> todo se hace sobre esa copia del plugin (p. ej. la del paquete, que no lleva pruebas/), con
+las pruebas de este repositorio.
 Sale con 1 si hay errores.
 """
+import argparse
+import importlib.util
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[1]  # el repositorio: las pruebas de cada skill están en pruebas/<skill>/
+PRUEBAS = REPO / "pruebas"
+RAIZ = REPO                                 # el plugin que se comprueba: este repositorio u otra copia (--plugin)
 SKILLS = RAIZ / "skills"
 
 # Skills que se citan y no están en el plugin, con el motivo.
@@ -33,9 +47,127 @@ NO_SKILLS = {"appian-docs", "appian-dev", "appian-analisis-funcional", "appian-d
 # Skills que tienen que llevar la regla de dudas de Appian (appian-best-practices la lleva en *Tools*).
 REGLA_DOCS = ["appian-functional-analyst", "appian-prototipos-aena"]
 TITULO_REGLA = "## Dudas de Appian"
-CARPETAS = ("references", "scripts", "templates", "assets", "schemas", "examples", "runtime")
+CARPETAS = ("references", "scripts", "templates", "assets", "schemas", "examples", "galerias", "runtime")
+# Lo que no va en una skill: sus pruebas y ejemplos van en pruebas/<skill>/, y un proyecto, en su carpeta <p>.
+PRUEBAS_EN_SKILL = ("tests", "ejemplos", "examples")
+FORMA_PROYECTO = ("fuentes", "analisis", "as-is", "refactorizacion", "prototipo")  # carpetas que escribe el plugin en <p>
+PLANTILLAS = ("plantillas", "templates")  # la plantilla de proyecto.md de una carpeta de plantillas no es un proyecto
+CACHES = ("__pycache__", ".pytest_cache")  # restos de ejecutar, que no van en el paquete
+NO_VAN_EN_EL_PAQUETE = (".git", ".github", ".claude", "docs", "pruebas", "CLAUDE.md")
 
 errores, avisos = [], []
+
+
+def corre(orden, **kw):
+    return subprocess.run(orden, capture_output=True, text=True, encoding="utf-8", errors="replace", **kw)
+
+
+def comprobar_contenido(nombres):
+    """Una skill solo lleva lo que usa al trabajar: ni pruebas, ni ejemplos, ni un proyecto (tampoco de ejemplo).
+    Se mira lo que hay en disco, sin los restos de ejecutar (una carpeta con solo __pycache__ no cuenta)."""
+    for n in nombres:
+        base = SKILLS / n
+        ficheros = {p.relative_to(base) for p in base.rglob("*")
+                    if p.is_file() and not set(CACHES) & set(p.relative_to(base).parts)}
+        carpetas = {d for f in ficheros for d in f.parents}  # con Path("."), la propia skill
+        for d in sorted(carpetas):
+            ruta = (Path("skills") / n / d).as_posix()
+            if d.name in PRUEBAS_EN_SKILL:
+                errores.append(f"{ruta}/: las pruebas y los ejemplos de una skill van en pruebas/{n}/, fuera del paquete")
+            forma = (["proyecto.md"] if d / "proyecto.md" in ficheros and d.name not in PLANTILLAS else [])
+            forma += [f"{m}/" for m in FORMA_PROYECTO if d / m in carpetas]
+            if forma:
+                errores.append(f"{ruta}: tiene forma de proyecto ({', '.join(forma)}); ninguna skill lleva un proyecto, "
+                               "tampoco de ejemplo")
+        for f in sorted(ficheros):
+            if f.name == "selftest.py":
+                errores.append(f"{(Path('skills') / n / f).as_posix()}: las pruebas de una skill van en pruebas/{n}/")
+
+
+def anota_prueba(nombre, r, ruta, pytest=False):
+    """0 bien y 1 error. Un selftest.py sale con otro código (2) si falta un requisito: aviso. Con pytest, todo lo que
+    no es 0 es un fallo (2: no se pudieron recoger las pruebas)."""
+    print(f"Prueba de {nombre}: {'bien' if r.returncode == 0 else f'falla (código {r.returncode})'}")
+    if r.returncode == 1 or (r.returncode and pytest):
+        errores.append(f"{ruta} falla:\n" + (r.stdout + r.stderr)[-1500:])
+    elif r.returncode:
+        avisos.append(f"{ruta} no se pudo completar (falta un requisito)")
+
+
+def pruebas_de_las_skills():
+    """Las pruebas de pruebas/<skill>/ contra el plugin que se comprueba, que reciben en PLUGIN_A_PROBAR."""
+    entorno = dict(os.environ, PLUGIN_A_PROBAR=str(RAIZ), PYTHONUTF8="1")
+    for p in sorted(PRUEBAS.glob("*/selftest.py")):
+        anota_prueba(p.parent.name, corre([sys.executable, str(p)], env=entorno), p.relative_to(REPO).as_posix())
+    inversa = PRUEBAS / "appian-reverse-engineering"
+    if all(importlib.util.find_spec(m) for m in ("pytest", "mcp")):
+        orden = [sys.executable, "-m", "pytest", "-q", str(inversa)]
+    elif shutil.which("uv"):
+        orden = ["uv", "run", "--no-project", "--with", "pytest", "--with", "mcp>=1.2,<2",
+                 "python", "-m", "pytest", "-q", str(inversa)]
+    else:
+        print("Prueba de appian-reverse-engineering: no se pudo completar")
+        avisos.append(f"{inversa.relative_to(REPO).as_posix()} no se pudo completar: faltan pytest o mcp y no hay uv "
+                      "para traerlos (pip install pytest \"mcp>=1.2,<2\")")
+        return
+    anota_prueba("appian-reverse-engineering", corre(orden, env=entorno, cwd=str(inversa)),
+                 inversa.relative_to(REPO).as_posix(), pytest=True)
+
+
+def copia_del_plugin(destino):
+    """Copia del plugin con lo que va en el paquete: sin pruebas/, docs/, CLAUDE.md ni restos."""
+    destino.mkdir(parents=True)
+    for p in sorted(RAIZ.iterdir()):
+        if p.name in NO_VAN_EN_EL_PAQUETE or p.name in CACHES or p.name.endswith(".plugin"):
+            continue
+        if p.is_dir():
+            shutil.copytree(p, destino / p.name, ignore=shutil.ignore_patterns(*CACHES, "*.plugin"))
+        else:
+            shutil.copy2(p, destino / p.name)
+    return destino
+
+
+def probar_comprobador(nombres):
+    """Prueba del propio comprobador, con una copia temporal del plugin sin pruebas/ (como la del paquete)."""
+    fallos = []
+    with tempfile.TemporaryDirectory(prefix="comprobar-plugin-") as tmp:
+        copia = copia_del_plugin(Path(tmp) / "Carpeta con espacios" / "plugin")
+        skill = copia / "skills" / nombres[0]
+
+        def comprueba(*extra):
+            r = corre([sys.executable, str(Path(__file__).resolve()), "--plugin", str(copia), *extra],
+                      env=dict(os.environ, PYTHONUTF8="1"))
+            return r.returncode, r.stdout + r.stderr
+
+        def espera(cond, que, salida):
+            if not cond:
+                fallos.append(f"{que}:\n{salida[-1500:]}")
+
+        c, out = comprueba()
+        espera(c == 0, "la copia sin pruebas/ no pasa las comprobaciones", out)
+        caso = skill / "ejemplos" / "x" / "proyecto.md"
+        caso.parent.mkdir(parents=True)
+        caso.write_text("# Proyecto de ejemplo\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "ejemplos/" in out and "forma de proyecto" in out,
+               "una skill con ejemplos/x/proyecto.md no da error", out)
+        shutil.rmtree(skill / "ejemplos")
+        prueba = skill / "tests" / "test_x.py"
+        prueba.parent.mkdir()
+        prueba.write_text("def test_x():\n    pass\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "tests/" in out, "una skill con tests/ no da error", out)
+        shutil.rmtree(skill / "tests")
+        # --completo --plugin pasa las pruebas del repositorio a la copia: con sus scripts rotos, ninguna pasa
+        # (si falta un requisito, como pytest sin uv, esa prueba no se completa, pero tampoco pasa)
+        for py in (copia / "skills").rglob("*.py"):
+            py.write_text('raise RuntimeError("roto a propósito por la prueba del comprobador")\n', encoding="utf-8")
+        c, out = comprueba("--completo")
+        suites = sorted(p.parent.name for p in PRUEBAS.glob("*/selftest.py")) + ["appian-reverse-engineering"]
+        espera(c == 1 and all(f"Prueba de {s}:" in out and f"Prueba de {s}: bien" not in out for s in suites),
+               "--completo --plugin no pasa las pruebas del repositorio a la copia", out)
+    print(f"Prueba del comprobador: {'bien' if not fallos else 'falla'}")
+    errores.extend(f"Prueba del comprobador: {f}" for f in fallos)
 
 
 def frontmatter(texto):
@@ -70,7 +202,14 @@ def sin_urls(texto):
     return re.sub(r"https?://\S+", " ", texto)
 
 
-def main(completo):
+def main(completo, plugin=None):
+    global RAIZ, SKILLS
+    if plugin:
+        RAIZ = Path(plugin).resolve()
+        SKILLS = RAIZ / "skills"
+        if not SKILLS.is_dir():
+            print(f"Error · {RAIZ} no es una copia del plugin: no tiene skills/")
+            return 1
     nombres = sorted(p.parent.name for p in SKILLS.glob("*/SKILL.md"))
     textos = {n: (SKILLS / n / "SKILL.md").read_text(encoding="utf-8") for n in nombres}
     servidores = set(json.loads((RAIZ / ".mcp.json").read_text(encoding="utf-8")).get("mcpServers", {}))
@@ -88,6 +227,9 @@ def main(completo):
             errores.append(f"{n}: la descripción lleva < o >")
         if d and not re.search(r"(^|[.:;] )(No|Not) ", d):
             errores.append(f"{n}: la descripción no dice qué no hace")
+
+    # Lo que lleva cada skill
+    comprobar_contenido(nombres)
 
     # Skills citadas
     documentos = [RAIZ / "README.md"] + [SKILLS / n / "SKILL.md" for n in nombres]
@@ -163,15 +305,9 @@ def main(completo):
         errores.append(f"plugin.json dice {version} y la última versión del README es {filas[0] if filas else 'ninguna'}")
 
     if completo:
-        pruebas = sorted(SKILLS.glob("*/scripts/selftest.py"))
-        for p in pruebas:
-            r = subprocess.run([sys.executable, str(p)], capture_output=True, text=True)
-            estado = "bien" if r.returncode == 0 else f"falla (código {r.returncode})"
-            print(f"Prueba de {p.parents[1].name}: {estado}")
-            if r.returncode == 1:
-                errores.append(f"{p.relative_to(RAIZ)} falla:\n" + (r.stdout + r.stderr)[-1500:])
-            elif r.returncode:
-                avisos.append(f"{p.relative_to(RAIZ)} no se pudo completar (falta un requisito)")
+        pruebas_de_las_skills()
+        if not plugin:  # el comprobador se prueba una vez, desde el repositorio
+            probar_comprobador(nombres)
 
     for a in avisos:
         print("Aviso ·", a)
@@ -182,4 +318,8 @@ def main(completo):
 
 
 if __name__ == "__main__":
-    sys.exit(main("--completo" in sys.argv[1:]))
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--completo", action="store_true", help="además, las pruebas de cada skill")
+    ap.add_argument("--plugin", help="otra copia del plugin, p. ej. la del paquete (por defecto, este repositorio)")
+    args = ap.parse_args()
+    sys.exit(main(args.completo, args.plugin))

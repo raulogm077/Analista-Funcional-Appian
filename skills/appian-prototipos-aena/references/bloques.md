@@ -4,9 +4,9 @@ Bloques reutilizables para componer pantallas. Cada uno es una función de `scri
 **SAIL real** (solo las claves que empiezan por `$` son del prototipo) y aplica la guía de `design-rules.md`.
 Salen de los patrones del *SAIL Design System* y del catálogo *Drag & Drop Patterns* de Appian, adaptados a AENA.
 
-- Galería navegable con un ejemplo de cada bloque: `examples/bloques/` (`generar_app.py` → `app.json` → HTML).
-- Los componentes de IA en acción (agente, chat de datos en panel, documento con citas, revisión): `examples/ia/`.
-- Los 147 componentes de Appian 26.9, uno a uno: `examples/componentes/`.
+- Galería navegable con un ejemplo de cada bloque: `galerias/bloques/` (`generar_app.py` → `app.json` → HTML).
+- Los componentes de IA en acción (agente, chat de datos en panel, documento con citas, revisión): `galerias/ia/`.
+- Los 147 componentes de Appian 26.9, uno a uno: `galerias/componentes/`.
 - Todos funcionan desde **Appian 26.6** salvo que se indique otra versión (§6 y §7).
 
 Uso en un `generar_app.py`:

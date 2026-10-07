@@ -163,6 +163,7 @@ appian-docs/_trabajo/<PREFIJO>/   = <trabajo>: datos en bruto, NO compartir
 | Archivo | Cuándo |
 |---|---|
 | `references/devmcp-setup.md` | Fase 0, si falta o falla algún MCP. |
+| `references/primera-ejecucion.md` | La primera vez contra un Appian real: comprobación sobre una aplicación pequeña. |
 | `references/analysis-workflow.md` | Al empezar: checklists por fase. |
 | `references/lectura-mcp-raw.md` | Antes de la fase 4 (y lo leen todos los subagentes). |
 | `references/execution-principles.md` | Antes de la fase 4 (registro de hallazgos y pasada de coherencia). |

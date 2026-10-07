@@ -11,7 +11,8 @@ Convierte lo que el cliente dice y escribe en dos documentos con una sola fuente
   desarrollo de Appian sin preguntar ni suponer.
 
 Sirve para cualquier proceso: perfiles, datos, estados y reglas salen de las fuentes del proyecto. Los
-ejemplos (`ejemplos/autorizaciones/`) enseñan el formato con un caso ficticio; no se copian sus nombres.
+fragmentos de `references/funcional-plantilla.md` y `references/tecnico-plantilla.md` enseñan el formato con un
+caso ficticio; no se copian sus nombres.
 
 `<skill>` es la carpeta de este fichero y `<p>`, la del proyecto. En Windows, `python` en vez de `python3`.
 

@@ -2,7 +2,8 @@
 
 Es lo que se construye. Con ella, las historias del funcional y el prototipo, quien construye con el
 MCP de desarrollo de Appian no tiene que preguntar ni suponer nada. Es interna: no va al cliente.
-Ejemplo completo: `ejemplos/autorizaciones/analisis/tecnico.md`.
+El fragmento del apartado 2 es de un caso ficticio (solicitudes de autorización) y tiene el formato exacto que leen
+los scripts.
 
 ## Cómo se escribe
 
@@ -80,6 +81,22 @@ un sistema. Tabla vertical:
 | **Depende de** | Versión o tier (ⓥ, ⓣ de buenas prácticas), u otra cosa; «—» si nada |
 | **Verificar** | Qué hay que comprobar en el entorno; «—» si nada |
 | **Verificado** | Dónde se comprobó (documentación de la versión, prueba) o «pendiente» |
+
+```markdown
+**DT-01 — Estados como record type de referencia**
+
+| Campo | Contenido |
+|---|---|
+| **Capa** | Datos |
+| **Necesidad** | funcional 3.2 y HU-03 |
+| **Decisión** | `AUT Estado`, record type de referencia relacionado con `AUT Solicitud` |
+| **Por qué** | Un estado escrito como texto en cada fila no se puede renombrar ni filtrar bien (BP 01 §1.1 · https://docs.appian.com/suite/help/latest/build-best-data-fabric.html#store-lookup-data-in-a-separate-record-type) |
+| **Descartada** | Texto con los valores en una constante: cambiar un estado obliga a desplegar |
+| **Riesgo** | Ninguno relevante |
+| **Depende de** | — |
+| **Verificar** | — |
+| **Verificado** | No hace falta |
+```
 
 ### 3. Modelo de datos
 Por record type, `### 3.n <Record type>`:
