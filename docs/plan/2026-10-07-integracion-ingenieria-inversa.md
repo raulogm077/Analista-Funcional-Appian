@@ -936,3 +936,34 @@ tercio en `ocultas/`) y `pruebas/evaluaciones/enrutado/README.md`; resultados en
   `comprobar_plugin.py --completo` en verde; paquete; etiqueta `v0.7.0-beta.1`; entregar el `.plugin`.
 - [ ] **Paso 3 (Raúl):** desinstalar de su cuenta la skill suelta de ingeniería inversa (y avisar a quien la tenga) y
   archivar `~/Proyectos IA/appian-reverse-engineering`, que lleva `.git/re-historial.bundle`, la copia usada en F1.
+
+---
+
+## F10 · Construcción (después de F9)
+
+Diseño: `docs/diseno/2026-10-07-flujo-completo-y-construccion.md`. Las tareas se detallan cuando se cierre lo
+«Abierto» de ese diseño; hasta entonces, este es su esqueleto.
+
+### Tarea 32: Lo que ofrece el Dev MCP
+
+- [ ] **Paso 1 (Raúl, en su equipo):** listar las herramientas del Dev MCP y comprobar si ejecuta test cases y monta
+  paquetes. Resultado, sin datos del entorno, a este plan.
+- [ ] **Paso 2:** decidir con Raúl qué pasa con `appian-devmcp-update` y con `appian-sail-generator`.
+
+### Tarea 33: La skill `appian-construccion`
+
+- [ ] SKILL.md con «Qué hace y qué no», entradas (técnico y `app.json` del prototipo), el ciclo por paso del plan
+  (buenas prácticas → `dev-mcp-skills` → Dev MCP → gate → registro), «Dudas de Appian» y `## Qué escribe`
+  (`construccion/registro.md`, `construccion/verificacion.md`).
+- [ ] Alta en `comprobar_plugin.py` y en la tabla de skills del README.
+
+### Tarea 34: Comprobar el registro y la verificación
+
+- [ ] `comprobar_construccion.py`: todo paso del apartado 13 del técnico tiene fila en el registro; todo criterio
+  `HU-nn.m` y `ESC-nn` del apartado 14 tiene resultado y evidencia en la verificación. Selftest con un proyecto ficticio.
+
+### Tarea 35: Punta a punta en un entorno de pruebas
+
+- [ ] **Paso 1 (Raúl, en su equipo):** con un técnico ficticio pequeño, construir en un entorno de pruebas, verificar y
+  montar el paquete. Resultado a `docs/evaluaciones.md`, sin datos del entorno.
+- [ ] **Paso 2:** versión y paquete.
