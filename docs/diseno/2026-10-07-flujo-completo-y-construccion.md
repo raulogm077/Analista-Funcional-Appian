@@ -1,11 +1,14 @@
 # Flujo completo: de cualquier punto de partida a la aplicación construida
 
 > Propuesta trabajada con Raúl el 2026-10-07 en el hilo «Flujo de trabajo Appian». Decidido: el flujo llega
-> hasta construir en Appian con IA, y construir es una skill nueva. Lo marcado como **abierto** está sin cerrar.
+> hasta construir en Appian con IA, y construir va en una skill (o skills) propia, no dentro de buenas prácticas.
+> Después se importó lo que ya estaba decidido en otros hilos (abajo, «Lo que ya existe»). Lo marcado como
+> **abierto** está sin cerrar.
 
 ## El flujo
 
-Tres entradas y un mismo camino. Todo lo que se construye pasa por el analista.
+Tres entradas y un mismo camino. Lo que se construye sale del análisis; la construcción la hace un equipo de agentes
+con papel fijo.
 
 | Fase | Qué se hace | Quién | Sale |
 |---|---|---|---|
@@ -14,45 +17,60 @@ Tres entradas y un mismo camino. Todo lo que se construye pasa por el analista.
 | | App legacy que se rehace (toda o una parte) | Ingeniería inversa → refactorización → analista | `as-is/`, `refactorizacion/propuesta.md` |
 | 1 · Especificar | Funcional que valida el cliente y técnico para construir; procesos en BPMN | Analista, diagramas | `analisis/funcional.md`, DF en Word, `analisis/tecnico.md` |
 | 2 · Validar con el cliente | Prototipo navegable; su feedback vuelve al analista como fuente | Prototipos → analista | `prototipo/` |
-| 3 · Construir | El plan de construcción del técnico, paso a paso, por el Dev MCP | **Construcción (nueva)** | Objetos en el entorno, `construccion/registro.md` |
-| 4 · Verificar | Las pruebas del técnico (apartado 14) y las siete quality gates sobre lo construido | **Construcción (nueva)** con buenas prácticas en modo revisión | `construccion/verificacion.md` |
-| 5 · Desplegar y mantener | Paquete, ICF y scripts de BD; runbooks; cada incidencia vuelve al analista como fuente | **Construcción (nueva)** para el paquete; buenas prácticas para los runbooks | Paquete y notas de despliegue |
+| 3 · Épicas y tareas | El técnico se parte en épicas (un recorrido de usuario cada una) y tareas, con sus objetos declarados | Jefe técnico (Claude Code) | Especificación de cada épica, tablero |
+| 4 · Construir | Cada tarea por el Dev MCP, con la skill oficial `appian`, verificada según el tipo de cambio | Constructores (Codex, Copilot) | Objetos en el entorno, evidencia en la tarea |
+| 5 · QA | Los escenarios de la épica con SAIL CLI por rol, y `testRule` en las reglas | QA (Antigravity) | Escenarios guardados, veredicto |
+| 6 · Revisión y despliegue | Revisión visual contra el prototipo, cierre de la épica y despliegue autorizado | Jefe técnico y Raúl | Épica cerrada, paquete |
 
-Las fases 0 a 2 ya existen o están en el plan (F2 a F9). Las fases 3 a 5 son nuevas (F10).
+Las fases 0 a 2 son del plugin (existen o están en el plan, F2 a F9). Las fases 3 a 6 ya funcionan en un proyecto real
+(abajo) y se generalizan en F10.
 
-## La skill de construcción
+## Lo que ya existe (importado de otros hilos)
 
-**Se ocupa de:** ejecutar en el entorno lo que el técnico especifica, comprobar que lo construido lo cumple y preparar el
-paquete. **No hace:** decidir requisitos ni diseño (analista), doctrina de Appian (buenas prácticas), pantallas de
-prototipo (prototipos).
+**Método por etapas con cuatro agentes.** Elegido por Raúl el 2026-10-07 en un proyecto real (pendiente de fusionar
+allí). Es el que cubre las fases 3 a 6:
 
-**Entradas:** `analisis/tecnico.md` (apartado 13, plan de construcción en orden de dependencias, y apartado 14,
-pruebas y trazabilidad), el `app.json` del prototipo como punto de partida del SAIL de cada interfaz, y el Dev MCP de
-la persona, con sus credenciales.
+- **Papeles fijos:** Claude Code especifica, gobierna el tablero y cierra; Codex y Copilot construyen en Appian;
+  Antigravity hace el QA de cada épica. Nadie revisa lo que ha construido.
+- **Estado en GitHub:** un manifiesto versionado de tareas publica issues y un Project. Un script cambia el estado con
+  **candado por objeto** (dos tareas a la vez nunca declaran el mismo objeto: el Dev MCP no tiene control de
+  concurrencia) y exige evidencia para cerrar. Cada agente deja un parte en la issue antes de cerrar sesión.
+- **Skills del proyecto:** especificar una épica, construir una tarea y hacer el QA de una épica.
+- **Verificación según el tipo de cambio** (cosmético, lógica, contrato) y siete puertas de calidad, A1 a A7, las mismas
+  siete de `appian-best-practices/references/10-quality-gates.md`.
+- **Dev MCP:** además de leer y escribir objetos, valida (`validateExpression`, `validateDesignObject`) y prueba
+  (`testRule`, `testInterface`, casos de prueba de reglas e interfaces, `testProcessModel`). No consta que monte
+  paquetes. Las pantallas se prueban con SAIL CLI, una sesión por rol.
+- **Lo que hace Raúl:** aprobar el mapa de épicas y sus especificaciones de una vez, las tareas `Manual` (lo que el Dev
+  MCP no hace: Designer, Admin Console, base de datos, publicación), abrir la pestaña de cada agente y autorizar
+  despliegues.
 
-**Por cada paso del plan:**
+**Retirado el 2026-10-01:** un plugin anterior con la cadena especificar → planificar → construir → verificar → revisar
+y hooks que bloqueaban. Se cambió por el método de arriba. La construcción nueva no lo repite: es método y scripts,
+no hooks.
 
-1. Lee la sección de buenas prácticas que aplica (`seccion.py`).
-2. Sigue la skill oficial `dev-mcp-skills` para la mecánica (nombres, orden de creación, UUID reales).
-3. Escribe por el Dev MCP; antes de modificar un objeto existente, mira sus dependientes.
-4. Pasa la quality gate del objeto (`10-quality-gates.md`).
-5. Anota en `construccion/registro.md`: paso del plan, objeto, Nuevo / Modifica, gate y pendientes.
+**Instalación de los agentes:** los cuatro agentes usan el mismo Dev MCP local, con un servidor por entorno. La skill
+personal `appian-devmcp-update` lo actualiza en los cuatro a la vez. Es mantenimiento del equipo, no una fase del
+flujo, y sigue fuera del plugin.
 
-Lo que no se puede construir como dice el técnico no se improvisa: vuelve al analista como pendiente técnico (`PT-nn`).
+**`appian-sail-generator`:** se decidió el 2026-10-04 que sigue fuera del plugin por ahora.
 
-**Verificar:** recorre la tabla del apartado 14 (cada criterio `HU-nn.m` con su prueba y cada `ESC-nn` de extremo a
-extremo), con test cases en las reglas donde aplique, y revisa el conjunto con las siete gates. Cada criterio queda
-como cumple, no cumple o sin verificar, con su evidencia.
+## Cómo se unen el análisis y la construcción
 
-**Desplegar:** monta el paquete, el ICF y los scripts de BD según `08-alm-testing-naming.md` §3, con la lista de pasos
-manuales del técnico.
+El riesgo es tener dos especificaciones: el técnico del plugin y la especificación de cada épica. Propuesta: el técnico
+es la fuente y la épica solo lo cita, igual que hoy la épica cita la fuente por sus ID.
 
-**Dónde se ejecuta:** en el equipo de quien construye, porque el Dev MCP es local. Sin Dev MCP, la skill deja los mismos
-pasos como cambios para Designer.
+- El **plan de construcción** del técnico (apartado 13) da el mapa de épicas y el orden de las tareas.
+- Los **objetos** de la épica salen de los apartados 3 a 11 del técnico, con su nombre; la épica añade solo quién
+  construye cada uno y qué es `Manual`.
+- **Cómo se prueba** sale del apartado 14 (`HU-nn.m` y `ESC-nn`), y el QA lo convierte en escenarios de SAIL CLI.
+- La **revisión visual** compara con las capturas del prototipo.
+- Lo que el constructor no puede hacer como dice el técnico vuelve al analista como pendiente técnico (`PT-nn`).
 
 ## Abierto
 
-- Si el portal web fuera de Appian (como el de GDE) entra en este flujo o queda fuera.
-- Qué ofrece el Dev MCP para ejecutar test cases y montar paquetes: sin verificar; se comprueba antes de escribir la skill.
-- Cómo encaja la skill propia `appian-devmcp-update` de Raúl: si la absorbe la de construcción o sigue aparte.
-- Si `appian-sail-generator` entra en el plugin para el SAIL funcional de las interfaces o sigue fuera.
+- Dónde vive el método de construcción para los proyectos siguientes: en el plugin, generalizado, o copiado en cada
+  proyecto.
+- Si el portal web fuera de Appian entra en este flujo. En el proyecto real va por su propia superficie, con sus
+  puertas P1 a P7.
+- Si el despliegue (paquete, ICF y scripts de BD) se automatiza o sigue como tarea `Manual`.

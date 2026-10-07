@@ -941,29 +941,26 @@ tercio en `ocultas/`) y `pruebas/evaluaciones/enrutado/README.md`; resultados en
 
 ## F10 · Construcción (después de F9)
 
-Diseño: `docs/diseno/2026-10-07-flujo-completo-y-construccion.md`. Las tareas se detallan cuando se cierre lo
-«Abierto» de ese diseño; hasta entonces, este es su esqueleto.
+Diseño: `docs/diseno/2026-10-07-flujo-completo-y-construccion.md`. Parte del método por etapas que ya funciona en un
+proyecto real (épicas, construir, QA, revisión visual, con cuatro agentes y tablero en GitHub). Las tareas se detallan
+cuando se cierre lo «Abierto» del diseño; hasta entonces, este es su esqueleto.
 
-### Tarea 32: Lo que ofrece el Dev MCP
+### Tarea 32: Del técnico a las épicas
 
-- [ ] **Paso 1 (Raúl, en su equipo):** listar las herramientas del Dev MCP y comprobar si ejecuta test cases y monta
-  paquetes. Resultado, sin datos del entorno, a este plan.
-- [ ] **Paso 2:** decidir con Raúl qué pasa con `appian-devmcp-update` y con `appian-sail-generator`.
+- [ ] El analista deriva del técnico (apartados 13 y 14) el mapa de épicas y, por épica, sus objetos y sus pruebas, sin
+  copiar lo que ya está en el técnico. La épica cita sus `HU`, `ESC` y objetos por nombre.
+- [ ] `comprobar.py` avisa de un objeto de una épica que no está en el técnico y de un criterio sin prueba.
 
-### Tarea 33: La skill `appian-construccion`
+### Tarea 33: Skills de construcción y QA, genéricas
 
-- [ ] SKILL.md con «Qué hace y qué no», entradas (técnico y `app.json` del prototipo), el ciclo por paso del plan
-  (buenas prácticas → `dev-mcp-skills` → Dev MCP → gate → registro), «Dudas de Appian» y `## Qué escribe`
-  (`construccion/registro.md`, `construccion/verificacion.md`).
-- [ ] Alta en `comprobar_plugin.py` y en la tabla de skills del README.
+- [ ] Generalizar las tres skills del proyecto real (especificar épica, construir tarea, QA de épica): fuera nombres,
+  entornos y prefijos del proyecto, que van a su `docs/appian.md`. Alta en `comprobar_plugin.py` y en el README.
+- [ ] Plantilla del tablero y de sus scripts (estado con candado por objeto, partes, ponerse al día) para un proyecto
+  nuevo, sin credenciales ni datos del proyecto real.
 
-### Tarea 34: Comprobar el registro y la verificación
+### Tarea 34: Punta a punta
 
-- [ ] `comprobar_construccion.py`: todo paso del apartado 13 del técnico tiene fila en el registro; todo criterio
-  `HU-nn.m` y `ESC-nn` del apartado 14 tiene resultado y evidencia en la verificación. Selftest con un proyecto ficticio.
-
-### Tarea 35: Punta a punta en un entorno de pruebas
-
-- [ ] **Paso 1 (Raúl, en su equipo):** con un técnico ficticio pequeño, construir en un entorno de pruebas, verificar y
-  montar el paquete. Resultado a `docs/evaluaciones.md`, sin datos del entorno.
+- [ ] **Paso 1 (Raúl, en su equipo):** con un técnico ficticio pequeño, una épica completa en un entorno de pruebas:
+  construir, QA con SAIL CLI y revisión visual contra el prototipo. Resultado a `docs/evaluaciones.md`, sin datos del
+  entorno.
 - [ ] **Paso 2:** versión y paquete.
