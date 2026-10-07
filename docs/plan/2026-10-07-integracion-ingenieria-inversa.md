@@ -1,6 +1,7 @@
 # Integración de ingeniería inversa y refactorización — plan de implementación
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Cómo se ejecuta:** tarea a tarea y en orden, marcando cada paso (`- [ ]` → `- [x]`) al terminarlo. Cada fase va en
+> su rama y llega a `main` con sus pruebas en verde y la revisión de un agente que no ha visto el trabajo.
 
 **Objetivo:** que el plugin tenga seis skills sin solapes —ingeniería inversa solo documenta lo que hay, refactorización
 propone cómo debería estar hecho, el analista acuerda y especifica— y que cualquiera del equipo pueda instalarlo.
@@ -14,16 +15,24 @@ nadie escribe en lo de otra skill y que cada capacidad (pintar, exportar BPMN, r
 diagramas y prototipos); `mcp` (vía `uv`) solo en el extractor; Node con `docx` para el Word; pytest para ingeniería
 inversa y `selftest.py` en el resto; GitHub Actions en Windows, macOS y Linux.
 
-**Diseño aprobado:** `docs/superpowers/specs/2026-10-07-integracion-ingenieria-inversa-diseno.md` (copia del doc
+**Diseño aprobado:** `docs/diseno/2026-10-07-integracion-ingenieria-inversa.md` (copia del doc
 «Plan: integrar la ingeniería inversa en el plugin»). Se leen los dos.
 
 ## Restricciones globales
 
+- **Plugin y proyecto, separados.** Este repositorio es el código del plugin y sus pruebas. Todo lo que el plugin genera
+  al trabajar, también en los proyectos de prueba de las evaluaciones, va a la carpeta de ese proyecto (`<p>`), fuera
+  del repositorio; el plugin no escribe nada fuera de `<p>`. Dentro de las skills solo hay ejemplos mínimos y ficticios
+  que enseñan el formato y usan los selftest (como hoy `ejemplos/autorizaciones`).
 - Todo en español: documentos, mensajes de los scripts, commits y nombres de los objetos de los ejemplos.
 - Ejemplos y aplicaciones de prueba ficticios. Nada del cliente en el repositorio. Nada sale del equipo para pintar o convertir.
 - Ingeniería inversa usa solo los MCP de Appian (Dev MCP, Appian MCP Server y MCP de documentación) y en solo lectura.
-- La extracción entra en el proyecto como un solo fichero, `as-is/extraccion.zip` (D4), sin credenciales, secretos,
-  nombres de usuario, rutas locales ni la lista de aplicaciones del entorno. Las demás skills leen `as-is/datos/`, nunca la extracción.
+- La extracción vive en el proyecto, en `as-is/extraccion/` (D4), y se escribe ya saneada: sin credenciales, secretos,
+  nombres de usuario (van seudónimos), rutas locales ni la lista de aplicaciones del entorno. Las demás skills leen
+  `as-is/datos/`, nunca la extracción.
+- Los proyectos de prueba de las evaluaciones se crean en `$PROYECTOS_PRUEBA` (por defecto `../proyectos-prueba/`, al
+  lado del repositorio). En el repositorio quedan las preguntas, lo esperado y los scripts que puntúan
+  (`pruebas/evaluaciones/`), y los resultados en `docs/evaluaciones.md`.
 - Los IDs de otra skill se citan dentro de su fuente: «[FU-07 PAN-03]», «[FU-08 REF-02]» (D1). Nunca en el texto del DF.
 - Scripts con `pathlib`, `encoding="utf-8"` y rutas con espacios; en Windows el comando es `python`. Rutas de prueba
   neutras («Carpeta con espacios/Gestión app»).
@@ -40,13 +49,12 @@ inversa y `selftest.py` en el resto; GitHub Actions en Windows, macOS y Linux.
 
 Lo que el diseño implica y ninguna prueba de tarea cubriría sola. Cada línea tiene su prueba en la tarea indicada.
 
-1. **Proyecto en una carpeta sincronizada con SharePoint u OneDrive.** Nada en bruto toca `<p>` antes de sanearse, la
-   extracción es un solo fichero y reemplazarlo aguanta un bloqueo temporal. Pruebas `test_nada_en_el_proyecto_antes_de_publicar`
-   y `test_reintenta_si_esta_bloqueado` (Tarea 2).
+1. **Proyecto en una carpeta sincronizada con SharePoint u OneDrive.** Lo que llega a `<p>` ya está saneado al
+   escribirse, y las rutas son cortas. Pruebas `test_sin_usuarios_ni_secretos` y `test_rutas_cortas` (Tarea 2).
 2. **Windows.** Rutas con espacios y largas, `python` en vez de `python3`, consola sin UTF-8. Pruebas
    `test_ruta_con_espacios` (Tareas 2 y 6) y la matriz de GitHub Actions (Tarea 26).
-3. **Repetir la ingeniería inversa o retomarla en otra sesión.** La segunda publicación sustituye a la primera, y si la
-   carpeta de trabajo se perdió, se recupera del zip. Pruebas `test_republicar_reemplaza` y `test_restaurar` (Tarea 2).
+3. **Repetir la ingeniería inversa o retomarla en otra sesión o en otro equipo.** Como la extracción está en el
+   proyecto, se retoma sin volver a extraer lo que ya está. Prueba `test_retomar` (Tarea 2).
 4. **Proyecto sin aplicación existente.** Las comprobaciones nuevas del analista no saltan sin `as-is/`. Prueba: el
    selftest del ejemplo `autorizaciones` da lo mismo que antes (Tarea 19).
 5. **Compañero sin Playwright o sin Node.** Se dibuja el `.drawio` y se exporta el BPMN sin navegador (sin PNG), y se
@@ -105,51 +113,51 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 - [ ] **Paso 5:** `python3 -m pytest -q` en verde y `python3 pruebas/comprobar_plugin.py` con 0 errores.
 - [ ] **Paso 6:** commit «F2: el bloque B sale de ingeniería inversa».
 
-### Tarea 2: Salida en `as-is/` y extracción saneada en el proyecto (D4)
+### Tarea 2: Salida y extracción dentro del proyecto (D4)
 
 **Ficheros:**
 - Modificar: `scripts/rutas.py`, `scripts/privacidad.py` (recibe de `build_annex.py` `USER_KEY`, `EMAIL`, `users_seen`,
-  `users_in`, `user_labels`, `scrub` y `scrub_text`), `scripts/build_annex.py` (los importa), `tests/conftest.py`,
+  `users_in`, `user_labels`, `scrub` y `scrub_text`), `scripts/build_annex.py` (los importa), `scripts/devmcp_extract.py`
+  (escribe ya saneado y con rutas cortas), `scripts/build_model.py` (misma ruta corta), `tests/conftest.py`,
   `tests/test_build_model.py:93-95`, `tests/test_extract.py:255`, `tests/test_registry.py:17`, `SKILL.md`
-  («Argumentos», «Dos carpetas», fase 6 y puntos 6 y 11 de la validación final), `references/response-format.md:50` y
-  las menciones a `_trabajo` de `references/` y `agents/`.
-- Crear: `scripts/publicar_extraccion.py`, `tests/test_publicar.py`.
+  («Argumentos», «Dos carpetas» pasa a una, y puntos 6 y 11 de la validación final), `references/response-format.md:50`
+  y las menciones a `_trabajo` de `references/` y `agents/`.
+- Crear: `tests/test_extraccion_en_proyecto.py`.
 
 **Interfaces:**
-- `rutas.work_dir(out, crear=False) -> Path`: `<base>/<nombre>-<hash8>`, con `<base>` = `$APPIAN_RE_TRABAJO` o
-  `~/.appian-re/trabajo`; `<nombre>` = la carpeta del proyecto si `out` se llama `as-is`, si no `out.name`;
-  `<hash8>` = 8 primeros hex del sha1 de `os.path.normcase(str(out.resolve()))`. Siempre fuera de `<p>`; sin `.gitignore`.
-- `rutas.zip_extraccion(out) -> Path`: `<out>/extraccion.zip`.
-- `publicar_extraccion.publicar(salida: Path) -> dict`: prepara en la carpeta de trabajo una copia de `mcp_raw/**`,
-  `inventory.json`, `graph.json`, `registro.json`, `summary.json`, `extraction_report.json` (sin `configFile` ni
-  `apps`) y `datafabric.json` (si existe), pasada por `privacidad.mask_secrets` y `privacidad.scrub` con las etiquetas de
-  `privacidad.user_labels` (los usuarios de constantes de tipo usuario y los asignados que no están en ningún grupo
-  también); `preflight.json` no se publica. Si `detect_secrets.py` encuentra algo en esa copia, para con error. Escribe
-  `<salida>/.extraccion.zip.tmp` y lo cambia por `extraccion.zip` con `os.replace`, con 5 reintentos de 1 s ante
-  `PermissionError`. Devuelve `{"ficheros": n, "usuarios": n}`.
-- CLI: `publicar_extraccion.py <salida>` (0 bien, 1 error, 2 uso) y `publicar_extraccion.py --restaurar <salida>`
-  (si la carpeta de trabajo no existe, la recrea desde `extraccion.zip` para seguir sin volver a extraer).
+- `rutas.work_dir(out, crear=False) -> Path`: `<out>/extraccion`, dentro del proyecto. Ya no hay `_trabajo` ni `.gitignore`.
+- `rutas.carpeta_objeto(raw: Path, tipo: str, uuid: str) -> Path`: `<raw>/<tipo>/<12 hex del sha1 del uuid>`; la usan
+  `devmcp_extract.py` al escribir y `build_model.py` al leer. `mcp_raw/_objects.json` sigue guardando el uuid de cada objeto.
+- `privacidad.seudonimo(usuario: str) -> str`: `‹usuario-xxxxxx›`, con los 6 primeros hex del sha256 del usuario en
+  minúsculas. El mismo usuario da siempre el mismo seudónimo, así que se puede retomar y `user_labels` sigue agrupando por grupos.
+- `privacidad.sanea(data, usuarios: set[str]) -> Any`: después de `mask_secrets`, cambia por su seudónimo los usuarios
+  de los campos de `USER_KEY`, de los objetos de tipo usuario y de las constantes de tipo usuario, y los usuarios ya
+  conocidos que aparezcan en cualquier texto; los correos pasan a `‹correo›`. `devmcp_extract.py` lo aplica a cada
+  respuesta antes de escribirla.
+- `devmcp_extract.barrido_final(raw: Path) -> int`: al terminar la extracción, repasa todos los ficheros con la lista
+  completa de usuarios (por si un texto se escribió antes de conocer a su usuario) y devuelve cuántos cambió.
+- `preflight.json` y `extraction_report.json` guardan del fichero de configuración solo su nombre, no su ruta, y de las
+  aplicaciones del entorno solo cuántas hay.
 
-- [ ] **Paso 1: pruebas que fallan.** En `conftest.py`, una fixture `autouse` hace
-  `monkeypatch.setenv("APPIAN_RE_TRABAJO", str(tmp_path / "trabajo"))`, y `interm()` usa `rutas.work_dir(self.out)`.
-  En `tests/test_publicar.py`:
-  - `test_work_dir_fuera_del_proyecto`: `work_dir(p / "as-is")` no está dentro de `p`.
-  - `test_nada_en_el_proyecto_antes_de_publicar`: tras `extract` y `build_model.py`, `<out>` no tiene ningún fichero.
-  - `test_publica_sin_datos_personales`: en una carpeta de trabajo preparada en la prueba (respuestas en bruto con un
-    usuario en un grupo, otro solo en una constante de tipo usuario, otro como asignado de un nodo, un correo, un token
-    sin enmascarar y un `extraction_report.json` con `configFile` y `apps`), tras publicar, ningún fichero del zip
-    contiene esos usuarios, el correo, el token, `configFile` ni `apps`, y aparece «‹usuario».
-  - `test_republicar_reemplaza`: la segunda publicación sustituye al zip de la primera.
-  - `test_reintenta_si_esta_bloqueado`: con `os.replace` simulado que falla dos veces con `PermissionError`, publica.
-  - `test_restaurar`: borrada la carpeta de trabajo, `--restaurar` la recrea y `build_model.py` vuelve a funcionar.
+- [ ] **Paso 1: pruebas que fallan.** `interm()` de `conftest.py` usa `rutas.work_dir(self.out)`. En
+  `tests/test_extraccion_en_proyecto.py`:
+  - `test_extraccion_dentro_del_proyecto`: tras `extract`, existe `<out>/extraccion/mcp_raw` y no hay nada fuera de `<out>`
+    (la carpeta temporal de la prueba solo tiene el proyecto, su `.mcp.json` y el registro de llamadas del simulador).
+  - `test_sin_usuarios_ni_secretos`: ningún fichero de `<out>` contiene los usuarios de `fixture.GROUP_USERS`, `sk_live_`,
+    un correo, la ruta de la carpeta de la prueba ni otra aplicación del entorno; aparece `‹usuario-`; y un mismo usuario
+    tiene el mismo seudónimo en los miembros del grupo y en el historial.
+  - `test_barrido_final`: con una respuesta preparada que cita «ana.garcia» en una expresión, escrita antes de conocer el
+    grupo, tras `barrido_final` ya no aparece.
+  - `test_rutas_cortas`: ninguna ruta relativa dentro de `<out>/extraccion` pasa de 100 caracteres.
+  - `test_retomar`: una segunda `extract` no vuelve a pedir lo que ya está (registro de llamadas del simulador) y
+    `build_model.py` funciona igual.
   - `test_ruta_con_espacios`: lo anterior con `out = tmp / "Carpeta con espacios" / "Gestión app" / "as-is"`.
-- [ ] **Paso 2:** `python3 -m pytest -q tests/test_publicar.py` → FALLA.
+- [ ] **Paso 2:** `python3 -m pytest -q tests/test_extraccion_en_proyecto.py` → FALLA.
 - [ ] **Paso 3:** implementar y ajustar las pruebas existentes de la lista de ficheros.
 - [ ] **Paso 4:** `SKILL.md`: salida por defecto `<p>/as-is/` (si la carpeta tiene `proyecto.md` o la da el usuario) o
-  `./<PREFIJO>/as-is/`; la carpeta de trabajo está fuera del proyecto (`APPIAN_RE_TRABAJO` para elegirla); el último paso
-  de la fase 6 es `publicar_extraccion.py <salida>`; los puntos 6 y 11 de la validación final y `response-format.md`
-  dicen que la extracción va saneada en `extraccion.zip`.
-- [ ] **Paso 5:** `python3 -m pytest -q` en verde. Commit «F2: salida en as-is/ y extracción saneada en un zip».
+  `./<PREFIJO>/as-is/`; una sola carpeta, con la extracción en `as-is/extraccion/`, ya saneada; los puntos 6 y 11 de la
+  validación final y `response-format.md` lo dicen así.
+- [ ] **Paso 5:** `python3 -m pytest -q` en verde. Commit «F2: salida y extracción saneada dentro del proyecto».
 
 ### Tarea 3: Alta de ingeniería inversa en el plugin
 
@@ -202,7 +210,7 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 
 **Ficheros:**
 - Crear: `skills/appian-reverse-engineering/scripts/build_datos.py`, `references/datos.md`, `tests/test_datos.py`.
-- Modificar: `SKILL.md` (fase 6: `build_datos.py <salida>` antes de `publicar_extraccion.py`).
+- Modificar: `SKILL.md` (fase 6: `build_datos.py <salida>` después de `build_summary.py`).
 
 **Interfaces:**
 - `build_datos.construir(salida: Path) -> dict` escribe en `<salida>/datos/`:
@@ -236,7 +244,7 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
   - una tabla con columna «Certeza» sin columna «Evidencia», o una fila cuya evidencia no enlaza a un fichero existente
     de `anexo/`, o una certeza fuera de ✅ 🔵 ❓;
   - cifras de `00` («N objetos», «N process models», «N interfaces», «N record types») distintas de las de
-    `summary.json` (leído de `extraccion.zip` o de la carpeta de trabajo);
+    `as-is/extraccion/summary.json`;
   - `{{` sin sustituir, un enlace relativo a un fichero que no existe, o lo que detecte `detect_secrets.py`.
 - Avisos (con `redaccion.py` del analista, importado desde `<skill>/../appian-functional-analyst/scripts`): muletillas,
   frases de más de 35 palabras, párrafos de 20 palabras o más repetidos en dos documentos y documentos por encima de su
@@ -309,8 +317,9 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 ### Tarea 9: Evaluación del recién llegado (antes y después)
 
 **Ficheros:**
-- Crear: `pruebas/evaluaciones/recien-llegado/{README.md,puntuar.py,palabras.py,resultados.md}` y
-  `pruebas/evaluaciones/aplicacion-ficticia/as-is/` (el `as-is/` de «después», que reutilizan las Tareas 15 y 22).
+- Crear: `pruebas/evaluaciones/recien-llegado/{README.md,puntuar.py,palabras.py}` y, en `docs/evaluaciones.md`, sus
+  resultados. El proyecto de prueba `MNT` se crea en `$PROYECTOS_PRUEBA/MNT/`, fuera del repositorio; las Tareas 15 y
+  22 trabajan sobre él.
 
 **Interfaces:**
 - `puntuar.py <respuestas.json> <as-is> [--ocultas]`: `respuestas.json` = `[{"id": "Q-01", "respuesta", "evidencia": "ruta#ancla"}]`.
@@ -319,9 +328,10 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 - `palabras.py <as-is>`: palabras por documento y total.
 
 - [ ] **Paso 1:** «antes»: desde `f3-antes`, un agente genera `as-is/` de la aplicación ficticia siguiendo el SKILL.md
-  contra el simulador; otro, que solo lee ese `as-is/`, responde las 20 preguntas y las 7 ocultas. Aciertos y palabras a `resultados.md`.
-- [ ] **Paso 2:** «después», igual con la Tarea 8 hecha. Criterio: 18 de 20 y 6 de 7 ocultas, con evidencia; 0 errores
-  de `comprobar_asis.py`; menos palabras que «antes».
+  contra el simulador, en `$PROYECTOS_PRUEBA/MNT-antes/`; otro, que solo lee su `as-is/`, responde las 20 preguntas y las 7
+  ocultas. Aciertos y palabras a `docs/evaluaciones.md`.
+- [ ] **Paso 2:** «después», igual con la Tarea 8 hecha, en `$PROYECTOS_PRUEBA/MNT/`. Criterio: 18 de 20 y 6 de 7
+  ocultas, con evidencia; 0 errores de `comprobar_asis.py`; menos palabras que «antes».
 - [ ] **Paso 3:** si dos documentos se responden el uno al otro (LEEME con 00, 05 con 06), se unen —plantillas,
   entregables del SKILL.md, publicadores y pruebas de la Tarea 8— y se repite el Paso 2.
 - [ ] **Paso 4:** commit. Cierre de fase: revisión y merge.
@@ -405,7 +415,7 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
   `references/senales.md` (de `modernization-guide.md`: `Señal · Dónde se ve en as-is/ · Problema · BP nn §x`, sin copiar doctrina).
 - Borrar: `docs/bloque-b/`.
 - Modificar: `pruebas/comprobar_plugin.py` (fuera de `EXTERNAS`, dentro de `REGLA_DOCS`; error si refactorización o el
-  analista citan `extraccion.zip` o `mcp_raw`) y `README.md`.
+  analista citan `as-is/extraccion` o `mcp_raw`) y `README.md`.
 
 **Interfaces:**
 - `propuesta.md`: `## 1. Alcance` (qué se rehace, qué se queda y los límites del equipo: plazo y lo que no se puede
@@ -437,14 +447,14 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 
 ### Tarea 15: Evaluación de malas prácticas sembradas
 
-**Ficheros:** Crear `pruebas/evaluaciones/malas-practicas/{README.md,puntuar.py,resultados.md}`.
+**Ficheros:** Crear `pruebas/evaluaciones/malas-practicas/{README.md,puntuar.py}`; resultados en `docs/evaluaciones.md`.
 
 **Interfaces:**
 - `puntuar.py <propuesta.md> [--ocultas]`: una mala práctica cuenta si una REF cita en su evidencia alguno de sus
   objetos, su regla es del documento de BP esperado y la REF tiene alternativa en Solución. Sale 0 con el 90 % o más.
 
-- [ ] **Paso 1:** un agente ejecuta refactorización sobre `pruebas/evaluaciones/aplicacion-ficticia/as-is/` siguiendo el SKILL.md.
-- [ ] **Paso 2:** 9 de 10 y 3 de 3 ocultas, y `comprobar_propuesta.py` sin errores. Resultados a `resultados.md`.
+- [ ] **Paso 1:** un agente ejecuta refactorización en el proyecto de prueba `$PROYECTOS_PRUEBA/MNT/` siguiendo el SKILL.md.
+- [ ] **Paso 2:** 9 de 10 y 3 de 3 ocultas, y `comprobar_propuesta.py` sin errores. Resultados a `docs/evaluaciones.md`.
 - [ ] **Paso 3:** commit. Cierre de fase: revisión y merge.
 
 ---
@@ -537,7 +547,8 @@ y `references/actualizacion.md` (apartado «Feedback de una demo»); en prototip
 ### Tarea 22: Evaluaciones del analista
 
 **Ficheros:** Crear `pruebas/evaluaciones/{incoherencias,demo,evolutivo}/` con `README.md`, sus fuentes ficticias,
-`esperado.json`, `puntuar.py`, `ocultas/` y `resultados.md`; en el ejemplo ATP de prototipos, dos PAN validadas (🔒).
+`esperado.json`, `puntuar.py` y `ocultas/`; en el ejemplo ATP de prototipos, dos PAN validadas (🔒). Cada caso se
+ejecuta en su proyecto de `$PROYECTOS_PRUEBA/` y los resultados van a `docs/evaluaciones.md`.
 
 - Incoherencias: un DF ficticio (1.0) y tres reuniones (`.txt` con marcas de tiempo) con 10 incoherencias sembradas y
   3 más ocultas; `esperado.json` = `[{"fuente", "minuto", "piezas", "tipo"}]`. `puntuar.py` cuenta las que aparecen en
@@ -588,7 +599,7 @@ y `references/actualizacion.md` (apartado «Feedback de una demo»); en prototip
   `REQUISITOS_SIN=docx`, la primera vez lo dice y la segunda no imprime nada; con `REQUISITOS_SIN=python`, sale 0 y lo dice.
 - [ ] **Paso 3:** `hooks.json` en la forma que da el Paso 1.
 - [ ] **Paso 4 (Raúl):** instalar el paquete en Claude Code y en la app de escritorio con algo de la tabla sin instalar
-  y comprobar que el primer mensaje lo dice. Resultado en `pruebas/evaluaciones/instalacion/resultados.md`.
+  y comprobar que el primer mensaje lo dice. Resultado en `docs/evaluaciones.md`.
 - [ ] **Paso 5:** commit.
 
 ### Tarea 25: README generado y nada personal
@@ -654,7 +665,7 @@ el autor en `.claude-plugin/plugin.json` y en `.claude-plugin/marketplace.json`.
 ### Tarea 29: Prueba de enrutado
 
 **Ficheros:** Crear `pruebas/enrutado.json` (`[{"peticion", "skill"}]`: unas 30, al menos 4 por skill y 6 frontera; un
-tercio en `ocultas/`) y `pruebas/evaluaciones/enrutado/{README.md,resultados.md}`.
+tercio en `ocultas/`) y `pruebas/evaluaciones/enrutado/README.md`; resultados en `docs/evaluaciones.md`.
 
 - Fronteras: «¿la rehacemos o la evolucionamos?» → refactorización; «revisa esta interfaz» → buenas prácticas;
   «documenta la app X» → ingeniería inversa; «añade estas historias a lo que ya hay» → analista; «dibuja el proceso de

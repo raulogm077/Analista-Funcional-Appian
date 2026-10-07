@@ -120,18 +120,18 @@ La base ya existe. Cada fuente nueva produce un informe de impacto que clasifica
 
 ## Contrato de ficheros
 
-Una carpeta por aplicación o proyecto: cada skill escribe solo en lo suyo y lee lo de las demás.
+Una carpeta por aplicación o proyecto: cada skill escribe solo en lo suyo y lee lo de las demás. Todo lo que el plugin genera al trabajar queda en esa carpeta; el repositorio del plugin solo tiene su código y sus pruebas.
 
 ```text
 <p>/proyecto.md, fuentes/, notas/, impacto/   analista
-<p>/as-is/                                     ingeniería inversa (documentos, anexo, datos/ y extraccion.zip)
+<p>/as-is/                                     ingeniería inversa (documentos, anexo, datos/ y extraccion/)
 <p>/refactorizacion/                           refactorización
 <p>/analisis/                                  analista (los .drawio, .png y .bpmn de diagramas/, la skill de diagramas)
 <p>/prototipo/                                 prototipos
 <p>/entregables/, versiones/                   analista
 ```
 
-La extracción completa también queda en el proyecto, en un solo fichero, `as-is/extraccion.zip` (D4), sin credenciales, secretos ni nombres de usuario. Un fichero y no miles evita conflictos al sincronizar con SharePoint y rutas demasiado largas en Windows. Las demás skills leen `as-is/datos/`, que tiene formato fijo; la extracción es interna de ingeniería inversa.
+La extracción completa también queda en el proyecto, en `as-is/extraccion/` (D4), y se escribe ya saneada: sin credenciales, secretos ni nombres de usuario, y con rutas cortas para Windows. Las demás skills leen `as-is/datos/`, que tiene formato fijo; la extracción es interna de ingeniería inversa.
 
 | Quién lee | Qué | Para qué |
 |---|---|---|
@@ -201,7 +201,7 @@ Todas cerradas el 7 de octubre; el nombre del plugin se mantiene.
 | **D1** Reparto | Refactorización propone y el analista especifica |
 | **D2** DF ya hecho | Pasa al formato del plugin; de ahí salen el Word y el técnico con el que se construye por MCP |
 | **D3** Repositorio | GitHub privado |
-| **D4** Extracción | Dentro del proyecto, en `as-is/extraccion.zip`, sin credenciales, secretos ni nombres de usuario |
+| **D4** Extracción | Dentro del proyecto, en `as-is/extraccion/`, ya saneada: sin credenciales, secretos ni nombres de usuario |
 
 ## Cómo funciona el plugin
 
