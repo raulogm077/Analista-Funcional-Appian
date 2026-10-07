@@ -1,0 +1,191 @@
+{
+ "id": "listado",
+ "title": "Expedientes",
+ "type": "page",
+ "pattern": "P01",
+ "req": [
+  "RF-LIST"
+ ],
+ "$note": "P01: cabecera con la acción principal + grid en una card: ≤7 columnas consolidadas (código + título en la 1.ª, enlace a la ficha), cifras a la derecha, estado como tag (en grids solo atención y negativo llevan color), filtros de usuario y búsqueda. Con asistente de datos: ai_side_pane (references/bloques.md). Página del site: si basta con buscar, filtrar y abrir la ficha, en Appian es una página de tipo Record List (la lista configurada en el record type, con sus filtros, búsqueda, exportación y acciones de lista), no una interfaz (BP 09 §1.3); el prototipo la pinta igual y app.json no declara el tipo de página.",
+ "interface": {
+  "type": "a!headerContentLayout",
+  "backgroundColor": "TRANSPARENT",
+  "contents": [
+   {
+    "type": "a!columnsLayout",
+    "alignVertical": "MIDDLE",
+    "marginBelow": "MORE",
+    "columns": [
+     {
+      "type": "a!columnLayout",
+      "contents": [
+       {
+        "type": "a!headingField",
+        "text": "Expedientes",
+        "size": "LARGE",
+        "headingTag": "H1",
+        "marginBelow": "EVEN_LESS"
+       },
+       {
+        "type": "a!richTextDisplayField",
+        "labelPosition": "COLLAPSED",
+        "value": [
+         {
+          "type": "a!richTextItem",
+          "text": "Todos los expedientes de su unidad",
+          "color": "SECONDARY"
+         }
+        ],
+        "marginBelow": "NONE"
+       }
+      ]
+     },
+     {
+      "type": "a!columnLayout",
+      "width": "AUTO",
+      "contents": [
+       {
+        "type": "a!buttonArrayLayout",
+        "align": "END",
+        "marginBelow": "NONE",
+        "buttons": [
+         {
+          "type": "a!buttonWidget",
+          "label": "Nuevo expediente",
+          "style": "SOLID",
+          "color": "ACCENT",
+          "icon": "plus",
+          "$action": {
+           "goto": "asistente"
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "a!cardLayout",
+    "style": "NONE",
+    "showBorder": false,
+    "showShadow": true,
+    "shape": "SEMI_ROUNDED",
+    "padding": "STANDARD",
+    "contents": [
+     {
+      "type": "a!gridField",
+      "labelPosition": "COLLAPSED",
+      "data": "recordType!EXP Expediente",
+      "borderStyle": "LIGHT",
+      "shadeAlternateRows": false,
+      "spacing": "STANDARD",
+      "pageSize": 25,
+      "rowHeader": 1,
+      "emptyGridMessage": "No hay expedientes que cumplan los filtros",
+      "columns": [
+       {
+        "type": "a!gridColumn",
+        "label": "Expediente",
+        "value": {
+         "type": "a!richTextDisplayField",
+         "labelPosition": "COLLAPSED",
+         "value": [
+          {
+           "type": "a!richTextItem",
+           "text": "{fv!row.codigo}",
+           "style": "STRONG",
+           "link": {
+            "type": "a!recordLink",
+            "recordType": "recordType!EXP Expediente",
+            "identifier": "{fv!row.id}"
+           },
+           "linkStyle": "STANDALONE"
+          },
+          "\n",
+          {
+           "type": "a!richTextItem",
+           "text": "{fv!row.titulo}",
+           "color": "SECONDARY",
+           "size": "SMALL"
+          }
+         ]
+        },
+        "sortField": "recordType!EXP Expediente.fields.codigo",
+        "width": "4X"
+       },
+       {
+        "type": "a!gridColumn",
+        "label": "Tipo",
+        "value": "{fv!row.tipo}",
+        "sortField": "recordType!EXP Expediente.fields.tipo",
+        "width": "2X"
+       },
+       {
+        "type": "a!gridColumn",
+        "label": "Unidad",
+        "value": "{fv!row.unidad}",
+        "sortField": "recordType!EXP Expediente.fields.unidad",
+        "width": "NARROW"
+       },
+       {
+        "type": "a!gridColumn",
+        "label": "Responsable",
+        "value": "{fv!row.responsable}",
+        "sortField": "recordType!EXP Expediente.fields.responsable",
+        "width": "3X"
+       },
+       {
+        "type": "a!gridColumn",
+        "label": "Importe",
+        "value": "{fv!row.importe|eur|dash}",
+        "align": "END",
+        "sortField": "recordType!EXP Expediente.fields.importe",
+        "width": "2X"
+       },
+       {
+        "type": "a!gridColumn",
+        "label": "Alta",
+        "value": "{fv!row.fechaAlta|date}",
+        "sortField": "recordType!EXP Expediente.fields.fechaAlta",
+        "width": "NARROW"
+       },
+       {
+        "type": "a!gridColumn",
+        "label": "Estado",
+        "value": {
+         "type": "a!tagField",
+         "labelPosition": "COLLAPSED",
+         "size": "SMALL",
+         "tags": [
+          {
+           "type": "a!tagItem",
+           "text": "{fv!row.estado}",
+           "backgroundColor": "{fv!row.estado|map:estadoColorGrid}"
+          }
+         ]
+        },
+        "sortField": "recordType!EXP Expediente.fields.estado",
+        "width": "NARROW_PLUS"
+       }
+      ],
+      "showSearchBox": true,
+      "showExportButton": true,
+      "userFilters": [
+       "recordType!EXP Expediente.filters.estado",
+       "recordType!EXP Expediente.filters.tipo",
+       "recordType!EXP Expediente.filters.unidad"
+      ],
+      "initialSorts": [
+       {
+        "type": "a!sortInfo",
+        "field": "recordType!EXP Expediente.fields.fechaAlta",
+        "ascending": false
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

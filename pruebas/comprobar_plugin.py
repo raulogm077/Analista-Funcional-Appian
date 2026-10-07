@@ -9,6 +9,8 @@ Qué mira:
 - cada SKILL.md: nombre igual a su carpeta, descripción de 1024 caracteres como mucho y que diga qué no hace;
 - que ninguna skill lleve pruebas (tests/, selftest.py), ejemplos (ejemplos/, examples/) ni una carpeta con forma de
   proyecto (proyecto.md, fuentes/, analisis/, as-is/, refactorizacion/ o prototipo/): van en pruebas/<skill>/;
+- que ninguna skill lleve la marca de un cliente: un brand-*.json que no sea brand-appian.json (la estándar de Appian)
+  o un logo (MARCA_NEUTRA, LOGO e IMAGENES dicen qué es cada cosa); van en <p>/prototipo/ de su proyecto;
 - que las skills que se citan existan en el plugin (o estén en EXTERNAS);
 - que existan los ficheros que cita cada SKILL.md y las rutas de una skill a otra;
 - que los servidores MCP que se citan estén en .mcp.json;
@@ -45,7 +47,7 @@ EXTERNAS = {
 NO_SKILLS = {"appian-docs", "appian-dev", "appian-analisis-funcional", "appian-dev-mcp-server",
              "appian-dev-mcp-server-bundle", "appian-mcp-server", "appian-public-docs"}
 # Skills que tienen que llevar la regla de dudas de Appian (appian-best-practices la lleva en *Tools*).
-REGLA_DOCS = ["appian-functional-analyst", "appian-prototipos-aena"]
+REGLA_DOCS = ["appian-functional-analyst", "appian-prototipos"]
 TITULO_REGLA = "## Dudas de Appian"
 CARPETAS = ("references", "scripts", "templates", "assets", "schemas", "examples", "galerias", "runtime")
 # Lo que no va en una skill: sus pruebas y ejemplos van en pruebas/<skill>/, y un proyecto, en su carpeta <p>.
@@ -53,6 +55,16 @@ PRUEBAS_EN_SKILL = ("tests", "ejemplos", "examples")
 FORMA_PROYECTO = ("fuentes", "analisis", "as-is", "refactorizacion", "prototipo")  # carpetas que escribe el plugin en <p>
 PLANTILLAS = ("plantillas", "templates")  # la plantilla de proyecto.md de una carpeta de plantillas no es un proyecto
 CACHES = ("__pycache__", ".pytest_cache")  # restos de ejecutar, que no van en el paquete
+# La marca de un cliente va en <p>/prototipo/ de su proyecto, nunca en una skill. La única marca del plugin es la estándar
+# de Appian; cualquier otro brand-<id>.json, en cualquier carpeta de una skill, es la marca de un cliente.
+MARCA_NEUTRA = "brand-appian.json"
+MARCA = re.compile(r"^brand-.+\.json$", re.I)
+# Un logo es una imagen (IMAGENES) cuyo nombre EMPIEZA por logo, logotipo, isotipo, imagotipo, símbolo o symbol, seguido de
+# «-», «_», «.» o la extensión: logo-x-on-dark.svg, symbol-x.svg, logotipo.png, logo.dark.svg. Se mira el principio del
+# nombre, no si lo contiene, porque «catalogo-patrones.json» y «P07-dialogo.json» contienen «logo»; los iconos del kit
+# (icons.json) y sus fuentes (fonts/*.woff2) no son imágenes con esos nombres.
+LOGO = re.compile(r"^(logo(tipo)?|isotipo|imagotipo|s[ií]mbolo|symbol)([-_.]|$)", re.I)
+IMAGENES = (".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico")
 NO_VAN_EN_EL_PAQUETE = (".git", ".github", ".claude", "docs", "pruebas", "CLAUDE.md")
 
 errores, avisos = [], []
@@ -80,8 +92,15 @@ def comprobar_contenido(nombres):
                 errores.append(f"{ruta}: tiene forma de proyecto ({', '.join(forma)}); ninguna skill lleva un proyecto, "
                                "tampoco de ejemplo")
         for f in sorted(ficheros):
+            ruta = (Path("skills") / n / f).as_posix()
             if f.name == "selftest.py":
-                errores.append(f"{(Path('skills') / n / f).as_posix()}: las pruebas de una skill van en pruebas/{n}/")
+                errores.append(f"{ruta}: las pruebas de una skill van en pruebas/{n}/")
+            if MARCA.match(f.name) and f.name.lower() != MARCA_NEUTRA:
+                errores.append(f"{ruta}: la marca de un cliente va en prototipo/ de su proyecto, junto al app.json; la única "
+                               f"marca del plugin es assets/{MARCA_NEUTRA}")
+            elif f.suffix.lower() in IMAGENES and LOGO.match(f.stem):
+                errores.append(f"{ruta}: un logo es de la marca de un cliente y va en prototipo/ de su proyecto, junto a su "
+                               "brand-<id>.json; la marca estándar de Appian no lleva logo")
 
 
 def anota_prueba(nombre, r, ruta, pytest=False):
@@ -158,6 +177,14 @@ def probar_comprobador(nombres):
         c, out = comprueba()
         espera(c == 1 and "tests/" in out, "una skill con tests/ no da error", out)
         shutil.rmtree(skill / "tests")
+        # la marca de un cliente (su brand-*.json o su logo) va en <p>/prototipo/ del proyecto, no en una skill
+        for nombre in ("brand-cliente.json", "logo-cliente-on-dark.svg", "symbol-cliente.svg"):
+            marca = skill / "assets" / nombre
+            marca.parent.mkdir(exist_ok=True)
+            marca.write_text("{}\n" if nombre.endswith(".json") else "<svg xmlns='http://www.w3.org/2000/svg'/>\n", encoding="utf-8")
+            c, out = comprueba()
+            espera(c == 1 and nombre in out and "prototipo/" in out, f"una skill con assets/{nombre} no da error", out)
+            marca.unlink()
         # --completo --plugin pasa las pruebas del repositorio a la copia: con sus scripts rotos, ninguna pasa
         # (si falta un requisito, como pytest sin uv, esa prueba no se completa, pero tampoco pasa)
         for py in (copia / "skills").rglob("*.py"):

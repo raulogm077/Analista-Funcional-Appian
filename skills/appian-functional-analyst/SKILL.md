@@ -1,6 +1,6 @@
 ---
 name: appian-functional-analyst
-description: Analista funcional de Appian. Convierte las fuentes de un proyecto (transcripciones de reuniones, correos, actas, notas, diagramas de flujo, un DF o ERS del cliente, o la descripción de una aplicación existente) en su análisis, el diseño funcional que valida el cliente (DF en Word con proceso, historias de usuario, pantallas y escenarios) y la especificación técnica para construir en Appian con buenas prácticas. Úsala para levantar requisitos, escribir o actualizar un análisis o un DF, incorporar una reunión, un correo o los comentarios del cliente al DF, redactar las historias de una pantalla que alguien explica o preparar la especificación técnica. No dibuja procesos (appian-diagramas-bpmn), no hace prototipos (appian-prototipos-aena), no construye ni revisa objetos en un entorno (appian-best-practices) y no audita aplicaciones existentes (appian-reverse-engineering).
+description: Analista funcional de Appian. Convierte las fuentes de un proyecto (transcripciones de reuniones, correos, actas, notas, diagramas de flujo, un DF o ERS del cliente, o la descripción de una aplicación existente) en su análisis, el diseño funcional que valida el cliente (DF en Word con proceso, historias de usuario, pantallas y escenarios) y la especificación técnica para construir en Appian con buenas prácticas. Úsala para levantar requisitos, escribir o actualizar un análisis o un DF, incorporar una reunión, un correo o los comentarios del cliente al DF, redactar las historias de una pantalla que alguien explica o preparar la especificación técnica. No dibuja procesos (appian-diagramas-bpmn), no hace prototipos (appian-prototipos), no construye ni revisa objetos en un entorno (appian-best-practices) y no audita aplicaciones existentes (appian-reverse-engineering).
 ---
 
 # Analista funcional · Appian
@@ -22,7 +22,7 @@ caso ficticio; no se copian sus nombres.
 |---|---|
 | Lee las fuentes, decide qué contiene el análisis y lo mantiene reunión a reunión | — |
 | Describe cada proceso (pasos, carriles, decisiones) | Lo dibuja `appian-diagramas-bpmn` |
-| Dice qué hace cada pantalla y quién la usa | La compone y la captura `appian-prototipos-aena` |
+| Dice qué hace cada pantalla y quién la usa | La compone y la captura `appian-prototipos` |
 | Diseña la solución técnica aplicando buenas prácticas | La doctrina está en `appian-best-practices`, que se consulta por secciones |
 | Usa la descripción de una aplicación existente como fuente (`as-is/`) | La escribe `appian-reverse-engineering` |
 | — | Construir o revisar objetos en un entorno: `appian-best-practices` con el MCP de desarrollo |
@@ -103,7 +103,7 @@ Di el modo al empezar.
    `analisis/diagramas/<proceso>.json`, con un carril por perfil y los mismos `ACT-nn`, y ejecuta su
    `diagrama.py crear`. Los estados, con `mermaid-diagrams.md`.
 5. **Prototipo**, si se pide (suele ser con la primera versión del funcional, para validar las pantallas).
-   Lo hace `appian-prototipos-aena` a partir del funcional y pone las capturas en las fichas de pantalla.
+   Lo hace `appian-prototipos` a partir del funcional y pone las capturas en las fichas de pantalla.
 6. **Técnico.** Escribe `analisis/tecnico.md` con `tecnico-plantilla.md` cuando el funcional esté estable
    (normalmente tras la primera validación) o cuando se pida. El Entorno (§0) y las Convenciones (§1) se
    rellenan antes, en cuanto se sepan.

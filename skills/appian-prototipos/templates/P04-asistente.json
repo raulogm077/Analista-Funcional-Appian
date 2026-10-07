@@ -1,0 +1,526 @@
+{
+ "id": "asistente",
+ "title": "Nuevo expediente (asistente)",
+ "type": "form",
+ "pattern": "P04",
+ "req": [
+  "RF-ALTA"
+ ],
+ "$note": "P04: barra lateral con el hito vertical (DOT_VERTICAL si hay más de 5 pasos o con sidebar; MINIMAL si 1–2), un tema por paso, revisión final con «Editar» por bloque ($action.step) y confirmación al cancelar.",
+ "local": {
+  "local!exp": {
+   "titulo": null,
+   "tipo": null,
+   "responsable": null,
+   "conImporte": true,
+   "importe": null,
+   "docs": []
+  }
+ },
+ "interface": {
+  "type": "a!wizardLayout",
+  "style": "DOT_VERTICAL",
+  "contentsWidth": "MEDIUM",
+  "showButtonDivider": true,
+  "backgroundColor": "WHITE",
+  "titleBar": {
+   "type": "a!sidebarTemplate",
+   "title": "Nuevo expediente",
+   "secondaryText": "Complete los datos en 4 pasos",
+   "backgroundColor": "#0F203A",
+   "width": "NARROW_PLUS",
+   "additionalContents": [
+    {
+     "type": "a!richTextDisplayField",
+     "labelPosition": "COLLAPSED",
+     "value": [
+      {
+       "type": "a!richTextIcon",
+       "icon": "info-circle",
+       "color": "#3fa7ce"
+      },
+      " ",
+      {
+       "type": "a!richTextItem",
+       "text": "Al enviar, el responsable recibe una tarea de aprobación.",
+       "size": "SMALL",
+       "color": "#FFFFFF"
+      }
+     ]
+    }
+   ]
+  },
+  "steps": [
+   {
+    "type": "a!wizardStep",
+    "label": "Datos generales",
+    "contents": [
+     {
+      "type": "a!textField",
+      "label": "Título",
+      "value": "local!exp.titulo",
+      "saveInto": "local!exp.titulo",
+      "required": true,
+      "characterLimit": 200
+     },
+     {
+      "type": "a!cardChoiceField",
+      "label": "Tipo",
+      "data": [
+       {
+        "id": "Obra",
+        "texto": "Obra",
+        "detalle": "Construcción, reforma o reparación",
+        "icono": "building"
+       },
+       {
+        "id": "Servicio",
+        "texto": "Servicio",
+        "detalle": "Mantenimiento, limpieza o asistencia",
+        "icono": "wrench"
+       },
+       {
+        "id": "Suministro",
+        "texto": "Suministro",
+        "detalle": "Compra de equipos o materiales",
+        "icono": "truck"
+       }
+      ],
+      "cardTemplate": {
+       "type": "a!cardTemplateBarTextStacked",
+       "id": "fv!data.id",
+       "primaryText": "{fv!data.texto}",
+       "icon": "{fv!data.icono}",
+       "secondaryText": "{fv!data.detalle}"
+      },
+      "value": "local!exp.tipo",
+      "saveInto": "local!exp.tipo",
+      "maxSelections": 1,
+      "required": true
+     },
+     {
+      "type": "a!pickerFieldUsers",
+      "label": "Responsable",
+      "maxSelections": 1,
+      "value": "local!exp.responsable",
+      "saveInto": "local!exp.responsable",
+      "required": true
+     }
+    ]
+   },
+   {
+    "type": "a!wizardStep",
+    "label": "Importe",
+    "contents": [
+     {
+      "type": "a!radioButtonField",
+      "label": "¿Tiene importe?",
+      "choiceLabels": [
+       "Sí",
+       "No"
+      ],
+      "choiceValues": [
+       true,
+       false
+      ],
+      "choiceLayout": "COMPACT",
+      "value": "local!exp.conImporte",
+      "saveInto": "local!exp.conImporte",
+      "required": true
+     },
+     {
+      "type": "a!columnsLayout",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!floatingPointField",
+          "label": "Importe (€)",
+          "value": "local!exp.importe",
+          "saveInto": "local!exp.importe",
+          "required": true,
+          "instructions": "Sin IVA"
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": []
+       }
+      ],
+      "showWhen": "local!exp.conImporte"
+     }
+    ]
+   },
+   {
+    "type": "a!wizardStep",
+    "label": "Documentación",
+    "contents": [
+     {
+      "type": "a!fileUploadField",
+      "label": "Documentos",
+      "value": "local!exp.docs",
+      "saveInto": "local!exp.docs",
+      "required": true,
+      "maxSelections": 5,
+      "instructions": "PDF o DOCX, máximo 10 MB por fichero"
+     }
+    ]
+   },
+   {
+    "type": "a!wizardStep",
+    "label": "Revisión",
+    "contents": [
+     {
+      "type": "a!messageBanner",
+      "backgroundColor": "INFO",
+      "highlightColor": "INFO",
+      "shape": "SEMI_ROUNDED",
+      "primaryText": "Revise los datos antes de enviar",
+      "secondaryText": "Al enviar, el expediente pasa a «Pendiente de aprobación».",
+      "marginBelow": "MORE"
+     },
+     {
+      "type": "a!sectionLayout",
+      "marginBelow": "MORE",
+      "contents": [
+       {
+        "type": "a!sideBySideLayout",
+        "alignVertical": "MIDDLE",
+        "marginBelow": "LESS",
+        "items": [
+         {
+          "type": "a!sideBySideItem",
+          "item": {
+           "type": "a!headingField",
+           "text": "DATOS GENERALES",
+           "size": "SMALL",
+           "headingTag": "H3",
+           "color": "SECONDARY",
+           "fontWeight": "BOLD",
+           "marginBelow": "NONE"
+          }
+         },
+         {
+          "type": "a!sideBySideItem",
+          "width": "MINIMIZE",
+          "item": {
+           "type": "a!richTextDisplayField",
+           "labelPosition": "COLLAPSED",
+           "value": [
+            {
+             "type": "a!richTextIcon",
+             "icon": "pencil",
+             "color": "ACCENT"
+            },
+            " ",
+            {
+             "type": "a!richTextItem",
+             "text": "Editar",
+             "link": {
+              "type": "a!dynamicLink",
+              "$action": {
+               "step": 1
+              }
+             },
+             "linkStyle": "STANDALONE",
+             "style": "STRONG"
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "type": "a!richTextDisplayField",
+        "label": "Título",
+        "labelPosition": "COLLAPSED",
+        "value": [
+         {
+          "type": "a!richTextItem",
+          "text": "Título",
+          "color": "SECONDARY",
+          "size": "SMALL"
+         },
+         "\n",
+         {
+          "type": "a!richTextItem",
+          "text": "{local!exp.titulo|dash}",
+          "size": "MEDIUM"
+         }
+        ],
+        "marginBelow": "STANDARD"
+       },
+       {
+        "type": "a!columnsLayout",
+        "marginBelow": "STANDARD",
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "label": "Tipo",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Tipo",
+              "color": "SECONDARY",
+              "size": "SMALL"
+             },
+             "\n",
+             {
+              "type": "a!richTextItem",
+              "text": "{local!exp.tipo|dash}",
+              "size": "MEDIUM"
+             }
+            ],
+            "marginBelow": "NONE"
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "label": "Responsable",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Responsable",
+              "color": "SECONDARY",
+              "size": "SMALL"
+             },
+             "\n",
+             {
+              "type": "a!richTextItem",
+              "text": "{local!exp.responsable|map:usuarios|dash}",
+              "size": "MEDIUM"
+             }
+            ],
+            "marginBelow": "NONE"
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!sectionLayout",
+      "marginBelow": "MORE",
+      "contents": [
+       {
+        "type": "a!sideBySideLayout",
+        "alignVertical": "MIDDLE",
+        "marginBelow": "LESS",
+        "items": [
+         {
+          "type": "a!sideBySideItem",
+          "item": {
+           "type": "a!headingField",
+           "text": "IMPORTE",
+           "size": "SMALL",
+           "headingTag": "H3",
+           "color": "SECONDARY",
+           "fontWeight": "BOLD",
+           "marginBelow": "NONE"
+          }
+         },
+         {
+          "type": "a!sideBySideItem",
+          "width": "MINIMIZE",
+          "item": {
+           "type": "a!richTextDisplayField",
+           "labelPosition": "COLLAPSED",
+           "value": [
+            {
+             "type": "a!richTextIcon",
+             "icon": "pencil",
+             "color": "ACCENT"
+            },
+            " ",
+            {
+             "type": "a!richTextItem",
+             "text": "Editar",
+             "link": {
+              "type": "a!dynamicLink",
+              "$action": {
+               "step": 2
+              }
+             },
+             "linkStyle": "STANDALONE",
+             "style": "STRONG"
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "type": "a!columnsLayout",
+        "marginBelow": "STANDARD",
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "label": "Tiene importe",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Tiene importe",
+              "color": "SECONDARY",
+              "size": "SMALL"
+             },
+             "\n",
+             {
+              "type": "a!richTextItem",
+              "text": "{local!exp.conImporte|map:siNo|dash}",
+              "size": "MEDIUM"
+             }
+            ],
+            "marginBelow": "NONE"
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "label": "Importe",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Importe",
+              "color": "SECONDARY",
+              "size": "SMALL"
+             },
+             "\n",
+             {
+              "type": "a!richTextItem",
+              "text": "{local!exp.importe|eur|dash}",
+              "size": "MEDIUM"
+             }
+            ],
+            "marginBelow": "NONE"
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!sectionLayout",
+      "marginBelow": "MORE",
+      "contents": [
+       {
+        "type": "a!sideBySideLayout",
+        "alignVertical": "MIDDLE",
+        "marginBelow": "LESS",
+        "items": [
+         {
+          "type": "a!sideBySideItem",
+          "item": {
+           "type": "a!headingField",
+           "text": "DOCUMENTACIÓN",
+           "size": "SMALL",
+           "headingTag": "H3",
+           "color": "SECONDARY",
+           "fontWeight": "BOLD",
+           "marginBelow": "NONE"
+          }
+         },
+         {
+          "type": "a!sideBySideItem",
+          "width": "MINIMIZE",
+          "item": {
+           "type": "a!richTextDisplayField",
+           "labelPosition": "COLLAPSED",
+           "value": [
+            {
+             "type": "a!richTextIcon",
+             "icon": "pencil",
+             "color": "ACCENT"
+            },
+            " ",
+            {
+             "type": "a!richTextItem",
+             "text": "Editar",
+             "link": {
+              "type": "a!dynamicLink",
+              "$action": {
+               "step": 3
+              }
+             },
+             "linkStyle": "STANDALONE",
+             "style": "STRONG"
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "type": "a!richTextDisplayField",
+        "label": "Documentos",
+        "labelPosition": "COLLAPSED",
+        "value": [
+         {
+          "type": "a!richTextItem",
+          "text": "Documentos",
+          "color": "SECONDARY",
+          "size": "SMALL"
+         },
+         "\n",
+         {
+          "type": "a!richTextItem",
+          "text": "{local!exp.docs.name|dash}",
+          "size": "MEDIUM"
+         }
+        ],
+        "marginBelow": "STANDARD"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "secondaryButtons": [
+   {
+    "type": "a!buttonWidget",
+    "label": "Cancelar",
+    "style": "OUTLINE",
+    "color": "ACCENT",
+    "$action": {
+     "goto": "listado"
+    },
+    "confirmHeader": "¿Descartar el alta?",
+    "confirmMessage": "Se perderán los datos introducidos.",
+    "confirmButtonLabel": "Descartar",
+    "cancelButtonLabel": "Seguir editando"
+   }
+  ],
+  "primaryButtons": [
+   {
+    "type": "a!buttonWidget",
+    "label": "Crear expediente",
+    "style": "SOLID",
+    "color": "ACCENT",
+    "$action": {
+     "goto": "listado"
+    },
+    "submit": true
+   }
+  ]
+ }
+}

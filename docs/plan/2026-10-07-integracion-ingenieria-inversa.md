@@ -141,12 +141,12 @@ Por defecto, el aspecto estándar de Appian; la marca del cliente es un fichero 
     skills; las filas de versiones anteriores no se tocan), `.claude-plugin/{plugin.json,marketplace.json}` (sin «aena»
     en descripción ni palabras clave) y `pruebas/comprobar_plugin.py` (`REGLA_DOCS` y la comprobación nueva).
 
-- [ ] **Paso 1: pruebas que fallan.** En `pruebas/appian-prototipos/selftest.py`: sin `--brand`, `build.py` usa `appian`;
+- [x] **Paso 1: pruebas que fallan.** En `pruebas/appian-prototipos/selftest.py`: sin `--brand`, `build.py` usa `appian`;
   con `--brand x` y un `brand-x.json` de prueba junto al `app.json`, usa esa; con `--brand aena` sin su fichero, sale
   con error y dice dónde ponerlo. En `comprobar_plugin.py`: error si una skill lleva un `brand-*.json` que no sea
   `brand-appian.json`, o un logo. → FALLA.
-- [ ] **Paso 2:** mover, crear y ajustar; regenerar plantillas y galerías.
-- [ ] **Paso 3:** `comprobar_plugin.py --completo` en verde y `git grep -i -w aena -- skills .claude-plugin` vacío. La
+- [x] **Paso 2:** mover, crear y ajustar; regenerar plantillas y galerías.
+- [x] **Paso 3:** `comprobar_plugin.py --completo` en verde y `git grep -i -w aena -- skills .claude-plugin` vacío. La
   galería de componentes de antes del cambio, construida con el kit nuevo y `--brand aena` (los ficheros de AENA,
   sacados del historial, junto a su `app.json`), da el mismo HTML que con el kit de antes: así lo verán los proyectos de
   AENA. Commit «F2: prototipos sin la marca de un cliente».

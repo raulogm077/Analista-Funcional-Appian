@@ -1,0 +1,130 @@
+{
+  "id": "appian",
+  "name": "Appian (aspecto estándar)",
+  "source": "Valores por defecto del objeto Site de Appian 26.6: https://docs.appian.com/suite/help/26.6/sites_object.html#navigation-bar y https://docs.appian.com/suite/help/26.6/sites_object.html#branding. Sin logo y sin perfil CSS propio. Paleta, componentes, gráficos y estados: valores neutros del kit a partir de esos colores y de los estándar de Appian, con la auditoría de contraste (references/marca.md).",
+  "site": {
+    "_comment": "Propiedades del objeto Site con sus valores por defecto en Appian 26.6. El equipo de desarrollo las copia tal cual en el Site. Sin logo (en el Site, Logo = None) y con el perfil CSS por defecto (ninguno propio).",
+    "navigationLayout": "HEADER_BAR",
+    "headerBarStyle": "MERCURY",
+    "backgroundColor": "#0f203a",
+    "selectedPageHighlightColor": "#3fa7ce",
+    "accentColor": "#1d659c",
+    "loadingBarColor": "#1d659c",
+    "buttonShape": "SQUARED",
+    "inputShape": "SQUARED",
+    "dialogShape": "SQUARED",
+    "useUppercase": true,
+    "useUppercasePageTitles": true,
+    "showUserMenu": true
+  },
+  "typeface": {
+    "prototype": "Open Sans",
+    "appian": "Open Sans es la tipografía por defecto de Appian en web. Otra tipografía se configura en Admin Console > Branding > Typefaces, para todos los sites del entorno, o, desde 26.5, en un perfil CSS."
+  },
+  "palette": {
+    "_comment": "Colores para usar como hex en parámetros SAIL que aceptan hex (fondo de cards y cajas, sellos, barras decorativas, gráficos). Salen del objeto Site y de los colores estándar de Appian; los helpers (scripts/sail_helpers.py) leen navy, slate, steel, red, greenDark, amber, lineStrong, pageBg y grayLight.",
+    "navy": "#0F203A",
+    "accent": "#1D659C",
+    "highlight": "#3FA7CE",
+    "slate": "#666666",
+    "steel": "#426681",
+    "info": "#115EBB",
+    "red": "#B2002C",
+    "greenDark": "#117C00",
+    "amber": "#C36B05",
+    "lineStrong": "#828588",
+    "pageBg": "#F4F5F7",
+    "grayLight": "#E6E8EA",
+    "white": "#FFFFFF"
+  },
+  "components": {
+    "_comment": "Convenciones de uso de la marca en componentes SAIL (ver references/design-rules.md, basada en el SAIL Design System de Appian)",
+    "primaryButton": {
+      "style": "SOLID",
+      "color": "ACCENT",
+      "_uso": "Un único botón SOLID por pantalla: la acción más frecuente. ACCENT es el color por defecto de Appian"
+    },
+    "secondaryButton": {
+      "style": "OUTLINE",
+      "color": "ACCENT"
+    },
+    "destructiveButton": {
+      "style": "GHOST",
+      "color": "NEGATIVE",
+      "_uso": "Borrar o cancelar algo guardado; siempre con confirmHeader/confirmMessage"
+    },
+    "chartColorScheme": [
+      "#1D659C",
+      "#B35C00",
+      "#0F7B6C",
+      "#0F203A",
+      "#8C564B",
+      "#666666",
+      "#A23B72",
+      "#3FA7CE"
+    ],
+    "_chartColorScheme": "Series en este orden: el acento de Appian, ámbar, verde azulado, el azul marino de la barra del site, marrón, gris, magenta y, el último, el color de resaltado. Todas llegan a 3:1 sobre blanco y sobre el gris de página (WCAG 1.4.11) salvo el resaltado #3FA7CE (2,8:1), que solo resalta una serie con etiquetas de datos. Las cinco primeras se distinguen entre sí también con deuteranopía.",
+    "toolbarButton": {
+      "style": "OUTLINE",
+      "color": "SECONDARY",
+      "size": "SMALL",
+      "_uso": "Acciones sobre una parte del contenido (encima de un grid, dentro de una card)"
+    },
+    "contentCard": {
+      "style": "NONE",
+      "showBorder": false,
+      "showShadow": true,
+      "shape": "SEMI_ROUNDED",
+      "padding": "STANDARD",
+      "_uso": "Cards de contenido sobre fondo gris (headerContentLayout TRANSPARENT). Sobre fondo blanco: showBorder true y sin sombra"
+    },
+    "pageBackground": {
+      "cardPages": "TRANSPARENT",
+      "forms": "WHITE"
+    }
+  },
+  "appianSemanticApprox": {
+    "_comment": "Appian no publica los hex de sus colores semánticos: el prototipo usa aproximaciones visuales. En SAIL se usan SIEMPRE los enumerados (POSITIVE, NEGATIVE...), nunca estos hex.",
+    "POSITIVE": "#117C00",
+    "NEGATIVE": "#C8102E",
+    "WARN": "#B35C00",
+    "INFO": "#1664C0",
+    "SECONDARY": "#666666",
+    "STANDARD": "#222222",
+    "bgPositive": "#E8F5E3",
+    "bgNegative": "#FCE8EA",
+    "bgWarn": "#FFF4E0",
+    "bgInfo": "#E6F0FA",
+    "CHARCOAL_SCHEME": "#2E2E35",
+    "NAVY_SCHEME": "#0F203A",
+    "PLUM_SCHEME": "#3C2A4D"
+  },
+  "states": {
+    "_comment": "Paleta semántica de estados, común a toda la app. Tags en filas: fondo apagado (hex) y texto STANDARD, como el patrón de Appian; el fondo es el tinte al 15 % sobre blanco del color estándar de Appian de cada categoría. Iconos y textos: el enumerado (en curso, el azul INFO estándar como hex). Máximo dos colores no neutros por grid; nunca el color solo (siempre con texto o icono).",
+    "neutral": {
+      "tag": "#E8E8E8",
+      "enum": "SECONDARY",
+      "uso": "Borrador, cerrado, cancelado, sin iniciar"
+    },
+    "enCurso": {
+      "tag": "#DBE7F5",
+      "enum": "#115EBB",
+      "uso": "En curso, en tramitación, en revisión"
+    },
+    "atencion": {
+      "tag": "#F9EBDA",
+      "enum": "WARN",
+      "uso": "Pendiente de otro, vence pronto, requiere atención"
+    },
+    "positivo": {
+      "tag": "#DBEBD9",
+      "enum": "POSITIVE",
+      "uso": "Aprobado, vigente, completado"
+    },
+    "negativo": {
+      "tag": "#F3D9DF",
+      "enum": "NEGATIVE",
+      "uso": "Rechazado, vencido, error, alerta"
+    }
+  }
+}

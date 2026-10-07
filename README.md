@@ -12,8 +12,8 @@ fuentes/ (FU-01…) → analisis/funcional.md ──► DF en Word para que el c
                   → analisis/decisiones.md     (versiones y decisiones del cliente)
         │   ├─► appian-diagramas-bpmn: cada proceso en draw.io (editable en la reunión) + PNG
         │   └─► appian-best-practices: la doctrina de Appian que aplica el técnico, por secciones
-        ▼  appian-prototipos-aena
-prototipo/ navegable con marca AENA · capturas que vuelven a las fichas de pantalla del funcional
+        ▼  appian-prototipos
+prototipo/ navegable con la marca del cliente o la estándar de Appian · capturas que vuelven a las fichas de pantalla del funcional
 ```
 
 Cada reunión, correo o comentario del cliente al DF se incorpora con un informe de impacto que aprueba
@@ -22,7 +22,7 @@ el analista: solo cambia lo afectado, en el funcional, el técnico, los diagrama
 Sirve para cualquier proceso (acuerdos con terceros, medioambiente, servidumbres,
 informes, expedientes…): el dominio sale siempre de las fuentes del proyecto. Las
 plantillas y las galerías del plugin enseñan técnica, no un dominio
-(`skills/appian-prototipos-aena/galerias/README.md`), y el plugin no lleva ningún
+(`skills/appian-prototipos/galerias/README.md`), y el plugin no lleva ningún
 proyecto, tampoco de ejemplo.
 
 ## Qué hace cada skill
@@ -33,14 +33,14 @@ Cada petición entra por una sola skill. Las demás se usan desde ella, y se pas
 |---|---|---|---|
 | `appian-functional-analyst` | Leer las fuentes del proyecto y escribir el análisis funcional (`analisis/funcional.md`), del que sale el DF en Word para el cliente, y la especificación técnica para construir (`analisis/tecnico.md`). Encajar cada reunión, correo o comentario nuevo en lo que ya hay | Dibujar procesos, hacer prototipos, construir o revisar objetos de Appian, auditar una aplicación existente | La skill de diagramas para los procesos; buenas prácticas para orientar la solución (`00` y la sección que decide); el MCP de documentación |
 | `appian-diagramas-bpmn` | Dibujar los procesos en draw.io con notación BPMN y un carril por perfil: `.drawio` editable, PNG para el documento y BPMN 2.0. Decir qué se cambió a mano en una reunión | Decidir qué pasos tiene un proceso | Nada |
-| `appian-prototipos-aena` | Las pantallas: patrón, componentes de Appian, marca AENA, navegación, validaciones, capturas para el documento y trazabilidad con los requisitos | Redactar requisitos, decidir el modelo de datos o la seguridad, construir en Appian | El análisis como entrada; buenas prácticas para las reglas de pantalla (`02` y `09`); el MCP de documentación |
+| `appian-prototipos` | Las pantallas: patrón, componentes de Appian, marca (la del cliente, en `prototipo/` de su proyecto, o la estándar de Appian), navegación, validaciones, capturas para el documento y trazabilidad con los requisitos | Redactar requisitos, decidir el modelo de datos o la seguridad, construir en Appian | El análisis como entrada; buenas prácticas para las reglas de pantalla (`02` y `09`); el MCP de documentación |
 | `appian-best-practices` | Cómo se hace bien en Appian: decisiones de solución, reglas por dominio, quality gates y runbooks de mantenimiento. Es la entrada para construir, revisar o diagnosticar objetos | Análisis funcional, diagramas y prototipos | El MCP de documentación; la skill oficial [`dev-mcp-skills`](https://github.com/appian/dev-mcp-skills/) antes de escribir en un entorno |
 
 **MCP `appian-docs`**: la documentación oficial de Appian (servidor público de Appian alojado en Kapa). Lo que una skill no sepa con certeza de Appian se le pregunta antes de escribirlo, y lo que se escribe lleva la URL. Qué conviene hacer no es una duda de documentación: eso es de buenas prácticas.
 
 **Ingeniería inversa** (`appian-reverse-engineering`, se incorporará): lee una aplicación existente conectándose al entorno por MCP y deja su descripción y su auditoría en `as-is/`. La auditoría usa buenas prácticas en modo revisión y los procesos se dibujan con la skill de diagramas.
 
-`pruebas/comprobar_plugin.py` comprueba que todo esto se cumple: nombres y descripciones de las skills, ficheros y rutas que se citan entre ellas, servidores MCP, la regla de dudas de Appian y la versión. También, que ninguna skill lleve pruebas, ejemplos ni un proyecto: las pruebas de cada skill y sus datos ficticios están en `pruebas/<skill>/`, que no va en el paquete.
+`pruebas/comprobar_plugin.py` comprueba que todo esto se cumple: nombres y descripciones de las skills, ficheros y rutas que se citan entre ellas, servidores MCP, la regla de dudas de Appian y la versión. También, que ninguna skill lleve pruebas, ejemplos, un proyecto ni la marca de un cliente: las pruebas de cada skill y sus datos ficticios están en `pruebas/<skill>/`, que no va en el paquete, y la marca de un cliente, en `prototipo/` de su proyecto.
 
 ## Requisitos
 
@@ -86,7 +86,7 @@ PDF.
   ```
 
 **Retirar las skills sueltas**: si la organización tenía `appian-functional-analyst`,
-`appian-prototipos-aena` o `appian-best-practices` como skills independientes, hay que eliminarlas al
+`appian-prototipos` o `appian-best-practices` como skills independientes, hay que eliminarlas al
 publicar el plugin. Si no, existen dos veces con versiones distintas y no se sabe
 cuál se activa.
 
