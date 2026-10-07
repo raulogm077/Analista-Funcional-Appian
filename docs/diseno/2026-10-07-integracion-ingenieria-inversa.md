@@ -13,9 +13,9 @@ Siete necesidades, cada una con la prueba que demostrará que se cumple.
 
 | Necesidad | Cómo se demuestra |
 |---|---|
-| Documentar una aplicación antigua o mal hecha para que el equipo entienda cómo está hecha, con precisión y sin palabrería | Un agente que solo lee `as-is/` responde 20 preguntas típicas del equipo sobre una aplicación ficticia: al menos 18 bien, cada una con su evidencia, y ningún objeto inventado. Con menos texto que hoy |
+| Documentar una aplicación antigua o mal hecha para que el equipo entienda cómo está hecha, con precisión y sin palabrería | Un agente que solo lee `as-is/` responde 22 preguntas típicas del equipo sobre una aplicación ficticia: al menos 20 bien, entre ellas qué quedó sin verificar y qué hace falta, cada una con su evidencia, y ningún objeto inventado. Con menos texto que hoy |
 | El bloque B, aparte de ingeniería inversa, y sin la skill suelta | Ingeniería inversa no genera nada del bloque B, y la skill suelta se desinstala al cerrar (F9) |
-| Plantear una solución nueva bien hecha, para toda la aplicación o una parte, con buenas prácticas y eficiencia | En una aplicación ficticia con 10 malas prácticas sembradas, refactorización encuentra al menos 9 y propone para cada una una alternativa con su regla de buenas prácticas |
+| Plantear una solución nueva bien hecha, para toda la aplicación o una parte, con buenas prácticas y eficiencia | En una aplicación ficticia con 11 malas prácticas sembradas, refactorización encuentra al menos 10 y propone para cada una una alternativa con su regla de buenas prácticas |
 | Entender una aplicación para rehacer una parte o añadirle funcionalidades | En esa aplicación, un evolutivo con tres historias nuevas: el técnico marca bien qué es nuevo, qué se modifica y qué existe, con los nombres reales (lo comprueba un script) |
 | Analista: partir de un DF ya hecho y sus reuniones, digerir las reuniones periódicas y detectar incoherencias que confirma el equipo, o el cliente si nadie sabe responder | Proyecto ficticio con DF y tres reuniones con 10 incoherencias sembradas: el informe de impacto encuentra las 10 y no aplica ninguna sin confirmación |
 | Enseñar la propuesta al cliente con el prototipo y ajustar con su feedback | Demo ficticia con 6 comentarios: cambian solo las pantallas afectadas, y las validadas no se tocan sin permiso |
@@ -79,13 +79,16 @@ Cada dato lleva su evidencia y cada documento responde a preguntas del equipo; l
 - **Preguntas primero.** Cada documento empieza por las preguntas que responde («¿qué proceso cambia este estado?», «¿quién puede aprobar?», «¿qué falla si cae esta integración?») y solo lleva lo que las responde.
 - **Sin relleno.** Sigue las reglas de prosa del plugin (`redaccion.md`): no explica qué es un record type, no repite datos de otro documento (los enlaza) y las secciones vacías no salen. Tablas antes que prosa.
 - **Hechos, no consejos.** Los hallazgos dicen qué pasa y qué riesgo tiene. Qué hacer lo dice refactorización.
+- **Lo que falta, a la vista.** Lo que no se pudo verificar se registra (NV) con lo que hace falta para resolverlo (acceso, export, permiso, entorno o negocio) y a quién pedírselo. Nada se da por inexistente sin decir dónde se buscó, y lo que dice la definición no se toma por lo que pasa en ejecución.
+- **Preguntas de la revisión.** Lo que el equipo quiere saber se apunta al empezar, y al terminar cada pregunta queda respondida, parcial o sin resolver, con su NV o con lo que la revisión no incluye.
 - **Precisión comprobada.** `comprobar_asis.py` da error si:
   - un objeto citado no está en el INVENTARIO (nada inventado);
+  - se cita un NV que no existe o queda una pregunta de la revisión sin cerrar;
   - una fila de hechos no lleva su evidencia enlazada al anexo y su certeza;
   - una cifra no sale de `summary.json`;
   - quedan marcadores de plantilla, enlaces rotos o secretos.
 - **Avisos de estilo:** muletillas, frases largas, párrafos repetidos entre documentos y documentos que crecen más que lo que describen.
-- **Datos para las demás skills** en `as-is/datos/`: inventario, dependencias, hallazgos y procesos en JSON, sin usuarios ni credenciales. Refactorización y el analista no tocan los datos en bruto.
+- **Datos para las demás skills** en `as-is/datos/`: inventario, dependencias, hallazgos, procesos y lo que queda sin verificar, en JSON, sin usuarios ni credenciales. Refactorización y el analista no tocan los datos en bruto.
 - **Prueba del recién llegado** (primera tabla), antes y después del recorte, con una aplicación ficticia mal hecha a propósito y más completa que la del simulador actual. Esa misma aplicación sirve para las pruebas de refactorización y del analista.
 - **Menos documentos si la prueba lo pide.** Si dos documentos responden a lo mismo, se unen. Candidatos: LEEME con 00, y 05 con 06.
 
@@ -100,7 +103,7 @@ Se usa después de ingeniería inversa, cuando se quiere plantear cómo debería
   - **Solución.** Por capa (datos, seguridad, procesos, pantallas, integraciones): qué se hace, por qué y qué se descarta, hasta entidades, procesos y patrones de pantalla.
   - **Migración y convivencia.** Cómo pasan los datos y cómo conviven lo viejo y lo nuevo mientras dura el cambio.
   - **Hoja de ruta.** Fases en orden de dependencias.
-  - **Pendientes.** Lo que tiene que decidir el equipo o el cliente.
+  - **Pendientes.** Lo que tiene que decidir el equipo o el cliente, y lo que ingeniería inversa dejó sin verificar y condiciona la solución.
 - **Piezas:** rebuild-architect sin el 12, la parte de arquitectura y migración del 14 y `modernization-guide.md` reducido a señales que remiten a buenas prácticas (la doctrina no se copia).
 - **Después:** el analista escribe el funcional (lo que se conserva y lo que cambia) y el técnico, que baja a objetos cada decisión citando su REF.
 - **No hace:** requisitos ni especificación objeto a objeto (analista), documentar la aplicación (ingeniería inversa) ni revisar un objeto suelto (buenas prácticas).
@@ -135,8 +138,8 @@ La extracción completa también queda en el proyecto, en `as-is/extraccion/` (D
 
 | Quién lee | Qué | Para qué |
 |---|---|---|
-| Refactorización | `as-is/` | Diagnóstico y solución |
-| Analista | `as-is/`, catalogado como fuente | El origen de cada historia y los nombres reales del INVENTARIO |
+| Refactorización | `as-is/` | Diagnóstico, solución y pendientes |
+| Analista | `as-is/`, catalogado como fuente | El origen de cada historia, los nombres reales del INVENTARIO y lo que está sin verificar: pregunta técnica o, si lo resuelve negocio, también pregunta al cliente |
 | Analista | `refactorizacion/propuesta.md` | Las decisiones que el técnico baja a objetos |
 | Diagramas | Los JSON de `as-is/08-procesos-bpmn/` y de `analisis/diagramas/` | Dibujar lo que hay y lo que habrá |
 | Prototipos | `analisis/funcional.md` (y el técnico) | Las pantallas de la propuesta |
@@ -183,7 +186,7 @@ Diez fases en orden; ninguna se da por cerrada sin sus pruebas en verde.
 - [x] **F0 Decisiones.** Tomadas el 7 de octubre.
 - [x] **F1 Repositorio único.** El plugin, con ingeniería inversa dentro y su historial, en un solo repositorio del que parte cada hilo: raulogm077/Analista-Funcional-Appian, rama main.
 - [ ] **F2 Ingeniería inversa en el plugin.** Antes, las skills se quedan solo con lo que usan al trabajar: sus pruebas y datos ficticios pasan a `pruebas/` y el caso de ejemplo de prototipos, un proyecto entero, sale del plugin; prototipos pasa a `appian-prototipos`, con el aspecto estándar de Appian por defecto. Después, ingeniería inversa solo con el bloque A, sus pruebas en verde y su alta en `comprobar_plugin.py`. El bloque B se aparta para F5.
-- [ ] **F3 Precisa y sin relleno.** `comprobar_asis.py`, las reglas de prosa comunes, `as-is/datos/`, la aplicación ficticia mal hecha a propósito y la prueba del recién llegado antes y después.
+- [ ] **F3 Precisa y sin relleno.** `comprobar_asis.py`, las reglas de prosa comunes, `as-is/datos/`, la disciplina de evidencia (lo que queda sin verificar, negativos acotados, diseño frente a ejecución y preguntas de la revisión), la aplicación ficticia mal hecha a propósito y la prueba del recién llegado antes y después.
 - [ ] **F4 Diagramas.** Un solo exportador BPMN y un solo pintor. Se retiran `bpmn_layout.py`, `validate_mermaid.py` y `render_diagrams.sh`.
 - [ ] **F5 Refactorización.** La skill nueva con el 13, la arquitectura y la migración del 14, rebuild-architect y las señales. Lee solo `as-is/`. Prueba de malas prácticas sembradas.
 - [ ] **F6 Analista.** DF ya hecho como base, guion de la próxima reunión, aviso de texto viejo, ciclo con el prototipo, aplicación existente y aviso de parte mal hecha. Pruebas de incoherencias sembradas, demo y evolutivo.
@@ -203,6 +206,7 @@ Todas cerradas el 7 de octubre; el nombre del plugin se mantiene.
 | **D3** Repositorio | GitHub privado |
 | **D4** Extracción | Dentro del proyecto, en `as-is/extraccion/`, ya saneada: sin credenciales, secretos ni nombres de usuario |
 | Marca de los prototipos | El plugin se usará con varios clientes: por defecto, el aspecto estándar de Appian; la marca del cliente va en su proyecto y la skill pasa a llamarse `appian-prototipos` |
+| Disciplina de evidencia | Se adopta adaptada a lo que ya hace ingeniería inversa: registro de lo que queda sin verificar, negativos acotados, diseño frente a ejecución y preguntas de la revisión cerradas. Sin registro aparte de afirmaciones ni escala de confianza; la marca de inferido pasa a 🔶, la del analista |
 
 ## Cómo funciona el plugin
 

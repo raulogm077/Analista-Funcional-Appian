@@ -29,6 +29,8 @@ inversa y `selftest.py` en el resto; GitHub Actions en Windows, macOS y Linux.
 - Todo en español: documentos, mensajes de los scripts, commits y nombres de los objetos de los ejemplos.
 - Ejemplos y aplicaciones de prueba ficticios. Nada del cliente en el repositorio. Nada sale del equipo para pintar o convertir.
 - Ingeniería inversa usa solo los MCP de Appian (Dev MCP, Appian MCP Server y MCP de documentación) y en solo lectura.
+- Ingeniería inversa no da nada por inexistente sin decir dónde lo buscó, no toma la definición por la ejecución y
+  registra lo que no pudo verificar, con lo que hace falta para resolverlo (Tarea 8b).
 - La extracción vive en el proyecto, en `as-is/extraccion/` (D4), y se escribe ya saneada: sin credenciales, secretos,
   nombres de usuario (van seudónimos), rutas locales ni la lista de aplicaciones del entorno. Las demás skills leen
   `as-is/datos/`, nunca la extracción.
@@ -39,6 +41,7 @@ inversa y `selftest.py` en el resto; GitHub Actions en Windows, macOS y Linux.
 - Scripts con `pathlib`, `encoding="utf-8"` y rutas con espacios; en Windows el comando es `python`. Rutas de prueba
   neutras («Carpeta con espacios/Gestión app»).
 - Una rama por fase (`f2-…`, `f3-…`); a `main` llega con las pruebas en verde y la revisión independiente de la fase.
+  Al cerrarla, el resumen de cambios y las lecciones aprendidas van a `docs/evaluaciones.md`.
 - Antes de cada commit: `python3 pruebas/comprobar_plugin.py --completo`, que desde la Tarea 0 incluye las pruebas de
   ingeniería inversa (solas: `python3 -m pytest -q pruebas/appian-reverse-engineering`).
 - Commits terminados en `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` y
@@ -61,6 +64,8 @@ Lo que el diseño implica y ninguna prueba de tarea cubriría sola. Cada línea 
    analista con `datos/autorizaciones` da lo mismo que antes (Tarea 19).
 5. **Compañero sin Playwright o sin Node.** Se dibuja el `.drawio` y se exporta el BPMN sin navegador (sin PNG), y se
    dice qué falta. Pruebas `DIAGRAMAS_SIN_NAVEGADOR=1` (Tarea 12) y `REQUISITOS_SIN=playwright,docx` (Tarea 23).
+6. **Lo que no se pudo verificar se pierde por el camino.** Llega como NV a refactorización y al analista, que lo
+   tratan como pendiente y no como hecho. Pruebas `test_evidencia.py` (Tarea 8b) y las de las Tareas 14, 19 y 20.
 
 ---
 
@@ -302,7 +307,7 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
     (de `registro.json`, sin duplicados).
   - `procesos.json`: `{"procesos": [{"nombre", "json", "nodos", "ejecuciones"}]}`, con `json` = ruta del JSON de
     diagrama en `08-procesos-bpmn/`.
-- Lo usan las Tareas 6, 14, 19 y 20.
+- Lo usan las Tareas 6, 14, 19 y 20. La Tarea 8b añade `sin-verificar.json` y dos campos, sin cambiar nada de lo de aquí.
 
 - [ ] **Paso 1:** `test_datos.py::test_datos_formato`: tras el flujo del simulador con un `hallazgos/prueba.json` de un
   hallazgo sobre `DEM_ERP_API_TOKEN`, existen los cuatro ficheros con sus claves, cada objeto de cada hallazgo está en
@@ -343,12 +348,13 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   `pruebas/evaluaciones/aplicacion-ficticia/{malas-practicas.json,preguntas.json,ocultas/}`.
 - Modificar: `pruebas/appian-reverse-engineering/mock_devmcp/lcp_mcp_server_mock.py` (módulo de `$MOCK_APP`, por defecto `fixture`; el prefijo sale
   del objeto aplicación del fixture y no de `"DEM"` fijo en las líneas 170 y 239; tipo `DATA_STORE` en `_app_objects`;
-  definición para `DATA_TYPE` y `DATA_STORE`) y `pruebas/appian-reverse-engineering/mock_devmcp/appian_mcp_server_mock.py` (también `$MOCK_APP`).
+  definición para `DATA_TYPE` y `DATA_STORE`) y `pruebas/appian-reverse-engineering/mock_devmcp/appian_mcp_server_mock.py`
+  (también `$MOCK_APP`).
 
 **Interfaces:**
 - `fixture_mal_hecha` expone lo mismo que `fixture`: `APP_KEY`, `REFS`, `DEPENDENTS_SUPPORTED`, `GROUP_USERS`,
   `PM_HISTORY`, `VALIDATION_ISSUES` y `build()`.
-- Aplicación «MNT Mantenimiento de Instalaciones», prefijo `MNT`, unos 45 objetos, con estas 10 malas prácticas
+- Aplicación «MNT Mantenimiento de Instalaciones», prefijo `MNT`, unos 45 objetos, con estas 11 malas prácticas
   (`malas-practicas.json`: `id`, `descripcion`, `objetos`, `capa`, `bp` = «doc §sección», fijada consultando
   `appian-best-practices/scripts/seccion.py`):
   1. `MNT_IF_ListadoOrdenes`: `a!queryEntity` sin filtros ni paginación.
@@ -361,18 +367,32 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   8. `MNT_INT_ConsultarERP`: integración sin tratamiento de errores ni reintentos.
   9. `ReglaCalculoPlazo` y `calcFecha`: sin prefijo ni convención de nombres.
   10. `MNT_IF_Tecnicos`: una consulta dentro de `a!forEach` por cada fila.
+  11. `MNT_CS_Proveedores`: connected system con `authType` explícito sin autenticación y la URL de un entorno de
+      desarrollo, en un entorno que no es de desarrollo.
+- Lo que no se puede verificar (Tarea 8b): las definiciones de `MNT_IF_FormularioOrden`, `MNT_PM_GestionOrden` y
+  `MNT_IF_Panel` llaman a `rule!CMN_FormatearFecha`, `rule!CMN_UsuarioActual` y `rule!CMN_IF_Cabecera`, de otra
+  aplicación ficticia (un marco común con prefijo `CMN`) que no está en la extracción. No hace falta una herramienta de
+  dependencias salientes: la del Dev MCP que se conoce da quién usa un objeto, y si el real trae otra, está sin verificar.
+- Con `MOCK_APP=fixture_mal_hecha`, el entorno simulado es de preproducción (`LCP_URL` = `https://pre.mnt.ejemplo.local`,
+  que pasa `test_fixture_mal_hecha.py` a `add_devmcp` y pone el `.mcp.json` del proyecto de prueba de la Tarea 9); la
+  URL de `MNT_CS_Proveedores` es de desarrollo (`https://proveedores-dev.ejemplo.local`).
 - Lo que pregunta un recién llegado: CDT `MNT_OrdenDTO` con su data store, record types `MNT Orden`, `MNT Técnico` y
   `MNT Estado`, grupos `MNT Administradores`, `MNT Técnicos` y `MNT Supervisores`, un site de tres páginas, un proceso
   sin ejecuciones `MNT_PM_Antiguo` y usuarios ficticios en los grupos, en una constante y como asignados.
-- `preguntas.json`: 20 preguntas `{"id": "Q-01", "pregunta", "respuestas": [formas aceptadas], "tipo": "objeto|numero|si-no|lista"}`,
+- `preguntas.json`: 22 preguntas `{"id": "Q-01", "pregunta", "respuestas": [formas aceptadas], "tipo": "objeto|numero|si-no|lista"}`,
   al menos una por documento 01–11. Por ejemplo: «¿Qué proceso lanza la acción "Nueva orden"?» → `MNT_PM_GestionOrden`;
-  «¿Cada cuánto se ejecuta el recordatorio?» → «5 minutos»; «¿Qué constante cambia por entorno?» → `MNT_URL_ERP_PRE`;
+  «¿Cada cuánto está programado el recordatorio?» → «5 minutos»; «¿Qué constante cambia por entorno?» → `MNT_URL_ERP_PRE`;
   «¿Qué proceso no se ha ejecutado nunca?» → `MNT_PM_Antiguo`; «¿Qué grupos ven la página Administración?» → `MNT Administradores`.
+  Q-21 mide la Tarea 8b: «¿Qué no se pudo verificar y qué hace falta para hacerlo?» → `lista` con
+  `respuestas` = `["CMN_FormatearFecha", "CMN_UsuarioActual", "CMN_IF_Cabecera", ["export", "acceso"]]` (un elemento que
+  es una lista son formas alternativas). Q-22: «¿Qué connected system no tiene autenticación?» → `MNT_CS_Proveedores`.
 - `ocultas/`: 7 preguntas y 3 malas prácticas más, escritas por un agente aparte con solo el fixture delante.
 
 - [ ] **Paso 1:** `test_fixture_mal_hecha.py`: con `MOCK_APP=fixture_mal_hecha`, `extract` + `build_model.py` dan al
   menos 40 objetos y prefijo `MNT`; el CDT y el data store tienen `detail: "full"`; cada objeto de `malas-practicas.json`
-  y cada respuesta de tipo `objeto` de `preguntas.json` está en `inventory.json`; y el simulador DEM da lo mismo que antes. → FALLA.
+  y cada respuesta de tipo `objeto` de `preguntas.json` está en `inventory.json`; los tres objetos `CMN` están en la
+  definición de quien los usa y no en `inventory.json`; `MNT_CS_Proveedores` llega con su `authType` y su URL; la URL
+  del entorno no es de desarrollo; y el simulador DEM da lo mismo que antes. → FALLA.
 - [ ] **Paso 2:** escribir la aplicación, los cambios del simulador y los JSON. **Paso 3:** pytest en verde.
 - [ ] **Paso 4:** commit «F3: aplicación ficticia mal hecha» y etiqueta `f3-antes` (punto de partida de la Tarea 9).
 
@@ -394,26 +414,127 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   documento y sin consejos (la frase de 09 «Appian recomienda dividir…» se va; el dato «procesos de más de 50 nodos» se queda).
 - [ ] **Paso 3:** pytest en verde. Commit «F3: plantillas que responden preguntas».
 
+### Tarea 8b: Disciplina de evidencia
+
+Lo aprobado en la evaluación de encaje del 7 de octubre, adaptado a lo que la skill ya hace (✅/🔵/❓, evidencia
+enlazada al anexo, «dato ausente no es defecto»). Lo que no se pudo verificar queda registrado con lo que hace falta para
+resolverlo; nada se da por inexistente sin decir dónde se buscó; la definición no se toma por la ejecución; y cada
+revisión cierra las preguntas con las que empezó. Solo añade: ningún fichero ni campo de `as-is/datos/` (Tarea 5) cambia
+de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶, la del analista; el JSON sigue diciendo `inferido`.
+
+**Ficheros:**
+- Modificar en `skills/appian-reverse-engineering/`:
+  - `references/execution-principles.md`:
+    - el principio 3 vale también para objetos y dependencias: «no encontrado en <ámbito consultado>» (aplicación,
+      entorno o herramienta), nunca «no existe»;
+    - el principio 4 admite «según su nombre» solo cuando ni la definición ni otra respuesta dicen lo que se afirma
+      (sigue valiendo, por ejemplo, para el actor que se deduce del nombre de un grupo);
+    - principio nuevo, «Diseño no es ejecución»: frecuencia, fallos, tiempos y volúmenes solo con evidencia de ejecución
+      (`@history`, recuentos del data fabric, Appian MCP Server); si no, «configurado para…» ✅ y lo de la ejecución ❓;
+    - §3, «Registro de hallazgos»: `base` (las evidencias de las que sale) es obligatorio con `certeza: inferido`;
+    - sección nueva «Sin verificar»: qué es un NV; lo registra el propietario del área y el orquestador une los
+      duplicados en la pasada de coherencia (`duplicadoDe`), como con los hallazgos; una limitación global va en «Qué
+      no incluye» de LEEME, no como NV;
+    - una regla de trabajo: una llamada fuera del script de extracción —al Dev MCP, con las herramientas que permite
+      `scripts/devmcp_policy.json`, o al Appian MCP Server, solo con lo que permite `references/data-fabric.md`
+      (metadatos y recuentos)— responde a una pregunta de la revisión o a un NV, y lo que se anota en él va saneado. El
+      MCP de documentación sigue con sus reglas («Dudas de Appian»);
+  - `references/presentation-rules.md` (Regla 7 y checklist con ✅ 🔶 ❓; un ❓ cita su NV cuando lo tiene),
+    `references/analysis-workflow.md` y `references/datos.md` (los campos nuevos);
+  - lo que remitía a las preguntas abiertas de `12`, que se va en la Tarea 1 (`references/response-format.md` y
+    `agents/pdf-publisher.md`), remite a «Sin verificar»;
+  - `SKILL.md`: la pregunta única del paso 5 de la fase 0 pide también qué necesita saber el equipo (sin respuesta: qué
+    hace, cómo está hecha y qué riesgos tiene), que se guarda en `preguntas` de `output_preferences.json`
+    (`{pdf, dashboard, preguntas}`); la fase 6 ejecuta `build_datos.py` después de escribir LEEME, para que rellene su
+    tabla «Sin verificar»; la fase 8 cierra cada pregunta, vuelve a ejecutar `build_datos.py` si ha creado un NV y la
+    respuesta al usuario dice qué preguntas quedan abiertas;
+  - plantillas: `LEEME.md` («Preguntas de esta revisión» tras el TL;DR; «Sin verificar», generada; `NV-<ÁREA>-NN` en
+    «Identificadores»; leyenda con 🔶) e `INVENTARIO.md` («Para qué» de un objeto sin descripción: una frase sacada de
+    su definición, 🔶, y «🔶 según su nombre» solo si no la tiene; «Cobertura de la extracción» suma las herramientas
+    usadas y omitidas, con el motivo, de `extraction_plan.json` y `extraction_report.json`);
+  - los agentes de análisis (registran sus NV y el `base` de sus hallazgos inferidos);
+  - `scripts/build_model.py`: un `rule!` o `cons!` cuyo nombre no está en la aplicación crea un nodo externo sin uuid,
+    con su nombre y su tipo («llamado con rule!», porque puede ser regla, interfaz, integración o decisión, o
+    constante); si una herramienta de dependencias ya trajo ese objeto con uuid, se une por nombre en un solo nodo; el
+    tipo de todos los nodos externos pasa por `canon_ext`;
+  - `scripts/build_registry.py` (🔶; error si un hallazgo `inferido` no trae `base`), `scripts/build_datos.py` y
+    `scripts/comprobar_asis.py`;
+  - 🔵 → 🔶 en toda la skill (plantillas, agentes, referencias y scripts) y en sus pruebas.
+- Modificar `pruebas/comprobar_plugin.py`: error si una skill usa 🔵 como marca.
+- Modificar `pruebas/appian-reverse-engineering/{test_datos.py,test_registry.py}` (cinco ficheros en `datos/`; `base`).
+- Crear: `pruebas/appian-reverse-engineering/test_evidencia.py`.
+
+**Interfaces:**
+- `<trabajo>/sin-verificar/<agente>.json`: `[{"id": "NV-ARQ-01", "pregunta", "porQue", "queHaceFalta", "aQuien",
+  "dondeSeBusco", "objetos": [], "indicios", "estado", "documento", "duplicadoDe"}]`:
+  - `id` cumple `^NV-[A-Z]{2,4}-\d{2,3}$`, con el prefijo de área de los hallazgos (no «PV»: en Appian son las
+    variables de proceso);
+  - `queHaceFalta` empieza por acceso, export, permiso, entorno o negocio; `estado` es abierto, parcial o resuelto;
+  - `objetos`: los de la aplicación afectados y los de fuera; `duplicadoDe` solo lo pone el orquestador.
+- `build_datos.construir()` valida los NV como `build_registry.py` valida los hallazgos (error con un `id`, un `estado` o
+  un `queHaceFalta` fuera de formato), los sanea con `privacidad.sanea` y además escribe:
+  - `datos/sin-verificar.json`: `{"sinVerificar": [...]}`, sin duplicados;
+  - en `datos/dependencias.json`, `fueraDeLaAplicacion: [{"nombre", "tipo", "usadoPor": [], "usa": [], "nv"}]`, de los
+    nodos externos del grafo: `usadoPor` son los objetos de la aplicación que lo llaman y `usa`, los que él llama; `nv`,
+    el NV que lo tiene en `objetos`. No se llama `externos` porque en la skill de diagramas son los participantes externos;
+  - en `datos/hallazgos.json`, `base` en los de certeza `inferido`;
+  - en LEEME, entre `<!-- sin-verificar:inicio -->` y `<!-- sin-verificar:fin -->`, la tabla
+    `ID · Pregunta · Qué hace falta · A quién · Estado`.
+- LEEME, «Preguntas de esta revisión»: `Pregunta · Estado · Dónde se responde`. Estado = Respondida, Parcial o Sin
+  resolver. Dónde = un enlace a un documento, el ID de un NV o, si lo impide una limitación global, un enlace a «Qué no
+  incluye».
+- `comprobar_asis.py`:
+  - errores: un `NV-…` citado que no está en `sin-verificar.json`; una pregunta de `preguntas` que no está en la tabla,
+    o está sin estado, o Parcial o Sin resolver sin NV ni enlace a «Qué no incluye»; una certeza fuera de ✅ 🔶 ❓;
+  - avisos: «no existe», «no existen» o «no hay ningún» en un entregable (no en `anexo/` ni en `extraccion/`); «según su
+    nombre» en una fila de INVENTARIO cuyo objeto tiene `detail: "full"` en `extraccion/inventory.json`; un hallazgo
+    `inferido` de severidad Alta con menos de dos evidencias en `base`; un objeto de `fueraDeLaAplicacion` con
+    `usadoPor` y sin NV (los que solo usan la aplicación no son nada sin verificar).
+
+- [ ] **Paso 1: pruebas que fallan.** `test_evidencia.py`, con el simulador (variante A, y `MOCK_APP=fixture_mal_hecha`
+  donde se dice):
+  - `test_sin_verificar_formato`: un `sin-verificar/prueba.json` llega validado y saneado a `datos/` y a la tabla de
+    LEEME; con un `id` o un `estado` fuera de formato, error;
+  - `test_nv_inexistente`, `test_pregunta_sin_cerrar` y `test_pregunta_que_falta`: errores; una pregunta Parcial con
+    enlace a «Qué no incluye» no da error;
+  - `test_negativo_sin_ambito`: aviso en un entregable y nada en `anexo/`;
+  - `test_segun_su_nombre_con_definicion`: aviso solo en la fila de un objeto con `detail: "full"`;
+  - `test_fuera_de_la_aplicacion` (`fixture_mal_hecha`): los tres objetos `CMN` de la Tarea 7 salen en
+    `fueraDeLaAplicacion` con su `usadoPor`, y sin NV dan aviso;
+  - `test_base_en_inferidos`: un `inferido` sin `base` da error en `build_registry.py`; uno Alta con una evidencia,
+    aviso; con dos, nada;
+  - `test_marca_de_inferido`: ningún 🔵 en la skill (la prueba lo escribe como `"\U0001F535"`) y los JSON siguen
+    diciendo `inferido`. → FALLA.
+- [ ] **Paso 2:** implementar y reescribir reglas, plantillas y agentes.
+- [ ] **Paso 3:** pytest y `comprobar_plugin.py --completo` en verde. Commit «F3: disciplina de evidencia».
+
 ### Tarea 9: Evaluación del recién llegado (antes y después)
 
 **Ficheros:**
-- Crear: `pruebas/evaluaciones/recien-llegado/{README.md,puntuar.py,palabras.py}` y, en `docs/evaluaciones.md`, sus
-  resultados. El proyecto de prueba `MNT` se crea en `$PROYECTOS_PRUEBA/MNT/`, fuera del repositorio; las Tareas 15 y
+- Crear: `pruebas/evaluaciones/recien-llegado/{README.md,puntuar.py,palabras.py,evidencia.py}` y, en
+  `docs/evaluaciones.md`, sus resultados. El proyecto de prueba `MNT` se crea en `$PROYECTOS_PRUEBA/MNT/`, fuera del repositorio; las Tareas 15 y
   22 trabajan sobre él.
 
 **Interfaces:**
-- `puntuar.py <respuestas.json> <as-is> [--ocultas]`: `respuestas.json` = `[{"id": "Q-01", "respuesta", "evidencia": "ruta#ancla"}]`.
-  Acierta si la respuesta normalizada está entre las aceptadas y el fichero de la evidencia existe. Imprime aciertos y
-  sale 0 con el 90 % o más.
+- `puntuar.py <respuestas.json> <as-is> [--ocultas] [--minimo N] [--obligatorias Q-21,…]`: `respuestas.json` =
+  `[{"id": "Q-01", "respuesta", "evidencia": "ruta#ancla"}]`. Acierta si la respuesta normalizada está entre las
+  aceptadas y el fichero de la evidencia existe; una de tipo `lista`, si están todos sus elementos (de un elemento que
+  es una lista de formas, basta una). Imprime aciertos y
+  sale 0 con `--minimo` aciertos o más (por defecto, el 90 %) y todas las obligatorias bien.
+- `evidencia.py <as-is>`: en `datos/`, `MNT_CS_Proveedores` tiene un hallazgo `verificado` con evidencia a su ficha del
+  anexo, y los tres `CMN` están en `fueraDeLaAplicacion` con un NV cuyo `queHaceFalta` empieza por export o acceso; y
+  ningún entregable dice «no existe». Sale 0 si se cumple todo.
 - `palabras.py <as-is>`: palabras por documento y total.
 
 - [ ] **Paso 1:** «antes»: desde `f3-antes`, un agente genera `as-is/` de la aplicación ficticia siguiendo el SKILL.md
-  contra el simulador, en `$PROYECTOS_PRUEBA/MNT-antes/`; otro, que solo lee su `as-is/`, responde las 20 preguntas y las 7
+  contra el simulador, en `$PROYECTOS_PRUEBA/MNT-antes/`; otro, que solo lee su `as-is/`, responde las 22 preguntas y las 7
   ocultas. Aciertos y palabras a `docs/evaluaciones.md`.
-- [ ] **Paso 2:** «después», igual con la Tarea 8 hecha, en `$PROYECTOS_PRUEBA/MNT/`. Criterio: 18 de 20 y 6 de 7
-  ocultas, con evidencia; 0 errores de `comprobar_asis.py`; menos palabras que «antes».
+- [ ] **Paso 2:** «después», igual con las Tareas 8 y 8b hechas, en `$PROYECTOS_PRUEBA/MNT/`. Criterio:
+  `puntuar.py --minimo 20 --obligatorias Q-21` y, con las ocultas, `--minimo 6`; `evidencia.py` sale 0; 0 errores de
+  `comprobar_asis.py`; menos palabras que «antes».
 - [ ] **Paso 3:** si dos documentos se responden el uno al otro (LEEME con 00, 05 con 06), se unen —plantillas,
-  entregables del SKILL.md, publicadores y pruebas de la Tarea 8— y se repite el Paso 2.
+  entregables del SKILL.md, publicadores y pruebas de las Tareas 8 y 8b— y se repite el Paso 2. Las secciones de la
+  Tarea 8b van al documento que quede, y `build_datos.py` escribe en él.
 - [ ] **Paso 4:** commit. Cierre de fase: revisión y merge.
 
 ---
@@ -494,6 +615,7 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
 - Crear desde `docs/bloque-b/`: `skills/appian-refactorizacion/SKILL.md`, `assets/plantillas/propuesta.md`,
   `agents/arquitecto-refactorizacion.md` (rebuild-architect sin el 12 ni el detalle objeto a objeto del 14) y
   `references/senales.md` (de `modernization-guide.md`: `Señal · Dónde se ve en as-is/ · Problema · BP nn §x`, sin copiar doctrina).
+  Donde el bloque B decía 🔵, 🔶 (Tarea 8b).
 - Borrar: `docs/bloque-b/`.
 - Modificar: `pruebas/comprobar_plugin.py` (fuera de `EXTERNAS`, dentro de `REGLA_DOCS`; error si refactorización o el
   analista citan `as-is/extraccion` o `mcp_raw`) y `README.md`.
@@ -501,9 +623,12 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
 **Interfaces:**
 - `propuesta.md`: `## 1. Alcance` (qué se rehace, qué se queda y los límites del equipo: plazo y lo que no se puede
   tocar) · `## 2. Diagnóstico` (fichas `**REF-nn — Problema**` con `Evidencia · Regla · Efecto · Prioridad · Esfuerzo`;
-  Evidencia enlaza a `../as-is/…`; Regla = «BP nn §x») · `## 3. Solución` (por capa: `Capa · Qué se hace · Por qué ·
+  Evidencia enlaza a `../as-is/…` y cita el `H-…` si sale de un hallazgo; Regla = «BP nn §x») · `## 3. Solución` (por capa: `Capa · Qué se hace · Por qué ·
   Se descarta`, cada fila con sus REF) · `## 4. Migración y convivencia` · `## 5. Hoja de ruta` (`Fase · Qué · Depende de`) ·
-  `## 6. Pendientes`.
+  `## 6. Pendientes` (lo que tiene que decidir el equipo o el cliente, y los NV de `as-is/datos/sin-verificar.json` que
+  condicionan la solución, con su ID).
+- Si la evidencia de una REF cita un hallazgo `inferido` o `pendiente`, la REF lo dice y la Hoja de ruta pone antes
+  «Verificar H-…» (Tarea 8b).
 - SKILL.md: «Qué hace y qué no», entradas (`as-is/`, alcance y límites), flujo, «Dudas de Appian» (bloque común) y
   `## Qué escribe` con `refactorizacion/propuesta.md`.
 
@@ -521,10 +646,14 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
 - `comprobar(p: Path) -> tuple[list[str], list[str]]`. Errores: falta un apartado; una REF sin evidencia o con un enlace
   a `as-is/` que no existe; una «BP nn §x» que `appian-best-practices/scripts/seccion.py nn x` no encuentra; en
   Diagnóstico o en «Sustituye a», un nombre con el prefijo de la app que no está en `as-is/datos/inventario.json`; una
-  REF que no aparece en Solución. Aviso: una REF que no está en la Hoja de ruta.
+  REF que no aparece en Solución; un NV citado que no está en `as-is/datos/sin-verificar.json`. Avisos: una REF que no
+  está en la Hoja de ruta; una REF cuya evidencia cita un hallazgo `inferido` o `pendiente` sin «Verificar H-…» antes en la
+  Hoja de ruta.
+- Los datos de `datos/mantenimiento` traen un `sin-verificar.json` con un NV y un hallazgo `inferido`.
 
-- [ ] **Paso 1:** selftest: `datos/mantenimiento` pasa (0/0) y cuatro copias rotas (evidencia rota, «BP 99 §1», objeto inventado en
-  Diagnóstico, REF sin Solución) dan su error; un objeto nuevo en Solución no da error. → FALLA.
+- [ ] **Paso 1:** selftest: `datos/mantenimiento` pasa (0/0); cinco copias rotas (evidencia rota, «BP 99 §1», objeto
+  inventado en Diagnóstico, REF sin Solución, NV inexistente) dan su error, y una REF sobre el hallazgo inferido sin
+  «Verificar» da su aviso; un objeto nuevo en Solución no da error. → FALLA.
 - [ ] **Paso 2:** implementar. **Paso 3:** `comprobar_plugin.py --completo` en verde. Commit.
 
 ### Tarea 15: Evaluación de malas prácticas sembradas
@@ -532,11 +661,14 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
 **Ficheros:** Crear `pruebas/evaluaciones/malas-practicas/{README.md,puntuar.py}`; resultados en `docs/evaluaciones.md`.
 
 **Interfaces:**
-- `puntuar.py <propuesta.md> [--ocultas]`: una mala práctica cuenta si una REF cita en su evidencia alguno de sus
-  objetos, su regla es del documento de BP esperado y la REF tiene alternativa en Solución. Sale 0 con el 90 % o más.
+- `puntuar.py <propuesta.md> <as-is> [--ocultas]`: una mala práctica cuenta si una REF cita en su evidencia alguno de
+  sus objetos, su regla es del documento de BP esperado y la REF tiene alternativa en Solución. Además, «Pendientes»
+  tiene que citar los NV de `as-is/datos/sin-verificar.json` que incluyen los objetos `CMN` (los usan las malas
+  prácticas 2, 3 y 4). Sale 0 con el 90 % o más y esa cita.
 
 - [ ] **Paso 1:** un agente ejecuta refactorización en el proyecto de prueba `$PROYECTOS_PRUEBA/MNT/` siguiendo el SKILL.md.
-- [ ] **Paso 2:** 9 de 10 y 3 de 3 ocultas, y `comprobar_propuesta.py` sin errores. Resultados a `docs/evaluaciones.md`.
+- [ ] **Paso 2:** 10 de 11 y 3 de 3 ocultas, con los NV de `CMN` en «Pendientes» (`puntuar.py` sale 0), y
+  `comprobar_propuesta.py` sin errores. Resultados a `docs/evaluaciones.md`.
 - [ ] **Paso 3:** commit. Cierre de fase: revisión y merge.
 
 ---
@@ -586,19 +718,31 @@ palabras que tenía antes y ya no tiene; avisa de cada otra línea del funcional
   conserva», «Cambia» o «Nueva»; si corrige un hallazgo, la cita «[FU-nn H-…]» va en la trazabilidad, no en el DF),
   `references/tecnico-plantilla.md` (con `as-is/`: §3 termina con «Carga inicial y migración» `Origen en la app actual ·
   Destino · Transformación · Volumen · Cómo se verifica`; §13 es una tabla `Paso · Objeto · Tipo · Situación · Sustituye
-  a`, con Situación = Nuevo, Modifica, Existe o Sustituye; §2: una DT cita «[FU-nn REF-nn]» en «Necesidad»; sin `as-is/`
-  todo sigue como hoy), `references/ingesta-fuentes.md` y `scripts/leer_fuentes.py` (opción `--una-fuente`: `as-is/`
+  a`, con Situación = Nuevo, Modifica, Existe o Sustituye; §2: una DT cita «[FU-nn REF-nn]» en «Necesidad»; un NV de
+  `as-is/` que condiciona lo que se construye entra como PT, con la cita «[FU-nn NV-…]»; sin `as-is/` todo sigue como
+  hoy). En `funcional-plantilla.md`, si el NV lo tiene que resolver negocio, entra además como PC (así llega al guion
+  de la Tarea 17), redactada en términos de negocio y sin objetos de Appian, con la cita en el comentario de
+  trazabilidad de su fila. `references/ingesta-fuentes.md` y `scripts/leer_fuentes.py` (opción `--una-fuente`: `as-is/`
   entra como una sola FU con el índice de sus documentos; `propuesta.md`, como cualquier fichero), `scripts/comprobar.py`,
   `pruebas/appian-functional-analyst/selftest.py`, `SKILL.md` (modo evolutivo y de refactorización).
 - Crear: `pruebas/appian-functional-analyst/datos/evolutivo/` (ficticio: `as-is/datos/` de la app DEM del simulador,
-  una `refactorizacion/propuesta.md` pequeña y un análisis con tres historias nuevas).
+  con un NV y un objeto fuera de la aplicación, una `refactorizacion/propuesta.md` pequeña y un análisis con tres
+  historias nuevas).
 
-**Interfaces:** `comprobar.comprobar_as_is(m)`, solo si existe `<p>/as-is/datos/inventario.json`. Errores: historia sin
-«Origen»; «Corrige H-xx» en una tabla del DF; una cita de hallazgo que no está en `hallazgos.json`; en §13, «Modifica» o
-«Existe» con un objeto que no está en el inventario, «Nuevo» con uno que sí está, o «Sustituye» sin un objeto del
-inventario; con propuesta, una REF de su Solución sin DT que la cite o un §3 sin la tabla de migración.
+**Interfaces:** `comprobar.comprobar_as_is(m)`, solo si existe `<p>/as-is/datos/inventario.json`.
+- Errores: historia sin «Origen»; «Corrige H-xx» en una tabla del DF; una cita de hallazgo que no está en
+  `hallazgos.json`; en §13, «Modifica» o «Existe» con un objeto que no está ni en el inventario ni en
+  `fueraDeLaAplicacion`, «Nuevo» con uno que está en cualquiera de los dos, o «Sustituye» sin un objeto del inventario;
+  una cita de NV que no está en `sin-verificar.json`; con propuesta, una REF de su Solución sin DT que la cite o un §3
+  sin la tabla de migración.
+- Un objeto de `fueraDeLaAplicacion` puede ser «Existe» (está en otra aplicación); «Modifica» con él es aviso: «CMN_X es
+  de otra aplicación: ¿quién la cambia?».
+- Si `as-is/datos/` no trae `sin-verificar.json` ni `fueraDeLaAplicacion` (un `as-is/` anterior a la Tarea 8b), lo que
+  depende de ellos no se comprueba.
 
-- [ ] **Paso 1:** selftest: `datos/evolutivo` pasa; cinco copias rotas dan su error; `leer_fuentes.py --una-fuente`
+- [ ] **Paso 1:** selftest: `datos/evolutivo` pasa; siete copias rotas dan su error (dos de ellas, «Nuevo» con el objeto
+  de fuera y un NV inexistente); una con «Existe» y el objeto de fuera no da error, y con «Modifica» da su aviso;
+  `leer_fuentes.py --una-fuente`
   cataloga `as-is/` como una FU; y `datos/autorizaciones`, sin `as-is/`, da exactamente los mismos errores y avisos
   que antes. → FALLA.
 - [ ] **Paso 2:** implementar y escribir `datos/evolutivo`. **Paso 3:** selftest en verde. Commit.
@@ -607,10 +751,13 @@ inventario; con propuesta, una REF de su Solución sin DT que la cite o un §3 s
 
 **Ficheros:** Modificar `scripts/comprobar.py`, `pruebas/appian-functional-analyst/selftest.py` y `SKILL.md`.
 
-**Interfaces:** dentro de `comprobar_as_is(m)`: aviso por cada fila de §13 «Modifica» o «Existe» cuyo objeto tiene un
-hallazgo de severidad Alta: «DEM_X tiene H-SEG-01 (Alta): ¿pasa antes por refactorización?».
+**Interfaces:** dentro de `comprobar_as_is(m)`, por cada fila de §13 «Modifica» o «Existe»:
+- aviso si su objeto tiene un hallazgo de severidad Alta: «DEM_X tiene H-SEG-01 (Alta): ¿pasa antes por refactorización?»;
+- aviso si su objeto tiene un NV abierto o parcial: «DEM_X tiene NV-ARQ-01 sin verificar: ¿PC?» si su `queHaceFalta`
+  empieza por negocio, y «¿PT?» si no.
 
-- [ ] **Paso 1:** selftest con `datos/evolutivo` (un objeto con un hallazgo Alta) → el aviso cita su H. → FALLA.
+- [ ] **Paso 1:** selftest con `datos/evolutivo` (un objeto con un hallazgo Alta y el objeto de fuera, con un NV abierto,
+  como «Existe») → cada aviso cita su H o su NV. → FALLA.
 - [ ] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 21: DF ya hecho (D2) y ciclo con el prototipo
@@ -768,7 +915,13 @@ tercio en `ocultas/`) y `pruebas/evaluaciones/enrutado/README.md`; resultados en
 - [ ] **Paso 1:** con la aplicación ficticia: ingeniería inversa → refactorización de un módulo → funcional y técnico
   (con una reunión ficticia que cambia algo) → diagramas → prototipo → DF en Word. Todos los comprobadores sin errores.
 - [ ] **Paso 2:** un agente que no ha visto el trabajo revisa la rama entera contra el diseño; se corrige lo que encuentre.
-- [ ] **Paso 3:** commit.
+- [ ] **Paso 3 (Raúl):** con una aplicación real del cliente, en su equipo: ingeniería inversa en la carpeta de su
+  proyecto, con extracción nueva (la guardada es del formato anterior a la Tarea 2). Lo que Raúl sabe que no se puede
+  verificar sale como NV con lo que hace falta, los hallazgos que ya conoce salen verificados con su evidencia y
+  refactorización, sobre ese `as-is/`, recoge esos NV en «Pendientes». El resultado se queda en el proyecto. A
+  `docs/evaluaciones.md` va si pasó o no y qué se corrigió, sin nombres ni detalles del cliente; si no pasa, se corrige
+  y se repite antes de la Tarea 31.
+- [ ] **Paso 4:** commit.
 
 ### Tarea 31: Paquete, instalación limpia, versión y entrega
 
