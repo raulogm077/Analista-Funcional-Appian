@@ -11,7 +11,8 @@ Qué mira:
   proyecto (proyecto.md, fuentes/, analisis/, as-is/, refactorizacion/ o prototipo/): van en pruebas/<skill>/;
 - que ninguna skill lleve la marca de un cliente: un brand-*.json que no sea brand-appian.json (la estándar de Appian)
   o un logo (MARCA_NEUTRA, LOGO e IMAGENES dicen qué es cada cosa); van en <p>/prototipo/ de su proyecto;
-- que las skills que se citan existan en el plugin (o estén en EXTERNAS);
+- que las skills que se citan existan en el plugin (o estén en EXTERNAS); el README cita además el nombre anterior de
+  una skill (ANTERIORES), para retirar sus copias sueltas;
 - que existan los ficheros que cita cada SKILL.md y las rutas de una skill a otra;
 - que los servidores MCP que se citan estén en .mcp.json;
 - que la regla «Dudas de Appian» esté, igual, en las skills de REGLA_DOCS;
@@ -46,6 +47,9 @@ EXTERNAS = {
 # Nombres que empiezan por appian- y no son skills (MCP, carpetas y paquetes de Appian).
 NO_SKILLS = {"appian-docs", "appian-dev", "appian-analisis-funcional", "appian-dev-mcp-server",
              "appian-dev-mcp-server-bundle", "appian-mcp-server", "appian-public-docs"}
+# Nombre anterior de una skill del plugin → el de hoy. Solo lo cita el README, para retirar las copias sueltas que
+# todavía lo llevan; en las skills es un error.
+ANTERIORES = {"appian-prototipos-aena": "appian-prototipos"}
 # Skills que tienen que llevar la regla de dudas de Appian (appian-best-practices la lleva en *Tools*).
 REGLA_DOCS = ["appian-functional-analyst", "appian-prototipos"]
 TITULO_REGLA = "## Dudas de Appian"
@@ -185,6 +189,14 @@ def probar_comprobador(nombres):
             c, out = comprueba()
             espera(c == 1 and nombre in out and "prototipo/" in out, f"una skill con assets/{nombre} no da error", out)
             marca.unlink()
+        # el nombre anterior de una skill solo lo cita el README (para retirar las copias sueltas); un SKILL.md, no
+        doc = skill / "SKILL.md"
+        original = doc.read_text(encoding="utf-8")
+        doc.write_text(original + "\nAntes se llamaba `appian-prototipos-aena`.\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "appian-prototipos-aena" in out and "hoy appian-prototipos" in out,
+               "un SKILL.md que cita el nombre anterior de una skill no da error", out)
+        doc.write_text(original, encoding="utf-8")
         # --completo --plugin pasa las pruebas del repositorio a la copia: con sus scripts rotos, ninguna pasa
         # (si falta un requisito, como pytest sin uv, esa prueba no se completa, pero tampoco pasa)
         for py in (copia / "skills").rglob("*.py"):
@@ -267,8 +279,11 @@ def main(completo, plugin=None):
         texto = sin_urls(doc.read_text(encoding="utf-8"))
         for m in re.finditer(r"(?<![\w./-])(appian-[a-z0-9]+(?:-[a-z0-9]+)*)", texto):
             nombre = m.group(1)
+            if nombre in ANTERIORES and doc == RAIZ / "README.md":
+                continue
             if nombre not in nombres and nombre not in EXTERNAS and nombre not in NO_SKILLS:
-                errores.append(f"{doc.relative_to(RAIZ)}: cita «{nombre}», que no está en el plugin")
+                hoy = f" (hoy {ANTERIORES[nombre]})" if nombre in ANTERIORES else ""
+                errores.append(f"{doc.relative_to(RAIZ)}: cita «{nombre}», que no está en el plugin{hoy}")
 
     # Ficheros que cita cada SKILL.md
     for n, t in textos.items():

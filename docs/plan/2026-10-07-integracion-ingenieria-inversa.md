@@ -810,11 +810,13 @@ se ejecuta allí y los resultados van a `docs/evaluaciones.md`.
   pedido. `--json`: `{"python": "3.12.1", "requisitos": [{…, "presente": bool}], "avisos": [...]}`. Navegador: el
   Chromium de Playwright, o Chrome o Edge en sus rutas habituales, sin abrir ninguno. `docx`: se busca en la carpeta
   actual y en la global de npm, como `df_docx.js`. `REQUISITOS_SIN=id,id` fuerza ausencias para las pruebas.
-- Aviso si existe una copia suelta de una skill del plugin en `~/.claude/skills/` (dos versiones activas a la vez).
+- Aviso si existe una copia suelta de una skill del plugin en `~/.claude/skills/` (dos versiones activas a la vez),
+  también con el nombre que tenía antes (`appian-prototipos-aena`, hoy `appian-prototipos`).
 
 - [ ] **Paso 1:** prueba en `comprobar_plugin.py --completo`: con `REQUISITOS_SIN=playwright,docx`, la salida `--json`
   es igual a `pruebas/requisitos-esperado.json` salvo versión y rutas, y sale 0; con `REQUISITOS_SIN=python`, sale 1;
-  con un `HOME` temporal que tiene `.claude/skills/appian-reverse-engineering/SKILL.md`, hay aviso. → FALLA.
+  con un `HOME` temporal que tiene `.claude/skills/appian-reverse-engineering/SKILL.md`, hay aviso, y también con
+  `.claude/skills/appian-prototipos-aena/SKILL.md`. → FALLA.
 - [ ] **Paso 2:** implementar. **Paso 3:** en verde. Commit.
 
 ### Tarea 24: Aviso al instalar

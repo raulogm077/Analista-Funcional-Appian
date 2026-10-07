@@ -86,9 +86,9 @@ PDF.
   ```
 
 **Retirar las skills sueltas**: si la organización tenía `appian-functional-analyst`,
-`appian-prototipos` o `appian-best-practices` como skills independientes, hay que eliminarlas al
-publicar el plugin. Si no, existen dos veces con versiones distintas y no se sabe
-cuál se activa.
+`appian-prototipos-aena` (hoy `appian-prototipos`) o `appian-best-practices` como skills
+independientes, hay que eliminarlas al publicar el plugin. Si no, existen dos veces con
+versiones distintas y no se sabe cuál se activa.
 
 **Si Claude dice que «el kit de la skill no está disponible»**: esa persona tiene
 una skill suelta de antes del plugin (solo el SKILL.md, que descargaba el kit de un
