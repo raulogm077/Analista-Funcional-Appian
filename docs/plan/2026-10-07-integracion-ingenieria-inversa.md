@@ -122,7 +122,8 @@ Por defecto, el aspecto estándar de Appian; la marca del cliente es un fichero 
 
 **Ficheros:**
 - Mover con `git mv`: `skills/appian-prototipos-aena/` → `skills/appian-prototipos/` y `pruebas/appian-prototipos-aena/`
-  → `pruebas/appian-prototipos/`.
+  → `pruebas/appian-prototipos/`, y cambiar la ruta de la skill dentro de esas pruebas (`selftest.py` y
+  `datos/autorizaciones/generar_app.py`) y la de `galerias/README.md` en el `README.md`.
 - Crear en la skill: `assets/brand-appian.json` (la marca por defecto, sin logo, con los valores por defecto del objeto
   Site que da la documentación de Appian, consultada con el MCP de documentación) y `references/marca.md` (formato de
   `brand-<id>.json`, que va en `<p>/prototipo/`, y cómo se saca la marca de un cliente de su guía de marca o de su web
