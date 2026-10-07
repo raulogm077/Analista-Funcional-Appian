@@ -2,8 +2,9 @@
 
 > Propuesta trabajada con Raúl el 2026-10-07 en el hilo «Flujo de trabajo Appian». Decidido: el flujo llega
 > hasta construir en Appian con IA, y construir va en una skill (o skills) propia, no dentro de buenas prácticas.
-> Después se importó lo que ya estaba decidido en otros hilos (abajo, «Lo que ya existe»). Lo marcado como
-> **abierto** está sin cerrar.
+> Después se importó lo que ya estaba decidido en otros hilos (abajo, «Lo que ya existe»), y Raúl decidió que el
+> método de construcción vive en el plugin, generalizado; cada proyecto pone solo lo suyo (`docs/appian.md`). Lo
+> marcado como **abierto** está sin cerrar.
 
 ## El flujo
 
@@ -69,8 +70,6 @@ es la fuente y la épica solo lo cita, igual que hoy la épica cita la fuente po
 
 ## Abierto
 
-- Dónde vive el método de construcción para los proyectos siguientes: en el plugin, generalizado, o copiado en cada
-  proyecto.
 - Si el portal web fuera de Appian entra en este flujo. En el proyecto real va por su propia superficie, con sus
   puertas P1 a P7.
 - Si el despliegue (paquete, ICF y scripts de BD) se automatiza o sigue como tarea `Manual`.
