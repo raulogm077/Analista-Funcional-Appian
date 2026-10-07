@@ -3,13 +3,16 @@
 
 Crea el ejemplo, lo cambia, simula una edición a mano en draw.io (también guardada comprimida),
 la compara y la acepta, vuelve a cambiarlo respetando lo movido a mano, exporta BPMN 2.0 y
-comprueba los errores de validación. Sale con 0 si todo va bien."""
+comprueba los errores de validación. Con el segundo ejemplo comprueba que nada se pisa, el lado de las
+etiquetas, los tipos de inicio y tarea, el flujo por defecto, los participantes externos, las notas y el
+ancho del PNG. Sale con 0 si todo va bien (tarda alrededor de un minuto)."""
 import base64, json, pathlib, shutil, subprocess, sys, tempfile, urllib.parse, zlib
 import xml.etree.ElementTree as ET
 
 HERE = pathlib.Path(__file__).resolve().parent
 CLI = [sys.executable, str(HERE / "diagrama.py")]
 EJEMPLO = HERE.parent / "ejemplos" / "solicitud.json"
+PEDIDO = HERE.parent / "ejemplos" / "pedido.json"
 fallos = []
 
 
@@ -31,6 +34,28 @@ def check(cond, texto):
 def celdas(ruta):
     root = ET.parse(ruta).getroot().find("diagram/mxGraphModel/root")
     return root, {c.get("id"): c for c in root}
+
+
+def solapes(drawio):
+    """Pares de cosas que se pisan en el dibujo: formas, etiquetas de eventos y puertas, y notas."""
+    import drawio_modelo as dm, colocacion as co
+    proc, geo, _ = dm.leer(str(drawio))
+    cajas = []
+    for p in proc["pasos"]:
+        cx, cy, w, h = geo["pasos"][p["id"]]
+        cajas.append((p["id"], (cx - w / 2, cy - h / 2, w, h)))
+        lado = geo["etiquetas"].get(p["id"])
+        if lado and p["nombre"]:
+            lh = co.alto_texto(p["nombre"]) - 6
+            cajas.append((p["id"], (cx - co.ANCHO_ETIQUETA / 2 + 4, cy - h / 2 - lh if lado == "arriba" else cy + h / 2, co.ANCHO_ETIQUETA - 8, lh)))
+    for n, (cx, cy, w, h) in zip(proc.get("notas") or [], geo["anotaciones"]):
+        cajas.append(("nota " + n["paso"], (cx - w / 2, cy - h / 2, w, h)))
+    out = []
+    for i, (a, (ax, ay, aw, ah)) in enumerate(cajas):
+        for b, (bx, by, bw, bh) in cajas[i + 1:]:
+            if a != b and ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah:
+                out.append(f"{a} / {b}")
+    return out
 
 
 def main():
@@ -150,6 +175,73 @@ def main():
         bb = (pag.with_suffix(".bpmn")).read_text(encoding="utf-8")
         check('boundaryEvent id="EV-02"' in bb and 'attachedToRef="ACT-04"' in bb, "bpmn: el plazo se exporta como evento de borde")
         check(run("validar", EJEMPLO).startswith("OK"), "validar: dice OK cuando está bien")
+        # 8. nada se pisa, tipos BPMN, flujo por defecto, participantes externos y notas
+        ped = tmp / "pedido" / "pedido.drawio"
+        run("crear", PEDIDO, "-o", ped)
+        base_p = json.loads(PEDIDO.read_text(encoding="utf-8"))
+        check(dm.comparar(base_p, dm.leer(str(ped))[0]) == [],
+              "pedido: el .drawio devuelve el mismo proceso (tipos nuevos, por defecto, externos y notas)")
+        limpio = tmp / "limpio" / "solicitud.drawio"
+        run("crear", EJEMPLO, "-o", limpio)
+        check(solapes(limpio) == [] and solapes(ped) == [], "colocación: ninguna forma, etiqueta o nota se pisa "
+              + "; ".join(solapes(limpio) + solapes(ped)))
+        run("bpmn", ped)
+        bb = ped.with_suffix(".bpmn").read_text(encoding="utf-8")
+        check(all(t in bb for t in ("<bpmn:timerEventDefinition/></bpmn:startEvent>", "<bpmn:scriptTask", "<bpmn:callActivity",
+                                    ' default="Flujo_', '<bpmn:participant id="Externo_1" name="ERP de compras"/>',
+                                    "<bpmn:messageFlow", "<bpmn:textAnnotation", "<bpmn:association", "<bpmndi:BPMNLabel>")),
+              "bpmn: inicio con temporizador, script, llamada, flujo por defecto, participante externo, mensaje y nota")
+        # cambios con la colocación hecha a mano
+        t = ET.parse(ped); r2 = t.getroot().find("diagram/mxGraphModel/root")
+        g2 = next(e for e in r2 if e.get("id") == "ACT-01").find("mxGeometry"); g2.set("y", str(float(g2.get("y")) + 10))
+        t.write(ped, encoding="utf-8")
+        run("comparar", ped, "--aceptar")
+        (tmp / "c6.json").write_text(json.dumps({"cambios": [
+            {"externo": "Banco"}, {"flujo": {"de": "ACT-01", "a": "Banco", "etiqueta": "Consultar saldo"}},
+            {"nota": {"paso": "ACT-02", "texto": "Revisa importes y proveedor"}},
+            {"quitar_nota": {"paso": "ACT-04", "texto": "Si el ERP no responde, no se reintenta"}},
+            {"flujo": {"de": "GW-02", "a": "EV-04", "defecto": False}}]}), encoding="utf-8")
+        out = run("actualizar", ped, tmp / "c6.json")
+        check("participante externo nuevo: «Banco»" in out and "nota nueva en ACT-02" in out and "nota quitada de ACT-04" in out
+              and "deja de ser el flujo por defecto" in out and "se ha respetado la colocación" in out,
+              "actualizar (manual): externo, nota, flujo de mensaje y flujo por defecto")
+        check(run("comparar", ped).startswith("Sin cambios"), "actualizar (manual): el dibujo queda igual que el análisis")
+        (tmp / "c7.json").write_text(json.dumps({"cambios": [{"quitar_externo": "Banco"}, {"quitar": "ACT-02"},
+            {"flujo": {"de": "GW-01", "a": "ACT-03", "etiqueta": "Sí"}}]}), encoding="utf-8")
+        out = run("actualizar", ped, tmp / "c7.json")
+        check("participante externo quitado: «Banco»" in out and "nota quitada de ACT-02" in out
+              and run("comparar", ped).startswith("Sin cambios"), "actualizar (manual): quitar un externo y un paso con nota")
+        # 9. la etiqueta de un evento va al lado por el que no llega ningún flujo
+        rev = {"proceso": "Revisión", "carriles": ["Revisor", "Sistema"],
+               "pasos": [{"id": "EV-01", "tipo": "inicio", "carril": "Revisor", "nombre": "Solicitud registrada"},
+                         {"id": "ACT-01", "tipo": "tarea", "carril": "Revisor", "nombre": "Revisar solicitud"},
+                         {"id": "ACT-02", "tipo": "sistema", "carril": "Sistema", "nombre": "Guardar decisión"},
+                         {"id": "GW-01", "tipo": "exclusiva", "carril": "Sistema", "nombre": "¿Aprobada?"},
+                         {"id": "EV-02", "tipo": "mensaje", "carril": "Sistema", "nombre": "Avisar aprobación al solicitante"},
+                         {"id": "EV-03", "tipo": "mensaje", "carril": "Sistema", "nombre": "Avisar rechazo al solicitante"},
+                         {"id": "EV-04", "tipo": "fin", "carril": "Sistema", "nombre": "Revisión resuelta"}],
+               "flujos": [{"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "ACT-02"}, {"de": "ACT-02", "a": "GW-01"},
+                          {"de": "GW-01", "a": "EV-02", "etiqueta": "Sí"}, {"de": "GW-01", "a": "EV-03", "etiqueta": "No"},
+                          {"de": "EV-02", "a": "EV-04"}, {"de": "EV-03", "a": "EV-04"}]}
+        (tmp / "rev.json").write_text(json.dumps(rev), encoding="utf-8")
+        run("crear", tmp / "rev.json", "-o", tmp / "rev")
+        proc_r, geo_r, _ = dm.leer(str(tmp / "rev" / "rev.drawio"))
+        por_debajo = [f["a"] for i, f in enumerate(proc_r["flujos"]) if f["a"].startswith("EV")
+                      and geo_r["flujos"][i] and geo_r["flujos"][i][-1][1] > geo_r["pasos"][f["a"]][1] + 25]
+        check(por_debajo and all(geo_r["etiquetas"].get(e) == "arriba" for e in por_debajo) and not solapes(tmp / "rev" / "rev.drawio"),
+              f"etiquetas: los eventos a los que llega un flujo por debajo llevan la etiqueta encima ({', '.join(por_debajo) or 'ninguno'})")
+        # 10. un proceso muy largo: aviso de ancho y PNG de tamaño razonable
+        largo = {"proceso": "Largo", "carriles": ["Sistema"],
+                 "pasos": [{"id": "EV-01", "tipo": "inicio", "carril": "Sistema", "nombre": "Inicio"}] +
+                          [{"id": f"ACT-{i:02d}", "tipo": "sistema", "carril": "Sistema", "nombre": f"Paso {i}"} for i in range(1, 25)] +
+                          [{"id": "EV-02", "tipo": "fin", "carril": "Sistema", "nombre": "Fin"}],
+                 "flujos": [{"de": "EV-01", "a": "ACT-01"}] + [{"de": f"ACT-{i:02d}", "a": f"ACT-{i + 1:02d}"} for i in range(1, 24)] +
+                           [{"de": "ACT-24", "a": "EV-02"}]}
+        (tmp / "largo.json").write_text(json.dumps(largo), encoding="utf-8")
+        out = run("crear", tmp / "largo.json", "-o", tmp / "largo")
+        from struct import unpack
+        ancho_png = unpack(">I", (tmp / "largo" / "largo.png").read_bytes()[16:20])[0]
+        check("aviso: el diagrama mide" in out and ancho_png <= 3300, f"ancho: aviso y PNG de {ancho_png} px como mucho 3300")
         # 7. errores de validación
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}

@@ -113,6 +113,8 @@ def codigo_mermaid(proc, eventos, puertas):
                 lineas.append(f'    {n}("{_esc(p.get("nombre"))}")')
         lineas.append("  end")
     for f in proc["flujos"]:
+        if f["de"] not in alias or f["a"] not in alias:   # flujo de mensaje con un participante externo
+            continue
         flecha = "-.->" if f.get("discontinuo") else "-->"
         eti = f'|"{_esc(f["etiqueta"])}"|' if f.get("etiqueta") else ""
         lineas.append(f"  {alias[f['de']]} {flecha}{eti} {alias[f['a']]}")
@@ -147,7 +149,7 @@ def colocar(proc, eventos, puertas, cabecera):
     for de, a, _, pts in sorted(res["flujos"], key=lambda f: f[2]):
         puntos.setdefault((de, a), []).append([dentro(x, y) for x, y in pts])
     for f in proc["flujos"]:
-        lista = puntos.get((alias[f["de"]], alias[f["a"]]), [])
+        lista = puntos.get((alias.get(f["de"]), alias.get(f["a"])), [])
         geo["flujos"].append(lista.pop(0) if lista else [])
     return geo
 

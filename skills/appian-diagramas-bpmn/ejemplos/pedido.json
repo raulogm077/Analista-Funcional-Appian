@@ -1,0 +1,34 @@
+{
+  "proceso": "Envío de pedidos (ejemplo ficticio)",
+  "carriles": ["Gestor de compras", "Sistema"],
+  "pasos": [
+    {"id": "EV-01", "tipo": "inicio_temporizador", "carril": "Sistema", "nombre": "Cada día a las 08:00 (hora de Madrid)"},
+    {"id": "ACT-01", "tipo": "script", "carril": "Sistema", "nombre": "Calcular pedidos pendientes"},
+    {"id": "GW-01", "tipo": "exclusiva", "carril": "Sistema", "nombre": "¿Hay pedidos?"},
+    {"id": "EV-02", "tipo": "fin", "carril": "Sistema", "nombre": "Sin pedidos"},
+    {"id": "ACT-02", "tipo": "tarea", "carril": "Gestor de compras", "nombre": "Revisar"},
+    {"id": "ACT-03", "tipo": "llamada", "carril": "Gestor de compras", "nombre": "Aprobar pedido"},
+    {"id": "GW-02", "tipo": "exclusiva", "carril": "Sistema", "nombre": "¿Aprobado?"},
+    {"id": "ACT-04", "tipo": "sistema", "carril": "Sistema", "nombre": "Enviar"},
+    {"id": "EV-03", "tipo": "fin", "carril": "Sistema", "nombre": "Pedido enviado al proveedor"},
+    {"id": "EV-04", "tipo": "mensaje", "carril": "Sistema", "nombre": "Avisar al gestor del rechazo"},
+    {"id": "EV-05", "tipo": "fin", "carril": "Sistema", "nombre": "Pedido rechazado"}
+  ],
+  "flujos": [
+    {"de": "EV-01", "a": "ACT-01"},
+    {"de": "ACT-01", "a": "GW-01"},
+    {"de": "GW-01", "a": "EV-02", "etiqueta": "No", "defecto": true},
+    {"de": "GW-01", "a": "ACT-02", "etiqueta": "Sí"},
+    {"de": "ACT-02", "a": "ACT-03"},
+    {"de": "ACT-03", "a": "GW-02"},
+    {"de": "GW-02", "a": "ACT-04", "etiqueta": "Sí"},
+    {"de": "GW-02", "a": "EV-04", "etiqueta": "No", "defecto": true},
+    {"de": "ACT-04", "a": "EV-03"},
+    {"de": "EV-04", "a": "EV-05"},
+    {"de": "ACT-04", "a": "ERP de compras", "etiqueta": "Alta del pedido"}
+  ],
+  "externos": ["ERP de compras"],
+  "notas": [
+    {"paso": "ACT-04", "texto": "Si el ERP no responde, no se reintenta"}
+  ]
+}

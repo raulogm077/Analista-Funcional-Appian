@@ -2,7 +2,9 @@
 
 El proceso se intercambia en JSON (ver SKILL.md):
   {"proceso": str, "carriles": [str], "pasos": [{id, tipo, carril, nombre, posicion?}],
-   "flujos": [{de, a, etiqueta?, discontinuo?}]}
+   "flujos": [{de, a, etiqueta?, discontinuo?, defecto?}],
+   "externos": [str]?,                    participantes externos (caja negra): flujos de mensaje con ellos
+   "notas": [{paso, texto}]?}             notas unidas a un paso
 
 Este módulo sabe:
 - escribir un .drawio nuevo a partir del proceso y una geometría ya calculada;
@@ -14,23 +16,28 @@ import base64, copy, html, json, re, urllib.parse, zlib
 import xml.etree.ElementTree as ET
 
 # ---------------------------------------------------------------- tipos y estilos
-EVENTOS = {"inicio", "fin", "temporizador", "mensaje", "intermedio"}
+INICIOS = {"inicio", "inicio_temporizador", "inicio_mensaje"}
+EVENTOS = INICIOS | {"fin", "temporizador", "mensaje", "intermedio"}
 PUERTAS = {"exclusiva", "paralela", "inclusiva"}
-TAREAS = {"tarea", "sistema", "manual", "subproceso"}
+TAREAS = {"tarea", "sistema", "script", "manual", "subproceso", "llamada"}
 TIPOS = EVENTOS | PUERTAS | TAREAS
 PREFIJO = {**{t: "EV" for t in EVENTOS}, **{t: "GW" for t in PUERTAS}, **{t: "ACT" for t in TAREAS}}
 TAM = {**{t: (40, 40) for t in EVENTOS}, **{t: (50, 50) for t in PUERTAS}, **{t: (120, 80) for t in TAREAS}}
 
 AZUL, VERDE, ROJO, AMBAR = "#1d659c", "#117c00", "#b2002c", "#b86e00"
 _BASE = "points=[];html=1;fontSize=12;fontColor=#222222;"
+# las etiquetas de eventos y puertas se ajustan a 110 px, el mismo ancho que reserva la colocación
 _EV = _BASE + ("shape=mxgraph.bpmn.event;verticalLabelPosition=bottom;verticalAlign=top;align=center;"
-               "perimeter=ellipsePerimeter;outlineConnect=0;aspect=fixed;labelBackgroundColor=none;")
-_GW = _BASE + ("shape=mxgraph.bpmn.gateway2;outline=none;symbol=none;verticalLabelPosition=top;verticalAlign=bottom;"
-               "align=center;perimeter=rhombusPerimeter;outlineConnect=0;strokeColor=" + AMBAR + ";fillColor=#fff8e6;"
+               "whiteSpace=wrap;labelWidth=110;perimeter=ellipsePerimeter;outlineConnect=0;aspect=fixed;"
                "labelBackgroundColor=none;")
+_GW = _BASE + ("shape=mxgraph.bpmn.gateway2;outline=none;symbol=none;verticalLabelPosition=top;verticalAlign=bottom;"
+               "align=center;whiteSpace=wrap;labelWidth=110;perimeter=rhombusPerimeter;outlineConnect=0;"
+               "strokeColor=" + AMBAR + ";fillColor=#fff8e6;labelBackgroundColor=none;")
 _TK = _BASE + ("shape=mxgraph.bpmn.task;rectStyle=rounded;size=10;whiteSpace=wrap;strokeColor=" + AZUL + ";")
 ESTILO = {
     "inicio": _EV + f"outline=standard;symbol=general;strokeColor={VERDE};",
+    "inicio_temporizador": _EV + f"outline=standard;symbol=timer;strokeColor={VERDE};",
+    "inicio_mensaje": _EV + f"outline=standard;symbol=message;strokeColor={VERDE};",
     "fin": _EV + f"outline=end;symbol=general;strokeColor={ROJO};",
     "temporizador": _EV + f"outline=catching;symbol=timer;strokeColor={AZUL};",
     "mensaje": _EV + f"outline=throwing;symbol=message;strokeColor={AZUL};",
@@ -40,13 +47,23 @@ ESTILO = {
     "inclusiva": _GW + "gwType=inclusive;",
     "tarea": _TK + "taskMarker=user;fillColor=#ffffff;",
     "sistema": _TK + "taskMarker=service;fillColor=#e8f0f6;",
+    "script": _TK + "taskMarker=script;fillColor=#e8f0f6;",
     "manual": _TK + "taskMarker=manual;fillColor=#ffffff;",
     "subproceso": _TK + "taskMarker=abstract;isLoopSub=1;fillColor=#ffffff;",
+    "llamada": _TK + "bpmnShapeType=call;taskMarker=abstract;isLoopSub=1;fillColor=#ffffff;",
 }
 ESTILO_CARRIL = ("swimlane;horizontal=0;startSize=40;html=1;fontSize=12;fontStyle=1;fillColor=#f4f5f7;"
                  "swimlaneFillColor=#ffffff;strokeColor=#b8bec5;")
 ESTILO_FLUJO = ("edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#4a5563;endArrow=block;"
                 "endFill=1;labelBackgroundColor=#ffffff;")
+DEFECTO = "startArrow=dash;startFill=0;startSize=10;"          # marca del flujo por defecto
+ESTILO_MENSAJE = ("edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;strokeColor=#4a5563;dashed=1;dashPattern=8 4;"
+                  "startArrow=oval;startFill=0;startSize=7;endArrow=block;endFill=0;endSize=9;labelBackgroundColor=#ffffff;")
+ESTILO_EXTERNO = ("rounded=0;whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fontColor=#222222;fillColor=#f4f5f7;"
+                  "strokeColor=#b8bec5;externo=1;")
+ESTILO_NOTA = ("shape=partialRectangle;right=0;top=1;bottom=1;left=1;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;"
+               "spacingLeft=8;fontSize=11;fontColor=#222222;fillColor=none;strokeColor=#4a5563;nota=1;")
+ESTILO_ASOCIACION = "html=1;dashed=1;dashPattern=1 3;endArrow=none;strokeColor=#4a5563;asociacion=1;"
 CABECERA = 40            # ancho de la cabecera de cada carril
 ALTO_CARRIL = 140        # alto por defecto de un carril nuevo
 COLUMNA = 150            # separación horizontal entre pasos al colocar a mano
@@ -55,6 +72,28 @@ ID_NUESTRO = re.compile(r"^(ACT|GW|EV)-\d+$")
 
 class ErrorProceso(Exception):
     pass
+
+
+def con_lado(estilo, lado):
+    """Estilo con la etiqueta encima («arriba») o debajo («abajo») de la forma."""
+    if lado not in ("arriba", "abajo"):
+        return estilo
+    partes = [t for t in estilo.split(";") if t and not t.startswith(("verticalLabelPosition=", "verticalAlign="))]
+    partes += (["verticalLabelPosition=top", "verticalAlign=bottom"] if lado == "arriba"
+               else ["verticalLabelPosition=bottom", "verticalAlign=top"])
+    return ";".join(partes) + ";"
+
+
+def estilo_flujo(f, externos=()):
+    """Estilo de un flujo: de secuencia (discontinuo o por defecto) o de mensaje, si une con un externo."""
+    if f["de"] in externos or f["a"] in externos:
+        return ESTILO_MENSAJE
+    return ESTILO_FLUJO + ("dashed=1;" if f.get("discontinuo") else "") + (DEFECTO if f.get("defecto") else "")
+
+
+def es_mensaje(f, proc):
+    ext = set(proc.get("externos") or [])
+    return f["de"] in ext or f["a"] in ext
 
 
 # ---------------------------------------------------------------- proceso (JSON)
@@ -73,9 +112,12 @@ def estructura(proc):
     """El proceso sin posiciones, ordenado de forma estable, para comparar."""
     pasos = sorted(({k: p[k] for k in ("id", "tipo", "carril", "nombre")} for p in proc["pasos"]), key=lambda p: p["id"])
     flujos = sorted(({"de": f["de"], "a": f["a"], "etiqueta": f.get("etiqueta", "") or "",
-                      "discontinuo": bool(f.get("discontinuo"))} for f in proc["flujos"]),
+                      "discontinuo": bool(f.get("discontinuo")), "defecto": bool(f.get("defecto"))} for f in proc["flujos"]),
                     key=lambda f: (f["de"], f["a"], f["etiqueta"]))
-    return {"proceso": proc.get("proceso", ""), "carriles": list(proc["carriles"]), "pasos": pasos, "flujos": flujos}
+    notas = sorted(({"paso": n["paso"], "texto": n.get("texto", "") or ""} for n in proc.get("notas") or []),
+                   key=lambda n: (n["paso"], n["texto"]))
+    return {"proceso": proc.get("proceso", ""), "carriles": list(proc["carriles"]), "pasos": pasos, "flujos": flujos,
+            "externos": list(proc.get("externos") or []), "notas": notas}
 
 
 def aplicar_cambios(base, cambios):
@@ -89,9 +131,12 @@ def aplicar_cambios(base, cambios):
       {"carril": "Nombre"}            añade un carril al final, para poner pasos en él en la misma lista
       {"renombrar_carril": ["Viejo", "Nuevo"]}
       {"proceso": "Nombre"}
+      {"externo": "Nombre"} / {"quitar_externo": "Nombre"}   participante externo (y sus flujos de mensaje)
+      {"nota": {paso, texto}} / {"quitar_nota": {paso, texto}}
     Un carril que se queda sin pasos desaparece; uno añadido con "carril" tiene que acabar con algún paso.
     """
     p = copy.deepcopy(base)
+    p.setdefault("externos", []); p.setdefault("notas", [])
     pasos = {x["id"]: x for x in p["pasos"]}
     con_pasos = {x["carril"] for x in p["pasos"]}
     anadidos = set()
@@ -119,6 +164,7 @@ def aplicar_cambios(base, cambios):
                 raise ErrorProceso(f"quitar: no existe el paso {pid}")
             p["pasos"] = [x for x in p["pasos"] if x["id"] != pid]; del pasos[pid]
             p["flujos"] = [f for f in p["flujos"] if pid not in (f["de"], f["a"])]
+            p["notas"] = [n for n in p["notas"] if n["paso"] != pid]
         elif "flujo" in c:
             f = c["flujo"]
             hit = [x for x in p["flujos"] if x["de"] == f["de"] and x["a"] == f["a"]]
@@ -148,6 +194,28 @@ def aplicar_cambios(base, cambios):
                     x["carril"] = nuevo
         elif "proceso" in c:
             p["proceso"] = c["proceso"]
+        elif "externo" in c:
+            if c["externo"] in p["carriles"]:
+                raise ErrorProceso(f"externo: «{c['externo']}» ya es un carril")
+            if c["externo"] not in p["externos"]:
+                p["externos"].append(c["externo"])
+        elif "quitar_externo" in c:
+            e = c["quitar_externo"]
+            if e not in p["externos"]:
+                raise ErrorProceso(f"quitar_externo: no existe el participante «{e}»")
+            p["externos"].remove(e)
+            p["flujos"] = [f for f in p["flujos"] if e not in (f["de"], f["a"])]
+        elif "nota" in c:
+            n = {"paso": c["nota"].get("paso"), "texto": c["nota"].get("texto", "")}
+            if n["paso"] not in pasos:
+                raise ErrorProceso(f"nota: no existe el paso {n['paso']}")
+            if n not in p["notas"]:
+                p["notas"].append(n)
+        elif "quitar_nota" in c:
+            n = {"paso": c["quitar_nota"].get("paso"), "texto": c["quitar_nota"].get("texto", "")}
+            if n not in p["notas"]:
+                raise ErrorProceso(f"quitar_nota: el paso {n['paso']} no tiene la nota «{n['texto']}»")
+            p["notas"].remove(n)
         else:
             raise ErrorProceso(f"cambio no reconocido: {json.dumps(c, ensure_ascii=False)}")
     usados = {x["carril"] for x in p["pasos"]}
@@ -155,6 +223,9 @@ def aplicar_cambios(base, cambios):
     if vacios:
         raise ErrorProceso("un carril sin pasos no se dibuja; pon algún paso en: " + ", ".join(f"«{c}»" for c in vacios))
     p["carriles"] = [c for c in p["carriles"] if c in usados]   # los que se quedan sin pasos desaparecen
+    for k in ("externos", "notas"):
+        if not p[k]:
+            del p[k]
     return p
 
 
@@ -168,6 +239,16 @@ def validar(proc):
     for c in {c for c in carriles if carriles.count(c) > 1}:
         err.append(f"el carril «{c}» está repetido")
     pasos = {p.get("id"): p for p in proc.get("pasos", [])}
+    externos = proc.get("externos") or []
+    for e in {e for e in externos if externos.count(e) > 1}:
+        err.append(f"el participante externo «{e}» está repetido")
+    for e in set(externos) & set(carriles):
+        err.append(f"«{e}» es a la vez carril y participante externo")
+    for n in proc.get("notas") or []:
+        if n.get("paso") not in pasos:
+            err.append(f"una nota es de {n.get('paso')}, que no existe")
+        elif not n.get("texto"):
+            av.append(f"{n['paso']} tiene una nota sin texto")
     for p in proc.get("pasos", []):
         falta = [k for k in ("id", "tipo", "carril", "nombre") if not p.get(k) and not (k == "nombre" and p.get("tipo") in PUERTAS | EVENTOS)]
         if falta:
@@ -179,31 +260,46 @@ def validar(proc):
         if p.get("tipo") in TIPOS and ID_NUESTRO.match(str(p.get("id"))) and not str(p["id"]).startswith(PREFIJO[p["tipo"]] + "-"):
             av.append(f"{p['id']} es de tipo {p['tipo']}: su código debería empezar por {PREFIJO[p['tipo']]}-")
     ent, sal = {}, {}
+    con_mensajes = set()
     for f in proc.get("flujos", []):
         for k in ("de", "a"):
-            if f.get(k) not in pasos:
+            if f.get(k) not in pasos and f.get(k) not in externos:
                 err.append(f"flujo {f.get('de')} → {f.get('a')}: no existe el paso {f.get(k)}")
+        if f.get("de") in externos and f.get("a") in externos:
+            err.append(f"flujo {f.get('de')} → {f.get('a')}: une dos participantes externos")
+        if f.get("de") in externos or f.get("a") in externos:   # flujo de mensaje: no cuenta como secuencia
+            con_mensajes |= {f.get("de"), f.get("a")}
+            continue
         sal.setdefault(f.get("de"), []).append(f); ent.setdefault(f.get("a"), []).append(f)
+    for e in externos:
+        if e not in con_mensajes:
+            av.append(f"el participante externo «{e}» no tiene flujos de mensaje")
     if err:
         return err, av
     tipos = [p["tipo"] for p in pasos.values()]
-    if "inicio" not in tipos:
+    if not INICIOS & set(tipos):
         av.append("no hay evento de inicio")
     if "fin" not in tipos:
         av.append("no hay evento de fin")
     for pid, p in pasos.items():
-        if p["tipo"] == "inicio" and pid in ent:
+        if p["tipo"] in INICIOS and pid in ent:
             av.append(f"{pid} es un inicio y le llega un flujo")
         if p["tipo"] == "fin" and pid in sal:
             av.append(f"{pid} es un fin y sale un flujo de él")
-        if p["tipo"] != "inicio" and pid not in ent:
+        if p["tipo"] not in INICIOS and pid not in ent:
             av.append(f"{pid} ({p.get('nombre', '')}) no tiene flujo de entrada")
         if p["tipo"] != "fin" and pid not in sal:
             av.append(f"{pid} ({p.get('nombre', '')}) no tiene flujo de salida")
         if p["tipo"] in ("exclusiva", "inclusiva") and len(sal.get(pid, [])) > 1:
-            sin = [f["a"] for f in sal[pid] if not f.get("etiqueta")]
+            sin = [f["a"] for f in sal[pid] if not f.get("etiqueta") and not f.get("defecto")]
             if sin:
                 av.append(f"{pid}: las salidas hacia {', '.join(sin)} no tienen etiqueta")
+        defecto = [f for f in sal.get(pid, []) if f.get("defecto")]
+        if len(defecto) > 1:
+            av.append(f"{pid}: tiene {len(defecto)} flujos por defecto; solo puede haber uno")
+        elif defecto and (p["tipo"] == "paralela" or len(sal.get(pid, [])) < 2):
+            av.append(f"{pid}: un flujo por defecto solo tiene sentido en una puerta exclusiva o inclusiva, "
+                      "o en una tarea con varias salidas")
     n = sum(1 for p in pasos.values() if p["tipo"] in TAREAS)
     if n > 20:
         av.append(f"{n} tareas en un diagrama: pártelo en subprocesos para que se lea bien")
@@ -215,9 +311,30 @@ def _xml_attr(s):
     return html.escape(str(s), quote=True)
 
 
+def entrada_mensaje(f, centro, ancho, externos):
+    """Puntos de salida y entrada de un flujo de mensaje: en vertical entre el paso y su participante externo
+    (que ocupa todo el ancho, desde x=0)."""
+    if f["a"] in externos:
+        return f"exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX={centro[f['de']][0] / ancho:.4f};entryY=0;entryDx=0;entryDy=0;"
+    return f"exitX={centro[f['a']][0] / ancho:.4f};exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+
+
+def entrada_asociacion(lado, nota=None, paso=None):
+    """Línea de la nota a su paso, en vertical por donde se solapan en horizontal. `nota` y `paso`: (x, w)."""
+    sx = ex = 0.5
+    if nota and paso:
+        a, b = max(nota[0], paso[0]), min(nota[0] + nota[1], paso[0] + paso[1])
+        x = (a + b) / 2 if a < b else (paso[0] + 4 if nota[0] < paso[0] else paso[0] + paso[1] - 4)
+        sx = min(max((x - nota[0]) / nota[1], 0), 1)
+        ex = min(max((x - paso[0]) / paso[1], 0), 1)
+    return (f"exitX={sx:.3f};exitY=1;exitDx=0;exitDy=0;entryX={ex:.3f};entryY=0;entryDx=0;entryDy=0;" if lado == "arriba"
+            else f"exitX={sx:.3f};exitY=0;exitDx=0;exitDy=0;entryX={ex:.3f};entryY=1;entryDx=0;entryDy=0;")
+
+
 def escribir_drawio(proc, geo, ruta):
     """Escribe un .drawio nuevo. `geo` = {"carriles": {nombre: (y, h)}, "ancho": w,
-    "pasos": {id: (cx, cy)} (centro absoluto), "flujos": [[(x, y), ...] por flujo en el orden de proc]}."""
+    "pasos": {id: (cx, cy)} (centro absoluto), "flujos": [[(x, y), ...] por flujo en el orden de proc],
+    y si los hay: "etiquetas": {id: "arriba"|"abajo"}, "externos": {nombre: (y, h)}, "anotaciones": [(x, y, w, h)]}."""
     celdas = ['<mxCell id="0"/>', '<mxCell id="1" parent="0"/>']
     lane_id = {}
     for i, c in enumerate(proc["carriles"], 1):
@@ -229,15 +346,50 @@ def escribir_drawio(proc, geo, ruta):
         w, h = TAM[p["tipo"]]
         cx, cy = geo["pasos"][p["id"]]
         ly = geo["carriles"][p["carril"]][0]
-        celdas.append(f'<mxCell id="{_xml_attr(p["id"])}" value="{_xml_attr(p.get("nombre", ""))}" style="{ESTILO[p["tipo"]]}" '
+        estilo = con_lado(ESTILO[p["tipo"]], geo.get("etiquetas", {}).get(p["id"]))
+        celdas.append(f'<mxCell id="{_xml_attr(p["id"])}" value="{_xml_attr(p.get("nombre", ""))}" style="{estilo}" '
                       f'vertex="1" parent="{lane_id[p["carril"]]}"><mxGeometry x="{cx - w / 2:.0f}" y="{cy - ly - h / 2:.0f}" '
                       f'width="{w}" height="{h}" as="geometry"/></mxCell>')
+    ext_id = {}
+    for i, e in enumerate(proc.get("externos") or [], 1):
+        y, h = geo["externos"][e][:2]
+        ext_id[e] = f"externo-{i}"
+        celdas.append(f'<mxCell id="{ext_id[e]}" value="{_xml_attr(e)}" style="{ESTILO_EXTERNO}" vertex="1" parent="1">'
+                      f'<mxGeometry y="{y:.0f}" width="{geo["ancho"]:.0f}" height="{h:.0f}" as="geometry"/></mxCell>')
+    centro = {pid: geo["pasos"][pid][:2] for pid in geo["pasos"]}
+    for i, (n, caja) in enumerate(zip(proc.get("notas") or [], geo.get("anotaciones") or []), 1):
+        x, y, w, h = caja
+        carril = next(p["carril"] for p in proc["pasos"] if p["id"] == n["paso"])
+        ly = geo["carriles"][carril][0]
+        lado = "arriba" if y + h / 2 < centro[n["paso"]][1] else "abajo"
+        pw = TAM[next(p["tipo"] for p in proc["pasos"] if p["id"] == n["paso"])][0]
+        asoc = entrada_asociacion(lado, (x, w), (centro[n["paso"]][0] - pw / 2, pw))
+        celdas.append(f'<mxCell id="NOTA-{i:02d}" value="{_xml_attr(n.get("texto", ""))}" style="{ESTILO_NOTA}" vertex="1" '
+                      f'parent="{lane_id[carril]}"><mxGeometry x="{x:.0f}" y="{y - ly:.0f}" width="{w:.0f}" height="{h:.0f}" '
+                      f'as="geometry"/></mxCell>')
+        celdas.append(f'<mxCell id="A{i:02d}" value="" style="{ESTILO_ASOCIACION}{asoc}" edge="1" parent="1" '
+                      f'source="NOTA-{i:02d}" target="{_xml_attr(n["paso"])}"><mxGeometry relative="1" as="geometry"/></mxCell>')
+    fondo = max((y + h for y, h in (v[:2] for v in geo["carriles"].values())), default=0)
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
     for i, f in enumerate(proc["flujos"], 1):
-        st = ESTILO_FLUJO + ("dashed=1;" if f.get("discontinuo") else "")
-        pts = geo["flujos"][i - 1] if i - 1 < len(geo.get("flujos", [])) else []
+        st = estilo_flujo(f, ext_id)
+        pos = ""
+        if f["de"] in ext_id or f["a"] in ext_id:
+            st += entrada_mensaje(f, centro, geo["ancho"], ext_id)
+            # la etiqueta, en el hueco entre los carriles y los participantes, donde no hay otros flujos
+            paso, ext = (f["de"], f["a"]) if f["a"] in ext_id else (f["a"], f["de"])
+            ys = centro[paso][1] + TAM[tipo[paso]][1] / 2
+            yp = geo["externos"][ext][0]
+            hueco = (fondo + min(v[0] for v in geo["externos"].values())) / 2
+            if yp > ys:
+                frac = (hueco - ys) / (yp - ys) if f["a"] in ext_id else (yp - hueco) / (yp - ys)
+                pos = f' x="{2 * min(max(frac, 0), 1) - 1:.3f}"'
+        mensaje = f["de"] in ext_id or f["a"] in ext_id
+        pts = geo["flujos"][i - 1] if i - 1 < len(geo.get("flujos", [])) and not mensaje else []
         arr = ('<Array as="points">' + "".join(f'<mxPoint x="{x:.0f}" y="{y:.0f}"/>' for x, y in pts) + "</Array>") if pts else ""
+        de, a = ext_id.get(f["de"], f["de"]), ext_id.get(f["a"], f["a"])
         celdas.append(f'<mxCell id="F{i:02d}" value="{_xml_attr(f.get("etiqueta", ""))}" style="{st}" edge="1" parent="1" '
-                      f'source="{_xml_attr(f["de"])}" target="{_xml_attr(f["a"])}"><mxGeometry relative="1" as="geometry">{arr}'
+                      f'source="{_xml_attr(de)}" target="{_xml_attr(a)}"><mxGeometry{pos} relative="1" as="geometry">{arr}'
                       f'</mxGeometry></mxCell>')
     xml = ('<mxfile host="appian-analisis-funcional"><diagram id="proceso" name="' + _xml_attr(proc.get("proceso") or "Proceso") +
            '"><mxGraphModel grid="1" gridSize="10" page="0" math="0"><root>' + "".join(celdas) +
@@ -354,6 +506,14 @@ class Fichero:
 
         es_carril = {cid for cid, i in info.items() if i["vertex"] and ("swimlane" in i["estilo"]["_base"]
                      or i["estilo"].get("shape") in ("swimlane", "mxgraph.bpmn.swimlane"))}
+        # participantes externos (caja negra): rectángulos marcados con externo=1
+        es_externo = {cid for cid, i in info.items() if i["vertex"] and i["estilo"].get("externo") == "1"}
+        externos, geo_externo, nombre_externo = [], {}, {}
+        for cid in sorted(es_externo, key=lambda c: absoluto(c)[1]):
+            nombre = info[cid]["texto"] or cid
+            ax, ay = absoluto(cid)
+            externos.append(nombre); nombre_externo[cid] = nombre
+            geo_externo[nombre] = (ay, info[cid]["h"], ax, info[cid]["w"], cid)
         # un carril que contiene otros carriles es un pool: su nombre es el del proceso
         pools = {i["padre"] for cid, i in info.items() if cid in es_carril and i["padre"] in es_carril}
         carriles_ids = sorted(es_carril - pools, key=lambda c: absoluto(c)[1])
@@ -378,14 +538,14 @@ class Fichero:
             if i["edge"]:
                 s, t = i["cell"].get("source"), i["cell"].get("target")
                 sal[s] = sal.get(s, 0) + 1; ent[t] = ent.get(t, 0) + 1
-        pasos, geo_pasos, notas = [], {}, []
+        pasos, geo_pasos, notas, celdas_nota, lados = [], {}, [], {}, {}
         for cid, i in info.items():
-            if not i["vertex"] or cid in es_carril or (i["padre"] in info and info[i["padre"]]["edge"]):
+            if not i["vertex"] or cid in es_carril or cid in es_externo or (i["padre"] in info and info[i["padre"]]["edge"]):
                 continue
             tipo = tipo_de_estilo(i["estilo"], ent.get(cid, 0), sal.get(cid, 0))
             if tipo is None:
                 if i["texto"] and es_nota(i["estilo"]):
-                    notas.append(i["texto"])
+                    celdas_nota[cid] = i
                 elif i["texto"]:
                     avisos.append(f"se ignora «{i['texto']}» ({cid}): no es una forma de proceso (documento, imagen…)")
                 continue
@@ -399,12 +559,31 @@ class Fichero:
                     carriles.append(carril)
             pasos.append({"id": cid, "tipo": tipo, "carril": carril, "nombre": i["texto"]})
             geo_pasos[cid] = (cx, cy, i["w"], i["h"])
+            vlp = i["estilo"].get("verticalLabelPosition")
+            if vlp in ("top", "bottom") and tipo in EVENTOS | PUERTAS:
+                lados[cid] = "arriba" if vlp == "top" else "abajo"
         ids_pasos = {p["id"] for p in pasos}
-        flujos, geo_flujos = [], []
+        flujos, geo_flujos, asociada = [], [], {}
         for cid, i in info.items():
             if not i["edge"]:
                 continue
             s, t = i["cell"].get("source"), i["cell"].get("target")
+            if s in celdas_nota or t in celdas_nota:          # asociación de una nota con su paso
+                nota, paso = (s, t) if s in celdas_nota else (t, s)
+                if paso in ids_pasos:
+                    asociada[nota] = paso
+                continue
+            if s in nombre_externo or t in nombre_externo:    # flujo de mensaje con un participante externo
+                de, a = nombre_externo.get(s, s), nombre_externo.get(t, t)
+                if (de in ids_pasos) == (a in ids_pasos):
+                    avisos.append(f"el flujo de mensaje {cid} no une un paso con un participante externo y se ignora")
+                    continue
+                f = {"de": de, "a": a, "id": cid}
+                etiqueta = " ".join([x for x in [i["texto"]] + etiquetas_flujo.get(cid, []) if x])
+                if etiqueta:
+                    f["etiqueta"] = etiqueta
+                flujos.append(f); geo_flujos.append([])
+                continue
             if s not in ids_pasos or t not in ids_pasos:
                 avisos.append(f"el flujo {cid} no une dos pasos (le falta el origen o el destino) y se ignora")
                 continue
@@ -414,6 +593,8 @@ class Fichero:
                 f["etiqueta"] = etiqueta
             if i["estilo"].get("dashed") == "1":
                 f["discontinuo"] = True
+            if i["estilo"].get("startArrow") == "dash":
+                f["defecto"] = True
             flujos.append(f)
             pts = []
             arr = i["g"].find("Array") if i["g"] is not None else None
@@ -421,20 +602,36 @@ class Fichero:
                 ox, oy = absoluto(i["padre"]) if i["padre"] not in ("1", None) else (0.0, 0.0)
                 pts = [(float(pt.get("x", 0)) + ox, float(pt.get("y", 0)) + oy) for pt in arr.findall("mxPoint")]
             geo_flujos.append(pts)
+        # notas: las unidas a un paso son del proceso; las sueltas, comentarios del dibujo
+        notas_proc, anotaciones, ids_nota = [], [], []
+        for nid, i in sorted(celdas_nota.items(), key=lambda kv: absoluto(kv[0])):
+            if nid in asociada:
+                ax, ay = absoluto(nid)
+                notas_proc.append({"paso": asociada[nid], "texto": i["texto"]})
+                anotaciones.append((ax + i["w"] / 2, ay + i["h"] / 2, i["w"], i["h"]))
+                ids_nota.append(nid)
+            else:
+                notas.append(i["texto"])
         nombre = nombre_pool or (self.diagram.get("name") if self.diagram is not None else "") or "Proceso"
         if self.paginas > 1:
             avisos.append(f"el fichero tiene {self.paginas} páginas; solo se lee la primera")
         usados = {p["carril"] for p in pasos}
         vacios = [c for c in carriles if c not in usados]
         proc = {"proceso": nombre, "carriles": carriles, "pasos": pasos, "flujos": flujos}
+        if externos:
+            proc["externos"] = externos
+        if notas_proc:
+            proc["notas"] = notas_proc
         geo = {"carriles": geo_carril, "pasos": geo_pasos, "flujos": geo_flujos, "vacios": vacios, "notas": notas,
-               "pool": next(iter(pools), None)}
+               "pool": next(iter(pools), None), "externos": geo_externo, "anotaciones": anotaciones, "ids_nota": ids_nota,
+               "etiquetas": lados}
         return proc, geo, avisos
 
 
 def es_nota(e):
     shape = e.get("shape") or (e["_base"][0] if e["_base"] else "")
-    return shape in ("text", "note", "mxgraph.bpmn.textAnnotation") or "text" in e["_base"] or "note" in e["_base"]
+    return (e.get("nota") == "1" or shape in ("text", "note", "mxgraph.bpmn.textAnnotation", "mxgraph.flowchart.annotation_2")
+            or "text" in e["_base"] or "note" in e["_base"])
 
 
 def tipo_de_estilo(e, n_ent, n_sal):
@@ -449,14 +646,16 @@ def tipo_de_estilo(e, n_ent, n_sal):
         if outline == "end":
             return "fin"
         if outline == "standard":
-            return "inicio"
+            return {"timer": "inicio_temporizador", "message": "inicio_mensaje"}.get(symbol, "inicio")
         return {"timer": "temporizador", "message": "mensaje"}.get(symbol, "intermedio")
     if shape == "mxgraph.bpmn.gateway2":
         return {"parallel": "paralela", "inclusive": "inclusiva"}.get(e.get("gwType", "exclusive"), "exclusiva")
     if shape in ("mxgraph.bpmn.task", "mxgraph.bpmn.task2"):
+        if e.get("bpmnShapeType") == "call":
+            return "llamada"
         if e.get("isLoopSub") == "1" or e.get("outline") == "call":
             return "subproceso"
-        return {"service": "sistema", "script": "sistema", "businessRule": "sistema", "send": "sistema",
+        return {"service": "sistema", "script": "script", "businessRule": "sistema", "send": "sistema",
                 "manual": "manual"}.get(e.get("taskMarker", "abstract"), "tarea")
     if shape in ("rhombus",):
         return "exclusiva"
@@ -519,18 +718,33 @@ def comparar(antes, despues):
     for pid, q in pa.items():
         if pid not in pd:
             out.append(("paso", f"paso quitado: {pid} «{q['nombre']}»"))
+    for e in d["externos"]:
+        if e not in a["externos"]:
+            out.append(("externo", f"participante externo nuevo: «{e}»"))
+    for e in a["externos"]:
+        if e not in d["externos"]:
+            out.append(("externo", f"participante externo quitado: «{e}»"))
+    for n in d["notas"]:
+        if n not in a["notas"]:
+            out.append(("nota", f"nota nueva en {n['paso']}: «{n['texto']}»"))
+    for n in a["notas"]:
+        if n not in d["notas"]:
+            out.append(("nota", f"nota quitada de {n['paso']}: «{n['texto']}»"))
     clave = lambda f: (f["de"], f["a"])
     fa, fd = {clave(f): f for f in a["flujos"]}, {clave(f): f for f in d["flujos"]}
     for k, f in fd.items():
         if k not in fa:
             out.append(("flujo", f"flujo nuevo: {f['de']} → {f['a']}" + (f" «{f['etiqueta']}»" if f["etiqueta"] else "")
-                        + (" (discontinuo)" if f["discontinuo"] else "")))
+                        + (" (discontinuo)" if f["discontinuo"] else "") + (" (por defecto)" if f["defecto"] else "")))
         else:
             g = fa[k]
             if g["etiqueta"] != f["etiqueta"]:
                 out.append(("flujo", f"flujo {f['de']} → {f['a']}: etiqueta «{g['etiqueta']}» → «{f['etiqueta']}»"))
             if g["discontinuo"] != f["discontinuo"]:
                 out.append(("flujo", f"flujo {f['de']} → {f['a']}: " + ("pasa a discontinuo" if f["discontinuo"] else "pasa a continuo")))
+            if g["defecto"] != f["defecto"]:
+                out.append(("flujo", f"flujo {f['de']} → {f['a']}: " + ("pasa a ser el flujo por defecto" if f["defecto"]
+                                                                         else "deja de ser el flujo por defecto")))
     for k, g in fa.items():
         if k not in fd:
             out.append(("flujo", f"flujo quitado: {g['de']} → {g['a']}"))
