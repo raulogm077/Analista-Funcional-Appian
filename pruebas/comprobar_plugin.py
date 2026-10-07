@@ -25,11 +25,11 @@ SKILLS = RAIZ / "skills"
 
 # Skills que se citan y no están en el plugin, con el motivo.
 EXTERNAS = {
-    "appian-reverse-engineering": "skill de ingeniería inversa, se incorporará al plugin",
     "appian-sail-generator": "skill aparte para escribir código SAIL suelto",
 }
-# Nombres que empiezan por appian- y no son skills.
-NO_SKILLS = {"appian-docs", "appian-dev", "appian-analisis-funcional"}
+# Nombres que empiezan por appian- y no son skills (MCP, carpetas y paquetes de Appian).
+NO_SKILLS = {"appian-docs", "appian-dev", "appian-analisis-funcional", "appian-dev-mcp-server",
+             "appian-dev-mcp-server-bundle", "appian-mcp-server", "appian-public-docs"}
 # Skills que tienen que llevar la regla de dudas de Appian (appian-best-practices la lleva en *Tools*).
 REGLA_DOCS = ["appian-functional-analyst", "appian-prototipos-aena"]
 TITULO_REGLA = "## Dudas de Appian"
