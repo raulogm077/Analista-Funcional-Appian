@@ -120,7 +120,7 @@ La base ya existe. Cada fuente nueva produce un informe de impacto que clasifica
 
 ## Contrato de ficheros
 
-Una carpeta por aplicación o proyecto: cada skill escribe solo en lo suyo y lee lo de las demás. Todo lo que el plugin genera al trabajar queda en esa carpeta; el repositorio del plugin solo tiene su código y sus pruebas.
+Una carpeta por aplicación o proyecto: cada skill escribe solo en lo suyo y lee lo de las demás. Todo lo que el plugin genera al trabajar queda en esa carpeta; el repositorio del plugin solo tiene su código y sus pruebas. Ninguna skill lleva un proyecto, tampoco de ejemplo: las pruebas y sus datos ficticios están en `pruebas/` y no van en el paquete.
 
 ```text
 <p>/proyecto.md, fuentes/, notas/, impacto/   analista
@@ -163,7 +163,7 @@ El MCP de documentación va incluido en el plugin.
 - **`requisitos.py`**, en la raíz del plugin, comprueba la tabla y dice, por skill, qué falta, el comando para instalarlo en Windows, macOS o Linux y qué se pierde. No instala nada sin permiso.
 - **Aviso al instalar.** Un hook de inicio de sesión del plugin lo ejecuta y Claude se lo cuenta al usuario la primera vez. Si la app no admite hooks de plugin, el primer paso de cada skill es ese mismo comando. Lo compruebo en Claude Code y en la app de escritorio.
 - **README** con la misma tabla, generada del mismo fichero para que no diverjan.
-- **Nada personal en el paquete.** `comprobar_plugin.py` falla si encuentra rutas de tu equipo, tu correo o tu nombre fuera del autor. Hoy la especificación de ingeniería inversa dice «en la carpeta local de Raul».
+- **Nada personal ni de un proyecto en el paquete.** `comprobar_plugin.py` falla si encuentra rutas de tu equipo, tu correo o tu nombre fuera del autor, o una skill con pruebas, ejemplos o una carpeta con forma de proyecto. Hoy la especificación de ingeniería inversa dice «en la carpeta local de Raul».
 - **Instalación limpia.** El paquete se prueba en un equipo vacío: primero sin nada (el aviso tiene que ser exacto) y después con todo (todas las pruebas en verde).
 
 ## Cómo garantizamos que no se solapen
@@ -182,7 +182,7 @@ Diez fases en orden; ninguna se da por cerrada sin sus pruebas en verde.
 
 - [x] **F0 Decisiones.** Tomadas el 7 de octubre.
 - [x] **F1 Repositorio único.** El plugin, con ingeniería inversa dentro y su historial, en un solo repositorio del que parte cada hilo: raulogm077/Analista-Funcional-Appian, rama main.
-- [ ] **F2 Ingeniería inversa en el plugin.** Solo con el bloque A, sus pruebas en verde y su alta en `comprobar_plugin.py`. El bloque B se aparta para F5.
+- [ ] **F2 Ingeniería inversa en el plugin.** Antes, las skills se quedan solo con lo que usan al trabajar: sus pruebas y datos ficticios pasan a `pruebas/` y el caso de ejemplo de prototipos, un proyecto entero, sale del plugin. Después, ingeniería inversa solo con el bloque A, sus pruebas en verde y su alta en `comprobar_plugin.py`. El bloque B se aparta para F5.
 - [ ] **F3 Precisa y sin relleno.** `comprobar_asis.py`, las reglas de prosa comunes, `as-is/datos/`, la aplicación ficticia mal hecha a propósito y la prueba del recién llegado antes y después.
 - [ ] **F4 Diagramas.** Un solo exportador BPMN y un solo pintor. Se retiran `bpmn_layout.py`, `validate_mermaid.py` y `render_diagrams.sh`.
 - [ ] **F5 Refactorización.** La skill nueva con el 13, la arquitectura y la migración del 14, rebuild-architect y las señales. Lee solo `as-is/`. Prueba de malas prácticas sembradas.

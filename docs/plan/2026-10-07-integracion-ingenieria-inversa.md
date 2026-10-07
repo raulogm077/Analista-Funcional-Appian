@@ -22,8 +22,9 @@ inversa y `selftest.py` en el resto; GitHub Actions en Windows, macOS y Linux.
 
 - **Plugin y proyecto, separados.** Este repositorio es el código del plugin y sus pruebas. Todo lo que el plugin genera
   al trabajar, también en los proyectos de prueba de las evaluaciones, va a la carpeta de ese proyecto (`<p>`), fuera
-  del repositorio; el plugin no escribe nada fuera de `<p>`. Dentro de las skills solo hay ejemplos mínimos y ficticios
-  que enseñan el formato y usan los selftest (como hoy `ejemplos/autorizaciones`).
+  del repositorio; el plugin no escribe nada fuera de `<p>`.
+- **Las skills, sin proyectos dentro.** Una skill solo lleva lo que usa al trabajar; ninguna lleva un proyecto, tampoco
+  de ejemplo. Las pruebas de cada skill y sus datos ficticios están en `pruebas/<skill>/` (Tarea 0), fuera del paquete.
 - Todo en español: documentos, mensajes de los scripts, commits y nombres de los objetos de los ejemplos.
 - Ejemplos y aplicaciones de prueba ficticios. Nada del cliente en el repositorio. Nada sale del equipo para pintar o convertir.
 - Ingeniería inversa usa solo los MCP de Appian (Dev MCP, Appian MCP Server y MCP de documentación) y en solo lectura.
@@ -37,11 +38,11 @@ inversa y `selftest.py` en el resto; GitHub Actions en Windows, macOS y Linux.
 - Scripts con `pathlib`, `encoding="utf-8"` y rutas con espacios; en Windows el comando es `python`. Rutas de prueba
   neutras («Carpeta con espacios/Gestión app»).
 - Una rama por fase (`f2-…`, `f3-…`); a `main` llega con las pruebas en verde y la revisión independiente de la fase.
-- Antes de cada commit: `python3 pruebas/comprobar_plugin.py --completo` y, si se toca ingeniería inversa,
-  `python3 -m pytest -q` en `skills/appian-reverse-engineering`.
+- Antes de cada commit: `python3 pruebas/comprobar_plugin.py --completo`, que desde la Tarea 0 incluye las pruebas de
+  ingeniería inversa (solas: `python3 -m pytest -q pruebas/appian-reverse-engineering`).
 - Commits terminados en `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` y
   `Claude-Session: https://claude.ai/code/session_01DozooebTcuXCNifwmTZUN5`.
-- Lo de desarrollo (`docs/`, `CLAUDE.md`, `pruebas/evaluaciones/`, `.github/`) no va en el paquete. Versión al cerrar: `0.7.0-beta.1`.
+- Lo de desarrollo (`docs/`, `CLAUDE.md`, `pruebas/`, `.github/`) no va en el paquete. Versión al cerrar: `0.7.0-beta.1`.
 - Las baterías de evaluación (preguntas, malas prácticas, incoherencias, peticiones de enrutado) tienen un tercio
   escrito por un agente aparte y guardado en `ocultas/`, que no lee quien ajusta plantillas ni descripciones hasta medir.
 
@@ -55,14 +56,59 @@ Lo que el diseño implica y ninguna prueba de tarea cubriría sola. Cada línea 
    `test_ruta_con_espacios` (Tareas 2 y 6) y la matriz de GitHub Actions (Tarea 26).
 3. **Repetir la ingeniería inversa o retomarla en otra sesión o en otro equipo.** Como la extracción está en el
    proyecto, se retoma sin volver a extraer lo que ya está. Prueba `test_retomar` (Tarea 2).
-4. **Proyecto sin aplicación existente.** Las comprobaciones nuevas del analista no saltan sin `as-is/`. Prueba: el
-   selftest del ejemplo `autorizaciones` da lo mismo que antes (Tarea 19).
+4. **Proyecto sin aplicación existente.** Las comprobaciones nuevas del analista no saltan sin `as-is/`. Prueba: la del
+   analista con `datos/autorizaciones` da lo mismo que antes (Tarea 19).
 5. **Compañero sin Playwright o sin Node.** Se dibuja el `.drawio` y se exporta el BPMN sin navegador (sin PNG), y se
    dice qué falta. Pruebas `DIAGRAMAS_SIN_NAVEGADOR=1` (Tarea 12) y `REQUISITOS_SIN=playwright,docx` (Tarea 23).
 
 ---
 
 ## F2 · Ingeniería inversa en el plugin, solo con el bloque A
+
+### Tarea 0: Las skills, solo con lo que usan al trabajar
+
+**Ficheros:**
+- Mover con `git mv`:
+  - `skills/{appian-functional-analyst,appian-diagramas-bpmn,appian-prototipos-aena}/scripts/selftest.py` →
+    `pruebas/<skill>/selftest.py`;
+  - `skills/appian-reverse-engineering/tests/` → `pruebas/appian-reverse-engineering/`, con `fixtures/` → `datos/`;
+  - `skills/appian-functional-analyst/ejemplos/autorizaciones/` → `pruebas/appian-functional-analyst/datos/autorizaciones/`;
+  - `skills/appian-diagramas-bpmn/ejemplos/{solicitud,pedido}.json` → `pruebas/appian-diagramas-bpmn/datos/`;
+  - `skills/appian-reverse-engineering/docs/{SPEC-v2-devmcp,CHANGELOG}.md` → `docs/ingenieria-inversa/`, y
+    `docs/PRIMERA-EJECUCION.md` → `references/primera-ejecucion.md` de la skill, porque es para quien la usa (la cita
+    su SKILL.md);
+  - `skills/appian-prototipos-aena/examples/{bloques,ia,componentes,README.md}` → `skills/appian-prototipos-aena/galerias/`:
+    son el catálogo del kit y se quedan.
+- Borrar: `skills/appian-prototipos-aena/examples/casos/` (un proyecto entero dentro de la skill).
+- Crear: `pruebas/appian-prototipos-aena/datos/autorizaciones/generar_app.py`, con dos pantallas de
+  `pruebas/appian-functional-analyst/datos/autorizaciones/` leídas con `modelo.py` del analista, como hacía el caso borrado.
+- Modificar:
+  - los `selftest.py` y las pruebas de ingeniería inversa: la skill se toma de `$PLUGIN_A_PROBAR/skills/<skill>` (por
+    defecto, la raíz del repositorio) y los datos, de `pruebas/<skill>/datos/`. En ingeniería inversa, `conftest.py`
+    define `SKILL` y las pruebas lo usan en lugar de `Path(__file__).parents[1]`;
+  - `pruebas/comprobar_plugin.py`: `--completo` ejecuta `pruebas/*/selftest.py` y
+    `python -m pytest -q pruebas/appian-reverse-engineering` con `PYTHONUTF8=1` (si faltan `pytest` o `mcp` y hay `uv`,
+    con `uv run --no-project --with pytest --with "mcp>=1.2,<2"`; si no, aviso de requisito, como el código 2 de hoy);
+    `--plugin <carpeta>` pasa las pruebas del repositorio a otra copia del plugin (la del paquete); `CARPETAS` con
+    `galerias`; y errores nuevos: una skill con `tests/`, `ejemplos/`, `examples/` o un `selftest.py`, o con una carpeta
+    que tiene forma de proyecto (`proyecto.md`, `fuentes/`, `analisis/`, `as-is/`, `refactorizacion/` o `prototipo/`);
+  - lo que citaba los ejemplos. Analista: `SKILL.md` y `references/{funcional,tecnico}-plantilla.md`, donde «Ejemplo
+    completo» pasa a fragmentos de pocas líneas dentro de la plantilla (una historia con su criterio, una ficha de
+    pantalla, una fila de pendientes y una DT). Diagramas: `SKILL.md` («Ejemplos completos en `ejemplos/`» sobra; basta
+    el bloque del formato). Prototipos: `SKILL.md` (sin `examples/casos/`; «En un equipo nuevo» dice que validar y
+    construir no necesitan nada más y que las capturas piden Playwright y un navegador, hasta que la Tarea 24 ponga
+    `requisitos.py`), `galerias/README.md` (qué es cada galería y que ahí no hay proyectos; sin «Añadir un caso»),
+    `references/{bloques,componentes,design-rules}.md`, `schemas/catalogo-appian.json`, `scripts/sail_helpers.py` y los
+    `generar_app.py` de las galerías. Y `README.md`;
+  - `docs/ingenieria-inversa/SPEC-v2-devmcp.md`: las dos líneas que citan una aplicación del cliente, sin su nombre.
+
+- [ ] **Paso 1: pruebas que fallan.** En `comprobar_plugin.py`, con copias temporales del plugin: una skill con
+  `ejemplos/x/proyecto.md` da error, y otra con `tests/` también; `--completo --plugin <copia sin pruebas/>` pasa las
+  pruebas del repositorio a esa copia. → FALLA.
+- [ ] **Paso 2:** mover, borrar y ajustar.
+- [ ] **Paso 3:** `python3 pruebas/comprobar_plugin.py --completo` en verde, con las mismas pruebas que antes salvo las
+  del caso borrado, que sustituye el prototipo de `autorizaciones`. `CLAUDE.md`, con los comandos nuevos. Commit
+  «F2: las skills, sin proyectos ni pruebas dentro».
 
 ### Tarea 1: Apartar el bloque B
 
@@ -75,9 +121,9 @@ Lo que el diseño implica y ninguna prueba de tarea cubriría sola. Cada línea 
   validación final), `assets/markdown-templates/{00-resumen-ejecutivo,LEEME,11-reglas-negocio}.md`,
   `agents/{pdf-publisher,dashboard-publisher}.md` (sin `modernization` ni `tratamiento[]`; «17 documentos» → la lista
   real), `references/{analysis-workflow,execution-principles,response-format}.md`, `scripts/build_registry.py`,
-  `scripts/build_summary.py`, `tests/test_registry.py`.
+  `scripts/build_summary.py`, `pruebas/appian-reverse-engineering/test_registry.py`.
 - Modificar: `pruebas/comprobar_plugin.py` (`EXTERNAS["appian-refactorizacion"] = "se crea en F5"`).
-- Crear: `skills/appian-reverse-engineering/tests/test_sin_bloque_b.py`.
+- Crear: `pruebas/appian-reverse-engineering/test_sin_bloque_b.py`.
 
 **Interfaces:**
 - Produce: `registro.json` con las claves exactas `{"hallazgos", "porSeveridad", "porCerteza"}`; `summary.json` sin
@@ -86,22 +132,24 @@ Lo que el diseño implica y ninguna prueba de tarea cubriría sola. Cada línea 
 - [ ] **Paso 1: prueba que falla**
 
 ```python
+from conftest import SKILL  # carpeta de la skill (Tarea 0)
+
 PROHIBIDO = re.compile(
     r"12-especificacion|13-modernizacion|14-diseno|rebuild-architect|target-designer|modernizacion\.json|"
     r"moderniz|reconstru|[Vv]eredicto|\b(MOD|PQ|DEC|RF|RNF)-|17 documentos|00.{1,3}14\b|"
     r"tratamiento (de|en) 13|\"tratamiento\"|tratamiento\[|\| Tratamiento \|")
 
 def test_ingenieria_inversa_no_menciona_el_bloque_b():
-    malos = [f"{p.relative_to(ROOT)}:{n}" for p in ROOT.rglob("*") if p.suffix in (".md", ".py", ".json")
-             and p.name != "test_sin_bloque_b.py" and "docs" not in p.parts
+    malos = [f"{p.relative_to(SKILL)}:{n}" for p in SKILL.rglob("*") if p.suffix in (".md", ".py", ".json")
              for n, l in enumerate(p.read_text(encoding="utf-8").splitlines(), 1) if PROHIBIDO.search(l)]
     assert malos == []
 ```
 
   Y en `test_registry.py`: `assert set(reg) == {"hallazgos", "porSeveridad", "porCerteza"}`.
-- [ ] **Paso 2:** `python3 -m pytest -q tests/test_sin_bloque_b.py tests/test_registry.py` → FALLA con la lista de ficheros y líneas.
-- [ ] **Paso 3:** quitar el bloque B de cada fichero de la lista. El `docs/` de la skill se mueve en la Tarea 3; hasta
-  entonces la prueba lo excluye con `"docs" not in p.parts`, y esa tarea quita la excepción.
+- [ ] **Paso 2:** en `pruebas/appian-reverse-engineering/`, `python3 -m pytest -q test_sin_bloque_b.py test_registry.py`
+  → FALLA con la lista de ficheros y líneas.
+- [ ] **Paso 3:** quitar el bloque B de cada fichero de la lista. La prueba no necesita excepciones: el `docs/` de la
+  skill y sus pruebas ya salieron de ella en la Tarea 0.
 - [ ] **Paso 4:** descripción nueva del SKILL.md (se afina en la Tarea 28):
   «Ingeniería inversa de aplicaciones Appian: lee la aplicación en vivo por el Dev MCP, en solo lectura, y documenta
   cómo está hecha para que el equipo la entienda: funcional, arquitectura, datos, seguridad, integraciones, APIs,
@@ -118,11 +166,13 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 **Ficheros:**
 - Modificar: `scripts/rutas.py`, `scripts/privacidad.py` (recibe de `build_annex.py` `USER_KEY`, `EMAIL`, `users_seen`,
   `users_in`, `user_labels`, `scrub` y `scrub_text`), `scripts/build_annex.py` (los importa), `scripts/devmcp_extract.py`
-  (escribe ya saneado y con rutas cortas), `scripts/build_model.py` (misma ruta corta), `tests/conftest.py`,
-  `tests/test_build_model.py:93-95`, `tests/test_extract.py:255`, `tests/test_registry.py:17`, `SKILL.md`
-  («Argumentos», «Dos carpetas» pasa a una, y puntos 6 y 11 de la validación final), `references/response-format.md:50`
+  (escribe ya saneado y con rutas cortas), `scripts/build_model.py` (misma ruta corta), `SKILL.md` («Argumentos», «Dos
+  carpetas» pasa a una, y puntos 6 y 11 de la validación final), `references/response-format.md:50`
   y las menciones a `_trabajo` de `references/` y `agents/`.
-- Crear: `tests/test_extraccion_en_proyecto.py`.
+- Modificar en `pruebas/appian-reverse-engineering/`: `conftest.py` y lo que da por hecho `_trabajo`
+  (`test_build_model.py:93-95`, el `.gitignore` de `test_extract.py:255` y la ruta de `test_registry.py:17`, con los
+  números de línea de antes de la Tarea 0).
+- Crear: `pruebas/appian-reverse-engineering/test_extraccion_en_proyecto.py`.
 
 **Interfaces:**
 - `rutas.work_dir(out, crear=False) -> Path`: `<out>/extraccion`, dentro del proyecto. Ya no hay `_trabajo` ni `.gitignore`.
@@ -140,7 +190,7 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
   aplicaciones del entorno solo cuántas hay.
 
 - [ ] **Paso 1: pruebas que fallan.** `interm()` de `conftest.py` usa `rutas.work_dir(self.out)`. En
-  `tests/test_extraccion_en_proyecto.py`:
+  `pruebas/appian-reverse-engineering/test_extraccion_en_proyecto.py`:
   - `test_extraccion_dentro_del_proyecto`: tras `extract`, existe `<out>/extraccion/mcp_raw` y no hay nada fuera de `<out>`
     (la carpeta temporal de la prueba solo tiene el proyecto, su `.mcp.json` y el registro de llamadas del simulador).
   - `test_sin_usuarios_ni_secretos`: ningún fichero de `<out>` contiene los usuarios de `fixture.GROUP_USERS`, `sk_live_`,
@@ -152,7 +202,7 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
   - `test_retomar`: una segunda `extract` no vuelve a pedir lo que ya está (registro de llamadas del simulador) y
     `build_model.py` funciona igual.
   - `test_ruta_con_espacios`: lo anterior con `out = tmp / "Carpeta con espacios" / "Gestión app" / "as-is"`.
-- [ ] **Paso 2:** `python3 -m pytest -q tests/test_extraccion_en_proyecto.py` → FALLA.
+- [ ] **Paso 2:** `python3 -m pytest -q pruebas/appian-reverse-engineering/test_extraccion_en_proyecto.py` → FALLA.
 - [ ] **Paso 3:** implementar y ajustar las pruebas existentes de la lista de ficheros.
 - [ ] **Paso 4:** `SKILL.md`: salida por defecto `<p>/as-is/` (si la carpeta tiene `proyecto.md` o la da el usuario) o
   `./<PREFIJO>/as-is/`; una sola carpeta, con la extracción en `as-is/extraccion/`, ya saneada; los puntos 6 y 11 de la
@@ -161,21 +211,16 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 
 ### Tarea 3: Alta de ingeniería inversa en el plugin
 
-**Ficheros:**
-- Crear: `skills/appian-reverse-engineering/scripts/selftest.py`.
-- Mover: `skills/appian-reverse-engineering/docs/` → `docs/ingenieria-inversa/`.
-- Modificar: `README.md` (mapa de skills); `skills/appian-reverse-engineering/SKILL.md` (apartado «## Dudas de Appian»
-  con el bloque común del analista); `references/docs-mcp-usage.md` (solo lo propio: tope de 30 consultas y caché);
-  `tests/test_scripts.py` (las pruebas de `detect_secrets.sh` se saltan si no hay `bash`; `encoding="utf-8"` en toda
-  lectura, también en `test_registry.py:50-51`); `tests/test_sin_bloque_b.py` (sin la excepción de `docs`);
-  `pruebas/comprobar_plugin.py` (`REGLA_DOCS` incluye `appian-reverse-engineering`).
+Sus pruebas ya las ejecuta `comprobar_plugin.py --completo` desde la Tarea 0; aquí entra en las reglas comunes.
 
-**Interfaces:**
-- `selftest.py`: ejecuta `python -m pytest -q <skill>/tests` con `PYTHONUTF8=1`. Si faltan `pytest` o `mcp` y hay `uv`,
-  lo repite con `uv run --no-project --with pytest --with "mcp>=1.2,<2"`. Sale 0, 1 (falla) o 2 (falta un requisito).
+**Ficheros:** Modificar `README.md` (mapa de skills); `skills/appian-reverse-engineering/SKILL.md` (apartado «## Dudas
+de Appian» con el bloque común del analista); `references/docs-mcp-usage.md` (solo lo propio: tope de 30 consultas y
+caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `detect_secrets.sh` se saltan si no hay
+`bash`; `encoding="utf-8"` en toda lectura, también en `test_registry.py:50-51`); `pruebas/comprobar_plugin.py`
+(`REGLA_DOCS` incluye `appian-reverse-engineering`).
 
 - [ ] **Paso 1:** añadir `appian-reverse-engineering` a `REGLA_DOCS` y ejecutar `python3 pruebas/comprobar_plugin.py --completo`
-  → FALLA («falta el apartado Dudas de Appian») y no aparece «Prueba de appian-reverse-engineering».
+  → FALLA («falta el apartado Dudas de Appian»).
 - [ ] **Paso 2:** hacer los cambios de la lista.
 - [ ] **Paso 3:** `python3 pruebas/comprobar_plugin.py --completo` → «Prueba de appian-reverse-engineering: bien», 0 errores.
 - [ ] **Paso 4:** commit «F2: ingeniería inversa en la prueba completa del plugin». Cierre de fase: revisión
@@ -190,7 +235,7 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 **Ficheros:**
 - Crear: `skills/appian-functional-analyst/scripts/redaccion.py`.
 - Modificar: `skills/appian-functional-analyst/scripts/comprobar.py` (usa `redaccion.py`; mismo comportamiento) y
-  `scripts/selftest.py`; `skills/appian-reverse-engineering/references/presentation-rules.md`: se quedan el esqueleto
+  `pruebas/appian-functional-analyst/selftest.py`; `skills/appian-reverse-engineering/references/presentation-rules.md`: se quedan el esqueleto
   de documento (TL;DR, Vista, Detalle, Hallazgos, Cobertura) y las reglas de evidencia, marcas de certeza y usuarios;
   las de prosa remiten a `appian-functional-analyst/references/redaccion.md`.
 
@@ -209,7 +254,7 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 ### Tarea 5: `as-is/datos/`, el contrato con las demás skills
 
 **Ficheros:**
-- Crear: `skills/appian-reverse-engineering/scripts/build_datos.py`, `references/datos.md`, `tests/test_datos.py`.
+- Crear: `skills/appian-reverse-engineering/scripts/build_datos.py`, `references/datos.md`, `pruebas/appian-reverse-engineering/test_datos.py`.
 - Modificar: `SKILL.md` (fase 6: `build_datos.py <salida>` después de `build_summary.py`).
 
 **Interfaces:**
@@ -233,7 +278,7 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 ### Tarea 6: `comprobar_asis.py`
 
 **Ficheros:**
-- Crear: `scripts/comprobar_asis.py`, `tests/test_comprobar_asis.py`, `assets/presupuesto-palabras.json`.
+- Crear: `scripts/comprobar_asis.py`, `pruebas/appian-reverse-engineering/test_comprobar_asis.py`, `assets/presupuesto-palabras.json`.
 - Modificar: `SKILL.md` (fase 8: sin errores de `comprobar_asis.py` antes de responder).
 
 **Interfaces:**
@@ -259,11 +304,11 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 ### Tarea 7: Aplicación ficticia mal hecha a propósito
 
 **Ficheros:**
-- Crear: `tests/mock_devmcp/fixture_mal_hecha.py`, `tests/test_fixture_mal_hecha.py`,
+- Crear: `pruebas/appian-reverse-engineering/mock_devmcp/fixture_mal_hecha.py`, `pruebas/appian-reverse-engineering/test_fixture_mal_hecha.py`,
   `pruebas/evaluaciones/aplicacion-ficticia/{malas-practicas.json,preguntas.json,ocultas/}`.
-- Modificar: `tests/mock_devmcp/lcp_mcp_server_mock.py` (módulo de `$MOCK_APP`, por defecto `fixture`; el prefijo sale
+- Modificar: `pruebas/appian-reverse-engineering/mock_devmcp/lcp_mcp_server_mock.py` (módulo de `$MOCK_APP`, por defecto `fixture`; el prefijo sale
   del objeto aplicación del fixture y no de `"DEM"` fijo en las líneas 170 y 239; tipo `DATA_STORE` en `_app_objects`;
-  definición para `DATA_TYPE` y `DATA_STORE`) y `tests/mock_devmcp/appian_mcp_server_mock.py` (también `$MOCK_APP`).
+  definición para `DATA_TYPE` y `DATA_STORE`) y `pruebas/appian-reverse-engineering/mock_devmcp/appian_mcp_server_mock.py` (también `$MOCK_APP`).
 
 **Interfaces:**
 - `fixture_mal_hecha` expone lo mismo que `fixture`: `APP_KEY`, `REFS`, `DEPENDENTS_SUPPORTED`, `GROUP_USERS`,
@@ -301,8 +346,8 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 **Ficheros:**
 - Modificar: `assets/markdown-templates/**/*.md` (00–11, LEEME, INVENTARIO y `08-procesos-bpmn/pm-template.md`), los
   cinco agentes de análisis, `references/{execution-principles,security-rules}.md`, `scripts/build_registry.py`
-  (aviso si un hallazgo trae `recomendacion`) y `tests/test_registry.py`.
-- Crear: `tests/test_plantillas.py`.
+  (aviso si un hallazgo trae `recomendacion`) y `pruebas/appian-reverse-engineering/test_registry.py`.
+- Crear: `pruebas/appian-reverse-engineering/test_plantillas.py`.
 
 - [ ] **Paso 1: pruebas que fallan.** `test_plantillas.py`:
   - `test_cada_plantilla_empieza_por_sus_preguntas`: tras el título, una línea `> **Responde a:**` con 2 a 5 preguntas.
@@ -344,8 +389,8 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 
 **Ficheros:**
 - Modificar en `skills/appian-diagramas-bpmn/scripts/`: `drawio_modelo.py`, `diagrama.py` (`_limpio` conserva las
-  claves nuevas), `bpmn_export.py`, `selftest.py`; y `SKILL.md`.
-- Crear: `ejemplos/semantico.json` (el proceso de `proceso_semantico.bpmn` de ingeniería inversa).
+  claves nuevas) y `bpmn_export.py`; `SKILL.md` y `pruebas/appian-diagramas-bpmn/selftest.py`.
+- Crear: `pruebas/appian-diagramas-bpmn/datos/semantico.json` (el proceso de `proceso_semantico.bpmn` de ingeniería inversa).
 
 **Interfaces:**
 - JSON del proceso, claves opcionales: en un paso `nodo` (id del nodo en Appian), `temporizador` (expresión) y
@@ -370,7 +415,7 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 **Ficheros:**
 - Mover: `skills/appian-functional-analyst/scripts/render_mermaid.py` → `skills/appian-diagramas-bpmn/scripts/mermaid.py`.
 - Modificar: `mermaid.py` (`MERMAID_JS` = su propia `assets/mermaid.min.js`; opción `--md`), el selftest de diagramas y,
-  en el analista, `SKILL.md`, `references/mermaid-diagrams.md`, `references/actualizacion.md` y `scripts/selftest.py`.
+  en el analista, `SKILL.md`, `references/mermaid-diagrams.md`, `references/actualizacion.md` y `pruebas/appian-functional-analyst/selftest.py`.
 
 **Interfaces:**
 - `mermaid.py <ficheros .mmd> [-o carpeta] [--check] [--svg] [--width N] [--md fichero.md …]`: con `--md` valida cada
@@ -385,16 +430,17 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 **Ficheros:**
 - Modificar en diagramas: `scripts/colocacion.py` (colocación de reserva sin navegador: capas de izquierda a derecha y
   un carril por perfil, la de `bpmn_layout.py`), `scripts/diagrama.py` (`crear` sin navegador escribe el `.drawio`, avisa
-  «sin PNG» y sale con 2 solo por la imagen), `scripts/navegador.py` (`DIAGRAMAS_SIN_NAVEGADOR=1` simula que no hay), `selftest.py`.
+  «sin PNG» y sale con 2 solo por la imagen), `scripts/navegador.py` (`DIAGRAMAS_SIN_NAVEGADOR=1` simula que no hay)
+  y `pruebas/appian-diagramas-bpmn/selftest.py`.
 - Modificar en ingeniería inversa: `agents/process-modeler.md` (escribe `08-procesos-bpmn/<slug>.json` con `nodo`,
   `temporizador`, `proceso_llamado` y `condicion`; después `diagrama.py crear` y `diagrama.py bpmn`),
   `references/bpmn-mapping.md` (nodo de Appian → tipo de paso y claves), `references/mermaid-rules.md` (qué se dibuja;
   sin las reglas del validador), `SKILL.md` (fase 5: `mermaid.py --md` en cada documento con Mermaid; sin navegador se
   dice y se sigue), `agents/{pdf-publisher,dashboard-publisher}.md` (imágenes de `mermaid.py --svg` y de los `.png`),
-  `tests/test_scripts.py` (quedan las pruebas de `detect_secrets`).
+  `pruebas/appian-reverse-engineering/test_scripts.py` (quedan las pruebas de `detect_secrets`).
 - Borrar: `scripts/bpmn_layout.py`, `scripts/validate_mermaid.py`, `scripts/render_diagrams.sh`,
-  `tests/test_bpmn_layout.py`, `tests/fixtures/proceso_semantico.bpmn`.
-- Crear: `tests/test_una_pieza.py`.
+  `pruebas/appian-reverse-engineering/test_bpmn_layout.py`, `pruebas/appian-reverse-engineering/datos/proceso_semantico.bpmn`.
+- Crear: `pruebas/appian-reverse-engineering/test_una_pieza.py`.
 
 - [ ] **Paso 1: pruebas que fallan.** Selftest de diagramas con `DIAGRAMAS_SIN_NAVEGADOR=1`: `crear` de
   `semantico.json` escribe un `.drawio` sin pasos solapados, sale con 2 y dice «sin PNG»; `bpmn` de ese `.drawio` da un
@@ -432,8 +478,9 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 ### Tarea 14: `comprobar_propuesta.py`, ejemplo y selftest
 
 **Ficheros:**
-- Crear: `skills/appian-refactorizacion/scripts/{comprobar_propuesta.py,selftest.py}` y
-  `ejemplos/mantenimiento/{as-is/datos/*.json,as-is/anexo/…,refactorizacion/propuesta.md}` (ficticio y pequeño).
+- Crear: `skills/appian-refactorizacion/scripts/comprobar_propuesta.py`, `pruebas/appian-refactorizacion/selftest.py` y
+  `pruebas/appian-refactorizacion/datos/mantenimiento/{as-is/datos/*.json,as-is/anexo/…,refactorizacion/propuesta.md}`
+  (ficticio y pequeño).
 
 **Interfaces:**
 - `comprobar(p: Path) -> tuple[list[str], list[str]]`. Errores: falta un apartado; una REF sin evidencia o con un enlace
@@ -441,7 +488,7 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
   Diagnóstico o en «Sustituye a», un nombre con el prefijo de la app que no está en `as-is/datos/inventario.json`; una
   REF que no aparece en Solución. Aviso: una REF que no está en la Hoja de ruta.
 
-- [ ] **Paso 1:** selftest: el ejemplo pasa (0/0) y cuatro copias rotas (evidencia rota, «BP 99 §1», objeto inventado en
+- [ ] **Paso 1:** selftest: `datos/mantenimiento` pasa (0/0) y cuatro copias rotas (evidencia rota, «BP 99 §1», objeto inventado en
   Diagnóstico, REF sin Solución) dan su error; un objeto nuevo en Solución no da error. → FALLA.
 - [ ] **Paso 2:** implementar. **Paso 3:** `comprobar_plugin.py --completo` en verde. Commit.
 
@@ -463,18 +510,18 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 
 ### Tarea 16: Citas de IDs de otras skills
 
-**Ficheros:** Modificar `skills/appian-functional-analyst/scripts/modelo.py` y `scripts/selftest.py`.
+**Ficheros:** Modificar `skills/appian-functional-analyst/scripts/modelo.py` y `pruebas/appian-functional-analyst/selftest.py`.
 
 **Interfaces:** `modelo.quita_citas(texto) -> str` borra los tramos `[FU-nn …]` antes de buscar IDs; lo usan la búsqueda
 de referencias de `modelo.py`, `indice.py` y `comprobar.py`.
 
-- [ ] **Paso 1:** selftest: en una copia del ejemplo, una línea con «[FU-07 PAN-03]» no aparece en `indice.py impacto PAN-03`
+- [ ] **Paso 1:** selftest: en una copia de `datos/autorizaciones`, una línea con «[FU-07 PAN-03]» no aparece en `indice.py impacto PAN-03`
   y no cuenta como referencia a la PAN-03 del análisis. → FALLA.
 - [ ] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 17: Guion de la próxima reunión
 
-**Ficheros:** Modificar `scripts/indice.py`, `scripts/selftest.py`, `SKILL.md`, `references/actualizacion.md`.
+**Ficheros:** Modificar `scripts/indice.py`, `pruebas/appian-functional-analyst/selftest.py`, `SKILL.md`, `references/actualizacion.md`.
 
 **Interfaces:** `indice.py pendientes <p>`: Markdown con las PC abiertas (sin tachar) agrupadas por «A quién»; cada una
 con pregunta, opciones y «Afecta a». Peso = elementos de «Afecta a» separados por comas + líneas fuera del §11 que citan
@@ -486,7 +533,7 @@ la PC. Dentro de cada grupo, de más peso a menos y, a igual peso, por ID.
 
 ### Tarea 18: Texto que queda viejo
 
-**Ficheros:** Modificar `scripts/comprobar.py`, `scripts/selftest.py` y `references/actualizacion.md` (el paso «Texto que
+**Ficheros:** Modificar `scripts/comprobar.py`, `pruebas/appian-functional-analyst/selftest.py` y `references/actualizacion.md` (el paso «Texto que
 queda viejo» cita la comprobación).
 
 **Interfaces:** `comprobar.texto_viejo(m, ant, modif) -> list[str]`: para cada pieza modificada, las secuencias de cinco
@@ -507,28 +554,28 @@ palabras que tenía antes y ya no tiene; avisa de cada otra línea del funcional
   a`, con Situación = Nuevo, Modifica, Existe o Sustituye; §2: una DT cita «[FU-nn REF-nn]» en «Necesidad»; sin `as-is/`
   todo sigue como hoy), `references/ingesta-fuentes.md` y `scripts/leer_fuentes.py` (opción `--una-fuente`: `as-is/`
   entra como una sola FU con el índice de sus documentos; `propuesta.md`, como cualquier fichero), `scripts/comprobar.py`,
-  `scripts/selftest.py`, `SKILL.md` (modo evolutivo y de refactorización).
-- Crear: `ejemplos/evolutivo/` (ficticio: `as-is/datos/` de la app DEM del simulador, una `refactorizacion/propuesta.md`
-  pequeña y un análisis con tres historias nuevas).
+  `pruebas/appian-functional-analyst/selftest.py`, `SKILL.md` (modo evolutivo y de refactorización).
+- Crear: `pruebas/appian-functional-analyst/datos/evolutivo/` (ficticio: `as-is/datos/` de la app DEM del simulador,
+  una `refactorizacion/propuesta.md` pequeña y un análisis con tres historias nuevas).
 
 **Interfaces:** `comprobar.comprobar_as_is(m)`, solo si existe `<p>/as-is/datos/inventario.json`. Errores: historia sin
 «Origen»; «Corrige H-xx» en una tabla del DF; una cita de hallazgo que no está en `hallazgos.json`; en §13, «Modifica» o
 «Existe» con un objeto que no está en el inventario, «Nuevo» con uno que sí está, o «Sustituye» sin un objeto del
 inventario; con propuesta, una REF de su Solución sin DT que la cite o un §3 sin la tabla de migración.
 
-- [ ] **Paso 1:** selftest: `ejemplos/evolutivo` pasa; cinco copias rotas dan su error; `leer_fuentes.py --una-fuente`
-  cataloga `as-is/` como una FU; y `ejemplos/autorizaciones`, sin `as-is/`, da exactamente los mismos errores y avisos
+- [ ] **Paso 1:** selftest: `datos/evolutivo` pasa; cinco copias rotas dan su error; `leer_fuentes.py --una-fuente`
+  cataloga `as-is/` como una FU; y `datos/autorizaciones`, sin `as-is/`, da exactamente los mismos errores y avisos
   que antes. → FALLA.
-- [ ] **Paso 2:** implementar y escribir el ejemplo. **Paso 3:** selftest en verde. Commit.
+- [ ] **Paso 2:** implementar y escribir `datos/evolutivo`. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 20: Aviso de parte mal hecha
 
-**Ficheros:** Modificar `scripts/comprobar.py`, `scripts/selftest.py` y `SKILL.md`.
+**Ficheros:** Modificar `scripts/comprobar.py`, `pruebas/appian-functional-analyst/selftest.py` y `SKILL.md`.
 
 **Interfaces:** dentro de `comprobar_as_is(m)`: aviso por cada fila de §13 «Modifica» o «Existe» cuyo objeto tiene un
 hallazgo de severidad Alta: «DEM_X tiene H-SEG-01 (Alta): ¿pasa antes por refactorización?».
 
-- [ ] **Paso 1:** selftest con `ejemplos/evolutivo` (un objeto con un hallazgo Alta) → el aviso cita su H. → FALLA.
+- [ ] **Paso 1:** selftest con `datos/evolutivo` (un objeto con un hallazgo Alta) → el aviso cita su H. → FALLA.
 - [ ] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 21: DF ya hecho (D2) y ciclo con el prototipo
@@ -547,13 +594,14 @@ y `references/actualizacion.md` (apartado «Feedback de una demo»); en prototip
 ### Tarea 22: Evaluaciones del analista
 
 **Ficheros:** Crear `pruebas/evaluaciones/{incoherencias,demo,evolutivo}/` con `README.md`, sus fuentes ficticias,
-`esperado.json`, `puntuar.py` y `ocultas/`; en el ejemplo ATP de prototipos, dos PAN validadas (🔒). Cada caso se
-ejecuta en su proyecto de `$PROYECTOS_PRUEBA/` y los resultados van a `docs/evaluaciones.md`.
+`esperado.json`, `puntuar.py` y `ocultas/`; la demo trae además su análisis de partida (un funcional ficticio con seis
+PAN, dos validadas 🔒) y el `generar_app.py` de su prototipo. Cada caso se copia a su proyecto de `$PROYECTOS_PRUEBA/`,
+se ejecuta allí y los resultados van a `docs/evaluaciones.md`.
 
 - Incoherencias: un DF ficticio (1.0) y tres reuniones (`.txt` con marcas de tiempo) con 10 incoherencias sembradas y
   3 más ocultas; `esperado.json` = `[{"fuente", "minuto", "piezas", "tipo"}]`. `puntuar.py` cuenta las que aparecen en
   los informes con su pieza y como «requiere aprobación», y comprueba que no se aplicó ninguna sin ella. Criterio: todas.
-- Demo: un comentario de demo por cada una de 6 pantallas del ATP, dos de ellas validadas; `esperado.json` = PAN que
+- Demo: un comentario de demo por cada una de sus 6 pantallas, dos de ellas validadas; `esperado.json` = PAN que
   cambian. `puntuar.py` compara los `app.json`: cambian las 4 no validadas y las 2 validadas solo con aprobación.
 - Evolutivo: tres historias nuevas sobre la aplicación ficticia; `esperado.json` = la Situación de cada objeto de §13.
   `puntuar.py` compara (marcarlo todo «Nuevo» no pasa) y `comprobar.py` sin errores.
@@ -688,11 +736,12 @@ tercio en `ocultas/`) y `pruebas/evaluaciones/enrutado/README.md`; resultados en
 ### Tarea 31: Paquete, instalación limpia, versión y entrega
 
 **Ficheros:** Crear `pruebas/empaquetar.py` (zip sin `.git`, `__pycache__`, `.pytest_cache`, `.github/`, `docs/`,
-`CLAUDE.md`, `pruebas/evaluaciones/` ni `*.plugin`); actualizar el comando de empaquetado del README.
+`CLAUDE.md`, `pruebas/` ni `*.plugin`); actualizar el comando de empaquetado del README.
 
 - [ ] **Paso 1:** empaquetar, descomprimir en una carpeta temporal y, desde ella, `requisitos.py --json` con
-  `REQUISITOS_SIN` de todo lo opcional: coincide con `pruebas/requisitos-esperado.json`. Después,
-  `pruebas/comprobar_plugin.py --completo` en verde desde la copia.
+  `REQUISITOS_SIN` de todo lo opcional: coincide con `pruebas/requisitos-esperado.json` del repositorio. Después, desde
+  el repositorio, `python3 pruebas/comprobar_plugin.py --completo --plugin <copia>` en verde: las pruebas contra lo que
+  se instala, que no las lleva.
 - [ ] **Paso 2:** `0.7.0-beta.1` en `plugin.json` y su fila en el README (qué cambia, una línea por skill);
   `comprobar_plugin.py --completo` en verde; paquete; etiqueta `v0.7.0-beta.1`; entregar el `.plugin`.
 - [ ] **Paso 3 (Raúl):** desinstalar de su cuenta la skill suelta de ingeniería inversa (y avisar a quien la tenga) y
