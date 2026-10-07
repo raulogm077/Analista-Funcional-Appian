@@ -66,7 +66,7 @@ Seis skills, cada una con una sola responsabilidad. Su descripción dice lo que 
 | Ingeniería inversa | Documentar cómo está hecha una aplicación que existe, con evidencia de cada dato | Juzgar, recomendar, escribir requisitos o diseñar |
 | Refactorización (nueva) | Plantear una solución bien hecha para toda la aplicación o una parte: diagnóstico, arquitectura y decisiones con buenas prácticas y eficiencia, migración y hoja de ruta | Requisitos, la especificación objeto a objeto, construir |
 | Analista funcional | Requisitos coherentes reunión a reunión: el funcional que valida el cliente, el técnico que se construye y las decisiones | Leer el entorno, dibujar, componer pantallas |
-| Prototipos | Enseñar la propuesta al cliente con pantallas SAIL navegables y sacar capturas para el DF | Decidir qué hace una pantalla |
+| Prototipos | Enseñar la propuesta al cliente con pantallas SAIL navegables, con su marca si el proyecto la tiene, y sacar capturas para el DF | Decidir qué hace una pantalla |
 | Diagramas BPMN | Dibujar en draw.io los procesos de lo que hay y de lo que habrá, y exportarlos; es la única que pinta | Decidir los pasos de un proceso |
 | Buenas prácticas | La doctrina de Appian y la revisión de un objeto o un cambio | Evaluar una aplicación entera, analizar, dibujar |
 
@@ -120,7 +120,7 @@ La base ya existe. Cada fuente nueva produce un informe de impacto que clasifica
 
 ## Contrato de ficheros
 
-Una carpeta por aplicación o proyecto: cada skill escribe solo en lo suyo y lee lo de las demás. Todo lo que el plugin genera al trabajar queda en esa carpeta; el repositorio del plugin solo tiene su código y sus pruebas. Ninguna skill lleva un proyecto, tampoco de ejemplo: las pruebas y sus datos ficticios están en `pruebas/` y no van en el paquete.
+Una carpeta por aplicación o proyecto: cada skill escribe solo en lo suyo y lee lo de las demás. Todo lo que el plugin genera al trabajar queda en esa carpeta; el repositorio del plugin solo tiene su código y sus pruebas. Ninguna skill lleva un proyecto, tampoco de ejemplo, ni la marca de un cliente: las pruebas y sus datos ficticios están en `pruebas/` y no van en el paquete, y la marca del cliente va en `prototipo/` de su proyecto.
 
 ```text
 <p>/proyecto.md, fuentes/, notas/, impacto/   analista
@@ -163,7 +163,7 @@ El MCP de documentación va incluido en el plugin.
 - **`requisitos.py`**, en la raíz del plugin, comprueba la tabla y dice, por skill, qué falta, el comando para instalarlo en Windows, macOS o Linux y qué se pierde. No instala nada sin permiso.
 - **Aviso al instalar.** Un hook de inicio de sesión del plugin lo ejecuta y Claude se lo cuenta al usuario la primera vez. Si la app no admite hooks de plugin, el primer paso de cada skill es ese mismo comando. Lo compruebo en Claude Code y en la app de escritorio.
 - **README** con la misma tabla, generada del mismo fichero para que no diverjan.
-- **Nada personal ni de un proyecto en el paquete.** `comprobar_plugin.py` falla si encuentra rutas de tu equipo, tu correo o tu nombre fuera del autor, o una skill con pruebas, ejemplos o una carpeta con forma de proyecto. Hoy la especificación de ingeniería inversa dice «en la carpeta local de Raul».
+- **Nada personal ni de un proyecto en el paquete.** `comprobar_plugin.py` falla si encuentra rutas de tu equipo, tu correo o tu nombre fuera del autor, o una skill con pruebas, ejemplos, una carpeta con forma de proyecto o la marca de un cliente. Hoy la especificación de ingeniería inversa dice «en la carpeta local de Raul».
 - **Instalación limpia.** El paquete se prueba en un equipo vacío: primero sin nada (el aviso tiene que ser exacto) y después con todo (todas las pruebas en verde).
 
 ## Cómo garantizamos que no se solapen
@@ -182,7 +182,7 @@ Diez fases en orden; ninguna se da por cerrada sin sus pruebas en verde.
 
 - [x] **F0 Decisiones.** Tomadas el 7 de octubre.
 - [x] **F1 Repositorio único.** El plugin, con ingeniería inversa dentro y su historial, en un solo repositorio del que parte cada hilo: raulogm077/Analista-Funcional-Appian, rama main.
-- [ ] **F2 Ingeniería inversa en el plugin.** Antes, las skills se quedan solo con lo que usan al trabajar: sus pruebas y datos ficticios pasan a `pruebas/` y el caso de ejemplo de prototipos, un proyecto entero, sale del plugin. Después, ingeniería inversa solo con el bloque A, sus pruebas en verde y su alta en `comprobar_plugin.py`. El bloque B se aparta para F5.
+- [ ] **F2 Ingeniería inversa en el plugin.** Antes, las skills se quedan solo con lo que usan al trabajar: sus pruebas y datos ficticios pasan a `pruebas/` y el caso de ejemplo de prototipos, un proyecto entero, sale del plugin; prototipos pasa a `appian-prototipos`, con el aspecto estándar de Appian por defecto. Después, ingeniería inversa solo con el bloque A, sus pruebas en verde y su alta en `comprobar_plugin.py`. El bloque B se aparta para F5.
 - [ ] **F3 Precisa y sin relleno.** `comprobar_asis.py`, las reglas de prosa comunes, `as-is/datos/`, la aplicación ficticia mal hecha a propósito y la prueba del recién llegado antes y después.
 - [ ] **F4 Diagramas.** Un solo exportador BPMN y un solo pintor. Se retiran `bpmn_layout.py`, `validate_mermaid.py` y `render_diagrams.sh`.
 - [ ] **F5 Refactorización.** La skill nueva con el 13, la arquitectura y la migración del 14, rebuild-architect y las señales. Lee solo `as-is/`. Prueba de malas prácticas sembradas.
@@ -202,6 +202,7 @@ Todas cerradas el 7 de octubre; el nombre del plugin se mantiene.
 | **D2** DF ya hecho | Pasa al formato del plugin; de ahí salen el Word y el técnico con el que se construye por MCP |
 | **D3** Repositorio | GitHub privado |
 | **D4** Extracción | Dentro del proyecto, en `as-is/extraccion/`, ya saneada: sin credenciales, secretos ni nombres de usuario |
+| Marca de los prototipos | El plugin se usará con varios clientes: por defecto, el aspecto estándar de Appian; la marca del cliente va en su proyecto y la skill pasa a llamarse `appian-prototipos` |
 
 ## Cómo funciona el plugin
 

@@ -23,8 +23,9 @@ inversa y `selftest.py` en el resto; GitHub Actions en Windows, macOS y Linux.
 - **Plugin y proyecto, separados.** Este repositorio es el código del plugin y sus pruebas. Todo lo que el plugin genera
   al trabajar, también en los proyectos de prueba de las evaluaciones, va a la carpeta de ese proyecto (`<p>`), fuera
   del repositorio; el plugin no escribe nada fuera de `<p>`.
-- **Las skills, sin proyectos dentro.** Una skill solo lleva lo que usa al trabajar; ninguna lleva un proyecto, tampoco
-  de ejemplo. Las pruebas de cada skill y sus datos ficticios están en `pruebas/<skill>/` (Tarea 0), fuera del paquete.
+- **Las skills, sin proyectos ni clientes dentro.** Una skill solo lleva lo que usa al trabajar; ninguna lleva un
+  proyecto, tampoco de ejemplo, ni la marca de un cliente. Las pruebas de cada skill y sus datos ficticios están en
+  `pruebas/<skill>/` (Tarea 0), fuera del paquete, y la marca del cliente va en `prototipo/` de su proyecto (Tarea 0b).
 - Todo en español: documentos, mensajes de los scripts, commits y nombres de los objetos de los ejemplos.
 - Ejemplos y aplicaciones de prueba ficticios. Nada del cliente en el repositorio. Nada sale del equipo para pintar o convertir.
 - Ingeniería inversa usa solo los MCP de Appian (Dev MCP, Appian MCP Server y MCP de documentación) y en solo lectura.
@@ -109,6 +110,40 @@ Lo que el diseño implica y ninguna prueba de tarea cubriría sola. Cada línea 
 - [ ] **Paso 3:** `python3 pruebas/comprobar_plugin.py --completo` en verde, con las mismas pruebas que antes salvo las
   del caso borrado, que sustituye el prototipo de `autorizaciones`. `CLAUDE.md`, con los comandos nuevos. Commit
   «F2: las skills, sin proyectos ni pruebas dentro».
+
+### Tarea 0b: Prototipos sin la marca de un cliente
+
+Por defecto, el aspecto estándar de Appian; la marca del cliente es un fichero de su proyecto, como las fuentes.
+
+**Ficheros:**
+- Mover con `git mv`: `skills/appian-prototipos-aena/` → `skills/appian-prototipos/` y `pruebas/appian-prototipos-aena/`
+  → `pruebas/appian-prototipos/`.
+- Crear en la skill: `assets/brand-appian.json` (la marca por defecto, sin logo, con los valores por defecto del objeto
+  Site que da la documentación de Appian, consultada con el MCP de documentación) y `references/marca.md` (formato de
+  `brand-<id>.json`, que va en `<p>/prototipo/`, y cómo se saca la marca de un cliente de su guía de marca o de su web
+  pública, con la auditoría de contraste de `validate.py`).
+- Borrar de la skill: `assets/brand-aena.json` y `assets/{logo-aena-on-light,logo-aena-on-dark,symbol-aena}.svg`. Raúl
+  los recibe en un zip, fuera del repositorio, para la carpeta `prototipo/` de sus proyectos de AENA.
+- Modificar:
+  - en la skill: `SKILL.md` (nombre, título y descripción sin «con la marca AENA»; si el proyecto no tiene
+    `prototipo/brand-<id>.json`, se pregunta por la marca y, sin respuesta, se usa `appian` con un `$assumption`),
+    `scripts/{build,validate,sail_helpers}.py` (marca por defecto `appian`; con `--brand x` y sin `brand-x.json` junto al
+    `app.json`, error que dice dónde ponerla), `references/design-rules.md` (las reglas valen para cualquier marca; la
+    paleta de estados sale de `brand-<id>.json → states`), `references/{componentes,bloques}.md`, y `templates/` y
+    `galerias/`, que se regeneran con la marca neutra y con constantes de prefijo ficticio en lugar de `AENA_…`;
+  - fuera de ella: `skills/appian-functional-analyst/{SKILL.md,references/actualizacion.md}`, `README.md` (mapa de
+    skills; las filas de versiones anteriores no se tocan), `.claude-plugin/{plugin.json,marketplace.json}` (sin «aena»
+    en descripción ni palabras clave) y `pruebas/comprobar_plugin.py` (`REGLA_DOCS` y la comprobación nueva).
+
+- [ ] **Paso 1: pruebas que fallan.** En `pruebas/appian-prototipos/selftest.py`: sin `--brand`, `build.py` usa `appian`;
+  con `--brand x` y un `brand-x.json` de prueba junto al `app.json`, usa esa; con `--brand aena` sin su fichero, sale
+  con error y dice dónde ponerlo. En `comprobar_plugin.py`: error si una skill lleva un `brand-*.json` que no sea
+  `brand-appian.json`, o un logo. → FALLA.
+- [ ] **Paso 2:** mover, crear y ajustar; regenerar plantillas y galerías.
+- [ ] **Paso 3:** `comprobar_plugin.py --completo` en verde y `git grep -i -w aena -- skills .claude-plugin` vacío. La
+  galería de componentes de antes del cambio, construida con el kit nuevo y `--brand aena` (los ficheros de AENA,
+  sacados del historial, junto a su `app.json`), da el mismo HTML que con el kit de antes: así lo verán los proyectos de
+  AENA. Commit «F2: prototipos sin la marca de un cliente».
 
 ### Tarea 1: Apartar el bloque B
 
@@ -658,7 +693,8 @@ se ejecuta allí y los resultados van a `docs/evaluaciones.md`.
 **Interfaces:** `comprobar_plugin.py` da error si la tabla del README no es la salida de `requisitos.py --tabla-readme`,
 o si un fichero que va al paquete contiene, con límite de palabra y sin distinguir acentos ni mayúsculas, `rgmoya`,
 `raulogm`, `C:/Users/` o `C:\Users\` no seguido de `<usuario>`, `/home/claude`, `Proyectos IA` o «Raúl» y «Raul»; salvo
-el autor en `.claude-plugin/plugin.json` y en `.claude-plugin/marketplace.json`.
+el autor en `.claude-plugin/plugin.json` y en `.claude-plugin/marketplace.json`. También, si `skills/` o
+`.claude-plugin/` nombran un cliente de `pruebas/clientes.txt` (hoy, AENA): el plugin no lleva clientes (Tarea 0b).
 
 - [ ] **Paso 1:** con un fichero temporal en una skill que diga `C:/Users/rgmoya`, `comprobar_plugin.py` da error, y el
   `HYDRAULIC` de `viewer-static.min.js` no lo da. → FALLA.
@@ -707,7 +743,8 @@ el autor en `.claude-plugin/plugin.json` y en `.claude-plugin/marketplace.json`.
 - Cambios: ingeniería inversa (Tarea 1); refactorización nueva («Úsala después de ingeniería inversa cuando se quiera
   plantear cómo debería estar hecha la aplicación, entera o una parte, con buenas prácticas y eficiencia…»); el analista
   remite a refactorización y deja de decir «no audita»; buenas prácticas remite «evaluar una aplicación entera» a
-  refactorización y se recorta, porque hoy tiene 1021 caracteres; diagramas nombra a refactorización si dibuja procesos objetivo.
+  refactorización y se recorta, porque hoy tiene 1021 caracteres; diagramas nombra a refactorización si dibuja procesos objetivo;
+  prototipos, ya `appian-prototipos` y sin marca de cliente (Tarea 0b).
 - [ ] **Paso 1:** `comprobar_plugin.py` en verde. **Paso 2:** commit.
 
 ### Tarea 29: Prueba de enrutado
