@@ -151,6 +151,52 @@ Por defecto, el aspecto estándar de Appian; la marca del cliente es un fichero 
   sacados del historial, junto a su `app.json`), da el mismo HTML que con el kit de antes: así lo verán los proyectos de
   AENA. Commit «F2: prototipos sin la marca de un cliente».
 
+### Tarea 0c: La marca de cualquier cliente, a partir de su nombre
+
+Con decir qué empresa es, el prototipo sale con su estilo: la skill busca su marca pública y la deja en `prototipo/`
+del proyecto. Sirve para cualquier cliente. (Añadida el 7 de octubre a petición de Raúl.)
+
+**Ficheros:**
+- Crear: `skills/appian-prototipos/scripts/marca.py` y `pruebas/appian-prototipos/datos/web-ficticia/{index.html,estilos.css,logo.svg}`
+  (la web de una empresa ficticia: dos colores de marca en variables CSS y en reglas, grises de texto y bordes, un logo
+  SVG en la cabecera, un icono del sitio y una tipografía).
+- Modificar en `skills/appian-prototipos/`: `SKILL.md` (paso 1, «Marca») y `references/marca.md` («Cómo se saca la marca
+  de un cliente» pasa a los pasos con `marca.py`). Fuera: `pruebas/appian-prototipos/selftest.py` y `README.md` (fila de
+  prototipos en el mapa de skills).
+
+**Interfaces:**
+- `marca.py web <url> [--max-css 10] [--timeout 10]`: descarga la página y las hojas de estilo que enlaza del mismo
+  sitio (como mucho `--max-css`, 2 MB cada una) y escribe en la salida estándar un JSON `{"url", "colores": [{"hex",
+  "veces", "variables", "contraste": {"blanco", "negro"}}], "themeColor", "logos": [{"url", "pista"}], "tipografias"}`.
+  `colores` va de más a menos usado, sin blancos, negros ni grises (saturación por debajo del 10 %); `variables`, las
+  propiedades CSS que definen ese color. `logos`: SVG en línea o imágenes de la cabecera con «logo» en `src`, `alt`,
+  `class` o `id`, primero; el icono del sitio, al final. Sin red o sin respuesta, sale con 2 y lo dice.
+- `marca.py crear --id <id> --nombre <nombre> --fuente <de dónde sale y fecha> --oscuro <hex> --realce <hex> --acento <hex>
+  [--principal <hex>] [--logo <svg>] [--formas SQUARED|SEMI_ROUNDED|ROUNDED] [--tipografia <nombre>] <carpeta>`: escribe
+  `<carpeta>/brand-<id>.json` a partir de `assets/brand-appian.json` y, con `--logo`, lo copia junto a él como
+  `logo-<id>-on-dark.svg`. Lo que no llega a WCAG 2.2 AA lo ajusta sin cambiar el tono y lo dice en la salida
+  (`acento #5DA9E9 → #2F78B4: 4,5:1 sobre blanco`): el acento, hasta 4,5:1 sobre blanco y sobre el gris de página
+  (`#F4F5F7`); el oscuro, hasta 4,5:1 con texto blanco; el realce, hasta 3:1 sobre el oscuro. `palette.navy` es el
+  oscuro; `chartColorScheme` pone delante, sin repetir, los colores de la marca que llegan a 3:1 sobre blanco y después
+  los de la estándar; `components.primaryButton.color` es `--principal` o `ACCENT`; `states`, los de la estándar.
+  Error (2) si un color no es `#RRGGBB`, si falta el logo o si `<carpeta>` está dentro del plugin.
+- `SKILL.md`, paso 1: si el proyecto no tiene `prototipo/brand-<id>.json` y se sabe qué empresa es (lo dice el usuario o
+  `proyecto.md`), la skill busca su marca: su web oficial y, si la publica, su guía de marca o su sala de prensa (solo
+  fuentes de la propia empresa). Con red en el terminal, `marca.py web`; si no, WebFetch pidiendo los colores en hex y
+  la URL del logo. Después, `marca.py crear` en `<p>/prototipo/`, validar y construir con `--brand <id>`, enseñar al
+  usuario la cabecera con su logo y anotar en el `$assumption` de `app` «Marca de <empresa> sacada de <fuente> el
+  <fecha>; falta que la confirme el cliente». Si no encuentra nada fiable, pide la guía de marca; sin respuesta, `appian`.
+
+- [ ] **Paso 1: pruebas que fallan.** En el selftest de prototipos:
+  - `crear` con el acento `#5DA9E9` da un `brand-x.json` con el acento a 4,5:1 o más sobre blanco y sobre `#F4F5F7` y a
+    menos de 10° de su matiz, `palette.navy` igual al oscuro y el logo copiado; `build.py --brand x` construye con él el
+    catálogo de patrones; con un color mal escrito, o con la carpeta del plugin como destino, sale con 2;
+  - `web` contra `datos/web-ficticia/`, servida en `127.0.0.1` por la propia prueba, da sus dos colores de marca entre
+    los tres primeros, el logo de la cabecera el primero de `logos` y su tipografía; contra un puerto cerrado, sale con 2.
+  → FALLA.
+- [ ] **Paso 2:** implementar `marca.py` y escribir el paso de la marca en `SKILL.md` y en `references/marca.md`.
+- [ ] **Paso 3:** `comprobar_plugin.py --completo` en verde. Commit «F2: la marca de cualquier cliente, a partir de su nombre».
+
 ### Tarea 1: Apartar el bloque B
 
 **Ficheros:**
@@ -837,18 +883,24 @@ se ejecuta allí y los resultados van a `docs/evaluaciones.md`.
 
 ### Tarea 25: README generado y nada personal
 
-**Ficheros:** Modificar `README.md` (tabla entre `<!-- requisitos:inicio -->` y `<!-- requisitos:fin -->`) y
-`pruebas/comprobar_plugin.py`.
+**Ficheros:** Modificar `README.md` (tabla entre `<!-- requisitos:inicio -->` y `<!-- requisitos:fin -->`),
+`pruebas/comprobar_plugin.py`, `pruebas/clientes.txt` y, en `skills/appian-prototipos/`, los datos de ejemplo de
+`galerias/*/generar_app.py` y `templates/generar_plantillas.py`, con lo que regeneran.
 
 **Interfaces:** `comprobar_plugin.py` da error si la tabla del README no es la salida de `requisitos.py --tabla-readme`,
 o si un fichero que va al paquete contiene, con límite de palabra y sin distinguir acentos ni mayúsculas, `rgmoya`,
 `raulogm`, `C:/Users/` o `C:\Users\` no seguido de `<usuario>`, `/home/claude`, `Proyectos IA` o «Raúl» y «Raul»; salvo
 el autor en `.claude-plugin/plugin.json` y en `.claude-plugin/marketplace.json`. También, si `skills/` o
 `.claude-plugin/` nombran un cliente de `pruebas/clientes.txt` (hoy, AENA): el plugin no lleva clientes (Tarea 0b).
+`clientes.txt` lleva también lo que delata a ese cliente en los datos de ejemplo: aeropuerto, Barajas, El Prat, MAD, BCN,
+PMI y AGP. Los datos de las galerías y las plantillas de prototipos pasan a un dominio ficticio neutro (por ejemplo,
+incidencias y expedientes en las sedes de una empresa ficticia), sin aeropuertos ni lugares o códigos reales de un
+cliente, y se regeneran con sus scripts (lo decidió Raúl el 7 de octubre).
 
 - [ ] **Paso 1:** con un fichero temporal en una skill que diga `C:/Users/rgmoya`, `comprobar_plugin.py` da error, y el
-  `HYDRAULIC` de `viewer-static.min.js` no lo da. → FALLA.
-- [ ] **Paso 2:** implementar y regenerar la tabla. **Paso 3:** en verde sin el fichero temporal. Commit.
+  `HYDRAULIC` de `viewer-static.min.js` no lo da; una galería que dice «Barajas» también da error. → FALLA.
+- [ ] **Paso 2:** implementar, pasar galerías y plantillas al dominio neutro y regenerar la tabla. **Paso 3:** en verde
+  sin el fichero temporal. Commit.
 
 ### Tarea 26: Pruebas en Windows, macOS y Linux
 

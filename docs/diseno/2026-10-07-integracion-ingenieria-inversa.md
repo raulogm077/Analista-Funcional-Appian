@@ -185,7 +185,7 @@ Diez fases en orden; ninguna se da por cerrada sin sus pruebas en verde.
 
 - [x] **F0 Decisiones.** Tomadas el 7 de octubre.
 - [x] **F1 Repositorio único.** El plugin, con ingeniería inversa dentro y su historial, en un solo repositorio del que parte cada hilo: raulogm077/Analista-Funcional-Appian, rama main.
-- [ ] **F2 Ingeniería inversa en el plugin.** Antes, las skills se quedan solo con lo que usan al trabajar: sus pruebas y datos ficticios pasan a `pruebas/` y el caso de ejemplo de prototipos, un proyecto entero, sale del plugin; prototipos pasa a `appian-prototipos`, con el aspecto estándar de Appian por defecto. Después, ingeniería inversa solo con el bloque A, sus pruebas en verde y su alta en `comprobar_plugin.py`. El bloque B se aparta para F5.
+- [ ] **F2 Ingeniería inversa en el plugin.** Antes, las skills se quedan solo con lo que usan al trabajar: sus pruebas y datos ficticios pasan a `pruebas/` y el caso de ejemplo de prototipos, un proyecto entero, sale del plugin; prototipos pasa a `appian-prototipos`, con el aspecto estándar de Appian por defecto, y saca la marca de cualquier cliente a partir de su nombre. Después, ingeniería inversa solo con el bloque A, sus pruebas en verde y su alta en `comprobar_plugin.py`. El bloque B se aparta para F5.
 - [ ] **F3 Precisa y sin relleno.** `comprobar_asis.py`, las reglas de prosa comunes, `as-is/datos/`, la disciplina de evidencia (lo que queda sin verificar, negativos acotados, diseño frente a ejecución y preguntas de la revisión), la aplicación ficticia mal hecha a propósito y la prueba del recién llegado antes y después.
 - [ ] **F4 Diagramas.** Un solo exportador BPMN y un solo pintor. Se retiran `bpmn_layout.py`, `validate_mermaid.py` y `render_diagrams.sh`.
 - [ ] **F5 Refactorización.** La skill nueva con el 13, la arquitectura y la migración del 14, rebuild-architect y las señales. Lee solo `as-is/`. Prueba de malas prácticas sembradas.
@@ -205,7 +205,8 @@ Todas cerradas el 7 de octubre; el nombre del plugin se mantiene.
 | **D2** DF ya hecho | Pasa al formato del plugin; de ahí salen el Word y el técnico con el que se construye por MCP |
 | **D3** Repositorio | GitHub privado |
 | **D4** Extracción | Dentro del proyecto, en `as-is/extraccion/`, ya saneada: sin credenciales, secretos ni nombres de usuario |
-| Marca de los prototipos | El plugin se usará con varios clientes: por defecto, el aspecto estándar de Appian; la marca del cliente va en su proyecto y la skill pasa a llamarse `appian-prototipos` |
+| Marca de los prototipos | El plugin se usará con varios clientes: por defecto, el aspecto estándar de Appian; la marca del cliente va en su proyecto y la skill pasa a llamarse `appian-prototipos`. Con decir qué empresa es, la skill busca su marca pública (su web o su guía de marca) y la crea en el proyecto (añadido el 7 de octubre) |
+| Datos de ejemplo de prototipos | Galerías y plantillas en un dominio ficticio neutro, sin aeropuertos ni códigos reales de un cliente (Tarea 25) |
 | Disciplina de evidencia | Se adopta adaptada a lo que ya hace ingeniería inversa: registro de lo que queda sin verificar, negativos acotados, diseño frente a ejecución y preguntas de la revisión cerradas. Sin registro aparte de afirmaciones ni escala de confianza; la marca de inferido pasa a 🔶, la del analista |
 
 ## Cómo funciona el plugin
