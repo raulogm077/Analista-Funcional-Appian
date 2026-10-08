@@ -16,7 +16,7 @@ Fase 7, solo si `<trabajo>/output_preferences.json` tiene `dashboard: true`. Pue
 ## Entradas
 
 - `<trabajo>/summary.json` (`<trabajo>` = `<salida>/extraccion/`): fuente de los datos estructurados.
-- `<salida>/`: `LEEME.md`, `00`–`11`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso), `diagrams/*.svg` y `08-procesos-bpmn/*.svg` (o `*.png` cuando el proceso se dibujó en draw.io).
+- `<salida>/`: `LEEME.md`, `01`–`11`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso), `diagrams/*.svg` y `08-procesos-bpmn/*.svg` (o `*.png` cuando el proceso se dibujó en draw.io).
 - `<salida>/anexo/`: no se inyecta (es grande); se enlaza (ver Contenido).
 - `<skill>`: la carpeta de la skill, para ejecutar `scripts/validate_mermaid.py`.
 - Opcional: la skill `anthropic-skills:web-artifacts-builder` (solo para apps muy grandes), si está en la sesión.
@@ -49,7 +49,7 @@ Inyecta en el HTML **solo los campos que uses**, no el fichero entero.
 
 ## Reglas de contenido
 
-- **Hallazgos**: los de `findings`, con su ID, severidad en palabra (Alta/Media/Baja) y certeza ✅ verificado / 🔵 inferido / ❓ pendiente. No uses otras marcas de estado.
+- **Hallazgos**: los de `findings`, con su ID, severidad en palabra (Alta/Media/Baja) y certeza ✅ verificado / 🔶 inferido / ❓ pendiente. No uses otras marcas de estado.
 - **Confianza**: `meta.confidence` con su motivo (`meta.confidenceBasis`) visible al pasar el ratón o al pulsar.
 - **Uso real**: si `meta.environment.isProduction` no es `true`, las ejecuciones van con la marca «orientativo (ver LEEME)».
 - **Lo que no se publica**: rutas o enlaces a `<trabajo>/` y referencias a la skill (ficheros, scripts, códigos internos). Los uuids solo en la vista de inventario.
@@ -59,7 +59,7 @@ Inyecta en el HTML **solo los campos que uses**, no el fichero entero.
 1. **Cabecera fija**: nombre de la app y prefijo (`meta.appName`, `meta.appPrefix`), entorno, fecha de extracción, distintivo de confianza (Alto/Medio/Bajo) y buscador global (nombres de objetos y títulos de hallazgos).
 2. **Tarjetas de cifras** (5-8, cada una filtra la vista): process models, record types, interfaces, integraciones, Web APIs, grupos, hallazgos Alta (`findingsBySeverity.Alta`), procesos críticos.
 3. **Pestañas** (se ocultan las que no tengan datos; sin emojis en las etiquetas):
-   - **Resumen**: `00` y procesos críticos.
+   - **Resumen**: `LEEME` (cifras, procesos críticos, hallazgos principales, uso real y guía de lectura).
    - **Arquitectura**: diagrama de `02` y hubs.
    - **Datos**: diagramas ER y catálogo de `03`.
    - **Procesos**: lista de process models (crítico, programado, ejecuciones) y, al pulsar, su diagrama y su documento de `08`.

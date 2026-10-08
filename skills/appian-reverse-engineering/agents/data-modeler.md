@@ -22,7 +22,7 @@ Lees las definiciones de los record types (campos, relaciones, origen, tabla, vi
 - `assets/markdown-templates/03-modelo-datos.md`: **la estructura del documento**. Manda en el orden de secciones y en las columnas; este fichero solo dice qué analizar y con qué criterio.
 - `references/mermaid-rules.md`: reglas de `erDiagram` y nombres de fichero.
 - `references/appian-objects-guide.md`: dónde está cada dato del modelo.
-- `references/docs-mcp-usage.md`: cuándo consultar la documentación oficial, con caché y tope.
+- «Dudas de Appian» de `SKILL.md`, que te pasa el orquestador, para lo que no sepas con certeza de Appian, y `references/docs-mcp-usage.md`, con el tope de consultas y la caché compartida. Documentas hechos: no consultas `appian-best-practices` para decir qué conviene hacer.
 
 ## Proceso
 
@@ -39,16 +39,16 @@ No inventes lo que falte. Lo que la extracción no trae para ningún objeto (nul
 ### Paso 2. Relaciones
 
 - **Declaradas** en `relationships[]` (tipo, record destino, campos de enlace): ✅, en el ER y en la tabla de relaciones de la ficha.
-- **Declaradas sin el campo de enlace en la respuesta**: dibuja la relación y la FK en el ER; en la tabla, «Campo de enlace: no lo devuelve la extracción» y certeza 🔵.
-- **Inferidas** (un campo `idCliente` que coincide con la PK de otro record, o una consulta en SAIL que filtra un record por un campo de otro): solo en la tabla de relaciones de la ficha, con 🔵 y de qué se deduce («según su nombre» si solo lo dice el nombre del campo); no en el ER. Si el modelo las necesita y no están declaradas, puede ser un hallazgo `H-DAT`.
+- **Declaradas sin el campo de enlace en la respuesta**: dibuja la relación y la FK en el ER; en la tabla, «Campo de enlace: no lo devuelve la extracción» y certeza 🔶.
+- **Inferidas** (un campo `idCliente` que coincide con la PK de otro record, o una consulta en SAIL que filtra un record por un campo de otro): solo en la tabla de relaciones de la ficha, con 🔶 y de qué se deduce («según su nombre» si solo lo dice el nombre del campo); no en el ER. Si el modelo las necesita y no están declaradas, puede ser un hallazgo `H-DAT`.
 - No inventes relaciones sin declaración ni evidencia de uso.
 
 ### Paso 3. Sincronización y volúmenes
 
 - Si la definición dice si el record type está sincronizado, esa es la fuente (✅).
-- Si no, que figure en los metadatos del data fabric indica que está sincronizado (🔵): esa herramienta solo lista y consulta record types sincronizados. Fuente: https://docs.appian.com/suite/help/26.6/mcp-system-tools.html#data-fabric-tools
+- Si no, que figure en los metadatos del data fabric indica que está sincronizado (🔶): esa herramienta solo lista y consulta record types sincronizados. Fuente: https://docs.appian.com/suite/help/26.6/mcp-system-tools.html#data-fabric-tools
 - Que **no** figure, o que no tenga recuento, no prueba lo contrario: los metadatos se filtran por los permisos de la cuenta de servicio y el data fabric no consulta los record types con seguridad por registro basada en expresión (`unmatchedRecordTypes`; ver `references/data-fabric.md`). Es ❓.
-- Los recuentos de filas van en la columna «Filas» y en la ficha. Si un recuento parece bajo, puede deberse a los permisos de la cuenta de servicio: dilo como supuesto.
+- Los recuentos de filas van en la columna «Filas» y en la ficha. Solo salen del data fabric: un volumen no se deduce de la definición (`execution-principles.md`, principio 5). Si un recuento parece bajo, puede deberse a los permisos de la cuenta de servicio: dilo como supuesto.
 
 ### Paso 4. Subdominios (solo con más de ~15 entidades)
 
@@ -83,33 +83,35 @@ Estructura, orden de secciones, columnas y campos de las fichas: los de la plant
 - **Catálogo completo**: todas las fichas de records y CDTs, aunque los diagramas se partan. Con más de 5 fichas, índice al principio del Detalle.
 - **Fichas compactas** (objetivo: ½ pantalla por entidad): campos clave, no todos; la lista completa está en el anexo, que se enlaza.
 - **Acciones de record**: proceso que lanza y tipo (lista o por registro). Quién puede usarlas es de `04-seguridad-grupos.md`: enlázalo. Si la respuesta no trae la seguridad de las acciones, es ❓ en «Cobertura y límites», no «sin seguridad».
-- **Hallazgos `H-DAT`**: problemas del modelo que se ven en las definiciones: relaciones que se usan pero no están declaradas, tipos distintos entre un campo y el que enlaza, un record type y un CDT sobre la misma tabla con campos o tipos que no coinciden, entidades duplicadas. Cada uno con evidencia y, si es 🔵 o ❓, qué lo confirmaría.
+- **Hallazgos `H-DAT`**: problemas del modelo que se ven en las definiciones: relaciones que se usan pero no están declaradas, tipos distintos entre un campo y el que enlaza, un record type y un CDT sobre la misma tabla con campos o tipos que no coinciden, entidades duplicadas. Cada uno con evidencia y, si es 🔶, su `base`; si es ❓, su NV.
 - **Otras áreas**: un CDT o record sin uso es un objeto huérfano: cita el `H-ARQ` que los agrupa en `02-arquitectura.md` (ya escrito) y enlaza la lista única de 09 (`09-valor-adicional.md`, «Objetos huérfanos»), sin repetirla. La seguridad de records y acciones es de `04`. Menciónalo en una frase sin severidad, enlaza el documento y apúntalo en «Para otras áreas».
 
 ### Paso 7. Hallazgos
 
-Regístralos como dice `execution-principles.md` §3: tabla en la sección Hallazgos y `<trabajo>/hallazgos/data-modeler.json` (`H-DAT-NN`, `area: "datos"`, `documento: "03-modelo-datos.md#hallazgos"`). Sin hallazgos, escribe `[]`.
+Regístralos como dice `execution-principles.md` §3: tabla en la sección Hallazgos y `<trabajo>/hallazgos/data-modeler.json` (`H-DAT-NN`, `area: "datos"`, `documento: "03-modelo-datos.md#hallazgos"`). Un hallazgo inferido lleva en `base` las evidencias de las que sale. Sin hallazgos, escribe `[]`.
+
+Lo que no pudiste verificar del modelo, y lo que de él pregunta la revisión y no puedes responder, va en `<trabajo>/sin-verificar/data-modeler.json` (§4: `NV-DAT-NN`; `[]` si no hay ninguno), con ❓ y su ID en la ficha. Lo que la extracción no trae de ningún objeto es una limitación de «Cobertura y límites», no un NV.
 
 ### Paso 8. Comprobación final
 
 - [ ] El catálogo cubre el 100 % de records y CDTs (cuenta cruzada con `inventory.json`).
 - [ ] Cada entidad está en un solo subdominio y tiene una sola ficha.
-- [ ] Las relaciones declaradas están en el ER con notación canónica; las inferidas, solo en las fichas con 🔵.
+- [ ] Las relaciones declaradas están en el ER con notación canónica; las inferidas, solo en las fichas con 🔶.
 - [ ] Cada diagrama pasa `validate_mermaid.py`, se renderizó sin aviso de ancho y aparece una sola vez.
-- [ ] Cada ficha tiene evidencia y certeza (✅/🔵/❓); cada evidencia enlaza su ficha del anexo.
-- [ ] Checklist de `presentation-rules.md` superado (TL;DR único, orden de secciones, sin placeholders ni referencias a la skill ni a `<trabajo>/`).
-- [ ] El JSON de hallazgos coincide con la tabla del documento.
+- [ ] Cada ficha tiene evidencia y certeza (✅/🔶/❓); cada evidencia enlaza su ficha del anexo.
+- [ ] Checklist de `presentation-rules.md` superado («Responde a», TL;DR único, orden de secciones, sin placeholders ni referencias a la skill ni a `<trabajo>/`).
+- [ ] El JSON de hallazgos coincide con la tabla del documento, y cada inferido trae su `base`.
 
 ## Salida
 
 - `<salida>/03-modelo-datos.md`
 - `<salida>/diagrams/modelo-datos.mmd` y `.svg`, y según el tamaño `modelo-datos-<subdominio>.mmd`/`.svg` y `modelo-datos-subdominios.mmd`/`.svg`
-- `<trabajo>/hallazgos/data-modeler.json`
-- `<trabajo>/docs_cache/data-modeler.json`, si consultas el Docs MCP
+- `<trabajo>/hallazgos/data-modeler.json` y `<trabajo>/sin-verificar/data-modeler.json`
+- `<trabajo>/docs_cache/data-modeler.json`, si consultas la documentación (por el Docs MCP o por la web)
 
 ## Informe final
 
-Termina con un informe breve al orquestador: ficheros escritos, consultas al Docs MCP (cuántas y sobre qué), choques entre instrucciones que hayas encontrado y cómo los resolviste, y «Para otras áreas» (con el objeto y la evidencia).
+Termina con un informe breve al orquestador: ficheros escritos, consultas a la documentación (por el Docs MCP o por la web; cuántas y sobre qué), choques entre instrucciones que hayas encontrado y cómo los resolviste, y «Para otras áreas» (con el objeto y la evidencia).
 
 ## No hagas esto
 

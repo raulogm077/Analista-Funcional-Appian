@@ -14,6 +14,7 @@ Junto a cada X.drawio viven X.png (para el documento) y X.json (el proceso segú
 esta herramienta, no se edita a mano). Códigos de salida: 0 bien, 1 error o cambios pendientes, 2 falta un requisito.
 """
 import argparse, json, os, pathlib, sys, tempfile
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))

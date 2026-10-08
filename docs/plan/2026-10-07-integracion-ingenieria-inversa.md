@@ -399,7 +399,7 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
 - Crear: `skills/appian-functional-analyst/scripts/redaccion.py`.
 - Modificar: `skills/appian-functional-analyst/scripts/comprobar.py` (usa `redaccion.py`; mismo comportamiento) y
   `pruebas/appian-functional-analyst/selftest.py`; `skills/appian-reverse-engineering/references/presentation-rules.md`: se quedan el esqueleto
-  de documento (TL;DR, Vista, Detalle, Hallazgos, Cobertura) y las reglas de evidencia, marcas de certeza y usuarios;
+  de documento (TL;DR, Vista, Detalle, Hallazgos, Cobertura) y las reglas de evidencia y marcas de certeza;
   las de prosa remiten a `appian-functional-analyst/references/redaccion.md`.
 
 **Interfaces:**
@@ -407,11 +407,11 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   `redaccion.frases(texto) -> list[str]`, `redaccion.MAX_PALABRAS = 35`,
   `redaccion.parrafos_repetidos(textos: dict[str, str], minimo=20) -> list[tuple[str, list[str]]]`.
 
-- [ ] **Paso 1:** en el selftest del analista: con un `redaccion.md` temporal de dos muletillas, `muletillas(ruta)` las
+- [x] **Paso 1:** en el selftest del analista: con un `redaccion.md` temporal de dos muletillas, `muletillas(ruta)` las
   devuelve normalizadas; `parrafos_repetidos` encuentra un párrafo de 25 palabras que está en dos textos y no uno de 15.
   → FALLA (no existe el módulo).
-- [ ] **Paso 2:** crear `redaccion.py` moviendo `muletillas()` y `frases()` de `comprobar.py`.
-- [ ] **Paso 3:** selftest del analista sin fallos y con los mismos avisos que antes en `autorizaciones`. Recortar
+- [x] **Paso 2:** crear `redaccion.py` moviendo `muletillas()` y `frases()` de `comprobar.py`.
+- [x] **Paso 3:** selftest del analista sin fallos y con los mismos avisos que antes en `autorizaciones`. Recortar
   `presentation-rules.md`. Commit «F3: reglas de prosa en un solo sitio».
 
 ### Tarea 5: `as-is/datos/`, el contrato con las demás skills
@@ -432,10 +432,10 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
     diagrama en `08-procesos-bpmn/`.
 - Lo usan las Tareas 6, 14, 19 y 20. La Tarea 8b añade `sin-verificar.json` y dos campos, sin cambiar nada de lo de aquí.
 
-- [ ] **Paso 1:** `test_datos.py::test_datos_formato`: tras el flujo del simulador con un `hallazgos/prueba.json` de un
+- [x] **Paso 1:** `test_datos.py::test_datos_formato`: tras el flujo del simulador con un `hallazgos/prueba.json` de un
   hallazgo sobre `DEM_ERP_API_TOKEN`, existen los cuatro ficheros con sus claves, cada objeto de cada hallazgo está en
   el inventario, y la tabla `DEM_SOLICITUD` y la vista «Resumen» están en `tambien` de `DEM Solicitud`. → FALLA.
-- [ ] **Paso 2:** implementar y documentar el formato en `references/datos.md`. **Paso 3:** pytest en verde. Commit.
+- [x] **Paso 2:** implementar y documentar el formato en `references/datos.md`. **Paso 3:** pytest en verde. Commit.
 
 ### Tarea 6: `comprobar_asis.py`
 
@@ -458,11 +458,11 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   frases de más de 35 palabras, párrafos de 20 palabras o más repetidos en dos documentos y documentos por encima de su
   presupuesto (`presupuesto-palabras.json`: palabras base más palabras por objeto de su tipo).
 
-- [ ] **Paso 1: pruebas que fallan**, con una carpeta `as-is` mínima creada en la prueba: `test_objeto_inventado`,
+- [x] **Paso 1: pruebas que fallan**, con una carpeta `as-is` mínima creada en la prueba: `test_objeto_inventado`,
   `test_tabla_y_vista_no_son_inventadas`, `test_certeza_sin_evidencia`, `test_evidencia_rota`, `test_cifra_distinta`,
   `test_marcador_y_enlace_roto`, `test_muletilla_es_aviso` (sale 0), `test_documento_correcto` (0 errores y 0 avisos) y
   `test_ruta_con_espacios`.
-- [ ] **Paso 2:** implementar. **Paso 3:** pytest en verde. Commit «F3: comprobar_asis.py».
+- [x] **Paso 2:** implementar. **Paso 3:** pytest en verde. Commit «F3: comprobar_asis.py».
 
 ### Tarea 7: Aplicación ficticia mal hecha a propósito
 
@@ -513,13 +513,13 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   es una lista son formas alternativas). Q-22: «¿Qué connected system no tiene autenticación?» → `MNT_CS_Proveedores`.
 - `ocultas/`: 7 preguntas y 3 malas prácticas más, escritas por un agente aparte con solo el fixture delante.
 
-- [ ] **Paso 1:** `test_fixture_mal_hecha.py`: con `MOCK_APP=fixture_mal_hecha`, `extract` + `build_model.py` dan al
+- [x] **Paso 1:** `test_fixture_mal_hecha.py`: con `MOCK_APP=fixture_mal_hecha`, `extract` + `build_model.py` dan al
   menos 40 objetos y prefijo `MNT`; el CDT y el data store tienen `detail: "full"`; cada objeto de `malas-practicas.json`
   y cada respuesta de tipo `objeto` de `preguntas.json` está en `inventory.json`; los tres objetos `CMN` están en la
   definición de quien los usa y no en `inventory.json`; `MNT_CS_Proveedores` llega con su `authType` y su URL; la URL
   del entorno no es de desarrollo; y el simulador DEM da lo mismo que antes. → FALLA.
-- [ ] **Paso 2:** escribir la aplicación, los cambios del simulador y los JSON. **Paso 3:** pytest en verde.
-- [ ] **Paso 4:** commit «F3: aplicación ficticia mal hecha» y etiqueta `f3-antes` (punto de partida de la Tarea 9).
+- [x] **Paso 2:** escribir la aplicación, los cambios del simulador y los JSON. **Paso 3:** pytest en verde.
+- [x] **Paso 4:** commit «F3: aplicación ficticia mal hecha» y etiqueta `f3-antes` (punto de partida de la Tarea 9).
 
 ### Tarea 8: Preguntas primero, hechos y no consejos
 
@@ -530,15 +530,15 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   `pruebas/appian-reverse-engineering/test_registry.py`.
 - Crear: `pruebas/appian-reverse-engineering/test_plantillas.py`.
 
-- [ ] **Paso 1: pruebas que fallan.** `test_plantillas.py`:
+- [x] **Paso 1: pruebas que fallan.** `test_plantillas.py`:
   - `test_cada_plantilla_empieza_por_sus_preguntas`: tras el título, una línea `> **Responde a:**` con 2 a 5 preguntas.
   - `test_toda_tabla_con_certeza_tiene_evidencia`.
   - `test_sin_recomendaciones`: ni plantillas, ni agentes, ni `references/` dicen «recomendaci» o «recomienda».
   - En `test_registry.py`, `test_recomendacion_es_aviso`.
-- [ ] **Paso 2:** reescribir: las preguntas que responde cada documento, tablas antes que prosa, columna «Evidencia»
+- [x] **Paso 2:** reescribir: las preguntas que responde cada documento, tablas antes que prosa, columna «Evidencia»
   donde hay «Certeza», sin explicar conceptos de Appian (se enlaza la documentación), sin repetir datos de otro
   documento y sin consejos (la frase de 09 «Appian recomienda dividir…» se va; el dato «procesos de más de 50 nodos» se queda).
-- [ ] **Paso 3:** pytest en verde. Commit «F3: plantillas que responden preguntas».
+- [x] **Paso 3:** pytest en verde. Commit «F3: plantillas que responden preguntas».
 
 ### Tarea 8b: Disciplina de evidencia
 
@@ -617,7 +617,7 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
     `inferido` de severidad Alta con menos de dos evidencias en `base`; un objeto de `fueraDeLaAplicacion` con
     `usadoPor` y sin NV (los que solo usan la aplicación no son nada sin verificar).
 
-- [ ] **Paso 1: pruebas que fallan.** `test_evidencia.py`, con el simulador (variante A, y `MOCK_APP=fixture_mal_hecha`
+- [x] **Paso 1: pruebas que fallan.** `test_evidencia.py`, con el simulador (variante A, y `MOCK_APP=fixture_mal_hecha`
   donde se dice):
   - `test_sin_verificar_formato`: un `sin-verificar/prueba.json` llega validado a `datos/` y a la tabla de
     LEEME; con un `id` o un `estado` fuera de formato, error;
@@ -631,8 +631,8 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
     aviso; con dos, nada;
   - `test_marca_de_inferido`: ningún 🔵 en la skill (la prueba lo escribe como `"\U0001F535"`) y los JSON siguen
     diciendo `inferido`. → FALLA.
-- [ ] **Paso 2:** implementar y reescribir reglas, plantillas y agentes.
-- [ ] **Paso 3:** pytest y `comprobar_plugin.py --completo` en verde. Commit «F3: disciplina de evidencia».
+- [x] **Paso 2:** implementar y reescribir reglas, plantillas y agentes.
+- [x] **Paso 3:** pytest y `comprobar_plugin.py --completo` en verde. Commit «F3: disciplina de evidencia».
 
 ### Tarea 9: Evaluación del recién llegado (antes y después)
 
@@ -653,18 +653,18 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   entregable dice «no existe». Sale 0 si se cumple todo.
 - `palabras.py <as-is>`: palabras por documento y total.
 
-- [ ] **Paso 1:** «antes»: desde `f3-antes`, un agente genera `as-is/` de la aplicación ficticia siguiendo el SKILL.md
+- [x] **Paso 1:** «antes»: desde `f3-antes`, un agente genera `as-is/` de la aplicación ficticia siguiendo el SKILL.md
   contra el simulador, en `$PROYECTOS_PRUEBA/MNT-antes/`, y pasa `comprobar_asis.py` solo como informe, sin exigir 0
   errores (la columna «Evidencia» llega con la Tarea 8); otro, que solo lee su `as-is/` sin `extraccion/`, responde las
   22 preguntas y las 7 ocultas. Aciertos y palabras a `docs/evaluaciones.md`.
-- [ ] **Paso 2:** «después», igual con las Tareas 8 y 8b hechas, en `$PROYECTOS_PRUEBA/MNT/`. Criterio:
+- [x] **Paso 2:** «después», igual con las Tareas 8 y 8b hechas, en `$PROYECTOS_PRUEBA/MNT/`. Criterio:
   `puntuar.py --minimo 20 --obligatorias Q-21` y, con las ocultas, `--minimo 6`; `evidencia.py` sale 0; 0 errores de
   `comprobar_asis.py`; menos palabras que «antes».
-- [ ] **Paso 3:** si dos documentos se responden el uno al otro (LEEME con 00, 05 con 06), se unen —plantillas,
+- [x] **Paso 3:** si dos documentos se responden el uno al otro (LEEME con 00, 05 con 06), se unen —plantillas,
   entregables del SKILL.md, publicadores y pruebas de las Tareas 8 y 8b— y se repite el Paso 2. Las secciones de la
   Tarea 8b van al documento que quede, y `build_datos.py` escribe en él. Si se unen LEEME y 00, cambian también
   `scripts/comprobar_asis.py` y `test_comprobar_asis.py::test_cifra_distinta`, que buscan las cifras en `00`.
-- [ ] **Paso 4:** commit. Cierre de fase: revisión y merge.
+- [x] **Paso 4:** commit. Cierre de fase: revisión y merge.
 
 ---
 

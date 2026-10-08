@@ -44,7 +44,8 @@ def test_registry_fills_09(tmp_path):
     (work / "hallazgos" / "process-modeler.json").write_text(json.dumps([h("H-PRO-01")]))
     (work / "hallazgos" / "integration-security-analyzer.json").write_text(json.dumps([
         h("H-SEG-01", titulo="Alta abierta a todos los usuarios", area="seguridad", severidad="Media",
-          certeza="inferido", documento="04-seguridad-grupos.md#hallazgos", evidencia="mcp:processModel/X@other:roleMap"),
+          certeza="inferido", documento="04-seguridad-grupos.md#hallazgos", evidencia="mcp:processModel/X@other:roleMap",
+          base=["mcp:processModel/X@other:roleMap", "mcp:group/DEM Users@members"]),
         h("H-SEG-02", titulo="Cancelar | no anula", duplicadoDe="H-PRO-01", documento="04-seguridad-grupos.md")]))
     p = run(REG, out)
     assert p.returncode == 0, p.stderr
@@ -52,7 +53,7 @@ def test_registry_fills_09(tmp_path):
     assert "| ID | Hallazgo | Área | Severidad | Certeza | Dónde |\n|---|---|---|---|---|---|\n" in t
     assert ("| H-PRO-01 | Cancelar no anula el alta | procesos | Alta | ✅ "
             "| [08 DEM Alta Solicitud](./08-procesos-bpmn/DEM_Alta_Solicitud.md#hallazgos) |\n") in t
-    assert "| H-SEG-01 |" in t and "🔵" in t
+    assert "| H-SEG-01 | Alta abierta a todos los usuarios | seguridad | Media | 🔶 |" in t      # inferido: 🔶
     assert "| H-SEG-02 |" not in t and "H-SEG-02 → H-PRO-01" in t        # fusionado, no se repite
     assert t.index("H-PRO-01 |") < t.index("H-SEG-01 |")                 # Alta antes que Media
     assert "## Glosario" in t and "(lo rellena" not in t
@@ -60,6 +61,8 @@ def test_registry_fills_09(tmp_path):
     reg = json.loads((work / "registro.json").read_text(encoding="utf-8"))
     assert set(reg) == {"hallazgos", "porSeveridad", "porCerteza"}
     assert reg["porSeveridad"] == {"Alta": 1, "Media": 1, "Baja": 0}
+    assert reg["porCerteza"] == {"verificado": 1, "inferido": 1, "pendiente": 0}             # el JSON dice «inferido»
+    assert next(x for x in reg["hallazgos"] if x["id"] == "H-SEG-01")["base"][1] == "mcp:group/DEM Users@members"
     # build_summary toma el registro (sin inventario: solo se comprueba la parte de hallazgos)
     (work / "inventory.json").write_text(json.dumps({"counts": {}, "objects": {}}))
     p = run(SUM, out)
@@ -69,14 +72,30 @@ def test_registry_fills_09(tmp_path):
     assert "modernization" not in s and all("tratamiento" not in f for f in s["findings"])
 
 
+def test_recomendacion_es_aviso(tmp_path):
+    """Un hallazgo dice qué pasa y qué riesgo tiene, no qué hacer: una «recomendacion» se avisa y no para el registro."""
+    out, work = setup(tmp_path)
+    (work / "hallazgos" / "process-modeler.json").write_text(json.dumps([
+        h("H-PRO-01", impacto="Una solicitud cancelada se registra igualmente.",
+          recomendacion="Pasarela tras el inicio que compruebe la cancelación."),
+        h("H-PRO-02", titulo="La pasarela no tiene salida por defecto", severidad="Media", recomendacion=""),
+        h("H-PRO-03", titulo="Tarea sin asignación", severidad="Baja", impacto="Nadie la ve en su bandeja.")]))
+    p = run(REG, out)
+    assert p.returncode == 0, p.stderr
+    avisos = [l for l in p.stderr.splitlines() if l.startswith("AVISO")]
+    assert len(avisos) == 1 and "H-PRO-01" in avisos[0] and "recomendacion" in avisos[0], p.stderr
+    assert "| H-PRO-01 |" in (out / "09-valor-adicional.md").read_text(encoding="utf-8")
+
+
 def test_registry_rejects_bad_entries(tmp_path):
     out, work = setup(tmp_path)
     (work / "hallazgos" / "a.json").write_text(json.dumps([
         h("H-PRO-01"), h("H-PRO-01"), h("PRO-2"), h("H-PRO-03", severidad="🔴"), h("H-PRO-04", certeza="seguro"),
-        h("H-PRO-05", documento="no-existe.md"), h("H-PRO-06", evidencia=""), h("H-PRO-07", duplicadoDe="H-XXX-99")]))
+        h("H-PRO-05", documento="no-existe.md"), h("H-PRO-06", evidencia=""), h("H-PRO-07", duplicadoDe="H-XXX-99"),
+        h("H-PRO-08", certeza="inferido")]))
     p = run(REG, out)
     assert p.returncode == 1
     for frag in ("repetido", "no sigue H-", "severidad", "certeza", "no existe en la salida", "sin evidencia",
-                 "duplicadoDe 'H-XXX-99'"):
+                 "duplicadoDe 'H-XXX-99'", "H-PRO-08: inferido sin base"):
         assert frag in p.stderr, frag
     assert "(lo rellena" in (out / "09-valor-adicional.md").read_text(encoding="utf-8")      # con errores no toca 09

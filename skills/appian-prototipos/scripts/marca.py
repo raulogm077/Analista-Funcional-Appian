@@ -25,6 +25,7 @@ Solo biblioteca estándar. Reutiliza contrast(), _lineal() y check_css_profile()
 mix_white() y on_color() de build.py.
 """
 import argparse, colorsys, copy, http.client, ipaddress, json, math, os, re, socket, sys
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 import urllib.error, urllib.parse, urllib.request
 from collections import Counter
 from datetime import date

@@ -5,12 +5,13 @@ Rutas cortas, para que el proyecto quepa en Windows y en OneDrive.
 """
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
 from pathlib import Path
 
-from conftest import BUILD_MODEL, SKILL
+from conftest import BUILD_MODEL, SKILL, extraccion_a_mano
 
 sys.path.insert(0, str(SKILL / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent / "mock_devmcp"))
@@ -25,6 +26,7 @@ CORREO = "soporte.dem@example.org"                  # en copia del aviso de DEM 
 CLAVE_DE_API = OBJS["C_TOKEN"]["value"]             # el valor de la constante DEM_ERP_API_TOKEN
 URL_CON_CREDENCIALES = OBJS["CS_ERP"]["baseUrl"]    # la URL base de DEM_CS_ERP, con usuario y contraseña
 CON_ESPACIOS = ("Carpeta con espacios", "Gestión app", "as-is")
+TOPE_NOMBRE = len(dx.safe_name("x" * 200))         # 48: el nombre de una herramienta en la extracción
 # lo que ningún texto de la skill pide: ocultar usuarios, correos, valores o secretos
 OCULTAR = re.compile(r"(?i)seud[oó]nim|‹usuario|‹correo›|‹secreto›|‹valor›|‹nombre›|host interno|sin usuarios|"
                      r"no se comparte|_huellas|enmascar")
@@ -84,13 +86,24 @@ def modelo_sin_fecha(project):
     return inv, project.load("graph.json")
 
 
+def envejece(project, fecha="2026-01-02T03:04:05+00:00"):
+    """Las respuestas guardadas pasan a ser de `fecha`, como si se hubieran descargado hace tiempo."""
+    for f in (project.interm() / "mcp_raw").rglob("*.json"):
+        d = json.loads(f.read_text(encoding="utf-8"))
+        if isinstance(d, dict) and isinstance(d.get("_meta"), dict):
+            d["_meta"]["fetchedAt"] = fecha
+            f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+
+
 def retomar(project):
     assert "--refresh" not in extrae(project).stdout
     modelo(project)
     antes, llamadas = modelo_sin_fecha(project), len(project.calls_list())
+    assert "--refresh" not in extrae(project).stdout              # recién descargado: no avisa
+    envejece(project)
     p = extrae(project)
     assert len(project.calls_list()) == llamadas                 # no vuelve a pedir lo que ya está
-    assert "--refresh" in p.stdout                               # y avisa de que reutiliza lo descargado
+    assert "--refresh" in p.stdout and "2026-01-02 03:04" in p.stdout   # y avisa, con la fecha, de lo que reutiliza
     modelo(project)
     assert modelo_sin_fecha(project) == antes                    # y el modelo sale igual
 
@@ -181,3 +194,38 @@ def test_rutas_cortas_con_tipo_largo(tmp_path):
     assert len((carpeta / f"{dx.safe_name('getDesignObject' * 10)}.json").relative_to(raw.parent).as_posix()) <= 100
     assert carpeta != rutas.carpeta_objeto(raw, largo + "Item", uuid)          # dos tipos largos no se pisan
     assert rutas.carpeta_objeto(raw, "processModel", uuid).parent.name == "processModel"   # los habituales, igual
+
+
+def test_rutas_cortas_con_nombre_largo(tmp_path):
+    """El slug de un objeto nombra extraccion/procesos/<slug>.json, anexo/<tipo>/<slug>.md y 08-procesos-bpmn/<slug>.*:
+    con un nombre de 150 caracteres, se recorta como el de una herramienta (48 y 8 hex), las rutas no pasan de 100
+    caracteres y build_annex.py y build_datos.py siguen encontrando las fichas."""
+    largo = ("DEM Proceso de alta, revisión y aprobación de solicitudes de mantenimiento correctivo " * 2)[:150]
+    otro = largo[:-1] + "x"                                                    # solo cambia la última letra
+    salida = extraccion_a_mano(tmp_path / "Carpeta con espacios" / "as-is", [
+        {"type": "processModel", "uuid": f"u-pm-000{i}", "name": n,
+         "respuestas": {"definition": {"name": n, "nodes": [{"id": 1, "type": "core.0", "name": "Inicio"}]}}}
+        for i, n in enumerate((largo, otro))])
+    for script in ("build_model.py", "build_annex.py"):
+        p = subprocess.run([sys.executable, str(SKILL / "scripts" / script), str(salida)], capture_output=True,
+                           text=True, encoding="utf-8")
+        assert p.returncode == 0, p.stderr
+    inventario = json.loads((rutas.work_dir(salida) / "inventory.json").read_text(encoding="utf-8"))
+    slugs = [o["slug"] for o in inventario["objects"]["processModel"]]
+    assert len(slugs) == 2 and len(set(slugs)) == 2 and all(len(s) <= TOPE_NOMBRE for s in slugs), slugs
+    for slug in slugs:
+        (salida / "08-procesos-bpmn").mkdir(exist_ok=True)
+        (salida / "08-procesos-bpmn" / f"{slug}.json").write_text("{}", encoding="utf-8")   # lo escribe process-modeler
+        rutas_slug = [f"extraccion/procesos/{slug}.json", f"anexo/processModel/{slug}.md",
+                      *(f"08-procesos-bpmn/{slug}{ext}" for ext in (".drawio", ".bpmn", "-1.svg", ".json"))]
+        assert all(len(r) <= 100 for r in rutas_slug), rutas_slug
+        assert (salida / "anexo" / "processModel" / f"{slug}.md").is_file()
+    p = subprocess.run([sys.executable, str(SKILL / "scripts" / "build_datos.py"), str(salida)], capture_output=True,
+                       text=True, encoding="utf-8")
+    assert p.returncode == 0, p.stderr
+    datos = salida / "datos"
+    anexos = [o["anexo"] for o in json.loads((datos / "inventario.json").read_text(encoding="utf-8"))["objetos"]]
+    assert sorted(anexos) == sorted(f"anexo/processModel/{s}.md" for s in slugs)
+    jsons = [x["json"] for x in json.loads((datos / "procesos.json").read_text(encoding="utf-8"))["procesos"]]
+    assert sorted(jsons) == sorted(f"08-procesos-bpmn/{s}.json" for s in slugs)
+

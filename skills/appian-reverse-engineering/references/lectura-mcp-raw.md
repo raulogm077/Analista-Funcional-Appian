@@ -62,11 +62,11 @@ Son una ayuda: ante la duda, **la fuente es el fichero `definition`**.
 
 ## Quién puede iniciar un process model
 
-Según la documentación oficial, para iniciar un process model hace falta **al menos el permiso Initiator**; Administrator, Editor, Manager y Viewer también pueden iniciarlo, y **Deny** no puede hacer nada. Fuente: https://docs.appian.com/suite/help/26.6/process-model-object.html#process-model-security
+Según la documentación oficial, para iniciar un process model hace falta **al menos el permiso Initiator**; Administrator, Editor, Manager y Viewer también pueden iniciarlo, y **Deny** no puede hacer nada. Fuente: https://docs.appian.com/suite/help/latest/process-model-object.html#process-model-security
 
-Los procesos que arranca un temporizador o que se lanzan como subproceso se ejecutan como el usuario que desplegó el process model. Fuente: https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors
+Los procesos que arranca un temporizador o que se lanzan como subproceso se ejecutan como el usuario que desplegó el process model. Fuente: https://docs.appian.com/suite/help/latest/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors
 
-Cada nodo desatendido se ejecuta como quien inició el proceso o como su diseñador, según su pestaña Asignación, que la extracción no trae: es ❓ salvo que la definición lo muestre. Fuente: https://docs.appian.com/suite/help/26.6/Process_Node_and_Smart_Service_Properties.html#assignment-tab
+Cada nodo desatendido se ejecuta como quien inició el proceso o como su diseñador, según su pestaña Asignación, que la extracción no trae: es ❓ salvo que la definición lo muestre. Fuente: https://docs.appian.com/suite/help/latest/Process_Node_and_Smart_Service_Properties.html#assignment-tab
 
 El iniciador que registran las ejecuciones es un dato (con su grupo, si aclara algo): no lo confundas con la cuenta de despliegue si no coinciden; si no cuadran, dilo como ❓.
 
@@ -87,7 +87,7 @@ Evidencia: mcp:<tipo>/<nombre>[@<rol>]#<ubicación>
 - `<ubicación>` es una ruta dentro de la respuesta (`pages[2].visibilityExpr`, `fields.importe`) o el *breadcrumb* de dependencias (`Interface Definition: Line 19`). En process models identifica los nodos por su id, no por su posición en la lista: `nodes[id=3].decision`.
 - Ejemplos: `mcp:processModel/DEM Alta Solicitud#nodes[id=2]`, `mcp:interface/DEM_SolicitudForm#expression (línea 4)`, `mcp:processModel/DEM Alta Solicitud@history#totalCount`, `mcp:interface/DEM_SolicitudForm@screen#contents[0]`.
 - Si la conclusión viene de un documento oficial: `Fuente: <URL de docs.appian.com>`.
-- Si es inferida, márcala 🔵 y explica en una línea de qué se infiere.
+- Si es inferida, márcala 🔶 y explica en una línea de qué se infiere.
 - El lector encuentra cada objeto en `anexo/<tipo>/<slug>.md`: la definición (con «línea N» numerada) y el resto de respuestas (`@dependents`, `@history`, `@versions`, `@validation`, `@screen`, `@members`, `@other`); las respuestas fallidas aparecen como «No disponible» con su error. La aplicación tiene su ficha en `anexo/application/` y las referencias `graph:` están en `anexo/grafo.md`. Enlaza la ficha del anexo en la evidencia (`presentation-rules.md`, Regla 5).
 
 ## Qué no está disponible por Dev MCP

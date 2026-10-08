@@ -13,6 +13,7 @@ El HTML empieza por <title> (sin <html>/<body>) para poder publicarse como Artif
 y también abrirse directamente en un navegador.
 """
 import base64, json, re, sys, argparse
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent

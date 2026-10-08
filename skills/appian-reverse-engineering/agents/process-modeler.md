@@ -23,18 +23,18 @@ Datos:
 - `<trabajo>/extraction_report.json`: fecha de la extracción (`startedAt`), para el temporizador.
 - `<salida>/anexo/processModel/<slug>.md`: la definición legible, para enlazarla.
 
-Opcionales: `references/appian-objects-guide.md` (tipos de nodo), `references/docs-mcp-usage.md` si hay Docs MCP (para un tipo de nodo o un comportamiento que no conozcas con seguridad) y la carpeta de la skill `appian-diagramas-bpmn`, si el orquestador te la pasa (ver «Diagramas»).
+Opcionales: `references/appian-objects-guide.md` (tipos de nodo) y la carpeta de la skill `appian-diagramas-bpmn`, si el orquestador te la pasa (ver «Diagramas»). Para un tipo de nodo o un comportamiento que no conozcas con certeza, «Dudas de Appian» de `SKILL.md`, que te pasa el orquestador, y `references/docs-mcp-usage.md`, con el tope de consultas y la caché compartida. Documentas hechos: no consultas `appian-best-practices` para decir qué conviene hacer.
 
 ## Qué analizar en cada process model
 
 Abre su fichero `definition` y saca:
 
-1. **Nodos** (`nodes[]`: `id`, `type`, `name`, `connections`, `assignment`, `data`, `forms`, `decision`), traducidos con la tabla de `bpmn-mapping.md`. Todos, también los técnicos. Lo que de un nodo solo dice su nombre (p. ej. un script task cuya expresión no llegó) es 🔵 «según su nombre» (`execution-principles.md`, principio 4).
+1. **Nodos** (`nodes[]`: `id`, `type`, `name`, `connections`, `assignment`, `data`, `forms`, `decision`), traducidos con la tabla de `bpmn-mapping.md`. Todos, también los técnicos. Lo que de un nodo solo dice su nombre (p. ej. un script task cuya expresión no llegó) es 🔶 «según su nombre» (`execution-principles.md`, principio 4).
 2. **Flujo**: `connections` de cada nodo; en las pasarelas, `decision.conditions[]` (expresión y `targetNodeId`) y `defaultPath`. Escribe cada condición en lenguaje de negocio.
-3. **Inicio**: `startType` y `schedule` del inventario (el temporizador está en el nodo de inicio), `startFormInterface`, y quién lo lanza (`dependents`, aristas `startProcess` y `subProcess`, acciones de record).
+3. **Inicio**: `startType` y `schedule` del inventario (el temporizador está en el nodo de inicio), `startFormInterface`, y quién lo lanza (`dependents`, aristas `startProcess` y `subProcess`, acciones de record). El temporizador dice para qué está configurado («configurado para…»); si se ejecuta así, lo dicen las ejecuciones (`execution-principles.md`, principio 5).
 4. **Quién puede iniciarlo**: según «Quién puede iniciar un process model» de `lectura-mcp-raw.md`. Sin role map: «grupo de seguridad declarado: X; role map no disponible» ❓, nunca «solo X puede iniciarlo».
 5. **Tareas de personas**: `assignment.assignees` (grupos, usuarios o expresiones) y formulario (`forms.interfaceUuid`). Una asignación a un usuario concreto o a una constante de tipo Usuario lleva el usuario; si aclara algo, añade su grupo o su rol.
-6. **Subprocesos** (`data.processModelUuid`) e **integraciones** (`data.integrationUuid` → su connected system), resueltos con el inventario.
+6. **Subprocesos** (`data.processModelUuid`) e **integraciones** (`data.integrationUuid` → su connected system), resueltos con el inventario. Un `rule!` o un subproceso que no está en la aplicación es «no encontrado en la aplicación»: cita el NV de `02-arquitectura.md` que lo recoge.
 7. **Datos**: record types que escribe (entradas de Write Records) y los que consulta un script task (que sigue siendo un script task).
 8. **Uso real** (`usage` y el fichero `history`): ejecuciones, última y fallos. Si existe `usage.failedInSampleOf`, los fallos son de la muestra («3 fallos en las últimas 50 ejecuciones»). Las instancias fallidas o detenidas (por ejemplo, por una excepción) de la muestra son hallazgo tuyo (`H-PRO`): cuántas, de cuántas, y en qué nodo si consta. La muestra puede ser uniforme (misma hora e iniciador): no deduzcas de ella qué cuenta ejecuta el proceso ni desfases horarios. Los procesos de temporizador y los subprocesos se ejecutan como el usuario que desplegó el modelo (`lectura-mcp-raw.md`).
 9. **Crítico**: `criticality.critical` y `criticality.reasons` del inventario. No lo recalcules.
@@ -43,16 +43,18 @@ Lo que la extracción no devuelve (pestañas de excepciones, alertas y escalados
 
 ## Hallazgos (H-PRO)
 
-Registra lo que haya que corregir, decidir o vigilar en el flujo de un proceso. Por ejemplo:
+Registra lo que pasa en el flujo de un proceso y tiene un riesgo: qué pasa, dónde y qué riesgo tiene, no qué hacer. Por ejemplo:
 
 - una rama que ignora una decisión del usuario («Cancelar» sigue y guarda);
 - una pasarela sin salida por defecto o con condiciones que se solapan o no cubren todos los casos;
 - nodos inalcanzables, caminos sin fin o bucles sin salida;
 - una tarea de persona sin asignación clara;
 - instancias fallidas o detenidas en la muestra de ejecuciones (paso 8);
-- un proceso de más de 50 nodos no es tuyo: es el `H-GEN` de 09 (recomendación de Appian); cítalo.
+- un proceso de más de 50 nodos no es tuyo: es el `H-GEN` de 09; cítalo.
 
-Cada hallazgo va en dos sitios (formato en `execution-principles.md`, «Registro de hallazgos»): una fila en la sección Hallazgos del `<slug>.md` (o del `indice.md` si afecta a varios procesos) y una entrada en `<trabajo>/hallazgos/process-modeler.json`, con `area: "procesos"` e IDs `H-PRO-01`, `H-PRO-02`… sin huecos. Si se basa en algo que la extracción no devuelve, certeza ❓ (o 🔵 con indicios) y la pregunta para validarlo.
+Cada hallazgo va en dos sitios (formato en `execution-principles.md`, «Registro de hallazgos»): una fila en la sección Hallazgos del `<slug>.md` (o del `indice.md` si afecta a varios procesos) y una entrada en `<trabajo>/hallazgos/process-modeler.json`, con `area: "procesos"` e IDs `H-PRO-01`, `H-PRO-02`… sin huecos. Si se basa en algo que la extracción no devuelve, certeza ❓ con su NV (o 🔶 con los indicios en `base`).
+
+Lo que no pudiste verificar de los procesos, y lo que de ellos pregunta la revisión y no puedes responder, va en `<trabajo>/sin-verificar/process-modeler.json` («Sin verificar» de `execution-principles.md`: `NV-PRO-NN`; `[]` si no hay ninguno), con ❓ y su ID donde lo dice el documento del proceso.
 
 No son tuyos: quién puede iniciar y la seguridad (`04-seguridad-grupos.md`), las integraciones (`05-integraciones-consumidas.md`), el temporizador como batch, es decir frecuencia, solapes y volumen (`07-batches.md`), procesos sin ejecuciones (`H-GEN` de `09-valor-adicional.md`) y procesos sin invocador (el `H-ARQ` de `02-arquitectura.md`, que ya existe: cita su ID; la lista de huérfanos está en 09). Si los ves, una frase sin severidad con el enlace al documento propietario y una línea en «Para otras áreas» de tu informe.
 
@@ -101,8 +103,8 @@ Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz la
 - [ ] Cada process model del inventario tiene `<slug>.md`, `<slug>.bpmn` (vía propia, con `bpmndi:BPMNDiagram`) y su diagrama: `<slug>(-N)?.mmd` + `.svg` (un fichero, o uno por tramo si pasa de 25 nodos), o `.drawio` + `.png`.
 - [ ] Cada `.mmd` pasa `validate_mermaid.py`, tiene ≤ 25 nodos y ninguno superó el aviso de ancho.
 - [ ] `indice.md` lista todos los procesos y el mapa refleja las aristas `subProcess` y `startProcess`.
-- [ ] Un solo TL;DR por documento; solo ✅/🔵/❓ como certeza y Alta/Media/Baja como severidad (solo en hallazgos).
-- [ ] Cada fila de Hallazgos está en `process-modeler.json` (o en `orquestador.json` si la añadió el orquestador) y al revés.
+- [ ] Cada documento empieza por su «Responde a» y tiene un solo TL;DR; solo ✅/🔶/❓ como certeza y Alta/Media/Baja como severidad (solo en hallazgos).
+- [ ] Cada fila de Hallazgos está en `process-modeler.json` (o en `orquestador.json` si la añadió el orquestador) y al revés; cada inferido trae su `base`.
 - [ ] Sin referencias a la skill ni a `<trabajo>/`, sin `{{`, `TODO` ni `TBD`.
 
 ## Salida
@@ -112,15 +114,15 @@ Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz la
 - Vía draw.io: `<salida>/08-procesos-bpmn/<slug>.drawio`, `<slug>.png` y `<slug>.json`, y `<trabajo>/procesos/<slug>.json` (la entrada de `diagrama.py`).
 - `<salida>/08-procesos-bpmn/indice.md`.
 - `<salida>/diagrams/mapa-procesos.mmd` y `mapa-procesos.svg` (si hay mapa y `mmdc`).
-- `<trabajo>/hallazgos/process-modeler.json` (`[]` si no hay hallazgos).
-- `<trabajo>/docs_cache/process-modeler.json`, si consultas el Docs MCP.
+- `<trabajo>/hallazgos/process-modeler.json` (`[]` si no hay hallazgos) y `<trabajo>/sin-verificar/process-modeler.json`.
+- `<trabajo>/docs_cache/process-modeler.json`, si consultas la documentación (por el Docs MCP o por la web).
 
 ## Informe final
 
 Breve, al orquestador:
 
 - ficheros generados y por qué vía (y si alguno cambió de vía, por qué);
-- consultas al Docs MCP;
+- consultas a la documentación (por el Docs MCP o por la web);
 - choques entre instrucciones que hayas encontrado y cómo los resolviste;
 - «Para otras áreas»: una línea por asunto con el documento propietario.
 

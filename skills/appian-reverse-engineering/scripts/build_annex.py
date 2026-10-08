@@ -8,8 +8,10 @@ Lee   <trabajo>/inventory.json y las definiciones de <trabajo>/mcp_raw/
 Crea  <salida>/anexo/indice.md y <salida>/anexo/<tipo>/<slug>.md (uno por objeto con definición)
 
 Para cada objeto:
-  - las expresiones (SAIL, reglas, cuerpos de integración) en bloques con número de línea, que es lo que citan
-    las evidencias «línea N»; las referencias recordType!{uuid}Nombre se muestran como recordType!Nombre;
+  - las expresiones (SAIL, reglas, cuerpos de integración), también las de una sola línea, en bloques con número de
+    línea, que es lo que citan las evidencias «línea N»; las de los nodos de un process model, si caben en una línea,
+    se quedan en la definición, porque se citan por su nodo (nodes[id=N]); las referencias recordType!{uuid}Nombre se
+    muestran como recordType!Nombre;
   - en los process models, una tabla de nodos;
   - la definición completa en JSON;
   - el resto de respuestas de la plataforma (role map, dependientes, validación, ejecuciones, versiones, miembros,
@@ -24,6 +26,7 @@ import json
 import re
 import shutil
 import sys
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from collections import defaultdict
 from pathlib import Path
 
@@ -32,6 +35,7 @@ from rutas import work_dir  # noqa: E402
 
 MARCA = "<!-- anexo generado por build_annex.py -->"
 CODE_HINT = re.compile(r"a!|rule!|cons!|local!|ri!|fv!|pv!|recordType!|\bif\(|=\s*\{")
+EXPRESION = re.compile(r"^\s*=|\w\(")   # una expresión entera, aunque sea de una línea: empieza por «=» o llama a algo
 UUID_REF = re.compile(r"(?<=[!.])\{[^{}\s]{8,}\}")
 QUIEN_INICIA = re.compile(r"(?i)^(initiator|initiatedby|starter|startedby|login|user(name|id)?)$")
 TIPOS = {"interface": "Interfaz", "expressionRule": "Regla de expresión", "processModel": "Modelo de proceso",
@@ -96,7 +100,9 @@ def history_summary(data) -> str:
 
 
 def extract_code(x) -> tuple[object, list[tuple[str, str]]]:
-    """Saca las cadenas que son código a bloques aparte y deja una referencia en su lugar."""
+    """Saca las cadenas que son código a bloques aparte y deja una referencia en su lugar: las de varias líneas o
+    largas y las expresiones de una línea, salvo las de los nodos de un process model, que se citan por su nodo. Un
+    tipo o una referencia sueltos (`recordType!X`, `pv!x`) no son una expresión que se cite por línea."""
     blocks: list[tuple[str, str]] = []
 
     def rec(v, path):
@@ -106,7 +112,8 @@ def extract_code(x) -> tuple[object, list[tuple[str, str]]]:
             return [rec(w, f"{path}[{i}]") for i, w in enumerate(v)]
         if isinstance(v, str):
             v = UUID_REF.sub("", v)
-            if ("\n" in v or len(v) > 160) and CODE_HINT.search(v):
+            larga = "\n" in v or len(v) > 160
+            if CODE_HINT.search(v) and (larga or (EXPRESION.search(v) and not path.startswith("nodes["))):
                 blocks.append((path or "valor", v))
                 return f"‹ver bloque {len(blocks)}›"
         return v

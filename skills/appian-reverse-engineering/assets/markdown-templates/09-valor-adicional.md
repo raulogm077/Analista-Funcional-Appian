@@ -3,67 +3,64 @@
   Qué analizar y criterios de los hallazgos: references/analysis-workflow.md, «Guía de 09».
   Datos: inventory.json, graph.json y summary.json (`signals`) de <trabajo>.
   Propiedad: aquí solo se registran hallazgos H-GEN (mantenimiento, validación de la plataforma, versionado,
-  métricas, uso). Secretos (H-SEG, 04), hubs y huérfanos (H-ARQ, 02) y el resto de áreas se enlazan por su ID,
-  sin severidad.
+  métricas, uso). Secretos (H-SEG, 04), hubs y huérfanos (H-ARQ, 02), integraciones (H-INT, 05) y el resto de áreas
+  se enlazan por su ID, sin severidad.
   El registro de hallazgos lo escribe build_registry.py entre los dos marcadores: no los cambies ni escribas
   dentro. Omite las subsecciones del Detalle sin contenido (y su entrada del índice).
   Un solo dueño por señal: process models sin ejecuciones → H-GEN (aquí); la lista de objetos huérfanos es solo
-  la de este documento (02 tiene el H-ARQ y los demás la enlazan).
+  la de este documento (02 tiene el H-ARQ y los demás la enlazan); lo que cambia por entorno está solo aquí (05 lo enlaza).
   Si el entorno no consta como producción, las cifras de uso llevan «orientativo (ver LEEME)», sin más explicación.
   Evidencia: siempre enlazada a la ficha del objeto en el anexo.
+  «Cobertura y límites»: solo lo de este documento; lo global está en LEEME.
 -->
 
 # Información de valor adicional
 
-> **TL;DR**: {{Lo más útil para quien mantiene la aplicación, p. ej. «12 constantes dependen del entorno, 3 objetos tienen avisos de la plataforma y 5 son candidatos a retirar»}}.
-> **Volumen**: {{N}} objetos · {{N}} líneas de expresiones · {{N}} hallazgos en el registro (Alta: {{n}}). **Hallazgos propios**: {{N (Alta: n)}} — principales: [H-GEN-01](#hallazgos), … (o «sin hallazgos»).
+> **Responde a:** ¿Qué cambia por entorno? ¿Qué objetos son muy grandes, tienen avisos de la plataforma o no los usa nadie? ¿Quién cambió la aplicación y cuándo? ¿Qué significan los términos del negocio? ¿Qué hallazgos hay en total?
+
+> **TL;DR**: {{Lo más útil para quien mantiene la aplicación, p. ej. «12 constantes dependen del entorno, 3 objetos tienen avisos de la plataforma y 5 no tienen referencias»}}.
+> **Volumen**: {{N}} líneas de expresiones · {{N}} hallazgos en el registro (Alta: {{n}}). **Hallazgos propios**: {{N (Alta: n)}} — principales: [H-GEN-01](#hallazgos), … (o «sin hallazgos»).
 
 ## Vista: métricas de la aplicación
 
 | Métrica | Valor |
 |---|---|
-| Objetos (con definición) | {{N}} ({{N}}) |
 | Líneas de expresiones (interfaces, reglas, integraciones, Web APIs) | {{N}} |
-| Process models con más de 50 nodos (el mayor tiene {{N}}) | {{N}} |
+| Process models con más de 50 nodos ([fuente](https://docs.appian.com/suite/help/latest/appian-recommendations.html#process-model-design-guidance)) | {{N}} (el mayor, `{{nombre}}`, con {{N}}) |
 | Expression rules de más de 200 líneas | {{N}} |
 | Interfaces de más de 80 KB de expresión | {{N}} |
 | Objetos con avisos de validación de la plataforma | {{N}} |
 | Process models sin ejecuciones | {{N}}{{, orientativo (ver [LEEME](./LEEME.md))}} |
 
-Appian recomienda dividir en subprocesos los process models de más de 50 nodos. Fuente: https://docs.appian.com/suite/help/26.6/appian-recommendations.html#process-model-design-guidance
-
 ## Detalle
 
-- [Constantes por entorno y secretos](#constantes-por-entorno-y-secretos)
-- [Reglas reutilizables](#reglas-reutilizables)
+- [Configuración por entorno](#configuración-por-entorno)
 - [Objetos huérfanos](#objetos-huérfanos)
 - [Avisos de validación de la plataforma](#avisos-de-validación-de-la-plataforma)
 - [Versionado](#versionado)
 - [Glosario de negocio](#glosario-de-negocio)
 
-### Constantes por entorno y secretos
+### Configuración por entorno
 
-Constantes cuyo valor depende del entorno (URLs, hosts, identificadores, interruptores). Solo se ve el valor de este entorno: los de los demás van en el fichero de personalización del paquete de despliegue, que la extracción no trae.
+<!--
+  Lo que cambia entre entornos: la URL base y las credenciales de cada connected system, y las constantes con URLs,
+  hosts, identificadores o interruptores de entorno (DEV/PRE/PRO). Solo se ve el valor del entorno extraído.
+  Dos columnas que no se mezclan: «Depende del entorno» (Sí: su valor es propio de un entorno, como una URL, un host
+  o una credencial; No: es el mismo en todos) y «Marca de entorno» (Sí: connected system o constante marcada
+  «Environment Specific»; No: constante sin la marca o literal en una expresión; ❓: la definición no lo dice).
+  Una constante que depende del entorno sin la marca es justo lo que hay que ver. Certeza: la de que el valor
+  dependa del entorno (🔶 si solo lo dice el valor). «Hallazgo»: el H-SEG de 04 si el valor es un secreto; el H-INT
+  de 05 si apunta a otro entorno. La propiedad de un connected system va con su nombre («URL base»).
+-->
 
-| Constante | Tipo | Valor en este entorno | Usada por | Certeza |
-|---|---|---|---|---|
-| `{{constante}}` | {{Texto}} | `{{valor}}` | {{N}} objetos | 🔵 |
-
-Hay valores con aspecto de secreto escritos en {{N}} objetos; su tratamiento está en [{{H-SEG-02}}](./04-seguridad-grupos.md#hallazgos).
-
-### Reglas reutilizables
-
-Expression rules y decisiones que usan 5 o más objetos: un cambio en ellas afecta a todos sus llamadores. Lo que suponen para la arquitectura está en [02](./02-arquitectura.md).
-
-| Regla | Qué hace | Entradas | Devuelve | Llamada por | Ficha |
-|---|---|---|---|---|---|
-| `{{regla}}` | {{qué calcula}} | `{{ri!a (Texto), ri!b (Número)}}` | {{tipo}} | {{N}} | [anexo](./anexo/expressionRule/{{slug}}.md) |
-
-«Llamada por» cuenta las referencias del grafo de la aplicación: puede ser mayor que lo que muestra la herramienta de dependientes de Appian, porque añade las encontradas en las definiciones.
+| Objeto | Valor en este entorno | Depende del entorno | Marca de entorno | Usado por | Hallazgo | Certeza | Evidencia |
+|---|---|---|---|---|---|---|---|
+| `{{CS_SAP}}` (URL base) | `{{https://sap.example.org/sap/api/v1}}` | Sí | Sí | {{2}} integraciones | — | ✅ | [`mcp:connectedSystem/{{CS_SAP}}#baseUrl`](./anexo/connectedSystem/{{slug}}.md) |
+| `{{constante}}` | `{{valor}}` | Sí | {{No}} | {{N}} objetos | {{[H-INT-01](./05-integraciones-consumidas.md#hallazgos) o «—»}} | 🔶 | [`mcp:constant/{{constante}}#value`](./anexo/constant/{{slug}}.md) |
 
 ### Objetos huérfanos
 
-Objetos sin ninguna referencia entrante en la aplicación{{, y process models sin ejecuciones en producción}}. Son candidatos a retirar, no código muerto seguro: pueden usarse desde fuera de la aplicación. El hallazgo de arquitectura es [{{H-ARQ-02}}](./02-arquitectura.md#hallazgos){{; el de los procesos sin ejecuciones, [H-GEN-NN](#hallazgos)}}.
+Sin referencias entrantes en la aplicación{{, y process models sin ejecuciones en producción}}; pueden usarse desde fuera de ella. Hallazgo: [{{H-ARQ-02}}](./02-arquitectura.md#hallazgos){{; procesos sin ejecuciones: [H-GEN-NN](#hallazgos)}}.
 
 | Objeto | Tipo | Última modificación | Ejecuciones | Ficha |
 |---|---|---|---|---|
@@ -71,15 +68,11 @@ Objetos sin ninguna referencia entrante en la aplicación{{, y process models si
 
 ### Avisos de validación de la plataforma
 
-Avisos que da la propia plataforma al validar el objeto (funciones obsoletas, referencias rotas…).
-
 | Objeto | Tipo | Aviso | Hallazgo |
 |---|---|---|---|
 | `{{objeto}}` | {{tipo}} | {{texto del aviso, ≤ 100 caracteres}} | {{H-GEN-01}} |
 
 ### Versionado
-
-Historial de versiones de los objetos: quién los cambió por última vez, cuándo y cuántas veces.
 
 | Último autor | Tipo de cuenta | Grupo | Objetos | Último cambio |
 |---|---|---|---|---|
@@ -95,15 +88,11 @@ Objetos con más versiones:
 
 ### Glosario de negocio
 
-Vocabulario del negocio que aparece en record types, campos, procesos y pantallas. Los términos de Appian están en [LEEME](./LEEME.md).
-
-| Término | Significado | Dónde aparece | Certeza |
-|---|---|---|---|
-| {{Expediente}} | {{definición en una frase}} | `{{record type}}`, `{{campo}}` | {{✅ (de la descripción) o 🔵 (del nombre)}} |
+| Término | Significado | Dónde aparece | Certeza | Evidencia |
+|---|---|---|---|---|
+| {{Expediente}} | {{definición en una frase}} | `{{record type}}`, `{{campo}}` | {{✅ (de la descripción) o 🔶 (del nombre)}} | [`mcp:recordType/{{record type}}#description`](./anexo/recordType/{{slug}}.md) |
 
 ## Hallazgos
-
-Mantenimiento, validación de la plataforma, versionado, métricas y uso. Los de las demás áreas están en su documento y en el registro de abajo.
 
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
@@ -111,12 +100,10 @@ Mantenimiento, validación de la plataforma, versionado, métricas y uso. Los de
 
 ## Registro de hallazgos
 
-Todos los hallazgos de la documentación, de mayor a menor severidad, con el documento que los explica.
-
 <!-- registro:inicio -->
 (lo rellena build_registry.py)
 <!-- registro:fin -->
 
 ## Cobertura y límites
 
-{{1-5 líneas: p. ej. «sin historial de versiones para los CDTs», «solo se ven los valores de las constantes de este entorno». Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}
+{{1-5 líneas: p. ej. «sin historial de versiones para los CDTs».}}

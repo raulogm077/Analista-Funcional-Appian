@@ -50,7 +50,7 @@ El `.bpmn` es BPMN 2.0 estándar con coordenadas de dibujo (BPMN DI). Se abre en
 Igual en las dos vías:
 
 - **Un carril por grupo** asignado a tareas de personas (`assignment.assignees` de tipo grupo), con el nombre del grupo.
-- **Asignaciones que no son un grupo**: al iniciador del proceso → carril «Iniciador»; a una expresión o regla → el rol que se deduzca de ella (🔵) o «Asignación por expresión» (❓); a un usuario concreto o a una constante de tipo Usuario → un carril con el usuario o, si aclara más, con su grupo.
+- **Asignaciones que no son un grupo**: al iniciador del proceso → carril «Iniciador»; a una expresión o regla → el rol que se deduzca de ella (🔶) o «Asignación por expresión» (❓); a un usuario concreto o a una constante de tipo Usuario → un carril con el usuario o, si aclara más, con su grupo.
 - **«Sistema»** para todo lo desatendido: scripts, escritura de records, integraciones, correos y subprocesos.
 - El **inicio** va en el carril del primer nodo; si el proceso arranca con un formulario de inicio, en el carril de quien lo rellena («Iniciador», o el grupo si solo puede iniciarlo uno). Cada **pasarela** y cada **fin**, en el carril del nodo que tienen antes; si tienen varios en carriles distintos, en «Sistema».
 - Orden: los grupos según aparecen en el flujo y «Sistema» al final.

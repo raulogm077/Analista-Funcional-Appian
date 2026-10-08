@@ -3,10 +3,14 @@
   Sustituye los {{marcadores}} y omite las secciones que queden vacías.
   «Crítico» es criticality.critical del inventario (no se recalcula).
   «Ejecuciones»: si el entorno no consta como producción, «orientativo (ver LEEME)» en la cabecera, sin más explicación.
+  Hallazgos: los de cada proceso están en su documento y el catálogo los cita; aquí solo los que afectan a varios.
   Evidencia: siempre enlazada a la ficha del proceso en el anexo (../anexo/processModel/<slug>.md).
+  «Cobertura y límites»: solo lo de este documento; lo global está en LEEME.
 -->
 
 # Procesos — índice
+
+> **Responde a:** ¿Qué procesos hay y cómo empieza cada uno? ¿Qué proceso lanza a cuál? ¿Cuáles son críticos? ¿Cuántas veces se ejecuta cada uno?
 
 > **TL;DR**: {{qué procesos sostienen el negocio, cuáles son críticos y lo más importante que hay que saber de ellos}}.
 > **Volumen**: {{N}} process models ({{n}} los inicia una persona, {{n}} un temporizador, {{n}} solo como subproceso, {{n}} sin invocador detectado). **Hallazgos**: {{5 (Alta: 1) — principales: [H-PRO-01](./slug.md#hallazgos)}} o «sin hallazgos».
@@ -20,8 +24,6 @@
 Fuente: [mapa-procesos.mmd](../diagrams/mapa-procesos.mmd)
 
 ## Detalle: catálogo
-
-Cada proceso tiene su documento (paso a paso, tareas, datos y hallazgos) y su diagrama BPMN 2.0 (`.bpmn`), que se abre en Camunda Modeler o en bpmn.io.
 
 | Proceso | Inicio | Crítico | Ejecuciones{{, orientativo (ver [LEEME](../LEEME.md))}} | Invocado por | Subprocesos e integraciones | Hallazgos | BPMN |
 |---|---|---|---|---|---|---|---|
@@ -45,11 +47,9 @@ Cada proceso tiene su documento (paso a paso, tareas, datos y hallazgos) y su di
 
 ## Hallazgos
 
-{{Los de cada proceso están en su documento y el catálogo los cita. Aquí solo los que afectan a varios procesos.}}
-
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| H-PRO-01 | {{qué hay que corregir, decidir o vigilar}} | {{Alta/Media/Baja}} | {{✅/🔵/❓}} | [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](../anexo/processModel/{{slug}}.md) |
+| H-PRO-01 | {{qué pasa y qué riesgo tiene}} | {{Alta/Media/Baja}} | {{✅/🔶/❓}} | [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](../anexo/processModel/{{slug}}.md) |
 
 ## Cobertura y límites
 

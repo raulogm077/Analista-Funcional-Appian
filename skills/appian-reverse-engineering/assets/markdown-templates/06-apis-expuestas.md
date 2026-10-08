@@ -4,11 +4,14 @@
   Objetivo: resumen + ½ pantalla por Web API (máximo 1).
   Una Web API solo la puede llamar un usuario o cuenta de servicio autenticado, y hace falta al menos Viewer en su role map.
   El método de autenticación (API key, Basic, OAuth 2.0, TLS mutuo) lo configura cada consumidor fuera de la Web API.
-  Fuentes: https://docs.appian.com/suite/help/26.6/Web_APIs.html#prodlink-security
-           https://docs.appian.com/suite/help/26.6/Web_API_Authentication.html#authentication
+  Fuentes: https://docs.appian.com/suite/help/latest/Web_APIs.html#prodlink-security
+           https://docs.appian.com/suite/help/latest/Web_API_Authentication.html#authentication
+  «Cobertura y límites»: solo lo de este documento; lo global está en LEEME.
 -->
 
 # APIs expuestas
+
+> **Responde a:** ¿Qué ofrece la aplicación a otros sistemas? ¿Quién puede llamar a cada API? ¿Qué recibe, qué devuelve y qué lanza cada una?
 
 > **TL;DR**: {{qué ofrece la aplicación a otros sistemas, quién puede llamarlo y qué dispara, en 2-3 frases}}.
 > **Volumen**: {{N}} Web APIs ({{N}} GET, {{N}} POST…), {{N}} que escriben datos o lanzan procesos. **Hallazgos**: {{N (Alta: n)}} — principales: [H-API-01](#hallazgos), … {{o «sin hallazgos»}}.
@@ -20,12 +23,10 @@
   «Pueden llamarla»: grupos con Viewer o superior en su role map; sin role map, «❓ role map no disponible».
 -->
 
-Lo que la aplicación ofrece a otros sistemas. Todas exigen un usuario o cuenta de servicio autenticado.
-
-| Web API | Método | Ruta | Pueden llamarla | Qué hace | Certeza |
-|---|---|---|---|---|---|
-| `{{DEM_API_AltaSolicitud}}` | POST | `/suite/webapi/{{dem-solicitudes}}` | `{{DEM Integraciones}}` | {{Registra una solicitud y lanza DEM Alta Solicitud}} | ✅ |
-| `{{DEM_API_Estado}}` | GET | `/suite/webapi/{{dem-estado}}` | ❓ role map no disponible | {{Devuelve el estado de una solicitud}} | ✅ |
+| Web API | Método | Ruta | Pueden llamarla | Qué hace | Certeza | Evidencia |
+|---|---|---|---|---|---|---|
+| `{{DEM_API_AltaSolicitud}}` | POST | `/suite/webapi/{{dem-solicitudes}}` | `{{DEM Integraciones}}` | {{Registra una solicitud y lanza DEM Alta Solicitud}} | ✅ | [`mcp:webApi/{{DEM_API_AltaSolicitud}}#expression`](./anexo/webApi/{{slug}}.md) |
+| `{{DEM_API_Estado}}` | GET | `/suite/webapi/{{dem-estado}}` | ❓ role map no disponible | {{Devuelve el estado de una solicitud}} | ✅ | [`mcp:webApi/{{DEM_API_Estado}}#expression`](./anexo/webApi/{{slug}}.md) |
 
 ## Detalle
 
@@ -69,11 +70,11 @@ Evidencia: [`mcp:webApi/{{DEM_API_AltaSolicitud}}#expression (líneas {{4-30}})`
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
 | H-API-01 | {{DEM_API_Estado la puede llamar cualquier usuario de la aplicación (DEM Users con Viewer)}} | Media | ✅ | [`mcp:webApi/{{DEM_API_Estado}}@other:{{herramienta}}#roleMap`](./anexo/webApi/{{slug}}.md) |
-| H-API-02 | {{DEM_API_AltaSolicitud lanza el proceso sin validar el importe}} | Media | 🔵 | [`mcp:webApi/{{DEM_API_AltaSolicitud}}#expression (línea {{12}})`](./anexo/webApi/{{slug}}.md) |
+| H-API-02 | {{DEM_API_AltaSolicitud lanza el proceso sin validar el importe}} | Media | 🔶 | [`mcp:webApi/{{DEM_API_AltaSolicitud}}#expression (línea {{12}})`](./anexo/webApi/{{slug}}.md) |
 
 <!--
   Solo hallazgos de Web APIs. Mismos ID, título, severidad y certeza que en <trabajo>/hallazgos/integration-security-analyzer.json.
-  Un hallazgo Alta lleva debajo una línea con su impacto y la recomendación.
+  Un hallazgo Alta lleva debajo una línea con su impacto: qué puede pasar y a quién afecta.
 -->
 
 ## Cobertura y límites

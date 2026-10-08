@@ -16,6 +16,7 @@ Requiere Playwright para Python (pip install playwright) y un navegador: el Chro
 (playwright install chromium) o Chrome / Edge ya instalados.
 """
 import json, os, re, sys, argparse
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from pathlib import Path
 from entorno import utf8_stdio, sync_playwright, launch_browser
 

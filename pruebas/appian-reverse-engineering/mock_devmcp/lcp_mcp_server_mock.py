@@ -9,9 +9,11 @@ Variables de entorno:
                             (simula un servidor que no respeta el modo).
   MOCK_FAIL_KEYS=K1,K2      Las herramientas de objeto fallan para esos objetos.
   MOCK_CALL_LOG=<fichero>   Registra cada llamada (jsonl).
+  MOCK_APP=<módulo>         La aplicación que sirve: fixture (DEM, por defecto) o fixture_mal_hecha (MNT).
 """
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import sys
@@ -22,7 +24,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
 sys.path.insert(0, str(Path(__file__).parent))
-import fixture  # noqa: E402
+fixture = importlib.import_module(os.environ.get("MOCK_APP") or "fixture")
 
 VARIANT = os.environ.get("MOCK_VARIANT", "a").lower()
 READONLY = os.environ.get("LCP_TOOL_MODE", "full").lower() == "readonly"
@@ -122,15 +124,16 @@ def history_of(uuid: str, limit: int = 20):
     inst = []
     for i in range(min(limit, h["total"])):
         inst.append({"processId": 900000 + i, "status": "COMPLETED" if i >= h["errors"] else "PAUSED_BY_EXCEPTION",
-                     "startTime": h["last"], "initiator": "ana.garcia"})
+                     "startTime": h["last"], "initiator": h["iniciador"]})
     return {"processModelUuid": uuid, "totalCount": h["total"], "instances": inst}
 
 
 def versions_of(uuid: str):
     o = obj_for(uuid)
-    return [{"versionId": 3, "modifiedBy": "marta.ruiz", "modifiedOn": "2026-09-01T10:00:00Z"},
-            {"versionId": 2, "modifiedBy": "pablo.soto", "modifiedOn": "2026-06-15T12:30:00Z"},
-            {"versionId": 1, "modifiedBy": "admin.dem", "modifiedOn": "2026-03-02T08:00:00Z", "comment": f"Creación de {o['name']}"}]
+    out = [{"versionId": v, "modifiedBy": quien, "modifiedOn": cuando}
+           for v, quien, cuando in fixture.VERSIONES.get(o["key"], fixture.VERSIONES["*"])]
+    out[-1]["comment"] = f"Creación de {o['name']}"
+    return out
 
 
 def validate(uuid: str):
@@ -158,16 +161,23 @@ def getter(expected: str):
     return lambda **kw: public(obj_for(next(iter(kw.values())), expected))
 
 
+def con_definicion(tipo: str) -> bool:
+    """Si la aplicación trae la definición de algún objeto de ese tipo, y no solo su nombre."""
+    return any(o["objType"] == tipo and set(o) - {"key", "uuid", "name", "objType"} for o in OBJ.values())
+
+
 GET_TYPES = [
     ("RecordType", "RECORD_TYPE"), ("Interface", "INTERFACE"), ("Constant", "CONSTANT"),
     ("ProcessModel", "PROCESS_MODEL"), ("Site", "SITE"), ("WebApi", "WEB_API"),
     ("Integration", "OUTBOUND_INTEGRATION"), ("ConnectedSystem", "CONNECTED_SYSTEM"),
     ("Group", "GROUP"), ("AiAgent", "AI_AGENT"),
 ]
+# CDTs y data stores, solo si la aplicación trae su definición: la DEM no la trae y su catálogo no cambia.
+GET_TYPES += [(n, t) for n, t in (("DataType", "DATA_TYPE"), ("DataStore", "DATA_STORE")) if con_definicion(t)]
 
 if VARIANT == "a":
     register("listApplications", [], lambda: {"applications": [
-        {"uuid": APP["uuid"], "name": APP["name"], "prefix": "DEM"}, OTHER_APP]})
+        {"uuid": APP["uuid"], "name": APP["name"], "prefix": APP["prefix"]}, OTHER_APP]})
     register("listNodeTypes", [], lambda: {"nodeTypes": [
         {"id": "core.0", "name": "Start Event"}, {"id": "core.1", "name": "End Event"},
         {"id": "core.4", "name": "XOR Gateway"}, {"id": "internal.16", "name": "Script Task"},
@@ -175,7 +185,7 @@ if VARIANT == "a":
         {"id": "internal3.write_records_to_source_23r3", "name": "Write Records"},
         {"id": "internal3.sendemail3", "name": "Send E-Mail"}, {"id": "internal3.integration", "name": "Call Integration"},
         {"id": "internal3.subprocess", "name": "Sub-Process"}]})
-    register("listUsers", [], lambda: {"users": ["ana.garcia", "luis.perez"]})
+    register("listUsers", [], lambda: {"users": fixture.GROUP_USERS["G_USR"]})
 
     def _app(uuid):
         if uuid == OTHER_APP["uuid"]:
@@ -189,7 +199,8 @@ if VARIANT == "a":
         groups = {"RECORD_TYPE": "recordTypes", "INTERFACE": "interfaces", "FREEFORM_RULE": "expressionRules",
                   "CONSTANT": "constants", "PROCESS_MODEL": "processModels", "SITE": "sites", "WEB_API": "webApis",
                   "OUTBOUND_INTEGRATION": "integrations", "CONNECTED_SYSTEM": "connectedSystems", "GROUP": "groups",
-                  "DECISION": "decisions", "DATA_TYPE": "dataTypes", "AI_AGENT": "aiAgents",
+                  "DECISION": "decisions", "DATA_TYPE": "dataTypes", "DATA_STORE": "dataStores",
+                  "AI_AGENT": "aiAgents",
                   "RULE_FOLDER": "folders", "PROCESS_MODEL_FOLDER": "processModelFolders"}
         out: dict = {}
         for o in app_objects():
@@ -222,8 +233,8 @@ if VARIANT == "a":
         # Herramienta "nueva" que la skill no conoce: debe usarse sin tocar el codigo.
         register("describeSecurityRoleMap", [("objectUuid", "str", ...)], lambda objectUuid: {
             "object": obj_for(objectUuid)["name"],
-            "roleMap": [{"group": "DEM Administrators", "permission": "ADMINISTRATOR"},
-                        {"group": "DEM Users", "permission": "VIEWER"}]})
+            "roleMap": [{"group": OBJ["G_ADM"]["name"], "permission": "ADMINISTRATOR"},
+                        {"group": OBJ["G_USR"]["name"], "permission": "VIEWER"}]})
     if EXPOSE_WRITES:
         register("createInterface", [("name", "str", ...), ("expression", "str", ...)], lambda name, expression: {"uuid": "new"})
         register("updateProcessModel", [("uuid", "str", ...), ("nodes", "str", "")], lambda uuid, nodes="": {"ok": True})
@@ -236,7 +247,7 @@ else:  # Variante B
         return {"result": rename_b(x)}
 
     register("searchApplications", [("query", "str", "")], lambda query="": wrap({"items": [
-        {"uuid": APP["uuid"], "name": APP["name"], "prefix": "DEM"}, OTHER_APP]}), annotations=RO)
+        {"uuid": APP["uuid"], "name": APP["name"], "prefix": APP["prefix"]}, OTHER_APP]}), annotations=RO)
     register("describeNodeCatalog", [], lambda: wrap([{"id": "core.0", "label": "Start Event"}]), annotations=RO)
     register("getApplicationDetails", [("applicationUuid", "str", ...)],
              lambda applicationUuid: wrap(public(APP) if applicationUuid == APP["uuid"] else OTHER_APP), annotations=RO)

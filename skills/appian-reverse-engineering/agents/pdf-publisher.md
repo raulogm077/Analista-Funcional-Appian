@@ -8,7 +8,7 @@ Fase 7, solo si `<trabajo>/output_preferences.json` tiene `pdf: true`. Puede ir 
 
 ## Entradas
 
-- `<salida>/`: `LEEME.md`, `00`–`11`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso) y las imágenes de `diagrams/` y `08-procesos-bpmn/` (`.svg`, o `.png` cuando el proceso se dibujó en draw.io).
+- `<salida>/`: `LEEME.md`, `01`–`11`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso) y las imágenes de `diagrams/` y `08-procesos-bpmn/` (`.svg`, o `.png` cuando el proceso se dibujó en draw.io).
 - `<salida>/anexo/`: solo para el apéndice opcional (ver Estructura).
 - `<trabajo>/summary.json` (`<trabajo>` = `<salida>/extraccion/`): la fuente de todas las cifras.
 - La skill de PDF disponible (`anthropic-skills:pdf` o equivalente): lee su `SKILL.md` antes de empezar y sigue su flujo (ReportLab, WeasyPrint, pandoc… lo decide ella).
@@ -40,7 +40,7 @@ summary.json
 ## Reglas de contenido
 
 - **Cifras** solo de `summary.json`; **textos** de los `.md`. Si no coinciden, manda `summary.json` y anótalo en el informe; no corrijas el documento.
-- **Hallazgos**: los de `findings`, con su ID, severidad en palabra (Alta/Media/Baja) y certeza ✅ verificado / 🔵 inferido / ❓ pendiente. No uses otras marcas de estado.
+- **Hallazgos**: los de `findings`, con su ID, severidad en palabra (Alta/Media/Baja) y certeza ✅ verificado / 🔶 inferido / ❓ pendiente. No uses otras marcas de estado.
 - **Confianza**: `meta.confidence` siempre con su motivo (`meta.confidenceBasis`).
 - **Uso real**: si `meta.environment.isProduction` no es `true`, las ejecuciones van con la marca «orientativo (ver LEEME)».
 - **Lo que no se publica**: rutas o enlaces a `<trabajo>/` y referencias a la skill (ficheros, scripts, códigos internos). Los uuids solo en el inventario y el apéndice.
@@ -49,10 +49,10 @@ summary.json
 
 | Orden | Sección | Contenido |
 |---|---|---|
-| 1 | Portada | Nombre visible y técnico de la app, entorno, fecha de extracción, «Documentación de reingeniería inversa». |
+| 1 | Portada | Nombre visible y técnico de la app, entorno, fecha de extracción, «Documentación de ingeniería inversa». |
 | 2 | Índice | Con número de página y marcadores del PDF. |
 | 3 | Cifras | Una página: objetos por capa, procesos críticos, hallazgos por severidad y certeza, secretos y confianza. |
-| 4 | Resumen ejecutivo | `00`. |
+| 4 | Resumen ejecutivo | De `LEEME`: el TL;DR, los datos de la extracción, los procesos críticos, los hallazgos principales y el uso real. |
 | … | Funcional | `01`: un caso de uso por página, con su diagrama. |
 | … | Arquitectura | `02`: diagrama a página completa (apaisado si es ancho) y tablas. |
 | … | Modelo de datos | `03`: diagramas ER y catálogo compacto. |
@@ -62,9 +62,9 @@ summary.json
 | … | Procesos | `08`: los de `criticalProcesses` (máx. 5) con diagrama y explicación; el resto, en la tabla del índice. |
 | … | Pantallas y reglas | `10` y `11`: mapa de navegación y tablas resumen. |
 | … | Hallazgos | Registro de `09` (de `findings`), coloreado por severidad. |
-| … | Mantenimiento | Resto de `09`: métricas, constantes por entorno, huérfanos, versionado. |
-| … | Pendientes de validación | Hallazgos con certeza ❓, con quién debe validarlos. |
-| … | Inventario y glosarios | `INVENTARIO` en tablas compactas; glosario de Appian (`LEEME`) y de negocio (`09`). |
+| … | Mantenimiento | Resto de `09`: métricas, configuración por entorno, huérfanos, versionado. |
+| … | Sin verificar | Las secciones «Sin verificar» y «Preguntas de esta revisión» de `LEEME`: lo que no se pudo verificar, qué hace falta y a quién pedirlo, y las preguntas que quedan abiertas. |
+| … | Inventario y glosarios | `INVENTARIO` en tablas compactas; términos de Appian (`LEEME`) y glosario de negocio (`09`). |
 | Apéndice | Anexo (opcional) | Las definiciones de `anexo/` solo si el usuario lo pidió o la app tiene menos de ~50 objetos; si no, una página que dice que el anexo acompaña al PDF en la carpeta `anexo/`. |
 
 ## Maquetación
@@ -78,7 +78,7 @@ summary.json
 
 ## Proceso
 
-1. Comprueba `pdf: true` y que existen `LEEME`, `00`–`11`, `INVENTARIO` y `summary.json`. Si falta algo, no sigas y dilo en el informe.
+1. Comprueba `pdf: true` y que existen `LEEME`, `01`–`11`, `INVENTARIO` y `summary.json`. Si falta algo, no sigas y dilo en el informe.
 2. Estima el tamaño con `totals.objects` y `counts`. Si pasa de ~100 páginas, deja el inventario y las fichas de detalle en tablas compactas y anótalo en el informe.
 3. Lee el `SKILL.md` de la skill de PDF y genera el PDF sección a sección según la tabla. Los ficheros temporales van en `<trabajo>/`, nunca junto a los documentos.
 4. Comprueba el resultado: cada página tiene contenido, los diagramas se ven nítidos, el índice apunta a la página correcta, cabecera y pie en todas las páginas, tamaño < 10 MB (si no, comprime las imágenes).

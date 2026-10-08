@@ -8,6 +8,7 @@ Uso:  python3 smoke_test.py prototipo.html app.json [--width 1440]
 Requiere Playwright para Python y un navegador (Chromium de Playwright, Chrome o Edge).
 """
 import json, sys, argparse
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from pathlib import Path
 from entorno import utf8_stdio, sync_playwright, launch_browser
 

@@ -126,6 +126,14 @@ def test_annex(built):
     form = (anexo / "interface" / "DEM_SolicitudForm.md").read_text(encoding="utf-8")
     assert "\n1  =a!formLayout" in form or "\n 1  =a!formLayout" in form          # líneas numeradas
     assert "recordType!DEM Solicitud.fields.titulo" in form and "recordType!{" not in form
+    assert '": "recordType!DEM Solicitud"' in form                        # el tipo de una entrada no es una expresión
+    # una expresión de una sola línea también se numera: la evidencia «línea 1» tiene a qué apuntar
+    regla = (anexo / "expressionRule" / "DEM_ER_EsAdmin.md").read_text(encoding="utf-8")
+    assert "### Bloque 1: `expression`" in regla and "\n1  =or(loggedInUser()" in regla, regla
+    site = (anexo / "site" / "DEM_Portal_Solicitudes.md").read_text(encoding="utf-8")
+    assert "\n1  a!isUserMemberOfGroup(loggedInUser(), cons!DEM_ADMIN_GROUP)" in site, site
+    # las de un nodo de proceso se citan por su nodo (nodes[id=N]) y se quedan en la definición
+    assert '"expression": "{pv!record}"' in (anexo / "processModel" / "DEM_Alta_Solicitud.md").read_text(encoding="utf-8")
     alta_txt = (anexo / "processModel" / "DEM_Alta_Solicitud.md").read_text(encoding="utf-8")
     assert "| 3 | Sub-Process (`internal3.subprocess`) |" in alta_txt or "| 3 | `internal3.subprocess` |" in alta_txt
     erp = (anexo / "connectedSystem" / "DEM_CS_ERP.md").read_text(encoding="utf-8")

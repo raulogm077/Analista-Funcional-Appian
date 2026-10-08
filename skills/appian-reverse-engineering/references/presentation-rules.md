@@ -1,8 +1,10 @@
 # Reglas de presentación
 
-Cómo se escribe **cada** entregable de `<salida>/`. Son la única fuente de estructura y estilo: las plantillas de `assets/markdown-templates/` las concretan para cada documento y los ficheros de agente dicen **qué** analizar, no cómo maquetar.
+Cómo se escribe **cada** entregable de `<salida>/`. Son la única fuente de estructura, evidencia y marcas: las plantillas de `assets/markdown-templates/` las concretan para cada documento y los ficheros de agente dicen **qué** analizar, no cómo maquetar.
 
-**Precedencia** (si aun así algo choca): la **plantilla** manda en la estructura del documento; el **fichero del agente** manda en el contenido y el criterio de análisis; estas reglas mandan en el estilo y los límites. Si encuentras un choque, aplica este orden y anótalo en tu informe al orquestador.
+**Prosa.** Sigue las reglas comunes del plugin, en `appian-functional-analyst/references/redaccion.md` (junto a esta skill: `<skill>/../appian-functional-analyst/references/redaccion.md`): frases cortas de una idea, concretas, cada cosa una sola vez, sin relleno ni muletillas. Lo que allí es solo del DF (nada de Appian, perfiles y no personas, negrita) no vale aquí: los objetos y los usuarios de la aplicación se nombran tal cual.
+
+**Precedencia** (si aun así algo choca): la **plantilla** manda en la estructura del documento; el **fichero del agente** manda en el contenido y el criterio de análisis; estas reglas mandan en la presentación y los límites. Si encuentras un choque, aplica este orden y anótalo en tu informe al orquestador.
 
 ---
 
@@ -12,6 +14,8 @@ Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no e
 
 ```markdown
 # <Título>
+
+> **Responde a:** <las preguntas de su plantilla, tal cual>
 
 > **TL;DR**: <2-3 frases: qué es y lo más importante que debe saber el lector>.
 > **Volumen**: <cifras que sitúan el documento>. **Hallazgos**: <N (Alta: n)> — principales: [H-PRO-01](#hallazgos), … (o «sin hallazgos»).
@@ -26,14 +30,15 @@ Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no e
 <solo los del área de este documento (ver execution-principles.md, «Registro de hallazgos»)>
 
 ## Cobertura y límites
-<1-5 líneas: qué no se pudo obtener o verificar en este documento y por qué. Lo global está en LEEME (Regla 8)>
+<1-5 líneas: qué no se pudo obtener o verificar en este documento y por qué, con su NV si lo tiene. Lo global está en LEEME (Regla 8)>
 ```
 
+- «Responde a» lleva las preguntas de la plantilla del documento, copiadas tal cual. Lo que no responde a ninguna de ellas no va en el documento.
 - El TL;DR es el **único** resumen del documento. No añadas «Resumen rápido», «Resumen» ni otro TL;DR más abajo.
 - La plantilla puede concretar el nombre de una sección («Vista: mapa de procesos») o subdividirla (`## Detalle: datos`…), pero no cambiar el orden.
 - `09` añade «Registro de hallazgos» tras sus Hallazgos.
 - Encabezados sin emojis.
-- `00-resumen-ejecutivo.md`, `LEEME.md` e `INVENTARIO.md` tienen su propia estructura en la plantilla; también empiezan por el TL;DR.
+- `LEEME.md` (la entrada a la documentación: resumen y guía de lectura) e `INVENTARIO.md` tienen su propia estructura en la plantilla; también empiezan por «Responde a» y el TL;DR.
 
 ## Regla 2: diagrama, luego tabla, luego prosa
 
@@ -79,7 +84,7 @@ Todas las fichas de un mismo tipo tienen los mismos campos en el mismo orden:
 
 <Notas (si aplica, 3-5 líneas)>
 
-Evidencia: [`mcp:<tipo>/<nombre>[@<rol>]#<ubicación>`](./anexo/<tipo>/<slug>.md) · Certeza: ✅/🔵/❓
+Evidencia: [`mcp:<tipo>/<nombre>[@<rol>]#<ubicación>`](./anexo/<tipo>/<slug>.md) · Certeza: ✅/🔶/❓
 ```
 
 Toda evidencia, en las fichas y en las columnas «Evidencia» de las tablas (también las de Hallazgos), enlaza la ficha del objeto en el anexo para que el lector la compruebe: `` [`mcp:<tipo>/<nombre>#<ubicación>`](./anexo/<tipo>/<slug>.md) ``; las de `graph:`, `./anexo/grafo.md`. Desde `08-procesos-bpmn/`, `../anexo/…`. Con el enlace en la evidencia, la ficha no repite otro «Definición» al anexo.
@@ -94,7 +99,7 @@ Cada cosa se documenta una vez, en su documento propietario (ver `execution-prin
 La integración `INT_SAP_Crear` la llama `PM_GestionExpedientes` ([ficha](./05-integraciones-consumidas.md#int_sap_crear--sap-crear-expediente)).
 ```
 
-No dupliques fichas. `00-resumen-ejecutivo.md` cita lo clave en una línea y enlaza.
+No dupliques fichas. `LEEME.md` cita lo clave en una línea y enlaza. Lo que es de Appian (qué es un record type, qué tipos heredan la seguridad de su carpeta) no se explica: se enlaza su página de la documentación oficial.
 
 ## Regla 7: marcas
 
@@ -103,19 +108,21 @@ No dupliques fichas. `00-resumen-ejecutivo.md` cita lo clave en una línea y enl
 | Marca | Significado |
 |---|---|
 | ✅ | Verificado: la definición o la respuesta lo muestra directamente. |
-| 🔵 | Inferido: se deduce de evidencia indirecta; di en una línea de qué. |
-| ❓ | Pendiente: depende de un dato que la extracción no trae o de validarlo con negocio; di quién debe validarlo. |
+| 🔶 | Inferido: se deduce de evidencia indirecta; di en una línea de qué. |
+| ❓ | Pendiente: depende de un dato que la extracción no trae o de validarlo con negocio; di quién debe validarlo y, si tiene NV, cítalo: «❓ [NV-ARQ-01](./LEEME.md#sin-verificar)». |
 
-**Severidad** (solo de hallazgos), con palabra: **Alta** (rompe un requisito de negocio o de seguridad, pierde datos o expone credenciales: actuar ya), **Media** (degrada mantenimiento, rendimiento o control: planificar), **Baja** (mejora o higiene).
+Lo que no se encontró dice dónde se buscó: «no encontrado en la aplicación» (o en el entorno, o en la respuesta de una herramienta), nunca «no existe» ni «no hay ningún».
 
-No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). Una buena práctica se dice con palabras («buena práctica»), no con ✅. Los emojis temáticos de los diagramas Tipo C (👤, 🔌, 💾…) son parte de la notación y sí se usan.
+**Severidad** (solo de hallazgos), con palabra, según su riesgo: **Alta** (rompe un requisito de negocio o de seguridad, pierde datos o expone credenciales), **Media** (degrada el mantenimiento, el rendimiento o el control), **Baja** (higiene: nombres, tamaño, restos sin uso). La severidad dice cuánto riesgo hay, no qué hacer.
+
+No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). ✅ es certeza, no una valoración: no marca que algo esté bien hecho. Los emojis temáticos de los diagramas Tipo C (👤, 🔌, 💾…) son parte de la notación y sí se usan.
 
 ## Regla 8: lo que el lector no debe ver
 
-- **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts, códigos internos de patrones (`DAT-02`) ni «heurística de la skill». Nombra la buena práctica y su fuente oficial.
+- **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts ni «heurística de la skill». Lo que sale de la documentación de Appian lleva su `Fuente: <URL>`.
 - **Notas de parche**: nunca «01 todavía dice…», «esto matiza a…», «corrige lo que dice X». Si otro documento está mal, se corrige ese documento (pasada de coherencia de la fase 6).
 - **`<trabajo>/`** (`extraccion/`): los entregables no lo enlazan ni escriben su ruta (son datos en bruto). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
-- **Limitaciones globales** (entorno no productivo, versión no determinada, muestra de ejecuciones, configuración que el Dev MCP no devuelve): se explican una vez en `LEEME.md`. Cada documento cita en su «Cobertura y límites» solo las que cambian lo que dice, en una línea. Donde una cifra dependa de ellas (p. ej. ejecuciones en un entorno que no consta como producción), no repitas la explicación: usa la marca corta «orientativo (ver [LEEME](./LEEME.md))» (`../LEEME.md` desde `08-procesos-bpmn/`), una vez por tabla o sección (p. ej. en la cabecera de la columna).
+- **Limitaciones globales** (entorno no productivo, versión no determinada, muestra de ejecuciones, configuración que el Dev MCP no devuelve): se explican una vez, en «Qué no incluye» de `LEEME.md`, y solo las que son verdad en esta extracción. Cada documento cita en su «Cobertura y límites» solo las que cambian lo que dice, en una línea. Donde una cifra dependa de ellas (p. ej. ejecuciones en un entorno que no consta como producción), no repitas la explicación: usa la marca corta «orientativo (ver [LEEME](./LEEME.md))» (`../LEEME.md` desde `08-procesos-bpmn/`), una vez por tabla o sección (p. ej. en la cabecera de la columna).
 
 ## Regla 9: longitud
 
@@ -125,8 +132,7 @@ Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal 
 
 | Entregable | Objetivo | Máximo |
 |---|---|---|
-| `LEEME.md` | 1-2 pantallas | 3 |
-| `00-resumen-ejecutivo.md` | 1-2 pantallas | 3 |
+| `LEEME.md` | 2 pantallas | 3 |
 | `01-funcional.md` | 1 + ½ por caso de uso | 1 + 1 por caso de uso |
 | `02-arquitectura.md` | 2-3 | 5 |
 | `03-modelo-datos.md` | 1 + ½ por entidad | 1 por entidad |
@@ -141,13 +147,16 @@ Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal 
 
 ## Checklist antes de escribir cada documento
 
-- [ ] Empieza por el TL;DR (≤ 5 líneas) y no hay otro resumen.
-- [ ] Orden Vista → Detalle → Hallazgos → Cobertura; sin secciones vacías.
+- [ ] Empieza por «Responde a» (las preguntas de su plantilla) y el TL;DR (≤ 5 líneas); no hay otro resumen.
+- [ ] Todo lo que lleva responde a alguna de sus preguntas; nada explica qué es un objeto de Appian (se enlaza).
+- [ ] Orden Vista → Detalle → Hallazgos → Cobertura (LEEME e INVENTARIO, el de su plantilla); sin secciones vacías.
 - [ ] Tablas ≤ 8 columnas; Vista ≤ 15 filas; celdas ≤ 100 caracteres (salvo Evidencia).
 - [ ] Cada diagrama una sola vez y legible al ancho de página.
-- [ ] Solo ✅/🔵/❓ como certeza y Alta/Media/Baja como severidad.
-- [ ] Hallazgos solo de tu área, con ID del registro.
+- [ ] Solo ✅/🔶/❓ como certeza y Alta/Media/Baja como severidad; cada ❓ con su NV cuando lo tiene.
+- [ ] Lo que no se encontró dice dónde se buscó; ningún «no existe».
+- [ ] Hallazgos solo de tu área, con ID del registro: qué pasa y qué riesgo tiene, sin decir qué hacer.
 - [ ] Sin referencias a la skill, sin notas de parche, sin enlaces a `<trabajo>/`.
 - [ ] Sin placeholders (`{{`, `TODO`, `TBD`, `xxx`, `lorem`).
-- [ ] Cada ficha con evidencia y certeza; cada evidencia enlaza su ficha del anexo.
+- [ ] Prosa como dice `redaccion.md`: sin muletillas, frases de 35 palabras como mucho y ningún párrafo copiado de otro documento.
+- [ ] Cada ficha con evidencia y certeza, y cada tabla con «Certeza» con su columna «Evidencia»; cada evidencia enlaza su ficha del anexo.
 - [ ] Ninguna ficha recortada u omitida por longitud.

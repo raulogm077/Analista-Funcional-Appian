@@ -11,6 +11,7 @@ Qué mira:
   proyecto (proyecto.md, fuentes/, analisis/, as-is/, refactorizacion/ o prototipo/): van en pruebas/<skill>/;
 - que ninguna skill lleve la marca de un cliente: un brand-*.json que no sea brand-appian.json (la estándar de Appian)
   o un logo (MARCA_NEUTRA, LOGO e IMAGENES dicen qué es cada cosa); van en <p>/prototipo/ de su proyecto;
+- que ninguna skill use como marca el círculo azul (MARCA_ANTIGUA): la de inferido es 🔶, la misma en todas;
 - que las skills que se citan existan en el plugin (o estén en EXTERNAS); el README cita además el nombre anterior de
   una skill (ANTERIORES), para retirar sus copias sueltas;
 - que existan los ficheros que cita cada SKILL.md y las rutas de una skill a otra;
@@ -26,6 +27,7 @@ las pruebas de este repositorio.
 Sale con 1 si hay errores.
 """
 import argparse
+import ast
 import importlib.util
 import json
 import os
@@ -72,6 +74,10 @@ MARCA = re.compile(r"^brand-.+\.json$", re.I)
 LOGO = re.compile(r"^(logo(tipo)?|isotipo|imagotipo|s[ií]mbolo|symbol)([-_.]|$)", re.I)
 IMAGENES = (".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico")
 NO_VAN_EN_EL_PAQUETE = (".git", ".github", ".claude", "docs", "pruebas", "CLAUDE.md")
+# La marca de inferido es 🔶 en todas las skills (la del analista); el círculo azul era la de ingeniería inversa. Se
+# mira en los textos que escriben marcas: documentos, plantillas, scripts y datos.
+MARCA_ANTIGUA = "\U0001F535"
+TEXTOS = (".md", ".py", ".json", ".sh", ".txt", ".html")
 
 errores, avisos = [], []
 
@@ -107,6 +113,30 @@ def comprobar_contenido(nombres):
             elif f.suffix.lower() in IMAGENES and LOGO.match(f.stem):
                 errores.append(f"{ruta}: un logo es de la marca de un cliente y va en prototipo/ de su proyecto, junto a su "
                                "brand-<id>.json; la marca estándar de Appian no lleva logo")
+            if f.suffix.lower() in TEXTOS:
+                lineas = (base / f).read_text(encoding="utf-8", errors="replace").splitlines()
+                azules = [str(i) for i, linea in enumerate(lineas, 1) if MARCA_ANTIGUA in linea]
+                if azules:
+                    errores.append(f"{ruta}:{','.join(azules[:5])}: usa {MARCA_ANTIGUA} como marca; la de inferido es 🔶, "
+                                   "la misma en todas las skills")
+    for py in sorted(SKILLS.glob("*/scripts/*.py")):
+        if py.parts[-3] in nombres and (falta := sin_bytecode(py)):
+            errores.append(f"{py.relative_to(RAIZ).as_posix()}:{falta}: importa un módulo de su carpeta sin "
+                           "«sys.dont_write_bytecode = True» antes: dejaría __pycache__ dentro del plugin, fuera del proyecto")
+
+
+def sin_bytecode(py: Path) -> int | None:
+    """La línea del primer import de un módulo de la misma carpeta si no va antes «sys.dont_write_bytecode = True»."""
+    locales = {p.stem for p in py.parent.glob("*.py")} - {py.stem}
+    arbol = ast.parse(py.read_text(encoding="utf-8"))
+    lineas = [n.lineno for n in ast.walk(arbol)
+              if (isinstance(n, ast.Import) and any(a.name.split(".")[0] in locales for a in n.names))
+              or (isinstance(n, ast.ImportFrom) and n.level == 0 and (n.module or "").split(".")[0] in locales)]
+    marca = [n.lineno for n in arbol.body if isinstance(n, ast.Assign) and ast.unparse(n).replace(" ", "")
+             == "sys.dont_write_bytecode=True"]
+    if lineas and not (marca and marca[0] < min(lineas)):
+        return min(lineas)
+    return None
 
 
 def anota_prueba(nombre, r, ruta, pytest=False):
@@ -191,6 +221,14 @@ def probar_comprobador(nombres):
             c, out = comprueba()
             espera(c == 1 and nombre in out and "prototipo/" in out, f"una skill con assets/{nombre} no da error", out)
             marca.unlink()
+        # la marca de inferido es 🔶 en todas las skills; la de antes, el círculo azul, es un error
+        nota = skill / "references" / "marca-antigua.md"
+        nota.parent.mkdir(exist_ok=True)
+        nota.write_text(f"# Marcas\n\n{MARCA_ANTIGUA} inferido\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "marca-antigua.md:3" in out and "🔶" in out,
+               "una skill que usa como marca el círculo azul no da error", out)
+        nota.unlink()
         # el nombre anterior de una skill solo lo cita el README (para retirar las copias sueltas); un SKILL.md, no
         doc = skill / "SKILL.md"
         original = doc.read_text(encoding="utf-8")
@@ -217,6 +255,16 @@ def probar_comprobador(nombres):
         espera(c == 1 and "la orden zip no deja fuera pruebas/*" in out,
                "una orden zip del README que mete pruebas/ en el paquete no da error", out)
         readme.write_text(texto, encoding="utf-8")
+        # un script que importa otro de su carpeta deja __pycache__ en el plugin si no lo evita
+        scripts = skill / "scripts"
+        scripts.mkdir(exist_ok=True)
+        (scripts / "zz_modulo.py").write_text("X = 1\n", encoding="utf-8")
+        (scripts / "zz_usa.py").write_text("import sys\nimport zz_modulo\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "zz_usa.py:2" in out and "dont_write_bytecode" in out,
+               "un script que importa un módulo de su carpeta sin dont_write_bytecode no da error", out)
+        (scripts / "zz_modulo.py").unlink()
+        (scripts / "zz_usa.py").unlink()
         # --completo --plugin pasa las pruebas del repositorio a la copia: con sus scripts rotos, ninguna pasa
         # (si falta un requisito, como pytest sin uv, esa prueba no se completa, pero tampoco pasa)
         for py in (copia / "skills").rglob("*.py"):

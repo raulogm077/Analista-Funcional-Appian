@@ -12,6 +12,7 @@ Sale con código 1 si hay errores. Los avisos no bloquean. Con --anterior y --co
 por el cliente (su 'ref' lleva uno de esos IDs) o un diálogo que abre es error.
 """
 import json, re, sys, argparse
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from pathlib import Path
 from entorno import utf8_stdio
 

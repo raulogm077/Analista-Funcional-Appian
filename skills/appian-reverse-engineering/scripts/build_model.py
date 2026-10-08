@@ -10,13 +10,18 @@ Crea  <trabajo>/inventory.json y graph.json (rutas "path" relativas a <trabajo>)
 No depende de nombres de herramientas: cada fichero lleva en _meta.role el papel que le asigno la
 politica (definition, dependents, dependencies, versions, history, validation, screen, members, other)
 y el contenido se interpreta de forma tolerante (claves alternativas, respuestas envueltas).
+Los objetos de fuera de la aplicacion son nodos externos del grafo (external: true): los que traen las herramientas
+de dependencias, con su uuid, y los que una definicion llama con rule! o cons! y no estan en la aplicacion, sin uuid
+(su id es la referencia, p. ej. rule!X). Si una herramienta de dependencias trajo uno de estos, es el mismo nodo.
 Solo usa la biblioteca estandar.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 import unicodedata
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -39,26 +44,34 @@ SECRET_NAME = re.compile(r"(?i)(token|secret|passw|pwd|api[_\-]?key|credential|p
 SECRET_VALUE = re.compile(r"sk_(live|test)_\w+|AKIA[0-9A-Z]{16}|(?i:bearer)\s+\S{8,}|-----BEGIN|eyJ[\w\-]{10,}\.[\w\-]{10,}"
                           r"|\b[A-Fa-f0-9]{32,}\b|\b[A-Za-z0-9+/]{40,}={0,2}")
 DATE_RX = re.compile(r"^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?)?")
+SLUG_MAXIMO = 48            # como el nombre de una herramienta (devmcp_extract.safe_name): rutas cortas en Windows
+LLAMADO_CON_RULE = "llamado con rule!"   # tipo de un rule! de fuera: regla, interfaz, integracion o decision
 
 
 # --------------------------------------------------------------------------- utilidades
 
-def slugify(name: str | None) -> str:
-    """Nombre de fichero estable para documentos por objeto: sin acentos, solo [A-Za-z0-9_-]."""
+def slugify(name: str | None, maximo: int = SLUG_MAXIMO) -> str:
+    """Nombre de fichero estable para documentos por objeto: sin acentos, solo [A-Za-z0-9_-]. Nombra
+    anexo/<tipo>/<slug>.md, 08-procesos-bpmn/<slug>.* y extraccion/procesos/<slug>.json: si no cabe, se recorta y
+    lleva 8 hex del sha1 del nombre, para que dos nombres largos no se pisen (como devmcp_extract.safe_name)."""
     s = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode("ascii")
     s = re.sub(r"[^A-Za-z0-9_-]+", "_", s).strip("_")
-    return s or "sin_nombre"
+    if not s:
+        return "sin_nombre"
+    if len(s) <= maximo:
+        return s
+    return f"{s[:maximo - 9]}-{hashlib.sha1(name.encode('utf-8')).hexdigest()[:8]}"
 
 
 def desambiguar_slugs(objs: list[dict]) -> None:
     """Dos objetos del mismo tipo con el mismo slug (sin distinguir mayúsculas, como en Windows) se pisarían en
-    el anexo y en 08: a los dos se les añade el principio de su uuid."""
+    el anexo y en 08: a los dos se les añade el principio de su uuid, sin pasar del tope."""
     vistos: dict[tuple[str, str], int] = defaultdict(int)
     for o in objs:
         vistos[(o["type"], o["slug"].lower())] += 1
     for o in objs:
         if vistos[(o["type"], o["slug"].lower())] > 1:
-            o["slug"] = f'{o["slug"]}_{re.sub(r"[^A-Za-z0-9]", "", o["uuid"])[:8]}'
+            o["slug"] = f'{o["slug"][:SLUG_MAXIMO - 9]}_{re.sub(r"[^A-Za-z0-9]", "", o["uuid"])[:8]}'
 
 
 def load(p: Path) -> Any:
@@ -328,10 +341,34 @@ def ref_type(src_type: str, dst_type: str) -> str:
         return {"processModel": "subProcess", "constant": "constValue"}.get(src_type, "startProcess")
     if dst_type == "integration":
         return "integrationCall"
-    if dst_type in ("expressionRule", "interface", "decision"):
+    if dst_type in ("expressionRule", "interface", "decision", LLAMADO_CON_RULE):
         return "viewRef" if (src_type == "recordType" and dst_type == "interface") else "ruleRef"
     return {"recordType": "recordTypeRef", "connectedSystem": "connectedSystemRef", "group": "groupRef",
             "cdt": "typeRef", "site": "siteRef", "webApi": "webApiRef"}.get(dst_type, "ref")
+
+
+def externos_de_dependencias(objs: list[dict], files_by_uuid: dict, by_uuid: dict) -> dict[str, dict]:
+    """Los objetos de fuera de la aplicación que traen las herramientas de dependencias, con su uuid y su tipo
+    canónico. Se reúnen antes que las aristas para unir por nombre los que una definición llama con rule! o cons!."""
+    out: dict[str, dict] = {}
+    for o in objs:
+        for f in files_by_uuid[o["uuid"]]:
+            if not f["ok"] or f["role"] not in ("dependents", "dependencies"):
+                continue
+            for it in items_with_uuid(unwrap(f["response"])):
+                u = pick(it, UUID_KEYS)
+                if u != o["uuid"] and u not in by_uuid:
+                    out.setdefault(u, {"id": u, "type": canon_ext(pick(it, TYPE_KEYS)), "name": pick(it, NAME_KEYS),
+                                       "external": True})
+    return out
+
+
+def externo(external: dict, por_nombre: dict, prefijo: str, nombre: str, tipo: str) -> str:
+    """El nodo de un objeto de fuera que una definición llama por su nombre (rule!X, cons!X): el que trajo una
+    herramienta de dependencias, si lo trajo; si no, uno sin uuid cuyo id es la referencia."""
+    i = por_nombre.get(nombre) or f"{prefijo}{nombre}"
+    external.setdefault(i, {"id": i, "type": canon_ext(tipo), "name": nombre, "external": True})
+    return i
 
 
 class Edges:
@@ -425,8 +462,10 @@ def main(out_dir: str) -> int:
 
     # ---- grafo
     edges = Edges()
-    external: dict[str, dict] = {}
     type_of = {u: o["type"] for u, o in by_uuid.items()}
+    external = externos_de_dependencias(objs, files_by_uuid, by_uuid)
+    ext_por_nombre = {n["name"]: i for i, n in external.items() if n.get("name")}
+    en_la_app = {o.get("name") for o in objs} | {app.get("name")}
     names = {}
     for o in objs:
         if o.get("name") and len(o["name"]) >= 6:
@@ -446,13 +485,10 @@ def main(out_dir: str) -> int:
                     other = pick(it, UUID_KEYS)
                     if other == u:
                         continue
-                    if other not in by_uuid:
-                        external.setdefault(other, {"id": other, "type": str(pick(it, TYPE_KEYS) or "unknown"),
-                                                    "name": pick(it, NAME_KEYS), "external": True})
                     crumb = pick(it, CRUMB_KEYS)
                     s, t = (other, u) if f["role"] == "dependents" else (u, other)
-                    st = type_of.get(s) or canon_ext(external.get(s, {}).get("type"))
-                    tt = type_of.get(t) or canon_ext(external.get(t, {}).get("type"))
+                    st = type_of.get(s) or external[s]["type"]
+                    tt = type_of.get(t) or external[t]["type"]
                     edges.add(s, t, ref_type(st, tt), f["role"], crumb)
             elif f["role"] == "members" and o["type"] == "group":
                 for it in primary_list(data):
@@ -470,9 +506,15 @@ def main(out_dir: str) -> int:
                 if m.group(1) in rule_callable:
                     t = rule_callable[m.group(1)]
                     edges.add(u, t, ref_type(o["type"], type_of[t]), "name", f"rule!{m.group(1)}")
+                elif m.group(1) not in en_la_app:
+                    t = externo(external, ext_por_nombre, "rule!", m.group(1), LLAMADO_CON_RULE)
+                    edges.add(u, t, ref_type(o["type"], external[t]["type"]), "name", f"rule!{m.group(1)}")
             for m in re.finditer(r"cons!([A-Za-z0-9_]+)", text):
                 if m.group(1) in const_by_name:
                     edges.add(u, const_by_name[m.group(1)], "constRef", "name", f"cons!{m.group(1)}")
+                elif m.group(1) not in en_la_app:
+                    t = externo(external, ext_por_nombre, "cons!", m.group(1), "constant")
+                    edges.add(u, t, "constRef", "name", f"cons!{m.group(1)}")
             for node in walk(unwrap(defn["response"])):
                 if isinstance(node, str) and node in names and names[node] != u:
                     t = names[node]
@@ -546,11 +588,17 @@ def set_criticality(objs: list[dict], edge_list: list[dict]) -> None:
                             "calledBy": len(callers[u]), "callsIntegrations": len(integ[u])}
 
 
+_CAMEL = re.compile(r"[A-Z]+(?=[A-Z][a-z]|\d|$)|[A-Z]?[a-z]+|[A-Z]+|\d+")
+
+
 def canon_ext(t: str | None) -> str:
-    """Tipo canonico aproximado para nodos externos (FREEFORM_RULE -> expressionRule...)."""
+    """Tipo canonico de un nodo externo, el del inventario: FREEFORM_RULE o «Expression Rule» -> expressionRule,
+    CONSTANT -> constant... Un tipo ya canonico (processModel) se queda igual, y LLAMADO_CON_RULE tambien."""
     if not t:
         return "unknown"
-    toks = [x.lower() for x in re.split(r"[_\s]+", t) if x]
+    if t == LLAMADO_CON_RULE:
+        return t
+    toks = [x.lower() for parte in re.split(r"[_\s]+", str(t)) for x in _CAMEL.findall(parte)]
     phrase = " ".join(toks)
     m = {"freeform rule": "expressionRule", "expression rule": "expressionRule", "outbound integration": "integration",
          "data type": "cdt", "web api": "webApi", "rule folder": "folder"}
