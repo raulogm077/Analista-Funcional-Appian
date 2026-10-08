@@ -33,6 +33,7 @@ import fnmatch
 import json
 import re
 import sys
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 import unicodedata
 from pathlib import Path
 from urllib.parse import unquote

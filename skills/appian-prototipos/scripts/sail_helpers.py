@@ -30,6 +30,9 @@ Bloques (cuándo usar cada uno: references/bloques.md; galería: galerias/bloque
 """
 import json  # noqa: F401 (los generadores lo reciben con «from sail_helpers import *»)
 from pathlib import Path  # noqa: F401
+import sys
+
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 
 
 def usar_marca(marca="appian", carpeta=None):

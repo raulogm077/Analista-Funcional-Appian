@@ -16,6 +16,7 @@ import glob
 import pathlib
 import re
 import sys
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import modelo as mo

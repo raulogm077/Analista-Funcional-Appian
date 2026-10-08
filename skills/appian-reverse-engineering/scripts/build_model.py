@@ -21,6 +21,7 @@ import hashlib
 import json
 import re
 import sys
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 import unicodedata
 from collections import Counter, defaultdict
 from datetime import datetime, timezone

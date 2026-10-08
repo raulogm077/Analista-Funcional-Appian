@@ -86,13 +86,24 @@ def modelo_sin_fecha(project):
     return inv, project.load("graph.json")
 
 
+def envejece(project, fecha="2026-01-02T03:04:05+00:00"):
+    """Las respuestas guardadas pasan a ser de `fecha`, como si se hubieran descargado hace tiempo."""
+    for f in (project.interm() / "mcp_raw").rglob("*.json"):
+        d = json.loads(f.read_text(encoding="utf-8"))
+        if isinstance(d, dict) and isinstance(d.get("_meta"), dict):
+            d["_meta"]["fetchedAt"] = fecha
+            f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+
+
 def retomar(project):
     assert "--refresh" not in extrae(project).stdout
     modelo(project)
     antes, llamadas = modelo_sin_fecha(project), len(project.calls_list())
+    assert "--refresh" not in extrae(project).stdout              # recién descargado: no avisa
+    envejece(project)
     p = extrae(project)
     assert len(project.calls_list()) == llamadas                 # no vuelve a pedir lo que ya está
-    assert "--refresh" in p.stdout                               # y avisa de que reutiliza lo descargado
+    assert "--refresh" in p.stdout and "2026-01-02 03:04" in p.stdout   # y avisa, con la fecha, de lo que reutiliza
     modelo(project)
     assert modelo_sin_fecha(project) == antes                    # y el modelo sale igual
 

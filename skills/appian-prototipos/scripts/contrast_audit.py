@@ -12,6 +12,7 @@ Uso:  python3 contrast_audit.py prototipo.html app.json [--screens id1,id2] [--j
 Sale con 1 si hay fallos. Requiere Playwright y un navegador, como smoke_test.py.
 """
 import json, sys, argparse
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from pathlib import Path
 from entorno import utf8_stdio, sync_playwright, launch_browser
 

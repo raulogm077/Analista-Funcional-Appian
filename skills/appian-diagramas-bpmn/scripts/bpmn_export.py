@@ -5,8 +5,10 @@ Conserva: inicio con temporizador o con mensaje, tareas de usuario, de sistema, 
 subproceso y llamada a otro proceso, flujo por defecto, plazos como eventos de borde, participantes
 externos con sus flujos de mensaje y notas unidas a su paso."""
 import re
+import sys
 from xml.sax.saxutils import escape, quoteattr
 
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 import colocacion
 
 ELEMENTO = {

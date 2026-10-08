@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from collections import defaultdict
 from pathlib import Path
 

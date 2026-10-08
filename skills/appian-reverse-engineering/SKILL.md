@@ -48,7 +48,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 1. Ejecuta `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor --json`. Si trae `appsNote` (más de 50 apps), busca la del usuario con `apps --json`.
 2. Comprueba en la sesión:
    - **Docs MCP**: si la sesión tiene sus herramientas (se reconocen como dice «Dudas de Appian»), haz **una** consulta de prueba corta; cuenta para el tope de `references/docs-mcp-usage.md`.
-   - **Appian MCP Server**: si `doctor` dice `no_configurado` pero en la sesión hay herramientas del data fabric de Appian, márcalo «disponible en sesión».
+   - **Appian MCP Server**: si `doctor` dice `no_configurado` y la configuración tiene un Appian MCP Server con otra URL que `<entorno>/mcp`, repite `doctor` con `--mcp-server-name <nombre en la configuración>` (y úsalo también en `datafabric`); si no lo tiene pero en la sesión hay herramientas del data fabric de Appian, márcalo «disponible en sesión».
 3. Muestra al usuario esta tabla (una fila por MCP): **estado · qué se pierde si falta · cómo activarlo** (sección correspondiente de `references/devmcp-setup.md`).
 4. Si el Dev MCP no está `ok`: explica el paso concreto de `devmcp-setup.md` que falta y **detente**.
 5. Con el Dev MCP `ok`, en una sola pregunta:

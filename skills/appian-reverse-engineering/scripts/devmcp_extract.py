@@ -33,6 +33,7 @@ import json
 import os
 import re
 import sys
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -625,6 +626,7 @@ class Extractor:
         self.stats = defaultdict(lambda: defaultdict(int))
         self.escritas: set[Path] = set()   # respuestas guardadas en esta ejecución
         self.anteriores = 0                # respuestas reutilizadas de una ejecución anterior
+        self.mas_antigua = ""              # fetchedAt de la más antigua de ellas
         self.errors: list[dict] = []
         self.disabled: list[dict] = []
         self.tools: list[ToolInfo] = []
@@ -742,11 +744,11 @@ class Extractor:
                 meta = cached.get("_meta", {})
                 if meta.get("ok"):
                     self.stats[ti.name]["cached"] += 1
-                    self.anteriores += f not in self.escritas
+                    self.reusada(f, meta)
                     return CallResult(True, cached.get("response"), None, meta.get("pages", 1))
                 if not meta.get("transient", True) and not self.retry_failed:
                     self.stats[ti.name]["cachedFailed"] += 1
-                    self.anteriores += f not in self.escritas
+                    self.reusada(f, meta)
                     self.errors.append(error_de(ti, scope, obj, meta.get("error")))   # el informe, igual al retomar
                     return CallResult(False, None, meta.get("error"))
             except Exception:
@@ -762,6 +764,15 @@ class Extractor:
         if f:
             self.guarda(f, ti, scope, obj, args, res)
         return res
+
+    def reusada(self, f: Path, meta: dict) -> None:
+        """Cuenta una respuesta guardada por otra ejecución y recuerda la fecha de la más antigua."""
+        if f in self.escritas:
+            return
+        self.anteriores += 1
+        fecha = str(meta.get("fetchedAt") or "")
+        if fecha and (not self.mas_antigua or fecha < self.mas_antigua):
+            self.mas_antigua = fecha
 
     def guarda(self, f: Path, ti: ToolInfo, scope: str, obj: dict | None, args: dict, res: CallResult) -> None:
         """Escribe la respuesta tal cual, con su _meta."""
@@ -1070,8 +1081,10 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
     print(f"Extraccion terminada: {len(objects)} objetos, {ok} respuestas correctas, "
           f"{len(ex.errors)} errores, {len(ex.disabled)} herramientas desactivadas por tipo. "
           f"Informe: {interm / 'extraction_report.json'}")
-    if ex.anteriores:
-        print(f"Reutilizadas {ex.anteriores} respuestas ya descargadas: si la aplicacion ha cambiado desde entonces, "
+    hace_una_hora = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(timespec="seconds")
+    if ex.anteriores and ex.mas_antigua and ex.mas_antigua < hace_una_hora:   # lo de hace un rato (p. ej. plan) no avisa
+        print(f"Reutilizadas {ex.anteriores} respuestas ya descargadas, la mas antigua del "
+              f"{ex.mas_antigua[:16].replace('T', ' ')} (UTC): si la aplicacion ha cambiado desde entonces, "
               f"repite con --refresh.")
     return EXIT_OK
 
