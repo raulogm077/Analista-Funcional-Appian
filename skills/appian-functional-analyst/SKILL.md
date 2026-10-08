@@ -101,7 +101,8 @@ Di el modo al empezar.
    guardando al terminar cada uno. Las preguntas de condiciones de uso (§10) se hacen desde el principio.
 4. **Diagramas.** Lee el `SKILL.md` de `appian-diagramas-bpmn`, describe cada proceso en su formato JSON en
    `analisis/diagramas/<proceso>.json`, con un carril por perfil y los mismos `ACT-nn`, y ejecuta su
-   `diagrama.py crear`. Los estados, con `mermaid-diagrams.md`.
+   `diagrama.py crear`. Los de estados y de datos, en Mermaid con `mermaid-diagrams.md`; los pinta el `mermaid.py`
+   de esa misma skill.
 5. **Prototipo**, si se pide (suele ser con la primera versión del funcional, para validar las pantallas).
    Lo hace `appian-prototipos` a partir del funcional y pone las capturas en las fichas de pantalla.
 6. **Técnico.** Escribe `analisis/tecnico.md` con `tecnico-plantilla.md` cuando el funcional esté estable

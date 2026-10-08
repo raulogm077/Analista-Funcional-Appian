@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Valida y renderiza diagramas Mermaid sin internet.
 
-Usa el mermaid.min.js de la skill appian-diagramas-bpmn (assets/) y un navegador headless:
+Usa el mermaid.min.js de esta skill (assets/) y un navegador headless:
 el Chromium de Playwright si está instalado, o Chrome / Edge del sistema.
 El contenido del diagrama no sale del equipo.
 
 Uso:
-  python3 render_mermaid.py diagrama.mmd [otro.mmd ...] [-o carpeta] [--check] [--svg] [--width 1600]
+  python3 mermaid.py diagrama.mmd [otro.mmd ...] [-o carpeta] [--check] [--svg] [--width 1600]
 
   --check   solo valida la sintaxis (no genera ficheros)
   --svg     además del PNG guarda el SVG
@@ -16,7 +16,7 @@ Código de salida: 0 todo OK, 1 algún diagrama con error de sintaxis, 2 falta u
 import argparse, glob, json, pathlib, sys
 
 HERE = pathlib.Path(__file__).resolve().parent
-MERMAID_JS = HERE.parents[1] / "appian-diagramas-bpmn" / "assets" / "mermaid.min.js"  # el motor lo aporta la skill de diagramas
+MERMAID_JS = HERE.parent / "assets" / "mermaid.min.js"
 
 PAGE = """<!doctype html><html><head><meta charset="utf-8">
 <style>body{margin:0;background:#fff}#out{display:inline-block;padding:16px}</style></head>

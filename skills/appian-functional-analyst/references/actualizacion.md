@@ -152,7 +152,8 @@ cliente no se le vuelve a preguntar.
   con una buena práctica o con la plataforma, se le explica en un PC con la alternativa.
 - **Diagramas**: si cambia el proceso, se pasan solo los cambios a `diagrama.py actualizar` (skill
   `appian-diagramas-bpmn`). Si se niega, alguien editó el `.drawio`: primero `diagrama.py comparar`. Los
-  diagramas de estados se editan en su `.mmd` y se vuelven a pintar con `render_mermaid.py`.
+  diagramas de estados y de datos se editan en su `.mmd` y se vuelven a pintar con `mermaid.py`
+  (`mermaid-diagrams.md`).
 - **decisiones.md**: fila de la versión nueva y filas D nuevas al final.
 - **Versión**: sube 0.1 en funcional y técnico.
 - **Anexo**: `indice.py derivadas <p> --escribir`.
