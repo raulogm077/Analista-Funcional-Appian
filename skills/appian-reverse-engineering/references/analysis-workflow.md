@@ -38,7 +38,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 ## Fase 2 — Extracción
 
-- [ ] `extract` terminado. Si se corta, repetirlo: reanuda desde lo descargado.
+- [ ] `extract` terminado. Si se corta, repetirlo: reanuda desde lo descargado. Si la aplicación ha cambiado desde la extracción que ya hay, o es la de otro entorno, `--refresh`: lo pide todo otra vez.
 - [ ] `extraction_report.json` revisado: `errorCount`, `disabledAfterProbe`, `toolsExcluded`, `callStatsByRole`.
 - [ ] Si en `callStatsByRole.definition` fallan más del 20 % de las llamadas: avisado al usuario antes de seguir.
 - [ ] Data fabric: `datafabric.json` generado (script o sesión, ver `data-fabric.md`) o anotado como no disponible.
@@ -48,7 +48,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 | Síntoma | Causa probable | Qué hacer |
 |---|---|---|
 | Código 13 al arrancar | Sesión SSO caducada o bundle mal instalado | Repetir: se abre el navegador. Si persiste, `devmcp-setup.md`. |
-| Código 15 | Aplicación no encontrada o ambigua, o la carpeta ya tiene otra aplicación | Usar el uuid o el prefijo exacto de `doctor`; para otra aplicación, otra `<salida>`. |
+| Código 15 | Aplicación no encontrada o ambigua, o la carpeta ya tiene otra aplicación u otro entorno | Usar el uuid o el prefijo exacto de `doctor`; para otra aplicación, otra `<salida>`; para otro entorno, otra `<salida>` o `--refresh`. |
 | Muchas llamadas de un tipo desactivadas | La herramienta no admite ese tipo | Normal. Aparece en el informe y en `INVENTARIO`. |
 | Timeouts | Entorno lento | `--concurrency 2` y repetir (reanuda). |
 

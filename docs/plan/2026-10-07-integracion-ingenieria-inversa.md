@@ -386,7 +386,7 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   → FALLA («falta el apartado Dudas de Appian»).
 - [x] **Paso 2:** hacer los cambios de la lista.
 - [x] **Paso 3:** `python3 pruebas/comprobar_plugin.py --completo` → «Prueba de appian-reverse-engineering: bien», 0 errores.
-- [ ] **Paso 4:** commit «F2: ingeniería inversa en la prueba completa del plugin». Cierre de fase: revisión
+- [x] **Paso 4:** commit «F2: ingeniería inversa en la prueba completa del plugin». Cierre de fase: revisión
   independiente de la rama y merge a `main`.
 
 ---

@@ -209,6 +209,14 @@ def probar_comprobador(nombres):
         espera(c == 1 and "appian-docs, que no está en .mcp.json" in out,
                "un .mcp.json sin el servidor appian-docs no da error", out)
         mcp.write_text(config, encoding="utf-8")
+        # la orden zip del README deja fuera lo de desarrollo: sin «pruebas/*», el .plugin llevaría las pruebas
+        readme = copia / "README.md"
+        texto = readme.read_text(encoding="utf-8")
+        readme.write_text(texto.replace(' "pruebas/*"', ""), encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "la orden zip no deja fuera pruebas/*" in out,
+               "una orden zip del README que mete pruebas/ en el paquete no da error", out)
+        readme.write_text(texto, encoding="utf-8")
         # --completo --plugin pasa las pruebas del repositorio a la copia: con sus scripts rotos, ninguna pasa
         # (si falta un requisito, como pytest sin uv, esa prueba no se completa, pero tampoco pasa)
         for py in (copia / "skills").rglob("*.py"):
@@ -359,6 +367,16 @@ def main(completo, plugin=None):
     filas = re.findall(r"^\| (\d+\.\d+\.\d+[\w.-]*) \|", (RAIZ / "README.md").read_text(encoding="utf-8"), re.M)
     if not filas or filas[0] != version:
         errores.append(f"plugin.json dice {version} y la última versión del README es {filas[0] if filas else 'ninguna'}")
+
+    # La orden zip del README, con la que se hace el .plugin, deja fuera lo que no va en el paquete
+    fuera = [n if Path(n).suffix else f"{n}/*" for n in NO_VAN_EN_EL_PAQUETE] + [f"*{c}*" for c in CACHES] + ["*.plugin"]
+    ordenes = re.findall(r"`(zip [^`]+)`", (RAIZ / "README.md").read_text(encoding="utf-8"))
+    if not ordenes:
+        errores.append("README.md: falta la orden zip que hace el .plugin")
+    for orden in ordenes:
+        falta = [f for f in fuera if f'"{f}"' not in orden]
+        if falta:
+            errores.append(f"README.md: la orden zip no deja fuera {', '.join(falta)}")
 
     if completo:
         pruebas_de_las_skills()

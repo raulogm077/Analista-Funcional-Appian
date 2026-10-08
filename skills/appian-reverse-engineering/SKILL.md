@@ -35,7 +35,7 @@ python3 "<skill>/scripts/build_model.py" <salida>
 | Idioma | No | español |
 | Carpeta de salida | No | `<p>/as-is/` si la carpeta tiene `proyecto.md` o el usuario da la del proyecto; si no, `./<PREFIJO>/as-is/` |
 
-**Una carpeta.** Todo va en `<salida>`: los documentos y, en `<salida>/extraccion/` (`<trabajo>`, que los scripts deducen de `<salida>`), la extracción y los datos de trabajo (respuestas, inventario, grafo, cachés, resumen). Se trabaja en entornos controlados y no se oculta nada: la extracción se guarda tal cual la devuelve el Dev MCP, con los usuarios, los datos de la aplicación y los secretos, y con rutas cortas, para que el proyecto quepa en Windows y en OneDrive. Como está en el proyecto, al repetir o retomar la ingeniería inversa, en otra sesión o en otro equipo, no se vuelve a pedir lo que ya está. Los documentos no enlazan `<trabajo>/` y las demás skills no lo leen.
+**Una carpeta.** Todo va en `<salida>`: los documentos y, en `<salida>/extraccion/` (`<trabajo>`, que los scripts deducen de `<salida>`), la extracción y los datos de trabajo (respuestas, inventario, grafo, cachés, resumen). Se trabaja en entornos controlados y no se oculta nada: la extracción se guarda tal cual la devuelve el Dev MCP, con los usuarios, los datos de la aplicación y los secretos, y con rutas cortas, para que el proyecto quepa en Windows y en OneDrive. Como está en el proyecto, al repetir o retomar la ingeniería inversa, en otra sesión o en otro equipo, no se vuelve a pedir lo que ya está. Una carpeta es de una aplicación y un entorno. Los documentos no enlazan `<trabajo>/` y las demás skills no lo leen.
 
 ---
 
@@ -63,7 +63,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 ### Fase 2 — Extracción
 
-1. `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <app> --out <salida>` (añade `--yes` si el usuario confirmó un plan grande). Es reanudable: si se corta, repítelo.
+1. `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <app> --out <salida>` (añade `--yes` si el usuario confirmó un plan grande). Es reanudable: si se corta, repítelo. Para documentar de nuevo una aplicación que ha cambiado desde la extracción que ya hay, o la de otro entorno, añade `--refresh`: lo pide todo otra vez.
 2. Revisa `extraction_report.json`. Si en `callStatsByRole.definition` las fallidas (`failed`) pasan del 20 % del total (`ok` + `failed`), díselo al usuario antes de seguir.
 3. Data fabric (opcional, `references/data-fabric.md`): `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" datafabric --out <salida>` si hay servidor en la configuración; si solo está en la sesión, hazlo desde la sesión; si no, sáltalo.
 

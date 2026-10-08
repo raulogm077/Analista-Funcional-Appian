@@ -20,7 +20,8 @@ Las respuestas se guardan tal cual las devuelve el Dev MCP, con rutas cortas (Wi
 Codigos de salida:
   0 ok | 2 uso incorrecto | 11 Dev MCP no configurado | 12 varias configuraciones posibles
   13 el Dev MCP no arranca o no autentica | 14 no hay aplicaciones visibles
-  15 app no encontrada o ambigua, o la carpeta ya tiene otra app extraida (usa otra --out)
+  15 app no encontrada o ambigua, o la carpeta ya tiene otra app u otro entorno (usa otra --out;
+     para la misma app de otro entorno, tambien --refresh)
   16 Appian MCP Server no disponible (solo datafabric)
 """
 from __future__ import annotations
@@ -590,13 +591,24 @@ def error_de(ti: "ToolInfo", scope: str, obj: dict | None, error: str | None) ->
             "error": error}
 
 
-def aplicacion_extraida(raw: Path) -> dict:
-    """La aplicación que ya está extraída en esta carpeta, según mcp_raw/_objects.json ({} si no hay ninguna)."""
+def extraccion_guardada(raw: Path) -> dict:
+    """mcp_raw/_objects.json de la extracción que ya hay en esta carpeta ({} si no hay ninguna)."""
     try:
-        app = json.loads((raw / "_objects.json").read_text(encoding="utf-8")).get("application")
-    except (OSError, ValueError, AttributeError):
+        d = json.loads((raw / "_objects.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
         return {}
+    return d if isinstance(d, dict) else {}
+
+
+def aplicacion_extraida(raw: Path) -> dict:
+    """La aplicación que ya está extraída en esta carpeta ({} si no hay ninguna)."""
+    app = extraccion_guardada(raw).get("application")
     return app if isinstance(app, dict) else {}
+
+
+def entorno(url: str) -> str:
+    """LCP_URL sin la barra final: así se guarda y se compara el entorno de una extracción."""
+    return (url or "").strip().rstrip("/")
 
 
 class Extractor:
@@ -611,6 +623,8 @@ class Extractor:
         self.skip = re.compile(skip) if skip else None
         self.raw = (work_dir(out, crear=True) / "mcp_raw") if out else None
         self.stats = defaultdict(lambda: defaultdict(int))
+        self.escritas: set[Path] = set()   # respuestas guardadas en esta ejecución
+        self.anteriores = 0                # respuestas reutilizadas de una ejecución anterior
         self.errors: list[dict] = []
         self.disabled: list[dict] = []
         self.tools: list[ToolInfo] = []
@@ -728,9 +742,11 @@ class Extractor:
                 meta = cached.get("_meta", {})
                 if meta.get("ok"):
                     self.stats[ti.name]["cached"] += 1
+                    self.anteriores += f not in self.escritas
                     return CallResult(True, cached.get("response"), None, meta.get("pages", 1))
                 if not meta.get("transient", True) and not self.retry_failed:
                     self.stats[ti.name]["cachedFailed"] += 1
+                    self.anteriores += f not in self.escritas
                     self.errors.append(error_de(ti, scope, obj, meta.get("error")))   # el informe, igual al retomar
                     return CallResult(False, None, meta.get("error"))
             except Exception:
@@ -756,6 +772,7 @@ class Extractor:
             meta.update({"objectUuid": obj["uuid"], "objectName": obj.get("name"), "objectType": obj["type"],
                          "mcpType": obj.get("mcpType")})
         f.parent.mkdir(parents=True, exist_ok=True)
+        self.escritas.add(f)
         f.write_text(json.dumps({"_meta": meta, "response": res.data}, ensure_ascii=False, indent=1, default=str),
                      encoding="utf-8")
 
@@ -1009,6 +1026,10 @@ async def cmd_plan_or_extract(args, execute: bool) -> int:
 
 async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerChoice", inicio: str, t0: float) -> int:
     out, policy = ex.out, ex.policy
+    url, antes = entorno(server_info(choice)["url"]), entorno(extraccion_guardada(ex.raw).get("entorno"))
+    if url and antes and url.lower() != antes.lower() and not ex.refresh:   # misma app, mismo uuid, otro entorno
+        eprint(f"Esta carpeta tiene la extraccion de {antes}: para {url}, usa otra carpeta o repite con --refresh.")
+        return EXIT_APP
     try:
         app_obj, objects, groups = await prepare(ex, args)
     except SystemExit as se:
@@ -1017,7 +1038,7 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
     write_json(interm / "mcp_catalog.json", catalog_json(ex))
     plan = plan_json(ex, app_obj, objects, groups)
     write_json(interm / "extraction_plan.json", plan)
-    write_json(interm / "mcp_raw" / "_objects.json", {"application": app_obj, "objects": objects})
+    write_json(interm / "mcp_raw" / "_objects.json", {"application": app_obj, "entorno": url, "objects": objects})
     if not execute:
         print(json.dumps(plan, ensure_ascii=False, indent=1)) if args.json else print_plan(plan)
         return EXIT_OK
@@ -1049,6 +1070,9 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
     print(f"Extraccion terminada: {len(objects)} objetos, {ok} respuestas correctas, "
           f"{len(ex.errors)} errores, {len(ex.disabled)} herramientas desactivadas por tipo. "
           f"Informe: {interm / 'extraction_report.json'}")
+    if ex.anteriores:
+        print(f"Reutilizadas {ex.anteriores} respuestas ya descargadas: si la aplicacion ha cambiado desde entonces, "
+              f"repite con --refresh.")
     return EXIT_OK
 
 
@@ -1302,7 +1326,7 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--app", required=True, help="uuid, prefijo o nombre de la aplicacion")
         sp.add_argument("--out", required=True, help="Carpeta de salida de la documentacion")
         sp.add_argument("--concurrency", type=int, default=4)
-        sp.add_argument("--refresh", action="store_true", help="Ignora las respuestas ya descargadas")
+        sp.add_argument("--refresh", action="store_true", help="Lo pide todo otra vez: app cambiada u otro entorno")
         sp.add_argument("--retry-failed", action="store_true",
                         help="Reintenta tambien los fallos no transitorios de ejecuciones anteriores")
         sp.add_argument("--retries", type=int, default=2)

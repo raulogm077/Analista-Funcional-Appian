@@ -129,6 +129,11 @@ def brands(tmp, built):
     esperado = ["appian ACCENT", f"{MARCA_PRUEBA['palette']['navy']} {MARCA_PRUEBA['site']['selectedPageHighlightColor']}"]
     probs = [] if code == 0 and lineas[-2:] == esperado else [f"esperaba {esperado} y sale ({code}):\n{salida[-600:]}"]
     out.append(("helpers: marca neutra por defecto y la del proyecto con usar_marca()", probs))
+    # al entregar, el perfil CSS es el que deja build.py junto al HTML, también con una marca hecha a mano (sin marca.py)
+    paso = re.search(r"### 5\. Entregar\n(.*?)(?=\n## |\Z)", (ROOT / "SKILL.md").read_text(encoding="utf-8"), re.S)
+    probs = [] if paso and "`prototipo-<app>-perfil-css.txt`" in paso.group(1) else \
+        ["el paso 5 de SKILL.md no entrega `prototipo-<app>-perfil-css.txt`, el perfil CSS que escribe build.py"]
+    out.append(("entrega: el perfil CSS que escribe build.py, con cualquier marca", probs))
     return out
 
 

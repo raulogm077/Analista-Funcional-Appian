@@ -85,11 +85,12 @@ def modelo_sin_fecha(project):
 
 
 def retomar(project):
-    extrae(project)
+    assert "--refresh" not in extrae(project).stdout
     modelo(project)
     antes, llamadas = modelo_sin_fecha(project), len(project.calls_list())
-    extrae(project)
+    p = extrae(project)
     assert len(project.calls_list()) == llamadas                 # no vuelve a pedir lo que ya está
+    assert "--refresh" in p.stdout                               # y avisa de que reutiliza lo descargado
     modelo(project)
     assert modelo_sin_fecha(project) == antes                    # y el modelo sale igual
 
@@ -153,6 +154,23 @@ def test_otra_aplicacion_en_la_misma_carpeta(project):
     extrae(project)
     p = project.run("plan", "--app", "Otra", "--out", str(project.out), check=15)
     assert "usa otra carpeta" in p.stderr
+
+
+def test_retomar_en_otro_entorno(project):
+    """Una aplicación conserva su uuid en DEV, PRE y PRO: una carpeta, un entorno, salvo con --refresh."""
+    project.add_devmcp(LCP_URL="https://desarrollo.example.com")
+    extrae(project)
+    project.add_devmcp(LCP_URL="https://produccion.example.com/")
+    llamadas = len(project.calls_list())
+    p = extrae(project, check=15)
+    assert "https://desarrollo.example.com" in p.stderr and "--refresh" in p.stderr
+    assert len(project.calls_list()) == llamadas                 # no llama al otro entorno
+    extrae(project, "--refresh")
+    assert len(project.calls_list()) > llamadas                  # lo pide todo de nuevo
+    assert project.load("mcp_raw/_objects.json")["entorno"] == "https://produccion.example.com"
+    llamadas = len(project.calls_list())
+    extrae(project)                                              # ya es de producción: se retoma
+    assert len(project.calls_list()) == llamadas
 
 
 def test_rutas_cortas_con_tipo_largo(tmp_path):
