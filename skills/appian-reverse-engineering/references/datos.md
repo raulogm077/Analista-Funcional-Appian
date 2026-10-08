@@ -50,7 +50,7 @@ Appian.
 ```
 
 Los del registro de `09`, sin los fusionados (`duplicadoDe`), ordenados por ID. `severidad`: Alta, Media o Baja.
-`certeza`: verificado, inferido o pendiente. `documento`: dónde se explica. `objetos`: nombres de `inventario.json`.
+`certeza`: verificado, inferido o pendiente. `documento`: dónde se explica. `objetos`: nombres de `inventario.json` o de `fueraDeLaAplicacion`; `build_datos.py` da error con uno que no esté en ninguno de los dos.
 Los de certeza `inferido` llevan además `base`: las evidencias de las que salen.
 
 ## `procesos.json`

@@ -171,3 +171,13 @@ def test_muletilla_es_aviso(tmp_path):
 def test_ruta_con_espacios(tmp_path):
     base = tmp_path / "Carpeta con espacios" / "Gestión app"
     assert comprueba(as_is(base)) == ([], [])
+
+
+def test_objeto_de_fuera_de_la_aplicacion(tmp_path):
+    """Un objeto de otra aplicación que esta llama (en `fueraDeLaAplicacion`) es un nombre real, aunque lleve el prefijo."""
+    salida = as_is(tmp_path, {"02-arquitectura.md": "# Arquitectura\n\n`DEM_ER_EsAdmin` llama a `DEM_ER_Compartida`, "
+                                                    "que está en otra aplicación.\n"})
+    (salida / "datos" / "dependencias.json").write_text(json.dumps({"aristas": [], "fueraDeLaAplicacion": [
+        {"nombre": "DEM_ER_Compartida", "tipo": "llamado con rule!", "usadoPor": ["DEM_ER_EsAdmin"], "usa": [],
+         "nv": "NV-ARQ-01"}]}, ensure_ascii=False), encoding="utf-8")
+    assert comprueba(salida) == ([], [])

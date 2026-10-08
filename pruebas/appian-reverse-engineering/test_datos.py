@@ -71,3 +71,22 @@ def test_datos_formato(project):
     assert procesos and all(set(p) == {"nombre", "json", "nodos", "ejecuciones"} for p in procesos)
     solicitud = next(o for o in inv["objetos"] if o["nombre"] == "DEM Solicitud")
     assert {"DEM_SOLICITUD", "Resumen"} <= set(solicitud["tambien"])        # la tabla y la vista, con su record type
+
+
+def test_objetos_que_no_estan(project):
+    """Los objetos de un hallazgo tienen que estar en el inventario (o fuera de la aplicación): las demás skills los
+    buscan por nombre. Con uno que no está, error y nada escrito; «cons!»/«rule!» delante no cuentan."""
+    datos = flujo(project)
+    registro = project.interm() / "hallazgos" / "prueba.json"
+    lista = json.loads(registro.read_text(encoding="utf-8"))
+    lista.append(hallazgo("H-SEG-04", objetos=["cons!DEM_ERP_API_TOKEN"]))
+    registro.write_text(json.dumps(lista, ensure_ascii=False), encoding="utf-8")
+    corre(REGISTRO, project.out)
+    corre(DATOS, project.out)                                           # «cons!» delante: el mismo objeto
+    lista.append(hallazgo("H-SEG-05", objetos=["DEM_ER_Inventada", "DEM Solicitud (record type)"]))
+    registro.write_text(json.dumps(lista, ensure_ascii=False), encoding="utf-8")
+    corre(REGISTRO, project.out)
+    antes = (datos / "hallazgos.json").read_text(encoding="utf-8")
+    p = subprocess.run([sys.executable, str(DATOS), str(project.out)], capture_output=True, text=True, encoding="utf-8")
+    assert p.returncode == 1 and "DEM_ER_Inventada" in p.stderr and "DEM Solicitud (record type)" in p.stderr, p.stderr
+    assert (datos / "hallazgos.json").read_text(encoding="utf-8") == antes   # no escribe nada

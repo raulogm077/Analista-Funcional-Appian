@@ -664,7 +664,7 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   entregables del SKILL.md, publicadores y pruebas de las Tareas 8 y 8b— y se repite el Paso 2. Las secciones de la
   Tarea 8b van al documento que quede, y `build_datos.py` escribe en él. Si se unen LEEME y 00, cambian también
   `scripts/comprobar_asis.py` y `test_comprobar_asis.py::test_cifra_distinta`, que buscan las cifras en `00`.
-- [ ] **Paso 4:** commit. Cierre de fase: revisión y merge.
+- [x] **Paso 4:** commit. Cierre de fase: revisión y merge.
 
 ---
 

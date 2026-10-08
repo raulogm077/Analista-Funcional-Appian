@@ -149,3 +149,14 @@ def test_texto_fijo_sin_avisos():
     textos["otro proceso"] = sin_comentarios(fijo((CARPETA / PROCESO).read_text(encoding="utf-8"), "otro"))
     avisos += [f"párrafo repetido en {' y '.join(n)}: «{par[:60]}…»" for par, n in rd.parrafos_repetidos(textos)]
     assert avisos == []
+
+
+def test_por_entorno_separa_marca_y_dependencia():
+    """09: que el valor dependa del entorno y que la constante tenga la marca «Environment Specific» son dos columnas
+    (con una sola, un lector concluía que una URL de preproducción sin la marca no cambia por entorno)."""
+    texto = sin_comentarios((CARPETA / "09-valor-adicional.md").read_text(encoding="utf-8"))
+    tabla = next(cab for _, cab, _ in ca.tablas(ca.lineas(texto)) if "Valor en este entorno" in cab)
+    assert "Depende del entorno" in tabla and "Marca de entorno" in tabla and "Por entorno" not in tabla, tabla
+    assert len(tabla) <= 8
+    guia = (SKILL / "references" / "analysis-workflow.md").read_text(encoding="utf-8")
+    assert "«Depende del entorno»" in guia and "«Marca de entorno»" in guia and "«Por entorno»" not in guia

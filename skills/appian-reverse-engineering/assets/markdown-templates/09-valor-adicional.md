@@ -45,15 +45,18 @@
 <!--
   Lo que cambia entre entornos: la URL base y las credenciales de cada connected system, y las constantes con URLs,
   hosts, identificadores o interruptores de entorno (DEV/PRE/PRO). Solo se ve el valor del entorno extraído.
-  «Por entorno»: Sí (connected system, o constante marcada «Environment Specific»), No (literal en una expresión o
-  constante sin la marca) o ❓ (la definición no lo dice). Certeza: la de que el valor dependa del entorno (🔶 si solo
-  lo dice el valor). «Hallazgo»: el H-SEG de 04 si el valor es un secreto; el H-INT de 05 si apunta a otro entorno.
+  Dos columnas que no se mezclan: «Depende del entorno» (Sí: su valor es propio de un entorno, como una URL, un host
+  o una credencial; No: es el mismo en todos) y «Marca de entorno» (Sí: connected system o constante marcada
+  «Environment Specific»; No: constante sin la marca o literal en una expresión; ❓: la definición no lo dice).
+  Una constante que depende del entorno sin la marca es justo lo que hay que ver. Certeza: la de que el valor
+  dependa del entorno (🔶 si solo lo dice el valor). «Hallazgo»: el H-SEG de 04 si el valor es un secreto; el H-INT
+  de 05 si apunta a otro entorno. La propiedad de un connected system va con su nombre («URL base»).
 -->
 
-| Objeto | Propiedad | Valor en este entorno | Por entorno | Usado por | Hallazgo | Certeza | Evidencia |
+| Objeto | Valor en este entorno | Depende del entorno | Marca de entorno | Usado por | Hallazgo | Certeza | Evidencia |
 |---|---|---|---|---|---|---|---|
-| `{{CS_SAP}}` | URL base | `{{https://sap.example.org/sap/api/v1}}` | Sí | {{2}} integraciones | — | ✅ | [`mcp:connectedSystem/{{CS_SAP}}#baseUrl`](./anexo/connectedSystem/{{slug}}.md) |
-| `{{constante}}` | Valor | `{{valor}}` | ❓ | {{N}} objetos | {{[H-INT-01](./05-integraciones-consumidas.md#hallazgos) o «—»}} | 🔶 | [`mcp:constant/{{constante}}#value`](./anexo/constant/{{slug}}.md) |
+| `{{CS_SAP}}` (URL base) | `{{https://sap.example.org/sap/api/v1}}` | Sí | Sí | {{2}} integraciones | — | ✅ | [`mcp:connectedSystem/{{CS_SAP}}#baseUrl`](./anexo/connectedSystem/{{slug}}.md) |
+| `{{constante}}` | `{{valor}}` | Sí | {{No}} | {{N}} objetos | {{[H-INT-01](./05-integraciones-consumidas.md#hallazgos) o «—»}} | 🔶 | [`mcp:constant/{{constante}}#value`](./anexo/constant/{{slug}}.md) |
 
 ### Objetos huérfanos
 

@@ -171,7 +171,8 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
     app = inv.get("aplicacion") or {}
     prefijo = app.get("prefijo")
     conocidos = {app.get("nombre")} | {o.get("nombre") for o in inv.get("objetos", [])} | \
-                {t for o in inv.get("objetos", []) for t in o.get("tambien", [])}
+                {t for o in inv.get("objetos", []) for t in o.get("tambien", [])} | \
+                {f.get("nombre") for f in _json(salida / "datos" / "dependencias.json").get("fueraDeLaAplicacion", [])}
     nvs = {n.get("id") for n in _json(salida / "datos" / "sin-verificar.json").get("sinVerificar", [])}
     detalle: dict[str, set] = {}
     for lista in (_json(work_dir(salida) / "inventory.json").get("objects") or {}).values():

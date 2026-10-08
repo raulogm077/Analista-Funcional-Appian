@@ -129,7 +129,8 @@ def test_sin_verificar_formato(project):
     con un id, un estado o un «qué hace falta» fuera de formato, build_datos.py da error y no toca nada."""
     salida = flujo_dem(project)
     prueba = project.interm() / "sin-verificar" / "prueba.json"
-    escribe(prueba, [nv(), nv("NV-ARQ-02", duplicadoDe="NV-ARQ-01")])
+    solo_dem = {"objetos": ["DEM_SolicitudForm"]}            # en DEM no hay ningún objeto de fuera de la aplicación
+    escribe(prueba, [nv(**solo_dem), nv("NV-ARQ-02", duplicadoDe="NV-ARQ-01", **solo_dem)])
     corre(DATOS, salida)
     datos = json.loads((salida / "datos" / "sin-verificar.json").read_text(encoding="utf-8"))
     assert [n["id"] for n in datos["sinVerificar"]] == ["NV-ARQ-01"]                  # sin el duplicado
@@ -307,7 +308,9 @@ def test_marca_de_inferido(tmp_path):
     assert registro["hallazgos"][0]["certeza"] == "inferido" and registro["porCerteza"]["inferido"] == 1
     assert ("| H-ARQ-01 | Tres objetos sin referencias entrantes | arquitectura | Media | 🔶 |"
             in (salida / "09-valor-adicional.md").read_text(encoding="utf-8"))
-    escribe(trabajo / "inventory.json", {"objects": {"application": [{"name": "DEM", "prefix": "DEM", "uuid": "u"}]}})
+    escribe(trabajo / "inventory.json", {"objects": {"application": [{"name": "DEM", "prefix": "DEM", "uuid": "u"}],
+                                                      "recordType": [{"name": "DEM Solicitud", "type": "recordType",
+                                                                      "uuid": "u-1"}]}})
     corre(DATOS, salida)
     datos = json.loads((salida / "datos" / "hallazgos.json").read_text(encoding="utf-8"))["hallazgos"]
     assert [(h["certeza"], h["base"]) for h in datos] == [("inferido", ["graph:orphans"])]

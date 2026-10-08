@@ -42,20 +42,23 @@ preguntas. «Antes» es la skill en `f3-antes` (4a7a09f, tras la Tarea 7); «des
 | Preguntas visibles | 21/22 (falla Q-21, obligatoria) | 21/22 (Q-21 bien) |
 | Preguntas ocultas | 7/7 | 7/7 |
 | `evidencia.py` | falla: los CMN no salen fuera de la aplicación | bien |
-| `comprobar_asis.py` | 19 errores, 6 avisos | 0 errores, 0 avisos |
+| `comprobar_asis.py` | 19 errores con el de entonces (58 con el de ahora) | 0 errores, 0 avisos |
 | NV registrados | — | 8 |
 | Palabras (total) | 16.741 | 17.293 (+3,3 %) |
 | Palabras sin líneas «Responde a» ni tablas | 7.932 | 7.122 (−10 %) |
 
 - **Criterio: se cumple todo salvo «menos palabras que antes».** Lo que crece son las líneas «Responde a» (523 palabras)
   y las tablas, por la columna de evidencia y el «Para qué» de INVENTARIO, que piden las Tareas 8 y 8b; la prosa baja un
-  10 %. Una primera medida «después», sin el paso 3, tenía 17.741 palabras: unir LEEME y 00 quitó 309.
+  10 %. Una primera medida «después», sin el paso 3, tenía 17.741 palabras (contadas igual que las de la tabla).
 - **Protocolo.** Con la primera instrucción («cada elemento corto»), quien respondía resumió los tres CMN como «las
   reglas CMN_» y Q-21 contaba como fallo aunque LEEME los nombra. La instrucción pasa a pedir cada objeto por su nombre
   (`recien-llegado/README.md`) y las cifras de la tabla son las de las dos medidas respondidas con ella.
-- **Q-10, ambigua en la documentación.** 09 marca «Por entorno: No» en las constantes porque ninguna tiene la marca de
-  Appian, y quien responde concluye que ninguna cambia por entorno, aunque `MNT_URL_ERP_PRE` guarda la URL de
-  preproducción. Queda en «Aplazado».
+- **Q-10, ambigua en la documentación.** 09 marcaba «Por entorno: No» en las constantes porque ninguna tiene la marca
+  de Appian, y quien responde concluía que ninguna cambia por entorno, aunque `MNT_URL_ERP_PRE` guarda la URL de
+  preproducción. Lo introdujo la Tarea 8; la revisión de la fase lo corrige con dos columnas, «Depende del entorno» y
+  «Marca de entorno». Se vuelve a medir en el punta a punta de F9.
+- **El criterio de palabras lo decide Raúl.** Aceptado de forma provisional en el merge (8 de octubre); si prefiere
+  recortar las preguntas de las plantillas, se hace en F4.
 - Proyectos en `$PROYECTOS_PRUEBA`: `MNT-antes/`, `MNT-despues-1/` y `MNT/` (el que usan las Tareas 15 y 22).
 
 ### Lo aprendido
@@ -68,6 +71,11 @@ preguntas. «Antes» es la skill en `f3-antes` (4a7a09f, tras la Tarea 7); «des
   lo que la fase pide. La cifra útil es la prosa, que baja.
 - Con una sola medida por lado, una diferencia de pocos cientos de palabras está dentro de lo que varía de una
   ejecución a otra.
+- La batería tiene techo: 7/7 y 21/22 en los dos lados, y solo Q-21 distingue. Para las Tareas 15 y 22 hacen falta
+  preguntas que «antes» falle.
+- La revisión de la fase, con sondas sobre los proyectos reales, encontró lo que ni las pruebas ni las medidas vieron:
+  una regresión de la propia fase (Q-10), `objetos` sin validar en el contrato de `datos/` y un error falso con los
+  objetos de fuera de la aplicación.
 
 ### Aplazado
 

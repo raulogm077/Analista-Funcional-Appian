@@ -13,8 +13,9 @@ Lo que no se pudo verificar (NV), un fichero por autor en <trabajo>/sin-verifica
   {"id": "NV-ARQ-01", "pregunta", "porQue", "queHaceFalta", "aQuien", "dondeSeBusco", "objetos": [], "indicios",
    "estado": "abierto|parcial|resuelto", "documento": "02-arquitectura.md#…", "duplicadoDe": "NV-…" (opcional)}
 Se validan como los hallazgos en build_registry.py: con un id, un estado o un queHaceFalta fuera de formato, no se
-escribe nada.
-Solo librería estándar. Salida: 0 bien, 1 con NV fuera de formato (se listan), 2 uso o falta el inventario.
+escribe nada. Tampoco si un hallazgo o un NV cita en «objetos» uno que no es del inventario ni de fuera de la
+aplicación («rule!» o «cons!» delante no cuentan): las demás skills los buscan por ese nombre.
+Solo librería estándar. Salida: 0 bien, 1 con NV u objetos fuera de formato (se listan), 2 uso o falta el inventario.
 """
 from __future__ import annotations
 
@@ -128,6 +129,11 @@ def sin_verificar(salida: Path, trabajo: Path) -> list[dict]:
                   key=lambda n: n["id"])
 
 
+def objeto(texto) -> str:
+    """El nombre de un objeto como se cita en «objetos»: sin comillas invertidas ni «rule!»/«cons!» delante."""
+    return re.sub(r"^(rule|cons)!", "", str(texto or "").strip().strip("`").strip())
+
+
 def fuera_de_la_aplicacion(grafo: dict, nombre: dict, nvs: list[dict]) -> list[dict]:
     """Los nodos externos del grafo: quién de la aplicación los usa, a quién usan y el NV que los tiene en objetos."""
     externos = {n["id"]: n for n in grafo.get("nodes", []) if n.get("external")}
@@ -140,7 +146,7 @@ def fuera_de_la_aplicacion(grafo: dict, nombre: dict, nvs: list[dict]) -> list[d
     nv_de: dict[str, str] = {}
     for n in nvs:
         for o in n.get("objetos") or []:
-            nv_de.setdefault(o, n["id"])
+            nv_de.setdefault(objeto(o), n["id"])
     fuera = [{"nombre": n.get("name") or i, "tipo": n.get("type"), "usadoPor": sorted(usado_por[i]),
               "usa": sorted(usa[i]), "nv": nv_de.get(n.get("name") or i)} for i, n in externos.items()]
     return sorted(fuera, key=lambda f: str(f["nombre"]).lower())
@@ -208,9 +214,15 @@ def construir(salida: Path) -> dict:
                  "json": _relativa(salida, f"08-procesos-bpmn/{o['slug']}.json") if o.get("slug") else None,
                  "nodos": o.get("nodeCount"), "ejecuciones": (o.get("usage") or {}).get("executions")}
                 for o in por_tipo.get("processModel", [])]
+    fuera = fuera_de_la_aplicacion(grafo, nombre, nvs)
+    validos = {app.get("name")} | {o.get("name") for o in objs} | {f["nombre"] for f in fuera}
+    errores = [f"{x.get('id')}: «{o}» de objetos no es un objeto del inventario ni de fuera de la aplicación"
+               for x in hallazgos + nvs for o in (x.get("objetos") or []) if objeto(o) not in validos]
+    if errores:      # las demás skills buscan los hallazgos y los NV por el nombre de sus objetos
+        raise NoValido(errores)
     datos = {"inventario.json": inventario,
              "dependencias.json": {"aristas": sorted(aristas, key=lambda a: (a["de"], a["a"], a["donde"] or "")),
-                                   "fueraDeLaAplicacion": fuera_de_la_aplicacion(grafo, nombre, nvs)},
+                                   "fueraDeLaAplicacion": fuera},
              "hallazgos.json": {"hallazgos": sorted(hallazgos, key=lambda h: h["id"] or "")},
              "procesos.json": {"procesos": sorted(procesos, key=lambda p: str(p["nombre"]).lower())},
              "sin-verificar.json": {"sinVerificar": nvs}}
