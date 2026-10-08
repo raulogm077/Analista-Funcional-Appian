@@ -17,7 +17,7 @@ Los campos citados son los habituales en las definiciones del Dev MCP (según la
 | Interfaz | Entradas | `inputs[]` |
 | | Lógica y componentes | `expression` (SAIL). Pantalla renderizada en el fichero con rol `screen` |
 | Expression rule | Entradas y lógica | `inputs[]`, `expression` |
-| Constante | Tipo y valor | `type`, `value` (enmascarado en el inventario si parece secreto). Un valor de tipo Usuario o un correo personal no se copia (`presentation-rules.md`, Regla 8) |
+| Constante | Tipo y valor | `type`, `value` (en el inventario, `secret: true` si parece un secreto) |
 | Process model | Nodos y flujo | `nodes[]` (`id`, `type`, `name`, `connections`, `assignment`, `data`, `forms`, `decision`) |
 | | Variables | `processVariables[]` (`isParameter`) |
 | | Formulario de inicio | `startForm.interfaceUuid`, `inputMap` |
@@ -26,7 +26,7 @@ Los campos citados son los habituales en las definiciones del Dev MCP (según la
 | | Uso real | Fichero con rol `history` (`usage` en el inventario) |
 | Site | Páginas | `pages[]`: `name`, `targetUuid`, `visibilityExpr`; URL en `webAddressIdentifier` |
 | Integración | Llamada | Método, ruta relativa, cabeceras, cuerpo (SAIL), connected system, si modifica datos |
-| Connected system | Destino y autenticación | Tipo, URL base, tipo de autenticación (nunca credenciales) |
+| Connected system | Destino y autenticación | Tipo, URL base, tipo de autenticación |
 | Web API | Endpoint | Método, alias de URL, `expression` (qué hace) |
 | Grupo | Jerarquía y miembros | Padre en la definición; miembros en el fichero con rol `members` |
 | Cualquiera | Quién lo usa | Ficheros con rol `dependents` (con *breadcrumb*) y aristas del grafo |
@@ -63,7 +63,7 @@ Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/
 ## Importancia de un objeto
 
 - **Process models**: «proceso crítico» es solo el que marca `criticality` en el inventario (una única fórmula para todos los documentos, ver `lectura-mcp-raw.md`). No la recalcules ni la sustituyas por otra.
-- **Resto de objetos**: estos criterios ayudan a decidir qué describir con más detalle y qué priorizar en 12 y 13. No son una etiqueta: la severidad solo se da a hallazgos.
+- **Resto de objetos**: estos criterios ayudan a decidir qué describir con más detalle. No son una etiqueta: la severidad solo se da a hallazgos.
   - Lo referencian 5 o más objetos (hub en `graph.json`).
   - Es punto de entrada: página de site, acción de record, Web API, temporizador.
   - Tiene mucho uso real (`usage.executions` alto, en producción).
@@ -86,8 +86,6 @@ Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/
 | Avisos de validación | `validationIssues` no vacío. |
 | Sin uso | `usage.executions = 0` con historial disponible y en un entorno de producción. |
 
-Para las alternativas actuales de cada patrón, ver `references/modernization-guide.md`.
-
 ## Roles típicos en aplicaciones Appian
 
 Para inferir actores cuando el grupo no lo aclara (es una inferencia: 🔵 «según su nombre», con el nombre del grupo como evidencia):
@@ -104,7 +102,7 @@ Para inferir actores cuando el grupo no lo aclara (es una inferencia: 🔵 «seg
 
 ## Informes y cuadros de mando
 
-Suelen estar como páginas de site con interfaces de gráficos (`a!barChartField`, `a!pieChartField`, `a!gridField`, KPIs) o como vistas de record. Si se usan record types sincronizados, valora Process HQ (ver `modernization-guide.md`).
+Suelen estar como páginas de site con interfaces de gráficos (`a!barChartField`, `a!pieChartField`, `a!gridField`, KPIs) o como vistas de record.
 
 ## Cuándo marcar algo como pendiente
 

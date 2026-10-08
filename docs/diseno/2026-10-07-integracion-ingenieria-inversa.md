@@ -86,9 +86,9 @@ Cada dato lleva su evidencia y cada documento responde a preguntas del equipo; l
   - se cita un NV que no existe o queda una pregunta de la revisión sin cerrar;
   - una fila de hechos no lleva su evidencia enlazada al anexo y su certeza;
   - una cifra no sale de `summary.json`;
-  - quedan marcadores de plantilla, enlaces rotos o secretos.
+  - quedan marcadores de plantilla o enlaces rotos.
 - **Avisos de estilo:** muletillas, frases largas, párrafos repetidos entre documentos y documentos que crecen más que lo que describen.
-- **Datos para las demás skills** en `as-is/datos/`: inventario, dependencias, hallazgos, procesos y lo que queda sin verificar, en JSON, sin usuarios ni credenciales. Refactorización y el analista no tocan los datos en bruto.
+- **Datos para las demás skills** en `as-is/datos/`: inventario, dependencias, hallazgos, procesos y lo que queda sin verificar, en JSON. Refactorización y el analista no tocan los datos en bruto.
 - **Prueba del recién llegado** (primera tabla), antes y después del recorte, con una aplicación ficticia mal hecha a propósito y más completa que la del simulador actual. Esa misma aplicación sirve para las pruebas de refactorización y del analista.
 - **Menos documentos si la prueba lo pide.** Si dos documentos responden a lo mismo, se unen. Candidatos: LEEME con 00, y 05 con 06.
 
@@ -134,7 +134,7 @@ Una carpeta por aplicación o proyecto: cada skill escribe solo en lo suyo y lee
 <p>/entregables/, versiones/                   analista
 ```
 
-La extracción completa también queda en el proyecto, en `as-is/extraccion/` (D4), y se escribe ya saneada: sin credenciales, secretos ni nombres de usuario, y con rutas cortas para Windows. Las demás skills leen `as-is/datos/`, que tiene formato fijo; la extracción es interna de ingeniería inversa.
+La extracción completa también queda en el proyecto, en `as-is/extraccion/` (D4), tal cual la devuelve el Dev MCP y con rutas cortas para Windows. Se trabaja en entornos controlados: no se oculta nada, ni usuarios, ni datos de la app, ni secretos. Las demás skills leen `as-is/datos/`, que tiene formato fijo; la extracción es interna de ingeniería inversa.
 
 | Quién lee | Qué | Para qué |
 |---|---|---|
@@ -185,7 +185,7 @@ Diez fases en orden; ninguna se da por cerrada sin sus pruebas en verde.
 
 - [x] **F0 Decisiones.** Tomadas el 7 de octubre.
 - [x] **F1 Repositorio único.** El plugin, con ingeniería inversa dentro y su historial, en un solo repositorio del que parte cada hilo: raulogm077/Analista-Funcional-Appian, rama main.
-- [ ] **F2 Ingeniería inversa en el plugin.** Antes, las skills se quedan solo con lo que usan al trabajar: sus pruebas y datos ficticios pasan a `pruebas/` y el caso de ejemplo de prototipos, un proyecto entero, sale del plugin; prototipos pasa a `appian-prototipos`, con el aspecto estándar de Appian por defecto. Después, ingeniería inversa solo con el bloque A, sus pruebas en verde y su alta en `comprobar_plugin.py`. El bloque B se aparta para F5.
+- [x] **F2 Ingeniería inversa en el plugin.** Antes, las skills se quedan solo con lo que usan al trabajar: sus pruebas y datos ficticios pasan a `pruebas/` y el caso de ejemplo de prototipos, un proyecto entero, sale del plugin; prototipos pasa a `appian-prototipos`, con el aspecto estándar de Appian por defecto, y saca la configuración de marca de cualquier cliente a partir de su nombre. Después, ingeniería inversa solo con el bloque A, sus pruebas en verde y su alta en `comprobar_plugin.py`. El bloque B se aparta para F5.
 - [ ] **F3 Precisa y sin relleno.** `comprobar_asis.py`, las reglas de prosa comunes, `as-is/datos/`, la disciplina de evidencia (lo que queda sin verificar, negativos acotados, diseño frente a ejecución y preguntas de la revisión), la aplicación ficticia mal hecha a propósito y la prueba del recién llegado antes y después.
 - [ ] **F4 Diagramas.** Un solo exportador BPMN y un solo pintor. Se retiran `bpmn_layout.py`, `validate_mermaid.py` y `render_diagrams.sh`.
 - [ ] **F5 Refactorización.** La skill nueva con el 13, la arquitectura y la migración del 14, rebuild-architect y las señales. Lee solo `as-is/`. Prueba de malas prácticas sembradas.
@@ -204,8 +204,9 @@ Todas cerradas el 7 de octubre; el nombre del plugin se mantiene.
 | **D1** Reparto | Refactorización propone y el analista especifica |
 | **D2** DF ya hecho | Pasa al formato del plugin; de ahí salen el Word y el técnico con el que se construye por MCP |
 | **D3** Repositorio | GitHub privado |
-| **D4** Extracción | Dentro del proyecto, en `as-is/extraccion/`, ya saneada: sin credenciales, secretos ni nombres de usuario |
-| Marca de los prototipos | El plugin se usará con varios clientes: por defecto, el aspecto estándar de Appian; la marca del cliente va en su proyecto y la skill pasa a llamarse `appian-prototipos` |
+| **D4** Extracción | Dentro del proyecto, en `as-is/extraccion/`, tal cual. En entornos controlados no se oculta nada: ni usuarios, ni datos de la app, ni secretos (8 de octubre) |
+| Marca de los prototipos | El plugin se usará con varios clientes: por defecto, el aspecto estándar de Appian; la marca del cliente va en su proyecto y la skill pasa a llamarse `appian-prototipos`. Con decir para qué empresa se trabaja, la skill saca su configuración de marca completa, como la que había de AENA (objeto Site, perfil CSS, paleta, componentes, estados y gráficos), de su guía de marca o de su web, y la deja en el proyecto con una guía para construir con ella (añadido el 7 de octubre) |
+| Datos de ejemplo de prototipos | Galerías y plantillas en un dominio ficticio neutro, sin aeropuertos ni códigos reales de un cliente (Tarea 25) |
 | Disciplina de evidencia | Se adopta adaptada a lo que ya hace ingeniería inversa: registro de lo que queda sin verificar, negativos acotados, diseño frente a ejecución y preguntas de la revisión cerradas. Sin registro aparte de afirmaciones ni escala de confianza; la marca de inferido pasa a 🔶, la del analista |
 
 ## Cómo funciona el plugin

@@ -10,7 +10,7 @@
     {
       "name": "appian-analisis-funcional",
       "source": "./",
-      "description": "Análisis funcional y prototipos navegables Appian (AENA)."
+      "description": "Análisis funcional y prototipos navegables Appian."
     }
   ]
 }

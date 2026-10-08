@@ -1,6 +1,6 @@
 ---
 name: appian-functional-analyst
-description: Analista funcional de Appian. Convierte las fuentes de un proyecto (transcripciones de reuniones, correos, actas, notas, diagramas de flujo, un DF o ERS del cliente, o la descripción de una aplicación existente) en su análisis, el diseño funcional que valida el cliente (DF en Word con proceso, historias de usuario, pantallas y escenarios) y la especificación técnica para construir en Appian con buenas prácticas. Úsala para levantar requisitos, escribir o actualizar un análisis o un DF, incorporar una reunión, un correo o los comentarios del cliente al DF, redactar las historias de una pantalla que alguien explica o preparar la especificación técnica. No dibuja procesos (appian-diagramas-bpmn), no hace prototipos (appian-prototipos-aena), no construye ni revisa objetos en un entorno (appian-best-practices) y no audita aplicaciones existentes (appian-reverse-engineering).
+description: Analista funcional de Appian. Convierte las fuentes de un proyecto (transcripciones de reuniones, correos, actas, notas, diagramas de flujo, un DF o ERS del cliente, o la descripción de una aplicación existente) en su análisis, el diseño funcional que valida el cliente (DF en Word con proceso, historias de usuario, pantallas y escenarios) y la especificación técnica para construir en Appian con buenas prácticas. Úsala para levantar requisitos, escribir o actualizar un análisis o un DF, incorporar una reunión, un correo o los comentarios del cliente al DF, redactar las historias de una pantalla que alguien explica o preparar la especificación técnica. No dibuja procesos (appian-diagramas-bpmn), no hace prototipos (appian-prototipos), no construye ni revisa objetos en un entorno (appian-best-practices) y no audita aplicaciones existentes (appian-reverse-engineering).
 ---
 
 # Analista funcional · Appian
@@ -11,7 +11,8 @@ Convierte lo que el cliente dice y escribe en dos documentos con una sola fuente
   desarrollo de Appian sin preguntar ni suponer.
 
 Sirve para cualquier proceso: perfiles, datos, estados y reglas salen de las fuentes del proyecto. Los
-ejemplos (`ejemplos/autorizaciones/`) enseñan el formato con un caso ficticio; no se copian sus nombres.
+fragmentos de `references/funcional-plantilla.md` y `references/tecnico-plantilla.md` enseñan el formato con un
+caso ficticio; no se copian sus nombres.
 
 `<skill>` es la carpeta de este fichero y `<p>`, la del proyecto. En Windows, `python` en vez de `python3`.
 
@@ -21,7 +22,7 @@ ejemplos (`ejemplos/autorizaciones/`) enseñan el formato con un caso ficticio; 
 |---|---|
 | Lee las fuentes, decide qué contiene el análisis y lo mantiene reunión a reunión | — |
 | Describe cada proceso (pasos, carriles, decisiones) | Lo dibuja `appian-diagramas-bpmn` |
-| Dice qué hace cada pantalla y quién la usa | La compone y la captura `appian-prototipos-aena` |
+| Dice qué hace cada pantalla y quién la usa | La compone y la captura `appian-prototipos` |
 | Diseña la solución técnica aplicando buenas prácticas | La doctrina está en `appian-best-practices`, que se consulta por secciones |
 | Usa la descripción de una aplicación existente como fuente (`as-is/`) | La escribe `appian-reverse-engineering` |
 | — | Construir o revisar objetos en un entorno: `appian-best-practices` con el MCP de desarrollo |
@@ -102,7 +103,7 @@ Di el modo al empezar.
    `analisis/diagramas/<proceso>.json`, con un carril por perfil y los mismos `ACT-nn`, y ejecuta su
    `diagrama.py crear`. Los estados, con `mermaid-diagrams.md`.
 5. **Prototipo**, si se pide (suele ser con la primera versión del funcional, para validar las pantallas).
-   Lo hace `appian-prototipos-aena` a partir del funcional y pone las capturas en las fichas de pantalla.
+   Lo hace `appian-prototipos` a partir del funcional y pone las capturas en las fichas de pantalla.
 6. **Técnico.** Escribe `analisis/tecnico.md` con `tecnico-plantilla.md` cuando el funcional esté estable
    (normalmente tras la primera validación) o cuando se pida. El Entorno (§0) y las Convenciones (§1) se
    rellenan antes, en cuanto se sepan.
@@ -144,7 +145,7 @@ cambio marcado con la historia o el apartado donde está, y se sigue `actualizac
 
 ## Dudas de Appian
 
-Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `appian-docs` (sus herramientas empiezan por `mcp__appian-docs__`) antes de escribirlo, nunca de memoria: si existe un componente, una función, un parámetro o un objeto, qué admite, sus límites, si depende de la licencia y desde qué versión.
+Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `appian-docs` (sus herramientas llevan `appian-docs` en el nombre o su descripción habla de buscar en la documentación de Appian) antes de escribirlo, nunca de memoria: si existe un componente, una función, un parámetro o un objeto, qué admite, sus límites, si depende de la licencia y desde qué versión.
 - Una duda por consulta, escrita como una frase completa.
 - Vale lo que diga la documentación de la versión del entorno del proyecto (va en la URL: `/help/26.6/`). Si solo lo dice una versión posterior, se avisa de que puede no estar disponible.
 - Lo que se escribe a partir de la respuesta lleva su URL, en la forma `/latest/`.

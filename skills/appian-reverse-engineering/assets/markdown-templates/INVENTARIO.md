@@ -13,8 +13,6 @@
   - Para qué: la `description` de Appian, literal y recortada a 100 caracteres. Si el objeto no tiene descripción en
     Appian (o la extracción no la trae), una frase deducida de su nombre, su uso o su documento propietario, que
     empieza por 🔵 (p. ej. «🔵 según su nombre, plantilla del correo de aviso»).
-  - Sin usuarios: los grupos dan recuentos (`userCount`), nunca nombres. Una constante de tipo Usuario: «una cuenta
-    de ‹grupo›» o «una cuenta personal»; un correo personal: ‹correo›.
 -->
 
 # Inventario de la aplicación
@@ -80,13 +78,13 @@ Cómo leer las tablas:
 
 | Nombre | uuid | Método | Endpoint | Connected system | Modifica datos | Para qué | Ficha |
 |---|---|---|---|---|---|---|---|
-| [`{{nombre}}`](./05-integraciones-consumidas.md#{{ancla}}) | `{{uuid}}` | {{GET}} | `{{ruta relativa, sin credenciales}}` | `{{connected system}}` | {{Sí / No / «—»}} | {{descripción o «🔵 frase deducida»}} | [anexo](./anexo/integration/{{slug}}.md) |
+| [`{{nombre}}`](./05-integraciones-consumidas.md#{{ancla}}) | `{{uuid}}` | {{GET}} | `{{ruta relativa}}` | `{{connected system}}` | {{Sí / No / «—»}} | {{descripción o «🔵 frase deducida»}} | [anexo](./anexo/integration/{{slug}}.md) |
 
 ## Connected systems
 
 | Nombre | uuid | Tipo | URL base | Autenticación | Para qué | Ficha |
 |---|---|---|---|---|---|---|
-| [`{{nombre}}`](./05-integraciones-consumidas.md#{{ancla}}) | `{{uuid}}` | {{csType}} | `{{URL base, sin credenciales}}` | {{authType o «—»}} | {{descripción o «🔵 frase deducida»}} | [anexo](./anexo/connectedSystem/{{slug}}.md) |
+| [`{{nombre}}`](./05-integraciones-consumidas.md#{{ancla}}) | `{{uuid}}` | {{csType}} | `{{URL base}}` | {{authType o «—»}} | {{descripción o «🔵 frase deducida»}} | [anexo](./anexo/connectedSystem/{{slug}}.md) |
 
 ## Web APIs
 
@@ -110,7 +108,7 @@ Cómo leer las tablas:
 
 | Nombre | uuid | Tipo | Valor | Referencia | Para qué | Ficha |
 |---|---|---|---|---|---|---|
-| `{{nombre}}` o [`{{nombre}}`](./09-valor-adicional.md#constantes-por-entorno-y-secretos) | `{{uuid}}` | {{typeRef}} | `{{valor}}`, «enmascarado» o, si es un usuario, «una cuenta de ‹grupo›» / «una cuenta personal» | {{valueRef o «—»}} | {{descripción o «🔵 frase deducida»}} | [anexo](./anexo/constant/{{slug}}.md) |
+| `{{nombre}}` o [`{{nombre}}`](./09-valor-adicional.md#constantes-por-entorno-y-secretos) | `{{uuid}}` | {{typeRef}} | `{{valor}}` | {{valueRef o «—»}} | {{descripción o «🔵 frase deducida»}} | [anexo](./anexo/constant/{{slug}}.md) |
 
 ## Otros tipos
 

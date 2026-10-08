@@ -4,7 +4,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 **Convenciones**
 
-- `<salida>` = `./appian-docs/<PREFIJO>/` salvo que el usuario indique otra; `<trabajo>` = `appian-docs/_trabajo/<PREFIJO>/` (datos en bruto, con un `.gitignore` con `*`: no se comparte ni se sube a un repositorio, y ningún entregable lo enlaza).
+- `<salida>` = `<p>/as-is/` si la carpeta es un proyecto (tiene `proyecto.md`) o el usuario da la del proyecto, y si no `./<PREFIJO>/as-is/`; `<trabajo>` = `<salida>/extraccion/` (la extracción, tal cual, y los datos de trabajo; ningún entregable lo enlaza).
 - Scripts, desde la carpeta del usuario (donde está su `.mcp.json`): `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" …`; los demás, `python3 <skill>/scripts/<script>.py <salida>`. `<skill>` es la carpeta de la skill.
 - Evidencia: `mcp:<tipo>/<nombre>[@<rol>]#<ubicación>`, con los nodos de proceso como `nodes[id=N]` (`lectura-mcp-raw.md`).
 - Hallazgos: ID con el prefijo del área, tabla en el documento propietario y `<trabajo>/hallazgos/<agente>.json` (`execution-principles.md`, secciones 2 y 3).
@@ -18,15 +18,15 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 - [ ] Appian MCP Server: estado según `doctor`, o «disponible en sesión» si sus herramientas están en la sesión.
 - [ ] Tabla de estado mostrada al usuario (estado · qué se pierde · cómo activarlo).
 - [ ] Si el Dev MCP no está `ok`: mostrado el paso de `devmcp-setup.md` que falta y **parada**.
-- [ ] En una sola pregunta: aplicación, formatos adicionales, objetivo (entender, modernizar o reconstruir; por defecto, modernizar) y si el entorno es producción (con su versión de Appian, si la sabe).
-- [ ] `preflight.json` (con `environment: {url, isProduction, appianVersion}`) y `output_preferences.json` (`pdf`, `dashboard`, `objetivo`; formato en `SKILL.md`) guardados.
+- [ ] En una sola pregunta: aplicación, formatos adicionales y si el entorno es producción (con su versión de Appian, si la sabe).
+- [ ] `preflight.json` (con `environment: {url, isProduction, appianVersion}`) y `output_preferences.json` (`pdf`, `dashboard`; formato en `SKILL.md`) guardados.
 
 **Qué pierde el usuario sin cada MCP opcional**
 
 | Falta | Consecuencia |
 |---|---|
-| Appian MCP Server | Sin volúmenes de datos: 03 no tiene filas por entidad y los requisitos de volumen de 12 pasan a preguntas abiertas. |
-| Docs MCP | Las fuentes de 13 son las URLs de `modernization-guide.md` (26.6), marcadas «sin verificar para la versión»; sin explicación oficial de nodos o funciones desconocidos. |
+| Appian MCP Server | Sin volúmenes de datos: 03 no tiene filas por entidad. |
+| Docs MCP | Las dudas se consultan en docs.appian.com por la web; si tampoco se puede, lo que depende de la documentación oficial se marca «sin verificar». |
 
 ## Fase 1 — Plan
 
@@ -38,7 +38,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 ## Fase 2 — Extracción
 
-- [ ] `extract` terminado. Si se corta, repetirlo: reanuda desde lo descargado.
+- [ ] `extract` terminado. Si se corta, repetirlo: reanuda desde lo descargado. Si la aplicación ha cambiado desde la extracción que ya hay, o es la de otro entorno, `--refresh`: lo pide todo otra vez.
 - [ ] `extraction_report.json` revisado: `errorCount`, `disabledAfterProbe`, `toolsExcluded`, `callStatsByRole`.
 - [ ] Si en `callStatsByRole.definition` fallan más del 20 % de las llamadas: avisado al usuario antes de seguir.
 - [ ] Data fabric: `datafabric.json` generado (script o sesión, ver `data-fabric.md`) o anotado como no disponible.
@@ -48,7 +48,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 | Síntoma | Causa probable | Qué hacer |
 |---|---|---|
 | Código 13 al arrancar | Sesión SSO caducada o bundle mal instalado | Repetir: se abre el navegador. Si persiste, `devmcp-setup.md`. |
-| Código 15 | Aplicación no encontrada o ambigua | Usar el uuid o el prefijo exacto de `doctor`. |
+| Código 15 | Aplicación no encontrada o ambigua, o la carpeta ya tiene otra aplicación u otro entorno | Usar el uuid o el prefijo exacto de `doctor`; para otra aplicación, otra `<salida>`; para otro entorno, otra `<salida>` o `--refresh`. |
 | Muchas llamadas de un tipo desactivadas | La herramienta no admite ese tipo | Normal. Aparece en el informe y en `INVENTARIO`. |
 | Timeouts | Entorno lento | `--concurrency 2` y repetir (reanuda). |
 
@@ -56,19 +56,17 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 - [ ] `build_model.py <salida>` sin errores; revisada la línea de resumen (objetos, aristas por origen, huérfanos, hubs).
 - [ ] `build_annex.py <salida>` → `<salida>/anexo/` (`indice.md` y `<tipo>/<slug>.md` por objeto con definición).
-- [ ] `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw`: anotado qué tipos de secreto hay y en qué objetos, sin copiar valores.
+- [ ] `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw`: anotado qué tipos de secreto hay y en qué objetos, para registrarlos como `H-SEG`.
 - [ ] Si `graph.json` tiene pocas aristas de origen `dependents` (la herramienta de dependencias no estaba o falló), las conclusiones sobre quién llama a quién llevan 🔵.
 
 ## Fase 4 — Análisis
 
-- [ ] `execution-principles.md` leído. Cada subagente recibe lo que lista `SKILL.md` (fase 4), incluidas las consultas al Docs MCP que le tocan (reparto en `docs-mcp-usage.md`).
+- [ ] `execution-principles.md` leído. Cada subagente recibe lo que lista `SKILL.md` (fase 4), incluidas las consultas a la documentación que le tocan, por el Docs MCP o por la web (reparto en `docs-mcp-usage.md`).
 - [ ] 4.1 `interface-analyzer` → 01, 02.
 - [ ] 4.2 en paralelo, en un solo turno: `data-modeler` (03), `integration-security-analyzer` (04–06), `process-modeler` (08), `ui-rules-analyzer` (10, 11).
 - [ ] Cada agente dejó `<trabajo>/hallazgos/<agente>.json` y su informe; sus «Para otras áreas» y choques, anotados para la fase 6.
 - [ ] 4.3 orquestador: `build_summary.py <salida>` para ver `signals` → `07` y `09` con sus plantillas y las guías de abajo → hallazgos `H-BAT` y `H-GEN` en `<trabajo>/hallazgos/orquestador.json` → `build_registry.py <salida>` sin errores (lo que reporte se corrige en el JSON del agente que corresponda).
-- [ ] 4.4 `rebuild-architect` (recibe el `objetivo`) → 12, 13 y `<trabajo>/modernizacion.json` (veredicto, estrategia y los `MOD-`/`PQ-` que tratan cada hallazgo).
-- [ ] 4.5 `target-designer` (recibe el `objetivo`) → 14.
-- [ ] Consultas al Docs MCP (suma de `<trabajo>/docs_cache/*.json`) ≤ 30.
+- [ ] Consultas a la documentación (suma de `<trabajo>/docs_cache/*.json`) ≤ 30.
 
 ### Guía de 07 (procesos programados)
 
@@ -77,7 +75,7 @@ Proceso programado = process model con `startType: timer` en `inventory.json`. P
 - **Frecuencia**: traduce la configuración del temporizador a lenguaje natural y, si es posible, a cron. Lo que no conste (hora, días) es ❓, no se supone.
 - **Zona horaria**: la que fija el temporizador; por defecto, la del process model (`pp!timezone`). Si no consta, ❓. Fuente: https://docs.appian.com/suite/help/26.6/Intermediate_Event_-_Timer.html#configuring-the-time-zone-used
 - **Próximas 3 ejecuciones**: calculadas desde la fecha de extracción (`source.extractedAt` de `inventory.json`) en la zona del temporizador. Si falta la zona o la hora, o la recurrencia es por intervalo sin hora de referencia, «no calculable» ❓.
-- **Cuenta de ejecución**: un proceso que arranca un temporizador se ejecuta con la cuenta de quien desplegó el process model (Fuente: https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors). Si `versions` da el autor de la última versión, indica su tipo de cuenta y grupo (🔵: la última versión guardada no tiene por qué ser la desplegada); si no, ❓. No la deduzcas de las ejecuciones de la muestra y nunca escribas el usuario.
+- **Cuenta de ejecución**: un proceso que arranca un temporizador se ejecuta con la cuenta de quien desplegó el process model (Fuente: https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors). Si `versions` da el autor de la última versión, indícalo, con su tipo de cuenta y su grupo si constan (🔵: la última versión guardada no tiene por qué ser la desplegada); si no, ❓. No la deduzcas de las ejecuciones de la muestra.
 - **Uso real**: `usage`. Con `failedInSampleOf`, «N fallos en las últimas M ejecuciones», nunca una tasa global. Si el entorno no consta como producción, las cifras son orientativas.
 - **Volumen por ejecución**: identifica la consulta de origen (`a!queryRecordType`, `a!queryEntity`, una regla…; no supongas cuál) y su tamaño de lote (`pagingInfo`/`batchSize`). Cita el nodo: `nodes[id=N]`.
 - **Manejo de errores**: lo que muestre la definición. El Dev MCP no devuelve las pestañas de excepciones y alertas de los nodos: su ausencia es ❓ «no lo devuelve la extracción», no «sin manejo de errores».
@@ -97,11 +95,11 @@ Hallazgos `H-BAT` (severidad orientativa; ajústala al impacto real). Los fallos
 Solo las subsecciones con contenido. Hallazgos propios: `H-GEN` (áreas mantenimiento, rendimiento o uso). Lo que sea de otra área se enlaza por su ID; si el propietario no lo registró, anótalo para la pasada de coherencia.
 
 - **Métricas** (Vista): de `inventory.json` (`counts`, `sailLines`, `sailBytes`, `nodeCount`, `validationIssues`, `usage`).
-- **Constantes por entorno y secretos**: constantes con URLs, hosts, identificadores o interruptores de entorno (`DEV`/`PRE`/`PRO`). Los valores con secreto (`maskedSecret`, `maskedSecrets`, `detect_secrets.py`) no se repiten: se enlaza el `H-SEG` de 04.
+- **Constantes por entorno y secretos**: constantes con URLs, hosts, identificadores o interruptores de entorno (`DEV`/`PRE`/`PRO`). Una constante con un secreto (`secret`, `secrets`, `detect_secrets.py`) enlaza además el `H-SEG` de 04.
 - **Reglas reutilizables**: los hubs de `graph.json` (5 o más objetos que los referencian) de tipo expression rule o decisión: qué hacen, entradas, salida y nº de llamadores. Los hubs como problema de arquitectura son `H-ARQ` de 02.
 - **Huérfanos**: `graph.orphans` (ya excluye puntos de entrada y procesos programados) y, solo si el entorno es producción, los process models sin ejecuciones (`signals`). Aquí va la lista para limpieza; el hallazgo de arquitectura es de 02.
 - **Avisos de validación**: `validationIssues`; un `H-GEN` por tipo de aviso, agrupando objetos.
-- **Versionado**: `versions` (`count`, `lastModifiedOn`, `lastModifiedBy`). El autor nunca se escribe: clasifícalo como cuenta personal, de servicio o «tipo no determinado» y busca su grupo en los ficheros `members` de `mcp_raw`. Cuenta de servicio solo si su grupo o su nombre lo indican claramente (🔵).
+- **Versionado**: `versions` (`count`, `lastModifiedOn`, `lastModifiedBy`). El autor se escribe tal cual; clasifícalo como cuenta personal, de servicio o «tipo no determinado» y busca su grupo en los ficheros `members` de `mcp_raw`. Cuenta de servicio solo si su grupo o su nombre lo indican claramente (🔵).
 - **Glosario de negocio**: términos de nombres y descripciones de records, campos, procesos y pantallas; ✅ si sale de una descripción de Appian, 🔵 si se deduce del nombre.
 
 Hallazgos `H-GEN` (severidad orientativa):
@@ -124,10 +122,9 @@ Hallazgos `H-GEN` (severidad orientativa):
 
 ## Fase 6 — Coherencia, resumen, inventario y guía
 
-- [ ] Pasada de coherencia (`execution-principles.md`, sección 4): contradicciones corregidas en su documento, duplicados marcados con `duplicadoDe`, severidades fuera del propietario quitadas, «Para otras áreas» registrados, «Preguntas nuevas» de target-designer dadas de alta como `PQ-` en 12 y en `modernizacion.json`, menciones a otras áreas en 01–11 con el ID canónico y su enlace. Sin notas de parche.
-- [ ] `build_registry.py <salida>` sin errores (ahora con el tratamiento de 13).
+- [ ] Pasada de coherencia (`execution-principles.md`, sección 4): contradicciones corregidas en su documento, duplicados marcados con `duplicadoDe`, severidades fuera del propietario quitadas, «Para otras áreas» registrados, menciones a otras áreas en 01–11 con el ID canónico y su enlace, sin notas de parche; al terminar, `build_registry.py <salida>` sin errores.
 - [ ] `build_summary.py <salida>` → `<trabajo>/summary.json`.
-- [ ] `00-resumen-ejecutivo.md` con su plantilla: todas las cifras de `summary.json` (confianza con su motivo, procesos críticos, hallazgos Alta, secretos, veredicto y estrategia, uso real con aviso de entorno).
+- [ ] `00-resumen-ejecutivo.md` con su plantilla: todas las cifras de `summary.json` (confianza con su motivo, procesos críticos, hallazgos Alta, secretos y uso real con aviso de entorno).
 - [ ] `INVENTARIO.md`: 100 % de `inventory.json`, con uuid, enlace al anexo y cobertura de la extracción.
 - [ ] `LEEME.md`: rutas por perfil, rangos reales de IDs, marcas, qué no incluye y glosario de Appian.
 

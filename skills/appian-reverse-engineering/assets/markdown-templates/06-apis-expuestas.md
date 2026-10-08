@@ -44,7 +44,7 @@ Lo que la aplicación ofrece a otros sistemas. Todas exigen un usuario o cuenta 
 | Respuesta | {{201 con el id de la solicitud; 400 si falta un campo obligatorio}} |
 | Consumidores | {{No constan en la definición}} ❓ |
 
-Forma del cuerpo (de la definición, sin valores):
+Forma del cuerpo (de la definición, con los tipos):
 
 ```json
 {"solicitante": "texto", "tipo": "texto", "importe": "decimal"}

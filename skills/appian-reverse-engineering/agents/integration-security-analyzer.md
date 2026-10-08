@@ -14,10 +14,10 @@ La **estructura** de cada documento la da su plantilla; este fichero dice **qué
 
 ## Lectura obligatoria antes de empezar
 
-- `references/lectura-mcp-raw.md`: roles de los ficheros, campos derivados, formato de evidencia, «Quién puede iniciar un process model», qué no devuelve el Dev MCP y privacidad.
+- `references/lectura-mcp-raw.md`: roles de los ficheros, campos derivados, formato de evidencia, «Quién puede iniciar un process model» y qué no devuelve el Dev MCP.
 - `references/execution-principles.md`: principios (sobre todo el 3, «dato ausente no es defecto»), documentos propietarios y registro de hallazgos.
 - `references/presentation-rules.md`: esqueleto, límites, marcas y lo que el lector no debe ver.
-- `references/security-rules.md`: secretos, credenciales, hosts y usuarios. **Antes de escribir nada.**
+- `references/security-rules.md`: cómo se detecta y se registra un secreto, y otros riesgos de seguridad.
 - Las tres plantillas.
 
 Cuando haga falta: `references/appian-objects-guide.md` (dónde está cada dato), `references/docs-mcp-usage.md` (Docs MCP: caché y tope de consultas), `references/mermaid-rules.md` (diagrama de grupos).
@@ -36,8 +36,7 @@ Para cada connected system del inventario:
 
 - Tipo (`csType`), URL base (`baseUrl`), autenticación (`authType`) e integraciones que lo usan (grafo).
 - Propósito: qué sistema externo es y qué se intercambia, por nombre, descripción y rutas de sus integraciones (🔵 si es inferido; «según su nombre» si solo lo dice el nombre).
-- Credenciales: nunca valores ni el usuario. Si la URL base lleva credenciales (la extracción las deja como `***:***@`), escribe la URL sin ellas y la frase «la URL base lleva credenciales embebidas (enmascaradas)», y regístralo como secreto (Bloque D).
-- Host: el de un servicio externo o público se muestra; uno interno se sustituye por `‹host interno›` (criterio en `security-rules.md`).
+- Credenciales: si la URL base lleva credenciales embebidas (`https://usuario:clave@host`), dilo en la ficha y regístralo como secreto (Bloque D).
 - Autenticación None contra una API externa: hallazgo `H-INT`.
 
 ### Integraciones
@@ -45,7 +44,7 @@ Para cada connected system del inventario:
 Para cada integración del inventario:
 
 - Connected system, método y ruta (`method`, `endpoint`) y si modifica datos (`modifiesData`).
-- Parámetros de ruta, consulta y cabecera con su origen (`ri!`, `cons!`, literal). Una cabecera con un secreto se nombra, sin valor.
+- Parámetros de ruta, consulta y cabecera con su origen (`ri!`, `cons!`, literal). Una cabecera con el secreto escrito, y no una referencia, va al Bloque D.
 - Forma del cuerpo y de la respuesta, de la definición: describe la estructura, no copies el SAIL.
 - Llamantes, del grafo: process model (con el nodo), regla o interfaz, enlazando su documento o su ficha del anexo. Sin llamante en el grafo: dilo con ❓ (puede llamarse por nombre dinámico o desde otra aplicación); los objetos huérfanos son el `H-ARQ` de `02` y su lista está en 09: cita el ID, no son hallazgos tuyos.
 - Errores: ✅ solo si la definición del llamante muestra el tratamiento (p. ej. `onError` en SAIL) o muestra que no lo hay. Las pestañas de excepciones de los nodos de proceso no siempre llegan: si no llegan, ❓ «no lo devuelve la extracción», nunca «sin manejo de error».
@@ -78,7 +77,7 @@ Hallazgos `H-API` típicos: la puede llamar un grupo de alcance amplio; escribe 
 ### Grupos
 
 - Jerarquía con `parentGroup`, `memberGroups` y las aristas `memberGroup` del grafo; comprueba que no hay ciclos.
-- Usuarios: solo `userCount`, que cuenta los **usuarios directos** (los de los subgrupos no se suman). Nunca nombres. Sin herramienta de miembros no hay recuentos: quita la columna y dilo en «Cobertura y límites». Una constante de tipo Usuario o un usuario escrito en el código (en un role map, una asignación o una expresión de seguridad) se escribe «una cuenta de ‹grupo›» o «una cuenta personal»; un correo personal, `‹correo›` (`presentation-rules.md`, Regla 8).
+- Usuarios: `userCount` cuenta los **usuarios directos** (los de los subgrupos no se suman). Sin herramienta de miembros no hay recuentos: quita la columna y dilo en «Cobertura y límites». Un usuario escrito en el código (en un role map, una asignación o una expresión de seguridad) o en una constante de tipo Usuario va con su grupo si aclara algo.
 - Diagrama `diagrams/grupos.mmd` (`flowchart TD`, etiqueta «Nombre (usuarios directos)», ≤ 30 nodos; con más, solo los grupos con subgrupos). Es el **único** diagrama que generas: 05 y 06 no llevan diagrama propio (el mapa de sistemas externos está en `02`).
 - «Grupos sin miembros»: solo si hay herramienta de miembros y algún grupo no tiene usuarios directos ni subgrupos; si no hay ninguno, la sección se omite. En un entorno que no es producción no es hallazgo.
 
@@ -100,13 +99,13 @@ Hallazgos `H-SEG` típicos (certeza según la evidencia; sin role map, ❓ o no 
 - Objeto con datos sensibles al alcance de un grupo amplio (definición en `security-rules.md`).
 - Grupo de sistema usado para dar permisos a objetos de la aplicación (Appian recomienda sus grupos de seguridad por defecto). Fuente: https://docs.appian.com/suite/help/26.6/System_Groups.html
 - Objeto sin ningún grupo Administrator: solo un administrador del sistema puede cambiar su seguridad.
-- Cuentas personales en un role map en lugar de grupos (di cuántas, nunca quiénes).
+- Cuentas personales en un role map en lugar de grupos (cuántas y cuáles).
 - Objeto que hereda de una carpeta con un grupo amplio.
 - Process model que puede iniciar un grupo amplio.
 
 ### Capacidades por grupo
 
-Filas: grupos. Columnas: capacidades funcionales (casos de uso de `01-funcional.md` o, si no los hay, los puntos de entrada), máximo 7. Celdas: Inicia, Tarea, Aprueba, Ve, Administra o «—», solo con evidencia (role map, asignación de tarea, visibilidad); si dependen de un dato que no llega, ❓. `rebuild-architect` parte de esta tabla para su matriz rol × capacidad.
+Filas: grupos. Columnas: capacidades funcionales (casos de uso de `01-funcional.md` o, si no los hay, los puntos de entrada), máximo 7. Celdas: Inicia, Tarea, Aprueba, Ve, Administra o «—», solo con evidencia (role map, asignación de tarea, visibilidad); si dependen de un dato que no llega, ❓.
 
 ### Reglas de seguridad en expresiones
 
@@ -120,9 +119,9 @@ Para cada una: objeto, patrón, qué controla, certeza y evidencia. Comprueba qu
 
 ## Bloque D — Secretos
 
-Sigue `references/security-rules.md`, «Acción ante un secreto». Fuentes: la salida de `bash <skill>/scripts/detect_secrets.sh <trabajo>/mcp_raw`, `maskedSecrets` de cada objeto en `inventory.json`, las constantes con `maskedSecret: true` y las URLs con `***:***@`.
+Sigue `references/security-rules.md`, «Acción ante un secreto». Fuentes: la salida de `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw`, `secrets` de cada objeto en `inventory.json` y las constantes con `secret: true`.
 
-Cada secreto real es un hallazgo `H-SEG` con `"area": "secretos"` y severidad **Alta**: fila en la sección Hallazgos de 04, una línea debajo de la tabla con su impacto y la recomendación, y su entrada en el JSON. En 05 o 06, donde aparezca el objeto, una frase sin severidad que enlace el hallazgo de 04. El registro de 09 lo genera un script a partir del JSON: no escribas en 09 ni en 13.
+Cada secreto real es un hallazgo `H-SEG` con `"area": "secretos"` y severidad **Alta**: fila en la sección Hallazgos de 04, una línea debajo de la tabla con su impacto y la recomendación, y su entrada en el JSON. En 05 o 06, donde aparezca el objeto, una frase sin severidad que enlace el hallazgo de 04. El registro de 09 lo genera un script a partir del JSON: no escribas en 09.
 
 ## Registro de hallazgos
 
@@ -141,7 +140,7 @@ Lo que veas de otras áreas (p. ej. un proceso que ignora un error de la integra
 ## Validación antes de terminar
 
 - [ ] Cada documento sigue su plantilla: TL;DR único, Vista, Detalle, Hallazgos, Cobertura y límites; sin secciones vacías.
-- [ ] `bash <skill>/scripts/detect_secrets.sh <salida>/04-seguridad-grupos.md <salida>/05-integraciones-consumidas.md <salida>/06-apis-expuestas.md` sin coincidencias; ninguna URL con credenciales (ni enmascaradas), ningún usuario y ningún host interno sin sustituir.
+- [ ] Cada coincidencia de `detect_secrets.py <trabajo>/mcp_raw` y cada constante con `secret: true` tiene su `H-SEG` o está descartada como falso positivo.
 - [ ] Todas las integraciones, connected systems y Web APIs del inventario tienen ficha; todos los objetos del alcance de la matriz aparecen en ella.
 - [ ] Ninguna conclusión ✅ se apoya en un dato que no llegó (seguridad de acciones, excepciones de nodos, role maps, consumidores).
 - [ ] `diagrams/grupos.mmd` pasa `python3 <skill>/scripts/validate_mermaid.py <salida>/diagrams/grupos.mmd`; si `bash <skill>/scripts/render_diagrams.sh --mermaid <salida>/diagrams/grupos.mmd` genera el SVG, el documento lo enlaza con «Fuente:»; si no, lleva el bloque mermaid.

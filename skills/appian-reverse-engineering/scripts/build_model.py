@@ -4,7 +4,7 @@
 Uso:
   python3 <skill>/scripts/build_model.py <carpeta_salida>
 
-Lee   <trabajo>/mcp_raw/ (lo escribe devmcp_extract.py); <trabajo> = <padre>/_trabajo/<nombre de salida>
+Lee   <trabajo>/mcp_raw/ (lo escribe devmcp_extract.py); <trabajo> = <salida>/extraccion
 Crea  <trabajo>/inventory.json y graph.json (rutas "path" relativas a <trabajo>)
 
 No depende de nombres de herramientas: cada fichero lleva en _meta.role el papel que le asigno la
@@ -24,7 +24,8 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rutas import work_dir  # noqa: E402
+from detect_secrets import buscar as secretos_en  # noqa: E402
+from rutas import carpeta_objeto, work_dir  # noqa: E402
 
 UUID_KEYS = ("uuid", "objectUuid", "designObjectUuid", "guid", "id", "objectId")
 NAME_KEYS = ("name", "objectName", "displayName", "label", "title")
@@ -37,7 +38,6 @@ ORIGIN_RANK = {"dependents": 0, "dependencies": 1, "uuid": 2, "name": 3, "litera
 SECRET_NAME = re.compile(r"(?i)(token|secret|passw|pwd|api[_\-]?key|credential|private[_\-]?key)")
 SECRET_VALUE = re.compile(r"sk_(live|test)_\w+|AKIA[0-9A-Z]{16}|(?i:bearer)\s+\S{8,}|-----BEGIN|eyJ[\w\-]{10,}\.[\w\-]{10,}"
                           r"|\b[A-Fa-f0-9]{32,}\b|\b[A-Za-z0-9+/]{40,}={0,2}")
-URL_CRED = re.compile(r"(https?://)([^/@\s:]+):([^/@\s]+)@")
 DATE_RX = re.compile(r"^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?)?")
 
 
@@ -133,10 +133,6 @@ def items_with_uuid(data: Any):
                 yield node
 
 
-def mask_url(u: Any) -> Any:
-    return URL_CRED.sub(r"\1\2:***@", u) if isinstance(u, str) else u
-
-
 def dates_in(data: Any) -> list[str]:
     return [n for n in walk(data) if isinstance(n, str) and DATE_RX.match(n)]
 
@@ -156,8 +152,7 @@ def read_object_files(folder: Path) -> list[dict]:
             continue
         meta = d.get("_meta", {})
         out.append({"file": f, "tool": meta.get("tool", f.stem), "role": meta.get("role", "other"),
-                    "ok": bool(meta.get("ok")), "error": meta.get("error"), "response": d.get("response"),
-                    "maskedSecrets": int(meta.get("maskedSecrets") or 0)})
+                    "ok": bool(meta.get("ok")), "error": meta.get("error"), "response": d.get("response")})
     return out
 
 
@@ -189,19 +184,15 @@ def enrich_by_type(o: dict, defn: Any, name_by_uuid: dict):
         value = find_key(defn, ("value",), want=(str, int, float, list, bool))
         o["typeRef"] = pick(defn, ("type", "constantType", "dataType", "valueType", "objectType"))
         o["isArray"] = bool(find_key(defn, ("isArray", "multiple"), want=(bool,)))
-        secret = bool(SECRET_NAME.search(o.get("name") or "")) or bool(
-            isinstance(value, str) and (SECRET_VALUE.search(value) or "***ENMASCARADO***" in value))
-        if secret:
-            o["value"], o["maskedSecret"] = "***", True
-        elif value is not None:
-            o["value"] = mask_url(value) if isinstance(value, str) else value
-            if isinstance(o["value"], str):
-                o["value"] = o["value"][:200]
+        if SECRET_NAME.search(o.get("name") or "") or (isinstance(value, str) and SECRET_VALUE.search(value)):
+            o["secret"] = True              # su nombre o su valor parecen un secreto
+        if value is not None:
+            o["value"] = value[:200] if isinstance(value, str) else value
         if isinstance(value, str) and value in name_by_uuid:
             o["valueRef"] = name_by_uuid[value]
     elif t == "integration":
         o["method"] = pick(defn, ("method", "httpMethod", "verb"))
-        o["endpoint"] = mask_url(pick(defn, ("relativePath", "endpoint", "url", "path", "uri")))
+        o["endpoint"] = pick(defn, ("relativePath", "endpoint", "url", "path", "uri"))
         cs = next((v for node in walk(defn) if isinstance(node, dict) for k, v in node.items()
                    if "connectedsystem" in k.lower() and isinstance(v, str)), None)
         if cs:
@@ -211,7 +202,7 @@ def enrich_by_type(o: dict, defn: Any, name_by_uuid: dict):
             o["modifiesData"] = wr
     elif t == "connectedSystem":
         o["csType"] = pick(defn, ("systemType", "connectedSystemType", "csType", "type", "objectType"))
-        o["baseUrl"] = mask_url(pick(defn, ("baseUrl", "baseURL", "url", "endpoint", "host")))
+        o["baseUrl"] = pick(defn, ("baseUrl", "baseURL", "url", "endpoint", "host"))
         o["authType"] = pick(defn, ("authType", "authenticationType", "authentication", "auth"))
     elif t == "webApi":
         o["method"] = pick(defn, ("httpMethod", "method", "verb"))
@@ -393,7 +384,7 @@ def main(out_dir: str) -> int:
     files_by_uuid: dict[str, list[dict]] = {}
     parse_errors = 0
     for o in objs:
-        folder = raw / re.sub(r"[^A-Za-z0-9_.\-]", "_", o["type"]) / re.sub(r"[^A-Za-z0-9_.\-]", "_", o["uuid"])[:150]
+        folder = carpeta_objeto(raw, o["type"], o["uuid"])
         files = read_object_files(folder) if folder.exists() else []
         files_by_uuid[o["uuid"]] = files
         defn_file = choose_definition(files)
@@ -407,9 +398,9 @@ def main(out_dir: str) -> int:
         if defn_file:
             enrich_by_type(o, unwrap(defn_file["response"]), name_by_uuid)
         enrich_roles(o, files, group_uuids, name_by_uuid)
-        masked = sum(f["maskedSecrets"] for f in files)
-        if masked:
-            o["maskedSecrets"] = masked
+        secretos = sum(1 for f in files for _ in secretos_en(f["file"]))   # lo que encuentra detect_secrets.py
+        if secretos:
+            o["secrets"] = secretos
         o.pop("sources", None)
     app_files = sorted((raw / "_app").glob("*.json")) if (raw / "_app").exists() else []
     app_obj = {"type": "application", "name": app.get("name"), "uuid": app["uuid"], "prefix": app.get("prefix"),

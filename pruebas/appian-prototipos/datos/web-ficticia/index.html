@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1D2B4A">
+<title>Nubarrón Mensajería · Envíos en el día</title>
+<!-- Web de una empresa ficticia, solo para las pruebas de marca.py (appian-prototipos). La hoja de otro sitio no se descarga. -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Ccircle%20cx='8'%20cy='8'%20r='7'%20fill='%235DA9E9'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="estilos.css">
+<link rel="stylesheet" href="https://estaticos.ejemplo.invalid/tipos.css">
+<style>
+  .aviso-temporal { border-left: 4px solid #F2B134; }
+</style>
+</head>
+<body>
+<header class="cabecera">
+  <a href="./" class="cabecera-marca"><img src="logo.svg" alt="Logo de Nubarrón Mensajería" width="180" height="40"></a>
+  <nav class="menu" aria-label="Principal">
+    <a href="#servicios">Servicios</a>
+    <a href="#tarifas">Tarifas</a>
+    <a href="#seguimiento">Seguimiento</a>
+  </nav>
+  <button class="buscar" type="button" aria-label="Buscar un envío">
+    <svg class="icono" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="#4D4D4D" stroke-width="2"/><path d="M11 11l4 4" stroke="#4D4D4D" stroke-width="2"/></svg>
+  </button>
+  <a href="#recogida" class="boton">Pedir recogida</a>
+  <a href="#salir" class="logout" aria-label="Cerrar sesión">
+    <svg class="icono" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 3H3v10h3M10 5l3 3-3 3M13 8H6" fill="none" stroke="#4D4D4D" stroke-width="2"/></svg>
+  </a>
+</header>
+<main>
+  <section class="portada">
+    <h1>Tus envíos, <span class="destacado">en el día</span></h1>
+    <p>Recogemos en tu tienda y entregamos en tu ciudad antes de las 20:00.</p>
+  </section>
+  <section id="servicios" class="servicios">
+    <article class="tarjeta"><h2>Urgente</h2><p>Entrega en dos horas dentro de la ciudad.</p><span class="etiqueta">Nuevo</span></article>
+    <article class="tarjeta"><h2>En el día</h2><p>Recogida por la mañana y entrega por la tarde.</p></article>
+    <article class="tarjeta"><h2>Programado</h2><p>Elige el día y la franja de entrega.</p></article>
+  </section>
+  <section id="seguimiento" class="seguimiento">
+    <form>
+      <label for="codigo">Código de envío</label>
+      <input id="codigo" name="codigo" placeholder="NUB-000000">
+      <p class="error">No encontramos ese código</p>
+    </form>
+  </section>
+  <p class="aviso aviso-temporal">Del 24 al 31 de diciembre ampliamos el horario de recogida.</p>
+</main>
+<a id="fab" href="#recogida" aria-label="Pedir recogida">+</a>
+<footer class="pie">
+  <p>Nubarrón Mensajería es una empresa ficticia. <a href="#contacto">Contacto</a></p>
+</footer>
+</body>
+</html>

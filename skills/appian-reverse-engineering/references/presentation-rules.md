@@ -30,8 +30,8 @@ Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no e
 ```
 
 - El TL;DR es el **único** resumen del documento. No añadas «Resumen rápido», «Resumen» ni otro TL;DR más abajo.
-- La plantilla puede concretar el nombre de una sección («Vista: mapa de procesos») o subdividirla (`## Detalle: requisitos`, `## Detalle: datos`…), pero no cambiar el orden.
-- Los documentos sin área propietaria de hallazgos (`12`, `13`, `14`) no tienen sección Hallazgos ni «Hallazgos:» en el TL;DR; citan los IDs donde los tratan. `09` añade «Registro de hallazgos» tras sus Hallazgos.
+- La plantilla puede concretar el nombre de una sección («Vista: mapa de procesos») o subdividirla (`## Detalle: datos`…), pero no cambiar el orden.
+- `09` añade «Registro de hallazgos» tras sus Hallazgos.
 - Encabezados sin emojis.
 - `00-resumen-ejecutivo.md`, `LEEME.md` e `INVENTARIO.md` tienen su propia estructura en la plantilla; también empiezan por el TL;DR.
 
@@ -112,18 +112,16 @@ No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). Una buena p
 
 ## Regla 8: lo que el lector no debe ver
 
-- **Usuarios**: ningún nombre de usuario en ningún entregable. Usa recuentos o el rol: «una cuenta personal del grupo DEM Gestores», «una cuenta de servicio». Una constante de tipo Usuario o un usuario escrito en el código se escribe «una cuenta de ‹grupo›», con el nombre de su grupo si se conoce (p. ej. «una cuenta de DEM Gestores»), o «una cuenta personal»; un correo personal, `‹correo›` (literal).
 - **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts, códigos internos de patrones (`DAT-02`) ni «heurística de la skill». Nombra la buena práctica y su fuente oficial.
 - **Notas de parche**: nunca «01 todavía dice…», «esto matiza a…», «corrige lo que dice X». Si otro documento está mal, se corrige ese documento (pasada de coherencia de la fase 6).
-- **`<trabajo>/`**: los entregables no lo enlazan ni escriben su ruta (no se comparte). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
-- **Render de una interfaz**: se guarda sin valores (‹valor›), porque al evaluarla Appian puede traer datos reales. Describe la estructura («un indicador de solicitudes pendientes»), nunca valores.
+- **`<trabajo>/`** (`extraccion/`): los entregables no lo enlazan ni escriben su ruta (son datos en bruto). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
 - **Limitaciones globales** (entorno no productivo, versión no determinada, muestra de ejecuciones, configuración que el Dev MCP no devuelve): se explican una vez en `LEEME.md`. Cada documento cita en su «Cobertura y límites» solo las que cambian lo que dice, en una línea. Donde una cifra dependa de ellas (p. ej. ejecuciones en un entorno que no consta como producción), no repitas la explicación: usa la marca corta «orientativo (ver [LEEME](./LEEME.md))» (`../LEEME.md` desde `08-procesos-bpmn/`), una vez por tabla o sección (p. ej. en la cabecera de la columna).
 
 ## Regla 9: longitud
 
 Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal estructurado. «1 pantalla» ≈ 50 líneas. En apps pequeñas (menos de ~50 objetos) apunta al objetivo, no al máximo.
 
-**El objetivo crece con el contenido.** Nunca se recorta ni se omite un caso de uso, RF, RN, MOD, pantalla u otra ficha para cumplir la longitud: lo que se acorta es cada ficha. En `01`, `12`, `13` y `14`, por encima de unas 15 fichas el documento se parte por área (subdominio, actor o módulo): un `## Detalle: <área>` por área, entre la Vista y los Hallazgos (Regla 1), y tras la Vista un índice de áreas con enlaces a sus fichas.
+**El objetivo crece con el contenido.** Nunca se recorta ni se omite un caso de uso, RN, pantalla u otra ficha para cumplir la longitud: lo que se acorta es cada ficha. En `01`, por encima de unas 15 fichas el documento se parte por área (subdominio, actor o módulo): un `## Detalle: <área>` por área, entre la Vista y los Hallazgos (Regla 1), y tras la Vista un índice de áreas con enlaces a sus fichas.
 
 | Entregable | Objetivo | Máximo |
 |---|---|---|
@@ -139,9 +137,6 @@ Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal 
 | `08-procesos-bpmn/indice.md` | 1 | 2 |
 | `09-valor-adicional.md` | según hallazgos | con índice |
 | `10-pantallas.md`, `11-reglas-negocio.md` | ½ por pantalla o regla | 1 por pantalla o regla |
-| `12-especificacion-reconstruccion.md` | 1 + ½ por RF | 1 + 1 por RF |
-| `13-modernizacion-refactor.md` | 1 + ⅓ por MOD | 1 + ⅔ por MOD |
-| `14-diseno-objetivo.md` | 2 + ½ por elemento que cambia | 2 + 1 por elemento que cambia |
 | `INVENTARIO.md` | una tabla por tipo | sin límite |
 
 ## Checklist antes de escribir cada documento
@@ -152,7 +147,7 @@ Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal 
 - [ ] Cada diagrama una sola vez y legible al ancho de página.
 - [ ] Solo ✅/🔵/❓ como certeza y Alta/Media/Baja como severidad.
 - [ ] Hallazgos solo de tu área, con ID del registro.
-- [ ] Sin usuarios, sin referencias a la skill, sin notas de parche, sin enlaces a `<trabajo>/`.
+- [ ] Sin referencias a la skill, sin notas de parche, sin enlaces a `<trabajo>/`.
 - [ ] Sin placeholders (`{{`, `TODO`, `TBD`, `xxx`, `lorem`).
 - [ ] Cada ficha con evidencia y certeza; cada evidencia enlaza su ficha del anexo.
 - [ ] Ninguna ficha recortada u omitida por longitud.

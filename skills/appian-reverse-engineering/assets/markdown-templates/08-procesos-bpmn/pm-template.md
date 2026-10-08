@@ -8,8 +8,8 @@
   Ejecuciones: si el entorno no consta como producción, la marca «orientativo (ver LEEME)» (../LEEME.md), sin más
   explicación. Instancias fallidas o detenidas de la muestra: hallazgo H-PRO de este proceso. Sin ejecuciones: el
   hallazgo es el H-GEN de 09; aquí se cita.
-  Usuarios: una asignación o un destinatario que es un usuario o una constante de tipo Usuario: «una cuenta de
-  ‹grupo›» o «una cuenta personal»; un correo personal: ‹correo›.
+  Una asignación o un destinatario que es un usuario o una constante de tipo Usuario lleva el usuario, con su grupo si
+  aclara algo.
   Evidencia: siempre enlazada a la ficha del proceso en el anexo (../anexo/processModel/<slug>.md).
 -->
 

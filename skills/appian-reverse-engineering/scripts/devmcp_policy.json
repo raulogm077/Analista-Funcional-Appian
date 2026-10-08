@@ -129,7 +129,7 @@
     {
       "pattern": "(?i)^(test|render|preview)[A-Za-z]*Interface[A-Za-z]*$",
       "role": "screen",
-      "reason": "Renderiza una interfaz con entradas vacias para obtener su arbol de componentes. No hace clic ni envia formularios. El resultado se guarda sin valores (privacidad.redact_screen): pueden ser datos reales evaluados."
+      "reason": "Renderiza una interfaz con entradas vacias para obtener su arbol de componentes. No hace clic ni envia formularios. El resultado se guarda tal cual, con los valores de la evaluacion."
     }
   ],
   "excludePatterns": [

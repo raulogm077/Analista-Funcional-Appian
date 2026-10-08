@@ -1,0 +1,1161 @@
+{
+ "id": "registro",
+ "title": "{rv!record.codigo} · {rv!record.titulo}",
+ "type": "record",
+ "pattern": "P02",
+ "recordType": "EXP Expediente",
+ "req": [
+  "RF-FICHA"
+ ],
+ "$note": "P02: cabecera azul marino con ≤3 acciones; Resumen = franja de datos clave + hito + aviso + 2X/1X (datos que no están en la franja / documentos recientes); las áreas 1:N en vistas.",
+ "breadcrumb": {
+  "label": "Expedientes",
+  "goto": "listado"
+ },
+ "headerBackgroundColor": "#0F203A",
+ "local": {
+  "local!comentarios": [
+   {
+    "id": 1,
+    "autor": "Rocío Sánchez Vidal",
+    "fecha": "2026-09-12T10:20",
+    "texto": "Adjunto el presupuesto actualizado con las bancadas de cuatro plazas.",
+    "adjuntos": [
+     {
+      "nombre": "Presupuesto_bancadas_v2.xlsx",
+      "tipo": "excel",
+      "tamano": "38 KB"
+     }
+    ],
+    "padre": null
+   },
+   {
+    "id": 2,
+    "autor": "María López Arranz",
+    "fecha": "2026-09-12T12:05",
+    "texto": "Gracias. ¿Incluye la toma de carga USB-C en todas las plazas?",
+    "adjuntos": [],
+    "padre": 1
+   },
+   {
+    "id": 3,
+    "autor": "Rocío Sánchez Vidal",
+    "fecha": "2026-09-12T13:40",
+    "texto": "Sí, en las cuatro plazas de cada bancada.",
+    "adjuntos": [],
+    "padre": 1
+   }
+  ],
+  "local!nuevoComentario": null,
+  "local!respondiendoA": null,
+  "local!respuesta": null
+ },
+ "recordActions": [
+  {
+   "type": "a!recordActionItem",
+   "action": "recordType!EXP Expediente.actions.editar",
+   "identifier": "{rv!record.id}",
+   "$label": "Editar",
+   "$icon": "pencil",
+   "$action": {
+    "dialog": "dialogo",
+    "params": {
+     "id": "{rv!record.id}"
+    }
+   }
+  },
+  {
+   "type": "a!recordActionItem",
+   "action": "recordType!EXP Expediente.actions.cerrar",
+   "identifier": "{rv!record.id}",
+   "$label": "Cerrar expediente",
+   "$icon": "lock",
+   "$note": "Solo para el responsable de la unidad. En Appian: seguridad de acción de registro (y permiso Initiator en el modelo de proceso)."
+  }
+ ],
+ "views": [
+  {
+   "id": "resumen",
+   "label": "Resumen",
+   "interface": {
+    "type": "a!headerContentLayout",
+    "backgroundColor": "TRANSPARENT",
+    "contents": [
+     {
+      "type": "a!cardLayout",
+      "style": "NONE",
+      "showBorder": false,
+      "showShadow": true,
+      "shape": "SEMI_ROUNDED",
+      "padding": "STANDARD",
+      "contents": [
+       {
+        "type": "a!columnsLayout",
+        "showDividers": true,
+        "spacing": "SPARSE",
+        "alignVertical": "TOP",
+        "stackWhen": [
+         "PHONE",
+         "TABLET_PORTRAIT"
+        ],
+        "columns": [
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "labelPosition": "COLLAPSED",
+            "marginBelow": "EVEN_LESS",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Estado",
+              "color": "SECONDARY",
+              "size": "SMALL"
+             }
+            ]
+           },
+           {
+            "type": "a!tagField",
+            "labelPosition": "COLLAPSED",
+            "size": "SMALL",
+            "tags": [
+             {
+              "type": "a!tagItem",
+              "text": "{rv!record.estado}",
+              "backgroundColor": "{rv!record.estado|map:estadoColor}"
+             }
+            ],
+            "marginBelow": "NONE"
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "label": "Tipo",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Tipo",
+              "color": "SECONDARY",
+              "size": "SMALL"
+             },
+             "\n",
+             {
+              "type": "a!richTextItem",
+              "text": "{rv!record.tipo|dash}",
+              "size": "MEDIUM"
+             }
+            ],
+            "marginBelow": "NONE"
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "label": "Unidad",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Unidad",
+              "color": "SECONDARY",
+              "size": "SMALL"
+             },
+             "\n",
+             {
+              "type": "a!richTextItem",
+              "text": "{rv!record.unidad|dash}",
+              "size": "MEDIUM"
+             }
+            ],
+            "marginBelow": "NONE"
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "label": "Importe",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Importe",
+              "color": "SECONDARY",
+              "size": "SMALL"
+             },
+             "\n",
+             {
+              "type": "a!richTextItem",
+              "text": "{rv!record.importe|eur|dash}",
+              "size": "MEDIUM"
+             }
+            ],
+            "marginBelow": "NONE"
+           }
+          ]
+         },
+         {
+          "type": "a!columnLayout",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "label": "Responsable",
+            "labelPosition": "COLLAPSED",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Responsable",
+              "color": "SECONDARY",
+              "size": "SMALL"
+             },
+             "\n",
+             {
+              "type": "a!richTextItem",
+              "text": "{rv!record.responsable|dash}",
+              "size": "MEDIUM"
+             }
+            ],
+            "marginBelow": "NONE"
+           }
+          ]
+         }
+        ],
+        "marginBelow": "STANDARD"
+       },
+       {
+        "type": "a!milestoneField",
+        "labelPosition": "COLLAPSED",
+        "steps": [
+         "Borrador",
+         "En tramitación",
+         "Pendiente de aprobación",
+         "Aprobado",
+         "Cerrado"
+        ],
+        "active": "{rv!record.estado|map:estadoPaso}",
+        "stepStyle": "LINE",
+        "color": "ACCENT"
+       }
+      ],
+      "marginBelow": "MORE"
+     },
+     {
+      "type": "a!cardLayout",
+      "style": "INFO",
+      "showBorder": false,
+      "padding": "STANDARD",
+      "shape": "SEMI_ROUNDED",
+      "decorativeBarPosition": "START",
+      "decorativeBarColor": "INFO",
+      "marginBelow": "MORE",
+      "contents": [
+       {
+        "type": "a!sideBySideLayout",
+        "alignVertical": "MIDDLE",
+        "spacing": "STANDARD",
+        "items": [
+         {
+          "type": "a!sideBySideItem",
+          "width": "MINIMIZE",
+          "item": {
+           "type": "a!richTextDisplayField",
+           "labelPosition": "COLLAPSED",
+           "value": [
+            {
+             "type": "a!richTextIcon",
+             "icon": "info-circle",
+             "color": "#115EBB",
+             "size": "MEDIUM"
+            }
+           ]
+          }
+         },
+         {
+          "type": "a!sideBySideItem",
+          "item": {
+           "type": "a!richTextDisplayField",
+           "labelPosition": "COLLAPSED",
+           "value": [
+            {
+             "type": "a!richTextItem",
+             "text": "Pendiente de aprobación",
+             "style": "STRONG"
+            },
+            "\n",
+            "El expediente espera la decisión del aprobador"
+           ]
+          }
+         }
+        ]
+       }
+      ],
+      "showWhen": "rv!record.estado = \"Pendiente de aprobación\""
+     },
+     {
+      "type": "a!columnsLayout",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "width": "2X",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "label": "Datos del expediente",
+          "labelSize": "MEDIUM",
+          "labelHeadingTag": "H2",
+          "labelColor": "STANDARD",
+          "marginBelow": "MORE",
+          "contents": [
+           {
+            "type": "a!cardLayout",
+            "style": "NONE",
+            "showBorder": false,
+            "showShadow": true,
+            "shape": "SEMI_ROUNDED",
+            "padding": "STANDARD",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Título",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Título",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.titulo|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "STANDARD"
+             },
+             {
+              "type": "a!columnsLayout",
+              "marginBelow": "STANDARD",
+              "columns": [
+               {
+                "type": "a!columnLayout",
+                "contents": [
+                 {
+                  "type": "a!richTextDisplayField",
+                  "label": "Fecha de alta",
+                  "labelPosition": "COLLAPSED",
+                  "value": [
+                   {
+                    "type": "a!richTextItem",
+                    "text": "Fecha de alta",
+                    "color": "SECONDARY",
+                    "size": "SMALL"
+                   },
+                   "\n",
+                   {
+                    "type": "a!richTextItem",
+                    "text": "{rv!record.fechaAlta|date|dash}",
+                    "size": "MEDIUM"
+                   }
+                  ],
+                  "marginBelow": "NONE"
+                 }
+                ]
+               },
+               {
+                "type": "a!columnLayout",
+                "contents": [
+                 {
+                  "type": "a!richTextDisplayField",
+                  "label": "Enviado a aprobación",
+                  "labelPosition": "COLLAPSED",
+                  "value": [
+                   {
+                    "type": "a!richTextItem",
+                    "text": "Enviado a aprobación",
+                    "color": "SECONDARY",
+                    "size": "SMALL"
+                   },
+                   "\n",
+                   {
+                    "type": "a!richTextItem",
+                    "text": "{rv!record.fechaEnvio|date|dash}",
+                    "size": "MEDIUM"
+                   }
+                  ],
+                  "marginBelow": "NONE"
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "a!richTextDisplayField",
+              "label": "Descripción",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Descripción",
+                "color": "SECONDARY",
+                "size": "SMALL"
+               },
+               "\n",
+               {
+                "type": "a!richTextItem",
+                "text": "{rv!record.descripcion|dash}",
+                "size": "MEDIUM"
+               }
+              ],
+              "marginBelow": "STANDARD"
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "label": "Documentos recientes",
+          "labelSize": "MEDIUM",
+          "labelHeadingTag": "H2",
+          "labelColor": "STANDARD",
+          "marginBelow": "MORE",
+          "contents": [
+           {
+            "type": "a!cardLayout",
+            "style": "NONE",
+            "showBorder": false,
+            "showShadow": true,
+            "shape": "SEMI_ROUNDED",
+            "padding": "STANDARD",
+            "contents": [
+             {
+              "type": "a!forEach",
+              "items": "data!documentos",
+              "$filter": "fv!item.expedienteId = rv!record.id",
+              "$limit": 3,
+              "expression": {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "marginBelow": "LESS",
+               "value": [
+                {
+                 "type": "a!richTextIcon",
+                 "icon": "{fv!item.icono}",
+                 "color": "SECONDARY",
+                 "size": "MEDIUM"
+                },
+                "  ",
+                {
+                 "type": "a!richTextItem",
+                 "text": "{fv!item.nombre}"
+                },
+                "\n",
+                {
+                 "type": "a!richTextItem",
+                 "text": "{fv!item.meta}",
+                 "color": "SECONDARY",
+                 "size": "SMALL"
+                }
+               ]
+              }
+             },
+             {
+              "type": "a!richTextDisplayField",
+              "labelPosition": "COLLAPSED",
+              "align": "RIGHT",
+              "marginAbove": "LESS",
+              "value": [
+               {
+                "type": "a!richTextItem",
+                "text": "Ver todos los documentos",
+                "link": {
+                 "type": "a!dynamicLink",
+                 "$action": {
+                  "goto": "registro",
+                  "params": {
+                   "id": "{rv!record.id}"
+                  },
+                  "view": "documentos"
+                 }
+                },
+                "linkStyle": "STANDALONE",
+                "style": "STRONG"
+               },
+               " ",
+               {
+                "type": "a!richTextIcon",
+                "icon": "arrow-right",
+                "color": "ACCENT",
+                "link": {
+                 "type": "a!dynamicLink",
+                 "$action": {
+                  "goto": "registro",
+                  "params": {
+                   "id": "{rv!record.id}"
+                  },
+                  "view": "documentos"
+                 }
+                },
+                "altText": "Ver todos los documentos"
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "documentos",
+   "label": "Documentos",
+   "interface": {
+    "type": "a!headerContentLayout",
+    "backgroundColor": "TRANSPARENT",
+    "contents": [
+     {
+      "type": "a!sectionLayout",
+      "label": "Documentos",
+      "labelSize": "MEDIUM",
+      "labelHeadingTag": "H2",
+      "labelColor": "STANDARD",
+      "marginBelow": "MORE",
+      "contents": [
+       {
+        "type": "a!cardLayout",
+        "style": "NONE",
+        "showBorder": false,
+        "showShadow": true,
+        "shape": "SEMI_ROUNDED",
+        "padding": "STANDARD",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "contents": [
+           {
+            "type": "a!forEach",
+            "items": "data!documentos",
+            "expression": {
+             "type": "a!sectionLayout",
+             "marginBelow": "NONE",
+             "contents": [
+              {
+               "type": "a!sideBySideLayout",
+               "alignVertical": "MIDDLE",
+               "marginBelow": "LESS",
+               "items": [
+                {
+                 "type": "a!sideBySideItem",
+                 "width": "MINIMIZE",
+                 "item": {
+                  "type": "a!richTextDisplayField",
+                  "labelPosition": "COLLAPSED",
+                  "value": [
+                   {
+                    "type": "a!richTextIcon",
+                    "icon": "{fv!item.icono}",
+                    "size": "LARGE",
+                    "color": "ACCENT"
+                   }
+                  ]
+                 }
+                },
+                {
+                 "type": "a!sideBySideItem",
+                 "item": {
+                  "type": "a!richTextDisplayField",
+                  "labelPosition": "COLLAPSED",
+                  "value": [
+                   {
+                    "type": "a!richTextItem",
+                    "text": "{fv!item.nombre}",
+                    "style": "STRONG",
+                    "link": {
+                     "type": "a!dynamicLink"
+                    },
+                    "linkStyle": "STANDALONE"
+                   },
+                   "\n",
+                   {
+                    "type": "a!richTextItem",
+                    "text": "{fv!item.meta}",
+                    "color": "SECONDARY",
+                    "size": "SMALL"
+                   }
+                  ]
+                 }
+                }
+               ]
+              },
+              {
+               "type": "a!horizontalLine",
+               "color": "SECONDARY",
+               "marginBelow": "LESS",
+               "showWhen": "not(fv!isLast)"
+              }
+             ]
+            },
+            "$filter": "fv!item.expedienteId = rv!record.id"
+           }
+          ],
+          "marginBelow": "NONE",
+          "$note": "En Appian: record type de documentos relacionado con EXP Expediente (1:N)."
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "comentarios",
+   "label": "Comentarios",
+   "interface": {
+    "type": "a!headerContentLayout",
+    "backgroundColor": "TRANSPARENT",
+    "contents": [
+     {
+      "type": "a!columnsLayout",
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "width": "WIDE_PLUS",
+        "contents": [
+         {
+          "type": "a!sectionLayout",
+          "marginBelow": "MORE",
+          "contents": [
+           {
+            "type": "a!headingField",
+            "text": "Comentarios ({count(local!comentarios)})",
+            "headingTag": "H2",
+            "size": "MEDIUM",
+            "fontWeight": "BOLD",
+            "marginBelow": "STANDARD"
+           },
+           {
+            "type": "a!cardLayout",
+            "shape": "SEMI_ROUNDED",
+            "padding": "STANDARD",
+            "showBorder": false,
+            "showShadow": true,
+            "marginBelow": "STANDARD",
+            "contents": [
+             {
+              "type": "a!paragraphField",
+              "label": "Nuevo comentario",
+              "labelPosition": "COLLAPSED",
+              "placeholder": "Añada un comentario",
+              "height": "SHORT",
+              "value": "local!nuevoComentario",
+              "saveInto": "local!nuevoComentario"
+             },
+             {
+              "type": "a!buttonArrayLayout",
+              "align": "END",
+              "marginBelow": "NONE",
+              "buttons": [
+               {
+                "type": "a!buttonWidget",
+                "label": "Publicar",
+                "icon": "paper-plane",
+                "style": "OUTLINE",
+                "color": "ACCENT",
+                "size": "SMALL",
+                "disabled": "a!isNullOrEmpty(local!nuevoComentario)",
+                "$action": {
+                 "prepend": {
+                  "local!comentarios": {
+                   "id": "{count(local!comentarios) + 1}",
+                   "autor": "María López Arranz",
+                   "fecha": "{now()}",
+                   "texto": "{local!nuevoComentario}",
+                   "adjuntos": [],
+                   "padre": null
+                  }
+                 },
+                 "set": {
+                  "local!nuevoComentario": null
+                 }
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "a!forEach",
+            "items": "local!comentarios",
+            "$filter": "a!isNullOrEmpty(fv!item.padre)",
+            "$local": {
+             "local!comentario": "fv!item"
+            },
+            "expression": {
+             "type": "a!cardLayout",
+             "shape": "SEMI_ROUNDED",
+             "padding": "STANDARD",
+             "showBorder": false,
+             "showShadow": true,
+             "marginBelow": "STANDARD",
+             "contents": [
+              {
+               "type": "a!sideBySideLayout",
+               "alignVertical": "MIDDLE",
+               "marginBelow": "LESS",
+               "items": [
+                {
+                 "type": "a!sideBySideItem",
+                 "width": "MINIMIZE",
+                 "item": {
+                  "type": "a!imageField",
+                  "labelPosition": "COLLAPSED",
+                  "size": "TINY",
+                  "style": "AVATAR",
+                  "images": [
+                   {
+                    "type": "a!userImage",
+                    "user": "{fv!item.autor}"
+                   }
+                  ]
+                 }
+                },
+                {
+                 "type": "a!sideBySideItem",
+                 "width": "MINIMIZE",
+                 "item": {
+                  "type": "a!richTextDisplayField",
+                  "labelPosition": "COLLAPSED",
+                  "value": [
+                   {
+                    "type": "a!richTextItem",
+                    "text": "{fv!item.autor}",
+                    "style": "STRONG"
+                   }
+                  ],
+                  "marginBelow": "NONE"
+                 }
+                },
+                {
+                 "type": "a!sideBySideItem",
+                 "item": {
+                  "type": "a!richTextDisplayField",
+                  "labelPosition": "COLLAPSED",
+                  "value": [
+                   {
+                    "type": "a!richTextItem",
+                    "text": "{fv!item.fecha|datetime}",
+                    "size": "SMALL",
+                    "color": "#666666"
+                   }
+                  ],
+                  "marginBelow": "NONE"
+                 }
+                },
+                {
+                 "type": "a!sideBySideItem",
+                 "width": "MINIMIZE",
+                 "item": {
+                  "type": "a!buttonArrayLayout",
+                  "align": "END",
+                  "marginBelow": "NONE",
+                  "buttons": [
+                   {
+                    "type": "a!buttonWidget",
+                    "label": "Responder",
+                    "icon": "reply",
+                    "style": "LINK",
+                    "color": "ACCENT",
+                    "size": "SMALL",
+                    "value": "{local!comentario.id}",
+                    "saveInto": "local!respondiendoA"
+                   }
+                  ]
+                 }
+                }
+               ]
+              },
+              {
+               "type": "a!richTextDisplayField",
+               "labelPosition": "COLLAPSED",
+               "value": [
+                "{fv!item.texto}"
+               ],
+               "marginBelow": "NONE"
+              },
+              {
+               "type": "a!cardGroupLayout",
+               "labelPosition": "COLLAPSED",
+               "cardWidth": "MEDIUM",
+               "spacing": "DENSE",
+               "marginAbove": "LESS",
+               "showWhen": "a!isNotNullOrEmpty(fv!item.adjuntos)",
+               "cards": [
+                {
+                 "type": "a!forEach",
+                 "items": "fv!item.adjuntos",
+                 "expression": {
+                  "type": "a!cardLayout",
+                  "shape": "SEMI_ROUNDED",
+                  "padding": "LESS",
+                  "borderColor": "#E6E8EA",
+                  "link": {
+                   "type": "a!documentDownloadLink",
+                   "document": "{fv!item.nombre}"
+                  },
+                  "accessibilityText": "Descargar {fv!item.nombre}",
+                  "$uxIgnore": "Patrón Comment Thread de Appian 26.9: cada adjunto es una tarjeta con borde dentro del comentario",
+                  "contents": [
+                   {
+                    "type": "a!sideBySideLayout",
+                    "alignVertical": "MIDDLE",
+                    "items": [
+                     {
+                      "type": "a!sideBySideItem",
+                      "width": "MINIMIZE",
+                      "item": {
+                       "type": "a!stampField",
+                       "icon": "{fv!item.tipo|map:adjuntoIcono}",
+                       "size": "TINY",
+                       "shape": "SQUARED",
+                       "backgroundColor": "#DBE7F5",
+                       "contentColor": "#0F203A",
+                       "accessibilityText": "{fv!item.tipo}"
+                      }
+                     },
+                     {
+                      "type": "a!sideBySideItem",
+                      "item": {
+                       "type": "a!richTextDisplayField",
+                       "labelPosition": "COLLAPSED",
+                       "value": [
+                        {
+                         "type": "a!richTextItem",
+                         "text": "{fv!item.nombre}",
+                         "style": "STRONG",
+                         "size": "SMALL"
+                        },
+                        "\n",
+                        {
+                         "type": "a!richTextItem",
+                         "text": "{fv!item.tamano}",
+                         "size": "SMALL",
+                         "color": "#666666"
+                        }
+                       ],
+                       "marginBelow": "NONE"
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                }
+               ]
+              },
+              {
+               "type": "a!sectionLayout",
+               "label": "Respuestas ({count(wherecontains(local!comentario.id, local!comentarios.padre))})",
+               "labelSize": "EXTRA_SMALL",
+               "labelColor": "STANDARD",
+               "labelHeadingTag": "H4",
+               "isCollapsible": true,
+               "marginAbove": "STANDARD",
+               "marginBelow": "NONE",
+               "showWhen": "contains(local!comentarios.padre, local!comentario.id)",
+               "contents": [
+                {
+                 "type": "a!forEach",
+                 "items": "local!comentarios",
+                 "$filter": "fv!item.padre = local!comentario.id",
+                 "expression": {
+                  "type": "a!cardLayout",
+                  "style": "#F4F5F7",
+                  "showBorder": false,
+                  "shape": "SEMI_ROUNDED",
+                  "padding": "STANDARD",
+                  "marginBelow": "LESS",
+                  "contents": [
+                   {
+                    "type": "a!sideBySideLayout",
+                    "alignVertical": "MIDDLE",
+                    "marginBelow": "LESS",
+                    "items": [
+                     {
+                      "type": "a!sideBySideItem",
+                      "width": "MINIMIZE",
+                      "item": {
+                       "type": "a!imageField",
+                       "labelPosition": "COLLAPSED",
+                       "size": "ICON_PLUS",
+                       "style": "AVATAR",
+                       "images": [
+                        {
+                         "type": "a!userImage",
+                         "user": "{fv!item.autor}"
+                        }
+                       ]
+                      }
+                     },
+                     {
+                      "type": "a!sideBySideItem",
+                      "width": "MINIMIZE",
+                      "item": {
+                       "type": "a!richTextDisplayField",
+                       "labelPosition": "COLLAPSED",
+                       "value": [
+                        {
+                         "type": "a!richTextItem",
+                         "text": "{fv!item.autor}",
+                         "style": "STRONG"
+                        }
+                       ],
+                       "marginBelow": "NONE"
+                      }
+                     },
+                     {
+                      "type": "a!sideBySideItem",
+                      "item": {
+                       "type": "a!richTextDisplayField",
+                       "labelPosition": "COLLAPSED",
+                       "value": [
+                        {
+                         "type": "a!richTextItem",
+                         "text": "{fv!item.fecha|datetime}",
+                         "size": "SMALL",
+                         "color": "#666666"
+                        }
+                       ],
+                       "marginBelow": "NONE"
+                      }
+                     }
+                    ]
+                   },
+                   {
+                    "type": "a!richTextDisplayField",
+                    "labelPosition": "COLLAPSED",
+                    "value": [
+                     "{fv!item.texto}"
+                    ],
+                    "marginBelow": "NONE"
+                   },
+                   {
+                    "type": "a!cardGroupLayout",
+                    "labelPosition": "COLLAPSED",
+                    "cardWidth": "MEDIUM",
+                    "spacing": "DENSE",
+                    "marginAbove": "LESS",
+                    "showWhen": "a!isNotNullOrEmpty(fv!item.adjuntos)",
+                    "cards": [
+                     {
+                      "type": "a!forEach",
+                      "items": "fv!item.adjuntos",
+                      "expression": {
+                       "type": "a!cardLayout",
+                       "shape": "SEMI_ROUNDED",
+                       "padding": "LESS",
+                       "borderColor": "#E6E8EA",
+                       "link": {
+                        "type": "a!documentDownloadLink",
+                        "document": "{fv!item.nombre}"
+                       },
+                       "accessibilityText": "Descargar {fv!item.nombre}",
+                       "$uxIgnore": "Patrón Comment Thread de Appian 26.9: cada adjunto es una tarjeta con borde dentro del comentario",
+                       "contents": [
+                        {
+                         "type": "a!sideBySideLayout",
+                         "alignVertical": "MIDDLE",
+                         "items": [
+                          {
+                           "type": "a!sideBySideItem",
+                           "width": "MINIMIZE",
+                           "item": {
+                            "type": "a!stampField",
+                            "icon": "{fv!item.tipo|map:adjuntoIcono}",
+                            "size": "TINY",
+                            "shape": "SQUARED",
+                            "backgroundColor": "#DBE7F5",
+                            "contentColor": "#0F203A",
+                            "accessibilityText": "{fv!item.tipo}"
+                           }
+                          },
+                          {
+                           "type": "a!sideBySideItem",
+                           "item": {
+                            "type": "a!richTextDisplayField",
+                            "labelPosition": "COLLAPSED",
+                            "value": [
+                             {
+                              "type": "a!richTextItem",
+                              "text": "{fv!item.nombre}",
+                              "style": "STRONG",
+                              "size": "SMALL"
+                             },
+                             "\n",
+                             {
+                              "type": "a!richTextItem",
+                              "text": "{fv!item.tamano}",
+                              "size": "SMALL",
+                              "color": "#666666"
+                             }
+                            ],
+                            "marginBelow": "NONE"
+                           }
+                          }
+                         ]
+                        }
+                       ]
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                }
+               ]
+              },
+              {
+               "type": "a!cardLayout",
+               "showWhen": "local!respondiendoA = local!comentario.id",
+               "shape": "SEMI_ROUNDED",
+               "padding": "STANDARD",
+               "borderColor": "ACCENT",
+               "marginAbove": "STANDARD",
+               "$uxIgnore": "Cuadro de respuesta abierto: el borde de acento indica dónde se escribe",
+               "contents": [
+                {
+                 "type": "a!paragraphField",
+                 "label": "Respuesta a {local!comentario.autor}",
+                 "labelPosition": "COLLAPSED",
+                 "placeholder": "Escriba su respuesta",
+                 "height": "SHORT",
+                 "value": "local!respuesta",
+                 "saveInto": "local!respuesta"
+                },
+                {
+                 "type": "a!buttonArrayLayout",
+                 "align": "END",
+                 "marginBelow": "NONE",
+                 "buttons": [
+                  {
+                   "type": "a!buttonWidget",
+                   "label": "Cancelar",
+                   "style": "LINK",
+                   "color": "SECONDARY",
+                   "size": "SMALL",
+                   "$action": {
+                    "set": {
+                     "local!respondiendoA": null,
+                     "local!respuesta": null
+                    }
+                   }
+                  },
+                  {
+                   "type": "a!buttonWidget",
+                   "label": "Responder",
+                   "style": "OUTLINE",
+                   "color": "ACCENT",
+                   "size": "SMALL",
+                   "disabled": "a!isNullOrEmpty(local!respuesta)",
+                   "$action": {
+                    "append": {
+                     "local!comentarios": {
+                      "id": "{count(local!comentarios) + 1}",
+                      "autor": "María López Arranz",
+                      "fecha": "{now()}",
+                      "texto": "{local!respuesta}",
+                      "adjuntos": [],
+                      "padre": "{local!comentario.id}"
+                     }
+                    },
+                    "set": {
+                     "local!respuesta": null,
+                     "local!respondiendoA": null
+                    }
+                   }
+                  }
+                 ]
+                }
+               ]
+              }
+             ]
+            }
+           }
+          ],
+          "$note": "En Appian: record type de comentarios relacionado con el expediente (1:N; padre = comentario al que responde) y adjuntos como documentos."
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": []
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "historial",
+   "label": "Historial",
+   "interface": {
+    "type": "a!headerContentLayout",
+    "backgroundColor": "TRANSPARENT",
+    "contents": [
+     {
+      "type": "a!cardLayout",
+      "style": "NONE",
+      "showBorder": false,
+      "showShadow": true,
+      "shape": "SEMI_ROUNDED",
+      "padding": "MORE",
+      "contents": [
+       {
+        "type": "a!eventHistoryListField",
+        "labelPosition": "COLLAPSED",
+        "eventStyle": "TIMELINE",
+        "commentLayout": "CARD",
+        "$events": [
+         {
+          "event": "Enviado a aprobación",
+          "user": "{rv!record.responsable}",
+          "timestamp": "{rv!record.fechaAlta}T12:00:00",
+          "comment": "Adjunto el presupuesto actualizado."
+         },
+         {
+          "event": "Expediente creado",
+          "user": "{rv!record.responsable}",
+          "timestamp": "{rv!record.fechaAlta}T09:00:00"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

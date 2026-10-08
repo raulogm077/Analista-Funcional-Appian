@@ -1,0 +1,852 @@
+{
+ "id": "informe",
+ "title": "Informes",
+ "type": "page",
+ "pattern": "P08",
+ "req": [
+  "RF-INFORME"
+ ],
+ "$note": "P08: filtros de página en una barra y franja de KPI calculados con los filtros. Un gráfico con más de 7 puntos va solo, a todo el ancho y arriba; los pequeños, en parejas. Cada gráfico con su tabla alternativa (chart_table: enlace «Ver como tabla») y uno que profundiza a sus registros (chart_link).",
+ "local": {
+  "local!tipo": null,
+  "local!unidad": null,
+  "local!estadoSel": null,
+  "local!tablaMes": false,
+  "local!tablaTipo": false,
+  "local!tablaEstado": false
+ },
+ "interface": {
+  "type": "a!headerContentLayout",
+  "backgroundColor": "TRANSPARENT",
+  "contents": [
+   {
+    "type": "a!columnsLayout",
+    "alignVertical": "MIDDLE",
+    "marginBelow": "MORE",
+    "columns": [
+     {
+      "type": "a!columnLayout",
+      "contents": [
+       {
+        "type": "a!headingField",
+        "text": "Informes",
+        "size": "LARGE",
+        "headingTag": "H1",
+        "marginBelow": "EVEN_LESS"
+       },
+       {
+        "type": "a!richTextDisplayField",
+        "labelPosition": "COLLAPSED",
+        "value": [
+         {
+          "type": "a!richTextItem",
+          "text": "Distribución y evolución de los expedientes",
+          "color": "SECONDARY"
+         }
+        ],
+        "marginBelow": "NONE"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "a!cardLayout",
+    "style": "NONE",
+    "showBorder": false,
+    "showShadow": true,
+    "shape": "SEMI_ROUNDED",
+    "padding": "STANDARD",
+    "contents": [
+     {
+      "type": "a!columnsLayout",
+      "alignVertical": "BOTTOM",
+      "marginBelow": "NONE",
+      "stackWhen": [
+       "PHONE"
+      ],
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!dropdownField",
+          "label": "Tipo",
+          "placeholder": "Todos los tipos",
+          "choiceLabels": [
+           "Obra",
+           "Servicio",
+           "Suministro"
+          ],
+          "choiceValues": [
+           "Obra",
+           "Servicio",
+           "Suministro"
+          ],
+          "value": "local!tipo",
+          "saveInto": "local!tipo",
+          "marginBelow": "NONE"
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!dropdownField",
+          "label": "Unidad",
+          "placeholder": "Todas las unidades",
+          "choiceLabels": [
+           "MAD",
+           "BCN",
+           "PMI",
+           "AGP",
+           "SSCC"
+          ],
+          "choiceValues": [
+           "MAD",
+           "BCN",
+           "PMI",
+           "AGP",
+           "SSCC"
+          ],
+          "value": "local!unidad",
+          "saveInto": "local!unidad",
+          "marginBelow": "NONE"
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         []
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "width": "AUTO",
+        "contents": [
+         {
+          "type": "a!richTextDisplayField",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextIcon",
+            "icon": "times",
+            "color": "ACCENT"
+           },
+           " ",
+           {
+            "type": "a!richTextItem",
+            "text": "Borrar filtros",
+            "link": {
+             "type": "a!dynamicLink",
+             "saveInto": [
+              {
+               "type": "a!save",
+               "target": "local!tipo",
+               "value": null
+              },
+              {
+               "type": "a!save",
+               "target": "local!unidad",
+               "value": null
+              }
+             ]
+            },
+            "linkStyle": "STANDALONE",
+            "style": "STRONG"
+           }
+          ],
+          "marginBelow": "LESS"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "marginBelow": "MORE"
+   },
+   {
+    "type": "a!cardLayout",
+    "style": "NONE",
+    "showBorder": false,
+    "showShadow": true,
+    "shape": "SEMI_ROUNDED",
+    "padding": "STANDARD",
+    "contents": [
+     {
+      "type": "a!columnsLayout",
+      "showDividers": true,
+      "spacing": "SPARSE",
+      "stackWhen": [
+       "PHONE",
+       "TABLET_PORTRAIT"
+      ],
+      "columns": [
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!kpiField",
+          "primaryText": "Expedientes",
+          "icon": "folder-open-o",
+          "template": "ADJACENT",
+          "iconStyle": "STAMP",
+          "iconColor": "ACCENT",
+          "secondaryText": "en el filtro",
+          "data": "recordType!EXP Expediente",
+          "primaryMeasure": {
+           "type": "a!measure",
+           "function": "COUNT",
+           "field": "recordType!EXP Expediente.fields.id"
+          },
+          "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), or(isnull(local!unidad), fv!row.unidad = local!unidad))"
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!kpiField",
+          "primaryText": "Aprobados",
+          "icon": "check-circle",
+          "template": "ADJACENT",
+          "iconStyle": "STAMP",
+          "iconColor": "ACCENT",
+          "secondaryText": "en el filtro",
+          "data": "recordType!EXP Expediente",
+          "primaryMeasure": {
+           "type": "a!measure",
+           "function": "COUNT",
+           "field": "recordType!EXP Expediente.fields.id"
+          },
+          "$filter": "and(and(or(isnull(local!tipo), fv!row.tipo = local!tipo), or(isnull(local!unidad), fv!row.unidad = local!unidad)), fv!row.estado = \"Aprobado\")"
+         }
+        ]
+       },
+       {
+        "type": "a!columnLayout",
+        "contents": [
+         {
+          "type": "a!kpiField",
+          "primaryText": "Importe total",
+          "icon": "eur",
+          "template": "ADJACENT",
+          "iconStyle": "STAMP",
+          "iconColor": "ACCENT",
+          "secondaryText": "expedientes con importe",
+          "data": "recordType!EXP Expediente",
+          "primaryMeasure": {
+           "type": "a!measure",
+           "function": "SUM",
+           "field": "recordType!EXP Expediente.fields.importe"
+          },
+          "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), or(isnull(local!unidad), fv!row.unidad = local!unidad))",
+          "$format": "eur"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "decorativeBarPosition": "TOP",
+    "decorativeBarColor": "#3fa7ce",
+    "marginBelow": "MORE"
+   },
+   {
+    "type": "a!sectionLayout",
+    "label": "Altas por mes",
+    "labelSize": "MEDIUM",
+    "labelHeadingTag": "H2",
+    "labelColor": "STANDARD",
+    "marginBelow": "MORE",
+    "contents": [
+     {
+      "type": "a!cardLayout",
+      "style": "NONE",
+      "showBorder": false,
+      "showShadow": true,
+      "shape": "SEMI_ROUNDED",
+      "padding": "STANDARD",
+      "contents": [
+       {
+        "type": "a!sectionLayout",
+        "marginBelow": "NONE",
+        "contents": [
+         {
+          "type": "a!richTextDisplayField",
+          "labelPosition": "COLLAPSED",
+          "value": [
+           {
+            "type": "a!richTextIcon",
+            "icon": "{if(local!tablaMes, \"bar-chart\", \"table\")}",
+            "color": "ACCENT"
+           },
+           " ",
+           {
+            "type": "a!richTextItem",
+            "text": "{if(local!tablaMes, \"Ver como gráfico\", \"Ver como tabla\")}",
+            "link": {
+             "type": "a!dynamicLink",
+             "saveInto": [
+              {
+               "type": "a!save",
+               "target": "local!tablaMes",
+               "value": "{not(local!tablaMes)}"
+              }
+             ]
+            },
+            "linkStyle": "STANDALONE",
+            "style": "STRONG"
+           }
+          ],
+          "align": "RIGHT",
+          "marginBelow": "LESS"
+         },
+         {
+          "type": "a!columnChartField",
+          "labelPosition": "COLLAPSED",
+          "data": "recordType!EXP Expediente",
+          "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), or(isnull(local!unidad), fv!row.unidad = local!unidad))",
+          "height": "SHORT",
+          "showDataLabels": true,
+          "config": {
+           "type": "a!columnChartConfig",
+           "primaryGrouping": {
+            "type": "a!grouping",
+            "field": "recordType!EXP Expediente.fields.mesAlta",
+            "interval": "MONTH_SHORT_TEXT"
+           },
+           "measures": [
+            {
+             "type": "a!measure",
+             "function": "COUNT",
+             "field": "recordType!EXP Expediente.fields.id",
+             "label": "Altas"
+            }
+           ]
+          },
+          "colorScheme": {
+           "type": "a!colorSchemeCustom",
+           "colors": [
+            "#0F203A"
+           ]
+          },
+          "showWhen": "not(local!tablaMes)"
+         },
+         {
+          "type": "a!gridField",
+          "labelPosition": "COLLAPSED",
+          "borderStyle": "LIGHT",
+          "shadeAlternateRows": false,
+          "spacing": "STANDARD",
+          "pageSize": 20,
+          "rowHeader": 1,
+          "emptyGridMessage": "No hay datos que mostrar",
+          "columns": [
+           {
+            "type": "a!gridColumn",
+            "label": "Mes",
+            "value": "{fv!row.categoria}"
+           },
+           {
+            "type": "a!gridColumn",
+            "label": "Altas",
+            "value": "{fv!row.s1|num}",
+            "align": "END"
+           }
+          ],
+          "$chart": {
+           "type": "a!columnChartField",
+           "labelPosition": "COLLAPSED",
+           "data": "recordType!EXP Expediente",
+           "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), or(isnull(local!unidad), fv!row.unidad = local!unidad))",
+           "height": "SHORT",
+           "showDataLabels": true,
+           "config": {
+            "type": "a!columnChartConfig",
+            "primaryGrouping": {
+             "type": "a!grouping",
+             "field": "recordType!EXP Expediente.fields.mesAlta",
+             "interval": "MONTH_SHORT_TEXT"
+            },
+            "measures": [
+             {
+              "type": "a!measure",
+              "function": "COUNT",
+              "field": "recordType!EXP Expediente.fields.id",
+              "label": "Altas"
+             }
+            ]
+           },
+           "colorScheme": {
+            "type": "a!colorSchemeCustom",
+            "colors": [
+             "#0F203A"
+            ]
+           }
+          },
+          "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+          "showWhen": "local!tablaMes"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "a!columnsLayout",
+    "columns": [
+     {
+      "type": "a!columnLayout",
+      "contents": [
+       {
+        "type": "a!sectionLayout",
+        "label": "Por tipo",
+        "labelSize": "MEDIUM",
+        "labelHeadingTag": "H2",
+        "labelColor": "STANDARD",
+        "marginBelow": "MORE",
+        "contents": [
+         {
+          "type": "a!cardLayout",
+          "style": "NONE",
+          "showBorder": false,
+          "showShadow": true,
+          "shape": "SEMI_ROUNDED",
+          "padding": "STANDARD",
+          "contents": [
+           {
+            "type": "a!sectionLayout",
+            "marginBelow": "NONE",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextIcon",
+                "icon": "{if(local!tablaTipo, \"bar-chart\", \"table\")}",
+                "color": "ACCENT"
+               },
+               " ",
+               {
+                "type": "a!richTextItem",
+                "text": "{if(local!tablaTipo, \"Ver como gráfico\", \"Ver como tabla\")}",
+                "link": {
+                 "type": "a!dynamicLink",
+                 "saveInto": [
+                  {
+                   "type": "a!save",
+                   "target": "local!tablaTipo",
+                   "value": "{not(local!tablaTipo)}"
+                  }
+                 ]
+                },
+                "linkStyle": "STANDALONE",
+                "style": "STRONG"
+               }
+              ],
+              "align": "RIGHT",
+              "marginBelow": "LESS"
+             },
+             {
+              "type": "a!pieChartField",
+              "labelPosition": "COLLAPSED",
+              "data": "recordType!EXP Expediente",
+              "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), or(isnull(local!unidad), fv!row.unidad = local!unidad))",
+              "style": "DONUT",
+              "height": "SHORT",
+              "showDataLabels": true,
+              "$categories": [
+               "Obra",
+               "Servicio",
+               "Suministro"
+              ],
+              "config": {
+               "type": "a!pieChartConfig",
+               "primaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!EXP Expediente.fields.tipo"
+               },
+               "measures": [
+                {
+                 "type": "a!measure",
+                 "function": "COUNT",
+                 "field": "recordType!EXP Expediente.fields.id",
+                 "label": "Expedientes"
+                }
+               ]
+              },
+              "colorScheme": {
+               "type": "a!colorSchemeCustom",
+               "colors": [
+                "#1D659C",
+                "#B35C00",
+                "#0F7B6C"
+               ]
+              },
+              "showWhen": "not(local!tablaTipo)"
+             },
+             {
+              "type": "a!gridField",
+              "labelPosition": "COLLAPSED",
+              "borderStyle": "LIGHT",
+              "shadeAlternateRows": false,
+              "spacing": "STANDARD",
+              "pageSize": 20,
+              "rowHeader": 1,
+              "emptyGridMessage": "No hay datos que mostrar",
+              "columns": [
+               {
+                "type": "a!gridColumn",
+                "label": "Tipo",
+                "value": "{fv!row.categoria}"
+               },
+               {
+                "type": "a!gridColumn",
+                "label": "Expedientes",
+                "value": "{fv!row.s1|num}",
+                "align": "END"
+               }
+              ],
+              "$chart": {
+               "type": "a!pieChartField",
+               "labelPosition": "COLLAPSED",
+               "data": "recordType!EXP Expediente",
+               "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), or(isnull(local!unidad), fv!row.unidad = local!unidad))",
+               "style": "DONUT",
+               "height": "SHORT",
+               "showDataLabels": true,
+               "$categories": [
+                "Obra",
+                "Servicio",
+                "Suministro"
+               ],
+               "config": {
+                "type": "a!pieChartConfig",
+                "primaryGrouping": {
+                 "type": "a!grouping",
+                 "field": "recordType!EXP Expediente.fields.tipo"
+                },
+                "measures": [
+                 {
+                  "type": "a!measure",
+                  "function": "COUNT",
+                  "field": "recordType!EXP Expediente.fields.id",
+                  "label": "Expedientes"
+                 }
+                ]
+               },
+               "colorScheme": {
+                "type": "a!colorSchemeCustom",
+                "colors": [
+                 "#1D659C",
+                 "#B35C00",
+                 "#0F7B6C"
+                ]
+               }
+              },
+              "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+              "showWhen": "local!tablaTipo"
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "a!columnLayout",
+      "contents": [
+       {
+        "type": "a!sectionLayout",
+        "label": "Expedientes por estado",
+        "labelSize": "MEDIUM",
+        "labelHeadingTag": "H2",
+        "labelColor": "STANDARD",
+        "marginBelow": "MORE",
+        "contents": [
+         {
+          "type": "a!cardLayout",
+          "style": "NONE",
+          "showBorder": false,
+          "showShadow": true,
+          "shape": "SEMI_ROUNDED",
+          "padding": "STANDARD",
+          "contents": [
+           {
+            "type": "a!richTextDisplayField",
+            "labelPosition": "COLLAPSED",
+            "marginBelow": "LESS",
+            "showWhen": "not(local!tablaEstado)",
+            "value": [
+             {
+              "type": "a!richTextItem",
+              "text": "Pulse una barra para ver sus expedientes",
+              "color": "SECONDARY",
+              "size": "SMALL"
+             }
+            ]
+           },
+           {
+            "type": "a!sectionLayout",
+            "marginBelow": "NONE",
+            "contents": [
+             {
+              "type": "a!richTextDisplayField",
+              "labelPosition": "COLLAPSED",
+              "value": [
+               {
+                "type": "a!richTextIcon",
+                "icon": "{if(local!tablaEstado, \"bar-chart\", \"table\")}",
+                "color": "ACCENT"
+               },
+               " ",
+               {
+                "type": "a!richTextItem",
+                "text": "{if(local!tablaEstado, \"Ver como gráfico\", \"Ver como tabla\")}",
+                "link": {
+                 "type": "a!dynamicLink",
+                 "saveInto": [
+                  {
+                   "type": "a!save",
+                   "target": "local!tablaEstado",
+                   "value": "{not(local!tablaEstado)}"
+                  }
+                 ]
+                },
+                "linkStyle": "STANDALONE",
+                "style": "STRONG"
+               }
+              ],
+              "align": "RIGHT",
+              "marginBelow": "LESS"
+             },
+             {
+              "type": "a!barChartField",
+              "labelPosition": "COLLAPSED",
+              "data": "recordType!EXP Expediente",
+              "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), or(isnull(local!unidad), fv!row.unidad = local!unidad))",
+              "height": "AUTO",
+              "showDataLabels": true,
+              "$categories": [
+               "Borrador",
+               "En tramitación",
+               "Pendiente de aprobación",
+               "Aprobado",
+               "Cerrado",
+               "Rechazado"
+              ],
+              "config": {
+               "type": "a!barChartConfig",
+               "primaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!EXP Expediente.fields.estado"
+               },
+               "secondaryGrouping": {
+                "type": "a!grouping",
+                "field": "recordType!EXP Expediente.fields.estado"
+               },
+               "measures": [
+                {
+                 "type": "a!measure",
+                 "function": "COUNT",
+                 "field": "recordType!EXP Expediente.fields.id",
+                 "label": "Expedientes"
+                }
+               ],
+               "link": {
+                "type": "a!dynamicLink",
+                "saveInto": [
+                 {
+                  "type": "a!save",
+                  "target": "local!estadoSel",
+                  "value": "{fv!selection[recordType!EXP Expediente.fields.estado]}"
+                 }
+                ]
+               }
+              },
+              "stacking": "NORMAL",
+              "showLegend": false,
+              "colorScheme": {
+               "type": "a!colorSchemeCustom",
+               "colors": [
+                "#666666",
+                "#115EBB",
+                "#D97706",
+                "#117C00",
+                "#666666",
+                "#B2002C"
+               ]
+              },
+              "$note": "Cada barra con el color de su estado (el mismo significado que las etiquetas): agrupación secundaria por el mismo campo.",
+              "showWhen": "not(local!tablaEstado)"
+             },
+             {
+              "type": "a!gridField",
+              "labelPosition": "COLLAPSED",
+              "borderStyle": "LIGHT",
+              "shadeAlternateRows": false,
+              "spacing": "STANDARD",
+              "pageSize": 20,
+              "rowHeader": 1,
+              "emptyGridMessage": "No hay datos que mostrar",
+              "columns": [
+               {
+                "type": "a!gridColumn",
+                "label": "Estado",
+                "value": "{fv!row.categoria}"
+               },
+               {
+                "type": "a!gridColumn",
+                "label": "Expedientes",
+                "value": "{fv!row.s1|num}",
+                "align": "END"
+               }
+              ],
+              "$chart": {
+               "type": "a!barChartField",
+               "labelPosition": "COLLAPSED",
+               "data": "recordType!EXP Expediente",
+               "$filter": "and(or(isnull(local!tipo), fv!row.tipo = local!tipo), or(isnull(local!unidad), fv!row.unidad = local!unidad))",
+               "height": "AUTO",
+               "showDataLabels": true,
+               "$categories": [
+                "Borrador",
+                "En tramitación",
+                "Pendiente de aprobación",
+                "Aprobado",
+                "Cerrado",
+                "Rechazado"
+               ],
+               "config": {
+                "type": "a!barChartConfig",
+                "primaryGrouping": {
+                 "type": "a!grouping",
+                 "field": "recordType!EXP Expediente.fields.estado"
+                },
+                "secondaryGrouping": {
+                 "type": "a!grouping",
+                 "field": "recordType!EXP Expediente.fields.estado"
+                },
+                "measures": [
+                 {
+                  "type": "a!measure",
+                  "function": "COUNT",
+                  "field": "recordType!EXP Expediente.fields.id",
+                  "label": "Expedientes"
+                 }
+                ],
+                "link": {
+                 "type": "a!dynamicLink",
+                 "saveInto": [
+                  {
+                   "type": "a!save",
+                   "target": "local!estadoSel",
+                   "value": "{fv!selection[recordType!EXP Expediente.fields.estado]}"
+                  }
+                 ]
+                }
+               },
+               "stacking": "NORMAL",
+               "showLegend": false,
+               "colorScheme": {
+                "type": "a!colorSchemeCustom",
+                "colors": [
+                 "#666666",
+                 "#115EBB",
+                 "#D97706",
+                 "#117C00",
+                 "#666666",
+                 "#B2002C"
+                ]
+               }
+              },
+              "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
+              "showWhen": "local!tablaEstado"
+             }
+            ]
+           },
+           {
+            "type": "a!sectionLayout",
+            "showWhen": "a!isNotNullOrEmpty(local!estadoSel)",
+            "label": "Expedientes en «{local!estadoSel}»",
+            "labelSize": "SMALL",
+            "labelHeadingTag": "H3",
+            "labelColor": "SECONDARY",
+            "marginAbove": "STANDARD",
+            "contents": [
+             {
+              "type": "a!gridField",
+              "labelPosition": "COLLAPSED",
+              "data": "recordType!EXP Expediente",
+              "borderStyle": "LIGHT",
+              "shadeAlternateRows": false,
+              "spacing": "STANDARD",
+              "pageSize": 5,
+              "rowHeader": 1,
+              "emptyGridMessage": "No hay expedientes",
+              "columns": [
+               {
+                "type": "a!gridColumn",
+                "label": "Expediente",
+                "value": {
+                 "type": "a!richTextDisplayField",
+                 "labelPosition": "COLLAPSED",
+                 "value": [
+                  {
+                   "type": "a!richTextItem",
+                   "text": "{fv!row.codigo}",
+                   "style": "STRONG",
+                   "link": {
+                    "type": "a!recordLink",
+                    "recordType": "recordType!EXP Expediente",
+                    "identifier": "{fv!row.id}"
+                   },
+                   "linkStyle": "STANDALONE"
+                  },
+                  "\n",
+                  {
+                   "type": "a!richTextItem",
+                   "text": "{fv!row.titulo}",
+                   "color": "SECONDARY",
+                   "size": "SMALL"
+                  }
+                 ]
+                }
+               },
+               {
+                "type": "a!gridColumn",
+                "label": "Unidad",
+                "value": "{fv!row.unidad}",
+                "width": "NARROW"
+               },
+               {
+                "type": "a!gridColumn",
+                "label": "Importe",
+                "value": "{fv!row.importe|eur|dash}",
+                "align": "END",
+                "width": "NARROW_PLUS"
+               }
+              ],
+              "$filter": "and(and(or(isnull(local!tipo), fv!row.tipo = local!tipo), or(isnull(local!unidad), fv!row.unidad = local!unidad)), fv!row.estado = local!estadoSel)"
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

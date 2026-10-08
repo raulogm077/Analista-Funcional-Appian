@@ -12,18 +12,23 @@ Subcomandos:
   doctor      Estado de los 3 MCP: Dev MCP (obligatorio), Appian MCP Server y Docs MCP (opcionales).
   apps        Lista las aplicaciones visibles para el usuario del Dev MCP.
   plan        Catalogo + clasificacion + objetos de la app + estimacion de llamadas. No llama por objeto.
-  extract     Ejecuta el plan y vuelca las respuestas en <padre de out>/_trabajo/<app>/mcp_raw/.
+  extract     Ejecuta el plan y vuelca las respuestas en <out>/extraccion/mcp_raw/, dentro del proyecto.
   datafabric  Metadatos y COUNT(*) por record type de la app a traves del Appian MCP Server.
+
+Las respuestas se guardan tal cual las devuelve el Dev MCP, con rutas cortas (Windows y OneDrive).
 
 Codigos de salida:
   0 ok | 2 uso incorrecto | 11 Dev MCP no configurado | 12 varias configuraciones posibles
-  13 el Dev MCP no arranca o no autentica | 14 no hay aplicaciones visibles | 15 app no encontrada o ambigua
+  13 el Dev MCP no arranca o no autentica | 14 no hay aplicaciones visibles
+  15 app no encontrada o ambigua, o la carpeta ya tiene otra app u otro entorno (usa otra --out;
+     para la misma app de otro entorno, tambien --refresh)
   16 Appian MCP Server no disponible (solo datafabric)
 """
 from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import os
 import re
@@ -37,7 +42,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rutas import work_dir  # noqa: E402
+from rutas import carpeta_objeto, work_dir  # noqa: E402
 
 EXIT_OK, EXIT_USAGE, EXIT_NO_CONFIG, EXIT_AMBIGUOUS, EXIT_START, EXIT_NO_APPS, EXIT_APP, EXIT_NO_MCPSERVER = \
     0, 2, 11, 12, 13, 14, 15, 16
@@ -74,17 +79,18 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def safe_name(s: str) -> str:
-    return re.sub(r"[^A-Za-z0-9_.\-]", "_", s)[:150]
+def safe_name(s: str, maximo: int = 48) -> str:
+    """Nombre de fichero de una herramienta, corto para que la ruta quepa en Windows y en OneDrive: si no cabe, se
+    recorta y lleva 8 hex del sha1 del nombre, para que dos nombres largos no se pisen. _meta.tool guarda el nombre."""
+    limpio = re.sub(r"[^A-Za-z0-9_.\-]", "_", s)
+    if len(limpio) <= maximo:
+        return limpio
+    return f"{limpio[:maximo - 9]}-{hashlib.sha1(s.encode('utf-8')).hexdigest()[:8]}"
 
 
 def is_transient(error: str | None) -> bool:
     return bool(re.search(r"(?i)timeout|timed out|\b50[0-9]\b|temporar|connection|reset|unavailable|rate limit|429",
                           error or ""))
-
-
-# Secretos y render de interfaces: mismas reglas que el anexo (privacidad.py)
-from privacidad import MASK, SECRET_NAME, is_reference as _is_reference, mask_secrets, redact_screen  # noqa: E402,F401
 
 
 def eprint(*a):
@@ -580,6 +586,31 @@ def set_path(data: Any, path: tuple, value: Any):
 
 # --------------------------------------------------------------------------- extractor
 
+def error_de(ti: "ToolInfo", scope: str, obj: dict | None, error: str | None) -> dict:
+    return {"tool": ti.name, "scope": scope, "object": (obj or {}).get("uuid"), "objectType": (obj or {}).get("type"),
+            "error": error}
+
+
+def extraccion_guardada(raw: Path) -> dict:
+    """mcp_raw/_objects.json de la extracción que ya hay en esta carpeta ({} si no hay ninguna)."""
+    try:
+        d = json.loads((raw / "_objects.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return d if isinstance(d, dict) else {}
+
+
+def aplicacion_extraida(raw: Path) -> dict:
+    """La aplicación que ya está extraída en esta carpeta ({} si no hay ninguna)."""
+    app = extraccion_guardada(raw).get("application")
+    return app if isinstance(app, dict) else {}
+
+
+def entorno(url: str) -> str:
+    """LCP_URL sin la barra final: así se guarda y se compara el entorno de una extracción."""
+    return (url or "").strip().rstrip("/")
+
+
 class Extractor:
     def __init__(self, sess: McpSession, policy: Policy, out: Path | None, *, concurrency=4, refresh=False,
                  retries=2, retry_delay=1.5, only: str | None = None, skip: str | None = None,
@@ -592,6 +623,8 @@ class Extractor:
         self.skip = re.compile(skip) if skip else None
         self.raw = (work_dir(out, crear=True) / "mcp_raw") if out else None
         self.stats = defaultdict(lambda: defaultdict(int))
+        self.escritas: set[Path] = set()   # respuestas guardadas en esta ejecución
+        self.anteriores = 0                # respuestas reutilizadas de una ejecución anterior
         self.errors: list[dict] = []
         self.disabled: list[dict] = []
         self.tools: list[ToolInfo] = []
@@ -699,7 +732,7 @@ class Extractor:
             return self.raw / "_env" / f"{safe_name(ti.name)}.json"
         if scope == "app":
             return self.raw / "_app" / f"{safe_name(ti.name)}.json"
-        return self.raw / safe_name(obj["type"]) / safe_name(obj["uuid"]) / f"{safe_name(ti.name)}.json"
+        return carpeta_objeto(self.raw, obj["type"], obj["uuid"]) / f"{safe_name(ti.name)}.json"
 
     async def run_call(self, ti: ToolInfo, scope: str, *, app_uuid=None, obj=None) -> CallResult:
         f = self.target_file(ti, scope, obj)
@@ -709,9 +742,12 @@ class Extractor:
                 meta = cached.get("_meta", {})
                 if meta.get("ok"):
                     self.stats[ti.name]["cached"] += 1
+                    self.anteriores += f not in self.escritas
                     return CallResult(True, cached.get("response"), None, meta.get("pages", 1))
                 if not meta.get("transient", True) and not self.retry_failed:
                     self.stats[ti.name]["cachedFailed"] += 1
+                    self.anteriores += f not in self.escritas
+                    self.errors.append(error_de(ti, scope, obj, meta.get("error")))   # el informe, igual al retomar
                     return CallResult(False, None, meta.get("error"))
             except Exception:
                 pass
@@ -722,26 +758,23 @@ class Extractor:
         res = await self.call_paginated(ti, args)
         self.stats[ti.name]["ok" if res.ok else "failed"] += 1
         if not res.ok:
-            self.errors.append({"tool": ti.name, "scope": scope, "object": (obj or {}).get("uuid"),
-                                "objectType": (obj or {}).get("type"), "error": res.error})
+            self.errors.append(error_de(ti, scope, obj, res.error))
         if f:
-            f.parent.mkdir(parents=True, exist_ok=True)
-            meta = {"tool": ti.name, "args": args, "scope": scope, "role": ti.role, "ok": res.ok,
-                    "error": res.error, "transient": bool(not res.ok and is_transient(res.error)),
-                    "pages": res.pages, "fetchedAt": now_iso(), "seconds": round(res.seconds, 2)}
-            if obj:
-                meta.update({"objectUuid": obj["uuid"], "objectName": obj.get("name"), "objectType": obj["type"],
-                             "mcpType": obj.get("mcpType")})
-            masked = [0]
-            secret_ctx = bool(obj and obj.get("type") == "constant" and SECRET_NAME.search(obj.get("name") or ""))
-            safe_data = mask_secrets(res.data, masked, secret_ctx)
-            if ti.role == "screen":   # el render evalúa la interfaz: los valores pueden ser datos reales
-                safe_data = redact_screen(safe_data)
-            if masked[0]:
-                meta["maskedSecrets"] = masked[0]
-            f.write_text(json.dumps({"_meta": meta, "response": safe_data}, ensure_ascii=False, indent=1, default=str),
-                         encoding="utf-8")
+            self.guarda(f, ti, scope, obj, args, res)
         return res
+
+    def guarda(self, f: Path, ti: ToolInfo, scope: str, obj: dict | None, args: dict, res: CallResult) -> None:
+        """Escribe la respuesta tal cual, con su _meta."""
+        meta = {"tool": ti.name, "args": args, "scope": scope, "role": ti.role, "ok": res.ok,
+                "error": res.error, "transient": bool(not res.ok and is_transient(res.error)),
+                "pages": res.pages, "fetchedAt": now_iso(), "seconds": round(res.seconds, 2)}
+        if obj:
+            meta.update({"objectUuid": obj["uuid"], "objectName": obj.get("name"), "objectType": obj["type"],
+                         "mcpType": obj.get("mcpType")})
+        f.parent.mkdir(parents=True, exist_ok=True)
+        self.escritas.add(f)
+        f.write_text(json.dumps({"_meta": meta, "response": res.data}, ensure_ascii=False, indent=1, default=str),
+                     encoding="utf-8")
 
     # ---- aplicaciones y objetos
     async def env_calls(self) -> dict[str, CallResult]:
@@ -910,6 +943,10 @@ async def prepare(ex: Extractor, args) -> tuple[dict, list[dict], list]:
     if not app:
         eprint(msg)
         raise SystemExit(EXIT_APP)
+    antes = aplicacion_extraida(ex.raw)
+    if antes.get("uuid") not in (None, app["uuid"]):   # las respuestas guardadas serían las de la otra
+        eprint(f"Esta carpeta ya tiene la extraccion de '{antes.get('name')}': para otra aplicacion, usa otra carpeta.")
+        raise SystemExit(EXIT_APP)
     app_results = await ex.app_calls(app["uuid"])
     app_obj, objects = ex.harvest_objects(app["uuid"], app_results)
     app_obj["name"] = app_obj["name"] or app["name"]
@@ -981,51 +1018,62 @@ async def cmd_plan_or_extract(args, execute: bool) -> int:
             ex = Extractor(sess, policy, out, concurrency=args.concurrency, refresh=args.refresh,
                            retries=args.retries, retry_delay=args.retry_delay, only=args.only, skip=args.skip,
                            retry_failed=args.retry_failed)
-            try:
-                app_obj, objects, groups = await prepare(ex, args)
-            except SystemExit as se:
-                return int(se.code)
-            interm = work_dir(out, crear=True)
-            write_json(interm / "mcp_catalog.json", catalog_json(ex))
-            plan = plan_json(ex, app_obj, objects, groups)
-            write_json(interm / "extraction_plan.json", plan)
-            write_json(interm / "mcp_raw" / "_objects.json", {"application": app_obj, "objects": objects})
-            if not execute:
-                print(json.dumps(plan, ensure_ascii=False, indent=1)) if args.json else print_plan(plan)
-                return EXIT_OK
-            if plan["needsConfirmation"] and not args.yes:
-                print_plan(plan)
-                eprint(f"\nEl plan supera {policy.confirm_above} llamadas. Repite con --yes para confirmar.")
-                return EXIT_USAGE
-            await ex.env_calls()
-            await asyncio.gather(*(ex.run_group(ti, t, objs) for ti, t, objs in groups))
-            report = {
-                "startedAt": inicio,
-                "durationSeconds": round(time.monotonic() - t0, 1),
-                "server": server_info(choice), "trustedMode": ex.trusted,
-                "app": app_obj, "objectCount": len(objects), "objectsByType": plan["objectsByType"],
-                "toolsUsed": sorted({t.name for t in ex.tools if t.allowed and t.scope != "manual"}),
-                "toolsExcluded": [{"name": t.name, "reason": t.safety_reason} for t in ex.tools if not t.allowed],
-                "toolsManual": [{"name": t.name, "reason": t.scope_reason} for t in ex.tools
-                                if t.allowed and t.scope == "manual"],
-                "callStats": {k: dict(v) for k, v in sorted(ex.stats.items())},
-                "callStatsByRole": por_rol(ex),
-                "disabledAfterProbe": ex.disabled,
-                "errors": ex.errors[:300], "errorCount": len(ex.errors),
-            }
-            write_json(interm / "extraction_report.json", report)
-            (interm / "LEEME.md").write_text(
-                "# Datos intermedios\n\nEsta carpeta contiene definiciones en bruto de la aplicacion (URLs, valores de "
-                "constantes, nombres de usuario del historial). **No la compartas.** Los entregables de la carpeta "
-                "superior ya enmascaran los secretos.\n", encoding="utf-8")
-            ok = sum(v.get("ok", 0) + v.get("cached", 0) for v in ex.stats.values())
-            print(f"Extraccion terminada: {len(objects)} objetos, {ok} respuestas correctas, "
-                  f"{len(ex.errors)} errores, {len(ex.disabled)} herramientas desactivadas por tipo. "
-                  f"Informe: {interm / 'extraction_report.json'}")
-            return EXIT_OK
+            return await plan_o_extrae(ex, args, execute, choice, inicio, t0)
     except Exception as ex_:
         eprint(f"No se pudo arrancar o autenticar el Dev MCP: {type(ex_).__name__}: {ex_}")
         return EXIT_START
+
+
+async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerChoice", inicio: str, t0: float) -> int:
+    out, policy = ex.out, ex.policy
+    url, antes = entorno(server_info(choice)["url"]), entorno(extraccion_guardada(ex.raw).get("entorno"))
+    if url and antes and url.lower() != antes.lower() and not ex.refresh:   # misma app, mismo uuid, otro entorno
+        eprint(f"Esta carpeta tiene la extraccion de {antes}: para {url}, usa otra carpeta o repite con --refresh.")
+        return EXIT_APP
+    try:
+        app_obj, objects, groups = await prepare(ex, args)
+    except SystemExit as se:
+        return int(se.code)
+    interm = work_dir(out, crear=True)
+    write_json(interm / "mcp_catalog.json", catalog_json(ex))
+    plan = plan_json(ex, app_obj, objects, groups)
+    write_json(interm / "extraction_plan.json", plan)
+    write_json(interm / "mcp_raw" / "_objects.json", {"application": app_obj, "entorno": url, "objects": objects})
+    if not execute:
+        print(json.dumps(plan, ensure_ascii=False, indent=1)) if args.json else print_plan(plan)
+        return EXIT_OK
+    if plan["needsConfirmation"] and not args.yes:
+        print_plan(plan)
+        eprint(f"\nEl plan supera {policy.confirm_above} llamadas. Repite con --yes para confirmar.")
+        return EXIT_USAGE
+    await ex.env_calls()
+    await asyncio.gather(*(ex.run_group(ti, t, objs) for ti, t, objs in groups))
+    report = {
+        "startedAt": inicio,
+        "durationSeconds": round(time.monotonic() - t0, 1),
+        "server": server_info(choice), "trustedMode": ex.trusted,
+        "app": app_obj, "objectCount": len(objects), "objectsByType": plan["objectsByType"],
+        "toolsUsed": sorted({t.name for t in ex.tools if t.allowed and t.scope != "manual"}),
+        "toolsExcluded": [{"name": t.name, "reason": t.safety_reason} for t in ex.tools if not t.allowed],
+        "toolsManual": [{"name": t.name, "reason": t.scope_reason} for t in ex.tools
+                        if t.allowed and t.scope == "manual"],
+        "callStats": {k: dict(v) for k, v in sorted(ex.stats.items())},
+        "callStatsByRole": por_rol(ex),
+        "disabledAfterProbe": ex.disabled,
+        "errors": ex.errors[:300], "errorCount": len(ex.errors),
+    }
+    write_json(interm / "extraction_report.json", report)
+    (interm / "LEEME.md").write_text(
+        "# Extracción\n\nRespuestas del Dev MCP de la aplicación, tal cual. Es la fuente de la documentación de la "
+        "carpeta superior; para consultar un objeto, su ficha de `anexo/`.\n", encoding="utf-8")
+    ok = sum(v.get("ok", 0) + v.get("cached", 0) for v in ex.stats.values())
+    print(f"Extraccion terminada: {len(objects)} objetos, {ok} respuestas correctas, "
+          f"{len(ex.errors)} errores, {len(ex.disabled)} herramientas desactivadas por tipo. "
+          f"Informe: {interm / 'extraction_report.json'}")
+    if ex.anteriores:
+        print(f"Reutilizadas {ex.anteriores} respuestas ya descargadas: si la aplicacion ha cambiado desde entonces, "
+              f"repite con --refresh.")
+    return EXIT_OK
 
 
 def por_rol(ex) -> dict:
@@ -1035,7 +1083,7 @@ def por_rol(ex) -> dict:
     for name, st in ex.stats.items():
         r = out.setdefault(rol.get(name) or "other", {"ok": 0, "failed": 0})
         r["ok"] += st.get("ok", 0) + st.get("cached", 0)
-        r["failed"] += st.get("failed", 0)
+        r["failed"] += st.get("failed", 0) + st.get("cachedFailed", 0)
     return out
 
 
@@ -1278,7 +1326,7 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--app", required=True, help="uuid, prefijo o nombre de la aplicacion")
         sp.add_argument("--out", required=True, help="Carpeta de salida de la documentacion")
         sp.add_argument("--concurrency", type=int, default=4)
-        sp.add_argument("--refresh", action="store_true", help="Ignora las respuestas ya descargadas")
+        sp.add_argument("--refresh", action="store_true", help="Lo pide todo otra vez: app cambiada u otro entorno")
         sp.add_argument("--retry-failed", action="store_true",
                         help="Reintenta tambien los fallos no transitorios de ejecuciones anteriores")
         sp.add_argument("--retries", type=int, default=2)

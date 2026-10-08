@@ -43,7 +43,7 @@ Es un JSON con un paso y un flujo por línea:
 }
 ```
 
-`externos` y `notas` son opcionales. Ejemplos completos en `ejemplos/`.
+`externos` y `notas` son opcionales.
 
 | Tipo | Qué representa | Código |
 |---|---|---|

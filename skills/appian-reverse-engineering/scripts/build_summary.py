@@ -6,7 +6,7 @@ la fuente de cifras de 00-resumen-ejecutivo.md y de los publicadores (PDF y dash
 Uso:
   python3 build_summary.py <carpeta_salida>
 
-Lee (en <trabajo> = <padre>/_trabajo/<nombre de salida>):
+Lee (en <trabajo> = <salida>/extraccion):
   inventory.json, graph.json, preflight.json y registro.json (si existen)
 
 Escribe:
@@ -94,8 +94,8 @@ def main(doc_root: str) -> int:
                     for pm in objects.get("processModel", []) if isinstance(pm.get("usage"), dict)),
                    key=lambda u: -(u["executions"] or 0))[:10]
 
-    # Secretos: objetos con valores enmascarados en la extracción
-    secret_objs = [o for o in all_objs if o.get("maskedSecrets") or o.get("maskedSecret")]
+    # Secretos: objetos con valores que parecen un secreto (secrets y secret de build_model.py)
+    secret_objs = [o for o in all_objs if o.get("secrets") or o.get("secret")]
 
     # Señales objetivas para el registro (el orquestador decide si son hallazgos)
     signals = []
@@ -145,11 +145,10 @@ def main(doc_root: str) -> int:
         "integrations": [{"name": it.get("name"), "method": it.get("method"), "connectedSystemRef": it.get("connectedSystemRef")}
                          for it in objects.get("integration", [])],
         "secrets": {"count": len(secret_objs), "objects": [o.get("name") for o in secret_objs]},
-        "findings": [{k: h.get(k) for k in ("id", "titulo", "area", "severidad", "certeza", "documento", "tratamiento")}
+        "findings": [{k: h.get(k) for k in ("id", "titulo", "area", "severidad", "certeza", "documento")}
                      for h in vivos],
         "findingsBySeverity": registro.get("porSeveridad", {}),
         "findingsByCertainty": registro.get("porCerteza", {}),
-        "modernization": {"verdict": registro.get("veredicto"), "strategy": registro.get("estrategia")},
         "signals": signals,
         "objects": {t: [{k: o.get(k) for k in ("name", "uuid", "type", "mcpType", "slug") if o.get(k) is not None}
                         for o in objs] for t, objs in objects.items()},

@@ -7,8 +7,6 @@
   sin severidad.
   El registro de hallazgos lo escribe build_registry.py entre los dos marcadores: no los cambies ni escribas
   dentro. Omite las subsecciones del Detalle sin contenido (y su entrada del índice).
-  Sin usuarios: el versionado da fechas, recuentos y tipo de cuenta. Una constante de tipo Usuario: «una cuenta de
-  ‹grupo›» o «una cuenta personal»; un correo personal: ‹correo›.
   Un solo dueño por señal: process models sin ejecuciones → H-GEN (aquí); la lista de objetos huérfanos es solo
   la de este documento (02 tiene el H-ARQ y los demás la enlazan).
   Si el entorno no consta como producción, las cifras de uso llevan «orientativo (ver LEEME)», sin más explicación.
@@ -49,9 +47,9 @@ Constantes cuyo valor depende del entorno (URLs, hosts, identificadores, interru
 
 | Constante | Tipo | Valor en este entorno | Usada por | Certeza |
 |---|---|---|---|---|
-| `{{constante}}` | {{Texto}} | `{{valor sin credenciales ni usuarios}}` | {{N}} objetos | 🔵 |
+| `{{constante}}` | {{Texto}} | `{{valor}}` | {{N}} objetos | 🔵 |
 
-La extracción enmascaró valores con aspecto de secreto en {{N}} objetos; su tratamiento está en [{{H-SEG-02}}](./04-seguridad-grupos.md#hallazgos).
+Hay valores con aspecto de secreto escritos en {{N}} objetos; su tratamiento está en [{{H-SEG-02}}](./04-seguridad-grupos.md#hallazgos).
 
 ### Reglas reutilizables
 
@@ -81,11 +79,11 @@ Avisos que da la propia plataforma al validar el objeto (funciones obsoletas, re
 
 ### Versionado
 
-Historial de versiones de los objetos: fechas y recuentos; los autores no se nombran.
+Historial de versiones de los objetos: quién los cambió por última vez, cuándo y cuántas veces.
 
-| Último autor | Grupo | Objetos | Último cambio |
-|---|---|---|---|
-| {{Cuenta personal / Cuenta de servicio / Tipo no determinado}} | {{grupo o «—»}} | {{N}} | {{AAAA-MM-DD}} |
+| Último autor | Tipo de cuenta | Grupo | Objetos | Último cambio |
+|---|---|---|---|---|
+| `{{marta.ruiz}}` | {{Cuenta personal / Cuenta de servicio / Tipo no determinado}} | {{grupo o «—»}} | {{N}} | {{AAAA-MM-DD}} |
 
 Objetos con más versiones:
 
@@ -113,7 +111,7 @@ Mantenimiento, validación de la plataforma, versionado, métricas y uso. Los de
 
 ## Registro de hallazgos
 
-Todos los hallazgos de la documentación, de mayor a menor severidad, con el documento que los explica y su tratamiento: la mejora de 13 (`MOD-`) o la pregunta abierta de 12 (`PQ-`).
+Todos los hallazgos de la documentación, de mayor a menor severidad, con el documento que los explica.
 
 <!-- registro:inicio -->
 (lo rellena build_registry.py)

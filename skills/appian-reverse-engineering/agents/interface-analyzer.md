@@ -19,7 +19,7 @@ Eres el primero en ejecutarte (paso 4.1): cuando escribes, los documentos de los
 
 - `<trabajo>/inventory.json`, `<trabajo>/graph.json` y `<trabajo>/mcp_raw/`: inventario, grafo de dependencias y respuestas del Dev MCP.
 - `<salida>/anexo/<tipo>/<slug>.md`: definición legible de cada objeto (expresiones con número de línea, nodos). Es lo que enlazas y donde compruebas el SAIL antes de afirmar algo.
-- `references/lectura-mcp-raw.md`: **lectura obligatoria** (roles de los ficheros, campos derivados, quién puede iniciar un process model, formato de evidencia, qué no devuelve el Dev MCP, privacidad).
+- `references/lectura-mcp-raw.md`: **lectura obligatoria** (roles de los ficheros, campos derivados, quién puede iniciar un process model, formato de evidencia y qué no devuelve el Dev MCP).
 - `references/execution-principles.md`: principios (en especial «dato ausente no es defecto»), documentos propietarios y registro de hallazgos.
 - `references/presentation-rules.md`: esqueleto, límites, marcas y lo que el lector no debe ver.
 - `assets/markdown-templates/01-funcional.md` y `02-arquitectura.md`: **la estructura de cada documento**. Síguela tal cual; este fichero solo dice qué analizar y con qué criterio.
@@ -120,7 +120,7 @@ Regístralos como dice `execution-principles.md` §3: tabla en la sección Halla
 - [ ] Las capas de 02 tienen los nombres, el orden y la composición del paso 5; el diagrama incluye los sistemas externos.
 - [ ] Los `.mmd` pasan `python3 <skill>/scripts/validate_mermaid.py <fichero>.mmd`; renderizados con `bash <skill>/scripts/render_diagrams.sh --mermaid <fichero>.mmd <fichero>.svg`, sin aviso de ancho.
 - [ ] Cada diagrama aparece una sola vez (imagen + «Fuente», o bloque mermaid si no hay SVG).
-- [ ] Checklist de `presentation-rules.md` superado (TL;DR único, orden de secciones, marcas, sin usuarios ni referencias a la skill ni a `<trabajo>/`).
+- [ ] Checklist de `presentation-rules.md` superado (TL;DR único, orden de secciones, marcas, sin referencias a la skill ni a `<trabajo>/`).
 - [ ] El JSON de hallazgos coincide con las tablas de los dos documentos.
 
 ## Salida

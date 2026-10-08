@@ -1,7 +1,8 @@
 # Análisis funcional (`analisis/funcional.md`)
 
 Es lo que el cliente valida. De aquí sale el DF en Word (`df_docx.js`) y lo leen el prototipo y la
-especificación técnica. Ejemplo completo: `ejemplos/autorizaciones/analisis/funcional.md`.
+especificación técnica. Los fragmentos de los apartados 4, 5 y 11 son de un caso ficticio (solicitudes de
+autorización) y tienen el formato exacto que leen los scripts.
 
 ## Lo que leen los scripts
 
@@ -80,6 +81,19 @@ Historias agrupadas por área (`### Área`). Cada una:
    textos literales entre comillas. Uno por comportamiento. Toda acción que borre o anule algo dice su
    confirmación literal; si no se sabe, va al 11.
 
+```markdown
+**HU-03 — Subsanar una solicitud** <!-- ✅ FU-01 00:15:30 -->
+
+| Perfil | Pantalla | Paso | Prioridad |
+|---|---|---|---|
+| Unidad solicitante | PAN-03 | ACT-06 | Imprescindible |
+
+Como unidad solicitante, quiero corregir la solicitud devuelta para que siga su curso sin empezar de nuevo.
+
+Se acepta si:
+- `HU-03.1` Al reenviarla vuelve a «En revisión» con el mismo número.
+```
+
 Al final, `### Reglas comunes`: tabla `ID · Regla · Historias` con las `RB-nn` que afectan a varias
 historias. Una regla de una sola historia va en su historia.
 
@@ -90,6 +104,21 @@ Una ficha `PAN-nn` por pantalla, vista o diálogo:
 - Para qué sirve, quién entra y desde dónde se abre, en una o dos frases.
 - Tabla `Parte · Qué permite · Quién`.
 - `Historias: HU-04, HU-05.`
+
+```markdown
+**PAN-03 — Registrar o subsanar solicitud** <!-- ✅ FU-01 00:04:10 -->
+
+![PAN-03 Registrar o subsanar solicitud](../prototipo/capturas/03-solicitud.png)
+
+Formulario de la solicitud. Se abre con «Nueva solicitud» o desde la tarea de subsanar.
+
+| Parte | Qué permite | Quién |
+|---|---|---|
+| Comentario del técnico | Leer lo que falta, solo al subsanar | Unidad solicitante |
+| Documentos | Adjuntar la memoria y el plano | Unidad solicitante |
+
+Historias: HU-03.
+```
 
 Cuando el cliente valida una pantalla, pasa a 🔒: el prototipo ya no la cambia sin el visto bueno del analista.
 
@@ -123,6 +152,12 @@ naturales. Lo que no se sabe es un PC. De aquí sale el apartado Entorno de la e
 ### 11. Pendiente de confirmar
 Tabla con IDs `PC-nn`: `ID · Pregunta · Opciones · A quién · Afecta a`. Una pregunta por fila, cerrada y con opciones
 cuando se puede. Lo respondido se tacha con la decisión que lo responde. El Word solo enseña las abiertas.
+
+```markdown
+| ID | Pregunta | Opciones | A quién | Afecta a |
+|---|---|---|---|---|
+| PC-02 | ¿Qué pasa si la unidad no subsana en 10 días hábiles? | Se archiva / Se le recuerda cada 10 días | Responsable de la unidad | ACT-06, HU-03 <!-- ❓ FU-03 00:16:20 --> |
+```
 
 ### Anexo. Quién puede hacer qué
 Lo genera `indice.py derivadas --escribir` a partir del 5. No se edita a mano.

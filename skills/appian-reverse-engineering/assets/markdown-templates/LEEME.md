@@ -10,7 +10,7 @@
     añaden con la documentación oficial (p. ej. https://docs.appian.com/suite/help/26.6/Sub-Process_Activity.html,
     https://docs.appian.com/suite/help/26.6/record-events.html,
     https://docs.appian.com/suite/help/26.6/prepare-deployment-packages.html#add-plugins).
-  - Celdas ≤ 100 caracteres. Un solo TL;DR. Sin usuarios.
+  - Celdas ≤ 100 caracteres. Un solo TL;DR.
 -->
 
 # {{Nombre visible de la aplicación}}: documentación de reingeniería
@@ -24,15 +24,14 @@
 |---|---|
 | Nuevo en el proyecto | 00 → 01 → 10 → 02 → 08 (índice) → 03 |
 | Desarrollador que la mantiene | 02 → 03 → 08 → 05 y 06 → 04 → 07 → 09 → INVENTARIO → anexo/ |
-| Arquitecto que la reconstruye o moderniza | 00 → 13 → 12 → 14 → 11 → 10 → anexo/ |
-| Negocio, para validar | 01 → 11 → 12 (preguntas abiertas y funcionalidad candidata a no migrar) |
+| Negocio, para validar | 01 → 11 |
 | Auditoría o seguridad | 04 → 06 → 05 → 09 (registro de hallazgos) |
 
 ## Contenido
 
 | Documento | Qué contiene | IDs |
 |---|---|---|
-| [00-resumen-ejecutivo.md](./00-resumen-ejecutivo.md) | Cifras, procesos críticos, hallazgos principales y veredicto | — |
+| [00-resumen-ejecutivo.md](./00-resumen-ejecutivo.md) | Cifras, procesos críticos y hallazgos principales | — |
 | [01-funcional.md](./01-funcional.md) | Qué hace, para quién y casos de uso | {{H-FUN-01…H-FUN-02}} |
 | [02-arquitectura.md](./02-arquitectura.md) | Capas, objetos principales, acoplamientos y huérfanos | {{H-ARQ-01…H-ARQ-03}} |
 | [03-modelo-datos.md](./03-modelo-datos.md) | Entidades, relaciones y volúmenes | {{H-DAT-01…H-DAT-04}} |
@@ -44,11 +43,8 @@
 | [09-valor-adicional.md](./09-valor-adicional.md) | Métricas, constantes, huérfanos, versionado, glosario y registro de hallazgos | {{H-GEN-01…H-GEN-02}} |
 | [10-pantallas.md](./10-pantallas.md) | Catálogo de pantallas | {{PAN-001…PAN-006}} |
 | [11-reglas-negocio.md](./11-reglas-negocio.md) | Catálogo de reglas de negocio | {{RN-001…RN-012}} |
-| [12-especificacion-reconstruccion.md](./12-especificacion-reconstruccion.md) | Requisitos para reconstruirla, criterios de aceptación y trazabilidad | {{RF-001…RF-010, PQ-001…PQ-004}} |
-| [13-modernizacion-refactor.md](./13-modernizacion-refactor.md) | Diagnóstico, estrategia y plan de migración | {{MOD-001…MOD-008}} |
-| [14-diseno-objetivo.md](./14-diseno-objetivo.md) | Cómo construirla: datos, procesos, pantallas e integraciones | — |
 | [INVENTARIO.md](./INVENTARIO.md) | Todos los objetos, con uuid, y cobertura de la extracción | — |
-| [anexo/indice.md](./anexo/indice.md) | Definición original de cada objeto: código numerado por líneas, sin usuarios | — |
+| [anexo/indice.md](./anexo/indice.md) | Definición original de cada objeto: código numerado por líneas | — |
 
 ## Cómo leer las marcas
 
@@ -69,10 +65,6 @@ Que la extracción no traiga un dato no significa que falte en la aplicación: p
 | `H-<ÁREA>-NN` | Hallazgo: algo que corregir, decidir o vigilar; el área dice su documento (ver «Contenido») | Su documento y el [registro de 09](./09-valor-adicional.md#registro-de-hallazgos) |
 | `PAN-NNN` | Pantalla | 10 |
 | `RN-NNN` | Regla de negocio | 11 |
-| `RF-NNN` · `RNF-NNN` | Requisito funcional · requisito no funcional (volúmenes, rendimiento…) | 12 |
-| `PQ-NNN` | Pregunta abierta para negocio o para el equipo técnico | 12 |
-| `MOD-NNN` | Actuación de modernización | 13 |
-| `DEC-NNN` | Decisión pendiente | 13 |
 
 **Evidencia**
 
@@ -80,21 +72,21 @@ Que la extracción no traiga un dato no significa que falte en la aplicación: p
 |---|---|
 | `mcp:tipo/nombre#ubicación` | Objeto y punto de su definición; el enlace abre su ficha en el [anexo](./anexo/indice.md). |
 | `@dependents` · `@history` · `@versions` | Tras el nombre, la respuesta de la que sale: quién lo usa · ejecuciones · versiones. |
-| `@validation` · `@screen` · `@members` | Avisos de la plataforma · pantalla renderizada (sin valores) · miembros del grupo. |
+| `@validation` · `@screen` · `@members` | Avisos de la plataforma · pantalla renderizada · miembros del grupo. |
 | `@other:<herramienta>` | Otra respuesta de la plataforma (p. ej. el role map). |
 | `graph:hubs` · `graph:orphans` · `graph:edge/A→B` | Conclusión del grafo de referencias entre objetos ([anexo/grafo.md](./anexo/grafo.md)). |
 | `Fuente: <URL>` | Documentación oficial de Appian. |
 
 ## Qué no incluye
 
-- Datos de negocio: no se leyó ninguna fila, solo metadatos y recuentos.
+- Datos de negocio: ninguna herramienta de datos (filas, variables de procesos, datos de tareas); el render (`@screen`) muestra lo que cada interfaz consulta al evaluarse con entradas vacías.
 - Valores de otros entornos: solo los de `{{url}}`; los demás están en el paquete de despliegue.
 - Configuración que el Dev MCP no devuelve (excepciones y alertas de nodos, destinatarios de correo, seguridad de acciones de record): marcada ❓.
 - {{Definición de N CDTs y N decisiones: el Dev MCP no la devuelve (ver INVENTARIO).}}
 - {{Seguridad por objeto (role maps): no disponible.}}
 - {{Volúmenes de datos: Appian MCP Server no disponible.}}
-- {{Verificación con la documentación oficial: Docs MCP no disponible; las fuentes de 13 no están verificadas para la versión.}}
-- {{Versión de Appian: no determinada; las recomendaciones usan la documentación más reciente.}}
+- {{Verificación con la documentación oficial: sin Docs MCP ni acceso a docs.appian.com; lo que depende de ella va marcado «sin verificar».}}
+- {{Versión de Appian: no determinada; las fuentes son de la documentación más reciente.}}
 - {{Uso real: el entorno no consta como producción y la muestra son las últimas N ejecuciones de cada proceso; las cifras son orientativas (los documentos las marcan «orientativo (ver LEEME)») y no sirven para decidir qué se usa{{; la muestra es uniforme (mismo iniciador y hora), así que no dice quién usa cada proceso ni cuándo}}.}}
 
 ## Glosario de Appian
@@ -129,4 +121,4 @@ Que la extracción no traiga un dato no significa que falte en la aplicación: p
 
 El vocabulario del negocio está en el [glosario de 09](./09-valor-adicional.md#glosario-de-negocio).
 
-> Los datos de trabajo de la extracción se guardan aparte, en la carpeta de trabajo que está junto a esta, y no viajan con esta documentación: contienen las respuestas sin filtrar, con usuarios y hosts internos.
+> Esta carpeta lleva también la extracción de la que sale la documentación, tal cual la devolvió el Dev MCP. Para consultar un objeto, usa su ficha del [anexo](./anexo/indice.md).

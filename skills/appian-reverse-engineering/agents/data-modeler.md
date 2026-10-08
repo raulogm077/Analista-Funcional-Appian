@@ -16,7 +16,7 @@ Lees las definiciones de los record types (campos, relaciones, origen, tabla, vi
 - `<trabajo>/datafabric.json` (opcional): referencia SQL, campos, relaciones y recuento de filas por record type (ver `references/data-fabric.md`).
 - `<salida>/anexo/<tipo>/<slug>.md`: definición legible de cada objeto; enlázala desde cada ficha.
 - `<salida>/01-funcional.md` y `02-arquitectura.md` (ya escritos): vocabulario de negocio y quién usa cada record.
-- `references/lectura-mcp-raw.md`: **lectura obligatoria** (roles de los ficheros, campos derivados, formato de evidencia, qué no devuelve el Dev MCP, privacidad).
+- `references/lectura-mcp-raw.md`: **lectura obligatoria** (roles de los ficheros, campos derivados, formato de evidencia y qué no devuelve el Dev MCP).
 - `references/execution-principles.md`: principios (en especial «dato ausente no es defecto»), documentos propietarios y registro de hallazgos.
 - `references/presentation-rules.md`: esqueleto, límites, marcas y lo que el lector no debe ver.
 - `assets/markdown-templates/03-modelo-datos.md`: **la estructura del documento**. Manda en el orden de secciones y en las columnas; este fichero solo dice qué analizar y con qué criterio.
@@ -48,7 +48,7 @@ No inventes lo que falte. Lo que la extracción no trae para ningún objeto (nul
 - Si la definición dice si el record type está sincronizado, esa es la fuente (✅).
 - Si no, que figure en los metadatos del data fabric indica que está sincronizado (🔵): esa herramienta solo lista y consulta record types sincronizados. Fuente: https://docs.appian.com/suite/help/26.6/mcp-system-tools.html#data-fabric-tools
 - Que **no** figure, o que no tenga recuento, no prueba lo contrario: los metadatos se filtran por los permisos de la cuenta de servicio y el data fabric no consulta los record types con seguridad por registro basada en expresión (`unmatchedRecordTypes`; ver `references/data-fabric.md`). Es ❓.
-- Los recuentos de filas van en la columna «Filas» y en la ficha; son la base de los requisitos de volumen de `12`. Si un recuento parece bajo, puede deberse a los permisos de la cuenta de servicio: dilo como supuesto.
+- Los recuentos de filas van en la columna «Filas» y en la ficha. Si un recuento parece bajo, puede deberse a los permisos de la cuenta de servicio: dilo como supuesto.
 
 ### Paso 4. Subdominios (solo con más de ~15 entidades)
 
@@ -97,7 +97,7 @@ Regístralos como dice `execution-principles.md` §3: tabla en la sección Halla
 - [ ] Las relaciones declaradas están en el ER con notación canónica; las inferidas, solo en las fichas con 🔵.
 - [ ] Cada diagrama pasa `validate_mermaid.py`, se renderizó sin aviso de ancho y aparece una sola vez.
 - [ ] Cada ficha tiene evidencia y certeza (✅/🔵/❓); cada evidencia enlaza su ficha del anexo.
-- [ ] Checklist de `presentation-rules.md` superado (TL;DR único, orden de secciones, sin placeholders, sin usuarios ni referencias a la skill ni a `<trabajo>/`).
+- [ ] Checklist de `presentation-rules.md` superado (TL;DR único, orden de secciones, sin placeholders ni referencias a la skill ni a `<trabajo>/`).
 - [ ] El JSON de hallazgos coincide con la tabla del documento.
 
 ## Salida

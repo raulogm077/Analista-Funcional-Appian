@@ -8,9 +8,9 @@ Fase 7, solo si `<trabajo>/output_preferences.json` tiene `pdf: true`. Puede ir 
 
 ## Entradas
 
-- `<salida>/`: `LEEME.md`, `00`–`14`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso) y las imágenes de `diagrams/` y `08-procesos-bpmn/` (`.svg`, o `.png` cuando el proceso se dibujó en draw.io).
+- `<salida>/`: `LEEME.md`, `00`–`11`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso) y las imágenes de `diagrams/` y `08-procesos-bpmn/` (`.svg`, o `.png` cuando el proceso se dibujó en draw.io).
 - `<salida>/anexo/`: solo para el apéndice opcional (ver Estructura).
-- `<trabajo>/summary.json` (`<trabajo>` = `<padre de la salida>/_trabajo/<nombre de la salida>`): la fuente de todas las cifras.
+- `<trabajo>/summary.json` (`<trabajo>` = `<salida>/extraccion/`): la fuente de todas las cifras.
 - La skill de PDF disponible (`anthropic-skills:pdf` o equivalente): lee su `SKILL.md` antes de empezar y sigue su flujo (ReportLab, WeasyPrint, pandoc… lo decide ella).
 
 ## Contrato de summary.json
@@ -30,10 +30,9 @@ summary.json
 ├── usage [{name, executions, lastExecution, failed, failedInSampleOf}]   (top 10 por ejecuciones)
 ├── integrations [{name, method, connectedSystemRef}]
 ├── secrets {count, objects[]}
-├── findings [{id, titulo, area, severidad, certeza, documento, tratamiento[]}]   ← registro, sin duplicados, Alta primero
+├── findings [{id, titulo, area, severidad, certeza, documento}]   ← registro, sin duplicados, Alta primero
 ├── findingsBySeverity {Alta, Media, Baja}
 ├── findingsByCertainty {verificado, inferido, pendiente}
-├── modernization {verdict, strategy}
 ├── signals [{type, objects[]}]   ← señales para el orquestador, no hallazgos: no las publiques
 └── objects {tipo: [{name, uuid, type, mcpType, slug}]}
 ```
@@ -44,7 +43,7 @@ summary.json
 - **Hallazgos**: los de `findings`, con su ID, severidad en palabra (Alta/Media/Baja) y certeza ✅ verificado / 🔵 inferido / ❓ pendiente. No uses otras marcas de estado.
 - **Confianza**: `meta.confidence` siempre con su motivo (`meta.confidenceBasis`).
 - **Uso real**: si `meta.environment.isProduction` no es `true`, las ejecuciones van con la marca «orientativo (ver LEEME)».
-- **Lo que no se publica**: usuarios, secretos, rutas o enlaces a `<trabajo>/`, referencias a la skill (ficheros, scripts, códigos internos). Los uuids solo en el inventario y el apéndice.
+- **Lo que no se publica**: rutas o enlaces a `<trabajo>/` y referencias a la skill (ficheros, scripts, códigos internos). Los uuids solo en el inventario y el apéndice.
 
 ## Estructura del PDF
 
@@ -52,7 +51,7 @@ summary.json
 |---|---|---|
 | 1 | Portada | Nombre visible y técnico de la app, entorno, fecha de extracción, «Documentación de reingeniería inversa». |
 | 2 | Índice | Con número de página y marcadores del PDF. |
-| 3 | Cifras | Una página: objetos por capa, procesos críticos, hallazgos por severidad y certeza, secretos, confianza y veredicto. |
+| 3 | Cifras | Una página: objetos por capa, procesos críticos, hallazgos por severidad y certeza, secretos y confianza. |
 | 4 | Resumen ejecutivo | `00`. |
 | … | Funcional | `01`: un caso de uso por página, con su diagrama. |
 | … | Arquitectura | `02`: diagrama a página completa (apaisado si es ancho) y tablas. |
@@ -64,8 +63,7 @@ summary.json
 | … | Pantallas y reglas | `10` y `11`: mapa de navegación y tablas resumen. |
 | … | Hallazgos | Registro de `09` (de `findings`), coloreado por severidad. |
 | … | Mantenimiento | Resto de `09`: métricas, constantes por entorno, huérfanos, versionado. |
-| … | Reconstrucción y modernización | `12` (requisitos y trazabilidad), `13` (veredicto, diagnóstico, plan), `14` (diseño objetivo). |
-| … | Pendientes de validación | Preguntas abiertas de `12` y hallazgos con certeza ❓, con quién debe validarlos. |
+| … | Pendientes de validación | Hallazgos con certeza ❓, con quién debe validarlos. |
 | … | Inventario y glosarios | `INVENTARIO` en tablas compactas; glosario de Appian (`LEEME`) y de negocio (`09`). |
 | Apéndice | Anexo (opcional) | Las definiciones de `anexo/` solo si el usuario lo pidió o la app tiene menos de ~50 objetos; si no, una página que dice que el anexo acompaña al PDF en la carpeta `anexo/`. |
 
@@ -80,9 +78,9 @@ summary.json
 
 ## Proceso
 
-1. Comprueba `pdf: true`, que existen los 17 documentos (`LEEME`, `00`–`14`, `INVENTARIO`) y `summary.json`. Si falta algo, no sigas y dilo en el informe.
+1. Comprueba `pdf: true` y que existen `LEEME`, `00`–`11`, `INVENTARIO` y `summary.json`. Si falta algo, no sigas y dilo en el informe.
 2. Estima el tamaño con `totals.objects` y `counts`. Si pasa de ~100 páginas, deja el inventario y las fichas de detalle en tablas compactas y anótalo en el informe.
-3. Lee el `SKILL.md` de la skill de PDF y genera el PDF sección a sección según la tabla. Los ficheros temporales van en `<trabajo>/`, nunca en `<salida>/`.
+3. Lee el `SKILL.md` de la skill de PDF y genera el PDF sección a sección según la tabla. Los ficheros temporales van en `<trabajo>/`, nunca junto a los documentos.
 4. Comprueba el resultado: cada página tiene contenido, los diagramas se ven nítidos, el índice apunta a la página correcta, cabecera y pie en todas las páginas, tamaño < 10 MB (si no, comprime las imágenes).
 
 ## Salida

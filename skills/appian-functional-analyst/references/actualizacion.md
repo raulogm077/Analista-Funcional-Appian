@@ -167,7 +167,7 @@ Tiene que salir sin errores: ningún ID desaparecido, la versión sube y tiene s
 resultado, cada cambio declarado en el informe, nada marcado «sin cambios» que haya cambiado y nada 🔒
 cambiado sin un punto aprobado. Después:
 - el Word, si ya se había entregado un DF (`df_docx.js`);
-- el prototipo: solo las pantallas afectadas, con `appian-prototipos-aena`. Las validadas por
+- el prototipo: solo las pantallas afectadas, con `appian-prototipos`. Las validadas por
   el cliente (🔒) no se tocan sin el visto bueno del analista.
 
 ## 8. Entregar
