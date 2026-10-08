@@ -22,7 +22,8 @@ inversa y `selftest.py` en el resto; GitHub Actions en Windows, macOS y Linux.
 
 - **Plugin y proyecto, separados.** Este repositorio es el código del plugin y sus pruebas. Todo lo que el plugin genera
   al trabajar, también en los proyectos de prueba de las evaluaciones, va a la carpeta de ese proyecto (`<p>`), fuera
-  del repositorio; el plugin no escribe nada fuera de `<p>`.
+  del repositorio; el plugin no escribe nada fuera de `<p>`, salvo la marca de aviso de la Tarea 24, que no es trabajo
+  de un proyecto.
 - **Las skills, sin proyectos ni clientes dentro.** Una skill solo lleva lo que usa al trabajar; ninguna lleva un
   proyecto, tampoco de ejemplo, ni la marca de un cliente. Las pruebas de cada skill y sus datos ficticios están en
   `pruebas/<skill>/` (Tarea 0), fuera del paquete, y la marca del cliente va en `prototipo/` de su proyecto (Tarea 0b).
@@ -34,9 +35,9 @@ inversa y `selftest.py` en el resto; GitHub Actions en Windows, macOS y Linux.
 - La extracción vive en el proyecto, en `as-is/extraccion/` (D4), y se escribe ya saneada: sin credenciales, secretos,
   nombres de usuario (van seudónimos), rutas locales ni la lista de aplicaciones del entorno. Las demás skills leen
   `as-is/datos/`, nunca la extracción.
-- Los proyectos de prueba de las evaluaciones se crean en `$PROYECTOS_PRUEBA` (por defecto `../proyectos-prueba/`, al
-  lado del repositorio). En el repositorio quedan las preguntas, lo esperado y los scripts que puntúan
-  (`pruebas/evaluaciones/`), y los resultados en `docs/evaluaciones.md`.
+- Los proyectos de prueba de las evaluaciones se crean en `$PROYECTOS_PRUEBA` (por defecto `proyectos-prueba/`, al
+  lado de la carpeta principal del repositorio, también si se trabaja desde un worktree). En el repositorio quedan las
+  preguntas, lo esperado y los scripts que puntúan (`pruebas/evaluaciones/`), y los resultados en `docs/evaluaciones.md`.
 - Los IDs de otra skill se citan dentro de su fuente: «[FU-07 PAN-03]», «[FU-08 REF-02]» (D1). Nunca en el texto del DF.
 - Scripts con `pathlib`, `encoding="utf-8"` y rutas con espacios; en Windows el comando es `python`. Rutas de prueba
   neutras («Carpeta con espacios/Gestión app»).
@@ -196,7 +197,7 @@ para cualquier cliente. (Añadida el 7 de octubre a petición de Raúl.)
     confirmar el cliente.
 
   Lo que no llega a WCAG 2.2 AA lo ajusta cambiando solo la luminosidad (matiz y saturación se quedan) y lo dice en la
-  salida y en la guía (`acento #5DA9E9 → #2F78B4: 4,5:1 sobre blanco`): el acento se oscurece hasta 4,5:1 sobre blanco y
+  salida y en la guía (`acento #5DA9E9 → #1971BA: 5,1:1 sobre blanco`): el acento se oscurece hasta 4,5:1 sobre blanco y
   sobre el gris de página (`#F4F5F7`); el oscuro, hasta 4,5:1 con texto blanco; el realce se aclara hasta 3:1 sobre el
   oscuro; los colores de estado del perfil, hasta 4,5:1 sobre blanco y sobre su fondo. `palette.navy` es el oscuro;
   `chartColorScheme` pone primero los colores de la marca que llegan a 3:1 sobre blanco y después los de la estándar,
@@ -250,12 +251,15 @@ para cualquier cliente. (Añadida el 7 de octubre a petición de Raúl.)
 - [ ] **Paso 1: prueba que falla**
 
 ```python
+import re
+
 from conftest import SKILL  # carpeta de la skill (Tarea 0)
 
 PROHIBIDO = re.compile(
     r"12-especificacion|13-modernizacion|14-diseno|rebuild-architect|target-designer|modernizacion\.json|"
     r"moderniz|reconstru|[Vv]eredicto|\b(MOD|PQ|DEC|RF|RNF)-|17 documentos|00.{1,3}14\b|"
-    r"tratamiento (de|en) 13|\"tratamiento\"|tratamiento\[|\| Tratamiento \|")
+    r"tratamiento (de|en) 13|\"tratamiento\"|tratamiento\[|\| Tratamiento \|"
+    r"|`1[234]`|(?i:moderniz|reconstru)|\b(MOD|PQ)\b|(?:\b(?:de|en|y)|→) 1[234]\b(?![\w ]*(referencias|interfaces|constantes|tareas))|\| (\d\d, )*1[234] [|(]")
 
 def test_ingenieria_inversa_no_menciona_el_bloque_b():
     malos = [f"{p.relative_to(SKILL)}:{n}" for p in SKILL.rglob("*") if p.suffix in (".md", ".py", ".json")
@@ -283,13 +287,20 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 
 **Ficheros:**
 - Modificar: `scripts/rutas.py`, `scripts/privacidad.py` (recibe de `build_annex.py` `USER_KEY`, `EMAIL`, `users_seen`,
-  `users_in`, `user_labels`, `scrub` y `scrub_text`), `scripts/build_annex.py` (los importa), `scripts/devmcp_extract.py`
-  (escribe ya saneado y con rutas cortas), `scripts/build_model.py` (misma ruta corta), `SKILL.md` («Argumentos», «Dos
-  carpetas» pasa a una, y puntos 6 y 11 de la validación final), `references/response-format.md:50`
-  y las menciones a `_trabajo` de `references/` y `agents/`.
-- Modificar en `pruebas/appian-reverse-engineering/`: `conftest.py` y lo que da por hecho `_trabajo`
-  (`test_build_model.py:93-95`, el `.gitignore` de `test_extract.py:255` y la ruta de `test_registry.py:17`, con los
-  números de línea de antes de la Tarea 0).
+  `users_in`, `user_labels`, `scrub` y `scrub_text`, y también `sensitive()` y lo que usan: `URL_CREDS`, `MASKED`,
+  `URL_HOST`, `INTERNAL_HOST`, `USER_PH` y `load`, para que no haya importación circular), `scripts/build_annex.py` (los
+  importa), `scripts/devmcp_extract.py` (escribe ya saneado y con rutas cortas), `scripts/build_model.py` (misma ruta
+  corta), `SKILL.md` («Argumentos», «Dos carpetas» pasa a una, y puntos 6 y 11 de la validación final), la nota sobre
+  `appian-docs/_trabajo/<PREFIJO>/` de `references/response-format.md` y las menciones a `_trabajo` de `references/` y
+  `agents/`.
+- Modificar también lo que aún dice que la extracción va aparte: `assets/markdown-templates/LEEME.md`,
+  `references/security-rules.md`, `references/presentation-rules.md` y, en `SKILL.md`, la fase 3.3 y el punto 4 de la
+  validación final.
+- Modificar en `pruebas/appian-reverse-engineering/`: `conftest.py` y lo que da por hecho `_trabajo` (la prueba de
+  `_trabajo` de `test_build_model.py`, `test_work_data_outside_deliverables`, entera; el `.gitignore` de
+  `test_extract.py:255` y la ruta de `test_registry.py:17`, con los números de línea de antes de la Tarea 0). También
+  la aserción de `lastModifiedBy` de `test_build_model.py`, que pasa a `privacidad.seudonimo(…)`, y lo que usa
+  `dx.safe_name(uuid)` en `test_extract.py`, que pasa a `rutas.carpeta_objeto`.
 - Crear: `pruebas/appian-reverse-engineering/test_extraccion_en_proyecto.py`.
 
 **Interfaces:**
@@ -306,11 +317,14 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
   completa de usuarios (por si un texto se escribió antes de conocer a su usuario) y devuelve cuántos cambió.
 - `preflight.json` y `extraction_report.json` guardan del fichero de configuración solo su nombre, no su ruta, y de las
   aplicaciones del entorno solo cuántas hay.
+- De la lista de aplicaciones, `mcp_raw/_env/` guarda solo la aplicación elegida (nada si no hay ninguna).
+  `datafabric.json` guarda del fichero de configuración solo su nombre.
 
 - [ ] **Paso 1: pruebas que fallan.** `interm()` de `conftest.py` usa `rutas.work_dir(self.out)`. En
   `pruebas/appian-reverse-engineering/test_extraccion_en_proyecto.py`:
   - `test_extraccion_dentro_del_proyecto`: tras `extract`, existe `<out>/extraccion/mcp_raw` y no hay nada fuera de `<out>`
-    (la carpeta temporal de la prueba solo tiene el proyecto, su `.mcp.json` y el registro de llamadas del simulador).
+    (la carpeta temporal de la prueba solo tiene el proyecto, su `.mcp.json`, el registro de llamadas del simulador y la
+    carpeta `home/` del conftest).
   - `test_sin_usuarios_ni_secretos`: ningún fichero de `<out>` contiene los usuarios de `fixture.GROUP_USERS`, `sk_live_`,
     un correo, la ruta de la carpeta de la prueba ni otra aplicación del entorno; aparece `‹usuario-`; y un mismo usuario
     tiene el mismo seudónimo en los miembros del grupo y en el historial.
@@ -334,8 +348,8 @@ Sus pruebas ya las ejecuta `comprobar_plugin.py --completo` desde la Tarea 0; aq
 **Ficheros:** Modificar `README.md` (mapa de skills); `skills/appian-reverse-engineering/SKILL.md` (apartado «## Dudas
 de Appian» con el bloque común del analista); `references/docs-mcp-usage.md` (solo lo propio: tope de 30 consultas y
 caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `detect_secrets.sh` se saltan si no hay
-`bash`; `encoding="utf-8"` en toda lectura, también en `test_registry.py:50-51`); `pruebas/comprobar_plugin.py`
-(`REGLA_DOCS` incluye `appian-reverse-engineering`).
+`bash`; `encoding="utf-8"` en toda lectura, también en cada `read_text()` sin `encoding` de `test_registry.py`);
+`pruebas/comprobar_plugin.py` (`REGLA_DOCS` incluye `appian-reverse-engineering`).
 
 - [ ] **Paso 1:** añadir `appian-reverse-engineering` a `REGLA_DOCS` y ejecutar `python3 pruebas/comprobar_plugin.py --completo`
   → FALLA («falta el apartado Dudas de Appian»).
@@ -401,11 +415,12 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
 
 **Interfaces:**
 - `comprobar(salida: Path) -> tuple[list[str], list[str]]` (errores, avisos). CLI: 0 sin errores, 1 con errores.
-- Errores:
+- Errores (los de tablas y de `{{` no se miran en `anexo/` ni en `extraccion/`: una lista anidada de SAIL lleva `{{`):
   - un nombre entre comillas invertidas que empieza por el prefijo de la app (seguido de `_` o espacio, cortado en `.`
     o `#`) y no está ni en `objetos[].nombre`, ni en `objetos[].tambien`, ni es `aplicacion.nombre`;
-  - una tabla con columna «Certeza» sin columna «Evidencia», o una fila cuya evidencia no enlaza a un fichero existente
-    de `anexo/`, o una certeza fuera de ✅ 🔵 ❓;
+  - una tabla con columna «Certeza» sin columna «Evidencia», salvo la del registro de 09, entre `<!-- registro:inicio -->`
+    y `<!-- registro:fin -->`, cuyas filas enlazan en «Dónde» al documento que tiene la evidencia; o una fila cuya
+    evidencia no enlaza a un fichero existente de `anexo/`, o una certeza fuera de ✅ 🔵 ❓;
   - cifras de `00` («N objetos», «N process models», «N interfaces», «N record types») distintas de las de
     `as-is/extraccion/summary.json`;
   - `{{` sin sustituir, un enlace relativo a un fichero que no existe, o lo que detecte `detect_secrets.py`.
@@ -427,11 +442,12 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
 - Modificar: `pruebas/appian-reverse-engineering/mock_devmcp/lcp_mcp_server_mock.py` (módulo de `$MOCK_APP`, por defecto `fixture`; el prefijo sale
   del objeto aplicación del fixture y no de `"DEM"` fijo en las líneas 170 y 239; tipo `DATA_STORE` en `_app_objects`;
   definición para `DATA_TYPE` y `DATA_STORE`) y `pruebas/appian-reverse-engineering/mock_devmcp/appian_mcp_server_mock.py`
-  (también `$MOCK_APP`).
+  (también `$MOCK_APP`, y toma `COUNTS` de ese módulo: los de DEM pasan a `fixture.py`).
 
 **Interfaces:**
 - `fixture_mal_hecha` expone lo mismo que `fixture`: `APP_KEY`, `REFS`, `DEPENDENTS_SUPPORTED`, `GROUP_USERS`,
-  `PM_HISTORY`, `VALIDATION_ISSUES` y `build()`.
+  `PM_HISTORY`, `VALIDATION_ISSUES`, `COUNTS` y `build()`. Usa las claves `G_ADM` y `G_USR`, que el simulador pide para
+  los grupos por defecto de la aplicación.
 - Aplicación «MNT Mantenimiento de Instalaciones», prefijo `MNT`, unos 45 objetos, con estas 11 malas prácticas
   (`malas-practicas.json`: `id`, `descripcion`, `objetos`, `capa`, `bp` = «doc §sección», fijada consultando
   `appian-best-practices/scripts/seccion.py`):
@@ -451,9 +467,10 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   `MNT_IF_Panel` llaman a `rule!CMN_FormatearFecha`, `rule!CMN_UsuarioActual` y `rule!CMN_IF_Cabecera`, de otra
   aplicación ficticia (un marco común con prefijo `CMN`) que no está en la extracción. No hace falta una herramienta de
   dependencias salientes: la del Dev MCP que se conoce da quién usa un objeto, y si el real trae otra, está sin verificar.
-- Con `MOCK_APP=fixture_mal_hecha`, el entorno simulado es de preproducción (`LCP_URL` = `https://pre.mnt.ejemplo.local`,
+- Con `MOCK_APP=fixture_mal_hecha`, el entorno simulado es de preproducción (`LCP_URL` = `https://pre.mnt.example.org`,
   que pasa `test_fixture_mal_hecha.py` a `add_devmcp` y pone el `.mcp.json` del proyecto de prueba de la Tarea 9); la
-  URL de `MNT_CS_Proveedores` es de desarrollo (`https://proveedores-dev.ejemplo.local`).
+  URL de `MNT_CS_Proveedores` es de desarrollo (`https://proveedores-dev.example.org`). Las dos, en un dominio de
+  ejemplo público, como el fixture DEM: un `.local` se publica como host interno.
 - Lo que pregunta un recién llegado: CDT `MNT_OrdenDTO` con su data store, record types `MNT Orden`, `MNT Técnico` y
   `MNT Estado`, grupos `MNT Administradores`, `MNT Técnicos` y `MNT Supervisores`, un site de tres páginas, un proceso
   sin ejecuciones `MNT_PM_Antiguo` y usuarios ficticios en los grupos, en una constante y como asignados.
@@ -478,8 +495,9 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
 
 **Ficheros:**
 - Modificar: `assets/markdown-templates/**/*.md` (00–11, LEEME, INVENTARIO y `08-procesos-bpmn/pm-template.md`), los
-  cinco agentes de análisis, `references/{execution-principles,security-rules}.md`, `scripts/build_registry.py`
-  (aviso si un hallazgo trae `recomendacion`) y `pruebas/appian-reverse-engineering/test_registry.py`.
+  cinco agentes de análisis, `references/{execution-principles,security-rules,appian-objects-guide}.md` (en la guía de
+  objetos, el dato de los 50 nodos se queda), `scripts/build_registry.py` (aviso si un hallazgo trae `recomendacion`) y
+  `pruebas/appian-reverse-engineering/test_registry.py`.
 - Crear: `pruebas/appian-reverse-engineering/test_plantillas.py`.
 
 - [ ] **Paso 1: pruebas que fallan.** `test_plantillas.py`:
@@ -596,23 +614,26 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
 **Interfaces:**
 - `puntuar.py <respuestas.json> <as-is> [--ocultas] [--minimo N] [--obligatorias Q-21,…]`: `respuestas.json` =
   `[{"id": "Q-01", "respuesta", "evidencia": "ruta#ancla"}]`. Acierta si la respuesta normalizada está entre las
-  aceptadas y el fichero de la evidencia existe; una de tipo `lista`, si están todos sus elementos (de un elemento que
-  es una lista de formas, basta una). Imprime aciertos y
+  aceptadas y el fichero de la evidencia existe y no está en `extraccion/`; una de tipo `lista`, si están todos sus
+  elementos (de un elemento que es una lista de formas, basta una). Imprime aciertos y
   sale 0 con `--minimo` aciertos o más (por defecto, el 90 %) y todas las obligatorias bien.
 - `evidencia.py <as-is>`: en `datos/`, `MNT_CS_Proveedores` tiene un hallazgo `verificado` con evidencia a su ficha del
-  anexo, y los tres `CMN` están en `fueraDeLaAplicacion` con un NV cuyo `queHaceFalta` empieza por export o acceso; y
-  ningún entregable dice «no existe». Sale 0 si se cumple todo.
+  anexo (la evidencia `mcp:<tipo>/<nombre>#…` de `hallazgos.json` se pasa a su ficha con `inventario.json → anexo`), y
+  los tres `CMN` están en `fueraDeLaAplicacion` con un NV cuyo `queHaceFalta` empieza por export o acceso; y ningún
+  entregable dice «no existe». Sale 0 si se cumple todo.
 - `palabras.py <as-is>`: palabras por documento y total.
 
 - [ ] **Paso 1:** «antes»: desde `f3-antes`, un agente genera `as-is/` de la aplicación ficticia siguiendo el SKILL.md
-  contra el simulador, en `$PROYECTOS_PRUEBA/MNT-antes/`; otro, que solo lee su `as-is/`, responde las 22 preguntas y las 7
-  ocultas. Aciertos y palabras a `docs/evaluaciones.md`.
+  contra el simulador, en `$PROYECTOS_PRUEBA/MNT-antes/`, y pasa `comprobar_asis.py` solo como informe, sin exigir 0
+  errores (la columna «Evidencia» llega con la Tarea 8); otro, que solo lee su `as-is/` sin `extraccion/`, responde las
+  22 preguntas y las 7 ocultas. Aciertos y palabras a `docs/evaluaciones.md`.
 - [ ] **Paso 2:** «después», igual con las Tareas 8 y 8b hechas, en `$PROYECTOS_PRUEBA/MNT/`. Criterio:
   `puntuar.py --minimo 20 --obligatorias Q-21` y, con las ocultas, `--minimo 6`; `evidencia.py` sale 0; 0 errores de
   `comprobar_asis.py`; menos palabras que «antes».
 - [ ] **Paso 3:** si dos documentos se responden el uno al otro (LEEME con 00, 05 con 06), se unen —plantillas,
   entregables del SKILL.md, publicadores y pruebas de las Tareas 8 y 8b— y se repite el Paso 2. Las secciones de la
-  Tarea 8b van al documento que quede, y `build_datos.py` escribe en él.
+  Tarea 8b van al documento que quede, y `build_datos.py` escribe en él. Si se unen LEEME y 00, cambian también
+  `scripts/comprobar_asis.py` y `test_comprobar_asis.py::test_cifra_distinta`, que buscan las cifras en `00`.
 - [ ] **Paso 4:** commit. Cierre de fase: revisión y merge.
 
 ---
@@ -653,7 +674,8 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
 
 **Interfaces:**
 - `mermaid.py <ficheros .mmd> [-o carpeta] [--check] [--svg] [--width N] [--md fichero.md …]`: con `--md` valida cada
-  bloque ```mermaid y dice en qué línea empieza el que falla. Sale 0 bien, 1 sintaxis, 2 falta un requisito.
+  bloque ```mermaid y dice en qué línea empieza el que falla; con solo `--md`, los `.mmd` son opcionales. Sale 0 bien,
+  1 sintaxis, 2 falta un requisito.
 
 - [ ] **Paso 1:** selftest de diagramas: `--check` de un `.mmd` válido → 0 y de uno inválido → 1; `--md` de un
   Markdown con dos bloques, uno roto en la línea 12 → 1 y «línea 12» en la salida. → FALLA.
@@ -678,7 +700,7 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
 
 - [ ] **Paso 1: pruebas que fallan.** Selftest de diagramas con `DIAGRAMAS_SIN_NAVEGADOR=1`: `crear` de
   `semantico.json` escribe un `.drawio` sin pasos solapados, sale con 2 y dice «sin PNG»; `bpmn` de ese `.drawio` da un
-  BPMN válido. `test_una_pieza.py` (excluyéndose a sí mismo): ningún fichero de la skill de ingeniería inversa menciona
+  BPMN válido. `test_una_pieza.py`: ningún fichero de la skill de ingeniería inversa menciona
   `bpmn_layout`, `validate_mermaid`, `render_diagrams`, `mmdc` ni la vía «.bpmn + Mermaid».
 - [ ] **Paso 2:** hacer los cambios. **Paso 3:** pytest y `comprobar_plugin.py --completo` en verde.
 - [ ] **Paso 4:** commit «F4: ingeniería inversa dibuja con la skill de diagramas». Cierre de fase: revisión y merge.
@@ -723,7 +745,7 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
 **Interfaces:**
 - `comprobar(p: Path) -> tuple[list[str], list[str]]`. Errores: falta un apartado; una REF sin evidencia o con un enlace
   a `as-is/` que no existe; una «BP nn §x» que `appian-best-practices/scripts/seccion.py nn x` no encuentra; en
-  Diagnóstico o en «Sustituye a», un nombre con el prefijo de la app que no está en `as-is/datos/inventario.json`; una
+  Diagnóstico, un nombre con el prefijo de la app que no está en `as-is/datos/inventario.json`; una
   REF que no aparece en Solución; un NV citado que no está en `as-is/datos/sin-verificar.json`. Avisos: una REF que no
   está en la Hoja de ruta; una REF cuya evidencia cita un hallazgo `inferido` o `pendiente` sin «Verificar H-…» antes en la
   Hoja de ruta.
@@ -875,38 +897,43 @@ se ejecuta allí y los resultados van a `docs/evaluaciones.md`.
 
 ### Tarea 23: `requisitos.py`
 
-**Ficheros:** Crear `requisitos.json`, `requisitos.py` y `pruebas/requisitos-esperado.json` en la raíz; modificar
-`pruebas/comprobar_plugin.py` (`--completo` ejecuta la prueba de requisitos).
+**Ficheros:** Crear `requisitos.json`, `requisitos.py` y `pruebas/requisitos-esperado.json` en la raíz (este último se
+genera con `requisitos.py --json` y `REQUISITOS_SIN` de todo lo opcional); modificar `pruebas/comprobar_plugin.py`
+(`--completo` ejecuta la prueba de requisitos).
 
 **Interfaces:**
 - `requisitos.json`: `[{"id", "nombre", "skills", "imprescindible", "solo_pruebas", "para", "sin_el", "instalar": {"windows", "macos", "linux"}}]`
-  con `python` (3.9+), `playwright`, `navegador`, `node`, `docx`, `libreoffice`, `pdf` (pdftotext o pypdf), `uv`,
-  `devmcp` (configuración encontrada con `config_files`, `server_entries` e `is_devmcp` de `devmcp_extract.py`),
-  `appian-mcp-server`, `skill-pdf` (no se detecta: se informa) y, con `solo_pruebas`, `pytest` y `mcp`.
+  con `python` (3.9+; ingeniería inversa pide 3.10 o superior, que instala `uv`), `playwright`, `navegador`, `node`,
+  `docx`, `libreoffice`, `pdf` (pdftotext o pypdf), `uv`, `devmcp` (configuración encontrada con `config_files`,
+  `server_entries` e `is_devmcp` de `devmcp_extract.py`), `appian-mcp-server`, `skill-pdf` (no se detecta: se informa)
+  y, con `solo_pruebas`, `pytest` y `mcp`.
 - `requisitos.py [--skill NOMBRE] [--json] [--breve] [--tabla-readme]`. Sale 1 si falta algo imprescindible para lo
   pedido. `--json`: `{"python": "3.12.1", "requisitos": [{…, "presente": bool}], "avisos": [...]}`. Navegador: el
   Chromium de Playwright, o Chrome o Edge en sus rutas habituales, sin abrir ninguno. `docx`: se busca en la carpeta
   actual y en la global de npm, como `df_docx.js`. `REQUISITOS_SIN=id,id` fuerza ausencias para las pruebas.
 - Aviso si existe una copia suelta de una skill del plugin en `~/.claude/skills/` (dos versiones activas a la vez),
-  también con el nombre que tenía antes (`appian-prototipos-aena`, hoy `appian-prototipos`).
+  también con el nombre que tenía antes (`appian-prototipos-aena`, hoy `appian-prototipos`). La carpeta personal (`~`)
+  sale de `devmcp_extract.home_dir()`, que respeta `APPIAN_RE_HOME`.
 
-- [ ] **Paso 1:** prueba en `comprobar_plugin.py --completo`: con `REQUISITOS_SIN=playwright,docx`, la salida `--json`
-  es igual a `pruebas/requisitos-esperado.json` salvo versión y rutas, y sale 0; con `REQUISITOS_SIN=python`, sale 1;
-  con un `HOME` temporal que tiene `.claude/skills/appian-reverse-engineering/SKILL.md`, hay aviso, y también con
-  `.claude/skills/appian-prototipos-aena/SKILL.md`. → FALLA.
+- [ ] **Paso 1:** prueba en `comprobar_plugin.py --completo`: con `REQUISITOS_SIN` de todo lo opcional, la salida
+  `--json` es igual a `pruebas/requisitos-esperado.json` salvo versión y rutas, como en la Tarea 31; con
+  `REQUISITOS_SIN=playwright,docx`, sale 0 y esos dos van con `presente: false`; con `REQUISITOS_SIN=python`, sale 1;
+  con un `APPIAN_RE_HOME` temporal que tiene `.claude/skills/appian-reverse-engineering/SKILL.md`, hay aviso, y también
+  con `.claude/skills/appian-prototipos-aena/SKILL.md`. → FALLA.
 - [ ] **Paso 2:** implementar. **Paso 3:** en verde. Commit.
 
 ### Tarea 24: Aviso al instalar
 
-**Ficheros:** Crear `hooks/hooks.json`; modificar la sección «Requisitos» de cada SKILL.md (una línea:
-`python3 <skill>/../../requisitos.py --skill <nombre>` antes de la primera tarea).
+**Ficheros:** Crear `hooks/hooks.json`; modificar la sección «Requisitos» de cada SKILL.md, que se crea donde no la
+haya (una línea: `python3 <skill>/../../requisitos.py --skill <nombre>` antes de la primera tarea).
 
 - [ ] **Paso 1:** comprobar con la documentación de plugins (agente `claude-code-guide`) cómo se declara un hook
   `SessionStart` de un plugin sin depender del shell (en Windows puede ir por PowerShell 5.1, que no tiene `||`) y cómo
   se cita su carpeta (`${CLAUDE_PLUGIN_ROOT}`).
 - [ ] **Paso 2:** `--breve` siempre sale con 0 (si no, Claude no recibe el texto), imprime solo lo que falta y escribe la
-  marca `~/.cache/appian-analisis-funcional/avisado-<versión>` después de imprimir. Prueba: con `HOME` temporal y
-  `REQUISITOS_SIN=docx`, la primera vez lo dice y la segunda no imprime nada; con `REQUISITOS_SIN=python`, sale 0 y lo dice.
+  marca `~/.cache/appian-analisis-funcional/avisado-<versión>` (`~` sale de `devmcp_extract.home_dir()`) después de
+  imprimir. Prueba: con `APPIAN_RE_HOME` temporal y `REQUISITOS_SIN=docx`, la primera vez lo dice y la segunda no
+  imprime nada; con `REQUISITOS_SIN=python`, sale 0 y lo dice.
 - [ ] **Paso 3:** `hooks.json` en la forma que da el Paso 1.
 - [ ] **Paso 4 (Raúl):** instalar el paquete en Claude Code y en la app de escritorio con algo de la tabla sin instalar
   y comprobar que el primer mensaje lo dice. Resultado en `docs/evaluaciones.md`.
@@ -916,12 +943,13 @@ se ejecuta allí y los resultados van a `docs/evaluaciones.md`.
 
 **Ficheros:** Modificar `README.md` (tabla entre `<!-- requisitos:inicio -->` y `<!-- requisitos:fin -->`),
 `pruebas/comprobar_plugin.py`, `pruebas/clientes.txt` y, en `skills/appian-prototipos/`, los datos de ejemplo de
-`galerias/*/generar_app.py` y `templates/generar_plantillas.py`, con lo que regeneran.
+`galerias/*/generar_app.py` y `templates/generar_plantillas.py`, con lo que regeneran, y los ejemplos de
+`references/{design-rules,ingesta-requisitos,spec-format}.md`, que también pasan al dominio neutro.
 
 **Interfaces:** `comprobar_plugin.py` da error si la tabla del README no es la salida de `requisitos.py --tabla-readme`,
 o si un fichero que va al paquete contiene, con límite de palabra y sin distinguir acentos ni mayúsculas, `rgmoya`,
 `raulogm`, `C:/Users/` o `C:\Users\` no seguido de `<usuario>`, `/home/claude`, `Proyectos IA` o «Raúl» y «Raul»; salvo
-el autor en `.claude-plugin/plugin.json` y en `.claude-plugin/marketplace.json`. También, si `skills/` o
+`author.name` de `.claude-plugin/plugin.json` y `owner.name` de `.claude-plugin/marketplace.json`. También, si `skills/` o
 `.claude-plugin/` nombran un cliente de `pruebas/clientes.txt` (hoy, AENA): el plugin no lleva clientes (Tarea 0b).
 `clientes.txt` lleva también lo que delata a ese cliente en los datos de ejemplo: aeropuerto, Barajas, El Prat, MAD, BCN,
 PMI y AGP. Los datos de las galerías y las plantillas de prototipos pasan a un dominio ficticio neutro (por ejemplo,
@@ -940,7 +968,10 @@ cliente, y se regeneran con sus scripts (lo decidió Raúl el 7 de octubre).
 - Matriz `ubuntu-latest`, `windows-latest` y `macos-latest` con Python 3.9 y 3.12: instala `playwright` (y
   `python -m playwright install chromium`), `pytest`, `mcp` y Node con `docx`; ejecuta `python pruebas/comprobar_plugin.py --completo`
   con `PYTHONUTF8=1`.
-- [ ] **Paso 1:** subir la rama y ver la ejecución en las seis combinaciones. **Paso 2:** arreglar lo que falle en
+- En Python 3.9 no se instala `mcp`, que pide 3.10 o superior: se instala `uv` con `UV_PYTHON=3.12` y
+  `comprobar_plugin.py` pasa ingeniería inversa por su vía de uv.
+- [ ] **Paso 1:** subir la rama y ver la ejecución en las seis combinaciones. Si el token no deja subir
+  `.github/workflows/` (permiso `workflows`), el fichero lo sube Raúl. **Paso 2:** arreglar lo que falle en
   Windows o macOS (codificación, rutas, `python3`/`python`) con su prueba. **Paso 3:** commit. Cierre de fase: revisión y merge.
 
 ---
@@ -988,8 +1019,9 @@ tercio en `ocultas/`) y `pruebas/evaluaciones/enrutado/README.md`; resultados en
 - Fronteras: «¿la rehacemos o la evolucionamos?» → refactorización; «revisa esta interfaz» → buenas prácticas;
   «documenta la app X» → ingeniería inversa; «añade estas historias a lo que ya hay» → analista; «dibuja el proceso de
   la app existente» → diagramas (con ingeniería inversa si no hay JSON); «enséñale al cliente cómo quedaría» → prototipos.
-- [ ] **Paso 1:** comprobar si `claude plugin eval` está disponible (agente `claude-code-guide`) y, si lo está, pasar el caso con él.
-- [ ] **Paso 2:** si no, un agente que solo ve las seis descripciones elige la skill de cada petición. Criterio: todas;
+- [ ] **Paso 1:** aquí se pasa al Paso 2: `claude plugin eval` espera otro formato de casos y llama a la API. Si Raúl
+  quiere `eval`, se convierte `enrutado.json` en casos con el evaluador `tool_used: Skill` y los ejecuta él.
+- [ ] **Paso 2:** un agente que solo ve las seis descripciones elige la skill de cada petición. Criterio: todas;
   si no, se ajustan las descripciones y se repite con las ocultas sin ver. **Paso 3:** resultados y commit. Cierre de fase: revisión y merge.
 
 ---
@@ -1011,8 +1043,9 @@ tercio en `ocultas/`) y `pruebas/evaluaciones/enrutado/README.md`; resultados en
 
 ### Tarea 31: Paquete, instalación limpia, versión y entrega
 
-**Ficheros:** Crear `pruebas/empaquetar.py` (zip sin `.git`, `__pycache__`, `.pytest_cache`, `.github/`, `docs/`,
-`CLAUDE.md`, `pruebas/` ni `*.plugin`); actualizar el comando de empaquetado del README.
+**Ficheros:** Crear `pruebas/empaquetar.py` (zip sin `.git`, `__pycache__`, `.pytest_cache`, `.github/`, `.claude/`,
+`docs/`, `CLAUDE.md`, `pruebas/` ni `*.plugin`: reutiliza `NO_VAN_EN_EL_PAQUETE` y `CACHES` de `comprobar_plugin.py`);
+actualizar el comando de empaquetado del README.
 
 - [ ] **Paso 1:** empaquetar, descomprimir en una carpeta temporal y, desde ella, `requisitos.py --json` con
   `REQUISITOS_SIN` de todo lo opcional: coincide con `pruebas/requisitos-esperado.json` del repositorio. Después, desde
