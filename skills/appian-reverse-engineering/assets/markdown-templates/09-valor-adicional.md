@@ -46,14 +46,14 @@
   Lo que cambia entre entornos: la URL base y las credenciales de cada connected system, y las constantes con URLs,
   hosts, identificadores o interruptores de entorno (DEV/PRE/PRO). Solo se ve el valor del entorno extraído.
   «Por entorno»: Sí (connected system, o constante marcada «Environment Specific»), No (literal en una expresión o
-  constante sin la marca) o ❓ (la definición no lo dice). Certeza: la de que el valor dependa del entorno (🔵 si solo
+  constante sin la marca) o ❓ (la definición no lo dice). Certeza: la de que el valor dependa del entorno (🔶 si solo
   lo dice el valor). «Hallazgo»: el H-SEG de 04 si el valor es un secreto; el H-INT de 05 si apunta a otro entorno.
 -->
 
 | Objeto | Propiedad | Valor en este entorno | Por entorno | Usado por | Hallazgo | Certeza | Evidencia |
 |---|---|---|---|---|---|---|---|
 | `{{CS_SAP}}` | URL base | `{{https://sap.example.org/sap/api/v1}}` | Sí | {{2}} integraciones | — | ✅ | [`mcp:connectedSystem/{{CS_SAP}}#baseUrl`](./anexo/connectedSystem/{{slug}}.md) |
-| `{{constante}}` | Valor | `{{valor}}` | ❓ | {{N}} objetos | {{[H-INT-01](./05-integraciones-consumidas.md#hallazgos) o «—»}} | 🔵 | [`mcp:constant/{{constante}}#value`](./anexo/constant/{{slug}}.md) |
+| `{{constante}}` | Valor | `{{valor}}` | ❓ | {{N}} objetos | {{[H-INT-01](./05-integraciones-consumidas.md#hallazgos) o «—»}} | 🔶 | [`mcp:constant/{{constante}}#value`](./anexo/constant/{{slug}}.md) |
 
 ### Objetos huérfanos
 
@@ -87,7 +87,7 @@ Objetos con más versiones:
 
 | Término | Significado | Dónde aparece | Certeza | Evidencia |
 |---|---|---|---|---|
-| {{Expediente}} | {{definición en una frase}} | `{{record type}}`, `{{campo}}` | {{✅ (de la descripción) o 🔵 (del nombre)}} | [`mcp:recordType/{{record type}}#description`](./anexo/recordType/{{slug}}.md) |
+| {{Expediente}} | {{definición en una frase}} | `{{record type}}`, `{{campo}}` | {{✅ (de la descripción) o 🔶 (del nombre)}} | [`mcp:recordType/{{record type}}#description`](./anexo/recordType/{{slug}}.md) |
 
 ## Hallazgos
 

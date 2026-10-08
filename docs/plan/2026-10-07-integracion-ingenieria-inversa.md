@@ -617,7 +617,7 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
     `inferido` de severidad Alta con menos de dos evidencias en `base`; un objeto de `fueraDeLaAplicacion` con
     `usadoPor` y sin NV (los que solo usan la aplicación no son nada sin verificar).
 
-- [ ] **Paso 1: pruebas que fallan.** `test_evidencia.py`, con el simulador (variante A, y `MOCK_APP=fixture_mal_hecha`
+- [x] **Paso 1: pruebas que fallan.** `test_evidencia.py`, con el simulador (variante A, y `MOCK_APP=fixture_mal_hecha`
   donde se dice):
   - `test_sin_verificar_formato`: un `sin-verificar/prueba.json` llega validado a `datos/` y a la tabla de
     LEEME; con un `id` o un `estado` fuera de formato, error;
@@ -631,8 +631,8 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
     aviso; con dos, nada;
   - `test_marca_de_inferido`: ningún 🔵 en la skill (la prueba lo escribe como `"\U0001F535"`) y los JSON siguen
     diciendo `inferido`. → FALLA.
-- [ ] **Paso 2:** implementar y reescribir reglas, plantillas y agentes.
-- [ ] **Paso 3:** pytest y `comprobar_plugin.py --completo` en verde. Commit «F3: disciplina de evidencia».
+- [x] **Paso 2:** implementar y reescribir reglas, plantillas y agentes.
+- [x] **Paso 3:** pytest y `comprobar_plugin.py --completo` en verde. Commit «F3: disciplina de evidencia».
 
 ### Tarea 9: Evaluación del recién llegado (antes y después)
 

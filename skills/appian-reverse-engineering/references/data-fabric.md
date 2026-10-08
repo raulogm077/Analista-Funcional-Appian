@@ -41,6 +41,6 @@ Se ejecuta desde la carpeta del usuario (donde está su `.mcp.json`). Al servido
 ## Limitaciones (documentación oficial)
 
 - No se pueden consultar record types no sincronizados, *legacy* ni con seguridad a nivel de registro basada en una expresión. Aparecen en `unmatchedRecordTypes`.
-- Los resultados se filtran por la seguridad de la cuenta de servicio: si un recuento parece bajo, puede ser por permisos. Márcalo 🔵 y dilo.
+- Los resultados se filtran por la seguridad de la cuenta de servicio: si un recuento parece bajo, puede ser por permisos. Márcalo 🔶 y dilo.
 
 Fuente: [MCP System Tools Reference](https://docs.appian.com/suite/help/26.6/mcp-system-tools.html#data-fabric-tools) · [Appian MCP Server – limitaciones](https://docs.appian.com/suite/help/26.6/appian-mcp-server.html#limitations) · [Appian MCP Server Security](https://docs.appian.com/suite/help/26.6/mcp-server-security.html)

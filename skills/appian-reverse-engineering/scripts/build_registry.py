@@ -11,8 +11,10 @@ Crea  <trabajo>/registro.json         (hallazgos validados y sus recuentos por s
 Cada hallazgo:
   {"id": "H-PRO-01", "titulo": "...", "area": "procesos", "severidad": "Alta|Media|Baja",
    "certeza": "verificado|inferido|pendiente", "objetos": ["..."], "documento": "08-procesos-bpmn/X.md#hallazgos",
-   "evidencia": "mcp:processModel/X#nodes[id=1]", "impacto": "...", "duplicadoDe": "H-XXX-NN" (opcional)}
-Un hallazgo dice qué pasa y qué riesgo tiene, no qué hacer: si trae «recomendacion», avisa.
+   "evidencia": "mcp:processModel/X#nodes[id=1]", "impacto": "...", "duplicadoDe": "H-XXX-NN" (opcional),
+   "base": ["mcp:…", "graph:…"] (las evidencias de las que sale; obligatoria con certeza inferido)}
+Un hallazgo dice qué pasa y qué riesgo tiene, no qué hacer: si trae «recomendacion», avisa. Un inferido sin «base» es
+un error; uno de severidad Alta con menos de dos evidencias en «base», un aviso.
 
 Salida: 0 sin errores, 1 con errores de validación (se listan), 2 uso.
 """
@@ -27,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from rutas import work_dir  # noqa: E402
 
 SEVERIDADES = ("Alta", "Media", "Baja")
-CERTEZAS = {"verificado": "✅", "inferido": "🔵", "pendiente": "❓"}
+CERTEZAS = {"verificado": "✅", "inferido": "🔶", "pendiente": "❓"}
 AREAS = ("funcional", "arquitectura", "datos", "seguridad", "secretos", "integraciones", "apis", "procesos",
          "batches", "pantallas", "reglas", "mantenimiento", "rendimiento", "uso")
 RE_ID = re.compile(r"^H-[A-Z]{2,4}-\d{2,3}$")
@@ -64,6 +66,13 @@ def validar(hallazgos: list[dict], salida: Path, errores: list[str], avisos: lis
             errores.append(f"{h['id']}: severidad '{h['severidad']}' no es {'/'.join(SEVERIDADES)}")
         if h["certeza"] not in CERTEZAS:
             errores.append(f"{h['id']}: certeza '{h['certeza']}' no es {'/'.join(CERTEZAS)}")
+        elif h["certeza"] == "inferido":
+            base = h.get("base")
+            if not (isinstance(base, list) and base and all(isinstance(b, str) and b.strip() for b in base)):
+                errores.append(f"{h['id']}: inferido sin base: la lista de evidencias de las que sale")
+            elif h["severidad"] == "Alta" and len(base) < 2:
+                avisos.append(f"{h['id']}: inferido de severidad Alta con una sola evidencia en «base»: crúzalo con lo "
+                              "que podría desmentirlo (contraevidencia) y añade a «base» lo que lo sostiene")
         if h["area"] not in AREAS:
             avisos.append(f"{h['id']}: área '{h['area']}' fuera de la lista ({', '.join(AREAS)})")
         if str(h.get("recomendacion") or "").strip():
@@ -105,7 +114,7 @@ def tabla(registro: list[dict]) -> str:
         lineas.append("")
         lineas.append("Fusionados: " + ", ".join(f"{h['id']} → {h['duplicadoDe']}" for h in sorted(dup, key=lambda x: x["id"])) + ".")
     lineas.append("")
-    lineas.append("Certeza: ✅ verificado en la definición · 🔵 inferido (se explica en el documento) · ❓ pendiente de validar.")
+    lineas.append("Certeza: ✅ verificado en la definición · 🔶 inferido (se explica en el documento) · ❓ pendiente de validar.")
     return "\n".join(lineas)
 
 

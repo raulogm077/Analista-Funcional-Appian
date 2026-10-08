@@ -10,7 +10,7 @@ Las definiciones extraídas (connected systems, integraciones, constantes, Web A
 
 ## Patrones de detección
 
-`python3 <skill>/scripts/detect_secrets.py <ruta>` aplica estos patrones (orientativos); `bash <skill>/scripts/detect_secrets.sh <ruta>` hace lo mismo. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3): da el patrón de cada posible secreto y dónde está. Un JSON lo recorre entero, sin el `_meta` de la extracción, y da el fichero y la propiedad (`…/getX.json#response.headers[0].value`); otro fichero, la línea. No cuenta las referencias (`=cons!X`, `ri!`, `pv!`, `rule!`, `local!`), los valores de asteriscos (`***`) ni las claves que describen el secreto sin serlo (`tokenUrl`, `passwordPolicy`). `inventory.json` lo resume por objeto: `secrets` son las coincidencias en sus respuestas y, en una constante, `secret: true` dice que su nombre o su valor parecen un secreto.
+`python3 <skill>/scripts/detect_secrets.py <ruta>` aplica estos patrones (orientativos); `bash <skill>/scripts/detect_secrets.sh <ruta>` hace lo mismo. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3): da el patrón de cada posible secreto y dónde está. Un JSON lo recorre entero, sin el `_meta` de la extracción, y da el fichero y la propiedad dentro de la respuesta (`…/getX.json#headers[0].value`), que es la ubicación de su evidencia; otro fichero, la línea. No cuenta las referencias (`=cons!X`, `ri!`, `pv!`, `rule!`, `local!`), tampoco unidas a un texto (`Authorization: "Bearer " & cons!X`: el secreto, si lo hay, está en la constante), los valores de asteriscos (`***`) ni las claves que describen el secreto sin serlo (`tokenUrl`, `passwordPolicy`). `inventory.json` lo resume por objeto: `secrets` son las coincidencias en sus respuestas y, en una constante, `secret: true` dice que su nombre o su valor parecen un secreto.
 
 | Tipo | Patrón |
 |---|---|
@@ -33,8 +33,8 @@ Las definiciones extraídas (connected systems, integraciones, constantes, Web A
    - Certeza: ✅ si la definición lo contiene; ❓ si dudas de que sea un secreto real, con la pregunta para el responsable de seguridad.
    - Fila en la sección Hallazgos de `04-seguridad-grupos.md` y una línea debajo de la tabla con su impacto.
    - Entrada en `<trabajo>/hallazgos/integration-security-analyzer.json` con `impacto`.
-   - Evidencia: `mcp:<tipo>/<nombre>#<propiedad>`.
-3. **Impacto**: el valor de una constante o de un connected system se ve desde el diseño de Appian y en los paquetes de despliegue; un usuario final no lo ve desde el portal aunque tenga Viewer. Descríbelo así: «visible para quien tenga acceso de diseño a la aplicación y en cualquier exportación del paquete». Qué hacer con el secreto no se escribe (`execution-principles.md`, principio 10).
+   - Evidencia: `mcp:<tipo>/<nombre>#<propiedad>`, con la propiedad que da `detect_secrets.py`.
+3. **Impacto**: el valor de una constante o de un connected system se ve desde el diseño de Appian y en los paquetes de despliegue; un usuario final no lo ve desde el portal aunque tenga Viewer. Descríbelo así: «visible para quien tenga acceso de diseño a la aplicación y en cualquier exportación del paquete». Qué hacer con el secreto no se escribe (`execution-principles.md`, principio 11).
 4. El registro de `09-valor-adicional.md` lo genera `scripts/build_registry.py` a partir del JSON. Nadie añade el secreto a mano en 09.
 
 ## Falsos positivos comunes
@@ -59,7 +59,7 @@ Detéctalos y regístralos en el documento propietario. Un riesgo que depende de
 | URL o constante que apunta a otro entorno (p. ej. un host de desarrollo en producción) | `H-INT` (05) |
 | Web API que puede llamar un grupo de alcance amplio, o sin validación de entrada visible | `H-API` (06) |
 
-**Grupo de alcance amplio**: un grupo de sistema (p. ej. Application Users) o uno que agrupa a todos los usuarios de la aplicación. Appian no trae un grupo «All Users», «Everyone» ni «Public»: el nombre no prueba el alcance; decide por sus subgrupos y miembros (✅) o por nombre y descripción (🔵). Fuente: https://docs.appian.com/suite/help/26.6/System_Groups.html
+**Grupo de alcance amplio**: un grupo de sistema (p. ej. Application Users) o uno que agrupa a todos los usuarios de la aplicación. Appian no trae un grupo «All Users», «Everyone» ni «Public»: el nombre no prueba el alcance; decide por sus subgrupos y miembros (✅) o por nombre y descripción (🔶). Fuente: https://docs.appian.com/suite/help/26.6/System_Groups.html
 
 ## Política para Markdown
 

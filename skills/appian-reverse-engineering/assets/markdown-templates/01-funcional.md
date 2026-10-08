@@ -35,7 +35,7 @@ Fuente: [flujo-general.mmd](diagrams/flujo-general.mmd)
 | Caso de uso | Quién lo inicia | Cómo empieza | Uso real | Certeza | Evidencia |
 |---|---|---|---|---|---|
 | [{{Registrar solicitud}}](#{{ancla}}) | {{Gestor}} | {{Botón «Nueva solicitud» del listado}} | {{N ejecuciones, última dd/mm/aaaa}} | ✅ | [`mcp:recordType/{{DEM Solicitud}}#actions[{{0}}]`](./anexo/recordType/{{slug}}.md) |
-| [{{Revisión diaria}}](#{{ancla}}) | Sistema | {{Automático, cada día a las 06:00}} | {{N ejecuciones}} | 🔵 | [`mcp:processModel/{{DEM Revisión}}#nodes[id={{1}}]`](./anexo/processModel/{{slug}}.md) |
+| [{{Revisión diaria}}](#{{ancla}}) | Sistema | {{Automático, cada día a las 06:00}} | {{N ejecuciones}} | 🔶 | [`mcp:processModel/{{DEM Revisión}}#nodes[id={{1}}]`](./anexo/processModel/{{slug}}.md) |
 
 ### Actores
 
@@ -70,7 +70,7 @@ Fuente: [flujo-general.mmd](diagrams/flujo-general.mmd)
 
 - {{Comportamiento actual relevante, en lenguaje de negocio, p. ej. «Cancelar en el formulario no anula el alta: la solicitud se registra igualmente» ([proceso](./08-procesos-bpmn/{{slug}}.md)).}}
 
-Evidencia: [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.md) · Certeza: ✅/🔵/❓
+Evidencia: [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.md) · Certeza: ✅/🔶/❓
 
 ### {{Siguiente caso de uso}}
 
@@ -80,7 +80,7 @@ Evidencia: [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.
 
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| H-FUN-01 | {{Las solicitudes no se pueden anular aunque existe el estado «Anulada»}} | Media | 🔵 | [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.md) |
+| H-FUN-01 | {{Las solicitudes no se pueden anular aunque existe el estado «Anulada»}} | Media | 🔶 | [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.md) |
 
 {{Para cada hallazgo ❓: la pregunta que lo resuelve y a quién hacerla.}}
 

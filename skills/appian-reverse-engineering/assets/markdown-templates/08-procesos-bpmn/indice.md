@@ -49,7 +49,7 @@ Fuente: [mapa-procesos.mmd](../diagrams/mapa-procesos.mmd)
 
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| H-PRO-01 | {{qué pasa y qué riesgo tiene}} | {{Alta/Media/Baja}} | {{✅/🔵/❓}} | [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](../anexo/processModel/{{slug}}.md) |
+| H-PRO-01 | {{qué pasa y qué riesgo tiene}} | {{Alta/Media/Baja}} | {{✅/🔶/❓}} | [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](../anexo/processModel/{{slug}}.md) |
 
 ## Cobertura y límites
 

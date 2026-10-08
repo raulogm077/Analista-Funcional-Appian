@@ -1,6 +1,6 @@
 # Guía de objetos Appian: dónde está cada dato y cómo valorarlo
 
-Complementa `references/lectura-mcp-raw.md` (cómo leer los ficheros). Aquí: **qué buscar en cada tipo de objeto** y criterios para valorar importancia, deuda y actores. La certeza (✅/🔵/❓) y la severidad de los hallazgos (Alta/Media/Baja) siguen `presentation-rules.md`, Regla 7.
+Complementa `references/lectura-mcp-raw.md` (cómo leer los ficheros). Aquí: **qué buscar en cada tipo de objeto** y criterios para valorar importancia, deuda y actores. La certeza (✅/🔶/❓) y la severidad de los hallazgos (Alta/Media/Baja) siguen `presentation-rules.md`, Regla 7.
 
 ## Dónde está cada dato
 
@@ -30,7 +30,7 @@ Los campos citados son los habituales en las definiciones del Dev MCP (según la
 | Web API | Endpoint | Método, alias de URL, `expression` (qué hace) |
 | Grupo | Jerarquía y miembros | Padre en la definición; miembros en el fichero con rol `members` |
 | Cualquiera | Quién lo usa | Ficheros con rol `dependents` (con *breadcrumb*) y aristas del grafo |
-| | Objetos de otras aplicaciones | Nodos con `external: true` en `graph.json` (los cuenta `stats.externalNodes`): los referencia la aplicación pero no están en ella |
+| | Objetos de otras aplicaciones | Nodos con `external: true` en `graph.json` (los cuenta `stats.externalNodes`): los referencia la aplicación, por la herramienta de dependencias o con un `rule!` o un `cons!`, pero no están en ella |
 | | Historial de cambios | Fichero con rol `versions` |
 | | Avisos de la plataforma | Fichero con rol `validation` |
 
@@ -88,7 +88,7 @@ Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/
 
 ## Roles típicos en aplicaciones Appian
 
-Para inferir actores cuando el grupo no lo aclara (es una inferencia: 🔵 «según su nombre», con el nombre del grupo como evidencia):
+Para inferir actores cuando el grupo no lo aclara (es una inferencia: 🔶 «según su nombre», con el nombre del grupo como evidencia):
 
 | Grupo típico | Rol funcional |
 |---|---|
@@ -116,4 +116,4 @@ Marca ❓ (no ✅) cuando la conclusión depende de un dato que la extracción n
 - Un grupo no tiene miembros según la extracción (la herramienta puede no devolverlos todos).
 - Falta configuración que el Dev MCP no siempre devuelve: excepciones y alertas de nodos, destinatarios de correo, seguridad de acciones de record.
 
-Cada pendiente lleva **responsable sugerido** (funcional, técnico Appian, DBA o responsable del sistema externo).
+Cada pendiente lleva **responsable sugerido** (funcional, técnico Appian, DBA o responsable del sistema externo). Si es una pregunta concreta (de un objeto o de un dato de negocio) y no una limitación de toda la extracción, es un NV, con ese responsable en `aQuien` (`execution-principles.md`, «Sin verificar»).

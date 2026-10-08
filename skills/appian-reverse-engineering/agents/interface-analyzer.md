@@ -53,7 +53,7 @@ Para cada uno, reúne lo que pide la ficha de la plantilla:
 
 - **Quién lo inicia** (actor humano o «Sistema») y **cómo** (página, botón de acción, endpoint, temporizador).
 - **Qué consigue**, en lenguaje de cliente.
-- **Paso a paso** (1-7 pasos): cada tarea de usuario del proceso raíz suele ser un paso, y también las tareas automáticas con efecto de negocio (avisar al ERP, generar un documento). Las triviales (escribir un log, actualizar un estado interno) no. Las decisiones del proceso entran en el paso, traducidas: «si el importe supera 1.000 €, …». Un paso que solo conoces por el nombre del nodo (su configuración no llegó) es 🔵 «según su nombre» (`execution-principles.md`, principio 4).
+- **Paso a paso** (1-7 pasos): cada tarea de usuario del proceso raíz suele ser un paso, y también las tareas automáticas con efecto de negocio (avisar al ERP, generar un documento). Las triviales (escribir un log, actualizar un estado interno) no. Las decisiones del proceso entran en el paso, traducidas: «si el importe supera 1.000 €, …». Un paso que solo conoces por el nombre del nodo (su configuración no llegó) es 🔶 «según su nombre» (`execution-principles.md`, principio 4).
 - **Resultados y avisos**: correos, tareas que genera, documentos.
 - **Uso real** (si el proceso raíz tiene `usage`): ejecuciones y última ejecución; distingue lo vivo de lo abandonado. Si `failedInSampleOf` existe, los fallos son de la muestra, no del total. Sin ejecuciones o con fallos, dilo sin severidad: el hallazgo es de 09 (sin ejecuciones) o de 08 (fallos).
 - **Implementado en**: los objetos Appian (única parte técnica).
@@ -75,7 +75,7 @@ Un actor es un conjunto de personas (o un sistema) con la misma responsabilidad 
 4. **Visibilidad de páginas y acciones** (`visibilityExpr`) y **expresiones de seguridad** en SAIL (`a!isUserMemberOfGroup(…, cons!GRUPO)`).
 5. **Procesos que arranca un temporizador o un mensaje**: el actor es «Sistema».
 
-Si todos los objetos tienen el mismo role map (p. ej. un grupo de administradores y otro de usuarios para toda la app), el role map no distingue actores: sácalos de 3 y 4. Un actor deducido solo del nombre de su grupo es 🔵 «según su nombre». Junta grupos con la misma responsabilidad (`Aprobador_Madrid` y `Aprobador_Barcelona` son «Aprobadores»). El detalle de cada grupo va en `04-seguridad-grupos.md`; en 01 solo el nombre del grupo y el enlace.
+Si todos los objetos tienen el mismo role map (p. ej. un grupo de administradores y otro de usuarios para toda la app), el role map no distingue actores: sácalos de 3 y 4. Un actor deducido solo del nombre de su grupo es 🔶 «según su nombre» (si una tarea, una página o el role map dicen quién es, cítalos a ellos). Junta grupos con la misma responsabilidad (`Aprobador_Madrid` y `Aprobador_Barcelona` son «Aprobadores»). El detalle de cada grupo va en `04-seguridad-grupos.md`; en 01 solo el nombre del grupo y el enlace.
 
 ### Paso 4. `01-funcional.md`
 
@@ -85,7 +85,7 @@ Estructura y campos de la ficha: los de la plantilla. Criterios de contenido:
 - **Una ficha por caso de uso**, todas con los mismos campos; con más de 5, índice al principio del Detalle. No hay «casos secundarios» resumidos en una línea.
 - **Flujo general** (`diagrams/flujo-general.mmd`): actor → caso de uso → resultado, `flowchart TD`, ≤ 10 nodos; con muchos casos de uso, agrupa por actor.
 - **Pantallas**: solo las clave de cada caso de uso, por su nombre de negocio. El catálogo es de `10-pantallas.md`.
-- **Hallazgos `H-FUN`**: funcionalidades ausentes o incompletas para el negocio: un estado al que ningún caso de uso lleva, un grupo con nombre de rol sin ninguna tarea ni página, un caso de uso sin punto de entrada. Son indicios: certeza 🔵 o ❓ con la pregunta que lo resuelve y a quién hacerla. Lo que falta en la extracción no es un hallazgo (principio 3).
+- **Hallazgos `H-FUN`**: funcionalidades ausentes o incompletas para el negocio: un estado al que ningún caso de uso lleva, un grupo con nombre de rol sin ninguna tarea ni página, un caso de uso sin punto de entrada. Son indicios: certeza 🔶, con su `base`, o ❓, con su NV (la pregunta que lo resuelve y a quién hacerla). Lo que falta en la extracción no es un hallazgo (principio 3).
 
 ### Paso 5. `02-arquitectura.md`
 
@@ -96,21 +96,23 @@ Estructura y columnas de las tablas: las de la plantilla (las mismas en todas la
 - **Tablas por capa**: los objetos relevantes, no todos (el inventario completo está en `INVENTARIO.md`). «Ficha» enlaza el documento propietario (03, 05, 06, 08, 10) o, si no lo tiene, `anexo/<tipo>/<slug>.md`.
 - **Referencias**: número de aristas de `graph.json` cuyo destino es el objeto (para los hubs viene en `hubs[].in`). Cita siempre esta cifra: suma el análisis de dependencias de Appian y las referencias encontradas en las definiciones, así que puede ser mayor que la de la herramienta de dependientes (p. ej. 8 frente a 7). Cuenta referencias, no objetos distintos. Qué cuenta se explica una vez, en LEEME.
 - **Hubs** (`graph.json` → `hubs`, 5 o más referencias entrantes): en la tabla de su capa. Son hallazgo `H-ARQ` solo si tienen un riesgo (una regla grande o compleja de la que dependen muchas pantallas: un cambio en ella las afecta a todas). Evidencia: `graph:hubs`.
-- **Huérfanos** (`graph.json` → `orphans`): sin referencias entrantes en el grafo. Pueden lanzarse desde fuera (otra aplicación, una llamada por nombre, el Appian MCP Server), así que el hallazgo lleva 🔵 o ❓, nunca ✅ solo por el grafo; si el historial dice 0 ejecuciones, súmalo como indicio (el hallazgo de proceso sin ejecuciones es `H-GEN` de 09: menciónalo sin severidad). Registra **un** `H-ARQ` que los agrupe (cuántos y de qué tipos) y enlaza la lista, que es única y está en 09 (`09-valor-adicional.md`, «Objetos huérfanos»): no los listes en 02. Evidencia: `graph:orphans`.
+- **Huérfanos** (`graph.json` → `orphans`): sin referencias entrantes en el grafo. Pueden lanzarse desde fuera (otra aplicación, una llamada por nombre, el Appian MCP Server), así que el hallazgo lleva 🔶 o ❓, nunca ✅ solo por el grafo; si el historial dice 0 ejecuciones, súmalo como indicio (el hallazgo de proceso sin ejecuciones es `H-GEN` de 09: menciónalo sin severidad). Registra **un** `H-ARQ` que los agrupe (cuántos y de qué tipos) y enlaza la lista, que es única y está en 09 (`09-valor-adicional.md`, «Objetos huérfanos»): no los listes en 02. Evidencia: `graph:orphans`.
 - **Dependencias externas** (sección propia de 02): lo que la aplicación usa y no viaja con ella. Los plug-ins se instalan en el entorno, no en la aplicación, y no aparecen en sus precedentes; los objetos de otras aplicaciones se despliegan con esas aplicaciones. Fuentes: https://docs.appian.com/suite/help/26.6/prepare-deployment-packages.html#add-plugins y https://docs.appian.com/suite/help/26.6/application-settings.html#missing-precedents. Busca:
-  - **Plug-ins**: nodos de proceso, funciones o componentes que no son del núcleo de Appian (no están en su documentación; con dudas, consúltala como dice «Dudas de Appian»). ✅ si la respuesta dice que es un plug-in; 🔵 si se deduce de que no está en la documentación.
-  - **Objetos de otras aplicaciones**: nodos con `external: true` de `graph.json` (`stats.externalNodes`), con su tipo y nombre si los trae.
+  - **Plug-ins**: nodos de proceso, funciones o componentes que no son del núcleo de Appian (no están en su documentación; con dudas, consúltala como dice «Dudas de Appian»). ✅ si la respuesta dice que es un plug-in; 🔶 si se deduce de que no está en la documentación.
+  - **Objetos de otras aplicaciones**: nodos con `external: true` de `graph.json` (`stats.externalNodes`), con su tipo y nombre. Son los que trae la herramienta de dependencias y los que una definición llama con `rule!` o `cons!` sin estar en la aplicación; un `rule!` puede ser una regla, una interfaz, una integración o una decisión, y su tipo es «llamado con rule!» (Fuente: https://docs.appian.com/suite/help/26.6/reference-objects.html). Se escriben «no encontrado en la aplicación», nunca «no existe»: que la aplicación los usa es ✅; qué hacen, ❓ con un `NV-ARQ` (uno por objeto, o uno para los que se resuelven igual, con todos en `objetos`), cuyo `queHaceFalta` dice qué conseguir: el export de la aplicación que los contiene o acceso de lectura a ella.
   - **Grupos de sistema** de Appian que usa la aplicación (lista oficial: https://docs.appian.com/suite/help/26.6/System_Groups.html). Si dan permisos, el hallazgo es `H-SEG` de 04: aquí solo se listan.
   - **Documentos o plantillas** de un knowledge center (constantes de tipo documento o carpeta, generación de documentos) y **translation sets**.
 
   De cada una: tipo, objeto, quién lo usa y evidencia. Lo que no reconozcas va con ❓ y la pregunta. Si no hay ninguna, se omite la sección y se dice en una línea de «Cobertura y límites». Es `H-ARQ` solo si tiene un riesgo (p. ej. una pieza clave que no se reconoce).
 - **Acoplamientos**: procesos que se llaman mutuamente, records que se escriben desde muchos sitios, interfaces que lanzan procesos directamente. Evidencia de cada relación: `graph:edge/<origen>→<destino>`.
 - **Escrituras y llamadas a otros sistemas** (tabla de 02): por dónde pasa cada escritura en una entidad y cada llamada a un sistema externo («toda escritura en X pasa por el proceso Y», «todas las llamadas al ERP, por la integración Z»), con su evidencia. Son hechos: no se valora si está bien o mal hecho.
-- Si `graph.json` tiene pocas aristas de origen `dependents`, las relaciones salen sobre todo de las definiciones: dilo en «Cobertura y límites» y marca 🔵 las conclusiones sobre quién llama a quién.
+- Si `graph.json` tiene pocas aristas de origen `dependents`, las relaciones salen sobre todo de las definiciones: dilo en «Cobertura y límites» y marca 🔶 las conclusiones sobre quién llama a quién.
 
 ### Paso 6. Hallazgos
 
-Regístralos como dice `execution-principles.md` §3: tabla en la sección Hallazgos de cada documento y `<trabajo>/hallazgos/interface-analyzer.json` con todos (`H-FUN-NN` con `area: "funcional"` y `documento: "01-funcional.md#hallazgos"`; `H-ARQ-NN` con `area: "arquitectura"` y `documento: "02-arquitectura.md#hallazgos"`). Sin hallazgos, escribe `[]`. Lo de otras áreas no lleva ID ni severidad: va a «Para otras áreas».
+Regístralos como dice `execution-principles.md` §3: tabla en la sección Hallazgos de cada documento y `<trabajo>/hallazgos/interface-analyzer.json` con todos (`H-FUN-NN` con `area: "funcional"` y `documento: "01-funcional.md#hallazgos"`; `H-ARQ-NN` con `area: "arquitectura"` y `documento: "02-arquitectura.md#hallazgos"`). Un hallazgo inferido lleva en `base` las evidencias de las que sale. Sin hallazgos, escribe `[]`. Lo de otras áreas no lleva ID ni severidad: va a «Para otras áreas».
+
+Lo que no pudiste verificar de tus dos áreas, y lo que de ellas pregunta la revisión y no puedes responder, va en `<trabajo>/sin-verificar/interface-analyzer.json` (§4: `NV-FUN-NN`, `NV-ARQ-NN`; `[]` si no hay ninguno), con ❓ y su ID donde lo dice tu documento.
 
 ### Paso 7. Comprobación final
 
@@ -121,7 +123,8 @@ Regístralos como dice `execution-principles.md` §3: tabla en la sección Halla
 - [ ] Los `.mmd` pasan `python3 <skill>/scripts/validate_mermaid.py <fichero>.mmd`; renderizados con `bash <skill>/scripts/render_diagrams.sh --mermaid <fichero>.mmd <fichero>.svg`, sin aviso de ancho.
 - [ ] Cada diagrama aparece una sola vez (imagen + «Fuente», o bloque mermaid si no hay SVG).
 - [ ] Checklist de `presentation-rules.md` superado («Responde a», TL;DR único, orden de secciones, marcas, sin referencias a la skill ni a `<trabajo>/`).
-- [ ] El JSON de hallazgos coincide con las tablas de los dos documentos.
+- [ ] El JSON de hallazgos coincide con las tablas de los dos documentos, y cada inferido trae su `base`.
+- [ ] Cada objeto de fuera de la aplicación que esta usa está en «Dependencias externas» con su NV; ningún «no existe».
 
 ## Salida
 
@@ -129,7 +132,7 @@ Regístralos como dice `execution-principles.md` §3: tabla en la sección Halla
 - `<salida>/02-arquitectura.md`
 - `<salida>/diagrams/flujo-general.mmd` y `.svg`
 - `<salida>/diagrams/arquitectura.mmd` y `.svg` (o `arquitectura-<capa>.mmd` y `.svg` si se parte)
-- `<trabajo>/hallazgos/interface-analyzer.json`
+- `<trabajo>/hallazgos/interface-analyzer.json` y `<trabajo>/sin-verificar/interface-analyzer.json`
 - `<trabajo>/docs_cache/interface-analyzer.json`, si consultas la documentación (por el Docs MCP o por la web)
 
 ## Informe final
@@ -141,5 +144,5 @@ Termina con un informe breve al orquestador: ficheros escritos, consultas a la d
 - Jerga Appian en 01 fuera de «Implementado en» y «Evidencia»: su público no conoce Appian.
 - Listar objetos sin contar qué hacen («hay 3 sites» no aporta).
 - Documentar la arquitectura genérica de Appian (Tempo, Records, Process como producto): el documento describe esta app.
-- Afirmar que algo no está configurado porque no aparece en la respuesta (principio 3).
+- Afirmar que algo no está configurado porque no aparece en la respuesta, o que un objeto no existe porque no está en la extracción (principio 3).
 - Poner severidad a lo que es de otra área o repetir aquí una ficha de otro documento: enlázala.

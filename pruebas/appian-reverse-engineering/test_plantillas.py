@@ -86,7 +86,8 @@ def test_sin_recomendaciones():
 
 def test_texto_fijo_sin_avisos():
     """Lo que las plantillas dejan escrito no da avisos de comprobar_asis.py: muletillas, frases de más de
-    35 palabras ni párrafos repetidos entre documentos (el de cada proceso se compara también consigo mismo)."""
+    35 palabras, negativos sin decir dónde se buscó («no existe») ni párrafos repetidos entre documentos (el de cada
+    proceso se compara también consigo mismo)."""
     rd = ca.rd
     assert rd is not None, "falta appian-functional-analyst/scripts/redaccion.py"
     muletillas = rd.muletillas()
@@ -101,6 +102,7 @@ def test_texto_fijo_sin_avisos():
             normal = rd.normaliza(leida)
             avisos += [f"{rel(p)}:{n} muletilla «{x}»" for x in muletillas
                        if re.search(rf"(?<!\w){re.escape(x)}(?!\w)", normal)]
+            avisos += [f"{rel(p)}:{n} «{m.group(0)}»" for m in ca.NEGATIVO.finditer(leida)]
             for trozo in ca.celdas(leida) if l.lstrip().startswith("|") else [leida]:
                 for frase in rd.frases(trozo):
                     k = len(re.findall(r"\w+", frase))

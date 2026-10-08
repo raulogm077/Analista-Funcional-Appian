@@ -40,7 +40,7 @@ summary.json
 ## Reglas de contenido
 
 - **Cifras** solo de `summary.json`; **textos** de los `.md`. Si no coinciden, manda `summary.json` y anótalo en el informe; no corrijas el documento.
-- **Hallazgos**: los de `findings`, con su ID, severidad en palabra (Alta/Media/Baja) y certeza ✅ verificado / 🔵 inferido / ❓ pendiente. No uses otras marcas de estado.
+- **Hallazgos**: los de `findings`, con su ID, severidad en palabra (Alta/Media/Baja) y certeza ✅ verificado / 🔶 inferido / ❓ pendiente. No uses otras marcas de estado.
 - **Confianza**: `meta.confidence` siempre con su motivo (`meta.confidenceBasis`).
 - **Uso real**: si `meta.environment.isProduction` no es `true`, las ejecuciones van con la marca «orientativo (ver LEEME)».
 - **Lo que no se publica**: rutas o enlaces a `<trabajo>/` y referencias a la skill (ficheros, scripts, códigos internos). Los uuids solo en el inventario y el apéndice.
@@ -63,7 +63,7 @@ summary.json
 | … | Pantallas y reglas | `10` y `11`: mapa de navegación y tablas resumen. |
 | … | Hallazgos | Registro de `09` (de `findings`), coloreado por severidad. |
 | … | Mantenimiento | Resto de `09`: métricas, configuración por entorno, huérfanos, versionado. |
-| … | Pendientes de validación | Hallazgos con certeza ❓, con quién debe validarlos. |
+| … | Sin verificar | Las secciones «Sin verificar» y «Preguntas de esta revisión» de `LEEME`: lo que no se pudo verificar, qué hace falta y a quién pedirlo, y las preguntas que quedan abiertas. |
 | … | Inventario y glosarios | `INVENTARIO` en tablas compactas; términos de Appian (`LEEME`) y glosario de negocio (`09`). |
 | Apéndice | Anexo (opcional) | Las definiciones de `anexo/` solo si el usuario lo pidió o la app tiene menos de ~50 objetos; si no, una página que dice que el anexo acompaña al PDF en la carpeta `anexo/`. |
 

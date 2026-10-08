@@ -83,8 +83,10 @@ Los objetos clave de cada capa; todos, en [INVENTARIO.md](./INVENTARIO.md).
 
 <!--
   Lo que la aplicación usa y no viaja con ella: plug-ins (nodos, funciones o componentes que no son del núcleo de Appian),
-  objetos de otras aplicaciones (nodos external: true de graph.json), grupos de sistema, documentos o plantillas de
-  knowledge center y translation sets. Lo no reconocido, ❓ con la pregunta.
+  objetos de otras aplicaciones (nodos external: true de graph.json, también los que llama con rule! o cons! y no están
+  en ella), grupos de sistema, documentos o plantillas de knowledge center y translation sets. Lo no reconocido, ❓ con
+  la pregunta. Un objeto de otra aplicación es «no encontrado en la aplicación»: que se usa es ✅; qué hace, ❓ con su
+  NV-ARQ (lo registra este documento).
   Sin ninguna: se omite la sección y se dice en una línea de «Cobertura y límites».
 -->
 
@@ -92,8 +94,9 @@ Lo que usa la aplicación y no viaja con ella ([plug-ins](https://docs.appian.co
 
 | Tipo | Objeto | Lo usa | Certeza | Evidencia |
 |---|---|---|---|---|
-| {{Plug-in (función)}} | `{{nombre}}` | `{{DEM_SolicitudForm}}` | 🔵 | [`mcp:interface/{{DEM_SolicitudForm}}#expression (línea {{n}})`](./anexo/interface/{{slug}}.md) |
+| {{Plug-in (función)}} | `{{nombre}}` | `{{DEM_SolicitudForm}}` | 🔶 | [`mcp:interface/{{DEM_SolicitudForm}}#expression (línea {{n}})`](./anexo/interface/{{slug}}.md) |
 | {{Objeto de otra aplicación}} | `{{nombre}}` ({{tipo}}) | `{{DEM Alta Solicitud}}` | ✅ | [`mcp:processModel/{{DEM Alta Solicitud}}@dependencies`](./anexo/processModel/{{slug}}.md) |
+| {{Llamado con rule!, no encontrado en la aplicación}} | `{{UTL_DiasLaborables}}` | `{{DEM_SolicitudForm}}` | ✅; qué hace, ❓ [{{NV-ARQ-01}}](./LEEME.md#sin-verificar) | [`mcp:interface/{{DEM_SolicitudForm}}#expression (línea {{n}})`](./anexo/interface/{{slug}}.md) |
 | {{Grupo de sistema}} | `{{All Users}}` | `{{DEM Solicitudes}}` (role map, ver [04](./04-seguridad-grupos.md)) | ✅ | [`mcp:site/{{DEM Solicitudes}}@other:{{herramienta}}#roleMap`](./anexo/site/{{slug}}.md) |
 
 ### Escrituras y llamadas a otros sistemas
@@ -113,11 +116,11 @@ Lo que usa la aplicación y no viaja con ella ([plug-ins](https://docs.appian.co
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
 | H-ARQ-01 | {{`DEM_getSolicitudes` (320 líneas) recibe 12 referencias: un cambio afecta a todas las pantallas}} | Media | ✅ | [`graph:hubs`](./anexo/grafo.md) |
-| H-ARQ-02 | {{5 objetos sin referencias entrantes: 2 interfaces, 1 process model y 2 constantes ([lista en 09](./09-valor-adicional.md#objetos-huérfanos))}} | Baja | 🔵 | [`graph:orphans`](./anexo/grafo.md) |
+| H-ARQ-02 | {{5 objetos sin referencias entrantes: 2 interfaces, 1 process model y 2 constantes ([lista en 09](./09-valor-adicional.md#objetos-huérfanos))}} | Baja | 🔶 | [`graph:orphans`](./anexo/grafo.md) |
 
-{{Para cada hallazgo ❓ o 🔵: de qué se deduce y qué lo confirmaría. Un huérfano que es un process model sin ejecuciones: una frase sin severidad con el H-GEN de 09.}}
+{{Para cada hallazgo ❓ o 🔶: de qué se deduce y qué lo confirmaría. Un huérfano que es un process model sin ejecuciones: una frase sin severidad con el H-GEN de 09.}}
 
 ## Cobertura y límites
 
-- {{Qué no se pudo obtener o verificar, p. ej. «Pocas referencias del análisis de dependencias de Appian: las relaciones salen sobre todo de las definiciones (🔵)».}}
+- {{Qué no se pudo obtener o verificar, p. ej. «Pocas referencias del análisis de dependencias de Appian: las relaciones salen sobre todo de las definiciones (🔶)».}}
 - {{Sin dependencias externas: «En las definiciones no se encontraron plug-ins, objetos de otras aplicaciones, grupos de sistema, documentos de knowledge center ni translation sets».}}

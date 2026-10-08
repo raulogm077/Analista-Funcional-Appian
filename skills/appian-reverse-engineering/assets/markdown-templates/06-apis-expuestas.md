@@ -70,7 +70,7 @@ Evidencia: [`mcp:webApi/{{DEM_API_AltaSolicitud}}#expression (líneas {{4-30}})`
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
 | H-API-01 | {{DEM_API_Estado la puede llamar cualquier usuario de la aplicación (DEM Users con Viewer)}} | Media | ✅ | [`mcp:webApi/{{DEM_API_Estado}}@other:{{herramienta}}#roleMap`](./anexo/webApi/{{slug}}.md) |
-| H-API-02 | {{DEM_API_AltaSolicitud lanza el proceso sin validar el importe}} | Media | 🔵 | [`mcp:webApi/{{DEM_API_AltaSolicitud}}#expression (línea {{12}})`](./anexo/webApi/{{slug}}.md) |
+| H-API-02 | {{DEM_API_AltaSolicitud lanza el proceso sin validar el importe}} | Media | 🔶 | [`mcp:webApi/{{DEM_API_AltaSolicitud}}#expression (línea {{12}})`](./anexo/webApi/{{slug}}.md) |
 
 <!--
   Solo hallazgos de Web APIs. Mismos ID, título, severidad y certeza que en <trabajo>/hallazgos/integration-security-analyzer.json.

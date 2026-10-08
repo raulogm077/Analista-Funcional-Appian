@@ -38,7 +38,7 @@ Fuente editable: [{{slug}}.drawio](./{{slug}}.drawio) (draw.io) · BPMN 2.0: [{{
 | Atributo | Valor |
 |---|---|
 | Inicio | {{formulario [`interfaz`](../10-pantallas.md#{{ancla}}) · acción de record · temporizador · subproceso}} |
-| Frecuencia | {{solo con temporizador: «cada día a las 08:00 (Europe/Madrid)»}} |
+| Frecuencia configurada | {{solo con temporizador: «cada día a las 08:00 (Europe/Madrid)»; si se ejecuta así, lo dicen las ejecuciones}} |
 | Quién puede iniciarlo | {{grupos según el role map, o «grupo de seguridad declarado: X; role map no disponible» ❓}} |
 | Carriles | {{grupos asignados}} · Sistema |
 | Lo invocan | {{[proceso padre](./slug-padre.md), interfaz, acción de record}} o «sin invocador detectado» |
@@ -64,7 +64,7 @@ Fuente editable: [{{slug}}.drawio](./{{slug}}.drawio) (draw.io) · BPMN 2.0: [{{
 
 | Tarea | Asignada a | Formulario | Evidencia |
 |---|---|---|---|
-| {{nombre}} | grupo `{{grupo}}` · {{rol de la expresión}} 🔵 | [`{{interfaz}}`](../10-pantallas.md#{{ancla}}) | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].assignment`](../anexo/processModel/{{slug}}.md) |
+| {{nombre}} | grupo `{{grupo}}` · {{rol de la expresión}} 🔶 | [`{{interfaz}}`](../10-pantallas.md#{{ancla}}) | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].assignment`](../anexo/processModel/{{slug}}.md) |
 
 ### Datos, integraciones y avisos
 
@@ -87,7 +87,7 @@ Fuente editable: [{{slug}}.drawio](./{{slug}}.drawio) (draw.io) · BPMN 2.0: [{{
 
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| H-PRO-01 | {{qué pasa y qué riesgo tiene}} | {{Alta/Media/Baja}} | {{✅/🔵/❓}} | [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](../anexo/processModel/{{slug}}.md) |
+| H-PRO-01 | {{qué pasa y qué riesgo tiene}} | {{Alta/Media/Baja}} | {{✅/🔶/❓}} | [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](../anexo/processModel/{{slug}}.md) |
 
 {{Para un hallazgo Alta: una línea con su impacto, qué puede pasar y a quién afecta.}}
 

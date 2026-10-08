@@ -79,6 +79,24 @@ def project(tmp_path):
     return Project(tmp_path)
 
 
+def extraccion_a_mano(salida: Path, objetos: list[dict], app=("DEM Gestión de Solicitudes", "DEM")) -> Path:
+    """Una extracción mínima escrita a mano, con la forma que le da devmcp_extract.py: mcp_raw/_objects.json y, por
+    objeto, una respuesta por rol en su carpeta. objetos: [{"type", "uuid", "name", "respuestas": {rol: respuesta}}]."""
+    raw = rutas.work_dir(salida) / "mcp_raw"
+    raw.mkdir(parents=True)
+    (raw / "_objects.json").write_text(json.dumps(
+        {"application": {"uuid": "app-00000001", "type": "application", "name": app[0], "prefix": app[1]},
+         "objects": [{k: o[k] for k in ("type", "uuid", "name")} for o in objetos]}, ensure_ascii=False), encoding="utf-8")
+    for o in objetos:
+        carpeta = rutas.carpeta_objeto(raw, o["type"], o["uuid"])
+        carpeta.mkdir(parents=True)
+        for rol, respuesta in o.get("respuestas", {}).items():
+            (carpeta / f"get_{rol}.json").write_text(json.dumps(
+                {"_meta": {"tool": f"get_{rol}", "role": rol, "ok": True}, "response": respuesta}, ensure_ascii=False),
+                encoding="utf-8")
+    return salida
+
+
 def free_port() -> int:
     s = socket.socket()
     s.bind(("127.0.0.1", 0))

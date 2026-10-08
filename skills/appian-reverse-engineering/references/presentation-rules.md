@@ -30,7 +30,7 @@ Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no e
 <solo los del área de este documento (ver execution-principles.md, «Registro de hallazgos»)>
 
 ## Cobertura y límites
-<1-5 líneas: qué no se pudo obtener o verificar en este documento y por qué. Lo global está en LEEME (Regla 8)>
+<1-5 líneas: qué no se pudo obtener o verificar en este documento y por qué, con su NV si lo tiene. Lo global está en LEEME (Regla 8)>
 ```
 
 - «Responde a» lleva las preguntas de la plantilla del documento, copiadas tal cual. Lo que no responde a ninguna de ellas no va en el documento.
@@ -84,7 +84,7 @@ Todas las fichas de un mismo tipo tienen los mismos campos en el mismo orden:
 
 <Notas (si aplica, 3-5 líneas)>
 
-Evidencia: [`mcp:<tipo>/<nombre>[@<rol>]#<ubicación>`](./anexo/<tipo>/<slug>.md) · Certeza: ✅/🔵/❓
+Evidencia: [`mcp:<tipo>/<nombre>[@<rol>]#<ubicación>`](./anexo/<tipo>/<slug>.md) · Certeza: ✅/🔶/❓
 ```
 
 Toda evidencia, en las fichas y en las columnas «Evidencia» de las tablas (también las de Hallazgos), enlaza la ficha del objeto en el anexo para que el lector la compruebe: `` [`mcp:<tipo>/<nombre>#<ubicación>`](./anexo/<tipo>/<slug>.md) ``; las de `graph:`, `./anexo/grafo.md`. Desde `08-procesos-bpmn/`, `../anexo/…`. Con el enlace en la evidencia, la ficha no repite otro «Definición» al anexo.
@@ -108,8 +108,10 @@ No dupliques fichas. `00-resumen-ejecutivo.md` cita lo clave en una línea y enl
 | Marca | Significado |
 |---|---|
 | ✅ | Verificado: la definición o la respuesta lo muestra directamente. |
-| 🔵 | Inferido: se deduce de evidencia indirecta; di en una línea de qué. |
-| ❓ | Pendiente: depende de un dato que la extracción no trae o de validarlo con negocio; di quién debe validarlo. |
+| 🔶 | Inferido: se deduce de evidencia indirecta; di en una línea de qué. |
+| ❓ | Pendiente: depende de un dato que la extracción no trae o de validarlo con negocio; di quién debe validarlo y, si tiene NV, cítalo: «❓ [NV-ARQ-01](./LEEME.md#sin-verificar)». |
+
+Lo que no se encontró dice dónde se buscó: «no encontrado en la aplicación» (o en el entorno, o en la respuesta de una herramienta), nunca «no existe» ni «no hay ningún».
 
 **Severidad** (solo de hallazgos), con palabra, según su riesgo: **Alta** (rompe un requisito de negocio o de seguridad, pierde datos o expone credenciales), **Media** (degrada el mantenimiento, el rendimiento o el control), **Baja** (higiene: nombres, tamaño, restos sin uso). La severidad dice cuánto riesgo hay, no qué hacer.
 
@@ -151,7 +153,8 @@ Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal 
 - [ ] Orden Vista → Detalle → Hallazgos → Cobertura; sin secciones vacías.
 - [ ] Tablas ≤ 8 columnas; Vista ≤ 15 filas; celdas ≤ 100 caracteres (salvo Evidencia).
 - [ ] Cada diagrama una sola vez y legible al ancho de página.
-- [ ] Solo ✅/🔵/❓ como certeza y Alta/Media/Baja como severidad.
+- [ ] Solo ✅/🔶/❓ como certeza y Alta/Media/Baja como severidad; cada ❓ con su NV cuando lo tiene.
+- [ ] Lo que no se encontró dice dónde se buscó; ningún «no existe».
 - [ ] Hallazgos solo de tu área, con ID del registro: qué pasa y qué riesgo tiene, sin decir qué hacer.
 - [ ] Sin referencias a la skill, sin notas de parche, sin enlaces a `<trabajo>/`.
 - [ ] Sin placeholders (`{{`, `TODO`, `TBD`, `xxx`, `lorem`).

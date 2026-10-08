@@ -35,7 +35,7 @@ Cuando haga falta: `references/appian-objects-guide.md` (dónde está cada dato)
 Para cada connected system del inventario:
 
 - Tipo (`csType`), URL base (`baseUrl`), autenticación (`authType`) e integraciones que lo usan (grafo).
-- Propósito: qué sistema externo es y qué se intercambia, por nombre, descripción y rutas de sus integraciones (🔵 si es inferido; «según su nombre» si solo lo dice el nombre).
+- Propósito: qué sistema externo es y qué se intercambia, por descripción y rutas de sus integraciones (🔶 si es inferido; «según su nombre» solo si ni la definición ni otra respuesta lo dicen).
 - Credenciales: si la URL base lleva credenciales embebidas (`https://usuario:clave@host`), dilo en la ficha y regístralo como secreto (Bloque D).
 - Autenticación None contra una API externa: hallazgo `H-INT`.
 
@@ -46,7 +46,7 @@ Para cada integración del inventario:
 - Connected system, método y ruta (`method`, `endpoint`) y si modifica datos (`modifiesData`).
 - Parámetros de ruta, consulta y cabecera con su origen (`ri!`, `cons!`, literal). Una cabecera con el secreto escrito, y no una referencia, va al Bloque D.
 - Forma del cuerpo y de la respuesta, de la definición: describe la estructura, no copies el SAIL.
-- Llamantes, del grafo: process model (con el nodo), regla o interfaz, enlazando su documento o su ficha del anexo. Sin llamante en el grafo: dilo con ❓ (puede llamarse por nombre dinámico o desde otra aplicación); los objetos huérfanos son el `H-ARQ` de `02` y su lista está en 09: cita el ID, no son hallazgos tuyos.
+- Llamantes, del grafo: process model (con el nodo), regla o interfaz, enlazando su documento o su ficha del anexo. Sin llamante en el grafo: «sin llamante encontrado en la aplicación» ❓ (puede llamarse por nombre dinámico o desde otra aplicación); los objetos huérfanos son el `H-ARQ` de `02` y su lista está en 09: cita el ID, no son hallazgos tuyos.
 - Errores: ✅ solo si la definición del llamante muestra el tratamiento (p. ej. `onError` en SAIL) o muestra que no lo hay. Las pestañas de excepciones de los nodos de proceso no siempre llegan: si no llegan, ❓ «no lo devuelve la extracción», nunca «sin manejo de error».
 
 ### Configuración por entorno
@@ -64,7 +64,7 @@ Para cada Web API del inventario:
 - Qué hace al invocarse, en lenguaje funcional, y qué invoca: proceso lanzado con `a!startProcess` (resuelve la constante al nombre del process model), reglas de validación, consultas y escrituras. Nombres reales, nunca uuids.
 - Consumidores: quién la llama y para qué, solo si consta (descripción, documentación, un llamante conocido). Si no, ❓ en la ficha y en «Cobertura y límites». No inventes el caso de uso.
 
-Hallazgos `H-API` típicos: la puede llamar un grupo de alcance amplio; escribe datos o lanza un proceso sin validación de entrada visible; lanza un process model que no está en la aplicación (🔵 o ❓ según la evidencia).
+Hallazgos `H-API` típicos: la puede llamar un grupo de alcance amplio; escribe datos o lanza un proceso sin validación de entrada visible; lanza un process model que no está en la aplicación (🔶 o ❓ según la evidencia).
 
 ## Bloque C — Grupos y seguridad (04)
 
@@ -82,7 +82,7 @@ Hallazgos `H-API` típicos: la puede llamar un grupo de alcance amplio; escribe 
 - Objetos: sites, process models, record types, Web APIs, connected systems y carpetas de nivel superior (rule folders, knowledge centers). Interfaces, reglas, constantes e integraciones solo si su role map no es el de su carpeta.
 - Evidencia: `mcp:<tipo>/<nombre>@other:<herramienta>#<ubicación>`; lo que venga de los ficheros de la aplicación (`mcp_raw/_app/`, p. ej. sus grupos de seguridad por defecto), `mcp:application/<nombre>@other:<herramienta>`.
 - Process models: pueden iniciarlos los grupos con cualquier rol salvo Deny. Si `initiatorGroup` no figura en su role map, una línea lo dice (`lectura-mcp-raw.md`, «Quién puede iniciar un process model»).
-- Herencia, con los role maps de carpetas: las interfaces, reglas, constantes, decisiones e integraciones heredan por defecto la seguridad de su rule folder; documentos y carpetas de documentos, la de su knowledge center; process models, record types, sites, Web APIs y connected systems nunca heredan, y la seguridad de una carpeta de process models no se aplica a su contenido. Fuentes: https://docs.appian.com/suite/help/26.6/object-security.html#security-inheritance-by-object-type y https://docs.appian.com/suite/help/26.6/folder-object.html#prodlink-process-model-folder-security. «Hereda de»: ✅ si la respuesta dice que hereda; 🔵 si solo llega el role map de la carpeta y el tipo hereda por defecto; ❓ si no llega ninguno.
+- Herencia, con los role maps de carpetas: las interfaces, reglas, constantes, decisiones e integraciones heredan por defecto la seguridad de su rule folder; documentos y carpetas de documentos, la de su knowledge center; process models, record types, sites, Web APIs y connected systems nunca heredan, y la seguridad de una carpeta de process models no se aplica a su contenido. Fuentes: https://docs.appian.com/suite/help/26.6/object-security.html#security-inheritance-by-object-type y https://docs.appian.com/suite/help/26.6/folder-object.html#prodlink-process-model-folder-security. «Hereda de»: ✅ si la respuesta dice que hereda; 🔶 si solo llega el role map de la carpeta y el tipo hereda por defecto; ❓ si no llega ninguno.
 
 **Sin role maps**, la matriz se limita a lo verificable (variante de la plantilla): grupo de seguridad declarado de cada process model («grupo de seguridad declarado: X; role map no disponible» ❓, nunca «solo X puede iniciarlo»), visibilidad de páginas del site (`visibilityExpr`) y reglas de seguridad de registro si la definición del record type las trae.
 
@@ -119,7 +119,9 @@ Cada secreto real es un hallazgo `H-SEG` con `"area": "secretos"` y severidad **
 
 ## Registro de hallazgos
 
-Un único fichero para las tres áreas: `<trabajo>/hallazgos/integration-security-analyzer.json` (formato en `execution-principles.md`, sección 3). IDs sin huecos por prefijo (`H-SEG-01`, `H-SEG-02`…, `H-INT-01`…, `H-API-01`…); `area`: `seguridad`, `secretos`, `integraciones` o `apis`; `documento`: `04-seguridad-grupos.md#hallazgos`, `05-integraciones-consumidas.md#hallazgos` o `06-apis-expuestas.md#hallazgos`. ID, título, severidad y certeza iguales en el documento y en el JSON.
+Un único fichero para las tres áreas: `<trabajo>/hallazgos/integration-security-analyzer.json` (formato en `execution-principles.md`, sección 3). IDs sin huecos por prefijo (`H-SEG-01`, `H-SEG-02`…, `H-INT-01`…, `H-API-01`…); `area`: `seguridad`, `secretos`, `integraciones` o `apis`; `documento`: `04-seguridad-grupos.md#hallazgos`, `05-integraciones-consumidas.md#hallazgos` o `06-apis-expuestas.md#hallazgos`. ID, título, severidad y certeza iguales en el documento y en el JSON; un inferido lleva en `base` las evidencias de las que sale.
+
+Lo que no pudiste verificar de tus tres áreas, y lo que de ellas pregunta la revisión y no puedes responder (p. ej. quién llama a una Web API cuando no consta), va en `<trabajo>/sin-verificar/integration-security-analyzer.json` (sección 4: `NV-SEG-NN`, `NV-INT-NN`, `NV-API-NN`; `[]` si no hay ninguno), con ❓ y su ID donde lo dice tu documento.
 
 ```json
 [{"id": "H-SEG-01", "titulo": "Credencial en claro en la constante CON_SAP_TOKEN", "area": "secretos",
@@ -137,14 +139,14 @@ Lo que veas de otras áreas (p. ej. un proceso que ignora un error de la integra
 - [ ] Todas las integraciones, connected systems y Web APIs del inventario tienen ficha; todos los objetos del alcance de la matriz aparecen en ella.
 - [ ] Ninguna conclusión ✅ se apoya en un dato que no llegó (seguridad de acciones, excepciones de nodos, role maps, consumidores).
 - [ ] `diagrams/grupos.mmd` pasa `python3 <skill>/scripts/validate_mermaid.py <salida>/diagrams/grupos.mmd`; si `bash <skill>/scripts/render_diagrams.sh --mermaid <salida>/diagrams/grupos.mmd` genera el SVG, el documento lo enlaza con «Fuente:»; si no, lleva el bloque mermaid.
-- [ ] El JSON de hallazgos es una lista válida, con los campos obligatorios y los mismos IDs que los documentos.
+- [ ] El JSON de hallazgos es una lista válida, con los campos obligatorios (`base` en los inferidos) y los mismos IDs que los documentos; cada ❓ con NV, también en `sin-verificar/`.
 - [ ] Cada ficha tiene evidencia y certeza, y cada evidencia enlaza su ficha del anexo; sin placeholders.
 
 ## Salida
 
 - `<salida>/04-seguridad-grupos.md`, `<salida>/05-integraciones-consumidas.md`, `<salida>/06-apis-expuestas.md`.
 - `<salida>/diagrams/grupos.mmd` (y `grupos.svg` si se pudo renderizar).
-- `<trabajo>/hallazgos/integration-security-analyzer.json`.
+- `<trabajo>/hallazgos/integration-security-analyzer.json` y `<trabajo>/sin-verificar/integration-security-analyzer.json`.
 - `<trabajo>/docs_cache/integration-security-analyzer.json`, si consultaste la documentación (por el Docs MCP o por la web).
 
 Termina con un informe breve al orquestador: ficheros generados, consultas a la documentación (por el Docs MCP o por la web), choques entre instrucciones y «Para otras áreas».

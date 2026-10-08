@@ -1,13 +1,19 @@
 <!--
   Plantilla LEEME — Guía de lectura (orquestador, fase 6, lo último que se escribe). Objetivo 1-2 pantallas, máximo 3.
   - No repite datos de otros documentos: las cifras, el entorno y la fecha están en 00.
+  - «Preguntas de esta revisión»: una fila por pregunta de `preguntas` (<trabajo>/output_preferences.json), copiada tal
+    cual. Estado: Respondida, Parcial o Sin resolver. «Dónde se responde»: el enlace al documento que la responde; si
+    no se respondió del todo, el ID de su NV o, si lo impide una limitación global, el enlace a «Qué no incluye». Se
+    cierra en la fase 8.
   - «Qué documento responde a cada pregunta»: las preguntas de cada documento, resumidas, y el rango real de IDs de esta
     ejecución (p. ej. PAN-001…PAN-006, H-SEG-01…H-SEG-04); «—» si no tiene.
+  - «Sin verificar»: la tabla la escribe build_datos.py entre los dos marcadores, desde los NV de los agentes. No
+    escribas dentro ni cambies los marcadores.
   - «Qué no incluye»: las tres primeras líneas van siempre; añade las de esta ejecución que de verdad falten (omite las
     que no apliquen: si hubo role maps o MCP opcionales, no van aquí). Las limitaciones globales (entorno, versión,
-    muestra de ejecuciones, configuración que el Dev MCP no devuelve) se explican aquí una vez; los demás documentos
-    marcan las cifras afectadas con «orientativo (ver LEEME)». Si ningún documento usa esa marca, quita su fila de
-    «Cómo leer».
+    muestra de ejecuciones, configuración que el Dev MCP no devuelve) se explican aquí una vez y no son NV; los demás
+    documentos marcan las cifras afectadas con «orientativo (ver LEEME)». Si ningún documento usa esa marca, quita su
+    fila de «Cómo leer».
   - «Términos de Appian»: un enlace a la documentación oficial por término que usen los documentos, sin definirlo.
     Quita los que no aparezcan; uno que falte va con la página que dé el Docs MCP.
   - Celdas ≤ 100 caracteres. Un solo TL;DR.
@@ -15,9 +21,18 @@
 
 # {{Nombre visible de la aplicación}}: documentación de ingeniería inversa
 
-> **Responde a:** ¿Qué documento responde a mi pregunta? ¿Por dónde empiezo según mi perfil? ¿Cómo se leen las marcas, los identificadores y las evidencias? ¿Qué no incluye esta documentación?
+> **Responde a:** ¿Qué se preguntó en esta revisión y dónde se responde? ¿Por dónde empiezo según mi perfil y qué documento responde a cada pregunta? ¿Cómo se leen las marcas, los identificadores y las evidencias? ¿Qué quedó sin verificar y qué hace falta para verificarlo? ¿Qué no incluye esta documentación?
 
 > **TL;DR**: Cómo está hecha `{{nombre técnico}}`, leída del entorno en solo lectura: la aplicación no se modificó. Empieza por [00-resumen-ejecutivo.md](./00-resumen-ejecutivo.md) y sigue la ruta de tu perfil.
+
+## Preguntas de esta revisión
+
+Lo que el equipo quería saber al empezar{{, o «qué hace, cómo está hecha y qué riesgos tiene» si no dijo otra cosa}}.
+
+| Pregunta | Estado | Dónde se responde |
+|---|---|---|
+| {{¿Qué hace la aplicación?}} | Respondida | [01-funcional.md](./01-funcional.md) |
+| {{¿Qué riesgos tiene?}} | Parcial | [Registro de 09](./09-valor-adicional.md#registro-de-hallazgos) · {{NV-SEG-01}} |
 
 ## Por dónde empezar
 
@@ -52,8 +67,9 @@
 | Marca o término | Qué significa |
 |---|---|
 | ✅ | Verificado: la definición o la respuesta de Appian lo muestra. |
-| 🔵 | Inferido: el documento dice de qué evidencia indirecta («según su nombre»: solo lo dice el nombre). |
-| ❓ | Pendiente: la extracción no trae el dato o lo tiene que validar negocio. No es un defecto. |
+| 🔶 | Inferido: el documento dice de qué evidencia indirecta («según su nombre»: solo lo dice el nombre). |
+| ❓ | Pendiente, no un defecto: falta el dato o lo valida negocio. Si tiene NV, en «Sin verificar». |
+| no encontrado en … | Se buscó en ese ámbito (la aplicación, el entorno o una herramienta) y no está; puede estar fuera. |
 | Alta | Hallazgo que rompe un requisito de negocio o de seguridad, pierde datos o expone credenciales. |
 | Media | Hallazgo que degrada el mantenimiento, el rendimiento o el control. |
 | Baja | Hallazgo de higiene: nombres, tamaño o restos sin uso. |
@@ -66,6 +82,7 @@
 | Prefijo | Qué es | Dónde |
 |---|---|---|
 | `H-<ÁREA>-NN` | Hallazgo: qué pasa y qué riesgo tiene; el área dice su documento | Su documento y el [registro de 09](./09-valor-adicional.md#registro-de-hallazgos) |
+| `NV-<ÁREA>-NN` | Sin verificar: dónde se buscó, qué hace falta y a quién pedirlo | Su documento y [Sin verificar](#sin-verificar) |
 | `PAN-NNN` | Pantalla | 10 |
 | `RN-NNN` | Regla de negocio | 11 |
 
@@ -79,6 +96,14 @@
 | `@other:<herramienta>` | Otra respuesta de la plataforma (p. ej. el role map). |
 | `graph:hubs` · `graph:orphans` · `graph:edge/A→B` | Conclusión del grafo de referencias entre objetos ([anexo/grafo.md](./anexo/grafo.md)). |
 | `Fuente: <URL>` | Documentación oficial de Appian. |
+
+## Sin verificar
+
+Lo que esta revisión no pudo verificar, qué hace falta para hacerlo y a quién pedirlo. Lo que falta en toda la documentación está en [Qué no incluye](#qué-no-incluye).
+
+<!-- sin-verificar:inicio -->
+(lo rellena build_datos.py)
+<!-- sin-verificar:fin -->
 
 ## Qué no incluye
 
@@ -102,7 +127,7 @@
 | Reglas | [Expresiones](https://docs.appian.com/suite/help/26.6/Expressions.html) · [expression rule](https://docs.appian.com/suite/help/26.6/Expression_Rules.html) · [decisión](https://docs.appian.com/suite/help/26.6/Decisions.html) · [constante](https://docs.appian.com/suite/help/26.6/Constants.html) · [agente de IA](https://docs.appian.com/suite/help/26.6/about-ai-agents.html) |
 | Integración | [Integración](https://docs.appian.com/suite/help/26.6/Integration_Object.html) · [connected system](https://docs.appian.com/suite/help/26.6/Connected_System_Object.html) · [Web API](https://docs.appian.com/suite/help/26.6/Web_APIs.html) |
 | Seguridad | [Grupo](https://docs.appian.com/suite/help/26.6/Creating_Groups.html) · [grupos de sistema](https://docs.appian.com/suite/help/26.6/System_Groups.html) · [role map](https://docs.appian.com/suite/help/26.6/object-security.html#groups-and-role-maps) · [seguridad de un process model](https://docs.appian.com/suite/help/26.6/process-model-object.html#process-model-security) |
-| Fuera de la aplicación | [Plug-in](https://docs.appian.com/suite/help/26.6/prepare-deployment-packages.html#add-plugins) · [knowledge center](https://docs.appian.com/suite/help/26.6/folder-object.html#knowledge-centers) · [translation set](https://docs.appian.com/suite/help/26.6/translation-set-object.html) |
+| Fuera de la aplicación | [Plug-in](https://docs.appian.com/suite/help/26.6/prepare-deployment-packages.html#add-plugins) · [knowledge center](https://docs.appian.com/suite/help/26.6/folder-object.html#knowledge-centers) · [translation set](https://docs.appian.com/suite/help/26.6/translation-set-object.html) · [`rule!` y `cons!`](https://docs.appian.com/suite/help/26.6/reference-objects.html) |
 | Negocio | El vocabulario de la aplicación, en el [glosario de 09](./09-valor-adicional.md#glosario-de-negocio) |
 
 > Esta carpeta lleva también la extracción de la que sale la documentación, tal cual la devolvió el Dev MCP. Para consultar un objeto, usa su ficha del [anexo](./anexo/indice.md).

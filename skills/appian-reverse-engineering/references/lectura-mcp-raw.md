@@ -87,7 +87,7 @@ Evidencia: mcp:<tipo>/<nombre>[@<rol>]#<ubicación>
 - `<ubicación>` es una ruta dentro de la respuesta (`pages[2].visibilityExpr`, `fields.importe`) o el *breadcrumb* de dependencias (`Interface Definition: Line 19`). En process models identifica los nodos por su id, no por su posición en la lista: `nodes[id=3].decision`.
 - Ejemplos: `mcp:processModel/DEM Alta Solicitud#nodes[id=2]`, `mcp:interface/DEM_SolicitudForm#expression (línea 4)`, `mcp:processModel/DEM Alta Solicitud@history#totalCount`, `mcp:interface/DEM_SolicitudForm@screen#contents[0]`.
 - Si la conclusión viene de un documento oficial: `Fuente: <URL de docs.appian.com>`.
-- Si es inferida, márcala 🔵 y explica en una línea de qué se infiere.
+- Si es inferida, márcala 🔶 y explica en una línea de qué se infiere.
 - El lector encuentra cada objeto en `anexo/<tipo>/<slug>.md`: la definición (con «línea N» numerada) y el resto de respuestas (`@dependents`, `@history`, `@versions`, `@validation`, `@screen`, `@members`, `@other`); las respuestas fallidas aparecen como «No disponible» con su error. La aplicación tiene su ficha en `anexo/application/` y las referencias `graph:` están en `anexo/grafo.md`. Enlaza la ficha del anexo en la evidencia (`presentation-rules.md`, Regla 5).
 
 ## Qué no está disponible por Dev MCP

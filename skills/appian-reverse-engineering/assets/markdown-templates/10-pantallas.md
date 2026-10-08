@@ -28,9 +28,9 @@ Fuente: [navegacion.mmd](diagrams/navegacion.mmd)
 | ID | Pantalla | Tipo | Quién la ve | Cómo se llega | Certeza | Evidencia |
 |---|---|---|---|---|---|---|
 | [PAN-001](#pan-001--{{ancla}}) | {{Panel de solicitudes}} | {{Página}} | {{Usuarios de la aplicación}} | {{Site Solicitudes › Panel}} | ✅ | [`mcp:interface/{{nombre}}@screen`](./anexo/interface/{{slug}}.md) |
-| [PAN-002](#pan-002--{{ancla}}) | {{Nueva solicitud}} | {{Formulario de inicio}} | {{Gestores}} | {{Lista de solicitudes › Nueva solicitud}} | 🔵 | [`mcp:interface/{{nombre}}#expression`](./anexo/interface/{{slug}}.md) |
+| [PAN-002](#pan-002--{{ancla}}) | {{Nueva solicitud}} | {{Formulario de inicio}} | {{Gestores}} | {{Lista de solicitudes › Nueva solicitud}} | 🔶 | [`mcp:interface/{{nombre}}#expression`](./anexo/interface/{{slug}}.md) |
 
-Certeza: ✅ la definición y el render coinciden · 🔵 solo de la definición (sin render, o con diferencias que explica la ficha) · ❓ no se pudo renderizar y la definición no trae el contenido.
+Certeza: ✅ la definición y el render coinciden · 🔶 solo de la definición (sin render, o con diferencias que explica la ficha) · ❓ no se pudo renderizar y la definición no trae el contenido.
 
 <!-- Más de 15 pantallas: una tabla por tipo (### Páginas, ### Vistas de registro, ### Formularios de inicio, ### Tareas). -->
 

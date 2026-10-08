@@ -11,8 +11,9 @@ BUILD_ANNEX = SKILL / "scripts" / "build_annex.py"
 REGISTRO = SKILL / "scripts" / "build_registry.py"
 RESUMEN = SKILL / "scripts" / "build_summary.py"
 DATOS = SKILL / "scripts" / "build_datos.py"
-CLAVES = {"inventario.json": {"aplicacion", "objetos"}, "dependencias.json": {"aristas"},
-          "hallazgos.json": {"hallazgos"}, "procesos.json": {"procesos"}}
+CLAVES = {"inventario.json": {"aplicacion", "objetos"}, "dependencias.json": {"aristas", "fueraDeLaAplicacion"},
+          "hallazgos.json": {"hallazgos"}, "procesos.json": {"procesos"}, "sin-verificar.json": {"sinVerificar"}}
+CAMPOS = {"id", "titulo", "area", "severidad", "certeza", "objetos", "documento", "evidencia"}
 
 
 def corre(script, salida):
@@ -37,7 +38,10 @@ def flujo(project):
     carpeta = project.interm() / "hallazgos"
     carpeta.mkdir()
     (carpeta / "prueba.json").write_text(json.dumps(
-        [hallazgo("H-SEG-01"), hallazgo("H-SEG-02", duplicadoDe="H-SEG-01")], ensure_ascii=False), encoding="utf-8")
+        [hallazgo("H-SEG-01"), hallazgo("H-SEG-02", duplicadoDe="H-SEG-01"),
+         hallazgo("H-SEG-03", titulo="Token del ERP en una cabecera", severidad="Media", certeza="inferido",
+                  base=["mcp:constant/DEM_ERP_API_TOKEN#value", "mcp:integration/DEM_INT_NotificarERP#headers"])],
+        ensure_ascii=False), encoding="utf-8")
     corre(REGISTRO, project.out)
     corre(RESUMEN, project.out)
     corre(DATOS, project.out)
@@ -55,9 +59,12 @@ def test_datos_formato(project):
     aristas = leidos["dependencias.json"]["aristas"]
     assert aristas and all(set(a) == {"de", "a", "donde"} for a in aristas)
     assert {"de": "DEM Solicitud", "a": "DEM_SolicitudResumen", "donde": "Record View: Resumen"} in aristas
+    assert leidos["dependencias.json"]["fueraDeLaAplicacion"] == []      # DEM no llama a nada de fuera
+    assert leidos["sin-verificar.json"]["sinVerificar"] == []
     hallazgos = leidos["hallazgos.json"]["hallazgos"]
-    assert [h["id"] for h in hallazgos] == ["H-SEG-01"]                    # sin el duplicado
-    assert set(hallazgos[0]) == {"id", "titulo", "area", "severidad", "certeza", "objetos", "documento", "evidencia"}
+    assert [h["id"] for h in hallazgos] == ["H-SEG-01", "H-SEG-03"]        # sin el duplicado
+    assert set(hallazgos[0]) == CAMPOS                                      # los campos de siempre…
+    assert set(hallazgos[1]) == CAMPOS | {"base"} and len(hallazgos[1]["base"]) == 2   # …y base, en los inferidos
     nombres = {o["nombre"] for o in inv["objetos"]}
     assert all(o in nombres for h in hallazgos for o in h["objetos"])      # cada objeto de un hallazgo, en el inventario
     procesos = leidos["procesos.json"]["procesos"]

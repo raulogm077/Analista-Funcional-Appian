@@ -11,14 +11,14 @@
     Cifras .............. counts, totals, layerBreakdown (sus 6 claves, en el orden y con los nombres de 02)
     Procesos críticos ... criticalProcesses (ya ordenados; máx. 5). Enlace: slug de objects.processModel
     Hallazgos ........... findingsBySeverity, findingsByCertainty y findings de severidad Alta (si no hay Alta: los
-                          Media, máx. 5, y dilo en el TL;DR). Evidencia: la de cada uno en datos/hallazgos.json,
-                          enlazada a su ficha del anexo (datos/inventario.json → anexo)
+                          Media, máx. 5, y dilo en el TL;DR). Evidencia: la de cada uno en <trabajo>/registro.json,
+                          enlazada a la ficha de su objeto en el anexo (anexo/<tipo>/<slug>.md, slug de inventory.json)
     Uso real ............ usage (los 3-5 más ejecutados; failedInSampleOf = fallos en una muestra) y
                           signals[type=processModelsWithoutExecutions]. Los fallos citan su H-PRO (08); los
                           procesos sin ejecuciones, su H-GEN (09). Sin historial, la sección es una línea:
                           «La extracción no trae historial de ejecuciones.»
   Los secretos son hallazgos H-SEG de severidad Alta: salen en «Hallazgos principales».
-  Certeza: verificado ✅ · inferido 🔵 · pendiente ❓. En 00 los hallazgos se citan por ID, sin columna de severidad.
+  Certeza: verificado ✅ · inferido 🔶 · pendiente ❓. En 00 los hallazgos se citan por ID, sin columna de severidad.
   Limitaciones globales (entorno no productivo, muestra de ejecuciones…): no se explican aquí; las cifras afectadas
   llevan la marca «orientativo (ver LEEME)».
 -->

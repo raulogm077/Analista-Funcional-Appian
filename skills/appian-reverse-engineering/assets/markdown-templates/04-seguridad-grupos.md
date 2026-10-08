@@ -61,7 +61,7 @@ Process models: pueden iniciarlos los grupos con cualquier rol salvo Deny ([fuen
 Otros objetos ([qué tipos heredan la seguridad de su carpeta](https://docs.appian.com/suite/help/26.6/object-security.html#security-inheritance-by-object-type)):
 
 <!--
-  Hereda de: la carpeta cuyo role map se aplica, con su certeza. ✅ si la respuesta dice que hereda; 🔵 si solo llega el
+  Hereda de: la carpeta cuyo role map se aplica, con su certeza. ✅ si la respuesta dice que hereda; 🔶 si solo llega el
   role map de la carpeta y el tipo hereda por defecto; ❓ si no llega ninguno de los dos. «—» si tiene role map propio.
   La evidencia es el role map que se aplica: el del objeto o el de su carpeta.
 -->
@@ -69,7 +69,7 @@ Otros objetos ([qué tipos heredan la seguridad de su carpeta](https://docs.appi
 | Objeto | Tipo | Administrator | Editor | Viewer | Deny | Hereda de | Evidencia |
 |---|---|---|---|---|---|---|---|
 | `{{DEM Rules}}` | Carpeta de reglas | `{{DEM Administrators}}` | — | `{{DEM Users}}` | — | — | [`mcp:folder/{{DEM Rules}}@other:{{herramienta}}#roleMap`](./anexo/folder/{{slug}}.md) |
-| `{{DEM_SolicitudForm}}` | Interfaz | `{{DEM Administrators}}` | — | `{{DEM Users}}` | — | `{{DEM Rules}}` 🔵 | [`mcp:folder/{{DEM Rules}}@other:{{herramienta}}#roleMap`](./anexo/folder/{{slug}}.md) |
+| `{{DEM_SolicitudForm}}` | Interfaz | `{{DEM Administrators}}` | — | `{{DEM Users}}` | — | `{{DEM Rules}}` 🔶 | [`mcp:folder/{{DEM Rules}}@other:{{herramienta}}#roleMap`](./anexo/folder/{{slug}}.md) |
 | `{{DEM Solicitudes}}` | Site | `{{DEM Administrators}}` | — | `{{DEM Users}}` | — | — | [`mcp:site/{{DEM Solicitudes}}@other:{{herramienta}}#roleMap`](./anexo/site/{{slug}}.md) |
 
 <!-- Variante sin role maps: sustituye a las dos tablas anteriores. -->

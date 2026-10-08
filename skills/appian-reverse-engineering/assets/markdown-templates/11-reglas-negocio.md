@@ -3,8 +3,9 @@
   Estructura: Responde a → TL;DR → Vista → Detalle → Hallazgos → Cobertura y límites. Las secciones sin contenido se omiten.
   Reglas RN-001…, sin SAIL en los enunciados; hallazgos H-RN-01….
   Los {{marcadores}} se sustituyen y los comentarios se borran.
-  Certeza de una regla: 🔵 «según su nombre» si solo se deduce del nombre de un nodo, objeto o variable; nunca ✅ si
-  un parámetro de su enunciado es ❓ (lleva la certeza más baja de sus partes).
+  Certeza de una regla: 🔶 «según su nombre» si solo se deduce del nombre de un nodo, objeto o variable (y ni la
+  definición ni otra respuesta lo dicen); nunca ✅ si un parámetro de su enunciado es ❓ (lleva la certeza más baja de
+  sus partes).
   Ninguna regla se recorta ni se omite por longitud. Evidencia: siempre enlazada a la ficha del objeto en el anexo.
   «Cobertura y límites»: solo lo de este documento; lo global está en LEEME.
 -->
