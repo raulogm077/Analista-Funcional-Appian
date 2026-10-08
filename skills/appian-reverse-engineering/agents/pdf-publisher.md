@@ -10,7 +10,7 @@ Fase 7, solo si `<trabajo>/output_preferences.json` tiene `pdf: true`. Puede ir 
 
 - `<salida>/`: `LEEME.md`, `00`–`11`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso) y las imágenes de `diagrams/` y `08-procesos-bpmn/` (`.svg`, o `.png` cuando el proceso se dibujó en draw.io).
 - `<salida>/anexo/`: solo para el apéndice opcional (ver Estructura).
-- `<trabajo>/summary.json` (`<trabajo>` = `<padre de la salida>/_trabajo/<nombre de la salida>`): la fuente de todas las cifras.
+- `<trabajo>/summary.json` (`<trabajo>` = `<salida>/extraccion/`): la fuente de todas las cifras.
 - La skill de PDF disponible (`anthropic-skills:pdf` o equivalente): lee su `SKILL.md` antes de empezar y sigue su flujo (ReportLab, WeasyPrint, pandoc… lo decide ella).
 
 ## Contrato de summary.json
@@ -80,7 +80,7 @@ summary.json
 
 1. Comprueba `pdf: true` y que existen `LEEME`, `00`–`11`, `INVENTARIO` y `summary.json`. Si falta algo, no sigas y dilo en el informe.
 2. Estima el tamaño con `totals.objects` y `counts`. Si pasa de ~100 páginas, deja el inventario y las fichas de detalle en tablas compactas y anótalo en el informe.
-3. Lee el `SKILL.md` de la skill de PDF y genera el PDF sección a sección según la tabla. Los ficheros temporales van en `<trabajo>/`, nunca en `<salida>/`.
+3. Lee el `SKILL.md` de la skill de PDF y genera el PDF sección a sección según la tabla. Los ficheros temporales van en `<trabajo>/`, nunca junto a los documentos.
 4. Comprueba el resultado: cada página tiene contenido, los diagramas se ven nítidos, el índice apunta a la página correcta, cabecera y pie en todas las páginas, tamaño < 10 MB (si no, comprime las imágenes).
 
 ## Salida

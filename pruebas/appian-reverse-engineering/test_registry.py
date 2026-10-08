@@ -8,13 +8,16 @@ from pathlib import Path
 
 from conftest import SKILL
 
+sys.path.insert(0, str(SKILL / "scripts"))
+from rutas import work_dir  # noqa: E402
+
 REG = SKILL / "scripts" / "build_registry.py"
 SUM = SKILL / "scripts" / "build_summary.py"
 
 
 def setup(tmp_path: Path):
-    out = tmp_path / "appian-docs" / "DEM"
-    work = tmp_path / "appian-docs" / "_trabajo" / "DEM"
+    out = tmp_path / "DEM" / "as-is"
+    work = work_dir(out)
     (out / "08-procesos-bpmn").mkdir(parents=True)
     (work / "hallazgos").mkdir(parents=True)
     (out / "08-procesos-bpmn" / "DEM_Alta_Solicitud.md").write_text("# Alta\n## Hallazgos\n")

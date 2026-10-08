@@ -4,8 +4,9 @@
 Uso: python3 detect_secrets.py <ruta> [<ruta> ...]   (cada ruta, carpeta o fichero)
 Salida: tabla Markdown con el patrón y fichero:línea. Código de salida 1 si encuentra algo, 2 si una ruta no existe.
 
-No cuenta como secreto una referencia (=cons!X, ri!y, pv!z, rule!…, local!…), un valor ya enmascarado (***)
-ni una clave que describe el secreto sin serlo (tokenUrl, passwordPolicy…). Mismas reglas que privacidad.py.
+No cuenta como secreto una referencia (=cons!X, ri!y, pv!z, rule!…, local!…), un valor ya enmascarado (***),
+un sí o no ("maskedSecret": true, en el inventario de la extracción) ni una clave que describe el secreto sin serlo
+(tokenUrl, passwordPolicy…). Mismas reglas que privacidad.py.
 """
 import re
 import sys
@@ -55,7 +56,8 @@ def buscar(f: Path):
     for n, linea in enumerate(datos.decode("utf-8", errors="replace").splitlines(), 1):
         for m in CLAVE_VALOR.finditer(linea):
             clave, valor = m.group(1), m.group(2)
-            if not NO_SECRET.search(clave) and not PROSA.match(clave) and not is_reference(valor) and not valor.startswith("‹"):
+            if not NO_SECRET.search(clave) and not PROSA.match(clave) and not is_reference(valor) and not valor.startswith("‹") \
+                    and valor.lower() not in ("true", "false", "null"):
                 yield "Password/Secret/Token en propiedad", n
                 break
         for etiqueta, rx in PATRONES:

@@ -12,8 +12,11 @@ Subcomandos:
   doctor      Estado de los 3 MCP: Dev MCP (obligatorio), Appian MCP Server y Docs MCP (opcionales).
   apps        Lista las aplicaciones visibles para el usuario del Dev MCP.
   plan        Catalogo + clasificacion + objetos de la app + estimacion de llamadas. No llama por objeto.
-  extract     Ejecuta el plan y vuelca las respuestas en <padre de out>/_trabajo/<app>/mcp_raw/.
+  extract     Ejecuta el plan y vuelca las respuestas en <out>/extraccion/mcp_raw/, dentro del proyecto.
   datafabric  Metadatos y COUNT(*) por record type de la app a traves del Appian MCP Server.
+
+Todo lo que escribe va ya saneado (privacidad.py): secretos enmascarados, cada usuario con su seudonimo, sin correos
+ni rutas locales y, de las aplicaciones del entorno, solo la elegida. Las rutas son cortas (Windows y OneDrive).
 
 Codigos de salida:
   0 ok | 2 uso incorrecto | 11 Dev MCP no configurado | 12 varias configuraciones posibles
@@ -24,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import os
 import re
@@ -37,7 +41,8 @@ from typing import Any
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rutas import work_dir  # noqa: E402
+import privacidad  # noqa: E402
+from rutas import carpeta_objeto, work_dir  # noqa: E402
 
 EXIT_OK, EXIT_USAGE, EXIT_NO_CONFIG, EXIT_AMBIGUOUS, EXIT_START, EXIT_NO_APPS, EXIT_APP, EXIT_NO_MCPSERVER = \
     0, 2, 11, 12, 13, 14, 15, 16
@@ -74,8 +79,13 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def safe_name(s: str) -> str:
-    return re.sub(r"[^A-Za-z0-9_.\-]", "_", s)[:150]
+def safe_name(s: str, maximo: int = 48) -> str:
+    """Nombre de fichero de una herramienta, corto para que la ruta quepa en Windows y en OneDrive: si no cabe, se
+    recorta y lleva 8 hex del sha1 del nombre, para que dos nombres largos no se pisen. _meta.tool guarda el nombre."""
+    limpio = re.sub(r"[^A-Za-z0-9_.\-]", "_", s)
+    if len(limpio) <= maximo:
+        return limpio
+    return f"{limpio[:maximo - 9]}-{hashlib.sha1(s.encode('utf-8')).hexdigest()[:8]}"
 
 
 def is_transient(error: str | None) -> bool:
@@ -296,6 +306,7 @@ class CallResult:
     error: str | None = None
     pages: int = 1
     seconds: float = 0.0
+    cached: bool = False     # leída de la extracción guardada, sin llamar al servidor
 
 
 def parse_result(res) -> tuple[bool, Any, str | None]:
@@ -580,6 +591,84 @@ def set_path(data: Any, path: tuple, value: Any):
 
 # --------------------------------------------------------------------------- extractor
 
+def error_de(ti: "ToolInfo", scope: str, obj: dict | None, error: str | None) -> dict:
+    return {"tool": ti.name, "scope": scope, "object": (obj or {}).get("uuid"), "objectType": (obj or {}).get("type"),
+            "error": error}
+
+
+def solo_la_app(data: Any, app_uuid: str | None) -> Any:
+    """Una lista de aplicaciones del entorno con solo la elegida: fuera las demás (las que tienen uuid y nombre)."""
+    if isinstance(data, list):
+        return [solo_la_app(x, app_uuid) for x in data
+                if not (isinstance(x, dict) and looks_uuid(pick(x, UUID_KEYS)) and pick(x, NAME_KEYS))
+                or pick(x, UUID_KEYS) == app_uuid]
+    if isinstance(data, dict):
+        return {k: solo_la_app(v, app_uuid) for k, v in data.items()}
+    return data
+
+
+def carpetas_locales(out=None) -> list[str]:
+    """Las carpetas del equipo, que no se guardan (dicen quién es el usuario y dónde trabaja): desde la que se
+    ejecuta, la del usuario y la del proyecto. De más larga a más corta, para cambiar antes la más concreta."""
+    cands = [Path.cwd(), home_dir(), Path.home()] + ([Path(os.environ["APPDATA"])] if os.environ.get("APPDATA") else [])
+    if out:
+        cands += [Path(out), Path(out).parent]
+    rutas = {str(r) for c in cands for r in (c, c.resolve()) if len(r.parts) >= 3}   # nunca la raíz ni /tmp
+    return sorted(rutas, key=len, reverse=True)
+
+
+def sin_rutas(x: Any, carpetas: list[str]) -> Any:
+    if isinstance(x, str):
+        for c in carpetas:
+            if c in x:
+                x = x.replace(c, "‹carpeta local›")
+        return x
+    if isinstance(x, dict):
+        return {k: sin_rutas(v, carpetas) for k, v in x.items()}
+    if isinstance(x, list):
+        return [sin_rutas(v, carpetas) for v in x]
+    return x
+
+
+def para_disco(data: Any, out, usuarios: set[str] | None = None) -> Any:
+    """Lo que la extracción guarda fuera de las respuestas (catálogo, plan, informe, preflight, data fabric), saneado
+    como ellas: sin secretos, usuarios, correos ni rutas locales, y del fichero de configuración solo su nombre."""
+    def nombres(x):
+        if isinstance(x, dict):
+            return {k: Path(v).name if k == "configFile" and isinstance(v, str) else nombres(v) for k, v in x.items()}
+        return [nombres(v) for v in x] if isinstance(x, list) else x
+    data = sin_rutas(mask_secrets(nombres(data), [0]), carpetas_locales(out))
+    huellas = privacidad.lee_huellas(work_dir(out) / "mcp_raw")
+    return privacidad.sanea(data, set(usuarios or ()) | privacidad.conocidos(data, huellas))
+
+
+# Lo que escribe este script fuera de mcp_raw/ (lo demás de la extracción, inventario o resumen, sale de lo saneado).
+FICHEROS_EXTRACCION = ("mcp_catalog.json", "extraction_plan.json", "extraction_report.json", "preflight.json",
+                       "datafabric.json")
+
+
+def barrido_final(raw: Path) -> int:
+    """Al terminar la extracción, la repasa entera con la lista completa de usuarios (su huella, en
+    mcp_raw/_huellas.json), por si un texto se escribió antes de conocer a su usuario. Devuelve cuántos ficheros cambió."""
+    raw = Path(raw)
+    huellas = privacidad.lee_huellas(raw)
+    if not huellas:
+        return 0
+    ficheros = [f for f in sorted(raw.rglob("*.json")) if f.name != privacidad.HUELLAS]
+    ficheros += [raw.parent / n for n in FICHEROS_EXTRACCION if (raw.parent / n).exists()]
+    cambiados = 0
+    for f in ficheros:
+        try:
+            datos = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        saneados = privacidad.sanea(datos, privacidad.conocidos(datos, huellas))
+        if saneados != datos:
+            f.write_text(json.dumps(saneados, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+            cambiados += 1
+    return cambiados
+
+
 class Extractor:
     def __init__(self, sess: McpSession, policy: Policy, out: Path | None, *, concurrency=4, refresh=False,
                  retries=2, retry_delay=1.5, only: str | None = None, skip: str | None = None,
@@ -591,6 +680,10 @@ class Extractor:
         self.only = re.compile(only) if only else None
         self.skip = re.compile(skip) if skip else None
         self.raw = (work_dir(out, crear=True) / "mcp_raw") if out else None
+        self.carpetas = carpetas_locales(out)
+        self.usuarios: set[str] = set()     # los conocidos en esta ejecución; en disco solo va su huella
+        self.app_uuid: str | None = None    # la aplicación elegida: de la lista del entorno solo se guarda ella
+        self.pendientes: list[tuple] = []   # listas de aplicaciones a la espera de saber cuál es la elegida
         self.stats = defaultdict(lambda: defaultdict(int))
         self.errors: list[dict] = []
         self.disabled: list[dict] = []
@@ -699,7 +792,7 @@ class Extractor:
             return self.raw / "_env" / f"{safe_name(ti.name)}.json"
         if scope == "app":
             return self.raw / "_app" / f"{safe_name(ti.name)}.json"
-        return self.raw / safe_name(obj["type"]) / safe_name(obj["uuid"]) / f"{safe_name(ti.name)}.json"
+        return carpeta_objeto(self.raw, obj["type"], obj["uuid"]) / f"{safe_name(ti.name)}.json"
 
     async def run_call(self, ti: ToolInfo, scope: str, *, app_uuid=None, obj=None) -> CallResult:
         f = self.target_file(ti, scope, obj)
@@ -709,10 +802,11 @@ class Extractor:
                 meta = cached.get("_meta", {})
                 if meta.get("ok"):
                     self.stats[ti.name]["cached"] += 1
-                    return CallResult(True, cached.get("response"), None, meta.get("pages", 1))
+                    return CallResult(True, cached.get("response"), None, meta.get("pages", 1), cached=True)
                 if not meta.get("transient", True) and not self.retry_failed:
                     self.stats[ti.name]["cachedFailed"] += 1
-                    return CallResult(False, None, meta.get("error"))
+                    self.errors.append(error_de(ti, scope, obj, meta.get("error")))   # el informe, igual al retomar
+                    return CallResult(False, None, meta.get("error"), cached=True)
             except Exception:
                 pass
         args = self.build_args(ti, app_uuid=app_uuid, obj=obj)
@@ -722,26 +816,48 @@ class Extractor:
         res = await self.call_paginated(ti, args)
         self.stats[ti.name]["ok" if res.ok else "failed"] += 1
         if not res.ok:
-            self.errors.append({"tool": ti.name, "scope": scope, "object": (obj or {}).get("uuid"),
-                                "objectType": (obj or {}).get("type"), "error": res.error})
-        if f:
-            f.parent.mkdir(parents=True, exist_ok=True)
-            meta = {"tool": ti.name, "args": args, "scope": scope, "role": ti.role, "ok": res.ok,
-                    "error": res.error, "transient": bool(not res.ok and is_transient(res.error)),
-                    "pages": res.pages, "fetchedAt": now_iso(), "seconds": round(res.seconds, 2)}
-            if obj:
-                meta.update({"objectUuid": obj["uuid"], "objectName": obj.get("name"), "objectType": obj["type"],
-                             "mcpType": obj.get("mcpType")})
-            masked = [0]
-            secret_ctx = bool(obj and obj.get("type") == "constant" and SECRET_NAME.search(obj.get("name") or ""))
-            safe_data = mask_secrets(res.data, masked, secret_ctx)
-            if ti.role == "screen":   # el render evalúa la interfaz: los valores pueden ser datos reales
-                safe_data = redact_screen(safe_data)
-            if masked[0]:
-                meta["maskedSecrets"] = masked[0]
-            f.write_text(json.dumps({"_meta": meta, "response": safe_data}, ensure_ascii=False, indent=1, default=str),
-                         encoding="utf-8")
+            self.errors.append(error_de(ti, scope, obj, res.error))
+        if f and self.es_lista_de_apps(ti) and self.app_uuid is None:
+            self.pendientes.append((f, ti, scope, obj, args, res))   # se guarda al saber cuál es la aplicación
+        elif f:
+            self.guarda(f, ti, scope, obj, args, res)
         return res
+
+    def es_lista_de_apps(self, ti: ToolInfo) -> bool:
+        return ti.scope == "env" and bool({"application", "app"}.intersection(ti.toks))
+
+    def elige_app(self, app_uuid: str) -> None:
+        """La aplicación que se extrae: ya se pueden guardar las listas de aplicaciones, solo con ella."""
+        self.app_uuid = app_uuid
+        for pendiente in self.pendientes:
+            self.guarda(*pendiente)
+        self.pendientes = []
+
+    def guarda(self, f: Path, ti: ToolInfo, scope: str, obj: dict | None, args: dict, res: CallResult) -> None:
+        """Escribe una respuesta ya saneada: secretos enmascarados, render sin valores, cada usuario con su seudónimo,
+        sin correos ni rutas locales y, de una lista de aplicaciones del entorno, solo la elegida."""
+        meta = {"tool": ti.name, "args": args, "scope": scope, "role": ti.role, "ok": res.ok,
+                "error": res.error, "transient": bool(not res.ok and is_transient(res.error)),
+                "pages": res.pages, "fetchedAt": now_iso(), "seconds": round(res.seconds, 2)}
+        if obj:
+            meta.update({"objectUuid": obj["uuid"], "objectName": obj.get("name"), "objectType": obj["type"],
+                         "mcpType": obj.get("mcpType")})
+        masked = [0]
+        secret_ctx = bool(obj and obj.get("type") == "constant" and SECRET_NAME.search(obj.get("name") or ""))
+        safe_data = mask_secrets(res.data, masked, secret_ctx)
+        if ti.role == "screen":   # el render evalúa la interfaz: los valores pueden ser datos reales
+            safe_data = redact_screen(safe_data)
+        if self.es_lista_de_apps(ti):
+            safe_data = solo_la_app(safe_data, self.app_uuid)
+        if masked[0]:
+            meta["maskedSecrets"] = masked[0]
+        conocidos = len(self.usuarios)
+        doc = privacidad.sanea(sin_rutas({"_meta": mask_secrets(meta, [0]), "response": safe_data}, self.carpetas),
+                               self.usuarios)
+        if len(self.usuarios) > conocidos:
+            privacidad.guarda_huellas(self.raw, self.usuarios)
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(json.dumps(doc, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
 
     # ---- aplicaciones y objetos
     async def env_calls(self) -> dict[str, CallResult]:
@@ -908,8 +1024,11 @@ async def prepare(ex: Extractor, args) -> tuple[dict, list[dict], list]:
         raise SystemExit(EXIT_NO_APPS)
     app, msg = resolve_app(apps, args.app)
     if not app:
+        if any(ex.stats[t.name]["cached"] for t in ex.usable("env") if ex.es_lista_de_apps(t)):
+            msg += " La lista guardada en esta carpeta solo tiene la aplicacion extraida antes: para otra, usa otra carpeta."
         eprint(msg)
         raise SystemExit(EXIT_APP)
+    ex.elige_app(app["uuid"])
     app_results = await ex.app_calls(app["uuid"])
     app_obj, objects = ex.harvest_objects(app["uuid"], app_results)
     app_obj["name"] = app_obj["name"] or app["name"]
@@ -982,50 +1101,63 @@ async def cmd_plan_or_extract(args, execute: bool) -> int:
                            retries=args.retries, retry_delay=args.retry_delay, only=args.only, skip=args.skip,
                            retry_failed=args.retry_failed)
             try:
-                app_obj, objects, groups = await prepare(ex, args)
-            except SystemExit as se:
-                return int(se.code)
-            interm = work_dir(out, crear=True)
-            write_json(interm / "mcp_catalog.json", catalog_json(ex))
-            plan = plan_json(ex, app_obj, objects, groups)
-            write_json(interm / "extraction_plan.json", plan)
-            write_json(interm / "mcp_raw" / "_objects.json", {"application": app_obj, "objects": objects})
-            if not execute:
-                print(json.dumps(plan, ensure_ascii=False, indent=1)) if args.json else print_plan(plan)
-                return EXIT_OK
-            if plan["needsConfirmation"] and not args.yes:
-                print_plan(plan)
-                eprint(f"\nEl plan supera {policy.confirm_above} llamadas. Repite con --yes para confirmar.")
-                return EXIT_USAGE
-            await ex.env_calls()
-            await asyncio.gather(*(ex.run_group(ti, t, objs) for ti, t, objs in groups))
-            report = {
-                "startedAt": inicio,
-                "durationSeconds": round(time.monotonic() - t0, 1),
-                "server": server_info(choice), "trustedMode": ex.trusted,
-                "app": app_obj, "objectCount": len(objects), "objectsByType": plan["objectsByType"],
-                "toolsUsed": sorted({t.name for t in ex.tools if t.allowed and t.scope != "manual"}),
-                "toolsExcluded": [{"name": t.name, "reason": t.safety_reason} for t in ex.tools if not t.allowed],
-                "toolsManual": [{"name": t.name, "reason": t.scope_reason} for t in ex.tools
-                                if t.allowed and t.scope == "manual"],
-                "callStats": {k: dict(v) for k, v in sorted(ex.stats.items())},
-                "callStatsByRole": por_rol(ex),
-                "disabledAfterProbe": ex.disabled,
-                "errors": ex.errors[:300], "errorCount": len(ex.errors),
-            }
-            write_json(interm / "extraction_report.json", report)
-            (interm / "LEEME.md").write_text(
-                "# Datos intermedios\n\nEsta carpeta contiene definiciones en bruto de la aplicacion (URLs, valores de "
-                "constantes, nombres de usuario del historial). **No la compartas.** Los entregables de la carpeta "
-                "superior ya enmascaran los secretos.\n", encoding="utf-8")
-            ok = sum(v.get("ok", 0) + v.get("cached", 0) for v in ex.stats.values())
-            print(f"Extraccion terminada: {len(objects)} objetos, {ok} respuestas correctas, "
-                  f"{len(ex.errors)} errores, {len(ex.disabled)} herramientas desactivadas por tipo. "
-                  f"Informe: {interm / 'extraction_report.json'}")
-            return EXIT_OK
+                return await plan_o_extrae(ex, args, execute, choice, inicio, t0)
+            finally:   # también si se corta: lo que se escribió antes de conocer a un usuario
+                cambiados = barrido_final(ex.raw)
+                if cambiados:
+                    print(f"Barrido final: {cambiados} ficheros citaban a un usuario antes de conocerlo; "
+                          "ya llevan su seudonimo.")
     except Exception as ex_:
         eprint(f"No se pudo arrancar o autenticar el Dev MCP: {type(ex_).__name__}: {ex_}")
         return EXIT_START
+
+
+async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerChoice", inicio: str, t0: float) -> int:
+    out, policy = ex.out, ex.policy
+    try:
+        app_obj, objects, groups = await prepare(ex, args)
+    except SystemExit as se:
+        return int(se.code)
+    interm = work_dir(out, crear=True)
+    write_json(interm / "mcp_catalog.json", para_disco(catalog_json(ex), out, ex.usuarios))
+    plan = plan_json(ex, app_obj, objects, groups)
+    write_json(interm / "extraction_plan.json", para_disco(plan, out, ex.usuarios))
+    write_json(interm / "mcp_raw" / "_objects.json",
+               para_disco({"application": app_obj, "objects": objects}, out, ex.usuarios))
+    if not execute:
+        print(json.dumps(plan, ensure_ascii=False, indent=1)) if args.json else print_plan(plan)
+        return EXIT_OK
+    if plan["needsConfirmation"] and not args.yes:
+        print_plan(plan)
+        eprint(f"\nEl plan supera {policy.confirm_above} llamadas. Repite con --yes para confirmar.")
+        return EXIT_USAGE
+    await ex.env_calls()
+    await asyncio.gather(*(ex.run_group(ti, t, objs) for ti, t, objs in groups))
+    report = {
+        "startedAt": inicio,
+        "durationSeconds": round(time.monotonic() - t0, 1),
+        "server": server_info(choice), "trustedMode": ex.trusted,
+        "app": app_obj, "objectCount": len(objects), "objectsByType": plan["objectsByType"],
+        "toolsUsed": sorted({t.name for t in ex.tools if t.allowed and t.scope != "manual"}),
+        "toolsExcluded": [{"name": t.name, "reason": t.safety_reason} for t in ex.tools if not t.allowed],
+        "toolsManual": [{"name": t.name, "reason": t.scope_reason} for t in ex.tools
+                        if t.allowed and t.scope == "manual"],
+        "callStats": {k: dict(v) for k, v in sorted(ex.stats.items())},
+        "callStatsByRole": por_rol(ex),
+        "disabledAfterProbe": ex.disabled,
+        "errors": ex.errors[:300], "errorCount": len(ex.errors),
+    }
+    write_json(interm / "extraction_report.json", para_disco(report, out, ex.usuarios))
+    (interm / "LEEME.md").write_text(
+        "# Extracción\n\nRespuestas del Dev MCP de la aplicación, ya saneadas: secretos enmascarados "
+        "(`***ENMASCARADO***`), seudónimos (`‹usuario-…›`) en lugar de usuarios, `‹correo›` en lugar de correos, sin "
+        "rutas locales y, de las aplicaciones del entorno, solo esta. Es la fuente de la documentación de la carpeta "
+        "superior; para consultar un objeto, su ficha de `anexo/`.\n", encoding="utf-8")
+    ok = sum(v.get("ok", 0) + v.get("cached", 0) for v in ex.stats.values())
+    print(f"Extraccion terminada: {len(objects)} objetos, {ok} respuestas correctas, "
+          f"{len(ex.errors)} errores, {len(ex.disabled)} herramientas desactivadas por tipo. "
+          f"Informe: {interm / 'extraction_report.json'}")
+    return EXIT_OK
 
 
 def por_rol(ex) -> dict:
@@ -1035,7 +1167,7 @@ def por_rol(ex) -> dict:
     for name, st in ex.stats.items():
         r = out.setdefault(rol.get(name) or "other", {"ok": 0, "failed": 0})
         r["ok"] += st.get("ok", 0) + st.get("cached", 0)
-        r["failed"] += st.get("failed", 0)
+        r["failed"] += st.get("failed", 0) + st.get("cachedFailed", 0)
     return out
 
 
@@ -1156,8 +1288,11 @@ async def cmd_doctor(args) -> int:
                          {"status": "no_detectado_en_ficheros",
                           "detail": "No aparece en los ficheros de configuracion. Puede estar anadido desde la interfaz "
                                     "del cliente: la skill lo comprueba desde la sesion."})
-    if args.out:
-        write_json(work_dir(args.out, crear=True) / "preflight.json", report)
+    if args.out:   # en disco, de las aplicaciones del entorno solo cuántas hay
+        disco = para_disco(report, args.out)
+        for clave in ("apps", "appsNote"):
+            disco["devMcp"].pop(clave, None)
+        write_json(work_dir(args.out, crear=True) / "preflight.json", disco)
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
@@ -1242,7 +1377,7 @@ async def cmd_datafabric(args) -> int:
     except Exception as ex_:
         eprint(f"Appian MCP Server no disponible: {type(ex_).__name__}: {ex_}")
         return EXIT_NO_MCPSERVER
-    write_json(work_dir(out, crear=True) / "datafabric.json", result)
+    write_json(work_dir(out, crear=True) / "datafabric.json", para_disco(result, out))
     print(f"Data fabric: {len(result['recordTypes'])} record types con metadatos, "
           f"{sum(1 for x in result['recordTypes'] if x['count'] is not None)} con recuento.")
     return EXIT_OK

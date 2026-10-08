@@ -17,10 +17,10 @@ uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.
 
 ```
 uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" apps
-uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" plan --app <prefijo> --out ./appian-docs/<prefijo>
+uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" plan --app <prefijo> --out ./<prefijo>/as-is
 ```
 
-Revisa la lista de herramientas (`USA` / `NO`) y `appian-docs/_trabajo/<prefijo>/extraction_plan.json`:
+Revisa la lista de herramientas (`USA` / `NO`) y `<prefijo>/as-is/extraccion/extraction_plan.json`:
 
 - [ ] Ninguna herramienta de escritura figura como `USA`.
 - [ ] Ninguna herramienta que lea filas de datos, usuarios o variables de procesos figura como `USA`.
@@ -31,18 +31,18 @@ Revisa la lista de herramientas (`USA` / `NO`) y `appian-docs/_trabajo/<prefijo>
 ## 3. Extracción y revisión de lo extraído
 
 ```
-uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <prefijo> --out ./appian-docs/<prefijo>
+uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <prefijo> --out ./<prefijo>/as-is
 ```
 
 - [ ] `extraction_report.json`: en `callStatsByRole.definition`, menos del 20 % de llamadas fallidas; mira el motivo de las herramientas desactivadas.
-- [ ] Abre 2 o 3 respuestas de `mcp_raw/` (una interfaz, un process model, un record type) y comprueba que traen la definición.
-- [ ] `python3 "<skill>/scripts/detect_secrets.py" appian-docs/_trabajo/<prefijo>/mcp_raw`: si algo sale, los entregables dicen dónde está sin reproducirlo.
+- [ ] Abre 2 o 3 respuestas de `mcp_raw/` (una interfaz, un process model, un record type) y comprueba que traen la definición, con seudónimos (`‹usuario-…›`) en lugar de usuarios.
+- [ ] `python3 "<skill>/scripts/detect_secrets.py" <prefijo>/as-is/extraccion/mcp_raw`: si algo sale, el enmascarado no lo reconoce y está en el proyecto; los entregables dicen dónde está sin reproducirlo.
 
 ## 4. Documentación
 
 Pide a Claude «documenta la aplicación <prefijo>» y sigue las fases de `SKILL.md`. Al terminar:
 
-- [ ] Ningún nombre de usuario en `appian-docs/<prefijo>/` (la carpeta `_trabajo/` no se comparte).
+- [ ] Ningún nombre de usuario en `<prefijo>/as-is/`, tampoco en `extraccion/`.
 - [ ] Contrasta 3 o 4 afirmaciones de `01` y `08` con Appian Designer.
 - [ ] Abre un `.bpmn` de `08-procesos-bpmn/` en https://demo.bpmn.io.
 

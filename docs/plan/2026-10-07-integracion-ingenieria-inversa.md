@@ -320,7 +320,7 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 - De la lista de aplicaciones, `mcp_raw/_env/` guarda solo la aplicación elegida (nada si no hay ninguna).
   `datafabric.json` guarda del fichero de configuración solo su nombre.
 
-- [ ] **Paso 1: pruebas que fallan.** `interm()` de `conftest.py` usa `rutas.work_dir(self.out)`. En
+- [x] **Paso 1: pruebas que fallan.** `interm()` de `conftest.py` usa `rutas.work_dir(self.out)`. En
   `pruebas/appian-reverse-engineering/test_extraccion_en_proyecto.py`:
   - `test_extraccion_dentro_del_proyecto`: tras `extract`, existe `<out>/extraccion/mcp_raw` y no hay nada fuera de `<out>`
     (la carpeta temporal de la prueba solo tiene el proyecto, su `.mcp.json`, el registro de llamadas del simulador y la
@@ -334,12 +334,12 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
   - `test_retomar`: una segunda `extract` no vuelve a pedir lo que ya está (registro de llamadas del simulador) y
     `build_model.py` funciona igual.
   - `test_ruta_con_espacios`: lo anterior con `out = tmp / "Carpeta con espacios" / "Gestión app" / "as-is"`.
-- [ ] **Paso 2:** `python3 -m pytest -q pruebas/appian-reverse-engineering/test_extraccion_en_proyecto.py` → FALLA.
-- [ ] **Paso 3:** implementar y ajustar las pruebas existentes de la lista de ficheros.
-- [ ] **Paso 4:** `SKILL.md`: salida por defecto `<p>/as-is/` (si la carpeta tiene `proyecto.md` o la da el usuario) o
+- [x] **Paso 2:** `python3 -m pytest -q pruebas/appian-reverse-engineering/test_extraccion_en_proyecto.py` → FALLA.
+- [x] **Paso 3:** implementar y ajustar las pruebas existentes de la lista de ficheros.
+- [x] **Paso 4:** `SKILL.md`: salida por defecto `<p>/as-is/` (si la carpeta tiene `proyecto.md` o la da el usuario) o
   `./<PREFIJO>/as-is/`; una sola carpeta, con la extracción en `as-is/extraccion/`, ya saneada; los puntos 6 y 11 de la
   validación final y `response-format.md` lo dicen así.
-- [ ] **Paso 5:** `python3 -m pytest -q` en verde. Commit «F2: salida y extracción saneada dentro del proyecto».
+- [x] **Paso 5:** `python3 -m pytest -q` en verde. Commit «F2: salida y extracción saneada dentro del proyecto».
 
 ### Tarea 3: Alta de ingeniería inversa en el plugin
 

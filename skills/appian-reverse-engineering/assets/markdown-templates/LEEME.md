@@ -121,4 +121,4 @@ Que la extracción no traiga un dato no significa que falte en la aplicación: p
 
 El vocabulario del negocio está en el [glosario de 09](./09-valor-adicional.md#glosario-de-negocio).
 
-> Los datos de trabajo de la extracción se guardan aparte, en la carpeta de trabajo que está junto a esta, y no viajan con esta documentación: contienen las respuestas sin filtrar, con usuarios y hosts internos.
+> Esta carpeta lleva también la extracción de la que sale la documentación, ya saneada: sin secretos, con seudónimos en lugar de usuarios y sin correos ni rutas locales. Para consultar un objeto, usa su ficha del [anexo](./anexo/indice.md).

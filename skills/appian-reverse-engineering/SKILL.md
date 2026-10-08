@@ -33,9 +33,9 @@ python3 "<skill>/scripts/build_model.py" <salida>
 |---|---|---|
 | Aplicación (nombre, prefijo o uuid) | Sí; si no lo da, se elige de la lista en la fase 0 | — |
 | Idioma | No | español |
-| Carpeta de salida | No | `./appian-docs/<PREFIJO>/` |
+| Carpeta de salida | No | `<p>/as-is/` si la carpeta tiene `proyecto.md` o el usuario da la del proyecto; si no, `./<PREFIJO>/as-is/` |
 
-**Dos carpetas.** `<salida>` (p. ej. `appian-docs/DEM/`) solo tiene entregables y se puede compartir. Los datos de trabajo (respuestas en bruto, inventario, grafo, cachés, resumen) van en `<trabajo>` = `appian-docs/_trabajo/<PREFIJO>/`, que los scripts deducen de `<salida>`. **`<trabajo>` no se comparte ni se sube a un repositorio** (lleva un `.gitignore` con `*`): tiene usuarios, hosts y definiciones completas.
+**Una carpeta.** Todo va en `<salida>`: los documentos y, en `<salida>/extraccion/` (`<trabajo>`, que los scripts deducen de `<salida>`), la extracción y los datos de trabajo (respuestas, inventario, grafo, cachés, resumen). La extracción se escribe ya saneada: secretos enmascarados, seudónimos (`‹usuario-…›`) en lugar de usuarios, `‹correo›` en lugar de correos, sin rutas locales y, de las aplicaciones del entorno, solo la elegida. Sus rutas son cortas, para que el proyecto quepa en Windows y en OneDrive. Como está en el proyecto, al repetir o retomar la ingeniería inversa, en otra sesión o en otro equipo, no se vuelve a pedir lo que ya está. Los documentos no enlazan `<trabajo>/` y las demás skills no lo leen.
 
 ---
 
@@ -55,7 +55,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
    - la aplicación, si no la ha dado (muéstrale las apps de `doctor`);
    - los formatos adicionales: *«Además de los documentos Markdown, ¿quieres 📄 PDF maquetado, 🖥️ dashboard web, o solo los .md?»* (sin respuesta: solo Markdown);
    - si el entorno (`url` de `doctor`) es producción y su versión de Appian, si la sabe: el uso real de procesos solo es representativo en producción. Todo es lectura, sea cual sea el entorno.
-6. Guarda en `<trabajo>/preflight.json` la salida de `doctor` con tus comprobaciones de sesión (`docsMcp.status: "operativo"` si respondió la consulta de prueba) y `environment: {url, isProduction, appianVersion}` (`null` lo que no se sepa). Las preferencias, en `<trabajo>/output_preferences.json`, con este formato: `{"pdf": true|false, "dashboard": true|false}`. Apunta la consulta de prueba del Docs MCP en `<trabajo>/docs_cache/orquestador.json`.
+6. Guarda en `<trabajo>/preflight.json` la salida de `doctor`, sin la lista `apps` (basta `appsVisible`) y con solo el nombre del fichero en cada `configFile`, no su ruta, junto con tus comprobaciones de sesión (`docsMcp.status: "operativo"` si respondió la consulta de prueba) y `environment: {url, isProduction, appianVersion}` (`null` lo que no se sepa). Las preferencias, en `<trabajo>/output_preferences.json`, con este formato: `{"pdf": true|false, "dashboard": true|false}`. Apunta la consulta de prueba del Docs MCP en `<trabajo>/docs_cache/orquestador.json`.
 
 ### Fase 1 — Plan de extracción
 
@@ -71,7 +71,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 1. `python3 <skill>/scripts/build_model.py <salida>` → `inventory.json` y `graph.json` (con la criticidad de cada proceso).
 2. `python3 <skill>/scripts/build_annex.py <salida>` → `anexo/`: por objeto, la definición legible y el resto de respuestas (role map, dependientes, validación, ejecuciones, versiones, render sin valores), con los usuarios sustituidos por sus grupos y los correos por `‹correo›`; y `anexo/grafo.md`. Repítelo si cambia `<trabajo>/`.
-3. `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw` (o `bash <skill>/scripts/detect_secrets.sh`, que lo llama): lo que salga no puede aparecer en los entregables: se dice dónde está (`references/security-rules.md`, «Cómo se escribe cada dato»). No cuenta referencias (`cons!`, `=ri!…`) ni valores ya enmascarados. **No muestres los valores.**
+3. `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw` (o `bash <skill>/scripts/detect_secrets.sh`, que lo llama). La extracción ya llega enmascarada: lo que salga es un secreto que el enmascarado no reconoce y que está en el proyecto. Díselo al usuario con el fichero y la línea, porque la carpeta no se comparte hasta quitarlo. En los entregables no aparece: se dice dónde está (`references/security-rules.md`, «Cómo se escribe cada dato»). No cuenta referencias (`cons!`, `=ri!…`) ni valores ya enmascarados. **No muestres los valores.**
 
 ### Fase 4 — Análisis con subagentes
 
@@ -142,9 +142,8 @@ Pasa la validación final (abajo) y responde con la plantilla de `references/res
 ├── 11-reglas-negocio.md
 ├── INVENTARIO.md
 ├── anexo/   (definiciones originales: indice.md + <tipo>/<slug>.md)
-└── diagrams/
-
-appian-docs/_trabajo/<PREFIJO>/   = <trabajo>: datos en bruto, NO compartir
+├── diagrams/
+└── extraccion/   = <trabajo>: la extracción y los datos de trabajo, ya saneados (no es un entregable)
 ```
 
 ## Recursos (cárgalos cuando toque, no todos a la vez)
@@ -174,12 +173,12 @@ appian-docs/_trabajo/<PREFIJO>/   = <trabajo>: datos en bruto, NO compartir
 1. Existen `LEEME`, `00`–`11`, `INVENTARIO`, `anexo/indice.md` y `diagrams/`. Los que no aplican llevan su frase de «no aplica» (p. ej. 07 sin batches).
 2. `08-procesos-bpmn/` tiene por cada process model su `.md`, su `.bpmn` (con `bpmndi:BPMNDiagram`) y su diagrama (`.svg`/`.mmd`, o `.png`/`.drawio` con su `.json`, que es la especificación del dibujo y no datos en bruto), e `indice.md` los lista todos. Un proceso de más de 25 nodos se parte en `<slug>-1.mmd`, `<slug>-2.mmd`…: se admite `<slug>(-N)?.mmd` y `.svg`.
 3. Todos los diagramas pasan `python3 <skill>/scripts/validate_mermaid.py` (o están sustituidos por tabla) y ninguno superó el aviso de ancho.
-4. `python3 <skill>/scripts/detect_secrets.py <salida>` no encuentra nada en toda la carpeta, incluidos `anexo/` y `dashboard/`. Si encuentra algo en un entregable generado (`anexo/`, `dashboard/`), no lo edites a mano: corrige la causa y regenéralo.
+4. `python3 <skill>/scripts/detect_secrets.py <salida>` no encuentra nada en toda la carpeta, incluidos `anexo/`, `dashboard/` y `extraccion/`. Si encuentra algo en un entregable generado (`anexo/`, `dashboard/`), no lo edites a mano: corrige la causa y regenéralo; si está en `extraccion/`, haz lo de la fase 3, paso 3.
 5. No quedan placeholders (`{{`, `TBD`, `TODO`, `lorem`) ni marcas fuera de la paleta (`🔴`, `🟡`, `⚠️`).
-6. Ningún usuario en los entregables: busca en `<salida>` los identificadores de los ficheros `members`, `versions` e `history` de `mcp_raw`, y las direcciones de correo (`[\w.+-]+@[\w-]+\.`): ninguna personal (se escriben `‹correo›`).
+6. Ningún usuario en `<salida>`: la extracción ya trae seudónimos (`‹usuario-…›`) y el anexo los cambia por sus grupos. En los documentos, ni el seudónimo: busca `‹usuario-` fuera de `extraccion/` y de `anexo/` y escribe recuentos o el grupo. Tampoco direcciones de correo (`[\w.+-]+@[\w-]+\.`) en ninguna parte de la carpeta: se escriben `‹correo›`.
 7. `build_registry.py` termina sin errores y cada hallazgo de los documentos tiene su ID en el registro de 09.
 8. `INVENTARIO.md` cubre el 100 % de `inventory.json`.
 9. `LEEME.md` dice qué no estuvo disponible (MCP opcionales, tipos sin definición, seguridad por objeto).
-10. No se ha escrito nada fuera de `<salida>/` y `<trabajo>/`, y `<salida>/` no contiene datos en bruto ni enlaces a `<trabajo>/`.
+10. No se ha escrito nada fuera de `<salida>/`. Los datos en bruto solo están en `<salida>/extraccion/`, ya saneados, y ningún documento enlaza esa carpeta.
 
 Si algo falla, corrígelo y vuelve a validar antes de responder.

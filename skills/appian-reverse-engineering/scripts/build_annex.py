@@ -15,9 +15,10 @@ Para cada objeto:
   - el resto de respuestas de la plataforma (role map, dependientes, validación, ejecuciones, versiones, miembros…),
     que es lo que citan las evidencias «@rol». El render (@screen) va sin valores (‹valor›): puede traer datos reales.
 Además, anexo/grafo.md con todas las referencias entre objetos (evidencias «graph:»).
-Los secretos ya vienen enmascarados de la extracción; aquí además las URLs pierden sus credenciales, los hosts
-internos se ocultan y cada usuario se sustituye por los grupos de la aplicación a los que pertenece
-(«‹usuario de DEM Gestores›»), nunca por su nombre. Los uuids conocidos llevan al lado el nombre del objeto.
+La extracción ya viene saneada (secretos enmascarados, cada usuario con su seudónimo y cada correo como ‹correo›);
+aquí además las URLs pierden sus credenciales, los hosts internos se ocultan y cada seudónimo se sustituye por los
+grupos de la aplicación a los que pertenece («‹usuario de DEM Gestores›»). Las reglas están en privacidad.py.
+Los uuids conocidos llevan al lado el nombre del objeto.
 Solo librería estándar. Salida: 0 bien, 2 uso o falta el inventario.
 """
 from __future__ import annotations
@@ -30,39 +31,13 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from privacidad import mask_text, redact_screen  # noqa: E402
+from privacidad import (USER_KEY, USER_PH, load, redact_screen, scrub, scrub_text, user_labels,  # noqa: E402
+                        users_seen)
 from rutas import work_dir  # noqa: E402
 
 MARCA = "<!-- anexo generado por build_annex.py -->"
-USER_KEY = re.compile(r"(?i)^(user(name|id)?|login|initiator|startedby|starter|author|owner|creator|modifier|assignee|usuario|"
-                      r"displayname|fullname|firstname|lastname|e-?mail|mail|"
-                      r".*(by|byuser|user|username|userid|fullname|displayname|email|author|owner|creator|modifier))$")
-EMAIL = re.compile(r"[\w.+-]+@[\w-]+(\.[\w-]+)+")
 CODE_HINT = re.compile(r"a!|rule!|cons!|local!|ri!|fv!|pv!|recordType!|\bif\(|=\s*\{")
 UUID_REF = re.compile(r"(?<=[!.])\{[^{}\s]{8,}\}")
-USER_PH = "‹usuario›"
-# Cómo se escriben los datos sensibles en un entregable (references/security-rules.md):
-URL_CREDS = re.compile(r"(https?://)\*+:\*+@")                 # credenciales ya enmascaradas: se retiran
-MASKED = re.compile(r"\*\*\*ENMASCARADO\*\*\*")
-URL_HOST = re.compile(r"(https?://)([^/\s:'\"?#]+)")
-INTERNAL_HOST = re.compile(r"^(10\.\d+\.\d+\.\d+|127\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+"
-                           r"|localhost|[^.]+|.+\.(local|internal|corp|intra))$", re.I)
-
-
-def sensitive(text: str, notes: set[str], key: str = "") -> str:
-    """Quita credenciales de las URLs, deja los secretos como *** y oculta los hosts internos."""
-    if URL_CREDS.search(text):
-        donde = f" de `{key}`" if key else ""
-        notes.add(f"La URL{donde} llevaba credenciales embebidas (usuario y contraseña): se han retirado.")
-        text = URL_CREDS.sub(r"\1", text)
-    text = MASKED.sub("***", text)
-
-    def host(m):
-        if INTERNAL_HOST.match(m.group(2)):
-            notes.add("Los hosts internos se muestran como ‹host interno›.")
-            return m.group(1) + "‹host interno›"
-        return m.group(0)
-    return URL_HOST.sub(host, text)
 TIPOS = {"interface": "Interfaz", "expressionRule": "Regla de expresión", "processModel": "Modelo de proceso",
          "recordType": "Record type", "integration": "Integración", "connectedSystem": "Connected system",
          "webApi": "Web API", "constant": "Constante", "site": "Site", "group": "Grupo", "decision": "Decisión",
@@ -77,113 +52,9 @@ ROLES = {"dependents": "Quién lo usa (@dependents)", "dependencies": "Qué usa 
          "screen": "Render de la interfaz, sin valores (@screen)", "other": "Otras respuestas (@other)"}
 
 
-def load(p: Path):
-    return json.loads(p.read_text(encoding="utf-8"))
-
-
 def unwrap(x):
     while isinstance(x, dict) and len(x) == 1 and next(iter(x)) in ("result", "data", "response", "object", "definition"):
         x = next(iter(x.values()))
-    return x
-
-
-def users_seen(raw: Path) -> set[str]:
-    """Identificadores de usuario que aparecen en miembros, versiones y ejecuciones."""
-    found: set[str] = set()
-
-    def walk(x, key=""):
-        if isinstance(x, dict):
-            if str(x.get("type", x.get("kind", ""))).lower() == "user":
-                found.update(v for k, v in x.items() if k in ("name", "username", "id", "value") and isinstance(v, str))
-            for k, v in x.items():
-                walk(v, k)
-        elif isinstance(x, list):
-            for v in x:
-                walk(v, key)
-        elif isinstance(x, str) and USER_KEY.match(key or "") and 3 <= len(x) <= 80 and " " not in x.strip():
-            found.add(x.strip())
-    for f in raw.rglob("*.json"):
-        try:
-            d = load(f)
-        except Exception:  # noqa: BLE001
-            continue
-        if isinstance(d, dict) and (d.get("_meta") or {}).get("role") in ("members", "versions", "history"):
-            walk(d.get("response"))
-    return {u for u in found if u != USER_PH}
-
-
-def user_labels(users: set[str], trabajo: Path, inv: dict) -> dict[str, str]:
-    """Etiqueta de cada usuario: los grupos de la aplicación de los que es miembro directo, sin su nombre."""
-    groups: dict[str, list[str]] = defaultdict(list)
-    for g in inv.get("objects", {}).get("group", []):
-        for f in g.get("files", []):
-            if f.get("role") != "members" or not f.get("ok"):
-                continue
-            try:
-                resp = load(trabajo / f["path"]).get("response")
-            except Exception:  # noqa: BLE001
-                continue
-            found = users_in(resp)
-            for u in found:
-                groups[u].append(g.get("name"))
-    return {u: (f"‹usuario de {', '.join(sorted(set(groups[u])))}›" if groups.get(u) else USER_PH) for u in users}
-
-
-def users_in(x) -> set[str]:
-    out: set[str] = set()
-
-    def walk(v, key=""):
-        if isinstance(v, dict):
-            if str(v.get("type", v.get("kind", ""))).lower() == "user":
-                out.update(w for k, w in v.items() if k in ("name", "username", "id", "value") and isinstance(w, str))
-            for k, w in v.items():
-                walk(w, k)
-        elif isinstance(v, list):
-            for w in v:
-                walk(w, key)
-        elif isinstance(v, str) and USER_KEY.match(key or ""):
-            out.add(v.strip())
-    walk(x)
-    return out
-
-
-def scrub(x, users: dict[str, str], notes: set[str] | None = None, names: dict[str, str] | None = None):
-    notes = set() if notes is None else notes
-    names = names or {}
-    if isinstance(x, dict):
-        # un objeto de usuario (por su tipo o por tener usuario o correo): no queda ningún texto suyo
-        is_user = str(x.get("type", x.get("kind", ""))).lower() == "user" or any(k.lower() == "username" for k in x)
-        ident = next((str(x[k]).strip() for k in ("username", "userName", "name", "id", "value") if isinstance(x.get(k), str)), "")
-        propia = users.get(ident, USER_PH) if is_user else USER_PH
-        out = {}
-        for k, v in x.items():
-            if USER_KEY.match(k) and isinstance(v, (str, int)):
-                out[k] = users.get(str(v).strip(), propia)
-            elif is_user and isinstance(v, str) and k not in ("type", "kind"):
-                out[k] = users.get(v.strip(), propia)
-            elif isinstance(v, str) and v not in names:
-                out[k] = scrub_text(v, users, notes, k)
-            else:
-                out[k] = scrub(v, users, notes, names)
-        return out
-    if isinstance(x, list):
-        return [scrub(v, users, notes, names) for v in x]
-    if isinstance(x, str):
-        if x in names:
-            return f"{x} ‹{names[x]}›"
-        return scrub_text(x, users, notes)
-    return x
-
-
-def scrub_text(x: str, users: dict[str, str], notes: set[str], key: str = "") -> str:
-    x = mask_text(x, [0])          # literales de autenticación y tokens que se hubieran escapado
-    x = sensitive(x, notes, key)
-    if EMAIL.search(x):
-        x = EMAIL.sub("‹correo›", x)
-        notes.add("Las direcciones de correo se muestran como ‹correo›.")
-    for u, label in users.items():
-        if u in x:
-            x = re.sub(rf"(?<![\w.]){re.escape(u)}(?![\w])", label, x)
     return x
 
 

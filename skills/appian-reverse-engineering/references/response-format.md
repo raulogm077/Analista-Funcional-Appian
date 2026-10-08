@@ -43,7 +43,7 @@ Plantilla de la respuesta que devuelve la skill **al terminar** todas las fases 
 - 📄 PDF: `<salida>/EXPORT.pdf` (si se pidió)
 - 🖥️ Dashboard: `<salida>/dashboard/index.html` (si se pidió)
 
-> `appian-docs/_trabajo/<PREFIJO>/` tiene los datos en bruto de la extracción (usuarios, hosts, definiciones completas): no la compartas ni la subas a un repositorio (lleva un `.gitignore` con `*`); no forma parte de la documentación.
+> La extracción va con el proyecto, en `<salida>/extraccion/`, ya saneada: sin secretos, con seudónimos en lugar de usuarios y sin correos, rutas locales ni la lista de aplicaciones del entorno. Es la fuente de la documentación, no parte de ella.
 ```
 
 ---

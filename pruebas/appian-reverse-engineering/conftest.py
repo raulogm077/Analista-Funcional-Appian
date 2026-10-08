@@ -25,6 +25,9 @@ EXTRACT = SKILL / "scripts" / "devmcp_extract.py"
 BUILD_MODEL = SKILL / "scripts" / "build_model.py"
 BUILD_SUMMARY = SKILL / "scripts" / "build_summary.py"
 
+sys.path.insert(0, str(SKILL / "scripts"))
+import rutas  # noqa: E402
+
 
 class Project:
     def __init__(self, base: Path):
@@ -65,7 +68,7 @@ class Project:
         return [json.loads(line) for line in self.calls.read_text().splitlines() if line.strip()]
 
     def interm(self) -> Path:
-        return self.out.parent / "_trabajo" / self.out.name
+        return rutas.work_dir(self.out)
 
     def load(self, rel: str):
         return json.loads((self.interm() / rel).read_text(encoding="utf-8"))

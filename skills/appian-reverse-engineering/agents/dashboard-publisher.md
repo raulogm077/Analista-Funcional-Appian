@@ -15,7 +15,7 @@ Fase 7, solo si `<trabajo>/output_preferences.json` tiene `dashboard: true`. Pue
 
 ## Entradas
 
-- `<trabajo>/summary.json` (`<trabajo>` = `<padre de la salida>/_trabajo/<nombre de la salida>`): fuente de los datos estructurados.
+- `<trabajo>/summary.json` (`<trabajo>` = `<salida>/extraccion/`): fuente de los datos estructurados.
 - `<salida>/`: `LEEME.md`, `00`–`11`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso), `diagrams/*.svg` y `08-procesos-bpmn/*.svg` (o `*.png` cuando el proceso se dibujó en draw.io).
 - `<salida>/anexo/`: no se inyecta (es grande); se enlaza (ver Contenido).
 - `<skill>`: la carpeta de la skill, para ejecutar `scripts/validate_mermaid.py`.
@@ -90,7 +90,7 @@ Por defecto, **un solo HTML** con Tailwind (CDN), JavaScript sin framework, Char
 1. Comprueba `dashboard: true` y que existe `summary.json`. Si no existe, no lo generes tú: dilo en el informe (lo genera el orquestador en la fase 6).
 2. Decide qué pestañas tienen datos y qué campos de `summary.json` alimentan cada una.
 3. Valida cada bloque Mermaid que vayas a renderizar en el navegador con `python3 <skill>/scripts/validate_mermaid.py`.
-4. Genera `dashboard/index.html` y copia los `.svg` que uses a `dashboard/diagrams/`. Los temporales van en `<trabajo>/`, nunca en `<salida>/`.
+4. Genera `dashboard/index.html` y copia los `.svg` que uses a `dashboard/diagrams/`. Los temporales van en `<trabajo>/`, nunca junto a los documentos.
 5. Comprueba: abre con doble clic; cada pestaña visible tiene contenido; las cifras coinciden con `summary.json`; la búsqueda encuentra un objeto de cada tipo presente; sin errores en la consola; navegable con teclado; el HTML pesa < 2 MB sin contar los `.svg`.
 
 ## Salida

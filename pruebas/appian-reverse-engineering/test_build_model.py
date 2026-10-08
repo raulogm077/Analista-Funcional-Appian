@@ -10,7 +10,10 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent / "mock_devmcp"))
 import fixture  # noqa: E402
-from conftest import BUILD_MODEL, BUILD_SUMMARY  # noqa: E402
+from conftest import BUILD_MODEL, BUILD_SUMMARY, SKILL  # noqa: E402
+
+sys.path.insert(0, str(SKILL / "scripts"))
+import privacidad  # noqa: E402
 
 OBJS, KEY_BY_UUID, _ = fixture.build()
 
@@ -82,18 +85,11 @@ def test_inventory_fields(built):
     assert by["G_USR"]["memberGroups"] and by["G_USR"]["userCount"] == 2
     assert by["RT_SOL"]["fieldCount"] == 6 and by["RT_SOL"]["tableName"] == "DEM_SOLICITUD"
     assert by["I_FORM"]["screen"].endswith(".json")
-    assert by["PM_ALTA"]["versions"]["lastModifiedBy"] == "marta.ruiz"
+    assert by["PM_ALTA"]["versions"]["lastModifiedBy"] == privacidad.seudonimo("marta.ruiz")
     assert by["T_DTO"]["detail"] == "none" and by["AG_CLAS"]["detail"] == "full"
     for o in by.values():
         if o.get("path"):
             assert (built.interm() / o["path"]).exists()
-
-
-def test_work_data_outside_deliverables(built):
-    """Los datos en bruto no viven en la carpeta de entregables (se comparte); van en _trabajo/<app>."""
-    assert built.interm() == built.out.parent / "_trabajo" / built.out.name
-    assert (built.interm() / "mcp_raw").is_dir() and (built.interm() / "inventory.json").exists()
-    assert not built.out.exists() or not any(built.out.rglob("*.json"))
 
 
 def test_raw_files_have_no_secrets(built):

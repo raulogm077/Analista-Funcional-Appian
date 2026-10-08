@@ -10,7 +10,7 @@ Las definiciones extraídas (connected systems, integraciones, constantes, Web A
 
 ## Patrones de detección
 
-`python3 <skill>/scripts/detect_secrets.py <ruta>` aplica estos patrones (orientativos); `bash <skill>/scripts/detect_secrets.sh <ruta>` hace lo mismo. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3), para saber qué hay que tratar, y sobre toda `<salida>/` al final. Solo imprime fichero y línea, nunca el valor. No cuenta las referencias (`=cons!X`, `ri!`, `pv!`, `rule!`, `local!`), los valores ya enmascarados ni las claves que describen el secreto sin serlo (`tokenUrl`, `passwordPolicy`).
+`python3 <skill>/scripts/detect_secrets.py <ruta>` aplica estos patrones (orientativos); `bash <skill>/scripts/detect_secrets.sh <ruta>` hace lo mismo. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3) y sobre toda `<salida>/` al final, `extraccion/` incluida. La extracción ya llega enmascarada y está en el proyecto: lo que encuentre ahí es un secreto que el enmascarado no reconoce, y la carpeta no se comparte hasta quitarlo. Solo imprime fichero y línea, nunca el valor. No cuenta las referencias (`=cons!X`, `ri!`, `pv!`, `rule!`, `local!`), los valores ya enmascarados ni las claves que describen el secreto sin serlo (`tokenUrl`, `passwordPolicy`).
 
 | Tipo | Patrón |
 |---|---|
@@ -101,7 +101,8 @@ Antes de devolver la respuesta:
 python3 <skill>/scripts/detect_secrets.py <salida>
 ```
 
-Recorre toda la carpeta, incluidos `anexo/` y `dashboard/`. Si encuentra algo (no en `<trabajo>/`, que no se comparte), **detente**:
+Recorre toda la carpeta, incluidos `anexo/`, `dashboard/` y `extraccion/`. Si encuentra algo, **detente**:
 
 - En un documento que escribe un agente (`00`–`11`, `08-procesos-bpmn/`, `LEEME`, `INVENTARIO`): corrígelo con la tabla «Cómo se escribe cada dato».
 - En un entregable generado (`anexo/`, `dashboard/`): no lo edites a mano. Corrige la causa (el enmascarado de la extracción o del anexo, o el documento de origen) y vuelve a generarlo.
+- En `extraccion/`: el enmascarado no lo reconoce. Díselo al usuario con el fichero y la línea, sin el valor: la carpeta no se comparte hasta quitarlo.

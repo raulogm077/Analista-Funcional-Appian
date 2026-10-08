@@ -6,13 +6,13 @@ La skill no lee un export: la aplicación se ha extraído en vivo del entorno Ap
 
 ## Ficheros de partida
 
-`<trabajo>` es la carpeta de datos de trabajo: `<padre de la salida>/_trabajo/<nombre de la salida>` (p. ej. `appian-docs/_trabajo/DEM/` para la salida `appian-docs/DEM/`). Lleva un `.gitignore` con `*`: no se comparte ni se sube a un repositorio, y los entregables no deben enlazarla.
+`<trabajo>` es la carpeta de la extracción y los datos de trabajo: `<salida>/extraccion/` (p. ej. `DEM/as-is/extraccion/` para la salida `DEM/as-is/`). Está en el proyecto y llega ya saneada; los entregables no la enlazan.
 
 | Fichero | Qué contiene | Úsalo para |
 |---|---|---|
 | `<trabajo>/inventory.json` | Todos los objetos de la app, agrupados por tipo. Cada objeto trae `name`, `uuid`, `type`, `mcpType`, `description`, `detail`, `path` (su definición), `files` (todas sus respuestas, con rol) y campos derivados (ver abajo). | Punto de partida y control de cobertura (100%). |
 | `<trabajo>/graph.json` | Nodos y aristas `{source, target, refType, origin, evidence}`. `origin` = `dependents`/`dependencies` (análisis de dependencias de Appian, fiable), `uuid`/`name`/`literal` (referencia encontrada en la definición), `derived` (deducida, p. ej. `a!startProcess` vía constante). | Quién llama a quién, callers, hubs, huérfanos. |
-| `<trabajo>/mcp_raw/<tipo>/<uuid>/<herramienta>.json` | Respuesta de cada herramienta para ese objeto, con los secretos enmascarados (y el render, sin valores): `{"_meta": {tool, role, ok, error, ...}, "response": ...}`. | El detalle: SAIL, nodos, campos, páginas, pantallas… |
+| `<trabajo>/mcp_raw/<tipo>/<carpeta del objeto>/<herramienta>.json` | Respuesta de cada herramienta para ese objeto, ya saneada (secretos enmascarados, seudónimos en lugar de usuarios, `‹correo›` y el render sin valores): `{"_meta": {tool, role, ok, error, objectUuid, ...}, "response": ...}`. La carpeta del objeto son 12 cifras hexadecimales sacadas de su uuid, para que la ruta sea corta: usa el `path` y los `files` de `inventory.json`. | El detalle: SAIL, nodos, campos, páginas, pantallas… |
 | `<trabajo>/mcp_raw/_app/*.json`, `_env/*.json` | Llamadas de aplicación (definición de la app, listados) y de entorno (catálogos de tipos de nodo, etc.). | Contexto general. |
 | `<trabajo>/extraction_report.json` | Herramientas usadas y excluidas, llamadas correctas y fallidas por rol (`callStatsByRole`), errores, herramientas desactivadas por tipo, servidor y entorno (`server.url`). | Sección de cobertura y limitaciones. |
 | `<trabajo>/datafabric.json` (opcional) | Metadatos del data fabric y `count` por record type (Appian MCP Server). | Volúmenes en 03. |
@@ -103,6 +103,6 @@ Dilo explícitamente en el documento afectado, en lugar de rellenar huecos:
 
 ## Privacidad
 
-- `mcp_raw` contiene nombres de usuario (ejecuciones, versiones, miembros de grupos). En los entregables **no aparece ningún usuario**: da recuentos o roles («una cuenta personal del grupo DEM Gestores»).
+- En `mcp_raw` cada usuario (ejecuciones, versiones, miembros de grupos) ya es un seudónimo, `‹usuario-xxxxxx›`, el mismo en todas las respuestas: sirve para saber que dos datos son del mismo usuario y, por los miembros, de qué grupos es. Cada correo es `‹correo›`. En los entregables **no aparece ningún usuario, ni su seudónimo**: da recuentos o roles («una cuenta personal del grupo DEM Gestores»).
 - Nunca copies valores de secretos. Sigue `references/security-rules.md`.
 - `mcp_raw` ya llega con los secretos enmascarados (`***ENMASCARADO***`, `***:***@`); `_meta.maskedSecrets` dice cuántos se taparon en cada fichero. Aun así, no vuelques definiciones completas al terminal ni a los entregables: cita la ubicación o enlaza el anexo.

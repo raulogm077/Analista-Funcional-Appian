@@ -6,7 +6,7 @@ la fuente de cifras de 00-resumen-ejecutivo.md y de los publicadores (PDF y dash
 Uso:
   python3 build_summary.py <carpeta_salida>
 
-Lee (en <trabajo> = <padre>/_trabajo/<nombre de salida>):
+Lee (en <trabajo> = <salida>/extraccion):
   inventory.json, graph.json, preflight.json y registro.json (si existen)
 
 Escribe:

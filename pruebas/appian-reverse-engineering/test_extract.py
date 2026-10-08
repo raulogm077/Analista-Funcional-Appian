@@ -9,6 +9,7 @@ from conftest import SKILL
 
 sys.path.insert(0, str(SKILL / "scripts"))
 import devmcp_extract as dx  # noqa: E402
+from rutas import carpeta_objeto  # noqa: E402
 
 WRITE_TOOLS = {"createInterface", "updateProcessModel", "deleteApplication", "startProcessModel", "sailClickButton",
                "createInterfaceObject", "removeObject", "runProcessModel"}
@@ -126,11 +127,11 @@ def test_extract_variant_a_readonly_forced(project):
     assert "PASSWORD" not in json.dumps(rep)
     # definiciones de todos los tipos con herramienta, incluido el tipo nuevo AI_AGENT
     raw = project.interm() / "mcp_raw"
-    assert (raw / "aiAgent" / dx.safe_name(uuid_of("AG_CLAS")) / "getAiAgent.json").exists()
-    assert (raw / "processModel" / dx.safe_name(uuid_of("PM_BATCH")) / "getProcessModel.json").exists()
-    assert (raw / "interface" / dx.safe_name(uuid_of("I_DASH")) / "testInterface.json").exists()
+    assert (carpeta_objeto(raw, "aiAgent", uuid_of("AG_CLAS")) / "getAiAgent.json").exists()
+    assert (carpeta_objeto(raw, "processModel", uuid_of("PM_BATCH")) / "getProcessModel.json").exists()
+    assert (carpeta_objeto(raw, "interface", uuid_of("I_DASH")) / "testInterface.json").exists()
     # paginacion por startIndex: DEM Users tiene 2 grupos y 2 usuarios, en lotes de 2
-    mem = json.loads((raw / "group" / dx.safe_name(uuid_of("G_USR")) / "listGroupMembers.json").read_text())
+    mem = json.loads((carpeta_objeto(raw, "group", uuid_of("G_USR")) / "listGroupMembers.json").read_text())
     assert mem["_meta"]["pages"] == 2 and len(mem["response"]["members"]) == 4
     # autodesactivacion: validateDesignObject no admite constantes
     assert any(d["tool"] == "validateDesignObject" and d["type"] == "constant" for d in rep["disabledAfterProbe"])
@@ -154,7 +155,7 @@ def test_extract_variant_b_other_names_and_shapes(project):
     assert roles["listGroupMembersPage"] == "members"
     assert roles["computeMetrics"] == "other"              # verbo desconocido, modo de confianza
     raw = project.interm() / "mcp_raw"
-    mem = json.loads((raw / "group" / dx.safe_name(uuid_of("G_USR")) / "listGroupMembersPage.json").read_text())
+    mem = json.loads((carpeta_objeto(raw, "group", uuid_of("G_USR")) / "listGroupMembersPage.json").read_text())
     assert mem["_meta"]["pages"] == 2                       # paginacion por cursor
     assert not NEVER & {c["tool"] for c in project.calls_list()}
 
@@ -193,7 +194,7 @@ def test_partial_failure(project):
     failed = {(e["tool"], e["object"]) for e in rep["errors"]}
     assert ("getInterface", uuid_of("I_DASH")) in failed
     raw = project.interm() / "mcp_raw"
-    assert json.loads((raw / "interface" / dx.safe_name(uuid_of("I_FORM")) / "getInterface.json").read_text())["_meta"]["ok"]
+    assert json.loads((carpeta_objeto(raw, "interface", uuid_of("I_FORM")) / "getInterface.json").read_text())["_meta"]["ok"]
 
 
 def test_app_resolution(project):
@@ -250,8 +251,9 @@ def test_datafabric_counts(project, http_server):
     assert counts == {"DEM Solicitud": 152, "DEM Estado": 4}
 
 
-def test_gitignore_desde_el_plan(project):
-    """La carpeta de trabajo lleva su .gitignore desde la primera escritura, no solo al final de la extracción."""
+def test_plan_escribe_dentro_del_proyecto(project):
+    """Desde la primera escritura, la extracción va en <salida>/extraccion: ni _trabajo aparte ni .gitignore."""
     project.add_devmcp()
     project.run("plan", "--app", "DEM", "--out", str(project.out), check=0)
-    assert (project.interm() / ".gitignore").read_text(encoding="utf-8").strip().endswith("*")
+    assert (project.out / "extraccion" / "extraction_plan.json").exists()
+    assert not list(project.base.rglob(".gitignore")) and not list(project.base.rglob("_trabajo"))

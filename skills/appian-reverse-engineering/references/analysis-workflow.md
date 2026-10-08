@@ -4,7 +4,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 **Convenciones**
 
-- `<salida>` = `./appian-docs/<PREFIJO>/` salvo que el usuario indique otra; `<trabajo>` = `appian-docs/_trabajo/<PREFIJO>/` (datos en bruto, con un `.gitignore` con `*`: no se comparte ni se sube a un repositorio, y ningún entregable lo enlaza).
+- `<salida>` = `<p>/as-is/` si la carpeta es un proyecto (tiene `proyecto.md`) o el usuario da la del proyecto, y si no `./<PREFIJO>/as-is/`; `<trabajo>` = `<salida>/extraccion/` (la extracción y los datos de trabajo, ya saneados; ningún entregable lo enlaza).
 - Scripts, desde la carpeta del usuario (donde está su `.mcp.json`): `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" …`; los demás, `python3 <skill>/scripts/<script>.py <salida>`. `<skill>` es la carpeta de la skill.
 - Evidencia: `mcp:<tipo>/<nombre>[@<rol>]#<ubicación>`, con los nodos de proceso como `nodes[id=N]` (`lectura-mcp-raw.md`).
 - Hallazgos: ID con el prefijo del área, tabla en el documento propietario y `<trabajo>/hallazgos/<agente>.json` (`execution-principles.md`, secciones 2 y 3).

@@ -4,7 +4,7 @@
 Uso:
   python3 <skill>/scripts/build_model.py <carpeta_salida>
 
-Lee   <trabajo>/mcp_raw/ (lo escribe devmcp_extract.py); <trabajo> = <padre>/_trabajo/<nombre de salida>
+Lee   <trabajo>/mcp_raw/ (lo escribe devmcp_extract.py, ya saneado); <trabajo> = <salida>/extraccion
 Crea  <trabajo>/inventory.json y graph.json (rutas "path" relativas a <trabajo>)
 
 No depende de nombres de herramientas: cada fichero lleva en _meta.role el papel que le asigno la
@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rutas import work_dir  # noqa: E402
+from rutas import carpeta_objeto, work_dir  # noqa: E402
 
 UUID_KEYS = ("uuid", "objectUuid", "designObjectUuid", "guid", "id", "objectId")
 NAME_KEYS = ("name", "objectName", "displayName", "label", "title")
@@ -393,7 +393,7 @@ def main(out_dir: str) -> int:
     files_by_uuid: dict[str, list[dict]] = {}
     parse_errors = 0
     for o in objs:
-        folder = raw / re.sub(r"[^A-Za-z0-9_.\-]", "_", o["type"]) / re.sub(r"[^A-Za-z0-9_.\-]", "_", o["uuid"])[:150]
+        folder = carpeta_objeto(raw, o["type"], o["uuid"])
         files = read_object_files(folder) if folder.exists() else []
         files_by_uuid[o["uuid"]] = files
         defn_file = choose_definition(files)
