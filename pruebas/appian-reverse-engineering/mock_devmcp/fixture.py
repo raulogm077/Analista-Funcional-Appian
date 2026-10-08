@@ -258,16 +258,23 @@ GROUP_USERS = {
 
 # Ejecuciones de procesos (para herramientas de historial)
 PM_HISTORY = {
-    "PM_ALTA": {"total": 120, "last": "2026-09-29T17:42:00Z", "errors": 2},
-    "PM_REV": {"total": 118, "last": "2026-09-30T09:10:00Z", "errors": 0},
-    "PM_BATCH": {"total": 30, "last": "2026-09-30T08:00:00Z", "errors": 1},
-    "PM_HUERF": {"total": 0, "last": None, "errors": 0},
+    "PM_ALTA": {"total": 120, "last": "2026-09-29T17:42:00Z", "errors": 2, "iniciador": "ana.garcia"},
+    "PM_REV": {"total": 118, "last": "2026-09-30T09:10:00Z", "errors": 0, "iniciador": "ana.garcia"},
+    "PM_BATCH": {"total": 30, "last": "2026-09-30T08:00:00Z", "errors": 1, "iniciador": "ana.garcia"},
+    "PM_HUERF": {"total": 0, "last": None, "errors": 0, "iniciador": "ana.garcia"},
 }
 
 VALIDATION_ISSUES = {
     "I_ADMIN": [{"severity": "WARNING", "line": 1,
                  "message": "a!queryEntity is deprecated; use a!queryRecordType"}],
 }
+
+# Historial de versiones: (versión, autor, fecha), de la última a la primera; "*" vale para todos los objetos.
+VERSIONES = {"*": [(3, "marta.ruiz", "2026-09-01T10:00:00Z"), (2, "pablo.soto", "2026-06-15T12:30:00Z"),
+                   (1, "admin.dem", "2026-03-02T08:00:00Z")]}
+
+# Filas de cada tabla (para el COUNT(*) del Appian MCP Server simulado)
+COUNTS = {"DEM_SOLICITUD": 152, "DEM_ESTADO": 4}
 
 
 def build():

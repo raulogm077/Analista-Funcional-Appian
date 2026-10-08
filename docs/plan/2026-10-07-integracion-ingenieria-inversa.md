@@ -513,12 +513,12 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   es una lista son formas alternativas). Q-22: «¿Qué connected system no tiene autenticación?» → `MNT_CS_Proveedores`.
 - `ocultas/`: 7 preguntas y 3 malas prácticas más, escritas por un agente aparte con solo el fixture delante.
 
-- [ ] **Paso 1:** `test_fixture_mal_hecha.py`: con `MOCK_APP=fixture_mal_hecha`, `extract` + `build_model.py` dan al
+- [x] **Paso 1:** `test_fixture_mal_hecha.py`: con `MOCK_APP=fixture_mal_hecha`, `extract` + `build_model.py` dan al
   menos 40 objetos y prefijo `MNT`; el CDT y el data store tienen `detail: "full"`; cada objeto de `malas-practicas.json`
   y cada respuesta de tipo `objeto` de `preguntas.json` está en `inventory.json`; los tres objetos `CMN` están en la
   definición de quien los usa y no en `inventory.json`; `MNT_CS_Proveedores` llega con su `authType` y su URL; la URL
   del entorno no es de desarrollo; y el simulador DEM da lo mismo que antes. → FALLA.
-- [ ] **Paso 2:** escribir la aplicación, los cambios del simulador y los JSON. **Paso 3:** pytest en verde.
+- [x] **Paso 2:** escribir la aplicación, los cambios del simulador y los JSON. **Paso 3:** pytest en verde.
 - [ ] **Paso 4:** commit «F3: aplicación ficticia mal hecha» y etiqueta `f3-antes` (punto de partida de la Tarea 9).
 
 ### Tarea 8: Preguntas primero, hechos y no consejos

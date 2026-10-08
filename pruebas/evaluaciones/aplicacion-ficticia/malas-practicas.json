@@ -1,0 +1,79 @@
+[
+  {
+    "id": "MP-01",
+    "descripcion": "MNT_IF_ListadoOrdenes lee todas las órdenes con a!queryEntity sobre el data store del modelo antiguo, sin filtros y sin paginar (batchSize: -1).",
+    "objetos": ["MNT_IF_ListadoOrdenes"],
+    "capa": "datos",
+    "bp": "BP 05 §2"
+  },
+  {
+    "id": "MP-02",
+    "descripcion": "MNT_IF_FormularioOrden tiene más de 3.000 líneas: copia el formulario entero para cada modo (alta, edición y revisión) y la misma lógica en cada uno de sus campos.",
+    "objetos": ["MNT_IF_FormularioOrden"],
+    "capa": "pantallas",
+    "bp": "BP 02 §1.3"
+  },
+  {
+    "id": "MP-03",
+    "descripcion": "MNT_IF_Panel solo oculta secciones con showWhen según el grupo (la de Administración arranca procesos) y el record type MNT Orden no tiene seguridad a nivel de registro: quien puede verlo ve todas las órdenes.",
+    "objetos": ["MNT_IF_Panel", "MNT Orden"],
+    "capa": "seguridad",
+    "bp": "BP 06 §5.1"
+  },
+  {
+    "id": "MP-04",
+    "descripcion": "MNT_PM_GestionOrden tiene 130 nodos y ningún subproceso: los mismos nueve nodos se repiten para cada hito de la orden.",
+    "objetos": ["MNT_PM_GestionOrden"],
+    "capa": "procesos",
+    "bp": "BP 03 §1"
+  },
+  {
+    "id": "MP-05",
+    "descripcion": "MNT_PM_Recordatorio arranca cada 5 minutos por temporizador solo para buscar las órdenes pendientes y avisar por correo: 288 instancias al día, aunque no haya nada que avisar.",
+    "objetos": ["MNT_PM_Recordatorio"],
+    "capa": "procesos",
+    "bp": "BP 03 §6"
+  },
+  {
+    "id": "MP-06",
+    "descripcion": "La URL del ERP de preproducción está escrita en la constante MNT_URL_ERP_PRE, que no es específica de entorno, y la integración la usa en lugar de la URL base de un connected system.",
+    "objetos": ["MNT_URL_ERP_PRE"],
+    "capa": "integraciones",
+    "bp": "BP 07 §1"
+  },
+  {
+    "id": "MP-07",
+    "descripcion": "La clave de la API del ERP está en claro en la constante MNT_ERP_API_TOKEN y viaja en una cabecera de la integración.",
+    "objetos": ["MNT_ERP_API_TOKEN"],
+    "capa": "seguridad",
+    "bp": "BP 06 §7"
+  },
+  {
+    "id": "MP-08",
+    "descripcion": "MNT_INT_ConsultarERP no tiene tiempo de espera ni tratamiento de errores, y el nodo de MNT_PM_GestionOrden que la llama solo guarda el cuerpo de la respuesta: ni mira si falló ni la reintenta.",
+    "objetos": ["MNT_INT_ConsultarERP"],
+    "capa": "integraciones",
+    "bp": "BP 07 §5"
+  },
+  {
+    "id": "MP-09",
+    "descripcion": "Las reglas ReglaCalculoPlazo y calcFecha no llevan el prefijo de la aplicación ni siguen la convención de nombres.",
+    "objetos": ["ReglaCalculoPlazo", "calcFecha"],
+    "capa": "reglas",
+    "bp": "BP 08 §1"
+  },
+  {
+    "id": "MP-10",
+    "descripcion": "MNT_IF_Tecnicos consulta las órdenes abiertas dentro de a!forEach: una consulta por cada técnico de la lista.",
+    "objetos": ["MNT_IF_Tecnicos"],
+    "capa": "pantallas",
+    "bp": "BP 05 §2"
+  },
+  {
+    "id": "MP-11",
+    "descripcion": "El connected system MNT_CS_Proveedores tiene la autenticación en None, puesta a propósito, y apunta al entorno de desarrollo del proveedor (proveedores-dev.example.org) desde un entorno de preproducción.",
+    "objetos": ["MNT_CS_Proveedores"],
+    "capa": "integraciones",
+    "bp": "BP 07 §1"
+  }
+]

@@ -2,10 +2,13 @@
 
 Nombres de herramientas tomados de la referencia publica de Appian 26.6 (MCP System Tools Reference).
 Uso: python appian_mcp_server_mock.py <puerto>
+Sirve la aplicacion de MOCK_APP, como el Dev MCP simulado (por defecto fixture, la DEM).
 """
 from __future__ import annotations
 
+import importlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -13,10 +16,10 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 sys.path.insert(0, str(Path(__file__).parent))
-import fixture  # noqa: E402
+fixture = importlib.import_module(os.environ.get("MOCK_APP") or "fixture")
 
 OBJ, _KEYS, _NAMES = fixture.build()
-COUNTS = {"DEM_SOLICITUD": 152, "DEM_ESTADO": 4}
+COUNTS = fixture.COUNTS
 
 port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
 mcp = FastMCP("appian-mcp-server-mock", host="127.0.0.1", port=port)
