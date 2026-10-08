@@ -68,6 +68,7 @@ def solapes(drawio):
 def main():
     for s in (sys.stdout, sys.stderr):
         s.reconfigure(encoding="utf-8", errors="replace")
+    probar_mermaid()
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="diagramas-"))
     try:
         d = tmp / "solicitud.drawio"
@@ -262,6 +263,70 @@ def main():
         print("\n" + "\n\n".join(fallos))
         sys.exit(1)
     print("\nTodo correcto.")
+
+
+# ---------------------------------------------------------------- pintor Mermaid
+def probar_mermaid():
+    """mermaid.py: valida los .mmd y los bloques mermaid de un Markdown, avisa de los diagramas demasiado anchos y
+    no escribe nada fuera de su carpeta de salida (ni temporales)."""
+    script = SCRIPTS / "mermaid.py"
+    check(script.is_file(), "mermaid: el pintor Mermaid está en la skill de diagramas")
+    if not script.is_file():
+        return
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="mermaid-"))
+    try:
+        carpeta = tmp / "Carpeta con espacios" / "Gestión app"
+        temporales = tmp / "temporales"  # la carpeta temporal del sistema para el pintor: tiene que acabar vacía
+        carpeta.mkdir(parents=True)
+        temporales.mkdir()
+        entorno = dict(os.environ, TMPDIR=str(temporales), TEMP=str(temporales), TMP=str(temporales))
+
+        def pinta(*args):
+            r = subprocess.run([sys.executable, str(script), *map(str, args)], capture_output=True, text=True,
+                               encoding="utf-8", env=entorno)
+            if r.returncode == 2:
+                print(r.stdout + r.stderr); sys.exit(2)
+            return r.returncode, r.stdout + r.stderr
+
+        def comprueba(cond, texto, out):  # la salida del pintor, solo si falla
+            check(cond, texto + ("" if cond else "\n" + out))
+
+        valido = carpeta / "estados.mmd"
+        valido.write_text("stateDiagram-v2\n    [*] --> Borrador\n    Borrador --> EnRevision: Unidad envía\n"
+                          "    EnRevision --> [*]\n    EnRevision: En revisión\n", encoding="utf-8")
+        roto = carpeta / "roto.mmd"
+        roto.write_text("flowchart LR\n    A[Inicio] --> B[[[Sin cerrar\n", encoding="utf-8")
+        ancho = carpeta / "ancho.mmd"
+        ancho.write_text("flowchart LR\n    " + " --> ".join(f"P{i}[Paso {i}]" for i in range(1, 25)) + "\n", encoding="utf-8")
+        lineas = ["# Documento", "", "```mermaid", "stateDiagram-v2", "    [*] --> Borrador", "    Borrador --> [*]",
+                  "```", "", "Texto entre los dos diagramas.", "", "Otro párrafo.", "```mermaid", "flowchart LR",
+                  "    A[Inicio] --> B[[[Sin cerrar", "```", ""]
+        assert lineas[11] == "```mermaid"
+        doc = carpeta / "documento.md"
+        doc.write_text("\n".join(lineas), encoding="utf-8")
+        antes = sorted(p.name for p in carpeta.iterdir())
+
+        c, out = pinta("--check", valido)
+        comprueba(c == 0 and "OK" in out and "px de ancho" not in out, "mermaid --check: un .mmd válido sale con 0", out)
+        c, out = pinta("--check", roto)
+        comprueba(c == 1 and "roto.mmd" in out, "mermaid --check: uno con un error de sintaxis sale con 1", out)
+        c, out = pinta("--md", doc)
+        comprueba(c == 1 and "línea 12" in out and "línea 3" not in out,
+                  "mermaid --md: dice en qué línea empieza el bloque roto, y solo ese", out)
+        c, out = pinta("--check", ancho)
+        comprueba(c == 0 and "px de ancho" in out, "mermaid: avisa de un diagrama de más de 1.600 px de ancho", out)
+        check(sorted(p.name for p in carpeta.iterdir()) == antes, "mermaid --check y --md: no escriben nada")
+        imagenes = carpeta / "imágenes"
+        c, out = pinta(valido, "--svg", "-o", imagenes)
+        png = imagenes / "estados.png"
+        comprueba(c == 0 and png.is_file() and png.stat().st_size > 2000
+                  and sorted(p.name for p in imagenes.iterdir()) == ["estados.png", "estados.svg"],
+                  "mermaid: PNG y SVG en la carpeta de salida, y nada más", out)
+        sobra = [p.name for p in temporales.iterdir()]
+        check(sorted(p.name for p in carpeta.iterdir()) == sorted(antes + ["imágenes"]) and not sobra,
+              "mermaid: nada fuera de la carpeta de salida, ni temporales" + (": " + ", ".join(sobra) if sobra else ""))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 if __name__ == "__main__":

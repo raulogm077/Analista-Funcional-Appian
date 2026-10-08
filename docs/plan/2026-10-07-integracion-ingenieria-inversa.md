@@ -707,9 +707,9 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   bloque ```mermaid y dice en qué línea empieza el que falla; con solo `--md`, los `.mmd` son opcionales. Sale 0 bien,
   1 sintaxis, 2 falta un requisito.
 
-- [ ] **Paso 1:** selftest de diagramas: `--check` de un `.mmd` válido → 0 y de uno inválido → 1; `--md` de un
+- [x] **Paso 1:** selftest de diagramas: `--check` de un `.mmd` válido → 0 y de uno inválido → 1; `--md` de un
   Markdown con dos bloques, uno roto en la línea 12 → 1 y «línea 12» en la salida. → FALLA.
-- [ ] **Paso 2:** mover, añadir `--md` y cambiar las rutas del analista. **Paso 3:** los dos selftest en verde. Commit.
+- [x] **Paso 2:** mover, añadir `--md` y cambiar las rutas del analista. **Paso 3:** los dos selftest en verde. Commit.
 
 ### Tarea 12: Ingeniería inversa dibuja con la skill de diagramas, también sin navegador
 

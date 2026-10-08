@@ -192,6 +192,20 @@ Hace falta Python 3 con Playwright (`pip install playwright`) y un navegador: el
 
 El diagrama no sale del equipo. El motor de colocación (Mermaid, licencia MIT) y el visor de draw.io (licencia Apache 2.0) van en `assets/`.
 
+## Diagramas Mermaid
+
+Los diagramas que no son procesos (estados, datos, arquitectura) van en Mermaid. Qué llevan lo decide quien llama; esta skill los valida y los pinta sin conexión:
+
+```bash
+python3 <skill>/scripts/mermaid.py <carpeta>/*.mmd [-o carpeta] [--svg]   # PNG (y SVG) de cada diagrama
+python3 <skill>/scripts/mermaid.py <carpeta>/*.mmd --check                # solo valida
+python3 <skill>/scripts/mermaid.py --md documento.md [otro.md …]          # valida los bloques mermaid de un Markdown
+```
+
+- Sale con 1 si un diagrama tiene un error de sintaxis (con `--md`, dice en qué línea del documento empieza el bloque) y con 2 si falta Playwright o un navegador.
+- Avisa de los que miden más de 1.600 px de ancho: se ponen de arriba abajo o se parten.
+- Solo escribe en la carpeta de salida (`-o`, o la de cada `.mmd`) y no deja temporales.
+
 ## Límites
 
 - **Varias páginas:** solo se lee y se cambia la primera página del `.drawio`; las demás se conservan.

@@ -19,7 +19,8 @@ mermaid.ink, kroki…).
    python3 <skill>/../appian-diagramas-bpmn/scripts/mermaid.py <p>/analisis/diagramas/datos.mmd --check # solo valida
    ```
    Salida 1: error de sintaxis, con la línea; corrige y repite. Salida 2: falta Playwright o un navegador;
-   dilo y deja el diagrama para cuando lo haya (el `.mmd` se queda; la imagen falta).
+   dilo y deja el diagrama para cuando lo haya (el `.mmd` se queda; la imagen falta). Si avisa de que mide más
+   de 1.600 px de ancho, ponlo de arriba abajo o pártelo.
 3. Mira el PNG con Read: textos cortados o nodos solapados se arreglan partiendo el diagrama.
 4. Enlaza la imagen: `![Estados de la solicitud](diagramas/estados-solicitud.png)`. El Word la numera como
    figura.
