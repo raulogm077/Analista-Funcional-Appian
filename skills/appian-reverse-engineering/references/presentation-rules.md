@@ -15,6 +15,8 @@ Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no e
 ```markdown
 # <Título>
 
+> **Responde a:** <las preguntas de su plantilla, tal cual>
+
 > **TL;DR**: <2-3 frases: qué es y lo más importante que debe saber el lector>.
 > **Volumen**: <cifras que sitúan el documento>. **Hallazgos**: <N (Alta: n)> — principales: [H-PRO-01](#hallazgos), … (o «sin hallazgos»).
 
@@ -31,11 +33,12 @@ Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no e
 <1-5 líneas: qué no se pudo obtener o verificar en este documento y por qué. Lo global está en LEEME (Regla 8)>
 ```
 
+- «Responde a» lleva las preguntas de la plantilla del documento, copiadas tal cual. Lo que no responde a ninguna de ellas no va en el documento.
 - El TL;DR es el **único** resumen del documento. No añadas «Resumen rápido», «Resumen» ni otro TL;DR más abajo.
 - La plantilla puede concretar el nombre de una sección («Vista: mapa de procesos») o subdividirla (`## Detalle: datos`…), pero no cambiar el orden.
 - `09` añade «Registro de hallazgos» tras sus Hallazgos.
 - Encabezados sin emojis.
-- `00-resumen-ejecutivo.md`, `LEEME.md` e `INVENTARIO.md` tienen su propia estructura en la plantilla; también empiezan por el TL;DR.
+- `00-resumen-ejecutivo.md`, `LEEME.md` e `INVENTARIO.md` tienen su propia estructura en la plantilla; también empiezan por «Responde a» y el TL;DR.
 
 ## Regla 2: diagrama, luego tabla, luego prosa
 
@@ -96,7 +99,7 @@ Cada cosa se documenta una vez, en su documento propietario (ver `execution-prin
 La integración `INT_SAP_Crear` la llama `PM_GestionExpedientes` ([ficha](./05-integraciones-consumidas.md#int_sap_crear--sap-crear-expediente)).
 ```
 
-No dupliques fichas. `00-resumen-ejecutivo.md` cita lo clave en una línea y enlaza.
+No dupliques fichas. `00-resumen-ejecutivo.md` cita lo clave en una línea y enlaza. Lo que es de Appian (qué es un record type, qué tipos heredan la seguridad de su carpeta) no se explica: se enlaza su página de la documentación oficial.
 
 ## Regla 7: marcas
 
@@ -108,13 +111,13 @@ No dupliques fichas. `00-resumen-ejecutivo.md` cita lo clave en una línea y enl
 | 🔵 | Inferido: se deduce de evidencia indirecta; di en una línea de qué. |
 | ❓ | Pendiente: depende de un dato que la extracción no trae o de validarlo con negocio; di quién debe validarlo. |
 
-**Severidad** (solo de hallazgos), con palabra: **Alta** (rompe un requisito de negocio o de seguridad, pierde datos o expone credenciales: actuar ya), **Media** (degrada mantenimiento, rendimiento o control: planificar), **Baja** (mejora o higiene).
+**Severidad** (solo de hallazgos), con palabra, según su riesgo: **Alta** (rompe un requisito de negocio o de seguridad, pierde datos o expone credenciales), **Media** (degrada el mantenimiento, el rendimiento o el control), **Baja** (higiene: nombres, tamaño, restos sin uso). La severidad dice cuánto riesgo hay, no qué hacer.
 
-No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). Una buena práctica se dice con palabras («buena práctica»), no con ✅. Los emojis temáticos de los diagramas Tipo C (👤, 🔌, 💾…) son parte de la notación y sí se usan.
+No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). ✅ es certeza, no una valoración: no marca que algo esté bien hecho. Los emojis temáticos de los diagramas Tipo C (👤, 🔌, 💾…) son parte de la notación y sí se usan.
 
 ## Regla 8: lo que el lector no debe ver
 
-- **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts ni «heurística de la skill». Nombra la buena práctica y su fuente oficial.
+- **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts ni «heurística de la skill». Lo que sale de la documentación de Appian lleva su `Fuente: <URL>`.
 - **Notas de parche**: nunca «01 todavía dice…», «esto matiza a…», «corrige lo que dice X». Si otro documento está mal, se corrige ese documento (pasada de coherencia de la fase 6).
 - **`<trabajo>/`** (`extraccion/`): los entregables no lo enlazan ni escriben su ruta (son datos en bruto). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
 - **Limitaciones globales** (entorno no productivo, versión no determinada, muestra de ejecuciones, configuración que el Dev MCP no devuelve): se explican una vez en `LEEME.md`. Cada documento cita en su «Cobertura y límites» solo las que cambian lo que dice, en una línea. Donde una cifra dependa de ellas (p. ej. ejecuciones en un entorno que no consta como producción), no repitas la explicación: usa la marca corta «orientativo (ver [LEEME](./LEEME.md))» (`../LEEME.md` desde `08-procesos-bpmn/`), una vez por tabla o sección (p. ej. en la cabecera de la columna).
@@ -143,14 +146,15 @@ Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal 
 
 ## Checklist antes de escribir cada documento
 
-- [ ] Empieza por el TL;DR (≤ 5 líneas) y no hay otro resumen.
+- [ ] Empieza por «Responde a» (las preguntas de su plantilla) y el TL;DR (≤ 5 líneas); no hay otro resumen.
+- [ ] Todo lo que lleva responde a alguna de sus preguntas; nada explica qué es un objeto de Appian (se enlaza).
 - [ ] Orden Vista → Detalle → Hallazgos → Cobertura; sin secciones vacías.
 - [ ] Tablas ≤ 8 columnas; Vista ≤ 15 filas; celdas ≤ 100 caracteres (salvo Evidencia).
 - [ ] Cada diagrama una sola vez y legible al ancho de página.
 - [ ] Solo ✅/🔵/❓ como certeza y Alta/Media/Baja como severidad.
-- [ ] Hallazgos solo de tu área, con ID del registro.
+- [ ] Hallazgos solo de tu área, con ID del registro: qué pasa y qué riesgo tiene, sin decir qué hacer.
 - [ ] Sin referencias a la skill, sin notas de parche, sin enlaces a `<trabajo>/`.
 - [ ] Sin placeholders (`{{`, `TODO`, `TBD`, `xxx`, `lorem`).
 - [ ] Prosa como dice `redaccion.md`: sin muletillas, frases de 35 palabras como mucho y ningún párrafo copiado de otro documento.
-- [ ] Cada ficha con evidencia y certeza; cada evidencia enlaza su ficha del anexo.
+- [ ] Cada ficha con evidencia y certeza, y cada tabla con «Certeza» con su columna «Evidencia»; cada evidencia enlaza su ficha del anexo.
 - [ ] Ninguna ficha recortada u omitida por longitud.

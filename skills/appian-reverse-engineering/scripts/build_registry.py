@@ -11,8 +11,8 @@ Crea  <trabajo>/registro.json         (hallazgos validados y sus recuentos por s
 Cada hallazgo:
   {"id": "H-PRO-01", "titulo": "...", "area": "procesos", "severidad": "Alta|Media|Baja",
    "certeza": "verificado|inferido|pendiente", "objetos": ["..."], "documento": "08-procesos-bpmn/X.md#hallazgos",
-   "evidencia": "mcp:processModel/X#nodes[id=1]", "impacto": "...", "recomendacion": "...",
-   "duplicadoDe": "H-XXX-NN" (opcional)}
+   "evidencia": "mcp:processModel/X#nodes[id=1]", "impacto": "...", "duplicadoDe": "H-XXX-NN" (opcional)}
+Un hallazgo dice qué pasa y qué riesgo tiene, no qué hacer: si trae «recomendacion», avisa.
 
 Salida: 0 sin errores, 1 con errores de validación (se listan), 2 uso.
 """
@@ -66,6 +66,9 @@ def validar(hallazgos: list[dict], salida: Path, errores: list[str], avisos: lis
             errores.append(f"{h['id']}: certeza '{h['certeza']}' no es {'/'.join(CERTEZAS)}")
         if h["area"] not in AREAS:
             avisos.append(f"{h['id']}: área '{h['area']}' fuera de la lista ({', '.join(AREAS)})")
+        if str(h.get("recomendacion") or "").strip():
+            avisos.append(f"{h['id']}: trae «recomendacion»; un hallazgo dice qué pasa y qué riesgo tiene, no qué hacer: "
+                          "quítala del JSON y del documento")
         doc = h["documento"].split("#", 1)[0]
         if not (salida / doc).exists():
             errores.append(f"{h['id']}: el documento '{doc}' no existe en la salida")

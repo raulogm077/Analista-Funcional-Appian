@@ -1,68 +1,71 @@
 <!--
   Plantilla LEEME — Guía de lectura (orquestador, fase 6, lo último que se escribe). Objetivo 1-2 pantallas, máximo 3.
-  - Columna IDs: el rango real de esta ejecución (p. ej. PAN-001…PAN-006, H-SEG-01…H-SEG-04); «—» si no tiene.
-  - «Qué no incluye»: las tres primeras líneas van siempre; añade las de esta ejecución que de verdad falten (omite las que no apliquen: si hubo role maps o MCP opcionales, no van aquí).
-  - Las limitaciones globales (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) se explican aquí una vez; los demás documentos no las repiten.
-  - «Orientativo (ver LEEME)»: los demás documentos marcan así las cifras que dependen de una limitación global; aquí,
-    en «Qué no incluye», se explica una vez por qué. Si ningún documento usa la marca, quita su fila de las marcas.
-  - Glosario de Appian: las filas fijas (hasta «Data fabric») van siempre. Debajo, una fila por cada término de Appian
-    que usen los entregables: las de la plantilla son las habituales (quita las que no aparezcan) y las que falten se
-    añaden con la documentación oficial (p. ej. https://docs.appian.com/suite/help/26.6/Sub-Process_Activity.html,
-    https://docs.appian.com/suite/help/26.6/record-events.html,
-    https://docs.appian.com/suite/help/26.6/prepare-deployment-packages.html#add-plugins).
+  - No repite datos de otros documentos: las cifras, el entorno y la fecha están en 00.
+  - «Qué documento responde a cada pregunta»: las preguntas de cada documento, resumidas, y el rango real de IDs de esta
+    ejecución (p. ej. PAN-001…PAN-006, H-SEG-01…H-SEG-04); «—» si no tiene.
+  - «Qué no incluye»: las tres primeras líneas van siempre; añade las de esta ejecución que de verdad falten (omite las
+    que no apliquen: si hubo role maps o MCP opcionales, no van aquí). Las limitaciones globales (entorno, versión,
+    muestra de ejecuciones, configuración que el Dev MCP no devuelve) se explican aquí una vez; los demás documentos
+    marcan las cifras afectadas con «orientativo (ver LEEME)». Si ningún documento usa esa marca, quita su fila de
+    «Cómo leer».
+  - «Términos de Appian»: un enlace a la documentación oficial por término que usen los documentos, sin definirlo.
+    Quita los que no aparezcan; uno que falte va con la página que dé el Docs MCP.
   - Celdas ≤ 100 caracteres. Un solo TL;DR.
 -->
 
-# {{Nombre visible de la aplicación}}: documentación de reingeniería
+# {{Nombre visible de la aplicación}}: documentación de ingeniería inversa
 
-> **TL;DR**: Documentación de `{{nombre técnico}}` obtenida leyendo el entorno `{{url}}` el {{AAAA-MM-DD}}, en solo lectura: la aplicación no se modificó. Empieza por [00-resumen-ejecutivo.md](./00-resumen-ejecutivo.md) y sigue la ruta de tu perfil.
-> **Volumen**: {{N}} objetos · {{N}} procesos · {{N}} pantallas · {{N}} hallazgos (Alta: {{n}}).
+> **Responde a:** ¿Qué documento responde a mi pregunta? ¿Por dónde empiezo según mi perfil? ¿Cómo se leen las marcas, los identificadores y las evidencias? ¿Qué no incluye esta documentación?
+
+> **TL;DR**: Cómo está hecha `{{nombre técnico}}`, leída del entorno en solo lectura: la aplicación no se modificó. Empieza por [00-resumen-ejecutivo.md](./00-resumen-ejecutivo.md) y sigue la ruta de tu perfil.
 
 ## Por dónde empezar
 
 | Perfil | Ruta de lectura |
 |---|---|
 | Nuevo en el proyecto | 00 → 01 → 10 → 02 → 08 (índice) → 03 |
-| Desarrollador que la mantiene | 02 → 03 → 08 → 05 y 06 → 04 → 07 → 09 → INVENTARIO → anexo/ |
+| Quien la mantiene | 02 → 03 → 08 → 05 y 06 → 04 → 07 → 09 → INVENTARIO → anexo/ |
 | Negocio, para validar | 01 → 11 |
 | Auditoría o seguridad | 04 → 06 → 05 → 09 (registro de hallazgos) |
 
-## Contenido
+## Qué documento responde a cada pregunta
 
-| Documento | Qué contiene | IDs |
+| Documento | Responde a | IDs |
 |---|---|---|
-| [00-resumen-ejecutivo.md](./00-resumen-ejecutivo.md) | Cifras, procesos críticos y hallazgos principales | — |
-| [01-funcional.md](./01-funcional.md) | Qué hace, para quién y casos de uso | {{H-FUN-01…H-FUN-02}} |
-| [02-arquitectura.md](./02-arquitectura.md) | Capas, objetos principales, acoplamientos y huérfanos | {{H-ARQ-01…H-ARQ-03}} |
-| [03-modelo-datos.md](./03-modelo-datos.md) | Entidades, relaciones y volúmenes | {{H-DAT-01…H-DAT-04}} |
-| [04-seguridad-grupos.md](./04-seguridad-grupos.md) | Grupos, permisos y secretos | {{H-SEG-01…H-SEG-03}} |
-| [05-integraciones-consumidas.md](./05-integraciones-consumidas.md) | Sistemas externos a los que llama | {{H-INT-01…H-INT-02}} |
-| [06-apis-expuestas.md](./06-apis-expuestas.md) | APIs que ofrece a otros sistemas | {{H-API-01}} |
-| [07-batches.md](./07-batches.md) | Procesos programados | {{H-BAT-01}} |
-| [08-procesos-bpmn/indice.md](./08-procesos-bpmn/indice.md) | Cada proceso en BPMN 2.0 (abre en bpmn.io o Camunda) y su explicación | {{H-PRO-01…H-PRO-05}} |
-| [09-valor-adicional.md](./09-valor-adicional.md) | Métricas, constantes, huérfanos, versionado, glosario y registro de hallazgos | {{H-GEN-01…H-GEN-02}} |
-| [10-pantallas.md](./10-pantallas.md) | Catálogo de pantallas | {{PAN-001…PAN-006}} |
-| [11-reglas-negocio.md](./11-reglas-negocio.md) | Catálogo de reglas de negocio | {{RN-001…RN-012}} |
-| [INVENTARIO.md](./INVENTARIO.md) | Todos los objetos, con uuid, y cobertura de la extracción | — |
-| [anexo/indice.md](./anexo/indice.md) | Definición original de cada objeto: código numerado por líneas | — |
+| [00-resumen-ejecutivo.md](./00-resumen-ejecutivo.md) | ¿Qué es, qué tamaño tiene y qué es lo más grave? ¿Cuánto se puede confiar en esta documentación? | — |
+| [01-funcional.md](./01-funcional.md) | ¿Qué hace, para quién y cómo empieza cada caso de uso? ¿Qué pasos sigue? | {{H-FUN-01…H-FUN-02}} |
+| [02-arquitectura.md](./02-arquitectura.md) | ¿Qué objetos hay por capa y quién llama a quién? ¿Qué no viaja con la aplicación? | {{H-ARQ-01…H-ARQ-03}} |
+| [03-modelo-datos.md](./03-modelo-datos.md) | ¿Qué entidades hay, cómo se relacionan y cuántos registros tienen? | {{H-DAT-01…H-DAT-04}} |
+| [04-seguridad-grupos.md](./04-seguridad-grupos.md) | ¿Quién puede ver, iniciar o administrar cada cosa? ¿Qué secretos hay escritos? | {{H-SEG-01…H-SEG-03}} |
+| [05-integraciones-consumidas.md](./05-integraciones-consumidas.md) | ¿A qué sistemas llama, desde dónde y qué falla si cae una integración? | {{H-INT-01…H-INT-02}} |
+| [06-apis-expuestas.md](./06-apis-expuestas.md) | ¿Qué ofrece a otros sistemas y quién puede llamarlo? | {{H-API-01}} |
+| [07-batches.md](./07-batches.md) | ¿Qué se ejecuta solo, cada cuánto y con qué cuenta? | {{H-BAT-01}} |
+| [08-procesos-bpmn/indice.md](./08-procesos-bpmn/indice.md) | ¿Qué procesos hay, cómo empieza cada uno y qué pasos sigue? | {{H-PRO-01…H-PRO-05}} |
+| [09-valor-adicional.md](./09-valor-adicional.md) | ¿Qué cambia por entorno, qué no usa nadie y quién la cambió? ¿Qué hallazgos hay? | {{H-GEN-01…H-GEN-02}} |
+| [10-pantallas.md](./10-pantallas.md) | ¿Qué pantallas hay, quién las ve y qué guarda cada una? | {{PAN-001…PAN-006}} |
+| [11-reglas-negocio.md](./11-reglas-negocio.md) | ¿Qué decide la aplicación y dónde? | {{RN-001…RN-012}} |
+| [INVENTARIO.md](./INVENTARIO.md) | ¿Qué objetos tiene, con su uuid, y de cuáles no hay definición? | — |
+| [anexo/indice.md](./anexo/indice.md) | ¿Qué dice exactamente la definición de un objeto? | — |
 
-## Cómo leer las marcas
+## Cómo leer
 
-| Marca | Significado |
+| Marca o término | Qué significa |
 |---|---|
 | ✅ | Verificado: la definición o la respuesta de Appian lo muestra. |
-| 🔵 | Inferido de evidencia indirecta; el documento dice de qué («según su nombre»: solo lo dice el nombre). |
-| ❓ | Pendiente: dato que la extracción no trae o que debe validar negocio. |
-| Alta · Media · Baja | Severidad de un hallazgo: actuar ya · planificar · mejora o higiene. |
+| 🔵 | Inferido: el documento dice de qué evidencia indirecta («según su nombre»: solo lo dice el nombre). |
+| ❓ | Pendiente: la extracción no trae el dato o lo tiene que validar negocio. No es un defecto. |
+| Alta | Hallazgo que rompe un requisito de negocio o de seguridad, pierde datos o expone credenciales. |
+| Media | Hallazgo que degrada el mantenimiento, el rendimiento o el control. |
+| Baja | Hallazgo de higiene: nombres, tamaño o restos sin uso. |
+| Proceso crítico | Lo deciden los objetos que lo lanzan, las integraciones que llama, su temporizador y sus tareas. |
+| Referencias | Veces que lo citan otros objetos, según Appian y las definiciones: pueden ser más que en Appian. |
 | orientativo (ver LEEME) | Cifra que depende de una limitación de esta extracción (ver «Qué no incluye»). |
-
-Que la extracción no traiga un dato no significa que falte en la aplicación: por eso se marca ❓ y no se trata como defecto.
 
 **Identificadores**
 
 | Prefijo | Qué es | Dónde |
 |---|---|---|
-| `H-<ÁREA>-NN` | Hallazgo: algo que corregir, decidir o vigilar; el área dice su documento (ver «Contenido») | Su documento y el [registro de 09](./09-valor-adicional.md#registro-de-hallazgos) |
+| `H-<ÁREA>-NN` | Hallazgo: qué pasa y qué riesgo tiene; el área dice su documento | Su documento y el [registro de 09](./09-valor-adicional.md#registro-de-hallazgos) |
 | `PAN-NNN` | Pantalla | 10 |
 | `RN-NNN` | Regla de negocio | 11 |
 
@@ -87,38 +90,19 @@ Que la extracción no traiga un dato no significa que falte en la aplicación: p
 - {{Volúmenes de datos: Appian MCP Server no disponible.}}
 - {{Verificación con la documentación oficial: sin Docs MCP ni acceso a docs.appian.com; lo que depende de ella va marcado «sin verificar».}}
 - {{Versión de Appian: no determinada; las fuentes son de la documentación más reciente.}}
-- {{Uso real: el entorno no consta como producción y la muestra son las últimas N ejecuciones de cada proceso; las cifras son orientativas (los documentos las marcan «orientativo (ver LEEME)») y no sirven para decidir qué se usa{{; la muestra es uniforme (mismo iniciador y hora), así que no dice quién usa cada proceso ni cuándo}}.}}
+- {{Uso real: el entorno no consta como producción y la muestra son las últimas N ejecuciones de cada proceso. Las cifras son orientativas y los documentos las marcan «orientativo (ver LEEME)»{{; la muestra es uniforme (mismo iniciador y hora): no dice quién usa cada proceso ni cuándo}}.}}
 
-## Glosario de Appian
+## Términos de Appian
 
-| Término | Significado |
+| Tema | Documentación de Appian |
 |---|---|
-| Record type | Entidad de datos: campos, relaciones, vistas y acciones sobre una tabla u otra fuente. |
-| CDT | Tipo de datos personalizado: estructura de datos para procesos, reglas e interfaces. |
-| Process model | Flujo de trabajo: tareas de usuario, pasos automáticos y decisiones. |
-| Interfaz | Pantalla o componente de pantalla. |
-| SAIL | Lenguaje de expresiones de Appian con el que se escriben interfaces y reglas. |
-| Expression rule | Función reutilizable escrita en SAIL. |
-| Decisión | Reglas de negocio expresadas como tabla de decisión. |
-| Constante | Valor con nombre (texto, número, grupo, documento…) que usan otros objetos. |
-| Integración | Llamada a un sistema externo, normalmente a través de un connected system. |
-| Connected system | Conexión y autenticación con un sistema externo. |
-| Web API | Endpoint HTTP que la aplicación ofrece a otros sistemas. |
-| Site | Aplicación web para el usuario final, organizada en páginas. |
-| Grupo | Conjunto de usuarios; base de la seguridad y de la asignación de tareas. |
-| Data fabric | Capa de datos de Appian construida con record types y sus relaciones. |
-| Role map | Grupos de un objeto con su nivel de permiso (Administrator, Editor, Viewer, Deny…). |
-| Initiator · Viewer | Permisos de un process model: Initiator, el mínimo para iniciarlo; Viewer, verlo e iniciarlo. |
-| Acción de lista · acción relacionada | Botón de un record type que lanza un proceso: desde la lista · sobre un registro concreto. |
-| Vista de record | Página de un registro concreto (p. ej. «Resumen»), hecha con una interfaz. |
-| Smart service · Write Records | Nodo que hace una acción de la plataforma · el que guarda registros de un record type. |
-| Subproceso síncrono · asíncrono | El proceso padre espera a que termine el hijo y recibe sus datos · sigue sin esperarlo. |
-| Record type sincronizado | Record type cuyos datos Appian copia en su caché para consultarlos y relacionarlos. |
-| Evento de record | Anotación de quién hizo qué y cuándo en un registro, guardada en un record type de historial. |
-| Plug-in | Extensión instalada en el entorno, no en la aplicación: añade nodos, funciones o componentes. |
-| Grupo de sistema | Grupo que trae la plataforma, no la aplicación. |
-| Knowledge center · translation set | Carpeta de documentos con su seguridad · textos de la aplicación con sus traducciones. |
-
-El vocabulario del negocio está en el [glosario de 09](./09-valor-adicional.md#glosario-de-negocio).
+| Datos | [Record type](https://docs.appian.com/suite/help/26.6/Record_Type_Object.html) · [relación](https://docs.appian.com/suite/help/26.6/record-type-relationships.html) · [sincronización](https://docs.appian.com/suite/help/26.6/about-data-sync.html) · [evento de record](https://docs.appian.com/suite/help/26.6/record-events.html) · [CDT](https://docs.appian.com/suite/help/26.6/Custom_Data_Types.html) · [data store](https://docs.appian.com/suite/help/26.6/Data_Stores.html) |
+| Pantallas | [Interfaz](https://docs.appian.com/suite/help/26.6/interface_object.html) · [site](https://docs.appian.com/suite/help/26.6/Sites.html) · [vista de record](https://docs.appian.com/suite/help/26.6/record-view.html) · [acción de lista](https://docs.appian.com/suite/help/26.6/record-actions.html#record-list-actions) · [acción relacionada](https://docs.appian.com/suite/help/26.6/record-actions.html#related-actions) |
+| Procesos | [Process model](https://docs.appian.com/suite/help/26.6/process-model-object.html) · [subproceso](https://docs.appian.com/suite/help/26.6/Sub-Process_Activity.html) · [temporizador](https://docs.appian.com/suite/help/26.6/Intermediate_Event_-_Timer.html) · [Write Records](https://docs.appian.com/suite/help/26.6/Write_Records_Smart_Service.html) |
+| Reglas | [Expresiones](https://docs.appian.com/suite/help/26.6/Expressions.html) · [expression rule](https://docs.appian.com/suite/help/26.6/Expression_Rules.html) · [decisión](https://docs.appian.com/suite/help/26.6/Decisions.html) · [constante](https://docs.appian.com/suite/help/26.6/Constants.html) · [agente de IA](https://docs.appian.com/suite/help/26.6/about-ai-agents.html) |
+| Integración | [Integración](https://docs.appian.com/suite/help/26.6/Integration_Object.html) · [connected system](https://docs.appian.com/suite/help/26.6/Connected_System_Object.html) · [Web API](https://docs.appian.com/suite/help/26.6/Web_APIs.html) |
+| Seguridad | [Grupo](https://docs.appian.com/suite/help/26.6/Creating_Groups.html) · [grupos de sistema](https://docs.appian.com/suite/help/26.6/System_Groups.html) · [role map](https://docs.appian.com/suite/help/26.6/object-security.html#groups-and-role-maps) · [seguridad de un process model](https://docs.appian.com/suite/help/26.6/process-model-object.html#process-model-security) |
+| Fuera de la aplicación | [Plug-in](https://docs.appian.com/suite/help/26.6/prepare-deployment-packages.html#add-plugins) · [knowledge center](https://docs.appian.com/suite/help/26.6/folder-object.html#knowledge-centers) · [translation set](https://docs.appian.com/suite/help/26.6/translation-set-object.html) |
+| Negocio | El vocabulario de la aplicación, en el [glosario de 09](./09-valor-adicional.md#glosario-de-negocio) |
 
 > Esta carpeta lleva también la extracción de la que sale la documentación, tal cual la devolvió el Dev MCP. Para consultar un objeto, usa su ficha del [anexo](./anexo/indice.md).

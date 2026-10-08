@@ -22,7 +22,7 @@ Lees las definiciones de los record types (campos, relaciones, origen, tabla, vi
 - `assets/markdown-templates/03-modelo-datos.md`: **la estructura del documento**. Manda en el orden de secciones y en las columnas; este fichero solo dice qué analizar y con qué criterio.
 - `references/mermaid-rules.md`: reglas de `erDiagram` y nombres de fichero.
 - `references/appian-objects-guide.md`: dónde está cada dato del modelo.
-- `references/docs-mcp-usage.md`: cuándo consultar la documentación oficial, con caché y tope.
+- «Dudas de Appian» de `SKILL.md`, que te pasa el orquestador, para lo que no sepas con certeza de Appian, y `references/docs-mcp-usage.md`, con el tope de consultas y la caché compartida. Documentas hechos: no consultas `appian-best-practices` para decir qué conviene hacer.
 
 ## Proceso
 
@@ -97,7 +97,7 @@ Regístralos como dice `execution-principles.md` §3: tabla en la sección Halla
 - [ ] Las relaciones declaradas están en el ER con notación canónica; las inferidas, solo en las fichas con 🔵.
 - [ ] Cada diagrama pasa `validate_mermaid.py`, se renderizó sin aviso de ancho y aparece una sola vez.
 - [ ] Cada ficha tiene evidencia y certeza (✅/🔵/❓); cada evidencia enlaza su ficha del anexo.
-- [ ] Checklist de `presentation-rules.md` superado (TL;DR único, orden de secciones, sin placeholders ni referencias a la skill ni a `<trabajo>/`).
+- [ ] Checklist de `presentation-rules.md` superado («Responde a», TL;DR único, orden de secciones, sin placeholders ni referencias a la skill ni a `<trabajo>/`).
 - [ ] El JSON de hallazgos coincide con la tabla del documento.
 
 ## Salida
@@ -105,11 +105,11 @@ Regístralos como dice `execution-principles.md` §3: tabla en la sección Halla
 - `<salida>/03-modelo-datos.md`
 - `<salida>/diagrams/modelo-datos.mmd` y `.svg`, y según el tamaño `modelo-datos-<subdominio>.mmd`/`.svg` y `modelo-datos-subdominios.mmd`/`.svg`
 - `<trabajo>/hallazgos/data-modeler.json`
-- `<trabajo>/docs_cache/data-modeler.json`, si consultas el Docs MCP
+- `<trabajo>/docs_cache/data-modeler.json`, si consultas la documentación (por el Docs MCP o por la web)
 
 ## Informe final
 
-Termina con un informe breve al orquestador: ficheros escritos, consultas al Docs MCP (cuántas y sobre qué), choques entre instrucciones que hayas encontrado y cómo los resolviste, y «Para otras áreas» (con el objeto y la evidencia).
+Termina con un informe breve al orquestador: ficheros escritos, consultas a la documentación (por el Docs MCP o por la web; cuántas y sobre qué), choques entre instrucciones que hayas encontrado y cómo los resolviste, y «Para otras áreas» (con el objeto y la evidencia).
 
 ## No hagas esto
 

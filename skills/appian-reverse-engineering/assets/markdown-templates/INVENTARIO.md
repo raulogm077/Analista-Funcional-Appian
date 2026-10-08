@@ -1,7 +1,8 @@
 <!--
   Plantilla INVENTARIO — Todos los objetos de la aplicación (orquestador, fase 6).
-  Fuentes: <trabajo>/inventory.json (objetos y campos derivados), graph.json («Llamado por»: aristas entrantes),
+  Fuentes: <trabajo>/inventory.json (objetos y campos derivados), graph.json («Referencias»: aristas entrantes),
   extraction_report.json y preflight.json (cobertura). Cubre el 100 % de inventory.json.
+  El entorno y la fecha de la extracción están en 00: aquí no se repiten.
   Una sección por tipo presente en `counts` (también los que esta plantilla no prevé, en «Otros tipos»);
   omite las secciones de tipos sin objetos. Sin límite de filas; ≤ 8 columnas y celdas ≤ 100 caracteres.
   - uuid: tal cual, entre comillas invertidas (INVENTARIO y anexo/ son los únicos sitios con uuids).
@@ -17,18 +18,19 @@
 
 # Inventario de la aplicación
 
+> **Responde a:** ¿Qué objetos tiene la aplicación y cuál es el uuid de cada uno? ¿Qué documento explica cada objeto? ¿Para qué sirve cada uno? ¿De qué objetos no hay definición y por qué?
+
 > **TL;DR**: {{N}} objetos de {{N}} tipos; {{N}} de {{N}} ({{%}}, sin contar carpetas: `meta.coverage` de summary.json) con definición. Cada objeto con definición enlaza su ficha del anexo, con la definición original.
 > **Volumen**: {{n}} process models · {{n}} interfaces · {{n}} reglas · {{n}} record types · {{n}} otros. {{N}} objetos sin definición (ver [Cobertura](#cobertura-de-la-extracción)).
 
 **Aplicación:** {{nombre visible}} (prefijo `{{prefijo}}`, uuid `{{uuid de la aplicación}}`)
-**Fuente:** entorno `{{url}}`, extraído el {{AAAA-MM-DD}} en solo lectura
 
-Cómo leer las tablas:
-
-- **Nombre**: enlaza el documento que explica el objeto, si lo tiene.
-- **Ficha**: la definición original del objeto y el resto de respuestas de la plataforma en el [anexo](./anexo/indice.md). «—»: la extracción no trajo nada de ese objeto.
-- **Para qué**: la descripción que tiene el objeto en Appian. Si no la tiene (o el Dev MCP no la devuelve para ese tipo), una frase deducida, marcada 🔵.
-- **Llamado por**: objetos que lo referencian según el grafo de la aplicación. Puede ser mayor que lo que muestra la herramienta de dependientes de Appian, porque también cuenta las referencias encontradas en las definiciones.
+| Columna | Qué es |
+|---|---|
+| Nombre | Enlaza el documento que explica el objeto, si lo tiene. |
+| Ficha | Su definición original y el resto de respuestas, en el [anexo](./anexo/indice.md); «—»: no llegó nada. |
+| Para qué | Su descripción en Appian o, si no la tiene o no llegó, una frase deducida, marcada 🔵. |
+| Referencias | Veces que lo citan otros objetos ([cómo se cuentan](./LEEME.md#cómo-leer)). |
 
 ## Conteo por tipo
 
@@ -46,7 +48,7 @@ Cómo leer las tablas:
 
 ## CDTs
 
-| Nombre | uuid | Llamado por | Para qué | Ficha |
+| Nombre | uuid | Referencias | Para qué | Ficha |
 |---|---|---|---|---|
 | [`{{nombre}}`](./03-modelo-datos.md#{{ancla}}) | `{{uuid}}` | {{N}} | {{descripción o «🔵 frase deducida»}} | {{[anexo](./anexo/cdt/{{slug}}.md) o «—»}} |
 
@@ -64,13 +66,13 @@ Cómo leer las tablas:
 
 ## Expression rules
 
-| Nombre | uuid | Líneas | Llamado por | Para qué | Ficha |
+| Nombre | uuid | Líneas | Referencias | Para qué | Ficha |
 |---|---|---|---|---|---|
 | [`{{nombre}}`](./11-reglas-negocio.md#{{ancla}}) o `{{nombre}}` | `{{uuid}}` | {{sailLines}} | {{N}} | {{descripción o «🔵 frase deducida»}} | [anexo](./anexo/expressionRule/{{slug}}.md) |
 
 ## Decisiones
 
-| Nombre | uuid | Llamado por | Para qué | Ficha |
+| Nombre | uuid | Referencias | Para qué | Ficha |
 |---|---|---|---|---|
 | [`{{nombre}}`](./11-reglas-negocio.md#{{ancla}}) o `{{nombre}}` | `{{uuid}}` | {{N}} | {{descripción o «🔵 frase deducida»}} | {{[anexo](./anexo/decision/{{slug}}.md) o «—»}} |
 
@@ -108,7 +110,7 @@ Cómo leer las tablas:
 
 | Nombre | uuid | Tipo | Valor | Referencia | Para qué | Ficha |
 |---|---|---|---|---|---|---|
-| `{{nombre}}` o [`{{nombre}}`](./09-valor-adicional.md#constantes-por-entorno-y-secretos) | `{{uuid}}` | {{typeRef}} | `{{valor}}` | {{valueRef o «—»}} | {{descripción o «🔵 frase deducida»}} | [anexo](./anexo/constant/{{slug}}.md) |
+| `{{nombre}}` o [`{{nombre}}`](./09-valor-adicional.md#configuración-por-entorno) | `{{uuid}}` | {{typeRef}} | `{{valor}}` | {{valueRef o «—»}} | {{descripción o «🔵 frase deducida»}} | [anexo](./anexo/constant/{{slug}}.md) |
 
 ## Otros tipos
 

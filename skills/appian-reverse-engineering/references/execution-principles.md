@@ -12,10 +12,10 @@ Lectura obligatoria antes de la fase 4 y para todos los subagentes. Concentra lo
 4. **Lo que solo dice un nombre es 🔵.** Lo que se deduce solo del nombre de un nodo, objeto o variable (sin ver su configuración ni su uso) se marca 🔵 «según su nombre». Una regla no es ✅ si un parámetro de su enunciado es ❓ (p. ej. un umbral cuya constante no llegó): lleva la certeza más baja de sus partes.
 5. **Contraevidencia.** Antes de registrar un hallazgo Alta inferido (🔵), crúzalo con lo que podría desmentirlo: ejecuciones (fechas frente a versiones, grupo del iniciador), render de las interfaces, recuentos del data fabric y validación de la plataforma. Si algo lo contradice, dilo en la explicación del hallazgo y añade la pregunta que lo resuelve; si la contradicción pesa, baja la severidad o la certeza.
 6. **Trazabilidad.** Cada afirmación importante lleva `Evidencia: mcp:<tipo>/<nombre>[@<rol>]#<ubicación>` (formato en `lectura-mcp-raw.md`), enlazada a la ficha del objeto en el anexo (`presentation-rules.md`, Regla 5); lo que viene de la documentación oficial, `Fuente: <URL>`.
-7. **Cero relleno.** Sin placeholders ni secciones vacías.
+7. **Cero relleno.** Cada documento responde a las preguntas de su plantilla (`> **Responde a:**`) y solo lleva lo que las responde. Sin placeholders, sin secciones vacías y sin explicar qué es un objeto de Appian: se enlaza su documentación. Cada objeto que se lista dice qué hace.
 8. **Cada cosa en un sitio.** Un objeto tiene una ficha y un hallazgo tiene un ID, en su documento propietario; el resto enlaza (tabla de propietarios abajo).
 9. **Nombres reales** (técnico y visible), nunca genéricos.
-10. **Accionable.** Todo objeto listado se conecta con lo que hace para el negocio o con lo que hay que hacer con él.
+10. **Hechos, no consejos.** Un hallazgo dice qué pasa, dónde y qué riesgo tiene. Qué hacer (corregirlo, cambiar una credencial, rehacer un proceso) no se escribe: lo propone `appian-refactorizacion`.
 11. **Seguridad.** Un secreto escrito en la aplicación es un hallazgo (`H-SEG`): se registra como dice `references/security-rules.md`.
 12. **Diagramas que pasan el validador** (`references/mermaid-rules.md`); si no, tabla equivalente. Los `.bpmn` siguen `references/bpmn-mapping.md`.
 13. **Idioma**: español técnico neutro salvo que el usuario pida otro.
@@ -53,7 +53,7 @@ Si al analizar tu área ves algo de otra (p. ej. ui-rules-analyzer nota que un p
 
 ## 3. Registro de hallazgos
 
-Un hallazgo es algo que hay que corregir, decidir o vigilar. Cada propietario los registra en dos sitios:
+Un hallazgo es algo que pasa en la aplicación y tiene un riesgo de negocio, de seguridad, de mantenimiento o de rendimiento: dice qué pasa, dónde y qué riesgo tiene, no qué hacer (principio 10). Cada propietario los registra en dos sitios:
 
 1. En su documento, sección `## Hallazgos`:
 
@@ -63,7 +63,7 @@ Un hallazgo es algo que hay que corregir, decidir o vigilar. Cada propietario lo
    | H-PRO-01 | «Cancelar» no anula el alta | Alta | ✅ | [`mcp:processModel/DEM Alta Solicitud#nodes[id=1].connections`](../anexo/processModel/DEM_Alta_Solicitud.md) |
    ```
 
-   Si un hallazgo Alta necesita explicación, añade debajo una línea con su impacto y la recomendación.
+   Un hallazgo Alta lleva debajo una línea con su impacto: qué puede pasar y a quién afecta.
 
 2. En `<trabajo>/hallazgos/<agente>.json` (el orquestador usa `orquestador.json`), una lista con un objeto por hallazgo:
 
@@ -72,10 +72,11 @@ Un hallazgo es algo que hay que corregir, decidir o vigilar. Cada propietario lo
      "severidad": "Alta", "certeza": "verificado", "objetos": ["DEM Alta Solicitud"],
      "documento": "08-procesos-bpmn/DEM_Alta_Solicitud.md#hallazgos",
      "evidencia": "mcp:processModel/DEM Alta Solicitud#nodes[id=1].connections",
-     "impacto": "Una solicitud cancelada se registra igualmente.", "recomendacion": "Pasarela tras el inicio que compruebe la cancelación."}]
+     "impacto": "Una solicitud cancelada se registra igualmente."}]
    ```
 
    - `id`: prefijo del área + número de dos cifras, sin huecos (`H-PRO-01`, `H-PRO-02`…).
+   - `impacto`: qué puede pasar y a quién afecta. Qué hacer no va en ningún campo: `build_registry.py` avisa si un hallazgo lo trae.
    - `area`: funcional, arquitectura, datos, seguridad, secretos, integraciones, apis, batches, procesos, pantallas, reglas, mantenimiento, rendimiento o uso.
    - `severidad`: Alta, Media o Baja. `certeza`: verificado, inferido o pendiente.
    - `documento`: ruta relativa a `<salida>` (con ancla si quieres).

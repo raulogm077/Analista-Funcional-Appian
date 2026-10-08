@@ -142,8 +142,8 @@ def main(rutas) -> int:
         print("## Coincidencias detectadas\n\n| Patrón | Ubicación |\n|---|---|")
         print("\n".join(filas))
         print("\n**Acción:** en la extracción, cada coincidencia es un posible secreto escrito en la aplicación: "
-              "regístralo como hallazgo H-SEG (área secretos, severidad Alta) en 04 y recomienda rotarlo y moverlo a la "
-              "autenticación del connected system; si es un falso positivo, descártalo (security-rules.md).")
+              "regístralo como hallazgo H-SEG (área secretos, severidad Alta) en 04, con el objeto y la propiedad donde "
+              "está; si es un falso positivo, descártalo (security-rules.md).")
         return 1
     print("## Sin coincidencias\nNo se han detectado patrones de secretos en la ruta analizada.")
     return 0

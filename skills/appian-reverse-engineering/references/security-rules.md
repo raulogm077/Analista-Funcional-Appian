@@ -31,12 +31,11 @@ Las definiciones extraídas (connected systems, integraciones, constantes, Web A
 2. **Regístralo como hallazgo de seguridad.** Lo registra `integration-security-analyzer`, propietario del área; si lo ve otro agente, lo cuenta en «Para otras áreas» de su informe.
    - ID `H-SEG-NN`, `"area": "secretos"`, severidad **Alta**.
    - Certeza: ✅ si la definición lo contiene; ❓ si dudas de que sea un secreto real, con la pregunta para el responsable de seguridad.
-   - Fila en la sección Hallazgos de `04-seguridad-grupos.md` y una línea debajo de la tabla con su impacto y la recomendación.
-   - Entrada en `<trabajo>/hallazgos/integration-security-analyzer.json` con `impacto` y `recomendacion`.
+   - Fila en la sección Hallazgos de `04-seguridad-grupos.md` y una línea debajo de la tabla con su impacto.
+   - Entrada en `<trabajo>/hallazgos/integration-security-analyzer.json` con `impacto`.
    - Evidencia: `mcp:<tipo>/<nombre>#<propiedad>`.
-3. **Impacto**: el valor de una constante o de un connected system se ve desde el diseño de Appian y en los paquetes de despliegue; un usuario final no lo ve desde el portal aunque tenga Viewer. Descríbelo así: «visible para quien tenga acceso de diseño a la aplicación y en cualquier exportación del paquete».
-4. **Recomendación habitual**: rotar la credencial y moverla a un campo cifrado del connected system o de la integración (valor introducido directamente, que Appian cifra y no exporta), con su valor por entorno en el fichero de personalización de importación; nunca a una constante ni a una expresión. Fuente: https://docs.appian.com/suite/help/26.6/Integration_Object.html#encrypted-values
-5. El registro de `09-valor-adicional.md` lo genera `scripts/build_registry.py` a partir del JSON. Nadie añade el secreto a mano en 09.
+3. **Impacto**: el valor de una constante o de un connected system se ve desde el diseño de Appian y en los paquetes de despliegue; un usuario final no lo ve desde el portal aunque tenga Viewer. Descríbelo así: «visible para quien tenga acceso de diseño a la aplicación y en cualquier exportación del paquete». Qué hacer con el secreto no se escribe (`execution-principles.md`, principio 10).
+4. El registro de `09-valor-adicional.md` lo genera `scripts/build_registry.py` a partir del JSON. Nadie añade el secreto a mano en 09.
 
 ## Falsos positivos comunes
 
@@ -60,7 +59,7 @@ Detéctalos y regístralos en el documento propietario. Un riesgo que depende de
 | URL o constante que apunta a otro entorno (p. ej. un host de desarrollo en producción) | `H-INT` (05) |
 | Web API que puede llamar un grupo de alcance amplio, o sin validación de entrada visible | `H-API` (06) |
 
-**Grupo de alcance amplio**: un grupo de sistema (p. ej. Application Users) o uno que agrupa a todos los usuarios de la aplicación. Appian no trae un grupo «All Users», «Everyone» ni «Public»: el nombre no prueba el alcance; decide por sus subgrupos y miembros (✅) o por nombre y descripción (🔵). Appian recomienda no usar grupos de sistema para dar seguridad a objetos de una aplicación, sino sus grupos de seguridad por defecto. Fuente: https://docs.appian.com/suite/help/26.6/System_Groups.html
+**Grupo de alcance amplio**: un grupo de sistema (p. ej. Application Users) o uno que agrupa a todos los usuarios de la aplicación. Appian no trae un grupo «All Users», «Everyone» ni «Public»: el nombre no prueba el alcance; decide por sus subgrupos y miembros (✅) o por nombre y descripción (🔵). Fuente: https://docs.appian.com/suite/help/26.6/System_Groups.html
 
 ## Política para Markdown
 

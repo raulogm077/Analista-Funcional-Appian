@@ -49,7 +49,7 @@ summary.json
 
 | Orden | Sección | Contenido |
 |---|---|---|
-| 1 | Portada | Nombre visible y técnico de la app, entorno, fecha de extracción, «Documentación de reingeniería inversa». |
+| 1 | Portada | Nombre visible y técnico de la app, entorno, fecha de extracción, «Documentación de ingeniería inversa». |
 | 2 | Índice | Con número de página y marcadores del PDF. |
 | 3 | Cifras | Una página: objetos por capa, procesos críticos, hallazgos por severidad y certeza, secretos y confianza. |
 | 4 | Resumen ejecutivo | `00`. |
@@ -62,9 +62,9 @@ summary.json
 | … | Procesos | `08`: los de `criticalProcesses` (máx. 5) con diagrama y explicación; el resto, en la tabla del índice. |
 | … | Pantallas y reglas | `10` y `11`: mapa de navegación y tablas resumen. |
 | … | Hallazgos | Registro de `09` (de `findings`), coloreado por severidad. |
-| … | Mantenimiento | Resto de `09`: métricas, constantes por entorno, huérfanos, versionado. |
+| … | Mantenimiento | Resto de `09`: métricas, configuración por entorno, huérfanos, versionado. |
 | … | Pendientes de validación | Hallazgos con certeza ❓, con quién debe validarlos. |
-| … | Inventario y glosarios | `INVENTARIO` en tablas compactas; glosario de Appian (`LEEME`) y de negocio (`09`). |
+| … | Inventario y glosarios | `INVENTARIO` en tablas compactas; términos de Appian (`LEEME`) y glosario de negocio (`09`). |
 | Apéndice | Anexo (opcional) | Las definiciones de `anexo/` solo si el usuario lo pidió o la app tiene menos de ~50 objetos; si no, una página que dice que el anexo acompaña al PDF en la carpeta `anexo/`. |
 
 ## Maquetación

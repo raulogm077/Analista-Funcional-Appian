@@ -7,7 +7,7 @@ description: "Ingeniería inversa de aplicaciones Appian: lee la aplicación en 
 
 Lee una aplicación Appian **en vivo y en solo lectura** a través del Appian Dev MCP y documenta cómo está hecha, para el onboarding y el mantenimiento: `00`–`11`, `INVENTARIO` y el `anexo/` con las definiciones.
 
-Todo con evidencia verificable (`mcp:<tipo>/<nombre>#<ubicación>`), certeza explícita (✅ verificado, 🔵 inferido, ❓ pendiente) y sin inventar: lo que no se puede obtener se dice. Los hallazgos tienen un ID y un registro único.
+Todo con evidencia verificable (`mcp:<tipo>/<nombre>#<ubicación>`), certeza explícita (✅ verificado, 🔵 inferido, ❓ pendiente) y sin inventar: lo que no se puede obtener se dice. Los hallazgos tienen un ID y un registro único. Cada documento empieza por las preguntas que responde, y un hallazgo dice qué pasa y qué riesgo tiene, no qué hacer.
 
 ## Principios de funcionamiento
 
@@ -157,7 +157,7 @@ Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `a
 - Sin el MCP, se consulta docs.appian.com con WebFetch o WebSearch. Si tampoco se puede, se escribe «sin verificar» y la duda pasa a pendientes.
 - Qué conviene hacer (qué mecanismo elegir, cómo diseñarlo) no es una duda de documentación: se consulta en `appian-best-practices`, solo la sección que toca. Esa skill está junto a esta: `python3 <esta skill>/../appian-best-practices/scripts/seccion.py 02 4.8` imprime solo §4.8 del doc 02.
 
-**En la ingeniería inversa**, las dudas típicas son qué hace un tipo de nodo, un smart service, una función o un componente que no conoces, si algo está deprecado y cómo se comporta un temporizador o una opción de seguridad. La versión del entorno es `environment.appianVersion` de `preflight.json`; si no consta, vale la documentación más reciente y `LEEME.md` lo dice. La URL acompaña a la afirmación como `Fuente: <URL>`; lo que quede sin verificar lleva ❓ y dice qué falta. El tope de consultas por ejecución y la caché que comparten los agentes están en `references/docs-mcp-usage.md`.
+**En la ingeniería inversa**, las dudas típicas son qué hace un tipo de nodo, un smart service, una función o un componente que no conoces, si algo está deprecado y cómo se comporta un temporizador o una opción de seguridad. La versión del entorno es `environment.appianVersion` de `preflight.json`; si no consta, vale la documentación más reciente y `LEEME.md` lo dice. La URL acompaña a la afirmación como `Fuente: <URL>`; lo que quede sin verificar lleva ❓ y dice qué falta. El tope de consultas por ejecución y la caché que comparten los agentes están en `references/docs-mcp-usage.md`. Aquí no se pregunta qué conviene hacer: el orquestador y los agentes documentan hechos y no consultan `appian-best-practices` para proponer nada; eso lo hace `appian-refactorizacion`.
 
 ## Recursos (cárgalos cuando toque, no todos a la vez)
 
@@ -184,12 +184,12 @@ Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `a
 
 ## Validación final (antes de responder)
 
-1. Existen `LEEME`, `00`–`11`, `INVENTARIO`, `anexo/indice.md` y `diagrams/`. Los que no aplican llevan su frase de «no aplica» (p. ej. 07 sin batches).
+1. Existen `LEEME`, `00`–`11`, `INVENTARIO`, `anexo/indice.md` y `diagrams/`, y cada documento empieza por la línea «Responde a» de su plantilla. Los que no aplican llevan su frase de «no aplica» (p. ej. 07 sin batches).
 2. `08-procesos-bpmn/` tiene por cada process model su `.md`, su `.bpmn` (con `bpmndi:BPMNDiagram`) y su diagrama (`.svg`/`.mmd`, o `.png`/`.drawio` con su `.json`, que es la especificación del dibujo y no datos en bruto), e `indice.md` los lista todos. Un proceso de más de 25 nodos se parte en `<slug>-1.mmd`, `<slug>-2.mmd`…: se admite `<slug>(-N)?.mmd` y `.svg`.
 3. Todos los diagramas pasan `python3 <skill>/scripts/validate_mermaid.py` (o están sustituidos por tabla) y ninguno superó el aviso de ancho.
 4. Cada posible secreto que encuentra `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw`, y cada constante con `secret: true` en `inventory.json`, tiene su `H-SEG` en 04 o está descartado como falso positivo.
 5. No quedan placeholders (`{{`, `TBD`, `TODO`, `lorem`) ni marcas fuera de la paleta (`🔴`, `🟡`, `⚠️`).
-6. `build_registry.py` termina sin errores y cada hallazgo de los documentos tiene su ID en el registro de 09.
+6. `build_registry.py` termina sin errores ni avisos de hallazgos que dicen qué hacer, y cada hallazgo de los documentos tiene su ID en el registro de 09.
 7. `INVENTARIO.md` cubre el 100 % de `inventory.json`.
 8. `LEEME.md` dice qué no estuvo disponible (MCP opcionales, tipos sin definición, seguridad por objeto).
 9. No se ha escrito nada fuera de `<salida>/`. Los datos en bruto solo están en `<salida>/extraccion/` y ningún documento enlaza esa carpeta.

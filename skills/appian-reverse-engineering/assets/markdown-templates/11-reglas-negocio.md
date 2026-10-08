@@ -1,14 +1,17 @@
 <!--
   Plantilla 11 — Reglas de negocio (ui-rules-analyzer).
-  Estructura: TL;DR → Vista → Detalle → Hallazgos → Cobertura y límites. Las secciones sin contenido se omiten.
+  Estructura: Responde a → TL;DR → Vista → Detalle → Hallazgos → Cobertura y límites. Las secciones sin contenido se omiten.
   Reglas RN-001…, sin SAIL en los enunciados; hallazgos H-RN-01….
   Los {{marcadores}} se sustituyen y los comentarios se borran.
   Certeza de una regla: 🔵 «según su nombre» si solo se deduce del nombre de un nodo, objeto o variable; nunca ✅ si
   un parámetro de su enunciado es ❓ (lleva la certeza más baja de sus partes).
   Ninguna regla se recorta ni se omite por longitud. Evidencia: siempre enlazada a la ficha del objeto en el anexo.
+  «Cobertura y límites»: solo lo de este documento; lo global está en LEEME.
 -->
 
 # Reglas de negocio
+
+> **Responde a:** ¿Qué decide la aplicación y dónde se aplica cada regla? ¿Qué estados tiene la entidad principal y qué los cambia? ¿Qué reglas se contradicen o se repiten? ¿Qué valores de negocio están escritos en el código?
 
 > **TL;DR**: {{2-3 frases: qué decide la aplicación y lo más importante que debe saber el lector}}.
 > **Volumen**: {{N}} reglas ({{n}} de validación, {{n}} de cálculo, {{n}} de decisión, {{n}} de permiso, {{n}} de ciclo de vida, {{n}} de plazo o notificación). **Hallazgos**: {{N (Alta: n)}} — principales: [H-RN-01](#hallazgos), {{…}} (o «sin hallazgos»).
@@ -23,9 +26,9 @@ Estados de {{la entidad principal}} y qué los cambia.
 
 Fuente: [estados-{{entidad}}.mmd](diagrams/estados-{{entidad}}.mmd)
 
-| ID | Tipo | Enunciado | Dónde se aplica | Certeza |
-|---|---|---|---|---|
-| [RN-001](#rn-001--{{ancla}}) | {{Decisión}} | {{Una solicitud solo se aprueba si el revisor elige «Aprobar».}} | {{PAN-004, proceso Revisión}} | ✅ |
+| ID | Tipo | Enunciado | Dónde se aplica | Certeza | Evidencia |
+|---|---|---|---|---|---|
+| [RN-001](#rn-001--{{ancla}}) | {{Decisión}} | {{Una solicitud solo se aprueba si el revisor elige «Aprobar».}} | {{PAN-004, proceso Revisión}} | ✅ | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].decision`](./anexo/processModel/{{slug}}.md) |
 
 <!-- Más de 15 reglas: una tabla por tipo (### Validación, ### Cálculo, ### Decisión, ### Permiso, ### Ciclo de vida, ### Plazo o notificación). -->
 
@@ -59,11 +62,15 @@ Evidencia: [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.
 
 ### Parámetros en literales
 
-<!-- Solo si hay. Valor hardcodeado: literal de negocio (estado, umbral, nombre o id de grupo, correo, URL) escrito en una expresión o configuración que debería ser constante o dato. La configuración de un temporizador no lo es. -->
+<!--
+  Solo si hay. Parámetro en un literal: un valor de negocio (estado, umbral, nombre o id de grupo, correo, URL) escrito en
+  una expresión o en una configuración, y no en una constante ni en un dato. La configuración de un temporizador no lo es.
+  «Escrito en»: todos los objetos donde aparece el mismo literal.
+-->
 
-| Regla | Valor | Debería ser | Hallazgo | Evidencia |
+| Regla | Valor | Escrito en | Hallazgo | Evidencia |
 |---|---|---|---|---|
-| RN-001 | {{«Aprobar»}} | {{Constante compartida por formulario y proceso}} | H-RN-01 | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].decision`](./anexo/processModel/{{slug}}.md) |
+| RN-001 | {{«Aprobar»}} | {{`DEM_RevisionForm` y `DEM Revisión`}} | H-RN-01 | [`mcp:processModel/{{nombre}}#nodes[id={{N}}].decision`](./anexo/processModel/{{slug}}.md) |
 
 ## Hallazgos
 
@@ -71,8 +78,8 @@ Evidencia: [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.
 |---|---|---|---|---|
 | H-RN-01 | {{El literal «Aprobar» se repite en el formulario y en el proceso}} | {{Baja}} | ✅ | [`mcp:interface/{{nombre}}#expression (línea {{N}})`](./anexo/interface/{{slug}}.md) |
 
-{{Debajo de cada hallazgo Alta, si hace falta: una línea con su impacto y la recomendación.}}
+{{Debajo de cada hallazgo Alta, si hace falta: una línea con su impacto, qué puede pasar y a quién afecta.}}
 
 ## Cobertura y límites
 
-{{1-5 líneas: pasarelas que no son reglas de negocio y por qué, decisiones sin definición disponible, reglas de procesos sin ejecuciones… Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}
+{{1-5 líneas: pasarelas que no son reglas de negocio y por qué, decisiones sin definición disponible, reglas de procesos sin ejecuciones…}}

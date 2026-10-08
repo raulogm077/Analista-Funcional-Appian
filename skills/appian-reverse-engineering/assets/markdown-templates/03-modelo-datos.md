@@ -8,10 +8,13 @@
   Diagramas: si existe el .svg, imagen + «Fuente»; si no, el bloque mermaid idéntico al .mmd.
   Secciones, columnas o filas sin contenido: se omiten (p. ej. sin CDTs no hay tabla de CDTs; sin data stores, no
   hay sección de data stores; sin recuentos, no hay columna «Filas»). Lo que la extracción no trae se dice una vez
-  en «Cobertura y límites», no con ❓ en cada celda.
+  en «Cobertura y límites», no con ❓ en cada celda. «Cobertura y límites»: solo lo de este documento; lo global
+  está en LEEME.
 -->
 
 # Modelo de datos
+
+> **Responde a:** ¿Qué entidades hay, dónde se guardan y cuántos registros tienen? ¿Cómo se relacionan? ¿Qué campos clave tiene cada una? ¿Qué procesos y pantallas las usan?
 
 > **TL;DR**: {{2-3 frases: núcleo del modelo, p. ej. «El núcleo es DEM Solicitud, relacionado con DEM Cliente y DEM Documento; todo está sincronizado salvo el catálogo de estados»}}.
 > **Volumen**: {{n}} record types, {{n}} CDTs, {{n}} data stores{{; n filas en total (recuento del data fabric)}}{{; n subdominios}}. **Hallazgos**: {{N (Alta: n)}} — principales: [H-DAT-01](#hallazgos) (o «sin hallazgos»).
@@ -91,10 +94,10 @@ erDiagram
 
 **Relaciones**
 
-| Relación | Tipo | Destino | Campo de enlace | Certeza |
-|---|---|---|---|---|
-| `{{cliente}}` | Muchos a uno | `{{DEM Cliente}}` | `{{idCliente}}` | ✅ |
-| `{{documentos}}` | Uno a muchos | `{{DEM Documento}}` | {{no lo devuelve la extracción}} | 🔵 |
+| Relación | Tipo | Destino | Campo de enlace | Certeza | Evidencia |
+|---|---|---|---|---|---|
+| `{{cliente}}` | Muchos a uno | `{{DEM Cliente}}` | `{{idCliente}}` | ✅ | [`mcp:recordType/{{DEM Solicitud}}#relationships.{{cliente}}`](./anexo/recordType/{{slug}}.md) |
+| `{{documentos}}` | Uno a muchos | `{{DEM Documento}}` | {{no lo devuelve la extracción}} | 🔵 | [`mcp:recordType/{{DEM Solicitud}}#relationships.{{documentos}}`](./anexo/recordType/{{slug}}.md) |
 
 Evidencia: [`mcp:recordType/{{nombre}}#{{fields}}`](./anexo/recordType/{{slug}}.md) · Certeza: ✅/🔵/❓
 

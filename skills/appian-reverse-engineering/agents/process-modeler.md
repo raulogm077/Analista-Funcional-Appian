@@ -23,7 +23,7 @@ Datos:
 - `<trabajo>/extraction_report.json`: fecha de la extracción (`startedAt`), para el temporizador.
 - `<salida>/anexo/processModel/<slug>.md`: la definición legible, para enlazarla.
 
-Opcionales: `references/appian-objects-guide.md` (tipos de nodo), `references/docs-mcp-usage.md` si hay Docs MCP (para un tipo de nodo o un comportamiento que no conozcas con seguridad) y la carpeta de la skill `appian-diagramas-bpmn`, si el orquestador te la pasa (ver «Diagramas»).
+Opcionales: `references/appian-objects-guide.md` (tipos de nodo) y la carpeta de la skill `appian-diagramas-bpmn`, si el orquestador te la pasa (ver «Diagramas»). Para un tipo de nodo o un comportamiento que no conozcas con certeza, «Dudas de Appian» de `SKILL.md`, que te pasa el orquestador, y `references/docs-mcp-usage.md`, con el tope de consultas y la caché compartida. Documentas hechos: no consultas `appian-best-practices` para decir qué conviene hacer.
 
 ## Qué analizar en cada process model
 
@@ -43,14 +43,14 @@ Lo que la extracción no devuelve (pestañas de excepciones, alertas y escalados
 
 ## Hallazgos (H-PRO)
 
-Registra lo que haya que corregir, decidir o vigilar en el flujo de un proceso. Por ejemplo:
+Registra lo que pasa en el flujo de un proceso y tiene un riesgo: qué pasa, dónde y qué riesgo tiene, no qué hacer. Por ejemplo:
 
 - una rama que ignora una decisión del usuario («Cancelar» sigue y guarda);
 - una pasarela sin salida por defecto o con condiciones que se solapan o no cubren todos los casos;
 - nodos inalcanzables, caminos sin fin o bucles sin salida;
 - una tarea de persona sin asignación clara;
 - instancias fallidas o detenidas en la muestra de ejecuciones (paso 8);
-- un proceso de más de 50 nodos no es tuyo: es el `H-GEN` de 09 (recomendación de Appian); cítalo.
+- un proceso de más de 50 nodos no es tuyo: es el `H-GEN` de 09; cítalo.
 
 Cada hallazgo va en dos sitios (formato en `execution-principles.md`, «Registro de hallazgos»): una fila en la sección Hallazgos del `<slug>.md` (o del `indice.md` si afecta a varios procesos) y una entrada en `<trabajo>/hallazgos/process-modeler.json`, con `area: "procesos"` e IDs `H-PRO-01`, `H-PRO-02`… sin huecos. Si se basa en algo que la extracción no devuelve, certeza ❓ (o 🔵 con indicios) y la pregunta para validarlo.
 
@@ -101,7 +101,7 @@ Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz la
 - [ ] Cada process model del inventario tiene `<slug>.md`, `<slug>.bpmn` (vía propia, con `bpmndi:BPMNDiagram`) y su diagrama: `<slug>(-N)?.mmd` + `.svg` (un fichero, o uno por tramo si pasa de 25 nodos), o `.drawio` + `.png`.
 - [ ] Cada `.mmd` pasa `validate_mermaid.py`, tiene ≤ 25 nodos y ninguno superó el aviso de ancho.
 - [ ] `indice.md` lista todos los procesos y el mapa refleja las aristas `subProcess` y `startProcess`.
-- [ ] Un solo TL;DR por documento; solo ✅/🔵/❓ como certeza y Alta/Media/Baja como severidad (solo en hallazgos).
+- [ ] Cada documento empieza por su «Responde a» y tiene un solo TL;DR; solo ✅/🔵/❓ como certeza y Alta/Media/Baja como severidad (solo en hallazgos).
 - [ ] Cada fila de Hallazgos está en `process-modeler.json` (o en `orquestador.json` si la añadió el orquestador) y al revés.
 - [ ] Sin referencias a la skill ni a `<trabajo>/`, sin `{{`, `TODO` ni `TBD`.
 
@@ -113,14 +113,14 @@ Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz la
 - `<salida>/08-procesos-bpmn/indice.md`.
 - `<salida>/diagrams/mapa-procesos.mmd` y `mapa-procesos.svg` (si hay mapa y `mmdc`).
 - `<trabajo>/hallazgos/process-modeler.json` (`[]` si no hay hallazgos).
-- `<trabajo>/docs_cache/process-modeler.json`, si consultas el Docs MCP.
+- `<trabajo>/docs_cache/process-modeler.json`, si consultas la documentación (por el Docs MCP o por la web).
 
 ## Informe final
 
 Breve, al orquestador:
 
 - ficheros generados y por qué vía (y si alguno cambió de vía, por qué);
-- consultas al Docs MCP;
+- consultas a la documentación (por el Docs MCP o por la web);
 - choques entre instrucciones que hayas encontrado y cómo los resolviste;
 - «Para otras áreas»: una línea por asunto con el documento propietario.
 

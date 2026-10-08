@@ -10,11 +10,14 @@
     Entorno ............. meta.environment {url, isProduction, appianVersion}; fecha: meta.source.extractedAt
     Cifras .............. counts, totals, layerBreakdown (sus 6 claves, en el orden y con los nombres de 02)
     Procesos críticos ... criticalProcesses (ya ordenados; máx. 5). Enlace: slug de objects.processModel
-    Hallazgos ........... findingsBySeverity, findingsByCertainty y findings de severidad Alta
-                          (si no hay Alta: los Media, máx. 5, y dilo en el TL;DR)
-    Secretos ............ secrets {count, objects}; tratamiento: los H-SEG de findings
-    Uso real ............ usage (top por ejecuciones; failedInSampleOf = fallos en una muestra) y signals[type=processModelsWithoutExecutions].
-                          Los fallos citan su H-PRO (08); los procesos sin ejecuciones, su H-GEN (09).
+    Hallazgos ........... findingsBySeverity, findingsByCertainty y findings de severidad Alta (si no hay Alta: los
+                          Media, máx. 5, y dilo en el TL;DR). Evidencia: la de cada uno en datos/hallazgos.json,
+                          enlazada a su ficha del anexo (datos/inventario.json → anexo)
+    Uso real ............ usage (los 3-5 más ejecutados; failedInSampleOf = fallos en una muestra) y
+                          signals[type=processModelsWithoutExecutions]. Los fallos citan su H-PRO (08); los
+                          procesos sin ejecuciones, su H-GEN (09). Sin historial, la sección es una línea:
+                          «La extracción no trae historial de ejecuciones.»
+  Los secretos son hallazgos H-SEG de severidad Alta: salen en «Hallazgos principales».
   Certeza: verificado ✅ · inferido 🔵 · pendiente ❓. En 00 los hallazgos se citan por ID, sin columna de severidad.
   Limitaciones globales (entorno no productivo, muestra de ejecuciones…): no se explican aquí; las cifras afectadas
   llevan la marca «orientativo (ver LEEME)».
@@ -22,7 +25,9 @@
 
 # {{meta.appName}}: resumen ejecutivo
 
-> **TL;DR**: {{Qué hace la aplicación y para quién, en lenguaje de negocio, 1-2 frases}}. {{Lo más importante: el hallazgo Alta principal en una frase}}.
+> **Responde a:** ¿Qué es la aplicación y qué tamaño tiene? ¿Qué procesos son críticos y cuánto se usan? ¿Qué es lo más grave que se ha encontrado? ¿Cuánto se puede confiar en esta documentación?
+
+> **TL;DR**: {{Qué hace la aplicación y para quién, en lenguaje de negocio, 1-2 frases}}. {{Lo más grave: el hallazgo Alta principal en una frase}}.
 > **Volumen**: {{totals.objects}} objetos ({{n}} process models, {{n}} interfaces, {{n}} record types). **Hallazgos**: {{N}} (Alta: {{findingsBySeverity.Alta}}) — principales: [{{H-SEG-01}}](./04-seguridad-grupos.md#hallazgos), [{{H-PRO-02}}](./08-procesos-bpmn/{{slug}}.md#hallazgos).
 
 | Dato | Valor |
@@ -43,16 +48,14 @@
 | Lógica | {{layerBreakdown["Lógica"]}} | {{n}} process models ({{n}} programados), {{n}} reglas, {{n}} decisiones, {{n}} agentes de IA | [08](./08-procesos-bpmn/indice.md), [11](./11-reglas-negocio.md) |
 | Datos | {{layerBreakdown["Datos"]}} | {{n}} record types, {{n}} CDTs, {{n}} data stores | [03](./03-modelo-datos.md) |
 | Integración | {{layerBreakdown["Integración"]}} | {{n}} integraciones, {{n}} connected systems | [05](./05-integraciones-consumidas.md) |
-| Transversal | {{layerBreakdown["Transversal"]}} | {{n}} constantes | [02](./02-arquitectura.md), [09](./09-valor-adicional.md#constantes-por-entorno-y-secretos) |
+| Transversal | {{layerBreakdown["Transversal"]}} | {{n}} constantes | [02](./02-arquitectura.md), [09](./09-valor-adicional.md#configuración-por-entorno) |
 | Seguridad | {{layerBreakdown["Seguridad"]}} | {{n}} grupos | [04](./04-seguridad-grupos.md) |
 
-{{totals.withDefinition}} de {{totals.objects}} objetos con definición ([INVENTARIO](./INVENTARIO.md)){{; fuera de las capas: n carpetas, n …}} · {{totals.hubs}} objetos muy reutilizados ([02](./02-arquitectura.md)) y {{totals.orphans}} sin referencias ([lista en 09](./09-valor-adicional.md#objetos-huérfanos)).
+{{totals.withDefinition}} de {{totals.objects}} objetos con definición ([INVENTARIO](./INVENTARIO.md)){{; fuera de las capas: n carpetas, n …}} · {{totals.hubs}} muy referenciados ([02](./02-arquitectura.md)) · {{totals.orphans}} sin referencias ([09](./09-valor-adicional.md#objetos-huérfanos)).
 
 ## Procesos críticos
 
-Criterio único para toda la documentación: cuántos objetos lo lanzan, a cuántas integraciones llama, si es programado y si tiene tareas humanas.
-
-| Proceso | Por qué es crítico | Programado | Ejecuciones |
+| Proceso | Por qué es crítico | Programado | Ejecuciones{{, orientativo (ver [LEEME](./LEEME.md))}} |
 |---|---|---|---|
 | [`{{name}}`](./08-procesos-bpmn/{{slug}}.md) | {{reasons, unidas por «, »}} | Sí/No | {{executions o «—»}} |
 
@@ -62,21 +65,18 @@ Criterio único para toda la documentación: cuántos objetos lo lanzan, a cuán
 
 {{N}} hallazgos: Alta {{n}} · Media {{n}} · Baja {{n}}; verificados {{n}}, inferidos {{n}}, pendientes de validar {{n}}. Registro completo en [09](./09-valor-adicional.md#registro-de-hallazgos).
 
-| ID | Hallazgo | Área | Certeza |
-|---|---|---|---|
-| [{{H-SEG-01}}](./{{documento}}) | {{titulo}} | {{area}} | ✅ |
-
-## Secretos
-
-Hay valores con aspecto de secreto escritos en {{secrets.count}} objetos: `{{objeto 1}}`, `{{objeto 2}}`. Tratamiento: [{{H-SEG-02}}](./04-seguridad-grupos.md#hallazgos).
+| ID | Hallazgo | Área | Certeza | Evidencia |
+|---|---|---|---|---|
+| [{{H-SEG-01}}](./{{documento}}) | {{titulo}} | {{area}} | ✅ | [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.md) |
 
 ## Uso real
 
-{{Los 3-5 procesos más ejecutados (usage: nombre, ejecuciones, última ejecución; fallos «en las últimas N» si hay failedInSampleOf, con su H-PRO) y N process models sin ejecuciones: `a`, `b` ([H-GEN-NN](./09-valor-adicional.md#hallazgos)). O «La extracción no trae historial de ejecuciones.»}}
-{{Si meta.environment.isProduction no es true: la marca «orientativo (ver [LEEME](./LEEME.md))» en la cabecera de la columna de ejecuciones (o tras la cifra, si va en texto), sin más explicación.}}
+| Proceso | Ejecuciones{{, orientativo (ver [LEEME](./LEEME.md))}} | Última | Fallos en la muestra |
+|---|---|---|---|
+| [`{{name}}`](./08-procesos-bpmn/{{slug}}.md) | {{executions}} | {{AAAA-MM-DD}} | {{«3 de las últimas 50» ([H-PRO-NN](./08-procesos-bpmn/{{slug}}.md#hallazgos)) o «—»}} |
+
+{{N}} process models sin ejecuciones: `{{a}}`, `{{b}}` ([{{H-GEN-NN}}](./09-valor-adicional.md#hallazgos)).
 
 ## Cobertura y límites
 
-{{1-3 líneas: lo que falta y cambia las conclusiones (p. ej. «sin volúmenes de datos», «sin role maps»). La lista completa está en [LEEME](./LEEME.md).}}
-
-Guía de lectura por perfil: [LEEME.md](./LEEME.md).
+{{1-3 líneas: lo que falta y cambia las conclusiones (p. ej. «sin volúmenes de datos», «sin role maps»)}}. La lista completa y la guía de lectura, en [LEEME](./LEEME.md).
