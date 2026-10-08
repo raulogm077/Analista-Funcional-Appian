@@ -116,6 +116,15 @@
   }
   const accentHex = () => (BRAND.site && BRAND.site.accentColor) || "#1d659c";
   const linkOn = (bg) => readableOn(bg, [accentHex(), (BRAND.site || {}).selectedPageHighlightColor]);
+  // iniciales del avatar de la cabecera, sobre el color de resaltado: el oscuro del site (el CSS, null) si llega a 4,5:1; si
+  // no, el texto de solidFg() y, si tampoco llega (resaltados de luminancia media), negro o blanco, el que más contraste dé
+  function avatarFg() {
+    const s = BRAND.site || {}, hl = s.selectedPageHighlightColor, bg = s.backgroundColor;
+    if (!rgbOf(hl) || !rgbOf(bg) || contrastOf(bg, hl) >= 4.5) return null;
+    const fg = solidFg(hl);
+    if (contrastOf(fg, hl) >= 4.5) return fg;
+    return contrastOf("#000000", hl) >= contrastOf("#ffffff", hl) ? "#000000" : "#ffffff";
+  }
   // contenedor con fondo oscuro (hex o esquema): marca .ondark y fija el color de enlace legible sobre ese fondo
   function darkProps(bg) {
     const hex = SCHEME_HEX[up(bg)] || (String(bg || "").startsWith("#") ? String(bg).slice(0, 7) : null);
@@ -2240,7 +2249,7 @@
     const user = site.user || { name: "Usuario" };
     const hdr = h("header", { class: "site-hdr", "data-sail": "Site · header bar", "data-k": "site" },
       h("div", { class: "site-brand" }, LOGO ? h("span", { html: LOGO, style: { display: "inline-flex" } }) : null, site.displayName ? h("span", { class: "dn" }, site.displayName) : null),
-      nav, h("div", { class: "site-user" }, h("span", { class: "uname" }, user.name), h("span", { class: "avatar", title: user.name }, FILTERS.initials(user.name))));
+      nav, h("div", { class: "site-user" }, h("span", { class: "uname" }, user.name), h("span", { class: "avatar", title: user.name, style: { color: avatarFg() } }, FILTERS.initials(user.name))));
     NODES.site = { type: "Site", navigationLayout: (BRAND.site || {}).navigationLayout, headerBarStyle: (BRAND.site || {}).headerBarStyle, backgroundColor: (BRAND.site || {}).backgroundColor, selectedPageHighlightColor: (BRAND.site || {}).selectedPageHighlightColor, accentColor: (BRAND.site || {}).accentColor, pages: pages.map((p) => p.title), $note: "Configuración del objeto Site (ver brand-*.json)" };
     const svg = hdr.querySelector(".site-brand svg"); if (svg) svg.classList.add("logo");
     return h("div", { class: "site" + ((BRAND.site || {}).useUppercase ? " upper" : "") + ((BRAND.site || {}).useUppercasePageTitles ? " upper-titles" : "") }, hdr, h("main", { class: "site-body" }, content));

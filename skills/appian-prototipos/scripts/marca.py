@@ -612,7 +612,7 @@ def crear(a):
         print("marca.py crear: un ajuste de contraste no llega; no se escribe nada.\n  " + "\n  ".join(fallos), file=sys.stderr)
         sys.exit(2)
 
-    forma = a.formas or "SEMI_ROUNDED"
+    forma = a.formas or "SQUARED"  # la de Appian: la marca solo cambia lo que dicta el cliente
     mayus = (a.mayusculas or "si") == "si"
     logo, logo_claro = (f"logo-{a.id}-on-dark.svg" if "--logo" in logos else None), (f"logo-{a.id}-on-light.svg" if "--logo-claro" in logos else None)
     limpios = {o: limpiar_svg(t) for o, t in logos.items()}
@@ -820,7 +820,7 @@ def guia_md(a, brand, graf, ajustes, avisos, logo, logo_claro, peor, tip, hoy):
     if cp:
         pend.append("Que el entorno tiene las capacidades avanzadas o premium que pide el perfil CSS.")
     if not a.formas:
-        pend.append("Las esquinas: Semi-rounded por defecto, sin dato de la marca.")
+        pend.append("Las esquinas: Squared, las de Appian, sin dato de la marca (se eligen mirando los botones y los campos de su web).")
     if not a.mayusculas:
         pend.append("Las mayúsculas en botones y títulos de página: las de Appian (sí), sin dato de la marca.")
     pend.append(f"Los ficheros de la tipografía {tip} (WOFF2, WOFF, OTF o TTF) para subirlos a Appian." if tip else "La tipografía de la marca, si tiene una propia.")
@@ -846,7 +846,8 @@ def main():
     c.add_argument("--secundarios", help="otros colores de la marca, separados por comas")
     c.add_argument("--logo", help="SVG del logo para fondo oscuro (la cabecera del site)")
     c.add_argument("--logo-claro", help="SVG del logo para fondo claro")
-    c.add_argument("--formas", choices=FORMAS, help="esquinas de botones, campos y diálogos (por defecto, SEMI_ROUNDED)")
+    c.add_argument("--formas", choices=FORMAS, help="esquinas de botones, campos y diálogos, como las de su web: rectas, SQUARED "
+                                                    "(por defecto, la de Appian); redondeadas, SEMI_ROUNDED; píldora, ROUNDED")
     c.add_argument("--mayusculas", choices=("si", "no"), help="mayúsculas en botones y títulos de página (por defecto, si, como el Site de Appian)")
     c.add_argument("--tipografia", help="tipografía de la marca")
     c.add_argument("--sin-perfil-css", action="store_true", help="sin perfil CSS (el entorno no tiene las capacidades avanzadas o premium)")

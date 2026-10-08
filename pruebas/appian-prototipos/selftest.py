@@ -11,9 +11,10 @@ Prueba el kit de $PLUGIN_A_PROBAR/skills/appian-prototipos (por defecto, el de e
    logo); con una marca que no está junto al app.json, error que dice dónde ponerla; y los helpers, con la neutra por
    defecto y la del proyecto con usar_marca().
 3. La configuración de marca de un cliente con marca.py, con la de una empresa ficticia: crear (con y sin perfil CSS,
-   el contraste de cada color, el logo, el perfil, la guía y los errores) y construir con ella el catálogo de patrones;
-   y web contra datos/web-ficticia/, servida en 127.0.0.1 por la propia prueba, y contra un puerto cerrado.
-4. Si hay Playwright y un navegador, pasa la prueba de humo y la auditoría de contraste a todo lo construido.
+   el contraste de cada color, el logo, el perfil, la guía y los errores) y construir con cada una el catálogo de
+   patrones; y web contra datos/web-ficticia/, servida en 127.0.0.1 por la propia prueba, y contra un puerto cerrado.
+4. Si hay Playwright y un navegador, pasa la prueba de humo y la auditoría de contraste a todo lo construido y comprueba
+   que, con la marca estándar, las iniciales del avatar de la cabecera siguen con el oscuro del site.
 Sale con 0 si validar y construir funcionan (lo imprescindible); la prueba de humo y
 las capturas son opcionales y se informa de lo que falta para tenerlas.
 """
@@ -169,9 +170,10 @@ def marca_cliente(tmp, built):
     negativo = tmp / "logo-negativo.svg"  # el logo para fondo oscuro: el de la web con el texto en blanco
     negativo.write_text(claro.replace('fill="#1D2B4A"', 'fill="#FFFFFF"'), encoding="utf-8")
 
-    # 1. crear, con perfil CSS, el logo en negativo para la cabecera y el de la web para fondos claros
+    # 1. crear, con perfil CSS, el logo en negativo para la cabecera y el de la web para fondos claros; los botones y los
+    # campos de la web ficticia tienen las esquinas redondeadas: SEMI_ROUNDED
     carpeta = tmp / "Carpeta con espacios" / "Gestión app" / "prototipo"
-    code, salida = run([marca, "crear", *opciones(), "--logo", negativo, "--logo-claro", WEB / "logo.svg", carpeta])
+    code, salida = run([marca, "crear", *opciones(formas="SEMI_ROUNDED"), "--logo", negativo, "--logo-claro", WEB / "logo.svg", carpeta])
     f = {n: carpeta / n for n in ("brand-x.json", "logo-x-on-dark.svg", "logo-x-on-light.svg", "perfil-css-x.txt", "marca-x.md")}
     probs = []
     if code or not f["brand-x.json"].is_file():
@@ -197,7 +199,10 @@ def marca_cliente(tmp, built):
         rep = Report()
         check_css_profile(b, rep)
         probs += [f"perfil CSS: {e}" for e in rep.errors]
-        flat = {k: v for g in (b.get("cssProfile") or {}).get("groups") or [] for k, v in (g.get("properties") or {}).items()}
+        grupos = (b.get("cssProfile") or {}).get("groups") or []
+        if len(grupos) != 6:
+            probs.append(f"el perfil CSS de una marca SEMI_ROUNDED lleva {len(grupos)} grupos y no seis: {[g.get('comment') for g in grupos]}")
+        flat = {k: v for g in grupos for k, v in (g.get("properties") or {}).items()}
         for texto, fondo in SEMANTICOS:
             fg, bg = flat.get(texto, std_css[texto]), flat.get(fondo, std_css[fondo])
             if min(contrast(fg, "#FFFFFF"), contrast(fg, bg)) < 4.5:
@@ -235,9 +240,10 @@ def marca_cliente(tmp, built):
     out.append(("marca.py crear: brand-x.json con las secciones de la estándar y su perfil CSS, contraste AA, logos, perfil, "
                 "guía con el Site y los ajustes; el catálogo construido con ella", probs))
 
-    # 2. crear --sin-perfil-css, con un realce que no se ve sobre el oscuro y el logo de la web (para fondo claro)
+    # 2. crear --sin-perfil-css y sin --formas, con un realce que no se ve sobre el oscuro y el logo de la web (para fondo
+    # claro); con esa marca, el catálogo de patrones (el avatar de la cabecera, sobre el realce a 3:1, tiene que leerse)
     carpeta = tmp / "Carpeta con espacios" / "Sin perfil" / "prototipo"
-    code, salida = run([marca, "crear", *opciones(realce="#3E5C8A", secundarios=None, tipografia=None, formas="SQUARED", mayusculas="no"),
+    code, salida = run([marca, "crear", *opciones(realce="#3E5C8A", secundarios=None, tipografia=None, mayusculas="no"),
                         "--logo", WEB / "logo.svg", "--sin-perfil-css", carpeta])
     probs = []
     if code or not (carpeta / "brand-x.json").is_file():
@@ -258,8 +264,16 @@ def marca_cliente(tmp, built):
             probs.append(f"no avisa de que el logo no llega a 3:1 sobre el oscuro (hace falta su versión en negativo):\n{salida[-600:]}")
         formas = {k: site.get(k) for k in ("buttonShape", "inputShape", "dialogShape", "useUppercase", "useUppercasePageTitles")}
         if formas != {"buttonShape": "SQUARED", "inputShape": "SQUARED", "dialogShape": "SQUARED", "useUppercase": False, "useUppercasePageTitles": False}:
-            probs.append(f"--formas SQUARED --mayusculas no da {formas}")
-    out.append(("marca.py crear --sin-perfil-css: sin perfil; aclara el realce hasta 3:1 y avisa del logo que no se ve sobre el oscuro", probs))
+            probs.append(f"sin --formas (SQUARED, la de Appian) y con --mayusculas no da {formas}")
+        spec, html = carpeta / "app.json", carpeta / "prototipo.html"
+        spec.write_text((ROOT / "templates" / "catalogo-patrones.json").read_text(encoding="utf-8"), encoding="utf-8")
+        code, salida = run([HERE / "build.py", spec, "-o", html, "--brand", "x"])
+        if code or not html.exists():
+            probs.append(f"build.py --brand x falla con la marca sin perfil CSS:\n{salida[-800:]}")
+        else:
+            built.append(("catálogo de patrones con la marca de marca.py sin perfil CSS", html, spec))
+    out.append(("marca.py crear --sin-perfil-css: sin perfil; SQUARED sin --formas; aclara el realce hasta 3:1 y avisa del logo que "
+                "no se ve sobre el oscuro; el catálogo construido con ella", probs))
 
     # 3. errores: sale con 2, dice por qué y no escribe nada
     probs = []
@@ -321,6 +335,32 @@ def marca_cliente(tmp, built):
     out.append(("marca.py web: los dos colores de marca de la web ficticia entre los tres primeros, el logo de la cabecera el "
                 "primero, el icono del sitio al final y su tipografía; sin respuesta, sale con 2", probs))
     return out
+
+
+# color calculado de las iniciales del avatar de la cabecera y su color propio (style), en el navegador
+AVATAR = ("import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); from entorno import sync_playwright, launch_browser\n"
+          "with sync_playwright() as p:\n"
+          "    b = launch_browser(p); pg = b.new_page()\n"
+          "    pg.route('**/*', lambda r: r.continue_() if r.request.url.startswith(('file:', 'data:', 'blob:')) else r.abort())\n"
+          "    pg.goto(Path(sys.argv[2]).resolve().as_uri()); pg.wait_for_function('window.PROTO && window.PROTO.ready')\n"
+          "    print(pg.evaluate(\"() => { const a = document.querySelector('.site-user .avatar'); return a ? getComputedStyle(a).color + '|' + a.style.color : 'sin avatar'; }\"))\n"
+          "    b.close()\n")
+
+
+def avatar_estandar(built):
+    """(qué, problemas) de las iniciales del avatar con la marca estándar: siguen con el oscuro del site, el color del CSS, sin
+    color propio (el mismo texto que antes). None si no hay navegador."""
+    cat = next((html for _, html, spec in built if spec.name == "catalogo-patrones.json"), None)
+    que = "marca estándar: las iniciales del avatar de la cabecera siguen con el oscuro del site, como antes"
+    if cat is None:
+        return que, ["no se construyó el catálogo de patrones"]
+    code, salida = run(["-c", AVATAR, HERE, cat])
+    if code == 2:
+        return None
+    oscuro = json.loads((ROOT / "assets" / "brand-appian.json").read_text(encoding="utf-8"))["site"]["backgroundColor"]
+    esperado = "rgb(%d, %d, %d)|" % tuple(int(oscuro[i:i + 2], 16) for i in (1, 3, 5))
+    ultima = salida.splitlines()[-1] if salida else ""
+    return que, [] if code == 0 and ultima == esperado else [f"esperaba «{esperado}» (color calculado|color propio) y sale ({code}):\n{salida[-400:]}"]
 
 
 def main():
@@ -386,6 +426,11 @@ def main():
             else:
                 ok = False
                 print(f"✗ Contraste ({name}):\n{out}")
+        avatar = avatar_estandar(built) if browser else None
+        if avatar:
+            que, probs = avatar
+            ok = ok and not probs
+            print(f"✗ Cabecera: {que}\n  " + "\n  ".join(probs) if probs else f"✓ Cabecera: {que}")
     print("\nKit listo." if ok else "\nEl kit tiene errores: revisa los mensajes anteriores.")
     sys.exit(0 if ok else 1)
 

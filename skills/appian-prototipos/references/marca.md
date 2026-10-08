@@ -63,8 +63,9 @@ Las claves que empiezan por `_` son comentarios.
    - `--acento`: enlaces, pestañas, bordes `OUTLINE` y, si no hay `--principal`, el botón principal (`ACCENT`).
    - `--principal`: el color del botón principal, si no es el acento; que se distinga del fondo (3:1).
    - `--secundarios`: los demás colores de la marca, para gráficos y barras decorativas.
-   - `--formas`: esquinas rectas, `SQUARED`; suaves, `SEMI_ROUNDED` (por defecto); de píldora, `ROUNDED` (los campos se
-     quedan en `SEMI_ROUNDED`, que es lo que admite el Site).
+   - `--formas`: se elige mirando los botones y los campos de su web: esquinas rectas, `SQUARED`; redondeadas,
+     `SEMI_ROUNDED`; píldora, `ROUNDED` (los campos se quedan en `SEMI_ROUNDED`, que es lo que admite el Site). Sin ella,
+     `SQUARED`, la de Appian: la marca solo cambia lo que dicta el cliente.
    - `--mayusculas si|no`: etiquetas de botón y títulos de página en mayúsculas; por defecto `si`, como el Site de Appian.
    - `--tipografia`: la de la marca, si tiene una propia.
    - `--logo`: el SVG para fondo oscuro, sin lema; `--logo-claro`, el de fondo claro.
