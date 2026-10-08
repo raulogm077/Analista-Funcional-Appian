@@ -1,8 +1,10 @@
 # Reglas de presentación
 
-Cómo se escribe **cada** entregable de `<salida>/`. Son la única fuente de estructura y estilo: las plantillas de `assets/markdown-templates/` las concretan para cada documento y los ficheros de agente dicen **qué** analizar, no cómo maquetar.
+Cómo se escribe **cada** entregable de `<salida>/`. Son la única fuente de estructura, evidencia y marcas: las plantillas de `assets/markdown-templates/` las concretan para cada documento y los ficheros de agente dicen **qué** analizar, no cómo maquetar.
 
-**Precedencia** (si aun así algo choca): la **plantilla** manda en la estructura del documento; el **fichero del agente** manda en el contenido y el criterio de análisis; estas reglas mandan en el estilo y los límites. Si encuentras un choque, aplica este orden y anótalo en tu informe al orquestador.
+**Prosa.** Sigue las reglas comunes del plugin, en `appian-functional-analyst/references/redaccion.md` (junto a esta skill: `<skill>/../appian-functional-analyst/references/redaccion.md`): frases cortas de una idea, concretas, cada cosa una sola vez, sin relleno ni muletillas. Lo que allí es solo del DF (nada de Appian, perfiles y no personas, negrita) no vale aquí: los objetos y los usuarios de la aplicación se nombran tal cual.
+
+**Precedencia** (si aun así algo choca): la **plantilla** manda en la estructura del documento; el **fichero del agente** manda en el contenido y el criterio de análisis; estas reglas mandan en la presentación y los límites. Si encuentras un choque, aplica este orden y anótalo en tu informe al orquestador.
 
 ---
 
@@ -112,7 +114,7 @@ No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). Una buena p
 
 ## Regla 8: lo que el lector no debe ver
 
-- **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts, códigos internos de patrones (`DAT-02`) ni «heurística de la skill». Nombra la buena práctica y su fuente oficial.
+- **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts ni «heurística de la skill». Nombra la buena práctica y su fuente oficial.
 - **Notas de parche**: nunca «01 todavía dice…», «esto matiza a…», «corrige lo que dice X». Si otro documento está mal, se corrige ese documento (pasada de coherencia de la fase 6).
 - **`<trabajo>/`** (`extraccion/`): los entregables no lo enlazan ni escriben su ruta (son datos en bruto). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
 - **Limitaciones globales** (entorno no productivo, versión no determinada, muestra de ejecuciones, configuración que el Dev MCP no devuelve): se explican una vez en `LEEME.md`. Cada documento cita en su «Cobertura y límites» solo las que cambian lo que dice, en una línea. Donde una cifra dependa de ellas (p. ej. ejecuciones en un entorno que no consta como producción), no repitas la explicación: usa la marca corta «orientativo (ver [LEEME](./LEEME.md))» (`../LEEME.md` desde `08-procesos-bpmn/`), una vez por tabla o sección (p. ej. en la cabecera de la columna).
@@ -149,5 +151,6 @@ Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal 
 - [ ] Hallazgos solo de tu área, con ID del registro.
 - [ ] Sin referencias a la skill, sin notas de parche, sin enlaces a `<trabajo>/`.
 - [ ] Sin placeholders (`{{`, `TODO`, `TBD`, `xxx`, `lorem`).
+- [ ] Prosa como dice `redaccion.md`: sin muletillas, frases de 35 palabras como mucho y ningún párrafo copiado de otro documento.
 - [ ] Cada ficha con evidencia y certeza; cada evidencia enlaza su ficha del anexo.
 - [ ] Ninguna ficha recortada u omitida por longitud.

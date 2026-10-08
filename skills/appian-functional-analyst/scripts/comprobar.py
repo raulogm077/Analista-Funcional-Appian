@@ -30,8 +30,8 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import modelo as mo
+import redaccion as rd
 
-SKILL = pathlib.Path(__file__).resolve().parents[1]
 SECCIONES = {"F": [str(n) for n in range(1, 12)], "T": [str(n) for n in range(0, 16)], "D": ["versiones", "decisiones"]}
 PRIORIDADES = ("imprescindible", "deseable")
 TIPOS_D = ("CAMBIA", "ANULA", "VALIDA", "RESPONDE", "ALCANCE+", "ALCANCE−", "ALCANCE-")
@@ -241,20 +241,8 @@ def comprobar_limpieza(m):
     informe("DF: sin términos de Appian (van en el técnico)", appian)
 
 
-def muletillas():
-    f = SKILL / "references" / "redaccion.md"
-    if not f.exists():
-        return []
-    return [mo.normaliza(x) for x in re.findall(r"^- «([^»]+)» →", f.read_text(encoding="utf-8"), re.M)]
-
-
-def frases(texto):
-    texto = re.sub(r"\*\*|~~|\||https?://\S+", " ", texto)
-    return [f.strip() for f in re.split(r"(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ«¿])", texto) if f.strip()]
-
-
 def comprobar_redaccion(m):
-    lista = muletillas()
+    lista = rd.muletillas()
     for d in ("F", "T"):
         if d not in m.docs:
             continue
@@ -267,9 +255,9 @@ def comprobar_redaccion(m):
                     mul.append(f"l.{i + 1} «{x}»")
             celdas = mo.celdas(l) if l.startswith("|") else [l]
             for c in celdas:
-                for f in frases(c):
+                for f in rd.frases(c):
                     pal = re.findall(r"\w+", f)
-                    if len(pal) > 35:
+                    if len(pal) > rd.MAX_PALABRAS:
                         largas.append(f"l.{i + 1} ({len(pal)} palabras)")
                     if d == "F":
                         nf = mo.normaliza(f)
@@ -282,7 +270,7 @@ def comprobar_redaccion(m):
                                     vagas.append(f"l.{i + 1} «{v}»")
         n = mo.DOCS[d]
         informe(f"{n}: sin muletillas (references/redaccion.md)", mul, grave=False)
-        informe(f"{n}: frases de 35 palabras o menos", largas, grave=False)
+        informe(f"{n}: frases de {rd.MAX_PALABRAS} palabras o menos", largas, grave=False)
         if d == "F":
             informe(f"{n}: palabras vagas con su cifra", vagas, grave=False)
             rep = [f"l.{', '.join(map(str, v[:3]))} «{k[:50]}…»" for k, v in vistas.items() if len(v) > 1]

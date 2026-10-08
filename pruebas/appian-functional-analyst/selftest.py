@@ -56,6 +56,27 @@ def main():
         ok("solo avisa de las capturas que faltan", "· pantallas con su captura" in out and
            len(re.findall(r"^· ", out, re.M)) == 1, out)
 
+        # 1b. Reglas de prosa en un solo sitio (redaccion.py, que usa también ingeniería inversa)
+        sys.path.insert(0, str(S))
+        try:
+            import redaccion
+        except ImportError as e:
+            ok("redaccion.py se importa", False, repr(e))
+        else:
+            guia = tmp / "Carpeta con espacios" / "redaccion.md"
+            guia.parent.mkdir(parents=True)
+            guia.write_text("# Muletillas\n\n- «Cabe destacar» → quítalo\n- «Así mismo» → quítalo\n", encoding="utf-8")
+            ok("redaccion.muletillas(ruta) las devuelve normalizadas",
+               redaccion.muletillas(guia) == ["cabe destacar", "asi mismo"], str(redaccion.muletillas(guia)))
+            ok("redaccion.frases y MAX_PALABRAS",
+               redaccion.frases("Una frase. Otra más.") == ["Una frase.", "Otra más."] and redaccion.MAX_PALABRAS == 35)
+            p25 = " ".join(f"palabra{n}" for n in range(25)) + "."
+            p15 = " ".join(f"otra{n}" for n in range(15)) + "."
+            rep = redaccion.parrafos_repetidos({"uno.md": f"# Uno\n\n{p25}\n\n{p15}\n",
+                                                "dos.md": f"Algo distinto.\n\n{p15}\n\n{p25}\n"})
+            ok("redaccion.parrafos_repetidos: el de 25 palabras en dos textos, no el de 15",
+               rep == [(p25, ["uno.md", "dos.md"])], str(rep))
+
         # 2. Consultas
         for args, espera in [(("resumen",), "Pendiente de confirmar con el cliente: 2"),
                              (("buscar", "informe", "organismo", "-n", "3"), "HU-07"),

@@ -399,7 +399,7 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
 - Crear: `skills/appian-functional-analyst/scripts/redaccion.py`.
 - Modificar: `skills/appian-functional-analyst/scripts/comprobar.py` (usa `redaccion.py`; mismo comportamiento) y
   `pruebas/appian-functional-analyst/selftest.py`; `skills/appian-reverse-engineering/references/presentation-rules.md`: se quedan el esqueleto
-  de documento (TL;DR, Vista, Detalle, Hallazgos, Cobertura) y las reglas de evidencia, marcas de certeza y usuarios;
+  de documento (TL;DR, Vista, Detalle, Hallazgos, Cobertura) y las reglas de evidencia y marcas de certeza;
   las de prosa remiten a `appian-functional-analyst/references/redaccion.md`.
 
 **Interfaces:**
@@ -407,11 +407,11 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   `redaccion.frases(texto) -> list[str]`, `redaccion.MAX_PALABRAS = 35`,
   `redaccion.parrafos_repetidos(textos: dict[str, str], minimo=20) -> list[tuple[str, list[str]]]`.
 
-- [ ] **Paso 1:** en el selftest del analista: con un `redaccion.md` temporal de dos muletillas, `muletillas(ruta)` las
+- [x] **Paso 1:** en el selftest del analista: con un `redaccion.md` temporal de dos muletillas, `muletillas(ruta)` las
   devuelve normalizadas; `parrafos_repetidos` encuentra un párrafo de 25 palabras que está en dos textos y no uno de 15.
   → FALLA (no existe el módulo).
-- [ ] **Paso 2:** crear `redaccion.py` moviendo `muletillas()` y `frases()` de `comprobar.py`.
-- [ ] **Paso 3:** selftest del analista sin fallos y con los mismos avisos que antes en `autorizaciones`. Recortar
+- [x] **Paso 2:** crear `redaccion.py` moviendo `muletillas()` y `frases()` de `comprobar.py`.
+- [x] **Paso 3:** selftest del analista sin fallos y con los mismos avisos que antes en `autorizaciones`. Recortar
   `presentation-rules.md`. Commit «F3: reglas de prosa en un solo sitio».
 
 ### Tarea 5: `as-is/datos/`, el contrato con las demás skills
