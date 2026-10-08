@@ -23,7 +23,7 @@ Eres el propietario de dos áreas de hallazgos: **pantallas** (`H-UI`, en 10) y 
 
 **Pantalla.** Interfaz que ve un usuario final a través de un punto de entrada: página de site, vista de record, acción de record, formulario de inicio o formulario de tarea. Las interfaces que solo se usan dentro de otras (secciones, componentes) no son pantallas: se mencionan en la pantalla que las contiene.
 
-**Qué guarda un formulario.** La interacción del usuario solo cambia datos a través del `saveInto` del componente (Fuente: https://docs.appian.com/suite/help/26.6/enabling_user_interaction.html#main_content). Antes de afirmar que un campo guarda algo, busca su `saveInto` en la expresión del anexo:
+**Qué guarda un formulario.** La interacción del usuario solo cambia datos a través del `saveInto` del componente (Fuente: https://docs.appian.com/suite/help/latest/enabling_user_interaction.html#main_content). Antes de afirmar que un campo guarda algo, busca su `saveInto` en la expresión del anexo:
 
 - `value` sin `saveInto`: el campo **muestra** un dato, pero lo que el usuario escribe o elige **no se guarda**;
 - un botón guarda o lanza algo solo por su `saveInto` (`a!save`, `a!writeRecords`, `a!startProcess`…) y por `submit`;

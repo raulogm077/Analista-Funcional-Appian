@@ -20,8 +20,8 @@ Plantilla de la respuesta que devuelve la skill **al terminar** todas las fases 
 - <cada pregunta de `preguntas`: Respondida, Parcial o Sin resolver; las que quedan abiertas, con su NV o la limitación que lo impide>
 
 ## Documentos
-- Empieza por `LEEME.md` (preguntas de esta revisión y rutas de lectura por perfil).
-- `00`–`11`, `INVENTARIO.md` y `anexo/` (definición original de <N> objetos)
+- Empieza por `LEEME.md` (cifras, hallazgos principales, preguntas de esta revisión y rutas de lectura por perfil).
+- `01`–`11`, `INVENTARIO.md` y `anexo/` (definición original de <N> objetos)
 - Diagramas: <N> Mermaid (<N> en SVG) · <N> BPMN
 - <Documentos que no aplican, p. ej. «07: la aplicación no tiene procesos programados»>
 
@@ -66,7 +66,7 @@ Plantilla de la respuesta que devuelve la skill **al terminar** todas las fases 
 Sobre una aplicación real, la skill es correcta cuando:
 
 - Documenta el 100 % de los objetos que lista el Dev MCP (`INVENTARIO.md`) y dice cuáles no tienen definición y por qué.
-- Genera `LEEME`, `00`–`11`, `INVENTARIO` y el `anexo/`; todos los diagramas se renderizan o quedan sustituidos por una tabla.
+- Genera `LEEME`, `01`–`11`, `INVENTARIO` y el `anexo/`; todos los diagramas se renderizan o quedan sustituidos por una tabla.
 - Cada integración queda con endpoint, método, autenticación y quién la llama.
 - Cada Web API queda con URL, método, qué dispara y grupos autorizados (❓ si la seguridad no está disponible).
 - Cada process model tiene su BPMN y su uso real (o «sin historial»).

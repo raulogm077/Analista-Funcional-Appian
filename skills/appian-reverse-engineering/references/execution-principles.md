@@ -47,7 +47,7 @@ Si al analizar tu área ves algo de otra (p. ej. ui-rules-analyzer nota que un p
 **Un solo dueño por señal.** Las señales que ven varios agentes tienen un único dueño; los demás citan su ID:
 
 - Process model sin ejecuciones: `H-GEN` (09). 07 y 02 citan el ID.
-- Instancias fallidas o detenidas en la muestra de ejecuciones: `H-PRO` (08). 07 y 00 citan el ID.
+- Instancias fallidas o detenidas en la muestra de ejecuciones: `H-PRO` (08). 07 y LEEME citan el ID.
 - Process model de más de 50 nodos: `H-GEN` (09). 08 y 02 citan el ID.
 - Objetos huérfanos: la lista es una sola, en 09 («Objetos huérfanos»); el hallazgo es `H-ARQ` (02). 03, 10 y los demás citan `H-ARQ`/`H-GEN` o enlazan esa lista, sin repetirla.
 - Objetos de fuera de la aplicación que esta llama (nodos `external: true` de `graph.json`): la tabla está en 02 («Dependencias externas») y lo que no se pudo verificar de ellos es `NV-ARQ`. 08, 10 y los demás citan su NV.
@@ -86,7 +86,7 @@ Un hallazgo es algo que pasa en la aplicación y tiene un riesgo de negocio, de 
    - `documento`: ruta relativa a `<salida>` (con ancla si quieres).
    - `duplicadoDe` (solo lo pone el orquestador): ID canónico cuando dos entradas son el mismo hallazgo.
 
-**La certeza viaja con el hallazgo.** Un hallazgo 🔶 o ❓ conserva su marca, o se redacta en condicional («probablemente», «la definición indica»), allí donde se resuma: TL;DR, 00 y tablas de reglas. Un hallazgo se explica solo en su documento propietario; en los demás, una línea con su ID.
+**La certeza viaja con el hallazgo.** Un hallazgo 🔶 o ❓ conserva su marca, o se redacta en condicional («probablemente», «la definición indica»), allí donde se resuma: TL;DR, LEEME y tablas de reglas. Un hallazgo se explica solo en su documento propietario; en los demás, una línea con su ID.
 
 `<skill>/scripts/build_registry.py` valida estos ficheros (un inferido sin `base` es un error) y genera la tabla del registro en `09-valor-adicional.md`. El resto de documentos citan el hallazgo por su ID y no repiten su severidad.
 
@@ -125,7 +125,7 @@ En `<trabajo>/sin-verificar/<agente>.json` (el orquestador usa `orquestador.json
 
 ## 5. Pasada de coherencia (orquestador, fase 6)
 
-Antes de escribir `00`, el orquestador lee todos los documentos y:
+Antes de escribir `LEEME`, el orquestador lee todos los documentos y:
 
 1. **Contradicciones** (una cifra, un comportamiento o un hecho distinto según el documento): comprueba en `<trabajo>/` cuál es correcto y **corrige el documento equivocado** en su sitio. Prohibido dejar notas del tipo «X todavía dice…» o «esto matiza a…».
 2. **Duplicados**: si dos propietarios registraron lo mismo, pon `duplicadoDe` en el JSON del que no es propietario y sustituye en su documento la fila por una línea que enlace el ID canónico. Donde se cite el ID fusionado, cámbialo por el canónico. Igual con los NV.

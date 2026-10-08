@@ -26,7 +26,7 @@
 |---|---|---|---|---|---|---|
 | [`{{nombre}}`](#{{ancla-de-la-ficha}}) | {{Cada lunes a las 08:00}} | {{Europe/Madrid}} | {{N o «—»}} | {{AAAA-MM-DD o «—»}} | ✅ | [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](./anexo/processModel/{{slug}}.md) |
 
-Fuentes: [zona horaria de un temporizador](https://docs.appian.com/suite/help/26.6/Intermediate_Event_-_Timer.html#configuring-the-time-zone-used) · [cuenta con la que se ejecuta](https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors).
+Fuentes: [zona horaria de un temporizador](https://docs.appian.com/suite/help/latest/Intermediate_Event_-_Timer.html#configuring-the-time-zone-used) · [cuenta con la que se ejecuta](https://docs.appian.com/suite/help/latest/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors).
 
 ## Detalle
 

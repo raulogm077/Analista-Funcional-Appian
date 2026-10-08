@@ -42,7 +42,45 @@ def fijo(texto: str, relleno: str = "x") -> str:
 
 
 def test_hay_plantillas():
-    assert {"LEEME.md", "INVENTARIO.md", "00-resumen-ejecutivo.md", PROCESO} <= {rel(p) for p in PLANTILLAS}
+    """LEEME es la entrada a la documentación: no hay un 00 aparte ni nada que lo enlace."""
+    assert {"LEEME.md", "INVENTARIO.md", PROCESO} <= {rel(p) for p in PLANTILLAS}
+    assert not any(rel(p).startswith("00") or "00-resumen" in p.read_text(encoding="utf-8") for p in PLANTILLAS)
+
+
+def secciones(texto: str) -> list[str]:
+    return [l[3:].strip() for _, l in ca.lineas(texto) if l.startswith("## ")]
+
+
+def test_leeme_es_la_entrada():
+    """En este orden: las preguntas, el TL;DR con el volumen, los datos de la extracción, lo que era el resumen
+    ejecutivo y la guía. Sin la tabla de preguntas por documento ni otra «Cobertura y límites»."""
+    texto = (CARPETA / "LEEME.md").read_text(encoding="utf-8")
+    lineas = [l.strip() for l in sin_comentarios(texto).splitlines() if l.strip()]
+    assert lineas[1].startswith(PREGUNTAS)
+    assert lineas[2].startswith("> **TL;DR**") and lineas[3].startswith("> **Volumen**"), lineas[2:4]
+    datos = lineas[4:lineas.index(next(l for l in lineas if l.startswith("## ")))]
+    assert [ca.celdas(l)[0] for l in datos[2:]] == ["Entorno", "Versión de Appian", "Extracción",
+                                                   "Confianza de la documentación"], datos
+    assert secciones(texto) == ["La aplicación en cifras", "Procesos críticos", "Hallazgos principales", "Uso real",
+                                "Preguntas de esta revisión", "Por dónde empezar", "Cómo leer", "Sin verificar",
+                                "Qué no incluye", "Términos de Appian"]
+    sin_verificar = texto.split("## Sin verificar", 1)[1].split("\n## ", 1)[0]
+    assert "<!-- sin-verificar:inicio -->" in sin_verificar and "<!-- sin-verificar:fin -->" in sin_verificar
+
+
+def test_que_no_incluye_sin_lineas_fijas():
+    """Cada línea de «Qué no incluye» se escribe solo si es verdad en esa extracción: ninguna va fija."""
+    seccion = (CARPETA / "LEEME.md").read_text(encoding="utf-8").split("## Qué no incluye", 1)[1].split("\n## ", 1)[0]
+    lineas = [l for _, l in ca.lineas(seccion) if l.strip()]
+    assert lineas and all(l.startswith("- {{") and l.rstrip().endswith("}}") for l in lineas), lineas
+
+
+def test_documentacion_de_appian_en_latest():
+    """Lo que acaba en un entregable enlaza la documentación de Appian en la forma /latest/ («Dudas de Appian»)."""
+    versiones = [f"{rel(p)}:{n} {m.group(0)}" for p in PLANTILLAS
+                 for n, l in enumerate(p.read_text(encoding="utf-8").splitlines(), 1)
+                 for m in re.finditer(r"docs\.appian\.com/suite/help/(?!latest/)[^/\s]+/", l)]
+    assert versiones == []
 
 
 def test_cada_plantilla_empieza_por_sus_preguntas():

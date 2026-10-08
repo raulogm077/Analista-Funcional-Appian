@@ -26,7 +26,7 @@
 | Métrica | Valor |
 |---|---|
 | Líneas de expresiones (interfaces, reglas, integraciones, Web APIs) | {{N}} |
-| Process models con más de 50 nodos ([fuente](https://docs.appian.com/suite/help/26.6/appian-recommendations.html#process-model-design-guidance)) | {{N}} (el mayor, `{{nombre}}`, con {{N}}) |
+| Process models con más de 50 nodos ([fuente](https://docs.appian.com/suite/help/latest/appian-recommendations.html#process-model-design-guidance)) | {{N}} (el mayor, `{{nombre}}`, con {{N}}) |
 | Expression rules de más de 200 líneas | {{N}} |
 | Interfaces de más de 80 KB de expresión | {{N}} |
 | Objetos con avisos de validación de la plataforma | {{N}} |

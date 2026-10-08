@@ -1,7 +1,7 @@
 <!--
   Plantilla 02 — Arquitectura de la aplicación (agente interface-analyzer). Borra estos comentarios en el documento final.
   Solo los objetos reales de esta aplicación y sus relaciones; nada de la arquitectura genérica de Appian.
-  Capas, en este orden (las de layerBreakdown de summary.json: mismos nombres, orden y cifras que 00):
+  Capas, en este orden (las de layerBreakdown de summary.json: mismos nombres, orden y cifras que LEEME):
     Entrada y presentación: sites, interfaces, Web APIs (entradas desde otros sistemas); también páginas, vistas y acciones de record.
     Lógica: process models, expression rules, decisiones, agentes de IA.
     Datos: record types, CDTs, data stores.
@@ -90,7 +90,7 @@ Los objetos clave de cada capa; todos, en [INVENTARIO.md](./INVENTARIO.md).
   Sin ninguna: se omite la sección y se dice en una línea de «Cobertura y límites».
 -->
 
-Lo que usa la aplicación y no viaja con ella ([plug-ins](https://docs.appian.com/suite/help/26.6/prepare-deployment-packages.html#add-plugins), [objetos de otras aplicaciones](https://docs.appian.com/suite/help/26.6/application-settings.html#missing-precedents)).
+Lo que usa la aplicación y no viaja con ella ([plug-ins](https://docs.appian.com/suite/help/latest/prepare-deployment-packages.html#add-plugins), [objetos de otras aplicaciones](https://docs.appian.com/suite/help/latest/application-settings.html#missing-precedents)).
 
 | Tipo | Objeto | Lo usa | Certeza | Evidencia |
 |---|---|---|---|---|

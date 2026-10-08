@@ -74,9 +74,9 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 Proceso programado = process model con `startType: timer` en `inventory.json`. Por cada uno, lee su definición (nodo de inicio y `schedule`), su `usage`, su `versions` y su documento de 08. Sin ninguno, 07 lleva solo el título y la frase de su plantilla.
 
 - **Frecuencia**: traduce la configuración del temporizador a lenguaje natural («configurado para…», ✅) y, si es posible, a cron. Lo que no conste (hora, días) es ❓, no se supone. Si se ejecuta con esa frecuencia lo dicen las ejecuciones, no la configuración (`execution-principles.md`, principio 5): si la última ejecución no cuadra con la frecuencia, se dicen las dos cosas y queda un NV (`NV-BAT`).
-- **Zona horaria**: la que fija el temporizador; por defecto, la del process model (`pp!timezone`). Si no consta, ❓. Fuente: https://docs.appian.com/suite/help/26.6/Intermediate_Event_-_Timer.html#configuring-the-time-zone-used
+- **Zona horaria**: la que fija el temporizador; por defecto, la del process model (`pp!timezone`). Si no consta, ❓. Fuente: https://docs.appian.com/suite/help/latest/Intermediate_Event_-_Timer.html#configuring-the-time-zone-used
 - **Próximas 3 ejecuciones**: calculadas desde la fecha de extracción (`source.extractedAt` de `inventory.json`) en la zona del temporizador. Si falta la zona o la hora, o la recurrencia es por intervalo sin hora de referencia, «no calculable» ❓.
-- **Cuenta de ejecución**: un proceso que arranca un temporizador se ejecuta con la cuenta de quien desplegó el process model (Fuente: https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors). Si `versions` da el autor de la última versión, indícalo, con su tipo de cuenta y su grupo si constan (🔶: la última versión guardada no tiene por qué ser la desplegada); si no, ❓. No la deduzcas de las ejecuciones de la muestra.
+- **Cuenta de ejecución**: un proceso que arranca un temporizador se ejecuta con la cuenta de quien desplegó el process model (Fuente: https://docs.appian.com/suite/help/latest/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors). Si `versions` da el autor de la última versión, indícalo, con su tipo de cuenta y su grupo si constan (🔶: la última versión guardada no tiene por qué ser la desplegada); si no, ❓. No la deduzcas de las ejecuciones de la muestra.
 - **Uso real**: `usage`. Con `failedInSampleOf`, «N fallos en las últimas M ejecuciones», nunca una tasa global. Si el entorno no consta como producción, las cifras son orientativas.
 - **Volumen por ejecución**: identifica la consulta de origen (`a!queryRecordType`, `a!queryEntity`, una regla…; no supongas cuál) y su tamaño de lote (`pagingInfo`/`batchSize`). Cita el nodo: `nodes[id=N]`.
 - **Manejo de errores**: lo que muestre la definición. El Dev MCP no devuelve las pestañas de excepciones y alertas de los nodos: su ausencia es ❓ «no lo devuelve la extracción», no «sin manejo de errores».
@@ -87,7 +87,7 @@ Hallazgos `H-BAT` (severidad orientativa; ajústala al impacto real). Los fallos
 |---|---|---|
 | Lee sin tamaño de lote y la definición lo muestra | Media | ✅ |
 | Programado y sin ejecuciones | No es H-BAT: cita el H-GEN de 09 (dueño de los procesos sin ejecuciones) | — |
-| Usa `loggedInUser()`: no hay una persona detrás ([fuente](https://docs.appian.com/suite/help/26.6/fnc_people_loggedinuser.html)) | Media | ✅ |
+| Usa `loggedInUser()`: no hay una persona detrás ([fuente](https://docs.appian.com/suite/help/latest/fnc_people_loggedinuser.html)) | Media | ✅ |
 | Intervalo de menos de una hora sobre integraciones o escrituras | Baja (vigilar) | ✅ |
 | Sin manejo de errores | Solo si la definición muestra que no lo hay; si no, no es hallazgo (❓ en la ficha) | ✅ |
 
@@ -97,7 +97,7 @@ Solo las subsecciones con contenido. Hallazgos propios: `H-GEN` (áreas mantenim
 
 - **Métricas** (Vista): de `inventory.json` (`counts`, `sailLines`, `sailBytes`, `nodeCount`, `validationIssues`, `usage`).
 - **Configuración por entorno**: la única tabla de lo que cambia por entorno (05 la enlaza). Lleva la URL base y las credenciales de cada connected system y las constantes con URLs, hosts, identificadores o interruptores de entorno (`DEV`/`PRE`/`PRO`). Solo se ve el valor del entorno extraído; los de los demás van en el fichero de personalización de importación. «Por entorno»:
-  - **Sí**: URL base y credenciales de un connected system; constante marcada «Environment Specific»; usuario y contraseña literales de una integración. Fuentes: https://docs.appian.com/suite/help/26.6/http-connected-system.html#properties, https://docs.appian.com/suite/help/26.6/Application_Deployment_Guidelines.html#environment-specific-constants y https://docs.appian.com/suite/help/26.6/Application_Deployment_Guidelines.html#integrations
+  - **Sí**: URL base y credenciales de un connected system; constante marcada «Environment Specific»; usuario y contraseña literales de una integración. Fuentes: https://docs.appian.com/suite/help/latest/http-connected-system.html#properties, https://docs.appian.com/suite/help/latest/Application_Deployment_Guidelines.html#environment-specific-constants y https://docs.appian.com/suite/help/latest/Application_Deployment_Guidelines.html#integrations
   - **No**: un literal dentro de una expresión (p. ej. una URL escrita en una regla) o una constante sin esa marca.
   - **❓**: la definición no dice si la constante está marcada.
 
@@ -113,7 +113,7 @@ Hallazgos `H-GEN` (severidad orientativa):
 |---|---|---|
 | Aviso de validación de la plataforma (función obsoleta, referencia rota) | Media; Alta si rompe una funcionalidad | ✅ |
 | Constante con un valor de entorno (URL, host) sin la marca «Environment Specific» (si apunta a otro entorno, es el `H-INT` de 05) | Media | ✅ o 🔶 |
-| Process model de más de 50 nodos ([fuente](https://docs.appian.com/suite/help/26.6/appian-recommendations.html#process-model-design-guidance)) | Media | ✅ |
+| Process model de más de 50 nodos ([fuente](https://docs.appian.com/suite/help/latest/appian-recommendations.html#process-model-design-guidance)) | Media | ✅ |
 | Expression rule de más de 200 líneas o interfaz de más de 80 KB | Baja | ✅ |
 | Process models sin ejecuciones (`signals`) | Baja | ✅ en producción; 🔶 «orientativo (ver LEEME)» si no consta como producción |
 
@@ -125,13 +125,12 @@ Hallazgos `H-GEN` (severidad orientativa):
 - [ ] `bpmn_layout.py <salida>/08-procesos-bpmn` ejecutado (lo hace `process-modeler`; repítelo si alguien tocó un `.bpmn`).
 - [ ] Cada diagrama aparece una sola vez en su documento: SVG con «Fuente: [x.mmd](…)», o el bloque mermaid si no hay SVG.
 
-## Fase 6 — Coherencia, resumen, inventario y guía
+## Fase 6 — Coherencia, inventario y LEEME
 
 - [ ] Pasada de coherencia (`execution-principles.md`, sección 5): contradicciones corregidas en su documento, duplicados de hallazgos y de NV marcados con `duplicadoDe`, severidades fuera del propietario quitadas, «Para otras áreas» registrados, menciones a otras áreas en 01–11 con el ID canónico y su enlace, sin notas de parche; al terminar, `build_registry.py <salida>` sin errores.
 - [ ] `build_summary.py <salida>` → `<trabajo>/summary.json`.
-- [ ] `00-resumen-ejecutivo.md` con su plantilla: todas las cifras de `summary.json` (confianza con su motivo, procesos críticos, hallazgos Alta con su evidencia y uso real con aviso de entorno).
 - [ ] `INVENTARIO.md`: 100 % de `inventory.json`, con uuid, enlace al anexo, el «Para qué» de cada objeto (su descripción; si no la tiene, una frase de su definición, 🔶; «🔶 según su nombre» solo sin definición) y la cobertura de la extracción (herramientas usadas y omitidas, con el motivo).
-- [ ] `LEEME.md`: las preguntas de esta revisión (las de `preguntas`), rutas por perfil, qué documento responde a cada pregunta (con los rangos reales de IDs), cómo leer, qué no incluye y términos de Appian (enlaces a su documentación).
+- [ ] `LEEME.md` con su plantilla: las cifras de `summary.json` (confianza con su motivo, procesos críticos, hallazgos Alta con su evidencia y uso real con aviso de entorno), las preguntas de esta revisión (las de `preguntas`), por dónde empezar, cómo leer, qué no incluye (cada línea comprobada en la extracción) y términos de Appian (enlaces a su documentación).
 - [ ] `build_datos.py <salida>` → `<salida>/datos/` y la tabla «Sin verificar» de LEEME. Un NV fuera de formato se corrige en el JSON de su agente y se repite.
 
 ## Fase 7 — Publicación opcional

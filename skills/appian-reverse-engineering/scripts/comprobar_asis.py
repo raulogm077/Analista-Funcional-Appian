@@ -9,11 +9,14 @@ inventory.json (build_model.py) y las preguntas de la revisión (output_preferen
 
 Errores (✗, salida 1):
   - un nombre entre comillas invertidas que empieza por el prefijo de la aplicación (seguido de «_» o espacio; se
-    corta en «.», «#», «(» o «[») y no es un objeto del inventario, algo que se cita con uno ni la aplicación;
+    corta en «.», «#», «(» o «[» y, si así no es un objeto, en lo que no admite el nombre de una regla, una interfaz
+    o una constante, como en una expresión SAIL) y no es un objeto del inventario, algo que se cita con uno ni la
+    aplicación;
   - una tabla con columna «Certeza» sin columna «Evidencia» (salvo el registro de 09, cuyas filas enlazan en «Dónde»
     al documento que tiene la evidencia), una fila cuya evidencia no enlaza a un fichero del anexo o una certeza que
     no es ✅, 🔶 ni ❓;
-  - cifras de 00 («N objetos», «N process models», «N interfaces», «N record types») distintas de las de summary.json;
+  - cifras del volumen de LEEME («N objetos», «N process models», «N interfaces», «N record types») distintas de las
+    de summary.json;
   - un «{{» sin sustituir o un enlace relativo a un fichero que no existe;
   - un NV-<ÁREA>-NN citado que no está en datos/sin-verificar.json;
   - una pregunta de la revisión que no está en la tabla «Preguntas de esta revisión» de LEEME, o está sin estado
@@ -24,7 +27,8 @@ Avisos (·): «no existe», «no existen» o «no hay ningún» en un documento 
 «según su nombre» en una fila de INVENTARIO cuyo objeto tiene definición; un hallazgo inferido de severidad Alta con
 menos de dos evidencias en «base»; un objeto de fuera de la aplicación que esta usa y que ningún NV tiene en
 «objetos»; y, con redaccion.py del analista, muletillas, frases de más de 35 palabras, párrafos de 20 palabras o más
-repetidos en dos documentos y documentos por encima de su presupuesto (assets/presupuesto-palabras.json).
+repetidos en dos documentos y documentos por encima de su presupuesto (assets/presupuesto-palabras.json), que no
+cuenta lo que escriben los scripts entre sus marcadores (el registro de 09 y la tabla «Sin verificar» de LEEME).
 Salida: 0 sin errores, 1 con errores, 2 uso o faltan datos/inventario.json o summary.json.
 """
 from __future__ import annotations
@@ -52,7 +56,9 @@ except ImportError:  # la skill suelta, sin el analista al lado
 PRESUPUESTO = SKILL / "assets" / "presupuesto-palabras.json"
 SIN_TABLAS = ("anexo", "extraccion")
 REGISTRO = ("<!-- registro:inicio -->", "<!-- registro:fin -->")
+GENERADOS = (REGISTRO, ("<!-- sin-verificar:inicio -->", "<!-- sin-verificar:fin -->"))   # lo escriben los scripts
 CERTEZAS = ("✅", "🔶", "❓")
+NO_NOMBRE = re.compile(r"[^\w ]")   # lo que no admite el nombre de una regla, una interfaz o una constante
 CODIGO = re.compile(r"`([^`\n]+)`")
 ENLACE = re.compile(r"!?\[[^\]\n]*\]\((<[^>\n]+>|[^)\s]+)(?:\s+\"[^\"\n]*\")?\)")
 CIFRA = re.compile(r"(\d[\d.]*)\s+(objetos|process models?|interfa(?:ces|z)|record types?)\b", re.I)
@@ -91,11 +97,33 @@ def destinos(linea: str) -> list[str]:
     return out
 
 
-def nombre_citado(s: str, prefijo: str) -> str | None:
+def nombre_citado(s: str, prefijo: str, conocidos: set) -> str | None:
+    """El objeto que cita `s` si empieza por el prefijo de la aplicación; None si no cita ninguno. Se prueban la cita
+    entera, lo que hay antes de «.», «#», «(» o «[» (un campo, un ancla, una llamada o un índice) y lo que hay antes de
+    lo primero que no admite el nombre de una regla, una interfaz o una constante, que es como se lee una expresión
+    SAIL (`cons!X & "/ruta"`). Vale el primero de `conocidos`, porque otros objetos sí admiten esos caracteres (una Web
+    API, un grupo con «&»); si no hay ninguno, el último. Un patrón que solo es el prefijo («DEM_*») no cita nada."""
     s = re.sub(r"^[A-Za-z]+!(\{[^}]*\})?", "", s.strip().strip("'\""))   # rule!X, recordType!{uuid}X
-    if not re.match(rf"{re.escape(prefijo)}[_ ]\S", s):
+    patron = rf"{re.escape(prefijo)}[_ ]\S"
+    if not re.match(patron, s):
         return None
-    return re.split(r"[.#(\[]", s, 1)[0].rstrip()
+    cortes = [s.rstrip(), re.split(r"[.#(\[]", s, 1)[0].rstrip(), NO_NOMBRE.split(s, 1)[0].rstrip()]
+    nombre = next((c for c in cortes if c in conocidos), cortes[-1])
+    return nombre if re.match(patron, nombre) else None
+
+
+def generadas(texto: str) -> set[int]:
+    """Los números de las líneas que escriben los scripts entre sus marcadores: el registro de 09 (build_registry.py)
+    y la tabla «Sin verificar» de LEEME (build_datos.py)."""
+    out, fin = set(), None
+    for n, l in enumerate(texto.splitlines(), 1):
+        if fin is None:
+            fin = next((f for i, f in GENERADOS if i in l), None)
+        elif fin in l:
+            fin = None
+        else:
+            out.add(n)
+    return out
 
 
 def tablas(numeradas: list[tuple[int, str]]):
@@ -162,21 +190,17 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
         # nombres que empiezan por el prefijo
         for n, l in numeradas if prefijo else []:
             for m in CODIGO.finditer(l):
-                nombre = nombre_citado(m.group(1), prefijo)
+                nombre = nombre_citado(m.group(1), prefijo, conocidos)
                 if nombre and nombre not in conocidos:
                     e(n, f"`{nombre}` no es un objeto del inventario ni se cita con uno")
         if con_tablas:
-            # certeza y evidencia
-            registro, dentro = set(), False
-            for n, l in enumerate(texto.splitlines(), 1):
-                dentro = (dentro or REGISTRO[0] in l) and REGISTRO[1] not in l
-                if dentro:
-                    registro.add(n)
+            # certeza y evidencia (el registro de 09, que escribe un script, enlaza en «Dónde» al documento que la tiene)
+            generado = generadas(texto)
             for n, cab, filas in tablas(numeradas):
                 cols = [c.replace("*", "").lower() for c in cab]
                 cert = next((k for k, c in enumerate(cols) if c.startswith("certeza")), None)
                 evid = next((k for k, c in enumerate(cols) if c.startswith("evidencia")), None)
-                if cert is not None and evid is None and n not in registro:
+                if cert is not None and evid is None and n not in generado:
                     e(n, "tabla con «Certeza» sin «Evidencia»")
                 for fn, fila in filas:
                     if cert is not None and cert < len(fila) and not fila[cert].startswith(CERTEZAS):
@@ -204,7 +228,7 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
                 if not (doc.parent / d).exists():
                     e(n, f"enlace a {d}, que no existe")
         if con_tablas:
-            textos[rel] = re.sub(r"<!--.*?-->", "", texto, flags=re.S)
+            textos[rel] = texto
     cifras(salida, resumen, errores)
     preguntas(salida, _json(work_dir(salida) / "output_preferences.json").get("preguntas") or [], errores)
     datos_sin_respaldo(salida, avisos)
@@ -225,11 +249,11 @@ def segun_su_nombre(n: int, fila: list[str], detalle: dict, avisos: list) -> Non
 
 
 def cifras(salida: Path, resumen: dict, errores: list) -> None:
-    """Las cifras de 00 («N objetos», «N process models»…), iguales a las de summary.json."""
-    cero = salida / "00-resumen-ejecutivo.md"
-    if not cero.exists():
+    """Las cifras del volumen de LEEME («N objetos», «N process models»…), iguales a las de summary.json."""
+    leeme = salida / "LEEME.md"
+    if not leeme.exists():
         return
-    numeradas = lineas(cero.read_text(encoding="utf-8"))
+    numeradas = lineas(leeme.read_text(encoding="utf-8"))
     volumen = [(n, l) for n, l in numeradas if "volumen" in l.lower()] or numeradas
     esperado = {"objetos": (resumen.get("totals") or {}).get("objects"),
                 "process model": (resumen.get("counts") or {}).get("processModel", 0),
@@ -243,7 +267,7 @@ def cifras(salida: Path, resumen: dict, errores: list) -> None:
                 continue
             vistas.add(clave)
             if esperado[clave] is not None and int(m.group(1).replace(".", "")) != esperado[clave]:
-                errores.append(("00-resumen-ejecutivo.md", n, f"«{m.group(0)}»: summary.json dice {esperado[clave]}"))
+                errores.append(("LEEME.md", n, f"«{m.group(0)}»: summary.json dice {esperado[clave]}"))
 
 
 def preguntas_de_leeme(salida: Path) -> list[tuple[int, str, str, str]]:
@@ -304,23 +328,27 @@ def datos_sin_respaldo(salida: Path, avisos: list) -> None:
 
 
 def prosa(l: str) -> str:
-    """La línea como se lee: sin código en línea ni destinos de enlaces."""
-    return re.sub(r"\]\([^)]*\)", "]", CODIGO.sub(" ", l))
+    """La línea como se lee: cada código en línea, una palabra (así, una frase que empieza por un nombre no se suma
+    a la anterior), y sin los destinos de los enlaces."""
+    return re.sub(r"\]\([^)]*\)", "]", CODIGO.sub("X", l))
 
 
 def redaccion(salida: Path, textos: dict[str, str], cuentas: dict, avisos: list) -> None:
+    """Avisos de redacción de cada documento (`textos`: {ruta: texto tal cual}). El presupuesto no cuenta lo que
+    escriben los scripts entre sus marcadores: cada hallazgo o NV que se registra lo haría crecer."""
     if rd is None:
         avisos.append(("redaccion", None, "sin avisos de redacción: no está appian-functional-analyst/scripts/redaccion.py"))
         return
     muletillas = rd.muletillas()
     presupuesto = json.loads(PRESUPUESTO.read_text(encoding="utf-8")).get("documentos", {})
     for rel, texto in textos.items():
-        palabras = 0
+        palabras, generado = 0, generadas(texto)
         for n, l in lineas(texto):
             if l.lstrip().startswith("#"):
                 continue
             leida = prosa(l)
-            palabras += len(re.findall(r"\w+", leida))
+            if n not in generado:
+                palabras += len(re.findall(r"\w+", leida))
             normal = rd.normaliza(leida)
             for x in muletillas:
                 if re.search(rf"(?<!\w){re.escape(x)}(?!\w)", normal):
@@ -336,7 +364,7 @@ def redaccion(salida: Path, textos: dict[str, str], cuentas: dict, avisos: list)
             limite = regla.get("base", 0) + sum(p * cuentas.get(t, 0) for t, p in (regla.get("porObjeto") or {}).items())
             if palabras > limite:
                 avisos.append((rel, None, f"{palabras} palabras, más que su presupuesto ({limite})"))
-    for p, nombres in rd.parrafos_repetidos(textos):
+    for p, nombres in rd.parrafos_repetidos({r: re.sub(r"<!--.*?-->", "", t, flags=re.S) for r, t in textos.items()}):
         avisos.append((nombres[0], None, f"párrafo repetido en {' y '.join(nombres)}: «{p[:60]}…»"))
 
 

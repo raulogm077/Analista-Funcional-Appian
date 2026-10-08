@@ -38,7 +38,7 @@ Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no e
 - La plantilla puede concretar el nombre de una sección («Vista: mapa de procesos») o subdividirla (`## Detalle: datos`…), pero no cambiar el orden.
 - `09` añade «Registro de hallazgos» tras sus Hallazgos.
 - Encabezados sin emojis.
-- `00-resumen-ejecutivo.md`, `LEEME.md` e `INVENTARIO.md` tienen su propia estructura en la plantilla; también empiezan por «Responde a» y el TL;DR.
+- `LEEME.md` (la entrada a la documentación: resumen y guía de lectura) e `INVENTARIO.md` tienen su propia estructura en la plantilla; también empiezan por «Responde a» y el TL;DR.
 
 ## Regla 2: diagrama, luego tabla, luego prosa
 
@@ -99,7 +99,7 @@ Cada cosa se documenta una vez, en su documento propietario (ver `execution-prin
 La integración `INT_SAP_Crear` la llama `PM_GestionExpedientes` ([ficha](./05-integraciones-consumidas.md#int_sap_crear--sap-crear-expediente)).
 ```
 
-No dupliques fichas. `00-resumen-ejecutivo.md` cita lo clave en una línea y enlaza. Lo que es de Appian (qué es un record type, qué tipos heredan la seguridad de su carpeta) no se explica: se enlaza su página de la documentación oficial.
+No dupliques fichas. `LEEME.md` cita lo clave en una línea y enlaza. Lo que es de Appian (qué es un record type, qué tipos heredan la seguridad de su carpeta) no se explica: se enlaza su página de la documentación oficial.
 
 ## Regla 7: marcas
 
@@ -122,7 +122,7 @@ No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). ✅ es cert
 - **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts ni «heurística de la skill». Lo que sale de la documentación de Appian lleva su `Fuente: <URL>`.
 - **Notas de parche**: nunca «01 todavía dice…», «esto matiza a…», «corrige lo que dice X». Si otro documento está mal, se corrige ese documento (pasada de coherencia de la fase 6).
 - **`<trabajo>/`** (`extraccion/`): los entregables no lo enlazan ni escriben su ruta (son datos en bruto). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
-- **Limitaciones globales** (entorno no productivo, versión no determinada, muestra de ejecuciones, configuración que el Dev MCP no devuelve): se explican una vez en `LEEME.md`. Cada documento cita en su «Cobertura y límites» solo las que cambian lo que dice, en una línea. Donde una cifra dependa de ellas (p. ej. ejecuciones en un entorno que no consta como producción), no repitas la explicación: usa la marca corta «orientativo (ver [LEEME](./LEEME.md))» (`../LEEME.md` desde `08-procesos-bpmn/`), una vez por tabla o sección (p. ej. en la cabecera de la columna).
+- **Limitaciones globales** (entorno no productivo, versión no determinada, muestra de ejecuciones, configuración que el Dev MCP no devuelve): se explican una vez, en «Qué no incluye» de `LEEME.md`, y solo las que son verdad en esta extracción. Cada documento cita en su «Cobertura y límites» solo las que cambian lo que dice, en una línea. Donde una cifra dependa de ellas (p. ej. ejecuciones en un entorno que no consta como producción), no repitas la explicación: usa la marca corta «orientativo (ver [LEEME](./LEEME.md))» (`../LEEME.md` desde `08-procesos-bpmn/`), una vez por tabla o sección (p. ej. en la cabecera de la columna).
 
 ## Regla 9: longitud
 
@@ -132,8 +132,7 @@ Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal 
 
 | Entregable | Objetivo | Máximo |
 |---|---|---|
-| `LEEME.md` | 1-2 pantallas | 3 |
-| `00-resumen-ejecutivo.md` | 1-2 pantallas | 3 |
+| `LEEME.md` | 2 pantallas | 3 |
 | `01-funcional.md` | 1 + ½ por caso de uso | 1 + 1 por caso de uso |
 | `02-arquitectura.md` | 2-3 | 5 |
 | `03-modelo-datos.md` | 1 + ½ por entidad | 1 por entidad |
@@ -150,7 +149,7 @@ Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal 
 
 - [ ] Empieza por «Responde a» (las preguntas de su plantilla) y el TL;DR (≤ 5 líneas); no hay otro resumen.
 - [ ] Todo lo que lleva responde a alguna de sus preguntas; nada explica qué es un objeto de Appian (se enlaza).
-- [ ] Orden Vista → Detalle → Hallazgos → Cobertura; sin secciones vacías.
+- [ ] Orden Vista → Detalle → Hallazgos → Cobertura (LEEME e INVENTARIO, el de su plantilla); sin secciones vacías.
 - [ ] Tablas ≤ 8 columnas; Vista ≤ 15 filas; celdas ≤ 100 caracteres (salvo Evidencia).
 - [ ] Cada diagrama una sola vez y legible al ancho de página.
 - [ ] Solo ✅/🔶/❓ como certeza y Alta/Media/Baja como severidad; cada ❓ con su NV cuando lo tiene.

@@ -10,9 +10,9 @@ from conftest import SKILL
 
 COMPROBAR = SKILL / "scripts" / "comprobar_asis.py"
 
-CERO = "# DEM Gestión de Solicitudes: resumen ejecutivo\n\n" \
-       "> **TL;DR**: La aplicación gestiona las solicitudes internas.\n" \
-       "> **Volumen**: 2 objetos (0 process models, 0 interfaces, 1 record types).\n"
+LEEME = "# DEM Gestión de Solicitudes: documentación de ingeniería inversa\n\n" \
+        "> **TL;DR**: La aplicación gestiona las solicitudes internas.\n" \
+        "> **Volumen**: 2 objetos (0 process models, 0 interfaces, 1 record types).\n"
 DATOS = """# Modelo de datos
 
 > **TL;DR**: `DEM Solicitud` guarda las solicitudes en la tabla `DEM_SOLICITUD` y las muestra en su vista `Resumen`.
@@ -29,8 +29,9 @@ PARRAFO = ("El gestor revisa cada solicitud nueva, comprueba que trae los docume
            "devuelve al solicitante con un motivo escrito.")
 
 
-def as_is(base: Path, docs: dict | None = None) -> Path:
-    """Una carpeta as-is mínima: inventario, resumen, dos fichas del anexo, 00, 03 y los documentos que se pasen."""
+def as_is(base: Path, docs: dict | None = None, objetos: tuple = ()) -> Path:
+    """Una carpeta as-is mínima: inventario (con los `objetos` que se pasen, como (nombre, tipo)), resumen, dos fichas
+    del anexo, LEEME, 03 y los documentos que se pasen."""
     salida = base / "as-is"
     (salida / "datos").mkdir(parents=True)
     (salida / "datos" / "inventario.json").write_text(json.dumps({
@@ -39,7 +40,9 @@ def as_is(base: Path, docs: dict | None = None) -> Path:
             {"nombre": "DEM Solicitud", "tipo": "recordType", "uuid": "u-1", "anexo": "anexo/recordType/DEM_Solicitud.md",
              "tambien": ["DEM_SOLICITUD", "Resumen", "titulo"]},
             {"nombre": "DEM_ER_EsAdmin", "tipo": "expressionRule", "uuid": "u-2",
-             "anexo": "anexo/expressionRule/DEM_ER_EsAdmin.md", "tambien": []}]}, ensure_ascii=False),
+             "anexo": "anexo/expressionRule/DEM_ER_EsAdmin.md", "tambien": []},
+            *({"nombre": n, "tipo": t, "uuid": f"u-x{i}", "anexo": None, "tambien": []}
+              for i, (n, t) in enumerate(objetos))]}, ensure_ascii=False),
         encoding="utf-8")
     (salida / "extraccion").mkdir()
     (salida / "extraccion" / "summary.json").write_text(json.dumps({
@@ -47,7 +50,7 @@ def as_is(base: Path, docs: dict | None = None) -> Path:
     for ficha in ("anexo/recordType/DEM_Solicitud.md", "anexo/expressionRule/DEM_ER_EsAdmin.md"):
         (salida / ficha).parent.mkdir(parents=True, exist_ok=True)
         (salida / ficha).write_text("# Ficha\n\n```text\n1 | {{1, 2}, {3}}\n```\n", encoding="utf-8")
-    for rel, texto in {"00-resumen-ejecutivo.md": CERO, "03-modelo-datos.md": DATOS, **(docs or {})}.items():
+    for rel, texto in {"LEEME.md": LEEME, "03-modelo-datos.md": DATOS, **(docs or {})}.items():
         (salida / rel).parent.mkdir(parents=True, exist_ok=True)
         (salida / rel).write_text(texto, encoding="utf-8")
     return salida
@@ -105,9 +108,46 @@ def test_evidencia_rota(tmp_path):
 
 
 def test_cifra_distinta(tmp_path):
-    salida = as_is(tmp_path, {"00-resumen-ejecutivo.md": CERO.replace("2 objetos", "3 objetos")})
+    """Las cifras del volumen de LEEME, que es la entrada a la documentación, son las de summary.json."""
+    salida = as_is(tmp_path, {"LEEME.md": LEEME.replace("2 objetos", "3 objetos")})
     errores, _ = comprueba(salida)
-    assert len(errores) == 1 and "3 objetos" in errores[0] and "2" in errores[0], errores
+    assert len(errores) == 1 and errores[0].split()[1] == "LEEME.md:4", errores
+    assert "3 objetos" in errores[0] and "2" in errores[0], errores
+
+
+def test_expresion_sail_no_es_un_nombre(tmp_path):
+    """Una expresión SAIL entre comillas invertidas se corta donde acaba el nombre: en lo que no admite el nombre de
+    una regla, una interfaz o una constante. Un nombre del inventario con esos caracteres (un grupo con «&») vale
+    entero, y un patrón que solo es el prefijo no cita ningún objeto."""
+    texto = ("# Integraciones\n\nLa URL es `cons!DEM_URL_ERP & \"/ordenes/\" & ri!id`, la condición "
+             "`rule!DEM_ER_EsAdmin()=true` y la lista `{cons!DEM_URL_ERP, cons!DEM_URL_ERP}`; la usan "
+             "`DEM Gestores & Revisores` y los objetos `DEM_*`.\n\nLa otra URL es `cons!DEM_URL_Inventada & \"/ruta\"`.\n")
+    salida = as_is(tmp_path, {"05-integraciones-consumidas.md": texto},
+                   objetos=(("DEM_URL_ERP", "constant"), ("DEM Gestores & Revisores", "group")))
+    errores, _ = comprueba(salida)
+    assert len(errores) == 1 and "05-integraciones-consumidas.md:5 `DEM_URL_Inventada` no es" in errores[0], errores
+
+
+def test_frase_que_empieza_por_un_nombre(tmp_path):
+    """Una frase que empieza por un nombre entre comillas invertidas no se suma a la anterior."""
+    texto = ("# Arquitectura\n\nLa regla calcula el plazo de cada solicitud nueva y devuelve la fecha límite que ve "
+             "el gestor en su bandeja de entrada cada mañana. `DEM_ER_EsAdmin` decide quién administra la aplicación "
+             "y quién puede reabrir una solicitud cerrada por error.\n")
+    assert comprueba(as_is(tmp_path, {"02-arquitectura.md": texto})) == ([], [])
+
+
+def test_presupuesto_sin_lo_generado(tmp_path):
+    """Lo que escriben los scripts entre sus marcadores (la tabla «Sin verificar» de LEEME, el registro de 09) no
+    cuenta para el presupuesto de palabras: cada NV registrado no empuja LEEME por encima del suyo."""
+    filas = "".join(f"| Pregunta número {i} que la revisión no pudo verificar con lo que había | Acceso de lectura "
+                    f"a la aplicación de utilidades | Equipo de utilidades | Abierto |\n" for i in range(120))
+    tabla = ("\n## Sin verificar\n\n<!-- sin-verificar:inicio -->\n| Pregunta | Qué hace falta | A quién | Estado |\n"
+             f"|---|---|---|---|\n{filas}<!-- sin-verificar:fin -->\n")
+    _, avisos = comprueba(as_is(tmp_path / "a", {"LEEME.md": LEEME + tabla}))
+    assert avisos == []
+    _, avisos = comprueba(as_is(tmp_path / "b", {"LEEME.md": LEEME + tabla.replace("<!-- sin-verificar:inicio -->\n", "")
+                                                                         .replace("<!-- sin-verificar:fin -->\n", "")}))
+    assert len(avisos) == 1 and "LEEME.md" in avisos[0] and "presupuesto" in avisos[0], avisos
 
 
 def test_marcador_y_enlace_roto(tmp_path):

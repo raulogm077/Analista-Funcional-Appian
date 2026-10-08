@@ -59,7 +59,7 @@ Detéctalos y regístralos en el documento propietario. Un riesgo que depende de
 | URL o constante que apunta a otro entorno (p. ej. un host de desarrollo en producción) | `H-INT` (05) |
 | Web API que puede llamar un grupo de alcance amplio, o sin validación de entrada visible | `H-API` (06) |
 
-**Grupo de alcance amplio**: un grupo de sistema (p. ej. Application Users) o uno que agrupa a todos los usuarios de la aplicación. Appian no trae un grupo «All Users», «Everyone» ni «Public»: el nombre no prueba el alcance; decide por sus subgrupos y miembros (✅) o por nombre y descripción (🔶). Fuente: https://docs.appian.com/suite/help/26.6/System_Groups.html
+**Grupo de alcance amplio**: un grupo de sistema (p. ej. Application Users) o uno que agrupa a todos los usuarios de la aplicación. Appian no trae un grupo «All Users», «Everyone» ni «Public»: el nombre no prueba el alcance; decide por sus subgrupos y miembros (✅) o por nombre y descripción (🔶). Fuente: https://docs.appian.com/suite/help/latest/System_Groups.html
 
 ## Política para Markdown
 

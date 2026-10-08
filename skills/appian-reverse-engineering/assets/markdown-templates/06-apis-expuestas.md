@@ -4,8 +4,8 @@
   Objetivo: resumen + ½ pantalla por Web API (máximo 1).
   Una Web API solo la puede llamar un usuario o cuenta de servicio autenticado, y hace falta al menos Viewer en su role map.
   El método de autenticación (API key, Basic, OAuth 2.0, TLS mutuo) lo configura cada consumidor fuera de la Web API.
-  Fuentes: https://docs.appian.com/suite/help/26.6/Web_APIs.html#prodlink-security
-           https://docs.appian.com/suite/help/26.6/Web_API_Authentication.html#authentication
+  Fuentes: https://docs.appian.com/suite/help/latest/Web_APIs.html#prodlink-security
+           https://docs.appian.com/suite/help/latest/Web_API_Authentication.html#authentication
   «Cobertura y límites»: solo lo de este documento; lo global está en LEEME.
 -->
 

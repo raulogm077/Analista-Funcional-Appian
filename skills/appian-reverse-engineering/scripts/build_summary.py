@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 build_summary.py - Consolida inventario, grafo, extracción y registro de hallazgos en summary.json,
-la fuente de cifras de 00-resumen-ejecutivo.md y de los publicadores (PDF y dashboard).
+la fuente de cifras de LEEME.md y de los publicadores (PDF y dashboard).
 
 Uso:
   python3 build_summary.py <carpeta_salida>
@@ -34,7 +34,7 @@ NIVELES = ("Bajo", "Medio", "Alto")
 
 
 def confidence(coverage: float, verified_ratio: float | None) -> tuple[str, list[str]]:
-    """Nivel de confianza de la documentación y por qué. Una sola fórmula para 00 y los publicadores.
+    """Nivel de confianza de la documentación y por qué. Una sola fórmula para LEEME y los publicadores.
     Alto: definiciones de al menos el 90 % de los objetos (sin carpetas) y, si hay hallazgos, al menos la mitad
     verificados. Medio: definiciones de al menos el 70 %. Bajo: el resto. Baja un nivel más si menos de un tercio
     de los hallazgos están verificados. Las llamadas que el servidor no admite para un tipo (p. ej. dependencias de

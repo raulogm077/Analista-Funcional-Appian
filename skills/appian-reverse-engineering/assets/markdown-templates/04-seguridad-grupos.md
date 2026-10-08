@@ -49,7 +49,7 @@ Fuente: [grupos.mmd](diagrams/grupos.mmd)
   Process models: todo sale de su role map, así que la tabla no lleva certeza; la evidencia de cada fila es ese role map.
 -->
 
-Process models: pueden iniciarlos los grupos con cualquier rol salvo Deny ([fuente](https://docs.appian.com/suite/help/26.6/process-model-object.html#process-model-security)).
+Process models: pueden iniciarlos los grupos con cualquier rol salvo Deny ([fuente](https://docs.appian.com/suite/help/latest/process-model-object.html#process-model-security)).
 
 | Process model | Administrator | Editor | Manager | Viewer | Initiator | Deny | Evidencia |
 |---|---|---|---|---|---|---|---|
@@ -58,7 +58,7 @@ Process models: pueden iniciarlos los grupos con cualquier rol salvo Deny ([fuen
 <!-- Una línea por cada process model cuyo grupo de seguridad declarado no figure en su role map: -->
 `{{DEM Alta Solicitud}}`: la definición declara el grupo `{{DEM Revisores}}`, que no figura en su role map.
 
-Otros objetos ([qué tipos heredan la seguridad de su carpeta](https://docs.appian.com/suite/help/26.6/object-security.html#security-inheritance-by-object-type)):
+Otros objetos ([qué tipos heredan la seguridad de su carpeta](https://docs.appian.com/suite/help/latest/object-security.html#security-inheritance-by-object-type)):
 
 <!--
   Hereda de: la carpeta cuyo role map se aplica, con su certeza. ✅ si la respuesta dice que hereda; 🔶 si solo llega el

@@ -47,7 +47,7 @@ Los campos citados son los habituales en las definiciones del Dev MCP (según la
 | `internal3.sendemail3` | Send E-Mail |
 | `internal3.integration` | Call Integration |
 
-Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/dev-mcp-skills). Para cualquier otro id, usa el catálogo de tipos de nodo de `mcp_raw/_env/` (si existe) o el Docs MCP. Un nodo, una función o un componente que no está en la documentación de Appian puede venir de un plug-in: es una dependencia externa (`02-arquitectura.md`), porque los plug-ins se instalan en el entorno, no en la aplicación, y no salen en sus precedentes. Fuente: https://docs.appian.com/suite/help/26.6/prepare-deployment-packages.html#add-plugins
+Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/dev-mcp-skills). Para cualquier otro id, usa el catálogo de tipos de nodo de `mcp_raw/_env/` (si existe) o el Docs MCP. Un nodo, una función o un componente que no está en la documentación de Appian puede venir de un plug-in: es una dependencia externa (`02-arquitectura.md`), porque los plug-ins se instalan en el entorno, no en la aplicación, y no salen en sus precedentes. Fuente: https://docs.appian.com/suite/help/latest/prepare-deployment-packages.html#add-plugins
 
 ### Referencias en SAIL
 
@@ -77,7 +77,7 @@ Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/
 |---|---|
 | Expression rule grande | `sailLines` > 200; muchos `if`/`choose` anidados. |
 | Interfaz grande | `sailBytes` > 80 KB o más de ~30 componentes. |
-| Process model complejo | Más de 50 nodos o más de 100 variables de proceso ([guía de diseño de Appian](https://docs.appian.com/suite/help/26.6/appian-recommendations.html#process-model-design-guidance)); muchas pasarelas o subprocesos muy anidados. |
+| Process model complejo | Más de 50 nodos o más de 100 variables de proceso ([guía de diseño de Appian](https://docs.appian.com/suite/help/latest/appian-recommendations.html#process-model-design-guidance)); muchas pasarelas o subprocesos muy anidados. |
 | Lógica de negocio en la interfaz | Cálculos pesados en `a!localVariables` de la interfaz, sin una regla que los recoja. |
 | Valores *hardcodeados* | URLs, emails, identificadores de grupo, valores tipo "PROD"/"DEV" en literales. |
 | Duplicidad | Reglas con nombres parecidos y SAIL similar. |

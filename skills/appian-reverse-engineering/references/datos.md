@@ -39,7 +39,7 @@ Appian.
   `sin-verificar.json` que lo tiene en `objetos`, o `null`. `tipo`: el canónico, como en el inventario, si una
   herramienta de dependencias lo trajo (`expressionRule`, `constant`…); `constant` para un `cons!`, y «llamado con
   rule!» para un `rule!` que no trajo ninguna, porque puede ser una regla, una interfaz, una integración o una
-  decisión ([fuente](https://docs.appian.com/suite/help/26.6/reference-objects.html)).
+  decisión ([fuente](https://docs.appian.com/suite/help/latest/reference-objects.html)).
 
 ## `hallazgos.json`
 

@@ -5,7 +5,7 @@ description: "Ingeniería inversa de aplicaciones Appian: lee la aplicación en 
 
 # Appian Reverse Engineering (Dev MCP)
 
-Lee una aplicación Appian **en vivo y en solo lectura** a través del Appian Dev MCP y documenta cómo está hecha, para el onboarding y el mantenimiento: `00`–`11`, `INVENTARIO` y el `anexo/` con las definiciones.
+Lee una aplicación Appian **en vivo y en solo lectura** a través del Appian Dev MCP y documenta cómo está hecha, para el onboarding y el mantenimiento: `LEEME` (la entrada), `01`–`11`, `INVENTARIO` y el `anexo/` con las definiciones.
 
 Todo con evidencia verificable (`mcp:<tipo>/<nombre>#<ubicación>`), certeza explícita (✅ verificado, 🔶 inferido, ❓ pendiente) y sin inventar. Lo que no se encuentra dice dónde se buscó, lo configurado no se toma por lo ejecutado y lo que no se pudo verificar queda registrado con lo que hace falta para resolverlo (NV). Los hallazgos tienen un ID y un registro único. Cada documento empieza por las preguntas que responde, y un hallazgo dice qué pasa y qué riesgo tiene, no qué hacer. La revisión empieza por lo que el equipo necesita saber y termina diciendo qué queda abierto.
 
@@ -106,14 +106,13 @@ Todos escriben sus hallazgos en su documento y en `<trabajo>/hallazgos/<agente>.
 
 Cada bloque Mermaid pasa `python3 <skill>/scripts/validate_mermaid.py <fichero.mmd>`, que admite los tipos A, B y C de `references/mermaid-rules.md`. `bash <skill>/scripts/render_diagrams.sh --batch <salida>` genera los SVG si hay `mmdc` y avisa de los que son demasiado anchos (rehazlos). Si un diagrama falla 3 veces, sustitúyelo por una tabla. Los `.bpmn` de 08 llevan coordenadas de dibujo: `python3 <skill>/scripts/bpmn_layout.py <salida>/08-procesos-bpmn` (lo ejecuta process-modeler; repítelo si alguien toca un `.bpmn`). En la vía draw.io la imagen sale de `appian-diagramas-bpmn`, pero el `.bpmn` es el propio.
 
-### Fase 6 — Coherencia, resumen, inventario y guía
+### Fase 6 — Coherencia, inventario y LEEME
 
 1. **Pasada de coherencia** (`references/execution-principles.md`, sección 5): corrige en su sitio las contradicciones entre documentos, fusiona duplicados (hallazgos y NV) y quita severidades repetidas. Completa en `01`–`11` las menciones a otras áreas con el ID canónico del hallazgo o del NV y su enlace. Nada de notas de parche. Termina con `build_registry.py` sin errores.
-2. `python3 <skill>/scripts/build_summary.py <salida>` → `<trabajo>/summary.json`, la fuente de las cifras de `00` y de los publicadores.
+2. `python3 <skill>/scripts/build_summary.py <salida>` → `<trabajo>/summary.json`, la fuente de las cifras de `LEEME` y de los publicadores.
 3. Escribe con sus plantillas:
-   - `00-resumen-ejecutivo.md`: cifras, confianza y su motivo, procesos críticos, hallazgos principales y uso real, de `summary.json`.
    - `INVENTARIO.md`: todos los objetos con su uuid, enlace al anexo y para qué sirven, y la cobertura de la extracción.
-   - `LEEME.md`: las preguntas de esta revisión, la guía de lectura por perfil, lo que no se pudo verificar y lo que no incluye.
+   - `LEEME.md`, la entrada a la documentación: de `summary.json`, las cifras, la confianza y su motivo, los procesos críticos, los hallazgos principales y el uso real; y las preguntas de esta revisión, por dónde empezar, cómo leer y lo que no incluye (cada línea, solo si es verdad en esta extracción).
 4. `python3 <skill>/scripts/build_datos.py <salida>` → `<salida>/datos/`, lo que leen las demás skills (`references/datos.md`), y la tabla «Sin verificar» de `LEEME.md`. Si da error con un NV, corrígelo en el JSON de su agente y repítelo.
 
 ### Fase 7 — Publicación opcional
@@ -133,7 +132,6 @@ Según `output_preferences.json` (`pdf`, `dashboard`): `agents/pdf-publisher.md`
 ```
 <salida>/
 ├── LEEME.md
-├── 00-resumen-ejecutivo.md
 ├── 01-funcional.md
 ├── 02-arquitectura.md
 ├── 03-modelo-datos.md
@@ -188,7 +186,7 @@ Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `a
 
 ## Validación final (antes de responder)
 
-1. Existen `LEEME`, `00`–`11`, `INVENTARIO`, `anexo/indice.md` y `diagrams/`, y cada documento empieza por la línea «Responde a» de su plantilla. Los que no aplican llevan su frase de «no aplica» (p. ej. 07 sin batches).
+1. Existen `LEEME`, `01`–`11`, `INVENTARIO`, `anexo/indice.md` y `diagrams/`, y cada documento empieza por la línea «Responde a» de su plantilla. Los que no aplican llevan su frase de «no aplica» (p. ej. 07 sin batches).
 2. `08-procesos-bpmn/` tiene por cada process model su `.md`, su `.bpmn` (con `bpmndi:BPMNDiagram`) y su diagrama (`.svg`/`.mmd`, o `.png`/`.drawio` con su `.json`, que es la especificación del dibujo y no datos en bruto), e `indice.md` los lista todos. Un proceso de más de 25 nodos se parte en `<slug>-1.mmd`, `<slug>-2.mmd`…: se admite `<slug>(-N)?.mmd` y `.svg`.
 3. Todos los diagramas pasan `python3 <skill>/scripts/validate_mermaid.py` (o están sustituidos por tabla) y ninguno superó el aviso de ancho.
 4. Cada posible secreto que encuentra `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw`, y cada constante con `secret: true` en `inventory.json`, tiene su `H-SEG` en 04 o está descartado como falso positivo.
@@ -197,6 +195,6 @@ Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `a
 7. `INVENTARIO.md` cubre el 100 % de `inventory.json`.
 8. `LEEME.md` dice qué no estuvo disponible (MCP opcionales, tipos sin definición, seguridad por objeto), qué no se pudo verificar (tabla «Sin verificar», de `build_datos.py`) y cómo quedó cada pregunta de la revisión.
 9. No se ha escrito nada fuera de `<salida>/`. Los datos en bruto solo están en `<salida>/extraccion/` y ningún documento enlaza esa carpeta.
-10. `python3 <skill>/scripts/comprobar_asis.py <salida>` sale sin errores: nombres con el prefijo que no están en el inventario, certezas sin evidencia o con una evidencia que no lleva al anexo, cifras de 00 distintas de `summary.json`, marcadores y enlaces rotos, NV citados que no están en `datos/` y preguntas de la revisión sin cerrar. Sus avisos (muletillas, frases largas, párrafos repetidos en dos documentos, documentos que pasan su presupuesto de palabras, «no existe» sin decir dónde se buscó, «según su nombre» en un objeto con definición, inferidos Alta con una sola evidencia en `base`, objetos de fuera de la aplicación sin NV) se corrigen.
+10. `python3 <skill>/scripts/comprobar_asis.py <salida>` sale sin errores: nombres con el prefijo que no están en el inventario, certezas sin evidencia o con una evidencia que no lleva al anexo, cifras del volumen de LEEME distintas de `summary.json`, marcadores y enlaces rotos, NV citados que no están en `datos/` y preguntas de la revisión sin cerrar. Sus avisos (muletillas, frases largas, párrafos repetidos en dos documentos, documentos que pasan su presupuesto de palabras, «no existe» sin decir dónde se buscó, «según su nombre» en un objeto con definición, inferidos Alta con una sola evidencia en `base`, objetos de fuera de la aplicación sin NV) se corrigen.
 
 Si algo falla, corrígelo y vuelve a validar antes de responder.

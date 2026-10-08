@@ -2,7 +2,7 @@
   Plantilla INVENTARIO — Todos los objetos de la aplicación (orquestador, fase 6).
   Fuentes: <trabajo>/inventory.json (objetos y campos derivados), graph.json («Referencias»: aristas entrantes),
   extraction_plan.json, extraction_report.json y preflight.json (cobertura). Cubre el 100 % de inventory.json.
-  El entorno y la fecha de la extracción están en 00: aquí no se repiten.
+  El entorno y la fecha de la extracción están en LEEME: aquí no se repiten.
   Una sección por tipo presente en `counts` (también los que esta plantilla no prevé, en «Otros tipos»);
   omite las secciones de tipos sin objetos. Sin límite de filas; ≤ 8 columnas y celdas ≤ 100 caracteres.
   - uuid: tal cual, entre comillas invertidas (INVENTARIO y anexo/ son los únicos sitios con uuids).

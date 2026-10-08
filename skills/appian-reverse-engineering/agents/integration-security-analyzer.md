@@ -58,8 +58,8 @@ Lo que cambia por entorno (URL base y credenciales de los connected systems, con
 Para cada Web API del inventario:
 
 - Método y ruta (`method`, `endpointPath` → `/suite/webapi/<alias>`).
-- Quién puede llamarla: los grupos con Viewer, Editor o Administrator en su role map (hace falta al menos Viewer). Sin role map: ❓ «role map no disponible». Fuente: https://docs.appian.com/suite/help/26.6/Web_APIs.html#prodlink-security
-- Autenticación: toda Web API exige un usuario o cuenta de servicio autenticado; el método (API key, Basic, OAuth 2.0, TLS mutuo) lo configura cada consumidor fuera de la Web API, así que la definición no lo dice. No lo deduzcas: va a «Cobertura y límites» con ❓. Fuente: https://docs.appian.com/suite/help/26.6/Web_API_Authentication.html#authentication
+- Quién puede llamarla: los grupos con Viewer, Editor o Administrator en su role map (hace falta al menos Viewer). Sin role map: ❓ «role map no disponible». Fuente: https://docs.appian.com/suite/help/latest/Web_APIs.html#prodlink-security
+- Autenticación: toda Web API exige un usuario o cuenta de servicio autenticado; el método (API key, Basic, OAuth 2.0, TLS mutuo) lo configura cada consumidor fuera de la Web API, así que la definición no lo dice. No lo deduzcas: va a «Cobertura y límites» con ❓. Fuente: https://docs.appian.com/suite/help/latest/Web_API_Authentication.html#authentication
 - Parámetros, forma del cuerpo y respuesta (solo los códigos que devuelve la expresión con `a!httpResponse`).
 - Qué hace al invocarse, en lenguaje funcional, y qué invoca: proceso lanzado con `a!startProcess` (resuelve la constante al nombre del process model), reglas de validación, consultas y escrituras. Nombres reales, nunca uuids.
 - Consumidores: quién la llama y para qué, solo si consta (descripción, documentación, un llamante conocido). Si no, ❓ en la ficha y en «Cobertura y límites». No inventes el caso de uso.
@@ -82,7 +82,7 @@ Hallazgos `H-API` típicos: la puede llamar un grupo de alcance amplio; escribe 
 - Objetos: sites, process models, record types, Web APIs, connected systems y carpetas de nivel superior (rule folders, knowledge centers). Interfaces, reglas, constantes e integraciones solo si su role map no es el de su carpeta.
 - Evidencia: `mcp:<tipo>/<nombre>@other:<herramienta>#<ubicación>`; lo que venga de los ficheros de la aplicación (`mcp_raw/_app/`, p. ej. sus grupos de seguridad por defecto), `mcp:application/<nombre>@other:<herramienta>`.
 - Process models: pueden iniciarlos los grupos con cualquier rol salvo Deny. Si `initiatorGroup` no figura en su role map, una línea lo dice (`lectura-mcp-raw.md`, «Quién puede iniciar un process model»).
-- Herencia, con los role maps de carpetas: las interfaces, reglas, constantes, decisiones e integraciones heredan por defecto la seguridad de su rule folder; documentos y carpetas de documentos, la de su knowledge center; process models, record types, sites, Web APIs y connected systems nunca heredan, y la seguridad de una carpeta de process models no se aplica a su contenido. Fuentes: https://docs.appian.com/suite/help/26.6/object-security.html#security-inheritance-by-object-type y https://docs.appian.com/suite/help/26.6/folder-object.html#prodlink-process-model-folder-security. «Hereda de»: ✅ si la respuesta dice que hereda; 🔶 si solo llega el role map de la carpeta y el tipo hereda por defecto; ❓ si no llega ninguno.
+- Herencia, con los role maps de carpetas: las interfaces, reglas, constantes, decisiones e integraciones heredan por defecto la seguridad de su rule folder; documentos y carpetas de documentos, la de su knowledge center; process models, record types, sites, Web APIs y connected systems nunca heredan, y la seguridad de una carpeta de process models no se aplica a su contenido. Fuentes: https://docs.appian.com/suite/help/latest/object-security.html#security-inheritance-by-object-type y https://docs.appian.com/suite/help/latest/folder-object.html#prodlink-process-model-folder-security. «Hereda de»: ✅ si la respuesta dice que hereda; 🔶 si solo llega el role map de la carpeta y el tipo hereda por defecto; ❓ si no llega ninguno.
 
 **Sin role maps**, la matriz se limita a lo verificable (variante de la plantilla): grupo de seguridad declarado de cada process model («grupo de seguridad declarado: X; role map no disponible» ❓, nunca «solo X puede iniciarlo»), visibilidad de páginas del site (`visibilityExpr`) y reglas de seguridad de registro si la definición del record type las trae.
 
@@ -91,7 +91,7 @@ Hallazgos `H-API` típicos: la puede llamar un grupo de alcance amplio; escribe 
 Hallazgos `H-SEG` típicos (certeza según la evidencia; sin role map, ❓ o no hay hallazgo):
 
 - Objeto con datos sensibles al alcance de un grupo amplio (definición en `security-rules.md`).
-- Grupo de sistema con permisos sobre objetos de la aplicación (los grupos de sistema: https://docs.appian.com/suite/help/26.6/System_Groups.html).
+- Grupo de sistema con permisos sobre objetos de la aplicación (los grupos de sistema: https://docs.appian.com/suite/help/latest/System_Groups.html).
 - Objeto sin ningún grupo Administrator: solo un administrador del sistema puede cambiar su seguridad.
 - Cuentas personales en un role map en lugar de grupos (cuántas y cuáles).
 - Objeto que hereda de una carpeta con un grupo amplio.
