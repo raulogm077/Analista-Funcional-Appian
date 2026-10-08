@@ -5,7 +5,7 @@ Crea el ejemplo, lo cambia, simula una edición a mano en draw.io (también guar
 la compara y la acepta, vuelve a cambiarlo respetando lo movido a mano, exporta BPMN 2.0 y
 comprueba los errores de validación. Con el segundo ejemplo comprueba que nada se pisa, el lado de las
 etiquetas, los tipos de inicio y tarea, el flujo por defecto, los participantes externos, las notas y el
-ancho del PNG. Sale con 0 si todo va bien (tarda alrededor de un minuto).
+ancho del PNG. Sale con 0 si todo va bien (tarda unos dos minutos).
 
   python3 pruebas/appian-diagramas-bpmn/selftest.py
 
