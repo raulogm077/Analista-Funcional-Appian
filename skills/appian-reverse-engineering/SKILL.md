@@ -47,7 +47,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 1. Ejecuta `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor --json`. Si trae `appsNote` (más de 50 apps), busca la del usuario con `apps --json`.
 2. Comprueba en la sesión:
-   - **Docs MCP**: si la sesión tiene sus herramientas (llevan `appian-docs` en el nombre), haz **una** consulta de prueba corta; cuenta para el tope de `references/docs-mcp-usage.md`.
+   - **Docs MCP**: si la sesión tiene sus herramientas (se reconocen como dice «Dudas de Appian»), haz **una** consulta de prueba corta; cuenta para el tope de `references/docs-mcp-usage.md`.
    - **Appian MCP Server**: si `doctor` dice `no_configurado` pero en la sesión hay herramientas del data fabric de Appian, márcalo «disponible en sesión».
 3. Muestra al usuario esta tabla (una fila por MCP): **estado · qué se pierde si falta · cómo activarlo** (sección correspondiente de `references/devmcp-setup.md`).
 4. Si el Dev MCP no está `ok`: explica el paso concreto de `devmcp-setup.md` que falta y **detente**.
@@ -83,7 +83,7 @@ Lee antes `references/execution-principles.md`. Cada subagente recibe:
 - el apartado «Dudas de Appian» de este fichero, si el Docs MCP está disponible y cuántas consultas le quedan (tope global de 30);
 - el entorno, si es producción y la versión si se conocen;
 - a process-modeler: si la sesión ofrece la skill `appian-diagramas-bpmn` (plugin appian-analisis-funcional), cárgala y pásale su carpeta para dibujar los procesos en draw.io editable; si no, usa su vía propia (`.bpmn` + Mermaid);
-- la orden de no crear tareas en tu lista y de terminar con un informe breve: ficheros generados, consultas al Docs MCP, choques entre instrucciones y «Para otras áreas».
+- la orden de no crear tareas en tu lista y de terminar con un informe breve: ficheros generados, consultas a la documentación (por el Docs MCP o por la web), choques entre instrucciones y «Para otras áreas».
 
 Todos escriben sus hallazgos en su documento y en `<trabajo>/hallazgos/<agente>.json` (`references/execution-principles.md`, «Registro de hallazgos»).
 
@@ -148,7 +148,7 @@ Pasa la validación final (abajo) y responde con la plantilla de `references/res
 
 ## Dudas de Appian
 
-Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `appian-docs` (sus herramientas empiezan por `mcp__appian-docs__`) antes de escribirlo, nunca de memoria: si existe un componente, una función, un parámetro o un objeto, qué admite, sus límites, si depende de la licencia y desde qué versión.
+Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `appian-docs` (sus herramientas llevan `appian-docs` en el nombre o su descripción habla de buscar en la documentación de Appian) antes de escribirlo, nunca de memoria: si existe un componente, una función, un parámetro o un objeto, qué admite, sus límites, si depende de la licencia y desde qué versión.
 - Una duda por consulta, escrita como una frase completa.
 - Vale lo que diga la documentación de la versión del entorno del proyecto (va en la URL: `/help/26.6/`). Si solo lo dice una versión posterior, se avisa de que puede no estar disponible.
 - Lo que se escribe a partir de la respuesta lleva su URL, en la forma `/latest/`.

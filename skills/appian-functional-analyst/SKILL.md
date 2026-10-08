@@ -145,7 +145,7 @@ cambio marcado con la historia o el apartado donde está, y se sigue `actualizac
 
 ## Dudas de Appian
 
-Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `appian-docs` (sus herramientas empiezan por `mcp__appian-docs__`) antes de escribirlo, nunca de memoria: si existe un componente, una función, un parámetro o un objeto, qué admite, sus límites, si depende de la licencia y desde qué versión.
+Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `appian-docs` (sus herramientas llevan `appian-docs` en el nombre o su descripción habla de buscar en la documentación de Appian) antes de escribirlo, nunca de memoria: si existe un componente, una función, un parámetro o un objeto, qué admite, sus límites, si depende de la licencia y desde qué versión.
 - Una duda por consulta, escrita como una frase completa.
 - Vale lo que diga la documentación de la versión del entorno del proyecto (va en la URL: `/help/26.6/`). Si solo lo dice una versión posterior, se avisa de que puede no estar disponible.
 - Lo que se escribe a partir de la respuesta lleva su URL, en la forma `/latest/`.

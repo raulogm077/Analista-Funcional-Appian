@@ -115,7 +115,7 @@ Configuración en `.mcp.json`, con la clave en una variable de entorno:
 
 La URL es la del mismo entorno que el `LCP_URL` del Dev MCP más `/mcp`: así lo reconoce la skill, y nunca toma por él otro servidor de la configuración. Si usas otra URL (un proxy, por ejemplo), indícalo con `--mcp-server-name appian-mcp-server`.
 
-Sin él, la documentación no incluye volúmenes de datos.
+Sin él, los entregables no incluyen volúmenes de datos.
 
 ---
 

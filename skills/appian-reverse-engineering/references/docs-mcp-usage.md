@@ -4,7 +4,7 @@ Qué se consulta, cómo se cita y qué se hace sin el Docs MCP lo dice «Dudas d
 
 ## Tope: 30 consultas por ejecución
 
-Entre todos los agentes, por el Docs MCP o por la web. El Docs MCP admite 300 consultas al día y 60 por minuto. La consulta de prueba de la fase 0 cuenta: el orquestador la apunta en `<trabajo>/docs_cache/orquestador.json`.
+Entre todos los agentes, por el Docs MCP o por la web. La consulta de prueba de la fase 0 cuenta: el orquestador la apunta en `<trabajo>/docs_cache/orquestador.json`.
 
 Reparto orientativo (el orquestador dice a cada subagente cuántas le quedan; lo que uno no gaste puede pasar a otro):
 

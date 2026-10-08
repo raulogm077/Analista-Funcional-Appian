@@ -61,7 +61,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 ## Fase 4 — Análisis
 
-- [ ] `execution-principles.md` leído. Cada subagente recibe lo que lista `SKILL.md` (fase 4), incluidas las consultas al Docs MCP que le tocan (reparto en `docs-mcp-usage.md`).
+- [ ] `execution-principles.md` leído. Cada subagente recibe lo que lista `SKILL.md` (fase 4), incluidas las consultas a la documentación que le tocan, por el Docs MCP o por la web (reparto en `docs-mcp-usage.md`).
 - [ ] 4.1 `interface-analyzer` → 01, 02.
 - [ ] 4.2 en paralelo, en un solo turno: `data-modeler` (03), `integration-security-analyzer` (04–06), `process-modeler` (08), `ui-rules-analyzer` (10, 11).
 - [ ] Cada agente dejó `<trabajo>/hallazgos/<agente>.json` y su informe; sus «Para otras áreas» y choques, anotados para la fase 6.
