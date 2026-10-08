@@ -48,7 +48,7 @@ def test_registry_fills_09(tmp_path):
         h("H-SEG-02", titulo="Cancelar | no anula", duplicadoDe="H-PRO-01", documento="04-seguridad-grupos.md")]))
     p = run(REG, out)
     assert p.returncode == 0, p.stderr
-    t = (out / "09-valor-adicional.md").read_text()
+    t = (out / "09-valor-adicional.md").read_text(encoding="utf-8")
     assert "| ID | Hallazgo | Área | Severidad | Certeza | Dónde |\n|---|---|---|---|---|---|\n" in t
     assert ("| H-PRO-01 | Cancelar no anula el alta | procesos | Alta | ✅ "
             "| [08 DEM Alta Solicitud](./08-procesos-bpmn/DEM_Alta_Solicitud.md#hallazgos) |\n") in t
@@ -56,15 +56,15 @@ def test_registry_fills_09(tmp_path):
     assert "| H-SEG-02 |" not in t and "H-SEG-02 → H-PRO-01" in t        # fusionado, no se repite
     assert t.index("H-PRO-01 |") < t.index("H-SEG-01 |")                 # Alta antes que Media
     assert "## Glosario" in t and "(lo rellena" not in t
-    assert run(REG, out).returncode == 0 and (out / "09-valor-adicional.md").read_text() == t   # idempotente
-    reg = json.loads((work / "registro.json").read_text())
+    assert run(REG, out).returncode == 0 and (out / "09-valor-adicional.md").read_text(encoding="utf-8") == t   # idempotente
+    reg = json.loads((work / "registro.json").read_text(encoding="utf-8"))
     assert set(reg) == {"hallazgos", "porSeveridad", "porCerteza"}
     assert reg["porSeveridad"] == {"Alta": 1, "Media": 1, "Baja": 0}
     # build_summary toma el registro (sin inventario: solo se comprueba la parte de hallazgos)
     (work / "inventory.json").write_text(json.dumps({"counts": {}, "objects": {}}))
     p = run(SUM, out)
     assert p.returncode == 0, p.stderr
-    s = json.loads((work / "summary.json").read_text())
+    s = json.loads((work / "summary.json").read_text(encoding="utf-8"))
     assert [f["id"] for f in s["findings"]] == ["H-PRO-01", "H-SEG-01"]
     assert "modernization" not in s and all("tratamiento" not in f for f in s["findings"])
 
@@ -79,4 +79,4 @@ def test_registry_rejects_bad_entries(tmp_path):
     for frag in ("repetido", "no sigue H-", "severidad", "certeza", "no existe en la salida", "sin evidencia",
                  "duplicadoDe 'H-XXX-99'"):
         assert frag in p.stderr, frag
-    assert "(lo rellena" in (out / "09-valor-adicional.md").read_text()      # con errores no toca 09
+    assert "(lo rellena" in (out / "09-valor-adicional.md").read_text(encoding="utf-8")      # con errores no toca 09

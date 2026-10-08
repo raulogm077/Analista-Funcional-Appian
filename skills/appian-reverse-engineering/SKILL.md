@@ -47,7 +47,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 1. Ejecuta `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor --json`. Si trae `appsNote` (más de 50 apps), busca la del usuario con `apps --json`.
 2. Comprueba en la sesión:
-   - **Docs MCP**: busca una herramienta de búsqueda en la documentación de Appian (ver `references/docs-mcp-usage.md`). Si existe, haz **una** consulta de prueba corta; cuenta para el tope.
+   - **Docs MCP**: si la sesión tiene sus herramientas (llevan `appian-docs` en el nombre), haz **una** consulta de prueba corta; cuenta para el tope de `references/docs-mcp-usage.md`.
    - **Appian MCP Server**: si `doctor` dice `no_configurado` pero en la sesión hay herramientas del data fabric de Appian, márcalo «disponible en sesión».
 3. Muestra al usuario esta tabla (una fila por MCP): **estado · qué se pierde si falta · cómo activarlo** (sección correspondiente de `references/devmcp-setup.md`).
 4. Si el Dev MCP no está `ok`: explica el paso concreto de `devmcp-setup.md` que falta y **detente**.
@@ -80,7 +80,7 @@ Lee antes `references/execution-principles.md`. Cada subagente recibe:
 - el contenido de `agents/<rol>.md`, o su ruta absoluta con la orden de leerlo entero antes de empezar (si el subagente puede leer ficheros);
 - la ruta de la skill (`<skill>`), para abrir los `references/` y `assets/` que cite su fichero y ejecutar los `scripts/`;
 - la carpeta de salida y la de trabajo;
-- si el Docs MCP está disponible y cuántas consultas le quedan (tope global de 30);
+- el apartado «Dudas de Appian» de este fichero, si el Docs MCP está disponible y cuántas consultas le quedan (tope global de 30);
 - el entorno, si es producción y la versión si se conocen;
 - a process-modeler: si la sesión ofrece la skill `appian-diagramas-bpmn` (plugin appian-analisis-funcional), cárgala y pásale su carpeta para dibujar los procesos en draw.io editable; si no, usa su vía propia (`.bpmn` + Mermaid);
 - la orden de no crear tareas en tu lista y de terminar con un informe breve: ficheros generados, consultas al Docs MCP, choques entre instrucciones y «Para otras áreas».
@@ -106,8 +106,8 @@ Cada bloque Mermaid pasa `python3 <skill>/scripts/validate_mermaid.py <fichero.m
 
 ### Fase 6 — Coherencia, resumen, inventario y guía
 
-1. **Pasada de coherencia** (`references/execution-principles.md`, sección 4): corrige en su sitio las contradicciones entre documentos, fusiona duplicados y quita severidades repetidas. Completa en `01`–`11` las menciones a otras áreas con el ID canónico del hallazgo y su enlace. Nada de notas de parche.
-2. `python3 <skill>/scripts/build_registry.py <salida>` (de nuevo, tras la pasada de coherencia) y `python3 <skill>/scripts/build_summary.py <salida>` → `<trabajo>/summary.json`, la fuente de las cifras de `00` y de los publicadores.
+1. **Pasada de coherencia** (`references/execution-principles.md`, sección 4): corrige en su sitio las contradicciones entre documentos, fusiona duplicados y quita severidades repetidas. Completa en `01`–`11` las menciones a otras áreas con el ID canónico del hallazgo y su enlace. Nada de notas de parche. Termina con `build_registry.py` sin errores.
+2. `python3 <skill>/scripts/build_summary.py <salida>` → `<trabajo>/summary.json`, la fuente de las cifras de `00` y de los publicadores.
 3. Escribe con sus plantillas:
    - `00-resumen-ejecutivo.md`: cifras, confianza y su motivo, procesos críticos, hallazgos principales y uso real, de `summary.json`.
    - `INVENTARIO.md`: todos los objetos con su uuid y enlace al anexo, y la cobertura de la extracción.
@@ -146,6 +146,17 @@ Pasa la validación final (abajo) y responde con la plantilla de `references/res
 └── extraccion/   = <trabajo>: la extracción, tal cual, y los datos de trabajo (no es un entregable)
 ```
 
+## Dudas de Appian
+
+Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `appian-docs` (sus herramientas empiezan por `mcp__appian-docs__`) antes de escribirlo, nunca de memoria: si existe un componente, una función, un parámetro o un objeto, qué admite, sus límites, si depende de la licencia y desde qué versión.
+- Una duda por consulta, escrita como una frase completa.
+- Vale lo que diga la documentación de la versión del entorno del proyecto (va en la URL: `/help/26.6/`). Si solo lo dice una versión posterior, se avisa de que puede no estar disponible.
+- Lo que se escribe a partir de la respuesta lleva su URL, en la forma `/latest/`.
+- Sin el MCP, se consulta docs.appian.com con WebFetch o WebSearch. Si tampoco se puede, se escribe «sin verificar» y la duda pasa a pendientes.
+- Qué conviene hacer (qué mecanismo elegir, cómo diseñarlo) no es una duda de documentación: se consulta en `appian-best-practices`, solo la sección que toca. Esa skill está junto a esta: `python3 <esta skill>/../appian-best-practices/scripts/seccion.py 02 4.8` imprime solo §4.8 del doc 02.
+
+**En la ingeniería inversa**, las dudas típicas son qué hace un tipo de nodo, un smart service, una función o un componente que no conoces, si algo está deprecado y cómo se comporta un temporizador o una opción de seguridad. La versión del entorno es `environment.appianVersion` de `preflight.json`; si no consta, vale la documentación más reciente y `LEEME.md` lo dice. La URL acompaña a la afirmación como `Fuente: <URL>`; lo que quede sin verificar lleva ❓ y dice qué falta. El tope de consultas por ejecución y la caché que comparten los agentes están en `references/docs-mcp-usage.md`.
+
 ## Recursos (cárgalos cuando toque, no todos a la vez)
 
 | Archivo | Cuándo |
@@ -155,7 +166,7 @@ Pasa la validación final (abajo) y responde con la plantilla de `references/res
 | `references/analysis-workflow.md` | Al empezar: checklists por fase. |
 | `references/lectura-mcp-raw.md` | Antes de la fase 4 (y lo leen todos los subagentes). |
 | `references/execution-principles.md` | Antes de la fase 4 (registro de hallazgos y pasada de coherencia). |
-| `references/docs-mcp-usage.md` | Si hay Docs MCP. |
+| `references/docs-mcp-usage.md` | Antes de consultar la documentación (tope y caché). |
 | `references/data-fabric.md` | Fase 2, paso 3. |
 | `references/appian-objects-guide.md` | Dónde está cada dato y heurísticas. |
 | `references/bpmn-mapping.md`, `mermaid-rules.md`, `presentation-rules.md` | Al generar diagramas y documentos. |

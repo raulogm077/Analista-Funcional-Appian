@@ -26,7 +26,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 | Falta | Consecuencia |
 |---|---|
 | Appian MCP Server | Sin volúmenes de datos: 03 no tiene filas por entidad. |
-| Docs MCP | Sin explicación oficial de nodos o funciones desconocidos; lo que depende de la documentación se marca «sin verificar». |
+| Docs MCP | Las dudas se consultan en docs.appian.com por la web; si tampoco se puede, lo que depende de la documentación oficial se marca «sin verificar». |
 
 ## Fase 1 — Plan
 
@@ -66,7 +66,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 - [ ] 4.2 en paralelo, en un solo turno: `data-modeler` (03), `integration-security-analyzer` (04–06), `process-modeler` (08), `ui-rules-analyzer` (10, 11).
 - [ ] Cada agente dejó `<trabajo>/hallazgos/<agente>.json` y su informe; sus «Para otras áreas» y choques, anotados para la fase 6.
 - [ ] 4.3 orquestador: `build_summary.py <salida>` para ver `signals` → `07` y `09` con sus plantillas y las guías de abajo → hallazgos `H-BAT` y `H-GEN` en `<trabajo>/hallazgos/orquestador.json` → `build_registry.py <salida>` sin errores (lo que reporte se corrige en el JSON del agente que corresponda).
-- [ ] Consultas al Docs MCP (suma de `<trabajo>/docs_cache/*.json`) ≤ 30.
+- [ ] Consultas a la documentación (suma de `<trabajo>/docs_cache/*.json`) ≤ 30.
 
 ### Guía de 07 (procesos programados)
 
@@ -122,8 +122,7 @@ Hallazgos `H-GEN` (severidad orientativa):
 
 ## Fase 6 — Coherencia, resumen, inventario y guía
 
-- [ ] Pasada de coherencia (`execution-principles.md`, sección 4): contradicciones corregidas en su documento, duplicados marcados con `duplicadoDe`, severidades fuera del propietario quitadas, «Para otras áreas» registrados, menciones a otras áreas en 01–11 con el ID canónico y su enlace. Sin notas de parche.
-- [ ] `build_registry.py <salida>` sin errores (de nuevo, tras la pasada de coherencia).
+- [ ] Pasada de coherencia (`execution-principles.md`, sección 4): contradicciones corregidas en su documento, duplicados marcados con `duplicadoDe`, severidades fuera del propietario quitadas, «Para otras áreas» registrados, menciones a otras áreas en 01–11 con el ID canónico y su enlace, sin notas de parche; al terminar, `build_registry.py <salida>` sin errores.
 - [ ] `build_summary.py <salida>` → `<trabajo>/summary.json`.
 - [ ] `00-resumen-ejecutivo.md` con su plantilla: todas las cifras de `summary.json` (confianza con su motivo, procesos críticos, hallazgos Alta, secretos y uso real con aviso de entorno).
 - [ ] `INVENTARIO.md`: 100 % de `inventory.json`, con uuid, enlace al anexo y cobertura de la extracción.

@@ -1,22 +1,28 @@
 """Pruebas de los scripts auxiliares: validate_mermaid.py y detect_secrets.sh."""
 from __future__ import annotations
 
+import os
+import shutil
 import subprocess
 import sys
+
+import pytest
 
 from conftest import SKILL
 
 VM = SKILL / "scripts" / "validate_mermaid.py"
 DS = SKILL / "scripts" / "detect_secrets.sh"
+UTF8 = dict(os.environ, PYTHONUTF8="1")   # validate_mermaid.py, en UTF-8 aunque el sistema use otra codificación
 
 
 def vm(text: str) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, str(VM), "-"], input=text, capture_output=True, text=True)
+    return subprocess.run([sys.executable, str(VM), "-"], input=text, capture_output=True, text=True,
+                          encoding="utf-8", env=UTF8)
 
 
 def test_rules_examples_are_valid():
     p = subprocess.run([sys.executable, str(VM), "--check", str(SKILL / "references" / "mermaid-rules.md")],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding="utf-8", env=UTF8)
     assert p.returncode == 0, p.stderr
 
 
@@ -51,6 +57,7 @@ def test_type_a_still_sanitized():
     assert p.returncode == 0 and "N1" in p.stdout
 
 
+@pytest.mark.skipif(shutil.which("bash") is None, reason="detect_secrets.sh necesita bash")
 def test_detect_secrets_files_and_dirs(tmp_path):
     d = tmp_path / "raw"
     d.mkdir()
@@ -60,7 +67,7 @@ def test_detect_secrets_files_and_dirs(tmp_path):
     clean.write_text("Constante: sk***\nURL base: https://***:***@erp.example.org/api\n")   # asteriscos: no es un secreto
     user_only = tmp_path / "06.md"
     user_only.write_text("URL base: https://svc_erp:***@erp.example.org/api\n")     # usuario visible: cuenta
-    p = subprocess.run(["bash", str(DS), str(d), str(clean)], capture_output=True, text=True)
+    p = subprocess.run(["bash", str(DS), str(d), str(clean)], capture_output=True, text=True, encoding="utf-8")
     assert p.returncode == 1
     assert [f"cs.json#{k} |" in p.stdout for k in ("baseUrl", "value", "password", "h")] == [True] * 4   # dónde
     assert "05.md:" not in p.stdout

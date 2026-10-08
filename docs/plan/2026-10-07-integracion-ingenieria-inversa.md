@@ -382,10 +382,10 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
 `bash`; `encoding="utf-8"` en toda lectura, también en cada `read_text()` sin `encoding` de `test_registry.py`);
 `pruebas/comprobar_plugin.py` (`REGLA_DOCS` incluye `appian-reverse-engineering`).
 
-- [ ] **Paso 1:** añadir `appian-reverse-engineering` a `REGLA_DOCS` y ejecutar `python3 pruebas/comprobar_plugin.py --completo`
+- [x] **Paso 1:** añadir `appian-reverse-engineering` a `REGLA_DOCS` y ejecutar `python3 pruebas/comprobar_plugin.py --completo`
   → FALLA («falta el apartado Dudas de Appian»).
-- [ ] **Paso 2:** hacer los cambios de la lista.
-- [ ] **Paso 3:** `python3 pruebas/comprobar_plugin.py --completo` → «Prueba de appian-reverse-engineering: bien», 0 errores.
+- [x] **Paso 2:** hacer los cambios de la lista.
+- [x] **Paso 3:** `python3 pruebas/comprobar_plugin.py --completo` → «Prueba de appian-reverse-engineering: bien», 0 errores.
 - [ ] **Paso 4:** commit «F2: ingeniería inversa en la prueba completa del plugin». Cierre de fase: revisión
   independiente de la rama y merge a `main`.
 

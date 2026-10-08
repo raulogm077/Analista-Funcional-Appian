@@ -47,12 +47,12 @@ EXTERNAS = {
 }
 # Nombres que empiezan por appian- y no son skills (MCP, carpetas y paquetes de Appian).
 NO_SKILLS = {"appian-docs", "appian-dev", "appian-analisis-funcional", "appian-dev-mcp-server",
-             "appian-dev-mcp-server-bundle", "appian-mcp-server", "appian-public-docs"}
+             "appian-dev-mcp-server-bundle", "appian-mcp-server"}
 # Nombre anterior de una skill del plugin → el de hoy. Solo lo cita el README, para retirar las copias sueltas que
 # todavía lo llevan; en las skills es un error.
 ANTERIORES = {"appian-prototipos-aena": "appian-prototipos"}
 # Skills que tienen que llevar la regla de dudas de Appian (appian-best-practices la lleva en *Tools*).
-REGLA_DOCS = ["appian-functional-analyst", "appian-prototipos"]
+REGLA_DOCS = ["appian-functional-analyst", "appian-prototipos", "appian-reverse-engineering"]
 TITULO_REGLA = "## Dudas de Appian"
 CARPETAS = ("references", "scripts", "templates", "assets", "schemas", "examples", "galerias", "runtime")
 # Lo que no va en una skill: sus pruebas y ejemplos van en pruebas/<skill>/, y un proyecto, en su carpeta <p>.

@@ -85,7 +85,7 @@ Que la extracción no traiga un dato no significa que falte en la aplicación: p
 - {{Definición de N CDTs y N decisiones: el Dev MCP no la devuelve (ver INVENTARIO).}}
 - {{Seguridad por objeto (role maps): no disponible.}}
 - {{Volúmenes de datos: Appian MCP Server no disponible.}}
-- {{Verificación con la documentación oficial: Docs MCP no disponible; lo que depende de ella va marcado «sin verificar».}}
+- {{Verificación con la documentación oficial: sin Docs MCP ni acceso a docs.appian.com; lo que depende de ella va marcado «sin verificar».}}
 - {{Versión de Appian: no determinada; las fuentes son de la documentación más reciente.}}
 - {{Uso real: el entorno no consta como producción y la muestra son las últimas N ejecuciones de cada proceso; las cifras son orientativas (los documentos las marcan «orientativo (ver LEEME)») y no sirven para decidir qué se usa{{; la muestra es uniforme (mismo iniciador y hora), así que no dice quién usa cada proceso ni cuándo}}.}}
 

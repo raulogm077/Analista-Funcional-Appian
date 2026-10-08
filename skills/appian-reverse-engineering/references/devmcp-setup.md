@@ -6,7 +6,7 @@ Guía para quien use la skill por primera vez. La fase 0 de la skill (`devmcp_ex
 |---|---|---|
 | Appian Dev MCP | **Sí** | Leer la aplicación: definiciones, dependencias, historial, pantallas. |
 | Appian MCP Server | No | Metadatos y recuento de filas del data fabric. |
-| Appian Docs MCP | No | Explicaciones y verificación de buenas prácticas con la documentación oficial. |
+| Appian Docs MCP | No | Resolver con la documentación oficial las dudas de Appian: qué hace un nodo, una función o un componente. |
 
 Fuente de esta guía: [Appian Developer MCP Servers](https://docs.appian.com/suite/help/latest/devmcp.html), [ficha de AppMarket](https://appmarket.appian.com/listings/appian-dev-mcp) y [Connect your AI application to Appian MCP Server](https://docs.appian.com/suite/help/26.6/connect-ai-application-to-mcp.html).
 
@@ -121,12 +121,14 @@ Sin él, la documentación no incluye volúmenes de datos.
 
 ## 3. Appian Docs MCP (opcional)
 
-En Claude Code:
+Viene con el plugin (`appian-docs`, en su `.mcp.json`) y pide iniciar sesión con Google o GitHub la primera vez. Límite: 300 consultas al día y 60 por minuto.
+
+Si no está en la sesión, en Claude Code:
 
 ```bash
-claude mcp add --transport http appian-public-docs https://appian-docs-public.mcp.kapa.ai
+claude mcp add --transport http appian-docs https://appian-docs-public.mcp.kapa.ai
 ```
 
-En Claude Desktop: *Settings* → *MCP Servers*, nombre `appian-public-docs` y la URL anterior. Pide iniciar sesión con Google o GitHub la primera vez. Límite: 300 consultas al día.
+En Claude Desktop: *Settings* → *MCP Servers*, nombre `appian-docs` y la URL anterior.
 
-Sin él, la documentación no explica con fuente oficial los nodos y funciones desconocidos, y lo que depende de la documentación se marca «sin verificar».
+Sin él, las dudas se consultan en docs.appian.com por la web («Dudas de Appian», en `SKILL.md`). Si tampoco se puede, los entregables no explican con la documentación oficial de Appian los nodos y funciones que no se conocen, y lo que dependa de ella se marca «sin verificar».

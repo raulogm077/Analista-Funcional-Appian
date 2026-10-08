@@ -14,7 +14,7 @@ Plantilla de la respuesta que devuelve la skill **al terminar** todas las fases 
 ## Estado de los MCP
 - Dev MCP: ok (<N> herramientas usadas, <N> excluidas por seguridad)
 - Appian MCP Server: ok / no disponible (sin volúmenes de datos)
-- Docs MCP: ok (<N> de 30 consultas) / no disponible (sin explicación oficial de nodos o funciones desconocidos)
+- Docs MCP: ok / no disponible, dudas por la web / sin MCP ni web (lo que depende de la documentación oficial va «sin verificar») · <N> de 30 consultas
 
 ## Documentos
 - Empieza por `LEEME.md` (rutas de lectura por perfil).

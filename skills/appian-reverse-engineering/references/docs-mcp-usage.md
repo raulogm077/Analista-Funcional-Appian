@@ -1,13 +1,12 @@
-# Uso del Appian Docs MCP
+# Docs MCP: tope de consultas y caché
 
-El Docs MCP es el servidor público de documentación de Appian (`https://appian-docs-public.mcp.kapa.ai`). Ofrece una búsqueda semántica sobre docs.appian.com. Es **opcional**: si no está disponible, la skill funciona igual y las afirmaciones que dependan de la documentación se marcan «sin verificar».
+Qué se consulta, cómo se cita y qué se hace sin el Docs MCP lo dice «Dudas de Appian» en `SKILL.md`, igual que en las demás skills del plugin. Aquí va lo propio de esta skill, en la que consultan varios agentes a la vez: el tope y la caché compartida.
 
-## Límites
+## Tope: 30 consultas por ejecución
 
-- **300 consultas al día y 60 por minuto** (límite del servicio). La skill se impone un tope de **30 consultas por ejecución** entre todos los agentes.
-- Requiere OAuth (Google o GitHub) en el cliente: el script de preflight no puede comprobarlo; se comprueba desde la sesión con una consulta de prueba (fase 0). El orquestador apunta esa consulta en `<trabajo>/docs_cache/orquestador.json` y cuenta para el tope.
+Entre todos los agentes, por el Docs MCP o por la web. El Docs MCP admite 300 consultas al día y 60 por minuto. La consulta de prueba de la fase 0 cuenta: el orquestador la apunta en `<trabajo>/docs_cache/orquestador.json`.
 
-Reparto orientativo del tope (el orquestador dice a cada subagente cuántas le quedan; lo que uno no gaste puede pasar a otro):
+Reparto orientativo (el orquestador dice a cada subagente cuántas le quedan; lo que uno no gaste puede pasar a otro):
 
 | Quién | Consultas |
 |---|---|
@@ -17,25 +16,10 @@ Reparto orientativo del tope (el orquestador dice a cada subagente cuántas le q
 | Orquestador (07, 09 y pasada de coherencia) | 4 |
 | **Total** | **30** |
 
-## Cómo localizar la herramienta
+Para no gastarlas:
 
-No dependas de un nombre fijo. En la sesión, busca una herramienta de un servidor de documentación de Appian cuya descripción hable de buscar en las fuentes de conocimiento o la documentación de Appian (hoy se llama `search_appian_knowledge_sources`). Si no hay ninguna, el Docs MCP no está disponible.
-
-## Cuándo consultarlo
-
-Solo cuando cambie lo que vas a escribir:
-
-1. **Explicar** un tipo de nodo, smart service, función o componente que no conozcas con seguridad.
-2. **Verificar** si algo está deprecado, antes de registrarlo como hallazgo.
-3. **Confirmar** un comportamiento dudoso (p. ej. semántica de un temporizador o de una opción de seguridad).
-
-No lo consultes para cosas que ya dicen `references/` o la propia definición del objeto.
-
-## Cómo consultarlo
-
-- Una pregunta por tema, en lenguaje natural y concreta: «¿Está deprecado el componente Paging Grid y qué lo sustituye?».
-- Incluye la versión si la conoces: «en Appian 26.6».
-- Agrupa: si hay 12 interfaces con el mismo componente obsoleto, **una** consulta.
+- Lo que ya dicen `references/` o la propia definición del objeto no se consulta.
+- Las dudas iguales se agrupan: si 12 interfaces usan el mismo componente, **una** consulta («¿Está deprecado el componente Paging Grid en Appian 26.6?»).
 
 ## Caché compartida
 
@@ -48,11 +32,3 @@ Después de consultar, añade la entrada a **tu** fichero (`<trabajo>/docs_cache
 ```
 
 El orquestador suma las consultas de todos los ficheros para respetar el tope. Cada agente dice en su informe final cuántas hizo.
-
-## Cómo citarlo
-
-Toda afirmación que salga de la documentación lleva la URL:
-
-```
-Fuente: https://docs.appian.com/suite/help/26.6/Deprecated_Features.html
-```
