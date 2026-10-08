@@ -15,7 +15,8 @@ Qué mira:
   una skill (ANTERIORES), para retirar sus copias sueltas;
 - que existan los ficheros que cita cada SKILL.md y las rutas de una skill a otra;
 - que los servidores MCP que se citan estén en .mcp.json;
-- que la regla «Dudas de Appian» esté, igual, en las skills de REGLA_DOCS;
+- que la regla «Dudas de Appian» esté, igual, en las skills de REGLA_DOCS, y el MCP que nombra (appian-docs), en
+  .mcp.json;
 - que no haya frases largas repetidas entre SKILL.md;
 - que la versión de plugin.json sea la última del README.
 Con --completo pasa además las pruebas de pruebas/ (cada selftest.py y, con pytest, las de ingeniería inversa) al
@@ -198,6 +199,16 @@ def probar_comprobador(nombres):
         espera(c == 1 and "appian-prototipos-aena" in out and "hoy appian-prototipos" in out,
                "un SKILL.md que cita el nombre anterior de una skill no da error", out)
         doc.write_text(original, encoding="utf-8")
+        # la regla «Dudas de Appian» nombra el MCP appian-docs, así que tiene que estar en el .mcp.json del plugin
+        mcp = copia / ".mcp.json"
+        config = mcp.read_text(encoding="utf-8")
+        conf = json.loads(config)
+        conf["mcpServers"]["otro-nombre"] = conf["mcpServers"].pop("appian-docs", {})
+        mcp.write_text(json.dumps(conf, indent=2), encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "appian-docs, que no está en .mcp.json" in out,
+               "un .mcp.json sin el servidor appian-docs no da error", out)
+        mcp.write_text(config, encoding="utf-8")
         # --completo --plugin pasa las pruebas del repositorio a la copia: con sus scripts rotos, ninguna pasa
         # (si falta un requisito, como pytest sin uv, esa prueba no se completa, pero tampoco pasa)
         for py in (copia / "skills").rglob("*.py"):
@@ -314,7 +325,9 @@ def main(completo, plugin=None):
             if s not in servidores:
                 errores.append(f"{doc.relative_to(RAIZ)}: cita el MCP «{s}», que no está en .mcp.json")
 
-    # Regla de dudas de Appian
+    # Regla de dudas de Appian: nombra el MCP appian-docs, que tiene que estar en .mcp.json
+    if "appian-docs" not in servidores:
+        errores.append(f"«{TITULO_REGLA[3:]}» nombra el MCP appian-docs, que no está en .mcp.json")
     reglas = {}
     for n in REGLA_DOCS:
         bloque = seccion(textos.get(n, ""), TITULO_REGLA)
