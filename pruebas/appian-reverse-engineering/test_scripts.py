@@ -57,14 +57,13 @@ def test_detect_secrets_files_and_dirs(tmp_path):
     (d / "cs.json").write_text('{"baseUrl": "https://svc:P4ss@erp.example.org",\n "value": "sk_live_51Hc9fakeTOKEN",\n'
                                ' "password": "hunter2hunter2",\n "h": "Bearer abcdefghijklmnopqrstuvwxyz"}')
     clean = tmp_path / "05.md"
-    clean.write_text("Constante enmascarada: sk***\nURL base: https://***:***@erp.example.org/api\n")
+    clean.write_text("Constante: sk***\nURL base: https://***:***@erp.example.org/api\n")   # asteriscos: no es un secreto
     user_only = tmp_path / "06.md"
     user_only.write_text("URL base: https://svc_erp:***@erp.example.org/api\n")     # usuario visible: cuenta
     p = subprocess.run(["bash", str(DS), str(d), str(clean)], capture_output=True, text=True)
     assert p.returncode == 1
-    for secret in ("P4ss", "sk_live", "hunter2", "abcdefghijklmnop"):
-        assert secret not in p.stdout, secret
-    assert p.stdout.count("[VALOR ENMASCARADO]") >= 4
+    assert [f"cs.json:{n} |" in p.stdout for n in (1, 2, 3, 4)] == [True] * 4      # dice dónde está cada uno
+    assert "05.md:" not in p.stdout
     assert subprocess.run(["bash", str(DS), str(clean)], capture_output=True).returncode == 0
     assert subprocess.run(["bash", str(DS), str(user_only)], capture_output=True).returncode == 1
     assert subprocess.run(["bash", str(DS), str(tmp_path / "nope")], capture_output=True).returncode == 2

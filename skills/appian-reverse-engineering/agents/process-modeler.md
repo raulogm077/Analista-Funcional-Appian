@@ -8,7 +8,7 @@ Documentas cada process model de la aplicación en `08-procesos-bpmn/`: su flujo
 
 Lee enteros antes de empezar:
 
-- `references/lectura-mcp-raw.md`: ficheros, roles, campos derivados, formato de evidencia, quién puede iniciar un process model, qué no devuelve el Dev MCP y privacidad.
+- `references/lectura-mcp-raw.md`: ficheros, roles, campos derivados, formato de evidencia, quién puede iniciar un process model y qué no devuelve el Dev MCP.
 - `references/execution-principles.md`: principios (en especial «dato ausente no es defecto»), documentos propietarios y registro de hallazgos.
 - `references/presentation-rules.md`: esqueleto, límites, marcas y lo que el lector no debe ver.
 - `references/bpmn-mapping.md`: mapeo de nodos, carriles, sistemas externos, temporizador y `.bpmn`.
@@ -33,7 +33,7 @@ Abre su fichero `definition` y saca:
 2. **Flujo**: `connections` de cada nodo; en las pasarelas, `decision.conditions[]` (expresión y `targetNodeId`) y `defaultPath`. Escribe cada condición en lenguaje de negocio.
 3. **Inicio**: `startType` y `schedule` del inventario (el temporizador está en el nodo de inicio), `startFormInterface`, y quién lo lanza (`dependents`, aristas `startProcess` y `subProcess`, acciones de record).
 4. **Quién puede iniciarlo**: según «Quién puede iniciar un process model» de `lectura-mcp-raw.md`. Sin role map: «grupo de seguridad declarado: X; role map no disponible» ❓, nunca «solo X puede iniciarlo».
-5. **Tareas de personas**: `assignment.assignees` (grupos o expresiones) y formulario (`forms.interfaceUuid`). Una asignación que no es un grupo se describe por su rol, nunca por el usuario: un usuario concreto o una constante de tipo Usuario es «una cuenta de ‹grupo›» o «una cuenta personal»; un correo personal (p. ej. un destinatario literal), `‹correo›`.
+5. **Tareas de personas**: `assignment.assignees` (grupos, usuarios o expresiones) y formulario (`forms.interfaceUuid`). Una asignación a un usuario concreto o a una constante de tipo Usuario lleva el usuario; si aclara algo, añade su grupo o su rol.
 6. **Subprocesos** (`data.processModelUuid`) e **integraciones** (`data.integrationUuid` → su connected system), resueltos con el inventario.
 7. **Datos**: record types que escribe (entradas de Write Records) y los que consulta un script task (que sigue siendo un script task).
 8. **Uso real** (`usage` y el fichero `history`): ejecuciones, última y fallos. Si existe `usage.failedInSampleOf`, los fallos son de la muestra («3 fallos en las últimas 50 ejecuciones»). Las instancias fallidas o detenidas (por ejemplo, por una excepción) de la muestra son hallazgo tuyo (`H-PRO`): cuántas, de cuántas, y en qué nodo si consta. La muestra puede ser uniforme (misma hora e iniciador): no deduzcas de ella qué cuenta ejecuta el proceso ni desfases horarios. Los procesos de temporizador y los subprocesos se ejecutan como el usuario que desplegó el modelo (`lectura-mcp-raw.md`).
@@ -94,7 +94,7 @@ Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz la
 - **`<slug>.md`**, uno por process model, con `pm-template.md`. Incrusta la imagen que exista (`.svg` o `.png`; si se partió, una por tramo y en orden) con su fuente y el enlace al `.bpmn`; sin imagen, el bloque mermaid. Cada evidencia enlaza la ficha del anexo (`../anexo/processModel/<slug>.md`). El diagrama se llama «Diagrama del proceso». En el paso a paso cada nodo se cita como `nodes[id=N]` (y con su código `ACT-`/`GW-`/`EV-` en la vía draw.io).
 - **`indice.md`** con su plantilla: catálogo de todos los procesos (≤ 8 columnas; «Hallazgos» con los IDs H-PRO de cada uno; «Crítico» de `criticality.critical`).
 - **Mapa de procesos** `<salida>/diagrams/mapa-procesos.mmd` (tipo A, `flowchart TD`): un nodo por process model (con su forma de inicio en la etiqueta si cabe) y una flecha por arista `subProcess` o `startProcess` de `graph.json`. Más de 30 nodos: solo los procesos que se relacionan con otro, y el resto queda en el catálogo. Valídalo y renderízalo como los demás. Si ningún proceso lanza a otro, no hay mapa: dilo en el TL;DR del índice.
-- **Enlaces**: los objetos de otras áreas enlazan su documento propietario (`03`, `05`, `10`…) y la definición, su ficha del `anexo/`. Nunca `<trabajo>/` ni nombres de usuario.
+- **Enlaces**: los objetos de otras áreas enlazan su documento propietario (`03`, `05`, `10`…) y la definición, su ficha del `anexo/`. Nunca `<trabajo>/`.
 
 ## Comprobación antes de terminar
 
@@ -103,7 +103,7 @@ Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz la
 - [ ] `indice.md` lista todos los procesos y el mapa refleja las aristas `subProcess` y `startProcess`.
 - [ ] Un solo TL;DR por documento; solo ✅/🔵/❓ como certeza y Alta/Media/Baja como severidad (solo en hallazgos).
 - [ ] Cada fila de Hallazgos está en `process-modeler.json` (o en `orquestador.json` si la añadió el orquestador) y al revés.
-- [ ] Sin usuarios, sin referencias a la skill ni a `<trabajo>/`, sin `{{`, `TODO` ni `TBD`.
+- [ ] Sin referencias a la skill ni a `<trabajo>/`, sin `{{`, `TODO` ni `TBD`.
 
 ## Salida
 

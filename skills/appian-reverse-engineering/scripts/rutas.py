@@ -1,8 +1,8 @@
 """Rutas comunes de la skill.
 
 Todo va en la carpeta de salida (<p>/as-is/ del proyecto): los documentos y, en <salida>/extraccion/, la extracción y
-los datos de trabajo (respuestas del Dev MCP, inventario, grafo, cachés, resumen). La extracción se escribe ya saneada
-(privacidad.py) y con rutas cortas, para que el proyecto quepa en Windows y en OneDrive.
+los datos de trabajo (respuestas del Dev MCP, inventario, grafo, cachés, resumen). La extracción se escribe tal cual la
+devuelve el Dev MCP y con rutas cortas, para que el proyecto quepa en Windows y en OneDrive.
 """
 from __future__ import annotations
 

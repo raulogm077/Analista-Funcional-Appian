@@ -52,7 +52,7 @@ Inyecta en el HTML **solo los campos que uses**, no el fichero entero.
 - **Hallazgos**: los de `findings`, con su ID, severidad en palabra (Alta/Media/Baja) y certeza ✅ verificado / 🔵 inferido / ❓ pendiente. No uses otras marcas de estado.
 - **Confianza**: `meta.confidence` con su motivo (`meta.confidenceBasis`) visible al pasar el ratón o al pulsar.
 - **Uso real**: si `meta.environment.isProduction` no es `true`, las ejecuciones van con la marca «orientativo (ver LEEME)».
-- **Lo que no se publica**: usuarios, secretos, rutas o enlaces a `<trabajo>/`, referencias a la skill (ficheros, scripts, códigos internos). Los uuids solo en la vista de inventario.
+- **Lo que no se publica**: rutas o enlaces a `<trabajo>/` y referencias a la skill (ficheros, scripts, códigos internos). Los uuids solo en la vista de inventario.
 
 ## Estructura
 

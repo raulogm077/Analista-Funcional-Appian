@@ -10,7 +10,7 @@
     añaden con la documentación oficial (p. ej. https://docs.appian.com/suite/help/26.6/Sub-Process_Activity.html,
     https://docs.appian.com/suite/help/26.6/record-events.html,
     https://docs.appian.com/suite/help/26.6/prepare-deployment-packages.html#add-plugins).
-  - Celdas ≤ 100 caracteres. Un solo TL;DR. Sin usuarios.
+  - Celdas ≤ 100 caracteres. Un solo TL;DR.
 -->
 
 # {{Nombre visible de la aplicación}}: documentación de reingeniería
@@ -44,7 +44,7 @@
 | [10-pantallas.md](./10-pantallas.md) | Catálogo de pantallas | {{PAN-001…PAN-006}} |
 | [11-reglas-negocio.md](./11-reglas-negocio.md) | Catálogo de reglas de negocio | {{RN-001…RN-012}} |
 | [INVENTARIO.md](./INVENTARIO.md) | Todos los objetos, con uuid, y cobertura de la extracción | — |
-| [anexo/indice.md](./anexo/indice.md) | Definición original de cada objeto: código numerado por líneas, sin usuarios | — |
+| [anexo/indice.md](./anexo/indice.md) | Definición original de cada objeto: código numerado por líneas | — |
 
 ## Cómo leer las marcas
 
@@ -72,7 +72,7 @@ Que la extracción no traiga un dato no significa que falte en la aplicación: p
 |---|---|
 | `mcp:tipo/nombre#ubicación` | Objeto y punto de su definición; el enlace abre su ficha en el [anexo](./anexo/indice.md). |
 | `@dependents` · `@history` · `@versions` | Tras el nombre, la respuesta de la que sale: quién lo usa · ejecuciones · versiones. |
-| `@validation` · `@screen` · `@members` | Avisos de la plataforma · pantalla renderizada (sin valores) · miembros del grupo. |
+| `@validation` · `@screen` · `@members` | Avisos de la plataforma · pantalla renderizada · miembros del grupo. |
 | `@other:<herramienta>` | Otra respuesta de la plataforma (p. ej. el role map). |
 | `graph:hubs` · `graph:orphans` · `graph:edge/A→B` | Conclusión del grafo de referencias entre objetos ([anexo/grafo.md](./anexo/grafo.md)). |
 | `Fuente: <URL>` | Documentación oficial de Appian. |
@@ -121,4 +121,4 @@ Que la extracción no traiga un dato no significa que falte en la aplicación: p
 
 El vocabulario del negocio está en el [glosario de 09](./09-valor-adicional.md#glosario-de-negocio).
 
-> Esta carpeta lleva también la extracción de la que sale la documentación, ya saneada: sin secretos, con seudónimos en lugar de usuarios y sin correos ni rutas locales. Para consultar un objeto, usa su ficha del [anexo](./anexo/indice.md).
+> Esta carpeta lleva también la extracción de la que sale la documentación, tal cual la devolvió el Dev MCP. Para consultar un objeto, usa su ficha del [anexo](./anexo/indice.md).

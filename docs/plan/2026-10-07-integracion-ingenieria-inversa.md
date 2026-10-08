@@ -363,13 +363,13 @@ secreto escrito en una constante o en una conexión sigue siendo un hallazgo de 
     todo lo que manda ocultar o comprobar que no haya usuarios, valores o secretos.
 - Modificar en `pruebas/appian-reverse-engineering/` las pruebas que exigían el saneado.
 
-- [ ] **Paso 1: pruebas que fallan.** `test_tal_cual`: tras `extract` y `build_annex.py`, los usuarios de
+- [x] **Paso 1: pruebas que fallan.** `test_tal_cual`: tras `extract` y `build_annex.py`, los usuarios de
   `fixture.GROUP_USERS`, un correo y el valor de la constante con la clave de API aparecen como los devuelve el
   simulador, en la extracción y en el anexo; y `test_sin_ocultar`: ningún texto de la skill pide seudónimos, `‹usuario›`,
   `‹correo›`, `‹secreto›` ni «sin usuarios». Siguen `test_extraccion_dentro_del_proyecto`, `test_rutas_cortas`,
   `test_retomar` y `test_ruta_con_espacios`. → FALLA.
-- [ ] **Paso 2:** quitar el saneado y reescribir los textos de la lista.
-- [ ] **Paso 3:** `python3 -m pytest -q pruebas/appian-reverse-engineering` y `comprobar_plugin.py --completo` en verde.
+- [x] **Paso 2:** quitar el saneado y reescribir los textos de la lista.
+- [x] **Paso 3:** `python3 -m pytest -q pruebas/appian-reverse-engineering` y `comprobar_plugin.py --completo` en verde.
   Commit «F2: nada se oculta en ingeniería inversa».
 
 ### Tarea 3: Alta de ingeniería inversa en el plugin

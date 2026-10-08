@@ -112,11 +112,9 @@ No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). Una buena p
 
 ## Regla 8: lo que el lector no debe ver
 
-- **Usuarios**: ningún nombre de usuario en ningún entregable. Usa recuentos o el rol: «una cuenta personal del grupo DEM Gestores», «una cuenta de servicio». Una constante de tipo Usuario o un usuario escrito en el código se escribe «una cuenta de ‹grupo›», con el nombre de su grupo si se conoce (p. ej. «una cuenta de DEM Gestores»), o «una cuenta personal»; un correo personal, `‹correo›` (literal).
 - **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts, códigos internos de patrones (`DAT-02`) ni «heurística de la skill». Nombra la buena práctica y su fuente oficial.
 - **Notas de parche**: nunca «01 todavía dice…», «esto matiza a…», «corrige lo que dice X». Si otro documento está mal, se corrige ese documento (pasada de coherencia de la fase 6).
-- **`<trabajo>/`** (`extraccion/`): los entregables no lo enlazan ni escriben su ruta (son datos en bruto, aunque saneados). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
-- **Render de una interfaz**: se guarda sin valores (‹valor›), porque al evaluarla Appian puede traer datos reales. Describe la estructura («un indicador de solicitudes pendientes»), nunca valores.
+- **`<trabajo>/`** (`extraccion/`): los entregables no lo enlazan ni escriben su ruta (son datos en bruto). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
 - **Limitaciones globales** (entorno no productivo, versión no determinada, muestra de ejecuciones, configuración que el Dev MCP no devuelve): se explican una vez en `LEEME.md`. Cada documento cita en su «Cobertura y límites» solo las que cambian lo que dice, en una línea. Donde una cifra dependa de ellas (p. ej. ejecuciones en un entorno que no consta como producción), no repitas la explicación: usa la marca corta «orientativo (ver [LEEME](./LEEME.md))» (`../LEEME.md` desde `08-procesos-bpmn/`), una vez por tabla o sección (p. ej. en la cabecera de la columna).
 
 ## Regla 9: longitud
@@ -149,7 +147,7 @@ Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal 
 - [ ] Cada diagrama una sola vez y legible al ancho de página.
 - [ ] Solo ✅/🔵/❓ como certeza y Alta/Media/Baja como severidad.
 - [ ] Hallazgos solo de tu área, con ID del registro.
-- [ ] Sin usuarios, sin referencias a la skill, sin notas de parche, sin enlaces a `<trabajo>/`.
+- [ ] Sin referencias a la skill, sin notas de parche, sin enlaces a `<trabajo>/`.
 - [ ] Sin placeholders (`{{`, `TODO`, `TBD`, `xxx`, `lorem`).
 - [ ] Cada ficha con evidencia y certeza; cada evidencia enlaza su ficha del anexo.
 - [ ] Ninguna ficha recortada u omitida por longitud.

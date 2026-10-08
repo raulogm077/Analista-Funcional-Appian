@@ -125,7 +125,7 @@ _RAW = [
     }),
     ("R_ADMIN", "FREEFORM_RULE", "DEM_ER_EsAdmin", {
         "inputs": [],
-        # cita a un usuario de DEM Users: la extracción no puede escribirlo en claro en ningún momento
+        # un usuario de DEM Users escrito en el código
         "expression": "=or(loggedInUser() = \"ana.garcia\", a!isUserMemberOfGroup(loggedInUser(), cons!DEM_ADMIN_GROUP))",
     }),
     ("INT_CAT", "OUTBOUND_INTEGRATION", "DEM_INT_ConsultarCatalogo", {

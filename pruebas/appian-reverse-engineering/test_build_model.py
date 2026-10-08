@@ -1,7 +1,6 @@
 """Pruebas de build_model.py y de la compatibilidad con build_summary.py (sin modificarlo)."""
 from __future__ import annotations
 
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -10,10 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent / "mock_devmcp"))
 import fixture  # noqa: E402
-from conftest import BUILD_MODEL, BUILD_SUMMARY, SKILL  # noqa: E402
-
-sys.path.insert(0, str(SKILL / "scripts"))
-import privacidad  # noqa: E402
+from conftest import BUILD_MODEL, BUILD_SUMMARY  # noqa: E402
 
 OBJS, KEY_BY_UUID, _ = fixture.build()
 
@@ -76,30 +72,20 @@ def test_inventory_fields(built):
     assert by["PM_ALTA"]["usage"]["executions"] == 120
     assert by["PM_HUERF"]["slug"] == "DEM_Utilidad_Huerfana"
     assert by["PM_HUERF"]["usage"]["executions"] == 0
-    assert by["C_TOKEN"]["maskedSecret"] is True and by["C_TOKEN"]["value"] == "***"
-    assert "P4ssw0rd" not in json.dumps(inv)
-    assert by["CS_ERP"]["baseUrl"] == "https://***:***@erp.example.org/api"
+    assert by["C_TOKEN"]["secret"] is True and by["C_TOKEN"]["value"] == OBJS["C_TOKEN"]["value"]   # tal cual
+    assert "secret" not in by["C_URL"] and by["C_URL"]["value"] == OBJS["C_URL"]["value"]
+    assert by["CS_ERP"]["baseUrl"] == OBJS["CS_ERP"]["baseUrl"]
     assert by["INT_ERP"]["method"] == "POST" and by["INT_ERP"]["connectedSystemRef"] == "DEM_CS_ERP"
     assert by["I_DASH"]["sailBytes"] > 100
     assert any("deprecated" in m for m in by["I_ADMIN"]["validationIssues"])
     assert by["G_USR"]["memberGroups"] and by["G_USR"]["userCount"] == 2
     assert by["RT_SOL"]["fieldCount"] == 6 and by["RT_SOL"]["tableName"] == "DEM_SOLICITUD"
     assert by["I_FORM"]["screen"].endswith(".json")
-    assert by["PM_ALTA"]["versions"]["lastModifiedBy"] == privacidad.seudonimo("marta.ruiz")
+    assert by["PM_ALTA"]["versions"]["lastModifiedBy"] == "marta.ruiz"
     assert by["T_DTO"]["detail"] == "none" and by["AG_CLAS"]["detail"] == "full"
     for o in by.values():
         if o.get("path"):
             assert (built.interm() / o["path"]).exists()
-
-
-def test_raw_files_have_no_secrets(built):
-    raw = built.interm() / "mcp_raw"
-    blob = "\n".join(p.read_text(encoding="utf-8") for p in raw.rglob("*.json"))
-    assert "P4ssw0rd" not in blob and "sk_live_51Hc9" not in blob
-    assert "=cons!DEM_ERP_API_TOKEN" in blob                 # las referencias no se enmascaran
-    inv = built.load("inventory.json")
-    tok = next(o for o in inv["objects"]["constant"] if o["name"] == "DEM_ERP_API_TOKEN")
-    assert tok["maskedSecret"] is True
 
 
 def test_criticality_and_secrets(built):
@@ -110,7 +96,8 @@ def test_criticality_and_secrets(built):
     assert by["PM_BATCH"]["criticality"]["critical"]                 # batch programado
     assert by["PM_REV"]["criticality"]["critical"]                   # subproceso con tarea humana
     assert not by["PM_HUERF"]["criticality"]["critical"]
-    assert by["C_TOKEN"]["maskedSecrets"] >= 1 and by["CS_ERP"]["maskedSecrets"] >= 1
+    assert by["C_TOKEN"]["secrets"] >= 1 and by["CS_ERP"]["secrets"] >= 1        # lo que encuentra detect_secrets
+    assert not any(o.get("secrets") for k, o in by.items() if k not in ("C_TOKEN", "CS_ERP"))
 
 
 def test_build_summary_contract(built):
@@ -141,21 +128,17 @@ def test_annex(built):
     assert "recordType!DEM Solicitud.fields.titulo" in form and "recordType!{" not in form
     alta_txt = (anexo / "processModel" / "DEM_Alta_Solicitud.md").read_text(encoding="utf-8")
     assert "| 3 | Sub-Process (`internal3.subprocess`) |" in alta_txt or "| 3 | `internal3.subprocess` |" in alta_txt
-    blob = "\n".join(f.read_text(encoding="utf-8") for f in anexo.rglob("*.md"))
-    for leak in ("marta.ruiz", "ana.garcia", "admin.dem", "P4ssw0rd", "sk_live_51Hc9", "svc_erp", "***:***@", "ENMASCARADO"):
-        assert leak not in blob, leak
     erp = (anexo / "connectedSystem" / "DEM_CS_ERP.md").read_text(encoding="utf-8")
-    assert "https://erp.example.org/api" in erp and "credenciales embebidas" in erp
+    assert OBJS["CS_ERP"]["baseUrl"] in erp                             # tal cual, con sus credenciales
     assert "[DEM_SolicitudForm.md](./interface/DEM_SolicitudForm.md)" in (anexo / "indice.md").read_text(encoding="utf-8")
     alta = (anexo / "processModel" / "DEM_Alta_Solicitud.md").read_text(encoding="utf-8")
     assert "## Ejecuciones (@history)" in alta and "## Quién lo usa (@dependents)" in alta
-    assert "‹usuario de DEM" in alta                                    # el usuario se sustituye por sus grupos
+    assert "marta.ruiz" in alta                                         # el autor de la última versión
     dash = (anexo / "interface" / "DEM_Dashboard.md").read_text(encoding="utf-8")
-    assert "(@screen)" in dash and "‹valor›" in dash and '"12"' not in dash and '"40"' not in dash   # render sin valores
-    if '"instances"' in alta:                                       # variante con instancias: resumen por grupo
-        assert "Resumen: 20 instancias en la muestra" in alta and "iniciadas por: ‹usuario de DEM" in alta
+    assert "(@screen)" in dash and '"12"' in dash and '"40"' in dash   # el render, con sus valores
+    if '"instances"' in alta:                                       # variante con instancias: resumen
+        assert "Resumen: 20 instancias en la muestra" in alta and "iniciadas por: ana.garcia (20)" in alta
     assert "No disponible: la plataforma respondió con un error" in (anexo / "cdt" / "DEM_SolicitudDTO.md").read_text(encoding="utf-8")
-    assert "credenciales embebidas" in (anexo / "connectedSystem" / "DEM_CS_ERP.md").read_text(encoding="utf-8")
     assert (anexo / "application" / "DEM.md").exists()
     assert "La extracción no trae la definición" in (anexo / "cdt" / "DEM_SolicitudDTO.md").read_text(encoding="utf-8")
     grafo = (anexo / "grafo.md").read_text(encoding="utf-8")

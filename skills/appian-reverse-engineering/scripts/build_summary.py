@@ -94,8 +94,8 @@ def main(doc_root: str) -> int:
                     for pm in objects.get("processModel", []) if isinstance(pm.get("usage"), dict)),
                    key=lambda u: -(u["executions"] or 0))[:10]
 
-    # Secretos: objetos con valores enmascarados en la extracción
-    secret_objs = [o for o in all_objs if o.get("maskedSecrets") or o.get("maskedSecret")]
+    # Secretos: objetos con valores que parecen un secreto (secrets y secret de build_model.py)
+    secret_objs = [o for o in all_objs if o.get("secrets") or o.get("secret")]
 
     # Señales objetivas para el registro (el orquestador decide si son hallazgos)
     signals = []

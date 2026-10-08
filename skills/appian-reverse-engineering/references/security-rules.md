@@ -1,16 +1,16 @@
 # Reglas de seguridad
 
-Cómo tratar secretos, credenciales, hosts y usuarios antes de escribir cualquier entregable o la web. Es la única regla sobre estos datos: las plantillas y los agentes la aplican, no la redefinen.
+Cómo se detecta y se registra un secreto escrito en la aplicación, y qué otros riesgos de seguridad se registran. Es la única regla sobre secretos: las plantillas y los agentes la aplican, no la redefinen.
 
 ## Principio
 
-Las definiciones extraídas (connected systems, integraciones, constantes, Web APIs) pueden contener contraseñas, tokens o API keys, certificados privados, URLs con credenciales embebidas (`https://user:pass@host`) y cadenas de conexión con contraseña. La extracción ya enmascara lo que reconoce (`***ENMASCARADO***`, `https://***:***@host`), pero algo puede escaparse.
+Se trabaja en entornos controlados: la extracción, el anexo y los documentos llevan los usuarios, los datos de la aplicación y los secretos tal cual.
 
-**Nunca** se reproducen en los entregables, ni en claro ni enmascarados: se dice dónde están (objeto y propiedad) y se registran como hallazgo.
+Las definiciones extraídas (connected systems, integraciones, constantes, Web APIs) pueden contener contraseñas, tokens o API keys, certificados privados, URLs con credenciales embebidas (`https://user:pass@host`) y cadenas de conexión con contraseña. Un secreto escrito en la aplicación es un hallazgo de seguridad: se registra con el objeto y la propiedad donde está.
 
 ## Patrones de detección
 
-`python3 <skill>/scripts/detect_secrets.py <ruta>` aplica estos patrones (orientativos); `bash <skill>/scripts/detect_secrets.sh <ruta>` hace lo mismo. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3) y sobre toda `<salida>/` al final, `extraccion/` incluida. La extracción ya llega enmascarada: lo que encuentre ahí es un secreto que el enmascarado no reconoce y, si la carpeta está sincronizada, ya está en la nube y en su historial de versiones. Se quita como dice «Un secreto en la extracción». Solo imprime fichero y línea, nunca el valor. No cuenta las referencias (`=cons!X`, `ri!`, `pv!`, `rule!`, `local!`), los valores ya enmascarados ni las claves que describen el secreto sin serlo (`tokenUrl`, `passwordPolicy`).
+`python3 <skill>/scripts/detect_secrets.py <ruta>` aplica estos patrones (orientativos); `bash <skill>/scripts/detect_secrets.sh <ruta>` hace lo mismo. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3): da el patrón, el fichero y la línea de cada posible secreto. No cuenta las referencias (`=cons!X`, `ri!`, `pv!`, `rule!`, `local!`), los valores de asteriscos (`***`) ni las claves que describen el secreto sin serlo (`tokenUrl`, `passwordPolicy`). `inventory.json` lo resume por objeto: `secrets` son las coincidencias en sus respuestas y, en una constante, `secret: true` dice que su nombre o su valor parecen un secreto.
 
 | Tipo | Patrón |
 |---|---|
@@ -25,56 +25,18 @@ Las definiciones extraídas (connected systems, integraciones, constantes, Web A
 | Slack token | `xox[abps]-[A-Za-z0-9-]{10,}` |
 | JWT (sospechoso si está en un literal) | `eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+` |
 
-Una URL ya enmascarada por completo (`https://***:***@host`) no cuenta como coincidencia, pero indica que la definición lleva credenciales embebidas: es un hallazgo y tampoco se escribe así en un entregable (tabla siguiente).
-
-## Cómo se escribe cada dato en los entregables
-
-| Dato | Cómo se escribe |
-|---|---|
-| Secreto (contraseña, token, clave, certificado) | No se escribe; se dice dónde está («la cabecera `Authorization` usa `CON_SAP_TOKEN`»). En un payload: `***`. |
-| URL con credenciales embebidas | La URL sin ellas y «la URL base lleva credenciales embebidas (enmascaradas)». Nunca `***:***@`. |
-| Usuario de una credencial (Basic, cuenta de servicio) | No se escribe: es dato sensible. «Usuario y contraseña en el connected system». |
-| Host de un servicio externo o público | Se escribe, porque dice a qué sistema llama la integración: `https://api.proveedor.com/v1`. |
-| Host interno | Se sustituye por `‹host interno›` y se conserva la ruta: `https://‹host interno›/sap/api`. |
-| Cadena de conexión (JDBC) | Tipo de base de datos y host según los criterios anteriores; sin usuario ni contraseña. |
-| Usuarios de Appian (miembros, versiones, ejecuciones) | Nunca. Recuentos o rol (`presentation-rules.md`, Regla 8). |
-| Constante de tipo Usuario o usuario escrito en el código | «una cuenta de ‹grupo›» si se conoce su grupo (p. ej. «una cuenta de DEM Gestores»); si no, «una cuenta personal». |
-| Dirección de correo personal | `‹correo›`. |
-
-**Host interno** es una IP privada (`10.*`, `172.16.*`–`172.31.*`, `192.168.*`, `127.*`), `localhost`, un nombre acabado en `.local`, `.internal`, `.corp` o `.intra`, o un nombre sin dominio (`sapprd01`). Cualquier otro nombre con dominio se muestra.
-
-El valor de una constante o de un connected system se ve desde el diseño de Appian y en los paquetes de despliegue; un usuario final no lo ve desde el portal aunque tenga Viewer. Describe el impacto así: «visible para quien tenga acceso de diseño a la aplicación y en cualquier exportación del paquete».
-
 ## Acción ante un secreto
 
-1. **No copies el valor** a ningún documento, informe, terminal ni dato de la web.
-2. **Descarta los falsos positivos** (abajo).
-3. **Regístralo como hallazgo de seguridad.** Lo registra `integration-security-analyzer`, propietario del área; si lo ve otro agente, lo cuenta en «Para otras áreas» de su informe.
+1. **Descarta los falsos positivos** (abajo).
+2. **Regístralo como hallazgo de seguridad.** Lo registra `integration-security-analyzer`, propietario del área; si lo ve otro agente, lo cuenta en «Para otras áreas» de su informe.
    - ID `H-SEG-NN`, `"area": "secretos"`, severidad **Alta**.
-   - Certeza: ✅ si la definición lo contiene (aunque la extracción lo enmascarara); ❓ si dudas de que sea un secreto real, con la pregunta para el responsable de seguridad.
+   - Certeza: ✅ si la definición lo contiene; ❓ si dudas de que sea un secreto real, con la pregunta para el responsable de seguridad.
    - Fila en la sección Hallazgos de `04-seguridad-grupos.md` y una línea debajo de la tabla con su impacto y la recomendación.
    - Entrada en `<trabajo>/hallazgos/integration-security-analyzer.json` con `impacto` y `recomendacion`.
-   - Evidencia: `mcp:<tipo>/<nombre>#<propiedad>`, sin el valor.
+   - Evidencia: `mcp:<tipo>/<nombre>#<propiedad>`.
+3. **Impacto**: el valor de una constante o de un connected system se ve desde el diseño de Appian y en los paquetes de despliegue; un usuario final no lo ve desde el portal aunque tenga Viewer. Descríbelo así: «visible para quien tenga acceso de diseño a la aplicación y en cualquier exportación del paquete».
 4. **Recomendación habitual**: rotar la credencial y moverla a un campo cifrado del connected system o de la integración (valor introducido directamente, que Appian cifra y no exporta), con su valor por entorno en el fichero de personalización de importación; nunca a una constante ni a una expresión. Fuente: https://docs.appian.com/suite/help/26.6/Integration_Object.html#encrypted-values
 5. El registro de `09-valor-adicional.md` lo genera `scripts/build_registry.py` a partir del JSON. Nadie añade el secreto a mano en 09.
-
-## Un secreto en la extracción
-
-Si `detect_secrets.py` encuentra algo en `extraccion/`, el enmascarado no lo reconoció y el valor está en ese fichero. En una carpeta sincronizada (OneDrive, SharePoint), el fichero ya se subió a la nube y queda en su historial de versiones, así que no basta con corregirlo en el equipo:
-
-1. Díselo al usuario con el fichero y la línea, sin el valor.
-2. En ese fichero, cambia solo el valor por `***ENMASCARADO***`: la extracción lo sigue usando y no lo vuelve a pedir. Después, vuelve a generar el anexo (`build_annex.py`). No repitas la extracción con `--refresh`, que lo volvería a escribir.
-3. Si la carpeta está sincronizada, el usuario borra las versiones anteriores del fichero en la web de OneDrive o de SharePoint: sobre el fichero, «Historial de versiones» → «Eliminar todas las versiones» → «Aceptar». Las versiones borradas van a la «Papelera de reciclaje» del sitio: hay que eliminarlas de ella y de la «Papelera de reciclaje de segundo nivel», que vacía un administrador de la colección de sitios. Fuentes: https://support.microsoft.com/es-es/SharePoint/documents-and-library/delete-a-previous-version-of-an-item-or-file-in-sharepoint y https://support.microsoft.com/es-ES/SharePoint/admin/delete-items-from-the-site-collection-recycle-bin
-4. Recomienda rotar la credencial, porque ha salido del entorno de Appian, y regístrala como cualquier secreto («Acción ante un secreto»).
-5. Avisa de que el enmascarado de `scripts/privacidad.py` no reconoce ese patrón, para que se corrija.
-
-## Usuarios en la extracción
-
-La extracción se escribe ya con seudónimos: cada usuario es `‹usuario-xxxxxx›` (los 6 primeros hex del sha256 del usuario en minúsculas), el mismo en todas las respuestas; cada nombre de persona es `‹nombre›` y cada correo, `‹correo›`.
-
-`mcp_raw/_huellas.json` guarda la huella de cada usuario que ha salido: un HMAC-SHA256 del usuario en minúsculas y sin espacios, con una sal aleatoria del proyecto que va en el mismo fichero. Nunca guarda un nombre ni un correo. Existe para retomar la ingeniería inversa en otra sesión o en otro equipo sin volver a pedir las listas de usuarios: con las huellas se reconoce a un usuario en lo que se escribe después y el barrido final sanea lo que se escribió antes de conocerlo.
-
-Riesgo: quien tenga la carpeta del proyecto y una lista de usuarios candidatos puede comprobar cuáles han salido, igual que con los seudónimos. Protege de una lectura casual, no de alguien con la carpeta y esa lista: la carpeta se comparte solo con el equipo del proyecto.
 
 ## Falsos positivos comunes
 
@@ -83,8 +45,6 @@ Antes de registrar un secreto, descarta:
 - Placeholders: `${SECRET_NAME}`, `<<PUT_TOKEN_HERE>>`, `<your-token>`.
 - Textos de ayuda, descripciones o etiquetas que solo nombran la palabra («Introduzca su password»).
 - Constantes o campos con nombre de secreto pero sin valor.
-
-Un valor enmascarado por la extracción (`***ENMASCARADO***`, `***:***@`) **no** es falso positivo: la definición contiene un secreto. Si dudas, regístralo con certeza ❓ y la pregunta.
 
 ## Otros riesgos de seguridad (sin ser secretos)
 
@@ -107,20 +67,4 @@ Detéctalos y regístralos en el documento propietario. Un riesgo que depende de
 Los entregables son Markdown plano que se abre en visores variados (GitHub, VS Code, herramientas internas):
 
 - **Sin bloques HTML crudos** (`<script>`, `<iframe>`, `<style>`).
-- **Sin URLs con credenciales**, ni enmascaradas (tabla de arriba).
-- **Sin tokens ni secretos** en bloques de código, ni siquiera de ejemplo: `***`.
 - **Diagramas Mermaid** saneados con `python3 <skill>/scripts/validate_mermaid.py` antes de escribirse (`mermaid-rules.md`).
-
-## Comprobación final
-
-Antes de devolver la respuesta:
-
-```bash
-python3 <skill>/scripts/detect_secrets.py <salida>
-```
-
-Recorre toda la carpeta, incluidos `anexo/`, `dashboard/` y `extraccion/`. Si encuentra algo, **detente**:
-
-- En un documento que escribe un agente (`00`–`11`, `08-procesos-bpmn/`, `LEEME`, `INVENTARIO`): corrígelo con la tabla «Cómo se escribe cada dato».
-- En un entregable generado (`anexo/`, `dashboard/`): no lo edites a mano. Corrige la causa (el enmascarado de la extracción o del anexo, o el documento de origen) y vuelve a generarlo.
-- En `extraccion/`: el enmascarado no lo reconoce y, en una carpeta sincronizada, ya está en la nube y en su historial de versiones. Sigue «Un secreto en la extracción».

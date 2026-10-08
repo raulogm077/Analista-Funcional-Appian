@@ -33,7 +33,7 @@ Eres el propietario de dos áreas de hallazgos: **pantallas** (`H-UI`, en 10) y 
 
 **Duplicidad y contradicción.** Duplicidad: la misma regla con la misma lógica en varios sitios (se anota en el campo «Duplicidades» de su ficha). Contradicción: dos reglas que no pueden cumplirse a la vez o que deciden distinto lo mismo (van a la tabla de contradicciones de 11; el campo «Duplicidades» no las cubre).
 
-**Valor hardcodeado.** Literal de negocio escrito en una expresión o en una configuración (un estado, un umbral, un nombre o id de grupo, un correo, una URL) que debería ser una constante o un dato. No lo son la configuración de un temporizador ni un objeto elegido por referencia en la configuración (p. ej. el grupo asignado a una tarea). Si el literal es un usuario (o una constante de tipo Usuario), escribe «una cuenta de ‹grupo›» o «una cuenta personal»; si es un correo personal, `‹correo›`; nunca el valor (`presentation-rules.md`, Regla 8).
+**Valor hardcodeado.** Literal de negocio escrito en una expresión o en una configuración (un estado, un umbral, un nombre o id de grupo, un correo, una URL) que debería ser una constante o un dato. No lo son la configuración de un temporizador ni un objeto elegido por referencia en la configuración (p. ej. el grupo asignado a una tarea). Si el literal es un usuario, añade su grupo o su rol cuando aclare algo.
 
 **Medir el efecto real.** Un hallazgo describe lo que pasa **hoy**. Si un desplegable de estados no guarda, hoy no hay riesgo de que el usuario «elija cualquier estado»: el problema real es que el campo no guarda (H-UI). El riesgo de elegir cualquier estado es del diseño previsto: regístralo como pregunta abierta (severidad Baja, certeza ❓, con la pregunta en la recomendación).
 

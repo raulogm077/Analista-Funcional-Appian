@@ -17,7 +17,7 @@ Los campos citados son los habituales en las definiciones del Dev MCP (según la
 | Interfaz | Entradas | `inputs[]` |
 | | Lógica y componentes | `expression` (SAIL). Pantalla renderizada en el fichero con rol `screen` |
 | Expression rule | Entradas y lógica | `inputs[]`, `expression` |
-| Constante | Tipo y valor | `type`, `value` (enmascarado en el inventario si parece secreto). Un valor de tipo Usuario o un correo personal no se copia (`presentation-rules.md`, Regla 8) |
+| Constante | Tipo y valor | `type`, `value` (en el inventario, `secret: true` si parece un secreto) |
 | Process model | Nodos y flujo | `nodes[]` (`id`, `type`, `name`, `connections`, `assignment`, `data`, `forms`, `decision`) |
 | | Variables | `processVariables[]` (`isParameter`) |
 | | Formulario de inicio | `startForm.interfaceUuid`, `inputMap` |
@@ -26,7 +26,7 @@ Los campos citados son los habituales en las definiciones del Dev MCP (según la
 | | Uso real | Fichero con rol `history` (`usage` en el inventario) |
 | Site | Páginas | `pages[]`: `name`, `targetUuid`, `visibilityExpr`; URL en `webAddressIdentifier` |
 | Integración | Llamada | Método, ruta relativa, cabeceras, cuerpo (SAIL), connected system, si modifica datos |
-| Connected system | Destino y autenticación | Tipo, URL base, tipo de autenticación (nunca credenciales) |
+| Connected system | Destino y autenticación | Tipo, URL base, tipo de autenticación |
 | Web API | Endpoint | Método, alias de URL, `expression` (qué hace) |
 | Grupo | Jerarquía y miembros | Padre en la definición; miembros en el fichero con rol `members` |
 | Cualquiera | Quién lo usa | Ficheros con rol `dependents` (con *breadcrumb*) y aristas del grafo |

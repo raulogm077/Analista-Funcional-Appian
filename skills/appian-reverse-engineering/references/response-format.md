@@ -31,7 +31,7 @@ Plantilla de la respuesta que devuelve la skill **al terminar** todas las fases 
 ## Hallazgos
 - Registro (`09`): <N> (Alta <N> · Media <N> · Baja <N>); verificados <N>, inferidos <N>, pendientes <N>
 - Principales (Alta): <H-SEG-01 título>, <H-PRO-02 título>, …
-- Secretos: <N objetos con valores enmascarados, tratados en H-SEG-NN / «ninguno detectado»>
+- Secretos: <N objetos con secretos escritos, registrados en H-SEG-NN / «ninguno detectado»>
 
 ## No disponible en esta ejecución
 - <tipos sin definición, seguridad por objeto, valores por entorno, MCP opcionales ausentes…>
@@ -43,7 +43,7 @@ Plantilla de la respuesta que devuelve la skill **al terminar** todas las fases 
 - 📄 PDF: `<salida>/EXPORT.pdf` (si se pidió)
 - 🖥️ Dashboard: `<salida>/dashboard/index.html` (si se pidió)
 
-> La extracción va con el proyecto, en `<salida>/extraccion/`, ya saneada: sin secretos, con seudónimos en lugar de usuarios y sin correos, rutas locales ni la lista de aplicaciones del entorno. Es la fuente de la documentación, no parte de ella.
+> La extracción va con el proyecto, en `<salida>/extraccion/`, tal cual la devolvió el Dev MCP. Es la fuente de la documentación, no parte de ella.
 ```
 
 ---
@@ -54,7 +54,6 @@ Plantilla de la respuesta que devuelve la skill **al terminar** todas las fases 
 - **Cifras concretas**, las de `summary.json`; ninguna recalculada a mano.
 - Los hallazgos se citan por su ID con su título; la severidad va en el recuento, no repetida en cada línea.
 - Si un documento no aplica (p. ej. `07` sin procesos programados), dilo en la lista.
-- Nunca incluyas secretos ni nombres de usuario.
 
 ---
 
@@ -64,9 +63,9 @@ Sobre una aplicación real, la skill es correcta cuando:
 
 - Documenta el 100 % de los objetos que lista el Dev MCP (`INVENTARIO.md`) y dice cuáles no tienen definición y por qué.
 - Genera `LEEME`, `00`–`11`, `INVENTARIO` y el `anexo/`; todos los diagramas se renderizan o quedan sustituidos por una tabla.
-- Cada integración queda con endpoint (sin credenciales), método, autenticación y quién la llama.
+- Cada integración queda con endpoint, método, autenticación y quién la llama.
 - Cada Web API queda con URL, método, qué dispara y grupos autorizados (❓ si la seguridad no está disponible).
 - Cada process model tiene su BPMN y su uso real (o «sin historial»).
 - Cada pantalla y cada regla de negocio tiene identificador y evidencia.
 - Cada hallazgo tiene ID, está en su documento propietario y en el registro de `09`, y `build_registry.py` termina sin errores.
-- No hay secciones vacías, placeholders, secretos, nombres de usuario ni enlaces a `<trabajo>/`.
+- No hay secciones vacías, placeholders ni enlaces a `<trabajo>/`.

@@ -16,7 +16,7 @@ Lectura obligatoria antes de la fase 4 y para todos los subagentes. Concentra lo
 8. **Cada cosa en un sitio.** Un objeto tiene una ficha y un hallazgo tiene un ID, en su documento propietario; el resto enlaza (tabla de propietarios abajo).
 9. **Nombres reales** (técnico y visible), nunca genéricos.
 10. **Accionable.** Todo objeto listado se conecta con lo que hace para el negocio o con lo que hay que hacer con él.
-11. **Seguridad.** Ningún secreto, credencial ni usuario en los entregables (`references/security-rules.md` y `presentation-rules.md`, Regla 8).
+11. **Seguridad.** Un secreto escrito en la aplicación es un hallazgo (`H-SEG`): se registra como dice `references/security-rules.md`.
 12. **Diagramas que pasan el validador** (`references/mermaid-rules.md`); si no, tabla equivalente. Los `.bpmn` siguen `references/bpmn-mapping.md`.
 13. **Idioma**: español técnico neutro salvo que el usuario pida otro.
 

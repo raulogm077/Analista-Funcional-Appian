@@ -2,8 +2,8 @@
   Plantilla 05 — Integraciones consumidas. Autor: integration-security-analyzer. Prefijo de hallazgos: H-INT.
   Los comentarios son instrucciones: no se copian al documento. Las secciones sin contenido se omiten.
   Objetivo: resumen + ½ pantalla por integración (máximo 1).
-  Secretos, credenciales y hosts: references/security-rules.md, «Cómo se escribe cada dato». Nunca una URL con credenciales,
-  ni enmascaradas; nunca el usuario de una credencial; host interno → ‹host interno›.
+  Un secreto escrito (credenciales en la URL base, una cabecera con un token…) es un hallazgo H-SEG de 04:
+  references/security-rules.md.
 -->
 
 # Integraciones consumidas
@@ -38,12 +38,12 @@ Qué llama la aplicación hacia fuera. El mapa con los sistemas externos está e
 | Campo | Valor |
 |---|---|
 | Tipo | {{HTTP}} |
-| URL base | `{{https://‹host interno›/sap/api/v1}}` |
-| Autenticación | {{Basic: usuario y contraseña en el connected system (valores no mostrados)}} |
+| URL base | `{{https://sap.example.org/sap/api/v1}}` |
+| Autenticación | {{Basic: usuario y contraseña en el connected system}} |
 | Integraciones | [{{INT_SAP_Crear}}](#{{int_sap_crear--sap-crear-expediente}}) |
 | Parametrizable por entorno | {{Sí: URL base y credenciales van en el fichero de personalización de importación}} |
 
-<!-- Si la URL base lleva credenciales embebidas, añade: «La URL base lleva credenciales embebidas (enmascaradas).» y regístralo como H-SEG en 04. -->
+<!-- Si la URL base lleva credenciales embebidas, añade: «La URL base lleva credenciales embebidas.» y regístralo como H-SEG en 04. -->
 
 Evidencia: [`mcp:connectedSystem/{{CS_SAP}}#baseUrl`](./anexo/connectedSystem/{{slug}}.md) · Certeza: ✅
 
@@ -58,13 +58,13 @@ Evidencia: [`mcp:connectedSystem/{{CS_SAP}}#baseUrl`](./anexo/connectedSystem/{{
 | Connected system | [{{CS_SAP}}](#{{cs_sap--sap-erp}}) |
 | Método y ruta | `{{POST /expedientes}}` |
 | Modifica datos | {{Sí}} |
-| Parámetros | {{`idExpediente` (ruta) ← `ri!idExpediente`; `Authorization` ← `CON_SAP_TOKEN` (valor no mostrado)}} |
+| Parámetros | {{`idExpediente` (ruta) ← `ri!idExpediente`; `Authorization` ← `CON_SAP_TOKEN`}} |
 | Cuerpo | {{JSON con expediente, solicitante e importe (forma abajo)}} |
 | Respuesta | {{`numeroSap` y `estado`, que el proceso guarda en `pv!numeroSap`}} |
 | Errores | {{El proceso llamante no muestra tratamiento de error en la definición extraída}} ❓ |
 | Llamantes | {{[DEM Alta Solicitud](08-procesos-bpmn/DEM_Alta_Solicitud.md) (nodo 4) y `DEM_ReenviarSap`}} |
 
-Forma del cuerpo (de la definición, sin valores):
+Forma del cuerpo (de la definición, con los tipos):
 
 ```json
 {"expediente": "texto", "solicitante": "texto", "importe": "decimal"}
@@ -85,13 +85,12 @@ Evidencia: [`mcp:integration/{{INT_SAP_Crear}}#expression (líneas {{3-18}})`](.
     Sí — URL base y credenciales de un connected system; constante marcada «Environment Specific»; usuario y contraseña literales de una integración.
     No — literal dentro de una expresión; constante sin esa marca.
     ❓ — la definición no dice si la constante está marcada.
-  Los secretos nunca: «(valor no mostrado)».
 -->
 
 | Objeto | Propiedad | Valor en el entorno extraído | ¿Parametrizable por entorno? | Notas |
 |---|---|---|---|---|
-| `{{CS_SAP}}` | URL base | `{{https://‹host interno›/sap/api/v1}}` | Sí | — |
-| `{{CS_SAP}}` | Credenciales | (valor no mostrado) | Sí | — |
+| `{{CS_SAP}}` | URL base | `{{https://sap.example.org/sap/api/v1}}` | Sí | — |
+| `{{CS_SAP}}` | Usuario | `{{svc_sap}}` | Sí | — |
 | `{{CON_CATASTRO_URL}}` | Valor | `{{https://ovc.catastro.example.es/servicio}}` | ❓ | {{Validar si la constante está marcada como específica del entorno}} |
 
 ## Hallazgos

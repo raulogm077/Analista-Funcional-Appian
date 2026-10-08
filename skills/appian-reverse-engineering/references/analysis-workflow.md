@@ -4,7 +4,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 **Convenciones**
 
-- `<salida>` = `<p>/as-is/` si la carpeta es un proyecto (tiene `proyecto.md`) o el usuario da la del proyecto, y si no `./<PREFIJO>/as-is/`; `<trabajo>` = `<salida>/extraccion/` (la extracción y los datos de trabajo, ya saneados; ningún entregable lo enlaza).
+- `<salida>` = `<p>/as-is/` si la carpeta es un proyecto (tiene `proyecto.md`) o el usuario da la del proyecto, y si no `./<PREFIJO>/as-is/`; `<trabajo>` = `<salida>/extraccion/` (la extracción, tal cual, y los datos de trabajo; ningún entregable lo enlaza).
 - Scripts, desde la carpeta del usuario (donde está su `.mcp.json`): `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" …`; los demás, `python3 <skill>/scripts/<script>.py <salida>`. `<skill>` es la carpeta de la skill.
 - Evidencia: `mcp:<tipo>/<nombre>[@<rol>]#<ubicación>`, con los nodos de proceso como `nodes[id=N]` (`lectura-mcp-raw.md`).
 - Hallazgos: ID con el prefijo del área, tabla en el documento propietario y `<trabajo>/hallazgos/<agente>.json` (`execution-principles.md`, secciones 2 y 3).
@@ -13,14 +13,13 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 ## Fase 0 — Preflight
 
-- [ ] `doctor --json` ejecutado (por consola, todavía sin `<salida>`). Con `appsNote` (más de 50 apps), la del usuario buscada con `apps --json`.
+- [ ] `doctor --json` ejecutado. Con `appsNote` (más de 50 apps), la del usuario buscada con `apps --json`.
 - [ ] Docs MCP: herramienta localizada y una consulta de prueba, apuntada en `<trabajo>/docs_cache/orquestador.json` (cuenta para el tope de 30).
 - [ ] Appian MCP Server: estado según `doctor`, o «disponible en sesión» si sus herramientas están en la sesión.
 - [ ] Tabla de estado mostrada al usuario (estado · qué se pierde · cómo activarlo).
 - [ ] Si el Dev MCP no está `ok`: mostrado el paso de `devmcp-setup.md` que falta y **parada**.
 - [ ] En una sola pregunta: aplicación, formatos adicionales y si el entorno es producción (con su versión de Appian, si la sabe).
-- [ ] Con `<salida>` ya decidida, `doctor --json --out <salida>`: el script guarda `preflight.json` saneado y tú solo le añades tus comprobaciones de sesión y `environment: {url, isProduction, appianVersion}`, sin copiar la salida por consola.
-- [ ] `output_preferences.json` (`pdf`, `dashboard`; formato en `SKILL.md`) guardado.
+- [ ] `preflight.json` (con `environment: {url, isProduction, appianVersion}`) y `output_preferences.json` (`pdf`, `dashboard`; formato en `SKILL.md`) guardados.
 
 **Qué pierde el usuario sin cada MCP opcional**
 
@@ -57,7 +56,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 - [ ] `build_model.py <salida>` sin errores; revisada la línea de resumen (objetos, aristas por origen, huérfanos, hubs).
 - [ ] `build_annex.py <salida>` → `<salida>/anexo/` (`indice.md` y `<tipo>/<slug>.md` por objeto con definición).
-- [ ] `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw`: anotado qué tipos de secreto hay y en qué objetos, sin copiar valores.
+- [ ] `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw`: anotado qué tipos de secreto hay y en qué objetos, para registrarlos como `H-SEG`.
 - [ ] Si `graph.json` tiene pocas aristas de origen `dependents` (la herramienta de dependencias no estaba o falló), las conclusiones sobre quién llama a quién llevan 🔵.
 
 ## Fase 4 — Análisis
@@ -76,7 +75,7 @@ Proceso programado = process model con `startType: timer` en `inventory.json`. P
 - **Frecuencia**: traduce la configuración del temporizador a lenguaje natural y, si es posible, a cron. Lo que no conste (hora, días) es ❓, no se supone.
 - **Zona horaria**: la que fija el temporizador; por defecto, la del process model (`pp!timezone`). Si no consta, ❓. Fuente: https://docs.appian.com/suite/help/26.6/Intermediate_Event_-_Timer.html#configuring-the-time-zone-used
 - **Próximas 3 ejecuciones**: calculadas desde la fecha de extracción (`source.extractedAt` de `inventory.json`) en la zona del temporizador. Si falta la zona o la hora, o la recurrencia es por intervalo sin hora de referencia, «no calculable» ❓.
-- **Cuenta de ejecución**: un proceso que arranca un temporizador se ejecuta con la cuenta de quien desplegó el process model (Fuente: https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors). Si `versions` da el autor de la última versión, indica su tipo de cuenta y grupo (🔵: la última versión guardada no tiene por qué ser la desplegada); si no, ❓. No la deduzcas de las ejecuciones de la muestra y nunca escribas el usuario.
+- **Cuenta de ejecución**: un proceso que arranca un temporizador se ejecuta con la cuenta de quien desplegó el process model (Fuente: https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors). Si `versions` da el autor de la última versión, indícalo, con su tipo de cuenta y su grupo si constan (🔵: la última versión guardada no tiene por qué ser la desplegada); si no, ❓. No la deduzcas de las ejecuciones de la muestra.
 - **Uso real**: `usage`. Con `failedInSampleOf`, «N fallos en las últimas M ejecuciones», nunca una tasa global. Si el entorno no consta como producción, las cifras son orientativas.
 - **Volumen por ejecución**: identifica la consulta de origen (`a!queryRecordType`, `a!queryEntity`, una regla…; no supongas cuál) y su tamaño de lote (`pagingInfo`/`batchSize`). Cita el nodo: `nodes[id=N]`.
 - **Manejo de errores**: lo que muestre la definición. El Dev MCP no devuelve las pestañas de excepciones y alertas de los nodos: su ausencia es ❓ «no lo devuelve la extracción», no «sin manejo de errores».
@@ -96,11 +95,11 @@ Hallazgos `H-BAT` (severidad orientativa; ajústala al impacto real). Los fallos
 Solo las subsecciones con contenido. Hallazgos propios: `H-GEN` (áreas mantenimiento, rendimiento o uso). Lo que sea de otra área se enlaza por su ID; si el propietario no lo registró, anótalo para la pasada de coherencia.
 
 - **Métricas** (Vista): de `inventory.json` (`counts`, `sailLines`, `sailBytes`, `nodeCount`, `validationIssues`, `usage`).
-- **Constantes por entorno y secretos**: constantes con URLs, hosts, identificadores o interruptores de entorno (`DEV`/`PRE`/`PRO`). Los valores con secreto (`maskedSecret`, `maskedSecrets`, `detect_secrets.py`) no se repiten: se enlaza el `H-SEG` de 04.
+- **Constantes por entorno y secretos**: constantes con URLs, hosts, identificadores o interruptores de entorno (`DEV`/`PRE`/`PRO`). Una constante con un secreto (`secret`, `secrets`, `detect_secrets.py`) enlaza además el `H-SEG` de 04.
 - **Reglas reutilizables**: los hubs de `graph.json` (5 o más objetos que los referencian) de tipo expression rule o decisión: qué hacen, entradas, salida y nº de llamadores. Los hubs como problema de arquitectura son `H-ARQ` de 02.
 - **Huérfanos**: `graph.orphans` (ya excluye puntos de entrada y procesos programados) y, solo si el entorno es producción, los process models sin ejecuciones (`signals`). Aquí va la lista para limpieza; el hallazgo de arquitectura es de 02.
 - **Avisos de validación**: `validationIssues`; un `H-GEN` por tipo de aviso, agrupando objetos.
-- **Versionado**: `versions` (`count`, `lastModifiedOn`, `lastModifiedBy`). El autor nunca se escribe: clasifícalo como cuenta personal, de servicio o «tipo no determinado» y busca su grupo en los ficheros `members` de `mcp_raw`, por su seudónimo. Cuenta de servicio solo si su grupo lo indica claramente (🔵): su nombre ya es un seudónimo y no dice nada.
+- **Versionado**: `versions` (`count`, `lastModifiedOn`, `lastModifiedBy`). El autor se escribe tal cual; clasifícalo como cuenta personal, de servicio o «tipo no determinado» y busca su grupo en los ficheros `members` de `mcp_raw`. Cuenta de servicio solo si su grupo o su nombre lo indican claramente (🔵).
 - **Glosario de negocio**: términos de nombres y descripciones de records, campos, procesos y pantallas; ✅ si sale de una descripción de Appian, 🔵 si se deduce del nombre.
 
 Hallazgos `H-GEN` (severidad orientativa):

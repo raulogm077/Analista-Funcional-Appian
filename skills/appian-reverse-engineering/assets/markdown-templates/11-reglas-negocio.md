@@ -59,8 +59,7 @@ Evidencia: [`mcp:{{tipo}}/{{nombre}}#{{ubicación}}`](./anexo/{{tipo}}/{{slug}}.
 
 ### Parámetros en literales
 
-<!-- Solo si hay. Valor hardcodeado: literal de negocio (estado, umbral, nombre o id de grupo, correo, URL) escrito en una expresión o configuración que debería ser constante o dato. La configuración de un temporizador no lo es.
-     Valor: un usuario (o una constante de tipo Usuario) se escribe «una cuenta de ‹grupo›» o «una cuenta personal»; un correo personal, ‹correo›. -->
+<!-- Solo si hay. Valor hardcodeado: literal de negocio (estado, umbral, nombre o id de grupo, correo, URL) escrito en una expresión o configuración que debería ser constante o dato. La configuración de un temporizador no lo es. -->
 
 | Regla | Valor | Debería ser | Hallazgo | Evidencia |
 |---|---|---|---|---|

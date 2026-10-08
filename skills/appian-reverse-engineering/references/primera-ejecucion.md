@@ -35,14 +35,14 @@ uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.
 ```
 
 - [ ] `extraction_report.json`: en `callStatsByRole.definition`, menos del 20 % de llamadas fallidas; mira el motivo de las herramientas desactivadas.
-- [ ] Abre 2 o 3 respuestas de `mcp_raw/` (una interfaz, un process model, un record type) y comprueba que traen la definición, con seudónimos (`‹usuario-…›`) en lugar de usuarios.
-- [ ] `python3 "<skill>/scripts/detect_secrets.py" <prefijo>/as-is/extraccion/mcp_raw`: si algo sale, el enmascarado no lo reconoce y está en el proyecto; los entregables dicen dónde está sin reproducirlo.
+- [ ] Abre 2 o 3 respuestas de `mcp_raw/` (una interfaz, un process model, un record type) y comprueba que traen la definición.
+- [ ] `python3 "<skill>/scripts/detect_secrets.py" <prefijo>/as-is/extraccion/mcp_raw`: lo que salga son posibles secretos escritos en la aplicación, que la documentación registra como hallazgos.
 
 ## 4. Documentación
 
 Pide a Claude «documenta la aplicación <prefijo>» y sigue las fases de `SKILL.md`. Al terminar:
 
-- [ ] Ningún nombre de usuario en `<prefijo>/as-is/`, tampoco en `extraccion/`.
+- [ ] Cada secreto que encontró `detect_secrets.py` tiene su hallazgo en `04`.
 - [ ] Contrasta 3 o 4 afirmaciones de `01` y `08` con Appian Designer.
 - [ ] Abre un `.bpmn` de `08-procesos-bpmn/` en https://demo.bpmn.io.
 

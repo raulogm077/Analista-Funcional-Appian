@@ -2,8 +2,8 @@
   Plantilla 04 — Seguridad y grupos. Autor: integration-security-analyzer. Prefijo de hallazgos: H-SEG (incluye secretos).
   Los comentarios son instrucciones: no se copian al documento. Las secciones sin contenido se omiten.
   Objetivo: 2-3 pantallas (máximo 5).
-  Usuarios: nunca nombres. Cuentas personales en un role map: cuántas, no quiénes. Una constante de tipo Usuario o un
-  usuario escrito en el código: «una cuenta de ‹grupo›» o «una cuenta personal»; un correo personal: ‹correo›.
+  Cuentas personales en un role map: cuántas y cuáles. Un usuario escrito en el código o en una constante de tipo
+  Usuario va con su grupo si aclara algo.
   Evidencia: siempre enlazada a la ficha del objeto en el anexo.
 -->
 
@@ -24,7 +24,7 @@ Fuente: [grupos.mmd](diagrams/grupos.mmd)
   Sin SVG: bloque mermaid embebido (flowchart TD, idéntico al .mmd), nunca los dos.
   Más de 30 grupos: el diagrama solo con los grupos que tienen subgrupos; el resto, en la tabla.
   Tabla: ≤ 15 filas. Si hay más grupos, aquí los que aparecen en la matriz y el resto en INVENTARIO.md.
-  "Usuarios directos" = userCount: no suma los usuarios de los subgrupos. Nunca nombres de usuario.
+  "Usuarios directos" = userCount: no suma los usuarios de los subgrupos.
 -->
 
 | Grupo | Padre | Subgrupos | Usuarios directos | Para qué sirve |
@@ -111,7 +111,7 @@ No se obtuvieron role maps: la matriz recoge solo lo que la definición de cada 
   En un entorno que no es producción es normal que estén vacíos: no es hallazgo salvo en producción.
 -->
 
-- `{{DEM Revisores}}`: sin usuarios directos ni subgrupos en el entorno extraído.
+- `{{DEM Revisores}}`: no tiene usuarios directos ni subgrupos en el entorno extraído.
 
 ## Hallazgos
 

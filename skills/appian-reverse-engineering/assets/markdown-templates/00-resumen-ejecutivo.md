@@ -3,7 +3,7 @@
   Fuente única de cifras: <trabajo>/summary.json (build_summary.py, ejecutado después de build_registry.py).
   No recalcules ni copies cifras de otros documentos: si summary.json contradice un documento, corrige el
   documento en la pasada de coherencia y vuelve a generar summary.json.
-  Objetivo 1-2 pantallas, máximo 3. Sin usuarios. Las secciones sin datos se omiten.
+  Objetivo 1-2 pantallas, máximo 3. Las secciones sin datos se omiten.
 
   De dónde sale cada dato:
     Confianza ........... meta.confidence + meta.confidenceBasis (unidos por «; »)
@@ -68,7 +68,7 @@ Criterio único para toda la documentación: cuántos objetos lo lanzan, a cuán
 
 ## Secretos
 
-La extracción enmascaró valores con aspecto de secreto en {{secrets.count}} objetos: `{{objeto 1}}`, `{{objeto 2}}`. Ningún valor aparece en esta documentación. Tratamiento: [{{H-SEG-02}}](./04-seguridad-grupos.md#hallazgos).
+Hay valores con aspecto de secreto escritos en {{secrets.count}} objetos: `{{objeto 1}}`, `{{objeto 2}}`. Tratamiento: [{{H-SEG-02}}](./04-seguridad-grupos.md#hallazgos).
 
 ## Uso real
 
