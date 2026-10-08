@@ -1,0 +1,44 @@
+[
+  {
+    "id": "QO-01",
+    "pregunta": "¿Cuántos días de plazo calcula la aplicación para una orden de prioridad Media?",
+    "respuestas": ["7"],
+    "tipo": "numero"
+  },
+  {
+    "id": "QO-02",
+    "pregunta": "Cuando un técnico recibe la tarea «Ejecutar trabajo», ¿qué interfaz se le abre?",
+    "respuestas": ["MNT_IF_CierreOrden"],
+    "tipo": "objeto"
+  },
+  {
+    "id": "QO-03",
+    "pregunta": "¿Qué usuarios forman el grupo MNT Técnicos?",
+    "respuestas": ["jorge.martin", "lucia.romero", "sergio.diaz", "nuria.campos"],
+    "tipo": "lista"
+  },
+  {
+    "id": "QO-04",
+    "pregunta": "Si hay que añadir una columna a la tabla MNT_ORDEN, además del record type MNT Orden, ¿qué tipo de datos (CDT) de la aplicación está definido sobre esa tabla?",
+    "respuestas": ["MNT_OrdenDTO"],
+    "tipo": "objeto"
+  },
+  {
+    "id": "QO-05",
+    "pregunta": "Si la API de proveedores no responde, ¿cuántos segundos espera como máximo la consulta de proveedores antes de dar error?",
+    "respuestas": ["30"],
+    "tipo": "numero"
+  },
+  {
+    "id": "QO-06",
+    "pregunta": "¿Cuántas órdenes pendientes, como máximo, recupera el recordatorio en cada ejecución?",
+    "respuestas": ["500"],
+    "tipo": "numero"
+  },
+  {
+    "id": "QO-07",
+    "pregunta": "Si se cambia qué estados cuentan como abiertos (la constante MNT_ESTADOS_ABIERTOS), ¿qué objetos que la usan directamente habría que revisar?",
+    "respuestas": ["MNT_IF_Panel", "MNT_IF_Tecnicos", "MNT_ER_OrdenesPendientes"],
+    "tipo": "lista"
+  }
+]
