@@ -8,17 +8,21 @@ Uso:
       --realce <hex> --acento <hex> [--principal <hex>] [--secundarios <hex,hex…>] [--logo <svg>] [--logo-claro <svg>]
       [--formas SQUARED|SEMI_ROUNDED|ROUNDED] [--mayusculas si|no] [--tipografia <nombre>] [--sin-perfil-css] <carpeta>
 
-web: descarga la página y las hojas de estilo que enlaza del mismo sitio (como mucho --max-css, de 2 MB cada una) y
-escribe en la salida estándar un JSON con sus colores (los 20 más usados, sin blancos, negros ni grises; con las
-variables CSS que los definen y su contraste), su theme-color, sus logos (los de la cabecera con «logo» primero; el
-icono del sitio, al final) y sus tipografías. Sin red o sin respuesta, sale con 2 y lo dice.
+web: descarga la página y las hojas de estilo que enlaza del mismo sitio (el mismo dominio, como www.x.es y
+estaticos.x.es; como mucho --max-css, de 2 MB cada una) y escribe en la salida estándar un JSON con sus colores (los 20
+más usados, sin blancos, negros ni grises; con las variables CSS que los definen y su contraste), su theme-color, sus
+logos (los de la cabecera con «logo» primero; el icono del sitio, al final) y sus tipografías. Con la URL de una hoja de
+estilo, lo mismo de esa hoja. Sin red o sin respuesta, o si la URL es un PDF u otra cosa que no es HTML ni CSS, sale con 2
+y lo dice.
 
 crear: escribe en <carpeta> (prototipo/ del proyecto, nunca dentro del plugin) brand-<id>.json, el logo junto a él
 (logo-<id>-on-dark.svg y, con --logo-claro, logo-<id>-on-light.svg), perfil-css-<id>.txt (salvo con --sin-perfil-css) y
 marca-<id>.md, la guía de marca para quien construye. Lo que no llega a WCAG 2.2 AA lo ajusta cambiando solo la
-luminosidad (HLS), en pasos pequeños, y lo dice. Sale con 2 si un dato no vale o un ajuste no llega, sin escribir nada.
+luminosidad (HLS), en pasos pequeños, y lo dice. Sale con 2 si un dato no vale o un ajuste no llega, sin escribir nada, y
+si no puede escribir un fichero, diciendo cuáles llegó a escribir.
 
-Solo biblioteca estándar. Reutiliza contrast() y check_css_profile() de validate.py y css_profile_text() de build.py.
+Solo biblioteca estándar. Reutiliza contrast(), _lineal() y check_css_profile() de validate.py y css_profile_text(),
+mix_white() y on_color() de build.py.
 """
 import argparse, colorsys, copy, http.client, ipaddress, json, math, os, re, socket, sys
 import urllib.error, urllib.parse, urllib.request
@@ -28,17 +32,22 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from validate import contrast, check_css_profile, Report  # noqa: E402
-from build import css_profile_text, mix_white  # noqa: E402
+from validate import contrast, _lineal, check_css_profile, Report  # noqa: E402
+from build import css_profile_text, mix_white, on_color  # noqa: E402
 from entorno import utf8_stdio  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent  # la skill
+# la carpeta del plugin: la que contiene skills/, lleve o no .claude-plugin/plugin.json (si la skill no está en una carpeta
+# skills/, la propia skill)
+PLUGIN = ROOT.parents[1] if ROOT.parent.name == "skills" else ROOT
 BLANCO, NEGRO, GRIS_PAGINA, TEXTO = "#FFFFFF", "#000000", "#F4F5F7", "#222222"
 PASO = 0.005                   # paso de luminosidad (HLS) de cada ajuste
 MAX_HOJA = 2 * 1024 * 1024     # bytes de una hoja de estilo
 MAX_PAGINA = 5 * 1024 * 1024   # bytes de la página
 MAX_COLORES = 20
 CASI_IGUAL = 15                # ΔE (CIE76) por debajo del cual dos series de un gráfico no se distinguen
+# fondos estándar de los avisos de Appian (appianStandardColors de schemas/css-profile-properties.json; el perfil no los cambia)
+FONDOS_AVISO = ("success-background-color", "info-background-color", "warn-background-color", "error-background-color")
 UA = "Mozilla/5.0 (compatible; appian-prototipos marca.py)"
 HEX6 = re.compile(r"#[0-9A-Fa-f]{6}")
 FORMAS = ("SQUARED", "SEMI_ROUNDED", "ROUNDED")
@@ -77,18 +86,25 @@ def razon(r):
     return f"{math.floor(r * 10 + 1e-9) / 10:g}".replace(".", ",")
 
 
-def ajustar(color, fondos, minimo, sentido):
-    """El color con solo la luminosidad (HLS) cambiada, en pasos de PASO (sentido -1 oscurece, +1 aclara), hasta llegar a
-    `minimo` sobre cada fondo. El mismo color si ya llega; None si no llega ni en el extremo."""
+def ajustar(color, cumple, sentido):
+    """El color con solo la luminosidad (HLS) cambiada, en pasos de PASO (sentido -1 oscurece, +1 aclara), hasta que
+    cumple(color). El mismo color si ya cumple; None si no llega ni en el extremo."""
     h, l, s = hls(color)
     c = color
-    while min(contrast(c, f) for f in fondos) < minimo:
+    while not cumple(c):
         siguiente = min(1.0, max(0.0, l + sentido * PASO))
         if siguiente == l:
             return None
         l = siguiente
         c = de_hls(h, l, s)
     return c
+
+
+def texto_sobre(c):
+    """(color, contraste) del texto de un botón SOLID de color c: blanco o casi negro, el que más contraste da (on_color()
+    de build.py, el mismo criterio que el runtime; en Appian el color del texto también es automático)."""
+    t = on_color(c).upper()
+    return t, contrast(t, c)
 
 
 def gris(base, fondos, minimo, saturacion=0.12):
@@ -106,11 +122,6 @@ def gris(base, fondos, minimo, saturacion=0.12):
 def tinte(c, pct=0.15):
     """El color al `pct` sobre blanco (fondos apagados de las etiquetas de estado, como en la marca estándar)."""
     return mix_white(c, pct).upper()
-
-
-def _lineal(x):
-    x /= 255
-    return x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4
 
 
 def lab(h):
@@ -132,6 +143,7 @@ COMENTARIO = re.compile(r"/\*.*?\*/", re.S)
 COLOR = re.compile(r"#[0-9a-fA-F]{3,8}(?![\w-])|\b(?:rgba?|hsla?)\([^()]*\)", re.I)
 IMPORT = re.compile(r"@import\s+(?:url\(\s*)?[\"']?([^\"')\s;]+)", re.I)
 VAR = re.compile(r"var\(\s*(--[\w-]+)")
+VAR_SOLA = re.compile(r"var\(\s*(--[\w-]+)\s*(?:,\s*(.*))?\)")  # un valor que es solo var(--x) o var(--x, respaldo)
 GENERICAS = {"serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui", "ui-serif", "ui-sans-serif",
              "ui-monospace", "ui-rounded", "emoji", "math", "fangsong", "inherit", "initial", "unset", "revert",
              "revert-layer", "-apple-system", "blinkmacsystemfont"}
@@ -197,13 +209,13 @@ def resolver(nombre, defs, nivel=0):
     vals = defs.get(nombre)
     if not vals or nivel > 5:
         return None
-    m = re.fullmatch(r"var\(\s*(--[\w-]+)\s*(?:,\s*(.*))?\)", vals[0].strip())
+    m = VAR_SOLA.fullmatch(vals[0].strip())
     return (resolver(m.group(1), defs, nivel + 1) or m.group(2)) if m else vals[0].strip()
 
 
 def primera_familia(valor, defs):
     """La primera familia de un font-family (resuelve var()); None si es genérica o de sistema."""
-    m = re.fullmatch(r"var\(\s*(--[\w-]+)\s*(?:,\s*(.*))?\)", valor.strip())
+    m = VAR_SOLA.fullmatch(valor.strip())
     if m:
         valor = resolver(m.group(1), defs) or m.group(2) or ""
     fam = re.split(r",(?=(?:[^\"']*[\"'][^\"']*[\"'])*[^\"']*$)", valor)[0].strip().strip("\"'").strip()
@@ -226,27 +238,41 @@ def _es_ip(host):
         return False
 
 
+def _local(host):
+    """Este mismo equipo: localhost o una IP de loopback (127.0.0.1, ::1)."""
+    return host == "localhost" or host.endswith(".localhost") or (_es_ip(host) and ipaddress.ip_address(host).is_loopback)
+
+
+# segundo nivel de los sufijos públicos más usados (empresa.co.uk, empresa.com.es, ministerio.gob.es…): con uno de ellos
+# en la penúltima etiqueta, el dominio son las tres últimas
+SUFIJOS = {"ac", "co", "com", "edu", "go", "gob", "gouv", "gov", "govt", "gv", "int", "ltd", "mil", "ne", "net", "nom", "or",
+           "org", "plc", "sch"}
+
+
 def _base(host):
-    partes = host.split(".")
-    return partes[-3:] if len(partes) >= 3 and len(partes[-1]) == 2 and len(partes[-2]) <= 3 else partes[-2:]
+    """El dominio de un servidor: sus dos últimas etiquetas (x.es) o tres si la penúltima es un sufijo (empresa.co.uk)."""
+    partes = host.rstrip(".").split(".")
+    return partes[-3:] if len(partes) >= 3 and partes[-2] in SUFIJOS else partes[-2:]
 
 
 def mismo_sitio(a, b):
-    """Mismo servidor o mismo dominio (www.x.es y estaticos.x.es); una IP, solo ella misma."""
+    """Mismo servidor, mismo dominio (www.x.es y estaticos.x.es) o este mismo equipo (localhost y 127.0.0.1); otra IP, solo
+    ella misma."""
     ha, hb = ((urllib.parse.urlsplit(u).hostname or "").lower() for u in (a, b))
-    if ha == hb:
+    if ha == hb or (_local(ha) and _local(hb)):
         return True
-    return not (_es_ip(ha) or _es_ip(hb)) and "." in ha and _base(ha) == _base(hb)
+    return not (_es_ip(ha) or _es_ip(hb)) and "." in ha and "." in hb and _base(ha) == _base(hb)
 
 
 def descargar(url, timeout, limite):
-    """(bytes, URL final, charset). A una dirección local se va sin proxy."""
-    host = (urllib.parse.urlsplit(url).hostname or "").lower()
-    local = host == "localhost" or (_es_ip(host) and ipaddress.ip_address(host).is_loopback)
+    """(bytes, URL final, charset, tipo): tipo, el Content-Type sin parámetros (None si no lo dice). A este mismo equipo
+    se va sin proxy."""
+    local = _local((urllib.parse.urlsplit(url).hostname or "").lower())
     opener = urllib.request.build_opener(*([urllib.request.ProxyHandler({})] if local else []))
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html,text/css;q=0.9,*/*;q=0.8"})
     with opener.open(req, timeout=timeout) as r:
-        return r.read(limite + 1), r.geturl(), r.headers.get_content_charset()
+        tipo = r.headers.get_content_type() if r.headers.get("Content-Type") else None
+        return r.read(limite + 1), r.geturl(), r.headers.get_content_charset(), tipo
 
 
 def texto_de(datos, charset):
@@ -271,9 +297,28 @@ def motivo(e, timeout):
 
 
 VACIOS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
-# palabras sueltas: sin una letra (también acentuada) delante, para que «catálogo» no cuente como «logo»
-CABECERA = re.compile(r"(?<![^\W\d_])(header|cabecera|masthead)(?![^\W\d_])", re.I)
-PISTA_LOGO = re.compile(r"(?<![^\W\d_])logo", re.I)
+CABECERAS = {"header", "cabecera", "masthead"}
+LOGOS = {"logo", "logos", "logotipo", "logotipos", "logotype", "logotypes"}
+
+
+def palabras(texto):
+    """Las palabras de un atributo, en minúsculas: corta por lo que no es letra (también acentuada) y donde una minúscula va
+    seguida de una mayúscula. site-logo, header__logo, siteLogo y logoImg llevan «logo»; catálogo, logout y blogger, no."""
+    out = set()
+    for trozo in re.findall(r"[^\W\d_]+", texto or ""):
+        palabra = trozo[0]
+        for antes, c in zip(trozo, trozo[1:]):
+            if antes.islower() and c.isupper():
+                out.add(palabra.lower())
+                palabra = ""
+            palabra += c
+        out.add(palabra.lower())
+    return out
+
+
+def dice_logo(texto):
+    """¿Lleva «logo» (o logotipo, logos…) como palabra entera?"""
+    return bool(palabras(texto) & LOGOS)
 
 
 class Pagina(HTMLParser):
@@ -295,16 +340,16 @@ class Pagina(HTMLParser):
         return self.inicios[linea - 1] + col
 
     def _en_cabecera(self):
-        return any(t == "header" or a.get("role") == "banner" or CABECERA.search(f"{a.get('class', '')} {a.get('id', '')}")
+        return any(t == "header" or a.get("role") == "banner" or palabras(f"{a.get('class', '')} {a.get('id', '')}") & CABECERAS
                    for t, a in self.pila)
 
     def _pista(self, a):
         for k in ("src", "alt", "class", "id", "aria-label", "title"):
-            if PISTA_LOGO.search(a.get(k) or ""):
+            if dice_logo(a.get(k)):
                 return f"«logo» en {k}"
         for t, x in reversed(self.pila):
             for k in ("class", "id"):
-                if PISTA_LOGO.search(x.get(k) or ""):
+                if dice_logo(x.get(k)):
                     return f"«logo» en {k} de <{t}>"
         return None
 
@@ -385,17 +430,24 @@ def web(url, max_css, timeout):
     if urllib.parse.urlsplit(url).scheme not in ("http", "https"):
         fallo(f"la URL tiene que empezar por http:// o https://: {url}", webfetch=False)
     try:
-        datos, final, charset = descargar(url, timeout, MAX_PAGINA)
+        datos, final, charset, tipo = descargar(url, timeout, MAX_PAGINA)
     except urllib.error.HTTPError as e:
         fallo(f"{url} responde {e.code} ({e.reason})")
     except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as e:
         fallo(f"no se pudo descargar {url}: {motivo(e, timeout)}")
+    if tipo == "application/pdf" or datos.startswith(b"%PDF-"):
+        fallo(f"{final} es un PDF ({tipo or 'sin Content-Type'}), no una página web: si es su guía de marca, léelo con la skill de "
+              "PDF y saca de ahí los colores en hex, la tipografía y el logo.", webfetch=False)
+    if tipo not in (None, "text/html", "application/xhtml+xml", "text/css"):
+        fallo(f"{final} es {tipo}, no una página web (HTML) ni una hoja de estilo (CSS).", webfetch=False)
     if len(datos) > MAX_PAGINA:
         print(f"Aviso: la página pasa de {MAX_PAGINA // 2 ** 20} MB; se leen los primeros", file=sys.stderr)
-    pag = Pagina(final, texto_de(datos[:MAX_PAGINA], charset))
-    # los bloques <style> y, en cola, sus @import y las hojas enlazadas (las del mismo sitio, como mucho --max-css)
-    hojas = [(final, t) for t in pag.estilos]
-    cola = [urllib.parse.urljoin(final, m) for t in pag.estilos for m in IMPORT.findall(COMENTARIO.sub(" ", t))] + pag.hojas
+    texto = texto_de(datos[:MAX_PAGINA], charset)
+    css = tipo == "text/css"  # la URL de una hoja de estilo: sus colores y tipografías, sin logos
+    pag = Pagina(final, "" if css else texto)
+    # los bloques <style> (o la hoja) y, en cola, sus @import y las hojas enlazadas (las del mismo sitio, como mucho --max-css)
+    hojas = [(final, t) for t in ([texto] if css else pag.estilos)]
+    cola = [urllib.parse.urljoin(final, m) for _, t in hojas for m in IMPORT.findall(COMENTARIO.sub(" ", t))] + pag.hojas
     vistas, leidas = set(), 0
     while cola:
         u = urllib.parse.urldefrag(cola.pop(0))[0]
@@ -409,7 +461,7 @@ def web(url, max_css, timeout):
             print(f"Hoja sin descargar (--max-css {max_css}): {u}", file=sys.stderr)
             continue
         try:
-            d, uf, cs = descargar(u, timeout, MAX_HOJA)
+            d, uf, cs, _ = descargar(u, timeout, MAX_HOJA)
         except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as e:
             print(f"Hoja de estilo sin descargar: {u} ({motivo(e, timeout)})", file=sys.stderr)
             continue
@@ -474,11 +526,6 @@ def web(url, max_css, timeout):
 
 
 # ------------------------------------------------------------------ crear
-def raiz_plugin():
-    """La carpeta del plugin (la que tiene .claude-plugin/plugin.json); si la skill va suelta, la propia skill."""
-    return next((d for d in (ROOT, *ROOT.parents) if (d / ".claude-plugin" / "plugin.json").is_file()), ROOT)
-
-
 def dentro(carpeta, raiz):
     c, r = (Path(os.path.normcase(str(p.resolve()))) for p in (carpeta, raiz))
     return c == r or r in c.parents
@@ -509,18 +556,33 @@ def fecha_larga(d):
 
 
 def esquema_graficos(marca, estandar):
-    """[(color, origen)]: primero los colores de la marca con 3:1 sobre blanco, después los de la estándar; sin repetir
-    ni colores casi iguales (ΔE < CASI_IGUAL), como mucho 8."""
-    out = []
-    for c, origen in marca + [(x, "estándar") for x in estandar]:
-        if origen != "estándar" and contrast(c, BLANCO) < 3:
-            continue
-        if any(c == o or math.dist(lab(c), lab(o)) < CASI_IGUAL for o, _ in out):
-            continue
-        out.append((c, origen))
-        if len(out) == 8:
-            break
-    return out
+    """([(color, origen)], [(color, origen)] de la marca que se quedan fuera): todas las series con 3:1 sobre blanco (WCAG
+    1.4.11), como mucho 8. Primero los colores de la marca, sin repetir; después los de la estándar que no se parecen a
+    ninguno de ellos (ΔE de CASI_IGUAL o más). El ΔE nunca quita un color de la marca."""
+    out, fuera = [], []
+    for c, origen in marca:
+        if contrast(c, BLANCO) < 3:
+            fuera.append((c, origen))
+        elif all(c != o for o, _ in out):
+            out.append((c, origen))
+    propios = [c for c, _ in out]
+    for c in estandar:
+        c = c.upper()
+        if contrast(c, BLANCO) >= 3 and c not in propios and all(math.dist(lab(c), lab(o)) >= CASI_IGUAL for o in propios):
+            out.append((c, "estándar"))
+    return out[:8], list(dict.fromkeys(fuera))
+
+
+def sombra_tarjeta(color):
+    """La sombra de las tarjetas del kit (--card-shadow de runtime/appian-kit.css) con el color `color`: los mismos
+    desplazamientos, desenfoques y opacidades."""
+    m = re.search(r"--card-shadow:\s*([^;]+);", (ROOT / "runtime" / "appian-kit.css").read_text(encoding="utf-8"))
+    if not m:
+        print("marca.py crear: no se encuentra --card-shadow en runtime/appian-kit.css; no se escribe nada.", file=sys.stderr)
+        sys.exit(2)
+    r, g, b = rgb(color)
+    return re.sub(r"rgba\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*([\d.]+)\s*\)",
+                  lambda x: f"rgba({r}, {g}, {b}, {float(x.group(1)):g})", m.group(1).strip())
 
 
 def crear(a):
@@ -540,14 +602,19 @@ def crear(a):
             p = Path(ruta)
             if not p.is_file():
                 errores.append(f"{opcion}: no existe el logo {p}")
-            else:
+                continue
+            try:
                 t = p.read_text(encoding="utf-8", errors="replace")
-                if not re.search(r"<svg\b", t, re.I):
-                    errores.append(f"{opcion}: {p} no es un SVG")
-                logos[opcion] = t
-    carpeta, plugin = Path(a.carpeta), raiz_plugin()
-    if dentro(carpeta, plugin):
-        errores.append(f"{carpeta.resolve()} está dentro del plugin ({plugin}): la marca de un cliente va en prototipo/ de su "
+            except OSError as e:
+                errores.append(f"{opcion}: no se puede leer {p} ({e.strerror or e})")
+                continue
+            if not re.search(r"<svg\b", t, re.I):
+                errores.append(f"{opcion}: {p} no es un SVG; si la marca solo lo tiene en PNG o JPG, crea la marca sin {opcion} y pide "
+                               "el SVG (el PNG sirve para el Site de Appian)")
+            logos[opcion] = t
+    carpeta = Path(a.carpeta)
+    if dentro(carpeta, PLUGIN):
+        errores.append(f"{carpeta.resolve()} está dentro del plugin ({PLUGIN}): la marca de un cliente va en prototipo/ de su "
                        "proyecto, junto al app.json, nunca en el plugin")
     elif carpeta.exists() and not carpeta.is_dir():
         errores.append(f"{carpeta} no es una carpeta")
@@ -560,22 +627,33 @@ def crear(a):
     perfil = not a.sin_perfil_css
     ajustes, fallos, avisos = [], [], []
 
-    def ajusta(rol, color, fondos, minimo, sentido):
-        """fondos: [(hex, cómo se dice)]."""
-        nuevo = ajustar(color, [f for f, _ in fondos], minimo, sentido)
+    def ajusta(rol, color, fondos, minimo, sentido, con_texto=False):
+        """fondos: [(hex o lista de hex, cómo se dice)]; de una lista cuenta el que menos contraste da. con_texto: además, el
+        texto encima (blanco o casi negro, el que más contraste da) con 4,5:1."""
+        grupos = [([x] if isinstance(x, str) else list(x), d) for x, d in fondos]
+        sobre = lambda c, fs: min(contrast(c, f) for f in fs)
+        nuevo = ajustar(color, lambda c: all(sobre(c, fs) >= minimo for fs, _ in grupos) and (not con_texto or texto_sobre(c)[1] >= 4.5), sentido)
         if nuevo is None:
             fallos.append(f"{rol} {color}: ni {'oscureciéndolo' if sentido < 0 else 'aclarándolo'} del todo llega a {razon(minimo)}:1")
             return color
         if nuevo != color:
-            ajustes.append(f"{rol} {color} → {nuevo}: " + " y ".join(f"{razon(contrast(nuevo, f))}:1 {d}" for f, d in fondos)
-                           + f" (mínimo {razon(minimo)}:1)")
+            partes = [f"{razon(sobre(nuevo, fs))}:1 {d}" for fs, d in grupos]
+            dicho = f"{rol} {color} → {nuevo}: " + (", ".join(partes[:-1]) + " y " if len(partes) > 1 else "") + partes[-1] + f" (mínimo {razon(minimo)}:1)"
+            if con_texto:
+                t, rt = texto_sobre(nuevo)
+                dicho += f"; su texto, {'blanco' if t == BLANCO else 'casi negro ' + t}, con {razon(rt)}:1 (mínimo 4,5:1)"
+            ajustes.append(dicho)
         return nuevo
     up = {o: v.upper() for o, v in colores}
     oscuro = ajusta("oscuro", up["--oscuro"], [(BLANCO, "con texto blanco")], 4.5, -1)
     realce = ajusta("realce", up["--realce"], [(oscuro, f"sobre el oscuro {oscuro}")], 3, +1)
-    acento = ajusta("acento", up["--acento"], [(GRIS_PAGINA, f"sobre el gris de página {GRIS_PAGINA}"), (BLANCO, "sobre blanco")], 4.5, -1)
-    principal = up.get("--principal")
-    papeles = {oscuro, realce, acento, principal, *(up[o] for o in ("--oscuro", "--realce", "--acento"))}
+    # el acento (enlaces, pestañas, botones) y el botón principal van sobre blanco, el gris de página y los avisos de Appian
+    # (sus fondos estándar, que el perfil no cambia): el acento, a 4,5:1; el botón principal, a 3:1, con su texto a 4,5:1
+    claros = [(GRIS_PAGINA, f"sobre el gris de página {GRIS_PAGINA}"), (BLANCO, "sobre blanco"),
+              ([std[k] for k in FONDOS_AVISO], "sobre los fondos de aviso de Appian")]
+    acento = ajusta("acento", up["--acento"], claros, 4.5, -1)
+    principal = ajusta("botón principal", up["--principal"], claros, 3, -1, con_texto=True) if "--principal" in up else None
+    papeles = {oscuro, realce, acento, principal, *(up[o] for o in ("--oscuro", "--realce", "--acento", "--principal") if o in up)}
     secundarios = [x for x in dict.fromkeys(x.upper() for x in secundarios) if x not in papeles]  # sin repetir un color de otro papel
     # grises con el matiz del oscuro: texto secundario (tan legible como el SECONDARY de Appian sobre el gris de página),
     # marcador de posición (4,5:1), bordes y líneas que deben verse (3:1) y líneas finas
@@ -584,18 +662,23 @@ def crear(a):
     placeholder = gris(oscuro, fondos_claros, 4.5)
     linea = gris(oscuro, fondos_claros, 3)
     gris_claro = de_hls(hls(oscuro)[0], 0.91, min(hls(oscuro)[2], 0.12))
-    # estados: «en curso» con el tinte del acento y el oscuro como color; atención, positivo y negativo, los de la estándar
-    en_curso, pct = tinte(acento), 0.15
-    while min(contrast(oscuro, en_curso), contrast(TEXTO, en_curso)) < 4.5 and pct > 0:
-        pct = round(pct - 0.01, 2)
-        en_curso = tinte(acento, pct)
+
+    # estados: el fondo de cada etiqueta, con su texto (STANDARD) a 4,5:1. «neutral», el tinte de slate (la estándar tiñe su
+    # gris); «en curso», el del acento, con el oscuro como color; atención, positivo y negativo, los de la estándar
+    def etiqueta_estado(c, *textos):
+        pct = 0.15
+        while pct > 0 and min(contrast(t, tinte(c, pct)) for t in textos) < 4.5:
+            pct = round(pct - 0.01, 2)
+        return tinte(c, pct)
     states = copy.deepcopy(est["states"])
-    states["_comment"] = ("Paleta semántica de estados, común a toda la app. Tags en filas: fondo apagado (hex) y texto STANDARD. Iconos, "
-                          "textos y barras: el enumerado; en curso, el oscuro de la marca, sobre el tinte del acento. Atención, positivo "
-                          "y negativo, los de la marca estándar. Máximo dos colores no neutros por grid; nunca el color solo (siempre "
-                          "con texto o icono).")
-    states["neutral"]["tag"] = tinte(slate)
-    states["enCurso"].update({"tag": en_curso, "enum": oscuro})
+    states["_comment"] = ("Paleta semántica de estados, común a toda la app. Tags en filas: fondo apagado (hex) con el texto STANDARD a 4,5:1. "
+                          "Iconos, textos y barras: el enumerado. Neutral, el tinte del gris de la marca (slate); en curso, el oscuro de la "
+                          "marca sobre el tinte del acento; atención, positivo y negativo, los de la marca estándar. Máximo dos colores no "
+                          "neutros por grid; nunca el color solo (siempre con texto o icono).")
+    states["neutral"]["tag"] = etiqueta_estado(slate, TEXTO)
+    states["enCurso"].update({"tag": etiqueta_estado(acento, oscuro, TEXTO), "enum": oscuro})
+    fallos += [f"etiqueta de estado «{k}» {v['tag']}: su texto no llega a 4,5:1" for k, v in states.items()
+               if not k.startswith("_") and contrast(TEXTO, v["tag"]) < 4.5]
     # colores semánticos del perfil: el estándar de Appian, oscurecido hasta 4,5:1 sobre blanco y sobre su fondo. Los fondos se
     # quedan en los de Appian (más claros que las etiquetas): sobre ellos van los avisos con su botón, que es del acento
     semanticos = {}
@@ -631,7 +714,7 @@ def crear(a):
         site.update({"logo": logo, "logoAltText": a.nombre})
     marca_graf = [(acento, "acento")] + ([(principal, "botón principal")] if principal else []) + [(c, "secundario") for c in secundarios] \
         + [(oscuro, "oscuro"), (realce, "realce")]
-    graf = esquema_graficos(marca_graf, est["components"]["chartColorScheme"])
+    graf, graf_fuera = esquema_graficos(marca_graf, est["components"]["chartColorScheme"])
     palette = {"_comment": f"Colores de {a.nombre} para usar como hex en SAIL (fondos de cards y cajas, sellos, barras decorativas, gráficos). "
                            "Los helpers (scripts/sail_helpers.py) leen navy, slate, steel, red, greenDark, amber, lineStrong, pageBg y grayLight.",
                "navy": oscuro, "accent": acento, "highlight": realce}
@@ -645,9 +728,9 @@ def crear(a):
     components["primaryButton"]["color"] = principal or "ACCENT"
     components["primaryButton"]["_uso"] = "Un único botón SOLID por pantalla: la acción más frecuente" + ("" if principal else ". ACCENT, el acento de la marca")
     components["chartColorScheme"] = [c for c, _ in graf]
-    components["_chartColorScheme"] = ("Series en este orden: primero los colores de la marca con 3:1 o más sobre blanco (WCAG 1.4.11) y después los "
-                                       "de la marca estándar, sin repetir ni colores casi iguales." +
-                                       (f" El último, {graf[-1][0]}, no llega a 3:1: solo con etiquetas de datos." if contrast(graf[-1][0], BLANCO) < 3 else ""))
+    components["_chartColorScheme"] = ("Series en este orden: primero los colores de la marca y después los de la marca estándar que no se parecen a "
+                                       "ninguno de ellos; todas con 3:1 o más sobre blanco (WCAG 1.4.11)." +
+                                       (" Fuera, por no llegar a 3:1: " + ", ".join(f"{c} ({o})" for c, o in graf_fuera) + "." if graf_fuera else ""))
     typeface = {"prototype": "Open Sans",
                 "appian": (f"La tipografía de {a.nombre} es {tip}. En Appian se sube en Admin Console > Branding > Typefaces (WOFF2, WOFF, OTF o TTF, "
                            "pesos 300, 400, 600 y 700) y, desde 26.5, se elige en el perfil CSS del site; sin perfil CSS, se pone como tipografía "
@@ -669,12 +752,11 @@ def crear(a):
         grupos.append(("Campos: borde con 3:1 sobre blanco y sobre el gris de página (WCAG 1.4.11)" + (" y esquinas de la marca" if forma != "SQUARED" else ""), campos))
         if forma != "SQUARED":
             grupos.append(("Botones: esquinas de la marca", {f"button-{'semi-' if forma == 'SEMI_ROUNDED' else ''}rounded-border-radius": RADIO_CONTROL[forma]}))
-        r, g, b = rgb(oscuro)
-        tarjetas = {"card-box-shadow": f"0px 1px 3px rgba({r}, {g}, {b}, 0.10), 0px 4px 12px rgba({r}, {g}, {b}, 0.06)",
+        tarjetas = {"card-box-shadow": sombra_tarjeta(oscuro),
                     "card-box-semi-rounded-border-radius": RADIO_CONTENEDOR["SEMI_ROUNDED"], "card-box-rounded-border-radius": RADIO_CONTENEDOR["ROUNDED"]}
         if forma != "SQUARED":
             tarjetas.update({"tag-standard-semi-rounded-border-radius": "4px", "tag-small-semi-rounded-border-radius": "4px"})
-        grupos.append(("Tarjetas, cajas y etiquetas: sombra suave teñida del oscuro de la marca y esquinas", tarjetas))
+        grupos.append(("Tarjetas, cajas y etiquetas: la sombra del kit teñida del oscuro de la marca y esquinas", tarjetas))
         grupos.append(("Tooltips: fondo con el oscuro de la marca y texto blanco", {"tooltip-background-color": oscuro, "tooltip-text-color": BLANCO}))
         brand["cssProfile"] = {"_comment": f"Perfil CSS de Appian para los sites de {a.nombre} (Admin Console > Branding > CSS Profiles; capacidades "
                                            "avanzadas y premium). Solo lleva lo que cambia respecto a Appian: lo que no se incluye conserva el valor "
@@ -689,40 +771,44 @@ def crear(a):
             print("marca.py crear: el perfil CSS no es válido; no se escribe nada.\n  " + "\n  ".join(rep.errors), file=sys.stderr)
             sys.exit(2)
 
-    guia = guia_md(a, brand, graf, ajustes, avisos, logo, logo_claro, peor, tip, hoy)
-    carpeta.mkdir(parents=True, exist_ok=True)
-    escritos = []
-
-    def escribe(nombre, texto, nota=""):
-        f = carpeta / nombre
-        f.write_text(texto, encoding="utf-8")
-        escritos.append(f"OK → {f}{nota}")
-    escribe(f"brand-{a.id}.json", json.dumps(brand, ensure_ascii=False, indent=2) + "\n")
-    for opcion, nombre in (("--logo", logo), ("--logo-claro", logo_claro)):
-        if nombre:
-            escribe(nombre, limpios[opcion])
+    guia = guia_md(a, brand, graf, graf_fuera, ajustes, avisos, logo, logo_claro, peor, tip, hoy)
+    ficheros = [(f"brand-{a.id}.json", json.dumps(brand, ensure_ascii=False, indent=2) + "\n", "")]
+    ficheros += [(nombre, limpios[opcion], "") for opcion, nombre in (("--logo", logo), ("--logo-claro", logo_claro)) if nombre]
     if perfil:
-        escribe(f"perfil-css-{a.id}.txt", css_profile_text(brand), " (perfil CSS para Admin Console › Branding › CSS Profiles)")
-    escribe(f"marca-{a.id}.md", guia, " (guía de marca para quien construye)")
+        ficheros.append((f"perfil-css-{a.id}.txt", css_profile_text(brand), " (perfil CSS para Admin Console › Branding › CSS Profiles)"))
+    ficheros.append((f"marca-{a.id}.md", guia, " (guía de marca para quien construye)"))
+    escritos = []
+    try:
+        carpeta.mkdir(parents=True, exist_ok=True)
+        for nombre, texto, nota in ficheros:
+            (carpeta / nombre).write_text(texto, encoding="utf-8")
+            escritos.append((nombre, nota))
+    except OSError as e:
+        print(f"marca.py crear: no se pudo escribir {e.filename or carpeta} ({e.strerror or e}). Llegaron a escribirse en {carpeta}: "
+              + (", ".join(n for n, _ in escritos) if escritos else "ninguno") + ". Corrige el problema y vuelve a ejecutar crear.", file=sys.stderr)
+        sys.exit(2)
     print(f"Marca «{a.nombre}» ({a.id}):")
-    print("Ajustes de contraste (WCAG 2.2 AA; solo la luminosidad):\n  " + "\n  ".join(ajustes) if ajustes else "Ajustes de contraste: ninguno; todo llega a WCAG 2.2 AA.")
+    print("Ajustes de contraste (WCAG 2.2 AA; solo la luminosidad):\n  " + "\n  ".join(ajustes) if ajustes else
+          f"Ajustes de contraste: ninguno; lo que se comprueba (marca-{a.id}.md) llega a WCAG 2.2 AA tal cual.")
     for x in avisos:
         print(f"Aviso: {x}")
-    print("\n".join(escritos))
+    print("\n".join(f"OK → {carpeta / n}{nota}" for n, nota in escritos))
     print(f"Siguiente: validate.py y build.py con --brand {a.id} (app.json en {carpeta}) y contrast_audit.py sobre el HTML.")
-    print(f"$assumption de app: «Marca de {a.nombre} sacada de {a.fuente.strip().rstrip('.')}; falta que la confirme el cliente»")
+    # la fecha de hoy al final de la fuente no se repite: «sacada de su web el 8 de octubre de 2026»
+    fuente = re.sub(rf",?\s*(?:el\s+)?{re.escape(fecha_larga(hoy))}$", "", a.fuente.strip().rstrip(".")).strip() or a.fuente.strip()
+    print(f"$assumption de app: «Marca de {a.nombre} sacada de {fuente} el {fecha_larga(hoy)}; falta que la confirme el cliente»")
 
 
-def guia_md(a, brand, graf, ajustes, avisos, logo, logo_claro, peor, tip, hoy):
+def guia_md(a, brand, graf, graf_fuera, ajustes, avisos, logo, logo_claro, peor, tip, hoy):
     """marca-<id>.md: la guía de marca del proyecto para quien construye."""
     site, pal, st, cp = brand["site"], brand["palette"], brand["states"], brand.get("cssProfile")
     si = lambda v: "Sí" if v else "No"
     contr = lambda c: f"{razon(contrast(c, BLANCO))}:1"
+    y = lambda xs: ", ".join(xs[:-1]) + " y " + xs[-1] if len(xs) > 1 else xs[0]
     fuente = a.fuente.strip().rstrip(".")
     L = [f"# Marca de {a.nombre}", "",
-         f"Configuración de marca del proyecto para el prototipo y para Appian, generada con `marca.py` el {fecha_larga(hoy)}. "
-         f"Fuente: {fuente}. " + ("Los colores llegan a WCAG 2.2 AA; los que no llegaban se han ajustado (ver «Ajustes de contraste»). " if ajustes
-                                  else "Los colores llegan a WCAG 2.2 AA tal cual. ") +
+         f"Configuración de marca del proyecto para el prototipo y para Appian, generada con `marca.py` el {fecha_larga(hoy)}. Fuente: {fuente}. "
+         "Qué contraste se ha comprobado y qué se ha ajustado está en «Ajustes de contraste». "
          f"En el prototipo: `--brand {a.id}` en `validate.py` y `build.py`, y `sail_helpers.usar_marca(\"{a.id}\", r\"<p>/prototipo\")` en el script del spec.",
          "", "## Configuración del Site", "", "En el objeto Site, tal cual:", "", "| Propiedad | Valor |", "|---|---|"]
     filas = [("Navigation Bar › Layout (`navigationLayout`)", "HEADER BAR"), ("Navigation Bar › Style (`headerBarStyle`)", "MERCURY"),
@@ -763,6 +849,9 @@ def guia_md(a, brand, graf, ajustes, avisos, logo, logo_claro, peor, tip, hoy):
             "greenDark": "Verde de éxito y tipo «Turno» del calendario", "amber": "Icono de aviso cuando WARN no llega a 3:1 sobre su fondo",
             "lineStrong": "Bordes de campo y líneas que tienen que verse (3:1)", "pageBg": "Gris de las páginas con tarjetas",
             "grayLight": "Líneas finas y separadores", "white": "Tarjetas y formularios"}
+    if pal.get("principal"):
+        t, r = texto_sobre(pal["principal"])
+        para["principal"] += f"; su texto, {'blanco' if t == BLANCO else 'casi negro ' + t}, con {razon(r)}:1 (en Appian, el color del texto es automático)"
     L += ["", "## Paleta", "", "| Color | Hex | Para qué | Contraste sobre blanco |", "|---|---|---|---|"]
     for k, v in pal.items():
         if not k.startswith("_"):
@@ -782,10 +871,13 @@ def guia_md(a, brand, graf, ajustes, avisos, logo, logo_claro, peor, tip, hoy):
              f"; con el perfil, botones {RADIO_CONTROL[site['buttonShape']]}, campos y etiquetas 4px y tarjetas 8px (16px las redondeadas).")]
     L += ["", "## Estados", "", "| Estado | Fondo de la etiqueta | Color | Para qué |", "|---|---|---|---|"]
     L += [f"| {k} | `{v['tag']}` | `{v['enum']}` | {v.get('uso', '')} |" for k, v in st.items() if not k.startswith("_")]
-    L += ["", "Etiquetas con texto `STANDARD` sobre su fondo; como mucho dos colores no neutros por grid; nunca el color solo."]
+    L += ["", "Etiquetas con texto `STANDARD` sobre su fondo (4,5:1 o más); como mucho dos colores no neutros por grid; nunca el color solo."]
     L += ["", "## Gráficos", "", "Series en este orden (`chartColorScheme`):", ""]
     L += [f"{i}. `{c}` · {o} · {contr(c)} sobre blanco" for i, (c, o) in enumerate(graf, 1)]
-    L += ["", "Un gráfico usa como mucho 5 colores y lleva su tabla; un color con menos de 3:1 sobre blanco va solo con etiquetas de datos."]
+    L += ["", "Todas llegan a 3:1 sobre blanco (WCAG 1.4.11): primero los colores de la marca y después los de la estándar que no se parecen "
+          "a ninguno de ellos. Un gráfico usa como mucho 5 colores y lleva su tabla."]
+    if graf_fuera:
+        L += ["", "Fuera, por no llegar a 3:1 sobre blanco: " + y([f"`{c}` ({o}, {contr(c)})" for c, o in graf_fuera]) + "."]
     L += ["", "## Tipografía", "", "| Dónde | Tipografía |", "|---|---|", f"| Marca | {tip or 'Sin dato: pendiente'} |",
           "| Prototipo | Open Sans, la que lleva el kit |",
           "| Appian | " + (f"{tip}: se sube en Admin Console › Branding › Typefaces (WOFF2, WOFF, OTF o TTF, pesos 300, 400, 600 y 700) y, "
@@ -806,12 +898,26 @@ def guia_md(a, brand, graf, ajustes, avisos, logo, logo_claro, peor, tip, hoy):
         L.append(f"Falta el logo para fondo oscuro: la cabecera del prototipo va sin él. {nota}.")
     L += ["", "## Fuentes", "", f"- Marca: {fuente}.", f"- Configuración generada con `marca.py` el {fecha_larga(hoy)}.",
           "- Appian: " + "; ".join(f"{k} ({u})" for k, u in DOCS.items()) + "."]
-    L += ["", "## Ajustes de contraste", ""]
-    L += (["Solo se ha cambiado la luminosidad (matiz y saturación se mantienen):", ""] + [f"- {x}" for x in ajustes]) if ajustes else \
-        ["Ninguno: todos los colores llegan a WCAG 2.2 AA tal cual."]
+    # lo que se comprueba, y nada más: la guía no dice «AA» de lo que no se ha medido
+    hecho = ["El oscuro con texto blanco: 4,5:1.", "El realce sobre el oscuro: 3:1.",
+             "El acento sobre blanco, sobre el gris de página y sobre los fondos de aviso de Appian: 4,5:1."]
+    if pal.get("principal"):
+        hecho.append("El botón principal sobre esos mismos fondos, 3:1, y su texto, 4,5:1.")
+    hecho += ["El texto secundario (`slate`), 4,5:1, y las líneas que deben verse (`lineStrong`), 3:1, sobre blanco y sobre el gris de página.",
+              "El texto de cada etiqueta de estado sobre su fondo: 4,5:1."]
+    if cp:
+        hecho.append("Con el perfil, los colores de estado sobre blanco y sobre su fondo y los textos de los campos: 4,5:1.")
+    hecho.append("Las series de los gráficos sobre blanco: 3:1.")
+    sin_medir = (["Los colores secundarios en las barras decorativas (en los gráficos solo van si llegan a 3:1)."] if any(k.startswith("secundario") for k in pal) else []) \
+        + (["El logo, salvo su color con menos contraste sobre el oscuro (ver «Logo»)."] if logo else [])
+    L += ["", "## Ajustes de contraste", "", "Comprobado con WCAG 2.2 AA, con estos mínimos:", ""] + [f"- {x}" for x in hecho]
+    if sin_medir:
+        L += ["", "Sin comprobar:", ""] + [f"- {x}" for x in sin_medir]
+    L += [""] + ((["Ajustes (solo la luminosidad; matiz y saturación se mantienen):", ""] + [f"- {x}" for x in ajustes]) if ajustes else
+                 ["Ajustes: ninguno; lo comprobado llega tal cual."])
     if avisos:
         L += ["", "Avisos:", ""] + [f"- {x}" for x in avisos]
-    pend = [f"Que los colores y el logo de «{fuente}» son los vigentes y el papel de cada uno: oscuro, realce, acento y botón principal."]
+    pend = [f"Que los colores y el logo de {a.nombre} son los vigentes y el papel de cada uno: oscuro, realce, acento y botón principal."]
     if ajustes:
         pend.append("Los colores ajustados por contraste: en Appian sustituyen a los de la marca.")
     pend.append("El logo en PNG para el Site y el icono del sitio (ICO)." if logo else "El logo para fondo oscuro (SVG para el prototipo; PNG para el Site) y el icono del sitio (ICO).")

@@ -559,10 +559,15 @@ def _over(fg, bg):
     return "#" + "".join("%02x" % round(x * a + y * (1 - a)) for x, y in zip(c, b))
 
 
+def _lineal(x):
+    """Un canal sRGB (0-255) en valor lineal, el de la luminancia relativa de WCAG."""
+    x /= 255
+    return x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4
+
+
 def _lum(h):
-    c = [x / 255 for x in _rgb(h)[0]]
-    c = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
-    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+    r, g, b = (_lineal(x) for x in _rgb(h)[0])
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
 def contrast(a, b):
