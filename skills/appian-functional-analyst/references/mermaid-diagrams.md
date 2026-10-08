@@ -13,10 +13,10 @@ mermaid.ink, kroki…).
 ## Cómo
 
 1. Escribe `analisis/diagramas/<nombre>.mmd` (`estados-<entidad>`, `datos`).
-2. Valida y pinta:
+2. Valida y pinta con el pintor de `appian-diagramas-bpmn`, que está junto a esta skill:
    ```bash
-   python3 <skill>/scripts/render_mermaid.py <p>/analisis/diagramas/*.mmd           # genera los .png
-   python3 <skill>/scripts/render_mermaid.py <p>/analisis/diagramas/datos.mmd --check # solo valida
+   python3 <skill>/../appian-diagramas-bpmn/scripts/mermaid.py <p>/analisis/diagramas/*.mmd           # genera los .png
+   python3 <skill>/../appian-diagramas-bpmn/scripts/mermaid.py <p>/analisis/diagramas/datos.mmd --check # solo valida
    ```
    Salida 1: error de sintaxis, con la línea; corrige y repite. Salida 2: falta Playwright o un navegador;
    dilo y deja el diagrama para cuando lo haya (el `.mmd` se queda; la imagen falta).
