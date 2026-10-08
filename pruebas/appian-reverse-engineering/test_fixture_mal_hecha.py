@@ -134,6 +134,13 @@ def test_aplicacion_mnt(mnt):
     assert inv["source"]["url"] == ENTORNO
 
 
+def test_herramienta_de_un_tipo_que_no_tiene(mnt):
+    """MNT no tiene agentes de IA: getAiAgent es de ese tipo y no se prueba en los demás (ni da errores)."""
+    rep = mnt.load("extraction_report.json")
+    assert [e for e in rep["errors"] if e["tool"] == "getAiAgent"] == []
+    assert [d for d in rep["disabledAfterProbe"] if d["tool"] == "getAiAgent"] == []
+
+
 def test_cdt_y_data_store_con_definicion(mnt):
     obj = objetos(mnt)
     cdt, almacen = obj["MNT_OrdenDTO"], obj["MNT Datos Mantenimiento"]

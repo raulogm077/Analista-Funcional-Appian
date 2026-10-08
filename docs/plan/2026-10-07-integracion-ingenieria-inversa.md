@@ -519,7 +519,7 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   definición de quien los usa y no en `inventory.json`; `MNT_CS_Proveedores` llega con su `authType` y su URL; la URL
   del entorno no es de desarrollo; y el simulador DEM da lo mismo que antes. → FALLA.
 - [x] **Paso 2:** escribir la aplicación, los cambios del simulador y los JSON. **Paso 3:** pytest en verde.
-- [ ] **Paso 4:** commit «F3: aplicación ficticia mal hecha» y etiqueta `f3-antes` (punto de partida de la Tarea 9).
+- [x] **Paso 4:** commit «F3: aplicación ficticia mal hecha» y etiqueta `f3-antes` (punto de partida de la Tarea 9).
 
 ### Tarea 8: Preguntas primero, hechos y no consejos
 

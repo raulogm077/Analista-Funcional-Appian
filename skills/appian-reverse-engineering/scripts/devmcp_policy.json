@@ -4,7 +4,8 @@
     "No contiene una lista de herramientas: son reglas sobre verbos y patrones de nombre.",
     "Se aplica a CUALQUIER herramienta que ofrezca el catalogo del servidor en cada ejecucion.",
     "Los tokens se obtienen partiendo el nombre (camelCase o snake_case), en minusculas y en singular.",
-    "Editable: si una herramienta nueva queda mal clasificada, ajusta estas reglas, no el codigo."
+    "Editable: si una herramienta nueva queda mal clasificada, ajusta estas reglas, no el codigo.",
+    "typeSynonyms lleva los tipos habituales aunque la aplicacion no tenga ninguno: si no, una herramienta de un tipo que falta (p. ej. getAiAgent sin agentes de IA) se toma por generica y se prueba en todos los demas."
   ],
   "writeVerbs": [
     "create",
@@ -221,6 +222,14 @@
     "object"
   ],
   "typeSynonyms": {
+    "processModel": ["process model"],
+    "recordType": ["record type"],
+    "interface": ["interface"],
+    "site": ["site"],
+    "constant": ["constant"],
+    "group": ["group"],
+    "connectedSystem": ["connected system"],
+    "aiAgent": ["ai agent"],
     "expressionRule": [
       "freeform rule",
       "expression rule",
