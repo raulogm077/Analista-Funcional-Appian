@@ -10,11 +10,11 @@ Las definiciones extraídas (connected systems, integraciones, constantes, Web A
 
 ## Patrones de detección
 
-`python3 <skill>/scripts/detect_secrets.py <ruta>` aplica estos patrones (orientativos); `bash <skill>/scripts/detect_secrets.sh <ruta>` hace lo mismo. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3): da el patrón, el fichero y la línea de cada posible secreto. No cuenta las referencias (`=cons!X`, `ri!`, `pv!`, `rule!`, `local!`), los valores de asteriscos (`***`) ni las claves que describen el secreto sin serlo (`tokenUrl`, `passwordPolicy`). `inventory.json` lo resume por objeto: `secrets` son las coincidencias en sus respuestas y, en una constante, `secret: true` dice que su nombre o su valor parecen un secreto.
+`python3 <skill>/scripts/detect_secrets.py <ruta>` aplica estos patrones (orientativos); `bash <skill>/scripts/detect_secrets.sh <ruta>` hace lo mismo. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3): da el patrón de cada posible secreto y dónde está. Un JSON lo recorre entero, sin el `_meta` de la extracción, y da el fichero y la propiedad (`…/getX.json#response.headers[0].value`); otro fichero, la línea. No cuenta las referencias (`=cons!X`, `ri!`, `pv!`, `rule!`, `local!`), los valores de asteriscos (`***`) ni las claves que describen el secreto sin serlo (`tokenUrl`, `passwordPolicy`). `inventory.json` lo resume por objeto: `secrets` son las coincidencias en sus respuestas y, en una constante, `secret: true` dice que su nombre o su valor parecen un secreto.
 
 | Tipo | Patrón |
 |---|---|
-| Clave de secreto con valor | Una clave que contiene `password`, `passwd`, `pwd`, `secret`, `api_key`/`apikey`, `token` o `credential` (también `sapPassword`, `authToken`), seguida de `:` o `=` y un valor |
+| Clave de secreto con valor | Una clave que contiene `password`, `passwd`, `pwd`, `secret`, `api_key`/`apikey`, `token`, `credential`, `private_key` o `authorization` (también `sapPassword`, `authToken`) con un valor escrito, o una cabecera `{name, value}` con ese nombre; en un texto o una expresión, seguida de `:` o `=` y un valor (`password: "x"`, `apiKey: "x"`) |
 | Token de API con prefijo conocido | `(sk\|pk\|rk)_(live\|test)_[A-Za-z0-9]{8,}` |
 | Cabecera Authorization con valor | `(?i)bearer\s+[A-Za-z0-9._~+/-]{16,}` |
 | Credenciales en URL | `https?://usuario:clave@host` |

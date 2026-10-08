@@ -19,7 +19,8 @@ Las respuestas se guardan tal cual las devuelve el Dev MCP, con rutas cortas (Wi
 
 Codigos de salida:
   0 ok | 2 uso incorrecto | 11 Dev MCP no configurado | 12 varias configuraciones posibles
-  13 el Dev MCP no arranca o no autentica | 14 no hay aplicaciones visibles | 15 app no encontrada o ambigua
+  13 el Dev MCP no arranca o no autentica | 14 no hay aplicaciones visibles
+  15 app no encontrada o ambigua, o la carpeta ya tiene otra app extraida (usa otra --out)
   16 Appian MCP Server no disponible (solo datafabric)
 """
 from __future__ import annotations

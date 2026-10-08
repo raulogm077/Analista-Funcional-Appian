@@ -71,7 +71,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 1. `python3 <skill>/scripts/build_model.py <salida>` → `inventory.json` y `graph.json` (con la criticidad de cada proceso).
 2. `python3 <skill>/scripts/build_annex.py <salida>` → `anexo/`: por objeto, la definición legible y el resto de respuestas (role map, dependientes, validación, ejecuciones, versiones, render); y `anexo/grafo.md`. Repítelo si cambia `<trabajo>/`.
-3. `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw` (o `bash <skill>/scripts/detect_secrets.sh`, que lo llama): da el fichero y la línea de cada posible secreto escrito en la aplicación. Cada uno es un hallazgo `H-SEG` o un falso positivo (`references/security-rules.md`, «Acción ante un secreto»). No cuenta referencias (`cons!`, `=ri!…`).
+3. `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw` (o `bash <skill>/scripts/detect_secrets.sh`, que lo llama): da cada posible secreto escrito en la aplicación con su fichero y su propiedad. Cada uno es un hallazgo `H-SEG` o un falso positivo (`references/security-rules.md`, «Acción ante un secreto»). No cuenta referencias (`cons!`, `=ri!…`).
 
 ### Fase 4 — Análisis con subagentes
 

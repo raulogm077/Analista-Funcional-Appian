@@ -48,7 +48,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 | Síntoma | Causa probable | Qué hacer |
 |---|---|---|
 | Código 13 al arrancar | Sesión SSO caducada o bundle mal instalado | Repetir: se abre el navegador. Si persiste, `devmcp-setup.md`. |
-| Código 15 | Aplicación no encontrada o ambigua | Usar el uuid o el prefijo exacto de `doctor`. |
+| Código 15 | Aplicación no encontrada o ambigua, o la carpeta ya tiene otra aplicación | Usar el uuid o el prefijo exacto de `doctor`; para otra aplicación, otra `<salida>`. |
 | Muchas llamadas de un tipo desactivadas | La herramienta no admite ese tipo | Normal. Aparece en el informe y en `INVENTARIO`. |
 | Timeouts | Entorno lento | `--concurrency 2` y repetir (reanuda). |
 

@@ -62,7 +62,7 @@ def test_detect_secrets_files_and_dirs(tmp_path):
     user_only.write_text("URL base: https://svc_erp:***@erp.example.org/api\n")     # usuario visible: cuenta
     p = subprocess.run(["bash", str(DS), str(d), str(clean)], capture_output=True, text=True)
     assert p.returncode == 1
-    assert [f"cs.json:{n} |" in p.stdout for n in (1, 2, 3, 4)] == [True] * 4      # dice dónde está cada uno
+    assert [f"cs.json#{k} |" in p.stdout for k in ("baseUrl", "value", "password", "h")] == [True] * 4   # dónde
     assert "05.md:" not in p.stdout
     assert subprocess.run(["bash", str(DS), str(clean)], capture_output=True).returncode == 0
     assert subprocess.run(["bash", str(DS), str(user_only)], capture_output=True).returncode == 1

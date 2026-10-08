@@ -79,7 +79,7 @@ Que la extracción no traiga un dato no significa que falte en la aplicación: p
 
 ## Qué no incluye
 
-- Datos de negocio: no se leyó ninguna fila, solo metadatos y recuentos.
+- Datos de negocio: ninguna herramienta de datos (filas, variables de procesos, datos de tareas); el render (`@screen`) muestra lo que cada interfaz consulta al evaluarse con entradas vacías.
 - Valores de otros entornos: solo los de `{{url}}`; los demás están en el paquete de despliegue.
 - Configuración que el Dev MCP no devuelve (excepciones y alertas de nodos, destinatarios de correo, seguridad de acciones de record): marcada ❓.
 - {{Definición de N CDTs y N decisiones: el Dev MCP no la devuelve (ver INVENTARIO).}}
