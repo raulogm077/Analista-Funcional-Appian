@@ -19,7 +19,8 @@ evidencia, y si la documentación es más corta. La aplicación es la ficticia M
 3. **Las respuestas.** Otro agente, que solo ve una copia de `as-is/` sin `extraccion/`, recibe las preguntas sin las
    respuestas (`id`, `pregunta` y `tipo`) y escribe `respuestas.json`:
    `[{"id": "Q-01", "respuesta": "…", "evidencia": "ruta#ancla"}]`. La evidencia es el documento de `as-is/` donde lo
-   leyó; en una de tipo `lista`, `respuesta` es una lista.
+   leyó; en una de tipo `lista`, `respuesta` es una lista, con cada objeto por su nombre exacto y en un elemento propio
+   (resumir «las reglas X» como un grupo cuenta como no nombrarlas).
 4. **La puntuación**:
 
    ```bash

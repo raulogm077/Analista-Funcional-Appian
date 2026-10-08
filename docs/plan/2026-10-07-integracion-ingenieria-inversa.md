@@ -653,14 +653,14 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   entregable dice «no existe». Sale 0 si se cumple todo.
 - `palabras.py <as-is>`: palabras por documento y total.
 
-- [ ] **Paso 1:** «antes»: desde `f3-antes`, un agente genera `as-is/` de la aplicación ficticia siguiendo el SKILL.md
+- [x] **Paso 1:** «antes»: desde `f3-antes`, un agente genera `as-is/` de la aplicación ficticia siguiendo el SKILL.md
   contra el simulador, en `$PROYECTOS_PRUEBA/MNT-antes/`, y pasa `comprobar_asis.py` solo como informe, sin exigir 0
   errores (la columna «Evidencia» llega con la Tarea 8); otro, que solo lee su `as-is/` sin `extraccion/`, responde las
   22 preguntas y las 7 ocultas. Aciertos y palabras a `docs/evaluaciones.md`.
-- [ ] **Paso 2:** «después», igual con las Tareas 8 y 8b hechas, en `$PROYECTOS_PRUEBA/MNT/`. Criterio:
+- [x] **Paso 2:** «después», igual con las Tareas 8 y 8b hechas, en `$PROYECTOS_PRUEBA/MNT/`. Criterio:
   `puntuar.py --minimo 20 --obligatorias Q-21` y, con las ocultas, `--minimo 6`; `evidencia.py` sale 0; 0 errores de
   `comprobar_asis.py`; menos palabras que «antes».
-- [ ] **Paso 3:** si dos documentos se responden el uno al otro (LEEME con 00, 05 con 06), se unen —plantillas,
+- [x] **Paso 3:** si dos documentos se responden el uno al otro (LEEME con 00, 05 con 06), se unen —plantillas,
   entregables del SKILL.md, publicadores y pruebas de las Tareas 8 y 8b— y se repite el Paso 2. Las secciones de la
   Tarea 8b van al documento que quede, y `build_datos.py` escribe en él. Si se unen LEEME y 00, cambian también
   `scripts/comprobar_asis.py` y `test_comprobar_asis.py::test_cifra_distinta`, que buscan las cifras en `00`.

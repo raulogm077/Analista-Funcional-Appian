@@ -4,6 +4,81 @@ Resultados de las evaluaciones del plan `docs/plan/2026-10-07-integracion-ingeni
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 
+## F3 · Precisa y sin relleno (8 de octubre de 2026)
+
+Rama `f3-precisa-sin-relleno`, de `main` 795ec61 al merge. Versión 0.7.0-alpha.2.
+
+### Qué cambia
+
+- **Reglas de prosa en un solo sitio (Tarea 4).** `redaccion.py` del analista (muletillas, frases, párrafos repetidos);
+  la prosa de ingeniería inversa sigue `redaccion.md`, sin lo que allí es solo del DF.
+- **`as-is/datos/` (Tareas 5 y 8b).** Lo único que leen las demás skills de ingeniería inversa: inventario (con lo que
+  se cita con cada record type), dependencias (y lo que queda fuera de la aplicación), hallazgos, procesos y lo que no
+  se pudo verificar. Formato en `references/datos.md`.
+- **`comprobar_asis.py` (Tarea 6).** Objetos inventados, certezas sin evidencia, evidencias que no llevan al anexo,
+  cifras distintas de `summary.json`, marcadores y enlaces rotos, NV y preguntas sin cerrar; avisos de redacción y de
+  presupuesto de palabras. La fase 8 lo exige sin errores.
+- **Aplicación ficticia MNT (Tarea 7).** 44 objetos con 11 malas prácticas, 22 preguntas y un conjunto oculto de 7
+  preguntas y 3 malas prácticas escrito a ciegas. Tres reglas de una aplicación común (CMN) que no está en la extracción.
+- **Preguntas primero, hechos y no consejos (Tarea 8).** Cada documento empieza por las preguntas que responde; toda
+  tabla con certeza lleva evidencia; sin recomendaciones.
+- **Disciplina de evidencia (Tarea 8b).** Lo no verificado queda como NV, con lo que hace falta para resolverlo; nada
+  se da por inexistente sin decir dónde se buscó; la definición no se toma por la ejecución; la revisión cierra sus
+  preguntas. La marca de inferido pasa a 🔶.
+- **Una entrada (Tarea 9, paso 3).** LEEME y el resumen ejecutivo se remitían el uno al otro y ahora son un documento;
+  fuera la tabla que repetía las preguntas de cada documento.
+- **Lo que encontraron las medidas.** El extractor reconoce los tipos habituales aunque la aplicación no tenga ninguno
+  (con MNT, `getAiAgent` daba 27 errores); ningún script deja `__pycache__` dentro del plugin, en las cinco skills, y
+  `comprobar_plugin.py` lo exige; el aviso de respuestas reutilizadas solo sale si son de hace más de una hora; `doctor`
+  guarda su salida en el proyecto (`--out`) y la fase 0 dice cuándo usar `--mcp-server-name`.
+
+### La evaluación del recién llegado (Tarea 9)
+
+La skill documenta MNT contra el simulador; otro agente, que solo lee `as-is/` sin `extraccion/`, responde las
+preguntas. «Antes» es la skill en `f3-antes` (4a7a09f, tras la Tarea 7); «después», con las Tareas 8, 8b y el paso 3.
+
+| | Antes | Después |
+|---|---|---|
+| Preguntas visibles | 21/22 (falla Q-21, obligatoria) | 21/22 (Q-21 bien) |
+| Preguntas ocultas | 7/7 | 7/7 |
+| `evidencia.py` | falla: los CMN no salen fuera de la aplicación | bien |
+| `comprobar_asis.py` | 19 errores, 6 avisos | 0 errores, 0 avisos |
+| NV registrados | — | 8 |
+| Palabras (total) | 16.741 | 17.293 (+3,3 %) |
+| Palabras sin líneas «Responde a» ni tablas | 7.932 | 7.122 (−10 %) |
+
+- **Criterio: se cumple todo salvo «menos palabras que antes».** Lo que crece son las líneas «Responde a» (523 palabras)
+  y las tablas, por la columna de evidencia y el «Para qué» de INVENTARIO, que piden las Tareas 8 y 8b; la prosa baja un
+  10 %. Una primera medida «después», sin el paso 3, tenía 17.741 palabras: unir LEEME y 00 quitó 309.
+- **Protocolo.** Con la primera instrucción («cada elemento corto»), quien respondía resumió los tres CMN como «las
+  reglas CMN_» y Q-21 contaba como fallo aunque LEEME los nombra. La instrucción pasa a pedir cada objeto por su nombre
+  (`recien-llegado/README.md`) y las cifras de la tabla son las de las dos medidas respondidas con ella.
+- **Q-10, ambigua en la documentación.** 09 marca «Por entorno: No» en las constantes porque ninguna tiene la marca de
+  Appian, y quien responde concluye que ninguna cambia por entorno, aunque `MNT_URL_ERP_PRE` guarda la URL de
+  preproducción. Queda en «Aplazado».
+- Proyectos en `$PROYECTOS_PRUEBA`: `MNT-antes/`, `MNT-despues-1/` y `MNT/` (el que usan las Tareas 15 y 22).
+
+### Lo aprendido
+
+- Una medida con un agente que sigue la skill de punta a punta encuentra lo que las pruebas no ven: los dos informes
+  dieron 17 y 18 puntos de fricción, la mitad de diagramas. Conviene repetirla al cerrar cada fase que toca una skill.
+- La instrucción de quien responde también se mide: «corto» le hizo resumir nombres. Las instrucciones de las
+  evaluaciones se fijan en su README y se usan iguales en «antes» y «después».
+- Contar palabras sin separar lo que se añade a propósito (preguntas, evidencia) de la prosa da un criterio que castiga
+  lo que la fase pide. La cifra útil es la prosa, que baja.
+- Con una sola medida por lado, una diferencia de pocos cientos de palabras está dentro de lo que varía de una
+  ejecución a otra.
+
+### Aplazado
+
+| Dónde | Qué | Tarea |
+|---|---|---|
+| Vía draw.io de `process-modeler.md` y `appian-diagramas-bpmn` | Un proceso de 130 nodos da un `.drawio` de 29.536 px y un PNG de 22.171 px (la skill promete 3.200); la vía draw.io no parte en tramos; «usa subprocesos» choca con «no inventes subprocesos» | 10 y 12 |
+| `scripts/render_diagrams.sh`, `validate_mermaid.py` | Temporales en `/tmp`, `--batch` recorre `extraccion/`, aviso de caché de Chrome con `PUPPETEER_EXECUTABLE_PATH`; el validador reescribe sin avisar | 11 (se retiran) |
+| `references/mermaid-rules.md` | Un subgraph de un solo carril se dibuja en horizontal; el diagrama por capas pasa del ancho | 11 |
+| `references/bpmn-mapping.md`, `pm-template.md` | Carril «Sistema» frente a «Aplicación»; integración sin connected system como participante externo; caja de nota cortada en el PNG | 10 |
+| Plantilla `08-procesos-bpmn/indice.md` | «Vista» obligatoria aunque ningún proceso lance a otro | 12 |
+
 ## F2 · Ingeniería inversa en el plugin (8 de octubre de 2026)
 
 Rama `f2-ingenieria-inversa`, de `main` 4938606 al merge. Versión 0.7.0-alpha.1.
@@ -75,3 +150,5 @@ Rama `f2-ingenieria-inversa`, de `main` 4938606 al merge. Versión 0.7.0-alpha.1
 
 Sin tarea en este plan, en `docs/siguiente-version.md`: lo pendiente de `marca.py` y las copias de conflicto de
 OneDrive en la extracción.
+
+Hechas en F3 las filas de las Tareas 4, 6 u 8b, 8, 8b y 8b o 12; quedan las de las Tareas 23, 24, 25, 28 y 31.

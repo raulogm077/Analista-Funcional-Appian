@@ -45,7 +45,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 ### Fase 0 — Preflight de los 3 MCP (obligatoria)
 
-1. Ejecuta `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor --json`. Si trae `appsNote` (más de 50 apps), busca la del usuario con `apps --json`.
+1. Ejecuta `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor --json --out <salida>` (deja su salida en `<trabajo>/preflight.json`, dentro del proyecto). Si trae `appsNote` (más de 50 apps), busca la del usuario con `apps --json`.
 2. Comprueba en la sesión:
    - **Docs MCP**: si la sesión tiene sus herramientas (se reconocen como dice «Dudas de Appian»), haz **una** consulta de prueba corta; cuenta para el tope de `references/docs-mcp-usage.md`.
    - **Appian MCP Server**: si `doctor` dice `no_configurado` y la configuración tiene un Appian MCP Server con otra URL que `<entorno>/mcp`, repite `doctor` con `--mcp-server-name <nombre en la configuración>` (y úsalo también en `datafabric`); si no lo tiene pero en la sesión hay herramientas del data fabric de Appian, márcalo «disponible en sesión».
@@ -56,7 +56,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
    - los formatos adicionales: *«Además de los documentos Markdown, ¿quieres 📄 PDF maquetado, 🖥️ dashboard web, o solo los .md?»* (sin respuesta: solo Markdown);
    - si el entorno (`url` de `doctor`) es producción y su versión de Appian, si la sabe: el uso real de procesos solo es representativo en producción. Todo es lectura, sea cual sea el entorno;
    - qué necesita saber el equipo de esta aplicación (sin respuesta: qué hace, cómo está hecha y qué riesgos tiene).
-6. Guarda en `<trabajo>/preflight.json` la salida de `doctor` con tus comprobaciones de sesión (`docsMcp.status: "operativo"` si respondió la consulta de prueba) y `environment: {url, isProduction, appianVersion}` (`null` lo que no se sepa). Las preferencias y las preguntas de la revisión, en `<trabajo>/output_preferences.json`, con este formato: `{"pdf": true|false, "dashboard": true|false, "preguntas": ["¿Qué hace la aplicación?", "¿Cómo está hecha?", "¿Qué riesgos tiene?"]}` (esas tres si no dice otras). Apunta la consulta de prueba del Docs MCP en `<trabajo>/docs_cache/orquestador.json`.
+6. Añade a `<trabajo>/preflight.json` tus comprobaciones de sesión (`docsMcp.status: "operativo"` si respondió la consulta de prueba) y `environment: {url, isProduction, appianVersion}` (`null` lo que no se sepa). Las preferencias y las preguntas de la revisión, en `<trabajo>/output_preferences.json`, con este formato: `{"pdf": true|false, "dashboard": true|false, "preguntas": ["¿Qué hace la aplicación?", "¿Cómo está hecha?", "¿Qué riesgos tiene?"]}` (esas tres si no dice otras). Apunta la consulta de prueba del Docs MCP en `<trabajo>/docs_cache/orquestador.json`.
 
 ### Fase 1 — Plan de extracción
 
