@@ -32,8 +32,9 @@ inversa y `selftest.py` en el resto; GitHub Actions en Windows, macOS y Linux.
 - Ingeniería inversa usa solo los MCP de Appian (Dev MCP, Appian MCP Server y MCP de documentación) y en solo lectura.
 - Ingeniería inversa no da nada por inexistente sin decir dónde lo buscó, no toma la definición por la ejecución y
   registra lo que no pudo verificar, con lo que hace falta para resolverlo (Tarea 8b).
-- La extracción vive en el proyecto, en `as-is/extraccion/` (D4), y se escribe ya saneada: sin credenciales, secretos,
-  nombres de usuario (van seudónimos), rutas locales ni la lista de aplicaciones del entorno. Las demás skills leen
+- La extracción vive en el proyecto, en `as-is/extraccion/` (D4), tal cual la devuelve el Dev MCP. Se trabaja en
+  entornos controlados y no se oculta nada: ni usuarios, ni datos de la app, ni secretos (Raúl, 8 de octubre; Tarea 2b).
+  Un secreto escrito en la app sigue siendo un hallazgo de seguridad. Las demás skills leen
   `as-is/datos/`, nunca la extracción.
 - Los proyectos de prueba de las evaluaciones se crean en `$PROYECTOS_PRUEBA` (por defecto `proyectos-prueba/`, al
   lado de la carpeta principal del repositorio, también si se trabaja desde un worktree). En el repositorio quedan las
@@ -55,8 +56,8 @@ inversa y `selftest.py` en el resto; GitHub Actions en Windows, macOS y Linux.
 
 Lo que el diseño implica y ninguna prueba de tarea cubriría sola. Cada línea tiene su prueba en la tarea indicada.
 
-1. **Proyecto en una carpeta sincronizada con SharePoint u OneDrive.** Lo que llega a `<p>` ya está saneado al
-   escribirse, y las rutas son cortas. Pruebas `test_sin_usuarios_ni_secretos` y `test_rutas_cortas` (Tarea 2).
+1. **Proyecto en una carpeta sincronizada con SharePoint u OneDrive.** Las rutas son cortas. Prueba `test_rutas_cortas`
+   (Tarea 2).
 2. **Windows.** Rutas con espacios y largas, `python` en vez de `python3`, consola sin UTF-8. Pruebas
    `test_ruta_con_espacios` (Tareas 2 y 6) y la matriz de GitHub Actions (Tarea 26).
 3. **Repetir la ingeniería inversa o retomarla en otra sesión o en otro equipo.** Como la extracción está en el
@@ -341,6 +342,36 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
   validación final y `response-format.md` lo dicen así.
 - [x] **Paso 5:** `python3 -m pytest -q` en verde. Commit «F2: salida y extracción saneada dentro del proyecto».
 
+### Tarea 2b: Nada se oculta
+
+Raúl decidió el 8 de octubre que no se oculte nada: se trabaja en entornos controlados donde toda la información se
+puede consumir. La extracción y los documentos llevan los usuarios, los datos de la app y los secretos tal cual. Un
+secreto escrito en una constante o en una conexión sigue siendo un hallazgo de seguridad: lo que se va es ocultarlo.
+
+**Ficheros:**
+- Borrar `skills/appian-reverse-engineering/scripts/privacidad.py` y lo que añadió la Tarea 2 para sanear: seudónimos,
+  huellas (`_huellas.json`), barrido final, `preflight.json` y `datafabric.json` sin rutas, y `_env/` sin la lista de
+  aplicaciones. Se queda lo demás de la Tarea 2: la extracción en `<salida>/extraccion`, `rutas.carpeta_objeto` con su
+  tope de longitud y lo que arregló al retomar.
+- Modificar en `skills/appian-reverse-engineering/`:
+  - `scripts/build_annex.py`, sin saneado: ni `‹usuario›`, ni `‹correo›`, ni `‹secreto›`, ni `‹host interno›`;
+  - `scripts/devmcp_extract.py` y `scripts/build_model.py`, que escriben y leen tal cual;
+  - `references/presentation-rules.md`: la Regla 8 pierde los usuarios, el correo y el render sin valores;
+  - `references/execution-principles.md`: el principio 11 pasa a «un secreto escrito en la app es un hallazgo»;
+  - `references/security-rules.md`: cómo se detecta y se registra un secreto, sin ocultarlo;
+  - `SKILL.md`, `references/{lectura-mcp-raw,analysis-workflow,response-format}.md`, los agentes y las plantillas:
+    todo lo que manda ocultar o comprobar que no haya usuarios, valores o secretos.
+- Modificar en `pruebas/appian-reverse-engineering/` las pruebas que exigían el saneado.
+
+- [ ] **Paso 1: pruebas que fallan.** `test_tal_cual`: tras `extract` y `build_annex.py`, los usuarios de
+  `fixture.GROUP_USERS`, un correo y el valor de la constante con la clave de API aparecen como los devuelve el
+  simulador, en la extracción y en el anexo; y `test_sin_ocultar`: ningún texto de la skill pide seudónimos, `‹usuario›`,
+  `‹correo›`, `‹secreto›` ni «sin usuarios». Siguen `test_extraccion_dentro_del_proyecto`, `test_rutas_cortas`,
+  `test_retomar` y `test_ruta_con_espacios`. → FALLA.
+- [ ] **Paso 2:** quitar el saneado y reescribir los textos de la lista.
+- [ ] **Paso 3:** `python3 -m pytest -q pruebas/appian-reverse-engineering` y `comprobar_plugin.py --completo` en verde.
+  Commit «F2: nada se oculta en ingeniería inversa».
+
 ### Tarea 3: Alta de ingeniería inversa en el plugin
 
 Sus pruebas ya las ejecuta `comprobar_plugin.py --completo` desde la Tarea 0; aquí entra en las reglas comunes.
@@ -403,8 +434,7 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
 
 - [ ] **Paso 1:** `test_datos.py::test_datos_formato`: tras el flujo del simulador con un `hallazgos/prueba.json` de un
   hallazgo sobre `DEM_ERP_API_TOKEN`, existen los cuatro ficheros con sus claves, cada objeto de cada hallazgo está en
-  el inventario, la tabla `DEM_SOLICITUD` y la vista «Resumen» están en `tambien` de `DEM Solicitud`, y ningún fichero
-  contiene un usuario del simulador. → FALLA.
+  el inventario, y la tabla `DEM_SOLICITUD` y la vista «Resumen» están en `tambien` de `DEM Solicitud`. → FALLA.
 - [ ] **Paso 2:** implementar y documentar el formato en `references/datos.md`. **Paso 3:** pytest en verde. Commit.
 
 ### Tarea 6: `comprobar_asis.py`
@@ -423,7 +453,7 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
     evidencia no enlaza a un fichero existente de `anexo/`, o una certeza fuera de ✅ 🔵 ❓;
   - cifras de `00` («N objetos», «N process models», «N interfaces», «N record types») distintas de las de
     `as-is/extraccion/summary.json`;
-  - `{{` sin sustituir, un enlace relativo a un fichero que no existe, o lo que detecte `detect_secrets.py`.
+  - `{{` sin sustituir o un enlace relativo a un fichero que no existe.
 - Avisos (con `redaccion.py` del analista, importado desde `<skill>/../appian-functional-analyst/scripts`): muletillas,
   frases de más de 35 palabras, párrafos de 20 palabras o más repetidos en dos documentos y documentos por encima de su
   presupuesto (`presupuesto-palabras.json`: palabras base más palabras por objeto de su tipo).
@@ -533,7 +563,7 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
       no incluye» de LEEME, no como NV;
     - una regla de trabajo: una llamada fuera del script de extracción —al Dev MCP, con las herramientas que permite
       `scripts/devmcp_policy.json`, o al Appian MCP Server, solo con lo que permite `references/data-fabric.md`
-      (metadatos y recuentos)— responde a una pregunta de la revisión o a un NV, y lo que se anota en él va saneado. El
+      (metadatos y recuentos)— responde a una pregunta de la revisión o a un NV. El
       MCP de documentación sigue con sus reglas («Dudas de Appian»);
   - `references/presentation-rules.md` (Regla 7 y checklist con ✅ 🔶 ❓; un ❓ cita su NV cuando lo tiene),
     `references/analysis-workflow.md` y `references/datos.md` (los campos nuevos);
@@ -568,7 +598,7 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   - `queHaceFalta` empieza por acceso, export, permiso, entorno o negocio; `estado` es abierto, parcial o resuelto;
   - `objetos`: los de la aplicación afectados y los de fuera; `duplicadoDe` solo lo pone el orquestador.
 - `build_datos.construir()` valida los NV como `build_registry.py` valida los hallazgos (error con un `id`, un `estado` o
-  un `queHaceFalta` fuera de formato), los sanea con `privacidad.sanea` y además escribe:
+  un `queHaceFalta` fuera de formato), y además escribe:
   - `datos/sin-verificar.json`: `{"sinVerificar": [...]}`, sin duplicados;
   - en `datos/dependencias.json`, `fueraDeLaAplicacion: [{"nombre", "tipo", "usadoPor": [], "usa": [], "nv"}]`, de los
     nodos externos del grafo: `usadoPor` son los objetos de la aplicación que lo llaman y `usa`, los que él llama; `nv`,
@@ -589,7 +619,7 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
 
 - [ ] **Paso 1: pruebas que fallan.** `test_evidencia.py`, con el simulador (variante A, y `MOCK_APP=fixture_mal_hecha`
   donde se dice):
-  - `test_sin_verificar_formato`: un `sin-verificar/prueba.json` llega validado y saneado a `datos/` y a la tabla de
+  - `test_sin_verificar_formato`: un `sin-verificar/prueba.json` llega validado a `datos/` y a la tabla de
     LEEME; con un `id` o un `estado` fuera de formato, error;
   - `test_nv_inexistente`, `test_pregunta_sin_cerrar` y `test_pregunta_que_falta`: errores; una pregunta Parcial con
     enlace a «Qué no incluye» no da error;
