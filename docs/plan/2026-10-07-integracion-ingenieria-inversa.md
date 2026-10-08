@@ -213,7 +213,7 @@ para cualquier cliente. (Añadida el 7 de octubre a petición de Raúl.)
   confirme el cliente». Si no encuentra nada fiable, pide su guía de marca; sin respuesta, `appian`. Paso 5: con el
   prototipo se entregan `marca-<id>.md` y `perfil-css-<id>.txt`.
 
-- [ ] **Paso 1: pruebas que fallan.** En el selftest de prototipos, con la marca de una empresa ficticia:
+- [x] **Paso 1: pruebas que fallan.** En el selftest de prototipos, con la marca de una empresa ficticia:
   - `crear` con el acento `#5DA9E9` da un `brand-x.json` con todas las secciones de `brand-appian.json` más `cssProfile`;
     el acento a 4,5:1 o más sobre blanco y sobre `#F4F5F7` y a menos de 10° de su matiz; `palette.navy` igual al
     oscuro; un perfil CSS sin errores de `validate.py`, con los colores de estado a 4,5:1 sobre blanco y sobre su fondo y
@@ -224,9 +224,9 @@ para cualquier cliente. (Añadida el 7 de octubre a petición de Raúl.)
   - `web` contra `datos/web-ficticia/`, servida en `127.0.0.1` por la propia prueba, da sus dos colores de marca entre
     los tres primeros, el logo de la cabecera el primero de `logos` y su tipografía; contra un puerto cerrado, sale con 2.
   → FALLA.
-- [ ] **Paso 2:** implementar `marca.py` y escribir los pasos de la marca en `SKILL.md`, `references/marca.md` y
+- [x] **Paso 2:** implementar `marca.py` y escribir los pasos de la marca en `SKILL.md`, `references/marca.md` y
   `references/design-rules.md`.
-- [ ] **Paso 3:** `comprobar_plugin.py --completo` en verde. Commit «F2: la configuración de marca de cualquier cliente».
+- [x] **Paso 3:** `comprobar_plugin.py --completo` en verde. Commit «F2: la configuración de marca de cualquier cliente».
 
 ### Tarea 1: Apartar el bloque B
 

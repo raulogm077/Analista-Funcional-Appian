@@ -1,0 +1,47 @@
+/* Nubarrón Mensajería: hoja de estilos de su web (empresa ficticia, solo para las pruebas de marca.py).
+   Dos colores de marca (noche y cielo) en variables y en reglas, un tercero de apoyo (sol), grises de texto y bordes y
+   una tipografía con nombre propio. */
+:root {
+  --nb-cielo: #5DA9E9;
+  --nb-noche: #1D2B4A;
+  --nb-sol: #F2B134;
+  --nb-texto: #2B2B2B;
+  --nb-texto-suave: #6B6B6B;
+  --nb-borde: #D9D9D9;
+  --nb-fondo: #F7F7F7;
+  --nb-fuente: "Nunito Sans", Arial, sans-serif;
+}
+
+body { margin: 0; font-family: var(--nb-fuente); color: var(--nb-texto); background: #FFFFFF; }
+
+.cabecera { display: flex; align-items: center; gap: 24px; padding: 12px 32px; background: #FFFFFF; border-bottom: 3px solid var(--nb-cielo); }
+.menu a { color: var(--nb-noche); text-decoration: none; font-weight: 600; }
+.menu a:hover { color: var(--nb-cielo); }
+.buscar { background: none; border: 0; }
+.boton { background: var(--nb-cielo); color: var(--nb-noche); border-radius: 6px; padding: 8px 16px; }
+.boton:hover { background: #1D2B4A; color: #FFFFFF; }
+
+.portada { background: var(--nb-noche); color: #FFFFFF; padding: 64px 32px; }
+.portada h1 { font-family: var(--nb-fuente); font-size: 40px; }
+.portada .destacado { color: #5DA9E9; }
+
+.tarjeta { background: #FFFFFF; border: 1px solid var(--nb-borde); border-radius: 8px; box-shadow: 0 2px 8px rgba(29, 43, 74, 0.12); }
+.tarjeta h2 { color: #1D2B4A; }
+.tarjeta p { color: var(--nb-texto-suave); }
+.etiqueta { background: rgba(93, 169, 233, 0.15); color: var(--nb-noche); border-radius: 4px; }
+
+.aviso { background: var(--nb-fondo); border-left: 4px solid var(--nb-sol); }
+.error { color: #C0563B; }
+input, select { border: 1px solid var(--nb-borde); border-radius: 6px; font-family: inherit; }
+input:focus { outline: 2px solid var(--nb-cielo); }
+
+/* un selector de id que parece un color (#fab) no es un color */
+#fab { position: fixed; right: 24px; bottom: 24px; background: var(--nb-sol); color: var(--nb-noche); }
+
+.pie { background: var(--nb-noche); color: #E6E6E6; }
+.pie a { color: var(--nb-cielo); }
+
+@media (max-width: 600px) {
+  .menu { display: none; }
+  .cabecera { padding: 8px 16px; }
+}

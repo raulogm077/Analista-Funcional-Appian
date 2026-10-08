@@ -1,6 +1,6 @@
 # Guía de diseño UX (Appian 26.9)
 
-Esta guía adapta el **SAIL Design System** oficial de Appian (docs.appian.com/suite/help/26.9/sail/) a los prototipos. Sirve para que todas las pantallas se parezcan entre sí y para que el equipo pueda construirlas en Appian sin decidir nada de diseño. Vale para cualquier marca: los colores concretos salen de la marca del prototipo, `brand-<id>.json` (la del cliente en `<p>/prototipo/` o la estándar de Appian, `assets/brand-appian.json`; formato en `references/marca.md`). Los valores de ejemplo de esta guía son los de la estándar.
+Esta guía adapta el **SAIL Design System** oficial de Appian (docs.appian.com/suite/help/26.9/sail/) a los prototipos. Sirve para que todas las pantallas se parezcan entre sí y para que el equipo pueda construirlas en Appian sin decidir nada de diseño. Vale para cualquier marca: los colores concretos salen de la marca del prototipo, `brand-<id>.json` (la del cliente en `<p>/prototipo/` o la estándar de Appian, `assets/brand-appian.json`; formato en `references/marca.md`). Los valores de ejemplo de esta guía son los de la estándar. Con la marca de un cliente, sus valores (Site, perfil CSS, paleta, botones, estados y gráficos) están en `marca-<id>.md` de su proyecto, junto a `brand-<id>.json`.
 
 El validador comprueba las reglas marcadas con ✔ y las muestra como avisos `UX ·`. Al final de la validación imprime la línea «Calidad UX: N avisos». El resto se revisa con la rúbrica (§17).
 
@@ -23,7 +23,7 @@ Pregunta de control, del SAIL Design System: «¿qué falta aquí que el usuario
 
 ## 1. Site y marca (objeto Site de Appian)
 
-La configuración está en `brand-<id>.json → site` y se copia tal cual en el objeto Site. La marca estándar (`assets/brand-appian.json`) lleva los valores por defecto de Appian 26.6:
+La configuración está en `brand-<id>.json → site` y se copia tal cual en el objeto Site; con la marca de un cliente, la tabla para copiarla está en su `marca-<id>.md`. La marca estándar (`assets/brand-appian.json`) lleva los valores por defecto de Appian 26.6:
 
 | Propiedad del Site | Valor en la marca estándar |
 |---|---|
@@ -41,7 +41,7 @@ La configuración está en `brand-<id>.json → site` y se copia tal cual en el 
 
 ### Perfil CSS (Appian 26.9, `brand-<id>.json → cssProfile`)
 
-Lo que el objeto Site no alcanza (colores de estado, textos de los campos, bordes, radios, sombras, tooltips) se fija con un **perfil CSS** de Appian (Admin Console › Branding › CSS Profiles; capacidades avanzadas y premium). Si la marca lo lleva, `build.py` lo aplica al prototipo y deja junto al HTML el fichero `<prototipo>-perfil-css.txt`, listo para pegar. La marca estándar no lleva perfil.
+Lo que el objeto Site no alcanza (colores de estado, textos de los campos, bordes, radios, sombras, tooltips) se fija con un **perfil CSS** de Appian (Admin Console › Branding › CSS Profiles; capacidades avanzadas y premium). Si la marca lo lleva, `build.py` lo aplica al prototipo y deja junto al HTML el fichero `<prototipo>-perfil-css.txt`, listo para pegar. La marca estándar no lleva perfil; el de un cliente lo escribe `marca.py` (`perfil-css-<id>.txt`) y `marca-<id>.md` dice dónde va y qué capacidades pide.
 
 - Solo lleva lo que cambia respecto a Appian: lo que no está en el perfil conserva el valor estándar.
 - Colores de estado: el ámbar estándar de Appian (`WARN`, `#D97706`) se queda en 3,2:1 sobre blanco. Sin perfil, no lo uses para texto, solo para iconos y barras; con perfil, `warn-on-light-color` más oscuro (4,5:1 sobre blanco y sobre su fondo).
@@ -105,7 +105,7 @@ Guía de color del SAIL Design System (ux-color-overview) aplicada a la marca de
 - **Bloques de color en el perímetro**: la cabecera del site, la cabecera de la ficha (`headerBackgroundColor` con el oscuro de la marca, `NAVY` en los helpers) y la cabecera «hero» del inicio o de una portada (`hero_header()`). No pintes bloques de color en mitad de la página para «alegrarla».
 - **Color para resaltar**: los sellos de icono de los KPI (`kpi()`: iconStyle STAMP con el acento), la barra decorativa de la franja de KPI con el color de resaltado de la marca, las etiquetas de estado y las barras de un gráfico por estado. Cada color nuevo compite por la atención: pregunta qué debe ver el usuario primero.
 - **Capas con transparencia** (`#RRGGBBAA`): tintes suaves para fondos de tarjetas de estado, eventos de calendario o el día de hoy (el color de resaltado con `33`), sin tapar lo que hay debajo.
-- **Estados**: usa la paleta semántica común de `brand-<id>.json → states`, con el mismo mapa `estadoColor` en toda la app. En la marca estándar:
+- **Estados**: usa la paleta semántica común de `brand-<id>.json → states`, con el mismo mapa `estadoColor` en toda la app. En la marca estándar (la de un cliente, en su `marca-<id>.md`):
 
 | Categoría | Tag (fondo apagado, texto STANDARD) | Icono, texto o barra de gráfico | Ejemplos |
 |---|---|---|---|
