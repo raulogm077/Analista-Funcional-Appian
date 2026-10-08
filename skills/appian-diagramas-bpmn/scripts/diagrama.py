@@ -47,10 +47,11 @@ def _json_compacto(proc):
 
 
 def _limpio(proc, geo=None):
-    """Proceso listo para guardar o mostrar: sin ids internos de flujos y, si se pide, con posiciones."""
+    """Proceso listo para guardar o mostrar: sin ids internos de flujos, con los datos de Appian que tengan valor y, si
+    se pide, con posiciones."""
     pasos = []
     for p in proc["pasos"]:
-        q = {k: p[k] for k in ("id", "tipo", "carril", "nombre")}
+        q = {**{k: p[k] for k in ("id", "tipo", "carril", "nombre")}, **dm.datos(p, dm.DATOS_PASO)}
         if geo is not None and p["id"] in geo["pasos"]:
             q["posicion"] = [round(v) for v in geo["pasos"][p["id"]][:2]]
         pasos.append(q)
@@ -63,6 +64,7 @@ def _limpio(proc, geo=None):
             g["discontinuo"] = True
         if f.get("defecto"):
             g["defecto"] = True
+        g.update(dm.datos(f, dm.DATOS_FLUJO))
         flujos.append(g)
     out = {"proceso": proc.get("proceso", ""), "carriles": list(proc["carriles"]), "pasos": pasos, "flujos": flujos}
     if proc.get("externos"):
@@ -345,6 +347,8 @@ class Editor:
             cell.set("parent", self.carril_id(nuevo["carril"]))
             self.poner_centro(pid, cx, self._fila_libre(nuevo["carril"], cx, pid))
             self._limpiar_puntos(pid)
+        if dm.datos(nuevo, dm.DATOS_PASO) != dm.datos(antes, dm.DATOS_PASO):
+            self.f.poner_datos(el, cell, nuevo, dm.DATOS_PASO)
 
     def _limpiar_puntos(self, pid):
         for el, cell in self.f.celdas():
@@ -403,8 +407,8 @@ class Editor:
             cy = self._fila_libre(p["carril"], cx)
         w, h = dm.TAM[p["tipo"]]
         lx, ly = self._origen(self.carril_id(p["carril"]))
-        cell = ET.SubElement(self.f.root, "mxCell", {"id": p["id"], "value": p.get("nombre", ""), "style": dm.ESTILO[p["tipo"]],
-                                                     "vertex": "1", "parent": self.carril_id(p["carril"])})
+        _, cell = self.f.nueva_celda(p["id"], p.get("nombre", ""), {"style": dm.ESTILO[p["tipo"]], "vertex": "1",
+                                                                     "parent": self.carril_id(p["carril"])}, dm.DATOS_PASO, p)
         ET.SubElement(cell, "mxGeometry", {"x": f"{cx - lx - w / 2:.0f}", "y": f"{cy - ly - h / 2:.0f}",
                                            "width": str(w), "height": str(h), "as": "geometry"})
         self.recargar()
@@ -447,22 +451,28 @@ class Editor:
         self.recargar()
 
     def anadir_nota(self, n):
-        """Una nota nueva encima de su paso (debajo si no cabe en el carril), unida a él."""
+        """Una nota nueva encima de su paso (debajo si no cabe en el carril), unida a él. En horizontal, dentro del
+        carril: sin pisar su cabecera y, si no cabe a la derecha, los carriles se ensanchan."""
         paso = next(q for q in self.proc["pasos"] if q["id"] == n["paso"])
         cx, cy = self.centro(n["paso"])
-        _, h = dm.TAM[paso["tipo"]]
-        alto = colocacion.alto_nota(n.get("texto"))
+        pw, h = dm.TAM[paso["tipo"]]
+        alto, ancho = colocacion.alto_nota(n.get("texto")), colocacion.ancho_nota(n.get("texto"))
         lx, ly = self._origen(self.carril_id(paso["carril"]))
         x, y, w, hc = self.carril_caja(paso["carril"])
+        nx = max(cx - ancho / 2, x + dm.CABECERA + 6)
+        if nx + ancho > x + w - 6:
+            self._ensanchar(nx + ancho - (x + w - 6))
+            self.recargar()
         arriba = cy - h / 2 - colocacion.NOTA_HUECO - alto >= y + 4
         ny = cy - h / 2 - colocacion.NOTA_HUECO - alto if arriba else cy + h / 2 + colocacion.NOTA_HUECO
         nid = self._id_libre("NOTA-")
         cell = ET.SubElement(self.f.root, "mxCell", {"id": nid, "value": n.get("texto", ""), "style": dm.ESTILO_NOTA,
                                                      "vertex": "1", "parent": self.carril_id(paso["carril"])})
-        ET.SubElement(cell, "mxGeometry", {"x": f"{cx - lx - colocacion.NOTA_ANCHO / 2:.0f}", "y": f"{ny - ly:.0f}",
-                                           "width": str(colocacion.NOTA_ANCHO), "height": f"{alto:.0f}", "as": "geometry"})
+        ET.SubElement(cell, "mxGeometry", {"x": f"{nx - lx:.0f}", "y": f"{ny - ly:.0f}",
+                                           "width": f"{ancho:.0f}", "height": f"{alto:.0f}", "as": "geometry"})
+        asociacion = dm.entrada_asociacion("arriba" if arriba else "abajo", (nx, ancho), (cx - pw / 2, pw))
         e = ET.SubElement(self.f.root, "mxCell", {"id": self._id_libre("A"), "value": "", "edge": "1", "parent": "1",
-                                                  "style": dm.ESTILO_ASOCIACION + dm.entrada_asociacion("arriba" if arriba else "abajo"),
+                                                  "style": dm.ESTILO_ASOCIACION + asociacion,
                                                   "source": nid, "target": n["paso"]})
         ET.SubElement(e, "mxGeometry", {"relative": "1", "as": "geometry"})
         self.recargar()
@@ -514,6 +524,7 @@ class Editor:
                     if c.get("parent") == el.get("id") and c.get("vertex") == "1":
                         self.f.root.remove(e)
                 self.f.poner_etiqueta(el, cell, f.get("etiqueta", ""))
+                self.f.poner_datos(el, cell, f, dm.DATOS_FLUJO)
                 if mensaje:
                     return
                 estilo = dm._estilo(cell.get("style"))
@@ -530,8 +541,8 @@ class Editor:
         while f"F{n:02d}" in usados:
             n += 1
         estilo = dm.ESTILO_MENSAJE if mensaje else dm.estilo_flujo(f)
-        cell = ET.SubElement(self.f.root, "mxCell", {"id": f"F{n:02d}", "value": f.get("etiqueta", ""), "style": estilo,
-                                                     "edge": "1", "parent": "1", "source": de, "target": a})
+        _, cell = self.f.nueva_celda(f"F{n:02d}", f.get("etiqueta", ""), {"style": estilo, "edge": "1", "parent": "1",
+                                                                          "source": de, "target": a}, dm.DATOS_FLUJO, f)
         ET.SubElement(cell, "mxGeometry", {"relative": "1", "as": "geometry"})
 
     # -- ids
@@ -595,7 +606,8 @@ def aplicar(editor, nuevo):
     editor.recargar()
     # 3. pasos que cambian
     for pid, p in pn.items():
-        if pid in pa and (p["tipo"], p.get("nombre", ""), p["carril"]) != (pa[pid]["tipo"], pa[pid]["nombre"], pa[pid]["carril"]):
+        if pid in pa and (p["tipo"], p.get("nombre", ""), p["carril"], dm.datos(p, dm.DATOS_PASO)) != \
+                (pa[pid]["tipo"], pa[pid]["nombre"], pa[pid]["carril"], dm.datos(pa[pid], dm.DATOS_PASO)):
             editor.cambiar_paso(pid, p, pa[pid])
             editor.recargar()
     # 4. pasos nuevos, junto a su predecesor
@@ -609,7 +621,8 @@ def aplicar(editor, nuevo):
     fa = {clave(f): f for f in actual["flujos"]}
     for k, f in fn.items():
         g = fa.get(k)
-        if g is None or any((g.get(c) or "") != (f.get(c) or "") for c in ("etiqueta", "discontinuo", "defecto")):
+        if g is None or any((g.get(c) or "") != (f.get(c) or "") for c in ("etiqueta", "discontinuo", "defecto")) \
+                or dm.datos(g, dm.DATOS_FLUJO) != dm.datos(f, dm.DATOS_FLUJO):
             editor.poner_flujo(f)
     editor.recargar()
     # notas: las quitadas y las nuevas (encima de su paso)

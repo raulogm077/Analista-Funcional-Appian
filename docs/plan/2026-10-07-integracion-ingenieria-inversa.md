@@ -688,12 +688,12 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   `<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">`; `error` → `<bpmn:errorEventDefinition/>` con
   `cancelActivity="true"` (el temporizador y el mensaje de borde siguen sin interrumpir).
 
-- [ ] **Paso 1:** en el selftest de diagramas, `crear` + `bpmn` de `semantico.json`: documentación «nodo 1» en el
+- [x] **Paso 1:** en el selftest de diagramas, `crear` + `bpmn` de `semantico.json`: documentación «nodo 1» en el
   inicio; `conditionExpression` «pv!ok» con su `xsi:type` en el flujo «Sí»; `default` en la puerta; evento de error que
   interrumpe, con `attachedToRef` a «Guardar»; un `BPMNShape` por nodo y carril y un `BPMNEdge` con dos o más puntos por
   flujo; los hijos del inicio en orden (`documentation`, `outgoing`); dos exportaciones iguales; `leer()` devuelve
   `nodo` y `condicion`; `comparar --aceptar` no las pierde. → FALLA.
-- [ ] **Paso 2:** implementar. **Paso 3:** selftest de diagramas en verde. Commit «F4: datos de Appian en el diagrama y en el BPMN».
+- [x] **Paso 2:** implementar. **Paso 3:** selftest de diagramas en verde. Commit «F4: datos de Appian en el diagrama y en el BPMN».
 
 ### Tarea 11: Un solo pintor Mermaid
 

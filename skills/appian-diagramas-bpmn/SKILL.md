@@ -16,7 +16,7 @@ Van juntos en la misma carpeta (`analisis/diagramas/` o la que indique quien lla
 | `X.drawio` | El diagrama. Se abre y se edita en draw.io |
 | `X.png` | La imagen para el documento. La regenera la herramienta |
 | `X.json` | El proceso que conoce el análisis. La primera vez puede ser el propio JSON que se pasa a `crear`; después lo mantiene la herramienta y no se edita a mano: los cambios van con `actualizar` |
-| `X.bpmn` | Solo si se exporta con `bpmn`: conserva los tipos de inicio y de tarea, el flujo por defecto, los plazos, los participantes externos con sus mensajes, las notas y el lado de cada etiqueta |
+| `X.bpmn` | Solo si se exporta con `bpmn`: conserva los tipos de inicio y de tarea, el flujo por defecto, los plazos y los errores, los participantes externos con sus mensajes, las notas, el lado de cada etiqueta y los datos de Appian |
 
 ## Formato del proceso
 
@@ -43,7 +43,7 @@ Es un JSON con un paso y un flujo por línea:
 }
 ```
 
-`externos` y `notas` son opcionales.
+`externos` y `notas` son opcionales, como los datos de Appian.
 
 | Tipo | Qué representa | Código |
 |---|---|---|
@@ -63,6 +63,7 @@ Es un JSON con un paso y un flujo por línea:
 | `temporizador` | Espera o plazo | `EV-nn` |
 | `mensaje` | Aviso que se envía | `EV-nn` |
 | `intermedio` | Otro evento intermedio | `EV-nn` |
+| `error` | Error que interrumpe la tarea en la que salta | `EV-nn` |
 
 **Códigos.** Son estables: no se renumeran ni se reutilizan. El `ACT-nn` de cada tarea es el mismo que el de su paso en el documento. En el dibujo solo se ve el nombre.
 
@@ -75,6 +76,17 @@ Es un JSON con un paso y un flujo por línea:
 **Notas.** Cada nota de `notas` va unida a su paso con una línea de puntos y sale en el PNG: úsalas para señalar algo que quien lee el diagrama no debe pasar por alto (un riesgo, una duda pendiente).
 
 **Posición.** `"posicion": [x, y]` en un paso es opcional. Solo la usa ingeniería inversa, cuando lee de Appian dónde está cada nodo, y tiene que venir en todos los pasos para que se use.
+
+**Datos de Appian.** Los pone ingeniería inversa al leer un process model:
+- en un paso, `nodo` (el id del nodo en Appian), `temporizador` (la expresión, en `inicio_temporizador` y `temporizador`) y `proceso_llamado` (en `llamada`);
+- en un flujo, `condicion` (la expresión que decide esa salida de la puerta).
+
+```json
+{"id": "ACT-04", "tipo": "llamada", "carril": "Aplicación", "nombre": "Notificar resolución", "nodo": "7", "proceso_llamado": "Notificación de resolución"}
+{"de": "GW-01", "a": "ACT-02", "etiqueta": "Sí", "condicion": "pv!completa"}
+```
+
+No se ven en el dibujo: en draw.io están en «Editar datos» del paso o del flujo, y `comparar` lista los que se cambien ahí. En el BPMN, `nodo` va en `documentation` («nodo 7»), `proceso_llamado` en `calledElement`, `condicion` en `conditionExpression` y `temporizador` en `timeCycle` (en `timeDuration` si es una duración ISO 8601, como `P10D`, y en `timeDate` si es una fecha y hora).
 
 ## Órdenes
 
@@ -100,6 +112,7 @@ Códigos de salida:
 - un paso no tiene entrada o salida, o sale un flujo de un fin;
 - una decisión tiene salidas sin etiqueta (salvo la de por defecto) o más de un flujo por defecto;
 - un código no corresponde a su tipo;
+- un `error` no está unido a su tarea con un flujo discontinuo, o un dato de Appian está en un paso de otro tipo;
 - un participante externo no tiene flujos de mensaje;
 - hay más de 20 tareas.
 
@@ -132,9 +145,9 @@ Pasa solo los cambios, que gasta muchos menos tokens que repetir el proceso ente
 ]}
 ```
 
-- **`poner`** añade un paso o cambia los campos que traiga uno existente. Un paso nuevo necesita `id`, `tipo`, `carril` y, si es una tarea, `nombre`.
+- **`poner`** añade un paso o cambia los campos que traiga uno existente. Un paso nuevo necesita `id`, `tipo`, `carril` y, si es una tarea, `nombre`. Un dato de Appian vacío (`"nodo": ""`) lo quita, también en `flujo`.
 - **`quitar`** borra el paso y sus flujos.
-- **`flujo`** añade el flujo o cambia su etiqueta, si es discontinuo o si es el de por defecto (`"defecto": false` lo quita). **`quitar_flujo`** lo borra.
+- **`flujo`** añade el flujo o cambia su etiqueta, su `condicion`, si es discontinuo o si es el de por defecto (`"defecto": false` lo quita). **`quitar_flujo`** lo borra.
 - **`externo`** añade un participante externo y **`quitar_externo`** lo quita con sus flujos de mensaje.
 - **`nota`** une una nota a un paso y **`quitar_nota`** la quita (con su texto exacto). Quitar un paso quita sus notas.
 - **`carril`** añade un carril al final. Tiene que ir antes, en la misma lista, que el `poner` que lo use: `poner` no crea carriles, para que una errata no invente uno. Un carril que se queda sin pasos desaparece.
@@ -177,7 +190,8 @@ Mientras haya cambios hechos a mano sin aceptar, `actualizar` se niega a tocar e
 - **Puertas exclusivas:** una pregunta cerrada («¿Completa?») y cada salida con su etiqueta.
 - **Inicio y fin:** un inicio por proceso y un fin por cada resultado de negocio («Solicitud denegada», «Autorización emitida»).
 - **Arranque:** `inicio_temporizador` si el proceso arranca solo a una hora o cada cierto tiempo (el nombre dice cuándo: «Cada día a las 08:00»); `inicio_mensaje` si arranca al recibir un aviso.
-- **Plazos:** un `temporizador` unido a la tarea que vigila con un flujo discontinuo. Al exportar a BPMN pasa a ser un evento de borde de esa tarea.
+- **Plazos:** un `temporizador` unido a la tarea que vigila con un flujo discontinuo. Al exportar a BPMN pasa a ser un evento de borde de esa tarea, que no la interrumpe.
+- **Errores:** un `error` unido igual a la tarea en la que salta, y de él, el camino que se sigue. En el BPMN es un evento de borde que la interrumpe.
 - **Avisos:** un `mensaje` en el carril «Aplicación». Si el aviso va a un sistema u organismo externo, un flujo de mensaje desde el paso que lo envía hasta el participante externo. Si después del aviso no pasa nada más, la rama acaba en un `fin`.
 - **Tamaño:** con más de 20 tareas, se parte en subprocesos. El proceso principal usa `subproceso` y cada subproceso tiene su diagrama.
 - **Notas:** las explicaciones van en el paso a paso del documento; en `notas`, solo lo que hay que ver en el propio diagrama. Una nota suelta que se deje en draw.io también sale en el PNG: bórrala si no debe verla el cliente.
@@ -197,6 +211,6 @@ El diagrama no sale del equipo. El motor de colocación (Mermaid, licencia MIT) 
 - **Varias páginas:** solo se lee y se cambia la primera página del `.drawio`; las demás se conservan.
 - **Pools:** si los carriles están dentro de un pool, el nombre del pool es el del proceso. Un participante externo es una franja marcada por la herramienta: si en draw.io se dibuja un pool nuevo a mano, se lee como un carril; para un participante nuevo, usa `externo`.
 - **Flujos de mensaje:** van en vertical entre el paso y su participante y pueden cruzar los carriles que hay entre los dos.
-- **Eventos de borde:** en draw.io, un plazo sale como un evento unido a su tarea con línea discontinua. Se puede pegar a la tarea a mano.
+- **Eventos de borde:** en draw.io, un plazo o un error sale como un evento unido a su tarea con línea discontinua. Se puede pegar a la tarea a mano.
 - **Flujos nuevos en un diagrama colocado a mano:** los traza draw.io y pueden cruzar alguna forma. Se retocan en draw.io o se usa `--recolocar`.
 - **Tamaño en un documento vertical:** a partir de unas 12 tareas en fila (más de 1.600 px), el texto queda pequeño en una página vertical. Usa una página apaisada o parte el proceso.

@@ -37,8 +37,15 @@ def alto_texto(texto, ancho=ANCHO_ETIQUETA):
     return lineas * LINEA + 6
 
 
+def ancho_nota(texto):
+    """El ancho normal de una nota, o más si una palabra no cabe en él (el nombre de una regla, una expresión): draw.io
+    no parte las palabras y se saldría de la caja. 8 px por letra, por exceso, también con mayúsculas."""
+    palabra = max((len(p) for p in str(texto or "").split()), default=0)
+    return max(NOTA_ANCHO, palabra * 8 + 20)
+
+
 def alto_nota(texto):
-    return max(36, alto_texto(texto, NOTA_ANCHO) + 12)
+    return max(36, alto_texto(texto, ancho_nota(texto)) + 12)
 
 
 # ---------------------------------------------------------------- lado de las etiquetas y las notas
@@ -97,9 +104,9 @@ def lados_nota(proc, usados, lados):
     return out
 
 
-def x_nota(cx, desplazamiento):
+def x_nota(cx, desplazamiento, ancho=NOTA_ANCHO):
     """x del borde izquierdo de una nota según su desplazamiento respecto al centro de su paso."""
-    return {"izquierda": cx - 10 - NOTA_ANCHO, "derecha": cx + 10}.get(desplazamiento, cx - NOTA_ANCHO / 2)
+    return {"izquierda": cx - 10 - ancho, "derecha": cx + 10}.get(desplazamiento, cx - ancho / 2)
 
 
 # ---------------------------------------------------------------- separación
@@ -142,9 +149,10 @@ def extensiones(proc, lados, notas_lado, tam, eventos, puertas):
         e = ext.get(n["paso"])
         if e is None:
             continue
-        izq = -x_nota(0, desplazamiento)
+        ancho = ancho_nota(n.get("texto"))
+        izq = -x_nota(0, desplazamiento, ancho)
         e[0] = max(e[0], izq)
-        e[1] = max(e[1], NOTA_ANCHO - izq)
+        e[1] = max(e[1], ancho - izq)
         extra = NOTA_HUECO + alto_nota(n.get("texto"))
         if lado == "arriba":
             e[2] += extra
@@ -245,7 +253,8 @@ def colocar_notas(proc, geo, notas_lado, tam):
             y = cy - h / 2 - etiqueta - NOTA_HUECO - alto
         else:
             y = cy + h / 2 + etiqueta + NOTA_HUECO
-        cajas.append((x_nota(cx, desplazamiento), y, NOTA_ANCHO, alto))
+        ancho = ancho_nota(n.get("texto"))
+        cajas.append((x_nota(cx, desplazamiento, ancho), y, ancho, alto))
     geo["anotaciones"] = cajas
     return geo
 

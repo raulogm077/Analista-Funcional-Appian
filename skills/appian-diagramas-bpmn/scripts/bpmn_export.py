@@ -2,8 +2,9 @@
 Camunda Modeler, bpmn.io, Signavio u otra herramienta BPM. Usa las posiciones del .drawio.
 
 Conserva: inicio con temporizador o con mensaje, tareas de usuario, de sistema, de script y manuales,
-subproceso y llamada a otro proceso, flujo por defecto, plazos como eventos de borde, participantes
-externos con sus flujos de mensaje y notas unidas a su paso."""
+subproceso y llamada a otro proceso, flujo por defecto, plazos y errores como eventos de borde, participantes
+externos con sus flujos de mensaje, notas unidas a su paso y los datos de Appian: el nodo (documentation), la
+expresión del temporizador, el proceso llamado (calledElement) y la condición de cada flujo (conditionExpression)."""
 import re
 import sys
 from xml.sax.saxutils import escape, quoteattr
@@ -14,19 +15,38 @@ import colocacion
 ELEMENTO = {
     "inicio": "startEvent", "inicio_temporizador": "startEvent", "inicio_mensaje": "startEvent", "fin": "endEvent",
     "temporizador": "intermediateCatchEvent", "mensaje": "intermediateThrowEvent", "intermedio": "intermediateCatchEvent",
+    "error": "intermediateCatchEvent",   # solo si no está en el borde de una tarea (validar lo avisa)
     "exclusiva": "exclusiveGateway", "paralela": "parallelGateway", "inclusiva": "inclusiveGateway",
     "tarea": "userTask", "sistema": "serviceTask", "script": "scriptTask", "manual": "manualTask",
     "subproceso": "subProcess", "llamada": "callActivity",
 }
 DEFINICION = {"temporizador": "<bpmn:timerEventDefinition/>", "inicio_temporizador": "<bpmn:timerEventDefinition/>",
-              "mensaje": "<bpmn:messageEventDefinition/>", "inicio_mensaje": "<bpmn:messageEventDefinition/>"}
+              "mensaje": "<bpmn:messageEventDefinition/>", "inicio_mensaje": "<bpmn:messageEventDefinition/>",
+              "error": "<bpmn:errorEventDefinition/>"}
 TAREAS = {"tarea", "sistema", "script", "manual", "subproceso", "llamada"}
+BORDE = ("temporizador", "mensaje", "intermedio", "error")   # eventos que, unidos a una tarea, van en su borde
 MARGEN = 30  # cabecera del participante
+# ISO 8601 (BPMN 2.0, 10.4.5): una duración va en timeDuration y una fecha y hora en timeDate; una repetición (R/…)
+# o una expresión de Appian, en timeCycle
+DURACION = re.compile(r"P(?=\d|T\d)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+([.,]\d+)?S)?)?")
+FECHA = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}([.,]\d+)?)?(Z|[+-]\d{2}:?\d{2})?")
 
 
 def _id(s):
     s = re.sub(r"[^A-Za-z0-9_.-]", "_", s)
     return s if re.match(r"[A-Za-z_]", s) else "_" + s
+
+
+def _qname(s):
+    """Nombre válido para calledElement (xsd:QName): sin espacios ni signos; las letras con tilde se conservan."""
+    s = re.sub(r"[^\w.-]", "_", s.strip())
+    return s if re.match(r"[^\W\d]", s) else "_" + s
+
+
+def _temporizador(expresion):
+    tipo = "timeDuration" if DURACION.fullmatch(expresion) else "timeDate" if FECHA.fullmatch(expresion) else "timeCycle"
+    return (f'<bpmn:timerEventDefinition><bpmn:{tipo} xsi:type="bpmn:tFormalExpression">{escape(expresion)}'
+            f'</bpmn:{tipo}></bpmn:timerEventDefinition>')
 
 
 def _recorte(caja, p, q):
@@ -61,17 +81,20 @@ def exportar(proc, geo, destino):
     caja = {}
     for pid, (cx, cy, w, h) in geo["pasos"].items():
         caja[pid] = (cx - w / 2 + MARGEN, cy - h / 2, w, h)
-    # un temporizador o evento unido a una tarea con flujo discontinuo es un evento de borde (plazo que no la interrumpe)
+    # un evento unido a una tarea con flujo discontinuo es un evento de borde: el error la interrumpe; un plazo o un
+    # mensaje, no
     borde = {}
     for f in proc["flujos"]:
         if f["de"] in pasos and f["a"] in pasos and f.get("discontinuo") \
-                and pasos[f["a"]]["tipo"] in ("temporizador", "mensaje", "intermedio") \
+                and pasos[f["a"]]["tipo"] in BORDE \
                 and pasos[f["de"]]["tipo"] in TAREAS and f["a"] not in borde:
             borde[f["a"]] = f["de"]
-    for ev, tarea in borde.items():  # el evento se dibuja sobre el borde inferior de su tarea
+    en_tarea = {}
+    for ev, tarea in borde.items():  # sobre el borde inferior de su tarea; si hay varios, de derecha a izquierda
         tx, ty, tw, th = caja[tarea]
         _, _, w, h = caja[ev]
-        caja[ev] = (tx + tw - w - 8, ty + th - h / 2, w, h)
+        k = en_tarea[tarea] = en_tarea.get(tarea, -1) + 1
+        caja[ev] = (tx + tw - w - 8 - k * (w + 6), ty + th - h / 2, w, h)
     puntos_de = geo["flujos"] + [[]] * max(0, len(proc["flujos"]) - len(geo["flujos"]))
     sal, ent, defecto = {}, {}, {}
     flujos, mensajes = [], []
@@ -99,15 +122,28 @@ def exportar(proc, geo, destino):
     for p in proc["pasos"]:
         tag, extra = ELEMENTO[p["tipo"]], ""
         if p["id"] in borde:
-            tag, extra = "boundaryEvent", f' attachedToRef="{_id(borde[p["id"]])}" cancelActivity="false"'
+            tag = "boundaryEvent"
+            extra = f' attachedToRef="{_id(borde[p["id"]])}" cancelActivity="{"true" if p["tipo"] == "error" else "false"}"'
         if p["id"] in defecto:
             extra += f' default="{defecto[p["id"]]}"'
-        dentro = "".join(f"<bpmn:incoming>{x}</bpmn:incoming>" for x in ent.get(p["id"], [])) + \
-            "".join(f"<bpmn:outgoing>{x}</bpmn:outgoing>" for x in sal.get(p["id"], [])) + DEFINICION.get(p["tipo"], "")
+        if p["tipo"] == "llamada" and p.get("proceso_llamado"):
+            extra += f' calledElement={quoteattr(_qname(str(p["proceso_llamado"])))}'
+        definicion = DEFINICION.get(p["tipo"], "")
+        if p.get("temporizador") and p["tipo"] in ("temporizador", "inicio_temporizador"):
+            definicion = _temporizador(str(p["temporizador"]))
+        # en el orden del esquema: documentation, incoming, outgoing y la definición del evento
+        dentro = (f"<bpmn:documentation>nodo {escape(str(p['nodo']))}</bpmn:documentation>" if p.get("nodo") else "") + \
+            "".join(f"<bpmn:incoming>{x}</bpmn:incoming>" for x in ent.get(p["id"], [])) + \
+            "".join(f"<bpmn:outgoing>{x}</bpmn:outgoing>" for x in sal.get(p["id"], [])) + definicion
         proc_xml.append(f'<bpmn:{tag} id="{_id(p["id"])}" name={quoteattr(p.get("nombre", ""))}{extra}>{dentro}</bpmn:{tag}>')
     for fid, f, _ in flujos:
         nombre = f' name={quoteattr(f["etiqueta"])}' if f.get("etiqueta") else ""
-        proc_xml.append(f'<bpmn:sequenceFlow id="{fid}"{nombre} sourceRef="{_id(f["de"])}" targetRef="{_id(f["a"])}"/>')
+        flujo = f'<bpmn:sequenceFlow id="{fid}"{nombre} sourceRef="{_id(f["de"])}" targetRef="{_id(f["a"])}"'
+        if f.get("condicion"):
+            proc_xml.append(f'{flujo}><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">{escape(str(f["condicion"]))}'
+                            "</bpmn:conditionExpression></bpmn:sequenceFlow>")
+        else:
+            proc_xml.append(flujo + "/>")
     notas = list(zip(proc.get("notas") or [], geo.get("anotaciones") or []))
     for i, (n, _) in enumerate(notas, 1):
         proc_xml.append(f'<bpmn:textAnnotation id="Nota_{i}"><bpmn:text>{escape(n.get("texto", ""))}</bpmn:text></bpmn:textAnnotation>')
@@ -189,8 +225,9 @@ def exportar(proc, geo, destino):
     xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
            '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" '
            'xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" '
-           'xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definiciones" targetNamespace="http://bpmn.io/schema/bpmn" '
-           'exporter="appian-analisis-funcional" exporterVersion="2">\n'
+           'xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+           'id="Definiciones" targetNamespace="http://bpmn.io/schema/bpmn" '
+           'exporter="appian-analisis-funcional" exporterVersion="3">\n'
            f'<bpmn:collaboration id="Colaboracion">{participantes}</bpmn:collaboration>\n'
            f'<bpmn:process id="Proceso" name={quoteattr(nombre)} isExecutable="false">\n' + "\n".join(proc_xml) + "\n</bpmn:process>\n"
            '<bpmndi:BPMNDiagram id="Diagrama"><bpmndi:BPMNPlane id="Plano" bpmnElement="Colaboracion">\n' + "\n".join(di) +

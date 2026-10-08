@@ -43,6 +43,225 @@ def celdas(ruta):
     return root, {c.get("id"): c for c in root}
 
 
+# ---------------------------------------------------------------- Tarea 10: datos de Appian y notas
+NS_BPMN = {"bpmn": "http://www.omg.org/spec/BPMN/20100524/MODEL", "bpmndi": "http://www.omg.org/spec/BPMN/20100524/DI",
+           "di": "http://www.omg.org/spec/DD/20100524/DI"}
+XSI_TYPE = "{http://www.w3.org/2001/XMLSchema-instance}type"
+
+
+def datos_de_appian(tmp):
+    """Los datos de Appian (nodo, temporizador, proceso llamado y condición) y el evento de error de borde pasan por
+    crear, leer, bpmn, actualizar (colocación automática y a mano) y comparar --aceptar sin perderse."""
+    import drawio_modelo as dm
+    ns = NS_BPMN
+    origen = AQUI / "datos" / "semantico.json"   # el proceso de proceso_semantico.bpmn de ingeniería inversa
+    base = json.loads(origen.read_text(encoding="utf-8"))
+    d = tmp / "Carpeta con espacios" / "Gestión app" / "semántico.drawio"
+    run("crear", origen, "-o", d)
+    proc = dm.leer(str(d))[0]
+    paso = {p["id"]: p for p in proc["pasos"]}
+    cond = {(f["de"], f["a"]): f.get("condicion") for f in proc["flujos"]}
+    check(paso["EV-01"].get("nodo") == "1" and paso["ACT-02"].get("nodo") == "4" and cond[("GW-01", "ACT-02")] == "pv!ok"
+          and paso["EV-02"]["tipo"] == "error" and dm.comparar(base, proc) == [],
+          "datos de Appian: leer() devuelve nodo, condicion y el evento de error")
+    leido = json.loads(run("leer", d).split("\naviso")[0])
+    check(dm.comparar(base, leido) == [] and any(f.get("condicion") == "pv!ok" for f in leido["flujos"]),
+          "datos de Appian: la orden leer los devuelve")
+    obj = next((e for e in ET.parse(d).getroot().iter("object") if e.get("id") == "EV-01"), None)
+    check(obj is not None and obj.get("nodo") == "1" and obj.find("mxCell") is not None and obj.find("mxCell").get("id") is None,
+          "datos de Appian: en el .drawio son atributos de un <object> que envuelve la celda («Editar datos»)")
+    # BPMN 2.0
+    bpmn = d.with_suffix(".bpmn")
+    run("bpmn", d)
+    primero = bpmn.read_bytes()
+    run("bpmn", d)
+    check(bpmn.read_bytes() == primero, "bpmn: dos exportaciones iguales")
+    b = ET.fromstring(primero)
+    pr = b.find("bpmn:process", ns)
+    inicio = pr.find("bpmn:startEvent[@id='EV-01']", ns)
+    check([c.tag.split("}")[1] for c in inicio] == ["documentation", "outgoing"] and inicio[0].text == "nodo 1",
+          "bpmn: «nodo 1» en la documentación del inicio, y los hijos en el orden del esquema")
+    si = pr.find("bpmn:sequenceFlow[@name='Sí']/bpmn:conditionExpression", ns)
+    check(si is not None and si.text == "pv!ok" and si.get(XSI_TYPE) == "bpmn:tFormalExpression",
+          "bpmn: condición «pv!ok» con su xsi:type en el flujo «Sí»")
+    check(pr.find("bpmn:exclusiveGateway[@id='GW-01']", ns).get("default") == pr.find("bpmn:sequenceFlow[@name='No']", ns).get("id"),
+          "bpmn: flujo por defecto en la puerta")
+    guardar = pr.find("bpmn:serviceTask[@name='Guardar']", ns).get("id")
+    err = [e for e in pr.findall("bpmn:boundaryEvent", ns) if e.find("bpmn:errorEventDefinition", ns) is not None]
+    check(len(err) == 1 and err[0].get("attachedToRef") == guardar and err[0].get("cancelActivity") == "true",
+          "bpmn: evento de error en el borde de «Guardar», que interrumpe")
+    nodos = [e.get("id") for e in pr if e.tag.split("}")[1] not in ("laneSet", "sequenceFlow", "textAnnotation", "association")]
+    carriles = [e.get("id") for e in pr.iter(f"{{{ns['bpmn']}}}lane")]
+    formas = [e.get("bpmnElement") for e in b.iter(f"{{{ns['bpmndi']}}}BPMNShape")]
+    puntos = {e.get("bpmnElement"): len(e.findall("di:waypoint", ns)) for e in b.iter(f"{{{ns['bpmndi']}}}BPMNEdge")}
+    check(len(nodos) == 7 and all(formas.count(i) == 1 for i in nodos + carriles)
+          and all(puntos.get(f.get("id"), 0) >= 2 for f in pr.findall("bpmn:sequenceFlow", ns)),
+          "bpmn: un BPMNShape por nodo y carril y un BPMNEdge con dos o más puntos por flujo")
+    # actualizar con la colocación automática: claves nuevas, cambiadas y quitadas
+    expresion = 'pv!ok and\n  pv!importe < 1000 & "sí"'
+    (tmp / "d1.json").write_text(json.dumps({"cambios": [
+        {"poner": {"id": "EV-01", "tipo": "inicio_temporizador", "nombre": "Cada día a las 08:00",
+                   "temporizador": "R/2026-10-05T08:00:00+02:00/P1D"}},
+        {"poner": {"id": "EV-05", "tipo": "temporizador", "carril": "Revisores", "nombre": "Diez días", "temporizador": "P10D"}},
+        {"poner": {"id": "EV-06", "tipo": "fin", "carril": "Revisores", "nombre": "Plazo vencido"}},
+        {"flujo": {"de": "ACT-01", "a": "EV-05", "discontinuo": True}}, {"flujo": {"de": "EV-05", "a": "EV-06"}},
+        {"poner": {"id": "ACT-03", "tipo": "llamada", "carril": "Sistema", "nombre": "Notificar", "nodo": "7",
+                   "proceso_llamado": "Notificación de resolución"}},
+        {"quitar_flujo": {"de": "ACT-02", "a": "EV-03"}}, {"flujo": {"de": "ACT-02", "a": "ACT-03"}},
+        {"flujo": {"de": "ACT-03", "a": "EV-03"}},
+        {"flujo": {"de": "GW-01", "a": "ACT-02", "condicion": expresion}},
+        {"poner": {"id": "ACT-01", "nodo": ""}}]}, ensure_ascii=False), encoding="utf-8")
+    run("actualizar", d, tmp / "d1.json")
+    paso = {p["id"]: p for p in dm.leer(str(d))[0]["pasos"]}
+    cond = {(f["de"], f["a"]): f.get("condicion") for f in dm.leer(str(d))[0]["flujos"]}
+    check(paso["EV-01"].get("temporizador") == "R/2026-10-05T08:00:00+02:00/P1D" and paso["EV-05"].get("temporizador") == "P10D"
+          and paso["ACT-03"].get("proceso_llamado") == "Notificación de resolución" and "nodo" not in paso["ACT-01"]
+          and cond[("GW-01", "ACT-02")] == expresion and run("comparar", d).startswith("Sin cambios"),
+          "actualizar (automática): pone, cambia y quita datos de Appian, también con < & \" y saltos de línea")
+    run("bpmn", d)
+    pr = ET.parse(bpmn).getroot().find("bpmn:process", ns)
+    ciclo = pr.find("bpmn:startEvent[@id='EV-01']/bpmn:timerEventDefinition/bpmn:timeCycle", ns)
+    plazo = pr.find("bpmn:boundaryEvent[@id='EV-05']", ns)
+    duracion = plazo.find("bpmn:timerEventDefinition/bpmn:timeDuration", ns) if plazo is not None else None
+    llamada = pr.find("bpmn:callActivity[@id='ACT-03']", ns)
+    si = pr.find("bpmn:sequenceFlow[@name='Sí']/bpmn:conditionExpression", ns)
+    check(ciclo is not None and ciclo.text == "R/2026-10-05T08:00:00+02:00/P1D" and ciclo.get(XSI_TYPE) == "bpmn:tFormalExpression"
+          and duracion is not None and duracion.text == "P10D" and plazo.get("cancelActivity") == "false"
+          and llamada is not None and llamada.get("calledElement") == "Notificación_de_resolución"
+          and si is not None and si.text == expresion and pr.find("bpmn:userTask[@id='ACT-01']/bpmn:documentation", ns) is None,
+          "bpmn: temporizador (timeCycle o timeDuration), proceso llamado, condición con < & \" y el plazo sin interrumpir")
+    # en draw.io se cambia un dato («Editar datos») y se mueve una forma; comparar lo lista y --aceptar no pierde nada
+    t = ET.parse(d)
+    obj = next(e for e in t.getroot().iter("object") if e.get("id") == "ACT-02")
+    obj.set("nodo", "40")
+    g = obj.find("mxCell/mxGeometry"); g.set("y", str(float(g.get("y")) + 10))
+    t.write(d, encoding="utf-8")
+    check("ACT-02: nodo «4» → «40»" in run("comparar", d, esperado=1), "comparar: lista un dato de Appian cambiado en draw.io")
+    run("comparar", d, "--aceptar")
+    g = json.loads(d.with_suffix(".json").read_text(encoding="utf-8"))
+    paso = {p["id"]: p for p in g["pasos"]}
+    check(g["colocacion"]["modo"] == "manual" and paso["ACT-02"].get("nodo") == "40" and paso["EV-01"].get("nodo") == "1"
+          and paso["EV-05"].get("temporizador") == "P10D" and paso["ACT-03"].get("proceso_llamado") == "Notificación de resolución"
+          and any(f.get("condicion") == expresion for f in g["flujos"]),
+          "comparar --aceptar: no pierde nodo, temporizador, proceso_llamado ni condicion")
+    # actualizar con la colocación hecha a mano: celdas que pasan a llevar datos, datos que se quitan y pasos nuevos
+    (tmp / "d2.json").write_text(json.dumps({"cambios": [
+        {"poner": {"id": "ACT-01", "nodo": "2"}},
+        {"poner": {"id": "ACT-03", "proceso_llamado": "Aviso de resolución"}},
+        {"flujo": {"de": "ACT-02", "a": "ACT-03", "condicion": "pv!avisar"}},
+        {"flujo": {"de": "GW-01", "a": "ACT-02", "condicion": ""}},
+        {"poner": {"id": "ACT-04", "tipo": "script", "carril": "Sistema", "nombre": "Calcular plazo", "nodo": "8"}},
+        {"quitar_flujo": {"de": "ACT-03", "a": "EV-03"}}, {"flujo": {"de": "ACT-03", "a": "ACT-04"}},
+        {"flujo": {"de": "ACT-04", "a": "EV-03", "condicion": "pv!plazo <> null"}}]}, ensure_ascii=False), encoding="utf-8")
+    out = run("actualizar", d, tmp / "d2.json")
+    proc = dm.leer(str(d))[0]
+    paso = {p["id"]: p for p in proc["pasos"]}
+    cond = {(f["de"], f["a"]): f.get("condicion") for f in proc["flujos"]}
+    check("se ha respetado la colocación" in out and run("comparar", d).startswith("Sin cambios")
+          and paso["ACT-01"].get("nodo") == "2" and paso["ACT-04"].get("nodo") == "8" and paso["ACT-02"].get("nodo") == "40"
+          and paso["ACT-03"].get("proceso_llamado") == "Aviso de resolución" and cond[("ACT-02", "ACT-03")] == "pv!avisar"
+          and cond[("GW-01", "ACT-02")] is None and cond[("ACT-04", "EV-03")] == "pv!plazo <> null",
+          "actualizar (a mano): pone, cambia y quita datos de Appian en celdas que los tenían o no")
+    # validar: un evento de error tiene que ir en el borde de su tarea
+    suelto = json.loads(origen.read_text(encoding="utf-8"))
+    for f in suelto["flujos"]:
+        f.pop("discontinuo", None)
+    (tmp / "suelto.json").write_text(json.dumps(suelto, ensure_ascii=False), encoding="utf-8")
+    check("EV-02: un evento de error va en el borde" in run("validar", tmp / "suelto.json"),
+          "validar: avisa de un evento de error que no está en el borde de una tarea")
+
+
+_JS_MEDIR_NOTAS = """async (xml) => {
+  const div = document.getElementById('out');
+  const graph = new Graph(div); graph.setEnabled(false);
+  const node = mxUtils.parseXml(xml).documentElement;
+  new mxCodec(node.ownerDocument).decode(node, graph.getModel());
+  await new Promise(r => setTimeout(r, 400));
+  const o = div.getBoundingClientRect(), res = [];
+  for (const c of Object.values(graph.getModel().cells)) {
+    if (!/(^|;)nota=1(;|$)/.test(c.style || '')) continue;
+    const s = graph.view.getState(c);
+    const caja = [o.left + s.x, o.top + s.y, s.width, s.height];
+    let letras = [Infinity, Infinity, -Infinity, -Infinity];
+    const w = document.createTreeWalker(s.text.node, NodeFilter.SHOW_TEXT);
+    while (w.nextNode()) {
+      const r = document.createRange(); r.selectNodeContents(w.currentNode);
+      for (const q of r.getClientRects())
+        letras = [Math.min(letras[0], q.left), Math.min(letras[1], q.top), Math.max(letras[2], q.right), Math.max(letras[3], q.bottom)];
+    }
+    // por dónde pasa el trazo: el centro de cada lado de la caja
+    const lados = {arriba: 0, abajo: 0, izquierda: 0, derecha: 0};
+    const centro = {arriba: [caja[0] + caja[2] / 2, caja[1]], abajo: [caja[0] + caja[2] / 2, caja[1] + caja[3]],
+                    izquierda: [caja[0], caja[1] + caja[3] / 2], derecha: [caja[0] + caja[2], caja[1] + caja[3] / 2]};
+    for (const el of s.shape.node.querySelectorAll('path')) {
+      const st = el.getAttribute('stroke');
+      if (!st || st === 'none' || st === 'transparent' || el.getAttribute('visibility') === 'hidden') continue;
+      const m = el.getScreenCTM(), largo = el.getTotalLength();
+      for (let k = 0; k <= largo; k += 1) {
+        const p = el.getPointAtLength(k).matrixTransform(m);
+        for (const l in centro) if (Math.abs(p.x - centro[l][0]) < 3 && Math.abs(p.y - centro[l][1]) < 3) lados[l]++;
+      }
+    }
+    res.push({texto: String(c.value), caja, letras, lados});
+  }
+  return res;
+}"""
+
+
+def medir_notas(drawio):
+    """Caja de cada nota, lo que ocupa su texto y por qué lados pasa su trazo, pintado con el visor de draw.io."""
+    import drawio_modelo as dm, navegador
+    sp = navegador._playwright()
+    with sp() as p:
+        b, pg = navegador._pagina(p)
+        pg.add_script_tag(content=navegador.VIEWER_JS.read_text(encoding="utf-8"))
+        res = pg.evaluate(_JS_MEDIR_NOTAS, dm.Fichero(str(drawio)).xml_modelo())
+        b.close()
+    return res
+
+
+def nota_larga(tmp):
+    """Una nota de texto largo, con una palabra muy larga (el nombre de una regla), cabe entera en su caja, también en
+    el último paso y al añadirla con actualizar; y se dibuja como anotación BPMN, un corchete abierto a la derecha,
+    no como una caja a la que le falta un lado."""
+    proc = {"proceso": "Nota larga", "carriles": ["Revisor", "Aplicación"],
+            "pasos": [{"id": "EV-01", "tipo": "inicio", "carril": "Revisor", "nombre": "Solicitud recibida"},
+                      {"id": "ACT-01", "tipo": "tarea", "carril": "Revisor", "nombre": "Revisar solicitud"},
+                      {"id": "ACT-02", "tipo": "sistema", "carril": "Aplicación", "nombre": "Guardar"},
+                      {"id": "EV-02", "tipo": "fin", "carril": "Aplicación", "nombre": "Fin"}],
+            "flujos": [{"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "ACT-02"}, {"de": "ACT-02", "a": "EV-02"}],
+            "notas": [{"paso": "ACT-01", "texto": "Pendiente de confirmar con el cliente si la revisión la hace siempre el "
+                                                  "mismo técnico o cualquiera del grupo, y qué pasa si vence el plazo"},
+                      {"paso": "EV-02", "texto": "Lo decide MNT_ER_ObtenerTecnicoResponsableDelExpediente con el grupo de "
+                                                 "la zona; si no devuelve a nadie, el proceso se queda parado"}]}
+    (tmp / "nota.json").write_text(json.dumps(proc, ensure_ascii=False), encoding="utf-8")
+    d = tmp / "nota" / "nota.drawio"
+    run("crear", tmp / "nota.json", "-o", d)
+    check(solapes(d) == [], "notas: una nota larga no pisa a otra forma " + "; ".join(solapes(d)))
+    # a mano: se mueve una forma y se añade otra nota larga, en el primer paso, con actualizar
+    t = ET.parse(d)
+    g = next(e for e in t.getroot().iter("mxCell") if e.get("id") == "ACT-02").find("mxGeometry")
+    g.set("y", str(float(g.get("y")) + 10))
+    t.write(d, encoding="utf-8")
+    run("comparar", d, "--aceptar")
+    (tmp / "n1.json").write_text(json.dumps({"cambios": [{"nota": {"paso": "EV-01", "texto":
+        "Llega desde pv!solicitud.estadoDelExpedienteAdministrativo"}}]}, ensure_ascii=False), encoding="utf-8")
+    run("actualizar", d, tmp / "n1.json")
+    import drawio_modelo as dm
+    _, geo, _ = dm.leer(str(d))
+    izquierda = min(x for _, _, x, _, _ in geo["carriles"].values()) + dm.CABECERA
+    derecha = max(x + w for _, _, x, w, _ in geo["carriles"].values())
+    check(all(izquierda <= cx - w / 2 and cx + w / 2 <= derecha for cx, _, w, _ in geo["anotaciones"]),
+          "notas: una nota ancha añadida a mano queda dentro de los carriles, sin pisar su cabecera")
+    medidas = medir_notas(d)
+    fuera = [m["texto"][:30] for m in medidas
+             if m["letras"][0] < m["caja"][0] - 1 or m["letras"][1] < m["caja"][1] - 1
+             or m["letras"][2] > m["caja"][0] + m["caja"][2] + 1 or m["letras"][3] > m["caja"][1] + m["caja"][3] + 1]
+    check(len(medidas) == 3 and not fuera, "notas: el texto largo cabe en su caja " + "; ".join(fuera))
+    abiertas = [m for m in medidas if m["lados"]["izquierda"] and not (m["lados"]["arriba"] or m["lados"]["abajo"] or m["lados"]["derecha"])]
+    check(len(abiertas) == 3, "notas: se dibujan como un corchete (sin los lados de arriba, abajo y derecha de punta a punta)")
+
+
 def solapes(drawio):
     """Pares de cosas que se pisan en el dibujo: formas, etiquetas de eventos y puertas, y notas."""
     import drawio_modelo as dm, colocacion as co
@@ -218,6 +437,9 @@ def main():
         out = run("actualizar", ped, tmp / "c7.json")
         check("participante externo quitado: «Banco»" in out and "nota quitada de ACT-02" in out
               and run("comparar", ped).startswith("Sin cambios"), "actualizar (manual): quitar un externo y un paso con nota")
+        # Tarea 10: datos de Appian en el diagrama y en el BPMN; notas de texto largo
+        datos_de_appian(tmp)
+        nota_larga(tmp)
         # 9. la etiqueta de un evento va al lado por el que no llega ningún flujo
         rev = {"proceso": "Revisión", "carriles": ["Revisor", "Aplicación"],
                "pasos": [{"id": "EV-01", "tipo": "inicio", "carril": "Revisor", "nombre": "Solicitud registrada"},
