@@ -432,10 +432,10 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
     diagrama en `08-procesos-bpmn/`.
 - Lo usan las Tareas 6, 14, 19 y 20. La Tarea 8b añade `sin-verificar.json` y dos campos, sin cambiar nada de lo de aquí.
 
-- [ ] **Paso 1:** `test_datos.py::test_datos_formato`: tras el flujo del simulador con un `hallazgos/prueba.json` de un
+- [x] **Paso 1:** `test_datos.py::test_datos_formato`: tras el flujo del simulador con un `hallazgos/prueba.json` de un
   hallazgo sobre `DEM_ERP_API_TOKEN`, existen los cuatro ficheros con sus claves, cada objeto de cada hallazgo está en
   el inventario, y la tabla `DEM_SOLICITUD` y la vista «Resumen» están en `tambien` de `DEM Solicitud`. → FALLA.
-- [ ] **Paso 2:** implementar y documentar el formato en `references/datos.md`. **Paso 3:** pytest en verde. Commit.
+- [x] **Paso 2:** implementar y documentar el formato en `references/datos.md`. **Paso 3:** pytest en verde. Commit.
 
 ### Tarea 6: `comprobar_asis.py`
 

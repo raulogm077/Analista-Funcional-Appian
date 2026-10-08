@@ -108,6 +108,7 @@ Cada bloque Mermaid pasa `python3 <skill>/scripts/validate_mermaid.py <fichero.m
 
 1. **Pasada de coherencia** (`references/execution-principles.md`, sección 4): corrige en su sitio las contradicciones entre documentos, fusiona duplicados y quita severidades repetidas. Completa en `01`–`11` las menciones a otras áreas con el ID canónico del hallazgo y su enlace. Nada de notas de parche. Termina con `build_registry.py` sin errores.
 2. `python3 <skill>/scripts/build_summary.py <salida>` → `<trabajo>/summary.json`, la fuente de las cifras de `00` y de los publicadores.
+   Después, `python3 <skill>/scripts/build_datos.py <salida>` → `<salida>/datos/`, lo que leen las demás skills (`references/datos.md`).
 3. Escribe con sus plantillas:
    - `00-resumen-ejecutivo.md`: cifras, confianza y su motivo, procesos críticos, hallazgos principales y uso real, de `summary.json`.
    - `INVENTARIO.md`: todos los objetos con su uuid y enlace al anexo, y la cobertura de la extracción.
@@ -142,6 +143,7 @@ Pasa la validación final (abajo) y responde con la plantilla de `references/res
 ├── 11-reglas-negocio.md
 ├── INVENTARIO.md
 ├── anexo/   (definiciones originales: indice.md + <tipo>/<slug>.md)
+├── datos/   (inventario, dependencias, hallazgos y procesos en JSON, para las demás skills)
 ├── diagrams/
 └── extraccion/   = <trabajo>: la extracción, tal cual, y los datos de trabajo (no es un entregable)
 ```
@@ -168,6 +170,7 @@ Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `a
 | `references/execution-principles.md` | Antes de la fase 4 (registro de hallazgos y pasada de coherencia). |
 | `references/docs-mcp-usage.md` | Antes de consultar la documentación (tope y caché). |
 | `references/data-fabric.md` | Fase 2, paso 3. |
+| `references/datos.md` | Fase 6: el formato de `datos/`. |
 | `references/appian-objects-guide.md` | Dónde está cada dato y heurísticas. |
 | `references/bpmn-mapping.md`, `mermaid-rules.md`, `presentation-rules.md` | Al generar diagramas y documentos. |
 | `references/security-rules.md` | Fase 3 y antes de escribir documentos. |
