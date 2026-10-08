@@ -25,7 +25,7 @@ Eres el primero en ejecutarte (paso 4.1): cuando escribes, los documentos de los
 - `assets/markdown-templates/01-funcional.md` y `02-arquitectura.md`: **la estructura de cada documento**. Síguela tal cual; este fichero solo dice qué analizar y con qué criterio.
 - `references/appian-objects-guide.md`: dónde está cada dato y roles típicos de grupos.
 - `references/mermaid-rules.md`: reglas de los diagramas y nombres de fichero.
-- `references/docs-mcp-usage.md`: cuándo consultar la documentación oficial, con caché y tope.
+- «Dudas de Appian» de `SKILL.md`, que te pasa el orquestador, para lo que no sepas con certeza de Appian, y `references/docs-mcp-usage.md`, con el tope de consultas y la caché compartida. Documentas hechos: no consultas `appian-best-practices` para decir qué conviene hacer.
 
 ## Proceso
 
@@ -94,18 +94,18 @@ Estructura y columnas de las tablas: las de la plantilla (las mismas en todas la
 - **Capas**, en este orden y con esta composición (la misma que `layerBreakdown` de `summary.json`, que da las cifras de 00): Entrada y presentación (sites, interfaces y Web APIs; también las páginas, vistas y acciones de record), Lógica (process models, expression rules, decisiones, agentes de IA), Datos (record types, CDTs, data stores), Integración (connected systems, integraciones), Transversal (constantes; solo en tablas) y Seguridad (grupos: solo su cifra en la Vista; el detalle es de 04). Las carpetas no son capa: están en INVENTARIO.
 - **Diagrama** (`diagrams/arquitectura.mmd`): `flowchart TD` con un `subgraph` por capa, en ese orden (las Web APIs arriba, con los sites, para que las flechas bajen), y al final un `subgraph` «Sistemas externos» con un nodo por sistema externo (el de cada connected system, por su nombre de negocio) y una flecha desde la integración que lo llama. 05 no tiene diagrama propio: remite a este. Solo los objetos clave: puntos de entrada, procesos raíz, hubs, records centrales e integraciones; el resto va en las tablas. Un nodo puede agrupar objetos del mismo papel («(Interfaces) listado y detalle, 3»). Máximo 30 nodos, pero el ancho manda: con más de ~15 nodos o más de 4 por fila suele pasar de 1600 px. Etiquetas de arista solo si aportan («lanza», «escribe»). Si el render avisa de ancho, agrupa más o parte en `arquitectura-<capa>.mmd`.
 - **Tablas por capa**: los objetos relevantes, no todos (el inventario completo está en `INVENTARIO.md`). «Ficha» enlaza el documento propietario (03, 05, 06, 08, 10) o, si no lo tiene, `anexo/<tipo>/<slug>.md`.
-- **Ref. entrantes**: número de aristas de `graph.json` cuyo destino es el objeto (para los hubs viene en `hubs[].in`). Cita siempre esta cifra y di de dónde sale: suma el análisis de dependencias de Appian y las referencias encontradas en las definiciones, así que puede ser mayor que la de la herramienta de dependientes (p. ej. 8 frente a 7). Cuenta referencias, no objetos distintos.
-- **Hubs** (`graph.json` → `hubs`, 5 o más referencias entrantes): en la tabla de su capa. Son hallazgo `H-ARQ` solo si hay algo que vigilar (una regla grande o compleja de la que dependen muchas pantallas). Evidencia: `graph:hubs`.
+- **Referencias**: número de aristas de `graph.json` cuyo destino es el objeto (para los hubs viene en `hubs[].in`). Cita siempre esta cifra: suma el análisis de dependencias de Appian y las referencias encontradas en las definiciones, así que puede ser mayor que la de la herramienta de dependientes (p. ej. 8 frente a 7). Cuenta referencias, no objetos distintos. Qué cuenta se explica una vez, en LEEME.
+- **Hubs** (`graph.json` → `hubs`, 5 o más referencias entrantes): en la tabla de su capa. Son hallazgo `H-ARQ` solo si tienen un riesgo (una regla grande o compleja de la que dependen muchas pantallas: un cambio en ella las afecta a todas). Evidencia: `graph:hubs`.
 - **Huérfanos** (`graph.json` → `orphans`): sin referencias entrantes en el grafo. Pueden lanzarse desde fuera (otra aplicación, una llamada por nombre, el Appian MCP Server), así que el hallazgo lleva 🔵 o ❓, nunca ✅ solo por el grafo; si el historial dice 0 ejecuciones, súmalo como indicio (el hallazgo de proceso sin ejecuciones es `H-GEN` de 09: menciónalo sin severidad). Registra **un** `H-ARQ` que los agrupe (cuántos y de qué tipos) y enlaza la lista, que es única y está en 09 (`09-valor-adicional.md`, «Objetos huérfanos»): no los listes en 02. Evidencia: `graph:orphans`.
 - **Dependencias externas** (sección propia de 02): lo que la aplicación usa y no viaja con ella. Los plug-ins se instalan en el entorno, no en la aplicación, y no aparecen en sus precedentes; los objetos de otras aplicaciones se despliegan con esas aplicaciones. Fuentes: https://docs.appian.com/suite/help/26.6/prepare-deployment-packages.html#add-plugins y https://docs.appian.com/suite/help/26.6/application-settings.html#missing-precedents. Busca:
-  - **Plug-ins**: nodos de proceso, funciones o componentes que no son del núcleo de Appian (no están en su documentación; con dudas, consulta el Docs MCP). ✅ si la respuesta dice que es un plug-in; 🔵 si se deduce de que no está en la documentación.
+  - **Plug-ins**: nodos de proceso, funciones o componentes que no son del núcleo de Appian (no están en su documentación; con dudas, consúltala como dice «Dudas de Appian»). ✅ si la respuesta dice que es un plug-in; 🔵 si se deduce de que no está en la documentación.
   - **Objetos de otras aplicaciones**: nodos con `external: true` de `graph.json` (`stats.externalNodes`), con su tipo y nombre si los trae.
   - **Grupos de sistema** de Appian que usa la aplicación (lista oficial: https://docs.appian.com/suite/help/26.6/System_Groups.html). Si dan permisos, el hallazgo es `H-SEG` de 04: aquí solo se listan.
   - **Documentos o plantillas** de un knowledge center (constantes de tipo documento o carpeta, generación de documentos) y **translation sets**.
 
-  De cada una: tipo, objeto, quién lo usa y evidencia. Lo que no reconozcas va con ❓ y la pregunta. Si no hay ninguna, se omite la sección y se dice en una línea de «Cobertura y límites». Es `H-ARQ` solo si hay algo que vigilar (p. ej. una pieza clave que no se reconoce).
+  De cada una: tipo, objeto, quién lo usa y evidencia. Lo que no reconozcas va con ❓ y la pregunta. Si no hay ninguna, se omite la sección y se dice en una línea de «Cobertura y límites». Es `H-ARQ` solo si tiene un riesgo (p. ej. una pieza clave que no se reconoce).
 - **Acoplamientos**: procesos que se llaman mutuamente, records que se escriben desde muchos sitios, interfaces que lanzan procesos directamente. Evidencia de cada relación: `graph:edge/<origen>→<destino>`.
-- **Notas para el mantenimiento**: lo que el equipo nuevo debe saber para no romper nada y las buenas prácticas observadas, dichas con palabras.
+- **Escrituras y llamadas a otros sistemas** (tabla de 02): por dónde pasa cada escritura en una entidad y cada llamada a un sistema externo («toda escritura en X pasa por el proceso Y», «todas las llamadas al ERP, por la integración Z»), con su evidencia. Son hechos: no se valora si está bien o mal hecho.
 - Si `graph.json` tiene pocas aristas de origen `dependents`, las relaciones salen sobre todo de las definiciones: dilo en «Cobertura y límites» y marca 🔵 las conclusiones sobre quién llama a quién.
 
 ### Paso 6. Hallazgos
@@ -120,7 +120,7 @@ Regístralos como dice `execution-principles.md` §3: tabla en la sección Halla
 - [ ] Las capas de 02 tienen los nombres, el orden y la composición del paso 5; el diagrama incluye los sistemas externos.
 - [ ] Los `.mmd` pasan `python3 <skill>/scripts/validate_mermaid.py <fichero>.mmd`; renderizados con `bash <skill>/scripts/render_diagrams.sh --mermaid <fichero>.mmd <fichero>.svg`, sin aviso de ancho.
 - [ ] Cada diagrama aparece una sola vez (imagen + «Fuente», o bloque mermaid si no hay SVG).
-- [ ] Checklist de `presentation-rules.md` superado (TL;DR único, orden de secciones, marcas, sin referencias a la skill ni a `<trabajo>/`).
+- [ ] Checklist de `presentation-rules.md` superado («Responde a», TL;DR único, orden de secciones, marcas, sin referencias a la skill ni a `<trabajo>/`).
 - [ ] El JSON de hallazgos coincide con las tablas de los dos documentos.
 
 ## Salida
@@ -130,11 +130,11 @@ Regístralos como dice `execution-principles.md` §3: tabla en la sección Halla
 - `<salida>/diagrams/flujo-general.mmd` y `.svg`
 - `<salida>/diagrams/arquitectura.mmd` y `.svg` (o `arquitectura-<capa>.mmd` y `.svg` si se parte)
 - `<trabajo>/hallazgos/interface-analyzer.json`
-- `<trabajo>/docs_cache/interface-analyzer.json`, si consultas el Docs MCP
+- `<trabajo>/docs_cache/interface-analyzer.json`, si consultas la documentación (por el Docs MCP o por la web)
 
 ## Informe final
 
-Termina con un informe breve al orquestador: ficheros escritos, consultas al Docs MCP (cuántas y sobre qué), choques entre instrucciones que hayas encontrado y cómo los resolviste, y «Para otras áreas» (lo que viste de procesos, pantallas, datos o seguridad, con el objeto y la evidencia).
+Termina con un informe breve al orquestador: ficheros escritos, consultas a la documentación (por el Docs MCP o por la web; cuántas y sobre qué), choques entre instrucciones que hayas encontrado y cómo los resolviste, y «Para otras áreas» (lo que viste de procesos, pantallas, datos o seguridad, con el objeto y la evidencia).
 
 ## No hagas esto
 

@@ -20,7 +20,7 @@ La **estructura** de cada documento la da su plantilla; este fichero dice **qué
 - `references/security-rules.md`: cómo se detecta y se registra un secreto, y otros riesgos de seguridad.
 - Las tres plantillas.
 
-Cuando haga falta: `references/appian-objects-guide.md` (dónde está cada dato), `references/docs-mcp-usage.md` (Docs MCP: caché y tope de consultas), `references/mermaid-rules.md` (diagrama de grupos).
+Cuando haga falta: `references/appian-objects-guide.md` (dónde está cada dato) y `references/mermaid-rules.md` (diagrama de grupos). Para lo que no sepas con certeza de Appian, «Dudas de Appian» de `SKILL.md`, que te pasa el orquestador, y `references/docs-mcp-usage.md`, con el tope de consultas y la caché compartida. Documentas hechos: no consultas `appian-best-practices` para decir qué conviene hacer.
 
 ## Entradas
 
@@ -51,13 +51,7 @@ Para cada integración del inventario:
 
 ### Configuración por entorno
 
-Los valores de otros entornos no están en la plataforma (van en el fichero de personalización de importación): documenta solo el **valor en el entorno extraído** y si es **parametrizable por entorno**.
-
-- **Sí**: URL base y credenciales de un connected system; constante marcada «Environment Specific»; usuario y contraseña literales de una integración. Fuentes: https://docs.appian.com/suite/help/26.6/http-connected-system.html#properties, https://docs.appian.com/suite/help/26.6/Application_Deployment_Guidelines.html#environment-specific-constants y https://docs.appian.com/suite/help/26.6/Application_Deployment_Guidelines.html#integrations
-- **No**: un literal dentro de una expresión (p. ej. una URL escrita en una regla) o una constante sin esa marca.
-- **❓**: la definición no dice si la constante está marcada.
-
-Una URL o constante que apunta a un entorno distinto del extraído (p. ej. un host de desarrollo en producción) es hallazgo `H-INT`.
+Lo que cambia por entorno (URL base y credenciales de los connected systems, constantes) lo documenta el orquestador en 09, en una sola tabla; 05 la enlaza. Lo tuyo: una URL o una constante que apunta a un entorno distinto del extraído (p. ej. un host de desarrollo en preproducción) es hallazgo `H-INT`.
 
 ## Bloque B — APIs expuestas (06)
 
@@ -79,7 +73,7 @@ Hallazgos `H-API` típicos: la puede llamar un grupo de alcance amplio; escribe 
 - Jerarquía con `parentGroup`, `memberGroups` y las aristas `memberGroup` del grafo; comprueba que no hay ciclos.
 - Usuarios: `userCount` cuenta los **usuarios directos** (los de los subgrupos no se suman). Sin herramienta de miembros no hay recuentos: quita la columna y dilo en «Cobertura y límites». Un usuario escrito en el código (en un role map, una asignación o una expresión de seguridad) o en una constante de tipo Usuario va con su grupo si aclara algo.
 - Diagrama `diagrams/grupos.mmd` (`flowchart TD`, etiqueta «Nombre (usuarios directos)», ≤ 30 nodos; con más, solo los grupos con subgrupos). Es el **único** diagrama que generas: 05 y 06 no llevan diagrama propio (el mapa de sistemas externos está en `02`).
-- «Grupos sin miembros»: solo si hay herramienta de miembros y algún grupo no tiene usuarios directos ni subgrupos; si no hay ninguno, la sección se omite. En un entorno que no es producción no es hallazgo.
+- Un grupo vacío (0 usuarios directos y 0 subgrupos) se ve en la tabla de grupos, sin sección aparte. En un entorno que no es producción no es hallazgo.
 
 ### Matriz de seguridad
 
@@ -97,7 +91,7 @@ Hallazgos `H-API` típicos: la puede llamar un grupo de alcance amplio; escribe 
 Hallazgos `H-SEG` típicos (certeza según la evidencia; sin role map, ❓ o no hay hallazgo):
 
 - Objeto con datos sensibles al alcance de un grupo amplio (definición en `security-rules.md`).
-- Grupo de sistema usado para dar permisos a objetos de la aplicación (Appian recomienda sus grupos de seguridad por defecto). Fuente: https://docs.appian.com/suite/help/26.6/System_Groups.html
+- Grupo de sistema con permisos sobre objetos de la aplicación (los grupos de sistema: https://docs.appian.com/suite/help/26.6/System_Groups.html).
 - Objeto sin ningún grupo Administrator: solo un administrador del sistema puede cambiar su seguridad.
 - Cuentas personales en un role map en lugar de grupos (cuántas y cuáles).
 - Objeto que hereda de una carpeta con un grupo amplio.
@@ -121,7 +115,7 @@ Para cada una: objeto, patrón, qué controla, certeza y evidencia. Comprueba qu
 
 Sigue `references/security-rules.md`, «Acción ante un secreto». Fuentes: la salida de `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw`, `secrets` de cada objeto en `inventory.json` y las constantes con `secret: true`.
 
-Cada secreto real es un hallazgo `H-SEG` con `"area": "secretos"` y severidad **Alta**: fila en la sección Hallazgos de 04, una línea debajo de la tabla con su impacto y la recomendación, y su entrada en el JSON. En 05 o 06, donde aparezca el objeto, una frase sin severidad que enlace el hallazgo de 04. El registro de 09 lo genera un script a partir del JSON: no escribas en 09.
+Cada secreto real es un hallazgo `H-SEG` con `"area": "secretos"` y severidad **Alta**: fila en la sección Hallazgos de 04, una línea debajo de la tabla con su impacto, y su entrada en el JSON. Qué hacer con él no se escribe. En 05 o 06, donde aparezca el objeto, una frase sin severidad que enlace el hallazgo de 04. El registro de 09 lo genera un script a partir del JSON: no escribas en 09.
 
 ## Registro de hallazgos
 
@@ -131,15 +125,14 @@ Un único fichero para las tres áreas: `<trabajo>/hallazgos/integration-securit
 [{"id": "H-SEG-01", "titulo": "Credencial en claro en la constante CON_SAP_TOKEN", "area": "secretos",
   "severidad": "Alta", "certeza": "verificado", "objetos": ["CON_SAP_TOKEN"],
   "documento": "04-seguridad-grupos.md#hallazgos", "evidencia": "mcp:constant/CON_SAP_TOKEN#value",
-  "impacto": "Quien pueda ver la constante obtiene la credencial de SAP.",
-  "recomendacion": "Rotarla y moverla al connected system como valor cifrado, con su valor por entorno en el fichero de personalización de importación."}]
+  "impacto": "La credencial de SAP la ve quien tenga acceso de diseño a la aplicación y va en cualquier exportación de su paquete."}]
 ```
 
 Lo que veas de otras áreas (p. ej. un proceso que ignora un error de la integración): una frase sin severidad donde tu documento lo necesite, enlace al documento propietario y mención en «Para otras áreas» de tu informe.
 
 ## Validación antes de terminar
 
-- [ ] Cada documento sigue su plantilla: TL;DR único, Vista, Detalle, Hallazgos, Cobertura y límites; sin secciones vacías.
+- [ ] Cada documento sigue su plantilla: «Responde a», TL;DR único, Vista, Detalle, Hallazgos, Cobertura y límites; sin secciones vacías.
 - [ ] Cada coincidencia de `detect_secrets.py <trabajo>/mcp_raw` y cada constante con `secret: true` tiene su `H-SEG` o está descartada como falso positivo.
 - [ ] Todas las integraciones, connected systems y Web APIs del inventario tienen ficha; todos los objetos del alcance de la matriz aparecen en ella.
 - [ ] Ninguna conclusión ✅ se apoya en un dato que no llegó (seguridad de acciones, excepciones de nodos, role maps, consumidores).
@@ -152,6 +145,6 @@ Lo que veas de otras áreas (p. ej. un proceso que ignora un error de la integra
 - `<salida>/04-seguridad-grupos.md`, `<salida>/05-integraciones-consumidas.md`, `<salida>/06-apis-expuestas.md`.
 - `<salida>/diagrams/grupos.mmd` (y `grupos.svg` si se pudo renderizar).
 - `<trabajo>/hallazgos/integration-security-analyzer.json`.
-- `<trabajo>/docs_cache/integration-security-analyzer.json`, si consultaste el Docs MCP.
+- `<trabajo>/docs_cache/integration-security-analyzer.json`, si consultaste la documentación (por el Docs MCP o por la web).
 
-Termina con un informe breve al orquestador: ficheros generados, consultas al Docs MCP, choques entre instrucciones y «Para otras áreas».
+Termina con un informe breve al orquestador: ficheros generados, consultas a la documentación (por el Docs MCP o por la web), choques entre instrucciones y «Para otras áreas».

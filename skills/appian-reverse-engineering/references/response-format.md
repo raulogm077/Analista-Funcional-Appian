@@ -7,7 +7,7 @@ Plantilla de la respuesta que devuelve la skill **al terminar** todas las fases 
 ## Plantilla
 
 ```markdown
-# Reingeniería inversa de <Aplicación> completada
+# Ingeniería inversa de <Aplicación> completada
 
 **Carpeta:** `<salida>/` · **Entorno:** `<url>` (<producción / no productivo / no consta>; lectura en vivo, sin cambios en Appian)
 

@@ -2,30 +2,31 @@
   Plantilla 07 — Procesos programados (orquestador, paso 4.3).
   Qué analizar y criterios de los hallazgos: references/analysis-workflow.md, «Guía de 07».
   Proceso programado = process model con inicio por temporizador (`startType: timer` en el inventario).
-  Sin procesos programados, el documento es solo el título y esta línea:
+  Sin procesos programados, el documento es el título, la línea «Responde a» y esta:
     > **TL;DR**: La aplicación no tiene procesos programados: ningún process model se inicia por temporizador.
   Hallazgos: solo H-BAT, en la tabla de Hallazgos y en <trabajo>/hallazgos/orquestador.json. La severidad
   solo aparece en esa tabla; en las fichas se cita el ID. Un proceso sin ejecuciones es H-GEN (09) y los fallos
   de la muestra de ejecuciones son H-PRO (08): aquí se citan por su ID.
   Si el entorno no consta como producción, las ejecuciones llevan la marca «orientativo (ver LEEME)», sin más explicación.
+  «Cobertura y límites»: solo lo de este documento; lo global está en LEEME.
 -->
 
 # Procesos programados
+
+> **Responde a:** ¿Qué procesos se lanzan solos y cada cuánto? ¿Con qué cuenta se ejecutan? ¿Qué leen, qué escriben y a qué sistemas llaman? ¿Cuántas veces se han ejecutado y con qué resultado?
 
 > **TL;DR**: {{N}} process models se lanzan solos por temporizador: {{resumen de frecuencias, p. ej. «uno diario y uno cada hora»}}. {{Lo más importante: qué mantienen al día o el hallazgo principal}}.
 > **Volumen**: {{N}} procesos programados · {{N}} ejecuciones registradas{{, orientativo (ver [LEEME](./LEEME.md))}}. **Hallazgos**: {{N (Alta: n)}} — principales: [H-BAT-01](#hallazgos), … (o «sin hallazgos»).
 
 ## Vista
 
-| Proceso | Frecuencia | Zona horaria | Próxima ejecución | Ejecuciones{{, orientativo (ver [LEEME](./LEEME.md))}} | Última | Certeza |
+| Proceso | Frecuencia | Zona horaria | Ejecuciones{{, orientativo (ver [LEEME](./LEEME.md))}} | Última | Certeza | Evidencia |
 |---|---|---|---|---|---|---|
-| [`{{nombre}}`](#{{ancla-de-la-ficha}}) | {{Cada lunes a las 08:00}} | {{Europe/Madrid}} | {{2026-10-06 08:00}} | {{N o «—»}} | {{AAAA-MM-DD o «—»}} | ✅ |
+| [`{{nombre}}`](#{{ancla-de-la-ficha}}) | {{Cada lunes a las 08:00}} | {{Europe/Madrid}} | {{N o «—»}} | {{AAAA-MM-DD o «—»}} | ✅ | [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](./anexo/processModel/{{slug}}.md) |
+
+Fuentes: [zona horaria de un temporizador](https://docs.appian.com/suite/help/26.6/Intermediate_Event_-_Timer.html#configuring-the-time-zone-used) · [cuenta con la que se ejecuta](https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors).
 
 ## Detalle
-
-La zona horaria de una recurrencia es la que fija el temporizador; por defecto, la del process model (`pp!timezone`). Fuente: https://docs.appian.com/suite/help/26.6/Intermediate_Event_-_Timer.html#configuring-the-time-zone-used
-
-Un proceso que arranca un temporizador se ejecuta con la cuenta del usuario que desplegó el process model. Fuente: https://docs.appian.com/suite/help/26.6/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors
 
 ### {{nombre técnico}} — {{nombre visible}}
 
@@ -54,4 +55,4 @@ Evidencia: [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](./anexo/processModel/
 
 ## Cobertura y límites
 
-{{1-5 líneas: p. ej. «sin historial de ejecuciones de DEM_Batch_X», «la consulta no fija lote: el volumen real por ejecución es ❓». Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}
+{{1-5 líneas: p. ej. «sin historial de ejecuciones de DEM_Batch_X», «la consulta no fija lote: el volumen real por ejecución es ❓».}}

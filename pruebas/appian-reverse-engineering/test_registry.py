@@ -69,6 +69,21 @@ def test_registry_fills_09(tmp_path):
     assert "modernization" not in s and all("tratamiento" not in f for f in s["findings"])
 
 
+def test_recomendacion_es_aviso(tmp_path):
+    """Un hallazgo dice qué pasa y qué riesgo tiene, no qué hacer: una «recomendacion» se avisa y no para el registro."""
+    out, work = setup(tmp_path)
+    (work / "hallazgos" / "process-modeler.json").write_text(json.dumps([
+        h("H-PRO-01", impacto="Una solicitud cancelada se registra igualmente.",
+          recomendacion="Pasarela tras el inicio que compruebe la cancelación."),
+        h("H-PRO-02", titulo="La pasarela no tiene salida por defecto", severidad="Media", recomendacion=""),
+        h("H-PRO-03", titulo="Tarea sin asignación", severidad="Baja", impacto="Nadie la ve en su bandeja.")]))
+    p = run(REG, out)
+    assert p.returncode == 0, p.stderr
+    avisos = [l for l in p.stderr.splitlines() if l.startswith("AVISO")]
+    assert len(avisos) == 1 and "H-PRO-01" in avisos[0] and "recomendacion" in avisos[0], p.stderr
+    assert "| H-PRO-01 |" in (out / "09-valor-adicional.md").read_text(encoding="utf-8")
+
+
 def test_registry_rejects_bad_entries(tmp_path):
     out, work = setup(tmp_path)
     (work / "hallazgos" / "a.json").write_text(json.dumps([

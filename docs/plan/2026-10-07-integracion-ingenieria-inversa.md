@@ -530,15 +530,15 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   `pruebas/appian-reverse-engineering/test_registry.py`.
 - Crear: `pruebas/appian-reverse-engineering/test_plantillas.py`.
 
-- [ ] **Paso 1: pruebas que fallan.** `test_plantillas.py`:
+- [x] **Paso 1: pruebas que fallan.** `test_plantillas.py`:
   - `test_cada_plantilla_empieza_por_sus_preguntas`: tras el título, una línea `> **Responde a:**` con 2 a 5 preguntas.
   - `test_toda_tabla_con_certeza_tiene_evidencia`.
   - `test_sin_recomendaciones`: ni plantillas, ni agentes, ni `references/` dicen «recomendaci» o «recomienda».
   - En `test_registry.py`, `test_recomendacion_es_aviso`.
-- [ ] **Paso 2:** reescribir: las preguntas que responde cada documento, tablas antes que prosa, columna «Evidencia»
+- [x] **Paso 2:** reescribir: las preguntas que responde cada documento, tablas antes que prosa, columna «Evidencia»
   donde hay «Certeza», sin explicar conceptos de Appian (se enlaza la documentación), sin repetir datos de otro
   documento y sin consejos (la frase de 09 «Appian recomienda dividir…» se va; el dato «procesos de más de 50 nodos» se queda).
-- [ ] **Paso 3:** pytest en verde. Commit «F3: plantillas que responden preguntas».
+- [x] **Paso 3:** pytest en verde. Commit «F3: plantillas que responden preguntas».
 
 ### Tarea 8b: Disciplina de evidencia
 

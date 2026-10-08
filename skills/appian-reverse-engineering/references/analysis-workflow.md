@@ -95,9 +95,13 @@ Hallazgos `H-BAT` (severidad orientativa; ajústala al impacto real). Los fallos
 Solo las subsecciones con contenido. Hallazgos propios: `H-GEN` (áreas mantenimiento, rendimiento o uso). Lo que sea de otra área se enlaza por su ID; si el propietario no lo registró, anótalo para la pasada de coherencia.
 
 - **Métricas** (Vista): de `inventory.json` (`counts`, `sailLines`, `sailBytes`, `nodeCount`, `validationIssues`, `usage`).
-- **Constantes por entorno y secretos**: constantes con URLs, hosts, identificadores o interruptores de entorno (`DEV`/`PRE`/`PRO`). Una constante con un secreto (`secret`, `secrets`, `detect_secrets.py`) enlaza además el `H-SEG` de 04.
-- **Reglas reutilizables**: los hubs de `graph.json` (5 o más objetos que los referencian) de tipo expression rule o decisión: qué hacen, entradas, salida y nº de llamadores. Los hubs como problema de arquitectura son `H-ARQ` de 02.
-- **Huérfanos**: `graph.orphans` (ya excluye puntos de entrada y procesos programados) y, solo si el entorno es producción, los process models sin ejecuciones (`signals`). Aquí va la lista para limpieza; el hallazgo de arquitectura es de 02.
+- **Configuración por entorno**: la única tabla de lo que cambia por entorno (05 la enlaza). Lleva la URL base y las credenciales de cada connected system y las constantes con URLs, hosts, identificadores o interruptores de entorno (`DEV`/`PRE`/`PRO`). Solo se ve el valor del entorno extraído; los de los demás van en el fichero de personalización de importación. «Por entorno»:
+  - **Sí**: URL base y credenciales de un connected system; constante marcada «Environment Specific»; usuario y contraseña literales de una integración. Fuentes: https://docs.appian.com/suite/help/26.6/http-connected-system.html#properties, https://docs.appian.com/suite/help/26.6/Application_Deployment_Guidelines.html#environment-specific-constants y https://docs.appian.com/suite/help/26.6/Application_Deployment_Guidelines.html#integrations
+  - **No**: un literal dentro de una expresión (p. ej. una URL escrita en una regla) o una constante sin esa marca.
+  - **❓**: la definición no dice si la constante está marcada.
+
+  Un valor que es un secreto (`secret`, `secrets`, `detect_secrets.py`) lleva en «Hallazgo» el `H-SEG` de 04; uno que apunta a otro entorno, el `H-INT` de 05.
+- **Huérfanos**: `graph.orphans` (ya excluye puntos de entrada y procesos programados) y, solo si el entorno es producción, los process models sin ejecuciones (`signals`). Aquí va la lista; el hallazgo es el `H-ARQ` de 02. Los objetos muy referenciados (hubs) también son de 02.
 - **Avisos de validación**: `validationIssues`; un `H-GEN` por tipo de aviso, agrupando objetos.
 - **Versionado**: `versions` (`count`, `lastModifiedOn`, `lastModifiedBy`). El autor se escribe tal cual; clasifícalo como cuenta personal, de servicio o «tipo no determinado» y busca su grupo en los ficheros `members` de `mcp_raw`. Cuenta de servicio solo si su grupo o su nombre lo indican claramente (🔵).
 - **Glosario de negocio**: términos de nombres y descripciones de records, campos, procesos y pantallas; ✅ si sale de una descripción de Appian, 🔵 si se deduce del nombre.
@@ -107,10 +111,10 @@ Hallazgos `H-GEN` (severidad orientativa):
 | Situación | Severidad | Certeza |
 |---|---|---|
 | Aviso de validación de la plataforma (función obsoleta, referencia rota) | Media; Alta si rompe una funcionalidad | ✅ |
-| Constante con un valor de otro entorno o fijo que debería variar por entorno | Media | ✅ o 🔵 |
+| Constante con un valor de entorno (URL, host) sin la marca «Environment Specific» (si apunta a otro entorno, es el `H-INT` de 05) | Media | ✅ o 🔵 |
 | Process model de más de 50 nodos ([fuente](https://docs.appian.com/suite/help/26.6/appian-recommendations.html#process-model-design-guidance)) | Media | ✅ |
 | Expression rule de más de 200 líneas o interfaz de más de 80 KB | Baja | ✅ |
-| Process models sin ejecuciones (`signals`) | Baja (candidatos a retirar) | ✅ en producción; 🔵 «orientativo (ver LEEME)» si no consta como producción |
+| Process models sin ejecuciones (`signals`) | Baja | ✅ en producción; 🔵 «orientativo (ver LEEME)» si no consta como producción |
 
 ## Fase 5 — Diagramas
 
@@ -124,9 +128,9 @@ Hallazgos `H-GEN` (severidad orientativa):
 
 - [ ] Pasada de coherencia (`execution-principles.md`, sección 4): contradicciones corregidas en su documento, duplicados marcados con `duplicadoDe`, severidades fuera del propietario quitadas, «Para otras áreas» registrados, menciones a otras áreas en 01–11 con el ID canónico y su enlace, sin notas de parche; al terminar, `build_registry.py <salida>` sin errores.
 - [ ] `build_summary.py <salida>` → `<trabajo>/summary.json`.
-- [ ] `00-resumen-ejecutivo.md` con su plantilla: todas las cifras de `summary.json` (confianza con su motivo, procesos críticos, hallazgos Alta, secretos y uso real con aviso de entorno).
+- [ ] `00-resumen-ejecutivo.md` con su plantilla: todas las cifras de `summary.json` (confianza con su motivo, procesos críticos, hallazgos Alta con su evidencia y uso real con aviso de entorno).
 - [ ] `INVENTARIO.md`: 100 % de `inventory.json`, con uuid, enlace al anexo y cobertura de la extracción.
-- [ ] `LEEME.md`: rutas por perfil, rangos reales de IDs, marcas, qué no incluye y glosario de Appian.
+- [ ] `LEEME.md`: rutas por perfil, qué documento responde a cada pregunta (con los rangos reales de IDs), cómo leer, qué no incluye y términos de Appian (enlaces a su documentación).
 
 ## Fase 7 — Publicación opcional
 

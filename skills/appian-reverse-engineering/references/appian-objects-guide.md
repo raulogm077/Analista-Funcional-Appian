@@ -77,8 +77,8 @@ Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/
 |---|---|
 | Expression rule grande | `sailLines` > 200; muchos `if`/`choose` anidados. |
 | Interfaz grande | `sailBytes` > 80 KB o más de ~30 componentes. |
-| Process model complejo | Más de 50 nodos o más de 100 variables de proceso (recomendaciones de diseño de Appian, [fuente](https://docs.appian.com/suite/help/26.6/appian-recommendations.html#process-model-design-guidance)); muchas pasarelas o subprocesos muy anidados. |
-| Lógica de negocio en la interfaz | Cálculos pesados en `a!localVariables` que deberían ser regla. |
+| Process model complejo | Más de 50 nodos o más de 100 variables de proceso ([guía de diseño de Appian](https://docs.appian.com/suite/help/26.6/appian-recommendations.html#process-model-design-guidance)); muchas pasarelas o subprocesos muy anidados. |
+| Lógica de negocio en la interfaz | Cálculos pesados en `a!localVariables` de la interfaz, sin una regla que los recoja. |
 | Valores *hardcodeados* | URLs, emails, identificadores de grupo, valores tipo "PROD"/"DEV" en literales. |
 | Duplicidad | Reglas con nombres parecidos y SAIL similar. |
 | Sin descripción | `description` vacía en la respuesta. Si la respuesta no trae el campo, no es indicio (dato ausente no es defecto). |

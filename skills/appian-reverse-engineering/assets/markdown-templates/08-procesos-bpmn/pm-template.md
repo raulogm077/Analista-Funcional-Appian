@@ -11,9 +11,12 @@
   Una asignación o un destinatario que es un usuario o una constante de tipo Usuario lleva el usuario, con su grupo si
   aclara algo.
   Evidencia: siempre enlazada a la ficha del proceso en el anexo (../anexo/processModel/<slug>.md).
+  «Cobertura y límites»: solo lo de este proceso; lo global está en LEEME.
 -->
 
 # {{nombre del process model}}
+
+> **Responde a:** ¿Quién lo inicia y cómo? ¿Qué pasos sigue? ¿Qué escribe, a qué llama y a quién avisa?
 
 > **TL;DR**: {{qué resultado de negocio produce, quién lo inicia y cómo (formulario, acción de record, temporizador, subproceso) y qué deja escrito o a quién avisa}}.
 > **Volumen**: {{N}} nodos ({{n}} tareas de personas, {{n}} automáticas, {{n}} pasarelas) · {{«120 ejecuciones, última el 2026-09-30» o «sin ejecuciones registradas» ([H-GEN-NN](../09-valor-adicional.md#hallazgos))}}{{, orientativo (ver [LEEME](../LEEME.md))}}. **Hallazgos**: {{2 (Alta: 1) — principales: [H-PRO-01](#hallazgos)}} o «sin hallazgos».
@@ -84,9 +87,9 @@ Fuente editable: [{{slug}}.drawio](./{{slug}}.drawio) (draw.io) · BPMN 2.0: [{{
 
 | ID | Hallazgo | Severidad | Certeza | Evidencia |
 |---|---|---|---|---|
-| H-PRO-01 | {{qué hay que corregir, decidir o vigilar}} | {{Alta/Media/Baja}} | {{✅/🔵/❓}} | [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](../anexo/processModel/{{slug}}.md) |
+| H-PRO-01 | {{qué pasa y qué riesgo tiene}} | {{Alta/Media/Baja}} | {{✅/🔵/❓}} | [`mcp:processModel/{{nombre}}#nodes[id={{N}}]`](../anexo/processModel/{{slug}}.md) |
 
-{{Para un hallazgo Alta: una línea con su impacto y la recomendación.}}
+{{Para un hallazgo Alta: una línea con su impacto, qué puede pasar y a quién afecta.}}
 
 {{Lo que corresponde a otra área: una frase sin severidad con el enlace a su documento.}}
 
@@ -94,4 +97,3 @@ Fuente editable: [{{slug}}.drawio](./{{slug}}.drawio) (draw.io) · BPMN 2.0: [{{
 
 - {{Datos no devueltos que cambian lo que dice este proceso: p. ej. «sin la pestaña de excepciones de Notificar ERP, no se sabe si un fallo detiene el proceso», destinatarios de correo, entradas de un nodo}} ❓.
 - {{Ejecuciones: solo lo propio de este proceso (fallos en la muestra con su H-PRO, ninguna ejecución con el H-GEN de 09). Si es de temporizador o subproceso, se ejecuta como el usuario que desplegó el modelo.}}
-{{Lo global (entorno, versión, muestra de ejecuciones, configuración que el Dev MCP no devuelve) está en LEEME: no lo repitas.}}
