@@ -264,11 +264,12 @@ Se acepta si:
 
         # 9. Diagramas de estados y de datos (opcional): los pinta el mermaid.py de la skill de diagramas
         mermaid = PLUGIN / "skills" / "appian-diagramas-bpmn" / "scripts" / "mermaid.py"
-        c, out = corre(mermaid, "--check", DATOS / "prueba.mmd") if mermaid.is_file() else (1, f"no existe {mermaid}")
+        c, out = (corre(mermaid, "--check", DATOS / "prueba.mmd", "--md", SKILL / "references" / "mermaid-diagrams.md")
+                  if mermaid.is_file() else (1, f"no existe {mermaid}"))
         if c == 2:
             print("· Diagramas: falta Playwright o un navegador; no se prueba")
         else:
-            ok("mermaid.py valida un diagrama", c == 0, out)
+            ok("mermaid.py valida un diagrama y los ejemplos de mermaid-diagrams.md", c == 0, out)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print("\nTodo correcto." if not fallos else f"\n{len(fallos)} pruebas fallan: {', '.join(fallos)}")
