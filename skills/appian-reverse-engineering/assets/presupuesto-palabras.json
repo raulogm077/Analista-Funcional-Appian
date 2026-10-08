@@ -1,0 +1,18 @@
+{
+ "_nota": "Presupuesto de palabras de cada documento: base + porObjeto[tipo] × objetos de ese tipo (summary.json, counts). Sale del máximo de presentation-rules.md, Regla 9, con 1 pantalla ≈ 450 palabras. Lo usa comprobar_asis.py para avisar; 09 e INVENTARIO no tienen techo.",
+ "documentos": {
+  "LEEME.md": {"base": 1350},
+  "00-resumen-ejecutivo.md": {"base": 1350},
+  "01-funcional.md": {"base": 450, "porObjeto": {"processModel": 450}},
+  "02-arquitectura.md": {"base": 2250},
+  "03-modelo-datos.md": {"base": 450, "porObjeto": {"recordType": 450, "cdt": 450}},
+  "04-seguridad-grupos.md": {"base": 2250},
+  "05-integraciones-consumidas.md": {"base": 450, "porObjeto": {"integration": 450}},
+  "06-apis-expuestas.md": {"base": 450, "porObjeto": {"webApi": 450}},
+  "07-batches.md": {"base": 2250},
+  "08-procesos-bpmn/indice.md": {"base": 900},
+  "08-procesos-bpmn/*.md": {"base": 1350},
+  "10-pantallas.md": {"base": 450, "porObjeto": {"interface": 450}},
+  "11-reglas-negocio.md": {"base": 450, "porObjeto": {"expressionRule": 450, "decision": 450}}
+ }
+}

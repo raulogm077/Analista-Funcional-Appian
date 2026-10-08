@@ -135,4 +135,5 @@ Hallazgos `H-GEN` (severidad orientativa):
 ## Fase 8 — Validación y respuesta
 
 - [ ] Validación final de `SKILL.md` superada.
+- [ ] `comprobar_asis.py <salida>` sin errores y con sus avisos corregidos.
 - [ ] Respuesta con la plantilla de `response-format.md`.

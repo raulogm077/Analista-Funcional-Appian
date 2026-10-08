@@ -458,11 +458,11 @@ caché); `pruebas/appian-reverse-engineering/test_scripts.py` (las pruebas de `d
   frases de más de 35 palabras, párrafos de 20 palabras o más repetidos en dos documentos y documentos por encima de su
   presupuesto (`presupuesto-palabras.json`: palabras base más palabras por objeto de su tipo).
 
-- [ ] **Paso 1: pruebas que fallan**, con una carpeta `as-is` mínima creada en la prueba: `test_objeto_inventado`,
+- [x] **Paso 1: pruebas que fallan**, con una carpeta `as-is` mínima creada en la prueba: `test_objeto_inventado`,
   `test_tabla_y_vista_no_son_inventadas`, `test_certeza_sin_evidencia`, `test_evidencia_rota`, `test_cifra_distinta`,
   `test_marcador_y_enlace_roto`, `test_muletilla_es_aviso` (sale 0), `test_documento_correcto` (0 errores y 0 avisos) y
   `test_ruta_con_espacios`.
-- [ ] **Paso 2:** implementar. **Paso 3:** pytest en verde. Commit «F3: comprobar_asis.py».
+- [x] **Paso 2:** implementar. **Paso 3:** pytest en verde. Commit «F3: comprobar_asis.py».
 
 ### Tarea 7: Aplicación ficticia mal hecha a propósito
 

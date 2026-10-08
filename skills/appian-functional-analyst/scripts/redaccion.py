@@ -4,6 +4,7 @@
   muletillas(ruta=None)              expresiones de references/redaccion.md («- «x» → …»), normalizadas
   frases(texto)                      las frases de un texto
   MAX_PALABRAS                       palabras por frase, como mucho
+  normaliza(texto)                   sin mayúsculas ni tildes, como se comparan las muletillas
   parrafos_repetidos(textos, minimo) párrafos de `minimo` palabras o más que están en dos textos o más
 """
 import pathlib
@@ -15,6 +16,7 @@ import modelo as mo  # noqa: E402
 
 GUIA = pathlib.Path(__file__).resolve().parents[1] / "references" / "redaccion.md"
 MAX_PALABRAS = 35
+normaliza = mo.normaliza   # sin mayúsculas ni tildes: así se comparan las muletillas
 
 
 def muletillas(ruta=None):

@@ -120,7 +120,7 @@ Según `output_preferences.json` (`pdf`, `dashboard`): `agents/pdf-publisher.md`
 
 ### Fase 8 — Validación y respuesta
 
-Pasa la validación final (abajo) y responde con la plantilla de `references/response-format.md`.
+Pasa la validación final (abajo), con `python3 <skill>/scripts/comprobar_asis.py <salida>` sin errores, y responde con la plantilla de `references/response-format.md`.
 
 ---
 
@@ -193,5 +193,6 @@ Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `a
 7. `INVENTARIO.md` cubre el 100 % de `inventory.json`.
 8. `LEEME.md` dice qué no estuvo disponible (MCP opcionales, tipos sin definición, seguridad por objeto).
 9. No se ha escrito nada fuera de `<salida>/`. Los datos en bruto solo están en `<salida>/extraccion/` y ningún documento enlaza esa carpeta.
+10. `python3 <skill>/scripts/comprobar_asis.py <salida>` sale sin errores: nombres con el prefijo que no están en el inventario, certezas sin evidencia o con una evidencia que no lleva al anexo, cifras de 00 distintas de `summary.json`, marcadores y enlaces rotos. Sus avisos (muletillas, frases largas, párrafos repetidos en dos documentos, documentos que pasan su presupuesto de palabras) se corrigen.
 
 Si algo falla, corrígelo y vuelve a validar antes de responder.
