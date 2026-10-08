@@ -36,6 +36,7 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -306,7 +307,6 @@ class CallResult:
     error: str | None = None
     pages: int = 1
     seconds: float = 0.0
-    cached: bool = False     # leída de la extracción guardada, sin llamar al servidor
 
 
 def parse_result(res) -> tuple[bool, Any, str | None]:
@@ -617,17 +617,28 @@ def carpetas_locales(out=None) -> list[str]:
     return sorted(rutas, key=len, reverse=True)
 
 
+@lru_cache(maxsize=32)
+def _patron_de_rutas(carpetas: tuple[str, ...]):
+    """Cada carpeta sin distinguir mayúsculas y con / o \\ entre sus partes (c:\\users\\…, C:/Users/…), y nunca
+    dentro de otro nombre (/home/raul/proyectos no está en /home/raul/proyectos2)."""
+    alternativas = []
+    for c in sorted(set(carpetas), key=len, reverse=True):
+        partes = [re.escape(p) for p in re.split(r"[\\/]+", c) if p]
+        if partes:
+            alternativas.append((r"[\\/]+" if c[:1] in "\\/" else "") + r"[\\/]+".join(partes))
+    return re.compile(r"(?i)(?:" + "|".join(alternativas) + r")(?![\w-])") if alternativas else None
+
+
 def sin_rutas(x: Any, carpetas: list[str]) -> Any:
-    if isinstance(x, str):
-        for c in carpetas:
-            if c in x:
-                x = x.replace(c, "‹carpeta local›")
-        return x
-    if isinstance(x, dict):
-        return {k: sin_rutas(v, carpetas) for k, v in x.items()}
-    if isinstance(x, list):
-        return [sin_rutas(v, carpetas) for v in x]
-    return x
+    patron = _patron_de_rutas(tuple(carpetas))
+
+    def quita(v):
+        if isinstance(v, str):
+            return patron.sub("‹carpeta local›", v)
+        if isinstance(v, dict):
+            return {k: quita(w) for k, w in v.items()}
+        return [quita(w) for w in v] if isinstance(v, list) else v
+    return quita(x) if patron else x
 
 
 def para_disco(data: Any, out, usuarios: set[str] | None = None) -> Any:
@@ -638,21 +649,30 @@ def para_disco(data: Any, out, usuarios: set[str] | None = None) -> Any:
             return {k: Path(v).name if k == "configFile" and isinstance(v, str) else nombres(v) for k, v in x.items()}
         return [nombres(v) for v in x] if isinstance(x, list) else x
     data = sin_rutas(mask_secrets(nombres(data), [0]), carpetas_locales(out))
-    huellas = privacidad.lee_huellas(work_dir(out) / "mcp_raw")
-    return privacidad.sanea(data, set(usuarios or ()) | privacidad.conocidos(data, huellas))
+    huellas = privacidad.Huellas(work_dir(out) / "mcp_raw")
+    return privacidad.sanea(data, set(usuarios or ()) | huellas.reconoce(data))
+
+
+def preflight_para_disco(report: dict, out) -> dict:
+    """preflight.json, saneado como lo demás y, de las aplicaciones del entorno, solo cuántas hay (appsVisible)."""
+    disco = para_disco(report, out)
+    for clave in ("apps", "appsNote"):
+        (disco.get("devMcp") or {}).pop(clave, None)
+    return disco
 
 
 # Lo que escribe este script fuera de mcp_raw/ (lo demás de la extracción, inventario o resumen, sale de lo saneado).
 FICHEROS_EXTRACCION = ("mcp_catalog.json", "extraction_plan.json", "extraction_report.json", "preflight.json",
                        "datafabric.json")
+ROLES_CON_USUARIOS = ("members", "versions", "history")   # se piden antes que lo demás
 
 
 def barrido_final(raw: Path) -> int:
     """Al terminar la extracción, la repasa entera con la lista completa de usuarios (su huella, en
     mcp_raw/_huellas.json), por si un texto se escribió antes de conocer a su usuario. Devuelve cuántos ficheros cambió."""
     raw = Path(raw)
-    huellas = privacidad.lee_huellas(raw)
-    if not huellas:
+    huellas = privacidad.Huellas(raw)
+    if not huellas.todas:
         return 0
     ficheros = [f for f in sorted(raw.rglob("*.json")) if f.name != privacidad.HUELLAS]
     ficheros += [raw.parent / n for n in FICHEROS_EXTRACCION if (raw.parent / n).exists()]
@@ -662,7 +682,7 @@ def barrido_final(raw: Path) -> int:
             datos = json.loads(f.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        saneados = privacidad.sanea(datos, privacidad.conocidos(datos, huellas))
+        saneados = privacidad.sanea(datos, huellas.reconoce(datos))
         if saneados != datos:
             f.write_text(json.dumps(saneados, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
             cambiados += 1
@@ -682,6 +702,7 @@ class Extractor:
         self.raw = (work_dir(out, crear=True) / "mcp_raw") if out else None
         self.carpetas = carpetas_locales(out)
         self.usuarios: set[str] = set()     # los conocidos en esta ejecución; en disco solo va su huella
+        self.huellas = privacidad.Huellas(self.raw) if self.raw else None   # los de sesiones anteriores
         self.app_uuid: str | None = None    # la aplicación elegida: de la lista del entorno solo se guarda ella
         self.pendientes: list[tuple] = []   # listas de aplicaciones a la espera de saber cuál es la elegida
         self.stats = defaultdict(lambda: defaultdict(int))
@@ -802,11 +823,11 @@ class Extractor:
                 meta = cached.get("_meta", {})
                 if meta.get("ok"):
                     self.stats[ti.name]["cached"] += 1
-                    return CallResult(True, cached.get("response"), None, meta.get("pages", 1), cached=True)
+                    return CallResult(True, cached.get("response"), None, meta.get("pages", 1))
                 if not meta.get("transient", True) and not self.retry_failed:
                     self.stats[ti.name]["cachedFailed"] += 1
                     self.errors.append(error_de(ti, scope, obj, meta.get("error")))   # el informe, igual al retomar
-                    return CallResult(False, None, meta.get("error"), cached=True)
+                    return CallResult(False, None, meta.get("error"))
             except Exception:
                 pass
         args = self.build_args(ti, app_uuid=app_uuid, obj=obj)
@@ -851,11 +872,10 @@ class Extractor:
             safe_data = solo_la_app(safe_data, self.app_uuid)
         if masked[0]:
             meta["maskedSecrets"] = masked[0]
-        conocidos = len(self.usuarios)
-        doc = privacidad.sanea(sin_rutas({"_meta": mask_secrets(meta, [0]), "response": safe_data}, self.carpetas),
-                               self.usuarios)
-        if len(self.usuarios) > conocidos:
-            privacidad.guarda_huellas(self.raw, self.usuarios)
+        doc = sin_rutas({"_meta": mask_secrets(meta, [0]), "response": safe_data}, self.carpetas)
+        self.usuarios |= self.huellas.reconoce(doc)            # también los de otras sesiones, por su huella
+        doc = privacidad.sanea(doc, self.usuarios)
+        self.huellas.añade(self.usuarios)                       # solo escribe si alguno es nuevo
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(json.dumps(doc, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
 
@@ -1086,8 +1106,22 @@ async def cmd_apps(args) -> int:
     return EXIT_OK if apps else EXIT_NO_APPS
 
 
+def normaliza_preflight(out: Path) -> None:
+    """La red de la fase 0: si el preflight.json lo completó el modelo, vuelve a quedar saneado (sin la lista de
+    aplicaciones ni rutas). Lo que añadió (environment, docsMcp) se conserva."""
+    f = work_dir(out) / "preflight.json"
+    try:
+        guardado = json.loads(f.read_text(encoding="utf-8"))
+        saneado = preflight_para_disco(guardado, out)
+        if saneado != guardado:                              # sin reescribirlo si ya está bien (carpetas sincronizadas)
+            write_json(f, saneado)
+    except (OSError, ValueError, AttributeError):
+        pass                                                 # no existe todavía o no es un JSON: nada que sanear
+
+
 async def cmd_plan_or_extract(args, execute: bool) -> int:
     out = Path(args.out).resolve()
+    normaliza_preflight(out)
     sess, choice, code, msg = open_session(args)
     if not sess:
         eprint(msg)
@@ -1132,7 +1166,10 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         eprint(f"\nEl plan supera {policy.confirm_above} llamadas. Repite con --yes para confirmar.")
         return EXIT_USAGE
     await ex.env_calls()
-    await asyncio.gather(*(ex.run_group(ti, t, objs) for ti, t, objs in groups))
+    # primero lo que dice quién es cada usuario (miembros, versiones, ejecuciones): lo demás ya se escribe saneado
+    for fase in ([g for g in groups if g[0].role in ROLES_CON_USUARIOS],
+                 [g for g in groups if g[0].role not in ROLES_CON_USUARIOS]):
+        await asyncio.gather(*(ex.run_group(ti, t, objs) for ti, t, objs in fase))
     report = {
         "startedAt": inicio,
         "durationSeconds": round(time.monotonic() - t0, 1),
@@ -1289,10 +1326,7 @@ async def cmd_doctor(args) -> int:
                           "detail": "No aparece en los ficheros de configuracion. Puede estar anadido desde la interfaz "
                                     "del cliente: la skill lo comprueba desde la sesion."})
     if args.out:   # en disco, de las aplicaciones del entorno solo cuántas hay
-        disco = para_disco(report, args.out)
-        for clave in ("apps", "appsNote"):
-            disco["devMcp"].pop(clave, None)
-        write_json(work_dir(args.out, crear=True) / "preflight.json", disco)
+        write_json(work_dir(args.out, crear=True) / "preflight.json", preflight_para_disco(report, args.out))
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
@@ -1341,7 +1375,7 @@ async def cmd_datafabric(args) -> int:
             if not r.ok:
                 eprint(f"Error en metadatos: {r.error}")
                 return EXIT_NO_MCPSERVER
-            _, lst, _ = find_primary_list(r.data)
+            path, lst, _ = find_primary_list(r.data)
             entries = [x for x in (lst or []) if isinstance(x, dict)]
             by_name = {str(pick(x, NAME_KEYS) or "").lower(): x for x in entries}
             by_uuid = {pick(x, UUID_KEYS): x for x in entries if pick(x, UUID_KEYS)}
@@ -1349,11 +1383,13 @@ async def cmd_datafabric(args) -> int:
             if sql:
                 qparam = next(p for p in (sql.inputSchema or {}).get("required") or []
                               if "query" in tokens(p) or "sql" in tokens(p))
+            de_la_app = []
             for rt in rts:
                 m = by_uuid.get(rt["uuid"]) or by_name.get(str(rt["name"]).lower())
                 if not m:
                     result["unmatchedRecordTypes"].append(rt["name"])
                     continue
+                de_la_app.append(m)
                 ref = next((v for k, v in m.items() if "sql" in k.lower() and isinstance(v, str)), None) \
                     or pick(m, ("tableName", "referenceName"))
                 fields = next((v for k, v in m.items() if k.lower() == "fields" and isinstance(v, list)), [])
@@ -1373,7 +1409,8 @@ async def cmd_datafabric(args) -> int:
                 elif not sql:
                     item["countError"] = "El servidor no ofrece consultas SQL."
                 result["recordTypes"].append(item)
-            result["metadataRaw"] = r.data
+            if lst is not None:   # el servidor ve los record types de todo el entorno: solo se guardan los de la app
+                result["metadataRaw"] = set_path(r.data, path, de_la_app)
     except Exception as ex_:
         eprint(f"Appian MCP Server no disponible: {type(ex_).__name__}: {ex_}")
         return EXIT_NO_MCPSERVER

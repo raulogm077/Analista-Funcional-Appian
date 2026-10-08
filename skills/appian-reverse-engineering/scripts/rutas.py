@@ -19,7 +19,14 @@ def work_dir(out, crear: bool = False) -> Path:
     return d
 
 
+TIPO_MAXIMO = 24   # con el nombre de herramienta de 48 (devmcp_extract.safe_name), mcp_raw/… no pasa de 100
+
+
 def carpeta_objeto(raw: Path, tipo: str, uuid: str) -> Path:
     """Carpeta de las respuestas de un objeto: <raw>/<tipo>/<12 hex del sha1 del uuid>. El uuid, que alargaría la
-    ruta, está en mcp_raw/_objects.json y en el _meta de cada respuesta."""
-    return Path(raw) / re.sub(r"[^A-Za-z0-9_-]", "_", tipo) / hashlib.sha1(uuid.encode("utf-8")).hexdigest()[:12]
+    ruta, está en mcp_raw/_objects.json y en el _meta de cada respuesta. Un tipo de más de 24 caracteres se recorta
+    y lleva 8 hex del sha1 del tipo, para que dos tipos largos no se pisen."""
+    limpio = re.sub(r"[^A-Za-z0-9_-]", "_", tipo)
+    if len(limpio) > TIPO_MAXIMO:
+        limpio = f"{limpio[:TIPO_MAXIMO - 9]}-{hashlib.sha1(tipo.encode('utf-8')).hexdigest()[:8]}"
+    return Path(raw) / limpio / hashlib.sha1(uuid.encode("utf-8")).hexdigest()[:12]

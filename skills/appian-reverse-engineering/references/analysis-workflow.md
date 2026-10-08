@@ -13,13 +13,14 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 ## Fase 0 — Preflight
 
-- [ ] `doctor --json` ejecutado. Con `appsNote` (más de 50 apps), la del usuario buscada con `apps --json`.
+- [ ] `doctor --json` ejecutado (por consola, todavía sin `<salida>`). Con `appsNote` (más de 50 apps), la del usuario buscada con `apps --json`.
 - [ ] Docs MCP: herramienta localizada y una consulta de prueba, apuntada en `<trabajo>/docs_cache/orquestador.json` (cuenta para el tope de 30).
 - [ ] Appian MCP Server: estado según `doctor`, o «disponible en sesión» si sus herramientas están en la sesión.
 - [ ] Tabla de estado mostrada al usuario (estado · qué se pierde · cómo activarlo).
 - [ ] Si el Dev MCP no está `ok`: mostrado el paso de `devmcp-setup.md` que falta y **parada**.
 - [ ] En una sola pregunta: aplicación, formatos adicionales y si el entorno es producción (con su versión de Appian, si la sabe).
-- [ ] `preflight.json` (con `environment: {url, isProduction, appianVersion}`) y `output_preferences.json` (`pdf`, `dashboard`; formato en `SKILL.md`) guardados.
+- [ ] Con `<salida>` ya decidida, `doctor --json --out <salida>`: el script guarda `preflight.json` saneado y tú solo le añades tus comprobaciones de sesión y `environment: {url, isProduction, appianVersion}`, sin copiar la salida por consola.
+- [ ] `output_preferences.json` (`pdf`, `dashboard`; formato en `SKILL.md`) guardado.
 
 **Qué pierde el usuario sin cada MCP opcional**
 
@@ -99,7 +100,7 @@ Solo las subsecciones con contenido. Hallazgos propios: `H-GEN` (áreas mantenim
 - **Reglas reutilizables**: los hubs de `graph.json` (5 o más objetos que los referencian) de tipo expression rule o decisión: qué hacen, entradas, salida y nº de llamadores. Los hubs como problema de arquitectura son `H-ARQ` de 02.
 - **Huérfanos**: `graph.orphans` (ya excluye puntos de entrada y procesos programados) y, solo si el entorno es producción, los process models sin ejecuciones (`signals`). Aquí va la lista para limpieza; el hallazgo de arquitectura es de 02.
 - **Avisos de validación**: `validationIssues`; un `H-GEN` por tipo de aviso, agrupando objetos.
-- **Versionado**: `versions` (`count`, `lastModifiedOn`, `lastModifiedBy`). El autor nunca se escribe: clasifícalo como cuenta personal, de servicio o «tipo no determinado» y busca su grupo en los ficheros `members` de `mcp_raw`. Cuenta de servicio solo si su grupo o su nombre lo indican claramente (🔵).
+- **Versionado**: `versions` (`count`, `lastModifiedOn`, `lastModifiedBy`). El autor nunca se escribe: clasifícalo como cuenta personal, de servicio o «tipo no determinado» y busca su grupo en los ficheros `members` de `mcp_raw`, por su seudónimo. Cuenta de servicio solo si su grupo lo indica claramente (🔵): su nombre ya es un seudónimo y no dice nada.
 - **Glosario de negocio**: términos de nombres y descripciones de records, campos, procesos y pantallas; ✅ si sale de una descripción de Appian, 🔵 si se deduce del nombre.
 
 Hallazgos `H-GEN` (severidad orientativa):

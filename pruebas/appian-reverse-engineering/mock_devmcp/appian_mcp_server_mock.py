@@ -31,6 +31,9 @@ def appian_data_fabric_metadata(recordType: str = "") -> str:
             rts.append({"name": o["name"], "sqlReferenceName": o["tableName"],
                         "fields": [{"name": f["fieldName"], "type": f["fieldType"]} for f in o["fields"]],
                         "relationships": [{"name": r["relationshipName"]} for r in o.get("relationships", [])]})
+    # el servidor ve los record types de todo el entorno, también los de otra aplicación
+    rts.append({"name": "OTR Expediente", "sqlReferenceName": "OTR_EXPEDIENTE",
+                "fields": [{"name": "titular", "type": "Text"}], "relationships": []})
     return json.dumps({"recordTypes": rts})
 
 

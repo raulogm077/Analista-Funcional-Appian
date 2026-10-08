@@ -99,7 +99,7 @@ def test_doctor_three_mcps(project, http_server):
     rep = json.loads(project.run("doctor", "--json", check=0).stdout)
     assert rep["appianMcpServer"]["status"] == "ok"
     assert rep["appianMcpServer"]["metadataCall"]["ok"] is True
-    assert rep["appianMcpServer"]["recordTypesVisible"] == 2
+    assert rep["appianMcpServer"]["recordTypesVisible"] == 3            # los del entorno: 2 de DEM y 1 de otra
     assert rep["docsMcp"]["status"] == "configurado"
 
 

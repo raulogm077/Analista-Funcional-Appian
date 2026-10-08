@@ -8,10 +8,11 @@ pertenece. Las mismas reglas, se ejecute lo que se ejecute.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
+import os
 import re
 from collections import defaultdict
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -231,17 +232,34 @@ def scrub_text(x: str, users: dict[str, str], notes: set[str], key: str = "") ->
 # ------------------------------------------------------------------------ seudónimos (la extracción)
 
 HUELLAS = "_huellas.json"   # en mcp_raw/: la huella de cada usuario que ha salido en la extracción, nunca su nombre
+NOMBRE = "‹nombre›"         # el nombre de una persona (no es un usuario: no se le da seudónimo)
 # Un usuario de Appian solo lleva letras ASCII, números y @ . _ - ' (https://docs.appian.com/suite/help/26.6/User_Management.html)
+USUARIO = re.compile(r"^[A-Za-z0-9@._'-]+$")
 PALABRA = re.compile(r"[A-Za-z0-9@._'-]+")
 APRENDE = re.compile(r"^(?=.*[A-Za-z])[A-Za-z0-9@._'-]{3,255}$")   # el usuario que luego se busca en los textos
 MARCA = re.compile(r"(‹[^‹›]*›)")                                    # lo ya saneado (‹usuario-…›, ‹correo›…)
-CAMPO_PERSONA = re.compile(r"(?i)^(displayname|fullname|firstname|lastname)$")   # fuera de un usuario, la etiqueta de un objeto
-CAMPO_CORREO = re.compile(r"(?i)^(e-?mail|mail|.*email)$")                      # su valor es un correo: ‹correo›
-NO_ES_USUARIO = re.compile(r"(?i)^(group|order|sort|partition|filter|index)by$")
-# entradas, variables y campos de tipo usuario: {name: "aprobador", type: "User"} es una definición, no un usuario
-DEFINICIONES = re.compile(r"(?i)^(inputs|ruleinputs|processvariables|variables|parameters|params|fields|properties|"
-                          r"attributes|outputs|columns|arguments)$")
+TIPOS = ("type", "kind", "objectType")
 CLAVES_UUID = ("uuid", "objectUuid", "designObjectUuid")
+ENVOLTORIOS = ("", "result", "data", "response", "object", "item", "definition")   # la respuesta de un objeto
+CAMPO_CORREO = re.compile(r"(?i)^(e-?mail|mail|.*email)$")
+NO_ES_USUARIO = re.compile(r"(?i)^(group|order|sort|partition|filter|index)by$")
+# claves de usuario que pueden ser también de un grupo: de ellas solo se cambia lo que tiene forma de usuario
+DE_USUARIO_O_GRUPO = re.compile(r"(?i)^(assignee|.*owner)$")
+# listas de usuarios (todo lo que llevan es un usuario) y de usuarios o grupos (solo lo que tiene forma de usuario)
+LISTA_DE_USUARIOS = re.compile(r"(?i)^(users|usernames|logins)$")
+LISTA_DE_PRINCIPALES = re.compile(r"(?i)^(assignees|members|principals|participants|recipients|owners|approvers|"
+                                  r"reviewers|initiators|viewers|editors|administrators|managers)$")
+# {"principal": "x", "principalType": "USER"}: la clave de al lado dice si es un usuario
+CON_SU_TIPO = ("principal", "member", "assignee", "owner", "initiator", "actor", "recipient", "participant")
+# el nombre de una persona: suelto, solo dentro de un usuario; compuesto (initiatorName, createdByName…), en cualquier sitio
+NOMBRE_SUELTO = re.compile(r"(?i)^(display|full|first|last|middle|nick)name$")
+NOMBRE_COMPUESTO = re.compile(r"(?i)^(.*(by|initiator|author|owner|creator|modifier|assignee|starter|requester|requestor|"
+                              r"submitter|approver|reviewer|usuario)(display|full|first|last|middle|nick)?name|"
+                              r".*user(display|full|first|last|middle|nick)name)$")
+# entradas, parámetros, variables y campos con su tipo: {name: "revisor", type: "User"} es una definición, no un usuario
+DEFINICIONES = re.compile(r"(?i)(parameters|params|inputs|outputs|variables|vars|fields|properties|attributes|columns|"
+                          r"arguments|args)$")
+CLAVES_DE_DEFINICION = ("isParameter", "isRequired", "required", "multiple", "isArray", "defaultValue", "dataType")
 
 
 def seudonimo(usuario: str) -> str:
@@ -250,52 +268,89 @@ def seudonimo(usuario: str) -> str:
     return "‹usuario-" + hashlib.sha256(usuario.strip().lower().encode("utf-8")).hexdigest()[:6] + "›"
 
 
-@lru_cache(maxsize=100_000)
-def huella(usuario: str) -> str:
-    """sha256 del usuario tal como se escribe: lo reconoce en un texto sin guardar su nombre."""
-    return hashlib.sha256(usuario.encode("utf-8")).hexdigest()
-
-
 def _valor(v) -> bool:
     """Un texto que puede ser un usuario: ni vacío, ni ya saneado (‹…›), ni una expresión o una referencia."""
     return isinstance(v, str) and bool(v.strip()) and not v.startswith("‹") and not is_reference(v)
 
 
-def _campo_usuario(k) -> bool:
+def _clave_de_usuario(k) -> str:
+    """'puro' si el valor de la clave es un usuario, 'mixto' si puede ser un usuario o un grupo y '' si no lo es."""
     k = str(k)
-    return bool(USER_KEY.match(k)) and not (CAMPO_PERSONA.match(k) or CAMPO_CORREO.match(k) or NO_ES_USUARIO.match(k))
+    if LISTA_DE_USUARIOS.match(k):
+        return "puro"
+    if LISTA_DE_PRINCIPALES.match(k):
+        return "mixto"
+    if (not USER_KEY.match(k) or CAMPO_CORREO.match(k) or NO_ES_USUARIO.match(k) or NOMBRE_SUELTO.match(k)
+            or nombre_de_persona(k, False)):   # displayName fuera de un usuario es la etiqueta de un objeto
+        return ""
+    return "mixto" if DE_USUARIO_O_GRUPO.match(k) else "puro"
 
 
-def _campos(x, hallados: set[str], padre: str = ""):
-    """Los usuarios de los campos de usuario, de los objetos de tipo usuario y de las constantes, variables y valores
-    de tipo usuario, cada uno por su seudónimo. Los que cambia los añade a `hallados`."""
-    if isinstance(x, list):
-        return [_campos(v, hallados, padre) for v in x]
-    if not isinstance(x, dict):
-        return x
-    diseno = any(k in x for k in CLAVES_UUID)                  # un objeto de diseño (p. ej. una constante) no es un usuario
-    de_tipo_usuario = any(str(x.get(k, "")).lower() == "user" for k in ("type", "kind", "objectType"))
-    con_valor = de_tipo_usuario and "value" in x               # constante, variable o valor: el usuario es el valor
-    usuario = not diseno and (any(str(k).lower() in ("username", "login") for k in x) or (
-        de_tipo_usuario and not con_valor and not DEFINICIONES.match(padre)))
-    ident = next((x[k] for k in ("username", "userName", "login", "name", "id") if _valor(x.get(k))), None)
-    propio = seudonimo(ident) if usuario and ident else None
+def nombre_de_persona(k, en_usuario: bool) -> bool:
+    k = str(k)
+    if NOMBRE_COMPUESTO.match(k):
+        return not NO_ES_USUARIO.match(re.sub(r"(?i)name$", "", k))      # sortByName no es el nombre de nadie
+    return en_usuario and bool(NOMBRE_SUELTO.match(k))
 
-    def cambia(v: str) -> str:
+
+def _de_tipo(v, tipo: str, hallados: set[str]):
+    """Un valor de una clave de usuario: con tipo 'puro', todo texto es un usuario; con 'mixto', solo el que tiene
+    forma de usuario (un grupo lleva espacios)."""
+    if isinstance(v, list):
+        return [_de_tipo(w, tipo, hallados) for w in v]
+    if _valor(v) and (tipo == "puro" or USUARIO.match(v.strip())):
         hallados.add(v.strip())
         return seudonimo(v)
+    return v
 
+
+def _campos(x, hallados: set[str], padre: str = "", de_usuario: str = ""):
+    """Primera pasada: los usuarios de los campos de usuario, de los objetos de tipo usuario y de las constantes,
+    variables y valores de tipo usuario, y los nombres de persona. `padre` es la clave que contiene `x`; `de_usuario`,
+    si esa clave dice que es un usuario. Los usuarios que cambia los añade a `hallados`."""
+    if isinstance(x, list):
+        return [_campos(v, hallados, padre, de_usuario) for v in x]
+    if isinstance(x, str):
+        return _de_tipo(x, de_usuario, hallados) if de_usuario else x
+    if not isinstance(x, dict):
+        return x
+    tipo = " ".join(str(x.get(k) or "") for k in TIPOS).strip().lower()
+    de_tipo_usuario = "user" in tipo                            # USER, User, User or Group, USER_OR_GROUP…
+    o_grupo = "group" in tipo                                   # puede ser un grupo: solo lo que tiene forma de usuario
+    diseno = padre in ENVOLTORIOS and any(k in x for k in CLAVES_UUID) and not de_usuario
+    con_valor = de_tipo_usuario and "value" in x                # constante, variable o valor: el usuario es el valor
+    definicion = bool(DEFINICIONES.search(padre)) or any(k in x for k in CLAVES_DE_DEFINICION)
+    por_la_clave = de_usuario == "puro" and (not tipo or de_tipo_usuario)   # "modifiedBy": {…}, sin otro tipo
+    usuario = not diseno and (por_la_clave or any(str(k).lower() in ("username", "login") for k in x) or (
+        de_tipo_usuario and not con_valor and not definicion))
+    ident = next((x[k] for k in ("username", "userName", "login", "name", "id")
+                  if _valor(x.get(k)) and USUARIO.match(x[k].strip())), None) if usuario else None
+    propio = seudonimo(ident) if ident else None
+    por_su_tipo = {str(k)[:-4].lower() for k, v in x.items()
+                   if str(k).lower().endswith("type") and str(k)[:-4].lower() in CON_SU_TIPO and "user" in str(v).lower()}
     out = {}
     for k, v in x.items():
-        if usuario and _valor(v) and (k in ("name", "id") or USER_KEY.match(str(k))):
-            hallados.add(v.strip())
-            out[k] = propio or seudonimo(v)                    # todo lo que identifica a la persona, con su seudónimo
-        elif con_valor and k == "value" and (_valor(v) or isinstance(v, list)):
-            out[k] = cambia(v) if isinstance(v, str) else [cambia(w) if _valor(w) else w for w in v]
-        elif _campo_usuario(k) and _valor(v):
-            out[k] = cambia(v)
+        if usuario and k not in TIPOS and _valor(v):
+            if CAMPO_CORREO.match(str(k)):
+                out[k] = "‹correo›"
+            elif nombre_de_persona(k, True):
+                out[k] = NOMBRE
+            elif k in ("name", "id", "value") or USER_KEY.match(str(k)):
+                if USUARIO.match(v.strip()):
+                    hallados.add(v.strip())
+                    out[k] = propio or seudonimo(v)
+                else:                                           # «Ana García»: el nombre de una persona; si puede
+                    out[k] = v if o_grupo else NOMBRE           # ser un grupo («DEM Revisores»), se queda
+            else:
+                out[k] = _campos(v, hallados, str(k))
+        elif con_valor and k == "value":
+            out[k] = _de_tipo(v, "mixto" if o_grupo else "puro", hallados)
+        elif str(k).lower() in por_su_tipo:
+            out[k] = _de_tipo(v, "puro", hallados)
+        elif nombre_de_persona(k, False) and _valor(v):
+            out[k] = NOMBRE
         else:
-            out[k] = _campos(v, hallados, str(k))
+            out[k] = _campos(v, hallados, str(k), _clave_de_usuario(k))
     return out
 
 
@@ -310,10 +365,19 @@ def _trozos(palabra: str) -> list[tuple[int, int]]:
 def _en_palabra(palabra: str, usuarios: set[str]) -> str:
     out, hecho = [], 0
     for s, e in _trozos(palabra):                            # de izquierda a derecha y, en cada inicio, el más largo
-        if s >= hecho and palabra[s:e] in usuarios:
+        if s >= hecho and palabra[s:e].lower() in usuarios:
             out += [palabra[hecho:s], seudonimo(palabra[s:e])]
             hecho = e
     return "".join(out + [palabra[hecho:]])
+
+
+def _palabras(s: str):
+    """Las palabras de un texto que pueden ser un usuario: fuera de lo ya saneado y nunca tras un dominio de SAIL
+    (pv!revisor, ri!x, local!x…), que es una variable o un objeto."""
+    for parte in MARCA.split(s)[::2]:
+        for m in PALABRA.finditer(parte):
+            if not (m.start() and parte[m.start() - 1] == "!"):
+                yield m.group(0)
 
 
 def _texto(s: str, usuarios: set[str]) -> str:
@@ -322,13 +386,23 @@ def _texto(s: str, usuarios: set[str]) -> str:
         return s
     partes = MARCA.split(s)                                   # lo ya saneado no se toca
     for i in range(0, len(partes), 2):
-        partes[i] = PALABRA.sub(lambda m: _en_palabra(m.group(0), usuarios), partes[i])
+        p = partes[i]                                         # tras pv!, ri!, local!… no hay un usuario
+        partes[i] = PALABRA.sub(lambda m: m.group(0) if m.start() and p[m.start() - 1] == "!"
+                                else _en_palabra(m.group(0), usuarios), p)
     return "".join(partes)
 
 
 def _textos(x, usuarios: set[str]):
+    """Segunda pasada: en cualquier texto, también en las claves, los correos y los usuarios conocidos."""
     if isinstance(x, dict):
-        return {k: _textos(v, usuarios) for k, v in x.items()}
+        out = {}
+        for k, v in x.items():
+            k2 = _texto(k, usuarios) if isinstance(k, str) else k
+            base, n = k2, 2
+            while k2 in out:                                  # dos claves que quedan iguales no se pisan
+                k2, n = f"{base} ({n})", n + 1
+            out[k2] = _textos(v, usuarios)
+        return out
     if isinstance(x, list):
         return [_textos(v, usuarios) for v in x]
     return _texto(x, usuarios) if isinstance(x, str) else x
@@ -336,18 +410,21 @@ def _textos(x, usuarios: set[str]):
 
 def sanea(data: Any, usuarios: set[str]) -> Any:
     """Lo que se guarda de la extracción, después de mask_secrets: cada usuario pasa a su seudónimo (los de los campos
-    de usuario de USER_KEY, de los objetos de tipo usuario y de las constantes, variables y valores de tipo usuario, y
-    los usuarios ya conocidos que aparezcan en cualquier texto) y cada correo, a ‹correo›. Añade a `usuarios` los que
-    encuentra, para sanear con ellos las respuestas siguientes. Sanear dos veces da lo mismo que una."""
+    de usuario, de los objetos de tipo usuario y de las constantes, variables y valores de tipo usuario, y los usuarios
+    ya conocidos que aparezcan en cualquier texto o clave, sin distinguir mayúsculas), cada nombre de persona a
+    ‹nombre› y cada correo a ‹correo›. Añade a `usuarios`, en minúsculas, los que encuentra con forma de usuario (nunca
+    un correo), para sanear con ellos las respuestas siguientes. Sanear dos veces da lo mismo que una."""
     hallados: set[str] = set()
     data = _campos(data, hallados)
-    usuarios.update(u for u in hallados if APRENDE.match(u))
-    return _textos(data, usuarios)
+    usuarios.update(u.lower() for u in hallados if APRENDE.match(u) and not EMAIL.search(u))
+    return _textos(data, {u.lower() for u in usuarios})
 
 
 def _cadenas(x):
     if isinstance(x, dict):
-        for v in x.values():
+        for k, v in x.items():
+            if isinstance(k, str):
+                yield k
             yield from _cadenas(v)
     elif isinstance(x, list):
         for v in x:
@@ -356,32 +433,53 @@ def _cadenas(x):
         yield x
 
 
-def conocidos(data: Any, huellas: set[str]) -> set[str]:
-    """Los usuarios que aparecen en los textos de `data` y cuya huella está en `huellas`: con ellos se sanea lo que se
-    escribió antes de conocerlos, sin haber guardado nunca su nombre."""
-    out: set[str] = set()
-    if not huellas:
-        return out
-    for s in _cadenas(data):
-        for parte in MARCA.split(s)[::2]:
-            for m in PALABRA.finditer(parte):
-                palabra = m.group(0)
-                out.update(palabra[a:b] for a, b in _trozos(palabra) if huella(palabra[a:b]) in huellas)
-    return out
+class Huellas:
+    """mcp_raw/_huellas.json: la huella de cada usuario que ha salido en la extracción, nunca su nombre ni un correo.
+    Huella = HMAC-SHA256 del usuario en minúsculas y sin espacios, con una sal aleatoria del proyecto guardada en el
+    mismo fichero. Con ella se reconoce a un usuario en un texto escrito antes de conocerlo, también al retomar en otra
+    sesión o en otro equipo, sin volver a pedir las listas de usuarios."""
 
+    def __init__(self, raw: Path):
+        self.fichero = Path(raw) / HUELLAS
+        self.sal, self.todas = None, set()
+        try:
+            datos = load(self.fichero)
+            self.sal, self.todas = bytes.fromhex(datos["sal"]), set(datos.get("huellas", []))
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            pass                                              # sin fichero (o de otro formato): se empieza de cero
+        self._de: dict[str, str] = {}
+        self._vistos: set[str] = set()
 
-def lee_huellas(raw: Path) -> set[str]:
-    try:
-        return set(load(Path(raw) / HUELLAS).get("huellas", []))
-    except (OSError, ValueError, AttributeError):
-        return set()
+    def de(self, usuario: str) -> str:
+        u = usuario.strip().lower()
+        if u not in self._de:
+            self._de[u] = hmac.new(self.sal, u.encode("utf-8"), hashlib.sha256).hexdigest()
+        return self._de[u]
 
+    def reconoce(self, data: Any) -> set[str]:
+        """Los usuarios (en minúsculas) que aparecen en los textos o en las claves de `data` y están en la lista."""
+        if not self.todas or self.sal is None:
+            return set()
+        return {palabra[a:b].lower() for s in _cadenas(data) for palabra in _palabras(s)
+                for a, b in _trozos(palabra) if self.de(palabra[a:b]) in self.todas}
 
-def guarda_huellas(raw: Path, usuarios: set[str]) -> None:
-    """Añade a mcp_raw/_huellas.json la huella de estos usuarios (nunca su nombre)."""
-    todas = lee_huellas(raw) | {huella(u) for u in usuarios}
-    f = Path(raw) / HUELLAS
-    f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text(json.dumps({"_doc": "Huella (sha256) de cada usuario que ha salido en la extracción, nunca su nombre: "
-                                     "con ella se reconoce a un usuario en un texto escrito antes de conocerlo.",
-                             "huellas": sorted(todas)}, ensure_ascii=False, indent=1), encoding="utf-8")
+    def añade(self, usuarios: set[str]) -> None:
+        """Guarda la huella de los usuarios nuevos (nunca la de un correo). Solo escribe si hay alguno."""
+        nuevos = {u.strip().lower() for u in usuarios} - self._vistos
+        self._vistos |= nuevos
+        nuevos = {u for u in nuevos if APRENDE.match(u) and not EMAIL.search(u)}
+        if not nuevos:
+            return
+        if self.sal is None:
+            self.sal = os.urandom(32)
+        huellas = {self.de(u) for u in nuevos} - self.todas
+        if not huellas:
+            return
+        self.todas |= huellas
+        self.fichero.parent.mkdir(parents=True, exist_ok=True)
+        self.fichero.write_text(json.dumps({
+            "_doc": "Huella (HMAC-SHA256 con la sal de este proyecto) de cada usuario que ha salido en la extracción, "
+                    "en minúsculas; nunca su nombre ni un correo. Sirve para reconocerlo en un texto escrito antes de "
+                    "conocerlo, también al retomar en otro equipo. Quien tenga la carpeta y una lista de nombres puede "
+                    "comprobar si alguno está: no la compartas fuera del proyecto.",
+            "sal": self.sal.hex(), "huellas": sorted(self.todas)}, ensure_ascii=False, indent=1), encoding="utf-8")

@@ -10,7 +10,7 @@ Las definiciones extraídas (connected systems, integraciones, constantes, Web A
 
 ## Patrones de detección
 
-`python3 <skill>/scripts/detect_secrets.py <ruta>` aplica estos patrones (orientativos); `bash <skill>/scripts/detect_secrets.sh <ruta>` hace lo mismo. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3) y sobre toda `<salida>/` al final, `extraccion/` incluida. La extracción ya llega enmascarada y está en el proyecto: lo que encuentre ahí es un secreto que el enmascarado no reconoce, y la carpeta no se comparte hasta quitarlo. Solo imprime fichero y línea, nunca el valor. No cuenta las referencias (`=cons!X`, `ri!`, `pv!`, `rule!`, `local!`), los valores ya enmascarados ni las claves que describen el secreto sin serlo (`tokenUrl`, `passwordPolicy`).
+`python3 <skill>/scripts/detect_secrets.py <ruta>` aplica estos patrones (orientativos); `bash <skill>/scripts/detect_secrets.sh <ruta>` hace lo mismo. Ejecútalo sobre `<trabajo>/mcp_raw/` justo después de la extracción (fase 3) y sobre toda `<salida>/` al final, `extraccion/` incluida. La extracción ya llega enmascarada: lo que encuentre ahí es un secreto que el enmascarado no reconoce y, si la carpeta está sincronizada, ya está en la nube y en su historial de versiones. Se quita como dice «Un secreto en la extracción». Solo imprime fichero y línea, nunca el valor. No cuenta las referencias (`=cons!X`, `ri!`, `pv!`, `rule!`, `local!`), los valores ya enmascarados ni las claves que describen el secreto sin serlo (`tokenUrl`, `passwordPolicy`).
 
 | Tipo | Patrón |
 |---|---|
@@ -57,6 +57,24 @@ El valor de una constante o de un connected system se ve desde el diseño de App
    - Evidencia: `mcp:<tipo>/<nombre>#<propiedad>`, sin el valor.
 4. **Recomendación habitual**: rotar la credencial y moverla a un campo cifrado del connected system o de la integración (valor introducido directamente, que Appian cifra y no exporta), con su valor por entorno en el fichero de personalización de importación; nunca a una constante ni a una expresión. Fuente: https://docs.appian.com/suite/help/26.6/Integration_Object.html#encrypted-values
 5. El registro de `09-valor-adicional.md` lo genera `scripts/build_registry.py` a partir del JSON. Nadie añade el secreto a mano en 09.
+
+## Un secreto en la extracción
+
+Si `detect_secrets.py` encuentra algo en `extraccion/`, el enmascarado no lo reconoció y el valor está en ese fichero. En una carpeta sincronizada (OneDrive, SharePoint), el fichero ya se subió a la nube y queda en su historial de versiones, así que no basta con corregirlo en el equipo:
+
+1. Díselo al usuario con el fichero y la línea, sin el valor.
+2. En ese fichero, cambia solo el valor por `***ENMASCARADO***`: la extracción lo sigue usando y no lo vuelve a pedir. Después, vuelve a generar el anexo (`build_annex.py`). No repitas la extracción con `--refresh`, que lo volvería a escribir.
+3. Si la carpeta está sincronizada, el usuario borra las versiones anteriores del fichero en la web de OneDrive o de SharePoint: sobre el fichero, «Historial de versiones» → «Eliminar todas las versiones» → «Aceptar». Las versiones borradas van a la «Papelera de reciclaje» del sitio: hay que eliminarlas de ella y de la «Papelera de reciclaje de segundo nivel», que vacía un administrador de la colección de sitios. Fuentes: https://support.microsoft.com/es-es/SharePoint/documents-and-library/delete-a-previous-version-of-an-item-or-file-in-sharepoint y https://support.microsoft.com/es-ES/SharePoint/admin/delete-items-from-the-site-collection-recycle-bin
+4. Recomienda rotar la credencial, porque ha salido del entorno de Appian, y regístrala como cualquier secreto («Acción ante un secreto»).
+5. Avisa de que el enmascarado de `scripts/privacidad.py` no reconoce ese patrón, para que se corrija.
+
+## Usuarios en la extracción
+
+La extracción se escribe ya con seudónimos: cada usuario es `‹usuario-xxxxxx›` (los 6 primeros hex del sha256 del usuario en minúsculas), el mismo en todas las respuestas; cada nombre de persona es `‹nombre›` y cada correo, `‹correo›`.
+
+`mcp_raw/_huellas.json` guarda la huella de cada usuario que ha salido: un HMAC-SHA256 del usuario en minúsculas y sin espacios, con una sal aleatoria del proyecto que va en el mismo fichero. Nunca guarda un nombre ni un correo. Existe para retomar la ingeniería inversa en otra sesión o en otro equipo sin volver a pedir las listas de usuarios: con las huellas se reconoce a un usuario en lo que se escribe después y el barrido final sanea lo que se escribió antes de conocerlo.
+
+Riesgo: quien tenga la carpeta del proyecto y una lista de usuarios candidatos puede comprobar cuáles han salido, igual que con los seudónimos. Protege de una lectura casual, no de alguien con la carpeta y esa lista: la carpeta se comparte solo con el equipo del proyecto.
 
 ## Falsos positivos comunes
 
@@ -105,4 +123,4 @@ Recorre toda la carpeta, incluidos `anexo/`, `dashboard/` y `extraccion/`. Si en
 
 - En un documento que escribe un agente (`00`–`11`, `08-procesos-bpmn/`, `LEEME`, `INVENTARIO`): corrígelo con la tabla «Cómo se escribe cada dato».
 - En un entregable generado (`anexo/`, `dashboard/`): no lo edites a mano. Corrige la causa (el enmascarado de la extracción o del anexo, o el documento de origen) y vuelve a generarlo.
-- En `extraccion/`: el enmascarado no lo reconoce. Díselo al usuario con el fichero y la línea, sin el valor: la carpeta no se comparte hasta quitarlo.
+- En `extraccion/`: el enmascarado no lo reconoce y, en una carpeta sincronizada, ya está en la nube y en su historial de versiones. Sigue «Un secreto en la extracción».
