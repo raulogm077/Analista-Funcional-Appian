@@ -31,7 +31,7 @@ Se ejecuta desde la carpeta del usuario (donde está su `.mcp.json`). Al servido
  "unmatchedRecordTypes": ["…"]}
 ```
 
-**Opción 3: no disponible.** No hay `datafabric.json`. Los documentos afectados lo dicen en una línea de su «Cobertura y límites» («volúmenes no disponibles: Appian MCP Server no configurado») y los requisitos de volumen de `12` pasan a «Preguntas abiertas». La falta de volúmenes no es un hallazgo.
+**Opción 3: no disponible.** No hay `datafabric.json`. Los documentos afectados lo dicen en una línea de su «Cobertura y límites» («volúmenes no disponibles: Appian MCP Server no configurado»). La falta de volúmenes no es un hallazgo.
 
 ## Cómo se usan los recuentos
 
@@ -40,7 +40,7 @@ Se ejecuta desde la carpeta del usuario (donde está su `.mcp.json`). Al servido
 
 ## Limitaciones (documentación oficial)
 
-- No se pueden consultar record types no sincronizados, *legacy* ni con seguridad a nivel de registro basada en una expresión. Aparecen en `unmatchedRecordTypes`; la seguridad por expresión es un patrón de `modernization-guide.md` que `13` recoge como `MOD-` con su fuente oficial (los documentos no citan el código interno del patrón).
+- No se pueden consultar record types no sincronizados, *legacy* ni con seguridad a nivel de registro basada en una expresión. Aparecen en `unmatchedRecordTypes`.
 - Los resultados se filtran por la seguridad de la cuenta de servicio: si un recuento parece bajo, puede ser por permisos. Márcalo 🔵 y dilo.
 
 Fuente: [MCP System Tools Reference](https://docs.appian.com/suite/help/26.6/mcp-system-tools.html#data-fabric-tools) · [Appian MCP Server – limitaciones](https://docs.appian.com/suite/help/26.6/appian-mcp-server.html#limitations) · [Appian MCP Server Security](https://docs.appian.com/suite/help/26.6/mcp-server-security.html)

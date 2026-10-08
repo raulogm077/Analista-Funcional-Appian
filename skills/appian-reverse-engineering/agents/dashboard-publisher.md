@@ -16,7 +16,7 @@ Fase 7, solo si `<trabajo>/output_preferences.json` tiene `dashboard: true`. Pue
 ## Entradas
 
 - `<trabajo>/summary.json` (`<trabajo>` = `<padre de la salida>/_trabajo/<nombre de la salida>`): fuente de los datos estructurados.
-- `<salida>/`: `LEEME.md`, `00`–`14`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso), `diagrams/*.svg` y `08-procesos-bpmn/*.svg` (o `*.png` cuando el proceso se dibujó en draw.io).
+- `<salida>/`: `LEEME.md`, `00`–`11`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso), `diagrams/*.svg` y `08-procesos-bpmn/*.svg` (o `*.png` cuando el proceso se dibujó en draw.io).
 - `<salida>/anexo/`: no se inyecta (es grande); se enlaza (ver Contenido).
 - `<skill>`: la carpeta de la skill, para ejecutar `scripts/validate_mermaid.py`.
 - Opcional: la skill `anthropic-skills:web-artifacts-builder` (solo para apps muy grandes), si está en la sesión.
@@ -38,10 +38,9 @@ summary.json
 ├── usage [{name, executions, lastExecution, failed, failedInSampleOf}]   (top 10 por ejecuciones)
 ├── integrations [{name, method, connectedSystemRef}]
 ├── secrets {count, objects[]}
-├── findings [{id, titulo, area, severidad, certeza, documento, tratamiento[]}]   ← registro, sin duplicados, Alta primero
+├── findings [{id, titulo, area, severidad, certeza, documento}]   ← registro, sin duplicados, Alta primero
 ├── findingsBySeverity {Alta, Media, Baja}
 ├── findingsByCertainty {verificado, inferido, pendiente}
-├── modernization {verdict, strategy}
 ├── signals [{type, objects[]}]   ← señales para el orquestador, no hallazgos: no las publiques
 └── objects {tipo: [{name, uuid, type, mcpType, slug}]}
 ```
@@ -60,15 +59,14 @@ Inyecta en el HTML **solo los campos que uses**, no el fichero entero.
 1. **Cabecera fija**: nombre de la app y prefijo (`meta.appName`, `meta.appPrefix`), entorno, fecha de extracción, distintivo de confianza (Alto/Medio/Bajo) y buscador global (nombres de objetos y títulos de hallazgos).
 2. **Tarjetas de cifras** (5-8, cada una filtra la vista): process models, record types, interfaces, integraciones, Web APIs, grupos, hallazgos Alta (`findingsBySeverity.Alta`), procesos críticos.
 3. **Pestañas** (se ocultan las que no tengan datos; sin emojis en las etiquetas):
-   - **Resumen**: `00`, procesos críticos y veredicto con estrategia (`modernization`).
+   - **Resumen**: `00` y procesos críticos.
    - **Arquitectura**: diagrama de `02` y hubs.
    - **Datos**: diagramas ER y catálogo de `03`.
    - **Procesos**: lista de process models (crítico, programado, ejecuciones) y, al pulsar, su diagrama y su documento de `08`.
    - **Integraciones y APIs**: `05` y `06`.
    - **Seguridad**: `04`.
    - **Pantallas y reglas**: `10` y `11`.
-   - **Hallazgos**: tabla de `findings` filtrable por severidad, área y certeza; cada fila abre el documento propietario y muestra su tratamiento (`MOD-`/`PQ-`).
-   - **Modernización**: `13`, `12` y `14`.
+   - **Hallazgos**: tabla de `findings` filtrable por severidad, área y certeza; cada fila abre el documento propietario.
    - **Inventario**: `INVENTARIO` con búsqueda; el enlace «anexo» de cada objeto abre `../anexo/<tipo>/<slug>.md`.
 4. **Pie**: fecha de generación (`meta.generatedAt`), fecha de extracción y entorno.
 

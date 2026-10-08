@@ -113,7 +113,7 @@ Mantenimiento, validación de la plataforma, versionado, métricas y uso. Los de
 
 ## Registro de hallazgos
 
-Todos los hallazgos de la documentación, de mayor a menor severidad, con el documento que los explica y su tratamiento: la mejora de 13 (`MOD-`) o la pregunta abierta de 12 (`PQ-`).
+Todos los hallazgos de la documentación, de mayor a menor severidad, con el documento que los explica.
 
 <!-- registro:inicio -->
 (lo rellena build_registry.py)

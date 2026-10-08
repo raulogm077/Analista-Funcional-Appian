@@ -129,4 +129,4 @@ claude mcp add --transport http appian-public-docs https://appian-docs-public.mc
 
 En Claude Desktop: *Settings* → *MCP Servers*, nombre `appian-public-docs` y la URL anterior. Pide iniciar sesión con Google o GitHub la primera vez. Límite: 300 consultas al día.
 
-Sin él, las recomendaciones de modernización se basan en las URLs de `references/modernization-guide.md` y se marcan «sin verificar para la versión del entorno».
+Sin él, la documentación no explica con fuente oficial los nodos y funciones desconocidos, y lo que depende de la documentación se marca «sin verificar».

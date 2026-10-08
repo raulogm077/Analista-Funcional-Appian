@@ -248,7 +248,7 @@ para cualquier cliente. (Añadida el 7 de octubre a petición de Raúl.)
 - Produce: `registro.json` con las claves exactas `{"hallazgos", "porSeveridad", "porCerteza"}`; `summary.json` sin
   `modernization`; la tabla del registro en 09 queda `ID · Hallazgo · Área · Severidad · Certeza · Dónde`.
 
-- [ ] **Paso 1: prueba que falla**
+- [x] **Paso 1: prueba que falla**
 
 ```python
 import re
@@ -268,11 +268,11 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
 ```
 
   Y en `test_registry.py`: `assert set(reg) == {"hallazgos", "porSeveridad", "porCerteza"}`.
-- [ ] **Paso 2:** en `pruebas/appian-reverse-engineering/`, `python3 -m pytest -q test_sin_bloque_b.py test_registry.py`
+- [x] **Paso 2:** en `pruebas/appian-reverse-engineering/`, `python3 -m pytest -q test_sin_bloque_b.py test_registry.py`
   → FALLA con la lista de ficheros y líneas.
-- [ ] **Paso 3:** quitar el bloque B de cada fichero de la lista. La prueba no necesita excepciones: el `docs/` de la
+- [x] **Paso 3:** quitar el bloque B de cada fichero de la lista. La prueba no necesita excepciones: el `docs/` de la
   skill y sus pruebas ya salieron de ella en la Tarea 0.
-- [ ] **Paso 4:** descripción nueva del SKILL.md (se afina en la Tarea 28):
+- [x] **Paso 4:** descripción nueva del SKILL.md (se afina en la Tarea 28):
   «Ingeniería inversa de aplicaciones Appian: lee la aplicación en vivo por el Dev MCP, en solo lectura, y documenta
   cómo está hecha para que el equipo la entienda: funcional, arquitectura, datos, seguridad, integraciones, APIs,
   batches, procesos, pantallas, reglas de negocio, inventario y anexo con las definiciones, cada dato con su evidencia.
@@ -280,8 +280,8 @@ def test_ingenieria_inversa_no_menciona_el_bloque_b():
   de datos, sus integraciones, procesos, pantallas o reglas, aunque no se diga «ingeniería inversa». No juzga ni
   propone cómo rehacerla (appian-refactorizacion), no escribe requisitos ni especificaciones (appian-functional-analyst),
   no dibuja (appian-diagramas-bpmn) y no crea ni modifica objetos.»
-- [ ] **Paso 5:** `python3 -m pytest -q` en verde y `python3 pruebas/comprobar_plugin.py` con 0 errores.
-- [ ] **Paso 6:** commit «F2: el bloque B sale de ingeniería inversa».
+- [x] **Paso 5:** `python3 -m pytest -q` en verde y `python3 pruebas/comprobar_plugin.py` con 0 errores.
+- [x] **Paso 6:** commit «F2: el bloque B sale de ingeniería inversa».
 
 ### Tarea 2: Salida y extracción dentro del proyecto (D4)
 

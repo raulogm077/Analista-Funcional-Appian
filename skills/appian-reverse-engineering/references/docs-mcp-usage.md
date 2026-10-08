@@ -12,11 +12,9 @@ Reparto orientativo del tope (el orquestador dice a cada subagente cuántas le q
 | Quién | Consultas |
 |---|---|
 | Preflight (fase 0) | 1 |
-| `interface-analyzer` (4.1) | 4 |
-| Cada uno de los 4 agentes de 4.2 | 4 (16 en total) |
-| Orquestador (07, 09 y pasada de coherencia) | 2 |
-| `rebuild-architect` (4.4) | 5 |
-| `target-designer` (4.5) | 2 |
+| `interface-analyzer` (4.1) | 5 |
+| Cada uno de los 4 agentes de 4.2 | 5 (20 en total) |
+| Orquestador (07, 09 y pasada de coherencia) | 4 |
 | **Total** | **30** |
 
 ## Cómo localizar la herramienta
@@ -28,7 +26,7 @@ No dependas de un nombre fijo. En la sesión, busca una herramienta de un servid
 Solo cuando cambie lo que vas a escribir:
 
 1. **Explicar** un tipo de nodo, smart service, función o componente que no conozcas con seguridad.
-2. **Verificar** si algo está deprecado o tiene una alternativa actual (hallazgos de `13`).
+2. **Verificar** si algo está deprecado, antes de registrarlo como hallazgo.
 3. **Confirmar** un comportamiento dudoso (p. ej. semántica de un temporizador o de una opción de seguridad).
 
 No lo consultes para cosas que ya dicen `references/` o la propia definición del objeto.
@@ -58,5 +56,3 @@ Toda afirmación que salga de la documentación lleva la URL:
 ```
 Fuente: https://docs.appian.com/suite/help/26.6/Deprecated_Features.html
 ```
-
-Si el Docs MCP no está disponible y usas una URL de `references/modernization-guide.md`, añade «(sin verificar para la versión del entorno)».

@@ -15,7 +15,7 @@ La skill no lee un export: la aplicación se ha extraído en vivo del entorno Ap
 | `<trabajo>/mcp_raw/<tipo>/<uuid>/<herramienta>.json` | Respuesta de cada herramienta para ese objeto, con los secretos enmascarados (y el render, sin valores): `{"_meta": {tool, role, ok, error, ...}, "response": ...}`. | El detalle: SAIL, nodos, campos, páginas, pantallas… |
 | `<trabajo>/mcp_raw/_app/*.json`, `_env/*.json` | Llamadas de aplicación (definición de la app, listados) y de entorno (catálogos de tipos de nodo, etc.). | Contexto general. |
 | `<trabajo>/extraction_report.json` | Herramientas usadas y excluidas, llamadas correctas y fallidas por rol (`callStatsByRole`), errores, herramientas desactivadas por tipo, servidor y entorno (`server.url`). | Sección de cobertura y limitaciones. |
-| `<trabajo>/datafabric.json` (opcional) | Metadatos del data fabric y `count` por record type (Appian MCP Server). | Volúmenes en 03 y en 12. |
+| `<trabajo>/datafabric.json` (opcional) | Metadatos del data fabric y `count` por record type (Appian MCP Server). | Volúmenes en 03. |
 | `<trabajo>/preflight.json` | Estado de los 3 MCP al empezar y el entorno (`environment.url`, `isProduction`, `appianVersion` si se conocen). | Cobertura; interpretar el uso real. |
 | `<salida>/anexo/<tipo>/<slug>.md` | La definición de cada objeto legible: expresiones con número de línea, nodos de los procesos y JSON completo, sin usuarios. | Citar líneas y enlazar el detalle desde los documentos. |
 
@@ -26,9 +26,9 @@ La skill no lee un export: la aplicación se ha extraído en vivo del entorno Ap
 | `definition` | La definición del objeto (SAIL, nodos, campos, páginas…). Es la fuente principal. | Todos los documentos |
 | `dependents` | Quién referencia a este objeto, con *breadcrumb* (p. ej. «Interface Definition: Line 19»). | Callers, impacto |
 | `dependencies` | Qué referencia este objeto. | Llamadas salientes |
-| `history` | Ejecuciones reales del process model (total, última, fallos). En los documentos llámalo «ejecuciones». | 07, 08, 12 (prioridad), 13 (código muerto) |
-| `versions` | Historial de versiones (cuándo y por quién; los usuarios no se citan). En los documentos llámalo «versiones». | 09 (versionado), 13 |
-| `validation` | Avisos de validación de la plataforma (funciones obsoletas, errores). | 09, 13 |
+| `history` | Ejecuciones reales del process model (total, última, fallos). En los documentos llámalo «ejecuciones». | 07, 08, 09 (sin ejecuciones) |
+| `versions` | Historial de versiones (cuándo y por quién; los usuarios no se citan). En los documentos llámalo «versiones». | 09 (versionado) |
+| `validation` | Avisos de validación de la plataforma (funciones obsoletas, errores). | 09 |
 | `screen` | Árbol de componentes de la interfaz renderizada con entradas vacías: la única evaluación que permite la política. Appian la evalúa en el servidor (puede ejecutar sus consultas de lectura) y se guarda ya sin valores: estructura y etiquetas; los valores son `‹valor›`. Así aparece en el anexo. | 10 (pantallas), 01 |
 | `members` | Miembros de un grupo (grupos y usuarios). | 04 |
 | `other` | Cualquier otra herramienta (p. ej. una nueva que haya añadido Appian). **Ábrela y aprovecha lo que aporte**: seguridad, métricas, configuración… | Donde encaje |

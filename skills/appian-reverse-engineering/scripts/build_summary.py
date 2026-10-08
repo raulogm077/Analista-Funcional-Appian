@@ -145,11 +145,10 @@ def main(doc_root: str) -> int:
         "integrations": [{"name": it.get("name"), "method": it.get("method"), "connectedSystemRef": it.get("connectedSystemRef")}
                          for it in objects.get("integration", [])],
         "secrets": {"count": len(secret_objs), "objects": [o.get("name") for o in secret_objs]},
-        "findings": [{k: h.get(k) for k in ("id", "titulo", "area", "severidad", "certeza", "documento", "tratamiento")}
+        "findings": [{k: h.get(k) for k in ("id", "titulo", "area", "severidad", "certeza", "documento")}
                      for h in vivos],
         "findingsBySeverity": registro.get("porSeveridad", {}),
         "findingsByCertainty": registro.get("porCerteza", {}),
-        "modernization": {"verdict": registro.get("veredicto"), "strategy": registro.get("estrategia")},
         "signals": signals,
         "objects": {t: [{k: o.get(k) for k in ("name", "uuid", "type", "mcpType", "slug") if o.get(k) is not None}
                         for o in objs] for t, objs in objects.items()},

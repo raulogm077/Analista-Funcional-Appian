@@ -1,11 +1,10 @@
 <!--
   Plantilla 11 — Reglas de negocio (ui-rules-analyzer).
   Estructura: TL;DR → Vista → Detalle → Hallazgos → Cobertura y límites. Las secciones sin contenido se omiten.
-  Reglas RN-001…, sin SAIL en los enunciados; hallazgos H-RN-01…. Base de los criterios de aceptación de 12.
+  Reglas RN-001…, sin SAIL en los enunciados; hallazgos H-RN-01….
   Los {{marcadores}} se sustituyen y los comentarios se borran.
   Certeza de una regla: 🔵 «según su nombre» si solo se deduce del nombre de un nodo, objeto o variable; nunca ✅ si
   un parámetro de su enunciado es ❓ (lleva la certeza más baja de sus partes).
-  Ciclo de vida: 11 es la fuente del ciclo ACTUAL (estados y transiciones de hoy); el OBJETIVO está en 14, que enlaza aquí.
   Ninguna regla se recorta ni se omite por longitud. Evidencia: siempre enlazada a la ficha del objeto en el anexo.
 -->
 
@@ -18,7 +17,7 @@
 
 <!-- Diagrama solo si se pueden deducir los estados y sus transiciones; si no, la Vista es la tabla. -->
 
-Estados actuales de {{la entidad principal}} y qué los cambia hoy. El ciclo de vida objetivo está en [14](./14-diseno-objetivo.md).
+Estados de {{la entidad principal}} y qué los cambia.
 
 ![Ciclo de vida de {{entidad}}](diagrams/estados-{{entidad}}.svg)
 

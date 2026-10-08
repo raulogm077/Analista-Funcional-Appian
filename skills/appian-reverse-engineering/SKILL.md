@@ -1,14 +1,11 @@
 ---
 name: appian-reverse-engineering
-description: Reingeniería inversa de aplicaciones Appian leyendo el entorno en vivo por MCP (Appian Dev MCP, en solo lectura; opcionalmente Appian MCP Server y Appian Docs MCP). Genera documentación funcional y técnica para que alguien nuevo entienda cómo está hecha la aplicación (funcional, arquitectura, modelo de datos, seguridad, integraciones, APIs, batches, BPMN por proceso, pantallas, reglas de negocio, inventario, anexo con las definiciones) y documentación para reconstruirla y modernizarla (especificación de requisitos independiente de la implementación, diagnóstico de obsolescencia y antipatrones con fuentes oficiales, plan de migración y diseño objetivo detallado). Úsala cuando el usuario quiera documentar, entender, hacer onboarding, auditar, reconstruir, refactorizar o modernizar una aplicación Appian existente, o pida su BPMN, modelo de datos, mapa de integraciones, pantallas o reglas de negocio, aunque no diga «reingeniería inversa». No es para crear ni modificar objetos Appian.
+description: "Ingeniería inversa de aplicaciones Appian: lee la aplicación en vivo por el Dev MCP, en solo lectura, y documenta cómo está hecha para que el equipo la entienda: funcional, arquitectura, datos, seguridad, integraciones, APIs, batches, procesos, pantallas, reglas de negocio, inventario y anexo con las definiciones, cada dato con su evidencia. Úsala para entender, documentar o hacer el onboarding de una aplicación Appian existente, o cuando se pida su modelo de datos, sus integraciones, procesos, pantallas o reglas, aunque no se diga «ingeniería inversa». No juzga ni propone cómo rehacerla (appian-refactorizacion), no escribe requisitos ni especificaciones (appian-functional-analyst), no dibuja (appian-diagramas-bpmn) y no crea ni modifica objetos."
 ---
 
 # Appian Reverse Engineering (Dev MCP)
 
-Lee una aplicación Appian **en vivo y en solo lectura** a través del Appian Dev MCP y produce dos bloques de documentación:
-
-- **A. Entender cómo está hecha** (onboarding y mantenimiento): `00`–`11`, `INVENTARIO` y el `anexo/` con las definiciones.
-- **B. Reconstruirla y modernizarla**: `12-especificacion-reconstruccion.md` (qué hace), `13-modernizacion-refactor.md` (diagnóstico, estrategia y plan) y `14-diseno-objetivo.md` (cómo construirla).
+Lee una aplicación Appian **en vivo y en solo lectura** a través del Appian Dev MCP y documenta cómo está hecha, para el onboarding y el mantenimiento: `00`–`11`, `INVENTARIO` y el `anexo/` con las definiciones.
 
 Todo con evidencia verificable (`mcp:<tipo>/<nombre>#<ubicación>`), certeza explícita (✅ verificado, 🔵 inferido, ❓ pendiente) y sin inventar: lo que no se puede obtener se dice. Los hallazgos tienen un ID y un registro único.
 
@@ -57,9 +54,8 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 5. Con el Dev MCP `ok`, en una sola pregunta:
    - la aplicación, si no la ha dado (muéstrale las apps de `doctor`);
    - los formatos adicionales: *«Además de los documentos Markdown, ¿quieres 📄 PDF maquetado, 🖥️ dashboard web, o solo los .md?»* (sin respuesta: solo Markdown);
-   - el objetivo, si no lo ha dicho: *«¿Quieres solo entender la aplicación, modernizarla sobre la actual o reconstruirla desde cero?»* (sin respuesta: modernizar). La documentación de B se genera siempre; el objetivo orienta la estrategia;
    - si el entorno (`url` de `doctor`) es producción y su versión de Appian, si la sabe: el uso real de procesos solo es representativo en producción. Todo es lectura, sea cual sea el entorno.
-6. Guarda en `<trabajo>/preflight.json` la salida de `doctor` con tus comprobaciones de sesión (`docsMcp.status: "operativo"` si respondió la consulta de prueba) y `environment: {url, isProduction, appianVersion}` (`null` lo que no se sepa). Las preferencias, en `<trabajo>/output_preferences.json`, con este formato: `{"pdf": true|false, "dashboard": true|false, "objetivo": "entender"|"modernizar"|"reconstruir"}`. Apunta la consulta de prueba del Docs MCP en `<trabajo>/docs_cache/orquestador.json`.
+6. Guarda en `<trabajo>/preflight.json` la salida de `doctor` con tus comprobaciones de sesión (`docsMcp.status: "operativo"` si respondió la consulta de prueba) y `environment: {url, isProduction, appianVersion}` (`null` lo que no se sepa). Las preferencias, en `<trabajo>/output_preferences.json`, con este formato: `{"pdf": true|false, "dashboard": true|false}`. Apunta la consulta de prueba del Docs MCP en `<trabajo>/docs_cache/orquestador.json`.
 
 ### Fase 1 — Plan de extracción
 
@@ -86,7 +82,7 @@ Lee antes `references/execution-principles.md`. Cada subagente recibe:
 - la carpeta de salida y la de trabajo;
 - si el Docs MCP está disponible y cuántas consultas le quedan (tope global de 30);
 - el entorno, si es producción y la versión si se conocen;
-- a process-modeler y target-designer: si la sesión ofrece la skill `appian-diagramas-bpmn` (plugin appian-analisis-funcional), cárgala y pásales su carpeta para dibujar los procesos en draw.io editable; si no, usan su vía propia (`.bpmn` + Mermaid);
+- a process-modeler: si la sesión ofrece la skill `appian-diagramas-bpmn` (plugin appian-analisis-funcional), cárgala y pásale su carpeta para dibujar los procesos en draw.io editable; si no, usa su vía propia (`.bpmn` + Mermaid);
 - la orden de no crear tareas en tu lista y de terminar con un informe breve: ficheros generados, consultas al Docs MCP, choques entre instrucciones y «Para otras áreas».
 
 Todos escriben sus hallazgos en su documento y en `<trabajo>/hallazgos/<agente>.json` (`references/execution-principles.md`, «Registro de hallazgos»).
@@ -99,12 +95,8 @@ Todos escriben sus hallazgos en su documento y en `<trabajo>/hallazgos/<agente>.
 | | `process-modeler` | `08-procesos-bpmn/` |
 | | `ui-rules-analyzer` | `10-pantallas.md`, `11-reglas-negocio.md` |
 | 4.3 | orquestador | `07-batches.md`, `09-valor-adicional.md` y el registro de hallazgos (ver abajo) |
-| 4.4 | `rebuild-architect` | `12-especificacion-reconstruccion.md`, `13-modernizacion-refactor.md`, `<trabajo>/modernizacion.json` |
-| 4.5 | `target-designer` | `14-diseno-objetivo.md` |
 
 **Paso 4.3 (orquestador).** `python3 <skill>/scripts/build_summary.py <salida>` para ver `signals` (procesos sin ejecuciones, avisos de validación, interfaces grandes, huérfanos). Escribe `07` y `09` con sus plantillas (guía en `references/analysis-workflow.md`) y tus hallazgos `H-BAT`/`H-GEN` en `<trabajo>/hallazgos/orquestador.json`. Después `python3 <skill>/scripts/build_registry.py <salida>`: valida todos los hallazgos y escribe la tabla del registro en `09`. Corrige lo que reporte (en el JSON del agente que corresponda).
-
-**Pasos 4.4 y 4.5.** `rebuild-architect` y `target-designer` reciben además el objetivo del usuario (`objetivo` de `output_preferences.json`).
 
 **Patrón de invocación** (Claude Code): `Agent({description, subagent_type: "general-purpose", prompt: <agents/rol.md> + entradas})`, varios en el mismo mensaje cuando van en paralelo. Sin herramienta de subagentes: aplica tú mismo cada `agents/<rol>.md` en el mismo orden.
 
@@ -114,10 +106,10 @@ Cada bloque Mermaid pasa `python3 <skill>/scripts/validate_mermaid.py <fichero.m
 
 ### Fase 6 — Coherencia, resumen, inventario y guía
 
-1. **Pasada de coherencia** (`references/execution-principles.md`, sección 4): corrige en su sitio las contradicciones entre documentos, fusiona duplicados y quita severidades repetidas. Da de alta como `PQ-`, en `12` y en `<trabajo>/modernizacion.json`, las «Preguntas nuevas» del informe de target-designer. Completa en `01`–`11` las menciones a otras áreas con el ID canónico del hallazgo y su enlace. Nada de notas de parche.
-2. `python3 <skill>/scripts/build_registry.py <salida>` (ahora con el tratamiento de 13) y `python3 <skill>/scripts/build_summary.py <salida>` → `<trabajo>/summary.json`, la fuente de las cifras de `00` y de los publicadores.
+1. **Pasada de coherencia** (`references/execution-principles.md`, sección 4): corrige en su sitio las contradicciones entre documentos, fusiona duplicados y quita severidades repetidas. Completa en `01`–`11` las menciones a otras áreas con el ID canónico del hallazgo y su enlace. Nada de notas de parche.
+2. `python3 <skill>/scripts/build_registry.py <salida>` (de nuevo, tras la pasada de coherencia) y `python3 <skill>/scripts/build_summary.py <salida>` → `<trabajo>/summary.json`, la fuente de las cifras de `00` y de los publicadores.
 3. Escribe con sus plantillas:
-   - `00-resumen-ejecutivo.md`: cifras, confianza y su motivo, procesos críticos y hallazgos principales de `summary.json`; veredicto y estrategia de 13; uso real.
+   - `00-resumen-ejecutivo.md`: cifras, confianza y su motivo, procesos críticos, hallazgos principales y uso real, de `summary.json`.
    - `INVENTARIO.md`: todos los objetos con su uuid y enlace al anexo, y la cobertura de la extracción.
    - `LEEME.md`: guía de lectura por perfil y lo que no se pudo obtener.
 
@@ -137,20 +129,17 @@ Pasa la validación final (abajo) y responde con la plantilla de `references/res
 <salida>/
 ├── LEEME.md
 ├── 00-resumen-ejecutivo.md
-├── 01-funcional.md                 ┐
-├── 02-arquitectura.md              │
-├── 03-modelo-datos.md              │
-├── 04-seguridad-grupos.md          │  A. Cómo está hecha
-├── 05-integraciones-consumidas.md  │     (onboarding y mantenimiento)
-├── 06-apis-expuestas.md            │
-├── 07-batches.md                   │
+├── 01-funcional.md
+├── 02-arquitectura.md
+├── 03-modelo-datos.md
+├── 04-seguridad-grupos.md
+├── 05-integraciones-consumidas.md
+├── 06-apis-expuestas.md
+├── 07-batches.md
 ├── 08-procesos-bpmn/  (por proceso: .md + .bpmn + .mmd/.svg, o .drawio/.png/.json en la vía draw.io; indice.md)
-├── 09-valor-adicional.md           │
-├── 10-pantallas.md                 │
-├── 11-reglas-negocio.md            ┘
-├── 12-especificacion-reconstruccion.md  ┐
-├── 13-modernizacion-refactor.md         │ B. Reconstruir y modernizar
-├── 14-diseno-objetivo.md                ┘
+├── 09-valor-adicional.md
+├── 10-pantallas.md
+├── 11-reglas-negocio.md
 ├── INVENTARIO.md
 ├── anexo/   (definiciones originales: indice.md + <tipo>/<slug>.md)
 └── diagrams/
@@ -169,7 +158,6 @@ appian-docs/_trabajo/<PREFIJO>/   = <trabajo>: datos en bruto, NO compartir
 | `references/execution-principles.md` | Antes de la fase 4 (registro de hallazgos y pasada de coherencia). |
 | `references/docs-mcp-usage.md` | Si hay Docs MCP. |
 | `references/data-fabric.md` | Fase 2, paso 3. |
-| `references/modernization-guide.md` | Lo usa `rebuild-architect`. |
 | `references/appian-objects-guide.md` | Dónde está cada dato y heurísticas. |
 | `references/bpmn-mapping.md`, `mermaid-rules.md`, `presentation-rules.md` | Al generar diagramas y documentos. |
 | `references/security-rules.md` | Fase 3 y antes de escribir documentos. |
@@ -183,7 +171,7 @@ appian-docs/_trabajo/<PREFIJO>/   = <trabajo>: datos en bruto, NO compartir
 
 ## Validación final (antes de responder)
 
-1. Existen los 17 documentos (`LEEME`, `00`–`14`, `INVENTARIO`), `anexo/indice.md` y `diagrams/`. Los que no aplican llevan su frase de «no aplica» (p. ej. 07 sin batches).
+1. Existen `LEEME`, `00`–`11`, `INVENTARIO`, `anexo/indice.md` y `diagrams/`. Los que no aplican llevan su frase de «no aplica» (p. ej. 07 sin batches).
 2. `08-procesos-bpmn/` tiene por cada process model su `.md`, su `.bpmn` (con `bpmndi:BPMNDiagram`) y su diagrama (`.svg`/`.mmd`, o `.png`/`.drawio` con su `.json`, que es la especificación del dibujo y no datos en bruto), e `indice.md` los lista todos. Un proceso de más de 25 nodos se parte en `<slug>-1.mmd`, `<slug>-2.mmd`…: se admite `<slug>(-N)?.mmd` y `.svg`.
 3. Todos los diagramas pasan `python3 <skill>/scripts/validate_mermaid.py` (o están sustituidos por tabla) y ninguno superó el aviso de ancho.
 4. `python3 <skill>/scripts/detect_secrets.py <salida>` no encuentra nada en toda la carpeta, incluidos `anexo/` y `dashboard/`. Si encuentra algo en un entregable generado (`anexo/`, `dashboard/`), no lo edites a mano: corrige la causa y regenéralo.
@@ -191,8 +179,7 @@ appian-docs/_trabajo/<PREFIJO>/   = <trabajo>: datos en bruto, NO compartir
 6. Ningún usuario en los entregables: busca en `<salida>` los identificadores de los ficheros `members`, `versions` e `history` de `mcp_raw`, y las direcciones de correo (`[\w.+-]+@[\w-]+\.`): ninguna personal (se escriben `‹correo›`).
 7. `build_registry.py` termina sin errores y cada hallazgo de los documentos tiene su ID en el registro de 09.
 8. `INVENTARIO.md` cubre el 100 % de `inventory.json`.
-9. Todos los `PAN-` y `RN-` aparecen en la trazabilidad de `12`; cada `MOD-` de `13` tiene evidencia y fuente; cada entidad, proceso y pantalla de `14` enlaza los RF, RN o MOD de los que sale.
-10. `LEEME.md` dice qué no estuvo disponible (MCP opcionales, tipos sin definición, seguridad por objeto).
-11. No se ha escrito nada fuera de `<salida>/` y `<trabajo>/`, y `<salida>/` no contiene datos en bruto ni enlaces a `<trabajo>/`.
+9. `LEEME.md` dice qué no estuvo disponible (MCP opcionales, tipos sin definición, seguridad por objeto).
+10. No se ha escrito nada fuera de `<salida>/` y `<trabajo>/`, y `<salida>/` no contiene datos en bruto ni enlaces a `<trabajo>/`.
 
 Si algo falla, corrígelo y vuelve a validar antes de responder.

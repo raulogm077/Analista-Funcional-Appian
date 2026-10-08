@@ -36,33 +36,34 @@ def run(script, out):
     return subprocess.run([sys.executable, str(script), str(out)], capture_output=True, text=True)
 
 
-def test_registry_fills_09_and_links_treatment(tmp_path):
+def test_registry_fills_09(tmp_path):
     out, work = setup(tmp_path)
     (work / "hallazgos" / "process-modeler.json").write_text(json.dumps([h("H-PRO-01")]))
     (work / "hallazgos" / "integration-security-analyzer.json").write_text(json.dumps([
         h("H-SEG-01", titulo="Alta abierta a todos los usuarios", area="seguridad", severidad="Media",
           certeza="inferido", documento="04-seguridad-grupos.md#hallazgos", evidencia="mcp:processModel/X@other:roleMap"),
         h("H-SEG-02", titulo="Cancelar | no anula", duplicadoDe="H-PRO-01", documento="04-seguridad-grupos.md")]))
-    (work / "modernizacion.json").write_text(json.dumps({"veredicto": "Refactorizar por fases",
-        "mod": [{"id": "MOD-001", "hallazgos": ["H-PRO-01"]}], "pq": [{"id": "PQ-002", "hallazgos": ["H-SEG-01"]}]}))
     p = run(REG, out)
     assert p.returncode == 0, p.stderr
     t = (out / "09-valor-adicional.md").read_text()
-    assert "| H-PRO-01 | Cancelar no anula el alta | procesos | Alta | ✅ |" in t and "MOD-001" in t
-    assert "| H-SEG-01 |" in t and "🔵" in t and "PQ-002" in t
+    assert "| ID | Hallazgo | Área | Severidad | Certeza | Dónde |\n|---|---|---|---|---|---|\n" in t
+    assert ("| H-PRO-01 | Cancelar no anula el alta | procesos | Alta | ✅ "
+            "| [08 DEM Alta Solicitud](./08-procesos-bpmn/DEM_Alta_Solicitud.md#hallazgos) |\n") in t
+    assert "| H-SEG-01 |" in t and "🔵" in t
     assert "| H-SEG-02 |" not in t and "H-SEG-02 → H-PRO-01" in t        # fusionado, no se repite
     assert t.index("H-PRO-01 |") < t.index("H-SEG-01 |")                 # Alta antes que Media
     assert "## Glosario" in t and "(lo rellena" not in t
     assert run(REG, out).returncode == 0 and (out / "09-valor-adicional.md").read_text() == t   # idempotente
     reg = json.loads((work / "registro.json").read_text())
-    assert reg["porSeveridad"] == {"Alta": 1, "Media": 1, "Baja": 0} and reg["veredicto"] == "Refactorizar por fases"
+    assert set(reg) == {"hallazgos", "porSeveridad", "porCerteza"}
+    assert reg["porSeveridad"] == {"Alta": 1, "Media": 1, "Baja": 0}
     # build_summary toma el registro (sin inventario: solo se comprueba la parte de hallazgos)
     (work / "inventory.json").write_text(json.dumps({"counts": {}, "objects": {}}))
     p = run(SUM, out)
     assert p.returncode == 0, p.stderr
     s = json.loads((work / "summary.json").read_text())
     assert [f["id"] for f in s["findings"]] == ["H-PRO-01", "H-SEG-01"]
-    assert s["modernization"]["verdict"] == "Refactorizar por fases"
+    assert "modernization" not in s and all("tratamiento" not in f for f in s["findings"])
 
 
 def test_registry_rejects_bad_entries(tmp_path):

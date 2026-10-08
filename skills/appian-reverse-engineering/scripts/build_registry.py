@@ -5,8 +5,7 @@ Uso:
   python3 <skill>/scripts/build_registry.py <carpeta_salida>
 
 Lee   <trabajo>/hallazgos/*.json      (un fichero por autor: lista de hallazgos)
-      <trabajo>/modernizacion.json    (opcional, lo escribe rebuild-architect: MOD y PQ con los hallazgos que tratan)
-Crea  <trabajo>/registro.json         (hallazgos validados, con su tratamiento)
+Crea  <trabajo>/registro.json         (hallazgos validados y sus recuentos por severidad y certeza)
       Rellena la tabla de 09-valor-adicional.md entre <!-- registro:inicio --> y <!-- registro:fin -->.
 
 Cada hallazgo:
@@ -79,15 +78,6 @@ def validar(hallazgos: list[dict], salida: Path, errores: list[str], avisos: lis
                 errores.append(f"{h.get('id')}: duplicadoDe apunta a otro duplicado ({d})")
 
 
-def tratamiento(modern: dict) -> dict[str, list[str]]:
-    trat: dict[str, list[str]] = {}
-    for clave in ("mod", "pq"):
-        for item in modern.get(clave, []) or []:
-            for hid in item.get("hallazgos", []) or item.get("resuelve", []) or []:
-                trat.setdefault(hid, []).append(item.get("id", "?"))
-    return trat
-
-
 def etiqueta_doc(doc: str) -> str:
     base = doc.split("#", 1)[0]
     nombre = Path(base).stem
@@ -101,13 +91,12 @@ def tabla(registro: list[dict]) -> str:
     vivos = [h for h in registro if not h.get("duplicadoDe")]
     orden = {s: i for i, s in enumerate(SEVERIDADES)}
     vivos.sort(key=lambda h: (orden.get(h["severidad"], 9), h["id"]))
-    lineas = ["| ID | Hallazgo | Área | Severidad | Certeza | Dónde | Tratamiento |",
-              "|---|---|---|---|---|---|---|"]
+    lineas = ["| ID | Hallazgo | Área | Severidad | Certeza | Dónde |",
+              "|---|---|---|---|---|---|"]
     for h in vivos:
         titulo = h["titulo"].replace("|", "/").strip()
-        trat = ", ".join(h.get("tratamiento", [])) or "—"
         lineas.append(f"| {h['id']} | {titulo} | {h['area']} | {h['severidad']} | {CERTEZAS.get(h['certeza'], '?')} "
-                      f"| [{etiqueta_doc(h['documento'])}](./{h['documento']}) | {trat} |")
+                      f"| [{etiqueta_doc(h['documento'])}](./{h['documento']}) |")
     dup = [h for h in registro if h.get("duplicadoDe")]
     if dup:
         lineas.append("")
@@ -135,14 +124,7 @@ def main(salida_dir: str) -> int:
             else:
                 errores.append(f"{f.name}: cada hallazgo debe ser un objeto")
     validar(hallazgos, salida, errores, avisos)
-    modern_path = trabajo / "modernizacion.json"
-    modern = json.loads(modern_path.read_text(encoding="utf-8")) if modern_path.exists() else {}
-    trat = tratamiento(modern)
-    ids = {h.get("id") for h in hallazgos}
-    for hid in sorted(set(trat) - ids):
-        avisos.append(f"modernizacion.json cita {hid}, que no está en el registro")
     for h in hallazgos:
-        h["tratamiento"] = trat.get(h.get("id"), [])
         h.pop("_fichero", None)
     for a in avisos:
         print(f"AVISO: {a}", file=sys.stderr)
@@ -154,8 +136,7 @@ def main(salida_dir: str) -> int:
                 "porSeveridad": {s: sum(1 for h in hallazgos if h["severidad"] == s and not h.get("duplicadoDe"))
                                  for s in SEVERIDADES},
                 "porCerteza": {c: sum(1 for h in hallazgos if h["certeza"] == c and not h.get("duplicadoDe"))
-                               for c in CERTEZAS},
-                "veredicto": modern.get("veredicto"), "estrategia": modern.get("estrategia")}
+                               for c in CERTEZAS}}
     (trabajo / "registro.json").write_text(json.dumps(registro, ensure_ascii=False, indent=2), encoding="utf-8")
     doc09 = salida / "09-valor-adicional.md"
     if doc09.exists():

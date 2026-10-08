@@ -18,15 +18,15 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 - [ ] Appian MCP Server: estado según `doctor`, o «disponible en sesión» si sus herramientas están en la sesión.
 - [ ] Tabla de estado mostrada al usuario (estado · qué se pierde · cómo activarlo).
 - [ ] Si el Dev MCP no está `ok`: mostrado el paso de `devmcp-setup.md` que falta y **parada**.
-- [ ] En una sola pregunta: aplicación, formatos adicionales, objetivo (entender, modernizar o reconstruir; por defecto, modernizar) y si el entorno es producción (con su versión de Appian, si la sabe).
-- [ ] `preflight.json` (con `environment: {url, isProduction, appianVersion}`) y `output_preferences.json` (`pdf`, `dashboard`, `objetivo`; formato en `SKILL.md`) guardados.
+- [ ] En una sola pregunta: aplicación, formatos adicionales y si el entorno es producción (con su versión de Appian, si la sabe).
+- [ ] `preflight.json` (con `environment: {url, isProduction, appianVersion}`) y `output_preferences.json` (`pdf`, `dashboard`; formato en `SKILL.md`) guardados.
 
 **Qué pierde el usuario sin cada MCP opcional**
 
 | Falta | Consecuencia |
 |---|---|
-| Appian MCP Server | Sin volúmenes de datos: 03 no tiene filas por entidad y los requisitos de volumen de 12 pasan a preguntas abiertas. |
-| Docs MCP | Las fuentes de 13 son las URLs de `modernization-guide.md` (26.6), marcadas «sin verificar para la versión»; sin explicación oficial de nodos o funciones desconocidos. |
+| Appian MCP Server | Sin volúmenes de datos: 03 no tiene filas por entidad. |
+| Docs MCP | Sin explicación oficial de nodos o funciones desconocidos; lo que depende de la documentación se marca «sin verificar». |
 
 ## Fase 1 — Plan
 
@@ -66,8 +66,6 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 - [ ] 4.2 en paralelo, en un solo turno: `data-modeler` (03), `integration-security-analyzer` (04–06), `process-modeler` (08), `ui-rules-analyzer` (10, 11).
 - [ ] Cada agente dejó `<trabajo>/hallazgos/<agente>.json` y su informe; sus «Para otras áreas» y choques, anotados para la fase 6.
 - [ ] 4.3 orquestador: `build_summary.py <salida>` para ver `signals` → `07` y `09` con sus plantillas y las guías de abajo → hallazgos `H-BAT` y `H-GEN` en `<trabajo>/hallazgos/orquestador.json` → `build_registry.py <salida>` sin errores (lo que reporte se corrige en el JSON del agente que corresponda).
-- [ ] 4.4 `rebuild-architect` (recibe el `objetivo`) → 12, 13 y `<trabajo>/modernizacion.json` (veredicto, estrategia y los `MOD-`/`PQ-` que tratan cada hallazgo).
-- [ ] 4.5 `target-designer` (recibe el `objetivo`) → 14.
 - [ ] Consultas al Docs MCP (suma de `<trabajo>/docs_cache/*.json`) ≤ 30.
 
 ### Guía de 07 (procesos programados)
@@ -124,10 +122,10 @@ Hallazgos `H-GEN` (severidad orientativa):
 
 ## Fase 6 — Coherencia, resumen, inventario y guía
 
-- [ ] Pasada de coherencia (`execution-principles.md`, sección 4): contradicciones corregidas en su documento, duplicados marcados con `duplicadoDe`, severidades fuera del propietario quitadas, «Para otras áreas» registrados, «Preguntas nuevas» de target-designer dadas de alta como `PQ-` en 12 y en `modernizacion.json`, menciones a otras áreas en 01–11 con el ID canónico y su enlace. Sin notas de parche.
-- [ ] `build_registry.py <salida>` sin errores (ahora con el tratamiento de 13).
+- [ ] Pasada de coherencia (`execution-principles.md`, sección 4): contradicciones corregidas en su documento, duplicados marcados con `duplicadoDe`, severidades fuera del propietario quitadas, «Para otras áreas» registrados, menciones a otras áreas en 01–11 con el ID canónico y su enlace. Sin notas de parche.
+- [ ] `build_registry.py <salida>` sin errores (de nuevo, tras la pasada de coherencia).
 - [ ] `build_summary.py <salida>` → `<trabajo>/summary.json`.
-- [ ] `00-resumen-ejecutivo.md` con su plantilla: todas las cifras de `summary.json` (confianza con su motivo, procesos críticos, hallazgos Alta, secretos, veredicto y estrategia, uso real con aviso de entorno).
+- [ ] `00-resumen-ejecutivo.md` con su plantilla: todas las cifras de `summary.json` (confianza con su motivo, procesos críticos, hallazgos Alta, secretos y uso real con aviso de entorno).
 - [ ] `INVENTARIO.md`: 100 % de `inventory.json`, con uuid, enlace al anexo y cobertura de la extracción.
 - [ ] `LEEME.md`: rutas por perfil, rangos reales de IDs, marcas, qué no incluye y glosario de Appian.
 

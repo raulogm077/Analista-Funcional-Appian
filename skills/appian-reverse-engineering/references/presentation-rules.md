@@ -30,8 +30,8 @@ Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no e
 ```
 
 - El TL;DR es el **único** resumen del documento. No añadas «Resumen rápido», «Resumen» ni otro TL;DR más abajo.
-- La plantilla puede concretar el nombre de una sección («Vista: mapa de procesos») o subdividirla (`## Detalle: requisitos`, `## Detalle: datos`…), pero no cambiar el orden.
-- Los documentos sin área propietaria de hallazgos (`12`, `13`, `14`) no tienen sección Hallazgos ni «Hallazgos:» en el TL;DR; citan los IDs donde los tratan. `09` añade «Registro de hallazgos» tras sus Hallazgos.
+- La plantilla puede concretar el nombre de una sección («Vista: mapa de procesos») o subdividirla (`## Detalle: datos`…), pero no cambiar el orden.
+- `09` añade «Registro de hallazgos» tras sus Hallazgos.
 - Encabezados sin emojis.
 - `00-resumen-ejecutivo.md`, `LEEME.md` e `INVENTARIO.md` tienen su propia estructura en la plantilla; también empiezan por el TL;DR.
 
@@ -123,7 +123,7 @@ No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). Una buena p
 
 Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal estructurado. «1 pantalla» ≈ 50 líneas. En apps pequeñas (menos de ~50 objetos) apunta al objetivo, no al máximo.
 
-**El objetivo crece con el contenido.** Nunca se recorta ni se omite un caso de uso, RF, RN, MOD, pantalla u otra ficha para cumplir la longitud: lo que se acorta es cada ficha. En `01`, `12`, `13` y `14`, por encima de unas 15 fichas el documento se parte por área (subdominio, actor o módulo): un `## Detalle: <área>` por área, entre la Vista y los Hallazgos (Regla 1), y tras la Vista un índice de áreas con enlaces a sus fichas.
+**El objetivo crece con el contenido.** Nunca se recorta ni se omite un caso de uso, RN, pantalla u otra ficha para cumplir la longitud: lo que se acorta es cada ficha. En `01`, por encima de unas 15 fichas el documento se parte por área (subdominio, actor o módulo): un `## Detalle: <área>` por área, entre la Vista y los Hallazgos (Regla 1), y tras la Vista un índice de áreas con enlaces a sus fichas.
 
 | Entregable | Objetivo | Máximo |
 |---|---|---|
@@ -139,9 +139,6 @@ Objetivo de longitud; si un documento (o una ficha) dobla el máximo, está mal 
 | `08-procesos-bpmn/indice.md` | 1 | 2 |
 | `09-valor-adicional.md` | según hallazgos | con índice |
 | `10-pantallas.md`, `11-reglas-negocio.md` | ½ por pantalla o regla | 1 por pantalla o regla |
-| `12-especificacion-reconstruccion.md` | 1 + ½ por RF | 1 + 1 por RF |
-| `13-modernizacion-refactor.md` | 1 + ⅓ por MOD | 1 + ⅔ por MOD |
-| `14-diseno-objetivo.md` | 2 + ½ por elemento que cambia | 2 + 1 por elemento que cambia |
 | `INVENTARIO.md` | una tabla por tipo | sin límite |
 
 ## Checklist antes de escribir cada documento

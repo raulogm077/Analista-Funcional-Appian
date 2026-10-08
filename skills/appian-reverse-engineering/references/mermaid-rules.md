@@ -63,7 +63,7 @@ Solo se permiten estos tres tipos. Cada uno tiene reglas específicas; las **reg
 
 ---
 
-### Tipo C — diagrama de proceso (uso exclusivo: `08-procesos-bpmn/<slug>.mmd` y los procesos de `14`)
+### Tipo C — diagrama de proceso (uso exclusivo: `08-procesos-bpmn/<slug>.mmd`)
 
 Un `flowchart` con formas, iconos y `classDef` que imitan la notación BPMN 2.0. En `08` va junto al `.bpmn` del mismo proceso (`references/bpmn-mapping.md`), que es el que se abre en Camunda Modeler o bpmn.io. En los documentos se llama «Diagrama del proceso».
 
@@ -144,12 +144,10 @@ Todos en `<salida>/diagrams/`, salvo los de cada proceso, que van en `<salida>/0
 | 02 | `arquitectura.mmd` (partido: `arquitectura-<capa>.mmd`) |
 | 03 | `modelo-datos.mmd`, `modelo-datos-<subdominio>.mmd`, `modelo-datos-subdominios.mmd` |
 | 04 | `grupos.mmd` |
-| 05, 06, 12 | sin diagrama obligatorio |
+| 05, 06 | sin diagrama obligatorio |
 | 08, índice | `mapa-procesos.mmd` |
 | 08, cada proceso | `08-procesos-bpmn/<slug>.mmd` (`slug` del inventario; partido: `<slug>-1.mmd`, `<slug>-2.mmd`) |
 | 10 / 11 | `navegacion.mmd`, `estados-<entidad>.mmd` |
-| 13 | `arquitectura-objetivo.mmd` |
-| 14 | `objetivo-datos.mmd`, `objetivo-<slug-proceso>.mmd`, `objetivo-navegacion.mmd` |
 
 Nombres en minúsculas, sin acentos ni espacios (salvo `<slug>`, que es el del inventario). El `.svg` lleva el mismo nombre.
 

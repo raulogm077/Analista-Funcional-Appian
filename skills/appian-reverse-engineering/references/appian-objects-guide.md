@@ -63,7 +63,7 @@ Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/
 ## Importancia de un objeto
 
 - **Process models**: «proceso crítico» es solo el que marca `criticality` en el inventario (una única fórmula para todos los documentos, ver `lectura-mcp-raw.md`). No la recalcules ni la sustituyas por otra.
-- **Resto de objetos**: estos criterios ayudan a decidir qué describir con más detalle y qué priorizar en 12 y 13. No son una etiqueta: la severidad solo se da a hallazgos.
+- **Resto de objetos**: estos criterios ayudan a decidir qué describir con más detalle. No son una etiqueta: la severidad solo se da a hallazgos.
   - Lo referencian 5 o más objetos (hub en `graph.json`).
   - Es punto de entrada: página de site, acción de record, Web API, temporizador.
   - Tiene mucho uso real (`usage.executions` alto, en producción).
@@ -86,8 +86,6 @@ Fuente: [appian/dev-mcp-skills – process-models.md](https://github.com/appian/
 | Avisos de validación | `validationIssues` no vacío. |
 | Sin uso | `usage.executions = 0` con historial disponible y en un entorno de producción. |
 
-Para las alternativas actuales de cada patrón, ver `references/modernization-guide.md`.
-
 ## Roles típicos en aplicaciones Appian
 
 Para inferir actores cuando el grupo no lo aclara (es una inferencia: 🔵 «según su nombre», con el nombre del grupo como evidencia):
@@ -104,7 +102,7 @@ Para inferir actores cuando el grupo no lo aclara (es una inferencia: 🔵 «seg
 
 ## Informes y cuadros de mando
 
-Suelen estar como páginas de site con interfaces de gráficos (`a!barChartField`, `a!pieChartField`, `a!gridField`, KPIs) o como vistas de record. Si se usan record types sincronizados, valora Process HQ (ver `modernization-guide.md`).
+Suelen estar como páginas de site con interfaces de gráficos (`a!barChartField`, `a!pieChartField`, `a!gridField`, KPIs) o como vistas de record.
 
 ## Cuándo marcar algo como pendiente
 

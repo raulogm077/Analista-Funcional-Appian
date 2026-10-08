@@ -106,7 +106,7 @@ Hallazgos `H-SEG` típicos (certeza según la evidencia; sin role map, ❓ o no 
 
 ### Capacidades por grupo
 
-Filas: grupos. Columnas: capacidades funcionales (casos de uso de `01-funcional.md` o, si no los hay, los puntos de entrada), máximo 7. Celdas: Inicia, Tarea, Aprueba, Ve, Administra o «—», solo con evidencia (role map, asignación de tarea, visibilidad); si dependen de un dato que no llega, ❓. `rebuild-architect` parte de esta tabla para su matriz rol × capacidad.
+Filas: grupos. Columnas: capacidades funcionales (casos de uso de `01-funcional.md` o, si no los hay, los puntos de entrada), máximo 7. Celdas: Inicia, Tarea, Aprueba, Ve, Administra o «—», solo con evidencia (role map, asignación de tarea, visibilidad); si dependen de un dato que no llega, ❓.
 
 ### Reglas de seguridad en expresiones
 
@@ -122,7 +122,7 @@ Para cada una: objeto, patrón, qué controla, certeza y evidencia. Comprueba qu
 
 Sigue `references/security-rules.md`, «Acción ante un secreto». Fuentes: la salida de `bash <skill>/scripts/detect_secrets.sh <trabajo>/mcp_raw`, `maskedSecrets` de cada objeto en `inventory.json`, las constantes con `maskedSecret: true` y las URLs con `***:***@`.
 
-Cada secreto real es un hallazgo `H-SEG` con `"area": "secretos"` y severidad **Alta**: fila en la sección Hallazgos de 04, una línea debajo de la tabla con su impacto y la recomendación, y su entrada en el JSON. En 05 o 06, donde aparezca el objeto, una frase sin severidad que enlace el hallazgo de 04. El registro de 09 lo genera un script a partir del JSON: no escribas en 09 ni en 13.
+Cada secreto real es un hallazgo `H-SEG` con `"area": "secretos"` y severidad **Alta**: fila en la sección Hallazgos de 04, una línea debajo de la tabla con su impacto y la recomendación, y su entrada en el JSON. En 05 o 06, donde aparezca el objeto, una frase sin severidad que enlace el hallazgo de 04. El registro de 09 lo genera un script a partir del JSON: no escribas en 09.
 
 ## Registro de hallazgos
 

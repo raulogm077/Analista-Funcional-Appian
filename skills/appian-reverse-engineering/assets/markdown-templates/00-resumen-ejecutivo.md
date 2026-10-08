@@ -13,8 +13,6 @@
     Hallazgos ........... findingsBySeverity, findingsByCertainty y findings de severidad Alta
                           (si no hay Alta: los Media, máx. 5, y dilo en el TL;DR)
     Secretos ............ secrets {count, objects}; tratamiento: los H-SEG de findings
-    Modernización ....... modernization {verdict, strategy} (vienen de 13; si son null, falta
-                          <trabajo>/modernizacion.json: corrígelo antes de escribir 00)
     Uso real ............ usage (top por ejecuciones; failedInSampleOf = fallos en una muestra) y signals[type=processModelsWithoutExecutions].
                           Los fallos citan su H-PRO (08); los procesos sin ejecuciones, su H-GEN (09).
   Certeza: verificado ✅ · inferido 🔵 · pendiente ❓. En 00 los hallazgos se citan por ID, sin columna de severidad.
@@ -24,8 +22,8 @@
 
 # {{meta.appName}}: resumen ejecutivo
 
-> **TL;DR**: {{Qué hace la aplicación y para quién, en lenguaje de negocio, 1-2 frases}}. {{Lo más importante: el hallazgo Alta principal o el veredicto en una frase}}.
-> **Volumen**: {{totals.objects}} objetos ({{n}} process models, {{n}} interfaces, {{n}} record types). **Hallazgos**: {{N}} (Alta: {{findingsBySeverity.Alta}}) — principales: [{{H-SEG-01}}](./04-seguridad-grupos.md#hallazgos), [{{H-PRO-02}}](./08-procesos-bpmn/{{slug}}.md#hallazgos). **Veredicto**: {{modernization.verdict}}.
+> **TL;DR**: {{Qué hace la aplicación y para quién, en lenguaje de negocio, 1-2 frases}}. {{Lo más importante: el hallazgo Alta principal en una frase}}.
+> **Volumen**: {{totals.objects}} objetos ({{n}} process models, {{n}} interfaces, {{n}} record types). **Hallazgos**: {{N}} (Alta: {{findingsBySeverity.Alta}}) — principales: [{{H-SEG-01}}](./04-seguridad-grupos.md#hallazgos), [{{H-PRO-02}}](./08-procesos-bpmn/{{slug}}.md#hallazgos).
 
 | Dato | Valor |
 |---|---|
@@ -64,19 +62,13 @@ Criterio único para toda la documentación: cuántos objetos lo lanzan, a cuán
 
 {{N}} hallazgos: Alta {{n}} · Media {{n}} · Baja {{n}}; verificados {{n}}, inferidos {{n}}, pendientes de validar {{n}}. Registro completo en [09](./09-valor-adicional.md#registro-de-hallazgos).
 
-| ID | Hallazgo | Área | Certeza | Tratamiento |
-|---|---|---|---|---|
-| [{{H-SEG-01}}](./{{documento}}) | {{titulo}} | {{area}} | ✅ | {{MOD-003 o «—»}} |
+| ID | Hallazgo | Área | Certeza |
+|---|---|---|---|
+| [{{H-SEG-01}}](./{{documento}}) | {{titulo}} | {{area}} | ✅ |
 
 ## Secretos
 
 La extracción enmascaró valores con aspecto de secreto en {{secrets.count}} objetos: `{{objeto 1}}`, `{{objeto 2}}`. Ningún valor aparece en esta documentación. Tratamiento: [{{H-SEG-02}}](./04-seguridad-grupos.md#hallazgos).
-
-## Modernización
-
-**Veredicto:** {{modernization.verdict}}. **Estrategia:** {{modernization.strategy}}.
-
-Diagnóstico y plan en [13](./13-modernizacion-refactor.md), requisitos para reconstruirla en [12](./12-especificacion-reconstruccion.md) y diseño objetivo en [14](./14-diseno-objetivo.md).
 
 ## Uso real
 

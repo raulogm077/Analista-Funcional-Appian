@@ -48,7 +48,7 @@ No inventes lo que falte. Lo que la extracción no trae para ningún objeto (nul
 - Si la definición dice si el record type está sincronizado, esa es la fuente (✅).
 - Si no, que figure en los metadatos del data fabric indica que está sincronizado (🔵): esa herramienta solo lista y consulta record types sincronizados. Fuente: https://docs.appian.com/suite/help/26.6/mcp-system-tools.html#data-fabric-tools
 - Que **no** figure, o que no tenga recuento, no prueba lo contrario: los metadatos se filtran por los permisos de la cuenta de servicio y el data fabric no consulta los record types con seguridad por registro basada en expresión (`unmatchedRecordTypes`; ver `references/data-fabric.md`). Es ❓.
-- Los recuentos de filas van en la columna «Filas» y en la ficha; son la base de los requisitos de volumen de `12`. Si un recuento parece bajo, puede deberse a los permisos de la cuenta de servicio: dilo como supuesto.
+- Los recuentos de filas van en la columna «Filas» y en la ficha. Si un recuento parece bajo, puede deberse a los permisos de la cuenta de servicio: dilo como supuesto.
 
 ### Paso 4. Subdominios (solo con más de ~15 entidades)
 

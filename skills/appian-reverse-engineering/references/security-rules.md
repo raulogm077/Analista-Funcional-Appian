@@ -34,7 +34,7 @@ Una URL ya enmascarada por completo (`https://***:***@host`) no cuenta como coin
 | Secreto (contraseña, token, clave, certificado) | No se escribe; se dice dónde está («la cabecera `Authorization` usa `CON_SAP_TOKEN`»). En un payload: `***`. |
 | URL con credenciales embebidas | La URL sin ellas y «la URL base lleva credenciales embebidas (enmascaradas)». Nunca `***:***@`. |
 | Usuario de una credencial (Basic, cuenta de servicio) | No se escribe: es dato sensible. «Usuario y contraseña en el connected system». |
-| Host de un servicio externo o público | Se escribe, porque sirve para reconstruir la integración: `https://api.proveedor.com/v1`. |
+| Host de un servicio externo o público | Se escribe, porque dice a qué sistema llama la integración: `https://api.proveedor.com/v1`. |
 | Host interno | Se sustituye por `‹host interno›` y se conserva la ruta: `https://‹host interno›/sap/api`. |
 | Cadena de conexión (JDBC) | Tipo de base de datos y host según los criterios anteriores; sin usuario ni contraseña. |
 | Usuarios de Appian (miembros, versiones, ejecuciones) | Nunca. Recuentos o rol (`presentation-rules.md`, Regla 8). |
@@ -56,7 +56,7 @@ El valor de una constante o de un connected system se ve desde el diseño de App
    - Entrada en `<trabajo>/hallazgos/integration-security-analyzer.json` con `impacto` y `recomendacion`.
    - Evidencia: `mcp:<tipo>/<nombre>#<propiedad>`, sin el valor.
 4. **Recomendación habitual**: rotar la credencial y moverla a un campo cifrado del connected system o de la integración (valor introducido directamente, que Appian cifra y no exporta), con su valor por entorno en el fichero de personalización de importación; nunca a una constante ni a una expresión. Fuente: https://docs.appian.com/suite/help/26.6/Integration_Object.html#encrypted-values
-5. El registro de `09-valor-adicional.md` lo genera `scripts/build_registry.py` a partir del JSON, y `13` lo trata con sus MOD. Nadie añade el secreto a mano en 09 ni en 13.
+5. El registro de `09-valor-adicional.md` lo genera `scripts/build_registry.py` a partir del JSON. Nadie añade el secreto a mano en 09.
 
 ## Falsos positivos comunes
 
@@ -103,5 +103,5 @@ python3 <skill>/scripts/detect_secrets.py <salida>
 
 Recorre toda la carpeta, incluidos `anexo/` y `dashboard/`. Si encuentra algo (no en `<trabajo>/`, que no se comparte), **detente**:
 
-- En un documento que escribe un agente (`00`–`14`, `08-procesos-bpmn/`, `LEEME`, `INVENTARIO`): corrígelo con la tabla «Cómo se escribe cada dato».
+- En un documento que escribe un agente (`00`–`11`, `08-procesos-bpmn/`, `LEEME`, `INVENTARIO`): corrígelo con la tabla «Cómo se escribe cada dato».
 - En un entregable generado (`anexo/`, `dashboard/`): no lo edites a mano. Corrige la causa (el enmascarado de la extracción o del anexo, o el documento de origen) y vuelve a generarlo.
