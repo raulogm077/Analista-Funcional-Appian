@@ -81,7 +81,7 @@ Fuente de esta guía: [Appian Developer MCP Servers](https://docs.appian.com/sui
 Desde la carpeta donde está tu `.mcp.json`, con la ruta absoluta de la skill (`<skill>`):
 
 ```bash
-uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor
+uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor
 ```
 
 Debe mostrar `Dev MCP ... ok` y el número de aplicaciones visibles.

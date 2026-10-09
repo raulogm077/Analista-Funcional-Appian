@@ -24,10 +24,11 @@ Errores (✗, salida 1) y avisos (·):
     solo cambia con aprobación;
   - con una aplicación existente (<p>/as-is/datos/inventario.json): cada historia con su «Origen»; hallazgos, NV y
     REF solo en la trazabilidad del DF y citados solo si existen; la Situación de cada objeto de técnico §13 contra el
-    inventario y los objetos de fuera de la aplicación; con propuesta de refactorización, una DT por cada REF de su
-    Solución y la tabla de migración en técnico §3. Avisa de lo que se modifica o se usa con un hallazgo Alta
-    (¿refactorización antes?) o con algo sin verificar (¿PC o PT?) que no cita ninguna PT ni PC. Sin as-is/, nada
-    de esto.
+    inventario y los objetos de fuera de la aplicación; con propuesta de refactorización, las REF citadas en su
+    Diagnóstico y las DEC en sus Pendientes, una DT por cada REF de su Solución y la tabla de migración en técnico §3.
+    Avisa de lo que se modifica o se usa con un hallazgo Alta (¿refactorización antes?) o con algo sin verificar
+    (¿PC o PT?) que no cita ninguna PT ni PC, y de las citas «[FU-nn H-…]» y «[FU-nn NV-…]» a un as-is/ anterior (su
+    huella en fuentes/indice.json no es la de ahora). Sin as-is/, nada de esto.
 """
 import argparse
 import bisect
@@ -39,6 +40,7 @@ import sys
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import leer_fuentes as lf
 import modelo as mo
 import redaccion as rd
 
@@ -421,6 +423,8 @@ def comprobar_versiones(m):
 RX_HALLAZGO = re.compile(r"\bH-[A-Z]{2,4}-\d{2,3}\b")
 RX_NV = re.compile(r"\bNV-[A-Z]{2,4}-\d{2,3}\b")
 RX_REF = re.compile(r"\bREF-\d{2,3}\b")
+RX_DEC = re.compile(r"\bDEC-\d{2,3}\b")
+RX_CITA_AS_IS = re.compile(r"\b(FU-\d+)\s+(?:H|NV)-[A-Z]{2,4}-\d{2,3}\b")   # «[FU-01 H-SEG-01]», «[FU-01 NV-PRO-01]»
 ORIGENES = ("se conserva", "cambia", "nueva")
 SITUACIONES = ("nuevo", "modifica", "existe", "sustituye")
 
@@ -435,6 +439,17 @@ def objetos_celda(celda):
     t = mo.sin_comentarios(celda).strip()
     nombres = re.findall(r"`([^`]+)`", t) or ([t] if t.strip(" —-") else [])
     return [re.sub(r"\(.*\)\s*$", "", re.sub(r"^[A-Za-z]+!(\{[^}]*\})?", "", n.strip())).strip() for n in nombres]
+
+
+def ids_de_la_propuesta(texto):
+    """(REF, DEC) de refactorizacion/propuesta.md: las fichas «**REF-nn — …**» de su Diagnóstico y la primera columna
+    de la tabla de sus Pendientes."""
+    texto = mo.sin_comentarios(texto)
+    apartado = lambda t: next((x.group(1) for x in [re.search(rf"^## {t}\s*$(.*?)(?=^## |\Z)", texto, re.M | re.S)]
+                               if x), "")
+    refs = set(re.findall(r"^\s*(?:#{3,4}\s+)?\**\s*(REF-\d{2,3})\s*[—–-]", apartado(r"2\. Diagn[oó]stico"), re.M))
+    decs = set(re.findall(r"^\|\s*(DEC-\d{2,3})\s*\|", apartado(r"6\. Pendientes"), re.M))
+    return refs, decs
 
 
 def citas(m, rx):
@@ -479,6 +494,13 @@ def comprobar_as_is(m):
     if nvs is not None:
         informe("as-is: los NV citados están en sin-verificar.json",
                 sorted(f"{x} ({', '.join(v[:3])})" for x, v in citas(m, RX_NV).items() if x not in nvs))
+    propuesta = m.raiz / "refactorizacion" / "propuesta.md"
+    if propuesta.exists():
+        refs, decs = ids_de_la_propuesta(propuesta.read_text(encoding="utf-8"))
+        informe("propuesta: las REF citadas están en su Diagnóstico",
+                sorted(f"{x} ({', '.join(v[:3])})" for x, v in citas(m, RX_REF).items() if x not in refs))
+        informe("propuesta: las DEC citadas están en sus Pendientes",
+                sorted(f"{x} ({', '.join(v[:3])})" for x, v in citas(m, RX_DEC).items() if x not in decs))
 
     empezado, completo = estado_tecnico(m)
     if not empezado:
@@ -542,7 +564,6 @@ def comprobar_as_is(m):
     informe("técnico §13: lo que se modifica o se usa con algo sin verificar que no cita ninguna PT ni PC",
             sin_verificar, grave=False)
 
-    propuesta = m.raiz / "refactorizacion" / "propuesta.md"
     if propuesta.exists():
         sol = re.search(r"^## 3\. Soluci[oó]n\s*$(.*?)(?=^## |\Z)", propuesta.read_text(encoding="utf-8"), re.M | re.S)
         refs = sorted(set(RX_REF.findall(mo.sin_comentarios(sol.group(1))))) if sol else []
@@ -552,6 +573,28 @@ def comprobar_as_is(m):
         migracion = any(cab and mo.normaliza(cab[0]).startswith("origen en la app") for _, cab, _ in m.tablas("T", "3"))
         informe("técnico §3: tabla «Carga inicial y migración» (hay propuesta de refactorización)",
                 [] if migracion else ["falta"], grave=completo)
+
+
+def comprobar_citas_as_is(m, carpeta_fuentes):
+    """Las citas «[FU-nn H-…]» y «[FU-nn NV-…]» son del as-is/ que catalogó FU-nn (leer_fuentes.py --una-fuente). Si se
+    repite la ingeniería inversa, los H- y NV- se numeran de nuevo y el as-is/ de ahora tiene otra huella: aviso. Sin
+    as-is/, sin el índice de las fuentes o sin esas citas, nada."""
+    asis = m.raiz / "as-is"
+    indice = pathlib.Path(carpeta_fuentes or m.raiz / "fuentes") / "indice.json"
+    if not asis.is_dir() or not indice.exists():
+        return
+    fuentes = {f["id"]: f for f in json.loads(indice.read_text(encoding="utf-8")).get("fuentes", [])}
+    citadas = sorted({x for D in m.docs.values() for l in D.lineas for x in RX_CITA_AS_IS.findall(l)
+                      if fuentes.get(x, {}).get("fichero") == "as-is/"})
+    if not citadas:
+        return
+    huella = lf.huella(asis.resolve())
+    ahora = next((f["id"] for f in fuentes.values() if f.get("hash") == huella), None)
+    donde = f"ahora es {ahora}" if ahora else \
+        "el de ahora no está catalogado: leer_fuentes.py --una-fuente <p>/as-is -o <p>/fuentes"
+    informe("as-is: las citas a hallazgos y NV son del as-is/ de ahora",
+            [f"las citas a {x} son de un as-is anterior ({donde}): revisa sus H- y NV- antes de dar nada por bueno"
+             for x in citadas if fuentes[x].get("hash") != huella], grave=False)
 
 
 # ------------------------------------------------------------------ fuentes
@@ -638,12 +681,14 @@ def comprobar_anterior(m, ruta_ant):
     return nuevas, modif, anul, ant
 
 
-SECUENCIA = 5   # palabras seguidas que, si una pieza cambiada ya no las dice, no deberían seguir en otra
+SECUENCIA = 6   # palabras seguidas que, si una pieza cambiada ya no las dice, no deberían seguir en otra
 
 
 def _palabras(linea):
-    """Las palabras visibles de una línea: (normalizada, tal cual)."""
-    return [(mo.normaliza(w), w) for w in re.findall(r"\w+", visible(linea))]
+    """Las palabras visibles de una línea, sin código ni URL: (normalizada, tal cual). De un enlace queda su texto; su
+    destino y las URL sueltas se repiten en muchas piezas y no son texto que se quede viejo."""
+    texto = re.sub(r"https?://\S+", " ", re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", visible(linea)))
+    return [(mo.normaliza(w), w) for w in re.findall(r"\w+", texto)]
 
 
 def _secuencias(lineas):
@@ -655,7 +700,7 @@ def _secuencias(lineas):
 
 
 def texto_viejo(m, ant, modif):
-    """Para cada pieza modificada, las secuencias de cinco palabras que tenía antes y ya no tiene, y cada otra línea del
+    """Para cada pieza modificada, las secuencias de seis palabras que tenía antes y ya no tiene, y cada otra línea del
     funcional o del técnico que aún las dice: «HU-07: "…" sigue en PAN-04, l.212». Una vez por línea, y solo de las
     líneas que ya estaban tal cual en la versión anterior: lo reescrito en esta versión ya se ha revisado."""
     duenio = {}     # (doc, línea) -> la pieza más pequeña que la contiene
@@ -852,6 +897,7 @@ def main():
         comprobar_tecnico(m)
         comprobar_versiones(m)
         comprobar_as_is(m)
+        comprobar_citas_as_is(m, a.fuentes)
     if a.fuentes:
         comprobar_fuentes(m, a.fuentes, a.corregir_citas)
     if a.anterior:

@@ -34,6 +34,8 @@ equipo, qué se pierde y cómo se instala. Si falta algo para esta tarea, dísel
     diagnóstico. Formato en `<skill>/../appian-reverse-engineering/references/datos.md`.
   - `as-is/LEEME.md` (entorno, versión de Appian, confianza y lo que no incluye), los documentos `01`–`11`,
     `INVENTARIO.md` y el `anexo/`: se leen para entender y se enlazan como evidencia.
+  - «Base:» de la propuesta lleva la fecha del `as-is/` que da `LEEME.md`. Si el `as-is/` se rehace, la propuesta se
+    revisa: sus `H-…` y NV se numeran de nuevo.
   - La extracción en bruto es interna de ingeniería inversa: no se lee ni se enlaza.
 - **El alcance**: la aplicación entera o qué módulos y procesos.
 - **Los límites del equipo**: plazo y lo que no se puede tocar (otras aplicaciones, contratos externos, tablas

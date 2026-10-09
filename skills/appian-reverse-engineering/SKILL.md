@@ -21,11 +21,11 @@ Todo con evidencia verificable (`mcp:<tipo>/<nombre>#<ubicación>`), certeza exp
 Desde la **carpeta del usuario** (donde está su configuración MCP, p. ej. `.mcp.json`), con la ruta absoluta de esta skill (`<skill>`):
 
 ```bash
-uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" <subcomando> [opciones]
+uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" <subcomando> [opciones]
 python3 "<skill>/scripts/build_model.py" <salida>
 ```
 
-`uv` ya es requisito del Dev MCP; `--no-project` evita que adopte el `pyproject.toml` que pueda haber en la carpeta del usuario. `doctor`, `apps` y `plan` admiten `--json` (salida legible por máquina). Códigos de salida en la cabecera de `devmcp_extract.py`. En Windows, `python` en vez de `python3`.
+`uv` ya es requisito del Dev MCP; `--no-project` evita que adopte el `pyproject.toml` que pueda haber en la carpeta del usuario, y `--python ">=3.10"`, que elija un Python más antiguo que el que pide `mcp`. `doctor`, `apps` y `plan` admiten `--json` (salida legible por máquina). Códigos de salida en la cabecera de `devmcp_extract.py`. En Windows, `python` en vez de `python3`.
 
 ## Requisitos
 
@@ -49,7 +49,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 ### Fase 0 — Preflight de los 3 MCP (obligatoria)
 
-1. Ejecuta `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor --json --out <salida>` (deja su salida en `<trabajo>/preflight.json`, dentro del proyecto). Si trae `appsNote` (más de 50 apps), busca la del usuario con `apps --json`.
+1. Ejecuta `uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor --json --out <salida>` (deja su salida en `<trabajo>/preflight.json`, dentro del proyecto). Si trae `appsNote` (más de 50 apps), busca la del usuario con `apps --json`.
 2. Comprueba en la sesión:
    - **Docs MCP**: si la sesión tiene sus herramientas (se reconocen como dice «Dudas de Appian»), haz **una** consulta de prueba corta; cuenta para el tope de `references/docs-mcp-usage.md`.
    - **Appian MCP Server**: si `doctor` dice `no_configurado` y la configuración tiene un Appian MCP Server con otra URL que `<entorno>/mcp`, repite `doctor` con `--mcp-server-name <nombre en la configuración>` (y úsalo también en `datafabric`); si no lo tiene pero en la sesión hay herramientas del data fabric de Appian, márcalo «disponible en sesión».
@@ -64,13 +64,13 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 ### Fase 1 — Plan de extracción
 
-`uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" plan --app <app> --out <salida>`. Resume al usuario: objetos por tipo, herramientas que se usarán y excluidas (con motivo) y llamadas estimadas. Si `needsConfirmation` es `true`, pide confirmación antes de seguir.
+`uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" plan --app <app> --out <salida>`. Resume al usuario: objetos por tipo, herramientas que se usarán y excluidas (con motivo) y llamadas estimadas. Si `needsConfirmation` es `true`, pide confirmación antes de seguir.
 
 ### Fase 2 — Extracción
 
-1. `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <app> --out <salida>` (añade `--yes` si el usuario confirmó un plan grande). Es reanudable: si se corta, repítelo. Para documentar de nuevo una aplicación que ha cambiado desde la extracción que ya hay, o la de otro entorno, añade `--refresh`: lo pide todo otra vez.
+1. `uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <app> --out <salida>` (añade `--yes` si el usuario confirmó un plan grande). Es reanudable: si se corta, repítelo. Para documentar de nuevo una aplicación que ha cambiado desde la extracción que ya hay, o la de otro entorno, añade `--refresh`: lo pide todo otra vez. Repetir la ingeniería inversa en un proyecto que ya tiene `analisis/` o `refactorizacion/` numera de nuevo los `H-…` y los NV: avisa antes al usuario de que las citas del análisis y de la propuesta habrá que revisarlas.
 2. Revisa `extraction_report.json`. Si en `callStatsByRole.definition` las fallidas (`failed`) pasan del 20 % del total (`ok` + `failed`), díselo al usuario antes de seguir.
-3. Data fabric (opcional, `references/data-fabric.md`): `uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" datafabric --out <salida>` si hay servidor en la configuración; si solo está en la sesión, hazlo desde la sesión; si no, sáltalo.
+3. Data fabric (opcional, `references/data-fabric.md`): `uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" datafabric --out <salida>` si hay servidor en la configuración; si solo está en la sesión, hazlo desde la sesión; si no, sáltalo.
 
 ### Fase 3 — Modelo y anexo
 

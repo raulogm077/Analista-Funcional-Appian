@@ -269,6 +269,36 @@ Versión 1.2: HU-07.1 a 30 MB · PC-04 nuevo · técnico §14 con 35 MB
         aviso = next((l for l in out.splitlines() if "queda viejo" in l), "")
         ok("texto que queda viejo: la línea que sigue igual (PAN-05) sale una vez aunque cambien HU-04 y PAN-04",
            aviso.startswith("· ") and aviso.count('" sigue en PAN-05') == 1, out)
+        # Una URL que se repite en dos piezas no es texto que se quede viejo, suelta o como destino de un enlace
+        r = tmp / "texto viejo URL"
+        shutil.copytree(EJEMPLO, r)
+        tr = r / "analisis" / "tecnico.md"
+        editar(tr, "https://docs.appian.com/suite/help/latest/record-level-security.html",
+               "[seguridad de registro](https://docs.appian.com/suite/help/latest/record-level-security.html)")
+        corre(S / "proyecto.py", "copia", r)
+        for x in (r / "analisis" / "funcional.md", tr):
+            editar(x, "Versión: 1.1", "Versión: 1.2")
+        editar(tr, "https://docs.appian.com/suite/help/latest/build-best-data-fabric.html",
+               "https://docs.appian.com/suite/help/26.6/build-best-data-fabric.html")
+        c, out = corre(S / "comprobar.py", r, "--anterior", r / "versiones" / "v1.1")
+        ok("texto que queda viejo: una URL que se repite en dos piezas no es aviso", "✓ texto que queda viejo" in out,
+           next((l for l in out.splitlines() if "queda viejo" in l), out))
+        # Cinco palabras que coinciden por casualidad («la fecha de cierre y») no son texto viejo
+        r = tmp / "texto viejo frase corta"
+        shutil.copytree(EJEMPLO, r)
+        fr = r / "analisis" / "funcional.md"
+        editar(fr, "Como técnico, quiero ver juntos los datos y los documentos",
+               "Al resolver, guarda la fecha de cierre y el resultado.\n\n"
+               "Como técnico, quiero ver juntos los datos y los documentos")
+        editar(fr, "Tarea del técnico. Se abre desde su bandeja de tareas.",
+               "Tarea del técnico. Se abre desde su bandeja de tareas. Muestra la fecha límite, la fecha de cierre y las horas.")
+        corre(S / "proyecto.py", "copia", r)
+        for x in (fr, r / "analisis" / "tecnico.md"):
+            editar(x, "Versión: 1.1", "Versión: 1.2")
+        editar(fr, "Al resolver, guarda la fecha de cierre y el resultado.", "Al resolver, guarda el resultado.")
+        c, out = corre(S / "comprobar.py", r, "--anterior", r / "versiones" / "v1.1")
+        ok("texto que queda viejo: cinco palabras que coinciden por casualidad no son aviso", "✓ texto que queda viejo" in out,
+           next((l for l in out.splitlines() if "queda viejo" in l), out))
 
         # 4b. Lo validado (🔒) solo cambia con un punto aprobado
         v = tmp / "validado"
@@ -421,6 +451,26 @@ Se acepta si:
            and len(json.loads((app / "fuentes" / "indice.json").read_text(encoding="utf-8"))["fuentes"]) == 2
            and not re.search(r"desktop\.ini|Thumbs|DS_Store|~\$", txt), out + txt)
 
+        # 7b'. Repetir la ingeniería inversa: las citas «[FU-nn H-…]» y «[FU-nn NV-…]» son del as-is/ que catalogó FU-nn
+        # (los H- y NV- se numeran de nuevo en cada ejecución); con otro as-is/ (otra huella), aviso
+        r = tmp / "evolutivo otra ingeniería inversa"
+        shutil.copytree(EVOLUTIVO, r)
+        corre(S / "leer_fuentes.py", "--una-fuente", r / "as-is", "-o", r / "fuentes")    # FU-01, la que cita el análisis
+        c, out = corre(S / "comprobar.py", r)
+        ok("evolutivo: con el as-is/ que catalogó FU-01, sin aviso de un as-is anterior",
+           c == 0 and "as-is anterior" not in out and "✓ as-is: las citas a hallazgos y NV" in out, out)
+        with open(r / "as-is" / "datos" / "sin-verificar.json", "a", encoding="utf-8") as fj:
+            fj.write("\n")
+        c, out = corre(S / "comprobar.py", r)
+        aviso = next((l for l in out.splitlines() if "as-is anterior" in l), "")
+        ok("evolutivo: con otro as-is/ sin catalogar, aviso de que las citas a FU-01 son de un as-is anterior",
+           c == 0 and aviso.startswith("· ") and "FU-01" in aviso and "no está catalogado" in aviso, out)
+        corre(S / "leer_fuentes.py", "--una-fuente", r / "as-is", "-o", r / "fuentes")    # el as-is/ de ahora, FU-02
+        c, out = corre(S / "comprobar.py", r)
+        aviso = next((l for l in out.splitlines() if "as-is anterior" in l), "")
+        ok("evolutivo: con otro as-is/ catalogado, el aviso dice qué FU es ahora",
+           c == 0 and aviso.startswith("· ") and "las citas a FU-01" in aviso and "ahora es FU-02" in aviso, out)
+
         # 7c. Aplicación existente: con as-is/datos/, el origen de cada historia, la Situación de cada objeto de §13
         # contra el inventario, las citas de hallazgos, NV y REF, y la migración si hay propuesta
         c, out = corre(S / "comprobar.py", EVOLUTIVO)
@@ -437,6 +487,10 @@ Se acepta si:
              "hallazgos.json", "H-DAT-07"),
             ("cita de un NV que no está en sin-verificar.json", "funcional", "[FU-01 NV-PRO-01]", "[FU-01 NV-PRO-09]",
              "sin-verificar.json", "NV-PRO-09"),
+            ("cita de una REF que no está en el Diagnóstico de la propuesta", "funcional", "[FU-01 H-DAT-01] -->",
+             "[FU-01 H-DAT-01]; [FU-02 REF-99] -->", "Diagnóstico", "REF-99"),
+            ("cita de una DEC que no está en los Pendientes de la propuesta", "funcional", "[FU-01 H-DAT-01] -->",
+             "[FU-01 H-DAT-01]; [FU-02 DEC-99] -->", "Pendientes", "DEC-99"),
             ("§13: «Nuevo» con el objeto de otra aplicación", "tecnico", "| Regla de otra aplicación | Existe |",
              "| Regla de otra aplicación | Nuevo |", "Situación", "UTL_DiasLaborables"),
             ("§13: «Nuevo» con un objeto del inventario", "tecnico", "| `DEM_ER_DiasPendiente` | Regla de expresión |",
@@ -458,6 +512,12 @@ Se acepta si:
             c, out = corre(S / "comprobar.py", r)
             linea = next((l for l in out.splitlines() if l.startswith("✗") and comprobacion in l), "")
             ok(f"evolutivo: {nombre} es error", c == 1 and cita in linea, out)
+        r = tmp / "evolutivo REF y DEC que existen"
+        shutil.copytree(EVOLUTIVO, r)
+        editar(r / "analisis" / "funcional.md", "[FU-01 H-DAT-01] -->", "[FU-01 H-DAT-01]; [FU-02 REF-01]; [FU-02 DEC-01] -->")
+        c, out = corre(S / "comprobar.py", r)
+        ok("evolutivo: las REF y DEC citadas que están en la propuesta no son error",
+           c == 0 and "✓ propuesta: las REF citadas" in out and "✓ propuesta: las DEC citadas" in out, out)
         # Con el técnico «en curso», una REF sin DT y la falta de la tabla de migración son aviso, como lo demás del
         # técnico; con «completo», error (lo de arriba)
         r = tmp / "evolutivo en curso"

@@ -513,12 +513,25 @@ def convert(path, out_dir, fid):
 SISTEMA = ("desktop.ini", "thumbs.db", ".ds_store")   # lo que dejan Windows y macOS en una carpeta
 
 
-def una_fuente(carpeta):
-    """Una carpeta como una sola fuente: (sus documentos, el .md con su índice, detalle, fecha). No entra su extracción
-    en bruto (extraccion/), que el análisis no lee, ni lo que dejan el sistema y Office (desktop.ini, Thumbs.db,
-    .DS_Store, ~$…), que cambiaría la fuente sin cambiar nada."""
-    docs = sorted(f for f in carpeta.rglob("*") if f.is_file() and "extraccion" not in f.relative_to(carpeta).parts
+def documentos(carpeta):
+    """Los documentos de una carpeta que es una sola fuente. No entra su extracción en bruto (extraccion/), que el
+    análisis no lee, ni lo que dejan el sistema y Office (desktop.ini, Thumbs.db, .DS_Store, ~$…), que cambiaría la
+    fuente sin cambiar nada."""
+    return sorted(f for f in carpeta.rglob("*") if f.is_file() and "extraccion" not in f.relative_to(carpeta).parts
                   and f.name.lower() not in SISTEMA and not f.name.startswith("~$"))
+
+
+def huella(carpeta, docs=None):
+    """La huella del contenido de una carpeta que es una sola fuente: si cambia, es otra fuente (comprobar.py la mira
+    para las citas a as-is/)."""
+    docs = documentos(carpeta) if docs is None else docs
+    return hashlib.sha1("\n".join(f"{d.relative_to(carpeta).as_posix()} {hashlib.sha1(d.read_bytes()).hexdigest()}"
+                                  for d in docs).encode("utf-8")).hexdigest()
+
+
+def una_fuente(carpeta):
+    """Una carpeta como una sola fuente: (sus documentos, el .md con su índice, detalle, fecha)."""
+    docs = documentos(carpeta)
     rows = [["Documento", "Qué es"]]
     for f in docs:
         titulo = ""
@@ -565,8 +578,7 @@ def main():
             continue
         carpeta = carpeta.resolve()
         docs, body, detail, date = una_fuente(carpeta)
-        h = hashlib.sha1("\n".join(f"{d.relative_to(carpeta).as_posix()} {hashlib.sha1(d.read_bytes()).hexdigest()}"
-                                   for d in docs).encode("utf-8")).hexdigest()
+        h = huella(carpeta, docs)
         nombre = carpeta.name + "/"
         if h in by_hash:   # la misma carpeta con lo mismo dentro; si cambia, es otra fuente, como un fichero
             print(f"= {by_hash[h]['id']} {nombre} (ya catalogada)")

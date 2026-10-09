@@ -5,7 +5,7 @@ No contiene nombres de herramientas: lee el catalogo del servidor en cada ejecuc
 herramienta por su firma y aplica la politica de scripts/devmcp_policy.json.
 
 Ejecucion (uv instala el SDK MCP al vuelo; uv ya es requisito del Dev MCP):
-  uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" <subcomando> [opciones]
+  uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" <subcomando> [opciones]
   (desde la carpeta del usuario, donde esta su .mcp.json; <skill> es la carpeta de la skill)
 
 Subcomandos:

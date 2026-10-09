@@ -4,6 +4,62 @@ Resultados de las evaluaciones del plan `docs/plan/2026-10-07-integracion-ingeni
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 
+## F9 · Cierre (9 de octubre de 2026)
+
+Rama `f9-cierre`, de `main` d9503a6 al merge. Versión 0.7.0-beta.1.
+
+### Punta a punta (Tarea 30, paso 1)
+
+Con la aplicación ficticia MNT en el simulador, en `$PROYECTOS_PRUEBA/MNT-e2e/`, cada paso lo hace un agente distinto
+que sigue los SKILL.md con una copia del plugin, sin ver el repositorio:
+
+| Paso | Tiempo | Resultado |
+|---|---|---|
+| Ingeniería inversa | 31 min | 35 hallazgos (5 Alta), 9 NV, 4 procesos (el de 130 nodos en 15 tramos); `comprobar_asis.py` 0/0 |
+| Refactorización del módulo de órdenes | 18 min | 20 REF, 12 decisiones y los 9 NV en Pendientes; `comprobar_propuesta.py` 0/0 |
+| Funcional y técnico, una reunión que cambia dos cosas, diagramas y Word | 54 min | 19 historias, 11 pantallas, 2 procesos; informe de impacto con aprobación de la ampliación; `comprobar.py` sin errores, también con `--anterior --impacto` |
+| Prototipo y Word con las capturas | 26 min | 13 pantallas, 20 capturas enlazadas en el funcional; `validate.py` sin avisos de UX |
+
+Los nueve NV llegan a las Pendientes de la propuesta y a una PT o una PC del análisis (los de negocio, como PC, y así
+al guion de la próxima reunión); cada REF de la Solución tiene su DT; el Word no lleva IDs internos ni marcas.
+
+### Revisión de conformidad con el diseño (Tarea 30, paso 2)
+
+Un agente que no había visto el trabajo revisó el plugin entero contra el diseño, con el punta a punta como prueba.
+Lo que se corrigió:
+
+- **Ingeniería inversa no arrancaba con un Python 3.9 de uv:** las órdenes `uv run` no fijaban la versión y `mcp` pide
+  3.10. Ahora llevan `--python ">=3.10"` y `comprobar_plugin.py` da error con una que no lo lleve.
+- **Repetir la ingeniería inversa en un proyecto que ya tiene análisis** cambiaba en silencio a qué apuntan las citas
+  `[FU-nn H-…]` (los hallazgos se numeran de nuevo). Ahora `comprobar.py` avisa si las citas son de un `as-is/` anterior.
+- **El aviso de texto viejo** daba 10 avisos falsos en el punta a punta (siete por las palabras de una URL): sin URL ni
+  código y con seis palabras seguidas, queda uno, que es cierto.
+- **`comprobar.py`** decía que comprobaba las REF citadas y no lo hacía; ahora también las DEC.
+- **La descripción del plugin** era la de antes del plan.
+
+### Paquete e instalación limpia (Tarea 31)
+
+`pruebas/empaquetar.py` hace el `.plugin` con la misma lista que comprueba `comprobar_plugin.py` (171 ficheros, sin
+pruebas, docs, cachés ni `.git`). Desde el paquete descomprimido en una carpeta con espacios, `requisitos.py --json` con
+todo lo opcional ausente es igual a `pruebas/requisitos-esperado.json`, y `comprobar_plugin.py --completo --plugin
+<copia>` pasa las pruebas del repositorio contra lo que se instala.
+
+### Pendiente de Raúl
+
+- Paso 4 de la Tarea 24: instalar el paquete en Claude Code y en la app de escritorio, con algo de la tabla sin instalar,
+  y ver que el primer mensaje lo dice (mejor también en un Windows).
+- Paso 3 de la Tarea 30: ingeniería inversa y refactorización con una aplicación real, en su equipo. Aquí va si pasó o
+  no y qué se corrigió, sin nada del cliente.
+- Paso 3 de la Tarea 31: desinstalar la skill suelta de ingeniería inversa y archivar su carpeta.
+- El criterio de palabras de F3.
+
+### Lo aprendido
+
+- El punta a punta encontró lo que ninguna fase veía porque está entre fases o en el primer paso: la versión de Python
+  de uv y lo que pasa al repetir la ingeniería inversa en un proyecto que ya sigue adelante.
+- Un aviso nuevo se mide con un proyecto real antes de darlo por bueno: el de texto viejo pasó sus pruebas y en el
+  primer caso real solo daba ruido.
+
 ## F8 · Sin solapes (9 de octubre de 2026)
 
 Rama `f8-sin-solapes`, de `main` ab088d0 al merge. Versión 0.7.0-alpha.7.
