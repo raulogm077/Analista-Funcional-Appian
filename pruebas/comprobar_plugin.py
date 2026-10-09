@@ -156,6 +156,9 @@ def comprobar_contenido(nombres):
             errores.append(f"{py.relative_to(RAIZ).as_posix()}:{falta}: importa un módulo de su carpeta sin "
                            "«sys.dont_write_bytecode = True» antes: dejaría __pycache__ dentro del plugin, fuera del proyecto")
     for py in [f for f in ficheros_del_paquete() if f.suffix == ".py"]:
+        if consola_sin_utf8(py):
+            errores.append(f"{py.relative_to(RAIZ).as_posix()}: escribe en la consola sin pasarla a UTF-8: en un Windows "
+                           "sin UTF-8 se rompe con «→» o «✓» (sys.stdout.reconfigure(encoding=\"utf-8\", errors=\"replace\"))")
         if lineas := texto_sin_codificacion(py):
             errores.append(f"{py.relative_to(RAIZ).as_posix()}:{','.join(map(str, lineas[:5]))}: lee la salida de otro "
                            "programa como texto sin encoding: en un Windows sin UTF-8 una ruta con tilde sale mal "
@@ -189,6 +192,16 @@ def texto_sin_codificacion(py: Path) -> list[int]:
             if como_texto and "encoding" not in claves:
                 lineas.append(n.lineno)
     return lineas
+
+
+def consola_sin_utf8(py: Path) -> bool:
+    """Si un script que se ejecuta (tiene «__main__») escribe en la consola sin pasarla antes a UTF-8: en un Windows sin
+    PYTHONUTF8 la consola va en cp1252 y un «→» o un «✓» lo rompen. Vale reconfigure() o utf8_stdio() de prototipos."""
+    texto = py.read_text(encoding="utf-8")
+    if "__main__" not in texto or "reconfigure(" in texto or "utf8_stdio" in texto:
+        return False
+    return any(isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "print"
+               for n in ast.walk(ast.parse(texto)))
 
 
 def sin_acentos(texto):
@@ -513,6 +526,16 @@ def probar_comprobador(nombres):
         c, out = comprueba()
         espera(c == 0, "un subprocess.run(text=True) con encoding da error", out)
         lee.unlink()
+        # un script que escribe en la consola sin pasarla a UTF-8 se rompe en un Windows sin UTF-8 con «→» o «✓»
+        (scripts / "zz_dice.py").write_text('if __name__ == "__main__":\n    print("hecho \u2192 ✓")\n', encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "zz_dice.py" in out and "UTF-8" in out, "un script que imprime sin reconfigure no da error", out)
+        (scripts / "zz_dice.py").write_text('import sys\nif __name__ == "__main__":\n    for s in (sys.stdout, sys.stderr):\n'
+                                            '        s.reconfigure(encoding="utf-8")\n    print("hecho \u2192 ✓")\n',
+                                            encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0, "un script que imprime con reconfigure da error", out)
+        (scripts / "zz_dice.py").unlink()
         # un script que importa otro de su carpeta deja __pycache__ en el plugin si no lo evita
         (scripts / "zz_modulo.py").write_text("X = 1\n", encoding="utf-8")
         (scripts / "zz_usa.py").write_text("import sys\nimport zz_modulo\n", encoding="utf-8")
@@ -763,6 +786,8 @@ def main(completo, plugin=None):
 
 
 if __name__ == "__main__":
+    for s_ in (sys.stdout, sys.stderr):  # consolas de Windows sin UTF-8
+        s_.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--completo", action="store_true", help="además, las pruebas de cada skill")
     ap.add_argument("--plugin", help="otra copia del plugin, p. ej. la del paquete (por defecto, este repositorio)")

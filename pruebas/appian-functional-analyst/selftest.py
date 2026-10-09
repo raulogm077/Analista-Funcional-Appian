@@ -538,7 +538,7 @@ Se acepta si:
         # 8. Word del DF (opcional)
         if shutil.which("node"):
             r = subprocess.run(["node", str(S / "df_docx.js"), str(EJEMPLO), "-o", str(tmp / "df.docx")],
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, encoding="utf-8", errors="replace")
             if r.returncode == 2 and "docx" in r.stderr:
                 print("· DF en Word: falta el paquete docx de Node (npm install docx); no se prueba")
             else:

@@ -131,7 +131,7 @@ def test_extract_variant_a_readonly_forced(project):
     assert (carpeta_objeto(raw, "processModel", uuid_of("PM_BATCH")) / "getProcessModel.json").exists()
     assert (carpeta_objeto(raw, "interface", uuid_of("I_DASH")) / "testInterface.json").exists()
     # paginacion por startIndex: DEM Users tiene 2 grupos y 2 usuarios, en lotes de 2
-    mem = json.loads((carpeta_objeto(raw, "group", uuid_of("G_USR")) / "listGroupMembers.json").read_text())
+    mem = json.loads((carpeta_objeto(raw, "group", uuid_of("G_USR")) / "listGroupMembers.json").read_text(encoding="utf-8"))
     assert mem["_meta"]["pages"] == 2 and len(mem["response"]["members"]) == 4
     # autodesactivacion: validateDesignObject no admite constantes
     assert any(d["tool"] == "validateDesignObject" and d["type"] == "constant" for d in rep["disabledAfterProbe"])
@@ -155,7 +155,7 @@ def test_extract_variant_b_other_names_and_shapes(project):
     assert roles["listGroupMembersPage"] == "members"
     assert roles["computeMetrics"] == "other"              # verbo desconocido, modo de confianza
     raw = project.interm() / "mcp_raw"
-    mem = json.loads((carpeta_objeto(raw, "group", uuid_of("G_USR")) / "listGroupMembersPage.json").read_text())
+    mem = json.loads((carpeta_objeto(raw, "group", uuid_of("G_USR")) / "listGroupMembersPage.json").read_text(encoding="utf-8"))
     assert mem["_meta"]["pages"] == 2                       # paginacion por cursor
     assert not NEVER & {c["tool"] for c in project.calls_list()}
 
@@ -194,7 +194,7 @@ def test_partial_failure(project):
     failed = {(e["tool"], e["object"]) for e in rep["errors"]}
     assert ("getInterface", uuid_of("I_DASH")) in failed
     raw = project.interm() / "mcp_raw"
-    assert json.loads((carpeta_objeto(raw, "interface", uuid_of("I_FORM")) / "getInterface.json").read_text())["_meta"]["ok"]
+    assert json.loads((carpeta_objeto(raw, "interface", uuid_of("I_FORM")) / "getInterface.json").read_text(encoding="utf-8"))["_meta"]["ok"]
 
 
 def test_app_resolution(project):
@@ -206,10 +206,10 @@ def test_app_resolution(project):
 
 def test_confirmation_threshold(project, tmp_path):
     project.add_devmcp()
-    pol = json.loads(dx.DEFAULT_POLICY.read_text())
+    pol = json.loads(dx.DEFAULT_POLICY.read_text(encoding="utf-8"))
     pol["confirmAboveCalls"] = 10
     pfile = tmp_path / "policy.json"
-    pfile.write_text(json.dumps(pol))
+    pfile.write_text(json.dumps(pol), encoding="utf-8")
     _extract(project, "--policy", str(pfile), check=2)
     _extract(project, "--policy", str(pfile), "--yes", check=0)
 

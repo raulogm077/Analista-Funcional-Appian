@@ -361,6 +361,8 @@ TEMPLATES = {"P02-vista-registro.json": p02, "P06-inicio.json": p06, "P01-listad
              "P09-maestro-detalle.json": p09, "P10-portada-modulo.json": p10, "P11-asistente-ia.json": p11, "P12-revision-ia.json": p12}
 
 if __name__ == "__main__":
+    for _s in (sys.stdout, sys.stderr):  # consolas de Windows sin UTF-8: «→» o «✓» no caben en cp1252
+        _s.reconfigure(encoding="utf-8", errors="replace")
     for name, s in TEMPLATES.items():
         (HERE / name).write_text(json.dumps(clean(s), ensure_ascii=False, indent=1), encoding="utf-8")
     cat = json.loads((HERE / "catalogo-patrones.json").read_text(encoding="utf-8"))

@@ -40,7 +40,7 @@ EXPECTED = {
 def built(request, project):
     project.add_devmcp(variant=request.param, mode="readonly")
     project.run("extract", "--app", "DEM", "--out", str(project.out), "--retry-delay", "0.1", check=0)
-    p = subprocess.run([sys.executable, str(BUILD_MODEL), str(project.out)], capture_output=True, text=True)
+    p = subprocess.run([sys.executable, str(BUILD_MODEL), str(project.out)], capture_output=True, text=True, encoding="utf-8", errors="replace")
     assert p.returncode == 0, p.stderr
     return project
 
@@ -101,7 +101,7 @@ def test_criticality_and_secrets(built):
 
 
 def test_build_summary_contract(built):
-    p = subprocess.run([sys.executable, str(BUILD_SUMMARY), str(built.out)], capture_output=True, text=True)
+    p = subprocess.run([sys.executable, str(BUILD_SUMMARY), str(built.out)], capture_output=True, text=True, encoding="utf-8", errors="replace")
     assert p.returncode == 0, p.stderr
     s = built.load("summary.json")
     crit = {c["name"]: c for c in s["criticalProcesses"]}
@@ -119,7 +119,7 @@ def test_build_summary_contract(built):
 
 def test_annex(built):
     annex_py = Path(BUILD_MODEL).parent / "build_annex.py"
-    run = lambda: subprocess.run([sys.executable, str(annex_py), str(built.out)], capture_output=True, text=True)
+    run = lambda: subprocess.run([sys.executable, str(annex_py), str(built.out)], capture_output=True, text=True, encoding="utf-8", errors="replace")
     p = run()
     assert p.returncode == 0, p.stderr
     anexo = built.out / "anexo"
@@ -152,5 +152,5 @@ def test_annex(built):
     grafo = (anexo / "grafo.md").read_text(encoding="utf-8")
     assert "| DEM Alta Solicitud | subProcess | DEM Revisar Solicitud | dependents |" in grafo
     assert run().returncode == 0                                   # repetible
-    (anexo / "indice.md").write_text("mío")                        # un anexo ajeno no se borra
+    (anexo / "indice.md").write_text("mío", encoding="utf-8")                        # un anexo ajeno no se borra
     assert run().returncode == 2 and (anexo / "interface").exists()
