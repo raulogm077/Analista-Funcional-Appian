@@ -149,3 +149,17 @@ apunta aquí y entra en la siguiente versión. Cada línea dice qué, dónde y d
   por versión «falta Dev MCP». Revisión de F7.
 - La matriz de GitHub avisa de que las acciones de Node 20 están obsoletas (checkout, setup-python, setup-node,
   setup-uv): subir de versión cuando haya las de Node 24.
+
+## Sin solapes
+
+- El `tambien` de `prototipo/` (para el analista, que la crea vacía) cubre toda la carpeta: crear una carpeta vacía no
+  debería contar como escritura. Revisión de F8.
+- La comprobación de dueños solo lee «Qué escribe»: una frase del cuerpo de un SKILL.md que mande escribir en lo de
+  otra skill no da error, aunque el diseño lo promete. Revisión de F8.
+- El `cambios.json` de `diagrama.py actualizar` no dice dónde va. Revisión de F8.
+- «Una pieza por capacidad» solo mira los `.py`: el panel de ingeniería inversa (`agents/dashboard-publisher.md`) pinta
+  Mermaid por CDN en el navegador, y un validador que buscara «BPMNDiagram» daría error como si exportara. Revisión de F8.
+- Las descripciones de buenas prácticas y del analista están cerca del límite de 1.024 caracteres (en bytes, el
+  analista ya lo pasa): si el anfitrión cuenta bytes, recortar. Revisión de F8.
+- La prueba de enrutado solo conoce las seis descripciones: medir también con las skills vecinas que compiten de verdad
+  (`appian-sail-generator`, la de Word) como distractoras. Revisión de F8.
