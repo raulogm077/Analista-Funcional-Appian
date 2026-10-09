@@ -1,6 +1,6 @@
 ---
 name: appian-prototipos
-description: "Crea prototipos navegables (maquetas, mockups) de aplicaciones Appian, con componentes SAIL reales, patrones de pantalla repetibles y capturas PNG que se enlazan en el diseño funcional. Úsala siempre que se pida un prototipo, maqueta, mockup o propuesta de pantallas navegable, sea cual sea el material de partida (primero obtiene el análisis funcional del proyecto, analisis/funcional.md, con appian-functional-analyst), o capturas de las pantallas para el DF. No redacta requisitos, no decide el modelo de datos ni la seguridad y no construye en Appian: parte del funcional y, si existe, de la especificación técnica. Para código SAIL suelto, appian-sail-generator."
+description: "Crea prototipos navegables (maquetas, mockups) de aplicaciones Appian, con componentes SAIL reales, patrones de pantalla repetibles y capturas PNG que se enlazan en el diseño funcional. Úsala siempre que se pida un prototipo, maqueta, mockup o propuesta de pantallas navegable, sea cual sea el material de partida (primero obtiene el análisis funcional del proyecto, analisis/funcional.md, con appian-functional-analyst), o capturas de las pantallas para el DF. No redacta requisitos ni decide el modelo de datos o la seguridad (appian-functional-analyst) y no construye en Appian (appian-best-practices): parte del funcional y, si existe, de la especificación técnica. Para código SAIL suelto, appian-sail-generator."
 ---
 
 # Prototipos Appian

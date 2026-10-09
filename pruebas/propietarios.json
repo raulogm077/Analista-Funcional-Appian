@@ -5,6 +5,7 @@
   {"patron": "impacto/", "dueno": "appian-functional-analyst"},
   {"patron": "analisis/*.md", "dueno": "appian-functional-analyst"},
   {"patron": "analisis/funcional.md", "dueno": "appian-functional-analyst", "tambien": ["appian-prototipos"]},
+  {"patron": "analisis/grafo.json", "dueno": "appian-functional-analyst"},
   {"patron": "analisis/diagramas/*.mmd", "dueno": "appian-functional-analyst"},
   {"patron": "analisis/diagramas/*.json", "dueno": "appian-functional-analyst", "tambien": ["appian-diagramas-bpmn"]},
   {"patron": "analisis/diagramas/*.{drawio,png,bpmn,svg}", "dueno": "appian-diagramas-bpmn"},

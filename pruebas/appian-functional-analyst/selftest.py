@@ -91,6 +91,16 @@ def main():
             c, out = corre(S / "indice.py", args[0], EJEMPLO, *args[1:])
             ok(f"indice.py {' '.join(args)}", c == 0 and espera in out, out)
 
+        # 2a. indice.py grafo escribe en el proyecto, no en la carpeta desde la que se ejecuta
+        g = tmp / "grafo"
+        shutil.copytree(EJEMPLO, g)
+        fuera = tmp / "otra carpeta"
+        fuera.mkdir()
+        r = subprocess.run([sys.executable, str(S / "indice.py"), "grafo", str(g)], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", cwd=str(fuera))
+        ok("indice.py grafo escribe analisis/grafo.json del proyecto y nada fuera",
+           r.returncode == 0 and (g / "analisis" / "grafo.json").is_file() and not any(fuera.iterdir()), r.stdout + r.stderr)
+
         # 2b. Un ID de otra skill citado en su fuente («[FU-07 PAN-03]», la pantalla del prototipo) no es una
         # referencia a la pieza del análisis que se llama igual
         cita = tmp / "con cita"

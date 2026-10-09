@@ -78,6 +78,7 @@ En `<p>`:
 - `analisis/funcional.md`: el diseño funcional
 - `analisis/tecnico.md`: la especificación técnica
 - `analisis/decisiones.md`: las versiones y las decisiones del cliente
+- `analisis/grafo.json`: las piezas y sus referencias, si se pide (`indice.py grafo`)
 - `analisis/diagramas/<proceso>.json`: cada proceso, en el formato de `appian-diagramas-bpmn`
 - `analisis/diagramas/<nombre>.mmd`: los diagramas de estados y de datos
 - `entregables/`: el DF en Word
