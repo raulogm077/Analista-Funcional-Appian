@@ -4,13 +4,13 @@
     "name": "Raúl Gómez Moya"
   },
   "metadata": {
-    "description": "Plugin de análisis funcional y prototipos Appian del equipo."
+    "description": "Plugin del equipo para analizar, documentar, rehacer y prototipar aplicaciones Appian."
   },
   "plugins": [
     {
       "name": "appian-analisis-funcional",
       "source": "./",
-      "description": "Análisis funcional y prototipos navegables Appian."
+      "description": "Ingeniería inversa, refactorización, análisis funcional, diagramas BPMN y prototipos de Appian."
     }
   ]
 }

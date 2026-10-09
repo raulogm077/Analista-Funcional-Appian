@@ -1,7 +1,7 @@
 {
   "name": "appian-analisis-funcional",
-  "version": "0.7.0-alpha.7",
-  "description": "Análisis funcional de aplicaciones Appian: de reuniones, correos o un DF existente al diseño funcional que valida el cliente (DF en Word) y a la especificación técnica para construir con buenas prácticas, con procesos BPMN editables en draw.io y un prototipo navegable con la marca del cliente o la estándar de Appian.",
+  "version": "0.7.0-beta.1",
+  "description": "Aplicaciones Appian de punta a punta para un equipo de consultoría: documenta una aplicación existente leyéndola en solo lectura (ingeniería inversa), propone cómo rehacerla con buenas prácticas (refactorización), escribe el diseño funcional que valida el cliente (DF en Word) y la especificación técnica, dibuja los procesos BPMN en draw.io y hace prototipos navegables con la marca del cliente o la estándar de Appian.",
   "author": {
     "name": "Raúl Gómez Moya"
   },
@@ -12,6 +12,9 @@
     "prototipos",
     "requisitos",
     "bpmn",
-    "drawio"
+    "drawio",
+    "ingenieria-inversa",
+    "refactorizacion",
+    "buenas-practicas"
   ]
 }

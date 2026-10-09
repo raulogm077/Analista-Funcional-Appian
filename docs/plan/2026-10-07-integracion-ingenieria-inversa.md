@@ -1060,16 +1060,16 @@ tercio en `ocultas/`) y `pruebas/evaluaciones/enrutado/README.md`; resultados en
 
 ### Tarea 30: Punta a punta y revisión independiente
 
-- [ ] **Paso 1:** con la aplicación ficticia: ingeniería inversa → refactorización de un módulo → funcional y técnico
+- [x] **Paso 1:** con la aplicación ficticia: ingeniería inversa → refactorización de un módulo → funcional y técnico
   (con una reunión ficticia que cambia algo) → diagramas → prototipo → DF en Word. Todos los comprobadores sin errores.
-- [ ] **Paso 2:** un agente que no ha visto el trabajo revisa la rama entera contra el diseño; se corrige lo que encuentre.
+- [x] **Paso 2:** un agente que no ha visto el trabajo revisa la rama entera contra el diseño; se corrige lo que encuentre.
 - [ ] **Paso 3 (Raúl):** con una aplicación real del cliente, en su equipo: ingeniería inversa en la carpeta de su
   proyecto, con extracción nueva (la guardada es del formato anterior a la Tarea 2). Lo que Raúl sabe que no se puede
   verificar sale como NV con lo que hace falta, los hallazgos que ya conoce salen verificados con su evidencia y
   refactorización, sobre ese `as-is/`, recoge esos NV en «Pendientes». El resultado se queda en el proyecto. A
   `docs/evaluaciones.md` va si pasó o no y qué se corrigió, sin nombres ni detalles del cliente; si no pasa, se corrige
   y se repite antes de la Tarea 31.
-- [ ] **Paso 4:** commit.
+- [x] **Paso 4:** commit.
 
 ### Tarea 31: Paquete, instalación limpia, versión y entrega
 
@@ -1077,11 +1077,11 @@ tercio en `ocultas/`) y `pruebas/evaluaciones/enrutado/README.md`; resultados en
 `docs/`, `CLAUDE.md`, `pruebas/` ni `*.plugin`: reutiliza `NO_VAN_EN_EL_PAQUETE` y `CACHES` de `comprobar_plugin.py`);
 actualizar el comando de empaquetado del README.
 
-- [ ] **Paso 1:** empaquetar, descomprimir en una carpeta temporal y, desde ella, `requisitos.py --json` con
+- [x] **Paso 1:** empaquetar, descomprimir en una carpeta temporal y, desde ella, `requisitos.py --json` con
   `REQUISITOS_SIN` de todo lo opcional: coincide con `pruebas/requisitos-esperado.json` del repositorio. Después, desde
   el repositorio, `python3 pruebas/comprobar_plugin.py --completo --plugin <copia>` en verde: las pruebas contra lo que
   se instala, que no las lleva.
-- [ ] **Paso 2:** `0.7.0-beta.1` en `plugin.json` y su fila en el README (qué cambia, una línea por skill);
+- [x] **Paso 2:** `0.7.0-beta.1` en `plugin.json` y su fila en el README (qué cambia, una línea por skill);
   `comprobar_plugin.py --completo` en verde; paquete; etiqueta `v0.7.0-beta.1`; entregar el `.plugin`.
 - [ ] **Paso 3 (Raúl):** desinstalar de su cuenta la skill suelta de ingeniería inversa (y avisar a quien la tenga) y
   archivar `~/Proyectos IA/appian-reverse-engineering`, que lleva `.git/re-historial.bundle`, la copia usada en F1.

@@ -163,3 +163,19 @@ apunta aquí y entra en la siguiente versión. Cada línea dice qué, dónde y d
   analista ya lo pasa): si el anfitrión cuenta bytes, recortar. Revisión de F8.
 - La prueba de enrutado solo conoce las seis descripciones: medir también con las skills vecinas que compiten de verdad
   (`appian-sail-generator`, la de Word) como distractoras. Revisión de F8.
+
+## Del punta a punta (F9)
+
+- `comprobar_asis.py` da error con el nombre de una tabla que lleva el prefijo de la aplicación en el diagrama ER
+  (`MNT_ORDENDTO`): el agente lo cambió por un alias. Es el aplazado de F3 «tambien de inventario.json: la tabla de cada
+  CDT y las entidades de cada data store», y aquí ya ha hecho daño.
+- `requisitos.py` da «falta» el Appian MCP Server cuando no está en `<LCP_URL>/mcp`, aunque `doctor
+  --mcp-server-name` lo encuentra.
+- No hay sitio para las decisiones que se toman sin respuesta del usuario (ingeniería inversa las puso en
+  `preflight.json` y en LEEME) ni para un texto que llega por el chat (el analista creó `fuentes-chat/`, sin dueño).
+- `df_docx.js` sobrescribe sin avisar el Word de la misma versión que ya se envió; el PDF de revisión puede quedar fuera
+  de `<p>` si `soffice` se ejecuta desde otra carpeta.
+- Las preguntas Q-nn del prototipo no llegan a §11 ni al guion de `indice.py pendientes`.
+- La aprobación que da el jefe de proyecto en el chat no tiene sitio en el análisis (se catalogó como fuente).
+- El aviso de hallazgos Alta o Media sin REF de `comprobar_propuesta.py` no conoce el alcance (ya apuntado en F5; en el
+  punta a punta obligó a llevar a Pendientes los de fuera del módulo).
