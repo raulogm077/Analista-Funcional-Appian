@@ -812,9 +812,9 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
 **Interfaces:** `modelo.quita_citas(texto) -> str` borra los tramos `[FU-nn …]` antes de buscar IDs; lo usan la búsqueda
 de referencias de `modelo.py`, `indice.py` y `comprobar.py`.
 
-- [ ] **Paso 1:** selftest: en una copia de `datos/autorizaciones`, una línea con «[FU-07 PAN-03]» no aparece en `indice.py impacto PAN-03`
+- [x] **Paso 1:** selftest: en una copia de `datos/autorizaciones`, una línea con «[FU-07 PAN-03]» no aparece en `indice.py impacto PAN-03`
   y no cuenta como referencia a la PAN-03 del análisis. → FALLA.
-- [ ] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
+- [x] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 17: Guion de la próxima reunión
 
@@ -824,9 +824,9 @@ de referencias de `modelo.py`, `indice.py` y `comprobar.py`.
 con pregunta, opciones y «Afecta a». Peso = elementos de «Afecta a» separados por comas + líneas fuera del §11 que citan
 la PC. Dentro de cada grupo, de más peso a menos y, a igual peso, por ID.
 
-- [ ] **Paso 1:** selftest: en `autorizaciones` salen PC-01 y PC-02 bajo «Responsable de la unidad» y no sale PC-03; en
+- [x] **Paso 1:** selftest: en `autorizaciones` salen PC-01 y PC-02 bajo «Responsable de la unidad» y no sale PC-03; en
   una copia con una PC-04 que afecta a cuatro elementos, PC-04 sale la primera. → FALLA.
-- [ ] **Paso 2:** implementar `c_pendientes`. **Paso 3:** selftest en verde. Commit.
+- [x] **Paso 2:** implementar `c_pendientes`. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 18: Texto que queda viejo
 
@@ -837,9 +837,9 @@ queda viejo» cita la comprobación).
 palabras que tenía antes y ya no tiene; avisa de cada otra línea del funcional o del técnico que aún las contiene
 («HU-07: "…" sigue en PAN-04, l.212»). Solo con `--anterior`. Es aviso, no error.
 
-- [ ] **Paso 1:** selftest: en una copia, cambiar el plazo de una historia y dejar la frase vieja en una pantalla →
+- [x] **Paso 1:** selftest: en una copia, cambiar el plazo de una historia y dejar la frase vieja en una pantalla →
   aviso con los dos IDs; sin dejarla → sin aviso. → FALLA.
-- [ ] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
+- [x] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 19: Aplicación existente en el funcional y el técnico
 
@@ -870,12 +870,12 @@ palabras que tenía antes y ya no tiene; avisa de cada otra línea del funcional
 - Si `as-is/datos/` no trae `sin-verificar.json` ni `fueraDeLaAplicacion` (un `as-is/` anterior a la Tarea 8b), lo que
   depende de ellos no se comprueba.
 
-- [ ] **Paso 1:** selftest: `datos/evolutivo` pasa; siete copias rotas dan su error (dos de ellas, «Nuevo» con el objeto
+- [x] **Paso 1:** selftest: `datos/evolutivo` pasa; siete copias rotas dan su error (dos de ellas, «Nuevo» con el objeto
   de fuera y un NV inexistente); una con «Existe» y el objeto de fuera no da error, y con «Modifica» da su aviso;
   `leer_fuentes.py --una-fuente`
   cataloga `as-is/` como una FU; y `datos/autorizaciones`, sin `as-is/`, da exactamente los mismos errores y avisos
   que antes. → FALLA.
-- [ ] **Paso 2:** implementar y escribir `datos/evolutivo`. **Paso 3:** selftest en verde. Commit.
+- [x] **Paso 2:** implementar y escribir `datos/evolutivo`. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 20: Aviso de parte mal hecha
 
@@ -886,9 +886,9 @@ palabras que tenía antes y ya no tiene; avisa de cada otra línea del funcional
 - aviso si su objeto tiene un NV abierto o parcial: «DEM_X tiene NV-ARQ-01 sin verificar: ¿PC?» si su `queHaceFalta`
   empieza por negocio, y «¿PT?» si no.
 
-- [ ] **Paso 1:** selftest con `datos/evolutivo` (un objeto con un hallazgo Alta y el objeto de fuera, con un NV abierto,
+- [x] **Paso 1:** selftest con `datos/evolutivo` (un objeto con un hallazgo Alta y el objeto de fuera, con un NV abierto,
   como «Existe») → cada aviso cita su H o su NV. → FALLA.
-- [ ] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
+- [x] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 21: DF ya hecho (D2) y ciclo con el prototipo
 
@@ -901,7 +901,7 @@ y `references/actualizacion.md` (apartado «Feedback de una demo»); en prototip
 - Feedback de una demo: cada comentario es un punto que encaja en su PAN; si la PAN está validada (🔒), requiere
   aprobación; prototipos rehace solo las PAN del informe con `--anterior` y `--confirmadas`.
 
-- [ ] **Paso 1:** `comprobar_plugin.py` y los selftest del analista y de prototipos en verde. **Paso 2:** commit.
+- [x] **Paso 1:** `comprobar_plugin.py` y los selftest del analista y de prototipos en verde. **Paso 2:** commit.
 
 ### Tarea 22: Evaluaciones del analista
 
@@ -918,8 +918,8 @@ se ejecuta allí y los resultados van a `docs/evaluaciones.md`.
 - Evolutivo: tres historias nuevas sobre la aplicación ficticia; `esperado.json` = la Situación de cada objeto de §13.
   `puntuar.py` compara (marcarlo todo «Nuevo» no pasa) y `comprobar.py` sin errores.
 
-- [ ] **Paso 1:** un agente hace cada caso siguiendo los SKILL.md. **Paso 2:** cada `puntuar.py` cumple su criterio.
-- [ ] **Paso 3:** commit. Cierre de fase: revisión y merge.
+- [x] **Paso 1:** un agente hace cada caso siguiendo los SKILL.md. **Paso 2:** cada `puntuar.py` cumple su criterio.
+- [x] **Paso 3:** commit. Cierre de fase: revisión y merge.
 
 ---
 

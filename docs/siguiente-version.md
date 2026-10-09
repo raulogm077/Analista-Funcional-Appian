@@ -106,3 +106,31 @@ apunta aquí y entra en la siguiente versión. Cada línea dice qué, dónde y d
   - los pasos 1, 2 y 5 piden hablar con el usuario; sin nadie que responda, no dice dónde dejar el resumen inicial;
   - BP 03 §9 para el recordatorio frecuente: quien la usó dice que trata el archivado y la memoria, no la frecuencia (la
     pasada de correcciones la eligió frente a la §13; `bp_aceptadas` de MP-05 admite la §6 y la §9).
+
+## Analista
+
+- Revisión de F6: «Sustituye» no comprueba que el objeto nuevo no esté ya en el inventario; §13 solo se comprueba si el
+  técnico tiene alguna DT o §3 con campos (un evolutivo de solo pantallas se la salta); el paso 8 de SKILL.md no nombra
+  «DF ya hecho»; `comprobar_plugin.py` no ejecuta los `prueba_puntuar.py` de las evaluaciones (importan `modelo`);
+  `leer_fuentes.py` sin `--una-fuente` cataloga un `~$x.docx` de Office como fuente; `requiere()` de los puntuadores de
+  incoherencias y demo acepta también «Sin…».
+- Evaluaciones de la Tarea 22, puntos de fricción:
+  - en una sesión desatendida, los puntos pendientes de aprobación solo quedan en los informes: no llegan al guion de
+    `indice.py pendientes` ni a ningún sitio que lea el cliente;
+  - «cada fuente sube 0.1» saca versiones casi vacías cuando no se aplica nada, y un Word por versión aunque no se envíe;
+  - falta un tipo de punto para plazos e hitos del proyecto, y no se dice si una pieza 🔒 sigue 🔒 tras un cambio
+    aprobado ni cuándo se marca «DF entregado»;
+  - `proyecto.py estado` da `--confirmadas` con todas las 🔒, también las que el informe acaba de aprobar;
+  - «app-vX.Y.json» no dice si X.Y es la versión del prototipo o la del funcional;
+  - un CAMBIA pendiente que respondería a una PC, una PR del DF con dos actores, una pantalla del DF sin requisito: sin
+    pauta en «DF ya hecho» («no reinterpretes»);
+  - el DF del cliente no trae prioridad ni «para qué», que la plantilla exige;
+  - la columna «Qué cambia» de `decisiones.md` sale en el Word y no se vigila la jerga interna allí;
+  - `df_docx.js` parte las viñetas de varias líneas, y el índice sale vacío o con una página en blanco en el PDF;
+  - revisar el Word en PDF con `soffice` escribe su perfil fuera de `<p>` (`~/.cache/dconf`) si no se le da otro HOME;
+  - en evolutivo no se dice si el funcional describe toda la aplicación o solo los cambios, ni cómo escribir un estado
+    que la aplicación actual no mantiene;
+  - una petición de un sistema (el ERP) no encaja como historia, porque no es un perfil de §2;
+  - el BPMN de un proceso de 8-9 tareas pasa de 1.900 px por los avisos dibujados como eventos de mensaje;
+  - el temporizador del diagrama siempre es «no interrumpe»;
+  - `capture.py` no deja capturar solo las pantallas que cambian.

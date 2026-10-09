@@ -1,0 +1,28 @@
+Reunión con el equipo del ERP · 21 de octubre de 2026
+
+[00:00:05] Sara León Prado:
+Buenos días. Nos habéis pedido esta reunión por la consulta que hace el ERP a la aplicación de mantenimiento.
+
+[00:00:40] Marcos Rubio Lara:
+Sí. Hoy el ERP pregunta por una orden y recibe el estado y la fecha límite. Necesitamos también el técnico asignado.
+
+[00:01:50] Sara León Prado:
+¿Solo el nombre del técnico?
+
+[00:02:10] Marcos Rubio Lara:
+El nombre y su zona. Con eso planificamos los desplazamientos.
+
+[00:03:20] Sara León Prado:
+¿Algo más de esa consulta?
+
+[00:03:40] Marcos Rubio Lara:
+Que si la orden no existe nos devuelva un error. Ahora nos llega una respuesta correcta pero vacía y el ERP no sabe qué hacer.
+
+[00:04:50] Alberto Cuesta Rey:
+Por nuestra parte, de acuerdo. Es lo único que cambia para el ERP.
+
+[00:05:40] Sara León Prado:
+Perfecto. Lo añado al análisis como una historia más.
+
+[00:06:10] Marcos Rubio Lara:
+Gracias.

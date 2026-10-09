@@ -1,0 +1,9 @@
+{
+ "fuente": "correo-2026-10-07.eml",
+ "cambian": ["PAN-03"],
+ "con_aprobacion": [],
+ "sin_cambio": ["PAN-01", "PAN-02", "PAN-04", "PAN-05", "PAN-06"],
+ "comentarios": [
+  {"pan": "PAN-03", "que": "Mis préstamos: la columna «Hasta» pasa a llamarse «Devolución prevista»"}
+ ]
+}

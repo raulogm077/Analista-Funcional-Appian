@@ -1,0 +1,17 @@
+{"sinVerificar": [
+  {"id": "NV-ARQ-01", "pregunta": "¿Qué hace UTL_DiasLaborables y con qué calendario cuenta?",
+   "porQue": "DEM Batch Recordatorios la llama con rule! y no está en la aplicación.",
+   "queHaceFalta": "Export de la aplicación que la contiene o acceso de lectura a ella",
+   "aQuien": "Equipo de la aplicación de utilidades",
+   "dondeSeBusco": "Inventario de la aplicación y dependencias de DEM Batch Recordatorios (Dev MCP)",
+   "objetos": ["DEM Batch Recordatorios", "UTL_DiasLaborables"],
+   "indicios": "Se le pasa la fecha de alta de cada solicitud pendiente.", "estado": "abierto",
+   "documento": "02-arquitectura.md#dependencias-externas"},
+  {"id": "NV-PRO-01", "pregunta": "¿A quién debe llegar el correo de «Avisar solicitante»?",
+   "porQue": "El nodo envía el correo con copia a soporte.dem@example.org y la definición no dice por qué.",
+   "queHaceFalta": "Negocio: que el responsable de las solicitudes diga quién lo recibe",
+   "aQuien": "Responsable de las solicitudes",
+   "dondeSeBusco": "Definición de DEM Revisar Solicitud, nodo «Avisar solicitante» (Dev MCP)",
+   "objetos": ["DEM Revisar Solicitud"], "indicios": "La copia está escrita en el nodo, no en una constante.",
+   "estado": "abierto", "documento": "08-procesos-bpmn/DEM_Revisar_Solicitud.md#sin-verificar"}
+ ]}

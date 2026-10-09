@@ -32,6 +32,7 @@ autorización) y tienen el formato exacto que leen los scripts.
 
 El cliente lo lee para decidir si es lo que quiere. Por eso:
 - Las fuentes, los estados y los nombres de las personas van solo en los comentarios.
+- Los IDs de otras skills (hallazgos H-…, NV-… y REF-…), solo en el comentario, dentro de su cita: «[FU-01 H-DAT-01]».
 - Nada de Appian: ni objetos, ni componentes, ni términos técnicos. Eso es la especificación técnica.
 - Lo que está pendiente se dice en la frase que afecta, «(pendiente: PC-04)», y se pregunta en el 11.
 - Los campos que solo sirven a la lógica de la aplicación no van: solo los datos que el cliente reconoce,
@@ -73,7 +74,9 @@ Después de los procesos:
 Historias agrupadas por área (`### Área`). Cada una:
 1. Título `**HU-nn — Verbo y objeto**` con su trazabilidad.
 2. Tabla `Perfil · Pantalla · Paso · Prioridad`. Pantalla y paso, el ID o «—». Prioridad: Imprescindible
-   o Deseable.
+   o Deseable. Con una aplicación existente (`as-is/`), la tabla suma «Origen»: «Se conserva», «Cambia» o
+   «Nueva». Si la historia corrige un hallazgo, su cita va en la trazabilidad, no en el DF:
+   `**HU-02 — …** <!-- ✅ FU-03 00:09:20; [FU-01 H-DAT-01] -->`.
 3. «Como <perfil>, quiero <qué> para <para qué>.»
 4. Descripción con sus reglas, en frases cortas; si hay varios casos, uno por línea. Lo que ya dice una
    regla común se cita («Se aplica RB-01»).
@@ -158,6 +161,10 @@ cuando se puede. Lo respondido se tacha con la decisión que lo responde. El Wor
 |---|---|---|---|---|
 | PC-02 | ¿Qué pasa si la unidad no subsana en 10 días hábiles? | Se archiva / Se le recuerda cada 10 días | Responsable de la unidad | ACT-06, HU-03 <!-- ❓ FU-03 00:16:20 --> |
 ```
+
+Lo que ingeniería inversa no pudo verificar y tiene que resolver negocio (un NV de `as-is/` cuyo «Qué hace falta»
+empieza por «Negocio») es también un PC: la pregunta en palabras del cliente, sin objetos de Appian, y la cita en el
+comentario de su fila (`<!-- ❓ [FU-01 NV-PRO-01] -->`). Así llega al guion de la próxima reunión.
 
 ### Anexo. Quién puede hacer qué
 Lo genera `indice.py derivadas --escribir` a partir del 5. No se edita a mano.

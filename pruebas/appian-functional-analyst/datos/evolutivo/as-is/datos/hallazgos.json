@@ -1,0 +1,11 @@
+{"hallazgos": [
+  {"id": "H-ARQ-01", "titulo": "DEM Utilidad Huérfana no la inicia ningún objeto, site ni temporizador", "area": "arquitectura",
+   "severidad": "Baja", "certeza": "verificado", "objetos": ["DEM Utilidad Huérfana"],
+   "documento": "02-arquitectura.md#hallazgos", "evidencia": "graph:DEM Utilidad Huérfana"},
+  {"id": "H-DAT-01", "titulo": "El formulario de la solicitud deja elegir el estado y saca los valores de DEM_ESTADOS_VALIDOS, no de DEM Estado",
+   "area": "datos", "severidad": "Media", "certeza": "verificado", "objetos": ["DEM_ESTADOS_VALIDOS", "DEM_SolicitudForm"],
+   "documento": "03-modelo-datos.md#hallazgos", "evidencia": "mcp:interface/DEM_SolicitudForm#línea 4"},
+  {"id": "H-SEG-01", "titulo": "El token del ERP está escrito en una constante y viaja en una cabecera", "area": "secretos",
+   "severidad": "Alta", "certeza": "verificado", "objetos": ["DEM_ERP_API_TOKEN", "DEM_INT_NotificarERP"],
+   "documento": "04-seguridad-grupos.md#hallazgos", "evidencia": "mcp:constant/DEM_ERP_API_TOKEN#value"}
+ ]}

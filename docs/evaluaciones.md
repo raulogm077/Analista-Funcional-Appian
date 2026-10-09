@@ -4,6 +4,68 @@ Resultados de las evaluaciones del plan `docs/plan/2026-10-07-integracion-ingeni
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 
+## F6 · Analista (9 de octubre de 2026)
+
+Rama `f6-analista`, de `main` a3cc312 al merge. Versión 0.7.0-alpha.5.
+
+### Qué cambia
+
+- **Citas de IDs de otra skill (Tarea 16).** «[FU-07 PAN-03]» es la PAN-03 del prototipo: `modelo.quita_citas` la quita
+  antes de buscar IDs, y no cuenta como referencia en el índice ni en las comprobaciones.
+- **Guion de la próxima reunión (Tarea 17).** `indice.py pendientes`: las PC abiertas por «A quién», de las que afectan a
+  más partes del análisis a las que menos.
+- **Texto que queda viejo (Tarea 18).** `comprobar.py --anterior` avisa de cada línea que ya estaba y aún dice lo que una
+  pieza cambiada ya no dice (cinco palabras seguidas).
+- **Aplicación existente (Tareas 19 y 20).** Con `as-is/`: «Origen» de cada historia, §13 con la Situación de cada
+  objeto, carga inicial y migración en §3, cada REF de la propuesta con su DT (o «No se hace»), y los NV que condicionan
+  lo que se construye como PT o, si los resuelve negocio, como PC. Avisa si se toca un objeto con un hallazgo Alta o
+  algo sin verificar que ninguna PT o PC cita. Sin `as-is/`, la salida es la de antes. `leer_fuentes.py --una-fuente`
+  cataloga `as-is/` como una sola fuente.
+- **DF ya hecho y demo (Tarea 21).** El DF del cliente entra como versión 1.0, cada pieza 🔒 con su ID original; las
+  reuniones de antes pasan por el informe de impacto. Los comentarios de una demo son puntos del informe y prototipos
+  rehace solo sus pantallas, sin tocar las validadas sin aprobación.
+- **El informe de impacto, más estricto (pasada de correcciones).** «Requiere» es «—» o «Sí (motivo)», y `comprobar.py`
+  lo exige; «de momento no» es «Pendiente»; en una sesión desatendida lo que requiere aprobación no se aplica y la
+  cabecera dice qué puntos quedan, que `proyecto.py estado` lista.
+
+### Las evaluaciones del analista (Tarea 22)
+
+Tres casos ficticios en `pruebas/evaluaciones/`, cada uno ejecutado por un agente a ciegas (copia de las skills, sin
+`pruebas/` ni `docs/`) en su proyecto de `$PROYECTOS_PRUEBA`.
+
+| Caso | Primera medida | Segunda medida (tras la pasada de correcciones) |
+|---|---|---|
+| Incoherencias: DF validado y tres reuniones anteriores, 10 incoherencias + 3 ocultas | 0/10 y 0/3 | 10/10 y 3/3, ninguna aplicada, ninguna coincidencia como cambio |
+| Demo: seis pantallas, dos validadas; un comentario por pantalla + un correo oculto | 4/6 | 6/6 y 6/6 |
+| Evolutivo: tres historias sobre MNT + una cuarta oculta | 10/10; oculta 2/3 sin aprobar y 3/3 aprobada | — (10/10 y 3/3 con el puntuador nuevo) |
+
+- **El fondo estaba bien desde la primera medida y el formato no.** En incoherencias y demo, los agentes encontraron todo,
+  con su pieza, sin aplicar nada sin aprobación; pero escribieron «Aprobación: cambia HU-01 🔒…» en la columna
+  «Requiere», que la skill no definía, y el puntuador lo da por no pedido. La revisión lo confirmó (con «Sí (🔒)» salen
+  10/10, 3/3 y 6/6). Se fija el formato y `comprobar.py` lo exige; no se ablanda el puntuador.
+- **La ronda oculta de evolutivo** pide una ampliación, que en una sesión desatendida no se aplica sin aprobación: el
+  README da ahora la aprobación por adelantado, como la demo.
+- **El puntuador de evolutivo emparejaba los objetos nuevos solo por tipo**: con tres quitados seguía en 9/10. Ahora cada
+  uno lleva las raíces de nombre que valen, sacadas de la reunión.
+- `comprobar.py` sin errores en los tres. Proyectos: `AYC-incoherencias/`, `PRE-demo/` y `MNT-evolutivo/` (las
+  primeras medidas, en `AYC-incoherencias-1/` y `PRE-demo-1/`).
+
+### Lo aprendido
+
+- Un formato que solo está en un ejemplo no es un formato: dos agentes distintos escribieron lo mismo fuera de él. Si
+  algo se va a leer con un script, la skill lo define y el comprobador lo exige.
+- Las reglas para la sesión desatendida tienen que cuadrar con las comprobaciones: «entra como ⚠️» chocaba con «una
+  pieza 🔒 no cambia sin aprobación».
+- Los avisos que no se pueden apagar se ignoran: 25 en el evolutivo, todos ya atendidos por una PT o una PC, y 4 de 4
+  falsos en el texto viejo. Ahora se apagan cuando lo que piden ya está hecho.
+- Los puntuadores se revisan quitando lo que debería contar, como en F5: el de evolutivo no bajaba.
+
+### Aplazado
+
+Lo menor de la revisión y la fricción de las evaluaciones, en `docs/siguiente-version.md` («Analista»). Lo más
+importante para la siguiente versión: en una sesión desatendida, los puntos pendientes de aprobación solo quedan en
+los informes y no llegan al guion de la próxima reunión.
+
 ## F5 · Refactorización (9 de octubre de 2026)
 
 Rama `f5-refactorizacion`, de `main` e475a94 al merge. Versión 0.7.0-alpha.4.

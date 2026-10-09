@@ -7,6 +7,10 @@ marcas de posición para poder citarlo: «Diapositiva 34», «Página 12»,
 
 Uso:
   python3 leer_fuentes.py <ficheros o carpetas...> -o fuentes/
+  python3 leer_fuentes.py --una-fuente <p>/as-is [<ficheros…>] -o fuentes/
+
+Con --una-fuente, la carpeta entera es una sola fuente (p. ej. as-is/, la aplicación existente): su .md es el índice
+de sus documentos, sin su extracción en bruto (extraccion/), que el análisis no cita.
 
 Genera en la carpeta de salida:
   FU-01-<nombre>.md …   el contenido de cada fuente
@@ -506,6 +510,28 @@ def convert(path, out_dir, fid):
     return body, kind, detail, date
 
 
+SISTEMA = ("desktop.ini", "thumbs.db", ".ds_store")   # lo que dejan Windows y macOS en una carpeta
+
+
+def una_fuente(carpeta):
+    """Una carpeta como una sola fuente: (sus documentos, el .md con su índice, detalle, fecha). No entra su extracción
+    en bruto (extraccion/), que el análisis no lee, ni lo que dejan el sistema y Office (desktop.ini, Thumbs.db,
+    .DS_Store, ~$…), que cambiaría la fuente sin cambiar nada."""
+    docs = sorted(f for f in carpeta.rglob("*") if f.is_file() and "extraccion" not in f.relative_to(carpeta).parts
+                  and f.name.lower() not in SISTEMA and not f.name.startswith("~$"))
+    rows = [["Documento", "Qué es"]]
+    for f in docs:
+        titulo = ""
+        if f.suffix.lower() == ".md":
+            m = re.search(r"^#\s+(.+)$", f.read_text(encoding="utf-8", errors="replace"), re.M)
+            titulo = m.group(1).strip() if m else ""
+        rows.append([f"{carpeta.name}/{f.relative_to(carpeta).as_posix()}", titulo or f.suffix[1:].upper()])
+    body = ("Una sola fuente: lo que se cita de ella lleva su ID dentro de la cita («[FU-nn H-SEG-01]»).\n\n"
+            "## Documentos\n\n" + md_table(rows))
+    fecha = max((f.stat().st_mtime for f in docs), default=carpeta.stat().st_mtime)
+    return docs, body, f"{len(docs)} documentos", datetime.datetime.fromtimestamp(fecha).strftime("%Y-%m-%d")
+
+
 def generated(f, out):
     """Lo que escribe este script en la carpeta de salida (FU-xx-*.md, indice.*, adjuntos/): no es una fuente.
     Las fuentes originales pueden estar en esa misma carpeta (leer_fuentes.py fuentes/ -o fuentes/)."""
@@ -517,9 +543,13 @@ def generated(f, out):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("inputs", nargs="+")
+    ap.add_argument("inputs", nargs="*")
+    ap.add_argument("--una-fuente", action="append", default=[], metavar="CARPETA",
+                    help="la carpeta entera como una sola fuente (as-is/), con el índice de sus documentos")
     ap.add_argument("-o", "--out", default="fuentes")
     a = ap.parse_args()
+    if not a.inputs and not a.una_fuente:
+        ap.error("indica los ficheros o carpetas, o --una-fuente <carpeta>")
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8", errors="replace")
 
@@ -528,6 +558,28 @@ def main():
     state_file = out / "indice.json"
     state = json.loads(state_file.read_text(encoding="utf-8")) if state_file.exists() else {"fuentes": []}
     by_hash = {f["hash"]: f for f in state["fuentes"]}
+
+    for carpeta in map(pathlib.Path, a.una_fuente):
+        if not carpeta.is_dir():
+            print(f"AVISO: no es una carpeta: {carpeta}", file=sys.stderr)
+            continue
+        carpeta = carpeta.resolve()
+        docs, body, detail, date = una_fuente(carpeta)
+        h = hashlib.sha1("\n".join(f"{d.relative_to(carpeta).as_posix()} {hashlib.sha1(d.read_bytes()).hexdigest()}"
+                                   for d in docs).encode("utf-8")).hexdigest()
+        nombre = carpeta.name + "/"
+        if h in by_hash:   # la misma carpeta con lo mismo dentro; si cambia, es otra fuente, como un fichero
+            print(f"= {by_hash[h]['id']} {nombre} (ya catalogada)")
+            continue
+        fid = f"FU-{len(state['fuentes']) + 1:02d}"
+        entry = {"id": fid, "fichero": nombre, "tipo": "Carpeta", "detalle": detail, "fecha": date, "hash": h,
+                 "salida": f"{fid}-{slug(carpeta.name)}.md"}
+        (out / entry["salida"]).write_text(
+            f"# {fid} · {nombre}\n\n- Tipo: Carpeta\n- Detalle: {detail}\n- Fecha: {date}\n\n---\n\n{body}\n",
+            encoding="utf-8")
+        state["fuentes"].append(entry)
+        by_hash[h] = entry
+        print(f"+ {fid} {nombre}: Carpeta, {detail}")
 
     files = []
     inputs = [x for inp in a.inputs for x in (sorted(glob.glob(inp)) if glob.has_magic(inp) and not pathlib.Path(inp).exists() else [inp])]

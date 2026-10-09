@@ -94,11 +94,11 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
 ## 4. Informe de impacto: `impacto/FU-04.md`
 ```markdown
 # Impacto de FU-04 · Seguimiento con la unidad gestora · 2026-10-01
-Análisis base: versión 1.1 · Estado: pendiente de aprobación
+Análisis base: versión 1.1 · Estado: pendiente
 
 ## Resumen
 - 9 puntos: 2 NUEVO · 3 COMPLETA · 1 CAMBIA · 1 RESPONDE · 2 SIN IMPACTO
-- Requieren aprobación: punto 4 (cambia HU-07, 🔒)
+- Requieren aprobación: punto 4 (cambia HU-07, 🔒). Recomiendo ✔: los planos no caben en 20 MB
 - Pendientes que se cierran: PC-02 · nuevos: 1 · alcance: sin cambios
 - Pantallas afectadas: PAN-02 · Técnico: DT-03, §8
 
@@ -106,21 +106,26 @@ Análisis base: versión 1.1 · Estado: pendiente de aprobación
 | # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión |
 |---|---|---|---|---|---|---|---|
 | 1 | RESPONDE | Si no subsana en 10 días hábiles, se archiva [FU-04 00:12:30] | PC-02, ACT-06 | ACT-06 con el archivo; HU-03.3 nueva; se cierra PC-02 | HU-03, T §8 | — | ✔ |
+| 4 | CAMBIA | Los planos pesan más: hasta 30 MB [FU-04 00:20:10] | HU-07 | HU-07.1 a 30 MB | DOC-01 | Sí (🔒) | Pendiente |
 
 ## Revisión de dependencias
 | Pieza | Punto | Resultado |
 |---|---|---|
 | HU-03 | 1 | Modificada: criterio HU-03.3 |
+| DOC-01 | 4 | Sin cambios hasta que se apruebe el punto 4 |
 
 ## Aplicado
 Versión 1.2: ACT-06 y HU-03 modificadas · ~~PC-02~~ respondida (D-03) · nuevas: HU-03.3
 ```
 - «Qué se dice» lleva la cita. «Encaja en» son IDs existentes o «nuevo en funcional §4».
-- «Decisión»: en lo que no requiere aprobación propones ✔ (o ⚠️, ❓, ✗); en lo que la requiere pones
-  «Pendiente» y la fija el analista: ✔ aplicar · ⚠️ aplicar como pendiente · ❓ preguntar al cliente (PC) ·
-  ✗ descartar.
+- «Requiere»: «—» si no requiere aprobación; si la requiere, «Sí» con el motivo corto entre paréntesis: «Sí (🔒)»,
+  «Sí (alcance)», «Sí (fuente interna)». La explicación va en «Cambio propuesto» o en el Resumen, y la recomendación
+  de cada punto que la requiere, en el Resumen.
+- «Decisión»: ✔ aplicar · ⚠️ aplicar como pendiente · ❓ preguntar al cliente (PC) · ✗ descartar · «Pendiente».
+  En lo que no requiere aprobación propones ✔ (o ⚠️, ❓, ✗); en lo que la requiere pones «Pendiente» y la fija el
+  analista. «De momento no» o sin respuesta es «Pendiente»: ✗ es descartar.
 - Lo SIN IMPACTO se agrupa en una fila. En «Revisión de dependencias» se pueden agrupar piezas con el mismo
-  resultado.
+  resultado; un resultado vacío o que empieza por «Pendiente» es una dependencia sin revisar.
 
 Antes de presentarlo:
 ```bash
@@ -134,9 +139,10 @@ Presenta el **Resumen** y **solo los puntos que requieren aprobación**, cada un
 pregunta «¿Aplico el informe con estas decisiones?». Con cualquier confirmación, aplica. Lo que decide el
 analista manda: si al aplicar ves un motivo para no seguirlo, pregúntale.
 
-Sin respuesta o en una sesión desatendida: aplica lo que no requiere aprobación; lo demás entra como ⚠️
-«pendiente de aprobación del analista» y el informe lo dice en su cabecera. Una decisión explícita del
-cliente no se le vuelve a preguntar.
+Sin respuesta o en una sesión desatendida: aplica lo que no requiere aprobación; lo que la requiere no se aplica:
+queda «Pendiente» en el informe, la pieza no cambia y la cabecera del informe lo dice: «Estado: aplicado en 1.2;
+pendientes de aprobación: puntos 4 y 7», o «Estado: pendiente» si no se ha aplicado nada. `proyecto.py estado` los
+lista. Una decisión explícita del cliente no se le vuelve a preguntar.
 
 ## 6. Aplicar
 - Solo se tocan las piezas del informe. `ficha --lineas` da las líneas exactas: lee solo ese tramo y edita
@@ -145,7 +151,10 @@ cliente no se le vuelve a preguntar.
 - **CAMBIA**: la pieza queda con lo nuevo; lo anterior y su cita van a «Antes» de la fila D.
 - **Texto que queda viejo**: tras un CAMBIA, un ANULA o un RESPONDE, busca el criterio viejo con sus
   propias palabras (`buscar` con las palabras del «Antes», también en el técnico) y corrige cada sitio que
-  lo siga diciendo. Es el error más frecuente y ningún script lo detecta.
+  lo siga diciendo. Es el error más frecuente. Al verificar (paso 7), `comprobar.py --anterior` avisa de cada
+  línea del funcional o del técnico, sin tocar en esta versión, que aún dice lo que una pieza cambiada ya no dice
+  (cinco palabras seguidas):
+  «HU-07: "…" sigue en PAN-04, l.212». Corrige cada sitio, o déjalo si sigue siendo verdad allí.
 - **ANULA**: se tacha el ID y las piezas que lo citaban se corrigen o dicen que ya no aplica.
 - **Criterios**: si cambia el comportamiento, se reescribe el criterio (mismo ID) o se añade el siguiente.
 - **Técnico**: los campos, decisiones, nodos, pruebas y apartados afectados. Si un cambio del cliente choca
@@ -158,7 +167,8 @@ cliente no se le vuelve a preguntar.
 - **Versión**: sube 0.1 en funcional y técnico.
 - **Anexo**: `indice.py derivadas <p> --escribir`.
 - **proyecto.md**: la fuente en «Fuentes procesadas» y el siguiente paso.
-- En el informe: completa «Revisión de dependencias» y «Aplicado», y pon «Estado: aplicado en 1.2».
+- En el informe: completa «Revisión de dependencias» y «Aplicado», y pon «Estado: aplicado en 1.2» (con lo que
+  quede sin aplicar: «Estado: aplicado en 1.2; pendientes de aprobación: puntos 4 y 7»).
 
 ## 7. Verificar
 ```bash
@@ -166,14 +176,30 @@ python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/ --anterior <p>/v
 ```
 Tiene que salir sin errores: ningún ID desaparecido, la versión sube y tiene su fila, cada dependencia con
 resultado, cada cambio declarado en el informe, nada marcado «sin cambios» que haya cambiado y nada 🔒
-cambiado sin un punto aprobado. Después:
-- el Word, si ya se había entregado un DF (`df_docx.js`);
-- el prototipo: solo las pantallas afectadas, con `appian-prototipos`. Las validadas por
-  el cliente (🔒) no se tocan sin el visto bueno del analista.
+cambiado sin un punto aprobado. Después, en este orden:
+- el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y sus capturas nuevas. Las validadas por
+  el cliente (🔒) no se tocan sin el visto bueno del analista;
+- el Word, si ya se había entregado un DF (`df_docx.js`), que incluye esas capturas.
 
 ## 8. Entregar
 En pocas líneas: versión, puntos por tipo, lo que cambió de verdad (CAMBIA, ANULA, alcance), pendientes
 cerrados y nuevos, lo que quedó pendiente de aprobación y las pantallas a actualizar.
+
+Para la próxima reunión, el guion de lo que hay que preguntar:
+```bash
+python3 <skill>/scripts/indice.py pendientes <p>
+```
+Las PC abiertas agrupadas por «A quién», cada una con sus opciones y lo que afecta; en cada grupo, primero las
+que afectan a más partes del análisis (los elementos de «Afecta a» y las líneas que la citan fuera del §11).
+
+## Feedback de una demo
+Las notas o la transcripción de una demo del prototipo son una fuente más y pasan por el informe de impacto:
+- cada comentario es un punto que encaja en su PAN, y además en la historia o el criterio si los toca («Encaja en:
+  PAN-02, HU-03»); lo que solo es del prototipo (un texto de ejemplo, un color) es «SIN IMPACTO» en el análisis y va
+  directo a prototipos;
+- si la PAN está validada (🔒), el punto requiere aprobación;
+- aplicado el informe, prototipos rehace solo las PAN del informe (`appian-prototipos`, «Después de una demo»): las
+  🔒 cuyo punto no se aprobó no se tocan y van en `--confirmadas`.
 
 ## Varias fuentes juntas
 En orden de fecha y en un solo informe si tratan lo mismo (la reunión y el correo que la confirma); si no,

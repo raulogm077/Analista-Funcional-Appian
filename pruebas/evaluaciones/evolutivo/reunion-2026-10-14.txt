@@ -1,0 +1,82 @@
+Reunión sobre los cambios en la aplicación de mantenimiento · 14 de octubre de 2026
+
+[00:00:05] Sara León Prado:
+Buenos días. Ya tenemos documentada la aplicación de mantenimiento tal como está hoy. Hoy quiero saber qué cambios necesitáis.
+
+[00:00:45] Alberto Cuesta Rey:
+Son tres cosas. Te las cuento por orden de importancia.
+
+[00:01:30] Alberto Cuesta Rey:
+La primera: corregir las órdenes. Cuando un técnico se equivoca al dar de alta una orden, hoy no hay manera de corregirla. Acabamos cancelándola y creando otra.
+
+[00:02:40] Sara León Prado:
+¿Quién debería poder corregirla?
+
+[00:03:00] Inés Marín Vela:
+Los supervisores, y solo mientras la orden está abierta. Una orden cerrada o cancelada no se toca.
+
+[00:04:10] Sara León Prado:
+¿Qué datos se pueden cambiar?
+
+[00:04:30] Inés Marín Vela:
+El título, la descripción, la instalación, la prioridad y la fecha límite. El técnico no, que eso se hace al asignar.
+
+[00:05:40] Sara León Prado:
+¿Desde dónde la corregiríais?
+
+[00:06:00] Inés Marín Vela:
+Desde la propia orden, con un botón «Corregir orden».
+
+[00:07:10] Alberto Cuesta Rey:
+La segunda: dar de baja a los técnicos. Cuando alguien se jubila o se va a otro servicio, sigue saliendo para asignarle órdenes.
+
+[00:08:20] Sara León Prado:
+¿Quién los da de baja?
+
+[00:08:40] Alberto Cuesta Rey:
+Los administradores, desde la ficha del técnico. El técnico se conserva con sus órdenes; solo deja de estar activo.
+
+[00:09:50] Sara León Prado:
+¿Dónde no debe salir un técnico de baja?
+
+[00:10:10] Inés Marín Vela:
+Al asignar una orden: que solo salgan los activos, que hoy salen todos. Y en la lista de técnicos del alta de una orden, igual.
+
+[00:11:20] Sara León Prado:
+¿Y en la carga de trabajo del panel?
+
+[00:11:40] Inés Marín Vela:
+Ahí tampoco, claro.
+
+[00:12:30] Sara León Prado:
+Cuando se da de alta un técnico nuevo, ¿entra activo?
+
+[00:12:50] Alberto Cuesta Rey:
+Sí, siempre.
+
+[00:14:00] Alberto Cuesta Rey:
+La tercera: saber si el trabajo quedó bien. Cuando se cierra una orden, que quien la pidió puntúe el trabajo de 1 a 5 y pueda dejar un comentario.
+
+[00:15:10] Sara León Prado:
+¿Cómo le llega?
+
+[00:15:30] Alberto Cuesta Rey:
+Como una tarea, cuando se valida el cierre. Si en una semana no la contesta, la tarea se cierra sola y la orden queda sin valoración.
+
+[00:16:40] Sara León Prado:
+¿Dónde queréis ver la valoración?
+
+[00:17:00] Inés Marín Vela:
+En el resumen de la orden, con su comentario.
+
+[00:18:10] Sara León Prado:
+¿El comentario es obligatorio?
+
+[00:18:30] Alberto Cuesta Rey:
+Solo si la puntuación es un 1 o un 2.
+
+[00:19:40] Sara León Prado:
+Perfecto. Corregir órdenes, dar de baja técnicos y valorar el trabajo. Os mando el análisis con las historias.
+
+[00:20:30] Alberto Cuesta Rey:
+Muy bien. Gracias, Sara.
