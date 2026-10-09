@@ -49,6 +49,17 @@ apunta aquí y entra en la siguiente versión. Cada línea dice qué, dónde y d
 - Evaluación del recién llegado: el docstring de `palabras.py` dice «como las cuenta `comprobar_asis.py`», pero cuenta
   también los títulos y el texto generado.
 - Presupuestos de palabras: con MNT, la mayoría de documentos van al 20-50 % de su límite; afinarlos con más medidas.
+- Los role maps de los objetos no están en `as-is/` ni quedan como NV: refactorización solo puede preguntarlos como
+  decisión. Evaluación de la Tarea 15.
+- La propuesta de MNT sacó del anexo dos señales que ingeniería inversa no registró como hallazgo: nombres fijos del
+  proceso y sus tareas, y dos reglas sin el prefijo de la aplicación. Evaluación de la Tarea 15.
+
+## Buenas prácticas
+
+- No hay sección sobre funcionalidades deprecadas: `senales.md` de refactorización las manda a BP 08 §7, la más
+  cercana. Tarea 13.
+- No hay sección sobre el «Cancelar» de un formulario de inicio de proceso (el patrón solo está en la documentación de
+  Appian): la propuesta de MNT usó BP 10 §2, genérica. Evaluación de la Tarea 15.
 
 ## Diagramas
 
