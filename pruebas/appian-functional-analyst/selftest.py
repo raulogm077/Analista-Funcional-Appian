@@ -177,6 +177,29 @@ Versión 1.2: HU-07.1 a 30 MB · PC-04 nuevo · técnico §14 con 35 MB
         c, out = corre(S / "comprobar.py", p, "--anterior", p / "versiones" / "v1.1", "--impacto", informe)
         ok("detecta un cambio que el informe no declara", c == 1 and "cada cambio está declarado" in out and "HU-06" in out, out)
 
+        # 4a. Texto que queda viejo: lo que una pieza cambiada ya no dice y sigue en otra (aviso, con --anterior)
+        viejo = tmp / "texto viejo"
+        shutil.copytree(EJEMPLO, viejo)
+        fo = viejo / "analisis" / "funcional.md"
+        editar(fo, "Como técnico, quiero ver juntos los datos y los documentos",
+               "La revisión se hace en un plazo de cinco días hábiles desde el envío.\n\n"
+               "Como técnico, quiero ver juntos los datos y los documentos")
+        editar(fo, "Tarea del técnico. Se abre desde su bandeja de tareas.",
+               "Tarea del técnico. Se abre desde su bandeja de tareas y vence en un plazo de cinco días hábiles desde el envío.")
+        corre(S / "proyecto.py", "copia", viejo)
+        for x in (fo, viejo / "analisis" / "tecnico.md"):
+            editar(x, "Versión: 1.1", "Versión: 1.2")
+        editar(fo, "La revisión se hace en un plazo de cinco días hábiles desde el envío.",
+               "La revisión se hace en un plazo de ocho días hábiles desde el envío.")
+        c, out = corre(S / "comprobar.py", viejo, "--anterior", viejo / "versiones" / "v1.1")
+        aviso = [l for l in out.splitlines() if "queda viejo" in l]
+        ok("texto que queda viejo: avisa de la frase vieja que sigue en otra pieza, con los dos IDs",
+           len(aviso) == 1 and aviso[0].startswith("· ") and "HU-04" in aviso[0] and "PAN-04" in aviso[0]
+           and "cinco días hábiles" in aviso[0], out)
+        editar(fo, "vence en un plazo de cinco días hábiles desde el envío.", "vence en un plazo de ocho días hábiles desde el envío.")
+        c, out = corre(S / "comprobar.py", viejo, "--anterior", viejo / "versiones" / "v1.1")
+        ok("texto que queda viejo: sin la frase vieja, sin aviso", "✓ texto que queda viejo" in out, out)
+
         # 4b. Lo validado (🔒) solo cambia con un punto aprobado
         v = tmp / "validado"
         shutil.copytree(EJEMPLO, v)

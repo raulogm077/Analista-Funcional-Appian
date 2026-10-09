@@ -17,7 +17,8 @@ Errores (✗, salida 1) y avisos (·):
     relación con otro sistema, perfil y criterio en su apartado técnico, decisiones con su porqué y su
     verificación, y la misma versión en los tres ficheros;
   - con --fuentes: citas con el minuto de una intervención real y sin nombres de participantes;
-  - con --anterior: ningún ID desaparece, la versión sube y tiene su fila; lista lo nuevo y lo cambiado;
+  - con --anterior: ningún ID desaparece, la versión sube y tiene su fila; lista lo nuevo y lo cambiado, y avisa
+    del texto que queda viejo (lo que una pieza cambiada ya no dice y sigue en otra);
   - con --impacto: los IDs del informe existen o son nuevos; después de aplicar, cada dependencia tiene
     resultado, cada cambio está declarado y lo 🔒 solo cambia con aprobación.
 """
@@ -483,6 +484,63 @@ def comprobar_anterior(m, ruta_ant):
     return nuevas, modif, anul, ant
 
 
+SECUENCIA = 5   # palabras seguidas que, si una pieza cambiada ya no las dice, no deberían seguir en otra
+
+
+def _palabras(linea):
+    """Las palabras visibles de una línea: (normalizada, tal cual)."""
+    return [(mo.normaliza(w), w) for w in re.findall(r"\w+", visible(linea))]
+
+
+def _secuencias(lineas):
+    out = set()
+    for l in lineas:
+        ws = [w for w, _ in _palabras(l)]
+        out |= {tuple(ws[k:k + SECUENCIA]) for k in range(len(ws) - SECUENCIA + 1)}
+    return out
+
+
+def texto_viejo(m, ant, modif):
+    """Para cada pieza modificada, las secuencias de cinco palabras que tenía antes y ya no tiene, y cada otra línea del
+    funcional o del técnico que aún las dice: «HU-07: "…" sigue en PAN-04, l.212». Una por pieza y línea."""
+    duenio = {}     # (doc, línea) -> la pieza más pequeña que la contiene
+    for p in m.piezas.values():
+        for i in range(p.ini, p.fin):
+            otro = duenio.get((p.doc, i))
+            if otro is None or p.fin - p.ini < m.piezas[otro].fin - m.piezas[otro].ini:
+                duenio[(p.doc, i)] = p.id
+    avisos, vistos = [], set()
+    for pid in modif:
+        p = m.piezas.get(pid)
+        if not p or p.doc not in ("F", "T") or pid not in ant.piezas or (p.padre and p.padre in modif):
+            continue
+        quitadas = _secuencias(ant.bloque(pid)) - _secuencias(m.bloque(pid))
+        if not quitadas:
+            continue
+        raiz = m.piezas[m.raiz_de(pid)]
+        propias = {(raiz.doc, i) for i in range(raiz.ini, raiz.fin)}
+        for d in ("F", "T"):
+            if d not in m.docs:
+                continue
+            for i, l in enumerate(m.docs[d].lineas):
+                otro = duenio.get((d, i))
+                if (d, i) in propias or (otro and anulada(m, otro)):
+                    continue
+                pal = _palabras(l)
+                ws = [w for w, _ in pal]
+                k = next((k for k in range(len(ws) - SECUENCIA + 1) if tuple(ws[k:k + SECUENCIA]) in quitadas), None)
+                if k is None or (pid, d, i) in vistos:
+                    continue
+                vistos.add((pid, d, i))
+                donde = otro or f"{mo.NOMBRE_DOC[d]} §{m.docs[d].seccion_de_linea[i]}"
+                fin = k + 1     # la frase entera: las secuencias quitadas seguidas desde la primera
+                while fin < len(ws) - SECUENCIA + 1 and tuple(ws[fin:fin + SECUENCIA]) in quitadas:
+                    fin += 1
+                frase = " ".join(o for _, o in pal[k:fin - 1 + SECUENCIA])
+                avisos.append(f'{pid}: "{frase}" sigue en {donde}, l.{i + 1}')
+    return avisos
+
+
 def lee_informe(ruta):
     t = pathlib.Path(ruta).read_text(encoding="utf-8")
     puntos, revision, cab = [], [], None
@@ -618,6 +676,8 @@ def main():
         comprobar_fuentes(m, a.fuentes, a.corregir_citas)
     if a.anterior:
         nuevas, modif, anul, ant = comprobar_anterior(m, a.anterior)
+        informe("texto que queda viejo (lo que una pieza cambiada ya no dice y sigue en otra: corrígelo o dilo)",
+                texto_viejo(m, ant, modif), grave=False)
         if a.impacto:
             comprobar_impacto(m, ant, a.impacto, (nuevas, modif, anul))
     elif a.impacto:

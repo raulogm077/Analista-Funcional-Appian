@@ -837,9 +837,9 @@ queda viejo» cita la comprobación).
 palabras que tenía antes y ya no tiene; avisa de cada otra línea del funcional o del técnico que aún las contiene
 («HU-07: "…" sigue en PAN-04, l.212»). Solo con `--anterior`. Es aviso, no error.
 
-- [ ] **Paso 1:** selftest: en una copia, cambiar el plazo de una historia y dejar la frase vieja en una pantalla →
+- [x] **Paso 1:** selftest: en una copia, cambiar el plazo de una historia y dejar la frase vieja en una pantalla →
   aviso con los dos IDs; sin dejarla → sin aviso. → FALLA.
-- [ ] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
+- [x] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 19: Aplicación existente en el funcional y el técnico
 

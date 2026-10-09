@@ -145,7 +145,9 @@ cliente no se le vuelve a preguntar.
 - **CAMBIA**: la pieza queda con lo nuevo; lo anterior y su cita van a «Antes» de la fila D.
 - **Texto que queda viejo**: tras un CAMBIA, un ANULA o un RESPONDE, busca el criterio viejo con sus
   propias palabras (`buscar` con las palabras del «Antes», también en el técnico) y corrige cada sitio que
-  lo siga diciendo. Es el error más frecuente y ningún script lo detecta.
+  lo siga diciendo. Es el error más frecuente. Al verificar (paso 7), `comprobar.py --anterior` avisa de cada
+  línea del funcional o del técnico que aún dice lo que una pieza cambiada ya no dice (cinco palabras seguidas):
+  «HU-07: "…" sigue en PAN-04, l.212». Corrige cada sitio, o déjalo si sigue siendo verdad allí.
 - **ANULA**: se tacha el ID y las piezas que lo citaban se corrigen o dicen que ya no aplica.
 - **Criterios**: si cambia el comportamiento, se reescribe el criterio (mismo ID) o se añade el siguiente.
 - **Técnico**: los campos, decisiones, nodos, pruebas y apartados afectados. Si un cambio del cliente choca
