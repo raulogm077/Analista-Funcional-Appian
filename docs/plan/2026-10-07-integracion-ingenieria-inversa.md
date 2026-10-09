@@ -901,7 +901,7 @@ y `references/actualizacion.md` (apartado «Feedback de una demo»); en prototip
 - Feedback de una demo: cada comentario es un punto que encaja en su PAN; si la PAN está validada (🔒), requiere
   aprobación; prototipos rehace solo las PAN del informe con `--anterior` y `--confirmadas`.
 
-- [ ] **Paso 1:** `comprobar_plugin.py` y los selftest del analista y de prototipos en verde. **Paso 2:** commit.
+- [x] **Paso 1:** `comprobar_plugin.py` y los selftest del analista y de prototipos en verde. **Paso 2:** commit.
 
 ### Tarea 22: Evaluaciones del analista
 

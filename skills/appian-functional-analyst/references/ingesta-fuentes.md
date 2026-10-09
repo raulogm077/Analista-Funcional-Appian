@@ -84,7 +84,16 @@ análisis. Quien lea el análisis debe poder ir de cualquier regla a la frase ex
 - De Visio solo se extraen los textos. Si el flujo importa, pide una exportación
   a PDF o PNG y revísala con Read.
 
-### Diseño funcional o ERS existente (modo fiel)
+### Diseño funcional o ERS existente (modo «DF ya hecho»)
+- **Entra como versión 1.0.** El DF es la base: se pasa al formato del plugin (funcional, técnico y Word) como
+  versión 1.0, con su fila en `decisiones.md`. Cada pieza lleva su ID del plugin (HU-, PAN-…), el estado 🔒 (lo
+  aprobó el cliente) y, en el comentario, la fuente y su ID original: `**HU-03 — Título** <!-- 🔒 FU-01 RF-07 -->`.
+  Si el cliente no lo ha aprobado, dilo en el checkpoint y entra como ✅.
+- **Las reuniones de antes del DF** no se mezclan con él: después de la versión 1.0 pasan una a una, por orden de
+  fecha, por el informe de impacto (`actualizacion.md`). Lo que dicen igual que el DF, con otras palabras, es «SIN
+  IMPACTO»; lo que no coincide es un punto que cambia una pieza 🔒 y requiere aprobación. El DF es posterior: puede
+  que el cliente cambiara de idea, y eso lo decide el analista, no tú.
+- **Las de después**, como siempre.
 - **Extrae, no reinterpretes.** Conserva los IDs y la numeración del documento
   (actividades, requisitos, pantallas), los nombres de campos y los textos
   literales: etiquetas, botones, tooltips, mensajes de error y de confirmación.

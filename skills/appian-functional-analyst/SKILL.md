@@ -78,7 +78,7 @@ si el proyecto ya existe.
 | Modo | Cuándo | Qué sale |
 |---|---|---|
 | **Síntesis** | Reuniones, correos, notas | Funcional y diagramas; el técnico cuando el funcional esté estable o se pida; DF en Word |
-| **Fiel** | Hay un DF o una ERS del cliente | Funcional extraído sin reinterpretar (el ID del cliente va en la trazabilidad) y técnico; sin Word: el documento oficial es el del cliente |
+| **DF ya hecho** | Hay un DF o una ERS del cliente | El DF entra como versión 1.0 en el formato del plugin, sin reinterpretar: cada pieza 🔒 con su ID original en la trazabilidad (`<!-- 🔒 FU-01 RF-07 -->`); funcional, técnico y Word. Las reuniones anteriores al DF pasan por el informe de impacto y lo que no coincide con el DF requiere aprobación; las posteriores, como siempre (`ingesta-fuentes.md`, `actualizacion.md`) |
 | **Evolutivo** | Hay que cambiar o ampliar una aplicación existente (`as-is/`) | Como síntesis, con lo de «Aplicación existente»: el origen de cada historia y la situación de cada objeto |
 | **Refactorización** | Hay una propuesta de refactorización (`refactorizacion/propuesta.md`) | Como evolutivo: el DF dice lo que se conserva, lo que cambia y lo nuevo; el técnico baja cada REF a objetos, con «Sustituye a» y la migración de datos |
 | **Actualización** | Ya hay análisis y llega una reunión, un correo o los comentarios al DF | Informe de impacto y cambios puntuales: `actualizacion.md` |

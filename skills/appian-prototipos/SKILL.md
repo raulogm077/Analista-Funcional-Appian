@@ -37,7 +37,7 @@ El prototipo parte de `<p>/analisis/funcional.md`, el diseño funcional que escr
 | El usuario da… | Antes del prototipo |
 |---|---|
 | Un proyecto con `analisis/funcional.md` | Nada: úsalo |
-| Un DF o una ERS del cliente (.pptx, .docx, .pdf) | Analista en **modo fiel** |
+| Un DF o una ERS del cliente (.pptx, .docx, .pdf) | Analista en **modo «DF ya hecho»** |
 | Transcripciones, correos, notas, diagramas de flujo | Analista en **modo síntesis**, sin el Word salvo que el usuario lo pida |
 | Una aplicación existente que hay que cambiar | Analista en **modo evolutivo** |
 | Un funcional y reuniones, correos o comentarios posteriores | Analista en **modo actualización** |
@@ -117,8 +117,15 @@ Sin Playwright o sin navegador (los scripts salen con código 2 y dicen qué fal
 - **Claude (web / escritorio)**: envía además con SendUserFile el HTML (se abre en cualquier navegador), `app.json`, la trazabilidad y las capturas. **Publícalo como artefacto solo si el usuario lo pide**: puede llevar la marca del cliente y un enlace publicado se puede compartir. Si lo pide, usa la herramienta Artifact (el fichero ya cumple el contrato de página: empieza por `<title>`, recursos embebidos, tema claro deliberado como un Site de Appian; `icon: "layout"`) y, en iteraciones, reconstruye y republica **en la misma ruta** para mantener el enlace.
 - **Vuelta al documento**: cada captura se enlaza en su ficha PAN de `analisis/funcional.md`, debajo del título, con la ruta relativa desde `analisis/` (`![PAN-04 Revisar documentación](../prototipo/capturas/04-revisar.png)`). `capturas/indice.md` da la línea lista para pegar en cada ficha (sale del `ref` de la pantalla). No cuenta como cambio de la ficha: no sube la versión. Después, `comprobar.py <p>` del analista ya no avisa de pantallas sin captura.
   - Las preguntas nuevas del prototipo (`Q-nn`) se devuelven al analista, que las convierte en PC.
-  - El Word lo regenera el analista (`df_docx.js`); así las capturas no se pierden en la siguiente versión. En modo fiel el documento es del cliente: entrega además las capturas con su índice para pegarlas en él.
+  - El Word lo regenera el analista (`df_docx.js`); así las capturas no se pierden en la siguiente versión. Si el cliente sigue con su propio documento (modo «DF ya hecho»), entrega además las capturas con su índice para pegarlas en él.
 - Resume en pocas líneas: pantallas, cobertura de historias, preguntas abiertas pendientes.
+
+### Después de una demo
+Los comentarios de una demo los incorpora antes el analista: informe de impacto («Feedback de una demo» de su `actualizacion.md`), con aprobación para lo que toca una pantalla validada (🔒). Con el informe aplicado:
+1. Guarda la versión que se enseñó: `app-vX.Y.json`.
+2. Rehaz **solo las PAN del informe**, en el script que escribe el spec. Una PAN 🔒 cuyo punto sigue «Pendiente» no se toca.
+3. Valida con `validate.py app.json --anterior app-vX.Y.json --confirmadas …` y las PAN 🔒 que el informe no aprueba (`proyecto.py estado <p>` del analista da las 🔒): es error si cambia una de ellas o un diálogo que abre.
+4. Construye, captura las pantallas que cambian y sigue con «Entregar».
 
 ## Uso del prototipo (explícalo al entregar la primera vez)
 - **Reunión**: navegación por las páginas del site, filtros, búsqueda, fichas, asistentes con validación, diálogos. Barra inferior: **Pantallas** (índice para saltar a cualquier pantalla o diálogo) y **Requisitos** (cobertura, preguntas abiertas, supuestos).

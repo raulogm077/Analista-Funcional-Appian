@@ -134,8 +134,9 @@ Presenta el **Resumen** y **solo los puntos que requieren aprobación**, cada un
 pregunta «¿Aplico el informe con estas decisiones?». Con cualquier confirmación, aplica. Lo que decide el
 analista manda: si al aplicar ves un motivo para no seguirlo, pregúntale.
 
-Sin respuesta o en una sesión desatendida: aplica lo que no requiere aprobación; lo demás entra como ⚠️
-«pendiente de aprobación del analista» y el informe lo dice en su cabecera. Una decisión explícita del
+Sin respuesta o en una sesión desatendida: aplica lo que no requiere aprobación; lo que la requiere no se aplica:
+queda «Pendiente» en el informe, la pieza no cambia y la cabecera del informe lo dice («Pendiente de aprobación
+del analista: puntos 4 y 7»). Una decisión explícita del
 cliente no se le vuelve a preguntar.
 
 ## 6. Aplicar
@@ -183,6 +184,14 @@ python3 <skill>/scripts/indice.py pendientes <p>
 ```
 Las PC abiertas agrupadas por «A quién», cada una con sus opciones y lo que afecta; en cada grupo, primero las
 que afectan a más partes del análisis (los elementos de «Afecta a» y las líneas que la citan fuera del §11).
+
+## Feedback de una demo
+Las notas o la transcripción de una demo del prototipo son una fuente más y pasan por el informe de impacto:
+- cada comentario es un punto que encaja en su PAN (o en la historia o el criterio que toca); lo que solo es del
+  prototipo (un texto de ejemplo, un color) es «SIN IMPACTO» en el análisis y va directo a prototipos;
+- si la PAN está validada (🔒), el punto requiere aprobación;
+- aplicado el informe, prototipos rehace solo las PAN del informe (`appian-prototipos`, «Después de una demo»): las
+  🔒 cuyo punto no se aprobó no se tocan y van en `--confirmadas`.
 
 ## Varias fuentes juntas
 En orden de fecha y en un solo informe si tratan lo mismo (la reunión y el correo que la confirma); si no,
