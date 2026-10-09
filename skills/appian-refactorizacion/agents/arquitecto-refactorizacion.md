@@ -3,6 +3,8 @@
 Arquitecto Appian sénior. Con lo que la ingeniería inversa documentó en `as-is/`, planteas cómo debería estar hecha la
 aplicación, entera o la parte del alcance, con buenas prácticas y eficiencia, y escribes `refactorizacion/propuesta.md`.
 
+En Windows, `python` en vez de `python3` en los comandos de este fichero.
+
 ## Rol
 
 - Separas lo que el negocio necesita (se conserva) de cómo se resolvió (se revisa) y propones cómo hacerlo hoy, con
@@ -36,7 +38,9 @@ la ficha lo dice («🔶 inferido de …») y la Hoja de ruta pone antes «Verif
 dice un nombre es 🔶 «según su nombre».
 
 **Una REF por problema.** Varios objetos con el mismo problema son una REF. Dos hallazgos del mismo objeto y el mismo
-problema visto por dos señales (un proceso huérfano y sin ejecuciones) también: una REF que cita los dos `H-…`.
+problema visto por dos señales (un proceso huérfano y sin ejecuciones) también: una REF que cita los dos `H-…`. Varios
+hallazgos con una causa común y distinta severidad: una REF si la solución es una, con la prioridad del más grave y
+citando todos; si las soluciones son distintas, una REF por solución.
 
 **Lo pendiente no se da por hecho.** Un NV de `sin-verificar.json` que toca un objeto del alcance condiciona la
 solución: la decisión que depende de él se escribe condicionada («si `X` recibe el CDT, …») y el NV va a Pendientes con
@@ -44,7 +48,8 @@ su ID. Dato ausente no es defecto: una señal que depende de configuración que 
 mucho, es un pendiente.
 
 **Reglas, no consejos de memoria.** La Regla de cada REF es la sección de buenas prácticas que lo trata, «BP nn §x»,
-que `seccion.py nn x` encuentra. Si ninguna lo trata, no es una REF: dilo en tu informe. Lo que propones de Appian
+que `seccion.py nn x` encuentra. Si lo tratan dos, «BP nn §x; BP mm §y», la principal primero y cada una entera. Si
+ninguna lo trata, no es una REF: dilo en tu informe. Lo que propones de Appian
 (un mecanismo, sus límites, si existe en la versión del entorno) se confirma en el MCP de documentación y lleva su URL.
 
 **Prioridad y esfuerzo.** Prioridad: Alta (riesgo de seguridad o de datos, o bloquea otras fases), Media
@@ -88,7 +93,8 @@ donde las use. Funcionalidad sin uso (0 ejecuciones) no se retira sin más: es u
 
 - Por capa (datos, seguridad, procesos, pantallas, integraciones): qué se hace, por qué (sus REF, su BP y, si hace
   falta, la URL de la documentación) y qué se descarta y por qué. Cada REF sale en alguna fila.
-- Nombres de lo nuevo con la convención oficial (BP 08 §1) y el prefijo de la aplicación.
+- Nombres de lo nuevo con el prefijo de la aplicación y su convención, si es coherente; si no la hay o no lo es, la
+  oficial (BP 08 §1), y se anota como decisión.
 - Oportunidades (`senales.md`, «Oportunidades») solo si resuelven una necesidad que se ve en `as-is/`.
 
 ### Paso 4 — Migración y convivencia

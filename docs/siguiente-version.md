@@ -58,6 +58,8 @@ apunta aquí y entra en la siguiente versión. Cada línea dice qué, dónde y d
 
 - No hay sección sobre funcionalidades deprecadas: `senales.md` de refactorización las manda a BP 08 §7, la más
   cercana. Tarea 13.
+- No hay sección sobre objetos huérfanos o sin ejecuciones: `senales.md` de refactorización los manda a BP 11 §8,
+  que solo lo dice en una línea (política de retirada). Revisión de F5.
 - No hay sección sobre el «Cancelar» de un formulario de inicio de proceso (el patrón solo está en la documentación de
   Appian): la propuesta de MNT usó BP 10 §2, genérica. Evaluación de la Tarea 15.
 

@@ -26,10 +26,12 @@ Base: [as-is](../as-is/LEEME.md) de {{fecha}}, entorno {{entorno}}, Appian {{ver
 
 <!-- Una ficha por problema, de más prioridad a menos. Una REF por problema: varios objetos con el mismo problema son
      una REF, y dos hallazgos del mismo objeto y el mismo problema visto por dos señales (un proceso huérfano y sin
-     ejecuciones) también, citando los dos.
+     ejecuciones) también, citando los dos. Varios hallazgos con una causa común y distinta severidad: una REF si la
+     solución es una, con la prioridad del más grave y citando todos; si las soluciones son distintas, una por solución.
      Evidencia: el H-… y su certeza si sale de un hallazgo, y el enlace a lo que lo muestra en as-is/. Si el hallazgo es
      inferido o pendiente, la ficha lo dice y la Hoja de ruta pone antes «Verificar H-…».
-     Regla: la sección de appian-best-practices que lo trata, «BP nn §x» (seccion.py nn x la imprime).
+     Regla: la sección de appian-best-practices que lo trata, «BP nn §x» (seccion.py nn x la imprime); si lo tratan
+     dos, «BP nn §x; BP mm §y», la principal primero.
      Efecto: en rendimiento, mantenimiento o riesgo, en una línea.
      Prioridad: Alta (riesgo de seguridad o de datos, o bloquea otras fases) · Media · Baja (higiene).
      Esfuerzo, por persona: S (hasta 2 días) · M (de 3 a 10 días) · L (más de 2 semanas), y por qué. -->

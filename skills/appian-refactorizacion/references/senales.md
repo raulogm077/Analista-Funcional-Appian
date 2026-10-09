@@ -40,7 +40,7 @@ los nodos de un proceso y las respuestas de la plataforma (validación, ejecucio
 | Instancias múltiples (MNI) sobre un nodo que acepta listas | tabla de nodos de la ficha | Una escritura por elemento en vez de una con la lista | BP 03 §5 |
 | Proceso con solo script tasks y puertas | tabla de nodos de la ficha | Un proceso donde basta una regla | BP 03 §8 |
 | Mensaje sin proceso destino | ficha del process model, avisos de validación | Se revisan todas las instancias que escuchan | BP 03 §13 |
-| Proceso programado muy frecuente que casi nunca tiene trabajo | `07`, `datos/procesos.json` (`ejecuciones`) | Instancias y memoria sin trabajo que hacer | BP 03 §13 |
+| Proceso programado muy frecuente que casi nunca tiene trabajo | `07`, `datos/procesos.json` (`ejecuciones`) | Instancias y memoria sin trabajo que hacer | BP 03 §9 |
 | Procesos que repiten la misma secuencia o escriben la misma entidad igual | `08-procesos-bpmn/`, `datos/dependencias.json` | Cada cambio hay que hacerlo varias veces | BP 03 §2 |
 | Sin ejecuciones o huérfano | `datos/procesos.json` (`ejecuciones: 0`), `H-ARQ` de `02`, huérfanos de `09` | Código muerto o abandonado que se mantiene igual | BP 11 §8 |
 | Botón con `a!startProcess` para actuar sobre un registro | expresiones de la ficha de la interfaz, `10` | Acciones fuera del record, sin su seguridad | BP 01 §9.2 |
