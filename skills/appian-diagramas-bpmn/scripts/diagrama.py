@@ -111,6 +111,17 @@ def _pngs(drawio, hojas):
     return [d.with_suffix(".png")] if hojas == 1 else [d.with_name(f"{d.stem}-{k}.png") for k in range(1, hojas + 1)]
 
 
+def _pngs_suyos(drawio):
+    """Los PNG de este diagrama que hay en su carpeta: X.png y X-N.png, salvo los de otro diagrama (X-2.png es de otro
+    si existe X-2.drawio)."""
+    d = pathlib.Path(drawio)
+
+    def ajeno(p):
+        return p.with_suffix(".drawio") != d and p.with_suffix(".drawio").exists()
+    return sorted(p for p in d.parent.iterdir() if not ajeno(p)
+                  and (p.name == f"{d.stem}.png" or re.fullmatch(re.escape(d.stem) + r"-\d+\.png", p.name)))
+
+
 def _png(drawio):
     """Pinta el PNG de cada página del proceso y quita los que sobren de una versión con otros tramos. Sin navegador,
     lanza navegador.SinNavegador sin tocar nada."""
@@ -129,27 +140,28 @@ def _png(drawio):
         escala = max(0.75, min(2.0, ANCHO_PNG_MAX / (ancho + 24)))   # nítido en un documento, sin pesar de más
         trabajos.append((xml, destino, escala))
     navegador.pintar_pngs(trabajos)
-    d = pathlib.Path(drawio)
-
-    def ajeno(p):   # X-2.png es de otro diagrama si existe X-2.drawio
-        return p.with_suffix(".drawio") != d and p.with_suffix(".drawio").exists()
     # los de cuando tenía otros tramos (o ninguno) ya no son de este diagrama
-    viejos = [p for p in d.parent.iterdir() if p not in destinos and not ajeno(p)
-              and (p.name == f"{d.stem}.png" or re.fullmatch(re.escape(d.stem) + r"-\d+\.png", p.name))]
+    viejos = [p for p in _pngs_suyos(drawio) if p not in destinos]
     for p in viejos:
         p.unlink()
         print(f"quitado {p.name}: es de una versión con otros tramos")
     return destinos
 
 
-def _imagen(drawio):
-    """Los PNG, o el aviso «sin PNG» si no hay navegador: True si se han pintado."""
+def _imagen(drawio, cambiado=True):
+    """Los PNG, o el aviso «sin PNG» si no hay navegador: True si se han pintado. Si el .drawio acaba de cambiar y no
+    se puede pintar, se quitan los PNG que tenía: son de la versión anterior y quien los abriera vería otro dibujo."""
     try:
         for p in _png(drawio):
             print(f"   {p}")
         return True
     except navegador.SinNavegador as e:
-        print("aviso: sin PNG: no hay navegador para pintar la imagen. Lo demás está hecho; cuando lo haya, "
+        viejos = _pngs_suyos(drawio) if cambiado else []
+        for p in viejos:
+            p.unlink()
+        quitados = (f"; quitado{'s' * (len(viejos) > 1)} {', '.join(p.name for p in viejos)}: "
+                    f"{'eran' if len(viejos) > 1 else 'era'} de la versión anterior") if viejos else ""
+        print(f"aviso: sin PNG: no hay navegador para pintar la imagen{quitados}. Lo demás está hecho; cuando lo haya, "
               f"«diagrama.py png {pathlib.Path(drawio).name}» la genera.")
         print(str(e), file=sys.stderr)
         return False
@@ -868,7 +880,7 @@ def comparar(a):
 
 def png(a):
     print(f"OK {a.drawio}")
-    return 0 if _imagen(a.drawio) else 2
+    return 0 if _imagen(a.drawio, cambiado=False) else 2
 
 
 def validar(a):

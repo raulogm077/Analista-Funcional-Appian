@@ -107,7 +107,7 @@ python3 <skill>/scripts/diagrama.py bpmn X.drawio [-o X.bpmn]                # B
 Códigos de salida:
 - **0:** todo ha ido bien.
 - **1:** hay un error o hay cambios pendientes de revisar.
-- **2:** falta Playwright o un navegador. Solo falta la imagen: `crear`, `actualizar` y `comparar --aceptar` escriben el `.drawio` y el `.json` igual, con la colocación por capas, y avisan «sin PNG»; `png` la genera cuando haya navegador. `leer`, `comparar`, `bpmn` y `validar` no lo necesitan.
+- **2:** falta Playwright o un navegador. Solo falta la imagen: `crear`, `actualizar` y `comparar --aceptar` escriben el `.drawio` y el `.json` igual, con la colocación por capas, y avisan «sin PNG»; si había PNG, lo quitan, porque ya no es del dibujo. `png` la genera cuando haya navegador. `leer`, `comparar`, `bpmn` y `validar` no lo necesitan.
 
 `validar`, `crear` y `actualizar` avisan si el proceso está incompleto:
 - falta un inicio o un fin;

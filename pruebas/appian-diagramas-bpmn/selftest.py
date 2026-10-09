@@ -519,6 +519,37 @@ def sin_navegador(tmp):
           "sin navegador: mermaid.py sale con 2 y dice por qué")
 
 
+def png_viejo(tmp):
+    """Un diagrama creado con navegador que se cambia sin él: actualizar y comparar --aceptar quitan sus PNG, que ya
+    no son del dibujo (también uno de cuando iba en tramos), y lo dicen; el de otro diagrama no se toca."""
+    sin = entorno(sin_navegador=True)
+    carpeta = tmp / "Carpeta con espacios" / "png viejo"
+    d = carpeta / "semántico.drawio"
+    run("crear", AQUI / "datos" / "semantico.json", "-o", d)
+    (carpeta / "semántico-3.png").write_bytes(b"de cuando iba en tramos")
+    (carpeta / "semántico-9.drawio").write_text("<mxfile/>", encoding="utf-8")
+    (carpeta / "semántico-9.png").write_bytes(b"de otro diagrama")
+    (tmp / "pv1.json").write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-02", "nombre": "Guardar la decisión"}}]},
+                                             ensure_ascii=False), encoding="utf-8")
+    out = run("actualizar", d, tmp / "pv1.json", esperado=2, env=sin)
+    quedan = sorted(p.name for p in carpeta.glob("*.png"))
+    check(quedan == ["semántico-9.png"] and "semántico.png" in out and "semántico-3.png" in out
+          and "versión anterior" in out and "semántico-9.png" not in out,
+          "sin navegador: actualizar quita los PNG del diagrama, que ya no son del dibujo, y lo dice "
+          + ", ".join(quedan) + ("" if "versión anterior" in out else "\n" + out))
+    run("png", d)
+    t = ET.parse(d)
+    el = next(e for e in t.getroot().iter() if e.get("id") == "ACT-02")
+    g = (el if el.tag == "mxCell" else el.find("mxCell")).find("mxGeometry")
+    g.set("y", str(float(g.get("y")) + 10))
+    t.write(d, encoding="utf-8")
+    out = run("comparar", d, "--aceptar", esperado=2, env=sin)
+    quedan = sorted(p.name for p in carpeta.glob("*.png"))
+    check(quedan == ["semántico-9.png"] and "semántico.png" in out and "versión anterior" in out,
+          "sin navegador: comparar --aceptar quita el PNG del diagrama y lo dice " + ", ".join(quedan)
+          + ("" if "versión anterior" in out else "\n" + out))
+
+
 def proceso_grande():
     """Un proceso de una aplicación que ya existe y no cabe en una página (53 pasos): carriles, decisiones con
     condición que cruzan de un tramo a otro, una vuelta atrás, un plazo en el borde de una tarea, un participante
@@ -727,6 +758,7 @@ def main():
         # Tarea 12: sin navegador y procesos que no caben en una página
         sin_navegador(tmp / "sin")
         conexiones(tmp / "conexiones")
+        png_viejo(tmp / "png viejo")
         tramos(tmp / "tramos")
         tramos(tmp / "tramos sin navegador", con_png=False)
         d = tmp / "solicitud.drawio"
