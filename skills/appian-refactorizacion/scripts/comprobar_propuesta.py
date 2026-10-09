@@ -7,19 +7,25 @@ Uso:
 Lee <p>/refactorizacion/propuesta.md y, de <p>/as-is/datos/, inventario.json, dependencias.json, hallazgos.json y
 sin-verificar.json (los dos últimos, si están).
 
+Un campo de una ficha es su línea y las sangradas que la siguen; si se repite, cuenta la unión.
+
 Errores (✗, salida 1):
   - falta uno de los seis apartados (## 1. Alcance … ## 6. Pendientes) o el Diagnóstico no tiene ninguna REF;
   - una REF sin Evidencia, Regla, Efecto, Prioridad o Esfuerzo; una evidencia sin enlace a as-is/; una Regla sin
-    «BP nn §x»; una Prioridad que no es Alta, Media ni Baja, o un Esfuerzo que no es S, M ni L;
+    «BP nn §x», o con una sección sin su documento (son «BP nn §x; BP mm §y»); una Prioridad que no es Alta, Media
+    ni Baja, o un Esfuerzo que no es S, M ni L;
+  - un marcador «{{…}}» de la plantilla sin sustituir;
   - un enlace relativo a un fichero que no existe, o a la extracción en bruto de ingeniería inversa;
   - una «BP nn §x» que no encuentra appian-best-practices/scripts/seccion.py nn x;
   - en el Diagnóstico, un nombre entre comillas invertidas que empieza por el prefijo de la aplicación y no es un
     objeto del inventario, algo que se cita con uno («tambien»), un objeto de fuera de la aplicación ni la aplicación
-    (la Solución sí puede nombrar objetos nuevos);
+    (la Solución sí puede nombrar objetos nuevos; un patrón, con «*» o que acaba en «…» o «_», no se comprueba);
   - una REF del Diagnóstico que no aparece en la Solución, o una REF citada que no está en el Diagnóstico;
   - un H-… que no está en hallazgos.json o un NV-… que no está en sin-verificar.json.
 Avisos (·): una REF que no está en la Hoja de ruta; una REF cuya evidencia cita un hallazgo inferido o pendiente sin
-«Verificar H-…» antes en la Hoja de ruta.
+«Verificar H-…» antes en la Hoja de ruta («Verificar H-X y H-Y» vale para los dos); un hallazgo inferido o pendiente
+marcado ✅; un hallazgo Alta o Media que no está en ninguna REF ni en Pendientes; un NV no resuelto de
+sin-verificar.json que la propuesta no cita.
 Salida: 0 sin errores, 1 con errores, 2 uso o faltan la propuesta o as-is/datos/inventario.json.
 """
 from __future__ import annotations
@@ -47,6 +53,8 @@ REF = re.compile(r"\bREF-\d{2,3}\b")
 HALLAZGO = re.compile(r"\bH-[A-Z]{2,4}-\d{2,3}\b")
 NV = re.compile(r"\bNV-[A-Z]{2,4}-\d{2,3}\b")
 BP = re.compile(r"\bBP\s+(\d{1,2})\s*§\s*(\d(?:[\w.]*\w)?)")
+SECCION_SUELTA = re.compile(r"§\s*(\d(?:[\w.]*\w)?)")
+MARCADOR = re.compile(r"\{\{[^{}]*\}\}")
 NO_NOMBRE = re.compile(r"[^\w ]")   # lo que no admite el nombre de una regla, una interfaz o una constante
 
 
@@ -107,6 +115,12 @@ def nombre_citado(s: str, prefijo: str, conocidos: set) -> str | None:
     return nombre if re.match(patron, nombre) else None
 
 
+def es_patron(s: str) -> bool:
+    """Un patrón de nombres («REX_IF_*», «MNT_ER_…», «REX_»), no un objeto: lleva «*» o acaba en «…» o «_»."""
+    s = s.strip()
+    return "*" in s or s.endswith(("…", "_", "..."))
+
+
 def _json(p: Path) -> dict:
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
 
@@ -123,17 +137,25 @@ def en_buenas_practicas(nn: str, x: str, cache: dict) -> bool | None:
 
 
 def fichas(diagnostico: list[tuple[int, str]]) -> dict[str, dict]:
-    """Las fichas REF-nn del Diagnóstico: {ref: {"linea": n, campo: (n, valor)}}."""
-    out, actual = {}, None
+    """Las fichas REF-nn del Diagnóstico: {ref: {"linea": n, campo: (n, valor)}}. Un campo es su línea y las sangradas
+    que la siguen (sub-viñetas o continuación); si se repite, la unión. n es su primera línea."""
+    out, actual, campo = {}, None, None
     for n, l in diagnostico:
         plana = l.replace("**", "").strip()
         m = FICHA.match(plana)
         if m:
-            actual = out.setdefault(m.group(1), {"linea": n})
+            actual, campo = out.setdefault(m.group(1), {"linea": n}), None
             continue
         c = CAMPO.match(plana)
         if c and actual is not None:
-            actual.setdefault(c.group(1), (n, c.group(2).strip()))
+            campo = c.group(1)
+            previo = actual.get(campo)
+            actual[campo] = (previo[0], f"{previo[1]} {c.group(2).strip()}".strip()) if previo else \
+                            (n, c.group(2).strip())
+        elif campo and plana and l[:1] in (" ", "\t"):
+            actual[campo] = (actual[campo][0], f"{actual[campo][1]} {plana}".strip())
+        else:
+            campo = None
     return out
 
 
@@ -152,7 +174,7 @@ def comprobar(p: Path) -> tuple[list[str], list[str]]:
                 {t for o in objetos for t in o.get("tambien") or []} | {f.get("nombre") for f in fuera}
     hallazgos = ({h.get("id"): h for h in _json(datos / "hallazgos.json").get("hallazgos", [])}
                  if (datos / "hallazgos.json").exists() else None)
-    nvs = ({n.get("id") for n in _json(datos / "sin-verificar.json").get("sinVerificar", [])}
+    nvs = ({n.get("id"): n for n in _json(datos / "sin-verificar.json").get("sinVerificar", [])}
            if (datos / "sin-verificar.json").exists() else None)
 
     numeradas = lineas(propuesta.read_text(encoding="utf-8"))
@@ -183,6 +205,9 @@ def comprobar(p: Path) -> tuple[list[str], list[str]]:
                 e(n, f"{ref}: la evidencia no enlaza nada de as-is/ (la ficha del anexo o el documento que lo muestra)")
         if "Regla" in ficha and ficha["Regla"][1] and not BP.search(ficha["Regla"][1]):
             e(ficha["Regla"][0], f"{ref}: la Regla no cita la sección de buenas prácticas que lo trata («BP nn §x»)")
+        for m in SECCION_SUELTA.finditer(BP.sub("", ficha.get("Regla", (0, ""))[1])):
+            e(ficha["Regla"][0], f"{ref}: «§{m.group(1)}» de la Regla sin su documento; cada sección, entera: "
+                                 "«BP nn §x; BP mm §y»")
         if "Prioridad" in ficha and ficha["Prioridad"][1]:
             valor = re.split(r"[\s,.;:—–-]", ficha["Prioridad"][1], 1)[0]
             if valor not in PRIORIDADES:
@@ -193,6 +218,9 @@ def comprobar(p: Path) -> tuple[list[str], list[str]]:
     # Enlaces, reglas de buenas prácticas e IDs citados, en todo el documento
     cache: dict = {}
     for n, l in numeradas:
+        marcador = MARCADOR.search(l)   # como comprobar_asis.py: «{{» fuera de código, o «{{…}}» también dentro
+        if marcador or "{{" in CODIGO.sub("", l):
+            e(n, f"marcador de la plantilla sin sustituir: {marcador.group(0) if marcador else '«{{»'}")
         for d in destinos(l):
             destino = (propuesta.parent / d).resolve()
             if destino.is_relative_to(asis) and destino.relative_to(asis).parts[:1] == ("extraccion",):
@@ -214,6 +242,11 @@ def comprobar(p: Path) -> tuple[list[str], list[str]]:
         for h in HALLAZGO.findall(l) if hallazgos is not None else []:
             if h not in hallazgos:
                 e(n, f"cita {h}, que no está en as-is/datos/hallazgos.json")
+        for m in re.finditer(rf"({HALLAZGO.pattern})\s*✅", l) if hallazgos is not None else []:
+            certeza = (hallazgos.get(m.group(1)) or {}).get("certeza")
+            if certeza in ("inferido", "pendiente"):
+                avisos.append(f"{m.group(1)} es {certeza} en hallazgos.json y la propuesta lo marca ✅ (línea {n}): "
+                              f"lleva su certeza, {'🔶' if certeza == 'inferido' else '❓'}")
         for nv in NV.findall(l) if nvs is not None else []:
             if nv not in nvs:
                 e(n, f"cita {nv}, que no está en as-is/datos/sin-verificar.json")
@@ -221,12 +254,18 @@ def comprobar(p: Path) -> tuple[list[str], list[str]]:
     # En el Diagnóstico, solo objetos que existen (la Solución puede proponer nuevos)
     for n, l in diagnostico if prefijo else []:
         for m in CODIGO.finditer(l):
+            if es_patron(m.group(1)):
+                continue
             nombre = nombre_citado(m.group(1), prefijo, conocidos)
             if nombre and nombre not in conocidos:
                 e(n, f"Diagnóstico: `{nombre}` no es un objeto del inventario (as-is/datos/inventario.json) ni se cita "
                      "con uno; el Diagnóstico solo afirma lo que está en as-is/")
 
     # Cada REF tiene su alternativa en la Solución y su fase en la Hoja de ruta
+    verificados: dict[str, int] = {}   # H-… → dónde empieza su primer «Verificar H-X y H-Y: …» en la Hoja de ruta
+    for m in re.finditer(r"\bVerificar\b([^:|\n]*)", hoja):
+        for h in HALLAZGO.findall(m.group(1)):
+            verificados.setdefault(h, m.start())
     for ref, ficha in refs.items():
         patron = rf"\b{re.escape(ref)}\b"
         if not re.search(patron, solucion):
@@ -238,9 +277,22 @@ def comprobar(p: Path) -> tuple[list[str], list[str]]:
         for h in HALLAZGO.findall(evidencia):
             certeza = ((hallazgos or {}).get(h) or {}).get("certeza")
             if certeza in ("inferido", "pendiente"):
-                verificar = re.search(rf"Verificar\s+\[?{re.escape(h)}\b", hoja)
-                if not verificar or (en_hoja and verificar.start() > en_hoja.start()):
+                if h not in verificados or (en_hoja and verificados[h] > en_hoja.start()):
                     avisos.append(f"{ref} se apoya en {h} ({certeza}) y la Hoja de ruta no pone antes «Verificar {h}»")
+
+    # Lo no verificado no desaparece sin aviso
+    texto = "\n".join(l for _, l in numeradas)
+    en_refs_o_pendientes = "\n".join(l for _, l in diagnostico + secciones.get(normal(APARTADOS[5]), []))
+    for h, hallazgo in (hallazgos or {}).items():
+        if hallazgo.get("severidad") in ("Alta", "Media") and not re.search(rf"\b{re.escape(h)}\b",
+                                                                           en_refs_o_pendientes):
+            avisos.append(f"{h} ({hallazgo['severidad']}) no está en ninguna REF ni en Pendientes: todo hallazgo Alta "
+                          "o Media del alcance acaba en una REF o, si no se puede decidir sin una respuesta, en "
+                          "Pendientes")
+    for nv, dato in (nvs or {}).items():
+        if dato.get("estado") != "resuelto" and not re.search(rf"\b{re.escape(nv)}\b", texto):
+            avisos.append(f"{nv} de as-is/datos/sin-verificar.json no se cita en la propuesta: si toca el alcance, "
+                          "condiciona la solución y va a Pendientes con la REF que condiciona")
     return [f"propuesta.md:{n}: {msg}" if n else f"propuesta.md: {msg}"
             for n, msg in sorted(errores, key=lambda x: x[0])], avisos
 

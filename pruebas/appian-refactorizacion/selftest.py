@@ -128,6 +128,64 @@ def main():
            errores == [] and len(avisos) == 1 and "REF-03" in avisos[0] and "Hoja de ruta" in avisos[0],
            errores + avisos)
 
+        def da_aviso(nombre, cambios, *esperado, datos=()):
+            """Una copia con `cambios` en la propuesta y `datos` [(fichero de as-is/datos, viejo, nuevo)] no da
+            errores y da un solo aviso, que contiene todo lo `esperado`."""
+            p, prop = copia()
+            for viejo, nuevo in cambios:
+                editar(prop, viejo, nuevo)
+            for fichero, viejo, nuevo in datos:
+                editar(p / "as-is" / "datos" / fichero, viejo, nuevo)
+            errores, avisos = cp.comprobar(p)
+            ok(nombre, errores == [] and len(avisos) == 1 and all(x in avisos[0] for x in esperado), errores + avisos)
+
+        def da_nada(nombre, cambios, datos=()):
+            p, prop = copia()
+            for viejo, nuevo in cambios:
+                editar(prop, viejo, nuevo)
+            for fichero, viejo, nuevo in datos:
+                editar(p / "as-is" / "datos" / fichero, viejo, nuevo)
+            errores, avisos = cp.comprobar(p)
+            ok(nombre, errores == [] and avisos == [], errores + avisos)
+
+        sin_verificar = ("| 0 | Verificar H-DAT-02: confirmar", "| 0 | Confirmar")
+        # Un campo es su línea y las sangradas que la siguen; si se repite, la unión
+        da_aviso("hallazgo inferido en la línea de continuación de la Evidencia, sin «Verificar»: aviso",
+                 [("- Evidencia: H-DAT-02 🔶", "- Evidencia: [`mcp:dataStore/REX Datos#entities`]"
+                   "(../as-is/anexo/dataStore/REX_Datos.md) y\n  H-DAT-02 🔶"), sin_verificar],
+                 "REF-02", "Verificar H-DAT-02")
+        da_aviso("hallazgo inferido en una segunda «- Evidencia:», sin «Verificar»: aviso",
+                 [("- Evidencia: H-DAT-02 🔶", "- Evidencia: [as-is](../as-is/LEEME.md)\n- Evidencia: H-DAT-02 🔶"),
+                  sin_verificar], "REF-02", "Verificar H-DAT-02")
+        da_nada("Evidencia con sub-viñetas no da errores", [("- Evidencia: H-DAT-02 🔶", "- Evidencia:\n  - H-DAT-02 🔶")])
+
+        # Lo no verificado no desaparece sin aviso
+        da_aviso("NV de sin-verificar.json que la propuesta no cita: aviso",
+                 [("(NV-ARQ-01).", "."), ("Fase 0 y NV-ARQ-01", "Fase 0"),
+                  ("| NV-ARQ-01 | ¿Qué hace `AVI_EnviarAviso` y qué recibe?; hace falta acceso de lectura a la "
+                   "aplicación de avisos o un export de ella | Equipo de la aplicación de avisos | REF-01 |\n", "")],
+                 "NV-ARQ-01", "sin-verificar.json")
+        da_aviso("hallazgo inferido marcado ✅: aviso", [("H-DAT-02 🔶 inferido de", "H-DAT-02 ✅ se ve en")],
+                 "H-DAT-02", "inferido", "✅")
+        da_aviso("hallazgo Media que no está en ninguna REF ni en Pendientes: aviso",
+                 [("- Evidencia: H-UI-01 ✅ el botón", "- Evidencia: el botón")], "H-UI-01", "Media", "Pendientes")
+
+        # Patrones de nombre, marcadores, dos BP en la Regla y «Verificar H-X y H-Y»
+        da_nada("patrones de nombre en el Diagnóstico (`REX_IF_*`, `REX_ER_…`, `REX_`) no dan errores",
+                [("con `a!queryEntity`", "con `a!queryEntity` (`REX_IF_*`)"),
+                 ("no llegan al data fabric.", "no llegan al data fabric ni a las `REX_ER_…` ni a nada `REX_`.")])
+        da_error("marcador {{…}} sin sustituir", [("seis semanas", "{{plazo}}")], "{{plazo}}")
+        da_nada("Regla con dos BP válidas no da errores", [("- Regla: BP 01 §11", "- Regla: BP 01 §11; BP 03 §4")])
+        da_error("Regla con dos BP y la segunda inexistente", [("- Regla: BP 01 §11", "- Regla: BP 01 §11; BP 01 §99")],
+                 "BP 01 §99", "appian-best-practices")
+        da_error("Regla con una segunda sección sin su documento («BP 01 §11 y §99»)",
+                 [("- Regla: BP 01 §11", "- Regla: BP 01 §11 y §99")], "REF-02", "§99", "BP nn §x; BP mm §y")
+        da_nada("«Verificar H-X y H-Y» vale para los dos",
+                [("H-UI-01 ✅ el botón", "H-UI-01 🔶 inferido: el botón"),
+                 ("| 0 | Verificar H-DAT-02: confirmar", "| 0 | Verificar H-DAT-02 y H-UI-01: confirmar")],
+                datos=[("hallazgos.json", '"severidad": "Media", "certeza": "verificado",\n   "objetos": ["REX_IF_Ficha',
+                        '"severidad": "Media", "certeza": "inferido",\n   "objetos": ["REX_IF_Ficha')])
+
         # 5. Lo que no es error
         p, prop = copia()
         editar(prop, "y el botón se quita |", "y el botón se quita; la regla nueva `REX_ER_PuedeDarDeBaja` dice quién |")
