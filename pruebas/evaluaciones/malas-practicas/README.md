@@ -21,8 +21,11 @@ resultados van a `docs/evaluaciones.md`; el proyecto de prueba, a `$PROYECTOS_PR
    python3 <repo>/skills/appian-refactorizacion/scripts/comprobar_propuesta.py <proyecto>
    ```
 
-Una mala práctica cuenta si una REF cita en su evidencia alguno de sus objetos, su regla es del documento de buenas
-prácticas esperado y la REF sale en Solución. Pendientes tiene que citar los NV de los objetos de fuera de la
+Cada mala práctica lleva en `bp_aceptadas` las secciones de buenas prácticas que la tratan, empezando por la de `bp`:
+las que, leídas, dan el problema y su alternativa, no las que solo tocan el tema. Se fijan con la descripción y las
+secciones (`seccion.py nn x`), nunca mirando una propuesta. Una mala práctica cuenta si una REF cita en su evidencia
+alguno de sus objetos, tiene en su Regla una de sus `bp_aceptadas`, la sección exacta («§1» no vale por «§1.3» si la
+lista no lo dice), y sale en Solución. Pendientes tiene que citar los NV de los objetos de fuera de la
 aplicación (en MNT, el de las reglas `CMN_`, que usan las malas prácticas 2, 3 y 4). `puntuar.py` sale 0 con el 90 % o
 más y esa cita.
 

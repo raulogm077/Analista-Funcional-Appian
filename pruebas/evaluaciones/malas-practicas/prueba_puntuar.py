@@ -14,16 +14,29 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 AQUI = Path(__file__).resolve().parent
 PUNTUAR = AQUI / "puntuar.py"
-MALAS = json.loads((AQUI.parent / "aplicacion-ficticia" / "malas-practicas.json").read_text(encoding="utf-8"))
+FICTICIA = AQUI.parent / "aplicacion-ficticia"
+MALAS = json.loads((FICTICIA / "malas-practicas.json").read_text(encoding="utf-8"))
+OCULTAS = json.loads((FICTICIA / "ocultas" / "malas-practicas.json").read_text(encoding="utf-8"))
 
 
-def propuesta(quitar_solucion=(), regla_otra=(), sin_nv=False, solo_titulo=()) -> str:
+def seccion_equivocada(mp: dict) -> str:
+    """Una «§n» del documento de `bp` que no está en sus bp_aceptadas."""
+    doc = mp["bp"].split(" ")[1]
+    return next(str(n) for n in range(1, 99) if f"BP {doc} §{n}" not in mp["bp_aceptadas"])
+
+
+def propuesta(quitar_solucion=(), regla_otra=(), sin_nv=False, solo_titulo=(), seccion_otra=(),
+              otra_aceptada=()) -> str:
     fichas, filas = [], []
     for k, mp in enumerate(MALAS, 1):
         ref = f"REF-{k:02d}"
         doc, sec = mp["bp"].split(" ")[1], mp["bp"].split("§")[1]
         if mp["id"] in regla_otra:
             doc = "99" if doc != "99" else "98"
+        if mp["id"] in seccion_otra:
+            sec = seccion_equivocada(mp)
+        if mp["id"] in otra_aceptada:   # la última de sus bp_aceptadas, no la de `bp`
+            doc, sec = mp["bp_aceptadas"][-1].split(" ")[1], mp["bp_aceptadas"][-1].split("§")[1]
         objetos = " y ".join(f"`{o}`" for o in mp["objetos"])
         if mp["id"] in solo_titulo:   # el objeto en el título, no en la evidencia
             fichas.append(f"**{ref} — Problema de {objetos}**\n\n- Evidencia: H-XXX-01 ✅ lo muestra el anexo\n"
@@ -66,6 +79,10 @@ def corre(texto: str, carpeta: Path, *extra) -> tuple[int, str]:
 
 def main() -> int:
     fallos = 0
+    sin_lista = [mp["id"] for mp in MALAS + OCULTAS if (mp.get("bp_aceptadas") or [None])[0] != mp["bp"]]
+    fallos += bool(sin_lista)
+    print(("OK   " if not sin_lista else "FALLO ") + "cada mala práctica lleva bp_aceptadas, empezando por su bp"
+          + (f": {', '.join(sin_lista)}" if sin_lista else ""))
     with tempfile.TemporaryDirectory(prefix="puntuar con espacios ") as t:
         carpeta = Path(t)
         as_is(carpeta)
@@ -74,6 +91,9 @@ def main() -> int:
             ("una sin Solución: 10/11 basta", propuesta(quitar_solucion=["MP-05"]), 0, "10/11"),
             ("dos sin Solución: 9/11 no basta", propuesta(quitar_solucion=["MP-05", "MP-06"]), 1, "9/11"),
             ("regla de otro documento no cuenta", propuesta(regla_otra=["MP-01", "MP-02"]), 1, "9/11"),
+            ("sección equivocada del documento correcto no cuenta",
+             propuesta(seccion_otra=["MP-01", "MP-04"]), 1, "9/11"),
+            ("otra sección de bp_aceptadas cuenta", propuesta(otra_aceptada=["MP-01", "MP-03", "MP-04"]), 0, "11/11"),
             ("objeto solo en el título no cuenta", propuesta(solo_titulo=["MP-03", "MP-04"]), 1, "9/11"),
             ("sin el NV de CMN no pasa", propuesta(sin_nv=True), 1, "NV-ARQ-01"),
         ]

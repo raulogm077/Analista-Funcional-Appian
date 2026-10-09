@@ -5,12 +5,13 @@ Uso:
   python3 puntuar.py <propuesta.md> <as-is> [--ocultas]
 
 Las malas prácticas están en ../aplicacion-ficticia/malas-practicas.json (con --ocultas, en
-../aplicacion-ficticia/ocultas/malas-practicas.json), cada una con sus objetos y su «BP nn §x».
+../aplicacion-ficticia/ocultas/malas-practicas.json), cada una con sus objetos, su «BP nn §x» y `bp_aceptadas`: las
+secciones de buenas prácticas que tratan ese problema, empezando por la de `bp`.
 
 Una mala práctica cuenta si hay una REF del Diagnóstico que:
   - cita en su Evidencia alguno de sus objetos, por su nombre exacto (vale también con «_» en lugar de los espacios,
     como en las rutas del anexo);
-  - tiene en su Regla una «BP nn §x» del documento esperado (el mismo nn; la sección puede ser otra);
+  - tiene en su Regla una de sus `bp_aceptadas`, la sección exacta («§1» no vale por «§1.3» si la lista no lo dice);
   - sale en el apartado Solución.
 Además, Pendientes tiene que citar los NV de <as-is>/datos/sin-verificar.json que tratan objetos de fuera de la
 aplicación (`fueraDeLaAplicacion` de dependencias.json, con su campo `nv`): en MNT, el de las reglas CMN.
@@ -58,18 +59,22 @@ def nombra(texto: str, objeto: str) -> bool:
     return any(re.search(rf"(?<![\w]){re.escape(f)}(?![\w])", texto) for f in formas)
 
 
-def documentos_bp(regla: str) -> set[str]:
-    return {m.group(1).zfill(2) for m in re.finditer(r"BP\s*(\d+)\s*§", regla)}
+def secciones_bp(texto: str) -> set[str]:
+    """Las «BP nn §x» de un texto, normalizadas («BP 5 §2» → «BP 05 §2»)."""
+    return {f"BP {m.group(1).zfill(2)} §{m.group(2)}"
+            for m in re.finditer(r"\bBP\s*(\d{1,2})\s*§\s*(\d(?:[\w.]*\w)?)", texto)}
 
 
 def cuenta(mp: dict, refs: dict[str, str], solucion: str) -> tuple[bool, str]:
-    esperado = re.match(r"BP\s*(\d+)", mp["bp"]).group(1).zfill(2)
+    aceptadas = secciones_bp(" ".join(mp["bp_aceptadas"]))
     candidatas = [r for r, f in refs.items() if any(nombra(campo(f, "Evidencia"), o) for o in mp["objetos"])]
     if not candidatas:
         return False, "ninguna REF cita sus objetos en la evidencia"
-    con_regla = [r for r in candidatas if esperado in documentos_bp(campo(refs[r], "Regla"))]
+    con_regla = [r for r in candidatas if aceptadas & secciones_bp(campo(refs[r], "Regla"))]
     if not con_regla:
-        return False, f"{', '.join(candidatas)} cita sus objetos, pero con otra regla (se espera BP {esperado})"
+        citadas = sorted(set().union(*(secciones_bp(campo(refs[r], "Regla")) for r in candidatas)))
+        return False, (f"{', '.join(candidatas)} cita sus objetos, pero con {', '.join(citadas) or 'otra regla'}; "
+                       f"valen {', '.join(mp['bp_aceptadas'])}")
     en_solucion = [r for r in con_regla if re.search(rf"(?<![\w-]){re.escape(r)}(?!\d)", solucion)]
     if not en_solucion:
         return False, f"{', '.join(con_regla)} no sale en Solución"
