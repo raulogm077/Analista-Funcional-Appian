@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Prueba de puntuar.py y de las dos baterías de peticiones: `python3 prueba_puntuar.py`. Sale 0 si todo va bien.
+"""Prueba de puntuar.py y de las tres baterías de peticiones: `python3 prueba_puntuar.py`. Sale 0 si todo va bien.
 
 Las respuestas se hacen a partir de lo esperado: todas bien, una mal, con el prefijo del plugin, una de menos, dos
-cambiadas de orden. No imprime las peticiones ocultas ni las descripciones."""
+cambiadas de orden. Las de las fronteras no llevan las palabras que delatan la skill (DELATAN). No imprime las
+peticiones ocultas ni las de las fronteras, ni las descripciones."""
 from __future__ import annotations
 
 import json
@@ -19,8 +20,13 @@ PUNTUAR = AQUI / "puntuar.py"
 REPO = AQUI.parents[2]
 VISIBLES = json.loads((REPO / "pruebas" / "enrutado.json").read_text(encoding="utf-8"))
 OCULTAS = json.loads((AQUI / "ocultas" / "enrutado.json").read_text(encoding="utf-8"))
+FRONTERAS = json.loads((AQUI / "fronteras" / "enrutado.json").read_text(encoding="utf-8"))
 SKILLS = sorted(md.parent.name for md in (REPO / "skills").glob("*/SKILL.md"))
 MINIMO_POR_SKILL = 4
+# Lo que resuelve una frontera sin pensar («ya tenemos el as-is», «en draw.io», «las capturas para el DF»): no va en
+# las peticiones de fronteras/.
+DELATAN = re.compile(r"\bas[- ]is\b|ingenier[ií]a\s+inversa|draw\.?io|bpmn|prototip|maquet|mockup|\bDF\b|\bhistorias\b"
+                     r"|refactori|buenas\s+pr[aá]cticas|best\s+practices?|\bcapturas?\b", re.I)
 fallos: list[str] = []
 
 
@@ -48,15 +54,20 @@ def otra_skill(skill: str) -> str:
 def baterias() -> None:
     espera(len(SKILLS) == 6, f"hay {len(SKILLS)} skills en skills/, no seis")
     todas = VISIBLES + OCULTAS
-    for nombre, lista in (("enrutado.json", VISIBLES), ("ocultas/enrutado.json", OCULTAS)):
+    for nombre, lista in (("enrutado.json", VISIBLES), ("ocultas/enrutado.json", OCULTAS),
+                          ("fronteras/enrutado.json", FRONTERAS)):
         malas = [k for k, p in enumerate(lista, 1) if set(p) != {"peticion", "skill"} or p["skill"] not in SKILLS]
         espera(not malas, f"{nombre}: entradas sin {{peticion, skill}} o con una skill que no existe: {malas}")
     cuenta = Counter(p["skill"] for p in todas)
     pocas = {s: cuenta[s] for s in SKILLS if cuenta[s] < MINIMO_POR_SKILL}
     espera(not pocas, f"menos de {MINIMO_POR_SKILL} peticiones de: {pocas}")
-    repetidas = [p for p, n in Counter(p["peticion"].strip() for p in todas).items() if n > 1]
+    repetidas = [p for p, n in Counter(p["peticion"].strip() for p in todas + FRONTERAS).items() if n > 1]
     espera(not repetidas, f"{len(repetidas)} peticiones repetidas")
     espera(3 * len(OCULTAS) >= len(todas) - 3, f"{len(OCULTAS)} ocultas de {len(todas)}: tendría que ser un tercio")
+    espera(len(FRONTERAS) >= 8, f"fronteras/enrutado.json tiene {len(FRONTERAS)} peticiones; al menos 8")
+    delatoras = {k: sorted({m.group(0) for m in DELATAN.finditer(p["peticion"])}) for k, p in enumerate(FRONTERAS, 1)}
+    delatoras = {k: v for k, v in delatoras.items() if v}
+    espera(not delatoras, f"fronteras/enrutado.json: peticiones con palabras que delatan la skill: {delatoras}")
 
 
 def puntuacion(carpeta: Path) -> None:
@@ -105,9 +116,23 @@ def puntuacion(carpeta: Path) -> None:
     c, out = puntua(carpeta, "ocultas mal.json", ocultas_mal, "--ocultas")
     espera(c == 1 and f"Total: {m - 1}/{m}" in out, "una oculta mal no sale 1")
 
+    nf = len(FRONTERAS)
+    c, out = puntua(carpeta, "fronteras bien.json", FRONTERAS, "--fronteras")
+    espera(c == 0 and f"Total: {nf}/{nf} (fronteras)" in out, "las de las fronteras bien no salen 0")
+    fronteras_mal = [dict(p) for p in FRONTERAS]
+    fronteras_mal[0]["skill"] = otra_skill(fronteras_mal[0]["skill"])
+    c, out = puntua(carpeta, "fronteras mal.json", fronteras_mal, "--fronteras")
+    espera(c == 1 and f"Total: {nf - 1}/{nf} (fronteras)" in out and re.search(r"(?m)^FALLO\s+1 esperada", out),
+           "una de las fronteras mal no sale 1 con su FALLO")
+    c, out = puntua(carpeta, "visibles con fronteras.json", VISIBLES, "--fronteras")
+    espera(c == 2, "las respuestas de las visibles puntuadas con --fronteras no salen 2")
+    c, out = puntua(carpeta, "ocultas y fronteras.json", FRONTERAS, "--ocultas", "--fronteras")
+    espera(c == 2 and "--fronteras" in out, "--ocultas y --fronteras a la vez no salen 2")
+
 
 def enunciado() -> None:
-    for args, lista, nombre in (((), VISIBLES, "visibles"), (("--ocultas",), OCULTAS, "ocultas")):
+    for args, lista, nombre in (((), VISIBLES, "visibles"), (("--ocultas",), OCULTAS, "ocultas"),
+                                (("--fronteras",), FRONTERAS, "fronteras")):
         c, out = corre("--enunciado", *args)
         espera(c == 0, f"--enunciado con las {nombre} no sale 0")
         lineas = dict(re.findall(r"(?m)^- `(appian-[\w-]+)`: (.*)$", out))
@@ -138,7 +163,7 @@ def main() -> int:
     for f in fallos:
         print("FALLO: " + f)
     print(f"prueba_puntuar.py: {'OK' if not fallos else f'{len(fallos)} fallos'} ({len(VISIBLES)} visibles, "
-          f"{len(OCULTAS)} ocultas)")
+          f"{len(OCULTAS)} ocultas, {len(FRONTERAS)} de fronteras)")
     return 1 if fallos else 0
 
 
