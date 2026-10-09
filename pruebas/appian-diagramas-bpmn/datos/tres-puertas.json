@@ -1,0 +1,43 @@
+{
+  "proceso": "Tres avisos",
+  "carriles": ["Aplicación"],
+  "pasos": [
+    {"id": "EV-01", "tipo": "inicio", "carril": "Aplicación", "nombre": "Inicio"},
+    {"id": "GW-01", "tipo": "exclusiva", "carril": "Aplicación", "nombre": "¿Qué decisión?"},
+    {"id": "ACT-01", "tipo": "script", "carril": "Aplicación", "nombre": "Preparar Validado"},
+    {"id": "GW-02", "tipo": "exclusiva", "carril": "Aplicación", "nombre": "¿Avisar de Validado?"},
+    {"id": "EV-03", "tipo": "mensaje", "carril": "Aplicación", "nombre": "Aviso de Validado"},
+    {"id": "ACT-04", "tipo": "script", "carril": "Aplicación", "nombre": "Cerrar Validado"},
+    {"id": "ACT-02", "tipo": "script", "carril": "Aplicación", "nombre": "Preparar Cancelado"},
+    {"id": "GW-03", "tipo": "exclusiva", "carril": "Aplicación", "nombre": "¿Avisar de Cancelado?"},
+    {"id": "EV-04", "tipo": "mensaje", "carril": "Aplicación", "nombre": "Aviso de Cancelado"},
+    {"id": "ACT-05", "tipo": "script", "carril": "Aplicación", "nombre": "Cerrar Cancelado"},
+    {"id": "ACT-03", "tipo": "script", "carril": "Aplicación", "nombre": "Preparar Rechazado"},
+    {"id": "GW-04", "tipo": "exclusiva", "carril": "Aplicación", "nombre": "¿Avisar de Rechazado?"},
+    {"id": "EV-05", "tipo": "mensaje", "carril": "Aplicación", "nombre": "Aviso de Rechazado"},
+    {"id": "ACT-06", "tipo": "script", "carril": "Aplicación", "nombre": "Cerrar Rechazado"},
+    {"id": "EV-02", "tipo": "fin", "carril": "Aplicación", "nombre": "Fin"}
+  ],
+  "flujos": [
+    {"de": "EV-01", "a": "GW-01"},
+    {"de": "GW-01", "a": "ACT-01", "etiqueta": "Validado"},
+    {"de": "ACT-01", "a": "GW-02"},
+    {"de": "GW-02", "a": "EV-03", "etiqueta": "Avisar"},
+    {"de": "GW-02", "a": "ACT-04", "etiqueta": "En otro caso", "defecto": true},
+    {"de": "EV-03", "a": "ACT-04"},
+    {"de": "ACT-04", "a": "EV-02"},
+    {"de": "GW-01", "a": "ACT-02", "etiqueta": "Cancelado"},
+    {"de": "ACT-02", "a": "GW-03"},
+    {"de": "GW-03", "a": "EV-04", "etiqueta": "Avisar"},
+    {"de": "GW-03", "a": "ACT-05", "etiqueta": "En otro caso", "defecto": true},
+    {"de": "EV-04", "a": "ACT-05"},
+    {"de": "ACT-05", "a": "EV-02"},
+    {"de": "GW-01", "a": "ACT-03", "etiqueta": "Rechazado", "defecto": true},
+    {"de": "ACT-03", "a": "GW-04"},
+    {"de": "GW-04", "a": "EV-05", "etiqueta": "Avisar"},
+    {"de": "GW-04", "a": "ACT-06", "etiqueta": "En otro caso", "defecto": true},
+    {"de": "EV-05", "a": "ACT-06"},
+    {"de": "ACT-06", "a": "EV-02"}
+  ],
+  "tramos": true
+}

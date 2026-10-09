@@ -22,7 +22,8 @@ Fuente de esta guía: [Appian Developer MCP Servers](https://docs.appian.com/sui
   - Mac/Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
   - Windows (PowerShell): `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
 - El Dev MCP tiene **soporte de comunidad**: Appian Support no atiende incidencias sobre él.
-- Los scripts de la skill son Python, salvo `render_diagrams.sh`, que necesita bash: en Windows, Git Bash, el mismo que usa Claude Code. En Windows, si `python3` no existe, usa `python`.
+- Los scripts de la skill son Python (`detect_secrets.sh` es un atajo opcional en bash de `detect_secrets.py`). En Windows, si `python3` no existe, usa `python`.
+- Para las imágenes de los diagramas, Playwright y un navegador (los usa la skill de diagramas del plugin). Sin ellos, la documentación sale sin imágenes: los procesos llevan su `.drawio` y su `.bpmn`, y los demás diagramas, el bloque mermaid.
 
 ### Instalación
 

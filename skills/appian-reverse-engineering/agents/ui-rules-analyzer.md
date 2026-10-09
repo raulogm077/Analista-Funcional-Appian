@@ -105,7 +105,7 @@ Lo que no pudiste verificar de pantallas y reglas, y lo que de ellas pregunta la
 
 - `diagrams/navegacion.mmd`: pantallas y procesos a los que llevan las acciones; `flowchart TD`, ≤ 30 nodos, etiquetas de arista solo si aportan.
 - `diagrams/estados-<entidad>.mmd`, si hay ciclo de vida.
-- Valida cada uno con `python3 <skill>/scripts/validate_mermaid.py <fichero>.mmd` y renderízalo con `bash <skill>/scripts/render_diagrams.sh --mermaid <fichero>.mmd <fichero>.svg` si hay `mmdc`. En el documento, imagen + «Fuente: …» si existe el `.svg`; si no, el bloque ` ```mermaid ` (`presentation-rules.md`, Regla 2).
+- Píntalo con `python3 <skill>/../appian-diagramas-bpmn/scripts/mermaid.py <fichero>.mmd --svg` (`.png` y `.svg`) y corrige lo que diga. En el documento, imagen + «Fuente: …» si existe el `.svg`; si no (sin navegador), el bloque ` ```mermaid ` (`presentation-rules.md`, Regla 2).
 
 ### Paso 7 — Comprobación final
 
@@ -120,7 +120,7 @@ Lo que no pudiste verificar de pantallas y reglas, y lo que de ellas pregunta la
 
 - `<salida>/10-pantallas.md`
 - `<salida>/11-reglas-negocio.md`
-- `<salida>/diagrams/navegacion.mmd` y, si hay ciclo de vida, `diagrams/estados-<entidad>.mmd` (con su `.svg` si hay `mmdc`)
+- `<salida>/diagrams/navegacion.mmd` y, si hay ciclo de vida, `diagrams/estados-<entidad>.mmd`, con su `.png` y su `.svg` si había navegador
 - `<trabajo>/hallazgos/ui-rules-analyzer.json` y `<trabajo>/sin-verificar/ui-rules-analyzer.json`
 - `<trabajo>/docs_cache/ui-rules-analyzer.json`, si consultas la documentación (por el Docs MCP o por la web)
 

@@ -66,4 +66,4 @@ Detéctalos y regístralos en el documento propietario. Un riesgo que depende de
 Los entregables son Markdown plano que se abre en visores variados (GitHub, VS Code, herramientas internas):
 
 - **Sin bloques HTML crudos** (`<script>`, `<iframe>`, `<style>`).
-- **Diagramas Mermaid** saneados con `python3 <skill>/scripts/validate_mermaid.py` antes de escribirse (`mermaid-rules.md`).
+- **Diagramas Mermaid** pintados con `mermaid.py` de la skill de diagramas antes de enlazarlos, sin errores (`mermaid-rules.md`).

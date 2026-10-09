@@ -1,28 +1,40 @@
 """Modelo de un proceso BPMN y su fichero .drawio.
 
 El proceso se intercambia en JSON (ver SKILL.md):
-  {"proceso": str, "carriles": [str], "pasos": [{id, tipo, carril, nombre, posicion?}],
-   "flujos": [{de, a, etiqueta?, discontinuo?, defecto?}],
+  {"proceso": str, "carriles": [str], "pasos": [{id, tipo, carril, nombre, posicion?, nodo?, temporizador?, proceso_llamado?}],
+   "flujos": [{de, a, etiqueta?, discontinuo?, defecto?, condicion?}],
    "externos": [str]?,                    participantes externos (caja negra): flujos de mensaje con ellos
    "notas": [{paso, texto}]?}             notas unidas a un paso
 
+nodo, temporizador, proceso_llamado y condicion son datos de Appian (DATOS_PASO, DATOS_FLUJO): en el .drawio van como
+atributos de un <object> que envuelve la celda («Editar datos» en draw.io) y no se ven en el dibujo.
+
+Un proceso con "tramos": true que no cabe en una página se dibuja en varias, una por tramo (id «tramo-N»). Cada flujo
+que va de un tramo a otro se corta en dos con un par de eventos de enlace (ENL-nn-S, el que sale, y ENL-nn-E, el que
+entra): son del dibujo, no del proceso, y al leer se vuelven a unir en el flujo original.
+
 Este módulo sabe:
-- escribir un .drawio nuevo a partir del proceso y una geometría ya calculada;
-- leer cualquier .drawio (también comprimido o editado a mano) y devolver el proceso;
+- escribir un .drawio nuevo a partir del proceso y una geometría ya calculada (una página o una por tramo);
+- leer cualquier .drawio (también comprimido, editado a mano o en tramos) y devolver el proceso;
 - validar un proceso y comparar dos.
 Solo usa la biblioteca estándar.
 """
-import base64, copy, html, json, re, urllib.parse, zlib
+import base64, bisect, copy, html, json, re, urllib.parse, zlib
 import xml.etree.ElementTree as ET
 
 # ---------------------------------------------------------------- tipos y estilos
 INICIOS = {"inicio", "inicio_temporizador", "inicio_mensaje"}
-EVENTOS = INICIOS | {"fin", "temporizador", "mensaje", "intermedio"}
+EVENTOS = INICIOS | {"fin", "temporizador", "mensaje", "intermedio", "error"}
 PUERTAS = {"exclusiva", "paralela", "inclusiva"}
 TAREAS = {"tarea", "sistema", "script", "manual", "subproceso", "llamada"}
 TIPOS = EVENTOS | PUERTAS | TAREAS
+ENLACES = {"enlace_salida", "enlace_entrada"}   # los cortes entre tramos: del dibujo, no del proceso
+FORMAS_EVENTO = EVENTOS | ENLACES
 PREFIJO = {**{t: "EV" for t in EVENTOS}, **{t: "GW" for t in PUERTAS}, **{t: "ACT" for t in TAREAS}}
-TAM = {**{t: (40, 40) for t in EVENTOS}, **{t: (50, 50) for t in PUERTAS}, **{t: (120, 80) for t in TAREAS}}
+TAM = {**{t: (40, 40) for t in FORMAS_EVENTO}, **{t: (50, 50) for t in PUERTAS}, **{t: (120, 80) for t in TAREAS}}
+DATOS_PASO = ("nodo", "temporizador", "proceso_llamado")   # datos de Appian de un paso
+DATOS_FLUJO = ("condicion",)                               # y de un flujo
+NOMBRE_DATO = {"nodo": "nodo", "temporizador": "temporizador", "proceso_llamado": "proceso llamado", "condicion": "condición"}
 
 AZUL, VERDE, ROJO, AMBAR = "#1d659c", "#117c00", "#b2002c", "#b86e00"
 _BASE = "points=[];html=1;fontSize=12;fontColor=#222222;"
@@ -42,6 +54,7 @@ ESTILO = {
     "temporizador": _EV + f"outline=catching;symbol=timer;strokeColor={AZUL};",
     "mensaje": _EV + f"outline=throwing;symbol=message;strokeColor={AZUL};",
     "intermedio": _EV + f"outline=catching;symbol=general;strokeColor={AZUL};",
+    "error": _EV + f"outline=boundInt;symbol=error;strokeColor={ROJO};",
     "exclusiva": _GW + "gwType=exclusive;",
     "paralela": _GW + "gwType=parallel;",
     "inclusiva": _GW + "gwType=inclusive;",
@@ -51,7 +64,12 @@ ESTILO = {
     "manual": _TK + "taskMarker=manual;fillColor=#ffffff;",
     "subproceso": _TK + "taskMarker=abstract;isLoopSub=1;fillColor=#ffffff;",
     "llamada": _TK + "bpmnShapeType=call;taskMarker=abstract;isLoopSub=1;fillColor=#ffffff;",
+    "enlace_salida": _EV + f"outline=throwing;symbol=link;strokeColor={AZUL};enlace=1;",
+    "enlace_entrada": _EV + f"outline=catching;symbol=link;strokeColor={AZUL};enlace=1;",
 }
+ENLACE = re.compile(r"^ENL-(\d+)-([SE])$")
+ID_TRAMO = re.compile(r"^tramo-(\d+)$")
+NOMBRE_TRAMO = re.compile(r"^(.*?) \(tramo \d+ de \d+(?:: .*)?\)$")   # «<proceso> (tramo N de M: <primero> – <último>)»
 ESTILO_CARRIL = ("swimlane;horizontal=0;startSize=40;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;fillColor=#f4f5f7;"
                  "swimlaneFillColor=#ffffff;strokeColor=#b8bec5;")
 ESTILO_FLUJO = ("edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#4a5563;endArrow=block;"
@@ -61,7 +79,20 @@ ESTILO_MENSAJE = ("edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;strokeColor=
                   "startArrow=oval;startFill=0;startSize=7;endArrow=block;endFill=0;endSize=9;labelBackgroundColor=#ffffff;")
 ESTILO_EXTERNO = ("rounded=0;whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fontColor=#222222;fillColor=#f4f5f7;"
                   "strokeColor=#b8bec5;externo=1;")
-ESTILO_NOTA = ("shape=partialRectangle;right=0;top=1;bottom=1;left=1;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;"
+
+
+def _forma_propia(xml):
+    """Forma propia de draw.io (shape=stencil(…)): el XML de la forma comprimido como lo guarda draw.io."""
+    co = zlib.compressobj(9, zlib.DEFLATED, -15)
+    datos = co.compress(urllib.parse.quote(xml, safe="").encode("utf-8")) + co.flush()
+    return "stencil(" + base64.b64encode(datos).decode() + ")"
+
+
+# la nota es una anotación BPMN: un corchete con dos tramos cortos arriba y abajo, abierto a la derecha
+CORCHETE = _forma_propia('<shape w="100" h="100" aspect="variable" strokewidth="inherit"><foreground><path>'
+                         '<move x="10" y="0"/><line x="0" y="0"/><line x="0" y="100"/><line x="10" y="100"/>'
+                         '</path><stroke/></foreground></shape>')
+ESTILO_NOTA = (f"shape={CORCHETE};whiteSpace=wrap;html=1;align=left;verticalAlign=middle;"
                "spacingLeft=8;fontSize=11;fontColor=#222222;fillColor=none;strokeColor=#4a5563;nota=1;")
 ESTILO_ASOCIACION = "html=1;dashed=1;dashPattern=1 3;endArrow=none;strokeColor=#4a5563;asociacion=1;"
 CABECERA = 40            # ancho de la cabecera de cada carril
@@ -96,6 +127,11 @@ def es_mensaje(f, proc):
     return f["de"] in ext or f["a"] in ext
 
 
+def datos(o, claves):
+    """Los datos de Appian de un paso o un flujo que tienen valor, como texto: {clave: valor}."""
+    return {k: str(o[k]) for k in claves if o.get(k) not in (None, "")}
+
+
 # ---------------------------------------------------------------- proceso (JSON)
 def cargar_json(ruta):
     with open(ruta, encoding="utf-8") as f:
@@ -109,10 +145,12 @@ def guardar_json(proc, ruta):
 
 
 def estructura(proc):
-    """El proceso sin posiciones, ordenado de forma estable, para comparar."""
-    pasos = sorted(({k: p[k] for k in ("id", "tipo", "carril", "nombre")} for p in proc["pasos"]), key=lambda p: p["id"])
+    """El proceso sin posiciones, ordenado de forma estable, para comparar. Un dato de Appian vacío cuenta como ausente."""
+    pasos = sorted(({**{k: p[k] for k in ("id", "tipo", "carril", "nombre")}, **{k: "" for k in DATOS_PASO},
+                     **datos(p, DATOS_PASO)} for p in proc["pasos"]), key=lambda p: p["id"])
     flujos = sorted(({"de": f["de"], "a": f["a"], "etiqueta": f.get("etiqueta", "") or "",
-                      "discontinuo": bool(f.get("discontinuo")), "defecto": bool(f.get("defecto"))} for f in proc["flujos"]),
+                      "discontinuo": bool(f.get("discontinuo")), "defecto": bool(f.get("defecto")),
+                      **{k: "" for k in DATOS_FLUJO}, **datos(f, DATOS_FLUJO)} for f in proc["flujos"]),
                     key=lambda f: (f["de"], f["a"], f["etiqueta"]))
     notas = sorted(({"paso": n["paso"], "texto": n.get("texto", "") or ""} for n in proc.get("notas") or []),
                    key=lambda n: (n["paso"], n["texto"]))
@@ -125,8 +163,9 @@ def aplicar_cambios(base, cambios):
 
     Cambios admitidos (uno por elemento de la lista):
       {"poner": paso}                 añade el paso (id, tipo, carril, nombre) o cambia los campos que traiga
+                                      (un dato de Appian vacío, "", lo quita)
       {"quitar": "ACT-04"}            quita el paso y sus flujos
-      {"flujo": {de, a, etiqueta?, discontinuo?}}   añade el flujo o cambia su etiqueta
+      {"flujo": {de, a, etiqueta?, discontinuo?, defecto?, condicion?}}   añade el flujo o cambia lo que traiga
       {"quitar_flujo": {de, a}}
       {"carril": "Nombre"}            añade un carril al final, para poner pasos en él en la misma lista
       {"renombrar_carril": ["Viejo", "Nuevo"]}
@@ -300,15 +339,81 @@ def validar(proc):
         elif defecto and (p["tipo"] == "paralela" or len(sal.get(pid, [])) < 2):
             av.append(f"{pid}: un flujo por defecto solo tiene sentido en una puerta exclusiva o inclusiva, "
                       "o en una tarea con varias salidas")
+        if p["tipo"] == "error" and not any(f.get("discontinuo") and pasos[f["de"]]["tipo"] in TAREAS for f in ent.get(pid, [])):
+            av.append(f"{pid}: un evento de error va en el borde de la tarea en la que salta; únelo a ella con un flujo discontinuo")
+        if p.get("proceso_llamado") and p["tipo"] != "llamada":
+            av.append(f"{pid}: proceso_llamado solo se usa en un paso de tipo llamada")
+        if p.get("temporizador") and p["tipo"] not in ("temporizador", "inicio_temporizador"):
+            av.append(f"{pid}: temporizador solo se usa en un paso de tipo temporizador o inicio_temporizador")
     n = sum(1 for p in pasos.values() if p["tipo"] in TAREAS)
-    if n > 20:
-        av.append(f"{n} tareas en un diagrama: pártelo en subprocesos para que se lea bien")
+    if n > 20 and not proc.get("tramos"):
+        av.append(f"{n} tareas en un diagrama: pártelo en subprocesos para que se lea bien (si es un proceso que ya "
+                  "existe y no se pueden inventar subprocesos, «\"tramos\": true» lo dibuja en tramos de una página)")
     return err, av
+
+
+# ---------------------------------------------------------------- tramos
+def partir(proc, grupos):
+    """Un proceso por tramo (`grupos`: los ids de los pasos de cada uno, en orden), para dibujar cada uno en su página.
+    Cada flujo que va de un tramo a otro se corta en dos con un par de eventos de enlace: el que sale, en el carril de
+    su origen y con el número del tramo al que va, se lleva la etiqueta, la condición y lo demás del flujo; el que
+    entra va en el carril de su destino. Cada tramo lleva sus carriles, sus participantes externos y sus notas."""
+    tramo = {pid: k for k, grupo in enumerate(grupos, 1) for pid in grupo}
+    pasos = {p["id"]: p for p in proc["pasos"]}
+    externos = set(proc.get("externos") or [])
+    out = [{"proceso": proc.get("proceso", ""), "pasos": [], "flujos": [], "externos": [], "notas": []} for _ in grupos]
+    for p in proc["pasos"]:
+        out[tramo[p["id"]] - 1]["pasos"].append(dict(p))
+    enlaces = 0
+    for f in proc["flujos"]:
+        if f["de"] in externos or f["a"] in externos:      # flujo de mensaje: en el tramo de su paso
+            externo, paso = (f["de"], f["a"]) if f["de"] in externos else (f["a"], f["de"])
+            t = out[tramo[paso] - 1]
+            t["flujos"].append(dict(f))
+            if externo not in t["externos"]:
+                t["externos"].append(externo)
+            continue
+        de, a = tramo[f["de"]], tramo[f["a"]]
+        if de == a:
+            out[de - 1]["flujos"].append(dict(f))
+            continue
+        enlaces += 1
+        sale, entra = f"ENL-{enlaces:02d}-S", f"ENL-{enlaces:02d}-E"
+        destino = pasos[f["a"]].get("nombre")
+        out[de - 1]["pasos"].append({"id": sale, "tipo": "enlace_salida", "carril": pasos[f["de"]]["carril"],
+                                     "nombre": f"Sigue en el tramo {a}" + (f": {destino}" if destino else "")})
+        out[de - 1]["flujos"].append({**f, "a": sale})
+        out[a - 1]["pasos"].append({"id": entra, "tipo": "enlace_entrada", "carril": pasos[f["a"]]["carril"],
+                                    "nombre": f"Viene del tramo {de}"})
+        out[a - 1]["flujos"].append({"de": entra, "a": f["a"]})
+    for n in proc.get("notas") or []:
+        out[tramo[n["paso"]] - 1]["notas"].append(dict(n))
+    for t in out:
+        usados = {p["carril"] for p in t["pasos"]}
+        t["carriles"] = [c for c in proc["carriles"] if c in usados]
+        for k in ("externos", "notas"):
+            if not t[k]:
+                del t[k]
+    return out
 
 
 # ---------------------------------------------------------------- escribir .drawio
 def _xml_attr(s):
     return html.escape(str(s), quote=True)
+
+
+def _xml_dato(s):
+    """Atributo que conserva los saltos de línea y los tabuladores (una expresión de Appian puede llevarlos)."""
+    return _xml_attr(s).replace("\n", "&#10;").replace("\r", "&#13;").replace("\t", "&#9;")
+
+
+def _celda(cid, valor, atributos, geometria, datos_appian=None):
+    """XML de una celda. Con datos de Appian, envuelta en un <object> que los lleva como atributos: así los guarda
+    draw.io con «Editar datos»."""
+    if datos_appian:
+        extra = "".join(f' {k}="{_xml_dato(v)}"' for k, v in datos_appian.items())
+        return f'<object id="{_xml_attr(cid)}" label="{_xml_attr(valor)}"{extra}><mxCell {atributos}>{geometria}</mxCell></object>'
+    return f'<mxCell id="{_xml_attr(cid)}" value="{_xml_attr(valor)}" {atributos}>{geometria}</mxCell>'
 
 
 def entrada_mensaje(f, centro, ancho, externos):
@@ -331,15 +436,67 @@ def entrada_asociacion(lado, nota=None, paso=None):
             else f"exitX={sx:.3f};exitY=0;exitDx=0;exitDy=0;entryX={ex:.3f};entryY=1;entryDx=0;entryDy=0;")
 
 
-def escribir_drawio(proc, geo, ruta):
-    """Escribe un .drawio nuevo. `geo` = {"carriles": {nombre: (y, h)}, "ancho": w,
+def _camino(a, ta, pts, b, tb):
+    """El trazado de un flujo de borde a borde: del borde del origen (por el lado hacia su primer punto), por sus
+    puntos, al borde del destino. `a` y `b`, centros; `ta` y `tb`, (ancho, alto)."""
+    def borde(c, tam, hacia):
+        (cx, cy), (w, h) = c, tam
+        if abs(hacia[1] - cy) <= 1:
+            return (cx + (w / 2 if hacia[0] > cx else -w / 2), cy)
+        if abs(hacia[0] - cx) <= 1:
+            return (cx, cy + (h / 2 if hacia[1] > cy else -h / 2))
+        return c
+    camino = [tuple(a)] + [tuple(p) for p in pts] + [tuple(b)]
+    camino[0], camino[-1] = borde(a, ta, camino[1]), borde(b, tb, camino[-2])
+    return camino
+
+
+def _sitio_etiqueta(camino, otros=()):
+    """Dónde va la etiqueta de un flujo con codos: en el centro del trozo más largo de sus tramos horizontales que no
+    cruza ni comparte ningún otro flujo de `otros` (sus caminos). Así no pisa las formas que rodea ni parece de otro
+    flujo. Es la posición relativa de draw.io, de -1 (origen) a 1 (destino), contada de borde a borde; None si el flujo
+    no tiene tramos horizontales."""
+    largos = [abs(q[0] - p[0]) + abs(q[1] - p[1]) for p, q in zip(camino, camino[1:])]
+    horizontales = [k for k, (p, q) in enumerate(zip(camino, camino[1:])) if abs(p[1] - q[1]) <= 1 and largos[k]]
+    if not horizontales or not sum(largos):
+        return None
+    mejor = None                                   # (largo del trozo libre, distancia de su centro al origen)
+    for k in horizontales:
+        p, q = camino[k], camino[k + 1]
+        lo, hi = sorted((p[0], q[0]))
+        ocupado = []
+        for otro in otros:
+            for r, t in zip(otro, otro[1:]):
+                if abs(r[0] - t[0]) <= 1 and min(r[1], t[1]) - 1 <= p[1] <= max(r[1], t[1]) + 1:
+                    ocupado.append((r[0], r[0]))                                  # lo cruza
+                elif abs(r[1] - t[1]) <= 1 and abs(r[1] - p[1]) <= 1:
+                    ocupado.append(tuple(sorted((r[0], t[0]))))                   # va por la misma recta
+        libres, desde = [], lo
+        for a, b in sorted(ocupado):
+            if a > desde:
+                libres.append((desde, min(a, hi)))
+            desde = max(desde, b)
+        libres.append((desde, hi))
+        for a, b in libres:
+            if b > a and (mejor is None or b - a > mejor[0]):
+                mejor = (b - a, sum(largos[:k]) + abs((a + b) / 2 - p[0]))
+    if mejor is None:                              # todo ocupado: el centro del tramo horizontal más largo
+        k = max(horizontales, key=lambda k: largos[k])
+        mejor = (0, sum(largos[:k]) + largos[k] / 2)
+    return 2 * mejor[1] / sum(largos) - 1
+
+
+def _celdas(proc, geo, pre=""):
+    """Las celdas de una página, sin las dos de la raíz. `geo` = {"carriles": {nombre: (y, h)}, "ancho": w,
     "pasos": {id: (cx, cy)} (centro absoluto), "flujos": [[(x, y), ...] por flujo en el orden de proc],
-    y si los hay: "etiquetas": {id: "arriba"|"abajo"}, "externos": {nombre: (y, h)}, "anotaciones": [(x, y, w, h)]}."""
-    celdas = ['<mxCell id="0"/>', '<mxCell id="1" parent="0"/>']
+    y si los hay: "etiquetas": {id: "arriba"|"abajo"}, "externos": {nombre: (y, h)}, "anotaciones": [(x, y, w, h)]}.
+    `pre` va delante de los ids que no son de un paso (carriles, externos, notas y flujos), para que no se repitan
+    entre las páginas de un proceso en tramos."""
+    celdas = []
     lane_id = {}
     for i, c in enumerate(proc["carriles"], 1):
         y, h = geo["carriles"][c]
-        lane_id[c] = f"carril-{i}"
+        lane_id[c] = f"{pre}carril-{i}"
         celdas.append(f'<mxCell id="{lane_id[c]}" value="{_xml_attr(c)}" style="{ESTILO_CARRIL}" vertex="1" parent="1">'
                       f'<mxGeometry y="{y:.0f}" width="{geo["ancho"]:.0f}" height="{h:.0f}" as="geometry"/></mxCell>')
     for p in proc["pasos"]:
@@ -347,13 +504,13 @@ def escribir_drawio(proc, geo, ruta):
         cx, cy = geo["pasos"][p["id"]]
         ly = geo["carriles"][p["carril"]][0]
         estilo = con_lado(ESTILO[p["tipo"]], geo.get("etiquetas", {}).get(p["id"]))
-        celdas.append(f'<mxCell id="{_xml_attr(p["id"])}" value="{_xml_attr(p.get("nombre", ""))}" style="{estilo}" '
-                      f'vertex="1" parent="{lane_id[p["carril"]]}"><mxGeometry x="{cx - w / 2:.0f}" y="{cy - ly - h / 2:.0f}" '
-                      f'width="{w}" height="{h}" as="geometry"/></mxCell>')
+        celdas.append(_celda(p["id"], p.get("nombre", ""), f'style="{estilo}" vertex="1" parent="{lane_id[p["carril"]]}"',
+                             f'<mxGeometry x="{cx - w / 2:.0f}" y="{cy - ly - h / 2:.0f}" width="{w}" height="{h}" '
+                             'as="geometry"/>', datos(p, DATOS_PASO)))
     ext_id = {}
     for i, e in enumerate(proc.get("externos") or [], 1):
         y, h = geo["externos"][e][:2]
-        ext_id[e] = f"externo-{i}"
+        ext_id[e] = f"{pre}externo-{i}"
         celdas.append(f'<mxCell id="{ext_id[e]}" value="{_xml_attr(e)}" style="{ESTILO_EXTERNO}" vertex="1" parent="1">'
                       f'<mxGeometry y="{y:.0f}" width="{geo["ancho"]:.0f}" height="{h:.0f}" as="geometry"/></mxCell>')
     centro = {pid: geo["pasos"][pid][:2] for pid in geo["pasos"]}
@@ -364,13 +521,19 @@ def escribir_drawio(proc, geo, ruta):
         lado = "arriba" if y + h / 2 < centro[n["paso"]][1] else "abajo"
         pw = TAM[next(p["tipo"] for p in proc["pasos"] if p["id"] == n["paso"])][0]
         asoc = entrada_asociacion(lado, (x, w), (centro[n["paso"]][0] - pw / 2, pw))
-        celdas.append(f'<mxCell id="NOTA-{i:02d}" value="{_xml_attr(n.get("texto", ""))}" style="{ESTILO_NOTA}" vertex="1" '
-                      f'parent="{lane_id[carril]}"><mxGeometry x="{x:.0f}" y="{y - ly:.0f}" width="{w:.0f}" height="{h:.0f}" '
-                      f'as="geometry"/></mxCell>')
-        celdas.append(f'<mxCell id="A{i:02d}" value="" style="{ESTILO_ASOCIACION}{asoc}" edge="1" parent="1" '
-                      f'source="NOTA-{i:02d}" target="{_xml_attr(n["paso"])}"><mxGeometry relative="1" as="geometry"/></mxCell>')
+        celdas.append(f'<mxCell id="{pre}NOTA-{i:02d}" value="{_xml_attr(n.get("texto", ""))}" style="{ESTILO_NOTA}" '
+                      f'vertex="1" parent="{lane_id[carril]}"><mxGeometry x="{x:.0f}" y="{y - ly:.0f}" width="{w:.0f}" '
+                      f'height="{h:.0f}" as="geometry"/></mxCell>')
+        celdas.append(f'<mxCell id="{pre}A{i:02d}" value="" style="{ESTILO_ASOCIACION}{asoc}" edge="1" parent="1" '
+                      f'source="{pre}NOTA-{i:02d}" target="{_xml_attr(n["paso"])}"><mxGeometry relative="1" as="geometry"/>'
+                      '</mxCell>')
     fondo = max((y + h for y, h in (v[:2] for v in geo["carriles"].values())), default=0)
     tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    caminos = {}          # los de la colocación por capas, para que la etiqueta de uno no quede donde pasa otro
+    if geo.get("etiqueta_en_horizontal"):
+        caminos = {i: _camino(centro[f["de"]], TAM[tipo[f["de"]]], geo["flujos"][i - 1], centro[f["a"]], TAM[tipo[f["a"]]])
+                   for i, f in enumerate(proc["flujos"], 1)
+                   if f["de"] in centro and f["a"] in centro and f["de"] != f["a"] and i - 1 < len(geo["flujos"])}
     for i, f in enumerate(proc["flujos"], 1):
         st = estilo_flujo(f, ext_id)
         pos = ""
@@ -386,16 +549,53 @@ def escribir_drawio(proc, geo, ruta):
                 pos = f' x="{2 * min(max(frac, 0), 1) - 1:.3f}"'
         mensaje = f["de"] in ext_id or f["a"] in ext_id
         pts = geo["flujos"][i - 1] if i - 1 < len(geo.get("flujos", [])) and not mensaje else []
+        if f.get("etiqueta") and i in caminos:
+            sitio = _sitio_etiqueta(caminos[i], [c for j, c in caminos.items() if j != i])
+            pos = f' x="{sitio:.3f}"' if sitio is not None else pos
         arr = ('<Array as="points">' + "".join(f'<mxPoint x="{x:.0f}" y="{y:.0f}"/>' for x, y in pts) + "</Array>") if pts else ""
         de, a = ext_id.get(f["de"], f["de"]), ext_id.get(f["a"], f["a"])
-        celdas.append(f'<mxCell id="F{i:02d}" value="{_xml_attr(f.get("etiqueta", ""))}" style="{st}" edge="1" parent="1" '
-                      f'source="{_xml_attr(de)}" target="{_xml_attr(a)}"><mxGeometry{pos} relative="1" as="geometry">{arr}'
-                      f'</mxGeometry></mxCell>')
-    xml = ('<mxfile host="appian-analisis-funcional"><diagram id="proceso" name="' + _xml_attr(proc.get("proceso") or "Proceso") +
-           '"><mxGraphModel grid="1" gridSize="10" page="0" math="0"><root>' + "".join(celdas) +
-           "</root></mxGraphModel></diagram></mxfile>")
+        celdas.append(_celda(f"{pre}F{i:02d}", f.get("etiqueta", ""),
+                             f'style="{st}" edge="1" parent="1" source="{_xml_attr(de)}" target="{_xml_attr(a)}"',
+                             f'<mxGeometry{pos} relative="1" as="geometry">{arr}</mxGeometry>', datos(f, DATOS_FLUJO)))
+    return celdas
+
+
+def rango(pasos, x):
+    """(primero, último, cuántos) de los pasos de un tramo: el de más a la izquierda y el de más a la derecha según `x`
+    ({id: x}; a igual x, el primero y el último de la lista), con su nombre o, si no tiene, su código."""
+    orden = sorted(pasos, key=lambda p: x[p["id"]])
+    nombre = lambda p: p.get("nombre") or p["id"]   # noqa: E731
+    return nombre(orden[0]), nombre(orden[-1]), len(orden)
+
+
+def xml_drawio(paginas):
+    """El .drawio de un proceso: `paginas` = [(proceso, geometría)], una o una por tramo («tramo-N», con el nombre
+    «<proceso> (tramo N de M: <primer paso> – <último paso>)»)."""
+    nombre = lambda p: p.get("proceso") or "Proceso"   # noqa: E731
+    hojas = []
+    for k, (proc, geo) in enumerate(paginas, 1):
+        uno = len(paginas) == 1
+        titulo = nombre(proc)
+        if not uno:
+            primero, ultimo, _ = rango([p for p in proc["pasos"] if p["tipo"] not in ENLACES],
+                                       {pid: c[0] for pid, c in geo["pasos"].items()})
+            titulo += f" (tramo {k} de {len(paginas)}: {primero} – {ultimo})"
+        hojas.append(f'<diagram id="{"proceso" if uno else f"tramo-{k}"}" name="' + _xml_attr(titulo)
+                     + '"><mxGraphModel grid="1" gridSize="10" page="0" math="0"><root><mxCell id="0"/>'
+                     '<mxCell id="1" parent="0"/>' + "".join(_celdas(proc, geo, "" if uno else f"t{k}-"))
+                     + "</root></mxGraphModel></diagram>")
+    return '<mxfile host="appian-analisis-funcional">' + "".join(hojas) + "</mxfile>"
+
+
+def escribir_paginas(paginas, ruta):
+    """Escribe un .drawio nuevo con una página por elemento de `paginas` ([(proceso, geometría)])."""
     with open(ruta, "w", encoding="utf-8") as fh:
-        fh.write(xml)
+        fh.write(xml_drawio(paginas))
+
+
+def escribir_drawio(proc, geo, ruta):
+    """Escribe un .drawio nuevo de una página (la geometría, como en `_celdas`)."""
+    escribir_paginas([(proc, geo)], ruta)
 
 
 # ---------------------------------------------------------------- leer .drawio
@@ -417,35 +617,80 @@ def _texto(v):
 
 
 class Fichero:
-    """Un .drawio abierto: el árbol XML (primera página) y acceso a sus celdas."""
+    """Un .drawio abierto: el árbol XML y sus páginas del proceso (la primera o, si está en tramos, las «tramo-N»),
+    con acceso a sus celdas. Las demás páginas se conservan y no se leen."""
 
-    def __init__(self, ruta):
+    def __init__(self, ruta, arbol=None):
         self.ruta = ruta
-        self.tree = ET.parse(ruta)
-        top = self.tree.getroot()
-        diagramas = [top] if top.tag == "diagram" else top.findall("diagram")
-        self.paginas = len(diagramas) if diagramas else 1
-        if top.tag == "mxGraphModel":
-            self.diagram, self.model = None, top
-        else:
-            if not diagramas:
-                raise ErrorProceso(f"{ruta}: no parece un fichero de draw.io")
-            self.diagram = diagramas[0]
-            self.model = self.diagram.find("mxGraphModel")
-            if self.model is None:  # contenido comprimido (deflate + base64 + URL)
-                raw = zlib.decompress(base64.b64decode((self.diagram.text or "").strip()), -15)
-                self.model = ET.fromstring(urllib.parse.unquote(raw.decode("utf-8")))
-                self.diagram.text = None
-                self.diagram.append(self.model)
-        self.root = self.model.find("root")
+        self.tree = arbol if arbol is not None else ET.parse(ruta)
+        self._cargar()
 
-    # celdas: el elemento que lleva el id (mxCell, o UserObject/object con un mxCell dentro)
-    def celdas(self):
-        for el in list(self.root):
+    def _cargar(self):
+        top = self.tree.getroot()
+        if top.tag == "mxGraphModel":
+            self.diagramas, self.hojas = [], [(None, top)]
+        else:
+            self.diagramas = [top] if top.tag == "diagram" else top.findall("diagram")
+            if not self.diagramas:
+                raise ErrorProceso(f"{self.ruta}: no parece un fichero de draw.io")
+            tramos = sorted((d for d in self.diagramas if ID_TRAMO.match(d.get("id") or "")),
+                            key=lambda d: int(ID_TRAMO.match(d.get("id")).group(1)))
+            self.hojas = [(d, self._modelo(d)) for d in (tramos or self.diagramas[:1])]
+        self.paginas = max(len(self.diagramas), 1)
+        self.diagram, self.model = self.hojas[0]
+        self.root = self.model.find("root")
+        self.en_tramos = len(self.hojas) > 1
+
+    @staticmethod
+    def _modelo(diagrama):
+        modelo = diagrama.find("mxGraphModel")
+        if modelo is None:  # contenido comprimido (deflate + base64 + URL)
+            raw = zlib.decompress(base64.b64decode((diagrama.text or "").strip()), -15)
+            modelo = ET.fromstring(urllib.parse.unquote(raw.decode("utf-8")))
+            diagrama.text = None
+            diagrama.append(modelo)
+        return modelo
+
+    @staticmethod
+    def _celdas_de(raiz):
+        for el in list(raiz):
             cell = el if el.tag == "mxCell" else el.find("mxCell")
             if cell is None:
                 continue
             yield el, cell
+
+    # celdas: el elemento que lleva el id (mxCell, o UserObject/object con un mxCell dentro), de todas las páginas
+    def celdas(self):
+        for _, modelo in self.hojas:
+            yield from self._celdas_de(modelo.find("root"))
+
+    def poner_paginas(self, nuevas):
+        """Sustituye las páginas del proceso por `nuevas` (elementos <diagram>), en su sitio; las demás se conservan."""
+        top = self.tree.getroot()
+        if top.tag != "mxfile":   # un mxGraphModel o un diagram sueltos: pasa a ser un mxfile
+            self.tree = ET.ElementTree(ET.Element("mxfile", {"host": "appian-analisis-funcional"}))
+            top, viejas, sitio = self.tree.getroot(), [], 0
+        else:
+            viejas = [d for d, _ in self.hojas]
+            sitio = list(top).index(viejas[0])
+        for d in viejas:
+            top.remove(d)
+        for k, d in enumerate(nuevas):
+            top.insert(sitio + k, d)
+        self._cargar()
+
+    def hojas_png(self):
+        """[(xml del modelo, ancho)] de cada página del proceso, para su PNG. El ancho, hasta donde llega lo que
+        cuelga de la capa de la página (carriles, participantes externos y lo suelto)."""
+        out = []
+        for _, modelo in self.hojas:
+            celdas = {el.get("id"): cell for el, cell in self._celdas_de(modelo.find("root"))}
+            raiz = {i for i, c in celdas.items() if not c.get("parent")}
+            capa = {i for i, c in celdas.items() if c.get("parent") in raiz}
+            anchos = [float(g.get("x", 0)) + float(g.get("width", 0)) for c in celdas.values()
+                      if c.get("vertex") == "1" and c.get("parent") in capa and (g := c.find("mxGeometry")) is not None]
+            out.append((ET.tostring(modelo, encoding="unicode"), max(anchos or [1])))
+        return out
 
     def por_id(self, cid):
         for el, cell in self.celdas():
@@ -461,6 +706,34 @@ class Fichero:
             el.set("label", texto)
         else:
             cell.set("value", texto)
+
+    def datos_celda(self, el, cell, claves):
+        """Datos de Appian de una celda: los atributos del <object> que la envuelve."""
+        return {k: el.get(k) for k in claves if el is not cell and el.get(k)}
+
+    def poner_datos(self, el, cell, valores, claves):
+        """Deja en la celda exactamente esos datos de Appian (sin valor, se quitan). Si hace falta, la envuelve en un
+        <object> en el mismo sitio, como draw.io con «Editar datos». Devuelve el elemento que lleva el id."""
+        valores = {k: str(v) for k, v in valores.items() if k in claves and v not in (None, "")}
+        if el is cell:
+            if not valores:
+                return el
+            i = list(self.root).index(cell)
+            el = ET.Element("object", {"id": cell.attrib.pop("id"), "label": cell.attrib.pop("value", "")})
+            self.root.remove(cell)
+            el.append(cell)
+            self.root.insert(i, el)
+        for k in claves:
+            if k in valores:
+                el.set(k, valores[k])
+            elif k in el.attrib:
+                del el.attrib[k]
+        return el
+
+    def nueva_celda(self, cid, valor, atributos, claves=(), valores=None):
+        """Añade una celda al final: un mxCell o, si lleva datos de Appian, un <object> con su mxCell. Devuelve (el, cell)."""
+        cell = ET.SubElement(self.root, "mxCell", {"id": cid, "value": valor, **atributos})
+        return self.poner_datos(cell, cell, valores or {}, claves), cell
 
     def guardar(self, ruta=None):
         ET.indent(self.tree, space="")  # sin sangría: draw.io lo lee igual y el diff queda limpio
@@ -483,10 +756,24 @@ class Fichero:
 
     # ----------------------------------------------------------- interpretación
     def leer(self):
-        """Devuelve (proceso, geometria, avisos). Geometría absoluta de carriles, pasos y flujos."""
+        """Devuelve (proceso, geometria, avisos). Geometría absoluta de carriles, pasos y flujos; si el proceso está en
+        tramos, la de todas sus páginas una al lado de otra y con los enlaces deshechos (como si fuera una)."""
+        partes = [self._leer_hoja(d, modelo.find("root")) for d, modelo in self.hojas]
+        if len(partes) > 1 or any(p["tipo"] in ENLACES for p in partes[0][0]["pasos"]):
+            proc, geo, avisos = _unir(partes)
+        else:
+            proc, geo, avisos = partes[0]
+        otras = self.paginas - len(self.hojas)
+        if otras:
+            avisos.append(f"el fichero tiene {otras} página{'s' * (otras > 1)} que no {'son' if otras > 1 else 'es'} "
+                          f"del proceso; no se lee{'n' * (otras > 1)}")
+        return proc, geo, avisos
+
+    def _leer_hoja(self, diagrama, raiz):
+        """(proceso, geometria, avisos) de una página. Los enlaces de los tramos son pasos de tipo enlace_*."""
         avisos = []
         info = {}
-        for el, cell in self.celdas():
+        for el, cell in self._celdas_de(raiz):
             cid = el.get("id")
             if cid in ("0", "1"):
                 continue
@@ -542,7 +829,14 @@ class Fichero:
         for cid, i in info.items():
             if not i["vertex"] or cid in es_carril or cid in es_externo or (i["padre"] in info and info[i["padre"]]["edge"]):
                 continue
-            tipo = tipo_de_estilo(i["estilo"], ent.get(cid, 0), sal.get(cid, 0))
+            if i["estilo"].get("enlace") == "1":            # corte entre dos tramos
+                m = ENLACE.match(cid)
+                if not m:
+                    avisos.append(f"se ignora el enlace {cid}: no es uno de los que pone la herramienta (ENL-nn-S o ENL-nn-E)")
+                    continue
+                tipo = "enlace_salida" if m.group(2) == "S" else "enlace_entrada"
+            else:
+                tipo = tipo_de_estilo(i["estilo"], ent.get(cid, 0), sal.get(cid, 0))
             if tipo is None:
                 if i["texto"] and es_nota(i["estilo"]):
                     celdas_nota[cid] = i
@@ -557,10 +851,11 @@ class Fichero:
                 carril = "(sin carril)"
                 if carril not in carriles:
                     carriles.append(carril)
-            pasos.append({"id": cid, "tipo": tipo, "carril": carril, "nombre": i["texto"]})
+            pasos.append({"id": cid, "tipo": tipo, "carril": carril, "nombre": i["texto"],
+                          **self.datos_celda(i["el"], i["cell"], DATOS_PASO)})
             geo_pasos[cid] = (cx, cy, i["w"], i["h"])
             vlp = i["estilo"].get("verticalLabelPosition")
-            if vlp in ("top", "bottom") and tipo in EVENTOS | PUERTAS:
+            if vlp in ("top", "bottom") and tipo in FORMAS_EVENTO | PUERTAS:
                 lados[cid] = "arriba" if vlp == "top" else "abajo"
         ids_pasos = {p["id"] for p in pasos}
         flujos, geo_flujos, asociada = [], [], {}
@@ -582,6 +877,7 @@ class Fichero:
                 etiqueta = " ".join([x for x in [i["texto"]] + etiquetas_flujo.get(cid, []) if x])
                 if etiqueta:
                     f["etiqueta"] = etiqueta
+                f.update(self.datos_celda(i["el"], i["cell"], DATOS_FLUJO))
                 flujos.append(f); geo_flujos.append([])
                 continue
             if s not in ids_pasos or t not in ids_pasos:
@@ -595,6 +891,7 @@ class Fichero:
                 f["discontinuo"] = True
             if i["estilo"].get("startArrow") == "dash":
                 f["defecto"] = True
+            f.update(self.datos_celda(i["el"], i["cell"], DATOS_FLUJO))
             flujos.append(f)
             pts = []
             arr = i["g"].find("Array") if i["g"] is not None else None
@@ -612,9 +909,9 @@ class Fichero:
                 ids_nota.append(nid)
             else:
                 notas.append(i["texto"])
-        nombre = nombre_pool or (self.diagram.get("name") if self.diagram is not None else "") or "Proceso"
-        if self.paginas > 1:
-            avisos.append(f"el fichero tiene {self.paginas} páginas; solo se lee la primera")
+        nombre = nombre_pool or (diagrama.get("name") if diagrama is not None else "") or "Proceso"
+        if diagrama is not None and ID_TRAMO.match(diagrama.get("id") or "") and NOMBRE_TRAMO.match(nombre):
+            nombre = NOMBRE_TRAMO.match(nombre).group(1)
         usados = {p["carril"] for p in pasos}
         vacios = [c for c in carriles if c not in usados]
         proc = {"proceso": nombre, "carriles": carriles, "pasos": pasos, "flujos": flujos}
@@ -626,6 +923,137 @@ class Fichero:
                "pool": next(iter(pools), None), "externos": geo_externo, "anotaciones": anotaciones, "ids_nota": ids_nota,
                "etiquetas": lados}
         return proc, geo, avisos
+
+
+def _mapa(pares):
+    """Función creciente que lleva cada coordenada vieja a la nueva, lineal entre los puntos dados."""
+    pares = sorted(pares)
+    xs, ys = [a for a, _ in pares], [b for _, b in pares]
+
+    def f(v):
+        if not xs:
+            return v
+        if v <= xs[0]:
+            return v + ys[0] - xs[0]
+        if v >= xs[-1]:
+            return v + ys[-1] - xs[-1]
+        k = bisect.bisect_right(xs, v) - 1
+        if xs[k + 1] == xs[k]:
+            return ys[k]
+        return ys[k] + (v - xs[k]) * (ys[k + 1] - ys[k]) / (xs[k + 1] - xs[k])
+    return f
+
+
+def _ancho_hoja(geo):
+    return max([x + w for _, _, x, w, _ in list(geo["carriles"].values()) + list(geo["externos"].values())]
+               + [cx + w / 2 for cx, _, w, _ in geo["pasos"].values()] + [1])
+
+
+def _unir(partes):
+    """Un proceso en tramos, de vuelta en uno: [(proceso, geometria, avisos)] de cada página → los mismos de todo el
+    proceso. Cada par de enlaces vuelve a ser su flujo (con lo que lleva el que sale). La geometría pone las páginas una
+    al lado de otra, con los carriles a todo lo ancho y el alto del más alto; un flujo que no va al tramo siguiente
+    pasa por debajo de los carriles."""
+    avisos = [a for _, _, av in partes for a in av]
+    carriles = []                       # en el orden de las páginas: uno nuevo, antes del siguiente que ya se conoce
+    for proc_k, _, _ in partes:
+        for j, c in enumerate(proc_k["carriles"]):
+            if c not in carriles:
+                siguiente = next((x for x in proc_k["carriles"][j + 1:] if x in carriles), None)
+                carriles.insert(carriles.index(siguiente) if siguiente else len(carriles), c)
+    alto = {c: max([g["carriles"][c][1] for _, g, _ in partes if c in g["carriles"]] or [0]) for c in carriles}
+    arriba, y = {}, 0.0
+    for c in carriles:
+        arriba[c], y = y, y + alto[c]
+    fondo = y
+    desde, x = [], 0.0
+    for _, g, _ in partes:
+        desde.append(x)
+        x += _ancho_hoja(g)
+    total = x
+    mapas = [_mapa([par for c, (yc, hc, *_r) in g["carriles"].items() for par in ((yc, arriba[c]), (yc + hc, arriba[c] + hc))])
+             for _, g, _ in partes]
+    punto = lambda k, px, py: (desde[k] + px, mapas[k](py))            # noqa: E731
+    pasos, geo_pasos, etiquetas, flujos, puntos = [], {}, {}, [], []
+    salen, entran = {}, {}
+    for k, (proc_k, g, _) in enumerate(partes):
+        for p in proc_k["pasos"]:
+            if p["tipo"] in ENLACES:
+                continue
+            pasos.append(p)
+            cx, cy, w, h = g["pasos"][p["id"]]
+            geo_pasos[p["id"]] = (*punto(k, cx, cy), w, h)
+        etiquetas.update({pid: lado for pid, lado in g.get("etiquetas", {}).items() if not ENLACE.match(pid)})
+        for f, pts in zip(proc_k["flujos"], g["flujos"]):
+            a, de = ENLACE.match(f["a"]), ENLACE.match(f["de"])
+            if a and a.group(2) == "S":
+                salen[a.group(1)] = (k, f, pts)
+            elif de and de.group(2) == "E":
+                entran[de.group(1)] = (k, f, pts)
+            elif a or de:
+                avisos.append(f"el flujo {f.get('id')} no une un paso con su enlace y se ignora")
+            else:
+                flujos.append(f)
+                puntos.append([punto(k, px, py) for px, py in pts])
+    pasillos = 0
+    for n in sorted(salen, key=int):
+        k1, f, pts1 = salen[n]
+        if n not in entran:
+            avisos.append(f"el enlace ENL-{n}-S no tiene su pareja ENL-{n}-E: se ignora el flujo de {f['de']}")
+            continue
+        k2, g2, pts2 = entran.pop(n)
+        flujos.append({**f, "a": g2["a"]})
+        sale = punto(k1, *partes[k1][1]["pasos"][f["a"]][:2])
+        entra = punto(k2, *partes[k2][1]["pasos"][g2["de"]][:2])
+        if k2 == k1 + 1:
+            medio = [sale, entra]
+        else:                           # por debajo de los carriles, hasta el tramo al que va
+            pasillos += 1
+            yp = fondo + 6 + 14 * pasillos
+            medio = [sale, (sale[0], yp), (entra[0], yp), entra]
+        puntos.append([punto(k1, px, py) for px, py in pts1] + medio + [punto(k2, px, py) for px, py in pts2])
+    for n in entran:
+        avisos.append(f"el enlace ENL-{n}-E no tiene su pareja ENL-{n}-S: se ignora el flujo a {entran[n][1]['a']}")
+    # participantes externos, debajo de los carriles (y de los pasillos), en el orden de las páginas
+    externos, geo_externos = [], {}
+    yext = fondo + (14 * pasillos + 6 if pasillos else 0) + 40
+    for _, g, _ in partes:
+        for nombre, (ye, he, _x, _w, cid) in sorted(g["externos"].items(), key=lambda kv: kv[1][0]):
+            if nombre not in geo_externos:
+                externos.append(nombre)
+                geo_externos[nombre] = (yext, he, 0.0, total, cid)
+                yext += he + 20
+    notas, anotaciones, ids_nota, sueltas = [], [], [], []
+    for k, (proc_k, g, _) in enumerate(partes):
+        notas += proc_k.get("notas") or []
+        anotaciones += [(*punto(k, cx, cy), w, h) for cx, cy, w, h in g.get("anotaciones") or []]
+        ids_nota += g.get("ids_nota") or []
+        sueltas += g.get("notas") or []
+    nombre = partes[0][0].get("proceso")
+    proc = {"proceso": nombre, "carriles": carriles, "pasos": pasos, "flujos": flujos}
+    if externos:
+        proc["externos"] = externos
+    if notas:
+        proc["notas"] = notas
+    if len(partes) > 1:
+        proc["tramos"] = True
+    usados = {p["carril"] for p in pasos}
+    primero = {}
+    for _, g, _ in partes:
+        for c, caja in g["carriles"].items():
+            primero.setdefault(c, caja[4])
+    geo = {"carriles": {c: (arriba[c], alto[c], 0.0, total, primero[c]) for c in carriles if c in primero}, "pasos": geo_pasos,
+           "flujos": puntos, "vacios": [c for c in carriles if c not in usados], "notas": sueltas,
+           "pool": partes[0][1].get("pool"), "externos": geo_externos, "anotaciones": anotaciones, "ids_nota": ids_nota,
+           "etiquetas": etiquetas,
+           "tramos": [{"x": desde[k], "ancho": _ancho_hoja(g), "pasos": [p["id"] for p in pr["pasos"] if p["tipo"] not in ENLACES]}
+                      for k, (pr, g, _) in enumerate(partes)]}
+    return proc, geo, avisos
+
+
+def diagramas(paginas):
+    """Las páginas (<diagram>) del .drawio de `paginas` ([(proceso, geometría)]), para poner en un fichero que ya existe."""
+    return ET.fromstring(xml_drawio(paginas)).findall("diagram")
 
 
 def es_nota(e):
@@ -647,7 +1075,7 @@ def tipo_de_estilo(e, n_ent, n_sal):
             return "fin"
         if outline == "standard":
             return {"timer": "inicio_temporizador", "message": "inicio_mensaje"}.get(symbol, "inicio")
-        return {"timer": "temporizador", "message": "mensaje"}.get(symbol, "intermedio")
+        return {"timer": "temporizador", "message": "mensaje", "error": "error"}.get(symbol, "intermedio")
     if shape == "mxgraph.bpmn.gateway2":
         return {"parallel": "paralela", "inclusive": "inclusiva"}.get(e.get("gwType", "exclusive"), "exclusiva")
     if shape in ("mxgraph.bpmn.task", "mxgraph.bpmn.task2"):
@@ -715,6 +1143,9 @@ def comparar(antes, despues):
             out.append(("paso", f"{pid} cambia de tipo: {q['tipo']} → {p['tipo']}"))
         if q["carril"] != p["carril"] and renombrado.get(q["carril"]) != p["carril"]:
             out.append(("paso", f"{pid} cambia de carril: «{q['carril']}» → «{p['carril']}»"))
+        for k in DATOS_PASO:
+            if q[k] != p[k]:
+                out.append(("paso", f"{pid}: {NOMBRE_DATO[k]} «{q[k]}» → «{p[k]}»"))
     for pid, q in pa.items():
         if pid not in pd:
             out.append(("paso", f"paso quitado: {pid} «{q['nombre']}»"))
@@ -745,6 +1176,9 @@ def comparar(antes, despues):
             if g["defecto"] != f["defecto"]:
                 out.append(("flujo", f"flujo {f['de']} → {f['a']}: " + ("pasa a ser el flujo por defecto" if f["defecto"]
                                                                          else "deja de ser el flujo por defecto")))
+            for c in DATOS_FLUJO:
+                if g[c] != f[c]:
+                    out.append(("flujo", f"flujo {f['de']} → {f['a']}: {NOMBRE_DATO[c]} «{g[c]}» → «{f[c]}»"))
     for k, g in fa.items():
         if k not in fd:
             out.append(("flujo", f"flujo quitado: {g['de']} → {g['a']}"))

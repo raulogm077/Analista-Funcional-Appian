@@ -1,0 +1,22 @@
+{
+  "proceso": "Proceso de prueba",
+  "carriles": ["Revisores", "Aplicación"],
+  "pasos": [
+    {"id": "EV-01", "tipo": "inicio", "carril": "Aplicación", "nombre": "Inicio", "nodo": "1"},
+    {"id": "ACT-01", "tipo": "tarea", "carril": "Revisores", "nombre": "Revisar", "nodo": "2"},
+    {"id": "GW-01", "tipo": "exclusiva", "carril": "Aplicación", "nombre": "¿Aprobada?", "nodo": "3"},
+    {"id": "ACT-02", "tipo": "sistema", "carril": "Aplicación", "nombre": "Guardar", "nodo": "4"},
+    {"id": "EV-02", "tipo": "error", "carril": "Aplicación", "nombre": ""},
+    {"id": "EV-03", "tipo": "fin", "carril": "Aplicación", "nombre": "Fin", "nodo": "5"},
+    {"id": "EV-04", "tipo": "fin", "carril": "Aplicación", "nombre": "Error", "nodo": "6"}
+  ],
+  "flujos": [
+    {"de": "EV-01", "a": "ACT-01"},
+    {"de": "ACT-01", "a": "GW-01"},
+    {"de": "GW-01", "a": "ACT-02", "etiqueta": "Sí", "condicion": "pv!ok"},
+    {"de": "GW-01", "a": "ACT-01", "etiqueta": "No", "defecto": true},
+    {"de": "ACT-02", "a": "EV-03"},
+    {"de": "ACT-02", "a": "EV-02", "discontinuo": true},
+    {"de": "EV-02", "a": "EV-04"}
+  ]
+}

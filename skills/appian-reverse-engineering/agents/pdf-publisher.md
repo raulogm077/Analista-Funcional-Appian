@@ -8,7 +8,7 @@ Fase 7, solo si `<trabajo>/output_preferences.json` tiene `pdf: true`. Puede ir 
 
 ## Entradas
 
-- `<salida>/`: `LEEME.md`, `01`–`11`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso) y las imágenes de `diagrams/` y `08-procesos-bpmn/` (`.svg`, o `.png` cuando el proceso se dibujó en draw.io).
+- `<salida>/`: `LEEME.md`, `01`–`11`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso) y las imágenes `.png`: las de `diagrams/` (`mermaid.py` de la skill de diagramas las pinta junto a cada `.svg`) y las de `08-procesos-bpmn/` (una por proceso, o una por tramo: `<slug>-1.png`, `<slug>-2.png`…).
 - `<salida>/anexo/`: solo para el apéndice opcional (ver Estructura).
 - `<trabajo>/summary.json` (`<trabajo>` = `<salida>/extraccion/`): la fuente de todas las cifras.
 - La skill de PDF disponible (`anthropic-skills:pdf` o equivalente): lee su `SKILL.md` antes de empezar y sigue su flujo (ReportLab, WeasyPrint, pandoc… lo decide ella).
@@ -69,7 +69,7 @@ summary.json
 
 ## Maquetación
 
-- Diagramas: el `.svg` ya renderizado, como vector. Si no hay `.svg`, la tabla equivalente del documento; nunca código Mermaid en crudo.
+- Diagramas: el `.png`, no el `.svg`, que lleva las etiquetas como HTML y en un PDF no se ven. Un proceso en tramos, una imagen por tramo, en orden. Si un diagrama no tiene imagen, la tabla equivalente del documento (en un proceso, su paso a paso); nunca código Mermaid en crudo.
 - Tablas nativas (copiables), con la cabecera repetida al cambiar de página.
 - Cabecera: nombre de la app y número de página. Pie: fecha de extracción y confianza.
 - Color por severidad (Alta rojo, Media ámbar, Baja gris) con contraste AA y siempre con la palabra: el color no es el único indicador.

@@ -217,7 +217,7 @@ def test_rutas_cortas_con_nombre_largo(tmp_path):
         (salida / "08-procesos-bpmn").mkdir(exist_ok=True)
         (salida / "08-procesos-bpmn" / f"{slug}.json").write_text("{}", encoding="utf-8")   # lo escribe process-modeler
         rutas_slug = [f"extraccion/procesos/{slug}.json", f"anexo/processModel/{slug}.md",
-                      *(f"08-procesos-bpmn/{slug}{ext}" for ext in (".drawio", ".bpmn", "-1.svg", ".json"))]
+                      *(f"08-procesos-bpmn/{slug}{ext}" for ext in (".drawio", ".bpmn", "-12.png", ".json"))]
         assert all(len(r) <= 100 for r in rutas_slug), rutas_slug
         assert (salida / "anexo" / "processModel" / f"{slug}.md").is_file()
     p = subprocess.run([sys.executable, str(SKILL / "scripts" / "build_datos.py"), str(salida)], capture_output=True,

@@ -1,8 +1,8 @@
 # Process Modeler
 
-Documentas cada process model de la aplicación en `08-procesos-bpmn/`: su flujo en BPMN 2.0, su diagrama y un documento que lo explica en lenguaje de negocio, más el índice con el mapa de procesos. Eres el propietario del área Procesos (hallazgos `H-PRO`).
+Documentas cada process model de la aplicación en `08-procesos-bpmn/`: su diagrama, su BPMN 2.0 y un documento que lo explica en lenguaje de negocio, más el índice con el mapa de procesos. Eres el propietario del área Procesos (hallazgos `H-PRO`).
 
-`<skill>` es la carpeta de la skill; `<salida>` y `<trabajo>`, las que te pasa el orquestador.
+`<skill>` es la carpeta de la skill; `<salida>` y `<trabajo>`, las que te pasa el orquestador; `<diagramas>`, la de la skill de diagramas del plugin: `<skill>/../appian-diagramas-bpmn`.
 
 ## Entradas
 
@@ -11,8 +11,9 @@ Lee enteros antes de empezar:
 - `references/lectura-mcp-raw.md`: ficheros, roles, campos derivados, formato de evidencia, quién puede iniciar un process model y qué no devuelve el Dev MCP.
 - `references/execution-principles.md`: principios (en especial «dato ausente no es defecto»), documentos propietarios y registro de hallazgos.
 - `references/presentation-rules.md`: esqueleto, límites, marcas y lo que el lector no debe ver.
-- `references/bpmn-mapping.md`: mapeo de nodos, carriles, sistemas externos, temporizador y `.bpmn`.
-- `references/mermaid-rules.md`: diagrama del proceso (tipo C), mapa de procesos (tipo A), ancho y nombres de fichero.
+- `references/bpmn-mapping.md`: de nodo de Appian a paso del diagrama, con sus claves; carriles, sistemas externos, temporizador y qué se entrega.
+- `references/mermaid-rules.md`: el mapa de procesos, su ancho y su nombre de fichero.
+- `<diagramas>/SKILL.md`: el formato del JSON del proceso, las órdenes de `diagrama.py`, sus avisos y sus límites.
 - `assets/markdown-templates/08-procesos-bpmn/pm-template.md` e `indice.md`: mandan en la estructura de los documentos.
 
 Datos:
@@ -23,7 +24,7 @@ Datos:
 - `<trabajo>/extraction_report.json`: fecha de la extracción (`startedAt`), para el temporizador.
 - `<salida>/anexo/processModel/<slug>.md`: la definición legible, para enlazarla.
 
-Opcionales: `references/appian-objects-guide.md` (tipos de nodo) y la carpeta de la skill `appian-diagramas-bpmn`, si el orquestador te la pasa (ver «Diagramas»). Para un tipo de nodo o un comportamiento que no conozcas con certeza, «Dudas de Appian» de `SKILL.md`, que te pasa el orquestador, y `references/docs-mcp-usage.md`, con el tope de consultas y la caché compartida. Documentas hechos: no consultas `appian-best-practices` para decir qué conviene hacer.
+Opcional: `references/appian-objects-guide.md` (tipos de nodo). Para un tipo de nodo o un comportamiento que no conozcas con certeza, «Dudas de Appian» de `SKILL.md`, que te pasa el orquestador, y `references/docs-mcp-usage.md`, con el tope de consultas y la caché compartida. Documentas hechos: no consultas `appian-best-practices` para decir qué conviene hacer.
 
 ## Qué analizar en cada process model
 
@@ -60,60 +61,46 @@ No son tuyos: quién puede iniciar y la seguridad (`04-seguridad-grupos.md`), la
 
 ## Diagramas
 
-Cada process model tiene su `.bpmn` y una imagen para el documento. El `.bpmn` sale siempre de la vía propia (pasos 1 y 4): lleva datos de Appian que el dibujo no tiene (la expresión del temporizador, el proceso llamado, las condiciones de las pasarelas y el id de cada nodo) y es igual con o sin esa skill. La imagen sale de la vía draw.io si el orquestador te pasa la carpeta de la skill `appian-diagramas-bpmn` (dibujo editable para trabajar con negocio); si no, de la vía propia (Mermaid). En los dos casos, el diagrama señala el punto de cada hallazgo Alta del proceso (p. ej. «cancel no se consulta»): en draw.io, con una nota unida al paso (`notas`); en Mermaid, con una nota; en el `.bpmn`, con `documentation` en ese elemento.
+Los dibuja la skill de diagramas: cada process model tiene en `<salida>/08-procesos-bpmn/` su `<slug>.json`, su `<slug>.drawio`, su imagen (`<slug>.png`, o una por tramo si no cabe en una página) y su `<slug>.bpmn`. El diagrama señala el punto de cada hallazgo Alta del proceso (p. ej. «cancel no se consulta») con una nota unida a su paso.
 
-### Vía propia (por defecto)
+Por cada proceso:
 
-Ficheros en `<salida>/08-procesos-bpmn/`: `<slug>.bpmn`, `<slug>.mmd` y `<slug>.svg` (o `<slug>-N.mmd` y `<slug>-N.svg` por tramo si pasa de 25 nodos).
-
-1. **`.bpmn` semántico** según `bpmn-mapping.md`: plantilla, ids con el id del nodo Appian, carriles, sistemas externos como participantes caja negra con `messageFlow`, temporizador con `timeCycle`. Sin DI. Si hay `xmllint`, `xmllint --noout <slug>.bpmn`.
-2. **`.mmd`**: el diagrama del proceso (tipo C de `mermaid-rules.md`): `flowchart TD` salvo procesos cortos, un `subgraph` por carril, cada sistema externo en su `subgraph` con un nodo `:::external`, ≤ 25 nodos. Si el proceso tiene más, el diagrama se parte en tramos del flujo: `<slug>-1.mmd`, `<slug>-2.mmd`… (`bpmn-mapping.md`); el `.bpmn` sigue completo. Valida cada fichero con `python3 <skill>/scripts/validate_mermaid.py <fichero>.mmd`.
-3. **Render**, fichero a fichero: `bash <skill>/scripts/render_diagrams.sh --mermaid <fichero>.mmd <fichero>.svg`. Si avisa de que pasa de ~1600 px de ancho, rehazlo. Sin `mmdc`, el `.md` lleva el bloque mermaid. La fase 5 vuelve a renderizar todo en lote: las dos cosas son correctas.
-4. **Coordenadas**, cuando estén todos los `.bpmn`: `python3 <skill>/scripts/bpmn_layout.py <salida>/08-procesos-bpmn`. Completa `incoming`/`outgoing`, crea el pool y los carriles si faltan y escribe el DI, sin el cual Camunda Modeler y bpmn.io no dibujan nada. Comprueba que cada `.bpmn` tiene `bpmndi:BPMNDiagram`.
-
-### Vía draw.io (opcional)
-
-Ficheros en `<salida>/08-procesos-bpmn/`: `<slug>.drawio` (editable en draw.io), `<slug>.png` (la imagen del documento) y `<slug>.json` (el proceso tal como lo conoce esa skill; lo escribe ella, no se edita y hace falta para actualizar el dibujo). El `<slug>.bpmn` sale de la vía propia (pasos 1 y 4). No hay `.mmd` ni `.svg`.
-
-Lee antes la `SKILL.md` de esa skill (`<diagramas>` es su carpeta): formato del JSON, órdenes, avisos y límites. Después, por cada proceso:
-
-1. Escribe `<trabajo>/procesos/<slug>.json` con la columna «JSON draw.io» de `bpmn-mapping.md`:
-   - `proceso`: el nombre del process model.
-   - `carriles`: los grupos asignados y «Sistema», en ese orden. Inicio, pasarelas y fines, en el carril que dice `bpmn-mapping.md` («Carriles y participantes»).
-   - `externos`: un sistema externo por connected system que llama el proceso, con el nombre de `bpmn-mapping.md` («Sistemas externos»).
-   - `pasos`: un código estable por tipo (`EV-01`, `ACT-01`, `GW-01`…), numerado en el orden de los `id` de los nodos Appian, con el `nombre` del nodo y el tipo de la tabla de mapeo (`inicio_temporizador`, `script`, `llamada`…). `posicion` solo si la definición trae las coordenadas de los nodos, y entonces en todos los pasos.
-   - `flujos`: los de `connections`; las salidas de cada pasarela con `etiqueta` (la condición) y la salida por defecto con `"defecto": true`; uno de cada tarea de integración a su sistema externo, con la operación como `etiqueta`.
+1. Escribe `<trabajo>/procesos/<slug>.json` con `bpmn-mapping.md`:
+   - `proceso`: el nombre del process model, y `"tramos": true` (un proceso que ya existe no se parte en subprocesos inventados).
+   - `carriles`: los grupos asignados y «Aplicación», en ese orden. Inicio, pasarelas y fines, en el carril que dice `bpmn-mapping.md` («Carriles y participantes»).
+   - `externos`: un sistema externo por sistema al que llaman sus integraciones, con el nombre de `bpmn-mapping.md`.
+   - `pasos`: un código estable por tipo (`EV-01`, `ACT-01`, `GW-01`…), numerado en el orden de los `id` de los nodos de Appian, con el `nombre` del nodo, el tipo de la tabla de mapeo y `nodo` (el id del nodo); `temporizador` en el inicio programado y `proceso_llamado` en un subproceso. `posicion` solo si la definición trae las coordenadas de los nodos, y entonces en todos los pasos.
+   - `flujos`: los de `connections`; en cada salida de una pasarela, `etiqueta` (la condición en lenguaje de negocio) y `condicion` (la expresión), y `"defecto": true` en la salida por defecto; uno de cada tarea de integración a su sistema externo, con la operación como `etiqueta`.
    - `notas`: una por hallazgo Alta del proceso, en su paso, con la frase corta del hallazgo y su ID.
-   - Si `validar` rechaza un tipo, `externos` o `notas` (versión anterior de esa skill), usa los tipos básicos (`inicio`, `sistema`, `subproceso`), quita lo que rechace y dilo en tu informe.
-2. `python3 <diagramas>/scripts/diagrama.py crear <trabajo>/procesos/<slug>.json -o <salida>/08-procesos-bpmn/` → `.drawio`, `.png` y `.json`. Corrige los avisos de validación (salidas sin etiqueta, pasos sin entrada o salida). Si el `.drawio` ya existe de una ejecución anterior, usa `diagrama.py actualizar <slug>.drawio <trabajo>/procesos/<slug>.json`, que respeta lo editado a mano; si se niega porque hay cambios manuales sin aceptar, déjalo y dilo en tu informe. Nunca `--forzar` ni `--recolocar`.
-3. No uses `diagrama.py bpmn`: el `.bpmn` es el de la vía propia.
-4. Mira cada `.png`: si algo se pisa o no se lee, dilo en tu informe.
+2. `python3 <diagramas>/scripts/diagrama.py crear <trabajo>/procesos/<slug>.json -o <salida>/08-procesos-bpmn/` → `<slug>.drawio`, `<slug>.json` (el proceso tal como lo conoce esa skill: lo escribe ella, no se edita y hace falta para actualizar el dibujo) y la imagen. Si no cabe en una página, dice cuántos tramos tiene y la imagen es `<slug>-1.png`, `<slug>-2.png`… Corrige los avisos de validación (salidas sin etiqueta, pasos sin entrada o salida).
+   Si el `.drawio` ya existe de una ejecución anterior, `diagrama.py actualizar <salida>/08-procesos-bpmn/<slug>.drawio <trabajo>/procesos/<slug>.json`, que respeta lo editado a mano; si se niega porque hay cambios manuales sin aceptar o tramos colocados a mano, déjalo y dilo en tu informe. Nunca `--forzar` ni `--recolocar`.
+3. `python3 <diagramas>/scripts/diagrama.py bpmn <salida>/08-procesos-bpmn/<slug>.drawio` → `<slug>.bpmn`: uno, con todos los nodos, aunque el dibujo vaya en tramos.
+4. Mira cada imagen: si algo se pisa o no se lee, dilo en tu informe.
 
-Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz las imágenes por la vía propia (Mermaid) y dilo en tu informe.
+Si `crear` o `actualizar` terminan con código 2 y «sin PNG», no hay navegador: el `.drawio`, el `.json` y el `.bpmn` se hacen igual y el proceso se queda sin imagen. Sigue, el `.md` lo dice (plantilla) y tu informe también. Cualquier otro error se corrige y se repite.
 
 ## Documentos
 
-- **`<slug>.md`**, uno por process model, con `pm-template.md`. Incrusta la imagen que exista (`.svg` o `.png`; si se partió, una por tramo y en orden) con su fuente y el enlace al `.bpmn`; sin imagen, el bloque mermaid. Cada evidencia enlaza la ficha del anexo (`../anexo/processModel/<slug>.md`). El diagrama se llama «Diagrama del proceso». En el paso a paso cada nodo se cita como `nodes[id=N]` (y con su código `ACT-`/`GW-`/`EV-` en la vía draw.io).
+- **`<slug>.md`**, uno por process model, con `pm-template.md`. Incrusta la imagen (si va en tramos, una por tramo y en orden, cada una con los pasos que cubre) con los enlaces al `.drawio` y al `.bpmn`; sin imagen, la frase de la plantilla. Cada evidencia enlaza la ficha del anexo (`../anexo/processModel/<slug>.md`). El diagrama se llama «Diagrama del proceso». En el paso a paso cada nodo se cita como `nodes[id=N]` y con su código en el diagrama (`ACT-`, `GW-`, `EV-`).
 - **`indice.md`** con su plantilla: catálogo de todos los procesos (≤ 8 columnas; «Hallazgos» con los IDs H-PRO de cada uno; «Crítico» de `criticality.critical`).
-- **Mapa de procesos** `<salida>/diagrams/mapa-procesos.mmd` (tipo A, `flowchart TD`): un nodo por process model (con su forma de inicio en la etiqueta si cabe) y una flecha por arista `subProcess` o `startProcess` de `graph.json`. Más de 30 nodos: solo los procesos que se relacionan con otro, y el resto queda en el catálogo. Valídalo y renderízalo como los demás. Si ningún proceso lanza a otro, no hay mapa: dilo en el TL;DR del índice.
+- **Mapa de procesos** `<salida>/diagrams/mapa-procesos.mmd` (`mermaid-rules.md`, «Mapa de procesos»): un nodo por process model (con su forma de inicio en la etiqueta si cabe) y una flecha por arista `subProcess` o `startProcess` de `graph.json`. Más de 30 nodos: solo los procesos que se relacionan con otro, y el resto queda en el catálogo. Píntalo con `python3 <diagramas>/scripts/mermaid.py <salida>/diagrams/mapa-procesos.mmd --svg` (`.png` y `.svg`; sin navegador sale con 2 y el índice lleva el bloque mermaid). Si ningún proceso lanza a otro, no hay mapa: el índice va sin «Vista» y lo dice en el TL;DR.
 - **Enlaces**: los objetos de otras áreas enlazan su documento propietario (`03`, `05`, `10`…) y la definición, su ficha del `anexo/`. Nunca `<trabajo>/`.
 
 ## Comprobación antes de terminar
 
-- [ ] Cada process model del inventario tiene `<slug>.md`, `<slug>.bpmn` (vía propia, con `bpmndi:BPMNDiagram`) y su diagrama: `<slug>(-N)?.mmd` + `.svg` (un fichero, o uno por tramo si pasa de 25 nodos), o `.drawio` + `.png`.
-- [ ] Cada `.mmd` pasa `validate_mermaid.py`, tiene ≤ 25 nodos y ninguno superó el aviso de ancho.
-- [ ] `indice.md` lista todos los procesos y el mapa refleja las aristas `subProcess` y `startProcess`.
+- [ ] Cada process model del inventario tiene `<slug>.md`, `<slug>.json`, `<slug>.drawio`, `<slug>.bpmn` (con `bpmndi:BPMNDiagram` y todos sus nodos) y su imagen (`<slug>.png`, o `<slug>-N.png` por tramo), salvo sin navegador, y entonces su `.md` lo dice.
+- [ ] Ningún proceso partido en subprocesos que no existen en Appian: los grandes van en tramos.
+- [ ] `indice.md` lista todos los procesos y el mapa, si lo hay, refleja las aristas `subProcess` y `startProcess` y no superó el aviso de ancho de `mermaid.py`.
 - [ ] Cada documento empieza por su «Responde a» y tiene un solo TL;DR; solo ✅/🔶/❓ como certeza y Alta/Media/Baja como severidad (solo en hallazgos).
 - [ ] Cada fila de Hallazgos está en `process-modeler.json` (o en `orquestador.json` si la añadió el orquestador) y al revés; cada inferido trae su `base`.
 - [ ] Sin referencias a la skill ni a `<trabajo>/`, sin `{{`, `TODO` ni `TBD`.
 
 ## Salida
 
-- `<salida>/08-procesos-bpmn/<slug>.md` y `<slug>.bpmn`, uno de cada por process model (`slug` del inventario: los demás agentes enlazan con ese nombre).
-- Vía propia: `<salida>/08-procesos-bpmn/<slug>.mmd` y `<slug>.svg` (si hay `mmdc`), o `<slug>-1.mmd`, `<slug>-2.mmd`… con sus `.svg` si se partió.
-- Vía draw.io: `<salida>/08-procesos-bpmn/<slug>.drawio`, `<slug>.png` y `<slug>.json`, y `<trabajo>/procesos/<slug>.json` (la entrada de `diagrama.py`).
+- `<salida>/08-procesos-bpmn/<slug>.md`, `<slug>.json`, `<slug>.drawio` y `<slug>.bpmn`, uno de cada por process model (`slug` del inventario: los demás agentes enlazan con ese nombre), y su imagen: `<slug>.png`, o `<slug>-1.png`, `<slug>-2.png`… si va en tramos.
+- `<trabajo>/procesos/<slug>.json`: la entrada de `diagrama.py`.
 - `<salida>/08-procesos-bpmn/indice.md`.
-- `<salida>/diagrams/mapa-procesos.mmd` y `mapa-procesos.svg` (si hay mapa y `mmdc`).
+- `<salida>/diagrams/mapa-procesos.mmd`, con su `.png` y su `.svg`, si hay mapa.
 - `<trabajo>/hallazgos/process-modeler.json` (`[]` si no hay hallazgos) y `<trabajo>/sin-verificar/process-modeler.json`.
 - `<trabajo>/docs_cache/process-modeler.json`, si consultas la documentación (por el Docs MCP o por la web).
 
@@ -121,7 +108,7 @@ Si `diagrama.py` termina con código 2 (falta Playwright o un navegador), haz la
 
 Breve, al orquestador:
 
-- ficheros generados y por qué vía (y si alguno cambió de vía, por qué);
+- ficheros generados; los procesos en tramos y los que se quedaron sin imagen;
 - consultas a la documentación (por el Docs MCP o por la web);
 - choques entre instrucciones que hayas encontrado y cómo los resolviste;
 - «Para otras áreas»: una línea por asunto con el documento propietario.
@@ -130,5 +117,5 @@ Breve, al orquestador:
 
 - Volcar el SAIL de un nodo en el `name`: es una etiqueta corta; el detalle va en el paso a paso o en el anexo.
 - Inventar carriles: aplica la regla de `bpmn-mapping.md` y, si la asignación no está clara, márcala ❓.
-- Omitir nodos «técnicos»: todos van en el `.bpmn`.
-- Inventar subprocesos para partir un proceso grande: el `.bpmn` refleja el process model tal cual.
+- Omitir nodos «técnicos»: todos van en el JSON, y así en el diagrama y en el `.bpmn`.
+- Inventar subprocesos para partir un proceso grande: va en tramos (`"tramos": true`) y el `.bpmn` refleja el process model tal cual.

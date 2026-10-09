@@ -1,12 +1,17 @@
 """Navegador sin conexión para colocar los pasos (motor de carriles de Mermaid) y pintar el .drawio a PNG
-(visor de draw.io). Todo va dentro de la skill: el diagrama no sale del equipo."""
-import pathlib, re, sys
+(visor de draw.io). Todo va dentro de la skill: el diagrama no sale del equipo.
+
+DIAGRAMAS_SIN_NAVEGADOR=1 simula que no hay navegador (para probar lo que se hace sin él)."""
+import os, pathlib, shutil, sys, tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 ASSETS = HERE.parent / "assets"
 MERMAID_JS = ASSETS / "mermaid.min.js"
 VIEWER_JS = ASSETS / "drawio" / "viewer-static.min.js"
 STENCILS = ASSETS / "drawio" / "stencils"
+SIMULAR = "DIAGRAMAS_SIN_NAVEGADOR"
+_sin_navegador = None    # el motivo, si en esta orden ya se vio que no hay navegador: no se vuelve a probar
+_temporales = {}         # navegador abierto -> su carpeta de temporales
 
 
 class SinNavegador(Exception):
@@ -14,18 +19,40 @@ class SinNavegador(Exception):
 
 
 def _launch(p):
-    """Chromium de Playwright; si no está descargado, Chrome o Edge del sistema."""
+    """Chromium de Playwright; si no está descargado, Chrome o Edge del sistema. El navegador escribe sus temporales en
+    una carpeta propia, que `cerrar` borra entera: a veces deja restos al cerrarse y no deben quedar en el equipo."""
+    global _sin_navegador
     errores = []
+    temporal = tempfile.mkdtemp(prefix="diagramas-navegador-")
+    entorno = {**os.environ, "TMPDIR": temporal, "TEMP": temporal, "TMP": temporal}
     for opts in ({}, {"channel": "chrome"}, {"channel": "msedge"}):
         try:
-            return p.chromium.launch(**opts)
+            b = p.chromium.launch(env=entorno, **opts)
+            _temporales[id(b)] = temporal
+            return b
         except Exception as e:  # noqa: BLE001 - se prueba el siguiente navegador
             errores.append(f"{opts.get('channel', 'chromium de Playwright')}: {str(e).splitlines()[0]}")
-    raise SinNavegador("No hay navegador disponible. Instala uno de estos:\n  - playwright install chromium\n"
-                       "  - o Google Chrome / Microsoft Edge (se usan sin descargar nada más)\nDetalle:\n  " + "\n  ".join(errores))
+    shutil.rmtree(temporal, ignore_errors=True)
+    _sin_navegador = ("No hay navegador disponible. Instala uno de estos:\n  - playwright install chromium\n"
+                      "  - o Google Chrome / Microsoft Edge (se usan sin descargar nada más)\nDetalle:\n  " + "\n  ".join(errores))
+    raise SinNavegador(_sin_navegador)
+
+
+def cerrar(b):
+    """Cierra el navegador y borra su carpeta de temporales."""
+    try:
+        b.close()
+    finally:
+        temporal = _temporales.pop(id(b), None)
+        if temporal:
+            shutil.rmtree(temporal, ignore_errors=True)
 
 
 def _playwright():
+    if os.environ.get(SIMULAR) == "1":
+        raise SinNavegador(f"Sin navegador: {SIMULAR}=1 simula que no hay ninguno (quítalo para usar el que haya).")
+    if _sin_navegador:
+        raise SinNavegador(_sin_navegador)
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -34,8 +61,9 @@ def _playwright():
     return sync_playwright
 
 
-def _pagina(p, ancho=2400, alto=1400, escala=2):
-    b = _launch(p)
+def _pagina(p, ancho=2400, alto=1400, escala=2, navegador=None):
+    """Una página en blanco que no sale del equipo. Sin `navegador`, abre uno."""
+    b = navegador or _launch(p)
     pg = b.new_page(device_scale_factor=escala, viewport={"width": ancho, "height": alto})
 
     def ruta(r):
@@ -87,6 +115,7 @@ _JS_COLOCAR = """async (code) => {
     while ((q = re.exec(p.getAttribute('d')))) { const s = new DOMPoint(+q[1], +q[2]).matrixTransform(ctm); pts.push([s.x, s.y]); }
     flujos.push([m[1], m[2], +m[3], pts]);
   });
+  out.innerHTML = '';
   return {nodos, carriles, flujos};
 }""".replace("ICONOS", _ICONOS)
 
@@ -121,15 +150,8 @@ def codigo_mermaid(proc, eventos, puertas):
     return "\n".join(lineas), alias
 
 
-def colocar(proc, eventos, puertas, cabecera):
-    """Geometría para escribir_drawio: carriles, centros de los pasos y puntos de cada flujo."""
-    code, alias = codigo_mermaid(proc, eventos, puertas)
-    sp = _playwright()
-    with sp() as p:
-        b, pg = _pagina(p, ancho=3000, alto=2000, escala=1)
-        pg.add_script_tag(content=MERMAID_JS.read_text(encoding="utf-8"))
-        res = pg.evaluate(_JS_COLOCAR, code)
-        b.close()
+def _geometria(proc, res, alias, cabecera, code):
+    """La geometría para escribir_drawio a partir de lo que mide el navegador."""
     if "error" in res:
         raise RuntimeError("El motor de colocación no aceptó el proceso:\n" + res["error"] + "\n\n" + code)
     rects = [res["carriles"][f"c{i}"] for i in range(len(proc["carriles"]))]
@@ -154,6 +176,27 @@ def colocar(proc, eventos, puertas, cabecera):
     return geo
 
 
+def colocar_varios(procs, eventos, puertas, cabecera):
+    """Geometría de cada proceso (carriles, centros de los pasos y puntos de cada flujo), en una sola sesión del
+    navegador."""
+    sp = _playwright()
+    with sp() as p:
+        b, pg = _pagina(p, ancho=3000, alto=2000, escala=1)
+        try:
+            pg.add_script_tag(content=MERMAID_JS.read_text(encoding="utf-8"))
+            geos = []
+            for proc in procs:
+                code, alias = codigo_mermaid(proc, eventos, puertas)
+                geos.append(_geometria(proc, pg.evaluate(_JS_COLOCAR, code), alias, cabecera, code))
+            return geos
+        finally:
+            cerrar(b)
+
+
+def colocar(proc, eventos, puertas, cabecera):
+    return colocar_varios([proc], eventos, puertas, cabecera)[0]
+
+
 # ---------------------------------------------------------------- PNG con el visor de draw.io
 _JS_PINTAR = """(xml) => new Promise(ok => {
   const out = document.getElementById('out');
@@ -169,12 +212,26 @@ _JS_PINTAR = """(xml) => new Promise(ok => {
 })"""
 
 
-def pintar_png(xml_modelo, destino, escala=2):
+def pintar_pngs(trabajos):
+    """[(xml del modelo, destino, escala)]: el PNG de cada uno, en una sola sesión del navegador."""
     sp = _playwright()
+    visor = VIEWER_JS.read_text(encoding="utf-8")
     with sp() as p:
-        b, pg = _pagina(p, escala=escala)
-        pg.add_script_tag(content=VIEWER_JS.read_text(encoding="utf-8"))
-        res = pg.evaluate(_JS_PINTAR, xml_modelo)
-        pg.locator("#out > div").screenshot(path=str(destino))
-        b.close()
-    return res
+        b = _launch(p)
+        try:
+            res, paginas = [], {}      # una página por escala, con el visor ya cargado
+            for xml_modelo, destino, escala in trabajos:
+                if escala not in paginas:
+                    paginas[escala] = _pagina(p, escala=escala, navegador=b)[1]
+                    paginas[escala].add_script_tag(content=visor)
+                pg = paginas[escala]
+                pg.evaluate("() => { document.getElementById('out').innerHTML = ''; }")
+                res.append(pg.evaluate(_JS_PINTAR, xml_modelo))
+                pg.locator("#out > div").screenshot(path=str(destino))
+            return res
+        finally:
+            cerrar(b)
+
+
+def pintar_png(xml_modelo, destino, escala=2):
+    return pintar_pngs([(xml_modelo, destino, escala)])[0]

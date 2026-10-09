@@ -688,12 +688,12 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   `<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">`; `error` → `<bpmn:errorEventDefinition/>` con
   `cancelActivity="true"` (el temporizador y el mensaje de borde siguen sin interrumpir).
 
-- [ ] **Paso 1:** en el selftest de diagramas, `crear` + `bpmn` de `semantico.json`: documentación «nodo 1» en el
+- [x] **Paso 1:** en el selftest de diagramas, `crear` + `bpmn` de `semantico.json`: documentación «nodo 1» en el
   inicio; `conditionExpression` «pv!ok» con su `xsi:type` en el flujo «Sí»; `default` en la puerta; evento de error que
   interrumpe, con `attachedToRef` a «Guardar»; un `BPMNShape` por nodo y carril y un `BPMNEdge` con dos o más puntos por
   flujo; los hijos del inicio en orden (`documentation`, `outgoing`); dos exportaciones iguales; `leer()` devuelve
   `nodo` y `condicion`; `comparar --aceptar` no las pierde. → FALLA.
-- [ ] **Paso 2:** implementar. **Paso 3:** selftest de diagramas en verde. Commit «F4: datos de Appian en el diagrama y en el BPMN».
+- [x] **Paso 2:** implementar. **Paso 3:** selftest de diagramas en verde. Commit «F4: datos de Appian en el diagrama y en el BPMN».
 
 ### Tarea 11: Un solo pintor Mermaid
 
@@ -707,9 +707,9 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   bloque ```mermaid y dice en qué línea empieza el que falla; con solo `--md`, los `.mmd` son opcionales. Sale 0 bien,
   1 sintaxis, 2 falta un requisito.
 
-- [ ] **Paso 1:** selftest de diagramas: `--check` de un `.mmd` válido → 0 y de uno inválido → 1; `--md` de un
+- [x] **Paso 1:** selftest de diagramas: `--check` de un `.mmd` válido → 0 y de uno inválido → 1; `--md` de un
   Markdown con dos bloques, uno roto en la línea 12 → 1 y «línea 12» en la salida. → FALLA.
-- [ ] **Paso 2:** mover, añadir `--md` y cambiar las rutas del analista. **Paso 3:** los dos selftest en verde. Commit.
+- [x] **Paso 2:** mover, añadir `--md` y cambiar las rutas del analista. **Paso 3:** los dos selftest en verde. Commit.
 
 ### Tarea 12: Ingeniería inversa dibuja con la skill de diagramas, también sin navegador
 
@@ -728,12 +728,12 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   `pruebas/appian-reverse-engineering/test_bpmn_layout.py`, `pruebas/appian-reverse-engineering/datos/proceso_semantico.bpmn`.
 - Crear: `pruebas/appian-reverse-engineering/test_una_pieza.py`.
 
-- [ ] **Paso 1: pruebas que fallan.** Selftest de diagramas con `DIAGRAMAS_SIN_NAVEGADOR=1`: `crear` de
+- [x] **Paso 1: pruebas que fallan.** Selftest de diagramas con `DIAGRAMAS_SIN_NAVEGADOR=1`: `crear` de
   `semantico.json` escribe un `.drawio` sin pasos solapados, sale con 2 y dice «sin PNG»; `bpmn` de ese `.drawio` da un
   BPMN válido. `test_una_pieza.py`: ningún fichero de la skill de ingeniería inversa menciona
   `bpmn_layout`, `validate_mermaid`, `render_diagrams`, `mmdc` ni la vía «.bpmn + Mermaid».
-- [ ] **Paso 2:** hacer los cambios. **Paso 3:** pytest y `comprobar_plugin.py --completo` en verde.
-- [ ] **Paso 4:** commit «F4: ingeniería inversa dibuja con la skill de diagramas». Cierre de fase: revisión y merge.
+- [x] **Paso 2:** hacer los cambios. **Paso 3:** pytest y `comprobar_plugin.py --completo` en verde.
+- [x] **Paso 4:** commit «F4: ingeniería inversa dibuja con la skill de diagramas». Cierre de fase: revisión y merge.
 
 ---
 
