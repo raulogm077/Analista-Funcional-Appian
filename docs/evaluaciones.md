@@ -4,6 +4,68 @@ Resultados de las evaluaciones del plan `docs/plan/2026-10-07-integracion-ingeni
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 
+## F5 · Refactorización (9 de octubre de 2026)
+
+Rama `f5-refactorizacion`, de `main` e475a94 al merge. Versión 0.7.0-alpha.4.
+
+### Qué cambia
+
+- **La skill `appian-refactorizacion` (Tarea 13).** Lee `as-is/` y nada más (no la extracción) y escribe
+  `refactorizacion/propuesta.md`: alcance y límites, diagnóstico (una ficha `REF-nn` por problema, con su evidencia en
+  `as-is/`, la sección de buenas prácticas que lo trata, efecto, prioridad y esfuerzo), solución por capa con lo que se
+  descarta, migración y convivencia, hoja de ruta y pendientes (decisiones y los NV que condicionan la solución). Del
+  bloque B entran rebuild-architect (sin el 12 ni el detalle objeto a objeto del 14), la migración de target-designer y
+  las señales de `modernization-guide.md`; `docs/bloque-b/` se borra.
+- **`comprobar_propuesta.py` (Tarea 14).** Apartados, fichas completas, evidencias que llevan a `as-is/`, «BP nn §x»
+  que existen (una o dos por REF), objetos del inventario en el Diagnóstico (los patrones no), cada REF en Solución,
+  `H-…` y NV que existen, marcadores sin sustituir y enlaces a la extracción. Avisa de lo no verificado que se pierde:
+  un NV que no se cita, un hallazgo inferido marcado ✅, uno Alta o Media sin REF ni pendiente, y una REF sobre un
+  hallazgo inferido sin «Verificar H-…» antes en la Hoja de ruta.
+- **Un problema, un hallazgo, una REF.** Ingeniería inversa no abre dos hallazgos del mismo problema visto por dos
+  señales (huérfano y sin ejecuciones; el aviso de validación de más de 50 nodos), y refactorización hace una REF por
+  problema citando todos sus hallazgos.
+- `comprobar_plugin.py` da error si refactorización o el analista citan la extracción en bruto.
+
+### La evaluación de malas prácticas (Tarea 15)
+
+Un agente sigue el `SKILL.md` sobre `$PROYECTOS_PRUEBA/MNT/` con una copia de las skills, sin ver `pruebas/` ni
+`docs/`, con alcance «toda la aplicación», seis meses y sin tocar las reglas `CMN_`. `puntuar.py` cuenta una mala
+práctica si una REF cita sus objetos en la evidencia, una de sus secciones aceptadas en la Regla y sale en Solución.
+
+| | Primera propuesta | Segunda propuesta (tras la revisión) |
+|---|---|---|
+| REF / palabras / tiempo | 27 / 6.298 / 16 min | 26 / 6.678 / 16 min |
+| Visibles, puntuador de la Tarea 15 | 11/11 | — |
+| Visibles, puntuador por sección | 9/11 (MP-05 y MP-11) | 10/11 (MP-01) |
+| Ocultas | 3/3 | 3/3 |
+| NV de las reglas `CMN_` en Pendientes | sí | sí |
+| `comprobar_propuesta.py` | 0/0 (el de entonces) | 0/0 |
+
+- **El primer puntuador medía poco.** Aceptaba cualquier sección del documento de buenas prácticas esperado: la revisión
+  quitó las cuatro REF que trataban MP-04, MP-08, MPO-01 y MPO-02 y seguía saliendo 11/11 y 3/3. Ahora cada mala
+  práctica lleva `bp_aceptadas`, fijadas por un agente con la descripción y las secciones, sin ver ninguna propuesta.
+- **Con el puntuador nuevo, la primera propuesta da 9/11**, y los dos fallos venían de `senales.md`: el correo
+  repetido iba a BP 03 §13 y el connected system de desarrollo a BP 07 §2, que no trata los entornos. Corregidas las
+  dos filas, la segunda propuesta, hecha a ciegas con la skill corregida, da 10/11: MP-01 (el listado sin paginar) sale
+  con BP 01 §7 y BP 02 §5.3.
+- Las dos propuestas citan en una sola REF los dos hallazgos de `MNT_PM_Antiguo` (huérfano y sin ejecuciones).
+- Proyectos: `MNT/` (la segunda) y `MNT-refactorizacion-1/` (la primera), en `$PROYECTOS_PRUEBA`.
+
+### Lo aprendido
+
+- Un puntuador también se revisa con sondas: quitar lo que debería contar y ver si el número baja. El primero pasaba
+  por bueno lo que no medía.
+- Las listas de lo aceptado se fijan antes de ver un resultado y no se tocan después; cuando un resultado no cuadra, se
+  arregla la skill y se vuelve a medir a ciegas.
+- La tabla de señales decide la regla que cita cada REF: un error en una fila es un error en todas las propuestas.
+- Lo que falta en buenas prácticas sale enseguida al usarla para justificar (el «Cancelar» de un formulario de inicio,
+  un paso que se hace siempre): apuntado para la siguiente versión.
+
+### Aplazado
+
+Siete menores de la revisión y la fricción de la segunda propuesta, en `docs/siguiente-version.md` («Refactorización»
+y «Buenas prácticas»).
+
 ## F4 · Diagramas (9 de octubre de 2026)
 
 Rama `f4-diagramas`, de `main` c656d21 al merge. Versión 0.7.0-alpha.3.

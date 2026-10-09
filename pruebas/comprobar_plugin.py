@@ -12,6 +12,8 @@ Qué mira:
 - que ninguna skill lleve la marca de un cliente: un brand-*.json que no sea brand-appian.json (la estándar de Appian)
   o un logo (MARCA_NEUTRA, LOGO e IMAGENES dicen qué es cada cosa); van en <p>/prototipo/ de su proyecto;
 - que ninguna skill use como marca el círculo azul (MARCA_ANTIGUA): la de inferido es 🔶, la misma en todas;
+- que las skills que leen lo de ingeniería inversa (LEEN_AS_IS) no citen su extracción en bruto (as-is/extraccion,
+  mcp_raw): leen as-is/datos/ y los documentos de as-is/;
 - que las skills que se citan existan en el plugin (o estén en EXTERNAS); el README cita además el nombre anterior de
   una skill (ANTERIORES), para retirar sus copias sueltas;
 - que existan los ficheros que cita cada SKILL.md y las rutas de una skill a otra;
@@ -48,7 +50,6 @@ SKILLS = RAIZ / "skills"
 # Skills que se citan y no están en el plugin, con el motivo.
 EXTERNAS = {
     "appian-sail-generator": "skill aparte para escribir código SAIL suelto",
-    "appian-refactorizacion": "se crea en F5",
 }
 # Nombres que empiezan por appian- y no son skills (MCP, carpetas y paquetes de Appian).
 NO_SKILLS = {"appian-docs", "appian-dev", "appian-analisis-funcional", "appian-dev-mcp-server",
@@ -57,7 +58,10 @@ NO_SKILLS = {"appian-docs", "appian-dev", "appian-analisis-funcional", "appian-d
 # todavía lo llevan; en las skills es un error.
 ANTERIORES = {"appian-prototipos-aena": "appian-prototipos"}
 # Skills que tienen que llevar la regla de dudas de Appian (appian-best-practices la lleva en *Tools*).
-REGLA_DOCS = ["appian-functional-analyst", "appian-prototipos", "appian-reverse-engineering"]
+REGLA_DOCS = ["appian-functional-analyst", "appian-prototipos", "appian-refactorizacion", "appian-reverse-engineering"]
+# Skills que leen lo de ingeniería inversa: as-is/datos/ y los documentos de as-is/, nunca la extracción en bruto.
+LEEN_AS_IS = ("appian-functional-analyst", "appian-refactorizacion")
+EXTRACCION = re.compile(r"as-is/extraccion|mcp_raw")
 TITULO_REGLA = "## Dudas de Appian"
 CARPETAS = ("references", "scripts", "templates", "assets", "schemas", "examples", "galerias", "runtime")
 # Lo que no va en una skill: sus pruebas y ejemplos van en pruebas/<skill>/, y un proyecto, en su carpeta <p>.
@@ -121,6 +125,10 @@ def comprobar_contenido(nombres):
                 if azules:
                     errores.append(f"{ruta}:{','.join(azules[:5])}: usa {MARCA_ANTIGUA} como marca; la de inferido es 🔶, "
                                    "la misma en todas las skills")
+                crudas = [str(i) for i, linea in enumerate(lineas, 1) if n in LEEN_AS_IS and EXTRACCION.search(linea)]
+                if crudas:
+                    errores.append(f"{ruta}:{','.join(crudas[:5])}: cita la extracción en bruto de ingeniería inversa; "
+                                   "esta skill lee as-is/datos/ y los documentos de as-is/")
     for py in sorted(SKILLS.glob("*/scripts/*.py")):
         if py.parts[-3] in nombres and (falta := sin_bytecode(py)):
             errores.append(f"{py.relative_to(RAIZ).as_posix()}:{falta}: importa un módulo de su carpeta sin "
@@ -231,6 +239,14 @@ def probar_comprobador(nombres):
         espera(c == 1 and "marca-antigua.md:3" in out and "🔶" in out,
                "una skill que usa como marca el círculo azul no da error", out)
         nota.unlink()
+        # refactorización y el analista leen as-is/datos/ y los documentos de as-is/, nunca la extracción en bruto
+        cruda = copia / "skills" / "appian-functional-analyst" / "references" / "zz-extraccion.md"
+        for cita in ("as-is/extraccion/inventory.json", "mcp_raw/"):
+            cruda.write_text(f"# Datos\n\nLee `{cita}`.\n", encoding="utf-8")
+            c, out = comprueba()
+            espera(c == 1 and "zz-extraccion.md:3" in out and "as-is/datos/" in out,
+                   f"el analista que cita {cita} no da error", out)
+        cruda.unlink()
         # el nombre anterior de una skill solo lo cita el README (para retirar las copias sueltas); un SKILL.md, no
         doc = skill / "SKILL.md"
         original = doc.read_text(encoding="utf-8")

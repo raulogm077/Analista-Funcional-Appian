@@ -23,9 +23,6 @@ apunta aquí y entra en la siguiente versión. Cada línea dice qué, dónde y d
 - `extraction_report.json`, `toolsUsed`: lista herramientas sin ninguna llamada (`getAiAgent` en una aplicación sin
   agentes de IA), y «usadas + omitidas» no da el catálogo que cuenta INVENTARIO. Medida «después» de F3.
 - `datafabric`: `metadataRaw` trae record types de otras aplicaciones. Medida «después» de F3.
-- Guía de 09 en `analysis-workflow.md`: una misma señal sale en dos hallazgos (validación y más de 50 nodos; huérfano y
-  sin ejecuciones), contra «un dueño por señal». Medida «después» de F3. Mejor en F5 (Tareas 13-14): refactorización
-  lee `hallazgos.json` y los duplicaría.
 - Pasada de coherencia: ningún script comprueba que cada mención de otra área lleve su ID canónico. Medida «después» de F3.
 - `build_datos.py` cuenta 80 aristas y `summary.json` 83 (las de fuera de la aplicación): decirlo en `datos.md`.
 - `security-rules.md`: decir que el valor de un secreto se reproduce tal cual (nada se oculta) y dónde acaba (04,
@@ -52,6 +49,21 @@ apunta aquí y entra en la siguiente versión. Cada línea dice qué, dónde y d
 - Evaluación del recién llegado: el docstring de `palabras.py` dice «como las cuenta `comprobar_asis.py`», pero cuenta
   también los títulos y el texto generado.
 - Presupuestos de palabras: con MNT, la mayoría de documentos van al 20-50 % de su límite; afinarlos con más medidas.
+- Los role maps de los objetos no están en `as-is/` ni quedan como NV: refactorización solo puede preguntarlos como
+  decisión. Evaluación de la Tarea 15.
+- La propuesta de MNT sacó del anexo dos señales que ingeniería inversa no registró como hallazgo: nombres fijos del
+  proceso y sus tareas, y dos reglas sin el prefijo de la aplicación. Evaluación de la Tarea 15.
+
+## Buenas prácticas
+
+- No hay sección sobre funcionalidades deprecadas: `senales.md` de refactorización las manda a BP 08 §7, la más
+  cercana. Tarea 13.
+- No hay sección sobre objetos huérfanos o sin ejecuciones: `senales.md` de refactorización los manda a BP 11 §8,
+  que solo lo dice en una línea (política de retirada). Revisión de F5.
+- No hay sección sobre el «Cancelar» de un formulario de inicio de proceso (el patrón solo está en la documentación de
+  Appian): la propuesta de MNT usó BP 10 §2, genérica. Evaluación de la Tarea 15.
+- Ninguna sección trata un paso de proceso que se hace siempre aunque no haga falta (la orden pasa siempre por
+  «Pendiente de material»): la segunda propuesta de MNT lo dejó como decisión. Evaluación de la Tarea 15.
 
 ## Diagramas
 
@@ -68,3 +80,29 @@ apunta aquí y entra en la siguiente versión. Cada línea dice qué, dónde y d
   Pasada de correcciones de F4.
 - `mermaid.py` sin argumentos sale con 2 (el de argparse), que en el script significa «falta un requisito». Pasada de
   correcciones de F4.
+
+## Refactorización
+
+- `comprobar_propuesta.py` (revisión de F5):
+  - `re.split(…, 1)` pasa `maxsplit` por posición: dos DeprecationWarning en cada ejecución con Python 3.13 (también
+    `comprobar_asis.py:110`);
+  - una REF citada en la prosa de encima de la tabla de la Hoja de ruta da el aviso de «Verificar» aunque la tabla lo
+    ponga;
+  - una ficha escrita «### REF-01 · …» no se reconoce y da errores de REF que no está en el Diagnóstico;
+  - sin `hallazgos.json` deja de comprobar los `H-…` sin avisar;
+  - el aviso de hallazgos Alta o Media sin REF no conoce el alcance: con una propuesta de una parte de la aplicación,
+    salta con los de fuera de esa parte.
+- `puntuar.py` de la evaluación de malas prácticas solo acepta fichas `**REF-`, no dice nada si `as-is/` no trae NV de
+  objetos de fuera, y `prueba_puntuar.py` no lo corre `--completo`. Revisión de F5.
+- `senales.md`: «funciones HTTP deprecadas» (BP 07 §1) y «connected system sin autenticación» (BP 07 §2) apuntan a
+  secciones que no tratan el problema como tal, y no hay otra mejor. Pasada de correcciones de F5.
+- Segunda propuesta de MNT (evaluación de la Tarea 15), puntos de fricción:
+  - lo que falta y no es decisión ni NV (versión de Appian no determinada, tier, tamaño del equipo) no tiene tipo de ID;
+  - «una REF por problema» no dice si un hallazgo que mezcla varios problemas puede alimentar varias REF;
+  - la tabla de estrategias define «Mixta» como datos y procesos nuevos; el caso de conservar los datos y rehacer la
+    lógica no tiene nombre;
+  - el orden fijo de la Hoja de ruta deja para el final los defectos Alta de los procesos: falta decir si arreglarlos ya
+    en la aplicación actual es contención;
+  - los pasos 1, 2 y 5 piden hablar con el usuario; sin nadie que responda, no dice dónde dejar el resumen inicial;
+  - BP 03 §9 para el recordatorio frecuente: quien la usó dice que trata el archivado y la memoria, no la frecuencia (la
+    pasada de correcciones la eligió frente a la §13; `bp_aceptadas` de MP-05 admite la §6 y la §9).

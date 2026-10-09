@@ -1,0 +1,10 @@
+{"sinVerificar": [
+  {"id": "NV-ARQ-01", "pregunta": "¿Qué hace AVI_EnviarAviso y qué recibe?",
+   "porQue": "REX_PM_RegistrarRevision la llama con rule! y no está en la aplicación.",
+   "queHaceFalta": "Acceso de lectura a la aplicación de avisos o un export de ella",
+   "aQuien": "Equipo de la aplicación de avisos",
+   "dondeSeBusco": "Inventario de la aplicación y dependencias de REX_PM_RegistrarRevision (Dev MCP)",
+   "objetos": ["REX_PM_RegistrarRevision", "AVI_EnviarAviso"],
+   "indicios": "La llamada le pasa pv!revision, de tipo REX_Revision.", "estado": "abierto",
+   "documento": "02-arquitectura.md#dependencias-externas"}
+ ]}

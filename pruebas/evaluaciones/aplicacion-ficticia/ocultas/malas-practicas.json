@@ -4,20 +4,23 @@
     "descripcion": "Las categorías de mantenimiento (Electricidad, Climatización, Fontanería, Obra civil, Ascensores) se guardan como un campo de texto en dos record types, categoria en MNT Orden y especialidad en MNT Técnico, y la lista está escrita a mano en MNT_IF_FormularioOrden y en MNT_IF_AltaTecnico, en vez de estar en un record type de catálogo relacionado.",
     "objetos": ["MNT Orden", "MNT Técnico", "MNT_IF_FormularioOrden", "MNT_IF_AltaTecnico"],
     "capa": "datos",
-    "bp": "BP 01 §1.1"
+    "bp": "BP 01 §1.1",
+    "bp_aceptadas": ["BP 01 §1.1", "BP 01 §1"]
   },
   {
     "id": "MPO-02",
     "descripcion": "En MNT_PM_GestionOrden, la tarea «Validar cierre» está asignada directamente al usuario david.molina y la tarea «Atender urgencia», al usuario de la constante MNT_USUARIO_GUARDIA (carmen.ortega), en vez de a un grupo como MNT Supervisores.",
     "objetos": ["MNT_PM_GestionOrden", "MNT_USUARIO_GUARDIA"],
     "capa": "procesos",
-    "bp": "BP 03 §7"
+    "bp": "BP 03 §7",
+    "bp_aceptadas": ["BP 03 §7", "BP 04 §9"]
   },
   {
     "id": "MPO-03",
     "descripcion": "La Web API MNT_WS_EstadoOrden, a la que llama el ERP, devuelve siempre el código 200 fijo: no comprueba el parámetro id ni devuelve 400 o 404 cuando falta o cuando la orden no existe.",
     "objetos": ["MNT_WS_EstadoOrden"],
     "capa": "integraciones",
-    "bp": "BP 07 §6"
+    "bp": "BP 07 §6",
+    "bp_aceptadas": ["BP 07 §6"]
   }
 ]

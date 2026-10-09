@@ -216,20 +216,23 @@ def test_formato_de_las_malas_practicas(mnt):
     assert [m["id"] for m in malas] == [f"MP-{i:02d}" for i in range(1, 12)]
     nombres = set(objetos(mnt))
     for m in malas:
-        assert set(m) == {"id", "descripcion", "objetos", "capa", "bp"}, m["id"]
+        assert set(m) == {"id", "descripcion", "objetos", "capa", "bp", "bp_aceptadas"}, m["id"]
         assert m["descripcion"] and m["capa"] in CAPAS and BP.match(m["bp"]), m["id"]
+        assert m["bp_aceptadas"][0] == m["bp"] and all(BP.match(b) for b in m["bp_aceptadas"]), m["id"]
         assert m["objetos"] and set(m["objetos"]) <= nombres, (m["id"], set(m["objetos"]) - nombres)
 
 
 def test_bp_de_cada_mala_practica():
-    """La regla de cada mala práctica es una sección que existe en appian-best-practices (seccion.py la encuentra)."""
+    """Las reglas de cada mala práctica (bp_aceptadas, que empieza por bp) son secciones que existen en
+    appian-best-practices (seccion.py las encuentra)."""
     fallan = []
     for mala in leer("malas-practicas.json"):
-        doc, seccion = BP.match(mala["bp"]).groups()
-        p = subprocess.run([sys.executable, str(SECCION), doc, seccion], capture_output=True, text=True,
-                           encoding="utf-8")
-        if p.returncode:
-            fallan.append((mala["id"], mala["bp"], p.stderr.strip()))
+        for bp in mala["bp_aceptadas"]:
+            doc, seccion = BP.match(bp).groups()
+            p = subprocess.run([sys.executable, str(SECCION), doc, seccion], capture_output=True, text=True,
+                               encoding="utf-8")
+            if p.returncode:
+                fallan.append((mala["id"], bp, p.stderr.strip()))
     assert not fallan
 
 

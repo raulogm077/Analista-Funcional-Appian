@@ -103,7 +103,7 @@ Solo las subsecciones con contenido. Hallazgos propios: `H-GEN` (áreas mantenim
 
   Un valor que es un secreto (`secret`, `secrets`, `detect_secrets.py`) lleva en «Hallazgo» el `H-SEG` de 04; uno que apunta a otro entorno, el `H-INT` de 05.
 - **Huérfanos**: `graph.orphans` (ya excluye puntos de entrada y procesos programados) y, solo si el entorno es producción, los process models sin ejecuciones (`signals`). Aquí va la lista; el hallazgo es el `H-ARQ` de 02. Los objetos muy referenciados (hubs) también son de 02.
-- **Avisos de validación**: `validationIssues`; un `H-GEN` por tipo de aviso, agrupando objetos.
+- **Avisos de validación**: `validationIssues`; un `H-GEN` por tipo de aviso, agrupando objetos. El de más de 50 nodos es la fila de su tabla, no otro hallazgo.
 - **Versionado**: `versions` (`count`, `lastModifiedOn`, `lastModifiedBy`). El autor se escribe tal cual; clasifícalo como cuenta personal, de servicio o «tipo no determinado» y busca su grupo en los ficheros `members` de `mcp_raw`. Cuenta de servicio solo si su grupo o su nombre lo indican claramente (🔶).
 - **Glosario de negocio**: términos de nombres y descripciones de records, campos, procesos y pantallas; ✅ si sale de una descripción de Appian, 🔶 si se deduce del nombre.
 
@@ -115,7 +115,7 @@ Hallazgos `H-GEN` (severidad orientativa):
 | Constante con un valor de entorno (URL, host) sin la marca «Environment Specific» (si apunta a otro entorno, es el `H-INT` de 05) | Media | ✅ o 🔶 |
 | Process model de más de 50 nodos ([fuente](https://docs.appian.com/suite/help/latest/appian-recommendations.html#process-model-design-guidance)) | Media | ✅ |
 | Expression rule de más de 200 líneas o interfaz de más de 80 KB | Baja | ✅ |
-| Process models sin ejecuciones (`signals`) | Baja | ✅ en producción; 🔶 «orientativo (ver LEEME)» si no consta como producción |
+| Process models sin ejecuciones (`signals`); si además es huérfano, no: cita el `H-ARQ` de 02, que dice las dos cosas | Baja | ✅ en producción; 🔶 «orientativo (ver LEEME)» si no consta como producción |
 
 ## Fase 5 — Diagramas
 

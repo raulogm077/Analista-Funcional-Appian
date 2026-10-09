@@ -50,6 +50,7 @@ Si al analizar tu área ves algo de otra (p. ej. ui-rules-analyzer nota que un p
 - Instancias fallidas o detenidas en la muestra de ejecuciones: `H-PRO` (08). 07 y LEEME citan el ID.
 - Process model de más de 50 nodos: `H-GEN` (09). 08 y 02 citan el ID.
 - Objetos huérfanos: la lista es una sola, en 09 («Objetos huérfanos»); el hallazgo es `H-ARQ` (02). 03, 10 y los demás citan `H-ARQ`/`H-GEN` o enlazan esa lista, sin repetirla.
+- Un objeto, un problema, un hallazgo, aunque se vea por dos señales. Un process model huérfano que además no tiene ejecuciones es un solo `H-ARQ` (02), que dice las dos cosas; 09 lo cita en lugar de abrir su `H-GEN`. El aviso de validación de la plataforma por más de 50 nodos es el `H-GEN` de más de 50 nodos, no otro de «Avisos de validación». Las demás skills leen `as-is/datos/hallazgos.json`: dos hallazgos del mismo problema serían dos problemas para ellas.
 - Objetos de fuera de la aplicación que esta llama (nodos `external: true` de `graph.json`): la tabla está en 02 («Dependencias externas») y lo que no se pudo verificar de ellos es `NV-ARQ`. 08, 10 y los demás citan su NV.
 
 ---

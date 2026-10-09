@@ -762,8 +762,8 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
 - SKILL.md: «Qué hace y qué no», entradas (`as-is/`, alcance y límites), flujo, «Dudas de Appian» (bloque común) y
   `## Qué escribe` con `refactorizacion/propuesta.md`.
 
-- [ ] **Paso 1:** quitar la skill de `EXTERNAS`: `comprobar_plugin.py` → FALLA (cita una skill que no existe).
-- [ ] **Paso 2:** escribir la skill. **Paso 3:** `comprobar_plugin.py` → 6 skills, 0 errores. Commit «F5: skill de refactorización».
+- [x] **Paso 1:** quitar la skill de `EXTERNAS`: `comprobar_plugin.py` → FALLA (cita una skill que no existe).
+- [x] **Paso 2:** escribir la skill. **Paso 3:** `comprobar_plugin.py` → 6 skills, 0 errores. Commit «F5: skill de refactorización».
 
 ### Tarea 14: `comprobar_propuesta.py`, ejemplo y selftest
 
@@ -781,10 +781,10 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   Hoja de ruta.
 - Los datos de `datos/mantenimiento` traen un `sin-verificar.json` con un NV y un hallazgo `inferido`.
 
-- [ ] **Paso 1:** selftest: `datos/mantenimiento` pasa (0/0); cinco copias rotas (evidencia rota, «BP 99 §1», objeto
+- [x] **Paso 1:** selftest: `datos/mantenimiento` pasa (0/0); cinco copias rotas (evidencia rota, «BP 99 §1», objeto
   inventado en Diagnóstico, REF sin Solución, NV inexistente) dan su error, y una REF sobre el hallazgo inferido sin
   «Verificar» da su aviso; un objeto nuevo en Solución no da error. → FALLA.
-- [ ] **Paso 2:** implementar. **Paso 3:** `comprobar_plugin.py --completo` en verde. Commit.
+- [x] **Paso 2:** implementar. **Paso 3:** `comprobar_plugin.py --completo` en verde. Commit.
 
 ### Tarea 15: Evaluación de malas prácticas sembradas
 
@@ -796,10 +796,10 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   tiene que citar los NV de `as-is/datos/sin-verificar.json` que incluyen los objetos `CMN` (los usan las malas
   prácticas 2, 3 y 4). Sale 0 con el 90 % o más y esa cita.
 
-- [ ] **Paso 1:** un agente ejecuta refactorización en el proyecto de prueba `$PROYECTOS_PRUEBA/MNT/` siguiendo el SKILL.md.
-- [ ] **Paso 2:** 10 de 11 y 3 de 3 ocultas, con los NV de `CMN` en «Pendientes» (`puntuar.py` sale 0), y
+- [x] **Paso 1:** un agente ejecuta refactorización en el proyecto de prueba `$PROYECTOS_PRUEBA/MNT/` siguiendo el SKILL.md.
+- [x] **Paso 2:** 10 de 11 y 3 de 3 ocultas, con los NV de `CMN` en «Pendientes» (`puntuar.py` sale 0), y
   `comprobar_propuesta.py` sin errores. Resultados a `docs/evaluaciones.md`.
-- [ ] **Paso 3:** commit. Cierre de fase: revisión y merge.
+- [x] **Paso 3:** commit. Cierre de fase: revisión y merge.
 
 ---
 
