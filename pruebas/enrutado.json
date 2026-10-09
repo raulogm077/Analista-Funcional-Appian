@@ -1,0 +1,82 @@
+[
+  {
+    "peticion": "Ayer tuvimos la reunión de seguimiento con el área de compras; te he dejado la transcripción en fuentes/. Incorpórala al análisis y dime qué cambia antes de tocar nada.",
+    "skill": "appian-functional-analyst"
+  },
+  {
+    "peticion": "Documenta la aplicación de Gestión de Subvenciones que nos dejó el proveedor anterior. Está en el entorno de desarrollo y ya tengo configurado el Dev MCP.",
+    "skill": "appian-reverse-engineering"
+  },
+  {
+    "peticion": "Revisa esta interfaz antes de pasarla a pruebas: hace un a!queryRecordType dentro de un a!forEach, uno por cada fila del grid, y el botón Guardar no valida nada.",
+    "skill": "appian-best-practices"
+  },
+  {
+    "peticion": "Ya tenemos el as-is de la aplicación de gestión de flota. El cliente pregunta si la rehacemos o la seguimos evolucionando: dime qué está mal hecho, cómo debería estar y cómo pasaríamos de una a otra.",
+    "skill": "appian-refactorizacion"
+  },
+  {
+    "peticion": "El viernes hay demo y el cliente quiere ver cómo quedarían la bandeja de solicitudes y la ficha del expediente que tenemos en el funcional. Prepáralo para que puedan ir pinchando de una pantalla a otra.",
+    "skill": "appian-prototipos"
+  },
+  {
+    "peticion": "La aplicación de inspecciones ya está documentada y el proceso de alta está en su JSON. Dibújalo en draw.io, con un carril por perfil, para repasarlo con el equipo de mantenimiento.",
+    "skill": "appian-diagramas-bpmn"
+  },
+  {
+    "peticion": "El usuario nos ha mandado por correo tres historias nuevas para la bandeja del gestor. Añádelas a lo que ya tenemos en el funcional, sin tocar lo que el cliente ya validó.",
+    "skill": "appian-functional-analyst"
+  },
+  {
+    "peticion": "How should I model a one-to-many relationship between two synced record types so that users can filter the parent grid by a field of the child records?",
+    "skill": "appian-best-practices"
+  },
+  {
+    "peticion": "Entran dos personas nuevas al mantenimiento de la aplicación de expedientes sancionadores y nadie sabe bien cómo está montada. Sácalo del entorno sin tocar nada: procesos, seguridad, integraciones y qué riesgos tiene.",
+    "skill": "appian-reverse-engineering"
+  },
+  {
+    "peticion": "En la reunión de esta mañana movieron y añadieron pasos a mano en el .drawio del proceso de reclamaciones. Dime qué han cambiado respecto a la versión que teníamos.",
+    "skill": "appian-diagramas-bpmn"
+  },
+  {
+    "peticion": "Saca las capturas de las pantallas de alta y de consulta para el DF: las fichas de pantalla del funcional todavía no tienen imagen.",
+    "skill": "appian-prototipos"
+  },
+  {
+    "peticion": "Queremos añadir la firma del responsable a la aplicación de expedientes, que ya documentamos. Escribe las historias del cambio y la especificación técnica, con qué objetos se modifican y cuáles son nuevos.",
+    "skill": "appian-functional-analyst"
+  },
+  {
+    "peticion": "Con la documentación que ya tenemos de la aplicación de becas, plantea cómo debería estar hecho el módulo de pagos con buenas prácticas. Hay seis meses y no se pueden tocar las tablas que comparte con contabilidad.",
+    "skill": "appian-refactorizacion"
+  },
+  {
+    "peticion": "En producción, un proceso se queda parado con «Process paused by exception» en el nodo que escribe en base de datos. ¿Por qué pasa y cómo lo arreglamos?",
+    "skill": "appian-best-practices"
+  },
+  {
+    "peticion": "Exporta el proceso de aprobación de gastos a BPMN 2.0: el arquitecto lo quiere abrir en Camunda Modeler.",
+    "skill": "appian-diagramas-bpmn"
+  },
+  {
+    "peticion": "¿Qué Web APIs, integraciones y procesos programados tiene la aplicación de compras? Léelo del entorno en solo lectura y déjalo documentado en el proyecto, con su evidencia.",
+    "skill": "appian-reverse-engineering"
+  },
+  {
+    "peticion": "Ponle al prototipo la marca de Cooperativa Ejemplo del Valle: colores, logo y tipografía de su web, y comprueba que el contraste cumple.",
+    "skill": "appian-prototipos"
+  },
+  {
+    "peticion": "El cliente nos ha devuelto el DF en Word con comentarios y cambios marcados. Mételos en el análisis y genera la versión nueva del Word para que lo vuelva a validar.",
+    "skill": "appian-functional-analyst"
+  },
+  {
+    "peticion": "La aplicación de reservas de salas va lentísima y tiene la misma lógica copiada en una docena de reglas. Con el as-is que sacamos la semana pasada, prepara cómo rehacerla por fases sin parar el servicio.",
+    "skill": "appian-refactorizacion"
+  },
+  {
+    "peticion": "Before we deploy this package to production, what should we check? It adds a new integration with an external REST service and changes group permissions.",
+    "skill": "appian-best-practices"
+  }
+]
