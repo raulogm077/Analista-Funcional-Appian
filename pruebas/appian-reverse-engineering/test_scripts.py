@@ -28,3 +28,26 @@ def test_detect_secrets_files_and_dirs(tmp_path):
     assert subprocess.run(["bash", str(DS), str(clean)], capture_output=True).returncode == 0
     assert subprocess.run(["bash", str(DS), str(user_only)], capture_output=True).returncode == 1
     assert subprocess.run(["bash", str(DS), str(tmp_path / "nope")], capture_output=True).returncode == 2
+
+
+@pytest.mark.skipif(shutil.which("bash") is None or shutil.which("dirname") is None or __import__("os").name == "nt",
+                    reason="simula en macOS y Linux el Windows sin python3 (en Windows lo prueba la de arriba)")
+def test_detect_secrets_sh_sin_python3(tmp_path):
+    """En Windows solo hay «python», y «python3» puede ser el alias de la Microsoft Store, que no ejecuta nada: el
+    envoltorio usa el primero que funcione."""
+    import os
+    import sys
+    bin_ = tmp_path / "bin"
+    bin_.mkdir()
+    (bin_ / "python").symlink_to(sys.executable)
+    (bin_ / "dirname").symlink_to(shutil.which("dirname"))
+    stub = bin_ / "python3"   # como el alias de la tienda: existe, pero no es Python
+    stub.write_text("#!/bin/sh\necho 'Python was not found' >&2\nexit 9\n")
+    stub.chmod(0o755)
+    d = tmp_path / "raw"
+    d.mkdir()
+    (d / "cs.json").write_text('{"value": "sk_live_51Hc9fakeTOKEN"}')
+    p = subprocess.run([shutil.which("bash"), str(DS), str(d)], capture_output=True, text=True, encoding="utf-8",
+                       env=dict(os.environ, PATH=str(bin_)))
+    assert p.returncode == 1, p.stderr
+    assert "cs.json#value |" in p.stdout
