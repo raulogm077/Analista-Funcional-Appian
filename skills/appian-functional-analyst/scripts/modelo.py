@@ -44,6 +44,9 @@ RX_CRITERIO = re.compile(rf"^\s*[-*]\s+(~~)?`({ID_CA})`(~~)?")
 RX_COMENTARIO = re.compile(r"<!--(.*?)-->", re.S)
 RX_FUENTE = re.compile(r"FU-\d+")
 RX_CITA = re.compile(r"FU-\d+(?:\s+\d{1,2}:\d{2}:\d{2})?")
+# Una cita entre corchetes: la fuente y, dentro, lo que se cita de ella. «[FU-07 PAN-03]» es la PAN-03 del prototipo
+# (fuente FU-07), no la del análisis (D1): sus IDs no son referencias.
+RX_CITA_CORCHETES = re.compile(r"\[FU-\d+\b[^\]\n]*\]")
 RX_SECCION = re.compile(r"^## (?:(\d+)\.|(\w+))")
 ESTADOS = ["🔒", "✅", "🔶", "⚠️", "❓"]
 NOMBRE_ESTADO = {"🔒": "Validado", "✅": "Decidido", "🔶": "Inferido", "⚠️": "Pendiente", "❓": "No definido"}
@@ -79,8 +82,16 @@ def tipo_de(pid):
     return "CA" if re.fullmatch(ID_CA, pid) else pid.split("-")[0]
 
 
+def quita_citas(texto):
+    """El texto sin las citas a una fuente entre corchetes («[FU-07 PAN-03]», «[FU-04 00:03:10]»): los IDs de dentro son
+    de otra skill o de la fuente, no del análisis."""
+    return RX_CITA_CORCHETES.sub(" ", texto)
+
+
 def ids_en(texto):
-    """IDs citados en un texto, con los rangos expandidos («HU-01 a HU-03», «HU-02.1 a HU-02.4»)."""
+    """IDs citados en un texto, con los rangos expandidos («HU-01 a HU-03», «HU-02.1 a HU-02.4»). No cuenta los que van
+    dentro de una cita a una fuente (quita_citas)."""
+    texto = quita_citas(texto)
     out = set(RX_ID.findall(texto))
     for m in RX_RANGO.finditer(texto):
         pre, a, b = m.group(1), int(m.group(2)), int(m.group(3))

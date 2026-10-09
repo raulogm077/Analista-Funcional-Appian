@@ -812,9 +812,9 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
 **Interfaces:** `modelo.quita_citas(texto) -> str` borra los tramos `[FU-nn …]` antes de buscar IDs; lo usan la búsqueda
 de referencias de `modelo.py`, `indice.py` y `comprobar.py`.
 
-- [ ] **Paso 1:** selftest: en una copia de `datos/autorizaciones`, una línea con «[FU-07 PAN-03]» no aparece en `indice.py impacto PAN-03`
+- [x] **Paso 1:** selftest: en una copia de `datos/autorizaciones`, una línea con «[FU-07 PAN-03]» no aparece en `indice.py impacto PAN-03`
   y no cuenta como referencia a la PAN-03 del análisis. → FALLA.
-- [ ] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
+- [x] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 17: Guion de la próxima reunión
 

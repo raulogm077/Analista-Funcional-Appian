@@ -88,6 +88,26 @@ def main():
             c, out = corre(S / "indice.py", args[0], EJEMPLO, *args[1:])
             ok(f"indice.py {' '.join(args)}", c == 0 and espera in out, out)
 
+        # 2b. Un ID de otra skill citado en su fuente («[FU-07 PAN-03]», la pantalla del prototipo) no es una
+        # referencia a la pieza del análisis que se llama igual
+        cita = tmp / "con cita"
+        shutil.copytree(EJEMPLO, cita)
+        editar(cita / "analisis" / "funcional.md", "Se aplica RB-01.\n\nSe acepta si:\n- `HU-02.1`",
+               "Se aplica RB-01. La lista es la del prototipo [FU-07 PAN-03].\n\nSe acepta si:\n- `HU-02.1`")
+        editar(cita / "analisis" / "funcional.md", "\n## 6.", "\nLa ayuda de la pantalla es la del prototipo [FU-07 PAN-03 · ayuda].\n\n## 6.")
+        c, out = corre(S / "indice.py", "impacto", cita, "PAN-03")
+        ok("indice.py impacto PAN-03 no cuenta «[FU-07 PAN-03]» (ni en una pieza ni suelto)",
+           c == 0 and "HU-02" not in out and "es la del prototipo" not in out, out)
+        try:
+            import modelo
+            sin = modelo.quita_citas("Ver PAN-03 y la del prototipo [FU-07 PAN-03] o [FU-07 00:01:00].")
+            m_cita = modelo.cargar(cita)
+            ok("modelo.quita_citas borra las citas y la HU-02 no cita PAN-03",
+               "PAN-03" in sin and sin.count("PAN-03") == 1 and "FU-07" not in sin
+               and "HU-02" not in m_cita.citada_por.get("PAN-03", set()), sin)
+        except (ImportError, AttributeError) as e:
+            ok("modelo.quita_citas existe", False, repr(e))
+
         # 3. Proyecto nuevo
         nuevo = tmp / "nuevo"
         c, out = corre(S / "proyecto.py", "iniciar", nuevo, "--nombre", "Prueba", "--cliente", "Ejemplo")
