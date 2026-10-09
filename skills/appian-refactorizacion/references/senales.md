@@ -66,7 +66,8 @@ los nodos de un proceso y las respuestas de la plataforma (validación, ejecucio
 |---|---|---|---|
 | `a!httpQuery`, `a!httpWrite`, smart services HTTP o conectores deprecados | expresiones de la ficha, `05` | Mecanismos deprecados | BP 07 §1 |
 | Integración sin connected system, o URL completa en la integración o en una constante | `05`, ficha de la integración o de la constante | Configuración por entorno frágil | BP 07 §1 |
-| Connected system sin autenticación o hacia otro entorno | `H-INT` de `05` | Riesgo de seguridad y datos cruzados entre entornos | BP 07 §2 |
+| Connected system hacia otro entorno (un host o una URL de desarrollo o de preproducción) | `H-INT` de `05` | Datos cruzados entre entornos | BP 07 §1 |
+| Connected system sin autenticación | `H-INT` de `05` | Riesgo de seguridad: quien llegue al servicio lo usa | BP 07 §2 |
 | Integración sin tiempo de espera, o que modifica datos y está clasificada como consulta | ficha de la integración | Llamadas colgadas o escrituras repetidas | BP 07 §3 |
 | Integración que modifica datos sin tratar el error en el proceso (si la trae) | `05`, `08-procesos-bpmn/` | Fallos que nadie ve | BP 07 §5 |
 | Web API con la lógica dentro o abierta a cualquier usuario | `06` | Difícil de probar y de proteger | BP 07 §6 |

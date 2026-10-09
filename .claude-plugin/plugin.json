@@ -1,6 +1,6 @@
 {
   "name": "appian-analisis-funcional",
-  "version": "0.7.0-alpha.3",
+  "version": "0.7.0-alpha.4",
   "description": "Análisis funcional de aplicaciones Appian: de reuniones, correos o un DF existente al diseño funcional que valida el cliente (DF en Word) y a la especificación técnica para construir con buenas prácticas, con procesos BPMN editables en draw.io y un prototipo navegable con la marca del cliente o la estándar de Appian.",
   "author": {
     "name": "Raúl Gómez Moya"

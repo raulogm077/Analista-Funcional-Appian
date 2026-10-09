@@ -799,7 +799,7 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
 - [x] **Paso 1:** un agente ejecuta refactorización en el proyecto de prueba `$PROYECTOS_PRUEBA/MNT/` siguiendo el SKILL.md.
 - [x] **Paso 2:** 10 de 11 y 3 de 3 ocultas, con los NV de `CMN` en «Pendientes» (`puntuar.py` sale 0), y
   `comprobar_propuesta.py` sin errores. Resultados a `docs/evaluaciones.md`.
-- [ ] **Paso 3:** commit. Cierre de fase: revisión y merge.
+- [x] **Paso 3:** commit. Cierre de fase: revisión y merge.
 
 ---
 
