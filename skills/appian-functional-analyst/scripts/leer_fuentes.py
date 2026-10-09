@@ -510,10 +510,15 @@ def convert(path, out_dir, fid):
     return body, kind, detail, date
 
 
+SISTEMA = ("desktop.ini", "thumbs.db", ".ds_store")   # lo que dejan Windows y macOS en una carpeta
+
+
 def una_fuente(carpeta):
     """Una carpeta como una sola fuente: (sus documentos, el .md con su índice, detalle, fecha). No entra su extracción
-    en bruto (extraccion/): el análisis lee los documentos y los datos, nunca lo que devolvió el entorno tal cual."""
-    docs = sorted(f for f in carpeta.rglob("*") if f.is_file() and "extraccion" not in f.relative_to(carpeta).parts)
+    en bruto (extraccion/), que el análisis no lee, ni lo que dejan el sistema y Office (desktop.ini, Thumbs.db,
+    .DS_Store, ~$…), que cambiaría la fuente sin cambiar nada."""
+    docs = sorted(f for f in carpeta.rglob("*") if f.is_file() and "extraccion" not in f.relative_to(carpeta).parts
+                  and f.name.lower() not in SISTEMA and not f.name.startswith("~$"))
     rows = [["Documento", "Qué es"]]
     for f in docs:
         titulo = ""

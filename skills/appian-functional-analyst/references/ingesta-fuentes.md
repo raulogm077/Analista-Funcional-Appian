@@ -94,9 +94,9 @@ análisis. Quien lea el análisis debe poder ir de cualquier regla a la frase ex
   IMPACTO»; lo que no coincide es un punto que cambia una pieza 🔒 y requiere aprobación. El DF es posterior: puede
   que el cliente cambiara de idea, y eso lo decide el analista, no tú.
 - **Las de después**, como siempre.
-- **Extrae, no reinterpretes.** Conserva los IDs y la numeración del documento
-  (actividades, requisitos, pantallas), los nombres de campos y los textos
-  literales: etiquetas, botones, tooltips, mensajes de error y de confirmación.
+- **Extrae, no reinterpretes.** Cada pieza lleva su ID del plugin y, en el comentario, el ID original del documento
+  (actividad, requisito, pantalla), como arriba. Conserva los nombres de campos y los textos literales: etiquetas,
+  botones, tooltips, mensajes de error y de confirmación.
 - Cada pantalla (§5) e historia cita su diapositiva o página. Si la diapositiva
   tiene imágenes de la pantalla (el `.md` de la fuente lo indica), mírala antes
   de completar la ficha:

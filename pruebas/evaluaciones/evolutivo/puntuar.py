@@ -6,12 +6,13 @@ Uso:
 
 <p> es la carpeta del proyecto, con as-is/ (la aplicación MNT) y analisis/. Lee las tablas de técnico §13
 (`Paso · Objeto · Tipo · Situación · Sustituye a`) y las compara con esperado.json (con --ocultas, con
-ocultas/esperado.json): {objeto: [situaciones que valen]}.
+ocultas/esperado.json): {objeto: [situaciones que valen]} y {"(nuevo) <tipo>: <qué es>": {"raices": [...]}}.
   - Un objeto de la aplicación cuenta si alguna de sus filas tiene una situación que vale. Una fila de una parte suya
     («MNT Orden — acción Corregir orden») cuenta como el objeto, y si es «Nuevo», como «Modifica». Una fila «Sustituye»
     cuenta para el objeto que dice en «Sustituye a».
   - «(nuevo) <tipo>: <qué es>» cuenta con una fila «Nuevo» de ese tipo (proceso, interfaz, record type, regla…), de un
-    objeto que no está en la aplicación y que no haya contado ya para otro.
+    objeto que no está en la aplicación, que no haya contado ya para otro y con una palabra del nombre que empiece por
+    una de sus raíces (lo que pide la historia: «corregi» vale para `MNT_PM_CorregirOrden`).
 Además, ningún objeto que ya existe (as-is/datos/inventario.json) va como «Nuevo», y comprobar.py del analista sale
 sin errores (con --fuentes si existe <p>/fuentes).
 
@@ -78,6 +79,18 @@ def igual(a: str, b: str) -> bool:
     return mo.normaliza(a) == mo.normaliza(b)
 
 
+def palabras(nombre: str) -> list[str]:
+    """Las palabras de un nombre, en minúsculas y sin tildes: «MNT_PM_DarDeBajaTécnico» → mnt, pm, dar, de, baja,
+    tecnico."""
+    return [mo.normaliza(w) for w in re.findall(r"[A-ZÁÉÍÓÚÑ]+(?![a-záéíóúüñ])|[A-ZÁÉÍÓÚÑ]?[a-záéíóúüñ]+|\d+", nombre)]
+
+
+def con_raiz(nombre: str, raices: list[str]) -> bool:
+    """Alguna palabra del nombre empieza por una de las raíces: «baja» vale para MNT_PM_DarDeBajaTecnico, no para
+    MNT_PM_Trabajador."""
+    return any(w.startswith(mo.normaliza(r)) for w in palabras(nombre) for r in raices)
+
+
 def parte_de(objeto: str, nombre: str) -> bool:
     """«MNT Orden — acción Corregir orden» o «MNT Orden (acción …)» es una parte de MNT Orden; «MNT_OrdenDTO» no."""
     o, n = mo.normaliza(objeto), mo.normaliza(nombre)
@@ -113,22 +126,24 @@ def main() -> int:
         existentes = {mo.normaliza(o["nombre"]) for o in json.loads(inventario.read_text(encoding="utf-8")).get("objetos", [])}
     usadas, bien = set(), 0
     for clave, valen in esperado.items():
-        valen_n = [mo.normaliza(v) for v in valen]
         nuevo = re.match(r"\(nuevo\)\s*([^:]+):", clave)
         if nuevo:
             tipo = mo.normaliza(nuevo.group(1).strip())
             sinonimos = TIPOS.get(tipo, (tipo,))
+            raices = valen["raices"]
             k = next((k for k, f in enumerate(filas) if k not in usadas and f["situacion"] == "nuevo"
-                      and mo.normaliza(f["objeto"]) not in existentes and any(s in f["tipo"] for s in sinonimos)), None)
+                      and mo.normaliza(f["objeto"]) not in existentes and any(s in f["tipo"] for s in sinonimos)
+                      and con_raiz(f["objeto"], raices)), None)
             if k is None:
-                print(f"FALLO {clave}: ninguna fila «Nuevo» de tipo {tipo} sin contar")
+                print(f"FALLO {clave}: ninguna fila «Nuevo» de tipo {tipo} sin contar con un nombre de "
+                      f"{', '.join(r + '…' for r in raices)}")
                 continue
             usadas.add(k)
             bien += 1
             print(f"OK    {clave}: {filas[k]['objeto']} ({filas[k]['tipo']}, nuevo)")
             continue
         vistas = situaciones(clave, filas)
-        if any(s in valen_n for s in vistas):
+        if any(s in [mo.normaliza(v) for v in valen] for s in vistas):
             bien += 1
             print(f"OK    {clave}: {', '.join(sorted(set(vistas)))}")
         elif vistas:

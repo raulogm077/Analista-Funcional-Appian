@@ -416,6 +416,8 @@ def c_pendientes(m, a):
 
 
 def main():
+    for s in (sys.stdout, sys.stderr):   # una consola en cp1252 no puede con «≥», «→» ni los estados
+        s.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
 

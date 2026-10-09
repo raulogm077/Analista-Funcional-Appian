@@ -2,7 +2,8 @@
 """Prueba de puntuar.py con proyectos inventados: `python3 prueba_puntuar.py`. Sale 0 si todo va bien.
 
 Primero comprueba el propio caso: cada objeto de lo esperado (salvo los «(nuevo) …») es de la aplicación ficticia MNT
-del simulador (`MOCK_APP=fixture_mal_hecha`) y cada «(nuevo) <tipo>: …» trae un tipo que puntuar.py conoce. Después monta
+del simulador (`MOCK_APP=fixture_mal_hecha`) y cada «(nuevo) <tipo>: …» trae un tipo que puntuar.py conoce y sus raíces de
+nombre. Después monta
 proyectos con el análisis de ejemplo del analista (datos/autorizaciones, que pasa comprobar.py) y un técnico §13
 inventado, y mira la salida de puntuar.py."""
 from __future__ import annotations
@@ -78,15 +79,21 @@ def main() -> int:
     fallos = 0
     sys.path.insert(0, str(AQUI))
     import puntuar  # noqa: E402  (para TIPOS)
-    mal = [c for c in {**VISIBLE, **OCULTO} if not c.startswith("(nuevo)") and c not in MNT]
-    mal += [c for c in {**VISIBLE, **OCULTO} if c.startswith("(nuevo)")
-            and re.match(r"\(nuevo\)\s*([^:]+):", c).group(1).strip() not in puntuar.TIPOS]
-    mal += [c for c, v in {**VISIBLE, **OCULTO}.items() if not set(v) <= {"Nuevo", "Modifica", "Existe", "Sustituye"}]
-    if all(v == ["Nuevo"] for v in VISIBLE.values()):
+    todo = {**VISIBLE, **OCULTO}
+    nuevos = {c: v for c, v in todo.items() if c.startswith("(nuevo)")}
+    mal = [c for c in todo if c not in nuevos and c not in MNT]
+    mal += [c for c in nuevos if re.match(r"\(nuevo\)\s*([^:]+):", c).group(1).strip() not in puntuar.TIPOS]
+    mal += [c for c, v in todo.items() if c not in nuevos
+            and not (isinstance(v, list) and v and set(v) <= {"Modifica", "Existe", "Sustituye"})]
+    mal += [f"{c}: sin raíces de nombre" for c, v in nuevos.items()
+            if not (isinstance(v, dict) and v.get("raices") and all(isinstance(r, str) and r for r in v["raices"]))]
+    mal += [f"{c}: {n} no casa con sus raíces" for tipo, ns in NUEVOS.items() for c, n in
+            zip((c for c in nuevos if c.startswith(f"(nuevo) {tipo}:")), ns) if not puntuar.con_raiz(n, nuevos[c]["raices"])]
+    if not [c for c in todo if c not in nuevos]:
         mal.append("todo lo esperado es «Nuevo»")
     fallos += bool(mal)
-    print(("OK   " if not mal else "FALLO ") + "lo esperado son objetos de MNT, tipos conocidos y situaciones válidas"
-          + "".join(f"\n  {x}" for x in mal))
+    print(("OK   " if not mal else "FALLO ") + "lo esperado son objetos de MNT, tipos conocidos, situaciones válidas y "
+          "los nuevos con sus raíces de nombre" + "".join(f"\n  {x}" for x in mal))
     bien = filas_bien(VISIBLE)
     sin = lambda nombres: [f for f in bien if f[0] not in nombres]
     con = lambda nombre, fila: [fila if f[0] == nombre else f for f in bien]
@@ -112,6 +119,20 @@ def main() -> int:
             ("un nuevo de otro tipo no cuenta",
              proyecto(raiz, con("MNT_IF_ValorarTrabajo", ("MNT Valoracion", "Record type", "Nuevo", "—"))), (), 0,
              "ninguna fila «Nuevo» de tipo interfaz"),
+            # El caso del revisor: sin los objetos de valorar y de baja, otro nuevo del mismo tipo (el de corregir) no
+            # cuenta por ellos
+            ("un nuevo del mismo tipo con otro nombre no cuenta",
+             proyecto(raiz, sin(["MNT_PM_BajaTecnico", "MNT_IF_ValorarTrabajo"])
+                      + [("MNT_IF_CorregirOrden", "Interfaz", "Nuevo", "—")]), (), 0,
+             "FALLO (nuevo) interfaz: tarea del solicitante para valorar el trabajo"),
+            ("sin valorar ni baja y sin MNT_IF_Tecnicos: 7/10 no basta",
+             proyecto(raiz, sin(["MNT_PM_BajaTecnico", "MNT_IF_ValorarTrabajo", "MNT_IF_Tecnicos"])
+                      + [("MNT_IF_CorregirOrden", "Interfaz", "Nuevo", "—")]), (), 1, "Total: 7/10"),
+            ("los nuevos con sinónimos razonables cuentan",
+             proyecto(raiz, [{"MNT_PM_CorregirOrden": ("MNT_PM_EditarOrden", "Process model", "Nuevo", "—"),
+                              "MNT_PM_BajaTecnico": ("MNT_PM_DesactivarTécnico", "Process model", "Nuevo", "—"),
+                              "MNT_IF_ValorarTrabajo": ("MNT_IF_PuntuacionTrabajo", "Interfaz", "Nuevo", "—")}.get(f[0], f)
+                             for f in bien]), (), 0, "Total: 10/10"),
             ("comprobar.py con errores no pasa", proyecto(raiz, bien, roto=True), (), 1, "FALLO comprobar.py"),
             ("--ocultas sin la cuarta historia", proyecto(raiz, bien), ("--ocultas",), 1, "MNT_WS_EstadoOrden: no está en §13"),
             ("--ocultas con la cuarta historia",

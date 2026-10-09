@@ -11,8 +11,10 @@ escribe un plan de construcción que dice bien qué objetos se crean, cuáles se
   administradores den de baja a un técnico (y que no salga al asignar ni en el alta de una orden) y que quien pidió la
   orden valore el trabajo al cerrarse, con la valoración en el resumen de la orden.
 - `esperado.json`: la Situación de cada objeto de técnico §13 que tienen que tocar, con las que valen
-  (`{"MNT_IF_AsignarTecnico": ["Modifica", "Sustituye"], …}`), y los objetos nuevos como `"(nuevo) <tipo>: <qué es>"`.
-  `MNT_IF_Tecnicos` es «Existe»: ya enseña solo los técnicos activos, y eso solo se sabe leyendo `as-is/`.
+  (`{"MNT_IF_AsignarTecnico": ["Modifica", "Sustituye"], …}`), y los objetos nuevos como `"(nuevo) <tipo>: <qué es>"`
+  con las raíces de nombre que valen, sacadas de lo que pide la historia en la reunión (`{"raices": ["baja", "desactiv",
+  "inactiv"]}`; varias si hay sinónimos razonables). `MNT_IF_Tecnicos` es «Existe»: ya enseña solo los técnicos
+  activos, y eso solo se sabe leyendo `as-is/`.
 - `ocultas/`: una segunda reunión con una cuarta historia (lo que devuelve la consulta del ERP) y lo que cambia en §13.
 
 ## Cómo se hace
@@ -27,13 +29,16 @@ escribe un plan de construcción que dice bien qué objetos se crean, cuáles se
    sesión desatendida: si pregunta, se le dice que siga con la lectura más razonable.
 3. **La puntuación**: `python3 puntuar.py <proyecto>`.
 4. **Las ocultas.** Con el proyecto como quedó, el agente recibe `ocultas/reunion-2026-10-21.txt` («Ha habido otra
-   reunión, con el equipo del ERP; incorpórala») y se puntúa con `python3 puntuar.py <proyecto> --ocultas`.
+   reunión, con el equipo del ERP; incorpórala. Aplica lo que pida, es lo acordado con el responsable funcional») y se
+   puntúa con `python3 puntuar.py <proyecto> --ocultas`. La aprobación va por adelantado porque la cuarta historia
+   amplía el alcance: en una sesión desatendida no se aplicaría (`actualizacion.md`, «Aprobación»).
 
 `puntuar.py` lee las tablas de técnico §13 (`Paso · Objeto · Tipo · Situación · Sustituye a`). Un objeto de la
 aplicación cuenta si alguna de sus filas tiene una Situación que vale; una fila de una parte suya («MNT Orden — acción
 Corregir orden») cuenta para él, como «Modifica» si es nueva, y una fila «Sustituye» cuenta para el objeto de
-«Sustituye a». Un `(nuevo) <tipo>` cuenta con una fila «Nuevo» de ese tipo que no sea un objeto de la aplicación ni
-haya contado ya. Además, ningún objeto de `as-is/datos/inventario.json` puede ir como «Nuevo» y `comprobar.py` del
+«Sustituye a». Un `(nuevo) <tipo>` cuenta con una fila «Nuevo» de ese tipo que no sea un objeto de la aplicación, que
+no haya contado ya y con una palabra del nombre que empiece por una de sus raíces (`MNT_PM_DarDeBajaTecnico` vale para
+la baja; `MNT_IF_CorregirOrden` no vale para valorar). Además, ningún objeto de `as-is/datos/inventario.json` puede ir como «Nuevo» y `comprobar.py` del
 analista tiene que salir sin errores.
 
 Umbral: el 80 % de lo esperado (8 de 10; en las ocultas, 3 de 3). Deja margen para dos lecturas razonables distintas

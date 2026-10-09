@@ -18,14 +18,16 @@ Errores (✗, salida 1) y avisos (·):
     verificación, y la misma versión en los tres ficheros;
   - con --fuentes: citas con el minuto de una intervención real y sin nombres de participantes;
   - con --anterior: ningún ID desaparece, la versión sube y tiene su fila; lista lo nuevo y lo cambiado, y avisa
-    del texto que queda viejo (lo que una pieza cambiada ya no dice y sigue en otra);
-  - con --impacto: los IDs del informe existen o son nuevos; después de aplicar, cada dependencia tiene
-    resultado, cada cambio está declarado y lo 🔒 solo cambia con aprobación;
+    del texto que queda viejo (lo que una pieza cambiada ya no dice y sigue en otra línea, sin tocar en esta versión);
+  - con --impacto: los IDs del informe existen o son nuevos; «Requiere» es «—» o «Sí (motivo)», y «Sí» en lo que
+    cambia o anula algo 🔒; después de aplicar, cada dependencia tiene resultado, cada cambio está declarado y lo 🔒
+    solo cambia con aprobación;
   - con una aplicación existente (<p>/as-is/datos/inventario.json): cada historia con su «Origen»; hallazgos, NV y
     REF solo en la trazabilidad del DF y citados solo si existen; la Situación de cada objeto de técnico §13 contra el
     inventario y los objetos de fuera de la aplicación; con propuesta de refactorización, una DT por cada REF de su
     Solución y la tabla de migración en técnico §3. Avisa de lo que se modifica o se usa con un hallazgo Alta
-    (¿refactorización antes?) o con algo sin verificar (¿PC o PT?). Sin as-is/, nada de esto.
+    (¿refactorización antes?) o con algo sin verificar (¿PC o PT?) que no cita ninguna PT ni PC. Sin as-is/, nada
+    de esto.
 """
 import argparse
 import bisect
@@ -428,10 +430,11 @@ def lee_json(ruta):
 
 
 def objetos_celda(celda):
-    """Los objetos de una celda: los nombres entre comillas invertidas o, si no hay, la celda; sin «rule!» ni «cons!»."""
+    """Los objetos de una celda: los nombres entre comillas invertidas o, si no hay, la celda; sin el prefijo de tipo
+    («rule!», «recordType!», como comprobar_asis.py) ni los paréntesis del final («MNT_IF_Panel()»)."""
     t = mo.sin_comentarios(celda).strip()
     nombres = re.findall(r"`([^`]+)`", t) or ([t] if t.strip(" —-") else [])
-    return [re.sub(r"^(rule|cons)!", "", n.strip()) for n in nombres]
+    return [re.sub(r"\(.*\)\s*$", "", re.sub(r"^[A-Za-z]+!(\{[^}]*\})?", "", n.strip())).strip() for n in nombres]
 
 
 def citas(m, rx):
@@ -519,29 +522,36 @@ def comprobar_as_is(m):
     if fuera is None:
         informe("técnico §13: objetos que no están en el inventario (as-is/ no dice cuáles son de otra aplicación)",
                 sin_inventario, grave=False)
-    # Parte mal hecha: construir encima de un objeto con un hallazgo grave o con algo sin verificar
+    # Parte mal hecha: construir encima de un objeto con un hallazgo grave o con algo sin verificar, salvo que una PT o
+    # una PC ya lo cite («[FU-nn H-…]», «[FU-nn NV-…]»): entonces ya está recogido
+    en_pendientes = {x for p in m.por_tipo("PT") + m.por_tipo("PC") for rx in (RX_HALLAZGO, RX_NV)
+                     for x in rx.findall(m.texto(p.id))}
     graves, sin_verificar = [], []
     for o in dict.fromkeys(usados):     # en el orden de §13, una vez cada objeto
         for h in sorted(hallazgos.values(), key=lambda h: h["id"]):
-            if mo.normaliza(h.get("severidad", "")) == "alta" and o in h.get("objetos", []):
+            if (mo.normaliza(h.get("severidad", "")) == "alta" and o in h.get("objetos", [])
+                    and h["id"] not in en_pendientes):
                 graves.append(f"{o} tiene {h['id']} (Alta): ¿pasa antes por refactorización?")
         for n in sorted((nvs or {}).values(), key=lambda n: n["id"]):
-            if mo.normaliza(n.get("estado", "")) in ("abierto", "parcial") and o in n.get("objetos", []):
+            if (mo.normaliza(n.get("estado", "")) in ("abierto", "parcial") and o in n.get("objetos", [])
+                    and n["id"] not in en_pendientes):
                 negocio = mo.normaliza(n.get("queHaceFalta", "")).startswith("negocio")
                 sin_verificar.append(f"{o} tiene {n['id']} sin verificar: ¿{'PC' if negocio else 'PT'}?")
-    informe("técnico §13: lo que se modifica o se usa con un hallazgo Alta", graves, grave=False)
-    informe("técnico §13: lo que se modifica o se usa con algo sin verificar", sin_verificar, grave=False)
+    informe("técnico §13: lo que se modifica o se usa con un hallazgo Alta que no cita ninguna PT ni PC", graves,
+            grave=False)
+    informe("técnico §13: lo que se modifica o se usa con algo sin verificar que no cita ninguna PT ni PC",
+            sin_verificar, grave=False)
 
     propuesta = m.raiz / "refactorizacion" / "propuesta.md"
     if propuesta.exists():
         sol = re.search(r"^## 3\. Soluci[oó]n\s*$(.*?)(?=^## |\Z)", propuesta.read_text(encoding="utf-8"), re.M | re.S)
         refs = sorted(set(RX_REF.findall(mo.sin_comentarios(sol.group(1))))) if sol else []
         en_dt = {x for p in m.vigentes("DT") for x in RX_REF.findall(m.texto(p.id))}
-        informe("propuesta: cada REF de su Solución con una DT que la cite («[FU-nn REF-nn]» en «Necesidad»)",
-                [r for r in refs if r not in en_dt])
+        informe("propuesta: cada REF de su Solución con una DT que la cite («[FU-nn REF-nn]» en «Necesidad»; si el "
+                "cliente la rechaza, con «Decisión: No se hace: …»)", [r for r in refs if r not in en_dt], grave=completo)
         migracion = any(cab and mo.normaliza(cab[0]).startswith("origen en la app") for _, cab, _ in m.tablas("T", "3"))
         informe("técnico §3: tabla «Carga inicial y migración» (hay propuesta de refactorización)",
-                [] if migracion else ["falta"])
+                [] if migracion else ["falta"], grave=completo)
 
 
 # ------------------------------------------------------------------ fuentes
@@ -646,13 +656,15 @@ def _secuencias(lineas):
 
 def texto_viejo(m, ant, modif):
     """Para cada pieza modificada, las secuencias de cinco palabras que tenía antes y ya no tiene, y cada otra línea del
-    funcional o del técnico que aún las dice: «HU-07: "…" sigue en PAN-04, l.212». Una por pieza y línea."""
+    funcional o del técnico que aún las dice: «HU-07: "…" sigue en PAN-04, l.212». Una vez por línea, y solo de las
+    líneas que ya estaban tal cual en la versión anterior: lo reescrito en esta versión ya se ha revisado."""
     duenio = {}     # (doc, línea) -> la pieza más pequeña que la contiene
     for p in m.piezas.values():
         for i in range(p.ini, p.fin):
             otro = duenio.get((p.doc, i))
             if otro is None or p.fin - p.ini < m.piezas[otro].fin - m.piezas[otro].ini:
                 duenio[(p.doc, i)] = p.id
+    de_antes = {(d, l) for d, D in ant.docs.items() for l in D.lineas}
     avisos, vistos = [], set()
     for pid in modif:
         p = m.piezas.get(pid)
@@ -668,14 +680,14 @@ def texto_viejo(m, ant, modif):
                 continue
             for i, l in enumerate(m.docs[d].lineas):
                 otro = duenio.get((d, i))
-                if (d, i) in propias or (otro and anulada(m, otro)):
+                if (d, i) in propias or (d, i) in vistos or (d, l) not in de_antes or (otro and anulada(m, otro)):
                     continue
                 pal = _palabras(l)
                 ws = [w for w, _ in pal]
                 k = next((k for k in range(len(ws) - SECUENCIA + 1) if tuple(ws[k:k + SECUENCIA]) in quitadas), None)
-                if k is None or (pid, d, i) in vistos:
+                if k is None:
                     continue
-                vistos.add((pid, d, i))
+                vistos.add((d, i))
                 donde = otro or f"{mo.NOMBRE_DOC[d]} §{m.docs[d].seccion_de_linea[i]}"
                 fin = k + 1     # la frase entera: las secuencias quitadas seguidas desde la primera
                 while fin < len(ws) - SECUENCIA + 1 and tuple(ws[fin:fin + SECUENCIA]) in quitadas:
@@ -706,8 +718,30 @@ def lee_informe(ruta):
     return t, puntos, revision
 
 
+def comprobar_requiere(base, puntos):
+    """«Requiere» de cada punto: «—» o «Sí (motivo)»; y «Sí» si el punto CAMBIA o ANULA una pieza 🔒 de «Encaja en»
+    (🔒 en base: el análisis antes de aplicar el informe)."""
+    formato, sin_si = [], []
+    for f in puntos:
+        col = next((k for k in f if k.startswith("requiere")), None)
+        if col is None:
+            continue
+        req = mo.sin_comentarios(f[col]).strip()
+        si = re.match(r"si(?!\w)", mo.normaliza(req).strip(" *")) is not None
+        if not si and req not in ("—", "-"):
+            formato.append(f"punto {f.get('#', '?')} «{req}»")
+        if not si and mo.normaliza(f.get("tipo", "")).strip(" *").startswith(("cambia", "anula")):
+            validadas = sorted(x for x in mo.ids_en(f.get("encaja en", "")) if x in base.piezas
+                               and "🔒" in (base.piezas[x].estado, base.piezas[base.raiz_de(x)].estado))
+            if validadas:
+                sin_si.append(f"punto {f.get('#', '?')} ({', '.join(validadas)})")
+    informe("«Requiere» de cada punto: «—» o «Sí (motivo)»", formato)
+    informe("«Requiere: Sí» en cada punto que cambia o anula algo 🔒 de «Encaja en»", sin_si)
+
+
 def comprobar_informe_previo(m, ruta_imp, carpeta_fuentes):
     t, puntos, revision = lee_informe(ruta_imp)
+    comprobar_requiere(m, puntos)
     en_revision = {m.raiz_de(x) for f in revision for x in mo.ids_en(f.get("pieza", ""))}
     faltan = set()
     for f in puntos:
@@ -754,14 +788,15 @@ def comprobar_informe_previo(m, ruta_imp, carpeta_fuentes):
 
 def comprobar_impacto(m, ant, ruta_imp, cambios):
     t, puntos, revision = lee_informe(ruta_imp)
+    comprobar_requiere(ant, puntos)
     revisar, resueltos, sin_cambios = set(), set(), set()
     for f in puntos:
         if "✗" not in f.get("decision", ""):
             revisar |= mo.ids_en(f.get("revisar tambien", ""))
     for f in revision:
-        res = mo.normaliza(f.get("resultado", ""))
+        res = mo.normaliza(mo.sin_comentarios(f.get("resultado", ""))).strip(" *")
         ids = {m.raiz_de(x) for x in mo.ids_en(f.get("pieza", ""))}
-        if res and "pendiente" not in res:
+        if res and not res.startswith("pendiente"):     # sin resolver: vacío o «Pendiente…»
             resueltos |= ids
         if "sin cambios" in res:
             sin_cambios |= ids

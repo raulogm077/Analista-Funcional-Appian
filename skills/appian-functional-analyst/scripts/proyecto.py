@@ -70,8 +70,12 @@ def estado(a):
     print(f"Fuentes: {len(catalogadas)} catalogadas, {len(procesadas)} procesadas" +
           (f"; sin procesar: {', '.join(sin)}" if sin else ""))
     for inf in sorted((raiz / "impacto").glob("FU-*.md")):
-        t = inf.read_text(encoding="utf-8")
-        if re.search(r"Estado:\s*pendiente", t, re.I):
+        # «Estado: pendiente» o «Estado: aplicado en 1.2; pendientes de aprobación: puntos 4 y 7» (actualizacion.md)
+        est = re.search(r"Estado:\s*([^·\n]+)", "\n".join(inf.read_text(encoding="utf-8").splitlines()[:5]))
+        e = est.group(1).strip() if est else ""
+        if re.search(r"pendientes? de aprobaci[oó]n:\s*puntos?\s+\d", e, re.I):
+            print(f"· {inf.name}: {e}")
+        elif re.match(r"pendiente", e, re.I):
             print(f"· {inf.name}: informe pendiente de aprobar o de aplicar")
 
     if not m.docs:

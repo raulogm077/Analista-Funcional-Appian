@@ -29,8 +29,9 @@ EVOLUTIVO = DATOS / "evolutivo"     # una aplicación existente (as-is/ de DEM, 
 fallos = []
 
 
-def corre(*args, entrada=None):
-    r = subprocess.run([sys.executable, *map(str, args)], capture_output=True, text=True, input=entrada)
+def corre(*args, entrada=None, env=None):
+    r = subprocess.run([sys.executable, *map(str, args)], capture_output=True, text=True, input=entrada,
+                       env={**os.environ, **env} if env else None, encoding="utf-8", errors="replace")
     return r.returncode, r.stdout + r.stderr
 
 
@@ -128,6 +129,12 @@ def main():
         grupo = out.split("## Responsable de la unidad", 1)[-1]
         ok("indice.py pendientes: la PC-04, que afecta a más, sale la primera",
            c == 0 and "PC-04" in grupo and grupo.index("PC-04") < grupo.index("PC-01") < grupo.index("PC-02"), out)
+        # Una consola de Windows en cp1252 no rompe la salida con «≥» o «→» (indice.py escribe en UTF-8)
+        editar(pend / "analisis" / "funcional.md", "Sí, hasta que se revise / No", "Sí, si faltan ≥ 2 días → retirada / No")
+        for orden in (("pendientes",), ("ficha", "PC-04")):
+            c, out = corre(S / "indice.py", orden[0], pend, *orden[1:], env={"PYTHONIOENCODING": "cp1252"})
+            ok(f"indice.py {orden[0]} con la consola en cp1252 y una PC con «≥» y «→»",
+               c == 0 and "≥ 2 días → retirada" in out, out)
 
         # 3. Proyecto nuevo
         nuevo = tmp / "nuevo"
@@ -174,6 +181,29 @@ Versión 1.2: HU-07.1 a 30 MB · PC-04 nuevo · técnico §14 con 35 MB
 """, encoding="utf-8")
         c, out = corre(S / "comprobar.py", p, "--anterior", p / "versiones" / "v1.1", "--impacto", informe)
         ok("actualización correcta: comprobar.py --anterior --impacto sin errores", c == 0, out)
+        # «Revisión de dependencias»: sin resolver es un resultado vacío o que empieza por «Pendiente»; la palabra
+        # dentro de la frase no
+        bien_inf = informe.read_text(encoding="utf-8")
+        for resultado, resuelta in [("Sin cambios: el punto 2 queda pendiente de la respuesta", True),
+                                    ("Pendiente: la revisa el analista", False), ("", False)]:
+            informe.write_text(bien_inf.replace("| Revisada, sin cambios |", f"| {resultado} |"), encoding="utf-8")
+            c, out = corre(S / "comprobar.py", p, "--anterior", p / "versiones" / "v1.1", "--impacto", informe)
+            linea = next((l for l in out.splitlines() if "cada dependencia del informe tiene resultado" in l), "")
+            ok(f"revisión de dependencias «{resultado}»: {'resuelta' if resuelta else 'sin resolver'}",
+               linea.startswith("✓") if resuelta else (linea.startswith("✗") and "DOC-01" in linea), out)
+        informe.write_text(bien_inf, encoding="utf-8")
+        # La cabecera de un informe con puntos sin aplicar: proyecto.py estado los reconoce y los lista
+        (p / "impacto" / "FU-05.md").write_text("# Impacto de FU-05\nAnálisis base: versión 1.2 · Estado: aplicado en 1.3; "
+                                                "pendientes de aprobación: puntos 4 y 7\n", encoding="utf-8")
+        (p / "impacto" / "FU-06.md").write_text("# Impacto de FU-06\nAnálisis base: versión 1.3 · Estado: pendiente\n",
+                                                encoding="utf-8")
+        c, out = corre(S / "proyecto.py", "estado", p)
+        lineas = {x: next((l for l in out.splitlines() if x in l), "") for x in ("FU-04.md", "FU-05.md", "FU-06.md")}
+        ok("proyecto.py estado: informe aplicado con puntos pendientes de aprobación, y pendiente entero",
+           c == 0 and not lineas["FU-04.md"] and "aplicado en 1.3" in lineas["FU-05.md"]
+           and "puntos 4 y 7" in lineas["FU-05.md"] and "pendiente" in lineas["FU-06.md"], out)
+        for x in ("FU-05.md", "FU-06.md"):
+            (p / "impacto" / x).unlink()
         editar(f, "| Título | Qué se quiere hacer, en una línea |", "| Título | Qué se quiere hacer, en una frase |")
         editar(f, "**HU-06 — Redactar el informe técnico**", "**HU-06 — Redactar el informe técnico de la solicitud**")
         c, out = corre(S / "comprobar.py", p, "--anterior", p / "versiones" / "v1.1", "--impacto", informe)
@@ -201,6 +231,34 @@ Versión 1.2: HU-07.1 a 30 MB · PC-04 nuevo · técnico §14 con 35 MB
         editar(fo, "vence en un plazo de cinco días hábiles desde el envío.", "vence en un plazo de ocho días hábiles desde el envío.")
         c, out = corre(S / "comprobar.py", viejo, "--anterior", viejo / "versiones" / "v1.1")
         ok("texto que queda viejo: sin la frase vieja, sin aviso", "✓ texto que queda viejo" in out, out)
+        # Una línea reescrita en esta misma versión ya se ha revisado: no se avisa de ella
+        r = tmp / "texto viejo reescrito"
+        shutil.copytree(viejo, r)
+        editar(r / "analisis" / "funcional.md", "vence en un plazo de ocho días hábiles desde el envío.",
+               "vence en un plazo de cinco días hábiles desde el envío de la solicitud.")
+        c, out = corre(S / "comprobar.py", r, "--anterior", r / "versiones" / "v1.1")
+        ok("texto que queda viejo: una línea reescrita en esta versión no es aviso", "✓ texto que queda viejo" in out, out)
+        # Dos piezas cambiadas que ya no dicen lo mismo: un aviso por línea, no uno por pieza
+        r = tmp / "texto viejo dos piezas"
+        shutil.copytree(EJEMPLO, r)
+        fr = r / "analisis" / "funcional.md"
+        editar(fr, "Como técnico, quiero ver juntos los datos y los documentos",
+               "La revisión se hace en un plazo de cinco días hábiles desde el envío.\n\n"
+               "Como técnico, quiero ver juntos los datos y los documentos")
+        for pan in ("técnico", "responsable"):
+            editar(fr, f"Tarea del {pan}. Se abre desde su bandeja de tareas.",
+                   f"Tarea del {pan}. Se abre desde su bandeja de tareas y vence en un plazo de cinco días hábiles desde el envío.")
+        corre(S / "proyecto.py", "copia", r)
+        for x in (fr, r / "analisis" / "tecnico.md"):
+            editar(x, "Versión: 1.1", "Versión: 1.2")
+        editar(fr, "en un plazo de cinco días hábiles desde el envío.\n\nComo técnico",
+               "en un plazo de ocho días hábiles desde el envío.\n\nComo técnico")
+        editar(fr, "Tarea del técnico. Se abre desde su bandeja de tareas y vence en un plazo de cinco",
+               "Tarea del técnico. Se abre desde su bandeja de tareas y vence en un plazo de ocho")
+        c, out = corre(S / "comprobar.py", r, "--anterior", r / "versiones" / "v1.1")
+        aviso = next((l for l in out.splitlines() if "queda viejo" in l), "")
+        ok("texto que queda viejo: la línea que sigue igual (PAN-05) sale una vez aunque cambien HU-04 y PAN-04",
+           aviso.startswith("· ") and aviso.count('" sigue en PAN-05') == 1, out)
 
         # 4b. Lo validado (🔒) solo cambia con un punto aprobado
         v = tmp / "validado"
@@ -232,6 +290,20 @@ Versión 1.2: PAN-01
         inf.write_text(plantilla_inf.format(d="✔"), encoding="utf-8")
         c, out = corre(S / "comprobar.py", v, "--anterior", v / "versiones" / "v1.1", "--impacto", inf)
         ok("con el punto aprobado (✔) pasa", "✓ lo 🔒 que cambia" in out, out)
+        # «Requiere»: «—» o «Sí (motivo)»; un punto que cambia o anula algo 🔒 de «Encaja en» lleva «Sí». Antes de
+        # aplicar (sin --anterior) y después, igual
+        for requiere, falla in [("Aprobación: cambia PAN-01 🔒", "«Requiere» de cada punto"),
+                                ("—", "«Requiere: Sí» en cada punto que cambia o anula algo 🔒"), ("Sí (🔒)", None)]:
+            inf.write_text(plantilla_inf.format(d="✔").replace("| Sí (🔒) |", f"| {requiere} |"), encoding="utf-8")
+            for antes in (False, True):
+                extra = () if antes else ("--anterior", v / "versiones" / "v1.1")
+                c, out = corre(S / "comprobar.py", v, *extra, "--impacto", inf)
+                req = [l for l in out.splitlines() if "«Requiere" in l]
+                ok(f"«Requiere: {requiere}» {'antes de aplicar' if antes else 'después'}: "
+                   + (f"error en «{falla}»" if falla else "sin errores"),
+                   len(req) == 2 and (all(l.startswith("✓") for l in req) if not falla else
+                                      any(l.startswith("✗ " + falla) and ("PAN-01" in l or "punto 1" in l) for l in req)),
+                   out)
 
         # 4c. La primera decisión de un proyecto (D-01) es un ID nuevo válido
         inf0 = nuevo / "impacto" / "FU-01.md"
@@ -329,6 +401,15 @@ Se acepta si:
         c, out = corre(S / "leer_fuentes.py", "--una-fuente", app / "as-is", "-o", app / "fuentes")
         ok("leer_fuentes.py --una-fuente otra vez: la misma FU", c == 0 and fu is not None and f"= {fu['id']}" in out
            and len(json.loads((app / "fuentes" / "indice.json").read_text(encoding="utf-8"))["fuentes"]) == 2, out)
+        # Lo que dejan el sistema y Office en la carpeta no es un documento: ni cambia la fuente ni sale en su índice
+        for basura in ("desktop.ini", "Thumbs.db", ".DS_Store", "~$LEEME.md", "datos/Thumbs.db", "datos/~$notas.docx"):
+            (app / "as-is" / basura).write_bytes(b"\x00basura")
+        c, out = corre(S / "leer_fuentes.py", "--una-fuente", app / "as-is", "-o", app / "fuentes")
+        txt = (app / "fuentes" / fu["salida"]).read_text(encoding="utf-8") if fu and fu.get("salida") else ""
+        ok("leer_fuentes.py --una-fuente: desktop.ini, Thumbs.db, .DS_Store y ~$… no crean otra FU ni salen en el índice",
+           c == 0 and fu is not None and f"= {fu['id']}" in out
+           and len(json.loads((app / "fuentes" / "indice.json").read_text(encoding="utf-8"))["fuentes"]) == 2
+           and not re.search(r"desktop\.ini|Thumbs|DS_Store|~\$", txt), out + txt)
 
         # 7c. Aplicación existente: con as-is/datos/, el origen de cada historia, la Situación de cada objeto de §13
         # contra el inventario, las citas de hallazgos, NV y REF, y la migración si hay propuesta
@@ -367,6 +448,34 @@ Se acepta si:
             c, out = corre(S / "comprobar.py", r)
             linea = next((l for l in out.splitlines() if l.startswith("✗") and comprobacion in l), "")
             ok(f"evolutivo: {nombre} es error", c == 1 and cita in linea, out)
+        # Con el técnico «en curso», una REF sin DT y la falta de la tabla de migración son aviso, como lo demás del
+        # técnico; con «completo», error (lo de arriba)
+        r = tmp / "evolutivo en curso"
+        shutil.copytree(EVOLUTIVO, r)
+        editar(r / "analisis" / "tecnico.md", "Versión: 1.0 · Estado: completo", "Versión: 1.0 · Estado: en curso")
+        editar(r / "analisis" / "tecnico.md", "| **Necesidad** | [FU-02 REF-01], HU-02 |", "| **Necesidad** | HU-02 |")
+        editar(r / "analisis" / "tecnico.md", "| Origen en la app actual |", "| Origen anterior |")
+        c, out = corre(S / "comprobar.py", r)
+        avisos = [l for l in out.splitlines() if l.startswith("· ")]
+        ok("evolutivo en curso: REF sin DT y sin tabla de migración, aviso",
+           c == 0 and any("cada REF" in l and "REF-01" in l for l in avisos)
+           and any("Carga inicial y migración" in l for l in avisos), out)
+        # Una REF que el cliente rechaza se cierra con su DT: «No se hace: …»
+        r = tmp / "evolutivo REF rechazada"
+        shutil.copytree(EVOLUTIVO, r)
+        editar(r / "analisis" / "tecnico.md", "| **Decisión** | `DEM_ER_IdEstado` da el id de un estado de `DEM Estado`;",
+               "| **Decisión** | No se hace: el cliente mantiene la constante `DEM_ESTADOS_VALIDOS` (FU-03); antes, "
+               "`DEM_ER_IdEstado` iba a dar el id de un estado de `DEM Estado`;")
+        c, out = corre(S / "comprobar.py", r)
+        ok("evolutivo: una REF rechazada con «No se hace: …» en su DT pasa", c == 0 and "✓ propuesta: cada REF" in out, out)
+        # Los objetos de §13 con su prefijo de tipo o con paréntesis («recordType!DEM Solicitud», «DEM_Dashboard()»)
+        r = tmp / "evolutivo con prefijos"
+        shutil.copytree(EVOLUTIVO, r)
+        editar(r / "analisis" / "tecnico.md", "| `DEM Solicitud` | Record type |", "| `recordType!DEM Solicitud` | Record type |")
+        editar(r / "analisis" / "tecnico.md", "| `DEM_Dashboard` | Interfaz |", "| `DEM_Dashboard()` | Interfaz |")
+        c, out = corre(S / "comprobar.py", r)
+        ok("evolutivo: «recordType!…» y «…()» en §13 se leen como el objeto",
+           c == 0 and not [l for l in out.splitlines() if l.startswith("✗")], out)
         r = tmp / "evolutivo modifica"
         shutil.copytree(EVOLUTIVO, r)
         editar(r / "analisis" / "tecnico.md", "| Regla de otra aplicación | Existe |", "| Regla de otra aplicación | Modifica |")
@@ -386,16 +495,33 @@ Se acepta si:
            and any(l.startswith("· ") and "UTL_DiasLaborables" in l for l in out.splitlines()), out)
 
         # 7d. Parte mal hecha: un objeto que se modifica o se usa (§13 «Modifica» o «Existe») con un hallazgo Alta o
-        # con algo sin verificar (abierto o parcial) es aviso, con su H o su NV
+        # con algo sin verificar (abierto o parcial) es aviso, con su H o su NV, salvo que una PT o una PC ya lo cite.
+        # En el ejemplo, PT-01 cita NV-ARQ-01, y PT-02 y PC-01, NV-PRO-01; H-SEG-01 no lo cita ninguna
         c, out = corre(S / "comprobar.py", EVOLUTIVO)
         avisos = "\n".join(l for l in out.splitlines() if l.startswith("· "))
-        ok("evolutivo: avisa del hallazgo Alta y de cada NV sin verificar, con su ID y ¿PC? o ¿PT?",
+        ok("evolutivo: avisa del hallazgo Alta sin PT ni PC, con su ID; de los NV que ya cita una PT o una PC, no",
            c == 0 and "DEM_INT_NotificarERP tiene H-SEG-01 (Alta): ¿pasa antes por refactorización?" in avisos
-           and "UTL_DiasLaborables tiene NV-ARQ-01 sin verificar: ¿PT?" in avisos
-           and "DEM Revisar Solicitud tiene NV-PRO-01 sin verificar: ¿PC?" in avisos
+           and "NV-ARQ-01" not in avisos and "NV-PRO-01" not in avisos
            and "DEM_SolicitudForm tiene" not in avisos and "DEM_ER_IdEstado tiene" not in avisos, out)
-        r = tmp / "evolutivo resuelto"
+        sin_citas = tmp / "evolutivo sin citas"
+        shutil.copytree(EVOLUTIVO, sin_citas)
+        editar(sin_citas / "analisis" / "tecnico.md", "`UTL_DiasLaborables`? [FU-01 NV-ARQ-01]", "`UTL_DiasLaborables`?")
+        editar(sin_citas / "analisis" / "tecnico.md", "de la revisión? [FU-01 NV-PRO-01]", "de la revisión?")
+        editar(sin_citas / "analisis" / "funcional.md", "ACT-01 <!-- ❓ [FU-01 NV-PRO-01] -->", "ACT-01 <!-- ❓ FU-01 -->")
+        c, out = corre(S / "comprobar.py", sin_citas)
+        avisos = "\n".join(l for l in out.splitlines() if l.startswith("· "))
+        ok("evolutivo: sin PT ni PC que los cite, avisa de cada NV sin verificar con ¿PC? o ¿PT?",
+           c == 0 and "UTL_DiasLaborables tiene NV-ARQ-01 sin verificar: ¿PT?" in avisos
+           and "DEM Revisar Solicitud tiene NV-PRO-01 sin verificar: ¿PC?" in avisos, out)
+        r = tmp / "evolutivo H citado"
         shutil.copytree(EVOLUTIVO, r)
+        editar(r / "analisis" / "tecnico.md", "| Analista con el responsable de las solicitudes (PC-01) |",
+               "| Analista con el responsable de las solicitudes (PC-01) |\n"
+               "| PT-03 | ¿Se refactoriza antes la integración con el ERP? [FU-01 H-SEG-01] | §10 | Analista con el cliente |")
+        c, out = corre(S / "comprobar.py", r)
+        ok("evolutivo: con una PT que cita el hallazgo Alta, sin aviso", c == 0 and "H-SEG-01 (Alta)" not in out, out)
+        r = tmp / "evolutivo resuelto"
+        shutil.copytree(sin_citas, r)
         editar(r / "as-is" / "datos" / "sin-verificar.json", '"estado": "abierto",\n   "documento": "02-arquitectura',
                '"estado": "resuelto",\n   "documento": "02-arquitectura')
         c, out = corre(S / "comprobar.py", r)

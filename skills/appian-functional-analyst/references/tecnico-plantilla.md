@@ -101,7 +101,9 @@ un sistema. Tabla vertical:
 ```
 
 Con propuesta de refactorización (`refactorizacion/propuesta.md`), cada REF de su «3. Solución» se baja a objetos en
-una DT que la cita en «Necesidad»: «[FU-02 REF-01], HU-02».
+una DT que la cita en «Necesidad»: «[FU-02 REF-01], HU-02». Una REF que el cliente rechaza se cierra igual, con una DT
+que la cita: «Decisión: No se hace: <lo que decide el cliente> (FU-nn)», en «Por qué» la BP que queda sin aplicar y en
+«Riesgo», el hallazgo que sigue. Con el técnico «en curso», una REF sin DT es aviso; con «completo», error.
 
 ### 3. Modelo de datos
 Por record type, `### 3.n <Record type>`:
