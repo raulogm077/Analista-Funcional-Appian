@@ -1,0 +1,11 @@
+[
+ {"id": "INO-01", "fuente": "reunion-2026-05-20.txt", "minuto": "00:05:20", "piezas": ["RF-06", "PR-04"], "tipo": "CAMBIA",
+  "que": "Regla: en la reunión la comisión acuerda una sola puntuación; en el DF cada miembro puntúa y se hace la media",
+  "reunion": ["una sola puntuacion", "acuerda"]},
+ {"id": "INO-02", "fuente": "reunion-2026-05-20.txt", "minuto": "00:08:30", "piezas": ["RN-03"], "tipo": "CAMBIA",
+  "que": "Regla: en la reunión no se concede por debajo de 60 puntos; en el DF, de 50",
+  "reunion": ["60 puntos", "sesenta puntos"]},
+ {"id": "INO-03", "fuente": "reunion-2026-06-03.txt", "minuto": "00:08:05", "piezas": ["NT-05"], "tipo": "CAMBIA",
+  "que": "Aviso: en la reunión la comisión recibe un solo correo al terminar el plazo de revisión; en el DF, uno por solicitud",
+  "reunion": ["un solo correo", "termina el plazo de revision", "cierre del plazo"]}
+]

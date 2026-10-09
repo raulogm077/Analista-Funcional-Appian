@@ -1,0 +1,12 @@
+{
+ "MNT Orden": ["Modifica"],
+ "MNT_IF_FormularioOrden": ["Modifica", "Sustituye"],
+ "(nuevo) proceso: corregir una orden abierta (acción «Corregir orden»)": ["Nuevo"],
+ "MNT Técnico": ["Modifica"],
+ "(nuevo) proceso: dar de baja a un técnico (acción desde su ficha)": ["Nuevo"],
+ "MNT_IF_AsignarTecnico": ["Modifica", "Sustituye"],
+ "MNT_IF_Tecnicos": ["Existe"],
+ "MNT_PM_GestionOrden": ["Modifica", "Sustituye"],
+ "(nuevo) interfaz: tarea del solicitante para valorar el trabajo": ["Nuevo"],
+ "MNT_IF_ResumenOrden": ["Modifica", "Sustituye"]
+}

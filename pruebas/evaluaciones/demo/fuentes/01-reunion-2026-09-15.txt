@@ -1,0 +1,97 @@
+Reunión con el almacén de medios audiovisuales · 15 de septiembre de 2026
+
+[00:00:05] Andrea Soler Pons:
+Buenos días. Queremos entender cómo funcionan hoy los préstamos de equipos audiovisuales y qué necesitáis de la aplicación.
+
+[00:00:40] Javier Ortega Prieto:
+Hoy nos piden los equipos por correo y los apuntamos en una hoja de cálculo. Se nos pierden peticiones y nunca sabemos qué está prestado.
+
+[00:01:50] Andrea Soler Pons:
+¿Cuántos equipos tenéis?
+
+[00:02:05] Javier Ortega Prieto:
+Unos 120: proyectores, cámaras, micrófonos, portátiles y pantallas.
+
+[00:02:40] Andrea Soler Pons:
+¿Qué necesita ver quien quiere pedir uno?
+
+[00:03:00] Nuria Velasco Ruiz:
+Un catálogo con el nombre de cada equipo, su categoría y si está disponible, prestado o en reparación. Y poder buscar por nombre y filtrar por categoría y por estado.
+
+[00:04:20] Andrea Soler Pons:
+¿Y para pedirlo?
+
+[00:04:40] Nuria Velasco Ruiz:
+Elegir el equipo, las fechas de inicio y de devolución, el motivo y dónde se va a usar.
+
+[00:05:30] Javier Ortega Prieto:
+Como mucho quince días naturales, y la devolución nunca antes del inicio. Y solo se pueden pedir los que estén disponibles en esas fechas.
+
+[00:06:40] Andrea Soler Pons:
+¿Quién aprueba el préstamo?
+
+[00:07:00] Nuria Velasco Ruiz:
+El responsable del área de quien lo pide. Tenemos dos días hábiles para contestar.
+
+[00:07:50] Andrea Soler Pons:
+¿Qué pasa si lo rechazáis?
+
+[00:08:10] Nuria Velasco Ruiz:
+Se rechaza y a la persona le llega un correo con el comentario que pongamos.
+
+[00:09:00] Andrea Soler Pons:
+¿Y si se aprueba?
+
+[00:09:20] Javier Ortega Prieto:
+Nos llega a nosotros la tarea de entregarlo, con un correo. El día de inicio lo entregamos y lo marcamos como prestado.
+
+[00:10:40] Andrea Soler Pons:
+¿Avisáis antes de la devolución?
+
+[00:10:55] Javier Ortega Prieto:
+Sí, un correo el día antes de la fecha de devolución, para que no se olvide.
+
+[00:11:50] Andrea Soler Pons:
+¿Y cuando lo devuelven?
+
+[00:12:10] Javier Ortega Prieto:
+Lo recogemos y anotamos si vuelve bien o con daños. Si tiene daños, escribimos qué le pasa y el equipo pasa a reparación. Si vuelve bien, queda disponible otra vez.
+
+[00:13:30] Andrea Soler Pons:
+¿Qué ve cada persona de sus préstamos?
+
+[00:13:50] Nuria Velasco Ruiz:
+Una lista con el número, el equipo, desde cuándo, hasta cuándo y en qué estado está.
+
+[00:14:50] Andrea Soler Pons:
+¿Quién ve qué?
+
+[00:15:05] Javier Ortega Prieto:
+Cada uno ve los suyos; el responsable, los de su área; y nosotros, todos.
+
+[00:16:10] Andrea Soler Pons:
+¿Necesitáis una ficha de cada equipo?
+
+[00:16:25] Javier Ortega Prieto:
+Sí, con sus datos, dónde lo guardamos y la lista de sus préstamos. Nosotros apuntamos también la fecha de la última revisión técnica, para planificar las revisiones.
+
+[00:17:40] Andrea Soler Pons:
+¿Cuánta gente lo usa?
+
+[00:17:55] Javier Ortega Prieto:
+Unas 400 personas, y hacemos unos 2.000 préstamos al año. Los guardamos tres años.
+
+[00:18:50] Andrea Soler Pons:
+¿Las personas y las áreas salen del directorio corporativo?
+
+[00:19:05] Nuria Velasco Ruiz:
+Sí, del directorio, que se actualiza cada noche.
+
+[00:20:00] Andrea Soler Pons:
+Una última: ¿se puede ampliar un préstamo que está en curso?
+
+[00:20:15] Javier Ortega Prieto:
+No lo tengo claro. Déjame pensarlo y te digo.
+
+[00:21:10] Andrea Soler Pons:
+De acuerdo. Os mando el diseño funcional esta semana.

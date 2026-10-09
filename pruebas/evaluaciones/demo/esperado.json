@@ -1,0 +1,14 @@
+{
+ "fuente": "demo-2026-10-06.txt",
+ "cambian": ["PAN-01", "PAN-03", "PAN-04", "PAN-06"],
+ "con_aprobacion": ["PAN-02", "PAN-05"],
+ "sin_cambio": [],
+ "comentarios": [
+  {"pan": "PAN-01", "minuto": "00:01:45", "que": "Catálogo: una columna con la ubicación de cada equipo"},
+  {"pan": "PAN-02", "minuto": "00:03:30", "que": "Solicitud (validada): el lugar de uso, una lista de las tres sedes en vez de texto libre"},
+  {"pan": "PAN-03", "minuto": "00:06:10", "que": "Mis préstamos: una columna con el responsable que lo aprobó"},
+  {"pan": "PAN-04", "minuto": "00:07:50", "que": "Aprobar: el comentario es obligatorio al rechazar"},
+  {"pan": "PAN-05", "minuto": "00:09:30", "que": "Entregar y recoger (validada): una casilla para marcar si vuelve con todos sus accesorios"},
+  {"pan": "PAN-06", "minuto": "00:11:20", "que": "Ficha del equipo: la fecha de la última revisión técnica"}
+ ]
+}
