@@ -82,6 +82,8 @@ En `<p>`:
 - `analisis/diagramas/<nombre>.mmd`: los diagramas de estados y de datos
 - `entregables/`: el DF en Word
 - `versiones/`: la copia del análisis antes de cada cambio
+- `modulos/`: el funcional y el técnico de cada módulo, en un análisis grande (`volumen-grande.md`)
+- `prototipo/`: solo la crea vacía al iniciar el proyecto; la llena `appian-prototipos`
 
 El `.drawio`, el `.png` y el `.bpmn` de cada proceso y la imagen de cada `.mmd` los escribe `appian-diagramas-bpmn`.
 

@@ -25,6 +25,7 @@ En la carpeta que indique quien llama, dentro de `<p>`:
 - `analisis/diagramas/*.json`: el proceso de cada diagrama, del analista; se reescribe al aceptar lo cambiado a mano
 - `as-is/08-procesos-bpmn/*.{drawio,png,bpmn}`: los procesos de una aplicación existente
 - `as-is/08-procesos-bpmn/*.json`: el proceso de cada diagrama, de ingeniería inversa; igual que el del analista
+- `as-is/diagrams/*.{png,svg}`: la imagen de cada Mermaid de ingeniería inversa (`mermaid.py`)
 
 ## Formato del proceso
 

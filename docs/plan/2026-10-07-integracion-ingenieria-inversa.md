@@ -1049,9 +1049,9 @@ tercio en `ocultas/`) y `pruebas/evaluaciones/enrutado/README.md`; resultados en
 - Fronteras: «¿la rehacemos o la evolucionamos?» → refactorización; «revisa esta interfaz» → buenas prácticas;
   «documenta la app X» → ingeniería inversa; «añade estas historias a lo que ya hay» → analista; «dibuja el proceso de
   la app existente» → diagramas (con ingeniería inversa si no hay JSON); «enséñale al cliente cómo quedaría» → prototipos.
-- [ ] **Paso 1:** aquí se pasa al Paso 2: `claude plugin eval` espera otro formato de casos y llama a la API. Si Raúl
+- [x] **Paso 1:** aquí se pasa al Paso 2: `claude plugin eval` espera otro formato de casos y llama a la API. Si Raúl
   quiere `eval`, se convierte `enrutado.json` en casos con el evaluador `tool_used: Skill` y los ejecuta él.
-- [ ] **Paso 2:** un agente que solo ve las seis descripciones elige la skill de cada petición. Criterio: todas;
+- [x] **Paso 2:** un agente que solo ve las seis descripciones elige la skill de cada petición. Criterio: todas;
   si no, se ajustan las descripciones y se repite con las ocultas sin ver. **Paso 3:** resultados y commit. Cierre de fase: revisión y merge.
 
 ---

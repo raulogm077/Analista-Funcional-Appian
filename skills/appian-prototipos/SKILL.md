@@ -129,6 +129,7 @@ En `<p>`:
 - `prototipo/brand-<id>.json`: la marca del cliente, con su logo, `perfil-css-<id>.txt` y `marca-<id>.md`
 - `prototipo/prototipo-<app>.html`: el prototipo, con su trazabilidad y, si la marca lo lleva, su perfil CSS
 - `prototipo/capturas/`: las capturas PNG y su `indice.md`
+- `analisis/funcional.md`: solo el enlace de cada captura en su ficha PAN; el documento es del analista
 
 ## Uso del prototipo (explícalo al entregar la primera vez)
 - **Reunión**: navegación por las páginas del site, filtros, búsqueda, fichas, asistentes con validación, diálogos. Barra inferior: **Pantallas** (índice para saltar a cualquier pantalla o diálogo) y **Requisitos** (cobertura, preguntas abiertas, supuestos).
