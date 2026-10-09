@@ -44,18 +44,39 @@ Cada petición entra por una sola skill. Las demás se usan desde ella, y se pas
 
 ## Requisitos
 
-| Entorno | Qué hace falta |
-|---|---|
-| **Claude (web o escritorio, sesiones en la nube)** | Nada: Python, Playwright, navegador, Node con `docx` y LibreOffice ya están |
-| **Claude Code** en el equipo | **Python 3.9+** (en Windows, el comando es `python`). Para diagramas, prueba de humo y capturas: `pip install playwright` (versión actual) y un navegador (`python -m playwright install chromium`, o Chrome / Edge ya instalados: no hace falta descargar nada más). Para el DF en Word: Node.js con el paquete `docx` (`npm install docx` en la carpeta de trabajo o `npm install -g docx`); LibreOffice para revisarlo. Opcional: `pdftotext` o `pip install pypdf` para PDF; LibreOffice y poppler para ver diapositivas de un DF |
+En Claude (web o escritorio, sesiones en la nube) ya está todo, salvo lo de ingeniería inversa, que solo funciona en el
+equipo. En el equipo, con Claude Code, hace falta lo de esta tabla; en negrita, lo imprescindible:
+
+<!-- requisitos:inicio -->
+| Requisito | Lo usa | Para qué | Si falta | Cómo se instala |
+|---|---|---|---|---|
+| **Python 3.9 o superior** | Todas las skills | Todos los scripts; el extractor de ingeniería inversa usa 3.10 o superior, que trae uv | No funciona nada | Windows: `winget install Python.Python.3.12` (el comando es `python`)<br>macOS: `brew install python`<br>Linux: `sudo apt install python3` |
+| Playwright para Python | `appian-diagramas-bpmn`, `appian-functional-analyst`, `appian-prototipos`, `appian-reverse-engineering` | Imagen de los diagramas; prueba de humo, contraste y capturas del prototipo | Diagramas sin imagen (el .drawio y el BPMN, sí) y prototipo sin capturas (se valida y se construye) | Windows: `python -m pip install playwright`<br>macOS y Linux: `python3 -m pip install playwright` |
+| Un navegador: el Chromium de Playwright, Chrome o Edge | `appian-diagramas-bpmn`, `appian-functional-analyst`, `appian-prototipos`, `appian-reverse-engineering` | Lo usa Playwright para pintar sin conexión | Lo mismo que sin Playwright | Windows: `python -m playwright install chromium`, o Chrome o Edge ya instalados<br>macOS y Linux: `python3 -m playwright install chromium`, o Chrome o Edge ya instalados |
+| Node.js | `appian-functional-analyst` | DF en Word, con el paquete docx | Se entrega el funcional.md | Windows: `winget install OpenJS.NodeJS.LTS`<br>macOS: `brew install node`<br>Linux: `sudo apt install nodejs npm` |
+| Paquete docx de Node | `appian-functional-analyst` | DF en Word | Se entrega el funcional.md | `npm install docx` en la carpeta de trabajo, o `npm install -g docx` |
+| LibreOffice | `appian-functional-analyst` | Revisar el DF en Word como PDF y ver las diapositivas de un DF del cliente | Se revisa a mano | Windows: `winget install TheDocumentFoundation.LibreOffice`<br>macOS: `brew install --cask libreoffice`<br>Linux: `sudo apt install libreoffice` |
+| pdftotext o pypdf | `appian-functional-analyst` | Leer fuentes en PDF | Claude lee el PDF directamente, más despacio | Windows: `python -m pip install pypdf`<br>macOS: `brew install poppler` o `python3 -m pip install pypdf`<br>Linux: `sudo apt install poppler-utils` o `python3 -m pip install pypdf` |
+| uv | `appian-reverse-engineering` | Arrancar el Dev MCP y el extractor, con Python 3.10 o superior y el SDK mcp | No se puede usar ingeniería inversa | Windows: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 \| iex"`<br>macOS y Linux: `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| Appian Dev MCP configurado | `appian-reverse-engineering` | Leer la aplicación en solo lectura (entorno 26.5 o superior, usuario con rol Designer) | No se puede usar ingeniería inversa | Lo instala cada persona y lo configura en el `.mcp.json` de su carpeta: `skills/appian-reverse-engineering/references/devmcp-setup.md` |
+| Appian MCP Server del mismo entorno | `appian-reverse-engineering` | Volúmenes del data fabric | La documentación sale sin volúmenes | Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía) |
+| Skill de PDF de Claude | `appian-reverse-engineering` | Exportar `as-is/` a PDF | Se entrega en Markdown | En Claude (web o escritorio) ya está; en Claude Code, una skill de PDF instalada, como `pdf` de anthropics/skills |
+| pytest | Las pruebas del repositorio | Pruebas de ingeniería inversa en `pruebas/comprobar_plugin.py --completo` | Las trae uv; sin uv, esas pruebas no se completan | Windows: `python -m pip install pytest`<br>macOS y Linux: `python3 -m pip install pytest` |
+| SDK mcp de Python (pide Python 3.10 o superior) | Las pruebas del repositorio | Pruebas de ingeniería inversa, con el Dev MCP simulado | Lo mismo que sin pytest | Windows: `python -m pip install "mcp>=1.2,<2"`<br>macOS y Linux: `python3 -m pip install "mcp>=1.2,<2"` |
+<!-- requisitos:fin -->
+
+La tabla sale de `requisitos.json` (`python3 requisitos.py --tabla-readme`). `requisitos.py`, en la carpeta del
+plugin, dice qué falta en un equipo, qué se pierde y cómo se instala: `python3 requisitos.py` para todo el plugin y
+`--skill <nombre>` para una skill (en Windows, `python`). Cada skill lo ejecuta antes de su primera tarea, y avisa
+también si hay una copia suelta de una skill del plugin en `~/.claude/skills/`.
 
 **Aviso al instalar**: al empezar una sesión, el plugin comprueba el equipo (`requisitos.py --breve`, en
 `hooks/hooks.json`) y Claude dice lo que falta la primera vez de cada versión. Los hooks de un plugin se cargan en
 Claude Code (también en la pestaña Code de la app de escritorio) y en Cowork; en el chat no, y allí lo comprueba cada
 skill antes de su primera tarea.
 
-Comprobación en un equipo nuevo: pide a Claude «comprueba que el plugin funciona
-en este equipo» con el repositorio del plugin abierto, o ejecuta desde él:
+Comprobación en un equipo nuevo: con el plugin instalado, pide a Claude «comprueba qué le falta al plugin en este
+equipo». Para pasar además todas sus pruebas, con el repositorio abierto:
 
 ```bash
 python pruebas/comprobar_plugin.py --completo
@@ -63,7 +84,8 @@ python pruebas/comprobar_plugin.py --completo
 
 Comprueba que las skills encajan entre sí y pasa las pruebas de cada una, que están en `pruebas/<skill>/`:
 el `selftest.py` del analista, de los diagramas, de los prototipos (este tarda un par de minutos) y de
-refactorización, y las de ingeniería inversa, con pytest y `mcp` (si faltan y hay `uv`, los trae él). Con
+refactorización, las de ingeniería inversa, con pytest y `mcp` (si faltan y hay `uv`, los trae él), y la de
+`requisitos.py` y el aviso al instalar. Con
 `--plugin <carpeta>` pasa
 esas pruebas a otra copia del plugin, por ejemplo la que se instala con el paquete, que no las lleva.
 

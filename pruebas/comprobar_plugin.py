@@ -380,6 +380,12 @@ def probar_comprobador(nombres):
         c, out = comprueba()
         espera(c == 1 and "la orden zip no deja fuera pruebas/*" in out,
                "una orden zip del README que mete pruebas/ en el paquete no da error", out)
+        # la tabla de requisitos del README es la salida de requisitos.py --tabla-readme, sin retoques a mano
+        readme.write_text(texto.replace("<!-- requisitos:fin -->", "| a mano | | | | |\n<!-- requisitos:fin -->"),
+                          encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "la tabla de requisitos no es la salida" in out,
+               "una tabla de requisitos del README retocada a mano no da error", out)
         readme.write_text(texto, encoding="utf-8")
         # un script que importa otro de su carpeta deja __pycache__ en el plugin si no lo evita
         scripts = skill / "scripts"
@@ -556,6 +562,16 @@ def main(completo, plugin=None):
         falta = [f for f in fuera if f'"{f}"' not in orden]
         if falta:
             errores.append(f"README.md: la orden zip no deja fuera {', '.join(falta)}")
+
+    # La tabla de requisitos del README sale de requisitos.json, para que no diverjan
+    tabla = re.search(r"^<!-- requisitos:inicio -->\n(.*?)^<!-- requisitos:fin -->",
+                      (RAIZ / "README.md").read_text(encoding="utf-8"), re.S | re.M)
+    generada = corre([sys.executable, str(RAIZ / "requisitos.py"), "--tabla-readme"], env=dict(os.environ, PYTHONUTF8="1"))
+    if not tabla:
+        errores.append("README.md: falta la tabla de requisitos entre <!-- requisitos:inicio --> y <!-- requisitos:fin -->")
+    elif generada.returncode or tabla.group(1).strip() != generada.stdout.strip():
+        errores.append("README.md: la tabla de requisitos no es la salida de `python3 requisitos.py --tabla-readme`; "
+                       "pon esa salida entre <!-- requisitos:inicio --> y <!-- requisitos:fin -->")
 
     if completo:
         pruebas_de_las_skills()

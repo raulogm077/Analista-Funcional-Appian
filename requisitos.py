@@ -6,6 +6,7 @@ instala en Windows, macOS o Linux. No instala nada ni abre ningún programa: sol
     python3 requisitos.py --skill NOMBRE   # solo lo que usa esa skill
     python3 requisitos.py --json           # lo mismo, legible por máquina
     python3 requisitos.py --breve          # para el hook de inicio de sesión (hooks/hooks.json)
+    python3 requisitos.py --tabla-readme   # la tabla de requisitos del README
 
 La lista de requisitos está en requisitos.json, junto a este fichero.
 Sale con 1 si falta algo imprescindible para lo pedido (Python 3.9 o superior) y con 2 si la skill no existe.
@@ -304,6 +305,28 @@ def texto(datos, skill) -> str:
     return "\n".join(lineas)
 
 
+def tabla_readme() -> str:
+    """La tabla de requisitos del README, que sale de requisitos.json para que no diverjan. En negrita, lo imprescindible;
+    los comandos iguales en varios sistemas, una sola vez."""
+    sistemas = (("windows", "Windows"), ("macos", "macOS"), ("linux", "Linux"))
+    filas = ["| Requisito | Lo usa | Para qué | Si falta | Cómo se instala |", "|---|---|---|---|---|"]
+    for r in cargar():
+        if r["solo_pruebas"]:
+            usa = "Las pruebas del repositorio"
+        elif set(r["skills"]) >= set(skills_del_plugin()):
+            usa = "Todas las skills"
+        else:
+            usa = ", ".join(f"`{s}`" for s in r["skills"])
+        grupos = {}
+        for clave, nombre in sistemas:
+            grupos.setdefault(r["instalar"][clave], []).append(nombre)
+        como = next(iter(grupos)) if len(grupos) == 1 else "<br>".join(
+            f"{' y '.join(nombres)}: {orden}" for orden, nombres in grupos.items())
+        nombre = f"**{r['nombre']}**" if r["imprescindible"] else r["nombre"]
+        filas.append("| " + " | ".join(c.replace("|", "\\|") for c in (nombre, usa, r["para"], r["sin_el"], como)) + " |")
+    return "\n".join(filas)
+
+
 def marca() -> Path:
     """Que ya se avisó a esta versión del plugin en este equipo: lo único que el plugin escribe fuera de un proyecto."""
     return carpeta_personal() / ".cache" / "appian-analisis-funcional" / f"avisado-{version_plugin()}"
@@ -348,7 +371,11 @@ def main(argv=None) -> int:
     ap.add_argument("--json", action="store_true", help="salida legible por máquina")
     ap.add_argument("--breve", action="store_true",
                     help="para el hook de inicio de sesión: solo lo que falta, una vez por versión; sale siempre con 0")
+    ap.add_argument("--tabla-readme", action="store_true", help="la tabla de requisitos del README, en Markdown")
     args = ap.parse_args(argv)
+    if args.tabla_readme:
+        print(tabla_readme())
+        return 0
     if args.breve:
         return breve(args.skill if args.skill in skills_del_plugin() else None)
     if args.skill and args.skill not in skills_del_plugin():

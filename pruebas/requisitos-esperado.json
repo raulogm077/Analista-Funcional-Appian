@@ -203,9 +203,9 @@
       "para": "Exportar `as-is/` a PDF",
       "sin_el": "Se entrega en Markdown",
       "instalar": {
-        "windows": "En Claude (web o escritorio) ya está; en Claude Code, una skill de PDF instalada, como `pdf` de anthropics/skills. No se puede comprobar desde aquí",
-        "macos": "En Claude (web o escritorio) ya está; en Claude Code, una skill de PDF instalada, como `pdf` de anthropics/skills. No se puede comprobar desde aquí",
-        "linux": "En Claude (web o escritorio) ya está; en Claude Code, una skill de PDF instalada, como `pdf` de anthropics/skills. No se puede comprobar desde aquí"
+        "windows": "En Claude (web o escritorio) ya está; en Claude Code, una skill de PDF instalada, como `pdf` de anthropics/skills",
+        "macos": "En Claude (web o escritorio) ya está; en Claude Code, una skill de PDF instalada, como `pdf` de anthropics/skills",
+        "linux": "En Claude (web o escritorio) ya está; en Claude Code, una skill de PDF instalada, como `pdf` de anthropics/skills"
       },
       "presente": false,
       "ruta": null
