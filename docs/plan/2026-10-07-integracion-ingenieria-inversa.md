@@ -886,9 +886,9 @@ palabras que tenía antes y ya no tiene; avisa de cada otra línea del funcional
 - aviso si su objeto tiene un NV abierto o parcial: «DEM_X tiene NV-ARQ-01 sin verificar: ¿PC?» si su `queHaceFalta`
   empieza por negocio, y «¿PT?» si no.
 
-- [ ] **Paso 1:** selftest con `datos/evolutivo` (un objeto con un hallazgo Alta y el objeto de fuera, con un NV abierto,
+- [x] **Paso 1:** selftest con `datos/evolutivo` (un objeto con un hallazgo Alta y el objeto de fuera, con un NV abierto,
   como «Existe») → cada aviso cita su H o su NV. → FALLA.
-- [ ] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
+- [x] **Paso 2:** implementar. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 21: DF ya hecho (D2) y ciclo con el prototipo
 

@@ -24,7 +24,8 @@ Errores (✗, salida 1) y avisos (·):
   - con una aplicación existente (<p>/as-is/datos/inventario.json): cada historia con su «Origen»; hallazgos, NV y
     REF solo en la trazabilidad del DF y citados solo si existen; la Situación de cada objeto de técnico §13 contra el
     inventario y los objetos de fuera de la aplicación; con propuesta de refactorización, una DT por cada REF de su
-    Solución y la tabla de migración en técnico §3. Sin as-is/, nada de esto.
+    Solución y la tabla de migración en técnico §3. Avisa de lo que se modifica o se usa con un hallazgo Alta
+    (¿refactorización antes?) o con algo sin verificar (¿PC o PT?). Sin as-is/, nada de esto.
 """
 import argparse
 import bisect
@@ -458,7 +459,8 @@ def comprobar_as_is(m):
     nvs = {n["id"]: n for n in sv.get("sinVerificar", [])} if sv is not None else None
     faltan = [x for x, v in (("los objetos de fuera de la aplicación", fuera), ("sin-verificar.json", nvs)) if v is None]
     if faltan:
-        print(f"· as-is/datos/ sin {' ni '.join(faltan)} (anterior a ellos): lo que depende de ello no se comprueba")
+        print(f"· as-is/datos/ sin {' ni '.join(faltan)}, de una ingeniería inversa anterior: lo que depende de ello "
+              "no se comprueba")
 
     sin_origen = []
     for p in m.vigentes("HU"):
@@ -466,8 +468,9 @@ def comprobar_as_is(m):
         if mo.normaliza(o) not in ORIGENES:
             sin_origen.append(f"{p.id} «{o}»" if o.strip(" —-") else p.id)
     informe("as-is: cada historia con «Origen»: Se conserva, Cambia o Nueva", sin_origen)
-    informe("DF: hallazgos, NV y REF solo en la trazabilidad (dentro del comentario)",
-            [f"l.{i + 1} {x}" for i, l in lineas_prosa(m, "F") for rx in (RX_HALLAZGO, RX_NV, RX_REF) for x in rx.findall(l)])
+    a_la_vista = [f"l.{i + 1} {x}" for i, l in lineas_prosa(m, "F")
+                  for rx in (RX_HALLAZGO, RX_NV, RX_REF) for x in rx.findall(l)]
+    informe("DF: hallazgos, NV y REF solo en la trazabilidad (dentro del comentario)", a_la_vista)
     informe("as-is: los hallazgos citados están en hallazgos.json",
             sorted(f"{x} ({', '.join(v[:3])})" for x, v in citas(m, RX_HALLAZGO).items() if x not in hallazgos))
     if nvs is not None:
@@ -480,7 +483,7 @@ def comprobar_as_is(m):
     tabla = next(((cab, filas) for _, cab, filas in m.tablas("T", "13")
                   if "situacion" in [mo.normaliza(c) for c in cab]), None)
     informe("técnico §13: tabla Paso · Objeto · Tipo · Situación · Sustituye a", [] if tabla else ["falta"], grave=completo)
-    malas, de_fuera, sin_inventario = [], [], []
+    malas, de_fuera, sin_inventario, usados = [], [], [], []
     if tabla:
         cab = [mo.normaliza(c) for c in tabla[0]]
         celda = lambda f, k: f[cab.index(k)] if k in cab and cab.index(k) < len(f) else ""
@@ -492,6 +495,8 @@ def comprobar_as_is(m):
             if s not in SITUACIONES:
                 malas.append(f"{nombre}: Situación «{sit}» (Nuevo, Modifica, Existe o Sustituye)")
                 continue
+            if s in ("modifica", "existe"):
+                usados += objetos
             for o in objetos:
                 if s == "nuevo" and o in inventario:
                     malas.append(f"{o}: «Nuevo» y ya está en el inventario")
@@ -514,6 +519,18 @@ def comprobar_as_is(m):
     if fuera is None:
         informe("técnico §13: objetos que no están en el inventario (as-is/ no dice cuáles son de otra aplicación)",
                 sin_inventario, grave=False)
+    # Parte mal hecha: construir encima de un objeto con un hallazgo grave o con algo sin verificar
+    graves, sin_verificar = [], []
+    for o in dict.fromkeys(usados):     # en el orden de §13, una vez cada objeto
+        for h in sorted(hallazgos.values(), key=lambda h: h["id"]):
+            if mo.normaliza(h.get("severidad", "")) == "alta" and o in h.get("objetos", []):
+                graves.append(f"{o} tiene {h['id']} (Alta): ¿pasa antes por refactorización?")
+        for n in sorted((nvs or {}).values(), key=lambda n: n["id"]):
+            if mo.normaliza(n.get("estado", "")) in ("abierto", "parcial") and o in n.get("objetos", []):
+                negocio = mo.normaliza(n.get("queHaceFalta", "")).startswith("negocio")
+                sin_verificar.append(f"{o} tiene {n['id']} sin verificar: ¿{'PC' if negocio else 'PT'}?")
+    informe("técnico §13: lo que se modifica o se usa con un hallazgo Alta", graves, grave=False)
+    informe("técnico §13: lo que se modifica o se usa con algo sin verificar", sin_verificar, grave=False)
 
     propuesta = m.raiz / "refactorizacion" / "propuesta.md"
     if propuesta.exists():

@@ -385,7 +385,24 @@ Se acepta si:
            c == 0 and "NV-PRO-09" not in out
            and any(l.startswith("· ") and "UTL_DiasLaborables" in l for l in out.splitlines()), out)
 
-        # 7d. Sin as-is/ (riesgo 4): las comprobaciones de as-is/ no saltan y el ejemplo da los mismos errores y avisos
+        # 7d. Parte mal hecha: un objeto que se modifica o se usa (§13 «Modifica» o «Existe») con un hallazgo Alta o
+        # con algo sin verificar (abierto o parcial) es aviso, con su H o su NV
+        c, out = corre(S / "comprobar.py", EVOLUTIVO)
+        avisos = "\n".join(l for l in out.splitlines() if l.startswith("· "))
+        ok("evolutivo: avisa del hallazgo Alta y de cada NV sin verificar, con su ID y ¿PC? o ¿PT?",
+           c == 0 and "DEM_INT_NotificarERP tiene H-SEG-01 (Alta): ¿pasa antes por refactorización?" in avisos
+           and "UTL_DiasLaborables tiene NV-ARQ-01 sin verificar: ¿PT?" in avisos
+           and "DEM Revisar Solicitud tiene NV-PRO-01 sin verificar: ¿PC?" in avisos
+           and "DEM_SolicitudForm tiene" not in avisos and "DEM_ER_IdEstado tiene" not in avisos, out)
+        r = tmp / "evolutivo resuelto"
+        shutil.copytree(EVOLUTIVO, r)
+        editar(r / "as-is" / "datos" / "sin-verificar.json", '"estado": "abierto",\n   "documento": "02-arquitectura',
+               '"estado": "resuelto",\n   "documento": "02-arquitectura')
+        c, out = corre(S / "comprobar.py", r)
+        ok("evolutivo: un NV resuelto no es aviso", c == 0 and "NV-ARQ-01 sin verificar" not in out
+           and "NV-PRO-01 sin verificar: ¿PC?" in out, out)
+
+        # 7e. Sin as-is/ (riesgo 4): las comprobaciones de as-is/ no saltan y el ejemplo da los mismos errores y avisos
         # que antes de tenerlas (los de la versión e058107)
         c, out = corre(S / "comprobar.py", EJEMPLO)
         ok("sin as-is/, autorizaciones da los mismos errores y avisos que antes",

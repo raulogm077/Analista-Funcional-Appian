@@ -146,6 +146,9 @@ En los modos evolutivo y de refactorización, los pasos de «Proyecto nuevo» co
    Sustituye); con propuesta, una DT por cada REF de su Solución y la carga inicial y migración en §3
    (`tecnico-plantilla.md`).
 5. **Comprobar.** `comprobar.py` lo contrasta con `as-is/datos/`: nombres, situaciones y citas.
+6. **Parte mal hecha.** Si `comprobar.py` avisa de que algo que se modifica o se usa tiene un hallazgo Alta, dilo al
+   usuario y propón pasar esa parte por refactorización (`appian-refactorizacion`) antes de construir encima. Si
+   tiene algo sin verificar, que sea un PT o, si lo resuelve negocio, también un PC.
 
 ## Pantalla suelta
 
