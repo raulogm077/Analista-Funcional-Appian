@@ -1,0 +1,6 @@
+{"procesos": [
+  {"nombre": "DEM Alta Solicitud", "json": null, "nodos": 5, "ejecuciones": 120},
+  {"nombre": "DEM Batch Recordatorios", "json": null, "nodos": 4, "ejecuciones": 30},
+  {"nombre": "DEM Revisar Solicitud", "json": null, "nodos": 6, "ejecuciones": 118},
+  {"nombre": "DEM Utilidad Huérfana", "json": null, "nodos": 3, "ejecuciones": 0}
+ ]}

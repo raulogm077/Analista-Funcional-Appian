@@ -20,11 +20,16 @@ Errores (✗, salida 1) y avisos (·):
   - con --anterior: ningún ID desaparece, la versión sube y tiene su fila; lista lo nuevo y lo cambiado, y avisa
     del texto que queda viejo (lo que una pieza cambiada ya no dice y sigue en otra);
   - con --impacto: los IDs del informe existen o son nuevos; después de aplicar, cada dependencia tiene
-    resultado, cada cambio está declarado y lo 🔒 solo cambia con aprobación.
+    resultado, cada cambio está declarado y lo 🔒 solo cambia con aprobación;
+  - con una aplicación existente (<p>/as-is/datos/inventario.json): cada historia con su «Origen»; hallazgos, NV y
+    REF solo en la trazabilidad del DF y citados solo si existen; la Situación de cada objeto de técnico §13 contra el
+    inventario y los objetos de fuera de la aplicación; con propuesta de refactorización, una DT por cada REF de su
+    Solución y la tabla de migración en técnico §3. Sin as-is/, nada de esto.
 """
 import argparse
 import bisect
 import collections
+import json
 import pathlib
 import re
 import sys
@@ -302,15 +307,22 @@ def datos_df(m):
     return out
 
 
+def estado_tecnico(m):
+    """(empezado, completo): empezado si tiene decisiones o modelo de datos; completo si dice «Estado: completo»."""
+    if "T" not in m.docs:
+        return False, False
+    empezado = bool(m.vigentes("DT")) or any(
+        "campo" in [mo.normaliza(c) for c in cab] for _, cab, _ in m.tablas("T", "3"))
+    est = re.search(r"Estado:\s*([^·\n]+)", "\n".join(m.docs["T"].lineas[:12]))
+    return empezado, bool(est) and mo.normaliza(est.group(1)).strip().startswith("completo")
+
+
 def comprobar_tecnico(m):
-    empezado = "T" in m.docs and (bool(m.vigentes("DT")) or any(
-        "campo" in [mo.normaliza(c) for c in cab] for _, cab, _ in m.tablas("T", "3")))
+    empezado, completo = estado_tecnico(m)
     if not empezado:
         print("· técnico: sin empezar (sin decisiones ni modelo de datos); se comprueba cuando lo esté")
         return
     T = m.docs["T"]
-    est = re.search(r"Estado:\s*([^·\n]+)", "\n".join(T.lineas[:12]))
-    completo = bool(est) and mo.normaliza(est.group(1)).strip().startswith("completo")
     print(f"  técnico {'completo: lo que falta es error' if completo else 'en curso: lo que falta es aviso'}")
     # datos ↔ campos
     df = datos_df(m)
@@ -398,6 +410,121 @@ def comprobar_versiones(m):
     if "D" in m.docs and ultima != vf:
         malas.append(f"última fila de Versiones {ultima} ≠ funcional {vf}")
     informe("misma versión en funcional, técnico y la última fila de Versiones", malas)
+
+
+# ------------------------------------------------------------------ aplicación existente (as-is/)
+# IDs de ingeniería inversa y de refactorización: se citan dentro de su fuente («[FU-01 H-SEG-01]», D1), así que
+# modelo.ids_en no los cuenta; se buscan aquí en el texto tal cual, también en los comentarios.
+RX_HALLAZGO = re.compile(r"\bH-[A-Z]{2,4}-\d{2,3}\b")
+RX_NV = re.compile(r"\bNV-[A-Z]{2,4}-\d{2,3}\b")
+RX_REF = re.compile(r"\bREF-\d{2,3}\b")
+ORIGENES = ("se conserva", "cambia", "nueva")
+SITUACIONES = ("nuevo", "modifica", "existe", "sustituye")
+
+
+def lee_json(ruta):
+    return json.loads(ruta.read_text(encoding="utf-8")) if ruta.exists() else None
+
+
+def objetos_celda(celda):
+    """Los objetos de una celda: los nombres entre comillas invertidas o, si no hay, la celda; sin «rule!» ni «cons!»."""
+    t = mo.sin_comentarios(celda).strip()
+    nombres = re.findall(r"`([^`]+)`", t) or ([t] if t.strip(" —-") else [])
+    return [re.sub(r"^(rule|cons)!", "", n.strip()) for n in nombres]
+
+
+def citas(m, rx):
+    """{ID: [«funcional l.12», …]}: dónde se cita cada ID que casa con rx, también dentro de los comentarios."""
+    out = collections.defaultdict(list)
+    for d, D in m.docs.items():
+        for i, l in enumerate(D.lineas):
+            for x in rx.findall(l):
+                out[x].append(f"{mo.NOMBRE_DOC[d]} l.{i + 1}")
+    return out
+
+
+def comprobar_as_is(m):
+    """Solo con <p>/as-is/datos/inventario.json. Lo que depende de sin-verificar.json o de fueraDeLaAplicacion (un
+    as-is/ anterior a ellos) no se comprueba."""
+    datos = m.raiz / "as-is" / "datos"
+    inv = lee_json(datos / "inventario.json")
+    if inv is None:
+        return
+    inventario = {o["nombre"] for o in inv.get("objetos", [])} | {inv.get("aplicacion", {}).get("nombre", "")}
+    dep = lee_json(datos / "dependencias.json") or {}
+    fuera = {o["nombre"] for o in dep["fueraDeLaAplicacion"]} if "fueraDeLaAplicacion" in dep else None
+    hallazgos = {h["id"]: h for h in (lee_json(datos / "hallazgos.json") or {}).get("hallazgos", [])}
+    sv = lee_json(datos / "sin-verificar.json")
+    nvs = {n["id"]: n for n in sv.get("sinVerificar", [])} if sv is not None else None
+    faltan = [x for x, v in (("los objetos de fuera de la aplicación", fuera), ("sin-verificar.json", nvs)) if v is None]
+    if faltan:
+        print(f"· as-is/datos/ sin {' ni '.join(faltan)} (anterior a ellos): lo que depende de ello no se comprueba")
+
+    sin_origen = []
+    for p in m.vigentes("HU"):
+        o = mo.sin_comentarios(m.campos(p.id).get("origen", "")).strip()
+        if mo.normaliza(o) not in ORIGENES:
+            sin_origen.append(f"{p.id} «{o}»" if o.strip(" —-") else p.id)
+    informe("as-is: cada historia con «Origen»: Se conserva, Cambia o Nueva", sin_origen)
+    informe("DF: hallazgos, NV y REF solo en la trazabilidad (dentro del comentario)",
+            [f"l.{i + 1} {x}" for i, l in lineas_prosa(m, "F") for rx in (RX_HALLAZGO, RX_NV, RX_REF) for x in rx.findall(l)])
+    informe("as-is: los hallazgos citados están en hallazgos.json",
+            sorted(f"{x} ({', '.join(v[:3])})" for x, v in citas(m, RX_HALLAZGO).items() if x not in hallazgos))
+    if nvs is not None:
+        informe("as-is: los NV citados están en sin-verificar.json",
+                sorted(f"{x} ({', '.join(v[:3])})" for x, v in citas(m, RX_NV).items() if x not in nvs))
+
+    empezado, completo = estado_tecnico(m)
+    if not empezado:
+        return
+    tabla = next(((cab, filas) for _, cab, filas in m.tablas("T", "13")
+                  if "situacion" in [mo.normaliza(c) for c in cab]), None)
+    informe("técnico §13: tabla Paso · Objeto · Tipo · Situación · Sustituye a", [] if tabla else ["falta"], grave=completo)
+    malas, de_fuera, sin_inventario = [], [], []
+    if tabla:
+        cab = [mo.normaliza(c) for c in tabla[0]]
+        celda = lambda f, k: f[cab.index(k)] if k in cab and cab.index(k) < len(f) else ""
+        for f in tabla[1]:
+            sit = mo.sin_comentarios(celda(f, "situacion")).strip()
+            s = mo.normaliza(sit)
+            objetos = objetos_celda(celda(f, "objeto"))
+            nombre = ", ".join(objetos) or f"paso {celda(f, 'paso')}"
+            if s not in SITUACIONES:
+                malas.append(f"{nombre}: Situación «{sit}» (Nuevo, Modifica, Existe o Sustituye)")
+                continue
+            for o in objetos:
+                if s == "nuevo" and o in inventario:
+                    malas.append(f"{o}: «Nuevo» y ya está en el inventario")
+                elif s == "nuevo" and fuera and o in fuera:
+                    malas.append(f"{o}: «Nuevo» y es de otra aplicación")
+                elif s in ("modifica", "existe") and o not in inventario:
+                    if fuera is None:
+                        sin_inventario.append(o)
+                    elif o not in fuera:
+                        malas.append(f"{o}: «{sit}» y no está en el inventario ni fuera de la aplicación")
+                    elif s == "modifica":
+                        de_fuera.append(f"{o} es de otra aplicación: ¿quién la cambia?")
+            if s == "sustituye":
+                sust = objetos_celda(celda(f, "sustituye a"))
+                if not sust or any(o not in inventario for o in sust):
+                    malas.append(f"{nombre}: «Sustituye» sin un objeto del inventario en «Sustituye a» "
+                                 f"({', '.join(sust) or '—'})")
+    informe("técnico §13: la Situación de cada objeto cuadra con as-is/ (inventario y objetos de fuera)", malas)
+    informe("técnico §13: objetos de otra aplicación que se modifican", de_fuera, grave=False)
+    if fuera is None:
+        informe("técnico §13: objetos que no están en el inventario (as-is/ no dice cuáles son de otra aplicación)",
+                sin_inventario, grave=False)
+
+    propuesta = m.raiz / "refactorizacion" / "propuesta.md"
+    if propuesta.exists():
+        sol = re.search(r"^## 3\. Soluci[oó]n\s*$(.*?)(?=^## |\Z)", propuesta.read_text(encoding="utf-8"), re.M | re.S)
+        refs = sorted(set(RX_REF.findall(mo.sin_comentarios(sol.group(1))))) if sol else []
+        en_dt = {x for p in m.vigentes("DT") for x in RX_REF.findall(m.texto(p.id))}
+        informe("propuesta: cada REF de su Solución con una DT que la cite («[FU-nn REF-nn]» en «Necesidad»)",
+                [r for r in refs if r not in en_dt])
+        migracion = any(cab and mo.normaliza(cab[0]).startswith("origen en la app") for _, cab, _ in m.tablas("T", "3"))
+        informe("técnico §3: tabla «Carga inicial y migración» (hay propuesta de refactorización)",
+                [] if migracion else ["falta"])
 
 
 # ------------------------------------------------------------------ fuentes
@@ -672,6 +799,7 @@ def main():
         comprobar_redaccion(m)
         comprobar_tecnico(m)
         comprobar_versiones(m)
+        comprobar_as_is(m)
     if a.fuentes:
         comprobar_fuentes(m, a.fuentes, a.corregir_citas)
     if a.anterior:

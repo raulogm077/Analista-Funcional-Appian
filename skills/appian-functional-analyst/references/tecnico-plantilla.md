@@ -2,8 +2,8 @@
 
 Es lo que se construye. Con ella, las historias del funcional y el prototipo, quien construye con el
 MCP de desarrollo de Appian no tiene que preguntar ni suponer nada. Es interna: no va al cliente.
-El fragmento del apartado 2 es de un caso ficticio (solicitudes de autorización) y tiene el formato exacto que leen
-los scripts.
+Los fragmentos de los apartados 2 y 13 son de un caso ficticio (solicitudes de autorización) y tienen el formato exacto
+que leen los scripts.
 
 ## Cómo se escribe
 
@@ -16,7 +16,9 @@ los scripts.
   cada pantalla, en el prototipo. Aquí se remite a ellos.
 - **Fuera:** lo que la skill oficial de Appian resuelve siempre igual (UUID, nombre de columna desde el
   campo, la relación inversa).
-- **Evolutivo:** cada objeto lleva Nuevo, Modifica o Existe, con el nombre real que da `as-is/`.
+- **Aplicación existente** (`as-is/`): los nombres son los de `as-is/datos/inventario.json` y de sus objetos de fuera
+  de la aplicación (`dependencias.json`); los hallazgos, NV y REF se citan dentro de su fuente («[FU-01 NV-ARQ-01]»).
+  Cambian §2, §3, §13 y §15, como se dice en cada uno. Sin `as-is/`, nada de eso.
 
 ## Buenas prácticas al diseñar
 
@@ -98,6 +100,9 @@ un sistema. Tabla vertical:
 | **Verificado** | No hace falta |
 ```
 
+Con propuesta de refactorización (`refactorizacion/propuesta.md`), cada REF de su «3. Solución» se baja a objetos en
+una DT que la cita en «Necesidad»: «[FU-02 REF-01], HU-02».
+
 ### 3. Modelo de datos
 Por record type, `### 3.n <Record type>`:
 - Tabla `Origen · Acceso · Volumen · Eventos · Seguridad`.
@@ -107,6 +112,10 @@ Por record type, `### 3.n <Record type>`:
 - Los estados y las listas de valores son record types de referencia, no texto.
 
 Al final: referencias y carga inicial (`Record type · Valores iniciales · Quién lo mantiene`).
+
+Con `as-is/`, §3 termina con `### 3.n Carga inicial y migración`: tabla `Origen en la app actual · Destino ·
+Transformación · Volumen · Cómo se verifica`, una fila por lo que se carga o se mueve («—» en el origen si el dato es
+nuevo). Con propuesta de refactorización es obligatoria.
 
 ### 4. Grupos y seguridad
 - Tabla `Perfil · Grupo · Constante`, con todos los perfiles del funcional.
@@ -154,6 +163,20 @@ hay que vigilar en producción.
 Lista numerada en orden de dependencias: grupos y constantes, datos, seguridad, lógica, interfaces,
 procesos, site. Los pasos manuales, marcados.
 
+Con `as-is/`, en lugar de la lista, tabla `Paso · Objeto · Tipo · Situación · Sustituye a`, una fila por objeto, en el
+mismo orden, y debajo los pasos manuales. Situación:
+- **Nuevo**: no está en el inventario ni es de otra aplicación.
+- **Modifica**: está en el inventario y cambia. Un objeto de otra aplicación que cambia lo cambia su equipo: dilo.
+- **Existe**: se usa sin cambiarlo; también un objeto de otra aplicación.
+- **Sustituye**: un objeto nuevo que reemplaza al del inventario que va en «Sustituye a».
+
+```markdown
+| Paso | Objeto | Tipo | Situación | Sustituye a |
+|---|---|---|---|---|
+| 2 | `AUT_IdEstado` | Regla de expresión | Sustituye | `AUT_ESTADOS_VALIDOS` |
+| 2 | `UTL_DiasLaborables` | Regla de otra aplicación | Existe | — |
+```
+
 ### 14. Pruebas y trazabilidad
 Tabla `Criterio · Cómo se prueba` con todos los criterios `HU-nn.m` (se pueden agrupar por historia) y los
 escenarios `ESC-nn` como pruebas de extremo a extremo. Cada acción protegida, con un perfil que puede y
@@ -162,3 +185,7 @@ otro que no.
 ### 15. Pendientes técnicos
 Tabla `ID · Duda · Bloquea · Quién la resuelve` con los `PT-nn`. Lo que hay que preguntar al cliente no
 va aquí: es un PC del funcional.
+
+Lo que ingeniería inversa no pudo verificar (un NV de `as-is/datos/sin-verificar.json`) y condiciona lo que se
+construye es un PT con su cita: «¿Qué devuelve `UTL_DiasLaborables`? [FU-01 NV-ARQ-01]». Si lo resuelve negocio, es
+además un PC del funcional.

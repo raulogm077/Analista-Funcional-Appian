@@ -21,6 +21,11 @@ python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o <proyecto>/fuen
   - Imágenes: revísalas con Read.
 - Texto pegado en el chat: guárdalo como `.txt` con un nombre descriptivo
   (`reunion-2026-09-03.txt`) y catalógalo igual, para que también tenga ID.
+- Aplicación existente: `as-is/` entra como una sola fuente, con el índice de sus documentos y sin su extracción en
+  bruto; la propuesta de refactorización, como cualquier fichero. Primero ellas, que son la base:
+  ```bash
+  python3 <skill>/scripts/leer_fuentes.py --una-fuente <p>/as-is <p>/refactorizacion/propuesta.md -o <p>/fuentes/
+  ```
 
 ## 2. Citar
 
@@ -36,10 +41,13 @@ Cada hecho del análisis lleva su fuente. En `funcional.md` va en el comentario 
 | Correo | `[FU-04]` (el índice ya da fecha y asunto) |
 | Diagrama | `[FU-10 «Revisar expediente»]` (nombre del elemento) |
 | Comentario al DF devuelto | `[FU-12 C3]` (número que le da `leer_fuentes.py`) |
+| Aplicación existente (`as-is/`) | `[FU-01 H-SEG-01]`, `[FU-01 NV-ARQ-01]` (el hallazgo o lo sin verificar) o `[FU-01 02-arquitectura.md]` |
+| Propuesta de refactorización | `[FU-02 REF-01]` |
 | Inferencia | `FU-03, FU-10` con el estado 🔶 |
 
-Dentro de un comentario o de una celda de tabla van sin corchetes (`FU-03 00:14:32`). Quien lea el
-análisis debe poder ir de cualquier regla a la frase exacta que la justifica.
+Dentro de un comentario o de una celda de tabla van sin corchetes (`FU-03 00:14:32`), salvo las que citan un ID de
+otra skill (`[FU-01 NV-ARQ-01]`, `[FU-07 PAN-03]`), que los llevan siempre: así no se confunden con los IDs del
+análisis. Quien lea el análisis debe poder ir de cualquier regla a la frase exacta que la justifica.
 
 ## 3. Qué extraer de cada tipo
 
@@ -96,6 +104,14 @@ análisis debe poder ir de cualquier regla a la frase exacta que la justifica.
 - Las incoherencias internas del documento (un campo que cambia de nombre entre
   diapositivas, un estado que no aparece en el ciclo de vida) son PC con
   las dos citas. No las corrijas por tu cuenta.
+
+### Aplicación existente y propuesta de refactorización
+- De `as-is/` se leen `LEEME.md`, los documentos de lo que toca el cambio y `as-is/datos/` (inventario, dependencias,
+  hallazgos y lo que no se pudo verificar). Nunca la extracción en bruto.
+- Lo que hace hoy la aplicación es un hecho: cada historia dice si se conserva, cambia o es nueva (funcional §4).
+- Lo de `sin-verificar.json` es una pregunta abierta, no un hecho: un PT y, si lo resuelve negocio, también un PC.
+- La propuesta de refactorización propone: sus REF se validan con el cliente, en sus palabras, y el técnico las
+  baja a objetos (una DT por REF).
 
 ### Hojas de cálculo
 - Suelen ser catálogos de campos, listas de valores o datos maestros: van al

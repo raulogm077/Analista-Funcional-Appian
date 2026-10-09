@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Prueba automática de la skill del analista. Usa el proyecto ficticio de datos/autorizaciones/.
+"""Prueba automática de la skill del analista. Usa los proyectos ficticios de datos/: autorizaciones/ (nuevo) y
+evolutivo/ (sobre una aplicación existente, con as-is/ y una propuesta de refactorización).
 
   python3 pruebas/appian-functional-analyst/selftest.py
 
@@ -24,6 +25,7 @@ SKILL = PLUGIN / "skills" / "appian-functional-analyst"
 S = SKILL / "scripts"
 DATOS = AQUI / "datos"
 EJEMPLO = DATOS / "autorizaciones"
+EVOLUTIVO = DATOS / "evolutivo"     # una aplicación existente (as-is/ de DEM, del simulador) con una propuesta
 fallos = []
 
 
@@ -307,6 +309,88 @@ Se acepta si:
         txt = fu.read_text(encoding="utf-8") if fu else ""
         ok("leer_fuentes.py saca los comentarios del Word con su historia",
            "## Comentarios del documento" in txt and "HU-07" in txt and "Mejor 30 MB" in txt, txt[-600:])
+
+        # 7b. as-is/ entra como una sola fuente, con el índice de sus documentos y sin su extracción; la propuesta de
+        # refactorización, como cualquier fichero
+        app = tmp / "Carpeta con espacios" / "Gestión app"
+        shutil.copytree(EVOLUTIVO / "as-is", app / "as-is")
+        (app / "as-is" / "extraccion").mkdir()
+        (app / "as-is" / "extraccion" / "LEEME.md").write_text("# Extracción en bruto\n", encoding="utf-8")
+        c, out = corre(S / "leer_fuentes.py", EVOLUTIVO / "refactorizacion" / "propuesta.md",
+                       "--una-fuente", app / "as-is", "-o", app / "fuentes")
+        estado = (json.loads((app / "fuentes" / "indice.json").read_text(encoding="utf-8"))["fuentes"]
+                  if (app / "fuentes" / "indice.json").exists() else [])
+        fu = next((e for e in estado if e["fichero"] == "as-is/"), None)
+        txt = (app / "fuentes" / fu["salida"]).read_text(encoding="utf-8") if fu and fu.get("salida") else ""
+        ok("leer_fuentes.py --una-fuente: as-is/ es una FU con el índice de sus documentos, sin la extracción",
+           c == 0 and len(estado) == 2 and fu is not None and "as-is/LEEME.md" in txt
+           and "as-is/datos/inventario.json" in txt and "extraccion" not in txt.lower()
+           and any(e["fichero"] == "propuesta.md" for e in estado), out + txt)
+        c, out = corre(S / "leer_fuentes.py", "--una-fuente", app / "as-is", "-o", app / "fuentes")
+        ok("leer_fuentes.py --una-fuente otra vez: la misma FU", c == 0 and fu is not None and f"= {fu['id']}" in out
+           and len(json.loads((app / "fuentes" / "indice.json").read_text(encoding="utf-8"))["fuentes"]) == 2, out)
+
+        # 7c. Aplicación existente: con as-is/datos/, el origen de cada historia, la Situación de cada objeto de §13
+        # contra el inventario, las citas de hallazgos, NV y REF, y la migración si hay propuesta
+        c, out = corre(S / "comprobar.py", EVOLUTIVO)
+        ok("evolutivo: pasa comprobar.py sin errores y comprueba lo de as-is/",
+           c == 0 and "✓ as-is: cada historia con «Origen»" in out, out)
+        ok("evolutivo: «Existe» con un objeto de otra aplicación no es error",
+           not [l for l in out.splitlines() if l.startswith("✗") and "UTL_DiasLaborables" in l], out)
+        rotas = [  # (qué se rompe, fichero, texto, cambio, comprobación que falla, lo que cita)
+            ("historia sin «Origen»", "funcional", "| Deseable | Nueva |", "| Deseable | — |", "«Origen»", "HU-03"),
+            ("«Corrige H-…» en una tabla del DF", "funcional", "| Datos | Corregir el título y el importe | Gestor |",
+             "| Datos | Corregir el título y el importe. Corrige H-DAT-01 | Gestor |", "solo en la trazabilidad",
+             "H-DAT-01"),
+            ("cita de un hallazgo que no está en hallazgos.json", "funcional", "[FU-01 H-DAT-01]", "[FU-01 H-DAT-07]",
+             "hallazgos.json", "H-DAT-07"),
+            ("cita de un NV que no está en sin-verificar.json", "funcional", "[FU-01 NV-PRO-01]", "[FU-01 NV-PRO-09]",
+             "sin-verificar.json", "NV-PRO-09"),
+            ("§13: «Nuevo» con el objeto de otra aplicación", "tecnico", "| Regla de otra aplicación | Existe |",
+             "| Regla de otra aplicación | Nuevo |", "Situación", "UTL_DiasLaborables"),
+            ("§13: «Nuevo» con un objeto del inventario", "tecnico", "| `DEM_ER_DiasPendiente` | Regla de expresión |",
+             "| `DEM_ER_EsAdmin` | Regla de expresión |", "Situación", "DEM_ER_EsAdmin"),
+            ("§13: «Modifica» con un objeto que no está", "tecnico", "| `DEM_Dashboard` | Interfaz |",
+             "| `DEM_Panel` | Interfaz |", "Situación", "DEM_Panel"),
+            ("§13: «Sustituye» sin un objeto del inventario", "tecnico", "| Sustituye | `DEM_ESTADOS_VALIDOS` |",
+             "| Sustituye | — |", "Situación", "DEM_ER_IdEstado"),
+            ("una REF de la propuesta sin DT que la cite", "tecnico", "| **Necesidad** | [FU-02 REF-01], HU-02 |",
+             "| **Necesidad** | HU-02 |", "cada REF", "REF-01"),
+            ("§3 sin la tabla de migración", "tecnico", "| Origen en la app actual |", "| Origen anterior |",
+             "Carga inicial y migración", "falta"),
+        ]
+        for nombre, doc, viejo, nuevo, comprobacion, cita in rotas:
+            r = tmp / "evolutivo roto"
+            shutil.rmtree(r, ignore_errors=True)
+            shutil.copytree(EVOLUTIVO, r)
+            editar(r / "analisis" / f"{doc}.md", viejo, nuevo)
+            c, out = corre(S / "comprobar.py", r)
+            linea = next((l for l in out.splitlines() if l.startswith("✗") and comprobacion in l), "")
+            ok(f"evolutivo: {nombre} es error", c == 1 and cita in linea, out)
+        r = tmp / "evolutivo modifica"
+        shutil.copytree(EVOLUTIVO, r)
+        editar(r / "analisis" / "tecnico.md", "| Regla de otra aplicación | Existe |", "| Regla de otra aplicación | Modifica |")
+        c, out = corre(S / "comprobar.py", r)
+        ok("evolutivo: «Modifica» con el objeto de otra aplicación es aviso",
+           c == 0 and any(l.startswith("· ") and "UTL_DiasLaborables es de otra aplicación: ¿quién la cambia?" in l
+                          for l in out.splitlines()), out)
+        r = tmp / "as-is anterior"
+        shutil.copytree(EVOLUTIVO, r)
+        (r / "as-is" / "datos" / "sin-verificar.json").unlink()
+        dep = r / "as-is" / "datos" / "dependencias.json"
+        dep.write_text(json.dumps({"aristas": json.loads(dep.read_text(encoding="utf-8"))["aristas"]}), encoding="utf-8")
+        editar(r / "analisis" / "funcional.md", "[FU-01 NV-PRO-01]", "[FU-01 NV-PRO-09]")
+        c, out = corre(S / "comprobar.py", r)
+        ok("as-is/ sin NV ni objetos de fuera (anterior): no se comprueban; lo que no está en el inventario, aviso",
+           c == 0 and "NV-PRO-09" not in out
+           and any(l.startswith("· ") and "UTL_DiasLaborables" in l for l in out.splitlines()), out)
+
+        # 7d. Sin as-is/ (riesgo 4): las comprobaciones de as-is/ no saltan y el ejemplo da los mismos errores y avisos
+        # que antes de tenerlas (los de la versión e058107)
+        c, out = corre(S / "comprobar.py", EJEMPLO)
+        ok("sin as-is/, autorizaciones da los mismos errores y avisos que antes",
+           c == 0 and "as-is" not in out and [l for l in out.splitlines() if l.startswith(("✗", "·"))]
+           == ["· pantallas con su captura del prototipo: 5 → PAN-01, PAN-02, PAN-03, PAN-04, PAN-05"], out)
 
         # 8. Word del DF (opcional)
         if shutil.which("node"):

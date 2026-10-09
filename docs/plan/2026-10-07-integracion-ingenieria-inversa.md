@@ -870,12 +870,12 @@ palabras que tenía antes y ya no tiene; avisa de cada otra línea del funcional
 - Si `as-is/datos/` no trae `sin-verificar.json` ni `fueraDeLaAplicacion` (un `as-is/` anterior a la Tarea 8b), lo que
   depende de ellos no se comprueba.
 
-- [ ] **Paso 1:** selftest: `datos/evolutivo` pasa; siete copias rotas dan su error (dos de ellas, «Nuevo» con el objeto
+- [x] **Paso 1:** selftest: `datos/evolutivo` pasa; siete copias rotas dan su error (dos de ellas, «Nuevo» con el objeto
   de fuera y un NV inexistente); una con «Existe» y el objeto de fuera no da error, y con «Modifica» da su aviso;
   `leer_fuentes.py --una-fuente`
   cataloga `as-is/` como una FU; y `datos/autorizaciones`, sin `as-is/`, da exactamente los mismos errores y avisos
   que antes. → FALLA.
-- [ ] **Paso 2:** implementar y escribir `datos/evolutivo`. **Paso 3:** selftest en verde. Commit.
+- [x] **Paso 2:** implementar y escribir `datos/evolutivo`. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 20: Aviso de parte mal hecha
 

@@ -25,6 +25,7 @@ caso ficticio; no se copian sus nombres.
 | Dice qué hace cada pantalla y quién la usa | La compone y la captura `appian-prototipos` |
 | Diseña la solución técnica aplicando buenas prácticas | La doctrina está en `appian-best-practices`, que se consulta por secciones |
 | Usa la descripción de una aplicación existente como fuente (`as-is/`) | La escribe `appian-reverse-engineering` |
+| Valida con el cliente la propuesta de refactorización y la baja a objetos en el técnico | La escribe `appian-refactorizacion` (`refactorizacion/propuesta.md`) |
 | — | Construir o revisar objetos en un entorno: `appian-best-practices` con el MCP de desarrollo |
 
 ## Requisitos
@@ -78,7 +79,8 @@ si el proyecto ya existe.
 |---|---|---|
 | **Síntesis** | Reuniones, correos, notas | Funcional y diagramas; el técnico cuando el funcional esté estable o se pida; DF en Word |
 | **Fiel** | Hay un DF o una ERS del cliente | Funcional extraído sin reinterpretar (el ID del cliente va en la trazabilidad) y técnico; sin Word: el documento oficial es el del cliente |
-| **Evolutivo** | Hay que cambiar una aplicación existente | Como síntesis, con `as-is/` como fuente; el técnico marca cada objeto Nuevo, Modifica o Existe |
+| **Evolutivo** | Hay que cambiar o ampliar una aplicación existente (`as-is/`) | Como síntesis, con lo de «Aplicación existente»: el origen de cada historia y la situación de cada objeto |
+| **Refactorización** | Hay una propuesta de refactorización (`refactorizacion/propuesta.md`) | Como evolutivo: el DF dice lo que se conserva, lo que cambia y lo nuevo; el técnico baja cada REF a objetos, con «Sustituye a» y la migración de datos |
 | **Actualización** | Ya hay análisis y llega una reunión, un correo o los comentarios al DF | Informe de impacto y cambios puntuales: `actualizacion.md` |
 | **Pantalla suelta** | Alguien explica una pantalla, con o sin captura | La ficha PAN y sus historias, en el chat y en el funcional si existe |
 
@@ -114,7 +116,7 @@ Di el modo al empezar.
    python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/
    ```
    Sin errores antes de entregar. Revisa los avisos: los de redacción se corrigen casi siempre.
-8. **DF en Word** (síntesis y evolutivo; si el análisis es solo para un prototipo, cuando se pida). La
+8. **DF en Word** (síntesis, evolutivo y refactorización; si el análisis es solo para un prototipo, cuando se pida). La
    primera entrega es la versión 1.0: sube la versión del funcional y del técnico y añade su fila en
    `decisiones.md`.
    ```bash
@@ -128,6 +130,22 @@ Di el modo al empezar.
 Para buscar en el análisis sin leerlo entero: `indice.py` (`resumen`, `buscar`, `ficha`, `impacto`,
 `seccion`, `siguientes`). Para preparar la próxima reunión, `indice.py pendientes <p>`: las preguntas abiertas
 por «A quién», de las que afectan a más partes del análisis a las que menos.
+
+## Aplicación existente
+
+En los modos evolutivo y de refactorización, los pasos de «Proyecto nuevo» con esto:
+1. **Fuentes.** `as-is/` es una sola fuente y la propuesta, otra, antes que las reuniones:
+   `leer_fuentes.py --una-fuente <p>/as-is <p>/refactorizacion/propuesta.md -o <p>/fuentes/`. De `as-is/` se leen
+   `LEEME.md`, los documentos de lo que toca el cambio y `as-is/datos/`; nunca la extracción en bruto
+   (`ingesta-fuentes.md`).
+2. **Funcional.** Cada historia dice su «Origen»: Se conserva, Cambia o Nueva. Los hallazgos que corrige, las REF y
+   los NV se citan dentro de su fuente («[FU-01 H-DAT-01]») y solo en la trazabilidad: el DF no los enseña.
+3. **Lo sin verificar.** Un NV que condiciona lo que se construye es un PT con su cita; si lo resuelve negocio, también
+   un PC, en palabras del cliente.
+4. **Técnico.** Los nombres reales del inventario; §13 con la Situación de cada objeto (Nuevo, Modifica, Existe o
+   Sustituye); con propuesta, una DT por cada REF de su Solución y la carga inicial y migración en §3
+   (`tecnico-plantilla.md`).
+5. **Comprobar.** `comprobar.py` lo contrasta con `as-is/datos/`: nombres, situaciones y citas.
 
 ## Pantalla suelta
 
