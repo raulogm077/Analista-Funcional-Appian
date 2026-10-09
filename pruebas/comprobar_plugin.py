@@ -26,6 +26,8 @@ Con --plugin <carpeta> todo se hace sobre esa copia del plugin (p. ej. la del pa
 las pruebas de este repositorio.
 Sale con 1 si hay errores.
 """
+from __future__ import annotations
+
 import argparse
 import ast
 import importlib.util
