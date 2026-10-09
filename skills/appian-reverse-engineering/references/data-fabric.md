@@ -14,7 +14,7 @@ La skill lo usa para dos cosas, y solo para ellas:
 **Opción 1: script (preferente).** Si la configuración MCP del proyecto tiene un servidor HTTP en `<URL del entorno>/mcp`, con el mismo host que el `LCP_URL` del Dev MCP (que la URL termine en `/mcp` no basta: muchos conectores ajenos a Appian también terminan así):
 
 ```bash
-uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" datafabric --out <salida>
+uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" datafabric --out <salida>
 ```
 
 Se ejecuta desde la carpeta del usuario (donde está su `.mcp.json`). Al servidor solo se le llaman herramientas que no son de escritura. Si el servidor tiene otra URL, nómbralo: `--mcp-server-name <nombre en la configuración>`. Escribe `<trabajo>/datafabric.json`. La consulta SQL solo se construye si la referencia SQL es un identificador válido (`[A-Za-z_][A-Za-z0-9_]*`).

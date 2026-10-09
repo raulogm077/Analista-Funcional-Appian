@@ -122,6 +122,9 @@ DIAGRAMAS = "appian-diagramas-bpmn"
 PIEZAS_DE_DIAGRAMAS = ("mermaid.initialize", "BPMNDiagram")
 REDACCION = "skills/appian-functional-analyst/references/redaccion.md"
 LISTA_MULETILLAS = re.compile(r"^\s*- «[^»\n]+» →")
+# Una orden uv run sin proyecto (--no-project o --with) elige el Python que encuentra, también un 3.9, y mcp pide 3.10:
+# lleva --python. Lo que va dentro de un proyecto (el bundle del Dev MCP tras uv sync) usa el Python del proyecto.
+UV_RUN = re.compile(r"\buv run\b([^`\n]*)")
 
 errores, avisos = [], []
 
@@ -363,6 +366,19 @@ def comprobar_piezas():
                                f"prosa están solo en {REDACCION}: remite a ese fichero")
 
 
+def comprobar_uv_run():
+    """Ninguna orden uv run sin proyecto (UV_RUN) del paquete deja a uv elegir el Python: lleva --python."""
+    for f in ficheros_del_paquete():
+        if f.suffix not in TEXTOS:
+            continue
+        lineas = [str(i) for i, linea in enumerate(f.read_text(encoding="utf-8", errors="replace").splitlines(), 1)
+                  for m in UV_RUN.finditer(linea)
+                  if re.search(r"--no-project|--with\b", m.group(1)) and "--python" not in m.group(1)]
+        if lineas:
+            errores.append(f"{f.relative_to(RAIZ).as_posix()}:{','.join(lineas[:5])}: una orden uv run sin --python: uv "
+                           'puede elegir un Python 3.9 y mcp pide 3.10 o superior (uv run --no-project --python ">=3.10" …)')
+
+
 def anota_prueba(nombre, r, ruta, pytest=False):
     """0 bien y 1 error. Un selftest.py sale con otro código (2) si falta un requisito: aviso. Con pytest, todo lo que
     no es 0 es un fallo (2: no se pudieron recoger las pruebas)."""
@@ -384,7 +400,9 @@ def pruebas_de_las_skills():
     if all(importlib.util.find_spec(m) for m in ("pytest", "mcp")):
         orden = [sys.executable, "-m", "pytest", "-q", str(inversa)]
     elif shutil.which("uv"):
-        orden = ["uv", "run", "--no-project", "--with", "pytest", "--with", "mcp>=1.2,<2",
+        # sin UV_PYTHON, uv elige el Python que encuentra, también un 3.9, y mcp pide 3.10 (UV_RUN)
+        python = [] if os.environ.get("UV_PYTHON") else ["--python", ">=3.10"]
+        orden = ["uv", "run", "--no-project", *python, "--with", "pytest", "--with", "mcp>=1.2,<2",
                  "python", "-m", "pytest", "-q", str(inversa)]
     else:
         print("Prueba de appian-reverse-engineering: no se pudo completar")
@@ -635,6 +653,17 @@ def probar_comprobador(nombres):
                "un script que importa un módulo de su carpeta sin dont_write_bytecode no da error", out)
         (scripts / "zz_modulo.py").unlink()
         (scripts / "zz_usa.py").unlink()
+        # una orden uv run sin proyecto y sin --python deja a uv elegir el Python: puede ser un 3.9, y mcp pide 3.10
+        orden = skill / "references" / "zz-uv.md"
+        orden.write_text('# Orden\n\n`uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/x.py" doctor`\n',
+                         encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "zz-uv.md:3" in out and "--python" in out, "una orden uv run sin --python no da error", out)
+        orden.write_text('# Orden\n\n`uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python x.py doctor`\n',
+                         encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0, "una orden uv run con --python da error", out)
+        orden.unlink()
         # nada personal en el paquete, con límite de palabra y sin distinguir acentos ni mayúsculas: el HYDRAULIC de
         # viewer-static.min.js (en la copia) no es «Raúl»; C:/Users/<usuario> es la ruta neutra
         personal = skill / "references" / "zz-personal.md"
@@ -804,6 +833,9 @@ def main(completo, plugin=None):
     # Un dueño por salida y una pieza por capacidad
     comprobar_propietarios(textos)
     comprobar_piezas()
+
+    # Las órdenes uv run sin proyecto fijan el Python
+    comprobar_uv_run()
 
     # Skills citadas
     documentos = [RAIZ / "README.md"] + [SKILLS / n / "SKILL.md" for n in nombres]

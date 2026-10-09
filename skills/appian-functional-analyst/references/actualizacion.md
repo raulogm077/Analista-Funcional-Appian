@@ -153,7 +153,7 @@ lista. Una decisión explícita del cliente no se le vuelve a preguntar.
   propias palabras (`buscar` con las palabras del «Antes», también en el técnico) y corrige cada sitio que
   lo siga diciendo. Es el error más frecuente. Al verificar (paso 7), `comprobar.py --anterior` avisa de cada
   línea del funcional o del técnico, sin tocar en esta versión, que aún dice lo que una pieza cambiada ya no dice
-  (cinco palabras seguidas):
+  (seis palabras seguidas, sin URL ni código):
   «HU-07: "…" sigue en PAN-04, l.212». Corrige cada sitio, o déjalo si sigue siendo verdad allí.
 - **ANULA**: se tacha el ID y las piezas que lo citaban se corrigen o dicen que ya no aplica.
 - **Criterios**: si cambia el comportamiento, se reescribe el criterio (mismo ID) o se añade el siguiente.

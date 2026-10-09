@@ -7,7 +7,7 @@ Las órdenes se ejecutan desde tu carpeta (donde está tu `.mcp.json`), con la r
 ## 1. Estado de los 3 MCP
 
 ```
-uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor
+uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" doctor
 ```
 
 - Dev MCP en `ok`. Si no, el código de salida dice qué falta (11 sin configuración, 12 varias configuraciones, 13 no arranca o no autentica) y `references/devmcp-setup.md` cómo arreglarlo.
@@ -16,8 +16,8 @@ uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.
 ## 2. Plan, sin extraer nada
 
 ```
-uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" apps
-uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" plan --app <prefijo> --out ./<prefijo>/as-is
+uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" apps
+uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" plan --app <prefijo> --out ./<prefijo>/as-is
 ```
 
 Revisa la lista de herramientas (`USA` / `NO`) y `<prefijo>/as-is/extraccion/extraction_plan.json`:
@@ -31,7 +31,7 @@ Revisa la lista de herramientas (`USA` / `NO`) y `<prefijo>/as-is/extraccion/ext
 ## 3. Extracción y revisión de lo extraído
 
 ```
-uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <prefijo> --out ./<prefijo>/as-is
+uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <prefijo> --out ./<prefijo>/as-is
 ```
 
 - [ ] `extraction_report.json`: en `callStatsByRole.definition`, menos del 20 % de llamadas fallidas; mira el motivo de las herramientas desactivadas.
