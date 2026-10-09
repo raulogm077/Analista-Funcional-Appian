@@ -108,6 +108,25 @@ def main():
         except (ImportError, AttributeError) as e:
             ok("modelo.quita_citas existe", False, repr(e))
 
+        # 2c. Guion de la próxima reunión: las PC abiertas por «A quién», de más peso a menos
+        c, out = corre(S / "indice.py", "pendientes", EJEMPLO)
+        grupo = out.split("## Responsable de la unidad", 1)[-1]
+        ok("indice.py pendientes: PC-01 y PC-02 bajo «Responsable de la unidad», sin PC-03",
+           c == 0 and "## Responsable de la unidad" in out and "PC-01" in grupo and "PC-02" in grupo
+           and grupo.index("PC-01") < grupo.index("PC-02") and "PC-03" not in out
+           and "5 años / 10 años" in out and "ACT-06, HU-03" in out, out)
+        pend = tmp / "pendientes"
+        shutil.copytree(EJEMPLO, pend)
+        editar(pend / "analisis" / "funcional.md", "| ~~PC-03~~ |",
+               "| PC-04 | ¿Puede una unidad retirar una solicitud ya enviada? | Sí, hasta que se revise / No | "
+               "Responsable de la unidad | HU-01, HU-02, PAN-01, 6.1 <!-- ❓ FU-03 00:30:00 --> |\n| ~~PC-03~~ |")
+        editar(pend / "analisis" / "funcional.md", "Se aplica RB-01.\n\nSe acepta si:\n- `HU-02.1`",
+               "Se aplica RB-01. Si se puede retirar una solicitud está por decidir (pendiente: PC-04).\n\nSe acepta si:\n- `HU-02.1`")
+        c, out = corre(S / "indice.py", "pendientes", pend)
+        grupo = out.split("## Responsable de la unidad", 1)[-1]
+        ok("indice.py pendientes: la PC-04, que afecta a más, sale la primera",
+           c == 0 and "PC-04" in grupo and grupo.index("PC-04") < grupo.index("PC-01") < grupo.index("PC-02"), out)
+
         # 3. Proyecto nuevo
         nuevo = tmp / "nuevo"
         c, out = corre(S / "proyecto.py", "iniciar", nuevo, "--nombre", "Prueba", "--cliente", "Ejemplo")

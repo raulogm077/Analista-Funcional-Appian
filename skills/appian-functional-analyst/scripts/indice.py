@@ -11,6 +11,7 @@
   indice.py seccion    <p> F6 [--con "documento"]          texto de una sección: F (funcional), T (técnico), D (decisiones)
   indice.py siguientes <p>                              siguiente ID libre de cada tipo
   indice.py derivadas  <p> [--escribir]                 anexo «Quién puede hacer qué» del funcional
+  indice.py pendientes <p>                              guion de la próxima reunión: las PC abiertas, por «A quién»
   indice.py grafo      <p> -o grafo.json
 
 Estados: 🔒 Validado · ✅ Decidido · 🔶 Inferido · ⚠️ Pendiente · ❓ No definido · Anulada · Respondida.
@@ -367,6 +368,53 @@ def c_derivadas(m, a):
         print("\n(El anexo ha cambiado. Con --escribir se guarda en funcional.md.)")
 
 
+def peso_pc(m, p):
+    """Lo que pesa una PC abierta: los elementos de su «Afecta a» y las líneas que la citan fuera del §11."""
+    cel = celda(m, p, "afecta a")
+    elementos = [x for x in re.split(r",", mo.sin_comentarios(cel)) if x.strip(" —-")]
+    citas = 0
+    for d, D in m.docs.items():
+        for i, l in enumerate(D.lineas):
+            if d == "F" and D.seccion_de_linea[i] == "11":
+                continue
+            if p.id in mo.ids_en(mo.sin_comentarios(l)):
+                citas += 1
+    return len(elementos) + citas
+
+
+def celda(m, p, nombre):
+    """El valor de la columna `nombre` (normalizado) de una pieza de tipo fila."""
+    cab = [mo.normaliza(c) for c in mo.celdas(p.cabecera)]
+    cel = mo.celdas(m.lineas(p.doc)[p.ini])
+    return cel[cab.index(nombre)] if nombre in cab and cab.index(nombre) < len(cel) else ""
+
+
+def c_pendientes(m, a):
+    """Guion de la próxima reunión: las PC abiertas agrupadas por «A quién»; en cada grupo, de más peso a menos."""
+    grupos = collections.defaultdict(list)
+    for p in m.vigentes("PC"):
+        quien = mo.sin_comentarios(celda(m, p, "a quien")).strip(" —-") or "Sin asignar"
+        grupos[quien].append((-peso_pc(m, p), clave(p.id), p))
+    if not grupos:
+        print("No hay preguntas pendientes de confirmar.")
+        return
+    print("# Próxima reunión: lo pendiente de confirmar\n")
+    print("De más a menos peso en cada grupo: lo que afecta a más partes del análisis va primero.\n")
+    orden = sorted(grupos, key=lambda q: (min(x[0] for x in grupos[q]), mo.normaliza(q)))
+    for quien in orden:
+        print(f"## {quien}\n")
+        for peso, _, p in sorted(grupos[quien], key=lambda x: x[:2]):
+            pregunta = mo.sin_comentarios(celda(m, p, "pregunta")).strip() or p.titulo
+            print(f"- **{p.id}** {pregunta}")
+            opciones = mo.sin_comentarios(celda(m, p, "opciones")).strip(" —-")
+            if opciones:
+                print(f"  - Opciones: {opciones}")
+            afecta = mo.sin_comentarios(celda(m, p, "afecta a")).strip(" —-")
+            if afecta:
+                print(f"  - Afecta a: {afecta}")
+        print()
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -387,6 +435,7 @@ def main():
     s.add_argument("--max", type=int, default=150)
     nuevo("siguientes", c_siguientes)
     s = nuevo("derivadas", c_derivadas); s.add_argument("--escribir", action="store_true")
+    nuevo("pendientes", c_pendientes)
     s = nuevo("grafo", c_grafo); s.add_argument("-o", default="grafo.json")
     a = ap.parse_args()
     m = mo.Proyecto(a.proyecto)

@@ -824,9 +824,9 @@ de referencias de `modelo.py`, `indice.py` y `comprobar.py`.
 con pregunta, opciones y «Afecta a». Peso = elementos de «Afecta a» separados por comas + líneas fuera del §11 que citan
 la PC. Dentro de cada grupo, de más peso a menos y, a igual peso, por ID.
 
-- [ ] **Paso 1:** selftest: en `autorizaciones` salen PC-01 y PC-02 bajo «Responsable de la unidad» y no sale PC-03; en
+- [x] **Paso 1:** selftest: en `autorizaciones` salen PC-01 y PC-02 bajo «Responsable de la unidad» y no sale PC-03; en
   una copia con una PC-04 que afecta a cuatro elementos, PC-04 sale la primera. → FALLA.
-- [ ] **Paso 2:** implementar `c_pendientes`. **Paso 3:** selftest en verde. Commit.
+- [x] **Paso 2:** implementar `c_pendientes`. **Paso 3:** selftest en verde. Commit.
 
 ### Tarea 18: Texto que queda viejo
 

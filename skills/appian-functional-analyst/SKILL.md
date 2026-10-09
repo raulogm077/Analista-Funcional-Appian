@@ -126,7 +126,8 @@ Di el modo al empezar.
    confirmar con el cliente y siguiente paso.
 
 Para buscar en el análisis sin leerlo entero: `indice.py` (`resumen`, `buscar`, `ficha`, `impacto`,
-`seccion`, `siguientes`).
+`seccion`, `siguientes`). Para preparar la próxima reunión, `indice.py pendientes <p>`: las preguntas abiertas
+por «A quién», de las que afectan a más partes del análisis a las que menos.
 
 ## Pantalla suelta
 

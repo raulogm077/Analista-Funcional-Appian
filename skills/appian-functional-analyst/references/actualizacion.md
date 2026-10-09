@@ -175,6 +175,13 @@ cambiado sin un punto aprobado. Después:
 En pocas líneas: versión, puntos por tipo, lo que cambió de verdad (CAMBIA, ANULA, alcance), pendientes
 cerrados y nuevos, lo que quedó pendiente de aprobación y las pantallas a actualizar.
 
+Para la próxima reunión, el guion de lo que hay que preguntar:
+```bash
+python3 <skill>/scripts/indice.py pendientes <p>
+```
+Las PC abiertas agrupadas por «A quién», cada una con sus opciones y lo que afecta; en cada grupo, primero las
+que afectan a más partes del análisis (los elementos de «Afecta a» y las líneas que la citan fuera del §11).
+
 ## Varias fuentes juntas
 En orden de fecha y en un solo informe si tratan lo mismo (la reunión y el correo que la confirma); si no,
 un informe por fuente. Para arrancar un análisis con muchas reuniones ya acumuladas, `volumen-grande.md`.
