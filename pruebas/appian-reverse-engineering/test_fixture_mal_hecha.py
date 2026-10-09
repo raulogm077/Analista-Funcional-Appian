@@ -443,7 +443,7 @@ async def arnes_dem(variante: str) -> dict[str, str]:
     async def sesion(modo, hacer):
         env = {**base, "MOCK_VARIANT": variante, "LCP_TOOL_MODE": modo, "MOCK_EXTRA_TOOLS": "1"}
         params = StdioServerParameters(command=sys.executable, args=[str(MOCK)], env=env)
-        with open(os.devnull, "w") as nulo:
+        with open(os.devnull, "w", encoding="utf-8") as nulo:
             async with stdio_client(params, errlog=nulo) as (r, w), ClientSession(r, w) as s:
                 await s.initialize()
                 return await hacer(s)

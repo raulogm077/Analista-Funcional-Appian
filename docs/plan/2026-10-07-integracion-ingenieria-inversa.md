@@ -945,29 +945,29 @@ genera con `requisitos.py --json` y `REQUISITOS_SIN` de todo lo opcional); modif
   también con el nombre que tenía antes (`appian-prototipos-aena`, hoy `appian-prototipos`). La carpeta personal (`~`)
   sale de `devmcp_extract.home_dir()`, que respeta `APPIAN_RE_HOME`.
 
-- [ ] **Paso 1:** prueba en `comprobar_plugin.py --completo`: con `REQUISITOS_SIN` de todo lo opcional, la salida
+- [x] **Paso 1:** prueba en `comprobar_plugin.py --completo`: con `REQUISITOS_SIN` de todo lo opcional, la salida
   `--json` es igual a `pruebas/requisitos-esperado.json` salvo versión y rutas, como en la Tarea 31; con
   `REQUISITOS_SIN=playwright,docx`, sale 0 y esos dos van con `presente: false`; con `REQUISITOS_SIN=python`, sale 1;
   con un `APPIAN_RE_HOME` temporal que tiene `.claude/skills/appian-reverse-engineering/SKILL.md`, hay aviso, y también
   con `.claude/skills/appian-prototipos-aena/SKILL.md`. → FALLA.
-- [ ] **Paso 2:** implementar. **Paso 3:** en verde. Commit.
+- [x] **Paso 2:** implementar. **Paso 3:** en verde. Commit.
 
 ### Tarea 24: Aviso al instalar
 
 **Ficheros:** Crear `hooks/hooks.json`; modificar la sección «Requisitos» de cada SKILL.md, que se crea donde no la
 haya (una línea: `python3 <skill>/../../requisitos.py --skill <nombre>` antes de la primera tarea).
 
-- [ ] **Paso 1:** comprobar con la documentación de plugins (agente `claude-code-guide`) cómo se declara un hook
+- [x] **Paso 1:** comprobar con la documentación de plugins (agente `claude-code-guide`) cómo se declara un hook
   `SessionStart` de un plugin sin depender del shell (en Windows puede ir por PowerShell 5.1, que no tiene `||`) y cómo
   se cita su carpeta (`${CLAUDE_PLUGIN_ROOT}`).
-- [ ] **Paso 2:** `--breve` siempre sale con 0 (si no, Claude no recibe el texto), imprime solo lo que falta y escribe la
+- [x] **Paso 2:** `--breve` siempre sale con 0 (si no, Claude no recibe el texto), imprime solo lo que falta y escribe la
   marca `~/.cache/appian-analisis-funcional/avisado-<versión>` (`~` sale de `devmcp_extract.home_dir()`) después de
   imprimir. Prueba: con `APPIAN_RE_HOME` temporal y `REQUISITOS_SIN=docx`, la primera vez lo dice y la segunda no
   imprime nada; con `REQUISITOS_SIN=python`, sale 0 y lo dice.
-- [ ] **Paso 3:** `hooks.json` en la forma que da el Paso 1.
+- [x] **Paso 3:** `hooks.json` en la forma que da el Paso 1.
 - [ ] **Paso 4 (Raúl):** instalar el paquete en Claude Code y en la app de escritorio con algo de la tabla sin instalar
   y comprobar que el primer mensaje lo dice. Resultado en `docs/evaluaciones.md`.
-- [ ] **Paso 5:** commit.
+- [x] **Paso 5:** commit.
 
 ### Tarea 25: README generado y nada personal
 
@@ -986,9 +986,9 @@ PMI y AGP. Los datos de las galerías y las plantillas de prototipos pasan a un 
 incidencias y expedientes en las sedes de una empresa ficticia), sin aeropuertos ni lugares o códigos reales de un
 cliente, y se regeneran con sus scripts (lo decidió Raúl el 7 de octubre).
 
-- [ ] **Paso 1:** con un fichero temporal en una skill que diga `C:/Users/rgmoya`, `comprobar_plugin.py` da error, y el
+- [x] **Paso 1:** con un fichero temporal en una skill que diga `C:/Users/rgmoya`, `comprobar_plugin.py` da error, y el
   `HYDRAULIC` de `viewer-static.min.js` no lo da; una galería que dice «Barajas» también da error. → FALLA.
-- [ ] **Paso 2:** implementar, pasar galerías y plantillas al dominio neutro y regenerar la tabla. **Paso 3:** en verde
+- [x] **Paso 2:** implementar, pasar galerías y plantillas al dominio neutro y regenerar la tabla. **Paso 3:** en verde
   sin el fichero temporal. Commit.
 
 ### Tarea 26: Pruebas en Windows, macOS y Linux
@@ -1000,7 +1000,7 @@ cliente, y se regeneran con sus scripts (lo decidió Raúl el 7 de octubre).
   con `PYTHONUTF8=1`.
 - En Python 3.9 no se instala `mcp`, que pide 3.10 o superior: se instala `uv` con `UV_PYTHON=3.12` y
   `comprobar_plugin.py` pasa ingeniería inversa por su vía de uv.
-- [ ] **Paso 1:** subir la rama y ver la ejecución en las seis combinaciones. Si el token no deja subir
+- [x] **Paso 1:** subir la rama y ver la ejecución en las seis combinaciones. Si el token no deja subir
   `.github/workflows/` (permiso `workflows`), el fichero lo sube Raúl. **Paso 2:** arreglar lo que falle en
   Windows o macOS (codificación, rutas, `python3`/`python`) con su prueba. **Paso 3:** commit. Cierre de fase: revisión y merge.
 

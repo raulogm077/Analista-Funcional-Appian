@@ -1,0 +1,79 @@
+# Pruebas del plugin en Windows, macOS y Linux, con Python 3.9 y 3.12 (Tarea 26).
+# No va en el paquete: .github/ es del repositorio.
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pruebas:
+    name: ${{ matrix.os }} · Python ${{ matrix.python }}${{ matrix.utf8 == '0' && ' · consola sin UTF-8' || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.9", "3.12"]
+        utf8: ["1"]
+        # Un Windows como el de un compañero: sin PYTHONUTF8, la consola y los ficheros sin decir la codificación van en
+        # cp1252 (riesgo 2 del plan)
+        include:
+          - os: windows-latest
+            python: "3.12"
+            utf8: "0"
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      PYTHONUTF8: ${{ matrix.utf8 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: docx para el Word del DF
+        run: npm install -g docx
+
+      - name: Playwright, Chromium y pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install playwright pytest
+          python -m playwright install ${{ runner.os == 'Linux' && '--with-deps' || '' }} chromium
+
+      # mcp pide Python 3.10 o superior: con 3.9, ingeniería inversa se prueba por la vía de uv con 3.12
+      - name: mcp (Python 3.10 o superior)
+        if: matrix.python != '3.9'
+        run: python -m pip install "mcp>=1.2,<2"
+
+      - name: uv para ingeniería inversa (Python 3.9)
+        if: matrix.python == '3.9'
+        uses: astral-sh/setup-uv@v5
+
+      - name: Comprobación completa del plugin
+        env:
+          UV_PYTHON: "3.12"
+        shell: bash
+        run: python pruebas/comprobar_plugin.py --completo 2>&1 | tee "$RUNNER_TEMP/comprobacion.log"; exit ${PIPESTATUS[0]}
+
+      # Los registros de un job no se pueden leer desde la API: si falla, la cola de la salida va en anotaciones.
+      # El registro va fuera del repositorio: dentro, comprobar_plugin.py lo leería como parte del paquete.
+      - name: La salida, en anotaciones
+        if: failure()
+        shell: bash
+        env:
+          PYTHONUTF8: "1"
+        run: |
+          python - <<'PY'
+          import os, pathlib, sys
+          sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+          t = pathlib.Path(os.environ["RUNNER_TEMP"], "comprobacion.log").read_text(encoding="utf-8", errors="replace")[-9000:]
+          for k in range(0, len(t), 3000):
+              trozo = t[k:k + 3000].replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+              print(f"::error title=comprobar_plugin {k // 3000 + 1}::{trozo}")
+          PY

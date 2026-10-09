@@ -11,6 +11,9 @@ Qué mira:
   proyecto (proyecto.md, fuentes/, analisis/, as-is/, refactorizacion/ o prototipo/): van en pruebas/<skill>/;
 - que ninguna skill lleve la marca de un cliente: un brand-*.json que no sea brand-appian.json (la estándar de Appian)
   o un logo (MARCA_NEUTRA, LOGO e IMAGENES dicen qué es cada cosa); van en <p>/prototipo/ de su proyecto;
+- que nada de lo que va al paquete lleve datos personales (PERSONALES; solo el autor y el dueño de .claude-plugin/,
+  AUTORIA) ni, salvo el README (CON_HISTORIA), nombre a un cliente de pruebas/clientes.txt o lo que lo delata, ni en
+  su contenido ni en el nombre del fichero;
 - que ninguna skill use como marca el círculo azul (MARCA_ANTIGUA): la de inferido es 🔶, la misma en todas;
 - que las skills que leen lo de ingeniería inversa (LEEN_AS_IS) no citen su extracción en bruto (as-is/extraccion,
   mcp_raw): leen as-is/datos/ y los documentos de as-is/;
@@ -23,7 +26,8 @@ Qué mira:
 - que no haya frases largas repetidas entre SKILL.md;
 - que la versión de plugin.json sea la última del README.
 Con --completo pasa además las pruebas de pruebas/ (cada selftest.py y, con pytest, las de ingeniería inversa) al
-plugin que se comprueba, que reciben en PLUGIN_A_PROBAR, y prueba el propio comprobador con una copia temporal.
+plugin que se comprueba, que reciben en PLUGIN_A_PROBAR, la de su requisitos.py y prueba el propio comprobador con una
+copia temporal.
 Con --plugin <carpeta> todo se hace sobre esa copia del plugin (p. ej. la del paquete, que no lleva pruebas/), con
 las pruebas de este repositorio.
 Sale con 1 si hay errores.
@@ -40,6 +44,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import unicodedata
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]  # el repositorio: las pruebas de cada skill están en pruebas/<skill>/
@@ -84,6 +89,23 @@ NO_VAN_EN_EL_PAQUETE = (".git", ".github", ".claude", "docs", "pruebas", "CLAUDE
 # mira en los textos que escriben marcas: documentos, plantillas, scripts y datos.
 MARCA_ANTIGUA = "\U0001F535"
 TEXTOS = (".md", ".py", ".json", ".sh", ".txt", ".html")
+# Nada personal en lo que va al paquete: ni el usuario ni las rutas del equipo de nadie. Palabras enteras, sin distinguir
+# mayúsculas ni acentos (se compara el texto en NFKD sin marcas y en minúsculas): «Raúl», «RAUL» y «raul» sí; el HYDRAULIC
+# de viewer-static.min.js, no. Un usuario con números detrás también cuenta (raulogm077), y el guion bajo separa como un
+# espacio (raul_garcia, rgmoya_minsait). Una carpeta personal de Windows, macOS o Linux (C:/Users/x, /Users/x, /home/x)
+# también, salvo las neutras: <usuario>, %USERNAME% y Public. Una URL con /users/ no es una ruta del equipo.
+PERSONALES = re.compile(r"(?<![a-z0-9])(?:rgmoya|raulogm)\d*(?![a-z0-9])|(?<![a-z0-9])raul(?![a-z0-9])"
+                        r"|(?:c:|(?<![\w.:/\\-]))(?:/|\\+)(?:users|home)(?:/|\\+)"
+                        r"(?!<usuario>|&lt;usuario&gt;|%username%|public(?![\w.-]))[\w.-]+"
+                        r"|(?<!\w)proyectos\s+ia(?!\w)")
+PISTAS = ("rgmoya", "raul", "users", "home", "proyectos")  # una línea sin ninguna no hace falta mirarla (rapidez)
+# Las únicas excepciones, el autor del plugin y el dueño del marketplace: fichero → objeto cuyo «name» no se mira.
+AUTORIA = {".claude-plugin/plugin.json": "author", ".claude-plugin/marketplace.json": "owner"}
+# El plugin no lleva clientes (Tarea 0b): ni su nombre ni lo que lo delata en los datos de ejemplo, que dice
+# pruebas/clientes.txt. Se mira en todo el paquete y en los nombres de los ficheros, salvo el README, que cuenta su
+# historia; el nombre anterior de prototipos (ANTERIORES) no cuenta: hay que poder buscarlo para retirar copias sueltas.
+CLIENTES = PRUEBAS / "clientes.txt"
+CON_HISTORIA = ("README.md",)
 
 errores, avisos = [], []
 
@@ -133,6 +155,14 @@ def comprobar_contenido(nombres):
         if py.parts[-3] in nombres and (falta := sin_bytecode(py)):
             errores.append(f"{py.relative_to(RAIZ).as_posix()}:{falta}: importa un módulo de su carpeta sin "
                            "«sys.dont_write_bytecode = True» antes: dejaría __pycache__ dentro del plugin, fuera del proyecto")
+    for py in [f for f in ficheros_del_paquete() if f.suffix == ".py"]:
+        if consola_sin_utf8(py):
+            errores.append(f"{py.relative_to(RAIZ).as_posix()}: escribe en la consola sin pasarla a UTF-8: en un Windows "
+                           "sin UTF-8 se rompe con «→» o «✓» (sys.stdout.reconfigure(encoding=\"utf-8\", errors=\"replace\"))")
+        if lineas := texto_sin_codificacion(py):
+            errores.append(f"{py.relative_to(RAIZ).as_posix()}:{','.join(map(str, lineas[:5]))}: lee la salida de otro "
+                           "programa como texto sin encoding: en un Windows sin UTF-8 una ruta con tilde sale mal "
+                           '(encoding="utf-8", errors="replace")')
 
 
 def sin_bytecode(py: Path) -> int | None:
@@ -149,6 +179,99 @@ def sin_bytecode(py: Path) -> int | None:
     return None
 
 
+def texto_sin_codificacion(py: Path) -> list[int]:
+    """Las líneas donde se lee la salida de otro programa como texto (text=True o universal_newlines=True) sin decir la
+    codificación: se leería en la de la consola, cp1252 en un Windows sin PYTHONUTF8, y una ruta con tilde saldría mal."""
+    lineas = []
+    for n in ast.walk(ast.parse(py.read_text(encoding="utf-8"))):
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in (
+                "run", "check_output", "Popen", "call", "check_call"):
+            claves = {k.arg: k.value for k in n.keywords if k.arg}
+            como_texto = any(isinstance(claves.get(k), ast.Constant) and claves[k].value is True
+                             for k in ("text", "universal_newlines"))
+            if como_texto and "encoding" not in claves:
+                lineas.append(n.lineno)
+    return lineas
+
+
+def consola_sin_utf8(py: Path) -> bool:
+    """Si un script que se ejecuta (tiene «__main__») escribe en la consola sin pasarla antes a UTF-8: en un Windows sin
+    PYTHONUTF8 la consola va en cp1252 y un «→» o un «✓» lo rompen. Vale reconfigure() o utf8_stdio() de prototipos."""
+    texto = py.read_text(encoding="utf-8")
+    if "__main__" not in texto or "reconfigure(" in texto or "utf8_stdio" in texto:
+        return False
+    return any(isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "print"
+               for n in ast.walk(ast.parse(texto)))
+
+
+def sin_acentos(texto):
+    return "".join(c for c in unicodedata.normalize("NFKD", texto) if not unicodedata.combining(c))
+
+
+def ficheros_del_paquete():
+    """Lo que mete en el .plugin la orden zip del README: todo menos NO_VAN_EN_EL_PAQUETE, CACHES y *.plugin."""
+    for p in sorted(RAIZ.iterdir()):
+        if p.name in NO_VAN_EN_EL_PAQUETE or p.name in CACHES or p.name.endswith(".plugin"):
+            continue
+        for f in sorted([p] if p.is_file() else p.rglob("*")):
+            partes = f.relative_to(RAIZ).parts
+            if f.is_file() and not set(CACHES) & set(partes) and not f.name.endswith(".plugin"):
+                yield f
+
+
+def terminos_de_clientes():
+    """(término, pista, patrón, sin distinguir mayúsculas) de pruebas/clientes.txt: palabras enteras y sin acentos; los
+    códigos de tres letras en mayúsculas, solo en mayúsculas («mad» y «bcn» en minúsculas son palabras corrientes)."""
+    terminos = []
+    for linea in CLIENTES.read_text(encoding="utf-8").splitlines():
+        t = linea.split("#", 1)[0].strip()
+        if t:
+            codigo = re.fullmatch(r"[A-Z]{3}", t) is not None
+            palabras = (sin_acentos(t) if codigo else sin_acentos(t).casefold()).split()
+            terminos.append((t, max(palabras, key=len), re.compile(r"(?<!\w)" + r"\s+".join(map(re.escape, palabras)) + r"(?!\w)"),
+                             not codigo))
+    return terminos
+
+
+def comprobar_personales_y_clientes():
+    """Ningún fichero del paquete lleva datos personales (PERSONALES), salvo los de AUTORIA, y ninguno salvo los de
+    CON_HISTORIA nombra a un cliente; tampoco en el nombre del fichero. Los binarios (imágenes, fuentes: llevan bytes nulos) no se leen; los .min.js y los HTML, sí."""
+    if not CLIENTES.is_file():
+        errores.append(f"falta {CLIENTES.relative_to(REPO).as_posix()}: los clientes que el plugin no puede nombrar")
+    clientes = terminos_de_clientes() if CLIENTES.is_file() else []
+    donde = lambda lineas: ",".join("nombre" if n == 0 else str(n) for n in lineas[:5]) + ("…" if len(lineas) > 5 else "")
+    for f in ficheros_del_paquete():
+        datos = f.read_bytes()
+        if b"\0" in datos:
+            continue
+        ruta = f.relative_to(RAIZ).as_posix()
+        texto = datos.decode("utf-8", errors="replace")
+        if ruta in AUTORIA:  # el «name» de ese objeto se deja en blanco, sin mover las líneas
+            texto = re.sub(r'("%s"\s*:\s*\{[^{}]*?"name"\s*:\s*)"(?:[^"\\]|\\.)*"' % AUTORIA[ruta], r'\1""', texto, count=1)
+        personales, de_clientes = {}, {}
+        # la línea 0 es el nombre del fichero: también cuenta
+        for i, linea in enumerate([ruta] + texto.splitlines()):
+            plana = linea if linea.isascii() else sin_acentos(linea)
+            for anterior in ANTERIORES:
+                plana = plana.replace(anterior, " ")
+            minus = plana.casefold()
+            if any(p in minus for p in PISTAS):
+                for m in PERSONALES.finditer(minus):
+                    personales.setdefault(m.group(0), []).append(i)
+            if ruta not in CON_HISTORIA:
+                for t, pista, patron, sin_mayusculas in clientes:
+                    donde_mira = minus if sin_mayusculas else plana
+                    if pista in donde_mira and patron.search(donde_mira):
+                        de_clientes.setdefault(t, []).append(i)
+        for dato, lineas in personales.items():
+            errores.append(f"{ruta}:{donde(lineas)}: «{dato}» es un dato personal; el paquete no lleva datos de nadie (solo "
+                           "author.name de plugin.json y owner.name de marketplace.json): usa uno neutro, como "
+                           "C:/Users/<usuario> o una ruta de ejemplo")
+        for t, lineas in de_clientes.items():
+            errores.append(f"{ruta}:{donde(lineas)}: nombra «{t}», de un cliente ({CLIENTES.relative_to(REPO).as_posix()}); "
+                           "el plugin no lleva clientes: usa datos ficticios neutros")
+
+
 def anota_prueba(nombre, r, ruta, pytest=False):
     """0 bien y 1 error. Un selftest.py sale con otro código (2) si falta un requisito: aviso. Con pytest, todo lo que
     no es 0 es un fallo (2: no se pudieron recoger las pruebas)."""
@@ -161,7 +284,9 @@ def anota_prueba(nombre, r, ruta, pytest=False):
 
 def pruebas_de_las_skills():
     """Las pruebas de pruebas/<skill>/ contra el plugin que se comprueba, que reciben en PLUGIN_A_PROBAR."""
-    entorno = dict(os.environ, PLUGIN_A_PROBAR=str(RAIZ), PYTHONUTF8="1")
+    # PYTHONUTF8=1 salvo que se pida otra cosa: la matriz de GitHub prueba un Windows con PYTHONUTF8=0, como el de un
+    # compañero, para que las pruebas vean la consola y los ficheros en cp1252
+    entorno = dict(os.environ, PLUGIN_A_PROBAR=str(RAIZ), PYTHONUTF8=os.environ.get("PYTHONUTF8", "1"))
     for p in sorted(PRUEBAS.glob("*/selftest.py")):
         anota_prueba(p.parent.name, corre([sys.executable, str(p)], env=entorno), p.relative_to(REPO).as_posix())
     inversa = PRUEBAS / "appian-reverse-engineering"
@@ -177,6 +302,108 @@ def pruebas_de_las_skills():
         return
     anota_prueba("appian-reverse-engineering", corre(orden, env=entorno, cwd=str(inversa)),
                  inversa.relative_to(REPO).as_posix(), pytest=True)
+
+
+def sin_version_ni_rutas(salida):
+    """La salida --json de requisitos.py sin lo que cambia de un equipo a otro: la versión de Python y las rutas."""
+    datos = json.loads(salida)
+    datos["python"] = "<versión>"
+    for r in datos.get("requisitos", []):
+        if r.get("ruta"):
+            r["ruta"] = "<ruta>"
+    return datos
+
+
+def prueba_de_requisitos():
+    """requisitos.py del plugin que se comprueba, en una carpeta de trabajo y una carpeta personal temporales (con
+    espacios) y con la consola en cp1252, como en Windows: con todo lo opcional ausente, su --json es el de
+    pruebas/requisitos-esperado.json salvo versión y rutas; si falta algo opcional sale con 0 y si falta Python, con 1;
+    avisa de la copia suelta de una skill del plugin en ~/.claude/skills/, también con el nombre que tenía antes; y
+    --breve y el hook de inicio de sesión salen siempre con 0 y avisan una sola vez de lo que falta."""
+    fallos = []
+    script, tabla = RAIZ / "requisitos.py", RAIZ / "requisitos.json"
+    if not (script.is_file() and tabla.is_file()):
+        fallos.append("faltan requisitos.py o requisitos.json en la raíz del plugin")
+    else:
+        opcional = ",".join(r["id"] for r in json.loads(tabla.read_text(encoding="utf-8")) if not r["imprescindible"])
+        with tempfile.TemporaryDirectory(prefix="requisitos-") as tmp:
+            trabajo = Path(tmp) / "Carpeta con espacios" / "Gestión app"
+            trabajo.mkdir(parents=True)
+
+            def requisitos(*args, sin="", casa="vacía", orden=None):
+                carpeta = Path(tmp) / "casas" / casa
+                carpeta.mkdir(parents=True, exist_ok=True)
+                entorno = dict(os.environ, APPIAN_RE_HOME=str(carpeta), REQUISITOS_SIN=sin, PYTHONIOENCODING="cp1252",
+                               CLAUDE_PLUGIN_ROOT=str(RAIZ))
+                entorno.pop("PYTHONUTF8", None)
+                r = corre(orden or [sys.executable, str(script), *args], env=entorno, cwd=str(trabajo))
+                return r.returncode, r.stdout, r.stdout + r.stderr
+
+            def espera(cond, que, salida):
+                if not cond:
+                    fallos.append(f"{que}:\n{salida[-1500:]}")
+
+            c, out, todo = requisitos("--json", sin=opcional)
+            esperado = (PRUEBAS / "requisitos-esperado.json").read_text(encoding="utf-8")
+            try:
+                igual = c == 0 and sin_version_ni_rutas(out) == sin_version_ni_rutas(esperado)
+            except ValueError:
+                igual = False
+            espera(igual, "con REQUISITOS_SIN de todo lo opcional, --json no es pruebas/requisitos-esperado.json (si el "
+                   "cambio es a propósito, regenéralo desde una carpeta vacía: APPIAN_RE_HOME=<otra carpeta vacía> "
+                   f"REQUISITOS_SIN={opcional} python3 requisitos.py --json > pruebas/requisitos-esperado.json)", todo)
+            c, out, todo = requisitos("--json", sin="playwright,docx")
+            try:
+                ausentes = {r["id"] for r in json.loads(out)["requisitos"] if r["presente"] is False}
+            except ValueError:
+                ausentes = set()
+            espera(c == 0 and {"playwright", "docx"} <= ausentes,
+                   "con REQUISITOS_SIN=playwright,docx no sale con 0 o no los da por ausentes", todo)
+            c, out, todo = requisitos(sin="python")
+            espera(c == 1 and "Python" in out, "con REQUISITOS_SIN=python no sale con 1 diciendo que falta Python", todo)
+            for suelta, hoy in (("appian-reverse-engineering", "appian-reverse-engineering"),
+                                ("appian-prototipos-aena", "appian-prototipos")):
+                copia = Path(tmp) / "casas" / suelta / ".claude" / "skills" / suelta / "SKILL.md"
+                copia.parent.mkdir(parents=True)
+                copia.write_text(f"---\nname: {suelta}\n---\n", encoding="utf-8")
+                c, out, todo = requisitos("--json", casa=suelta)
+                try:
+                    avisos = " ".join(json.loads(out)["avisos"])
+                except ValueError:
+                    avisos = ""
+                espera(suelta in avisos and hoy in avisos, f"una copia suelta de {suelta} en ~/.claude/skills/ no da aviso",
+                       todo)
+            # --breve, para el hook de inicio de sesión: sale siempre con 0 (si no, Claude no recibe el texto), dice
+            # solo lo que falta y deja la marca de que ya avisó a esta versión
+            version = json.loads((RAIZ / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
+            marca = Path(tmp) / "casas" / "aviso" / ".cache" / "appian-analisis-funcional" / f"avisado-{version}"
+            c, out, todo = requisitos("--breve", sin="docx", casa="aviso")
+            espera(c == 0 and "Paquete docx de Node" in out and "Falta Python" not in out
+                   and "Skill de PDF" not in out and marca.is_file(),
+                   "--breve con REQUISITOS_SIN=docx no sale con 0 diciendo solo que falta docx y dejando la marca", todo)
+            c, out, todo = requisitos("--breve", sin="docx", casa="aviso")
+            espera(c == 0 and not out.strip(), "--breve avisa otra vez de lo mismo", todo)
+            c, out, todo = requisitos("--breve", sin="python", casa="sin-python")
+            espera(c == 0 and "Falta Python" in out, "--breve con REQUISITOS_SIN=python no sale con 0 diciendo que falta", todo)
+            # el hook de hooks/hooks.json tal cual, con la carpeta del plugin en su sitio: python3 y python en la misma
+            # orden (sh en macOS y Linux, PowerShell en Windows) y el aviso una sola vez
+            try:
+                grupos = json.loads((RAIZ / "hooks" / "hooks.json").read_text(encoding="utf-8"))["hooks"]["SessionStart"]
+                ordenes = [h["command"] for g in grupos if "startup" in g.get("matcher", "").split("|") for h in g["hooks"]]
+            except (OSError, ValueError, KeyError, TypeError):
+                ordenes = []
+            espera(len(ordenes) == 1, "hooks/hooks.json no tiene un hook SessionStart para «startup»", "")
+            for orden in ordenes:
+                orden = orden.replace("${CLAUDE_PLUGIN_ROOT}", RAIZ.as_posix())
+                shell = (["powershell", "-NoProfile", "-NonInteractive", "-Command", orden] if os.name == "nt"
+                         else ["sh", "-c", orden])
+                for vez in (1, 2):
+                    c, out, todo = requisitos(sin="docx", casa="hook", orden=shell)
+                    espera(c == 0 and out.count("Paquete docx de Node") == (1 if vez == 1 else 0),
+                           f"el hook de inicio de sesión, la {'primera' if vez == 1 else 'segunda'} vez, no sale con 0 o "
+                           f"no avisa de docx {'una vez' if vez == 1 else 'ninguna vez'}", todo)
+    print(f"Prueba de requisitos: {'bien' if not fallos else 'falla'}")
+    errores.extend(f"Prueba de requisitos: {f}" for f in fallos)
 
 
 def copia_del_plugin(destino):
@@ -254,6 +481,11 @@ def probar_comprobador(nombres):
         c, out = comprueba()
         espera(c == 1 and "appian-prototipos-aena" in out and "hoy appian-prototipos" in out,
                "un SKILL.md que cita el nombre anterior de una skill no da error", out)
+        # cada SKILL.md manda comprobar el equipo con su nombre antes de la primera tarea
+        doc.write_text(original.replace(f"--skill {nombres[0]}", "--skill otra"), encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and f"requisitos.py --skill {nombres[0]}" in out,
+               "un SKILL.md sin la línea de requisitos.py con su nombre no da error", out)
         doc.write_text(original, encoding="utf-8")
         # la regla «Dudas de Appian» nombra el MCP appian-docs, así que tiene que estar en el .mcp.json del plugin
         mcp = copia / ".mcp.json"
@@ -272,10 +504,39 @@ def probar_comprobador(nombres):
         c, out = comprueba()
         espera(c == 1 and "la orden zip no deja fuera pruebas/*" in out,
                "una orden zip del README que mete pruebas/ en el paquete no da error", out)
+        # la tabla de requisitos del README es la salida de requisitos.py --tabla-readme, sin retoques a mano
+        readme.write_text(texto.replace("<!-- requisitos:fin -->", "| a mano | | | | |\n<!-- requisitos:fin -->"),
+                          encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "la tabla de requisitos no es la salida" in out,
+               "una tabla de requisitos del README retocada a mano no da error", out)
         readme.write_text(texto, encoding="utf-8")
-        # un script que importa otro de su carpeta deja __pycache__ en el plugin si no lo evita
+        # un script que lee la salida de otro programa como texto sin decir la codificación la lee en la de la consola
+        # (cp1252 en Windows): una ruta con tilde sale mal
         scripts = skill / "scripts"
         scripts.mkdir(exist_ok=True)
+        lee = scripts / "zz_lee.py"
+        lee.write_text("import subprocess\nr = subprocess.run(['npm', 'root', '-g'], capture_output=True, text=True)\n",
+                       encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "zz_lee.py:2" in out and "encoding" in out,
+               "un subprocess.run(text=True) sin encoding no da error", out)
+        lee.write_text("import subprocess\nr = subprocess.run(['npm', 'root', '-g'], capture_output=True, text=True,\n"
+                       "                   encoding='utf-8', errors='replace')\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0, "un subprocess.run(text=True) con encoding da error", out)
+        lee.unlink()
+        # un script que escribe en la consola sin pasarla a UTF-8 se rompe en un Windows sin UTF-8 con «→» o «✓»
+        (scripts / "zz_dice.py").write_text('if __name__ == "__main__":\n    print("hecho \u2192 ✓")\n', encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "zz_dice.py" in out and "UTF-8" in out, "un script que imprime sin reconfigure no da error", out)
+        (scripts / "zz_dice.py").write_text('import sys\nif __name__ == "__main__":\n    for s in (sys.stdout, sys.stderr):\n'
+                                            '        s.reconfigure(encoding="utf-8")\n    print("hecho \u2192 ✓")\n',
+                                            encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0, "un script que imprime con reconfigure da error", out)
+        (scripts / "zz_dice.py").unlink()
+        # un script que importa otro de su carpeta deja __pycache__ en el plugin si no lo evita
         (scripts / "zz_modulo.py").write_text("X = 1\n", encoding="utf-8")
         (scripts / "zz_usa.py").write_text("import sys\nimport zz_modulo\n", encoding="utf-8")
         c, out = comprueba()
@@ -283,6 +544,54 @@ def probar_comprobador(nombres):
                "un script que importa un módulo de su carpeta sin dont_write_bytecode no da error", out)
         (scripts / "zz_modulo.py").unlink()
         (scripts / "zz_usa.py").unlink()
+        # nada personal en el paquete, con límite de palabra y sin distinguir acentos ni mayúsculas: el HYDRAULIC de
+        # viewer-static.min.js (en la copia) no es «Raúl»; C:/Users/<usuario> es la ruta neutra
+        personal = skill / "references" / "zz-personal.md"
+        for dato in ("C:/Users/rgmoya/Documents", "C:\\Users\\otro\\Documents", "lo revisó RAÚL", "según raul",
+                     "/home/claude/proyecto", "D:/Proyectos IA/app", "github.com/raulogm077/x",
+                     "/Users/jgarcia/Library/x", "`/home/jgarcia/x`", "usuario raul_garcia", "rgmoya_minsait"):
+            personal.write_text(f"# Notas\n\n{dato}\n", encoding="utf-8")
+            c, out = comprueba()
+            espera(c == 1 and "zz-personal.md:3" in out and "dato personal" in out, f"una skill que dice «{dato}» no da error", out)
+        personal.write_text("# Notas\n\nC:/Users/<usuario>/Documents · ELECTRO_HYDRAULIC · C:/Users/%USERNAME%/x · "
+                            "C:/Users/Public/x · https://api.example.org/users/12 · /home/<usuario>/x\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0 and "viewer-static.min.js" not in out,
+               "C:/Users/<usuario>, %USERNAME%, Public, una URL con /users/ o HYDRAULIC dan error", out)
+        personal.unlink()
+        # el nombre de un fichero también cuenta
+        for nombre in ("rgmoya-notas.md", "aena-notas.md"):
+            f = skill / "references" / nombre
+            f.write_text("# Notas\n\nTexto neutro.\n", encoding="utf-8")
+            c, out = comprueba()
+            espera(c == 1 and nombre in out, f"un fichero que se llama {nombre} no da error", out)
+            f.unlink()
+        # la única excepción es author.name de plugin.json (y owner.name de marketplace.json)
+        manifiesto = copia / ".claude-plugin" / "plugin.json"
+        antes = manifiesto.read_text(encoding="utf-8")
+        manifiesto.write_text(antes.replace('"description": "', '"description": "De Raúl: ', 1), encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "plugin.json:" in out and "dato personal" in out,
+               "un plugin.json que nombra a Raúl fuera de author.name no da error", out)
+        manifiesto.write_text(antes, encoding="utf-8")
+        # el plugin no lleva clientes (pruebas/clientes.txt): ni su nombre ni lo que lo delata en los datos de ejemplo;
+        # los códigos de tres letras, solo en mayúsculas («mad» en minúsculas es una palabra corriente)
+        galeria = copia / "skills" / "appian-prototipos" / "galerias" / "zz-galeria.json"
+        for dato in ('"ubicacion": "Madrid-Barajas"', '"sede": "MAD"', '"cliente": "Aena"'):
+            galeria.write_text("{\n " + dato + "\n}\n", encoding="utf-8")
+            c, out = comprueba()
+            espera(c == 1 and "zz-galeria.json:2" in out and "clientes.txt" in out, f"una galería que dice {dato} no da error", out)
+        galeria.write_text('{\n "ruta": "datos/mad/2026",\n "antes": "appian-prototipos-aena"\n}\n', encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0, "un «mad» en minúsculas o el nombre anterior de prototipos dan error como cliente", out)
+        galeria.unlink()
+        # fuera de skills/ también: lo que va en la raíz del paquete (requisitos.json, hooks/) no nombra clientes
+        gancho = copia / "hooks" / "zz-cliente.json"
+        gancho.parent.mkdir(exist_ok=True)
+        gancho.write_text('{\n "description": "Para el aeropuerto de Barajas"\n}\n', encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "zz-cliente.json:2" in out and "clientes.txt" in out, "un fichero de hooks/ que nombra a un cliente no da error", out)
+        gancho.unlink()
         # --completo --plugin pasa las pruebas del repositorio a la copia: con sus scripts rotos, ninguna pasa
         # (si falta un requisito, como pytest sin uv, esa prueba no se completa, pero tampoco pasa)
         for py in (copia / "skills").rglob("*.py"):
@@ -356,6 +665,9 @@ def main(completo, plugin=None):
     # Lo que lleva cada skill
     comprobar_contenido(nombres)
 
+    # Nada personal ni de un cliente en el paquete
+    comprobar_personales_y_clientes()
+
     # Skills citadas
     documentos = [RAIZ / "README.md"] + [SKILLS / n / "SKILL.md" for n in nombres]
     for n in nombres:
@@ -380,6 +692,11 @@ def main(completo, plugin=None):
                 continue
             if not (SKILLS / n / ruta).exists():
                 errores.append(f"{n}/SKILL.md cita `{ruta}`, que no existe")
+
+    # Cada skill comprueba el equipo antes de su primera tarea (en el chat no hay hook de inicio de sesión)
+    for n, t in textos.items():
+        if not re.search(rf'requisitos\.py"? --skill {re.escape(n)}(?![\w-])', t):
+            errores.append(f"{n}/SKILL.md: falta en «Requisitos» la línea `python3 <skill>/../../requisitos.py --skill {n}`")
 
     # Rutas de una skill a otra
     for py in SKILLS.glob("*/**/*.py"):
@@ -444,8 +761,19 @@ def main(completo, plugin=None):
         if falta:
             errores.append(f"README.md: la orden zip no deja fuera {', '.join(falta)}")
 
+    # La tabla de requisitos del README sale de requisitos.json, para que no diverjan
+    tabla = re.search(r"^<!-- requisitos:inicio -->\n(.*?)^<!-- requisitos:fin -->",
+                      (RAIZ / "README.md").read_text(encoding="utf-8"), re.S | re.M)
+    generada = corre([sys.executable, str(RAIZ / "requisitos.py"), "--tabla-readme"], env=dict(os.environ, PYTHONUTF8="1"))
+    if not tabla:
+        errores.append("README.md: falta la tabla de requisitos entre <!-- requisitos:inicio --> y <!-- requisitos:fin -->")
+    elif generada.returncode or tabla.group(1).strip() != generada.stdout.strip():
+        errores.append("README.md: la tabla de requisitos no es la salida de `python3 requisitos.py --tabla-readme`; "
+                       "pon esa salida entre <!-- requisitos:inicio --> y <!-- requisitos:fin -->")
+
     if completo:
         pruebas_de_las_skills()
+        prueba_de_requisitos()
         if not plugin:  # el comprobador se prueba una vez, desde el repositorio
             probar_comprobador(nombres)
 
@@ -458,6 +786,8 @@ def main(completo, plugin=None):
 
 
 if __name__ == "__main__":
+    for s_ in (sys.stdout, sys.stderr):  # consolas de Windows sin UTF-8
+        s_.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--completo", action="store_true", help="además, las pruebas de cada skill")
     ap.add_argument("--plugin", help="otra copia del plugin, p. ej. la del paquete (por defecto, este repositorio)")

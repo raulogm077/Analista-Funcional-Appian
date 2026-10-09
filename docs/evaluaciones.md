@@ -4,6 +4,64 @@ Resultados de las evaluaciones del plan `docs/plan/2026-10-07-integracion-ingeni
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 
+## F7 · Equipo (9 de octubre de 2026)
+
+Rama `f7-equipo`, de `main` ee4b19b al merge. Versión 0.7.0-alpha.6.
+
+### Qué cambia
+
+- **`requisitos.py` y `requisitos.json` (Tarea 23).** Qué hace falta para cada skill (Python, Playwright y un navegador,
+  Node con `docx`, LibreOffice, un lector de PDF, `uv`, el Dev MCP, el Appian MCP Server), qué se pierde sin ello y
+  cómo se instala en cada sistema. Solo busca ejecutables y rutas: no abre nada. Avisa si hay una copia suelta de una
+  skill del plugin, también con el nombre anterior de prototipos.
+- **El aviso al instalar (Tarea 24).** Un hook `SessionStart` ejecuta `requisitos.py --breve`: dice lo que falta una vez
+  por versión y deja la marca en `~/.cache/appian-analisis-funcional/` (lo único que el plugin escribe fuera de un
+  proyecto). El comando vale en sh y en PowerShell 5.1 y prueba `python3` y `python`. Cada skill lo comprueba antes de
+  su primera tarea y sigue sin él en una copia suelta.
+- **El README y el paquete (Tarea 25).** La tabla de requisitos del README sale de `requisitos.json`. `comprobar_plugin.py`
+  da error si un fichero del paquete, o su nombre, lleva un dato personal (usuarios, carpetas personales de Windows,
+  macOS o Linux) o un cliente de `pruebas/clientes.txt`. Las galerías, las plantillas y los ejemplos de prototipos pasan
+  a una empresa ficticia (Vadelia, sus sedes, incidencias y expedientes) y se regeneran.
+- **Windows (Tarea 26 y revisión).** Los scripts pasan la consola a UTF-8 al arrancar y leen la salida de otros
+  programas en UTF-8; `comprobar_plugin.py` da error si uno no lo hace. `detect_secrets.sh` usa el primer Python que
+  funcione.
+
+### Pruebas: la matriz de GitHub
+
+| Ejecución | ubuntu 3.9 / 3.12 | macOS 3.9 / 3.12 | Windows 3.9 / 3.12 | Windows 3.12 sin UTF-8 |
+|---|---|---|---|---|
+| acac31e, 8c19eb7 | ✓ / ✓ | ✓ / ✓ | ✗ / ✗ | — |
+| c47c1f5 | ✓ / ✓ | ✓ / ✓ | ✗ / ✗ | — |
+| dfe6af6, d102e72 | ✓ / ✓ | ✓ / ✓ | ✓ / ✓ | ✗ |
+| ff22ff9 | ✓ / ✓ | ✓ / ✓ | ✓ / ✓ | ✓ |
+
+- **Windows con `PYTHONUTF8=1`** fallaba en una sola prueba, la de `detect_secrets.sh`. El primer arreglo (que el
+  envoltorio no encontrara `python3`) era bueno pero no era la causa: en Windows, `subprocess` con «bash» a secas encuentra
+  el lanzador de WSL de System32 antes que el bash de Git. Lo vio la revisión de la fase.
+- **Windows sin UTF-8**, la consola de un compañero: no estaba en el plan; lo pidió la revisión, porque `PYTHONUTF8=1`
+  tapaba justo el fallo típico. Se rompían nueve scripts al imprimir «→» o «✓» y el propio comprobador. Aquí se
+  reprodujo con una locale CP1252 antes de subir el arreglo.
+- Los registros de un job no se pueden leer desde la API: si la comprobación falla, el workflow deja la cola de la
+  salida en anotaciones.
+- **Pendiente de Raúl (Paso 4 de la Tarea 24):** instalar el paquete en Claude Code y en la app de escritorio, con algo de
+  la tabla sin instalar, y ver que el primer mensaje lo dice; si puede ser, también en un Windows.
+
+### Lo aprendido
+
+- Antes de arreglar un fallo que solo se ve en otra máquina, confirmar la causa: el primer arreglo de Windows tenía
+  sentido y no era el fallo. Una aserción que pasaba (el código de salida) ya lo decía.
+- Una variable que hace pasar las pruebas (`PYTHONUTF8=1`) también puede esconder lo que más le pasa a quien usa el
+  plugin. Conviene una combinación de la matriz sin ella.
+- Lo que no se puede ver (los registros de GitHub) se hace visible desde el propio workflow.
+- Una comprobación estática barata (AST: `print` sin `reconfigure`, `subprocess` de texto sin `encoding`) evita que el
+  fallo vuelva con el siguiente script.
+
+### Aplazado
+
+Lo menor de la revisión, en `docs/siguiente-version.md` («Equipo»): «PMI» como código de un cliente, el orden
+`python3`/`python` del hook en Windows, la sustitución de `${CLAUDE_PLUGIN_ROOT}` en PowerShell (sin verificar), el Dev
+MCP configurado en otro proyecto y las acciones de Node 20 de la matriz.
+
 ## F6 · Analista (9 de octubre de 2026)
 
 Rama `f6-analista`, de `main` a3cc312 al merge. Versión 0.7.0-alpha.5.

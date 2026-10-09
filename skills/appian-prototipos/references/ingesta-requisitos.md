@@ -52,7 +52,7 @@ La ficha no dice cómo se compone la pantalla. Eso sale de las historias y de §
 | Descripción y criterios de la historia | Columnas, filtros y orden de los listados. Acciones con su texto literal: quién la ve → `showWhen`, cuándo está activa → `disabled`, qué pasa después → `$action`, confirmación → `confirmHeader` / `confirmMessage` literales. Los textos entre comillas → `instructions`, `helpTooltip`, mensajes de `$validations` y banners, sin reescribirlos |
 
 - **Listados con más de 7 columnas**: consolida en celdas de dos líneas (`two_line`: código + título,
-  tipología + aeropuerto, paso + fase) sin perder ningún dato. Si aun así sobran, propón llevarlas a la
+  tipología + sede, paso + fase) sin perder ningún dato. Si aun así sobran, propón llevarlas a la
   ficha con un `$assumption` y una pregunta abierta; no las quites sin decirlo.
 - **Filtros**: hasta 4 `userFilters` en la barra del grid, más el buscador. Los filtros predefinidos de uso
   diario («mis informes», «con alertas») → vistas guardadas con `a!tabLayout` y el recuento en la
@@ -137,7 +137,7 @@ Una necesidad, una pantalla. Si dos historias caben en la misma (listado + expor
 | Entero / decimal / importe | `a!integerField` / `a!floatingPointField` | filtro `num` / `eur` |
 | Persona / grupo | `a!pickerFieldUsers` / `a!pickerFieldGroups`; si hay que recorrer la estructura para encontrarlo, `a!userBrowserFieldColumns` / `a!groupBrowserFieldColumns` | nombre + `a!imageField` AVATAR; línea jerárquica → `a!orgChartField` |
 | Documento o carpeta ya existente en Appian | `a!pickerFieldDocuments` / `a!pickerFieldFolders` / `a!pickerFieldDocumentsAndFolders`; explorar una biblioteca → `a!documentAndFolderBrowserFieldColumns` | `a!documentDownloadLink` / `a!documentViewerField` |
-| Jerarquía propia (aeropuerto → terminal → zona, organigrama de unidades) | `a!hierarchyBrowserFieldColumns` (selección) | `a!hierarchyBrowserFieldTree` |
+| Jerarquía propia (sede → edificio → zona, organigrama de unidades) | `a!hierarchyBrowserFieldColumns` (selección) | `a!hierarchyBrowserFieldTree` |
 | Firma | `a!signatureField` | la firma guardada como imagen |
 | Vídeo de formación o procedimiento / página de otra herramienta | — | `a!videoField` + `a!webVideo` / `a!webContentField` |
 | Relación con otra entidad | `a!pickerFieldRecords` o `a!dropdownField` | `a!recordLink` |

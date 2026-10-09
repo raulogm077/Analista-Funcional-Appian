@@ -25,7 +25,11 @@ uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.
 python3 "<skill>/scripts/build_model.py" <salida>
 ```
 
-`uv` ya es requisito del Dev MCP; `--no-project` evita que adopte el `pyproject.toml` que pueda haber en la carpeta del usuario. `doctor`, `apps` y `plan` admiten `--json` (salida legible por máquina). Códigos de salida en la cabecera de `devmcp_extract.py`.
+`uv` ya es requisito del Dev MCP; `--no-project` evita que adopte el `pyproject.toml` que pueda haber en la carpeta del usuario. `doctor`, `apps` y `plan` admiten `--json` (salida legible por máquina). Códigos de salida en la cabecera de `devmcp_extract.py`. En Windows, `python` en vez de `python3`.
+
+## Requisitos
+
+Antes de la primera tarea, desde la carpeta del usuario: `python3 "<skill>/../../requisitos.py" --skill appian-reverse-engineering`. Dice qué falta en el equipo, qué se pierde y cómo se instala. Sin `uv` o sin el Dev MCP no se puede seguir: díselo al usuario con `references/devmcp-setup.md`. Si falta otra cosa que esta tarea necesita, díselo una vez y sigue con lo que haya.
 
 ## Argumentos
 

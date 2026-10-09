@@ -98,4 +98,6 @@ def main():
 
 
 if __name__ == "__main__":
+    for _s in (sys.stdout, sys.stderr):  # consolas de Windows sin UTF-8: «→» o «✓» no caben en cp1252
+        _s.reconfigure(encoding="utf-8", errors="replace")
     main()

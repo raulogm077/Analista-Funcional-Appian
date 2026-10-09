@@ -6,7 +6,7 @@ Fuente: Catálogo SAIL de Appian 26.9 (docs.appian.com/suite/help/26.9/SAIL_Comp
 
 | Requisito | Descripción | Pantallas |
 |---|---|---|
-| C1 | Catálogo completo de componentes de interfaz de Appian 26.9 | Diseño de página, Entradas y selección, Visualización, Acciones y enlaces, Grids y listas, Gráficos, Selectores y navegadores, IA y chat, Parte de incidencia, Alta de proveedor, Consola de guardia, Ficha de INC Incidencia, Detalle del vuelo, Terminal T4 |
+| C1 | Catálogo completo de componentes de interfaz de Appian 26.9 | Diseño de página, Entradas y selección, Visualización, Acciones y enlaces, Grids y listas, Gráficos, Selectores y navegadores, IA y chat, Parte de incidencia, Alta de proveedor, Consola de guardia, Ficha de INC Incidencia, Detalle de la visita, Edificio A |
 
 ## Inventario de pantallas
 
@@ -24,5 +24,5 @@ Fuente: Catálogo SAIL de Appian 26.9 (docs.appian.com/suite/help/26.9/SAIL_Comp
 | asistente | Alta de proveedor | form | P04 | C1 | — |
 | paneles | Consola de guardia | page | P09 | C1 | — |
 | incidencia | Ficha de INC Incidencia | record | P02 | C1 | — |
-| dlg-full | Detalle del vuelo | dialog | P07 | C1 | — |
-| dlg-imagen | Terminal T4 | dialog | P07 | C1 | — |
+| dlg-full | Detalle de la visita | dialog | P07 | C1 | — |
+| dlg-imagen | Edificio A | dialog | P07 | C1 | — |

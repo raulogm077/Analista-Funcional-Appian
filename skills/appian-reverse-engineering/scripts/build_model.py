@@ -608,6 +608,8 @@ def canon_ext(t: str | None) -> str:
 
 
 if __name__ == "__main__":
+    for _s in (sys.stdout, sys.stderr):  # consolas de Windows sin UTF-8: «→» o «✓» no caben en cp1252
+        _s.reconfigure(encoding="utf-8", errors="replace")
     if len(sys.argv) != 2:
         print(__doc__, file=sys.stderr)
         sys.exit(2)

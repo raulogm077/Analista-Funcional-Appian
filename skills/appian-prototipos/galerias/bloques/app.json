@@ -116,49 +116,49 @@
     {
      "id": 1,
      "codigo": "INC-2026-0412",
-     "titulo": "Fuga de agua en el falso techo de la zona de facturación",
+     "titulo": "Fuga de agua en el falso techo del vestíbulo",
      "area": "Mantenimiento",
-     "aeropuerto": "MAD",
+     "sede": "NOR",
      "estado": "En curso",
      "prioridad": "Alta",
-     "descripcion": "Goteo continuo sobre los mostradores 812-818; se han colocado cubos y se ha acotado la zona a la espera del equipo de cubiertas, que revisará la impermeabilización de la lucernaria."
+     "descripcion": "Goteo continuo sobre los puestos de recepción 1 a 4; se han colocado cubos y se ha acotado la zona a la espera del equipo de cubiertas, que revisará la impermeabilización de la lucernaria."
     },
     {
      "id": 2,
      "codigo": "INC-2026-0415",
-     "titulo": "Escalera mecánica detenida en el acceso a la T4S",
+     "titulo": "Ascensor detenido en el edificio B",
      "area": "Mantenimiento",
-     "aeropuerto": "MAD",
+     "sede": "NOR",
      "estado": "Pendiente",
      "prioridad": "Alta",
-     "descripcion": "La escalera 4S-03 se detiene al arrancar; posible fallo del freno de servicio."
+     "descripcion": "El ascensor B-03 se detiene al arrancar; posible fallo del freno de servicio."
     },
     {
      "id": 3,
      "codigo": "INC-2026-0418",
-     "titulo": "Cola excesiva en el filtro de seguridad norte",
+     "titulo": "Cola excesiva en el control de accesos principal",
      "area": "Operaciones",
-     "aeropuerto": "BCN",
+     "sede": "SUR",
      "estado": "Cerrada",
      "prioridad": "Media",
-     "descripcion": "Tiempo de espera de 38 minutos entre las 6:00 y las 7:30 por falta de personal en el turno de mañana; se reforzó el turno con dos vigilantes adicionales."
+     "descripcion": "Tiempo de espera de 38 minutos entre las 8:00 y las 9:30 por falta de personal en el turno de mañana; se reforzó el turno con dos vigilantes adicionales."
     },
     {
      "id": 4,
      "codigo": "INC-2026-0421",
-     "titulo": "Pantallas de información de vuelos sin datos en la puerta B22",
+     "titulo": "Pantallas de cartelería sin datos en la planta 2",
      "area": "Sistemas",
-     "aeropuerto": "BCN",
+     "sede": "SUR",
      "estado": "En curso",
      "prioridad": "Media",
-     "descripcion": "Los monitores FIDS de la puerta B22 muestran la pantalla en negro desde el cambio de turno."
+     "descripcion": "Las pantallas de cartelería digital de la planta 2 están en negro desde el cambio de turno."
     },
     {
      "id": 5,
      "codigo": "INC-2026-0423",
-     "titulo": "Humedad y moho en los aseos de llegadas",
+     "titulo": "Humedad y moho en los aseos de la planta baja",
      "area": "Limpieza",
-     "aeropuerto": "PMI",
+     "sede": "EST",
      "estado": "Pendiente",
      "prioridad": "Baja",
      "descripcion": "Olor persistente y manchas de humedad en la pared del aseo de caballeros."
@@ -166,9 +166,9 @@
     {
      "id": 6,
      "codigo": "INC-2026-0426",
-     "titulo": "Avería del sistema de climatización en la sala de embarque C",
+     "titulo": "Avería del sistema de climatización en la sala de formación C",
      "area": "Mantenimiento",
-     "aeropuerto": "AGP",
+     "sede": "OES",
      "estado": "En curso",
      "prioridad": "Alta",
      "descripcion": "Temperatura de 29 °C en la sala; la enfriadora 2 da alarma de alta presión."
@@ -176,22 +176,22 @@
     {
      "id": 7,
      "codigo": "INC-2026-0430",
-     "titulo": "Pérdida de equipajes en la cinta de recogida 7",
+     "titulo": "Cajas atascadas en la cinta transportadora del almacén",
      "area": "Operaciones",
-     "aeropuerto": "MAD",
+     "sede": "NOR",
      "estado": "Cerrada",
      "prioridad": "Media",
-     "descripcion": "Maletas atascadas en la curva de la cinta 7; revisada la guía lateral."
+     "descripcion": "Cajas atascadas en la curva de la cinta 7; revisada la guía lateral."
     },
     {
      "id": 8,
      "codigo": "INC-2026-0433",
-     "titulo": "Fallo de la red wifi de pasajeros en la terminal 2",
+     "titulo": "Fallo de la red wifi de visitantes en el edificio 2",
      "area": "Sistemas",
-     "aeropuerto": "BCN",
+     "sede": "SUR",
      "estado": "Pendiente",
      "prioridad": "Media",
-     "descripcion": "Los pasajeros no reciben la página de acceso; el controlador inalámbrico se reinicia cada hora."
+     "descripcion": "Los visitantes no reciben la página de acceso; el controlador inalámbrico se reinicia cada hora."
     }
    ]
   }
@@ -207,7 +207,7 @@
    ],
    "local": {
     "local!seccion": "mantenimiento",
-    "local!fAeropuerto": null,
+    "local!fSede": null,
     "local!fArea": null,
     "local!fDesde": null,
     "local!fTexto": null
@@ -413,7 +413,7 @@
             "contents": [
              {
               "type": "a!headingField",
-              "text": "Mantenimiento de terminales",
+              "text": "Mantenimiento de sedes",
               "size": "MEDIUM_PLUS",
               "headingTag": "H2",
               "color": "#FFFFFF",
@@ -425,7 +425,7 @@
               "value": [
                {
                 "type": "a!richTextItem",
-                "text": "Aeropuerto Adolfo Suárez Madrid-Barajas",
+                "text": "Sede Norte de Vadelia",
                 "color": "#FFFFFF"
                }
               ],
@@ -601,22 +601,22 @@
             "contents": [
              {
               "type": "a!dropdownField",
-              "label": "Aeropuerto",
+              "label": "Sede",
               "placeholder": "Seleccione",
               "choiceLabels": [
-               "MAD",
-               "BCN",
-               "PMI",
-               "AGP"
+               "NOR",
+               "SUR",
+               "EST",
+               "OES"
               ],
               "choiceValues": [
-               "MAD",
-               "BCN",
-               "PMI",
-               "AGP"
+               "NOR",
+               "SUR",
+               "EST",
+               "OES"
               ],
-              "value": "local!fAeropuerto",
-              "saveInto": "local!fAeropuerto"
+              "value": "local!fSede",
+              "saveInto": "local!fSede"
              }
             ]
            },
@@ -689,7 +689,7 @@
                  "saveInto": [
                   {
                    "type": "a!save",
-                   "target": "local!fAeropuerto",
+                   "target": "local!fSede",
                    "value": null
                   },
                   {
@@ -861,7 +861,7 @@
               "value": [
                {
                 "type": "a!richTextIcon",
-                "icon": "plane",
+                "icon": "cogs",
                 "color": "{if(local!seccion = \"operaciones\", \"ACCENT\", \"SECONDARY\")}"
                },
                "  ",
@@ -1927,19 +1927,19 @@
             "contents": [
              {
               "type": "a!richTextDisplayField",
-              "label": "Aeropuerto",
+              "label": "Sede",
               "labelPosition": "COLLAPSED",
               "value": [
                {
                 "type": "a!richTextItem",
-                "text": "Aeropuerto",
+                "text": "Sede",
                 "color": "SECONDARY",
                 "size": "SMALL"
                },
                "\n",
                {
                 "type": "a!richTextItem",
-                "text": "MAD",
+                "text": "NOR",
                 "size": "MEDIUM"
                }
               ],
@@ -2082,7 +2082,7 @@
                "\n",
                {
                 "type": "a!richTextItem",
-                "text": "Sala de embarque C",
+                "text": "Sala de formación C",
                 "size": "MEDIUM"
                }
               ],
@@ -3159,7 +3159,7 @@
     "local!marcaIzq": null,
     "local!marcaDer": null,
     "local!correos": [
-     "guardia.mad@example.com",
+     "guardia.norte@example.org",
      ""
     ]
    },
@@ -3340,7 +3340,7 @@
                     "\n",
                     {
                      "type": "a!richTextItem",
-                     "text": "{fv!item.aeropuerto} · {fv!item.area}",
+                     "text": "{fv!item.sede} · {fv!item.area}",
                      "color": "SECONDARY",
                      "size": "SMALL"
                     }
@@ -3649,7 +3649,7 @@
                   "\n",
                   {
                    "type": "a!richTextItem",
-                   "text": "{fv!row.aeropuerto}",
+                   "text": "{fv!row.sede}",
                    "color": "SECONDARY",
                    "size": "SMALL"
                   }
@@ -3956,7 +3956,7 @@
                 "\n",
                 {
                  "type": "a!richTextItem",
-                 "text": "{fv!row.aeropuerto} · {fv!row.area}",
+                 "text": "{fv!row.sede} · {fv!row.area}",
                  "color": "SECONDARY",
                  "size": "SMALL"
                 }
@@ -4583,7 +4583,7 @@
                 "type": "a!textField",
                 "label": "Correos de aviso {fv!index}",
                 "labelPosition": "COLLAPSED",
-                "placeholder": "nombre@example.com",
+                "placeholder": "nombre@example.org",
                 "value": "fv!item",
                 "saveInto": "fv!item"
                }
@@ -4775,7 +4775,7 @@
                "\n",
                {
                 "type": "a!richTextItem",
-                "text": "Avise de una avería o un problema en la terminal",
+                "text": "Avise de una avería o un problema en su sede",
                 "color": "SECONDARY"
                }
               ],
@@ -5066,7 +5066,7 @@
             "value": [
              {
               "type": "a!richTextItem",
-              "text": "Incidencias en filtros, controles y accesos",
+              "text": "Incidencias en el control de accesos y la vigilancia",
               "color": "SECONDARY"
              }
             ]
@@ -5306,8 +5306,8 @@
     "local!cita": "plazo máximo de 2 horas",
     "local!campos": [
      {
-      "campo": "Aeropuerto",
-      "valor": "AGP",
+      "campo": "Sede",
+      "valor": "OES",
       "confianza": "ALTA",
       "origen": "IA",
       "revisado": true,
@@ -5410,7 +5410,7 @@
           "$messages": [
            {
             "role": "USER",
-            "text": "¿Qué incidencias de climatización hay abiertas en AGP?"
+            "text": "¿Qué incidencias de climatización hay abiertas en la sede Oeste?"
            },
            {
             "role": "TOOL",
@@ -5419,7 +5419,7 @@
            },
            {
             "role": "ASSISTANT",
-            "text": "Hay **1 incidencia abierta**: INC-2026-0426, avería de la enfriadora 2 en la sala de embarque C (prioridad alta)."
+            "text": "Hay **1 incidencia abierta**: INC-2026-0426, avería de la enfriadora 2 en la sala de formación C (prioridad alta)."
            }
           ]
          }
@@ -5953,7 +5953,7 @@
               "$content": [
                [
                 "Parte de trabajo PT-2026-118",
-                "Aeropuerto: AGP",
+                "Sede: OES",
                 "Equipo afectado: Enfriadora 2"
                ],
                [
@@ -6045,7 +6045,7 @@
               "\n",
               {
                "type": "a!richTextItem",
-               "text": "{fv!row.aeropuerto} · {fv!row.area}",
+               "text": "{fv!row.sede} · {fv!row.area}",
                "color": "SECONDARY",
                "size": "SMALL"
               }
@@ -6150,7 +6150,7 @@
       "hora": "09:00",
       "titulo": "Coordinación del plan de invierno",
       "tipo": "Evento",
-      "detalle": "Jefaturas de operaciones de MAD y BCN"
+      "detalle": "Jefaturas de las sedes Norte y Sur"
      },
      {
       "id": 2,
@@ -6164,15 +6164,15 @@
       "id": 3,
       "fecha": "2026-09-24",
       "hora": "08:30",
-      "titulo": "Simulacro de evacuación T4",
+      "titulo": "Simulacro de evacuación del edificio A",
       "tipo": "Evento",
-      "detalle": "Zona de facturación, mostradores 800-990"
+      "detalle": "Vestíbulo y plantas 1 a 3"
      },
      {
       "id": 4,
       "fecha": "2026-09-24",
       "hora": "12:00",
-      "titulo": "Revisión del SMS con AESA",
+      "titulo": "Revisión del plan de prevención",
       "tipo": "Evento",
       "detalle": "Sala de juntas, edificio de servicios generales"
      },
@@ -6180,7 +6180,7 @@
       "id": 5,
       "fecha": "2026-09-24",
       "hora": "14:00",
-      "titulo": "Refuerzo en filtros de seguridad",
+      "titulo": "Refuerzo en el control de accesos",
       "tipo": "Turno",
       "detalle": "Dos vigilantes adicionales de 14:00 a 22:00"
      },
@@ -6190,29 +6190,29 @@
       "hora": "18:00",
       "titulo": "Cierre de ofertas de limpieza",
       "tipo": "Plazo",
-      "detalle": "Licitación de limpieza de la T2"
+      "detalle": "Licitación de limpieza del edificio 2"
      },
      {
       "id": 7,
       "fecha": "2026-09-29",
       "hora": "10:00",
-      "titulo": "Visita de la dirección a PMI",
+      "titulo": "Visita de la dirección a la sede Este",
       "tipo": "Evento",
-      "detalle": "Recorrido por las obras de la terminal"
+      "detalle": "Recorrido por las obras del edificio principal"
      },
      {
       "id": 8,
       "fecha": "2026-09-30",
       "hora": "23:00",
-      "titulo": "Cierre nocturno de la pista 14L",
+      "titulo": "Corte nocturno de la electricidad del edificio A",
       "tipo": "Evento",
-      "detalle": "Mantenimiento del balizamiento hasta las 05:00"
+      "detalle": "Mantenimiento del cuadro general hasta las 05:00"
      },
      {
       "id": 9,
       "fecha": "2026-10-02",
       "hora": "09:00",
-      "titulo": "Auditoría de seguridad operacional",
+      "titulo": "Auditoría de seguridad y salud",
       "tipo": "Evento",
       "detalle": "Auditoría interna anual"
      },
@@ -6220,17 +6220,17 @@
       "id": 10,
       "fecha": "2026-10-05",
       "hora": "23:59",
-      "titulo": "Informe mensual de puntualidad",
+      "titulo": "Informe mensual del nivel de servicio",
       "tipo": "Plazo",
-      "detalle": "Datos de septiembre de toda la red"
+      "detalle": "Datos de septiembre de todas las sedes"
      },
      {
       "id": 11,
       "fecha": "2026-10-14",
       "hora": "07:00",
-      "titulo": "Turno especial puente del Pilar",
+      "titulo": "Turno especial del puente de octubre",
       "tipo": "Turno",
-      "detalle": "Refuerzo de personal en BCN y MAD"
+      "detalle": "Refuerzo de personal en las sedes Sur y Norte"
      }
     ],
     "local!dia": "2026-09-24",
@@ -6249,8 +6249,8 @@
      },
      {
       "id": 2,
-      "titulo": "Actualizar el firmware de los FIDS",
-      "descripcion": "Monitores de las puertas B20-B26",
+      "titulo": "Actualizar el firmware de la cartelería",
+      "descripcion": "Pantallas de las plantas 1 a 3",
       "tipo": "Sistemas",
       "tipoColor": "#0F7B6C",
       "responsable": "Hugo Romero",
@@ -6261,7 +6261,7 @@
      {
       "id": 3,
       "titulo": "Formación de nuevos vigilantes",
-      "descripcion": "Procedimiento de filtros y detección de objetos prohibidos",
+      "descripcion": "Procedimiento de control de accesos y registro de visitas",
       "tipo": "Seguridad",
       "tipoColor": "#0F203A",
       "responsable": "Elena Castro",
@@ -6282,7 +6282,7 @@
      },
      {
       "id": 5,
-      "titulo": "Plan de invierno de BCN",
+      "titulo": "Plan de invierno de la sede Sur",
       "descripcion": "Consolidado y enviado a la Dirección de Operaciones",
       "tipo": "Operaciones",
       "tipoColor": "#1D659C",
@@ -6297,7 +6297,7 @@
       "id": 4,
       "autor": "Lucía Fernández Gil",
       "fecha": "2026-09-23T16:30",
-      "texto": "¿Podemos reabrir los mostradores 812-818 mientras llegan las juntas? Hay mucha cola en la zona.",
+      "texto": "¿Podemos reabrir los puestos de recepción 1 a 4 mientras llegan las juntas? Hay mucha cola en el vestíbulo.",
       "adjuntos": [],
       "padre": null
      },

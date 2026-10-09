@@ -134,3 +134,18 @@ apunta aquí y entra en la siguiente versión. Cada línea dice qué, dónde y d
   - el BPMN de un proceso de 8-9 tareas pasa de 1.900 px por los avisos dibujados como eventos de mensaje;
   - el temporizador del diagrama siempre es «no interrumpe»;
   - `capture.py` no deja capturar solo las pantallas que cambian.
+
+## Equipo (requisitos, aviso, paquete)
+
+- «PMI» (Project Management Institute) da error como código de un cliente; los códigos de tres letras podrían mirarse
+  solo en datos (`*.json`, galerías). Revisión de F7.
+- El hook prueba `python3` antes que `python` también en Windows: con el de la Store y el de python.org a la vez,
+  comprueba Playwright y pypdf en el primero y la marca calla al segundo. La línea «Detalle» de `--breve` dice
+  `python3` aunque solo haya `python`. Revisión de F7.
+- Sin verificar: si en Windows con PowerShell Claude Code sustituye `${CLAUDE_PLUGIN_ROOT}` en el texto del comando (la
+  prueba lo hace así) o solo la exporta como variable; en el segundo caso el aviso callaría. Lo dirá el Paso 4 de la
+  Tarea 24 si se prueba en un Windows. Revisión de F7.
+- El Dev MCP se busca en la carpeta de la primera sesión: quien lo tiene configurado en otro proyecto recibe una vez
+  por versión «falta Dev MCP». Revisión de F7.
+- La matriz de GitHub avisa de que las acciones de Node 20 están obsoletas (checkout, setup-python, setup-node,
+  setup-uv): subir de versión cuando haya las de Node 24.

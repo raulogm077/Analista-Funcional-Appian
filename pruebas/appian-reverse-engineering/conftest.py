@@ -51,12 +51,12 @@ class Project:
         self._write()
 
     def _write(self):
-        (self.proj / ".mcp.json").write_text(json.dumps({"mcpServers": self.servers}, indent=1))
+        (self.proj / ".mcp.json").write_text(json.dumps({"mcpServers": self.servers}, indent=1), encoding="utf-8")
 
     def run(self, *args, check=None, timeout=180):
         env = dict(os.environ, APPIAN_RE_HOME=str(self.home), APPDATA=str(self.home / "AppData"))
         p = subprocess.run([sys.executable, str(EXTRACT), *args], cwd=self.proj, env=env,
-                           capture_output=True, text=True, timeout=timeout)
+                           capture_output=True, text=True, timeout=timeout, encoding="utf-8", errors="replace")
         if check is not None:
             assert p.returncode == check, f"exit {p.returncode}\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr[-3000:]}"
         return p
@@ -64,7 +64,7 @@ class Project:
     def calls_list(self) -> list[dict]:
         if not self.calls.exists():
             return []
-        return [json.loads(line) for line in self.calls.read_text().splitlines() if line.strip()]
+        return [json.loads(line) for line in self.calls.read_text(encoding="utf-8").splitlines() if line.strip()]
 
     def interm(self) -> Path:
         return rutas.work_dir(self.out)

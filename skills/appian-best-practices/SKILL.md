@@ -96,6 +96,11 @@ instead of perpetuating it.
 ❌ **Don't explore the entire application "for context."** Modifying an interface doesn't justify
 inventorying every record type, process and integration. Widen the context when a real dependency shows up.
 
+## Requirements
+
+Before the first task: `python3 <skill>/../../requisitos.py --skill appian-best-practices` (`<skill>` is this file's
+folder; on Windows, `python`). It says what this machine lacks, what is lost and how to install it. If something this task needs is missing, tell the user once and carry on with what there is; if `requisitos.py` is not there (a loose copy of the skill), carry on without it.
+
 ## Tools
 
 Check what is available in the session; don't invent tools or assume they exist.

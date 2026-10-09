@@ -55,7 +55,7 @@ def test_detector_sin_falsos_positivos(tmp_path):
     assert subprocess.run([sys.executable, str(SCRIPTS / "detect_secrets.py"), str(f)],
                           capture_output=True).returncode == 0
     f.write_text('{"clientSecret": "xyzw9876"}\n', encoding="utf-8")
-    p = subprocess.run([sys.executable, str(SCRIPTS / "detect_secrets.py"), str(f)], capture_output=True, text=True)
+    p = subprocess.run([sys.executable, str(SCRIPTS / "detect_secrets.py"), str(f)], capture_output=True, text=True, encoding="utf-8", errors="replace")
     assert p.returncode == 1 and f"{f}:1" in p.stdout                     # dice dónde está
 
 

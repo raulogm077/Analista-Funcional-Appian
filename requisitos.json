@@ -1,0 +1,185 @@
+[
+  {
+    "id": "python",
+    "nombre": "Python 3.9 o superior",
+    "skills": ["appian-best-practices", "appian-diagramas-bpmn", "appian-functional-analyst", "appian-prototipos",
+               "appian-refactorizacion", "appian-reverse-engineering"],
+    "imprescindible": true,
+    "solo_pruebas": false,
+    "para": "Todos los scripts; el extractor de ingeniería inversa usa 3.10 o superior, que trae uv",
+    "sin_el": "No funciona nada",
+    "instalar": {
+      "windows": "`winget install Python.Python.3.12` (el comando es `python`)",
+      "macos": "`brew install python`",
+      "linux": "`sudo apt install python3`"
+    }
+  },
+  {
+    "id": "playwright",
+    "nombre": "Playwright para Python",
+    "skills": ["appian-diagramas-bpmn", "appian-functional-analyst", "appian-prototipos", "appian-reverse-engineering"],
+    "imprescindible": false,
+    "solo_pruebas": false,
+    "para": "Imagen de los diagramas; prueba de humo, contraste y capturas del prototipo",
+    "sin_el": "Diagramas sin imagen (el .drawio y el BPMN, sí) y prototipo sin capturas (se valida y se construye)",
+    "instalar": {
+      "windows": "`python -m pip install playwright`",
+      "macos": "`python3 -m pip install playwright`",
+      "linux": "`python3 -m pip install playwright`"
+    }
+  },
+  {
+    "id": "navegador",
+    "nombre": "Un navegador: el Chromium de Playwright, Chrome o Edge",
+    "skills": ["appian-diagramas-bpmn", "appian-functional-analyst", "appian-prototipos", "appian-reverse-engineering"],
+    "imprescindible": false,
+    "solo_pruebas": false,
+    "para": "Lo usa Playwright para pintar sin conexión",
+    "sin_el": "Lo mismo que sin Playwright",
+    "instalar": {
+      "windows": "`python -m playwright install chromium`, o Chrome o Edge ya instalados",
+      "macos": "`python3 -m playwright install chromium`, o Chrome o Edge ya instalados",
+      "linux": "`python3 -m playwright install chromium`, o Chrome o Edge ya instalados"
+    }
+  },
+  {
+    "id": "node",
+    "nombre": "Node.js",
+    "skills": ["appian-functional-analyst"],
+    "imprescindible": false,
+    "solo_pruebas": false,
+    "para": "DF en Word, con el paquete docx",
+    "sin_el": "Se entrega el funcional.md",
+    "instalar": {
+      "windows": "`winget install OpenJS.NodeJS.LTS`",
+      "macos": "`brew install node`",
+      "linux": "`sudo apt install nodejs npm`"
+    }
+  },
+  {
+    "id": "docx",
+    "nombre": "Paquete docx de Node",
+    "skills": ["appian-functional-analyst"],
+    "imprescindible": false,
+    "solo_pruebas": false,
+    "para": "DF en Word",
+    "sin_el": "Se entrega el funcional.md",
+    "instalar": {
+      "windows": "`npm install docx` en la carpeta de trabajo, o `npm install -g docx`",
+      "macos": "`npm install docx` en la carpeta de trabajo, o `npm install -g docx`",
+      "linux": "`npm install docx` en la carpeta de trabajo, o `npm install -g docx`"
+    }
+  },
+  {
+    "id": "libreoffice",
+    "nombre": "LibreOffice",
+    "skills": ["appian-functional-analyst"],
+    "imprescindible": false,
+    "solo_pruebas": false,
+    "para": "Revisar el DF en Word como PDF y ver las diapositivas de un DF del cliente",
+    "sin_el": "Se revisa a mano",
+    "instalar": {
+      "windows": "`winget install TheDocumentFoundation.LibreOffice`",
+      "macos": "`brew install --cask libreoffice`",
+      "linux": "`sudo apt install libreoffice`"
+    }
+  },
+  {
+    "id": "pdf",
+    "nombre": "pdftotext o pypdf",
+    "skills": ["appian-functional-analyst"],
+    "imprescindible": false,
+    "solo_pruebas": false,
+    "para": "Leer fuentes en PDF",
+    "sin_el": "Claude lee el PDF directamente, más despacio",
+    "instalar": {
+      "windows": "`python -m pip install pypdf`",
+      "macos": "`brew install poppler` o `python3 -m pip install pypdf`",
+      "linux": "`sudo apt install poppler-utils` o `python3 -m pip install pypdf`"
+    }
+  },
+  {
+    "id": "uv",
+    "nombre": "uv",
+    "skills": ["appian-reverse-engineering"],
+    "imprescindible": false,
+    "solo_pruebas": false,
+    "para": "Arrancar el Dev MCP y el extractor, con Python 3.10 o superior y el SDK mcp",
+    "sin_el": "No se puede usar ingeniería inversa",
+    "instalar": {
+      "windows": "`powershell -ExecutionPolicy ByPass -c \"irm https://astral.sh/uv/install.ps1 | iex\"`",
+      "macos": "`curl -LsSf https://astral.sh/uv/install.sh | sh`",
+      "linux": "`curl -LsSf https://astral.sh/uv/install.sh | sh`"
+    }
+  },
+  {
+    "id": "devmcp",
+    "nombre": "Appian Dev MCP configurado",
+    "skills": ["appian-reverse-engineering"],
+    "imprescindible": false,
+    "solo_pruebas": false,
+    "para": "Leer la aplicación en solo lectura (entorno 26.5 o superior, usuario con rol Designer)",
+    "sin_el": "No se puede usar ingeniería inversa",
+    "instalar": {
+      "windows": "Lo instala cada persona y lo configura en el `.mcp.json` de su carpeta: `skills/appian-reverse-engineering/references/devmcp-setup.md`",
+      "macos": "Lo instala cada persona y lo configura en el `.mcp.json` de su carpeta: `skills/appian-reverse-engineering/references/devmcp-setup.md`",
+      "linux": "Lo instala cada persona y lo configura en el `.mcp.json` de su carpeta: `skills/appian-reverse-engineering/references/devmcp-setup.md`"
+    }
+  },
+  {
+    "id": "appian-mcp-server",
+    "nombre": "Appian MCP Server del mismo entorno",
+    "skills": ["appian-reverse-engineering"],
+    "imprescindible": false,
+    "solo_pruebas": false,
+    "para": "Volúmenes del data fabric",
+    "sin_el": "La documentación sale sin volúmenes",
+    "instalar": {
+      "windows": "Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía)",
+      "macos": "Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía)",
+      "linux": "Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía)"
+    }
+  },
+  {
+    "id": "skill-pdf",
+    "nombre": "Skill de PDF de Claude",
+    "skills": ["appian-reverse-engineering"],
+    "imprescindible": false,
+    "solo_pruebas": false,
+    "para": "Exportar `as-is/` a PDF",
+    "sin_el": "Se entrega en Markdown",
+    "instalar": {
+      "windows": "En Claude (web o escritorio) ya está; en Claude Code, una skill de PDF instalada, como `pdf` de anthropics/skills",
+      "macos": "En Claude (web o escritorio) ya está; en Claude Code, una skill de PDF instalada, como `pdf` de anthropics/skills",
+      "linux": "En Claude (web o escritorio) ya está; en Claude Code, una skill de PDF instalada, como `pdf` de anthropics/skills"
+    }
+  },
+  {
+    "id": "pytest",
+    "nombre": "pytest",
+    "skills": [],
+    "imprescindible": false,
+    "solo_pruebas": true,
+    "para": "Pruebas de ingeniería inversa en `pruebas/comprobar_plugin.py --completo`",
+    "sin_el": "Las trae uv; sin uv, esas pruebas no se completan",
+    "instalar": {
+      "windows": "`python -m pip install pytest`",
+      "macos": "`python3 -m pip install pytest`",
+      "linux": "`python3 -m pip install pytest`"
+    }
+  },
+  {
+    "id": "mcp",
+    "nombre": "SDK mcp de Python (pide Python 3.10 o superior)",
+    "skills": [],
+    "imprescindible": false,
+    "solo_pruebas": true,
+    "para": "Pruebas de ingeniería inversa, con el Dev MCP simulado",
+    "sin_el": "Lo mismo que sin pytest",
+    "instalar": {
+      "windows": "`python -m pip install \"mcp>=1.2,<2\"`",
+      "macos": "`python3 -m pip install \"mcp>=1.2,<2\"`",
+      "linux": "`python3 -m pip install \"mcp>=1.2,<2\"`"
+    }
+  }
+]

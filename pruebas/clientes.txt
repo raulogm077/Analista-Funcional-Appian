@@ -1,0 +1,16 @@
+# Clientes que el plugin no nombra (Tarea 0b) y lo que los delata en los datos de ejemplo.
+# Lo lee pruebas/comprobar_plugin.py: da error si skills/ o .claude-plugin/ dicen uno de estos términos.
+# Un término por línea; lo que va detrás de # es un comentario.
+# Se buscan como palabras enteras. Los nombres, sin distinguir mayúsculas ni acentos («Aena», «AEROPUERTO»).
+# Los códigos de tres letras en mayúsculas, solo en mayúsculas: en minúsculas son palabras corrientes o trozos de
+# rutas y correos («mad», «bcn»).
+
+AENA
+aeropuerto
+aeropuertos
+Barajas
+El Prat
+MAD
+BCN
+PMI
+AGP

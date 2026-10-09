@@ -1,0 +1,17 @@
+{
+  "description": "Al empezar la sesión, dice una vez por versión qué falta en el equipo para usar el plugin (requisitos.py --breve)",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/requisitos.py\" --breve; python \"${CLAUDE_PLUGIN_ROOT}/requisitos.py\" --breve; exit 0",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
