@@ -52,3 +52,19 @@ apunta aquí y entra en la siguiente versión. Cada línea dice qué, dónde y d
 - Evaluación del recién llegado: el docstring de `palabras.py` dice «como las cuenta `comprobar_asis.py`», pero cuenta
   también los títulos y el texto generado.
 - Presupuestos de palabras: con MNT, la mayoría de documentos van al 20-50 % de su límite; afinarlos con más medidas.
+
+## Diagramas
+
+- La línea de puntos de una nota cruza la etiqueta de su puerta. Revisión de F4.
+- `X.drawio.tmp` se queda en la carpeta si falla la relectura de comprobación al escribir. Revisión de F4.
+- BPMN: `calledElement` guarda solo el nombre (QName) del proceso llamado, y un evento de error que no va unido a una
+  tarea se exporta como evento intermedio. Revisión de F4.
+- Mermaid dibuja las dos líneas de un bucle de dos pasos una encima de otra. Revisión de F4.
+- Las pruebas que importan scripts de una skill dejan `__pycache__` dentro de `skills/`; `sin_bytecode()` de
+  `comprobar_plugin.py` solo mira los scripts. Revisión de F4.
+- Colocación por capas: las filas de la columna que sigue a una puerta se compactan y quedan verticales largas en los
+  huecos; en el ejemplo semántico, «Sí» cabe justa, pegada a la flecha. Pasada de correcciones de F4.
+- Si se renombra un paso a mano en draw.io, el nombre de la página de su tramo no cambia hasta que se vuelve a colocar.
+  Pasada de correcciones de F4.
+- `mermaid.py` sin argumentos sale con 2 (el de argparse), que en el script significa «falta un requisito». Pasada de
+  correcciones de F4.

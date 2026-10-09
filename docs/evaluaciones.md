@@ -4,6 +4,61 @@ Resultados de las evaluaciones del plan `docs/plan/2026-10-07-integracion-ingeni
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 
+## F4 · Diagramas (9 de octubre de 2026)
+
+Rama `f4-diagramas`, de `main` c656d21 al merge. Versión 0.7.0-alpha.3.
+
+### Qué cambia
+
+- **Un solo exportador y un solo pintor (Tarea 12).** Ingeniería inversa dibuja y exporta con `diagrama.py` de la skill
+  de diagramas; se retiran `bpmn_layout.py`, `validate_mermaid.py` y `render_diagrams.sh`. El carril de lo que hace
+  Appian es «Aplicación», una integración sin connected system es un participante externo y el índice de procesos no
+  pide «Vista» si ningún proceso lanza a otro.
+- **Procesos grandes en tramos (Tarea 12).** Con `"tramos": true`, un proceso que existe y no cabe en 1.600 px sale en
+  varias páginas del `.drawio`, unidas por eventos de enlace, y un PNG por página; `leer`, `comparar` y `bpmn` deshacen
+  los enlaces y el `.bpmn` es uno. `crear` y `actualizar` dicen qué pasos lleva cada tramo, y el nombre de la página
+  también.
+- **Sin navegador (Tarea 12).** Con la colocación por capas, `crear`, `actualizar` y `comparar --aceptar` escriben el
+  `.drawio` y el `.json` igual, avisan «sin PNG» y salen con 2; si había PNG, lo quitan. Se prueba con
+  `DIAGRAMAS_SIN_NAVEGADOR=1`.
+- **Los datos de Appian en el diagrama (Tarea 10).** El nodo, la expresión del temporizador, el proceso llamado y la
+  condición de cada salida, en «Editar datos» de draw.io y en el `.bpmn` (válido contra el XSD de BPMN 2.0). Un paso
+  para los errores; la nota es un corchete que se ensancha con su texto.
+- **`mermaid.py` en la skill de diagramas (Tarea 11).** Comprueba y pinta los bloques Mermaid de un Markdown (`--md`),
+  avisa si uno pasa del ancho legible y acepta comodines también en Windows. El analista lo usa en lugar del suyo.
+
+### Pruebas
+
+| | Antes (F3) | Después |
+|---|---|---|
+| `MNT_PM_GestionOrden` (130 nodos), `.drawio` | una página de 29.536 px | 14 tramos de 1.244 a 1.528 px |
+| PNG | uno de 22.171 px (la skill promete 3.200) | uno por tramo |
+| `.bpmn` | del exportador de ingeniería inversa | uno, de `diagrama.py`, válido contra el XSD |
+| Pruebas de ingeniería inversa | 139 | 140 |
+
+- Selftest de la skill de diagramas con y sin navegador; `--completo` en verde, también con Python 3.9.
+- La revisión de la fase reprodujo con tres puertas seguidas conexiones que no existen en la colocación por capas. El
+  selftest comprueba ahora sobre la geometría que sale (no sobre un caso) que ningún flujo pasa por un paso ajeno ni por
+  la etiqueta de otro flujo y que dos flujos sin extremo común no van por la misma recta; con el JSON del revisor, de 9
+  conexiones falsas a 0.
+
+### Lo aprendido
+
+- Un dibujo puede ser correcto en el `.drawio` y engañar a la vista. La prueba que lo atrapa mide la geometría (qué
+  cruza qué), no el XML; conviene que toda colocación nueva pase por ella.
+- Lo que se hace sin navegador tiene que dejar la carpeta coherente: un PNG que ya no es del dibujo es peor que ninguno.
+- Partir en páginas resuelve el ancho pero crea otro problema, encontrar un paso; la salida de `crear` tiene que decir
+  dónde está cada uno.
+- El comprobador del plugin también es código del plugin: la anotación `int | None` de F3 lo rompía en Python 3.9 y
+  ninguna prueba lo veía, porque todas corren con el Python del equipo.
+
+### Aplazado
+
+Ocho menores de la revisión y de su pasada de correcciones, en `docs/siguiente-version.md` («Diagramas»): la línea de
+una nota sobre la etiqueta de su puerta, el `.tmp` que queda si falla la relectura, `calledElement` y los errores sin
+tarea en el BPMN, el bucle de dos pasos en Mermaid, `__pycache__` de las pruebas, verticales largas en la colocación por
+capas, el nombre de la página tras renombrar a mano y la salida de `mermaid.py` sin argumentos.
+
 ## F3 · Precisa y sin relleno (8 de octubre de 2026)
 
 Rama `f3-precisa-sin-relleno`, de `main` 795ec61 al merge. Versión 0.7.0-alpha.2.

@@ -733,7 +733,7 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   BPMN válido. `test_una_pieza.py`: ningún fichero de la skill de ingeniería inversa menciona
   `bpmn_layout`, `validate_mermaid`, `render_diagrams`, `mmdc` ni la vía «.bpmn + Mermaid».
 - [x] **Paso 2:** hacer los cambios. **Paso 3:** pytest y `comprobar_plugin.py --completo` en verde.
-- [ ] **Paso 4:** commit «F4: ingeniería inversa dibuja con la skill de diagramas». Cierre de fase: revisión y merge.
+- [x] **Paso 4:** commit «F4: ingeniería inversa dibuja con la skill de diagramas». Cierre de fase: revisión y merge.
 
 ---
 
