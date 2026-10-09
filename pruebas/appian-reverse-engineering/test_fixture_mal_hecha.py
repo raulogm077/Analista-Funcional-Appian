@@ -16,6 +16,7 @@ import subprocess
 import sys
 import time
 import unicodedata
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -334,6 +335,91 @@ def test_respuestas_salen_de_la_extraccion(mnt):
             assert sorted(map(normal, calculada)) == sorted(map(normal, esperada)), (qid, calculada)
         else:
             assert normal(calculada) in {normal(r) for r in q["respuestas"]}, (qid, calculada)
+
+
+# ---------------------------------------------------------------- el proceso de 130 nodos, en tramos
+
+DIAGRAMA = PLUGIN / "skills" / "appian-diagramas-bpmn" / "scripts" / "diagrama.py"
+# La tabla de mapeo de references/bpmn-mapping.md: tipo de nodo de Appian → tipo de paso de la skill de diagramas
+TIPO_PASO = {"core.0": "inicio", "core.1": "fin", "core.4": "exclusiva", "internal.16": "script", "internal.17": "tarea",
+             "internal3.write_records_to_source_23r3": "sistema", "internal3.sendemail3": "mensaje",
+             "internal3.integration": "sistema", "internal3.subprocess": "llamada"}
+NS_BPMN = {"bpmn": "http://www.omg.org/spec/BPMN/20100524/MODEL", "bpmndi": "http://www.omg.org/spec/BPMN/20100524/DI",
+           "di": "http://www.omg.org/spec/DD/20100524/DI"}
+
+
+def como_process_modeler(p: Project, nombre: str) -> dict:
+    """El JSON que escribe process-modeler para la skill de diagramas (bpmn-mapping.md), en lo que mide esta prueba: un
+    código por paso en el orden de los nodos con el id del nodo, las condiciones y la salida por defecto de cada
+    pasarela, un carril por quien hace las tareas y «Aplicación» para lo automático, el sistema externo de la
+    integración y «tramos», porque es un proceso que ya existe."""
+    nodos = sorted(definicion(p, objetos(p)[nombre])["nodes"], key=lambda n: n["id"])
+    antes = {n["id"]: [m["id"] for m in nodos if n["id"] in m["connections"]] for n in nodos}
+    cuenta, codigo, carril, pasos, flujos, externos = {}, {}, {}, [], [], []
+    for n in nodos:
+        tipo = TIPO_PASO[n["type"]]
+        pre = "GW" if tipo == "exclusiva" else "EV" if tipo in ("inicio", "fin", "mensaje") else "ACT"
+        cuenta[pre] = cuenta.get(pre, 0) + 1
+        codigo[n["id"]] = f"{pre}-{cuenta[pre]:02d}"
+        quien = ((n.get("assignment") or {}).get("assignees") or [{}])[0]
+        previos = {carril.get(a, "Aplicación") for a in antes[n["id"]]}
+        carril[n["id"]] = (quien.get("name") or quien.get("expression") if tipo == "tarea" else
+                           previos.pop() if tipo in ("exclusiva", "fin") and len(previos) == 1 else "Aplicación")
+        pasos.append({"id": codigo[n["id"]], "tipo": tipo, "carril": carril[n["id"]], "nombre": n["name"],
+                      "nodo": str(n["id"])})
+    for n in nodos:
+        decision = n.get("decision") or {}
+        condicion = {c["targetNodeId"]: c["expression"] for c in decision.get("conditions") or []}
+        for destino in n["connections"]:
+            f = {"de": codigo[n["id"]], "a": codigo[destino]}
+            if destino in condicion:
+                f.update(etiqueta=condicion[destino], condicion=condicion[destino])
+            if decision.get("defaultPath") == destino:
+                f.update(etiqueta="En otro caso", defecto=True)
+            flujos.append(f)
+        if n["type"] == "internal3.integration":
+            externos.append("ERP (MNT_INT_ConsultarERP)")
+            flujos.append({"de": codigo[n["id"]], "a": externos[-1], "etiqueta": "Consultar orden"})
+    carriles = list(dict.fromkeys(c for c in carril.values() if c != "Aplicación")) + ["Aplicación"]
+    return {"proceso": nombre, "carriles": carriles, "pasos": pasos, "flujos": flujos, "externos": externos,
+            "tramos": True}
+
+
+def test_proceso_de_130_nodos_en_tramos(mnt, tmp_path):
+    """MNT_PM_GestionOrden (130 nodos, sin subprocesos) se dibuja con la skill de diagramas sin inventar subprocesos: en
+    tramos de una página, de 1.600 px de ancho como mucho, y un solo .bpmn válido con los 130 nodos. Sin navegador
+    (sin PNG), que es lo rápido; con navegador lo prueba el selftest de diagramas."""
+    proc = como_process_modeler(mnt, "MNT_PM_GestionOrden")
+    entrada = tmp_path / "extraccion" / "procesos" / "MNT_PM_GestionOrden.json"
+    entrada.parent.mkdir(parents=True)
+    entrada.write_text(json.dumps(proc, ensure_ascii=False), encoding="utf-8")
+    salida = tmp_path / "08-procesos-bpmn"
+    env = dict(os.environ, DIAGRAMAS_SIN_NAVEGADOR="1")
+    orden = lambda *a: subprocess.run([sys.executable, str(DIAGRAMA), *map(str, a)], capture_output=True,  # noqa: E731
+                                      text=True, encoding="utf-8", env=env)
+    r = orden("crear", entrada, "-o", salida)
+    assert r.returncode == 2 and "sin PNG" in r.stdout + r.stderr, r.stdout + r.stderr
+    drawio = salida / "MNT_PM_GestionOrden.drawio"
+    anchos = []
+    for pagina in ET.parse(drawio).getroot().findall("diagram"):
+        celdas = {el.get("id"): (el if el.tag == "mxCell" else el.find("mxCell")) for el in pagina.find("mxGraphModel/root")}
+        capa = {i for i, c in celdas.items() if c.get("parent") and not celdas[c.get("parent")].get("parent")}
+        anchos.append(max(float(c.find("mxGeometry").get("x", 0)) + float(c.find("mxGeometry").get("width"))
+                          for c in celdas.values() if c.get("vertex") == "1" and c.get("parent") in capa))
+    assert len(anchos) > 1 and max(anchos) <= 1600, anchos
+    assert json.loads((salida / "MNT_PM_GestionOrden.json").read_text(encoding="utf-8"))["tramos"] is True
+    r = orden("bpmn", drawio)
+    assert r.returncode == 0, r.stdout + r.stderr
+    b = ET.parse(drawio.with_suffix(".bpmn")).getroot()
+    nodos = [e for e in b.find("bpmn:process", NS_BPMN)
+             if e.tag.split("}")[1] not in ("laneSet", "sequenceFlow", "textAnnotation", "association")]
+    assert sorted(e.find("bpmn:documentation", NS_BPMN).text for e in nodos) == sorted(f"nodo {i}" for i in range(1, 131))
+    assert not [e for e in nodos if e.tag.split("}")[1] in ("subProcess", "callActivity")]      # sin subprocesos inventados
+    formas = {e.get("bpmnElement") for e in b.iter(f"{{{NS_BPMN['bpmndi']}}}BPMNShape")}
+    trazos = {e.get("bpmnElement") for e in b.iter(f"{{{NS_BPMN['bpmndi']}}}BPMNEdge") if len(e.findall("di:waypoint", NS_BPMN)) >= 2}
+    assert {e.get("id") for e in nodos} <= formas
+    assert {f.get("id") for f in b.iter(f"{{{NS_BPMN['bpmn']}}}sequenceFlow")} <= trazos
+    assert len(b.findall(f"{{{NS_BPMN['bpmndi']}}}BPMNDiagram")) == 1
 
 
 # ---------------------------------------------------------------- el simulador DEM, igual que antes

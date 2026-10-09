@@ -74,7 +74,7 @@ Para cada `erDiagram` (reglas de `mermaid-rules.md`):
 2. Como mucho 8 atributos por entidad: PK, FK y campos clave.
 3. Relaciones con la notación canónica (`||--||`, `||--o{`, `}o--||`, `}o--o{`).
 4. Los CDTs que no usa ningún record ni proceso no van al ER, solo al catálogo.
-5. Guarda el `.mmd`, valídalo con `python3 <skill>/scripts/validate_mermaid.py <fichero>.mmd` y renderízalo con `bash <skill>/scripts/render_diagrams.sh --mermaid <fichero>.mmd <fichero>.svg`. Si avisa de ancho, quita atributos o parte por subdominio. Sin `mmdc`, el bloque mermaid va embebido.
+5. Guarda el `.mmd` y píntalo con `python3 <skill>/../appian-diagramas-bpmn/scripts/mermaid.py <fichero>.mmd --svg` (`.png` y `.svg`). Si da un error, corrígelo; si avisa de ancho, quita atributos o parte por subdominio. Sin navegador (sale con 2), el bloque mermaid va embebido.
 
 ### Paso 6. `03-modelo-datos.md`
 
@@ -97,7 +97,7 @@ Lo que no pudiste verificar del modelo, y lo que de él pregunta la revisión y 
 - [ ] El catálogo cubre el 100 % de records y CDTs (cuenta cruzada con `inventory.json`).
 - [ ] Cada entidad está en un solo subdominio y tiene una sola ficha.
 - [ ] Las relaciones declaradas están en el ER con notación canónica; las inferidas, solo en las fichas con 🔶.
-- [ ] Cada diagrama pasa `validate_mermaid.py`, se renderizó sin aviso de ancho y aparece una sola vez.
+- [ ] Cada diagrama se pintó con `mermaid.py` sin errores ni aviso de ancho (o, sin navegador, va el bloque mermaid) y aparece una sola vez.
 - [ ] Cada ficha tiene evidencia y certeza (✅/🔶/❓); cada evidencia enlaza su ficha del anexo.
 - [ ] Checklist de `presentation-rules.md` superado («Responde a», TL;DR único, orden de secciones, sin placeholders ni referencias a la skill ni a `<trabajo>/`).
 - [ ] El JSON de hallazgos coincide con la tabla del documento, y cada inferido trae su `base`.
@@ -105,7 +105,7 @@ Lo que no pudiste verificar del modelo, y lo que de él pregunta la revisión y 
 ## Salida
 
 - `<salida>/03-modelo-datos.md`
-- `<salida>/diagrams/modelo-datos.mmd` y `.svg`, y según el tamaño `modelo-datos-<subdominio>.mmd`/`.svg` y `modelo-datos-subdominios.mmd`/`.svg`
+- `<salida>/diagrams/modelo-datos.mmd`, y según el tamaño `modelo-datos-<subdominio>.mmd` y `modelo-datos-subdominios.mmd`, cada uno con su `.png` y su `.svg`
 - `<trabajo>/hallazgos/data-modeler.json` y `<trabajo>/sin-verificar/data-modeler.json`
 - `<trabajo>/docs_cache/data-modeler.json`, si consultas la documentación (por el Docs MCP o por la web)
 
@@ -119,4 +119,4 @@ Termina con un informe breve al orquestador: ficheros escritos, consultas a la d
 - Apilar 40 entidades en un ER: el criterio es la legibilidad.
 - Partir en subdominios un modelo de 15 entidades o menos.
 - Dar por no sincronizado un record type porque no figura en el data fabric, o por no configurado lo que la respuesta no trae (principio 3).
-- Renderizar sin validar antes con `validate_mermaid.py`.
+- Dejar en el documento un diagrama que `mermaid.py` no pudo pintar por un error: se corrige o va la tabla.

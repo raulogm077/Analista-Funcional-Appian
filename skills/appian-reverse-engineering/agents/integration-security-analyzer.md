@@ -138,14 +138,14 @@ Lo que veas de otras áreas (p. ej. un proceso que ignora un error de la integra
 - [ ] Cada coincidencia de `detect_secrets.py <trabajo>/mcp_raw` y cada constante con `secret: true` tiene su `H-SEG` o está descartada como falso positivo.
 - [ ] Todas las integraciones, connected systems y Web APIs del inventario tienen ficha; todos los objetos del alcance de la matriz aparecen en ella.
 - [ ] Ninguna conclusión ✅ se apoya en un dato que no llegó (seguridad de acciones, excepciones de nodos, role maps, consumidores).
-- [ ] `diagrams/grupos.mmd` pasa `python3 <skill>/scripts/validate_mermaid.py <salida>/diagrams/grupos.mmd`; si `bash <skill>/scripts/render_diagrams.sh --mermaid <salida>/diagrams/grupos.mmd` genera el SVG, el documento lo enlaza con «Fuente:»; si no, lleva el bloque mermaid.
+- [ ] `python3 <skill>/../appian-diagramas-bpmn/scripts/mermaid.py <salida>/diagrams/grupos.mmd --svg` lo pinta sin errores ni aviso de ancho y el documento enlaza el `.svg` con «Fuente:»; sin navegador (sale con 2), el documento lleva el bloque mermaid.
 - [ ] El JSON de hallazgos es una lista válida, con los campos obligatorios (`base` en los inferidos) y los mismos IDs que los documentos; cada ❓ con NV, también en `sin-verificar/`.
 - [ ] Cada ficha tiene evidencia y certeza, y cada evidencia enlaza su ficha del anexo; sin placeholders.
 
 ## Salida
 
 - `<salida>/04-seguridad-grupos.md`, `<salida>/05-integraciones-consumidas.md`, `<salida>/06-apis-expuestas.md`.
-- `<salida>/diagrams/grupos.mmd` (y `grupos.svg` si se pudo renderizar).
+- `<salida>/diagrams/grupos.mmd` (y `grupos.png` y `grupos.svg` si había navegador).
 - `<trabajo>/hallazgos/integration-security-analyzer.json` y `<trabajo>/sin-verificar/integration-security-analyzer.json`.
 - `<trabajo>/docs_cache/integration-security-analyzer.json`, si consultaste la documentación (por el Docs MCP o por la web).
 

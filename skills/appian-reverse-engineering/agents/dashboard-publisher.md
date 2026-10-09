@@ -16,9 +16,9 @@ Fase 7, solo si `<trabajo>/output_preferences.json` tiene `dashboard: true`. Pue
 ## Entradas
 
 - `<trabajo>/summary.json` (`<trabajo>` = `<salida>/extraccion/`): fuente de los datos estructurados.
-- `<salida>/`: `LEEME.md`, `01`–`11`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso), `diagrams/*.svg` y `08-procesos-bpmn/*.svg` (o `*.png` cuando el proceso se dibujó en draw.io).
+- `<salida>/`: `LEEME.md`, `01`–`11`, `INVENTARIO.md`, `08-procesos-bpmn/` (`indice.md` y un `.md` por proceso), `diagrams/*.svg` (los Mermaid, que pinta `mermaid.py --svg`) y los `.png` de los procesos de `08-procesos-bpmn/` (uno por tramo si va en tramos).
 - `<salida>/anexo/`: no se inyecta (es grande); se enlaza (ver Contenido).
-- `<skill>`: la carpeta de la skill, para ejecutar `scripts/validate_mermaid.py`.
+- `<skill>`: la carpeta de la skill; el pintor de Mermaid es `<skill>/../appian-diagramas-bpmn/scripts/mermaid.py`.
 - Opcional: la skill `anthropic-skills:web-artifacts-builder` (solo para apps muy grandes), si está en la sesión.
 
 ## Contrato de summary.json
@@ -73,8 +73,8 @@ Inyecta en el HTML **solo los campos que uses**, no el fichero entero.
 ## Gráficos y diagramas
 
 - **Chart.js** solo con 3 o más categorías reales y diferencias visibles; si no, una cifra grande o una tabla.
-- **Diagramas grandes** (arquitectura, ER, procesos): el `.svg` ya renderizado, copiado a `dashboard/diagrams/` y mostrado con `<img>` y texto alternativo.
-- **Mermaid en el navegador** solo para diagramas pequeños (< 25 nodos) sin `.svg`, y solo si el bloque pasa `python3 <skill>/scripts/validate_mermaid.py`. Si falla, la tabla equivalente del documento. Un diagrama roto rompe la página.
+- **Diagramas**: el `.svg` de los Mermaid (arquitectura, ER…) y el `.png` de los procesos (uno por tramo, en orden), copiados a `dashboard/diagrams/` y mostrados con `<img>` y texto alternativo.
+- **Mermaid en el navegador** solo para diagramas pequeños (< 25 nodos) sin `.svg`, y solo si el documento que lo lleva pasa `python3 <skill>/../appian-diagramas-bpmn/scripts/mermaid.py --md <documento>.md`. Si falla, o no se puede comprobar (sin navegador sale con 2), la tabla equivalente del documento. Un diagrama roto rompe la página.
 - **Tablas** de más de 200 filas: paginadas o virtualizadas.
 
 ## Contenido de los documentos
@@ -89,14 +89,14 @@ Por defecto, **un solo HTML** con Tailwind (CDN), JavaScript sin framework, Char
 
 1. Comprueba `dashboard: true` y que existe `summary.json`. Si no existe, no lo generes tú: dilo en el informe (lo genera el orquestador en la fase 6).
 2. Decide qué pestañas tienen datos y qué campos de `summary.json` alimentan cada una.
-3. Valida cada bloque Mermaid que vayas a renderizar en el navegador con `python3 <skill>/scripts/validate_mermaid.py`.
-4. Genera `dashboard/index.html` y copia los `.svg` que uses a `dashboard/diagrams/`. Los temporales van en `<trabajo>/`, nunca junto a los documentos.
-5. Comprueba: abre con doble clic; cada pestaña visible tiene contenido; las cifras coinciden con `summary.json`; la búsqueda encuentra un objeto de cada tipo presente; sin errores en la consola; navegable con teclado; el HTML pesa < 2 MB sin contar los `.svg`.
+3. Valida los bloques Mermaid que vayas a pintar en el navegador con `python3 <skill>/../appian-diagramas-bpmn/scripts/mermaid.py --md` de su documento.
+4. Genera `dashboard/index.html` y copia las imágenes que uses (`.svg` y `.png`) a `dashboard/diagrams/`. Los temporales van en `<trabajo>/`, nunca junto a los documentos.
+5. Comprueba: abre con doble clic; cada pestaña visible tiene contenido; las cifras coinciden con `summary.json`; la búsqueda encuentra un objeto de cada tipo presente; sin errores en la consola; navegable con teclado; el HTML pesa < 2 MB sin contar las imágenes.
 
 ## Salida
 
 - `<salida>/dashboard/index.html`
-- `<salida>/dashboard/diagrams/*.svg`
+- `<salida>/dashboard/diagrams/` (los `.svg` y `.png` que usa)
 
 ## Informe final
 

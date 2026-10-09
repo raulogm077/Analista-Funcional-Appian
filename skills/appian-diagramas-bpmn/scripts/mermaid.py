@@ -146,7 +146,7 @@ def main():
                         n = len(encontrados)
                         print(f"OK {f}: " + (f"{n} bloque{'s' * (n > 1)} mermaid" if n else "sin bloques mermaid"))
             finally:
-                b.close()  # el navegador borra al cerrarse su perfil temporal
+                navegador.cerrar(b)  # y sus temporales: no queda nada fuera de la carpeta de salida
     except navegador.SinNavegador as e:
         print(e, file=sys.stderr)
         sys.exit(2)

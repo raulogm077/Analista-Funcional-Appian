@@ -728,11 +728,11 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   `pruebas/appian-reverse-engineering/test_bpmn_layout.py`, `pruebas/appian-reverse-engineering/datos/proceso_semantico.bpmn`.
 - Crear: `pruebas/appian-reverse-engineering/test_una_pieza.py`.
 
-- [ ] **Paso 1: pruebas que fallan.** Selftest de diagramas con `DIAGRAMAS_SIN_NAVEGADOR=1`: `crear` de
+- [x] **Paso 1: pruebas que fallan.** Selftest de diagramas con `DIAGRAMAS_SIN_NAVEGADOR=1`: `crear` de
   `semantico.json` escribe un `.drawio` sin pasos solapados, sale con 2 y dice «sin PNG»; `bpmn` de ese `.drawio` da un
   BPMN válido. `test_una_pieza.py`: ningún fichero de la skill de ingeniería inversa menciona
   `bpmn_layout`, `validate_mermaid`, `render_diagrams`, `mmdc` ni la vía «.bpmn + Mermaid».
-- [ ] **Paso 2:** hacer los cambios. **Paso 3:** pytest y `comprobar_plugin.py --completo` en verde.
+- [x] **Paso 2:** hacer los cambios. **Paso 3:** pytest y `comprobar_plugin.py --completo` en verde.
 - [ ] **Paso 4:** commit «F4: ingeniería inversa dibuja con la skill de diagramas». Cierre de fase: revisión y merge.
 
 ---

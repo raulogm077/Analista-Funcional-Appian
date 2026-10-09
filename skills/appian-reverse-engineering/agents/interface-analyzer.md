@@ -92,7 +92,7 @@ Estructura y campos de la ficha: los de la plantilla. Criterios de contenido:
 Estructura y columnas de las tablas: las de la plantilla (las mismas en todas las capas). Criterios:
 
 - **Capas**, en este orden y con esta composición (la misma que `layerBreakdown` de `summary.json`, que da las cifras de LEEME): Entrada y presentación (sites, interfaces y Web APIs; también las páginas, vistas y acciones de record), Lógica (process models, expression rules, decisiones, agentes de IA), Datos (record types, CDTs, data stores), Integración (connected systems, integraciones), Transversal (constantes; solo en tablas) y Seguridad (grupos: solo su cifra en la Vista; el detalle es de 04). Las carpetas no son capa: están en INVENTARIO.
-- **Diagrama** (`diagrams/arquitectura.mmd`): `flowchart TD` con un `subgraph` por capa, en ese orden (las Web APIs arriba, con los sites, para que las flechas bajen), y al final un `subgraph` «Sistemas externos» con un nodo por sistema externo (el de cada connected system, por su nombre de negocio) y una flecha desde la integración que lo llama. 05 no tiene diagrama propio: remite a este. Solo los objetos clave: puntos de entrada, procesos raíz, hubs, records centrales e integraciones; el resto va en las tablas. Un nodo puede agrupar objetos del mismo papel («(Interfaces) listado y detalle, 3»). Máximo 30 nodos, pero el ancho manda: con más de ~15 nodos o más de 4 por fila suele pasar de 1600 px. Etiquetas de arista solo si aportan («lanza», «escribe»). Si el render avisa de ancho, agrupa más o parte en `arquitectura-<capa>.mmd`.
+- **Diagrama** (`diagrams/arquitectura.mmd`): `flowchart TD` con un `subgraph` por capa, en ese orden (las Web APIs arriba, con los sites, para que las flechas bajen), y al final un `subgraph` «Sistemas externos» con un nodo por sistema externo (el de cada connected system, por su nombre de negocio, o el de la URL de una integración sin connected system: `bpmn-mapping.md`) y una flecha desde la integración que lo llama. 05 no tiene diagrama propio: remite a este. Solo los objetos clave: puntos de entrada, procesos raíz, hubs, records centrales e integraciones; el resto va en las tablas. Un nodo puede agrupar objetos del mismo papel («(Interfaces) listado y detalle, 3»). Como mucho 5 cajas por capa y 30 nodos, con las flechas de nodo a nodo (`mermaid-rules.md`, «Arquitectura por capas»). Etiquetas de arista solo si aportan («lanza», «escribe»). Si `mermaid.py` avisa de ancho, agrupa más o parte en `arquitectura-<capa>.mmd`.
 - **Tablas por capa**: los objetos relevantes, no todos (el inventario completo está en `INVENTARIO.md`). «Ficha» enlaza el documento propietario (03, 05, 06, 08, 10) o, si no lo tiene, `anexo/<tipo>/<slug>.md`.
 - **Referencias**: número de aristas de `graph.json` cuyo destino es el objeto (para los hubs viene en `hubs[].in`). Cita siempre esta cifra: suma el análisis de dependencias de Appian y las referencias encontradas en las definiciones, así que puede ser mayor que la de la herramienta de dependientes (p. ej. 8 frente a 7). Cuenta referencias, no objetos distintos. Qué cuenta se explica una vez, en LEEME.
 - **Hubs** (`graph.json` → `hubs`, 5 o más referencias entrantes): en la tabla de su capa. Son hallazgo `H-ARQ` solo si tienen un riesgo (una regla grande o compleja de la que dependen muchas pantallas: un cambio en ella las afecta a todas). Evidencia: `graph:hubs`.
@@ -120,8 +120,8 @@ Lo que no pudiste verificar de tus dos áreas, y lo que de ellas pregunta la rev
 - [ ] 01 sin jerga Appian fuera de «Implementado en» y «Evidencia»; ninguna afirmación sobre datos guardados sin comprobar el `saveInto`.
 - [ ] Ningún caso de uso omitido por longitud (`presentation-rules.md`, Regla 9).
 - [ ] Las capas de 02 tienen los nombres, el orden y la composición del paso 5; el diagrama incluye los sistemas externos.
-- [ ] Los `.mmd` pasan `python3 <skill>/scripts/validate_mermaid.py <fichero>.mmd`; renderizados con `bash <skill>/scripts/render_diagrams.sh --mermaid <fichero>.mmd <fichero>.svg`, sin aviso de ancho.
-- [ ] Cada diagrama aparece una sola vez (imagen + «Fuente», o bloque mermaid si no hay SVG).
+- [ ] Los `.mmd` se pintan con `python3 <skill>/../appian-diagramas-bpmn/scripts/mermaid.py <fichero>.mmd --svg` sin errores ni aviso de ancho (`mermaid-rules.md`, «Arquitectura por capas»).
+- [ ] Cada diagrama aparece una sola vez (imagen + «Fuente», o bloque mermaid si no había navegador).
 - [ ] Checklist de `presentation-rules.md` superado («Responde a», TL;DR único, orden de secciones, marcas, sin referencias a la skill ni a `<trabajo>/`).
 - [ ] El JSON de hallazgos coincide con las tablas de los dos documentos, y cada inferido trae su `base`.
 - [ ] Cada objeto de fuera de la aplicación que esta usa está en «Dependencias externas» con su NV; ningún «no existe».
@@ -130,8 +130,8 @@ Lo que no pudiste verificar de tus dos áreas, y lo que de ellas pregunta la rev
 
 - `<salida>/01-funcional.md`
 - `<salida>/02-arquitectura.md`
-- `<salida>/diagrams/flujo-general.mmd` y `.svg`
-- `<salida>/diagrams/arquitectura.mmd` y `.svg` (o `arquitectura-<capa>.mmd` y `.svg` si se parte)
+- `<salida>/diagrams/flujo-general.mmd`, con su `.png` y su `.svg`
+- `<salida>/diagrams/arquitectura.mmd` (o `arquitectura-<capa>.mmd` si se parte), con su `.png` y su `.svg`
 - `<trabajo>/hallazgos/interface-analyzer.json` y `<trabajo>/sin-verificar/interface-analyzer.json`
 - `<trabajo>/docs_cache/interface-analyzer.json`, si consultas la documentación (por el Docs MCP o por la web)
 

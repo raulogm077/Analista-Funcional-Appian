@@ -1,7 +1,7 @@
 """Utilidades comunes: proyectos temporales con una configuracion MCP que apunta a los mocks.
 
 La skill que se prueba es la de $PLUGIN_A_PROBAR/skills/appian-reverse-engineering (por defecto, la de este
-repositorio); los datos de las pruebas están en datos/ y el Dev MCP simulado en mock_devmcp/, junto a este fichero.
+repositorio); el Dev MCP simulado está en mock_devmcp/, junto a este fichero.
 """
 from __future__ import annotations
 
@@ -18,7 +18,6 @@ import pytest
 AQUI = Path(__file__).resolve().parent
 PLUGIN = Path(os.environ.get("PLUGIN_A_PROBAR") or AQUI.parents[1]).resolve()
 SKILL = PLUGIN / "skills" / "appian-reverse-engineering"
-DATOS = AQUI / "datos"
 MOCK = AQUI / "mock_devmcp" / "lcp_mcp_server_mock.py"
 HTTP_MOCK = AQUI / "mock_devmcp" / "appian_mcp_server_mock.py"
 EXTRACT = SKILL / "scripts" / "devmcp_extract.py"

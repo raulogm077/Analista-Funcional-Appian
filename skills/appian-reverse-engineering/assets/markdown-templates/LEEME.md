@@ -137,6 +137,7 @@ Cada evidencia enlaza la ficha de su objeto en el [anexo](./anexo/indice.md): `m
 - {{Volúmenes de datos: Appian MCP Server no disponible.}}
 - {{Verificación con la documentación oficial: sin Docs MCP ni acceso a docs.appian.com; lo que depende de ella va marcado «sin verificar».}}
 - {{Versión de Appian: no determinada; las fuentes son de la documentación más reciente.}}
+- {{Imágenes de los diagramas: no había navegador al generarlas. Los procesos se ven abriendo su `.drawio` en draw.io (o su `.bpmn` en Camunda Modeler o bpmn.io) y los demás diagramas van como bloque mermaid, sin validar.}}
 - {{Uso real: el entorno no consta como producción y la muestra son las últimas N ejecuciones de cada proceso. Las cifras son orientativas y los documentos las marcan «orientativo (ver LEEME)»{{; la muestra es uniforme (mismo iniciador y hora): no dice quién usa cada proceso ni cuándo}}.}}
 
 ## Términos de Appian

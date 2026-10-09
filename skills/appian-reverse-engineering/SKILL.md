@@ -84,7 +84,7 @@ Lee antes `references/execution-principles.md`. Cada subagente recibe:
 - el apartado «Dudas de Appian» de este fichero, si el Docs MCP está disponible y cuántas consultas le quedan (tope global de 30);
 - el entorno, si es producción y la versión si se conocen;
 - las preguntas de la revisión (`preguntas`), para que registren como NV lo que de su área no puedan responder;
-- a process-modeler: si la sesión ofrece la skill `appian-diagramas-bpmn` (plugin appian-analisis-funcional), cárgala y pásale su carpeta para dibujar los procesos en draw.io editable; si no, usa su vía propia (`.bpmn` + Mermaid);
+- a process-modeler y a quien dibuje diagramas Mermaid, la carpeta de la skill de diagramas del plugin (`<skill>/../appian-diagramas-bpmn`): process-modeler dibuja con ella los procesos en draw.io y exporta su BPMN, y todos pintan con su `mermaid.py`;
 - la orden de no crear tareas en tu lista y de terminar con un informe breve: ficheros generados, consultas a la documentación (por el Docs MCP o por la web), choques entre instrucciones y «Para otras áreas».
 
 Todos escriben sus hallazgos en su documento y en `<trabajo>/hallazgos/<agente>.json`, y lo que no pudieron verificar, con ❓ y su NV en el documento y en `<trabajo>/sin-verificar/<agente>.json` (`references/execution-principles.md`, «Registro de hallazgos» y «Sin verificar»).
@@ -104,7 +104,13 @@ Todos escriben sus hallazgos en su documento y en `<trabajo>/hallazgos/<agente>.
 
 ### Fase 5 — Diagramas
 
-Cada bloque Mermaid pasa `python3 <skill>/scripts/validate_mermaid.py <fichero.mmd>`, que admite los tipos A, B y C de `references/mermaid-rules.md`. `bash <skill>/scripts/render_diagrams.sh --batch <salida>` genera los SVG si hay `mmdc` y avisa de los que son demasiado anchos (rehazlos). Si un diagrama falla 3 veces, sustitúyelo por una tabla. Los `.bpmn` de 08 llevan coordenadas de dibujo: `python3 <skill>/scripts/bpmn_layout.py <salida>/08-procesos-bpmn` (lo ejecuta process-modeler; repítelo si alguien toca un `.bpmn`). En la vía draw.io la imagen sale de `appian-diagramas-bpmn`, pero el `.bpmn` es el propio.
+Los pinta la skill de diagramas del plugin (`<diagramas>` = `<skill>/../appian-diagramas-bpmn`); qué lleva cada diagrama, en `references/mermaid-rules.md`.
+
+1. `python3 <diagramas>/scripts/mermaid.py <salida>/diagrams/*.mmd --svg` vuelve a pintar los Mermaid (`.png` y `.svg`) con lo que haya cambiado. Los que avisa de que pasan de 1.600 px de ancho se rehacen.
+2. `python3 <diagramas>/scripts/mermaid.py --md <salida>/<documento>.md …` con cada documento que lleve bloques mermaid: dice en qué línea empieza el que falla. Si un diagrama falla 3 veces, sustitúyelo por una tabla.
+3. Los procesos ya están dibujados (fase 4). Si alguien ha cambiado un `.drawio`, `python3 <diagramas>/scripts/diagrama.py bpmn <salida>/08-procesos-bpmn/<slug>.drawio` rehace su `.bpmn`.
+
+**Sin navegador**, `mermaid.py` sale con 2 y los procesos se quedan sin imagen («sin PNG»): no hay imágenes ni se validan los Mermaid. Díselo al usuario y sigue: los documentos llevan el bloque mermaid, los procesos su `.drawio` y su `.bpmn`, y `LEEME.md` lo dice en «Qué no incluye».
 
 ### Fase 6 — Coherencia, inventario y LEEME
 
@@ -139,14 +145,14 @@ Según `output_preferences.json` (`pdf`, `dashboard`): `agents/pdf-publisher.md`
 ├── 05-integraciones-consumidas.md
 ├── 06-apis-expuestas.md
 ├── 07-batches.md
-├── 08-procesos-bpmn/  (por proceso: .md + .bpmn + .mmd/.svg, o .drawio/.png/.json en la vía draw.io; indice.md)
+├── 08-procesos-bpmn/  (por proceso: .md, .json, .drawio, .bpmn y su imagen .png, una por tramo si no cabe en una página; indice.md)
 ├── 09-valor-adicional.md
 ├── 10-pantallas.md
 ├── 11-reglas-negocio.md
 ├── INVENTARIO.md
 ├── anexo/   (definiciones originales: indice.md + <tipo>/<slug>.md)
 ├── datos/   (inventario, dependencias, hallazgos, procesos y lo sin verificar, en JSON, para las demás skills)
-├── diagrams/
+├── diagrams/  (los Mermaid: .mmd, .png y .svg)
 └── extraccion/   = <trabajo>: la extracción, tal cual, y los datos de trabajo (no es un entregable)
 ```
 
@@ -182,13 +188,14 @@ Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `a
 | `scripts/devmcp_extract.py`, `devmcp_policy.json` | Fases 0–2. |
 | `scripts/build_model.py`, `build_annex.py` | Fase 3. |
 | `scripts/build_registry.py`, `build_summary.py`, `build_datos.py` | Fases 4.3, 6 y 8. |
-| `scripts/detect_secrets.py` (o `.sh`), `validate_mermaid.py`, `render_diagrams.sh`, `bpmn_layout.py`, `comprobar_asis.py` | Fases 3, 4, 5 y 8. |
+| `scripts/detect_secrets.py` (o `.sh`), `comprobar_asis.py` | Fases 3 y 8. |
+| `<skill>/../appian-diagramas-bpmn/scripts/diagrama.py` y `mermaid.py` | Fases 4 y 5: procesos en draw.io y BPMN; Mermaid. |
 
 ## Validación final (antes de responder)
 
 1. Existen `LEEME`, `01`–`11`, `INVENTARIO`, `anexo/indice.md` y `diagrams/`, y cada documento empieza por la línea «Responde a» de su plantilla. Los que no aplican llevan su frase de «no aplica» (p. ej. 07 sin batches).
-2. `08-procesos-bpmn/` tiene por cada process model su `.md`, su `.bpmn` (con `bpmndi:BPMNDiagram`) y su diagrama (`.svg`/`.mmd`, o `.png`/`.drawio` con su `.json`, que es la especificación del dibujo y no datos en bruto), e `indice.md` los lista todos. Un proceso de más de 25 nodos se parte en `<slug>-1.mmd`, `<slug>-2.mmd`…: se admite `<slug>(-N)?.mmd` y `.svg`.
-3. Todos los diagramas pasan `python3 <skill>/scripts/validate_mermaid.py` (o están sustituidos por tabla) y ninguno superó el aviso de ancho.
+2. `08-procesos-bpmn/` tiene por cada process model su `.md`, su `.json` (la especificación del dibujo, no datos en bruto), su `.drawio`, su `.bpmn` (con `bpmndi:BPMNDiagram` y todos sus nodos) y su imagen (`<slug>.png`, o `<slug>-1.png`, `<slug>-2.png`… si va en tramos; sin navegador, ninguna, y su `.md` lo dice), e `indice.md` los lista todos. Ningún proceso partido en subprocesos que no existen en Appian.
+3. Cada `.mmd` y cada documento con bloques mermaid pasan `mermaid.py` de la skill de diagramas (o el diagrama está sustituido por tabla) y ninguno superó el aviso de ancho. Sin navegador, `LEEME.md` dice que no se pudieron validar.
 4. Cada posible secreto que encuentra `python3 <skill>/scripts/detect_secrets.py <trabajo>/mcp_raw`, y cada constante con `secret: true` en `inventory.json`, tiene su `H-SEG` en 04 o está descartado como falso positivo.
 5. No quedan placeholders (`{{`, `TBD`, `TODO`, `lorem`) ni marcas fuera de la paleta (`🔴`, `🟡`, `⚠️`).
 6. `build_registry.py` termina sin errores ni avisos de hallazgos que dicen qué hacer, y cada hallazgo de los documentos tiene su ID en el registro de 09.

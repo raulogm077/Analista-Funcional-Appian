@@ -14,9 +14,9 @@ Van juntos en la misma carpeta (`analisis/diagramas/` o la que indique quien lla
 | Fichero | Qué es |
 |---|---|
 | `X.drawio` | El diagrama. Se abre y se edita en draw.io |
-| `X.png` | La imagen para el documento. La regenera la herramienta |
+| `X.png` | La imagen para el documento. La regenera la herramienta. Si el proceso va en tramos, una por tramo: `X-1.png`, `X-2.png`… |
 | `X.json` | El proceso que conoce el análisis. La primera vez puede ser el propio JSON que se pasa a `crear`; después lo mantiene la herramienta y no se edita a mano: los cambios van con `actualizar` |
-| `X.bpmn` | Solo si se exporta con `bpmn`: conserva los tipos de inicio y de tarea, el flujo por defecto, los plazos y los errores, los participantes externos con sus mensajes, las notas, el lado de cada etiqueta y los datos de Appian |
+| `X.bpmn` | Solo si se exporta con `bpmn`, y uno con el proceso entero aunque vaya en tramos: conserva los tipos de inicio y de tarea, el flujo por defecto, los plazos y los errores, los participantes externos con sus mensajes, las notas, el lado de cada etiqueta y los datos de Appian |
 
 ## Formato del proceso
 
@@ -43,7 +43,7 @@ Es un JSON con un paso y un flujo por línea:
 }
 ```
 
-`externos` y `notas` son opcionales, como los datos de Appian.
+`externos`, `notas` y `tramos` son opcionales, como los datos de Appian.
 
 | Tipo | Qué representa | Código |
 |---|---|---|
@@ -75,6 +75,8 @@ Es un JSON con un paso y un flujo por línea:
 
 **Notas.** Cada nota de `notas` va unida a su paso con una línea de puntos y sale en el PNG: úsalas para señalar algo que quien lee el diagrama no debe pasar por alto (un riesgo, una duda pendiente).
 
+**Tramos.** `"tramos": true` es para un proceso que ya existe y no se puede partir en subprocesos, porque no los tiene (ingeniería inversa). Si no cabe en una página (1.600 px de ancho), se dibuja en tramos: una página del `.drawio` por tramo, con capas seguidas del flujo, y un PNG por tramo. Cada flujo que pasa de un tramo a otro se corta con un par de eventos de enlace: «Sigue en el tramo N: <paso>» en el tramo de origen y «Viene del tramo M» en el de destino. Los enlaces son del dibujo, no del proceso: `leer`, `comparar` y `bpmn` los deshacen y el `.bpmn` es uno, con todos los pasos. Un plazo o un error va en el tramo de su tarea. Si cabe en una página, no se parte.
+
 **Posición.** `"posicion": [x, y]` en un paso es opcional. Solo la usa ingeniería inversa, cuando lee de Appian dónde está cada nodo, y tiene que venir en todos los pasos para que se use.
 
 **Datos de Appian.** Los pone ingeniería inversa al leer un process model:
@@ -105,7 +107,7 @@ python3 <skill>/scripts/diagrama.py bpmn X.drawio [-o X.bpmn]                # B
 Códigos de salida:
 - **0:** todo ha ido bien.
 - **1:** hay un error o hay cambios pendientes de revisar.
-- **2:** falta Playwright o un navegador.
+- **2:** falta Playwright o un navegador. Solo falta la imagen: `crear`, `actualizar` y `comparar --aceptar` escriben el `.drawio` y el `.json` igual, con la colocación por capas, y avisan «sin PNG»; `png` la genera cuando haya navegador. `leer`, `comparar`, `bpmn` y `validar` no lo necesitan.
 
 `validar`, `crear` y `actualizar` avisan si el proceso está incompleto:
 - falta un inicio o un fin;
@@ -114,9 +116,9 @@ Códigos de salida:
 - un código no corresponde a su tipo;
 - un `error` no está unido a su tarea con un flujo discontinuo, o un dato de Appian está en un paso de otro tipo;
 - un participante externo no tiene flujos de mensaje;
-- hay más de 20 tareas.
+- hay más de 20 tareas (salvo con `tramos`).
 
-`crear`, `actualizar` y `png` avisan si el diagrama mide más de 1.600 px de ancho: en una página vertical el texto quedará pequeño. El PNG se limita a unos 3.200 px de ancho.
+`crear`, `actualizar` y `png` avisan si el diagrama mide más de 1.600 px de ancho: en una página vertical el texto quedará pequeño. El PNG se limita a unos 3.200 px de ancho. En tramos, cada página cabe a lo ancho.
 
 **Qué se niega a hacer:**
 - `crear` no sobrescribe un `.drawio` que ya existe; para cambiarlo, `actualizar`.
@@ -159,6 +161,7 @@ Si algo falla, el `.drawio` no se toca.
 Cómo se coloca lo que cambia:
 - **Si nadie ha movido nada en draw.io** desde la última vez, el diagrama se vuelve a colocar entero y queda limpio: ninguna forma, etiqueta o nota pisa a otra, y la etiqueta de un evento o una puerta va al lado por el que no llega ningún flujo.
 - **Si alguien lo ha colocado a mano**, se respeta. Lo nuevo va a la derecha de su paso anterior y lo que sigue se desplaza para hacer sitio; un participante nuevo va debajo de todo y una nota nueva encima de su paso.
+- **Si está en tramos y alguien los ha colocado a mano**, `actualizar` se niega: el cambio se hace en draw.io (y después `comparar --aceptar`) o con `--recolocar`.
 - `--recolocar` coloca todo de nuevo aunque se haya colocado a mano. Pregunta antes de usarlo.
 
 ## Edición en una reunión
@@ -193,7 +196,7 @@ Mientras haya cambios hechos a mano sin aceptar, `actualizar` se niega a tocar e
 - **Plazos:** un `temporizador` unido a la tarea que vigila con un flujo discontinuo. Al exportar a BPMN pasa a ser un evento de borde de esa tarea, que no la interrumpe.
 - **Errores:** un `error` unido igual a la tarea en la que salta, y de él, el camino que se sigue. En el BPMN es un evento de borde que la interrumpe.
 - **Avisos:** un `mensaje` en el carril «Aplicación». Si el aviso va a un sistema u organismo externo, un flujo de mensaje desde el paso que lo envía hasta el participante externo. Si después del aviso no pasa nada más, la rama acaba en un `fin`.
-- **Tamaño:** con más de 20 tareas, se parte en subprocesos. El proceso principal usa `subproceso` y cada subproceso tiene su diagrama.
+- **Tamaño:** con más de 20 tareas, se parte en subprocesos. El proceso principal usa `subproceso` y cada subproceso tiene su diagrama. Un proceso que ya existe sin subprocesos no se parte en subprocesos inventados: va con `"tramos": true`.
 - **Notas:** las explicaciones van en el paso a paso del documento; en `notas`, solo lo que hay que ver en el propio diagrama. Una nota suelta que se deje en draw.io también sale en el PNG: bórrala si no debe verla el cliente.
 
 ## Leer un diagrama
@@ -202,9 +205,9 @@ No leas el XML del `.drawio`, que es largo y caro. Usa `leer`, que devuelve el p
 
 ## Requisitos y privacidad
 
-Hace falta Python 3 con Playwright (`pip install playwright`) y un navegador: el Chromium de Playwright, o Chrome o Edge ya instalados.
+Para la imagen hace falta Python 3 con Playwright (`pip install playwright`) y un navegador: el Chromium de Playwright, o Chrome o Edge ya instalados. Con navegador, los pasos se colocan con el motor de carriles de Mermaid (los tramos, siempre por capas). Sin él se hace todo menos la imagen: los pasos se colocan por capas, de izquierda a derecha, con un carril por perfil y sin que nada se pise. `DIAGRAMAS_SIN_NAVEGADOR=1` simula que no hay navegador.
 
-El diagrama no sale del equipo. El motor de colocación (Mermaid, licencia MIT) y el visor de draw.io (licencia Apache 2.0) van en `assets/`.
+El diagrama no sale del equipo. El motor de colocación (Mermaid, licencia MIT) y el visor de draw.io (licencia Apache 2.0) van en `assets/`. Solo se escribe junto al `.drawio`: ni temporales ni `__pycache__` fuera de ahí.
 
 ## Diagramas Mermaid
 
@@ -219,12 +222,14 @@ python3 <skill>/scripts/mermaid.py --md documento.md [otro.md …]          # va
 - Sale con 1 si un diagrama tiene un error de sintaxis (con `--md`, dice en qué línea del documento empieza el bloque) y con 2 si falta Playwright o un navegador.
 - Avisa de los que miden más de 1.600 px de ancho: se ponen de arriba abajo o se parten.
 - Solo escribe en la carpeta de salida (`-o`, o la de cada `.mmd`) y no deja temporales.
+- El SVG lleva las etiquetas como HTML: se ve bien en un navegador (una web, un dashboard), no en Word ni en un PDF. Ahí va el PNG.
 
 ## Límites
 
-- **Varias páginas:** solo se lee y se cambia la primera página del `.drawio`; las demás se conservan.
+- **Varias páginas:** solo se lee y se cambia la primera página del `.drawio` o, si va en tramos, sus páginas de tramo («tramo-N»); las demás se conservan.
+- **Tramos:** draw.io no une formas de dos páginas, así que un flujo entre dos tramos no se dibuja a mano: se pide con `actualizar` (con `--recolocar` si alguien colocó los tramos a mano). Los enlaces (ENL-nn-S y ENL-nn-E) no se renombran ni se borran sueltos.
 - **Pools:** si los carriles están dentro de un pool, el nombre del pool es el del proceso. Un participante externo es una franja marcada por la herramienta: si en draw.io se dibuja un pool nuevo a mano, se lee como un carril; para un participante nuevo, usa `externo`.
 - **Flujos de mensaje:** van en vertical entre el paso y su participante y pueden cruzar los carriles que hay entre los dos.
 - **Eventos de borde:** en draw.io, un plazo o un error sale como un evento unido a su tarea con línea discontinua. Se puede pegar a la tarea a mano.
 - **Flujos nuevos en un diagrama colocado a mano:** los traza draw.io y pueden cruzar alguna forma. Se retocan en draw.io o se usa `--recolocar`.
-- **Tamaño en un documento vertical:** a partir de unas 12 tareas en fila (más de 1.600 px), el texto queda pequeño en una página vertical. Usa una página apaisada o parte el proceso.
+- **Tamaño en un documento vertical:** a partir de unas 12 tareas en fila (más de 1.600 px), el texto queda pequeño en una página vertical. Usa una página apaisada, parte el proceso o, si ya existe, `"tramos": true`.

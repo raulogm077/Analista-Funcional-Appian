@@ -49,7 +49,7 @@ Un diagrama aparece **una sola vez** por documento:
 - si existe el `.svg`: `![<qué muestra>](diagrams/<nombre>.svg)` y debajo `Fuente: [<nombre>.mmd](diagrams/<nombre>.mmd)`;
 - si no se pudo renderizar: el bloque ` ```mermaid ` embebido (idéntico al `.mmd`).
 
-Los diagramas se leen al ancho de una página: más de ~1600 px de ancho es ilegible (el render avisa). Usa `flowchart TD`, pocas cajas por fila y etiquetas de arista solo si aportan; si no cabe, parte el diagrama. Nombres de fichero en `references/mermaid-rules.md`.
+Los diagramas se leen al ancho de una página: más de ~1600 px de ancho es ilegible (`mermaid.py` avisa al pintarlo). Usa `flowchart TD`, pocas cajas por fila y etiquetas de arista solo si aportan; si no cabe, parte el diagrama. Nombres de fichero en `references/mermaid-rules.md`.
 
 ## Regla 3: límites
 
@@ -58,9 +58,9 @@ Los diagramas se leen al ancho de una página: más de ~1600 px de ancho es ileg
 | Columnas por tabla | ≤ 8 |
 | Filas por tabla de la Vista | ≤ 15 (si hay más, parte por tipo o subdominio). No aplica al catálogo completo del Detalle, al registro de hallazgos de 09 ni a INVENTARIO. |
 | Caracteres por celda | ≤ 100 de texto visible (sin contar la sintaxis de los enlaces), salvo la columna Evidencia |
-| Nodos por diagrama Tipo A (flowchart, también por capas) | ≤ 30 y sin aviso de ancho del render (en la práctica, unos 15: agrupa o parte) |
-| Entidades por diagrama Tipo B (erDiagram) | sin techo fijo; por legibilidad, parte por subdominio a partir de ~15 (ver `mermaid-rules.md`) |
-| Nodos por diagrama Tipo C (proceso) | ≤ 25 |
+| Nodos por diagrama `flowchart` (también por capas) | ≤ 30, como mucho 5 por fila y sin aviso de ancho al pintarlo (ver `mermaid-rules.md`) |
+| Entidades por `erDiagram` | sin techo fijo; por legibilidad, parte por subdominio a partir de ~15 (ver `mermaid-rules.md`) |
+| Pasos por diagrama de proceso | todos los nodos; si no cabe en una página, va en tramos (`bpmn-mapping.md`) |
 
 ## Regla 4: tablas escaneables
 
@@ -115,11 +115,11 @@ Lo que no se encontró dice dónde se buscó: «no encontrado en la aplicación�
 
 **Severidad** (solo de hallazgos), con palabra, según su riesgo: **Alta** (rompe un requisito de negocio o de seguridad, pierde datos o expone credenciales), **Media** (degrada el mantenimiento, el rendimiento o el control), **Baja** (higiene: nombres, tamaño, restos sin uso). La severidad dice cuánto riesgo hay, no qué hacer.
 
-No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). ✅ es certeza, no una valoración: no marca que algo esté bien hecho. Los emojis temáticos de los diagramas Tipo C (👤, 🔌, 💾…) son parte de la notación y sí se usan.
+No uses otras marcas de estado (🔴, 🟡, ⚠️, ❗, ✔️…). ✅ es certeza, no una valoración: no marca que algo esté bien hecho.
 
 ## Regla 8: lo que el lector no debe ver
 
-- **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), tipos de diagrama («Tipo C»), nombres de scripts ni «heurística de la skill». Lo que sale de la documentación de Appian lleva su `Fuente: <URL>`.
+- **La maquinaria de la skill**: no cites ficheros de la skill (`references/…`, `agents/…`), claves del JSON de los diagramas («tramos», los enlaces ENL-…), nombres de scripts ni «heurística de la skill». Lo que sale de la documentación de Appian lleva su `Fuente: <URL>`.
 - **Notas de parche**: nunca «01 todavía dice…», «esto matiza a…», «corrige lo que dice X». Si otro documento está mal, se corrige ese documento (pasada de coherencia de la fase 6).
 - **`<trabajo>/`** (`extraccion/`): los entregables no lo enlazan ni escriben su ruta (son datos en bruto). Para el detalle de un objeto, enlaza su ficha del `anexo/`.
 - **Limitaciones globales** (entorno no productivo, versión no determinada, muestra de ejecuciones, configuración que el Dev MCP no devuelve): se explican una vez, en «Qué no incluye» de `LEEME.md`, y solo las que son verdad en esta extracción. Cada documento cita en su «Cobertura y límites» solo las que cambian lo que dice, en una línea. Donde una cifra dependa de ellas (p. ej. ejecuciones en un entorno que no consta como producción), no repitas la explicación: usa la marca corta «orientativo (ver [LEEME](./LEEME.md))» (`../LEEME.md` desde `08-procesos-bpmn/`), una vez por tabla o sección (p. ej. en la cabecera de la columna).

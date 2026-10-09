@@ -1,14 +1,14 @@
 {
   "proceso": "Proceso de prueba",
-  "carriles": ["Revisores", "Sistema"],
+  "carriles": ["Revisores", "Aplicación"],
   "pasos": [
-    {"id": "EV-01", "tipo": "inicio", "carril": "Sistema", "nombre": "Inicio", "nodo": "1"},
+    {"id": "EV-01", "tipo": "inicio", "carril": "Aplicación", "nombre": "Inicio", "nodo": "1"},
     {"id": "ACT-01", "tipo": "tarea", "carril": "Revisores", "nombre": "Revisar", "nodo": "2"},
-    {"id": "GW-01", "tipo": "exclusiva", "carril": "Sistema", "nombre": "¿Aprobada?", "nodo": "3"},
-    {"id": "ACT-02", "tipo": "sistema", "carril": "Sistema", "nombre": "Guardar", "nodo": "4"},
-    {"id": "EV-02", "tipo": "error", "carril": "Sistema", "nombre": ""},
-    {"id": "EV-03", "tipo": "fin", "carril": "Sistema", "nombre": "Fin", "nodo": "5"},
-    {"id": "EV-04", "tipo": "fin", "carril": "Sistema", "nombre": "Error", "nodo": "6"}
+    {"id": "GW-01", "tipo": "exclusiva", "carril": "Aplicación", "nombre": "¿Aprobada?", "nodo": "3"},
+    {"id": "ACT-02", "tipo": "sistema", "carril": "Aplicación", "nombre": "Guardar", "nodo": "4"},
+    {"id": "EV-02", "tipo": "error", "carril": "Aplicación", "nombre": ""},
+    {"id": "EV-03", "tipo": "fin", "carril": "Aplicación", "nombre": "Fin", "nodo": "5"},
+    {"id": "EV-04", "tipo": "fin", "carril": "Aplicación", "nombre": "Error", "nodo": "6"}
   ],
   "flujos": [
     {"de": "EV-01", "a": "ACT-01"},

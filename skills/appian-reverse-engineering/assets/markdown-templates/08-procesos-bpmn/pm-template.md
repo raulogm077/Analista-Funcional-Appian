@@ -1,10 +1,11 @@
 <!--
   Plantilla de 08-procesos-bpmn/<slug>.md, uno por process model. Este comentario no se copia.
   Sustituye los {{marcadores}} y omite las filas y secciones que queden vacías.
-  Diagrama: la variante de la vía con la que se dibujó (vía propia: .svg + .mmd; vía draw.io: .png + .drawio).
-  Sin imagen renderizada: el bloque mermaid del .mmd en lugar de la imagen.
-  Más de 25 nodos (vía propia): una imagen por tramo (<slug>-1.svg, <slug>-2.svg…), en orden, cada una con una frase
-  que dice qué pasos cubre y su «Fuente: [<slug>-N.mmd]»; el enlace al .bpmn (uno, completo) va una sola vez.
+  Diagrama: el .png que dibuja la skill de diagramas, con su .drawio (editable) y el .bpmn.
+  En tramos (no cabía en una página): una imagen por tramo (<slug>-1.png, <slug>-2.png…), en orden, cada una con una
+  frase que dice qué pasos cubre; los enlaces al .drawio y al .bpmn (uno, completo) van una sola vez, debajo.
+  Sin imagen (no había navegador al dibujarlo): en su lugar, la frase «El diagrama no tiene imagen en esta versión: se
+  ve abriendo <slug>.drawio en draw.io.», con los mismos enlaces.
   Ejecuciones: si el entorno no consta como producción, la marca «orientativo (ver LEEME)» (../LEEME.md), sin más
   explicación. Instancias fallidas o detenidas de la muestra: hallazgo H-PRO de este proceso. Sin ejecuciones: el
   hallazgo es el H-GEN de 09; aquí se cita.
@@ -25,22 +26,16 @@
 
 {{Una frase: qué muestra el diagrama (carriles, decisiones principales).}}
 
-![Diagrama del proceso {{nombre}}](./{{slug}}.svg)
-
-Fuente: [{{slug}}.mmd](./{{slug}}.mmd) · BPMN 2.0: [{{slug}}.bpmn](./{{slug}}.bpmn) (se abre en Camunda Modeler o en bpmn.io)
-
-<!-- Vía draw.io, en lugar de las dos líneas anteriores:
 ![Diagrama del proceso {{nombre}}](./{{slug}}.png)
 
 Fuente editable: [{{slug}}.drawio](./{{slug}}.drawio) (draw.io) · BPMN 2.0: [{{slug}}.bpmn](./{{slug}}.bpmn) (se abre en Camunda Modeler o en bpmn.io)
--->
 
 | Atributo | Valor |
 |---|---|
 | Inicio | {{formulario [`interfaz`](../10-pantallas.md#{{ancla}}) · acción de record · temporizador · subproceso}} |
 | Frecuencia configurada | {{solo con temporizador: «cada día a las 08:00 (Europe/Madrid)»; si se ejecuta así, lo dicen las ejecuciones}} |
 | Quién puede iniciarlo | {{grupos según el role map, o «grupo de seguridad declarado: X; role map no disponible» ❓}} |
-| Carriles | {{grupos asignados}} · Sistema |
+| Carriles | {{grupos asignados}} · Aplicación |
 | Lo invocan | {{[proceso padre](./slug-padre.md), interfaz, acción de record}} o «sin invocador detectado» |
 | Subprocesos | {{[proceso hijo](./{{slug-hijo}}.md)}} |
 | Sistemas externos | {{sistema}} vía [`{{integración}}`](../05-integraciones-consumidas.md#{{ancla}}) |
@@ -52,13 +47,13 @@ Fuente editable: [{{slug}}.drawio](./{{slug}}.drawio) (draw.io) · BPMN 2.0: [{{
 
 ### Paso a paso
 
-{{Lenguaje de negocio. Cada paso cita su nodo; en la vía draw.io, también su código (ACT-01, GW-01, EV-01).}}
+{{Lenguaje de negocio. Cada paso cita su nodo y su código en el diagrama (ACT-01, GW-01, EV-01).}}
 
-1. **{{Qué pasa}}** — {{inicio · tarea de `grupo` · tarea automática · fin}}, `nodes[id={{N}}]`.
-2. **{{¿Pregunta de la decisión?}}** — pasarela, `nodes[id={{N}}]`:
+1. **{{Qué pasa}}** — {{inicio · tarea de `grupo` · tarea automática · fin}}, `nodes[id={{N}}]` ({{EV-01}}).
+2. **{{¿Pregunta de la decisión?}}** — pasarela, `nodes[id={{N}}]` ({{GW-01}}):
    - {{condición}} → paso {{n}}.
    - En otro caso → paso {{n}}.
-3. **{{Qué pasa}}** — {{…}}, `nodes[id={{N}}]`.
+3. **{{Qué pasa}}** — {{…}}, `nodes[id={{N}}]` ({{ACT-01}}).
 
 ### Tareas de personas
 

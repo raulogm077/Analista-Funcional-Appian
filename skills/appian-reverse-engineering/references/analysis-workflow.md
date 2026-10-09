@@ -119,11 +119,12 @@ Hallazgos `H-GEN` (severidad orientativa):
 
 ## Fase 5 — Diagramas
 
-- [ ] Cada `.mmd` pasa `python3 <skill>/scripts/validate_mermaid.py <fichero.mmd>`.
-- [ ] `bash <skill>/scripts/render_diagrams.sh --check`; con `mmdc`, `bash <skill>/scripts/render_diagrams.sh --batch <salida>`. Los que avise por ancho (más de ~1600 px) se rehacen: `flowchart TD`, menos cajas por fila o partidos en dos.
+- [ ] `python3 <skill>/../appian-diagramas-bpmn/scripts/mermaid.py <salida>/diagrams/*.mmd --svg` pinta todos los Mermaid sin errores. Los que avisa por ancho (más de ~1600 px) se rehacen (`mermaid-rules.md`, «Que quepa en una página»).
+- [ ] `python3 <skill>/../appian-diagramas-bpmn/scripts/mermaid.py --md` de cada documento con bloques mermaid, sin errores.
 - [ ] Un diagrama que falla 3 veces se sustituye por su tabla equivalente.
-- [ ] `bpmn_layout.py <salida>/08-procesos-bpmn` ejecutado (lo hace `process-modeler`; repítelo si alguien tocó un `.bpmn`).
-- [ ] Cada diagrama aparece una sola vez en su documento: SVG con «Fuente: [x.mmd](…)», o el bloque mermaid si no hay SVG.
+- [ ] Cada proceso de `08-procesos-bpmn/` tiene su `.drawio`, su `.bpmn` y su imagen (o su `.md` dice que no la tiene); si alguien tocó un `.drawio`, `diagrama.py bpmn` de nuevo.
+- [ ] Cada diagrama aparece una sola vez en su documento: SVG con «Fuente: [x.mmd](…)», o el bloque mermaid si no hubo navegador.
+- [ ] Sin navegador: anotado para «Qué no incluye» de `LEEME.md` (sin imágenes y sin validar los Mermaid).
 
 ## Fase 6 — Coherencia, inventario y LEEME
 

@@ -60,8 +60,9 @@ Los de certeza `inferido` llevan además `base`: las evidencias de las que salen
                "ejecuciones": 120}]}
 ```
 
-Un elemento por process model. `json`: el diagrama en el formato de la skill de diagramas, `null` si no se dibujó con
-ella. `nodos`: nodos de la definición. `ejecuciones`: las que devolvió el entorno, `null` si no las devolvió.
+Un elemento por process model. `json`: el proceso en el formato de la skill de diagramas, que lo dibuja; con él se
+abre su `.drawio`, al lado. `nodos`: nodos de la definición. `ejecuciones`: las que devolvió el entorno, `null` si no
+las devolvió.
 
 ## `sin-verificar.json`
 

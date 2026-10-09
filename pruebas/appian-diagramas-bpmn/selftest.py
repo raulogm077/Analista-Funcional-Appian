@@ -1,32 +1,49 @@
 #!/usr/bin/env python3
-"""Prueba de la skill de diagramas de principio a fin, en una carpeta temporal (tarda unos 30 segundos).
+"""Prueba de la skill de diagramas de principio a fin, en una carpeta temporal.
 
 Crea el ejemplo, lo cambia, simula una edición a mano en draw.io (también guardada comprimida),
 la compara y la acepta, vuelve a cambiarlo respetando lo movido a mano, exporta BPMN 2.0 y
 comprueba los errores de validación. Con el segundo ejemplo comprueba que nada se pisa, el lado de las
 etiquetas, los tipos de inicio y tarea, el flujo por defecto, los participantes externos, las notas y el
-ancho del PNG. Sale con 0 si todo va bien (tarda unos dos minutos).
+ancho del PNG. Comprueba también lo que se hace sin navegador y un proceso que no cabe en una página (tramos).
+Sale con 0 si todo va bien (tarda unos tres minutos).
 
   python3 pruebas/appian-diagramas-bpmn/selftest.py
+  DIAGRAMAS_SIN_NAVEGADOR=1 python3 pruebas/appian-diagramas-bpmn/selftest.py   # solo lo que no necesita navegador
 
 Prueba la skill de $PLUGIN_A_PROBAR/skills/appian-diagramas-bpmn (por defecto, la de este repositorio) con los
 procesos de ejemplo de datos/."""
-import base64, json, os, pathlib, shutil, subprocess, sys, tempfile, urllib.parse, zlib
+import base64, json, os, pathlib, re, shutil, subprocess, sys, tempfile, urllib.parse, zlib
 import xml.etree.ElementTree as ET
+from struct import unpack
 
+sys.dont_write_bytecode = True  # importa los módulos de la skill: sin __pycache__ en el plugin
 AQUI = pathlib.Path(__file__).resolve().parent
 PLUGIN = pathlib.Path(os.environ.get("PLUGIN_A_PROBAR") or AQUI.parents[1]).resolve()
 SCRIPTS = PLUGIN / "skills" / "appian-diagramas-bpmn" / "scripts"
 CLI = [sys.executable, str(SCRIPTS / "diagrama.py")]
 EJEMPLO = AQUI / "datos" / "solicitud.json"
 PEDIDO = AQUI / "datos" / "pedido.json"
+SIN_NAVEGADOR = os.environ.get("DIAGRAMAS_SIN_NAVEGADOR") == "1"   # el propio selftest, sin navegador
+ANCHO_PAGINA = 1600     # lo que se lee en una página vertical
+ANCHO_PNG = 3300        # el PNG, a doble resolución como mucho
 fallos = []
 
 
-def run(*args, esperado=0):
-    r = subprocess.run(CLI + [str(a) for a in args], capture_output=True, text=True, encoding="utf-8")
-    if r.returncode == 2:
-        print(r.stderr); sys.exit(2)
+def entorno(sin_navegador=False, temporales=None):
+    """El entorno de una orden: sin navegador (DIAGRAMAS_SIN_NAVEGADOR=1) y con la carpeta temporal que se diga."""
+    env = dict(os.environ)
+    if sin_navegador:
+        env["DIAGRAMAS_SIN_NAVEGADOR"] = "1"
+    if temporales:
+        env.update(TMPDIR=str(temporales), TEMP=str(temporales), TMP=str(temporales))
+    return env
+
+
+def run(*args, esperado=0, env=None):
+    r = subprocess.run(CLI + [str(a) for a in args], capture_output=True, text=True, encoding="utf-8", env=env)
+    if r.returncode == 2 and esperado != 2:
+        print(r.stdout + r.stderr); sys.exit(2)
     if r.returncode != esperado:
         fallos.append(f"{' '.join(map(str, args[:1]))}: salida {r.returncode} (esperaba {esperado})\n{r.stdout}{r.stderr}")
     return r.stdout + r.stderr
@@ -54,7 +71,7 @@ def datos_de_appian(tmp):
     crear, leer, bpmn, actualizar (colocación automática y a mano) y comparar --aceptar sin perderse."""
     import drawio_modelo as dm
     ns = NS_BPMN
-    origen = AQUI / "datos" / "semantico.json"   # el proceso de proceso_semantico.bpmn de ingeniería inversa
+    origen = AQUI / "datos" / "semantico.json"   # un proceso con datos de Appian, como los que dibuja ingeniería inversa
     base = json.loads(origen.read_text(encoding="utf-8"))
     d = tmp / "Carpeta con espacios" / "Gestión app" / "semántico.drawio"
     run("crear", origen, "-o", d)
@@ -105,7 +122,7 @@ def datos_de_appian(tmp):
         {"poner": {"id": "EV-05", "tipo": "temporizador", "carril": "Revisores", "nombre": "Diez días", "temporizador": "P10D"}},
         {"poner": {"id": "EV-06", "tipo": "fin", "carril": "Revisores", "nombre": "Plazo vencido"}},
         {"flujo": {"de": "ACT-01", "a": "EV-05", "discontinuo": True}}, {"flujo": {"de": "EV-05", "a": "EV-06"}},
-        {"poner": {"id": "ACT-03", "tipo": "llamada", "carril": "Sistema", "nombre": "Notificar", "nodo": "7",
+        {"poner": {"id": "ACT-03", "tipo": "llamada", "carril": "Aplicación", "nombre": "Notificar", "nodo": "7",
                    "proceso_llamado": "Notificación de resolución"}},
         {"quitar_flujo": {"de": "ACT-02", "a": "EV-03"}}, {"flujo": {"de": "ACT-02", "a": "ACT-03"}},
         {"flujo": {"de": "ACT-03", "a": "EV-03"}},
@@ -150,7 +167,7 @@ def datos_de_appian(tmp):
         {"poner": {"id": "ACT-03", "proceso_llamado": "Aviso de resolución"}},
         {"flujo": {"de": "ACT-02", "a": "ACT-03", "condicion": "pv!avisar"}},
         {"flujo": {"de": "GW-01", "a": "ACT-02", "condicion": ""}},
-        {"poner": {"id": "ACT-04", "tipo": "script", "carril": "Sistema", "nombre": "Calcular plazo", "nodo": "8"}},
+        {"poner": {"id": "ACT-04", "tipo": "script", "carril": "Aplicación", "nombre": "Calcular plazo", "nodo": "8"}},
         {"quitar_flujo": {"de": "ACT-03", "a": "EV-03"}}, {"flujo": {"de": "ACT-03", "a": "ACT-04"}},
         {"flujo": {"de": "ACT-04", "a": "EV-03", "condicion": "pv!plazo <> null"}}]}, ensure_ascii=False), encoding="utf-8")
     out = run("actualizar", d, tmp / "d2.json")
@@ -216,7 +233,7 @@ def medir_notas(drawio):
         b, pg = navegador._pagina(p)
         pg.add_script_tag(content=navegador.VIEWER_JS.read_text(encoding="utf-8"))
         res = pg.evaluate(_JS_MEDIR_NOTAS, dm.Fichero(str(drawio)).xml_modelo())
-        b.close()
+        navegador.cerrar(b)
     return res
 
 
@@ -284,12 +301,309 @@ def solapes(drawio):
     return out
 
 
+# ---------------------------------------------------------------- Tarea 12: sin navegador y procesos grandes
+def bpmn_valido(ruta):
+    """Lo que necesitan Camunda Modeler y bpmn.io para abrir y dibujar un BPMN 2.0: ids únicos, referencias que
+    existen, cada nodo en un carril, incoming y outgoing iguales a los flujos, un BPMNShape por nodo y carril y un
+    BPMNEdge con dos o más puntos por flujo. Devuelve los problemas (vacío si es válido)."""
+    ns = NS_BPMN
+    b = ET.parse(ruta).getroot()
+    mal = []
+    todos = [e.get("id") for e in b.iter() if e.get("id")]
+    mal += [f"id repetido: {i}" for i in sorted({i for i in todos if todos.count(i) > 1})]
+    pr = b.find("bpmn:process", ns)
+    nodos = {e.get("id"): e for e in pr if e.tag.split("}")[1] not in ("laneSet", "sequenceFlow", "textAnnotation",
+                                                                         "association", "documentation")}
+    flujos = pr.findall("bpmn:sequenceFlow", ns)
+    for e in b.iter():
+        for k in ("sourceRef", "targetRef", "attachedToRef", "default", "processRef", "bpmnElement"):
+            if e.get(k) and e.get(k) not in todos:
+                mal.append(f"{e.get('id')}: {k}={e.get(k)} no existe")
+    for f in flujos:
+        if f.get("sourceRef") not in nodos or f.get("targetRef") not in nodos:
+            mal.append(f"{f.get('id')}: no une dos nodos del proceso")
+    for nid, n in nodos.items():
+        for lado, ref in (("incoming", "targetRef"), ("outgoing", "sourceRef")):
+            if {x.text for x in n.findall(f"bpmn:{lado}", ns)} != {f.get("id") for f in flujos if f.get(ref) == nid}:
+                mal.append(f"{nid}: {lado} no coincide con los flujos")
+    refs = [r.text for r in pr.iter(f"{{{ns['bpmn']}}}flowNodeRef")]
+    carriles = [e.get("id") for e in pr.iter(f"{{{ns['bpmn']}}}lane")]
+    if carriles:
+        mal += [f"{nid}: está en {refs.count(nid)} carriles" for nid in nodos if refs.count(nid) != 1]
+    formas = [e.get("bpmnElement") for e in b.iter(f"{{{ns['bpmndi']}}}BPMNShape")]
+    mal += [f"{i}: {formas.count(i)} BPMNShape" for i in list(nodos) + carriles if formas.count(i) != 1]
+    puntos = {e.get("bpmnElement"): len(e.findall("di:waypoint", ns)) for e in b.iter(f"{{{ns['bpmndi']}}}BPMNEdge")}
+    mal += [f"{f.get('id')}: sin trazado" for f in flujos if puntos.get(f.get("id"), 0) < 2]
+    return mal
+
+
+def paginas(drawio):
+    """Las páginas del .drawio: [(nombre, ancho, {id de celda: estilo})]. El ancho, hasta donde llega lo que cuelga
+    de la capa de la página (carriles y participantes externos)."""
+    out = []
+    for dg in ET.parse(drawio).getroot().findall("diagram"):
+        celdas = {el.get("id"): (el if el.tag == "mxCell" else el.find("mxCell")) for el in dg.find("mxGraphModel/root")}
+        raiz = {i for i, c in celdas.items() if not c.get("parent")}
+        capa = {i for i, c in celdas.items() if c.get("parent") in raiz}
+        ancho = max([float(c.find("mxGeometry").get("x", 0)) + float(c.find("mxGeometry").get("width", 0))
+                     for c in celdas.values() if c.get("vertex") == "1" and c.get("parent") in capa] or [0])
+        out.append((dg.get("name"), ancho, {i: c.get("style") or "" for i, c in celdas.items()}))
+    return out
+
+
+def ancho_png(ruta):
+    return unpack(">I", pathlib.Path(ruta).read_bytes()[16:20])[0]
+
+
+def sin_navegador(tmp):
+    """Sin navegador (DIAGRAMAS_SIN_NAVEGADOR=1 simula que no hay): crear escribe el .drawio y el .json con la
+    colocación de reserva, sin pasos que se pisen, dice «sin PNG» y sale con 2; bpmn da un BPMN válido; actualizar
+    aplica el cambio y también sale con 2 solo por la imagen; png y mermaid.py dicen qué falta."""
+    import drawio_modelo as dm
+    tmp.mkdir(parents=True)
+    sin = entorno(sin_navegador=True)
+    origen = AQUI / "datos" / "semantico.json"
+    base = json.loads(origen.read_text(encoding="utf-8"))
+    d = tmp / "Carpeta con espacios" / "sin navegador" / "semántico.drawio"
+    out = run("crear", origen, "-o", d, esperado=2, env=sin)
+    check(d.exists() and d.with_suffix(".json").exists() and not d.with_suffix(".png").exists() and "sin PNG" in out,
+          "sin navegador: crear escribe el .drawio y el .json, dice «sin PNG» y sale con 2")
+    proc, geo, _ = dm.leer(str(d))
+    izquierda = {p["id"]: geo["pasos"][p["id"]][0] for p in proc["pasos"]}
+    check(dm.comparar(base, proc) == [] and solapes(d) == [] and izquierda["EV-01"] < izquierda["ACT-01"]
+          < izquierda["GW-01"] < izquierda["ACT-02"] < izquierda["EV-03"],
+          "sin navegador: el proceso entero, de izquierda a derecha y sin nada que se pise " + "; ".join(solapes(d)))
+    dentro = [p["id"] for p in proc["pasos"] if not (geo["carriles"][p["carril"]][0] <= geo["pasos"][p["id"]][1]
+                                                     <= sum(geo["carriles"][p["carril"]][:2]))]
+    check(not dentro, "sin navegador: cada paso dentro de su carril " + ", ".join(dentro))
+    run("bpmn", d, env=sin)
+    mal = bpmn_valido(d.with_suffix(".bpmn"))
+    check(not mal, "sin navegador: bpmn da un BPMN 2.0 válido " + "; ".join(mal[:5]))
+    out = run("png", d, esperado=2, env=sin)
+    check("sin PNG" in out and not d.with_suffix(".png").exists(), "sin navegador: png sale con 2 y dice «sin PNG»")
+    (tmp / "sn1.json").write_text(json.dumps({"cambios": [
+        {"poner": {"id": "ACT-03", "tipo": "script", "carril": "Aplicación", "nombre": "Calcular plazo", "nodo": "8"}},
+        {"quitar_flujo": {"de": "ACT-02", "a": "EV-03"}}, {"flujo": {"de": "ACT-02", "a": "ACT-03"}},
+        {"flujo": {"de": "ACT-03", "a": "EV-03"}}]}, ensure_ascii=False), encoding="utf-8")
+    out = run("actualizar", d, tmp / "sn1.json", esperado=2, env=sin)
+    check("sin PNG" in out and run("comparar", d, env=sin).startswith("Sin cambios") and solapes(d) == [],
+          "sin navegador: actualizar aplica el cambio, sin nada que se pise, y sale con 2 solo por la imagen")
+    # el ejemplo con participante externo, notas y etiquetas a los dos lados
+    p = tmp / "sin navegador" / "pedido.drawio"
+    run("crear", PEDIDO, "-o", p, esperado=2, env=sin)
+    check(dm.comparar(json.loads(PEDIDO.read_text(encoding="utf-8")), dm.leer(str(p))[0]) == [] and solapes(p) == [],
+          "sin navegador: pedido, con externo y notas, sin nada que se pise " + "; ".join(solapes(p)))
+    (tmp / "no-hace-falta.mmd").write_text("flowchart TD\n  A --> B\n", encoding="utf-8")
+    r = subprocess.run([sys.executable, str(SCRIPTS / "mermaid.py"), "--check", str(tmp / "no-hace-falta.mmd")],
+                       capture_output=True, text=True, encoding="utf-8", env=sin)
+    check(r.returncode == 2 and "DIAGRAMAS_SIN_NAVEGADOR" in r.stdout + r.stderr,
+          "sin navegador: mermaid.py sale con 2 y dice por qué")
+
+
+def proceso_grande():
+    """Un proceso de una aplicación que ya existe y no cabe en una página (53 pasos): carriles, decisiones con
+    condición que cruzan de un tramo a otro, una vuelta atrás, un plazo en el borde de una tarea, un participante
+    externo, una nota y datos de Appian. «tramos»: se dibuja en tramos de una página, sin inventar subprocesos."""
+    T, S, A = "Técnicos", "Supervisores", "Aplicación"
+    pasos, flujos, cuenta = [], [], {"EV": 0, "ACT": 0, "GW": 0}
+
+    def paso(tipo, carril, nombre, **kw):
+        pre = {"inicio": "EV", "fin": "EV", "mensaje": "EV", "temporizador": "EV", "exclusiva": "GW"}.get(tipo, "ACT")
+        cuenta[pre] += 1
+        pasos.append({"id": f"{pre}-{cuenta[pre]:02d}", "tipo": tipo, "carril": carril, "nombre": nombre,
+                      "nodo": str(len(pasos) + 1), **kw})
+        return pasos[-1]["id"]
+
+    def une(*ids):
+        flujos.extend({"de": a, "a": b} for a, b in zip(ids, ids[1:]))
+
+    inicio, registrar = paso("inicio", T, "Orden recibida"), paso("tarea", T, "Registrar orden")
+    guardar, urgente = paso("sistema", A, "Guardar orden"), paso("exclusiva", A, "¿Urgente?")
+    atender, asignar = paso("tarea", S, "Atender urgencia"), paso("tarea", S, "Asignar técnico")
+    ejecutar = paso("tarea", T, "Ejecutar trabajo")
+    plazo, vencido = paso("temporizador", T, "Diez días", temporizador="P10D"), paso("fin", T, "Plazo vencido")
+    une(inicio, registrar, guardar, urgente)
+    flujos += [{"de": urgente, "a": atender, "etiqueta": "Sí", "condicion": 'pv!prioridad = "Urgente"'},
+               {"de": urgente, "a": asignar, "etiqueta": "No", "defecto": True},
+               {"de": ejecutar, "a": plazo, "discontinuo": True}]
+    une(atender, ejecutar)
+    une(asignar, ejecutar)
+    une(plazo, vencido)
+    previo = ejecutar
+    for i in range(1, 9):   # hitos repetidos, como en una aplicación mal hecha
+        preparar, guarda = paso("script", A, f"Preparar hito {i}"), paso("sistema", A, f"Guardar hito {i}")
+        avisar, aviso = paso("exclusiva", A, f"¿Avisar del hito {i}?"), paso("mensaje", A, f"Aviso del hito {i}")
+        cierre = paso("script", A, f"Cerrar hito {i}")
+        une(previo, preparar, guarda, avisar)
+        flujos += [{"de": avisar, "a": aviso, "etiqueta": "Sí", "condicion": "pv!avisar"},
+                   {"de": avisar, "a": cierre, "etiqueta": "No", "defecto": True}]
+        une(aviso, cierre)
+        previo = cierre
+    validar, validado = paso("tarea", S, "Validar cierre"), paso("exclusiva", S, "¿Cierre validado?")
+    cerrar, fin = paso("sistema", A, "Cerrar orden"), paso("fin", A, "Orden cerrada")
+    une(previo, validar, validado)
+    flujos += [{"de": validado, "a": cerrar, "etiqueta": "Validado", "condicion": 'pv!decision = "VALIDAR"'},
+               {"de": validado, "a": ejecutar, "etiqueta": "Rechazado", "defecto": True},      # vuelve atrás
+               {"de": guardar, "a": "ERP", "etiqueta": "Alta de la orden"}]
+    une(cerrar, fin)
+    return {"proceso": "Gestión de orden", "carriles": [T, S, A], "pasos": pasos, "flujos": flujos, "externos": ["ERP"],
+            "notas": [{"paso": cerrar, "texto": "Sin validar el cierre, la orden queda abierta"}], "tramos": True}
+
+
+def tramos(tmp, con_png=True):
+    """Un proceso que no cabe en una página, con «tramos»: una página del .drawio por tramo, cada una de 1.600 px de
+    ancho como mucho, con un PNG por tramo; los cortes, con un evento de enlace en cada lado; leer devuelve el
+    proceso entero; un solo .bpmn válido con todos los pasos y sin los enlaces; comparar ve lo cambiado a mano en
+    cualquier tramo; actualizar coloca de nuevo los tramos y, si se colocaron a mano, se niega sin --recolocar. Nada
+    fuera de la carpeta de salida."""
+    import drawio_modelo as dm
+    con_imagen = 0 if con_png else 2
+    temporales = tmp / "temporales del sistema"
+    temporales.mkdir(parents=True)
+    env = entorno(sin_navegador=not con_png, temporales=temporales)
+    proc = proceso_grande()
+    codigo = {p["nombre"]: p["id"] for p in proc["pasos"]}
+    origen = tmp / "grande.json"
+    origen.write_text(json.dumps(proc, ensure_ascii=False), encoding="utf-8")
+    d = tmp / "Carpeta con espacios" / "grande" / "gestión.drawio"
+    run("crear", origen, "-o", d, esperado=con_imagen, env=env)
+    pags = paginas(d)
+    nombres_ok = all(re.fullmatch(rf"Gestión de orden \(tramo {k} de {len(pags)}\)", n) for k, (n, _, _) in enumerate(pags, 1))
+    check(len(pags) > 2 and nombres_ok and all(a <= ANCHO_PAGINA for _, a, _ in pags),
+          f"tramos: una página por tramo, de {ANCHO_PAGINA} px de ancho como mucho ({len(pags)} tramos: "
+          + ", ".join(f"{a:.0f}" for _, a, _ in pags) + " px)")
+    if con_png:
+        pngs = sorted(d.parent.glob("gestión-*.png"), key=lambda p: int(p.stem.rsplit("-", 1)[1]))
+        check(len(pngs) == len(pags) and not d.with_suffix(".png").exists()
+              and all(ancho_png(p) <= ANCHO_PNG for p in pngs),
+              f"tramos: un PNG por tramo (gestión-1.png…), de {ANCHO_PNG} px como mucho ("
+              + ", ".join(str(ancho_png(p)) for p in pngs) + ")")
+    leido = dm.leer(str(d))[0]
+    check(dm.comparar(proc, leido) == [] and leido.get("tramos") is True and solapes(d) == [],
+          "tramos: leer devuelve el proceso entero, con la etiqueta, la condición y el flujo por defecto de los que "
+          "cruzan de un tramo a otro " + "; ".join(t for _, t in dm.comparar(proc, leido)) + "; ".join(solapes(d)))
+    # cada flujo que cruza de un tramo a otro: un enlace que sale en el suyo, con el número del otro, y uno que entra
+    pagina_de = {cid: k for k, (_, _, estilos) in enumerate(pags, 1) for cid in estilos}
+    t = ET.parse(d).getroot()
+    aristas = {(c.get("source"), c.get("target")) for c in t.iter("mxCell") if c.get("edge") == "1"}
+    texto = {(c.get("id") or ""): (c.get("value") or c.get("label") or "") for c in t.iter() if c.tag in ("mxCell", "object")}
+    for o in t.iter("object"):
+        texto[o.get("id")] = o.get("label") or ""
+    mal = []
+    cruzan = [f for f in proc["flujos"] if f["a"] not in proc["externos"] and pagina_de[f["de"]] != pagina_de[f["a"]]]
+    for f in cruzan:
+        sale = next((a for s, a in aristas if s == f["de"] and a and re.fullmatch(r"ENL-\d+-S", a)
+                     and (a[:-1] + "E", f["a"]) in aristas), None)
+        if sale is None or pagina_de.get(sale) != pagina_de[f["de"]] or pagina_de.get(sale[:-1] + "E") != pagina_de[f["a"]] \
+                or f"tramo {pagina_de[f['a']]}" not in texto.get(sale, ""):
+            mal.append(f"{f['de']} → {f['a']}")
+    enlaces = [cid for cid in pagina_de if re.fullmatch(r"ENL-\d+-[SE]", cid)]
+    vuelta = next(f for f in proc["flujos"] if f.get("etiqueta") == "Rechazado")
+    check(cruzan and not mal and len(enlaces) == 2 * len(cruzan)
+          and pagina_de[codigo["Diez días"]] == pagina_de[codigo["Ejecutar trabajo"]]
+          and pagina_de[vuelta["de"]] > pagina_de[vuelta["a"]]
+          and all("enlace=1" in pags[pagina_de[e] - 1][2][e] and "symbol=link" in pags[pagina_de[e] - 1][2][e] for e in enlaces),
+          f"tramos: {len(cruzan)} flujos cruzan de un tramo a otro, cada uno con un enlace que sale (con el número del "
+          "otro tramo) y uno que entra; también la vuelta atrás; el plazo, en el tramo de su tarea " + ", ".join(mal))
+    run("bpmn", d, env=env)
+    b = ET.parse(d.with_suffix(".bpmn")).getroot()
+    nodos = [e for e in b.find("bpmn:process", NS_BPMN) if e.tag.split("}")[1] not in
+             ("laneSet", "sequenceFlow", "textAnnotation", "association")]
+    mal = bpmn_valido(d.with_suffix(".bpmn"))
+    si = [e for e in b.iter(f"{{{NS_BPMN['bpmn']}}}sequenceFlow") if e.get("name") == "Sí"]
+    check(not mal and len(nodos) == len(proc["pasos"]) and "linkEventDefinition" not in d.with_suffix(".bpmn").read_text(encoding="utf-8")
+          and len(b.findall(f"{{{NS_BPMN['bpmndi']}}}BPMNDiagram")) == 1
+          and len(si) == 9 and all(e.find("bpmn:conditionExpression", NS_BPMN) is not None for e in si),
+          f"tramos: un solo .bpmn válido con los {len(proc['pasos'])} pasos ({len(nodos)}), sin los enlaces y con las "
+          "condiciones " + "; ".join(mal[:5]))
+    # actualizar con la colocación automática: los tramos se colocan de nuevo
+    cerrar, fin = codigo["Cerrar orden"], codigo["Orden cerrada"]
+    (tmp / "t1.json").write_text(json.dumps({"cambios": [
+        {"poner": {"id": "ACT-99", "tipo": "script", "carril": "Aplicación", "nombre": "Calcular coste", "nodo": "99"}},
+        {"quitar_flujo": {"de": cerrar, "a": fin}}, {"flujo": {"de": cerrar, "a": "ACT-99"}},
+        {"flujo": {"de": "ACT-99", "a": fin}}]}, ensure_ascii=False), encoding="utf-8")
+    run("actualizar", d, tmp / "t1.json", esperado=con_imagen, env=env)
+    pags = paginas(d)
+    check(run("comparar", d, env=env).startswith("Sin cambios") and len(pags) > 2 and all(a <= ANCHO_PAGINA for _, a, _ in pags),
+          "tramos: actualizar coloca de nuevo los tramos y el dibujo queda igual que el análisis")
+    # en draw.io se renombra un paso de un tramo que no es el primero y se mueve: comparar lo ve
+    t = ET.parse(d)
+    pagina2 = t.getroot().findall("diagram")[1]
+    celda = next(c for c in pagina2.iter() if c.tag in ("mxCell", "object") and re.fullmatch(r"ACT-\d+", c.get("id") or ""))
+    viejo = celda.get("label") if celda.tag == "object" else celda.get("value")
+    celda.set("label" if celda.tag == "object" else "value", "Revisar de nuevo")
+    g = (celda.find("mxCell") if celda.tag == "object" else celda).find("mxGeometry")
+    g.set("y", str(float(g.get("y")) + 10))
+    t.write(d, encoding="utf-8")
+    out = run("comparar", d, esperado=1, env=env)
+    check(f"{celda.get('id')} renombrado: «{viejo}» → «Revisar de nuevo»" in out, "tramos: comparar ve un cambio a mano en el tramo 2")
+    run("comparar", d, "--aceptar", esperado=con_imagen, env=env)
+    js = json.loads(d.with_suffix(".json").read_text(encoding="utf-8"))
+    check(js.get("tramos") is True and js["colocacion"]["modo"] == "manual", "tramos: comparar --aceptar conserva «tramos»")
+    (tmp / "t2.json").write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-99", "nombre": "Calcular el coste"}}]},
+                                            ensure_ascii=False), encoding="utf-8")
+    out = run("actualizar", d, tmp / "t2.json", esperado=1, env=env)
+    check("tramos" in out and "--recolocar" in out and "Calcular el coste" not in d.read_text(encoding="utf-8"),
+          "tramos: actualizar se niega a encajar cambios en tramos colocados a mano y dice cómo seguir")
+    run("actualizar", d, tmp / "t2.json", "--recolocar", esperado=con_imagen, env=env)
+    check("Calcular el coste" in d.read_text(encoding="utf-8") and run("comparar", d, env=env).startswith("Sin cambios")
+          and len(paginas(d)) > 2, "tramos: actualizar --recolocar coloca de nuevo los tramos")
+    sobra = [p.name for p in temporales.iterdir()]
+    check(not sobra, "tramos: nada fuera de la carpeta de salida, ni temporales " + ", ".join(sobra))
+    # un proceso con «tramos» que cabe en una página: una sola página, con su nombre, y X.png
+    pequeno = dict(json.loads((AQUI / "datos" / "semantico.json").read_text(encoding="utf-8")), tramos=True)
+    (tmp / "pequeño.json").write_text(json.dumps(pequeno, ensure_ascii=False), encoding="utf-8")
+    run("crear", tmp / "pequeño.json", "-o", tmp / "pequeño", esperado=con_imagen, env=env)
+    pags = paginas(tmp / "pequeño" / "pequeño.drawio")
+    check(len(pags) == 1 and pags[0][0] == "Proceso de prueba" and (not con_png or (tmp / "pequeño" / "pequeño.png").exists()),
+          "tramos: un proceso que cabe en una página no se parte")
+    # crece hasta no caber: actualizar lo pasa a tramos y quita el PNG de una sola página (el de otro diagrama, no)
+    (tmp / "pequeño" / "pequeño-99.drawio").write_text("<mxfile/>", encoding="utf-8")
+    (tmp / "pequeño" / "pequeño-99.png").write_bytes(b"de otro diagrama")
+    run("actualizar", tmp / "pequeño" / "pequeño.drawio", origen, esperado=con_imagen, env=env)
+    hechos = sorted(p.name for p in (tmp / "pequeño").glob("*.png"))
+    check(len(paginas(tmp / "pequeño" / "pequeño.drawio")) > 2 and run("comparar", tmp / "pequeño" / "pequeño.drawio",
+                                                                       env=env).startswith("Sin cambios")
+          and (not con_png or ("pequeño.png" not in hechos and "pequeño-1.png" in hechos))
+          and (tmp / "pequeño" / "pequeño-99.png").read_bytes() == b"de otro diagrama",
+          "tramos: un proceso que deja de caber pasa a tramos y se quita su PNG de una página (no el de otro diagrama) "
+          + ", ".join(hechos))
+
+
+def main_sin_navegador():
+    """Con DIAGRAMAS_SIN_NAVEGADOR=1, lo que se puede hacer sin navegador: dibujar el .drawio (también en tramos),
+    leerlo, compararlo, exportar el BPMN y validar."""
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="diagramas-sin-navegador-"))
+    try:
+        sin_navegador(tmp / "sin")
+        tramos(tmp / "tramos", con_png=False)
+        malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
+                "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}
+        (tmp / "malo.json").write_text(json.dumps(malo), encoding="utf-8")
+        out = run("validar", tmp / "malo.json", esperado=1)
+        check("desconocido" in out and "no está en «carriles»" in out and "no existe el paso ACT-02" in out,
+              "validar: tipo, carril y flujo incorrectos")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    if fallos:
+        print("\n" + "\n\n".join(fallos))
+        sys.exit(1)
+    print("\nTodo correcto (sin navegador: sin PNG ni pintor Mermaid).")
+
+
 def main():
     for s in (sys.stdout, sys.stderr):
         s.reconfigure(encoding="utf-8", errors="replace")
+    sys.path.insert(0, str(SCRIPTS))
+    if SIN_NAVEGADOR:
+        return main_sin_navegador()
     probar_mermaid()
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="diagramas-"))
     try:
+        # Tarea 12: sin navegador y procesos que no caben en una página
+        sin_navegador(tmp / "sin")
+        tramos(tmp / "tramos")
+        tramos(tmp / "tramos sin navegador", con_png=False)
         d = tmp / "solicitud.drawio"
         # 1. crear
         run("validar", EJEMPLO)
