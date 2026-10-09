@@ -23,9 +23,6 @@ apunta aquí y entra en la siguiente versión. Cada línea dice qué, dónde y d
 - `extraction_report.json`, `toolsUsed`: lista herramientas sin ninguna llamada (`getAiAgent` en una aplicación sin
   agentes de IA), y «usadas + omitidas» no da el catálogo que cuenta INVENTARIO. Medida «después» de F3.
 - `datafabric`: `metadataRaw` trae record types de otras aplicaciones. Medida «después» de F3.
-- Guía de 09 en `analysis-workflow.md`: una misma señal sale en dos hallazgos (validación y más de 50 nodos; huérfano y
-  sin ejecuciones), contra «un dueño por señal». Medida «después» de F3. Mejor en F5 (Tareas 13-14): refactorización
-  lee `hallazgos.json` y los duplicaría.
 - Pasada de coherencia: ningún script comprueba que cada mención de otra área lleve su ID canónico. Medida «después» de F3.
 - `build_datos.py` cuenta 80 aristas y `summary.json` 83 (las de fuera de la aplicación): decirlo en `datos.md`.
 - `security-rules.md`: decir que el valor de un secreto se reproduce tal cual (nada se oculta) y dónde acaba (04,
