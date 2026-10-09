@@ -101,6 +101,11 @@ inventorying every record type, process and integration. Widen the context when 
 Before the first task: `python3 <skill>/../../requisitos.py --skill appian-best-practices` (`<skill>` is this file's
 folder; on Windows, `python`). It says what this machine lacks, what is lost and how to install it. If something this task needs is missing, tell the user once and carry on with what there is; if `requisitos.py` is not there (a loose copy of the skill), carry on without it.
 
+## What it writes
+
+Nothing in the project folder (`<p>`): `scripts/seccion.py` only prints, and objects change in the Appian environment
+through the design MCP, never through files.
+
 ## Tools
 
 Check what is available in the session; don't invent tools or assume they exist.

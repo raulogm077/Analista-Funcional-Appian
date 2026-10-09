@@ -68,6 +68,23 @@ Formatos: `funcional-plantilla.md`, `tecnico-plantilla.md` y la cabecera de `dec
 `assets/plantillas/`. `proyecto.py estado <p>` dice en qué punto está el proyecto: empieza siempre por ahí
 si el proyecto ya existe.
 
+## Qué escribe
+
+En `<p>`:
+- `proyecto.md`: el estado del proyecto
+- `fuentes/`: las fuentes catalogadas, con su índice y sus adjuntos
+- `notas/`: una nota por fuente
+- `impacto/`: un informe por fuente nueva
+- `analisis/funcional.md`: el diseño funcional
+- `analisis/tecnico.md`: la especificación técnica
+- `analisis/decisiones.md`: las versiones y las decisiones del cliente
+- `analisis/diagramas/<proceso>.json`: cada proceso, en el formato de `appian-diagramas-bpmn`
+- `analisis/diagramas/<nombre>.mmd`: los diagramas de estados y de datos
+- `entregables/`: el DF en Word
+- `versiones/`: la copia del análisis antes de cada cambio
+
+El `.drawio`, el `.png` y el `.bpmn` de cada proceso y la imagen de cada `.mmd` los escribe `appian-diagramas-bpmn`.
+
 ## Modos
 
 | Modo | Cuándo | Qué sale |

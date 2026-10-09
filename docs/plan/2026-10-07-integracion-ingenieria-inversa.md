@@ -1025,9 +1025,9 @@ cliente, y se regeneran con sus scripts (lo decidió Raúl el 7 de octubre).
   declara; un `.py` fuera de diagramas con `mermaid.initialize` o `BPMNDiagram`; una lista de muletillas (`- «…» →`)
   fuera de `redaccion.md`.
 
-- [ ] **Paso 1:** pruebas en `comprobar_plugin.py` con copias temporales: una skill que declara `as-is/` sin serlo y un
+- [x] **Paso 1:** pruebas en `comprobar_plugin.py` con copias temporales: una skill que declara `as-is/` sin serlo y un
   script con `BPMNDiagram` fuera de diagramas dan error; las reglas de `tambien` no. → FALLA.
-- [ ] **Paso 2:** implementar y escribir las secciones. **Paso 3:** en verde. Commit.
+- [x] **Paso 2:** implementar y escribir las secciones. **Paso 3:** en verde. Commit.
 
 ### Tarea 28: Las seis descripciones
 

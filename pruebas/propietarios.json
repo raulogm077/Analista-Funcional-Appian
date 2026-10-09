@@ -1,0 +1,17 @@
+[
+  {"patron": "proyecto.md", "dueno": "appian-functional-analyst"},
+  {"patron": "fuentes/", "dueno": "appian-functional-analyst"},
+  {"patron": "notas/", "dueno": "appian-functional-analyst"},
+  {"patron": "impacto/", "dueno": "appian-functional-analyst"},
+  {"patron": "analisis/*.md", "dueno": "appian-functional-analyst"},
+  {"patron": "analisis/diagramas/*.mmd", "dueno": "appian-functional-analyst"},
+  {"patron": "analisis/diagramas/*.json", "dueno": "appian-functional-analyst", "tambien": ["appian-diagramas-bpmn"]},
+  {"patron": "analisis/diagramas/*.{drawio,png,bpmn,svg}", "dueno": "appian-diagramas-bpmn"},
+  {"patron": "entregables/", "dueno": "appian-functional-analyst"},
+  {"patron": "versiones/", "dueno": "appian-functional-analyst"},
+  {"patron": "as-is/", "dueno": "appian-reverse-engineering"},
+  {"patron": "as-is/08-procesos-bpmn/*.json", "dueno": "appian-reverse-engineering", "tambien": ["appian-diagramas-bpmn"]},
+  {"patron": "as-is/08-procesos-bpmn/*.{drawio,png,bpmn}", "dueno": "appian-diagramas-bpmn"},
+  {"patron": "refactorizacion/", "dueno": "appian-refactorizacion"},
+  {"patron": "prototipo/", "dueno": "appian-prototipos"}
+]

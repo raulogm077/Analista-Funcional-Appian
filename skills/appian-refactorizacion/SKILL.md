@@ -76,7 +76,8 @@ Reglas que no se negocian:
 
 ## Qué escribe
 
-- `refactorizacion/propuesta.md`
+En `<p>`:
+- `refactorizacion/propuesta.md`: la propuesta, del Diagnóstico a los Pendientes
 
 Nada más: no toca `as-is/` ni `analisis/`.
 
