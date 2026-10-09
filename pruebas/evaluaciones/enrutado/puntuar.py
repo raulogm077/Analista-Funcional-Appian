@@ -2,10 +2,11 @@
 """Prueba de enrutado: el enunciado para el agente que enruta y la puntuación de sus respuestas.
 
 Uso:
-  python3 puntuar.py --enunciado [--ocultas]      # las seis descripciones y las peticiones, sin la skill esperada
-  python3 puntuar.py <respuestas.json> [--ocultas]
+  python3 puntuar.py --enunciado [--ocultas | --fronteras]   # las seis descripciones y las peticiones, sin la skill
+  python3 puntuar.py <respuestas.json> [--ocultas | --fronteras]
 
-Las peticiones visibles están en pruebas/enrutado.json y las ocultas en ocultas/enrutado.json, las dos con el formato
+Las peticiones visibles están en pruebas/enrutado.json, las ocultas en ocultas/enrutado.json y las de las fronteras
+(los solapes más probables, sin las palabras que delatan la skill) en fronteras/enrutado.json, las tres con el formato
 [{"peticion": "…", "skill": "appian-…"}]. Las respuestas tienen el mismo formato y el mismo orden, una por petición y
 con la petición copiada tal cual. Vale la skill con el prefijo del plugin («appian-analisis-funcional:appian-…»).
 
@@ -26,6 +27,7 @@ AQUI = Path(__file__).resolve().parent
 REPO = AQUI.parents[2]
 VISIBLES = REPO / "pruebas" / "enrutado.json"
 OCULTAS = AQUI / "ocultas" / "enrutado.json"
+FRONTERAS = AQUI / "fronteras" / "enrutado.json"
 SKILLS = REPO / "skills"
 
 
@@ -98,14 +100,16 @@ def compara(esperadas: list[dict], respuestas: list[dict]) -> list[tuple[int, st
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("respuestas", nargs="?")
-    ap.add_argument("--ocultas", action="store_true", help="las peticiones ocultas en vez de las visibles")
+    lote = ap.add_mutually_exclusive_group()
+    lote.add_argument("--ocultas", action="store_true", help="las peticiones ocultas en vez de las visibles")
+    lote.add_argument("--fronteras", action="store_true", help="las peticiones de las fronteras en vez de las visibles")
     ap.add_argument("--enunciado", action="store_true", help="imprime lo que recibe el agente que enruta")
     a = ap.parse_args()
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8", errors="replace")
     if bool(a.enunciado) == bool(a.respuestas):
         ap.error("o --enunciado o un fichero de respuestas")
-    esperado = OCULTAS if a.ocultas else VISIBLES
+    esperado = OCULTAS if a.ocultas else FRONTERAS if a.fronteras else VISIBLES
     faltan = [str(p) for p in (esperado, Path(a.respuestas or esperado)) if not p.is_file()]
     if faltan:
         print("No encuentro: " + ", ".join(faltan), file=sys.stderr)
@@ -129,7 +133,7 @@ def main() -> int:
         else:
             otra = elegida if elegida in validas else f"«{elegida}» (no es una de las skills)"
             print(f"FALLO {k:2d} esperada {esperada}, elegida {otra}: {peticion}")
-    print(f"Total: {bien}/{len(filas)}" + (" (ocultas)" if a.ocultas else ""))
+    print(f"Total: {bien}/{len(filas)}" + (" (ocultas)" if a.ocultas else " (fronteras)" if a.fronteras else ""))
     return 0 if bien == len(filas) else 1
 
 

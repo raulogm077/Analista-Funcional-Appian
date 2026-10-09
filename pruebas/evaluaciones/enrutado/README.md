@@ -31,6 +31,10 @@ Otras visibles tocan una frontera vecina: un cambio en una aplicación ya docume
 analista), «cómo debería estar hecho con buenas prácticas» un módulo con su `as-is/` (13, refactorización), una
 aplicación lenta que se quiere rehacer (19, refactorización) y las capturas para el DF (11, prototipos).
 
+Un tercer lote, `fronteras/enrutado.json`, trae 8 peticiones de los solapes más probables sin las palabras que delatan la
+skill («as-is», «draw.io», «DF», «prototipo»…; lo comprueba `prueba_puntuar.py`): `python3 puntuar.py --enunciado
+--fronteras` y `python3 puntuar.py respuestas-fronteras.json --fronteras`.
+
 ## Cómo se hace
 
 1. **El enunciado.** `python3 puntuar.py --enunciado > <carpeta temporal>/enunciado.md`: las seis descripciones,
