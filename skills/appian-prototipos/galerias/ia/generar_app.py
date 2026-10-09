@@ -8,20 +8,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 from sail_helpers import *  # noqa: E402,F401
 
 inc = [
-    (1, "INC-2026-0412", "Fuga de agua en el falso techo de la zona de facturación", "Mantenimiento", "MAD", "En curso", "Alta", "Goteo continuo sobre los mostradores 812-818; se han colocado cubos y se ha acotado la zona."),
-    (2, "INC-2026-0415", "Escalera mecánica detenida en el acceso a la T4S", "Mantenimiento", "MAD", "Pendiente", "Alta", "La escalera 4S-03 se detiene al arrancar; posible fallo del freno de servicio."),
-    (3, "INC-2026-0418", "Cola excesiva en el filtro de seguridad norte", "Operaciones", "BCN", "Cerrada", "Media", "Tiempo de espera de 38 minutos entre las 6:00 y las 7:30 por falta de personal."),
-    (4, "INC-2026-0421", "Pantallas de información de vuelos sin datos en la puerta B22", "Sistemas", "BCN", "En curso", "Media", "Los monitores FIDS de la puerta B22 muestran la pantalla en negro desde el cambio de turno."),
-    (5, "INC-2026-0423", "Humedad y moho en los aseos de llegadas", "Limpieza", "PMI", "Pendiente", "Baja", "Olor persistente y manchas de humedad en la pared del aseo de caballeros."),
-    (6, "INC-2026-0426", "Avería del sistema de climatización en la sala de embarque C", "Mantenimiento", "AGP", "En curso", "Alta", "Temperatura de 29 °C en la sala; la enfriadora 2 da alarma de alta presión."),
-    (7, "INC-2026-0430", "Pérdida de equipajes en la cinta de recogida 7", "Operaciones", "MAD", "Cerrada", "Media", "Maletas atascadas en la curva de la cinta 7; revisada la guía lateral."),
-    (8, "INC-2026-0433", "Fallo de la red wifi de pasajeros en la terminal 2", "Sistemas", "BCN", "Pendiente", "Media", "Los pasajeros no reciben la página de acceso; el controlador inalámbrico se reinicia cada hora."),
-    (9, "INC-2026-0436", "Filtración de agua en la cubierta del aparcamiento P1", "Mantenimiento", "PMI", "Pendiente", "Media", "Tras la lluvia aparecen charcos en la planta -1 junto a los pilares 14 y 15."),
-    (10, "INC-2026-0439", "Puerta automática bloqueada en la salida de llegadas", "Mantenimiento", "AGP", "Cerrada", "Alta", "La puerta de doble hoja no abre por un sensor sucio; se limpió y se probó."),
+    (1, "INC-2026-0412", "Fuga de agua en el falso techo del vestíbulo", "Mantenimiento", "NOR", "En curso", "Alta", "Goteo continuo sobre los puestos de recepción 1 a 4; se han colocado cubos y se ha acotado la zona."),
+    (2, "INC-2026-0415", "Ascensor detenido en el edificio B", "Mantenimiento", "NOR", "Pendiente", "Alta", "El ascensor B-03 se detiene al arrancar; posible fallo del freno de servicio."),
+    (3, "INC-2026-0418", "Cola excesiva en el control de accesos principal", "Operaciones", "SUR", "Cerrada", "Media", "Tiempo de espera de 38 minutos entre las 8:00 y las 9:30 por falta de personal."),
+    (4, "INC-2026-0421", "Pantallas de cartelería sin datos en la planta 2", "Sistemas", "SUR", "En curso", "Media", "Las pantallas de cartelería digital de la planta 2 están en negro desde el cambio de turno."),
+    (5, "INC-2026-0423", "Humedad y moho en los aseos de la planta baja", "Limpieza", "EST", "Pendiente", "Baja", "Olor persistente y manchas de humedad en la pared del aseo de caballeros."),
+    (6, "INC-2026-0426", "Avería del sistema de climatización en la sala de formación C", "Mantenimiento", "OES", "En curso", "Alta", "Temperatura de 29 °C en la sala; la enfriadora 2 da alarma de alta presión."),
+    (7, "INC-2026-0430", "Cajas atascadas en la cinta transportadora del almacén", "Operaciones", "NOR", "Cerrada", "Media", "Cajas atascadas en la curva de la cinta 7; revisada la guía lateral."),
+    (8, "INC-2026-0433", "Fallo de la red wifi de visitantes en el edificio 2", "Sistemas", "SUR", "Pendiente", "Media", "Los visitantes no reciben la página de acceso; el controlador inalámbrico se reinicia cada hora."),
+    (9, "INC-2026-0436", "Filtración de agua en la cubierta del aparcamiento P1", "Mantenimiento", "EST", "Pendiente", "Media", "Tras la lluvia aparecen charcos en la planta -1 junto a los pilares 14 y 15."),
+    (10, "INC-2026-0439", "Puerta automática bloqueada en la entrada principal", "Mantenimiento", "OES", "Cerrada", "Alta", "La puerta de doble hoja no abre por un sensor sucio; se limpió y se probó."),
 ]
 RESP = ["Rocío Sánchez Vidal", "Pablo Martín Ortega", "Javier García Ruiz", "Andrés Moreno Pastor"]
-rows = [{"id": i, "codigo": c, "titulo": t, "area": a, "aeropuerto": ap, "estado": e, "prioridad": p, "descripcion": d,
-         "fecha": f"2026-09-{10 + i:02d}", "responsable": RESP[i % len(RESP)]} for i, c, t, a, ap, e, p, d in inc]
+rows = [{"id": i, "codigo": c, "titulo": t, "area": a, "sede": se, "estado": e, "prioridad": p, "descripcion": d,
+         "fecha": f"2026-09-{10 + i:02d}", "responsable": RESP[i % len(RESP)]} for i, c, t, a, se, e, p, d in inc]
 ESTADO = state_map({"Pendiente": "atencion", "En curso": "enCurso", "Cerrada": "positivo"})
 
 # ------------------------------------------------------------------ 1. Asistente de agente (a!agentChatField + outputsSaveInto con revisión humana)
@@ -30,13 +30,13 @@ asistente = {"id": "asistente", "title": "Asistente de incidencias", "type": "pa
   "interface": {"type": "a!headerContentLayout", "backgroundColor": BG, "contents": [
     page_header("Partes de trabajo", "Pida al asistente que prepare el parte de una incidencia y revíselo antes de guardarlo"),
     cols(
-      [content_card([ai_agent_chat("Asistente de incidencias", "agent!INC_INCIDENCIAS", "Puedo buscar incidencias, resumir su historial y preparar el parte de trabajo para que usted lo revise.\n\nPor ejemplo: «¿Qué incidencias de climatización hay abiertas en AGP?»",
+      [content_card([ai_agent_chat("Asistente de incidencias", "agent!INC_INCIDENCIAS", "Puedo buscar incidencias, resumir su historial y preparar el parte de trabajo para que usted lo revise.\n\nPor ejemplo: «¿Qué incidencias de climatización hay abiertas en la sede Oeste?»",
           placeholder="Pregunte por una incidencia o pida un parte de trabajo", inputs={"usuario": "loggedInUser()"},
           outputs=[{"type": "a!save", "target": "local!propuesta", "value": "save!value.parte"}], height="TALL",
-          **{"$sessions": [{"name": "Incidencias abiertas de climatización en AGP", "messages": [{"role": "USER", "text": "Incidencias abiertas de climatización en AGP"}, {"role": "TOOL", "tool": "Buscar incidencias", "text": "1 resultado"}, {"role": "ASSISTANT", "text": "Hay **1 incidencia abierta**: INC-2026-0426, avería de la enfriadora 2 en la sala de embarque C (prioridad alta)."}]}, "Resumen semanal de Mantenimiento en MAD"],
+          **{"$sessions": [{"name": "Incidencias abiertas de climatización en la sede Oeste", "messages": [{"role": "USER", "text": "Incidencias abiertas de climatización en la sede Oeste"}, {"role": "TOOL", "tool": "Buscar incidencias", "text": "1 resultado"}, {"role": "ASSISTANT", "text": "Hay **1 incidencia abierta**: INC-2026-0426, avería de la enfriadora 2 en la sala de formación C (prioridad alta)."}]}, "Resumen semanal de Mantenimiento en la sede Norte"],
              "$replies": [{"text": "He preparado el **parte de trabajo** para la INC-2026-0426:\n\n- Revisar la presión de condensación de la enfriadora 2\n- Limpiar el condensador y comprobar el ventilador\n- Medir la temperatura de la sala tras la intervención\n\nLo tiene a la derecha para revisarlo antes de guardarlo.",
                            "tools": [{"tool": "Consultar incidencia", "text": "INC-2026-0426", "input": {"codigo": "INC-2026-0426"}, "output": {"estado": "En curso", "equipo": "Enfriadora 2"}}, {"tool": "Generar parte de trabajo", "input": {"plantilla": "Climatización"}, "output": {"tareas": 3}}],
-                           "outputs": {"parte": {"incidencia": "INC-2026-0426", "equipo": "Enfriadora 2 · Sala de embarque C", "tareas": "Revisar la presión de condensación; limpiar el condensador y comprobar el ventilador; medir la temperatura de la sala", "horas": 3}}}]})], padding="NONE")],
+                           "outputs": {"parte": {"incidencia": "INC-2026-0426", "equipo": "Enfriadora 2 · Sala de formación C", "tareas": "Revisar la presión de condensación; limpiar el condensador y comprobar el ventilador; medir la temperatura de la sala", "horas": 3}}}]})], padding="NONE")],
       [{"type": "a!sectionLayout", "label": "Parte propuesto", "labelSize": "MEDIUM", "labelHeadingTag": "H2", "labelColor": "STANDARD", "contents": [
           empty_state("magic", "Aún no hay parte propuesto", "Pida al asistente que prepare el parte de una incidencia", showWhen="a!isNullOrEmpty(local!propuesta)"),
           content_card([
@@ -53,28 +53,28 @@ listado = {"id": "incidencias", "title": "Incidencias", "type": "page", "pattern
   "interface": ai_side_pane(
       [page_header("Incidencias", "Busque por significado: «goteras», «no funciona el aire»…", ai_toggle("local!asistente")),
        content_card([grid("data!incidencias", None, [
-           gcol_link("Incidencia", "{fv!row.codigo}", {"goto": "incidencia", "params": {"id": "{fv!row.id}"}}, "{fv!row.aeropuerto} · {fv!row.area}", width="MEDIUM"),
+           gcol_link("Incidencia", "{fv!row.codigo}", {"goto": "incidencia", "params": {"id": "{fv!row.id}"}}, "{fv!row.sede} · {fv!row.area}", width="MEDIUM"),
            gcol("Descripción", two_line("{fv!row.titulo}", "{fv!row.descripcion}", strong=False)),
            gcol("Estado", tag("fv!row.estado", "estadoGrid"), width="NARROW"),
            match_quality("INC Incidencia")], "No hay incidencias que coincidan con la búsqueda",
            showSearchBox=True, smartSearchType="SEMANTIC", similarityScoreThreshold=0.5)])],
       ai_data_chat("Pregunte a sus datos", ["recordType!INC Incidencia"], [
-          ("¿Cuántas incidencias hay pendientes por aeropuerto?", "list", "ACCENT"),
+          ("¿Cuántas incidencias hay pendientes por sede?", "list", "ACCENT"),
           ("¿Qué área acumula más incidencias de prioridad alta?", "bar-chart", "ACCENT"),
           ("Resume las incidencias abiertas de Mantenimiento", "file-text-o", "ACCENT")],
-          **{"$replies": ["Hay **5 incidencias pendientes**:\n\n- MAD: 1\n- BCN: 1\n- PMI: 2\n- AGP: 1", "**Mantenimiento** acumula 4 de las 5 incidencias de prioridad alta."]}),
+          **{"$replies": ["Hay **4 incidencias pendientes**:\n\n- NOR: 1\n- SUR: 1\n- EST: 2", "**Mantenimiento** acumula las 4 incidencias de prioridad alta."]}),
       "local!asistente")}
 
 # ------------------------------------------------------------------ 3. Ficha con Records Chatbot
 ficha = {"id": "incidencia", "title": "{rv!record.codigo} · {rv!record.titulo}", "type": "record", "pattern": "P02", "recordType": "INC Incidencia", "req": ["R1"],
   "breadcrumb": {"label": "Incidencias", "goto": "incidencias"}, "headerBackgroundColor": NAVY,
   "views": [{"id": "resumen", "label": "Resumen", "interface": {"type": "a!headerContentLayout", "backgroundColor": BG, "contents": [
-      key_facts([("Estado", tag("rv!record.estado", "estado")), ("Prioridad", "{rv!record.prioridad}"), ("Aeropuerto", "{rv!record.aeropuerto}"), ("Área", "{rv!record.area}")],
+      key_facts([("Estado", tag("rv!record.estado", "estado")), ("Prioridad", "{rv!record.prioridad}"), ("Sede", "{rv!record.sede}"), ("Área", "{rv!record.area}")],
                 extra=milestone(["Pendiente", "En curso", "Cerrada"], "{rv!record.estado|map:estadoPaso}")),
       cols([section_card("Datos de la incidencia", field_summary([("Descripción", "{rv!record.descripcion}", True), ("Comunicada", "{rv!record.fecha|date}"), ("Responsable", "{rv!record.responsable}")], columns=2))],
            [{"type": "a!sectionLayout", "label": "Pregunte por esta incidencia", "labelSize": "MEDIUM", "labelHeadingTag": "H2", "labelColor": "STANDARD", "contents": [
                ai_records_chat("Asistente", "recordType!INC Incidencia", "rv!record.id", "Hola. Puedo responder preguntas sobre esta incidencia: su historial, el equipo afectado o incidencias parecidas.",
-                               ["¿Qué se ha hecho hasta ahora?", "¿Hay incidencias parecidas en otros aeropuertos?"], labelPosition="COLLAPSED",
+                               ["¿Qué se ha hecho hasta ahora?", "¿Hay incidencias parecidas en otras sedes?"], labelPosition="COLLAPSED",
                                **{"$replies": ["Se acotó la zona y se colocaron cubos. Está **pendiente la visita del equipo de cubiertas**, prevista para mañana a las 8:00."]}),
                ai_notice(marginAbove="LESS")]}], widths=["AUTO", "MEDIUM_PLUS"])]}},
             {"id": "historial", "label": "Historial", "interface": {"type": "a!headerContentLayout", "backgroundColor": BG, "contents": [content_card([
@@ -83,7 +83,7 @@ ficha = {"id": "incidencia", "title": "{rv!record.codigo} · {rv!record.titulo}"
                     {"event": "Incidencia comunicada", "user": "Centro de control", "timestamp": "{rv!record.fecha}T08:40"}]}], padding="MORE")]}}]}
 
 # ------------------------------------------------------------------ 4. Documento + chat con cita (initialPageDisplay + highlightedText)
-pag = [["1. Objeto", "El presente pliego regula el servicio de mantenimiento preventivo y correctivo de las instalaciones de climatización de las terminales."],
+pag = [["1. Objeto", "El presente pliego regula el servicio de mantenimiento preventivo y correctivo de las instalaciones de climatización de las sedes."],
        ["2. Alcance", "Incluye enfriadoras, unidades de tratamiento de aire, fancoils y el sistema de control centralizado.", "Quedan excluidas las instalaciones de los locales comerciales."],
        ["3. Niveles de servicio", "Las averías críticas deberán atenderse en un plazo máximo de 2 horas desde el aviso.", "Las averías no críticas se atenderán en un plazo de 24 horas.", "El incumplimiento reiterado de los plazos dará lugar a penalizaciones."],
        ["4. Penalizaciones", "Cada hora de retraso en una avería crítica supone una penalización del 0,5 % de la facturación mensual.", "El importe máximo de las penalizaciones será del 10 % anual."],
@@ -104,7 +104,7 @@ docchat = {"id": "documento", "title": "Consultar pliego", "type": "page", "patt
 
 # ------------------------------------------------------------------ 5. Revisión de sugerencias de IA (confianza + revisión humana antes de guardar)
 campos = [
-    {"campo": "Aeropuerto", "valor": "AGP", "confianza": "ALTA", "origen": "IA", "revisado": True, "pagina": 1},
+    {"campo": "Sede", "valor": "OES", "confianza": "ALTA", "origen": "IA", "revisado": True, "pagina": 1},
     {"campo": "Equipo afectado", "valor": "Enfriadora 2", "confianza": "ALTA", "origen": "IA", "revisado": True, "pagina": 1},
     {"campo": "Fecha del aviso", "valor": "22/09/2026", "confianza": "MEDIA", "origen": "IA", "revisado": True, "pagina": 2},
     {"campo": "Importe estimado", "valor": "1.850,00 €", "confianza": "BAJA", "origen": "IA", "revisado": False, "pagina": 2},
@@ -117,7 +117,7 @@ revision = {"id": "revision", "title": "Revisar datos extraídos", "type": "form
             ai_notice("El botón Guardar se activa cuando estén revisados los datos de confianza baja", marginAbove="STANDARD")],
            {"type": "a!documentViewerField", "label": "Parte escaneado", "labelPosition": "COLLAPSED", "document": "local!doc", "height": "TALL", "initialPageDisplay": "local!pagina", "highlightedText": "local!cita",
             "altText": "Parte de trabajo escaneado", "$fileName": "Parte_PT-2026-118.pdf", "$pages": 3,
-            "$content": [["Parte de trabajo PT-2026-118", "Aeropuerto: AGP", "Equipo afectado: Enfriadora 2"], ["Fecha del aviso: 22/09/2026", "Importe estimado: 1.850,00 €"], ["Proveedor: Clima Sur S.L.", "Firma del técnico"]]},
+            "$content": [["Parte de trabajo PT-2026-118", "Sede: OES", "Equipo afectado: Enfriadora 2"], ["Fecha del aviso: 22/09/2026", "Importe estimado: 1.850,00 €"], ["Proveedor: Clima Sur S.L.", "Firma del técnico"]]},
            widths=["3X", "2X"])],
     "buttons": bl(primary("Guardar datos", disabled="contains(local!campos.revisado, false)"), [secondary("Cancelar")])}}
 # ------------------------------------------------------------------ 6. Novedades 26.7–26.9
@@ -140,7 +140,7 @@ novedades = {"id": "novedades", "title": "Novedades 26.7–26.9", "type": "page"
           "config": {"type": "a!columnChartConfig", "primaryGrouping": {"type": "a!grouping", "field": "mes", "interval": "MONTH_SHORT_TEXT"}, "secondaryGrouping": {"type": "a!grouping", "field": "area"}, "measures": [{"type": "a!measure", "function": "SUM", "field": "n"}]}}, "Mes", value_labels=["Mantenimiento", "Sistemas", "Operaciones"]),
          {"type": "a!recordKnowledgeGraph", "label": "Relaciones de la incidencia", "recordType": "recordType!INC Incidencia", "recordIdentifier": 6, "relationshipLevel": 2, "height": "MEDIUM",
           "$root": {"recordType": "Incidencia", "name": "INC-2026-0426", "icon": "wrench"},
-          "$nodes": [{"recordType": "Aeropuerto", "name": "AGP", "icon": "plane"}, {"recordType": "Equipo", "name": "Enfriadora 2", "icon": "cog"}, {"recordType": "Parte de trabajo", "name": "PT-2026-118", "icon": "file-text-o"},
+          "$nodes": [{"recordType": "Sede", "name": "OES", "icon": "building"}, {"recordType": "Equipo", "name": "Enfriadora 2", "icon": "cog"}, {"recordType": "Parte de trabajo", "name": "PT-2026-118", "icon": "file-text-o"},
                      {"recordType": "Proveedor", "name": "Clima Sur S.L.", "icon": "building", "parent": "PT-2026-118"}, {"recordType": "Técnico", "name": "Rocío Sánchez", "icon": "user", "parent": "PT-2026-118"},
                      {"recordType": "Incidencia", "name": "INC-2026-0301", "icon": "wrench", "parent": "Enfriadora 2"}, {"recordType": "Responsable", "name": "Pablo Martín", "icon": "user"}]}]},
       {"type": "a!tabItem", "label": "Celdas compuestas", "icon": "table", "contents": [

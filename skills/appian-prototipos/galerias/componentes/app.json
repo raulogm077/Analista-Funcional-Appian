@@ -79,19 +79,19 @@
   {
    "id": "mlopez",
    "name": "María López Arranz",
-   "title": "Jefa de Operaciones MAD",
+   "title": "Jefa de la sede Norte",
    "supervisor": "cruiz",
    "groups": [
-    "g-mad"
+    "g-norte"
    ]
   },
   {
    "id": "jgarcia",
    "name": "Javier García Ruiz",
-   "title": "Jefe de Operaciones BCN",
+   "title": "Jefe de la sede Sur",
    "supervisor": "cruiz",
    "groups": [
-    "g-bcn"
+    "g-sur"
    ]
   },
   {
@@ -106,19 +106,19 @@
   {
    "id": "rsanchez",
    "name": "Rocío Sánchez Vidal",
-   "title": "Supervisora de la T4",
+   "title": "Supervisora del edificio A",
    "supervisor": "mlopez",
    "groups": [
-    "g-t4"
+    "g-edifa"
    ]
   },
   {
    "id": "pmartin",
    "name": "Pablo Martín Ortega",
-   "title": "Coordinador del área de movimiento",
+   "title": "Coordinador de servicios generales",
    "supervisor": "mlopez",
    "groups": [
-    "g-pista"
+    "g-servicios"
    ]
   },
   {
@@ -127,7 +127,7 @@
    "title": "Técnica de operaciones",
    "supervisor": "rsanchez",
    "groups": [
-    "g-t4"
+    "g-edifa"
    ]
   },
   {
@@ -136,7 +136,7 @@
    "title": "Técnico de operaciones",
    "supervisor": "rsanchez",
    "groups": [
-    "g-t4"
+    "g-edifa"
    ]
   },
   {
@@ -160,10 +160,10 @@
   {
    "id": "ecastro",
    "name": "Elena Castro Ibáñez",
-   "title": "Supervisora de turno BCN",
+   "title": "Supervisora de turno de la sede Sur",
    "supervisor": "jgarcia",
    "groups": [
-    "g-bcn"
+    "g-sur"
    ]
   },
   {
@@ -181,31 +181,31 @@
    "id": "g-dir",
    "name": "Dirección de Operaciones",
    "parent": null,
-   "description": "Dirección y jefaturas de operaciones"
+   "description": "Dirección y jefaturas de las sedes"
   },
   {
-   "id": "g-mad",
-   "name": "Operaciones MAD",
+   "id": "g-norte",
+   "name": "Sede Norte",
    "parent": "g-dir",
-   "description": "Adolfo Suárez Madrid-Barajas"
+   "description": "Oficinas centrales y almacén"
   },
   {
-   "id": "g-t4",
-   "name": "Terminal T4",
-   "parent": "g-mad",
-   "description": "Supervisión y técnicos de la T4"
+   "id": "g-edifa",
+   "name": "Edificio A",
+   "parent": "g-norte",
+   "description": "Supervisión y técnicos del edificio A"
   },
   {
-   "id": "g-pista",
-   "name": "Área de movimiento",
-   "parent": "g-mad",
-   "description": "Plataforma, calles de rodaje y pistas"
+   "id": "g-servicios",
+   "name": "Servicios generales",
+   "parent": "g-norte",
+   "description": "Recepción, correo interno y aparcamientos"
   },
   {
-   "id": "g-bcn",
-   "name": "Operaciones BCN",
+   "id": "g-sur",
+   "name": "Sede Sur",
    "parent": "g-dir",
-   "description": "Josep Tarradellas Barcelona-El Prat"
+   "description": "Oficinas y centro de formación"
   },
   {
    "id": "g-mant",
@@ -223,13 +223,13 @@
    "id": "g-elev",
    "name": "Elevación",
    "parent": "g-mant",
-   "description": "Escaleras mecánicas, ascensores y pasarelas"
+   "description": "Ascensores, montacargas y puertas automáticas"
   },
   {
    "id": "g-sis",
    "name": "Sistemas",
    "parent": null,
-   "description": "Sistemas de información aeroportuaria"
+   "description": "Sistemas de información y comunicaciones"
   }
  ],
  "documents": [
@@ -243,40 +243,40 @@
   },
   {
    "id": "f-seg",
-   "name": "Seguridad operacional",
+   "name": "Seguridad y salud",
    "folder": "f-norm",
    "type": "folder",
    "size": null,
    "modified": null
   },
   {
-   "id": "d-sms",
-   "name": "Manual_SMS_v4.pdf",
+   "id": "d-prev",
+   "name": "Manual_de_prevencion_v4.pdf",
    "folder": "f-seg",
    "type": "document",
    "size": "2,4 MB",
    "modified": "2026-07-14"
   },
   {
-   "id": "d-fod",
-   "name": "Procedimiento_FOD.docx",
+   "id": "d-evac",
+   "name": "Procedimiento_de_evacuacion.docx",
    "folder": "f-seg",
    "type": "document",
    "size": "310 KB",
    "modified": "2026-05-02"
   },
   {
-   "id": "f-plat",
-   "name": "Plataforma",
+   "id": "f-alm",
+   "name": "Almacén",
    "folder": "f-norm",
    "type": "folder",
    "size": null,
    "modified": null
   },
   {
-   "id": "d-plat",
-   "name": "Normas_de_plataforma_2026.pdf",
-   "folder": "f-plat",
+   "id": "d-alm",
+   "name": "Normas_del_almacen_2026.pdf",
+   "folder": "f-alm",
    "type": "document",
    "size": "1,1 MB",
    "modified": "2026-01-20"
@@ -299,7 +299,7 @@
   },
   {
    "id": "d-clima",
-   "name": "Contrato_climatizacion_T4.pdf",
+   "name": "Contrato_climatizacion_sede_Norte.pdf",
    "folder": "f-cmant",
    "type": "document",
    "size": "860 KB",
@@ -322,16 +322,16 @@
    "modified": null
   },
   {
-   "id": "d-t4n1",
-   "name": "Plano_T4_nivel_1.pdf",
+   "id": "d-ea1",
+   "name": "Plano_edificio_A_planta_1.pdf",
    "folder": "f-planos",
    "type": "document",
    "size": "5,2 MB",
    "modified": "2025-11-30"
   },
   {
-   "id": "d-t4n2",
-   "name": "Plano_T4_nivel_2.pdf",
+   "id": "d-ea2",
+   "name": "Plano_edificio_A_planta_2.pdf",
    "folder": "f-planos",
    "type": "document",
    "size": "4,8 MB",
@@ -404,9 +404,9 @@
     {
      "id": 1,
      "codigo": "INC-2026-0412",
-     "titulo": "Fuga de agua en el falso techo de facturación",
+     "titulo": "Fuga de agua en el falso techo del vestíbulo",
      "area": "Mantenimiento",
-     "aeropuerto": "MAD",
+     "sede": "NOR",
      "estado": "En curso",
      "prioridad": "Alta",
      "fecha": "2026-09-12",
@@ -417,9 +417,9 @@
     {
      "id": 2,
      "codigo": "INC-2026-0415",
-     "titulo": "Escalera mecánica detenida en la T4S",
+     "titulo": "Ascensor detenido en el edificio B",
      "area": "Mantenimiento",
-     "aeropuerto": "MAD",
+     "sede": "NOR",
      "estado": "Pendiente",
      "prioridad": "Alta",
      "fecha": "2026-09-14",
@@ -430,9 +430,9 @@
     {
      "id": 3,
      "codigo": "INC-2026-0418",
-     "titulo": "Cola excesiva en el filtro de seguridad norte",
+     "titulo": "Cola excesiva en el control de accesos principal",
      "area": "Operaciones",
-     "aeropuerto": "BCN",
+     "sede": "SUR",
      "estado": "Cerrada",
      "prioridad": "Media",
      "fecha": "2026-09-15",
@@ -443,9 +443,9 @@
     {
      "id": 4,
      "codigo": "INC-2026-0421",
-     "titulo": "Pantallas FIDS sin datos en la puerta B22",
+     "titulo": "Pantallas de cartelería sin datos en la planta 2",
      "area": "Sistemas",
-     "aeropuerto": "BCN",
+     "sede": "SUR",
      "estado": "En curso",
      "prioridad": "Media",
      "fecha": "2026-09-17",
@@ -456,9 +456,9 @@
     {
      "id": 5,
      "codigo": "INC-2026-0423",
-     "titulo": "Humedad en los aseos de llegadas",
+     "titulo": "Humedad en los aseos de la planta baja",
      "area": "Limpieza",
-     "aeropuerto": "PMI",
+     "sede": "EST",
      "estado": "Pendiente",
      "prioridad": "Baja",
      "fecha": "2026-09-18",
@@ -469,9 +469,9 @@
     {
      "id": 6,
      "codigo": "INC-2026-0426",
-     "titulo": "Avería de climatización en la sala de embarque C",
+     "titulo": "Avería de climatización en la sala de formación C",
      "area": "Mantenimiento",
-     "aeropuerto": "AGP",
+     "sede": "OES",
      "estado": "En curso",
      "prioridad": "Alta",
      "fecha": "2026-09-20",
@@ -482,9 +482,9 @@
     {
      "id": 7,
      "codigo": "INC-2026-0430",
-     "titulo": "Equipajes atascados en la cinta 7",
+     "titulo": "Cajas atascadas en la cinta 7 del almacén",
      "area": "Operaciones",
-     "aeropuerto": "MAD",
+     "sede": "NOR",
      "estado": "Cerrada",
      "prioridad": "Media",
      "fecha": "2026-09-21",
@@ -495,9 +495,9 @@
     {
      "id": 8,
      "codigo": "INC-2026-0433",
-     "titulo": "Wifi de pasajeros intermitente en la T2",
+     "titulo": "Wifi de visitantes intermitente en el edificio 2",
      "area": "Sistemas",
-     "aeropuerto": "BCN",
+     "sede": "SUR",
      "estado": "Pendiente",
      "prioridad": "Media",
      "fecha": "2026-09-23",
@@ -507,116 +507,116 @@
     }
    ]
   },
-  "pasajeros": {
-   "recordType": "INC Pasajeros",
+  "visitas": {
+   "recordType": "INC Visita",
    "rows": [
     {
      "id": 0,
      "mes": "Abr",
-     "aeropuerto": "MAD",
-     "pax": 5.1
+     "sede": "NOR",
+     "visitas": 5.1
     },
     {
      "id": 1,
      "mes": "Abr",
-     "aeropuerto": "BCN",
-     "pax": 4.2
+     "sede": "SUR",
+     "visitas": 4.2
     },
     {
      "id": 2,
      "mes": "Abr",
-     "aeropuerto": "PMI",
-     "pax": 2.1
+     "sede": "EST",
+     "visitas": 2.1
     },
     {
      "id": 3,
      "mes": "May",
-     "aeropuerto": "MAD",
-     "pax": 5.6
+     "sede": "NOR",
+     "visitas": 5.6
     },
     {
      "id": 4,
      "mes": "May",
-     "aeropuerto": "BCN",
-     "pax": 4.8
+     "sede": "SUR",
+     "visitas": 4.8
     },
     {
      "id": 5,
      "mes": "May",
-     "aeropuerto": "PMI",
-     "pax": 3.0
+     "sede": "EST",
+     "visitas": 3.0
     },
     {
      "id": 6,
      "mes": "Jun",
-     "aeropuerto": "MAD",
-     "pax": 5.9
+     "sede": "NOR",
+     "visitas": 5.9
     },
     {
      "id": 7,
      "mes": "Jun",
-     "aeropuerto": "BCN",
-     "pax": 5.2
+     "sede": "SUR",
+     "visitas": 5.2
     },
     {
      "id": 8,
      "mes": "Jun",
-     "aeropuerto": "PMI",
-     "pax": 3.9
+     "sede": "EST",
+     "visitas": 3.9
     },
     {
      "id": 9,
      "mes": "Jul",
-     "aeropuerto": "MAD",
-     "pax": 6.4
+     "sede": "NOR",
+     "visitas": 6.4
     },
     {
      "id": 10,
      "mes": "Jul",
-     "aeropuerto": "BCN",
-     "pax": 5.8
+     "sede": "SUR",
+     "visitas": 5.8
     },
     {
      "id": 11,
      "mes": "Jul",
-     "aeropuerto": "PMI",
-     "pax": 4.6
+     "sede": "EST",
+     "visitas": 4.6
     },
     {
      "id": 12,
      "mes": "Ago",
-     "aeropuerto": "MAD",
-     "pax": 6.6
+     "sede": "NOR",
+     "visitas": 6.6
     },
     {
      "id": 13,
      "mes": "Ago",
-     "aeropuerto": "BCN",
-     "pax": 6.0
+     "sede": "SUR",
+     "visitas": 6.0
     },
     {
      "id": 14,
      "mes": "Ago",
-     "aeropuerto": "PMI",
-     "pax": 4.9
+     "sede": "EST",
+     "visitas": 4.9
     },
     {
      "id": 15,
      "mes": "Sep",
-     "aeropuerto": "MAD",
-     "pax": 6.0
+     "sede": "NOR",
+     "visitas": 6.0
     },
     {
      "id": 16,
      "mes": "Sep",
-     "aeropuerto": "BCN",
-     "pax": 5.3
+     "sede": "SUR",
+     "visitas": 5.3
     },
     {
      "id": 17,
      "mes": "Sep",
-     "aeropuerto": "PMI",
-     "pax": 4.0
+     "sede": "EST",
+     "visitas": 4.0
     }
    ]
   }
@@ -951,16 +951,16 @@
             "contents": [
              {
               "type": "a!textField",
-              "label": "Vuelo",
+              "label": "Sede",
               "labelPosition": "ABOVE",
-              "value": "IB3166",
+              "value": "NOR",
               "readOnly": true
              },
              {
               "type": "a!textField",
-              "label": "Puerta",
+              "label": "Planta",
               "labelPosition": "ABOVE",
-              "value": "J48",
+              "value": "2",
               "readOnly": true
              }
             ]
@@ -972,14 +972,14 @@
               "type": "a!textField",
               "label": "Incidencia",
               "labelPosition": "ABOVE",
-              "value": "Retraso por inspección de la escalera de pasajeros de la posición 22",
+              "value": "Ascensor B-03 parado por inspección del freno de servicio",
               "readOnly": true
              },
              {
               "type": "a!textField",
               "label": "Origen",
               "labelPosition": "ABOVE",
-              "value": "Centro de control de operaciones",
+              "value": "Centro de control de mantenimiento",
               "readOnly": true
              }
             ]
@@ -1076,7 +1076,7 @@
               "\n",
               {
                "type": "a!richTextItem",
-               "text": "Supervisora de la T4 · turno de mañana",
+               "text": "Supervisora del edificio A · turno de mañana",
                "color": "SECONDARY"
               }
              ]
@@ -1294,7 +1294,7 @@
         "value": [
          {
           "type": "a!richTextItem",
-          "text": "Repetir cards del mismo tamaño que se recolocan solas según el ancho (catálogos, aeropuertos, servicios).",
+          "text": "Repetir cards del mismo tamaño que se recolocan solas según el ancho (catálogos, sedes, servicios).",
           "color": "SECONDARY"
          }
         ]
@@ -1320,20 +1320,20 @@
             "value": [
              {
               "type": "a!richTextIcon",
-              "icon": "plane",
+              "icon": "building",
               "color": "ACCENT",
               "size": "MEDIUM"
              },
              "  ",
              {
               "type": "a!richTextItem",
-              "text": "MAD · Madrid-Barajas",
+              "text": "NOR · Sede Norte",
               "style": "STRONG"
              },
              "\n",
              {
               "type": "a!richTextItem",
-              "text": "Adolfo Suárez · 66,2 M pasajeros",
+              "text": "Oficinas centrales · 1.250 personas",
               "color": "SECONDARY"
              }
             ]
@@ -1367,20 +1367,20 @@
             "value": [
              {
               "type": "a!richTextIcon",
-              "icon": "plane",
+              "icon": "building",
               "color": "ACCENT",
               "size": "MEDIUM"
              },
              "  ",
              {
               "type": "a!richTextItem",
-              "text": "BCN · Barcelona-El Prat",
+              "text": "SUR · Sede Sur",
               "style": "STRONG"
              },
              "\n",
              {
               "type": "a!richTextItem",
-              "text": "Josep Tarradellas · 55,0 M pasajeros",
+              "text": "Centro de formación · 860 personas",
               "color": "SECONDARY"
              }
             ]
@@ -1414,20 +1414,20 @@
             "value": [
              {
               "type": "a!richTextIcon",
-              "icon": "plane",
+              "icon": "building",
               "color": "ACCENT",
               "size": "MEDIUM"
              },
              "  ",
              {
               "type": "a!richTextItem",
-              "text": "PMI · Palma de Mallorca",
+              "text": "EST · Sede Este",
               "style": "STRONG"
              },
              "\n",
              {
               "type": "a!richTextItem",
-              "text": "Son Sant Joan · 33,2 M pasajeros",
+              "text": "Oficinas · 420 personas",
               "color": "SECONDARY"
              }
             ]
@@ -1440,7 +1440,7 @@
             "tags": [
              {
               "type": "a!tagItem",
-              "text": "Obras en la terminal",
+              "text": "Obras en el edificio",
               "backgroundColor": "#F9EBDA"
              }
             ]
@@ -1461,20 +1461,20 @@
             "value": [
              {
               "type": "a!richTextIcon",
-              "icon": "plane",
+              "icon": "building",
               "color": "ACCENT",
               "size": "MEDIUM"
              },
              "  ",
              {
               "type": "a!richTextItem",
-              "text": "AGP · Málaga-Costa del Sol",
+              "text": "OES · Sede Oeste",
               "style": "STRONG"
              },
              "\n",
              {
               "type": "a!richTextItem",
-              "text": "Pablo Ruiz Picasso · 24,8 M pasajeros",
+              "text": "Oficinas y almacén · 310 personas",
               "color": "SECONDARY"
              }
             ]
@@ -1611,7 +1611,7 @@
           "contents": [
            {
             "type": "a!boxLayout",
-            "label": "Aviso de operaciones",
+            "label": "Aviso de mantenimiento",
             "style": "WARN",
             "shape": "SEMI_ROUNDED",
             "marginBelow": "NONE",
@@ -1620,7 +1620,7 @@
               "type": "a!richTextDisplayField",
               "labelPosition": "COLLAPSED",
               "value": [
-               "Pista 14L cerrada de 23:00 a 05:00 por mantenimiento del balizamiento."
+               "Edificio A sin electricidad de 23:00 a 05:00 por mantenimiento del cuadro general."
               ]
              }
             ]
@@ -1727,7 +1727,7 @@
                   "type": "a!richTextDisplayField",
                   "labelPosition": "COLLAPSED",
                   "value": [
-                   "Datos generales de la terminal."
+                   "Datos generales del edificio."
                   ]
                  }
                 ]
@@ -1741,7 +1741,7 @@
                   "type": "a!richTextDisplayField",
                   "labelPosition": "COLLAPSED",
                   "value": [
-                   "Escaleras, ascensores y pasarelas."
+                   "Ascensores, montacargas y puertas automáticas."
                   ]
                  }
                 ]
@@ -1775,39 +1775,39 @@
               "tabs": [
                {
                 "type": "a!tabItem",
-                "label": "Facturación",
+                "label": "Recepción",
                 "contents": [
                  {
                   "type": "a!richTextDisplayField",
                   "labelPosition": "COLLAPSED",
                   "value": [
-                   "Mostradores 800-990."
+                   "Puestos 1 a 12."
                   ]
                  }
                 ]
                },
                {
                 "type": "a!tabItem",
-                "label": "Filtros",
+                "label": "Accesos",
                 "contents": [
                  {
                   "type": "a!richTextDisplayField",
                   "labelPosition": "COLLAPSED",
                   "value": [
-                   "12 líneas de control."
+                   "12 tornos de control."
                   ]
                  }
                 ]
                },
                {
                 "type": "a!tabItem",
-                "label": "Embarque",
+                "label": "Salas",
                 "contents": [
                  {
                   "type": "a!richTextDisplayField",
                   "labelPosition": "COLLAPSED",
                   "value": [
-                   "Puertas J y K."
+                   "Salas de reuniones de las plantas 1 a 3."
                   ]
                  }
                 ]
@@ -1857,8 +1857,8 @@
           "type": "a!billboardLayout",
           "backgroundMedia": {
            "type": "a!webImage",
-           "source": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 300'><defs><linearGradient id='s' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%230F203A'/><stop offset='1' stop-color='%231D659C'/></linearGradient></defs><rect width='1200' height='300' fill='url(%23s)'/><path d='M0 260 Q600 150 1200 260 L1200 300 L0 300Z' fill='%23081220'/><path d='M760 90 l160 34 -160 34 -24 -8 70 -26 -120 -24z' fill='%23ffffff' opacity='.9'/><rect x='0' y='285' width='1200' height='6' fill='%233fa7ce'/></svg>",
-           "altText": "Avión despegando al atardecer"
+           "source": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 300'><defs><linearGradient id='s' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%230F203A'/><stop offset='1' stop-color='%231D659C'/></linearGradient></defs><rect width='1200' height='300' fill='url(%23s)'/><g fill='%23ffffff' opacity='.9'><rect x='760' y='125' width='70' height='125'/><rect x='840' y='95' width='60' height='155'/><rect x='910' y='145' width='50' height='105'/></g><path d='M0 260 Q600 150 1200 260 L1200 300 L0 300Z' fill='%23081220'/><rect x='0' y='285' width='1200' height='6' fill='%233fa7ce'/></svg>",
+           "altText": "Edificios de oficinas al atardecer"
           },
           "backgroundColor": "#0F203A",
           "height": "SHORT_PLUS",
@@ -1880,7 +1880,7 @@
              "type": "a!richTextDisplayField",
              "labelPosition": "COLLAPSED",
              "value": [
-              "Plan de temporada 2026-2027 para toda la red"
+              "Plan de temporada 2026-2027 para todas las sedes"
              ]
             }
            ]
@@ -1897,7 +1897,7 @@
               "backgroundMedia": {
                "type": "a!webImage",
                "source": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 180'><rect width='320' height='180' fill='%23666666'/><rect y='70' width='320' height='40' fill='%23333333'/><g fill='%23ffffff'><rect x='10' y='88' width='20' height='4'/><rect x='46' y='88' width='20' height='4'/><rect x='82' y='88' width='20' height='4'/><rect x='118' y='88' width='20' height='4'/><rect x='154' y='88' width='20' height='4'/><rect x='190' y='88' width='20' height='4'/><rect x='226' y='88' width='20' height='4'/><rect x='262' y='88' width='20' height='4'/><rect x='298' y='88' width='20' height='4'/></g><circle cx='270' cy='40' r='18' fill='%233fa7ce' opacity='.9'/></svg>",
-               "altText": "Pista"
+               "altText": "Vial de acceso"
               },
               "backgroundColor": "#0F203A",
               "height": "SHORT",
@@ -1914,7 +1914,7 @@
                  "value": [
                   {
                    "type": "a!richTextItem",
-                   "text": "Pista 14L-32R",
+                   "text": "Aparcamiento P1",
                    "style": "STRONG"
                   },
                   " · reapertura el 3 de octubre"
@@ -1953,7 +1953,7 @@
                   "\n",
                   {
                    "type": "a!richTextItem",
-                   "text": "puntualidad en salidas en septiembre",
+                   "text": "incidencias resueltas en plazo en septiembre",
                    "color": "#FFFFFF"
                   }
                  ],
@@ -1982,11 +1982,11 @@
     "C1"
    ],
    "local": {
-    "local!matricula": "EC-MXV",
+    "local!matricula": "4821 BCD",
     "local!codigo": null,
     "local!barcode": null,
     "local!obs": null,
-    "local!pax": 186,
+    "local!personas": 46,
     "local!importe": 1850.5,
     "local!fecha": "2026-09-26",
     "local!cierre": null,
@@ -1998,12 +1998,12 @@
     ],
     "local!firma": null,
     "local!firma2": "firma_responsable.png",
-    "local!comunicado": "<p>Se informa a las compañías de que la <b>pista 14L</b> permanecerá cerrada esta noche.</p>",
+    "local!comunicado": "<p>Se informa a la plantilla de que el <b>edificio A</b> permanecerá cerrado esta noche.</p>",
     "local!area": null,
     "local!prioIdx": 1,
-    "local!aeros": [
-     "MAD",
-     "BCN"
+    "local!sedes": [
+     "NOR",
+     "SUR"
     ],
     "local!turnos": [],
     "local!afecta": "S",
@@ -2095,10 +2095,10 @@
             "contents": [
              {
               "type": "a!textField",
-              "label": "Matrícula de la aeronave",
+              "label": "Matrícula del vehículo",
               "value": "local!matricula",
               "saveInto": "local!matricula",
-              "placeholder": "EC-MXV",
+              "placeholder": "1234 BCD",
               "characterLimit": 10,
               "required": true
              }
@@ -2109,7 +2109,7 @@
             "contents": [
              {
               "type": "a!encryptedTextField",
-              "label": "Código de acceso a plataforma",
+              "label": "Código de acceso al almacén",
               "value": "local!codigo",
               "saveInto": "local!codigo",
               "instructions": "Se guarda cifrado"
@@ -2121,7 +2121,7 @@
             "contents": [
              {
               "type": "a!barcodeField",
-              "label": "Etiqueta del equipaje",
+              "label": "Etiqueta del paquete",
               "value": "local!barcode",
               "saveInto": "local!barcode",
               "acceptedTypes": [
@@ -2187,9 +2187,9 @@
             "contents": [
              {
               "type": "a!integerField",
-              "label": "Pasajeros afectados",
-              "value": "local!pax",
-              "saveInto": "local!pax",
+              "label": "Personas afectadas",
+              "value": "local!personas",
+              "saveInto": "local!personas",
               "align": "RIGHT"
              }
             ]
@@ -2346,7 +2346,7 @@
         "contents": [
          {
           "type": "a!styledTextEditorField",
-          "label": "Comunicado a las compañías",
+          "label": "Comunicado a la plantilla",
           "value": "local!comunicado",
           "saveInto": "local!comunicado",
           "height": "SHORT"
@@ -2435,21 +2435,21 @@
             "contents": [
              {
               "type": "a!multipleDropdownField",
-              "label": "Aeropuertos",
+              "label": "Sedes",
               "choiceLabels": [
-               "MAD",
-               "BCN",
-               "PMI",
-               "AGP"
+               "NOR",
+               "SUR",
+               "EST",
+               "OES"
               ],
               "choiceValues": [
-               "MAD",
-               "BCN",
-               "PMI",
-               "AGP"
+               "NOR",
+               "SUR",
+               "EST",
+               "OES"
               ],
-              "value": "local!aeros",
-              "saveInto": "local!aeros",
+              "value": "local!sedes",
+              "saveInto": "local!sedes",
               "placeholder": "Todos"
              }
             ]
@@ -2516,7 +2516,7 @@
             "contents": [
              {
               "type": "a!radioButtonField",
-              "label": "Afecta a la operación",
+              "label": "Afecta a la actividad",
               "choiceLabels": [
                "Sí",
                "No",
@@ -2559,12 +2559,12 @@
               "choiceLabels": [
                "Centro de control",
                "Seguridad",
-               "Compañía aérea"
+               "Recursos humanos"
               ],
               "choiceValues": [
                "CCO",
                "SEG",
-               "CIA"
+               "RRHH"
               ],
               "value": "local!avisar",
               "saveInto": "local!avisar"
@@ -2580,7 +2580,7 @@
               "choiceLabels": [
                "Zona acotada",
                "Señalización",
-               "Desvío de pasajeros"
+               "Desvío de visitantes"
               ],
               "value": "local!medidas",
               "saveInto": "local!medidas",
@@ -2633,7 +2633,7 @@
             "contents": [
              {
               "type": "a!booleanCheckboxField",
-              "choiceLabel": "He revisado la zona y no hay riesgo para los pasajeros",
+              "choiceLabel": "He revisado la zona y no hay riesgo para las personas",
               "value": "local!revisado",
               "saveInto": "local!revisado"
              }
@@ -2700,13 +2700,13 @@
            {
             "id": "SIS",
             "label": "Sistemas",
-            "detail": "FIDS, wifi, megafonía, control de accesos",
+            "detail": "Cartelería, wifi, megafonía, control de accesos",
             "icon": "desktop"
            },
            {
             "id": "LIM",
             "label": "Limpieza",
-            "detail": "Aseos, zonas públicas y plataforma",
+            "detail": "Aseos, zonas comunes y aparcamientos",
             "icon": "tint"
            }
           ],
@@ -2734,13 +2734,13 @@
            {
             "id": "SIS",
             "label": "Sistemas",
-            "detail": "FIDS, wifi, megafonía, control de accesos",
+            "detail": "Cartelería, wifi, megafonía, control de accesos",
             "icon": "desktop"
            },
            {
             "id": "LIM",
             "label": "Limpieza",
-            "detail": "Aseos, zonas públicas y plataforma",
+            "detail": "Aseos, zonas comunes y aparcamientos",
             "icon": "tint"
            }
           ],
@@ -2769,13 +2769,13 @@
            {
             "id": "SIS",
             "label": "Sistemas",
-            "detail": "FIDS, wifi, megafonía, control de accesos",
+            "detail": "Cartelería, wifi, megafonía, control de accesos",
             "icon": "desktop"
            },
            {
             "id": "LIM",
             "label": "Limpieza",
-            "detail": "Aseos, zonas públicas y plataforma",
+            "detail": "Aseos, zonas comunes y aparcamientos",
             "icon": "tint"
            }
           ],
@@ -3181,14 +3181,14 @@
             "contents": [
              {
               "type": "a!progressBarField",
-              "label": "Ocupación de la T4",
+              "label": "Ocupación del edificio A",
               "percentage": 82,
               "color": "WARN",
               "style": "THICK"
              },
              {
               "type": "a!progressBarField",
-              "label": "Filtros abiertos",
+              "label": "Tornos abiertos",
               "percentage": 58,
               "color": "ACCENT"
              }
@@ -3253,12 +3253,12 @@
             "contents": [
              {
               "type": "a!stampField",
-              "icon": "plane",
+              "icon": "building",
               "backgroundColor": "#0F203A",
               "contentColor": "#3fa7ce",
               "size": "MEDIUM",
               "align": "START",
-              "tooltip": "Operación aérea"
+              "tooltip": "Sede"
              }
             ]
            },
@@ -3267,7 +3267,7 @@
             "contents": [
              {
               "type": "a!stampField",
-              "text": "T4",
+              "text": "B2",
               "backgroundColor": "#DBE7F5",
               "contentColor": "#0F203A",
               "size": "MEDIUM",
@@ -3346,8 +3346,8 @@
         "contents": [
          {
           "type": "a!messageBanner",
-          "primaryText": "Pista 14L cerrada esta noche",
-          "secondaryText": "De 23:00 a 05:00 por mantenimiento del balizamiento",
+          "primaryText": "Edificio A sin electricidad esta noche",
+          "secondaryText": "De 23:00 a 05:00 por mantenimiento del cuadro general",
           "backgroundColor": "WARN",
           "highlightColor": "WARN",
           "icon": "exclamation-triangle",
@@ -3367,8 +3367,8 @@
             "contents": [
              {
               "type": "a!timeDisplayField",
-              "label": "Apertura de la terminal",
-              "value": "04:30"
+              "label": "Apertura del edificio",
+              "value": "07:00"
              }
             ]
            },
@@ -3377,8 +3377,8 @@
             "contents": [
              {
               "type": "a!timeDisplayField",
-              "label": "Cierre de la terminal",
-              "value": "00:30"
+              "label": "Cierre del edificio",
+              "value": "22:00"
              }
             ]
            },
@@ -3432,13 +3432,13 @@
             "contents": [
              {
               "type": "a!imageField",
-              "label": "Terminal T4",
+              "label": "Edificio A",
               "size": "MEDIUM_PLUS",
               "images": [
                {
                 "type": "a!webImage",
-                "source": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 180'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%231D659C'/><stop offset='1' stop-color='%23A5C1D7'/></linearGradient></defs><rect width='320' height='180' fill='url(%23g)'/><path d='M0 150 Q160 70 320 150 L320 180 L0 180Z' fill='%230F203A'/><g fill='%233fa7ce'><rect x='40' y='140' width='240' height='6' rx='3'/></g><g fill='%23ffffff' opacity='.85'><path d='M210 50 l40 10 -40 10 -8 -3 18 -7 -30 -7z'/></g></svg>",
-                "altText": "Vista de la Terminal T4"
+                "source": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 180'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%231D659C'/><stop offset='1' stop-color='%23A5C1D7'/></linearGradient></defs><rect width='320' height='180' fill='url(%23g)'/><g fill='%23ffffff' opacity='.85'><rect x='128' y='36' width='34' height='104'/><rect x='168' y='58' width='26' height='82'/></g><path d='M0 150 Q160 70 320 150 L320 180 L0 180Z' fill='%230F203A'/><g fill='%233fa7ce'><rect x='40' y='140' width='240' height='6' rx='3'/></g></svg>",
+                "altText": "Vista del edificio A"
                }
               ]
              }
@@ -3449,13 +3449,13 @@
             "contents": [
              {
               "type": "a!imageField",
-              "label": "Plano del área de movimiento",
+              "label": "Plano del aparcamiento",
               "size": "MEDIUM_PLUS",
               "images": [
                {
                 "type": "a!documentImage",
-                "document": "cons!INC_PLANO_PISTA",
-                "altText": "Plano de la pista"
+                "document": "cons!INC_PLANO_APARCAMIENTO",
+                "altText": "Plano del aparcamiento"
                }
               ]
              }
@@ -3526,23 +3526,23 @@
         "contents": [
          {
           "type": "a!documentViewerField",
-          "label": "Normas de plataforma",
+          "label": "Normas del almacén",
           "labelPosition": "COLLAPSED",
-          "document": "d-plat",
+          "document": "d-alm",
           "height": "MEDIUM",
-          "altText": "Normas de plataforma 2026",
+          "altText": "Normas del almacén 2026",
           "highlightedText": "chaleco reflectante",
-          "$fileName": "Normas_de_plataforma_2026.pdf",
+          "$fileName": "Normas_del_almacen_2026.pdf",
           "$pages": 3,
           "$content": [
            [
             "1. Ámbito",
-            "Estas normas se aplican a todas las personas que acceden a la plataforma."
+            "Estas normas se aplican a todas las personas que acceden al almacén."
            ],
            [
             "2. Circulación",
-            "Es obligatorio el uso de chaleco reflectante en toda la zona de movimiento.",
-            "La velocidad máxima es de 30 km/h."
+            "Es obligatorio el uso de chaleco reflectante en toda la zona de carga.",
+            "La velocidad máxima de las carretillas es de 10 km/h."
            ],
            [
             "3. Sanciones"
@@ -3591,14 +3591,14 @@
           "videos": [
            {
             "type": "a!webVideo",
-            "source": "https://www.youtube.com/embed/seguridad-plataforma",
-            "tooltip": "Seguridad en plataforma: circulación de vehículos",
+            "source": "https://www.youtube.com/embed/seguridad-almacen",
+            "tooltip": "Seguridad en el almacén: circulación de carretillas",
             "$duration": "4:12"
            },
            {
             "type": "a!webVideo",
-            "source": "https://vimeo.com/ejemplo/procedimiento-fod",
-            "tooltip": "Procedimiento FOD: objetos extraños en pista",
+            "source": "https://vimeo.com/ejemplo/procedimiento-evacuacion",
+            "tooltip": "Procedimiento de evacuación: puntos de encuentro",
             "$duration": "2:45"
            }
           ]
@@ -3640,13 +3640,13 @@
         "contents": [
          {
           "type": "a!webContentField",
-          "label": "Mapa de ocupación de posiciones",
+          "label": "Mapa de ocupación de salas",
           "labelPosition": "COLLAPSED",
-          "source": "https://mapas.example.com/posiciones/MAD",
+          "source": "https://mapas.example.org/salas/NOR",
           "height": "SHORT",
           "showBorder": true,
-          "altText": "Mapa de ocupación de posiciones de Madrid-Barajas",
-          "$title": "Ocupación de posiciones en plataforma · MAD"
+          "altText": "Mapa de ocupación de salas de la sede Norte",
+          "$title": "Ocupación de salas · NOR"
          }
         ]
        }
@@ -3670,7 +3670,7 @@
         "value": [
          {
           "type": "a!richTextItem",
-          "text": "26.8: cómo se relaciona un registro con otros (aeropuerto, equipo, parte, proveedor) hasta varios niveles.",
+          "text": "26.8: cómo se relaciona un registro con otros (sede, equipo, parte, proveedor) hasta varios niveles.",
           "color": "SECONDARY"
          }
         ]
@@ -3699,9 +3699,9 @@
           },
           "$nodes": [
            {
-            "recordType": "Aeropuerto",
-            "name": "AGP",
-            "icon": "plane"
+            "recordType": "Sede",
+            "name": "OES",
+            "icon": "building"
            },
            {
             "recordType": "Equipo",
@@ -4437,8 +4437,8 @@
               "links": [
                {
                 "type": "a!documentDownloadLink",
-                "label": "Manual_SMS_v4.pdf",
-                "document": "d-sms"
+                "label": "Manual_de_prevencion_v4.pdf",
+                "document": "d-prev"
                }
               ]
              }
@@ -4513,8 +4513,8 @@
               "links": [
                {
                 "type": "a!reportLink",
-                "label": "Informe de puntualidad",
-                "report": "cons!INC_INFORME_PUNTUALIDAD",
+                "label": "Informe de nivel de servicio",
+                "report": "cons!INC_INFORME_SERVICIO",
                 "openLinkIn": "NEW_TAB"
                }
               ]
@@ -4552,7 +4552,7 @@
               "links": [
                {
                 "type": "a!newsEntryLink",
-                "label": "Nueva normativa de plataforma",
+                "label": "Nueva normativa del almacén",
                 "entry": "e-4f2a"
                }
               ]
@@ -4764,10 +4764,10 @@
            },
            {
             "type": "a!gridColumn",
-            "label": "Aeropuerto",
-            "value": "{fv!row.aeropuerto}",
+            "label": "Sede",
+            "value": "{fv!row.sede}",
             "width": "NARROW",
-            "sortField": "aeropuerto"
+            "sortField": "sede"
            },
            {
             "type": "a!gridColumn",
@@ -5043,7 +5043,7 @@
             "event": "Incidencia comunicada",
             "user": "Centro de control",
             "timestamp": "2026-09-20T08:40",
-            "details": "Temperatura de 29 °C en la sala de embarque C",
+            "details": "Temperatura de 29 °C en la sala de formación C",
             "icon": "flag"
            }
           ]
@@ -5066,8 +5066,8 @@
    "local": {
     "local!tablaColumnas": false,
     "local!tablaBarras": false,
-    "local!tablaPuntualidad": false,
-    "local!tablaPasajeros": false,
+    "local!tablaPlazo": false,
+    "local!tablaVisitas": false,
     "local!tablaArea": false,
     "local!tablaAnillo": false,
     "local!tablaDispersion": false
@@ -5371,7 +5371,7 @@
            },
            {
             "type": "a!barChartField",
-            "label": "Coste de reparación por aeropuerto (€)",
+            "label": "Coste de reparación por sede (€)",
             "data": "data!incidencias",
             "showDataLabels": true,
             "height": "SHORT",
@@ -5390,8 +5390,8 @@
              "type": "a!barChartConfig",
              "primaryGrouping": {
               "type": "a!grouping",
-              "field": "recordType!INC Incidencia.fields.aeropuerto",
-              "alias": "aeropuerto"
+              "field": "recordType!INC Incidencia.fields.sede",
+              "alias": "sede"
              },
              "measures": [
               {
@@ -5427,7 +5427,7 @@
             "columns": [
              {
               "type": "a!gridColumn",
-              "label": "Aeropuerto",
+              "label": "Sede",
               "value": "{fv!row.categoria}"
              },
              {
@@ -5439,7 +5439,7 @@
             ],
             "$chart": {
              "type": "a!barChartField",
-             "label": "Coste de reparación por aeropuerto (€)",
+             "label": "Coste de reparación por sede (€)",
              "data": "data!incidencias",
              "showDataLabels": true,
              "height": "SHORT",
@@ -5458,8 +5458,8 @@
               "type": "a!barChartConfig",
               "primaryGrouping": {
                "type": "a!grouping",
-               "field": "recordType!INC Incidencia.fields.aeropuerto",
-               "alias": "aeropuerto"
+               "field": "recordType!INC Incidencia.fields.sede",
+               "alias": "sede"
               },
               "measures": [
                {
@@ -5538,20 +5538,20 @@
                 "value": [
                  {
                   "type": "a!richTextIcon",
-                  "icon": "{if(local!tablaPuntualidad, \"bar-chart\", \"table\")}",
+                  "icon": "{if(local!tablaPlazo, \"bar-chart\", \"table\")}",
                   "color": "ACCENT"
                  },
                  " ",
                  {
                   "type": "a!richTextItem",
-                  "text": "{if(local!tablaPuntualidad, \"Ver como gráfico\", \"Ver como tabla\")}",
+                  "text": "{if(local!tablaPlazo, \"Ver como gráfico\", \"Ver como tabla\")}",
                   "link": {
                    "type": "a!dynamicLink",
                    "saveInto": [
                     {
                      "type": "a!save",
-                     "target": "local!tablaPuntualidad",
-                     "value": "{not(local!tablaPuntualidad)}"
+                     "target": "local!tablaPlazo",
+                     "value": "{not(local!tablaPlazo)}"
                     }
                    ]
                   },
@@ -5564,7 +5564,7 @@
                },
                {
                 "type": "a!lineChartField",
-                "label": "Puntualidad en salidas (%)",
+                "label": "Incidencias resueltas en plazo (%)",
                 "categories": [
                  "Abr",
                  "May",
@@ -5579,7 +5579,7 @@
                 "series": [
                  {
                   "type": "a!chartSeries",
-                  "label": "MAD",
+                  "label": "NOR",
                   "data": [
                    91.2,
                    90.4,
@@ -5592,7 +5592,7 @@
                  },
                  {
                   "type": "a!chartSeries",
-                  "label": "BCN",
+                  "label": "SUR",
                   "data": [
                    89.8,
                    89.1,
@@ -5613,7 +5613,7 @@
                   "style": "SHORTDASH"
                  }
                 ],
-                "showWhen": "not(local!tablaPuntualidad)"
+                "showWhen": "not(local!tablaPlazo)"
                },
                {
                 "type": "a!gridField",
@@ -5632,20 +5632,20 @@
                  },
                  {
                   "type": "a!gridColumn",
-                  "label": "MAD",
+                  "label": "NOR",
                   "value": "{fv!row.s1|num}",
                   "align": "END"
                  },
                  {
                   "type": "a!gridColumn",
-                  "label": "BCN",
+                  "label": "SUR",
                   "value": "{fv!row.s2|num}",
                   "align": "END"
                  }
                 ],
                 "$chart": {
                  "type": "a!lineChartField",
-                 "label": "Puntualidad en salidas (%)",
+                 "label": "Incidencias resueltas en plazo (%)",
                  "categories": [
                   "Abr",
                   "May",
@@ -5660,7 +5660,7 @@
                  "series": [
                   {
                    "type": "a!chartSeries",
-                   "label": "MAD",
+                   "label": "NOR",
                    "data": [
                     91.2,
                     90.4,
@@ -5673,7 +5673,7 @@
                   },
                   {
                    "type": "a!chartSeries",
-                   "label": "BCN",
+                   "label": "SUR",
                    "data": [
                     89.8,
                     89.1,
@@ -5696,7 +5696,7 @@
                  ]
                 },
                 "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
-                "showWhen": "local!tablaPuntualidad"
+                "showWhen": "local!tablaPlazo"
                }
               ]
              }
@@ -5715,20 +5715,20 @@
                 "value": [
                  {
                   "type": "a!richTextIcon",
-                  "icon": "{if(local!tablaPasajeros, \"bar-chart\", \"table\")}",
+                  "icon": "{if(local!tablaVisitas, \"bar-chart\", \"table\")}",
                   "color": "ACCENT"
                  },
                  " ",
                  {
                   "type": "a!richTextItem",
-                  "text": "{if(local!tablaPasajeros, \"Ver como gráfico\", \"Ver como tabla\")}",
+                  "text": "{if(local!tablaVisitas, \"Ver como gráfico\", \"Ver como tabla\")}",
                   "link": {
                    "type": "a!dynamicLink",
                    "saveInto": [
                     {
                      "type": "a!save",
-                     "target": "local!tablaPasajeros",
-                     "value": "{not(local!tablaPasajeros)}"
+                     "target": "local!tablaVisitas",
+                     "value": "{not(local!tablaVisitas)}"
                     }
                    ]
                   },
@@ -5741,8 +5741,8 @@
                },
                {
                 "type": "a!lineChartField",
-                "label": "Pasajeros por mes (millones)",
-                "data": "data!pasajeros",
+                "label": "Visitas por mes (miles)",
+                "data": "data!visitas",
                 "height": "SHORT",
                 "colorScheme": {
                  "type": "a!colorSchemeCustom",
@@ -5764,20 +5764,20 @@
                  },
                  "secondaryGrouping": {
                   "type": "a!grouping",
-                  "field": "aeropuerto",
-                  "alias": "aeropuerto"
+                  "field": "sede",
+                  "alias": "sede"
                  },
                  "measures": [
                   {
                    "type": "a!measure",
                    "function": "SUM",
-                   "field": "pax",
-                   "alias": "pax",
-                   "label": "Pasajeros"
+                   "field": "visitas",
+                   "alias": "visitas",
+                   "label": "Visitas"
                   }
                  ]
                 },
-                "showWhen": "not(local!tablaPasajeros)"
+                "showWhen": "not(local!tablaVisitas)"
                },
                {
                 "type": "a!gridField",
@@ -5796,27 +5796,27 @@
                  },
                  {
                   "type": "a!gridColumn",
-                  "label": "MAD",
+                  "label": "NOR",
                   "value": "{fv!row.s1|num}",
                   "align": "END"
                  },
                  {
                   "type": "a!gridColumn",
-                  "label": "BCN",
+                  "label": "SUR",
                   "value": "{fv!row.s2|num}",
                   "align": "END"
                  },
                  {
                   "type": "a!gridColumn",
-                  "label": "PMI",
+                  "label": "EST",
                   "value": "{fv!row.s3|num}",
                   "align": "END"
                  }
                 ],
                 "$chart": {
                  "type": "a!lineChartField",
-                 "label": "Pasajeros por mes (millones)",
-                 "data": "data!pasajeros",
+                 "label": "Visitas por mes (miles)",
+                 "data": "data!visitas",
                  "height": "SHORT",
                  "colorScheme": {
                   "type": "a!colorSchemeCustom",
@@ -5838,22 +5838,22 @@
                   },
                   "secondaryGrouping": {
                    "type": "a!grouping",
-                   "field": "aeropuerto",
-                   "alias": "aeropuerto"
+                   "field": "sede",
+                   "alias": "sede"
                   },
                   "measures": [
                    {
                     "type": "a!measure",
                     "function": "SUM",
-                    "field": "pax",
-                    "alias": "pax",
-                    "label": "Pasajeros"
+                    "field": "visitas",
+                    "alias": "visitas",
+                    "label": "Visitas"
                    }
                   ]
                  }
                 },
                 "$note": "En Appian: a!gridField sobre a!queryRecordType con a!aggregationFields (la misma agrupación, medidas y filtros que el gráfico).",
-                "showWhen": "local!tablaPasajeros"
+                "showWhen": "local!tablaVisitas"
                }
               ]
              }
@@ -5938,8 +5938,8 @@
                },
                {
                 "type": "a!areaChartField",
-                "label": "Pasajeros acumulados por aeropuerto (millones)",
-                "data": "data!pasajeros",
+                "label": "Visitas acumuladas por sede (miles)",
+                "data": "data!visitas",
                 "stacking": "NORMAL",
                 "height": "SHORT",
                 "colorScheme": {
@@ -5962,16 +5962,16 @@
                  },
                  "secondaryGrouping": {
                   "type": "a!grouping",
-                  "field": "aeropuerto",
-                  "alias": "aeropuerto"
+                  "field": "sede",
+                  "alias": "sede"
                  },
                  "measures": [
                   {
                    "type": "a!measure",
                    "function": "SUM",
-                   "field": "pax",
-                   "alias": "pax",
-                   "label": "Pasajeros"
+                   "field": "visitas",
+                   "alias": "visitas",
+                   "label": "Visitas"
                   }
                  ]
                 },
@@ -5994,27 +5994,27 @@
                  },
                  {
                   "type": "a!gridColumn",
-                  "label": "MAD",
+                  "label": "NOR",
                   "value": "{fv!row.s1|num}",
                   "align": "END"
                  },
                  {
                   "type": "a!gridColumn",
-                  "label": "BCN",
+                  "label": "SUR",
                   "value": "{fv!row.s2|num}",
                   "align": "END"
                  },
                  {
                   "type": "a!gridColumn",
-                  "label": "PMI",
+                  "label": "EST",
                   "value": "{fv!row.s3|num}",
                   "align": "END"
                  }
                 ],
                 "$chart": {
                  "type": "a!areaChartField",
-                 "label": "Pasajeros acumulados por aeropuerto (millones)",
-                 "data": "data!pasajeros",
+                 "label": "Visitas acumuladas por sede (miles)",
+                 "data": "data!visitas",
                  "stacking": "NORMAL",
                  "height": "SHORT",
                  "colorScheme": {
@@ -6037,16 +6037,16 @@
                   },
                   "secondaryGrouping": {
                    "type": "a!grouping",
-                   "field": "aeropuerto",
-                   "alias": "aeropuerto"
+                   "field": "sede",
+                   "alias": "sede"
                   },
                   "measures": [
                    {
                     "type": "a!measure",
                     "function": "SUM",
-                    "field": "pax",
-                    "alias": "pax",
-                    "label": "Pasajeros"
+                    "field": "visitas",
+                    "alias": "visitas",
+                    "label": "Visitas"
                    }
                   ]
                  }
@@ -6390,268 +6390,268 @@
     ],
     "local!grupo": null,
     "local!inc": null,
-    "local!aero": [
-     "MAD"
+    "local!sede": [
+     "NOR"
     ],
     "local!docProc": [
-     "d-sms"
+     "d-prev"
     ],
     "local!carpeta": null,
     "local!docCarp": null,
     "local!rutaU": [
-     "g-mad",
-     "g-t4"
+     "g-norte",
+     "g-edifa"
     ],
     "local!tecnico": null,
     "local!rutaG": [
-     "g-mad"
+     "g-norte"
     ],
-    "local!grupoSel": "g-mad",
+    "local!grupoSel": "g-norte",
     "local!rutaUG": [],
     "local!ug": null,
     "local!navDoc": "f-seg",
-    "local!docSel": "d-sms",
+    "local!docSel": "d-prev",
     "local!navDoc2": null,
     "local!docSel2": null,
     "local!navCarp": null,
     "local!carpSel": null,
     "local!rutaH": [
      {
-      "id": "MAD",
-      "label": "Madrid-Barajas",
-      "description": "Adolfo Suárez",
-      "details": "4 terminales",
-      "icon": "plane",
+      "id": "NOR",
+      "label": "Sede Norte",
+      "description": "Oficinas centrales",
+      "details": "3 edificios",
+      "icon": "map-marker",
       "children": [
        {
-        "id": "MAD-T4",
-        "label": "Terminal T4",
-        "description": "Nacional y Schengen",
+        "id": "NOR-A",
+        "label": "Edificio A",
+        "description": "Oficinas y atención al público",
         "icon": "building",
         "children": [
          {
-          "id": "MAD-T4-F",
-          "label": "Facturación",
-          "description": "Mostradores 800-990",
-          "icon": "suitcase"
+          "id": "NOR-A-R",
+          "label": "Recepción",
+          "description": "Puestos 1 a 12",
+          "icon": "users"
          },
          {
-          "id": "MAD-T4-S",
-          "label": "Filtros de seguridad",
-          "description": "12 líneas",
+          "id": "NOR-A-C",
+          "label": "Control de accesos",
+          "description": "12 tornos",
           "icon": "shield"
          },
          {
-          "id": "MAD-T4-E",
-          "label": "Embarque J-K",
-          "description": "38 puertas",
-          "icon": "sign-out"
+          "id": "NOR-A-S",
+          "label": "Salas de reuniones",
+          "description": "38 salas",
+          "icon": "sign-in"
          }
         ]
        },
        {
-        "id": "MAD-T4S",
-        "label": "Terminal T4S",
-        "description": "No Schengen",
+        "id": "NOR-B",
+        "label": "Edificio B",
+        "description": "Oficinas y formación",
         "icon": "building",
         "children": [
          {
-          "id": "MAD-T4S-E",
-          "label": "Embarque M-S",
-          "description": "26 puertas",
-          "icon": "sign-out"
+          "id": "NOR-B-F",
+          "label": "Salas de formación",
+          "description": "6 salas",
+          "icon": "graduation-cap"
          }
         ]
        },
        {
-        "id": "MAD-T123",
-        "label": "Terminales T1-T2-T3",
-        "description": "Edificio común",
+        "id": "NOR-ALM",
+        "label": "Almacén",
+        "description": "Edificio de servicios",
         "icon": "building",
         "children": [
          {
-          "id": "MAD-T123-F",
-          "label": "Facturación T1",
-          "icon": "suitcase"
+          "id": "NOR-ALM-M",
+          "label": "Muelles de carga",
+          "icon": "truck"
          }
         ]
        }
       ]
      },
      {
-      "id": "MAD-T4",
-      "label": "Terminal T4",
-      "description": "Nacional y Schengen",
+      "id": "NOR-A",
+      "label": "Edificio A",
+      "description": "Oficinas y atención al público",
       "icon": "building",
       "children": [
        {
-        "id": "MAD-T4-F",
-        "label": "Facturación",
-        "description": "Mostradores 800-990",
-        "icon": "suitcase"
+        "id": "NOR-A-R",
+        "label": "Recepción",
+        "description": "Puestos 1 a 12",
+        "icon": "users"
        },
        {
-        "id": "MAD-T4-S",
-        "label": "Filtros de seguridad",
-        "description": "12 líneas",
+        "id": "NOR-A-C",
+        "label": "Control de accesos",
+        "description": "12 tornos",
         "icon": "shield"
        },
        {
-        "id": "MAD-T4-E",
-        "label": "Embarque J-K",
-        "description": "38 puertas",
-        "icon": "sign-out"
+        "id": "NOR-A-S",
+        "label": "Salas de reuniones",
+        "description": "38 salas",
+        "icon": "sign-in"
        }
       ]
      }
     ],
     "local!zona": {
-     "id": "MAD-T4",
-     "label": "Terminal T4",
-     "description": "Nacional y Schengen",
+     "id": "NOR-A",
+     "label": "Edificio A",
+     "description": "Oficinas y atención al público",
      "icon": "building",
      "children": [
       {
-       "id": "MAD-T4-F",
-       "label": "Facturación",
-       "description": "Mostradores 800-990",
-       "icon": "suitcase"
+       "id": "NOR-A-R",
+       "label": "Recepción",
+       "description": "Puestos 1 a 12",
+       "icon": "users"
       },
       {
-       "id": "MAD-T4-S",
-       "label": "Filtros de seguridad",
-       "description": "12 líneas",
+       "id": "NOR-A-C",
+       "label": "Control de accesos",
+       "description": "12 tornos",
        "icon": "shield"
       },
       {
-       "id": "MAD-T4-E",
-       "label": "Embarque J-K",
-       "description": "38 puertas",
-       "icon": "sign-out"
+       "id": "NOR-A-S",
+       "label": "Salas de reuniones",
+       "description": "38 salas",
+       "icon": "sign-in"
       }
      ]
     },
     "local!rutaT": [
      {
       "id": "RED",
-      "label": "Red de aeropuertos",
-      "description": "4 aeropuertos",
-      "details": "Aeropuertos de Ejemplo, S.A.",
+      "label": "Sedes de Vadelia",
+      "description": "4 sedes",
+      "details": "Vadelia, S.A.",
       "icon": "globe",
       "children": [
        {
-        "id": "MAD",
-        "label": "Madrid-Barajas",
-        "description": "Adolfo Suárez",
-        "details": "4 terminales",
-        "icon": "plane",
+        "id": "NOR",
+        "label": "Sede Norte",
+        "description": "Oficinas centrales",
+        "details": "3 edificios",
+        "icon": "map-marker",
         "children": [
          {
-          "id": "MAD-T4",
-          "label": "Terminal T4",
-          "description": "Nacional y Schengen",
+          "id": "NOR-A",
+          "label": "Edificio A",
+          "description": "Oficinas y atención al público",
           "icon": "building",
           "children": [
            {
-            "id": "MAD-T4-F",
-            "label": "Facturación",
-            "description": "Mostradores 800-990",
-            "icon": "suitcase"
+            "id": "NOR-A-R",
+            "label": "Recepción",
+            "description": "Puestos 1 a 12",
+            "icon": "users"
            },
            {
-            "id": "MAD-T4-S",
-            "label": "Filtros de seguridad",
-            "description": "12 líneas",
+            "id": "NOR-A-C",
+            "label": "Control de accesos",
+            "description": "12 tornos",
             "icon": "shield"
            },
            {
-            "id": "MAD-T4-E",
-            "label": "Embarque J-K",
-            "description": "38 puertas",
-            "icon": "sign-out"
+            "id": "NOR-A-S",
+            "label": "Salas de reuniones",
+            "description": "38 salas",
+            "icon": "sign-in"
            }
           ]
          },
          {
-          "id": "MAD-T4S",
-          "label": "Terminal T4S",
-          "description": "No Schengen",
+          "id": "NOR-B",
+          "label": "Edificio B",
+          "description": "Oficinas y formación",
           "icon": "building",
           "children": [
            {
-            "id": "MAD-T4S-E",
-            "label": "Embarque M-S",
-            "description": "26 puertas",
-            "icon": "sign-out"
+            "id": "NOR-B-F",
+            "label": "Salas de formación",
+            "description": "6 salas",
+            "icon": "graduation-cap"
            }
           ]
          },
          {
-          "id": "MAD-T123",
-          "label": "Terminales T1-T2-T3",
-          "description": "Edificio común",
+          "id": "NOR-ALM",
+          "label": "Almacén",
+          "description": "Edificio de servicios",
           "icon": "building",
           "children": [
            {
-            "id": "MAD-T123-F",
-            "label": "Facturación T1",
-            "icon": "suitcase"
+            "id": "NOR-ALM-M",
+            "label": "Muelles de carga",
+            "icon": "truck"
            }
           ]
          }
         ]
        },
        {
-        "id": "BCN",
-        "label": "Barcelona-El Prat",
-        "description": "Josep Tarradellas",
-        "details": "2 terminales",
-        "icon": "plane",
+        "id": "SUR",
+        "label": "Sede Sur",
+        "description": "Oficinas y centro de formación",
+        "details": "2 edificios",
+        "icon": "map-marker",
         "children": [
          {
-          "id": "BCN-T1",
-          "label": "Terminal T1",
-          "description": "Módulos A-E",
+          "id": "SUR-1",
+          "label": "Edificio 1",
+          "description": "Plantas 0 a 4",
           "icon": "building",
           "children": [
            {
-            "id": "BCN-T1-D",
-            "label": "Dique Sur",
-            "icon": "sign-out"
+            "id": "SUR-1-F",
+            "label": "Centro de formación",
+            "icon": "graduation-cap"
            }
           ]
          },
          {
-          "id": "BCN-T2",
-          "label": "Terminal T2",
-          "description": "Módulos T2A-T2C",
+          "id": "SUR-2",
+          "label": "Edificio 2",
+          "description": "Plantas 0 a 2",
           "icon": "building"
          }
         ]
        },
        {
-        "id": "PMI",
-        "label": "Palma de Mallorca",
-        "details": "1 terminal",
-        "icon": "plane",
+        "id": "EST",
+        "label": "Sede Este",
+        "details": "1 edificio",
+        "icon": "map-marker",
         "children": [
          {
-          "id": "PMI-T",
-          "label": "Terminal",
-          "description": "Módulos A-D",
+          "id": "EST-P",
+          "label": "Edificio principal",
+          "description": "Plantas 0 a 3",
           "icon": "building"
          }
         ]
        },
        {
-        "id": "AGP",
-        "label": "Málaga-Costa del Sol",
-        "details": "1 terminal",
-        "icon": "plane",
+        "id": "OES",
+        "label": "Sede Oeste",
+        "details": "1 edificio",
+        "icon": "map-marker",
         "children": [
          {
-          "id": "AGP-T3",
-          "label": "Terminal T3",
+          "id": "OES-P",
+          "label": "Edificio principal",
           "icon": "building"
          }
         ]
@@ -6659,62 +6659,62 @@
       ]
      },
      {
-      "id": "MAD",
-      "label": "Madrid-Barajas",
-      "description": "Adolfo Suárez",
-      "details": "4 terminales",
-      "icon": "plane",
+      "id": "NOR",
+      "label": "Sede Norte",
+      "description": "Oficinas centrales",
+      "details": "3 edificios",
+      "icon": "map-marker",
       "children": [
        {
-        "id": "MAD-T4",
-        "label": "Terminal T4",
-        "description": "Nacional y Schengen",
+        "id": "NOR-A",
+        "label": "Edificio A",
+        "description": "Oficinas y atención al público",
         "icon": "building",
         "children": [
          {
-          "id": "MAD-T4-F",
-          "label": "Facturación",
-          "description": "Mostradores 800-990",
-          "icon": "suitcase"
+          "id": "NOR-A-R",
+          "label": "Recepción",
+          "description": "Puestos 1 a 12",
+          "icon": "users"
          },
          {
-          "id": "MAD-T4-S",
-          "label": "Filtros de seguridad",
-          "description": "12 líneas",
+          "id": "NOR-A-C",
+          "label": "Control de accesos",
+          "description": "12 tornos",
           "icon": "shield"
          },
          {
-          "id": "MAD-T4-E",
-          "label": "Embarque J-K",
-          "description": "38 puertas",
-          "icon": "sign-out"
+          "id": "NOR-A-S",
+          "label": "Salas de reuniones",
+          "description": "38 salas",
+          "icon": "sign-in"
          }
         ]
        },
        {
-        "id": "MAD-T4S",
-        "label": "Terminal T4S",
-        "description": "No Schengen",
+        "id": "NOR-B",
+        "label": "Edificio B",
+        "description": "Oficinas y formación",
         "icon": "building",
         "children": [
          {
-          "id": "MAD-T4S-E",
-          "label": "Embarque M-S",
-          "description": "26 puertas",
-          "icon": "sign-out"
+          "id": "NOR-B-F",
+          "label": "Salas de formación",
+          "description": "6 salas",
+          "icon": "graduation-cap"
          }
         ]
        },
        {
-        "id": "MAD-T123",
-        "label": "Terminales T1-T2-T3",
-        "description": "Edificio común",
+        "id": "NOR-ALM",
+        "label": "Almacén",
+        "description": "Edificio de servicios",
         "icon": "building",
         "children": [
          {
-          "id": "MAD-T123-F",
-          "label": "Facturación T1",
-          "icon": "suitcase"
+          "id": "NOR-ALM-M",
+          "label": "Muelles de carga",
+          "icon": "truck"
          }
         ]
        }
@@ -6889,26 +6889,26 @@
             "contents": [
              {
               "type": "a!pickerFieldCustom",
-              "label": "Aeropuerto",
-              "value": "local!aero",
-              "saveInto": "local!aero",
-              "suggestFunction": "rule!INC_sugerirAeropuertos",
+              "label": "Sede",
+              "value": "local!sede",
+              "saveInto": "local!sede",
+              "suggestFunction": "rule!INC_sugerirSedes",
               "$options": [
                {
-                "id": "MAD",
-                "label": "MAD · Madrid-Barajas"
+                "id": "NOR",
+                "label": "NOR · Sede Norte"
                },
                {
-                "id": "BCN",
-                "label": "BCN · Barcelona-El Prat"
+                "id": "SUR",
+                "label": "SUR · Sede Sur"
                },
                {
-                "id": "PMI",
-                "label": "PMI · Palma de Mallorca"
+                "id": "EST",
+                "label": "EST · Sede Este"
                },
                {
-                "id": "AGP",
-                "label": "AGP · Málaga-Costa del Sol"
+                "id": "OES",
+                "label": "OES · Sede Oeste"
                }
               ]
              }
@@ -7225,7 +7225,7 @@
         "value": [
          {
           "type": "a!richTextItem",
-          "text": "Recorrer datos propios con jerarquía (aeropuerto → terminal → zona) en columnas. Cada nodo se describe con nodeConfigs y fv!nodeValue.",
+          "text": "Recorrer datos propios con jerarquía (sede → edificio → zona) en columnas. Cada nodo se describe con nodeConfigs y fv!nodeValue.",
           "color": "SECONDARY"
          }
         ]
@@ -7244,118 +7244,118 @@
           "labelPosition": "COLLAPSED",
           "firstColumnValues": [
            {
-            "id": "MAD",
-            "label": "Madrid-Barajas",
-            "description": "Adolfo Suárez",
-            "details": "4 terminales",
-            "icon": "plane",
+            "id": "NOR",
+            "label": "Sede Norte",
+            "description": "Oficinas centrales",
+            "details": "3 edificios",
+            "icon": "map-marker",
             "children": [
              {
-              "id": "MAD-T4",
-              "label": "Terminal T4",
-              "description": "Nacional y Schengen",
+              "id": "NOR-A",
+              "label": "Edificio A",
+              "description": "Oficinas y atención al público",
               "icon": "building",
               "children": [
                {
-                "id": "MAD-T4-F",
-                "label": "Facturación",
-                "description": "Mostradores 800-990",
-                "icon": "suitcase"
+                "id": "NOR-A-R",
+                "label": "Recepción",
+                "description": "Puestos 1 a 12",
+                "icon": "users"
                },
                {
-                "id": "MAD-T4-S",
-                "label": "Filtros de seguridad",
-                "description": "12 líneas",
+                "id": "NOR-A-C",
+                "label": "Control de accesos",
+                "description": "12 tornos",
                 "icon": "shield"
                },
                {
-                "id": "MAD-T4-E",
-                "label": "Embarque J-K",
-                "description": "38 puertas",
-                "icon": "sign-out"
+                "id": "NOR-A-S",
+                "label": "Salas de reuniones",
+                "description": "38 salas",
+                "icon": "sign-in"
                }
               ]
              },
              {
-              "id": "MAD-T4S",
-              "label": "Terminal T4S",
-              "description": "No Schengen",
+              "id": "NOR-B",
+              "label": "Edificio B",
+              "description": "Oficinas y formación",
               "icon": "building",
               "children": [
                {
-                "id": "MAD-T4S-E",
-                "label": "Embarque M-S",
-                "description": "26 puertas",
-                "icon": "sign-out"
+                "id": "NOR-B-F",
+                "label": "Salas de formación",
+                "description": "6 salas",
+                "icon": "graduation-cap"
                }
               ]
              },
              {
-              "id": "MAD-T123",
-              "label": "Terminales T1-T2-T3",
-              "description": "Edificio común",
+              "id": "NOR-ALM",
+              "label": "Almacén",
+              "description": "Edificio de servicios",
               "icon": "building",
               "children": [
                {
-                "id": "MAD-T123-F",
-                "label": "Facturación T1",
-                "icon": "suitcase"
+                "id": "NOR-ALM-M",
+                "label": "Muelles de carga",
+                "icon": "truck"
                }
               ]
              }
             ]
            },
            {
-            "id": "BCN",
-            "label": "Barcelona-El Prat",
-            "description": "Josep Tarradellas",
-            "details": "2 terminales",
-            "icon": "plane",
+            "id": "SUR",
+            "label": "Sede Sur",
+            "description": "Oficinas y centro de formación",
+            "details": "2 edificios",
+            "icon": "map-marker",
             "children": [
              {
-              "id": "BCN-T1",
-              "label": "Terminal T1",
-              "description": "Módulos A-E",
+              "id": "SUR-1",
+              "label": "Edificio 1",
+              "description": "Plantas 0 a 4",
               "icon": "building",
               "children": [
                {
-                "id": "BCN-T1-D",
-                "label": "Dique Sur",
-                "icon": "sign-out"
+                "id": "SUR-1-F",
+                "label": "Centro de formación",
+                "icon": "graduation-cap"
                }
               ]
              },
              {
-              "id": "BCN-T2",
-              "label": "Terminal T2",
-              "description": "Módulos T2A-T2C",
+              "id": "SUR-2",
+              "label": "Edificio 2",
+              "description": "Plantas 0 a 2",
               "icon": "building"
              }
             ]
            },
            {
-            "id": "PMI",
-            "label": "Palma de Mallorca",
-            "details": "1 terminal",
-            "icon": "plane",
+            "id": "EST",
+            "label": "Sede Este",
+            "details": "1 edificio",
+            "icon": "map-marker",
             "children": [
              {
-              "id": "PMI-T",
-              "label": "Terminal",
-              "description": "Módulos A-D",
+              "id": "EST-P",
+              "label": "Edificio principal",
+              "description": "Plantas 0 a 3",
               "icon": "building"
              }
             ]
            },
            {
-            "id": "AGP",
-            "label": "Málaga-Costa del Sol",
-            "details": "1 terminal",
-            "icon": "plane",
+            "id": "OES",
+            "label": "Sede Oeste",
+            "details": "1 edificio",
+            "icon": "map-marker",
             "children": [
              {
-              "id": "AGP-T3",
-              "label": "Terminal T3",
+              "id": "OES-P",
+              "label": "Edificio principal",
               "icon": "building"
              }
             ]
@@ -7417,7 +7417,7 @@
         "contents": [
          {
           "type": "a!hierarchyBrowserFieldTree",
-          "label": "Red de aeropuertos",
+          "label": "Sedes",
           "labelPosition": "COLLAPSED",
           "pathValue": "local!rutaT",
           "pathSaveInto": "local!rutaT",
@@ -7584,7 +7584,7 @@
            },
            {
             "role": "ASSISTANT",
-            "text": "Hay **1 incidencia abierta**: la INC-2026-0426, avería de climatización en la sala de embarque C de Málaga, asignada a Irene Vega."
+            "text": "Hay **1 incidencia abierta**: la INC-2026-0426, avería de climatización en la sala de formación C de la sede Oeste, asignada a Irene Vega."
            }
           ],
           "$replies": [
@@ -7637,16 +7637,16 @@
            {
             "type": "a!chatMessage",
             "role": "USER",
-            "messageContent": "¿Está abierta la pista 14L?"
+            "messageContent": "¿Estará abierto el edificio A esta noche?"
            },
            {
             "type": "a!chatMessage",
             "role": "ASSISTANT",
-            "messageContent": "Sí, hasta las 23:00. Después se cierra por mantenimiento del balizamiento hasta las 05:00."
+            "messageContent": "Hasta las 23:00. Después se corta la electricidad por mantenimiento del cuadro general hasta las 05:00."
            }
           ],
           "$replies": [
-           "Consulto el estado de la pista y le respondo en unos minutos."
+           "Consulto el estado del edificio y le respondo en unos minutos."
           ]
          }
         ]
@@ -7695,7 +7695,7 @@
             "type": "a!suggestedQuestion",
             "iconName": "list",
             "iconColor": "ACCENT",
-            "question": "¿Cuántas incidencias hay pendientes por aeropuerto?"
+            "question": "¿Cuántas incidencias hay pendientes por sede?"
            },
            {
             "type": "a!suggestedQuestion",
@@ -7705,7 +7705,7 @@
            }
           ],
           "$replies": [
-           "Hay **2 incidencias pendientes** en MAD, 1 en BCN y 1 en PMI."
+           "Hay **3 incidencias pendientes**: 1 en NOR, 1 en SUR y 1 en EST."
           ],
           "$uxIgnore": "Catálogo: se muestra junto a los demás chats; en una pantalla real va en un panel lateral (ai_side_pane)"
          }
@@ -7774,10 +7774,10 @@
             "contents": [
              {
               "type": "a!documentsChatField",
-              "label": "Pregunte a las normas de plataforma",
+              "label": "Pregunte a las normas del almacén",
               "documents": [
-               "d-plat",
-               "d-fod"
+               "d-alm",
+               "d-evac"
               ],
               "height": "MEDIUM"
              }
@@ -7802,7 +7802,7 @@
    ],
    "local": {
     "local!titulo": null,
-    "local!aero": null,
+    "local!sede": null,
     "local!desc": null
    },
    "interface": {
@@ -7826,22 +7826,22 @@
      },
      {
       "type": "a!dropdownField",
-      "label": "Aeropuerto",
+      "label": "Sede",
       "placeholder": "Seleccione",
       "choiceLabels": [
-       "MAD",
-       "BCN",
-       "PMI",
-       "AGP"
+       "NOR",
+       "SUR",
+       "EST",
+       "OES"
       ],
       "choiceValues": [
-       "MAD",
-       "BCN",
-       "PMI",
-       "AGP"
+       "NOR",
+       "SUR",
+       "EST",
+       "OES"
       ],
-      "value": "local!aero",
-      "saveInto": "local!aero",
+      "value": "local!sede",
+      "saveInto": "local!sede",
       "required": true
      },
      {
@@ -7856,9 +7856,9 @@
     "validations": [
      {
       "type": "a!validationMessage",
-      "message": "Indique el aeropuerto antes de enviar el parte",
+      "message": "Indique la sede antes de enviar el parte",
       "validateAfter": "SUBMIT",
-      "showWhen": "a!isNullOrEmpty(local!aero)"
+      "showWhen": "a!isNullOrEmpty(local!sede)"
      }
     ],
     "buttons": {
@@ -8159,19 +8159,19 @@
                "contents": [
                 {
                  "type": "a!richTextDisplayField",
-                 "label": "Aeropuerto",
+                 "label": "Sede",
                  "labelPosition": "COLLAPSED",
                  "value": [
                   {
                    "type": "a!richTextItem",
-                   "text": "Aeropuerto",
+                   "text": "Sede",
                    "color": "SECONDARY",
                    "size": "SMALL"
                   },
                   "\n",
                   {
                    "type": "a!richTextItem",
-                   "text": "{fv!item.aeropuerto|dash}",
+                   "text": "{fv!item.sede|dash}",
                    "size": "MEDIUM"
                   }
                  ],
@@ -8373,19 +8373,19 @@
             "contents": [
              {
               "type": "a!richTextDisplayField",
-              "label": "Aeropuerto",
+              "label": "Sede",
               "labelPosition": "COLLAPSED",
               "value": [
                {
                 "type": "a!richTextItem",
-                "text": "Aeropuerto",
+                "text": "Sede",
                 "color": "SECONDARY",
                 "size": "SMALL"
                },
                "\n",
                {
                 "type": "a!richTextItem",
-                "text": "{rv!record.aeropuerto|dash}",
+                "text": "{rv!record.sede|dash}",
                 "size": "MEDIUM"
                }
               ],
@@ -8575,7 +8575,7 @@
   },
   {
    "id": "dlg-full",
-   "title": "Detalle del vuelo",
+   "title": "Detalle de la visita",
    "type": "dialog",
    "pattern": "P07",
    "req": [
@@ -8588,10 +8588,10 @@
     "contentsWidth": "FULL",
     "titleBar": {
      "type": "a!headerTemplateFull",
-     "title": "IB3166 · Madrid → Roma",
-     "secondaryText": "a!headerTemplateFull · salida 08:40 · puerta J48",
+     "title": "VIS-2026-0186 · Visita de proveedores",
+     "secondaryText": "a!headerTemplateFull · llegada 08:40 · sala 2.2",
      "backgroundColor": "#0F203A",
-     "stampIcon": "plane",
+     "stampIcon": "users",
      "stampColor": "#3fa7ce"
     },
     "contents": [
@@ -8617,7 +8617,7 @@
             "\n",
             {
              "type": "a!richTextItem",
-             "text": "Embarcando",
+             "text": "En curso",
              "size": "MEDIUM"
             }
            ],
@@ -8630,19 +8630,19 @@
          "contents": [
           {
            "type": "a!richTextDisplayField",
-           "label": "Mostradores",
+           "label": "Recepción",
            "labelPosition": "COLLAPSED",
            "value": [
             {
              "type": "a!richTextItem",
-             "text": "Mostradores",
+             "text": "Recepción",
              "color": "SECONDARY",
              "size": "SMALL"
             },
             "\n",
             {
              "type": "a!richTextItem",
-             "text": "812-818",
+             "text": "Puesto 3",
              "size": "MEDIUM"
             }
            ],
@@ -8655,19 +8655,19 @@
          "contents": [
           {
            "type": "a!richTextDisplayField",
-           "label": "Pasajeros",
+           "label": "Asistentes",
            "labelPosition": "COLLAPSED",
            "value": [
             {
              "type": "a!richTextItem",
-             "text": "Pasajeros",
+             "text": "Asistentes",
              "color": "SECONDARY",
              "size": "SMALL"
             },
             "\n",
             {
              "type": "a!richTextItem",
-             "text": "186",
+             "text": "18",
              "size": "MEDIUM"
             }
            ],
@@ -8709,7 +8709,7 @@
   },
   {
    "id": "dlg-imagen",
-   "title": "Terminal T4",
+   "title": "Edificio A",
    "type": "dialog",
    "pattern": "P07",
    "req": [
@@ -8722,13 +8722,13 @@
     "contentsWidth": "FULL",
     "titleBar": {
      "type": "a!headerTemplateImage",
-     "title": "Terminal T4",
-     "secondaryText": "a!headerTemplateImage · Madrid-Barajas",
+     "title": "Edificio A",
+     "secondaryText": "a!headerTemplateImage · Sede Norte",
      "backgroundColor": "WHITE",
      "image": {
       "type": "a!webImage",
-      "source": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 180'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%231D659C'/><stop offset='1' stop-color='%23A5C1D7'/></linearGradient></defs><rect width='320' height='180' fill='url(%23g)'/><path d='M0 150 Q160 70 320 150 L320 180 L0 180Z' fill='%230F203A'/><g fill='%233fa7ce'><rect x='40' y='140' width='240' height='6' rx='3'/></g><g fill='%23ffffff' opacity='.85'><path d='M210 50 l40 10 -40 10 -8 -3 18 -7 -30 -7z'/></g></svg>",
-      "altText": "Terminal T4"
+      "source": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 180'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%231D659C'/><stop offset='1' stop-color='%23A5C1D7'/></linearGradient></defs><rect width='320' height='180' fill='url(%23g)'/><g fill='%23ffffff' opacity='.85'><rect x='128' y='36' width='34' height='104'/><rect x='168' y='58' width='26' height='82'/></g><path d='M0 150 Q160 70 320 150 L320 180 L0 180Z' fill='%230F203A'/><g fill='%233fa7ce'><rect x='40' y='140' width='240' height='6' rx='3'/></g></svg>",
+      "altText": "Edificio A"
      },
      "imageSize": "MEDIUM"
     },
@@ -8737,7 +8737,7 @@
       "type": "a!richTextDisplayField",
       "labelPosition": "COLLAPSED",
       "value": [
-       "Terminal inaugurada en 2006: 38 puertas de embarque y 12 filtros de seguridad."
+       "Edificio inaugurado en 2006: 38 salas de reuniones y 12 tornos de control de accesos."
       ]
      }
     ],

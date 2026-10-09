@@ -986,7 +986,7 @@ PMI y AGP. Los datos de las galerías y las plantillas de prototipos pasan a un 
 incidencias y expedientes en las sedes de una empresa ficticia), sin aeropuertos ni lugares o códigos reales de un
 cliente, y se regeneran con sus scripts (lo decidió Raúl el 7 de octubre).
 
-- [ ] **Paso 1:** con un fichero temporal en una skill que diga `C:/Users/rgmoya`, `comprobar_plugin.py` da error, y el
+- [x] **Paso 1:** con un fichero temporal en una skill que diga `C:/Users/rgmoya`, `comprobar_plugin.py` da error, y el
   `HYDRAULIC` de `viewer-static.min.js` no lo da; una galería que dice «Barajas» también da error. → FALLA.
 - [ ] **Paso 2:** implementar, pasar galerías y plantillas al dominio neutro y regenerar la tabla. **Paso 3:** en verde
   sin el fichero temporal. Commit.

@@ -14,24 +14,24 @@ F = lambda f: f"recordType!{RT}.fields.{f}"
 TIPOS = ["Obra", "Servicio", "Suministro"]
 TIPOS_DET = ["Construcción, reforma o reparación", "Mantenimiento, limpieza o asistencia", "Compra de equipos o materiales"]
 TIPOS_ICON = ["building", "wrench", "truck"]
-UNIDADES = ["MAD", "BCN", "PMI", "AGP", "SSCC"]
+UNIDADES = ["NOR", "SUR", "EST", "OES", "SSCC"]  # sedes Norte, Sur, Este y Oeste y Servicios Centrales de una empresa ficticia
 TODAY = datetime.date(2026, 9, 24)
 FASES = ["Borrador", "En tramitación", "Pendiente de aprobación", "Aprobado", "Cerrado", "Rechazado"]
 
 # ------------------------------------------------------------------ datos de ejemplo (ficticios, coherentes entre pantallas)
 _src = [
-    ("Renovación de la cubierta de la terminal T2", "Obra", "MAD", "Javier García Ruiz", "2026-02-11", 185000, "En tramitación", None, "Sustitución de la lámina impermeable y de los lucernarios de la T2."),
-    ("Suministro de asientos para las salas de embarque", "Suministro", "BCN", "Rocío Sánchez Vidal", "2026-09-02", 48600, "Pendiente de aprobación", "2026-09-12", "Bancadas de cuatro plazas con toma de carga para las puertas B20 a B30."),
-    ("Mantenimiento de pasarelas de embarque 2026-2027", "Servicio", "PMI", "María López Arranz", "2026-04-13", 320000, "Aprobado", None, "Mantenimiento preventivo y correctivo de las 14 pasarelas del dique norte."),
-    ("Señalética accesible en el edificio de llegadas", "Obra", "AGP", "Javier García Ruiz", "2026-05-14", 36500, "Cerrado", None, "Señales táctiles y en braille en los recorridos de llegadas."),
-    ("Limpieza de fachadas acristaladas", "Servicio", "MAD", "Rocío Sánchez Vidal", "2026-06-15", 92000, "Rechazado", None, "Limpieza semestral de las fachadas de la T4 y la T4S."),
-    ("Ampliación del aparcamiento de empleados", "Obra", "BCN", "María López Arranz", "2026-07-16", 610000, "En tramitación", None, "Nueva planta de 220 plazas en el aparcamiento de empleados de la T1."),
-    ("Sustitución de luminarias por LED en el aparcamiento P2", "Obra", "MAD", "Javier García Ruiz", "2026-08-17", 74000, "Pendiente de aprobación", "2026-09-21", "Cambio de 1.200 luminarias por LED con sensor de presencia."),
-    ("Asistencia a personas con movilidad reducida en temporada alta", "Servicio", "PMI", "Rocío Sánchez Vidal", "2026-09-10", 128000, "Pendiente de aprobación", "2026-09-18", "Refuerzo del servicio PMR de junio a septiembre."),
-    ("Adquisición de escáneres de equipaje de mano", "Suministro", "AGP", "María López Arranz", "2026-01-10", 540000, "Aprobado", None, "Seis escáneres con tomografía para los filtros de seguridad."),
-    ("Reparación del pavimento de la plataforma norte", "Obra", "MAD", "Javier García Ruiz", "2026-02-11", 212000, "Cerrado", None, "Reparación de juntas y losas en los puestos de estacionamiento 40 a 48."),
+    ("Renovación de la cubierta del edificio A", "Obra", "NOR", "Javier García Ruiz", "2026-02-11", 185000, "En tramitación", None, "Sustitución de la lámina impermeable y de los lucernarios del edificio A."),
+    ("Suministro de asientos para las salas de espera", "Suministro", "SUR", "Rocío Sánchez Vidal", "2026-09-02", 48600, "Pendiente de aprobación", "2026-09-12", "Bancadas de cuatro plazas con toma de carga para las salas de espera de las plantas 1 a 3."),
+    ("Mantenimiento de ascensores 2026-2027", "Servicio", "EST", "María López Arranz", "2026-04-13", 320000, "Aprobado", None, "Mantenimiento preventivo y correctivo de los 14 ascensores y montacargas de la sede."),
+    ("Señalética accesible en el edificio principal", "Obra", "OES", "Javier García Ruiz", "2026-05-14", 36500, "Cerrado", None, "Señales táctiles y en braille en los recorridos de acceso."),
+    ("Limpieza de fachadas acristaladas", "Servicio", "NOR", "Rocío Sánchez Vidal", "2026-06-15", 92000, "Rechazado", None, "Limpieza semestral de las fachadas de los edificios A y B."),
+    ("Ampliación del aparcamiento de empleados", "Obra", "SUR", "María López Arranz", "2026-07-16", 610000, "En tramitación", None, "Nueva planta de 220 plazas en el aparcamiento de empleados del edificio 1."),
+    ("Sustitución de luminarias por LED en el aparcamiento P2", "Obra", "NOR", "Javier García Ruiz", "2026-08-17", 74000, "Pendiente de aprobación", "2026-09-21", "Cambio de 1.200 luminarias por LED con sensor de presencia."),
+    ("Refuerzo de la atención a visitantes en temporada alta", "Servicio", "EST", "Rocío Sánchez Vidal", "2026-09-10", 128000, "Pendiente de aprobación", "2026-09-18", "Refuerzo del servicio de recepción y atención a visitantes de junio a septiembre."),
+    ("Adquisición de escáneres de paquetería", "Suministro", "OES", "María López Arranz", "2026-01-10", 540000, "Aprobado", None, "Seis escáneres de rayos X para el control de accesos y la recepción de paquetes."),
+    ("Reparación del pavimento de los muelles de carga", "Obra", "NOR", "Javier García Ruiz", "2026-02-11", 212000, "Cerrado", None, "Reparación de juntas y losas en los muelles 4 a 8 del almacén."),
     ("Consultoría de eficiencia energética", "Servicio", "SSCC", "Rocío Sánchez Vidal", "2026-03-12", 58000, "Aprobado", None, "Auditoría energética de los edificios de Servicios Centrales."),
-    ("Mobiliario para la zona de trabajo de tripulaciones", "Suministro", "BCN", "María López Arranz", "2026-09-22", 6000, "Borrador", None, "Mesas y sillas para la sala de tripulaciones de la T1."),
+    ("Mobiliario para la zona de trabajo compartida", "Suministro", "SUR", "María López Arranz", "2026-09-22", 6000, "Borrador", None, "Mesas y sillas para la sala de trabajo compartida del edificio 1."),
 ]
 ROWS = []
 plazo_txt = lambda d: f"Vence en {d} días" if d > 1 else "Vence mañana" if d == 1 else "Vence hoy"
@@ -264,7 +264,7 @@ p11 = screen("ia", "Asistente del expediente", "page", "P11", ["RF-FICHA"], {"ty
     **{"$assumption": "Propuesta: asistente de IA para redactar el informe de tramitación (no está en los requisitos)."})
 
 # ------------------------------------------------------------------ P12 Revisión de datos sugeridos por IA
-campos = [{"campo": "Unidad", "valor": "AGP", "confianza": "ALTA", "origen": "IA", "revisado": True, "pagina": 1},
+campos = [{"campo": "Unidad", "valor": "OES", "confianza": "ALTA", "origen": "IA", "revisado": True, "pagina": 1},
           {"campo": "Tipo", "valor": "Servicio", "confianza": "ALTA", "origen": "IA", "revisado": True, "pagina": 1},
           {"campo": "Fecha de inicio", "valor": "01/10/2026", "confianza": "MEDIA", "origen": "IA", "revisado": True, "pagina": 2},
           {"campo": "Importe", "valor": "12.400,00 €", "confianza": "BAJA", "origen": "IA", "revisado": False, "pagina": 3},
@@ -278,7 +278,7 @@ p12 = screen("revision-ia", "Revisar datos extraídos", "form", "P12", ["RF-ALTA
                                                                    ai_notice("Al guardar se comprueba que estén revisados los datos de confianza baja.", marginAbove="STANDARD")]},
             {"type": "a!columnLayout", "width": "2X", "contents": [{"type": "a!documentViewerField", "label": "Solicitud escaneada", "labelPosition": "COLLAPSED", "document": "local!doc", "height": "TALL",
                                                                     "initialPageDisplay": "local!pagina", "highlightedText": "local!cita", "altText": "Solicitud escaneada", "$fileName": "Solicitud_EXP-2026-0013.pdf", "$pages": 3,
-                                                                    "$content": [["Solicitud de expediente", "Unidad solicitante: AGP", "Tipo de expediente: Servicio"], ["Fecha prevista de inicio: 01/10/2026"], ["Importe estimado: 12.400,00 €", "Responsable: Javier García"]]}]}]},
+                                                                    "$content": [["Solicitud de expediente", "Unidad solicitante: OES", "Tipo de expediente: Servicio"], ["Fecha prevista de inicio: 01/10/2026"], ["Importe estimado: 12.400,00 €", "Responsable: Javier García"]]}]}]},
     ],
     "validations": [ai_review_validation("local!campos")],
     "buttons": bl(primary("Guardar datos", {"goto": "listado"}, submit=True), [secondary("Cancelar", {"goto": "listado"})])},

@@ -11,6 +11,8 @@ Qué mira:
   proyecto (proyecto.md, fuentes/, analisis/, as-is/, refactorizacion/ o prototipo/): van en pruebas/<skill>/;
 - que ninguna skill lleve la marca de un cliente: un brand-*.json que no sea brand-appian.json (la estándar de Appian)
   o un logo (MARCA_NEUTRA, LOGO e IMAGENES dicen qué es cada cosa); van en <p>/prototipo/ de su proyecto;
+- que nada de lo que va al paquete lleve datos personales (PERSONALES; solo el autor y el dueño de .claude-plugin/,
+  AUTORIA) ni, en skills/ y .claude-plugin/, nombre a un cliente de pruebas/clientes.txt o lo que lo delata;
 - que ninguna skill use como marca el círculo azul (MARCA_ANTIGUA): la de inferido es 🔶, la misma en todas;
 - que las skills que leen lo de ingeniería inversa (LEEN_AS_IS) no citen su extracción en bruto (as-is/extraccion,
   mcp_raw): leen as-is/datos/ y los documentos de as-is/;
@@ -40,6 +42,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import unicodedata
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]  # el repositorio: las pruebas de cada skill están en pruebas/<skill>/
@@ -84,6 +87,19 @@ NO_VAN_EN_EL_PAQUETE = (".git", ".github", ".claude", "docs", "pruebas", "CLAUDE
 # mira en los textos que escriben marcas: documentos, plantillas, scripts y datos.
 MARCA_ANTIGUA = "\U0001F535"
 TEXTOS = (".md", ".py", ".json", ".sh", ".txt", ".html")
+# Nada personal en lo que va al paquete: ni el usuario ni las rutas del equipo de nadie. Palabras enteras, sin distinguir
+# mayúsculas ni acentos (se compara el texto en NFKD sin marcas y en minúsculas): «Raúl», «RAUL» y «raul» sí; el HYDRAULIC
+# de viewer-static.min.js, no. Un usuario con números detrás también cuenta (raulogm077). La ruta neutra de los ejemplos
+# es C:/Users/<usuario>.
+PERSONALES = re.compile(r"(?<!\w)(?:rgmoya|raulogm)\d*(?!\w)|(?<!\w)raul(?!\w)|(?<!\w)c:(?:/|\\+)users(?:/|\\+)(?!<usuario>)"
+                        r"|/home/claude(?!\w)|(?<!\w)proyectos\s+ia(?!\w)")
+PISTAS = ("rgmoya", "raul", "users", "/home/claude", "proyectos")  # una línea sin ninguna no hace falta mirarla (rapidez)
+# Las únicas excepciones, el autor del plugin y el dueño del marketplace: fichero → objeto cuyo «name» no se mira.
+AUTORIA = {".claude-plugin/plugin.json": "author", ".claude-plugin/marketplace.json": "owner"}
+# El plugin no lleva clientes (Tarea 0b): ni su nombre ni lo que lo delata en los datos de ejemplo, que dice
+# pruebas/clientes.txt. Se mira donde está el plugin (skills/ y .claude-plugin/); el README cuenta su historia.
+CLIENTES = PRUEBAS / "clientes.txt"
+SIN_CLIENTES = ("skills", ".claude-plugin")
 
 errores, avisos = [], []
 
@@ -147,6 +163,71 @@ def sin_bytecode(py: Path) -> int | None:
     if lineas and not (marca and marca[0] < min(lineas)):
         return min(lineas)
     return None
+
+
+def sin_acentos(texto):
+    return "".join(c for c in unicodedata.normalize("NFKD", texto) if not unicodedata.combining(c))
+
+
+def ficheros_del_paquete():
+    """Lo que mete en el .plugin la orden zip del README: todo menos NO_VAN_EN_EL_PAQUETE, CACHES y *.plugin."""
+    for p in sorted(RAIZ.iterdir()):
+        if p.name in NO_VAN_EN_EL_PAQUETE or p.name in CACHES or p.name.endswith(".plugin"):
+            continue
+        for f in sorted([p] if p.is_file() else p.rglob("*")):
+            partes = f.relative_to(RAIZ).parts
+            if f.is_file() and not set(CACHES) & set(partes) and not f.name.endswith(".plugin"):
+                yield f
+
+
+def terminos_de_clientes():
+    """(término, pista, patrón, sin distinguir mayúsculas) de pruebas/clientes.txt: palabras enteras y sin acentos; los
+    códigos de tres letras en mayúsculas, solo en mayúsculas («mad» y «bcn» en minúsculas son palabras corrientes)."""
+    terminos = []
+    for linea in CLIENTES.read_text(encoding="utf-8").splitlines():
+        t = linea.split("#", 1)[0].strip()
+        if t:
+            codigo = re.fullmatch(r"[A-Z]{3}", t) is not None
+            palabras = (sin_acentos(t) if codigo else sin_acentos(t).casefold()).split()
+            terminos.append((t, max(palabras, key=len), re.compile(r"(?<!\w)" + r"\s+".join(map(re.escape, palabras)) + r"(?!\w)"),
+                             not codigo))
+    return terminos
+
+
+def comprobar_personales_y_clientes():
+    """Ningún fichero del paquete lleva datos personales (PERSONALES), salvo los de AUTORIA, y en SIN_CLIENTES ninguno
+    nombra a un cliente. Los binarios (imágenes, fuentes: llevan bytes nulos) no se leen; los .min.js y los HTML, sí."""
+    if not CLIENTES.is_file():
+        errores.append(f"falta {CLIENTES.relative_to(REPO).as_posix()}: los clientes que el plugin no puede nombrar")
+    clientes = terminos_de_clientes() if CLIENTES.is_file() else []
+    donde = lambda lineas: ",".join(map(str, lineas[:5])) + ("…" if len(lineas) > 5 else "")
+    for f in ficheros_del_paquete():
+        datos = f.read_bytes()
+        if b"\0" in datos:
+            continue
+        ruta = f.relative_to(RAIZ).as_posix()
+        texto = datos.decode("utf-8", errors="replace")
+        if ruta in AUTORIA:  # el «name» de ese objeto se deja en blanco, sin mover las líneas
+            texto = re.sub(r'("%s"\s*:\s*\{[^{}]*?"name"\s*:\s*)"(?:[^"\\]|\\.)*"' % AUTORIA[ruta], r'\1""', texto, count=1)
+        personales, de_clientes = {}, {}
+        for i, linea in enumerate(texto.splitlines(), 1):
+            plana = linea if linea.isascii() else sin_acentos(linea)
+            minus = plana.casefold()
+            if any(p in minus for p in PISTAS):
+                for m in PERSONALES.finditer(minus):
+                    personales.setdefault(m.group(0), []).append(i)
+            if ruta.split("/")[0] in SIN_CLIENTES:
+                for t, pista, patron, sin_mayusculas in clientes:
+                    donde_mira = minus if sin_mayusculas else plana
+                    if pista in donde_mira and patron.search(donde_mira):
+                        de_clientes.setdefault(t, []).append(i)
+        for dato, lineas in personales.items():
+            errores.append(f"{ruta}:{donde(lineas)}: «{dato}» es un dato personal; el paquete no lleva datos de nadie (solo "
+                           "author.name de plugin.json y owner.name de marketplace.json): usa uno neutro, como "
+                           "C:/Users/<usuario> o una ruta de ejemplo")
+        for t, lineas in de_clientes.items():
+            errores.append(f"{ruta}:{donde(lineas)}: nombra «{t}», de un cliente ({CLIENTES.relative_to(REPO).as_posix()}); "
+                           "el plugin no lleva clientes: usa datos ficticios neutros")
 
 
 def anota_prueba(nombre, r, ruta, pytest=False):
@@ -283,6 +364,37 @@ def probar_comprobador(nombres):
                "un script que importa un módulo de su carpeta sin dont_write_bytecode no da error", out)
         (scripts / "zz_modulo.py").unlink()
         (scripts / "zz_usa.py").unlink()
+        # nada personal en el paquete, con límite de palabra y sin distinguir acentos ni mayúsculas: el HYDRAULIC de
+        # viewer-static.min.js (en la copia) no es «Raúl»; C:/Users/<usuario> es la ruta neutra
+        personal = skill / "references" / "zz-personal.md"
+        for dato in ("C:/Users/rgmoya/Documents", "C:\\Users\\otro\\Documents", "lo revisó RAÚL", "según raul",
+                     "/home/claude/proyecto", "D:/Proyectos IA/app", "github.com/raulogm077/x"):
+            personal.write_text(f"# Notas\n\n{dato}\n", encoding="utf-8")
+            c, out = comprueba()
+            espera(c == 1 and "zz-personal.md:3" in out and "dato personal" in out, f"una skill que dice «{dato}» no da error", out)
+        personal.write_text("# Notas\n\nC:/Users/<usuario>/Documents · ELECTRO_HYDRAULIC\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0 and "viewer-static.min.js" not in out, "C:/Users/<usuario> o HYDRAULIC dan error", out)
+        personal.unlink()
+        # la única excepción es author.name de plugin.json (y owner.name de marketplace.json)
+        manifiesto = copia / ".claude-plugin" / "plugin.json"
+        antes = manifiesto.read_text(encoding="utf-8")
+        manifiesto.write_text(antes.replace('"description": "', '"description": "De Raúl: ', 1), encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "plugin.json:" in out and "dato personal" in out,
+               "un plugin.json que nombra a Raúl fuera de author.name no da error", out)
+        manifiesto.write_text(antes, encoding="utf-8")
+        # el plugin no lleva clientes (pruebas/clientes.txt): ni su nombre ni lo que lo delata en los datos de ejemplo;
+        # los códigos de tres letras, solo en mayúsculas («mad» en minúsculas es una palabra corriente)
+        galeria = copia / "skills" / "appian-prototipos" / "galerias" / "zz-galeria.json"
+        for dato in ('"ubicacion": "Madrid-Barajas"', '"sede": "MAD"', '"cliente": "Aena"'):
+            galeria.write_text("{\n " + dato + "\n}\n", encoding="utf-8")
+            c, out = comprueba()
+            espera(c == 1 and "zz-galeria.json:2" in out and "clientes.txt" in out, f"una galería que dice {dato} no da error", out)
+        galeria.write_text('{\n "ruta": "datos/mad/2026"\n}\n', encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0, "un «mad» en minúsculas da error como código de un cliente", out)
+        galeria.unlink()
         # --completo --plugin pasa las pruebas del repositorio a la copia: con sus scripts rotos, ninguna pasa
         # (si falta un requisito, como pytest sin uv, esa prueba no se completa, pero tampoco pasa)
         for py in (copia / "skills").rglob("*.py"):
@@ -355,6 +467,9 @@ def main(completo, plugin=None):
 
     # Lo que lleva cada skill
     comprobar_contenido(nombres)
+
+    # Nada personal ni de un cliente en el paquete
+    comprobar_personales_y_clientes()
 
     # Skills citadas
     documentos = [RAIZ / "README.md"] + [SKILLS / n / "SKILL.md" for n in nombres]
