@@ -23,7 +23,8 @@ Qué mira:
 - que no haya frases largas repetidas entre SKILL.md;
 - que la versión de plugin.json sea la última del README.
 Con --completo pasa además las pruebas de pruebas/ (cada selftest.py y, con pytest, las de ingeniería inversa) al
-plugin que se comprueba, que reciben en PLUGIN_A_PROBAR, y prueba el propio comprobador con una copia temporal.
+plugin que se comprueba, que reciben en PLUGIN_A_PROBAR, la de su requisitos.py y prueba el propio comprobador con una
+copia temporal.
 Con --plugin <carpeta> todo se hace sobre esa copia del plugin (p. ej. la del paquete, que no lleva pruebas/), con
 las pruebas de este repositorio.
 Sale con 1 si hay errores.
@@ -177,6 +178,77 @@ def pruebas_de_las_skills():
         return
     anota_prueba("appian-reverse-engineering", corre(orden, env=entorno, cwd=str(inversa)),
                  inversa.relative_to(REPO).as_posix(), pytest=True)
+
+
+def sin_version_ni_rutas(salida):
+    """La salida --json de requisitos.py sin lo que cambia de un equipo a otro: la versión de Python y las rutas."""
+    datos = json.loads(salida)
+    datos["python"] = "<versión>"
+    for r in datos.get("requisitos", []):
+        if r.get("ruta"):
+            r["ruta"] = "<ruta>"
+    return datos
+
+
+def prueba_de_requisitos():
+    """requisitos.py del plugin que se comprueba, en una carpeta de trabajo y una carpeta personal temporales (con
+    espacios) y con la consola en cp1252, como en Windows: con todo lo opcional ausente, su --json es el de
+    pruebas/requisitos-esperado.json salvo versión y rutas; si falta algo opcional sale con 0 y si falta Python, con 1;
+    y avisa de la copia suelta de una skill del plugin en ~/.claude/skills/, también con el nombre que tenía antes."""
+    fallos = []
+    script, tabla = RAIZ / "requisitos.py", RAIZ / "requisitos.json"
+    if not (script.is_file() and tabla.is_file()):
+        fallos.append("faltan requisitos.py o requisitos.json en la raíz del plugin")
+    else:
+        opcional = ",".join(r["id"] for r in json.loads(tabla.read_text(encoding="utf-8")) if not r["imprescindible"])
+        with tempfile.TemporaryDirectory(prefix="requisitos-") as tmp:
+            trabajo = Path(tmp) / "Carpeta con espacios" / "Gestión app"
+            trabajo.mkdir(parents=True)
+
+            def requisitos(*args, sin="", casa="vacía"):
+                carpeta = Path(tmp) / "casas" / casa
+                carpeta.mkdir(parents=True, exist_ok=True)
+                entorno = dict(os.environ, APPIAN_RE_HOME=str(carpeta), REQUISITOS_SIN=sin, PYTHONIOENCODING="cp1252")
+                entorno.pop("PYTHONUTF8", None)
+                r = corre([sys.executable, str(script), *args], env=entorno, cwd=str(trabajo))
+                return r.returncode, r.stdout, r.stdout + r.stderr
+
+            def espera(cond, que, salida):
+                if not cond:
+                    fallos.append(f"{que}:\n{salida[-1500:]}")
+
+            c, out, todo = requisitos("--json", sin=opcional)
+            esperado = (PRUEBAS / "requisitos-esperado.json").read_text(encoding="utf-8")
+            try:
+                igual = c == 0 and sin_version_ni_rutas(out) == sin_version_ni_rutas(esperado)
+            except ValueError:
+                igual = False
+            espera(igual, "con REQUISITOS_SIN de todo lo opcional, --json no es pruebas/requisitos-esperado.json (si el "
+                   "cambio es a propósito, regenéralo desde una carpeta vacía: APPIAN_RE_HOME=<otra carpeta vacía> "
+                   f"REQUISITOS_SIN={opcional} python3 requisitos.py --json > pruebas/requisitos-esperado.json)", todo)
+            c, out, todo = requisitos("--json", sin="playwright,docx")
+            try:
+                ausentes = {r["id"] for r in json.loads(out)["requisitos"] if r["presente"] is False}
+            except ValueError:
+                ausentes = set()
+            espera(c == 0 and {"playwright", "docx"} <= ausentes,
+                   "con REQUISITOS_SIN=playwright,docx no sale con 0 o no los da por ausentes", todo)
+            c, out, todo = requisitos(sin="python")
+            espera(c == 1 and "Python" in out, "con REQUISITOS_SIN=python no sale con 1 diciendo que falta Python", todo)
+            for suelta, hoy in (("appian-reverse-engineering", "appian-reverse-engineering"),
+                                ("appian-prototipos-aena", "appian-prototipos")):
+                copia = Path(tmp) / "casas" / suelta / ".claude" / "skills" / suelta / "SKILL.md"
+                copia.parent.mkdir(parents=True)
+                copia.write_text(f"---\nname: {suelta}\n---\n", encoding="utf-8")
+                c, out, todo = requisitos("--json", casa=suelta)
+                try:
+                    avisos = " ".join(json.loads(out)["avisos"])
+                except ValueError:
+                    avisos = ""
+                espera(suelta in avisos and hoy in avisos, f"una copia suelta de {suelta} en ~/.claude/skills/ no da aviso",
+                       todo)
+    print(f"Prueba de requisitos: {'bien' if not fallos else 'falla'}")
+    errores.extend(f"Prueba de requisitos: {f}" for f in fallos)
 
 
 def copia_del_plugin(destino):
@@ -446,6 +518,7 @@ def main(completo, plugin=None):
 
     if completo:
         pruebas_de_las_skills()
+        prueba_de_requisitos()
         if not plugin:  # el comprobador se prueba una vez, desde el repositorio
             probar_comprobador(nombres)
 

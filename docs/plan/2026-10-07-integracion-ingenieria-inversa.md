@@ -945,12 +945,12 @@ genera con `requisitos.py --json` y `REQUISITOS_SIN` de todo lo opcional); modif
   también con el nombre que tenía antes (`appian-prototipos-aena`, hoy `appian-prototipos`). La carpeta personal (`~`)
   sale de `devmcp_extract.home_dir()`, que respeta `APPIAN_RE_HOME`.
 
-- [ ] **Paso 1:** prueba en `comprobar_plugin.py --completo`: con `REQUISITOS_SIN` de todo lo opcional, la salida
+- [x] **Paso 1:** prueba en `comprobar_plugin.py --completo`: con `REQUISITOS_SIN` de todo lo opcional, la salida
   `--json` es igual a `pruebas/requisitos-esperado.json` salvo versión y rutas, como en la Tarea 31; con
   `REQUISITOS_SIN=playwright,docx`, sale 0 y esos dos van con `presente: false`; con `REQUISITOS_SIN=python`, sale 1;
   con un `APPIAN_RE_HOME` temporal que tiene `.claude/skills/appian-reverse-engineering/SKILL.md`, hay aviso, y también
   con `.claude/skills/appian-prototipos-aena/SKILL.md`. → FALLA.
-- [ ] **Paso 2:** implementar. **Paso 3:** en verde. Commit.
+- [x] **Paso 2:** implementar. **Paso 3:** en verde. Commit.
 
 ### Tarea 24: Aviso al instalar
 
