@@ -95,7 +95,15 @@ def por_capas(proc, eventos, puertas, cabecera):
             previos[hueco].append(anterior)
             anterior = hueco
         previos[("paso", f["a"])].append(anterior)
-    # filas: capa a capa, en el orden medio de sus predecesores
+    # filas: capa a capa, en el orden medio de sus predecesores. Una puerta reserva una fila por cada salida que sigue en
+    # su carril: así sale en vertical hacia sus destinos sin que otro paso de su columna se lo tape
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    salidas = defaultdict(int)
+    for i, f in secuencia:
+        if tipo[f["de"]] in puertas and i not in atras and f["de"] != f["a"]:
+            sig = ("hueco", i, capa[f["de"]] + 1) if capa[f["a"]] > capa[f["de"]] + 1 else ("paso", f["a"])
+            if lado_de[sig] == carril[f["de"]]:
+                salidas[("paso", f["de"])] += 1
     posicion, fila = {}, {}
     indice = {c: k for k, c in enumerate(proc["carriles"])}
     for c in sorted(por_capa):
@@ -105,9 +113,11 @@ def por_capas(proc, eventos, puertas, cabecera):
                 ps = [posicion[x] for x in previos[e] if x in posicion]
                 media = sum(ps) / len(ps) if ps else None
                 return (media is None, media or 0, orden_paso.get(e[1], 0) if e[0] == "paso" else e[1])
-            for k, e in enumerate(sorted(suyos, key=clave)):
-                fila[e] = k
-                posicion[e] = indice[nombre] * 1000 + k
+            libre = 0
+            for e in sorted(suyos, key=clave):
+                fila[e] = libre
+                posicion[e] = indice[nombre] * 1000 + libre
+                libre += max(1, salidas[e])
     filas = {c: max([fila[e] + 1 for e in fila if lado_de[e] == c] or [1]) for c in proc["carriles"]}
     geo = {"carriles": {}, "pasos": {}, "flujos": [], "etiqueta_en_horizontal": True}
     y = 0.0
@@ -116,7 +126,6 @@ def por_capas(proc, eventos, puertas, cabecera):
         geo["carriles"][c] = (y, h)
         y += h
     # columnas: la de después de una puerta, ancha para la etiqueta de sus salidas, que va en el tramo horizontal
-    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
     ultima = max(capa.values(), default=0)
     ancho_col = [COLUMNA] * (ultima + 2)
     for i, f in secuencia:
@@ -131,15 +140,14 @@ def por_capas(proc, eventos, puertas, cabecera):
     pasillo = {i: geo["carriles"][c][0] + MARGEN + filas[c] * FILA + (k + 0.5) * CORREDOR
                for c, vueltas in pasillos.items() for k, i in enumerate(vueltas)}
     # trazado: los tramos verticales van por el hueco entre dos columnas, cada flujo a su altura del hueco para que no
-    # se monten; los de una puerta salen en vertical desde ella
-    usos = defaultdict(list)            # hueco (capa a su izquierda) -> [(flujo, y de referencia)]
-    rutas, salidas = [], defaultdict(int)
-    en_columna = defaultdict(list)
-    for pid in carril:
-        en_columna[capa[pid]].append(geo["pasos"][pid][1])
+    # se monten; los de una puerta salen en vertical desde ella, salvo que otro paso de su columna lo tape
+    usos = defaultdict(dict)            # hueco (capa a su izquierda) -> {flujo: [y al entrar, y al salir]}
+    rutas = []
+    en_columna = {c: [yy(e) for e in lista] for c, lista in por_capa.items()}
 
     def tapado(pid, y2):
-        """Si al salir en vertical de `pid` hasta y2 (y seguir en horizontal) se cruzaría otro paso de su columna."""
+        """Si al salir en vertical de `pid` hasta y2 (y seguir en horizontal) se cruzaría otro paso de su columna o un
+        flujo largo que la atraviesa."""
         y1 = geo["pasos"][pid][1]
         return any(abs(y - y1) > 1 and min(y1, y2) - 1 <= y <= max(y1, y2) + 1 for y in en_columna[capa[pid]])
     for i, f in enumerate(proc["flujos"]):
@@ -157,28 +165,39 @@ def por_capas(proc, eventos, puertas, cabecera):
                     continue
                 if k == 0 and tipo[f["de"]] in puertas and not tapado(f["de"], yy(sig)):
                     ruta.append((geo["pasos"][f["de"]][0], yy(sig)))
-                elif k == 0 and tipo[f["de"]] in puertas:   # pegado a la puerta: el tramo largo, para la etiqueta
-                    xp = geo["pasos"][f["de"]][0] + 35 + 6 * salidas[f["de"]]
-                    salidas[f["de"]] += 1
-                    ruta += [(xp, yy(e)), (xp, yy(sig))]
                 else:
                     ruta += [("hueco", capa[f["de"]] + k, yy(e)), ("hueco", capa[f["de"]] + k, yy(sig))]
         for punto in ruta:
-            if punto[0] == "hueco" and (i, punto[1]) not in [(j, h) for j, h, _ in usos[punto[1]]]:
-                usos[punto[1]].append((i, punto[1], punto[2]))
+            if punto[0] == "hueco":
+                usos[punto[1]].setdefault(i, [punto[2], punto[2]])[1] = punto[2]
         rutas.append(ruta)
     sitio = {}
-    for hueco, lista in usos.items():
+    for hueco, extremos in usos.items():
         izquierda = xs[hueco] if hueco >= 0 else xs[0] - COLUMNA
         derecha = xs[hueco + 1] if hueco + 1 < len(xs) else izquierda + COLUMNA
         centro, libre = (izquierda + derecha) / 2, (derecha - izquierda - 120) / 2 - 6
-        paso_ = min(10, 2 * libre / max(len(lista) - 1, 1))
-        for k, (i, _, _) in enumerate(sorted(lista, key=lambda u: u[2])):
-            sitio[(hueco, i)] = centro + (k - (len(lista) - 1) / 2) * paso_
+        paso_ = min(10, 2 * libre / max(len(extremos) - 1, 1))
+        for k, i in enumerate(orden_en_hueco(extremos)):
+            sitio[(hueco, i)] = centro + (k - (len(extremos) - 1) / 2) * paso_
     for i, ruta in enumerate(rutas):
         geo["flujos"].append([(sitio[(p[1], i)], p[2]) if p[0] == "hueco" else p for p in ruta])
     geo["ancho"] = max([cx for cx, _ in geo["pasos"].values()] + [xs[0]]) + COLUMNA / 2 + MARGEN
     return geo
+
+
+def orden_en_hueco(extremos):
+    """De izquierda a derecha, los flujos que suben o bajan por un hueco ({flujo: (y al entrar, y al salir)}): por la
+    fila de la que vienen, salvo que uno salga de la fila a la que llega otro, que va a su izquierda; si no, el tramo
+    horizontal del que llega pisaría al del que sale y parecería un solo flujo."""
+    pendientes = sorted(extremos, key=lambda i: (extremos[i][0], i))
+    antes = {i: {j for j in extremos if j != i and abs(extremos[j][0] - extremos[i][1]) <= 1} for i in extremos}
+    orden = []
+    while pendientes:          # si dos se cruzan las filas (uno va de a a b y otro de b a a), el primero
+        quedan = set(pendientes)
+        i = next((i for i in pendientes if not antes[i] & quedan), pendientes[0])
+        pendientes.remove(i)
+        orden.append(i)
+    return orden
 
 
 def ancho_etiqueta_flujo(texto):

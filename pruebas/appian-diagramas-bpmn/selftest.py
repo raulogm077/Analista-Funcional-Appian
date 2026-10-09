@@ -5,7 +5,8 @@ Crea el ejemplo, lo cambia, simula una edición a mano en draw.io (también guar
 la compara y la acepta, vuelve a cambiarlo respetando lo movido a mano, exporta BPMN 2.0 y
 comprueba los errores de validación. Con el segundo ejemplo comprueba que nada se pisa, el lado de las
 etiquetas, los tipos de inicio y tarea, el flujo por defecto, los participantes externos, las notas y el
-ancho del PNG. Comprueba también lo que se hace sin navegador y un proceso que no cabe en una página (tramos).
+ancho del PNG. Comprueba también lo que se hace sin navegador, un proceso que no cabe en una página (tramos) y que la
+colocación por capas no dibuje conexiones falsas.
 Sale con 0 si todo va bien (tarda unos tres minutos).
 
   python3 pruebas/appian-diagramas-bpmn/selftest.py
@@ -301,6 +302,122 @@ def solapes(drawio):
     return out
 
 
+# ---------------------------------------------------------------- conexiones falsas
+ANCHO_LETRA_FLUJO = 6    # la etiqueta de un flujo (11 px): unos 5 px por letra; 6, por exceso, y 4 de margen
+HOLGURA = 6              # un flujo que pasa a menos de esto de un paso parece que sale o entra de él
+
+
+def _camino(a, ta, pts, b, tb):
+    """El trazado de un flujo como lo dibuja draw.io con sus puntos: del borde del origen (por el lado hacia el primer
+    punto), por los puntos, al borde del destino. `a` y `b`, centros; `ta` y `tb`, (ancho, alto)."""
+    def borde(c, tam, hacia):
+        (cx, cy), (w, h) = c, tam
+        if abs(hacia[1] - cy) <= 1:
+            return (cx + (w / 2 if hacia[0] > cx else -w / 2), cy)
+        if abs(hacia[0] - cx) <= 1:
+            return (cx, cy + (h / 2 if hacia[1] > cy else -h / 2))
+        return c
+    camino = [tuple(a)] + [tuple(p) for p in pts] + [tuple(b)]
+    camino[0], camino[-1] = borde(a, ta, camino[1]), borde(b, tb, camino[-2])
+    return camino
+
+
+def _punto_a(camino, t):
+    """El punto a la fracción t (0 a 1) del largo del camino."""
+    largos = [abs(q[0] - p[0]) + abs(q[1] - p[1]) for p, q in zip(camino, camino[1:])]
+    falta = t * sum(largos)
+    for (p, q), largo in zip(zip(camino, camino[1:]), largos):
+        if falta <= largo and largo:
+            return (p[0] + (q[0] - p[0]) * falta / largo, p[1] + (q[1] - p[1]) * falta / largo)
+        falta -= largo
+    return camino[-1]
+
+
+def _cruza(p, q, caja):
+    """Si el segmento p-q entra en el interior de la caja (x, y, w, h)."""
+    x0, y0, x1, y1 = caja[0], caja[1], caja[0] + caja[2], caja[1] + caja[3]
+    t0, t1 = 0.0, 1.0
+    dx, dy = q[0] - p[0], q[1] - p[1]
+    for d, desde, lo, hi in ((dx, p[0], x0, x1), (dy, p[1], y0, y1)):
+        if abs(d) < 1e-9:
+            if not lo < desde < hi:
+                return False
+            continue
+        a, b = (lo - desde) / d, (hi - desde) / d
+        t0, t1 = max(t0, min(a, b)), min(t1, max(a, b))
+    return t1 - t0 > 1e-6
+
+
+def conexiones_falsas(drawio):
+    """Lo que hace parecer que un flujo sale o entra de donde no, página a página y sobre la geometría del .drawio: un
+    tramo de un flujo que pasa por encima de un paso que no es el suyo o de su etiqueta (o a menos de HOLGURA del paso),
+    o por encima de la etiqueta de otro flujo; y dos flujos que no comparten origen ni destino con tramos en la misma
+    recta que se solapan (los que salen de un mismo paso o llegan a uno pueden compartir el tramo de salida o de
+    llegada). Los flujos de mensaje van en vertical hasta su participante y no se miran."""
+    import drawio_modelo as dm, colocacion as co
+    f = dm.Fichero(str(drawio))
+    out = []
+    for k, (hoja, modelo) in enumerate(f.hojas, 1):
+        proc, geo, _ = f._leer_hoja(hoja, modelo.find("root"))
+        pagina = f"tramo {k}: " if len(f.hojas) > 1 else ""
+        nombre = {p["id"]: p["nombre"] for p in proc["pasos"]}
+        cajas = {}
+        for p in proc["pasos"]:
+            cx, cy, w, h = geo["pasos"][p["id"]]
+            cajas[p["id"]] = [(cx - w / 2 - HOLGURA, cy - h / 2 - HOLGURA, w + 2 * HOLGURA, h + 2 * HOLGURA)]
+            lado = geo["etiquetas"].get(p["id"])
+            if lado and p["nombre"]:
+                lh = co.alto_texto(p["nombre"]) - 6
+                cajas[p["id"]].append((cx - co.ANCHO_ETIQUETA / 2 + 4, cy - h / 2 - lh if lado == "arriba" else cy + h / 2,
+                                       co.ANCHO_ETIQUETA - 8, lh))
+        caminos, etiquetas = [], []
+        for fl, pts in zip(proc["flujos"], geo["flujos"]):
+            if fl["de"] not in geo["pasos"] or fl["a"] not in geo["pasos"]:
+                continue
+            (ax, ay, aw, ah), (bx, by, bw, bh) = geo["pasos"][fl["de"]], geo["pasos"][fl["a"]]
+            camino = _camino((ax, ay), (aw, ah), pts, (bx, by), (bw, bh))
+            caminos.append((fl, camino))
+            if fl.get("etiqueta"):
+                g = f.por_id(fl["id"])[1].find("mxGeometry")
+                cx, cy = _punto_a(camino, (float(g.get("x", 0)) + 1) / 2)
+                ancho = len(fl["etiqueta"]) * ANCHO_LETRA_FLUJO + 4
+                etiquetas.append((fl, (cx - ancho / 2, cy - 7, ancho, 14)))
+        texto = lambda fl: f"{fl['de']} → {fl['a']}"   # noqa: E731
+        for fl, camino in caminos:
+            segmentos = list(zip(camino, camino[1:]))
+            for pid, lista in cajas.items():
+                if pid not in (fl["de"], fl["a"]) and any(_cruza(p, q, c) for p, q in segmentos for c in lista):
+                    out.append(f"{pagina}{texto(fl)} pasa por {pid} («{nombre[pid]}»)")
+            for otro, caja in etiquetas:
+                if otro is not fl and any(_cruza(p, q, caja) for p, q in segmentos):
+                    out.append(f"{pagina}{texto(fl)} pasa por la etiqueta «{otro['etiqueta']}» de {texto(otro)}")
+        for i, (f1, c1) in enumerate(caminos):
+            for f2, c2 in caminos[i + 1:]:
+                if f1["de"] == f2["de"] or f1["a"] == f2["a"]:
+                    continue
+                for p1, q1 in zip(c1, c1[1:]):
+                    for p2, q2 in zip(c2, c2[1:]):
+                        for eje in (0, 1):   # 0: tramos verticales (misma x); 1: horizontales (misma y)
+                            if not (abs(p1[eje] - q1[eje]) <= 1 and abs(p2[eje] - q2[eje]) <= 1 and abs(p1[eje] - p2[eje]) <= 1):
+                                continue
+                            o = 1 - eje
+                            solape = min(max(p1[o], q1[o]), max(p2[o], q2[o])) - max(min(p1[o], q1[o]), min(p2[o], q2[o]))
+                            if solape > 1:
+                                out.append(f"{pagina}{texto(f1)} y {texto(f2)} van juntos {solape:.0f} px")
+    return sorted(set(out))
+
+
+def conexiones(tmp):
+    """La colocación por capas no dibuja conexiones falsas (conexiones_falsas): con tres puertas seguidas que se apilan
+    en una columna, la salida de una que tapa otro paso va por el hueco entre columnas, no pegada a la puerta."""
+    sin = entorno(sin_navegador=True)
+    d = tmp / "Carpeta con espacios" / "tres puertas" / "tres.drawio"
+    run("crear", AQUI / "datos" / "tres-puertas.json", "-o", d, esperado=2, env=sin)
+    mal = conexiones_falsas(d)
+    check(not mal and not solapes(d), "por capas: tres puertas seguidas, sin conexiones falsas ni nada que se pise ("
+          + f"{len(mal)}) " + "; ".join(mal[:6] + solapes(d)))
+
+
 # ---------------------------------------------------------------- Tarea 12: sin navegador y procesos grandes
 def bpmn_valido(ruta):
     """Lo que necesitan Camunda Modeler y bpmn.io para abrir y dibujar un BPMN 2.0: ids únicos, referencias que
@@ -373,6 +490,7 @@ def sin_navegador(tmp):
     check(dm.comparar(base, proc) == [] and solapes(d) == [] and izquierda["EV-01"] < izquierda["ACT-01"]
           < izquierda["GW-01"] < izquierda["ACT-02"] < izquierda["EV-03"],
           "sin navegador: el proceso entero, de izquierda a derecha y sin nada que se pise " + "; ".join(solapes(d)))
+    check(not conexiones_falsas(d), "sin navegador: sin conexiones falsas " + "; ".join(conexiones_falsas(d)))
     dentro = [p["id"] for p in proc["pasos"] if not (geo["carriles"][p["carril"]][0] <= geo["pasos"][p["id"]][1]
                                                      <= sum(geo["carriles"][p["carril"]][:2]))]
     check(not dentro, "sin navegador: cada paso dentro de su carril " + ", ".join(dentro))
@@ -393,6 +511,7 @@ def sin_navegador(tmp):
     run("crear", PEDIDO, "-o", p, esperado=2, env=sin)
     check(dm.comparar(json.loads(PEDIDO.read_text(encoding="utf-8")), dm.leer(str(p))[0]) == [] and solapes(p) == [],
           "sin navegador: pedido, con externo y notas, sin nada que se pise " + "; ".join(solapes(p)))
+    check(not conexiones_falsas(p), "sin navegador: pedido, sin conexiones falsas " + "; ".join(conexiones_falsas(p)))
     (tmp / "no-hace-falta.mmd").write_text("flowchart TD\n  A --> B\n", encoding="utf-8")
     r = subprocess.run([sys.executable, str(SCRIPTS / "mermaid.py"), "--check", str(tmp / "no-hace-falta.mmd")],
                        capture_output=True, text=True, encoding="utf-8", env=sin)
@@ -482,6 +601,8 @@ def tramos(tmp, con_png=True):
     check(dm.comparar(proc, leido) == [] and leido.get("tramos") is True and solapes(d) == [],
           "tramos: leer devuelve el proceso entero, con la etiqueta, la condición y el flujo por defecto de los que "
           "cruzan de un tramo a otro " + "; ".join(t for _, t in dm.comparar(proc, leido)) + "; ".join(solapes(d)))
+    mal = conexiones_falsas(d)
+    check(not mal, f"tramos: sin conexiones falsas ({len(mal)}) " + "; ".join(mal[:6]))
     # cada flujo que cruza de un tramo a otro: un enlace que sale en el suyo, con el número del otro, y uno que entra
     pagina_de = {cid: k for k, (_, _, estilos) in enumerate(pags, 1) for cid in estilos}
     t = ET.parse(d).getroot()
@@ -526,6 +647,8 @@ def tramos(tmp, con_png=True):
     pags = paginas(d)
     check(run("comparar", d, env=env).startswith("Sin cambios") and len(pags) > 2 and all(a <= ANCHO_PAGINA for _, a, _ in pags),
           "tramos: actualizar coloca de nuevo los tramos y el dibujo queda igual que el análisis")
+    mal = conexiones_falsas(d)
+    check(not mal, f"tramos: actualizar, sin conexiones falsas ({len(mal)}) " + "; ".join(mal[:6]))
     # en draw.io se renombra un paso de un tramo que no es el primero y se mueve: comparar lo ve
     t = ET.parse(d)
     pagina2 = t.getroot().findall("diagram")[1]
@@ -576,6 +699,7 @@ def main_sin_navegador():
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="diagramas-sin-navegador-"))
     try:
         sin_navegador(tmp / "sin")
+        conexiones(tmp / "conexiones")
         tramos(tmp / "tramos", con_png=False)
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}
@@ -602,6 +726,7 @@ def main():
     try:
         # Tarea 12: sin navegador y procesos que no caben en una página
         sin_navegador(tmp / "sin")
+        conexiones(tmp / "conexiones")
         tramos(tmp / "tramos")
         tramos(tmp / "tramos sin navegador", con_png=False)
         d = tmp / "solicitud.drawio"

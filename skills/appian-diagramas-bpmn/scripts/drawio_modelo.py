@@ -436,10 +436,9 @@ def entrada_asociacion(lado, nota=None, paso=None):
             else f"exitX={sx:.3f};exitY=0;exitDx=0;exitDy=0;entryX={ex:.3f};entryY=1;entryDx=0;entryDy=0;")
 
 
-def _sitio_etiqueta(a, ta, pts, b, tb):
-    """Dónde va la etiqueta de un flujo con codos: en el centro de su tramo horizontal más largo (así no pisa las formas
-    que rodea). Es la posición relativa de draw.io, de -1 (origen) a 1 (destino), contada de borde a borde; None si el
-    flujo no tiene tramos horizontales."""
+def _camino(a, ta, pts, b, tb):
+    """El trazado de un flujo de borde a borde: del borde del origen (por el lado hacia su primer punto), por sus
+    puntos, al borde del destino. `a` y `b`, centros; `ta` y `tb`, (ancho, alto)."""
     def borde(c, tam, hacia):
         (cx, cy), (w, h) = c, tam
         if abs(hacia[1] - cy) <= 1:
@@ -447,14 +446,44 @@ def _sitio_etiqueta(a, ta, pts, b, tb):
         if abs(hacia[0] - cx) <= 1:
             return (cx, cy + (h / 2 if hacia[1] > cy else -h / 2))
         return c
-    camino = [a] + [tuple(p) for p in pts] + [b]
+    camino = [tuple(a)] + [tuple(p) for p in pts] + [tuple(b)]
     camino[0], camino[-1] = borde(a, ta, camino[1]), borde(b, tb, camino[-2])
+    return camino
+
+
+def _sitio_etiqueta(camino, otros=()):
+    """Dónde va la etiqueta de un flujo con codos: en el centro del trozo más largo de sus tramos horizontales que no
+    cruza ni comparte ningún otro flujo de `otros` (sus caminos). Así no pisa las formas que rodea ni parece de otro
+    flujo. Es la posición relativa de draw.io, de -1 (origen) a 1 (destino), contada de borde a borde; None si el flujo
+    no tiene tramos horizontales."""
     largos = [abs(q[0] - p[0]) + abs(q[1] - p[1]) for p, q in zip(camino, camino[1:])]
     horizontales = [k for k, (p, q) in enumerate(zip(camino, camino[1:])) if abs(p[1] - q[1]) <= 1 and largos[k]]
     if not horizontales or not sum(largos):
         return None
-    k = max(horizontales, key=lambda k: largos[k])
-    return 2 * (sum(largos[:k]) + largos[k] / 2) / sum(largos) - 1
+    mejor = None                                   # (largo del trozo libre, distancia de su centro al origen)
+    for k in horizontales:
+        p, q = camino[k], camino[k + 1]
+        lo, hi = sorted((p[0], q[0]))
+        ocupado = []
+        for otro in otros:
+            for r, t in zip(otro, otro[1:]):
+                if abs(r[0] - t[0]) <= 1 and min(r[1], t[1]) - 1 <= p[1] <= max(r[1], t[1]) + 1:
+                    ocupado.append((r[0], r[0]))                                  # lo cruza
+                elif abs(r[1] - t[1]) <= 1 and abs(r[1] - p[1]) <= 1:
+                    ocupado.append(tuple(sorted((r[0], t[0]))))                   # va por la misma recta
+        libres, desde = [], lo
+        for a, b in sorted(ocupado):
+            if a > desde:
+                libres.append((desde, min(a, hi)))
+            desde = max(desde, b)
+        libres.append((desde, hi))
+        for a, b in libres:
+            if b > a and (mejor is None or b - a > mejor[0]):
+                mejor = (b - a, sum(largos[:k]) + abs((a + b) / 2 - p[0]))
+    if mejor is None:                              # todo ocupado: el centro del tramo horizontal más largo
+        k = max(horizontales, key=lambda k: largos[k])
+        mejor = (0, sum(largos[:k]) + largos[k] / 2)
+    return 2 * mejor[1] / sum(largos) - 1
 
 
 def _celdas(proc, geo, pre=""):
@@ -500,6 +529,11 @@ def _celdas(proc, geo, pre=""):
                       '</mxCell>')
     fondo = max((y + h for y, h in (v[:2] for v in geo["carriles"].values())), default=0)
     tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    caminos = {}          # los de la colocación por capas, para que la etiqueta de uno no quede donde pasa otro
+    if geo.get("etiqueta_en_horizontal"):
+        caminos = {i: _camino(centro[f["de"]], TAM[tipo[f["de"]]], geo["flujos"][i - 1], centro[f["a"]], TAM[tipo[f["a"]]])
+                   for i, f in enumerate(proc["flujos"], 1)
+                   if f["de"] in centro and f["a"] in centro and f["de"] != f["a"] and i - 1 < len(geo["flujos"])}
     for i, f in enumerate(proc["flujos"], 1):
         st = estilo_flujo(f, ext_id)
         pos = ""
@@ -515,8 +549,8 @@ def _celdas(proc, geo, pre=""):
                 pos = f' x="{2 * min(max(frac, 0), 1) - 1:.3f}"'
         mensaje = f["de"] in ext_id or f["a"] in ext_id
         pts = geo["flujos"][i - 1] if i - 1 < len(geo.get("flujos", [])) and not mensaje else []
-        if geo.get("etiqueta_en_horizontal") and f.get("etiqueta") and pts:
-            sitio = _sitio_etiqueta(centro[f["de"]], TAM[tipo[f["de"]]], pts, centro[f["a"]], TAM[tipo[f["a"]]])
+        if f.get("etiqueta") and i in caminos:
+            sitio = _sitio_etiqueta(caminos[i], [c for j, c in caminos.items() if j != i])
             pos = f' x="{sitio:.3f}"' if sitio is not None else pos
         arr = ('<Array as="points">' + "".join(f'<mxPoint x="{x:.0f}" y="{y:.0f}"/>' for x, y in pts) + "</Array>") if pts else ""
         de, a = ext_id.get(f["de"], f["de"]), ext_id.get(f["a"], f["a"])
