@@ -1,6 +1,6 @@
 ---
 name: appian-diagramas-bpmn
-description: Dibuja y mantiene los diagramas de proceso BPMN del proyecto en draw.io (fichero .drawio editable, con carriles por perfil) y su PNG para el documento, sin conexión. Úsala para crear o cambiar el diagrama de un proceso, revisar qué se cambió a mano en draw.io (por ejemplo, en una reunión con el usuario), leer un .drawio o exportar un proceso a BPMN 2.0. La usan appian-functional-analyst (procesos del análisis) y appian-reverse-engineering (procesos de una aplicación existente). No decide qué contiene el proceso: si sale de reuniones o documentos, primero lo describe appian-functional-analyst.
+description: "Dibuja y mantiene los diagramas de proceso BPMN del proyecto en draw.io (fichero .drawio editable, con carriles por perfil) y su PNG para el documento, sin conexión. Úsala para crear o cambiar el diagrama de un proceso, dibujar el proceso de una aplicación existente, revisar qué se cambió a mano en draw.io (por ejemplo, en una reunión con el usuario), leer un .drawio o exportar un proceso a BPMN 2.0. La usan appian-functional-analyst (procesos del análisis), appian-reverse-engineering (procesos de una aplicación existente, que lee antes de la aplicación si no están extraídos) y appian-refactorizacion (los procesos objetivo, si los dibuja). No decide qué contiene el proceso: si sale de reuniones o documentos, primero lo describe appian-functional-analyst."
 ---
 
 # Diagramas de proceso BPMN

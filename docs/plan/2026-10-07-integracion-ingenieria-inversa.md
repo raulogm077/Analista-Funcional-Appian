@@ -1039,7 +1039,7 @@ cliente, y se regeneran con sus scripts (lo decidió Raúl el 7 de octubre).
   remite a refactorización y deja de decir «no audita»; buenas prácticas remite «evaluar una aplicación entera» a
   refactorización y se recorta, porque hoy tiene 1021 caracteres; diagramas nombra a refactorización si dibuja procesos objetivo;
   prototipos, ya `appian-prototipos` y sin marca de cliente (Tarea 0b).
-- [ ] **Paso 1:** `comprobar_plugin.py` en verde. **Paso 2:** commit.
+- [x] **Paso 1:** `comprobar_plugin.py` en verde. **Paso 2:** commit.
 
 ### Tarea 29: Prueba de enrutado
 
