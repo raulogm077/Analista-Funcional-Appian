@@ -17,6 +17,11 @@ Qué mira:
 - que ninguna skill use como marca el círculo azul (MARCA_ANTIGUA): la de inferido es 🔶, la misma en todas;
 - que las skills que leen lo de ingeniería inversa (LEEN_AS_IS) no citen su extracción en bruto (as-is/extraccion,
   mcp_raw): leen as-is/datos/ y los documentos de as-is/;
+- un dueño por salida: que cada SKILL.md tenga «Qué escribe» («What it writes» en inglés) y declare ahí solo rutas de
+  <p> que pruebas/propietarios.json le da (como dueño o en «tambien»), y que cada regla de ese fichero la declare su
+  dueño;
+- una pieza por capacidad: que ningún script fuera de appian-diagramas-bpmn pinte Mermaid (mermaid.initialize) o
+  exporte BPMN (BPMNDiagram), y que las listas de muletillas («- «…» →») estén solo en redaccion.md (REDACCION);
 - que las skills que se citan existan en el plugin (o estén en EXTERNAS); el README cita además el nombre anterior de
   una skill (ANTERIORES), para retirar sus copias sueltas;
 - que existan los ficheros que cita cada SKILL.md y las rutas de una skill a otra;
@@ -106,6 +111,17 @@ AUTORIA = {".claude-plugin/plugin.json": "author", ".claude-plugin/marketplace.j
 # historia; el nombre anterior de prototipos (ANTERIORES) no cuenta: hay que poder buscarlo para retirar copias sueltas.
 CLIENTES = PRUEBAS / "clientes.txt"
 CON_HISTORIA = ("README.md",)
+# Un dueño por salida: cada ruta de <p> es de una skill (PROPIETARIOS; gana el patrón más específico) y cada SKILL.md
+# declara en «Qué escribe» («What it writes» en inglés) las que escribe, relativas a <p>, una por línea y entre comillas
+# invertidas al empezar la línea.
+PROPIETARIOS = PRUEBAS / "propietarios.json"
+TITULOS_ESCRIBE = ("## Qué escribe", "## What it writes")
+# Una pieza por capacidad: solo la skill de diagramas pinta Mermaid y exporta BPMN, y las muletillas solo están en
+# REDACCION, las reglas de prosa comunes.
+DIAGRAMAS = "appian-diagramas-bpmn"
+PIEZAS_DE_DIAGRAMAS = ("mermaid.initialize", "BPMNDiagram")
+REDACCION = "skills/appian-functional-analyst/references/redaccion.md"
+LISTA_MULETILLAS = re.compile(r"^\s*- «[^»\n]+» →")
 
 errores, avisos = [], []
 
@@ -270,6 +286,81 @@ def comprobar_personales_y_clientes():
         for t, lineas in de_clientes.items():
             errores.append(f"{ruta}:{donde(lineas)}: nombra «{t}», de un cliente ({CLIENTES.relative_to(REPO).as_posix()}); "
                            "el plugin no lleva clientes: usa datos ficticios neutros")
+
+
+def expande(patron):
+    """Las variantes de un patrón con llaves: «x/*.{png,svg}» → «x/*.png», «x/*.svg»."""
+    m = re.search(r"\{([^{}]*)\}", patron)
+    if not m:
+        return [patron]
+    return [v for alt in m.group(1).split(",") for v in expande(patron[:m.start()] + alt.strip() + patron[m.end():])]
+
+
+def regla_de(ruta, reglas):
+    """La regla más específica (la de más caracteres fijos) que abarca una ruta de <p>, o None: «*» no pasa de una
+    carpeta a otra y «x/» es la carpeta con todo lo que lleva."""
+    candidatas = []
+    for r in reglas:
+        for p in expande(r["patron"]):
+            rx = "".join("[^/]*" if c == "*" else re.escape(c) for c in p) + (".*" if p.endswith("/") else "")
+            if re.fullmatch(rx, ruta):
+                candidatas.append((len(p.replace("*", "")), r))
+    return max(candidatas, key=lambda x: x[0])[1] if candidatas else None
+
+
+def comprobar_propietarios(textos):
+    """Un dueño por salida: lo que declara una skill en «Qué escribe» es suyo o de una regla que la tiene en «tambien», y
+    cada regla de PROPIETARIOS la declara su dueño. Una ruta declarada con <x> o * se mira con un nombre cualquiera."""
+    fichero = PROPIETARIOS.relative_to(REPO).as_posix()
+    if not PROPIETARIOS.is_file():
+        errores.append(f"falta {fichero}: de qué skill es cada ruta de <p>")
+        return
+    reglas = json.loads(PROPIETARIOS.read_text(encoding="utf-8"))
+    nuevos, declaradas = [], set()
+    for r in reglas:
+        for s in [r["dueno"], *r.get("tambien", [])]:
+            if s not in textos:
+                nuevos.append(f"{fichero}: la regla `{r['patron']}` nombra {s}, que no está en el plugin")
+    for n, t in textos.items():
+        bloque = next((b for b in (seccion(t, x) for x in TITULOS_ESCRIBE) if b is not None), None)
+        if bloque is None:
+            nuevos.append(f"{n}/SKILL.md: falta el apartado «Qué escribe» («What it writes» en inglés): las rutas que escribe, "
+                          "relativas a <p>, una por línea con lo que es, o que no escribe nada")
+            continue
+        for ruta in re.findall(r"^\s*[-*] `([^`]+)`", bloque, re.M):
+            for variante in expande(ruta):
+                r = regla_de(re.sub(r"<[^>]*>|\*", "x", variante), reglas)
+                if r is None:
+                    nuevos.append(f"{n}/SKILL.md: «Qué escribe» declara `{ruta}`, que no es de ninguna skill en {fichero}: "
+                                  "corrige la ruta (relativa a <p>) o añade su regla")
+                elif r["dueno"] == n:
+                    declaradas.add((n, r["patron"]))
+                elif n not in r.get("tambien", []):
+                    nuevos.append(f"{n}/SKILL.md: «Qué escribe» declara `{ruta}`, que es de {r['dueno']} ({fichero}, "
+                                  f"`{r['patron']}`): una skill escribe solo lo suyo y lo que una regla le deja en «tambien»")
+    for r in reglas:
+        if r["dueno"] in textos and (r["dueno"], r["patron"]) not in declaradas:
+            nuevos.append(f"{fichero}: la regla `{r['patron']}` es de {r['dueno']}, pero su «Qué escribe» no la declara")
+    errores.extend(dict.fromkeys(nuevos))  # una vez cada uno: las variantes de una ruta con llaves dan el mismo
+
+
+def comprobar_piezas():
+    """Una pieza por capacidad: fuera de DIAGRAMAS ningún script pinta Mermaid ni exporta BPMN, y ningún documento del
+    paquete salvo REDACCION lleva una lista de muletillas (se remite a REDACCION)."""
+    for f in ficheros_del_paquete():
+        ruta = f.relative_to(RAIZ).as_posix()
+        if f.suffix == ".py" and not ruta.startswith(f"skills/{DIAGRAMAS}/"):
+            texto = f.read_text(encoding="utf-8", errors="replace")
+            for pieza in PIEZAS_DE_DIAGRAMAS:
+                if pieza in texto:
+                    errores.append(f"{ruta}: escribe «{pieza}»: solo {DIAGRAMAS} pinta Mermaid y exporta BPMN; usa su "
+                                   "mermaid.py o su diagrama.py")
+        elif f.suffix == ".md" and ruta != REDACCION:
+            lineas = [str(i) for i, linea in enumerate(f.read_text(encoding="utf-8", errors="replace").splitlines(), 1)
+                      if LISTA_MULETILLAS.match(linea)]
+            if lineas:
+                errores.append(f"{ruta}:{','.join(lineas[:5])}: lleva una lista de muletillas («- «…» →»); las reglas de "
+                               f"prosa están solo en {REDACCION}: remite a ese fichero")
 
 
 def anota_prueba(nombre, r, ruta, pytest=False):
@@ -592,6 +683,48 @@ def probar_comprobador(nombres):
         c, out = comprueba()
         espera(c == 1 and "zz-cliente.json:2" in out and "clientes.txt" in out, "un fichero de hooks/ que nombra a un cliente no da error", out)
         gancho.unlink()
+        # un dueño por salida (pruebas/propietarios.json): «Qué escribe» declara solo lo de esa skill o lo que su regla le
+        # deja en «tambien», y cada dueño declara sus reglas
+        def cambia(nombre, cambio):
+            doc = copia / "skills" / nombre / "SKILL.md"
+            antes = doc.read_text(encoding="utf-8")
+            despues = cambio(antes)
+            espera(despues != antes, f"la prueba no pudo cambiar {nombre}/SKILL.md (¿falta su «Qué escribe»?)", "")
+            doc.write_text(despues, encoding="utf-8")
+            c, out = comprueba()
+            doc.write_text(antes, encoding="utf-8")
+            return c, out
+
+        declara = lambda linea: lambda t: t.replace("## Qué escribe\n", f"## Qué escribe\n\n{linea}\n", 1)
+        c, out = cambia("appian-refactorizacion", declara("- `as-is/`: prueba"))
+        espera(c == 1 and "appian-refactorizacion/SKILL.md" in out and "`as-is/`" in out
+               and "appian-reverse-engineering" in out, "una skill que declara as-is/ sin ser ingeniería inversa no da error", out)
+        c, out = cambia("appian-diagramas-bpmn", declara("- `analisis/diagramas/zz.json`: prueba"))
+        espera(c == 0, "diagramas, que está en «tambien» de analisis/diagramas/*.json, da error al declararlo", out)
+        c, out = cambia("appian-prototipos", declara("- `analisis/diagramas/zz.json`: prueba"))
+        espera(c == 1 and "appian-prototipos/SKILL.md" in out and "analisis/diagramas/zz.json" in out,
+               "prototipos, que no está en «tambien» de analisis/diagramas/*.json, no da error al declararlo", out)
+        c, out = cambia("appian-refactorizacion", lambda t: re.sub(r"^- `refactorizacion/propuesta\.md`.*\n", "", t, flags=re.M))
+        espera(c == 1 and "`refactorizacion/`" in out and "no la declara" in out,
+               "una regla de propietarios.json que su dueño no declara no da error", out)
+        c, out = cambia(nombres[0], lambda t: re.sub(r"^## (Qué escribe|What it writes)\n.*?(?=^## |\Z)", "", t,
+                                                       flags=re.S | re.M))
+        espera(c == 1 and f"{nombres[0]}/SKILL.md" in out and "Qué escribe" in out,
+               "un SKILL.md sin el apartado «Qué escribe» no da error", out)
+        # una pieza por capacidad: solo diagramas pinta Mermaid y exporta BPMN, y las muletillas solo están en redaccion.md
+        for nombre, dato in (("zz_bpmn.py", '<bpmndi:BPMNDiagram id="d"/>'), ("zz_pinta.py", "mermaid.initialize({})")):
+            pieza = scripts / nombre
+            pieza.write_text(f"PLANTILLA = '{dato}'\n", encoding="utf-8")
+            c, out = comprueba()
+            espera(c == 1 and nombre in out and "appian-diagramas-bpmn" in out,
+                   f"un script fuera de diagramas con {dato} no da error", out)
+            pieza.unlink()
+        lista = skill / "references" / "zz-muletillas.md"
+        lista.write_text("# Prosa\n\n- «cabe destacar» → quítalo\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "zz-muletillas.md:3" in out and "redaccion.md" in out,
+               "una lista de muletillas fuera de redaccion.md no da error", out)
+        lista.unlink()
         # --completo --plugin pasa las pruebas del repositorio a la copia: con sus scripts rotos, ninguna pasa
         # (si falta un requisito, como pytest sin uv, esa prueba no se completa, pero tampoco pasa)
         for py in (copia / "skills").rglob("*.py"):
@@ -667,6 +800,10 @@ def main(completo, plugin=None):
 
     # Nada personal ni de un cliente en el paquete
     comprobar_personales_y_clientes()
+
+    # Un dueño por salida y una pieza por capacidad
+    comprobar_propietarios(textos)
+    comprobar_piezas()
 
     # Skills citadas
     documentos = [RAIZ / "README.md"] + [SKILLS / n / "SKILL.md" for n in nombres]

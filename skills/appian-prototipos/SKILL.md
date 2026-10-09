@@ -122,6 +122,14 @@ Los comentarios de una demo los incorpora antes el analista: informe de impacto 
 3. Valida con `validate.py app.json --anterior app-vX.Y.json --confirmadas …` y las PAN 🔒 que el informe no aprueba (`proyecto.py estado <p>` del analista da las 🔒): es error si cambia una de ellas o un diálogo que abre.
 4. Construye, captura las pantallas que cambian y sigue con «Entregar».
 
+## Qué escribe
+
+En `<p>`:
+- `prototipo/`: el script que escribe el spec, `app.json`, las versiones enseñadas (`app-vX.Y.json`) y, si hace falta, `prototype-extensions.json`
+- `prototipo/brand-<id>.json`: la marca del cliente, con su logo, `perfil-css-<id>.txt` y `marca-<id>.md`
+- `prototipo/prototipo-<app>.html`: el prototipo, con su trazabilidad y, si la marca lo lleva, su perfil CSS
+- `prototipo/capturas/`: las capturas PNG y su `indice.md`
+
 ## Uso del prototipo (explícalo al entregar la primera vez)
 - **Reunión**: navegación por las páginas del site, filtros, búsqueda, fichas, asistentes con validación, diálogos. Barra inferior: **Pantallas** (índice para saltar a cualquier pantalla o diálogo) y **Requisitos** (cobertura, preguntas abiertas, supuestos).
 - **Documento funcional**: `capturas/*.png` + `capturas/indice.md` (pie de figura, ficha PAN, línea lista para pegar en ella, patrón e historias). En capturas la barra del prototipo no aparece.

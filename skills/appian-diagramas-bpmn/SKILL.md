@@ -18,6 +18,14 @@ Van juntos en la misma carpeta (`analisis/diagramas/` o la que indique quien lla
 | `X.json` | El proceso que conoce el análisis. La primera vez puede ser el propio JSON que se pasa a `crear`; después lo mantiene la herramienta y no se edita a mano: los cambios van con `actualizar` |
 | `X.bpmn` | Solo si se exporta con `bpmn`, y uno con el proceso entero aunque vaya en tramos: conserva los tipos de inicio y de tarea, el flujo por defecto, los plazos y los errores, los participantes externos con sus mensajes, las notas, el lado de cada etiqueta y los datos de Appian |
 
+## Qué escribe
+
+En la carpeta que indique quien llama, dentro de `<p>`:
+- `analisis/diagramas/*.{drawio,png,bpmn,svg}`: los procesos del análisis y la imagen de cada Mermaid
+- `analisis/diagramas/*.json`: el proceso de cada diagrama, del analista; se reescribe al aceptar lo cambiado a mano
+- `as-is/08-procesos-bpmn/*.{drawio,png,bpmn}`: los procesos de una aplicación existente
+- `as-is/08-procesos-bpmn/*.json`: el proceso de cada diagrama, de ingeniería inversa; igual que el del analista
+
 ## Formato del proceso
 
 Es un JSON con un paso y un flujo por línea:

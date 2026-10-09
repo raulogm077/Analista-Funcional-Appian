@@ -160,6 +160,19 @@ Según `output_preferences.json` (`pdf`, `dashboard`): `agents/pdf-publisher.md`
 └── extraccion/   = <trabajo>: la extracción, tal cual, y los datos de trabajo (no es un entregable)
 ```
 
+## Qué escribe
+
+En `<p>` (sin proyecto, `<p>` es `./<PREFIJO>/`):
+- `as-is/`: `LEEME.md`, los documentos `01`–`11`, `INVENTARIO.md` y, si se piden, `EXPORT.pdf` y `dashboard/`
+- `as-is/08-procesos-bpmn/<slug>.md`: el documento de cada proceso, y su `indice.md`
+- `as-is/08-procesos-bpmn/<slug>.json`: el proceso de cada process model, que escribe y mantiene `diagrama.py`
+- `as-is/anexo/`: las definiciones originales
+- `as-is/datos/`: lo que leen las demás skills
+- `as-is/diagrams/<nombre>.mmd`: los diagramas Mermaid
+- `as-is/extraccion/`: la extracción y los datos de trabajo
+
+El `.drawio`, el `.png` y el `.bpmn` de cada proceso y las imágenes de los Mermaid los escribe `appian-diagramas-bpmn`.
+
 ## Dudas de Appian
 
 Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `appian-docs` (sus herramientas llevan `appian-docs` en el nombre o su descripción habla de buscar en la documentación de Appian) antes de escribirlo, nunca de memoria: si existe un componente, una función, un parámetro o un objeto, qué admite, sus límites, si depende de la licencia y desde qué versión.
