@@ -54,17 +54,17 @@
         "label": "Unidad",
         "placeholder": "Seleccione",
         "choiceLabels": [
-         "MAD",
-         "BCN",
-         "PMI",
-         "AGP",
+         "NOR",
+         "SUR",
+         "EST",
+         "OES",
          "SSCC"
         ],
         "choiceValues": [
-         "MAD",
-         "BCN",
-         "PMI",
-         "AGP",
+         "NOR",
+         "SUR",
+         "EST",
+         "OES",
          "SSCC"
         ],
         "value": "local!unidad",

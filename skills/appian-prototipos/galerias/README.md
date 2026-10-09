@@ -13,7 +13,7 @@ su flujo ni sus datos.
 
 | Carpeta | Qué enseña | Dominio de los datos (ficticio) |
 |---|---|---|
-| `bloques/` | Los bloques de `scripts/sail_helpers.py` (cuándo usar cada uno: `references/bloques.md`) y los patrones de 26.9: calendario, comentarios y kanban | Mantenimiento de terminales |
+| `bloques/` | Los bloques de `scripts/sail_helpers.py` (cuándo usar cada uno: `references/bloques.md`) y los patrones de 26.9: calendario, comentarios y kanban | Mantenimiento de las sedes de una empresa |
 | `ia/` | Los componentes de IA de Appian en pantallas completas | Incidencias y pliegos |
 | `componentes/` | Los 147 componentes de interfaz de Appian 26.9, uno a uno y agrupados como en la documentación | Incidencias y proveedores |
 | `../templates/` | Los 12 patrones de pantalla (P01–P12) y su catálogo navegable (`catalogo-patrones.json`) | Genérico: expedientes de una unidad |

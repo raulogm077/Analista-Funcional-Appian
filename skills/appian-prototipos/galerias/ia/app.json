@@ -92,57 +92,57 @@
     {
      "id": 1,
      "codigo": "INC-2026-0412",
-     "titulo": "Fuga de agua en el falso techo de la zona de facturación",
+     "titulo": "Fuga de agua en el falso techo del vestíbulo",
      "area": "Mantenimiento",
-     "aeropuerto": "MAD",
+     "sede": "NOR",
      "estado": "En curso",
      "prioridad": "Alta",
-     "descripcion": "Goteo continuo sobre los mostradores 812-818; se han colocado cubos y se ha acotado la zona.",
+     "descripcion": "Goteo continuo sobre los puestos de recepción 1 a 4; se han colocado cubos y se ha acotado la zona.",
      "fecha": "2026-09-11",
      "responsable": "Pablo Martín Ortega"
     },
     {
      "id": 2,
      "codigo": "INC-2026-0415",
-     "titulo": "Escalera mecánica detenida en el acceso a la T4S",
+     "titulo": "Ascensor detenido en el edificio B",
      "area": "Mantenimiento",
-     "aeropuerto": "MAD",
+     "sede": "NOR",
      "estado": "Pendiente",
      "prioridad": "Alta",
-     "descripcion": "La escalera 4S-03 se detiene al arrancar; posible fallo del freno de servicio.",
+     "descripcion": "El ascensor B-03 se detiene al arrancar; posible fallo del freno de servicio.",
      "fecha": "2026-09-12",
      "responsable": "Javier García Ruiz"
     },
     {
      "id": 3,
      "codigo": "INC-2026-0418",
-     "titulo": "Cola excesiva en el filtro de seguridad norte",
+     "titulo": "Cola excesiva en el control de accesos principal",
      "area": "Operaciones",
-     "aeropuerto": "BCN",
+     "sede": "SUR",
      "estado": "Cerrada",
      "prioridad": "Media",
-     "descripcion": "Tiempo de espera de 38 minutos entre las 6:00 y las 7:30 por falta de personal.",
+     "descripcion": "Tiempo de espera de 38 minutos entre las 8:00 y las 9:30 por falta de personal.",
      "fecha": "2026-09-13",
      "responsable": "Andrés Moreno Pastor"
     },
     {
      "id": 4,
      "codigo": "INC-2026-0421",
-     "titulo": "Pantallas de información de vuelos sin datos en la puerta B22",
+     "titulo": "Pantallas de cartelería sin datos en la planta 2",
      "area": "Sistemas",
-     "aeropuerto": "BCN",
+     "sede": "SUR",
      "estado": "En curso",
      "prioridad": "Media",
-     "descripcion": "Los monitores FIDS de la puerta B22 muestran la pantalla en negro desde el cambio de turno.",
+     "descripcion": "Las pantallas de cartelería digital de la planta 2 están en negro desde el cambio de turno.",
      "fecha": "2026-09-14",
      "responsable": "Rocío Sánchez Vidal"
     },
     {
      "id": 5,
      "codigo": "INC-2026-0423",
-     "titulo": "Humedad y moho en los aseos de llegadas",
+     "titulo": "Humedad y moho en los aseos de la planta baja",
      "area": "Limpieza",
-     "aeropuerto": "PMI",
+     "sede": "EST",
      "estado": "Pendiente",
      "prioridad": "Baja",
      "descripcion": "Olor persistente y manchas de humedad en la pared del aseo de caballeros.",
@@ -152,9 +152,9 @@
     {
      "id": 6,
      "codigo": "INC-2026-0426",
-     "titulo": "Avería del sistema de climatización en la sala de embarque C",
+     "titulo": "Avería del sistema de climatización en la sala de formación C",
      "area": "Mantenimiento",
-     "aeropuerto": "AGP",
+     "sede": "OES",
      "estado": "En curso",
      "prioridad": "Alta",
      "descripcion": "Temperatura de 29 °C en la sala; la enfriadora 2 da alarma de alta presión.",
@@ -164,24 +164,24 @@
     {
      "id": 7,
      "codigo": "INC-2026-0430",
-     "titulo": "Pérdida de equipajes en la cinta de recogida 7",
+     "titulo": "Cajas atascadas en la cinta transportadora del almacén",
      "area": "Operaciones",
-     "aeropuerto": "MAD",
+     "sede": "NOR",
      "estado": "Cerrada",
      "prioridad": "Media",
-     "descripcion": "Maletas atascadas en la curva de la cinta 7; revisada la guía lateral.",
+     "descripcion": "Cajas atascadas en la curva de la cinta 7; revisada la guía lateral.",
      "fecha": "2026-09-17",
      "responsable": "Andrés Moreno Pastor"
     },
     {
      "id": 8,
      "codigo": "INC-2026-0433",
-     "titulo": "Fallo de la red wifi de pasajeros en la terminal 2",
+     "titulo": "Fallo de la red wifi de visitantes en el edificio 2",
      "area": "Sistemas",
-     "aeropuerto": "BCN",
+     "sede": "SUR",
      "estado": "Pendiente",
      "prioridad": "Media",
-     "descripcion": "Los pasajeros no reciben la página de acceso; el controlador inalámbrico se reinicia cada hora.",
+     "descripcion": "Los visitantes no reciben la página de acceso; el controlador inalámbrico se reinicia cada hora.",
      "fecha": "2026-09-18",
      "responsable": "Rocío Sánchez Vidal"
     },
@@ -190,7 +190,7 @@
      "codigo": "INC-2026-0436",
      "titulo": "Filtración de agua en la cubierta del aparcamiento P1",
      "area": "Mantenimiento",
-     "aeropuerto": "PMI",
+     "sede": "EST",
      "estado": "Pendiente",
      "prioridad": "Media",
      "descripcion": "Tras la lluvia aparecen charcos en la planta -1 junto a los pilares 14 y 15.",
@@ -200,9 +200,9 @@
     {
      "id": 10,
      "codigo": "INC-2026-0439",
-     "titulo": "Puerta automática bloqueada en la salida de llegadas",
+     "titulo": "Puerta automática bloqueada en la entrada principal",
      "area": "Mantenimiento",
-     "aeropuerto": "AGP",
+     "sede": "OES",
      "estado": "Cerrada",
      "prioridad": "Alta",
      "descripcion": "La puerta de doble hoja no abre por un sensor sucio; se limpió y se probó.",
@@ -334,7 +334,7 @@
             "type": "a!agentChatField",
             "title": "Asistente de incidencias",
             "agent": "agent!INC_INCIDENCIAS",
-            "welcomeMessage": "Puedo buscar incidencias, resumir su historial y preparar el parte de trabajo para que usted lo revise.\n\nPor ejemplo: «¿Qué incidencias de climatización hay abiertas en AGP?»",
+            "welcomeMessage": "Puedo buscar incidencias, resumir su historial y preparar el parte de trabajo para que usted lo revise.\n\nPor ejemplo: «¿Qué incidencias de climatización hay abiertas en la sede Oeste?»",
             "placeholder": "Pregunte por una incidencia o pida un parte de trabajo",
             "height": "TALL",
             "inputs": {
@@ -349,11 +349,11 @@
             ],
             "$sessions": [
              {
-              "name": "Incidencias abiertas de climatización en AGP",
+              "name": "Incidencias abiertas de climatización en la sede Oeste",
               "messages": [
                {
                 "role": "USER",
-                "text": "Incidencias abiertas de climatización en AGP"
+                "text": "Incidencias abiertas de climatización en la sede Oeste"
                },
                {
                 "role": "TOOL",
@@ -362,11 +362,11 @@
                },
                {
                 "role": "ASSISTANT",
-                "text": "Hay **1 incidencia abierta**: INC-2026-0426, avería de la enfriadora 2 en la sala de embarque C (prioridad alta)."
+                "text": "Hay **1 incidencia abierta**: INC-2026-0426, avería de la enfriadora 2 en la sala de formación C (prioridad alta)."
                }
               ]
              },
-             "Resumen semanal de Mantenimiento en MAD"
+             "Resumen semanal de Mantenimiento en la sede Norte"
             ],
             "$replies": [
              {
@@ -396,7 +396,7 @@
               "outputs": {
                "parte": {
                 "incidencia": "INC-2026-0426",
-                "equipo": "Enfriadora 2 · Sala de embarque C",
+                "equipo": "Enfriadora 2 · Sala de formación C",
                 "tareas": "Revisar la presión de condensación; limpiar el condensador y comprobar el ventilador; medir la temperatura de la sala",
                 "horas": 3
                }
@@ -739,7 +739,7 @@
               "\n",
               {
                "type": "a!richTextItem",
-               "text": "{fv!row.aeropuerto} · {fv!row.area}",
+               "text": "{fv!row.sede} · {fv!row.area}",
                "color": "SECONDARY",
                "size": "SMALL"
               }
@@ -858,7 +858,7 @@
           "type": "a!suggestedQuestion",
           "iconName": "list",
           "iconColor": "ACCENT",
-          "question": "¿Cuántas incidencias hay pendientes por aeropuerto?"
+          "question": "¿Cuántas incidencias hay pendientes por sede?"
          },
          {
           "type": "a!suggestedQuestion",
@@ -874,8 +874,8 @@
          }
         ],
         "$replies": [
-         "Hay **5 incidencias pendientes**:\n\n- MAD: 1\n- BCN: 1\n- PMI: 2\n- AGP: 1",
-         "**Mantenimiento** acumula 4 de las 5 incidencias de prioridad alta."
+         "Hay **4 incidencias pendientes**:\n\n- NOR: 1\n- SUR: 1\n- EST: 2",
+         "**Mantenimiento** acumula las 4 incidencias de prioridad alta."
         ]
        }
       ]
@@ -984,19 +984,19 @@
             "contents": [
              {
               "type": "a!richTextDisplayField",
-              "label": "Aeropuerto",
+              "label": "Sede",
               "labelPosition": "COLLAPSED",
               "value": [
                {
                 "type": "a!richTextItem",
-                "text": "Aeropuerto",
+                "text": "Sede",
                 "color": "SECONDARY",
                 "size": "SMALL"
                },
                "\n",
                {
                 "type": "a!richTextItem",
-                "text": "{rv!record.aeropuerto|dash}",
+                "text": "{rv!record.sede|dash}",
                 "size": "MEDIUM"
                }
               ],
@@ -1171,7 +1171,7 @@
               "initialMessage": "Hola. Puedo responder preguntas sobre esta incidencia: su historial, el equipo afectado o incidencias parecidas.",
               "suggestedQuestions": [
                "¿Qué se ha hecho hasta ahora?",
-               "¿Hay incidencias parecidas en otros aeropuertos?"
+               "¿Hay incidencias parecidas en otras sedes?"
               ],
               "height": "MEDIUM",
               "buttonStyle": "PRIMARY",
@@ -1557,7 +1557,7 @@
           "$content": [
            [
             "1. Objeto",
-            "El presente pliego regula el servicio de mantenimiento preventivo y correctivo de las instalaciones de climatización de las terminales."
+            "El presente pliego regula el servicio de mantenimiento preventivo y correctivo de las instalaciones de climatización de las sedes."
            ],
            [
             "2. Alcance",
@@ -1603,8 +1603,8 @@
    "local": {
     "local!campos": [
      {
-      "campo": "Aeropuerto",
-      "valor": "AGP",
+      "campo": "Sede",
+      "valor": "OES",
       "confianza": "ALTA",
       "origen": "IA",
       "revisado": true,
@@ -1894,7 +1894,7 @@
           "$content": [
            [
             "Parte de trabajo PT-2026-118",
-            "Aeropuerto: AGP",
+            "Sede: OES",
             "Equipo afectado: Enfriadora 2"
            ],
            [
@@ -2288,9 +2288,9 @@
           },
           "$nodes": [
            {
-            "recordType": "Aeropuerto",
-            "name": "AGP",
-            "icon": "plane"
+            "recordType": "Sede",
+            "name": "OES",
+            "icon": "building"
            },
            {
             "recordType": "Equipo",

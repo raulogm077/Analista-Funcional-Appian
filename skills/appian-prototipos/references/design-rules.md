@@ -350,7 +350,7 @@ Aquí fallan casi todos los listados. Las reglas:
 
 ## 13. Datos de ejemplo
 
-- Realistas y del dominio del proyecto (el de su análisis funcional, no el de un ejemplo del kit): aeropuertos por código IATA, personas y empresas verosímiles, importes creíbles. Nunca «Lorem ipsum» ni «Test 1».
+- Realistas y del dominio del proyecto (el de su análisis funcional, no el de un ejemplo del kit): sedes, unidades y tipos con sus códigos, personas y empresas verosímiles, importes creíbles. Nunca «Lorem ipsum» ni «Test 1».
 - 10–20 filas en la entidad principal, con todos los estados representados.
 - Coherencia entre pantallas: el mismo registro muestra los mismos datos en el listado, la ficha, la tarea y las capturas.
 - Personas ficticias. Nunca datos personales reales de empleados del cliente.
