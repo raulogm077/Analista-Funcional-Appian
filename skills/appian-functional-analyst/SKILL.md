@@ -31,7 +31,7 @@ caso ficticio; no se copian sus nombres.
 ## Requisitos
 
 Antes de la primera tarea: `python3 <skill>/../../requisitos.py --skill appian-functional-analyst`. Dice qué falta en el
-equipo, qué se pierde y cómo se instala. Si falta algo, díselo al usuario y sigue con lo que haya.
+equipo, qué se pierde y cómo se instala. Si falta algo para esta tarea, díselo una vez y sigue. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
 
 Los correos `.msg` no se leen de forma fiable: pide el correo como `.eml` o PDF.
 

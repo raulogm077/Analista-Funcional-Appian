@@ -25,7 +25,7 @@ estar, cómo se pasa de lo que hay a lo nuevo y qué falta por decidir.
 ## Requisitos
 
 Antes de la primera tarea: `python3 <skill>/../../requisitos.py --skill appian-refactorizacion`. Dice qué falta en el
-equipo, qué se pierde y cómo se instala. Si falta algo, díselo al usuario y sigue con lo que haya.
+equipo, qué se pierde y cómo se instala. Si falta algo para esta tarea, díselo una vez y sigue. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
 
 ## Entradas
 

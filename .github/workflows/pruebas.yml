@@ -9,16 +9,23 @@ on:
 
 jobs:
   pruebas:
-    name: ${{ matrix.os }} · Python ${{ matrix.python }}
+    name: ${{ matrix.os }} · Python ${{ matrix.python }}${{ matrix.utf8 == '0' && ' · consola sin UTF-8' || '' }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python: ["3.9", "3.12"]
+        utf8: ["1"]
+        # Un Windows como el de un compañero: sin PYTHONUTF8, la consola y los ficheros sin decir la codificación van en
+        # cp1252 (riesgo 2 del plan)
+        include:
+          - os: windows-latest
+            python: "3.12"
+            utf8: "0"
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     env:
-      PYTHONUTF8: "1"
+      PYTHONUTF8: ${{ matrix.utf8 }}
     steps:
       - uses: actions/checkout@v4
 

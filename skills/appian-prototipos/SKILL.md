@@ -24,7 +24,7 @@ Convierte el análisis funcional de un proyecto en un **prototipo navegable de l
 ### 0. Kit y requisitos
 `KIT` = la carpeta de este SKILL.md: scripts, runtime, schemas, plantillas, marca estándar y galerías vienen dentro del plugin. Todos los comandos usan `python3 $KIT/scripts/...` (en Windows, `python`) y las rutas `references/`, `templates/`, `galerias/` son relativas a `$KIT`.
 
-Antes de la primera tarea: `python3 $KIT/../../requisitos.py --skill appian-prototipos`. Dice qué falta en el equipo, qué se pierde y cómo se instala. Si falta algo, díselo al usuario y sigue con lo que haya.
+Antes de la primera tarea: `python3 $KIT/../../requisitos.py --skill appian-prototipos`. Dice qué falta en el equipo, qué se pierde y cómo se instala. Si falta algo para esta tarea, díselo una vez y sigue. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
 
 ### 1. Entrada: el análisis funcional (`analisis/funcional.md`)
 El prototipo parte de `<p>/analisis/funcional.md`, el diseño funcional que escribe **`appian-functional-analyst`** (en este mismo plugin); `<p>` es la carpeta del proyecto. Si hay `analisis/tecnico.md`, se usa también: versión de Appian, record types y campos, y capa de seguridad de cada perfil. Si el proyecto ya existe, empieza por `python3 $KIT/../appian-functional-analyst/scripts/proyecto.py estado <p>`: versión, pantallas sin captura y pantallas validadas por el cliente.

@@ -29,7 +29,7 @@ python3 "<skill>/scripts/build_model.py" <salida>
 
 ## Requisitos
 
-Antes de la primera tarea, desde la carpeta del usuario: `python3 "<skill>/../../requisitos.py" --skill appian-reverse-engineering`. Dice qué falta en el equipo, qué se pierde y cómo se instala. Sin `uv` o sin el Dev MCP no se puede seguir: díselo al usuario con `references/devmcp-setup.md`. Si falta otra cosa, díselo y sigue con lo que haya.
+Antes de la primera tarea, desde la carpeta del usuario: `python3 "<skill>/../../requisitos.py" --skill appian-reverse-engineering`. Dice qué falta en el equipo, qué se pierde y cómo se instala. Sin `uv` o sin el Dev MCP no se puede seguir: díselo al usuario con `references/devmcp-setup.md`. Si falta otra cosa que esta tarea necesita, díselo una vez y sigue con lo que haya.
 
 ## Argumentos
 

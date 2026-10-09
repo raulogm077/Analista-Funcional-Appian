@@ -99,8 +99,7 @@ inventorying every record type, process and integration. Widen the context when 
 ## Requirements
 
 Before the first task: `python3 <skill>/../../requisitos.py --skill appian-best-practices` (`<skill>` is this file's
-folder; on Windows, `python`). It says what this machine lacks, what is lost and how to install it. If something is
-missing, tell the user and carry on with what there is.
+folder; on Windows, `python`). It says what this machine lacks, what is lost and how to install it. If something this task needs is missing, tell the user once and carry on with what there is; if `requisitos.py` is not there (a loose copy of the skill), carry on without it.
 
 ## Tools
 

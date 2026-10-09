@@ -137,7 +137,8 @@ def _docx():
     npm = shutil.which("npm")
     if npm:
         try:
-            r = subprocess.run([npm, "root", "-g"], capture_output=True, text=True, timeout=20)
+            r = subprocess.run([npm, "root", "-g"], capture_output=True, text=True, encoding="utf-8",
+                               errors="replace", timeout=20)
             if r.returncode == 0 and r.stdout.strip():
                 sitios.append(Path(r.stdout.strip()))
         except (OSError, subprocess.SubprocessError):
