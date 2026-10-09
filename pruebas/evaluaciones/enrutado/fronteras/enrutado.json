@@ -1,0 +1,34 @@
+[
+  {
+    "peticion": "Llevamos más de un año manteniendo la aplicación de licencias de obra y la conocemos de sobra. Antes de la siguiente fase, el jefe de proyecto del cliente quiere un repaso de toda ella: qué está mal montado, cómo tendría que estar y en qué orden lo iríamos arreglando.",
+    "skill": "appian-refactorizacion"
+  },
+  {
+    "peticion": "Antes de pasar a pruebas, mírame la regla de expresión que calcula el importe pendiente de cada expediente: con la bandeja llena tarda casi diez segundos en cargar y creo que el problema está ahí. Dime qué le pasa y cómo la dejo.",
+    "skill": "appian-best-practices"
+  },
+  {
+    "peticion": "De la aplicación de ayudas al alquiler no hay papeles de ningún tipo; solo sabemos que está en el entorno de preproducción. Necesito saber qué tablas y entidades tiene y cómo se relacionan entre ellas.",
+    "skill": "appian-reverse-engineering"
+  },
+  {
+    "peticion": "Para el documento que va a revisar el cliente, dibuja los estados por los que pasa una solicitud de reembolso, desde que se presenta hasta que se paga o se archiva, y cómo se relacionan la solicitud, sus justificantes y los pagos.",
+    "skill": "appian-functional-analyst"
+  },
+  {
+    "peticion": "El martes la jefa de servicio nos contó de palabra cómo tramitan hoy las quejas: quién las recibe, a quién se pasan, cuándo se piden más datos al ciudadano y cuándo se cierran. No está escrito en ningún sitio. Con las notas que tomé en la reunión, pásame a limpio ese flujo.",
+    "skill": "appian-functional-analyst"
+  },
+  {
+    "peticion": "Antes de validar el documento, el cliente quiere ver cómo quedaría la pantalla de alta de una solicitud. Móntame algo que pueda abrir y recorrer él mismo, con los campos, los desplegables y los botones que ya hemos descrito.",
+    "skill": "appian-prototipos"
+  },
+  {
+    "peticion": "Desde la subida del jueves, en producción, la llamada al servicio externo que comprueba las cuentas bancarias da timeout una de cada tres veces y el expediente se queda a medias. ¿Qué tengo que mirar y cómo lo corregimos?",
+    "skill": "appian-best-practices"
+  },
+  {
+    "peticion": "En la última reunión el cliente pidió poder filtrar la bandeja por centro, que el aprobador pueda devolver la solicitud y quitar un paso del alta. Mételo en lo que ya tenemos escrito y validado, y dime qué partes tendría que volver a firmar.",
+    "skill": "appian-functional-analyst"
+  }
+]

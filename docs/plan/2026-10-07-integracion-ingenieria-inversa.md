@@ -1025,9 +1025,9 @@ cliente, y se regeneran con sus scripts (lo decidió Raúl el 7 de octubre).
   declara; un `.py` fuera de diagramas con `mermaid.initialize` o `BPMNDiagram`; una lista de muletillas (`- «…» →`)
   fuera de `redaccion.md`.
 
-- [ ] **Paso 1:** pruebas en `comprobar_plugin.py` con copias temporales: una skill que declara `as-is/` sin serlo y un
+- [x] **Paso 1:** pruebas en `comprobar_plugin.py` con copias temporales: una skill que declara `as-is/` sin serlo y un
   script con `BPMNDiagram` fuera de diagramas dan error; las reglas de `tambien` no. → FALLA.
-- [ ] **Paso 2:** implementar y escribir las secciones. **Paso 3:** en verde. Commit.
+- [x] **Paso 2:** implementar y escribir las secciones. **Paso 3:** en verde. Commit.
 
 ### Tarea 28: Las seis descripciones
 
@@ -1039,7 +1039,7 @@ cliente, y se regeneran con sus scripts (lo decidió Raúl el 7 de octubre).
   remite a refactorización y deja de decir «no audita»; buenas prácticas remite «evaluar una aplicación entera» a
   refactorización y se recorta, porque hoy tiene 1021 caracteres; diagramas nombra a refactorización si dibuja procesos objetivo;
   prototipos, ya `appian-prototipos` y sin marca de cliente (Tarea 0b).
-- [ ] **Paso 1:** `comprobar_plugin.py` en verde. **Paso 2:** commit.
+- [x] **Paso 1:** `comprobar_plugin.py` en verde. **Paso 2:** commit.
 
 ### Tarea 29: Prueba de enrutado
 
@@ -1049,9 +1049,9 @@ tercio en `ocultas/`) y `pruebas/evaluaciones/enrutado/README.md`; resultados en
 - Fronteras: «¿la rehacemos o la evolucionamos?» → refactorización; «revisa esta interfaz» → buenas prácticas;
   «documenta la app X» → ingeniería inversa; «añade estas historias a lo que ya hay» → analista; «dibuja el proceso de
   la app existente» → diagramas (con ingeniería inversa si no hay JSON); «enséñale al cliente cómo quedaría» → prototipos.
-- [ ] **Paso 1:** aquí se pasa al Paso 2: `claude plugin eval` espera otro formato de casos y llama a la API. Si Raúl
+- [x] **Paso 1:** aquí se pasa al Paso 2: `claude plugin eval` espera otro formato de casos y llama a la API. Si Raúl
   quiere `eval`, se convierte `enrutado.json` en casos con el evaluador `tool_used: Skill` y los ejecuta él.
-- [ ] **Paso 2:** un agente que solo ve las seis descripciones elige la skill de cada petición. Criterio: todas;
+- [x] **Paso 2:** un agente que solo ve las seis descripciones elige la skill de cada petición. Criterio: todas;
   si no, se ajustan las descripciones y se repite con las ocultas sin ver. **Paso 3:** resultados y commit. Cierre de fase: revisión y merge.
 
 ---

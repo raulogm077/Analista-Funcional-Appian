@@ -1,6 +1,6 @@
 ---
 name: appian-diagramas-bpmn
-description: Dibuja y mantiene los diagramas de proceso BPMN del proyecto en draw.io (fichero .drawio editable, con carriles por perfil) y su PNG para el documento, sin conexión. Úsala para crear o cambiar el diagrama de un proceso, revisar qué se cambió a mano en draw.io (por ejemplo, en una reunión con el usuario), leer un .drawio o exportar un proceso a BPMN 2.0. La usan appian-functional-analyst (procesos del análisis) y appian-reverse-engineering (procesos de una aplicación existente). No decide qué contiene el proceso: si sale de reuniones o documentos, primero lo describe appian-functional-analyst.
+description: "Dibuja y mantiene los diagramas de proceso BPMN del proyecto en draw.io (fichero .drawio editable, con carriles por perfil) y su PNG para el documento, sin conexión. Úsala para crear o cambiar el diagrama de un proceso, dibujar el proceso de una aplicación existente, revisar qué se cambió a mano en draw.io (por ejemplo, en una reunión con el usuario), leer un .drawio o exportar un proceso a BPMN 2.0. La usan appian-functional-analyst (procesos del análisis) y appian-reverse-engineering (procesos de una aplicación existente, que los lee de la aplicación si no están extraídos). No decide qué contiene el proceso: si sale de reuniones o documentos, primero lo describe appian-functional-analyst."
 ---
 
 # Diagramas de proceso BPMN
@@ -17,6 +17,15 @@ Van juntos en la misma carpeta (`analisis/diagramas/` o la que indique quien lla
 | `X.png` | La imagen para el documento. La regenera la herramienta. Si el proceso va en tramos, una por tramo: `X-1.png`, `X-2.png`… |
 | `X.json` | El proceso que conoce el análisis. La primera vez puede ser el propio JSON que se pasa a `crear`; después lo mantiene la herramienta y no se edita a mano: los cambios van con `actualizar` |
 | `X.bpmn` | Solo si se exporta con `bpmn`, y uno con el proceso entero aunque vaya en tramos: conserva los tipos de inicio y de tarea, el flujo por defecto, los plazos y los errores, los participantes externos con sus mensajes, las notas, el lado de cada etiqueta y los datos de Appian |
+
+## Qué escribe
+
+En la carpeta que indique quien llama, dentro de `<p>`:
+- `analisis/diagramas/*.{drawio,png,bpmn,svg}`: los procesos del análisis y la imagen de cada Mermaid
+- `analisis/diagramas/*.json`: el proceso de cada diagrama, del analista; se reescribe al aceptar lo cambiado a mano
+- `as-is/08-procesos-bpmn/*.{drawio,png,bpmn}`: los procesos de una aplicación existente
+- `as-is/08-procesos-bpmn/*.json`: el proceso de cada diagrama, de ingeniería inversa; igual que el del analista
+- `as-is/diagrams/*.{png,svg}`: la imagen de cada Mermaid de ingeniería inversa (`mermaid.py`)
 
 ## Formato del proceso
 

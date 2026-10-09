@@ -1,6 +1,6 @@
 ---
 name: appian-prototipos
-description: "Crea prototipos navegables (maquetas, mockups) de aplicaciones Appian, con componentes SAIL reales, patrones de pantalla repetibles y capturas PNG que se enlazan en el diseño funcional. Úsala siempre que se pida un prototipo, maqueta, mockup o propuesta de pantallas navegable, sea cual sea el material de partida (primero obtiene el análisis funcional del proyecto, analisis/funcional.md, con appian-functional-analyst), o capturas de las pantallas para el DF. No redacta requisitos, no decide el modelo de datos ni la seguridad y no construye en Appian: parte del funcional y, si existe, de la especificación técnica. Para código SAIL suelto, appian-sail-generator."
+description: "Crea prototipos navegables (maquetas, mockups) de aplicaciones Appian, con componentes SAIL reales, patrones de pantalla repetibles y capturas PNG que se enlazan en el diseño funcional. Úsala siempre que se pida un prototipo, maqueta, mockup o propuesta de pantallas navegable, sea cual sea el material de partida (primero obtiene el análisis funcional del proyecto, analisis/funcional.md, con appian-functional-analyst), o capturas de las pantallas para el DF. No redacta requisitos ni decide el modelo de datos o la seguridad (appian-functional-analyst) y no construye en Appian (appian-best-practices): parte del funcional y, si existe, de la especificación técnica. Para código SAIL suelto, appian-sail-generator."
 ---
 
 # Prototipos Appian
@@ -121,6 +121,15 @@ Los comentarios de una demo los incorpora antes el analista: informe de impacto 
 2. Rehaz **solo las PAN del informe**, en el script que escribe el spec. Una PAN 🔒 cuyo punto sigue «Pendiente» no se toca.
 3. Valida con `validate.py app.json --anterior app-vX.Y.json --confirmadas …` y las PAN 🔒 que el informe no aprueba (`proyecto.py estado <p>` del analista da las 🔒): es error si cambia una de ellas o un diálogo que abre.
 4. Construye, captura las pantallas que cambian y sigue con «Entregar».
+
+## Qué escribe
+
+En `<p>`:
+- `prototipo/`: el script que escribe el spec, `app.json`, las versiones enseñadas (`app-vX.Y.json`) y, si hace falta, `prototype-extensions.json`
+- `prototipo/brand-<id>.json`: la marca del cliente, con su logo, `perfil-css-<id>.txt` y `marca-<id>.md`
+- `prototipo/prototipo-<app>.html`: el prototipo, con su trazabilidad y, si la marca lo lleva, su perfil CSS
+- `prototipo/capturas/`: las capturas PNG y su `indice.md`
+- `analisis/funcional.md`: solo el enlace de cada captura en su ficha PAN; el documento es del analista
 
 ## Uso del prototipo (explícalo al entregar la primera vez)
 - **Reunión**: navegación por las páginas del site, filtros, búsqueda, fichas, asistentes con validación, diálogos. Barra inferior: **Pantallas** (índice para saltar a cualquier pantalla o diálogo) y **Requisitos** (cobertura, preguntas abiertas, supuestos).

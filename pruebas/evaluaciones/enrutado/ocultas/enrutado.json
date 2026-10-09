@@ -1,0 +1,42 @@
+[
+  {
+    "peticion": "El cliente duda entre seguir poniendo parches a la aplicación de mantenimiento de vehículos o hacerla de nuevo. Con lo que ya documentamos de ella, ¿qué le proponemos y en qué orden lo haríamos?",
+    "skill": "appian-refactorizacion"
+  },
+  {
+    "peticion": "Del proceso de bajas de la aplicación que documentamos la semana pasada, quiero el diagrama en draw.io con sus carriles; si no cabe en una página, pártelo en tramos.",
+    "skill": "appian-diagramas-bpmn"
+  },
+  {
+    "peticion": "Can you review this SAIL form before I hand it over? It loads all 50,000 rows into a local variable and filters them in the interface.",
+    "skill": "appian-best-practices"
+  },
+  {
+    "peticion": "Antes de firmar el funcional, el cliente quiere ver cómo quedaría el asistente de alta en pantalla, con sus pasos y sus validaciones. Móntale algo que pueda tocar.",
+    "skill": "appian-prototipos"
+  },
+  {
+    "peticion": "Antes de tocar nada en la aplicación de inventario de almacenes quiero saber cómo está hecha: record types, procesos, seguridad y lo que usa de otras aplicaciones. Está en el entorno de pruebas y no hay ninguna documentación.",
+    "skill": "appian-reverse-engineering"
+  },
+  {
+    "peticion": "Del taller de ayer con los usuarios salieron dos historias más para el panel del responsable. Súmalas al análisis que ya tenemos y avísame si chocan con algo validado.",
+    "skill": "appian-functional-analyst"
+  },
+  {
+    "peticion": "En la ficha del expediente del prototipo, la tabla de documentos tiene diez columnas. Déjala en siete como mucho y vuelve a capturar solo esa pantalla.",
+    "skill": "appian-prototipos"
+  },
+  {
+    "peticion": "Del as-is de la aplicación de licencias ya tenemos los hallazgos. ¿Cómo quedaría bien hecha, capa a capa, y cómo convivirían la vieja y la nueva mientras se migran los datos?",
+    "skill": "appian-refactorizacion"
+  },
+  {
+    "peticion": "Necesito el inventario de objetos de la aplicación de nóminas, con sus dependencias y lo que usa de fuera, cada cosa con su evidencia y leído del entorno de desarrollo.",
+    "skill": "appian-reverse-engineering"
+  },
+  {
+    "peticion": "El cliente ha retocado el .drawio del proceso de compras. Saca otra vez la imagen para el documento y el BPMN 2.0 a partir de su versión.",
+    "skill": "appian-diagramas-bpmn"
+  }
+]

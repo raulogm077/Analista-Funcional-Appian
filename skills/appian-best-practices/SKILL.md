@@ -1,6 +1,6 @@
 ---
 name: appian-best-practices
-description: Official Appian best practices, solution-design decisions and quality gates for designing, building, reviewing and debugging Appian applications. Use when orienting or designing an Appian solution or architecture, and when creating, changing, reviewing or debugging record types, data models, relationships, sync, record events, SAIL interfaces, expression rules, decisions, process models, integrations, Web APIs, sites, security, performance, deployment packages, test cases, translations, offline forms, AI agents, AI skills or document extraction — via an MCP server or in Appian Designer. Also use when diagnosing an Appian error or production symptom, or maintaining a live application (runbooks and known issues from Appian's Community Knowledge Base). Use before any write to an Appian environment and before declaring an object finished. Not for functional analysis, user stories, a project's technical specification, process diagrams or prototypes: the plugin's analyst, diagram and prototype skills lead those.
+description: "Official Appian best practices, solution-design decisions and quality gates for designing, building, reviewing and debugging Appian applications. Use when orienting or designing an Appian solution, and when creating, changing, reviewing or debugging record types, data models, sync, record events, SAIL interfaces, expression rules, decisions, process models, integrations, Web APIs, sites, security, performance, deployments, test cases, translations, AI agents, AI skills or document extraction. Also use to diagnose an Appian error or production symptom, to maintain a live application (runbooks and known issues from Appian's Community Knowledge Base), and before any write to an Appian environment or declaring an object finished. Not for functional analysis, user stories or technical specifications (appian-functional-analyst), process diagrams (appian-diagramas-bpmn), prototypes (appian-prototipos), or assessing a whole application and proposing how to rebuild it (appian-refactorizacion)."
 ---
 
 # Appian development best practices
@@ -100,6 +100,11 @@ inventorying every record type, process and integration. Widen the context when 
 
 Before the first task: `python3 <skill>/../../requisitos.py --skill appian-best-practices` (`<skill>` is this file's
 folder; on Windows, `python`). It says what this machine lacks, what is lost and how to install it. If something this task needs is missing, tell the user once and carry on with what there is; if `requisitos.py` is not there (a loose copy of the skill), carry on without it.
+
+## What it writes
+
+Nothing in the project folder (`<p>`): `scripts/seccion.py` only prints, and objects change in the Appian environment
+through the design MCP, never through files.
 
 ## Tools
 

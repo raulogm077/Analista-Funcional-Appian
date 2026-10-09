@@ -1,6 +1,6 @@
 ---
 name: appian-functional-analyst
-description: Analista funcional de Appian. Convierte las fuentes de un proyecto (transcripciones de reuniones, correos, actas, notas, diagramas de flujo, un DF o ERS del cliente, o la descripción de una aplicación existente) en su análisis, el diseño funcional que valida el cliente (DF en Word con proceso, historias de usuario, pantallas y escenarios) y la especificación técnica para construir en Appian con buenas prácticas. Úsala para levantar requisitos, escribir o actualizar un análisis o un DF, incorporar una reunión, un correo o los comentarios del cliente al DF, redactar las historias de una pantalla que alguien explica o preparar la especificación técnica. No dibuja procesos (appian-diagramas-bpmn), no hace prototipos (appian-prototipos), no construye ni revisa objetos en un entorno (appian-best-practices) y no audita aplicaciones existentes (appian-reverse-engineering).
+description: "Analista funcional de Appian. Convierte las fuentes de un proyecto (reuniones, correos, actas, notas, diagramas de flujo, un DF o ERS del cliente ya hecho, la documentación de una aplicación existente o una propuesta de refactorización) en su análisis, el diseño funcional que valida el cliente (DF en Word con proceso, historias de usuario, pantallas y escenarios) y la especificación técnica para construir en Appian con buenas prácticas. Úsala para levantar requisitos, escribir o actualizar un análisis o un DF, incorporar una reunión, un correo, una demo o los comentarios del cliente, añadir historias a una aplicación que ya existe, redactar las historias de una pantalla que alguien explica o preparar la especificación técnica. No dibuja procesos (appian-diagramas-bpmn), no hace prototipos (appian-prototipos), no construye ni revisa objetos en un entorno (appian-best-practices), no documenta una aplicación existente (appian-reverse-engineering) y no decide si rehacerla ni cómo (appian-refactorizacion)."
 ---
 
 # Analista funcional · Appian
@@ -67,6 +67,26 @@ Los correos `.msg` no se leen de forma fiable: pide el correo como `.eml` o PDF.
 Formatos: `funcional-plantilla.md`, `tecnico-plantilla.md` y la cabecera de `decisiones.md` en
 `assets/plantillas/`. `proyecto.py estado <p>` dice en qué punto está el proyecto: empieza siempre por ahí
 si el proyecto ya existe.
+
+## Qué escribe
+
+En `<p>`:
+- `proyecto.md`: el estado del proyecto
+- `fuentes/`: las fuentes catalogadas, con su índice y sus adjuntos
+- `notas/`: una nota por fuente
+- `impacto/`: un informe por fuente nueva
+- `analisis/funcional.md`: el diseño funcional
+- `analisis/tecnico.md`: la especificación técnica
+- `analisis/decisiones.md`: las versiones y las decisiones del cliente
+- `analisis/grafo.json`: las piezas y sus referencias, si se pide (`indice.py grafo`)
+- `analisis/diagramas/<proceso>.json`: cada proceso, en el formato de `appian-diagramas-bpmn`
+- `analisis/diagramas/<nombre>.mmd`: los diagramas de estados y de datos
+- `entregables/`: el DF en Word
+- `versiones/`: la copia del análisis antes de cada cambio
+- `modulos/`: el funcional y el técnico de cada módulo, en un análisis grande (`volumen-grande.md`)
+- `prototipo/`: solo la crea vacía al iniciar el proyecto; la llena `appian-prototipos`
+
+El `.drawio`, el `.png` y el `.bpmn` de cada proceso y la imagen de cada `.mmd` los escribe `appian-diagramas-bpmn`.
 
 ## Modos
 

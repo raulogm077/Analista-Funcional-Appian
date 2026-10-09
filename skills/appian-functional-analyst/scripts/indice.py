@@ -12,7 +12,7 @@
   indice.py siguientes <p>                              siguiente ID libre de cada tipo
   indice.py derivadas  <p> [--escribir]                 anexo «Quién puede hacer qué» del funcional
   indice.py pendientes <p>                              guion de la próxima reunión: las PC abiertas, por «A quién»
-  indice.py grafo      <p> -o grafo.json
+  indice.py grafo      <p> [-o analisis/grafo.json]       las piezas y sus referencias en JSON (en el proyecto)
 
 Estados: 🔒 Validado · ✅ Decidido · 🔶 Inferido · ⚠️ Pendiente · ❓ No definido · Anulada · Respondida.
 """
@@ -307,9 +307,9 @@ def c_grafo(m, a):
              for p in sorted(m.piezas.values(), key=lambda p: clave(p.id))]
     aristas = [{"de": p.id, "a": r} for p in m.piezas.values() for r in sorted(p.refs) if r in m.piezas]
     aristas += [{"de": p.id, "a": h, "tipo": "contiene"} for p in m.piezas.values() for h in p.hijos]
-    pathlib.Path(a.o).write_text(json.dumps({"nodos": nodos, "aristas": aristas}, ensure_ascii=False, indent=1),
-                                 encoding="utf-8")
-    print(f"{a.o}: {len(nodos)} piezas, {len(aristas)} referencias")
+    destino = pathlib.Path(a.o) if a.o else m.analisis / "grafo.json"   # en el proyecto: el plugin no escribe fuera
+    destino.write_text(json.dumps({"nodos": nodos, "aristas": aristas}, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"{destino}: {len(nodos)} piezas, {len(aristas)} referencias")
 
 
 # ------------------------------------------------------- anexo derivado
@@ -438,7 +438,7 @@ def main():
     nuevo("siguientes", c_siguientes)
     s = nuevo("derivadas", c_derivadas); s.add_argument("--escribir", action="store_true")
     nuevo("pendientes", c_pendientes)
-    s = nuevo("grafo", c_grafo); s.add_argument("-o", default="grafo.json")
+    s = nuevo("grafo", c_grafo); s.add_argument("-o", help="por defecto, analisis/grafo.json del proyecto")
     a = ap.parse_args()
     m = mo.Proyecto(a.proyecto)
     if not m.docs:

@@ -4,6 +4,55 @@ Resultados de las evaluaciones del plan `docs/plan/2026-10-07-integracion-ingeni
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 
+## F8 · Sin solapes (9 de octubre de 2026)
+
+Rama `f8-sin-solapes`, de `main` ab088d0 al merge. Versión 0.7.0-alpha.7.
+
+### Qué cambia
+
+- **Un dueño por salida (Tarea 27).** Cada SKILL.md dice en «Qué escribe» («What it writes» en buenas prácticas) qué
+  rutas del proyecto escribe, y `pruebas/propietarios.json` dice de quién es cada una (gana el patrón más específico;
+  `tambien` deja escribir a otra skill, como diagramas en el `.json` de un proceso). `comprobar_plugin.py` da error si
+  una skill declara lo de otra, si un dueño no declara su regla, si un script fuera de diagramas pinta Mermaid o exporta
+  BPMN, o si hay una lista de muletillas fuera de `redaccion.md`. Cuatro escrituras que no encajaban tienen su regla:
+  el enlace de cada captura en el funcional (prototipos), las imágenes de los Mermaid de ingeniería inversa
+  (diagramas), la carpeta `prototipo/` vacía y `modulos/` (analista).
+- **Las seis descripciones (Tarea 28).** Qué hace cada una, cuándo usarla y qué no hace, con la skill que lo hace. El
+  analista remite a refactorización; buenas prácticas, la evaluación de una aplicación entera; diagramas dibuja también
+  el proceso de una aplicación existente.
+- **`indice.py grafo`** escribía en la carpeta desde la que se ejecutaba; ahora, en `analisis/grafo.json`.
+
+### La prueba de enrutado (Tarea 29)
+
+Un agente que solo ve las seis descripciones elige la skill de cada petición; cada lote, un agente nuevo.
+
+| Lote | Peticiones | Primera medida | Con las descripciones corregidas |
+|---|---|---|---|
+| Visibles (`pruebas/enrutado.json`) | 20, cuatro o tres por skill y una por frontera | 20/20 | 20/20 |
+| Ocultas | 10, una variante de cada frontera | 10/10 | 10/10 |
+| Fronteras difíciles (tras la revisión) | 8, sin las palabras que delatan la skill | — | 8/8 |
+
+- La revisión vio que las peticiones de frontera llevaban la pista que las resuelve: un clasificador que solo cuenta
+  palabras acertaba 16 de 20 visibles y 5 de 10 ocultas. Por eso el tercer lote: revisar una aplicación entera frente a
+  un objeto, las tablas de una aplicación sin papeles, los diagramas de estados y de datos (del analista), un proceso
+  contado en una reunión (primero el analista), algo navegable antes de validar, un timeout en producción y los cambios
+  de una reunión sobre lo validado. `prueba_puntuar.py` comprueba que no lleven esas palabras.
+- La revisión de la fase también encontró que diagramas decía que la usa refactorización, que no dibuja, y que el «No…»
+  de cuatro descripciones no nombraba a la skill que lo hace: corregido antes de la segunda medida.
+
+### Lo aprendido
+
+- Una prueba de enrutado con las palabras de las descripciones mide el vocabulario, no la frontera. La prueba de que
+  mide algo es un clasificador tonto que falla donde el agente acierta.
+- «Qué escribe» cruzado con lo que escriben los scripts encontró una escritura fuera del proyecto (`grafo.json`) que
+  ninguna prueba había visto.
+
+### Aplazado
+
+Lo menor de la revisión, en `docs/siguiente-version.md` («Sin solapes»): el `tambien` de `prototipo/`, la comprobación
+de dueños que solo lee «Qué escribe», el `cambios.json` de diagramas, «una pieza por capacidad» fuera de los `.py`, las
+descripciones cerca del límite y las skills vecinas como distractoras en el enrutado.
+
 ## F7 · Equipo (9 de octubre de 2026)
 
 Rama `f7-equipo`, de `main` ee4b19b al merge. Versión 0.7.0-alpha.6.

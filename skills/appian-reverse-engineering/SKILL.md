@@ -1,6 +1,6 @@
 ---
 name: appian-reverse-engineering
-description: "Ingeniería inversa de aplicaciones Appian: lee la aplicación en vivo por el Dev MCP, en solo lectura, y documenta cómo está hecha para que el equipo la entienda: funcional, arquitectura, datos, seguridad, integraciones, APIs, batches, procesos, pantallas, reglas de negocio, inventario y anexo con las definiciones, cada dato con su evidencia. Úsala para entender, documentar o hacer el onboarding de una aplicación Appian existente, o cuando se pida su modelo de datos, sus integraciones, procesos, pantallas o reglas, aunque no se diga «ingeniería inversa». No juzga ni propone cómo rehacerla (appian-refactorizacion), no escribe requisitos ni especificaciones (appian-functional-analyst), no dibuja (appian-diagramas-bpmn) y no crea ni modifica objetos."
+description: "Ingeniería inversa de aplicaciones Appian: lee la aplicación en vivo por el Dev MCP, en solo lectura, y documenta cómo está hecha para que el equipo la entienda: funcional, arquitectura, datos, seguridad, integraciones, APIs, batches, procesos, pantallas, reglas de negocio, inventario y anexo con las definiciones, cada dato con su evidencia. Úsala para entender, documentar o hacer el onboarding de una aplicación Appian existente, o cuando se pida su modelo de datos, sus integraciones, procesos, pantallas o reglas, aunque no se diga «ingeniería inversa». No juzga ni propone cómo rehacerla (appian-refactorizacion), no escribe requisitos ni especificaciones (appian-functional-analyst), no dibuja (appian-diagramas-bpmn) y no crea ni modifica objetos (appian-best-practices)."
 ---
 
 # Appian Reverse Engineering (Dev MCP)
@@ -159,6 +159,19 @@ Según `output_preferences.json` (`pdf`, `dashboard`): `agents/pdf-publisher.md`
 ├── diagrams/  (los Mermaid: .mmd, .png y .svg)
 └── extraccion/   = <trabajo>: la extracción, tal cual, y los datos de trabajo (no es un entregable)
 ```
+
+## Qué escribe
+
+En `<p>` (sin proyecto, `<p>` es `./<PREFIJO>/`):
+- `as-is/`: `LEEME.md`, los documentos `01`–`11`, `INVENTARIO.md` y, si se piden, `EXPORT.pdf` y `dashboard/`
+- `as-is/08-procesos-bpmn/<slug>.md`: el documento de cada proceso, y su `indice.md`
+- `as-is/08-procesos-bpmn/<slug>.json`: el proceso de cada process model, que escribe y mantiene `diagrama.py`
+- `as-is/anexo/`: las definiciones originales
+- `as-is/datos/`: lo que leen las demás skills
+- `as-is/diagrams/<nombre>.mmd`: los diagramas Mermaid
+- `as-is/extraccion/`: la extracción y los datos de trabajo
+
+El `.drawio`, el `.png` y el `.bpmn` de cada proceso y las imágenes de los Mermaid los escribe `appian-diagramas-bpmn`.
 
 ## Dudas de Appian
 
