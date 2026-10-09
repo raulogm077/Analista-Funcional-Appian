@@ -122,6 +122,7 @@ donde las use. Funcionalidad sin uso (0 ejecuciones) no se retira sin más: es u
 - [ ] Cada REF en la Solución y en la Hoja de ruta; las de un hallazgo 🔶 o ❓, después de su «Verificar H-…».
 - [ ] Todo hallazgo Alta o Media del alcance, en una REF o en Pendientes.
 - [ ] La estrategia, explícita y con su porqué; los NV que condicionan la solución, en Pendientes.
+- [ ] `python3 <skill>/scripts/comprobar_propuesta.py <p>` sin errores ni avisos.
 
 ## Salida
 

@@ -781,10 +781,10 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
   Hoja de ruta.
 - Los datos de `datos/mantenimiento` traen un `sin-verificar.json` con un NV y un hallazgo `inferido`.
 
-- [ ] **Paso 1:** selftest: `datos/mantenimiento` pasa (0/0); cinco copias rotas (evidencia rota, «BP 99 §1», objeto
+- [x] **Paso 1:** selftest: `datos/mantenimiento` pasa (0/0); cinco copias rotas (evidencia rota, «BP 99 §1», objeto
   inventado en Diagnóstico, REF sin Solución, NV inexistente) dan su error, y una REF sobre el hallazgo inferido sin
   «Verificar» da su aviso; un objeto nuevo en Solución no da error. → FALLA.
-- [ ] **Paso 2:** implementar. **Paso 3:** `comprobar_plugin.py --completo` en verde. Commit.
+- [x] **Paso 2:** implementar. **Paso 3:** `comprobar_plugin.py --completo` en verde. Commit.
 
 ### Tarea 15: Evaluación de malas prácticas sembradas
 

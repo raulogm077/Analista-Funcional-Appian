@@ -1,0 +1,20 @@
+{"hallazgos": [
+  {"id": "H-ARQ-01", "titulo": "REX_PM_AvisoAnual es huérfano: ningún objeto, site ni temporizador lo inicia",
+   "area": "arquitectura", "severidad": "Baja", "certeza": "verificado", "objetos": ["REX_PM_AvisoAnual"],
+   "documento": "02-arquitectura.md#hallazgos", "evidencia": "graph:REX_PM_AvisoAnual"},
+  {"id": "H-DAT-01", "titulo": "Las revisiones se guardan con el CDT REX_Revision en el data store REX Datos, sin record type ni relación con el extintor",
+   "area": "datos", "severidad": "Media", "certeza": "verificado",
+   "objetos": ["REX_Revision", "REX Datos", "REX_IF_ListaRevisiones"],
+   "documento": "03-modelo-datos.md#hallazgos", "evidencia": "mcp:cdt/REX_Revision#fields"},
+  {"id": "H-DAT-02", "titulo": "Cada revisión se copia a mano en una segunda entidad del data store que hace de historial",
+   "area": "datos", "severidad": "Baja", "certeza": "inferido", "objetos": ["REX_PM_RegistrarRevision", "REX Datos"],
+   "documento": "03-modelo-datos.md#hallazgos", "evidencia": "mcp:processModel/REX_PM_RegistrarRevision#nodes[id=5]",
+   "base": ["mcp:processModel/REX_PM_RegistrarRevision#nodes[id=5]", "mcp:dataStore/REX Datos#entities"]},
+  {"id": "H-GEN-01", "titulo": "REX_PM_AvisoAnual no tiene ejecuciones", "area": "uso", "severidad": "Baja",
+   "certeza": "verificado", "objetos": ["REX_PM_AvisoAnual"], "documento": "09-valor-adicional.md#hallazgos",
+   "evidencia": "mcp:processModel/REX_PM_AvisoAnual@history"},
+  {"id": "H-UI-01", "titulo": "La baja de un extintor se inicia con a!startProcess desde un botón de REX_IF_FichaExtintor, sin acción de record",
+   "area": "pantallas", "severidad": "Media", "certeza": "verificado",
+   "objetos": ["REX_IF_FichaExtintor", "REX_PM_BajaExtintor"], "documento": "10-pantallas.md#hallazgos",
+   "evidencia": "mcp:interface/REX_IF_FichaExtintor#línea 13"}
+ ]}

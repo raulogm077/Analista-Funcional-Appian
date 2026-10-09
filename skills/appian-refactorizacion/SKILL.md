@@ -45,7 +45,11 @@ Sin `as-is/datos/inventario.json` no se empieza: primero, ingeniería inversa.
 3. **Propuesta.** Lee entero `agents/arquitecto-refactorizacion.md` y síguelo, o pásaselo a un subagente con
    `<skill>`, `<p>`, el alcance, los límites y el apartado «Dudas de Appian» de este fichero. Escribe
    `refactorizacion/propuesta.md` con `assets/plantillas/propuesta.md` y las señales de `references/senales.md`.
-4. **Entregar.** En pocas líneas: qué se rehace, los problemas de prioridad Alta, la estrategia, las fases y lo que
+4. **Comprobar.** `python3 <skill>/scripts/comprobar_propuesta.py <p>`, sin errores antes de entregar: apartados y
+   fichas completos, evidencia que existe en `as-is/`, reglas que buenas prácticas tiene, objetos del Diagnóstico que
+   están en el inventario, cada REF con su alternativa en la Solución y los `H-…` y NV que existen. Sus avisos (una REF
+   fuera de la Hoja de ruta o sin su «Verificar H-…» antes) se corrigen.
+5. **Entregar.** En pocas líneas: qué se rehace, los problemas de prioridad Alta, la estrategia, las fases y lo que
    tiene que decidir el equipo o el cliente. Después, el analista escribe el funcional (lo que se conserva y lo que
    cambia) y el técnico, que baja a objetos cada REF.
 
@@ -89,3 +93,4 @@ qué» de la Solución; lo que quede sin verificar va a Pendientes.
 | `agents/arquitecto-refactorizacion.md` | Al empezar la propuesta: criterio y pasos |
 | `references/senales.md` | En el diagnóstico: qué buscar en `as-is/` y qué sección de buenas prácticas lo trata |
 | `assets/plantillas/propuesta.md` | Al escribir la propuesta |
+| `scripts/comprobar_propuesta.py` | Antes de entregar |

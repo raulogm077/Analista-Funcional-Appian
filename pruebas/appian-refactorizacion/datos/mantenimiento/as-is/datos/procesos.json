@@ -1,0 +1,6 @@
+{"procesos": [
+  {"nombre": "REX_PM_AvisoAnual", "json": "08-procesos-bpmn/REX_PM_AvisoAnual.json", "nodos": 4, "ejecuciones": 0},
+  {"nombre": "REX_PM_BajaExtintor", "json": "08-procesos-bpmn/REX_PM_BajaExtintor.json", "nodos": 5, "ejecuciones": 12},
+  {"nombre": "REX_PM_RegistrarRevision", "json": "08-procesos-bpmn/REX_PM_RegistrarRevision.json", "nodos": 7,
+   "ejecuciones": 340}
+ ]}

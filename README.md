@@ -57,8 +57,9 @@ python pruebas/comprobar_plugin.py --completo
 ```
 
 Comprueba que las skills encajan entre sí y pasa las pruebas de cada una, que están en `pruebas/<skill>/`:
-el `selftest.py` del analista, de los diagramas y de los prototipos (este tarda un par de minutos) y las de
-ingeniería inversa, con pytest y `mcp` (si faltan y hay `uv`, los trae él). Con `--plugin <carpeta>` pasa
+el `selftest.py` del analista, de los diagramas, de los prototipos (este tarda un par de minutos) y de
+refactorización, y las de ingeniería inversa, con pytest y `mcp` (si faltan y hay `uv`, los trae él). Con
+`--plugin <carpeta>` pasa
 esas pruebas a otra copia del plugin, por ejemplo la que se instala con el paquete, que no las lleva.
 
 Nada de lo anterior envía información del cliente fuera del equipo: Mermaid

@@ -1,0 +1,11 @@
+{"aristas": [
+  {"de": "REX Extintor", "a": "REX_IF_FichaExtintor", "donde": "Record View: Resumen"},
+  {"de": "REX_IF_FichaExtintor", "a": "REX_PM_BajaExtintor", "donde": "a!startProcess, línea 13"},
+  {"de": "REX_IF_ListaRevisiones", "a": "REX Datos", "donde": "a!queryEntity, línea 2"},
+  {"de": "REX_PM_RegistrarRevision", "a": "REX Datos", "donde": "Node: Guardar revisión"},
+  {"de": "REX_PM_RegistrarRevision", "a": "REX_Revision", "donde": "processVariables"}
+ ],
+ "fueraDeLaAplicacion": [
+  {"nombre": "AVI_EnviarAviso", "tipo": "llamado con rule!", "usadoPor": ["REX_PM_RegistrarRevision"], "usa": [],
+   "nv": "NV-ARQ-01"}
+ ]}
