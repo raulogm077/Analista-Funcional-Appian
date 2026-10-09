@@ -1,0 +1,52 @@
+Demo del prototipo con el almacén de medios · 6 de octubre de 2026
+
+[00:00:05] Andrea Soler Pons:
+Buenos días. Os enseño el prototipo pantalla a pantalla y me decís qué cambiaríais.
+
+[00:00:40] Javier Ortega Prieto:
+Adelante.
+
+[00:01:10] Andrea Soler Pons:
+La primera es el catálogo de equipos: el nombre con su código, la categoría y el estado.
+
+[00:01:45] Javier Ortega Prieto:
+Nos falta ver dónde está cada equipo. Añadid una columna con la ubicación; así no hay que abrir la ficha para ir a buscarlo.
+
+[00:03:00] Andrea Soler Pons:
+Anotado. Ahora, el formulario para solicitar un préstamo.
+
+[00:03:30] Nuria Velasco Ruiz:
+El lugar de uso no puede ser texto libre, porque cada uno escribe una cosa. Que sea una lista con nuestras tres sedes: Sede central, Edificio Norte y Centro de Formación.
+
+[00:05:40] Andrea Soler Pons:
+Anotado. Esta es la pantalla de mis préstamos.
+
+[00:06:10] Nuria Velasco Ruiz:
+Que salga también quién lo aprobó, que la gente lo pregunta. Una columna con el responsable que lo aprobó.
+
+[00:07:20] Andrea Soler Pons:
+Ahora, la tarea del responsable para aprobar o rechazar.
+
+[00:07:50] Nuria Velasco Ruiz:
+Al rechazar, el comentario tiene que ser obligatorio. Si no, la persona no sabe por qué se lo hemos rechazado.
+
+[00:09:00] Andrea Soler Pons:
+Y esta es la tarea del almacén para entregar y recoger el equipo.
+
+[00:09:30] Javier Ortega Prieto:
+Al recogerlo, añadid una casilla para marcar si vuelve con todos sus accesorios: el cable, el mando, la funda. Es lo que más se pierde.
+
+[00:10:50] Andrea Soler Pons:
+Anotado. Por último, la ficha de cada equipo.
+
+[00:11:20] Javier Ortega Prieto:
+En la ficha quiero ver la fecha de la última revisión técnica. Ese dato ya lo apuntamos, pero no sale en ninguna pantalla.
+
+[00:12:30] Andrea Soler Pons:
+Perfecto. ¿Algo más?
+
+[00:12:50] Nuria Velasco Ruiz:
+Nada más por nuestra parte.
+
+[00:13:20] Andrea Soler Pons:
+Os mando los cambios y el prototipo actualizado esta semana.

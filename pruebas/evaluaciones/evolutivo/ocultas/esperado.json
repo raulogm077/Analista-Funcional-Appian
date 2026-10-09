@@ -1,0 +1,5 @@
+{
+ "MNT_WS_EstadoOrden": ["Modifica", "Sustituye"],
+ "MNT Orden": ["Modifica", "Existe"],
+ "MNT Técnico": ["Modifica", "Existe"]
+}
