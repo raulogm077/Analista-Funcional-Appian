@@ -66,9 +66,12 @@ jobs:
       - name: La salida, en anotaciones
         if: failure()
         shell: bash
+        env:
+          PYTHONUTF8: "1"
         run: |
           python - <<'PY'
-          import os, pathlib
+          import os, pathlib, sys
+          sys.stdout.reconfigure(encoding="utf-8", errors="replace")
           t = pathlib.Path(os.environ["RUNNER_TEMP"], "comprobacion.log").read_text(encoding="utf-8", errors="replace")[-9000:]
           for k in range(0, len(t), 3000):
               trozo = t[k:k + 3000].replace("%", "%25").replace("\r", "").replace("\n", "%0A")
