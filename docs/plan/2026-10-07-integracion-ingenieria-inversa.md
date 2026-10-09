@@ -762,8 +762,8 @@ de nombre. Lo único que cambia es la marca de inferido, que pasa de 🔵 a 🔶
 - SKILL.md: «Qué hace y qué no», entradas (`as-is/`, alcance y límites), flujo, «Dudas de Appian» (bloque común) y
   `## Qué escribe` con `refactorizacion/propuesta.md`.
 
-- [ ] **Paso 1:** quitar la skill de `EXTERNAS`: `comprobar_plugin.py` → FALLA (cita una skill que no existe).
-- [ ] **Paso 2:** escribir la skill. **Paso 3:** `comprobar_plugin.py` → 6 skills, 0 errores. Commit «F5: skill de refactorización».
+- [x] **Paso 1:** quitar la skill de `EXTERNAS`: `comprobar_plugin.py` → FALLA (cita una skill que no existe).
+- [x] **Paso 2:** escribir la skill. **Paso 3:** `comprobar_plugin.py` → 6 skills, 0 errores. Commit «F5: skill de refactorización».
 
 ### Tarea 14: `comprobar_propuesta.py`, ejemplo y selftest
 
