@@ -918,8 +918,8 @@ se ejecuta allí y los resultados van a `docs/evaluaciones.md`.
 - Evolutivo: tres historias nuevas sobre la aplicación ficticia; `esperado.json` = la Situación de cada objeto de §13.
   `puntuar.py` compara (marcarlo todo «Nuevo» no pasa) y `comprobar.py` sin errores.
 
-- [ ] **Paso 1:** un agente hace cada caso siguiendo los SKILL.md. **Paso 2:** cada `puntuar.py` cumple su criterio.
-- [ ] **Paso 3:** commit. Cierre de fase: revisión y merge.
+- [x] **Paso 1:** un agente hace cada caso siguiendo los SKILL.md. **Paso 2:** cada `puntuar.py` cumple su criterio.
+- [x] **Paso 3:** commit. Cierre de fase: revisión y merge.
 
 ---
 
