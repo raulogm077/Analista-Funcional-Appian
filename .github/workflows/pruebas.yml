@@ -1,0 +1,54 @@
+# Pruebas del plugin en Windows, macOS y Linux, con Python 3.9 y 3.12 (Tarea 26).
+# No va en el paquete: .github/ es del repositorio.
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pruebas:
+    name: ${{ matrix.os }} · Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.9", "3.12"]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: docx para el Word del DF
+        run: npm install -g docx
+
+      - name: Playwright, Chromium y pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install playwright pytest
+          python -m playwright install ${{ runner.os == 'Linux' && '--with-deps' || '' }} chromium
+
+      # mcp pide Python 3.10 o superior: con 3.9, ingeniería inversa se prueba por la vía de uv con 3.12
+      - name: mcp (Python 3.10 o superior)
+        if: matrix.python != '3.9'
+        run: python -m pip install "mcp>=1.2,<2"
+
+      - name: uv para ingeniería inversa (Python 3.9)
+        if: matrix.python == '3.9'
+        uses: astral-sh/setup-uv@v5
+
+      - name: Comprobación completa del plugin
+        env:
+          UV_PYTHON: "3.12"
+        run: python pruebas/comprobar_plugin.py --completo

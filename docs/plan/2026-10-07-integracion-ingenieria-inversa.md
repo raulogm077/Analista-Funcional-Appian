@@ -988,7 +988,7 @@ cliente, y se regeneran con sus scripts (lo decidió Raúl el 7 de octubre).
 
 - [x] **Paso 1:** con un fichero temporal en una skill que diga `C:/Users/rgmoya`, `comprobar_plugin.py` da error, y el
   `HYDRAULIC` de `viewer-static.min.js` no lo da; una galería que dice «Barajas» también da error. → FALLA.
-- [ ] **Paso 2:** implementar, pasar galerías y plantillas al dominio neutro y regenerar la tabla. **Paso 3:** en verde
+- [x] **Paso 2:** implementar, pasar galerías y plantillas al dominio neutro y regenerar la tabla. **Paso 3:** en verde
   sin el fichero temporal. Commit.
 
 ### Tarea 26: Pruebas en Windows, macOS y Linux
