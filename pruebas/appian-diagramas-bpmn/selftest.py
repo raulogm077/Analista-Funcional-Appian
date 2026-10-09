@@ -517,6 +517,12 @@ def sin_navegador(tmp):
                        capture_output=True, text=True, encoding="utf-8", env=sin)
     check(r.returncode == 2 and "DIAGRAMAS_SIN_NAVEGADOR" in r.stdout + r.stderr,
           "sin navegador: mermaid.py sale con 2 y dice por qué")
+    for orden in (["no-existe/*.mmd"], ["--md", "no-existe/*.md"]):   # 2 es «falta un requisito», no esto
+        r = subprocess.run([sys.executable, str(SCRIPTS / "mermaid.py"), *orden], capture_output=True, text=True,
+                           encoding="utf-8", env=sin, cwd=str(tmp))
+        check(r.returncode == 1 and f"No encuentro: {orden[-1]}" in r.stdout + r.stderr,
+              f"mermaid.py {' '.join(orden)}: un comodín sin coincidencias sale con 1 y dice qué patrón no encuentra "
+              f"(sale con {r.returncode}: {(r.stdout + r.stderr).strip()[-120:]})")
 
 
 def png_viejo(tmp):

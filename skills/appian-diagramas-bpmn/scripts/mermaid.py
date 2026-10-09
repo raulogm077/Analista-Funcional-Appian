@@ -68,9 +68,11 @@ def bloques(texto):
 
 
 def ficheros(rutas):
-    """Las rutas, con los comodines expandidos (PowerShell y cmd no los expanden)."""
+    """Las rutas, con los comodines expandidos (PowerShell y cmd no los expanden). Un comodín sin coincidencias se
+    queda como está: así se dice qué patrón no se encuentra."""
     return [x for f in rutas
-            for x in (sorted(glob.glob(f, recursive=True)) if glob.has_magic(f) and not pathlib.Path(f).exists() else [f])]
+            for x in ((sorted(glob.glob(f, recursive=True)) or [f]) if glob.has_magic(f) and not pathlib.Path(f).exists()
+                      else [f])]
 
 
 def aviso_ancho(que, ancho):
