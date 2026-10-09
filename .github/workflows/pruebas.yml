@@ -51,4 +51,19 @@ jobs:
       - name: Comprobación completa del plugin
         env:
           UV_PYTHON: "3.12"
-        run: python pruebas/comprobar_plugin.py --completo
+        shell: bash
+        run: python pruebas/comprobar_plugin.py --completo 2>&1 | tee "$RUNNER_TEMP/comprobacion.log"; exit ${PIPESTATUS[0]}
+
+      # Los registros de un job no se pueden leer desde la API: si falla, la cola de la salida va en anotaciones.
+      # El registro va fuera del repositorio: dentro, comprobar_plugin.py lo leería como parte del paquete.
+      - name: La salida, en anotaciones
+        if: failure()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os, pathlib
+          t = pathlib.Path(os.environ["RUNNER_TEMP"], "comprobacion.log").read_text(encoding="utf-8", errors="replace")[-9000:]
+          for k in range(0, len(t), 3000):
+              trozo = t[k:k + 3000].replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+              print(f"::error title=comprobar_plugin {k // 3000 + 1}::{trozo}")
+          PY
