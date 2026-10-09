@@ -1000,7 +1000,7 @@ cliente, y se regeneran con sus scripts (lo decidió Raúl el 7 de octubre).
   con `PYTHONUTF8=1`.
 - En Python 3.9 no se instala `mcp`, que pide 3.10 o superior: se instala `uv` con `UV_PYTHON=3.12` y
   `comprobar_plugin.py` pasa ingeniería inversa por su vía de uv.
-- [ ] **Paso 1:** subir la rama y ver la ejecución en las seis combinaciones. Si el token no deja subir
+- [x] **Paso 1:** subir la rama y ver la ejecución en las seis combinaciones. Si el token no deja subir
   `.github/workflows/` (permiso `workflows`), el fichero lo sube Raúl. **Paso 2:** arreglar lo que falle en
   Windows o macOS (codificación, rutas, `python3`/`python`) con su prueba. **Paso 3:** commit. Cierre de fase: revisión y merge.
 

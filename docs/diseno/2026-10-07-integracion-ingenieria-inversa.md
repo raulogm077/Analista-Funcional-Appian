@@ -190,7 +190,7 @@ Diez fases en orden; ninguna se da por cerrada sin sus pruebas en verde.
 - [x] **F4 Diagramas.** Un solo exportador BPMN y un solo pintor. Se retiran `bpmn_layout.py`, `validate_mermaid.py` y `render_diagrams.sh`.
 - [x] **F5 Refactorización.** La skill nueva con el 13, la arquitectura y la migración del 14, rebuild-architect y las señales. Lee solo `as-is/`. Prueba de malas prácticas sembradas.
 - [x] **F6 Analista.** DF ya hecho como base, guion de la próxima reunión, aviso de texto viejo, ciclo con el prototipo, aplicación existente y aviso de parte mal hecha. Pruebas de incoherencias sembradas, demo y evolutivo.
-- [ ] **F7 Equipo.** `requisitos.py`, aviso al instalar, README y comprobación de que no hay nada personal.
+- [x] **F7 Equipo.** `requisitos.py`, aviso al instalar, README y comprobación de que no hay nada personal.
 - [ ] **F8 Sin solapes.** Las seis descripciones, `propietarios.json` y la prueba de enrutado.
 - [ ] **F9 Cierre.** Punta a punta, revisión independiente, instalación limpia, versión 0.7.0-beta.1 y paquete. Después se desinstala la skill suelta de tu cuenta (y de quien la tenga) y se archiva su carpeta.
 
