@@ -622,9 +622,9 @@ def tramos(tmp, con_png=True):
     origen = tmp / "grande.json"
     origen.write_text(json.dumps(proc, ensure_ascii=False), encoding="utf-8")
     d = tmp / "Carpeta con espacios" / "grande" / "gestión.drawio"
-    run("crear", origen, "-o", d, esperado=con_imagen, env=env)
+    salida = run("crear", origen, "-o", d, esperado=con_imagen, env=env)
     pags = paginas(d)
-    nombres_ok = all(re.fullmatch(rf"Gestión de orden \(tramo {k} de {len(pags)}\)", n) for k, (n, _, _) in enumerate(pags, 1))
+    nombres_ok = all(re.fullmatch(rf"Gestión de orden \(tramo {k} de {len(pags)}: .+ – .+\)", n) for k, (n, _, _) in enumerate(pags, 1))
     check(len(pags) > 2 and nombres_ok and all(a <= ANCHO_PAGINA for _, a, _ in pags),
           f"tramos: una página por tramo, de {ANCHO_PAGINA} px de ancho como mucho ({len(pags)} tramos: "
           + ", ".join(f"{a:.0f}" for _, a, _ in pags) + " px)")
@@ -663,6 +663,18 @@ def tramos(tmp, con_png=True):
           and all("enlace=1" in pags[pagina_de[e] - 1][2][e] and "symbol=link" in pags[pagina_de[e] - 1][2][e] for e in enlaces),
           f"tramos: {len(cruzan)} flujos cruzan de un tramo a otro, cada uno con un enlace que sale (con el número del "
           "otro tramo) y uno que entra; también la vuelta atrás; el plazo, en el tramo de su tarea " + ", ".join(mal))
+    # qué pasos lleva cada tramo: una línea por tramo en lo que dice crear, y lo mismo en el nombre de su página
+    lineas = re.findall(r"^\s*tramo (\d+): (.+) – (.+) \((\d+) pasos?\)$", salida, re.M)
+    suyos = {k: {p["id"] for p in proc["pasos"] if pagina_de[p["id"]] == k} for k in range(1, len(pags) + 1)}
+    mal = [f"tramo {n}" for n, primero, ultimo, cuantos in lineas
+           if int(cuantos) != len(suyos[int(n)]) or codigo.get(primero) not in suyos[int(n)]
+           or codigo.get(ultimo) not in suyos[int(n)]
+           or pags[int(n) - 1][0] != f"Gestión de orden (tramo {n} de {len(pags)}: {primero} – {ultimo})"]
+    check([int(n) for n, *_ in lineas] == list(range(1, len(pags) + 1)) and not mal
+          and sum(int(c) for *_, c in lineas) == len(proc["pasos"])
+          and dm.NOMBRE_TRAMO.match("Gestión de orden (tramo 2 de 8)").group(1) == "Gestión de orden",
+          "tramos: crear dice qué pasos lleva cada tramo («tramo N: <primero> – <último> (K pasos)»), entre todos "
+          "cubren el proceso y la página se llama igual " + ", ".join(mal) + ("" if lineas else "\n" + salida))
     run("bpmn", d, env=env)
     b = ET.parse(d.with_suffix(".bpmn")).getroot()
     nodos = [e for e in b.find("bpmn:process", NS_BPMN) if e.tag.split("}")[1] not in
@@ -680,10 +692,13 @@ def tramos(tmp, con_png=True):
         {"poner": {"id": "ACT-99", "tipo": "script", "carril": "Aplicación", "nombre": "Calcular coste", "nodo": "99"}},
         {"quitar_flujo": {"de": cerrar, "a": fin}}, {"flujo": {"de": cerrar, "a": "ACT-99"}},
         {"flujo": {"de": "ACT-99", "a": fin}}]}, ensure_ascii=False), encoding="utf-8")
-    run("actualizar", d, tmp / "t1.json", esperado=con_imagen, env=env)
+    salida = run("actualizar", d, tmp / "t1.json", esperado=con_imagen, env=env)
     pags = paginas(d)
-    check(run("comparar", d, env=env).startswith("Sin cambios") and len(pags) > 2 and all(a <= ANCHO_PAGINA for _, a, _ in pags),
-          "tramos: actualizar coloca de nuevo los tramos y el dibujo queda igual que el análisis")
+    lineas = re.findall(r"^\s*tramo (\d+): (.+) – (.+) \((\d+) pasos?\)$", salida, re.M)
+    check(run("comparar", d, env=env).startswith("Sin cambios") and len(pags) > 2 and all(a <= ANCHO_PAGINA for _, a, _ in pags)
+          and len(lineas) == len(pags) and sum(int(c) for *_, c in lineas) == len(proc["pasos"]) + 1,
+          "tramos: actualizar coloca de nuevo los tramos, dice qué pasos lleva cada uno y el dibujo queda igual que el "
+          "análisis")
     mal = conexiones_falsas(d)
     check(not mal, f"tramos: actualizar, sin conexiones falsas ({len(mal)}) " + "; ".join(mal[:6]))
     # en draw.io se renombra un paso de un tramo que no es el primero y se mueve: comparar lo ve

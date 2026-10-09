@@ -167,6 +167,22 @@ def _imagen(drawio, cambiado=True):
         return False
 
 
+def _tramos(drawio):
+    """Una línea por tramo con los pasos que lleva («tramo N: <primero> – <último> (K pasos)»), para encontrar un paso
+    sin abrir todas las páginas; ninguna si el diagrama cabe en una."""
+    proc, geo, _ = dm.leer(str(drawio))
+    tramos = geo.get("tramos") or []
+    if len(tramos) < 2:
+        return []
+    paso = {p["id"]: p for p in proc["pasos"]}
+    x = {pid: c[0] for pid, c in geo["pasos"].items()}
+    lineas = []
+    for k, t in enumerate(tramos, 1):
+        primero, ultimo, n = dm.rango([paso[pid] for pid in t["pasos"]], x)
+        lineas.append(f"   tramo {k}: {primero} – {ultimo} ({n} paso{'s' * (n != 1)})")
+    return lineas
+
+
 # ---------------------------------------------------------------- crear
 def _geometria_por_posiciones(proc):
     """Cuando cada paso trae «posicion» (por ejemplo, leída de Appian): x de la posición, carriles apilados."""
@@ -253,6 +269,8 @@ def crear(a):
     dm.escribir_paginas(paginas, drawio)
     _escribir_json(proc, js, drawio, automatica=True)
     print(f"OK {drawio}" + (f" ({len(paginas)} tramos)" if len(paginas) > 1 else "") + f"\n   {js}")
+    for linea in _tramos(drawio):
+        print(linea)
     return 0 if _imagen(drawio) else 2
 
 
@@ -803,6 +821,8 @@ def actualizar(a):
     print(f"OK {drawio} ({len(cambios_hechos)} cambios)")
     for _, t in cambios_hechos:
         print(f"  - {t}")
+    for linea in _tramos(drawio):
+        print(linea)
     return 0 if _imagen(drawio) else 2
 
 

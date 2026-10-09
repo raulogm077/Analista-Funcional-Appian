@@ -69,7 +69,7 @@ ESTILO = {
 }
 ENLACE = re.compile(r"^ENL-(\d+)-([SE])$")
 ID_TRAMO = re.compile(r"^tramo-(\d+)$")
-NOMBRE_TRAMO = re.compile(r"^(.*) \(tramo \d+ de \d+\)$")
+NOMBRE_TRAMO = re.compile(r"^(.*?) \(tramo \d+ de \d+(?:: .*)?\)$")   # «<proceso> (tramo N de M: <primero> – <último>)»
 ESTILO_CARRIL = ("swimlane;horizontal=0;startSize=40;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;fillColor=#f4f5f7;"
                  "swimlaneFillColor=#ffffff;strokeColor=#b8bec5;")
 ESTILO_FLUJO = ("edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#4a5563;endArrow=block;"
@@ -560,15 +560,27 @@ def _celdas(proc, geo, pre=""):
     return celdas
 
 
+def rango(pasos, x):
+    """(primero, último, cuántos) de los pasos de un tramo: el de más a la izquierda y el de más a la derecha según `x`
+    ({id: x}; a igual x, el primero y el último de la lista), con su nombre o, si no tiene, su código."""
+    orden = sorted(pasos, key=lambda p: x[p["id"]])
+    nombre = lambda p: p.get("nombre") or p["id"]   # noqa: E731
+    return nombre(orden[0]), nombre(orden[-1]), len(orden)
+
+
 def xml_drawio(paginas):
     """El .drawio de un proceso: `paginas` = [(proceso, geometría)], una o una por tramo («tramo-N», con el nombre
-    «<proceso> (tramo N de M)»)."""
+    «<proceso> (tramo N de M: <primer paso> – <último paso>)»)."""
     nombre = lambda p: p.get("proceso") or "Proceso"   # noqa: E731
     hojas = []
     for k, (proc, geo) in enumerate(paginas, 1):
         uno = len(paginas) == 1
-        hojas.append(f'<diagram id="{"proceso" if uno else f"tramo-{k}"}" name="'
-                     + _xml_attr(nombre(proc) if uno else f"{nombre(proc)} (tramo {k} de {len(paginas)})")
+        titulo = nombre(proc)
+        if not uno:
+            primero, ultimo, _ = rango([p for p in proc["pasos"] if p["tipo"] not in ENLACES],
+                                       {pid: c[0] for pid, c in geo["pasos"].items()})
+            titulo += f" (tramo {k} de {len(paginas)}: {primero} – {ultimo})"
+        hojas.append(f'<diagram id="{"proceso" if uno else f"tramo-{k}"}" name="' + _xml_attr(titulo)
                      + '"><mxGraphModel grid="1" gridSize="10" page="0" math="0"><root><mxCell id="0"/>'
                      '<mxCell id="1" parent="0"/>' + "".join(_celdas(proc, geo, "" if uno else f"t{k}-"))
                      + "</root></mxGraphModel></diagram>")
