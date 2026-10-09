@@ -957,17 +957,17 @@ genera con `requisitos.py --json` y `REQUISITOS_SIN` de todo lo opcional); modif
 **Ficheros:** Crear `hooks/hooks.json`; modificar la sección «Requisitos» de cada SKILL.md, que se crea donde no la
 haya (una línea: `python3 <skill>/../../requisitos.py --skill <nombre>` antes de la primera tarea).
 
-- [ ] **Paso 1:** comprobar con la documentación de plugins (agente `claude-code-guide`) cómo se declara un hook
+- [x] **Paso 1:** comprobar con la documentación de plugins (agente `claude-code-guide`) cómo se declara un hook
   `SessionStart` de un plugin sin depender del shell (en Windows puede ir por PowerShell 5.1, que no tiene `||`) y cómo
   se cita su carpeta (`${CLAUDE_PLUGIN_ROOT}`).
-- [ ] **Paso 2:** `--breve` siempre sale con 0 (si no, Claude no recibe el texto), imprime solo lo que falta y escribe la
+- [x] **Paso 2:** `--breve` siempre sale con 0 (si no, Claude no recibe el texto), imprime solo lo que falta y escribe la
   marca `~/.cache/appian-analisis-funcional/avisado-<versión>` (`~` sale de `devmcp_extract.home_dir()`) después de
   imprimir. Prueba: con `APPIAN_RE_HOME` temporal y `REQUISITOS_SIN=docx`, la primera vez lo dice y la segunda no
   imprime nada; con `REQUISITOS_SIN=python`, sale 0 y lo dice.
-- [ ] **Paso 3:** `hooks.json` en la forma que da el Paso 1.
+- [x] **Paso 3:** `hooks.json` en la forma que da el Paso 1.
 - [ ] **Paso 4 (Raúl):** instalar el paquete en Claude Code y en la app de escritorio con algo de la tabla sin instalar
   y comprobar que el primer mensaje lo dice. Resultado en `docs/evaluaciones.md`.
-- [ ] **Paso 5:** commit.
+- [x] **Paso 5:** commit.
 
 ### Tarea 25: README generado y nada personal
 

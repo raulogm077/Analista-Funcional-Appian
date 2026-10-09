@@ -5,9 +5,12 @@ instala en Windows, macOS o Linux. No instala nada ni abre ningún programa: sol
     python3 requisitos.py                  # todo el plugin (en Windows, python)
     python3 requisitos.py --skill NOMBRE   # solo lo que usa esa skill
     python3 requisitos.py --json           # lo mismo, legible por máquina
+    python3 requisitos.py --breve          # para el hook de inicio de sesión (hooks/hooks.json)
 
 La lista de requisitos está en requisitos.json, junto a este fichero.
 Sale con 1 si falta algo imprescindible para lo pedido (Python 3.9 o superior) y con 2 si la skill no existe.
+--breve sale siempre con 0, imprime solo lo que falta y, después, deja la marca
+~/.cache/appian-analisis-funcional/avisado-<versión>: con ella no vuelve a decir nada a esa versión.
 REQUISITOS_SIN=id,id da esos requisitos por ausentes, para las pruebas.
 """
 from __future__ import annotations
@@ -258,11 +261,15 @@ def version_plugin() -> str:
 
 # ---------------------------------------------------------------- salida
 
+def quien(r) -> str:
+    if not r["skills"]:
+        return ""
+    return " (todas las skills)" if set(r["skills"]) >= set(skills_del_plugin()) else f" ({', '.join(r['skills'])})"
+
+
 def detalle(r, so) -> list:
     """Lo que hay que saber de un requisito que falta o no se puede comprobar."""
-    usa = (" (todas las skills)" if set(r["skills"]) >= set(skills_del_plugin()) else
-           f" ({', '.join(r['skills'])})" if r["skills"] else "")
-    return [f"  - {r['nombre']}{usa}", f"    Para: {r['para']}", f"    Si falta: {r['sin_el']}",
+    return [f"  - {r['nombre']}{quien(r)}", f"    Para: {r['para']}", f"    Si falta: {r['sin_el']}",
             f"    Cómo se instala: {r['instalar'][so]}"]
 
 
@@ -297,6 +304,39 @@ def texto(datos, skill) -> str:
     return "\n".join(lineas)
 
 
+def marca() -> Path:
+    """Que ya se avisó a esta versión del plugin en este equipo: lo único que el plugin escribe fuera de un proyecto."""
+    return carpeta_personal() / ".cache" / "appian-analisis-funcional" / f"avisado-{version_plugin()}"
+
+
+def breve(skill) -> int:
+    """Para el hook de inicio de sesión: la primera vez de cada versión, solo lo que falta y las copias sueltas; después,
+    nada. Sale siempre con 0, porque Claude solo recibe lo que imprime un hook que sale con 0."""
+    try:
+        hecho = marca()
+        if hecho.exists():
+            return 0
+        datos = comprobar(skill)
+        faltan = [r for r in datos["requisitos"] if r["presente"] is False and not r["solo_pruebas"]]
+        if faltan or datos["avisos"]:
+            so = sistema()
+            print(f"Plugin appian-analisis-funcional {version_plugin()}: comprobación de este equipo, que solo se hace "
+                  "una vez por versión. Díselo al usuario en tu primera respuesta, con cómo instalar lo que falta.")
+            for r in faltan:
+                print(f"- Falta {r['nombre']}{quien(r)}: {r['para']}. Si falta: {r['sin_el']}. "
+                      f"Cómo se instala: {r['instalar'][so]}")
+            for a in datos["avisos"]:
+                print(f"- {a}")
+            print(f"Detalle: {'python' if so == 'windows' else 'python3'} \"{RAIZ / 'requisitos.py'}\"")
+            sys.stdout.flush()
+        hecho.parent.mkdir(parents=True, exist_ok=True)
+        hecho.write_text("Avisado de lo que falta en este equipo.\n", encoding="utf-8")
+    except Exception:  # noqa: BLE001 - el aviso no puede impedir que empiece la sesión
+        import traceback
+        traceback.print_exc()
+    return 0
+
+
 def main(argv=None) -> int:
     for s in (sys.stdout, sys.stderr):
         try:
@@ -306,7 +346,11 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--skill", help="solo lo que usa esta skill")
     ap.add_argument("--json", action="store_true", help="salida legible por máquina")
+    ap.add_argument("--breve", action="store_true",
+                    help="para el hook de inicio de sesión: solo lo que falta, una vez por versión; sale siempre con 0")
     args = ap.parse_args(argv)
+    if args.breve:
+        return breve(args.skill if args.skill in skills_del_plugin() else None)
     if args.skill and args.skill not in skills_del_plugin():
         print(f"No hay ninguna skill «{args.skill}» en el plugin. Son: {', '.join(skills_del_plugin())}",
               file=sys.stderr)

@@ -30,15 +30,10 @@ caso ficticio; no se copian sus nombres.
 
 ## Requisitos
 
-| Para | Necesita | Si falta |
-|---|---|---|
-| Scripts de análisis | Python 3.9+, sin paquetes | Imprescindible |
-| PDF | `pdftotext` o `pip install pypdf` | Read lee el PDF |
-| Correos `.msg` | Nada fiable | Pide el correo como `.eml` o PDF |
-| Diagramas y su PNG | `pip install playwright` y un navegador (el de Playwright, Chrome o Edge) | Se entrega el `.drawio` o el `.mmd` sin imagen y se dice |
-| DF en Word | Node.js con el paquete `docx` (`npm install docx` en la carpeta de trabajo o `npm install -g docx`) | Se entrega el `funcional.md` y se dice |
+Antes de la primera tarea: `python3 <skill>/../../requisitos.py --skill appian-functional-analyst`. Dice qué falta en el
+equipo, qué se pierde y cómo se instala. Si falta algo, díselo al usuario y sigue con lo que haya.
 
-En Claude (web o escritorio) todo esto ya está.
+Los correos `.msg` no se leen de forma fiable: pide el correo como `.eml` o PDF.
 
 ## Principios
 

@@ -49,6 +49,11 @@ Cada petición entra por una sola skill. Las demás se usan desde ella, y se pas
 | **Claude (web o escritorio, sesiones en la nube)** | Nada: Python, Playwright, navegador, Node con `docx` y LibreOffice ya están |
 | **Claude Code** en el equipo | **Python 3.9+** (en Windows, el comando es `python`). Para diagramas, prueba de humo y capturas: `pip install playwright` (versión actual) y un navegador (`python -m playwright install chromium`, o Chrome / Edge ya instalados: no hace falta descargar nada más). Para el DF en Word: Node.js con el paquete `docx` (`npm install docx` en la carpeta de trabajo o `npm install -g docx`); LibreOffice para revisarlo. Opcional: `pdftotext` o `pip install pypdf` para PDF; LibreOffice y poppler para ver diapositivas de un DF |
 
+**Aviso al instalar**: al empezar una sesión, el plugin comprueba el equipo (`requisitos.py --breve`, en
+`hooks/hooks.json`) y Claude dice lo que falta la primera vez de cada versión. Los hooks de un plugin se cargan en
+Claude Code (también en la pestaña Code de la app de escritorio) y en Cowork; en el chat no, y allí lo comprueba cada
+skill antes de su primera tarea.
+
 Comprobación en un equipo nuevo: pide a Claude «comprueba que el plugin funciona
 en este equipo» con el repositorio del plugin abierto, o ejecuta desde él:
 

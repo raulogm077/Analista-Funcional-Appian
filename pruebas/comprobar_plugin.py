@@ -194,7 +194,8 @@ def prueba_de_requisitos():
     """requisitos.py del plugin que se comprueba, en una carpeta de trabajo y una carpeta personal temporales (con
     espacios) y con la consola en cp1252, como en Windows: con todo lo opcional ausente, su --json es el de
     pruebas/requisitos-esperado.json salvo versión y rutas; si falta algo opcional sale con 0 y si falta Python, con 1;
-    y avisa de la copia suelta de una skill del plugin en ~/.claude/skills/, también con el nombre que tenía antes."""
+    avisa de la copia suelta de una skill del plugin en ~/.claude/skills/, también con el nombre que tenía antes; y
+    --breve y el hook de inicio de sesión salen siempre con 0 y avisan una sola vez de lo que falta."""
     fallos = []
     script, tabla = RAIZ / "requisitos.py", RAIZ / "requisitos.json"
     if not (script.is_file() and tabla.is_file()):
@@ -205,12 +206,13 @@ def prueba_de_requisitos():
             trabajo = Path(tmp) / "Carpeta con espacios" / "Gestión app"
             trabajo.mkdir(parents=True)
 
-            def requisitos(*args, sin="", casa="vacía"):
+            def requisitos(*args, sin="", casa="vacía", orden=None):
                 carpeta = Path(tmp) / "casas" / casa
                 carpeta.mkdir(parents=True, exist_ok=True)
-                entorno = dict(os.environ, APPIAN_RE_HOME=str(carpeta), REQUISITOS_SIN=sin, PYTHONIOENCODING="cp1252")
+                entorno = dict(os.environ, APPIAN_RE_HOME=str(carpeta), REQUISITOS_SIN=sin, PYTHONIOENCODING="cp1252",
+                               CLAUDE_PLUGIN_ROOT=str(RAIZ))
                 entorno.pop("PYTHONUTF8", None)
-                r = corre([sys.executable, str(script), *args], env=entorno, cwd=str(trabajo))
+                r = corre(orden or [sys.executable, str(script), *args], env=entorno, cwd=str(trabajo))
                 return r.returncode, r.stdout, r.stdout + r.stderr
 
             def espera(cond, que, salida):
@@ -247,6 +249,35 @@ def prueba_de_requisitos():
                     avisos = ""
                 espera(suelta in avisos and hoy in avisos, f"una copia suelta de {suelta} en ~/.claude/skills/ no da aviso",
                        todo)
+            # --breve, para el hook de inicio de sesión: sale siempre con 0 (si no, Claude no recibe el texto), dice
+            # solo lo que falta y deja la marca de que ya avisó a esta versión
+            version = json.loads((RAIZ / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
+            marca = Path(tmp) / "casas" / "aviso" / ".cache" / "appian-analisis-funcional" / f"avisado-{version}"
+            c, out, todo = requisitos("--breve", sin="docx", casa="aviso")
+            espera(c == 0 and "Paquete docx de Node" in out and "Falta Python" not in out
+                   and "Skill de PDF" not in out and marca.is_file(),
+                   "--breve con REQUISITOS_SIN=docx no sale con 0 diciendo solo que falta docx y dejando la marca", todo)
+            c, out, todo = requisitos("--breve", sin="docx", casa="aviso")
+            espera(c == 0 and not out.strip(), "--breve avisa otra vez de lo mismo", todo)
+            c, out, todo = requisitos("--breve", sin="python", casa="sin-python")
+            espera(c == 0 and "Falta Python" in out, "--breve con REQUISITOS_SIN=python no sale con 0 diciendo que falta", todo)
+            # el hook de hooks/hooks.json tal cual, con la carpeta del plugin en su sitio: python3 y python en la misma
+            # orden (sh en macOS y Linux, PowerShell en Windows) y el aviso una sola vez
+            try:
+                grupos = json.loads((RAIZ / "hooks" / "hooks.json").read_text(encoding="utf-8"))["hooks"]["SessionStart"]
+                ordenes = [h["command"] for g in grupos if "startup" in g.get("matcher", "").split("|") for h in g["hooks"]]
+            except (OSError, ValueError, KeyError, TypeError):
+                ordenes = []
+            espera(len(ordenes) == 1, "hooks/hooks.json no tiene un hook SessionStart para «startup»", "")
+            for orden in ordenes:
+                orden = orden.replace("${CLAUDE_PLUGIN_ROOT}", RAIZ.as_posix())
+                shell = (["powershell", "-NoProfile", "-NonInteractive", "-Command", orden] if os.name == "nt"
+                         else ["sh", "-c", orden])
+                for vez in (1, 2):
+                    c, out, todo = requisitos(sin="docx", casa="hook", orden=shell)
+                    espera(c == 0 and out.count("Paquete docx de Node") == (1 if vez == 1 else 0),
+                           f"el hook de inicio de sesión, la {'primera' if vez == 1 else 'segunda'} vez, no sale con 0 o "
+                           f"no avisa de docx {'una vez' if vez == 1 else 'ninguna vez'}", todo)
     print(f"Prueba de requisitos: {'bien' if not fallos else 'falla'}")
     errores.extend(f"Prueba de requisitos: {f}" for f in fallos)
 
@@ -326,6 +357,11 @@ def probar_comprobador(nombres):
         c, out = comprueba()
         espera(c == 1 and "appian-prototipos-aena" in out and "hoy appian-prototipos" in out,
                "un SKILL.md que cita el nombre anterior de una skill no da error", out)
+        # cada SKILL.md manda comprobar el equipo con su nombre antes de la primera tarea
+        doc.write_text(original.replace(f"--skill {nombres[0]}", "--skill otra"), encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and f"requisitos.py --skill {nombres[0]}" in out,
+               "un SKILL.md sin la línea de requisitos.py con su nombre no da error", out)
         doc.write_text(original, encoding="utf-8")
         # la regla «Dudas de Appian» nombra el MCP appian-docs, así que tiene que estar en el .mcp.json del plugin
         mcp = copia / ".mcp.json"
@@ -452,6 +488,11 @@ def main(completo, plugin=None):
                 continue
             if not (SKILLS / n / ruta).exists():
                 errores.append(f"{n}/SKILL.md cita `{ruta}`, que no existe")
+
+    # Cada skill comprueba el equipo antes de su primera tarea (en el chat no hay hook de inicio de sesión)
+    for n, t in textos.items():
+        if not re.search(rf'requisitos\.py"? --skill {re.escape(n)}(?![\w-])', t):
+            errores.append(f"{n}/SKILL.md: falta en «Requisitos» la línea `python3 <skill>/../../requisitos.py --skill {n}`")
 
     # Rutas de una skill a otra
     for py in SKILLS.glob("*/**/*.py"):

@@ -24,12 +24,7 @@ Convierte el análisis funcional de un proyecto en un **prototipo navegable de l
 ### 0. Kit y requisitos
 `KIT` = la carpeta de este SKILL.md: scripts, runtime, schemas, plantillas, marca estándar y galerías vienen dentro del plugin. Todos los comandos usan `python3 $KIT/scripts/...` (en Windows, `python`) y las rutas `references/`, `templates/`, `galerias/` son relativas a `$KIT`.
 
-| Para | Necesita | Si falta |
-|---|---|---|
-| Validar y construir | Python 3.9+ (solo biblioteca estándar) | Imprescindible |
-| Prueba de humo y capturas | `pip install playwright` (versión actual) + un navegador: `python -m playwright install chromium`, o Chrome / Edge ya instalados | Valida, construye y revisa el HTML generado |
-
-En Claude (web / escritorio) todo está en el entorno. En un equipo nuevo, validar y construir no necesitan nada más; la prueba de humo, el contraste y las capturas piden Playwright y un navegador (paso 4).
+Antes de la primera tarea: `python3 $KIT/../../requisitos.py --skill appian-prototipos`. Dice qué falta en el equipo, qué se pierde y cómo se instala. Si falta algo, díselo al usuario y sigue con lo que haya.
 
 ### 1. Entrada: el análisis funcional (`analisis/funcional.md`)
 El prototipo parte de `<p>/analisis/funcional.md`, el diseño funcional que escribe **`appian-functional-analyst`** (en este mismo plugin); `<p>` es la carpeta del proyecto. Si hay `analisis/tecnico.md`, se usa también: versión de Appian, record types y campos, y capa de seguridad de cada perfil. Si el proyecto ya existe, empieza por `python3 $KIT/../appian-functional-analyst/scripts/proyecto.py estado <p>`: versión, pantallas sin captura y pantallas validadas por el cliente.

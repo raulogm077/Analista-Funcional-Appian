@@ -22,6 +22,11 @@ estar, cómo se pasa de lo que hay a lo nuevo y qué falta por decidir.
 | — | Dibujar procesos: `appian-diagramas-bpmn` |
 | — | Crear o modificar objetos en un entorno |
 
+## Requisitos
+
+Antes de la primera tarea: `python3 <skill>/../../requisitos.py --skill appian-refactorizacion`. Dice qué falta en el
+equipo, qué se pierde y cómo se instala. Si falta algo, díselo al usuario y sigue con lo que haya.
+
 ## Entradas
 
 - **`as-is/`**, escrito por `appian-reverse-engineering`. No se vuelve a leer el entorno.
