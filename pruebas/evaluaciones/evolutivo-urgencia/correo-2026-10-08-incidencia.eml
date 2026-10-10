@@ -1,0 +1,33 @@
+From: Marcos Llorente Vidal <proyecto.solicitudes@example.org>
+To: Clara Ibáñez Rey <analisis.solicitudes@example.org>
+Date: Thu, 08 Oct 2026 09:05:00 +0200
+Subject: RV: URGENTE - No se pueden enviar solicitudes de 1.000 € o más
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+
+Clara:
+
+Te reenvío el correo de la jefa de Servicios generales. Lo declara crítico y estoy de acuerdo: hay que corregirlo antes del viernes 9.
+
+Lucía, de desarrollo, ya ha encontrado la causa:
+
+> Reproducido en el entorno de corrección, que tiene lo mismo que producción. El fallo está en
+> DEM_SolicitudForm: al enviar, el importe se valida convirtiendo el texto con number() y el punto
+> de los miles lo rompe. Con 1.000 € o más sale el error. La corrección es cambiar esa validación
+> en DEM_SolicitudForm y nada más.
+
+Marcos
+
+-------- Mensaje original --------
+De: Elena Marín Castro <servicios.generales@example.org>
+Fecha: 07/10/2026 18:40
+Asunto: URGENTE - No se pueden enviar solicitudes de 1.000 € o más
+
+Marcos:
+
+Desde ayer, con la campaña de material del trimestre, ninguna solicitud de 1.000 € o más se puede enviar: al pulsar «Enviar» sale «Se ha producido un error al evaluar la expresión» y la solicitud se queda en borrador. Tenemos 35 paradas y el pedido al proveedor se cierra el viernes 9.
+
+Para nosotros es crítico: los centros no pueden pedir el material del trimestre. Lo necesitamos corregido antes del viernes.
+
+Elena Marín Castro
+Jefa de Servicios generales

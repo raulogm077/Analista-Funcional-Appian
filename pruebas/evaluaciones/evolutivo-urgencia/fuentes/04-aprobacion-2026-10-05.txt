@@ -1,0 +1,5 @@
+Tipo de fuente: aprobación
+De: Jefe de proyecto
+Fecha: 2026-10-05
+
+Aprobado el cambio de la firma de la revisión (EV-02), con su alcance y su coste: tres jornadas. Se construye en desarrollo después del pase de octubre.

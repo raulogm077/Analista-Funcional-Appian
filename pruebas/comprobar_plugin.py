@@ -825,7 +825,8 @@ def probar_comprobador(nombres):
         # las evaluaciones de enrutado y de malas prácticas no ejecutan scripts del plugin (leen las descripciones de
         # SKILL.md y los datos de pruebas/): con los scripts rotos siguen pasando
         suites = (sorted(p.parent.name for p in PRUEBAS.glob("*/selftest.py")) + ["appian-reverse-engineering"]
-                  + [f"evaluaciones/{e}" for e in ("demo", "evolutivo", "incoherencias")])
+                  + [f"evaluaciones/{e}" for e in ("demo", "evolutivo", "incoherencias", "evolutivo-urgencia",
+                                                   "coste-retoque")])
         espera(c == 1 and all(f"Prueba de {s}:" in out and f"Prueba de {s}: bien" not in out for s in suites),
                "--completo --plugin no pasa las pruebas del repositorio a la copia", out)
     print(f"Prueba del comprobador: {'bien' if not fallos else 'falla'}")

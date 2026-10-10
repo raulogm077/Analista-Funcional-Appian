@@ -1,0 +1,26 @@
+{
+ "fuente": "correo-2026-10-08-incidencia.eml",
+ "tipo": "Defecto",
+ "declara": ["jef", "responsable", "servicios generales", "elena", "marin"],
+ "objeto": "DEM_SolicitudForm",
+ "choca_con": "EV-02",
+ "donde": "correccion",
+ "estados": {"EV-01": "En producción", "EV-02": "Aprobada", "URG": "Abierta"},
+ "version_funcional": "1.1",
+ "puntos": {
+  "ficha": "La urgencia es una URG-nn de analisis/cambios.md con su ficha impacto/URG-nn.md: «Cambio: URG-nn», «Urgencia», Tipo «Defecto», Síntoma, quién la declara crítica y la cita de la fuente",
+  "colision": "«Colisión» nombra EV-02 y DEM_SolicitudForm",
+  "donde": "«Dónde se corrige» dice el entorno de corrección",
+  "encargo": "construccion/EV-02.md lleva «Reaplicar URG-nn en `DEM_SolicitudForm`»",
+  "bloqueo": "En una copia, EV-02 no pasa a Construida sin --reaplicada URG-nn y con ella sí",
+  "estados": "EV-01 En producción, EV-02 Aprobada y la URG Abierta: nada aprobado ni pasado a producción",
+  "sin_word_ni_capturas": "Ningún .docx, .pdf ni .png nuevo o cambiado desde el montaje",
+  "sin_version": "El funcional sigue en la 1.1: es un defecto",
+  "comprobar": "comprobar.py sin errores"
+ },
+ "umbral": {
+  "obligatorios": ["ficha", "colision", "donde", "encargo", "bloqueo", "estados", "comprobar"],
+  "ligereza": ["sin_word_ni_capturas", "sin_version"],
+  "fallos_de_ligereza_tolerados": 1
+ }
+}
