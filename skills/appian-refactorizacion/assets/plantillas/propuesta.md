@@ -18,9 +18,15 @@ Base: [as-is](../as-is/LEEME.md) de {{fecha}}, entorno {{entorno}}, Appian {{ver
 
 ## 1. Alcance
 
+<!-- «Fuera del alcance»: los hallazgos Alta o Media que esta propuesta no trata, por su H-…, y por qué.
+     «Supuestos sin respuesta»: lo que se supuso porque nadie dio el alcance, el plazo o los límites.
+     Cada una, solo si hace falta; si no, se borra. -->
+
 - **Se rehace:** {{módulos, procesos o capas}}.
 - **Se queda como está:** {{lo que no se toca y por qué}}.
 - **Límites:** {{plazo}}; no se puede tocar {{otras aplicaciones, contratos externos, tablas compartidas}}.
+- **Fuera del alcance:** {{H-…, H-…}}: {{por qué no se tratan aquí}}.
+- **Supuestos sin respuesta:** {{lo que se supuso: alcance, plazo o límites}}.
 
 ## 2. Diagnóstico
 
@@ -28,6 +34,7 @@ Base: [as-is](../as-is/LEEME.md) de {{fecha}}, entorno {{entorno}}, Appian {{ver
      una REF, y dos hallazgos del mismo objeto y el mismo problema visto por dos señales (un proceso huérfano y sin
      ejecuciones) también, citando los dos. Varios hallazgos con una causa común y distinta severidad: una REF si la
      solución es una, con la prioridad del más grave y citando todos; si las soluciones son distintas, una por solución.
+     Un hallazgo que mezcla varios problemas: una REF por problema, y cada una lo cita.
      Evidencia: el H-… y su certeza si sale de un hallazgo, y el enlace a lo que lo muestra en as-is/. Si el hallazgo es
      inferido o pendiente, la ficha lo dice y la Hoja de ruta pone antes «Verificar H-…».
      Regla: la sección de appian-best-practices que lo trata, «BP nn §x» (seccion.py nn x la imprime); si lo tratan
@@ -81,7 +88,8 @@ Base: [as-is](../as-is/LEEME.md) de {{fecha}}, entorno {{entorno}}, Appian {{ver
 ## 6. Pendientes
 
 <!-- Lo que tiene que decidir el equipo o el cliente (DEC-nn, con sus opciones y la recomendada) y los NV de
-     as-is/datos/sin-verificar.json que condicionan la solución, con su ID. -->
+     as-is/datos/sin-verificar.json que condicionan la solución, con su ID. Lo que falta y no es decisión ni NV (la
+     versión de Appian, el tier, el tamaño del equipo) también es una DEC, con el supuesto como opción recomendada. -->
 
 | ID | Qué falta | Quién | Condiciona |
 |---|---|---|---|

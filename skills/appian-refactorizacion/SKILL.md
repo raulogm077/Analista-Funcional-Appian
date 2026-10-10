@@ -48,7 +48,8 @@ Sin `as-is/datos/inventario.json` no se empieza: primero, ingeniería inversa.
 1. **Base.** Lee `as-is/LEEME.md` y `as-is/datos/`. Di al usuario en pocas líneas qué hay: objetos, procesos,
    hallazgos por severidad y lo que quedó sin verificar.
 2. **Alcance y límites.** Si no los ha dado, pregúntalos en un solo mensaje: qué se rehace, plazo y qué no se puede
-   tocar. Sin respuesta, la aplicación entera y sin plazo, y el Alcance lo dice.
+   tocar. Sin respuesta, la aplicación entera y sin plazo, y el Alcance lo dice en la línea «- **Supuestos sin
+   respuesta:** …».
 3. **Propuesta.** Lee entero `agents/arquitecto-refactorizacion.md` y síguelo, o pásaselo a un subagente con
    `<skill>`, `<p>`, el alcance, los límites, el apartado «Dudas de Appian» de este fichero y, en Windows, que el
    comando es `python` y no `python3`. Escribe
@@ -56,10 +57,11 @@ Sin `as-is/datos/inventario.json` no se empieza: primero, ingeniería inversa.
 4. **Comprobar.** `python3 <skill>/scripts/comprobar_propuesta.py <p>`, sin errores antes de entregar: apartados y
    fichas completos, evidencia que existe en `as-is/`, reglas que buenas prácticas tiene, objetos del Diagnóstico que
    están en el inventario, cada REF con su alternativa en la Solución y los `H-…` y NV que existen. Sus avisos (una REF
-   fuera de la Hoja de ruta o sin su «Verificar H-…» antes, un hallazgo inferido marcado ✅, un hallazgo Alta o Media
-   sin REF ni Pendientes, un NV sin citar) se corrigen.
-5. **Entregar.** En pocas líneas: qué se rehace, los problemas de prioridad Alta, la estrategia, las fases y lo que
-   tiene que decidir el equipo o el cliente. Después, el analista escribe el funcional (lo que se conserva y lo que
+   fuera de la tabla de la Hoja de ruta o sin su «Verificar H-…» antes, un hallazgo inferido marcado ✅, un hallazgo
+   Alta o Media sin REF, ni Pendientes, ni la línea «- **Fuera del alcance:** H-…» del Alcance, un NV sin citar) se
+   corrigen.
+5. **Entregar.** En pocas líneas: qué se rehace, los problemas de prioridad Alta, la estrategia, las fases, los
+   supuestos sin respuesta y lo que tiene que decidir el equipo o el cliente. Después, el analista escribe el funcional (lo que se conserva y lo que
    cambia) y el técnico, que baja a objetos cada REF.
 
 Reglas que no se negocian:
@@ -69,7 +71,8 @@ Reglas que no se negocian:
 - **Una REF por problema.** Si dos hallazgos tratan del mismo objeto y del mismo problema visto por dos señales (un
   proceso huérfano y sin ejecuciones), una sola REF cita los dos `H-…`. Varios hallazgos con una causa común y
   distinta severidad: una REF si la solución es una, con la prioridad del más grave y citando todos; si las soluciones
-  son distintas, una REF por solución.
+  son distintas, una REF por solución. Al revés, un hallazgo que mezcla varios problemas da una REF por problema, y
+  cada una lo cita.
 - **Lo pendiente no se da por hecho.** Una REF sobre un hallazgo inferido (🔶) o pendiente (❓) lo dice, y la Hoja de
   ruta pone antes «Verificar H-…». Lo que ingeniería inversa no pudo verificar y condiciona la solución va a
   Pendientes con su NV.

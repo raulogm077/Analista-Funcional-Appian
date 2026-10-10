@@ -37,7 +37,7 @@
     "objetos": ["MNT_PM_Recordatorio"],
     "capa": "procesos",
     "bp": "BP 03 §6",
-    "bp_aceptadas": ["BP 03 §6", "BP 03 §9"]
+    "bp_aceptadas": ["BP 03 §6", "BP 03 §9", "BP 03 §13"]
   },
   {
     "id": "MP-06",
