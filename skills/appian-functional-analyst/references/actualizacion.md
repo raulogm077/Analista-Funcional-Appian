@@ -9,12 +9,11 @@ coherente.
 - El **informe de impacto** es la revisión antes de tocar nada.
 - El análisis **no se lee entero**: se consulta con `indice.py`.
 
-Una fuente cada vez, en orden de fecha. Cada fuente es un informe de impacto y una versión (+0.1). En los
-ejemplos, la fuente nueva es FU-04 y la versión vigente la 1.1. `<p>` es la carpeta del proyecto.
+Una fuente cada vez, en orden de fecha: un informe de impacto que toca solo lo afectado y una versión (+0.1) solo si
+se aplica algún cambio. En los ejemplos, la fuente nueva es FU-04 y la vigente la 1.1. `<p>` es la carpeta del proyecto.
 
 ## 0. Antes de empezar
 ```bash
-python3 <skill>/scripts/proyecto.py copia <p>          # guarda la versión vigente en versiones/v1.1/
 python3 <skill>/scripts/indice.py resumen <p>
 ```
 
@@ -23,7 +22,8 @@ python3 <skill>/scripts/indice.py resumen <p>
 python3 <skill>/scripts/leer_fuentes.py <fichero nuevo> -o <p>/fuentes/   # sigue la numeración: FU-04
 ```
 El DF devuelto con comentarios o con cambios marcados se cataloga igual: `leer_fuentes.py` saca cada
-comentario y cada cambio con el texto al que se refiere y la historia o el apartado donde está.
+comentario y cada cambio con el texto al que se refiere y la historia o el apartado donde está. Lo que llega por el
+chat (también la aprobación del jefe de proyecto) es una fuente más: `ingesta-fuentes.md` §1.
 
 ## 2. Nota de la fuente
 `notas/FU-04.md` con las secciones de `volumen-grande.md` §1. Aplica `ingesta-fuentes.md`: separa la
@@ -56,15 +56,13 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
    | COMPLETA | Añade detalle sin contradecir | Se añade a la pieza con su cita | No |
    | CONFIRMA | Ratifica algo ⚠️, 🔶 o ❓ | Pasa a ✅ y suma la cita | No |
    | VALIDA | El cliente lo aprueba por escrito o en la revisión del DF | Pasa a 🔒 | Sí (una por bloque) |
-   | CAMBIA | Contradice una decisión anterior | Se reescribe la pieza; lo anterior va a «Antes» | Sí |
+   | CAMBIA | Contradice una decisión anterior | Se reescribe la pieza; lo anterior va a «Antes». Si era 🔒: aprobado por el cliente sigue 🔒 y suma la cita de la aprobación; solo por el equipo, pasa a ✅ y el cliente lo revalida en la siguiente entrega | Sí |
    | ANULA | Deja de hacerse algo que tiene ID | Se tacha: `Anulada por D-nn` | Sí |
    | RESPONDE | Contesta un PC entero | Se aplica; el PC se tacha: `Respondida por D-nn` | Sí |
    | ALCANCE+ / ALCANCE− | Entra o sale funcionalidad | Funcional §1 y piezas nuevas o anuladas | Sí |
    | PREGUNTA | Surge una duda o algo queda abierto | PC nuevo (o PT si es técnica) | No |
+   | PROYECTO | Plazos, hitos o dependencias del proyecto | `proyecto.md` «## Plazos e hitos»; si condiciona la construcción, técnico §12 o un PT. Sin aprobación | No |
    | SIN IMPACTO | Contexto, conversación o repite lo que hay | Nada | No |
-
-   Los plazos, hitos y dependencias del proyecto no son SIN IMPACTO: van a `proyecto.md` o, si condicionan
-   la construcción, al técnico (§12 o un PT).
 
    Casos frontera:
    - Si lo que se quita es **parte** de una pieza (una columna, un dato de un aviso), es CAMBIA de esa
@@ -136,15 +134,19 @@ ha quedado sin cita (señal de que se ha leído entera).
 
 ## 5. Aprobación
 Presenta el **Resumen** y **solo los puntos que requieren aprobación**, cada uno con tu recomendación, y
-pregunta «¿Aplico el informe con estas decisiones?». Con cualquier confirmación, aplica. Lo que decide el
-analista manda: si al aplicar ves un motivo para no seguirlo, pregúntale.
+pregunta «¿Aplico el informe con estas decisiones?». Con cualquier confirmación, aplica; la que llega por el chat
+o por correo se cataloga (tipo Aprobación) y la Decisión la cita: «✔ FU-09». Lo que decide el analista manda: si al
+aplicar ves un motivo para no seguirlo, pregúntale.
 
 Sin respuesta o en una sesión desatendida: aplica lo que no requiere aprobación; lo que la requiere no se aplica:
 queda «Pendiente» en el informe, la pieza no cambia y la cabecera del informe lo dice: «Estado: aplicado en 1.2;
-pendientes de aprobación: puntos 4 y 7», o «Estado: pendiente» si no se ha aplicado nada. `proyecto.py estado` los
-lista. Una decisión explícita del cliente no se le vuelve a preguntar.
+pendientes de aprobación: puntos 4 y 7», o «Estado: pendiente» si no se ha aplicado nada. Los listan
+`proyecto.py estado` e `indice.py pendientes` («Para decidir (equipo)»). Una decisión explícita del cliente no se
+le vuelve a preguntar.
 
 ## 6. Aplicar
+- Si hay algo que aplicar, antes de tocar nada `proyecto.py copia <p>` (guarda la 1.1 en `versiones/v1.1/`). Si no,
+  el informe queda «Estado: sin cambios», sin copia ni versión, y se verifica con `comprobar.py <p> --impacto …`.
 - Solo se tocan las piezas del informe. `ficha --lineas` da las líneas exactas: lee solo ese tramo y edita
   en sitio. Las líneas marcadas ⟂ están iguales en otro sitio: incluye la de al lado para que sea única.
 - Lo que cambia cita la fuente nueva en su comentario y actualiza el estado (✅, 🔒, ⚠️…).
@@ -165,7 +167,7 @@ lista. Una decisión explícita del cliente no se le vuelve a preguntar.
   (`mermaid-diagrams.md`).
 - **decisiones.md**: fila de la versión nueva y filas D nuevas al final.
 - **Versión**: sube 0.1 en funcional y técnico.
-- **Anexo**: `indice.py derivadas <p> --escribir`.
+- **Anexo**: `indice.py derivadas <p> --escribir`, solo si el informe toca alguna pantalla o algún perfil.
 - **proyecto.md**: la fuente en «Fuentes procesadas» y el siguiente paso.
 - En el informe: completa «Revisión de dependencias» y «Aplicado», y pon «Estado: aplicado en 1.2» (con lo que
   quede sin aplicar: «Estado: aplicado en 1.2; pendientes de aprobación: puntos 4 y 7»).
@@ -177,9 +179,10 @@ python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/ --anterior <p>/v
 Tiene que salir sin errores: ningún ID desaparecido, la versión sube y tiene su fila, cada dependencia con
 resultado, cada cambio declarado en el informe, nada marcado «sin cambios» que haya cambiado y nada 🔒
 cambiado sin un punto aprobado. Después, en este orden:
-- el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y sus capturas nuevas. Las validadas por
-  el cliente (🔒) no se tocan sin el visto bueno del analista;
-- el Word, si ya se había entregado un DF (`df_docx.js`), que incluye esas capturas.
+- el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y solo sus capturas. Las validadas por
+  el cliente (🔒) no se tocan sin el visto bueno del analista. Cada pregunta nueva que devuelve (Q-nn de su
+  trazabilidad) pasa a una PC de §11 con la PAN en «Afecta a» y `<!-- ❓ prototipo Q-03 -->`;
+- el Word, solo al enviarlo o si se pide (`df_docx.js`; nunca pisa el de la versión entregada).
 
 ## 8. Entregar
 En pocas líneas: versión, puntos por tipo, lo que cambió de verdad (CAMBIA, ANULA, alcance), pendientes
@@ -193,7 +196,8 @@ Las PC abiertas agrupadas por «A quién», cada una con sus opciones y lo que a
 que afectan a más partes del análisis (los elementos de «Afecta a» y las líneas que la citan fuera del §11).
 
 ## Feedback de una demo
-Las notas o la transcripción de una demo del prototipo son una fuente más y pasan por el informe de impacto:
+Las notas o la transcripción de una demo del prototipo son una fuente más y pasan por el informe de impacto (lo
+enseñado es `app-vX.Y.json`, con X.Y la versión del funcional de entonces):
 - cada comentario es un punto que encaja en su PAN, y además en la historia o el criterio si los toca («Encaja en:
   PAN-02, HU-03»); lo que solo es del prototipo (un texto de ejemplo, un color) es «SIN IMPACTO» en el análisis y va
   directo a prototipos;

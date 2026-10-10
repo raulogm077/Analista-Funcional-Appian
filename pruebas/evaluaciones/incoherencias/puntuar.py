@@ -144,7 +144,8 @@ def tipo(fila: dict) -> str:
 
 
 def requiere(fila: dict) -> bool:
-    return mo.normaliza(mo.sin_comentarios(campo(fila, "requiere"))).strip(" *").startswith("si")
+    """«Sí (…)», como comprobar.py; «Sin cambios» no."""
+    return re.match(r"si(?!\w)", mo.normaliza(mo.sin_comentarios(campo(fila, "requiere"))).strip(" *")) is not None
 
 
 def pendiente(fila: dict) -> bool:

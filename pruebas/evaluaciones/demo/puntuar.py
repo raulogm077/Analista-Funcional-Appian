@@ -99,6 +99,11 @@ def campo(fila: dict, prefijo: str) -> str:
     return next((v for k, v in fila.items() if k.startswith(prefijo)), "")
 
 
+def requiere(fila: dict) -> bool:
+    """«Sí (…)», como comprobar.py; «Sin cambios» no."""
+    return re.match(r"si(?!\w)", mo.normaliza(mo.sin_comentarios(campo(fila, "requiere"))).strip(" *")) is not None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("proyecto")
@@ -148,7 +153,7 @@ def main() -> int:
         total += 1
         suyos = [f for f in filas if pan in {x for x in mo.ids_en(campo(f, "encaja en"))}]
         aprobado = any("✔" in campo(f, "decision") for f in suyos)
-        piden = [f for f in suyos if mo.normaliza(mo.sin_comentarios(campo(f, "requiere"))).strip(" *").startswith("si")]
+        piden = [f for f in suyos if requiere(f)]
         decision = "; ".join(sorted({campo(f, "decision") or "—" for f in suyos}))
         if not suyos:
             print(f"FALLO {pan}: ningún punto del informe de {fu or esperado['fuente']} encaja en {pan}"

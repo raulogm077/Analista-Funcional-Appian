@@ -11,7 +11,8 @@
   indice.py seccion    <p> F6 [--con "documento"]          texto de una sección: F (funcional), T (técnico), D (decisiones)
   indice.py siguientes <p>                              siguiente ID libre de cada tipo
   indice.py derivadas  <p> [--escribir]                 anexo «Quién puede hacer qué» del funcional
-  indice.py pendientes <p>                              guion de la próxima reunión: las PC abiertas, por «A quién»
+  indice.py pendientes <p>                              guion de la próxima reunión: lo que decide el equipo
+                                                        (puntos «Pendiente» de los informes) y las PC, por «A quién»
   indice.py grafo      <p> [-o analisis/grafo.json]       las piezas y sus referencias en JSON (en el proyecto)
 
 Estados: 🔒 Validado · ✅ Decidido · 🔶 Inferido · ⚠️ Pendiente · ❓ No definido · Anulada · Respondida.
@@ -298,7 +299,7 @@ def c_siguientes(m, a):
         if t != "CA":
             n = (max(usados[t]) + 1) if usados[t] else 1
             print(f"{t}-{n:0{ANCHO}d}")
-    print("Criterios: el siguiente .n de su historia (HU-07.4 tras HU-07.3)")
+    print("Criterios: el siguiente .n de su historia o de su ficha INT (HU-07.4 tras HU-07.3)")
 
 
 def c_grafo(m, a):
@@ -389,16 +390,44 @@ def celda(m, p, nombre):
     return cel[cab.index(nombre)] if nombre in cab and cab.index(nombre) < len(cel) else ""
 
 
+def para_decidir(m):
+    """[(informe, punto)] de los puntos «Decisión: Pendiente» de impacto/*.md: lo que tiene que decidir el equipo."""
+    out = []
+    for inf in sorted((m.raiz / "impacto").glob("*.md")):
+        _, puntos, _ = mo.lee_informe(inf)
+        out += [(inf.stem, f) for f in puntos if mo.normaliza(f.get("decision", "")).strip(" *").startswith("pendiente")]
+    return out
+
+
 def c_pendientes(m, a):
-    """Guion de la próxima reunión: las PC abiertas agrupadas por «A quién»; en cada grupo, de más peso a menos."""
+    """Guion de la próxima reunión: primero lo que tiene que decidir el equipo (los puntos pendientes de aprobación de los
+    informes, que no llegan solos a §11 ni al Word); después, las PC abiertas agrupadas por «A quién», en cada grupo de
+    más peso a menos."""
     grupos = collections.defaultdict(list)
     for p in m.vigentes("PC"):
         quien = mo.sin_comentarios(celda(m, p, "a quien")).strip(" —-") or "Sin asignar"
         grupos[quien].append((-peso_pc(m, p), clave(p.id), p))
-    if not grupos:
+    decidir = para_decidir(m)
+    if not grupos and not decidir:
         print("No hay preguntas pendientes de confirmar.")
         return
     print("# Próxima reunión: lo pendiente de confirmar\n")
+    if decidir:
+        print("## Para decidir (equipo)\n")
+        print("Puntos pendientes de aprobación: no se aplican ni van al cliente hasta que el equipo decida.\n")
+        for inf, f in decidir:
+            print(f"- **{inf} · punto {f.get('#', '?')}** {mo.sin_comentarios(f.get('que se dice', '')).strip()}")
+            cambio = mo.sin_comentarios(f.get("cambio propuesto", "")).strip(" —-")
+            if cambio:
+                print(f"  - Cambio propuesto: {cambio}")
+            req = mo.sin_comentarios(next((v for k, v in f.items() if k.startswith("requiere")), "")).strip()
+            motivo = re.search(r"\(([^)]*)\)", req)
+            if req.strip(" —-"):
+                print(f"  - Requiere: {motivo.group(1) if motivo else req}")
+        print()
+    if not grupos:
+        print("No hay preguntas pendientes de confirmar con el cliente.")
+        return
     print("De más a menos peso en cada grupo: lo que afecta a más partes del análisis va primero.\n")
     orden = sorted(grupos, key=lambda q: (min(x[0] for x in grupos[q]), mo.normaliza(q)))
     for quien in orden:

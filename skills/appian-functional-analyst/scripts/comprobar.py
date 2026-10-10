@@ -5,27 +5,33 @@ Uso (<p> es la carpeta del proyecto o su carpeta analisis/):
   comprobar.py <p> [--fuentes fuentes/] [--corregir-citas]
   comprobar.py <p> --impacto impacto/FU-04.md --fuentes fuentes/        informe listo, antes de aplicar
   comprobar.py <p> --anterior versiones/v1.1 [--impacto impacto/FU-04.md]   después de aplicar
+  comprobar.py <p> --impacto impacto/FU-04.md        informe «Estado: sin cambios»: no hay versión nueva ni copia
 
 Errores (✗, salida 1) y avisos (·):
   - estructura: los apartados de cada fichero con su número;
   - IDs: definidos una vez y en su sitio, citados solo si existen, ninguna pieza vigente remite a una anulada;
   - completo: historias con perfil, pantalla, prioridad y criterios; pantallas con sus partes y captura;
     pasos con quién y pantalla; pendientes con a quién preguntar;
-  - DF limpio: sin fuentes, marcas de estado ni términos de Appian a la vista, comentarios cerrados;
+  - DF limpio: sin fuentes, marcas de estado ni términos de Appian a la vista, comentarios cerrados; lo mismo en
+    «Qué cambia» de las versiones 1.0 y siguientes de decisiones.md, que sale en el Word, y además (aviso) sin D-nn,
+    «punto N», el informe ni muletillas;
+  - prototipo (aviso): cada pregunta nueva (Q-nn de «Preguntas abiertas» en prototipo/*trazabilidad*.md) con su PC;
   - redacción (avisos): muletillas de references/redaccion.md, frases largas o repetidas, palabras vagas sin cifra;
   - funcional ↔ técnico, si hay tecnico.md: cada dato del DF con su campo y viceversa, cada pantalla, aviso,
-    relación con otro sistema, perfil y criterio en su apartado técnico, decisiones con su porqué y su
-    verificación, y la misma versión en los tres ficheros;
+    relación con otro sistema, perfil y criterio (HU-nn.m e INT-nn.m) en su apartado técnico, decisiones con su
+    porqué y su verificación, y la misma versión en los tres ficheros;
   - con --fuentes: citas con el minuto de una intervención real y sin nombres de participantes;
-  - con --anterior: ningún ID desaparece, la versión sube y tiene su fila; lista lo nuevo y lo cambiado, y avisa
-    del texto que queda viejo (lo que una pieza cambiada ya no dice y sigue en otra línea, sin tocar en esta versión);
+  - con --anterior: ningún ID desaparece, la versión sube si algo cambia y no sube si nada cambia, y tiene su
+    fila; lista lo nuevo y lo cambiado, y avisa del texto que queda viejo (lo que una pieza cambiada ya no dice y sigue
+    en otra línea, sin tocar en esta versión);
   - con --impacto: los IDs del informe existen o son nuevos; «Requiere» es «—» o «Sí (motivo)», y «Sí» en lo que
     cambia o anula algo 🔒; después de aplicar, cada dependencia tiene resultado, cada cambio está declarado y lo 🔒
-    solo cambia con aprobación;
+    solo cambia con aprobación; con «Estado: sin cambios», ningún punto por aplicar y la versión del análisis base;
   - con una aplicación existente (<p>/as-is/datos/inventario.json): cada historia con su «Origen»; hallazgos, NV y
-    REF solo en la trazabilidad del DF y citados solo si existen; la Situación de cada objeto de técnico §13 contra el
-    inventario y los objetos de fuera de la aplicación; con propuesta de refactorización, las REF citadas en su
-    Diagnóstico y las DEC en sus Pendientes, una DT por cada REF de su Solución y la tabla de migración en técnico §3.
+    REF solo en la trazabilidad del DF y citados solo si existen; la Situación de cada objeto de técnico §13 (siempre
+    que tenga filas) contra el inventario y los objetos de fuera de la aplicación (lo «Nuevo» y lo que «Sustituye» no
+    existe todavía); con propuesta de refactorización, las REF citadas en su Diagnóstico y las DEC en sus Pendientes,
+    una DT por cada REF de su Solución y la tabla de migración en técnico §3.
     Avisa de lo que se modifica o se usa con un hallazgo Alta (¿refactorización antes?) o con algo sin verificar
     (¿PC o PT?) que no cita ninguna PT ni PC, y de las citas «[FU-nn H-…]» y «[FU-nn NV-…]» a un as-is/ anterior (su
     huella en fuentes/indice.json no es la de ahora). Sin as-is/, nada de esto.
@@ -161,8 +167,10 @@ def comprobar_completo(m):
             quien = m.campos(paso).get("quien", "") if paso in m.piezas else ""
             if quien and not any(mo.normaliza(x) in mo.normaliza(quien) for x in nombres(c["perfil"], pf)):
                 otro_perfil.append(f"{p.id} ({paso}: {mo.sin_comentarios(quien).strip()})")
-        if not re.search(r"^Como .+ quiero .+ para ", m.texto(p.id), re.M):
-            sin_como.append(p.id)
+        de_un_df = p.estado == "🔒" and re.search(r"FU-\d+\s+[A-Z][A-Za-z]*-\w", " ".join(
+            mo.RX_COMENTARIO.findall(m.docs["F"].lineas[p.ini])))   # «<!-- 🔒 FU-01 RF-07 -->»: el DF del cliente
+        if not de_un_df and not re.search(r"^Como .+ quiero .+ para ", m.texto(p.id), re.M):
+            sin_como.append(p.id)   # de un DF ya hecho no se inventa el «para qué»
     informe("historias con la tabla Perfil · Pantalla · Paso · Prioridad", sin_campos)
     informe("perfiles de las historias que están en §2", perfil_mal)
     informe("pantalla de cada historia: PAN-nn o —", pan_mal)
@@ -251,6 +259,59 @@ def comprobar_limpieza(m):
     informe("DF: fuentes (FU-) solo dentro de comentarios", fuentes)
     informe("DF: marcas de estado solo dentro de comentarios", marcas)
     informe("DF: sin términos de Appian (van en el técnico)", appian)
+
+
+def comprobar_control(m):
+    """La columna «Qué cambia» de las versiones 1.0 y siguientes de decisiones.md sale en el Word (control del documento,
+    df_docx.js): sin fuentes, marcas de estado ni términos de Appian, como el DF (error); sin la jerga del análisis
+    (D-nn, «punto N», el informe de impacto) ni muletillas (aviso). «informe» suelto solo cuenta si el DF no usa la
+    palabra (si la usa, es del cliente)."""
+    if "D" not in m.docs:
+        return
+    del_cliente = "informe" in mo.normaliza(" ".join(l for _, l in lineas_prosa(m, "F")))
+    lista = rd.muletillas()
+    errs, jerga = [], []
+    for _, cab, filas in m.tablas("D", "versiones"):
+        ncab = [mo.normaliza(c) for c in cab]
+        if "que cambia" not in ncab:
+            continue
+        k = ncab.index("que cambia")
+        for f in filas:
+            mv = re.match(r"v?(\d+)\.(\d+)", f[0] if f else "")
+            if not mv or int(mv.group(1)) < 1 or k >= len(f):
+                continue
+            t = mo.sin_comentarios(f[k])
+            nt = mo.normaliza(t)
+            malo = [x for x in mo.RX_FUENTE.findall(t)] + [e for e in mo.ESTADOS if e in t]
+            malo += [mt.group(0) for x in TERMINOS_APPIAN for mt in [re.search(x, nt)] if mt]
+            dudoso = re.findall(r"\bD-\d+\b", t) + [x.group(0) for x in re.finditer(r"\bpuntos? \d+", nt)]
+            dudoso += [x.group(0) for x in re.finditer(r"\binformes? de impacto\b" if del_cliente else r"\binformes?\b", nt)]
+            dudoso += [x for x in lista if re.search(rf"(?<!\w){re.escape(x)}(?!\w)", nt)]
+            ver = f"{mv.group(1)}.{mv.group(2)}"
+            if malo:
+                errs.append(f"{ver} " + ", ".join(f"«{x}»" for x in dict.fromkeys(malo)))
+            if dudoso:
+                jerga.append(f"{ver} " + ", ".join(f"«{x}»" for x in dict.fromkeys(dudoso)))
+    informe("DF (control del documento): «Qué cambia» de decisiones.md sin fuentes, marcas de estado ni términos de Appian",
+            errs)
+    informe("DF (control del documento): «Qué cambia» sin D-nn, «punto N», el informe ni muletillas (lo lee el cliente)",
+            jerga, grave=False)
+
+
+def comprobar_preguntas_prototipo(m):
+    """Las preguntas nuevas del prototipo (Q-nn de «Preguntas abiertas» en prototipo/*trazabilidad*.md) pasan a una PC de
+    §11 que las cita («<!-- ❓ prototipo Q-03 -->»). Aviso, que se apaga cuando la PC existe. Sin trazabilidad, nada."""
+    trazas = sorted((m.raiz / "prototipo").glob("*trazabilidad*.md"))
+    if not trazas:
+        return
+    rx = re.compile(r"(?<![\w-])Q-\d+(?!\d)")
+    qs = set()
+    for f in trazas:
+        sec = re.search(r"^## Preguntas abiertas[^\n]*\n(.*?)(?=^## |\Z)", f.read_text(encoding="utf-8"), re.M | re.S)
+        qs |= set(rx.findall(sec.group(1))) if sec else set()
+    citadas = {x for p in m.por_tipo("PC") for x in rx.findall(m.texto(p.id))}
+    informe("preguntas nuevas del prototipo (Q-nn) con su PC en funcional §11 («<!-- ❓ prototipo Q-03 -->»)",
+            sorted(qs - citadas, key=lambda x: int(x[2:])), grave=False)
 
 
 def comprobar_redaccion(m):
@@ -503,11 +564,13 @@ def comprobar_as_is(m):
                 sorted(f"{x} ({', '.join(v[:3])})" for x, v in citas(m, RX_DEC).items() if x not in decs))
 
     empezado, completo = estado_tecnico(m)
-    if not empezado:
-        return
     tabla = next(((cab, filas) for _, cab, filas in m.tablas("T", "13")
                   if "situacion" in [mo.normaliza(c) for c in cab]), None)
-    informe("técnico §13: tabla Paso · Objeto · Tipo · Situación · Sustituye a", [] if tabla else ["falta"], grave=completo)
+    if not empezado and not (tabla and tabla[1]):   # §13 con filas se comprueba siempre
+        return
+    if empezado:
+        informe("técnico §13: tabla Paso · Objeto · Tipo · Situación · Sustituye a", [] if tabla else ["falta"],
+                grave=completo)
     malas, de_fuera, sin_inventario, usados = [], [], [], []
     if tabla:
         cab = [mo.normaliza(c) for c in tabla[0]]
@@ -522,11 +585,11 @@ def comprobar_as_is(m):
                 continue
             if s in ("modifica", "existe"):
                 usados += objetos
-            for o in objetos:
-                if s == "nuevo" and o in inventario:
-                    malas.append(f"{o}: «Nuevo» y ya está en el inventario")
-                elif s == "nuevo" and fuera and o in fuera:
-                    malas.append(f"{o}: «Nuevo» y es de otra aplicación")
+            for o in objetos:   # «Nuevo» y «Sustituye» crean el objeto: no puede existir ya
+                if s in ("nuevo", "sustituye") and o in inventario:
+                    malas.append(f"{o}: «{sit}» y ya está en el inventario")
+                elif s in ("nuevo", "sustituye") and fuera and o in fuera:
+                    malas.append(f"{o}: «{sit}» y es de otra aplicación")
                 elif s in ("modifica", "existe") and o not in inventario:
                     if fuera is None:
                         sin_inventario.append(o)
@@ -564,7 +627,7 @@ def comprobar_as_is(m):
     informe("técnico §13: lo que se modifica o se usa con algo sin verificar que no cita ninguna PT ni PC",
             sin_verificar, grave=False)
 
-    if propuesta.exists():
+    if propuesta.exists() and empezado:
         sol = re.search(r"^## 3\. Soluci[oó]n\s*$(.*?)(?=^## |\Z)", propuesta.read_text(encoding="utf-8"), re.M | re.S)
         refs = sorted(set(RX_REF.findall(mo.sin_comentarios(sol.group(1))))) if sol else []
         en_dt = {x for p in m.vigentes("DT") for x in RX_REF.findall(m.texto(p.id))}
@@ -658,6 +721,12 @@ def normaliza_pieza(t):
     return re.sub(r"\s+", " ", t).strip()
 
 
+def contenido(P):
+    """El funcional y el técnico sin la línea de la versión ni las capturas: si no cambian, no hay versión nueva."""
+    return {d: normaliza_pieza("\n".join(l for l in P.docs[d].lineas if not re.search(r"Versi[oó]n:\s*v?\d+\.\d+", l)))
+            for d in ("F", "T") if d in P.docs}
+
+
 def comprobar_anterior(m, ruta_ant):
     ant = mo.Proyecto(ruta_ant)
     if not ant.docs:
@@ -665,7 +734,6 @@ def comprobar_anterior(m, ruta_ant):
         return [], [], [], ant
     va, vn = ant.version("F"), m.version("F")
     print(f"  versión anterior {va[0]}.{va[1]} → nueva {vn[0]}.{vn[1]}" if va and vn else "  versión: ¿?")
-    informe("la versión sube", [] if (va and vn and vn > va) else [f"{va} → {vn}"])
     informe("ningún ID ha desaparecido (lo que ya no vale se tacha)",
             sorted((i for i in ant.piezas if i not in m.piezas), key=clave_pid))
     nuevas = sorted((i for i in m.piezas if i not in ant.piezas), key=clave_pid)
@@ -674,6 +742,12 @@ def comprobar_anterior(m, ruta_ant):
     anul = sorted((i for i in comunes if m.piezas[i].anulada and not ant.piezas[i].anulada), key=clave_pid)
     estado = [f"{i} {ant.piezas[i].estado or '—'}→{m.piezas[i].estado or '—'}" for i in comunes
               if m.piezas[i].estado != ant.piezas[i].estado and i not in anul]
+    # Modificar, no rehacer: la versión sube solo si se aplica algún cambio (piezas o texto sin ID del funcional o del técnico)
+    v = lambda x: f"{x[0]}.{x[1]}" if x else "¿?"
+    if nuevas or modif or anul or estado or contenido(m) != contenido(ant):
+        informe("la versión sube", [] if (va and vn and vn > va) else [f"{v(va)} → {v(vn)}"])
+    else:
+        informe("sin cambios en el análisis, la versión no sube", [] if va == vn else [f"{v(va)} → {v(vn)}"])
     informe("nuevas", nuevas, grave=False)
     informe("modificadas", modif, grave=False)
     informe("anuladas o respondidas en esta versión", anul, grave=False)
@@ -742,27 +816,6 @@ def texto_viejo(m, ant, modif):
     return avisos
 
 
-def lee_informe(ruta):
-    t = pathlib.Path(ruta).read_text(encoding="utf-8")
-    puntos, revision, cab = [], [], None
-    for l in t.split("\n"):
-        if not l.startswith("|"):
-            cab = None
-            continue
-        c = mo.celdas(l)
-        if cab is None:
-            cab = [mo.normaliza(x) for x in c]
-            continue
-        if re.match(r"^[-:\s]+$", c[0]):
-            continue
-        fila = {k: (c[i] if i < len(c) else "") for i, k in enumerate(cab)}
-        if "revisar tambien" in cab:
-            puntos.append(fila)
-        elif cab[0] == "pieza" and "resultado" in cab:
-            revision.append(fila)
-    return t, puntos, revision
-
-
 def comprobar_requiere(base, puntos):
     """«Requiere» de cada punto: «—» o «Sí (motivo)»; y «Sí» si el punto CAMBIA o ANULA una pieza 🔒 de «Encaja en»
     (🔒 en base: el análisis antes de aplicar el informe)."""
@@ -785,7 +838,7 @@ def comprobar_requiere(base, puntos):
 
 
 def comprobar_informe_previo(m, ruta_imp, carpeta_fuentes):
-    t, puntos, revision = lee_informe(ruta_imp)
+    t, puntos, revision = mo.lee_informe(ruta_imp)
     comprobar_requiere(m, puntos)
     en_revision = {m.raiz_de(x) for f in revision for x in mo.ids_en(f.get("pieza", ""))}
     faltan = set()
@@ -831,8 +884,25 @@ def comprobar_informe_previo(m, ruta_imp, carpeta_fuentes):
             informe("cada tramo de 10 minutos de la reunión tiene alguna cita (también lo que no cambia nada)", huecos)
 
 
+def comprobar_sin_cambios(m, ruta_imp):
+    """«Estado: sin cambios»: no se aplica nada, así que no hay versión nueva. Error si un punto se queda por aplicar
+    (✔, ⚠️ o ❓ con IDs en «Cambio propuesto», o «Pendiente», que proyecto.py estado ya no listaría) o si la versión del
+    funcional ya no es la del análisis base."""
+    t, puntos, _ = mo.lee_informe(ruta_imp)
+    quedan = [f"punto {f.get('#', '?')}" for f in puntos
+              if mo.normaliza(f.get("decision", "")).strip(" *").startswith("pendiente")
+              or (re.search("✔|⚠|❓", f.get("decision", "")) and mo.ids_en(f.get("cambio propuesto", "")))]
+    informe("«Estado: sin cambios»: ningún punto queda por aplicar ni pendiente de aprobación", quedan)
+    base = re.search(r"An[aá]lisis base:\s*versi[oó]n\s*v?(\d+)\.(\d+)", t)
+    vn = m.version("F")
+    if base and vn:
+        vb = (int(base.group(1)), int(base.group(2)))
+        informe("«Estado: sin cambios»: la versión sigue siendo la del análisis base",
+                [] if vb == vn else [f"análisis base {vb[0]}.{vb[1]} → funcional {vn[0]}.{vn[1]}"])
+
+
 def comprobar_impacto(m, ant, ruta_imp, cambios):
-    t, puntos, revision = lee_informe(ruta_imp)
+    t, puntos, revision = mo.lee_informe(ruta_imp)
     comprobar_requiere(ant, puntos)
     revisar, resueltos, sin_cambios = set(), set(), set()
     for f in puntos:
@@ -893,6 +963,8 @@ def main():
     if "F" in m.docs:
         comprobar_completo(m)
         comprobar_limpieza(m)
+        comprobar_control(m)
+        comprobar_preguntas_prototipo(m)
         comprobar_redaccion(m)
         comprobar_tecnico(m)
         comprobar_versiones(m)
@@ -907,7 +979,11 @@ def main():
         if a.impacto:
             comprobar_impacto(m, ant, a.impacto, (nuevas, modif, anul))
     elif a.impacto:
-        print("  (informe antes de aplicar: sin --anterior solo se revisan IDs y citas)")
+        if mo.normaliza(mo.estado_informe(pathlib.Path(a.impacto).read_text(encoding="utf-8"))).startswith("sin cambios"):
+            print("  (informe sin cambios: sin versión nueva ni copia, no hace falta --anterior)")
+            comprobar_sin_cambios(m, a.impacto)
+        else:
+            print("  (informe antes de aplicar: sin --anterior solo se revisan IDs y citas)")
         comprobar_informe_previo(m, a.impacto, a.fuentes)
     print("\nSin errores." if not errores else f"\n{errores} comprobaciones con errores.")
     sys.exit(1 if errores else 0)

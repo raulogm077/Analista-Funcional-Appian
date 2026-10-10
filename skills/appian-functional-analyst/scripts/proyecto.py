@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Crea la carpeta de un proyecto y dice en qué punto está.
 
-  proyecto.py iniciar <carpeta> --nombre "Solicitudes de autorización" [--cliente …] [--direccion …] [--tipo "evolutivo de X"]
-  proyecto.py estado  <carpeta>      versión, fuentes sin procesar, pendientes, pantallas, DF entregado
-  proyecto.py copia   <carpeta>      guarda analisis/*.md en versiones/v<versión>/ antes de cambiarlo
+  proyecto.py iniciar  <carpeta> --nombre "Solicitudes de autorización" [--cliente …] [--direccion …] [--tipo "evolutivo de X"]
+  proyecto.py estado   <carpeta>     versión, cliente y marca, DF enviado, fuentes sin procesar, pendientes, pantallas
+  proyecto.py copia    <carpeta>     guarda analisis/*.md en versiones/v<versión>/ antes de cambiarlo
+  proyecto.py entregar <carpeta>     el Word sale hacia el cliente: «DF entregado: <versión> · <fecha>» en proyecto.md
 
-`iniciar` no toca nada que ya exista.
+`iniciar` no toca nada que ya exista. `entregar` solo cuando el Word se envía, nunca en una sesión desatendida.
 """
 import argparse
 import datetime
@@ -20,6 +21,8 @@ import modelo as mo
 
 PLANTILLAS = pathlib.Path(__file__).resolve().parents[1] / "assets" / "plantillas"
 CARPETAS = ["fuentes", "notas", "impacto", "analisis/diagramas", "prototipo", "entregables", "versiones"]
+# «DF entregado: 1.1 · 2026-10-10» (entregar) o, en proyectos anteriores, «DF entregado: 1.0 (2026-09-12)»
+RX_ENTREGADO = re.compile(r"DF entregado:\s*v?(\d+\.\d+)(?:\s*(?:·\s*|\()(\d{4}-\d{2}-\d{2}))?")
 
 
 def iniciar(a):
@@ -59,9 +62,13 @@ def estado(a):
     v = m.version("F")
     vs = f"{v[0]}.{v[1]}" if v else "—"
     print(f"Análisis: versión {vs}")
-    entregado = re.search(r"DF entregado:\s*([\d.]+)", texto)
-    if entregado and entregado.group(1) != vs:
-        print(f"· El último DF entregado es el {entregado.group(1)}: el Word está desactualizado")
+    cliente = re.search(r"Cliente:\s*([^·\n]+)", texto)
+    marcas = sorted(f"prototipo/{b.name}" for b in (raiz / "prototipo").glob("brand-*.json"))
+    print(f"Cliente: {cliente.group(1).strip() if cliente else '—'} · Marca: {', '.join(marcas) or 'sin marca'}")
+    entregado = RX_ENTREGADO.search(texto)
+    if entregado:   # el Word se genera al enviarlo o si se pide: aquí solo se informa
+        fecha = f" ({entregado.group(2)})" if entregado.group(2) else ""
+        print(f"DF en Word: último enviado {entregado.group(1)}{fecha}, versión actual {vs}")
 
     # fuentes
     catalogadas = sorted({re.match(r"(FU-\d+)", f.name).group(1) for f in (raiz / "fuentes").glob("FU-*.md")})
@@ -69,14 +76,20 @@ def estado(a):
     sin = [x for x in catalogadas if x not in procesadas]
     print(f"Fuentes: {len(catalogadas)} catalogadas, {len(procesadas)} procesadas" +
           (f"; sin procesar: {', '.join(sin)}" if sin else ""))
+    aprobadas = set()   # PAN de un cambio aprobado (✔) en un informe aplicado en la versión vigente
     for inf in sorted((raiz / "impacto").glob("FU-*.md")):
         # «Estado: pendiente» o «Estado: aplicado en 1.2; pendientes de aprobación: puntos 4 y 7» (actualizacion.md)
-        est = re.search(r"Estado:\s*([^·\n]+)", "\n".join(inf.read_text(encoding="utf-8").splitlines()[:5]))
-        e = est.group(1).strip() if est else ""
+        t, puntos, _ = mo.lee_informe(inf)
+        e = mo.estado_informe(t)
         if re.search(r"pendientes? de aprobaci[oó]n:\s*puntos?\s+\d", e, re.I):
             print(f"· {inf.name}: {e}")
         elif re.match(r"pendiente", e, re.I):
             print(f"· {inf.name}: informe pendiente de aprobar o de aplicar")
+        aplicado = re.match(r"aplicado en v?(\d+\.\d+)", e, re.I)
+        if aplicado and aplicado.group(1) == vs:
+            aprobadas |= {x for f in puntos if "✔" in f.get("decision", "")
+                          for col in ("encaja en", "cambio propuesto") for x in mo.ids_en(f.get(col, ""))
+                          if x.startswith("PAN-")}
 
     if not m.docs:
         print("Sin análisis todavía.")
@@ -91,7 +104,12 @@ def estado(a):
     conf = [p for p in pan if m.piezas[p].estado == "🔒"]
     if conf:
         print(f"Pantallas validadas por el cliente (🔒; no se cambian sin el visto bueno del analista): {', '.join(conf)}")
-        print(f"  para el prototipo: --confirmadas {','.join(conf)}")
+        cambian = [p for p in conf if p in aprobadas]
+        if cambian:
+            print(f"  con un cambio aprobado en la versión {vs}, el prototipo las rehace: {', '.join(cambian)}")
+        quedan = [p for p in conf if p not in aprobadas]
+        print(f"  para el prototipo: --confirmadas {','.join(quedan)}" if quedan else
+              "  para el prototipo: ninguna va en --confirmadas")
     if "T" in m.docs:
         tv = m.version("T")
         empezado = bool(m.vigentes("DT")) or any("campo" in [mo.normaliza(c) for c in cab] for _, cab, _ in m.tablas("T", "3"))
@@ -116,6 +134,34 @@ def copia(a):
     print(f"Copia de la versión {v[0]}.{v[1]} en {destino}. Al terminar: comprobar.py {raiz} --anterior {destino}")
 
 
+def entregar(a):
+    """El Word sale hacia el cliente: «DF entregado: <versión> · <fecha>» en proyecto.md. df_docx.js no vuelve a
+    escribir ese Word."""
+    if a.cambio:
+        sys.exit("proyecto.py entregar --cambio todavía no está disponible: se marca el DF completo (sin --cambio)")
+    raiz = pathlib.Path(a.carpeta)
+    pm = raiz / "proyecto.md"
+    if not pm.exists():
+        sys.exit(f"No existe {pm}")
+    v = mo.Proyecto(raiz).version("F")
+    if not v:
+        sys.exit("funcional.md no tiene «Versión: x.y»")
+    vs, fecha = f"{v[0]}.{v[1]}", datetime.date.today().isoformat()
+    texto = pm.read_text(encoding="utf-8")
+    valor = f"DF entregado: {vs} · {fecha}"
+    if re.search(r"DF entregado:", texto):
+        texto = re.sub(r"DF entregado:[^\n]*?(?=\s+·\s+Estado:|$)", valor, texto, count=1, flags=re.M)
+    else:   # tras la línea del cliente o, si no está, tras el título
+        lineas = texto.split("\n")
+        k = next((i for i, l in enumerate(lineas) if l.startswith("Cliente:")), 0)
+        lineas.insert(k + 1, valor)
+        texto = "\n".join(lineas)
+    if not list((raiz / "entregables").glob(f"DF-*-v{vs}.docx")):
+        print(f"· No encuentro entregables/DF-…-v{vs}.docx: genéralo con df_docx.js antes de enviarlo")
+    pm.write_text(texto, encoding="utf-8")
+    print(f"{valor} en {pm}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -124,6 +170,8 @@ def main():
     s.set_defaults(f=iniciar)
     s = sub.add_parser("estado"); s.add_argument("carpeta"); s.set_defaults(f=estado)
     s = sub.add_parser("copia"); s.add_argument("carpeta"); s.set_defaults(f=copia)
+    s = sub.add_parser("entregar"); s.add_argument("carpeta"); s.set_defaults(f=entregar)
+    s.add_argument("--cambio", help="el DF de un cambio (todavía no disponible)")
     a = ap.parse_args()
     for st in (sys.stdout, sys.stderr):
         st.reconfigure(encoding="utf-8", errors="replace")
