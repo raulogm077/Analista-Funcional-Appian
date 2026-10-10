@@ -592,15 +592,20 @@ def marca_detalles(tmp):
     code, salida = run([marca, "web", "www.nubarron.example"])
     if code != 2 or "https://www.nubarron.example" not in salida:
         probs.append(f"marca.py web con un dominio sin https:// sale con {code} y no da la URL completa:\n{salida[-400:]}")
+    for otra in ("ftp://www.nubarron.example/marca", "file:///tmp/marca.html"):
+        code, salida = run([marca, "web", otra])
+        if code != 2 or "tiene que empezar por http:// o https://" not in salida or "WebSearch" in salida:
+            probs.append(f"marca.py web {otra} sale con {code} y no dice que la URL tiene que ser http(s):\n{salida[-400:]}")
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     paso = re.search(r"^\*\*Marca\*\*:(.*?)(?=\n### )", skill, re.S | re.M)
-    if not paso or not re.search(r"0\. .*WebSearch.*manual de identidad corporativa.*brand guidelines.*logo SVG", paso.group(1)):
-        probs.append("el apartado de marca de SKILL.md no tiene el paso 0: con solo el nombre, buscar con WebSearch su manual de "
-                     "identidad corporativa, sus brand guidelines, su logo SVG y su web oficial")
+    if not paso or not re.search(r"^1\. .*WebSearch.*manual de identidad corporativa.*brand guidelines.*logo SVG.*web oficial",
+                                 paso.group(1), re.M) or re.search(r"^0\. ", paso.group(1), re.M):
+        probs.append("el paso 1 del apartado de marca de SKILL.md no dice que se busquen con WebSearch su manual de identidad "
+                     "corporativa, sus brand guidelines, su logo SVG y su web oficial (sin un paso 0 aparte)")
     descripcion = re.search(r'^description: "(.*)"$', skill, re.M).group(1)
     if "la marca de un cliente" not in descripcion or len(descripcion.encode("utf-8")) >= 1000:
         probs.append(f"la descripción no nombra «la marca de un cliente» o pasa de 1.000 bytes ({len(descripcion.encode('utf-8'))})")
-    out.append(("la marca de un cliente con solo su nombre: paso 0 en SKILL.md, marca.py web lo dice y la descripción la nombra",
+    out.append(("la marca de un cliente con solo su nombre: WebSearch en el paso 1 de SKILL.md, marca.py web lo dice y la descripción la nombra",
                 probs))
     return out
 

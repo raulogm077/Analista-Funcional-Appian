@@ -146,11 +146,13 @@ def datos_json(o, claves):
     return {k: True if k in SI_NO else v for k, v in datos(o, claves).items()}
 
 
+BORDE = ("temporizador", "mensaje", "intermedio", "error")   # eventos que, unidos a una tarea, van en su borde
+
+
 def en_borde(proc):
     """Los eventos unidos a una tarea con un flujo discontinuo: van en su borde."""
     tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
-    return {f["a"] for f in proc["flujos"] if f.get("discontinuo") and tipo.get(f["de"]) in TAREAS
-            and tipo.get(f["a"]) in ("temporizador", "mensaje", "intermedio", "error")}
+    return {f["a"] for f in proc["flujos"] if f.get("discontinuo") and tipo.get(f["de"]) in TAREAS and tipo.get(f["a"]) in BORDE}
 
 
 def con_contorno(estilo, contorno):
@@ -160,17 +162,29 @@ def con_contorno(estilo, contorno):
     return ";".join([t for t in estilo.split(";") if t and not t.startswith("outline=")] + [f"outline={contorno}"]) + ";"
 
 
-def contorno(p, borde):
-    """El contorno de un temporizador en el borde de su tarea: continuo si la interrumpe (boundInt) y discontinuo si no
-    (boundNonint); None si no es eso (se queda el de su tipo)."""
-    if p["tipo"] != "temporizador" or p["id"] not in borde:
-        return None
-    return "boundInt" if es_si(p.get("interrumpe")) else "boundNonint"
+def contornos(proc):
+    """{id: contorno (outline=…)} de los eventos que pueden ir en el borde de una tarea, como en el BPMN: en el borde,
+    continuo si la interrumpen (un error, o un temporizador con «interrumpe») y discontinuo si no (un plazo, un mensaje o
+    un intermedio); un error suelto y sin salidas, el de un fin; los demás, el de su tipo."""
+    borde, ids = en_borde(proc), {p["id"] for p in proc["pasos"]}
+    salen = {f["de"] for f in proc["flujos"] if f["a"] in ids}
+    out = {}
+    for p in proc["pasos"]:
+        if p["tipo"] not in BORDE:
+            continue
+        if p["id"] in borde:
+            interrumpe = p["tipo"] == "error" or (p["tipo"] == "temporizador" and es_si(p.get("interrumpe")))
+            out[p["id"]] = "boundInt" if interrumpe else "boundNonint"
+        elif p["tipo"] == "error" and p["id"] not in salen:
+            out[p["id"]] = "end"
+        else:
+            out[p["id"]] = _estilo(ESTILO[p["tipo"]]).get("outline")
+    return out
 
 
-def estilo_paso(p, borde=()):
-    """El estilo de un paso: el de su tipo y, en un temporizador en el borde de su tarea, su contorno."""
-    return con_contorno(ESTILO[p["tipo"]], contorno(p, borde))
+def estilo_paso(p, contorno=None):
+    """El estilo de un paso: el de su tipo con su contorno (de contornos())."""
+    return con_contorno(ESTILO[p["tipo"]], contorno)
 
 
 # ---------------------------------------------------------------- proceso (JSON)
@@ -544,12 +558,12 @@ def _celdas(proc, geo, pre=""):
         lane_id[c] = f"{pre}carril-{i}"
         celdas.append(f'<mxCell id="{lane_id[c]}" value="{_xml_attr(c)}" style="{ESTILO_CARRIL}" vertex="1" parent="1">'
                       f'<mxGeometry y="{y:.0f}" width="{geo["ancho"]:.0f}" height="{h:.0f}" as="geometry"/></mxCell>')
-    borde = en_borde(proc)
+    contorno = contornos(proc)
     for p in proc["pasos"]:
         w, h = TAM[p["tipo"]]
         cx, cy = geo["pasos"][p["id"]]
         ly = geo["carriles"][p["carril"]][0]
-        estilo = con_lado(estilo_paso(p, borde), geo.get("etiquetas", {}).get(p["id"]))
+        estilo = con_lado(estilo_paso(p, contorno.get(p["id"])), geo.get("etiquetas", {}).get(p["id"]))
         celdas.append(_celda(p["id"], p.get("nombre", ""), f'style="{estilo}" vertex="1" parent="{lane_id[p["carril"]]}"',
                              f'<mxGeometry x="{cx - w / 2:.0f}" y="{cy - ly - h / 2:.0f}" width="{w}" height="{h}" '
                              'as="geometry"/>', datos(p, DATOS_PASO)))
@@ -1140,8 +1154,8 @@ def tipo_de_estilo(e, n_ent, n_sal):
         outline, symbol = e.get("outline", "standard"), e.get("symbol", "general")
         if symbol in ("exclusiveGw", "parallelGw", "inclusiveGw", "gateway"):
             return {"parallelGw": "paralela", "inclusiveGw": "inclusiva"}.get(symbol, "exclusiva")
-        if outline == "end":
-            return "fin"
+        if outline == "end":     # un error suelto y sin salidas se dibuja como un fin de error
+            return "error" if symbol == "error" else "fin"
         if outline == "standard":
             return {"timer": "inicio_temporizador", "message": "inicio_mensaje"}.get(symbol, "inicio")
         return {"timer": "temporizador", "message": "mensaje", "error": "error"}.get(symbol, "intermedio")

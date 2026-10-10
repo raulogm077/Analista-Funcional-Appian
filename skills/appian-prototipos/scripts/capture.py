@@ -31,8 +31,9 @@ def ref_de(texto):
 
 
 def elegir(caps, byid, solo):
-    """(las capturas de `solo`, los de `solo` que no son de ninguna): una captura es de su pantalla (su id y el código de
-    su ref) y, si abre una vista, de esa vista (su id y el código de su ref; sin ref, el de la pantalla)."""
+    """(las capturas de `solo`, los de `solo` que no son de ninguna): una captura se elige por el id de su pantalla, el de
+    su vista o el código del ref de la ficha que enseña: el de su vista si tiene uno propio (es otra PAN) y, si no, el de
+    su pantalla. Así PAN-02 no elige una vista de su pantalla que es PAN-03."""
     elegidas, usados = [], set()
     for c in caps:
         s = byid.get(c["screen"], {})

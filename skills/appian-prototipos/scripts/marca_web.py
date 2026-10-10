@@ -293,6 +293,8 @@ def web(url, max_css, timeout):
               file=sys.stderr)
         sys.exit(2)
     if urllib.parse.urlsplit(url).scheme not in ("http", "https"):
+        if "://" in url or url.lower().startswith(("file:", "mailto:", "data:")):    # otra clase de URL (ftp://, file:…)
+            fallo(f"la URL tiene que empezar por http:// o https://: {url}", webfetch=False)
         if re.fullmatch(r"[\w-]+(\.[\w-]+)+(/\S*)?", url.strip()):    # un dominio sin http(s)://
             fallo(f"la URL tiene que empezar por http:// o https://: prueba con https://{url.strip()}", webfetch=False)
         fallo(f"«{url}» no es una URL. Con solo el nombre de la empresa, busca con WebSearch «{url} manual de identidad "

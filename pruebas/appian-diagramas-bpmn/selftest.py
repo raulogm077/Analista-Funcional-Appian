@@ -256,6 +256,15 @@ def interrumpe(tmp):
     t.write(d, encoding="utf-8")
     check("EV-02: deja de interrumpir su tarea" in run("comparar", d, esperado=1, env=sin),
           "interrumpe: comparar ve que se ha quitado en draw.io")
+    run("comparar", d, "--aceptar", esperado=2, env=sin)
+    paso, borde, _ = estado()
+    check("interrumpe" not in paso["EV-02"] and borde["EV-02"] == "boundNonint",
+          f"interrumpe: comparar --aceptar cambia el borde del que se ha quitado en draw.io ({borde})")
+    cambio.write_text(json.dumps({"cambios": [{"flujo": {"de": "ACT-01", "a": "EV-02", "discontinuo": False}}]}), encoding="utf-8")
+    out = run("actualizar", d, cambio, esperado=2, env=sin)
+    paso, borde, _ = estado()
+    check(borde["EV-02"] == "catching" and "se ha respetado la colocación" in out,
+          f"interrumpe: un temporizador que deja de ir en el borde de su tarea (colocación a mano) vuelve a su borde ({borde})")
     malo = json.loads(json.dumps(PLAZOS))
     malo["pasos"][1]["interrumpe"] = True
     (tmp / "plazos-malo.json").write_text(json.dumps(malo, ensure_ascii=False), encoding="utf-8")
@@ -264,9 +273,9 @@ def interrumpe(tmp):
 
 
 def avisos(tmp):
-    """T7: un aviso a un perfil del proceso no se dibuja y uno a un sistema externo es un flujo de mensaje desde la tarea:
-    un proceso de 9 tareas con 4 avisos mide lo mismo que sin ellos, y menos que con un evento de mensaje por aviso (la
-    regla de antes, que añadía una capa por aviso)."""
+    """T7: un aviso a un perfil del proceso no se dibuja (SKILL.md lo dice) y uno a un sistema externo es un flujo de
+    mensaje desde la tarea, que no añade capa: un proceso de 9 tareas con dos avisos al registro mide lo mismo que sin
+    ellos."""
     sin = entorno(sin_navegador=True)
     nombres = ["Registrar solicitud", "Revisar solicitud", "Pedir informe", "Emitir informe", "Valorar informe",
                "Resolver", "Generar autorización", "Registrar salida", "Cerrar expediente"]
@@ -277,11 +286,7 @@ def avisos(tmp):
         pasos += [{"id": f"ACT-{i:02d}", "tipo": "tarea", "carril": c, "nombre": n} for i, (n, c) in enumerate(zip(nombres, carril), 1)]
         cadena = ["EV-01"] + [f"ACT-{i:02d}" for i in range(1, 10)]
         flujos, externos = [], []
-        if regla == "antes":       # un evento de mensaje en el carril Aplicación tras las tareas 2, 4, 6 y 8
-            for k, i in enumerate((2, 4, 6, 8), 3):
-                pasos.append({"id": f"EV-{k:02d}", "tipo": "mensaje", "carril": "Aplicación", "nombre": f"Aviso {k - 2}"})
-                cadena.insert(cadena.index(f"ACT-{i:02d}") + 1, f"EV-{k:02d}")
-        elif regla == "ahora":     # los dos avisos a perfiles no se dibujan; los dos al registro, flujos de mensaje
+        if regla == "con avisos":     # los dos avisos al registro, flujos de mensaje desde la tarea
             externos = ["Registro de entrada"]
             flujos = [{"de": "ACT-04", "a": externos[0], "etiqueta": "Aviso de informe"},
                       {"de": "ACT-08", "a": externos[0], "etiqueta": "Aviso de salida"}]
@@ -291,35 +296,27 @@ def avisos(tmp):
         return {"proceso": "Avisos", "carriles": ["Solicitante", "Técnico", "Aplicación"], "pasos": pasos, "flujos": flujos,
                 **({"externos": externos} if externos else {})}
     ancho = {}
-    for regla in ("sin avisos", "antes", "ahora"):
+    for regla in ("sin avisos", "con avisos"):
         origen = tmp / f"avisos {regla}.json"
         origen.write_text(json.dumps(proceso(regla), ensure_ascii=False), encoding="utf-8")
         run("crear", origen, "-o", tmp / "avisos", esperado=2, env=sin)
         ancho[regla] = paginas(tmp / "avisos" / f"avisos {regla}.drawio")[0][1]
-    check(ancho["ahora"] == ancho["sin avisos"] < ancho["antes"],
-          "avisos: un proceso de 9 tareas con 4 avisos (a perfiles, sin dibujar; a un sistema externo, flujos de mensaje) "
-          f"mide lo mismo que sin ellos y menos que con un evento por aviso ({', '.join(f'{k}: {v:.0f} px' for k, v in ancho.items())})")
+    check(ancho["con avisos"] == ancho["sin avisos"],
+          "avisos: los avisos a un sistema externo, flujos de mensaje desde la tarea, no añaden capa "
+          f"({', '.join(f'{k}: {v:.0f} px' for k, v in ancho.items())})")
     skill = (SCRIPTS.parent / "SKILL.md").read_text(encoding="utf-8")
     check("un aviso a un perfil del proceso no se dibuja" in skill.lower() and "en el carril «Aplicación»" not in skill,
           "avisos: SKILL.md dice que un aviso a un perfil no se dibuja y ya no pide un mensaje en el carril «Aplicación»")
 
 
 def cambios_temporales(tmp):
-    """T17: el cambios.json de actualizar es temporal y va fuera de <p>: SKILL.md lo dice y, tras actualizar, en
-    analisis/diagramas/ solo quedan X.json, X.drawio y X.png."""
-    sin = entorno(sin_navegador=True)
-    carpeta = tmp / "proyecto" / "analisis" / "diagramas"
-    run("crear", AQUI / "datos" / "semantico.json", "-o", carpeta / "semántico.drawio", esperado=2, env=sin)
-    temporal = tmp / "temporal de la sesión"
-    temporal.mkdir()
-    (temporal / "cambios.json").write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-02", "nombre": "Guardar todo"}}]}),
-                                           encoding="utf-8")
-    run("actualizar", carpeta / "semántico.drawio", temporal / "cambios.json", esperado=2, env=sin)
-    quedan = sorted(p.name for p in carpeta.iterdir())
+    """T17: SKILL.md dice que el fichero de cambios de actualizar es temporal, va fuera de <p> y no se guarda, en la orden
+    y donde explica cómo se cambia un proceso."""
     skill = (SCRIPTS.parent / "SKILL.md").read_text(encoding="utf-8")
-    check(set(quedan) <= {"semántico.json", "semántico.drawio", "semántico.png"} and "fuera de `<p>`" in skill,
-          "actualizar: cambios.json es temporal y va fuera de <p> (SKILL.md lo dice); en analisis/diagramas/ solo quedan "
-          "X.{json,drawio,png} " + ", ".join(quedan))
+    orden = next((l for l in skill.splitlines() if "diagrama.py actualizar X.drawio cambios.json" in l), "")
+    cambiar = skill.split("## Cambiar un proceso")[-1].split("```")[0]
+    check("temporal, fuera de <p>" in orden and "temporal" in cambiar and "fuera de `<p>`" in cambiar and "no se guarda" in cambiar,
+          "actualizar: SKILL.md dice que el fichero de cambios es temporal, va fuera de <p> y no se guarda")
 
 
 def error_suelto(tmp):
@@ -339,6 +336,24 @@ def error_suelto(tmp):
     check(fin is not None and fin.find("bpmn:errorEventDefinition", NS_BPMN) is not None
           and pr.find("bpmn:intermediateCatchEvent[@id='EV-02']", NS_BPMN) is None and not bpmn_valido(d.with_suffix(".bpmn")),
           "bpmn: un error suelto y sin salidas es un fin de error (endEvent con errorEventDefinition)")
+    # el dibujo dice lo mismo que el BPMN: el error suelto, con el borde de un fin (y se lee como error); un mensaje en el
+    # borde de su tarea, que no la interrumpe, con borde discontinuo
+    import drawio_modelo as dm
+    suelto["pasos"].append({"id": "EV-05", "tipo": "mensaje", "carril": "Revisores", "nombre": "Recordatorio"})
+    suelto["pasos"].append({"id": "EV-06", "tipo": "fin", "carril": "Revisores", "nombre": "Recordado"})
+    suelto["flujos"] += [{"de": "ACT-01", "a": "EV-05", "discontinuo": True}, {"de": "EV-05", "a": "EV-06"}]
+    (tmp / "error suelto.json").write_text(json.dumps(suelto, ensure_ascii=False), encoding="utf-8")
+    d = tmp / "error suelto 2" / "error.drawio"
+    run("crear", tmp / "error suelto.json", "-o", d, esperado=2, env=entorno(sin_navegador=True))
+    _, c = celdas(d)
+    borde = {i: dm._estilo((c[i] if c[i].tag == "mxCell" else c[i].find("mxCell")).get("style")).get("outline")
+             for i in ("EV-02", "EV-05")}
+    run("bpmn", d)
+    pr = ET.parse(d.with_suffix(".bpmn")).getroot().find("bpmn:process", NS_BPMN)
+    mensaje = pr.find("bpmn:boundaryEvent[@id='EV-05']", NS_BPMN)
+    check(borde == {"EV-02": "end", "EV-05": "boundNonint"} and dm.comparar(suelto, dm.leer(str(d))[0]) == []
+          and mensaje is not None and mensaje.get("cancelActivity") == "false",
+          f"error suelto con el borde de un fin y mensaje en el borde, discontinuo como en el BPMN ({borde})")
 
 
 _JS_MEDIR_NOTAS = """async (xml) => {
@@ -491,6 +506,35 @@ def nota_y_etiqueta(tmp, env=None):
     e = caja_etiqueta({"pasos": {"GW-01": (500, 300, 50, 50)}, "etiquetas": lados}, "GW-01", "¿Completa?")
     check(not _cruza(*linea, e) and (x + w < e[0] or x > e[0] + e[2]),
           f"notas: sin ningún lado libre, la nota va al lado de la etiqueta y su línea no la cruza ({sitio})")
+
+
+def nota_a_mano(tmp):
+    """Una nota que se añade con actualizar a una puerta con la etiqueta encima, en un diagrama colocado a mano, no pisa
+    la etiqueta ni otra forma, y su línea no la cruza."""
+    sin = entorno(sin_navegador=True)
+    mal = []
+    for nombre, paso in (("pedido", "GW-02"), ("tres-puertas", "GW-03")):
+        d = tmp / nombre / f"{nombre}.drawio"
+        run("crear", AQUI / "datos" / f"{nombre}.json", "-o", d, esperado=2, env=sin)
+        t = ET.parse(d)                     # se mueve un paso a mano y se acepta: la colocación pasa a ser a mano
+        g = next(e for e in t.getroot().iter("mxCell") if e.get("id") == "EV-01").find("mxGeometry")
+        g.set("y", str(float(g.get("y")) + 10))
+        t.write(d, encoding="utf-8")
+        run("comparar", d, "--aceptar", esperado=2, env=sin)
+        cambio = tmp / nombre / "nota.json"
+        cambio.write_text(json.dumps({"cambios": [{"nota": {"paso": paso, "texto": "Confirmar con el cliente si esta "
+                                                                                   "pregunta sigue haciendo falta"}}]},
+                                     ensure_ascii=False), encoding="utf-8")
+        out = run("actualizar", d, cambio, esperado=2, env=sin)
+        proc, geo, lineas = lineas_de_notas(d)
+        nombres = {p["id"]: p["nombre"] for p in proc["pasos"]}
+        mal += [f"{nombre}: {s}" for s in solapes(d)]
+        mal += [f"{nombre}: la línea de la nota de {p} cruza su etiqueta" for p, _, (a, b) in lineas
+                if (e := caja_etiqueta(geo, p, nombres[p])) and _cruza(a, b, e)]
+        if "se ha respetado la colocación" not in out:
+            mal.append(f"{nombre}: actualizar no respetó la colocación a mano\n{out}")
+    check(not mal, "notas: una nota añadida a mano a una puerta con la etiqueta encima no la pisa ni la cruza "
+          + "; ".join(mal))
 
 
 def provisional(tmp):
@@ -1052,7 +1096,8 @@ def g3(tmp):
     """Lo de la 0.7.0-beta.2 (G3) que no necesita navegador: la nota y la etiqueta de su puerta, el .drawio.tmp, el error
     suelto, la holgura de las etiquetas y las filas por capas, el temporizador que interrumpe, los avisos y el fichero de
     cambios temporal."""
-    for nombre, prueba in (("nota", lambda t: nota_y_etiqueta(t, entorno(sin_navegador=True))), ("provisional", provisional),
+    for nombre, prueba in (("nota", lambda t: nota_y_etiqueta(t, entorno(sin_navegador=True))), ("nota a mano", nota_a_mano),
+                           ("provisional", provisional),
                            ("error suelto", error_suelto), ("holgura", holgura), ("interrumpe", interrumpe),
                            ("avisos", avisos), ("cambios", cambios_temporales)):
         (tmp / nombre).mkdir(parents=True)

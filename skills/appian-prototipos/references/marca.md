@@ -44,7 +44,7 @@ Las claves que empiezan por `_` son comentarios.
 
 1. **Fuente**: su guía de marca (manual de identidad corporativa) o su sala de prensa y, si no las publica, su web
    oficial. Solo fuentes de la propia empresa: lo público o lo que el cliente ha entregado. La fuente y su fecha van en
-   `--fuente`. Con solo el nombre de la empresa, se buscan con WebSearch (SKILL.md, paso 0); `marca.py web` con un nombre
+   `--fuente`. Con solo el nombre de la empresa, se buscan con WebSearch (SKILL.md, «Marca», paso 1); `marca.py web` con un nombre
    en lugar de una URL sale con 2 y dice qué buscar.
 2. **Leer la web** (el lector está en `scripts/marca_web.py`): `python3 <KIT>/scripts/marca.py web <url> [--max-css 10] [--timeout 10]` descarga la página y las
    hojas de estilo que enlaza del mismo sitio (el mismo dominio: `www.x.es` y `estaticos.x.es`, `www.empresa.co.uk` y
