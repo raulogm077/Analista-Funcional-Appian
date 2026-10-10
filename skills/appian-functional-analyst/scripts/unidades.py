@@ -64,15 +64,19 @@ class Unidad:
     produccion: str = "—"
     comparte: str = "—"
     desde: tuple = None     # versión del análisis al abrirla (<!-- desde 1.3 --> en su celda ID)
+    aprobada_en: tuple = None   # versión al aprobarla y sus informes entonces (<!-- aprobada 1.4: FU-12, FU-14 -->)
+    aprobada_con: tuple = ()
 
     @property
     def urgente(self):
         return self.id.startswith("URG")
 
     def fila(self):
-        desde = f" <!-- desde {self.desde[0]}.{self.desde[1]} -->" if self.desde else ""
-        celdas = [self.id + desde, self.titulo, self.tipo, self.estado, self.aprobada, self.construida, self.produccion,
-                  self.comparte]
+        marcas = ([f"desde {self.desde[0]}.{self.desde[1]}"] if self.desde else []) + (
+            [f"aprobada {self.aprobada_en[0]}.{self.aprobada_en[1]}: {', '.join(self.aprobada_con)}".rstrip(": ")]
+            if self.aprobada_en else [])
+        celdas = [self.id + (f" <!-- {' · '.join(marcas)} -->" if marcas else ""), self.titulo, self.tipo, self.estado,
+                  self.aprobada, self.construida, self.produccion, self.comparte]
         return "| " + " | ".join((c or "—").replace("|", "/").replace("\n", " ") for c in celdas) + " |"
 
 
@@ -105,8 +109,12 @@ def leer(raiz):
             continue
         c += [""] * (len(COLUMNAS) - len(c))
         desde = re.search(r"desde\s+(\d+\.\d+)", c[0])
+        aprobada = re.search(r"aprobada\s+(\d+\.\d+):?([^·>]*)", c[0])
         out.append(Unidad(mo.sin_comentarios(c[0]).strip(), *[x.strip() or "—" for x in c[1:8]],
-                          desde=version(desde.group(1)) if desde else None))
+                          desde=version(desde.group(1)) if desde else None,
+                          aprobada_en=version(aprobada.group(1)) if aprobada else None,
+                          aprobada_con=tuple(x.strip(" -") for x in aprobada.group(2).split(",") if x.strip(" -"))
+                          if aprobada else ()))
     return out
 
 
@@ -145,6 +153,30 @@ def objeto(nombre):
     return re.split(r"\s+[—–]\s+", nombre, maxsplit=1)[0].strip()
 
 
+def filas_6(P):
+    """{(entidad, dato) normalizados: (entidad, dato, fila)} de las tablas «| Dato | …» de funcional §6 de un análisis."""
+    out = {}
+    D = P.docs.get("F")
+    rango = D.seccion("6") if D else None
+    if not rango:
+        return out
+    for ini, cab, fs in P.tablas("F", "6"):
+        if cab and mo.normaliza(cab[0]) == "dato":
+            ent = next((re.sub(r"^###\s+[\d.]*\s*", "", D.lineas[k]).strip() for k in range(ini, rango[0], -1)
+                        if D.lineas[k].startswith("### ")), "")
+            for f in fs:
+                if f and f[0]:
+                    dato = mo.sin_comentarios(f[0]).strip()
+                    out[(mo.normaliza(ent), mo.normaliza(dato))] = (ent, dato, " | ".join(f))
+    return out
+
+
+def donde_se_corrige(campos):
+    """«desarrollo», «correccion» o "" (no se reconoce) según el campo «Dónde se corrige» de una ficha URG."""
+    lugar = mo.normaliza((campos or {}).get("donde se corrige", ""))
+    return "correccion" if "correccion" in lugar else "desarrollo" if "desarrollo" in lugar else ""
+
+
 def campos_urgencia(texto):
     """Los campos de la sección «## Urgencia» de una ficha URG: {campo normalizado: valor}."""
     sec = re.search(r"^## Urgencia\s*$(.*?)(?=^## |\Z)", texto, re.M | re.S)
@@ -169,6 +201,9 @@ class Contexto:
         inv = m.raiz / "as-is" / "datos" / "inventario.json"
         self.inventario = ({o["nombre"] for o in json.loads(inv.read_text(encoding="utf-8")).get("objetos", [])}
                            if inv.is_file() else None)
+        # una fila de §13 sin unidad es de EV-01 (la construcción inicial) solo en una aplicación nueva: con as-is/, el
+        # primer evolutivo puede ser EV-01 y las filas sin ID no son suyas
+        self.sin_id = "EV-01" if "EV-01" in self.por_id and self.inventario is None else None
         self.filas = self._filas_13()
         self._copias = {}
 
@@ -230,6 +265,15 @@ class Contexto:
                 out |= mo.ids_en(ma.group(1)) if ma else set()
         return out
 
+    def crecida(self, uid):
+        """Lo que impide construir una unidad tal como se aprobó: sus informes que no estaban al aprobarla (si se guardó
+        con qué se aprobó) y sus puntos «Pendiente». [] si nada."""
+        u = self.por_id[uid]
+        nuevos = [n for n in self.informes_de(uid) if u.aprobada_en and n not in u.aprobada_con]
+        pend = [f"{n} punto {p.get('#', '?')} pendiente" for n, t, p in self.puntos_de(uid)
+                if p and mo.normaliza(p.get("decision", "")).strip(" *").startswith("pendiente")]
+        return nuevos + pend
+
     def raices_de(self, uid, aplicadas=True):
         """Las piezas de una unidad con sus fichas: un criterio que cambia toca su historia."""
         ids = self.piezas_de(uid, aplicadas)
@@ -247,6 +291,15 @@ class Contexto:
         vs = {version(e.group(1)) for n, t, _ in self.puntos_de(uid)
               for e in [re.match(r"aplicado en v?([\d.]+)", mo.estado_informe(t), re.I)] if e}
         return sorted(v for v in vs if v)
+
+    def datos_cambiados(self, v):
+        """{(entidad, dato) normalizados: (entidad, dato)} de las filas de funcional §6 nuevas o distintas frente a la copia
+        de la versión v (versiones/), o None si no hay copia."""
+        ant = self.copia(v)
+        if ant is None or "F" not in ant.docs:
+            return None
+        antes, ahora = filas_6(ant), filas_6(self.m)
+        return {k: x[:2] for k, x in ahora.items() if antes.get(k, (None, None, None))[2] != x[2]}
 
     def copia(self, v):
         """El análisis de versiones/v<x.y>/ (proyecto.py copia), o None."""
@@ -268,12 +321,11 @@ class Contexto:
             return out
         cab = [mo.normaliza(c) for c in tabla[0]]
         celda = lambda f, k: f[cab.index(k)] if k in cab and cab.index(k) < len(f) else ""
-        sin_id = "EV-01" if "EV-01" in self.por_id else None
         for f in tabla[1]:
             us = RX_UNIDAD.findall(celda(f, "cambio"))
             out.append({"objetos": objetos_celda(celda(f, "objeto")), "tipo": mo.sin_comentarios(celda(f, "tipo")).strip(),
                         "situacion": mo.normaliza(mo.sin_comentarios(celda(f, "situacion"))).strip(),
-                        "sustituye": objetos_celda(celda(f, "sustituye a")), "unidad": us[0] if us else sin_id,
+                        "sustituye": objetos_celda(celda(f, "sustituye a")), "unidad": us[0] if us else self.sin_id,
                         "paso": celda(f, "paso")})
         return out
 
@@ -334,16 +386,49 @@ class Contexto:
         for v in self.unidades:
             if not v.urgente or v.id == uid or v.estado == DESCARTADA:
                 continue
-            lugar = mo.normaliza((self.ficha_urg(v.id) or {}).get("donde se corrige", ""))
-            if donde == "correccion" and "correccion" in lugar and vacio(v.construida):
+            lugar = donde_se_corrige(self.ficha_urg(v.id))
+            if donde == "correccion" and lugar == "correccion" and vacio(v.construida):
                 comunes = [o for o in self.objetos_urg(v.id) if o in mias]
-            elif donde == "desarrollo" and "desarrollo" in lugar and "correccion" not in lugar and v.estado != PRODUCCION:
+            elif donde == "desarrollo" and lugar == "desarrollo" and v.estado != PRODUCCION:
                 comunes = [o for o in self.objetos_urg(v.id) if o in mias]
             else:
                 comunes = []
             if comunes:
                 out.append((v.id, comunes))
         return out
+
+    def colision(self, uid):
+        """La colisión de una URG: {corregidos, usan (as-is/datos/dependencias.json), choques: [texto] con las unidades
+        en curso que cambian lo corregido o lo que lo usa y lo modificado en desarrollo después del último pase
+        (as-is/datos/deriva.json), deriva: "sin fichero" | "sin historial" | "leída"}."""
+        corregidos = self.objetos_urg(uid)
+        datos = self.raiz / "as-is" / "datos"
+        dep = json.loads((datos / "dependencias.json").read_text(encoding="utf-8")) \
+            if (datos / "dependencias.json").is_file() else {}
+        usan = sorted({x["de"] for x in dep.get("aristas", []) if x.get("a") in corregidos} - set(corregidos))
+        choques = []
+        for v in self.unidades:
+            if v.id == uid or v.estado not in EN_CURSO:
+                continue
+            suyos = self.objetos_urg(v.id) if v.urgente else self.cambian(v.id)
+            directos, por_uso = [o for o in suyos if o in corregidos], [o for o in suyos if o in usan]
+            if directos:
+                choques.append(f"{v.id} ({v.estado}) cambia {', '.join(directos)}")
+            if por_uso:
+                choques.append(f"{v.id} ({v.estado}) cambia {', '.join(por_uso)}, que usa lo que se corrige")
+        deriva, estado = datos / "deriva.json", "sin fichero"
+        if deriva.is_file():
+            d = json.loads(deriva.read_text(encoding="utf-8"))
+            estado = "sin historial" if d.get("cambiados") is None else "leída"
+            # lo modificado hasta el último pase ya está en producción (lo llevó una unidad): solo cuenta lo posterior
+            pase = max((x.group(0) for u in self.unidades if u.estado == PRODUCCION
+                        for x in [re.match(r"\d{4}-\d\d-\d\d", u.produccion)] if x), default="")
+            tocados = [c.get("nombre") for c in d.get("cambiados") or [] if c.get("nombre") in set(corregidos) | set(usan)
+                       and str((c.get("ahora") or {}).get("fecha") or "9999")[:10] >= pase]
+            if tocados:
+                choques.append(f"modificados en desarrollo después del último pase (as-is/datos/deriva.json): "
+                               f"{', '.join(tocados)}")
+        return {"corregidos": corregidos, "usan": usan, "choques": choques, "deriva": estado}
 
     def reaplicar(self, uid):
         """[(URG, objetos)]: las corregidas en el entorno de corrección sobre objetos que cambia esta unidad y que aún no
@@ -383,8 +468,10 @@ class Contexto:
         tocadas = de_tipo(nuevas, "HU") + de_tipo(cambian, "HU")
         lugar = lambda h: {x for k in ("pantalla", "paso") for x in mo.ids_en(m.campos(h).get(k, ""))}
         comparten = set().union(*(lugar(h) for h in tocadas)) if tocadas else set()
+        cambiados = set(de_tipo(nuevas + cambian, "PAN") + de_tipo(nuevas + cambian, "ACT"))
         conservan = [h.id for h in sorted(m.vigentes("HU"), key=lambda p: orden(p.id))
-                     if h.id not in tocadas and lugar(h.id) & comparten]
+                     if h.id not in tocadas and lugar(h.id) & (comparten | cambiados)]
+        usan_lo_cambiado = [h for h in conservan if lugar(h) & cambiados]   # su pantalla o su paso cambia: se prueban
         pantallas = sorted(set(de_tipo(nuevas, "PAN") + de_tipo(cambian, "PAN"))
                            | {x for h in tocadas for x in mo.ids_en(m.campos(h).get("pantalla", "")) if x in m.piezas},
                            key=orden)
@@ -401,7 +488,7 @@ class Contexto:
             tecnico |= {"§13"} if self.filas_de(uid) else set()
             dt = self.dt_construido(uid)
             tecnico |= {dt.id} if dt else set()
-        criterios = sorted((h for x in tocadas + de_tipo(nuevas + cambian, "INT") for h in m.piezas[x].hijos
+        criterios = sorted((h for x in tocadas + usan_lo_cambiado + de_tipo(nuevas + cambian, "INT") for h in m.piezas[x].hijos
                             if not m.piezas[h].anulada), key=orden)
         por_donde = set(tocadas) | pasos | {x for h in tocadas for x in mo.ids_en(m.campos(h).get("paso", ""))}
         escenarios = [e.id for e in m.vigentes("ESC") if set(e.refs) & por_donde]   # los que pasan por lo tocado
@@ -422,6 +509,7 @@ class Contexto:
                 decision = "; ".join(c for c in (u.comparte, v.comparte) if not vacio(c)
                                      and (v.id in RX_UNIDAD.findall(c) or uid in RX_UNIDAD.findall(c)))
                 colisiones.append({"unidad": v.id, "estado": v.estado, "objetos": comunes, "decision": decision})
+        datos = self.datos_cambiados(self.version_base(uid)) or {}
         return {"unidad": uid, "titulo": u.titulo, "tipo": u.tipo, "estado": u.estado, "informes": self.informes_de(uid),
                 "base": "%d.%d" % self.version_base(uid) if self.version_base(uid) else None,
                 "version": "%d.%d" % m.version("F") if m.version("F") else None,
@@ -429,6 +517,7 @@ class Contexto:
                 "historias": {"nuevas": de_tipo(nuevas, "HU"), "cambian": de_tipo(cambian, "HU"),
                               "anuladas": de_tipo(anuladas, "HU"), "seConservan": conservan},
                 "pantallas": pantallas, "diagramas": diagramas,
+                "datos": [{"entidad": e, "dato": d} for e, d in datos.values()],
                 "tecnico": sorted((x for x in tecnico if x.startswith("DT")), key=orden)
                 + sorted((x for x in tecnico if x.startswith("§")), key=lambda x: int(re.sub(r"\D", "", x) or 0)),
                 "objetos": [{"objeto": o, "tipo": f["tipo"], "situacion": f["situacion"].capitalize(),
@@ -509,6 +598,11 @@ class Contexto:
         base = self.base()
         if base == "EV-01" and not suyas and pid in self.m.piezas:
             suyas, curso = [self.por_id["EV-01"]], (["EV-01"] if self.por_id["EV-01"].estado in EN_CURSO else [])
+        elif base == "EV-01" and pid in self.m.piezas and "EV-01" not in [u.id for u in suyas] \
+                and not self.nueva(pid, suyas[0].id):       # ya estaba: es de la construcción inicial
+            ev01 = self.por_id["EV-01"]
+            construido += ["EV-01"] if ev01.estado in CONSTRUIDAS else []
+            curso = (["EV-01"] if ev01.estado in EN_CURSO else []) + curso
         elif base == "as-is" and pid in self.m.piezas and (not suyas or not self.nueva(pid, suyas[0].id)):
             construido.append("as-is")
         construido += [u.id for u in suyas if u.estado in CONSTRUIDAS]

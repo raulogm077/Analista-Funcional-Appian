@@ -273,8 +273,13 @@ def c_impacto(m, a):
     if construidas:   # señales del informe (references/cambios.md): el modelo las copia, no las deduce
         print(f"  → Si el punto las cambia, «Posible petición de cambio» en el Resumen: {', '.join(construidas)} "
               "están construidas (no pide aprobación)")
-    if en_curso:
-        print(f"  → Si el punto es de otra unidad, «Requiere: Sí ({', '.join(sorted(en_curso))})»: hay que decidir el orden")
+    # la unidad del informe (--cambio o, sin él, la única Abierta) no se sugiere: tocar lo suyo no pide aprobación
+    abiertas = [u.id for u in ctx.unidades if u.estado == un.ABIERTA]
+    propia = (a.cambio or "").upper() or (abiertas[0] if len(abiertas) == 1 else None)
+    otras = sorted(en_curso - {propia})
+    if otras:
+        print(f"  → En curso en {', '.join(otras)}: si el punto es de {propia or 'otra unidad'}, «Requiere: Sí "
+              f"({', '.join(otras)})»: hay que decidir el orden")
 
     def lista(titulo, d):
         print(f"\n{titulo} ({len(d)}):")
@@ -512,6 +517,9 @@ def c_cambios(m, a):
     print(f"\nPruebas a repetir: criterios {lista(pr['criterios'])} · escenarios {lista(pr['escenarios'])} · urgentes "
           + lista(g["id"] + " (" + ", ".join(g["objetos"]) + ")" for g in pr["urgentes"]))
     for c in r["colisiones"]:
+        if c["unidad"].startswith("URG"):
+            print(f"Colisión: {c['unidad']} ({c['estado']}) corrige {', '.join(c['objetos'])} (urgentes.md)")
+            continue
         print(f"Colisión: {c['unidad']} ({c['estado']}) también cambia {', '.join(c['objetos'])}"
               + (f" · decisión: {c['decision']}" if c["decision"] else " · sin decisión"))
     for t in r["reaplicar"]:
@@ -522,57 +530,44 @@ def c_cambios(m, a):
 
 
 def c_colision(m, a):
-    """Una corrección urgente frente a las unidades sin pasar a producción: los objetos que corrige y los que los usan
-    (as-is/datos/dependencias.json) y, si hay as-is/datos/deriva.json, los modificados en desarrollo."""
+    """Una corrección urgente frente a las unidades en curso (sin pasar a producción): los objetos que corrige y los que
+    los usan (as-is/datos/dependencias.json) y, si hay as-is/datos/deriva.json, lo modificado en desarrollo después del
+    último pase."""
     ctx, uid = unidad(m, a.unidad)
     if not ctx.por_id[uid].urgente:
         sys.exit(f"{uid} no es una URG: la colisión es de un cambio urgente (references/urgentes.md)")
-    corregidos = ctx.objetos_urg(uid)
-    if not corregidos:
+    col = ctx.colision(uid)
+    if not col["corregidos"]:
         sys.exit(f"impacto/{uid}.md no dice «Objetos» en «Urgencia» (references/urgentes.md)")
-    datos = m.raiz / "as-is" / "datos"
-    dep = json.loads((datos / "dependencias.json").read_text(encoding="utf-8")) if (datos / "dependencias.json").is_file() else {}
-    usan = sorted({x["de"] for x in dep.get("aristas", []) if x.get("a") in corregidos} - set(corregidos))
-    print(f"{uid} corrige: {', '.join(corregidos)}" + (f" · los usan: {', '.join(usan)}" if usan else ""))
-    choques = []
-    for v in ctx.unidades:
-        if v.id == uid or v.estado not in un.EN_CURSO:
-            continue
-        suyos = ctx.objetos_urg(v.id) if v.urgente else ctx.cambian(v.id)
-        directos, por_uso = [o for o in suyos if o in corregidos], [o for o in suyos if o in usan]
-        if directos:
-            choques.append(f"{v.id} ({v.estado}) cambia {', '.join(directos)}")
-        if por_uso:
-            choques.append(f"{v.id} ({v.estado}) cambia {', '.join(por_uso)}, que usa lo que se corrige")
-    deriva = datos / "deriva.json"
-    if deriva.is_file():
-        d = json.loads(deriva.read_text(encoding="utf-8"))
-        if d.get("cambiados") is None:
-            print("Deriva: el Dev MCP no da el historial de versiones; no se sabe si se han modificado en desarrollo")
-        else:
-            tocados = [c.get("nombre") for c in d["cambiados"] if c.get("nombre") in set(corregidos) | set(usan)]
-            if tocados:
-                choques.append(f"modificados en desarrollo después del as-is (as-is/datos/deriva.json): {', '.join(tocados)}")
-    elif (m.raiz / "as-is").is_dir():
+    print(f"{uid} corrige: {', '.join(col['corregidos'])}" + (f" · los usan: {', '.join(col['usan'])}" if col["usan"] else ""))
+    if col["deriva"] == "sin historial":
+        print("Deriva: el Dev MCP no da el historial de versiones; no se sabe si se han modificado en desarrollo")
+    elif col["deriva"] == "sin fichero" and (m.raiz / "as-is").is_dir():
         print(f"Sin as-is/datos/deriva.json. Si el Dev MCP da el historial, solo de esos objetos:\n  {DX} deriva --out "
-              f"\"<p>/as-is\" --objetos \"{','.join(corregidos + usan)}\"")
-    print(f"Colisión: {'sí' if choques else 'no'}")
-    for c in choques:
+              f"\"<p>/as-is\" --objetos \"{','.join(col['corregidos'] + col['usan'])}\"")
+    print(f"Colisión: {'sí' if col['choques'] else 'no'}")
+    for c in col["choques"]:
         print(f"  {c}")
-    print("→ " + ("Se corrige en el entorno de corrección (igual que producción); cada unidad que cambia esos objetos "
+    print("→ " + ("«Dónde se corrige: Entorno de corrección» (igual que producción); cada unidad que cambia esos objetos "
                   "recibe en su encargo «reaplicar " + uid + "». Sin entorno de corrección, la ficha registra lo que "
-                  "decide el equipo." if choques else
-                  "Se corrige en desarrollo; esos objetos quedan congelados para las unidades en curso hasta el pase."))
+                  "decide el equipo." if col["choques"] else
+                  "«Dónde se corrige: Desarrollo»; esos objetos quedan congelados para las unidades en curso hasta el pase."))
     print(f"Escríbelo en «Colisión» y «Dónde se corrige» de impacto/{uid}.md.")
 
 
-def donde_en_tecnico(m, objeto):
+def donde_en_tecnico(m, objeto, fuentes=(), suyas=()):
     """Los apartados del técnico y las DT que nombran un objeto (sin Entorno, Convenciones ni §13; un record type, por su
-    «### 3.n <nombre>»), y la primera fila que lo nombra (qué cambia)."""
+    «### 3.n <nombre>»), y qué cambia en él con esta unidad: la «Decisión» de una DT de la unidad (de sus piezas o que
+    cita una de sus fuentes) que lo nombra o, si no, una fila que lo nombra y cita una de sus fuentes; "" si no hay."""
     if "T" not in m.docs:
         return [], ""
     T, rx = m.docs["T"], re.compile(rf"`{re.escape(objeto)}(?:\(\))?`")
     secs, dts, fila = [], [], ""
+    cita = lambda texto: any(re.search(rf"\b{x}\b", texto) for x in fuentes)
+    for p in m.vigentes("DT"):
+        if (p.id in suyas or cita(m.texto(p.id))) and rx.search(m.texto(p.id)):
+            decision = mo.sin_comentarios(m.campos(p.id).get("decision", "")).replace("`", "").strip()
+            fila = fila or (f"{p.id}: {decision}" if decision else "")
     for i, l in enumerate(T.lineas):
         s = T.seccion_de_linea[i]
         apartado = re.match(r"^###\s+([\d.]+)\s+(.+)$", l)
@@ -586,7 +581,7 @@ def donde_en_tecnico(m, objeto):
             dts += [dt] if dt else []
         else:
             secs.append(f"§{s}")
-            if not fila and l.startswith("|"):
+            if not fila and l.startswith("|") and cita(l):
                 fila = " · ".join(c for c in mo.celdas(mo.sin_comentarios(l).replace("`", "")) if c.strip(" —-"))
     return list(dict.fromkeys(dts + secs)), fila[:140]
 
@@ -603,6 +598,10 @@ def c_encargo(m, a):
     if u.estado not in (un.APROBADA, un.CONSTRUIDA):
         sys.exit(f"{uid} está {u.estado}: solo se construye una unidad aprobada "
                  f"(proyecto.py cambio <p> {uid} aprobada --fuente FU-nn)")
+    crecida = ctx.crecida(uid)
+    if crecida:   # lo añadido después de aprobarla no se construye sin aprobarlo (references/cambios.md)
+        sys.exit(f"{uid} ha crecido desde que se aprobó ({'; '.join(crecida)}): vuelve a aprobarla "
+                 f"(`proyecto.py cambio <p> {uid} aprobada --fuente FU-nn`) o lleva lo nuevo a otra unidad")
     filas = [f for f in ctx.filas_de(uid) if f["situacion"] in un.CAMBIAN]
     if not filas:
         sys.exit(f"Técnico §13 no tiene objetos de {uid} (columna «Cambio»): no hay nada que construir")
@@ -618,11 +617,14 @@ def c_encargo(m, a):
          "Se construye solo esto. El orden lo da la skill oficial de Appian (`change-planning`) y las puertas, la "
          "calibración de `appian-best-practices`. Lo que hay que construir está en el técnico; aquí, dónde.", "",
          "## Objetos", "", "| Objeto | Tipo | Situación | Qué cambia | Dónde, en el técnico |", "|---|---|---|---|---|"]
+    fuentes = sorted({x for n in r["informes"] for x in re.findall(r"FU-\d+", n)})
     for f in filas:
         for o in f["objetos"]:
-            donde, fila = donde_en_tecnico(m, un.objeto(o))
+            donde, fila = donde_en_tecnico(m, un.objeto(o), fuentes, ctx.piezas_de(uid))
             campos = esperado.get(un.objeto(o), {}).get("campos")
-            que = (f"campos: {', '.join(c['nombre'] for c in campos)}" if campos else fila) or "—"
+            secs = [x for x in donde if x.startswith("§")]
+            que = (f"campos: {', '.join(c['nombre'] for c in campos)}" if campos else fila) or \
+                (f"ver técnico {', '.join(secs)}" if secs else "—")
             sust = f" (sustituye a {', '.join(f['sustituye'])})" if f["sustituye"] else ""
             L.append(f"| `{o}` | {f['tipo']} | {f['situacion'].capitalize()}{sust} | {que.replace('|', '/')} | "
                      f"{', '.join(donde) or '—'} |")
@@ -688,6 +690,7 @@ def main():
     s.add_argument("-n", type=int, default=15)
     s = nuevo("ficha", c_ficha); s.add_argument("ids", nargs="+"); s.add_argument("--lineas", action="store_true")
     s = nuevo("impacto", c_impacto); s.add_argument("ids", nargs="+"); s.add_argument("--nivel", type=int, default=1)
+    s.add_argument("--cambio", help="la unidad del informe (EV-02): no se sugiere «Requiere: Sí» por ella")
     s.add_argument("--con", nargs="+", help="solo dependencias cuyo texto menciona alguno de estos términos")
     s = nuevo("seccion", c_seccion); s.add_argument("n"); s.add_argument("--con", nargs="+")
     s.add_argument("--max", type=int, default=150)

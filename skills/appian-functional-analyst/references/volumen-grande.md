@@ -50,7 +50,5 @@ Antes de cualquier evolutivo, el análisis base tiene **toda** la aplicación, c
   y `as-is/datos/`.
 - Historias con criterios y escenarios que describen el comportamiento real con su evidencia: ✅ si es directa, 🔶 si es
   inferida; nada es 🔒 salvo lo que venga de un DF validado. Las historias de lo que ya existe no llevan prioridad («—»).
-- El técnico no repite `as-is/`: Entorno y Convenciones, y para lo existente remite a sus documentos. Sus apartados se
-  escriben con cada cambio, solo para lo que toca.
 - Es la versión 1.0, sin unidad de cambio: construida y en producción por definición (`cambios.md`). El Word, solo si se
   pide.

@@ -160,8 +160,8 @@ En los modos evolutivo y de refactorización, los pasos de «Proyecto nuevo» co
    (`ingesta-fuentes.md`).
 2. **Funcional.** De toda la aplicación y con detalle, por módulos (`volumen-grande.md` §4): criterios y escenarios del
    comportamiento real con su evidencia (✅ directa, 🔶 inferida; 🔒 solo lo de un DF validado), sin prioridad («—»). El
-   técnico lleva Entorno y Convenciones y remite a `as-is/` para lo existente. Lo nuevo y lo que cambia lo dice
-   `indice.py cambios`, no un «Origen» escrito. Los hallazgos que corrige, las REF y los NV se citan dentro de su fuente
+   técnico no repite `as-is/` (`cambios.md` §4). Lo nuevo y lo que cambia lo dice `indice.py cambios`, no un «Origen»
+   escrito. Los hallazgos que corrige, las REF y los NV se citan dentro de su fuente
    («[FU-01 H-DAT-01]») y solo en la trazabilidad: el DF no los enseña.
 3. **Lo sin verificar.** Un NV que condiciona lo que se construye es un PT con su cita; si lo resuelve negocio, también
    un PC, en palabras del cliente.
