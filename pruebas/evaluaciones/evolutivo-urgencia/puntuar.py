@@ -14,14 +14,16 @@ Puntos de la primera parte (la incidencia):
               en la cabecera, la sección «Urgencia», Tipo «Defecto», Síntoma, «Quién la declara crítica» con quien la
               declara (`declara`) y la cita de la fuente nueva (la FU con la que se catalogó)
   colision    «Colisión» nombra la unidad con la que choca (EV-02) y el objeto
-  donde       «Dónde se corrige» dice el entorno de corrección
+  donde       «Dónde se corrige» dice «Entorno de corrección» (una de las dos opciones de la plantilla, como la lee
+              unidades.py; con las dos sin elegir, no)
   encargo     construccion/EV-02.md lleva «Reaplicar URG-nn en `<objeto>`»
   bloqueo     en una copia del proyecto, «proyecto.py cambio <copia> EV-02 construida --manual» falla y pide
               «--reaplicada URG-nn», y con «--reaplicada URG-nn» pasa
   estados     EV-01 sigue En producción, EV-02 Aprobada y la URG Abierta: en una sesión desatendida no se aprueba ni se
               pasa nada a producción
   sin_word_ni_capturas  ningún .docx, .pdf ni .png nuevo o cambiado desde el montaje (salvo fuentes/)
-  sin_version el funcional sigue en su versión: un defecto no cambia el funcional
+  funcional_sin_cambios  el funcional dice lo mismo que al montarlo, salvo la línea de la versión: un defecto no cambia
+              el funcional (la versión sí puede subir, porque la prueba que reproduce el fallo cambia el técnico, R2)
   comprobar   comprobar.py del analista sin errores (con --fuentes)
 Con --ocultas (después del pase a producción):
   produccion  la URG está En producción con la referencia del pase
@@ -29,7 +31,7 @@ Con --ocultas (después del pase a producción):
   ev02_sin_construir  EV-02 sigue Aprobada, EV-01 En producción y el encargo de EV-02 sigue con «Reaplicar URG-nn»
   bloqueo_pase  en una copia, EV-02 no pasa a producción, ni a Construida sin «--reaplicada URG-nn»; con ella pasa a
               Construida y después a producción
-  ligereza    ni Word ni capturas nuevos o cambiados, y el funcional en su versión
+  ligereza    ni Word ni capturas nuevos o cambiados, y el funcional sin cambios
   comprobar   comprobar.py sin errores
 
 Umbral («umbral» de esperado.json): los puntos obligatorios se cumplen todos; de los de ligereza se tolera
@@ -105,6 +107,27 @@ def ficha_de(p: Path, u) -> tuple[str, dict]:
     return texto, un.campos_urgencia(texto)
 
 
+def donde_es(campos: dict) -> str:
+    """«correccion» o «desarrollo», como lo lee el plugin (unidades.donde_se_corrige); "" si no dice una de las dos o
+    sigue con las dos opciones de la plantilla («Desarrollo / Entorno de corrección»)."""
+    valor = norm(campos.get("donde se corrige", ""))
+    return "" if re.search(r"desarrollo\s*[/·|]\s*entorno", valor) else un.donde_se_corrige(campos)
+
+
+def contenido(texto: str) -> str:
+    """El funcional sin la línea de la versión ni las capturas, y sin diferencias de espacios."""
+    lineas = [l for l in texto.split("\n") if not re.search(r"Versi[oó]n:\s*v?\d+\.\d+", l)
+              and not re.search(r"!\[[^\]]*\]\([^)]+\.png\)", l)]
+    return re.sub(r"\s+", " ", "\n".join(lineas)).strip()
+
+
+def funcional_igual(p: Path) -> bool:
+    """Un defecto no cambia el funcional: dice lo mismo que al montarlo (la versión sí puede subir: la prueba que
+    reproduce el fallo cambia el técnico, R2)."""
+    leer = lambda d: (d / "analisis" / "funcional.md").read_text(encoding="utf-8")
+    return contenido(leer(p)) == contenido(leer(mt.DATOS))
+
+
 def reaplica(p: Path, uid: str, objeto: str) -> bool:
     f = p / "construccion" / "EV-02.md"
     return f.is_file() and re.search(rf"Reaplicar\s+{re.escape(uid)}\s+en\s+[^\n]*{re.escape(objeto)}",
@@ -155,8 +178,7 @@ def visibles(p: Path, huella: dict, esperado: dict, P: Puntuacion, m, ctx):
     col = norm(campos.get("colision", ""))
     P.punto("colision", bool(u) and otra.lower() in col and mo.normaliza(obj) in col,
             f"«{campos.get('colision', '—')[:120]}»" if u else "sin URG")
-    donde = norm(campos.get("donde se corrige", ""))
-    P.punto("donde", bool(u) and esperado["donde"] in donde, f"«{campos.get('donde se corrige', '—')[:120]}»"
+    P.punto("donde", bool(u) and donde_es(campos) == esperado["donde"], f"«{campos.get('donde se corrige', '—')[:120]}»"
             if u else "sin URG")
     # encargo y bloqueo
     P.punto("encargo", bool(u) and reaplica(p, u.id, obj),
@@ -178,9 +200,9 @@ def visibles(p: Path, huella: dict, esperado: dict, P: Puntuacion, m, ctx):
             " · ".join(f"{k if k != 'URG' else u.id} {x.estado}" for k, x in ve.items()))
     regen = mt.regenerados(p, huella)
     P.punto("sin_word_ni_capturas", not regen, ", ".join(regen) or "ningún Word ni captura nuevos o cambiados")
-    v = m.version("F")
-    vs = f"{v[0]}.{v[1]}" if v else "—"
-    P.punto("sin_version", vs == esperado["version_funcional"], f"funcional {vs} (al montar, {esperado['version_funcional']})")
+    igual = funcional_igual(p)
+    P.punto("funcional_sin_cambios", igual, "el funcional dice lo mismo que al montar (la versión puede subir por la "
+            "prueba de técnico §14)" if igual else "el funcional ha cambiado, y un defecto no cambia el funcional")
 
 
 def ocultas(p: Path, huella: dict, esperado: dict, P: Puntuacion, m, ctx):
@@ -207,10 +229,9 @@ def ocultas(p: Path, huella: dict, esperado: dict, P: Puntuacion, m, ctx):
     else:
         P.punto("bloqueo_pase", False, "sin URG")
     regen = mt.regenerados(p, huella)
-    v = m.version("F")
-    vs = f"{v[0]}.{v[1]}" if v else "—"
-    P.punto("ligereza", not regen and vs == esperado["version_funcional"],
-            (", ".join(regen) or "ningún Word ni captura nuevos o cambiados") + f"; funcional {vs}")
+    igual = funcional_igual(p)
+    P.punto("ligereza", not regen and igual, (", ".join(regen) or "ningún Word ni captura nuevos o cambiados")
+            + ("; el funcional dice lo mismo que al montar" if igual else "; el funcional ha cambiado"))
 
 
 def main() -> int:

@@ -33,7 +33,7 @@ AVISO = AQUI / "ocultas" / OCULTO["fuente"]
 PY = sys.executable
 
 FICHA = """# URG-01 · No se pueden enviar solicitudes de 1.000 € o más · 2026-10-08
-Análisis base: versión 1.1 · Cambio: URG-01 · Estado: sin cambios
+Análisis base: versión 1.1 · Cambio: URG-01 · Estado: {estado}
 
 ## Urgencia
 
@@ -56,8 +56,10 @@ Análisis base: versión 1.1 · Cambio: URG-01 · Estado: sin cambios
 | 1 | SIN IMPACTO | Defecto en producción: el funcional no cambia [{fu}] | HU-01 | Prueba que lo reproduce en técnico §14 | — | — | ✔ |
 
 ## Aplicado
+{aplicado}
 """
-BIEN = {"tipo": "Defecto", "fu": "FU-05",
+BIEN = {"tipo": "Defecto", "fu": "FU-05", "estado": "aplicado en 1.2",
+        "aplicado": "Versión 1.2: técnico §14 con la prueba de URG-01",
         "quien": "La jefa de Servicios generales: 35 solicitudes paradas y el pedido se cierra el viernes; el jefe de "
                  "proyecto está de acuerdo [FU-05]",
         "colision": "Sí: EV-02 (Aprobada) cambia `DEM_SolicitudForm`", "donde": "Entorno de corrección"}
@@ -82,22 +84,31 @@ def copia(base: Path, raiz: Path) -> Path:
     return p
 
 
-def agente(p: Path, catalogar=True, encargo=True, prueba=True, **ficha):
-    """Lo que haría el agente con los scripts del plugin: catalogar la incidencia, abrir URG-01, su ficha, la prueba que
-    reproduce el fallo en técnico §14 y rehacer el encargo de EV-02."""
+def agente(p: Path, catalogar=True, encargo=True, crece=False, **ficha):
+    """Lo que haría el agente con los scripts del plugin (references/urgentes.md): catalogar la incidencia, abrir
+    URG-01 y su ficha; la prueba que reproduce el fallo en técnico §14, que cambia el técnico y sube la versión (R2,
+    con su copia y su fila en decisiones.md; el funcional no cambia), y rehacer el encargo de EV-02. Con crece, antes
+    del encargo llega otra fuente para EV-02, ya aprobada: la devuelve a aprobación y el encargo ya no se rehace."""
     if catalogar:
         corre(PY, mt.ANALISTA / "leer_fuentes.py", p / VISIBLE["fuente"], "-o", p / "fuentes")
-    c, s = corre(PY, mt.ANALISTA / "proyecto.py", "cambio", p, "URG-01", "abrir", "--titulo",
-                 "No se pueden enviar solicitudes de 1.000 € o más")
-    if c:
-        sys.exit(f"proyecto.py cambio abrir falla:\n{s}")
+    for orden in (("cambio", p, "URG-01", "abrir", "--titulo", "No se pueden enviar solicitudes de 1.000 € o más"),
+                  ("copia", p)):
+        c, s = corre(PY, mt.ANALISTA / "proyecto.py", *orden)
+        if c:
+            sys.exit(f"proyecto.py {orden[0]} falla:\n{s}")
     (p / "impacto" / "URG-01.md").write_text(FICHA.format(**{**BIEN, **ficha}), encoding="utf-8")
-    if prueba:
-        editar(p / "analisis" / "tecnico.md", "| HU-05.1 | Aprobar, rechazar y devolver sin firma |",
-               "| HU-05.1 | Aprobar, rechazar y devolver sin firma |\n| URG-01 | Enviar una solicitud de 1.250,00 € |")
+    editar(p / "analisis" / "tecnico.md", "| HU-05.1 | Aprobar, rechazar y devolver sin firma |",
+           "| HU-05.1 | Aprobar, rechazar y devolver sin firma |\n| URG-01 | Enviar una solicitud de 1.250,00 € |")
+    version(p, que="Se comprueba que se pueden enviar solicitudes de 1.000 € o más")
+    if crece:
+        (p / "impacto" / "FU-06.md").write_text(
+            "# Impacto de FU-06 · La firma con la fecha · 2026-10-08\nAnálisis base: versión 1.2 · Cambio: EV-02 · "
+            "Estado: pendiente\n\n## Puntos\n\n| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también "
+            "| Requiere | Decisión |\n|---|---|---|---|---|---|---|---|\n| 1 | COMPLETA | La firma lleva la fecha [FU-05] "
+            "| HU-05 | HU-05.1 con la fecha | — | — | ✔ |\n", encoding="utf-8")
     if encargo:
         c, s = corre(PY, mt.ANALISTA / "indice.py", "encargo", p, "EV-02")
-        if c:
+        if c and not (crece and "ha crecido" in s):
             sys.exit(f"indice.py encargo falla:\n{s}")
     return p
 
@@ -114,13 +125,17 @@ def pase(p: Path, ref="HF-2026-007", produccion=True):
     return p
 
 
-def version(p: Path, v="1.2"):
+def version(p: Path, v="1.2", que="Los importes de 1.000 € o más se pueden enviar"):
     """Una versión nueva del análisis, coherente en los tres ficheros."""
     for f in ("funcional.md", "tecnico.md"):
         editar(p / "analisis" / f, "Versión: 1.1", f"Versión: {v}")
     editar(p / "analisis" / "decisiones.md", "DF del cambio EV-02 entregado 2026-10-02 |",
-           f"DF del cambio EV-02 entregado 2026-10-02 |\n| {v} | 2026-10-08 | Los importes de 1.000 € o más se pueden "
-           "enviar | FU-05 | — |")
+           f"DF del cambio EV-02 entregado 2026-10-02 |\n| {v} | 2026-10-08 | {que} | FU-05 | — |")
+    return p
+
+
+def funcional_cambiado(p: Path):
+    editar(p / "analisis" / "funcional.md", "llega hasta 6.000 €; si se pasa", "llega hasta 6.000,00 €; si se pasa")
     return p
 
 
@@ -146,9 +161,11 @@ def comprobar_caso(base: Path) -> list[str]:
         mal.append("el aviso del pase no trae la referencia esperada")
     if not any("entorno de correccion" in mo.normaliza(f.read_text(encoding="utf-8")) for f in mt.FUENTES):
         mal.append("ninguna fuente dice que hay un entorno de corrección")
-    v = mo.Proyecto(mt.DATOS).version("F")
-    if f"{v[0]}.{v[1]}" != VISIBLE["version_funcional"] or OCULTO["version_funcional"] != VISIBLE["version_funcional"]:
-        mal.append("version_funcional no es la del funcional de datos/")
+    ev02 = ctx.por_id.get("EV-02")
+    if not (ev02 and ev02.aprobada_en == (1, 1) and ev02.aprobada_con == ("FU-03",)
+            and ev02.aprobada.endswith(f"· {mt.APROBACION}")):
+        mal.append("EV-02 no está aprobada con la orden de verdad («aprobada 1.1: FU-03» en su celda y "
+                   f"{mt.APROBACION} en «Aprobada»): una fuente nueva para ella no la devolvería a aprobación")
     for e in (VISIBLE, OCULTO):
         um = e["umbral"]
         if sorted(um["obligatorios"] + um["ligereza"]) != sorted(e["puntos"]):
@@ -204,7 +221,11 @@ def main() -> int:
             ("lo que se espera", agente(nuevo()), (), 0, "Total: 9/9"),
             ("sin hacer nada", nuevo(), (), 1, "FALLO ficha: ninguna URG nueva"),
             ("corregida en desarrollo: sin reaplicar en el encargo ni bloqueo",
-             agente(nuevo(), donde="Desarrollo; los objetos quedan congelados"), (), 1, "FALLO bloqueo"),
+             agente(nuevo(), donde="Desarrollo"), (), 1, "FALLO bloqueo"),
+            ("«Dónde se corrige» con las dos opciones de la plantilla sin elegir",
+             agente(nuevo(), donde="Desarrollo / Entorno de corrección"), (), 1, "FALLO donde"),
+            ("una fuente nueva para EV-02 la devuelve a aprobación: ni encargo nuevo ni Construida",
+             agente(nuevo(), crece=True), (), 1, "ha crecido desde que se aprobó"),
             ("sin rehacer el encargo de EV-02", agente(nuevo(), encargo=False), (), 1,
              "FALLO encargo: construccion/EV-02.md no lleva «Reaplicar URG-01"),
             ("la colisión no nombra EV-02", agente(nuevo(), colision="No hay"), (), 1, "FALLO colision"),
@@ -217,8 +238,8 @@ def main() -> int:
             ("EV-02 marcada Construida", construida(agente(nuevo())), (), 1, "FALLO estados: EV-02 Construida"),
             ("un Word regenerado: de ligereza se tolera uno", word(agente(nuevo())), (), 0,
              "de ligereza fallan 1 (se tolera 1) → pasa"),
-            ("una captura cambiada y versión nueva del funcional: dos de ligereza no",
-             version(captura(agente(nuevo()))), (), 1, "de ligereza fallan 2"),
+            ("una captura cambiada y el funcional cambiado: dos de ligereza no",
+             funcional_cambiado(captura(agente(nuevo()))), (), 1, "de ligereza fallan 2"),
             ("comprobar.py con errores", roto(agente(nuevo())), (), 1, "FALLO comprobar"),
         ]
         cerrada = pase(agente(nuevo()))

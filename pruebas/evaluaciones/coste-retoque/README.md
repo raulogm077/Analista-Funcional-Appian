@@ -48,7 +48,7 @@ resultados van a `docs/evaluaciones.md`; el proyecto de prueba, a `$PROYECTOS_PR
 
 | Punto | Se cumple si |
 |---|---|
-| `hecho` | El correo está catalogado, su informe de impacto (`impacto/<FU>.md`) aplicado, la ficha de PAN-01 dice «Pedir material» y técnico §13 tiene `DEM_Dashboard` «Modifica» en una unidad Abierta, que el jefe de proyecto aprobará una vez. No hacer nada no pasa, ni meterlo en `EV-02`, ya aprobada con su alcance (sería construir algo sin aprobar), ni dejar la fila sin unidad (quedaría en `EV-01`, en producción, y no se construiría) |
+| `hecho` | El correo está catalogado, su informe de impacto (`impacto/<FU>.md`) aplicado, la ficha de PAN-01 dice «Pedir material» y técnico §13 tiene `DEM_Dashboard` «Modifica» en una unidad Abierta, que el jefe de proyecto aprobará una vez. No hacer nada no pasa, ni meterlo en `EV-02`, ya aprobada con su alcance (la devolvería a aprobación: `encargo` y `construida` fallan con «ha crecido»), ni dejar la fila sin unidad (quedaría en `EV-01`, en producción, y no se construiría) |
 | `sin_aprobacion` | Ningún punto de ese informe pide aprobación («Requiere: Sí…») ni queda «Pendiente». Que esté construido sale, como mucho, en «Posible petición de cambio» del Resumen |
 | `sin_dt` | Ninguna DT «Cambio sobre lo construido» nueva (la de `EV-02` ya estaba) |
 | `comprobar_una_pasada` | `comprobar.py` sin errores, con `--fuentes`, y K = 0 |
@@ -68,20 +68,22 @@ Fijado antes de medir, con el camino más corto que sigue el método (`SKILL.md`
 | Cargar la skill y `proyecto.py estado` | 2 |
 | Leer `actualizacion.md` y, como `estado` lista unidades en curso, `cambios.md` | 2 |
 | Catalogar el correo (`leer_fuentes.py`) y leerlo | 2 |
-| `indice.py ficha PAN-01 --lineas` e `indice.py impacto PAN-01` (las señales «Construido · En curso») | 2 |
+| `proyecto.py cambio … EV-03 abrir`: `EV-02` está Aprobada, y una fuente nueva para ella la devolvería a aprobación | 1 |
+| `indice.py ficha PAN-01 --lineas` e `indice.py impacto PAN-01 --cambio EV-03` (las señales «Construido · En curso») | 2 |
 | Escribir el informe y `comprobar.py --impacto` | 2 |
-| `proyecto.py cambio … EV-03 abrir` y `proyecto.py copia` | 2 |
+| `proyecto.py copia` | 1 |
 | Funcional: PAN-01 y la versión | 2 |
 | Técnico: la versión, §7 y la fila de §13 | 3 |
-| `decisiones.md` y `proyecto.md` | 2 |
+| `decisiones.md` (la versión y la D del CAMBIA) y `proyecto.md` | 3 |
 | Cerrar el informe («Estado» y «Aplicado») y `comprobar.py --anterior --impacto --fuentes` | 2 |
-| **Total** | **21** |
+| **Total** | **22** |
 
-El tope deja 4 de margen para lo razonable que no está en esa cuenta: `requisitos.py` al empezar, `indice.py resumen`,
-una búsqueda más o leer una plantilla. Lo que ya no cabe es lo que 3.0 quita: regenerar el Word, el prototipo o las
-capturas, escribir una DT, presentar puntos para aprobarlos, leer el funcional o el técnico enteros o dar una vuelta de
-correcciones a `comprobar.py`. Cada uno suma de 2 a 10 llamadas. Los 21 son los ~10 pasos que el plan calcula en 3.0
-para este retoque, a una o dos llamadas cada uno.
+`prueba_puntuar.py` recorre este camino con las órdenes del plugin y comprueba que son 22 llamadas y que las dos pasadas
+de `comprobar.py` salen sin errores. El tope deja 3 de margen para lo razonable que no está en esa cuenta:
+`requisitos.py` al empezar, `indice.py resumen`, una búsqueda más o leer una plantilla. Lo que ya no cabe es lo que 3.0
+quita: regenerar el Word, el prototipo o las capturas, escribir una DT, presentar puntos para aprobarlos, leer el
+funcional o el técnico enteros o dar una vuelta de correcciones a `comprobar.py`. Cada uno suma de 2 a 10 llamadas. Las 22
+son los ~10 pasos que el plan calcula en 3.0 para este retoque, a dos llamadas por paso.
 
 ## Lo que no mide
 
@@ -89,7 +91,6 @@ La calidad del análisis más allá de `comprobar.py` (que «Nueva solicitud» s
 encargo de la unidad nueva, que se genera al construir, después de aprobarla.
 
 `python3 prueba_puntuar.py` monta el proyecto, comprueba el caso (PAN-01 construida, ✅ y fuera de `EV-02`, el correo, el
-tope) y prueba `puntuar.py` con proyectos inventados: lo que haría el agente con los scripts del plugin, que pasa
-`comprobar.py --anterior --impacto` y la puntuación, y variantes que no (una llamada de más, una pasada con errores, la
+tope, el camino más corto) y prueba `puntuar.py` con proyectos inventados: ese camino, que pasa, y variantes que no (una llamada de más, una pasada con errores, la
 aprobación por construido, una DT, el Word o una captura regenerados, la fila sin unidad o en `EV-02`, nada hecho). Lee el
 plugin de `PLUGIN_A_PROBAR`.

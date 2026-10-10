@@ -12,7 +12,7 @@ apartado 3.5). Y que lo hace sin regenerar lo que no hace falta (3.0). Todo es f
 - `datos/`: el proyecto tal como está. «Solicitudes de material» (`DEM Gestión de Solicitudes`) es una aplicación nueva
   hecha desde reuniones (caso C del plan, sin `as-is/`: no hace falta el simulador). Análisis 1.1 (funcional, técnico
   completo y decisiones); `analisis/cambios.md` con `EV-01`, la construcción inicial, en producción (PASE-2026-031), y
-  `EV-02`, la firma de la revisión, aprobada y sin construir: modifica `DEM Solicitud`, `DEM_RevisionForm` y
+  `EV-02`, la firma de la revisión, Abierta (`montar.py` la aprueba): modifica `DEM Solicitud`, `DEM_RevisionForm` y
   `DEM_SolicitudForm` y crea `DEM_ER_Firma`; su informe `impacto/FU-03.md`, aplicado en la 1.1; la copia de la 1.0 en
   `versiones/v1.0/` y `proyecto.md`.
 - `fuentes/`: las cuatro fuentes que cita el análisis: la reunión de arranque, la aprobación de la construcción (que dice
@@ -34,9 +34,11 @@ apartado 3.5). Y que lo hace sin regenerar lo que no hace falta (3.0). Todo es f
    python3 montar.py "$PROYECTOS_PRUEBA/DEM-urgencia"
    ```
 
-   Copia `datos/`, cataloga `fuentes/` en su orden (FU-01 a FU-04), escribe las capturas de las tres pantallas, los dos
+   Copia `datos/`, cataloga `fuentes/` en su orden (FU-01 a FU-04), escribe las capturas de las tres pantallas y los dos
    Word entregados (el DF 1.0 y el del cambio `EV-02`, con `df_docx.js`; sin Node o sin el paquete `docx` lo avisa y el
-   proyecto queda sin Word) y el encargo de `EV-02` (`indice.py encargo`), y deja el correo en la carpeta. Comprueba que
+   proyecto queda sin Word), aprueba `EV-02` con la orden de verdad (`proyecto.py cambio <p> EV-02 aprobada --fuente
+   FU-04`, que guarda con qué se aprueba: `<!-- desde 1.0 · aprobada 1.1: FU-03 -->`; una fuente nueva para `EV-02` la
+   devolvería a aprobación) y escribe su encargo (`indice.py encargo`), y deja el correo en la carpeta. Comprueba que
    el análisis pasa `comprobar.py` y escribe junto a la carpeta `DEM-urgencia.montaje.json`, la huella de cada fichero:
    con ella se sabe después si se ha regenerado algún documento. Con `PLUGIN_A_PROBAR=<carpeta>` usa esa copia del
    plugin (la del paquete).
@@ -69,12 +71,12 @@ el proyecto, y su ficha, `impacto/URG-nn.md` (`references/urgentes.md`).
 |---|---|
 | `ficha` | La URG está en `cambios.md` y su ficha lleva «Cambio: URG-nn» en la cabecera, la sección «Urgencia», Tipo «Defecto», Síntoma, «Quién la declara crítica» con quien la declara (la jefa de Servicios generales o el jefe de proyecto: `declara`) y la cita de la fuente nueva, que tiene que estar catalogada |
 | `colision` | «Colisión» nombra `EV-02` y `DEM_SolicitudForm` |
-| `donde` | «Dónde se corrige» dice el entorno de corrección |
-| `encargo` | `construccion/EV-02.md` lleva «Reaplicar URG-nn en `DEM_SolicitudForm`»: el del montaje no la lleva, así que hay que rehacerlo |
+| `donde` | «Dónde se corrige» dice «Entorno de corrección», una de las dos opciones de la plantilla, como la lee `unidades.py` (las dos sin elegir no valen) |
+| `encargo` | `construccion/EV-02.md` lleva «Reaplicar URG-nn en `DEM_SolicitudForm`»: el del montaje no la lleva, así que hay que rehacerlo. Si la urgencia entra como fuente de `EV-02`, la devuelve a aprobación y el encargo ya no se rehace |
 | `bloqueo` | En una copia del proyecto, `proyecto.py cambio <copia> EV-02 construida --manual` falla y pide `--reaplicada URG-nn`; con `--reaplicada URG-nn`, pasa |
 | `estados` | `EV-01` sigue En producción, `EV-02` Aprobada y la URG Abierta: en una sesión desatendida no se aprueba ni se pasa nada a producción |
 | `sin_word_ni_capturas` | Ningún `.docx`, `.pdf` ni `.png` (salvo en `fuentes/`) nuevo o distinto del montaje |
-| `sin_version` | El funcional sigue en la 1.1: un defecto no cambia el funcional; gana una prueba en técnico §14 |
+| `funcional_sin_cambios` | El funcional dice lo mismo que al montar, salvo la línea de la versión: un defecto no cambia el funcional. La versión sí sube: la prueba que reproduce el fallo en técnico §14 cambia el técnico (R2, `references/urgentes.md`) |
 | `comprobar` | `comprobar.py` del analista sin errores, con `--fuentes` |
 
 Con `--ocultas`:
@@ -85,7 +87,7 @@ Con `--ocultas`:
 | `cierre` | Su ficha tiene «Cierre» con HF-2026-007 |
 | `ev02_sin_construir` | `EV-02` sigue Aprobada, `EV-01` En producción y el encargo de `EV-02` sigue con «Reaplicar URG-nn» |
 | `bloqueo_pase` | En una copia, `EV-02` no pasa a producción, ni a Construida sin `--reaplicada URG-nn`; con ella pasa a Construida y después a producción |
-| `ligereza` | Ni Word ni capturas nuevos o cambiados, y el funcional en la 1.1 |
+| `ligereza` | Ni Word ni capturas nuevos o cambiados, y el funcional sin cambios |
 | `comprobar` | `comprobar.py` sin errores |
 
 ## Umbral
@@ -98,12 +100,10 @@ puerta de todas las evaluaciones. No tienen margen: cada uno es un paso escrito 
 `references/urgentes.md` que da un script (`indice.py colision`, `indice.py encargo`, `proyecto.py cambio`), así que no
 hay dos lecturas razonables como en `../evolutivo/`, que por eso pide el 80 %.
 
-De la ligereza (`sin_word_ni_capturas` y `sin_version`; en las ocultas, `ligereza`) se tolera un fallo: regenerar cuesta
-tiempo, pero no pierde trabajo ni construye nada equivocado, y la ligereza la mide `../coste-retoque/`. Si falla
-`sin_version` porque el agente sube la versión al añadir la prueba de técnico §14 (R2 sube la versión cuando cambia el
-técnico), anótalo en `docs/evaluaciones.md` con el motivo: puede ser un choque entre R2 y `references/urgentes.md` más
-que un fallo del agente. La primera parte
-pasa con 9/9, o con 8/9 si el que falla es de ligereza; las ocultas, con 6/6 o 5/6 igual.
+De la ligereza (`sin_word_ni_capturas` y `funcional_sin_cambios`; en las ocultas, `ligereza`) se tolera un fallo:
+regenerar o tocar el funcional cuesta tiempo, pero no pierde trabajo ni construye nada equivocado, y la ligereza la mide
+`../coste-retoque/`. La primera parte pasa con 9/9, o con 8/9 si el que falla es de ligereza; las ocultas, con 6/6 o
+5/6 igual.
 
 Criterio: las dos puntuaciones salen 0.
 
@@ -117,6 +117,7 @@ Criterio: las dos puntuaciones salen 0.
 
 `python3 prueba_puntuar.py` monta el proyecto, comprueba el caso (unidades, encargo sin nada que reaplicar, la incidencia
 que nombra el objeto, el entorno de corrección en las fuentes, lo esperado coherente) y prueba `puntuar.py` con proyectos
-inventados: lo que haría el agente con los scripts del plugin, que pasa, y variantes que no (corregida en desarrollo, sin
-rehacer el encargo, otro tipo, la URG pasada a producción en la sesión desatendida, `EV-02` construida, Word y capturas
+inventados: lo que haría el agente con los scripts del plugin (con la copia, la prueba de §14 y la versión 1.2), que
+pasa, y variantes que no (corregida en desarrollo, «Dónde se corrige» sin elegir, una fuente nueva que devuelve `EV-02`
+a aprobación, sin rehacer el encargo, otro tipo, la URG pasada a producción en la sesión desatendida, `EV-02` construida, Word y capturas
 regenerados…). Lee el plugin de `PLUGIN_A_PROBAR`.

@@ -13,8 +13,8 @@ veces que pasó comprobar.py y salió con errores. Lo esperado está en esperado
 Puntos (umbral: todos):
   hecho                 el correo está catalogado, su informe de impacto (impacto/<FU>*.md) aplicado, la ficha de PAN-01
                         dice el texto nuevo y técnico §13 tiene `DEM_Dashboard` «Modifica» en una unidad Abierta: la
-                        aprueba después el jefe de proyecto, una vez (no hacer nada no pasa; meterlo en EV-02, ya
-                        aprobada con su alcance, sería construir algo sin aprobar)
+                        aprueba después el jefe de proyecto (no hacer nada no pasa; meterlo en EV-02, ya aprobada
+                        con su alcance, la devolvería a aprobación)
   sin_aprobacion        ningún punto de ese informe pide aprobación («Requiere: Sí…») ni queda «Pendiente»: lo construido
                         no la pide (como mucho, «Posible petición de cambio» en el Resumen)
   sin_dt                ninguna DT «Cambio sobre lo construido» nueva: una interfaz no la pide

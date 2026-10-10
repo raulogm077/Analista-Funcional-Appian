@@ -9,12 +9,13 @@ vacía. El proyecto es la aplicación ficticia «Solicitudes de material» (`DEM
 desde reuniones (caso C, sin as-is/): EV-01, la construcción inicial, en producción, y EV-02, la firma de la revisión,
 aprobada y sin construir.
 
-  1. Copia datos/: el análisis 1.1, analisis/cambios.md, el informe de EV-02 (impacto/FU-03.md), la copia de la 1.0 en
-     versiones/ y proyecto.md.
+  1. Copia datos/: el análisis 1.1, analisis/cambios.md (EV-01 en producción, EV-02 Abierta), el informe de EV-02
+     (impacto/FU-03.md), la copia de la 1.0 en versiones/ y proyecto.md.
   2. Cataloga fuentes/ en su orden con leer_fuentes.py del plugin: FU-01 a FU-04.
   3. Escribe las capturas de las tres pantallas (prototipo/capturas/) y, con Node y el paquete docx, los dos Word
      entregados: el DF 1.0 y el DF del cambio EV-02 (1.1). Sin ellos, avisa y sigue sin Word.
-  4. Escribe el encargo de EV-02 (indice.py encargo): construccion/EV-02.md y EV-02-esperado.json.
+  4. Aprueba EV-02 con la orden de verdad (proyecto.py cambio … EV-02 aprobada --fuente FU-04), que guarda con qué se
+     aprueba, y escribe su encargo (indice.py encargo): construccion/EV-02.md y EV-02-esperado.json.
   5. Deja la fuente nueva en <destino>/: por defecto, el correo de la incidencia (correo-2026-10-08-incidencia.eml);
      la prueba de coste pasa el suyo con --fuente.
   6. Comprueba que el análisis pasa comprobar.py y escribe la huella de cada fichero (sha256) en
@@ -46,6 +47,7 @@ ANALISTA = PLUGIN / "skills" / "appian-functional-analyst" / "scripts"
 DATOS = AQUI / "datos"
 FUENTES = sorted((AQUI / "fuentes").glob("0*"))
 INCIDENCIA = AQUI / "correo-2026-10-08-incidencia.eml"
+APROBACION = "FU-04"     # la aprobación de EV-02 por el jefe de proyecto (fuentes/04-aprobacion-2026-10-05.txt)
 ENTORNO = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8", PYTHONDONTWRITEBYTECODE="1")
 WORD_10 = "DF-Solicitudes-de-material-v1.0.docx"
 
@@ -176,6 +178,11 @@ def montar(destino: Path, fuente: Path | None = INCIDENCIA) -> Path:
         raise SystemExit(f"leer_fuentes.py falla:\n{r.stdout}{r.stderr}")
     capturas(destino / "prototipo" / "capturas")
     sin_word = words(destino)
+    # EV-02 se aprueba con la orden de verdad: guarda con qué se aprueba (<!-- … · aprobada 1.1: FU-03 -->), y una
+    # fuente nueva para ella después la devuelve a aprobación
+    r = corre(sys.executable, ANALISTA / "proyecto.py", "cambio", destino, "EV-02", "aprobada", "--fuente", APROBACION)
+    if r.returncode:
+        raise SystemExit(f"proyecto.py cambio EV-02 aprobada falla:\n{r.stdout}{r.stderr}")
     r = corre(sys.executable, ANALISTA / "indice.py", "encargo", destino, "EV-02")
     if r.returncode:
         raise SystemExit(f"indice.py encargo falla:\n{r.stdout}{r.stderr}")
