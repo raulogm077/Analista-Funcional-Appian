@@ -73,6 +73,39 @@ def test_datos_formato(project):
     assert {"DEM_SOLICITUD", "Resumen"} <= set(solicitud["tambien"])        # la tabla y la vista, con su record type
 
 
+def test_senal_en_hallazgos(project):
+    """La señal de un hallazgo (senal, opcional) llega a datos/hallazgos.json, como base en los inferidos."""
+    datos = flujo(project)
+    registro = project.interm() / "hallazgos" / "prueba.json"
+    lista = json.loads(registro.read_text(encoding="utf-8"))
+    lista.append(hallazgo("H-SEG-04", titulo="Proceso sin ejecuciones", area="uso", severidad="Baja",
+                          objetos=["DEM Utilidad Huérfana"], senal="sin-ejecuciones"))
+    registro.write_text(json.dumps(lista, ensure_ascii=False), encoding="utf-8")
+    corre(REGISTRO, project.out)
+    corre(DATOS, project.out)
+    hallazgos = {h["id"]: h for h in json.loads((datos / "hallazgos.json").read_text(encoding="utf-8"))["hallazgos"]}
+    assert hallazgos["H-SEG-04"]["senal"] == "sin-ejecuciones" and "senal" not in hallazgos["H-SEG-01"]
+
+
+def test_tambien_de_cdt_y_data_store(project):
+    """En MNT, «tambien» lleva la tabla del CDT (de su definición: el inventario solo la saca de los record types) y la
+    entidad del data store, que se citan con ellos sin ser objetos."""
+    project.add_devmcp(MOCK_APP="fixture_mal_hecha", LCP_URL="https://pre.mnt.example.org")
+    project.run("extract", "--app", "MNT", "--out", str(project.out), "--retry-delay", "0.1", check=0)
+    corre(BUILD_MODEL, project.out)
+    p = corre(DATOS, project.out)
+    inv = json.loads((project.out / "datos" / "inventario.json").read_text(encoding="utf-8"))
+    por = {o["nombre"]: o for o in inv["objetos"]}
+    assert por["MNT_OrdenDTO"]["tambien"] == ["MNT_ORDEN"]
+    assert por["MNT Datos Mantenimiento"]["tambien"] == ["ordenes"]
+    # las aristas: las de datos/ son entre objetos de la aplicación; el grafo (y summary.json) cuenta también las de
+    # fuera, y el aviso lo dice
+    aristas = json.loads((project.out / "datos" / "dependencias.json").read_text(encoding="utf-8"))["aristas"]
+    fuera = len(project.load("graph.json")["edges"]) - len(aristas)
+    assert fuera > 0 and f"{len(aristas)} aristas entre objetos de la aplicación" in p.stdout, p.stdout
+    assert f"{fuera} con objetos de fuera" in p.stdout, p.stdout
+
+
 def test_objetos_que_no_estan(project):
     """Los objetos de un hallazgo tienen que estar en el inventario (o fuera de la aplicación): las demás skills los
     buscan por nombre. Con uno que no está, error y nada escrito; «cons!»/«rule!» delante no cuentan."""

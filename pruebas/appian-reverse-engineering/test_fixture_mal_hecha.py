@@ -142,6 +142,30 @@ def test_herramienta_de_un_tipo_que_no_tiene(mnt):
     assert [d for d in rep["disabledAfterProbe"] if d["tool"] == "getAiAgent"] == []
 
 
+def test_herramientas_usadas_y_omitidas(mnt):
+    """toolsUsed son las herramientas con alguna llamada (correcta, reutilizada o fallida): getAiAgent, de un tipo que
+    MNT no tiene, no. Usadas más omitidas (las que el plan no usó) son el catálogo, como cuenta INVENTARIO."""
+    rep = mnt.load("extraction_report.json")
+    llamadas = {n for n, st in rep["callStats"].items()
+                if any(st.get(k) for k in ("ok", "cached", "failed", "cachedFailed"))}
+    usadas = set(rep["toolsUsed"])
+    assert usadas == llamadas and "getAiAgent" not in usadas
+    omitidas = {t["name"] for t in mnt.load("extraction_plan.json")["tools"] if not t["use"]}
+    catalogo = {t["name"] for t in mnt.load("mcp_catalog.json")["tools"]}
+    assert not usadas & omitidas and usadas | omitidas == catalogo, (usadas & omitidas, catalogo - usadas - omitidas)
+
+
+def test_senal_sin_prefijo(mnt):
+    """summary.json señala los objetos cuyo nombre no empieza por el prefijo de la aplicación (MP-09): el H-ARQ de
+    interface-analyzer los recoge."""
+    from conftest import BUILD_SUMMARY
+    p = subprocess.run([sys.executable, str(BUILD_SUMMARY), str(mnt.out)], capture_output=True, text=True,
+                       encoding="utf-8")
+    assert p.returncode == 0, p.stderr
+    senales = {s["type"]: s["objects"] for s in mnt.load("summary.json")["signals"]}
+    assert sorted(senales["sinPrefijo"]) == ["ReglaCalculoPlazo", "calcFecha"]
+
+
 def test_cdt_y_data_store_con_definicion(mnt):
     obj = objetos(mnt)
     cdt, almacen = obj["MNT_OrdenDTO"], obj["MNT Datos Mantenimiento"]

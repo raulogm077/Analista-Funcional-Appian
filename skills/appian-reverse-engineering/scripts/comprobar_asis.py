@@ -11,24 +11,33 @@ Errores (✗, salida 1):
   - un nombre entre comillas invertidas que empieza por el prefijo de la aplicación (seguido de «_» o espacio; se
     corta en «.», «#», «(» o «[» y, si así no es un objeto, en lo que no admite el nombre de una regla, una interfaz
     o una constante, como en una expresión SAIL) y no es un objeto del inventario, algo que se cita con uno ni la
-    aplicación;
+    aplicación; fuera del código, en texto plano, en negrita o como texto de un enlace, igual con <prefijo>_<palabra>
+    (sin contar rutas ni el slug de la ficha de un objeto);
   - una tabla con columna «Certeza» sin columna «Evidencia» (salvo el registro de 09, cuyas filas enlazan en «Dónde»
     al documento que tiene la evidencia), una fila cuya evidencia no enlaza a un fichero del anexo o una certeza que
     no es ✅, 🔶 ni ❓;
+  - una evidencia «mcp:<tipo>/<nombre>» que enlaza una ficha del anexo que no es la de ese objeto (inventario.json →
+    anexo), también anexo/indice.md;
   - cifras del volumen de LEEME («N objetos», «N process models», «N interfaces», «N record types») distintas de las
-    de summary.json;
+    de summary.json; se comparan solo en la línea «Volumen» (sin ella, en todo LEEME): una cifra en otra línea o en
+    otro documento no se mira;
   - un «{{» sin sustituir o un enlace relativo a un fichero que no existe;
-  - un NV-<ÁREA>-NN citado que no está en datos/sin-verificar.json;
+  - un NV-<ÁREA>-NN citado que no está en datos/sin-verificar.json, o un H-<ÁREA>-NN que no está en
+    datos/hallazgos.json (el registro de 09, que escribe build_registry.py, no se mira);
   - una pregunta de la revisión que no está en la tabla «Preguntas de esta revisión» de LEEME, o está sin estado
     (Respondida, Parcial o Sin resolver), Respondida sin enlace ni NV, o Parcial o Sin resolver sin NV ni enlace a
     «Qué no incluye».
-  Las tablas, los «{{» y los NV no se miran en anexo/ ni en extraccion/ (una lista anidada de SAIL lleva «{{»).
-Avisos (·): «no existe», «no existen» o «no hay ningún» en un documento (lo que no se encontró dice dónde se buscó);
-«según su nombre» en una fila de INVENTARIO cuyo objeto tiene definición; un hallazgo inferido de severidad Alta con
-menos de dos evidencias en «base»; un objeto de fuera de la aplicación que esta usa y que ningún NV tiene en
+  Las tablas, las evidencias, los «{{», los H y los NV no se miran en anexo/ ni en extraccion/ (una lista anidada de
+  SAIL lleva «{{»).
+Avisos (·): la aplicación sin prefijo (no se comprueban los nombres); «no existe», «no existen» o «no hay ningún» en
+un documento (lo que no se encontró dice dónde se buscó); una línea que enlaza los hallazgos de otro documento
+(«04-seguridad-grupos.md#hallazgos») sin citar un H-… o un NV-… (heurístico: la pasada de coherencia cita el ID
+canónico); «según su nombre» en una fila de INVENTARIO cuyo objeto tiene definición; un hallazgo inferido de severidad
+Alta con menos de dos evidencias en «base»; un objeto de fuera de la aplicación que esta usa y que ningún NV tiene en
 «objetos»; y, con redaccion.py del analista, muletillas, frases de más de 35 palabras, párrafos de 20 palabras o más
-repetidos en dos documentos y documentos por encima de su presupuesto (assets/presupuesto-palabras.json), que no
-cuenta lo que escriben los scripts entre sus marcadores (el registro de 09 y la tabla «Sin verificar» de LEEME).
+repetidos en dos documentos y documentos por encima de su presupuesto (assets/presupuesto-palabras.json), que cuenta
+palabras(): sin títulos ni lo que escriben los scripts entre sus marcadores (el registro de 09 y la tabla «Sin
+verificar» de LEEME).
 Salida: 0 sin errores, 1 con errores, 2 uso o faltan datos/inventario.json o summary.json.
 """
 from __future__ import annotations
@@ -63,6 +72,9 @@ CODIGO = re.compile(r"`([^`\n]+)`")
 ENLACE = re.compile(r"!?\[[^\]\n]*\]\((<[^>\n]+>|[^)\s]+)(?:\s+\"[^\"\n]*\")?\)")
 CIFRA = re.compile(r"(\d[\d.]*)\s+(objetos|process models?|interfa(?:ces|z)|record types?)\b", re.I)
 NV = re.compile(r"\bNV-[A-Z]{2,4}-\d{2,3}\b")
+HALLAZGO = re.compile(r"\bH-[A-Z]{2,4}-\d{2,3}\b")
+# [`mcp:<tipo>/<nombre>#…`](destino): el nombre, como lo lee evidencia.py de la evaluación del recién llegado
+EVIDENCIA = re.compile(r"\[\s*`?mcp:[^/`\]]+/([^#@`\]]+)[^\]]*\]\((<[^>\n]+>|[^)\s]+)")
 NEGATIVO = re.compile(r"(?i)(?<!\w)no (?:existen?|hay ning[uú]n[oa]?)(?!\w)")   # sin decir dónde se buscó
 ESTADOS = {"respondida": "Respondida", "parcial": "Parcial", "sin resolver": "Sin resolver"}
 
@@ -174,6 +186,10 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
                 {t for o in inv.get("objetos", []) for t in o.get("tambien", [])} | \
                 {f.get("nombre") for f in _json(salida / "datos" / "dependencias.json").get("fueraDeLaAplicacion", [])}
     nvs = {n.get("id") for n in _json(salida / "datos" / "sin-verificar.json").get("sinVerificar", [])}
+    hallazgos = {h.get("id") for h in _json(salida / "datos" / "hallazgos.json").get("hallazgos", [])}
+    ficha = {o.get("nombre"): o.get("anexo") for o in inv.get("objetos", []) if o.get("anexo")}
+    en_prosa = re.compile(rf"(?<![\w!/]){re.escape(prefijo)}_\w+") if prefijo else None
+    con_slug = conocidos | {Path(f).stem for f in ficha.values()}   # en la prosa, también el slug de una ficha
     detalle: dict[str, set] = {}
     for lista in (_json(work_dir(salida) / "inventory.json").get("objects") or {}).values():
         for o in lista:
@@ -181,6 +197,9 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
     anexo = salida / "anexo"
     errores: list[tuple] = []
     avisos: list[tuple] = []
+    if not prefijo:
+        avisos.append(("datos/inventario.json", None, "la aplicación no tiene prefijo: no se comprueba que los nombres "
+                                                      "citados sean objetos del inventario"))
     textos: dict[str, str] = {}
     for doc in sorted(salida.rglob("*.md")):
         rel = doc.relative_to(salida).as_posix()
@@ -188,11 +207,16 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
         numeradas = lineas(texto)
         con_tablas = rel.split("/", 1)[0] not in SIN_TABLAS
         e = lambda n, msg: errores.append((rel, n, msg))  # noqa: E731
-        # nombres que empiezan por el prefijo
+        # nombres que empiezan por el prefijo: en el código y, en los entregables, también fuera de él
         for n, l in numeradas if prefijo else []:
             for m in CODIGO.finditer(l):
                 nombre = nombre_citado(m.group(1), prefijo, conocidos)
                 if nombre and nombre not in conocidos:
+                    e(n, f"`{nombre}` no es un objeto del inventario ni se cita con uno")
+        for n, l in numeradas if prefijo and con_tablas else []:
+            for m in en_prosa.finditer(prosa(l)):
+                nombre = nombre_citado(m.group(0), prefijo, con_slug)
+                if nombre and nombre not in con_slug:
                     e(n, f"`{nombre}` no es un objeto del inventario ni se cita con uno")
         if con_tablas:
             # certeza y evidencia (el registro de 09, que escribe un script, enlaza en «Dónde» al documento que la tiene)
@@ -220,6 +244,18 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
                 for m in NV.finditer(l):
                     if m.group(0) not in nvs:
                         e(n, f"{m.group(0)} no está en datos/sin-verificar.json")
+                # una evidencia lleva a la ficha de su objeto
+                for nombre, destino in evidencias_de_otro(doc, l, anexo, ficha, salida):
+                    e(n, f"la evidencia de «{nombre}» enlaza {destino}, que no es su ficha ({ficha[nombre]})")
+                if n not in generado:   # el registro de 09 lo escribe build_registry.py
+                    # un hallazgo se cita por su ID, que está en datos/
+                    for m in HALLAZGO.finditer(l):
+                        if m.group(0) not in hallazgos:
+                            e(n, f"{m.group(0)} no está en datos/hallazgos.json")
+                    # una mención a los hallazgos de otra área lleva su ID (T21)
+                    otro = hallazgos_de_otro(doc, l)
+                    if otro and not (HALLAZGO.search(l) or NV.search(l)):
+                        avisos.append((rel, n, f"enlaza los hallazgos de {otro} sin citar su ID (H-… o NV-…)"))
                 # lo que no se encontró dice dónde se buscó
                 for m in NEGATIVO.finditer(prosa(l)):
                     avisos.append((rel, n, f"«{m.group(0)}»: di dónde se buscó («no encontrado en <ámbito>»)"))
@@ -237,6 +273,42 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
     orden = lambda x: (x[0], x[1] or 0)  # noqa: E731
     return ([f"{r}:{n} {m}" if n else f"{r}: {m}" for r, n, m in sorted(errores, key=orden)],
             [f"{r}:{n} {m}" if n else f"{r}: {m}" for r, n, m in sorted(avisos, key=orden)])
+
+
+def evidencias_de_otro(doc: Path, linea: str, anexo: Path, ficha: dict, salida: Path) -> list[tuple[str, str]]:
+    """(nombre, destino) de cada evidencia «mcp:<tipo>/<nombre>» de la línea que enlaza una ficha del anexo que no es
+    la de ese objeto (`ficha`: su anexo en inventario.json). Un destino que no es un fichero del anexo lo dicen las
+    comprobaciones de la evidencia y de los enlaces; un nombre sin ficha (la aplicación, uno de fuera), nada."""
+    out = []
+    for m in EVIDENCIA.finditer(linea):
+        nombre = m.group(1).strip()
+        destino = (doc.parent / unquote(m.group(2).strip("<>").split("#", 1)[0])).resolve()
+        if nombre in ficha and anexo in destino.parents and destino.is_file() \
+                and destino != (salida / ficha[nombre]).resolve():
+            out.append((nombre, destino.relative_to(salida).as_posix()))
+    return out
+
+
+def hallazgos_de_otro(doc: Path, linea: str) -> str | None:
+    """El documento de otra área cuyos hallazgos («…md#hallazgos») enlaza la línea, o None."""
+    for m in ENLACE.finditer(CODIGO.sub("x", linea)):
+        d = m.group(1).strip("<>")
+        if re.match(r"^[a-z][a-z0-9+.-]*:", d, re.I) or "#" not in d:
+            continue
+        fichero, ancla = d.split("#", 1)
+        if ancla.lower() == "hallazgos" and fichero and (doc.parent / unquote(fichero)).resolve() != doc.resolve():
+            return Path(unquote(fichero)).name
+    return None
+
+
+def palabras(texto: str) -> int:
+    """Las palabras de un documento como las cuenta su presupuesto: fuera de los bloques de código y de los
+    comentarios, sin los títulos ni lo que escriben los scripts entre sus marcadores (generadas), sin los destinos de
+    los enlaces y con cada código en línea como una palabra. La usa también palabras.py de la evaluación del recién
+    llegado."""
+    generado = generadas(texto)
+    return sum(len(re.findall(r"\w+", prosa(l))) for n, l in lineas(texto)
+               if n not in generado and not l.lstrip().startswith("#"))
 
 
 def segun_su_nombre(n: int, fila: list[str], detalle: dict, avisos: list) -> None:
@@ -335,21 +407,18 @@ def prosa(l: str) -> str:
 
 
 def redaccion(salida: Path, textos: dict[str, str], cuentas: dict, avisos: list) -> None:
-    """Avisos de redacción de cada documento (`textos`: {ruta: texto tal cual}). El presupuesto no cuenta lo que
-    escriben los scripts entre sus marcadores: cada hallazgo o NV que se registra lo haría crecer."""
+    """Avisos de redacción de cada documento (`textos`: {ruta: texto tal cual}). El presupuesto cuenta palabras(), sin lo
+    que escriben los scripts entre sus marcadores: cada hallazgo o NV que se registra lo haría crecer."""
     if rd is None:
         avisos.append(("redaccion", None, "sin avisos de redacción: no está appian-functional-analyst/scripts/redaccion.py"))
         return
     muletillas = rd.muletillas()
     presupuesto = json.loads(PRESUPUESTO.read_text(encoding="utf-8")).get("documentos", {})
     for rel, texto in textos.items():
-        palabras, generado = 0, generadas(texto)
         for n, l in lineas(texto):
             if l.lstrip().startswith("#"):
                 continue
             leida = prosa(l)
-            if n not in generado:
-                palabras += len(re.findall(r"\w+", leida))
             normal = rd.normaliza(leida)
             for x in muletillas:
                 if re.search(rf"(?<!\w){re.escape(x)}(?!\w)", normal):
@@ -363,8 +432,9 @@ def redaccion(salida: Path, textos: dict[str, str], cuentas: dict, avisos: list)
         regla = presupuesto.get(rel) or next((v for k, v in presupuesto.items() if fnmatch.fnmatch(rel, k)), None)
         if regla:
             limite = regla.get("base", 0) + sum(p * cuentas.get(t, 0) for t, p in (regla.get("porObjeto") or {}).items())
-            if palabras > limite:
-                avisos.append((rel, None, f"{palabras} palabras, más que su presupuesto ({limite})"))
+            cuenta = palabras(texto)
+            if cuenta > limite:
+                avisos.append((rel, None, f"{cuenta} palabras, más que su presupuesto ({limite})"))
     for p, nombres in rd.parrafos_repetidos({r: re.sub(r"<!--.*?-->", "", t, flags=re.S) for r, t in textos.items()}):
         avisos.append((nombres[0], None, f"párrafo repetido en {' y '.join(nombres)}: «{p[:60]}…»"))
 

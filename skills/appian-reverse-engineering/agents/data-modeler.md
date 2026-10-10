@@ -70,7 +70,7 @@ Cada entidad pertenece a un subdominio principal; si conecta dos, aparece en el 
 
 Para cada `erDiagram` (reglas de `mermaid-rules.md`):
 
-1. Nombres de entidad en `PascalCase` o `SCREAMING_SNAKE_CASE`; si cambias un nombre, añade la tabla «Nombre real | Nombre en el diagrama».
+1. Nombre de entidad: el real si ya es un identificador (`[A-Za-z_][A-Za-z0-9_]*`), tal cual, sin pasarlo a mayúsculas (`comprobar_asis.py` da por inventado un nombre que no es el real); si no lo es, en `PascalCase` o `SCREAMING_SNAKE_CASE`, y añade la tabla «Nombre real | Nombre en el diagrama».
 2. Como mucho 8 atributos por entidad: PK, FK y campos clave.
 3. Relaciones con la notación canónica (`||--||`, `||--o{`, `}o--||`, `}o--o{`).
 4. Los CDTs que no usa ningún record ni proceso no van al ER, solo al catálogo.

@@ -12,13 +12,23 @@ Subcomandos:
   doctor      Estado de los 3 MCP: Dev MCP (obligatorio), Appian MCP Server y Docs MCP (opcionales).
   apps        Lista las aplicaciones visibles para el usuario del Dev MCP.
   plan        Catalogo + clasificacion + objetos de la app + estimacion de llamadas. No llama por objeto.
-  extract     Ejecuta el plan y vuelca las respuestas en <out>/extraccion/mcp_raw/, dentro del proyecto.
+  extract     Ejecuta el plan y vuelca las respuestas en <out>/extraccion/mcp_raw/, dentro del proyecto. Con
+              --solo <objetos>, vuelve a pedir solo esos (y la lista de la aplicacion, para encontrar uno nuevo);
+              de los demas usa lo guardado sin llamar al Dev MCP, y rehace el modelo (build_model.py).
   datafabric  Metadatos y COUNT(*) por record type de la app a traves del Appian MCP Server.
+  verificar   --app <app> --objetos <nombres|@fichero> --out <fichero.json>: por objeto, si existe, su tipo, su
+              nombre, su ultima modificacion (rol versions; un dato, no una prueba), los campos de record types y
+              CDT y sus casos de prueba si el Dev MCP los expone. No escribe en ninguna extraccion.
+  deriva      --out <as-is> [--objetos …] [--ignorar <nombre>@<fecha ISO>,…]: la lista de objetos de la aplicacion
+              y su historial de versiones (rol versions), frente al as-is; cambiados, nuevos y retirados en
+              <as-is>/datos/deriva.json. Sin historial en el Dev MCP, lo dice y no supone nada.
 
 Las respuestas se guardan tal cual las devuelve el Dev MCP, con rutas cortas (Windows y OneDrive).
 
 Codigos de salida:
-  0 ok | 2 uso incorrecto | 11 Dev MCP no configurado | 12 varias configuraciones posibles
+  0 ok (verificar, tambien si falta algun objeto: lo dice el JSON) | 2 uso incorrecto; en verificar y deriva,
+  tambien sin conexion, sin la aplicacion o con el as-is de otro entorno
+  11 Dev MCP no configurado | 12 varias configuraciones posibles
   13 el Dev MCP no arranca o no autentica | 14 no hay aplicaciones visibles
   15 app no encontrada o ambigua, o la carpeta ya tiene otra app u otro entorno (usa otra --out;
      para la misma app de otro entorno, tambien --refresh)
@@ -28,7 +38,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import hashlib
 import json
 import os
 import re
@@ -43,7 +52,8 @@ from typing import Any
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rutas import carpeta_objeto, work_dir  # noqa: E402
+from rutas import carpeta_objeto, safe_name, work_dir  # noqa: E402
+import build_model as bm  # noqa: E402  (el modelo, que rehace extract --solo, y cómo se leen las respuestas)
 
 EXIT_OK, EXIT_USAGE, EXIT_NO_CONFIG, EXIT_AMBIGUOUS, EXIT_START, EXIT_NO_APPS, EXIT_APP, EXIT_NO_MCPSERVER = \
     0, 2, 11, 12, 13, 14, 15, 16
@@ -78,15 +88,6 @@ def tokens(name: str) -> list[str]:
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
-
-def safe_name(s: str, maximo: int = 48) -> str:
-    """Nombre de fichero de una herramienta, corto para que la ruta quepa en Windows y en OneDrive: si no cabe, se
-    recorta y lleva 8 hex del sha1 del nombre, para que dos nombres largos no se pisen. _meta.tool guarda el nombre."""
-    limpio = re.sub(r"[^A-Za-z0-9_.\-]", "_", s)
-    if len(limpio) <= maximo:
-        return limpio
-    return f"{limpio[:maximo - 9]}-{hashlib.sha1(s.encode('utf-8')).hexdigest()[:8]}"
 
 
 def is_transient(error: str | None) -> bool:
@@ -615,9 +616,12 @@ def entorno(url: str) -> str:
 class Extractor:
     def __init__(self, sess: McpSession, policy: Policy, out: Path | None, *, concurrency=4, refresh=False,
                  retries=2, retry_delay=1.5, only: str | None = None, skip: str | None = None,
-                 retry_failed=False):
+                 retry_failed=False, solo=False):
         self.sess, self.policy, self.out = sess, policy, out
         self.retry_failed = retry_failed
+        # --solo: uuids de los objetos que se vuelven a pedir (se rellena tras listar la aplicación); de los demás,
+        # solo lo guardado, sin llamar al Dev MCP. None: extracción normal
+        self.solo: set[str] | None = set() if solo else None
         self.sem = asyncio.Semaphore(max(1, concurrency))
         self.refresh, self.retries, self.retry_delay = refresh, retries, retry_delay
         self.only = re.compile(only) if only else None
@@ -736,9 +740,19 @@ class Extractor:
             return self.raw / "_app" / f"{safe_name(ti.name)}.json"
         return carpeta_objeto(self.raw, obj["type"], obj["uuid"]) / f"{safe_name(ti.name)}.json"
 
+    def refresca(self, scope: str, obj: dict | None) -> bool:
+        """Si se pide otra vez aunque esté guardado: con --refresh, todo; con --solo, la lista de la aplicación (para
+        encontrar un objeto nuevo) y los objetos de --solo."""
+        return self.refresh or (self.solo is not None and (scope == "app" or (scope == "object"
+                                                                              and obj["uuid"] in self.solo)))
+
+    def fuera_de_solo(self, scope: str, obj: dict | None) -> bool:
+        return self.solo is not None and scope == "object" and obj["uuid"] not in self.solo
+
     async def run_call(self, ti: ToolInfo, scope: str, *, app_uuid=None, obj=None) -> CallResult:
         f = self.target_file(ti, scope, obj)
-        if f and f.exists() and not self.refresh:
+        fuera = self.fuera_de_solo(scope, obj)
+        if f and f.exists() and not self.refresca(scope, obj):
             try:
                 cached = json.loads(f.read_text(encoding="utf-8"))
                 meta = cached.get("_meta", {})
@@ -746,13 +760,16 @@ class Extractor:
                     self.stats[ti.name]["cached"] += 1
                     self.reusada(f, meta)
                     return CallResult(True, cached.get("response"), None, meta.get("pages", 1))
-                if not meta.get("transient", True) and not self.retry_failed:
+                if (not meta.get("transient", True) and not self.retry_failed) or fuera:
                     self.stats[ti.name]["cachedFailed"] += 1
                     self.reusada(f, meta)
                     self.errors.append(error_de(ti, scope, obj, meta.get("error")))   # el informe, igual al retomar
                     return CallResult(False, None, meta.get("error"))
             except Exception:
                 pass
+        if fuera:   # --solo: de los demás objetos no se llama al Dev MCP
+            self.stats[ti.name]["notRequested"] += 1
+            return CallResult(False, error="Fuera de --solo y sin respuesta guardada.")
         args = self.build_args(ti, app_uuid=app_uuid, obj=obj)
         if args is None:
             self.stats[ti.name]["notApplicable"] += 1
@@ -880,6 +897,8 @@ class Extractor:
         return groups
 
     async def run_group(self, ti: ToolInfo, typ: str, objs: list[dict]):
+        if self.solo is not None:   # --solo: los demás objetos, solo si hay algo guardado (la sonda no los cuenta)
+            objs = [o for o in objs if o["uuid"] in self.solo or self.target_file(ti, "object", o).exists()]
         probe = objs[: self.policy.probe]
         rest = objs[self.policy.probe:]
         results = await asyncio.gather(*(self.run_call(ti, "object", obj=o) for o in probe))
@@ -918,7 +937,7 @@ def catalog_json(ex: Extractor) -> dict:
             "tools": [t.to_json() for t in ex.tools]}
 
 
-def plan_json(ex: Extractor, app: dict, objects: list[dict], groups) -> dict:
+def plan_json(ex: Extractor, app: dict, objects: list[dict], groups, inicio: str | None = None) -> dict:
     counts = defaultdict(int)
     for o in objects:
         counts[o["type"]] += 1
@@ -938,7 +957,8 @@ def plan_json(ex: Extractor, app: dict, objects: list[dict], groups) -> dict:
             entry["estimatedCalls"] = 1
         tools.append(entry)
     total = sum(e.get("estimatedCalls", 0) for e in tools if e["use"])
-    return {"generatedAt": now_iso(), "app": app, "trustedMode": ex.trusted, "objectCount": len(objects),
+    return {"generatedAt": now_iso(), "startedAt": inicio, "app": app, "trustedMode": ex.trusted,
+            "objectCount": len(objects),
             "objectsByType": dict(sorted(counts.items())), "estimatedCalls": total,
             "confirmAboveCalls": ex.policy.confirm_above, "needsConfirmation": total > ex.policy.confirm_above,
             "tools": sorted(tools, key=lambda e: (not e["use"], e["scope"], e["name"]))}
@@ -954,7 +974,7 @@ async def prepare(ex: Extractor, args) -> tuple[dict, list[dict], list]:
     if not app:
         eprint(msg)
         raise SystemExit(EXIT_APP)
-    antes = aplicacion_extraida(ex.raw)
+    antes = aplicacion_extraida(ex.raw) if ex.raw else {}   # verificar y deriva no escriben: sin carpeta
     if antes.get("uuid") not in (None, app["uuid"]):   # las respuestas guardadas serían las de la otra
         eprint(f"Esta carpeta ya tiene la extraccion de '{antes.get('name')}': para otra aplicacion, usa otra carpeta.")
         raise SystemExit(EXIT_APP)
@@ -1017,6 +1037,21 @@ async def cmd_apps(args) -> int:
 
 async def cmd_plan_or_extract(args, execute: bool) -> int:
     out = Path(args.out).resolve()
+    solo = getattr(args, "solo", None)
+    if solo and args.refresh:
+        eprint("--solo y --refresh no van juntos: --solo vuelve a pedir solo esos objetos.")
+        return EXIT_USAGE
+    if solo and not (work_dir(out) / "mcp_raw" / "_objects.json").exists():
+        eprint("--solo reextrae objetos de una extraccion que ya esta en la carpeta: haz antes extract sin --solo.")
+        return EXIT_USAGE
+    try:
+        args.solo_pedidos = lista_de_objetos(solo)
+    except OSError as ex_:
+        eprint(f"No se puede leer {solo}: {ex_}")
+        return EXIT_USAGE
+    if solo and not args.solo_pedidos:
+        eprint("--solo no trae ningun objeto.")
+        return EXIT_USAGE
     sess, choice, code, msg = open_session(args)
     if not sess:
         eprint(msg)
@@ -1028,7 +1063,7 @@ async def cmd_plan_or_extract(args, execute: bool) -> int:
         async with sess:
             ex = Extractor(sess, policy, out, concurrency=args.concurrency, refresh=args.refresh,
                            retries=args.retries, retry_delay=args.retry_delay, only=args.only, skip=args.skip,
-                           retry_failed=args.retry_failed)
+                           retry_failed=args.retry_failed, solo=bool(solo))
             return await plan_o_extrae(ex, args, execute, choice, inicio, t0)
     except Exception as ex_:
         eprint(f"No se pudo arrancar o autenticar el Dev MCP: {type(ex_).__name__}: {ex_}")
@@ -1045,15 +1080,24 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         app_obj, objects, groups = await prepare(ex, args)
     except SystemExit as se:
         return int(se.code)
+    if ex.solo is not None:
+        pedidos = args.solo_pedidos
+        por = resolver(pedidos, objects)
+        if len(por) < len(pedidos):
+            eprint("--solo: no estan en la aplicacion: " + ", ".join(p for p in pedidos if p not in por))
+        if not por:
+            return EXIT_USAGE
+        ex.solo.update(o["uuid"] for o in por.values())
     interm = work_dir(out, crear=True)
     write_json(interm / "mcp_catalog.json", catalog_json(ex))
-    plan = plan_json(ex, app_obj, objects, groups)
+    anterior = inicio_anterior(interm / "extraction_plan.json")   # antes de sobrescribirlo
+    plan = plan_json(ex, app_obj, objects, groups, inicio)
     write_json(interm / "extraction_plan.json", plan)
     write_json(interm / "mcp_raw" / "_objects.json", {"application": app_obj, "entorno": url, "objects": objects})
     if not execute:
         print(json.dumps(plan, ensure_ascii=False, indent=1)) if args.json else print_plan(plan)
         return EXIT_OK
-    if plan["needsConfirmation"] and not args.yes:
+    if plan["needsConfirmation"] and not args.yes and ex.solo is None:   # --solo pide solo unos objetos
         print_plan(plan)
         eprint(f"\nEl plan supera {policy.confirm_above} llamadas. Repite con --yes para confirmar.")
         return EXIT_USAGE
@@ -1064,7 +1108,7 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         "durationSeconds": round(time.monotonic() - t0, 1),
         "server": server_info(choice), "trustedMode": ex.trusted,
         "app": app_obj, "objectCount": len(objects), "objectsByType": plan["objectsByType"],
-        "toolsUsed": sorted({t.name for t in ex.tools if t.allowed and t.scope != "manual"}),
+        "toolsUsed": usadas(ex),
         "toolsExcluded": [{"name": t.name, "reason": t.safety_reason} for t in ex.tools if not t.allowed],
         "toolsManual": [{"name": t.name, "reason": t.scope_reason} for t in ex.tools
                         if t.allowed and t.scope == "manual"],
@@ -1073,6 +1117,15 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         "disabledAfterProbe": ex.disabled,
         "errors": ex.errors[:300], "errorCount": len(ex.errors),
     }
+    if ex.solo is not None:
+        report["solo"] = sorted(o.get("name") or o["uuid"] for o in objects if o["uuid"] in ex.solo)
+        try:   # lo desactivado en la extracción completa sigue valiendo para los objetos que no se piden
+            previo = json.loads((interm / "extraction_report.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            previo = {}
+        vistos = {(d.get("tool"), d.get("type")) for d in ex.disabled}
+        report["disabledAfterProbe"] = ex.disabled + [d for d in previo.get("disabledAfterProbe") or []
+                                                      if (d.get("tool"), d.get("type")) not in vistos]
     write_json(interm / "extraction_report.json", report)
     (interm / "LEEME.md").write_text(
         "# Extracción\n\nRespuestas del Dev MCP de la aplicación, tal cual. Es la fuente de la documentación de la "
@@ -1081,12 +1134,32 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
     print(f"Extraccion terminada: {len(objects)} objetos, {ok} respuestas correctas, "
           f"{len(ex.errors)} errores, {len(ex.disabled)} herramientas desactivadas por tipo. "
           f"Informe: {interm / 'extraction_report.json'}")
-    hace_una_hora = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(timespec="seconds")
-    if ex.anteriores and ex.mas_antigua and ex.mas_antigua < hace_una_hora:   # lo de hace un rato (p. ej. plan) no avisa
+    if ex.solo is not None:   # el resto es lo guardado a propósito: si cambió, lo dice la deriva
+        print(f"Reextraidos {len(report['solo'])}: {', '.join(report['solo'])}. Los demas, de lo guardado. Modelo:")
+        return bm.main(str(out))
+    # lo que descargó la ejecución anterior (p. ej. el plan, aunque fuera hace horas) no avisa; lo de antes, sí
+    if ex.anteriores and ex.mas_antigua and (not anterior or ex.mas_antigua < anterior):
         print(f"Reutilizadas {ex.anteriores} respuestas ya descargadas, la mas antigua del "
               f"{ex.mas_antigua[:16].replace('T', ' ')} (UTC): si la aplicacion ha cambiado desde entonces, "
               f"repite con --refresh.")
     return EXIT_OK
+
+
+def inicio_anterior(plan: Path) -> str:
+    """Cuándo empezó la ejecución anterior (plan o extract): startedAt de su extraction_plan.json; en un plan de antes
+    de 0.7.0-beta.2, su generatedAt. "" si no hay plan."""
+    try:
+        d = json.loads(plan.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    return str((d.get("startedAt") or d.get("generatedAt") or "") if isinstance(d, dict) else "")
+
+
+
+def usadas(ex) -> list[str]:
+    """Las herramientas con alguna llamada en esta ejecución: correcta, reutilizada o fallida. Las que el plan no usó
+    (use: false en extraction_plan.json) son las demás del catálogo."""
+    return sorted(n for n, st in ex.stats.items() if any(st.get(k) for k in bm.LLAMADAS))
 
 
 def por_rol(ex) -> dict:
@@ -1299,13 +1372,291 @@ async def cmd_datafabric(args) -> int:
                 elif not sql:
                     item["countError"] = "El servidor no ofrece consultas SQL."
                 result["recordTypes"].append(item)
-            result["metadataRaw"] = r.data
     except Exception as ex_:
         eprint(f"Appian MCP Server no disponible: {type(ex_).__name__}: {ex_}")
         return EXIT_NO_MCPSERVER
     write_json(work_dir(out, crear=True) / "datafabric.json", result)
     print(f"Data fabric: {len(result['recordTypes'])} record types con metadatos, "
           f"{sum(1 for x in result['recordTypes'] if x['count'] is not None)} con recuento.")
+    return EXIT_OK
+
+
+# --------------------------------------------------------------------------- verificar y deriva (atajo, solo lectura)
+
+def lista_de_objetos(valor: str | None) -> list[str]:
+    """Los objetos de --objetos, --solo o --ignorar: separados por comas, o @fichero con uno por línea (sin las líneas
+    vacías ni las que empiezan por #). OSError si no se puede leer el fichero."""
+    if not valor:
+        return []
+    if valor.startswith("@"):
+        partes = [x for x in Path(valor[1:]).read_text(encoding="utf-8").splitlines() if not x.strip().startswith("#")]
+    else:
+        partes = valor.split(",")
+    return list(dict.fromkeys(x.strip() for x in partes if x.strip()))
+
+
+def resolver(pedidos: list[str], objects: list[dict]) -> dict[str, dict]:
+    """{pedido: objeto} de los pedidos que están en `objects`: por uuid, por nombre o por nombre sin mayúsculas."""
+    por_uuid = {o["uuid"]: o for o in objects}
+    por_nombre: dict[str, dict] = {}
+    por_minusculas: dict[str, dict] = {}
+    for o in objects:
+        por_nombre.setdefault(str(o.get("name") or ""), o)
+        por_minusculas.setdefault(str(o.get("name") or "").lower(), o)
+    out = {}
+    for p in pedidos:
+        o = por_uuid.get(p) or por_nombre.get(p) or por_minusculas.get(p.lower())
+        if o:
+            out[p] = o
+    return out
+
+
+def aplica(ex: Extractor, ti: ToolInfo, o: dict) -> bool:
+    return o["type"] in ti.types or (ti.generic and o["type"] not in ex.policy.generic_skip)
+
+
+async def llama(ex: Extractor, tools: list[ToolInfo], o: dict) -> tuple[list, list[str]]:
+    """Las respuestas correctas de las herramientas `tools` que se aplican a `o`, y los errores de las demás."""
+    usar = [t for t in tools if aplica(ex, t, o)]
+    res = await asyncio.gather(*(ex.run_call(t, "object", obj=o) for t in usar))
+    return [r.data for r in res if r.ok], [f"{t.name}: {(r.error or '')[:200]}" for t, r in zip(usar, res) if not r.ok]
+
+
+def version(data) -> dict | None:
+    """La última versión de una respuesta de historial: {fecha, autor, versiones}."""
+    v = bm.ultima_version(data)
+    return {"fecha": v["lastModifiedOn"], "autor": v["lastModifiedBy"], "versiones": v["count"]} if v else None
+
+
+def campos(data) -> list[dict]:
+    """Los campos de la definición de un record type o un CDT: nombre, tipo y, si los trae, longitud y clave."""
+    out = []
+    for c in bm.find_list(bm.unwrap(data), ("fields",)):
+        if not isinstance(c, dict):
+            continue
+        f = {"nombre": bm.pick(c, ("fieldName", "name", "objectName")),
+             "tipo": bm.pick(c, ("fieldType", "type", "dataType", "typeName", "objectType"))}
+        largo = bm.pick(c, ("length", "maxLength"), want=int)
+        if largo is not None:
+            f["longitud"] = largo
+        if any(c.get(k) is True for k in ("isPrimaryKey", "primaryKey")):
+            f["clavePrimaria"] = True
+        out.append(f)
+    return out
+
+
+async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: list[str]) -> dict:
+    """Por objeto pedido: si existe, su tipo y su nombre; la última modificación (un dato, no una prueba); los campos
+    de un record type o un CDT, y sus casos de prueba si el Dev MCP los expone. Nada se compara: lo hace quien lee."""
+    por = resolver(pedidos, objects)
+    usables = ex.usable("object")
+    versiones = [t for t in usables if t.role == "versions"]
+    definiciones = [t for t in usables if t.role == "definition"]
+    casos = [t for t in usables if {"test", "case"} <= set(t.toks)]
+
+    async def uno(p: str) -> dict:
+        o = por.get(p)
+        if not o:
+            return {"pedido": p, "existe": False}
+        r = {"pedido": p, "existe": True, "nombre": o.get("name"), "tipo": o["type"], "uuid": o["uuid"]}
+        datos, errores = await llama(ex, versiones, o)
+        r["ultimaModificacion"] = next((v for v in map(version, datos) if v), None)
+        if o["type"] in ("recordType", "cdt"):
+            datos, err = await llama(ex, definiciones, o)
+            errores += err
+            r["campos"] = campos(max(datos, key=lambda d: len(json.dumps(d, default=str)))) if datos else None
+        if any(aplica(ex, t, o) for t in casos):
+            datos, err = await llama(ex, casos, o)
+            errores += err
+            r["casosDePrueba"] = (bm.primary_list(datos[0]) or bm.unwrap(datos[0])) if datos else None
+        if errores:
+            r["errores"] = errores
+        return r
+
+    return {"aplicacion": {"nombre": app_obj.get("name"), "prefijo": app_obj.get("prefix"), "uuid": app_obj.get("uuid")},
+            "conHistorialDeVersiones": bool(versiones), "conCasosDePrueba": bool(casos),
+            "objetos": list(await asyncio.gather(*(uno(p) for p in pedidos))),
+            "faltan": [p for p in pedidos if p not in por]}
+
+
+async def cmd_verificar(args) -> int:
+    try:
+        pedidos = lista_de_objetos(args.objetos)
+    except OSError as ex_:
+        eprint(f"No se puede leer {args.objetos}: {ex_}")
+        return EXIT_USAGE
+    if not pedidos:
+        eprint("--objetos no trae ningun objeto.")
+        return EXIT_USAGE
+    sess, choice, code, msg = open_session(args)
+    if not sess:
+        eprint(msg)
+        return EXIT_USAGE
+    try:
+        async with sess:
+            ex = Extractor(sess, Policy(args.policy), None)
+            app_obj, objects, _ = await prepare(ex, args)
+            resultado = await verifica(ex, app_obj, objects, pedidos)
+    except SystemExit:
+        eprint("No se encuentra la aplicacion (o no hay ninguna visible).")
+        return EXIT_USAGE
+    except Exception as ex_:
+        eprint(f"No se pudo arrancar o autenticar el Dev MCP: {type(ex_).__name__}: {ex_}")
+        return EXIT_USAGE
+    resultado = {"generadoEn": now_iso(), "entorno": entorno(server_info(choice)["url"]), **resultado}
+    destino = Path(args.out).resolve()
+    write_json(destino, resultado)
+    if args.json:
+        print(json.dumps(resultado, ensure_ascii=False, indent=1))
+    existen = sum(1 for o in resultado["objetos"] if o["existe"])
+    print(f"Verificados {len(pedidos)} objetos: {existen} existen"
+          + (f"; faltan: {', '.join(resultado['faltan'])}" if resultado["faltan"] else "") + f". Detalle: {destino}")
+    return EXIT_OK
+
+
+def instante(texto) -> datetime | None:
+    """Una fecha ISO (con hora o sin ella, con Z o con desfase) como instante en UTC, para compararla."""
+    t = str(texto or "").strip().replace("Z", "+00:00")
+    for valor in (t, t[:10]):
+        try:
+            d = datetime.fromisoformat(valor)
+        except ValueError:
+            continue
+        return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    return None
+
+
+def ignorar_de(valor: str | None) -> dict[str, tuple[datetime, str]]:
+    """--ignorar: <nombre>@<fecha ISO> separados por comas, o @fichero con uno por línea. ValueError si uno no lo es."""
+    out = {}
+    for x in lista_de_objetos(valor):
+        nombre, _, fecha = x.rpartition("@")
+        d = instante(fecha) if fecha.strip() else None
+        if not nombre.strip() or d is None:
+            raise ValueError(f"--ignorar: «{x}» no es <nombre>@<fecha ISO>")
+        out[nombre.strip()] = (d, fecha.strip())
+    return out
+
+
+def version_guardada(raw: Path, o: dict, usadas: set[str] | None) -> dict | None:
+    """La última versión de un objeto según el as-is: su respuesta de historial guardada en mcp_raw."""
+    carpeta = carpeta_objeto(raw, o["type"], o["uuid"])
+    if not carpeta.exists():
+        return None
+    return next((v for f in bm.read_object_files(carpeta, usadas) if f["ok"] and f["role"] == "versions"
+                 for v in [version(f["response"])] if v), None)
+
+
+def cambio(antes: dict, ahora: dict) -> bool:
+    t0, t1 = instante(antes.get("fecha")), instante(ahora.get("fecha"))
+    return bool((t0 and t1 and t1 > t0) or antes.get("versiones") != ahora.get("versiones"))
+
+
+async def deriva_de(ex: Extractor, guardada: dict, objects: list[dict], pedidos: list[str],
+                    ignorar: dict, raw: Path, usadas: set[str] | None) -> dict:
+    """Cambiados, nuevos y retirados frente al as-is. Los de --ignorar modificados después de su fecha van aparte."""
+    base = {o["uuid"]: o for o in guardada.get("objects", [])}
+    ahora = {o["uuid"]: o for o in objects}
+    if pedidos:
+        por = resolver(pedidos, list(base.values()) + [o for u, o in ahora.items() if u not in base])
+        alcance = {o["uuid"] for o in por.values()}
+    else:
+        por, alcance = {}, set(base) | set(ahora)
+    versiones = [t for t in ex.usable("object") if t.role == "versions"]
+
+    def ficha(o: dict, **kw) -> dict:
+        return {"nombre": o.get("name"), "tipo": o["type"], "uuid": o["uuid"], **kw}
+    orden = sorted((u for u in alcance if u in ahora), key=lambda u: (ahora[u]["type"], str(ahora[u].get("name"))))
+    if versiones:
+        respuestas = await asyncio.gather(*(llama(ex, versiones, ahora[u]) for u in orden))
+    else:
+        respuestas = [([], [])] * len(orden)
+    nuevos, cambiados, ignorados, sin_dato = [], [], [], []
+    for u, (datos, errores) in zip(orden, respuestas):
+        o = ahora[u]
+        actual = next((v for v in map(version, datos) if v), None)
+        if u not in base:
+            entrada, destino = ficha(o, ahora=actual), nuevos
+        else:
+            if not versiones:
+                continue
+            antes = version_guardada(raw, base[u], usadas)
+            if actual is None or antes is None:
+                sin_dato.append({"nombre": o.get("name"), "motivo": "el as-is no trae su historial" if antes is None
+                                 else "el Dev MCP no devolvio su historial" + (f" ({errores[0]})" if errores else "")})
+                continue
+            if not cambio(antes, actual):
+                continue
+            entrada, destino = ficha(o, asIs=antes, ahora=actual), cambiados
+        desde = ignorar.get(o.get("name")) or ignorar.get(u)
+        cuando = instante((actual or {}).get("fecha"))
+        if desde and cuando and cuando > desde[0]:   # de nuestras unidades: modificado después de aprobarla
+            ignorados.append({**entrada, "desde": desde[1]})
+        else:
+            destino.append(entrada)
+    out = {"conHistorialDeVersiones": bool(versiones), "alcance": pedidos or "todos",
+           "cambiados": cambiados if versiones else None, "nuevos": nuevos,
+           "retirados": [ficha(base[u]) for u in sorted(alcance, key=lambda u: str(base.get(u, {}).get("name")))
+                         if u in base and u not in ahora],
+           "ignorados": ignorados, "sinDato": sin_dato, "noEncontrados": [p for p in pedidos if p not in por]}
+    if not versiones:
+        out["nota"] = ("El Dev MCP no da el historial de versiones: no se sabe que objetos cambiaron y no se supone "
+                       "nada. Nuevos y retirados salen de la lista de objetos de la aplicacion.")
+    return out
+
+
+async def cmd_deriva(args) -> int:
+    salida = Path(args.out).resolve()
+    interm = work_dir(salida)
+    guardada = extraccion_guardada(interm / "mcp_raw")
+    app = guardada.get("application") or {}
+    if not app.get("uuid"):
+        eprint(f"No hay extraccion en {salida}: la deriva se compara con un as-is ya extraido.")
+        return EXIT_USAGE
+    try:
+        pedidos, ignorar = lista_de_objetos(args.objetos), ignorar_de(args.ignorar)
+    except (OSError, ValueError) as ex_:
+        eprint(str(ex_))
+        return EXIT_USAGE
+    sess, choice, code, msg = open_session(args)
+    if not sess:
+        eprint(msg)
+        return EXIT_USAGE
+    url, antes = entorno(server_info(choice)["url"]), entorno(guardada.get("entorno"))
+    if url and antes and url.lower() != antes.lower():
+        eprint(f"El as-is es de {antes} y el Dev MCP de {url}: la deriva compara con el mismo entorno.")
+        return EXIT_USAGE
+    try:
+        report = json.loads((interm / "extraction_report.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        report = {}
+    args.app = app["uuid"]
+    try:
+        async with sess:
+            ex = Extractor(sess, Policy(args.policy), None)
+            _, objects, _ = await prepare(ex, args)
+            resultado = await deriva_de(ex, guardada, objects, pedidos, ignorar, interm / "mcp_raw",
+                                        bm.herramientas_usadas(report))
+    except SystemExit:
+        eprint(f"La aplicacion del as-is ({app.get('name')}) no esta visible en el entorno.")
+        return EXIT_USAGE
+    except Exception as ex_:
+        eprint(f"No se pudo arrancar o autenticar el Dev MCP: {type(ex_).__name__}: {ex_}")
+        return EXIT_USAGE
+    resultado = {"generadoEn": now_iso(), "entorno": url or antes,
+                 "aplicacion": {k2: app.get(k) for k, k2 in (("name", "nombre"), ("prefix", "prefijo"), ("uuid", "uuid"))},
+                 "asIs": {"extraidoEn": report.get("startedAt")}, **resultado}
+    destino = salida / "datos" / "deriva.json"
+    write_json(destino, resultado)
+    if args.json:
+        print(json.dumps(resultado, ensure_ascii=False, indent=1))
+    n = lambda k: len(resultado[k] or [])  # noqa: E731
+    print(f"Deriva frente al as-is del {str(resultado['asIs']['extraidoEn'] or '?')[:10]}: "
+          + (f"{n('cambiados')} cambiados, " if resultado["cambiados"] is not None else "cambiados: sin historial, ")
+          + f"{n('nuevos')} nuevos, {n('retirados')} retirados, {n('ignorados')} ignorados (de nuestras unidades). "
+          f"Detalle: {destino}")
+    if resultado.get("nota"):
+        print(resultado["nota"])
     return EXIT_OK
 
 
@@ -1347,9 +1698,23 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--only", help="Regex: usar solo herramientas cuyo nombre coincida")
         sp.add_argument("--skip", help="Regex: no usar herramientas cuyo nombre coincida")
         sp.add_argument("--yes", action="store_true", help="Confirma planes por encima del umbral de llamadas")
+        if name == "extract":
+            sp.add_argument("--solo", help="Objetos que se vuelven a extraer (nombres o uuids separados por comas, o "
+                                           "@fichero); de los demas, lo guardado, sin llamar al Dev MCP. Rehace el modelo")
     sp = sub.add_parser("datafabric")
     common(sp)
     sp.add_argument("--out", required=True)
+    sp = sub.add_parser("verificar")
+    common(sp)
+    sp.add_argument("--app", required=True, help="uuid, prefijo o nombre de la aplicacion")
+    sp.add_argument("--objetos", required=True, help="Nombres o uuids separados por comas, o @fichero (uno por linea)")
+    sp.add_argument("--out", required=True, help="Fichero JSON del resultado")
+    sp = sub.add_parser("deriva")
+    common(sp)
+    sp.add_argument("--out", required=True, help="Carpeta as-is con la extraccion con la que se compara")
+    sp.add_argument("--objetos", help="Solo estos objetos (nombres o uuids separados por comas, o @fichero)")
+    sp.add_argument("--ignorar", help="<nombre>@<fecha ISO>, separados por comas (o @fichero): los de nuestras "
+                                      "unidades modificados despues de esa fecha no cuentan como cambiados")
     return p
 
 
@@ -1363,6 +1728,10 @@ def main(argv=None) -> int:
         return asyncio.run(cmd_plan_or_extract(args, execute=args.cmd == "extract"))
     if args.cmd == "datafabric":
         return asyncio.run(cmd_datafabric(args))
+    if args.cmd == "verificar":
+        return asyncio.run(cmd_verificar(args))
+    if args.cmd == "deriva":
+        return asyncio.run(cmd_deriva(args))
     return EXIT_USAGE
 
 

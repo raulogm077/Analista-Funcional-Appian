@@ -87,6 +87,37 @@ def test_recomendacion_es_aviso(tmp_path):
     assert "| H-PRO-01 |" in (out / "09-valor-adicional.md").read_text(encoding="utf-8")
 
 
+def test_senales_del_mismo_problema(tmp_path):
+    """Un objeto, un problema, un hallazgo (T27): dos hallazgos vivos del mismo objeto con señales del mismo grupo
+    (huerfano y sin-ejecuciones; mas-50-nodos y aviso-validacion-nodos) son un error; con duplicadoDe, no. Señales de
+    grupos distintos, u otros objetos, tampoco."""
+    out, work = setup(tmp_path)
+    (out / "02-arquitectura.md").write_text("# Arquitectura\n", encoding="utf-8")
+    huerfana = ["DEM Utilidad Huérfana"]
+    fichero = work / "hallazgos" / "orquestador.json"
+
+    def registra(*hs):
+        fichero.write_text(json.dumps(list(hs)), encoding="utf-8")
+        return run(REG, out)
+
+    arq = h("H-ARQ-01", titulo="Objetos sin referencias entrantes", area="arquitectura", severidad="Baja",
+            documento="02-arquitectura.md#hallazgos", objetos=["DEM_Otro", *huerfana], senal="huerfano")
+    gen = h("H-PRO-01", titulo="Proceso sin ejecuciones", area="uso", severidad="Baja", objetos=huerfana,
+            senal="sin-ejecuciones")
+    p = registra(arq, gen)
+    assert p.returncode == 1 and "H-ARQ-01" in p.stderr and "H-PRO-01" in p.stderr and "DEM Utilidad Huérfana" in p.stderr
+    assert registra(arq, {**gen, "duplicadoDe": "H-ARQ-01"}).returncode == 0
+    nodos = h("H-PRO-02", titulo="130 nodos", severidad="Media", objetos=["DEM Alta Solicitud"], senal="mas-50-nodos")
+    aviso = h("H-PRO-03", titulo="Aviso de la validación", severidad="Baja", objetos=["DEM Alta Solicitud"],
+              senal="aviso-validacion-nodos")
+    p = registra(nodos, aviso)
+    assert p.returncode == 1 and "H-PRO-02" in p.stderr and "H-PRO-03" in p.stderr, p.stderr
+    assert registra(nodos, {**aviso, "objetos": ["DEM Revisar Solicitud"]}).returncode == 0
+    assert registra(nodos, {**gen, "objetos": ["DEM Alta Solicitud"]}).returncode == 0      # grupos distintos
+    p = registra({**nodos, "senal": ""})
+    assert p.returncode == 1 and "senal" in p.stderr, p.stderr
+
+
 def test_registry_rejects_bad_entries(tmp_path):
     out, work = setup(tmp_path)
     (work / "hallazgos" / "a.json").write_text(json.dumps([

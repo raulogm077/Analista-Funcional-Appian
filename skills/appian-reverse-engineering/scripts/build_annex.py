@@ -227,7 +227,8 @@ def main(salida_dir: str) -> int:
             (anexo / rel).write_text("\n".join(head + [""] + lines), encoding="utf-8")
             por_tipo[tipo].append((o.get("name"), rel.as_posix()))
     app = (inv.get("objects", {}).get("application") or [{}])[0]
-    app_files = sorted((trabajo / "mcp_raw" / "_app").glob("*.json")) if (trabajo / "mcp_raw" / "_app").exists() else []
+    # las mismas respuestas que tomó build_model.py: sin copias de OneDrive ni herramientas que ya no se usan
+    app_files = [trabajo / f["path"] for f in app.get("files", []) if f.get("path")]
     if app_files:
         al = []
         for f in app_files:

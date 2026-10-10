@@ -161,6 +161,17 @@ def test_ruta_con_espacios(project, http_server):
     rutas_cortas(project)
 
 
+def test_data_fabric_solo_de_la_aplicacion(project, http_server):
+    """datafabric.json trae solo los record types de la aplicación: el Appian MCP Server ve los de todo el entorno
+    (OTR Expediente, de otra aplicación), y su respuesta en bruto no se guarda, porque nadie la lee."""
+    con_mcp_server(project, http_server)
+    extrae(project)
+    project.run("datafabric", "--out", str(project.out), check=0)
+    texto = (project.interm() / "datafabric.json").read_text(encoding="utf-8")
+    assert "OTR_EXPEDIENTE" not in texto and "OTR Expediente" not in texto
+    assert {r["name"] for r in json.loads(texto)["recordTypes"]} == {"DEM Solicitud", "DEM Estado"}
+
+
 def test_otra_aplicacion_en_la_misma_carpeta(project):
     """Una carpeta, una aplicación: con otra, las respuestas guardadas serían las de la primera."""
     project.add_devmcp()

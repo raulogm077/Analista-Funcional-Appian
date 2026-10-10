@@ -10,6 +10,10 @@ Variables de entorno:
   MOCK_FAIL_KEYS=K1,K2      Las herramientas de objeto fallan para esos objetos.
   MOCK_CALL_LOG=<fichero>   Registra cada llamada (jsonl).
   MOCK_APP=<módulo>         La aplicación que sirve: fixture (DEM, por defecto) o fixture_mal_hecha (MNT).
+  MOCK_VERSION_NUEVA=K=F,…  El objeto K tiene una versión más, de la fecha F, de otro autor (alguien lo cambió).
+  MOCK_OCULTAR=K1,K2        Esos objetos no salen en la lista de la aplicación (retirados, o nuevos si se
+                            extrajo con ellos ocultos).
+  MOCK_CASOS_DE_PRUEBA=1    Expone getRuleTestCases: los casos de prueba de una expression rule.
 """
 from __future__ import annotations
 
@@ -31,6 +35,8 @@ READONLY = os.environ.get("LCP_TOOL_MODE", "full").lower() == "readonly"
 EXPOSE_WRITES = (not READONLY) or os.environ.get("MOCK_IGNORE_READONLY") == "1"
 FAIL_KEYS = {k for k in os.environ.get("MOCK_FAIL_KEYS", "").split(",") if k}
 CALL_LOG = os.environ.get("MOCK_CALL_LOG")
+VERSION_NUEVA = dict(x.split("=", 1) for x in os.environ.get("MOCK_VERSION_NUEVA", "").split(",") if "=" in x)
+OCULTAR = {k for k in os.environ.get("MOCK_OCULTAR", "").split(",") if k}
 
 OBJ, KEY_BY_UUID, NAMES = fixture.build()
 APP = OBJ[fixture.APP_KEY]
@@ -102,7 +108,7 @@ def rename_b(d):
 
 
 def app_objects():
-    return [o for k, o in OBJ.items() if k != fixture.APP_KEY]
+    return [o for k, o in OBJ.items() if k != fixture.APP_KEY and k not in OCULTAR]
 
 
 def dependents_of(uuid: str):
@@ -130,8 +136,10 @@ def history_of(uuid: str, limit: int = 20):
 
 def versions_of(uuid: str):
     o = obj_for(uuid)
-    out = [{"versionId": v, "modifiedBy": quien, "modifiedOn": cuando}
-           for v, quien, cuando in fixture.VERSIONES.get(o["key"], fixture.VERSIONES["*"])]
+    versiones = list(fixture.VERSIONES.get(o["key"], fixture.VERSIONES["*"]))
+    if o["key"] in VERSION_NUEVA:
+        versiones.insert(0, (versiones[0][0] + 1, "otro.equipo", VERSION_NUEVA[o["key"]]))
+    out = [{"versionId": v, "modifiedBy": quien, "modifiedOn": cuando} for v, quien, cuando in versiones]
     out[-1]["comment"] = f"Creación de {o['name']}"
     return out
 
@@ -235,6 +243,9 @@ if VARIANT == "a":
             "object": obj_for(objectUuid)["name"],
             "roleMap": [{"group": OBJ["G_ADM"]["name"], "permission": "ADMINISTRATOR"},
                         {"group": OBJ["G_USR"]["name"], "permission": "VIEWER"}]})
+    if os.environ.get("MOCK_CASOS_DE_PRUEBA") == "1":
+        register("getRuleTestCases", [("uuid", "str", ...)], lambda uuid: {"testCases": [
+            {"name": f"{obj_for(uuid, 'FREEFORM_RULE')['name']}: sin datos", "inputs": {}, "expectedOutput": "0"}]})
     if EXPOSE_WRITES:
         register("createInterface", [("name", "str", ...), ("expression", "str", ...)], lambda name, expression: {"uuid": "new"})
         register("updateProcessModel", [("uuid", "str", ...), ("nodes", "str", "")], lambda uuid, nodes="": {"ok": True})

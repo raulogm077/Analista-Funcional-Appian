@@ -51,6 +51,7 @@ Registra lo que pasa en el flujo de un proceso y tiene un riesgo: qué pasa, dó
 - nodos inalcanzables, caminos sin fin o bucles sin salida;
 - una tarea de persona sin asignación clara;
 - instancias fallidas o detenidas en la muestra de ejecuciones (paso 8);
+- el nombre de las instancias (`displayName`) o el de las tareas, un texto fijo sin `pv!` ni otra expresión: todas se llaman igual en las listas de tareas y en el monitor de procesos (`"senal": "nombre-fijo"`);
 - un proceso de más de 50 nodos no es tuyo: es el `H-GEN` de 09; cítalo.
 
 Cada hallazgo va en dos sitios (formato en `execution-principles.md`, «Registro de hallazgos»): una fila en la sección Hallazgos del `<slug>.md` (o del `indice.md` si afecta a varios procesos) y una entrada en `<trabajo>/hallazgos/process-modeler.json`, con `area: "procesos"` e IDs `H-PRO-01`, `H-PRO-02`… sin huecos. Si se basa en algo que la extracción no devuelve, certeza ❓ con su NV (o 🔶 con los indicios en `base`).
@@ -93,6 +94,7 @@ Si `crear` o `actualizar` terminan con código 2 y «sin PNG», no hay navegador
 - [ ] `indice.md` lista todos los procesos y el mapa, si lo hay, refleja las aristas `subProcess` y `startProcess` y no superó el aviso de ancho de `mermaid.py`.
 - [ ] Cada documento empieza por su «Responde a» y tiene un solo TL;DR; solo ✅/🔶/❓ como certeza y Alta/Media/Baja como severidad (solo en hallazgos).
 - [ ] Cada fila de Hallazgos está en `process-modeler.json` (o en `orquestador.json` si la añadió el orquestador) y al revés; cada inferido trae su `base`.
+- [ ] Cada proceso cuyo nombre de instancia o el de alguna de sus tareas es un texto fijo tiene su `H-PRO` (`"senal": "nombre-fijo"`).
 - [ ] Sin referencias a la skill ni a `<trabajo>/`, sin `{{`, `TODO` ni `TBD`.
 
 ## Salida

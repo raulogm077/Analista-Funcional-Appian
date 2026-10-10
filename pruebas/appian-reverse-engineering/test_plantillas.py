@@ -41,6 +41,23 @@ def fijo(texto: str, relleno: str = "x") -> str:
         texto = nuevo
 
 
+def test_senales_en_los_agentes():
+    """Las señales que la ingeniería inversa no registraba (siguiente-version.md, evaluación de la Tarea 15) están en
+    la comprobación final de su agente: los nombres sin prefijo (sinPrefijo, H-ARQ), los nombres fijos del proceso y
+    sus tareas (H-PRO) y los role maps que el Dev MCP no da (NV-SEG fijo, T23). El campo senal (T27) está documentado
+    para quien escribe los hallazgos y para quien lee datos/."""
+    agente = lambda n: (SKILL / "agents" / f"{n}.md").read_text(encoding="utf-8")  # noqa: E731
+    final = lambda t: t.split("Comprobación")[-1]  # noqa: E731
+    assert "sinPrefijo" in final(agente("interface-analyzer")) and '"sin-prefijo"' in agente("interface-analyzer")
+    assert any(all(w in l.lower() for w in ("nombre", "fijo", "tareas", "h-pro"))
+               for l in final(agente("process-modeler")).splitlines())
+    seguridad = agente("integration-security-analyzer")
+    assert "role maps no disponibles" in seguridad and re.search(r"NV-SEG[^\n]*role maps no disponibles", seguridad)
+    for ref in ("execution-principles.md", "datos.md"):
+        texto = (SKILL / "references" / ref).read_text(encoding="utf-8")
+        assert "`senal`" in texto and "huerfano" in texto and "aviso-validacion-nodos" in texto, ref
+
+
 def test_hay_plantillas():
     """LEEME es la entrada a la documentación: no hay un 00 aparte ni nada que lo enlace."""
     assert {"LEEME.md", "INVENTARIO.md", PROCESO} <= {rel(p) for p in PLANTILLAS}

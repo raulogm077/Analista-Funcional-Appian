@@ -44,7 +44,7 @@ Un diagrama de más de ~1.600 px de ancho no se lee en una página vertical. Las
 
 ### Modelo de datos
 
-- `erDiagram`. Entidades en `PascalCase` o `SCREAMING_SNAKE_CASE`, sin espacios, guiones ni acentos; si el nombre real los lleva, el documento da la correspondencia «nombre en el diagrama ↔ nombre real».
+- `erDiagram`. Cada entidad con su nombre real si ya es un identificador (`[A-Za-z_][A-Za-z0-9_]*`, como `DEM_SolicitudDTO`), tal cual: ni en mayúsculas ni de otra forma. Si lleva espacios, guiones o acentos, en `PascalCase` o `SCREAMING_SNAKE_CASE`, y el documento da la correspondencia «nombre en el diagrama ↔ nombre real».
 - Relaciones: `||--||` uno a uno, `||--o{` uno a muchos, `}o--||` muchos a uno, `}o--o{` muchos a muchos, con la etiqueta entre comillas dobles (`EXPEDIENTE ||--o{ DOCUMENTO : "contiene"`).
 - Atributos: los campos clave, como mucho 8 por entidad, `tipo nombre [PK|FK]`.
 - Tamaño: hasta ~15 entidades, un diagrama; de ~15 a ~30, uno con las entidades clave más uno por subdominio; más de ~30, un mapa de subdominios (`flowchart TD`, un nodo por subdominio) y uno por subdominio de 8 a 15 entidades. El criterio es que se lea. Las tablas del documento cubren siempre todas las entidades.
