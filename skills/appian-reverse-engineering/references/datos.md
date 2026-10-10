@@ -48,7 +48,8 @@ Appian.
 ```json
 {"hallazgos": [{"id": "H-SEG-01", "titulo": "…", "area": "secretos", "severidad": "Alta", "certeza": "verificado",
                 "objetos": ["DEM_ERP_API_TOKEN"], "documento": "04-seguridad-grupos.md#hallazgos",
-                "evidencia": "mcp:constant/DEM_ERP_API_TOKEN#value"}]}
+                "evidencia": "mcp:constant/DEM_ERP_API_TOKEN#value"}],
+ "retirados": [{"id": "H-PRO-03", "titulo": "…", "area": "procesos", "objetos": ["…"]}]}
 ```
 
 Los del registro de `09`, sin los fusionados (`duplicadoDe`), ordenados por ID. `severidad`: Alta, Media o Baja.
@@ -56,7 +57,9 @@ Los del registro de `09`, sin los fusionados (`duplicadoDe`), ordenados por ID. 
 Los de certeza `inferido` llevan además `base`: las evidencias de las que salen. Los que salen de una señal llevan
 `senal` (`huerfano`, `sin-ejecuciones`, `mas-50-nodos`, `aviso-validacion-nodos`, `sin-prefijo`, `nombre-fijo`…):
 un objeto no tiene dos hallazgos del mismo problema, y el ID de un hallazgo se mantiene al repetir la ingeniería
-inversa.
+inversa. `retirados` (aquí los `H-…` y en `sin-verificar.json` los `NV-…`, `[]` si no hay): los IDs de una revisión
+anterior que ya no están, con su `titulo` o su `pregunta` y, si los tenían, `area`, `objetos` y `senal`; una cita a
+uno de ellos ya no vale, y su ID no se reutiliza (si el mismo hallazgo vuelve, recupera su ID).
 
 ## `procesos.json`
 
@@ -78,7 +81,8 @@ las devolvió.
                    "aQuien": "Equipo de la aplicación de utilidades",
                    "dondeSeBusco": "Inventario de la aplicación y dependencias de DEM_SolicitudForm (Dev MCP)",
                    "objetos": ["DEM_SolicitudForm", "UTL_DiasLaborables"], "indicios": "…", "estado": "abierto",
-                   "documento": "02-arquitectura.md#dependencias-externas"}]}
+                   "documento": "02-arquitectura.md#dependencias-externas"}],
+ "retirados": []}
 ```
 
 Lo que la revisión no pudo verificar, sin los fusionados (`duplicadoDe`), ordenado por ID. Es pendiente, no un hecho:

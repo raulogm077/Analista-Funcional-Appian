@@ -54,7 +54,7 @@ Registra lo que pasa en el flujo de un proceso y tiene un riesgo: qué pasa, dó
 - el nombre de las instancias (`displayName`) o el de las tareas, un texto fijo sin `pv!` ni otra expresión: todas se llaman igual en las listas de tareas y en el monitor de procesos (`"senal": "nombre-fijo"`);
 - un proceso de más de 50 nodos no es tuyo: es el `H-GEN` de 09; cítalo.
 
-Cada hallazgo va en dos sitios (formato en `execution-principles.md`, «Registro de hallazgos»): una fila en la sección Hallazgos del `<slug>.md` (o del `indice.md` si afecta a varios procesos) y una entrada en `<trabajo>/hallazgos/process-modeler.json`, con `area: "procesos"` e IDs `H-PRO-01`, `H-PRO-02`… sin huecos. Si se basa en algo que la extracción no devuelve, certeza ❓ con su NV (o 🔶 con los indicios en `base`).
+Cada hallazgo va en dos sitios (formato en `execution-principles.md`, «Registro de hallazgos»): una fila en la sección Hallazgos del `<slug>.md` (o del `indice.md` si afecta a varios procesos) y una entrada en `<trabajo>/hallazgos/process-modeler.json`, con `area: "procesos"` e IDs `H-PRO-01`, `H-PRO-02`… sin huecos (los IDs que mantiene `build_registry.py` al repetir la ingeniería inversa pueden dejarlos, y no se renumeran). Si se basa en algo que la extracción no devuelve, certeza ❓ con su NV (o 🔶 con los indicios en `base`).
 
 Lo que no pudiste verificar de los procesos, y lo que de ellos pregunta la revisión y no puedes responder, va en `<trabajo>/sin-verificar/process-modeler.json` («Sin verificar» de `execution-principles.md`: `NV-PRO-NN`; `[]` si no hay ninguno), con ❓ y su ID donde lo dice el documento del proceso.
 

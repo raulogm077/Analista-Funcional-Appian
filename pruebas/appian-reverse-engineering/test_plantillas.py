@@ -58,6 +58,16 @@ def test_senales_en_los_agentes():
         assert "`senal`" in texto and "huerfano" in texto and "aviso-validacion-nodos" in texto, ref
 
 
+def test_huecos_de_los_ids_estables():
+    """Donde se pide numerar «sin huecos», se dice también que los IDs que mantiene build_registry.py al repetir la
+    ingeniería inversa pueden dejarlos y no se renumeran (si no, las dos reglas chocan)."""
+    for rel in ("references/execution-principles.md", "agents/process-modeler.md",
+                "agents/integration-security-analyzer.md", "agents/ui-rules-analyzer.md"):
+        texto = (SKILL / rel).read_text(encoding="utf-8")
+        lineas = [l for l in texto.splitlines() if "sin huecos" in l]
+        assert lineas and all("no se renumeran" in l and "build_registry.py" in l for l in lineas), rel
+
+
 def test_hay_plantillas():
     """LEEME es la entrada a la documentación: no hay un 00 aparte ni nada que lo enlace."""
     assert {"LEEME.md", "INVENTARIO.md", PROCESO} <= {rel(p) for p in PLANTILLAS}

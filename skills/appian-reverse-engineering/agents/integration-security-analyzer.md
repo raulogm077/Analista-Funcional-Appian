@@ -119,7 +119,7 @@ Cada secreto real es un hallazgo `H-SEG` con `"area": "secretos"` y severidad **
 
 ## Registro de hallazgos
 
-Un único fichero para las tres áreas: `<trabajo>/hallazgos/integration-security-analyzer.json` (formato en `execution-principles.md`, sección 3). IDs sin huecos por prefijo (`H-SEG-01`, `H-SEG-02`…, `H-INT-01`…, `H-API-01`…); `area`: `seguridad`, `secretos`, `integraciones` o `apis`; `documento`: `04-seguridad-grupos.md#hallazgos`, `05-integraciones-consumidas.md#hallazgos` o `06-apis-expuestas.md#hallazgos`. ID, título, severidad y certeza iguales en el documento y en el JSON; un inferido lleva en `base` las evidencias de las que sale.
+Un único fichero para las tres áreas: `<trabajo>/hallazgos/integration-security-analyzer.json` (formato en `execution-principles.md`, sección 3). IDs sin huecos por prefijo (`H-SEG-01`, `H-SEG-02`…, `H-INT-01`…, `H-API-01`…; los IDs que mantiene `build_registry.py` al repetir la ingeniería inversa pueden dejarlos, y no se renumeran); `area`: `seguridad`, `secretos`, `integraciones` o `apis`; `documento`: `04-seguridad-grupos.md#hallazgos`, `05-integraciones-consumidas.md#hallazgos` o `06-apis-expuestas.md#hallazgos`. ID, título, severidad y certeza iguales en el documento y en el JSON; un inferido lleva en `base` las evidencias de las que sale.
 
 Lo que no pudiste verificar de tus tres áreas, y lo que de ellas pregunta la revisión y no puedes responder (p. ej. quién llama a una Web API cuando no consta), va en `<trabajo>/sin-verificar/integration-security-analyzer.json` (sección 4: `NV-SEG-NN`, `NV-INT-NN`, `NV-API-NN`; `[]` si no hay ninguno), con ❓ y su ID donde lo dice tu documento.
 

@@ -5,8 +5,10 @@ Uso:
   python3 <skill>/scripts/build_registry.py <carpeta_salida>
 
 Lee   <trabajo>/hallazgos/*.json      (un fichero por autor: lista de hallazgos)
-Crea  <trabajo>/registro.json         (hallazgos validados y sus recuentos por severidad y certeza)
+Crea  <trabajo>/registro.json         (hallazgos validados, sus recuentos por severidad y certeza y los IDs retirados)
       Rellena la tabla de 09-valor-adicional.md entre <!-- registro:inicio --> y <!-- registro:fin -->.
+Al repetir la ingeniería inversa mantiene los IDs de los hallazgos y los NV del registro anterior (ids_estables) y
+lista como retirados los anteriores que ya no se casan con ninguno: sus citas no valen y su ID no se reutiliza.
 
 Cada hallazgo:
   {"id": "H-PRO-01", "titulo": "...", "area": "procesos", "severidad": "Alta|Media|Baja",
@@ -144,38 +146,50 @@ def _objetos(x: dict) -> frozenset:
     return frozenset(objeto(o) for o in (x.get("objetos") if isinstance(x.get("objetos"), list) else []))
 
 
+# Señales de un hallazgo que agrupa objetos (un H-ARQ con todos los huérfanos): sus objetos y sus cifras cambian de una
+# revisión a otra, así que se casa por área y señal
+SENALES_DE_GRUPO = frozenset({"huerfano", "sin-prefijo"})
+
+
 def clave_h(h: dict):
-    return (h.get("area"), _objetos(h), h.get("senal") or None)
+    senal = h.get("senal") or None
+    return (h.get("area"), senal) if senal in SENALES_DE_GRUPO else (h.get("area"), _objetos(h), senal)
 
 
 def clave_nv(n: dict):
     return (str(n.get("id", "")).rsplit("-", 1)[0], _objetos(n))   # el área de un NV es su prefijo
 
 
-def ids_estables(actuales: list[dict], previos: list[dict], clave, campo: str) -> dict[str, str]:
-    """{ID actual: ID que se mantiene}, solo los que cambian. Cada actual conserva el ID anterior con su misma clave
-    (área, objetos y señal): primero el suyo, si es la misma clave o el mismo `campo` (título o pregunta: el mismo
-    hallazgo corregido); después el de otro anterior libre con su clave (si hay varios, el del mismo `campo`). Un
-    actual sin anterior conserva su ID si no lo tuvo nadie; si no, el siguiente de su prefijo: un ID retirado no se
-    reutiliza."""
+def ids_estables(actuales: list[dict], previos: list[dict], clave, campo: str) -> tuple[dict[str, str], list[dict]]:
+    """({ID actual: ID que se mantiene} de los que cambian, los anteriores que no se casan con ninguno). `previos`: los
+    del registro anterior y los retirados de antes, que pueden volver. Cada actual toma un anterior libre, en este
+    orden: 1) con su misma clave (área, objetos y señal) y su mismo `campo` (título o pregunta); 2) su propio ID, si es
+    la misma clave; 3) otro con la misma clave; 4) solo con el mismo `campo`, como último recurso. Si dos empatan, gana
+    el de su propio ID. Un actual sin anterior conserva su ID si no lo tuvo nadie; si no, el siguiente de su prefijo:
+    un ID retirado no se reutiliza."""
     previo = {p["id"]: p for p in previos if p.get("id")}
     final: dict[str, str] = {}
     usados: set[str] = set()
-    for h in actuales:
-        p = previo.get(h["id"])
-        if p and (clave(p) == clave(h) or (p.get(campo) and p.get(campo) == h.get(campo))):
-            final[h["id"]] = h["id"]
-            usados.add(h["id"])
-    for h in sorted(actuales, key=lambda x: x["id"]):
-        if h["id"] in final:
-            continue
-        libres = [p for i, p in sorted(previo.items()) if i not in usados and clave(p) == clave(h)]
-        p = next((p for p in libres if p.get(campo) == h.get(campo)), libres[0] if libres else None)
-        if p:
-            final[h["id"]] = p["id"]
-            usados.add(p["id"])
-    ocupados = set(final.values()) | set(previo) | {h["id"] for h in actuales if h["id"] not in final}
+
+    def casa(como) -> None:
+        for h in sorted(actuales, key=lambda x: x["id"]):
+            if h["id"] in final:
+                continue
+            libres = [p for i, p in sorted(previo.items()) if i not in usados and como(h, p)]
+            if libres:
+                p = next((p for p in libres if p["id"] == h["id"]), libres[0])
+                final[h["id"]] = p["id"]
+                usados.add(p["id"])
+
+    def titulo(h, p) -> bool:
+        return bool(p.get(campo)) and p.get(campo) == h.get(campo)
+    casa(lambda h, p: clave(p) == clave(h) and titulo(h, p))
+    casa(lambda h, p: p["id"] == h["id"] and clave(p) == clave(h))
+    casa(lambda h, p: clave(p) == clave(h))
+    casa(titulo)
     tomados = set(final.values())
+    # los ID que no puede tomar un nuevo: los casados, los anteriores (también retirados) y los actuales por decidir
+    ocupados = tomados | set(previo) | {h["id"] for h in actuales if h["id"] not in final}
     for h in sorted(actuales, key=lambda x: x["id"]):
         if h["id"] in final:
             continue
@@ -183,28 +197,43 @@ def ids_estables(actuales: list[dict], previos: list[dict], clave, campo: str) -
             final[h["id"]] = h["id"]
         else:
             prefijo = h["id"].rsplit("-", 1)[0]
-            n = max(int(i.rsplit("-", 1)[1]) for i in ocupados | tomados if i.rsplit("-", 1)[0] == prefijo) + 1
+            n = max(int(i.rsplit("-", 1)[1]) for i in ocupados if i.rsplit("-", 1)[0] == prefijo) + 1
             final[h["id"]] = f"{prefijo}-{n:02d}"
         tomados.add(final[h["id"]])
         ocupados.add(final[h["id"]])
-    return {a: b for a, b in final.items() if a != b}
+    perdidos = [{k: p[k] for k in ("id", campo, "area", "objetos", "senal") if p.get(k) not in (None, "", [])}
+                for i, p in sorted(previo.items()) if i not in usados]
+    return {a: b for a, b in final.items() if a != b}, perdidos
 
 
-def mantener_ids(salida: Path, trabajo: Path) -> dict[str, str]:
-    """Los cambios de ID que mantienen los del registro anterior (registro.json, o datos/hallazgos.json) y los NV de
-    datos/sin-verificar.json al repetir la ingeniería inversa. Nada si los IDs actuales no son válidos o se repiten:
-    eso lo dicen la validación y build_datos.py."""
+def mantener_ids(salida: Path, trabajo: Path) -> tuple[dict[str, str], list[dict]]:
+    """Al repetir la ingeniería inversa: los cambios de ID que mantienen los del registro anterior (registro.json, o
+    datos/hallazgos.json) y los NV de datos/sin-verificar.json, y los retirados: los anteriores, también los retirados
+    de antes (que pueden volver), que ahora no se casan con ninguno. Con IDs actuales que no son válidos o se repiten,
+    no cambia nada y los retirados de antes siguen: eso lo dicen la validación y build_datos.py."""
     cambios: dict[str, str] = {}
+    try:
+        antes = json.loads((trabajo / "registro.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        antes = {}
+    de_antes = [r for r in (antes.get("retirados") if isinstance(antes, dict) else None) or []
+                if isinstance(r, dict) and isinstance(r.get("id"), str)]
+    retirados: list[dict] = []
     previos_h = _lista(trabajo / "registro.json") or _lista(salida / "datos" / "hallazgos.json")
-    for actuales, previos, clave, campo, rx in (
-            ([h for f in sorted((trabajo / "hallazgos").glob("*.json")) for h in _lista(f)], previos_h, clave_h,
+    for prefijo, actuales, previos, clave, campo, rx in (
+            ("H-", [h for f in sorted((trabajo / "hallazgos").glob("*.json")) for h in _lista(f)], previos_h, clave_h,
              "titulo", RE_ID),
-            ([n for f in sorted((trabajo / "sin-verificar").glob("*.json")) for n in _lista(f)],
+            ("NV-", [n for f in sorted((trabajo / "sin-verificar").glob("*.json")) for n in _lista(f)],
              _lista(salida / "datos" / "sin-verificar.json"), clave_nv, "pregunta", RE_NV)):
+        previos = previos + [r for r in de_antes if r["id"].startswith(prefijo)]
         ids = [x.get("id") for x in actuales]
-        if previos and ids and all(isinstance(i, str) and rx.match(i) for i in ids) and len(set(ids)) == len(ids):
-            cambios.update(ids_estables(actuales, previos, clave, campo))
-    return cambios
+        if previos and all(isinstance(i, str) and rx.match(i) for i in ids) and len(set(ids)) == len(ids):
+            nuevos, perdidos = ids_estables(actuales, previos, clave, campo)
+            cambios.update(nuevos)
+            retirados += perdidos
+        else:
+            retirados += [r for r in de_antes if r["id"].startswith(prefijo)]
+    return cambios, sorted({r["id"]: r for r in retirados}.values(), key=lambda r: r["id"])
 
 
 def renombra(salida: Path, trabajo: Path, cambios: dict[str, str]) -> None:
@@ -228,7 +257,7 @@ def etiqueta_doc(doc: str) -> str:
     return m.group(1) if m else nombre
 
 
-def tabla(registro: list[dict]) -> str:
+def tabla(registro: list[dict], retirados: list[dict] = ()) -> str:
     vivos = [h for h in registro if not h.get("duplicadoDe")]
     orden = {s: i for i, s in enumerate(SEVERIDADES)}
     vivos.sort(key=lambda h: (orden.get(h["severidad"], 9), h["id"]))
@@ -242,6 +271,10 @@ def tabla(registro: list[dict]) -> str:
     if dup:
         lineas.append("")
         lineas.append("Fusionados: " + ", ".join(f"{h['id']} → {h['duplicadoDe']}" for h in sorted(dup, key=lambda x: x["id"])) + ".")
+    if retirados:
+        lineas.append("")
+        lineas.append("Retirados (estaban en una revisión anterior y ya no; sus citas no valen): " + ", ".join(
+            f"{r['id']} «{str(r.get('titulo') or r.get('pregunta') or '').replace('|', '/')}»" for r in retirados) + ".")
     lineas.append("")
     lineas.append("Certeza: ✅ verificado en la definición · 🔶 inferido (se explica en el documento) · ❓ pendiente de validar.")
     return "\n".join(lineas)
@@ -254,12 +287,18 @@ def main(salida_dir: str) -> int:
     if not carpeta.exists():
         print(f"ERROR: no existe {carpeta}", file=sys.stderr)
         return 2
-    cambios = mantener_ids(salida, trabajo)
+    cambios, retirados = mantener_ids(salida, trabajo)
     if cambios:
         renombra(salida, trabajo, cambios)
         print("IDs que se mantienen del registro anterior: " + ", ".join(f"{a} → {b}" for a, b in sorted(cambios.items()))
               + " (cambiados en los JSON de hallazgos, sin verificar y procesos y en los documentos; si un diagrama de "
                 "08 cita uno, vuelve a pasar diagrama.py actualizar)")
+    vivos = {x.get("id") for d in ("hallazgos", "sin-verificar") for f in sorted((trabajo / d).glob("*.json"))
+             for x in _lista(f)}
+    retirados = [r for r in retirados if r["id"] not in vivos]
+    if retirados:
+        print("IDs retirados (estaban en una revisión anterior y ya no; sus citas no valen): "
+              + ", ".join(r["id"] for r in retirados))
     errores: list[str] = []
     avisos: list[str] = []
     hallazgos: list[dict] = []
@@ -283,7 +322,8 @@ def main(salida_dir: str) -> int:
                 "porSeveridad": {s: sum(1 for h in hallazgos if h["severidad"] == s and not h.get("duplicadoDe"))
                                  for s in SEVERIDADES},
                 "porCerteza": {c: sum(1 for h in hallazgos if h["certeza"] == c and not h.get("duplicadoDe"))
-                               for c in CERTEZAS}}
+                               for c in CERTEZAS},
+                "retirados": retirados}
     (trabajo / "registro.json").write_text(json.dumps(registro, ensure_ascii=False, indent=2), encoding="utf-8")
     doc09 = salida / "09-valor-adicional.md"
     if doc09.exists():
@@ -291,7 +331,7 @@ def main(salida_dir: str) -> int:
         if INICIO in texto and FIN in texto:
             antes, resto = texto.split(INICIO, 1)
             _, despues = resto.split(FIN, 1)
-            doc09.write_text(f"{antes}{INICIO}\n{tabla(hallazgos)}\n{FIN}{despues}", encoding="utf-8")
+            doc09.write_text(f"{antes}{INICIO}\n{tabla(hallazgos, retirados)}\n{FIN}{despues}", encoding="utf-8")
             print(f"09-valor-adicional.md: registro con {sum(1 for h in hallazgos if not h.get('duplicadoDe'))} hallazgos")
         else:
             print("AVISO: 09-valor-adicional.md no tiene los marcadores del registro", file=sys.stderr)

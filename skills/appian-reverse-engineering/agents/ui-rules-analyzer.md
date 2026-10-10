@@ -112,7 +112,7 @@ Lo que no pudiste verificar de pantallas y reglas, y lo que de ellas pregunta la
 - [ ] Todas las páginas de site, vistas y acciones de record, formularios de inicio y de tarea tienen su `PAN-`.
 - [ ] Toda pasarela con condición tiene su `RN-` o una línea en «Cobertura y límites» que diga por qué no es de negocio.
 - [ ] Ninguna afirmación sobre lo que guarda un formulario sin comprobar su `saveInto`.
-- [ ] Ningún enunciado de regla en SAIL; identificadores únicos y sin huecos.
+- [ ] Ningún enunciado de regla en SAIL; identificadores únicos y sin huecos (los H y NV que mantiene `build_registry.py` al repetir la ingeniería inversa pueden dejarlos, y no se renumeran).
 - [ ] Cada ficha con evidencia (enlazada a su ficha del anexo) y certeza; ninguna RN ✅ con un parámetro ❓; hallazgos solo `H-UI` y `H-RN`, también en el JSON, y cada ❓ con su NV si lo tiene.
 - [ ] Documentos conformes al checklist de `presentation-rules.md`.
 

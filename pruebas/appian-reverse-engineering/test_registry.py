@@ -59,7 +59,7 @@ def test_registry_fills_09(tmp_path):
     assert "## Glosario" in t and "(lo rellena" not in t
     assert run(REG, out).returncode == 0 and (out / "09-valor-adicional.md").read_text(encoding="utf-8") == t   # idempotente
     reg = json.loads((work / "registro.json").read_text(encoding="utf-8"))
-    assert set(reg) == {"hallazgos", "porSeveridad", "porCerteza"}
+    assert set(reg) == {"hallazgos", "porSeveridad", "porCerteza", "retirados"} and reg["retirados"] == []
     assert reg["porSeveridad"] == {"Alta": 1, "Media": 1, "Baja": 0}
     assert reg["porCerteza"] == {"verificado": 1, "inferido": 1, "pendiente": 0}             # el JSON dice «inferido»
     assert next(x for x in reg["hallazgos"] if x["id"] == "H-SEG-01")["base"][1] == "mcp:group/DEM Users@members"
@@ -130,3 +130,89 @@ def test_registry_rejects_bad_entries(tmp_path):
                  "duplicadoDe 'H-XXX-99'", "H-PRO-08: inferido sin base"):
         assert frag in p.stderr, frag
     assert "(lo rellena" in (out / "09-valor-adicional.md").read_text(encoding="utf-8")      # con errores no toca 09
+
+
+# ---------------------------------------------------------------- IDs estables (correcciones de la revisión de G1)
+
+def rehace(out, work, hallazgos=(), nvs=None, previos_nv=None):
+    """El agente vuelve a escribir sus hallazgos (y NV) con otra numeración; build_registry.py los casa con el registro
+    anterior. Devuelve la salida de build_registry y lo que queda en el JSON de hallazgos."""
+    (work / "hallazgos" / "process-modeler.json").write_text(json.dumps(list(hallazgos), ensure_ascii=False),
+                                                              encoding="utf-8")
+    if nvs is not None:
+        (work / "sin-verificar").mkdir(exist_ok=True)
+        (work / "sin-verificar" / "process-modeler.json").write_text(json.dumps(nvs, ensure_ascii=False),
+                                                                      encoding="utf-8")
+    if previos_nv is not None:
+        (out / "datos").mkdir(exist_ok=True)
+        (out / "datos" / "sin-verificar.json").write_text(json.dumps({"sinVerificar": previos_nv}, ensure_ascii=False),
+                                                          encoding="utf-8")
+    p = run(REG, out)
+    assert p.returncode == 0, p.stdout + p.stderr
+    return p, json.loads((work / "hallazgos" / "process-modeler.json").read_text(encoding="utf-8"))
+
+
+def nv(id_, pregunta, objetos):
+    return {"id": id_, "pregunta": pregunta, "objetos": objetos}
+
+
+def test_ids_estables_en_otro_orden(tmp_path):
+    """Dos hallazgos del mismo proceso, sin señal, rehechos en el orden contrario: cada uno conserva su ID (mandan la
+    clave y el título juntos, antes que el ID que el agente le puso). Igual con dos NV del mismo objeto."""
+    out, work = setup(tmp_path)
+    alta = ["DEM Alta Solicitud"]
+    a = h("H-PRO-01", titulo="Cancelar no anula el alta", objetos=alta)
+    b = h("H-PRO-02", titulo="La pasarela no tiene salida por defecto", objetos=alta)
+    rehace(out, work, [a, b], [nv("NV-PRO-01", "¿Quién revisa?", alta), nv("NV-PRO-02", "¿Cuándo vence?", alta)])
+    (out / "08-procesos-bpmn" / "DEM_Alta_Solicitud.md").write_text(
+        "# Alta\n## Hallazgos\n\nH-PRO-01 (pasarela) y H-PRO-02 (cancelar); NV-PRO-01 (vence) y NV-PRO-02 (revisa).\n",
+        encoding="utf-8")
+    p, js = rehace(out, work, [{**b, "id": "H-PRO-01"}, {**a, "id": "H-PRO-02"}],
+                   [nv("NV-PRO-01", "¿Cuándo vence?", alta), nv("NV-PRO-02", "¿Quién revisa?", alta)],
+                   previos_nv=[nv("NV-PRO-01", "¿Quién revisa?", alta), nv("NV-PRO-02", "¿Cuándo vence?", alta)])
+    assert {x["titulo"]: x["id"] for x in js} == {a["titulo"]: "H-PRO-01", b["titulo"]: "H-PRO-02"}, p.stdout
+    nvs = json.loads((work / "sin-verificar" / "process-modeler.json").read_text(encoding="utf-8"))
+    assert {x["pregunta"]: x["id"] for x in nvs} == {"¿Quién revisa?": "NV-PRO-01", "¿Cuándo vence?": "NV-PRO-02"}
+    assert ("H-PRO-02 (pasarela) y H-PRO-01 (cancelar); NV-PRO-02 (vence) y NV-PRO-01 (revisa)."
+            in (out / "08-procesos-bpmn" / "DEM_Alta_Solicitud.md").read_text(encoding="utf-8"))
+
+
+def test_ids_estables_titulo_generico_y_objetos_cruzados(tmp_path):
+    """Dos hallazgos con el mismo título genérico en procesos distintos, rehechos con los objetos cruzados: el ID va
+    con el objeto, no con el título."""
+    out, work = setup(tmp_path)
+    titulo = "Tarea sin asignación"
+    rehace(out, work, [h("H-PRO-01", titulo=titulo, objetos=["DEM Alta Solicitud"]),
+                       h("H-PRO-02", titulo=titulo, objetos=["DEM Revisar Solicitud"])])
+    _, js = rehace(out, work, [h("H-PRO-01", titulo=titulo, objetos=["DEM Revisar Solicitud"]),
+                               h("H-PRO-02", titulo=titulo, objetos=["DEM Alta Solicitud"])])
+    assert {x["objetos"][0]: x["id"] for x in js} == {"DEM Alta Solicitud": "H-PRO-01", "DEM Revisar Solicitud": "H-PRO-02"}
+
+
+def test_ids_estables_senal_de_grupo_y_retirados(tmp_path):
+    """Un hallazgo de una señal de grupo (huerfano, sin-prefijo) se casa por área y señal, porque sus objetos y sus
+    cifras cambian. Un ID anterior que no se casa con ninguno queda en el registro como retirado (en registro.json y en
+    09), también en las ejecuciones siguientes, y no se reutiliza."""
+    out, work = setup(tmp_path)
+    (out / "02-arquitectura.md").write_text("# Arquitectura\n", encoding="utf-8")
+    huerfanos = h("H-ARQ-01", titulo="Tres objetos sin referencias entrantes", area="arquitectura",
+                  documento="02-arquitectura.md#hallazgos", objetos=["DEM_A", "DEM_B", "DEM_C"], senal="huerfano")
+    tarea = h("H-PRO-01", titulo="Tarea sin asignación", objetos=["DEM Revisar Solicitud"])
+    rehace(out, work, [huerfanos, tarea])
+    otra = h("H-PRO-01", titulo="La pasarela no tiene salida por defecto", objetos=["DEM Alta Solicitud"])
+    p, js = rehace(out, work, [{**huerfanos, "id": "H-ARQ-02", "titulo": "Cuatro objetos sin referencias entrantes",
+                                "objetos": ["DEM_A", "DEM_D", "DEM_E", "DEM_F"]}, otra])
+    assert {x["titulo"]: x["id"] for x in js} == {"Cuatro objetos sin referencias entrantes": "H-ARQ-01",
+                                                  otra["titulo"]: "H-PRO-02"}, p.stdout
+    retirados = json.loads((work / "registro.json").read_text(encoding="utf-8"))["retirados"]
+    assert [(r["id"], r["titulo"], r["objetos"]) for r in retirados] == [
+        ("H-PRO-01", "Tarea sin asignación", ["DEM Revisar Solicitud"])]
+    assert "H-PRO-01" in p.stdout and "retirad" in p.stdout
+    t = (out / "09-valor-adicional.md").read_text(encoding="utf-8")
+    assert "Retirados" in t and "H-PRO-01" in t.split("Retirados", 1)[1]
+    run(REG, out)                                                    # de nuevo: sigue retirado
+    assert json.loads((work / "registro.json").read_text(encoding="utf-8"))["retirados"] == retirados
+    # si vuelve (un agente que faltaba), recupera su ID y deja de estar retirado
+    _, js = rehace(out, work, [*js, {**tarea, "id": "H-PRO-09"}])
+    assert {x["titulo"]: x["id"] for x in js}["Tarea sin asignación"] == "H-PRO-01"
+    assert json.loads((work / "registro.json").read_text(encoding="utf-8"))["retirados"] == []

@@ -231,12 +231,16 @@ def construir(salida: Path) -> dict:
                for x in hallazgos + nvs for o in (x.get("objetos") or []) if objeto(o) not in validos]
     if errores:      # las demás skills buscan los hallazgos y los NV por el nombre de sus objetos
         raise NoValido(errores)
+    # los IDs de una revisión anterior que ya no están (build_registry.py): sus citas no valen
+    retirados = [r for r in _json(trabajo / "registro.json").get("retirados") or [] if isinstance(r, dict)]
     datos = {"inventario.json": inventario,
              "dependencias.json": {"aristas": sorted(aristas, key=lambda a: (a["de"], a["a"], a["donde"] or "")),
                                    "fueraDeLaAplicacion": fuera},
-             "hallazgos.json": {"hallazgos": sorted(hallazgos, key=lambda h: h["id"] or "")},
+             "hallazgos.json": {"hallazgos": sorted(hallazgos, key=lambda h: h["id"] or ""),
+                                "retirados": [r for r in retirados if str(r.get("id")).startswith("H-")]},
              "procesos.json": {"procesos": sorted(procesos, key=lambda p: str(p["nombre"]).lower())},
-             "sin-verificar.json": {"sinVerificar": nvs}}
+             "sin-verificar.json": {"sinVerificar": nvs,
+                                    "retirados": [r for r in retirados if str(r.get("id")).startswith("NV-")]}}
     carpeta = salida / "datos"
     carpeta.mkdir(parents=True, exist_ok=True)
     for fichero, contenido in datos.items():

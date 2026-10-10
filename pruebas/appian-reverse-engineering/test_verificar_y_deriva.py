@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -71,16 +72,63 @@ def test_verificar(project, tmp_path):
     # @fichero, uno por línea; sin casos de prueba en el Dev MCP, no hay casos
     project.add_devmcp()
     lista = tmp_path / "objetos.txt"
-    lista.write_text("# los de EV-02\nDEM Estado\n\n", encoding="utf-8")
+    lista.write_text("# los de EV-02\nDEM Estado\n\n", encoding="utf-8-sig")       # con BOM, como el Bloc de notas
     project.run("verificar", "--app", "DEM", "--objetos", f"@{lista}", "--out", str(destino), check=0)
     v = json.loads(destino.read_text(encoding="utf-8"))
     assert [o["nombre"] for o in v["objetos"]] == ["DEM Estado"] and v["conCasosDePrueba"] is False
     assert [c["nombre"] for c in v["objetos"][0]["campos"]] == ["id", "label"]
 
 
-def test_verificar_sin_conexion(project, tmp_path):
-    p = project.run("verificar", "--app", "DEM", "--objetos", "DEM Solicitud", "--out", str(tmp_path / "v.json"), check=2)
+def test_verificar_con_esperado(project, tmp_path):
+    """Con --esperado (lo que dice el técnico de la unidad), verificar calcula las diferencias, que no deduce quien
+    lee: el objeto que falta, el tipo distinto y los campos que faltan, sobran o cambian de tipo. Los tipos se comparan
+    sin mayúsculas y con sus sinónimos (Integer = Number (Integer) = INTEGER). Verifica los de --esperado aunque no
+    estén en --objetos."""
+    project.add_devmcp()
+    campos = [("id", "Number (Integer)"), ("titulo", "Text"), ("estadoId", "Integer"), ("solicitante", "User"),
+              ("fechaAlta", "Date and Time"), ("importe", "Integer"), ("prioridad", "Text")]
+    esperado = tmp_path / "esperado.json"
+    esperado.write_text(json.dumps({
+        "DEM Solicitud": {"tipo": "recordType", "campos": [{"nombre": n, "tipo": t} for n, t in campos]},
+        "DEM Estado": {"tipo": "Record Type", "campos": [{"nombre": "ID", "tipo": "integer"}, {"nombre": "label",
+                                                                                              "tipo": "Text"}]},
+        "DEM_ER_EsAdmin": {"tipo": "interface"},
+        "DEM_ER_Inventada": {"tipo": "expressionRule"}}, ensure_ascii=False), encoding="utf-8-sig")
+    destino = tmp_path / "v.json"
+    project.run("verificar", "--app", "DEM", "--objetos", "DEM_Dashboard", "--esperado", str(esperado),
+                "--out", str(destino), check=0)
+    v = json.loads(destino.read_text(encoding="utf-8"))
+    por = {o["pedido"]: o for o in v["objetos"]}
+    assert list(por) == ["DEM_Dashboard", "DEM Solicitud", "DEM Estado", "DEM_ER_EsAdmin", "DEM_ER_Inventada"]
+    assert "diferencias" not in por["DEM_Dashboard"]                     # sin esperado, no se compara
+    assert por["DEM Solicitud"]["diferencias"] == {
+        "faltanCampos": ["prioridad"], "camposDeOtroTipo": [{"nombre": "importe", "esperado": "Integer", "real": "DECIMAL"}]}
+    assert por["DEM Estado"]["diferencias"] == {}
+    assert por["DEM_ER_EsAdmin"]["diferencias"] == {"tipo": {"esperado": "interface", "real": "expressionRule"}}
+    assert por["DEM_ER_Inventada"]["diferencias"] == {"falta": True}
+    assert v["conDiferencias"] == ["DEM Solicitud", "DEM_ER_EsAdmin", "DEM_ER_Inventada"]
+    project.run("verificar", "--app", "DEM", "--out", str(destino), check=2)    # sin --objetos ni --esperado
+
+
+def test_atajo_con_comillas():
+    """En el atajo de SKILL.md, los valores de --objetos, --esperado, --ignorar y --solo van entre comillas: en
+    PowerShell, un @fichero sin comillas no llega como texto."""
+    atajo = (SKILL / "SKILL.md").read_text(encoding="utf-8").split("## Verificar o deriva (atajo)", 1)[1]
+    atajo = atajo.split("\n---", 1)[0]
+    valores = re.findall(r"--(?:objetos|esperado|ignorar|solo) (\S)", atajo)
+    assert len(valores) >= 4 and set(valores) == {'"'}, valores
+
+
+def test_verificar_y_deriva_sin_configuracion(project, tmp_path):
+    """Sin el Dev MCP en la configuración, los mismos códigos que el resto de subcomandos (11) y nada escrito."""
+    p = project.run("verificar", "--app", "DEM", "--objetos", "DEM Solicitud", "--out", str(tmp_path / "v.json"), check=11)
     assert "Dev MCP" in p.stderr and not (tmp_path / "v.json").exists()
+    project.add_devmcp()
+    extrae(project)
+    project.servers.clear()
+    project._write()
+    project.run("deriva", "--out", str(project.out), check=11)
+    assert not (project.out / "datos" / "deriva.json").exists()
 
 
 # ---------------------------------------------------------------- deriva
@@ -152,7 +200,7 @@ def test_extract_solo(project):
     al Dev MCP. Rehace el modelo, con lo nuevo de esos objetos y lo de siempre de los demás."""
     project.add_devmcp()
     extrae(project)
-    n = len(project.calls_list())
+    n, completa = len(project.calls_list()), project.load("extraction_report.json")["startedAt"]
     project.add_devmcp(MOCK_VERSION_NUEVA="I_DASH=2026-10-05T09:00:00Z,R_CONT=2026-10-06T11:00:00Z")
     p = extrae(project, "--solo", "DEM_Dashboard,DEM_Nada")
     assert "DEM_Nada" in p.stderr and "inventory.json" in p.stdout, p.stdout + p.stderr
@@ -167,8 +215,32 @@ def test_extract_solo(project):
     rep = project.load("extraction_report.json")
     assert rep["solo"] == ["DEM_Dashboard"] and "getRecordType" in rep["toolsUsed"]
     assert any((d["tool"], d["type"]) == ("validateDesignObject", "constant") for d in rep["disabledAfterProbe"])
+    # la fecha de la extracción es la de la completa; la reextracción va aparte
+    assert rep["startedAt"] == completa and rep["reextraidoEn"] >= completa
+    assert inv["source"]["extractedAt"] == completa
+    # los nombres se comprueban antes de guardar nada: si no hay ninguno, la extracción no cambia
+    antes = huella(project.interm())
     extrae(project, "--solo", "DEM_Nada", check=2)
+    assert huella(project.interm()) == antes
     extrae(project, "--solo", "DEM_Dashboard", "--refresh", check=2)
+
+
+def test_extract_solo_con_fallos_guardados(project):
+    """Con --solo, lo guardado de los demás objetos se lee sin sonda: los fallos guardados de otras interfaces (las
+    tres primeras, que desactivaron getInterface en la extracción completa) no dejan sin llamadas al objeto pedido."""
+    from rutas import carpeta_objeto
+    project.add_devmcp(MOCK_FAIL_KEYS="I_ADMIN,I_DASH,I_REV")
+    extrae(project)
+    resumen = carpeta_objeto(project.interm() / "mcp_raw", "interface", OBJS["I_RES"]["uuid"])
+    assert not (resumen / "getInterface.json").exists()                 # desactivada tras la sonda
+    n = len(project.calls_list())
+    project.add_devmcp()                                                # ya funciona
+    extrae(project, "--solo", "DEM_SolicitudResumen")
+    llamadas = project.calls_list()[n:]
+    assert uuids_de(llamadas) == {APP, OBJS["I_RES"]["uuid"]}
+    assert any(c["tool"] == "getInterface" and OBJS["I_RES"]["uuid"] in c["args"].values() for c in llamadas)
+    por = {o["uuid"]: o for objs in project.load("inventory.json")["objects"].values() for o in objs}
+    assert por[OBJS["I_RES"]["uuid"]]["detail"] == "full" and por[OBJS["I_DASH"]["uuid"]]["detail"] == "none"
 
 
 def test_extract_solo_sin_extraccion(project):

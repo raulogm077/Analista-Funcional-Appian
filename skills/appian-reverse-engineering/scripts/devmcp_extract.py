@@ -13,25 +13,27 @@ Subcomandos:
   apps        Lista las aplicaciones visibles para el usuario del Dev MCP.
   plan        Catalogo + clasificacion + objetos de la app + estimacion de llamadas. No llama por objeto.
   extract     Ejecuta el plan y vuelca las respuestas en <out>/extraccion/mcp_raw/, dentro del proyecto. Con
-              --solo <objetos>, vuelve a pedir solo esos (y la lista de la aplicacion, para encontrar uno nuevo);
-              de los demas usa lo guardado sin llamar al Dev MCP, y rehace el modelo (build_model.py).
+              --solo <objetos>, vuelve a pedir solo esos (y la lista de la aplicacion, para encontrar uno nuevo,
+              que se guarda solo si alguno existe); de los demas usa lo guardado sin llamar al Dev MCP y sin sonda,
+              y rehace el modelo (build_model.py). La fecha de la extraccion sigue siendo la de la completa
+              (startedAt); la de la reextraccion va en reextraidoEn.
   datafabric  Metadatos y COUNT(*) por record type de la app a traves del Appian MCP Server.
-  verificar   --app <app> --objetos <nombres|@fichero> --out <fichero.json>: por objeto, si existe, su tipo, su
-              nombre, su ultima modificacion (rol versions; un dato, no una prueba), los campos de record types y
-              CDT y sus casos de prueba si el Dev MCP los expone. No escribe en ninguna extraccion.
+  verificar   --app <app> [--objetos <nombres|@fichero>] [--esperado <json>] --out <fichero.json>: por objeto, si
+              existe, su tipo, su nombre, su ultima modificacion (rol versions; un dato, no una prueba), los campos
+              de record types y CDT y sus casos de prueba si el Dev MCP los expone. Con --esperado, tambien sus
+              diferencias con lo esperado (diferencias()). No escribe en ninguna extraccion.
   deriva      --out <as-is> [--objetos …] [--ignorar <nombre>@<fecha ISO>,…]: la lista de objetos de la aplicacion
               y su historial de versiones (rol versions), frente al as-is; cambiados, nuevos y retirados en
               <as-is>/datos/deriva.json. Sin historial en el Dev MCP, lo dice y no supone nada.
 
 Las respuestas se guardan tal cual las devuelve el Dev MCP, con rutas cortas (Windows y OneDrive).
 
-Codigos de salida:
-  0 ok (verificar, tambien si falta algun objeto: lo dice el JSON) | 2 uso incorrecto; en verificar y deriva,
-  tambien sin conexion, sin la aplicacion o con el as-is de otro entorno
-  11 Dev MCP no configurado | 12 varias configuraciones posibles
+Codigos de salida (los mismos en todos los subcomandos):
+  0 ok (verificar, tambien si falta algun objeto o no es lo esperado: lo dice el JSON) | 2 uso incorrecto (deriva:
+  sin as-is en --out) | 11 Dev MCP no configurado | 12 varias configuraciones posibles
   13 el Dev MCP no arranca o no autentica | 14 no hay aplicaciones visibles
   15 app no encontrada o ambigua, o la carpeta ya tiene otra app u otro entorno (usa otra --out;
-     para la misma app de otro entorno, tambien --refresh)
+     para la misma app de otro entorno, tambien --refresh; deriva: el as-is es de otro entorno)
   16 Appian MCP Server no disponible (solo datafabric)
 """
 from __future__ import annotations
@@ -622,6 +624,8 @@ class Extractor:
         # --solo: uuids de los objetos que se vuelven a pedir (se rellena tras listar la aplicación); de los demás,
         # solo lo guardado, sin llamar al Dev MCP. None: extracción normal
         self.solo: set[str] | None = set() if solo else None
+        # --solo: las respuestas de la aplicación se guardan cuando se sabe que algún objeto pedido existe
+        self.aplazadas: list | None = [] if solo else None
         self.sem = asyncio.Semaphore(max(1, concurrency))
         self.refresh, self.retries, self.retry_delay = refresh, retries, retry_delay
         self.only = re.compile(only) if only else None
@@ -778,7 +782,9 @@ class Extractor:
         self.stats[ti.name]["ok" if res.ok else "failed"] += 1
         if not res.ok:
             self.errors.append(error_de(ti, scope, obj, res.error))
-        if f:
+        if f and self.aplazadas is not None and scope == "app":
+            self.aplazadas.append((f, ti, scope, obj, args, res))
+        elif f:
             self.guarda(f, ti, scope, obj, args, res)
         return res
 
@@ -897,8 +903,10 @@ class Extractor:
         return groups
 
     async def run_group(self, ti: ToolInfo, typ: str, objs: list[dict]):
-        if self.solo is not None:   # --solo: los demás objetos, solo si hay algo guardado (la sonda no los cuenta)
-            objs = [o for o in objs if o["uuid"] in self.solo or self.target_file(ti, "object", o).exists()]
+        if self.solo is not None:   # --solo: lo guardado de los demás se lee sin sonda; la sonda, solo con los pedidos
+            await asyncio.gather(*(self.run_call(ti, "object", obj=o) for o in objs
+                                   if o["uuid"] not in self.solo and self.target_file(ti, "object", o).exists()))
+            objs = [o for o in objs if o["uuid"] in self.solo]
         probe = objs[: self.policy.probe]
         rest = objs[self.policy.probe:]
         results = await asyncio.gather(*(self.run_call(ti, "object", obj=o) for o in probe))
@@ -1085,9 +1093,12 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         por = resolver(pedidos, objects)
         if len(por) < len(pedidos):
             eprint("--solo: no estan en la aplicacion: " + ", ".join(p for p in pedidos if p not in por))
-        if not por:
+        if not por:   # sin ninguno, la extraccion se queda como estaba: no se guarda ni la lista de la aplicacion
             return EXIT_USAGE
         ex.solo.update(o["uuid"] for o in por.values())
+        for aplazada in ex.aplazadas:
+            ex.guarda(*aplazada)
+        ex.aplazadas = None
     interm = work_dir(out, crear=True)
     write_json(interm / "mcp_catalog.json", catalog_json(ex))
     anterior = inicio_anterior(interm / "extraction_plan.json")   # antes de sobrescribirlo
@@ -1126,6 +1137,9 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         vistos = {(d.get("tool"), d.get("type")) for d in ex.disabled}
         report["disabledAfterProbe"] = ex.disabled + [d for d in previo.get("disabledAfterProbe") or []
                                                       if (d.get("tool"), d.get("type")) not in vistos]
+        # la fecha de la extracción (extractedAt del inventario, asIs de la deriva) es la de la completa
+        report = {"startedAt": previo.get("startedAt") or inicio, "reextraidoEn": inicio,
+                  **{k: v for k, v in report.items() if k != "startedAt"}}
     write_json(interm / "extraction_report.json", report)
     (interm / "LEEME.md").write_text(
         "# Extracción\n\nRespuestas del Dev MCP de la aplicación, tal cual. Es la fuente de la documentación de la "
@@ -1389,7 +1403,8 @@ def lista_de_objetos(valor: str | None) -> list[str]:
     if not valor:
         return []
     if valor.startswith("@"):
-        partes = [x for x in Path(valor[1:]).read_text(encoding="utf-8").splitlines() if not x.strip().startswith("#")]
+        partes = [x for x in Path(valor[1:]).read_text(encoding="utf-8-sig").splitlines()   # con o sin BOM
+                  if not x.strip().startswith("#")]
     else:
         partes = valor.split(",")
     return list(dict.fromkeys(x.strip() for x in partes if x.strip()))
@@ -1479,30 +1494,81 @@ async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: l
             "faltan": [p for p in pedidos if p not in por]}
 
 
+# Tipos de campo que son el mismo con otro nombre (el técnico escribe uno y Appian devuelve otro)
+SINONIMOS = {"integer": ("int", "number (integer)", "número (entero)", "entero"),
+             "decimal": ("float", "double", "number (decimal)", "número (decimal)", "numeric"),
+             "text": ("string", "varchar", "texto"), "boolean": ("bool", "booleano"),
+             "datetime": ("date and time", "date time", "timestamp", "fecha y hora"), "date": ("fecha",),
+             "time": ("hora",), "user": ("usuario",), "group": ("grupo",)}
+
+
+def tipo_de_campo(t) -> str:
+    s = " ".join(str(t or "").lower().replace("(", " (").split()).replace("( ", "(")
+    return next((c for c, alias in SINONIMOS.items() if s == c or s in alias), s)
+
+
+def tipo_de_objeto(t) -> str:
+    return re.sub(r"[\s_-]", "", str(t or "")).lower()   # recordType = Record Type = record_type
+
+
+def diferencias(o: dict, esperado: dict) -> dict:
+    """Lo que no coincide entre un objeto verificado y lo esperado ({"tipo", "campos": [{"nombre", "tipo"}]}):
+    {"falta": true}; o «tipo» {esperado, real}, faltanCampos, sobranCampos, camposDeOtroTipo [{nombre, esperado, real}]
+    y camposSinLeer (no se pudo leer la definición), solo los que no están vacíos. {} si coincide."""
+    if not o.get("existe"):
+        return {"falta": True}
+    out: dict = {}
+    if esperado.get("tipo") and tipo_de_objeto(esperado["tipo"]) != tipo_de_objeto(o.get("tipo")):
+        out["tipo"] = {"esperado": esperado["tipo"], "real": o.get("tipo")}
+    if isinstance(esperado.get("campos"), list):
+        if o.get("campos") is None:
+            out["camposSinLeer"] = True
+            return out
+        reales = {str(c.get("nombre") or "").lower(): c for c in o["campos"]}
+        pedidos = {str(c.get("nombre") or "").lower(): c for c in esperado["campos"] if isinstance(c, dict)}
+        faltan = [c.get("nombre") for k, c in pedidos.items() if k not in reales]
+        sobran = [c.get("nombre") for k, c in reales.items() if k not in pedidos]
+        otro = [{"nombre": reales[k].get("nombre"), "esperado": c.get("tipo"), "real": reales[k].get("tipo")}
+                for k, c in pedidos.items() if k in reales and c.get("tipo")
+                and tipo_de_campo(c["tipo"]) != tipo_de_campo(reales[k].get("tipo"))]
+        out.update({k: v for k, v in (("faltanCampos", faltan), ("sobranCampos", sobran),
+                                      ("camposDeOtroTipo", otro)) if v})
+    return out
+
+
 async def cmd_verificar(args) -> int:
     try:
         pedidos = lista_de_objetos(args.objetos)
-    except OSError as ex_:
-        eprint(f"No se puede leer {args.objetos}: {ex_}")
+        esperado = json.loads(Path(args.esperado).read_text(encoding="utf-8-sig")) if args.esperado else {}
+    except (OSError, ValueError) as ex_:
+        eprint(f"No se puede leer --objetos o --esperado: {ex_}")
         return EXIT_USAGE
+    if not isinstance(esperado, dict):
+        eprint("--esperado: un JSON {objeto: {\"tipo\": …, \"campos\": [{\"nombre\", \"tipo\"}]}}.")
+        return EXIT_USAGE
+    pedidos += [p for p in esperado if p not in pedidos]
     if not pedidos:
-        eprint("--objetos no trae ningun objeto.")
+        eprint("Sin objetos: --objetos o --esperado.")
         return EXIT_USAGE
     sess, choice, code, msg = open_session(args)
     if not sess:
         eprint(msg)
-        return EXIT_USAGE
+        return code
     try:
         async with sess:
             ex = Extractor(sess, Policy(args.policy), None)
             app_obj, objects, _ = await prepare(ex, args)
             resultado = await verifica(ex, app_obj, objects, pedidos)
-    except SystemExit:
-        eprint("No se encuentra la aplicacion (o no hay ninguna visible).")
-        return EXIT_USAGE
+    except SystemExit as se:
+        return int(se.code)
     except Exception as ex_:
         eprint(f"No se pudo arrancar o autenticar el Dev MCP: {type(ex_).__name__}: {ex_}")
-        return EXIT_USAGE
+        return EXIT_START
+    if esperado:
+        for o in resultado["objetos"]:
+            if isinstance(esperado.get(o["pedido"]), dict):
+                o["diferencias"] = diferencias(o, esperado[o["pedido"]])
+        resultado["conDiferencias"] = [o["pedido"] for o in resultado["objetos"] if o.get("diferencias")]
     resultado = {"generadoEn": now_iso(), "entorno": entorno(server_info(choice)["url"]), **resultado}
     destino = Path(args.out).resolve()
     write_json(destino, resultado)
@@ -1510,7 +1576,9 @@ async def cmd_verificar(args) -> int:
         print(json.dumps(resultado, ensure_ascii=False, indent=1))
     existen = sum(1 for o in resultado["objetos"] if o["existe"])
     print(f"Verificados {len(pedidos)} objetos: {existen} existen"
-          + (f"; faltan: {', '.join(resultado['faltan'])}" if resultado["faltan"] else "") + f". Detalle: {destino}")
+          + (f"; faltan: {', '.join(resultado['faltan'])}" if resultado["faltan"] else "")
+          + (f"; distintos de lo esperado: {', '.join(resultado['conDiferencias'])}" if resultado.get("conDiferencias")
+             else "") + f". Detalle: {destino}")
     return EXIT_OK
 
 
@@ -1621,11 +1689,11 @@ async def cmd_deriva(args) -> int:
     sess, choice, code, msg = open_session(args)
     if not sess:
         eprint(msg)
-        return EXIT_USAGE
+        return code
     url, antes = entorno(server_info(choice)["url"]), entorno(guardada.get("entorno"))
     if url and antes and url.lower() != antes.lower():
         eprint(f"El as-is es de {antes} y el Dev MCP de {url}: la deriva compara con el mismo entorno.")
-        return EXIT_USAGE
+        return EXIT_APP
     try:
         report = json.loads((interm / "extraction_report.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -1637,12 +1705,12 @@ async def cmd_deriva(args) -> int:
             _, objects, _ = await prepare(ex, args)
             resultado = await deriva_de(ex, guardada, objects, pedidos, ignorar, interm / "mcp_raw",
                                         bm.herramientas_usadas(report))
-    except SystemExit:
+    except SystemExit as se:
         eprint(f"La aplicacion del as-is ({app.get('name')}) no esta visible en el entorno.")
-        return EXIT_USAGE
+        return int(se.code)
     except Exception as ex_:
         eprint(f"No se pudo arrancar o autenticar el Dev MCP: {type(ex_).__name__}: {ex_}")
-        return EXIT_USAGE
+        return EXIT_START
     resultado = {"generadoEn": now_iso(), "entorno": url or antes,
                  "aplicacion": {k2: app.get(k) for k, k2 in (("name", "nombre"), ("prefix", "prefijo"), ("uuid", "uuid"))},
                  "asIs": {"extraidoEn": report.get("startedAt")}, **resultado}
@@ -1707,7 +1775,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("verificar")
     common(sp)
     sp.add_argument("--app", required=True, help="uuid, prefijo o nombre de la aplicacion")
-    sp.add_argument("--objetos", required=True, help="Nombres o uuids separados por comas, o @fichero (uno por linea)")
+    sp.add_argument("--objetos", help="Nombres o uuids separados por comas, o @fichero (uno por linea)")
+    sp.add_argument("--esperado", help="JSON {objeto: {\"tipo\": …, \"campos\": [{\"nombre\", \"tipo\"}]}}: se verifican "
+                                       "tambien esos objetos y se escriben sus diferencias")
     sp.add_argument("--out", required=True, help="Fichero JSON del resultado")
     sp = sub.add_parser("deriva")
     common(sp)

@@ -45,9 +45,11 @@ Antes de la primera tarea, desde la carpeta del usuario: `python3 "<skill>/../..
 
 Para comprobar lo construido de un cambio o ver qué cambió desde el `as-is/`, sin las fases 0-8 (solo `doctor` si falla la conexión). Todo es lectura. `<dx>` = `uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py"`.
 
-- **Verificar**: `<dx> verificar --app <app> --objetos <nombres separados por comas o @fichero> --out <p>/construccion/verificacion/<U>.json`: si existe cada objeto (los que no, en `faltan`), su tipo, su última modificación (un dato, no una prueba), los campos de record types y CDT para compararlos con su §3 y los casos de prueba si el Dev MCP los expone.
-- **Deriva**: `<dx> deriva --out <p>/as-is [--objetos …] [--ignorar <nombre>@<fecha ISO>,…]` → `<p>/as-is/datos/deriva.json`: cambiados, nuevos y retirados; `--ignorar` descarta los de nuestras unidades modificados después de esa fecha. Sin historial de versiones, lo dice y no supone nada.
-- **Reextraer** los cambiados y los nuevos: `<dx> extract --app <app> --out <p>/as-is --solo <objetos>`, que rehace el modelo; después, las fases 3-8 solo para ellos.
+- **Verificar**: `<dx> verificar --app <app> --objetos "<nombres separados por comas o @fichero>" --esperado "<json>" --out <p>/construccion/verificacion/<U>.json`: si existe cada objeto (los que no, en `faltan`), su tipo, su última modificación (un dato, no una prueba), los campos de record types y CDT y los casos de prueba si el Dev MCP los expone; con `--esperado` (lo que dice el técnico), sus `diferencias`.
+- **Deriva**: `<dx> deriva --out <p>/as-is [--objetos "…"] [--ignorar "<nombre>@<fecha ISO>,…"]` → `<p>/as-is/datos/deriva.json`: cambiados, nuevos y retirados; `--ignorar` descarta los de nuestras unidades modificados después de esa fecha. Sin historial de versiones, lo dice y no supone nada.
+- **Reextraer** los cambiados y los nuevos: `<dx> extract --app <app> --out <p>/as-is --solo "<objetos>"`, que rehace el modelo; después, las fases 3-8 solo para ellos.
+
+Los valores van entre comillas: en PowerShell, un `@fichero` sin ellas no llega como texto.
 
 ---
 
@@ -76,7 +78,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 ### Fase 2 — Extracción
 
-1. `uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <app> --out <salida>` (añade `--yes` si el usuario confirmó un plan grande). Es reanudable: si se corta, repítelo. Para documentar de nuevo una aplicación que ha cambiado desde la extracción que ya hay, o la de otro entorno, añade `--refresh`: lo pide todo otra vez. Al repetir la ingeniería inversa, `build_registry.py` mantiene los IDs de los `H-…` y los NV que ya existían (los casa por área, objetos y `senal`) y los nuevos siguen la numeración: las citas del análisis y de la propuesta siguen valiendo.
+1. `uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <app> --out <salida>` (añade `--yes` si el usuario confirmó un plan grande). Es reanudable: si se corta, repítelo. Para documentar de nuevo una aplicación que ha cambiado desde la extracción que ya hay, o la de otro entorno, añade `--refresh`: lo pide todo otra vez. Al repetir la ingeniería inversa, `build_registry.py` mantiene los IDs de los `H-…` y los NV que ya existían (los casa por área, objetos y `senal`) y los nuevos siguen la numeración: las citas del análisis y de la propuesta siguen valiendo, salvo las de los IDs que lista como retirados (en 09 y en `retirados` de `datos/`).
 2. Revisa `extraction_report.json`. Si en `callStatsByRole.definition` las fallidas (`failed`) pasan del 20 % del total (`ok` + `failed`), díselo al usuario antes de seguir.
 3. Data fabric (opcional, `references/data-fabric.md`): `uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" datafabric --out <salida>` si hay servidor en la configuración; si solo está en la sesión, hazlo desde la sesión; si no, sáltalo.
 

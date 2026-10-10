@@ -12,7 +12,8 @@ REGISTRO = SKILL / "scripts" / "build_registry.py"
 RESUMEN = SKILL / "scripts" / "build_summary.py"
 DATOS = SKILL / "scripts" / "build_datos.py"
 CLAVES = {"inventario.json": {"aplicacion", "objetos"}, "dependencias.json": {"aristas", "fueraDeLaAplicacion"},
-          "hallazgos.json": {"hallazgos"}, "procesos.json": {"procesos"}, "sin-verificar.json": {"sinVerificar"}}
+          "hallazgos.json": {"hallazgos", "retirados"}, "procesos.json": {"procesos"},
+          "sin-verificar.json": {"sinVerificar", "retirados"}}
 CAMPOS = {"id", "titulo", "area", "severidad", "certeza", "objetos", "documento", "evidencia"}
 
 
@@ -71,6 +72,21 @@ def test_datos_formato(project):
     assert procesos and all(set(p) == {"nombre", "json", "nodos", "ejecuciones"} for p in procesos)
     solicitud = next(o for o in inv["objetos"] if o["nombre"] == "DEM Solicitud")
     assert {"DEM_SOLICITUD", "Resumen"} <= set(solicitud["tambien"])        # la tabla y la vista, con su record type
+
+
+def test_retirados(project):
+    """Los IDs que el registro da por retirados (de una revisión anterior, sin casar con ninguno de ahora) llegan a
+    datos/: los H a hallazgos.json y los NV a sin-verificar.json, para que las demás skills sepan qué citas ya no
+    valen."""
+    datos = flujo(project)
+    assert json.loads((datos / "hallazgos.json").read_text(encoding="utf-8"))["retirados"] == []
+    registro = project.interm() / "registro.json"
+    r = json.loads(registro.read_text(encoding="utf-8"))
+    r["retirados"] = [{"id": "H-PRO-07", "titulo": "Tarea sin asignación"}, {"id": "NV-ARQ-03", "pregunta": "¿Quién?"}]
+    registro.write_text(json.dumps(r, ensure_ascii=False), encoding="utf-8")
+    corre(DATOS, project.out)
+    assert json.loads((datos / "hallazgos.json").read_text(encoding="utf-8"))["retirados"] == [r["retirados"][0]]
+    assert json.loads((datos / "sin-verificar.json").read_text(encoding="utf-8"))["retirados"] == [r["retirados"][1]]
 
 
 def test_senal_en_hallazgos(project):
