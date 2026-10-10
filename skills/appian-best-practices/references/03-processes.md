@@ -687,7 +687,7 @@ count in the daily process throughput that Health Check reports: medium risk whe
 benefit from autoscale, high risk above the standard engine's recommended throughput. A Start Event timer
 can also carry *Timer conditions*: the trigger fires only once all of them are true, and Appian recommends
 conditions over expressions, which can slow the application. **[engineering]** Start the work from the
-event that creates it (the action or record event that sets the due date), or use the longest interval
+event that creates it (the record action or process that sets the due date), or use the longest interval
 the business accepts; if the polling stays, end at once when there is nothing to do and archive or
 auto-delete those instances (§9).
 - Source: [Start Event — Timer conditions](https://docs.appian.com/suite/help/latest/Start_Event.html#timer-conditions) · [Health Check — Daily process and node throughput](https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html#daily-process-and-node-throughput)

@@ -27,16 +27,17 @@ def seccion_equivocada(mp: dict) -> str:
 
 
 def propuesta(quitar_solucion=(), regla_otra=(), sin_nv=False, solo_titulo=(), seccion_otra=(),
-              otra_aceptada=(), titulos=None, juntas=(), cabecera="**{ref} — {titulo}**") -> str:
+              otra_aceptada=(), titulos=None, efectos=None, juntas=(), cabecera="**{ref} — {titulo}**") -> str:
     """Una REF por mala práctica, con la primera de sus claves en el título, salvo lo que diga cada argumento.
-    `titulos`: {MP: título}; `juntas`: una sola REF, la de la primera, cita también los objetos de las demás, que no
-    tienen REF propia; `cabecera`: la forma de la línea de la ficha."""
+    `titulos` y `efectos`: {MP: texto}; `juntas`: una sola REF, la de la primera, cita también los objetos de las
+    demás, que no tienen REF propia; `cabecera`: la forma de la línea de la ficha."""
     fichas, filas = [], []
     for k, mp in enumerate(MALAS, 1):
         if mp["id"] in juntas[1:]:
             continue
         ref = f"REF-{k:02d}"
         titulo = (titulos or {}).get(mp["id"], f"Problema: {CLAVES[mp['id']][0]}")
+        efecto = (efectos or {}).get(mp["id"], "x")
         doc, sec = mp["bp"].split(" ")[1], mp["bp"].split("§")[1]
         if mp["id"] in regla_otra:
             doc = "99" if doc != "99" else "98"
@@ -52,8 +53,8 @@ def propuesta(quitar_solucion=(), regla_otra=(), sin_nv=False, solo_titulo=(), s
                           f"- Regla: BP {doc} §{sec}\n- Efecto: x\n- Prioridad: Media\n- Esfuerzo: S, poco\n")
         else:
             fichas.append(cabecera.format(ref=ref, titulo=titulo) + f"\n\n- Evidencia: H-XXX-01 ✅ {objetos} · "
-                          f"[`mcp:x/{mp['objetos'][0]}#a`](../as-is/anexo/x/{mp['objetos'][0].replace(' ', '_')}.md)\n"
-                          f"- Regla: BP {doc} §{sec}\n- Efecto: x\n- Prioridad: Media\n- Esfuerzo: S, poco\n")
+                          f"[`mcp:x/{mp['objetos'][0]}#nodes[id=130]`](../as-is/anexo/x/{mp['objetos'][0].replace(' ', '_')}.md)\n"
+                          f"- Regla: BP {doc} §{sec}\n- Efecto: {efecto}\n- Prioridad: Media\n- Esfuerzo: S, poco\n")
         if mp["id"] not in quitar_solucion:
             filas.append(f"| Datos | algo | {ref}: porque sí (BP {doc} §{sec}) | nada |")
     pendientes = "| ID | Qué falta | Quién | Condiciona |\n|---|---|---|---|\n"
@@ -118,10 +119,31 @@ def main() -> int:
              propuesta(titulos={"MP-04": "Escribe el historial a mano"}), 0, "FALLO MP-04"),
             ("una REF con los objetos de MP-06 y MP-11 cuenta solo para la que nombra",
              propuesta(juntas=("MP-06", "MP-11")), 0, "FALLO MP-11"),
+            # Fichas escritas como las escribiría un arquitecto (sin mirar ninguna propuesta real)
+            ("fichas naturales de MP-02, MP-03, MP-04 y MP-05 cuentan",
+             propuesta(titulos={"MP-02": "El formulario tiene más de 3.000 líneas",
+                                "MP-03": "La seguridad de las órdenes está solo en la interfaz",
+                                "MP-04": "Proceso monolítico de 130 actividades",
+                                "MP-05": "Arranca por timer aunque no haya órdenes pendientes"}), 0, "11/11"),
+            ("el Efecto también nombra el problema («cada cambio se hace tres veces»)",
+             propuesta(titulos={"MP-02": "Formulario de alta y edición"},
+                       efectos={"MP-02": "mantenimiento: cada cambio se hace tres veces"}), 0, "11/11"),
+            ("«por cada», «error» y «falla» no nombran el problema de MP-10 ni el de MP-08",
+             propuesta(titulos={"MP-10": "Por cada técnico se muestra la etiqueta sin traducir",
+                                "MP-08": "La pantalla falla porque el mensaje de error no está traducido"}),
+             1, ("9/11", "FALLO MP-10", "FALLO MP-08")),
+            # Una REF cuenta como mucho para una mala práctica
+            ("una REF con «URL» y «desarrollo» cuenta solo para una (a igualdad, la primera)",
+             propuesta(juntas=("MP-06", "MP-11"), titulos={"MP-06": "La URL del ERP apunta al entorno de desarrollo"}),
+             0, ("10/11", "OK    MP-06", "FALLO MP-11")),
+            ("una REF que nombra más el problema de MP-11 cuenta para MP-11",
+             propuesta(juntas=("MP-06", "MP-11"),
+                       titulos={"MP-06": "Autenticación None hacia el entorno de desarrollo, con su URL"}),
+             0, ("10/11", "FALLO MP-06", "OK    MP-11")),
         ]
         for nombre, texto, codigo, debe in casos:
             c, salida = corre(texto, carpeta)
-            bien = c == codigo and debe in salida
+            bien = c == codigo and all(d in salida for d in ((debe,) if isinstance(debe, str) else debe))
             fallos += not bien
             print(("OK   " if bien else "FALLO ") + nombre + ("" if bien else f" (sale {c}):\n{salida}"))
         c, salida = corre(propuesta(), carpeta, "--ocultas")
@@ -131,9 +153,9 @@ def main() -> int:
         sin_fuera = Path(t) / "sin objetos de fuera"
         as_is(sin_fuera, con_fuera=False)
         c, salida = corre(propuesta(), sin_fuera)
-        bien = c == 1 and "no trae NV de objetos de fuera" in salida
+        bien = c == 2 and "no trae NV de objetos de fuera" in salida and "Total" not in salida
         fallos += not bien
-        print(("OK   " if bien else "FALLO ") + "as-is sin NV de objetos de fuera sale con 1 y lo dice"
+        print(("OK   " if bien else "FALLO ") + "as-is sin NV de objetos de fuera sale con 2, sin puntuar, y lo dice"
               + ("" if bien else f" (sale {c}):\n{salida}"))
         c, salida = corre(propuesta(), Path(t) / "no-existe")
         bien = c == 2

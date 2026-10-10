@@ -41,7 +41,8 @@ dice un nombre es 🔶 «según su nombre».
 problema visto por dos señales (un proceso huérfano y sin ejecuciones) también: una REF que cita los dos `H-…`. Varios
 hallazgos con una causa común y distinta severidad: una REF si la solución es una, con la prioridad del más grave y
 citando todos; si las soluciones son distintas, una REF por solución. Al revés, un hallazgo que mezcla varios
-problemas (un tiempo de espera que falta y un secreto en una cabecera) da una REF por problema, y cada una lo cita.
+problemas (una interfaz con los textos sin traducir y grids sin cabecera de fila) da una REF por problema, y cada
+una lo cita.
 
 **Lo pendiente no se da por hecho.** Un NV de `sin-verificar.json` que toca un objeto del alcance condiciona la
 solución: la decisión que depende de él se escribe condicionada («si `X` recibe el CDT, …») y el NV va a Pendientes con
@@ -63,7 +64,7 @@ días), M (de 3 a 10 días) o L (más de 2 semanas), justificado en una línea (
 |---|---|---|
 | En la aplicación actual | Se cambian sus objetos, versión a versión | Pocos problemas graves y localizados, o una base ya actual |
 | Aplicación nueva a su lado | Se migran los datos y se retira la actual al final | La mayor parte habría que rehacerla, o el modelo de datos o los nombres impiden evolucionarla |
-| Mixta | Se conserva una capa y se rehace la otra: se quedan los datos y se rehace la lógica (procesos, reglas y pantallas), o al revés | Una de las dos capas es aprovechable y la otra no |
+| Mixta | Se conserva una capa y se rehace la otra: se quedan los datos y se rehace la lógica (procesos, reglas y pantallas) | Los datos son aprovechables y la lógica no |
 
 Antes de proponer rehacerlo todo, valora modernizar sin refactorizar: record types sincronizados sobre las mismas
 tablas, que conviven con los objetos actuales (BP 01 §7).
@@ -115,8 +116,8 @@ donde las use. Funcionalidad sin uso (0 ejecuciones) no se retira sin más: es u
 ### Paso 5 — Hoja de ruta
 
 - Fase 0: lo que hay que verificar antes («Verificar H-…») y la contención: un problema Alta que se corrige en la
-  aplicación actual sin cambiar el diseño (un tiempo de espera, un secreto que sale de una constante) va con su REF a
-  la Fase 0, aunque la parte se rehaga después.
+  aplicación actual sin cambiar el diseño (retirar a un grupo un permiso que le sobra, apagar el registro de
+  peticiones HTTP que guarda datos personales) va con su REF a la Fase 0, aunque la parte se rehaga después.
 - Las siguientes, por dependencias: datos y seguridad, reglas, integraciones, interfaces, procesos. Cada fase con sus
   REF y de qué depende. Cada REF, en alguna fase.
 

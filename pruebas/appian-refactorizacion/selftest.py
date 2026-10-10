@@ -236,14 +236,16 @@ def main():
         citadas = sorted({(m.group(1).zfill(2), m.group(2)) for m in cp.BP.finditer(senales)})
         faltan = [f"BP {nn} §{x}" for nn, x in citadas if cp.en_buenas_practicas(nn, x, {}) is False]
         ok("cada «BP nn §x» de references/senales.md está en buenas prácticas", citadas and not faltan, faltan)
-        fila = lambda texto: next((l for l in senales.splitlines() if l.startswith("|") and texto in l), "")  # noqa: E731
-        ok("señales: el proceso programado muy frecuente va a BP 03 §13", "BP 03 §13" in fila("muy frecuente"),
-           fila("muy frecuente"))
-        ok("señales: «None» con secretos en la llamada va a BP 07 §1 y BP 06 §7, y None sin más no es REF",
-           all(x in fila("None") for x in ("BP 07 §1", "BP 06 §7")) and "sin autenticación |" not in senales
-           and "None sin" in senales, fila("None"))
-        ok("señales: una versión antigua (`_17r1`) solo es señal si está en la lista de deprecados",
-           "solo si" in fila("_17r1") and "BP 08 §7" in fila("_17r1"), fila("_17r1"))
+        def bp_de_la_fila(senal):
+            """Las «BP nn §x» de la última columna de la fila de la tabla cuya señal contiene `senal`."""
+            fila = next((l for l in senales.splitlines() if l.startswith("|") and senal in l.split("|")[1]), "|")
+            bp = fila.strip().strip("|").split("|")[-1]
+            return {f"BP {m.group(1).zfill(2)} §{m.group(2)}" for m in cp.BP.finditer(bp)}
+        for senal, esperadas in (("muy frecuente", {"BP 03 §13"}), ("None", {"BP 07 §1", "BP 06 §7"}),
+                                 ("_17r1", {"BP 08 §7"}), ("huérfano", {"BP 08 §6", "BP 11 §8"}),
+                                 ("Cancelar", {"BP 03 §7"}), ("aunque no haga falta", {"BP 03 §5"})):
+            ok(f"señales: la fila «{senal}» va a {'; '.join(sorted(esperadas))}", bp_de_la_fila(senal) == esperadas,
+               bp_de_la_fila(senal))
 
         # 7. Salida 1 con errores y 2 sin as-is/datos/
         p, prop = copia()

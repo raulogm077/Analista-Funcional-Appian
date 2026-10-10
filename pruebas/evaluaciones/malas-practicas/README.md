@@ -29,8 +29,8 @@ Una mala práctica cuenta si una REF cita en su evidencia alguno de sus objetos,
 `bp_aceptadas`, la sección exacta («§1» no vale por «§1.3» si la lista no lo dice), dice alguna de sus claves en el
 título, el Efecto o la Evidencia (así no cuenta una REF del mismo objeto que trata otro problema, ni una sola REF por dos
 malas prácticas), y sale en Solución. Pendientes tiene que citar los NV de los objetos de fuera de la aplicación (en
-MNT, el de las reglas `CMN_`, que usan las malas prácticas 2, 3 y 4); un as-is sin esos NV sale con 1. `puntuar.py`
-sale 0 con el 90 % o más y esa cita.
+MNT, el de las reglas `CMN_`, que usan las malas prácticas 2, 3 y 4); con un as-is sin esos NV no se puntúa: sale
+con 2. `puntuar.py` sale 0 con el 90 % o más y esa cita.
 
 Criterio de la Tarea 15: 10 de 11 visibles y 3 de 3 ocultas, las dos puntuaciones salen 0 y `comprobar_propuesta.py` no
 da errores.

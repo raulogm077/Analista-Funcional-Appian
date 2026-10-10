@@ -16,12 +16,14 @@ Una mala práctica cuenta si hay una REF del Diagnóstico (las fichas que recono
   - nombra el problema: su título, su Efecto o su Evidencia dicen alguna de sus claves (claves.json, junto a este
     fichero), sin tildes ni mayúsculas y al principio de una palabra («pagin» vale por «paginar» y «sin paginación»);
   - sale en el apartado Solución.
+Una REF cuenta como mucho para una mala práctica: la que más claves dice en esos tres sitios y, a igualdad, la primera
+de la lista.
 Además, Pendientes tiene que citar los NV de <as-is>/datos/sin-verificar.json que tratan objetos de fuera de la
 aplicación (`fueraDeLaAplicacion` de dependencias.json, con su campo `nv`): en MNT, el de las reglas CMN. Un as-is sin
-esos NV no sirve para esta evaluación.
+esos NV no sirve para esta evaluación: no se puntúa.
 
-Imprime cada mala práctica, el total y los NV. Sale 0 con el 90 % o más y los NV citados; 1 si no o si el as-is no trae
-NV de objetos de fuera; 2 si falta un fichero o las claves de una mala práctica.
+Imprime cada mala práctica, el total y los NV. Sale 0 con el 90 % o más y los NV citados; 1 si no; 2 si falta un
+fichero, las claves de una mala práctica o los NV de objetos de fuera en el as-is.
 """
 from __future__ import annotations
 
@@ -79,10 +81,10 @@ def normal(texto: str) -> str:
     return " ".join("".join(c for c in t if not unicodedata.combining(c)).lower().split())
 
 
-def nombra_problema(ficha: str, claves: list[str]) -> bool:
-    """Si el título, el Efecto o la Evidencia de la ficha dicen alguna clave, al principio de una palabra."""
+def claves_que_dice(ficha: str, claves: list[str]) -> int:
+    """Cuántas claves dicen el título, el Efecto y la Evidencia de la ficha, cada una al principio de una palabra."""
     texto = normal(" ".join((ficha.split("\n", 1)[0], campo(ficha, "Efecto"), campo(ficha, "Evidencia"))))
-    return any(re.search(rf"(?<!\w){re.escape(normal(c))}", texto) for c in claves)
+    return sum(bool(re.search(rf"(?<!\w){re.escape(normal(c))}", texto)) for c in claves)
 
 
 def nombra(texto: str, objeto: str) -> bool:
@@ -96,24 +98,25 @@ def secciones_bp(texto: str) -> set[str]:
             for m in re.finditer(r"\bBP\s*(\d{1,2})\s*§\s*(\d(?:[\w.]*\w)?)", texto)}
 
 
-def cuenta(mp: dict, claves: list[str], refs: dict[str, str], solucion: str) -> tuple[bool, str]:
+def cuenta(mp: dict, claves: list[str], refs: dict[str, str], solucion: str) -> tuple[list[str], str]:
+    """(las REF que valen para la mala práctica, por qué no vale ninguna)."""
     aceptadas = secciones_bp(" ".join(mp["bp_aceptadas"]))
     candidatas = [r for r, f in refs.items() if any(nombra(campo(f, "Evidencia"), o) for o in mp["objetos"])]
     if not candidatas:
-        return False, "ninguna REF cita sus objetos en la evidencia"
+        return [], "ninguna REF cita sus objetos en la evidencia"
     con_regla = [r for r in candidatas if aceptadas & secciones_bp(campo(refs[r], "Regla"))]
     if not con_regla:
         citadas = sorted(set().union(*(secciones_bp(campo(refs[r], "Regla")) for r in candidatas)))
-        return False, (f"{', '.join(candidatas)} cita sus objetos, pero con {', '.join(citadas) or 'otra regla'}; "
+        return [], (f"{', '.join(candidatas)} cita sus objetos, pero con {', '.join(citadas) or 'otra regla'}; "
                        f"valen {', '.join(mp['bp_aceptadas'])}")
-    nombran = [r for r in con_regla if nombra_problema(refs[r], claves)]
+    nombran = [r for r in con_regla if claves_que_dice(refs[r], claves)]
     if not nombran:
-        return False, (f"{', '.join(con_regla)} cita sus objetos y su regla, pero ni su título, ni su Efecto ni su "
+        return [], (f"{', '.join(con_regla)} cita sus objetos y su regla, pero ni su título, ni su Efecto ni su "
                        f"Evidencia nombran el problema (claves: {', '.join(claves)})")
     en_solucion = [r for r in nombran if re.search(rf"(?<![\w-]){re.escape(r)}(?!\d)", solucion)]
     if not en_solucion:
-        return False, f"{', '.join(nombran)} no sale en Solución"
-    return True, ", ".join(en_solucion)
+        return [], f"{', '.join(nombran)} no sale en Solución"
+    return en_solucion, ""
 
 
 def nv_de_fuera(as_is: Path) -> list[str]:
@@ -151,23 +154,33 @@ def main() -> int:
     if sin_claves:
         print(f"{CLAVES.name} no tiene claves para {', '.join(sin_claves)}", file=sys.stderr)
         return 2
+    nvs = nv_de_fuera(as_is)
+    if not nvs:
+        print("El as-is no trae NV de objetos de fuera (fueraDeLaAplicacion de dependencias.json, con su NV): no sirve "
+              "para esta evaluación", file=sys.stderr)
+        return 2
     texto = propuesta.read_text(encoding="utf-8")
     secciones = apartados(texto)
     refs = fichas(apartado(secciones, "diagnóstico"))
     solucion = apartado(secciones, "solución")
     pendientes = apartado(secciones, "pendientes")
+    validas = {mp["id"]: cuenta(mp, claves[mp["id"]], refs, solucion) for mp in malas}
+    duena = {}   # cada REF, para una sola mala práctica: la que más claves dice; a igualdad, la primera de la lista
+    for ref in refs:
+        aspirantes = [mp["id"] for mp in malas if ref in validas[mp["id"]][0]]
+        if aspirantes:
+            duena[ref] = max(aspirantes, key=lambda i: claves_que_dice(refs[ref], claves[i]))
     bien = 0
     for mp in malas:
-        ok, por_que = cuenta(mp, claves[mp["id"]], refs, solucion)
-        bien += ok
-        print(f"{'OK   ' if ok else 'FALLO'} {mp['id']} ({mp['bp']}): {por_que}")
-    nvs = nv_de_fuera(as_is)
+        suyas, por_que = validas[mp["id"]]
+        cuentan = [r for r in suyas if duena[r] == mp["id"]]
+        if suyas and not cuentan:
+            por_que = (f"{', '.join(suyas)} cuenta ya para {', '.join(sorted({duena[r] for r in suyas}))}, que dice "
+                       "más claves: una REF cuenta para una sola mala práctica")
+        bien += bool(cuentan)
+        print(f"{'OK   ' if cuentan else 'FALLO'} {mp['id']} ({mp['bp']}): {', '.join(cuentan) or por_que}")
     sin_citar = [nv for nv in nvs if not re.search(rf"(?<![\w-]){re.escape(nv)}(?!\d)", pendientes)]
     print(f"Total: {bien}/{len(malas)} ({len(refs)} REF en el Diagnóstico)")
-    if not nvs:
-        print("El as-is no trae NV de objetos de fuera (fueraDeLaAplicacion de dependencias.json, con su NV): no sirve "
-              "para esta evaluación")
-        return 1
     print(f"NV de fuera de la aplicación en Pendientes: {', '.join(nvs)}"
           + (f"; faltan {', '.join(sin_citar)}" if sin_citar else " (todos)"))
     return 0 if bien >= MINIMO * len(malas) and not sin_citar else 1
