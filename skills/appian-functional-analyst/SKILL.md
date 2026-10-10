@@ -81,7 +81,7 @@ En `<p>`:
 - `analisis/grafo.json`: las piezas y sus referencias, si se pide (`indice.py grafo`)
 - `analisis/diagramas/<proceso>.json`: cada proceso, en el formato de `appian-diagramas-bpmn`
 - `analisis/diagramas/<nombre>.mmd`: los diagramas de estados y de datos
-- `entregables/`: el DF en Word
+- `entregables/`: el DF en Word y, para revisarlo, su PDF (`entregables/revision/`)
 - `versiones/`: la copia del análisis antes de cada cambio
 - `modulos/`: el funcional y el técnico de cada módulo, en un análisis grande (`volumen-grande.md`)
 - `prototipo/`: solo la crea vacía al iniciar el proyecto; la llena `appian-prototipos`
@@ -93,7 +93,7 @@ El `.drawio`, el `.png` y el `.bpmn` de cada proceso y la imagen de cada `.mmd` 
 | Modo | Cuándo | Qué sale |
 |---|---|---|
 | **Síntesis** | Reuniones, correos, notas | Funcional y diagramas; el técnico cuando el funcional esté estable o se pida; DF en Word |
-| **DF ya hecho** | Hay un DF o una ERS del cliente | El DF entra como versión 1.0 en el formato del plugin, sin reinterpretar: cada pieza 🔒 con su ID original en la trazabilidad (`<!-- 🔒 FU-01 RF-07 -->`); funcional, técnico y Word. Las reuniones anteriores al DF pasan por el informe de impacto y lo que no coincide con el DF requiere aprobación; las posteriores, como siempre (`ingesta-fuentes.md`, `actualizacion.md`) |
+| **DF ya hecho** | Hay un DF o una ERS del cliente | El DF entra como versión 1.0 en el formato del plugin, sin reinterpretar: cada pieza 🔒 con su ID original en la trazabilidad (`<!-- 🔒 FU-01 RF-07 -->`); funcional y técnico, y el Word al enviarlo. Las reuniones anteriores al DF pasan por el informe de impacto y lo que no coincide con el DF requiere aprobación; las posteriores, como siempre (`ingesta-fuentes.md`, `actualizacion.md`) |
 | **Evolutivo** | Hay que cambiar o ampliar una aplicación existente (`as-is/`) | Como síntesis, con lo de «Aplicación existente»: el origen de cada historia y la situación de cada objeto |
 | **Refactorización** | Hay una propuesta de refactorización (`refactorizacion/propuesta.md`) | Como evolutivo: el DF dice lo que se conserva, lo que cambia y lo nuevo; el técnico baja cada REF a objetos, con «Sustituye a» y la migración de datos |
 | **Actualización** | Ya hay análisis y llega una reunión, un correo o los comentarios al DF | Informe de impacto y cambios puntuales: `actualizacion.md` |
@@ -121,7 +121,8 @@ Di el modo al empezar.
    `diagrama.py crear`. Los de estados y de datos, en Mermaid con `mermaid-diagrams.md`; los pinta el `mermaid.py`
    de esa misma skill.
 5. **Prototipo**, si se pide (suele ser con la primera versión del funcional, para validar las pantallas).
-   Lo hace `appian-prototipos` a partir del funcional y pone las capturas en las fichas de pantalla.
+   Lo hace `appian-prototipos` a partir del funcional y pone las capturas en las fichas de pantalla. Sus preguntas
+   nuevas (Q-nn) pasan a PC (`funcional-plantilla.md` §11).
 6. **Técnico.** Escribe `analisis/tecnico.md` con `tecnico-plantilla.md` cuando el funcional esté estable
    (normalmente tras la primera validación) o cuando se pida. El Entorno (§0) y las Convenciones (§1) se
    rellenan antes, en cuanto se sepan.
@@ -131,20 +132,20 @@ Di el modo al empezar.
    python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/
    ```
    Sin errores antes de entregar. Revisa los avisos: los de redacción se corrigen casi siempre.
-8. **DF en Word** (síntesis, evolutivo y refactorización; si el análisis es solo para un prototipo, cuando se pida). La
-   primera entrega es la versión 1.0: sube la versión del funcional y del técnico y añade su fila en
-   `decisiones.md`.
+8. **DF en Word**, solo para enviarlo o si se pide (síntesis, evolutivo y refactorización). La primera entrega es la
+   versión 1.0: sube la versión del funcional y del técnico y añade su fila en `decisiones.md`.
    ```bash
-   node <skill>/scripts/df_docx.js <p>          # entregables/DF-<proyecto>-v<versión>.docx
+   node <skill>/scripts/df_docx.js <p> --pdf    # entregables/DF-<proyecto>-v<versión>.docx; el PDF, en revision/
    ```
-   Ábrelo (conviértelo a PDF y mira algunas páginas) antes de entregarlo.
-9. **Entregar.** Actualiza `proyecto.md` (fuentes procesadas, DF entregado y siguiente paso) y envía el Word
-   y el `funcional.md` (SendUserFile en Claude). En pocas líneas: modo, historias, pantallas, pendientes de
-   confirmar con el cliente y siguiente paso.
+   Mira algunas páginas del PDF antes de enviarlo. Nunca sobrescribe un Word entregado.
+9. **Entregar.** Actualiza `proyecto.md` (fuentes procesadas y siguiente paso) y envía el Word y el `funcional.md`
+   (SendUserFile en Claude). Cuando el Word sale hacia el cliente, `proyecto.py entregar <p>` apunta «DF entregado» y
+   el fichero; nunca en una sesión desatendida. En pocas líneas: modo, historias, pantallas, pendientes de confirmar con el
+   cliente y siguiente paso.
 
 Para buscar en el análisis sin leerlo entero: `indice.py` (`resumen`, `buscar`, `ficha`, `impacto`,
-`seccion`, `siguientes`). Para preparar la próxima reunión, `indice.py pendientes <p>`: las preguntas abiertas
-por «A quién», de las que afectan a más partes del análisis a las que menos.
+`seccion`, `siguientes`). Para preparar la próxima reunión, `indice.py pendientes <p>`: lo que decide el equipo y
+las preguntas abiertas por «A quién», de las que afectan a más partes del análisis a las que menos.
 
 ## Aplicación existente
 
@@ -173,8 +174,8 @@ En los modos evolutivo y de refactorización, los pasos de «Proyecto nuevo» co
    pantalla es otra ficha.
 3. Lo que falte (quién ve una acción, el texto de una confirmación) se pregunta antes de cerrar; los
    detalles menores, con la opción más razonable dicha en el texto.
-4. Entrégala en el chat. Si el proyecto ya tiene análisis, la explicación es una fuente más: guárdala como
-   `.txt`, catalógala y sigue `actualizacion.md`.
+4. Entrégala en el chat. Si el proyecto ya tiene análisis, la explicación es una fuente más (de chat,
+   `ingesta-fuentes.md` §1): catalógala y sigue `actualizacion.md`.
 
 ## Comentarios del cliente al DF
 

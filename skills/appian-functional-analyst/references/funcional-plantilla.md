@@ -1,7 +1,7 @@
 # Análisis funcional (`analisis/funcional.md`)
 
 Es lo que el cliente valida. De aquí sale el DF en Word (`df_docx.js`) y lo leen el prototipo y la
-especificación técnica. Los fragmentos de los apartados 4, 5 y 11 son de un caso ficticio (solicitudes de
+especificación técnica. Los fragmentos de los apartados 4, 5, 9 y 11 son de un caso ficticio (solicitudes de
 autorización) y tienen el formato exacto que leen los scripts.
 
 ## Lo que leen los scripts
@@ -12,7 +12,7 @@ autorización) y tienen el formato exacto que leen los scripts.
 - **Ficha**: `**HU-07 — Título**` y, en la misma línea, el comentario de trazabilidad
   `<!-- ✅ FU-03 00:14:32; FU-05 -->`. Llega hasta la siguiente ficha o título.
 - **Fila**: `| AV-03 | … |`, con la trazabilidad en un comentario dentro de la última celda.
-- **Criterio**: `` - `HU-07.1` texto ``, dentro de su historia.
+- **Criterio**: `` - `HU-07.1` texto ``, dentro de su historia (o `` `INT-02.1` ``, dentro de la ficha de un intercambio).
 - **Trazabilidad**: el comentario lleva el estado y las fuentes. El Word no lo enseña.
 
   | | Estado |
@@ -64,7 +64,8 @@ Por cada proceso, `### 3.n <Proceso>`:
 Después de los procesos:
 - **Estados**: tabla `Estado · Qué significa` y tabla `De · A · Quién · Paso`, donde «Paso» es el ACT que
   hace el cambio (lo que pasa en él ya está en su ficha). Con 3 o más estados, el diagrama de estados
-  (`mermaid-diagrams.md`).
+  (`mermaid-diagrams.md`). Un estado que la aplicación actual no guarda (`as-is/`) se escribe como lo entiende el
+  cliente; cómo se guarda y qué pasa con lo que ya hay es del técnico (§5 y §3).
 - **Escenarios**: de 3 a 6 fichas `ESC-nn`, cada una contada como una historia corta con un caso concreto
   (quién, qué pide, qué pasa) y la línea `Pasos: ACT-01, ACT-02…`. Uno por camino: el normal, una
   devolución, un rechazo, un plazo vencido. Son lo que mejor entiende el cliente y después sirven de
@@ -144,7 +145,21 @@ Tabla con IDs `AV-nn`: `ID · Cuándo · A quién · Qué dice · Cómo llega`. 
 Tabla con IDs `DOC-nn`: `ID · Qué es · Quién lo genera o lo sube · Cuándo · Formato`. Si no hay, «No hay.».
 
 ### 9. Relación con otros sistemas
-Tabla con IDs `INT-nn`: `ID · Sistema · Qué se intercambia · Cuándo · Si falla`. Si no hay, «No hay.».
+Tabla con IDs `INT-nn`: `ID · Sistema · Qué se intercambia · Cuándo · Si falla`. Si no hay, «No hay.». Un
+intercambio con reglas (qué pide el otro sistema, qué devuelve, qué pasa con cada error) va en una ficha debajo de la
+tabla, en vez de en una fila, con criterios `INT-nn.m` que se prueban como los de una historia. Las historias siguen
+siendo de personas.
+
+```markdown
+**INT-02 — Comprobar el organismo en su registro** <!-- ✅ FU-04 00:12:00 -->
+
+| Sistema | Cuándo | Qué pide | Qué devuelve | Si falla |
+|---|---|---|---|---|
+| Registro de organismos | Al enviar la solicitud | El código del organismo | Si está de alta | Se envía y se comprueba al revisarla |
+
+Se acepta si:
+- `INT-02.1` Un organismo dado de baja no se puede elegir.
+```
 
 ### 10. Condiciones de uso
 Una línea por tema, en lenguaje del cliente: personas que la usan y cuántas a la vez, volumen y
@@ -161,6 +176,10 @@ cuando se puede. Lo respondido se tacha con la decisión que lo responde. El Wor
 |---|---|---|---|---|
 | PC-02 | ¿Qué pasa si la unidad no subsana en 10 días hábiles? | Se archiva / Se le recuerda cada 10 días | Responsable de la unidad | ACT-06, HU-03 <!-- ❓ FU-03 00:16:20 --> |
 ```
+
+Las preguntas nuevas del prototipo (Q-nn de su trazabilidad) son PC con la PAN en «Afecta a» y
+`<!-- ❓ prototipo Q-03 -->`. Una decisión tomada sin respuesta, en lo que no requiere aprobación, es una PC
+«Supuesto: ¿confirmas que…?», con la opción aplicada primero.
 
 Lo que ingeniería inversa no pudo verificar y tiene que resolver negocio (un NV de `as-is/` cuyo «Qué hace falta»
 empieza por «Negocio») es también un PC: la pregunta en palabras del cliente, sin objetos de Appian, y la cita en el

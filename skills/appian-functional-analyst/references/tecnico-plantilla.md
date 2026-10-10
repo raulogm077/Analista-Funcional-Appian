@@ -117,17 +117,20 @@ Al final: referencias y carga inicial (`Record type · Valores iniciales · Qui�
 
 Con `as-is/`, §3 termina con `### 3.n Carga inicial y migración`: tabla `Origen en la app actual · Destino ·
 Transformación · Volumen · Cómo se verifica`, una fila por lo que se carga o se mueve («—» en el origen si el dato es
-nuevo). Con propuesta de refactorización es obligatoria.
+nuevo), también el valor que toman los registros que ya hay en un estado que la aplicación actual no guarda (§5). Con
+propuesta de refactorización es obligatoria.
 
 ### 4. Grupos y seguridad
 - Tabla `Perfil · Grupo · Constante`, con todos los perfiles del funcional.
 - Matriz de qué ve y qué hace cada grupo (registros, campos, vistas, acciones).
 - Cada «solo lo ve…» o «solo puede…» del funcional, con la capa de Appian que lo aplica (seguridad de
   registro, de campo, de vista, de acción o de la interfaz). Si es una decisión, su DT.
+- La cuenta del sistema que llama a una Web API expuesta (§10), con su grupo: va aquí y solo aquí.
 
 ### 5. Estados y transiciones
 Qué hace cada transición del funcional (acción, nodo del proceso, regla). Ninguna interfaz cambia el
-estado por su cuenta.
+estado por su cuenta. Un estado que la aplicación actual no guarda lleva una DT (cómo se guarda o se calcula) y su
+carga inicial en §3.
 
 ### 6. Lógica
 Tabla de reglas de expresión y decisiones `Regla · Entradas · Devuelve · Lógica · Pruebas`, y tabla de
@@ -150,8 +153,9 @@ tarea más un correo, no solo un correo.
 
 ### 10. Integraciones, documentos e IA
 Por INT: sistema conectado, autenticación, operación, entradas, salidas, errores, reintentos e
-idempotencia. Documentos: dónde se guardan, carpetas, tipos y tamaño, y cómo se generan. IA solo si el
-funcional la pide.
+idempotencia; los criterios `INT-nn.m` de su ficha, en §14. Si el otro sistema nos llama, el bloque «Expuesta»:
+método, ruta, grupo que la llama, entradas, salidas, errores y versión (BP 07 §6); la cuenta que llama, solo en §4.
+Documentos: dónde se guardan, carpetas, tipos y tamaño, y cómo se generan. IA solo si el funcional la pide.
 
 ### 11. Site e informes
 Páginas en orden y quién ve cada una; informes y cuadros de mando con su origen de datos. Los indicadores
@@ -180,7 +184,7 @@ mismo orden, y debajo los pasos manuales. Situación:
 ```
 
 ### 14. Pruebas y trazabilidad
-Tabla `Criterio · Cómo se prueba` con todos los criterios `HU-nn.m` (se pueden agrupar por historia) y los
+Tabla `Criterio · Cómo se prueba` con todos los criterios `HU-nn.m` e `INT-nn.m` (se pueden agrupar) y los
 escenarios `ESC-nn` como pruebas de extremo a extremo. Cada acción protegida, con un perfil que puede y
 otro que no.
 

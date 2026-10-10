@@ -140,6 +140,22 @@ def main():
         grupo = out.split("## Responsable de la unidad", 1)[-1]
         ok("indice.py pendientes: la PC-04, que afecta a más, sale la primera",
            c == 0 and "PC-04" in grupo and grupo.index("PC-04") < grupo.index("PC-01") < grupo.index("PC-02"), out)
+        # Lo que el equipo tiene que decidir (T1): las filas «Decisión: Pendiente» de los informes, antes que las PC
+        (pend / "impacto").mkdir(exist_ok=True)
+        (pend / "impacto" / "FU-04.md").write_text(
+            "# Impacto de FU-04\nAnálisis base: versión 1.1 · Estado: aplicado en 1.2; pendientes de aprobación: punto 4\n\n"
+            "## Puntos\n| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión |\n"
+            "|---|---|---|---|---|---|---|---|\n"
+            "| 1 | COMPLETA | Un texto [FU-04 00:01:00] | HU-02 | HU-02 con el texto | — | — | ✔ |\n"
+            "| 4 | CAMBIA | Los planos pesan más: hasta 30 MB [FU-04 00:20:10] | HU-07 | HU-07.1 a 30 MB | DOC-01 "
+            "| Sí (🔒) | Pendiente |\n", encoding="utf-8")
+        c, out = corre(S / "indice.py", "pendientes", pend)
+        bloque = out.split("## Para decidir (equipo)", 1)[-1].split("\n## ", 1)[0]
+        ok("indice.py pendientes: «Para decidir (equipo)» primero, con el punto pendiente, su cambio y el motivo",
+           c == 0 and "## Para decidir (equipo)" in out and out.index("## Para decidir") < out.index("## Responsable")
+           and "FU-04 · punto 4" in bloque and "hasta 30 MB" in bloque and "HU-07.1 a 30 MB" in bloque
+           and "Requiere: 🔒" in bloque and "punto 1" not in bloque, out)
+        (pend / "impacto" / "FU-04.md").unlink()
         # Una consola de Windows en cp1252 no rompe la salida con «≥» o «→» (indice.py escribe en UTF-8)
         editar(pend / "analisis" / "funcional.md", "Sí, hasta que se revise / No", "Sí, si faltan ≥ 2 días → retirada / No")
         for orden in (("pendientes",), ("ficha", "PC-04")):
@@ -154,6 +170,67 @@ def main():
            c == 0 and (nuevo / "analisis" / "funcional.md").exists() and (nuevo / "fuentes").is_dir(), out)
         c, out = corre(S / "proyecto.py", "estado", nuevo)
         ok("proyecto.py estado", c == 0 and "versión 0.1" in out, out)
+
+        # 3b. proyecto.py estado: cliente y marca; el DF enviado se informa; --confirmadas sin las PAN de un cambio
+        # aprobado después del prototipo que se enseñó (app-vX.Y.json), leyendo todos los informes (impacto/*.md);
+        # fuentes sin cambios y aprobaciones cuentan como procesadas; entregar escribe «DF entregado» y el fichero
+        e = tmp / "estado"
+        shutil.copytree(EJEMPLO, e)
+        c, out = corre(S / "proyecto.py", "estado", e)
+        ok("proyecto.py estado: cliente, sin marca y el último DF enviado sin pedir el Word",
+           c == 0 and "Cliente: Organización de ejemplo · Marca: sin marca" in out
+           and "último enviado 1.0 (2026-09-12), versión actual 1.1" in out and "desactualizado" not in out, out)
+        (e / "prototipo").mkdir(exist_ok=True)
+        (e / "prototipo" / "brand-ejemplo.json").write_text('{"id": "ejemplo"}', encoding="utf-8")
+        fe = e / "analisis" / "funcional.md"
+        fe.write_text(re.sub(r"(\*\*PAN-0[123] — [^*]+\*\* <!-- )✅", r"\1🔒", fe.read_text(encoding="utf-8")),
+                      encoding="utf-8")
+        (e / "impacto").mkdir(exist_ok=True)
+        cab = "| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión |\n|---|---|---|---|---|---|---|---|\n"
+        (e / "impacto" / "FU-04.md").write_text(
+            "# Impacto de FU-04\nAnálisis base: versión 1.0 · Estado: aplicado en 1.1; pendientes de aprobación: punto 2\n\n"
+            "## Puntos\n" + cab + "| 1 | CAMBIA | Sin descarga [FU-04 00:01:00] | PAN-01 | PAN-01 sin descarga | — | Sí (🔒) "
+            "| ✔ FU-06 |\n| 2 | CAMBIA | Otro orden [FU-04 00:02:00] | PAN-02 | PAN-02 con otro orden | — | Sí (🔒) | Pendiente |\n",
+            encoding="utf-8")
+        (e / "impacto" / "URG-01.md").write_text(   # cualquier informe de impacto/, no solo los FU-nn
+            "# Impacto de URG-01\nAnálisis base: versión 0.9 · Estado: aplicado en 1.0\n\n"
+            "## Puntos\n" + cab + "| 1 | CAMBIA | Filtro [FU-03 00:01:00] | PAN-03 | PAN-03 con filtro | — | Sí (🔒) | ✔ |\n",
+            encoding="utf-8")
+        (e / "impacto" / "FU-05.md").write_text("# Impacto de FU-05\nAnálisis base: versión 1.1 · Estado: sin cambios\n",
+                                                encoding="utf-8")
+        (e / "fuentes").mkdir()
+        for n in (5, 6, 7):
+            (e / "fuentes" / f"FU-0{n}-fuente.md").write_text(f"# FU-0{n}\n", encoding="utf-8")
+        c, out = corre(S / "proyecto.py", "estado", e)
+        conf = next((l for l in out.splitlines() if "--confirmadas" in l), "")
+        fuentes = next((l for l in out.splitlines() if l.startswith("Fuentes:")), "")
+        ok("proyecto.py estado: la marca del prototipo; sin app-vX.Y.json, --confirmadas sin las PAN aprobadas de todos los informes",
+           c == 0 and "Marca: prototipo/brand-ejemplo.json" in out and conf.endswith("--confirmadas PAN-02"), out)
+        ok("proyecto.py estado: una fuente «sin cambios» y una aprobación citada en un informe no salen sin procesar",
+           fuentes.endswith("sin procesar: FU-07"), out)
+        (e / "prototipo" / "app-v1.0.json").write_text("{}", encoding="utf-8")
+        c, out = corre(S / "proyecto.py", "estado", e)
+        conf = next((l for l in out.splitlines() if "--confirmadas" in l), "")
+        ok("proyecto.py estado: con app-v1.0.json, solo salen de --confirmadas las PAN aprobadas después de la 1.0",
+           c == 0 and conf.endswith("--confirmadas PAN-02,PAN-03"), out)
+        hoy = __import__("datetime").date.today().isoformat()
+        (e / "entregables").mkdir(exist_ok=True)
+        (e / "entregables" / "DF-Solicitudes-de-autorizacion-v1.1.docx").write_bytes(b"word")
+        c, out = corre(S / "proyecto.py", "entregar", e)
+        pm = (e / "proyecto.md").read_text(encoding="utf-8")
+        ok("proyecto.py entregar escribe «DF entregado: <versión> · <fecha>» y el fichero en «Entregados»",
+           c == 0 and f"DF entregado: 1.1 · {hoy} · Estado: en validación" in pm
+           and "\nEntregados: DF-Solicitudes-de-autorizacion-v1.1.docx\n" in pm, out + pm)
+        c, out = corre(S / "proyecto.py", "entregar", e)
+        pm = (e / "proyecto.md").read_text(encoding="utf-8")
+        ok("proyecto.py entregar otra vez: el fichero una sola vez", c == 0 and pm.count("DF-Solicitudes-de-autorizacion-v1.1") == 1,
+           pm)
+        c, out = corre(S / "proyecto.py", "estado", e)
+        ok("proyecto.py estado tras entregar: el último enviado es la versión actual",
+           c == 0 and f"último enviado 1.1 ({hoy}), versión actual 1.1" in out, out)
+        c, out = corre(S / "proyecto.py", "entregar", e, "--cambio", "EV-02")
+        ok("proyecto.py entregar --cambio todavía no está: sale con error y no toca proyecto.md",
+           c != 0 and (e / "proyecto.md").read_text(encoding="utf-8") == pm, out)
 
         # 4. Actualización con informe de impacto
         p = tmp / "autorizaciones"
@@ -219,6 +296,110 @@ Versión 1.2: HU-07.1 a 30 MB · PC-04 nuevo · técnico §14 con 35 MB
         editar(f, "**HU-06 — Redactar el informe técnico**", "**HU-06 — Redactar el informe técnico de la solicitud**")
         c, out = corre(S / "comprobar.py", p, "--anterior", p / "versiones" / "v1.1", "--impacto", informe)
         ok("detecta un cambio que el informe no declara", c == 1 and "cada cambio está declarado" in out and "HU-06" in out, out)
+
+        # 4-R2. La versión sube solo si cambia el funcional o el técnico: con cambios y sin subir, error; sin cambios y
+        # subida, aviso (subir de más no pierde trabajo), salvo a la 1.0, la primera entrega. Una cita o un estado que
+        # cambian son un cambio. Un informe sin nada que aplicar («Estado: sin cambios») se comprueba sin --anterior
+        r2 = tmp / "R2"
+        shutil.copytree(EJEMPLO, r2)
+        corre(S / "proyecto.py", "copia", r2)
+        for x in (r2 / "analisis" / "funcional.md", r2 / "analisis" / "tecnico.md"):
+            editar(x, "Versión: 1.1", "Versión: 1.2")
+        editar(r2 / "analisis" / "decisiones.md", "| 1.1 | 2026-09-24 | Plazos en días hábiles; recordatorio al organismo; "
+               "se quita la urgencia | FU-03 | Analista, 2026-09-24 |", "| 1.1 | 2026-09-24 | Plazos en días hábiles; "
+               "recordatorio al organismo; se quita la urgencia | FU-03 | Analista, 2026-09-24 |\n| 1.2 | 2026-10-02 | "
+               "Nada | FU-05 | — |")
+        c, out = corre(S / "comprobar.py", r2, "--anterior", r2 / "versiones" / "v1.1")
+        ok("R2: sin ningún cambio, subir la versión es aviso", c == 0 and any(
+            l.startswith("· ") and "sin cambios" in l and "1.2" in l for l in out.splitlines()), out)
+        for x in (r2 / "analisis" / "funcional.md", r2 / "analisis" / "tecnico.md"):
+            editar(x, "Versión: 1.2", "Versión: 1.1")
+        editar(r2 / "analisis" / "decisiones.md", "\n| 1.2 | 2026-10-02 | Nada | FU-05 | — |", "")
+        for nombre, antes, despues in [
+                ("un texto", "| Descargar | Descargar la lista filtrada en Excel |", "| Descargar | Descargar la lista filtrada en CSV |"),
+                ("solo una cita", "**PAN-01 — Solicitudes** <!-- ✅ FU-02 00:08:15 -->", "**PAN-01 — Solicitudes** <!-- ✅ FU-02 00:09:00 -->"),
+                ("solo un estado", "**PAN-01 — Solicitudes** <!-- ✅ FU-02 00:08:15 -->", "**PAN-01 — Solicitudes** <!-- 🔒 FU-02 00:08:15 -->")]:
+            shutil.copy(r2 / "versiones" / "v1.1" / "funcional.md", r2 / "analisis" / "funcional.md")
+            editar(r2 / "analisis" / "funcional.md", antes, despues)
+            c, out = corre(S / "comprobar.py", r2, "--anterior", r2 / "versiones" / "v1.1")
+            ok(f"R2: con un cambio ({nombre}), no subir la versión es error",
+               c == 1 and any(l.startswith("✗ la versión sube") for l in out.splitlines()), out)
+        pe = tmp / "primera entrega"
+        shutil.copytree(EJEMPLO, pe)
+        for x in (pe / "analisis" / "funcional.md", pe / "analisis" / "tecnico.md"):
+            editar(x, "Versión: 1.1", "Versión: 0.9")
+        corre(S / "proyecto.py", "copia", pe)
+        for x in (pe / "analisis" / "funcional.md", pe / "analisis" / "tecnico.md"):
+            editar(x, "Versión: 0.9", "Versión: 1.0")
+        editar(pe / "analisis" / "decisiones.md", "\n| 1.1 | 2026-09-24 | Plazos en días hábiles; recordatorio al organismo; "
+               "se quita la urgencia | FU-03 | Analista, 2026-09-24 |", "")
+        c, out = corre(S / "comprobar.py", pe, "--anterior", pe / "versiones" / "v0.9")
+        ok("R2: la subida a la 1.0 de la primera entrega, sin cambios, no es error ni aviso",
+           c == 0 and not [l for l in out.splitlines() if l.startswith(("✗", "·")) and "versión" in l], out)
+        shutil.rmtree(r2)
+        shutil.copytree(EJEMPLO, r2)
+        (r2 / "impacto").mkdir()
+        sin = ("# Impacto de FU-05\nAnálisis base: versión {v} · Estado: sin cambios\n\n## Puntos\n"
+               "| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión |\n"
+               "|---|---|---|---|---|---|---|---|\n| 1 | SIN IMPACTO | Repite lo de la lista [FU-05 00:01:00] | PAN-01 | "
+               "Nada: ya lo dice PAN-01 | — | — | ✔ |\n"
+               "| 2 | PROYECTO | La entrega se retrasa una semana [FU-05 00:01:30] | — | proyecto.md | — | — | ✔ |\n{extra}")
+        (r2 / "impacto" / "FU-05.md").write_text(sin.format(v="1.1", extra=""), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", r2, "--impacto", r2 / "impacto" / "FU-05.md")
+        ok("R2: un informe «sin cambios» (SIN IMPACTO que cita una pieza, PROYECTO) pasa sin --anterior",
+           c == 0 and "sin cambios" in out, out)
+        for extra in ("| 3 | PREGUNTA | Quién firma [FU-05 00:02:00] | — | PC nueva: quién firma | — | — | ❓ |\n",
+                      "| 3 | CAMBIA | Otro plazo [FU-05 00:02:00] | HU-07 | HU-07.1 a 30 MB | — | Sí (🔒) | Pendiente |\n"):
+            (r2 / "impacto" / "FU-05.md").write_text(sin.format(v="1.1", extra=extra), encoding="utf-8")
+            c, out = corre(S / "comprobar.py", r2, "--impacto", r2 / "impacto" / "FU-05.md")
+            ok(f"R2: «sin cambios» con un punto {extra.split('|')[2].strip()} por aplicar o pendiente es error",
+               c == 1 and any(l.startswith("✗") and "sin cambios" in l and "punto 3" in l for l in out.splitlines()), out)
+        (r2 / "impacto" / "FU-05.md").write_text(sin.format(v="1.0", extra=""), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", r2, "--impacto", r2 / "impacto" / "FU-05.md")
+        ok("R2: «sin cambios» y la versión ha subido desde el análisis base es aviso", c == 0 and any(
+            l.startswith("· ") and "sin cambios" in l and "1.0" in l for l in out.splitlines()), out)
+
+        # 4-control. La columna «Qué cambia» de decisiones.md sale en el Word (control del documento, versión ≥ 1.0):
+        # sin fuentes, estados ni Appian (error), ni jerga del análisis o muletillas (aviso); una 0.x no sale
+        q = tmp / "control"
+        fila11 = "| 1.1 | 2026-09-24 | Plazos en días hábiles; recordatorio al organismo; se quita la urgencia |"
+        for texto, grave, cita in [("Plazos [FU-03 00:11:00] en días hábiles ✅", True, "FU-03"),
+                                   ("Plazos en el record type de la solicitud", True, "record type"),
+                                   ("Aplica los puntos 1 a 3 del informe de impacto (D-01); cabe destacar los plazos",
+                                    False, "D-01")]:
+            shutil.rmtree(q, ignore_errors=True)
+            shutil.copytree(EJEMPLO, q)
+            editar(q / "analisis" / "decisiones.md", fila11, f"| 1.1 | 2026-09-24 | {texto} |")
+            c, out = corre(S / "comprobar.py", q)
+            linea = next((l for l in out.splitlines() if "«Qué cambia»" in l and l.startswith("✗" if grave else "·")), "")
+            ok(f"control del documento: «{texto[:30]}…» es {'error' if grave else 'aviso'}",
+               (c == 1 if grave else c == 0) and cita in linea and "1.1" in linea, out)
+        ok("control del documento: el aviso dice «punto N», «informe» y la muletilla",
+           all(x in linea for x in ("puntos 1", "informe", "cabe destacar")), linea)
+        shutil.rmtree(q)
+        shutil.copytree(EJEMPLO, q)
+        editar(q / "analisis" / "decisiones.md", "| 1.0 | 2026-09-10 | Primera versión del análisis |",
+               "| 0.9 | 2026-09-01 | Borrador con FU-01 y el record type |\n| 1.0 | 2026-09-10 | Primera versión del análisis |")
+        c, out = corre(S / "comprobar.py", q)
+        ok("control del documento: una fila 0.x no sale en el Word y no se mira",
+           c == 0 and not [l for l in out.splitlines() if "«Qué cambia»" in l and not l.startswith("✓")], out)
+
+        # 4-Q. Una pregunta del prototipo (Q-nn de su trazabilidad) que no ha pasado a una PC es aviso; con su PC, no
+        (q / "prototipo").mkdir(exist_ok=True)
+        (q / "prototipo" / "prototipo-autorizaciones-trazabilidad.md").write_text(
+            "# Trazabilidad\n\n## Preguntas abiertas para el cliente\n\n- **PC-01** ¿Cuánto se guardan?\n"
+            "- 🔴 **Q-03** ¿Se puede filtrar por organismo? _(pantalla: PAN-01)_\n\n## Supuestos a validar\n\n- Q-09 no es pregunta\n",
+            encoding="utf-8")
+        c, out = corre(S / "comprobar.py", q)
+        linea = next((l for l in out.splitlines() if "prototipo" in l and "Q-" in l), "")
+        ok("Q-nn del prototipo sin PC: aviso con su ID (solo las de «Preguntas abiertas»)",
+           c == 0 and linea.startswith("· ") and "Q-03" in linea and "Q-09" not in linea, out)
+        editar(q / "analisis" / "funcional.md", "| ~~PC-03~~ |",
+               "| PC-04 | ¿Se puede filtrar la lista por organismo? | Sí / No | Responsable de la unidad | PAN-01 "
+               "<!-- ❓ prototipo Q-03 --> |\n| ~~PC-03~~ |")
+        c, out = corre(S / "comprobar.py", q)
+        ok("Q-nn del prototipo con su PC: sin aviso", c == 0 and any(l.startswith("✓") and "Q-nn" in l
+                                                                   for l in out.splitlines()), out)
 
         # 4a. Texto que queda viejo: lo que una pieza cambiada ya no dice y sigue en otra (aviso, con --anterior)
         viejo = tmp / "texto viejo"
@@ -367,6 +548,65 @@ Versión 1.2: PAN-01
         ok("detecta fuentes y términos de Appian en el DF", "✗ DF: fuentes" in out and "✗ DF: sin términos de Appian" in out, out)
         ok("detecta un dato del DF sin su campo en el técnico", "✗ funcional §6: cada dato tiene su campo" in out and "Título" in out, out)
 
+        # 5a. DF ya hecho: una historia 🔒 que trae su ID original no se avisa por no decir «para qué» (no se inventa); las
+        # demás, sí
+        dfh = tmp / "DF ya hecho"
+        shutil.copytree(EJEMPLO, dfh)
+        fd = dfh / "analisis" / "funcional.md"
+        editar(fd, "**HU-07 — Adjuntar el informe del organismo** <!-- ✅ FU-01 00:20:05 -->",
+               "**HU-07 — Adjuntar el informe del organismo** <!-- 🔒 FU-01 RF-07 -->")
+        editar(fd, "cuando llega para que se pare el recordatorio y la solicitud avance.", "cuando llega.")
+        editar(fd, "en la propia solicitud para que el responsable lo tenga junto al resto.", "en la propia solicitud.")
+        c, out = corre(S / "comprobar.py", dfh)
+        linea = next((l for l in out.splitlines() if "Como… quiero… para…" in l), "")
+        ok("DF ya hecho: sin aviso del «para qué» en la historia 🔒 con su ID original; con aviso en la otra",
+           c == 0 and linea.startswith("· ") and "HU-06" in linea and "HU-07" not in linea, out)
+
+        # 5b. Ficha INT con criterios (R6): un intercambio con reglas es una ficha en §9 con criterios INT-nn.m que bajan a
+        # técnico §14; la fila sencilla sigue valiendo
+        intp = tmp / "con ficha INT"
+        shutil.copytree(EJEMPLO, intp)
+        editar(intp / "analisis" / "funcional.md", "Se usa la copia del día anterior <!-- ✅ FU-02 00:14:30 --> |\n",
+               "Se usa la copia del día anterior <!-- ✅ FU-02 00:14:30 --> |\n\n"
+               "**INT-02 — Comprobar el organismo en su registro** <!-- ✅ FU-02 00:15:00 -->\n\n"
+               "| Sistema | Cuándo | Qué pide | Qué devuelve | Si falla |\n|---|---|---|---|---|\n"
+               "| Registro de organismos | Al enviar la solicitud | El código del organismo | Si está de alta | "
+               "La solicitud se envía y se comprueba al revisarla |\n\n"
+               "Se acepta si:\n- `INT-02.1` Un organismo de baja no se puede elegir.\n"
+               "- `INT-02.2` Si el registro no responde, la solicitud se envía igual.\n\n"
+               "| ID | Sistema | Qué se intercambia | Cuándo | Si falla |\n|---|---|---|---|---|\n"
+               "| INT-03 | Registro mercantil | Datos de la empresa | Al dar de alta | Se piden a mano <!-- ✅ FU-02 00:16:00 --> |\n")
+        editar(intp / "analisis" / "tecnico.md", "| INT-01 Directorio |",
+               "| INT-02 Registro | Integración REST con la clave del organismo; reintento al revisar | Se envía igual |\n"
+               "| INT-03 Registro mercantil | Fuera de la aplicación: se piden a mano | — |\n| INT-01 Directorio |")
+        try:
+            m_int = modelo.cargar(intp)
+            ok("modelo: la ficha INT-02 y sus criterios INT-02.1 y INT-02.2; INT-01 sigue siendo fila",
+               m_int.piezas["INT-02"].forma == "ficha" and m_int.piezas["INT-02"].hijos == ["INT-02.1", "INT-02.2"]
+               and m_int.piezas["INT-02.1"].tipo == "CA" and m_int.piezas["INT-01"].forma == "fila"
+               and not m_int.fuera_de_casa, str(m_int.fuera_de_casa))
+            ok("modelo: una fila INT debajo de una ficha INT es una pieza y cierra la ficha antes de su tabla",
+               "INT-03" in m_int.piezas and m_int.piezas["INT-03"].forma == "fila"
+               and "| ID | Sistema |" not in m_int.texto("INT-02"), str(m_int.piezas.get("INT-03")))
+        except (KeyError, NameError) as e:
+            ok("modelo: la ficha INT-02 y sus criterios", False, repr(e))
+        c, out = corre(S / "comprobar.py", intp)
+        ok("ficha INT: con el técnico completo, sus criterios sin prueba en §14 son error",
+           c == 1 and any(l.startswith("✗ técnico §14") and "INT-02.1" in l for l in out.splitlines()), out)
+        editar(intp / "analisis" / "tecnico.md", "| ESC-01 a ESC-04 |",
+               "| INT-02.1, INT-02.2 | Elegir un organismo de baja; registro parado |\n| ESC-01 a ESC-04 |")
+        c, out = corre(S / "comprobar.py", intp)
+        ok("ficha INT: con sus criterios en §14, sin errores", c == 0, out)
+        c, out = corre(S / "indice.py", "ficha", intp, "INT-02")
+        ok("indice.py ficha INT-02 enseña sus criterios", c == 0 and "INT-02.2" in out and "registro no responde" in out, out)
+        hu = tmp / "criterio INT en una historia"
+        shutil.copytree(intp, hu)
+        editar(hu / "analisis" / "funcional.md", "- `HU-07.1` Solo admite PDF de hasta 20 MB.",
+               "- `HU-07.1` Solo admite PDF de hasta 20 MB.\n- `INT-02.3` El registro se consulta otra vez.")
+        m_hu = modelo.cargar(hu)
+        ok("modelo: un criterio INT-02.3 suelto en una historia no se cuelga de ella",
+           "INT-02.3" not in m_hu.piezas["HU-07"].hijos and "INT-02.3" not in m_hu.piezas, str(m_hu.piezas["HU-07"].hijos))
+
         # 6. Unir módulos
         m = tmp / "modulos"
         corre(S / "proyecto.py", "iniciar", m, "--nombre", "Módulos")
@@ -407,10 +647,26 @@ Se acepta si:
         (entrada / "notas.md").write_text("# Notas\nTexto.\n", encoding="utf-8")
         docx = entrada / "DF-revisado.docx"
         crear_docx_con_comentario(docx)
+        # Lo pegado en el chat (R1): «Tipo de fuente: chat | aprobación», «De:» y «Fecha:» en la cabecera; la fecha de
+        # la cabecera manda sobre la del nombre. El temporal de Office (~$…) no es una fuente
+        (entrada / "chat-2026-10-09-plazos.txt").write_text(
+            "Tipo de fuente: chat\nDe: Responsable de la unidad\nFecha: 2026-10-09\n\nLos plazos son de 10 días.\n", encoding="utf-8")
+        (entrada / "aprobacion-2026-10-01-informe.txt").write_text(
+            "Tipo de fuente: Aprobación\nDe: Jefe de proyecto\nFecha: 10/10/2026\n\nAplica el informe de FU-04.\n", encoding="utf-8")
+        (entrada / "~$DF-revisado.docx").write_bytes(b"\x00temporal de Office")
         c, out = corre(S / "leer_fuentes.py", entrada, "-o", tmp / "fuentes")
         indice = (tmp / "fuentes" / "indice.md").read_text(encoding="utf-8") if (tmp / "fuentes" / "indice.md").exists() else ""
         ok("leer_fuentes.py cataloga transcripción, texto y Word",
            c == 0 and "Transcripción" in indice and "| Texto |" in indice and "Documento Word" in indice, out + indice)
+        ok("leer_fuentes.py: chat y aprobación con su tipo, quién y la fecha de la cabecera",
+           re.search(r"\| chat-2026-10-09-plazos\.txt \| Chat \| de Responsable de la unidad[^|]*\| 2026-10-09 \|", indice)
+           and re.search(r"\| aprobacion-2026-10-01-informe\.txt \| Aprobación \| de Jefe de proyecto[^|]*\| 2026-10-10 \|",
+                         indice), indice)
+        ok("leer_fuentes.py: el temporal de Office (~$…) de una carpeta no se cataloga", "~$" not in indice, indice)
+        c, out = corre(S / "leer_fuentes.py", entrada / "~$DF-revisado.docx", "-o", tmp / "fuentes")
+        ok("leer_fuentes.py: un temporal de Office suelto da aviso y no se cataloga",
+           "~$" not in (tmp / "fuentes" / "indice.md").read_text(encoding="utf-8") and "~$DF-revisado.docx" in out
+           and "AVISO" in out, out)
         tr = next((x for x in (tmp / "fuentes").glob("FU-*-reunion-*.md")), None)
         ok("la transcripción lleva sus participantes", tr is not None and "- Participantes: Persona 0; Persona 1" in tr.read_text(encoding="utf-8"))
         w = tmp / "con-nombres"
@@ -500,6 +756,12 @@ Se acepta si:
              "| `DEM_Panel` | Interfaz |", "Situación", "DEM_Panel"),
             ("§13: «Sustituye» sin un objeto del inventario", "tecnico", "| Sustituye | `DEM_ESTADOS_VALIDOS` |",
              "| Sustituye | — |", "Situación", "DEM_ER_IdEstado"),
+            ("§13: «Sustituye» con un objeto nuevo que ya está en el inventario", "tecnico",
+             "| `DEM_ER_IdEstado` | Regla de expresión | Sustituye |", "| `DEM_ER_EsAdmin` | Regla de expresión | Sustituye |",
+             "Situación", "DEM_ER_EsAdmin"),
+            ("§13: «Sustituye» con un objeto nuevo de otra aplicación", "tecnico",
+             "| `DEM_ER_IdEstado` | Regla de expresión | Sustituye |",
+             "| `UTL_DiasLaborables` | Regla de expresión | Sustituye |", "Situación", "«Sustituye» y es de otra aplicación"),
             ("una REF de la propuesta sin DT que la cite", "tecnico", "| **Necesidad** | [FU-02 REF-01], HU-02 |",
              "| **Necesidad** | HU-02 |", "cada REF", "REF-01"),
             ("§3 sin la tabla de migración", "tecnico", "| Origen en la app actual |", "| Origen anterior |",
@@ -513,6 +775,18 @@ Se acepta si:
             c, out = corre(S / "comprobar.py", r)
             linea = next((l for l in out.splitlines() if l.startswith("✗") and comprobacion in l), "")
             ok(f"evolutivo: {nombre} es error", c == 1 and cita in linea, out)
+        # §13 se comprueba siempre que su tabla tenga filas, también con el técnico sin empezar (sin DT ni modelo)
+        r = tmp / "evolutivo técnico sin empezar"
+        shutil.copytree(EVOLUTIVO, r)
+        (r / "analisis" / "tecnico.md").write_text(
+            "# Devoluciones de solicitudes — Especificación técnica\n\nVersión: 1.0 · Estado: en curso\n\n"
+            + "\n".join(f"## {n}. Apartado\n" for n in range(13))
+            + "## 13. Plan de construcción\n\n| Paso | Objeto | Tipo | Situación | Sustituye a |\n|---|---|---|---|---|\n"
+            "| 1 | `DEM_ER_EsAdmin` | Regla de expresión | Nuevo | — |\n\n## 14. Pruebas\n\n## 15. Pendientes\n",
+            encoding="utf-8")
+        c, out = corre(S / "comprobar.py", r)
+        ok("evolutivo: §13 con filas se comprueba aunque el técnico no esté empezado",
+           c == 1 and any(l.startswith("✗ técnico §13") and "DEM_ER_EsAdmin" in l for l in out.splitlines()), out)
         r = tmp / "evolutivo REF y DEC que existen"
         shutil.copytree(EVOLUTIVO, r)
         editar(r / "analisis" / "funcional.md", "[FU-01 H-DAT-01] -->", "[FU-01 H-DAT-01]; [FU-02 REF-01]; [FU-02 DEC-01] -->")
@@ -619,6 +893,90 @@ Se acepta si:
                     ok("el DF no enseña fuentes, anuladas ni respondidas",
                        "FU-0" not in xml and "HU-11" not in xml and "PC-03" not in xml and "PC-01" in xml
                        and "indice.py" not in xml and "Analista, 2026" not in xml)
+                    toc = re.search(r"<w:sdt>.*?</w:sdt>", xml, re.S)
+                    ok("el índice del DF lleva sus entradas (soffice no rellena un campo vacío)",
+                       toc is not None and "1. Objetivo y alcance" in toc.group(0) and "HU-07 — " in toc.group(0),
+                       toc.group(0)[:600] if toc else xml[:600])
+                    estilos = zipfile.ZipFile(tmp / "df.docx").read("word/styles.xml").decode("utf-8")
+                    ok("sin marca, los colores de siempre", 'w:fill="1F3864"' in xml and "1F3864" in estilos)
+                d = docx_de(intp, tmp / "int.docx")
+                xml = zipfile.ZipFile(d).read("word/document.xml").decode("utf-8").replace(GUION, "-") if d else ""
+                ok("la ficha INT (R6) sale como título, igual que una historia",
+                   any('w:val="Heading3"' in x and "INT-02 — Comprobar el organismo" in x  # como las fichas HU (####)
+                       for x in re.findall(r"<w:p>.*?</w:p>", xml, re.S)),
+                   xml[:300])
+                # Una viñeta en varias líneas es un párrafo con su numeración; el color de la marca del cliente (T12)
+                w = tmp / "Word con marca"
+                shutil.copytree(EJEMPLO, w)
+                editar(w / "analisis" / "funcional.md", "\n## 2. Perfiles",
+                       "\n- Primera parte de la viñeta\n  que sigue en otra línea.\n- Otra viñeta.\n\n## 2. Perfiles")
+                (w / "prototipo").mkdir()
+                (w / "prototipo" / "brand-ejemplo.json").write_text(
+                    json.dumps({"id": "ejemplo", "site": {"backgroundColor": "#7a1f3d"}}), encoding="utf-8")
+                d = docx_de(w, tmp / "marca.docx")
+                xml = zipfile.ZipFile(d).read("word/document.xml").decode("utf-8") if d else ""
+                estilos = zipfile.ZipFile(d).read("word/styles.xml").decode("utf-8") if d else ""
+                ok("una viñeta de varias líneas es un solo párrafo con numeración",
+                   any("<w:numPr>" in x and "Primera parte de la viñeta que sigue en otra línea." in x
+                       for x in re.findall(r"<w:p>.*?</w:p>", xml, re.S)) and xml.count("que sigue en otra línea") == 1,
+                   xml[:300])
+                ok("con prototipo/brand-<id>.json, su color en títulos y cabeceras de tabla",
+                   'w:fill="7A1F3D"' in xml and 'w:fill="1F3864"' not in xml and 'w:color w:val="7A1F3D"' in estilos
+                   and "1F3864" not in estilos and "2F5597" not in estilos, estilos[-600:])
+                # El Word entregado (por fichero: «Entregados:» de proyecto.md) no se pisa; el que no se ha entregado se
+                # reemplaza avisando, aunque «DF entregado» diga su versión
+                (w / "entregables").mkdir(exist_ok=True)
+                destino = w / "entregables" / "DF-Solicitudes-de-autorizacion-v1.1.docx"
+                destino.write_bytes(b"el que se envio")
+                editar(w / "proyecto.md", "DF entregado: 1.0 (2026-09-12)", "DF entregado: 1.1 · 2026-10-01")
+                r = subprocess.run(["node", str(S / "df_docx.js"), str(w)], capture_output=True, text=True,
+                                   encoding="utf-8", errors="replace")
+                ok("un Word que no está en «Entregados» se reemplaza, avisando, aunque sea de la versión de «DF entregado»",
+                   r.returncode == 0 and "se reemplaza" in r.stdout and destino.read_bytes() != b"el que se envio",
+                   r.stdout + r.stderr)
+                editar(w / "proyecto.md", "DF entregado: 1.1 · 2026-10-01 · Estado: en validación",
+                       "DF entregado: 1.1 · 2026-10-01 · Estado: en validación\nEntregados: DF-Solicitudes-de-autorizacion-v1.1.docx")
+                destino.write_bytes(b"el que se envio")
+                r = subprocess.run(["node", str(S / "df_docx.js"), str(w)], capture_output=True, text=True,
+                                   encoding="utf-8", errors="replace")
+                ok("un Word de «Entregados» no se sobrescribe: sale con error y no lo toca",
+                   r.returncode == 1 and "ya se entregó" in r.stderr and destino.read_bytes() == b"el que se envio",
+                   r.stdout + r.stderr)
+                editar(w / "proyecto.md", "\nEntregados: DF-Solicitudes-de-autorizacion-v1.1.docx", "")
+                # Sin LibreOffice, el PDF que ya había se queda
+                revision = w / "entregables" / "revision"
+                revision.mkdir()
+                (revision / "DF del cliente.pdf").write_bytes(b"%PDF anterior")
+                (w / "fuentes").mkdir(exist_ok=True)
+                otro = w / "fuentes" / "DF del cliente.docx"
+                shutil.copy(destino, otro)
+                r = subprocess.run(["node", str(S / "df_docx.js"), str(w), "--pdf-de", str(otro)], capture_output=True,
+                                   text=True, encoding="utf-8", errors="replace",
+                                   env={**os.environ, "PATH": str(pathlib.Path(shutil.which("node")).parent), "SOFFICE": ""})
+                ok("df_docx.js --pdf-de sin LibreOffice: lo dice y no borra el PDF que había",
+                   r.returncode == 1 and "Sin LibreOffice" in r.stdout
+                   and (revision / "DF del cliente.pdf").is_file()
+                   and (revision / "DF del cliente.pdf").read_bytes() == b"%PDF anterior", r.stdout + r.stderr)
+                # --pdf: LibreOffice en un HOME temporal que se borra y el PDF en <p>/entregables/revision/
+                if shutil.which("soffice"):
+                    temporal = tmp / "temporal de soffice"
+                    temporal.mkdir()
+                    r = subprocess.run(["node", str(S / "df_docx.js"), str(w), "--pdf"], capture_output=True, text=True,
+                                       encoding="utf-8", errors="replace", env={**os.environ, "TMPDIR": str(temporal)})
+                    pdf = revision / "DF-Solicitudes-de-autorizacion-v1.1.pdf"
+                    ok("df_docx.js --pdf: el PDF en entregables/revision/ y el HOME temporal borrado",
+                       r.returncode == 0 and pdf.is_file() and pdf.read_bytes()[:4] == b"%PDF"
+                       and not [x for x in temporal.iterdir() if x.name != "node-compile-cache"],  # la caché es de Node
+                       r.stdout + r.stderr + str(list(temporal.iterdir())))
+                    # --pdf-de: un documento cualquiera (el DF del cliente para ver sus diapositivas), sin generar el Word
+                    r = subprocess.run(["node", str(S / "df_docx.js"), str(w), "--pdf-de", str(otro)], capture_output=True,
+                                       text=True, encoding="utf-8", errors="replace", env={**os.environ, "TMPDIR": str(temporal)})
+                    ok("df_docx.js --pdf-de: solo ese PDF, en entregables/revision/, y sustituye al anterior",
+                       r.returncode == 0 and (revision / "DF del cliente.pdf").read_bytes()[:4] == b"%PDF"
+                       and (revision / "DF del cliente.pdf").read_bytes() != b"%PDF anterior"
+                       and not [x for x in temporal.iterdir() if x.name != "node-compile-cache"], r.stdout + r.stderr)
+                else:
+                    print("· df_docx.js --pdf: no hay LibreOffice (soffice); no se prueba")
         else:
             print("· DF en Word: no hay Node.js; no se prueba")
 
@@ -634,6 +992,19 @@ Se acepta si:
         shutil.rmtree(tmp, ignore_errors=True)
     print("\nTodo correcto." if not fallos else f"\n{len(fallos)} pruebas fallan: {', '.join(fallos)}")
     return 1 if fallos else 0
+
+
+GUION = chr(0x2011)   # df_docx.js pone guiones que no se parten en los IDs (PAN‑02)
+
+
+def docx_de(proyecto, salida):
+    """El Word del DF de un proyecto (df_docx.js -o salida), o None si no se genera."""
+    r = subprocess.run(["node", str(S / "df_docx.js"), str(proyecto), "-o", str(salida)], capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    if r.returncode or not salida.exists():
+        print(r.stdout + r.stderr)
+        return None
+    return salida
 
 
 def crear_docx_con_comentario(ruta):

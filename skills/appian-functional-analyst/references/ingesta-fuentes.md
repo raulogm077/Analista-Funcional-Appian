@@ -19,8 +19,17 @@ python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o <proyecto>/fuen
     Archivo → Guardar como) o PDF. No intentes instalar `extract-msg`: en muchos
     equipos no compila.
   - Imágenes: revísalas con Read.
-- Texto pegado en el chat: guárdalo como `.txt` con un nombre descriptivo
-  (`reunion-2026-09-03.txt`) y catalógalo igual, para que también tenga ID.
+- **Lo que llega por el chat** (texto pegado, una decisión, la aprobación del jefe de proyecto) es una fuente: guárdalo
+  en `<p>/fuentes/chat-AAAA-MM-DD-<tema>.txt` con esta cabecera y catalógalo igual, para que tenga ID:
+  ```
+  Tipo de fuente: chat | aprobación
+  De: <rol de quien lo dice, sin su nombre>
+  Fecha: AAAA-MM-DD
+  ```
+  La aprobación del jefe de proyecto es una FU de tipo Aprobación (por correo, de tipo Correo), y el informe de
+  impacto la cita en la Decisión: «✔ FU-09». Si tomas una decisión sin respuesta (sesión desatendida, nadie contesta),
+  la pieza queda 🔶 con «(pendiente: PC-nn)» y una PC «Supuesto: ¿confirmas que…?», con la opción aplicada primero en
+  «Opciones»; solo en lo que no requiere aprobación: lo que la requiere queda «Pendiente» (`actualizacion.md` §5).
 - Aplicación existente: `as-is/` entra como una sola fuente, con el índice de sus documentos y sin su extracción en
   bruto; la propuesta de refactorización, como cualquier fichero. Primero ellas, que son la base:
   ```bash
@@ -97,12 +106,24 @@ análisis. Quien lea el análisis debe poder ir de cualquier regla a la frase ex
 - **Extrae, no reinterpretes.** Cada pieza lleva su ID del plugin y, en el comentario, el ID original del documento
   (actividad, requisito, pantalla), como arriba. Conserva los nombres de campos y los textos literales: etiquetas,
   botones, tooltips, mensajes de error y de confirmación.
+  - Un elemento del DF con dos actores (dos perfiles hacen cosas distintas) da varias piezas con el mismo ID original;
+    nunca al revés: dos elementos del DF no se juntan en una pieza.
+  - Una pantalla sin requisito que la pida: la PAN entra 🔒 y su historia 🔶 si el texto de la pantalla la sostiene;
+    si no, una PC.
+  - Un DF que no prioriza: las historias, Imprescindible, inferida (`<!-- 🔒 FU-01 RF-07; prioridad 🔶 -->`), y una sola
+    PC «El DF no prioriza: ¿hay algo deseable?».
+  - Un CAMBIA pendiente de aprobación que respondería a una PC abierta se añade como opción de esa PC: el cliente
+    decide con todo delante.
+  - No inventes el «para qué» de una historia que el DF no da (`comprobar.py` no lo pide en las 🔒 con su ID original).
 - Cada pantalla (§5) e historia cita su diapositiva o página. Si la diapositiva
   tiene imágenes de la pantalla (el `.md` de la fuente lo indica), mírala antes
   de completar la ficha:
-  - Entorno con LibreOffice y poppler (Claude en la nube los tiene):
-    `soffice --headless --convert-to pdf doc.pptx` y
-    `pdftoppm -f N -l N -png -r 80 doc.pdf diap`; luego Read del PNG.
+  - Entorno con LibreOffice y poppler (Claude en la nube los tiene): a PDF con LibreOffice en un perfil temporal, la
+    diapositiva a PNG y Read del PNG:
+    ```bash
+    node <skill>/scripts/df_docx.js <p> --pdf-de doc.pptx      # <p>/entregables/revision/doc.pdf
+    pdftoppm -f N -l N -png -r 80 <p>/entregables/revision/doc.pdf <p>/entregables/revision/diap
+    ```
   - Sin esas herramientas: pide al usuario el documento exportado a PDF y usa
     Read con `pages`.
 - **Imagen de pantalla frente a texto**: la imagen completa lo que el texto no

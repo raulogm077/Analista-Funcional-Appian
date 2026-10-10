@@ -169,6 +169,8 @@ def main() -> int:
              proyecto(raiz, VISIBLES, **{uno["id"]: {"encaja": "HU-08"}}), 1, "pero encaja en «HU-08»"),
             ("una que no requiere aprobación no cuenta",
              proyecto(raiz, VISIBLES, **{uno["id"]: {"requiere": "—"}}), 1, "no requiere aprobación"),
+            ("«Requiere: Sin cambios» no es «Sí»",
+             proyecto(raiz, VISIBLES, **{uno["id"]: {"requiere": "Sin cambios"}}), 1, "no requiere aprobación"),
             ("una decidida sin el analista no cuenta",
              proyecto(raiz, VISIBLES, **{uno["id"]: {"decision": "✔"}}), 1, "no «Pendiente»"),
             ("aplicada: la pieza cambia respecto a v1.0",
