@@ -16,8 +16,8 @@ está, Chrome o Edge del sistema.
 
 Avisa de los diagramas de más de 1.600 px de ancho: en una página vertical, el texto queda pequeño.
 Salida: <nombre>.png (y .svg) por cada .mmd.
-Código de salida: 0 todo bien, 1 algún diagrama con error de sintaxis o un fichero que no está, 2 falta un
-requisito (Playwright, un navegador o assets/mermaid.min.js).
+Código de salida: 0 todo bien, 1 algún diagrama con error de sintaxis, un fichero que no está o una orden mal escrita
+(también sin ningún .mmd ni --md), 2 falta un requisito (Playwright, un navegador o assets/mermaid.min.js).
 """
 import argparse, glob, pathlib, re, sys, textwrap
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera de la carpeta de salida
@@ -89,6 +89,12 @@ def main():
     ap.add_argument("--svg", action="store_true")
     ap.add_argument("--width", type=int, default=1600)
     ap.add_argument("--md", nargs="+", action="extend", default=[], metavar="documento.md")
+
+    def error_de_uso(mensaje):   # sale con 1: el 2 de argparse aquí significa «falta un requisito»
+        ap.print_usage(sys.stderr)
+        print(f"{ap.prog}: {mensaje}", file=sys.stderr)
+        sys.exit(1)
+    ap.error = error_de_uso
     a = ap.parse_intermixed_args()
     for stream in (sys.stdout, sys.stderr):  # consolas Windows sin UTF-8
         stream.reconfigure(encoding="utf-8", errors="replace")

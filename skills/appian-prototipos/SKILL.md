@@ -1,6 +1,6 @@
 ---
 name: appian-prototipos
-description: "Crea prototipos navegables (maquetas, mockups) de aplicaciones Appian, con componentes SAIL reales, patrones de pantalla repetibles y capturas PNG que se enlazan en el diseño funcional. Úsala siempre que se pida un prototipo, maqueta, mockup o propuesta de pantallas navegable, sea cual sea el material de partida (primero obtiene el análisis funcional del proyecto, analisis/funcional.md, con appian-functional-analyst), o capturas de las pantallas para el DF. No redacta requisitos ni decide el modelo de datos o la seguridad (appian-functional-analyst) y no construye en Appian (appian-best-practices): parte del funcional y, si existe, de la especificación técnica. Para código SAIL suelto, appian-sail-generator."
+description: "Crea prototipos navegables (maquetas, mockups) de aplicaciones Appian, con componentes SAIL reales, patrones de pantalla repetibles, la marca de un cliente (la busca si solo se sabe su nombre) y capturas PNG que se enlazan en el diseño funcional. Úsala siempre que se pida un prototipo, maqueta, mockup o propuesta de pantallas navegable, sea cual sea el material de partida (primero obtiene el análisis funcional del proyecto, analisis/funcional.md, con appian-functional-analyst), capturas de las pantallas para el DF o aplicar la marca de un cliente al prototipo. No redacta requisitos ni decide el modelo de datos o la seguridad (appian-functional-analyst) y no construye en Appian (appian-best-practices): parte del funcional y, si existe, de la especificación técnica. Para código SAIL suelto, appian-sail-generator."
 ---
 
 # Prototipos Appian
@@ -40,7 +40,7 @@ El prototipo parte de `<p>/analisis/funcional.md`, el diseño funcional que escr
 
 Carga la skill del analista para ese paso y vuelve aquí con el funcional. Así el prototipo recibe siempre el mismo formato, con IDs estables y la fuente de cada dato.
 
-Tras una actualización, el analista dice qué pantallas cambian: la línea «Pantallas afectadas (prototipo)» de `indice.py impacto`. Se rehacen y se vuelven a capturar solo esas.
+Tras una actualización, el analista dice qué pantallas cambian: la línea «Pantallas afectadas (prototipo)» de `indice.py impacto`. Se rehacen y se vuelven a capturar solo esas (`capture.py … --solo`, paso 4).
 
 Después sigue `references/ingesta-requisitos.md`: qué apartado del funcional va a qué parte del spec, el patrón de cada pantalla, el componente de cada tipo de dato y qué hacer con lo que el funcional no define.
 
@@ -55,7 +55,7 @@ En las fichas, decide qué áreas 1:N son vistas (máximo 7) y qué datos van en
 **Checkpoint**: presenta al usuario en un único mensaje el inventario (`Id · Pantalla · Patrón · Tarea principal · Historias`), la navegación y las preguntas abiertas, y espera confirmación. Si pidió ir directo o no está presente, sigue con la lectura más razonable y déjalo en `openQuestions` y `$assumption`.
 
 **Marca**: si el proyecto tiene `prototipo/brand-<id>.json`, el prototipo se construye con esa marca. Si no la tiene y se sabe para qué empresa es (lo dice el usuario o `proyecto.md`), saca su configuración de marca (`references/marca.md`):
-1. Busca su guía de marca (manual de identidad) o su sala de prensa y, si no las publica, su web oficial. Solo fuentes de la propia empresa.
+1. Busca con WebSearch («<empresa> manual de identidad corporativa», «<empresa> brand guidelines», «<empresa> logo SVG») su guía de marca o su sala de prensa y su web oficial. Solo fuentes de la propia empresa.
 2. `python3 $KIT/scripts/marca.py web <url>` da sus colores, con su uso y su contraste, sus logos y sus tipografías. Si sale con 2 porque el terminal no llega a esa web, usa WebFetch pidiendo los colores en hex, la tipografía y la URL del logo. Si la guía de marca es un PDF, léela con la skill de PDF.
 3. Guarda el logo como SVG en `<p>/prototipo/` (por ejemplo, `logo-web.svg`): el campo `svg` de `logos`, tal cual, o la descarga de su `url`. `crear` solo admite SVG. Si solo hay PNG o JPG, busca el SVG en su sala de prensa o en su guía de marca; si no aparece, crea la marca sin `--logo` (la cabecera del prototipo va sin logo y `marca-<id>.md` lo deja pendiente) y guarda el PNG, que es lo que pide el Site de Appian.
 4. Decide qué color hace cada papel: oscuro (la cabecera del site, con texto blanco), realce (la página seleccionada), acento (enlaces y botones) y botón principal. Para la cabecera, el logo en su versión para fondo oscuro. La forma (`--formas`) se elige mirando los botones y los campos de su web: esquinas rectas, `SQUARED`; redondeadas, `SEMI_ROUNDED`; píldora, `ROUNDED`. Sin ella, `SQUARED`, la de Appian.
@@ -101,7 +101,9 @@ Si hay Playwright y un navegador (ver paso 0):
 python3 $KIT/scripts/smoke_test.py prototipo-<app>.html app.json      # pulsa todo; falla con errores JS o componentes sin pintar
 python3 $KIT/scripts/contrast_audit.py prototipo-<app>.html app.json  # contraste WCAG 2.2 AA de cada texto, campo y gráfico: debe dar 0
 python3 $KIT/scripts/capture.py prototipo-<app>.html app.json -o capturas/
+python3 $KIT/scripts/capture.py prototipo-<app>.html app.json -o capturas/ --solo PAN-02,PAN-04   # solo las que cambian
 ```
+Con `--solo` (el código del `ref` de la pantalla o de la vista, o su id) se capturan solo esas y `capturas/indice.md` se fusiona: cambian sus filas y las demás se quedan.
 Revisa **visualmente** las capturas (Read sobre los PNG): textos cortados, columnas desalineadas, pantallas vacías, datos incoherentes. Después pasa la **rúbrica UX** (`references/design-rules.md` §17): 25 criterios, marcados ✅, ⚠️ o ❌ por pantalla. Si puedes lanzar agentes, que la aplique uno que no haya diseñado las pantallas, con las capturas y la guía como única entrada. Corrige lo marcado con ❌. Después recorre los **criterios de aceptación** (`HU-nn.m`) de las historias de cada pantalla y comprueba en el prototipo los que se pueden ver (validaciones, visibilidad, botones, textos, estados); los que dependen de algo que el prototipo no hace (avisos, plazos, integraciones) quedan en un `$note`. Corrige el `app.json` y repite. Para flujos críticos (alta con validaciones, decisión de una tarea) haz además una prueba dirigida con Playwright rellenando campos y pulsando botones: los escenarios `ESC-nn` del funcional son los recorridos y los criterios, lo que se comprueba. El prototipo expone `window.PROTO` (espera a `PROTO.ready`): `PROTO.show("pantalla", {params: {id: 4}, view: "documentos", step: 1, state: {"local!x": …}, showValidation: true})` abre una pantalla en ese estado; después, pulsa y escribe con Playwright sobre lo visible (`page.get_by_role("button", name="Enviar")`, `page.get_by_label("Título")`). `scripts/capture.py` es un ejemplo completo.
 
 Sin Playwright o sin navegador (los scripts salen con código 2 y dicen qué falta): valida, construye y revisa al menos el HTML generado.
@@ -120,7 +122,7 @@ Los comentarios de una demo los incorpora antes el analista: informe de impacto 
 1. Guarda la versión que se enseñó: `app-vX.Y.json`.
 2. Rehaz **solo las PAN del informe**, en el script que escribe el spec. Una PAN 🔒 cuyo punto sigue «Pendiente» no se toca.
 3. Valida con `validate.py app.json --anterior app-vX.Y.json --confirmadas …` y las PAN 🔒 que el informe no aprueba (`proyecto.py estado <p>` del analista da las 🔒): es error si cambia una de ellas o un diálogo que abre.
-4. Construye, captura las pantallas que cambian y sigue con «Entregar».
+4. Construye, captura las pantallas que cambian (`--solo`, paso 4 del flujo) y sigue con «Entregar».
 
 ## Qué escribe
 

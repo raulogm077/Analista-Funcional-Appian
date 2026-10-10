@@ -1,13 +1,15 @@
 """Modelo de un proceso BPMN y su fichero .drawio.
 
 El proceso se intercambia en JSON (ver SKILL.md):
-  {"proceso": str, "carriles": [str], "pasos": [{id, tipo, carril, nombre, posicion?, nodo?, temporizador?, proceso_llamado?}],
+  {"proceso": str, "carriles": [str], "pasos": [{id, tipo, carril, nombre, posicion?, nodo?, temporizador?, proceso_llamado?,
+              interrumpe?}],
    "flujos": [{de, a, etiqueta?, discontinuo?, defecto?, condicion?}],
    "externos": [str]?,                    participantes externos (caja negra): flujos de mensaje con ellos
    "notas": [{paso, texto}]?}             notas unidas a un paso
 
 nodo, temporizador, proceso_llamado y condicion son datos de Appian (DATOS_PASO, DATOS_FLUJO): en el .drawio van como
-atributos de un <object> que envuelve la celda («Editar datos» en draw.io) y no se ven en el dibujo.
+atributos de un <object> que envuelve la celda («Editar datos» en draw.io) y no se ven en el dibujo. interrumpe (true en
+un temporizador unido a su tarea que la cancela al vencer) va igual, como "1", y además cambia el borde del evento.
 
 Un proceso con "tramos": true que no cabe en una página se dibuja en varias, una por tramo (id «tramo-N»). Cada flujo
 que va de un tramo a otro se corta en dos con un par de eventos de enlace (ENL-nn-S, el que sale, y ENL-nn-E, el que
@@ -32,8 +34,9 @@ ENLACES = {"enlace_salida", "enlace_entrada"}   # los cortes entre tramos: del d
 FORMAS_EVENTO = EVENTOS | ENLACES
 PREFIJO = {**{t: "EV" for t in EVENTOS}, **{t: "GW" for t in PUERTAS}, **{t: "ACT" for t in TAREAS}}
 TAM = {**{t: (40, 40) for t in FORMAS_EVENTO}, **{t: (50, 50) for t in PUERTAS}, **{t: (120, 80) for t in TAREAS}}
-DATOS_PASO = ("nodo", "temporizador", "proceso_llamado")   # datos de Appian de un paso
-DATOS_FLUJO = ("condicion",)                               # y de un flujo
+DATOS_PASO = ("nodo", "temporizador", "proceso_llamado", "interrumpe")   # datos de un paso que no se ven en el dibujo
+DATOS_FLUJO = ("condicion",)                                             # y de un flujo
+SI_NO = ("interrumpe",)       # datos de sí o no: true en el JSON y "1" en el .drawio; sin ellos, no
 NOMBRE_DATO = {"nodo": "nodo", "temporizador": "temporizador", "proceso_llamado": "proceso llamado", "condicion": "condición"}
 
 AZUL, VERDE, ROJO, AMBAR = "#1d659c", "#117c00", "#b2002c", "#b86e00"
@@ -127,9 +130,61 @@ def es_mensaje(f, proc):
     return f["de"] in ext or f["a"] in ext
 
 
+def es_si(v):
+    """Si un dato de sí o no (SI_NO) dice que sí: true, o "1", "true" o "sí" escritos en draw.io."""
+    return v is True or str(v).strip().lower() in ("1", "true", "sí", "si")
+
+
 def datos(o, claves):
-    """Los datos de Appian de un paso o un flujo que tienen valor, como texto: {clave: valor}."""
-    return {k: str(o[k]) for k in claves if o.get(k) not in (None, "")}
+    """Los datos de un paso o un flujo que tienen valor, como texto: {clave: valor}. Uno de sí o no, solo si es sí, "1"."""
+    return {k: "1" if k in SI_NO else str(o[k]) for k in claves
+            if (es_si(o.get(k)) if k in SI_NO else o.get(k) not in (None, ""))}
+
+
+def datos_json(o, claves):
+    """Los mismos datos para el JSON del proceso: uno de sí o no, true."""
+    return {k: True if k in SI_NO else v for k, v in datos(o, claves).items()}
+
+
+BORDE = ("temporizador", "mensaje", "intermedio", "error")   # eventos que, unidos a una tarea, van en su borde
+
+
+def en_borde(proc):
+    """Los eventos unidos a una tarea con un flujo discontinuo: van en su borde."""
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    return {f["a"] for f in proc["flujos"] if f.get("discontinuo") and tipo.get(f["de"]) in TAREAS and tipo.get(f["a"]) in BORDE}
+
+
+def con_contorno(estilo, contorno):
+    """Estilo con otro contorno de evento (outline=…)."""
+    if not contorno:
+        return estilo
+    return ";".join([t for t in estilo.split(";") if t and not t.startswith("outline=")] + [f"outline={contorno}"]) + ";"
+
+
+def contornos(proc):
+    """{id: contorno (outline=…)} de los eventos que pueden ir en el borde de una tarea, como en el BPMN: en el borde,
+    continuo si la interrumpen (un error, o un temporizador con «interrumpe») y discontinuo si no (un plazo, un mensaje o
+    un intermedio); un error suelto y sin salidas, el de un fin; los demás, el de su tipo."""
+    borde, ids = en_borde(proc), {p["id"] for p in proc["pasos"]}
+    salen = {f["de"] for f in proc["flujos"] if f["a"] in ids}
+    out = {}
+    for p in proc["pasos"]:
+        if p["tipo"] not in BORDE:
+            continue
+        if p["id"] in borde:
+            interrumpe = p["tipo"] == "error" or (p["tipo"] == "temporizador" and es_si(p.get("interrumpe")))
+            out[p["id"]] = "boundInt" if interrumpe else "boundNonint"
+        elif p["tipo"] == "error" and p["id"] not in salen:
+            out[p["id"]] = "end"
+        else:
+            out[p["id"]] = _estilo(ESTILO[p["tipo"]]).get("outline")
+    return out
+
+
+def estilo_paso(p, contorno=None):
+    """El estilo de un paso: el de su tipo con su contorno (de contornos())."""
+    return con_contorno(ESTILO[p["tipo"]], contorno)
 
 
 # ---------------------------------------------------------------- proceso (JSON)
@@ -327,7 +382,8 @@ def validar(proc):
             av.append(f"{pid} es un fin y sale un flujo de él")
         if p["tipo"] not in INICIOS and pid not in ent:
             av.append(f"{pid} ({p.get('nombre', '')}) no tiene flujo de entrada")
-        if p["tipo"] != "fin" and pid not in sal:
+        unido = any(f.get("discontinuo") and pasos[f["de"]]["tipo"] in TAREAS for f in ent.get(pid, []))
+        if p["tipo"] != "fin" and pid not in sal and not (p["tipo"] == "error" and not unido):   # error suelto: un fin
             av.append(f"{pid} ({p.get('nombre', '')}) no tiene flujo de salida")
         if p["tipo"] in ("exclusiva", "inclusiva") and len(sal.get(pid, [])) > 1:
             sin = [f["a"] for f in sal[pid] if not f.get("etiqueta") and not f.get("defecto")]
@@ -339,12 +395,14 @@ def validar(proc):
         elif defecto and (p["tipo"] == "paralela" or len(sal.get(pid, [])) < 2):
             av.append(f"{pid}: un flujo por defecto solo tiene sentido en una puerta exclusiva o inclusiva, "
                       "o en una tarea con varias salidas")
-        if p["tipo"] == "error" and not any(f.get("discontinuo") and pasos[f["de"]]["tipo"] in TAREAS for f in ent.get(pid, [])):
+        if p["tipo"] == "error" and not unido and pid in sal:
             av.append(f"{pid}: un evento de error va en el borde de la tarea en la que salta; únelo a ella con un flujo discontinuo")
         if p.get("proceso_llamado") and p["tipo"] != "llamada":
             av.append(f"{pid}: proceso_llamado solo se usa en un paso de tipo llamada")
         if p.get("temporizador") and p["tipo"] not in ("temporizador", "inicio_temporizador"):
             av.append(f"{pid}: temporizador solo se usa en un paso de tipo temporizador o inicio_temporizador")
+        if es_si(p.get("interrumpe")) and (p["tipo"] != "temporizador" or not unido):
+            av.append(f"{pid}: interrumpe solo se usa en un temporizador unido a su tarea con un flujo discontinuo")
     n = sum(1 for p in pasos.values() if p["tipo"] in TAREAS)
     if n > 20 and not proc.get("tramos"):
         av.append(f"{n} tareas en un diagrama: pártelo en subprocesos para que se lea bien (si es un proceso que ya "
@@ -425,7 +483,8 @@ def entrada_mensaje(f, centro, ancho, externos):
 
 
 def entrada_asociacion(lado, nota=None, paso=None):
-    """Línea de la nota a su paso, en vertical por donde se solapan en horizontal. `nota` y `paso`: (x, w)."""
+    """Línea de la nota a su paso, en vertical por donde se solapan en horizontal; si no se solapan (una nota al lado de
+    la etiqueta del paso), desde la esquina de la nota más cercana al paso. `nota` y `paso`: (x, w)."""
     sx = ex = 0.5
     if nota and paso:
         a, b = max(nota[0], paso[0]), min(nota[0] + nota[1], paso[0] + paso[1])
@@ -499,11 +558,12 @@ def _celdas(proc, geo, pre=""):
         lane_id[c] = f"{pre}carril-{i}"
         celdas.append(f'<mxCell id="{lane_id[c]}" value="{_xml_attr(c)}" style="{ESTILO_CARRIL}" vertex="1" parent="1">'
                       f'<mxGeometry y="{y:.0f}" width="{geo["ancho"]:.0f}" height="{h:.0f}" as="geometry"/></mxCell>')
+    contorno = contornos(proc)
     for p in proc["pasos"]:
         w, h = TAM[p["tipo"]]
         cx, cy = geo["pasos"][p["id"]]
         ly = geo["carriles"][p["carril"]][0]
-        estilo = con_lado(ESTILO[p["tipo"]], geo.get("etiquetas", {}).get(p["id"]))
+        estilo = con_lado(estilo_paso(p, contorno.get(p["id"])), geo.get("etiquetas", {}).get(p["id"]))
         celdas.append(_celda(p["id"], p.get("nombre", ""), f'style="{estilo}" vertex="1" parent="{lane_id[p["carril"]]}"',
                              f'<mxGeometry x="{cx - w / 2:.0f}" y="{cy - ly - h / 2:.0f}" width="{w}" height="{h}" '
                              'as="geometry"/>', datos(p, DATOS_PASO)))
@@ -568,18 +628,39 @@ def rango(pasos, x):
     return nombre(orden[0]), nombre(orden[-1]), len(orden)
 
 
+def titulo_pagina(proc, geo, k, n):
+    """Nombre de la página k de las n de un proceso: el del proceso o, en tramos, «<proceso> (tramo k de n: <primer paso>
+    – <último paso>)» (`geo["pasos"]`: {id: (cx, …)})."""
+    titulo = proc.get("proceso") or "Proceso"
+    if n > 1:
+        primero, ultimo, _ = rango([p for p in proc["pasos"] if p["tipo"] not in ENLACES],
+                                   {pid: c[0] for pid, c in geo["pasos"].items()})
+        titulo += f" (tramo {k} de {n}: {primero} – {ultimo})"
+    return titulo
+
+
+def renombrar_tramos(f, proc):
+    """En un .drawio en tramos (`f`, un Fichero), el nombre de cada página con el del proceso y los pasos que lleva ahora
+    (uno se puede haber renombrado a mano en draw.io). Devuelve si ha cambiado alguno; con una página, no hace nada."""
+    if not f.en_tramos:
+        return False
+    cambiado = False
+    for k, (hoja, modelo) in enumerate(f.hojas, 1):
+        proc_k, geo_k, _ = f._leer_hoja(hoja, modelo.find("root"))
+        titulo = titulo_pagina({**proc_k, "proceso": proc.get("proceso")}, geo_k, k, len(f.hojas))
+        if hoja.get("name") != titulo:
+            hoja.set("name", titulo)
+            cambiado = True
+    return cambiado
+
+
 def xml_drawio(paginas):
     """El .drawio de un proceso: `paginas` = [(proceso, geometría)], una o una por tramo («tramo-N», con el nombre
     «<proceso> (tramo N de M: <primer paso> – <último paso>)»)."""
-    nombre = lambda p: p.get("proceso") or "Proceso"   # noqa: E731
     hojas = []
     for k, (proc, geo) in enumerate(paginas, 1):
         uno = len(paginas) == 1
-        titulo = nombre(proc)
-        if not uno:
-            primero, ultimo, _ = rango([p for p in proc["pasos"] if p["tipo"] not in ENLACES],
-                                       {pid: c[0] for pid, c in geo["pasos"].items()})
-            titulo += f" (tramo {k} de {len(paginas)}: {primero} – {ultimo})"
+        titulo = titulo_pagina(proc, geo, k, len(paginas))
         hojas.append(f'<diagram id="{"proceso" if uno else f"tramo-{k}"}" name="' + _xml_attr(titulo)
                      + '"><mxGraphModel grid="1" gridSize="10" page="0" math="0"><root><mxCell id="0"/>'
                      '<mxCell id="1" parent="0"/>' + "".join(_celdas(proc, geo, "" if uno else f"t{k}-"))
@@ -708,13 +789,15 @@ class Fichero:
             cell.set("value", texto)
 
     def datos_celda(self, el, cell, claves):
-        """Datos de Appian de una celda: los atributos del <object> que la envuelve."""
-        return {k: el.get(k) for k in claves if el is not cell and el.get(k)}
+        """Datos de Appian de una celda: los atributos del <object> que la envuelve (uno de sí o no, True si es sí)."""
+        if el is cell:
+            return {}
+        return {k: True if k in SI_NO else el.get(k) for k in claves if (es_si(el.get(k)) if k in SI_NO else el.get(k))}
 
     def poner_datos(self, el, cell, valores, claves):
         """Deja en la celda exactamente esos datos de Appian (sin valor, se quitan). Si hace falta, la envuelve en un
         <object> en el mismo sitio, como draw.io con «Editar datos». Devuelve el elemento que lleva el id."""
-        valores = {k: str(v) for k, v in valores.items() if k in claves and v not in (None, "")}
+        valores = datos(valores, claves)
         if el is cell:
             if not valores:
                 return el
@@ -1071,8 +1154,8 @@ def tipo_de_estilo(e, n_ent, n_sal):
         outline, symbol = e.get("outline", "standard"), e.get("symbol", "general")
         if symbol in ("exclusiveGw", "parallelGw", "inclusiveGw", "gateway"):
             return {"parallelGw": "paralela", "inclusiveGw": "inclusiva"}.get(symbol, "exclusiva")
-        if outline == "end":
-            return "fin"
+        if outline == "end":     # un error suelto y sin salidas se dibuja como un fin de error
+            return "error" if symbol == "error" else "fin"
         if outline == "standard":
             return {"timer": "inicio_temporizador", "message": "inicio_mensaje"}.get(symbol, "inicio")
         return {"timer": "temporizador", "message": "mensaje", "error": "error"}.get(symbol, "intermedio")
@@ -1144,7 +1227,9 @@ def comparar(antes, despues):
         if q["carril"] != p["carril"] and renombrado.get(q["carril"]) != p["carril"]:
             out.append(("paso", f"{pid} cambia de carril: «{q['carril']}» → «{p['carril']}»"))
         for k in DATOS_PASO:
-            if q[k] != p[k]:
+            if q[k] != p[k] and k == "interrumpe":
+                out.append(("paso", f"{pid}: " + ("pasa a interrumpir su tarea" if p[k] else "deja de interrumpir su tarea")))
+            elif q[k] != p[k]:
                 out.append(("paso", f"{pid}: {NOMBRE_DATO[k]} «{q[k]}» → «{p[k]}»"))
     for pid, q in pa.items():
         if pid not in pd:
