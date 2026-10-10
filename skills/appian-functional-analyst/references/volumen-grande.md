@@ -1,7 +1,7 @@
 # Muchas fuentes o una aplicación grande
 
-Cuándo: más de unas 5 reuniones largas para arrancar, o más de 5 procesos. Probado con 25 reuniones
-(≈27.000 líneas) y una aplicación de 5 módulos.
+Cuándo: más de unas 5 reuniones largas para arrancar, más de 5 procesos o el análisis base de una aplicación existente
+(§4). Probado con 25 reuniones (≈27.000 líneas) y una aplicación de 5 módulos.
 
 ## 1. Una nota por fuente, antes de escribir
 Nadie retiene 25 reuniones a la vez. Primero una nota por fuente en `notas/FU-xx.md` con estas secciones:
@@ -41,3 +41,16 @@ El resumen del paso 2 del SKILL.md se hace desde las notas. Propón ahí los mó
 5. Escribe tú los escenarios que cruzan módulos. Después, cada reunión nueva entra con `actualizacion.md`.
 
 La especificación técnica se escribe igual, con `modulos/Mx-tecnico.md`, cuando el funcional esté estable.
+
+## 4. Una aplicación existente entera (análisis base)
+Antes de cualquier evolutivo, el análisis base tiene **toda** la aplicación, coherente y con detalle (E1), desde
+`as-is/` y, si existe, el DF del cliente (modo «DF ya hecho»):
+- Un módulo por proceso o área de `as-is/` (sus documentos de procesos, pantallas, datos y reglas), cada uno con su
+  rango de IDs como arriba y, si la sesión permite agentes, en paralelo. Cada módulo lee solo los documentos de su área
+  y `as-is/datos/`.
+- Historias con criterios y escenarios que describen el comportamiento real con su evidencia: ✅ si es directa, 🔶 si es
+  inferida; nada es 🔒 salvo lo que venga de un DF validado. Las historias de lo que ya existe no llevan prioridad («—»).
+- El técnico no repite `as-is/`: Entorno y Convenciones, y para lo existente remite a sus documentos. Sus apartados se
+  escriben con cada cambio, solo para lo que toca.
+- Es la versión 1.0, sin unidad de cambio: construida y en producción por definición (`cambios.md`). El Word, solo si se
+  pide.

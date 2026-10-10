@@ -180,6 +180,7 @@ En `<p>` (sin proyecto, `<p>` es `./<PREFIJO>/`):
 - `as-is/datos/`: lo que leen las demás skills
 - `as-is/diagrams/<nombre>.mmd`: los diagramas Mermaid
 - `as-is/extraccion/`: la extracción y los datos de trabajo
+- `construccion/verificacion/<U>.json`: lo construido de una unidad de cambio, leído en el entorno (atajo «Verificar»)
 
 El `.drawio`, el `.png` y el `.bpmn` de cada proceso y las imágenes de los Mermaid los escribe `appian-diagramas-bpmn`.
 

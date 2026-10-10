@@ -75,6 +75,9 @@ En `<p>`:
 - `fuentes/`: las fuentes catalogadas, con su índice y sus adjuntos
 - `notas/`: una nota por fuente
 - `impacto/`: un informe por fuente nueva
+- `impacto/URG-nn.md`: la ficha de un cambio urgente (`urgentes.md`)
+- `analisis/cambios.md`: las unidades de cambio, solo con `proyecto.py cambio` (`cambios.md`)
+- `construccion/<U>.md` y `construccion/<U>-esperado.json`: el encargo de construcción de una unidad (`indice.py encargo`)
 - `analisis/funcional.md`: el diseño funcional
 - `analisis/tecnico.md`: la especificación técnica
 - `analisis/decisiones.md`: las versiones y las decisiones del cliente
@@ -94,10 +97,11 @@ El `.drawio`, el `.png` y el `.bpmn` de cada proceso y la imagen de cada `.mmd` 
 |---|---|---|
 | **Síntesis** | Reuniones, correos, notas | Funcional y diagramas; el técnico cuando el funcional esté estable o se pida; DF en Word |
 | **DF ya hecho** | Hay un DF o una ERS del cliente | El DF entra como versión 1.0 en el formato del plugin, sin reinterpretar: cada pieza 🔒 con su ID original en la trazabilidad (`<!-- 🔒 FU-01 RF-07 -->`); funcional y técnico, y el Word al enviarlo. Las reuniones anteriores al DF pasan por el informe de impacto y lo que no coincide con el DF requiere aprobación; las posteriores, como siempre (`ingesta-fuentes.md`, `actualizacion.md`) |
-| **Evolutivo** | Hay que cambiar o ampliar una aplicación existente (`as-is/`) | Como síntesis, con lo de «Aplicación existente»: el origen de cada historia y la situación de cada objeto |
+| **Evolutivo** | Hay que cambiar o ampliar una aplicación existente (`as-is/`) | Como síntesis, con lo de «Aplicación existente»: la situación de cada objeto; cada cambio que se construye, una unidad (`cambios.md`) |
 | **Refactorización** | Hay una propuesta de refactorización (`refactorizacion/propuesta.md`) | Como evolutivo: el DF dice lo que se conserva, lo que cambia y lo nuevo; el técnico baja cada REF a objetos, con «Sustituye a» y la migración de datos |
 | **Actualización** | Ya hay análisis y llega una reunión, un correo o los comentarios al DF | Informe de impacto y cambios puntuales: `actualizacion.md` |
 | **Pantalla suelta** | Alguien explica una pantalla, con o sin captura | La ficha PAN y sus historias, en el chat y en el funcional si existe |
+| **Urgente** | El cliente o el equipo declaran crítico algo de producción | La ficha `impacto/URG-nn.md` y el flujo corto de `urgentes.md`, sin DF ni prototipo |
 
 Di el modo al empezar.
 
@@ -154,8 +158,11 @@ En los modos evolutivo y de refactorización, los pasos de «Proyecto nuevo» co
    `leer_fuentes.py --una-fuente <p>/as-is <p>/refactorizacion/propuesta.md -o <p>/fuentes/`. De `as-is/` se leen
    `LEEME.md`, los documentos de lo que toca el cambio y `as-is/datos/`; nunca la extracción en bruto
    (`ingesta-fuentes.md`).
-2. **Funcional.** Cada historia dice su «Origen»: Se conserva, Cambia o Nueva. Los hallazgos que corrige, las REF y
-   los NV se citan dentro de su fuente («[FU-01 H-DAT-01]») y solo en la trazabilidad: el DF no los enseña.
+2. **Funcional.** De toda la aplicación y con detalle, por módulos (`volumen-grande.md` §4): criterios y escenarios del
+   comportamiento real con su evidencia (✅ directa, 🔶 inferida; 🔒 solo lo de un DF validado), sin prioridad («—»). El
+   técnico lleva Entorno y Convenciones y remite a `as-is/` para lo existente. Lo nuevo y lo que cambia lo dice
+   `indice.py cambios`, no un «Origen» escrito. Los hallazgos que corrige, las REF y los NV se citan dentro de su fuente
+   («[FU-01 H-DAT-01]») y solo en la trazabilidad: el DF no los enseña.
 3. **Lo sin verificar.** Un NV que condiciona lo que se construye es un PT con su cita; si lo resuelve negocio, también
    un PC, en palabras del cliente.
 4. **Técnico.** Los nombres reales del inventario; §13 con la Situación de cada objeto (Nuevo, Modifica, Existe o
@@ -205,4 +212,5 @@ lo que quede sin verificar es un PT, o un PC si cambia lo que se promete al clie
 | `references/redaccion.md` | Al escribir cualquiera de los dos |
 | `references/actualizacion.md` | Con cada fuente nueva |
 | `references/volumen-grande.md` | Muchas fuentes o muchos procesos |
+| `references/cambios.md`, `references/urgentes.md` | Si `proyecto.py estado` lista unidades en curso (`analisis/cambios.md`), al abrir una, o si se declara una urgencia |
 | `references/mermaid-diagrams.md` | Diagramas de estados y de datos |

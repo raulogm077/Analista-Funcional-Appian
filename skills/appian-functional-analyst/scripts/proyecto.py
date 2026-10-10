@@ -4,12 +4,22 @@
   proyecto.py iniciar  <carpeta> --nombre "Solicitudes de autorización" [--cliente …] [--direccion …] [--tipo "evolutivo de X"]
   proyecto.py estado   <carpeta>     versión, cliente y marca, DF enviado, fuentes sin procesar, pendientes, pantallas
   proyecto.py copia    <carpeta>     guarda analisis/*.md en versiones/v<versión>/ antes de cambiarlo
-  proyecto.py entregar <carpeta>     el Word sale hacia el cliente: «DF entregado» y el fichero en «Entregados»
+  proyecto.py entregar <carpeta> [--cambio EV-02]   el Word sale hacia el cliente: «DF entregado» (el de un cambio, en su
+                                     fila de Versiones de decisiones.md) y el fichero en «Entregados»
+  proyecto.py cambio   <carpeta> <EV-nn|URG-nn> <estado> [opciones]   una unidad de cambio (analisis/cambios.md):
+      abrir --titulo "…"                    Abierta
+      aprobada --fuente FU-nn [--comparte "EV-03 en <objeto>: secuenciar (EV-02 primero)"]
+                                            el jefe de proyecto la aprueba, una vez; de Construida vuelve a Aprobada
+      construida [--reaplicada URG-nn …] [--manual]   tras construir y verificar (construccion/verificacion/<ID>.json)
+      produccion --ref "<referencia del pase>"        tras el pase (una URG, desde Abierta)
+      descartada [--informe impacto/FU-nn.md]         desde Abierta, sin nada aplicado o con el informe que lo deshace
+    Con --desatendida nunca aprueba ni pasa a producción. Las condiciones, en references/cambios.md.
 
 `iniciar` no toca nada que ya exista. `entregar` solo cuando el Word se envía, nunca en una sesión desatendida.
 """
 import argparse
 import datetime
+import json
 import pathlib
 import re
 import shutil
@@ -19,6 +29,7 @@ sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fu
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import modelo as mo
+import unidades as un
 
 PLANTILLAS = pathlib.Path(__file__).resolve().parents[1] / "assets" / "plantillas"
 CARPETAS = ["fuentes", "notas", "impacto", "analisis/diagramas", "prototipo", "entregables", "versiones"]
@@ -99,6 +110,7 @@ def estado(a):
           (f"; sin procesar: {', '.join(sin)}" if sin else ""))
     for x in pendientes:
         print(x)
+    unidades(un.Contexto(m))
 
     if not m.docs:
         print("Sin análisis todavía.")
@@ -129,6 +141,24 @@ def estado(a):
         print(f"Siguiente paso: {sig.group(1).strip()}")
 
 
+def unidades(ctx):
+    """Las unidades en curso de analisis/cambios.md con sus fuentes, versiones y objetos, que no se guardan: se derivan."""
+    if not ctx.hay:
+        return
+    curso = [u for u in ctx.unidades if u.estado in un.EN_CURSO]
+    print(f"Unidades en curso (analisis/cambios.md; references/cambios.md): {len(curso) or 'ninguna'}")
+    for u in curso:
+        fu = sorted({x for n in ctx.informes_de(u.id) for x in re.findall(r"(?:FU|URG)-\d+", n)}, key=mo.numero)
+        vs = ", ".join(f"{v[0]}.{v[1]}" for v in ctx.versiones_de(u.id))
+        obj = ctx.cambian(u.id) if not u.urgente else ctx.objetos_urg(u.id)
+        print(f"  {u.id} · {u.titulo} · {u.estado} · fuentes: {', '.join(fu) or '—'} · versión: {vs or '—'}"
+              f" · objetos: {', '.join(obj) or '—'}")
+        for g, objs in ctx.reaplicar(u.id):
+            print(f"    reaplicar {g} en {', '.join(objs)} antes de marcarla Construida (--reaplicada {g})")
+    for n in ctx.sin_unidad():
+        print(f"· impacto/{n}.md no dice «Cambio:» y hay varias unidades Abiertas: ¿de cuál es?")
+
+
 def copia(a):
     raiz = pathlib.Path(a.carpeta)
     m = mo.Proyecto(raiz)
@@ -152,11 +182,22 @@ def nombre_df(m, vs):
     return f"DF-{slug}-v{vs}.docx"
 
 
+def entregados(texto, word):
+    """proyecto.md con el fichero en «Entregados: a.docx, b.docx» (tras «DF entregado» o tras la línea del cliente)."""
+    lineas = texto.split("\n")
+    k = next((i for i, l in enumerate(lineas) if l.startswith("Entregados:")), None)
+    if k is None:
+        k = next((i for i, l in enumerate(lineas) if "DF entregado:" in l),
+                 next((i for i, l in enumerate(lineas) if l.startswith("Cliente:")), 0)) + 1
+        lineas.insert(k, "Entregados:")
+    ya = [x.strip() for x in lineas[k].split(":", 1)[1].split(",") if x.strip()]
+    lineas[k] = "Entregados: " + ", ".join(ya + ([word] if word not in ya else []))
+    return "\n".join(lineas)
+
+
 def entregar(a):
-    """El Word sale hacia el cliente: «DF entregado: <versión> · <fecha>» en proyecto.md y el fichero en «Entregados:»,
-    que df_docx.js no vuelve a escribir."""
-    if a.cambio:
-        sys.exit("proyecto.py entregar --cambio todavía no está disponible: se marca el DF completo (sin --cambio)")
+    """El Word sale hacia el cliente: «DF entregado: <versión> · <fecha>» en proyecto.md (el de un cambio, en la fila de
+    su versión en decisiones.md) y el fichero en «Entregados:», que df_docx.js no vuelve a escribir."""
     raiz = pathlib.Path(a.carpeta)
     pm = raiz / "proyecto.md"
     if not pm.exists():
@@ -167,6 +208,8 @@ def entregar(a):
         sys.exit("funcional.md no tiene «Versión: x.y»")
     vs, fecha = f"{v[0]}.{v[1]}", datetime.date.today().isoformat()
     texto = pm.read_text(encoding="utf-8")
+    if a.cambio:
+        return entregar_cambio(a.cambio.upper(), raiz, m, vs, fecha, texto)
     valor = f"DF entregado: {vs} · {fecha}"
     if re.search(r"DF entregado:", texto):
         texto = re.sub(r"DF entregado:[^\n]*?(?=\s+·\s+Estado:|$)", valor, texto, count=1, flags=re.M)
@@ -178,17 +221,183 @@ def entregar(a):
     word = nombre_df(m, vs)
     if not (raiz / "entregables" / word).is_file():
         print(f"· No encuentro entregables/{word}: genéralo con df_docx.js antes de enviarlo")
-    else:   # «Entregados: a.docx, b.docx», tras la línea de «DF entregado»
-        lineas = texto.split("\n")
-        k = next((i for i, l in enumerate(lineas) if l.startswith("Entregados:")), None)
-        if k is None:
-            k = next(i for i, l in enumerate(lineas) if "DF entregado:" in l) + 1
-            lineas.insert(k, "Entregados:")
-        ya = [x.strip() for x in lineas[k].split(":", 1)[1].split(",") if x.strip()]
-        lineas[k] = "Entregados: " + ", ".join(ya + ([word] if word not in ya else []))
-        texto = "\n".join(lineas)
+    else:
+        texto = entregados(texto, word)
     pm.write_text(texto, encoding="utf-8")
     print(f"{valor} en {pm}")
+
+
+def entregar_cambio(uid, raiz, m, vs, fecha, texto):
+    """El DF de un cambio (df_docx.js --cambio): «DF del cambio <U> entregado <fecha>» en la columna «Aprobación» de la
+    fila de la versión en decisiones.md (no sale en el Word) y el fichero en «Entregados» de proyecto.md."""
+    if uid not in {u.id for u in un.leer(raiz) or []}:
+        sys.exit(f"{uid} no está en analisis/cambios.md")
+    word = nombre_df(m, vs).replace(f"-v{vs}.docx", f"-{uid}-v{vs}.docx")
+    if not (raiz / "entregables" / word).is_file():
+        sys.exit(f"No encuentro entregables/{word}: genéralo con «df_docx.js {raiz} --cambio {uid}» antes de enviarlo")
+    dm = m.analisis / "decisiones.md"
+    lineas = dm.read_text(encoding="utf-8").split("\n") if dm.is_file() else []
+    k = next((i for i, l in enumerate(lineas) if re.match(rf"^\|\s*v?{re.escape(vs)}\s*\|", l)), None)
+    if k is None:
+        sys.exit(f"decisiones.md no tiene la fila de la versión {vs} en «Versiones»")
+    c = mo.celdas(lineas[k])
+    nota = f"DF del cambio {uid} entregado {fecha}"
+    if nota not in c[-1]:
+        c[-1] = nota if c[-1].strip(" —-") == "" else f"{c[-1]} · {nota}"
+        lineas[k] = "| " + " | ".join(c) + " |"
+        dm.write_text("\n".join(lineas), encoding="utf-8")
+    (raiz / "proyecto.md").write_text(entregados(texto, word), encoding="utf-8")
+    print(f"{nota}: en la versión {vs} de decisiones.md y {word} en «Entregados» de proyecto.md")
+
+
+def cambio(a):
+    """Mueve una unidad de cambio en analisis/cambios.md. Solo bloquea lo que haría perder trabajo o construir algo
+    equivocado (references/cambios.md): aprobar con puntos pendientes o con objetos de otra unidad aprobada sin decisión,
+    marcar Construida sin verificar o sin reaplicar una corrección urgente, pasar a producción sin construir."""
+    raiz, uid, destino = pathlib.Path(a.carpeta), a.id.upper(), a.estado
+    hoy = datetime.date.today().isoformat()
+
+    def no(motivo):
+        sys.exit(f"✗ {uid} {destino}: {motivo}")
+    if not re.fullmatch(r"(EV|URG)-\d+", uid):
+        no("el ID de una unidad es EV-nn (evolutivo) o URG-nn (urgente)")
+    if destino in ("aprobada", "produccion") and a.desatendida:
+        no("en una sesión desatendida no se aprueba ni se pasa a producción: lo hace el jefe de proyecto")
+    m = mo.Proyecto(raiz)
+    ctx = un.Contexto(m)
+    u = ctx.por_id.get(uid)
+    if destino == "abrir":
+        if u:
+            no(f"ya existe ({u.estado})")
+        if not (a.titulo or "").strip():
+            no("falta --titulo \"…\"")
+        u = un.Unidad(uid, a.titulo.strip(), "Urgente" if uid.startswith("URG") else "Evolutivo", desde=m.version("F"))
+        ctx.unidades.append(u)
+    elif not u:
+        no(f"no está en analisis/cambios.md: ábrela con «proyecto.py cambio {raiz} {uid} abrir --titulo \"…\"»")
+    elif destino == "aprobada":
+        if u.urgente:
+            no("una URG no se aprueba como unidad: va de Abierta a En producción (references/urgentes.md)")
+        if u.estado == un.CONSTRUIDA:     # vuelve a Aprobada: una URG obliga a reaplicar
+            u.estado, u.construida = un.APROBADA, "—"
+        elif u.estado != un.ABIERTA:
+            no(f"está {u.estado}: se aprueba una unidad Abierta (o vuelve a Aprobada una Construida)")
+        else:
+            aprobar(a, ctx, u, hoy, no, raiz)
+    elif destino == "construida":
+        if u.urgente or u.estado != un.APROBADA:
+            no("una URG va de Abierta a En producción" if u.urgente else
+               f"está {u.estado}: se marca Construida una unidad Aprobada")
+        construir(a, ctx, u, hoy, no, raiz)
+    elif destino == "produccion":
+        if not (a.ref or "").strip():
+            no("falta --ref \"<referencia del pase>\"")
+        if u.urgente:
+            if u.estado != un.ABIERTA:
+                no(f"está {u.estado}: una URG pasa a producción desde Abierta")
+            campos = ctx.ficha_urg(uid)
+            if campos is None:
+                no(f"falta su ficha impacto/{uid}.md (references/urgentes.md)")
+            if un.vacio(campos.get("donde se corrige")):
+                no(f"impacto/{uid}.md no dice «Dónde se corrige»: sin eso no se sabe qué unidades tienen que reaplicarla")
+        elif u.estado != un.CONSTRUIDA:
+            no(f"está {u.estado}: pasa a producción una unidad Construida")
+        u.estado, u.produccion = un.PRODUCCION, f"{hoy} · {a.ref.strip()}"
+    elif destino == "descartada":
+        if u.estado != un.ABIERTA:
+            no(f"está {u.estado}: se descarta una unidad Abierta")
+        hecho = sorted(ctx.piezas_de(uid), key=mo.numero) + ctx.cambian(uid)
+        if hecho and not a.informe:
+            no(f"tiene cambios aplicados ({', '.join(hecho[:8])}): se descarta con el informe que los deshace, "
+               "--informe impacto/FU-nn.md")
+        if hecho:
+            f = pathlib.Path(a.informe)
+            f = f if f.is_file() else raiz / a.informe
+            if not f.is_file():
+                no(f"no existe {a.informe}")
+            if not mo.normaliza(mo.estado_informe(f.read_text(encoding="utf-8"))).startswith("aplicado"):
+                no(f"{f.name} no está aplicado: aplícalo antes de descartar")
+            if ctx.filas_de(uid):
+                no(f"técnico §13 sigue teniendo filas de {uid}: el informe que deshace las quita")
+        u.estado = un.DESCARTADA
+    un.escribir(raiz, ctx.unidades, PLANTILLAS / "cambios.md")
+    print(f"{uid}: {u.estado} · analisis/cambios.md\n{u.fila()}")
+    if destino == "abrir":
+        print("Sus fuentes llevan «Cambio: " + uid + "» en la cabecera del informe" +
+              (f"; su ficha es impacto/{uid}.md (assets/plantillas/urgencia.md, references/urgentes.md)" if u.urgente
+               else " (references/cambios.md)"))
+    if destino == "produccion":
+        print("Actualiza el entorno de corrección con este pase: las correcciones urgentes se hacen sobre lo que hay en "
+              "producción (references/urgentes.md)")
+
+
+def aprobar(a, ctx, u, hoy, no, raiz):
+    fu = (a.fuente or "").strip().upper()
+    if not re.fullmatch(r"FU-\d+", fu):
+        no("falta --fuente FU-nn: la aprobación del jefe de proyecto, catalogada como fuente (chat o correo, R1)")
+    if (raiz / "fuentes").is_dir() and not list((raiz / "fuentes").glob(f"{fu}*.md")):
+        no(f"{fu} no está en fuentes/: catalógala antes con leer_fuentes.py")
+    pend = [f"{n} punto {p.get('#', '?')}" for n, t, p in ctx.puntos_de(u.id)
+            if p and mo.normaliza(p.get("decision", "")).strip(" *").startswith("pendiente")]
+    if pend:
+        no(f"puntos pendientes de aprobación en sus informes: {', '.join(pend)}. Decídelos antes de aprobar la unidad")
+    if (a.comparte or "").strip():
+        u.comparte = a.comparte.strip() if un.vacio(u.comparte) else f"{u.comparte}; {a.comparte.strip()}"
+    mias, choques = set(ctx.cambian(u.id)), []
+    for v in ctx.unidades:
+        if v.id == u.id or v.urgente or v.estado not in (un.APROBADA, un.CONSTRUIDA):
+            continue
+        comunes = [o for o in ctx.cambian(v.id) if o in mias]
+        decidido = v.id in un.RX_UNIDAD.findall(u.comparte) or u.id in un.RX_UNIDAD.findall(v.comparte)
+        if comunes and not decidido:
+            choques.append((v.id, comunes))
+    if choques:
+        v0, o0 = choques[0]
+        no("comparte objetos con otra unidad aprobada y no hay decisión: "
+           + "; ".join(f"{v} ({', '.join(o)})" for v, o in choques)
+           + f". Decidid el orden o unidlas y escribidlo: --comparte \"{v0} en {o0[0]}: secuenciar ({v0} primero)\"")
+    u.estado, u.aprobada = un.APROBADA, f"{hoy} · {fu}"
+
+
+def construir(a, ctx, u, hoy, no, raiz):
+    reaplicadas = {x.upper() for x in a.reaplicada or []}
+    for g in reaplicadas:
+        if g not in ctx.por_id or not ctx.por_id[g].urgente:
+            no(f"--reaplicada {g}: no es una URG de analisis/cambios.md")
+    falta = [(g, objs) for g, objs in ctx.reaplicar(u.id) if g not in reaplicadas]
+    if falta:
+        no("antes, reaplica en desarrollo las correcciones urgentes y confírmalo cuando su prueba pase: "
+           + "; ".join(f"{g} en {', '.join(o)} (--reaplicada {g})" for g, o in falta))
+    ver = raiz / "construccion" / "verificacion" / f"{u.id}.json"
+    if a.manual:
+        marca = "manual"
+    elif not ver.is_file():
+        no(f"falta construccion/verificacion/{u.id}.json: pasa la orden «verificar» de construccion/{u.id}.md "
+           "(sin Dev MCP, --manual)")
+    else:
+        try:
+            d = json.loads(ver.read_text(encoding="utf-8"))
+        except ValueError as e:
+            no(f"{ver} no es JSON: {e}")
+        objetos = d.get("objetos", [])
+        sin = [o for o in ctx.cambian(u.id) if o not in {x.get("pedido") for x in objetos}]
+        if sin:
+            no(f"la verificación no incluye {', '.join(sin)}: vuelve a pasar «verificar» con los objetos del encargo")
+        situacion = {un.objeto(o): f["situacion"] for f in ctx.filas_de(u.id) for o in f["objetos"]}
+        malos = []
+        for o in objetos:
+            dif = o.get("diferencias") or ({} if o.get("existe") else {"falta": True})
+            if o.get("pedido") not in ctx.cambian(u.id) and not o.get("diferencias"):
+                continue
+            # §3 de un objeto que se modifica lleva solo los campos de esta unidad: los demás «sobran» y no cuentan
+            if dif and not (situacion.get(o.get("pedido")) in ("modifica", "existe") and set(dif) <= {"sobranCampos"}):
+                malos.append(f"{o.get('pedido')}: {', '.join(dif)}")
+        if malos:
+            no(f"lo construido no es lo del técnico: {'; '.join(malos)} (detalle en {ver})")
+        marca = "verificada"
+    u.estado, u.construida = un.CONSTRUIDA, f"{hoy} · {marca}"
+    for g in sorted(reaplicadas):
+        ctx.por_id[g].construida = f"{hoy} · reaplicada en {u.id}"
 
 
 def main():
@@ -200,7 +409,12 @@ def main():
     s = sub.add_parser("estado"); s.add_argument("carpeta"); s.set_defaults(f=estado)
     s = sub.add_parser("copia"); s.add_argument("carpeta"); s.set_defaults(f=copia)
     s = sub.add_parser("entregar"); s.add_argument("carpeta"); s.set_defaults(f=entregar)
-    s.add_argument("--cambio", help="el DF de un cambio (todavía no disponible)")
+    s.add_argument("--cambio", help="el DF de un cambio (df_docx.js --cambio): se anota en decisiones.md")
+    s = sub.add_parser("cambio"); s.add_argument("carpeta"); s.add_argument("id"); s.set_defaults(f=cambio)
+    s.add_argument("estado", choices=["abrir", "aprobada", "construida", "produccion", "descartada"])
+    s.add_argument("--titulo"); s.add_argument("--fuente"); s.add_argument("--comparte"); s.add_argument("--ref")
+    s.add_argument("--reaplicada", nargs="+", metavar="URG-nn"); s.add_argument("--manual", action="store_true")
+    s.add_argument("--informe"); s.add_argument("--desatendida", action="store_true")
     a = ap.parse_args()
     for st in (sys.stdout, sys.stderr):
         st.reconfigure(encoding="utf-8", errors="replace")

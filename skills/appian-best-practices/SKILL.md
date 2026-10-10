@@ -96,6 +96,12 @@ instead of perpetuating it.
 ❌ **Don't explore the entire application "for context."** Modifying an interface doesn't justify
 inventorying every record type, process and integration. Widen the context when a real dependency shows up.
 
+**A build order from the analyst.** If the project has `construccion/<U>.md` (written by the analyst's
+`indice.py encargo`), that file is the scope: build only its objects, in the order of the official skill's
+`change-planning`, with the gates the calibration gives, and honour its "reaplicar" and frozen objects. When done, run
+its `verificar` command and `proyecto.py cambio <p> <U> construida`. Progress across sessions shows by re-running
+`verificar`; there is no other state to keep.
+
 ## Requirements
 
 Before the first task: `python3 <skill>/../../requisitos.py --skill appian-best-practices` (`<skill>` is this file's

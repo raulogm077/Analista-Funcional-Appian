@@ -18,7 +18,11 @@ que leen los scripts.
   campo, la relación inversa).
 - **Aplicación existente** (`as-is/`): los nombres son los de `as-is/datos/inventario.json` y de sus objetos de fuera
   de la aplicación (`dependencias.json`); los hallazgos, NV y REF se citan dentro de su fuente («[FU-01 NV-ARQ-01]»).
-  Cambian §2, §3, §13 y §15, como se dice en cada uno. Sin `as-is/`, nada de eso.
+  Cambian §2, §3, §13 y §15, como se dice en cada uno. El técnico no repite `as-is/`: lleva Entorno y Convenciones y
+  remite a `as-is/` para lo existente; sus apartados se escriben solo para lo que tocan los cambios. Sin `as-is/`, nada
+  de eso.
+- **Unidades de cambio** (`analisis/cambios.md`, `cambios.md`): §13 lleva la columna «Cambio» y, si la unidad modifica
+  algo construido, una DT «Cambio sobre lo construido» (§2). «Completo» es lo de las unidades en curso.
 
 ## Buenas prácticas al diseñar
 
@@ -105,6 +109,12 @@ una DT que la cita en «Necesidad»: «[FU-02 REF-01], HU-02». Una REF que el c
 que la cita: «Decisión: No se hace: <lo que decide el cliente> (FU-nn)», en «Por qué» la BP que queda sin aplicar y en
 «Riesgo», el hallazgo que sigue. Con el técnico «en curso», una REF sin DT es aviso; con «completo», error.
 
+Con unidades de cambio, la unidad que modifica o sustituye algo construido lleva su DT `**DT-nn — Cambio sobre lo
+construido: EV-02**`, con Capa (Operación), Necesidad, Por qué, Verificado y **solo** las filas que piden sus objetos de
+§13 por tipo: **Datos existentes** (record type, CDT o tabla), **Procesos en curso** (process model),
+**Compatibilidad** (Web API o integración que usan otros), **Permisos** (grupo o seguridad) y, con cualquiera de ellos,
+**Despliegue y vuelta atrás** (`cambios.md` §4). Interfaces, reglas, constantes y textos no la piden.
+
 ### 3. Modelo de datos
 Por record type, `### 3.n <Record type>`:
 - Tabla `Origen · Acceso · Volumen · Eventos · Seguridad`.
@@ -182,6 +192,11 @@ mismo orden, y debajo los pasos manuales. Situación:
 | 2 | `AUT_IdEstado` | Regla de expresión | Sustituye | `AUT_ESTADOS_VALIDOS` |
 | 2 | `UTL_DiasLaborables` | Regla de otra aplicación | Existe | — |
 ```
+
+Con unidades de cambio (`analisis/cambios.md`), en una aplicación existente o nueva, la tabla suma la columna
+`Cambio` con la unidad de cada fila (`EV-02`): son los objetos de la unidad, los que lleva su encargo de construcción.
+En la construcción inicial de una aplicación nueva, las filas sin unidad son de `EV-01`. La Situación se compara con lo
+ya construido: lo que creó una unidad Construida «Existe» o se «Modifica».
 
 ### 14. Pruebas y trazabilidad
 Tabla `Criterio · Cómo se prueba` con todos los criterios `HU-nn.m` e `INT-nn.m` (se pueden agrupar) y los

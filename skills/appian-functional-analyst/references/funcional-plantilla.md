@@ -75,9 +75,9 @@ Después de los procesos:
 Historias agrupadas por área (`### Área`). Cada una:
 1. Título `**HU-nn — Verbo y objeto**` con su trazabilidad.
 2. Tabla `Perfil · Pantalla · Paso · Prioridad`. Pantalla y paso, el ID o «—». Prioridad: Imprescindible
-   o Deseable. Con una aplicación existente (`as-is/`), la tabla suma «Origen»: «Se conserva», «Cambia» o
-   «Nueva». Si la historia corrige un hallazgo, su cita va en la trazabilidad, no en el DF:
-   `**HU-02 — …** <!-- ✅ FU-03 00:09:20; [FU-01 H-DAT-01] -->`.
+   o Deseable; con una aplicación existente (`as-is/`), «—» en lo que ya hace. Si es nueva, cambia o se conserva no se
+   escribe: lo deriva `indice.py cambios` (`cambios.md`). Si la historia corrige un hallazgo, su cita va en la
+   trazabilidad, no en el DF: `**HU-02 — …** <!-- ✅ FU-03 00:09:20; [FU-01 H-DAT-01] -->`.
 3. «Como <perfil>, quiero <qué> para <para qué>.»
 4. Descripción con sus reglas, en frases cortas; si hay varios casos, uno por línea. Lo que ya dice una
    regla común se cita («Se aplica RB-01»).

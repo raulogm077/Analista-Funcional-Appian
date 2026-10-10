@@ -229,8 +229,11 @@ def main():
         ok("proyecto.py estado tras entregar: el último enviado es la versión actual",
            c == 0 and f"último enviado 1.1 ({hoy}), versión actual 1.1" in out, out)
         c, out = corre(S / "proyecto.py", "entregar", e, "--cambio", "EV-02")
-        ok("proyecto.py entregar --cambio todavía no está: sale con error y no toca proyecto.md",
-           c != 0 and (e / "proyecto.md").read_text(encoding="utf-8") == pm, out)
+        ok("proyecto.py entregar --cambio de una unidad que no existe: error y no toca proyecto.md",
+           c != 0 and "EV-02" in out and (e / "proyecto.md").read_text(encoding="utf-8") == pm, out)
+
+        # G5: unidades de cambio, señales, técnico por unidad, derivados y urgentes
+        pruebas_unidades(tmp)
 
         # 4. Actualización con informe de impacto
         p = tmp / "autorizaciones"
@@ -732,11 +735,30 @@ Se acepta si:
         # contra el inventario, las citas de hallazgos, NV y REF, y la migración si hay propuesta
         c, out = corre(S / "comprobar.py", EVOLUTIVO)
         ok("evolutivo: pasa comprobar.py sin errores y comprueba lo de as-is/",
-           c == 0 and "✓ as-is: cada historia con «Origen»" in out, out)
+           c == 0 and "✓ as-is: los hallazgos citados están en hallazgos.json" in out, out)
+        # 5.5: el «Origen» de cada historia ya no se escribe (lo deriva indice.py cambios): sin él, ni error ni aviso; si
+        # está, vale
+        r = tmp / "evolutivo sin origen"
+        shutil.copytree(EVOLUTIVO, r)
+        fo = r / "analisis" / "funcional.md"
+        fo.write_text(fo.read_text(encoding="utf-8").replace("| Perfil | Pantalla | Paso | Prioridad | Origen |\n|---|---|---|---|---|",
+                                                             "| Perfil | Pantalla | Paso | Prioridad |\n|---|---|---|---|")
+                      .replace(" | Nueva |", " |"), encoding="utf-8")
+        c, out2 = corre(S / "comprobar.py", r)
+        ok("5.5: sin «Origen» en las historias, ni error ni aviso; con él, tampoco",
+           c == 0 and "Origen" not in out2 and "Origen" not in out and "| Nueva |" not in fo.read_text(encoding="utf-8"),
+           out2)
+        # 5.8: con as-is/, las historias de lo que ya hace la aplicación no llevan prioridad («—»); sin as-is/, sí
+        editar(fo, "| Revisor | PAN-03 | — | Deseable |", "| Revisor | PAN-03 | — | — |")
+        c, out = corre(S / "comprobar.py", r)
+        ok("5.8: con as-is/, una historia con prioridad «—» no es error", c == 0, out)
+        shutil.rmtree(r / "as-is")
+        c, out = corre(S / "comprobar.py", r)
+        ok("5.8: sin as-is/, una historia con prioridad «—» es error",
+           c == 1 and any(l.startswith("✗ prioridad") and "HU-03" in l for l in out.splitlines()), out)
         ok("evolutivo: «Existe» con un objeto de otra aplicación no es error",
            not [l for l in out.splitlines() if l.startswith("✗") and "UTL_DiasLaborables" in l], out)
         rotas = [  # (qué se rompe, fichero, texto, cambio, comprobación que falla, lo que cita)
-            ("historia sin «Origen»", "funcional", "| Deseable | Nueva |", "| Deseable | — |", "«Origen»", "HU-03"),
             ("«Corrige H-…» en una tabla del DF", "funcional", "| Datos | Corregir el título y el importe | Gestor |",
              "| Datos | Corregir el título y el importe. Corrige H-DAT-01 | Gestor |", "solo en la trazabilidad",
              "H-DAT-01"),
@@ -995,6 +1017,475 @@ Se acepta si:
 
 
 GUION = chr(0x2011)   # df_docx.js pone guiones que no se parten en los IDs (PAN‑02)
+COLS = "| ID | Título | Tipo | Estado | Aprobada | Construida | En producción | Comparte objetos / decisión |\n|---|---|---|---|---|---|---|---|\n"
+FILAS_BASE = {   # analisis/cambios.md del proyecto con unidades (con_unidades): ID → fila
+    "EV-01": "| EV-01 | Devoluciones | Evolutivo | En producción | 2026-10-09 · FU-03 | 2026-10-10 · verificada | 2026-10-11 · PASE-1 | — |",
+    "EV-02": "| EV-02 | Firma de la revisión | Evolutivo | Aprobada | 2026-10-12 · FU-05 | — | — | — |",
+    "URG-01": "| URG-01 | El formulario de la solicitud falla | Urgente | Abierta | — | — | — | — |",
+    "EV-03": "| EV-03 | Alta desde el panel | Evolutivo | Abierta | — | — | — | — |"}
+
+
+def cambios_md(p, filas):
+    """analisis/cambios.md con estas filas (ID → fila completa o, si es un estado, la de FILAS_BASE en ese estado)."""
+    out = []
+    for k, v in filas.items():
+        if v.startswith("|"):
+            out.append(v)
+        else:
+            c = FILAS_BASE.get(k, f"| {k} | Prueba | {'Urgente' if k.startswith('URG') else 'Evolutivo'} | Abierta | — | — | — | — |").split(" | ")
+            c[3] = v
+            out.append(" | ".join(c))
+    (p / "analisis" / "cambios.md").write_text("# Devoluciones de solicitudes — Unidades de cambio\n\n" + COLS
+                                               + "\n".join(out) + "\n", encoding="utf-8")
+
+
+def con_unidades(destino):
+    """Un proyecto con unidades de cambio, desde evolutivo/ (la aplicación existente DEM, versión 1.0): EV-01 (las
+    devoluciones, las filas de §13 sin ID) en producción; EV-02 (firma de la revisión: cambia HU-02.2 y crea HU-04, con
+    su informe FU-04 aplicado en la 1.1, sus filas de §13 y su DT «Cambio sobre lo construido») aprobada; URG-01 (el
+    formulario de la solicitud falla, corregido en el entorno de corrección: choca con EV-02) abierta; y EV-03 (modifica
+    DEM Alta Solicitud, que usa el formulario; su informe FU-06 tiene un punto pendiente) abierta."""
+    shutil.copytree(EVOLUTIVO, destino)
+    corre(S / "proyecto.py", "copia", destino)
+    f, t, d = (destino / "analisis" / x for x in ("funcional.md", "tecnico.md", "decisiones.md"))
+    for x in (f, t):
+        editar(x, "Versión: 1.0", "Versión: 1.1")
+    editar(f, "- `HU-02.2` Al reenviarla vuelve a «Enviada» con el mismo número.",
+           "- `HU-02.2` Al reenviarla vuelve a «Enviada» con el mismo número y sin la firma anterior. <!-- ✅ FU-04 00:02:00 -->")
+    editar(f, "### Seguimiento", "**HU-04 — Firmar la revisión** <!-- ✅ FU-04 00:05:00 -->\n\n"
+           "| Perfil | Pantalla | Paso | Prioridad | Origen |\n|---|---|---|---|---|\n"
+           "| Revisor | PAN-01 | ACT-01 | Imprescindible | Nueva |\n\n"
+           "Como revisor, quiero firmar la revisión para que quede constancia de quién la hizo.\n\n"
+           "Se acepta si:\n- `HU-04.1` Sin firma no se puede aprobar ni rechazar.\n\n### Seguimiento")
+    editar(f, "Historias: HU-01.", "Historias: HU-01, HU-04.")
+    editar(f, "| Fecha de envío |", "| Firma del revisor | Quién revisó | Texto | Al aprobar o rechazar | PAN-01 |\n| Fecha de envío |")
+    editar(t, "| fechaEnvio | Fecha y hora |", "| firmaRevisor | Texto | 255 | — | No | Al decidir | — | Funcional: Firma del revisor |\n"
+           "| fechaEnvio | Fecha y hora |")
+    editar(t, "| Paso | Objeto | Tipo | Situación | Sustituye a |\n|---|---|---|---|---|",
+           "| Paso | Objeto | Tipo | Situación | Sustituye a | Cambio |\n|---|---|---|---|---|---|")
+    editar(t, "| 4 | `DEM_INT_NotificarERP` | Integración | Existe | — |",
+           "| 4 | `DEM_INT_NotificarERP` | Integración | Existe | — |\n"
+           "| 5 | `DEM Solicitud` | Record type | Modifica | — | EV-02 |\n"
+           "| 6 | `DEM_ER_Firma` | Regla de expresión | Nuevo | — | EV-02 |\n"
+           "| 7 | `DEM_RevisionForm` | Interfaz | Modifica | — | EV-02 |\n"
+           "| 7 | `DEM_SolicitudForm` | Interfaz | Modifica | — | EV-02 |\n"
+           "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |")
+    editar(t, "| HU-03.1, HU-03.2 |", "| HU-04.1 | Aprobar sin firma |\n| URG-01 | Guardar una solicitud con el importe vacío |\n"
+           "| HU-03.1, HU-03.2 |")
+    editar(t, "| `DEM_ER_DiasPendiente` | fechaEnvio |", "| `DEM_ER_Firma` | solicitud | Booleano | Si tiene firma (HU-04) | "
+           "Sin firma: false |\n| `DEM_ER_DiasPendiente` | fechaEnvio |")
+    editar(t, "## 3. Modelo de datos", "**DT-04 — Cambio sobre lo construido: EV-02**\n\n| Campo | Contenido |\n|---|---|\n"
+           "| **Capa** | Operación |\n| **Necesidad** | HU-02, HU-04 |\n"
+           "| **Datos existentes** | `firmaRevisor` queda vacío en las solicitudes que ya hay; no se migra nada |\n"
+           "| **Despliegue y vuelta atrás** | Un paquete con los cuatro objetos; vuelta atrás con el de la 1.0 |\n"
+           "| **Por qué** | Lo que ya está en producción no se rompe al desplegar (BP 08 §3) |\n"
+           "| **Verificado** | No hace falta |\n\n## 3. Modelo de datos")
+    editar(d, "| 1.0 | 2026-10-09 | Primera versión del análisis | FU-01, FU-02, FU-03 | — |",
+           "| 1.0 | 2026-10-09 | Primera versión del análisis | FU-01, FU-02, FU-03 | — |\n"
+           "| 1.1 | 2026-10-12 | Firma de la revisión | FU-04 | — |")
+    (destino / "impacto").mkdir()
+    cab = ("| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión |\n"
+           "|---|---|---|---|---|---|---|---|\n")
+    (destino / "impacto" / "FU-04.md").write_text(
+        "# Impacto de FU-04 · Firma · 2026-10-12\nAnálisis base: versión 1.0 · Cambio: EV-02 · Estado: aplicado en 1.1\n\n"
+        "## Puntos\n" + cab +
+        "| 1 | CAMBIA | Al reenviar se borra la firma [FU-04 00:02:00] | HU-02 | HU-02.2 sin la firma | — | — | ✔ |\n"
+        "| 2 | NUEVO | El revisor firma [FU-04 00:05:00] | nuevo en funcional §4 | HU-04 y HU-04.1 nuevas; PAN-01 | — | — | ✔ |\n\n"
+        "## Aplicado\nVersión 1.1: HU-02.2 · nuevas: HU-04, HU-04.1 · PAN-01\n", encoding="utf-8")
+    (destino / "impacto" / "FU-06.md").write_text(
+        "# Impacto de FU-06 · Alta desde el panel · 2026-10-14\nAnálisis base: versión 1.1 · Cambio: EV-03 · "
+        "Estado: pendiente\n\n## Puntos\n" + cab +
+        "| 1 | ALCANCE+ | Dar de alta desde el panel [FU-06 00:01:00] | PAN-03 | PAN-03 con «Nueva solicitud» | — | "
+        "Sí (alcance) | Pendiente |\n", encoding="utf-8")
+    (destino / "impacto" / "URG-01.md").write_text(
+        "# URG-01 · El formulario de la solicitud falla al guardar · 2026-10-15\n"
+        "Análisis base: versión 1.1 · Cambio: URG-01 · Estado: sin cambios\n\n## Urgencia\n\n| Campo | Valor |\n|---|---|\n"
+        "| Tipo | Defecto |\n| Síntoma | Guardar con el importe vacío da un error |\n"
+        "| Quién la declara crítica | Responsable de las solicitudes (FU-07) |\n| Causa | El importe vacío no se comprueba |\n"
+        "| Objetos | `DEM_SolicitudForm` |\n| Colisión | EV-02 modifica `DEM_SolicitudForm` |\n"
+        "| Dónde se corrige | Entorno de corrección |\n| Despliegue y vuelta atrás | Paquete con el formulario |\n"
+        "| Cierre | — |\n", encoding="utf-8")
+    (destino / "fuentes").mkdir()
+    for n in (4, 5, 6, 7, 8):
+        (destino / "fuentes" / f"FU-0{n}-fuente.md").write_text(f"# FU-0{n}\n", encoding="utf-8")
+    cambios_md(destino, dict(FILAS_BASE))
+    return destino
+
+
+def fila_de(p, uid):
+    """La fila de una unidad en analisis/cambios.md, o ""."""
+    t = (p / "analisis" / "cambios.md").read_text(encoding="utf-8") if (p / "analisis" / "cambios.md").exists() else ""
+    return next((l for l in t.splitlines() if l.startswith(f"| {uid} ")), "")
+
+
+def pruebas_unidades(tmp):
+    """G5 5.1: proyecto.py cambio con las condiciones de references/cambios.md, estado con las unidades y entregar --cambio."""
+    # Abrir crea analisis/cambios.md desde la plantilla, con la versión del análisis al abrirla; dos veces, error
+    nuevo = tmp / "unidades nuevo"
+    shutil.copytree(EVOLUTIVO, nuevo)
+    c, out = corre(S / "proyecto.py", "cambio", nuevo, "EV-01", "abrir", "--titulo", "Devoluciones")
+    ok("cambio abrir: crea analisis/cambios.md con la unidad Abierta y la versión al abrirla",
+       c == 0 and fila_de(nuevo, "EV-01").startswith("| EV-01 <!-- desde 1.0 --> | Devoluciones | Evolutivo | Abierta |")
+       and "| ID | Título | Tipo | Estado |" in (nuevo / "analisis" / "cambios.md").read_text(encoding="utf-8"), out)
+    c, out = corre(S / "proyecto.py", "cambio", nuevo, "EV-01", "abrir", "--titulo", "Otra")
+    ok("cambio abrir: una unidad que ya existe es error", c == 1 and "ya existe" in out, out)
+    c, out = corre(S / "proyecto.py", "cambio", nuevo, "XX-01", "abrir", "--titulo", "Otra")
+    ok("cambio: un ID que no es EV-nn ni URG-nn es error", c == 1 and "EV-nn" in out, out)
+    c, out = corre(S / "proyecto.py", "cambio", nuevo, "URG-01", "abrir", "--titulo", "Falla")
+    ok("cambio abrir URG: Urgente, y dice dónde va su ficha",
+       c == 0 and "| Urgente | Abierta |" in fila_de(nuevo, "URG-01") and "impacto/URG-01.md" in out, out)
+
+    # Cada transición: las permitidas pasan y las prohibidas fallan sin tocar cambios.md (una unidad sin nada aplicado)
+    extra = {"abrir": ["--titulo", "Otra"], "aprobada": ["--fuente", "FU-05"], "construida": ["--manual"],
+             "produccion": ["--ref", "PASE-9"], "descartada": []}
+    permitidas = {("EV", "Abierta"): {"aprobada", "descartada"}, ("EV", "Aprobada"): {"construida"},
+                  ("EV", "Construida"): {"aprobada", "produccion"}, ("EV", "En producción"): set(),
+                  ("EV", "Descartada"): set(), ("URG", "Abierta"): {"produccion", "descartada"},
+                  ("URG", "En producción"): set(), ("URG", "Descartada"): set()}
+    llega = {"aprobada": "Aprobada", "construida": "Construida", "produccion": "En producción", "descartada": "Descartada"}
+    mal = []
+    m9 = con_unidades(tmp / "unidades matriz")
+    (m9 / "impacto" / "URG-09.md").write_text("# URG-09\nCambio: URG-09 · Estado: sin cambios\n\n## Urgencia\n\n"
+                                              "| Campo | Valor |\n|---|---|\n| Tipo | Datos u operación |\n"
+                                              "| Dónde se corrige | Producción: se corrige el dato |\n", encoding="utf-8")
+    for (pre, estado), bien in permitidas.items():
+        uid = f"{pre}-09"
+        for orden in extra:
+            cambios_md(m9, {**FILAS_BASE, uid: estado})
+            antes = (m9 / "analisis" / "cambios.md").read_text(encoding="utf-8")
+            c, out = corre(S / "proyecto.py", "cambio", m9, uid, orden, *extra[orden])
+            despues = fila_de(m9, uid)
+            if orden in bien:
+                if c != 0 or f"| {llega[orden]} |" not in despues:
+                    mal.append(f"{uid} {estado} → {orden} debería pasar: {out.strip()[-200:]}")
+            elif c != 1 or (m9 / "analisis" / "cambios.md").read_text(encoding="utf-8") != antes:
+                mal.append(f"{uid} {estado} → {orden} debería fallar sin tocar cambios.md (sale {c})")
+    ok("cambio: cada transición permitida pasa y cada prohibida falla sin tocar cambios.md", not mal, "\n".join(mal))
+
+    # Aprobada: con --fuente catalogada, sin puntos pendientes y sin objetos de otra unidad aprobada sin decisión
+    p = con_unidades(tmp / "unidades aprobar")
+    cambios_md(p, {**FILAS_BASE, "EV-02": "Abierta"})
+    for args, falla in [((), "--fuente"), (("--fuente", "FU-99"), "no está en fuentes"),
+                        (("--fuente", "FU-05", "--desatendida"), "desatendida")]:
+        c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "aprobada", *args)
+        ok(f"cambio aprobada {' '.join(args) or 'sin --fuente'}: error ({falla})",
+           c == 1 and falla in out and "| Abierta |" in fila_de(p, "EV-02"), out)
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "aprobada", "--fuente", "FU-05")
+    ok("cambio aprobada: pasa con la fuente, y anota fecha y fuente",
+       c == 0 and re.search(r"\| Aprobada \| \d{4}-\d\d-\d\d · FU-05 \|", fila_de(p, "EV-02")), out)
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-03", "aprobada", "--fuente", "FU-05")
+    ok("cambio aprobada: un punto «Pendiente» en sus informes es error", c == 1 and "FU-06 punto 1" in out, out)
+    editar(p / "impacto" / "FU-06.md", "| Sí (alcance) | Pendiente |", "| Sí (alcance) | ✔ FU-05 |")
+    editar(p / "analisis" / "tecnico.md", "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |",
+           "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |\n"
+           "| 8 | `DEM_SolicitudForm` | Interfaz | Modifica | — | EV-03 |")
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-03", "aprobada", "--fuente", "FU-05")
+    ok("cambio aprobada: un objeto de otra unidad aprobada sin decisión es error, y dice cómo escribirla",
+       c == 1 and "EV-02 (DEM_SolicitudForm)" in out and "--comparte" in out and "| Abierta |" in fila_de(p, "EV-03"), out)
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-03", "aprobada", "--fuente", "FU-05", "--comparte",
+                   "EV-02 en DEM_SolicitudForm: secuenciar (EV-02 primero)")
+    ok("cambio aprobada: con la decisión (--comparte) pasa y queda escrita",
+       c == 0 and "| Aprobada |" in fila_de(p, "EV-03") and "secuenciar (EV-02 primero) |" in fila_de(p, "EV-03"), out)
+
+    # Construida: verificación sin diferencias (o --manual) y cada «reaplicar URG-nn» confirmado
+    p = con_unidades(tmp / "unidades construir")
+    ver = p / "construccion" / "verificacion" / "EV-02.json"
+    bien = {"objetos": [{"pedido": "DEM Solicitud", "existe": True, "diferencias": {"sobranCampos": ["titulo"]}},
+                        {"pedido": "DEM_ER_Firma", "existe": True, "diferencias": {}},
+                        {"pedido": "DEM_RevisionForm", "existe": True, "diferencias": {}},
+                        {"pedido": "DEM_SolicitudForm", "existe": True, "diferencias": {}}],
+            "faltan": [], "conDiferencias": ["DEM Solicitud"]}
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "construida", "--reaplicada", "URG-01")
+    ok("cambio construida: sin verificar es error y dice dónde está la orden",
+       c == 1 and "construccion/verificacion/EV-02.json" in out and "construccion/EV-02.md" in out, out)
+    ver.parent.mkdir(parents=True)
+    for nombre, datos, falla in [
+            ("un objeto nuevo que no existe", {**bien, "objetos": bien["objetos"][:1] + [
+                {"pedido": "DEM_ER_Firma", "existe": False, "diferencias": {"falta": True}}] + bien["objetos"][2:]},
+             "DEM_ER_Firma: falta"),
+            ("un campo de otro tipo", {**bien, "objetos": [{"pedido": "DEM Solicitud", "existe": True, "diferencias": {
+                "camposDeOtroTipo": [{"nombre": "firmaRevisor"}]}}] + bien["objetos"][1:]}, "DEM Solicitud: camposDeOtroTipo"),
+            ("sin uno de sus objetos", {**bien, "objetos": bien["objetos"][:3]}, "no incluye DEM_SolicitudForm")]:
+        ver.write_text(json.dumps(datos), encoding="utf-8")
+        c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "construida", "--reaplicada", "URG-01")
+        ok(f"cambio construida: verificación con {nombre} es error", c == 1 and falla in out, out)
+    ver.write_text(json.dumps(bien), encoding="utf-8")
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "construida")
+    ok("cambio construida: sin --reaplicada de la URG corregida en el entorno de corrección es error",
+       c == 1 and "URG-01 en DEM_SolicitudForm" in out and "--reaplicada URG-01" in out, out)
+    c, out = corre(S / "proyecto.py", "estado", p)
+    ok("proyecto.py estado: unidades en curso con fuentes, versión y objetos, y lo que hay que reaplicar",
+       c == 0 and re.search(r"EV-02 · Firma de la revisión · Aprobada · fuentes: FU-04 · versión: 1\.1 · objetos: "
+                            r"DEM Solicitud, DEM_ER_Firma, DEM_RevisionForm, DEM_SolicitudForm", out)
+       and "reaplicar URG-01 en DEM_SolicitudForm" in out and "EV-01 ·" not in out
+       and "URG-01 · El formulario de la solicitud falla · Abierta" in out, out)
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "construida", "--reaplicada", "URG-01")
+    ok("cambio construida: con la verificación (sobranCampos de un objeto que se modifica no cuenta) y --reaplicada pasa; "
+       "la URG queda reaplicada",
+       c == 0 and re.search(r"\| Construida \| [^|]+ · FU-05 \| \d{4}-\d\d-\d\d · verificada \|", fila_de(p, "EV-02"))
+       and "reaplicada en EV-02" in fila_de(p, "URG-01"), out)
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "aprobada")
+    ok("cambio aprobada desde Construida: vuelve a Aprobada (otra URG obliga a reaplicar) sin perder la aprobación",
+       c == 0 and "| Aprobada | " in fila_de(p, "EV-02") and "· FU-05 | — |" in fila_de(p, "EV-02"), out)
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "construida", "--manual")
+    ok("cambio construida --manual: la URG ya reaplicada no se pide otra vez y la marca dice «manual»",
+       c == 0 and "· manual |" in fila_de(p, "EV-02"), out)
+    for args, falla in [(("--ref", "PASE-2", "--desatendida"), "desatendida"), ((), "--ref")]:
+        c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "produccion", *args)
+        ok(f"cambio produccion {' '.join(args) or 'sin --ref'}: error", c == 1 and falla in out, out)
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "produccion", "--ref", "PASE-2")
+    ok("cambio produccion: anota la referencia y recuerda actualizar el entorno de corrección",
+       c == 0 and "· PASE-2 |" in fila_de(p, "EV-02") and "entorno de corrección" in out, out)
+    editar(p / "impacto" / "URG-01.md", "| Dónde se corrige | Entorno de corrección |", "| Dónde se corrige | — |")
+    c, out = corre(S / "proyecto.py", "cambio", p, "URG-01", "produccion", "--ref", "URG")
+    ok("cambio produccion de una URG sin «Dónde se corrige» en su ficha es error", c == 1 and "Dónde se corrige" in out, out)
+
+    # Descartada: sin nada aplicado; con algo aplicado, solo con el informe (aplicado) que lo deshace
+    p = con_unidades(tmp / "unidades descartar")
+    cambios_md(p, {**FILAS_BASE, "EV-02": "Abierta"})
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "descartada")
+    ok("cambio descartada con cambios aplicados y sin --informe es error", c == 1 and "--informe" in out and "HU-04" in out, out)
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "descartada", "--informe", "impacto/FU-06.md")
+    ok("cambio descartada con un informe sin aplicar es error", c == 1 and "no está aplicado" in out, out)
+    (p / "impacto" / "FU-08.md").write_text("# Impacto de FU-08\nAnálisis base: versión 1.1 · Cambio: EV-02 · "
+                                            "Estado: aplicado en 1.2\n", encoding="utf-8")
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "descartada", "--informe", "impacto/FU-08.md")
+    ok("cambio descartada con el informe aplicado pero con sus filas en §13 es error", c == 1 and "§13" in out, out)
+    t = p / "analisis" / "tecnico.md"
+    t.write_text("\n".join(l for l in t.read_text(encoding="utf-8").split("\n") if "| EV-02 |" not in l), encoding="utf-8")
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "descartada", "--informe", "impacto/FU-08.md")
+    ok("cambio descartada con el informe aplicado que lo deshace pasa", c == 0 and "| Descartada |" in fila_de(p, "EV-02"), out)
+
+    # entregar --cambio: el DF del cambio en la fila de su versión de decisiones.md y en «Entregados»
+    p = con_unidades(tmp / "unidades entregar")
+    c, out = corre(S / "proyecto.py", "entregar", p, "--cambio", "EV-02")
+    ok("entregar --cambio sin el Word del cambio: error que dice cómo generarlo", c == 1 and "--cambio EV-02" in out, out)
+    (p / "entregables").mkdir(exist_ok=True)
+    (p / "entregables" / "DF-Devoluciones-de-solicitudes-EV-02-v1.1.docx").write_bytes(b"word")
+    pm_antes = (p / "proyecto.md").read_text(encoding="utf-8")
+    c, out = corre(S / "proyecto.py", "entregar", p, "--cambio", "EV-02")
+    dec = (p / "analisis" / "decisiones.md").read_text(encoding="utf-8")
+    pm = (p / "proyecto.md").read_text(encoding="utf-8")
+    hoy = __import__("datetime").date.today().isoformat()
+    ok("entregar --cambio: «DF del cambio EV-02 entregado» en la fila 1.1 y el fichero en «Entregados»; «DF entregado» no cambia",
+       c == 0 and f"| 1.1 | 2026-10-12 | Firma de la revisión | FU-04 | DF del cambio EV-02 entregado {hoy} |" in dec
+       and "Entregados: DF-Devoluciones-de-solicitudes-EV-02-v1.1.docx" in pm
+       and pm.split("\n")[3] == pm_antes.split("\n")[3], out + dec + pm)
+
+    # Un informe sin «Cambio» es de la única unidad Abierta, si es de después de abrirla; con dos Abiertas, estado avisa
+    p = con_unidades(tmp / "unidades sin cabecera")
+    for n, base in (("FU-10", "1.1"), ("FU-11", "1.0")):
+        (p / "impacto" / f"{n}.md").write_text(f"# Impacto de {n}\nAnálisis base: versión {base} · Estado: aplicado en 1.2\n\n"
+                                               "## Aplicado\nVersión 1.2: HU-03\n", encoding="utf-8")
+    c, out = corre(S / "proyecto.py", "estado", p)
+    ok("proyecto.py estado: con dos unidades Abiertas, avisa del informe sin «Cambio»",
+       c == 0 and "impacto/FU-10.md no dice «Cambio:»" in out, out)
+    cambios_md(p, {**FILAS_BASE, "URG-01": "En producción",
+                   "EV-03": FILAS_BASE["EV-03"].replace("| EV-03 |", "| EV-03 <!-- desde 1.1 --> |")})
+    c, out = corre(S / "proyecto.py", "estado", p)
+    ok("proyecto.py estado: sin «Cambio», el informe de después de abrirla es de la única Abierta; el de antes, no",
+       c == 0 and "fuentes: FU-06, FU-10 ·" in out and "no dice «Cambio:»" not in out, out)
+
+    # Sin analisis/cambios.md, estado no habla de unidades
+    c, out = corre(S / "proyecto.py", "estado", EVOLUTIVO)
+    ok("sin analisis/cambios.md, proyecto.py estado no habla de unidades", c == 0 and "Unidades" not in out, out)
+
+    # 5.2 Señales calculadas: «Construido: … · En curso: …» por pieza en ficha e impacto
+    p = con_unidades(tmp / "unidades señales")
+    for pid, senal in [("HU-02", "Construido: as-is · En curso: EV-02"), ("HU-04", "Construido: — · En curso: EV-02"),
+                       ("HU-01", "Construido: as-is · En curso: —"), ("HU-04.1", "Construido: — · En curso: EV-02")]:
+        c, out = corre(S / "indice.py", "ficha", p, pid)
+        ok(f"indice.py ficha {pid}: «{senal}»", c == 0 and senal in out, out)
+    c, out = corre(S / "indice.py", "impacto", p, "HU-02")
+    ok("indice.py impacto: la señal por pieza, «Posible petición de cambio» y «Requiere: Sí (EV-02)» para copiarlas",
+       c == 0 and "Construido: as-is · En curso: EV-02" in out and "Posible petición de cambio" in out
+       and "Requiere: Sí (EV-02)" in out, out)
+    cambios_md(p, {**FILAS_BASE, "EV-02": "En producción"})
+    c, out = corre(S / "indice.py", "ficha", p, "HU-04")
+    ok("indice.py ficha: lo de una unidad en producción está construido", "Construido: EV-02 · En curso: —" in out, out)
+    c, out = corre(S / "indice.py", "ficha", EVOLUTIVO, "HU-02")
+    ok("indice.py ficha sin analisis/cambios.md: sin señales", c == 0 and "Construido:" not in out, out)
+    nueva = tmp / "unidades aplicación nueva"
+    shutil.copytree(EJEMPLO, nueva)
+    cambios_md(nueva, {"EV-01": FILAS_BASE["EV-01"].replace("Devoluciones", "Construcción inicial")})
+    c, out = corre(S / "indice.py", "ficha", nueva, "HU-01")
+    ok("aplicación nueva: lo que no es de ninguna unidad es de la construcción inicial (EV-01)",
+       "Construido: EV-01 · En curso: —" in out, out)
+    c, out = corre(S / "comprobar.py", nueva)
+    ok("aplicación nueva con unidades y §13 en lista: sin comprobaciones de Situación", c == 0 and "Situación" not in out,
+       out)
+    t = nueva / "analisis" / "tecnico.md"
+    t.write_text(re.sub(r"(?ms)^## 13\. .*?(?=^## 14\.)", lambda _: (
+        "## 13. Plan de construcción\n\n| Paso | Objeto | Tipo | Situación | Sustituye a | Cambio |\n|---|---|---|---|---|---|\n"
+        "| 1 | `AUT Solicitud` | Record type | Nuevo | — | |\n| 1 | `AUT_GenerarNumero` | Regla de expresión | Nuevo | — | |\n"
+        "| 2 | `AUT Solicitud` | Record type | Modifica | — | EV-02 |\n| 2 | `AUT_GenerarNumero` | Regla de expresión | "
+        "Nuevo | — | EV-02 |\n\n"), t.read_text(encoding="utf-8")), encoding="utf-8")
+    cambios_md(nueva, {"EV-01": FILAS_BASE["EV-01"], "EV-02": FILAS_BASE["EV-02"]})
+    c, out = corre(S / "comprobar.py", nueva)
+    ok("aplicación nueva: «Modifica» de lo que construyó EV-01 vale; «Nuevo» de lo mismo es error",
+       c == 1 and any(l.startswith("✗ técnico §13") and "AUT_GenerarNumero" in l and "lo construido" in l
+                      and "AUT Solicitud" not in l for l in out.splitlines()), out)
+    # El informe admite la cabecera «Cambio», una columna «Cambio» por punto y «Requiere: Sí (EV-02)»
+    (p / "impacto" / "FU-09.md").write_text(
+        "# Impacto de FU-09\nAnálisis base: versión 1.1 · Cambio: EV-03 · Estado: pendiente\n\n## Resumen\n"
+        "- Posible petición de cambio: punto 1\n\n## Puntos\n"
+        "| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión | Cambio |\n"
+        "|---|---|---|---|---|---|---|---|---|\n"
+        "| 1 | COMPLETA | El comentario se ve en rojo [FU-08 00:01:00] | HU-02 | HU-02.1 en rojo | — | Sí (EV-02) | Pendiente | EV-03 |\n"
+        "| 2 | COMPLETA | La firma lleva la fecha [FU-08 00:02:00] | HU-04 | HU-04.1 con la fecha | — | — | ✔ | EV-02 |\n",
+        encoding="utf-8")
+    c, out = corre(S / "comprobar.py", p, "--impacto", p / "impacto" / "FU-09.md")
+    ok("comprobar.py --impacto admite «Cambio», la columna por punto y «Requiere: Sí (EV-02)»",
+       c == 0 and "✓ «Requiere» de cada punto" in out, out)
+
+    # 5.3 y 5.9 Técnico por unidad: completitud solo de lo de las unidades en curso, Situación contra la línea base,
+    # DT «Cambio sobre lo construido» por tipo de objeto y avisos que se apagan solos
+    p = con_unidades(tmp / "unidades técnico")
+    c, out = corre(S / "comprobar.py", p)
+    avisos = [l for l in out.splitlines() if l.startswith("· ")]
+    ok("con unidades: el proyecto pasa comprobar.py; las filas de EV-01 (en producción) no se vuelven a mirar",
+       c == 0 and "solo lo de las unidades en curso" in out, out)
+    ok("aviso: EV-03 modifica un process model construido y no tiene su DT «Cambio sobre lo construido»",
+       any("Cambio sobre lo construido" in l and "EV-03: «Procesos en curso» (DEM Alta Solicitud)" in l
+           and "«Despliegue y vuelta atrás»" in l and "EV-02" not in l for l in avisos), out)
+    editar(p / "analisis" / "tecnico.md", "| **Datos existentes** | `firmaRevisor` queda vacío en las solicitudes que ya hay; "
+           "no se migra nada |\n", "")
+    c, out = corre(S / "comprobar.py", p)
+    ok("aviso: a la DT de EV-02 le falta «Datos existentes» (modifica un record type construido)",
+       c == 0 and any(l.startswith("· ") and "EV-02: «Datos existentes» (DEM Solicitud)" in l for l in out.splitlines()), out)
+    editar(p / "analisis" / "tecnico.md", "| 7 | `DEM_RevisionForm` | Interfaz | Modifica | — | EV-02 |\n",
+           "| 7 | `DEM_RevisionForm` | Interfaz | Modifica | — | EV-02 |\n| 7 | `DEM_ER_DiasPendiente` | Regla de expresión | "
+           "Nuevo | — | EV-02 |\n")
+    c, out = corre(S / "comprobar.py", p)
+    ok("Situación: «Nuevo» de un objeto que construyó otra unidad (EV-01) es error",
+       c == 1 and any(l.startswith("✗ técnico §13") and "DEM_ER_DiasPendiente" in l and "lo construido" in l
+                      for l in out.splitlines()), out)
+    editar(p / "analisis" / "tecnico.md", "| 7 | `DEM_ER_DiasPendiente` | Regla de expresión | Nuevo | — | EV-02 |\n", "")
+    editar(p / "analisis" / "tecnico.md", "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |",
+           "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |\n| 8 | `DEM_ER_Firma` | Regla de expresión | "
+           "Modifica | — | EV-03 |")
+    c, out = corre(S / "comprobar.py", p)
+    ok("Situación: «Modifica» de lo que crea una unidad aún sin construir (EV-02) es error",
+       c == 1 and any(l.startswith("✗ técnico §13") and "DEM_ER_Firma" in l for l in out.splitlines()), out)
+    cambios_md(p, {**FILAS_BASE, "EV-02": "Construida"})
+    c, out = corre(S / "comprobar.py", p)
+    ok("Situación: con EV-02 Construida, su DEM_ER_Firma es línea base y EV-03 puede modificarlo",
+       not any(l.startswith("✗ técnico §13") for l in out.splitlines()), out)
+    cambios_md(p, dict(FILAS_BASE))
+    editar(p / "analisis" / "tecnico.md", "| 8 | `DEM_ER_Firma` | Regla de expresión | Modifica | — | EV-03 |", "")
+    t = p / "analisis" / "tecnico.md"
+    sin_pan = lambda pan: "\n".join(l for l in t.read_text(encoding="utf-8").split("\n") if not l.startswith(f"| {pan} |"))
+    t.write_text(sin_pan("PAN-03"), encoding="utf-8")
+    c, out = corre(S / "comprobar.py", p)
+    ok("completitud: con el técnico completo, una pantalla que no toca ninguna unidad en curso no hace falta en §7",
+       c == 0 and "✓ técnico §7: cada pantalla" in out, out)
+    t.write_text(sin_pan("PAN-01"), encoding="utf-8")
+    c, out = corre(S / "comprobar.py", p)
+    ok("completitud: una pantalla de EV-02 sin su fila en §7 es error", c == 1 and any(
+        l.startswith("✗ técnico §7") and "PAN-01" in l for l in out.splitlines()), out)
+    p = con_unidades(tmp / "unidades reflejo")
+    t = p / "analisis" / "tecnico.md"
+    t.write_text("\n".join(l for l in t.read_text(encoding="utf-8").split("\n") if "| EV-02 |" not in l), encoding="utf-8")
+    editar(t, "**DT-04 — Cambio sobre lo construido: EV-02**", "**DT-04 — Firma**")
+    c, out = corre(S / "comprobar.py", p)
+    linea = next((l for l in out.splitlines() if "se refleja en el técnico" in l), "")
+    ok("aviso: un punto aplicado sin filas de §13 de su unidad ni DT que cite su fuente",
+       c == 0 and linea.startswith("· ") and "EV-02: FU-04 punto 1" in linea and "EV-02: FU-04 punto 2" in linea, out)
+    editar(p / "impacto" / "FU-04.md", "| HU-02.2 sin la firma | — | — | ✔ |",
+           "| HU-02.2 sin la firma; Sin cambio técnico: lo hace el formulario que ya está | — | — | ✔ |")
+    editar(t, "| **Necesidad** | HU-02, HU-04 |", "| **Necesidad** | HU-02, HU-04 (FU-04) |")
+    c, out = corre(S / "comprobar.py", p)
+    ok("aviso que se apaga solo: con «Sin cambio técnico: …» en el punto y una DT que cita la fuente",
+       c == 0 and "✓ unidades: cada punto aplicado se refleja" in out, out)
+    editar(t, "| URG-01 | Guardar una solicitud con el importe vacío |\n", "")
+    c, out = corre(S / "comprobar.py", p)
+    ok("aviso: un defecto urgente sin la prueba que lo reproduce en §14",
+       c == 0 and any(l.startswith("· urgentes") and "URG-01" in l for l in out.splitlines()), out)
+    c, out = corre(S / "comprobar.py", EVOLUTIVO)
+    ok("sin analisis/cambios.md, comprobar.py no habla de unidades ni de urgentes",
+       "unidades" not in out and "urgentes" not in out, out)
+
+    # 5.4 Derivados: indice.py cambios, colision y encargo; df_docx.js --cambio
+    p = con_unidades(tmp / "unidades derivados")
+    c, out = corre(S / "indice.py", "cambios", p, "EV-02", "--json")
+    try:
+        r = json.loads(out)
+    except ValueError:
+        r = {}
+    cambian = {x["id"]: x for x in r.get("piezas", {}).get("cambian", [])}
+    ok("indice.py cambios --json: nuevas, cambian (con antes y después frente a versiones/) y las que se conservan (T5)",
+       c == 0 and [x["id"] for x in r["piezas"]["nuevas"]] == ["HU-04"] and set(cambian) == {"HU-02", "PAN-01"}
+       and any("sin la firma anterior" in l for l in cambian["HU-02"]["despues"])
+       and any("con el mismo número." in l for l in cambian["HU-02"]["antes"])
+       and r["historias"]["seConservan"] == ["HU-01"] and r["pantallas"] == ["PAN-01", "PAN-02"], out)
+    ok("indice.py cambios --json: objetos, pruebas a repetir (criterios, escenarios y la URG sobre sus objetos), "
+       "colisión con la URG y lo que hay que reaplicar",
+       bool(r) and [o["objeto"] for o in r["objetos"]] == ["DEM Solicitud", "DEM_ER_Firma", "DEM_RevisionForm",
+                                                           "DEM_SolicitudForm"]
+       and r["pruebas"]["criterios"] == ["HU-02.1", "HU-02.2", "HU-04.1"] and r["pruebas"]["escenarios"] == ["ESC-01"]
+       and [g["id"] for g in r["pruebas"]["urgentes"]] == ["URG-01"] and "importe vacío" in r["pruebas"]["urgentes"][0]["prueba"]
+       and [x["unidad"] for x in r["colisiones"]] == ["URG-01"]
+       and r["reaplicar"] == [{"urgente": "URG-01", "objetos": ["DEM_SolicitudForm"]}]
+       and "DT-04" in r["tecnico"] and "§13" in r["tecnico"], out)
+    c, out = corre(S / "indice.py", "cambios", p, "EV-02")
+    ok("indice.py cambios: en texto, con el antes y después y la orden de capturas",
+       c == 0 and "antes  :" in out and "después:" in out and "--solo PAN-01,PAN-02" in out and "Reaplicar URG-01" in out, out)
+    c, out = corre(S / "indice.py", "colision", p, "URG-01")
+    ok("indice.py colision: los objetos que corrige y los que los usan, frente a las unidades sin pasar a producción",
+       c == 0 and "corrige: DEM_SolicitudForm · los usan: DEM Alta Solicitud" in out and "Colisión: sí" in out
+       and "EV-02 (Aprobada) cambia DEM_SolicitudForm" in out
+       and "EV-03 (Abierta) cambia DEM Alta Solicitud, que usa lo que se corrige" in out
+       and "deriva --out" in out and "entorno de corrección" in out, out)
+    (p / "as-is" / "datos" / "deriva.json").write_text(json.dumps({"cambiados": [{"nombre": "DEM Alta Solicitud"}]}),
+                                                        encoding="utf-8")
+    cambios_md(p, {k: v for k, v in FILAS_BASE.items() if k != "EV-03"} | {"EV-02": "En producción"})
+    c, out = corre(S / "indice.py", "colision", p, "URG-01")
+    ok("indice.py colision: lo modificado en desarrollo (as-is/datos/deriva.json) también choca",
+       c == 0 and "Colisión: sí" in out and "deriva.json): DEM Alta Solicitud" in out and "EV-02" not in out, out)
+    (p / "as-is" / "datos" / "deriva.json").write_text(json.dumps({"cambiados": None}), encoding="utf-8")
+    c, out = corre(S / "indice.py", "colision", p, "URG-01")
+    ok("indice.py colision: sin choques, se corrige en desarrollo; sin historial, lo dice",
+       c == 0 and "Colisión: no" in out and "congelados" in out and "no da el historial" in out, out)
+    c, out = corre(S / "indice.py", "colision", p, "EV-02")
+    ok("indice.py colision de un EV es error", c == 1 and "no es una URG" in out, out)
+    p = con_unidades(tmp / "unidades encargo")
+    c, out = corre(S / "indice.py", "encargo", p, "EV-03")
+    ok("indice.py encargo de una unidad sin aprobar es error (no se construye sin aprobar)",
+       c == 1 and "aprobada" in out and not (p / "construccion").exists(), out)
+    c, out = corre(S / "indice.py", "encargo", p, "EV-02")
+    enc = (p / "construccion" / "EV-02.md").read_text(encoding="utf-8") if (p / "construccion" / "EV-02.md").exists() else ""
+    esp = json.loads((p / "construccion" / "EV-02-esperado.json").read_text(encoding="utf-8")) \
+        if (p / "construccion" / "EV-02-esperado.json").exists() else {}
+    ok("indice.py encargo: construccion/EV-02.md con sus objetos, dónde están en el técnico, el cambio sobre lo construido, "
+       "las pruebas, la URG que reaplicar y la orden de verificar",
+       c == 0 and "| `DEM Solicitud` | Record type | Modifica | campos: firmaRevisor | §3.1 |" in enc
+       and "| `DEM_ER_Firma` | Regla de expresión | Nuevo | DEM_ER_Firma · solicitud · Booleano · Si tiene firma (HU-04)" in enc
+       and "**Datos existentes** (DEM Solicitud): `firmaRevisor`" in enc
+       and "URG-01 sobre DEM_SolicitudForm: Guardar una solicitud con el importe vacío" in enc
+       and "HU-02.1, HU-02.2, HU-04.1" in enc and "Reaplicar URG-01 en `DEM_SolicitudForm`" in enc
+       and 'verificar --app "DEM Gestión de Solicitudes" --objetos "DEM Solicitud,DEM_ER_Firma,DEM_RevisionForm,'
+           'DEM_SolicitudForm" --esperado "<p>/construccion/EV-02-esperado.json" --out "<p>/construccion/verificacion/EV-02.json"'
+       in enc and "construida --reaplicada URG-01" in enc and "change-planning" in enc, out + enc)
+    ok("indice.py encargo: --esperado con el tipo de cada objeto y, del record type que se modifica, solo sus campos nuevos",
+       esp == {"DEM Solicitud": {"tipo": "recordType", "campos": [{"nombre": "firmaRevisor", "tipo": "Text"}]},
+               "DEM_ER_Firma": {"tipo": "expressionRule"}, "DEM_RevisionForm": {"tipo": "interface"},
+               "DEM_SolicitudForm": {"tipo": "interface"}}, json.dumps(esp, ensure_ascii=False))
+    c, out = corre(S / "indice.py", "encargo", p, "EV-02")
+    ok("indice.py encargo otra vez sin cambios: no reescribe nada (R2)", c == 0 and "Al día" in out, out)
+    if shutil.which("node"):
+        r = subprocess.run(["node", str(S / "df_docx.js"), str(p), "--cambio", "EV-02"], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
+        d = p / "entregables" / "DF-Devoluciones-de-solicitudes-EV-02-v1.1.docx"
+        if r.returncode == 2 and "docx" in r.stderr:
+            print("· DF del cambio: falta el paquete docx de Node; no se prueba")
+        else:
+            xml = zipfile.ZipFile(d).read("word/document.xml").decode("utf-8").replace(GUION, "-") if d.exists() else ""
+            ok("df_docx.js --cambio: el DF del cambio con lo nuevo, lo que cambia y lo que se conserva y comparte pantalla "
+               "o paso; sin lo demás",
+               r.returncode == 0 and "Qué cambia" in xml and "HU-04 — Firmar la revisión" in xml
+               and "HU-02 — Corregir y reenviar" in xml and "HU-01 — Devolver una solicitud" in xml
+               and "HU-03" not in xml and "Se conserva" in xml and "Nueva" in xml and "cambio EV-02" in xml,
+               r.stdout + r.stderr + xml[:500])
 
 
 def docx_de(proyecto, salida):

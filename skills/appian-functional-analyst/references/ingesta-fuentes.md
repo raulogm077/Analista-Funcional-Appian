@@ -138,7 +138,8 @@ análisis. Quien lea el análisis debe poder ir de cualquier regla a la frase ex
 ### Aplicación existente y propuesta de refactorización
 - De `as-is/` se leen `LEEME.md`, los documentos de lo que toca el cambio y `as-is/datos/` (inventario, dependencias,
   hallazgos y lo que no se pudo verificar). Nunca la extracción en bruto.
-- Lo que hace hoy la aplicación es un hecho: cada historia dice si se conserva, cambia o es nueva (funcional §4).
+- Lo que hace hoy la aplicación es un hecho: su comportamiento real, con su evidencia. Lo que es nuevo o cambia lo deriva
+  `indice.py cambios` (`cambios.md`).
 - Lo de `sin-verificar.json` es una pregunta abierta, no un hecho: un PT y, si lo resuelve negocio, también un PC.
 - La propuesta de refactorización propone: sus REF se validan con el cliente, en sus palabras, y el técnico las
   baja a objetos (una DT por REF).

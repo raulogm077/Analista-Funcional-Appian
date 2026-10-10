@@ -3,7 +3,12 @@
  * Genera el DF en Word (.docx) a partir del análisis de un proyecto.
  *
  * Uso: node df_docx.js <carpeta del proyecto> [-o entregables/DF-<proyecto>-v1.1.docx] [--pdf]
+ *      node df_docx.js <carpeta del proyecto> --cambio EV-02 [--pdf]   el DF de un cambio (DF-<proyecto>-EV-02-v1.1.docx)
  *      node df_docx.js <carpeta del proyecto> --pdf-de <fichero>     solo convierte ese fichero a PDF
+ *
+ * --cambio lee lo de la unidad de `indice.py cambios <p> EV-02 --json` (Python): qué cambia en un párrafo, y las piezas
+ * nuevas y las que cambian, con las historias que se conservan pero comparten pantalla o paso con ellas (T5); lo demás
+ * no sale.
  *
  * Lee analisis/funcional.md (el contenido), analisis/decisiones.md (control del documento) y proyecto.md
  * (cliente y «Entregados»). Lo que no ve el cliente se queda fuera: comentarios <!-- … --> (fuentes y
@@ -37,7 +42,7 @@ function cargarDocx() {
 }
 
 const args = process.argv.slice(2);
-const CON_VALOR = ["-o", "--pdf-de"];
+const CON_VALOR = ["-o", "--pdf-de", "--cambio"];
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const src = args.find((a, i) => !a.startsWith("-") && !(i > 0 && CON_VALOR.includes(args[i - 1])));
 if (!src) { console.error("Uso: node df_docx.js <carpeta del proyecto> [-o salida.docx] [--pdf] | --pdf-de <fichero>"); process.exit(2); }
@@ -99,7 +104,24 @@ const slug = titulo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^
 // fecha de la versión (fila de Versiones en decisiones.md) o, si no está, la de hoy
 const filaVersion = decisiones.split("\n").find((l) => new RegExp(`^\\|\\s*v?${version.replace(".", "\\.")}\\s*\\|`).test(l));
 const fechaVersion = filaVersion ? filaVersion.split("|")[2].trim().split("-").reverse().join("/") : new Date().toLocaleDateString("es-ES");
-const out = path.resolve(opt("-o", path.join(raiz, "entregables", `DF-${slug}-v${version}.docx`)));
+// --cambio: lo de la unidad, de indice.py cambios --json (la única fuente de qué es nuevo, qué cambia y qué se conserva)
+const CAMBIO = args.includes("--cambio") ? String(opt("--cambio") || "").toUpperCase() : null;
+let R = null;
+if (CAMBIO !== null) {
+  if (!/^(EV|URG)-\d+$/.test(CAMBIO)) { console.error("--cambio necesita el ID de una unidad: EV-02"); process.exit(2); }
+  const env = { ...process.env, PYTHONUTF8: "1", PYTHONIOENCODING: "utf-8", PYTHONDONTWRITEBYTECODE: "1" };
+  // en Windows, python antes que python3 (el alias de la tienda responde 9009 sin Python)
+  const pythons = process.platform === "win32" ? ["python", "py", "python3"] : ["python3", "python"];
+  for (const exe of [process.env.PYTHON, ...pythons].filter(Boolean)) {
+    const r = cp.spawnSync(exe, [path.join(__dirname, "indice.py"), "cambios", raiz, CAMBIO, "--json"], { env, encoding: "utf8" });
+    if ((r.error && r.error.code === "ENOENT") || r.status === 9009) continue;
+    if (r.status !== 0) { console.error(String(r.stderr || r.stdout).trim()); process.exit(2); }
+    R = JSON.parse(r.stdout);
+    break;
+  }
+  if (!R) { console.error("--cambio necesita Python (python3 o python) para leer la unidad con indice.py"); process.exit(2); }
+}
+const out = path.resolve(opt("-o", path.join(raiz, "entregables", `DF-${slug}${CAMBIO ? "-" + CAMBIO : ""}-v${version}.docx`)));
 
 // Un Word entregado no se toca: los de «Entregados: a.docx, b.docx» de proyecto.md (proyecto.py entregar)
 const entregados = ((proyecto.match(/^Entregados:\s*(.*)$/m) || [])[1] || "").split(",").map((x) => x.trim()).filter(Boolean);
@@ -163,7 +185,61 @@ function control() {
   return `## Control del documento\n\nEstado: ${estadoDoc}.\n\n${t.join("\n")}\n`;
 }
 
-const md = control() + "\n" + limpiar(funcional).replace(/^# .+$/m, "");
+// El DF de un cambio: «Qué cambia» en un párrafo y, de cada apartado, solo las fichas y filas de la unidad (nuevas y las
+// que cambian) y las historias y pantallas que se conservan pero comparten pantalla o paso con ellas, con su marca
+function delCambio(md, R) {
+  const marca = {};
+  for (const p of R.piezas.cambian) marca[p.id] = "Cambia";
+  for (const p of R.piezas.nuevas) marca[p.id] = "Nueva";
+  for (const id of [...R.historias.seConservan, ...R.pantallas]) if (!marca[id]) marca[id] = "Se conserva";
+  const L = md.split("\n"), out = [];
+  const ficha = (l) => (l.match(/^\*\*(?:~~)?([A-Z]+-\d+)(?:~~)?\s+—\s/) || [])[1];
+  const fila = (l) => (l.match(/^\|\s*(?:~~)?([A-Z]+-\d+)(?:~~)?\s*\|/) || [])[1];
+  let i = 0;
+  while (i < L.length && !/^## /.test(L[i])) out.push(L[i++]);   // título y versión
+  const lista = (xs) => xs.map((p) => `- ${p.id} — ${p.titulo}`).join("\n");
+  out.push("## Qué cambia", "", `${R.titulo}.`, "");
+  if (R.piezas.nuevas.length) out.push("Nuevo:", "", lista(R.piezas.nuevas), "");
+  if (R.piezas.cambian.length) out.push("Cambia:", "", lista(R.piezas.cambian), "");
+  if (R.piezas.anuladas.length) out.push("Se quita:", "", lista(R.piezas.anuladas), "");
+  out.push(`El resto de la aplicación no cambia: sigue como en la versión ${R.base || "anterior"} de este diseño funcional.`, "");
+  while (i < L.length) {
+    const titulo = L[i++], cuerpo = [];
+    while (i < L.length && !/^## /.test(L[i])) cuerpo.push(L[i++]);
+    if (/^## Anexo/.test(titulo)) continue;
+    const kept = [];
+    let sub = null;
+    for (let k = 0; k < cuerpo.length;) {
+      const l = cuerpo[k];
+      if (/^#{3,}\s/.test(l)) { sub = l; k++; continue; }
+      const id = ficha(l);
+      if (id) {
+        let fin = k + 1;
+        while (fin < cuerpo.length && !/^#/.test(cuerpo[fin]) && !ficha(cuerpo[fin])) fin++;
+        if (marca[id]) {
+          if (sub) { kept.push(sub, ""); sub = null; }
+          kept.push(cuerpo[k], "", `*${marca[id]}*`, ...cuerpo.slice(k + 1, fin));
+        }
+        k = fin; continue;
+      }
+      if (/^\|/.test(l)) {
+        let fin = k;
+        while (fin < cuerpo.length && /^\|/.test(cuerpo[fin])) fin++;
+        const filas = cuerpo.slice(k + 2, fin).filter((x) => marca[fila(x)]);
+        if (filas.length) {
+          if (sub) { kept.push(sub, ""); sub = null; }
+          kept.push(cuerpo[k], cuerpo[k + 1], ...filas, "");
+        }
+        k = fin; continue;
+      }
+      k++;
+    }
+    if (kept.length) out.push(titulo, "", ...kept);
+  }
+  return out.join("\n");
+}
+
+const md = control() + "\n" + limpiar(R ? delCambio(funcional, R) : funcional).replace(/^# .+$/m, "");
 
 const FONT = "Calibri", MONO = "Consolas";
 const PAGE_W = 11906, MARGIN = 1134, CONTENT_W = PAGE_W - 2 * MARGIN; // A4, márgenes 2 cm
@@ -322,8 +398,9 @@ while (i < L.length) {
 }
 
 const portada = [
-  new Paragraph({ spacing: { before: 3000, after: 300 }, children: [new TextRun({ text: "Diseño funcional", size: 28, color: "595959" })] }),
+  new Paragraph({ spacing: { before: 3000, after: 300 }, children: [new TextRun({ text: R ? `Diseño funcional · cambio ${R.unidad}` : "Diseño funcional", size: 28, color: "595959" })] }),
   new Paragraph({ spacing: { after: 400 }, children: [new TextRun({ text: titulo, bold: true, size: 48, color: COLOR })] }),
+  ...(R ? [new Paragraph({ spacing: { after: 300 }, children: [new TextRun({ text: R.titulo, size: 32, color: COLOR })] })] : []),
   new Paragraph({ children: [new TextRun({ text: cliente ? `Cliente: ${cliente}` : "", size: 24 })] }),
   new Paragraph({ children: [new TextRun({ text: `Versión ${version} · ${estadoDoc}`, size: 24 })] }),
   new Paragraph({ children: [new TextRun({ text: `Fecha: ${fechaVersion}`, size: 24 })] }),

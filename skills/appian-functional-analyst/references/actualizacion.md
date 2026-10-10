@@ -86,8 +86,8 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
 
 4. **Requiere aprobación** si: CAMBIA o ANULA algo 🔒; es ALCANCE+ o ALCANCE−; una fuente interna cambia
    algo decidido con el cliente; dos personas del cliente dicen cosas distintas; o el cambio obliga a
-   rediseñar una pantalla validada por el cliente (🔒) o construida. Los retoques (un texto, una columna, el
-   orden) no la requieren.
+   rediseñar una pantalla validada por el cliente (🔒) o construida (con unidades, lo construido no: abajo). Los
+   retoques (un texto, una columna, el orden) no la requieren.
 
 ## 4. Informe de impacto: `impacto/FU-04.md`
 ```markdown
@@ -124,6 +124,10 @@ Versión 1.2: ACT-06 y HU-03 modificadas · ~~PC-02~~ respondida (D-03) · nueva
   analista. «De momento no» o sin respuesta es «Pendiente»: ✗ es descartar.
 - Lo SIN IMPACTO se agrupa en una fila. En «Revisión de dependencias» se pueden agrupar piezas con el mismo
   resultado; un resultado vacío o que empieza por «Pendiente» es una dependencia sin revisar.
+- **Con unidades de cambio** (las lista `proyecto.py estado`; `cambios.md`): la cabecera dice de cuál es la fuente
+  (`Análisis base: versión 1.1 · Cambio: EV-02 · Estado: …`) y `ficha` e `impacto` imprimen por pieza «Construido: … ·
+  En curso: …», que se copia: lo construido que cambia va al Resumen como «Posible petición de cambio: puntos 3 y 5» y no
+  pide aprobación por eso; lo que está en curso en otra unidad, «Requiere: Sí (EV-03)». Una urgencia: `urgentes.md`.
 
 Antes de presentarlo:
 ```bash
