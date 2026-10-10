@@ -19,6 +19,7 @@ import sys
 import tempfile
 import zipfile
 
+sys.dont_write_bytecode = True  # importa un módulo de la skill (redaccion): sin __pycache__ en el plugin
 AQUI = pathlib.Path(__file__).resolve().parent
 PLUGIN = pathlib.Path(os.environ.get("PLUGIN_A_PROBAR") or AQUI.parents[1]).resolve()
 SKILL = PLUGIN / "skills" / "appian-functional-analyst"

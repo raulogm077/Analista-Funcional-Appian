@@ -23,6 +23,7 @@ las capturas son opcionales y se informa de lo que falta para tenerlas.
 """
 import colorsys, functools, http.server, json, os, pathlib, re, shutil, socket, subprocess, sys, tempfile, threading
 
+sys.dont_write_bytecode = True  # importa un módulo de la skill (entorno): sin __pycache__ en el plugin
 AQUI = pathlib.Path(__file__).resolve().parent
 PLUGIN = pathlib.Path(os.environ.get("PLUGIN_A_PROBAR") or AQUI.parents[1]).resolve()
 ROOT = PLUGIN / "skills" / "appian-prototipos"
@@ -122,7 +123,8 @@ def brands(tmp, built):
     probs = [] if code and falta in salida else [f"build.py --brand aena sin brand-aena.json sale con {code} y no dice «{falta}»:\n{salida[-600:]}"]
     out.append(("marca que falta (--brand aena sin su fichero): error con la ruta donde ponerla", probs))
     # los helpers: la marca neutra por defecto y la del proyecto con usar_marca(), antes de from sail_helpers import *
-    prog = ("import sys; sys.path.insert(0, sys.argv[1]); import sail_helpers as s; print(s._BRAND.get('id'), s.PRIMARY); "
+    prog = ("import sys; sys.dont_write_bytecode = True; sys.path.insert(0, sys.argv[1]); "
+            "import sail_helpers as s; print(s._BRAND.get('id'), s.PRIMARY); "
             "s.usar_marca('prueba', sys.argv[2]); from sail_helpers import NAVY, GREEN; print(NAVY, GREEN)")
     code, salida = run(["-c", prog, HERE, carpeta])
     lineas = salida.splitlines()
@@ -516,7 +518,8 @@ def marca_cliente(tmp, built):
 
 
 # color calculado de las iniciales del avatar de la cabecera y su color propio (style), en el navegador
-AVATAR = ("import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); from entorno import sync_playwright, launch_browser\n"
+AVATAR = ("import sys; from pathlib import Path; sys.dont_write_bytecode = True; sys.path.insert(0, sys.argv[1])\n"
+          "from entorno import sync_playwright, launch_browser\n"
           "with sync_playwright() as p:\n"
           "    b = launch_browser(p); pg = b.new_page()\n"
           "    pg.route('**/*', lambda r: r.continue_() if r.request.url.startswith(('file:', 'data:', 'blob:')) else r.abort())\n"

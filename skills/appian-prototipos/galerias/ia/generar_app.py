@@ -4,6 +4,7 @@ revisión de datos sugeridos) y las novedades visuales de 26.7–26.9. Declara a
 Uso: python3 generar_app.py app.json"""
 import json, sys
 from pathlib import Path
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 from sail_helpers import *  # noqa: E402,F401
 

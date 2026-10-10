@@ -30,9 +30,9 @@ Qué mira:
   .mcp.json;
 - que no haya frases largas repetidas entre SKILL.md;
 - que la versión de plugin.json sea la última del README.
-Con --completo pasa además las pruebas de pruebas/ (cada selftest.py y, con pytest, las de ingeniería inversa) al
-plugin que se comprueba, que reciben en PLUGIN_A_PROBAR, la de su requisitos.py y prueba el propio comprobador con una
-copia temporal.
+Con --completo pasa además las pruebas de pruebas/ (cada selftest.py, cada evaluaciones/*/prueba_puntuar.py y, con
+pytest, las de ingeniería inversa) al plugin que se comprueba, que reciben en PLUGIN_A_PROBAR, la de su requisitos.py,
+mira que no dejen __pycache__ en skills/ y prueba el propio comprobador con una copia temporal.
 Con --plugin <carpeta> todo se hace sobre esa copia del plugin (p. ej. la del paquete, que no lleva pruebas/), con
 las pruebas de este repositorio.
 Sale con 1 si hay errores.
@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import argparse
 import ast
-import importlib.util
+import importlib.metadata
 import json
 import os
 import re
@@ -170,10 +170,11 @@ def comprobar_contenido(nombres):
                 if crudas:
                     errores.append(f"{ruta}:{','.join(crudas[:5])}: cita la extracción en bruto de ingeniería inversa; "
                                    "esta skill lee as-is/datos/ y los documentos de as-is/")
-    for py in sorted(SKILLS.glob("*/scripts/*.py")):
-        if py.parts[-3] in nombres and (falta := sin_bytecode(py)):
-            errores.append(f"{py.relative_to(RAIZ).as_posix()}:{falta}: importa un módulo de su carpeta sin "
-                           "«sys.dont_write_bytecode = True» antes: dejaría __pycache__ dentro del plugin, fuera del proyecto")
+    for py in sorted(f for d in ("scripts/*.py", "templates/*.py", "galerias/**/*.py") for f in SKILLS.glob(f"*/{d}")):
+        if py.relative_to(SKILLS).parts[0] in nombres and (falta := sin_bytecode(py)):
+            errores.append(f"{py.relative_to(RAIZ).as_posix()}:{falta}: importa un módulo de su carpeta o de scripts/ "
+                           "sin «sys.dont_write_bytecode = True» antes: dejaría __pycache__ dentro del plugin, fuera del "
+                           "proyecto")
     for py in [f for f in ficheros_del_paquete() if f.suffix == ".py"]:
         if consola_sin_utf8(py):
             errores.append(f"{py.relative_to(RAIZ).as_posix()}: escribe en la consola sin pasarla a UTF-8: en un Windows "
@@ -185,8 +186,10 @@ def comprobar_contenido(nombres):
 
 
 def sin_bytecode(py: Path) -> int | None:
-    """La línea del primer import de un módulo de la misma carpeta si no va antes «sys.dont_write_bytecode = True»."""
-    locales = {p.stem for p in py.parent.glob("*.py")} - {py.stem}
+    """La línea del primer import de un módulo de la misma carpeta o de scripts/ de la skill (el sail_helpers de los
+    generadores de templates/ y galerias/) si no va antes «sys.dont_write_bytecode = True»."""
+    scripts = SKILLS / py.relative_to(SKILLS).parts[0] / "scripts"
+    locales = {p.stem for p in [*py.parent.glob("*.py"), *scripts.glob("*.py")]} - {py.stem}
     arbol = ast.parse(py.read_text(encoding="utf-8"))
     lineas = [n.lineno for n in ast.walk(arbol)
               if (isinstance(n, ast.Import) and any(a.name.split(".")[0] in locales for a in n.names))
@@ -389,28 +392,56 @@ def anota_prueba(nombre, r, ruta, pytest=False):
         avisos.append(f"{ruta} no se pudo completar (falta un requisito)")
 
 
+def version_de(paquete):
+    """La versión instalada de un paquete en el Python del comprobador, o None."""
+    try:
+        return importlib.metadata.version(paquete)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def orden_de_pytest(pytest, mcp, uv, carpeta):
+    """La orden de las pruebas de ingeniería inversa: este Python si tiene pytest y mcp>=1.2,<2 (con mcp 2 el simulador
+    no arranca: importa mcp.server.fastmcp); si no, uv, que los trae; None si tampoco hay uv. pytest y mcp son sus
+    versiones (None si no están) y uv, su ruta."""
+    if pytest and mcp and (1, 2) <= tuple(map(int, re.findall(r"\d+", mcp)[:2])) < (2,):
+        return [sys.executable, "-m", "pytest", "-q", str(carpeta)]
+    if uv:
+        # sin UV_PYTHON, uv elige el Python que encuentra, también un 3.9, y mcp pide 3.10 (UV_RUN)
+        python = [] if os.environ.get("UV_PYTHON") else ["--python", ">=3.10"]
+        return ["uv", "run", "--no-project", *python, "--with", "pytest", "--with", "mcp>=1.2,<2",
+                "python", "-m", "pytest", "-q", str(carpeta)]
+    return None
+
+
 def pruebas_de_las_skills():
     """Las pruebas de pruebas/<skill>/ contra el plugin que se comprueba, que reciben en PLUGIN_A_PROBAR."""
     # PYTHONUTF8=1 salvo que se pida otra cosa: la matriz de GitHub prueba un Windows con PYTHONUTF8=0, como el de un
-    # compañero, para que las pruebas vean la consola y los ficheros en cp1252
-    entorno = dict(os.environ, PLUGIN_A_PROBAR=str(RAIZ), PYTHONUTF8=os.environ.get("PYTHONUTF8", "1"))
+    # compañero, para que las pruebas vean la consola y los ficheros en cp1252. Sin bytecode: las pruebas importan
+    # módulos del plugin y dejarían __pycache__ dentro (restos_de_bytecode)
+    entorno = dict(os.environ, PLUGIN_A_PROBAR=str(RAIZ), PYTHONUTF8=os.environ.get("PYTHONUTF8", "1"),
+                   PYTHONDONTWRITEBYTECODE="1")
     for p in sorted(PRUEBAS.glob("*/selftest.py")):
         anota_prueba(p.parent.name, corre([sys.executable, str(p)], env=entorno), p.relative_to(REPO).as_posix())
+    for p in sorted(PRUEBAS.glob("evaluaciones/*/prueba_puntuar.py")):  # las de los puntuadores de las evaluaciones
+        anota_prueba(p.parent.relative_to(PRUEBAS).as_posix(), corre([sys.executable, str(p)], env=entorno),
+                     p.relative_to(REPO).as_posix())
     inversa = PRUEBAS / "appian-reverse-engineering"
-    if all(importlib.util.find_spec(m) for m in ("pytest", "mcp")):
-        orden = [sys.executable, "-m", "pytest", "-q", str(inversa)]
-    elif shutil.which("uv"):
-        # sin UV_PYTHON, uv elige el Python que encuentra, también un 3.9, y mcp pide 3.10 (UV_RUN)
-        python = [] if os.environ.get("UV_PYTHON") else ["--python", ">=3.10"]
-        orden = ["uv", "run", "--no-project", *python, "--with", "pytest", "--with", "mcp>=1.2,<2",
-                 "python", "-m", "pytest", "-q", str(inversa)]
-    else:
+    orden = orden_de_pytest(version_de("pytest"), version_de("mcp"), shutil.which("uv"), inversa)
+    if orden is None:
         print("Prueba de appian-reverse-engineering: no se pudo completar")
         avisos.append(f"{inversa.relative_to(REPO).as_posix()} no se pudo completar: faltan pytest o mcp y no hay uv "
                       "para traerlos (pip install pytest \"mcp>=1.2,<2\")")
         return
     anota_prueba("appian-reverse-engineering", corre(orden, env=entorno, cwd=str(inversa)),
                  inversa.relative_to(REPO).as_posix(), pytest=True)
+
+
+def restos_de_bytecode():
+    """Tras las pruebas, ningún __pycache__ en skills/: algo importó un módulo del plugin sin evitar el bytecode."""
+    for d in sorted(SKILLS.rglob("__pycache__")):
+        errores.append(f"{d.relative_to(RAIZ).as_posix()}: queda tras las pruebas; algo escribió bytecode dentro del "
+                       "plugin (sys.dont_write_bytecode = True antes del import, o PYTHONDONTWRITEBYTECODE=1 al lanzarlo)")
 
 
 def sin_version_ni_rutas(salida):
@@ -531,6 +562,17 @@ def copia_del_plugin(destino):
 def probar_comprobador(nombres):
     """Prueba del propio comprobador, con una copia temporal del plugin sin pruebas/ (como la del paquete)."""
     fallos = []
+    # pytest de ingeniería inversa, con versiones simuladas: el Python del sistema solo si tiene pytest y mcp>=1.2,<2
+    # (con mcp 2 el simulador no arranca); si no, uv; sin uv, ninguna orden
+    for pytest, mcp, uv, quien in (("8.3.0", "1.26.0", "/bin/uv", "sistema"), ("8.3.0", "1.26.0", None, "sistema"),
+                                   ("8.3.0", "2.2.0", "/bin/uv", "uv"), ("8.3.0", "2.0.0rc1", "/bin/uv", "uv"),
+                                   ("8.3.0", "1.1.3", "/bin/uv", "uv"), (None, "1.26.0", "/bin/uv", "uv"),
+                                   ("8.3.0", None, "/bin/uv", "uv"), ("8.3.0", "2.2.0", None, None)):
+        orden = orden_de_pytest(pytest, mcp, uv, Path("inversa"))
+        elegido = orden and ("sistema" if orden[0] == sys.executable else orden[0])
+        if elegido != quien or (quien == "uv" and "mcp>=1.2,<2" not in orden):
+            fallos.append(f"con pytest {pytest}, mcp {mcp} y uv {uv}, las pruebas de ingeniería inversa van con "
+                          f"{elegido or 'nada'} y no con {quien or 'nada'}: {orden}")
     with tempfile.TemporaryDirectory(prefix="comprobar-plugin-") as tmp:
         copia = copia_del_plugin(Path(tmp) / "Carpeta con espacios" / "plugin")
         skill = copia / "skills" / nombres[0]
@@ -653,6 +695,21 @@ def probar_comprobador(nombres):
                "un script que importa un módulo de su carpeta sin dont_write_bytecode no da error", out)
         (scripts / "zz_modulo.py").unlink()
         (scripts / "zz_usa.py").unlink()
+        # también un generador de galerias/ o templates/ que importa un módulo de scripts/ de su skill (sail_helpers)
+        kit = copia / "skills" / "appian-prototipos"
+        for generador in (kit / "galerias" / "zz" / "generar_app.py", kit / "templates" / "zz_generar.py"):
+            generador.parent.mkdir(exist_ok=True)
+            generador.write_text("import sys\nsys.path.insert(0, 'scripts')\nfrom sail_helpers import *\n", encoding="utf-8")
+            c, out = comprueba()
+            espera(c == 1 and f"{generador.parent.name}/{generador.name}:3" in out and "dont_write_bytecode" in out,
+                   f"un {generador.parent.name}/{generador.name} que importa sail_helpers sin dont_write_bytecode no da "
+                   "error", out)
+            generador.write_text("import sys\nsys.dont_write_bytecode = True\nsys.path.insert(0, 'scripts')\n"
+                                 "from sail_helpers import *\n", encoding="utf-8")
+            c, out = comprueba()
+            espera(c == 0, f"un {generador.parent.name}/{generador.name} con dont_write_bytecode da error", out)
+            generador.unlink()
+        shutil.rmtree(kit / "galerias" / "zz")
         # una orden uv run sin proyecto y sin --python deja a uv elegir el Python: puede ser un 3.9, y mcp pide 3.10
         orden = skill / "references" / "zz-uv.md"
         orden.write_text('# Orden\n\n`uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/x.py" doctor`\n',
@@ -758,8 +815,17 @@ def probar_comprobador(nombres):
         # (si falta un requisito, como pytest sin uv, esa prueba no se completa, pero tampoco pasa)
         for py in (copia / "skills").rglob("*.py"):
             py.write_text('raise RuntimeError("roto a propósito por la prueba del comprobador")\n', encoding="utf-8")
+        # y un __pycache__ en una skill tras las pruebas es un error: algo escribió bytecode dentro del plugin
+        resto = skill / "scripts" / "__pycache__" / "zz.cpython-313.pyc"
+        resto.parent.mkdir(parents=True)
+        resto.write_bytes(b"")
         c, out = comprueba("--completo")
-        suites = sorted(p.parent.name for p in PRUEBAS.glob("*/selftest.py")) + ["appian-reverse-engineering"]
+        espera(f"skills/{nombres[0]}/scripts/__pycache__" in out and "bytecode" in out,
+               "un __pycache__ en una skill tras las pruebas no da error", out)
+        # las evaluaciones de enrutado y de malas prácticas no ejecutan scripts del plugin (leen las descripciones de
+        # SKILL.md y los datos de pruebas/): con los scripts rotos siguen pasando
+        suites = (sorted(p.parent.name for p in PRUEBAS.glob("*/selftest.py")) + ["appian-reverse-engineering"]
+                  + [f"evaluaciones/{e}" for e in ("demo", "evolutivo", "incoherencias")])
         espera(c == 1 and all(f"Prueba de {s}:" in out and f"Prueba de {s}: bien" not in out for s in suites),
                "--completo --plugin no pasa las pruebas del repositorio a la copia", out)
     print(f"Prueba del comprobador: {'bien' if not fallos else 'falla'}")
@@ -943,6 +1009,7 @@ def main(completo, plugin=None):
     if completo:
         pruebas_de_las_skills()
         prueba_de_requisitos()
+        restos_de_bytecode()
         if not plugin:  # el comprobador se prueba una vez, desde el repositorio
             probar_comprobador(nombres)
 

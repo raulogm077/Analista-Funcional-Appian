@@ -14,8 +14,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import warnings
 
 sys.dont_write_bytecode = True  # importa un script de la skill: sin __pycache__ dentro del plugin
+# un aviso de obsolescencia del script es un fallo: con otra versión de Python será un error (re.split con maxsplit
+# por posición, en 3.13). Como PYTHONWARNINGS=error::DeprecationWarning, pero para el script importado
+warnings.simplefilter("error", DeprecationWarning)
 
 AQUI = pathlib.Path(__file__).resolve().parent
 PLUGIN = pathlib.Path(os.environ.get("PLUGIN_A_PROBAR") or AQUI.parents[1]).resolve()

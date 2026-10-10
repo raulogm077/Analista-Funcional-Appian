@@ -107,7 +107,7 @@ def nombre_citado(s: str, prefijo: str, conocidos: set) -> str | None:
     patron = rf"{re.escape(prefijo)}[_ ]\S"
     if not re.match(patron, s):
         return None
-    cortes = [s.rstrip(), re.split(r"[.#(\[]", s, 1)[0].rstrip(), NO_NOMBRE.split(s, 1)[0].rstrip()]
+    cortes = [s.rstrip(), re.split(r"[.#(\[]", s, maxsplit=1)[0].rstrip(), NO_NOMBRE.split(s, 1)[0].rstrip()]
     nombre = next((c for c in cortes if c in conocidos), cortes[-1])
     return nombre if re.match(patron, nombre) else None
 

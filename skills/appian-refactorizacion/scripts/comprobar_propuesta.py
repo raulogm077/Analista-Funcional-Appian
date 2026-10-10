@@ -110,7 +110,7 @@ def nombre_citado(s: str, prefijo: str, conocidos: set) -> str | None:
     patron = rf"{re.escape(prefijo)}[_ ]\S"
     if not re.match(patron, s):
         return None
-    cortes = [s.rstrip(), re.split(r"[.#(\[]", s, 1)[0].rstrip(), NO_NOMBRE.split(s, 1)[0].rstrip()]
+    cortes = [s.rstrip(), re.split(r"[.#(\[]", s, maxsplit=1)[0].rstrip(), NO_NOMBRE.split(s, 1)[0].rstrip()]
     nombre = next((c for c in cortes if c in conocidos), cortes[-1])
     return nombre if re.match(patron, nombre) else None
 
@@ -209,7 +209,7 @@ def comprobar(p: Path) -> tuple[list[str], list[str]]:
             e(ficha["Regla"][0], f"{ref}: «§{m.group(1)}» de la Regla sin su documento; cada sección, entera: "
                                  "«BP nn §x; BP mm §y»")
         if "Prioridad" in ficha and ficha["Prioridad"][1]:
-            valor = re.split(r"[\s,.;:—–-]", ficha["Prioridad"][1], 1)[0]
+            valor = re.split(r"[\s,.;:—–-]", ficha["Prioridad"][1], maxsplit=1)[0]
             if valor not in PRIORIDADES:
                 e(ficha["Prioridad"][0], f"{ref}: prioridad «{valor}»; es Alta, Media o Baja")
         if "Esfuerzo" in ficha and ficha["Esfuerzo"][1] and not re.match(r"^[SML]\b", ficha["Esfuerzo"][1]):

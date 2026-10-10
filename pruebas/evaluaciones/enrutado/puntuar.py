@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import unicodedata
@@ -25,10 +26,11 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 AQUI = Path(__file__).resolve().parent
 REPO = AQUI.parents[2]
+PLUGIN = Path(os.environ.get("PLUGIN_A_PROBAR") or REPO).resolve()
 VISIBLES = REPO / "pruebas" / "enrutado.json"
 OCULTAS = AQUI / "ocultas" / "enrutado.json"
 FRONTERAS = AQUI / "fronteras" / "enrutado.json"
-SKILLS = REPO / "skills"
+SKILLS = PLUGIN / "skills"
 
 
 class Formato(Exception):
@@ -73,7 +75,7 @@ def enunciado(peticiones: list[dict]) -> str:
     for md in sorted(SKILLS.glob("*/SKILL.md")):
         texto = descripcion(md)
         if not texto:
-            raise Formato(f"{md.relative_to(REPO).as_posix()} no tiene description")
+            raise Formato(f"{md.relative_to(PLUGIN).as_posix()} no tiene description")
         skills.append(f"- `{md.parent.name}`: {texto}")
     return ("# Enrutado de peticiones\n\n"
             "Decide qué skill atiende cada petición. Solo conoces estas skills, por su descripción. Cada petición entra "

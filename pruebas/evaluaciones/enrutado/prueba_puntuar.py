@@ -7,6 +7,7 @@ peticiones ocultas ni las de las fronteras, ni las descripciones."""
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -18,10 +19,11 @@ sys.dont_write_bytecode = True
 AQUI = Path(__file__).resolve().parent
 PUNTUAR = AQUI / "puntuar.py"
 REPO = AQUI.parents[2]
+PLUGIN = Path(os.environ.get("PLUGIN_A_PROBAR") or REPO).resolve()
 VISIBLES = json.loads((REPO / "pruebas" / "enrutado.json").read_text(encoding="utf-8"))
 OCULTAS = json.loads((AQUI / "ocultas" / "enrutado.json").read_text(encoding="utf-8"))
 FRONTERAS = json.loads((AQUI / "fronteras" / "enrutado.json").read_text(encoding="utf-8"))
-SKILLS = sorted(md.parent.name for md in (REPO / "skills").glob("*/SKILL.md"))
+SKILLS = sorted(md.parent.name for md in (PLUGIN / "skills").glob("*/SKILL.md"))
 MINIMO_POR_SKILL = 4
 # Lo que resuelve una frontera sin pensar («ya tenemos el as-is», «en draw.io», «las capturas para el DF»): no va en
 # las peticiones de fronteras/.
