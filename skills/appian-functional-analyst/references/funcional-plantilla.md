@@ -64,7 +64,7 @@ Por cada proceso, `### 3.n <Proceso>`:
 Después de los procesos:
 - **Estados**: tabla `Estado · Qué significa` y tabla `De · A · Quién · Paso`, donde «Paso» es el ACT que
   hace el cambio (lo que pasa en él ya está en su ficha). Con 3 o más estados, el diagrama de estados
-  (`mermaid-diagrams.md`). Un estado que la aplicación actual no guarda (`as-is/`) se escribe como lo entiende el
+  (`mermaid-diagrams.md`). Un estado que la aplicación actual no tiene (`as-is/`) se escribe como lo entiende el
   cliente; cómo se guarda y qué pasa con lo que ya hay es del técnico (§5 y §3).
 - **Escenarios**: de 3 a 6 fichas `ESC-nn`, cada una contada como una historia corta con un caso concreto
   (quién, qué pide, qué pasa) y la línea `Pasos: ACT-01, ACT-02…`. Uno por camino: el normal, una

@@ -21,5 +21,5 @@
   {"patron": "as-is/08-procesos-bpmn/*.{drawio,png,bpmn}", "dueno": "appian-diagramas-bpmn"},
   {"patron": "as-is/diagrams/*.{png,svg}", "dueno": "appian-diagramas-bpmn"},
   {"patron": "refactorizacion/", "dueno": "appian-refactorizacion"},
-  {"patron": "prototipo/", "dueno": "appian-prototipos", "tambien": ["appian-functional-analyst"]}
+  {"patron": "prototipo/", "dueno": "appian-prototipos", "crea_vacia": ["appian-functional-analyst"]}
 ]

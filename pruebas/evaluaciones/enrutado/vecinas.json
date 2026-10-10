@@ -1,0 +1,10 @@
+[
+  {
+    "skill": "appian-sail-generator",
+    "descripcion": "Generate Appian SAIL UI expressions from natural-language requirements — both static mockups and functional interfaces wired to live record-type data. Use this skill whenever the user wants to build, design, mock, or generate an Appian interface, form, dashboard, grid, wizard, KPI page, or any SAIL component; whenever they ask to \"vibe code\" Appian or convert a mockup into a functional interface backed by record types; or whenever they mention `a!localVariables`, `a!queryRecordType`, `a!recordData`, `ri!`, `recordType!`, or paste SAIL expressions and ask for fixes/improvements. Use it even when the user does not say \"SAIL\" explicitly — phrases like \"make an Appian screen to capture X\", \"I need a dashboard for our Case records\", or \"connect this mockup to our Employee records\" all qualify. The skill knows how to ask follow-up questions when requirements are ambiguous instead of inventing details."
+  },
+  {
+    "skill": "docx",
+    "descripcion": "Use this skill whenever the user wants to create, read, edit, or manipulate Word documents (.docx) or Word templates (.dotx). Triggers include: any mention of Microsoft Word Documents, such as 'Word doc', 'word document', '.docx', '.dotx', 'microsoft doc'. Also use when extracting or reorganizing content from .docx or .dotx files, inserting or replacing images in documents, find-and-replace in Word files, working with tracked changes or comments, or converting content into a polished Word document. If the user asks for a deliverable as a Word or .docx file (to download, email or print), use this skill. However, if they ask for a document, page, report, memo, or notes WITHOUT naming a file format and the session offers Claude's own dedicated document or page skill or connector, use that instead, even if they will email or print it. Do NOT use for PDFs, spreadsheets, Google Docs, or coding unrelated to document generation."
+  }
+]

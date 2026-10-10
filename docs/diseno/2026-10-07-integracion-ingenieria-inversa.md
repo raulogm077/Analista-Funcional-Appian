@@ -205,8 +205,8 @@ Todas cerradas el 7 de octubre; el nombre del plugin se mantiene.
 | **D2** DF ya hecho | Pasa al formato del plugin; de ahí salen el Word y el técnico con el que se construye por MCP |
 | **D3** Repositorio | GitHub privado |
 | **D4** Extracción | Dentro del proyecto, en `as-is/extraccion/`, tal cual. En entornos controlados no se oculta nada: ni usuarios, ni datos de la app, ni secretos (8 de octubre) |
-| Marca de los prototipos | El plugin se usará con varios clientes: por defecto, el aspecto estándar de Appian; la marca del cliente va en su proyecto y la skill pasa a llamarse `appian-prototipos`. Con decir para qué empresa se trabaja, la skill saca su configuración de marca completa, como la que había de AENA (objeto Site, perfil CSS, paleta, componentes, estados y gráficos), de su guía de marca o de su web, y la deja en el proyecto con una guía para construir con ella (añadido el 7 de octubre) |
-| Datos de ejemplo de prototipos | Galerías y plantillas en un dominio ficticio neutro, sin aeropuertos ni códigos reales de un cliente (Tarea 25) |
+| Marca de los prototipos | El plugin se usará con varios clientes: por defecto, el aspecto estándar de Appian; la marca del cliente va en su proyecto y la skill pasa a llamarse `appian-prototipos`. Con decir para qué empresa se trabaja, la skill saca su configuración de marca completa, como la que había del cliente (objeto Site, perfil CSS, paleta, componentes, estados y gráficos), de su guía de marca o de su web, y la deja en el proyecto con una guía para construir con ella (añadido el 7 de octubre) |
+| Datos de ejemplo de prototipos | Galerías y plantillas en un dominio ficticio neutro, sin lugares ni códigos reales de un cliente (Tarea 25) |
 | Disciplina de evidencia | Se adopta adaptada a lo que ya hace ingeniería inversa: registro de lo que queda sin verificar, negativos acotados, diseño frente a ejecución y preguntas de la revisión cerradas. Sin registro aparte de afirmaciones ni escala de confianza; la marca de inferido pasa a 🔶, la del analista |
 
 ## Cómo funciona el plugin

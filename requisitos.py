@@ -9,9 +9,13 @@ instala en Windows, macOS o Linux. No instala nada ni abre ningún programa: sol
     python3 requisitos.py --tabla-readme   # la tabla de requisitos del README
 
 La lista de requisitos está en requisitos.json, junto a este fichero.
-Sale con 1 si falta algo imprescindible para lo pedido (Python 3.9 o superior) y con 2 si la skill no existe.
---breve sale siempre con 0, imprime solo lo que falta y, después, deja la marca
-~/.cache/appian-analisis-funcional/avisado-<versión>: con ella no vuelve a decir nada a esa versión.
+Sale con 1 si falta algo imprescindible para lo pedido (Python 3.9 o superior) o, con --skill, algo sin lo que esa
+skill no puede trabajar («bloquea» en requisitos.json: uv y el Dev MCP para ingeniería inversa; sin --skill, lo dice y
+sale con 0), y con 2 si la skill no existe.
+--breve sale siempre con 0, imprime solo lo que falta (sin el Dev MCP ni el Appian MCP Server, que dependen de la
+carpeta) y, después, deja la marca ~/.cache/appian-analisis-funcional/avisado-<versión>: con ella no vuelve a decir
+nada a esa versión. El hook lo lanza con python3 y con python, cada uno con --como: avisa el preferido del sistema
+(python en Windows) y, si no funciona, el otro.
 REQUISITOS_SIN=id,id da esos requisitos por ausentes, para las pruebas.
 """
 from __future__ import annotations
@@ -37,9 +41,13 @@ except Exception:  # noqa: BLE001 - un Python demasiado antiguo para el extracto
     dx = None
 
 SIMULAR = "REQUISITOS_SIN"
-# Nombre anterior de una skill del plugin → el de hoy: una copia suelta con ese nombre también es la skill dos veces.
-ANTERIORES = {"appian-prototipos-aena": "appian-prototipos"}
+# Nombre anterior de una skill del plugin, por prefijo → el de hoy (appian-prototipos-<cliente> es hoy appian-prototipos):
+# una copia suelta con ese nombre también es la skill dos veces.
+ANTERIORES = {"appian-prototipos-": "appian-prototipos"}
 NO_SE_DETECTA = {"skill-pdf"}  # se informa, sin comprobar
+# Dependen de la carpeta en la que se trabaja, no del equipo: el aviso de inicio de sesión (--breve) no los dice;
+# ingeniería inversa los comprueba al empezar, desde la carpeta del usuario.
+DE_LA_CARPETA = {"devmcp", "appian-mcp-server"}
 
 
 def carpeta_personal() -> Path:
@@ -193,10 +201,19 @@ def _devmcp():
 
 
 def _appian_mcp_server():
+    """Está si hay un http <entorno del Dev MCP>/mcp. Si no, otro servidor http que no sea el MCP de documentación
+    puede serlo (otra URL, sin Dev MCP configurado): no se puede comprobar, y ingeniería inversa lo usa si se le pasa
+    con --mcp-server-name. Sin ninguno, falta."""
     hosts = _hosts_devmcp()
+    otros = []
     for f, n, e in _servidores():
         if dx.is_http(e) and any(dx.is_appian_mcp_server(e, h) for h in hosts):
             return True, f"{n} ({f})"
+        if dx.is_http(e) and not dx.is_docs_mcp(e):
+            otros.append(f"{n} ({f})")
+    if otros:
+        return None, None, (f"Si es uno de estos servidores http, pásalo a ingeniería inversa con `--mcp-server-name`: "
+                            f"{', '.join(otros)}")
     return False, None
 
 
@@ -219,39 +236,50 @@ DETECTORES = {
 def copias_sueltas() -> list:
     """Una skill del plugin copiada suelta en ~/.claude/skills/ (también con su nombre anterior) existe dos veces."""
     carpeta = carpeta_personal() / ".claude" / "skills"
+    skills = skills_del_plugin()
+    anteriores = {d.name: hoy for d in (carpeta.iterdir() if carpeta.is_dir() else []) for p, hoy in ANTERIORES.items()
+                  if d.name.startswith(p) and d.name not in skills}
     avisos = []
-    for n in skills_del_plugin() + sorted(ANTERIORES):
+    for n in skills + sorted(anteriores):
         copia = carpeta / n
         if (copia / "SKILL.md").is_file():
-            nombre = f"{n} (hoy {ANTERIORES[n]})" if n in ANTERIORES else n
+            nombre = f"{n} (hoy {anteriores[n]})" if n in anteriores else n
             avisos.append(f"Hay una copia suelta de {nombre} en {copia}: con el plugin, la skill está dos veces y no se "
                           "sabe cuál se activa. Bórrala para usar la del plugin.")
     return avisos
 
 
 def comprobar(skill=None) -> dict:
-    """Cada requisito de lo pedido, con «presente» (None si no se puede comprobar) y la ruta donde está."""
+    """Cada requisito de lo pedido, con «presente» (None si no se puede comprobar), la ruta donde está y, si el detector
+    la da, una «nota» con lo que hay que saber."""
     sin = {s.strip() for s in os.environ.get(SIMULAR, "").split(",") if s.strip()}
     requisitos = []
     for r in cargar():
         if skill and skill not in r["skills"]:
             continue
+        nota = []
         if r["id"] in sin:
             presente, ruta = False, None
         elif r["id"] in NO_SE_DETECTA:
             presente, ruta = None, None
         else:
             try:
-                presente, ruta = DETECTORES[r["id"]]()
+                presente, ruta, *nota = DETECTORES[r["id"]]()
             except Exception:  # noqa: BLE001 - lo que no se puede mirar se da por ausente
                 presente, ruta = False, None
-        requisitos.append({**r, "presente": presente, "ruta": ruta})
+        requisitos.append({**r, "presente": presente, "ruta": ruta, **({"nota": nota[0]} if nota else {})})
     return {"python": ".".join(str(v) for v in sys.version_info[:3]), "requisitos": requisitos,
             "avisos": copias_sueltas()}
 
 
 def falta_imprescindible(datos) -> bool:
     return any(r["imprescindible"] and r["presente"] is False for r in datos["requisitos"])
+
+
+def bloqueos(datos, skill=None) -> list:
+    """(requisito, skill) de lo que falta y deja a una skill sin poder trabajar («bloquea» en requisitos.json)."""
+    return [(r, s) for r in datos["requisitos"] if r["presente"] is False for s in r.get("bloquea", [])
+            if skill in (None, s)]
 
 
 def version_plugin() -> str:
@@ -271,8 +299,8 @@ def quien(r) -> str:
 
 def detalle(r, so) -> list:
     """Lo que hay que saber de un requisito que falta o no se puede comprobar."""
-    return [f"  - {r['nombre']}{quien(r)}", f"    Para: {r['para']}", f"    Si falta: {r['sin_el']}",
-            f"    Cómo se instala: {r['instalar'][so]}"]
+    return [f"  - {r['nombre']}{quien(r)}", *([f"    {r['nota']}"] if r.get("nota") else []), f"    Para: {r['para']}",
+            f"    Si falta: {r['sin_el']}", f"    Cómo se instala: {r['instalar'][so]}"]
 
 
 def texto(datos, skill) -> str:
@@ -296,9 +324,14 @@ def texto(datos, skill) -> str:
     if datos["avisos"]:
         lineas += ["", "Avisos"] + [f"  - {a}" for a in datos["avisos"]]
     lineas.append("")
+    bloqueados = bloqueos(datos)
     if falta_imprescindible(datos):
         lineas.append("Falta Python 3.9 o superior" + (f" (este es {datos['python']})" if sys.version_info < (3, 9) else "")
                       + ": no funciona nada.")
+    elif bloqueados:
+        lineas += [f"Sin {r['nombre']}, {s} no puede trabajar." for r, s in bloqueados]
+        if any(r["presente"] is False and not r.get("bloquea") for r in de_las_skills):
+            lineas.append("Sin lo demás que falta, se sigue con lo que hay y se dice qué se pierde.")
     elif any(r["presente"] is False for r in de_las_skills):
         lineas.append("Lo imprescindible está. Sin lo que falta, se sigue con lo que hay y se dice qué se pierde.")
     else:
@@ -333,15 +366,38 @@ def marca() -> Path:
     return carpeta_personal() / ".cache" / "appian-analisis-funcional" / f"avisado-{version_plugin()}"
 
 
-def breve(skill) -> int:
+def preferido() -> str:
+    """La orden de Python que se dice por defecto: python en Windows (python3 suele ser el atajo de la Microsoft Store) y
+    python3 en macOS y Linux."""
+    return "python" if sistema() == "windows" else "python3"
+
+
+def funciona(orden) -> bool:
+    """Si la orden arranca en este equipo un Python 3.9 o superior."""
+    ruta = shutil.which(orden)
+    if not ruta:
+        return False
+    try:
+        return subprocess.run([ruta, "-c", "import sys; sys.exit(sys.version_info < (3, 9))"], capture_output=True,
+                              timeout=15).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def breve(skill, como=None) -> int:
     """Para el hook de inicio de sesión: la primera vez de cada versión, solo lo que falta y las copias sueltas; después,
-    nada. Sale siempre con 0, porque Claude solo recibe lo que imprime un hook que sale con 0."""
+    nada. Sale siempre con 0, porque Claude solo recibe lo que imprime un hook que sale con 0.
+    El hook lanza este script con python3 y con python (--como dice con cuál): avisa el preferido del sistema y el otro
+    solo si el preferido no funciona; «Detalle» dice el que funciona."""
     try:
         hecho = marca()
-        if hecho.exists():
+        if hecho.exists():  # antes de lanzar ningún proceso: casi siempre ya se avisó
             return 0
+        if como and como != preferido() and funciona(preferido()):
+            return 0  # avisa el preferido, que el hook también lanza
         datos = comprobar(skill)
-        faltan = [r for r in datos["requisitos"] if r["presente"] is False and not r["solo_pruebas"]]
+        faltan = [r for r in datos["requisitos"] if r["presente"] is False and not r["solo_pruebas"]
+                  and r["id"] not in DE_LA_CARPETA]
         if faltan or datos["avisos"]:
             so = sistema()
             print(f"Plugin appian-analisis-funcional {version_plugin()}: comprobación de este equipo, que solo se hace "
@@ -351,7 +407,7 @@ def breve(skill) -> int:
                       f"Cómo se instala: {r['instalar'][so]}")
             for a in datos["avisos"]:
                 print(f"- {a}")
-            print(f"Detalle: {'python' if so == 'windows' else 'python3'} \"{RAIZ / 'requisitos.py'}\"")
+            print(f"Detalle: {como or preferido()} \"{RAIZ / 'requisitos.py'}\"")
             sys.stdout.flush()
         hecho.parent.mkdir(parents=True, exist_ok=True)
         hecho.write_text("Avisado de lo que falta en este equipo.\n", encoding="utf-8")
@@ -373,19 +429,21 @@ def main(argv=None) -> int:
     ap.add_argument("--breve", action="store_true",
                     help="para el hook de inicio de sesión: solo lo que falta, una vez por versión; sale siempre con 0")
     ap.add_argument("--tabla-readme", action="store_true", help="la tabla de requisitos del README, en Markdown")
+    ap.add_argument("--como", choices=("python", "python3"),
+                    help="con --breve: la orden con la que lo lanza el hook (avisa solo una, la que funciona)")
     args = ap.parse_args(argv)
     if args.tabla_readme:
         print(tabla_readme())
         return 0
     if args.breve:
-        return breve(args.skill if args.skill in skills_del_plugin() else None)
+        return breve(args.skill if args.skill in skills_del_plugin() else None, args.como)
     if args.skill and args.skill not in skills_del_plugin():
         print(f"No hay ninguna skill «{args.skill}» en el plugin. Son: {', '.join(skills_del_plugin())}",
               file=sys.stderr)
         return 2
     datos = comprobar(args.skill)
     print(json.dumps(datos, ensure_ascii=False, indent=2) if args.json else texto(datos, args.skill))
-    return 1 if falta_imprescindible(datos) else 0
+    return 1 if falta_imprescindible(datos) or (args.skill and bloqueos(datos, args.skill)) else 0
 
 
 if __name__ == "__main__":

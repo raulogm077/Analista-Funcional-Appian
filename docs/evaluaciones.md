@@ -4,6 +4,28 @@ Resultados de las evaluaciones de los planes de `docs/plan/` y, al cerrar cada
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 
+## 0.7.0-beta.2 · G6 (11 de octubre de 2026)
+
+### Enrutado con vecinas (tarea 6.6)
+
+Lote nuevo `pruebas/evaluaciones/enrutado/vecinas/`: 13 peticiones de frontera con dos skills de fuera del plugin
+(`appian-sail-generator` y `docx`, con su descripción literal en `vecinas.json`). Cada pasada, un agente nuevo sin
+herramientas ni skills (`claude -p` desde una carpeta vacía) que solo recibe `puntuar.py --enunciado --vecinas`.
+
+| Descripciones | Vecinas | Fronteras | Visibles |
+|---|---|---|---|
+| Las de 6.5 (≤ 1.000 bytes, fronteras con SAIL y Word) | 12/13 ×3 | — | — |
+| Buenas prácticas reclama el SAIL pegado que se revisa | 13/13 ×3 | 7/8, 8/8, 7/8 | 20/20 |
+| Diagramas remite al analista los de estados y de datos | 13/13 ×2 | 8/8 ×3 | 20/20 |
+
+- El fallo de las tres primeras pasadas: «Revisa este SAIL: hace un a!queryRecordType dentro de un a!forEach» iba a
+  `appian-sail-generator`, que se ofrece para «paste SAIL expressions and ask for fixes/improvements». Buenas prácticas
+  dice ahora «reviewing … pasted SAIL code» y, en su «Not for», «writing new SAIL (appian-sail-generator)». La otra
+  mitad, que `appian-sail-generator` diga que no es para revisiones de buenas prácticas, es de Raúl (plan, apartado 6).
+- El recorte del analista para caber en 1.000 bytes hizo fallar la frontera de los diagramas de estados y de datos (con
+  las descripciones de antes, 8/8 ×2): diagramas dice ahora que esos los hace el analista.
+- Las ocultas no se han pasado: quedan para G7, con el resto de las evaluaciones.
+
 ## 0.7.0-beta.2 · G0-G5 (10-11 de octubre de 2026)
 
 Plan único `docs/plan/2026-10-10-0.7.0-beta.2.md`. Cada fase, en su rama, con su revisión independiente; los hallazgos
@@ -478,7 +500,7 @@ Rama `f2-ingenieria-inversa`, de `main` 4938606 al merge. Versión 0.7.0-alpha.1
   `pruebas/<skill>/` y el caso de ejemplo de prototipos sale del plugin. `comprobar_plugin.py` da error si una skill
   lleva pruebas, ejemplos, un proyecto o la marca de un cliente, y `--completo --plugin` pasa las mismas pruebas sobre
   la copia del paquete.
-- **La marca de cualquier cliente (Tareas 0b y 0c).** `appian-prototipos-aena` pasa a `appian-prototipos`, con la
+- **La marca de cualquier cliente (Tareas 0b y 0c).** `appian-prototipos-<cliente>` pasa a `appian-prototipos`, con la
   marca estándar de Appian por defecto; la de un cliente va en `<p>/prototipo/`. `marca.py web` saca de su web los
   colores, el logo y la tipografía, y `marca.py crear`, la configuración completa (Site, perfil CSS, paleta, estados,
   gráficos y `marca-<id>.md` para quien construye) con el contraste AA ya ajustado.
@@ -501,7 +523,7 @@ Rama `f2-ingenieria-inversa`, de `main` 4938606 al merge. Versión 0.7.0-alpha.1
 - Ingeniería inversa: 89 pruebas en verde, entre ellas retomar en otra ruta, con espacios y en otro entorno.
 - Scripts de `skills/` y `pruebas/`: se analizan e importan con Python 3.9.
 - Galerías y plantillas: se regeneran idénticas, byte a byte. La galería de antes, construida con el kit nuevo y la
-  marca de AENA del historial, solo cambia el gris del pie del visor de documentos.
+  marca del cliente del historial, solo cambia el gris del pie del visor de documentos.
 
 ### Lo aprendido
 

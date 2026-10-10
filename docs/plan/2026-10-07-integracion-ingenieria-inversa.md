@@ -77,7 +77,7 @@ Lo que el diseño implica y ninguna prueba de tarea cubriría sola. Cada línea 
 
 **Ficheros:**
 - Mover con `git mv`:
-  - `skills/{appian-functional-analyst,appian-diagramas-bpmn,appian-prototipos-aena}/scripts/selftest.py` →
+  - `skills/{appian-functional-analyst,appian-diagramas-bpmn,appian-prototipos-<cliente>}/scripts/selftest.py` →
     `pruebas/<skill>/selftest.py`;
   - `skills/appian-reverse-engineering/tests/` → `pruebas/appian-reverse-engineering/`, con `fixtures/` → `datos/`;
   - `skills/appian-functional-analyst/ejemplos/autorizaciones/` → `pruebas/appian-functional-analyst/datos/autorizaciones/`;
@@ -85,10 +85,10 @@ Lo que el diseño implica y ninguna prueba de tarea cubriría sola. Cada línea 
   - `skills/appian-reverse-engineering/docs/{SPEC-v2-devmcp,CHANGELOG}.md` → `docs/ingenieria-inversa/`, y
     `docs/PRIMERA-EJECUCION.md` → `references/primera-ejecucion.md` de la skill, porque es para quien la usa (la cita
     su SKILL.md);
-  - `skills/appian-prototipos-aena/examples/{bloques,ia,componentes,README.md}` → `skills/appian-prototipos-aena/galerias/`:
+  - `skills/appian-prototipos-<cliente>/examples/{bloques,ia,componentes,README.md}` → `skills/appian-prototipos-<cliente>/galerias/`:
     son el catálogo del kit y se quedan.
-- Borrar: `skills/appian-prototipos-aena/examples/casos/` (un proyecto entero dentro de la skill).
-- Crear: `pruebas/appian-prototipos-aena/datos/autorizaciones/generar_app.py`, con dos pantallas de
+- Borrar: `skills/appian-prototipos-<cliente>/examples/casos/` (un proyecto entero dentro de la skill).
+- Crear: `pruebas/appian-prototipos-<cliente>/datos/autorizaciones/generar_app.py`, con dos pantallas de
   `pruebas/appian-functional-analyst/datos/autorizaciones/` leídas con `modelo.py` del analista, como hacía el caso borrado.
 - Modificar:
   - los `selftest.py` y las pruebas de ingeniería inversa: la skill se toma de `$PLUGIN_A_PROBAR/skills/<skill>` (por
@@ -123,39 +123,39 @@ Lo que el diseño implica y ninguna prueba de tarea cubriría sola. Cada línea 
 Por defecto, el aspecto estándar de Appian; la marca del cliente es un fichero de su proyecto, como las fuentes.
 
 **Ficheros:**
-- Mover con `git mv`: `skills/appian-prototipos-aena/` → `skills/appian-prototipos/` y `pruebas/appian-prototipos-aena/`
+- Mover con `git mv`: `skills/appian-prototipos-<cliente>/` → `skills/appian-prototipos/` y `pruebas/appian-prototipos-<cliente>/`
   → `pruebas/appian-prototipos/`, y cambiar la ruta de la skill dentro de esas pruebas (`selftest.py` y
   `datos/autorizaciones/generar_app.py`) y la de `galerias/README.md` en el `README.md`.
 - Crear en la skill: `assets/brand-appian.json` (la marca por defecto, sin logo, con los valores por defecto del objeto
   Site que da la documentación de Appian, consultada con el MCP de documentación) y `references/marca.md` (formato de
   `brand-<id>.json`, que va en `<p>/prototipo/`, y cómo se saca la marca de un cliente de su guía de marca o de su web
   pública, con la auditoría de contraste de `validate.py`).
-- Borrar de la skill: `assets/brand-aena.json` y `assets/{logo-aena-on-light,logo-aena-on-dark,symbol-aena}.svg`. Raúl
-  los recibe en un zip, fuera del repositorio, para la carpeta `prototipo/` de sus proyectos de AENA.
+- Borrar de la skill: `assets/brand-<cliente>.json` y `assets/{logo-<cliente>-on-light,logo-<cliente>-on-dark,symbol-<cliente>}.svg`. Raúl
+  los recibe en un zip, fuera del repositorio, para la carpeta `prototipo/` de los proyectos de ese cliente.
 - Modificar:
-  - en la skill: `SKILL.md` (nombre, título y descripción sin «con la marca AENA»; si el proyecto no tiene
+  - en la skill: `SKILL.md` (nombre, título y descripción sin «con la marca <cliente>»; si el proyecto no tiene
     `prototipo/brand-<id>.json`, se pregunta por la marca y, sin respuesta, se usa `appian` con un `$assumption`),
     `scripts/{build,validate,sail_helpers}.py` (marca por defecto `appian`; con `--brand x` y sin `brand-x.json` junto al
     `app.json`, error que dice dónde ponerla), `references/design-rules.md` (las reglas valen para cualquier marca; la
     paleta de estados sale de `brand-<id>.json → states`), `references/{componentes,bloques}.md`, y `templates/` y
-    `galerias/`, que se regeneran con la marca neutra y con constantes de prefijo ficticio en lugar de `AENA_…`;
+    `galerias/`, que se regeneran con la marca neutra y con constantes de prefijo ficticio en lugar de `<CLIENTE>_…`;
   - fuera de ella: `skills/appian-functional-analyst/{SKILL.md,references/actualizacion.md}`, `README.md` (mapa de
-    skills; las filas de versiones anteriores no se tocan), `.claude-plugin/{plugin.json,marketplace.json}` (sin «aena»
+    skills; las filas de versiones anteriores no se tocan), `.claude-plugin/{plugin.json,marketplace.json}` (sin «<cliente>»
     en descripción ni palabras clave) y `pruebas/comprobar_plugin.py` (`REGLA_DOCS` y la comprobación nueva).
 
 - [x] **Paso 1: pruebas que fallan.** En `pruebas/appian-prototipos/selftest.py`: sin `--brand`, `build.py` usa `appian`;
-  con `--brand x` y un `brand-x.json` de prueba junto al `app.json`, usa esa; con `--brand aena` sin su fichero, sale
+  con `--brand x` y un `brand-x.json` de prueba junto al `app.json`, usa esa; con `--brand <cliente>` sin su fichero, sale
   con error y dice dónde ponerlo. En `comprobar_plugin.py`: error si una skill lleva un `brand-*.json` que no sea
   `brand-appian.json`, o un logo. → FALLA.
 - [x] **Paso 2:** mover, crear y ajustar; regenerar plantillas y galerías.
-- [x] **Paso 3:** `comprobar_plugin.py --completo` en verde y `git grep -i -w aena -- skills .claude-plugin` vacío. La
-  galería de componentes de antes del cambio, construida con el kit nuevo y `--brand aena` (los ficheros de AENA,
+- [x] **Paso 3:** `comprobar_plugin.py --completo` en verde y `git grep -i -w <cliente> -- skills .claude-plugin` vacío. La
+  galería de componentes de antes del cambio, construida con el kit nuevo y `--brand <cliente>` (los ficheros de ese cliente,
   sacados del historial, junto a su `app.json`), da el mismo HTML que con el kit de antes: así lo verán los proyectos de
-  AENA. Commit «F2: prototipos sin la marca de un cliente».
+  ese cliente. Commit «F2: prototipos sin la marca de un cliente».
 
 ### Tarea 0c: La configuración de marca de cualquier cliente, a partir de su nombre
 
-Con decir para qué empresa se trabaja, la skill saca su configuración de marca completa, como la que había de AENA, y la
+Con decir para qué empresa se trabaja, la skill saca su configuración de marca completa, como la que había del cliente, y la
 deja en `prototipo/` del proyecto: el objeto Site con su logo, el perfil CSS de Appian, la paleta, las convenciones de
 botones y tarjetas, los estados, los colores de gráfico y la tipografía, todo con el contraste comprobado. Así el
 prototipo es fiel a su marca y el equipo sabe cómo configurar Appian y cómo diseñar cada pantalla que construya. Sirve
@@ -182,7 +182,7 @@ para cualquier cliente. (Añadida el 7 de octubre a petición de Raúl.)
   --acento <hex> [--principal <hex>] [--secundarios <hex,hex…>] [--logo <svg>] [--logo-claro <svg>]
   [--formas SQUARED|SEMI_ROUNDED|ROUNDED] [--mayusculas si|no] [--tipografia <nombre>] [--sin-perfil-css] <carpeta>`
   escribe en `<carpeta>`:
-  - `brand-<id>.json`, con las mismas secciones que la de AENA: `site` (el objeto Site con su logo), `typeface`,
+  - `brand-<id>.json`, con las mismas secciones que la del cliente: `site` (el objeto Site con su logo), `typeface`,
     `palette`, `components` (botones principal, secundario, destructivo y de barra, tarjeta de contenido, fondo de página
     y `chartColorScheme`), `appianSemanticApprox`, `states` y, salvo con `--sin-perfil-css`, `cssProfile`. El perfil
     lleva solo lo que cambia respecto a Appian, con propiedades de `schemas/css-profile-properties.json`, en seis grupos:
@@ -942,14 +942,14 @@ genera con `requisitos.py --json` y `REQUISITOS_SIN` de todo lo opcional); modif
   Chromium de Playwright, o Chrome o Edge en sus rutas habituales, sin abrir ninguno. `docx`: se busca en la carpeta
   actual y en la global de npm, como `df_docx.js`. `REQUISITOS_SIN=id,id` fuerza ausencias para las pruebas.
 - Aviso si existe una copia suelta de una skill del plugin en `~/.claude/skills/` (dos versiones activas a la vez),
-  también con el nombre que tenía antes (`appian-prototipos-aena`, hoy `appian-prototipos`). La carpeta personal (`~`)
+  también con el nombre que tenía antes (`appian-prototipos-<cliente>`, hoy `appian-prototipos`). La carpeta personal (`~`)
   sale de `devmcp_extract.home_dir()`, que respeta `APPIAN_RE_HOME`.
 
 - [x] **Paso 1:** prueba en `comprobar_plugin.py --completo`: con `REQUISITOS_SIN` de todo lo opcional, la salida
   `--json` es igual a `pruebas/requisitos-esperado.json` salvo versión y rutas, como en la Tarea 31; con
   `REQUISITOS_SIN=playwright,docx`, sale 0 y esos dos van con `presente: false`; con `REQUISITOS_SIN=python`, sale 1;
   con un `APPIAN_RE_HOME` temporal que tiene `.claude/skills/appian-reverse-engineering/SKILL.md`, hay aviso, y también
-  con `.claude/skills/appian-prototipos-aena/SKILL.md`. → FALLA.
+  con `.claude/skills/appian-prototipos-<cliente>/SKILL.md`. → FALLA.
 - [x] **Paso 2:** implementar. **Paso 3:** en verde. Commit.
 
 ### Tarea 24: Aviso al instalar
@@ -980,14 +980,14 @@ haya (una línea: `python3 <skill>/../../requisitos.py --skill <nombre>` antes d
 o si un fichero que va al paquete contiene, con límite de palabra y sin distinguir acentos ni mayúsculas, `rgmoya`,
 `raulogm`, `C:/Users/` o `C:\Users\` no seguido de `<usuario>`, `/home/claude`, `Proyectos IA` o «Raúl» y «Raul»; salvo
 `author.name` de `.claude-plugin/plugin.json` y `owner.name` de `.claude-plugin/marketplace.json`. También, si `skills/` o
-`.claude-plugin/` nombran un cliente de `pruebas/clientes.txt` (hoy, AENA): el plugin no lleva clientes (Tarea 0b).
-`clientes.txt` lleva también lo que delata a ese cliente en los datos de ejemplo: aeropuerto, Barajas, El Prat, MAD, BCN,
-PMI y AGP. Los datos de las galerías y las plantillas de prototipos pasan a un dominio ficticio neutro (por ejemplo,
-incidencias y expedientes en las sedes de una empresa ficticia), sin aeropuertos ni lugares o códigos reales de un
+`.claude-plugin/` nombran un cliente de `pruebas/clientes.txt` (hoy, uno): el plugin no lleva clientes (Tarea 0b).
+`clientes.txt` lleva también lo que delata a ese cliente en los datos de ejemplo: sus lugares y sus códigos de
+tres letras. Los datos de las galerías y las plantillas de prototipos pasan a un dominio ficticio neutro (por ejemplo,
+incidencias y expedientes en las sedes de una empresa ficticia), sin lugares ni códigos reales de un
 cliente, y se regeneran con sus scripts (lo decidió Raúl el 7 de octubre).
 
 - [x] **Paso 1:** con un fichero temporal en una skill que diga `C:/Users/rgmoya`, `comprobar_plugin.py` da error, y el
-  `HYDRAULIC` de `viewer-static.min.js` no lo da; una galería que dice «Barajas» también da error. → FALLA.
+  `HYDRAULIC` de `viewer-static.min.js` no lo da; una galería que dice un lugar del cliente también da error. → FALLA.
 - [x] **Paso 2:** implementar, pasar galerías y plantillas al dominio neutro y regenerar la tabla. **Paso 3:** en verde
   sin el fichero temporal. Commit.
 

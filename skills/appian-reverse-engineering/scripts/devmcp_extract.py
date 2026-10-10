@@ -18,7 +18,7 @@ Subcomandos:
               y rehace el modelo (build_model.py). La fecha de la extraccion sigue siendo la de la completa
               (startedAt); la de la reextraccion va en reextraidoEn.
   datafabric  Metadatos y COUNT(*) por record type de la app a traves del Appian MCP Server.
-  verificar   --app <app> [--objetos <nombres|@fichero>] [--esperado <json>] --out <fichero.json>: por objeto, si
+  verificar   --app <app> [--objetos <nombres|@fichero>] [--esperado <fichero.json>] --out <fichero.json>: por objeto, si
               existe, su tipo, su nombre, su ultima modificacion (rol versions; un dato, no una prueba), los campos
               de record types y CDT y sus casos de prueba si el Dev MCP los expone. Con --esperado, tambien sus
               diferencias con lo esperado (diferencias()). No escribe en ninguna extraccion.
@@ -1776,7 +1776,7 @@ def build_parser() -> argparse.ArgumentParser:
     common(sp)
     sp.add_argument("--app", required=True, help="uuid, prefijo o nombre de la aplicacion")
     sp.add_argument("--objetos", help="Nombres o uuids separados por comas, o @fichero (uno por linea)")
-    sp.add_argument("--esperado", help="JSON {objeto: {\"tipo\": …, \"campos\": [{\"nombre\", \"tipo\"}]}}: se verifican "
+    sp.add_argument("--esperado", help="Fichero JSON {objeto: {\"tipo\": …, \"campos\": [{\"nombre\", \"tipo\"}]}}: se verifican "
                                        "tambien esos objetos y se escriben sus diferencias")
     sp.add_argument("--out", required=True, help="Fichero JSON del resultado")
     sp = sub.add_parser("deriva")
