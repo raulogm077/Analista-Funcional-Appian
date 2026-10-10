@@ -21,12 +21,12 @@ Errores (✗, salida 1) y avisos (·):
     relación con otro sistema, perfil y criterio (HU-nn.m e INT-nn.m) en su apartado técnico, decisiones con su
     porqué y su verificación, y la misma versión en los tres ficheros;
   - con --fuentes: citas con el minuto de una intervención real y sin nombres de participantes;
-  - con --anterior: ningún ID desaparece, la versión sube si algo cambia y no sube si nada cambia, y tiene su
-    fila; lista lo nuevo y lo cambiado, y avisa del texto que queda viejo (lo que una pieza cambiada ya no dice y sigue
-    en otra línea, sin tocar en esta versión);
+  - con --anterior: ningún ID desaparece, la versión sube si cambia el funcional o el técnico (si no cambian y sube,
+    aviso, salvo a la 1.0) y tiene su fila; lista lo nuevo y lo cambiado, y avisa del texto que queda viejo (lo que
+    una pieza cambiada ya no dice y sigue en otra línea, sin tocar en esta versión);
   - con --impacto: los IDs del informe existen o son nuevos; «Requiere» es «—» o «Sí (motivo)», y «Sí» en lo que
     cambia o anula algo 🔒; después de aplicar, cada dependencia tiene resultado, cada cambio está declarado y lo 🔒
-    solo cambia con aprobación; con «Estado: sin cambios», ningún punto por aplicar y la versión del análisis base;
+    solo cambia con aprobación; con «Estado: sin cambios», ningún punto por aplicar (y aviso si la versión ha subido);
   - con una aplicación existente (<p>/as-is/datos/inventario.json): cada historia con su «Origen»; hallazgos, NV y
     REF solo en la trazabilidad del DF y citados solo si existen; la Situación de cada objeto de técnico §13 (siempre
     que tenga filas) contra el inventario y los objetos de fuera de la aplicación (lo «Nuevo» y lo que «Sustituye» no
@@ -721,6 +721,11 @@ def normaliza_pieza(t):
     return re.sub(r"\s+", " ", t).strip()
 
 
+def primera_entrega(antes, ahora):
+    """La subida de una 0.x a la 1.0: la primera entrega, que sube la versión aunque el análisis no cambie."""
+    return bool(antes) and ahora == (1, 0) and antes < (1, 0)
+
+
 def contenido(P):
     """El funcional y el técnico sin la línea de la versión ni las capturas: si no cambian, no hay versión nueva."""
     return {d: normaliza_pieza("\n".join(l for l in P.docs[d].lineas if not re.search(r"Versi[oó]n:\s*v?\d+\.\d+", l)))
@@ -742,12 +747,14 @@ def comprobar_anterior(m, ruta_ant):
     anul = sorted((i for i in comunes if m.piezas[i].anulada and not ant.piezas[i].anulada), key=clave_pid)
     estado = [f"{i} {ant.piezas[i].estado or '—'}→{m.piezas[i].estado or '—'}" for i in comunes
               if m.piezas[i].estado != ant.piezas[i].estado and i not in anul]
-    # Modificar, no rehacer: la versión sube solo si se aplica algún cambio (piezas o texto sin ID del funcional o del técnico)
+    # Modificar, no rehacer: la versión sube solo si cambia el funcional o el técnico (piezas, citas, estados o texto
+    # sin ID). Sin cambios y subida es aviso (subir de más no pierde trabajo), salvo la subida a la 1.0 (primera entrega)
     v = lambda x: f"{x[0]}.{x[1]}" if x else "¿?"
     if nuevas or modif or anul or estado or contenido(m) != contenido(ant):
         informe("la versión sube", [] if (va and vn and vn > va) else [f"{v(va)} → {v(vn)}"])
     else:
-        informe("sin cambios en el análisis, la versión no sube", [] if va == vn else [f"{v(va)} → {v(vn)}"])
+        informe("sin cambios en el análisis, la versión no sube (salvo a la 1.0, la primera entrega)",
+                [] if va == vn or primera_entrega(va, vn) else [f"{v(va)} → {v(vn)}"], grave=False)
     informe("nuevas", nuevas, grave=False)
     informe("modificadas", modif, grave=False)
     informe("anuladas o respondidas en esta versión", anul, grave=False)
@@ -885,20 +892,22 @@ def comprobar_informe_previo(m, ruta_imp, carpeta_fuentes):
 
 
 def comprobar_sin_cambios(m, ruta_imp):
-    """«Estado: sin cambios»: no se aplica nada, así que no hay versión nueva. Error si un punto se queda por aplicar
-    (✔, ⚠️ o ❓ con IDs en «Cambio propuesto», o «Pendiente», que proyecto.py estado ya no listaría) o si la versión del
-    funcional ya no es la del análisis base."""
+    """«Estado: sin cambios»: no cambia ni el funcional ni el técnico, así que no hay versión nueva. Error si un punto se
+    queda por aplicar: «Pendiente» (proyecto.py estado ya no lo listaría) o un tipo que cambia el análisis (todos menos
+    SIN IMPACTO y PROYECTO) que no se descarta (✗). Aviso si la versión del funcional ya no es la del análisis base."""
     t, puntos, _ = mo.lee_informe(ruta_imp)
     quedan = [f"punto {f.get('#', '?')}" for f in puntos
               if mo.normaliza(f.get("decision", "")).strip(" *").startswith("pendiente")
-              or (re.search("✔|⚠|❓", f.get("decision", "")) and mo.ids_en(f.get("cambio propuesto", "")))]
+              or (mo.normaliza(f.get("tipo", "")).strip(" *`") not in ("sin impacto", "proyecto")
+                  and "✗" not in f.get("decision", ""))]
     informe("«Estado: sin cambios»: ningún punto queda por aplicar ni pendiente de aprobación", quedan)
     base = re.search(r"An[aá]lisis base:\s*versi[oó]n\s*v?(\d+)\.(\d+)", t)
     vn = m.version("F")
     if base and vn:
         vb = (int(base.group(1)), int(base.group(2)))
         informe("«Estado: sin cambios»: la versión sigue siendo la del análisis base",
-                [] if vb == vn else [f"análisis base {vb[0]}.{vb[1]} → funcional {vn[0]}.{vn[1]}"])
+                [] if vb == vn or primera_entrega(vb, vn) else [f"análisis base {vb[0]}.{vb[1]} → funcional {vn[0]}.{vn[1]}"],
+                grave=False)
 
 
 def comprobar_impacto(m, ant, ruta_imp, cambios):

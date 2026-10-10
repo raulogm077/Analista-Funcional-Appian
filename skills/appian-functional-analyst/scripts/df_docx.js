@@ -6,7 +6,7 @@
  *      node df_docx.js <carpeta del proyecto> --pdf-de <fichero>     solo convierte ese fichero a PDF
  *
  * Lee analisis/funcional.md (el contenido), analisis/decisiones.md (control del documento) y proyecto.md
- * (cliente y «DF entregado»). Lo que no ve el cliente se queda fuera: comentarios <!-- … --> (fuentes y
+ * (cliente y «Entregados»). Lo que no ve el cliente se queda fuera: comentarios <!-- … --> (fuentes y
  * estados), piezas, filas y criterios tachados (anulados o respondidos). Las fichas (**HU-07 — …**,
  * **INT-02 — …**) salen como títulos de cuarto nivel. Con prototipo/brand-<id>.json, su color oscuro
  * (site.backgroundColor) en títulos y cabeceras de tabla.
@@ -16,8 +16,8 @@
  * *cursiva* y `código`, listas (una viñeta puede seguir en líneas sangradas), tablas, citas (>), imágenes
  * ![pie](ruta.png) con figuras numeradas.
  *
- * No sobrescribe el Word de la versión entregada («DF entregado» de proyecto.md): sale con 1. --pdf y --pdf-de
- * convierten con LibreOffice (soffice) en un perfil temporal que se borra y dejan el PDF en
+ * No sobrescribe un Word entregado («Entregados» de proyecto.md, que escribe proyecto.py entregar): sale con 1.
+ * --pdf y --pdf-de convierten con LibreOffice (soffice) en un perfil temporal que se borra y dejan el PDF en
  * <p>/entregables/revision/.
  *
  * Requiere Node.js y el paquete docx (npm install docx si no está).
@@ -53,22 +53,25 @@ function aPdf(fichero) {
   const exes = [process.env.SOFFICE, "soffice", "libreoffice"];
   if (process.platform === "win32") exes.push("C:\\Program Files\\LibreOffice\\program\\soffice.exe");
   if (process.platform === "darwin") exes.push("/Applications/LibreOffice.app/Contents/MacOS/soffice");
-  const pdf = path.join(REVISION, path.basename(fichero, path.extname(fichero)) + ".pdf");
+  const nombre = path.basename(fichero, path.extname(fichero)) + ".pdf", pdf = path.join(REVISION, nombre);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "df-pdf-"));
-  try {
-    fs.mkdirSync(REVISION, { recursive: true });
-    if (fs.existsSync(pdf)) fs.unlinkSync(pdf);
-    const perfil = require("url").pathToFileURL(path.join(tmp, "perfil")).href;
+  try {   // se convierte en la carpeta temporal y solo si sale bien sustituye al PDF que hubiera
+    const perfil = require("url").pathToFileURL(path.join(tmp, "perfil")).href, salida = path.join(tmp, "salida");
     const env = { ...process.env, HOME: tmp, TMPDIR: tmp, TMP: tmp, TEMP: tmp };
     for (const exe of exes.filter(Boolean)) {
-      const r = cp.spawnSync(exe, [`-env:UserInstallation=${perfil}`, "--headless", "--convert-to", "pdf", "--outdir", REVISION, fichero],
+      const r = cp.spawnSync(exe, [`-env:UserInstallation=${perfil}`, "--headless", "--convert-to", "pdf", "--outdir", salida, fichero],
         { env, encoding: "utf8", timeout: 300000 });
       if (r.error && r.error.code === "ENOENT") continue;
-      return fs.existsSync(pdf) ? { ok: true, pdf } :
-        { ok: false, msg: `LibreOffice no ha convertido ${path.basename(fichero)}: ${String(r.stderr || r.stdout || (r.error && r.error.message) || "").trim().slice(-300)}` };
+      if (!fs.existsSync(path.join(salida, nombre)))
+        return { ok: false, msg: `LibreOffice no ha convertido ${path.basename(fichero)}: ${String(r.stderr || r.stdout || (r.error && r.error.message) || "").trim().slice(-300)}` };
+      fs.mkdirSync(REVISION, { recursive: true });
+      fs.copyFileSync(path.join(salida, nombre), pdf);
+      return { ok: true, pdf };
     }
     return { ok: false, msg: "Sin LibreOffice (soffice): no se genera el PDF; revisa el Word a mano" };
-  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  } finally {
+    try { fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5 }); } catch (e) { /* en Windows puede seguir abierto (EBUSY) */ }
+  }
 }
 if (args.includes("--pdf-de")) {
   const f = opt("--pdf-de") ? path.resolve(opt("--pdf-de")) : "";
@@ -98,12 +101,11 @@ const filaVersion = decisiones.split("\n").find((l) => new RegExp(`^\\|\\s*v?${v
 const fechaVersion = filaVersion ? filaVersion.split("|")[2].trim().split("-").reverse().join("/") : new Date().toLocaleDateString("es-ES");
 const out = path.resolve(opt("-o", path.join(raiz, "entregables", `DF-${slug}-v${version}.docx`)));
 
-// El Word de la versión entregada no se toca: «DF entregado: 1.1 · …» en proyecto.md y el fichero de esa versión
-const entregado = (proyecto.match(/DF entregado:\s*v?(\d+\.\d+)/) || [])[1];
-const versionDe = (f) => (path.basename(f).match(/-v(\d+\.\d+)\.docx$/i) || [])[1];
+// Un Word entregado no se toca: los de «Entregados: a.docx, b.docx» de proyecto.md (proyecto.py entregar)
+const entregados = ((proyecto.match(/^Entregados:\s*(.*)$/m) || [])[1] || "").split(",").map((x) => x.trim()).filter(Boolean);
 if (fs.existsSync(out)) {
-  if (entregado && versionDe(out) === entregado) {
-    console.error(`El DF ${entregado} ya se entregó al cliente («DF entregado» de proyecto.md): no se sobrescribe ${out}. ` +
+  if (entregados.includes(path.basename(out))) {
+    console.error(`${path.basename(out)} ya se entregó al cliente («Entregados» de proyecto.md): no se sobrescribe ${out}. ` +
       `Si el análisis ha cambiado, sube la versión; para el PDF de ese Word, --pdf-de ${out}.`);
     process.exit(1);
   }

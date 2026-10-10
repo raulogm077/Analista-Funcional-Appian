@@ -10,7 +10,7 @@ coherente.
 - El análisis **no se lee entero**: se consulta con `indice.py`.
 
 Una fuente cada vez, en orden de fecha: un informe de impacto que toca solo lo afectado y una versión (+0.1) solo si
-se aplica algún cambio. En los ejemplos, la fuente nueva es FU-04 y la vigente la 1.1. `<p>` es la carpeta del proyecto.
+cambia el funcional o el técnico. En los ejemplos, la fuente nueva es FU-04 y la vigente la 1.1. `<p>`: el proyecto.
 
 ## 0. Antes de empezar
 ```bash
@@ -56,7 +56,7 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
    | COMPLETA | Añade detalle sin contradecir | Se añade a la pieza con su cita | No |
    | CONFIRMA | Ratifica algo ⚠️, 🔶 o ❓ | Pasa a ✅ y suma la cita | No |
    | VALIDA | El cliente lo aprueba por escrito o en la revisión del DF | Pasa a 🔒 | Sí (una por bloque) |
-   | CAMBIA | Contradice una decisión anterior | Se reescribe la pieza; lo anterior va a «Antes». Si era 🔒: aprobado por el cliente sigue 🔒 y suma la cita de la aprobación; solo por el equipo, pasa a ✅ y el cliente lo revalida en la siguiente entrega | Sí |
+   | CAMBIA | Contradice una decisión anterior | Se reescribe la pieza; lo anterior va a «Antes». Si era 🔒 y lo aprueba el cliente, sigue 🔒 con la cita; si solo el equipo, ✅ | Sí |
    | ANULA | Deja de hacerse algo que tiene ID | Se tacha: `Anulada por D-nn` | Sí |
    | RESPONDE | Contesta un PC entero | Se aplica; el PC se tacha: `Respondida por D-nn` | Sí |
    | ALCANCE+ / ALCANCE− | Entra o sale funcionalidad | Funcional §1 y piezas nuevas o anuladas | Sí |
@@ -134,9 +134,9 @@ ha quedado sin cita (señal de que se ha leído entera).
 
 ## 5. Aprobación
 Presenta el **Resumen** y **solo los puntos que requieren aprobación**, cada uno con tu recomendación, y
-pregunta «¿Aplico el informe con estas decisiones?». Con cualquier confirmación, aplica; la que llega por el chat
-o por correo se cataloga (tipo Aprobación) y la Decisión la cita: «✔ FU-09». Lo que decide el analista manda: si al
-aplicar ves un motivo para no seguirlo, pregúntale.
+pregunta «¿Aplico el informe con estas decisiones?». Con cualquier confirmación, aplica. La que llega por el chat se
+cataloga como Aprobación y la de un correo, como Correo; la Decisión la cita igual («✔ FU-09») y la fuente va a «Fuentes
+procesadas». Lo que decide el analista manda: si al aplicar ves un motivo para no seguirlo, pregúntale.
 
 Sin respuesta o en una sesión desatendida: aplica lo que no requiere aprobación; lo que la requiere no se aplica:
 queda «Pendiente» en el informe, la pieza no cambia y la cabecera del informe lo dice: «Estado: aplicado en 1.2;
@@ -145,8 +145,9 @@ pendientes de aprobación: puntos 4 y 7», o «Estado: pendiente» si no se ha a
 le vuelve a preguntar.
 
 ## 6. Aplicar
-- Si hay algo que aplicar, antes de tocar nada `proyecto.py copia <p>` (guarda la 1.1 en `versiones/v1.1/`). Si no,
-  el informe queda «Estado: sin cambios», sin copia ni versión, y se verifica con `comprobar.py <p> --impacto …`.
+- Si el informe cambia el funcional o el técnico, antes de tocar nada `proyecto.py copia <p>` (guarda la 1.1 en
+  `versiones/v1.1/`). Si no (SIN IMPACTO, PROYECTO o descartes), «Estado: sin cambios», sin copia ni versión: la fuente
+  va igual a «Fuentes procesadas» y se verifica con `comprobar.py <p> --impacto …`.
 - Solo se tocan las piezas del informe. `ficha --lineas` da las líneas exactas: lee solo ese tramo y edita
   en sitio. Las líneas marcadas ⟂ están iguales en otro sitio: incluye la de al lado para que sea única.
 - Lo que cambia cita la fuente nueva en su comentario y actualiza el estado (✅, 🔒, ⚠️…).
@@ -166,7 +167,7 @@ le vuelve a preguntar.
   diagramas de estados y de datos se editan en su `.mmd` y se vuelven a pintar con `mermaid.py`
   (`mermaid-diagrams.md`).
 - **decisiones.md**: fila de la versión nueva y filas D nuevas al final.
-- **Versión**: sube 0.1 en funcional y técnico.
+- **Versión**: si cambia el funcional o el técnico, sube 0.1 en los dos.
 - **Anexo**: `indice.py derivadas <p> --escribir`, solo si el informe toca alguna pantalla o algún perfil.
 - **proyecto.md**: la fuente en «Fuentes procesadas» y el siguiente paso.
 - En el informe: completa «Revisión de dependencias» y «Aplicado», y pon «Estado: aplicado en 1.2» (con lo que
@@ -176,13 +177,12 @@ le vuelve a preguntar.
 ```bash
 python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/ --anterior <p>/versiones/v1.1 --impacto <p>/impacto/FU-04.md
 ```
-Tiene que salir sin errores: ningún ID desaparecido, la versión sube y tiene su fila, cada dependencia con
-resultado, cada cambio declarado en el informe, nada marcado «sin cambios» que haya cambiado y nada 🔒
-cambiado sin un punto aprobado. Después, en este orden:
+Tiene que salir sin errores: ningún ID desaparecido, la versión sube (si cambió el funcional o el técnico) y tiene
+su fila, cada dependencia con resultado, cada cambio declarado en el informe, nada marcado «sin cambios» que haya
+cambiado y nada 🔒 cambiado sin un punto aprobado. Después, en este orden:
 - el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y solo sus capturas. Las validadas por
-  el cliente (🔒) no se tocan sin el visto bueno del analista. Cada pregunta nueva que devuelve (Q-nn de su
-  trazabilidad) pasa a una PC de §11 con la PAN en «Afecta a» y `<!-- ❓ prototipo Q-03 -->`;
-- el Word, solo al enviarlo o si se pide (`df_docx.js`; nunca pisa el de la versión entregada).
+  el cliente (🔒) no se tocan sin el visto bueno del analista;
+- el Word, solo al enviarlo o si se pide (`df_docx.js`; nunca pisa uno entregado).
 
 ## 8. Entregar
 En pocas líneas: versión, puntos por tipo, lo que cambió de verdad (CAMBIA, ANULA, alcance), pendientes

@@ -178,8 +178,8 @@ cuando se puede. Lo respondido se tacha con la decisión que lo responde. El Wor
 ```
 
 Las preguntas nuevas del prototipo (Q-nn de su trazabilidad) son PC con la PAN en «Afecta a» y
-`<!-- ❓ prototipo Q-03 -->`. Una decisión tomada sin respuesta es una PC «Supuesto: ¿confirmas que…?», con la opción
-aplicada primero.
+`<!-- ❓ prototipo Q-03 -->`. Una decisión tomada sin respuesta, en lo que no requiere aprobación, es una PC
+«Supuesto: ¿confirmas que…?», con la opción aplicada primero.
 
 Lo que ingeniería inversa no pudo verificar y tiene que resolver negocio (un NV de `as-is/` cuyo «Qué hace falta»
 empieza por «Negocio») es también un PC: la pregunta en palabras del cliente, sin objetos de Appian, y la cita en el

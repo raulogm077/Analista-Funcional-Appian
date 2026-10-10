@@ -93,7 +93,7 @@ El `.drawio`, el `.png` y el `.bpmn` de cada proceso y la imagen de cada `.mmd` 
 | Modo | Cuándo | Qué sale |
 |---|---|---|
 | **Síntesis** | Reuniones, correos, notas | Funcional y diagramas; el técnico cuando el funcional esté estable o se pida; DF en Word |
-| **DF ya hecho** | Hay un DF o una ERS del cliente | El DF entra como versión 1.0 en el formato del plugin, sin reinterpretar: cada pieza 🔒 con su ID original en la trazabilidad (`<!-- 🔒 FU-01 RF-07 -->`); funcional, técnico y Word. Las reuniones anteriores al DF pasan por el informe de impacto y lo que no coincide con el DF requiere aprobación; las posteriores, como siempre (`ingesta-fuentes.md`, `actualizacion.md`) |
+| **DF ya hecho** | Hay un DF o una ERS del cliente | El DF entra como versión 1.0 en el formato del plugin, sin reinterpretar: cada pieza 🔒 con su ID original en la trazabilidad (`<!-- 🔒 FU-01 RF-07 -->`); funcional y técnico, y el Word al enviarlo. Las reuniones anteriores al DF pasan por el informe de impacto y lo que no coincide con el DF requiere aprobación; las posteriores, como siempre (`ingesta-fuentes.md`, `actualizacion.md`) |
 | **Evolutivo** | Hay que cambiar o ampliar una aplicación existente (`as-is/`) | Como síntesis, con lo de «Aplicación existente»: el origen de cada historia y la situación de cada objeto |
 | **Refactorización** | Hay una propuesta de refactorización (`refactorizacion/propuesta.md`) | Como evolutivo: el DF dice lo que se conserva, lo que cambia y lo nuevo; el técnico baja cada REF a objetos, con «Sustituye a» y la migración de datos |
 | **Actualización** | Ya hay análisis y llega una reunión, un correo o los comentarios al DF | Informe de impacto y cambios puntuales: `actualizacion.md` |
@@ -121,8 +121,8 @@ Di el modo al empezar.
    `diagrama.py crear`. Los de estados y de datos, en Mermaid con `mermaid-diagrams.md`; los pinta el `mermaid.py`
    de esa misma skill.
 5. **Prototipo**, si se pide (suele ser con la primera versión del funcional, para validar las pantallas).
-   Lo hace `appian-prototipos` a partir del funcional y pone las capturas en las fichas de pantalla. Cada pregunta
-   nueva que devuelve (Q-nn) pasa a una PC de §11, con la PAN en «Afecta a» y `<!-- ❓ prototipo Q-03 -->`.
+   Lo hace `appian-prototipos` a partir del funcional y pone las capturas en las fichas de pantalla. Sus preguntas
+   nuevas (Q-nn) pasan a PC (`funcional-plantilla.md` §11).
 6. **Técnico.** Escribe `analisis/tecnico.md` con `tecnico-plantilla.md` cuando el funcional esté estable
    (normalmente tras la primera validación) o cuando se pida. El Entorno (§0) y las Convenciones (§1) se
    rellenan antes, en cuanto se sepan.
@@ -137,10 +137,10 @@ Di el modo al empezar.
    ```bash
    node <skill>/scripts/df_docx.js <p> --pdf    # entregables/DF-<proyecto>-v<versión>.docx; el PDF, en revision/
    ```
-   Mira algunas páginas del PDF antes de enviarlo. Nunca sobrescribe el Word de la versión entregada.
+   Mira algunas páginas del PDF antes de enviarlo. Nunca sobrescribe un Word entregado.
 9. **Entregar.** Actualiza `proyecto.md` (fuentes procesadas y siguiente paso) y envía el Word y el `funcional.md`
-   (SendUserFile en Claude). Cuando el Word sale hacia el cliente, `proyecto.py entregar <p>` escribe «DF entregado»;
-   nunca en una sesión desatendida. En pocas líneas: modo, historias, pantallas, pendientes de confirmar con el
+   (SendUserFile en Claude). Cuando el Word sale hacia el cliente, `proyecto.py entregar <p>` apunta «DF entregado» y
+   el fichero; nunca en una sesión desatendida. En pocas líneas: modo, historias, pantallas, pendientes de confirmar con el
    cliente y siguiente paso.
 
 Para buscar en el análisis sin leerlo entero: `indice.py` (`resumen`, `buscar`, `ficha`, `impacto`,

@@ -4,7 +4,7 @@
   proyecto.py iniciar  <carpeta> --nombre "Solicitudes de autorización" [--cliente …] [--direccion …] [--tipo "evolutivo de X"]
   proyecto.py estado   <carpeta>     versión, cliente y marca, DF enviado, fuentes sin procesar, pendientes, pantallas
   proyecto.py copia    <carpeta>     guarda analisis/*.md en versiones/v<versión>/ antes de cambiarlo
-  proyecto.py entregar <carpeta>     el Word sale hacia el cliente: «DF entregado: <versión> · <fecha>» en proyecto.md
+  proyecto.py entregar <carpeta>     el Word sale hacia el cliente: «DF entregado» y el fichero en «Entregados»
 
 `iniciar` no toca nada que ya exista. `entregar` solo cuando el Word se envía, nunca en una sesión desatendida.
 """
@@ -14,6 +14,7 @@ import pathlib
 import re
 import shutil
 import sys
+import unicodedata
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -70,26 +71,34 @@ def estado(a):
         fecha = f" ({entregado.group(2)})" if entregado.group(2) else ""
         print(f"DF en Word: último enviado {entregado.group(1)}{fecha}, versión actual {vs}")
 
-    # fuentes
-    catalogadas = sorted({re.match(r"(FU-\d+)", f.name).group(1) for f in (raiz / "fuentes").glob("FU-*.md")})
-    procesadas = {f[0] for f in tabla(texto, "Fuentes procesadas")}
-    sin = [x for x in catalogadas if x not in procesadas]
-    print(f"Fuentes: {len(catalogadas)} catalogadas, {len(procesadas)} procesadas" +
-          (f"; sin procesar: {', '.join(sin)}" if sin else ""))
-    aprobadas = set()   # PAN de un cambio aprobado (✔) en un informe aplicado en la versión vigente
-    for inf in sorted((raiz / "impacto").glob("FU-*.md")):
+    # informes de impacto: los pendientes; las PAN de un cambio aprobado (✔) en una versión posterior al prototipo que se
+    # enseñó (el último prototipo/app-vX.Y.json; sin ninguno, todas), que el prototipo rehace; y las fuentes que cuentan
+    # como procesadas aunque no estén en la tabla: la de un informe «sin cambios» y la que cita una Decisión («✔ FU-09»)
+    ensenadas = [tuple(map(int, x.groups())) for b in (raiz / "prototipo").glob("app-v*.json")
+                 for x in [re.match(r"app-v(\d+)\.(\d+)\.json$", b.name)] if x]
+    ultima = max(ensenadas) if ensenadas else None
+    aprobadas, procesadas, pendientes = set(), {f[0] for f in tabla(texto, "Fuentes procesadas")}, []
+    for nombre, t, puntos, _ in mo.informes(raiz):
         # «Estado: pendiente» o «Estado: aplicado en 1.2; pendientes de aprobación: puntos 4 y 7» (actualizacion.md)
-        t, puntos, _ = mo.lee_informe(inf)
         e = mo.estado_informe(t)
         if re.search(r"pendientes? de aprobaci[oó]n:\s*puntos?\s+\d", e, re.I):
-            print(f"· {inf.name}: {e}")
+            pendientes.append(f"· {nombre}.md: {e}")
         elif re.match(r"pendiente", e, re.I):
-            print(f"· {inf.name}: informe pendiente de aprobar o de aplicar")
-        aplicado = re.match(r"aplicado en v?(\d+\.\d+)", e, re.I)
-        if aplicado and aplicado.group(1) == vs:
+            pendientes.append(f"· {nombre}.md: informe pendiente de aprobar o de aplicar")
+        if re.match(r"sin cambios", e, re.I):
+            procesadas |= set(re.findall(r"FU-\d+", nombre))
+        procesadas |= {x for f in puntos for x in re.findall(r"FU-\d+", f.get("decision", ""))}
+        aplicado = re.match(r"aplicado en v?(\d+)\.(\d+)", e, re.I)
+        if aplicado and (ultima is None or tuple(map(int, aplicado.groups())) > ultima):
             aprobadas |= {x for f in puntos if "✔" in f.get("decision", "")
                           for col in ("encaja en", "cambio propuesto") for x in mo.ids_en(f.get(col, ""))
                           if x.startswith("PAN-")}
+    catalogadas = sorted({re.match(r"(FU-\d+)", f.name).group(1) for f in (raiz / "fuentes").glob("FU-*.md")})
+    sin = [x for x in catalogadas if x not in procesadas]
+    print(f"Fuentes: {len(catalogadas)} catalogadas, {len(procesadas)} procesadas" +
+          (f"; sin procesar: {', '.join(sin)}" if sin else ""))
+    for x in pendientes:
+        print(x)
 
     if not m.docs:
         print("Sin análisis todavía.")
@@ -106,7 +115,8 @@ def estado(a):
         print(f"Pantallas validadas por el cliente (🔒; no se cambian sin el visto bueno del analista): {', '.join(conf)}")
         cambian = [p for p in conf if p in aprobadas]
         if cambian:
-            print(f"  con un cambio aprobado en la versión {vs}, el prototipo las rehace: {', '.join(cambian)}")
+            desde = f"después de app-v{ultima[0]}.{ultima[1]}.json" if ultima else "(sin app-vX.Y.json)"
+            print(f"  con un cambio aprobado {desde}, el prototipo las rehace: {', '.join(cambian)}")
         quedan = [p for p in conf if p not in aprobadas]
         print(f"  para el prototipo: --confirmadas {','.join(quedan)}" if quedan else
               "  para el prototipo: ninguna va en --confirmadas")
@@ -134,16 +144,25 @@ def copia(a):
     print(f"Copia de la versión {v[0]}.{v[1]} en {destino}. Al terminar: comprobar.py {raiz} --anterior {destino}")
 
 
+def nombre_df(m, vs):
+    """El nombre del Word que escribe df_docx.js por defecto: DF-<título sin tildes ni signos>-v<versión>.docx."""
+    tit = re.search(r"^# (.+)$", "\n".join(m.docs["F"].lineas), re.M) if "F" in m.docs else None
+    tit = re.sub(r"\s+—\s+Diseño funcional\s*$", "", tit.group(1)) if tit else "Diseño funcional"
+    slug = re.sub(r"[^A-Za-z0-9_]+", "-", re.sub(r"[\u0300-\u036f]", "", unicodedata.normalize("NFD", tit))).strip("-")
+    return f"DF-{slug}-v{vs}.docx"
+
+
 def entregar(a):
-    """El Word sale hacia el cliente: «DF entregado: <versión> · <fecha>» en proyecto.md. df_docx.js no vuelve a
-    escribir ese Word."""
+    """El Word sale hacia el cliente: «DF entregado: <versión> · <fecha>» en proyecto.md y el fichero en «Entregados:»,
+    que df_docx.js no vuelve a escribir."""
     if a.cambio:
         sys.exit("proyecto.py entregar --cambio todavía no está disponible: se marca el DF completo (sin --cambio)")
     raiz = pathlib.Path(a.carpeta)
     pm = raiz / "proyecto.md"
     if not pm.exists():
         sys.exit(f"No existe {pm}")
-    v = mo.Proyecto(raiz).version("F")
+    m = mo.Proyecto(raiz)
+    v = m.version("F")
     if not v:
         sys.exit("funcional.md no tiene «Versión: x.y»")
     vs, fecha = f"{v[0]}.{v[1]}", datetime.date.today().isoformat()
@@ -156,8 +175,18 @@ def entregar(a):
         k = next((i for i, l in enumerate(lineas) if l.startswith("Cliente:")), 0)
         lineas.insert(k + 1, valor)
         texto = "\n".join(lineas)
-    if not list((raiz / "entregables").glob(f"DF-*-v{vs}.docx")):
-        print(f"· No encuentro entregables/DF-…-v{vs}.docx: genéralo con df_docx.js antes de enviarlo")
+    word = nombre_df(m, vs)
+    if not (raiz / "entregables" / word).is_file():
+        print(f"· No encuentro entregables/{word}: genéralo con df_docx.js antes de enviarlo")
+    else:   # «Entregados: a.docx, b.docx», tras la línea de «DF entregado»
+        lineas = texto.split("\n")
+        k = next((i for i, l in enumerate(lineas) if l.startswith("Entregados:")), None)
+        if k is None:
+            k = next(i for i, l in enumerate(lineas) if "DF entregado:" in l) + 1
+            lineas.insert(k, "Entregados:")
+        ya = [x.strip() for x in lineas[k].split(":", 1)[1].split(",") if x.strip()]
+        lineas[k] = "Entregados: " + ", ".join(ya + ([word] if word not in ya else []))
+        texto = "\n".join(lineas)
     pm.write_text(texto, encoding="utf-8")
     print(f"{valor} en {pm}")
 

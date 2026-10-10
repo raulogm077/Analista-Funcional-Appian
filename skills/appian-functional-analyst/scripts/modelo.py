@@ -229,19 +229,25 @@ class Proyecto:
             else:
                 en_tabla = False
             mr = RX_FILA.match(l)
-            if mr and not ficha:
+            if mr and self._es_casa(mr.group(2), D.doc, self._sec_fila(D, sec), "fila"):
+                if ficha:   # una fila en su sitio (INT-03 bajo la ficha INT-02) cierra la ficha antes de su tabla
+                    ini = i
+                    while ini - 1 > ficha.ini and L[ini - 1].startswith("|"):
+                        ini -= 1
+                    self._cierra(D, ficha, ini)
+                    ficha = None
                 pid = mr.group(2)
-                if self._es_casa(pid, D.doc, self._sec_fila(D, sec), "fila"):
-                    cel = celdas(l)
-                    p = Pieza(pid, tipo_de(pid), "fila", self._titulo_fila(cel, cabecera), D.doc, sec, i, i + 1,
-                              cabecera=cabecera)
-                    p.estado = self._estado_fila(l, cabecera, bool(mr.group(1) or mr.group(3)))
-                    p.refs = ids_en(sin_comentarios(l)) - {pid}
-                    p.fuentes = set(RX_CITA.findall(l))
-                    self._alta(p)
-                    continue
+                cel = celdas(l)
+                p = Pieza(pid, tipo_de(pid), "fila", self._titulo_fila(cel, cabecera), D.doc, sec, i, i + 1,
+                          cabecera=cabecera)
+                p.estado = self._estado_fila(l, cabecera, bool(mr.group(1) or mr.group(3)))
+                p.refs = ids_en(sin_comentarios(l)) - {pid}
+                p.fuentes = set(RX_CITA.findall(l))
+                self._alta(p)
+                continue
             mc = RX_CRITERIO.match(l)
-            if mc and ficha and ficha.tipo in CON_CRITERIOS:
+            # un criterio es de su ficha: INT-02.1 suelto en una historia no se cuelga de ella
+            if mc and ficha and ficha.tipo in CON_CRITERIOS and mc.group(2).rsplit(".", 1)[0] == ficha.id:
                 cid = mc.group(2)
                 anulado = bool(mc.group(1) or mc.group(3)) or bool(re.search(r"Anulad[ao] por", l))
                 texto = sin_comentarios(l[mc.end():])
@@ -362,6 +368,12 @@ class Proyecto:
 
 def cargar(ruta):
     return Proyecto(ruta)
+
+
+def informes(raiz):
+    """Los informes de impacto de un proyecto, todos los de <p>/impacto/*.md (FU-nn, varias fuentes juntas y los que
+    vengan): [(nombre, texto, puntos, revisión)], por nombre. El único lector de informes que usan los scripts."""
+    return [(f.stem, *lee_informe(f)) for f in sorted((pathlib.Path(raiz) / "impacto").glob("*.md"))]
 
 
 def lee_informe(ruta):

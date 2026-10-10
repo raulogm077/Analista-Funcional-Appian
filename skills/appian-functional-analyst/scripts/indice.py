@@ -392,11 +392,8 @@ def celda(m, p, nombre):
 
 def para_decidir(m):
     """[(informe, punto)] de los puntos «Decisión: Pendiente» de impacto/*.md: lo que tiene que decidir el equipo."""
-    out = []
-    for inf in sorted((m.raiz / "impacto").glob("*.md")):
-        _, puntos, _ = mo.lee_informe(inf)
-        out += [(inf.stem, f) for f in puntos if mo.normaliza(f.get("decision", "")).strip(" *").startswith("pendiente")]
-    return out
+    return [(nombre, f) for nombre, _, puntos, _ in mo.informes(m.raiz) for f in puntos
+            if mo.normaliza(f.get("decision", "")).strip(" *").startswith("pendiente")]
 
 
 def c_pendientes(m, a):
