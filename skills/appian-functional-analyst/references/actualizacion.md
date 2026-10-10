@@ -125,8 +125,8 @@ Versión 1.2: ACT-06 y HU-03 modificadas · ~~PC-02~~ respondida (D-03) · nueva
 - Lo SIN IMPACTO se agrupa en una fila. En «Revisión de dependencias» se pueden agrupar piezas con el mismo
   resultado; un resultado vacío o que empieza por «Pendiente» es una dependencia sin revisar.
 - **Con unidades de cambio** (las lista `proyecto.py estado`; `cambios.md`): la cabecera dice de cuál es la fuente
-  (`Análisis base: versión 1.1 · Cambio: EV-02 · Estado: …`) y `ficha` e `impacto` imprimen por pieza «Construido: … ·
-  En curso: …», que se copia: lo construido que cambia va al Resumen como «Posible petición de cambio: puntos 3 y 5» y no
+  (`Análisis base: versión 1.1 · Cambio: EV-02 · Estado: …`) y `ficha` e `impacto … --cambio EV-02` imprimen por pieza
+  «Construido: … · En curso: …», que se copia: lo construido que cambia va al Resumen como «Posible petición de cambio: puntos 3 y 5» y no
   pide aprobación por eso; lo que está en curso en otra unidad, «Requiere: Sí (EV-03)». Una urgencia: `urgentes.md`.
 
 Antes de presentarlo:

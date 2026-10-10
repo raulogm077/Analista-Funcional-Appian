@@ -377,45 +377,24 @@ def comprobar_redaccion(m):
 
 
 # ------------------------------------------------------------------ funcional ↔ técnico
-def datos_df(m, filas=None):
-    """{(entidad, dato normalizado): dato} de las tablas «| Dato | …» de funcional §6 (y en `filas`, cada fila entera)."""
-    out = {}
-    D = m.docs["F"]
-    rango = D.seccion("6")
-    if not rango:
-        return out
-    entidad = ""
-    for i in range(*rango):
-        l = D.lineas[i]
-        if l.startswith("### "):
-            entidad = re.sub(r"^###\s+[\d.]*\s*", "", l).strip()
-    for ini, cab, fs in m.tablas("F", "6"):
-        if cab and mo.normaliza(cab[0]) == "dato":
-            ent = next((re.sub(r"^###\s+[\d.]*\s*", "", D.lineas[k]).strip() for k in range(ini, rango[0], -1)
-                        if D.lineas[k].startswith("### ")), "")
-            for f in fs:
-                if f and f[0]:
-                    k = (mo.normaliza(ent), mo.normaliza(mo.sin_comentarios(f[0])))
-                    out[k] = f"{ent} · {f[0]}"
-                    if filas is not None:
-                        filas[k] = " | ".join(f)
-    return out
+def datos_df(m):
+    """{(entidad, dato normalizado): «entidad · dato»} de las tablas «| Dato | …» de funcional §6."""
+    return {k: f"{e} · {d}" for k, (e, d, _) in un.filas_6(m).items()}
 
 
 def datos_de_las_unidades(m, ctx, al):
-    """Los datos de funcional §6 que tocan las unidades en curso: los que no estaban igual en la copia de la versión
+    """Los datos de funcional §6 que tocan las unidades en curso: los nuevos o distintos frente a la copia de la versión
     anterior a la primera de ellas (versiones/). (datos, grave): sin copia, todos y solo como aviso; sin unidades, todos."""
-    filas = {}
-    df = datos_df(m, filas)
+    df = datos_df(m)
     if al is None:
         return df, True
     vs = [v for u in ctx.unidades if u.estado in un.EN_CURSO for v in [ctx.version_base(u.id)] if v]
-    ant = ctx.copia(min(vs)) if vs else None
-    if ant is None or "F" not in ant.docs:
-        return (df, False) if vs else ({}, True)
-    filas_ant = {}
-    datos_df(ant, filas_ant)
-    return {k: v for k, v in df.items() if filas[k] != filas_ant.get(k)}, True
+    if not vs:
+        return {}, True
+    cambiados = ctx.datos_cambiados(min(vs))
+    if cambiados is None:
+        return df, False
+    return {k: v for k, v in df.items() if k in cambiados}, True
 
 
 def estado_tecnico(m):
@@ -694,7 +673,7 @@ def comprobar_situacion(m, ctx, inventario, fuera):
     hechas = {u.id for u in ctx.unidades if u.estado in un.CONSTRUIDAS + (un.DESCARTADA,)}
     base = set(inventario) | (ctx.linea_base() if ctx.hay else set())
     donde = "lo construido (as-is/ y las unidades Construidas)" if ctx.hay else "as-is/ (inventario y objetos de fuera)"
-    sin_id = "EV-01" if "EV-01" in ctx.por_id else None
+    sin_id = ctx.sin_id
     if tabla:
         cab = [mo.normaliza(c) for c in tabla[0]]
         celda = lambda f, k: f[cab.index(k)] if k in cab and cab.index(k) < len(f) else ""
@@ -716,8 +695,8 @@ def comprobar_situacion(m, ctx, inventario, fuera):
                 elif s in ("nuevo", "sustituye") and fuera and o in fuera:
                     malas.append(f"{o}: «{sit}» y es de otra aplicación")
                 elif s in ("modifica", "existe") and o not in base:
-                    if fuera is None:
-                        sin_inventario.append(o)
+                    if fuera is None:   # con unidades y sin as-is/, «Existe» de otra aplicación no se podría apagar
+                        sin_inventario += [o] if s == "modifica" or inventario or not ctx.hay else []
                     elif o not in fuera:
                         malas.append(f"{o}: «{sit}» y no está en el inventario ni fuera de la aplicación")
                     elif s == "modifica":
@@ -731,7 +710,7 @@ def comprobar_situacion(m, ctx, inventario, fuera):
     informe("técnico §13: objetos de otra aplicación que se modifican", de_fuera, grave=False)
     if fuera is None:
         informe("técnico §13: objetos que no están en el inventario (as-is/ no dice cuáles son de otra aplicación)"
-                if inventario else "técnico §13: «Modifica» o «Existe» de objetos que ninguna unidad ha construido",
+                if inventario else "técnico §13: «Modifica» de objetos que ninguna unidad ha construido",
                 sin_inventario, grave=False)
     return usados
 

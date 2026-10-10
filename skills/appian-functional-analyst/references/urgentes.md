@@ -20,8 +20,17 @@ mismas comprobaciones (`comprobar.py --impacto`). Su sección «Urgencia» lleva
 | Cambio de comportamiento | Hay que cambiar lo que hace | Los de defecto | Un punto CAMBIA que aprueba el jefe de proyecto (✅, R4); el cliente lo valida después |
 | Datos u operación | Datos, procesos en curso (BP 03 §12), configuración, certificado | Síntoma, Quién la declara crítica, Qué se hizo, Cierre | Nada, salvo que cambie una regla |
 
-«Objetos» son los que se corrigen, entre comillas invertidas. «Dónde se corrige» dice «Desarrollo» o «Entorno de
-corrección»; con eso los scripts saben qué unidades tienen que reaplicarla.
+«Objetos» son los que se corrigen, entre comillas invertidas. «Dónde se corrige» dice **«Desarrollo»** o **«Entorno de
+corrección»**, una de las dos: con eso los scripts saben qué unidades tienen que reaplicarla (otra cosa solo vale si nada
+choca; si choca, `produccion` falla).
+
+**El «Estado» de su cabecera**, como en cualquier informe (`actualizacion.md`):
+- al abrirla, `Estado: pendiente`;
+- cuando se aplica lo que cambia el análisis, `Estado: aplicado en X.Y`. La prueba de un defecto en técnico §14 cambia el
+  técnico, así que sube la versión (R2), con su fila en `decisiones.md`;
+- si no cambia nada del análisis (datos u operación), `Estado: sin cambios`.
+
+Tras `produccion`, `proyecto.py estado` ya no la lista como pendiente.
 
 ## 2. El flujo corto
 
@@ -39,11 +48,13 @@ corrección»; con eso los scripts saben qué unidades tienen que reaplicarla.
    - Con colisión: en el entorno de corrección, igual que producción. Cada unidad en curso que cambia esos objetos
      recibe en su encargo «reaplicar URG-nn en <objeto>», y no pasa a Construida sin `--reaplicada URG-nn`, que confirma
      quien construye cuando la prueba de la urgencia pasa en desarrollo.
-   - Sin entorno de corrección: la ficha registra lo que decide el equipo; el plugin no inventa un procedimiento.
+   - Sin entorno de corrección: la ficha registra en «Colisión» lo que decide el equipo (el plugin no inventa un
+     procedimiento) y «Dónde se corrige» dice igualmente una de las dos.
 5. **Despliegue** por el proceso de cambios urgentes del cliente (el plugin no lo gestiona), con la vuelta atrás
    preparada: el paquete con la versión de producción de esos objetos. Restaurar una copia de seguridad es lo último.
 6. **Cierre**: «Cierre» en la ficha y `proyecto.py cambio <p> URG-nn produccion --ref "<referencia>"` (falla si la ficha no
-   dice «Dónde se corrige»). Después, actualizar el entorno de corrección con el pase, que `proyecto.py` recuerda.
+   dice «Dónde se corrige», o si no dice «Desarrollo» ni «Entorno de corrección» y algo choca). Después, actualizar el
+   entorno de corrección con el pase, que `proyecto.py` recuerda.
 
 Una urgencia va de Abierta a En producción, o a Descartada; no se aprueba ni se marca Construida como un evolutivo.
 

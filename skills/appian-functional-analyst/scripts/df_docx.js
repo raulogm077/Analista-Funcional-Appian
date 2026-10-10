@@ -192,6 +192,22 @@ function delCambio(md, R) {
   for (const p of R.piezas.cambian) marca[p.id] = "Cambia";
   for (const p of R.piezas.nuevas) marca[p.id] = "Nueva";
   for (const id of [...R.historias.seConservan, ...R.pantallas]) if (!marca[id]) marca[id] = "Se conserva";
+  const norm = (s) => String(s || "").replace(/<!--[\s\S]*?-->/g, "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  const datos = new Set((R.datos || []).map((d) => `${norm(d.entidad)}|${norm(d.dato)}`));   // filas de §6 que cambian
+  const celdas = (l) => l.replace(/^\||\|\s*$/g, "").split("|").map((c) => c.trim());
+  // Sin la columna «Origen» (si un proyecto anterior la escribió): lo nuevo y lo que cambia lo dice este DF
+  function sinOrigen(lineas) {
+    const res = [];
+    for (let k = 0; k < lineas.length;) {
+      if (!/^\|/.test(lineas[k])) { res.push(lineas[k++]); continue; }
+      let fin = k;
+      while (fin < lineas.length && /^\|/.test(lineas[fin])) fin++;
+      const col = celdas(lineas[k]).findIndex((c) => norm(c) === "origen");
+      for (const l of lineas.slice(k, fin)) res.push(col < 0 ? l : "| " + celdas(l).filter((_, j) => j !== col).join(" | ") + " |");
+      k = fin;
+    }
+    return res;
+  }
   const L = md.split("\n"), out = [];
   const ficha = (l) => (l.match(/^\*\*(?:~~)?([A-Z]+-\d+)(?:~~)?\s+—\s/) || [])[1];
   const fila = (l) => (l.match(/^\|\s*(?:~~)?([A-Z]+-\d+)(?:~~)?\s*\|/) || [])[1];
@@ -208,27 +224,28 @@ function delCambio(md, R) {
     while (i < L.length && !/^## /.test(L[i])) cuerpo.push(L[i++]);
     if (/^## Anexo/.test(titulo)) continue;
     const kept = [];
-    let sub = null;
+    let sub = null, entidad = "";
     for (let k = 0; k < cuerpo.length;) {
       const l = cuerpo[k];
-      if (/^#{3,}\s/.test(l)) { sub = l; k++; continue; }
+      if (/^#{3,}\s/.test(l)) { sub = l; entidad = l.replace(/^#+\s+[\d.]*\s*/, ""); k++; continue; }
       const id = ficha(l);
       if (id) {
         let fin = k + 1;
         while (fin < cuerpo.length && !/^#/.test(cuerpo[fin]) && !ficha(cuerpo[fin])) fin++;
         if (marca[id]) {
           if (sub) { kept.push(sub, ""); sub = null; }
-          kept.push(cuerpo[k], "", `*${marca[id]}*`, ...cuerpo.slice(k + 1, fin));
+          kept.push(cuerpo[k], "", `*${marca[id]}*`, ...sinOrigen(cuerpo.slice(k + 1, fin)));
         }
         k = fin; continue;
       }
       if (/^\|/.test(l)) {
         let fin = k;
         while (fin < cuerpo.length && /^\|/.test(cuerpo[fin])) fin++;
-        const filas = cuerpo.slice(k + 2, fin).filter((x) => marca[fila(x)]);
+        const esDato = norm(celdas(l)[0]) === "dato";   // §6: los datos nuevos o que cambian
+        const filas = cuerpo.slice(k + 2, fin).filter((x) => marca[fila(x)] || (esDato && datos.has(`${norm(entidad)}|${norm(celdas(x)[0])}`)));
         if (filas.length) {
           if (sub) { kept.push(sub, ""); sub = null; }
-          kept.push(cuerpo[k], cuerpo[k + 1], ...filas, "");
+          kept.push(...sinOrigen([cuerpo[k], cuerpo[k + 1], ...filas]), "");
         }
         k = fin; continue;
       }
