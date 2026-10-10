@@ -10,6 +10,7 @@ de cada regla. Las copias van en una carpeta con espacios. Sale con 1 si algo fa
 import importlib.util
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -173,6 +174,40 @@ def main():
                  "H-DAT-02", "inferido", "✅")
         da_aviso("hallazgo Media que no está en ninguna REF ni en Pendientes: aviso",
                  [("- Evidencia: H-UI-01 ✅ el botón", "- Evidencia: el botón")], "H-UI-01", "Media", "Pendientes")
+        da_nada("hallazgo Media en «- **Fuera del alcance:** H-…» del Alcance: sin aviso",
+                [("- Evidencia: H-UI-01 ✅ el botón", "- Evidencia: el botón"),
+                 ("- **Límites:**", "- **Fuera del alcance:** H-UI-01, la baja se revisa en otro proyecto.\n"
+                                    "- **Límites:**")])
+        plantilla = (SKILL / "assets" / "plantillas" / "propuesta.md").read_text(encoding="utf-8")
+        linea = next((l for l in plantilla.splitlines() if l.startswith("- **Fuera del alcance:**")), "")
+        da_nada("la línea «Fuera del alcance» de la plantilla, rellena, cuenta",
+                [("- Evidencia: H-UI-01 ✅ el botón", "- Evidencia: el botón"),
+                 ("- **Límites:**", re.sub(r"\{\{[^{}]*\}\}", "H-UI-01", linea) + "\n- **Límites:**")])
+        da_aviso("hallazgo Media citado en otra línea del Alcance: sigue el aviso",
+                 [("- Evidencia: H-UI-01 ✅ el botón", "- Evidencia: el botón"),
+                  ("que ya siguen el diseño recomendado.", "que ya siguen el diseño recomendado (salvo H-UI-01).")],
+                 "H-UI-01", "Media", "Fuera del alcance")
+        for fichero, cita in (("hallazgos.json", "H-"), ("sin-verificar.json", "NV-")):
+            p, prop = copia()
+            (p / "as-is" / "datos" / fichero).unlink()
+            errores, avisos = cp.comprobar(p)
+            ok(f"sin as-is/datos/{fichero}, la propuesta cita {cita}…: aviso de que no se comprueban",
+               errores == [] and len(avisos) == 1 and fichero in avisos[0] and cita in avisos[0], errores + avisos)
+
+        # La Hoja de ruta se lee en su tabla: la prosa de encima no cuenta
+        da_aviso("REF citada en la prosa de la Hoja de ruta y no en su tabla: aviso",
+                 [("| 2 | REF-02: eventos de record. REF-03: acción", "| 2 | REF-02: eventos de record. Acción"),
+                  ("## 5. Hoja de ruta\n", "## 5. Hoja de ruta\n\nLa baja (REF-03) va con la fase 2.\n")],
+                 "REF-03", "Hoja de ruta")
+        da_aviso("«Verificar H-…» en la prosa de la Hoja de ruta y no en su tabla: aviso",
+                 [sin_verificar, ("## 5. Hoja de ruta\n", "## 5. Hoja de ruta\n\nAntes, Verificar H-DAT-02: con el equipo.\n")],
+                 "REF-02", "Verificar H-DAT-02")
+
+        # Fichas con otro separador o como título
+        da_nada("fichas «### REF-01 · …» y «**REF-02: …**» valen",
+                [("**REF-01 — Las revisiones se guardan con un CDT y un data store, sin record type**",
+                  "### REF-01 · Las revisiones se guardan con un CDT y un data store, sin record type"),
+                 ("**REF-02 — El historial", "**REF-02: El historial")])
 
         # Patrones de nombre, marcadores, dos BP en la Regla y «Verificar H-X y H-Y»
         da_nada("patrones de nombre en el Diagnóstico (`REX_IF_*`, `REX_ER_…`, `REX_`) no dan errores",
@@ -196,7 +231,21 @@ def main():
         errores, avisos = cp.comprobar(p)
         ok("un objeto nuevo en la Solución no da error", errores == [] and avisos == [], errores + avisos)
 
-        # 6. Salida 1 con errores y 2 sin as-is/datos/
+        # 6. Las señales citan secciones que existen, con el criterio de buenas prácticas
+        senales = (SKILL / "references" / "senales.md").read_text(encoding="utf-8")
+        citadas = sorted({(m.group(1).zfill(2), m.group(2)) for m in cp.BP.finditer(senales)})
+        faltan = [f"BP {nn} §{x}" for nn, x in citadas if cp.en_buenas_practicas(nn, x, {}) is False]
+        ok("cada «BP nn §x» de references/senales.md está en buenas prácticas", citadas and not faltan, faltan)
+        fila = lambda texto: next((l for l in senales.splitlines() if l.startswith("|") and texto in l), "")  # noqa: E731
+        ok("señales: el proceso programado muy frecuente va a BP 03 §13", "BP 03 §13" in fila("muy frecuente"),
+           fila("muy frecuente"))
+        ok("señales: «None» con secretos en la llamada va a BP 07 §1 y BP 06 §7, y None sin más no es REF",
+           all(x in fila("None") for x in ("BP 07 §1", "BP 06 §7")) and "sin autenticación |" not in senales
+           and "None sin" in senales, fila("None"))
+        ok("señales: una versión antigua (`_17r1`) solo es señal si está en la lista de deprecados",
+           "solo si" in fila("_17r1") and "BP 08 §7" in fila("_17r1"), fila("_17r1"))
+
+        # 7. Salida 1 con errores y 2 sin as-is/datos/
         p, prop = copia()
         editar(prop, "- Regla: BP 01 §7", "- Regla: BP 99 §1")
         r = subprocess.run([sys.executable, str(SCRIPT), str(p)], capture_output=True, text=True, encoding="utf-8",

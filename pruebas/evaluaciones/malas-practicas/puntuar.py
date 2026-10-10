@@ -8,27 +8,39 @@ Las malas prácticas están en ../aplicacion-ficticia/malas-practicas.json (con 
 ../aplicacion-ficticia/ocultas/malas-practicas.json), cada una con sus objetos, su «BP nn §x» y `bp_aceptadas`: las
 secciones de buenas prácticas que tratan ese problema, empezando por la de `bp`.
 
-Una mala práctica cuenta si hay una REF del Diagnóstico que:
+Una mala práctica cuenta si hay una REF del Diagnóstico (las fichas que reconoce comprobar_propuesta.py: «**REF-01 —
+…**», «### REF-01 · …») que:
   - cita en su Evidencia alguno de sus objetos, por su nombre exacto (vale también con «_» en lugar de los espacios,
     como en las rutas del anexo);
   - tiene en su Regla una de sus `bp_aceptadas`, la sección exacta («§1» no vale por «§1.3» si la lista no lo dice);
+  - nombra el problema: su título, su Efecto o su Evidencia dicen alguna de sus claves (claves.json, junto a este
+    fichero), sin tildes ni mayúsculas y al principio de una palabra («pagin» vale por «paginar» y «sin paginación»);
   - sale en el apartado Solución.
 Además, Pendientes tiene que citar los NV de <as-is>/datos/sin-verificar.json que tratan objetos de fuera de la
-aplicación (`fueraDeLaAplicacion` de dependencias.json, con su campo `nv`): en MNT, el de las reglas CMN.
+aplicación (`fueraDeLaAplicacion` de dependencias.json, con su campo `nv`): en MNT, el de las reglas CMN. Un as-is sin
+esos NV no sirve para esta evaluación.
 
-Imprime cada mala práctica, el total y los NV. Sale 0 con el 90 % o más y los NV citados; 1 si no; 2 si falta un
-fichero.
+Imprime cada mala práctica, el total y los NV. Sale 0 con el 90 % o más y los NV citados; 1 si no o si el as-is no trae
+NV de objetos de fuera; 2 si falta un fichero o las claves de una mala práctica.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 sys.dont_write_bytecode = True
-FICTICIA = Path(__file__).resolve().parents[1] / "aplicacion-ficticia"
+AQUI = Path(__file__).resolve().parent
+FICTICIA = AQUI.parent / "aplicacion-ficticia"
+CLAVES = AQUI / "claves.json"
+PLUGIN = Path(os.environ.get("PLUGIN_A_PROBAR") or AQUI.parents[2]).resolve()
+sys.path.insert(0, str(PLUGIN / "skills" / "appian-refactorizacion" / "scripts"))
+from comprobar_propuesta import FICHA  # noqa: E402  (la ficha que reconoce la comprobación de la skill)
+
 MINIMO = 0.9
 
 
@@ -49,9 +61,28 @@ def campo(ficha: str, nombre: str) -> str:
 
 
 def fichas(diagnostico: str) -> dict[str, str]:
-    """{REF-nn: texto de la ficha} de las fichas `**REF-nn — …**`."""
-    trozos = re.split(r"(?m)^\*\*(REF-\d+)\b", diagnostico)
-    return {trozos[k]: trozos[k + 1] for k in range(1, len(trozos) - 1, 2)}
+    """{REF-nn: texto de la ficha, desde la línea de su título} de las fichas que reconoce FICHA."""
+    out, actual = {}, None
+    for linea in diagnostico.splitlines():
+        m = FICHA.match(linea.replace("**", "").strip())
+        if m:
+            actual = m.group(1)
+            out.setdefault(actual, "")
+        if actual:
+            out[actual] += linea + "\n"
+    return out
+
+
+def normal(texto: str) -> str:
+    """Sin tildes ni mayúsculas, con un espacio entre palabras."""
+    t = unicodedata.normalize("NFKD", texto)
+    return " ".join("".join(c for c in t if not unicodedata.combining(c)).lower().split())
+
+
+def nombra_problema(ficha: str, claves: list[str]) -> bool:
+    """Si el título, el Efecto o la Evidencia de la ficha dicen alguna clave, al principio de una palabra."""
+    texto = normal(" ".join((ficha.split("\n", 1)[0], campo(ficha, "Efecto"), campo(ficha, "Evidencia"))))
+    return any(re.search(rf"(?<!\w){re.escape(normal(c))}", texto) for c in claves)
 
 
 def nombra(texto: str, objeto: str) -> bool:
@@ -65,7 +96,7 @@ def secciones_bp(texto: str) -> set[str]:
             for m in re.finditer(r"\bBP\s*(\d{1,2})\s*§\s*(\d(?:[\w.]*\w)?)", texto)}
 
 
-def cuenta(mp: dict, refs: dict[str, str], solucion: str) -> tuple[bool, str]:
+def cuenta(mp: dict, claves: list[str], refs: dict[str, str], solucion: str) -> tuple[bool, str]:
     aceptadas = secciones_bp(" ".join(mp["bp_aceptadas"]))
     candidatas = [r for r, f in refs.items() if any(nombra(campo(f, "Evidencia"), o) for o in mp["objetos"])]
     if not candidatas:
@@ -75,9 +106,13 @@ def cuenta(mp: dict, refs: dict[str, str], solucion: str) -> tuple[bool, str]:
         citadas = sorted(set().union(*(secciones_bp(campo(refs[r], "Regla")) for r in candidatas)))
         return False, (f"{', '.join(candidatas)} cita sus objetos, pero con {', '.join(citadas) or 'otra regla'}; "
                        f"valen {', '.join(mp['bp_aceptadas'])}")
-    en_solucion = [r for r in con_regla if re.search(rf"(?<![\w-]){re.escape(r)}(?!\d)", solucion)]
+    nombran = [r for r in con_regla if nombra_problema(refs[r], claves)]
+    if not nombran:
+        return False, (f"{', '.join(con_regla)} cita sus objetos y su regla, pero ni su título, ni su Efecto ni su "
+                       f"Evidencia nombran el problema (claves: {', '.join(claves)})")
+    en_solucion = [r for r in nombran if re.search(rf"(?<![\w-]){re.escape(r)}(?!\d)", solucion)]
     if not en_solucion:
-        return False, f"{', '.join(con_regla)} no sale en Solución"
+        return False, f"{', '.join(nombran)} no sale en Solución"
     return True, ", ".join(en_solucion)
 
 
@@ -105,27 +140,36 @@ def main() -> int:
         stream.reconfigure(encoding="utf-8", errors="replace")
     propuesta, as_is = Path(a.propuesta), Path(a.as_is)
     esperadas = FICTICIA / ("ocultas" if a.ocultas else "") / "malas-practicas.json"
-    faltan = [str(p) for p in (propuesta, as_is / "datos" / "dependencias.json", esperadas) if not p.is_file()]
+    faltan = [str(p) for p in (propuesta, as_is / "datos" / "dependencias.json", esperadas, CLAVES)
+              if not p.is_file()]
     if faltan:
         print("No encuentro: " + ", ".join(faltan), file=sys.stderr)
+        return 2
+    malas = json.loads(esperadas.read_text(encoding="utf-8"))
+    claves = json.loads(CLAVES.read_text(encoding="utf-8"))
+    sin_claves = [mp["id"] for mp in malas if not claves.get(mp["id"])]
+    if sin_claves:
+        print(f"{CLAVES.name} no tiene claves para {', '.join(sin_claves)}", file=sys.stderr)
         return 2
     texto = propuesta.read_text(encoding="utf-8")
     secciones = apartados(texto)
     refs = fichas(apartado(secciones, "diagnóstico"))
     solucion = apartado(secciones, "solución")
     pendientes = apartado(secciones, "pendientes")
-    malas = json.loads(esperadas.read_text(encoding="utf-8"))
     bien = 0
     for mp in malas:
-        ok, por_que = cuenta(mp, refs, solucion)
+        ok, por_que = cuenta(mp, claves[mp["id"]], refs, solucion)
         bien += ok
         print(f"{'OK   ' if ok else 'FALLO'} {mp['id']} ({mp['bp']}): {por_que}")
     nvs = nv_de_fuera(as_is)
     sin_citar = [nv for nv in nvs if not re.search(rf"(?<![\w-]){re.escape(nv)}(?!\d)", pendientes)]
     print(f"Total: {bien}/{len(malas)} ({len(refs)} REF en el Diagnóstico)")
-    if nvs:
-        print(f"NV de fuera de la aplicación en Pendientes: {', '.join(nvs)}"
-              + (f"; faltan {', '.join(sin_citar)}" if sin_citar else " (todos)"))
+    if not nvs:
+        print("El as-is no trae NV de objetos de fuera (fueraDeLaAplicacion de dependencias.json, con su NV): no sirve "
+              "para esta evaluación")
+        return 1
+    print(f"NV de fuera de la aplicación en Pendientes: {', '.join(nvs)}"
+          + (f"; faltan {', '.join(sin_citar)}" if sin_citar else " (todos)"))
     return 0 if bien >= MINIMO * len(malas) and not sin_citar else 1
 
 

@@ -185,8 +185,9 @@ Source: https://docs.appian.com/suite/help/latest/sail/ux-inputs.html · https:/
 - ✅ **At most one Solid button per interface** — the primary action. Default style is Outline.
 - ✅ An action that **deletes persisted data** uses the **Ghost** style with **Negative** color (not Solid), and adjacent buttons use Secondary color; reserve Negative for real data loss.
 - ✅ When an action is destructive or hard to undo, add `confirmHeader` / `confirmMessage` (the `saveInto` runs only on confirm) — the pattern the docs show with Ghost + Negative.
+- ✅ **Cancel on a process start form** also submits (with `validate: false`) and starts the process: the process has to read it and end — doc 03 §7.
 
-Source: https://docs.appian.com/suite/help/latest/sail/ux-buttons.html · https://docs.appian.com/suite/help/latest/Button_Component.html#usage-considerations
+Source: https://docs.appian.com/suite/help/latest/sail/ux-buttons.html · https://docs.appian.com/suite/help/latest/Button_Component.html#usage-considerations · https://docs.appian.com/suite/help/latest/Form_Layout.html
 
 ### 4.10 File upload: validate in the form, restrict in the Admin Console
 - ✅ Validate with `fv!files` (`size`, `extension`, `name`) in the component's `validations`.

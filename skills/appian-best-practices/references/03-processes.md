@@ -2,8 +2,8 @@
 
 > Official Appian doctrine for designing process models that are robust, maintainable and
 > scalable. Every rule is anchored to official documentation (`docs.appian.com/.../latest/...`)
-> or the Appian Community. Links use the `latest` alias, which always redirects to the
-> latest release. (The linked
+> or the Appian Community, except those marked **[engineering]** (no Appian page; see doc 11).
+> Links use the `latest` alias, which always redirects to the latest release. (The linked
 > **Appian RPA** pages carry their own product version — `…/latest/rpa-9.25/…` —: that is their
 > canonical path within `/latest/`, not a platform version pin.)
 
@@ -241,6 +241,14 @@ one instance can **overwrite** another's value. Check *Keep process variables sy
 across this flow* on the connector's Flow Properties to protect values from being overwritten.
 - Source: [Common Recipes — Using process variables in parallel flows](https://docs.appian.com/suite/help/latest/Process_Model_Recipes.html#using-process-variables-in-parallel-flows)
 
+**⚠️ A step that runs in every case, even where it adds nothing, is a routing decision for the business.**
+**[engineering]** Don't drop the step on your own, and don't leave it unconditional by default: ask the
+business which cases need it. The mechanism is an XOR gateway in front of it, which sends each case down
+one path by condition, with an optional *Else if no rules are TRUE* destination for the rest. To bring
+evidence to the decision, Process HQ's drill-down shows how long cases, activities and sequences take, how
+often an unwanted outcome occurs, and the days of work a reduction could save.
+- Source: [XOR Gateway](https://docs.appian.com/suite/help/latest/XOR_Node.html) · [Drill Down to Insights (Process HQ)](https://docs.appian.com/suite/help/latest/investigate.html)
+
 ---
 
 ## 6. Exceptions, timers and robustness
@@ -377,6 +385,16 @@ nested inside another group that has access).
 tasks (completed, deleted or not permitted) in 15 minutes is locked out of **all** tasks for 15 minutes:
 don't leave stale task links in emails or custom lists (doc 13 §1).
 - Source: [Start Process Smart Service](https://docs.appian.com/suite/help/latest/Start_Process_Smart_Service.html) · [KB-2360](https://community.appian.com/application-design-33/kb-2360-a-user-is-locked-out-due-to-accessing-an-invalid-task-too-many-times-1406)
+
+**✅ A start form's Cancel must end the process before anything is written.**
+On a start form, Cancel also submits, so the process starts anyway. In Appian's tutorial the button
+saves `true` into a `cancel` rule input (Appian creates the matching process variable when the interface
+becomes the start form), and an XOR gateway right after the start sends `pv!cancel` to an end event set to
+terminate the process, so the write step never runs. The form layout examples show the button:
+`value: true`, `saveInto: ri!cancel`, `submit: true`, `validate: false`. Button styles: doc 02 §4.9.
+- ❌ Anti-pattern: a Cancel whose `pv!cancel` nothing reads — the process carries on as if the form had
+  been submitted.
+- Source: [Process Modeling Tutorial — Add a cancel flow](https://docs.appian.com/suite/help/latest/Process_Modeling_Tutorial.html#add-a-cancel-flow) · [Form Layout](https://docs.appian.com/suite/help/latest/Form_Layout.html)
 
 ---
 
@@ -663,6 +681,17 @@ Message are not compatible with autoscale.
   (doc 04 §11), and pass rule arguments **by position** inside event expressions (doc 04 §2).
 - Source: [Timer Event](https://docs.appian.com/suite/help/latest/Intermediate_Event_-_Timer.html) · [Start Event — Timer recurrence](https://docs.appian.com/suite/help/latest/Start_Event.html#configuring-a-timer-trigger-on-a-start-event) · [Process Node Properties — Scheduling tab](https://docs.appian.com/suite/help/latest/Process_Node_and_Smart_Service_Properties.html#scheduling-tab)
 
+**⚠️ A frequent scheduled start that rarely finds work still starts an instance every time.**
+A recurring start every 5 minutes (the minimum) is 288 instances a day, with or without work, and they
+count in the daily process throughput that Health Check reports: medium risk when the volume would
+benefit from autoscale, high risk above the standard engine's recommended throughput. A Start Event timer
+can also carry *Timer conditions*: the trigger fires only once all of them are true, and Appian recommends
+conditions over expressions, which can slow the application. **[engineering]** Start the work from the
+event that creates it (the action or record event that sets the due date), or use the longest interval
+the business accepts; if the polling stays, end at once when there is nothing to do and archive or
+auto-delete those instances (§9).
+- Source: [Start Event — Timer conditions](https://docs.appian.com/suite/help/latest/Start_Event.html#timer-conditions) · [Health Check — Daily process and node throughput](https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html#daily-process-and-node-throughput)
+
 ---
 
 ## Sources
@@ -673,10 +702,10 @@ Official documentation (`latest` redirects to the latest release, published mont
 2. [Understanding the Health Check Report](https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html) — Max process variables per model, Process model that could be replaced by a rule, Sequential script tasks, Simple wrapper process model, Activity chaining limit reached, Number of activity chained unattended nodes using MNI.
 3. [Subprocess](https://docs.appian.com/suite/help/latest/Sub-Process_Activity.html) — synchronous/asynchronous, same engine, reuse recommendation.
 4. [Start Process Smart Service](https://docs.appian.com/suite/help/latest/Start_Process_Smart_Service.html) · [Ways to Start a Process](https://docs.appian.com/suite/help/latest/Ways_to_Start_a_Process_From_a_Process.html).
-5. [Gateways](https://docs.appian.com/suite/help/latest/Gateways.html) · [Common Process Model Workflows and Recipes](https://docs.appian.com/suite/help/latest/Process_Model_Recipes.html) — multiple outgoing flows, parallel flows / keep PVs synchronized, using activity-chaining to display multiple forms, **escalating a task** (four actions, chained levels, `a!addDateTime` with `useProcessCalendar`).
+5. [Gateways](https://docs.appian.com/suite/help/latest/Gateways.html) · [XOR Gateway](https://docs.appian.com/suite/help/latest/XOR_Node.html) · [Drill Down to Insights (Process HQ)](https://docs.appian.com/suite/help/latest/investigate.html) · [Common Process Model Workflows and Recipes](https://docs.appian.com/suite/help/latest/Process_Model_Recipes.html) — multiple outgoing flows, parallel flows / keep PVs synchronized, using activity-chaining to display multiple forms, **escalating a task** (four actions, chained levels, `a!addDateTime` with `useProcessCalendar`).
 6. [Looping Recipes — Multi-node instances](https://docs.appian.com/suite/help/latest/looping.html#multi-node-instances).
 7. [Write Records Smart Service](https://docs.appian.com/suite/help/latest/Write_Records_Smart_Service.html) · [Configure Data Sync Options](https://docs.appian.com/suite/help/latest/records-data-sync.html) · [Troubleshooting Process Models](https://docs.appian.com/suite/help/latest/Testing_and_Debugging_Problems_with_Process_Models.html).
-8. [Start Event](https://docs.appian.com/suite/help/latest/Start_Event.html) · [End Event](https://docs.appian.com/suite/help/latest/End_Event.html) · [Process Modeling Tutorial](https://docs.appian.com/suite/help/latest/Process_Modeling_Tutorial.html).
+8. [Start Event](https://docs.appian.com/suite/help/latest/Start_Event.html) · [End Event](https://docs.appian.com/suite/help/latest/End_Event.html) · [Process Modeling Tutorial](https://docs.appian.com/suite/help/latest/Process_Modeling_Tutorial.html) · [Form Layout](https://docs.appian.com/suite/help/latest/Form_Layout.html).
 9. [Autoscale Patterns and Best Practices](https://docs.appian.com/suite/help/latest/autoscale-patterns-practices.html).
 10. [Considerations for Archiving Processes](https://docs.appian.com/suite/help/latest/Archiving_Processes.html) · [Process Model Object — Data Management tab](https://docs.appian.com/suite/help/latest/process-model-object.html#data-management-tab) · [Monitoring view](https://docs.appian.com/suite/help/latest/monitoring_view.html).
 11. [Design Patterns for Production AI Agents](https://docs.appian.com/suite/help/latest/agent-studio-design-patterns.html) · [Design Patterns (Appian RPA)](https://docs.appian.com/suite/help/latest/rpa-9.25/design-patterns.html) · [Prepare process models for AI agent tools](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html).
