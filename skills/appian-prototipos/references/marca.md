@@ -44,15 +44,17 @@ Las claves que empiezan por `_` son comentarios.
 
 1. **Fuente**: su guía de marca (manual de identidad corporativa) o su sala de prensa y, si no las publica, su web
    oficial. Solo fuentes de la propia empresa: lo público o lo que el cliente ha entregado. La fuente y su fecha van en
-   `--fuente`.
-2. **Leer la web**: `python3 <KIT>/scripts/marca.py web <url> [--max-css 10] [--timeout 10]` descarga la página y las
+   `--fuente`. Con solo el nombre de la empresa, se buscan con WebSearch (SKILL.md, paso 0); `marca.py web` con un nombre
+   en lugar de una URL sale con 2 y dice qué buscar.
+2. **Leer la web** (el lector está en `scripts/marca_web.py`): `python3 <KIT>/scripts/marca.py web <url> [--max-css 10] [--timeout 10]` descarga la página y las
    hojas de estilo que enlaza del mismo sitio (el mismo dominio: `www.x.es` y `estaticos.x.es`, `www.empresa.co.uk` y
    `estaticos.empresa.co.uk`; como mucho `--max-css`, de 2 MB cada una) y escribe un JSON:
    - `colores`: los 20 más usados, de más a menos, sin blancos ni negros (luminosidad de 96 % o más, o de 4 % o menos)
      ni grises (saturación por debajo del 10 %); cada uno con `veces`, las `variables` CSS que lo definen y su
      `contraste` sobre blanco y sobre negro;
    - `themeColor`, el de `<meta name="theme-color">`;
-   - `logos`: primero los SVG en línea y las imágenes de la cabecera con «logo» en `src`, `alt`, `class` o `id` (un SVG
+   - `logos`: primero los SVG en línea y las imágenes de la cabecera con una palabra que empieza por «logo» (`logoImg`,
+     `logomark`; no `logout`, `logon` ni `logoff`) en `src`, `alt`, `class` o `id` (un SVG
      en línea lleva su código en `svg` y, como `url`, la de la página con `#svg-<n>`); al final, el icono del sitio;
    - `tipografias`: la primera familia de cada `font-family`, de más a menos usada.
 
@@ -81,8 +83,8 @@ Las claves que empiezan por `_` son comentarios.
    aviso de Appian…`):
    - el acento se oscurece hasta 4,5:1 sobre blanco, sobre el gris de página (`#F4F5F7`) y sobre los fondos de aviso de
      Appian (éxito, información, atención y error: dentro de un aviso va su botón);
-   - el botón principal, sobre esos mismos fondos, hasta 3:1, con su texto (blanco o casi negro, el que más contraste da;
-     en Appian es automático) a 4,5:1;
+   - el botón principal, sobre esos mismos fondos, hasta 3:1, con su texto (blanco o casi negro, el que más contraste da)
+     a 4,5:1 en el prototipo; en Appian, el color de ese texto lo elige la plataforma, y la guía lo dice;
    - el oscuro, hasta 4,5:1 con texto blanco;
    - el realce se aclara hasta 3:1 sobre el oscuro;
    - con perfil CSS, los colores de estado y la etiqueta y el asterisco de los campos, hasta 4,5:1 sobre blanco y sobre
@@ -97,8 +99,8 @@ Las claves que empiezan por `_` son comentarios.
      fondo (la estándar tiñe su gris); «en curso», con el tinte del acento de fondo y el oscuro de color; atención,
      positivo y negativo, los de la estándar.
    - **Gráficos** (`chartColorScheme`): todas las series con 3:1 sobre blanco, como mucho 8. Primero los colores de la
-     marca, sin repetir; después los de la estándar que no se parecen a ninguno de ellos. Un color de la marca solo se
-     queda fuera si no llega a 3:1, y la guía lo dice.
+     marca, sin repetir; después los de la estándar que no se parecen a ninguno de ellos. Un color de la marca se queda
+     fuera si no llega a 3:1 o si ya hay 8 series (límite de 8 series), y la marca y la guía dicen cuáles y por qué.
    - **Perfil CSS**, salvo con `--sin-perfil-css` (el entorno no tiene las capacidades avanzadas o premium): solo lo que
      cambia respecto a Appian, en seis grupos: colores semánticos (texto e iconos de estado con 4,5:1 sobre blanco y sobre
      su fondo, que es el de Appian), textos de los campos (etiqueta con el oscuro; instrucciones, marcador de posición y

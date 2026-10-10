@@ -12,9 +12,11 @@ Prueba el kit de $PLUGIN_A_PROBAR/skills/appian-prototipos (por defecto, el de e
    defecto y la del proyecto con usar_marca().
 3. La configuración de marca de un cliente con marca.py, con la de una empresa ficticia: crear (con y sin perfil CSS y
    ROUNDED con un botón principal propio; el contraste de cada color, el logo, el perfil, la guía, la salida y los
-   errores, también al escribir) y construir con cada una el catálogo de patrones; y web: qué es el mismo sitio y «logo»
-   como palabra, y contra datos/web-ficticia/ y otra página (logo SVG en línea, hoja de localhost y un PDF), servidas en
-   127.0.0.1 por la propia prueba, y contra un puerto cerrado.
+   errores, también al escribir) y construir con cada una el catálogo de patrones; y web: qué es el mismo sitio y qué
+   palabras dicen «logo», y contra datos/web-ficticia/ y otra página (logo SVG en línea, hoja de localhost y un PDF),
+   servidas en 127.0.0.1 por la propia prueba, contra un puerto cerrado y con solo el nombre de la empresa. Además, la
+   guía (el texto del botón principal lo elige Appian, el tope de 8 series), el supuesto sin la fecha repetida, la _lum
+   única y capture.py --solo (qué elige y cómo fusiona el índice), sin navegador.
 4. Si hay Playwright y un navegador, pasa la prueba de humo y la auditoría de contraste a todo lo construido y comprueba
    las iniciales del avatar de la cabecera: con la marca estándar, siguen con el oscuro del site; con un realce de
    luminancia media, en negro puro.
@@ -118,10 +120,10 @@ def brands(tmp, built):
     sin = tmp / "sin marca"
     sin.mkdir()
     (sin / "app.json").write_text(spec.read_text(encoding="utf-8"), encoding="utf-8")
-    code, salida = run([HERE / "build.py", sin / "app.json", "-o", sin / "prototipo.html", "--brand", "aena"])
-    falta = str(sin.resolve() / "brand-aena.json")
-    probs = [] if code and falta in salida else [f"build.py --brand aena sin brand-aena.json sale con {code} y no dice «{falta}»:\n{salida[-600:]}"]
-    out.append(("marca que falta (--brand aena sin su fichero): error con la ruta donde ponerla", probs))
+    code, salida = run([HERE / "build.py", sin / "app.json", "-o", sin / "prototipo.html", "--brand", "cliente-x"])
+    falta = str(sin.resolve() / "brand-cliente-x.json")
+    probs = [] if code and falta in salida else [f"build.py --brand cliente-x sin brand-cliente-x.json sale con {code} y no dice «{falta}»:\n{salida[-600:]}"]
+    out.append(("marca que falta (--brand cliente-x sin su fichero): error con la ruta donde ponerla", probs))
     # los helpers: la marca neutra por defecto y la del proyecto con usar_marca(), antes de from sail_helpers import *
     prog = ("import sys; sys.dont_write_bytecode = True; sys.path.insert(0, sys.argv[1]); "
             "import sail_helpers as s; print(s._BRAND.get('id'), s.PRIMARY); "
@@ -157,7 +159,7 @@ PAGINA_EXTRA = """<!doctype html>
 <body><header class="cabecera"><a href="./" class="inicio"><svg class="logo" viewBox="0 0 120 24" role="img" aria-label="Nubarrón Mensajería"><rect width="24" height="24" rx="4" fill="#1D2B4A"/><path d="M6 16h12" stroke="#5DA9E9" stroke-width="3"/></svg></a></header>
 <main><p class="aviso">Área de clientes</p></main></body></html>
 """
-ASSUMPTION = re.compile(r"«Marca de Nubarrón Mensajería sacada de .+ el \d{1,2} de [a-z]+ de \d{4}; falta que la confirme el cliente»")
+ASSUMPTION = re.compile(r"«Marca de Nubarrón Mensajería sacada de .+ \d{1,2} de [a-z]+ de \d{4}; falta que la confirme el cliente»")
 
 
 def sombra_del_runtime(valor, oscuro):
@@ -404,10 +406,10 @@ def marca_cliente(tmp, built):
                 "la carpeta del plugin (también la de una copia sin plugin.json); con un error al escribir, sale con 2 y dice qué "
                 "escribió", probs))
 
-    # 5. web, sin red: qué es el mismo sitio y «logo» como palabra entera (las funciones de marca.py)
+    # 5. web, sin red: qué es el mismo sitio y qué palabras dicen «logo» (las funciones de marca_web.py, el lector web)
     probs = []
     try:
-        import marca as m
+        import marca_web as m
         for a, b, esperado in (("https://www.x.es/", "https://estaticos.x.es/a.css", True),
                                ("https://www.abc.es/", "https://cdn.abc.es/a.css", True),
                                ("https://www.empresa.co.uk/", "https://estaticos.empresa.co.uk/a.css", True),
@@ -418,14 +420,15 @@ def marca_cliente(tmp, built):
             if m.mismo_sitio(a, b) != esperado:
                 probs.append(f"mismo_sitio({a}, {b}) da {not esperado}")
         for texto, esperado in (("logo", True), ("site-logo", True), ("header__logo", True), ("siteLogo", True), ("logoImg", True),
-                                ("Logotipo de la empresa", True), ("logos", True), ("logout", False), ("catálogo", False),
-                                ("blogger", False), ("Cerrar sesión", False)):
+                                ("Logotipo de la empresa", True), ("logos", True), ("logomark", True), ("logoimg", True),
+                                ("site-logomark", True), ("logout", False), ("logon", False), ("logoff", False),
+                                ("btn-Logoff", False), ("catálogo", False), ("blogger", False), ("Cerrar sesión", False)):
             if m.dice_logo(texto) != esperado:
                 probs.append(f"dice_logo(«{texto}») da {not esperado}")
     except Exception as e:  # noqa: BLE001 (la prueba dice qué falta en lugar de pararse)
-        probs.append(f"no se puede probar mismo_sitio() y dice_logo() de marca.py: {e!r}")
-    out.append(("marca.py web, sin red: mismo sitio con x.es, abc.es, empresa.co.uk y localhost = 127.0.0.1, y «logo» como palabra "
-                "entera (no «logout» ni «catálogo»)", probs))
+        probs.append(f"no se puede probar mismo_sitio() y dice_logo() de marca_web.py: {e!r}")
+    out.append(("marca.py web, sin red: mismo sitio con x.es, abc.es, empresa.co.uk y localhost = 127.0.0.1, y «logo» al principio "
+                "de una palabra (logomark, logoimg; no logout, logon, logoff ni catálogo)", probs))
 
     # 6. web contra la web ficticia, contra otra página de la misma empresa (logo SVG en línea, hoja servida como localhost
     # y un PDF), servidas aquí mismo en 127.0.0.1, y contra un puerto cerrado
@@ -517,6 +520,124 @@ def marca_cliente(tmp, built):
     return out
 
 
+def marca_detalles(tmp):
+    """[(qué, problemas)] de la guía y la salida de marca.py crear: el texto del botón principal (y del acento cuando hace
+    de botón principal) lo elige Appian; la fecha de --fuente no se repite en el supuesto; los colores de la marca que no
+    caben en las 8 series de los gráficos se dicen."""
+    import marca as m
+    from validate import contrast
+    marca, out = HERE / "marca.py", []
+    # 1. WCAG: el color del texto del botón principal lo elige Appian
+    probs = []
+    for que, cambios, papel in (("sin --principal", {}, "El acento, que hace de botón principal"),
+                                ("con --principal", {"principal": "#1F6F43"}, "El botón principal")):
+        carpeta = tmp / "detalles" / que / "prototipo"
+        code, salida = run([marca, "crear", *opciones(**cambios), carpeta])
+        guia = (carpeta / "marca-x.md").read_text(encoding="utf-8") if (carpeta / "marca-x.md").is_file() else ""
+        hecho = guia.split("Comprobado con WCAG 2.2 AA")[-1].split("Sin comprobar")[0]
+        linea = next((l for l in hecho.splitlines() if l.startswith(f"- {papel}")), "")
+        if code or "lo elige Appian" not in linea or "y su texto, 4,5:1" in hecho:
+            probs.append(f"{que}: la lista «Comprobado con WCAG 2.2 AA» no dice que el texto de «{papel}» lo elige Appian "
+                         f"(sale con {code}):\n{hecho[:800]}")
+    out.append(("marca.py crear: la guía dice que el color del texto del botón principal (también del acento cuando lo es) lo "
+                "elige Appian", probs))
+    # 2. el supuesto no repite la fecha que ya trae --fuente (larga, ISO o dd/mm/aaaa)
+    probs = []
+    hoy = m.fecha_larga(m.date.today())
+    for fuente, esperado in (("Su web, 8 de octubre de 2026", "Su web, 8 de octubre de 2026"),
+                             ("Su web el 8 de octubre de 2026.", "Su web el 8 de octubre de 2026"),
+                             ("Guía de marca, 2026-10-08", "Guía de marca, 2026-10-08"),
+                             ("Guía de marca, 08/10/2026", "Guía de marca, 08/10/2026"),
+                             ("Su web", f"Su web el {hoy}")):
+        dice = m.supuesto("Empresa", fuente, m.date.today())
+        if dice != f"Marca de Empresa sacada de {esperado}; falta que la confirme el cliente":
+            probs.append(f"--fuente «{fuente}» da «{dice}»")
+    out.append(("marca.py crear: el supuesto no repite la fecha que trae --fuente (larga, ISO o dd/mm/aaaa) y, sin fecha, pone "
+                "la de hoy", probs))
+    # 3. más de 8 colores de marca: los que no caben en las 8 series van fuera, con el motivo
+    probs = []
+    secundarios = ["#8B1E3F", "#2E5E4E", "#5B3A8C", "#7A4B00", "#0B5563", "#9C2C77", "#3D5A80"]
+    carpeta = tmp / "detalles" / "muchos" / "prototipo"
+    code, salida = run([marca, "crear", *opciones(secundarios=",".join(secundarios)), carpeta])
+    if code:
+        probs.append(f"marca.py crear con {len(secundarios)} secundarios sale con {code}:\n{salida[-600:]}")
+    else:
+        b = json.loads((carpeta / "brand-x.json").read_text(encoding="utf-8"))
+        guia = (carpeta / "marca-x.md").read_text(encoding="utf-8")
+        series = b["components"]["chartColorScheme"]
+        propios = [b["site"]["accentColor"], *secundarios, b["palette"]["navy"]]       # los de la marca con 3:1 o más
+        quedan = [c for c in propios if contrast(c, "#FFFFFF") >= 3 and c not in series]
+        if len(series) != 8 or not quedan or any(c not in b["components"]["_chartColorScheme"] for c in quedan) \
+                or "límite de 8 series" not in b["components"]["_chartColorScheme"] \
+                or not re.search(r"Fuera, por el límite de 8 series: .*" + re.escape(quedan[0]), guia):
+            probs.append(f"con {len(propios)} colores de marca, las series son {series} y no dicen que {quedan} quedan fuera por el "
+                         f"límite de 8 series:\n{b['components']['_chartColorScheme']}")
+    marca_md = (ROOT / "references" / "marca.md").read_text(encoding="utf-8")
+    if "límite de 8 series" not in marca_md:
+        probs.append("references/marca.md no dice que un color de la marca se queda fuera por el límite de 8 series")
+    out.append(("marca.py crear: con más de 8 colores de marca, los que no caben en las 8 series de los gráficos se dicen (en "
+                "la marca, la guía y references/marca.md)", probs))
+    # 4. una sola luminancia: build.py usa la de validate.py
+    import build, validate
+    texto = (HERE / "build.py").read_text(encoding="utf-8")
+    probs = [] if build._lum is validate._lum and "def _lum" not in texto and [build.on_color(c) for c in ("#1D659C", "#F2B134")] \
+        == ["#ffffff", "#1a1a1a"] else ["build.py tiene su propia _lum (o on_color cambia): tiene que usar la de validate.py"]
+    out.append(("build.py usa la luminancia (_lum) de validate.py y on_color da lo mismo", probs))
+    # 5. la marca de un cliente con solo su nombre (R5): SKILL.md dice cómo buscarla, marca.py web con un nombre lo dice y la
+    # descripción la nombra
+    probs = []
+    code, salida = run([marca, "web", "Nubarrón Mensajería"])
+    if code != 2 or "WebSearch" not in salida or "manual de identidad" not in salida or "Nubarrón Mensajería" not in salida:
+        probs.append(f"marca.py web con solo el nombre de la empresa sale con {code} y no dice cómo buscar su web:\n{salida[-400:]}")
+    code, salida = run([marca, "web", "www.nubarron.example"])
+    if code != 2 or "https://www.nubarron.example" not in salida:
+        probs.append(f"marca.py web con un dominio sin https:// sale con {code} y no da la URL completa:\n{salida[-400:]}")
+    skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    paso = re.search(r"^\*\*Marca\*\*:(.*?)(?=\n### )", skill, re.S | re.M)
+    if not paso or not re.search(r"0\. .*WebSearch.*manual de identidad corporativa.*brand guidelines.*logo SVG", paso.group(1)):
+        probs.append("el apartado de marca de SKILL.md no tiene el paso 0: con solo el nombre, buscar con WebSearch su manual de "
+                     "identidad corporativa, sus brand guidelines, su logo SVG y su web oficial")
+    descripcion = re.search(r'^description: "(.*)"$', skill, re.M).group(1)
+    if "la marca de un cliente" not in descripcion or len(descripcion.encode("utf-8")) >= 1000:
+        probs.append(f"la descripción no nombra «la marca de un cliente» o pasa de 1.000 bytes ({len(descripcion.encode('utf-8'))})")
+    out.append(("la marca de un cliente con solo su nombre: paso 0 en SKILL.md, marca.py web lo dice y la descripción la nombra",
+                probs))
+    return out
+
+
+def capturas_solo(tmp):
+    """[(qué, problemas)] de capture.py --solo, sin navegador: qué capturas elige (por el ref de su pantalla o vista o por
+    su id) y cómo se fusiona el índice (solo se sustituyen las filas del mismo «Fichero»)."""
+    import capture
+    spec = {"app": {"name": "Prueba"}, "screens": [
+        {"id": "listado", "ref": "PAN-01 · Listado", "pattern": "P01"},
+        {"id": "ficha", "ref": "PAN-02 · Ficha", "pattern": "P02",
+         "views": [{"id": "docs", "label": "Documentos", "ref": "PAN-03 · Documentos"}, {"id": "datos", "label": "Datos"}]},
+        {"id": "alta", "ref": "PAN-04 · Alta", "pattern": "P03"}],
+        "captures": [{"name": "01-listado", "screen": "listado"}, {"name": "02-ficha", "screen": "ficha"},
+                     {"name": "03-docs", "screen": "ficha", "view": "docs"}, {"name": "04-datos", "screen": "ficha", "view": "datos"},
+                     {"name": "05-alta", "screen": "alta"}]}
+    byid = {s["id"]: s for s in spec["screens"]}
+    probs = []
+    for solo, esperado, faltan in ((["PAN-03", "alta"], ["03-docs", "05-alta"], []), (["PAN-02"], ["02-ficha", "04-datos"], []),
+                                   (["ficha"], ["02-ficha", "03-docs", "04-datos"], []), (["PAN-09", "PAN-01"], ["01-listado"], ["PAN-09"])):
+        elegidas, sin = capture.elegir(spec["captures"], byid, solo)
+        if [c["name"] for c in elegidas] != esperado or sin != faltan:
+            probs.append(f"--solo {','.join(solo)} elige {[c['name'] for c in elegidas]} (esperaba {esperado}) y no encuentra {sin}")
+    cabecera = "# Capturas · Prueba\n\ntexto\n\n| Fichero | Pie de figura | Ficha | Para la ficha | Patrón | Requisitos |\n|---|---|---|---|---|---|\n"
+    viejo = cabecera + "".join(f"| {n}.png | viejo {n} | — | — | P0 | |\n" for n in ("01-listado", "02-ficha", "03-docs", "99-quitada"))
+    nuevo = cabecera.replace("Prueba", "Prueba 2") + "| 03-docs.png | nuevo 03 | — | — | P0 | |\n| 05-alta.png | nuevo 05 | — | — | P0 | |\n"
+    filas = [l.split("|")[2].strip() for l in capture.fusionar(viejo, nuevo).splitlines() if l.startswith("| ") and ".png" in l]
+    if filas != ["viejo 01-listado", "viejo 02-ficha", "nuevo 03", "viejo 99-quitada", "nuevo 05"] \
+            or not capture.fusionar(viejo, nuevo).startswith("# Capturas · Prueba 2\n"):
+        probs.append(f"la fusión del índice da {filas}")
+    code, ayuda = run([HERE / "capture.py", "--help"])
+    if code or "--solo" not in ayuda:
+        probs.append(f"capture.py --help no ofrece --solo (sale con {code})")
+    return [("capture.py --solo: elige por el ref de la pantalla o de la vista o por su id, dice lo que no encuentra y fusiona "
+             "el índice", probs)]
+
+
 # color calculado de las iniciales del avatar de la cabecera y su color propio (style), en el navegador
 AVATAR = ("import sys; from pathlib import Path; sys.dont_write_bytecode = True; sys.path.insert(0, sys.argv[1])\n"
           "from entorno import sync_playwright, launch_browser\n"
@@ -588,7 +709,7 @@ def main():
             else:
                 ok = False
                 print(f"✗ Validar y construir: {name}\n{out}")
-        for que, probs in brands(tmp, built) + marca_cliente(tmp, built):
+        for que, probs in brands(tmp, built) + marca_cliente(tmp, built) + marca_detalles(tmp) + capturas_solo(tmp):
             if probs:
                 ok = False
                 print(f"✗ Marca: {que}\n  " + "\n  ".join(probs))

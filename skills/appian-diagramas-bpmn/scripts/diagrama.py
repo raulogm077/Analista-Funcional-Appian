@@ -54,7 +54,7 @@ def _limpio(proc, geo=None):
     se pide, con posiciones."""
     pasos = []
     for p in proc["pasos"]:
-        q = {**{k: p[k] for k in ("id", "tipo", "carril", "nombre")}, **dm.datos(p, dm.DATOS_PASO)}
+        q = {**{k: p[k] for k in ("id", "tipo", "carril", "nombre")}, **dm.datos_json(p, dm.DATOS_PASO)}
         if geo is not None and p["id"] in geo["pasos"]:
             q["posicion"] = [round(v) for v in geo["pasos"][p["id"]][:2]]
         pasos.append(q)
@@ -452,6 +452,16 @@ class Editor:
         if dm.datos(nuevo, dm.DATOS_PASO) != dm.datos(antes, dm.DATOS_PASO):
             self.f.poner_datos(el, cell, nuevo, dm.DATOS_PASO)
 
+    def contornos(self):
+        """El borde de cada temporizador según esté en el de su tarea y la interrumpa o no (tras cambiar tipos, datos o
+        flujos)."""
+        borde = dm.en_borde(self.proc)
+        for p in self.proc["pasos"]:
+            nuevo = dm.contorno(p, borde)
+            _, cell = self._cell(p["id"])
+            if nuevo and dm._estilo(cell.get("style")).get("outline") != nuevo:
+                cell.set("style", dm.con_contorno(cell.get("style") or dm.ESTILO[p["tipo"]], nuevo))
+
     def _limpiar_puntos(self, pid):
         for el, cell in self.f.celdas():
             if cell.get("edge") == "1" and pid in (cell.get("source"), cell.get("target")):
@@ -737,6 +747,7 @@ def aplicar(editor, nuevo):
             editor.anadir_nota(n)
     editor.reajustar_mensajes()
     editor.recargar()
+    editor.contornos()
     # 6. carriles vacíos
     for c in quitados:
         if c in editor.geo["carriles"] and not editor.quitar_carril(c):
@@ -748,6 +759,7 @@ def aplicar(editor, nuevo):
             editor.f.poner_etiqueta(el, cell, nuevo["proceso"])
         elif editor.f.diagram is not None:
             editor.f.diagram.set("name", nuevo["proceso"])
+    dm.renombrar_tramos(editor.f, nuevo)   # en tramos, cada página con los pasos que lleva ahora
     return avisos
 
 
@@ -764,7 +776,9 @@ def recolocar(editor, nuevo, drawio):
     for el, cell in editor.f.celdas():
         cid = el.get("id")
         if cid in tipos_antes and tipo_nuevo.get(cid) == tipos_antes[cid] and antes.get(cid):
-            cell.set("style", dm.con_lado(antes[cid], lados.get(cid)))   # el lado de la etiqueta es el nuevo
+            # el lado de la etiqueta y el borde de un temporizador son los nuevos
+            contorno = dm._estilo(cell.get("style")).get("outline") if tipo_nuevo[cid] == "temporizador" else None
+            cell.set("style", dm.con_contorno(dm.con_lado(antes[cid], lados.get(cid)), contorno))
         if cell.get("vertex") == "1" and "swimlane" in (cell.get("style") or "") and carril_estilo.get(cell.get("value")):
             cell.set("style", carril_estilo[cell.get("value")])
     editor.recargar()
@@ -803,17 +817,19 @@ def actualizar(a):
         avisos = aplicar(ed, nuevo)
         avisos.append("se ha respetado la colocación hecha a mano en draw.io; lo nuevo va junto a su paso anterior "
                       "(para recolocar todo el diagrama: --recolocar)")
-    # se escribe al lado, se comprueba y solo entonces sustituye al original
+    # se escribe al lado, se comprueba y solo entonces sustituye al original; si algo falla, el provisional no se queda
     provisional = drawio.with_name(drawio.name + ".tmp")
-    ed.f.guardar(str(provisional))
-    comprobado, _, _ = dm.leer(str(provisional))
-    dif = dm.comparar(nuevo, comprobado)
-    if dif:  # no debería pasar: el dibujo no refleja el proceso pedido; el original queda intacto
-        provisional.unlink()
-        print("ERROR: no he cambiado nada; el resultado no coincidía con el proceso pedido:\n  "
-              + "\n  ".join(t for _, t in dif), file=sys.stderr)
-        return 1
-    os.replace(provisional, drawio)
+    try:
+        ed.f.guardar(str(provisional))
+        comprobado, _, _ = dm.leer(str(provisional))
+        dif = dm.comparar(nuevo, comprobado)
+        if dif:  # no debería pasar: el dibujo no refleja el proceso pedido; el original queda intacto
+            print("ERROR: no he cambiado nada; el resultado no coincidía con el proceso pedido:\n  "
+                  + "\n  ".join(t for _, t in dif), file=sys.stderr)
+            return 1
+        os.replace(provisional, drawio)
+    finally:
+        provisional.unlink(missing_ok=True)
     for av in avisos:
         print(f"aviso: {av}")
     _escribir_json(nuevo, js, drawio, automatica=automatica)
@@ -892,6 +908,8 @@ def comparar(a):
         antes = (base or {}).get("colocacion") or {}
         sigue_auto = antes.get("modo") == "automatica" and antes.get("huella") == ed.f.huella()
         aceptado = dict(ed.proc, tramos=True) if (base or {}).get("tramos") else ed.proc
+        if dm.renombrar_tramos(ed.f, aceptado):   # un paso renombrado a mano cambia el nombre de la página de su tramo
+            ed.f.guardar()
         _escribir_json(aceptado, js, drawio, automatica=sigue_auto)
         print(f"Aceptado: {js.name} actualizado.")
         return 0 if _imagen(drawio) else 2
