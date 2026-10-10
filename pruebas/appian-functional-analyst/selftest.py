@@ -1174,12 +1174,12 @@ def pruebas_unidades(tmp):
     p = con_unidades(tmp / "unidades aprobar")
     cambios_md(p, {**FILAS_BASE, "EV-02": "Abierta"})
     for args, falla in [((), "--fuente"), (("--fuente", "FU-99"), "no está en fuentes"),
-                        (("--fuente", "FU-05", "--desatendida"), "desatendida")]:
+                        (("--desatendida",), "visto bueno"), (("--fuente", "FU-99", "--desatendida"), "no está en fuentes")]:
         c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "aprobada", *args)
         ok(f"cambio aprobada {' '.join(args) or 'sin --fuente'}: error ({falla})",
            c == 1 and falla in out and "| Abierta |" in fila_de(p, "EV-02"), out)
-    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "aprobada", "--fuente", "FU-05")
-    ok("cambio aprobada: pasa con la fuente, y anota fecha y fuente",
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "aprobada", "--fuente", "FU-05", "--desatendida")
+    ok("cambio aprobada: pasa con la fuente, también desatendida (el visto bueno es la fuente), y anota fecha y fuente",
        c == 0 and re.search(r"\| Aprobada \| \d{4}-\d\d-\d\d · FU-05 \|", fila_de(p, "EV-02")), out)
     c, out = corre(S / "proyecto.py", "cambio", p, "EV-03", "aprobada", "--fuente", "FU-05")
     ok("cambio aprobada: un punto «Pendiente» en sus informes es error", c == 1 and "FU-06 punto 1" in out, out)
@@ -1280,12 +1280,16 @@ def pruebas_unidades(tmp):
     c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "construida", "--manual")
     ok("cambio construida --manual: la URG ya reaplicada no se pide otra vez y la marca dice «manual»",
        c == 0 and "· manual |" in fila_de(p, "EV-02"), out)
-    for args, falla in [(("--ref", "PASE-2", "--desatendida"), "desatendida"), ((), "--ref")]:
+    for args, falla in [(("--ref", "PASE-2", "--desatendida"), "visto bueno"), ((), "--ref")]:
         c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "produccion", *args)
         ok(f"cambio produccion {' '.join(args) or 'sin --ref'}: error", c == 1 and falla in out, out)
-    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "produccion", "--ref", "PASE-2")
-    ok("cambio produccion: anota la referencia y recuerda actualizar el entorno de corrección",
-       c == 0 and "· PASE-2 |" in fila_de(p, "EV-02") and "entorno de corrección" in out, out)
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "produccion", "--ref", "PASE-2", "--fecha", "8/10/2026")
+    ok("cambio produccion --fecha que no es AAAA-MM-DD: error", c == 1 and "AAAA-MM-DD" in out, out)
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "produccion", "--ref", "PASE-2", "--desatendida",
+                   "--fuente", "FU-05", "--fecha", "2026-10-08")
+    ok("cambio produccion: desatendida con el visto bueno (--fuente) pasa, anota la referencia y recuerda actualizar el "
+       "entorno de corrección",
+       c == 0 and "| 2026-10-08 · PASE-2 |" in fila_de(p, "EV-02") and "entorno de corrección" in out, out)
     editar(p / "impacto" / "URG-01.md", "| Dónde se corrige | Entorno de corrección |", "| Dónde se corrige | — |")
     c, out = corre(S / "proyecto.py", "cambio", p, "URG-01", "produccion", "--ref", "URG")
     ok("cambio produccion de una URG sin «Dónde se corrige» en su ficha es error", c == 1 and "Dónde se corrige" in out, out)
@@ -1395,6 +1399,12 @@ def pruebas_unidades(tmp):
     c, out = corre(S / "indice.py", "impacto", p, "HU-02", "--cambio", "EV-02")
     ok("B4: indice.py impacto --cambio EV-02 no sugiere «Requiere: Sí (EV-02)» para la propia unidad",
        c == 0 and "Construido: as-is · En curso: EV-02" in out and "Requiere: Sí" not in out, out)
+    c, out = corre(S / "indice.py", "impacto", p, "HU-01")
+    ok("indice.py impacto con una unidad Abierta no sugiere abrir otra", c == 0 and "Ninguna unidad Abierta" not in out, out)
+    cambios_md(p, {**FILAS_BASE, "EV-03": "Descartada"})
+    c, out = corre(S / "indice.py", "impacto", p, "HU-01")
+    ok("indice.py impacto sin unidad Abierta y algo construido: dice que abra EV-04 y no la meta en la Aprobada",
+       c == 0 and "Ninguna unidad Abierta" in out and "EV-04 abrir" in out and "Cambio: EV-04" in out, out)
     cambios_md(p, {**FILAS_BASE, "EV-02": "En producción"})
     c, out = corre(S / "indice.py", "ficha", p, "HU-04")
     ok("indice.py ficha: lo de una unidad en producción está construido", "Construido: EV-02 · En curso: —" in out, out)

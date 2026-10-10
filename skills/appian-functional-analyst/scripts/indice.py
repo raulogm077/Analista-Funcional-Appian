@@ -276,6 +276,12 @@ def c_impacto(m, a):
     # la unidad del informe (--cambio o, sin él, la única Abierta) no se sugiere: tocar lo suyo no pide aprobación
     abiertas = [u.id for u in ctx.unidades if u.estado == un.ABIERTA]
     propia = (a.cambio or "").upper() or (abiertas[0] if len(abiertas) == 1 else None)
+    ev_abiertas = [u for u in abiertas if u.startswith("EV-")]
+    if ctx.hay and construidas and not a.cambio and not ev_abiertas:   # dónde va: lo dice el script, no el modelo
+        sig = 1 + max([int(u.id.split("-")[1]) for u in ctx.unidades if u.id.startswith("EV-")] or [0])
+        print(f"  → Ninguna unidad Abierta: si aplicas el cambio, ábrela antes (proyecto.py cambio <p> EV-{sig:02d} "
+              "abrir --titulo \"…\") y pon «Cambio: EV-" + f"{sig:02d}» en el informe; meterlo en una Aprobada la "
+              "devuelve a aprobación")
     otras = sorted(en_curso - {propia})
     if otras:
         print(f"  → En curso en {', '.join(otras)}: si el punto es de {propia or 'otra unidad'}, «Requiere: Sí "

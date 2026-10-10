@@ -52,9 +52,11 @@ Tras `produccion`, `proyecto.py estado` ya no la lista como pendiente.
      procedimiento) y «Dónde se corrige» dice igualmente una de las dos.
 5. **Despliegue** por el proceso de cambios urgentes del cliente (el plugin no lo gestiona), con la vuelta atrás
    preparada: el paquete con la versión de producción de esos objetos. Restaurar una copia de seguridad es lo último.
-6. **Cierre**: «Cierre» en la ficha y `proyecto.py cambio <p> URG-nn produccion --ref "<referencia>"` (falla si la ficha no
-   dice «Dónde se corrige», o si no dice «Desarrollo» ni «Entorno de corrección» y algo choca). Después, actualizar el
-   entorno de corrección con el pase, que `proyecto.py` recuerda.
+6. **Cierre**: «Cierre» en la ficha y `proyecto.py cambio <p> URG-nn produccion --ref "<referencia>" --fecha <AAAA-MM-DD del pase>` (falla si la ficha no
+   dice «Dónde se corrige», o si no dice «Desarrollo» ni «Entorno de corrección» y algo choca). Se cierra en cuanto
+   consta el pase: lo que quede por comprobar (la prueba de la urgencia en producción, los datos afectados) va en
+   «Cierre» como pendiente, o como otra urgencia si se confirma un daño. Después, actualizar el entorno de corrección
+   con el pase, que `proyecto.py` recuerda.
 
 Una urgencia va de Abierta a En producción, o a Descartada; no se aprueba ni se marca Construida como un evolutivo.
 

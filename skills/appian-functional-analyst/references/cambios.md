@@ -23,14 +23,16 @@ escribe `proyecto.py cambio` (`<p>`, el proyecto). Cada error dice la salida.
 | `cambio <p> EV-02 abrir --titulo "…"` | Abierta | Empieza el cambio | ya existe |
 | `… aprobada --fuente FU-nn [--comparte "…"]` | Aprobada | El jefe de proyecto aprueba la unidad entera, con su alcance y coste; su aprobación (chat o correo) es la fuente FU-nn | hay puntos «Pendiente» en sus informes; o un objeto suyo de §13 está también en otra unidad Aprobada o Construida sin una decisión escrita (`--comparte "EV-03 en X: secuenciar (EV-02 primero)"`) |
 | `… construida [--reaplicada URG-nn …] [--manual]` | Construida | Construida y verificada en desarrollo | no está Aprobada; ha crecido desde que se aprobó; falta `construccion/verificacion/EV-02.json` (o `--manual` sin Dev MCP, y la marca lo dice); la verificación no incluye un objeto suyo o lo encuentra distinto del técnico; o falta confirmar una corrección urgente que hay que reaplicar |
-| `… produccion --ref "<pase>"` | En producción | Tras el pase | no está Construida |
+| `… produccion --ref "<pase>" --fecha <AAAA-MM-DD del pase>` | En producción | Tras el pase | no está Construida |
 | `… descartada [--informe impacto/FU-nn.md]` | Descartada | No se hace | no está Abierta; o tiene algo aplicado y no se da el informe (aplicado) que lo deshace, o §13 sigue con sus filas |
 
 **Aprobar guarda con qué se aprueba** (la versión y sus informes, en la celda de su ID). Una fuente nueva para una
 unidad Aprobada (otro informe con su `Cambio:`, o un punto «Pendiente») la devuelve a aprobación: `encargo` y
 `construida` fallan con «ha crecido desde que se aprobó» hasta que se vuelve a aprobar con `--fuente`. Si no conviene,
 lo nuevo va en otra unidad. Sin `--fuente`, de Construida se vuelve a Aprobada cuando una urgencia obliga a reaplicar.
-Con `--desatendida` nunca se aprueba ni se pasa a producción: lo hace el jefe de proyecto. `proyecto.py estado` imprime
+Con `--desatendida` no se aprueba ni se pasa a producción sin el visto bueno del jefe de proyecto; si lo da (también
+en el propio encargo), se cataloga como fuente de tipo Aprobación y se pasa con ella. «En producción» registra un pase
+que ya ha ocurrido: lo que quede por comprobar se apunta, no lo frena. `proyecto.py estado` imprime
 las unidades en curso con sus fuentes, versiones y objetos (no se guardan: se derivan) y lo que hay que reaplicar.
 
 **Qué es de cada unidad.**
@@ -122,7 +124,7 @@ python3 <skill>/scripts/indice.py encargo <p> EV-02    # construccion/EV-02.md y
    campos de esta unidad (de uno que se modifica, que tenga más campos que los suyos no cuenta); la fecha de última
    modificación es un dato, no una prueba. Si no pudo leer los campos, se repite o se marca `--manual`. Lo semántico lo
    garantizan las pruebas de quien construye. El avance entre sesiones se ve volviendo a verificar.
-3. **Marcar**: `proyecto.py cambio <p> EV-02 construida` y, tras el pase, `… produccion --ref "<pase>"`.
+3. **Marcar**: `proyecto.py cambio <p> EV-02 construida` y, tras el pase, `… produccion --ref "<pase>" --fecha <AAAA-MM-DD>`.
 
 **Deriva** (antes de abrir una unidad en una aplicación ajena, o para los objetos de una urgencia): `devmcp_extract.py
 deriva` de ingeniería inversa compara el historial de versiones con el de `as-is/` y escribe `as-is/datos/deriva.json`; si

@@ -1,8 +1,47 @@
 # Evaluaciones y cierre de fases
 
-Resultados de las evaluaciones del plan `docs/plan/2026-10-07-integracion-ingenieria-inversa.md` y, al cerrar cada
+Resultados de las evaluaciones de los planes de `docs/plan/` y, al cerrar cada
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
+
+## 0.7.0-beta.2 · G0-G5 (10-11 de octubre de 2026)
+
+Plan único `docs/plan/2026-10-10-0.7.0-beta.2.md`. Cada fase, en su rama, con su revisión independiente; los hallazgos
+de las revisiones se corrigieron en la misma rama antes de unirla (el más grave: los IDs de hallazgos que debían quedar
+estables se podían intercambiar al reextraer, G1).
+
+### Evolutivo con urgencia (tarea 5.11)
+
+Proyecto ficticio del caso C (`EV-01` en producción, `EV-02` aprobada) y una incidencia crítica sobre un objeto de
+`EV-02`. Dos pasadas a ciegas con las skills copiadas, sin `pruebas/` ni `docs/`.
+
+| Pasada | Visible | Ocultas | Nota |
+|---|---|---|---|
+| 1 | 9/9, pasa | 5/6, no pasa | No pasó la URG a producción: el método decía «desatendida: nunca» aunque el encargo traía el visto bueno del jefe de proyecto, y quiso la prueba en producción antes de cerrar |
+| 2 | 9/9, pasa | 6/6, pasa | Tras corregir: con el visto bueno catalogado como Aprobación se pasa (`--desatendida --fuente`), y «En producción» registra un pase que ya ocurrió: lo que falte por comprobar va en «Cierre» |
+
+La pasada 2 encontró además que `produccion` guardaba la fecha del registro y no la del pase, que es con la que compara
+la deriva: `--fecha`.
+
+### Prueba de coste: texto de un botón construido (tarea 5.12)
+
+Calidad, las tres veces: informe aplicado en una unidad nueva Abierta, 0 aprobaciones, 0 DT, 0 pasadas de `comprobar.py`
+con errores, ningún Word ni captura regenerados. **Coste: 34, 34 y 47 llamadas frente al tope de 25: no pasa.**
+
+- Unas 22 llamadas son del método (leer SKILL.md y tres referencias, catalogar, buscar, informe, copia, editar
+  funcional, técnico y decisiones, anexo, comprobar). El resto, dudas que el método no resolvía: si meterlo en la unidad
+  Aprobada o abrir otra, el formato de la fila D, si hay que rehacer la captura.
+- Tras la pasada 1 se corrigió: una fuente corta no lleva nota; si nada requiere aprobación, una sola pasada de
+  `comprobar.py`; el formato de la fila D en `actualizacion.md`; e `indice.py impacto` dice qué unidad abrir cuando no
+  hay ninguna Abierta. La pasada 3 ya no dudó en eso, pero editó con 20 llamadas sueltas: la cifra depende mucho de cómo
+  edite el modelo.
+- El tope se fijó antes de medir y no se cambia. Queda para la siguiente versión un camino corto de retoque (apartado
+  «Aplazado»).
+
+### Aplazado
+
+- Retoque: un cambio de texto sobre algo construido sigue costando ~30 llamadas. Medir de nuevo con el plugin instalado
+  y, si sigue por encima, un camino corto para un punto sin aprobación (informe y aplicación en un paso).
 
 ## F9 · Cierre (9 de octubre de 2026)
 

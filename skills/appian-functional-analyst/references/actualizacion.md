@@ -26,6 +26,7 @@ comentario y cada cambio con el texto al que se refiere y la historia o el apart
 chat (también la aprobación del jefe de proyecto) es una fuente más: `ingesta-fuentes.md` §1.
 
 ## 2. Nota de la fuente
+Una fuente corta (un correo, un chat, unas líneas) no lleva nota: el informe cita la fuente. Las demás,
 `notas/FU-04.md` con las secciones de `volumen-grande.md` §1. Aplica `ingesta-fuentes.md`: separa la
 decisión de la conversación; una reunión interna (sin cliente) solo produce propuestas ⚠️; un correo del
 cliente que confirma o cambia algo pesa más que la reunión.
@@ -129,7 +130,7 @@ Versión 1.2: ACT-06 y HU-03 modificadas · ~~PC-02~~ respondida (D-03) · nueva
   «Construido: … · En curso: …», que se copia: lo construido que cambia va al Resumen como «Posible petición de cambio: puntos 3 y 5» y no
   pide aprobación por eso; lo que está en curso en otra unidad, «Requiere: Sí (EV-03)». Una urgencia: `urgentes.md`.
 
-Antes de presentarlo:
+Antes de presentarlo (si nada requiere aprobación, basta la pasada del paso 7, que también lo comprueba):
 ```bash
 python3 <skill>/scripts/comprobar.py <p> --impacto <p>/impacto/FU-04.md --fuentes <p>/fuentes/
 ```
@@ -170,7 +171,8 @@ le vuelve a preguntar.
   `appian-diagramas-bpmn`). Si se niega, alguien editó el `.drawio`: primero `diagrama.py comparar`. Los
   diagramas de estados y de datos se editan en su `.mmd` y se vuelven a pintar con `mermaid.py`
   (`mermaid-diagrams.md`).
-- **decisiones.md**: fila de la versión nueva y filas D nuevas al final.
+- **decisiones.md**: fila de la versión nueva y filas D nuevas al final, así:
+  `| D-01 | 2026-10-08 | FU-05 | CAMBIA | Lo nuevo | Lo de antes [FU-01 00:12:30] | PAN-01 | Sí |`.
 - **Versión**: si cambia el funcional o el técnico, sube 0.1 en los dos.
 - **Anexo**: `indice.py derivadas <p> --escribir`, solo si el informe toca alguna pantalla o algún perfil.
 - **proyecto.md**: la fuente en «Fuentes procesadas» y el siguiente paso.

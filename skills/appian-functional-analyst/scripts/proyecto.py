@@ -14,7 +14,8 @@
       construida [--reaplicada URG-nn …] [--manual]   tras construir y verificar (construccion/verificacion/<ID>.json)
       produccion --ref "<referencia del pase>"        tras el pase (una URG, desde Abierta)
       descartada [--informe impacto/FU-nn.md]         desde Abierta, sin nada aplicado o con el informe que lo deshace
-    Con --desatendida nunca aprueba ni pasa a producción. Las condiciones, en references/cambios.md.
+    Con --desatendida solo aprueba o pasa a producción con --fuente (el visto bueno del jefe de proyecto). Las
+    condiciones, en references/cambios.md.
 
 `iniciar` no toca nada que ya exista. `entregar` solo cuando el Word se envía, nunca en una sesión desatendida.
 """
@@ -268,8 +269,13 @@ def cambio(a):
     if not re.fullmatch(r"(EV|URG)-\d+", uid):
         no("el ID de una unidad es EV-nn (evolutivo) o URG-nn (urgente)", "usa uno de esos, p. ej. EV-02")
     if destino in ("aprobada", "produccion") and a.desatendida:
-        no("en una sesión desatendida no se aprueba ni se pasa a producción",
-           "déjalo para el jefe de proyecto: proyecto.py estado lo lista")
+        fu = (a.fuente or "").strip().upper()
+        if not fu:
+            no("en una sesión desatendida no se aprueba ni se pasa a producción sin el visto bueno del jefe de proyecto",
+               f"si lo ha dado (también en el encargo), catalógalo como Aprobación y repite con --fuente FU-nn; "
+               "si no, déjalo para él: proyecto.py estado lo lista")
+        if (raiz / "fuentes").is_dir() and not list((raiz / "fuentes").glob(f"{fu}*.md")):
+            no(f"{fu} no está en fuentes/", f"catalógala antes con leer_fuentes.py y repite con --fuente {fu}")
     m = mo.Proyecto(raiz)
     ctx = un.Contexto(m)
     u = ctx.por_id.get(uid)
@@ -313,7 +319,10 @@ def cambio(a):
             no(f"está {u.estado}: pasa a producción una unidad Construida",
                f"constrúyela y verifícala antes ({orden} construida)" if u.estado in (un.ABIERTA, un.APROBADA) else
                "ninguna: ya está cerrada")
-        u.estado, u.produccion = un.PRODUCCION, f"{hoy} · {a.ref.strip()}"
+        fecha = (a.fecha or hoy).strip()   # la del pase, no la del registro: la deriva compara con ella
+        if not re.fullmatch(r"\d{4}-\d\d-\d\d", fecha):
+            no(f"la fecha del pase «{fecha}» no es AAAA-MM-DD", f"{orden} produccion --ref \"…\" --fecha 2026-10-08")
+        u.estado, u.produccion = un.PRODUCCION, f"{fecha} · {a.ref.strip()}"
     elif destino == "descartada":
         if u.estado != un.ABIERTA:
             no(f"está {u.estado}: se descarta una unidad Abierta",
@@ -460,6 +469,7 @@ def main():
     s.add_argument("--titulo"); s.add_argument("--fuente"); s.add_argument("--comparte"); s.add_argument("--ref")
     s.add_argument("--reaplicada", nargs="+", metavar="URG-nn"); s.add_argument("--manual", action="store_true")
     s.add_argument("--informe"); s.add_argument("--desatendida", action="store_true")
+    s.add_argument("--fecha", help="produccion: la fecha del pase (AAAA-MM-DD); sin ella, hoy")
     a = ap.parse_args()
     for st in (sys.stdout, sys.stderr):
         st.reconfigure(encoding="utf-8", errors="replace")
