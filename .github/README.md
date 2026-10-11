@@ -2,17 +2,17 @@
 
 <div align="center">
 
-<img src="assets/banner.svg" alt="Analista funcional Appian, plugin de Claude" width="100%">
+<img src="assets/banner.svg" alt="Analista funcional Appian, plugin de Claude: del material del cliente a lo que se valida y se construye" width="100%">
 
 <br>
 
 **Del material del cliente al diseño funcional que valida y a lo que se construye en Appian.**
 
-[![Versión](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fraulogm077%2Fanalista-funcional-appian%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=versi%C3%B3n&color=2f6fd6)](../README.md#versiones)
-[![Pruebas](https://github.com/raulogm077/analista-funcional-appian/actions/workflows/pruebas.yml/badge.svg?branch=main)](https://github.com/raulogm077/analista-funcional-appian/actions/workflows/pruebas.yml)
-![Plugin de Claude](https://img.shields.io/badge/plugin-Claude%20Code%20%C2%B7%20Claude-d97757)
-![Skills](https://img.shields.io/badge/skills-6-6b4fbb)
-![Sistemas](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-555)
+[![Versión](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fraulogm077%2Fanalista-funcional-appian%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=versi%C3%B3n&color=2f6fd6&style=flat-square)](../README.md#versiones)
+[![Pruebas](https://img.shields.io/github/actions/workflow/status/raulogm077/analista-funcional-appian/pruebas.yml?branch=main&label=pruebas&style=flat-square)](https://github.com/raulogm077/analista-funcional-appian/actions/workflows/pruebas.yml)
+![Plugin de Claude](https://img.shields.io/badge/plugin-Claude%20Code%20%C2%B7%20Claude-d97757?style=flat-square)
+![Skills](https://img.shields.io/badge/skills-6-6b4fbb?style=flat-square)
+![Sistemas](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-555?style=flat-square)
 
 [Instalación](#-instalación) · [Actualizaciones](#-actualizaciones) · [Skills](#-las-seis-skills) · [Cómo trabaja](#-cómo-trabaja) · [Desarrollo](#-para-quien-desarrolla-el-plugin) · [Manual completo](../README.md)
 
@@ -92,44 +92,11 @@ Incluye el MCP público de documentación de Appian: lo que una skill no sabe co
 
 ## 🧠 Cómo trabaja
 
-```mermaid
-flowchart LR
-    F["📥 Fuentes<br/>reuniones · correos · actas<br/>DF del cliente"]
-    APP["🏛️ Aplicación<br/>existente"]
-    RE["🔍 Ingeniería inversa"]
-    RF["🧭 Refactorización"]
-    AF["📝 Analista funcional"]
-    BP["🔀 Diagramas BPMN<br/>draw.io"]
-    PR["🎨 Prototipo<br/>navegable"]
-    DF["📄 DF en Word<br/>lo valida el cliente"]
-    TEC["⚙️ Especificación técnica"]
-    BUILD["🏗️ Construcción<br/>con el Dev MCP"]
-    BPR["✅ Buenas prácticas"]
-
-    APP --> RE --> RF --> AF
-    RE --> AF
-    F --> AF
-    AF <--> BP
-    AF --> PR
-    PR -- capturas --> DF
-    AF --> DF
-    AF --> TEC --> BUILD
-    BPR -. orienta .-> AF
-    BPR -. orienta .-> PR
-    BPR -. revisa .-> BUILD
-```
+<img src="assets/como-trabaja.svg" alt="Las fuentes del cliente entran al analista funcional, cada una con su informe de impacto. Una aplicación existente pasa antes por ingeniería inversa y, si se rehace, por refactorización. Del análisis salen el prototipo navegable, el DF en Word, con las capturas del prototipo, y la especificación técnica con la que se construye por el Dev MCP. Los procesos se dibujan con diagramas BPMN. Buenas prácticas orienta el análisis y el prototipo y revisa lo construido." width="100%">
 
 ## 🔧 Para quien desarrolla el plugin
 
-```mermaid
-flowchart LR
-    A["⬇️ git pull"] --> B["✏️ Cambios con<br/>Claude Code"]
-    B --> C["🧪 Probar<br/>claude --plugin-dir ."]
-    C --> D["✅ Pruebas<br/>comprobar_plugin.py --completo"]
-    D --> E["🔢 Subir la versión"]
-    E --> F["⬆️ Push a main"]
-    F --> G["👥 Les llega al equipo"]
-```
+<img src="assets/desarrollo.svg" alt="Siete pasos: git pull, cambios con Claude Code, probar, pasar las pruebas, subir la versión, push a main y la versión le llega al equipo." width="100%">
 
 1. Empieza siempre con `git pull` en la carpeta del repositorio.
 2. Haz los cambios con Claude Code abierto en esa carpeta.
