@@ -6,8 +6,9 @@ la compara y la acepta, vuelve a cambiarlo respetando lo movido a mano, exporta 
 comprueba los errores de validación. Con el segundo ejemplo comprueba que nada se pisa, el lado de las
 etiquetas, los tipos de inicio y tarea, el flujo por defecto, los participantes externos, las notas y el
 ancho del PNG. Comprueba también lo que se hace sin navegador, un proceso que no cabe en una página (tramos), que la
-colocación por capas no dibuje conexiones falsas ni deje las etiquetas pegadas a la flecha, que la línea de una nota no
-cruce la etiqueta de su paso, el temporizador que interrumpe, los avisos sin capa y el error suelto en BPMN.
+colocación por capas no dibuje conexiones falsas ni deje las etiquetas pegadas a la flecha, que la etiqueta de cada
+salida de una puerta vaya sobre un tramo suyo (también en 170 procesos al azar), que la línea de una nota no cruce la
+etiqueta de su paso, el temporizador que interrumpe, los avisos sin capa y el error suelto en BPMN.
 Sale con 0 si todo va bien (tarda unos tres minutos).
 
   python3 pruebas/appian-diagramas-bpmn/selftest.py
@@ -740,6 +741,139 @@ def conexiones(tmp):
           + f"{len(mal)}) " + "; ".join(mal[:6] + solapes(d)))
 
 
+# ---------------------------------------------------------------- etiquetas de las salidas de una puerta
+def _caminos(proc, geo):
+    """[(flujo, camino)] de los flujos entre dos pasos de una página, como los dibuja draw.io (_camino)."""
+    return [(fl, _camino(geo["pasos"][fl["de"]][:2], geo["pasos"][fl["de"]][2:], pts, geo["pasos"][fl["a"]][:2],
+                         geo["pasos"][fl["a"]][2:]))
+            for fl, pts in zip(proc["flujos"], geo["flujos"]) if fl["de"] in geo["pasos"] and fl["a"] in geo["pasos"]]
+
+
+def etiquetas_en_tramo_ajeno(drawio):
+    """Las etiquetas de las salidas de una puerta que no van sobre un tramo propio de su flujo: con su centro donde pasa
+    otro flujo (el tramo que comparten dos salidas al salir de la puerta, o el que comparten dos flujos al llegar a un
+    paso), donde no se sabe de cuál es. Sobre la geometría del .drawio, como conexiones_falsas."""
+    import drawio_modelo as dm
+    f = dm.Fichero(str(drawio))
+    proc, geo, _ = f.leer()
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    caminos = _caminos(proc, geo)
+    out = []
+    for fl, camino in caminos:
+        if not fl.get("etiqueta") or tipo[fl["de"]] not in dm.PUERTAS:
+            continue
+        x, y = _punto_a(camino, (float(f.por_id(fl["id"])[1].find("mxGeometry").get("x", 0)) + 1) / 2)
+        for otro, suyo in caminos:
+            if otro is not fl and any(min(p[0], q[0]) - 1 <= x <= max(p[0], q[0]) + 1 and
+                                      min(p[1], q[1]) - 1 <= y <= max(p[1], q[1]) + 1 for p, q in zip(suyo, suyo[1:])):
+                out.append(f"«{fl['etiqueta']}» de {fl['de']} → {fl['a']} va donde pasa {otro['de']} → {otro['a']}")
+    return out
+
+
+def proceso_aleatorio(rnd, k):
+    """Un proceso al azar para la prueba de estrés: de 1 a 4 carriles; tareas y puertas (casi todas exclusivas, de dos
+    o tres salidas con etiqueta) que muchas veces siguen en otro carril; alguna salida que vuelve a una tarea anterior
+    o se une a otra, y un fin para lo que queda sin salida."""
+    carriles = [f"Carril {i + 1}" for i in range(rnd.choice([1, 2, 2, 3, 3, 3, 4]))]
+    pasos, flujos, cuenta = [], [], {"ACT": 0, "GW": 0, "EV": 0}
+
+    def nuevo(pre, tipo, carril, nombre):
+        cuenta[pre] += 1
+        pasos.append({"id": f"{pre}-{cuenta[pre]:02d}", "tipo": tipo, "carril": carril, "nombre": nombre})
+        return pasos[-1]["id"]
+
+    def carril_de(base):
+        return base if rnd.random() < 0.45 else rnd.choice(carriles)
+    abiertos, tareas, meta = [nuevo("EV", "inicio", rnd.choice(carriles), "Inicio")], [], rnd.randint(4, 16)
+    while abiertos and cuenta["ACT"] + cuenta["GW"] < meta:
+        de = abiertos.pop(rnd.randrange(len(abiertos)))
+        carril = next(p["carril"] for p in pasos if p["id"] == de)
+        r = rnd.random()
+        if r < 0.32:
+            tipo = "exclusiva" if rnd.random() < 0.8 else rnd.choice(["inclusiva", "paralela"])
+            g = nuevo("GW", tipo, carril_de(carril), "¿Decisión?")
+            flujos.append({"de": de, "a": g})
+            etiquetas = rnd.choice([("Sí", "No"), ("Aprobada", "Rechazada"), ("Completa", "Incompleta", "Dudosa"),
+                                    ("Sí", "No", "Otro")])
+            defecto = rnd.random() < 0.4
+            for j, etiqueta in enumerate(etiquetas):
+                if tareas and rnd.random() < 0.15:
+                    a = rnd.choice(tareas)
+                else:
+                    a = nuevo("ACT", rnd.choice(["tarea", "sistema"]),
+                              carril_de(carril) if rnd.random() < 0.4 else rnd.choice(carriles),
+                              f"Tarea {cuenta['ACT'] + 1}")
+                    tareas.append(a)
+                    abiertos.append(a)
+                fl = {"de": g, "a": a}
+                if tipo != "paralela":
+                    fl["etiqueta"] = etiqueta
+                    if defecto and j == len(etiquetas) - 1:
+                        fl["defecto"] = True
+                if not any(x["de"] == g and x["a"] == a for x in flujos):
+                    flujos.append(fl)
+        elif r < 0.42 and len(tareas) > 2:
+            a = rnd.choice(tareas)
+            if a != de and not any(x["de"] == de and x["a"] == a for x in flujos):
+                flujos.append({"de": de, "a": a})
+            else:
+                abiertos.append(de)
+        else:
+            t = nuevo("ACT", rnd.choice(["tarea", "sistema", "script"]), carril_de(carril),
+                      f"Tarea {cuenta['ACT'] + 1}")
+            tareas.append(t)
+            flujos.append({"de": de, "a": t})
+            abiertos.append(t)
+    salen, fin = {fl["de"] for fl in flujos}, None
+    for p in list(pasos):
+        if p["id"] not in salen and p["tipo"] != "fin":
+            if fin is None or rnd.random() < 0.3:
+                fin = nuevo("EV", "fin", p["carril"], "Fin")
+            flujos.append({"de": p["id"], "a": fin})
+    usados = {p["carril"] for p in pasos}
+    return {"proceso": f"Estrés {k}", "carriles": [c for c in carriles if c in usados], "pasos": pasos,
+            "flujos": flujos}
+
+
+def etiquetas_de_puertas(tmp):
+    """Por capas, la etiqueta de cada salida de una puerta va sobre un tramo suyo, junto a la puerta. Con las dos
+    salidas hacia otro carril y un paso de su columna que les tapa la vertical, salían las dos por la derecha y la
+    etiqueta «Sí» caía en el tramo que comparten: ahora la que va más lejos sale por el vértice de abajo, con su tramo.
+    Y en 170 procesos al azar (semilla fija) ninguna etiqueta de una salida de una puerta cae donde pasa otro flujo."""
+    import random
+    import drawio_modelo as dm, colocacion as co
+    d = tmp / "puerta" / "puerta-otro-carril.drawio"
+    run("crear", AQUI / "datos" / "puerta-otro-carril.json", "-o", d, esperado=2, env=entorno(sin_navegador=True))
+    f = dm.Fichero(str(d))
+    proc, geo, _ = f.leer()
+    caminos = _caminos(proc, geo)
+    junto = []
+    for fl, camino in caminos:
+        if fl["de"] != "GW-02":
+            continue
+        x, y = _punto_a(camino, (float(f.por_id(fl["id"])[1].find("mxGeometry").get("x", 0)) + 1) / 2)
+        p, q = next((p, q) for p, q in zip(camino, camino[1:]) if abs(p[1] - q[1]) <= 1)   # su primer tramo horizontal
+        mitad = (len(fl["etiqueta"]) * ANCHO_LETRA_FLUJO + 4) / 2
+        caja = (x - mitad, y - 7, 2 * mitad, 14)
+        if abs(y - p[1]) > 1 or not min(p[0], q[0]) <= x <= max(p[0], q[0]) \
+                or any(_cruza(r, t, caja) for otro, suyo in caminos if otro is not fl for r, t in zip(suyo, suyo[1:])):
+            junto.append(f"«{fl['etiqueta']}»")
+    mal, pisa = etiquetas_en_tramo_ajeno(d), conexiones_falsas(d) + solapes(d)
+    check(not mal and not junto and not pisa, "puerta con las dos salidas hacia otro carril: la etiqueta de cada una "
+          "va en su primer tramo horizontal, sin que la toque otro flujo, y nada se pisa "
+          + "; ".join(mal + junto + pisa))
+    (tmp / "muestra").mkdir()
+    rnd, mal = random.Random(7), []
+    for k in range(170):
+        proc = proceso_aleatorio(rnd, k)
+        geo = co.ajustar(proc, co.por_capas(proc, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA), dm.TAM, dm.FORMAS_EVENTO,
+                         dm.PUERTAS, dm.CABECERA)
+        dm.escribir_paginas([(proc, geo)], str(tmp / "muestra" / f"p{k}.drawio"))
+        mal += [f"proceso {k}: {m}" for m in etiquetas_en_tramo_ajeno(tmp / "muestra" / f"p{k}.drawio")]
+    check(not mal, "170 procesos al azar: ninguna etiqueta de una salida de una puerta cae donde pasa otro flujo "
+          f"({len(mal)}) " + "; ".join(mal[:4]))
+
+
 # ---------------------------------------------------------------- Tarea 12: sin navegador y procesos grandes
 def bpmn_valido(ruta):
     """Lo que necesitan Camunda Modeler y bpmn.io para abrir y dibujar un BPMN 2.0: ids únicos, referencias que
@@ -1111,6 +1245,7 @@ def main_sin_navegador():
     try:
         sin_navegador(tmp / "sin")
         conexiones(tmp / "conexiones")
+        etiquetas_de_puertas(tmp / "etiquetas")
         tramos(tmp / "tramos", con_png=False)
         g3(tmp)
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
@@ -1139,6 +1274,7 @@ def main():
         # Tarea 12: sin navegador y procesos que no caben en una página
         sin_navegador(tmp / "sin")
         conexiones(tmp / "conexiones")
+        etiquetas_de_puertas(tmp / "etiquetas")
         png_viejo(tmp / "png viejo")
         tramos(tmp / "tramos")
         tramos(tmp / "tramos sin navegador", con_png=False)

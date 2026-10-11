@@ -32,8 +32,10 @@ hasta F9 se cerró en esa versión o está aquí. Cada línea dice qué, dónde 
 
 - Ingeniería inversa: en el informe de un `extract --solo` o con herramientas cuyas llamadas son todas `notApplicable`,
   usadas + omitidas no da el catálogo.
-- Diagramas: en una prueba de estrés de 170 procesos aleatorios, 2 empeoran con la colocación nueva: puertas con las dos
-  salidas hacia otro carril, donde la etiqueta «Sí» cae en el tramo horizontal compartido.
+- Diagramas: la salida de una puerta que comparte el tramo de su derecha sale ya por su vértice (el codo) y su etiqueta
+  va en un tramo suyo; en 1.000 procesos al azar (semilla 11 del generador de `selftest.py`) quedan 8 (antes, 46) con
+  una etiqueta donde pasa otro flujo: puertas con tres o más salidas por la derecha, con salidas por los tres vértices
+  y el hueco lleno, o cuyo codo añadiría un cruce.
 - `requisitos.py`: cualquier servidor http configurado (GitHub, Notion…) deja el Appian MCP Server en «no se puede
   comprobar».
 - Las URL de la documentación de Appian con versión fija (`/help/26.6/`) en `references/data-fabric.md`,

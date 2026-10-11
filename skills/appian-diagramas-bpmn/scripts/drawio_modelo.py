@@ -21,8 +21,11 @@ Este módulo sabe:
 - validar un proceso y comparar dos.
 Solo usa la biblioteca estándar.
 """
-import base64, bisect, copy, html, json, re, urllib.parse, zlib
+import base64, bisect, copy, html, json, re, sys, urllib.parse, zlib
 import xml.etree.ElementTree as ET
+
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
+import colocacion  # noqa: E402
 
 # ---------------------------------------------------------------- tipos y estilos
 INICIOS = {"inicio", "inicio_temporizador", "inicio_mensaje"}
@@ -510,39 +513,88 @@ def _camino(a, ta, pts, b, tb):
     return camino
 
 
-def _sitio_etiqueta(camino, otros=()):
+def _trozos_libres(p, q, otros):
+    """Los trozos del tramo horizontal o vertical p-q que no cruza ni comparte ningún flujo de `otros` (sus caminos):
+    [(desde, hasta)] a lo largo del tramo (en x si es horizontal y en y si es vertical)."""
+    e = 0 if abs(p[1] - q[1]) <= 1 else 1          # la coordenada a lo largo del tramo; o, la de través
+    o = 1 - e
+    lo, hi = sorted((p[e], q[e]))
+    ocupado = []
+    for otro in otros:
+        for r, t in zip(otro, otro[1:]):
+            if abs(r[e] - t[e]) <= 1 and min(r[o], t[o]) - 1 <= p[o] <= max(r[o], t[o]) + 1:
+                ocupado.append((r[e], r[e]))                                      # lo cruza
+            elif abs(r[o] - t[o]) <= 1 and abs(r[o] - p[o]) <= 1:
+                ocupado.append(tuple(sorted((r[e], t[e]))))                       # va por la misma recta
+    libres, desde = [], lo
+    for a, b in sorted(ocupado):
+        if a > desde:
+            libres.append((desde, min(a, hi)))
+        desde = max(desde, b)
+    libres.append((desde, hi))
+    return [(a, b) for a, b in libres if b > a]
+
+
+ALTO_ETIQUETA_FLUJO = 14   # la etiqueta de un flujo (11 px) con su fondo
+
+
+def _sitio_etiqueta(camino, otros=(), etiqueta=None):
     """Dónde va la etiqueta de un flujo con codos: en el centro del trozo más largo de sus tramos horizontales que no
     cruza ni comparte ningún otro flujo de `otros` (sus caminos). Así no pisa las formas que rodea ni parece de otro
-    flujo. Es la posición relativa de draw.io, de -1 (origen) a 1 (destino), contada de borde a borde; None si el flujo
-    no tiene tramos horizontales."""
+    flujo. Si no cabe en él (o no queda ninguno) y se da `etiqueta` (su ancho y las cajas de lo que no puede pisar), en
+    el primer trozo vertical libre en el que quepa sin pisar nada; si tampoco, en el trozo horizontal libre más largo o,
+    sin ninguno, en el centro del tramo horizontal más largo. Es la posición relativa de draw.io, de -1 (origen) a 1
+    (destino), contada de borde a borde; None si el flujo no tiene tramos horizontales."""
     largos = [abs(q[0] - p[0]) + abs(q[1] - p[1]) for p, q in zip(camino, camino[1:])]
     horizontales = [k for k, (p, q) in enumerate(zip(camino, camino[1:])) if abs(p[1] - q[1]) <= 1 and largos[k]]
     if not horizontales or not sum(largos):
         return None
     mejor = None                                   # (largo del trozo libre, distancia de su centro al origen)
     for k in horizontales:
-        p, q = camino[k], camino[k + 1]
-        lo, hi = sorted((p[0], q[0]))
-        ocupado = []
-        for otro in otros:
-            for r, t in zip(otro, otro[1:]):
-                if abs(r[0] - t[0]) <= 1 and min(r[1], t[1]) - 1 <= p[1] <= max(r[1], t[1]) + 1:
-                    ocupado.append((r[0], r[0]))                                  # lo cruza
-                elif abs(r[1] - t[1]) <= 1 and abs(r[1] - p[1]) <= 1:
-                    ocupado.append(tuple(sorted((r[0], t[0]))))                   # va por la misma recta
-        libres, desde = [], lo
-        for a, b in sorted(ocupado):
-            if a > desde:
-                libres.append((desde, min(a, hi)))
-            desde = max(desde, b)
-        libres.append((desde, hi))
-        for a, b in libres:
-            if b > a and (mejor is None or b - a > mejor[0]):
+        p = camino[k]
+        for a, b in _trozos_libres(p, camino[k + 1], otros):
+            if mejor is None or b - a > mejor[0]:
                 mejor = (b - a, sum(largos[:k]) + abs((a + b) / 2 - p[0]))
+    if etiqueta and (mejor is None or mejor[0] < etiqueta[0] + 2 * colocacion.AIRE_ETIQUETA):
+        mejor = _sitio_en_vertical(camino, largos, otros, *etiqueta) or mejor
     if mejor is None:                              # todo ocupado: el centro del tramo horizontal más largo
         k = max(horizontales, key=lambda k: largos[k])
         mejor = (0, sum(largos[:k]) + largos[k] / 2)
     return 2 * mejor[1] / sum(largos) - 1
+
+
+def _sitio_en_vertical(camino, largos, otros, ancho, cajas):
+    """(largo, distancia desde el origen) del centro del primer trozo vertical del flujo que no cruza ni comparte otro y
+    en el que cabe su etiqueta (`ancho`) sin pisar otro flujo ni ninguna de las `cajas` (x, y, w, h); None si no hay."""
+    def pisa(r, t, caja):
+        """Si el tramo r-t (o la caja de esquinas r y t) entra en la caja."""
+        x, y, w, h = caja
+        return min(r[0], t[0]) < x + w and max(r[0], t[0]) > x and min(r[1], t[1]) < y + h and max(r[1], t[1]) > y
+    for k, (p, q) in enumerate(zip(camino, camino[1:])):
+        if abs(p[0] - q[0]) > 1:
+            continue
+        for a, b in _trozos_libres(p, q, otros):
+            y = (a + b) / 2
+            caja = (p[0] - ancho / 2 - colocacion.AIRE_ETIQUETA, y - ALTO_ETIQUETA_FLUJO / 2 - colocacion.AIRE_ETIQUETA,
+                    ancho + 2 * colocacion.AIRE_ETIQUETA, ALTO_ETIQUETA_FLUJO + 2 * colocacion.AIRE_ETIQUETA)
+            if b - a >= caja[3] and not any(pisa(r, t, caja) for otro in otros for r, t in zip(otro, otro[1:])) \
+                    and not any(pisa((x, y0), (x + w, y0 + h), caja) for x, y0, w, h in cajas):
+                return (b - a, sum(largos[:k]) + abs(y - p[1]))
+    return None
+
+
+def _cajas(proc, geo):
+    """Las cajas (x, y, w, h) de las formas, de la etiqueta de cada evento y puerta y de las notas de una página."""
+    cajas = list(geo.get("anotaciones") or [])
+    for p in proc["pasos"]:
+        (cx, cy), (w, h) = geo["pasos"][p["id"]][:2], TAM[p["tipo"]]
+        cajas.append((cx - w / 2, cy - h / 2, w, h))
+        lado = geo.get("etiquetas", {}).get(p["id"])
+        if lado and p.get("nombre"):
+            alto = colocacion.alto_texto(p["nombre"])
+            cajas.append((cx - colocacion.ANCHO_ETIQUETA / 2, cy - h / 2 - alto if lado == "arriba" else cy + h / 2,
+                          colocacion.ANCHO_ETIQUETA, alto))
+    return cajas
 
 
 def _celdas(proc, geo, pre=""):
@@ -594,6 +646,7 @@ def _celdas(proc, geo, pre=""):
         caminos = {i: _camino(centro[f["de"]], TAM[tipo[f["de"]]], geo["flujos"][i - 1], centro[f["a"]], TAM[tipo[f["a"]]])
                    for i, f in enumerate(proc["flujos"], 1)
                    if f["de"] in centro and f["a"] in centro and f["de"] != f["a"] and i - 1 < len(geo["flujos"])}
+        cajas = _cajas(proc, geo)
     for i, f in enumerate(proc["flujos"], 1):
         st = estilo_flujo(f, ext_id)
         pos = ""
@@ -610,7 +663,8 @@ def _celdas(proc, geo, pre=""):
         mensaje = f["de"] in ext_id or f["a"] in ext_id
         pts = geo["flujos"][i - 1] if i - 1 < len(geo.get("flujos", [])) and not mensaje else []
         if f.get("etiqueta") and i in caminos:
-            sitio = _sitio_etiqueta(caminos[i], [c for j, c in caminos.items() if j != i])
+            sitio = _sitio_etiqueta(caminos[i], [c for j, c in caminos.items() if j != i],
+                                    (colocacion.ancho_etiqueta_flujo(f["etiqueta"]), cajas))
             pos = f' x="{sitio:.3f}"' if sitio is not None else pos
         arr = ('<Array as="points">' + "".join(f'<mxPoint x="{x:.0f}" y="{y:.0f}"/>' for x, y in pts) + "</Array>") if pts else ""
         de, a = ext_id.get(f["de"], f["de"]), ext_id.get(f["a"], f["a"])
