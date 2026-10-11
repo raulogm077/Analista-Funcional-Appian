@@ -127,9 +127,8 @@ python3 <skill>/scripts/indice.py encargo <p> EV-02    # construccion/EV-02.md y
 3. **Marcar**: `proyecto.py cambio <p> EV-02 construida` y, tras el pase, `… produccion --ref "<pase>" --fecha <AAAA-MM-DD>`.
 
 **Deriva** (antes de abrir una unidad en una aplicación ajena, o para los objetos de una urgencia): `devmcp_extract.py
-deriva` de `appian-reverse-engineering` compara el historial de versiones con el de `as-is/` y escribe
-`as-is/datos/deriva.json`; si algo cambió fuera de nuestro control, entra como una fuente más (tipo «as-is») por el
-informe de impacto.
+deriva` de ingeniería inversa compara el historial de versiones con el de `as-is/` y escribe `as-is/datos/deriva.json`; si
+algo cambió fuera de nuestro control, entra como una fuente más (tipo «as-is») por el informe de impacto.
 
 ## 7. Lo que avisa comprobar.py (y cómo se apaga)
 

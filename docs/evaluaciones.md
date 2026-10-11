@@ -17,11 +17,13 @@ herramientas ni skills (`claude -p` desde una carpeta vacía) que solo recibe `p
 | Las de 6.5 (≤ 1.000 bytes, fronteras con SAIL y Word) | 12/13 ×3 | — | — |
 | Buenas prácticas reclama el SAIL pegado que se revisa | 13/13 ×3 | 7/8, 8/8, 7/8 | 20/20 |
 | Diagramas remite al analista los de estados y de datos | 13/13 ×2 | 8/8 ×3 | 20/20 |
+| Tras la revisión: buenas prácticas, en un entorno o pegado; el SAIL a partir de requisitos, de `appian-sail-generator`; analista con margen (974 bytes) | 13/13 ×3 | 8/8 ×3 | 20/20 ×2 |
 
 - El fallo de las tres primeras pasadas: «Revisa este SAIL: hace un a!queryRecordType dentro de un a!forEach» iba a
   `appian-sail-generator`, que se ofrece para «paste SAIL expressions and ask for fixes/improvements». Buenas prácticas
-  dice ahora «reviewing … pasted SAIL code» y, en su «Not for», «writing new SAIL (appian-sail-generator)». La otra
-  mitad, que `appian-sail-generator` diga que no es para revisiones de buenas prácticas, es de Raúl (plan, apartado 6).
+  dice ahora que construye, cambia, revisa o depura «in an environment or as pasted code» y, en su «Not for»,
+  «generating SAIL from requirements (appian-sail-generator)». La otra mitad, que `appian-sail-generator` diga que no es
+  para revisiones de buenas prácticas, es de Raúl (plan, apartado 6).
 - El recorte del analista para caber en 1.000 bytes hizo fallar la frontera de los diagramas de estados y de datos (con
   las descripciones de antes, 8/8 ×2): diagramas dice ahora que esos los hace el analista.
 - Las ocultas no se han pasado: quedan para G7, con el resto de las evaluaciones.

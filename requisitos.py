@@ -34,11 +34,6 @@ sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fu
 
 RAIZ = Path(__file__).resolve().parent
 SKILLS = RAIZ / "skills"
-sys.path.append(str(SKILLS / "appian-reverse-engineering" / "scripts"))
-try:  # la configuración MCP y la carpeta personal se buscan como lo hace el extractor de ingeniería inversa
-    import devmcp_extract as dx
-except Exception:  # noqa: BLE001 - un Python demasiado antiguo para el extractor: se dice que falta Python
-    dx = None
 
 SIMULAR = "REQUISITOS_SIN"
 # Nombre anterior de una skill del plugin, por prefijo → el de hoy (appian-prototipos-<cliente> es hoy appian-prototipos):
@@ -50,8 +45,26 @@ NO_SE_DETECTA = {"skill-pdf"}  # se informa, sin comprobar
 DE_LA_CARPETA = {"devmcp", "appian-mcp-server"}
 
 
+_extractor = None
+
+
+def extractor():
+    """devmcp_extract de ingeniería inversa, con el que la configuración MCP se busca como la busca el extractor; None
+    con un Python demasiado antiguo para él. Se importa al usarlo (lleva asyncio): --breve mira antes la marca."""
+    global _extractor
+    if _extractor is None:
+        sys.path.append(str(SKILLS / "appian-reverse-engineering" / "scripts"))
+        try:
+            import devmcp_extract
+            _extractor = devmcp_extract
+        except Exception:  # noqa: BLE001 - un Python demasiado antiguo para el extractor: se dice que falta Python
+            _extractor = False
+    return _extractor or None
+
+
 def carpeta_personal() -> Path:
-    return dx.home_dir() if dx else Path(os.environ.get("APPIAN_RE_HOME") or Path.home())
+    """La misma que devmcp_extract.home_dir(), sin importarlo."""
+    return Path(os.environ.get("APPIAN_RE_HOME") or Path.home())
 
 
 def sistema() -> str:
@@ -179,11 +192,13 @@ def _servidores():
     """Los servidores MCP configurados para esta carpeta, como los encuentra el extractor."""
     global _entradas
     if _entradas is None:
+        dx = extractor()
         _entradas = dx.server_entries(Path.cwd(), []) if dx else []
     return _entradas
 
 
 def _hosts_devmcp():
+    dx = extractor()
     hosts = set()
     for _f, _n, e in _servidores():
         if dx.is_devmcp(e):
@@ -194,6 +209,7 @@ def _hosts_devmcp():
 
 
 def _devmcp():
+    dx = extractor()
     for f, n, e in _servidores():
         if dx.is_devmcp(e):
             return True, f"{n} ({f})"
@@ -204,6 +220,7 @@ def _appian_mcp_server():
     """Está si hay un http <entorno del Dev MCP>/mcp. Si no, otro servidor http que no sea el MCP de documentación
     puede serlo (otra URL, sin Dev MCP configurado): no se puede comprobar, y ingeniería inversa lo usa si se le pasa
     con --mcp-server-name. Sin ninguno, falta."""
+    dx = extractor()
     hosts = _hosts_devmcp()
     otros = []
     for f, n, e in _servidores():
