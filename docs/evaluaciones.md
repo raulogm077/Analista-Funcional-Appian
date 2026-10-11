@@ -119,6 +119,15 @@ con errores, ningún Word ni captura regenerados. **Coste: 34, 34 y 47 llamadas 
 - Retoque: un cambio de texto sobre algo construido sigue costando ~30 llamadas. Medir de nuevo con el plugin instalado
   y, si sigue por encima, un camino corto para un punto sin aprobación (informe y aplicación en un paso).
 
+### Cierre de la 0.7.0-beta.2
+
+`comprobar_plugin.py --completo` en verde en el repositorio y sobre el paquete descomprimido en una carpeta con espacios (177 ficheros, sin pruebas, docs ni cachés). CI en verde en Windows, macOS y Linux con Python 3.9 y 3.12, también con la consola en cp1252.
+
+Lo aprendido:
+- Mirar el CI tras cada subida: el Windows con consola cp1252 falló desde G0 (las pruebas de las evaluaciones escribían ✔ y 🔒 sin pasar la consola a UTF-8) y no se vio hasta G6.
+- Las evaluaciones a ciegas encuentran lo que las pruebas no: «desatendida: nunca» bloqueaba un cierre con el visto bueno del jefe de proyecto en el propio encargo, y la fecha del pase no era la del pase.
+- El coste de un retoque depende tanto del método como de cómo edita el modelo (34 frente a 47 llamadas con el mismo método): medirlo con varias pasadas.
+
 ## F9 · Cierre (9 de octubre de 2026)
 
 Rama `f9-cierre`, de `main` d9503a6 al merge. Versión 0.7.0-beta.1.

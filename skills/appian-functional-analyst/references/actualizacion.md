@@ -57,7 +57,7 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
    | COMPLETA | Añade detalle sin contradecir | Se añade a la pieza con su cita | No |
    | CONFIRMA | Ratifica algo ⚠️, 🔶 o ❓ | Pasa a ✅ y suma la cita | No |
    | VALIDA | El cliente lo aprueba por escrito o en la revisión del DF | Pasa a 🔒 | Sí (una por bloque) |
-   | CAMBIA | Contradice una decisión anterior | Se reescribe la pieza; lo anterior va a «Antes». Si era 🔒 y lo aprueba el cliente, sigue 🔒 con la cita; si solo el equipo, ✅ | Sí |
+   | CAMBIA | Contradice una decisión anterior | Se reescribe la pieza; lo anterior va a «Antes». Si era 🔒 y lo aprueba el cliente (una fuente suya que lo apruebe; pedirlo en una reunión o una demo no basta), sigue 🔒 con la cita; si solo el equipo, ✅ | Sí |
    | ANULA | Deja de hacerse algo que tiene ID | Se tacha: `Anulada por D-nn` | Sí |
    | RESPONDE | Contesta un PC entero | Se aplica; el PC se tacha: `Respondida por D-nn` | Sí |
    | ALCANCE+ / ALCANCE− | Entra o sale funcionalidad | Funcional §1 y piezas nuevas o anuladas | Sí |
