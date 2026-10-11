@@ -109,11 +109,15 @@ PDF.
   `.github/`, `.claude/`), ni `.git`, cachés u otros `.plugin`:
   `zip -r appian-analisis-funcional.plugin . -x ".git/*" ".github/*" ".claude/*" "docs/*" "pruebas/*" "CLAUDE.md" "*__pycache__*" "*.pytest_cache*" "*.plugin"`
   o, igual y también en Windows, `python3 pruebas/empaquetar.py` (lo deja junto a la carpeta del repositorio).
-- **Claude Code**: el repositorio es también un marketplace.
+- **Claude Code**: el repositorio es también un marketplace. Hace falta git en el equipo, porque Claude Code
+  descarga el plugin con él.
   ```bash
   claude plugin marketplace add <ruta o URL git del repositorio>
   claude plugin install appian-analisis-funcional@appian-analisis-funcional
   ```
+  Para que las versiones nuevas lleguen solas: `/plugin` → Marketplaces → `appian-analisis-funcional` →
+  **Enable auto-update** (viene desactivado). Sin él, `/plugin marketplace update appian-analisis-funcional`.
+  Una versión llega cuando cambia `version` en `.claude-plugin/plugin.json`.
 
 **Retirar las skills sueltas**: si la organización tenía `appian-functional-analyst`,
 `appian-prototipos-<cliente>` (hoy `appian-prototipos`) o `appian-best-practices` como skills
