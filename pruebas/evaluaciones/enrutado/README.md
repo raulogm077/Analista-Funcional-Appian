@@ -41,9 +41,9 @@ el enunciado con las seis y valen como respuesta. Son 13 peticiones, con las pal
 Word, DF): una maqueta para enseñar o validar es de prototipos y el SAIL para pegar, de `appian-sail-generator`; el DF
 en Word lo genera el analista y un Word suelto, `docx`; construir un evolutivo es de buenas prácticas y una incidencia
 urgente la registra el analista. `python3 puntuar.py --enunciado --vecinas` y
-`python3 puntuar.py respuestas-vecinas.json --vecinas`. La descripción de `appian-sail-generator` es la de su 2.3.2, que
-dice su frontera con prototipos y buenas prácticas. `vecinas/ocultas.json` trae 10 peticiones más de esa frontera, que
-no ve quien ajusta las descripciones: `--vecinas-ocultas`, igual que `--vecinas`.
+`python3 puntuar.py respuestas-vecinas.json --vecinas`. La descripción de `appian-sail-generator` es la de su 2.3.1, la
+publicada. `vecinas/ocultas.json` trae 10 peticiones más de esa frontera, que no ve quien ajusta las descripciones:
+`--vecinas-ocultas`, igual que `--vecinas`.
 
 ## Cómo se hace
 

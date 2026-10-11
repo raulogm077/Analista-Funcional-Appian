@@ -45,6 +45,8 @@ Un agente que no había visto el trabajo revisó la rama: nada grave. Corregido:
 `vecinas.json` con la descripción de `appian-sail-generator` 2.3.2 (su frontera con prototipos y buenas prácticas):
 visibles **13/13** y las 10 ocultas nuevas (`vecinas/ocultas.json`, `--vecinas-ocultas`) **10/10**. Las seis
 descripciones del plugin no cambian en esta versión: el resto de lotes no se repite.
+Raúl no publica la 2.3.2 (desactiva `appian-sail-generator` en su cuenta): `vecinas.json` vuelve a la descripción
+publicada, la 2.3.1, y con ella también salen **13/13** y **10/10**. El plugin marca la frontera por sí solo.
 
 ### El recién llegado (Tarea 9), con la versión actual
 
