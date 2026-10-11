@@ -4,6 +4,58 @@ Resultados de las evaluaciones de los planes de `docs/plan/` y, al cerrar cada
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 
+## 0.7.0-beta.2 · G7 · Evaluaciones finales (11 de octubre de 2026)
+
+Rama `g7-evaluaciones`, de `v0.7.0-beta.2` 4fe7338. Se pasan a ciegas, con las skills y los puntuadores tal como están,
+las ocultas del enrutado y las tres evaluaciones del analista que más ha cambiado la versión. «Evolutivo con urgencia» y
+la prueba de coste se midieron en G5 con este método y no se repiten.
+
+**Cómo se pasaron.** Cada agente es un `claude -p` nuevo con una copia del paquete (`pruebas/empaquetar.py`, 177
+ficheros), sin la herramienta Skill (lee los `SKILL.md`), sin CLAUDE.md ni ajustes (`--restricted
+--setting-sources ""`), con la lectura de `pruebas/`, `docs/` y `skills/` del repositorio denegada y Bash limitado a
+`python3` y `node` sobre la copia (y `uv run` en ingeniería inversa). El entorno solo deja lanzar agentes con herramientas desde la carpeta del
+repositorio: la copia y los proyectos estuvieron en una carpeta ignorada dentro de ella y al terminar pasaron a
+`$PROYECTOS_PRUEBA`. Los registros de cada sesión confirman que ninguno abrió `pruebas/` ni `docs/`. Analista e
+ingeniería inversa, con Opus; el enrutado, con el modelo por defecto de `claude -p`.
+
+| Evaluación | Resultado | Umbral | Pasa |
+|---|---|---|---|
+| Enrutado, ocultas (tres pasadas) | 10/10 ×3 | todas | sí |
+| Incoherencias | 10/10 y 3/3; ninguna aplicada, ninguna coincidencia como cambio | todas (las dos salen 0) | sí |
+| Demo | 6/6 y 6/6 | las dos salen 0 | sí |
+| Evolutivo | 10/10 y 3/3; `comprobar.py` sin errores | 8 de 10 y 3 de 3 | sí |
+
+- **Enrutado.** Las descripciones finales de G6 con las 10 ocultas, que no se habían pasado: un agente sin herramientas
+  por pasada, desde una carpeta vacía.
+- **Incoherencias** (`AYC-incoherencias/`, 75 turnos). El DF entra como 1.0 con sus IDs y cada reunión tiene su
+  informe, con las 13 diferencias «Sí (🔒)» y «Pendiente». La versión sube a 1.1 solo por un COMPLETA que no pedía
+  aprobación (R2).
+- **Demo** (`PRE-demo/`). Aplica los cuatro retoques, deja PAN-02 y PAN-05 pendientes y pide aprobación. Con «Aplica el
+  de la solicitud; el de entregar y recoger, de momento no» cataloga la respuesta como aprobación (FU-04, R1), cambia
+  PAN-02 y no toca PAN-05. En la ronda oculta cambia solo PAN-03.
+- **Evolutivo** (`MNT-evolutivo/`). Primero la 1.0 de toda la aplicación desde `as-is/` (12 historias, 11 pantallas y 3
+  procesos, E1); después la reunión como 1.1 en la unidad EV-01, con §13 objeto a objeto, y el aviso del hallazgo Alta
+  de lo que se modifica. En la oculta, la consulta del ERP pasa a una ficha INT con criterios en vez de una historia (R6).
+- **El `as-is/` de MNT** no estaba en este equipo: lo generó un agente a ciegas con ingeniería inversa contra el
+  simulador (`mock_devmcp/`, `MOCK_APP=fixture_mal_hecha`, con el Dev MCP y el Appian MCP Server) en 40 minutos: 44
+  objetos, 39 hallazgos, `comprobar_asis.py` con 0 errores y un aviso (11 pasa de su presupuesto de palabras) y
+  `evidencia.py` bien. Está en `MNT/`. No se pasó la evaluación del recién llegado (sus preguntas).
+- **Puntuadores.** Ninguno choca con el método nuevo: el de evolutivo lee la Situación de §13, no un «Origen» en las
+  historias, y los de incoherencias y demo leen los informes y no dependen de que la versión suba (sin `versiones/v1.0`,
+  buscan lo aplicado en el texto).
+
+### Lo que salió
+
+- **R4 en la demo.** El cambio de PAN-02 lo aprobó el equipo (FU-04, «De: analista del proyecto») y la pantalla sigue 🔒
+  porque «lo pidió el almacén en la demo»; `proyecto.py estado` la sigue dando por validada por el cliente. Según R4 (y
+  el plan: un CAMBIA aprobado por el jefe de proyecto pasa a ✅ y el cliente valida después) tendría que pasar a ✅. La
+  fila CAMBIA de `skills/appian-functional-analyst/references/actualizacion.md` dice «si lo aprueba el cliente» sin
+  decir qué es aprobarlo. Corrección propuesta, sin aplicar: «Si era 🔒 y lo aprueba el cliente (una fuente suya que lo
+  apruebe: pedirlo en una reunión o en una demo no basta), sigue 🔒 con la cita; si lo aprueba el equipo, ✅». No cambia
+  la puntuación.
+- Con Bash limitado, los agentes probaron `echo`, `python3 -c` y órdenes encadenadas, y las rehicieron: es fricción del
+  montaje, no del plugin.
+
 ## 0.7.0-beta.2 · G6 (11 de octubre de 2026)
 
 ### Enrutado con vecinas (tarea 6.6)
