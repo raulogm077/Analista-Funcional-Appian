@@ -214,6 +214,10 @@ def test_extract_solo(project):
     assert por[OBJS["RT_SOL"]["uuid"]]["detail"] == "full"
     rep = project.load("extraction_report.json")
     assert rep["solo"] == ["DEM_Dashboard"] and "getRecordType" in rep["toolsUsed"]
+    # usadas más omitidas son el catálogo también al reextraer unos pocos (lo cuenta INVENTARIO)
+    catalogo = {t["name"] for t in project.load("mcp_catalog.json")["tools"]}
+    omitidas = {t["name"] for t in rep["toolsOmitted"]}
+    assert not set(rep["toolsUsed"]) & omitidas and set(rep["toolsUsed"]) | omitidas == catalogo
     assert any((d["tool"], d["type"]) == ("validateDesignObject", "constant") for d in rep["disabledAfterProbe"])
     # la fecha de la extracción es la de la completa; la reextracción va aparte
     assert rep["startedAt"] == completa and rep["reextraidoEn"] >= completa
@@ -317,3 +321,18 @@ def test_ids_estables_al_reextraer(project):
     corre("build_registry.py", salida)
     ids = {h["titulo"]: h["id"] for h in json.loads((trabajo / "hallazgos" / "process-modeler.json").read_text("utf-8"))}
     assert ids == {"Sin ejecuciones en el último año": "H-PRO-01", "El batch no controla los errores": "H-PRO-04"}, ids
+
+
+def test_omitidas_con_su_motivo():
+    """Una herramienta del catálogo sin llamadas sale en toolsOmitted con su motivo: el del plan, que solo había objetos
+    no pedidos con --solo (notRequested) o que no aplicaba a ninguno (notApplicable). Usadas más omitidas, el catálogo."""
+    sys.path.insert(0, str(SCRIPTS))
+    import devmcp_extract as dx
+    from types import SimpleNamespace as N
+    ex = N(tools=[N(name=n) for n in ("a", "b", "c", "d", "e")],
+           stats={"a": {"ok": 3}, "c": {"notRequested": 2}, "d": {"notApplicable": 4}, "e": {}})
+    plan = {"tools": [{"name": "a", "use": True}, {"name": "b", "use": False, "reason": "Escribe."},
+                      {"name": "c", "use": True}, {"name": "d", "use": True}, {"name": "e", "use": True}]}
+    om = {t["name"]: t["reason"] for t in dx.omitidas(ex, plan)}
+    assert dx.usadas(ex) == ["a"] and set(om) == {"b", "c", "d", "e"}
+    assert om["b"] == "Escribe." and "--solo" in om["c"] and "No aplicaba" in om["d"] and om["e"]

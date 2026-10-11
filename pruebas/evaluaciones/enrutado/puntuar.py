@@ -2,13 +2,14 @@
 """Prueba de enrutado: el enunciado para el agente que enruta y la puntuación de sus respuestas.
 
 Uso:
-  python3 puntuar.py --enunciado [--ocultas | --fronteras | --vecinas]   # las descripciones y las peticiones
-  python3 puntuar.py <respuestas.json> [--ocultas | --fronteras | --vecinas]
+  python3 puntuar.py --enunciado [--ocultas | --fronteras | --vecinas | --vecinas-ocultas]   # descripciones y peticiones
+  python3 puntuar.py <respuestas.json> [--ocultas | --fronteras | --vecinas | --vecinas-ocultas]
 
 Las peticiones visibles están en pruebas/enrutado.json, las ocultas en ocultas/enrutado.json, las de las fronteras
 (los solapes más probables, sin las palabras que delatan la skill) en fronteras/enrutado.json y las de las vecinas (la
 frontera con skills de fuera del plugin que el usuario puede tener a la vez, como appian-sail-generator o docx) en
-vecinas/enrutado.json, las cuatro con el formato [{"peticion": "…", "skill": "…"}]. Con --vecinas, las descripciones
+vecinas/enrutado.json (y, sin enseñarlas a quien ajusta las descripciones, en vecinas/ocultas.json), todas con el
+formato [{"peticion": "…", "skill": "…"}]. Con --vecinas o --vecinas-ocultas, las descripciones
 de vecinas.json ([{"skill", "descripcion"}], tal cual las ve el modelo) van con las seis en el enunciado y sus skills
 valen como respuesta. Las respuestas tienen el mismo formato y el mismo orden, una por petición y con la petición
 copiada tal cual. Vale la skill con el prefijo de su plugin («appian-analisis-funcional:appian-…»).
@@ -34,6 +35,7 @@ VISIBLES = REPO / "pruebas" / "enrutado.json"
 OCULTAS = AQUI / "ocultas" / "enrutado.json"
 FRONTERAS = AQUI / "fronteras" / "enrutado.json"
 VECINAS = AQUI / "vecinas" / "enrutado.json"
+VECINAS_OCULTAS = AQUI / "vecinas" / "ocultas.json"
 DESCRIPCIONES_VECINAS = AQUI / "vecinas.json"
 SKILLS = PLUGIN / "skills"
 
@@ -124,21 +126,25 @@ def main() -> int:
     lote.add_argument("--fronteras", action="store_true", help="las peticiones de las fronteras en vez de las visibles")
     lote.add_argument("--vecinas", action="store_true",
                       help="las peticiones de la frontera con las skills de vecinas.json, que van en el enunciado")
+    lote.add_argument("--vecinas-ocultas", action="store_true",
+                      help="como --vecinas, con las peticiones ocultas de esa frontera")
     ap.add_argument("--enunciado", action="store_true", help="imprime lo que recibe el agente que enruta")
     a = ap.parse_args()
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8", errors="replace")
     if bool(a.enunciado) == bool(a.respuestas):
         ap.error("o --enunciado o un fichero de respuestas")
-    esperado = OCULTAS if a.ocultas else FRONTERAS if a.fronteras else VECINAS if a.vecinas else VISIBLES
-    faltan = [str(p) for p in (esperado, Path(a.respuestas or esperado), *([DESCRIPCIONES_VECINAS] if a.vecinas else []))
+    con_vecinas = a.vecinas or a.vecinas_ocultas
+    esperado = (OCULTAS if a.ocultas else FRONTERAS if a.fronteras else VECINAS if a.vecinas
+                else VECINAS_OCULTAS if a.vecinas_ocultas else VISIBLES)
+    faltan = [str(p) for p in (esperado, Path(a.respuestas or esperado), *([DESCRIPCIONES_VECINAS] if con_vecinas else []))
               if not p.is_file()]
     if faltan:
         print("No encuentro: " + ", ".join(faltan), file=sys.stderr)
         return 2
     try:
         esperadas = lee_lista(esperado)
-        otras = vecinas() if a.vecinas else []
+        otras = vecinas() if con_vecinas else []
         if a.enunciado:
             print(enunciado(esperadas, otras), end="")
             return 0
@@ -157,7 +163,8 @@ def main() -> int:
             otra = elegida if elegida in validas else f"«{elegida}» (no es una de las skills)"
             print(f"FALLO {k:2d} esperada {esperada}, elegida {otra}: {peticion}")
     print(f"Total: {bien}/{len(filas)}" + (" (ocultas)" if a.ocultas else " (fronteras)" if a.fronteras
-                                           else " (vecinas)" if a.vecinas else ""))
+                                           else " (vecinas)" if a.vecinas else " (vecinas ocultas)" if a.vecinas_ocultas
+                                           else ""))
     return 0 if bien == len(filas) else 1
 
 

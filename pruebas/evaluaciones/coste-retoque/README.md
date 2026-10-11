@@ -61,29 +61,30 @@ evita que pase sin hacer el cambio. Criterio: la puntuación sale 0.
 
 ## El tope: 25 llamadas
 
-Fijado antes de medir, con el camino más corto que sigue el método (`SKILL.md`, `actualizacion.md` y `cambios.md`):
+Fijado antes de medir (0.7.0-beta.2) y no se cambia. El camino corto de un retoque (`actualizacion.md`, «Camino corto»,
+desde la 0.7.0-beta.3) lo deja así:
 
 | Paso | Llamadas |
 |---|---|
 | Cargar la skill y `proyecto.py estado` | 2 |
-| Leer `actualizacion.md` y, como `estado` lista unidades en curso, `cambios.md` | 2 |
+| Leer `actualizacion.md` (su «Camino corto» cubre las unidades: `cambios.md` no hace falta) | 1 |
 | Catalogar el correo (`leer_fuentes.py`) y leerlo | 2 |
 | `proyecto.py cambio … EV-03 abrir`: `EV-02` está Aprobada, y una fuente nueva para ella la devolvería a aprobación | 1 |
-| `indice.py ficha PAN-01 --lineas` e `indice.py impacto PAN-01 --cambio EV-03` (las señales «Construido · En curso») | 2 |
-| Escribir el informe y `comprobar.py --impacto` | 2 |
-| `proyecto.py copia` | 1 |
-| Funcional: PAN-01 y la versión | 2 |
-| Técnico: la versión, §7 y la fila de §13 | 3 |
-| `decisiones.md` (la versión y la D del CAMBIA) y `proyecto.md` | 3 |
-| Cerrar el informe («Estado» y «Aplicado») y `comprobar.py --anterior --impacto --fuentes` | 2 |
-| **Total** | **22** |
+| `indice.py ficha PAN-01 --lineas` e `indice.py impacto PAN-01 --cambio EV-03` (las señales y la fila de §13) | 2 |
+| `proyecto.py version … --decision CAMBIA …`: la copia, la 1.2 en los dos, la fila de la versión, la D-01 y la fuente en `proyecto.md` | 1 |
+| Funcional: leer el tramo de PAN-01 y editarlo (la herramienta de edición pide leer antes) | 2 |
+| Técnico: leer el tramo de §7 a §13 y editar §7 y la fila de §13 | 3 |
+| El informe, ya aplicado, de una vez | 1 |
+| `comprobar.py --anterior --impacto --fuentes` | 1 |
+| **Total** | **16** |
 
-`prueba_puntuar.py` recorre este camino con las órdenes del plugin y comprueba que son 22 llamadas y que las dos pasadas
-de `comprobar.py` salen sin errores. El tope deja 3 de margen para lo razonable que no está en esa cuenta:
-`requisitos.py` al empezar, `indice.py resumen`, una búsqueda más o leer una plantilla. Lo que ya no cabe es lo que 3.0
-quita: regenerar el Word, el prototipo o las capturas, escribir una DT, presentar puntos para aprobarlos, leer el
-funcional o el técnico enteros o dar una vuelta de correcciones a `comprobar.py`. Cada uno suma de 2 a 10 llamadas. Las 22
-son los ~10 pasos que el plan calcula en 3.0 para este retoque, a dos llamadas por paso.
+`prueba_puntuar.py` recorre este camino con las órdenes del plugin y comprueba que son 16 llamadas y que la pasada de
+`comprobar.py` sale sin errores. El tope deja 9 de margen para lo razonable que no está en esa cuenta:
+`requisitos.py` al empezar, `indice.py resumen`, leer `cambios.md`, una búsqueda más o leer una plantilla. Lo que ya no
+cabe es lo que 3.0 quita: regenerar el Word, el prototipo o las capturas, escribir una DT, presentar puntos para
+aprobarlos, leer el funcional o el técnico enteros o dar una vuelta de correcciones a `comprobar.py`. Cada uno suma de
+2 a 10 llamadas. En la 0.7.0-beta.2, con el camino entero (22 llamadas como mínimo), las tres pasadas costaron 34, 34
+y 47 (`docs/evaluaciones.md`).
 
 ## Lo que no mide
 

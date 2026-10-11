@@ -4,10 +4,10 @@
 Primero monta el proyecto con ../evolutivo-urgencia/montar.py y el correo de esta prueba (con el plugin de
 PLUGIN_A_PROBAR) y comprueba el propio caso: PAN-01 construida en EV-01, validada por el equipo y no por el cliente
 (✅, no 🔒), sin unidad en curso que la toque (`indice.py ficha` lo dice), `DEM_Dashboard` fuera de EV-02, una interfaz que
-no pide DT, y un correo que pide justo ese texto. Después recorre sobre una copia el camino más corto del método con las
-órdenes de ahora (estado, catalogar, abrir EV-03, ficha e impacto --cambio EV-03, informe, comprobar.py --impacto,
-copia, funcional, técnico §7 y §13, decisiones, proyecto.md, informe aplicado y comprobar.py --anterior --impacto),
-contando las llamadas como el README: tienen que ser las 22 que cuenta, dentro del tope, y sin ninguna pasada de
+no pide DT, y un correo que pide justo ese texto. Después recorre sobre una copia el camino corto de un retoque
+(actualizacion.md, «Camino corto») con las órdenes de ahora (estado, catalogar, abrir EV-03, ficha e impacto --cambio
+EV-03, version con la fila D, funcional, técnico §7 y §13, el informe ya aplicado y comprobar.py --anterior --impacto),
+contando las llamadas como el README (también leer antes lo que se edita): tienen que ser las 16 que cuenta, dentro del tope, y sin ninguna pasada de
 comprobar.py con errores. Después, variantes que no deben pasar, y mira la salida de puntuar.py."""
 from __future__ import annotations
 
@@ -77,17 +77,18 @@ def editar(ruta: Path, viejo: str, nuevo: str):
     ruta.write_text(t.replace(viejo, nuevo, 1), encoding="utf-8")
 
 
-LEIDOS = 4    # lo que el agente lee sin script: la skill, actualizacion.md, cambios.md y el correo catalogado
-MINIMO = 22   # el camino más corto que cuenta el README («El tope: 25 llamadas»)
+LEIDOS = 5    # lo que el agente lee sin script: la skill, actualizacion.md, el correo catalogado y, antes de editarlos,
+              # el tramo del funcional y el del técnico (la herramienta de edición pide leer antes)
+MINIMO = 16   # el camino corto que cuenta el README («El tope: 25 llamadas»)
 CAMINO = {}   # carpeta → {"llamadas": n, "salidas": {orden: salida}, "comprobar_con_errores": k} del camino simulado
 
 
 def retoque(p: Path, aplicar=True, requiere="—", decision="✔", unidad="EV-03", dt=False) -> Path:
-    """El camino más corto del método, con las órdenes de ahora y en su orden, contando las llamadas como el README:
-    estado, catalogar el correo, abrir EV-03, ficha e impacto --cambio EV-03 de PAN-01, el informe y comprobar.py
-    --impacto, la copia, PAN-01 y la versión en el funcional, la versión, §7 y la fila «Modifica» de §13 en el técnico,
-    decisiones.md (versión y D-01, es un CAMBIA), proyecto.md, el informe cerrado y comprobar.py --anterior --impacto.
-    Con aplicar=False, solo el informe pendiente. Lo que cuenta queda en CAMINO[p]."""
+    """El camino corto de un retoque, con las órdenes de ahora y en su orden, contando las llamadas como el README:
+    estado, catalogar el correo, abrir EV-03, ficha e impacto --cambio EV-03 de PAN-01, version (la copia, la 1.2 en los
+    dos, la fila de la versión, la D-01 del CAMBIA y la fuente en proyecto.md), PAN-01 en el funcional, §7 y la fila
+    «Modifica» de §13 en el técnico, el informe ya aplicado y comprobar.py --anterior --impacto. Con aplicar=False,
+    solo el informe pendiente (el camino entero, parado en la aprobación). Lo que cuenta queda en CAMINO[p]."""
     camino = CAMINO.setdefault(p, {"llamadas": LEIDOS, "salidas": {}, "comprobar_con_errores": 0})
 
     def script(nombre, *args, puede_fallar=False):
@@ -116,32 +117,22 @@ def retoque(p: Path, aplicar=True, requiere="—", decision="✔", unidad="EV-03
     camino["salidas"]["ficha"] = script("indice.py", "ficha", p, "PAN-01", "--lineas")
     camino["salidas"]["impacto"] = script("indice.py", "impacto", p, "PAN-01", "--cambio", unidad)
     pedida = "ninguno" if requiere == "—" else "punto 1"
-    informe(estado="pendiente", aprobacion=pedida, requiere=requiere, decision=decision, aplicado="")
     if not aplicar:
+        informe(estado="pendiente", aprobacion=pedida, requiere=requiere, decision=decision, aplicado="")
         return p
-    script("comprobar.py", p, "--impacto", p / "impacto" / "FU-05.md", "--fuentes", p / "fuentes", puede_fallar=True)
-    script("proyecto.py", "copia", p)
+    camino["salidas"]["version"] = script(
+        "proyecto.py", "version", p, "--fuente", "FU-05", "--que", "El botón del panel se llama «Pedir material»",
+        "--decision", "CAMBIA", "PAN-01", "El botón del panel para empezar una solicitud se llama «Pedir material»",
+        "«Nueva solicitud» [FU-01 00:06:40]")
     a = p / "analisis"
     edita(a / "funcional.md", ("| Botón «Nueva solicitud» | Empezar una solicitud en PAN-02 | Gestor |",
                                "| Botón «Pedir material» | Empezar una solicitud en PAN-02 | Gestor <!-- ✅ FU-05 --> |"))
-    edita(a / "funcional.md", ("Versión: 1.1", "Versión: 1.2"))
-    edita(a / "tecnico.md", ("Versión: 1.1", "Versión: 1.2"))
     edita(a / "tecnico.md", ("botón «Nueva solicitud» que abre", "botón «Pedir material» que abre"))
     edita(a / "tecnico.md", ("| 8 | `DEM_SolicitudForm` | Interfaz | Modifica | — | EV-02 |",
                              "| 8 | `DEM_SolicitudForm` | Interfaz | Modifica | — | EV-02 |\n"
                              f"| 9 | `DEM_Dashboard` | Interfaz | Modifica | — | {unidad if unidad != 'EV-01' else ''} |"))
     if dt:
         edita(a / "tecnico.md", ("## 3. Modelo de datos", DT))
-    edita(a / "decisiones.md", ("DF del cambio EV-02 entregado 2026-10-02 |",
-                                "DF del cambio EV-02 entregado 2026-10-02 |\n| 1.2 | 2026-10-08 | El botón del panel "
-                                "para empezar una solicitud se llama «Pedir material» | FU-05 | — |"))
-    edita(a / "decisiones.md", ("|---|---|---|---|---|---|---|---|",
-                                "|---|---|---|---|---|---|---|---|\n| D-01 | 2026-10-08 | FU-05 | CAMBIA | El botón del "
-                                "panel para empezar una solicitud se llama «Pedir material» | «Nueva solicitud» "
-                                "[FU-01 00:06:40] | PAN-01 | Sí |"))
-    edita(p / "proyecto.md", ("| FU-04 | 2026-10-05 |",
-                              "| FU-05 | 2026-10-08 | Correo de Servicios generales: texto del botón del panel | "
-                              "impacto/FU-05.md | 1.2 |\n| FU-04 | 2026-10-05 |"))
     informe(estado="aplicado en 1.2", aprobacion=pedida, requiere=requiere, decision=decision,
             aplicado="Versión 1.2: PAN-01 modificada · nueva: D-01")
     script("comprobar.py", p, "--fuentes", p / "fuentes", "--anterior", p / "versiones" / "v1.1", "--impacto",
@@ -168,9 +159,9 @@ def comprobar_caso(base: Path, p_bien: Path) -> list[str]:
         mal.append("el correo no pide el texto nuevo del botón «Nueva solicitud»")
     if not (isinstance(E["tope_llamadas"], int) and E["tope_llamadas"] > 0):
         mal.append("tope_llamadas tiene que ser un número fijado")
-    # el camino más corto, con las órdenes de ahora: 22 llamadas (la cuenta del README), las dos pasadas de comprobar.py
-    # sin errores, estado con EV-02 Aprobada, e impacto --cambio EV-03 con «Posible petición de cambio» y sin pedir
-    # aprobación
+    # el camino corto, con las órdenes de ahora: 16 llamadas (la cuenta del README), la pasada de comprobar.py sin
+    # errores, estado con EV-02 Aprobada, impacto --cambio EV-03 con «Posible petición de cambio», sin pedir aprobación
+    # y con la fila de §13 que lleva DEM_Dashboard, y version con la 1.2
     camino = CAMINO[p_bien]
     if camino["llamadas"] != MINIMO or MINIMO > E["tope_llamadas"]:
         mal.append(f"el camino más corto son {camino['llamadas']} llamadas; el README cuenta {MINIMO} y el tope es "
@@ -182,6 +173,10 @@ def comprobar_caso(base: Path, p_bien: Path) -> list[str]:
     imp = camino["salidas"]["impacto"]
     if "Posible petición de cambio" not in imp or "Requiere: Sí" in imp:
         mal.append(f"indice.py impacto PAN-01 --cambio EV-03 no da «Posible petición de cambio» sin pedir aprobación:\n{imp}")
+    if f"| 9 | `{E['objeto']}` | Interfaz | Modifica | — | EV-03 |" not in imp:
+        mal.append(f"indice.py impacto PAN-01 --cambio EV-03 no da la fila de §13 de {E['objeto']}:\n{imp}")
+    if "Versión 1.2" not in camino["salidas"]["version"] or "D-01" not in camino["salidas"]["version"]:
+        mal.append(f"proyecto.py version no abre la 1.2:\n{camino['salidas']['version']}")
     ctx = un.Contexto(mo.Proyecto(p_bien))
     if ctx.puntos_construido("EV-03"):
         mal.append(f"cambiar {E['objeto']} pide «Cambio sobre lo construido»: {ctx.puntos_construido('EV-03')}")

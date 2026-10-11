@@ -4,6 +4,12 @@
   proyecto.py iniciar  <carpeta> --nombre "Solicitudes de autorización" [--cliente …] [--direccion …] [--tipo "evolutivo de X"]
   proyecto.py estado   <carpeta>     versión, cliente y marca, DF enviado, fuentes sin procesar, pendientes, pantallas
   proyecto.py copia    <carpeta>     guarda analisis/*.md en versiones/v<versión>/ antes de cambiarlo
+  proyecto.py version  <carpeta> --fuente FU-nn [FU-nn …] --que "…" [--informe impacto/URG-nn.md]
+                       [--decision CAMBIA PAN-01 "lo nuevo" "lo de antes [FU-01 00:12:30]" …]
+                                     antes de aplicar un informe que cambia el análisis: la copia, la versión +0.1 en
+                                     funcional y técnico, su fila en decisiones.md, cada fuente en «Fuentes procesadas»
+                                     y, con --decision (una por punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE, con
+                                     la primera fuente), su fila D
   proyecto.py entregar <carpeta> [--cambio EV-02]   el Word sale hacia el cliente: «DF entregado» (el de un cambio, en su
                                      fila de Versiones de decisiones.md) y el fichero en «Entregados»
   proyecto.py cambio   <carpeta> <EV-nn|URG-nn> <estado> [opciones]   una unidad de cambio (analisis/cambios.md):
@@ -164,9 +170,7 @@ def unidades(ctx):
         print(f"· impacto/{n}.md no dice «Cambio:» y hay varias unidades Abiertas: ¿de cuál es?")
 
 
-def copia(a):
-    raiz = pathlib.Path(a.carpeta)
-    m = mo.Proyecto(raiz)
+def _copia(raiz, m):
     v = m.version("F")
     if not v:
         sys.exit("funcional.md no tiene «Versión: x.y»")
@@ -176,7 +180,137 @@ def copia(a):
         f = m.analisis / nombre
         if f.exists():
             shutil.copy2(f, destino / nombre)
+    return v, destino
+
+
+def copia(a):
+    raiz = pathlib.Path(a.carpeta)
+    v, destino = _copia(raiz, mo.Proyecto(raiz))
     print(f"Copia de la versión {v[0]}.{v[1]} en {destino}. Al terminar: comprobar.py {raiz} --anterior {destino}")
+
+
+RX_VERSION = re.compile(r"(Versi[oó]n:\s*v?)(\d+)\.(\d+)")
+
+
+def anade_fila(texto, titulo, fila):
+    """Añade una fila al final de la tabla de la sección «## <titulo>» (tras su cabecera si está vacía)."""
+    lineas = texto.split("\n")
+    ini = next((i for i, l in enumerate(lineas) if l.strip() == f"## {titulo}"), None)
+    if ini is None:
+        return None
+    fin = next((i for i in range(ini + 1, len(lineas)) if lineas[i].startswith("## ")), len(lineas))
+    ultima = max((i for i in range(ini + 1, fin) if lineas[i].startswith("|")), default=None)
+    if ultima is None:
+        return None
+    return "\n".join(lineas[:ultima + 1] + [fila] + lineas[ultima + 1:])
+
+
+def que_es_fuente(e):
+    """«Qué es» de una fuente catalogada: su tipo y, si lo hay, el asunto («…») o de quién es («de Jefe de proyecto»)."""
+    tipo, detalle = str(e.get("tipo") or "Fuente"), str(e.get("detalle") or "")
+    asunto = re.search(r"«[^»]+»", detalle) if detalle.lower().startswith("correo") else None
+    if asunto:
+        return f"{tipo} {asunto.group(0)}"
+    if detalle.startswith("de "):
+        return f"{tipo} {detalle.split(',')[0]}"
+    return tipo
+
+
+def citada(ruta):
+    """La ruta tal cual o entre comillas si lleva espacios, para copiar la orden."""
+    return f'"{ruta}"' if " " in str(ruta) else str(ruta)
+
+
+def version(a):
+    """Abre la versión siguiente para aplicar el informe de una o varias fuentes: copia la actual (como copia), sube
+    0.1 la del funcional y la del técnico y escribe la fila de la versión en decisiones.md, las D de --decision y cada
+    fuente en «Fuentes procesadas» de proyecto.md. No toca ninguna pieza: las edita quien aplica el informe. Lo que no
+    puede escribir (falta la tabla) lo dice, para hacerlo a mano."""
+    m = mo.Proyecto(pathlib.Path(a.carpeta))
+    raiz = m.raiz
+    fuentes = list(dict.fromkeys(f.strip().upper() for f in a.fuente))
+    try:
+        cat = {f["id"]: f for f in json.loads((raiz / "fuentes" / "indice.json").read_text(encoding="utf-8"))
+               .get("fuentes", [])}
+    except (OSError, ValueError):
+        cat = {}
+    fuera = [f for f in fuentes if f not in cat]
+    if fuera:
+        sys.exit(f"{', '.join(fuera)} no está en fuentes/: catalógala antes con leer_fuentes.py")
+    proy, dec = raiz / "proyecto.md", m.ruta("D")
+    texto_p = proy.read_text(encoding="utf-8") if proy.exists() else ""
+    texto_d = dec.read_text(encoding="utf-8") if dec.exists() else ""
+    ya = {f[0]: f[-1] for f in tabla(texto_p, "Fuentes procesadas") if f}
+    for f in tabla(texto_d, "Versiones"):
+        for x in re.findall(r"FU-\d+", f[3] if len(f) > 3 else ""):
+            ya.setdefault(x, f[0])
+    repetidas = [f"{f} (versión {ya[f]})" for f in fuentes if f in ya]
+    if repetidas:
+        sys.exit(f"{', '.join(repetidas)} ya tiene versión: si sigues aplicándola, edita esa versión sin abrir otra (una "
+                 "fila D que falte, a mano con el formato de references/actualizacion.md §6)")
+    decisiones = a.decision or []
+    malas = [d[0] for d in decisiones if d[0].upper() not in mo.TIPOS_D]
+    if malas:
+        sys.exit(f"--decision {', '.join(malas)}: el tipo es uno de {', '.join(mo.TIPOS_D)}")
+    v, destino = _copia(raiz, m)
+    nueva = f"{v[0]}.{v[1] + 1}"
+    subidos, escrito, a_mano = [], [], []
+    for doc, nombre in (("F", "funcional"), ("T", "técnico")):
+        if doc not in m.docs or not m.version(doc):
+            continue   # técnico sin empezar
+        ruta = m.ruta(doc)
+        lineas = ruta.read_text(encoding="utf-8").split("\n")
+        i = next(i for i, l in enumerate(lineas[:20]) if RX_VERSION.search(l))
+        lineas[i] = RX_VERSION.sub(lambda x: f"{x.group(1)}{nueva}", lineas[i], count=1)
+        ruta.write_text("\n".join(lineas), encoding="utf-8")
+        subidos.append(nombre)
+    hoy = datetime.date.today().isoformat()
+    que = " ".join(a.que.split()).replace("|", "/")
+    nuevo_d = anade_fila(texto_d, "Versiones", f"| {nueva} | {hoy} | {que} | {', '.join(fuentes)} | — |")
+    if nuevo_d is None:
+        a_mano.append(f"la fila de la versión {nueva} en «## Versiones» de decisiones.md")
+    else:
+        escrito.append("su fila en decisiones.md")
+        texto_d = nuevo_d
+    ids_d = []
+    n = max([int(x) for f in tabla(texto_d, "Decisiones del cliente") for x in re.findall(r"^D-(\d+)", f[0])] or [0])
+    fecha_fu = str(cat[fuentes[0]].get("fecha", ""))[:10] or hoy
+    for tipo, afecta, nuevo_txt, antes in decisiones:
+        celdas = [" ".join(x.split()).replace("|", "/") for x in (tipo.upper(), nuevo_txt, antes, afecta)]
+        fila = (f"| D-{n + 1:02d} | {fecha_fu} | {fuentes[0]} | {celdas[0]} | {celdas[1]} | {celdas[2]} | {celdas[3]} "
+                "| Sí |")
+        nuevo_d = anade_fila(texto_d, "Decisiones del cliente", fila)
+        if nuevo_d is None:
+            a_mano.append(f"la D de {celdas[0]} {celdas[3]} en «## Decisiones del cliente» de decisiones.md")
+            continue
+        n += 1
+        texto_d = nuevo_d
+        ids_d.append(f"D-{n:02d}")
+    if ids_d:
+        escrito.append(f"{', '.join(ids_d)} en decisiones.md")
+    if texto_d != (dec.read_text(encoding="utf-8") if dec.exists() else ""):
+        dec.write_text(texto_d, encoding="utf-8")
+    informe = (a.informe or f"impacto/{fuentes[0]}.md").replace("\\", "/")
+    for fu in fuentes:
+        e = cat[fu]
+        fila = f"| {fu} | {str(e.get('fecha', ''))[:10]} | {que_es_fuente(e).replace('|', '/')} | {informe} | {nueva} |"
+        nuevo_p = anade_fila(texto_p, "Fuentes procesadas", fila)
+        if nuevo_p is None:
+            a_mano.append(f"{fu} en «## Fuentes procesadas» de proyecto.md")
+        else:
+            texto_p = nuevo_p
+    if texto_p and texto_p != (proy.read_text(encoding="utf-8") if proy.exists() else ""):
+        proy.write_text(texto_p, encoding="utf-8")
+        escrito.append(f"{', '.join(fuentes)} en «Fuentes procesadas» de proyecto.md")
+    print(f"Versión {nueva}: {' y '.join(subidos)} en {nueva}" + (f"; {'; '.join(escrito)}" if escrito else "")
+          + f". Copia de la {v[0]}.{v[1]} en {destino}.")
+    for x in a_mano:
+        print(f"· No hay dónde escribirla, añádela a mano: {x}")
+    filas_d = "" if ids_d else " y, si hay CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE, sus filas D"
+    print(f"Ahora: edita solo las piezas del informe (indice.py ficha --lineas){filas_d}; escribe {informe} con "
+          f"«Estado: aplicado en {nueva}» y verifica:")
+    print(f"  comprobar.py {citada(raiz)} --fuentes {citada(raiz / 'fuentes')} --anterior {citada(destino)} "
+          f"--impacto {citada(raiz / informe)}")
 
 
 def nombre_df(m, vs):
@@ -462,6 +596,14 @@ def main():
     s.set_defaults(f=iniciar)
     s = sub.add_parser("estado"); s.add_argument("carpeta"); s.set_defaults(f=estado)
     s = sub.add_parser("copia"); s.add_argument("carpeta"); s.set_defaults(f=copia)
+    s = sub.add_parser("version"); s.add_argument("carpeta"); s.set_defaults(f=version)
+    s.add_argument("--fuente", nargs="+", required=True, metavar="FU-nn", help="las fuentes del informe")
+    s.add_argument("--que", required=True, help="qué cambia, en una frase y en palabras del cliente (sale en el Word): "
+                                                 "la fila de la versión en decisiones.md")
+    s.add_argument("--informe", help="el informe, si no es impacto/<primera fuente>.md (una urgencia: impacto/URG-nn.md)")
+    s.add_argument("--decision", nargs=4, action="append", metavar=("TIPO", "AFECTA_A", "LO_NUEVO", "LO_DE_ANTES"),
+                   help="la fila D de un punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE±, con la primera fuente de "
+                        "--fuente; «lo de antes» con su cita")
     s = sub.add_parser("entregar"); s.add_argument("carpeta"); s.set_defaults(f=entregar)
     s.add_argument("--cambio", help="el DF de un cambio (df_docx.js --cambio): se anota en decisiones.md")
     s = sub.add_parser("cambio"); s.add_argument("carpeta"); s.add_argument("id"); s.set_defaults(f=cambio)

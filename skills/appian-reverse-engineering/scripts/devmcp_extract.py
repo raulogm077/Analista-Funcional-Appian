@@ -1120,6 +1120,7 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         "server": server_info(choice), "trustedMode": ex.trusted,
         "app": app_obj, "objectCount": len(objects), "objectsByType": plan["objectsByType"],
         "toolsUsed": usadas(ex),
+        "toolsOmitted": omitidas(ex, plan),
         "toolsExcluded": [{"name": t.name, "reason": t.safety_reason} for t in ex.tools if not t.allowed],
         "toolsManual": [{"name": t.name, "reason": t.scope_reason} for t in ex.tools
                         if t.allowed and t.scope == "manual"],
@@ -1171,9 +1172,32 @@ def inicio_anterior(plan: Path) -> str:
 
 
 def usadas(ex) -> list[str]:
-    """Las herramientas con alguna llamada en esta ejecución: correcta, reutilizada o fallida. Las que el plan no usó
-    (use: false en extraction_plan.json) son las demás del catálogo."""
+    """Las herramientas con alguna llamada en esta ejecución: correcta, reutilizada o fallida. Las demás del catálogo,
+    con su motivo, son las omitidas (omitidas())."""
     return sorted(n for n, st in ex.stats.items() if any(st.get(k) for k in bm.LLAMADAS))
+
+
+def omitidas(ex, plan: dict) -> list[dict]:
+    """Las herramientas del catálogo sin ninguna llamada, cada una con su motivo: el del plan si no la usaba (use: false)
+    o, si la usaba, por qué no hubo llamada (con --solo, de objetos no pedidos sin respuesta guardada; o no aplicaba a
+    ninguno de sus objetos). Usadas más omitidas son el catálogo, también con --solo."""
+    usa = set(usadas(ex))
+    del_plan = {t["name"]: t["reason"] for t in plan.get("tools", []) if not t.get("use")}
+    out = []
+    for t in sorted(ex.tools, key=lambda t: t.name):
+        if t.name in usa:
+            continue
+        st = ex.stats.get(t.name, {})
+        if t.name in del_plan:
+            motivo = del_plan[t.name]
+        elif st.get("notRequested"):
+            motivo = "Con --solo, solo para objetos no pedidos y sin respuesta guardada."
+        elif st.get("notApplicable"):
+            motivo = "No aplicaba a ninguno de los objetos de sus tipos."
+        else:
+            motivo = "Sin llamadas en esta extracción."
+        out.append({"name": t.name, "reason": motivo})
+    return out
 
 
 def por_rol(ex) -> dict:

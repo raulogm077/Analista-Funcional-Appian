@@ -235,6 +235,74 @@ def main():
         # G5: unidades de cambio, señales, técnico por unidad, derivados y urgentes
         pruebas_unidades(tmp)
 
+        # proyecto.py version: la copia, la versión +0.1 en funcional y técnico, su fila en decisiones.md y la fuente en
+        # «Fuentes procesadas»; una fuente sin catalogar o que ya tiene versión, error sin tocar nada
+        pv = tmp / "version"
+        shutil.copytree(EJEMPLO, pv)
+        (pv / "fuentes").mkdir()
+        (pv / "fuentes" / "indice.json").write_text(json.dumps({"fuentes": [
+            {"id": f"FU-0{i}", "fichero": f"f{i}.txt", "tipo": "Transcripción", "detalle": "8 intervenciones",
+             "fecha": "2026-09-03 10:00"} for i in (1, 2, 3)] + [
+            {"id": "FU-04", "fichero": "planos.eml", "tipo": "Correo", "detalle": "correo «Tamaño de los planos»",
+             "fecha": "2026-10-01 09:30"}]}), encoding="utf-8")
+        antes = {x: (pv / x).read_text(encoding="utf-8") for x in ("proyecto.md", "analisis/decisiones.md")}
+        for args, que in ((("FU-03",), "ya tiene versión"), (("FU-09",), "no está en fuentes")):
+            c, out = corre(S / "proyecto.py", "version", pv, "--fuente", *args, "--que", "x")
+            ok(f"proyecto.py version con {args[0]}: error «{que}» y nada tocado",
+               c != 0 and que in out and not (pv / "versiones").exists()
+               and all((pv / x).read_text(encoding="utf-8") == v for x, v in antes.items()), out)
+        c, out = corre(S / "proyecto.py", "version", pv, "--fuente", "FU-04", "--que", "Planos | hasta 30 MB")
+        pf, pt, pd, pp = ((pv / x).read_text(encoding="utf-8") for x in ("analisis/funcional.md", "analisis/tecnico.md",
+                                                                         "analisis/decisiones.md", "proyecto.md"))
+        ok("proyecto.py version: copia la 1.1, sube los dos a la 1.2, la fila de la versión y la fuente en proyecto.md",
+           c == 0 and (pv / "versiones" / "v1.1" / "funcional.md").exists() and "Versión: 1.2" in pf
+           and "Versión: 1.2" in pt and f"| 1.1 | 2026-09-24 | Plazos en días hábiles; recordatorio al organismo; se "
+           f"quita la urgencia | FU-03 | Analista, 2026-09-24 |\n| 1.2 | {hoy} | Planos / hasta 30 MB | FU-04 | — |" in pd
+           and "| FU-03 | 2026-09-23 | Seguimiento con la unidad gestora | impacto/FU-03.md | 1.1 |\n| FU-04 | 2026-10-01 | "
+               "Correo «Tamaño de los planos» | impacto/FU-04.md | 1.2 |" in pp
+           and "--anterior" in out and "impacto/FU-04.md" in out, out + pd + pp)
+        c, out = corre(S / "proyecto.py", "version", pv, "--fuente", "FU-04", "--que", "otra vez")
+        ok("proyecto.py version dos veces con la misma fuente: error, la versión sigue en 1.2",
+           c != 0 and "ya tiene versión" in out and "Versión: 1.2" in (pv / "analisis" / "funcional.md").read_text(encoding="utf-8"), out)
+        # sin «## Fuentes procesadas» en proyecto.md ni técnico con versión: lo dice, y solo nombra lo que sube
+        pv3 = tmp / "version a medias"
+        shutil.copytree(EJEMPLO, pv3)
+        shutil.copytree(pv / "fuentes", pv3 / "fuentes")
+        editar(pv3 / "proyecto.md", "## Fuentes procesadas", "## Otras fuentes")
+        editar(pv3 / "analisis" / "tecnico.md", "Versión: 1.1", "Revisión: 1.1")
+        c, out = corre(S / "proyecto.py", "version", pv3 / "analisis", "--fuente", "FU-04", "--que", "x")
+        ok("proyecto.py version (también con la carpeta analisis/): sin tabla de fuentes lo dice para hacerlo a mano y "
+           "sin versión en el técnico solo sube el funcional",
+           c == 0 and "Versión 1.2: funcional en 1.2" in out and "a mano: FU-04 en «## Fuentes procesadas»" in out, out)
+        pd2 = tmp / "version con decisiones"
+        shutil.copytree(EJEMPLO, pd2)
+        shutil.copytree(pv / "fuentes", pd2 / "fuentes")
+        c, out = corre(S / "proyecto.py", "version", pd2, "--fuente", "FU-04", "--que", "x",
+                       "--decision", "CAMBIO", "HU-07", "a", "b")
+        ok("proyecto.py version --decision con un tipo que no existe: error sin tocar nada",
+           c != 0 and "CAMBIO" in out and not (pd2 / "versiones").exists(), out)
+        c, out = corre(S / "proyecto.py", "version", pd2, "--fuente", "FU-04", "--que", "Planos de hasta 30 MB",
+                       "--decision", "CAMBIA", "HU-07", "Los planos, hasta 30 MB", "Hasta 20 MB [FU-01 00:20:10]",
+                       "--decision", "RESPONDE", "PC-03", "Lo firma el responsable", "—")
+        dd = (pd2 / "analisis" / "decisiones.md").read_text(encoding="utf-8")
+        ok("proyecto.py version --decision: una fila D por punto, numeradas tras las que hay, con la fecha y la fuente",
+           c == 0 and "| D-03 | 2026-10-01 | FU-04 | CAMBIA | Los planos, hasta 30 MB | Hasta 20 MB [FU-01 00:20:10] | "
+           "HU-07 | Sí |" in dd and "| D-04 | 2026-10-01 | FU-04 | RESPONDE | Lo firma el responsable | — | PC-03 | Sí |" in dd
+           and "D-03, D-04" in out, out + dd)
+
+        # el anexo «Quién puede hacer qué» que se queda viejo al renombrar una parte de una pantalla: aviso, no error
+        px = tmp / "anexo viejo"
+        shutil.copytree(EJEMPLO, px)
+        fx = px / "analisis" / "funcional.md"
+        parte = next(l for l in fx.read_text(encoding="utf-8").split("\n") if l.startswith("| Nueva solicitud |"))
+        editar(fx, parte, parte.replace("| Nueva solicitud |", "| Pedir autorización |", 1))
+        c, out = corre(S / "comprobar.py", px)
+        ok("comprobar.py: el anexo viejo tras renombrar una parte de una pantalla es aviso (derivadas --escribir)",
+           c == 0 and "· el anexo «Quién puede hacer qué» al día" in out, out)
+        corre(S / "indice.py", "derivadas", px, "--escribir")
+        c, out = corre(S / "comprobar.py", px)
+        ok("comprobar.py: con el anexo regenerado, sin aviso", "✓ el anexo «Quién puede hacer qué» al día" in out, out)
+
         # 4. Actualización con informe de impacto
         p = tmp / "autorizaciones"
         shutil.copytree(EJEMPLO, p)
@@ -1396,6 +1464,22 @@ def pruebas_unidades(tmp):
     ok("indice.py impacto: la señal por pieza, «Posible petición de cambio» y «Requiere: Sí (EV-02)» para copiarlas",
        c == 0 and "Construido: as-is · En curso: EV-02" in out and "Posible petición de cambio" in out
        and "Requiere: Sí (EV-02)" in out, out)
+    c, out = corre(S / "indice.py", "impacto", p, "PAN-01", "--cambio", "EV-03")
+    ok("indice.py impacto --cambio EV-03 de una pantalla construida: la fila de técnico §13 que lleva, con el objeto que "
+       "la implementa (el primero de su fila de §7), el siguiente paso y la unidad",
+       c == 0 and "Técnico §13" in out and "| 9 | `DEM_RevisionForm` | Interfaz | Modifica | — | EV-03 |" in out, out)
+    c, out = corre(S / "indice.py", "impacto", p, "PAN-01")
+    ok("indice.py impacto sin --cambio, con URG-01 y EV-03 Abiertas: la fila de §13 es de la única EV Abierta",
+       c == 0 and "| 9 | `DEM_RevisionForm` | Interfaz | Modifica | — | EV-03 |" in out and "de URG-01" not in out, out)
+    c, out = corre(S / "indice.py", "impacto", p, "HU-02", "--cambio", "EV-03")
+    ok("indice.py impacto de una historia construida: la fila de §13 con el objeto de la fila de su pantalla (PAN-02)",
+       c == 0 and "`DEM_SolicitudForm` | Interfaz | Modifica | — | EV-03 |" in out, out)
+    sin_t = tmp / "unidades sin técnico"
+    shutil.copytree(p, sin_t)
+    (sin_t / "analisis" / "tecnico.md").unlink()
+    c, out = corre(S / "indice.py", "impacto", sin_t, "PAN-01", "--cambio", "EV-03")
+    ok("indice.py impacto con unidades y sin técnico todavía: sin fila de §13 y sin fallar",
+       c == 0 and "Traceback" not in out and "Técnico §13" not in out, out)
     c, out = corre(S / "indice.py", "impacto", p, "HU-02", "--cambio", "EV-02")
     ok("B4: indice.py impacto --cambio EV-02 no sugiere «Requiere: Sí (EV-02)» para la propia unidad",
        c == 0 and "Construido: as-is · En curso: EV-02" in out and "Requiere: Sí" not in out, out)

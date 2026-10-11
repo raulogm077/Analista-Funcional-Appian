@@ -674,14 +674,22 @@ def prueba_de_requisitos():
                 espera(c == codigo and (bloqueo in out) == (codigo == 1 or not args),
                        f"con REQUISITOS_SIN=uv y {' '.join(args) or 'sin --skill'}, no sale con {codigo} o "
                        f"{'no dice' if codigo == 1 or not args else 'dice'} «{bloqueo}»", todo)
-            # el Appian MCP Server: está (el http <entorno>/mcp del Dev MCP), no se puede comprobar (hay otros http que no
-            # son el MCP de documentación: puede ser uno, con --mcp-server-name) o falta (ningún otro http)
+            # el Appian MCP Server: está (el http <entorno>/mcp del Dev MCP), no se puede comprobar (un http del mismo
+            # dominio que el Dev MCP o, sin él, de Appian: puede ser, con --mcp-server-name) o falta (los demás http,
+            # como GitHub o Notion, no lo son)
             docs = {"appian-docs": {"type": "http", "url": "https://appian-docs-public.mcp.kapa.ai"}}
             devmcp = {"command": "uv", "args": ["run", "--directory", "bundle", "lcp_mcp_server"],
                       "env": {"LCP_URL": "https://entorno.example.com/suite"}}
+            ajenos = {"github": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"},
+                      "notion": {"type": "http", "url": "https://mcp.notion.com/mcp"}}
             for servidores, estado in (({**docs, "appian-dev": devmcp, "appian": {"type": "http",
                                          "url": "https://entorno.example.com/mcp"}}, True),
-                                       ({**docs, "otro": {"type": "http", "url": "https://otro.example.org/mcp"}}, None),
+                                       ({**docs, **ajenos, "appian-dev": devmcp, "otro": {"type": "http",
+                                         "url": "https://otro-entorno.example.com/mcp"}}, None),
+                                       ({**docs, **ajenos, "appian-dev": devmcp}, False),
+                                       ({**docs, **ajenos, "sitio": {"type": "http",
+                                         "url": "https://sitio.appiancloud.com/mcp"}}, None),
+                                       ({**docs, **ajenos}, False),
                                        (docs, False)):
                 (trabajo / ".mcp.json").write_text(json.dumps({"mcpServers": servidores}), encoding="utf-8")
                 c, out, todo = requisitos("--json")

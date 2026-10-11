@@ -79,5 +79,5 @@ Inicio programado (`startType: timer`; la configuración está en el nodo de ini
 - `temporizador` = `R/<inicio>/<periodo>` (repetición ISO 8601). En el BPMN va en `timeCycle`.
   - `<inicio>`: la fecha de inicio de la configuración o, si no la trae, la de la extracción (`startedAt` de `<trabajo>/extraction_report.json`), con la hora del temporizador y el desfase UTC de su zona en esa fecha (`+02:00` para Europe/Madrid en verano).
   - `<periodo>`: `P1D` diario, `P1W` semanal, `P1M` mensual, `PT1H` cada hora, `PT<n>M` cada n minutos.
-- Si la configuración no trae la hora o la zona, no las inventes: `R/<periodo>` y el nombre dice «hora no devuelta por la extracción».
+- Si la configuración no trae la hora o la zona, no las inventes: `R/<periodo>` y el nombre dice «hora no devuelta por la extracción». Un intervalo (cada n minutos u horas) sin hora de inicio va igual: `R/PT5M`.
 - Si la recurrencia no cabe en un periodo (p. ej. solo días laborables), usa el periodo base y explica la regla en el paso a paso del `.md`.

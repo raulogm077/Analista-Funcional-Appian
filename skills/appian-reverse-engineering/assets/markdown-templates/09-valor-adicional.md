@@ -11,6 +11,8 @@
   la de este documento (02 tiene el H-ARQ y los demás la enlazan); lo que cambia por entorno está solo aquí (05 lo enlaza).
   Si el entorno no consta como producción, las cifras de uso llevan «orientativo (ver LEEME)», sin más explicación.
   Evidencia: siempre enlazada a la ficha del objeto en el anexo.
+  «N hallazgos en el registro (Alta: n)» del Volumen se escribe al final, con lo que imprime build_registry.py
+  («registro con N hallazgos»; Alta, de porSeveridad): hasta entonces, {{N}}.
   «Cobertura y límites»: solo lo de este documento; lo global está en LEEME.
 -->
 

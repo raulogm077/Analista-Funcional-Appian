@@ -44,7 +44,7 @@ def acierta(pregunta: dict, respuesta) -> bool:
     if pregunta["tipo"] == "lista":
         return all(any(contiene(texto, f) for f in (e if isinstance(e, list) else [e])) for e in aceptadas)
     if pregunta["tipo"] == "si-no":
-        primera = (normal(texto).split() or [""])[0]
+        primera = (re.findall(r"\w+", normal(texto)) or [""])[0]   # «No.» o «No,» también es «no»
         return primera in {normal(f) for f in aceptadas}
     return any(contiene(texto, f) for f in aceptadas)
 

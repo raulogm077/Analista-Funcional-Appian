@@ -12,6 +12,61 @@ coherente.
 Una fuente cada vez, en orden de fecha: un informe de impacto que toca solo lo afectado y una versión (+0.1) solo si
 cambia el funcional o el técnico. En los ejemplos, la fuente nueva es FU-04 y la vigente la 1.1. `<p>`: el proyecto.
 
+## Camino corto: un retoque
+Cuándo: la fuente trae pocos puntos y **ninguno requiere aprobación** (§3.4): un texto, una etiqueta, una columna, el
+orden, un detalle que completa. Con unidades de cambio, que esté construido no la pide. Si un punto la requiere, o hay
+que preguntar al cliente, el camino entero (§0-§8). Sin nota, sin `comprobar.py` previo y sin presentar nada:
+1. **Catalogar**: `leer_fuentes.py <fichero> -o <p>/fuentes/` y leer la fuente.
+2. **Unidad** (solo si `proyecto.py estado` lista unidades): el retoque va en la unidad Abierta o, si no hay ninguna,
+   en una nueva: `proyecto.py cambio <p> EV-03 abrir --titulo "…"`. Una Aprobada no se toca: volvería a aprobación.
+3. **Las piezas**, con dos órdenes:
+   ```bash
+   python3 <skill>/scripts/indice.py ficha <p> PAN-01 --lineas            # las líneas exactas y la cita que trae
+   python3 <skill>/scripts/indice.py impacto <p> PAN-01 --cambio EV-03    # sin unidades, sin --cambio
+   ```
+   `impacto` dice lo que depende, las señales «Construido · En curso» y, con unidades, la fila de técnico §13.
+4. **Versión y decisiones**, en una orden: `proyecto.py version <p> --fuente FU-04 --que "<qué cambia>" [--decision
+   CAMBIA PAN-01 "<lo nuevo>" "<lo de antes> [FU-01 00:06:40]"]`. Copia la 1.1, sube el funcional y el técnico a la 1.2,
+   escribe la fila de la versión y la D de cada CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE en `decisiones.md` y la
+   fuente en `proyecto.md`. «Qué cambia» sale en el Word: en palabras del cliente, sin IDs. La cita de «lo de antes»
+   es la del comentario de la pieza: no hace falta buscarla en la fuente.
+5. **Editar solo esas líneas**. La herramienta de edición pide leer antes el fichero: lee solo ese tramo, con los
+   números de `ficha --lineas`. La pieza, con la fuente nueva en su comentario (`<!-- ✅ FU-01 00:06:40; FU-04 -->`);
+   en el técnico, la línea que la describe y, con unidades, la fila de §13 que dice `impacto`. El «Siguiente paso» de
+   `proyecto.md` no se toca: `proyecto.py estado` ya dice qué le falta a cada unidad.
+6. **El informe, ya aplicado, de una vez**, sin buscar otro como modelo:
+   ```markdown
+   # Impacto de FU-04 · <asunto> · 2026-10-08
+   Análisis base: versión 1.1 · Cambio: EV-03 · Estado: aplicado en 1.2
+
+   ## Resumen
+   - 1 punto: 1 CAMBIA
+   - Requieren aprobación: ninguno
+   - Posible petición de cambio: punto 1 (PAN-01 está construida en EV-01)
+   - Pantallas afectadas: PAN-01 · Técnico: §7, §13
+
+   ## Puntos
+   | # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión |
+   |---|---|---|---|---|---|---|---|
+   | 1 | CAMBIA | <lo que pide> [FU-04] | PAN-01 | <el cambio>; D-01 | HU-04 | — | ✔ |
+
+   ## Revisión de dependencias
+   | Pieza | Punto | Resultado |
+   |---|---|---|
+   | PAN-01 | 1 | Modificada: <qué> |
+   | HU-04 | 1 | Sin cambios: <por qué> |
+
+   ## Aplicado
+   Versión 1.2: PAN-01 modificada · técnico §7 y §13 · D-01
+   ```
+   Sin unidades, ni «Cambio:» ni «Posible petición de cambio». «Revisar también» y la revisión, con lo que dijo `impacto`.
+7. **Una pasada**: `comprobar.py <p> --fuentes <p>/fuentes/ --anterior <p>/versiones/v1.1 --impacto
+   <p>/impacto/FU-04.md`. Si avisa de que el anexo no está al día (cambió el nombre de una parte de una pantalla o
+   quién la usa), `indice.py derivadas <p> --escribir`, sin repetir la pasada.
+
+Ni el Word, ni el prototipo, ni las capturas: se rehacen al enviar el DF o al construir (`cambios.md` §5). Ni DT: una
+interfaz, una regla, una constante o un texto no la piden.
+
 ## 0. Antes de empezar
 ```bash
 python3 <skill>/scripts/indice.py resumen <p>
@@ -150,9 +205,10 @@ pendientes de aprobación: puntos 4 y 7», o «Estado: pendiente» si no se ha a
 le vuelve a preguntar.
 
 ## 6. Aplicar
-- Si el informe cambia el funcional o el técnico, antes de tocar nada `proyecto.py copia <p>` (guarda la 1.1 en
-  `versiones/v1.1/`). Si no (SIN IMPACTO, PROYECTO o descartes), «Estado: sin cambios», sin copia ni versión: la fuente
-  va igual a «Fuentes procesadas» y se verifica con `comprobar.py <p> --impacto …`.
+- Si el informe cambia el funcional o el técnico, antes de tocar nada `proyecto.py version <p> --fuente FU-04 --que
+  "…"`: guarda la 1.1 en `versiones/v1.1/`, sube los dos a la 1.2 y escribe la fila de la versión en `decisiones.md` y
+  la fuente en «Fuentes procesadas». Si no (SIN IMPACTO, PROYECTO o descartes), «Estado: sin cambios», sin copia ni
+  versión: la fuente va igual a «Fuentes procesadas» y se verifica con `comprobar.py <p> --impacto …`.
 - Solo se tocan las piezas del informe. `ficha --lineas` da las líneas exactas: lee solo ese tramo y edita
   en sitio. Las líneas marcadas ⟂ están iguales en otro sitio: incluye la de al lado para que sea única.
 - Lo que cambia cita la fuente nueva en su comentario y actualiza el estado (✅, 🔒, ⚠️…).
@@ -171,11 +227,12 @@ le vuelve a preguntar.
   `appian-diagramas-bpmn`). Si se niega, alguien editó el `.drawio`: primero `diagrama.py comparar`. Los
   diagramas de estados y de datos se editan en su `.mmd` y se vuelven a pintar con `mermaid.py`
   (`mermaid-diagrams.md`).
-- **decisiones.md**: fila de la versión nueva y filas D nuevas al final, así:
+- **decisiones.md**: una fila D por punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE, al final; mejor con `version
+  --decision` (la escribe con su número), o a mano así:
   `| D-01 | 2026-10-08 | FU-05 | CAMBIA | Lo nuevo | Lo de antes [FU-01 00:12:30] | PAN-01 | Sí |`.
-- **Versión**: si cambia el funcional o el técnico, sube 0.1 en los dos.
-- **Anexo**: `indice.py derivadas <p> --escribir`, solo si el informe toca alguna pantalla o algún perfil.
-- **proyecto.md**: la fuente en «Fuentes procesadas» y el siguiente paso.
+- **Anexo**: `indice.py derivadas <p> --escribir`, si cambia una parte de una pantalla (su nombre o quién la usa) o un
+  perfil y el funcional lo lleva; `comprobar.py` avisa si se queda viejo.
+- **proyecto.md**: el siguiente paso, si cambia (la fuente ya la apuntó `version`).
 - En el informe: completa «Revisión de dependencias» y «Aplicado», y pon «Estado: aplicado en 1.2» (con lo que
   quede sin aplicar: «Estado: aplicado en 1.2; pendientes de aprobación: puntos 4 y 7»).
 

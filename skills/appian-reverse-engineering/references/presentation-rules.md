@@ -10,7 +10,7 @@ Cómo se escribe **cada** entregable de `<salida>/`. Son la única fuente de est
 
 ## Regla 1: esqueleto único
 
-Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no escribas «ninguno» ni «no aplica»); si la ausencia es un dato relevante, dilo en una frase del TL;DR.
+Todo documento sigue este orden. Las secciones sin contenido **se omiten** (no escribas «ninguno» ni «no aplica»); si la ausencia es un dato relevante, dilo en una frase del TL;DR. Un documento entero que no aplica (07 sin batches) no se omite: lleva su línea «Responde a» y un TL;DR que dice que no aplica y por qué.
 
 ```markdown
 # <Título>

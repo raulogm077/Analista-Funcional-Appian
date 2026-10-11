@@ -1,0 +1,42 @@
+[
+ {
+  "peticion": "Necesito el código SAIL de un formulario de alta de proveedor, con la validación del NIF, para pegarlo en el diseñador de interfaces.",
+  "skill": "appian-sail-generator"
+ },
+ {
+  "peticion": "Tengo esta interfaz que tarda mucho en cargar y hace tres consultas seguidas; ¿está bien planteada según lo que recomienda Appian?",
+  "skill": "appian-best-practices"
+ },
+ {
+  "peticion": "El cliente quiere ver mañana cómo quedarían las pantallas de alta y de consulta antes de dar el visto bueno al diseño; prepárame algo por lo que pueda navegar.",
+  "skill": "appian-prototipos"
+ },
+ {
+  "peticion": "Pásame a Word el acta de la reunión de ayer con el formato de la plantilla corporativa.",
+  "skill": "docx"
+ },
+ {
+  "peticion": "Saca el documento de diseño funcional en Word con la versión de hoy para mandárselo al cliente.",
+  "skill": "appian-functional-analyst"
+ },
+ {
+  "peticion": "Convierte esta maqueta estática del panel en una interfaz de verdad que lea del record type de Contratos.",
+  "skill": "appian-sail-generator"
+ },
+ {
+  "peticion": "En el Word que te adjunto, añade una tabla con los plazos y deja los cambios marcados en control de cambios.",
+  "skill": "docx"
+ },
+ {
+  "peticion": "Quiero una propuesta de pantallas para la nueva gestión de incidencias que podamos enseñar a los usuarios en la demo del jueves.",
+  "skill": "appian-prototipos"
+ },
+ {
+  "peticion": "Antes de subirlo a producción, mira si este grid con a!queryRecordType cumple las recomendaciones de rendimiento.",
+  "skill": "appian-best-practices"
+ },
+ {
+  "peticion": "Escríbeme la expresión de un asistente de tres pasos para pedir vacaciones, con los campos que te paso, para meterla en Appian.",
+  "skill": "appian-sail-generator"
+ }
+]

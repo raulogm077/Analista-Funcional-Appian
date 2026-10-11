@@ -21,6 +21,7 @@ import unicodedata
 from dataclasses import dataclass, field
 
 DOCS = {"F": "funcional.md", "T": "tecnico.md", "D": "decisiones.md"}
+TIPOS_D = ("CAMBIA", "ANULA", "VALIDA", "RESPONDE", "ALCANCE+", "ALCANCE−", "ALCANCE-")   # tipos de las filas D
 NOMBRE_DOC = {"F": "funcional", "T": "técnico", "D": "decisiones"}
 
 # Dónde se define cada tipo: (doc, sección, formas)

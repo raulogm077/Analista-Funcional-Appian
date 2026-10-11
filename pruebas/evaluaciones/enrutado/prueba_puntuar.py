@@ -25,6 +25,7 @@ VISIBLES = json.loads((REPO / "pruebas" / "enrutado.json").read_text(encoding="u
 OCULTAS = json.loads((AQUI / "ocultas" / "enrutado.json").read_text(encoding="utf-8"))
 FRONTERAS = json.loads((AQUI / "fronteras" / "enrutado.json").read_text(encoding="utf-8"))
 VECINAS = json.loads((AQUI / "vecinas" / "enrutado.json").read_text(encoding="utf-8"))
+VECINAS_OCULTAS = json.loads((AQUI / "vecinas" / "ocultas.json").read_text(encoding="utf-8"))
 DESCRIPCIONES_VECINAS = json.loads((AQUI / "vecinas.json").read_text(encoding="utf-8"))
 NOMBRES_VECINAS = sorted(v.get("skill", "") for v in DESCRIPCIONES_VECINAS if isinstance(v, dict))
 SKILLS = sorted(md.parent.name for md in (PLUGIN / "skills").glob("*/SKILL.md"))
@@ -62,7 +63,8 @@ def baterias() -> None:
     todas = VISIBLES + OCULTAS
     for nombre, lista, validas in (("enrutado.json", VISIBLES, SKILLS), ("ocultas/enrutado.json", OCULTAS, SKILLS),
                                    ("fronteras/enrutado.json", FRONTERAS, SKILLS),
-                                   ("vecinas/enrutado.json", VECINAS, SKILLS + NOMBRES_VECINAS)):
+                                   ("vecinas/enrutado.json", VECINAS, SKILLS + NOMBRES_VECINAS),
+                                   ("vecinas/ocultas.json", VECINAS_OCULTAS, SKILLS + NOMBRES_VECINAS)):
         malas = [k for k, p in enumerate(lista, 1) if set(p) != {"peticion", "skill"} or p["skill"] not in validas]
         espera(not malas, f"{nombre}: entradas sin {{peticion, skill}} o con una skill que no existe: {malas}")
     espera(len(DESCRIPCIONES_VECINAS) >= 1 and all(
@@ -72,10 +74,14 @@ def baterias() -> None:
     sin_peticion = set(NOMBRES_VECINAS) - {p["skill"] for p in VECINAS}
     espera(not sin_peticion, f"vecinas/enrutado.json: ninguna petición espera {sorted(sin_peticion)}")
     espera(len(VECINAS) >= 10, f"vecinas/enrutado.json tiene {len(VECINAS)} peticiones; al menos 10")
+    sin_oculta = set(NOMBRES_VECINAS) - {p["skill"] for p in VECINAS_OCULTAS}
+    espera(not sin_oculta and len(VECINAS_OCULTAS) >= 8,
+           f"vecinas/ocultas.json: al menos 8 peticiones y alguna para cada vecina (falta {sorted(sin_oculta)})")
     cuenta = Counter(p["skill"] for p in todas)
     pocas = {s: cuenta[s] for s in SKILLS if cuenta[s] < MINIMO_POR_SKILL}
     espera(not pocas, f"menos de {MINIMO_POR_SKILL} peticiones de: {pocas}")
-    repetidas = [p for p, n in Counter(p["peticion"].strip() for p in todas + FRONTERAS + VECINAS).items() if n > 1]
+    repetidas = [p for p, n in Counter(p["peticion"].strip() for p in todas + FRONTERAS + VECINAS + VECINAS_OCULTAS)
+                 .items() if n > 1]
     espera(not repetidas, f"{len(repetidas)} peticiones repetidas")
     espera(3 * len(OCULTAS) >= len(todas) - 3, f"{len(OCULTAS)} ocultas de {len(todas)}: tendría que ser un tercio")
     espera(len(FRONTERAS) >= 8, f"fronteras/enrutado.json tiene {len(FRONTERAS)} peticiones; al menos 8")
@@ -164,17 +170,25 @@ def puntuacion(carpeta: Path) -> None:
     espera(c == 1 and "no es una de las skills" in out, "sin --vecinas, una vecina vale como respuesta", out)
     c, out = puntua(carpeta, "vecinas y fronteras.json", VECINAS, "--vecinas", "--fronteras")
     espera(c == 2, "--vecinas y --fronteras a la vez no salen 2")
+    no = len(VECINAS_OCULTAS)
+    c, out = puntua(carpeta, "vecinas ocultas bien.json", VECINAS_OCULTAS, "--vecinas-ocultas")
+    espera(c == 0 and f"Total: {no}/{no} (vecinas ocultas)" in out and "no es una de las skills" not in out,
+           "las vecinas ocultas bien no salen 0")
+    c, out = puntua(carpeta, "vecinas ocultas con las visibles.json", VECINAS, "--vecinas-ocultas")
+    espera(c == 2, "las respuestas de las vecinas visibles puntuadas con --vecinas-ocultas no salen 2")
 
 
 def enunciado() -> None:
     for args, lista, nombre in (((), VISIBLES, "visibles"), (("--ocultas",), OCULTAS, "ocultas"),
-                                (("--fronteras",), FRONTERAS, "fronteras"), (("--vecinas",), VECINAS, "vecinas")):
+                                (("--fronteras",), FRONTERAS, "fronteras"), (("--vecinas",), VECINAS, "vecinas"),
+                                (("--vecinas-ocultas",), VECINAS_OCULTAS, "vecinas ocultas")):
         c, out = corre("--enunciado", *args)
         espera(c == 0, f"--enunciado con las {nombre} no sale 0")
         lineas = dict(re.findall(r"(?m)^- `([\w-]+)`: (.*)$", out))
-        skills = sorted(SKILLS + (NOMBRES_VECINAS if args == ("--vecinas",) else []))
+        con_vecinas = args in (("--vecinas",), ("--vecinas-ocultas",))
+        skills = sorted(SKILLS + (NOMBRES_VECINAS if con_vecinas else []))
         espera(sorted(lineas) == skills, f"--enunciado con las {nombre} no trae {', '.join(skills)}")
-        if args == ("--vecinas",):
+        if con_vecinas:
             espera(all(lineas.get(v["skill"]) == v["descripcion"] for v in DESCRIPCIONES_VECINAS),
                    "--enunciado con las vecinas no trae su descripción tal cual")
         espera(all(len(d) > 100 for d in lineas.values()), f"--enunciado con las {nombre}: alguna descripción vacía o "
@@ -203,7 +217,8 @@ def main() -> int:
     for f in fallos:
         print("FALLO: " + f)
     print(f"prueba_puntuar.py: {'OK' if not fallos else f'{len(fallos)} fallos'} ({len(VISIBLES)} visibles, "
-          f"{len(OCULTAS)} ocultas, {len(FRONTERAS)} de fronteras, {len(VECINAS)} con vecinas)")
+          f"{len(OCULTAS)} ocultas, {len(FRONTERAS)} de fronteras, {len(VECINAS)} con vecinas y "
+          f"{len(VECINAS_OCULTAS)} ocultas con vecinas)")
     return 1 if fallos else 0
 
 
