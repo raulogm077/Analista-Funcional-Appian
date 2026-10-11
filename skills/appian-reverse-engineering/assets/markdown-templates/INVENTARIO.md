@@ -16,9 +16,9 @@
     qué muestra), que empieza por 🔶 (p. ej. «🔶 envía el correo de aviso al solicitante»). «🔶 según su nombre, …»
     solo si no hay definición (`detail: "none"`).
   - Cobertura de la extracción: las herramientas del Dev MCP usadas (`toolsUsed` de extraction_report.json) y las
-    omitidas, cada una con su motivo: las que el plan no usó (`use: false` en extraction_plan.json: escritura, lectura
-    de datos, sin objetos de sus tipos…) y las desactivadas para un tipo tras fallar (`disabledAfterProbe`). Usadas más
-    omitidas son todas las del catálogo.
+    omitidas (`toolsOmitted`), cada una con su motivo (escritura, lectura de datos, sin objetos de sus tipos…). Usadas
+    más omitidas son todas las del catálogo. Las desactivadas para un tipo tras fallar (`disabledAfterProbe`) se
+    usaron: van también en la tabla de omitidas, con «desactivada para <tipo>», sin contarlas como omitidas.
 -->
 
 # Inventario de la aplicación

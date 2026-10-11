@@ -4,6 +4,79 @@ Resultados de las evaluaciones de los planes de `docs/plan/` y, al cerrar cada
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 
+## 0.7.0-beta.3 · Retoques ligeros y menores (11 de octubre de 2026)
+
+Rama `v0.7.0-beta.3`, de `main` 222a8e6. Plan: `docs/plan/2026-10-11-0.7.0-beta.3.md`. Todas las evaluaciones, a ciegas
+con una copia del paquete (`/home/claude/eval-plugin`), sin `pruebas/` ni `docs/`.
+
+### Prueba de coste: texto de un botón construido (camino corto)
+
+| Ronda | Método | Llamadas | Puntos |
+|---|---|---|---|
+| 0.7.0-beta.2 | Camino entero | 34, 34, 47 | 5/6 las tres (llamadas) |
+| 1 | Camino corto con `proyecto.py version` | 27, 29, 30 | 5/6 las tres (llamadas) |
+| 2 | Y `version --decision`, el informe de ejemplo, «Siguiente paso» sin tocar | 16, 19, 21 | **6/6 las tres** |
+| 3 | Tras la revisión independiente (anexo, fila de §13) | 20, 27, 23 | 6/6, 5/6, 6/6 |
+| 4 | El anexo solo si `comprobar.py` avisa; las dos órdenes de `ficha` e `impacto`, separadas | 22, 20, 18 | **6/6 las tres** |
+
+- Ronda 1: las llamadas de más eran dudas que el camino corto no resolvía: leer otro informe como modelo, el formato del
+  comentario con dos fuentes, buscar en la fuente la cita del «Antes», si se cambia el «Siguiente paso» (2-3 llamadas),
+  y editar sin leer antes (la herramienta de edición lo pide: 4 llamadas fallidas en una pasada).
+- Ronda 2: ninguna duda en las tres. El mínimo del README sube de 15 a 16 porque cuenta leer lo que se edita.
+- Ronda 3: «si cambia una parte de una pantalla, el anexo» hizo que las tres crearan un anexo que el proyecto no tenía
+  (`derivadas --escribir` lo añade), y una pasó `--cambio` a `ficha`, que no lo admite. Ronda 4: el anexo, solo si
+  `comprobar.py` avisa de que se quedó viejo; las dos órdenes, en un bloque cada una.
+- La calidad no baja: las doce pasadas dejan D-01 con su «Antes» citado, la fila de §13 de EV-03 y el informe completo.
+
+### Revisión independiente
+
+Un agente que no había visto el trabajo revisó la rama: nada grave. Corregido:
+- el anexo «Quién puede hacer qué» se quedaba viejo al renombrar una parte de una pantalla, y el DF lo enseña:
+  `comprobar.py` avisa (se apaga con `derivadas --escribir`);
+- la fila de §13 que sugiere `impacto`: fallaba sin técnico, proponía objetos sin construir, usaba una URG Abierta o la
+  unidad equivocada cuando sugería abrir otra, y para historias o pasos sacaba objetos de cualquier línea: ahora, solo
+  lo construido de la fila de la pantalla de la pieza (sin pantalla, solo el formato);
+- `proyecto.py version` dice lo que no pudo escribir (sin la tabla), nombra solo los documentos que sube, entrecomilla
+  las rutas con espacios, acepta la carpeta `analisis/`, describe bien un chat en «Fuentes procesadas» y recuerda que
+  «Qué cambia» sale en el Word; los tipos de las filas D, en un solo sitio (`modelo.py`).
+
+### Enrutado con las vecinas
+
+`vecinas.json` con la descripción de `appian-sail-generator` 2.3.2 (su frontera con prototipos y buenas prácticas):
+visibles **13/13** y las 10 ocultas nuevas (`vecinas/ocultas.json`, `--vecinas-ocultas`) **10/10**. Las seis
+descripciones del plugin no cambian en esta versión: el resto de lotes no se repite.
+
+### El recién llegado (Tarea 9), con la versión actual
+
+MNT documentada a ciegas contra el simulador (32 minutos) y respondida por otro agente con `as-is/` sin `extraccion/`.
+
+| | Tarea 9 (después) | 0.7.0-beta.3 |
+|---|---|---|
+| Preguntas visibles | 21/22 | 22/22 |
+| Preguntas ocultas | 7/7 | 7/7 |
+| `evidencia.py` | bien | bien |
+| `comprobar_asis.py` | 0 errores, 0 avisos | 0 errores, 0 avisos (8 avisos en la primera pasada, corregidos) |
+| NV registrados | 8 | 12 |
+| Palabras (total) | 17.293 | 14.744 (−15 %) |
+
+- `puntuar.py` daba por mala una respuesta «No. …» a una pregunta sí/no: comparaba la primera palabra con el punto
+  pegado. Corregido; sin el arreglo, 21/22.
+- Lo que el agente encontró confuso en las instrucciones, y qué se hizo:
+  - un documento entero que no aplica frente a «las secciones sin contenido se omiten»: Regla 1 de
+    `presentation-rules.md` lo distingue;
+  - la cifra del registro en el TL;DR de 09, que se sabe después de `build_registry.py`: la plantilla lo dice;
+  - un temporizador por intervalo sin hora de inicio: `bpmn-mapping.md`, `R/PT5M`;
+  - un proceso de 130 nodos no cabe en el presupuesto de su `.md` con un paso por nodo, y «5 cajas por capa» no basta
+    para el ancho de la arquitectura: a `siguiente-version.md`.
+
+### Menores
+
+- `toolsOmitted` en `extraction_report.json`: usadas más omitidas son el catálogo también con `--solo` y con llamadas
+  `notApplicable` (pruebas en `test_fixture_mal_hecha.py` y `test_verificar_y_deriva.py`).
+- Diagramas: con 170 procesos al azar (semilla 7), etiquetas de salida de puerta sobre un tramo ajeno de 7 diagramas a 0,
+  cruces de 359 a 347, sin que empeore ninguno; uno de la muestra pasa de 1.534 a 1.618 px de ancho (aviso de los 1.600).
+- `requisitos.py`: GitHub o Notion configurados ya no dejan el Appian MCP Server «sin comprobar».
+
 ## 0.7.0-beta.2 · G7 · Evaluaciones finales (11 de octubre de 2026)
 
 Rama `g7-evaluaciones`, de `v0.7.0-beta.2` 4fe7338. Se pasan a ciegas, con las skills y los puntuadores tal como están,

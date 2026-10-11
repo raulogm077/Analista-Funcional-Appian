@@ -1,0 +1,28 @@
+{
+  "proceso": "Revisión de solicitud",
+  "carriles": ["Solicitante", "Técnico", "Jefatura"],
+  "pasos": [
+    {"id": "EV-01", "tipo": "inicio", "carril": "Solicitante", "nombre": "Solicitud recibida"},
+    {"id": "GW-01", "tipo": "paralela", "carril": "Solicitante", "nombre": ""},
+    {"id": "ACT-01", "tipo": "tarea", "carril": "Solicitante", "nombre": "Revisar solicitud"},
+    {"id": "ACT-02", "tipo": "sistema", "carril": "Técnico", "nombre": "Preparar informe"},
+    {"id": "GW-02", "tipo": "exclusiva", "carril": "Solicitante", "nombre": "¿Completa?"},
+    {"id": "ACT-03", "tipo": "tarea", "carril": "Técnico", "nombre": "Validar informe"},
+    {"id": "ACT-04", "tipo": "tarea", "carril": "Técnico", "nombre": "Registrar alta"},
+    {"id": "ACT-05", "tipo": "tarea", "carril": "Jefatura", "nombre": "Revisar con jefatura"},
+    {"id": "EV-02", "tipo": "fin", "carril": "Técnico", "nombre": "Alta registrada"},
+    {"id": "EV-03", "tipo": "fin", "carril": "Jefatura", "nombre": "Solicitud devuelta"}
+  ],
+  "flujos": [
+    {"de": "EV-01", "a": "GW-01"},
+    {"de": "GW-01", "a": "ACT-01"},
+    {"de": "GW-01", "a": "ACT-02"},
+    {"de": "ACT-01", "a": "GW-02"},
+    {"de": "ACT-02", "a": "ACT-03"},
+    {"de": "GW-02", "a": "ACT-04", "etiqueta": "Sí"},
+    {"de": "GW-02", "a": "ACT-05", "etiqueta": "No"},
+    {"de": "ACT-03", "a": "ACT-04"},
+    {"de": "ACT-04", "a": "EV-02"},
+    {"de": "ACT-05", "a": "EV-03"}
+  ]
+}

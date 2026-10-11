@@ -277,11 +277,17 @@ def c_impacto(m, a):
     abiertas = [u.id for u in ctx.unidades if u.estado == un.ABIERTA]
     propia = (a.cambio or "").upper() or (abiertas[0] if len(abiertas) == 1 else None)
     ev_abiertas = [u for u in abiertas if u.startswith("EV-")]
+    sugerida = None
     if ctx.hay and construidas and not a.cambio and not ev_abiertas:   # dónde va: lo dice el script, no el modelo
         sig = 1 + max([int(u.id.split("-")[1]) for u in ctx.unidades if u.id.startswith("EV-")] or [0])
-        print(f"  → Ninguna unidad Abierta: si aplicas el cambio, ábrela antes (proyecto.py cambio <p> EV-{sig:02d} "
-              "abrir --titulo \"…\") y pon «Cambio: EV-" + f"{sig:02d}» en el informe; meterlo en una Aprobada la "
+        sugerida = f"EV-{sig:02d}"
+        print(f"  → Ninguna unidad Abierta: si aplicas el cambio, ábrela antes (proyecto.py cambio <p> {sugerida} "
+              f"abrir --titulo \"…\") y pon «Cambio: {sugerida}» en el informe; meterlo en una Aprobada la "
               "devuelve a aprobación")
+    # la fila de §13 sin leer §13 (la unidad: --cambio, la única EV Abierta o la que se acaba de sugerir abrir)
+    unidad13 = (a.cambio or "").upper() or (ev_abiertas[0] if len(ev_abiertas) == 1 else None) or sugerida
+    if ctx.hay and construidas and unidad13 and "T" in m.docs:
+        fila_13(m, ctx, construidas, unidad13)
     otras = sorted(en_curso - {propia})
     if otras:
         print(f"  → En curso en {', '.join(otras)}: si el punto es de {propia or 'otra unidad'}, «Requiere: Sí "
@@ -322,6 +328,54 @@ def c_impacto(m, a):
     val = [x for x in todas if m.piezas.get(x) and m.piezas[x].estado == "🔒"]
     if val:
         print(f"\n🔒 Validadas por el cliente (cambiarlas requiere aprobación): {', '.join(sorted(val, key=clave))}")
+
+
+def pantallas_de(m, pid):
+    """Las pantallas de una pieza: ella misma si es una PAN; si no, las de la columna «Pantalla» de su ficha."""
+    r = m.raiz_de(pid)
+    if r.startswith("PAN-"):
+        return [r]
+    col, out = None, []
+    for l in m.bloque(r) if r in m.piezas else []:
+        if not l.startswith("|"):
+            if out:
+                break
+            continue
+        c = mo.celdas(l)
+        if col is None:
+            col = next((i for i, x in enumerate(c) if mo.normaliza(x) == "pantalla"), None)
+        elif col < len(c):
+            out += re.findall(r"PAN-\d+", c[col])
+    return list(dict.fromkeys(out))
+
+
+def fila_13(m, ctx, construidas, unidad):
+    """La fila de técnico §13 que lleva lo construido que cambia, sin leer §13: el formato, el siguiente paso y los
+    objetos construidos de la fila del técnico de su pantalla («| PAN-01 | `DEM_Dashboard`, … |»), en su orden (el
+    primero es el que la implementa). Sin pantalla o sin esa fila, solo el formato."""
+    tipos = {}
+    for f in ctx.filas:
+        for o in f["objetos"]:
+            tipos.setdefault(un.objeto(o), f["tipo"])
+    hechos, ya = ctx.linea_base(), set(ctx.cambian(unidad))
+    pantallas = {x for pid in construidas for x in pantallas_de(m, pid)}
+    T, objetos = m.docs["T"], []
+    for i, l in enumerate(T.lineas):
+        if not l.startswith("|") or T.seccion_de_linea[i] in ("13", "14", "15"):
+            continue
+        c = mo.celdas(l)
+        if c and mo.sin_comentarios(c[0]).strip() in pantallas:
+            for o in un.objetos_celda(" ".join(re.findall(r"`[^`]+`", l))):
+                o = un.objeto(o)
+                if o in hechos and o not in ya and o not in objetos:
+                    objetos.append(o)
+    pasos = [int(x) for f in ctx.filas for x in re.findall(r"^\s*(\d+)", mo.sin_comentarios(f["paso"]))]
+    o = objetos[0] if objetos else None
+    ejemplo = (f"| {max(pasos or [0]) + 1} | `{o or '<objeto>'}` | {tipos.get(o, '<tipo>')} | Modifica | — | "
+               f"{unidad} |")
+    print(f"  → Técnico §13: cada objeto construido que cambie lleva su fila de {unidad} (los que no cambian, "
+          f"ninguna), así: «{ejemplo}»" + (". Los de la fila de su pantalla en el técnico: " + ", ".join(
+              f"`{x}` ({tipos.get(x, '?')})" for x in objetos) if objetos else ""))
 
 
 def c_siguientes(m, a):

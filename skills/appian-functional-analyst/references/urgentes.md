@@ -27,7 +27,7 @@ choca; si choca, `produccion` falla).
 **El «Estado» de su cabecera**, como en cualquier informe (`actualizacion.md`):
 - al abrirla, `Estado: pendiente`;
 - cuando se aplica lo que cambia el análisis, `Estado: aplicado en X.Y`. La prueba de un defecto en técnico §14 cambia el
-  técnico, así que sube la versión (R2), con su fila en `decisiones.md`;
+  técnico, así que sube la versión: `proyecto.py version <p> --fuente FU-nn --que "…" --informe impacto/URG-nn.md`, con la fuente del aviso;
 - si no cambia nada del análisis (datos u operación), `Estado: sin cambios`.
 
 Tras `produccion`, `proyecto.py estado` ya no la lista como pendiente.

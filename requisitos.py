@@ -216,17 +216,26 @@ def _devmcp():
     return False, None
 
 
+def _dominio(host: str) -> str:
+    return ".".join(host.split(".")[-2:])
+
+
 def _appian_mcp_server():
-    """Está si hay un http <entorno del Dev MCP>/mcp. Si no, otro servidor http que no sea el MCP de documentación
-    puede serlo (otra URL, sin Dev MCP configurado): no se puede comprobar, y ingeniería inversa lo usa si se le pasa
-    con --mcp-server-name. Sin ninguno, falta."""
+    """Está si hay un http <entorno del Dev MCP>/mcp. Si no, puede serlo un servidor http con otra URL del mismo dominio
+    que el Dev MCP o, sin el host del Dev MCP, uno de Appian (su host dice «appian»): no se puede comprobar, e
+    ingeniería inversa lo usa si se le pasa con --mcp-server-name. Los demás http (GitHub, Notion…) no lo son. Sin
+    ninguno, falta."""
     dx = extractor()
     hosts = _hosts_devmcp()
+    dominios = {_dominio(h) for h in hosts}
     otros = []
     for f, n, e in _servidores():
-        if dx.is_http(e) and any(dx.is_appian_mcp_server(e, h) for h in hosts):
+        if not dx.is_http(e) or dx.is_docs_mcp(e):
+            continue
+        if any(dx.is_appian_mcp_server(e, h) for h in hosts):
             return True, f"{n} ({f})"
-        if dx.is_http(e) and not dx.is_docs_mcp(e):
+        host = (urlparse(str(e.get("url", ""))).hostname or "").lower()
+        if (_dominio(host) in dominios) if dominios else ("appian" in host):
             otros.append(f"{n} ({f})")
     if otros:
         return None, None, (f"Si es uno de estos servidores http, pásalo a ingeniería inversa con `--mcp-server-name`: "

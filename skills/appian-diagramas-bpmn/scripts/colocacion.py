@@ -2,7 +2,8 @@
 
 - `por_capas`: la colocación de reserva, cuando no hay navegador para el motor de Mermaid: capas de izquierda a
   derecha (el camino más largo desde el inicio, sin contar las vueltas atrás) y un carril por perfil; los flujos
-  largos y las vueltas atrás van por huecos que no pisan ningún paso.
+  largos y las vueltas atrás van por huecos que no pisan ningún paso, y las salidas de una puerta que compartirían el
+  tramo de su derecha salen por su vértice (el codo), para que la etiqueta de cada una vaya en un tramo suyo.
 - `tramos`: parte un proceso que no cabe en una página en tramos de capas seguidas (sin inventar subprocesos).
 - `ajustar`: el motor da a cada paso el ancho de su texto, pero en draw.io las tareas miden siempre 120×80 y las
   etiquetas de eventos y puertas ocupan hasta 110 px de ancho. Se elige a qué lado va la etiqueta de cada evento o
@@ -132,40 +133,60 @@ def por_capas(proc, eventos, puertas, cabecera):
     pasillo = {i: geo["carriles"][c][0] + MARGEN + filas[c] * FILA + (k + 0.5) * CORREDOR
                for c, vueltas in pasillos.items() for k, i in enumerate(vueltas)}
     # trazado: los tramos verticales van por el hueco entre dos columnas, cada flujo a su altura del hueco para que no
-    # se monten; los de una puerta salen en vertical desde ella, salvo que otro paso de su columna lo tape
-    usos = defaultdict(dict)            # hueco (capa a su izquierda) -> {flujo: [y al entrar, y al salir]}
-    rutas = []
+    # se monten; los de una puerta salen en vertical desde ella, salvo que otro paso de su columna lo tape (entonces
+    # por su derecha o, si allí comparten tramo con otra salida, por el codo: salidas_por_codo)
     en_columna = {c: [yy(e) for e in lista] for c, lista in por_capa.items()}
+    nombre = {p["id"]: p.get("nombre") for p in proc["pasos"]}
 
     def tapado(pid, y2):
         """Si al salir en vertical de `pid` hasta y2 (y seguir en horizontal) se cruzaría otro paso de su columna o un
         flujo largo que la atraviesa."""
         y1 = yy(("paso", pid))
         return any(abs(y - y1) > 1 and min(y1, y2) - 1 <= y <= max(y1, y2) + 1 for y in en_columna[capa[pid]])
-    for i, f in enumerate(proc["flujos"]):
-        ruta = []
-        if f["de"] not in carril or f["a"] not in carril or f["de"] == f["a"]:
-            pass
-        elif i in pasillo:   # vuelta atrás: por el hueco de su derecha, el pasillo y el hueco de la izquierda del destino
-            sy, ty = yy(("paso", f["de"])), yy(("paso", f["a"]))
-            ruta = [("hueco", capa[f["de"]], sy), ("hueco", capa[f["de"]], pasillo[i]),
-                    ("hueco", capa[f["a"]] - 1, pasillo[i]), ("hueco", capa[f["a"]] - 1, ty)]
-        else:
-            cadena = [("paso", f["de"])] + [("hueco", i, c) for c in range(capa[f["de"]] + 1, capa[f["a"]])] + [("paso", f["a"])]
-            for k, (e, sig) in enumerate(zip(cadena, cadena[1:])):
-                if abs(yy(e) - yy(sig)) <= 1:
-                    continue
-                if k == 0 and tipo[f["de"]] in puertas and not tapado(f["de"], yy(sig)):
-                    ruta.append(("columna", capa[f["de"]], yy(sig)))
-                else:
-                    ruta += [("hueco", capa[f["de"]] + k, yy(e)), ("hueco", capa[f["de"]] + k, yy(sig))]
-        for punto in ruta:
-            if punto[0] == "hueco":
-                usos[punto[1]].setdefault(i, [punto[2], punto[2]])[1] = punto[2]
-        rutas.append(ruta)
 
-    def colocar_columnas(ancho_col):
+    def cabe_debajo(pid):
+        """Si la etiqueta de la puerta cabe debajo de ella sin que la cruce el pasillo de una vuelta atrás."""
+        y, alto = yy(("paso", pid)), 25 + alto_texto(nombre[pid]) + 2 + AIRE_ETIQUETA
+        return not any(y < pasillo[i] < y + alto and capa[f["a"]] <= capa[pid] <= capa[f["de"]]
+                       for i, f in secuencia if i in pasillo)
+
+    def trazar(codo):
+        """Con las salidas que van por el codo ({flujo: y del codo}): la ruta de cada flujo, lo que usa cada uno de cada
+        hueco ({hueco (capa a su izquierda): {flujo: [y al entrar, y al salir]}}) y, en el hueco, qué salidas por el
+        codo van a la izquierda de cada flujo: las de su puerta, que si no lo cruzarían."""
+        usos, rutas = defaultdict(dict), []
+        for i, f in enumerate(proc["flujos"]):
+            ruta = []
+            if f["de"] not in carril or f["a"] not in carril or f["de"] == f["a"]:
+                pass
+            elif i in pasillo:
+                # vuelta atrás: por el hueco de su derecha, el pasillo y el hueco de la izquierda del destino
+                sy, ty = yy(("paso", f["de"])), yy(("paso", f["a"]))
+                ruta = [("hueco", capa[f["de"]], sy), ("hueco", capa[f["de"]], pasillo[i]),
+                        ("hueco", capa[f["a"]] - 1, pasillo[i]), ("hueco", capa[f["a"]] - 1, ty)]
+            else:
+                cadena = ([("paso", f["de"])] + [("hueco", i, c) for c in range(capa[f["de"]] + 1, capa[f["a"]])]
+                          + [("paso", f["a"])])
+                for k, (e, sig) in enumerate(zip(cadena, cadena[1:])):
+                    if abs(yy(e) - yy(sig)) <= 1:
+                        continue
+                    if k == 0 and i in codo:      # por su vértice hasta el codo y por él al hueco
+                        ruta += [("columna", capa[f["de"]], codo[i]), ("hueco", capa[f["de"]], codo[i]),
+                                 ("hueco", capa[f["de"]], yy(sig))]
+                    elif k == 0 and tipo[f["de"]] in puertas and not tapado(f["de"], yy(sig)):
+                        ruta.append(("columna", capa[f["de"]], yy(sig)))
+                    else:
+                        ruta += [("hueco", capa[f["de"]] + k, yy(e)), ("hueco", capa[f["de"]] + k, yy(sig))]
+            for punto in ruta:
+                if punto[0] == "hueco":
+                    usos[punto[1]].setdefault(i, [punto[2], punto[2]])[1] = punto[2]
+            rutas.append(ruta)
+        izquierda = {j: {i for i in codo if i != j and proc["flujos"][i]["de"] == f["de"]} for j, f in secuencia}
+        return rutas, usos, izquierda
+
+    def colocar_columnas(ancho_col, trazado):
         """Las x: de cada columna, de cada paso y de cada flujo en los huecos entre columnas."""
+        rutas, usos, a_su_izquierda = trazado
         xs = [cabecera + MARGEN + 60 + (40 if any(capa[f["a"]] == 0 for i, f in secuencia if i in atras) else 0)]
         for c in range(ultima + 1):
             xs.append(xs[-1] + ancho_col[c])
@@ -177,7 +198,7 @@ def por_capas(proc, eventos, puertas, cabecera):
             derecha = xs[hueco + 1] if hueco + 1 < len(xs) else izquierda + COLUMNA
             centro, libre = (izquierda + derecha) / 2, (derecha - izquierda - 120) / 2 - 6
             paso_ = min(10, 2 * libre / max(len(extremos) - 1, 1))
-            for k, i in enumerate(orden_en_hueco(extremos)):
+            for k, i in enumerate(orden_en_hueco(extremos, a_su_izquierda)):
                 sitio[(hueco, i)] = centro + (k - (len(extremos) - 1) / 2) * paso_
         geo["flujos"] = [[(sitio[(p[1], i)], p[2]) if p[0] == "hueco" else (xs[p[1]], p[2]) if p[0] == "columna" else p
                           for p in ruta] for i, ruta in enumerate(rutas)]
@@ -190,9 +211,21 @@ def por_capas(proc, eventos, puertas, cabecera):
     for i, f in secuencia:
         if f.get("etiqueta") and tipo[f["de"]] in puertas and i not in atras:
             ancho_col[capa[f["de"]]] = max(ancho_col[capa[f["de"]]], ancho_columna_puerta(proc, f))
+    # una salida va por el codo solo si así no se cruza con más flujos: si no, se queda en el tramo que comparte
+    codo = salidas_por_codo(proc, secuencia, atras, capa, tipo, puertas, yy, tapado, cabe_debajo)
+    for i in sorted(codo):
+        sin = {j: y for j, y in codo.items() if j != i}
+        cuenta = []
+        for prueba in (codo, sin):
+            trazado = trazar(prueba)
+            colocar_columnas(ancho_col, trazado)
+            cuenta.append(cruces(proc, geo, set(trazado[1][capa[proc["flujos"][i]["de"]]]) | {i}))
+        if cuenta[0] > cuenta[1]:
+            codo = sin
+    trazado = trazar(codo)
     for _ in range(3):
-        colocar_columnas(ancho_col)
-        falta = etiquetas_cortadas(proc, geo, capa, atras, eventos, puertas)
+        colocar_columnas(ancho_col, trazado)
+        falta = etiquetas_cortadas(proc, geo, capa, atras, eventos, puertas, codo)
         if not falta:
             break
         for c, px in falta.items():
@@ -219,6 +252,36 @@ def bajar_a_su_siguiente(por_capa, previos, lado_de, fila, salidas):
 
 MARCA_DEFECTO = 20       # lo que ocupa la marca del flujo por defecto al salir de una puerta, con su aire
 AIRE_ETIQUETA = 6        # entre la etiqueta de un flujo y lo que la rodea (la flecha, otro flujo)
+CODO = 40                # lo que baja o sube por su vértice una salida de una puerta antes de ir al hueco: pasada la
+                         # puerta (25) y con sitio para su etiqueta (14 de alto) sin llegar a lo de la fila de al lado
+
+
+def salidas_por_codo(proc, secuencia, atras, capa, tipo, puertas, yy, tapado, cabe_debajo):
+    """{flujo: y del codo} de las salidas de una puerta que dejan de compartir el tramo que sale por su derecha. Por la
+    derecha sale la que sigue en su fila, una vuelta atrás y las que van por el hueco porque algo de su columna les
+    tapa la vertical (`tapado`): si son más de una, la que va más lejos hacia abajo sale por el vértice de abajo y, si
+    por abajo no sale ninguna y la etiqueta de la puerta cabe debajo (`cabe_debajo`), la que va más lejos hacia arriba,
+    por el de arriba (con salidas por los dos vértices, la etiqueta de la puerta pisaría una). Bajan o suben CODO y van
+    al hueco por un tramo suyo, donde va su etiqueta: en el compartido no se sabría de qué salida es."""
+    por_puerta = defaultdict(list)
+    for i, f in secuencia:
+        if tipo[f["de"]] in puertas and f["de"] != f["a"]:
+            sig = ("hueco", i, capa[f["de"]] + 1) if capa[f["a"]] > capa[f["de"]] + 1 else ("paso", f["a"])
+            # una vuelta atrás sale por la derecha, hacia el hueco de su pasillo: como la que sigue en su fila
+            por_puerta[f["de"]].append((i, 0 if i in atras else yy(sig) - yy(("paso", f["de"]))))
+    codo = {}
+    for pid, salidas in por_puerta.items():
+        y = yy(("paso", pid))
+        derecha = [(i, dy) for i, dy in salidas if abs(dy) <= 1 or tapado(pid, y + dy)]
+        if len(derecha) < 2:
+            continue
+        por_abajo = any(dy > 1 and not tapado(pid, y + dy) for _, dy in salidas)
+        for signo in (1, -1):
+            lejos = max((s for s in derecha if s[1] * signo > 1), key=lambda s: s[1] * signo, default=None)
+            if lejos and (signo == 1 or not por_abajo and cabe_debajo(pid)) and not tapado(pid, y + signo * CODO):
+                codo[lejos[0]] = y + signo * CODO
+                por_abajo = por_abajo or signo == 1
+    return codo
 
 
 def ancho_columna_puerta(proc, f):
@@ -228,46 +291,86 @@ def ancho_columna_puerta(proc, f):
     return ancho_etiqueta_flujo(f["etiqueta"]) + 100 + (MARCA_DEFECTO if defecto else 0)
 
 
-def etiquetas_cortadas(proc, geo, capa, atras, eventos, puertas):
-    """{capa: px}: lo que hay que ensanchar la columna que sigue a una puerta para que la etiqueta de una salida que va en
-    recto al paso siguiente quepa en el trozo de su tramo que no cruza ni comparte otro flujo (donde la pone draw.io).
-    Un flujo que sube o baja por el hueco está en su centro: se aleja de la flecha la mitad de lo que se ensancha."""
+def etiquetas_cortadas(proc, geo, capa, atras, eventos, puertas, codo=()):
+    """{capa: px}: lo que hay que ensanchar la columna que sigue a una puerta para que la etiqueta de una de sus salidas
+    quepa en un trozo de su tramo que no cruza ni comparte otro flujo (donde la pone draw.io): el de la que va en recto
+    al paso siguiente, el del codo al hueco (`codo`) o, en la que sale por la derecha y sube o baja por el hueco hasta
+    el paso siguiente, el de la derecha o el último, que llega al paso. Un flujo que sube o baja por el hueco está en
+    su centro: se aleja de la flecha (o del codo) la mitad de lo que se ensancha."""
     tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
     medio = lambda pid: 25 if tipo[pid] in puertas else 20 if tipo[pid] in eventos else 60    # noqa: E731
-    falta = {}
-    for i, f in enumerate(proc["flujos"]):
-        if not f.get("etiqueta") or i in atras or tipo.get(f["de"]) not in puertas or f["a"] not in tipo \
-                or capa[f["a"]] != capa[f["de"]] + 1 or geo["flujos"][i]:
-            continue
-        (gx, gy), (tx, ty) = geo["pasos"][f["de"]], geo["pasos"][f["a"]]
-        if abs(gy - ty) > 1:
-            continue
-        lo, hi = gx + medio(f["de"]), tx - medio(f["a"])
+
+    def libres(i, lo, y, hi):
+        """Los trozos (desde, hasta) del tramo de lo a hi a la altura y que no cruza ni comparte otro flujo que el i, y
+        si hay alguno que lo haga."""
         ocupado = []
         for j, (g, pts) in enumerate(zip(proc["flujos"], geo["flujos"])):
             camino = [geo["pasos"][g["de"]]] + pts + [geo["pasos"][g["a"]]] if g["de"] in tipo and g["a"] in tipo else pts
             for p, q in zip(camino, camino[1:]):
-                if j != i and abs(p[0] - q[0]) <= 1 and min(p[1], q[1]) - 1 <= gy <= max(p[1], q[1]) + 1:
+                if j != i and abs(p[0] - q[0]) <= 1 and min(p[1], q[1]) - 1 <= y <= max(p[1], q[1]) + 1:
                     ocupado.append((p[0], p[0]))                                        # lo cruza
-                elif j != i and abs(p[1] - q[1]) <= 1 and abs(p[1] - gy) <= 1:
+                elif j != i and abs(p[1] - q[1]) <= 1 and abs(p[1] - y) <= 1:
                     ocupado.append(tuple(sorted((p[0], q[0]))))                         # va por la misma recta
-        libres, desde = [], lo
+        trozos, desde = [], lo
         for a, b in sorted(ocupado):
-            libres.append(min(a, hi) - desde)
+            trozos.append((desde, min(a, hi)))
             desde = max(desde, b)
-        libres.append(hi - desde)
+        return trozos + [(desde, hi)], bool(ocupado)
+    falta = {}
+    for i, f in enumerate(proc["flujos"]):
+        if not f.get("etiqueta") or i in atras or tipo.get(f["de"]) not in puertas or f["a"] not in tipo:
+            continue
+        (gx, gy), (tx, ty), ruta = geo["pasos"][f["de"]], geo["pasos"][f["a"]], geo["flujos"][i]
+        siguiente = capa[f["a"]] == capa[f["de"]] + 1
+        al_paso = siguiente and len(ruta) == 2 and abs(ruta[0][0] - gx) > 1   # por la derecha al hueco y en él al paso
+        if i in codo:
+            tramos = [(gx, ruta[0][1], ruta[1][0])]
+        elif siguiente and not ruta and abs(gy - ty) <= 1:
+            tramos = [(gx + medio(f["de"]), gy, tx - medio(f["a"]))]
+        elif al_paso:
+            tramos = [(gx + medio(f["de"]), gy, ruta[0][0]), (ruta[-1][0], ty, tx - medio(f["a"]))]
+        else:
+            continue
+        medidas = [libres(i, *t) for t in tramos]
+        mayor = max(b - a for trozos, _ in medidas for a, b in trozos)
         necesita = ancho_etiqueta_flujo(f["etiqueta"]) + 2 * AIRE_ETIQUETA
-        if ocupado and max(libres) < necesita:
-            falta[capa[f["de"]]] = max(falta.get(capa[f["de"]], 0), 2 * (necesita - max(libres)))
+        if mayor >= necesita or not (medidas[0][1] or i in codo or al_paso):
+            continue
+        if al_paso:   # al ensanchar, solo crece el trozo que llega al paso (ninguno si otro flujo llega por él)
+            mayor = next((b - a for a, b in medidas[-1][0] if b == tramos[-1][2]), 0)
+            if mayor <= 0:
+                continue
+        falta[capa[f["de"]]] = max(falta.get(capa[f["de"]], 0), 2 * (necesita - mayor))
     return falta
 
 
-def orden_en_hueco(extremos):
+def cruces(proc, geo, flujos=None):
+    """Cuántas veces se cruzan dos flujos (un tramo horizontal de uno y uno vertical del otro, por dentro de los dos);
+    con `flujos`, solo las de alguno de esos con otro."""
+    tramos = {}
+    for i, (f, pts) in enumerate(zip(proc["flujos"], geo["flujos"])):
+        if f["de"] in geo["pasos"] and f["a"] in geo["pasos"]:
+            camino = [geo["pasos"][f["de"]][:2]] + list(pts) + [geo["pasos"][f["a"]][:2]]
+            tramos[i] = list(zip(camino, camino[1:]))
+    n = 0
+    for i, j in ((i, j) for i in tramos for j in tramos if i < j and (flujos is None or i in flujos or j in flujos)):
+        for a in tramos[i]:
+            for b in tramos[j]:
+                for (h, h2), (v, v2) in ((a, b), (b, a)):
+                    if abs(h[1] - h2[1]) <= 1 and abs(v[0] - v2[0]) <= 1 and min(h[0], h2[0]) + 1 < v[0] < \
+                            max(h[0], h2[0]) - 1 and min(v[1], v2[1]) + 1 < h[1] < max(v[1], v2[1]) - 1:
+                        n += 1
+    return n
+
+
+def orden_en_hueco(extremos, a_su_izquierda=None):
     """De izquierda a derecha, los flujos que suben o bajan por un hueco ({flujo: (y al entrar, y al salir)}): por la
     fila de la que vienen, salvo que uno salga de la fila a la que llega otro, que va a su izquierda; si no, el tramo
-    horizontal del que llega pisaría al del que sale y parecería un solo flujo."""
+    horizontal del que llega pisaría al del que sale y parecería un solo flujo. `a_su_izquierda` ({flujo: {flujos}})
+    dice además qué otros van a la izquierda de uno: la salida de su puerta por el codo, que si no lo cruzaría."""
     pendientes = sorted(extremos, key=lambda i: (extremos[i][0], i))
-    antes = {i: {j for j in extremos if j != i and abs(extremos[j][0] - extremos[i][1]) <= 1} for i in extremos}
+    antes = {i: {j for j in extremos if j != i and (abs(extremos[j][0] - extremos[i][1]) <= 1
+                                                   or j in (a_su_izquierda or {}).get(i, ()))} for i in extremos}
     orden = []
     while pendientes:          # si dos se cruzan las filas (uno va de a a b y otro de b a a), el primero
         quedan = set(pendientes)

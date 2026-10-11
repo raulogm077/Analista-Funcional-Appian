@@ -58,7 +58,7 @@ import unidades as un
 
 SECCIONES = {"F": [str(n) for n in range(1, 12)], "T": [str(n) for n in range(0, 16)], "D": ["versiones", "decisiones"]}
 PRIORIDADES = ("imprescindible", "deseable")
-TIPOS_D = ("CAMBIA", "ANULA", "VALIDA", "RESPONDE", "ALCANCE+", "ALCANCE−", "ALCANCE-")
+TIPOS_D = mo.TIPOS_D
 TERMINOS_APPIAN = [r"record types?", r"record lists?", r"process models?", r"\bsail\b", r"expression rules?",
                    r"reglas? de expresi[oó]n", r"smart services?", r"data stores?", r"\bcdts?\b", r"\ba![a-z]\w*",
                    r"appian designer", r"record actions?", r"interface objects?", r"\bdesigner\b",
@@ -77,6 +77,23 @@ def informe(nombre, lista, grave=True):
           ("" if not lista else f": {len(lista)} → {', '.join(map(str, lista[:40]))}{mas}"))
     if grave and lista:
         errores += 1
+
+
+def comprobar_anexo(m):
+    """El anexo «Quién puede hacer qué» del funcional, si lo hay, es el que sale ahora de las pantallas: si se cambió el
+    nombre de una parte o quién la usa y no se regeneró, el DF lo enseñaría viejo. Aviso; se apaga con
+    indice.py derivadas --escribir."""
+    import indice as ix   # aquí: comprobar.py no necesita indice.py para lo demás
+    L = m.docs["F"].lineas
+    ini = next((i for i, l in enumerate(L) if l.startswith("## Anexo")), None)
+    if ini is None:
+        return
+    fin = next((i for i in range(ini + 1, len(L)) if L[i].startswith("## ")), len(L))
+    actual = [l.rstrip() for l in L[ini:fin]]
+    while actual and not actual[-1]:
+        actual.pop()
+    informe("el anexo «Quién puede hacer qué» al día (si no: indice.py derivadas <p> --escribir)",
+            [] if actual == ix.anexo(m) else ["no es el que sale ahora de las pantallas"], grave=False)
 
 
 def anulada(m, pid):
@@ -1053,6 +1070,7 @@ def main():
         comprobar_control(m)
         comprobar_preguntas_prototipo(m)
         comprobar_redaccion(m)
+        comprobar_anexo(m)
         comprobar_tecnico(m, ctx)
         comprobar_versiones(m)
         comprobar_as_is(m, ctx)

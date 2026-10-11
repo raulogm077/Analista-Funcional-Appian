@@ -302,7 +302,7 @@ class Contexto:
         return {k: x[:2] for k, x in ahora.items() if antes.get(k, (None, None, None))[2] != x[2]}
 
     def copia(self, v):
-        """El análisis de versiones/v<x.y>/ (proyecto.py copia), o None."""
+        """El análisis de versiones/v<x.y>/ (proyecto.py version o copia), o None."""
         if not v:
             return None
         if v not in self._copias:
