@@ -16,6 +16,9 @@ import tempfile
 from pathlib import Path
 
 sys.dont_write_bytecode = True
+for _s in (sys.stdout, sys.stderr):  # un Windows sin PYTHONUTF8 escribe la consola en cp1252 (✔, 🔒)
+    if hasattr(_s, "reconfigure"):
+        _s.reconfigure(encoding="utf-8", errors="replace")
 AQUI = Path(__file__).resolve().parent
 PLUGIN = Path(os.environ.get("PLUGIN_A_PROBAR") or AQUI.parents[2]).resolve()
 sys.path.insert(0, str(PLUGIN / "skills" / "appian-functional-analyst" / "scripts"))
