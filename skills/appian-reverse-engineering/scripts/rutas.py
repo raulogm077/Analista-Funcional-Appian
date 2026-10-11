@@ -19,7 +19,16 @@ def work_dir(out, crear: bool = False) -> Path:
     return d
 
 
-TIPO_MAXIMO = 24   # con el nombre de herramienta de 48 (devmcp_extract.safe_name), mcp_raw/… no pasa de 100
+def safe_name(s: str, maximo: int = 48) -> str:
+    """Nombre de fichero de una herramienta, corto para que la ruta quepa en Windows y en OneDrive: si no cabe, se
+    recorta y lleva 8 hex del sha1 del nombre, para que dos nombres largos no se pisen. _meta.tool guarda el nombre."""
+    limpio = re.sub(r"[^A-Za-z0-9_.\-]", "_", s)
+    if len(limpio) <= maximo:
+        return limpio
+    return f"{limpio[:maximo - 9]}-{hashlib.sha1(s.encode('utf-8')).hexdigest()[:8]}"
+
+
+TIPO_MAXIMO = 24   # con el nombre de herramienta de 48 (safe_name), mcp_raw/… no pasa de 100
 
 
 def carpeta_objeto(raw: Path, tipo: str, uuid: str) -> Path:

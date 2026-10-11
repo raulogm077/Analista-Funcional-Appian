@@ -1,0 +1,7 @@
+Tipo de fuente: aprobación
+De: Jefe de proyecto
+Fecha: 2026-09-04
+
+Aprobada la construcción de la versión 1.0 del análisis, con su alcance y su coste. Se construye en desarrollo y se pasa a producción por el proceso de cambios de Sistemas.
+
+Además de desarrollo, preproducción y producción hay un entorno de corrección, con la misma versión que producción, para las urgencias.

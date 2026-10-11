@@ -11,8 +11,16 @@
   indice.py seccion    <p> F6 [--con "documento"]          texto de una sección: F (funcional), T (técnico), D (decisiones)
   indice.py siguientes <p>                              siguiente ID libre de cada tipo
   indice.py derivadas  <p> [--escribir]                 anexo «Quién puede hacer qué» del funcional
-  indice.py pendientes <p>                              guion de la próxima reunión: las PC abiertas, por «A quién»
+  indice.py pendientes <p>                              guion de la próxima reunión: lo que decide el equipo
+                                                        (puntos «Pendiente» de los informes) y las PC, por «A quién»
   indice.py grafo      <p> [-o analisis/grafo.json]       las piezas y sus referencias en JSON (en el proyecto)
+
+Con unidades de cambio (analisis/cambios.md, references/cambios.md):
+  indice.py cambios    <p> EV-02 [--json]               lo de una unidad: piezas nuevas, que cambian (antes y después) y
+                                                        anuladas, pantallas, técnico, objetos, pruebas, colisiones
+  indice.py colision   <p> URG-01                       la corrección urgente frente a las unidades sin pasar a producción
+  indice.py encargo    <p> EV-02                        construccion/EV-02.md y EV-02-esperado.json (unidad aprobada)
+  ficha e impacto imprimen además «Construido: … · En curso: …» por pieza.
 
 Estados: 🔒 Validado · ✅ Decidido · 🔶 Inferido · ⚠️ Pendiente · ❓ No definido · Anulada · Respondida.
 """
@@ -27,6 +35,7 @@ sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fu
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import modelo as mo
+import unidades as un
 
 ORDEN = ["ACT", "ESC", "HU", "CA", "RB", "PAN", "AV", "DOC", "INT", "PC", "D", "DT", "PT"]
 ANCHO = 2
@@ -152,6 +161,7 @@ def c_buscar(m, a):
 
 
 def c_ficha(m, a):
+    ctx = un.Contexto(m)
     for pid in a.ids:
         p = m.piezas.get(pid)
         if not p:
@@ -160,6 +170,8 @@ def c_ficha(m, a):
         D = m.docs[p.doc]
         veces = collections.Counter(l for l in D.lineas if l.strip())
         print(f"── {etiqueta(m, pid, 90)} · {mo.DOCS[p.doc]} líneas {p.ini + 1}–{p.fin}")
+        if ctx.hay:
+            print(f"   {ctx.texto_senales(pid)}")
         if p.forma == "fila" and p.cabecera:
             print(p.cabecera)
         for k, l in enumerate(m.bloque(pid)):
@@ -246,11 +258,34 @@ def c_impacto(m, a):
     if con:
         print(f"(solo dependencias cuyo texto menciona: {', '.join(a.con)})")
     print("Piezas de entrada:")
+    ctx = un.Contexto(m)
+    construidas, en_curso = [], set()
     for pid in sorted(entrada, key=clave):
         print("  " + etiqueta(m, pid))
         p = m.piezas.get(pid)
         if p and p.hijos:
             print(f"      criterios: {', '.join(p.hijos)}")
+        if ctx.hay and p:
+            hecho, curso = ctx.senales(pid)
+            print(f"      {ctx.texto_senales(pid)}")
+            construidas += [pid] if hecho else []
+            en_curso |= set(curso)
+    if construidas:   # señales del informe (references/cambios.md): el modelo las copia, no las deduce
+        print(f"  → Si el punto las cambia, «Posible petición de cambio» en el Resumen: {', '.join(construidas)} "
+              "están construidas (no pide aprobación)")
+    # la unidad del informe (--cambio o, sin él, la única Abierta) no se sugiere: tocar lo suyo no pide aprobación
+    abiertas = [u.id for u in ctx.unidades if u.estado == un.ABIERTA]
+    propia = (a.cambio or "").upper() or (abiertas[0] if len(abiertas) == 1 else None)
+    ev_abiertas = [u for u in abiertas if u.startswith("EV-")]
+    if ctx.hay and construidas and not a.cambio and not ev_abiertas:   # dónde va: lo dice el script, no el modelo
+        sig = 1 + max([int(u.id.split("-")[1]) for u in ctx.unidades if u.id.startswith("EV-")] or [0])
+        print(f"  → Ninguna unidad Abierta: si aplicas el cambio, ábrela antes (proyecto.py cambio <p> EV-{sig:02d} "
+              "abrir --titulo \"…\") y pon «Cambio: EV-" + f"{sig:02d}» en el informe; meterlo en una Aprobada la "
+              "devuelve a aprobación")
+    otras = sorted(en_curso - {propia})
+    if otras:
+        print(f"  → En curso en {', '.join(otras)}: si el punto es de {propia or 'otra unidad'}, «Requiere: Sí "
+              f"({', '.join(otras)})»: hay que decidir el orden")
 
     def lista(titulo, d):
         print(f"\n{titulo} ({len(d)}):")
@@ -298,7 +333,7 @@ def c_siguientes(m, a):
         if t != "CA":
             n = (max(usados[t]) + 1) if usados[t] else 1
             print(f"{t}-{n:0{ANCHO}d}")
-    print("Criterios: el siguiente .n de su historia (HU-07.4 tras HU-07.3)")
+    print("Criterios: el siguiente .n de su historia o de su ficha INT (HU-07.4 tras HU-07.3)")
 
 
 def c_grafo(m, a):
@@ -389,16 +424,41 @@ def celda(m, p, nombre):
     return cel[cab.index(nombre)] if nombre in cab and cab.index(nombre) < len(cel) else ""
 
 
+def para_decidir(m):
+    """[(informe, punto)] de los puntos «Decisión: Pendiente» de impacto/*.md: lo que tiene que decidir el equipo."""
+    return [(nombre, f) for nombre, _, puntos, _ in mo.informes(m.raiz) for f in puntos
+            if mo.normaliza(f.get("decision", "")).strip(" *").startswith("pendiente")]
+
+
 def c_pendientes(m, a):
-    """Guion de la próxima reunión: las PC abiertas agrupadas por «A quién»; en cada grupo, de más peso a menos."""
+    """Guion de la próxima reunión: primero lo que tiene que decidir el equipo (los puntos pendientes de aprobación de los
+    informes, que no llegan solos a §11 ni al Word); después, las PC abiertas agrupadas por «A quién», en cada grupo de
+    más peso a menos."""
     grupos = collections.defaultdict(list)
     for p in m.vigentes("PC"):
         quien = mo.sin_comentarios(celda(m, p, "a quien")).strip(" —-") or "Sin asignar"
         grupos[quien].append((-peso_pc(m, p), clave(p.id), p))
-    if not grupos:
+    decidir = para_decidir(m)
+    if not grupos and not decidir:
         print("No hay preguntas pendientes de confirmar.")
         return
     print("# Próxima reunión: lo pendiente de confirmar\n")
+    if decidir:
+        print("## Para decidir (equipo)\n")
+        print("Puntos pendientes de aprobación: no se aplican ni van al cliente hasta que el equipo decida.\n")
+        for inf, f in decidir:
+            print(f"- **{inf} · punto {f.get('#', '?')}** {mo.sin_comentarios(f.get('que se dice', '')).strip()}")
+            cambio = mo.sin_comentarios(f.get("cambio propuesto", "")).strip(" —-")
+            if cambio:
+                print(f"  - Cambio propuesto: {cambio}")
+            req = mo.sin_comentarios(next((v for k, v in f.items() if k.startswith("requiere")), "")).strip()
+            motivo = re.search(r"\(([^)]*)\)", req)
+            if req.strip(" —-"):
+                print(f"  - Requiere: {motivo.group(1) if motivo else req}")
+        print()
+    if not grupos:
+        print("No hay preguntas pendientes de confirmar con el cliente.")
+        return
     print("De más a menos peso en cada grupo: lo que afecta a más partes del análisis va primero.\n")
     orden = sorted(grupos, key=lambda q: (min(x[0] for x in grupos[q]), mo.normaliza(q)))
     for quien in orden:
@@ -413,6 +473,210 @@ def c_pendientes(m, a):
             if afecta:
                 print(f"  - Afecta a: {afecta}")
         print()
+
+
+# ------------------------------------------------------- unidades de cambio (references/cambios.md)
+DX = ('uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python '
+      '"<skill de ingeniería inversa>/scripts/devmcp_extract.py"')
+
+
+def unidad(m, uid):
+    """El contexto de las unidades y el ID, o sale: sin analisis/cambios.md o sin esa unidad no hay nada que derivar."""
+    ctx = un.Contexto(m)
+    uid = uid.upper()
+    if not ctx.hay:
+        sys.exit(f"No hay {m.analisis / un.FICHERO}: las unidades se abren con proyecto.py cambio <p> <ID> abrir")
+    if uid not in ctx.por_id:
+        sys.exit(f"{uid} no está en analisis/cambios.md ({', '.join(ctx.por_id) or 'sin unidades'})")
+    return ctx, uid
+
+
+def c_cambios(m, a):
+    """Lo de una unidad: piezas, historias, pantallas, diagramas, técnico, objetos, pruebas a repetir y colisiones."""
+    ctx, uid = unidad(m, a.unidad)
+    r = ctx.resumen(uid)
+    if a.json:
+        print(json.dumps(r, ensure_ascii=False, indent=1))
+        return
+    lista = lambda xs: ", ".join(xs) or "—"
+    print(f"# {uid} · {r['titulo']} · {r['estado']}")
+    print(f"Fuentes: {lista(r['informes'])} · versión {r['base'] or '?'} → {r['version']}"
+          + ("" if r["copiaBase"] else " (sin la copia de la versión base en versiones/: Nueva o Cambia sale de los "
+                                       "puntos de sus informes)"))
+    piezas = r["piezas"]
+    print("\nNuevas: " + lista(p["id"] + " " + p["titulo"][:50] for p in piezas["nuevas"]))
+    print(f"Cambian ({len(piezas['cambian'])}):")
+    for p in piezas["cambian"]:
+        print(f"  {p['id']} — {p['titulo'][:60]}")
+        for k in ("antes", "despues"):
+            for l in p[k]:
+                print(f"    {'antes  ' if k == 'antes' else 'después'}: {l[:120]}")
+    print(f"Anuladas: {lista(p['id'] for p in piezas['anuladas'])}")
+    print(f"Historias que se conservan y comparten pantalla o paso (van en el DF del cambio): "
+          f"{lista(r['historias']['seConservan'])}")
+    print(f"\nPantallas: {lista(r['pantallas'])}" + (f" (capture.py … --solo {','.join(r['pantallas'])})"
+                                                     if r["pantallas"] else ""))
+    print(f"Diagramas: {lista(r['diagramas'])}")
+    print(f"Técnico: {lista(r['tecnico'])}")
+    print("Objetos (técnico §13): " + lista(o["objeto"] + " (" + o["situacion"] + ")" for o in r["objetos"]))
+    pr = r["pruebas"]
+    print(f"\nPruebas a repetir: criterios {lista(pr['criterios'])} · escenarios {lista(pr['escenarios'])} · urgentes "
+          + lista(g["id"] + " (" + ", ".join(g["objetos"]) + ")" for g in pr["urgentes"]))
+    for c in r["colisiones"]:
+        if c["unidad"].startswith("URG"):
+            print(f"Colisión: {c['unidad']} ({c['estado']}) corrige {', '.join(c['objetos'])} (urgentes.md)")
+            continue
+        print(f"Colisión: {c['unidad']} ({c['estado']}) también cambia {', '.join(c['objetos'])}"
+              + (f" · decisión: {c['decision']}" if c["decision"] else " · sin decisión"))
+    for t in r["reaplicar"]:
+        print(f"Reaplicar {t['urgente']} en {', '.join(t['objetos'])} (proyecto.py cambio … construida --reaplicada "
+              f"{t['urgente']})")
+    for t in r["congelados"]:
+        print(f"Congelados hasta el pase de {t['urgente']}: {', '.join(t['objetos'])}")
+
+
+def c_colision(m, a):
+    """Una corrección urgente frente a las unidades en curso (sin pasar a producción): los objetos que corrige y los que
+    los usan (as-is/datos/dependencias.json) y, si hay as-is/datos/deriva.json, lo modificado en desarrollo después del
+    último pase."""
+    ctx, uid = unidad(m, a.unidad)
+    if not ctx.por_id[uid].urgente:
+        sys.exit(f"{uid} no es una URG: la colisión es de un cambio urgente (references/urgentes.md)")
+    col = ctx.colision(uid)
+    if not col["corregidos"]:
+        sys.exit(f"impacto/{uid}.md no dice «Objetos» en «Urgencia» (references/urgentes.md)")
+    print(f"{uid} corrige: {', '.join(col['corregidos'])}" + (f" · los usan: {', '.join(col['usan'])}" if col["usan"] else ""))
+    if col["deriva"] == "sin historial":
+        print("Deriva: el Dev MCP no da el historial de versiones; no se sabe si se han modificado en desarrollo")
+    elif col["deriva"] == "sin fichero" and (m.raiz / "as-is").is_dir():
+        print(f"Sin as-is/datos/deriva.json. Si el Dev MCP da el historial, solo de esos objetos:\n  {DX} deriva --out "
+              f"\"<p>/as-is\" --objetos \"{','.join(col['corregidos'] + col['usan'])}\"")
+    print(f"Colisión: {'sí' if col['choques'] else 'no'}")
+    for c in col["choques"]:
+        print(f"  {c}")
+    print("→ " + ("«Dónde se corrige: Entorno de corrección» (igual que producción); cada unidad que cambia esos objetos "
+                  "recibe en su encargo «reaplicar " + uid + "». Sin entorno de corrección, la ficha registra lo que "
+                  "decide el equipo." if col["choques"] else
+                  "«Dónde se corrige: Desarrollo»; esos objetos quedan congelados para las unidades en curso hasta el pase."))
+    print(f"Escríbelo en «Colisión» y «Dónde se corrige» de impacto/{uid}.md.")
+
+
+def donde_en_tecnico(m, objeto, fuentes=(), suyas=()):
+    """Los apartados del técnico y las DT que nombran un objeto (sin Entorno, Convenciones ni §13; un record type, por su
+    «### 3.n <nombre>»), y qué cambia en él con esta unidad: la «Decisión» de una DT de la unidad (de sus piezas o que
+    cita una de sus fuentes) que lo nombra o, si no, una fila que lo nombra y cita una de sus fuentes; "" si no hay."""
+    if "T" not in m.docs:
+        return [], ""
+    T, rx = m.docs["T"], re.compile(rf"`{re.escape(objeto)}(?:\(\))?`")
+    secs, dts, fila = [], [], ""
+    cita = lambda texto: any(re.search(rf"\b{x}\b", texto) for x in fuentes)
+    for p in m.vigentes("DT"):
+        if (p.id in suyas or cita(m.texto(p.id))) and rx.search(m.texto(p.id)):
+            decision = mo.sin_comentarios(m.campos(p.id).get("decision", "")).replace("`", "").strip()
+            fila = fila or (f"{p.id}: {decision}" if decision else "")
+    for i, l in enumerate(T.lineas):
+        s = T.seccion_de_linea[i]
+        apartado = re.match(r"^###\s+([\d.]+)\s+(.+)$", l)
+        if apartado and mo.normaliza(apartado.group(2).strip(" `")) == mo.normaliza(objeto):
+            secs.append(f"§{apartado.group(1).rstrip('.')}")
+            continue
+        if s in ("0", "1", "13", "") or not rx.search(l):
+            continue
+        if s == "2":
+            dt = next((p.id for p in m.vigentes("DT") if p.ini <= i < p.fin), None)
+            dts += [dt] if dt else []
+        else:
+            secs.append(f"§{s}")
+            if not fila and l.startswith("|") and cita(l):
+                fila = " · ".join(c for c in mo.celdas(mo.sin_comentarios(l).replace("`", "")) if c.strip(" —-"))
+    return list(dict.fromkeys(dts + secs)), fila[:140]
+
+
+def c_encargo(m, a):
+    """construccion/<U>.md: qué construir (por objeto, su situación, qué cambia y dónde está en el técnico), los puntos
+    de «Cambio sobre lo construido», las pruebas, lo que hay que reaplicar y la orden de verificar; y
+    construccion/<U>-esperado.json para verificar --esperado. Sin orden ni lista de cierre propios: los dan la skill
+    oficial de Appian (change-planning) y las puertas de appian-best-practices. Se genera, no se edita."""
+    ctx, uid = unidad(m, a.unidad)
+    u = ctx.por_id[uid]
+    if u.urgente:
+        sys.exit(f"{uid} es una URG: se corrige con su ficha, impacto/{uid}.md (references/urgentes.md)")
+    if u.estado not in (un.APROBADA, un.CONSTRUIDA):
+        sys.exit(f"{uid} está {u.estado}: solo se construye una unidad aprobada "
+                 f"(proyecto.py cambio <p> {uid} aprobada --fuente FU-nn)")
+    crecida = ctx.crecida(uid)
+    if crecida:   # lo añadido después de aprobarla no se construye sin aprobarlo (references/cambios.md)
+        sys.exit(f"{uid} ha crecido desde que se aprobó ({'; '.join(crecida)}): vuelve a aprobarla "
+                 f"(`proyecto.py cambio <p> {uid} aprobada --fuente FU-nn`) o lleva lo nuevo a otra unidad")
+    filas = [f for f in ctx.filas_de(uid) if f["situacion"] in un.CAMBIAN]
+    if not filas:
+        sys.exit(f"Técnico §13 no tiene objetos de {uid} (columna «Cambio»): no hay nada que construir")
+    r, esperado = ctx.resumen(uid), ctx.esperado(uid)
+    inv = m.raiz / "as-is" / "datos" / "inventario.json"
+    app = json.loads(inv.read_text(encoding="utf-8")).get("aplicacion", {}).get("nombre") if inv.is_file() else None
+    if not app:
+        fila0 = next((f for _, cab, fs in m.tablas("T", "0") for f in fs if f and mo.normaliza(f[0]) == "aplicacion"), None)
+        app = (re.findall(r"`([^`]+)`", fila0[1]) or ["<aplicación>"])[0] if fila0 and len(fila0) > 1 else "<aplicación>"
+    L = [f"# Encargo de construcción · {uid} · {u.titulo}", "",
+         "<!-- Lo genera indice.py encargo a partir del análisis; no se edita: se vuelve a generar. -->", "",
+         f"Unidad {uid} · {u.estado} ({u.aprobada}) · análisis {r['version']} · aplicación `{app}`", "",
+         "Se construye solo esto. El orden lo da la skill oficial de Appian (`change-planning`) y las puertas, la "
+         "calibración de `appian-best-practices`. Lo que hay que construir está en el técnico; aquí, dónde.", "",
+         "## Objetos", "", "| Objeto | Tipo | Situación | Qué cambia | Dónde, en el técnico |", "|---|---|---|---|---|"]
+    fuentes = sorted({x for n in r["informes"] for x in re.findall(r"FU-\d+", n)})
+    for f in filas:
+        for o in f["objetos"]:
+            donde, fila = donde_en_tecnico(m, un.objeto(o), fuentes, ctx.piezas_de(uid))
+            campos = esperado.get(un.objeto(o), {}).get("campos")
+            secs = [x for x in donde if x.startswith("§")]
+            que = (f"campos: {', '.join(c['nombre'] for c in campos)}" if campos else fila) or \
+                (f"ver técnico {', '.join(secs)}" if secs else "—")
+            sust = f" (sustituye a {', '.join(f['sustituye'])})" if f["sustituye"] else ""
+            L.append(f"| `{o}` | {f['tipo']} | {f['situacion'].capitalize()}{sust} | {que.replace('|', '/')} | "
+                     f"{', '.join(donde) or '—'} |")
+    puntos = ctx.puntos_construido(uid)
+    if puntos:
+        dt = ctx.dt_construido(uid)
+        campos = m.campos(dt.id) if dt else {}
+        L += ["", f"## Cambio sobre lo construido ({dt.id if dt else 'sin DT: comprobar.py lo avisa'})", ""]
+        L += [f"- **{p}** ({', '.join(o)}): {mo.sin_comentarios(campos.get(mo.normaliza(p), '')).strip() or 'falta en la DT'}"
+              for p, o in puntos.items()]
+    pr = r["pruebas"]
+    L += ["", "## Pruebas (técnico §14)", "", f"- Criterios: {', '.join(pr['criterios']) or '—'}",
+          f"- Escenarios: {', '.join(pr['escenarios']) or '—'}"]
+    L += [f"- {g['id']} sobre {', '.join(g['objetos'])}: {g['prueba'] or 'su prueba en técnico §14'}" for g in pr["urgentes"]]
+    if r["reaplicar"] or r["congelados"]:
+        L += ["", "## Correcciones urgentes", ""]
+        L += [f"- Reaplicar {t['urgente']} en {', '.join(f'`{o}`' for o in t['objetos'])}: la corrección se hizo en el "
+              f"entorno de corrección; cuando su prueba pase en desarrollo, se confirma con `--reaplicada {t['urgente']}`"
+              for t in r["reaplicar"]]
+        L += [f"- No tocar {', '.join(f'`{o}`' for o in t['objetos'])} hasta el pase de {t['urgente']} (se corrige en "
+              "desarrollo)" for t in r["congelados"]]
+    otras = [c for c in r["colisiones"] if not c["unidad"].startswith("URG")]
+    if otras:
+        L += ["", "## Otras unidades sobre los mismos objetos", ""]
+        L += [f"- {c['unidad']} ({c['estado']}): {', '.join(c['objetos'])} · {c['decision'] or 'sin decisión escrita'}"
+              for c in otras]
+    objetos = list(esperado)
+    reap = "".join(f" --reaplicada {t['urgente']}" for t in r["reaplicar"])
+    L += ["", "## Verificar y marcar", "",
+          "Al terminar, solo lectura, con el atajo «Verificar» de `appian-reverse-engineering` (`<p>` es esta carpeta "
+          "del proyecto; sin Dev MCP, `--manual`):", "", "```",
+          f"{DX} verificar --app \"{app}\" --objetos \"{','.join(objetos)}\" --esperado \"<p>/construccion/{uid}-esperado.json\" "
+          f"--out \"<p>/construccion/verificacion/{uid}.json\"",
+          f"python3 <skill del analista>/scripts/proyecto.py cambio <p> {uid} construida{reap}", "```", ""]
+    destino = m.raiz / "construccion" / f"{uid}.md"
+    texto = "\n".join(L)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    esp = m.raiz / "construccion" / f"{uid}-esperado.json"
+    nuevo_esp = json.dumps(esperado, ensure_ascii=False, indent=1) + "\n"
+    cambia = [x for x, t in ((destino, texto), (esp, nuevo_esp))
+              if not x.is_file() or x.read_text(encoding="utf-8") != t]
+    for x, t in ((destino, texto), (esp, nuevo_esp)):
+        if x in cambia:
+            x.write_text(t, encoding="utf-8")
+    print(f"{'Escrito' if cambia else 'Al día, sin cambios'}: construccion/{uid}.md y construccion/{uid}-esperado.json "
+          f"({len(objetos)} objetos)")
 
 
 def main():
@@ -432,6 +696,7 @@ def main():
     s.add_argument("-n", type=int, default=15)
     s = nuevo("ficha", c_ficha); s.add_argument("ids", nargs="+"); s.add_argument("--lineas", action="store_true")
     s = nuevo("impacto", c_impacto); s.add_argument("ids", nargs="+"); s.add_argument("--nivel", type=int, default=1)
+    s.add_argument("--cambio", help="la unidad del informe (EV-02): no se sugiere «Requiere: Sí» por ella")
     s.add_argument("--con", nargs="+", help="solo dependencias cuyo texto menciona alguno de estos términos")
     s = nuevo("seccion", c_seccion); s.add_argument("n"); s.add_argument("--con", nargs="+")
     s.add_argument("--max", type=int, default=150)
@@ -439,6 +704,9 @@ def main():
     s = nuevo("derivadas", c_derivadas); s.add_argument("--escribir", action="store_true")
     nuevo("pendientes", c_pendientes)
     s = nuevo("grafo", c_grafo); s.add_argument("-o", help="por defecto, analisis/grafo.json del proyecto")
+    s = nuevo("cambios", c_cambios); s.add_argument("unidad"); s.add_argument("--json", action="store_true")
+    s = nuevo("colision", c_colision); s.add_argument("unidad")
+    s = nuevo("encargo", c_encargo); s.add_argument("unidad")
     a = ap.parse_args()
     m = mo.Proyecto(a.proyecto)
     if not m.docs:

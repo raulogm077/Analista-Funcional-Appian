@@ -16,6 +16,9 @@ import tempfile
 from pathlib import Path
 
 sys.dont_write_bytecode = True
+for _s in (sys.stdout, sys.stderr):  # un Windows sin PYTHONUTF8 escribe la consola en cp1252 (✔, 🔒)
+    if hasattr(_s, "reconfigure"):
+        _s.reconfigure(encoding="utf-8", errors="replace")
 AQUI = Path(__file__).resolve().parent
 PLUGIN = Path(os.environ.get("PLUGIN_A_PROBAR") or AQUI.parents[2]).resolve()
 sys.path.insert(0, str(PLUGIN / "skills" / "appian-functional-analyst" / "scripts"))
@@ -169,6 +172,8 @@ def main() -> int:
              proyecto(raiz, VISIBLES, **{uno["id"]: {"encaja": "HU-08"}}), 1, "pero encaja en «HU-08»"),
             ("una que no requiere aprobación no cuenta",
              proyecto(raiz, VISIBLES, **{uno["id"]: {"requiere": "—"}}), 1, "no requiere aprobación"),
+            ("«Requiere: Sin cambios» no es «Sí»",
+             proyecto(raiz, VISIBLES, **{uno["id"]: {"requiere": "Sin cambios"}}), 1, "no requiere aprobación"),
             ("una decidida sin el analista no cuenta",
              proyecto(raiz, VISIBLES, **{uno["id"]: {"decision": "✔"}}), 1, "no «Pendiente»"),
             ("aplicada: la pieza cambia respecto a v1.0",

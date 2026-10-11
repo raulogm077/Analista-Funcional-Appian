@@ -35,6 +35,14 @@ Un tercer lote, `fronteras/enrutado.json`, trae 8 peticiones de los solapes más
 skill («as-is», «draw.io», «DF», «prototipo»…; lo comprueba `prueba_puntuar.py`): `python3 puntuar.py --enunciado
 --fronteras` y `python3 puntuar.py respuestas-fronteras.json --fronteras`.
 
+Un cuarto lote, `vecinas/enrutado.json`, mide la frontera con skills de fuera del plugin que el usuario puede tener a la
+vez: `vecinas.json` trae sus descripciones tal cual las ve el modelo (hoy `appian-sail-generator` y `docx`), que van en
+el enunciado con las seis y valen como respuesta. Son 13 peticiones, con las palabras de cada frontera (maqueta, SAIL,
+Word, DF): una maqueta para enseñar o validar es de prototipos y el SAIL para pegar, de `appian-sail-generator`; el DF
+en Word lo genera el analista y un Word suelto, `docx`; construir un evolutivo es de buenas prácticas y una incidencia
+urgente la registra el analista. `python3 puntuar.py --enunciado --vecinas` y
+`python3 puntuar.py respuestas-vecinas.json --vecinas`.
+
 ## Cómo se hace
 
 1. **El enunciado.** `python3 puntuar.py --enunciado > <carpeta temporal>/enunciado.md`: las seis descripciones,
@@ -55,5 +63,6 @@ Criterio de la Tarea 29: todas, también las ocultas cuando se pasan.
 `claude plugin eval` espera otro formato de casos y llama a la API. Si se quiere, `enrutado.json` se convierte en
 casos con el evaluador `tool_used: Skill`.
 
-`python3 prueba_puntuar.py` prueba `puntuar.py` y las dos baterías (al menos 4 peticiones por skill, sin repetir y un
-tercio ocultas) sin imprimir las ocultas. En Windows, `python` en vez de `python3`.
+`python3 prueba_puntuar.py` prueba `puntuar.py` y las baterías (al menos 4 peticiones por skill, sin repetir y un
+tercio ocultas; las de las vecinas, con cada vecina esperada alguna vez) sin imprimir las ocultas. En Windows, `python`
+en vez de `python3`.

@@ -1,0 +1,54 @@
+[
+  {
+    "peticion": "Hazme una maqueta de la pantalla de alta de solicitud para enseñársela al cliente el jueves",
+    "skill": "appian-prototipos"
+  },
+  {
+    "peticion": "Escríbeme el SAIL de un formulario de incidencias con a!localVariables, que lo pego en Appian",
+    "skill": "appian-sail-generator"
+  },
+  {
+    "peticion": "Conecta esta interfaz a los record types de Expediente",
+    "skill": "appian-sail-generator"
+  },
+  {
+    "peticion": "Revisa este SAIL: hace un a!queryRecordType dentro de un a!forEach",
+    "skill": "appian-best-practices"
+  },
+  {
+    "peticion": "Pásame el DF a Word",
+    "skill": "appian-functional-analyst"
+  },
+  {
+    "peticion": "El cliente devolvió el DF con control de cambios y comentarios; incorpóralos",
+    "skill": "appian-functional-analyst"
+  },
+  {
+    "peticion": "Pon en un Word bonito estas notas sueltas, sin más",
+    "skill": "docx"
+  },
+  {
+    "peticion": "Cambia el logo de la plantilla .dotx de la empresa",
+    "skill": "docx"
+  },
+  {
+    "peticion": "Diseña la bandeja del gestor: campos, filtros y acciones, para el funcional",
+    "skill": "appian-functional-analyst"
+  },
+  {
+    "peticion": "Un dashboard SAIL de KPIs con a!queryRecordType",
+    "skill": "appian-sail-generator"
+  },
+  {
+    "peticion": "Construye el EV-02 con su encargo",
+    "skill": "appian-best-practices"
+  },
+  {
+    "peticion": "Hay una incidencia crítica en producción: no se pueden enviar solicitudes; prepara lo necesario para corregirla",
+    "skill": "appian-functional-analyst"
+  },
+  {
+    "peticion": "Aplica la marca de Conservas Ribera del Norte al prototipo",
+    "skill": "appian-prototipos"
+  }
+]

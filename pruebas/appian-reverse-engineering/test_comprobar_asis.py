@@ -6,9 +6,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from conftest import SKILL
+from conftest import BUILD_MODEL, BUILD_SUMMARY, SKILL, extraccion_a_mano
 
 COMPROBAR = SKILL / "scripts" / "comprobar_asis.py"
+PALABRAS = Path(__file__).resolve().parent.parent / "evaluaciones" / "recien-llegado" / "palabras.py"
 
 LEEME = "# DEM Gestión de Solicitudes: documentación de ingeniería inversa\n\n" \
         "> **TL;DR**: La aplicación gestiona las solicitudes internas.\n" \
@@ -173,6 +174,26 @@ def test_ruta_con_espacios(tmp_path):
     assert comprueba(as_is(base)) == ([], [])
 
 
+def test_tabla_del_cdt_y_entidad_del_data_store(tmp_path):
+    """Con datos/ hecho por build_datos.py, la tabla de un CDT y la entidad de un data store se citan sin ser objetos.
+    El nombre del CDT pasado a mayúsculas (como lo dejaba en el diagrama ER la regla de antes) no es real."""
+    salida = extraccion_a_mano(tmp_path / "as-is", [
+        {"type": "cdt", "uuid": "u-cdt-00001", "name": "DEM_SolicitudDTO",
+         "respuestas": {"definition": {"name": "DEM_SolicitudDTO", "jpa": {"tableName": "DEM_SOLICITUD_V1"},
+                                       "fields": [{"name": "id", "type": "Number (Integer)"}]}}},
+        {"type": "dataStore", "uuid": "u-ds-000001", "name": "DEM Datos",
+         "respuestas": {"definition": {"name": "DEM Datos", "entities": [{"name": "DEM_ENT_Solicitudes",
+                                                                         "dataTypeUuid": "u-cdt-00001"}]}}}])
+    for script in (BUILD_MODEL, BUILD_SUMMARY, SKILL / "scripts" / "build_datos.py"):
+        p = subprocess.run([sys.executable, str(script), str(salida)], capture_output=True, text=True, encoding="utf-8")
+        assert p.returncode == 0, p.stderr
+    (salida / "03-modelo-datos.md").write_text(
+        "# Modelo de datos\n\n`DEM_SolicitudDTO` se guarda en la tabla `DEM_SOLICITUD_V1` por la entidad "
+        "`DEM_ENT_Solicitudes` de `DEM Datos`; en el diagrama, `DEM_SOLICITUDDTO`.\n", encoding="utf-8")
+    errores, _ = comprueba(salida)
+    assert len(errores) == 1 and "`DEM_SOLICITUDDTO` no es" in errores[0], errores
+
+
 def test_objeto_de_fuera_de_la_aplicacion(tmp_path):
     """Un objeto de otra aplicación que esta llama (en `fueraDeLaAplicacion`) es un nombre real, aunque lleve el prefijo."""
     salida = as_is(tmp_path, {"02-arquitectura.md": "# Arquitectura\n\n`DEM_ER_EsAdmin` llama a `DEM_ER_Compartida`, "
@@ -181,3 +202,89 @@ def test_objeto_de_fuera_de_la_aplicacion(tmp_path):
         {"nombre": "DEM_ER_Compartida", "tipo": "llamado con rule!", "usadoPor": ["DEM_ER_EsAdmin"], "usa": [],
          "nv": "NV-ARQ-01"}]}, ensure_ascii=False), encoding="utf-8")
     assert comprueba(salida) == ([], [])
+
+
+# ---------------------------------------------------------------- sin agujeros (tarea 1.5 de la 0.7.0-beta.2)
+
+def test_nombre_inventado_fuera_del_codigo(tmp_path):
+    """Un nombre con el prefijo también se mira fuera del código: en texto plano, en negrita o como texto de un enlace.
+    Un nombre real, el slug de su ficha y una ruta no son inventados, y lo que ya se miró en el código no se repite."""
+    texto = ("# Arquitectura\n\nDEM_ER_Plana calcula el plazo, **DEM_ER_Negrita** lo avisa y "
+             "[DEM_ER_Enlace](./03-modelo-datos.md) lo guarda.\n\n"
+             "DEM_ER_EsAdmin decide quién administra (ver anexo/expressionRule/DEM_ER_Ruta.md y la ficha "
+             "DEM_Solicitud); `DEM_ER_Codigo` sale una vez.\n")
+    errores, _ = comprueba(as_is(tmp_path, {"02-arquitectura.md": texto}))
+    assert [e.split("`")[1] for e in errores] == ["DEM_ER_Plana", "DEM_ER_Negrita", "DEM_ER_Enlace", "DEM_ER_Codigo"], errores
+
+
+def test_evidencia_de_otro_objeto(tmp_path):
+    """Una evidencia «mcp:<tipo>/<nombre>» lleva a la ficha del anexo de ese objeto (inventario.json → anexo), no a la
+    de otro ni al índice del anexo."""
+    tabla = ("# Arquitectura\n\n| Objeto | Certeza | Evidencia |\n|---|---|---|\n"
+             "| `DEM Solicitud` | ✅ | [`mcp:recordType/DEM Solicitud#fields`](./anexo/recordType/DEM_Solicitud.md) |\n"
+             "| `DEM Solicitud` | ✅ | [`mcp:recordType/DEM Solicitud#tableName`](./anexo/expressionRule/DEM_ER_EsAdmin.md) |\n"
+             "| `DEM_ER_EsAdmin` | ✅ | [`mcp:expressionRule/DEM_ER_EsAdmin@validation`](./anexo/indice.md) |\n\n"
+             "La regla lo decide ([`mcp:expressionRule/DEM_ER_EsAdmin#expression`](./anexo/recordType/DEM_Solicitud.md)).\n")
+    salida = as_is(tmp_path, {"02-arquitectura.md": tabla, "anexo/indice.md": "# Anexo\n"})
+    errores, _ = comprueba(salida)
+    assert [e.split()[1] for e in errores] == ["02-arquitectura.md:6", "02-arquitectura.md:7", "02-arquitectura.md:9"], errores
+    assert "DEM Solicitud" in errores[0] and "anexo/recordType/DEM_Solicitud.md" in errores[0], errores
+
+
+def test_hallazgo_que_no_existe(tmp_path):
+    """Un H-… citado tiene que estar en datos/hallazgos.json (como los NV en sin-verificar.json); el registro de 09, que
+    escribe build_registry.py, no se mira."""
+    salida = as_is(tmp_path, {
+        "04-seguridad-grupos.md": "# Seguridad\n\nEl token es H-SEG-01; la cabecera, H-SEG-09.\n",
+        "09-valor-adicional.md": "# Valor adicional\n\n<!-- registro:inicio -->\nFusionados: H-SEG-02 → H-SEG-01.\n"
+                                 "<!-- registro:fin -->\n"})
+    (salida / "datos" / "hallazgos.json").write_text(json.dumps({"hallazgos": [{"id": "H-SEG-01"}]}), encoding="utf-8")
+    errores, _ = comprueba(salida)
+    assert len(errores) == 1 and "04-seguridad-grupos.md:3" in errores[0] and "H-SEG-09" in errores[0], errores
+
+
+def test_sin_prefijo_avisa(tmp_path):
+    """Sin prefijo en la aplicación, los nombres citados no se pueden comprobar: un aviso lo dice."""
+    salida = as_is(tmp_path, {"02-arquitectura.md": "# Arquitectura\n\nLa regla `XYZ_Inventada` calcula el plazo.\n"})
+    inventario = salida / "datos" / "inventario.json"
+    datos = json.loads(inventario.read_text(encoding="utf-8"))
+    datos["aplicacion"]["prefijo"] = None
+    inventario.write_text(json.dumps(datos, ensure_ascii=False), encoding="utf-8")
+    errores, avisos = comprueba(salida)
+    assert errores == [] and len(avisos) == 1 and "prefijo" in avisos[0], avisos
+
+
+def test_mencion_a_otra_area_sin_id(tmp_path):
+    """Una línea que enlaza los hallazgos de otro documento cita su H-… o su NV-… (T21): si no, un aviso. Los suyos y
+    los que llevan ID, no."""
+    texto = ("# Modelo de datos\n\nQuién usa la acción lo dice [04](./04-seguridad-grupos.md#hallazgos).\n\n"
+             "El token es H-SEG-01 ([04](./04-seguridad-grupos.md#hallazgos)).\n\n"
+             "Los del modelo, en [Hallazgos](#hallazgos) y [aquí](./03-modelo-datos.md#hallazgos).\n")
+    salida = as_is(tmp_path, {"03-modelo-datos.md": texto, "04-seguridad-grupos.md": "# Seguridad\n\n## Hallazgos\n"})
+    (salida / "datos" / "hallazgos.json").write_text(json.dumps({"hallazgos": [{"id": "H-SEG-01"}]}), encoding="utf-8")
+    errores, avisos = comprueba(salida)
+    assert errores == [] and len(avisos) == 1 and "03-modelo-datos.md:3" in avisos[0], avisos
+
+
+def test_cifras_solo_en_el_volumen(tmp_path):
+    """Las cifras se comparan solo en la línea «Volumen» de LEEME (T22, lo dice el docstring): otra cifra no se mira."""
+    import comprobar_asis as ca
+    assert "solo en la línea «Volumen»" in " ".join(ca.__doc__.split())
+    salida = as_is(tmp_path, {"LEEME.md": LEEME + "\nDe los 7 objetos clave, 3 interfaces se ven en el portal.\n"})
+    assert comprueba(salida) == ([], [])
+
+
+def test_palabras_comun_con_la_evaluacion(tmp_path):
+    """palabras() de comprobar_asis.py, la del presupuesto, no cuenta títulos ni lo que escriben los scripts, y
+    palabras.py de la evaluación del recién llegado cuenta con ella."""
+    import comprobar_asis as ca
+    texto = ("# Un título largo de varias palabras\n\nUna frase de seis palabras aquí.\n\n<!-- registro:inicio -->\n"
+             "| H-SEG-01 | Token | seguridad |\n<!-- registro:fin -->\n\n```text\ncódigo que no cuenta\n```\n")
+    assert ca.palabras(texto) == 6
+    salida = as_is(tmp_path, {"09-valor-adicional.md": texto})
+    p = subprocess.run([sys.executable, str(PALABRAS), str(salida), "--json"], capture_output=True, text=True,
+                       encoding="utf-8")
+    assert p.returncode == 0, p.stderr
+    cuenta = json.loads(p.stdout)["documentos"]
+    assert cuenta["09-valor-adicional.md"] == 6
+    assert cuenta == {rel: ca.palabras((salida / rel).read_text(encoding="utf-8")) for rel in cuenta}

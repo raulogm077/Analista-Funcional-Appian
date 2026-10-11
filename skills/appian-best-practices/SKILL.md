@@ -1,6 +1,6 @@
 ---
 name: appian-best-practices
-description: "Official Appian best practices, solution-design decisions and quality gates for designing, building, reviewing and debugging Appian applications. Use when orienting or designing an Appian solution, and when creating, changing, reviewing or debugging record types, data models, sync, record events, SAIL interfaces, expression rules, decisions, process models, integrations, Web APIs, sites, security, performance, deployments, test cases, translations, AI agents, AI skills or document extraction. Also use to diagnose an Appian error or production symptom, to maintain a live application (runbooks and known issues from Appian's Community Knowledge Base), and before any write to an Appian environment or declaring an object finished. Not for functional analysis, user stories or technical specifications (appian-functional-analyst), process diagrams (appian-diagramas-bpmn), prototypes (appian-prototipos), or assessing a whole application and proposing how to rebuild it (appian-refactorizacion)."
+description: "Official Appian best practices, solution-design decisions and quality gates for Appian applications. Use when orienting or designing a solution, and when building, changing, reviewing or debugging, in an environment or as pasted code, record types, data models, sync, record events, SAIL interfaces, expression rules, decisions, process models, integrations, Web APIs, sites, security, performance, deployments, test cases, translations, AI agents and skills or document extraction. Also to diagnose an error or production symptom, maintain a live application (runbooks, Knowledge Base known issues) and before writing to an environment or declaring an object finished. Not for functional analysis, user stories, technical specs or logging an urgent incident (appian-functional-analyst), process diagrams (appian-diagramas-bpmn), prototypes (appian-prototipos), generating SAIL from requirements (appian-sail-generator) or assessing how to rebuild a whole application (appian-refactorizacion)."
 ---
 
 # Appian development best practices
@@ -95,6 +95,12 @@ instead of perpetuating it.
 
 ❌ **Don't explore the entire application "for context."** Modifying an interface doesn't justify
 inventorying every record type, process and integration. Widen the context when a real dependency shows up.
+
+**A build order from the analyst.** If the project has `construccion/<U>.md` (written by the analyst's
+`indice.py encargo`), that file is the scope: build only its objects, in the order of the official skill's
+`change-planning`, with the gates the calibration gives, and honour its "reaplicar" and frozen objects. When done, run
+its `verificar` command and `proyecto.py cambio <p> <U> construida`. Progress across sessions shows by re-running
+`verificar`; there is no other state to keep.
 
 ## Requirements
 

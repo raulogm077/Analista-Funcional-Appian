@@ -117,6 +117,8 @@ Hallazgos `H-GEN` (severidad orientativa):
 | Expression rule de más de 200 líneas o interfaz de más de 80 KB | Baja | ✅ |
 | Process models sin ejecuciones (`signals`); si además es huérfano, no: cita el `H-ARQ` de 02, que dice las dos cosas | Baja | ✅ en producción; 🔶 «orientativo (ver LEEME)» si no consta como producción |
 
+Los que salen de una señal llevan su `senal` (`execution-principles.md` §3): `aviso-validacion-nodos`, `mas-50-nodos` o `sin-ejecuciones`.
+
 ## Fase 5 — Diagramas
 
 - [ ] `python3 <skill>/../appian-diagramas-bpmn/scripts/mermaid.py <salida>/diagrams/*.mmd --svg` pinta todos los Mermaid sin errores. Los que avisa por ancho (más de ~1600 px) se rehacen (`mermaid-rules.md`, «Que quepa en una página»).

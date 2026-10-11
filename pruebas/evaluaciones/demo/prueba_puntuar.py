@@ -17,6 +17,9 @@ import tempfile
 from pathlib import Path
 
 sys.dont_write_bytecode = True
+for _s in (sys.stdout, sys.stderr):  # un Windows sin PYTHONUTF8 escribe la consola en cp1252 (✔, 🔒)
+    if hasattr(_s, "reconfigure"):
+        _s.reconfigure(encoding="utf-8", errors="replace")
 AQUI = Path(__file__).resolve().parent
 PLUGIN = Path(os.environ.get("PLUGIN_A_PROBAR") or AQUI.parents[2]).resolve()
 KIT = PLUGIN / "skills" / "appian-prototipos"
@@ -58,15 +61,16 @@ def fila(n, pan, requiere="—", decision="✔") -> str:
             f"| {decision} |")
 
 
-def informe(fu, decisiones: dict, quitar=(), sin_pedir=()) -> str:
-    """decisiones = {PAN validada: «Pendiente» o «✔»}; el resto, retoques sin aprobación."""
+def informe(fu, decisiones: dict, quitar=(), sin_pedir=(), requiere=None) -> str:
+    """decisiones = {PAN validada: «Pendiente» o «✔»}; el resto, retoques sin aprobación. requiere = {PAN: texto de
+    «Requiere»} para las validadas que no lo llevan como «Sí (🔒)»."""
     filas = []
     for n, c in enumerate(VISIBLE["comentarios"], 1):
         pan = c["pan"]
         if pan in quitar:
             continue
         if pan in decisiones and pan not in sin_pedir:
-            filas.append(fila(n, pan, "Sí (🔒)", decisiones[pan]))
+            filas.append(fila(n, pan, (requiere or {}).get(pan, "Sí (🔒)"), decisiones[pan]))
         else:
             filas.append(fila(n, pan))
     return (f"# Impacto de {fu} · Demo del prototipo\n\n## Puntos\n\n| # | Tipo | Qué se dice | Encaja en | Cambio propuesto "
@@ -148,6 +152,10 @@ def main() -> int:
              (), 1, "PAN-05: ningún punto del informe"),
             ("una validada cuyo punto no pide aprobación",
              proyecto(raiz, ronda1, informe("FU-03", {"PAN-02": "Pendiente", "PAN-05": "Pendiente"}, sin_pedir=["PAN-02"])),
+             (), 1, "PAN-02: está validada y"),
+            ("una validada con «Requiere: Sin cambios» no pide aprobación",
+             proyecto(raiz, ronda1, informe("FU-03", {"PAN-02": "Pendiente", "PAN-05": "Pendiente"},
+                                            requiere={"PAN-02": "Sin cambios"})),
              (), 1, "PAN-02: está validada y"),
             ("un app.json que validate.py no acepta", proyecto(raiz, cambia(antes, cuatro, invalido=True)), (), 1,
              "FALLO validate.py"),

@@ -24,7 +24,9 @@ Volver a ejecutarlo con fuentes nuevas conserva los IDs de las ya catalogadas
 Solo usa la biblioteca estándar de Python, salvo:
   .pdf  pdftotext (poppler) o el paquete pypdf; si no hay, léelo con la herramienta Read
   .msg  el paquete extract-msg; si no hay, guarda el correo como .eml o PDF desde Outlook
-Formatos: .vtt .srt .txt .md .docx .pptx .xlsx .pdf .eml .msg .bpmn .drawio .vsdx.
+Formatos: .vtt .srt .txt .md .docx .pptx .xlsx .pdf .eml .msg .bpmn .drawio .vsdx. Un .txt que empieza por
+«Tipo de fuente: chat» o «… aprobación», con «De: <rol>» y «Fecha:», es lo pegado en el chat o una aprobación.
+No se catalogan desktop.ini, Thumbs.db, .DS_Store ni los temporales de Office (~$…).
 Se catalogan sin leer: imágenes (.png .jpg…, se revisan con Read) y formatos antiguos
 (.doc .ppt .xls .vsd .odt .rtf…, con la indicación de a qué formato convertirlos).
 Acepta comodines entre comillas ("reuniones/*.vtt") también en PowerShell o cmd.
@@ -464,6 +466,7 @@ def slug(s):
 def convert(path, out_dir, fid):
     ext = path.suffix.lower()
     date = datetime.datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d")
+    fecha_cabecera = None   # «Fecha:» de la cabecera de un chat o una aprobación: manda sobre la del nombre
     try:
         if ext in (".vtt", ".srt"):
             body, detail = read_subtitles(path); kind = "Transcripción"
@@ -472,7 +475,15 @@ def convert(path, out_dir, fid):
             detail = f"{body.count(chr(10)) + 1} líneas"
             turns = re.findall(r"^\[(\d{1,2}:\d{2}:\d{2})\] ([^:\n]{2,60}):\s*$", body, re.M)
             stamps = re.findall(r"^\[(\d{1,2}:\d{2}:\d{2})\]", body, re.M)
-            if len(turns) >= 5:  # transcripción exportada (Teams, Stream, Otter…) con «[hh:mm:ss] Hablante:»
+            chat = re.search(r"^Tipo de fuente:\s*(chat|aprobaci[oó]n)\b", body[:2000], re.I | re.M)
+            if chat:  # lo pegado en el chat o la aprobación del jefe de proyecto: quién y cuándo, de la cabecera
+                kind = "Chat" if chat.group(1).lower() == "chat" else "Aprobación"
+                de = re.search(r"^De:\s*(.+?)\s*$", body[:2000], re.M)
+                detail = (f"de {de.group(1)}, " if de else "sin «De:», ") + detail
+                f = re.search(r"^Fecha:\s*(?:(\d{4})-(\d{2})-(\d{2})|(\d{1,2})/(\d{1,2})/(\d{4}))", body[:2000], re.M)
+                fecha_cabecera = (f"{f.group(1)}-{f.group(2)}-{f.group(3)}" if f and f.group(1) else
+                                  f"{f.group(6)}-{int(f.group(5)):02d}-{int(f.group(4)):02d}" if f else None)
+            elif len(turns) >= 5:  # transcripción exportada (Teams, Stream, Otter…) con «[hh:mm:ss] Hablante:»
                 kind = "Transcripción"
                 detail = f"{len(turns)} intervenciones, {len({s for _, s in turns})} participantes"
             elif len(stamps) >= 5 or re.search(r"^Tipo de fuente:.*transcripci", body[:2000], re.I | re.M):
@@ -507,18 +518,23 @@ def convert(path, out_dir, fid):
     m = re.search(r"(20\d{2})[-_]?(0[1-9]|1[0-2])[-_]?(0[1-9]|[12]\d|3[01])(?!\d)", path.name)
     if m and ext not in (".eml", ".msg"):  # fecha en el nombre (p. ej. grabaciones de Teams): mejor que la del fichero
         date = "-".join(m.groups())
-    return body, kind, detail, date
+    return body, kind, detail, fecha_cabecera or date
 
 
 SISTEMA = ("desktop.ini", "thumbs.db", ".ds_store")   # lo que dejan Windows y macOS en una carpeta
 
 
+def es_basura(f):
+    """Lo que dejan el sistema y Office (desktop.ini, Thumbs.db, .DS_Store, ~$… de un documento abierto): no es una
+    fuente."""
+    return f.name.lower() in SISTEMA or f.name.startswith("~$")
+
+
 def documentos(carpeta):
     """Los documentos de una carpeta que es una sola fuente. No entra su extracción en bruto (extraccion/), que el
-    análisis no lee, ni lo que dejan el sistema y Office (desktop.ini, Thumbs.db, .DS_Store, ~$…), que cambiaría la
-    fuente sin cambiar nada."""
+    análisis no lee, ni la basura del sistema y de Office (es_basura), que cambiaría la fuente sin cambiar nada."""
     return sorted(f for f in carpeta.rglob("*") if f.is_file() and "extraccion" not in f.relative_to(carpeta).parts
-                  and f.name.lower() not in SISTEMA and not f.name.startswith("~$"))
+                  and not es_basura(f))
 
 
 def huella(carpeta, docs=None):
@@ -599,7 +615,10 @@ def main():
         p = pathlib.Path(inp)
         if p.is_dir():
             files += sorted(f for f in p.rglob("*") if f.is_file() and f.suffix.lower() in SUPPORTED | set(LEGACY)
-                            and not generated(f, out))
+                            and not generated(f, out) and not es_basura(f))
+        elif p.is_file() and es_basura(p):
+            print(f"AVISO: {p.name} es un fichero del sistema o el temporal de un documento abierto en Office: se omite",
+                  file=sys.stderr)
         elif p.is_file():
             files.append(p)
         else:

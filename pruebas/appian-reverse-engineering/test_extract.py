@@ -187,6 +187,31 @@ def test_resume_makes_no_new_calls(project):
     assert len(project.calls_list()) == n
 
 
+def test_aviso_de_reutilizadas_con_el_plan_anterior(project):
+    """El aviso de respuestas reutilizadas compara con el startedAt del plan anterior (plan o extract), leído antes de
+    sobrescribirlo, no con una hora fija: lo que descargó el plan de hace tres horas no avisa; lo que es de antes de la
+    ejecución anterior, sí."""
+    from datetime import datetime, timedelta, timezone
+    project.add_devmcp()
+    project.run("plan", "--app", "DEM", "--out", str(project.out), check=0)
+    plan = project.interm() / "extraction_plan.json"
+    hace = lambda h: (datetime.now(timezone.utc) - timedelta(hours=h)).isoformat(timespec="seconds")  # noqa: E731
+    datos = json.loads(plan.read_text(encoding="utf-8"))
+    datos["startedAt"] = hace(3)
+    plan.write_text(json.dumps(datos), encoding="utf-8")
+    for f in (project.interm() / "mcp_raw").rglob("*.json"):       # lo que descargó ese plan
+        d = json.loads(f.read_text(encoding="utf-8"))
+        if isinstance(d, dict) and "_meta" in d:
+            d["_meta"]["fetchedAt"] = hace(2.9)
+            f.write_text(json.dumps(d), encoding="utf-8")
+    p = _extract(project)
+    assert "--refresh" not in p.stdout, p.stdout
+    nuevo = json.loads(plan.read_text(encoding="utf-8"))["startedAt"]
+    assert nuevo == project.load("extraction_report.json")["startedAt"] and nuevo > hace(0.1)
+    p = _extract(project)                                       # las del plan son de antes de la ejecución anterior
+    assert "--refresh" in p.stdout and "Reutilizadas" in p.stdout, p.stdout
+
+
 def test_partial_failure(project):
     project.add_devmcp(MOCK_FAIL_KEYS="I_DASH")
     _extract(project)

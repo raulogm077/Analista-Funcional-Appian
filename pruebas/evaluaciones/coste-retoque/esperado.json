@@ -1,0 +1,16 @@
+{
+ "fuente": "correo-2026-10-08-boton.eml",
+ "pantalla": "PAN-01",
+ "texto_nuevo": "Pedir material",
+ "objeto": "DEM_Dashboard",
+ "tope_llamadas": 25,
+ "puntos": {
+  "hecho": "El correo está catalogado, su informe de impacto aplicado, PAN-01 dice «Pedir material» y técnico §13 tiene `DEM_Dashboard` «Modifica» en una unidad Abierta (no en EV-02, ya aprobada, ni sin unidad)",
+  "sin_aprobacion": "Ningún punto del informe del correo pide aprobación (Requiere «Sí…») ni queda «Pendiente»",
+  "sin_dt": "Ninguna DT «Cambio sobre lo construido» nueva",
+  "comprobar_una_pasada": "comprobar.py sin errores, y ninguna pasada del agente con errores",
+  "sin_word_ni_capturas": "Ningún .docx, .pdf ni .png nuevo o cambiado desde el montaje",
+  "llamadas": "Llamadas a herramientas del agente ≤ tope_llamadas"
+ },
+ "umbral": "todos"
+}

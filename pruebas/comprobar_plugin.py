@@ -6,33 +6,36 @@
     python3 pruebas/comprobar_plugin.py --completo --plugin <carpeta>   # lo mismo, sobre otra copia del plugin
 
 Qué mira:
-- cada SKILL.md: nombre igual a su carpeta, descripción de 1024 caracteres como mucho y que diga qué no hace;
+- cada SKILL.md: nombre igual a su carpeta, descripción de 1000 bytes UTF-8 como mucho (MAX_DESCRIPCION) y que diga
+  qué no hace;
 - que ninguna skill lleve pruebas (tests/, selftest.py), ejemplos (ejemplos/, examples/) ni una carpeta con forma de
   proyecto (proyecto.md, fuentes/, analisis/, as-is/, refactorizacion/ o prototipo/): van en pruebas/<skill>/;
 - que ninguna skill lleve la marca de un cliente: un brand-*.json que no sea brand-appian.json (la estándar de Appian)
   o un logo (MARCA_NEUTRA, LOGO e IMAGENES dicen qué es cada cosa); van en <p>/prototipo/ de su proyecto;
 - que nada de lo que va al paquete lleve datos personales (PERSONALES; solo el autor y el dueño de .claude-plugin/,
-  AUTORIA) ni, salvo el README (CON_HISTORIA), nombre a un cliente de pruebas/clientes.txt o lo que lo delata, ni en
-  su contenido ni en el nombre del fichero;
+  AUTORIA) ni nombre a un cliente de pruebas/clientes.txt, tampoco el README, docs/ ni pruebas/, ni en su contenido ni
+  en el nombre del fichero; sus códigos de tres letras, solo en los datos (.json, galerias/, templates/);
 - que ninguna skill use como marca el círculo azul (MARCA_ANTIGUA): la de inferido es 🔶, la misma en todas;
 - que las skills que leen lo de ingeniería inversa (LEEN_AS_IS) no citen su extracción en bruto (as-is/extraccion,
   mcp_raw): leen as-is/datos/ y los documentos de as-is/;
 - un dueño por salida: que cada SKILL.md tenga «Qué escribe» («What it writes» en inglés) y declare ahí solo rutas de
-  <p> que pruebas/propietarios.json le da (como dueño o en «tambien»), y que cada regla de ese fichero la declare su
-  dueño;
-- una pieza por capacidad: que ningún script fuera de appian-diagramas-bpmn pinte Mermaid (mermaid.initialize) o
-  exporte BPMN (BPMNDiagram), y que las listas de muletillas («- «…» →») estén solo en redaccion.md (REDACCION);
+  <p> que pruebas/propietarios.json le da (como dueño, en «tambien» o, solo la carpeta, en «crea_vacia»), que cada regla
+  de ese fichero la declare su dueño y, con un aviso, que el resto de SKILL.md y references/ no digan que escribe una
+  ruta de otra skill sin nombrarla (ESCRIBE);
+- una pieza por capacidad: que ningún script ni página (SCRIPTS) fuera de appian-diagramas-bpmn pinte Mermaid
+  (mermaid.initialize) o exporte BPMN (BPMNDiagram), y que las listas de muletillas («- «…» →») estén solo en
+  redaccion.md (REDACCION);
 - que las skills que se citan existan en el plugin (o estén en EXTERNAS); el README cita además el nombre anterior de
-  una skill (ANTERIORES), para retirar sus copias sueltas;
+  una skill (ANTERIORES, por prefijo: appian-prototipos-<cliente>), para retirar sus copias sueltas;
 - que existan los ficheros que cita cada SKILL.md y las rutas de una skill a otra;
 - que los servidores MCP que se citan estén en .mcp.json;
 - que la regla «Dudas de Appian» esté, igual, en las skills de REGLA_DOCS, y el MCP que nombra (appian-docs), en
   .mcp.json;
 - que no haya frases largas repetidas entre SKILL.md;
 - que la versión de plugin.json sea la última del README.
-Con --completo pasa además las pruebas de pruebas/ (cada selftest.py y, con pytest, las de ingeniería inversa) al
-plugin que se comprueba, que reciben en PLUGIN_A_PROBAR, la de su requisitos.py y prueba el propio comprobador con una
-copia temporal.
+Con --completo pasa además las pruebas de pruebas/ (cada selftest.py, cada evaluaciones/*/prueba_puntuar.py y, con
+pytest, las de ingeniería inversa) al plugin que se comprueba, que reciben en PLUGIN_A_PROBAR, la de su requisitos.py,
+mira que no dejen __pycache__ en skills/ y prueba el propio comprobador con una copia temporal.
 Con --plugin <carpeta> todo se hace sobre esa copia del plugin (p. ej. la del paquete, que no lleva pruebas/), con
 las pruebas de este repositorio.
 Sale con 1 si hay errores.
@@ -41,7 +44,7 @@ from __future__ import annotations
 
 import argparse
 import ast
-import importlib.util
+import importlib.metadata
 import json
 import os
 import re
@@ -57,6 +60,9 @@ PRUEBAS = REPO / "pruebas"
 RAIZ = REPO                                 # el plugin que se comprueba: este repositorio u otra copia (--plugin)
 SKILLS = RAIZ / "skills"
 
+# La descripción de una skill: la documentación de Claude Code dice 1024 caracteres como mucho; se cuentan bytes UTF-8,
+# con margen, para no depender de cómo los cuente quien la carga.
+MAX_DESCRIPCION = 1000
 # Skills que se citan y no están en el plugin, con el motivo.
 EXTERNAS = {
     "appian-sail-generator": "skill aparte para escribir código SAIL suelto",
@@ -64,9 +70,11 @@ EXTERNAS = {
 # Nombres que empiezan por appian- y no son skills (MCP, carpetas y paquetes de Appian).
 NO_SKILLS = {"appian-docs", "appian-dev", "appian-analisis-funcional", "appian-dev-mcp-server",
              "appian-dev-mcp-server-bundle", "appian-mcp-server"}
-# Nombre anterior de una skill del plugin → el de hoy. Solo lo cita el README, para retirar las copias sueltas que
-# todavía lo llevan; en las skills es un error.
-ANTERIORES = {"appian-prototipos-aena": "appian-prototipos"}
+# Nombre anterior de una skill del plugin, por prefijo → el de hoy: appian-prototipos-<cliente> es hoy appian-prototipos
+# (el nombre llevaba el de un cliente, que el plugin no dice). Solo lo cita el README, para retirar las copias sueltas
+# que todavía lo llevan; en las skills es un error.
+ANTERIORES = {"appian-prototipos-": "appian-prototipos"}
+ANTIGUO = "appian-prototipos-cliente-x"  # un nombre anterior de prototipos, para las pruebas
 # Skills que tienen que llevar la regla de dudas de Appian (appian-best-practices la lleva en *Tools*).
 REGLA_DOCS = ["appian-functional-analyst", "appian-prototipos", "appian-refactorizacion", "appian-reverse-engineering"]
 # Skills que leen lo de ingeniería inversa: as-is/datos/ y los documentos de as-is/, nunca la extracción en bruto.
@@ -106,25 +114,50 @@ PERSONALES = re.compile(r"(?<![a-z0-9])(?:rgmoya|raulogm)\d*(?![a-z0-9])|(?<![a-
 PISTAS = ("rgmoya", "raul", "users", "home", "proyectos")  # una línea sin ninguna no hace falta mirarla (rapidez)
 # Las únicas excepciones, el autor del plugin y el dueño del marketplace: fichero → objeto cuyo «name» no se mira.
 AUTORIA = {".claude-plugin/plugin.json": "author", ".claude-plugin/marketplace.json": "owner"}
-# El plugin no lleva clientes (Tarea 0b): ni su nombre ni lo que lo delata en los datos de ejemplo, que dice
-# pruebas/clientes.txt. Se mira en todo el paquete y en los nombres de los ficheros, salvo el README, que cuenta su
-# historia; el nombre anterior de prototipos (ANTERIORES) no cuenta: hay que poder buscarlo para retirar copias sueltas.
+# El plugin no lleva clientes (Tarea 0b, R5): ni su nombre ni lo que lo delata en los datos de ejemplo, que dice
+# pruebas/clientes.txt. Los nombres se miran en todo el paquete, también el README, en docs/ y pruebas/ del repositorio
+# y en los nombres de los ficheros; los códigos de tres letras, que en un documento pueden ser otra cosa (unas siglas),
+# solo en los datos: los .json y lo que hay en galerias/ y templates/.
 CLIENTES = PRUEBAS / "clientes.txt"
-CON_HISTORIA = ("README.md",)
+DATOS, CARPETAS_DE_DATOS = (".json",), ("galerias", "templates")
+DEL_REPOSITORIO = ("docs", "pruebas", ".github", "CLAUDE.md")  # no van en el paquete, pero tampoco nombran clientes
+BASE64 = re.compile(r"base64,[A-Za-z0-9+/=]{20,}")  # un dato en base64 (las fuentes de las galerías) no es texto
 # Un dueño por salida: cada ruta de <p> es de una skill (PROPIETARIOS; gana el patrón más específico) y cada SKILL.md
 # declara en «Qué escribe» («What it writes» en inglés) las que escribe, relativas a <p>, una por línea y entre comillas
-# invertidas al empezar la línea.
+# invertidas al empezar la línea. Una regla deja escribir a otras skills («tambien») o solo crear la carpeta vacía
+# («crea_vacia»: el analista crea prototipo/ al iniciar el proyecto y la llena prototipos).
 PROPIETARIOS = PRUEBAS / "propietarios.json"
 TITULOS_ESCRIBE = ("## Qué escribe", "## What it writes")
+# Lo mismo en el resto de SKILL.md y en references/, como aviso (es una heurística, T16): una frase con un verbo de
+# escribir (ESCRIBE) seguido de rutas de <p> entre comillas invertidas que son de otra skill nombra a la dueña, por su
+# id o por su nombre corto (ALIAS). No cuentan una ruta con una negación antes en la frase (NIEGA) ni la que el verbo usa
+# como fuente (DESDE: «crea la propuesta a partir de `as-is/`»). FRASE corta las frases.
+ESCRIBE = re.compile(r"(?i)(?<![\w-])(?:(?:sobre)?e?scrib\w*|(?:crea|genera|guarda|deja|actualiza)(?:r|n|d[oa]s?)?"
+                     r"|añaden?|añadir|añadid[oa]s?|writes?|written|creates?|updates?|saves?)(?![\w-])")
+NIEGA = re.compile(r"(?i)(?<![\w-])(?:no|nunca|ni|sin|nada|never|not|nothing|without)(?![\w-])")
+DESDE = re.compile(r"(?i)(?<![\w-])(?:a partir de|desde|seg[uú]n|leyendo|lee|from|reads?|based on|using)(?![\w-])")
+ALIAS = {"appian-functional-analyst": ("analista", "functional analyst"), "appian-prototipos": ("prototipos", "prototypes"),
+         "appian-reverse-engineering": ("ingenieria inversa", "reverse engineering"),
+         "appian-diagramas-bpmn": ("diagramas", "diagrams"), "appian-refactorizacion": ("refactorizacion", "refactoring"),
+         "appian-best-practices": ("buenas practicas", "best practices")}
+FRASE = re.compile(r"(?<=[.;])\s+|\n\s*\n|\n(?=\s*[-*|#])|\|")
 # Una pieza por capacidad: solo la skill de diagramas pinta Mermaid y exporta BPMN, y las muletillas solo están en
 # REDACCION, las reglas de prosa comunes.
 DIAGRAMAS = "appian-diagramas-bpmn"
 PIEZAS_DE_DIAGRAMAS = ("mermaid.initialize", "BPMNDiagram")
+# Se mira en los scripts y las páginas; un .md puede citar las piezas como algo que comprobar. Sin excepciones: el panel
+# de ingeniería inversa, que pinta Mermaid en el navegador, lo escribe un agente en el proyecto, no va en el paquete.
+SCRIPTS = (".py", ".js", ".mjs", ".cjs", ".html", ".htm")
 REDACCION = "skills/appian-functional-analyst/references/redaccion.md"
 LISTA_MULETILLAS = re.compile(r"^\s*- «[^»\n]+» →")
-# Una orden uv run sin proyecto (--no-project o --with) elige el Python que encuentra, también un 3.9, y mcp pide 3.10:
-# lleva --python. Lo que va dentro de un proyecto (el bundle del Dev MCP tras uv sync) usa el Python del proyecto.
-UV_RUN = re.compile(r"\buv run\b([^`\n]*)")
+# Una orden uv run elige el Python que encuentra, también un 3.9, y mcp pide 3.10: lleva --python (T25). Lo que va
+# dentro de un proyecto (--directory, --project o el bundle del Dev MCP tras un uv sync en el mismo apartado) usa el
+# Python del proyecto. Las opciones de uv son las que van antes del programa; UV_CON_VALOR, las que llevan valor.
+UV_ORDEN = re.compile(r"(?<![\w-])uv (?:run|sync)\b")
+UV_CON_VALOR = {"--python", "-p", "--with", "--directory", "--project", "--with-requirements", "--with-editable",
+                "--env-file", "--extra", "--group", "--only-group", "--no-group", "--package", "--index", "--index-url",
+                "--default-index"}
+UV_PYTHON_FIJO = {"--python", "-p", "--directory", "--project"}
 
 errores, avisos = [], []
 
@@ -170,10 +203,11 @@ def comprobar_contenido(nombres):
                 if crudas:
                     errores.append(f"{ruta}:{','.join(crudas[:5])}: cita la extracción en bruto de ingeniería inversa; "
                                    "esta skill lee as-is/datos/ y los documentos de as-is/")
-    for py in sorted(SKILLS.glob("*/scripts/*.py")):
-        if py.parts[-3] in nombres and (falta := sin_bytecode(py)):
-            errores.append(f"{py.relative_to(RAIZ).as_posix()}:{falta}: importa un módulo de su carpeta sin "
-                           "«sys.dont_write_bytecode = True» antes: dejaría __pycache__ dentro del plugin, fuera del proyecto")
+    for py in sorted(f for d in ("scripts/*.py", "templates/*.py", "galerias/**/*.py") for f in SKILLS.glob(f"*/{d}")):
+        if py.relative_to(SKILLS).parts[0] in nombres and (falta := sin_bytecode(py)):
+            errores.append(f"{py.relative_to(RAIZ).as_posix()}:{falta}: importa un módulo de su carpeta o de scripts/ "
+                           "sin «sys.dont_write_bytecode = True» antes: dejaría __pycache__ dentro del plugin, fuera del "
+                           "proyecto")
     for py in [f for f in ficheros_del_paquete() if f.suffix == ".py"]:
         if consola_sin_utf8(py):
             errores.append(f"{py.relative_to(RAIZ).as_posix()}: escribe en la consola sin pasarla a UTF-8: en un Windows "
@@ -185,8 +219,10 @@ def comprobar_contenido(nombres):
 
 
 def sin_bytecode(py: Path) -> int | None:
-    """La línea del primer import de un módulo de la misma carpeta si no va antes «sys.dont_write_bytecode = True»."""
-    locales = {p.stem for p in py.parent.glob("*.py")} - {py.stem}
+    """La línea del primer import de un módulo de la misma carpeta o de scripts/ de la skill (el sail_helpers de los
+    generadores de templates/ y galerias/) si no va antes «sys.dont_write_bytecode = True»."""
+    scripts = SKILLS / py.relative_to(SKILLS).parts[0] / "scripts"
+    locales = {p.stem for p in [*py.parent.glob("*.py"), *scripts.glob("*.py")]} - {py.stem}
     arbol = ast.parse(py.read_text(encoding="utf-8"))
     lineas = [n.lineno for n in ast.walk(arbol)
               if (isinstance(n, ast.Import) and any(a.name.split(".")[0] in locales for a in n.names))
@@ -239,7 +275,8 @@ def ficheros_del_paquete():
 
 
 def terminos_de_clientes():
-    """(término, pista, patrón, sin distinguir mayúsculas) de pruebas/clientes.txt: palabras enteras y sin acentos; los
+    """(término, pista, patrón, es un nombre) de pruebas/clientes.txt, sin acentos y sin otra letra pegada (un «_», un
+    dígito o un signo no separan menos: OP_X y X2026 también lo nombran); los nombres, sin distinguir mayúsculas, y los
     códigos de tres letras en mayúsculas, solo en mayúsculas («mad» y «bcn» en minúsculas son palabras corrientes)."""
     terminos = []
     for linea in CLIENTES.read_text(encoding="utf-8").splitlines():
@@ -247,41 +284,51 @@ def terminos_de_clientes():
         if t:
             codigo = re.fullmatch(r"[A-Z]{3}", t) is not None
             palabras = (sin_acentos(t) if codigo else sin_acentos(t).casefold()).split()
-            terminos.append((t, max(palabras, key=len), re.compile(r"(?<!\w)" + r"\s+".join(map(re.escape, palabras)) + r"(?!\w)"),
-                             not codigo))
+            terminos.append((t, max(palabras, key=len), re.compile(r"(?<![^\W\d_])" + r"\s+".join(map(re.escape, palabras))
+                                                                   + r"(?![^\W\d_])"), not codigo))
     return terminos
 
 
+def ficheros_del_repositorio():
+    """Lo de DEL_REPOSITORIO que tiene la copia que se comprueba (el repositorio sí; el paquete, no), salvo CLIENTES."""
+    for d in DEL_REPOSITORIO:
+        for f in [RAIZ / d] if (RAIZ / d).is_file() else sorted((RAIZ / d).rglob("*")):
+            if f.is_file() and not set(CACHES) & set(f.relative_to(RAIZ).parts) and f.resolve() != CLIENTES.resolve():
+                yield f
+
+
 def comprobar_personales_y_clientes():
-    """Ningún fichero del paquete lleva datos personales (PERSONALES), salvo los de AUTORIA, y ninguno salvo los de
-    CON_HISTORIA nombra a un cliente; tampoco en el nombre del fichero. Los binarios (imágenes, fuentes: llevan bytes nulos) no se leen; los .min.js y los HTML, sí."""
+    """Ningún fichero del paquete lleva datos personales (PERSONALES), salvo los de AUTORIA, y ninguno, tampoco los de
+    docs/ y pruebas/ del repositorio, nombra a un cliente; tampoco en el nombre del fichero. Los códigos de tres letras,
+    solo en los datos. Los binarios (imágenes, fuentes: llevan bytes nulos) no se leen; los .min.js y los
+    HTML, sí."""
     if not CLIENTES.is_file():
         errores.append(f"falta {CLIENTES.relative_to(REPO).as_posix()}: los clientes que el plugin no puede nombrar")
     clientes = terminos_de_clientes() if CLIENTES.is_file() else []
     donde = lambda lineas: ",".join("nombre" if n == 0 else str(n) for n in lineas[:5]) + ("…" if len(lineas) > 5 else "")
-    for f in ficheros_del_paquete():
+    paquete = list(ficheros_del_paquete())
+    del_paquete = set(paquete)
+    for f in paquete + list(ficheros_del_repositorio()):
         datos = f.read_bytes()
         if b"\0" in datos:
             continue
         ruta = f.relative_to(RAIZ).as_posix()
-        texto = datos.decode("utf-8", errors="replace")
+        en_datos = f.suffix.lower() in DATOS or bool(set(CARPETAS_DE_DATOS) & set(f.relative_to(RAIZ).parts))
+        texto = BASE64.sub("base64,", datos.decode("utf-8", errors="replace"))
         if ruta in AUTORIA:  # el «name» de ese objeto se deja en blanco, sin mover las líneas
             texto = re.sub(r'("%s"\s*:\s*\{[^{}]*?"name"\s*:\s*)"(?:[^"\\]|\\.)*"' % AUTORIA[ruta], r'\1""', texto, count=1)
         personales, de_clientes = {}, {}
         # la línea 0 es el nombre del fichero: también cuenta
         for i, linea in enumerate([ruta] + texto.splitlines()):
             plana = linea if linea.isascii() else sin_acentos(linea)
-            for anterior in ANTERIORES:
-                plana = plana.replace(anterior, " ")
             minus = plana.casefold()
-            if any(p in minus for p in PISTAS):
+            if f in del_paquete and any(p in minus for p in PISTAS):  # docs/ sí dice quién decidió qué
                 for m in PERSONALES.finditer(minus):
                     personales.setdefault(m.group(0), []).append(i)
-            if ruta not in CON_HISTORIA:
-                for t, pista, patron, sin_mayusculas in clientes:
-                    donde_mira = minus if sin_mayusculas else plana
-                    if pista in donde_mira and patron.search(donde_mira):
-                        de_clientes.setdefault(t, []).append(i)
+            for t, pista, patron, es_nombre in clientes:
+                donde_mira = minus if es_nombre else plana
+                if (es_nombre or en_datos) and pista in donde_mira and patron.search(donde_mira):
+                    de_clientes.setdefault(t, []).append(i)
         for dato, lineas in personales.items():
             errores.append(f"{ruta}:{donde(lineas)}: «{dato}» es un dato personal; el paquete no lleva datos de nadie (solo "
                            "author.name de plugin.json y owner.name de marketplace.json): usa uno neutro, como "
@@ -311,17 +358,35 @@ def regla_de(ruta, reglas):
     return max(candidatas, key=lambda x: x[0])[1] if candidatas else None
 
 
+def puede_escribir(n, ruta, r):
+    """Si la skill n puede escribir una ruta de <p> cuya regla es r: es la dueña, está en su «tambien» o, en su
+    «crea_vacia», la ruta es la carpeta misma (la crea vacía y la llena la dueña)."""
+    return r["dueno"] == n or n in r.get("tambien", []) or (n in r.get("crea_vacia", []) and ruta == r["patron"])
+
+
+def frases(texto):
+    """(línea, frase) de un documento Markdown: corta en punto o punto y coma, párrafo, viñeta, título y celda."""
+    inicio = 0
+    for m in [*FRASE.finditer(texto), None]:
+        fin = m.start() if m else len(texto)
+        yield texto.count("\n", 0, inicio) + 1, texto[inicio:fin]
+        if m:
+            inicio = m.end()
+
+
 def comprobar_propietarios(textos):
-    """Un dueño por salida: lo que declara una skill en «Qué escribe» es suyo o de una regla que la tiene en «tambien», y
-    cada regla de PROPIETARIOS la declara su dueño. Una ruta declarada con <x> o * se mira con un nombre cualquiera."""
+    """Un dueño por salida: lo que declara una skill en «Qué escribe» es suyo o de una regla que la tiene en «tambien» (o
+    en «crea_vacia», solo la carpeta), y cada regla de PROPIETARIOS la declara su dueño. Una ruta declarada con <x> o *
+    se mira con un nombre cualquiera. En el resto de SKILL.md y en references/, una frase que dice que escribe (ESCRIBE)
+    una ruta de otra skill nombra a la dueña; si no, aviso."""
     fichero = PROPIETARIOS.relative_to(REPO).as_posix()
     if not PROPIETARIOS.is_file():
         errores.append(f"falta {fichero}: de qué skill es cada ruta de <p>")
         return
     reglas = json.loads(PROPIETARIOS.read_text(encoding="utf-8"))
-    nuevos, declaradas = [], set()
+    nuevos, avisos_, declaradas = [], [], set()
     for r in reglas:
-        for s in [r["dueno"], *r.get("tambien", [])]:
+        for s in [r["dueno"], *r.get("tambien", []), *r.get("crea_vacia", [])]:
             if s not in textos:
                 nuevos.append(f"{fichero}: la regla `{r['patron']}` nombra {s}, que no está en el plugin")
     for n, t in textos.items():
@@ -338,21 +403,46 @@ def comprobar_propietarios(textos):
                                   "corrige la ruta (relativa a <p>) o añade su regla")
                 elif r["dueno"] == n:
                     declaradas.add((n, r["patron"]))
-                elif n not in r.get("tambien", []):
+                elif not puede_escribir(n, variante, r):
                     nuevos.append(f"{n}/SKILL.md: «Qué escribe» declara `{ruta}`, que es de {r['dueno']} ({fichero}, "
-                                  f"`{r['patron']}`): una skill escribe solo lo suyo y lo que una regla le deja en «tambien»")
+                                  f"`{r['patron']}`): una skill escribe solo lo suyo y lo que una regla le deja en «tambien» "
+                                  "(o la carpeta que crea vacía, «crea_vacia»)")
+        # el resto de SKILL.md (sin «Qué escribe», con sus líneas en blanco para no mover las demás) y references/
+        cuerpo = re.sub(r"^## (?:Qué escribe|What it writes)\n.*?(?=^## |\Z)", lambda m: "\n" * m.group(0).count("\n"), t,
+                        flags=re.S | re.M)
+        docs = [(f"skills/{n}/SKILL.md", cuerpo)] + [(d.relative_to(RAIZ).as_posix(), d.read_text(encoding="utf-8"))
+                                                     for d in sorted((SKILLS / n / "references").glob("*.md"))]
+        for doc, texto in docs:
+            for linea, frase in frases(texto):
+                verbos = list(ESCRIBE.finditer(frase))
+                nombra = sin_acentos(re.sub(r"`[^`\n]*`", " ", frase)).casefold()  # sin el código: `analisis/diagramas/`
+                for m in re.finditer(r"`([^`\n]+)`", frase):
+                    v = next((v for v in reversed(verbos) if v.end() <= m.start()), None)
+                    ruta = re.sub(r"^<p>/", "", m.group(1).strip())
+                    if v is None or NIEGA.search(frase[:m.start()]) or DESDE.search(frase[v.end():m.start()]):
+                        continue
+                    for variante in expande(ruta) if "/" in ruta or "." in ruta else []:
+                        r = regla_de(re.sub(r"<[^>]*>|\*", "x", variante), reglas)
+                        if (r and not puede_escribir(n, variante, r) and r["dueno"] not in frase
+                                and not any(a in nombra for a in ALIAS.get(r["dueno"], ()))):
+                            avisos_.append(f"{doc}:{linea}: «{v.group(0)} … `{m.group(1)}`»: esa ruta es de {r['dueno']} "
+                                           f"({fichero}); una skill escribe solo lo suyo: si la escribe otra, nómbrala en "
+                                           "la frase (si la frase no dice que la escribe, no hace falta)")
+                            break
     for r in reglas:
         if r["dueno"] in textos and (r["dueno"], r["patron"]) not in declaradas:
             nuevos.append(f"{fichero}: la regla `{r['patron']}` es de {r['dueno']}, pero su «Qué escribe» no la declara")
     errores.extend(dict.fromkeys(nuevos))  # una vez cada uno: las variantes de una ruta con llaves dan el mismo
+    avisos.extend(dict.fromkeys(avisos_))
 
 
 def comprobar_piezas():
-    """Una pieza por capacidad: fuera de DIAGRAMAS ningún script pinta Mermaid ni exporta BPMN, y ningún documento del
-    paquete salvo REDACCION lleva una lista de muletillas (se remite a REDACCION)."""
+    """Una pieza por capacidad: fuera de DIAGRAMAS ningún script ni página (SCRIPTS) pinta Mermaid ni exporta BPMN, y
+    ningún documento del paquete salvo REDACCION lleva una lista de muletillas (se remite a REDACCION)."""
     for f in ficheros_del_paquete():
         ruta = f.relative_to(RAIZ).as_posix()
-        if f.suffix == ".py" and not ruta.startswith(f"skills/{DIAGRAMAS}/"):
+        skill = f.relative_to(SKILLS).parts[0] if SKILLS in f.parents else None
+        if f.suffix.lower() in SCRIPTS and skill != DIAGRAMAS:
             texto = f.read_text(encoding="utf-8", errors="replace")
             for pieza in PIEZAS_DE_DIAGRAMAS:
                 if pieza in texto:
@@ -366,17 +456,64 @@ def comprobar_piezas():
                                f"prosa están solo en {REDACCION}: remite a ese fichero")
 
 
+def ordenes_uv(texto, markdown):
+    """(línea, orden) de las órdenes de uv de un texto y (línea, None) en cada título, que empieza otro apartado. En
+    Markdown, solo el código: cada línea de un bloque (las partidas con \\ son una) y cada código en línea; en otro
+    fichero, cada línea desde «uv run» o «uv sync»."""
+    en_bloque, partida = False, None
+    for i, linea in enumerate(texto.splitlines(), 1):
+        s = linea.strip()
+        if not markdown:
+            for m in UV_ORDEN.finditer(linea):
+                yield i, linea[m.start():]
+        elif s.startswith("```"):
+            en_bloque, partida = not en_bloque, None
+        elif en_bloque:
+            inicio, previa = partida or (i, "")
+            orden = f"{previa} {s.rstrip(chr(92))}".strip()
+            partida = (inicio, orden) if s.endswith("\\") else None
+            if partida is None:
+                yield inicio, re.sub(r"^\$\s*", "", orden)
+        elif re.match(r"#+\s", s):
+            yield i, None
+        else:
+            for m in re.finditer(r"`([^`\n]+)`", linea):
+                yield i, m.group(1).strip()
+
+
+def fija_el_python(orden):
+    """Si una orden «uv run» fija el Python (UV_PYTHON_FIJO antes del programa); None si no es una orden (no lleva
+    programa: «Nunca uses `uv run` sin…»)."""
+    fichas = re.findall(r"\"[^\"]*\"|'[^']*'|\S+", orden[len("uv run"):])
+    opciones, k = set(), 0
+    while k < len(fichas):
+        ficha = fichas[k]
+        if not ficha.startswith("-"):
+            return bool(opciones & UV_PYTHON_FIJO)
+        nombre = ficha.split("=", 1)[0]
+        opciones.add(nombre)
+        k += 2 if nombre in UV_CON_VALOR and "=" not in ficha else 1
+    return None
+
+
 def comprobar_uv_run():
-    """Ninguna orden uv run sin proyecto (UV_RUN) del paquete deja a uv elegir el Python: lleva --python."""
+    """Ninguna orden uv run del paquete deja a uv elegir el Python: lleva --python, salvo dentro de un proyecto
+    (--directory o --project, o tras un uv sync en el mismo apartado), que usa el suyo. Solo cuentan las órdenes
+    (ordenes_uv) y las opciones de uv, antes del programa."""
     for f in ficheros_del_paquete():
         if f.suffix not in TEXTOS:
             continue
-        lineas = [str(i) for i, linea in enumerate(f.read_text(encoding="utf-8", errors="replace").splitlines(), 1)
-                  for m in UV_RUN.finditer(linea)
-                  if re.search(r"--no-project|--with\b", m.group(1)) and "--python" not in m.group(1)]
+        lineas, tras_sync = [], False
+        for i, orden in ordenes_uv(f.read_text(encoding="utf-8", errors="replace"), f.suffix == ".md"):
+            if orden is None:
+                tras_sync = False
+            elif orden.startswith("uv run") and fija_el_python(orden) is False and not tras_sync:
+                lineas.append(str(i))
+            tras_sync = tras_sync or bool(orden and re.search(r"(?<![\w-])uv sync\b", orden))
         if lineas:
             errores.append(f"{f.relative_to(RAIZ).as_posix()}:{','.join(lineas[:5])}: una orden uv run sin --python: uv "
-                           'puede elegir un Python 3.9 y mcp pide 3.10 o superior (uv run --no-project --python ">=3.10" …)')
+                           'puede elegir un Python 3.9 y mcp pide 3.10 o superior (uv run --no-project --python ">=3.10" …); '
+                           "dentro de un proyecto, --directory antes del programa o uv sync antes en el mismo apartado")
 
 
 def anota_prueba(nombre, r, ruta, pytest=False):
@@ -389,28 +526,56 @@ def anota_prueba(nombre, r, ruta, pytest=False):
         avisos.append(f"{ruta} no se pudo completar (falta un requisito)")
 
 
+def version_de(paquete):
+    """La versión instalada de un paquete en el Python del comprobador, o None."""
+    try:
+        return importlib.metadata.version(paquete)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def orden_de_pytest(pytest, mcp, uv, carpeta):
+    """La orden de las pruebas de ingeniería inversa: este Python si tiene pytest y mcp>=1.2,<2 (con mcp 2 el simulador
+    no arranca: importa mcp.server.fastmcp); si no, uv, que los trae; None si tampoco hay uv. pytest y mcp son sus
+    versiones (None si no están) y uv, su ruta."""
+    if pytest and mcp and (1, 2) <= tuple(map(int, re.findall(r"\d+", mcp)[:2])) < (2,):
+        return [sys.executable, "-m", "pytest", "-q", str(carpeta)]
+    if uv:
+        # sin UV_PYTHON, uv elige el Python que encuentra, también un 3.9, y mcp pide 3.10 (UV_RUN)
+        python = [] if os.environ.get("UV_PYTHON") else ["--python", ">=3.10"]
+        return ["uv", "run", "--no-project", *python, "--with", "pytest", "--with", "mcp>=1.2,<2",
+                "python", "-m", "pytest", "-q", str(carpeta)]
+    return None
+
+
 def pruebas_de_las_skills():
     """Las pruebas de pruebas/<skill>/ contra el plugin que se comprueba, que reciben en PLUGIN_A_PROBAR."""
     # PYTHONUTF8=1 salvo que se pida otra cosa: la matriz de GitHub prueba un Windows con PYTHONUTF8=0, como el de un
-    # compañero, para que las pruebas vean la consola y los ficheros en cp1252
-    entorno = dict(os.environ, PLUGIN_A_PROBAR=str(RAIZ), PYTHONUTF8=os.environ.get("PYTHONUTF8", "1"))
+    # compañero, para que las pruebas vean la consola y los ficheros en cp1252. Sin bytecode: las pruebas importan
+    # módulos del plugin y dejarían __pycache__ dentro (restos_de_bytecode)
+    entorno = dict(os.environ, PLUGIN_A_PROBAR=str(RAIZ), PYTHONUTF8=os.environ.get("PYTHONUTF8", "1"),
+                   PYTHONDONTWRITEBYTECODE="1")
     for p in sorted(PRUEBAS.glob("*/selftest.py")):
         anota_prueba(p.parent.name, corre([sys.executable, str(p)], env=entorno), p.relative_to(REPO).as_posix())
+    for p in sorted(PRUEBAS.glob("evaluaciones/*/prueba_puntuar.py")):  # las de los puntuadores de las evaluaciones
+        anota_prueba(p.parent.relative_to(PRUEBAS).as_posix(), corre([sys.executable, str(p)], env=entorno),
+                     p.relative_to(REPO).as_posix())
     inversa = PRUEBAS / "appian-reverse-engineering"
-    if all(importlib.util.find_spec(m) for m in ("pytest", "mcp")):
-        orden = [sys.executable, "-m", "pytest", "-q", str(inversa)]
-    elif shutil.which("uv"):
-        # sin UV_PYTHON, uv elige el Python que encuentra, también un 3.9, y mcp pide 3.10 (UV_RUN)
-        python = [] if os.environ.get("UV_PYTHON") else ["--python", ">=3.10"]
-        orden = ["uv", "run", "--no-project", *python, "--with", "pytest", "--with", "mcp>=1.2,<2",
-                 "python", "-m", "pytest", "-q", str(inversa)]
-    else:
+    orden = orden_de_pytest(version_de("pytest"), version_de("mcp"), shutil.which("uv"), inversa)
+    if orden is None:
         print("Prueba de appian-reverse-engineering: no se pudo completar")
         avisos.append(f"{inversa.relative_to(REPO).as_posix()} no se pudo completar: faltan pytest o mcp y no hay uv "
                       "para traerlos (pip install pytest \"mcp>=1.2,<2\")")
         return
     anota_prueba("appian-reverse-engineering", corre(orden, env=entorno, cwd=str(inversa)),
                  inversa.relative_to(REPO).as_posix(), pytest=True)
+
+
+def restos_de_bytecode():
+    """Tras las pruebas, ningún __pycache__ en skills/: algo importó un módulo del plugin sin evitar el bytecode."""
+    for d in sorted(SKILLS.rglob("__pycache__")):
+        errores.append(f"{d.relative_to(RAIZ).as_posix()}: queda tras las pruebas; algo escribió bytecode dentro del "
+                       "plugin (sys.dont_write_bytecode = True antes del import, o PYTHONDONTWRITEBYTECODE=1 al lanzarlo)")
 
 
 def sin_version_ni_rutas(salida):
@@ -421,6 +586,35 @@ def sin_version_ni_rutas(salida):
         if r.get("ruta"):
             r["ruta"] = "<ruta>"
     return datos
+
+
+def git_bash():
+    """El bash de Git para Windows, con el que Claude Code lanza los hooks en Windows, o None (el de System32 es WSL)."""
+    candidatos = [shutil.which("bash")] + [str(Path(os.environ[v], "Git", "bin", "bash.exe"))
+                                           for v in ("ProgramFiles", "ProgramW6432") if os.environ.get(v)]
+    return next((c for c in candidatos if c and "system32" not in c.lower() and Path(c).is_file()), None)
+
+
+def shells_del_hook() -> list:
+    """(nombre, orden del shell) con los que se prueba el hook: sh en macOS y Linux; en Windows, Git Bash (el shell de
+    los hooks; None si no está, que es un fallo de la prueba) y PowerShell."""
+    if os.name != "nt":
+        return [("sh", [shutil.which("sh") or "/bin/sh", "-c"])]
+    bash = git_bash()
+    return [("Git Bash", [bash, "-c"] if bash else None),
+            ("PowerShell", [shutil.which("powershell") or "powershell", "-NoProfile", "-NonInteractive", "-Command"])]
+
+
+def solo_python(carpeta: Path, shell: str) -> Path:
+    """Una carpeta para el PATH con un `python` que lanza este Python y sin python3: python.bat para PowerShell y, para
+    sh y Git Bash, un script con #! (los dos lo ejecutan sin bit de ejecución en Windows). Cada shell, su carpeta:
+    PowerShell intentaría abrir el script sin extensión."""
+    carpeta.mkdir(parents=True)
+    f, texto = (("python.bat", f'@"{sys.executable}" %*\n') if shell == "PowerShell"
+                else ("python", f'#!/bin/sh\nexec "{Path(sys.executable).as_posix()}" "$@"\n'))
+    (carpeta / f).write_bytes(texto.encode("utf-8"))  # con \n también en Windows: sh no acepta \r\n
+    (carpeta / f).chmod(0o755)
+    return carpeta
 
 
 def prueba_de_requisitos():
@@ -439,12 +633,14 @@ def prueba_de_requisitos():
             trabajo = Path(tmp) / "Carpeta con espacios" / "Gestión app"
             trabajo.mkdir(parents=True)
 
-            def requisitos(*args, sin="", casa="vacía", orden=None):
+            def requisitos(*args, sin="", casa="vacía", orden=None, path=None):
                 carpeta = Path(tmp) / "casas" / casa
                 carpeta.mkdir(parents=True, exist_ok=True)
                 entorno = dict(os.environ, APPIAN_RE_HOME=str(carpeta), REQUISITOS_SIN=sin, PYTHONIOENCODING="cp1252",
                                CLAUDE_PLUGIN_ROOT=str(RAIZ))
                 entorno.pop("PYTHONUTF8", None)
+                if path is not None:
+                    entorno["PATH"] = path
                 r = corre(orden or [sys.executable, str(script), *args], env=entorno, cwd=str(trabajo))
                 return r.returncode, r.stdout, r.stdout + r.stderr
 
@@ -470,8 +666,37 @@ def prueba_de_requisitos():
                    "con REQUISITOS_SIN=playwright,docx no sale con 0 o no los da por ausentes", todo)
             c, out, todo = requisitos(sin="python")
             espera(c == 1 and "Python" in out, "con REQUISITOS_SIN=python no sale con 1 diciendo que falta Python", todo)
+            # sin uv o sin el Dev MCP, ingeniería inversa no puede trabajar («bloquea»): con --skill de esa skill sale con
+            # 1; sin --skill, con 0 y lo dice; con --skill de otra, con 0
+            bloqueo = "Sin uv, appian-reverse-engineering no puede trabajar"
+            for args, codigo in ((("--skill", "appian-reverse-engineering"), 1), ((), 0), (("--skill", "appian-prototipos"), 0)):
+                c, out, todo = requisitos(*args, sin="uv")
+                espera(c == codigo and (bloqueo in out) == (codigo == 1 or not args),
+                       f"con REQUISITOS_SIN=uv y {' '.join(args) or 'sin --skill'}, no sale con {codigo} o "
+                       f"{'no dice' if codigo == 1 or not args else 'dice'} «{bloqueo}»", todo)
+            # el Appian MCP Server: está (el http <entorno>/mcp del Dev MCP), no se puede comprobar (hay otros http que no
+            # son el MCP de documentación: puede ser uno, con --mcp-server-name) o falta (ningún otro http)
+            docs = {"appian-docs": {"type": "http", "url": "https://appian-docs-public.mcp.kapa.ai"}}
+            devmcp = {"command": "uv", "args": ["run", "--directory", "bundle", "lcp_mcp_server"],
+                      "env": {"LCP_URL": "https://entorno.example.com/suite"}}
+            for servidores, estado in (({**docs, "appian-dev": devmcp, "appian": {"type": "http",
+                                         "url": "https://entorno.example.com/mcp"}}, True),
+                                       ({**docs, "otro": {"type": "http", "url": "https://otro.example.org/mcp"}}, None),
+                                       (docs, False)):
+                (trabajo / ".mcp.json").write_text(json.dumps({"mcpServers": servidores}), encoding="utf-8")
+                c, out, todo = requisitos("--json")
+                try:
+                    fila = next(r for r in json.loads(out)["requisitos"] if r["id"] == "appian-mcp-server")
+                except (ValueError, StopIteration):
+                    fila = {}
+                espera(c == 0 and fila.get("presente", "?") is estado
+                       and (estado is not None or "--mcp-server-name" in (fila.get("nota") or "")),
+                       f"con {', '.join(servidores)} en .mcp.json, el Appian MCP Server no sale como "
+                       f"{ {True: 'presente', None: 'no comprobable (con --mcp-server-name)', False: 'ausente'}[estado]}",
+                       todo)
+            (trabajo / ".mcp.json").unlink()
             for suelta, hoy in (("appian-reverse-engineering", "appian-reverse-engineering"),
-                                ("appian-prototipos-aena", "appian-prototipos")):
+                                (ANTIGUO, "appian-prototipos")):
                 copia = Path(tmp) / "casas" / suelta / ".claude" / "skills" / suelta / "SKILL.md"
                 copia.parent.mkdir(parents=True)
                 copia.write_text(f"---\nname: {suelta}\n---\n", encoding="utf-8")
@@ -486,31 +711,58 @@ def prueba_de_requisitos():
             # solo lo que falta y deja la marca de que ya avisó a esta versión
             version = json.loads((RAIZ / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
             marca = Path(tmp) / "casas" / "aviso" / ".cache" / "appian-analisis-funcional" / f"avisado-{version}"
-            c, out, todo = requisitos("--breve", sin="docx", casa="aviso")
+            # sin el Dev MCP ni el Appian MCP Server: dependen de la carpeta y los comprueba ingeniería inversa al empezar
+            c, out, todo = requisitos("--breve", sin="docx,devmcp,appian-mcp-server", casa="aviso")
             espera(c == 0 and "Paquete docx de Node" in out and "Falta Python" not in out
-                   and "Skill de PDF" not in out and marca.is_file(),
-                   "--breve con REQUISITOS_SIN=docx no sale con 0 diciendo solo que falta docx y dejando la marca", todo)
+                   and "Skill de PDF" not in out and "Falta Appian Dev MCP" not in out
+                   and "Falta Appian MCP Server" not in out and marca.is_file(),
+                   "--breve con REQUISITOS_SIN=docx,devmcp,appian-mcp-server no sale con 0 diciendo solo que falta docx "
+                   "(sin el Dev MCP ni el Appian MCP Server) y dejando la marca", todo)
             c, out, todo = requisitos("--breve", sin="docx", casa="aviso")
             espera(c == 0 and not out.strip(), "--breve avisa otra vez de lo mismo", todo)
+            # con la marca, sale antes de importar el extractor (lleva asyncio)
+            c, out, todo = requisitos(sin="docx", casa="aviso",
+                                      orden=[sys.executable, "-X", "importtime", str(script), "--breve"])
+            espera(c == 0 and not out.strip() and "devmcp_extract" not in todo,
+                   "--breve con la marca ya puesta importa devmcp_extract antes de mirarla", todo)
+            # el hook lo lanza con los dos: el que no es el preferido calla, y sin marca, si el preferido funciona
+            otro = "python3" if os.name == "nt" else "python"
+            c, out, todo = requisitos("--breve", "--como", otro, sin="docx", casa="no-preferido")
+            espera(c == 0 and not out.strip() and not (Path(tmp) / "casas" / "no-preferido" / ".cache").exists(),
+                   f"--breve --como {otro}, con el preferido del sistema funcionando, no calla o deja la marca", todo)
             c, out, todo = requisitos("--breve", sin="python", casa="sin-python")
             espera(c == 0 and "Falta Python" in out, "--breve con REQUISITOS_SIN=python no sale con 0 diciendo que falta", todo)
             # el hook de hooks/hooks.json tal cual, con la carpeta del plugin en su sitio: python3 y python en la misma
-            # orden (sh en macOS y Linux, PowerShell en Windows) y el aviso una sola vez
+            # orden (sh en macOS y Linux; Git Bash, el shell de los hooks, y PowerShell en Windows) y el aviso una sola vez
             try:
                 grupos = json.loads((RAIZ / "hooks" / "hooks.json").read_text(encoding="utf-8"))["hooks"]["SessionStart"]
                 ordenes = [h["command"] for g in grupos if "startup" in g.get("matcher", "").split("|") for h in g["hooks"]]
             except (OSError, ValueError, KeyError, TypeError):
                 ordenes = []
             espera(len(ordenes) == 1, "hooks/hooks.json no tiene un hook SessionStart para «startup»", "")
-            for orden in ordenes:
-                orden = orden.replace("${CLAUDE_PLUGIN_ROOT}", RAIZ.as_posix())
-                shell = (["powershell", "-NoProfile", "-NonInteractive", "-Command", orden] if os.name == "nt"
-                         else ["sh", "-c", orden])
-                for vez in (1, 2):
-                    c, out, todo = requisitos(sin="docx", casa="hook", orden=shell)
-                    espera(c == 0 and out.count("Paquete docx de Node") == (1 if vez == 1 else 0),
-                           f"el hook de inicio de sesión, la {'primera' if vez == 1 else 'segunda'} vez, no sale con 0 o "
-                           f"no avisa de docx {'una vez' if vez == 1 else 'ninguna vez'}", todo)
+            for nombre, shell in shells_del_hook():
+                if shell is None:
+                    fallos.append(f"en Windows, la prueba del hook necesita {nombre}, el shell con el que Claude Code lanza "
+                                  "los hooks (el bash de System32 es WSL y no vale)")
+                    continue
+                for orden in ordenes:
+                    orden = orden.replace("${CLAUDE_PLUGIN_ROOT}", RAIZ.as_posix())
+                    for vez in (1, 2):
+                        c, out, todo = requisitos(sin="docx", casa=f"hook-{nombre}", orden=[*shell, orden])
+                        espera(c == 0 and out.count("Paquete docx de Node") == (1 if vez == 1 else 0),
+                               f"el hook de inicio de sesión ({nombre}), la {'primera' if vez == 1 else 'segunda'} vez, "
+                               f"no sale con 0 o no avisa de docx {'una vez' if vez == 1 else 'ninguna vez'}", todo)
+                    # con solo `python` en el PATH (sin python3, como en muchos Windows), el hook avisa una vez y
+                    # «Detalle» dice python, el que funciona
+                    carpeta = solo_python(Path(tmp) / "solo python" / nombre, nombre)
+                    for vez in (1, 2):
+                        c, out, todo = requisitos(sin="docx", casa=f"solo-python-{nombre}", orden=[*shell, orden],
+                                                  path=str(carpeta))
+                        bien = (out.count("Detalle: python ") == 1 and "Detalle: python3" not in out if vez == 1
+                                else "Detalle" not in out)
+                        espera(c == 0 and bien, f"el hook con solo python en el PATH ({nombre}), la "
+                               f"{'primera' if vez == 1 else 'segunda'} vez, no sale con 0 o no dice "
+                               f"{'una vez «Detalle: python»' if vez == 1 else 'nada'}", todo)
     print(f"Prueba de requisitos: {'bien' if not fallos else 'falla'}")
     errores.extend(f"Prueba de requisitos: {f}" for f in fallos)
 
@@ -531,6 +783,24 @@ def copia_del_plugin(destino):
 def probar_comprobador(nombres):
     """Prueba del propio comprobador, con una copia temporal del plugin sin pruebas/ (como la del paquete)."""
     fallos = []
+    # un nombre y un código de tres letras de pruebas/clientes.txt: el repositorio tampoco los escribe (R5)
+    terminos = terminos_de_clientes()
+    cliente = next((t for t, _p, _r, es_nombre in terminos if es_nombre), "")
+    codigo = next((t for t, _p, _r, es_nombre in terminos if not es_nombre), "")
+    if not (cliente and codigo):
+        fallos.append(f"{CLIENTES.relative_to(REPO).as_posix()} no tiene un nombre y un código de tres letras con los "
+                      "que probar la comprobación de clientes")
+    # pytest de ingeniería inversa, con versiones simuladas: el Python del sistema solo si tiene pytest y mcp>=1.2,<2
+    # (con mcp 2 el simulador no arranca); si no, uv; sin uv, ninguna orden
+    for pytest, mcp, uv, quien in (("8.3.0", "1.26.0", "/bin/uv", "sistema"), ("8.3.0", "1.26.0", None, "sistema"),
+                                   ("8.3.0", "2.2.0", "/bin/uv", "uv"), ("8.3.0", "2.0.0rc1", "/bin/uv", "uv"),
+                                   ("8.3.0", "1.1.3", "/bin/uv", "uv"), (None, "1.26.0", "/bin/uv", "uv"),
+                                   ("8.3.0", None, "/bin/uv", "uv"), ("8.3.0", "2.2.0", None, None)):
+        orden = orden_de_pytest(pytest, mcp, uv, Path("inversa"))
+        elegido = orden and ("sistema" if orden[0] == sys.executable else orden[0])
+        if elegido != quien or (quien == "uv" and "mcp>=1.2,<2" not in orden):
+            fallos.append(f"con pytest {pytest}, mcp {mcp} y uv {uv}, las pruebas de ingeniería inversa van con "
+                          f"{elegido or 'nada'} y no con {quien or 'nada'}: {orden}")
     with tempfile.TemporaryDirectory(prefix="comprobar-plugin-") as tmp:
         copia = copia_del_plugin(Path(tmp) / "Carpeta con espacios" / "plugin")
         skill = copia / "skills" / nombres[0]
@@ -583,13 +853,24 @@ def probar_comprobador(nombres):
             espera(c == 1 and "zz-extraccion.md:3" in out and "as-is/datos/" in out,
                    f"el analista que cita {cita} no da error", out)
         cruda.unlink()
-        # el nombre anterior de una skill solo lo cita el README (para retirar las copias sueltas); un SKILL.md, no
+        # el nombre anterior de una skill (appian-prototipos-<cliente>, por prefijo) solo lo cita el README, para retirar
+        # las copias sueltas; un SKILL.md, no
         doc = skill / "SKILL.md"
         original = doc.read_text(encoding="utf-8")
-        doc.write_text(original + "\nAntes se llamaba `appian-prototipos-aena`.\n", encoding="utf-8")
+        doc.write_text(original + f"\nAntes se llamaba `{ANTIGUO}`.\n", encoding="utf-8")
         c, out = comprueba()
-        espera(c == 1 and "appian-prototipos-aena" in out and "hoy appian-prototipos" in out,
+        espera(c == 1 and ANTIGUO in out and "hoy appian-prototipos" in out,
                "un SKILL.md que cita el nombre anterior de una skill no da error", out)
+        # la descripción, 1000 bytes UTF-8 como mucho (la documentación dice 1024 caracteres: con tildes, menos bytes)
+        larga = "Prueba de tamaño. No hace nada más. "
+        while len((larga + "é").encode("utf-8")) <= 1001:
+            larga += "é"
+        larga += "a" * (1001 - len(larga.encode("utf-8")))
+        doc.write_text(re.sub(r"^description: .*$", lambda _m: f'description: "{larga}"', original, count=1, flags=re.M),
+                       encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and f"{nombres[0]}: la descripción tiene 1001 bytes" in out,
+               f"una descripción de 1001 bytes ({len(larga)} caracteres, con tildes) no da error", out)
         # cada SKILL.md manda comprobar el equipo con su nombre antes de la primera tarea
         doc.write_text(original.replace(f"--skill {nombres[0]}", "--skill otra"), encoding="utf-8")
         c, out = comprueba()
@@ -619,6 +900,13 @@ def probar_comprobador(nombres):
         c, out = comprueba()
         espera(c == 1 and "la tabla de requisitos no es la salida" in out,
                "una tabla de requisitos del README retocada a mano no da error", out)
+        # el README tampoco nombra clientes (R5); sí cita el nombre anterior de prototipos, para retirar las copias sueltas
+        readme.write_text(texto + f"\nHecho para {cliente}.\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "README.md:" in out and "clientes.txt" in out, "un README que nombra a un cliente no da error", out)
+        readme.write_text(texto + f"\nRetira `{ANTIGUO}` si la tienes suelta.\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0, "un README que cita el nombre anterior de prototipos da error", out)
         readme.write_text(texto, encoding="utf-8")
         # un script que lee la salida de otro programa como texto sin decir la codificación la lee en la de la consola
         # (cp1252 en Windows): una ruta con tilde sale mal
@@ -653,16 +941,43 @@ def probar_comprobador(nombres):
                "un script que importa un módulo de su carpeta sin dont_write_bytecode no da error", out)
         (scripts / "zz_modulo.py").unlink()
         (scripts / "zz_usa.py").unlink()
-        # una orden uv run sin proyecto y sin --python deja a uv elegir el Python: puede ser un 3.9, y mcp pide 3.10
+        # también un generador de galerias/ o templates/ que importa un módulo de scripts/ de su skill (sail_helpers)
+        kit = copia / "skills" / "appian-prototipos"
+        for generador in (kit / "galerias" / "zz" / "generar_app.py", kit / "templates" / "zz_generar.py"):
+            generador.parent.mkdir(exist_ok=True)
+            generador.write_text("import sys\nsys.path.insert(0, 'scripts')\nfrom sail_helpers import *\n", encoding="utf-8")
+            c, out = comprueba()
+            espera(c == 1 and f"{generador.parent.name}/{generador.name}:3" in out and "dont_write_bytecode" in out,
+                   f"un {generador.parent.name}/{generador.name} que importa sail_helpers sin dont_write_bytecode no da "
+                   "error", out)
+            generador.write_text("import sys\nsys.dont_write_bytecode = True\nsys.path.insert(0, 'scripts')\n"
+                                 "from sail_helpers import *\n", encoding="utf-8")
+            c, out = comprueba()
+            espera(c == 0, f"un {generador.parent.name}/{generador.name} con dont_write_bytecode da error", out)
+            generador.unlink()
+        shutil.rmtree(kit / "galerias" / "zz")
+        # una orden uv run sin --python deja a uv elegir el Python: puede ser un 3.9, y mcp pide 3.10; salvo dentro de un
+        # proyecto (--directory, --project o tras uv sync en el mismo bloque de código), que usa el suyo (T25)
+        # (solo las órdenes: los bloques de código y el código en línea que empieza por uv run y lleva un programa; las
+        # líneas partidas con \ son una; un uv sync antes en el mismo apartado vale; las opciones, solo antes del programa)
         orden = skill / "references" / "zz-uv.md"
-        orden.write_text('# Orden\n\n`uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/x.py" doctor`\n',
-                         encoding="utf-8")
-        c, out = comprueba()
-        espera(c == 1 and "zz-uv.md:3" in out and "--python" in out, "una orden uv run sin --python no da error", out)
-        orden.write_text('# Orden\n\n`uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python x.py doctor`\n',
-                         encoding="utf-8")
-        c, out = comprueba()
-        espera(c == 0, "una orden uv run con --python da error", out)
+        for texto, error in (('`uv run --no-project --with "mcp>=1.2,<2" python "<skill>/scripts/x.py" doctor`', True),
+                             ("`uv run python x.py`", True),
+                             ("`uv run python x.py --directory salida`", True),
+                             ("```bash\nuv run playwright install chromium\nuv sync\n```", True),
+                             ("## Instalar\n\n`uv sync`\n\n## Usar\n\n`uv run playwright install chromium`", True),
+                             ('`uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python x.py doctor`', False),
+                             ("`uv run --directory bundle python -m servidor`", False),
+                             ("```bash\ncd bundle\nuv sync\nuv run playwright install chromium\n```", False),
+                             ("1. `uv sync` en la carpeta del bundle.\n2. `uv run playwright install chromium`.", False),
+                             ("```bash\nuv sync\n```\n\nY después:\n\n```bash\nuv run playwright install chromium\n```",
+                              False),
+                             ('```bash\nuv run --no-project \\\n  --python ">=3.10" python x.py\n```', False),
+                             ("Nunca uses `uv run` sin `--python` fuera de un proyecto.", False)):
+            orden.write_text(f"# Orden\n\n{texto}\n", encoding="utf-8")
+            c, out = comprueba()
+            espera((c == 1 and "zz-uv.md:" in out and "--python" in out) if error else c == 0,
+                   f"una orden «{texto}» {'no ' if error else ''}da error", out)
         orden.unlink()
         # nada personal en el paquete, con límite de palabra y sin distinguir acentos ni mayúsculas: el HYDRAULIC de
         # viewer-static.min.js (en la copia) no es «Raúl»; C:/Users/<usuario> es la ruta neutra
@@ -680,7 +995,7 @@ def probar_comprobador(nombres):
                "C:/Users/<usuario>, %USERNAME%, Public, una URL con /users/ o HYDRAULIC dan error", out)
         personal.unlink()
         # el nombre de un fichero también cuenta
-        for nombre in ("rgmoya-notas.md", "aena-notas.md"):
+        for nombre in ("rgmoya-notas.md", f"{cliente.lower()}-notas.md"):
             f = skill / "references" / nombre
             f.write_text("# Notas\n\nTexto neutro.\n", encoding="utf-8")
             c, out = comprueba()
@@ -694,24 +1009,59 @@ def probar_comprobador(nombres):
         espera(c == 1 and "plugin.json:" in out and "dato personal" in out,
                "un plugin.json que nombra a Raúl fuera de author.name no da error", out)
         manifiesto.write_text(antes, encoding="utf-8")
-        # el plugin no lleva clientes (pruebas/clientes.txt): ni su nombre ni lo que lo delata en los datos de ejemplo;
-        # los códigos de tres letras, solo en mayúsculas («mad» en minúsculas es una palabra corriente)
+        # el plugin no lleva clientes (pruebas/clientes.txt): su nombre, en ningún fichero; los códigos de tres letras que
+        # lo delatan, solo en los datos (*.json, galerias/, templates/) y en mayúsculas: «según el <código>» en un
+        # documento o el código en minúsculas son palabras corrientes (T13)
         galeria = copia / "skills" / "appian-prototipos" / "galerias" / "zz-galeria.json"
-        for dato in ('"ubicacion": "Madrid-Barajas"', '"sede": "MAD"', '"cliente": "Aena"'):
+        for dato in (f'"ubicacion": "Sede {cliente}"', f'"sede": "{codigo}"', f'"cliente": "{cliente.title()}"'):
             galeria.write_text("{\n " + dato + "\n}\n", encoding="utf-8")
             c, out = comprueba()
             espera(c == 1 and "zz-galeria.json:2" in out and "clientes.txt" in out, f"una galería que dice {dato} no da error", out)
-        galeria.write_text('{\n "ruta": "datos/mad/2026",\n "antes": "appian-prototipos-aena"\n}\n', encoding="utf-8")
+        plantilla = copia / "skills" / "appian-prototipos" / "templates" / "zz-notas.md"
+        plantilla.write_text(f"# Notas\n\nSede {codigo}.\n", encoding="utf-8")
         c, out = comprueba()
-        espera(c == 0, "un «mad» en minúsculas o el nombre anterior de prototipos dan error como cliente", out)
+        espera(c == 1 and "zz-notas.md:3" in out and "clientes.txt" in out, f"una plantilla que dice {codigo} no da error", out)
+        plantilla.unlink()
+        galeria.write_text('{\n "ruta": "datos/' + codigo.lower() + '/2026"\n}\n', encoding="utf-8")
+        siglas = skill / "references" / "zz-siglas.md"
+        siglas.write_text(f"# Siglas\n\nSegún el {codigo}, el alcance se cierra antes del plan.\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0, f"«{codigo.lower()}» en minúsculas en una galería o «según el {codigo}» en un documento dan error "
+               "como cliente", out)
         galeria.unlink()
+        siglas.unlink()
         # fuera de skills/ también: lo que va en la raíz del paquete (requisitos.json, hooks/) no nombra clientes
         gancho = copia / "hooks" / "zz-cliente.json"
         gancho.parent.mkdir(exist_ok=True)
-        gancho.write_text('{\n "description": "Para el aeropuerto de Barajas"\n}\n', encoding="utf-8")
+        gancho.write_text('{\n "description": "Para ' + cliente + '"\n}\n', encoding="utf-8")
         c, out = comprueba()
         espera(c == 1 and "zz-cliente.json:2" in out and "clientes.txt" in out, "un fichero de hooks/ que nombra a un cliente no da error", out)
         gancho.unlink()
+        # ni docs/, pruebas/, .github/ ni CLAUDE.md del repositorio, aunque no vayan en el paquete (R5); y el límite es
+        # solo una letra: OP_<cliente>, <cliente>2026 o brand_<cliente>.json también lo nombran
+        casos = {copia / "docs" / "zz-plan.md": (f"# Plan\n\nPara {cliente}.\n", "3"),
+                 copia / ".github" / "workflows" / "zz.yml": (f"# Pruebas\n\nname: {cliente}\n", "3"),
+                 copia / "CLAUDE.md": (f"# Repositorio\n\nDe {cliente}.\n", "3"),
+                 skill / "references" / "zz-op.md": (f"# Código\n\nOP_{cliente.upper()}\n", "3"),
+                 copia / "hooks" / "zz-anio.json": ('{\n "id": "' + cliente.lower() + '2026"\n}\n', "2"),
+                 skill / "references" / f"brand_{cliente.lower()}.md": ("# Marca\n\nTexto neutro.\n", "nombre")}
+        for f, (texto, _linea) in casos.items():
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text(texto, encoding="utf-8")
+        c, out = comprueba()
+        for f, (_texto, linea) in casos.items():
+            espera(c == 1 and f"{f.relative_to(copia).as_posix()}:{linea}:" in out and "clientes.txt" in out,
+                   f"{f.relative_to(copia).as_posix()}, que nombra a un cliente, no da error", out)
+            f.unlink()
+        shutil.rmtree(copia / "docs")
+        shutil.rmtree(copia / ".github")
+        # un dato en base64 (las fuentes de una galería) no es texto: un código entre + y / no lo nombra
+        fuente = copia / "skills" / "appian-prototipos" / "galerias" / "zz-fuente.html"
+        fuente.write_text(f'<style>src:url(data:font/woff2;base64,{"A" * 40}+{codigo}/{cliente.lower()}0{"B" * 40})'
+                          "</style>\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0, "un código o un nombre dentro de un dato en base64 dan error como cliente", out)
+        fuente.unlink()
         # un dueño por salida (pruebas/propietarios.json): «Qué escribe» declara solo lo de esa skill o lo que su regla le
         # deja en «tambien», y cada dueño declara sus reglas
         def cambia(nombre, cambio):
@@ -740,14 +1090,57 @@ def probar_comprobador(nombres):
                                                        flags=re.S | re.M))
         espera(c == 1 and f"{nombres[0]}/SKILL.md" in out and "Qué escribe" in out,
                "un SKILL.md sin el apartado «Qué escribe» no da error", out)
-        # una pieza por capacidad: solo diagramas pinta Mermaid y exporta BPMN, y las muletillas solo están en redaccion.md
-        for nombre, dato in (("zz_bpmn.py", '<bpmndi:BPMNDiagram id="d"/>'), ("zz_pinta.py", "mermaid.initialize({})")):
-            pieza = scripts / nombre
+        # prototipo/ es de prototipos: el analista solo la crea vacía («crea_vacia»), así que no puede declarar lo de dentro
+        c, out = cambia("appian-functional-analyst", declara("- `prototipo/app.json`: prueba"))
+        espera(c == 1 and "appian-functional-analyst/SKILL.md" in out and "prototipo/app.json" in out,
+               "el analista, que solo crea vacía prototipo/, no da error al declarar prototipo/app.json", out)
+        # el cuerpo de SKILL.md y references/ tampoco dicen que la skill escribe una ruta de otra sin nombrarla (T16): es
+        # una heurística, así que avisa sin dar error
+        cuerpo = lambda frase: lambda t: t.replace("## Qué escribe\n", f"{frase}\n\n## Qué escribe\n", 1)
+        c, out = cambia("appian-refactorizacion", cuerpo("Al terminar, escribe `as-is/datos/zz.json`."))
+        espera(c == 0 and re.search(r"Aviso · skills/appian-refactorizacion/SKILL\.md:\d+: .*as-is/datos/zz\.json.*"
+                                    r"appian-reverse-engineering", out),
+               "un SKILL.md que dice en su cuerpo que escribe una ruta de otra skill no avisa (o da error)", out)
+        referencia = copia / "skills" / "appian-refactorizacion" / "references" / "zz-escribe.md"
+        frases_ = [("La propuesta deja `<p>/as-is/datos/zz.json` al día.", True),
+                   ("Actualiza `refactorizacion/propuesta.md` y `as-is/datos/zz.json`.", True),
+                   ("Updates `as-is/datos/zz.json` after each run.", True),
+                   ("Sobrescribe `analisis/funcional.md` con la propuesta.", True),
+                   ("En general, `as-is/datos/zz.json` tiene lo que hace falta.", False),
+                   ("Crea la propuesta a partir de `as-is/datos/zz.json`.", False),
+                   ("No escribas nada en `as-is/`.", False),
+                   ("Never writes to `as-is/` or `analisis/`.", False),
+                   ("Ingeniería inversa crea `as-is/datos/zz.json` y el analista guarda `analisis/funcional.md`.", False),
+                   ("`devmcp_extract.py` de appian-reverse-engineering escribe `as-is/datos/zz.json`.", False),
+                   ("Lee `as-is/datos/zz.json` y escribe `refactorizacion/propuesta.md`.", False)]
+        referencia.write_text("# Pasos\n\n" + "\n\n".join(f for f, _ in frases_) + "\n", encoding="utf-8")
+        c, out = comprueba()
+        for k, (frase, avisa) in enumerate(frases_):
+            dice = re.search(rf"Aviso · \S*zz-escribe\.md:{3 + 2 * k}:", out) is not None
+            espera(c == 0 and dice == avisa, f"una referencia que dice «{frase}» {'no ' if avisa else ''}avisa (o da "
+                   "error)", out)
+        referencia.unlink()
+        # una pieza por capacidad: solo diagramas pinta Mermaid y exporta BPMN, en cualquier script (también .js, .mjs,
+        # .cjs, .html y .htm, e ingeniería inversa, cuyo panel lo genera un agente en el proyecto); un documento .md puede
+        # citarlos; y las muletillas solo están en redaccion.md
+        inversa = copia / "skills" / "appian-reverse-engineering" / "scripts"
+        piezas = {scripts / "zz_bpmn.py": '<bpmndi:BPMNDiagram id="d"/>', inversa / "zz_pinta.py": "mermaid.initialize({})",
+                  scripts / "zz-pinta.js": "mermaid.initialize({})", scripts / "zz-bpmn.mjs": "bpmndi:BPMNDiagram",
+                  scripts / "zz-bpmn.cjs": "BPMNDiagram", scripts / "zz-pinta.html": "<script>mermaid.initialize({})</script>",
+                  scripts / "zz-pinta.htm": "<script>mermaid.initialize({})</script>"}
+        for pieza, dato in piezas.items():
             pieza.write_text(f"PLANTILLA = '{dato}'\n", encoding="utf-8")
-            c, out = comprueba()
-            espera(c == 1 and nombre in out and "appian-diagramas-bpmn" in out,
-                   f"un script fuera de diagramas con {dato} no da error", out)
+        c, out = comprueba()
+        for pieza, dato in piezas.items():
+            espera(c == 1 and re.search(rf"Error · {re.escape(pieza.relative_to(copia).as_posix())}: escribe .*"
+                                        r"appian-diagramas-bpmn", out),
+                   f"{pieza.relative_to(copia).as_posix()}, fuera de diagramas con {dato}, no da error", out)
             pieza.unlink()
+        cita = skill / "references" / "zz-cita.md"
+        cita.write_text("# Comprobar\n\nEl `.bpmn` lleva `bpmndi:BPMNDiagram` y `mermaid.initialize`.\n", encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0, "un documento .md que cita las piezas da error", out)
+        cita.unlink()
         lista = skill / "references" / "zz-muletillas.md"
         lista.write_text("# Prosa\n\n- «cabe destacar» → quítalo\n", encoding="utf-8")
         c, out = comprueba()
@@ -758,8 +1151,18 @@ def probar_comprobador(nombres):
         # (si falta un requisito, como pytest sin uv, esa prueba no se completa, pero tampoco pasa)
         for py in (copia / "skills").rglob("*.py"):
             py.write_text('raise RuntimeError("roto a propósito por la prueba del comprobador")\n', encoding="utf-8")
+        # y un __pycache__ en una skill tras las pruebas es un error: algo escribió bytecode dentro del plugin
+        resto = skill / "scripts" / "__pycache__" / "zz.cpython-313.pyc"
+        resto.parent.mkdir(parents=True)
+        resto.write_bytes(b"")
         c, out = comprueba("--completo")
-        suites = sorted(p.parent.name for p in PRUEBAS.glob("*/selftest.py")) + ["appian-reverse-engineering"]
+        espera(f"skills/{nombres[0]}/scripts/__pycache__" in out and "bytecode" in out,
+               "un __pycache__ en una skill tras las pruebas no da error", out)
+        # las evaluaciones de enrutado y de malas prácticas no ejecutan scripts del plugin (leen las descripciones de
+        # SKILL.md y los datos de pruebas/): con los scripts rotos siguen pasando
+        suites = (sorted(p.parent.name for p in PRUEBAS.glob("*/selftest.py")) + ["appian-reverse-engineering"]
+                  + [f"evaluaciones/{e}" for e in ("demo", "evolutivo", "incoherencias", "evolutivo-urgencia",
+                                                   "coste-retoque")])
         espera(c == 1 and all(f"Prueba de {s}:" in out and f"Prueba de {s}: bien" not in out for s in suites),
                "--completo --plugin no pasa las pruebas del repositorio a la copia", out)
     print(f"Prueba del comprobador: {'bien' if not fallos else 'falla'}")
@@ -817,8 +1220,9 @@ def main(completo, plugin=None):
             errores.append(f"{n}: el name del SKILL.md es «{fm.get('name')}»")
         if not d:
             errores.append(f"{n}: sin descripción")
-        elif len(d) > 1024:
-            errores.append(f"{n}: la descripción tiene {len(d)} caracteres (máximo 1024)")
+        elif len(d.encode("utf-8")) > MAX_DESCRIPCION:
+            errores.append(f"{n}: la descripción tiene {len(d.encode('utf-8'))} bytes (máximo {MAX_DESCRIPCION} en UTF-8: "
+                           "la documentación dice 1024 caracteres y se deja margen)")
         if "<" in d or ">" in d:
             errores.append(f"{n}: la descripción lleva < o >")
         if d and not re.search(r"(^|[.:;] )(No|Not) ", d):
@@ -834,7 +1238,7 @@ def main(completo, plugin=None):
     comprobar_propietarios(textos)
     comprobar_piezas()
 
-    # Las órdenes uv run sin proyecto fijan el Python
+    # Las órdenes uv run fijan el Python, salvo dentro de un proyecto
     comprobar_uv_run()
 
     # Skills citadas
@@ -846,11 +1250,12 @@ def main(completo, plugin=None):
         texto = sin_urls(doc.read_text(encoding="utf-8"))
         for m in re.finditer(r"(?<![\w./-])(appian-[a-z0-9]+(?:-[a-z0-9]+)*)", texto):
             nombre = m.group(1)
-            if nombre in ANTERIORES and doc == RAIZ / "README.md":
+            if nombre in nombres or nombre in EXTERNAS or nombre in NO_SKILLS:
                 continue
-            if nombre not in nombres and nombre not in EXTERNAS and nombre not in NO_SKILLS:
-                hoy = f" (hoy {ANTERIORES[nombre]})" if nombre in ANTERIORES else ""
-                errores.append(f"{doc.relative_to(RAIZ)}: cita «{nombre}», que no está en el plugin{hoy}")
+            hoy = next((h for prefijo, h in ANTERIORES.items() if nombre.startswith(prefijo)), None)
+            if not (hoy and doc == RAIZ / "README.md"):
+                errores.append(f"{doc.relative_to(RAIZ)}: cita «{nombre}», que no está en el plugin"
+                               + (f" (hoy {hoy})" if hoy else ""))
 
     # Ficheros que cita cada SKILL.md
     for n, t in textos.items():
@@ -943,6 +1348,7 @@ def main(completo, plugin=None):
     if completo:
         pruebas_de_las_skills()
         prueba_de_requisitos()
+        restos_de_bytecode()
         if not plugin:  # el comprobador se prueba una vez, desde el repositorio
             probar_comprobador(nombres)
 

@@ -3,7 +3,7 @@
 Genera capturas PNG de cada pantalla/estado del prototipo para el documento funcional.
 
 Uso:
-  python3 capture.py prototipo.html app.json -o capturas/ [--width 1440] [--height 900] [--viewport]
+  python3 capture.py prototipo.html app.json -o capturas/ [--width 1440] [--height 900] [--viewport] [--solo PAN-02,PAN-04]
 
 - Usa spec.captures si existe; si no, una captura por pantalla en su estado inicial.
 - Oculta la barra del prototipo (modo captura).
@@ -11,6 +11,9 @@ Uso:
   en una captura concreta, "full": false hace lo mismo.
 - Escribe capturas/indice.md: cada figura con su pie, su ficha PAN (el 'ref' de la pantalla) y la línea que la enlaza
   en esa ficha de analisis/funcional.md (ruta relativa desde analisis/, con el prototipo en <proyecto>/prototipo/).
+- --solo: solo las capturas de esas pantallas o vistas (el código de su 'ref', como PAN-02, o su id), separadas por
+  comas; el indice.md que ya hay se fusiona: se sustituyen solo las filas con el mismo «Fichero» y se añaden las nuevas.
+  Si alguna no es de ninguna captura, sale con 1 sin capturar nada.
 - Informa de errores de JavaScript de la página (si hay alguno, sale con código 1).
 Requiere Playwright para Python (pip install playwright) y un navegador: el Chromium de Playwright
 (playwright install chromium) o Chrome / Edge ya instalados.
@@ -21,6 +24,38 @@ from pathlib import Path
 from entorno import utf8_stdio, sync_playwright, launch_browser
 
 
+def ref_de(texto):
+    """El código de una ficha («PAN-04») al principio de un ref («PAN-04 · Revisar documentación»), o None."""
+    m = re.match(r"\s*([A-Z]+-\d+)", texto or "")
+    return m.group(1) if m else None
+
+
+def elegir(caps, byid, solo):
+    """(las capturas de `solo`, los de `solo` que no son de ninguna): una captura se elige por el id de su pantalla, el de
+    su vista o el código del ref de la ficha que enseña: el de su vista si tiene uno propio (es otra PAN) y, si no, el de
+    su pantalla. Así PAN-02 no elige una vista de su pantalla que es PAN-03."""
+    elegidas, usados = [], set()
+    for c in caps:
+        s = byid.get(c["screen"], {})
+        v = next((x for x in s.get("views") or [] if x.get("id") == c.get("view")), None)
+        claves = {c["screen"], c.get("view"), ref_de((v or {}).get("ref") or s.get("ref"))} & set(solo)
+        if claves:
+            elegidas.append(c)
+            usados |= claves
+    return elegidas, [x for x in solo if x not in usados]
+
+
+def fusionar(viejo, nuevo):
+    """El índice `nuevo` (con las capturas de ahora) dentro del `viejo`: la cabecera es la nueva; las filas del viejo se
+    quedan en su sitio salvo las del mismo «Fichero», que se sustituyen, y las que no estaban van al final."""
+    def fichero(linea):
+        es_fila = linea.startswith("| ") and not linea.startswith(("| Fichero ", "|---"))
+        return linea.split("|")[1].strip() if es_fila else None
+    nuevas = {fichero(l): l for l in nuevo.splitlines() if fichero(l)}
+    filas = [nuevas.pop(fichero(l), l) for l in viejo.splitlines() if fichero(l)]
+    return "\n".join([l for l in nuevo.splitlines() if not fichero(l)] + filas + list(nuevas.values())) + "\n"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("html")
@@ -29,12 +64,21 @@ def main():
     ap.add_argument("--width", type=int, default=1440)
     ap.add_argument("--height", type=int, default=900)
     ap.add_argument("--viewport", action="store_true", help="capturar solo el área visible (por defecto: página completa)")
+    ap.add_argument("--solo", help="solo las capturas de estas pantallas o vistas: el código de su ref (PAN-02) o su id, separados "
+                                   "por comas; el indice.md que ya hay se fusiona (se sustituyen las filas del mismo fichero)")
     a = ap.parse_args()
     utf8_stdio()
 
     spec = json.loads(Path(a.spec).read_text(encoding="utf-8"))
     byid = {s["id"]: s for s in spec["screens"]}
     caps = spec.get("captures") or [{"name": f"{i + 1:02d}-{s['id']}", "screen": s["id"]} for i, s in enumerate(spec["screens"])]
+    solo = [x.strip() for x in (a.solo or "").split(",") if x.strip()]
+    if solo:
+        caps, faltan = elegir(caps, byid, solo)
+        if faltan:
+            print(f"--solo: {', '.join(faltan)} no es de ninguna captura (el código del ref de una pantalla o vista, como "
+                  "PAN-02, o su id); no se captura nada.", file=sys.stderr)
+            sys.exit(1)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     errors = []
@@ -95,7 +139,10 @@ def main():
             index.append(f"| {f.name} | {pie} | {ref} | {enlace} | {s.get('pattern', '')} | {', '.join((v or {}).get('req') or s.get('req', []))} |")
             print(f"  ✓ {f}")
         b.close()
-    (out / "indice.md").write_text("\n".join(index) + "\n", encoding="utf-8")
+    texto = "\n".join(index) + "\n"
+    if solo and (out / "indice.md").is_file():   # solo las de ahora: el resto del índice se queda como estaba
+        texto = fusionar((out / "indice.md").read_text(encoding="utf-8"), texto)
+    (out / "indice.md").write_text(texto, encoding="utf-8")
     print(f"OK → {out / 'indice.md'}")
     if errors:
         print("\nErrores en la página:")

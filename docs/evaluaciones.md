@@ -1,8 +1,132 @@
 # Evaluaciones y cierre de fases
 
-Resultados de las evaluaciones del plan `docs/plan/2026-10-07-integracion-ingenieria-inversa.md` y, al cerrar cada
+Resultados de las evaluaciones de los planes de `docs/plan/` y, al cerrar cada
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
+
+## 0.7.0-beta.2 · G7 · Evaluaciones finales (11 de octubre de 2026)
+
+Rama `g7-evaluaciones`, de `v0.7.0-beta.2` 4fe7338. Se pasan a ciegas, con las skills y los puntuadores tal como están,
+las ocultas del enrutado y las tres evaluaciones del analista que más ha cambiado la versión. «Evolutivo con urgencia» y
+la prueba de coste se midieron en G5 con este método y no se repiten.
+
+**Cómo se pasaron.** Cada agente es un `claude -p` nuevo con una copia del paquete (`pruebas/empaquetar.py`, 177
+ficheros), sin la herramienta Skill (lee los `SKILL.md`), sin CLAUDE.md ni ajustes (`--restricted
+--setting-sources ""`), con la lectura de `pruebas/`, `docs/` y `skills/` del repositorio denegada y Bash limitado a
+`python3` y `node` sobre la copia (y `uv run` en ingeniería inversa). El entorno solo deja lanzar agentes con herramientas desde la carpeta del
+repositorio: la copia y los proyectos estuvieron en una carpeta ignorada dentro de ella y al terminar pasaron a
+`$PROYECTOS_PRUEBA`. Los registros de cada sesión confirman que ninguno abrió `pruebas/` ni `docs/`. Analista e
+ingeniería inversa, con Opus; el enrutado, con el modelo por defecto de `claude -p`.
+
+| Evaluación | Resultado | Umbral | Pasa |
+|---|---|---|---|
+| Enrutado, ocultas (tres pasadas) | 10/10 ×3 | todas | sí |
+| Incoherencias | 10/10 y 3/3; ninguna aplicada, ninguna coincidencia como cambio | todas (las dos salen 0) | sí |
+| Demo | 6/6 y 6/6 | las dos salen 0 | sí |
+| Evolutivo | 10/10 y 3/3; `comprobar.py` sin errores | 8 de 10 y 3 de 3 | sí |
+
+- **Enrutado.** Las descripciones finales de G6 con las 10 ocultas, que no se habían pasado: un agente sin herramientas
+  por pasada, desde una carpeta vacía.
+- **Incoherencias** (`AYC-incoherencias/`, 75 turnos). El DF entra como 1.0 con sus IDs y cada reunión tiene su
+  informe, con las 13 diferencias «Sí (🔒)» y «Pendiente». La versión sube a 1.1 solo por un COMPLETA que no pedía
+  aprobación (R2).
+- **Demo** (`PRE-demo/`). Aplica los cuatro retoques, deja PAN-02 y PAN-05 pendientes y pide aprobación. Con «Aplica el
+  de la solicitud; el de entregar y recoger, de momento no» cataloga la respuesta como aprobación (FU-04, R1), cambia
+  PAN-02 y no toca PAN-05. En la ronda oculta cambia solo PAN-03.
+- **Evolutivo** (`MNT-evolutivo/`). Primero la 1.0 de toda la aplicación desde `as-is/` (12 historias, 11 pantallas y 3
+  procesos, E1); después la reunión como 1.1 en la unidad EV-01, con §13 objeto a objeto, y el aviso del hallazgo Alta
+  de lo que se modifica. En la oculta, la consulta del ERP pasa a una ficha INT con criterios en vez de una historia (R6).
+- **El `as-is/` de MNT** no estaba en este equipo: lo generó un agente a ciegas con ingeniería inversa contra el
+  simulador (`mock_devmcp/`, `MOCK_APP=fixture_mal_hecha`, con el Dev MCP y el Appian MCP Server) en 40 minutos: 44
+  objetos, 39 hallazgos, `comprobar_asis.py` con 0 errores y un aviso (11 pasa de su presupuesto de palabras) y
+  `evidencia.py` bien. Está en `MNT/`. No se pasó la evaluación del recién llegado (sus preguntas).
+- **Puntuadores.** Ninguno choca con el método nuevo: el de evolutivo lee la Situación de §13, no un «Origen» en las
+  historias, y los de incoherencias y demo leen los informes y no dependen de que la versión suba (sin `versiones/v1.0`,
+  buscan lo aplicado en el texto).
+
+### Lo que salió
+
+- **R4 en la demo.** El cambio de PAN-02 lo aprobó el equipo (FU-04, «De: analista del proyecto») y la pantalla sigue 🔒
+  porque «lo pidió el almacén en la demo»; `proyecto.py estado` la sigue dando por validada por el cliente. Según R4 (y
+  el plan: un CAMBIA aprobado por el jefe de proyecto pasa a ✅ y el cliente valida después) tendría que pasar a ✅. La
+  fila CAMBIA de `skills/appian-functional-analyst/references/actualizacion.md` dice «si lo aprueba el cliente» sin
+  decir qué es aprobarlo. Corrección propuesta, sin aplicar: «Si era 🔒 y lo aprueba el cliente (una fuente suya que lo
+  apruebe: pedirlo en una reunión o en una demo no basta), sigue 🔒 con la cita; si lo aprueba el equipo, ✅». No cambia
+  la puntuación.
+- Con Bash limitado, los agentes probaron `echo`, `python3 -c` y órdenes encadenadas, y las rehicieron: es fricción del
+  montaje, no del plugin.
+
+## 0.7.0-beta.2 · G6 (11 de octubre de 2026)
+
+### Enrutado con vecinas (tarea 6.6)
+
+Lote nuevo `pruebas/evaluaciones/enrutado/vecinas/`: 13 peticiones de frontera con dos skills de fuera del plugin
+(`appian-sail-generator` y `docx`, con su descripción literal en `vecinas.json`). Cada pasada, un agente nuevo sin
+herramientas ni skills (`claude -p` desde una carpeta vacía) que solo recibe `puntuar.py --enunciado --vecinas`.
+
+| Descripciones | Vecinas | Fronteras | Visibles |
+|---|---|---|---|
+| Las de 6.5 (≤ 1.000 bytes, fronteras con SAIL y Word) | 12/13 ×3 | — | — |
+| Buenas prácticas reclama el SAIL pegado que se revisa | 13/13 ×3 | 7/8, 8/8, 7/8 | 20/20 |
+| Diagramas remite al analista los de estados y de datos | 13/13 ×2 | 8/8 ×3 | 20/20 |
+| Tras la revisión: buenas prácticas, en un entorno o pegado; el SAIL a partir de requisitos, de `appian-sail-generator`; analista con margen (974 bytes) | 13/13 ×3 | 8/8 ×3 | 20/20 ×2 |
+
+- El fallo de las tres primeras pasadas: «Revisa este SAIL: hace un a!queryRecordType dentro de un a!forEach» iba a
+  `appian-sail-generator`, que se ofrece para «paste SAIL expressions and ask for fixes/improvements». Buenas prácticas
+  dice ahora que construye, cambia, revisa o depura «in an environment or as pasted code» y, en su «Not for»,
+  «generating SAIL from requirements (appian-sail-generator)». La otra mitad, que `appian-sail-generator` diga que no es
+  para revisiones de buenas prácticas, es de Raúl (plan, apartado 6).
+- El recorte del analista para caber en 1.000 bytes hizo fallar la frontera de los diagramas de estados y de datos (con
+  las descripciones de antes, 8/8 ×2): diagramas dice ahora que esos los hace el analista.
+- Las ocultas no se han pasado: quedan para G7, con el resto de las evaluaciones.
+
+## 0.7.0-beta.2 · G0-G5 (10-11 de octubre de 2026)
+
+Plan único `docs/plan/2026-10-10-0.7.0-beta.2.md`. Cada fase, en su rama, con su revisión independiente; los hallazgos
+de las revisiones se corrigieron en la misma rama antes de unirla (el más grave: los IDs de hallazgos que debían quedar
+estables se podían intercambiar al reextraer, G1).
+
+### Evolutivo con urgencia (tarea 5.11)
+
+Proyecto ficticio del caso C (`EV-01` en producción, `EV-02` aprobada) y una incidencia crítica sobre un objeto de
+`EV-02`. Dos pasadas a ciegas con las skills copiadas, sin `pruebas/` ni `docs/`.
+
+| Pasada | Visible | Ocultas | Nota |
+|---|---|---|---|
+| 1 | 9/9, pasa | 5/6, no pasa | No pasó la URG a producción: el método decía «desatendida: nunca» aunque el encargo traía el visto bueno del jefe de proyecto, y quiso la prueba en producción antes de cerrar |
+| 2 | 9/9, pasa | 6/6, pasa | Tras corregir: con el visto bueno catalogado como Aprobación se pasa (`--desatendida --fuente`), y «En producción» registra un pase que ya ocurrió: lo que falte por comprobar va en «Cierre» |
+
+La pasada 2 encontró además que `produccion` guardaba la fecha del registro y no la del pase, que es con la que compara
+la deriva: `--fecha`.
+
+### Prueba de coste: texto de un botón construido (tarea 5.12)
+
+Calidad, las tres veces: informe aplicado en una unidad nueva Abierta, 0 aprobaciones, 0 DT, 0 pasadas de `comprobar.py`
+con errores, ningún Word ni captura regenerados. **Coste: 34, 34 y 47 llamadas frente al tope de 25: no pasa.**
+
+- Unas 22 llamadas son del método (leer SKILL.md y tres referencias, catalogar, buscar, informe, copia, editar
+  funcional, técnico y decisiones, anexo, comprobar). El resto, dudas que el método no resolvía: si meterlo en la unidad
+  Aprobada o abrir otra, el formato de la fila D, si hay que rehacer la captura.
+- Tras la pasada 1 se corrigió: una fuente corta no lleva nota; si nada requiere aprobación, una sola pasada de
+  `comprobar.py`; el formato de la fila D en `actualizacion.md`; e `indice.py impacto` dice qué unidad abrir cuando no
+  hay ninguna Abierta. La pasada 3 ya no dudó en eso, pero editó con 20 llamadas sueltas: la cifra depende mucho de cómo
+  edite el modelo.
+- El tope se fijó antes de medir y no se cambia. Queda para la siguiente versión un camino corto de retoque (apartado
+  «Aplazado»).
+
+### Aplazado
+
+- Retoque: un cambio de texto sobre algo construido sigue costando ~30 llamadas. Medir de nuevo con el plugin instalado
+  y, si sigue por encima, un camino corto para un punto sin aprobación (informe y aplicación en un paso).
+
+### Cierre de la 0.7.0-beta.2
+
+`comprobar_plugin.py --completo` en verde en el repositorio y sobre el paquete descomprimido en una carpeta con espacios (177 ficheros, sin pruebas, docs ni cachés). CI en verde en Windows, macOS y Linux con Python 3.9 y 3.12, también con la consola en cp1252.
+
+Lo aprendido:
+- Mirar el CI tras cada subida: el Windows con consola cp1252 falló desde G0 (las pruebas de las evaluaciones escribían ✔ y 🔒 sin pasar la consola a UTF-8) y no se vio hasta G6.
+- Las evaluaciones a ciegas encuentran lo que las pruebas no: «desatendida: nunca» bloqueaba un cierre con el visto bueno del jefe de proyecto en el propio encargo, y la fecha del pase no era la del pase.
+- El coste de un retoque depende tanto del método como de cómo edita el modelo (34 frente a 47 llamadas con el mismo método): medirlo con varias pasadas.
 
 ## F9 · Cierre (9 de octubre de 2026)
 
@@ -439,7 +563,7 @@ Rama `f2-ingenieria-inversa`, de `main` 4938606 al merge. Versión 0.7.0-alpha.1
   `pruebas/<skill>/` y el caso de ejemplo de prototipos sale del plugin. `comprobar_plugin.py` da error si una skill
   lleva pruebas, ejemplos, un proyecto o la marca de un cliente, y `--completo --plugin` pasa las mismas pruebas sobre
   la copia del paquete.
-- **La marca de cualquier cliente (Tareas 0b y 0c).** `appian-prototipos-aena` pasa a `appian-prototipos`, con la
+- **La marca de cualquier cliente (Tareas 0b y 0c).** `appian-prototipos-<cliente>` pasa a `appian-prototipos`, con la
   marca estándar de Appian por defecto; la de un cliente va en `<p>/prototipo/`. `marca.py web` saca de su web los
   colores, el logo y la tipografía, y `marca.py crear`, la configuración completa (Site, perfil CSS, paleta, estados,
   gráficos y `marca-<id>.md` para quien construye) con el contraste AA ya ajustado.
@@ -462,7 +586,7 @@ Rama `f2-ingenieria-inversa`, de `main` 4938606 al merge. Versión 0.7.0-alpha.1
 - Ingeniería inversa: 89 pruebas en verde, entre ellas retomar en otra ruta, con espacios y en otro entorno.
 - Scripts de `skills/` y `pruebas/`: se analizan e importan con Python 3.9.
 - Galerías y plantillas: se regeneran idénticas, byte a byte. La galería de antes, construida con el kit nuevo y la
-  marca de AENA del historial, solo cambia el gris del pie del visor de documentos.
+  marca del cliente del historial, solo cambia el gris del pie del visor de documentos.
 
 ### Lo aprendido
 

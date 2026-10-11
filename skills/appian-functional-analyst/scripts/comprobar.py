@@ -5,30 +5,41 @@ Uso (<p> es la carpeta del proyecto o su carpeta analisis/):
   comprobar.py <p> [--fuentes fuentes/] [--corregir-citas]
   comprobar.py <p> --impacto impacto/FU-04.md --fuentes fuentes/        informe listo, antes de aplicar
   comprobar.py <p> --anterior versiones/v1.1 [--impacto impacto/FU-04.md]   después de aplicar
+  comprobar.py <p> --impacto impacto/FU-04.md        informe «Estado: sin cambios»: no hay versión nueva ni copia
 
 Errores (✗, salida 1) y avisos (·):
   - estructura: los apartados de cada fichero con su número;
   - IDs: definidos una vez y en su sitio, citados solo si existen, ninguna pieza vigente remite a una anulada;
   - completo: historias con perfil, pantalla, prioridad y criterios; pantallas con sus partes y captura;
     pasos con quién y pantalla; pendientes con a quién preguntar;
-  - DF limpio: sin fuentes, marcas de estado ni términos de Appian a la vista, comentarios cerrados;
+  - DF limpio: sin fuentes, marcas de estado ni términos de Appian a la vista, comentarios cerrados; lo mismo en
+    «Qué cambia» de las versiones 1.0 y siguientes de decisiones.md, que sale en el Word, y además (aviso) sin D-nn,
+    «punto N», el informe ni muletillas;
+  - prototipo (aviso): cada pregunta nueva (Q-nn de «Preguntas abiertas» en prototipo/*trazabilidad*.md) con su PC;
   - redacción (avisos): muletillas de references/redaccion.md, frases largas o repetidas, palabras vagas sin cifra;
   - funcional ↔ técnico, si hay tecnico.md: cada dato del DF con su campo y viceversa, cada pantalla, aviso,
-    relación con otro sistema, perfil y criterio en su apartado técnico, decisiones con su porqué y su
-    verificación, y la misma versión en los tres ficheros;
+    relación con otro sistema, perfil y criterio (HU-nn.m e INT-nn.m) en su apartado técnico, decisiones con su
+    porqué y su verificación, y la misma versión en los tres ficheros;
   - con --fuentes: citas con el minuto de una intervención real y sin nombres de participantes;
-  - con --anterior: ningún ID desaparece, la versión sube y tiene su fila; lista lo nuevo y lo cambiado, y avisa
-    del texto que queda viejo (lo que una pieza cambiada ya no dice y sigue en otra línea, sin tocar en esta versión);
+  - con --anterior: ningún ID desaparece, la versión sube si cambia el funcional o el técnico (si no cambian y sube,
+    aviso, salvo a la 1.0) y tiene su fila; lista lo nuevo y lo cambiado, y avisa del texto que queda viejo (lo que
+    una pieza cambiada ya no dice y sigue en otra línea, sin tocar en esta versión);
   - con --impacto: los IDs del informe existen o son nuevos; «Requiere» es «—» o «Sí (motivo)», y «Sí» en lo que
     cambia o anula algo 🔒; después de aplicar, cada dependencia tiene resultado, cada cambio está declarado y lo 🔒
-    solo cambia con aprobación;
-  - con una aplicación existente (<p>/as-is/datos/inventario.json): cada historia con su «Origen»; hallazgos, NV y
-    REF solo en la trazabilidad del DF y citados solo si existen; la Situación de cada objeto de técnico §13 contra el
-    inventario y los objetos de fuera de la aplicación; con propuesta de refactorización, las REF citadas en su
+    solo cambia con aprobación; con «Estado: sin cambios», ningún punto por aplicar (y aviso si la versión ha subido);
+  - con una aplicación existente (<p>/as-is/datos/inventario.json): hallazgos, NV y REF solo en la trazabilidad del DF
+    y citados solo si existen; la Situación de cada objeto de técnico §13 (siempre que tenga filas) contra el
+    inventario y los objetos de fuera de la aplicación (lo «Nuevo» y lo que «Sustituye» no existe todavía); prioridad
+    «—» en las historias de lo que ya hace la aplicación; con propuesta de refactorización, las REF citadas en su
     Diagnóstico y las DEC en sus Pendientes, una DT por cada REF de su Solución y la tabla de migración en técnico §3.
     Avisa de lo que se modifica o se usa con un hallazgo Alta (¿refactorización antes?) o con algo sin verificar
     (¿PC o PT?) que no cita ninguna PT ni PC, y de las citas «[FU-nn H-…]» y «[FU-nn NV-…]» a un as-is/ anterior (su
-    huella en fuentes/indice.json no es la de ahora). Sin as-is/, nada de esto.
+    huella en fuentes/indice.json no es la de ahora). Sin as-is/, nada de esto. El «Origen» de las historias ya no se
+    escribe (lo deriva indice.py cambios): si está, vale;
+  - con unidades de cambio (analisis/cambios.md, references/cambios.md): lo que exige el técnico es lo de las unidades
+    en curso, y la Situación de §13 se compara con la línea base (as-is/ más lo que han construido las unidades); avisa
+    (y el aviso se apaga solo) de un punto aplicado sin reflejo en el técnico, de un punto que falta en la DT «Cambio
+    sobre lo construido» y de un defecto urgente sin su prueba en §14. Sin cambios.md, nada de esto.
 """
 import argparse
 import bisect
@@ -43,6 +54,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import leer_fuentes as lf
 import modelo as mo
 import redaccion as rd
+import unidades as un
 
 SECCIONES = {"F": [str(n) for n in range(1, 12)], "T": [str(n) for n in range(0, 16)], "D": ["versiones", "decisiones"]}
 PRIORIDADES = ("imprescindible", "deseable")
@@ -137,11 +149,29 @@ def perfiles(m):
     return []
 
 
-def comprobar_completo(m):
+def alcance(ctx):
+    """Lo que tiene que estar en el técnico: con analisis/cambios.md, las piezas de las unidades en curso con sus
+    criterios (el técnico «completo» exige lo suyo, no la aplicación entera); sin cambios.md, o con la construcción
+    inicial (EV-01) en curso en una aplicación nueva, None: todo."""
+    if not ctx.hay or (ctx.base() == "EV-01" and ctx.por_id["EV-01"].estado in un.EN_CURSO):
+        return None
+    ids = {x for u in ctx.unidades if u.estado in un.EN_CURSO for x in ctx.raices_de(u.id)}
+    return ids | {h for x in ids if x in ctx.m.piezas for h in ctx.m.piezas[x].hijos}
+
+
+def nuevas_en_curso(ctx):
+    """Las piezas que crea una unidad en curso (no estaban en la copia de su versión base)."""
+    return {x for u in ctx.unidades if u.estado in un.EN_CURSO for x in ctx.raices_de(u.id) if ctx.nueva(x, u.id)}
+
+
+def comprobar_completo(m, ctx):
     pf = {mo.normaliza(x) for x in perfiles(m)}
     informe("funcional §2: tabla de perfiles («| Perfil | …»)", [] if pf else ["falta"])
     sin_campos, perfil_mal, pan_mal, prio_mal, sin_ca, sin_como, otro_perfil = [], [], [], [], [], [], []
     usados = set()
+    # Aplicación existente (E1): las historias de lo que ya hace no llevan prioridad («—»); las nuevas de una unidad, sí
+    existente = ctx.inventario is not None
+    nuevas = nuevas_en_curso(ctx) if existente and ctx.hay else set()
     for p in m.vigentes("HU"):
         c = m.campos(p.id)
         if not all(c.get(k) for k in ("perfil", "pantalla", "prioridad")):
@@ -153,7 +183,8 @@ def comprobar_completo(m):
                 perfil_mal.append(f"{p.id} «{x}»")
         if c["pantalla"].strip() not in ("—", "-") and not mo.ids_en(c["pantalla"]):
             pan_mal.append(p.id)
-        if mo.normaliza(c["prioridad"]) not in PRIORIDADES:
+        sin_prioridad = existente and c["prioridad"].strip() in ("—", "-") and p.id not in nuevas
+        if mo.normaliza(c["prioridad"]) not in PRIORIDADES and not sin_prioridad:
             prio_mal.append(f"{p.id} «{c['prioridad']}»")
         if not [h for h in p.hijos if not anulada(m, h)]:
             sin_ca.append(p.id)
@@ -161,12 +192,15 @@ def comprobar_completo(m):
             quien = m.campos(paso).get("quien", "") if paso in m.piezas else ""
             if quien and not any(mo.normaliza(x) in mo.normaliza(quien) for x in nombres(c["perfil"], pf)):
                 otro_perfil.append(f"{p.id} ({paso}: {mo.sin_comentarios(quien).strip()})")
-        if not re.search(r"^Como .+ quiero .+ para ", m.texto(p.id), re.M):
-            sin_como.append(p.id)
+        de_un_df = p.estado == "🔒" and re.search(r"FU-\d+\s+[A-Z][A-Za-z]*-\w", " ".join(
+            mo.RX_COMENTARIO.findall(m.docs["F"].lineas[p.ini])))   # «<!-- 🔒 FU-01 RF-07 -->»: el DF del cliente
+        if not de_un_df and not re.search(r"^Como .+ quiero .+ para ", m.texto(p.id), re.M):
+            sin_como.append(p.id)   # de un DF ya hecho no se inventa el «para qué»
     informe("historias con la tabla Perfil · Pantalla · Paso · Prioridad", sin_campos)
     informe("perfiles de las historias que están en §2", perfil_mal)
     informe("pantalla de cada historia: PAN-nn o —", pan_mal)
-    informe("prioridad «Imprescindible» o «Deseable»", prio_mal)
+    informe("prioridad «Imprescindible» o «Deseable» (con as-is/, «—» en lo que ya hace la aplicación)" if existente
+            else "prioridad «Imprescindible» o «Deseable»", prio_mal)
     informe("historias con criterios («Se acepta si:»)", sin_ca)
     informe("historias con «Como… quiero… para…»", sin_como, grave=False)
     informe("el perfil de cada historia es quien hace su paso", otro_perfil, grave=False)
@@ -253,6 +287,59 @@ def comprobar_limpieza(m):
     informe("DF: sin términos de Appian (van en el técnico)", appian)
 
 
+def comprobar_control(m):
+    """La columna «Qué cambia» de las versiones 1.0 y siguientes de decisiones.md sale en el Word (control del documento,
+    df_docx.js): sin fuentes, marcas de estado ni términos de Appian, como el DF (error); sin la jerga del análisis
+    (D-nn, «punto N», el informe de impacto) ni muletillas (aviso). «informe» suelto solo cuenta si el DF no usa la
+    palabra (si la usa, es del cliente)."""
+    if "D" not in m.docs:
+        return
+    del_cliente = "informe" in mo.normaliza(" ".join(l for _, l in lineas_prosa(m, "F")))
+    lista = rd.muletillas()
+    errs, jerga = [], []
+    for _, cab, filas in m.tablas("D", "versiones"):
+        ncab = [mo.normaliza(c) for c in cab]
+        if "que cambia" not in ncab:
+            continue
+        k = ncab.index("que cambia")
+        for f in filas:
+            mv = re.match(r"v?(\d+)\.(\d+)", f[0] if f else "")
+            if not mv or int(mv.group(1)) < 1 or k >= len(f):
+                continue
+            t = mo.sin_comentarios(f[k])
+            nt = mo.normaliza(t)
+            malo = [x for x in mo.RX_FUENTE.findall(t)] + [e for e in mo.ESTADOS if e in t]
+            malo += [mt.group(0) for x in TERMINOS_APPIAN for mt in [re.search(x, nt)] if mt]
+            dudoso = re.findall(r"\bD-\d+\b", t) + [x.group(0) for x in re.finditer(r"\bpuntos? \d+", nt)]
+            dudoso += [x.group(0) for x in re.finditer(r"\binformes? de impacto\b" if del_cliente else r"\binformes?\b", nt)]
+            dudoso += [x for x in lista if re.search(rf"(?<!\w){re.escape(x)}(?!\w)", nt)]
+            ver = f"{mv.group(1)}.{mv.group(2)}"
+            if malo:
+                errs.append(f"{ver} " + ", ".join(f"«{x}»" for x in dict.fromkeys(malo)))
+            if dudoso:
+                jerga.append(f"{ver} " + ", ".join(f"«{x}»" for x in dict.fromkeys(dudoso)))
+    informe("DF (control del documento): «Qué cambia» de decisiones.md sin fuentes, marcas de estado ni términos de Appian",
+            errs)
+    informe("DF (control del documento): «Qué cambia» sin D-nn, «punto N», el informe ni muletillas (lo lee el cliente)",
+            jerga, grave=False)
+
+
+def comprobar_preguntas_prototipo(m):
+    """Las preguntas nuevas del prototipo (Q-nn de «Preguntas abiertas» en prototipo/*trazabilidad*.md) pasan a una PC de
+    §11 que las cita («<!-- ❓ prototipo Q-03 -->»). Aviso, que se apaga cuando la PC existe. Sin trazabilidad, nada."""
+    trazas = sorted((m.raiz / "prototipo").glob("*trazabilidad*.md"))
+    if not trazas:
+        return
+    rx = re.compile(r"(?<![\w-])Q-\d+(?!\d)")
+    qs = set()
+    for f in trazas:
+        sec = re.search(r"^## Preguntas abiertas[^\n]*\n(.*?)(?=^## |\Z)", f.read_text(encoding="utf-8"), re.M | re.S)
+        qs |= set(rx.findall(sec.group(1))) if sec else set()
+    citadas = {x for p in m.por_tipo("PC") for x in rx.findall(m.texto(p.id))}
+    informe("preguntas nuevas del prototipo (Q-nn) con su PC en funcional §11 («<!-- ❓ prototipo Q-03 -->»)",
+            sorted(qs - citadas, key=lambda x: int(x[2:])), grave=False)
+
+
 def comprobar_redaccion(m):
     lista = rd.muletillas()
     for d in ("F", "T"):
@@ -291,25 +378,23 @@ def comprobar_redaccion(m):
 
 # ------------------------------------------------------------------ funcional ↔ técnico
 def datos_df(m):
-    """{(entidad, dato normalizado): dato} de las tablas «| Dato | …» de funcional §6."""
-    out = {}
-    D = m.docs["F"]
-    rango = D.seccion("6")
-    if not rango:
-        return out
-    entidad = ""
-    for i in range(*rango):
-        l = D.lineas[i]
-        if l.startswith("### "):
-            entidad = re.sub(r"^###\s+[\d.]*\s*", "", l).strip()
-    for ini, cab, filas in m.tablas("F", "6"):
-        if cab and mo.normaliza(cab[0]) == "dato":
-            ent = next((re.sub(r"^###\s+[\d.]*\s*", "", D.lineas[k]).strip() for k in range(ini, rango[0], -1)
-                        if D.lineas[k].startswith("### ")), "")
-            for f in filas:
-                if f and f[0]:
-                    out[(mo.normaliza(ent), mo.normaliza(mo.sin_comentarios(f[0])))] = f"{ent} · {f[0]}"
-    return out
+    """{(entidad, dato normalizado): «entidad · dato»} de las tablas «| Dato | …» de funcional §6."""
+    return {k: f"{e} · {d}" for k, (e, d, _) in un.filas_6(m).items()}
+
+
+def datos_de_las_unidades(m, ctx, al):
+    """Los datos de funcional §6 que tocan las unidades en curso: los nuevos o distintos frente a la copia de la versión
+    anterior a la primera de ellas (versiones/). (datos, grave): sin copia, todos y solo como aviso; sin unidades, todos."""
+    df = datos_df(m)
+    if al is None:
+        return df, True
+    vs = [v for u in ctx.unidades if u.estado in un.EN_CURSO for v in [ctx.version_base(u.id)] if v]
+    if not vs:
+        return {}, True
+    cambiados = ctx.datos_cambiados(min(vs))
+    if cambiados is None:
+        return df, False
+    return {k: v for k, v in df.items() if k in cambiados}, True
 
 
 def estado_tecnico(m):
@@ -322,16 +407,22 @@ def estado_tecnico(m):
     return empezado, bool(est) and mo.normaliza(est.group(1)).strip().startswith("completo")
 
 
-def comprobar_tecnico(m):
+def comprobar_tecnico(m, ctx):
+    """Funcional ↔ técnico. Con analisis/cambios.md, lo que tiene que estar en el técnico es lo de las unidades en curso
+    (alcance): sus piezas y los datos de §6 que han cambiado; lo demás ya está construido (o en as-is/)."""
     empezado, completo = estado_tecnico(m)
     if not empezado:
         print("· técnico: sin empezar (sin decisiones ni modelo de datos); se comprueba cuando lo esté")
         return
     T = m.docs["T"]
-    print(f"  técnico {'completo: lo que falta es error' if completo else 'en curso: lo que falta es aviso'}")
+    al = alcance(ctx)
+    dentro = (lambda x: True) if al is None else (lambda x: x in al)
+    print(f"  técnico {'completo: lo que falta es error' if completo else 'en curso: lo que falta es aviso'}"
+          + ("" if al is None else "; solo lo de las unidades en curso (analisis/cambios.md)"))
     # datos ↔ campos
     df = datos_df(m)
     nombres_df = {k[1] for k in df}
+    df_unidades, grave_datos = datos_de_las_unidades(m, ctx, al)
     usados, sin_uso, sin_dato = set(), [], []
     for ini, cab, filas in m.tablas("T", "3"):
         ncab = [mo.normaliza(c) for c in cab]
@@ -350,14 +441,14 @@ def comprobar_tecnico(m):
                 sin_uso.append(f[0])
     informe("técnico §3: cada campo con «Uso: Funcional: <dato del DF>» o «Técnico: para qué»", sin_uso)
     informe("técnico §3: los campos funcionales remiten a un dato de funcional §6", sin_dato)
-    informe("funcional §6: cada dato tiene su campo en técnico §3",
-            sorted(v for k, v in df.items() if k[1] not in usados), grave=completo)
+    informe("funcional §6: cada dato tiene su campo en técnico §3" + ("" if al is None else " (los que cambian las unidades)"),
+            sorted(v for k, v in df_unidades.items() if k[1] not in usados), grave=completo and grave_datos)
 
     def falta_en(seccion, ids):
         rango = T.seccion(seccion)
         texto = "\n".join(T.lineas[rango[0]:rango[1]]) if rango else ""
         citados = mo.ids_en(texto)
-        return sorted((x for x in ids if x not in citados), key=clave_pid)
+        return sorted((x for x in ids if x not in citados and dentro(x)), key=clave_pid)
     informe("técnico §7: cada pantalla", falta_en("7", [p.id for p in m.vigentes("PAN")]), grave=completo)
     en_app = [p.id for p in m.vigentes("ACT")
               if "fuera de la aplicacion" not in mo.normaliza(m.campos(p.id).get("pantalla", ""))]
@@ -367,14 +458,17 @@ def comprobar_tecnico(m):
             grave=completo)
     citadas_t = mo.ids_en(mo.sin_comentarios("\n".join(T.lineas)))
     informe("técnico: cada regla común aplicada en algún apartado",
-            sorted((p.id for p in m.vigentes("RB") if p.id not in citadas_t), key=clave_pid), grave=completo)
-    informe("técnico §14: cada criterio de aceptación",
+            sorted((p.id for p in m.vigentes("RB") if p.id not in citadas_t and dentro(p.id)), key=clave_pid),
+            grave=completo)
+    informe("técnico §14: cada criterio de aceptación" + ("" if al is None else " (de las historias que tocan las unidades)"),
             falta_en("14", [p.id for p in m.por_tipo("CA") if not anulada(m, p.id)]), grave=completo)
     informe("técnico §14: cada escenario", falta_en("14", [p.id for p in m.vigentes("ESC")]), grave=False)
     r4 = T.seccion("4")
     t4 = mo.normaliza("\n".join(T.lineas[r4[0]:r4[1]])) if r4 else ""
-    informe("técnico §4: cada perfil con su grupo", [x for x in perfiles(m) if mo.normaliza(x) not in t4],
-            grave=completo)
+    suyos = None if al is None else {mo.normaliza(x) for h in m.vigentes("HU") if h.id in al
+                                     for x in nombres(m.campos(h.id).get("perfil", ""))}
+    informe("técnico §4: cada perfil con su grupo", [x for x in perfiles(m) if mo.normaliza(x) not in t4
+                                                     and (suyos is None or mo.normaliza(x) in suyos)], grave=completo)
     vacios = []
     for clave, titulo, ini, fin in T.secciones:
         if clave.isdigit() and int(clave) <= 14 and not any(l.strip() for l in T.lineas[ini + 1:fin]):
@@ -398,6 +492,44 @@ def comprobar_tecnico(m):
     version_appian = [f for f in entorno if f and "version de appian" in mo.normaliza(f[0])]
     informe("técnico §0: versión de Appian", [] if version_appian and version_appian[0][1].strip(" —-") else ["falta"],
             grave=False)
+
+
+TIPOS_QUE_CAMBIAN = ("nuevo", "completa", "cambia", "anula", "responde", "alcance+", "alcance−", "alcance-")
+
+
+def comprobar_unidades(m, ctx):
+    """Avisos de las unidades en curso (references/cambios.md), que se apagan solos cuando lo que piden está hecho o hay
+    una decisión registrada. Los bloqueos de las unidades van en proyecto.py cambio, no aquí."""
+    if not ctx.hay:
+        return
+    curso = [u for u in ctx.unidades if u.estado in un.EN_CURSO]
+    sin_reflejo, sin_punto = [], []
+    for u in curso:
+        filas = ctx.filas_de(u.id)
+        for n, t, p in ctx.puntos_de(u.id):
+            if p is None or not mo.normaliza(mo.estado_informe(t)).startswith("aplicado"):
+                continue
+            dec = p.get("decision", "")
+            if (mo.normaliza(p.get("tipo", "")).strip(" *`") not in TIPOS_QUE_CAMBIAN or not re.search(r"✔|⚠", dec)
+                    or re.search(r"sin cambio tecnico\s*:", mo.normaliza(" ".join(p.values())))):
+                continue
+            fuentes = set(re.findall(r"FU-\d+", n))
+            if not filas and not any(f in m.texto(d.id) for d in m.vigentes("DT") for f in fuentes):
+                sin_reflejo.append(f"{u.id}: {n} punto {p.get('#', '?')}")
+        dt = ctx.dt_construido(u.id)
+        campos = m.campos(dt.id) if dt else {}
+        for punto, objs in ctx.puntos_construido(u.id).items():
+            if un.vacio(campos.get(mo.normaliza(punto))):
+                sin_punto.append(f"{u.id}: «{punto}» ({', '.join(dict.fromkeys(objs))})")
+    informe("unidades: cada punto aplicado se refleja en el técnico (filas de §13 de su unidad o una DT que cita su "
+            "fuente) o dice «Sin cambio técnico: <motivo>»", sin_reflejo, grave=False)
+    informe("unidades: la DT «Cambio sobre lo construido: <unidad>» con los puntos que piden los objetos construidos que "
+            "cambia", sin_punto, grave=False)
+    r14 = m.docs["T"].seccion("14") if "T" in m.docs else None
+    t14 = "\n".join(m.docs["T"].lineas[r14[0]:r14[1]]) if r14 else ""
+    informe("urgentes: cada defecto con la prueba que lo reproduce en técnico §14 (su URG-nn en la fila)",
+            [u.id for u in ctx.unidades if u.urgente and u.estado != un.DESCARTADA and u.id not in t14
+             and mo.normaliza((ctx.ficha_urg(u.id) or {}).get("tipo", "")).startswith("defecto")], grave=False)
 
 
 def comprobar_versiones(m):
@@ -425,20 +557,12 @@ RX_NV = re.compile(r"\bNV-[A-Z]{2,4}-\d{2,3}\b")
 RX_REF = re.compile(r"\bREF-\d{2,3}\b")
 RX_DEC = re.compile(r"\bDEC-\d{2,3}\b")
 RX_CITA_AS_IS = re.compile(r"\b(FU-\d+)\s+(?:H|NV)-[A-Z]{2,4}-\d{2,3}\b")   # «[FU-01 H-SEG-01]», «[FU-01 NV-PRO-01]»
-ORIGENES = ("se conserva", "cambia", "nueva")
 SITUACIONES = ("nuevo", "modifica", "existe", "sustituye")
+objetos_celda = un.objetos_celda
 
 
 def lee_json(ruta):
     return json.loads(ruta.read_text(encoding="utf-8")) if ruta.exists() else None
-
-
-def objetos_celda(celda):
-    """Los objetos de una celda: los nombres entre comillas invertidas o, si no hay, la celda; sin el prefijo de tipo
-    («rule!», «recordType!», como comprobar_asis.py) ni los paréntesis del final («MNT_IF_Panel()»)."""
-    t = mo.sin_comentarios(celda).strip()
-    nombres = re.findall(r"`([^`]+)`", t) or ([t] if t.strip(" —-") else [])
-    return [re.sub(r"\(.*\)\s*$", "", re.sub(r"^[A-Za-z]+!(\{[^}]*\})?", "", n.strip())).strip() for n in nombres]
 
 
 def ids_de_la_propuesta(texto):
@@ -462,12 +586,15 @@ def citas(m, rx):
     return out
 
 
-def comprobar_as_is(m):
-    """Solo con <p>/as-is/datos/inventario.json. Lo que depende de sin-verificar.json o de fueraDeLaAplicacion (un
-    as-is/ anterior a ellos) no se comprueba."""
+def comprobar_as_is(m, ctx):
+    """Con <p>/as-is/datos/inventario.json (o, sin él, con analisis/cambios.md: solo la Situación de §13 frente a lo que
+    han construido las unidades). Lo que depende de sin-verificar.json o de fueraDeLaAplicacion (un as-is/ anterior a
+    ellos) no se comprueba. El «Origen» de cada historia ya no se escribe: lo deriva indice.py cambios (si está, vale)."""
     datos = m.raiz / "as-is" / "datos"
     inv = lee_json(datos / "inventario.json")
     if inv is None:
+        if ctx.hay and ctx.filas:   # una aplicación nueva con unidades: §13 frente a lo que han construido
+            comprobar_situacion(m, ctx, set(), None)
         return
     inventario = {o["nombre"] for o in inv.get("objetos", [])} | {inv.get("aplicacion", {}).get("nombre", "")}
     dep = lee_json(datos / "dependencias.json") or {}
@@ -480,12 +607,6 @@ def comprobar_as_is(m):
         print(f"· as-is/datos/ sin {' ni '.join(faltan)}, de una ingeniería inversa anterior: lo que depende de ello "
               "no se comprueba")
 
-    sin_origen = []
-    for p in m.vigentes("HU"):
-        o = mo.sin_comentarios(m.campos(p.id).get("origen", "")).strip()
-        if mo.normaliza(o) not in ORIGENES:
-            sin_origen.append(f"{p.id} «{o}»" if o.strip(" —-") else p.id)
-    informe("as-is: cada historia con «Origen»: Se conserva, Cambia o Nueva", sin_origen)
     a_la_vista = [f"l.{i + 1} {x}" for i, l in lineas_prosa(m, "F")
                   for rx in (RX_HALLAZGO, RX_NV, RX_REF) for x in rx.findall(l)]
     informe("DF: hallazgos, NV y REF solo en la trazabilidad (dentro del comentario)", a_la_vista)
@@ -503,47 +624,14 @@ def comprobar_as_is(m):
                 sorted(f"{x} ({', '.join(v[:3])})" for x, v in citas(m, RX_DEC).items() if x not in decs))
 
     empezado, completo = estado_tecnico(m)
-    if not empezado:
-        return
     tabla = next(((cab, filas) for _, cab, filas in m.tablas("T", "13")
                   if "situacion" in [mo.normaliza(c) for c in cab]), None)
-    informe("técnico §13: tabla Paso · Objeto · Tipo · Situación · Sustituye a", [] if tabla else ["falta"], grave=completo)
-    malas, de_fuera, sin_inventario, usados = [], [], [], []
-    if tabla:
-        cab = [mo.normaliza(c) for c in tabla[0]]
-        celda = lambda f, k: f[cab.index(k)] if k in cab and cab.index(k) < len(f) else ""
-        for f in tabla[1]:
-            sit = mo.sin_comentarios(celda(f, "situacion")).strip()
-            s = mo.normaliza(sit)
-            objetos = objetos_celda(celda(f, "objeto"))
-            nombre = ", ".join(objetos) or f"paso {celda(f, 'paso')}"
-            if s not in SITUACIONES:
-                malas.append(f"{nombre}: Situación «{sit}» (Nuevo, Modifica, Existe o Sustituye)")
-                continue
-            if s in ("modifica", "existe"):
-                usados += objetos
-            for o in objetos:
-                if s == "nuevo" and o in inventario:
-                    malas.append(f"{o}: «Nuevo» y ya está en el inventario")
-                elif s == "nuevo" and fuera and o in fuera:
-                    malas.append(f"{o}: «Nuevo» y es de otra aplicación")
-                elif s in ("modifica", "existe") and o not in inventario:
-                    if fuera is None:
-                        sin_inventario.append(o)
-                    elif o not in fuera:
-                        malas.append(f"{o}: «{sit}» y no está en el inventario ni fuera de la aplicación")
-                    elif s == "modifica":
-                        de_fuera.append(f"{o} es de otra aplicación: ¿quién la cambia?")
-            if s == "sustituye":
-                sust = objetos_celda(celda(f, "sustituye a"))
-                if not sust or any(o not in inventario for o in sust):
-                    malas.append(f"{nombre}: «Sustituye» sin un objeto del inventario en «Sustituye a» "
-                                 f"({', '.join(sust) or '—'})")
-    informe("técnico §13: la Situación de cada objeto cuadra con as-is/ (inventario y objetos de fuera)", malas)
-    informe("técnico §13: objetos de otra aplicación que se modifican", de_fuera, grave=False)
-    if fuera is None:
-        informe("técnico §13: objetos que no están en el inventario (as-is/ no dice cuáles son de otra aplicación)",
-                sin_inventario, grave=False)
+    if not empezado and not (tabla and tabla[1]):   # §13 con filas se comprueba siempre
+        return
+    if empezado:
+        informe("técnico §13: tabla Paso · Objeto · Tipo · Situación · Sustituye a", [] if tabla else ["falta"],
+                grave=completo)
+    usados = comprobar_situacion(m, ctx, inventario, fuera)
     # Parte mal hecha: construir encima de un objeto con un hallazgo grave o con algo sin verificar, salvo que una PT o
     # una PC ya lo cite («[FU-nn H-…]», «[FU-nn NV-…]»): entonces ya está recogido
     en_pendientes = {x for p in m.por_tipo("PT") + m.por_tipo("PC") for rx in (RX_HALLAZGO, RX_NV)
@@ -564,7 +652,7 @@ def comprobar_as_is(m):
     informe("técnico §13: lo que se modifica o se usa con algo sin verificar que no cita ninguna PT ni PC",
             sin_verificar, grave=False)
 
-    if propuesta.exists():
+    if propuesta.exists() and empezado:
         sol = re.search(r"^## 3\. Soluci[oó]n\s*$(.*?)(?=^## |\Z)", propuesta.read_text(encoding="utf-8"), re.M | re.S)
         refs = sorted(set(RX_REF.findall(mo.sin_comentarios(sol.group(1))))) if sol else []
         en_dt = {x for p in m.vigentes("DT") for x in RX_REF.findall(m.texto(p.id))}
@@ -573,6 +661,58 @@ def comprobar_as_is(m):
         migracion = any(cab and mo.normaliza(cab[0]).startswith("origen en la app") for _, cab, _ in m.tablas("T", "3"))
         informe("técnico §3: tabla «Carga inicial y migración» (hay propuesta de refactorización)",
                 [] if migracion else ["falta"], grave=completo)
+
+
+def comprobar_situacion(m, ctx, inventario, fuera):
+    """La Situación de cada objeto de técnico §13 frente a lo que ya existe: el inventario de as-is/ y, con
+    analisis/cambios.md, también lo que han construido las unidades (la línea base); entonces solo se miran las filas de
+    las unidades sin construir (las demás ya son la línea base). Devuelve los objetos que se modifican o se usan."""
+    tabla = next(((cab, filas) for _, cab, filas in m.tablas("T", "13")
+                  if "situacion" in [mo.normaliza(c) for c in cab]), None)
+    malas, de_fuera, sin_inventario, usados = [], [], [], []
+    hechas = {u.id for u in ctx.unidades if u.estado in un.CONSTRUIDAS + (un.DESCARTADA,)}
+    base = set(inventario) | (ctx.linea_base() if ctx.hay else set())
+    donde = "lo construido (as-is/ y las unidades Construidas)" if ctx.hay else "as-is/ (inventario y objetos de fuera)"
+    sin_id = ctx.sin_id
+    if tabla:
+        cab = [mo.normaliza(c) for c in tabla[0]]
+        celda = lambda f, k: f[cab.index(k)] if k in cab and cab.index(k) < len(f) else ""
+        for f in tabla[1]:
+            if ctx.hay and (un.RX_UNIDAD.findall(celda(f, "cambio")) or [sin_id])[0] in hechas:
+                continue
+            sit = mo.sin_comentarios(celda(f, "situacion")).strip()
+            s = mo.normaliza(sit)
+            objetos = objetos_celda(celda(f, "objeto"))
+            nombre = ", ".join(objetos) or f"paso {celda(f, 'paso')}"
+            if s not in SITUACIONES:
+                malas.append(f"{nombre}: Situación «{sit}» (Nuevo, Modifica, Existe o Sustituye)")
+                continue
+            if s in ("modifica", "existe"):
+                usados += objetos
+            for o in objetos:   # «Nuevo» y «Sustituye» crean el objeto: no puede existir ya
+                if s in ("nuevo", "sustituye") and o in base:
+                    malas.append(f"{o}: «{sit}» y ya está en " + ("el inventario" if o in inventario else "lo construido"))
+                elif s in ("nuevo", "sustituye") and fuera and o in fuera:
+                    malas.append(f"{o}: «{sit}» y es de otra aplicación")
+                elif s in ("modifica", "existe") and o not in base:
+                    if fuera is None:   # con unidades y sin as-is/, «Existe» de otra aplicación no se podría apagar
+                        sin_inventario += [o] if s == "modifica" or inventario or not ctx.hay else []
+                    elif o not in fuera:
+                        malas.append(f"{o}: «{sit}» y no está en el inventario ni fuera de la aplicación")
+                    elif s == "modifica":
+                        de_fuera.append(f"{o} es de otra aplicación: ¿quién la cambia?")
+            if s == "sustituye":
+                sust = objetos_celda(celda(f, "sustituye a"))
+                if not sust or any(o not in base for o in sust):
+                    malas.append(f"{nombre}: «Sustituye» sin un objeto del inventario en «Sustituye a» "
+                                 f"({', '.join(sust) or '—'})")
+    informe(f"técnico §13: la Situación de cada objeto cuadra con {donde}", malas)
+    informe("técnico §13: objetos de otra aplicación que se modifican", de_fuera, grave=False)
+    if fuera is None:
+        informe("técnico §13: objetos que no están en el inventario (as-is/ no dice cuáles son de otra aplicación)"
+                if inventario else "técnico §13: «Modifica» de objetos que ninguna unidad ha construido",
+                sin_inventario, grave=False)
+    return usados
 
 
 def comprobar_citas_as_is(m, carpeta_fuentes):
@@ -658,6 +798,17 @@ def normaliza_pieza(t):
     return re.sub(r"\s+", " ", t).strip()
 
 
+def primera_entrega(antes, ahora):
+    """La subida de una 0.x a la 1.0: la primera entrega, que sube la versión aunque el análisis no cambie."""
+    return bool(antes) and ahora == (1, 0) and antes < (1, 0)
+
+
+def contenido(P):
+    """El funcional y el técnico sin la línea de la versión ni las capturas: si no cambian, no hay versión nueva."""
+    return {d: normaliza_pieza("\n".join(l for l in P.docs[d].lineas if not re.search(r"Versi[oó]n:\s*v?\d+\.\d+", l)))
+            for d in ("F", "T") if d in P.docs}
+
+
 def comprobar_anterior(m, ruta_ant):
     ant = mo.Proyecto(ruta_ant)
     if not ant.docs:
@@ -665,7 +816,6 @@ def comprobar_anterior(m, ruta_ant):
         return [], [], [], ant
     va, vn = ant.version("F"), m.version("F")
     print(f"  versión anterior {va[0]}.{va[1]} → nueva {vn[0]}.{vn[1]}" if va and vn else "  versión: ¿?")
-    informe("la versión sube", [] if (va and vn and vn > va) else [f"{va} → {vn}"])
     informe("ningún ID ha desaparecido (lo que ya no vale se tacha)",
             sorted((i for i in ant.piezas if i not in m.piezas), key=clave_pid))
     nuevas = sorted((i for i in m.piezas if i not in ant.piezas), key=clave_pid)
@@ -674,6 +824,14 @@ def comprobar_anterior(m, ruta_ant):
     anul = sorted((i for i in comunes if m.piezas[i].anulada and not ant.piezas[i].anulada), key=clave_pid)
     estado = [f"{i} {ant.piezas[i].estado or '—'}→{m.piezas[i].estado or '—'}" for i in comunes
               if m.piezas[i].estado != ant.piezas[i].estado and i not in anul]
+    # Modificar, no rehacer: la versión sube solo si cambia el funcional o el técnico (piezas, citas, estados o texto
+    # sin ID). Sin cambios y subida es aviso (subir de más no pierde trabajo), salvo la subida a la 1.0 (primera entrega)
+    v = lambda x: f"{x[0]}.{x[1]}" if x else "¿?"
+    if nuevas or modif or anul or estado or contenido(m) != contenido(ant):
+        informe("la versión sube", [] if (va and vn and vn > va) else [f"{v(va)} → {v(vn)}"])
+    else:
+        informe("sin cambios en el análisis, la versión no sube (salvo a la 1.0, la primera entrega)",
+                [] if va == vn or primera_entrega(va, vn) else [f"{v(va)} → {v(vn)}"], grave=False)
     informe("nuevas", nuevas, grave=False)
     informe("modificadas", modif, grave=False)
     informe("anuladas o respondidas en esta versión", anul, grave=False)
@@ -742,27 +900,6 @@ def texto_viejo(m, ant, modif):
     return avisos
 
 
-def lee_informe(ruta):
-    t = pathlib.Path(ruta).read_text(encoding="utf-8")
-    puntos, revision, cab = [], [], None
-    for l in t.split("\n"):
-        if not l.startswith("|"):
-            cab = None
-            continue
-        c = mo.celdas(l)
-        if cab is None:
-            cab = [mo.normaliza(x) for x in c]
-            continue
-        if re.match(r"^[-:\s]+$", c[0]):
-            continue
-        fila = {k: (c[i] if i < len(c) else "") for i, k in enumerate(cab)}
-        if "revisar tambien" in cab:
-            puntos.append(fila)
-        elif cab[0] == "pieza" and "resultado" in cab:
-            revision.append(fila)
-    return t, puntos, revision
-
-
 def comprobar_requiere(base, puntos):
     """«Requiere» de cada punto: «—» o «Sí (motivo)»; y «Sí» si el punto CAMBIA o ANULA una pieza 🔒 de «Encaja en»
     (🔒 en base: el análisis antes de aplicar el informe)."""
@@ -785,7 +922,7 @@ def comprobar_requiere(base, puntos):
 
 
 def comprobar_informe_previo(m, ruta_imp, carpeta_fuentes):
-    t, puntos, revision = lee_informe(ruta_imp)
+    t, puntos, revision = mo.lee_informe(ruta_imp)
     comprobar_requiere(m, puntos)
     en_revision = {m.raiz_de(x) for f in revision for x in mo.ids_en(f.get("pieza", ""))}
     faltan = set()
@@ -831,8 +968,27 @@ def comprobar_informe_previo(m, ruta_imp, carpeta_fuentes):
             informe("cada tramo de 10 minutos de la reunión tiene alguna cita (también lo que no cambia nada)", huecos)
 
 
+def comprobar_sin_cambios(m, ruta_imp):
+    """«Estado: sin cambios»: no cambia ni el funcional ni el técnico, así que no hay versión nueva. Error si un punto se
+    queda por aplicar: «Pendiente» (proyecto.py estado ya no lo listaría) o un tipo que cambia el análisis (todos menos
+    SIN IMPACTO y PROYECTO) que no se descarta (✗). Aviso si la versión del funcional ya no es la del análisis base."""
+    t, puntos, _ = mo.lee_informe(ruta_imp)
+    quedan = [f"punto {f.get('#', '?')}" for f in puntos
+              if mo.normaliza(f.get("decision", "")).strip(" *").startswith("pendiente")
+              or (mo.normaliza(f.get("tipo", "")).strip(" *`") not in ("sin impacto", "proyecto")
+                  and "✗" not in f.get("decision", ""))]
+    informe("«Estado: sin cambios»: ningún punto queda por aplicar ni pendiente de aprobación", quedan)
+    base = re.search(r"An[aá]lisis base:\s*versi[oó]n\s*v?(\d+)\.(\d+)", t)
+    vn = m.version("F")
+    if base and vn:
+        vb = (int(base.group(1)), int(base.group(2)))
+        informe("«Estado: sin cambios»: la versión sigue siendo la del análisis base",
+                [] if vb == vn or primera_entrega(vb, vn) else [f"análisis base {vb[0]}.{vb[1]} → funcional {vn[0]}.{vn[1]}"],
+                grave=False)
+
+
 def comprobar_impacto(m, ant, ruta_imp, cambios):
-    t, puntos, revision = lee_informe(ruta_imp)
+    t, puntos, revision = mo.lee_informe(ruta_imp)
     comprobar_requiere(ant, puntos)
     revisar, resueltos, sin_cambios = set(), set(), set()
     for f in puntos:
@@ -890,13 +1046,17 @@ def main():
         sys.exit(f"No encuentro el análisis en {m.analisis}")
     comprobar_estructura(m)
     comprobar_ids(m)
+    ctx = un.Contexto(m)     # unidades de cambio (analisis/cambios.md); sin él, todo como antes
     if "F" in m.docs:
-        comprobar_completo(m)
+        comprobar_completo(m, ctx)
         comprobar_limpieza(m)
+        comprobar_control(m)
+        comprobar_preguntas_prototipo(m)
         comprobar_redaccion(m)
-        comprobar_tecnico(m)
+        comprobar_tecnico(m, ctx)
         comprobar_versiones(m)
-        comprobar_as_is(m)
+        comprobar_as_is(m, ctx)
+        comprobar_unidades(m, ctx)
         comprobar_citas_as_is(m, a.fuentes)
     if a.fuentes:
         comprobar_fuentes(m, a.fuentes, a.corregir_citas)
@@ -907,7 +1067,11 @@ def main():
         if a.impacto:
             comprobar_impacto(m, ant, a.impacto, (nuevas, modif, anul))
     elif a.impacto:
-        print("  (informe antes de aplicar: sin --anterior solo se revisan IDs y citas)")
+        if mo.normaliza(mo.estado_informe(pathlib.Path(a.impacto).read_text(encoding="utf-8"))).startswith("sin cambios"):
+            print("  (informe sin cambios: sin versión nueva ni copia, no hace falta --anterior)")
+            comprobar_sin_cambios(m, a.impacto)
+        else:
+            print("  (informe antes de aplicar: sin --anterior solo se revisan IDs y citas)")
         comprobar_informe_previo(m, a.impacto, a.fuentes)
     print("\nSin errores." if not errores else f"\n{errores} comprobaciones con errores.")
     sys.exit(1 if errores else 0)

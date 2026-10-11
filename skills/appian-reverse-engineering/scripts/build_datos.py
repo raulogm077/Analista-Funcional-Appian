@@ -27,7 +27,7 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build_model import find_list, load, pick, unwrap  # noqa: E402
+from build_model import find_key, find_list, load, pick, unwrap  # noqa: E402
 from rutas import work_dir  # noqa: E402
 
 CAMPOS_HALLAZGO = ("id", "titulo", "area", "severidad", "certeza", "objetos", "documento", "evidencia")
@@ -57,20 +57,29 @@ def _nombres(lista: list, claves: tuple[str, ...]) -> list[str]:
 
 
 def tambien(o: dict, trabajo: Path) -> list[str]:
-    """Lo que se cita con un record type sin ser un objeto: su tabla, vistas, campos, relaciones y acciones."""
-    if o.get("type") != "recordType":
+    """Lo que se cita con un objeto sin ser un objeto: de un record type, su tabla, vistas, campos, relaciones y
+    acciones; de un CDT, su tabla; de un data store, sus entidades."""
+    if o.get("type") not in ("recordType", "cdt", "dataStore"):
         return []
     out = [o["tableName"]] if o.get("tableName") else []
+    d = None
     if o.get("detail") == "full" and o.get("path"):
         try:
             d = unwrap(load(trabajo / o["path"]).get("response"))
         except (OSError, ValueError, AttributeError):
             d = None
-        if d is not None:
-            out += _nombres(find_list(d, ("views",)), ("name", "viewName", "label", "displayName"))
-            out += _nombres(find_list(d, ("fields",)), ("fieldName", "name"))
-            out += _nombres(find_list(d, ("relationships",)), ("relationshipName", "name"))
-            out += _nombres(find_list(d, ("actions",)), ("displayName", "name", "key"))
+    if d is None:
+        return out
+    if o["type"] == "recordType":
+        out += _nombres(find_list(d, ("views",)), ("name", "viewName", "label", "displayName"))
+        out += _nombres(find_list(d, ("fields",)), ("fieldName", "name"))
+        out += _nombres(find_list(d, ("relationships",)), ("relationshipName", "name"))
+        out += _nombres(find_list(d, ("actions",)), ("displayName", "name", "key"))
+    elif o["type"] == "cdt":
+        tabla = find_key(d, ("tableName", "table"), want=(str,))   # el inventario solo la saca de los record types
+        out += [tabla] if tabla else []
+    else:
+        out += _nombres(find_list(d, ("entities",)), ("name", "entityName"))
     return list(dict.fromkeys(out))
 
 
@@ -210,6 +219,8 @@ def construir(salida: Path) -> dict:
         hallazgos.append({k: h.get(k, [] if k == "objetos" else None) for k in CAMPOS_HALLAZGO})
         if h.get("certeza") == "inferido":
             hallazgos[-1]["base"] = list(h.get("base") or [])
+        if h.get("senal"):
+            hallazgos[-1]["senal"] = h["senal"]
     procesos = [{"nombre": o.get("name"),
                  "json": _relativa(salida, f"08-procesos-bpmn/{o['slug']}.json") if o.get("slug") else None,
                  "nodos": o.get("nodeCount"), "ejecuciones": (o.get("usage") or {}).get("executions")}
@@ -220,12 +231,16 @@ def construir(salida: Path) -> dict:
                for x in hallazgos + nvs for o in (x.get("objetos") or []) if objeto(o) not in validos]
     if errores:      # las demás skills buscan los hallazgos y los NV por el nombre de sus objetos
         raise NoValido(errores)
+    # los IDs de una revisión anterior que ya no están (build_registry.py): sus citas no valen
+    retirados = [r for r in _json(trabajo / "registro.json").get("retirados") or [] if isinstance(r, dict)]
     datos = {"inventario.json": inventario,
              "dependencias.json": {"aristas": sorted(aristas, key=lambda a: (a["de"], a["a"], a["donde"] or "")),
                                    "fueraDeLaAplicacion": fuera},
-             "hallazgos.json": {"hallazgos": sorted(hallazgos, key=lambda h: h["id"] or "")},
+             "hallazgos.json": {"hallazgos": sorted(hallazgos, key=lambda h: h["id"] or ""),
+                                "retirados": [r for r in retirados if str(r.get("id")).startswith("H-")]},
              "procesos.json": {"procesos": sorted(procesos, key=lambda p: str(p["nombre"]).lower())},
-             "sin-verificar.json": {"sinVerificar": nvs}}
+             "sin-verificar.json": {"sinVerificar": nvs,
+                                    "retirados": [r for r in retirados if str(r.get("id")).startswith("NV-")]}}
     carpeta = salida / "datos"
     carpeta.mkdir(parents=True, exist_ok=True)
     for fichero, contenido in datos.items():
@@ -245,8 +260,11 @@ def main(salida_dir: str) -> int:
         for e in ex.errores:
             print(f"ERROR: {e}", file=sys.stderr)
         return 1
-    print(f"datos/: {len(d['inventario.json']['objetos'])} objetos, {len(d['dependencias.json']['aristas'])} aristas, "
-          f"{len(d['dependencias.json']['fueraDeLaAplicacion'])} fuera de la aplicación, "
+    aristas = len(d["dependencias.json"]["aristas"])
+    de_fuera = len(_json(work_dir(salida) / "graph.json").get("edges", [])) - aristas
+    print(f"datos/: {len(d['inventario.json']['objetos'])} objetos, {aristas} aristas entre objetos de la aplicación "
+          f"(el grafo y summary.json cuentan además las {de_fuera} con objetos de fuera, que van en "
+          f"fueraDeLaAplicacion), {len(d['dependencias.json']['fueraDeLaAplicacion'])} fuera de la aplicación, "
           f"{len(d['hallazgos.json']['hallazgos'])} hallazgos, {len(d['procesos.json']['procesos'])} procesos, "
           f"{len(d['sin-verificar.json']['sinVerificar'])} sin verificar")
     return 0

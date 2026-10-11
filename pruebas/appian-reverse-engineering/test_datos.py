@@ -12,7 +12,8 @@ REGISTRO = SKILL / "scripts" / "build_registry.py"
 RESUMEN = SKILL / "scripts" / "build_summary.py"
 DATOS = SKILL / "scripts" / "build_datos.py"
 CLAVES = {"inventario.json": {"aplicacion", "objetos"}, "dependencias.json": {"aristas", "fueraDeLaAplicacion"},
-          "hallazgos.json": {"hallazgos"}, "procesos.json": {"procesos"}, "sin-verificar.json": {"sinVerificar"}}
+          "hallazgos.json": {"hallazgos", "retirados"}, "procesos.json": {"procesos"},
+          "sin-verificar.json": {"sinVerificar", "retirados"}}
 CAMPOS = {"id", "titulo", "area", "severidad", "certeza", "objetos", "documento", "evidencia"}
 
 
@@ -71,6 +72,54 @@ def test_datos_formato(project):
     assert procesos and all(set(p) == {"nombre", "json", "nodos", "ejecuciones"} for p in procesos)
     solicitud = next(o for o in inv["objetos"] if o["nombre"] == "DEM Solicitud")
     assert {"DEM_SOLICITUD", "Resumen"} <= set(solicitud["tambien"])        # la tabla y la vista, con su record type
+
+
+def test_retirados(project):
+    """Los IDs que el registro da por retirados (de una revisión anterior, sin casar con ninguno de ahora) llegan a
+    datos/: los H a hallazgos.json y los NV a sin-verificar.json, para que las demás skills sepan qué citas ya no
+    valen."""
+    datos = flujo(project)
+    assert json.loads((datos / "hallazgos.json").read_text(encoding="utf-8"))["retirados"] == []
+    registro = project.interm() / "registro.json"
+    r = json.loads(registro.read_text(encoding="utf-8"))
+    r["retirados"] = [{"id": "H-PRO-07", "titulo": "Tarea sin asignación"}, {"id": "NV-ARQ-03", "pregunta": "¿Quién?"}]
+    registro.write_text(json.dumps(r, ensure_ascii=False), encoding="utf-8")
+    corre(DATOS, project.out)
+    assert json.loads((datos / "hallazgos.json").read_text(encoding="utf-8"))["retirados"] == [r["retirados"][0]]
+    assert json.loads((datos / "sin-verificar.json").read_text(encoding="utf-8"))["retirados"] == [r["retirados"][1]]
+
+
+def test_senal_en_hallazgos(project):
+    """La señal de un hallazgo (senal, opcional) llega a datos/hallazgos.json, como base en los inferidos."""
+    datos = flujo(project)
+    registro = project.interm() / "hallazgos" / "prueba.json"
+    lista = json.loads(registro.read_text(encoding="utf-8"))
+    lista.append(hallazgo("H-SEG-04", titulo="Proceso sin ejecuciones", area="uso", severidad="Baja",
+                          objetos=["DEM Utilidad Huérfana"], senal="sin-ejecuciones"))
+    registro.write_text(json.dumps(lista, ensure_ascii=False), encoding="utf-8")
+    corre(REGISTRO, project.out)
+    corre(DATOS, project.out)
+    hallazgos = {h["id"]: h for h in json.loads((datos / "hallazgos.json").read_text(encoding="utf-8"))["hallazgos"]}
+    assert hallazgos["H-SEG-04"]["senal"] == "sin-ejecuciones" and "senal" not in hallazgos["H-SEG-01"]
+
+
+def test_tambien_de_cdt_y_data_store(project):
+    """En MNT, «tambien» lleva la tabla del CDT (de su definición: el inventario solo la saca de los record types) y la
+    entidad del data store, que se citan con ellos sin ser objetos."""
+    project.add_devmcp(MOCK_APP="fixture_mal_hecha", LCP_URL="https://pre.mnt.example.org")
+    project.run("extract", "--app", "MNT", "--out", str(project.out), "--retry-delay", "0.1", check=0)
+    corre(BUILD_MODEL, project.out)
+    p = corre(DATOS, project.out)
+    inv = json.loads((project.out / "datos" / "inventario.json").read_text(encoding="utf-8"))
+    por = {o["nombre"]: o for o in inv["objetos"]}
+    assert por["MNT_OrdenDTO"]["tambien"] == ["MNT_ORDEN"]
+    assert por["MNT Datos Mantenimiento"]["tambien"] == ["ordenes"]
+    # las aristas: las de datos/ son entre objetos de la aplicación; el grafo (y summary.json) cuenta también las de
+    # fuera, y el aviso lo dice
+    aristas = json.loads((project.out / "datos" / "dependencias.json").read_text(encoding="utf-8"))["aristas"]
+    fuera = len(project.load("graph.json")["edges"]) - len(aristas)
+    assert fuera > 0 and f"{len(aristas)} aristas entre objetos de la aplicación" in p.stdout, p.stdout
+    assert f"{fuera} con objetos de fuera" in p.stdout, p.stdout
 
 
 def test_objetos_que_no_estan(project):

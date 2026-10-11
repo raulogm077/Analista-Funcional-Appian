@@ -20,8 +20,8 @@ Appian.
 - `objetos`: todos los de la aplicación salvo ella misma, ordenados por tipo y nombre. `tipo` es el del inventario
   (`processModel`, `interface`, `recordType`…).
 - `anexo`: la ficha del objeto con su definición; `null` si la extracción no la trae.
-- `tambien`: los nombres que no son objetos pero se citan con él. Hoy, los de un record type: su tabla, sus vistas, sus
-  campos y relaciones y sus acciones. Para el resto, `[]`.
+- `tambien`: los nombres que no son objetos pero se citan con él: de un record type, su tabla, sus vistas, sus campos y
+  relaciones y sus acciones; de un CDT, su tabla; de un data store, sus entidades. Para el resto, `[]`.
 
 ## `dependencias.json`
 
@@ -33,7 +33,9 @@ Appian.
 
 - `aristas`: quién usa a quién, entre objetos de la aplicación. `donde` es dónde está la referencia en `de` («Node:
   Revisar», «rule!DEM_ER_EsAdmin»…) o, si el entorno no lo dice, el tipo de referencia (`integrationCall`,
-  `constRef`…).
+  `constRef`…). Las que llegan a un objeto de fuera no están aquí, sino en `fueraDeLaAplicacion` (`usadoPor` y `usa`):
+  por eso `summary.json` (`totals.edges`, todas las del grafo) da más aristas que esta lista (p. ej. 83 frente a 80,
+  con tres hacia objetos de fuera), y `build_datos.py` lo dice al terminar.
 - `fueraDeLaAplicacion`: los objetos de fuera de la aplicación que esta llama o que la llaman (los nodos externos del
   grafo). `usadoPor`: los objetos de la aplicación que lo llaman; `usa`: los que él llama. `nv`: el NV de
   `sin-verificar.json` que lo tiene en `objetos`, o `null`. `tipo`: el canónico, como en el inventario, si una
@@ -46,12 +48,18 @@ Appian.
 ```json
 {"hallazgos": [{"id": "H-SEG-01", "titulo": "…", "area": "secretos", "severidad": "Alta", "certeza": "verificado",
                 "objetos": ["DEM_ERP_API_TOKEN"], "documento": "04-seguridad-grupos.md#hallazgos",
-                "evidencia": "mcp:constant/DEM_ERP_API_TOKEN#value"}]}
+                "evidencia": "mcp:constant/DEM_ERP_API_TOKEN#value"}],
+ "retirados": [{"id": "H-PRO-03", "titulo": "…", "area": "procesos", "objetos": ["…"]}]}
 ```
 
 Los del registro de `09`, sin los fusionados (`duplicadoDe`), ordenados por ID. `severidad`: Alta, Media o Baja.
 `certeza`: verificado, inferido o pendiente. `documento`: dónde se explica. `objetos`: nombres de `inventario.json` o de `fueraDeLaAplicacion`; `build_datos.py` da error con uno que no esté en ninguno de los dos.
-Los de certeza `inferido` llevan además `base`: las evidencias de las que salen.
+Los de certeza `inferido` llevan además `base`: las evidencias de las que salen. Los que salen de una señal llevan
+`senal` (`huerfano`, `sin-ejecuciones`, `mas-50-nodos`, `aviso-validacion-nodos`, `sin-prefijo`, `nombre-fijo`…):
+un objeto no tiene dos hallazgos del mismo problema, y el ID de un hallazgo se mantiene al repetir la ingeniería
+inversa. `retirados` (aquí los `H-…` y en `sin-verificar.json` los `NV-…`, `[]` si no hay): los IDs de una revisión
+anterior que ya no están, con su `titulo` o su `pregunta` y, si los tenían, `area`, `objetos` y `senal`; una cita a
+uno de ellos ya no vale, y su ID no se reutiliza (si el mismo hallazgo vuelve, recupera su ID).
 
 ## `procesos.json`
 
@@ -73,10 +81,30 @@ las devolvió.
                    "aQuien": "Equipo de la aplicación de utilidades",
                    "dondeSeBusco": "Inventario de la aplicación y dependencias de DEM_SolicitudForm (Dev MCP)",
                    "objetos": ["DEM_SolicitudForm", "UTL_DiasLaborables"], "indicios": "…", "estado": "abierto",
-                   "documento": "02-arquitectura.md#dependencias-externas"}]}
+                   "documento": "02-arquitectura.md#dependencias-externas"}],
+ "retirados": []}
 ```
 
 Lo que la revisión no pudo verificar, sin los fusionados (`duplicadoDe`), ordenado por ID. Es pendiente, no un hecho:
 quien lo lea lo trata como una pregunta abierta. `queHaceFalta` empieza por acceso, export, permiso, entorno o
 negocio. `estado`: abierto, parcial o resuelto. `objetos`: los de la aplicación afectados y los de fuera, por su
 nombre. Formato y reglas, en `references/execution-principles.md`, «Sin verificar».
+
+## `deriva.json` (solo si se pidió la deriva)
+
+```json
+{"generadoEn": "…", "entorno": "https://…", "aplicacion": {"nombre": "…", "prefijo": "DEM", "uuid": "…"},
+ "asIs": {"extraidoEn": "…"}, "conHistorialDeVersiones": true, "alcance": "todos",
+ "cambiados": [{"nombre": "DEM_Dashboard", "tipo": "interface", "uuid": "…",
+                "asIs": {"fecha": "…", "autor": "…", "versiones": 3}, "ahora": {"fecha": "…", "autor": "…", "versiones": 4}}],
+ "nuevos": [{"nombre": "…", "tipo": "…", "uuid": "…", "ahora": {"fecha": "…", "autor": "…", "versiones": 1}}],
+ "retirados": [{"nombre": "…", "tipo": "…", "uuid": "…"}],
+ "ignorados": [{"nombre": "…", "tipo": "…", "uuid": "…", "asIs": {…}, "ahora": {…}, "desde": "2026-10-01"}],
+ "sinDato": [{"nombre": "…", "motivo": "…"}], "noEncontrados": []}
+```
+
+Lo escribe `devmcp_extract.py deriva`: qué cambió en el entorno desde la extracción del `as-is/`, por el historial de
+versiones. `alcance`: «todos» o los objetos pedidos (`noEncontrados`: los pedidos que no están ni en el `as-is/` ni
+en el entorno). `ignorados`: los de `--ignorar` modificados después de su fecha (`desde`), que son los de nuestras
+unidades. Sin historial en el Dev MCP, `conHistorialDeVersiones` es `false`, `cambiados` es `null` y `nota` lo
+explica: no se sabe qué cambió. Entra al análisis como una fuente más (tipo «as-is»).

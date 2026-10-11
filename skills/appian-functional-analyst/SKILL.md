@@ -1,6 +1,6 @@
 ---
 name: appian-functional-analyst
-description: "Analista funcional de Appian. Convierte las fuentes de un proyecto (reuniones, correos, actas, notas, diagramas de flujo, un DF o ERS del cliente ya hecho, la documentación de una aplicación existente o una propuesta de refactorización) en su análisis, el diseño funcional que valida el cliente (DF en Word con proceso, historias de usuario, pantallas y escenarios) y la especificación técnica para construir en Appian con buenas prácticas. Úsala para levantar requisitos, escribir o actualizar un análisis o un DF, incorporar una reunión, un correo, una demo o los comentarios del cliente, añadir historias a una aplicación que ya existe, redactar las historias de una pantalla que alguien explica o preparar la especificación técnica. No dibuja procesos (appian-diagramas-bpmn), no hace prototipos (appian-prototipos), no construye ni revisa objetos en un entorno (appian-best-practices), no documenta una aplicación existente (appian-reverse-engineering) y no decide si rehacerla ni cómo (appian-refactorizacion)."
+description: "Analista funcional de Appian. Convierte las fuentes (reuniones, correos, actas, notas, diagramas de flujo, un DF o ERS del cliente, la documentación de una aplicación o una propuesta de refactorización) en el diseño funcional en Word que valida el cliente (proceso, historias, pantallas y escenarios) y la especificación técnica. Úsala para levantar requisitos, escribir o actualizar un análisis o un DF, incorporar una reunión, un correo, una demo o los comentarios al DF, añadir historias a una aplicación existente, redactar las historias de una pantalla que alguien explica, preparar la especificación técnica o llevar un evolutivo o una incidencia urgente (la registra y prepara su corrección). No dibuja procesos (appian-diagramas-bpmn), no hace prototipos (appian-prototipos), no construye, revisa ni diagnostica objetos (appian-best-practices), no documenta lo que ya existe (appian-reverse-engineering) ni decide si rehacerlo (appian-refactorizacion)."
 ---
 
 # Analista funcional · Appian
@@ -75,13 +75,16 @@ En `<p>`:
 - `fuentes/`: las fuentes catalogadas, con su índice y sus adjuntos
 - `notas/`: una nota por fuente
 - `impacto/`: un informe por fuente nueva
+- `impacto/URG-nn.md`: la ficha de un cambio urgente (`urgentes.md`)
+- `analisis/cambios.md`: las unidades de cambio, solo con `proyecto.py cambio` (`cambios.md`)
+- `construccion/<U>.md` y `construccion/<U>-esperado.json`: el encargo de construcción de una unidad (`indice.py encargo`)
 - `analisis/funcional.md`: el diseño funcional
 - `analisis/tecnico.md`: la especificación técnica
 - `analisis/decisiones.md`: las versiones y las decisiones del cliente
 - `analisis/grafo.json`: las piezas y sus referencias, si se pide (`indice.py grafo`)
 - `analisis/diagramas/<proceso>.json`: cada proceso, en el formato de `appian-diagramas-bpmn`
 - `analisis/diagramas/<nombre>.mmd`: los diagramas de estados y de datos
-- `entregables/`: el DF en Word
+- `entregables/`: el DF en Word y, para revisarlo, su PDF (`entregables/revision/`)
 - `versiones/`: la copia del análisis antes de cada cambio
 - `modulos/`: el funcional y el técnico de cada módulo, en un análisis grande (`volumen-grande.md`)
 - `prototipo/`: solo la crea vacía al iniciar el proyecto; la llena `appian-prototipos`
@@ -93,11 +96,12 @@ El `.drawio`, el `.png` y el `.bpmn` de cada proceso y la imagen de cada `.mmd` 
 | Modo | Cuándo | Qué sale |
 |---|---|---|
 | **Síntesis** | Reuniones, correos, notas | Funcional y diagramas; el técnico cuando el funcional esté estable o se pida; DF en Word |
-| **DF ya hecho** | Hay un DF o una ERS del cliente | El DF entra como versión 1.0 en el formato del plugin, sin reinterpretar: cada pieza 🔒 con su ID original en la trazabilidad (`<!-- 🔒 FU-01 RF-07 -->`); funcional, técnico y Word. Las reuniones anteriores al DF pasan por el informe de impacto y lo que no coincide con el DF requiere aprobación; las posteriores, como siempre (`ingesta-fuentes.md`, `actualizacion.md`) |
-| **Evolutivo** | Hay que cambiar o ampliar una aplicación existente (`as-is/`) | Como síntesis, con lo de «Aplicación existente»: el origen de cada historia y la situación de cada objeto |
+| **DF ya hecho** | Hay un DF o una ERS del cliente | El DF entra como versión 1.0 en el formato del plugin, sin reinterpretar: cada pieza 🔒 con su ID original en la trazabilidad (`<!-- 🔒 FU-01 RF-07 -->`); funcional y técnico, y el Word al enviarlo. Las reuniones anteriores al DF pasan por el informe de impacto y lo que no coincide con el DF requiere aprobación; las posteriores, como siempre (`ingesta-fuentes.md`, `actualizacion.md`) |
+| **Evolutivo** | Hay que cambiar o ampliar una aplicación existente (`as-is/`) | Como síntesis, con lo de «Aplicación existente»: la situación de cada objeto; cada cambio que se construye, una unidad (`cambios.md`) |
 | **Refactorización** | Hay una propuesta de refactorización (`refactorizacion/propuesta.md`) | Como evolutivo: el DF dice lo que se conserva, lo que cambia y lo nuevo; el técnico baja cada REF a objetos, con «Sustituye a» y la migración de datos |
 | **Actualización** | Ya hay análisis y llega una reunión, un correo o los comentarios al DF | Informe de impacto y cambios puntuales: `actualizacion.md` |
 | **Pantalla suelta** | Alguien explica una pantalla, con o sin captura | La ficha PAN y sus historias, en el chat y en el funcional si existe |
+| **Urgente** | El cliente o el equipo declaran crítico algo de producción | La ficha `impacto/URG-nn.md` y el flujo corto de `urgentes.md`, sin DF ni prototipo |
 
 Di el modo al empezar.
 
@@ -121,7 +125,8 @@ Di el modo al empezar.
    `diagrama.py crear`. Los de estados y de datos, en Mermaid con `mermaid-diagrams.md`; los pinta el `mermaid.py`
    de esa misma skill.
 5. **Prototipo**, si se pide (suele ser con la primera versión del funcional, para validar las pantallas).
-   Lo hace `appian-prototipos` a partir del funcional y pone las capturas en las fichas de pantalla.
+   Lo hace `appian-prototipos` a partir del funcional y pone las capturas en las fichas de pantalla. Sus preguntas
+   nuevas (Q-nn) pasan a PC (`funcional-plantilla.md` §11).
 6. **Técnico.** Escribe `analisis/tecnico.md` con `tecnico-plantilla.md` cuando el funcional esté estable
    (normalmente tras la primera validación) o cuando se pida. El Entorno (§0) y las Convenciones (§1) se
    rellenan antes, en cuanto se sepan.
@@ -131,20 +136,20 @@ Di el modo al empezar.
    python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/
    ```
    Sin errores antes de entregar. Revisa los avisos: los de redacción se corrigen casi siempre.
-8. **DF en Word** (síntesis, evolutivo y refactorización; si el análisis es solo para un prototipo, cuando se pida). La
-   primera entrega es la versión 1.0: sube la versión del funcional y del técnico y añade su fila en
-   `decisiones.md`.
+8. **DF en Word**, solo para enviarlo o si se pide (síntesis, evolutivo y refactorización). La primera entrega es la
+   versión 1.0: sube la versión del funcional y del técnico y añade su fila en `decisiones.md`.
    ```bash
-   node <skill>/scripts/df_docx.js <p>          # entregables/DF-<proyecto>-v<versión>.docx
+   node <skill>/scripts/df_docx.js <p> --pdf    # entregables/DF-<proyecto>-v<versión>.docx; el PDF, en revision/
    ```
-   Ábrelo (conviértelo a PDF y mira algunas páginas) antes de entregarlo.
-9. **Entregar.** Actualiza `proyecto.md` (fuentes procesadas, DF entregado y siguiente paso) y envía el Word
-   y el `funcional.md` (SendUserFile en Claude). En pocas líneas: modo, historias, pantallas, pendientes de
-   confirmar con el cliente y siguiente paso.
+   Mira algunas páginas del PDF antes de enviarlo. Nunca sobrescribe un Word entregado.
+9. **Entregar.** Actualiza `proyecto.md` (fuentes procesadas y siguiente paso) y envía el Word y el `funcional.md`
+   (SendUserFile en Claude). Cuando el Word sale hacia el cliente, `proyecto.py entregar <p>` apunta «DF entregado» y
+   el fichero; nunca en una sesión desatendida. En pocas líneas: modo, historias, pantallas, pendientes de confirmar con el
+   cliente y siguiente paso.
 
 Para buscar en el análisis sin leerlo entero: `indice.py` (`resumen`, `buscar`, `ficha`, `impacto`,
-`seccion`, `siguientes`). Para preparar la próxima reunión, `indice.py pendientes <p>`: las preguntas abiertas
-por «A quién», de las que afectan a más partes del análisis a las que menos.
+`seccion`, `siguientes`). Para preparar la próxima reunión, `indice.py pendientes <p>`: lo que decide el equipo y
+las preguntas abiertas por «A quién», de las que afectan a más partes del análisis a las que menos.
 
 ## Aplicación existente
 
@@ -153,8 +158,11 @@ En los modos evolutivo y de refactorización, los pasos de «Proyecto nuevo» co
    `leer_fuentes.py --una-fuente <p>/as-is <p>/refactorizacion/propuesta.md -o <p>/fuentes/`. De `as-is/` se leen
    `LEEME.md`, los documentos de lo que toca el cambio y `as-is/datos/`; nunca la extracción en bruto
    (`ingesta-fuentes.md`).
-2. **Funcional.** Cada historia dice su «Origen»: Se conserva, Cambia o Nueva. Los hallazgos que corrige, las REF y
-   los NV se citan dentro de su fuente («[FU-01 H-DAT-01]») y solo en la trazabilidad: el DF no los enseña.
+2. **Funcional.** De toda la aplicación y con detalle, por módulos (`volumen-grande.md` §4): criterios y escenarios del
+   comportamiento real con su evidencia (✅ directa, 🔶 inferida; 🔒 solo lo de un DF validado), sin prioridad («—»). El
+   técnico no repite `as-is/` (`cambios.md` §4). Lo nuevo y lo que cambia lo dice `indice.py cambios`, no un «Origen»
+   escrito. Los hallazgos que corrige, las REF y los NV se citan dentro de su fuente
+   («[FU-01 H-DAT-01]») y solo en la trazabilidad: el DF no los enseña.
 3. **Lo sin verificar.** Un NV que condiciona lo que se construye es un PT con su cita; si lo resuelve negocio, también
    un PC, en palabras del cliente.
 4. **Técnico.** Los nombres reales del inventario; §13 con la Situación de cada objeto (Nuevo, Modifica, Existe o
@@ -173,8 +181,8 @@ En los modos evolutivo y de refactorización, los pasos de «Proyecto nuevo» co
    pantalla es otra ficha.
 3. Lo que falte (quién ve una acción, el texto de una confirmación) se pregunta antes de cerrar; los
    detalles menores, con la opción más razonable dicha en el texto.
-4. Entrégala en el chat. Si el proyecto ya tiene análisis, la explicación es una fuente más: guárdala como
-   `.txt`, catalógala y sigue `actualizacion.md`.
+4. Entrégala en el chat. Si el proyecto ya tiene análisis, la explicación es una fuente más (de chat,
+   `ingesta-fuentes.md` §1): catalógala y sigue `actualizacion.md`.
 
 ## Comentarios del cliente al DF
 
@@ -204,4 +212,5 @@ lo que quede sin verificar es un PT, o un PC si cambia lo que se promete al clie
 | `references/redaccion.md` | Al escribir cualquiera de los dos |
 | `references/actualizacion.md` | Con cada fuente nueva |
 | `references/volumen-grande.md` | Muchas fuentes o muchos procesos |
+| `references/cambios.md`, `references/urgentes.md` | Si `proyecto.py estado` lista unidades en curso (`analisis/cambios.md`), al abrir una, o si se declara una urgencia |
 | `references/mermaid-diagrams.md` | Diagramas de estados y de datos |

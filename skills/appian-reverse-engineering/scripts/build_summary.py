@@ -15,6 +15,7 @@ Escribe:
 from __future__ import annotations
 
 import json
+import re
 import sys
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from datetime import datetime, timezone
@@ -113,6 +114,12 @@ def main(doc_root: str) -> int:
     orphans = {o for o in graph.get("orphans", [])}
     if orphans:
         signals.append({"type": "orphans", "objects": [o.get("name") for o in all_objs if o.get("uuid") in orphans]})
+    prefix = app_meta.get("prefix")
+    if prefix:   # nombres que no empiezan por el prefijo de la aplicación (seguido de algo que no es letra ni cifra)
+        sin = [o.get("name") for o in all_objs
+               if o.get("name") and not re.match(rf"{re.escape(prefix)}(?![A-Za-z0-9])", o["name"], re.I)]
+        if sin:
+            signals.append({"type": "sinPrefijo", "objects": sin})
 
     env = preflight.get("environment") or {}
     summary = {

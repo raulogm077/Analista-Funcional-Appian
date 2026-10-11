@@ -1,7 +1,8 @@
 # Best practices — ALM, testing, naming conventions and development approach
 
 > Official Appian doctrine on how to name, structure, test, version and deploy applications,
-> and how to govern their quality over time. Every rule is anchored to `docs.appian.com/suite/help/latest/…`.
+> and how to govern their quality over time. Every rule is anchored to `docs.appian.com/suite/help/latest/…`,
+> except those marked **[engineering]** (no Appian page; see doc 11).
 > Links with `latest`: an alias that redirects to the newest release, so they never expire.
 
 **Contents:** 1. Object naming · 2. Application structure · 3. ALM / deployment across environments
@@ -526,6 +527,15 @@ if they grow past that.
   guidance "Too many nodes" / "Too many process variables").
 - Source: <https://docs.appian.com/suite/help/latest/appian-recommendations.html>
 
+⚠️ **An object nothing uses, or a process model with no executions, is a candidate for retirement, not
+proven dead code.** **[engineering]** (no Appian page says it is dead code): it may still be started by a
+timer or a message, called from outside (Web API, integration), used by another application, or used only
+at certain times of the year. Check those, let the business confirm it, and retire it with an observation
+period (doc 11 §8). The check itself is Appian's impact analysis: the object's Dependents and Precedents,
+and the review of remaining dependents Appian asks for when you delete an object. It lists at most 500
+direct relationships and only objects you can see, and it doesn't trace expressions with syntax errors.
+- Source (impact analysis): <https://docs.appian.com/suite/help/latest/Trace_Relationships_for_Impact_Analysis.html>
+
 ---
 
 ## 7. Continuous quality control (Health Check, design guidance, technical debt)
@@ -558,6 +568,18 @@ it into Jenkins.
 
 ✅ **Health Check cadence that sticks:** at least monthly in Production with an action plan for High and Medium findings, at the end of each sprint, and after testing before a deployment; each application owner reviews its own findings. The organization's Health Check account password expires every 365 days — a silent reason for missing reports (doc 13 §0).
 - Source: [Appian Max — Platform Health Management](https://community.appian.com/vision-26/platform-health-management-1180) · [Appian Max — Application Monitoring Checklist](https://community.appian.com/delivery-28/application-monitoring-checklist-1306) · [KB-2277](https://community.appian.com/how-to-36/kb-2277-how-to-generate-or-reset-health-check-credentials-1351)
+
+❌ **Don't keep deprecated features: replace them before Appian removes them.** A feature is deprecated
+when its title carries "[Deprecated]" or its page says so; it keeps working until a later release removes
+it, and Appian asks you to replace it before then. The Deprecated Features page lists each one with the
+release that deprecated it (for example `a!httpQuery()` and `a!httpWrite()` in 17.2, the HTTP Query smart
+service in 17.3, query rules in 19.1). Health Check also flags plug-ins that call deprecated, private or
+removed Appian APIs: a deprecated API usually lasts two releases before removal, and a plug-in that calls
+a removed one stops working until it is updated.
+- ⚠️ An old function version (a name ending in `_17r1`, `_19r2`…) is **not** deprecated by itself:
+  Appian says old versions can be used indefinitely. It is deprecated only if the Deprecated Features page
+  lists it (for example `a!dashboardLayout_17r1`, `a!gridImageColumn_17r3`).
+- Source: <https://docs.appian.com/suite/help/latest/Deprecated_Features.html> · <https://docs.appian.com/suite/help/latest/function_versions.html> · <https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html#plug-ins-using-deprecated-private-or-removed-appian-apis>
 
 ---
 
@@ -594,6 +616,8 @@ it into Jenkins.
 - **Appian Design Guidance** — <https://docs.appian.com/suite/help/latest/appian-recommendations.html>
 - **Health Check** — <https://docs.appian.com/suite/help/latest/health-check.html>
 - **Understanding the Health Check Report** — <https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html>
+- **Deprecated Features** — <https://docs.appian.com/suite/help/latest/Deprecated_Features.html>
+- **Function Versions** — <https://docs.appian.com/suite/help/latest/function_versions.html>
 - **Build Your Best Data Fabric** — <https://docs.appian.com/suite/help/latest/build-best-data-fabric.html>
 - **About Record Types** — <https://docs.appian.com/suite/help/latest/Record_Type_Object.html>
 - **Data Fabric** — <https://docs.appian.com/suite/help/latest/data-fabric.html>

@@ -145,6 +145,9 @@
         "appian-reverse-engineering"
       ],
       "imprescindible": false,
+      "bloquea": [
+        "appian-reverse-engineering"
+      ],
       "solo_pruebas": false,
       "para": "Arrancar el Dev MCP y el extractor, con Python 3.10 o superior y el SDK mcp",
       "sin_el": "No se puede usar ingeniería inversa",
@@ -163,6 +166,9 @@
         "appian-reverse-engineering"
       ],
       "imprescindible": false,
+      "bloquea": [
+        "appian-reverse-engineering"
+      ],
       "solo_pruebas": false,
       "para": "Leer la aplicación en solo lectura (entorno 26.5 o superior, usuario con rol Designer)",
       "sin_el": "No se puede usar ingeniería inversa",

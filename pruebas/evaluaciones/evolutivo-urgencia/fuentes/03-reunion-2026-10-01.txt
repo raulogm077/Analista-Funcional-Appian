@@ -1,0 +1,19 @@
+Reunión con Servicios generales sobre la firma de la revisión · 1 de octubre de 2026
+
+[00:00:05] Clara Ibáñez Rey:
+Buenos días. Contadme qué queréis cambiar en la revisión.
+
+[00:00:30] Elena Marín Castro:
+Auditoría nos pide que quede constancia de quién revisó cada solicitud.
+
+[00:01:10] Sergio Pardo Gil:
+Que el revisor firme la revisión antes de aprobar, rechazar o devolver. Sin firma, que no le deje decidir.
+
+[00:02:00] Clara Ibáñez Rey:
+¿Y si la solicitud vuelve corregida?
+
+[00:02:40] Elena Marín Castro:
+Entonces la firma anterior no vale: al reenviarla se borra y firma quien la revise de nuevo.
+
+[00:03:30] Clara Ibáñez Rey:
+De acuerdo. Lo preparo como un cambio sobre lo que ya está en producción.

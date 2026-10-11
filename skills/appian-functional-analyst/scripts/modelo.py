@@ -11,7 +11,8 @@ Una pieza es algo con ID estable. Solo se define en su sitio (CASA); en cualquie
 una mención:
   ficha:    **HU-07 — Título** <!-- ✅ FU-03 00:14:32 -->  (hasta la siguiente ficha o título)
   fila:     | PC-03 | … |
-  criterio: - `HU-07.1` texto   (dentro de su historia)
+  criterio: - `HU-07.1` texto   (dentro de su historia, o `INT-02.1` dentro de la ficha de un intercambio)
+Un INT es una fila o, si el intercambio tiene reglas, una ficha con criterios.
 El comentario <!-- … --> lleva el estado (🔒 ✅ 🔶 ⚠️ ❓) y las fuentes; el Word no lo muestra.
 """
 import pathlib
@@ -22,22 +23,23 @@ from dataclasses import dataclass, field
 DOCS = {"F": "funcional.md", "T": "tecnico.md", "D": "decisiones.md"}
 NOMBRE_DOC = {"F": "funcional", "T": "técnico", "D": "decisiones"}
 
-# Dónde se define cada tipo: (doc, sección, forma)
+# Dónde se define cada tipo: (doc, sección, formas)
 CASA = {
     "ACT": ("F", "3", "ficha"), "ESC": ("F", "3", "ficha"),
     "HU": ("F", "4", "ficha"), "RB": ("F", "4", "fila"),
     "PAN": ("F", "5", "ficha"), "AV": ("F", "7", "fila"), "DOC": ("F", "8", "fila"),
-    "INT": ("F", "9", "fila"), "PC": ("F", "11", "fila"),
+    "INT": ("F", "9", ("fila", "ficha")), "PC": ("F", "11", "fila"),
     "D": ("D", "decisiones", "fila"),
     "DT": ("T", "2", "ficha"), "PT": ("T", "15", "fila"),
 }
+CON_CRITERIOS = {"HU": "4", "INT": "9"}    # fichas con criterios «Se acepta si:» (HU-07.1, INT-02.1) y su sección
 TIPOS = list(CASA) + ["CA"]
 _PRE = "|".join(sorted(CASA, key=len, reverse=True))
 ID_SIMPLE = rf"(?:{_PRE})-\d+"
-ID_CA = r"HU-\d+\.\d+"
+ID_CA = rf"(?:{'|'.join(CON_CRITERIOS)})-\d+\.\d+"
 RX_ID = re.compile(rf"(?<![\w-])(?:{ID_CA}|{ID_SIMPLE})(?![\w-]|\.\d)")
 RX_RANGO = re.compile(rf"(?<![\w-])((?:{_PRE})-)(\d+)`?\s+a\s+`?(?:\1)?(\d+)(?![\w.-])")
-RX_RANGO_CA = re.compile(r"(HU-\d+)\.(\d+)`?\s+a\s+`?(?:\1\.)?(\d+)(?![\w.])")
+RX_RANGO_CA = re.compile(rf"((?:{'|'.join(CON_CRITERIOS)})-\d+)\.(\d+)`?\s+a\s+`?(?:\1\.)?(\d+)(?![\w.])")
 RX_FICHA = re.compile(rf"^\*\*(~~)?({ID_SIMPLE})(~~)?\s+—\s+(.+?)\*\*(.*)$")
 RX_FILA = re.compile(rf"^\|\s*(~~)?({ID_SIMPLE})(~~)?\s*\|")
 RX_CRITERIO = re.compile(rf"^\s*[-*]\s+(~~)?`({ID_CA})`(~~)?")
@@ -190,9 +192,10 @@ class Proyecto:
     def _es_casa(self, pid, doc, sec, forma):
         t = tipo_de(pid)
         if t == "CA":
-            return doc == "F" and sec == "4"
+            return doc == "F" and sec == CON_CRITERIOS.get(pid.split("-")[0])
         casa = CASA.get(t)
-        return bool(casa) and casa[0] == doc and casa[1] == sec and casa[2] == forma
+        formas = casa[2] if casa and isinstance(casa[2], tuple) else (casa[2],) if casa else ()
+        return bool(casa) and casa[0] == doc and casa[1] == sec and forma in formas
 
     def _leer(self, D):
         L = D.lineas
@@ -226,19 +229,25 @@ class Proyecto:
             else:
                 en_tabla = False
             mr = RX_FILA.match(l)
-            if mr and not ficha:
+            if mr and self._es_casa(mr.group(2), D.doc, self._sec_fila(D, sec), "fila"):
+                if ficha:   # una fila en su sitio (INT-03 bajo la ficha INT-02) cierra la ficha antes de su tabla
+                    ini = i
+                    while ini - 1 > ficha.ini and L[ini - 1].startswith("|"):
+                        ini -= 1
+                    self._cierra(D, ficha, ini)
+                    ficha = None
                 pid = mr.group(2)
-                if self._es_casa(pid, D.doc, self._sec_fila(D, sec), "fila"):
-                    cel = celdas(l)
-                    p = Pieza(pid, tipo_de(pid), "fila", self._titulo_fila(cel, cabecera), D.doc, sec, i, i + 1,
-                              cabecera=cabecera)
-                    p.estado = self._estado_fila(l, cabecera, bool(mr.group(1) or mr.group(3)))
-                    p.refs = ids_en(sin_comentarios(l)) - {pid}
-                    p.fuentes = set(RX_CITA.findall(l))
-                    self._alta(p)
-                    continue
+                cel = celdas(l)
+                p = Pieza(pid, tipo_de(pid), "fila", self._titulo_fila(cel, cabecera), D.doc, sec, i, i + 1,
+                          cabecera=cabecera)
+                p.estado = self._estado_fila(l, cabecera, bool(mr.group(1) or mr.group(3)))
+                p.refs = ids_en(sin_comentarios(l)) - {pid}
+                p.fuentes = set(RX_CITA.findall(l))
+                self._alta(p)
+                continue
             mc = RX_CRITERIO.match(l)
-            if mc and ficha and ficha.tipo == "HU":
+            # un criterio es de su ficha: INT-02.1 suelto en una historia no se cuelga de ella
+            if mc and ficha and ficha.tipo in CON_CRITERIOS and mc.group(2).rsplit(".", 1)[0] == ficha.id:
                 cid = mc.group(2)
                 anulado = bool(mc.group(1) or mc.group(3)) or bool(re.search(r"Anulad[ao] por", l))
                 texto = sin_comentarios(l[mc.end():])
@@ -359,3 +368,39 @@ class Proyecto:
 
 def cargar(ruta):
     return Proyecto(ruta)
+
+
+def informes(raiz):
+    """Los informes de impacto de un proyecto, todos los de <p>/impacto/*.md (FU-nn, varias fuentes juntas y los que
+    vengan): [(nombre, texto, puntos, revisión)], por nombre. El único lector de informes que usan los scripts."""
+    return [(f.stem, *lee_informe(f)) for f in sorted((pathlib.Path(raiz) / "impacto").glob("*.md"))]
+
+
+def lee_informe(ruta):
+    """Un informe de impacto (impacto/FU-04.md): (texto, puntos, revisión). Cada punto (tabla con «Revisar también») y
+    cada fila de «Revisión de dependencias» es un {columna normalizada: celda}."""
+    t = pathlib.Path(ruta).read_text(encoding="utf-8")
+    puntos, revision, cab = [], [], None
+    for l in t.split("\n"):
+        if not l.startswith("|"):
+            cab = None
+            continue
+        c = celdas(l)
+        if cab is None:
+            cab = [normaliza(x) for x in c]
+            continue
+        if re.match(r"^[-:\s]+$", c[0]):
+            continue
+        fila = {k: (c[i] if i < len(c) else "") for i, k in enumerate(cab)}
+        if "revisar tambien" in cab:
+            puntos.append(fila)
+        elif cab[0] == "pieza" and "resultado" in cab:
+            revision.append(fila)
+    return t, puntos, revision
+
+
+def estado_informe(texto):
+    """El «Estado:» de la cabecera de un informe: «pendiente», «aplicado en 1.2; pendientes de aprobación: …»,
+    «sin cambios»…; "" si no lo dice."""
+    est = re.search(r"Estado:\s*([^·\n]+)", "\n".join(texto.splitlines()[:5]))
+    return est.group(1).strip() if est else ""

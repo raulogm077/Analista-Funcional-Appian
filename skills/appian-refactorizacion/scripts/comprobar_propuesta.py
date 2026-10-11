@@ -22,10 +22,11 @@ Errores (✗, salida 1):
     (la Solución sí puede nombrar objetos nuevos; un patrón, con «*» o que acaba en «…» o «_», no se comprueba);
   - una REF del Diagnóstico que no aparece en la Solución, o una REF citada que no está en el Diagnóstico;
   - un H-… que no está en hallazgos.json o un NV-… que no está en sin-verificar.json.
-Avisos (·): una REF que no está en la Hoja de ruta; una REF cuya evidencia cita un hallazgo inferido o pendiente sin
-«Verificar H-…» antes en la Hoja de ruta («Verificar H-X y H-Y» vale para los dos); un hallazgo inferido o pendiente
-marcado ✅; un hallazgo Alta o Media que no está en ninguna REF ni en Pendientes; un NV no resuelto de
-sin-verificar.json que la propuesta no cita.
+Avisos (·): una REF que no está en la tabla de la Hoja de ruta; una REF cuya evidencia cita un hallazgo inferido o
+pendiente sin «Verificar H-…» antes en esa tabla («Verificar H-X y H-Y» vale para los dos); un hallazgo inferido o
+pendiente marcado ✅; un hallazgo Alta o Media que no está en ninguna REF, ni en Pendientes, ni en la línea
+«- **Fuera del alcance:** H-…» del Alcance; un NV no resuelto de sin-verificar.json que la propuesta no cita; H-… o NV-…
+citados sin hallazgos.json o sin-verificar.json, que entonces no se comprueban.
 Salida: 0 sin errores, 1 con errores, 2 uso o faltan la propuesta o as-is/datos/inventario.json.
 """
 from __future__ import annotations
@@ -47,7 +48,7 @@ CAMPOS = ("Evidencia", "Regla", "Efecto", "Prioridad", "Esfuerzo")
 PRIORIDADES = ("Alta", "Media", "Baja")
 CODIGO = re.compile(r"`([^`\n]+)`")
 ENLACE = re.compile(r"!?\[[^\]\n]*\]\((<[^>\n]+>|[^)\s]+)(?:\s+\"[^\"\n]*\")?\)")
-FICHA = re.compile(r"^(?:#{3,4}\s+)?(REF-\d{2,3})\s*[—–-]\s*\S")
+FICHA = re.compile(r"^(?:#{3,4}\s+)?(REF-\d{2,3})\s*[—–\-·:]\s*\S")
 CAMPO = re.compile(rf"^\s*[-*]\s*({'|'.join(CAMPOS)})\s*:\s*(.*)$")
 REF = re.compile(r"\bREF-\d{2,3}\b")
 HALLAZGO = re.compile(r"\bH-[A-Z]{2,4}-\d{2,3}\b")
@@ -110,7 +111,7 @@ def nombre_citado(s: str, prefijo: str, conocidos: set) -> str | None:
     patron = rf"{re.escape(prefijo)}[_ ]\S"
     if not re.match(patron, s):
         return None
-    cortes = [s.rstrip(), re.split(r"[.#(\[]", s, 1)[0].rstrip(), NO_NOMBRE.split(s, 1)[0].rstrip()]
+    cortes = [s.rstrip(), re.split(r"[.#(\[]", s, maxsplit=1)[0].rstrip(), NO_NOMBRE.split(s, 1)[0].rstrip()]
     nombre = next((c for c in cortes if c in conocidos), cortes[-1])
     return nombre if re.match(patron, nombre) else None
 
@@ -188,7 +189,7 @@ def comprobar(p: Path) -> tuple[list[str], list[str]]:
             e(None, f"falta el apartado «## {titulo}»")
     diagnostico = secciones.get(normal(APARTADOS[1]), [])
     solucion = "\n".join(l for _, l in secciones.get(normal(APARTADOS[2]), []))
-    hoja = "\n".join(l for _, l in secciones.get(normal(APARTADOS[4]), []))
+    hoja = "\n".join(l for _, l in secciones.get(normal(APARTADOS[4]), []) if l.lstrip().startswith("|"))  # su tabla
     refs = fichas(diagnostico)
     if normal(APARTADOS[1]) in secciones and not refs:
         e(None, "el Diagnóstico no tiene ninguna ficha «**REF-nn — Problema**»")
@@ -209,7 +210,7 @@ def comprobar(p: Path) -> tuple[list[str], list[str]]:
             e(ficha["Regla"][0], f"{ref}: «§{m.group(1)}» de la Regla sin su documento; cada sección, entera: "
                                  "«BP nn §x; BP mm §y»")
         if "Prioridad" in ficha and ficha["Prioridad"][1]:
-            valor = re.split(r"[\s,.;:—–-]", ficha["Prioridad"][1], 1)[0]
+            valor = re.split(r"[\s,.;:—–-]", ficha["Prioridad"][1], maxsplit=1)[0]
             if valor not in PRIORIDADES:
                 e(ficha["Prioridad"][0], f"{ref}: prioridad «{valor}»; es Alta, Media o Baja")
         if "Esfuerzo" in ficha and ficha["Esfuerzo"][1] and not re.match(r"^[SML]\b", ficha["Esfuerzo"][1]):
@@ -272,7 +273,7 @@ def comprobar(p: Path) -> tuple[list[str], list[str]]:
             e(ficha["linea"], f"{ref} no aparece en la Solución: cada problema del Diagnóstico tiene su alternativa")
         en_hoja = re.search(patron, hoja)
         if not en_hoja:
-            avisos.append(f"{ref} no está en la Hoja de ruta")
+            avisos.append(f"{ref} no está en la tabla de la Hoja de ruta")
         evidencia = ficha.get("Evidencia", (0, ""))[1]
         for h in HALLAZGO.findall(evidencia):
             certeza = ((hallazgos or {}).get(h) or {}).get("certeza")
@@ -282,17 +283,26 @@ def comprobar(p: Path) -> tuple[list[str], list[str]]:
 
     # Lo no verificado no desaparece sin aviso
     texto = "\n".join(l for _, l in numeradas)
-    en_refs_o_pendientes = "\n".join(l for _, l in diagnostico + secciones.get(normal(APARTADOS[5]), []))
+    fuera_del_alcance, dentro = [], False   # la línea «- **Fuera del alcance:** H-…» del Alcance y sus sangradas
+    for _, l in secciones.get(normal(APARTADOS[0]), []):
+        if l[:1] not in (" ", "\t") or not l.strip():
+            dentro = bool(re.match(r"^[-*]\s*fuera del alcance\s*:", normal(l.replace("**", ""))))
+        if dentro:
+            fuera_del_alcance.append(l)
+    tratados = "\n".join([l for _, l in diagnostico + secciones.get(normal(APARTADOS[5]), [])] + fuera_del_alcance)
     for h, hallazgo in (hallazgos or {}).items():
-        if hallazgo.get("severidad") in ("Alta", "Media") and not re.search(rf"\b{re.escape(h)}\b",
-                                                                           en_refs_o_pendientes):
-            avisos.append(f"{h} ({hallazgo['severidad']}) no está en ninguna REF ni en Pendientes: todo hallazgo Alta "
-                          "o Media del alcance acaba en una REF o, si no se puede decidir sin una respuesta, en "
-                          "Pendientes")
+        if hallazgo.get("severidad") in ("Alta", "Media") and not re.search(rf"\b{re.escape(h)}\b", tratados):
+            avisos.append(f"{h} ({hallazgo['severidad']}) no está en ninguna REF, ni en Pendientes, ni en «Fuera del "
+                          "alcance»: todo hallazgo Alta o Media acaba en una REF; en Pendientes, si no se puede decidir "
+                          "sin una respuesta, o en la línea «- **Fuera del alcance:** H-…» del Alcance, si se deja fuera")
     for nv, dato in (nvs or {}).items():
         if dato.get("estado") != "resuelto" and not re.search(rf"\b{re.escape(nv)}\b", texto):
             avisos.append(f"{nv} de as-is/datos/sin-verificar.json no se cita en la propuesta: si toca el alcance, "
                           "condiciona la solución y va a Pendientes con la REF que condiciona")
+    for ids, patron, cita, fichero in ((hallazgos, HALLAZGO, "H-", "hallazgos.json"),
+                                       (nvs, NV, "NV-", "sin-verificar.json")):
+        if ids is None and patron.search(texto):
+            avisos.append(f"la propuesta cita {cita}… y no está as-is/datos/{fichero}: no se comprueba que existan")
     return [f"propuesta.md:{n}: {msg}" if n else f"propuesta.md: {msg}"
             for n, msg in sorted(errores, key=lambda x: x[0])], avisos
 

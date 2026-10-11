@@ -36,6 +36,7 @@ Las definiciones extraídas (connected systems, integraciones, constantes, Web A
    - Evidencia: `mcp:<tipo>/<nombre>#<propiedad>`, con la propiedad que da `detect_secrets.py`.
 3. **Impacto**: el valor de una constante o de un connected system se ve desde el diseño de Appian y en los paquetes de despliegue; un usuario final no lo ve desde el portal aunque tenga Viewer. Descríbelo así: «visible para quien tenga acceso de diseño a la aplicación y en cualquier exportación del paquete». Qué hacer con el secreto no se escribe (`execution-principles.md`, principio 11).
 4. El registro de `09-valor-adicional.md` lo genera `scripts/build_registry.py` a partir del JSON. Nadie añade el secreto a mano en 09.
+5. **Dónde acaba el valor.** Se reproduce tal cual, sin ocultar nada, como lo traen la extracción y el anexo: donde el hallazgo lo cite (título, evidencia, impacto), acaba en `04-seguridad-grupos.md`, en el registro de 09 y en `datos/hallazgos.json`, que leen las demás skills. Quien comparta la documentación fuera del entorno controlado lo tiene que saber.
 
 ## Falsos positivos comunes
 

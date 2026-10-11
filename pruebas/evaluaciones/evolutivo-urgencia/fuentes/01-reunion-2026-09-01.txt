@@ -1,0 +1,40 @@
+Reunión de arranque con Servicios generales · 1 de septiembre de 2026
+
+[00:00:05] Clara Ibáñez Rey:
+Buenos días. Queremos entender cómo pedís hoy el material y qué necesitáis de la aplicación.
+
+[00:00:40] Elena Marín Castro:
+Hoy cada centro nos pide el material de oficina por correo y lo apuntamos en una hoja de cálculo. Se pierden peticiones y nadie sabe cuáles están aprobadas.
+
+[00:01:30] Elena Marín Castro:
+Queremos que el gestor de cada centro haga la solicitud en la aplicación: un título, el importe estimado y una descripción del material. Que la pueda guardar como borrador y enviarla cuando la tenga.
+
+[00:02:20] Sergio Pardo Gil:
+El importe, con céntimos. Y nunca más de 6.000 euros por solicitud: lo que pase de ahí va por contratación y no por aquí.
+
+[00:03:10] Sergio Pardo Gil:
+Las revisamos en Servicios generales. Cualquiera de los revisores coge la solicitud y la aprueba, la rechaza o, si le falta algo, la devuelve con un comentario. Intentamos contestar en tres días laborables.
+
+[00:04:15] Clara Ibáñez Rey:
+¿Cada solicitud necesita un número?
+
+[00:04:30] Elena Marín Castro:
+Sí, con el año: DEM, el año y cuatro cifras, como en la hoja de cálculo. Se pone al enviarla.
+
+[00:05:20] Elena Marín Castro:
+Cuando se la devolvemos, el gestor ve nuestro comentario, la corrige y la reenvía con el mismo número. Y vuelve a revisarla cualquiera de nosotros.
+
+[00:06:40] Sergio Pardo Gil:
+Al entrar, cada uno debería ver sus solicitudes y en qué estado están: el gestor, las suyas; nosotros, todas menos los borradores. Con un filtro por estado y un buscador por número o título.
+
+[00:07:30] Elena Marín Castro:
+Y que al gestor le llegue un aviso cuando se aprueba, se rechaza o se devuelve la suya.
+
+[00:08:10] Elena Marín Castro:
+La compra al proveedor no entra: la seguimos haciendo en el sistema económico.
+
+[00:09:00] Clara Ibáñez Rey:
+¿Cuántas solicitudes tenéis al año y cuánta gente las usaría?
+
+[00:09:20] Elena Marín Castro:
+Unas 1.200 al año, de 12 centros. Unas 60 personas, y a la vez no más de 15.

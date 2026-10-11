@@ -79,12 +79,13 @@ Un hallazgo es algo que pasa en la aplicación y tiene un riesgo de negocio, de 
      "impacto": "Una solicitud cancelada se registra igualmente."}]
    ```
 
-   - `id`: prefijo del área + número de dos cifras, sin huecos (`H-PRO-01`, `H-PRO-02`…).
+   - `id`: prefijo del área + número de dos cifras, sin huecos (`H-PRO-01`, `H-PRO-02`…); los IDs que mantiene `build_registry.py` al repetir la ingeniería inversa pueden dejarlos, y no se renumeran.
    - `impacto`: qué puede pasar y a quién afecta. Qué hacer no va en ningún campo: `build_registry.py` avisa si un hallazgo lo trae.
    - `area`: funcional, arquitectura, datos, seguridad, secretos, integraciones, apis, batches, procesos, pantallas, reglas, mantenimiento, rendimiento o uso.
    - `severidad`: Alta, Media o Baja. `certeza`: verificado, inferido o pendiente.
    - `base` (obligatoria con `certeza: inferido`): las evidencias de las que sale, en una lista y con la forma de `evidencia` (`["mcp:group/DEM Gestores#name", "mcp:processModel/DEM Alta Solicitud#nodes[id=3].assignment"]`). Con severidad Alta, al menos dos (principio 6).
    - `documento`: ruta relativa a `<salida>` (con ancla si quieres).
+   - `senal` (opcional): la señal de la que sale, en minúsculas y con guiones: `huerfano` y `sin-prefijo` (H-ARQ), `sin-ejecuciones`, `mas-50-nodos` y `aviso-validacion-nodos` (H-GEN; el último, el aviso de la plataforma por demasiados nodos), `nombre-fijo` (H-PRO)… Un objeto, un problema, un hallazgo: dos del mismo objeto con señales del mismo grupo (`huerfano` y `sin-ejecuciones`; `mas-50-nodos` y `aviso-validacion-nodos`; o la misma) son un error de `build_registry.py`, salvo que uno lleve `duplicadoDe`. Al repetir la ingeniería inversa, `build_registry.py` mantiene el ID de un hallazgo casándolo con el anterior por área, objetos y señal (y título, si empatan); los de una señal de grupo (`huerfano`, `sin-prefijo`), por área y señal, porque sus objetos cambian. Lo anterior que ya no se casa queda como retirado en el registro y en `datos/`.
    - `duplicadoDe` (solo lo pone el orquestador): ID canónico cuando dos entradas son el mismo hallazgo.
 
 **La certeza viaja con el hallazgo.** Un hallazgo 🔶 o ❓ conserva su marca, o se redacta en condicional («probablemente», «la definición indica»), allí donde se resuma: TL;DR, LEEME y tablas de reglas. Un hallazgo se explica solo en su documento propietario; en los demás, una línea con su ID.
@@ -98,7 +99,7 @@ Un hallazgo es algo que pasa en la aplicación y tiene un riesgo de negocio, de 
 Un NV es una pregunta que la revisión necesitaba responder y no pudo verificar con lo que había: dice dónde se buscó, qué hace falta para resolverla y a quién pedirlo. Por ejemplo, qué hace un objeto que la aplicación llama y no está en ella, la definición de un objeto cuya llamada falló o un dato que solo tiene negocio.
 
 - Lo registra el propietario del área (sección 2), con su prefijo: `NV-ARQ-01`, `NV-PRO-01`… El orquestador une los duplicados en la pasada de coherencia (`duplicadoDe`), como con los hallazgos.
-- Una limitación global (entorno no productivo, versión no determinada, un tipo sin herramienta de definición, configuración que el Dev MCP no devuelve de ningún objeto) no es un NV: va una vez en «Qué no incluye» de LEEME.
+- Una limitación global (entorno no productivo, versión no determinada, un tipo sin herramienta de definición, configuración que el Dev MCP no devuelve de ningún objeto) no es un NV: va una vez en «Qué no incluye» de LEEME. La excepción, los role maps: sin ellos hay además un `NV-SEG` fijo (`agents/integration-security-analyzer.md`).
 - En el documento, lo afirmado lleva ❓ y su NV: «❓ [NV-ARQ-01](./LEEME.md#sin-verificar)» (`../LEEME.md` desde `08-procesos-bpmn/`).
 - `build_datos.py` los valida, los escribe en `datos/sin-verificar.json` y rellena la tabla «Sin verificar» de LEEME.
 

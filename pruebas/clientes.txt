@@ -1,9 +1,13 @@
-# Clientes que el plugin no nombra (Tarea 0b) y lo que los delata en los datos de ejemplo.
-# Lo lee pruebas/comprobar_plugin.py: da error si skills/ o .claude-plugin/ dicen uno de estos términos.
+# Clientes que el plugin no nombra (Tarea 0b, R5) y lo que los delata en los datos de ejemplo.
+# Lo lee pruebas/comprobar_plugin.py: da error si uno de estos términos está en lo que va en el paquete (también el
+# README) o en docs/, pruebas/, .github/ o CLAUDE.md del repositorio, en el texto o en el nombre de un fichero. Este
+# fichero es el único que los dice.
 # Un término por línea; lo que va detrás de # es un comentario.
-# Se buscan como palabras enteras. Los nombres, sin distinguir mayúsculas ni acentos («Aena», «AEROPUERTO»).
-# Los códigos de tres letras en mayúsculas, solo en mayúsculas: en minúsculas son palabras corrientes o trozos de
-# rutas y correos («mad», «bcn»).
+# Se buscan sin otra letra pegada: «OP_X», «X2026» o «brand_x» también cuentan. Los nombres, sin distinguir mayúsculas
+# ni acentos («Aena», «AEROPUERTO»).
+# Los códigos de tres letras en mayúsculas, solo en mayúsculas y solo en los datos (*.json, galerias/, templates/): en
+# minúsculas son palabras corrientes o trozos de rutas y correos («mad», «bcn»), y en un documento, unas siglas
+# («según el PMI»). Un dato en base64 no es texto.
 
 AENA
 aeropuerto

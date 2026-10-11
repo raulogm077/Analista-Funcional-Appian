@@ -2,20 +2,22 @@
 Camunda Modeler, bpmn.io, Signavio u otra herramienta BPM. Usa las posiciones del .drawio.
 
 Conserva: inicio con temporizador o con mensaje, tareas de usuario, de sistema, de script y manuales,
-subproceso y llamada a otro proceso, flujo por defecto, plazos y errores como eventos de borde, participantes
-externos con sus flujos de mensaje, notas unidas a su paso y los datos de Appian: el nodo (documentation), la
-expresión del temporizador, el proceso llamado (calledElement) y la condición de cada flujo (conditionExpression)."""
+subproceso y llamada a otro proceso, flujo por defecto, plazos y errores como eventos de borde (un error suelto y sin
+salidas, como fin de error), participantes externos con sus flujos de mensaje, notas unidas a su paso y los datos de
+Appian: el nodo (documentation), la expresión del temporizador, el proceso llamado (calledElement: su nombre, que no se
+resuelve a un proceso) y la condición de cada flujo (conditionExpression)."""
 import re
 import sys
 from xml.sax.saxutils import escape, quoteattr
 
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 import colocacion
+import drawio_modelo as dm
 
 ELEMENTO = {
     "inicio": "startEvent", "inicio_temporizador": "startEvent", "inicio_mensaje": "startEvent", "fin": "endEvent",
     "temporizador": "intermediateCatchEvent", "mensaje": "intermediateThrowEvent", "intermedio": "intermediateCatchEvent",
-    "error": "intermediateCatchEvent",   # solo si no está en el borde de una tarea (validar lo avisa)
+    "error": "intermediateCatchEvent",   # suelto y con salidas (validar lo avisa); en el borde, boundaryEvent; sin salidas, endEvent
     "exclusiva": "exclusiveGateway", "paralela": "parallelGateway", "inclusiva": "inclusiveGateway",
     "tarea": "userTask", "sistema": "serviceTask", "script": "scriptTask", "manual": "manualTask",
     "subproceso": "subProcess", "llamada": "callActivity",
@@ -81,8 +83,8 @@ def exportar(proc, geo, destino):
     caja = {}
     for pid, (cx, cy, w, h) in geo["pasos"].items():
         caja[pid] = (cx - w / 2 + MARGEN, cy - h / 2, w, h)
-    # un evento unido a una tarea con flujo discontinuo es un evento de borde: el error la interrumpe; un plazo o un
-    # mensaje, no
+    # un evento unido a una tarea con flujo discontinuo es un evento de borde: el error la interrumpe; un plazo, solo si
+    # lleva «interrumpe»; un mensaje, no
     borde = {}
     for f in proc["flujos"]:
         if f["de"] in pasos and f["a"] in pasos and f.get("discontinuo") \
@@ -121,9 +123,12 @@ def exportar(proc, geo, destino):
         proc_xml.append("</bpmn:laneSet>")
     for p in proc["pasos"]:
         tag, extra = ELEMENTO[p["tipo"]], ""
+        if p["tipo"] == "error" and p["id"] not in borde and p["id"] not in sal:
+            tag = "endEvent"   # un error suelto que acaba el proceso: fin de error (no hay evento intermedio de error)
         if p["id"] in borde:
             tag = "boundaryEvent"
-            extra = f' attachedToRef="{_id(borde[p["id"]])}" cancelActivity="{"true" if p["tipo"] == "error" else "false"}"'
+            cancela = p["tipo"] == "error" or (p["tipo"] == "temporizador" and dm.es_si(p.get("interrumpe")))
+            extra = f' attachedToRef="{_id(borde[p["id"]])}" cancelActivity="{"true" if cancela else "false"}"'
         if p["id"] in defecto:
             extra += f' default="{defecto[p["id"]]}"'
         if p["tipo"] == "llamada" and p.get("proceso_llamado"):
@@ -212,7 +217,8 @@ def exportar(proc, geo, destino):
         px, py, pw, ph = caja[n["paso"]]
         a, b = max(x, px), min(x + w, px + pw)          # en vertical por donde se solapan, como en el dibujo
         lx = (a + b) / 2 if a < b else (px + 4 if x < px else px + pw - 4)
-        ruta = [(lx, y + h), (lx, py)] if cy < py else [(lx, y), (lx, py + ph)]
+        sx = min(max(lx, x), x + w)                      # si no se solapan, desde la esquina de la nota
+        ruta = [(sx, y + h), (lx, py)] if cy < py else [(sx, y), (lx, py + ph)]
         di.append(f'<bpmndi:BPMNEdge id="Asociacion_{i}_di" bpmnElement="Asociacion_{i}">{_wps(ruta)}</bpmndi:BPMNEdge>')
 
     nombre = proc.get("proceso") or "Proceso"

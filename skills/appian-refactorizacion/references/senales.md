@@ -40,9 +40,11 @@ los nodos de un proceso y las respuestas de la plataforma (validación, ejecucio
 | Instancias múltiples (MNI) sobre un nodo que acepta listas | tabla de nodos de la ficha | Una escritura por elemento en vez de una con la lista | BP 03 §5 |
 | Proceso con solo script tasks y puertas | tabla de nodos de la ficha | Un proceso donde basta una regla | BP 03 §8 |
 | Mensaje sin proceso destino | ficha del process model, avisos de validación | Se revisan todas las instancias que escuchan | BP 03 §13 |
-| Proceso programado muy frecuente que casi nunca tiene trabajo | `07`, `datos/procesos.json` (`ejecuciones`) | Instancias y memoria sin trabajo que hacer | BP 03 §9 |
+| Proceso programado muy frecuente que casi nunca tiene trabajo | `07`, `datos/procesos.json` (`ejecuciones`) | Instancias y memoria sin trabajo que hacer | BP 03 §13 |
 | Procesos que repiten la misma secuencia o escriben la misma entidad igual | `08-procesos-bpmn/`, `datos/dependencias.json` | Cada cambio hay que hacerlo varias veces | BP 03 §2 |
-| Sin ejecuciones o huérfano | `datos/procesos.json` (`ejecuciones: 0`), `H-ARQ` de `02`, huérfanos de `09` | Código muerto o abandonado que se mantiene igual | BP 11 §8 |
+| Sin ejecuciones o huérfano | `datos/procesos.json` (`ejecuciones: 0`), `H-ARQ` de `02`, huérfanos de `09` | Código muerto o abandonado que se mantiene igual | BP 08 §6; BP 11 §8 |
+| «Cancelar» del formulario de inicio que el proceso no lee (ninguna puerta lleva `pv!cancel` a un fin) | expresiones de la interfaz de inicio y nodos de la ficha del process model | El proceso arranca igual y sigue como si se hubiera enviado | BP 03 §7 |
+| Paso de proceso que se hace siempre, aunque no haga falta | nodos de la ficha del process model, `08-procesos-bpmn/` | Trabajo y esperas que no aportan; qué casos se lo saltan lo decide el negocio (DEC) | BP 03 §5 |
 | Botón con `a!startProcess` para actuar sobre un registro | expresiones de la ficha de la interfaz, `10` | Acciones fuera del record, sin su seguridad | BP 01 §9.2 |
 | Instancias completadas sin archivar (si la trae) | ficha del process model | Memoria del motor | BP 03 §9 |
 
@@ -50,7 +52,7 @@ los nodos de un proceso y las respuestas de la plataforma (validación, ejecucio
 
 | Señal | Dónde se ve en as-is/ | Problema | BP |
 |---|---|---|---|
-| Funciones o componentes deprecados, o versiones antiguas de funciones (`_17r1`, `_22r2`…) | avisos de validación (`09`, ficha `@validation`) | Funcionalidad que Appian retirará | BP 08 §7 |
+| Funciones, componentes o smart services de la lista de deprecados de Appian; una versión antigua (`_17r1`, `_22r2`…), solo si está en esa lista | avisos de validación (`09`, ficha `@validation`), expresiones y nodos de la ficha | Funcionalidad que Appian retirará | BP 08 §7 |
 | Consultas sin paginar (`batchSize: -1`), sin `fields` o dentro de un bucle | expresiones de la ficha | Memoria y lentitud | BP 05 §2 |
 | Consultas o cálculos caros en los parámetros de un componente | expresiones de la ficha | Se recalculan en cada interacción | BP 02 §1.1 |
 | Interfaz de más de 80 KB o con muchas responsabilidades | `H-GEN` de `09`, ficha de la interfaz | Difícil de mantener y de probar | BP 02 §1.3 |
@@ -67,10 +69,13 @@ los nodos de un proceso y las respuestas de la plataforma (validación, ejecucio
 | `a!httpQuery`, `a!httpWrite`, smart services HTTP o conectores deprecados | expresiones de la ficha, `05` | Mecanismos deprecados | BP 07 §1 |
 | Integración sin connected system, o URL completa en la integración o en una constante | `05`, ficha de la integración o de la constante | Configuración por entorno frágil | BP 07 §1 |
 | Connected system hacia otro entorno (un host o una URL de desarrollo o de preproducción) | `H-INT` de `05` | Datos cruzados entre entornos | BP 07 §1 |
-| Connected system sin autenticación | `H-INT` de `05` | Riesgo de seguridad: quien llegue al servicio lo usa | BP 07 §2 |
+| Connected system con autenticación None y secretos en la URL, las cabeceras o el cuerpo de sus integraciones | `H-INT` de `05`, ficha del connected system y de sus integraciones | Secretos sin enmascarar, a la vista y exportados con el objeto | BP 07 §1; BP 06 §7 |
 | Integración sin tiempo de espera, o que modifica datos y está clasificada como consulta | ficha de la integración | Llamadas colgadas o escrituras repetidas | BP 07 §3 |
 | Integración que modifica datos sin tratar el error en el proceso (si la trae) | `05`, `08-procesos-bpmn/` | Fallos que nadie ve | BP 07 §5 |
 | Web API con la lógica dentro o abierta a cualquier usuario | `06` | Difícil de probar y de proteger | BP 07 §6 |
+
+None sin secretos en la llamada no es una REF: el servicio puede no pedir autenticación o protegerse de otro modo (un
+certificado, la red). Si condiciona la solución, es una DEC o un NV.
 
 ## Seguridad
 

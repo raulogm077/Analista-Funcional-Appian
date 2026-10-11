@@ -8,12 +8,8 @@ Uso:
       --realce <hex> --acento <hex> [--principal <hex>] [--secundarios <hex,hex…>] [--logo <svg>] [--logo-claro <svg>]
       [--formas SQUARED|SEMI_ROUNDED|ROUNDED] [--mayusculas si|no] [--tipografia <nombre>] [--sin-perfil-css] <carpeta>
 
-web: descarga la página y las hojas de estilo que enlaza del mismo sitio (el mismo dominio, como www.x.es y
-estaticos.x.es; como mucho --max-css, de 2 MB cada una) y escribe en la salida estándar un JSON con sus colores (los 20
-más usados, sin blancos, negros ni grises; con las variables CSS que los definen y su contraste), su theme-color, sus
-logos (los de la cabecera con «logo» primero; el icono del sitio, al final) y sus tipografías. Con la URL de una hoja de
-estilo, lo mismo de esa hoja. Sin red o sin respuesta, o si la URL es un PDF u otra cosa que no es HTML ni CSS, sale con 2
-y lo dice.
+web: el lector de la web de la empresa, que está en marca_web.py (su docstring dice qué hace): un JSON con sus colores,
+su theme-color, sus logos y sus tipografías.
 
 crear: escribe en <carpeta> (prototipo/ del proyecto, nunca dentro del plugin) brand-<id>.json, el logo junto a él
 (logo-<id>-on-dark.svg y, con --logo-claro, logo-<id>-on-light.svg), perfil-css-<id>.txt (salvo con --sin-perfil-css) y
@@ -24,12 +20,9 @@ si no puede escribir un fichero, diciendo cuáles llegó a escribir.
 Solo biblioteca estándar. Reutiliza contrast(), _lineal() y check_css_profile() de validate.py y css_profile_text(),
 mix_white() y on_color() de build.py.
 """
-import argparse, colorsys, copy, http.client, ipaddress, json, math, os, re, socket, sys
+import argparse, colorsys, copy, json, math, os, re, sys
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
-import urllib.error, urllib.parse, urllib.request
-from collections import Counter
 from datetime import date
-from html.parser import HTMLParser
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -43,13 +36,9 @@ ROOT = Path(__file__).resolve().parent.parent  # la skill
 PLUGIN = ROOT.parents[1] if ROOT.parent.name == "skills" else ROOT
 BLANCO, NEGRO, GRIS_PAGINA, TEXTO = "#FFFFFF", "#000000", "#F4F5F7", "#222222"
 PASO = 0.005                   # paso de luminosidad (HLS) de cada ajuste
-MAX_HOJA = 2 * 1024 * 1024     # bytes de una hoja de estilo
-MAX_PAGINA = 5 * 1024 * 1024   # bytes de la página
-MAX_COLORES = 20
 CASI_IGUAL = 15                # ΔE (CIE76) por debajo del cual dos series de un gráfico no se distinguen
 # fondos estándar de los avisos de Appian (appianStandardColors de schemas/css-profile-properties.json; el perfil no los cambia)
 FONDOS_AVISO = ("success-background-color", "info-background-color", "warn-background-color", "error-background-color")
-UA = "Mozilla/5.0 (compatible; appian-prototipos marca.py)"
 HEX6 = re.compile(r"#[0-9A-Fa-f]{6}")
 FORMAS = ("SQUARED", "SEMI_ROUNDED", "ROUNDED")
 FORMA_UI = {"SQUARED": "Squared", "SEMI_ROUNDED": "Semi-rounded", "ROUNDED": "Rounded"}
@@ -133,23 +122,6 @@ def lab(h):
     return 116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)
 
 
-def neutro(h):
-    """Blanco o negro (luminosidad HLS de 96 % o más, o de 4 % o menos) o gris (saturación por debajo del 10 %)."""
-    _, l, s = hls(h)
-    return l >= 0.96 or l <= 0.04 or s < 0.10
-
-
-# ------------------------------------------------------------------ CSS
-COMENTARIO = re.compile(r"/\*.*?\*/", re.S)
-COLOR = re.compile(r"#[0-9a-fA-F]{3,8}(?![\w-])|\b(?:rgba?|hsla?)\([^()]*\)", re.I)
-IMPORT = re.compile(r"@import\s+(?:url\(\s*)?[\"']?([^\"')\s;]+)", re.I)
-VAR = re.compile(r"var\(\s*(--[\w-]+)")
-VAR_SOLA = re.compile(r"var\(\s*(--[\w-]+)\s*(?:,\s*(.*))?\)")  # un valor que es solo var(--x) o var(--x, respaldo)
-GENERICAS = {"serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui", "ui-serif", "ui-sans-serif",
-             "ui-monospace", "ui-rounded", "emoji", "math", "fangsong", "inherit", "initial", "unset", "revert",
-             "revert-layer", "-apple-system", "blinkmacsystemfont"}
-
-
 def color_hex(t):
     """#RRGGBB de un color CSS (#rgb, #rgba, #rrggbb, #rrggbbaa, rgb(), rgba(), hsl(), hsla()); None si no lo es o es
     transparente del todo."""
@@ -183,349 +155,6 @@ def color_hex(t):
         return None
 
 
-def declaraciones(texto, bloques=True):
-    """(propiedad, valor) de una hoja de estilo, sin selectores ni preludios de @-reglas (solo lo que hay entre una llave
-    y la «}» que la cierra); con bloques=False, de un atributo style."""
-    texto = COMENTARIO.sub(" ", texto)
-    trozos, inicio = [], 0
-    if bloques:
-        for m in re.finditer(r"[{}]", texto):
-            if m.group() == "}":
-                trozos.append(texto[inicio:m.start()])
-            inicio = m.end()
-    else:
-        trozos = [texto]
-    out = []
-    for trozo in trozos:
-        for d in trozo.split(";"):
-            if ":" in d:
-                p, v = (x.strip() for x in d.split(":", 1))
-                if re.fullmatch(r"-?-?[A-Za-z][\w-]*", p):
-                    out.append((p if p.startswith("--") else p.lower(), v))
-    return out
-
-
-def resolver(nombre, defs, nivel=0):
-    """Valor de una variable CSS (su primera definición), siguiendo los var() encadenados."""
-    vals = defs.get(nombre)
-    if not vals or nivel > 5:
-        return None
-    m = VAR_SOLA.fullmatch(vals[0].strip())
-    return (resolver(m.group(1), defs, nivel + 1) or m.group(2)) if m else vals[0].strip()
-
-
-def primera_familia(valor, defs):
-    """La primera familia de un font-family (resuelve var()); None si es genérica o de sistema."""
-    m = VAR_SOLA.fullmatch(valor.strip())
-    if m:
-        valor = resolver(m.group(1), defs) or m.group(2) or ""
-    fam = re.split(r",(?=(?:[^\"']*[\"'][^\"']*[\"'])*[^\"']*$)", valor)[0].strip().strip("\"'").strip()
-    return fam if fam and fam.lower() not in GENERICAS and not fam.lower().startswith("var(") else None
-
-
-def familia_font(valor):
-    """La lista de familias del atajo font (lo que va tras el tamaño y la altura de línea)."""
-    m = re.search(r"(?:^|\s)(?:\d[\w.%]*|xx-small|x-small|small|medium|large|x-large|xx-large|smaller|larger)"
-                  r"(?:\s*/\s*[\w.%-]+)?\s+([^\d\s].*)$", valor.strip(), re.I)
-    return m.group(1) if m else None
-
-
-# ------------------------------------------------------------------ web
-def _es_ip(host):
-    try:
-        ipaddress.ip_address(host)
-        return True
-    except ValueError:
-        return False
-
-
-def _local(host):
-    """Este mismo equipo: localhost o una IP de loopback (127.0.0.1, ::1)."""
-    return host == "localhost" or host.endswith(".localhost") or (_es_ip(host) and ipaddress.ip_address(host).is_loopback)
-
-
-# segundo nivel de los sufijos públicos más usados (empresa.co.uk, empresa.com.es, ministerio.gob.es…): con uno de ellos
-# en la penúltima etiqueta, el dominio son las tres últimas
-SUFIJOS = {"ac", "co", "com", "edu", "go", "gob", "gouv", "gov", "govt", "gv", "int", "ltd", "mil", "ne", "net", "nom", "or",
-           "org", "plc", "sch"}
-
-
-def _base(host):
-    """El dominio de un servidor: sus dos últimas etiquetas (x.es) o tres si la penúltima es un sufijo (empresa.co.uk)."""
-    partes = host.rstrip(".").split(".")
-    return partes[-3:] if len(partes) >= 3 and partes[-2] in SUFIJOS else partes[-2:]
-
-
-def mismo_sitio(a, b):
-    """Mismo servidor, mismo dominio (www.x.es y estaticos.x.es) o este mismo equipo (localhost y 127.0.0.1); otra IP, solo
-    ella misma."""
-    ha, hb = ((urllib.parse.urlsplit(u).hostname or "").lower() for u in (a, b))
-    if ha == hb or (_local(ha) and _local(hb)):
-        return True
-    return not (_es_ip(ha) or _es_ip(hb)) and "." in ha and "." in hb and _base(ha) == _base(hb)
-
-
-def descargar(url, timeout, limite):
-    """(bytes, URL final, charset, tipo): tipo, el Content-Type sin parámetros (None si no lo dice). A este mismo equipo
-    se va sin proxy."""
-    local = _local((urllib.parse.urlsplit(url).hostname or "").lower())
-    opener = urllib.request.build_opener(*([urllib.request.ProxyHandler({})] if local else []))
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html,text/css;q=0.9,*/*;q=0.8"})
-    with opener.open(req, timeout=timeout) as r:
-        tipo = r.headers.get_content_type() if r.headers.get("Content-Type") else None
-        return r.read(limite + 1), r.geturl(), r.headers.get_content_charset(), tipo
-
-
-def texto_de(datos, charset):
-    if not charset:
-        m = re.search(rb"(?:<meta[^>]+charset=|@charset\s+)[\"']?([\w-]+)", datos[:4096], re.I)
-        charset = m.group(1).decode("ascii", "replace") if m else "utf-8"
-    try:
-        return datos.decode(charset, errors="replace")
-    except LookupError:
-        return datos.decode("utf-8", errors="replace")
-
-
-def motivo(e, timeout):
-    r = getattr(e, "reason", e)
-    if isinstance(r, ConnectionRefusedError):
-        return "conexión rechazada (nada responde en esa dirección)"
-    if isinstance(r, socket.gaierror):
-        return "no se encuentra el servidor (sin red o sin DNS)"
-    if isinstance(r, (TimeoutError, socket.timeout)):
-        return f"sin respuesta en {timeout:g} s"
-    return str(r)
-
-
-VACIOS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
-CABECERAS = {"header", "cabecera", "masthead"}
-LOGOS = {"logo", "logos", "logotipo", "logotipos", "logotype", "logotypes"}
-
-
-def palabras(texto):
-    """Las palabras de un atributo, en minúsculas: corta por lo que no es letra (también acentuada) y donde una minúscula va
-    seguida de una mayúscula. site-logo, header__logo, siteLogo y logoImg llevan «logo»; catálogo, logout y blogger, no."""
-    out = set()
-    for trozo in re.findall(r"[^\W\d_]+", texto or ""):
-        palabra = trozo[0]
-        for antes, c in zip(trozo, trozo[1:]):
-            if antes.islower() and c.isupper():
-                out.add(palabra.lower())
-                palabra = ""
-            palabra += c
-        out.add(palabra.lower())
-    return out
-
-
-def dice_logo(texto):
-    """¿Lleva «logo» (o logotipo, logos…) como palabra entera?"""
-    return bool(palabras(texto) & LOGOS)
-
-
-class Pagina(HTMLParser):
-    """Lo que marca.py web lee de la página: hojas y bloques de estilo, atributos style, colores de los SVG en línea,
-    candidatos a logo, iconos del sitio, theme-color y familias de Google Fonts."""
-
-    def __init__(self, url, texto):
-        super().__init__(convert_charrefs=True)
-        self.url, self.texto = url, texto
-        self.inicios = [0] + [m.end() for m in re.finditer("\n", texto)]
-        self.pila, self.hojas, self.estilos, self.atributos_style, self.colores_svg = [], [], [], [], []
-        self.candidatos, self.iconos, self.familias_enlazadas = [], [], []
-        self.theme, self._estilo, self._svg, self._nivel_svg, self.n_svg = None, None, None, 0, 0
-        self.feed(texto)
-        self.close()
-
-    def _pos(self):
-        linea, col = self.getpos()
-        return self.inicios[linea - 1] + col
-
-    def _en_cabecera(self):
-        return any(t == "header" or a.get("role") == "banner" or palabras(f"{a.get('class', '')} {a.get('id', '')}") & CABECERAS
-                   for t, a in self.pila)
-
-    def _pista(self, a):
-        for k in ("src", "alt", "class", "id", "aria-label", "title"):
-            if dice_logo(a.get(k)):
-                return f"«logo» en {k}"
-        for t, x in reversed(self.pila):
-            for k in ("class", "id"):
-                if dice_logo(x.get(k)):
-                    return f"«logo» en {k} de <{t}>"
-        return None
-
-    def _candidato(self, entrada, cabecera):
-        self.candidatos.append((not cabecera, len(self.candidatos), entrada))
-
-    def handle_starttag(self, tag, attrs):
-        a = {k: v or "" for k, v in attrs}
-        if tag == "svg":
-            if self._svg is None:
-                self.n_svg += 1
-                self._svg = (self._pos(), self.n_svg, self._en_cabecera(), self._pista(a))
-                self._nivel_svg = 0
-            else:
-                self._nivel_svg += 1
-        elif tag == "style":
-            self._estilo = []
-        self._comunes(tag, a)
-        if tag not in VACIOS:
-            self.pila.append((tag, a))
-
-    def handle_startendtag(self, tag, attrs):
-        self._comunes(tag, {k: v or "" for k, v in attrs})
-
-    def _comunes(self, tag, a):
-        if a.get("style"):
-            self.atributos_style.append(a["style"])
-        if self._svg is not None:
-            self.colores_svg += [a[k] for k in ("fill", "stroke", "stop-color", "color", "flood-color") if a.get(k)]
-        rel = set((a.get("rel") or "").lower().split())
-        if tag == "img" and a.get("src"):
-            pista, cab = self._pista(a), self._en_cabecera()
-            if pista:
-                self._candidato({"url": urllib.parse.urljoin(self.url, a["src"]), "pista": f"img{' en la cabecera' if cab else ''}; {pista}"}, cab)
-        elif tag == "link" and a.get("href"):
-            href = urllib.parse.urljoin(self.url, a["href"])
-            if "stylesheet" in rel and "alternate" not in rel:
-                self.hojas.append(href)
-            if rel & {"icon", "apple-touch-icon", "mask-icon"}:
-                self.iconos.append({"url": href, "pista": f"icono del sitio (rel=\"{a.get('rel')}\")"})
-            if "fonts.googleapis.com" in href:
-                for fam in urllib.parse.parse_qs(urllib.parse.urlsplit(href).query).get("family", []):
-                    self.familias_enlazadas += [f.split(":")[0].strip() for f in fam.split("|") if f.strip()]
-        elif tag == "meta" and (a.get("name") or "").lower() == "theme-color" and self.theme is None:
-            self.theme = a.get("content")
-
-    def handle_endtag(self, tag):
-        if tag == "style" and self._estilo is not None:
-            self.estilos.append("".join(self._estilo))
-            self._estilo = None
-        if tag == "svg" and self._svg is not None:
-            if self._nivel_svg:
-                self._nivel_svg -= 1
-            else:
-                inicio, n, cab, pista = self._svg
-                fin = self.texto.find(">", self._pos()) + 1
-                if pista:
-                    self._candidato({"url": f"{urllib.parse.urldefrag(self.url)[0]}#svg-{n}",
-                                     "pista": f"svg en línea{' en la cabecera' if cab else ''}; {pista}", "svg": self.texto[inicio:fin]}, cab)
-                self._svg = None
-        for i in range(len(self.pila) - 1, -1, -1):
-            if self.pila[i][0] == tag:
-                del self.pila[i:]
-                break
-
-    def handle_data(self, data):
-        if self._estilo is not None:
-            self._estilo.append(data)
-
-
-def web(url, max_css, timeout):
-    """El JSON de colores, theme-color, logos y tipografías de una web (ver el docstring del módulo)."""
-    def fallo(msg, webfetch=True):
-        print(f"marca.py web: {msg}" + ("\nSi el terminal no puede leer esa web, saca la marca con WebFetch: los colores en hex, la "
-                                        "tipografía y la URL del logo, de la guía de marca o de la web oficial de la empresa." if webfetch else ""),
-              file=sys.stderr)
-        sys.exit(2)
-    if urllib.parse.urlsplit(url).scheme not in ("http", "https"):
-        fallo(f"la URL tiene que empezar por http:// o https://: {url}", webfetch=False)
-    try:
-        datos, final, charset, tipo = descargar(url, timeout, MAX_PAGINA)
-    except urllib.error.HTTPError as e:
-        fallo(f"{url} responde {e.code} ({e.reason})")
-    except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as e:
-        fallo(f"no se pudo descargar {url}: {motivo(e, timeout)}")
-    if tipo == "application/pdf" or datos.startswith(b"%PDF-"):
-        fallo(f"{final} es un PDF ({tipo or 'sin Content-Type'}), no una página web: si es su guía de marca, léelo con la skill de "
-              "PDF y saca de ahí los colores en hex, la tipografía y el logo.", webfetch=False)
-    if tipo not in (None, "text/html", "application/xhtml+xml", "text/css"):
-        fallo(f"{final} es {tipo}, no una página web (HTML) ni una hoja de estilo (CSS).", webfetch=False)
-    if len(datos) > MAX_PAGINA:
-        print(f"Aviso: la página pasa de {MAX_PAGINA // 2 ** 20} MB; se leen los primeros", file=sys.stderr)
-    texto = texto_de(datos[:MAX_PAGINA], charset)
-    css = tipo == "text/css"  # la URL de una hoja de estilo: sus colores y tipografías, sin logos
-    pag = Pagina(final, "" if css else texto)
-    # los bloques <style> (o la hoja) y, en cola, sus @import y las hojas enlazadas (las del mismo sitio, como mucho --max-css)
-    hojas = [(final, t) for t in ([texto] if css else pag.estilos)]
-    cola = [urllib.parse.urljoin(final, m) for _, t in hojas for m in IMPORT.findall(COMENTARIO.sub(" ", t))] + pag.hojas
-    vistas, leidas = set(), 0
-    while cola:
-        u = urllib.parse.urldefrag(cola.pop(0))[0]
-        if u in vistas:
-            continue
-        vistas.add(u)
-        if not mismo_sitio(u, final):
-            print(f"Hoja de otro sitio, sin descargar: {u}", file=sys.stderr)
-            continue
-        if leidas >= max_css:
-            print(f"Hoja sin descargar (--max-css {max_css}): {u}", file=sys.stderr)
-            continue
-        try:
-            d, uf, cs, _ = descargar(u, timeout, MAX_HOJA)
-        except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as e:
-            print(f"Hoja de estilo sin descargar: {u} ({motivo(e, timeout)})", file=sys.stderr)
-            continue
-        leidas += 1
-        if len(d) > MAX_HOJA:
-            print(f"Hoja de estilo de más de 2 MB, sin leer: {u}", file=sys.stderr)
-            continue
-        t = texto_de(d, cs)
-        hojas.append((uf, t))
-        cola += [urllib.parse.urljoin(uf, m) for m in IMPORT.findall(COMENTARIO.sub(" ", t))]
-    decl = [x for _, t in hojas for x in declaraciones(t)] + [x for s in pag.atributos_style for x in declaraciones(s, bloques=False)]
-    defs = {}
-    for p, v in decl:
-        if p.startswith("--"):
-            defs.setdefault(p, []).append(re.sub(r"url\([^)]*\)", "url()", v, flags=re.I))
-    veces, orden, refs, familias = Counter(), {}, Counter(), Counter()
-
-    def cuenta(c, n=1):
-        veces[c] += n
-        orden.setdefault(c, len(orden))
-    for p, v in decl:
-        v = re.sub(r"url\([^)]*\)", "url()", v, flags=re.I)
-        for m in COLOR.finditer(v):
-            c = color_hex(m.group())
-            if c:
-                cuenta(c)
-        for m in VAR.finditer(v):
-            refs[m.group(1)] += 1
-        fam = primera_familia(v, defs) if p == "font-family" else primera_familia(familia_font(v) or "", defs) if p == "font" else None
-        if fam:
-            familias[fam] += 1
-    for v in pag.colores_svg:
-        c = color_hex(v)
-        if c:
-            cuenta(c)
-    variables = {}
-    for nombre in defs:
-        valor = resolver(nombre, defs) or ""
-        c = color_hex(valor) if COLOR.fullmatch(valor.strip()) else None
-        if c:
-            variables.setdefault(c, []).append(nombre)
-            cuenta(c, refs[nombre])
-    for fam in pag.familias_enlazadas:
-        familias[fam] += 1
-    colores = sorted((c for c in veces if not neutro(c)), key=lambda c: (-veces[c], orden[c]))[:MAX_COLORES]
-    tipos, vistas_t = [], set()
-    for fam, _ in sorted(familias.items(), key=lambda x: -x[1]):
-        if fam.lower() not in vistas_t:
-            vistas_t.add(fam.lower())
-            tipos.append(fam)
-    logos, urls = [], set()
-    for entrada in [e for _, _, e in sorted(pag.candidatos, key=lambda x: x[:2])] + pag.iconos:
-        if entrada["url"] not in urls:
-            urls.add(entrada["url"])
-            logos.append(entrada)
-    tema = color_hex(pag.theme) if pag.theme else None
-    json.dump({"url": final,
-               "colores": [{"hex": c, "veces": veces[c], "variables": variables.get(c, []),
-                            "contraste": {"blanco": round(contrast(c, BLANCO), 2), "negro": round(contrast(c, NEGRO), 2)}} for c in colores],
-               "themeColor": tema or pag.theme, "logos": logos, "tipografias": tipos}, sys.stdout, ensure_ascii=False, indent=1)
-    print()
-
-
 # ------------------------------------------------------------------ crear
 def dentro(carpeta, raiz):
     c, r = (Path(os.path.normcase(str(p.resolve()))) for p in (carpeta, raiz))
@@ -556,22 +185,44 @@ def fecha_larga(d):
     return f"{d.day} de {MESES[d.month - 1]} de {d.year}"
 
 
+SERIES = 8                     # series de un gráfico como mucho (chartColorScheme)
+NO_LLEGA, LIMITE = "no llega a 3:1 sobre blanco", f"límite de {SERIES} series"   # por qué un color de la marca se queda fuera
+
+
 def esquema_graficos(marca, estandar):
-    """([(color, origen)], [(color, origen)] de la marca que se quedan fuera): todas las series con 3:1 sobre blanco (WCAG
-    1.4.11), como mucho 8. Primero los colores de la marca, sin repetir; después los de la estándar que no se parecen a
-    ninguno de ellos (ΔE de CASI_IGUAL o más). El ΔE nunca quita un color de la marca."""
+    """([(color, origen)], [(color, origen, motivo)] de la marca que se quedan fuera): todas las series con 3:1 sobre
+    blanco (WCAG 1.4.11), como mucho SERIES. Primero los colores de la marca, sin repetir; después los de la estándar que no
+    se parecen a ninguno de ellos (ΔE de CASI_IGUAL o más). El ΔE nunca quita un color de la marca; uno que no llega a 3:1
+    o que no cabe en las SERIES, sí, y va en la segunda lista con el motivo."""
     out, fuera = [], []
     for c, origen in marca:
         if contrast(c, BLANCO) < 3:
-            fuera.append((c, origen))
+            fuera.append((c, origen, NO_LLEGA))
         elif all(c != o for o, _ in out):
             out.append((c, origen))
+    fuera += [(c, origen, LIMITE) for c, origen in out[SERIES:]]
     propios = [c for c, _ in out]
     for c in estandar:
         c = c.upper()
         if contrast(c, BLANCO) >= 3 and c not in propios and all(math.dist(lab(c), lab(o)) >= CASI_IGUAL for o in propios):
             out.append((c, "estándar"))
-    return out[:8], list(dict.fromkeys(fuera))
+    return out[:SERIES], list(dict.fromkeys(fuera))
+
+
+def fuera_por_motivo(fuera, como, junta=", ".join):
+    """«Fuera, por <motivo>: …» de cada motivo, con cada color escrito con `como(color, origen)` y unidos con `junta`."""
+    return [f"Fuera, por {'no llegar a 3:1 sobre blanco' if motivo == NO_LLEGA else 'el ' + motivo}: "
+            + junta([como(c, o) for c, o, m in fuera if m == motivo]) + "."
+            for motivo in (NO_LLEGA, LIMITE) if any(m == motivo for _, _, m in fuera)]
+
+
+def supuesto(nombre, fuente, hoy):
+    """El $assumption de la app para una marca: de dónde sale y cuándo. Si --fuente ya acaba en una fecha (larga, ISO o
+    dd/mm/aaaa), no se añade la de hoy."""
+    fuente = fuente.strip().rstrip(".").strip()
+    fecha = rf"(?:\d{{1,2}} de (?:{'|'.join(MESES)}) de \d{{4}}|\d{{4}}-\d{{2}}-\d{{2}}|\d{{1,2}}/\d{{1,2}}/\d{{4}})"
+    cuando = "" if re.search(fecha + r"$", fuente) else f" el {fecha_larga(hoy)}"
+    return f"Marca de {nombre} sacada de {fuente}{cuando}; falta que la confirme el cliente"
 
 
 def sombra_tarjeta(color):
@@ -729,9 +380,9 @@ def crear(a):
     components["primaryButton"]["color"] = principal or "ACCENT"
     components["primaryButton"]["_uso"] = "Un único botón SOLID por pantalla: la acción más frecuente" + ("" if principal else ". ACCENT, el acento de la marca")
     components["chartColorScheme"] = [c for c, _ in graf]
-    components["_chartColorScheme"] = ("Series en este orden: primero los colores de la marca y después los de la marca estándar que no se parecen a "
-                                       "ninguno de ellos; todas con 3:1 o más sobre blanco (WCAG 1.4.11)." +
-                                       (" Fuera, por no llegar a 3:1: " + ", ".join(f"{c} ({o})" for c, o in graf_fuera) + "." if graf_fuera else ""))
+    components["_chartColorScheme"] = " ".join(["Series en este orden: primero los colores de la marca y después los de la marca estándar que no se "
+                                                "parecen a ninguno de ellos; todas con 3:1 o más sobre blanco (WCAG 1.4.11), como mucho 8."]
+                                               + fuera_por_motivo(graf_fuera, lambda c, o: f"{c} ({o})"))
     typeface = {"prototype": "Open Sans",
                 "appian": (f"La tipografía de {a.nombre} es {tip}. En Appian se sube en Admin Console > Branding > Typefaces (WOFF2, WOFF, OTF o TTF, "
                            "pesos 300, 400, 600 y 700) y, desde 26.5, se elige en el perfil CSS del site; sin perfil CSS, se pone como tipografía "
@@ -795,9 +446,7 @@ def crear(a):
         print(f"Aviso: {x}")
     print("\n".join(f"OK → {carpeta / n}{nota}" for n, nota in escritos))
     print(f"Siguiente: validate.py y build.py con --brand {a.id} (app.json en {carpeta}) y contrast_audit.py sobre el HTML.")
-    # la fecha de hoy al final de la fuente no se repite: «sacada de su web el 8 de octubre de 2026»
-    fuente = re.sub(rf",?\s*(?:el\s+)?{re.escape(fecha_larga(hoy))}$", "", a.fuente.strip().rstrip(".")).strip() or a.fuente.strip()
-    print(f"$assumption de app: «Marca de {a.nombre} sacada de {fuente} el {fecha_larga(hoy)}; falta que la confirme el cliente»")
+    print(f"$assumption de app: «{supuesto(a.nombre, a.fuente, hoy)}»")
 
 
 def guia_md(a, brand, graf, graf_fuera, ajustes, avisos, logo, logo_claro, peor, tip, hoy):
@@ -875,10 +524,10 @@ def guia_md(a, brand, graf, graf_fuera, ajustes, avisos, logo, logo_claro, peor,
     L += ["", "Etiquetas con texto `STANDARD` sobre su fondo (4,5:1 o más); como mucho dos colores no neutros por grid; nunca el color solo."]
     L += ["", "## Gráficos", "", "Series en este orden (`chartColorScheme`):", ""]
     L += [f"{i}. `{c}` · {o} · {contr(c)} sobre blanco" for i, (c, o) in enumerate(graf, 1)]
-    L += ["", "Todas llegan a 3:1 sobre blanco (WCAG 1.4.11): primero los colores de la marca y después los de la estándar que no se parecen "
-          "a ninguno de ellos. Un gráfico usa como mucho 5 colores y lleva su tabla."]
-    if graf_fuera:
-        L += ["", "Fuera, por no llegar a 3:1 sobre blanco: " + y([f"`{c}` ({o}, {contr(c)})" for c, o in graf_fuera]) + "."]
+    L += ["", f"Todas llegan a 3:1 sobre blanco (WCAG 1.4.11), como mucho {SERIES}: primero los colores de la marca y después los de la estándar "
+          "que no se parecen a ninguno de ellos. Un gráfico usa como mucho 5 colores y lleva su tabla."]
+    for linea in fuera_por_motivo(graf_fuera, lambda c, o: f"`{c}` ({o}, {contr(c)})", y):
+        L += ["", linea]
     L += ["", "## Tipografía", "", "| Dónde | Tipografía |", "|---|---|", f"| Marca | {tip or 'Sin dato: pendiente'} |",
           "| Prototipo | Open Sans, la que lleva el kit |",
           "| Appian | " + (f"{tip}: se sube en Admin Console › Branding › Typefaces (WOFF2, WOFF, OTF o TTF, pesos 300, 400, 600 y 700) y, "
@@ -902,14 +551,18 @@ def guia_md(a, brand, graf, graf_fuera, ajustes, avisos, logo, logo_claro, peor,
     # lo que se comprueba, y nada más: la guía no dice «AA» de lo que no se ha medido
     hecho = ["El oscuro con texto blanco: 4,5:1.", "El realce sobre el oscuro: 3:1.",
              "El acento sobre blanco, sobre el gris de página y sobre los fondos de aviso de Appian: 4,5:1."]
-    if pal.get("principal"):
-        hecho.append("El botón principal sobre esos mismos fondos, 3:1, y su texto, 4,5:1.")
+    # el color del texto de un botón SOLID lo elige Appian: se dice cuál pone el prototipo y con cuánto contraste
+    t, r = texto_sobre(pal.get("principal") or pal["accent"])
+    texto = (f"el color de su texto lo elige Appian (en el prototipo, {'blanco' if t == BLANCO else 'casi negro ' + t}, con "
+             f"{razon(r)}:1).")
+    hecho.append(f"El botón principal sobre esos mismos fondos: 3:1; {texto}" if pal.get("principal") else
+                 f"El acento, que hace de botón principal: {texto}")
     hecho += ["El texto secundario (`slate`), 4,5:1, y las líneas que deben verse (`lineStrong`), 3:1, sobre blanco y sobre el gris de página.",
               "El texto de cada etiqueta de estado sobre su fondo: 4,5:1."]
     if cp:
         hecho.append("Con el perfil, los colores de estado sobre blanco y sobre su fondo y los textos de los campos: 4,5:1.")
     hecho.append("Las series de los gráficos sobre blanco: 3:1.")
-    sin_medir = (["Los colores secundarios en las barras decorativas (en los gráficos solo van si llegan a 3:1)."] if any(k.startswith("secundario") for k in pal) else []) \
+    sin_medir = ([f"Los colores secundarios en las barras decorativas (en los gráficos solo van si llegan a 3:1 y caben en las {SERIES} series)."] if any(k.startswith("secundario") for k in pal) else []) \
         + (["El logo, salvo su color con menos contraste sobre el oscuro (ver «Logo»)."] if logo else [])
     L += ["", "## Ajustes de contraste", "", "Comprobado con WCAG 2.2 AA, con estos mínimos:", ""] + [f"- {x}" for x in hecho]
     if sin_medir:
@@ -962,6 +615,7 @@ def main():
     a = ap.parse_args()
     utf8_stdio()
     if a.orden == "web":
+        from marca_web import web
         web(a.url, a.max_css, a.timeout)
     else:
         crear(a)

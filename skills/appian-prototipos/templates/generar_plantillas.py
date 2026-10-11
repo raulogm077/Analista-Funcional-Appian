@@ -6,6 +6,7 @@ Uso: python3 generar_plantillas.py        (escribe en esta carpeta)"""
 import datetime, json, sys
 from pathlib import Path
 HERE = Path(__file__).resolve().parent
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 sys.path.insert(0, str(HERE.parent / "scripts"))
 from sail_helpers import *  # noqa: E402,F401
 

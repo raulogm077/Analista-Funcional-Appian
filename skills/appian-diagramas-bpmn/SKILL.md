@@ -1,6 +1,6 @@
 ---
 name: appian-diagramas-bpmn
-description: "Dibuja y mantiene los diagramas de proceso BPMN del proyecto en draw.io (fichero .drawio editable, con carriles por perfil) y su PNG para el documento, sin conexión. Úsala para crear o cambiar el diagrama de un proceso, dibujar el proceso de una aplicación existente, revisar qué se cambió a mano en draw.io (por ejemplo, en una reunión con el usuario), leer un .drawio o exportar un proceso a BPMN 2.0. La usan appian-functional-analyst (procesos del análisis) y appian-reverse-engineering (procesos de una aplicación existente, que los lee de la aplicación si no están extraídos). No decide qué contiene el proceso: si sale de reuniones o documentos, primero lo describe appian-functional-analyst."
+description: "Dibuja y mantiene los diagramas de proceso BPMN del proyecto en draw.io (fichero .drawio editable, con carriles por perfil) y su PNG para el documento, sin conexión. Úsala para crear o cambiar el diagrama de un proceso, dibujar el proceso de una aplicación existente, revisar qué se cambió a mano en draw.io (por ejemplo, en una reunión con el usuario), leer un .drawio o exportar un proceso a BPMN 2.0. La usan appian-functional-analyst (procesos del análisis) y appian-reverse-engineering (procesos de una aplicación existente, que los lee de la aplicación si no están extraídos). No decide qué contiene el proceso: si sale de reuniones o documentos, primero lo describe appian-functional-analyst, que hace también los diagramas de estados y de datos del funcional."
 ---
 
 # Diagramas de proceso BPMN
@@ -70,7 +70,7 @@ Es un JSON con un paso y un flujo por línea:
 | `inicio_mensaje` | El proceso arranca al recibir un aviso | `EV-nn` |
 | `fin` | Evento de fin | `EV-nn` |
 | `temporizador` | Espera o plazo | `EV-nn` |
-| `mensaje` | Aviso que se envía | `EV-nn` |
+| `mensaje` | Aviso que se envía como paso propio (ver «Avisos») | `EV-nn` |
 | `intermedio` | Otro evento intermedio | `EV-nn` |
 | `error` | Error que interrumpe la tarea en la que salta | `EV-nn` |
 
@@ -84,7 +84,7 @@ Es un JSON con un paso y un flujo por línea:
 
 **Notas.** Cada nota de `notas` va unida a su paso con una línea de puntos y sale en el PNG: úsalas para señalar algo que quien lee el diagrama no debe pasar por alto (un riesgo, una duda pendiente).
 
-**Tramos.** `"tramos": true` es para un proceso que ya existe y no se puede partir en subprocesos, porque no los tiene (ingeniería inversa). Si no cabe en una página (1.600 px de ancho), se dibuja en tramos: una página del `.drawio` por tramo, con capas seguidas del flujo, y un PNG por tramo. Cada flujo que pasa de un tramo a otro se corta con un par de eventos de enlace: «Sigue en el tramo N: <paso>» en el tramo de origen y «Viene del tramo M» en el de destino. Los enlaces son del dibujo, no del proceso: `leer`, `comparar` y `bpmn` los deshacen y el `.bpmn` es uno, con todos los pasos. Un plazo o un error va en el tramo de su tarea. Si cabe en una página, no se parte. `crear` y `actualizar` dicen qué pasos lleva cada tramo, una línea por tramo («tramo N: <primer paso> – <último paso> (K pasos)»), y el nombre de cada página dice lo mismo.
+**Tramos.** `"tramos": true` es para un proceso que ya existe y no se puede partir en subprocesos, porque no los tiene (ingeniería inversa). Si no cabe en una página (1.600 px de ancho), se dibuja en tramos: una página del `.drawio` por tramo, con capas seguidas del flujo, y un PNG por tramo. Cada flujo que pasa de un tramo a otro se corta con un par de eventos de enlace: «Sigue en el tramo N: <paso>» en el tramo de origen y «Viene del tramo M» en el de destino. Los enlaces son del dibujo, no del proceso: `leer`, `comparar` y `bpmn` los deshacen y el `.bpmn` es uno, con todos los pasos. Un plazo o un error va en el tramo de su tarea. Si cabe en una página, no se parte. `crear` y `actualizar` dicen qué pasos lleva cada tramo, una línea por tramo («tramo N: <primer paso> – <último paso> (K pasos)»), y el nombre de cada página dice lo mismo (también tras aceptar un paso renombrado a mano).
 
 **Posición.** `"posicion": [x, y]` en un paso es opcional. Solo la usa ingeniería inversa, cuando lee de Appian dónde está cada nodo, y tiene que venir en todos los pasos para que se use.
 
@@ -97,7 +97,7 @@ Es un JSON con un paso y un flujo por línea:
 {"de": "GW-01", "a": "ACT-02", "etiqueta": "Sí", "condicion": "pv!completa"}
 ```
 
-No se ven en el dibujo: en draw.io están en «Editar datos» del paso o del flujo, y `comparar` lista los que se cambien ahí. En el BPMN, `nodo` va en `documentation` («nodo 7»), `proceso_llamado` en `calledElement`, `condicion` en `conditionExpression` y `temporizador` en `timeCycle` (en `timeDuration` si es una duración ISO 8601, como `P10D`, y en `timeDate` si es una fecha y hora).
+No se ven en el dibujo: en draw.io están en «Editar datos» del paso o del flujo, y `comparar` lista los que se cambien ahí. En el BPMN, `nodo` va en `documentation` («nodo 7»), `proceso_llamado` en `calledElement` (es el nombre del proceso llamado, con `_` en lugar de espacios y signos, no la referencia a un proceso: la otra herramienta no lo resuelve), `condicion` en `conditionExpression` y `temporizador` en `timeCycle` (en `timeDuration` si es una duración ISO 8601, como `P10D`, y en `timeDate` si es una fecha y hora).
 
 ## Órdenes
 
@@ -106,7 +106,7 @@ No se ven en el dibujo: en draw.io están en «Editar datos» del paso o del flu
 ```bash
 python3 <skill>/scripts/diagrama.py validar proceso.json                     # comprueba el JSON
 python3 <skill>/scripts/diagrama.py crear proceso.json -o analisis/diagramas/ # .drawio + .png + .json
-python3 <skill>/scripts/diagrama.py actualizar X.drawio cambios.json          # cambios del análisis
+python3 <skill>/scripts/diagrama.py actualizar X.drawio cambios.json          # cambios del análisis (temporal, fuera de <p>)
 python3 <skill>/scripts/diagrama.py comparar X.drawio [--aceptar] [--json]   # qué se cambió a mano
 python3 <skill>/scripts/diagrama.py leer X.drawio [--posiciones]             # el proceso en JSON
 python3 <skill>/scripts/diagrama.py png X.drawio                             # regenera el PNG
@@ -123,7 +123,7 @@ Códigos de salida:
 - un paso no tiene entrada o salida, o sale un flujo de un fin;
 - una decisión tiene salidas sin etiqueta (salvo la de por defecto) o más de un flujo por defecto;
 - un código no corresponde a su tipo;
-- un `error` no está unido a su tarea con un flujo discontinuo, o un dato de Appian está en un paso de otro tipo;
+- un `error` con salidas no está unido a su tarea con un flujo discontinuo, un dato de Appian está en un paso de otro tipo o `interrumpe` no va en un temporizador unido a su tarea;
 - un participante externo no tiene flujos de mensaje;
 - hay más de 20 tareas (salvo con `tramos`).
 
@@ -135,7 +135,7 @@ Códigos de salida:
 
 ## Cambiar un proceso
 
-Pasa solo los cambios, que gasta muchos menos tokens que repetir el proceso entero:
+Pasa solo los cambios, que gasta muchos menos tokens que repetir el proceso entero. El fichero de cambios es temporal: va fuera de `<p>` (en la carpeta temporal del sistema o la de la sesión) y no se guarda; lo que queda del cambio es `X.json`.
 
 ```json
 {"cambios": [
@@ -202,9 +202,9 @@ Mientras haya cambios hechos a mano sin aceptar, `actualizar` se niega a tocar e
 - **Puertas exclusivas:** una pregunta cerrada («¿Completa?») y cada salida con su etiqueta.
 - **Inicio y fin:** un inicio por proceso y un fin por cada resultado de negocio («Solicitud denegada», «Autorización emitida»).
 - **Arranque:** `inicio_temporizador` si el proceso arranca solo a una hora o cada cierto tiempo (el nombre dice cuándo: «Cada día a las 08:00»); `inicio_mensaje` si arranca al recibir un aviso.
-- **Plazos:** un `temporizador` unido a la tarea que vigila con un flujo discontinuo. Al exportar a BPMN pasa a ser un evento de borde de esa tarea, que no la interrumpe.
-- **Errores:** un `error` unido igual a la tarea en la que salta, y de él, el camino que se sigue. En el BPMN es un evento de borde que la interrumpe.
-- **Avisos:** un `mensaje` en el carril «Aplicación». Si el aviso va a un sistema u organismo externo, un flujo de mensaje desde el paso que lo envía hasta el participante externo. Si después del aviso no pasa nada más, la rama acaba en un `fin`.
+- **Plazos:** un `temporizador` unido a la tarea que vigila con un flujo discontinuo. Al exportar a BPMN pasa a ser un evento de borde de esa tarea, que no la interrumpe (en el dibujo, con borde discontinuo). Si al vencer cancela la tarea, `"interrumpe": true` en el temporizador: borde continuo y, en el BPMN, `cancelActivity`. En draw.io va en «Editar datos» del temporizador (`interrumpe` = 1).
+- **Errores:** un `error` unido igual a la tarea en la que salta, y de él, el camino que se sigue. En el BPMN es un evento de borde que la interrumpe. Un `error` suelto y sin salidas se dibuja y se exporta como un fin de error.
+- **Avisos:** un aviso a un perfil del proceso no se dibuja: ya está en la tabla de avisos (AV) y en el paso que lo envía. Uno a un sistema u organismo externo es un flujo de mensaje desde la tarea que lo envía hasta el participante externo. Así ningún aviso añade una columna al diagrama. Un `mensaje` solo va si el proceso que ya existe lo tiene como paso propio (ingeniería inversa).
 - **Tamaño:** con más de 20 tareas, se parte en subprocesos. El proceso principal usa `subproceso` y cada subproceso tiene su diagrama. Un proceso que ya existe sin subprocesos no se parte en subprocesos inventados: va con `"tramos": true`.
 - **Notas:** las explicaciones van en el paso a paso del documento; en `notas`, solo lo que hay que ver en el propio diagrama. Una nota suelta que se deje en draw.io también sale en el PNG: bórrala si no debe verla el cliente.
 
@@ -230,7 +230,7 @@ python3 <skill>/scripts/mermaid.py <carpeta>/*.mmd --check                # solo
 python3 <skill>/scripts/mermaid.py --md documento.md [otro.md …]          # valida los bloques mermaid de un Markdown
 ```
 
-- Sale con 1 si un diagrama tiene un error de sintaxis (con `--md`, dice en qué línea del documento empieza el bloque) y con 2 si falta Playwright o un navegador.
+- Sale con 1 si un diagrama tiene un error de sintaxis (con `--md`, dice en qué línea del documento empieza el bloque) o la orden está mal (sin ningún `.mmd` ni `--md`), y con 2 si falta Playwright o un navegador.
 - Avisa de los que miden más de 1.600 px de ancho: se ponen de arriba abajo o se parten.
 - Solo escribe en la carpeta de salida (`-o`, o la de cada `.mmd`) y no deja temporales.
 - El SVG lleva las etiquetas como HTML: se ve bien en un navegador (una web, un dashboard), no en Word ni en un PDF. Ahí va el PNG.

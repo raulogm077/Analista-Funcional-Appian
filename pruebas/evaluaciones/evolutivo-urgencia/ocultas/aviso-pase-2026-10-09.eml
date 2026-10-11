@@ -1,0 +1,15 @@
+From: Sistemas - Cambios urgentes <cambios.urgentes@example.org>
+To: Marcos Llorente Vidal <proyecto.solicitudes@example.org>
+Cc: Clara Ibáñez Rey <analisis.solicitudes@example.org>
+Date: Fri, 09 Oct 2026 08:10:00 +0200
+Subject: HF-2026-007 desplegado en producción (DEM Gestión de Solicitudes)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+
+El cambio urgente HF-2026-007 se desplegó en producción el 8 de octubre a las 22:30, sin incidencias: la validación del importe en DEM_SolicitudForm, un solo objeto, desde el entorno de corrección.
+
+El entorno de corrección queda con el mismo paquete que producción. La vuelta atrás (DEM_SolicitudForm del PASE-2026-031) no ha hecho falta.
+
+Comprobación en producción: Servicios generales ha enviado esta mañana una solicitud de 1.250,00 € sin error, y las 35 que estaban paradas ya están enviadas.
+
+Sistemas - Cambios urgentes

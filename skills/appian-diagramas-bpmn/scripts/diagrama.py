@@ -54,7 +54,7 @@ def _limpio(proc, geo=None):
     se pide, con posiciones."""
     pasos = []
     for p in proc["pasos"]:
-        q = {**{k: p[k] for k in ("id", "tipo", "carril", "nombre")}, **dm.datos(p, dm.DATOS_PASO)}
+        q = {**{k: p[k] for k in ("id", "tipo", "carril", "nombre")}, **dm.datos_json(p, dm.DATOS_PASO)}
         if geo is not None and p["id"] in geo["pasos"]:
             q["posicion"] = [round(v) for v in geo["pasos"][p["id"]][:2]]
         pasos.append(q)
@@ -452,6 +452,17 @@ class Editor:
         if dm.datos(nuevo, dm.DATOS_PASO) != dm.datos(antes, dm.DATOS_PASO):
             self.f.poner_datos(el, cell, nuevo, dm.DATOS_PASO)
 
+    def contornos(self):
+        """El borde de cada evento que puede ir en el de una tarea según donde va ahora (dm.contornos), tras cambiar
+        tipos, datos o flujos. Devuelve si ha cambiado alguno."""
+        cambiado = False
+        for pid, nuevo in dm.contornos(self.proc).items():
+            _, cell = self._cell(pid)
+            if nuevo and dm._estilo(cell.get("style")).get("outline") != nuevo:
+                cell.set("style", dm.con_contorno(cell.get("style") or "", nuevo))
+                cambiado = True
+        return cambiado
+
     def _limpiar_puntos(self, pid):
         for el, cell in self.f.celdas():
             if cell.get("edge") == "1" and pid in (cell.get("source"), cell.get("target")):
@@ -553,20 +564,34 @@ class Editor:
         self.recargar()
 
     def anadir_nota(self, n):
-        """Una nota nueva encima de su paso (debajo si no cabe en el carril), unida a él. En horizontal, dentro del
-        carril: sin pisar su cabecera y, si no cabe a la derecha, los carriles se ensanchan."""
+        """Una nota nueva junto a su paso, unida a él, en el lado que elige la colocación (colocacion.lados_nota: el que no
+        usan su etiqueta ni sus flujos); si no cabe en el carril, en el otro. En horizontal, dentro del carril: sin pisar
+        su cabecera y, si no cabe a la derecha, los carriles se ensanchan."""
         paso = next(q for q in self.proc["pasos"] if q["id"] == n["paso"])
         cx, cy = self.centro(n["paso"])
         pw, h = dm.TAM[paso["tipo"]]
         alto, ancho = colocacion.alto_nota(n.get("texto")), colocacion.ancho_nota(n.get("texto"))
         lx, ly = self._origen(self.carril_id(paso["carril"]))
         x, y, w, hc = self.carril_caja(paso["carril"])
-        nx = max(cx - ancho / 2, x + dm.CABECERA + 6)
+        etiquetas = self.geo.get("etiquetas", {})
+        usados = colocacion.lados_usados(self.proc, self.geo)
+        lado, desplazamiento = colocacion.lados_nota({"notas": [n]}, usados, etiquetas)[0]
+        nx = max(colocacion.x_nota(cx, desplazamiento, ancho), x + dm.CABECERA + 6)
         if nx + ancho > x + w - 6:
             self._ensanchar(nx + ancho - (x + w - 6))
             self.recargar()
-        arriba = cy - h / 2 - colocacion.NOTA_HUECO - alto >= y + 4
-        ny = cy - h / 2 - colocacion.NOTA_HUECO - alto if arriba else cy + h / 2 + colocacion.NOTA_HUECO
+
+        def arriba_de(lado_):
+            """y de la nota en ese lado: pegada a su paso si va al lado de la etiqueta; si no, pasada la etiqueta."""
+            etiqueta = colocacion.alto_texto(paso.get("nombre")) + 2 if etiquetas.get(n["paso"]) == lado_ else 0
+            hueco = 0 if desplazamiento.startswith("fuera") else colocacion.NOTA_HUECO + etiqueta
+            return cy - h / 2 - hueco - alto if lado_ == "arriba" else cy + h / 2 + hueco
+        cabe = lambda lado_: y + 4 <= arriba_de(lado_) and arriba_de(lado_) + alto <= y + hc - 4   # noqa: E731
+        otro = "abajo" if lado == "arriba" else "arriba"
+        if not cabe(lado) and cabe(otro) and etiquetas.get(n["paso"]) != otro:
+            lado = otro
+        arriba = lado == "arriba"
+        ny = arriba_de(lado)
         nid = self._id_libre("NOTA-")
         cell = ET.SubElement(self.f.root, "mxCell", {"id": nid, "value": n.get("texto", ""), "style": dm.ESTILO_NOTA,
                                                      "vertex": "1", "parent": self.carril_id(paso["carril"])})
@@ -737,6 +762,7 @@ def aplicar(editor, nuevo):
             editor.anadir_nota(n)
     editor.reajustar_mensajes()
     editor.recargar()
+    editor.contornos()
     # 6. carriles vacíos
     for c in quitados:
         if c in editor.geo["carriles"] and not editor.quitar_carril(c):
@@ -748,6 +774,7 @@ def aplicar(editor, nuevo):
             editor.f.poner_etiqueta(el, cell, nuevo["proceso"])
         elif editor.f.diagram is not None:
             editor.f.diagram.set("name", nuevo["proceso"])
+    dm.renombrar_tramos(editor.f, nuevo)   # en tramos, cada página con los pasos que lleva ahora
     return avisos
 
 
@@ -764,7 +791,9 @@ def recolocar(editor, nuevo, drawio):
     for el, cell in editor.f.celdas():
         cid = el.get("id")
         if cid in tipos_antes and tipo_nuevo.get(cid) == tipos_antes[cid] and antes.get(cid):
-            cell.set("style", dm.con_lado(antes[cid], lados.get(cid)))   # el lado de la etiqueta es el nuevo
+            # el lado de la etiqueta y el borde de un evento que puede ir en el de una tarea son los nuevos
+            contorno = dm._estilo(cell.get("style")).get("outline") if tipo_nuevo[cid] in dm.BORDE else None
+            cell.set("style", dm.con_contorno(dm.con_lado(antes[cid], lados.get(cid)), contorno))
         if cell.get("vertex") == "1" and "swimlane" in (cell.get("style") or "") and carril_estilo.get(cell.get("value")):
             cell.set("style", carril_estilo[cell.get("value")])
     editor.recargar()
@@ -803,17 +832,19 @@ def actualizar(a):
         avisos = aplicar(ed, nuevo)
         avisos.append("se ha respetado la colocación hecha a mano en draw.io; lo nuevo va junto a su paso anterior "
                       "(para recolocar todo el diagrama: --recolocar)")
-    # se escribe al lado, se comprueba y solo entonces sustituye al original
+    # se escribe al lado, se comprueba y solo entonces sustituye al original; si algo falla, el provisional no se queda
     provisional = drawio.with_name(drawio.name + ".tmp")
-    ed.f.guardar(str(provisional))
-    comprobado, _, _ = dm.leer(str(provisional))
-    dif = dm.comparar(nuevo, comprobado)
-    if dif:  # no debería pasar: el dibujo no refleja el proceso pedido; el original queda intacto
-        provisional.unlink()
-        print("ERROR: no he cambiado nada; el resultado no coincidía con el proceso pedido:\n  "
-              + "\n  ".join(t for _, t in dif), file=sys.stderr)
-        return 1
-    os.replace(provisional, drawio)
+    try:
+        ed.f.guardar(str(provisional))
+        comprobado, _, _ = dm.leer(str(provisional))
+        dif = dm.comparar(nuevo, comprobado)
+        if dif:  # no debería pasar: el dibujo no refleja el proceso pedido; el original queda intacto
+            print("ERROR: no he cambiado nada; el resultado no coincidía con el proceso pedido:\n  "
+                  + "\n  ".join(t for _, t in dif), file=sys.stderr)
+            return 1
+        os.replace(provisional, drawio)
+    finally:
+        provisional.unlink(missing_ok=True)
     for av in avisos:
         print(f"aviso: {av}")
     _escribir_json(nuevo, js, drawio, automatica=automatica)
@@ -892,6 +923,9 @@ def comparar(a):
         antes = (base or {}).get("colocacion") or {}
         sigue_auto = antes.get("modo") == "automatica" and antes.get("huella") == ed.f.huella()
         aceptado = dict(ed.proc, tramos=True) if (base or {}).get("tramos") else ed.proc
+        # un paso renombrado a mano cambia el nombre de la página de su tramo, y un dato o un flujo, el borde de un evento
+        if dm.renombrar_tramos(ed.f, aceptado) | ed.contornos():
+            ed.f.guardar()
         _escribir_json(aceptado, js, drawio, automatica=sigue_auto)
         print(f"Aceptado: {js.name} actualizado.")
         return 0 if _imagen(drawio) else 2

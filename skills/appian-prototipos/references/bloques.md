@@ -13,7 +13,7 @@ marca del prototipo (`references/marca.md`).
 Uso en un `generar_app.py`:
 
 ```python
-import sys; sys.path.insert(0, r"<KIT>/scripts")
+import sys; sys.dont_write_bytecode = True; sys.path.insert(0, r"<KIT>/scripts")
 from sail_helpers import *
 ```
 

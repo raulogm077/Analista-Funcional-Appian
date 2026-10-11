@@ -113,8 +113,41 @@ def test_build_summary_contract(built):
     assert s["meta"]["coverage"]["objects"] == 31 and s["meta"]["coverage"]["withDefinition"] == 29
     assert {"DEM_ERP_API_TOKEN", "DEM_CS_ERP"} <= set(s["secrets"]["objects"])
     assert any(x["type"] == "processModelsWithoutExecutions" for x in s["signals"])
+    assert not any(x["type"] == "sinPrefijo" for x in s["signals"])     # en DEM todo lleva el prefijo
     assert s["findings"] == []                                        # sin registro todavia
     assert s["usage"][0]["name"] == "DEM Alta Solicitud" and s["usage"][0]["executions"] == 120
+
+
+def test_solo_las_respuestas_del_ultimo_extract(project):
+    """De la carpeta de cada objeto entra solo <herramienta>.json de las herramientas que usó el último extract: ni la
+    copia de conflicto de OneDrive (…-PC.json), aunque sea mayor que la buena, ni la respuesta de una herramienta que
+    ya no se usa (un getAiAgent.json de 0.7.0-alpha.1 en una aplicación sin agentes de IA). Tampoco en _app/."""
+    import json
+    import fixture_mal_hecha
+    from rutas import carpeta_objeto, work_dir
+    project.add_devmcp(mode="readonly", MOCK_APP="fixture_mal_hecha", LCP_URL="https://pre.mnt.example.org")
+    project.run("extract", "--app", "MNT", "--out", str(project.out), "--retry-delay", "0.1", check=0)
+    panel = fixture_mal_hecha.build()[0]["I_PANEL"]
+    raw = work_dir(project.out) / "mcp_raw"
+    carpeta = carpeta_objeto(raw, "interface", panel["uuid"])
+    buena = json.loads((carpeta / "getInterface.json").read_text(encoding="utf-8"))
+    expresion = buena["response"]["expression"]
+    copia = {**buena, "response": {**buena["response"], "expression": expresion + "\n" + expresion}}   # mayor: ganaría
+    (carpeta / "getInterface-PC.json").write_text(json.dumps(copia), encoding="utf-8")
+    (carpeta / "getAiAgent.json").write_text(json.dumps(
+        {"_meta": {"tool": "getAiAgent", "role": "definition", "ok": False, "error": "Object is not of type AI_AGENT"},
+         "response": None}), encoding="utf-8")
+    app = json.loads((raw / "_app" / "getApplication.json").read_text(encoding="utf-8"))
+    (raw / "_app" / "getApplication-PC.json").write_text(json.dumps(app), encoding="utf-8")
+    p = subprocess.run([sys.executable, str(BUILD_MODEL), str(project.out)], capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    assert p.returncode == 0, p.stderr
+    inv = project.load("inventory.json")
+    o = next(x for x in inv["objects"]["interface"] if x["uuid"] == panel["uuid"])
+    assert [f["path"].rsplit("/", 1)[1] for f in o["files"] if f["role"] == "definition"] == ["getInterface.json"]
+    assert "getAiAgent" not in {f["tool"] for f in o["files"]} and o["path"].endswith("/getInterface.json")
+    assert o["sailBytes"] == len(expresion.encode("utf-8"))
+    assert [f["path"] for f in inv["objects"]["application"][0]["files"] if f["path"].endswith("-PC.json")] == []
 
 
 def test_annex(built):

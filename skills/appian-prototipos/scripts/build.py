@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from validate import validate, trace_markdown, find_brand, ux_summary  # noqa: E402
+from validate import validate, trace_markdown, find_brand, ux_summary, _lum  # noqa: E402
 from entorno import utf8_stdio  # noqa: E402
 
 # Open Sans (licencia SIL OFL, assets/fonts/OFL-OpenSans.txt) embebida: el prototipo y sus capturas usan la fuente
@@ -36,13 +36,6 @@ def mix_white(hex_color, pct):
     r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
     f = lambda c: round(c * pct + 255 * (1 - pct))
     return "#%02x%02x%02x" % (f(r), f(g), f(b))
-
-
-def _lum(hex_color):
-    h = hex_color.lstrip("#")[:6]
-    c = [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
-    c = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
-    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
 
 
 def on_color(hex_color):

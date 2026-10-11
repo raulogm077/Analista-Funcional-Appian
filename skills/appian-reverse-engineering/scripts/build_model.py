@@ -4,7 +4,9 @@
 Uso:
   python3 <skill>/scripts/build_model.py <carpeta_salida>
 
-Lee   <trabajo>/mcp_raw/ (lo escribe devmcp_extract.py); <trabajo> = <salida>/extraccion
+Lee   <trabajo>/mcp_raw/ (lo escribe devmcp_extract.py); <trabajo> = <salida>/extraccion. De cada carpeta, solo
+      <herramienta>.json de las herramientas que llamó el último extract (callStats de extraction_report.json): ni
+      copias de conflicto de OneDrive (…-PC.json) ni respuestas de herramientas que ya no se usan.
 Crea  <trabajo>/inventory.json y graph.json (rutas "path" relativas a <trabajo>)
 
 No depende de nombres de herramientas: cada fichero lleva en _meta.role el papel que le asigno la
@@ -30,7 +32,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from detect_secrets import buscar as secretos_en  # noqa: E402
-from rutas import carpeta_objeto, work_dir  # noqa: E402
+from rutas import carpeta_objeto, safe_name, work_dir  # noqa: E402
 
 UUID_KEYS = ("uuid", "objectUuid", "designObjectUuid", "guid", "id", "objectId")
 NAME_KEYS = ("name", "objectName", "displayName", "label", "title")
@@ -44,8 +46,9 @@ SECRET_NAME = re.compile(r"(?i)(token|secret|passw|pwd|api[_\-]?key|credential|p
 SECRET_VALUE = re.compile(r"sk_(live|test)_\w+|AKIA[0-9A-Z]{16}|(?i:bearer)\s+\S{8,}|-----BEGIN|eyJ[\w\-]{10,}\.[\w\-]{10,}"
                           r"|\b[A-Fa-f0-9]{32,}\b|\b[A-Za-z0-9+/]{40,}={0,2}")
 DATE_RX = re.compile(r"^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?)?")
-SLUG_MAXIMO = 48            # como el nombre de una herramienta (devmcp_extract.safe_name): rutas cortas en Windows
+SLUG_MAXIMO = 48            # como el nombre de una herramienta (rutas.safe_name): rutas cortas en Windows
 LLAMADO_CON_RULE = "llamado con rule!"   # tipo de un rule! de fuera: regla, interfaz, integracion o decision
+LLAMADAS = ("ok", "cached", "failed", "cachedFailed")   # de callStats, lo que cuenta como llamada (también reutilizada)
 
 
 # --------------------------------------------------------------------------- utilidades
@@ -53,7 +56,7 @@ LLAMADO_CON_RULE = "llamado con rule!"   # tipo de un rule! de fuera: regla, int
 def slugify(name: str | None, maximo: int = SLUG_MAXIMO) -> str:
     """Nombre de fichero estable para documentos por objeto: sin acentos, solo [A-Za-z0-9_-]. Nombra
     anexo/<tipo>/<slug>.md, 08-procesos-bpmn/<slug>.* y extraccion/procesos/<slug>.json: si no cabe, se recorta y
-    lleva 8 hex del sha1 del nombre, para que dos nombres largos no se pisen (como devmcp_extract.safe_name)."""
+    lleva 8 hex del sha1 del nombre, para que dos nombres largos no se pisen (como rutas.safe_name)."""
     s = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode("ascii")
     s = re.sub(r"[^A-Za-z0-9_-]+", "_", s).strip("_")
     if not s:
@@ -156,14 +159,38 @@ def rel(p: Path, root: Path) -> str:
 
 # --------------------------------------------------------------------------- lectura de mcp_raw
 
-def read_object_files(folder: Path) -> list[dict]:
+def herramientas_usadas(report: dict) -> set[str] | None:
+    """Las herramientas con alguna llamada en el último extract, de callStats de extraction_report.json (correctas,
+    reutilizadas o fallidas): así vale también un informe de antes de 0.7.0-beta.2, cuyo toolsUsed traía herramientas
+    que no se llamaron. None sin informe (una extracción escrita a mano): entonces vale cualquiera."""
+    stats = report.get("callStats")
+    if not isinstance(stats, dict):
+        return None
+    return {n for n, st in stats.items() if isinstance(st, dict) and any(st.get(k) for k in LLAMADAS)}
+
+
+def respuestas(folder: Path, usadas: set[str] | None) -> list[tuple[Path, dict]]:
+    """Las respuestas buenas de una carpeta de mcp_raw: solo <herramienta>.json (rutas.safe_name) de las herramientas
+    `usadas` por el último extract. Ni la copia de conflicto de OneDrive (getInterface-PC.json) ni la respuesta de una
+    herramienta que ese extract no usó (la dejó una versión anterior del extractor)."""
     out = []
     for f in sorted(folder.glob("*.json")):
         try:
             d = load(f)
         except Exception:
             continue
-        meta = d.get("_meta", {})
+        if not isinstance(d, dict):
+            continue
+        tool = (d.get("_meta") or {}).get("tool", f.stem)
+        if f.stem == safe_name(str(tool)) and (usadas is None or tool in usadas):
+            out.append((f, d))
+    return out
+
+
+def read_object_files(folder: Path, usadas: set[str] | None = None) -> list[dict]:
+    out = []
+    for f, d in respuestas(folder, usadas):
+        meta = d.get("_meta") or {}
         out.append({"file": f, "tool": meta.get("tool", f.stem), "role": meta.get("role", "other"),
                     "ok": bool(meta.get("ok")), "error": meta.get("error"), "response": d.get("response")})
     return out
@@ -296,15 +323,9 @@ def enrich_roles(o: dict, files: list[dict], app_group_uuids: set[str], name_by_
             if sample:
                 o["usage"]["failedInSampleOf"] = sample
         elif r == "versions":
-            lst = [x for x in primary_list(data) if isinstance(x, dict)]
-            if lst:
-                def d_of(x):
-                    ds = dates_in(x)
-                    return max(ds) if ds else ""
-                last = max(lst, key=d_of)
-                o["versions"] = {"count": len(lst), "lastModifiedOn": d_of(last) or None,
-                                 "lastModifiedBy": pick(last, ("modifiedBy", "author", "user", "updatedBy", "username")),
-                                 "source": f["tool"]}
+            v = ultima_version(data)
+            if v:
+                o["versions"] = {**v, "source": f["tool"]}
         elif r == "validation":
             issues = [x for x in primary_list(data) if isinstance(x, dict)]
             o["validationIssues"] = [str(pick(x, ("message", "text", "description")) or x)[:200] for x in issues][:10]
@@ -321,6 +342,21 @@ def enrich_roles(o: dict, files: list[dict], app_group_uuids: set[str], name_by_
                 extra.append(f["tool"])
     if extra:
         o["extraTools"] = extra
+
+
+def ultima_version(data: Any) -> dict | None:
+    """De una respuesta de historial de versiones (rol versions): cuántas versiones hay y la fecha y el autor de la
+    última ({count, lastModifiedOn, lastModifiedBy}); None si no trae ninguna. La usan también verificar y deriva."""
+    lst = [x for x in primary_list(data) if isinstance(x, dict)]
+    if not lst:
+        return None
+
+    def d_of(x):
+        ds = dates_in(x)
+        return max(ds) if ds else ""
+    last = max(lst, key=d_of)
+    return {"count": len(lst), "lastModifiedOn": d_of(last) or None,
+            "lastModifiedBy": pick(last, ("modifiedBy", "author", "user", "updatedBy", "username"))}
 
 
 _ROOT: Path = Path(".")
@@ -410,6 +446,7 @@ def main(out_dir: str) -> int:
         return 2
     idx = load(raw / "_objects.json")
     report = load(interm / "extraction_report.json") if (interm / "extraction_report.json").exists() else {}
+    usadas = herramientas_usadas(report)
     app = dict(idx["application"])
     objs = [dict(o) for o in idx["objects"]]
     by_uuid = {o["uuid"]: o for o in objs}
@@ -422,7 +459,7 @@ def main(out_dir: str) -> int:
     parse_errors = 0
     for o in objs:
         folder = carpeta_objeto(raw, o["type"], o["uuid"])
-        files = read_object_files(folder) if folder.exists() else []
+        files = read_object_files(folder, usadas) if folder.exists() else []
         files_by_uuid[o["uuid"]] = files
         defn_file = choose_definition(files)
         if any(f["role"] == "definition" and not f["ok"] for f in files) and not defn_file:
@@ -439,7 +476,7 @@ def main(out_dir: str) -> int:
         if secretos:
             o["secrets"] = secretos
         o.pop("sources", None)
-    app_files = sorted((raw / "_app").glob("*.json")) if (raw / "_app").exists() else []
+    app_files = [f for f, _ in respuestas(raw / "_app", usadas)] if (raw / "_app").exists() else []
     app_obj = {"type": "application", "name": app.get("name"), "uuid": app["uuid"], "prefix": app.get("prefix"),
                "description": app.get("description"), "mcpType": "APPLICATION", "detail": "full",
                "path": rel(app_files[0], root) if app_files else None, "evidenceRef": f"mcp:application/{app.get('name')}",

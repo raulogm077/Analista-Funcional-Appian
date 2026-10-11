@@ -1,0 +1,24 @@
+{
+  "proceso": "Puerta con nota",
+  "carriles": ["Técnico", "Aplicación"],
+  "pasos": [
+    {"id": "EV-01", "tipo": "inicio", "carril": "Técnico", "nombre": "Solicitud recibida"},
+    {"id": "ACT-01", "tipo": "tarea", "carril": "Técnico", "nombre": "Revisar solicitud"},
+    {"id": "GW-01", "tipo": "exclusiva", "carril": "Técnico", "nombre": "¿Completa?"},
+    {"id": "ACT-02", "tipo": "tarea", "carril": "Técnico", "nombre": "Resolver"},
+    {"id": "ACT-03", "tipo": "tarea", "carril": "Técnico", "nombre": "Pedir subsanación"},
+    {"id": "ACT-04", "tipo": "sistema", "carril": "Aplicación", "nombre": "Guardar"},
+    {"id": "EV-02", "tipo": "fin", "carril": "Aplicación", "nombre": "Resuelta"},
+    {"id": "EV-03", "tipo": "fin", "carril": "Técnico", "nombre": "Pendiente"}
+  ],
+  "flujos": [
+    {"de": "EV-01", "a": "ACT-01"},
+    {"de": "ACT-01", "a": "GW-01"},
+    {"de": "GW-01", "a": "ACT-02", "etiqueta": "Sí", "defecto": true},
+    {"de": "GW-01", "a": "ACT-03", "etiqueta": "No"},
+    {"de": "ACT-02", "a": "ACT-04"},
+    {"de": "ACT-04", "a": "EV-02"},
+    {"de": "ACT-03", "a": "EV-03"}
+  ],
+  "notas": [{"paso": "GW-01", "texto": "Completa: con el DNI y el justificante"}]
+}

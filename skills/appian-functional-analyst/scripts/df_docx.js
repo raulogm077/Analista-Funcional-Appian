@@ -2,43 +2,94 @@
 /*
  * Genera el DF en Word (.docx) a partir del análisis de un proyecto.
  *
- * Uso: node df_docx.js <carpeta del proyecto> [-o entregables/DF-<proyecto>-v1.1.docx]
+ * Uso: node df_docx.js <carpeta del proyecto> [-o entregables/DF-<proyecto>-v1.1.docx] [--pdf]
+ *      node df_docx.js <carpeta del proyecto> --cambio EV-02 [--pdf]   el DF de un cambio (DF-<proyecto>-EV-02-v1.1.docx)
+ *      node df_docx.js <carpeta del proyecto> --pdf-de <fichero>     solo convierte ese fichero a PDF
+ *
+ * --cambio lee lo de la unidad de `indice.py cambios <p> EV-02 --json` (Python): qué cambia en un párrafo, y las piezas
+ * nuevas y las que cambian, con las historias que se conservan pero comparten pantalla o paso con ellas (T5); lo demás
+ * no sale.
  *
  * Lee analisis/funcional.md (el contenido), analisis/decisiones.md (control del documento) y proyecto.md
- * (cliente). Lo que no ve el cliente se queda fuera: comentarios <!-- … --> (fuentes y estados), piezas,
- * filas y criterios tachados (anulados o respondidos). Las fichas (**HU-07 — …**) salen como títulos de
- * cuarto nivel.
+ * (cliente y «Entregados»). Lo que no ve el cliente se queda fuera: comentarios <!-- … --> (fuentes y
+ * estados), piezas, filas y criterios tachados (anulados o respondidos). Las fichas (**HU-07 — …**,
+ * **INT-02 — …**) salen como títulos de cuarto nivel. Con prototipo/brand-<id>.json, su color oscuro
+ * (site.backgroundColor) en títulos y cabeceras de tabla.
  *
- * Portada, control del documento, índice (se actualiza al abrir en Word), encabezado y pie con
- * confidencialidad, versión y número de página. Markdown admitido: títulos, párrafos con **negrita**,
- * *cursiva* y `código`, listas, tablas, citas (>), imágenes ![pie](ruta.png) con figuras numeradas.
+ * Portada, control del documento, índice (con sus entradas; Word pone las páginas al abrirlo), encabezado y pie
+ * con confidencialidad, versión y número de página. Markdown admitido: títulos, párrafos con **negrita**,
+ * *cursiva* y `código`, listas (una viñeta puede seguir en líneas sangradas), tablas, citas (>), imágenes
+ * ![pie](ruta.png) con figuras numeradas.
+ *
+ * No sobrescribe un Word entregado («Entregados» de proyecto.md, que escribe proyecto.py entregar): sale con 1.
+ * --pdf y --pdf-de convierten con LibreOffice (soffice) en un perfil temporal que se borra y dejan el PDF en
+ * <p>/entregables/revision/.
  *
  * Requiere Node.js y el paquete docx (npm install docx si no está).
  */
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
+const cp = require("child_process");
 // docx se busca junto al script, en la carpeta de trabajo y en los paquetes globales de npm
 function cargarDocx() {
   const { createRequire } = require("module");
   const sitios = [__filename, path.join(process.cwd(), "x.js")];
-  try { sitios.push(path.join(require("child_process").execSync("npm root -g", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(), "x.js")); } catch (e) { /* sin npm */ }
+  try { sitios.push(path.join(cp.execSync("npm root -g", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(), "x.js")); } catch (e) { /* sin npm */ }
   for (const s of sitios) { try { return createRequire(s)("docx"); } catch (e) { /* siguiente */ } }
   console.error("Falta el paquete docx de Node. Instálalo en la carpeta de trabajo (npm install docx) o para todo el equipo (npm install -g docx).");
   process.exit(2);
 }
-const D = cargarDocx();
-const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType,
-  ImageRun, AlignmentType, TableOfContents, Header, Footer, PageNumber, LevelFormat, BorderStyle, PageBreak,
-  PageOrientation } = D;
 
 const args = process.argv.slice(2);
+const CON_VALOR = ["-o", "--pdf-de", "--cambio"];
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
-const src = args.find((a, i) => !a.startsWith("-") && !(i > 0 && args[i - 1].startsWith("-")));
-if (!src) { console.error("Uso: node df_docx.js <carpeta del proyecto> [-o salida.docx]"); process.exit(2); }
+const src = args.find((a, i) => !a.startsWith("-") && !(i > 0 && CON_VALOR.includes(args[i - 1])));
+if (!src) { console.error("Uso: node df_docx.js <carpeta del proyecto> [-o salida.docx] [--pdf] | --pdf-de <fichero>"); process.exit(2); }
 let analisis = path.resolve(src);
 if (fs.statSync(analisis).isFile()) analisis = path.dirname(analisis);
 if (fs.existsSync(path.join(analisis, "analisis"))) analisis = path.join(analisis, "analisis");
 const raiz = path.basename(analisis) === "analisis" ? path.dirname(analisis) : analisis;
+const REVISION = path.join(raiz, "entregables", "revision");   // los PDF para revisar, dentro del proyecto
+
+// PDF con LibreOffice en un perfil y un HOME temporales, que se borran: no deja nada fuera del proyecto ni choca con
+// un LibreOffice abierto
+function aPdf(fichero) {
+  const exes = [process.env.SOFFICE, "soffice", "libreoffice"];
+  if (process.platform === "win32") exes.push("C:\\Program Files\\LibreOffice\\program\\soffice.exe");
+  if (process.platform === "darwin") exes.push("/Applications/LibreOffice.app/Contents/MacOS/soffice");
+  const nombre = path.basename(fichero, path.extname(fichero)) + ".pdf", pdf = path.join(REVISION, nombre);
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "df-pdf-"));
+  try {   // se convierte en la carpeta temporal y solo si sale bien sustituye al PDF que hubiera
+    const perfil = require("url").pathToFileURL(path.join(tmp, "perfil")).href, salida = path.join(tmp, "salida");
+    const env = { ...process.env, HOME: tmp, TMPDIR: tmp, TMP: tmp, TEMP: tmp };
+    for (const exe of exes.filter(Boolean)) {
+      const r = cp.spawnSync(exe, [`-env:UserInstallation=${perfil}`, "--headless", "--convert-to", "pdf", "--outdir", salida, fichero],
+        { env, encoding: "utf8", timeout: 300000 });
+      if (r.error && r.error.code === "ENOENT") continue;
+      if (!fs.existsSync(path.join(salida, nombre)))
+        return { ok: false, msg: `LibreOffice no ha convertido ${path.basename(fichero)}: ${String(r.stderr || r.stdout || (r.error && r.error.message) || "").trim().slice(-300)}` };
+      fs.mkdirSync(REVISION, { recursive: true });
+      fs.copyFileSync(path.join(salida, nombre), pdf);
+      return { ok: true, pdf };
+    }
+    return { ok: false, msg: "Sin LibreOffice (soffice): no se genera el PDF; revisa el Word a mano" };
+  } finally {
+    try { fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5 }); } catch (e) { /* en Windows puede seguir abierto (EBUSY) */ }
+  }
+}
+if (args.includes("--pdf-de")) {
+  const f = opt("--pdf-de") ? path.resolve(opt("--pdf-de")) : "";
+  if (!f || !fs.existsSync(f)) { console.error(`No existe ${f || "el fichero de --pdf-de"}`); process.exit(2); }
+  const r = aPdf(f);
+  console.log(r.ok ? `OK ${r.pdf}` : r.msg);
+  process.exit(r.ok ? 0 : 1);
+}
+
+const D = cargarDocx();
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType,
+  ImageRun, AlignmentType, TableOfContents, Header, Footer, PageNumber, LevelFormat, BorderStyle, PageBreak,
+  PageOrientation } = D;
 const leer = (f) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n") : "");
 const funcional = leer(path.join(analisis, "funcional.md"));
 if (!funcional) { console.error(`No encuentro ${path.join(analisis, "funcional.md")}`); process.exit(2); }
@@ -53,7 +104,52 @@ const slug = titulo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^
 // fecha de la versión (fila de Versiones en decisiones.md) o, si no está, la de hoy
 const filaVersion = decisiones.split("\n").find((l) => new RegExp(`^\\|\\s*v?${version.replace(".", "\\.")}\\s*\\|`).test(l));
 const fechaVersion = filaVersion ? filaVersion.split("|")[2].trim().split("-").reverse().join("/") : new Date().toLocaleDateString("es-ES");
-const out = opt("-o", path.join(raiz, "entregables", `DF-${slug}-v${version}.docx`));
+// --cambio: lo de la unidad, de indice.py cambios --json (la única fuente de qué es nuevo, qué cambia y qué se conserva)
+const CAMBIO = args.includes("--cambio") ? String(opt("--cambio") || "").toUpperCase() : null;
+let R = null;
+if (CAMBIO !== null) {
+  if (!/^(EV|URG)-\d+$/.test(CAMBIO)) { console.error("--cambio necesita el ID de una unidad: EV-02"); process.exit(2); }
+  const env = { ...process.env, PYTHONUTF8: "1", PYTHONIOENCODING: "utf-8", PYTHONDONTWRITEBYTECODE: "1" };
+  // en Windows, python antes que python3 (el alias de la tienda responde 9009 sin Python)
+  const pythons = process.platform === "win32" ? ["python", "py", "python3"] : ["python3", "python"];
+  for (const exe of [process.env.PYTHON, ...pythons].filter(Boolean)) {
+    const r = cp.spawnSync(exe, [path.join(__dirname, "indice.py"), "cambios", raiz, CAMBIO, "--json"], { env, encoding: "utf8" });
+    if ((r.error && r.error.code === "ENOENT") || r.status === 9009) continue;
+    if (r.status !== 0) { console.error(String(r.stderr || r.stdout).trim()); process.exit(2); }
+    R = JSON.parse(r.stdout);
+    break;
+  }
+  if (!R) { console.error("--cambio necesita Python (python3 o python) para leer la unidad con indice.py"); process.exit(2); }
+}
+const out = path.resolve(opt("-o", path.join(raiz, "entregables", `DF-${slug}${CAMBIO ? "-" + CAMBIO : ""}-v${version}.docx`)));
+
+// Un Word entregado no se toca: los de «Entregados: a.docx, b.docx» de proyecto.md (proyecto.py entregar)
+const entregados = ((proyecto.match(/^Entregados:\s*(.*)$/m) || [])[1] || "").split(",").map((x) => x.trim()).filter(Boolean);
+if (fs.existsSync(out)) {
+  if (entregados.includes(path.basename(out))) {
+    console.error(`${path.basename(out)} ya se entregó al cliente («Entregados» de proyecto.md): no se sobrescribe ${out}. ` +
+      `Si el análisis ha cambiado, sube la versión; para el PDF de ese Word, --pdf-de ${out}.`);
+    process.exit(1);
+  }
+  console.log(`· ${path.basename(out)} existe y no se ha entregado: se reemplaza`);
+}
+
+// La marca del cliente: su color oscuro (site.backgroundColor, que lleva texto blanco encima) en títulos y
+// cabeceras de tabla; sin marca, los azules de siempre
+function marca() {
+  const dir = path.join(raiz, "prototipo");
+  const ficheros = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /^brand-.+\.json$/i.test(f)).sort() : [];
+  if (!ficheros.length) return null;
+  try {
+    const b = JSON.parse(fs.readFileSync(path.join(dir, ficheros[0]), "utf8"));
+    const c = String((b.site && b.site.backgroundColor) || (b.palette && b.palette.navy) || "");
+    if (/^#?[0-9a-f]{6}$/i.test(c)) return { fichero: `prototipo/${ficheros[0]}`, color: c.replace("#", "").toUpperCase() };
+  } catch (e) { /* abajo */ }
+  console.log(`· prototipo/${ficheros[0]} sin un color #RRGGBB en site.backgroundColor: el Word sale con los colores de siempre`);
+  return null;
+}
+const MARCA = marca();
+const COLOR = MARCA ? MARCA.color : "1F3864", COLOR2 = MARCA ? MARCA.color : "2F5597";
 
 // Lo que no ve el cliente
 function limpiar(md) {
@@ -68,7 +164,7 @@ function limpiar(md) {
     if (/^\s*[-*]\s+~~/.test(l)) continue;                                      // criterio tachado
     if (/^Versi[oó]n:/.test(l)) continue;                                       // va en la portada
     let x = l.replace(/`((?:HU|ACT|ESC|PAN|AV|DOC|INT|PC|RB)-[\d.]+)`/g, "$1");
-    const f = x.match(/^\*\*((?:ACT|ESC|HU|PAN)-\d+ — .+?)\*\*\s*$/);
+    const f = x.match(/^\*\*((?:ACT|ESC|HU|PAN|INT)-\d+ — .+?)\*\*\s*$/);
     res.push(f ? `#### ${f[1]}` : x.replace(/\s+$/, ""));
   }
   return res.join("\n").replace(/\n{3,}/g, "\n\n");
@@ -89,7 +185,78 @@ function control() {
   return `## Control del documento\n\nEstado: ${estadoDoc}.\n\n${t.join("\n")}\n`;
 }
 
-const md = control() + "\n" + limpiar(funcional).replace(/^# .+$/m, "");
+// El DF de un cambio: «Qué cambia» en un párrafo y, de cada apartado, solo las fichas y filas de la unidad (nuevas y las
+// que cambian) y las historias y pantallas que se conservan pero comparten pantalla o paso con ellas, con su marca
+function delCambio(md, R) {
+  const marca = {};
+  for (const p of R.piezas.cambian) marca[p.id] = "Cambia";
+  for (const p of R.piezas.nuevas) marca[p.id] = "Nueva";
+  for (const id of [...R.historias.seConservan, ...R.pantallas]) if (!marca[id]) marca[id] = "Se conserva";
+  const norm = (s) => String(s || "").replace(/<!--[\s\S]*?-->/g, "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  const datos = new Set((R.datos || []).map((d) => `${norm(d.entidad)}|${norm(d.dato)}`));   // filas de §6 que cambian
+  const celdas = (l) => l.replace(/^\||\|\s*$/g, "").split("|").map((c) => c.trim());
+  // Sin la columna «Origen» (si un proyecto anterior la escribió): lo nuevo y lo que cambia lo dice este DF
+  function sinOrigen(lineas) {
+    const res = [];
+    for (let k = 0; k < lineas.length;) {
+      if (!/^\|/.test(lineas[k])) { res.push(lineas[k++]); continue; }
+      let fin = k;
+      while (fin < lineas.length && /^\|/.test(lineas[fin])) fin++;
+      const col = celdas(lineas[k]).findIndex((c) => norm(c) === "origen");
+      for (const l of lineas.slice(k, fin)) res.push(col < 0 ? l : "| " + celdas(l).filter((_, j) => j !== col).join(" | ") + " |");
+      k = fin;
+    }
+    return res;
+  }
+  const L = md.split("\n"), out = [];
+  const ficha = (l) => (l.match(/^\*\*(?:~~)?([A-Z]+-\d+)(?:~~)?\s+—\s/) || [])[1];
+  const fila = (l) => (l.match(/^\|\s*(?:~~)?([A-Z]+-\d+)(?:~~)?\s*\|/) || [])[1];
+  let i = 0;
+  while (i < L.length && !/^## /.test(L[i])) out.push(L[i++]);   // título y versión
+  const lista = (xs) => xs.map((p) => `- ${p.id} — ${p.titulo}`).join("\n");
+  out.push("## Qué cambia", "", `${R.titulo}.`, "");
+  if (R.piezas.nuevas.length) out.push("Nuevo:", "", lista(R.piezas.nuevas), "");
+  if (R.piezas.cambian.length) out.push("Cambia:", "", lista(R.piezas.cambian), "");
+  if (R.piezas.anuladas.length) out.push("Se quita:", "", lista(R.piezas.anuladas), "");
+  out.push(`El resto de la aplicación no cambia: sigue como en la versión ${R.base || "anterior"} de este diseño funcional.`, "");
+  while (i < L.length) {
+    const titulo = L[i++], cuerpo = [];
+    while (i < L.length && !/^## /.test(L[i])) cuerpo.push(L[i++]);
+    if (/^## Anexo/.test(titulo)) continue;
+    const kept = [];
+    let sub = null, entidad = "";
+    for (let k = 0; k < cuerpo.length;) {
+      const l = cuerpo[k];
+      if (/^#{3,}\s/.test(l)) { sub = l; entidad = l.replace(/^#+\s+[\d.]*\s*/, ""); k++; continue; }
+      const id = ficha(l);
+      if (id) {
+        let fin = k + 1;
+        while (fin < cuerpo.length && !/^#/.test(cuerpo[fin]) && !ficha(cuerpo[fin])) fin++;
+        if (marca[id]) {
+          if (sub) { kept.push(sub, ""); sub = null; }
+          kept.push(cuerpo[k], "", `*${marca[id]}*`, ...sinOrigen(cuerpo.slice(k + 1, fin)));
+        }
+        k = fin; continue;
+      }
+      if (/^\|/.test(l)) {
+        let fin = k;
+        while (fin < cuerpo.length && /^\|/.test(cuerpo[fin])) fin++;
+        const esDato = norm(celdas(l)[0]) === "dato";   // §6: los datos nuevos o que cambian
+        const filas = cuerpo.slice(k + 2, fin).filter((x) => marca[fila(x)] || (esDato && datos.has(`${norm(entidad)}|${norm(celdas(x)[0])}`)));
+        if (filas.length) {
+          if (sub) { kept.push(sub, ""); sub = null; }
+          kept.push(...sinOrigen([cuerpo[k], cuerpo[k + 1], ...filas]), "");
+        }
+        k = fin; continue;
+      }
+      k++;
+    }
+    if (kept.length) out.push(titulo, "", ...kept);
+  }
+  return out.join("\n");
+}
+
+const md = control() + "\n" + limpiar(R ? delCambio(funcional, R) : funcional).replace(/^# .+$/m, "");
 
 const FONT = "Calibri", MONO = "Consolas";
 const PAGE_W = 11906, MARGIN = 1134, CONTENT_W = PAGE_W - 2 * MARGIN; // A4, márgenes 2 cm
@@ -145,7 +312,7 @@ function table(rows) {
       children: r.map((c, j) => new TableCell({
         width: { size: widths[j], type: WidthType.DXA },
         borders: { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder },
-        shading: i === 0 ? { type: ShadingType.CLEAR, fill: "1F3864", color: "auto" } : undefined,
+        shading: i === 0 ? { type: ShadingType.CLEAR, fill: COLOR, color: "auto" } : undefined,
         margins: { top: 40, bottom: 40, left: 80, right: 80 },
         children: c.split(/<br\s*\/?>/).map((part) => new Paragraph({
           spacing: { after: 0 },
@@ -182,7 +349,8 @@ function image(file, caption) {
 }
 
 const HL = [null, HeadingLevel.HEADING_1, HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3, HeadingLevel.HEADING_4, HeadingLevel.HEADING_5];
-const body = [];
+const body = [], entradas = [];   // entradas del índice: Word pone las páginas al abrirlo; LibreOffice las enseña así
+const NIVEL_INDICE = [0, 1, 1, 2, 3];   // # y ## → 1, ### → 2, #### (las fichas) → 3, como headingStyleRange 1-3
 const L = md.split("\n");
 let i = 0, skippedFirstH1 = false, listInstance = 0;
 while (i < L.length) {
@@ -202,6 +370,7 @@ while (i < L.length) {
     const lvl = Math.min(m[1].length, 6);
     if (lvl === 2 && /^(Anexo|Control del documento)/.test(m[2]) && body.length) body.push(new Paragraph({ children: [new PageBreak()] }));
     body.push(new Paragraph({ heading: HL[lvl], keepNext: true, children: runs(m[2].replace(/\*\*/g, "")) }));
+    if (NIVEL_INDICE[lvl]) entradas.push({ title: m[2].replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").replace(/[`*~]/g, "").trim(), level: NIVEL_INDICE[lvl] });
     i++; continue;
   }
   if ((m = l.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/))) { body.push(...image(m[2], m[1])); i++; continue; }
@@ -219,8 +388,11 @@ while (i < L.length) {
     listInstance++; // cada lista empieza su numeración en 1
     while (i < L.length && (/^\s*[-*] /.test(L[i]) || /^\s*\d+\. /.test(L[i]))) {
       const li = L[i], ind = li.match(/^\s*/)[0].length, num = /^\s*\d+\. /.test(li);
-      body.push(new Paragraph({ numbering: { reference: num ? "num" : "bul", level: Math.min(Math.floor(ind / 2), 3), instance: listInstance }, spacing: { after: 40 }, children: runs(li.replace(/^\s*([-*]|\d+\.) /, "")) }));
+      let texto = li.replace(/^\s*([-*]|\d+\.) /, "");
       i++;
+      // la viñeta sigue en las líneas sangradas de debajo que no son otra viñeta
+      while (i < L.length && /^\s+\S/.test(L[i]) && !/^\s*([-*]|\d+\.) /.test(L[i])) texto += " " + L[i++].trim();
+      body.push(new Paragraph({ numbering: { reference: num ? "num" : "bul", level: Math.min(Math.floor(ind / 2), 3), instance: listInstance }, spacing: { after: 40 }, children: runs(texto) }));
     }
     continue;
   }
@@ -243,14 +415,15 @@ while (i < L.length) {
 }
 
 const portada = [
-  new Paragraph({ spacing: { before: 3000, after: 300 }, children: [new TextRun({ text: "Diseño funcional", size: 28, color: "595959" })] }),
-  new Paragraph({ spacing: { after: 400 }, children: [new TextRun({ text: titulo, bold: true, size: 48, color: "1F3864" })] }),
+  new Paragraph({ spacing: { before: 3000, after: 300 }, children: [new TextRun({ text: R ? `Diseño funcional · cambio ${R.unidad}` : "Diseño funcional", size: 28, color: "595959" })] }),
+  new Paragraph({ spacing: { after: 400 }, children: [new TextRun({ text: titulo, bold: true, size: 48, color: COLOR })] }),
+  ...(R ? [new Paragraph({ spacing: { after: 300 }, children: [new TextRun({ text: R.titulo, size: 32, color: COLOR })] })] : []),
   new Paragraph({ children: [new TextRun({ text: cliente ? `Cliente: ${cliente}` : "", size: 24 })] }),
   new Paragraph({ children: [new TextRun({ text: `Versión ${version} · ${estadoDoc}`, size: 24 })] }),
   new Paragraph({ children: [new TextRun({ text: `Fecha: ${fechaVersion}`, size: 24 })] }),
   new Paragraph({ children: [new PageBreak()] }),
   new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Índice")] }),
-  new TableOfContents("Índice", { hyperlink: true, headingStyleRange: "1-3" }),
+  new TableOfContents("Índice", { hyperlink: true, headingStyleRange: "1-3", cachedEntries: entradas }),
 ];
 
 const doc = new Document({
@@ -260,9 +433,9 @@ const doc = new Document({
   styles: {
     default: { document: { run: { font: FONT, size: 21 } } },
     paragraphStyles: [
-      { id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 32, bold: true, color: "1F3864", font: FONT }, paragraph: { spacing: { before: 240, after: 160 }, outlineLevel: 0 } },
-      { id: "Heading2", name: "Heading 2", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 26, bold: true, color: "2F5597", font: FONT }, paragraph: { spacing: { before: 240, after: 120 }, outlineLevel: 1 } },
-      { id: "Heading3", name: "Heading 3", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 23, bold: true, color: "2F5597", font: FONT }, paragraph: { spacing: { before: 200, after: 100 }, outlineLevel: 2 } },
+      { id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 32, bold: true, color: COLOR, font: FONT }, paragraph: { spacing: { before: 240, after: 160 }, outlineLevel: 0 } },
+      { id: "Heading2", name: "Heading 2", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 26, bold: true, color: COLOR2, font: FONT }, paragraph: { spacing: { before: 240, after: 120 }, outlineLevel: 1 } },
+      { id: "Heading3", name: "Heading 3", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 23, bold: true, color: COLOR2, font: FONT }, paragraph: { spacing: { before: 200, after: 100 }, outlineLevel: 2 } },
       { id: "Heading4", name: "Heading 4", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 21, bold: true, font: FONT }, paragraph: { spacing: { before: 160, after: 80 }, outlineLevel: 3 } },
       { id: "Heading5", name: "Heading 5", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 21, bold: true, italics: true, font: FONT }, paragraph: { spacing: { before: 120, after: 60 }, outlineLevel: 4 } },
     ],
@@ -290,5 +463,10 @@ Packer.toBuffer(doc).then((buf) => {
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, buf);
   console.log(`OK ${out} (${(buf.length / 1024 / 1024).toFixed(1)} MB, ${fig} figuras${missing ? `, ${missing} imágenes no encontradas` : ""})`);
+  if (MARCA) console.log(`Marca: ${MARCA.fichero} (#${MARCA.color} en títulos y cabeceras de tabla)`);
+  if (args.includes("--pdf")) {
+    const r = aPdf(out);
+    console.log(r.ok ? `PDF para revisar: ${r.pdf}` : `· ${r.msg}`);
+  }
   process.exit(missing ? 1 : 0);
 });

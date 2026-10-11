@@ -19,6 +19,7 @@ from pathlib import Path
 AQUI = Path(__file__).resolve().parent                       # pruebas/appian-prototipos/datos/autorizaciones
 PRUEBAS = AQUI.parents[2]                                    # pruebas/
 PLUGIN = Path(os.environ.get("PLUGIN_A_PROBAR") or PRUEBAS.parent).resolve()
+sys.dont_write_bytecode = True  # sin __pycache__ en el plugin
 sys.path.insert(0, str(PLUGIN / "skills" / "appian-prototipos" / "scripts"))
 sys.path.insert(0, str(PLUGIN / "skills" / "appian-functional-analyst" / "scripts"))
 from sail_helpers import *  # noqa: E402,F401,F403

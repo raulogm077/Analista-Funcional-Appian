@@ -1,0 +1,20 @@
+{
+ "fuente": "aviso-pase-2026-10-09.eml",
+ "ref": "HF-2026-007",
+ "objeto": "DEM_SolicitudForm",
+ "choca_con": "EV-02",
+ "estados": {"EV-01": "En producción", "EV-02": "Aprobada", "URG": "En producción"},
+ "puntos": {
+  "produccion": "La URG está En producción con la referencia HF-2026-007 en analisis/cambios.md",
+  "cierre": "Su ficha tiene «Cierre» con la referencia HF-2026-007",
+  "ev02_sin_construir": "EV-02 sigue Aprobada, EV-01 En producción y el encargo de EV-02 sigue con «Reaplicar URG-nn»",
+  "bloqueo_pase": "En una copia, EV-02 no pasa a producción, ni a Construida sin --reaplicada URG-nn; con ella pasa a Construida y después a producción",
+  "ligereza": "Ni Word ni capturas nuevos o cambiados desde el montaje, y el funcional dice lo mismo que al montar",
+  "comprobar": "comprobar.py sin errores"
+ },
+ "umbral": {
+  "obligatorios": ["produccion", "cierre", "ev02_sin_construir", "bloqueo_pase", "comprobar"],
+  "ligereza": ["ligereza"],
+  "fallos_de_ligereza_tolerados": 1
+ }
+}

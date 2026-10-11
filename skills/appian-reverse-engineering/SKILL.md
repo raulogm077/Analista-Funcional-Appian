@@ -41,6 +41,16 @@ Antes de la primera tarea, desde la carpeta del usuario: `python3 "<skill>/../..
 
 **Una carpeta.** Todo va en `<salida>`: los documentos y, en `<salida>/extraccion/` (`<trabajo>`, que los scripts deducen de `<salida>`), la extracción y los datos de trabajo (respuestas, inventario, grafo, cachés, resumen). Se trabaja en entornos controlados y no se oculta nada: la extracción se guarda tal cual la devuelve el Dev MCP, con los usuarios, los datos de la aplicación y los secretos, y con rutas cortas, para que el proyecto quepa en Windows y en OneDrive. Como está en el proyecto, al repetir o retomar la ingeniería inversa, en otra sesión o en otro equipo, no se vuelve a pedir lo que ya está. Una carpeta es de una aplicación y un entorno. Los documentos no enlazan `<trabajo>/` y las demás skills no lo leen.
 
+## Verificar o deriva (atajo)
+
+Para comprobar lo construido de un cambio o ver qué cambió desde el `as-is/`, sin las fases 0-8 (solo `doctor` si falla la conexión). Todo es lectura. `<dx>` = `uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py"`.
+
+- **Verificar**: `<dx> verificar --app <app> --objetos "<nombres separados por comas o @fichero>" --esperado "<fichero.json>" --out <p>/construccion/verificacion/<U>.json`: si existe cada objeto (los que no, en `faltan`), su tipo, su última modificación (un dato, no una prueba), los campos de record types y CDT y los casos de prueba si el Dev MCP los expone; con `--esperado` (lo que dice el técnico), sus `diferencias`.
+- **Deriva**: `<dx> deriva --out <p>/as-is [--objetos "…"] [--ignorar "<nombre>@<fecha ISO>,…"]` → `<p>/as-is/datos/deriva.json`: cambiados, nuevos y retirados; `--ignorar` descarta los de nuestras unidades modificados después de esa fecha. Sin historial de versiones, lo dice y no supone nada.
+- **Reextraer** los cambiados y los nuevos: `<dx> extract --app <app> --out <p>/as-is --solo "<objetos>"`, que rehace el modelo; después, las fases 3-8 solo para ellos.
+
+Los valores van entre comillas: en PowerShell, un `@fichero` sin ellas no llega como texto.
+
 ---
 
 ## Flujo de trabajo
@@ -68,7 +78,7 @@ Detalle operativo y checklists en `references/analysis-workflow.md`. Crea una li
 
 ### Fase 2 — Extracción
 
-1. `uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <app> --out <salida>` (añade `--yes` si el usuario confirmó un plan grande). Es reanudable: si se corta, repítelo. Para documentar de nuevo una aplicación que ha cambiado desde la extracción que ya hay, o la de otro entorno, añade `--refresh`: lo pide todo otra vez. Repetir la ingeniería inversa en un proyecto que ya tiene `analisis/` o `refactorizacion/` numera de nuevo los `H-…` y los NV: avisa antes al usuario de que las citas del análisis y de la propuesta habrá que revisarlas.
+1. `uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" extract --app <app> --out <salida>` (añade `--yes` si el usuario confirmó un plan grande). Es reanudable: si se corta, repítelo. Para documentar de nuevo una aplicación que ha cambiado desde la extracción que ya hay, o la de otro entorno, añade `--refresh`: lo pide todo otra vez. Al repetir la ingeniería inversa, `build_registry.py` mantiene los IDs de los `H-…` y los NV que ya existían (los casa por área, objetos y `senal`) y los nuevos siguen la numeración: las citas del análisis y de la propuesta siguen valiendo, salvo las de los IDs que lista como retirados (en 09 y en `retirados` de `datos/`).
 2. Revisa `extraction_report.json`. Si en `callStatsByRole.definition` las fallidas (`failed`) pasan del 20 % del total (`ok` + `failed`), díselo al usuario antes de seguir.
 3. Data fabric (opcional, `references/data-fabric.md`): `uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py" datafabric --out <salida>` si hay servidor en la configuración; si solo está en la sesión, hazlo desde la sesión; si no, sáltalo.
 
@@ -102,7 +112,7 @@ Todos escriben sus hallazgos en su documento y en `<trabajo>/hallazgos/<agente>.
 | | `ui-rules-analyzer` | `10-pantallas.md`, `11-reglas-negocio.md` |
 | 4.3 | orquestador | `07-batches.md`, `09-valor-adicional.md` y el registro de hallazgos (ver abajo) |
 
-**Paso 4.3 (orquestador).** `python3 <skill>/scripts/build_summary.py <salida>` para ver `signals` (procesos sin ejecuciones, avisos de validación, interfaces grandes, huérfanos). Escribe `07` y `09` con sus plantillas (guía en `references/analysis-workflow.md`), tus hallazgos `H-BAT`/`H-GEN` en `<trabajo>/hallazgos/orquestador.json` y tus NV en `<trabajo>/sin-verificar/orquestador.json`. Después `python3 <skill>/scripts/build_registry.py <salida>`: valida todos los hallazgos y escribe la tabla del registro en `09`. Corrige lo que reporte (en el JSON del agente que corresponda).
+**Paso 4.3 (orquestador).** `python3 <skill>/scripts/build_summary.py <salida>` para ver `signals` (procesos sin ejecuciones, avisos de validación, interfaces grandes, huérfanos, nombres sin prefijo). Escribe `07` y `09` con sus plantillas (guía en `references/analysis-workflow.md`), tus hallazgos `H-BAT`/`H-GEN` en `<trabajo>/hallazgos/orquestador.json` y tus NV en `<trabajo>/sin-verificar/orquestador.json`. Después `python3 <skill>/scripts/build_registry.py <salida>`: valida todos los hallazgos y escribe la tabla del registro en `09`. Corrige lo que reporte (en el JSON del agente que corresponda).
 
 **Patrón de invocación** (Claude Code): `Agent({description, subagent_type: "general-purpose", prompt: <agents/rol.md> + entradas})`, varios en el mismo mensaje cuando van en paralelo. Sin herramienta de subagentes: aplica tú mismo cada `agents/<rol>.md` en el mismo orden.
 
@@ -170,6 +180,7 @@ En `<p>` (sin proyecto, `<p>` es `./<PREFIJO>/`):
 - `as-is/datos/`: lo que leen las demás skills
 - `as-is/diagrams/<nombre>.mmd`: los diagramas Mermaid
 - `as-is/extraccion/`: la extracción y los datos de trabajo
+- `construccion/verificacion/<U>.json`: lo construido de una unidad de cambio, leído en el entorno (atajo «Verificar»)
 
 El `.drawio`, el `.png` y el `.bpmn` de cada proceso y las imágenes de los Mermaid los escribe `appian-diagramas-bpmn`.
 
@@ -219,6 +230,6 @@ Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `a
 7. `INVENTARIO.md` cubre el 100 % de `inventory.json`.
 8. `LEEME.md` dice qué no estuvo disponible (MCP opcionales, tipos sin definición, seguridad por objeto), qué no se pudo verificar (tabla «Sin verificar», de `build_datos.py`) y cómo quedó cada pregunta de la revisión.
 9. No se ha escrito nada fuera de `<salida>/`. Los datos en bruto solo están en `<salida>/extraccion/` y ningún documento enlaza esa carpeta.
-10. `python3 <skill>/scripts/comprobar_asis.py <salida>` sale sin errores: nombres con el prefijo que no están en el inventario, certezas sin evidencia o con una evidencia que no lleva al anexo, cifras del volumen de LEEME distintas de `summary.json`, marcadores y enlaces rotos, NV citados que no están en `datos/` y preguntas de la revisión sin cerrar. Sus avisos (muletillas, frases largas, párrafos repetidos en dos documentos, documentos que pasan su presupuesto de palabras, «no existe» sin decir dónde se buscó, «según su nombre» en un objeto con definición, inferidos Alta con una sola evidencia en `base`, objetos de fuera de la aplicación sin NV) se corrigen.
+10. `python3 <skill>/scripts/comprobar_asis.py <salida>` sale sin errores: nombres con el prefijo que no están en el inventario, certezas sin evidencia o con una evidencia que no lleva a la ficha de su objeto, cifras del volumen de LEEME distintas de `summary.json`, marcadores y enlaces rotos, H y NV citados que no están en `datos/` y preguntas de la revisión sin cerrar. Sus avisos (menciones a los hallazgos de otra área sin su ID, muletillas, frases largas, párrafos repetidos en dos documentos, documentos que pasan su presupuesto de palabras, «no existe» sin decir dónde se buscó, «según su nombre» en un objeto con definición, inferidos Alta con una sola evidencia en `base`, objetos de fuera de la aplicación sin NV) se corrigen.
 
 Si algo falla, corrígelo y vuelve a validar antes de responder.

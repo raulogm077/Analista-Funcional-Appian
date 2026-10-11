@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Palabras de cada documento de <as-is> y el total, como las cuenta comprobar_asis.py para su presupuesto: fuera de
-los bloques de código y de los comentarios, sin el código en línea ni los destinos de los enlaces. No cuenta anexo/,
+"""Palabras de cada documento de <as-is> y el total, como las cuenta comprobar_asis.py para su presupuesto (su función
+palabras()): fuera de los bloques de código y de los comentarios, sin los títulos ni lo que escriben los scripts entre
+sus marcadores, sin los destinos de los enlaces y con cada código en línea como una palabra. No cuenta anexo/,
 extraccion/ ni datos/.
 
 Uso: python3 palabras.py <as-is> [--json]
@@ -8,14 +9,13 @@ Uso: python3 palabras.py <as-is> [--json]
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 
 sys.dont_write_bytecode = True
 SCRIPTS = Path(__file__).resolve().parents[3] / "skills" / "appian-reverse-engineering" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
-from comprobar_asis import lineas, prosa  # noqa: E402
+from comprobar_asis import palabras as palabras_de  # noqa: E402
 
 FUERA = ("anexo", "extraccion", "datos")
 
@@ -26,7 +26,7 @@ def palabras(as_is: Path) -> dict[str, int]:
         rel = doc.relative_to(as_is).as_posix()
         if rel.split("/", 1)[0] in FUERA:
             continue
-        out[rel] = sum(len(re.findall(r"\w+", prosa(l))) for _, l in lineas(doc.read_text(encoding="utf-8")))
+        out[rel] = palabras_de(doc.read_text(encoding="utf-8"))
     return out
 
 
