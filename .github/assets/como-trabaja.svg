@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="436" viewBox="0 0 900 436" role="img" aria-labelledby="titulo descripcion">
+  <title id="titulo">Cómo trabaja el plugin</title>
+  <desc id="descripcion">Las fuentes del cliente entran al analista funcional, cada una con su informe de impacto. Una aplicación existente pasa antes por ingeniería inversa, que la documenta en as-is, y, si se rehace, por refactorización, que escribe la propuesta. El analista escribe funcional.md, decisiones.md y tecnico.md. De ahí salen el prototipo navegable, el DF en Word, que recibe las capturas del prototipo, y la especificación técnica con la que se construye por el Dev MCP. Los procesos se dibujan con diagramas BPMN. Buenas prácticas orienta el análisis y el prototipo y revisa lo construido.</desc>
+  <style>
+    :root {
+      --fondo: #f6f8fc; --marco: #dfe4ef; --tarjeta: #ffffff; --borde: #d4dbea; --ficha: #f3f6fc;
+      --tinta: #131a30; --suave: #5c6787; --flecha: #8791b0;
+      --azul: #2f6fd6; --violeta: #6b4fbb; --verde: #0e8a66; --coral: #d2643f; --gris: #9aa4c0;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fondo: #0c1122; --marco: #222b47; --tarjeta: #141b31; --borde: #2a3454; --ficha: #1a2340;
+        --tinta: #eef1fb; --suave: #98a3c3; --flecha: #6d78a0;
+        --azul: #7fa8ff; --violeta: #b49dff; --verde: #4fd1b0; --coral: #f0906c; --gris: #5f6a8f;
+      }
+    }
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; }
+    .titulo { font-size: 13px; font-weight: 600; fill: var(--tinta); }
+    .nota { font-size: 11px; fill: var(--suave); }
+    .mono { font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 10.5px; fill: var(--suave); }
+    .fichero { font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 11px; fill: var(--tinta); }
+    .rotulo { font-size: 10px; font-weight: 600; letter-spacing: 1.4px; fill: var(--suave); }
+    .fondo { fill: var(--fondo); stroke: var(--marco); }
+    .tarjeta { fill: var(--tarjeta); stroke: var(--borde); }
+    .centro { fill: var(--tarjeta); stroke: var(--azul); stroke-opacity: .6; }
+    .ficha { fill: var(--ficha); stroke: var(--borde); }
+    .pastilla { fill: var(--fondo); stroke: var(--borde); }
+    .linea { fill: none; stroke: var(--flecha); stroke-width: 1.4; stroke-linecap: round; }
+    .punta { fill: var(--flecha); }
+    .azul { fill: var(--azul); } .violeta { fill: var(--violeta); } .verde { fill: var(--verde); }
+    .coral { fill: var(--coral); } .gris { fill: var(--gris); }
+  </style>
+
+  <rect class="fondo" x=".5" y=".5" width="899" height="435" rx="14"/>
+
+  <text class="rotulo" x="20" y="42">ENTRA</text>
+  <text class="rotulo" x="236" y="146">SI YA EXISTE</text>
+  <text class="rotulo" x="440" y="42">SE ANALIZA</text>
+  <text class="rotulo" x="684" y="42">SALE</text>
+
+  <!-- Flechas -->
+  <g class="linea">
+    <path d="M203 92H431"/>
+    <path d="M203 188H227"/>
+    <path d="M407 188H431"/>
+    <path d="M320 223V243"/>
+    <path d="M407 284H431"/>
+    <path d="M651 92H675"/>
+    <path d="M651 188H675"/>
+    <path d="M651 284H675"/>
+    <path d="M782 127V147"/>
+    <path d="M782 319V339"/>
+    <path d="M544 325V339"/>
+  </g>
+  <g class="punta">
+    <path d="M437 92l-7-3.5v7z"/>
+    <path d="M233 188l-7-3.5v7z"/>
+    <path d="M437 188l-7-3.5v7z"/>
+    <path d="M320 249l-3.5-7h7z"/>
+    <path d="M437 284l-7-3.5v7z"/>
+    <path d="M681 92l-7-3.5v7z"/>
+    <path d="M681 188l-7-3.5v7z"/>
+    <path d="M681 284l-7-3.5v7z"/>
+    <path d="M782 153l-3.5-7h7z"/>
+    <path d="M782 345l-3.5-7h7z"/>
+    <path d="M544 345l-3.5-7h7z"/>
+    <path d="M544 319l-3.5 7h7z"/>
+  </g>
+  <rect class="pastilla" x="255.5" y="81.5" width="129" height="21" rx="10.5"/>
+  <text class="mono" x="320" y="95.5" text-anchor="middle">informe de impacto</text>
+  <text class="mono" x="792" y="144">capturas</text>
+  <text class="mono" x="554" y="336">procesos</text>
+
+  <!-- Entra -->
+  <rect class="tarjeta" x="20.5" y="60.5" width="180" height="64" rx="10"/>
+  <rect class="gris" x="32" y="76" width="3" height="32" rx="1.5"/>
+  <text class="titulo" x="44" y="88">Fuentes</text>
+  <text class="nota" x="44" y="107">reuniones · correos · actas</text>
+
+  <rect class="tarjeta" x="20.5" y="156.5" width="180" height="64" rx="10"/>
+  <rect class="gris" x="32" y="172" width="3" height="32" rx="1.5"/>
+  <text class="titulo" x="44" y="184">Aplicación existente</text>
+  <text class="nota" x="44" y="203">en un entorno Appian</text>
+
+  <!-- Si ya existe -->
+  <rect class="tarjeta" x="236.5" y="156.5" width="168" height="64" rx="10"/>
+  <rect class="violeta" x="248" y="172" width="3" height="32" rx="1.5"/>
+  <text class="titulo" x="260" y="184">Ingeniería inversa</text>
+  <text class="nota" x="260" y="203"><tspan class="mono">as-is/</tspan> · solo lectura</text>
+
+  <rect class="tarjeta" x="236.5" y="252.5" width="168" height="64" rx="10"/>
+  <rect class="violeta" x="248" y="268" width="3" height="32" rx="1.5"/>
+  <text class="titulo" x="260" y="280">Refactorización</text>
+  <text class="mono" x="260" y="299">propuesta.md</text>
+
+  <!-- Se analiza -->
+  <rect class="centro" x="440.5" y="60.5" width="208" height="256" rx="12"/>
+  <rect class="azul" x="452" y="76" width="3" height="32" rx="1.5"/>
+  <text class="titulo" x="464" y="88">Analista funcional</text>
+  <text class="nota" x="464" y="107">solo cambia lo afectado</text>
+  <text class="rotulo" x="456" y="158">ESCRIBE EN ANALISIS/</text>
+  <rect class="ficha" x="456.5" y="172.5" width="176" height="31" rx="8"/>
+  <text class="fichero" x="468" y="192">funcional.md</text>
+  <text class="nota" x="622" y="192" text-anchor="end">se valida</text>
+  <rect class="ficha" x="456.5" y="220.5" width="176" height="31" rx="8"/>
+  <text class="fichero" x="468" y="240">decisiones.md</text>
+  <text class="nota" x="622" y="240" text-anchor="end">versiones</text>
+  <rect class="ficha" x="456.5" y="268.5" width="176" height="31" rx="8"/>
+  <text class="fichero" x="468" y="288">tecnico.md</text>
+  <text class="nota" x="622" y="288" text-anchor="end">se construye</text>
+
+  <rect class="tarjeta" x="440.5" y="348.5" width="208" height="64" rx="10"/>
+  <rect class="azul" x="452" y="364" width="3" height="32" rx="1.5"/>
+  <text class="titulo" x="464" y="376">Diagramas BPMN</text>
+  <text class="mono" x="464" y="395">.drawio · PNG · BPMN 2.0</text>
+
+  <!-- Sale -->
+  <rect class="tarjeta" x="684.5" y="60.5" width="196" height="64" rx="10"/>
+  <rect class="verde" x="696" y="76" width="3" height="32" rx="1.5"/>
+  <text class="titulo" x="708" y="88">Prototipo navegable</text>
+  <text class="nota" x="708" y="107">con la marca del cliente</text>
+
+  <rect class="tarjeta" x="684.5" y="156.5" width="196" height="64" rx="10"/>
+  <rect class="verde" x="696" y="172" width="3" height="32" rx="1.5"/>
+  <text class="titulo" x="708" y="184">DF en Word</text>
+  <text class="nota" x="708" y="203">lo valida el cliente</text>
+
+  <rect class="tarjeta" x="684.5" y="252.5" width="196" height="64" rx="10"/>
+  <rect class="verde" x="696" y="268" width="3" height="32" rx="1.5"/>
+  <text class="titulo" x="708" y="280">Especificación técnica</text>
+  <text class="nota" x="708" y="299">para construir</text>
+
+  <rect class="tarjeta" x="684.5" y="348.5" width="196" height="64" rx="10"/>
+  <rect class="verde" x="696" y="364" width="3" height="32" rx="1.5"/>
+  <text class="titulo" x="708" y="376">Construcción</text>
+  <text class="nota" x="708" y="395">con el Dev MCP</text>
+
+  <!-- Buenas prácticas: el punto coral marca lo que orienta o revisa -->
+  <rect class="tarjeta" x="20.5" y="348.5" width="384" height="64" rx="10"/>
+  <rect class="coral" x="32" y="364" width="3" height="32" rx="1.5"/>
+  <text class="titulo" x="44" y="376">Buenas prácticas</text>
+  <circle class="coral" cx="48" cy="391" r="3.5"/>
+  <text class="nota" x="58" y="395">orienta el análisis y el prototipo, y revisa lo construido</text>
+  <circle class="coral" cx="632" cy="77" r="4"/>
+  <circle class="coral" cx="864" cy="77" r="4"/>
+  <circle class="coral" cx="864" cy="365" r="4"/>
+</svg>
