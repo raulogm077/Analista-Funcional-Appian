@@ -23,7 +23,7 @@ skill contests, doc 14, against the 26.9 documentation); each ⓥ names its rele
 | The task is… | Start with | Output |
 |---|---|---|
 | **Orienting a solution** — "how should we build X", architecture, choosing objects, reviewing a design | `references/00-solution-decisions.md`, then only the domain docs the decisions touch | Each decision with **why (source) · alternative rejected · risk · tier/version dependency · what to verify** |
-| **Building or changing objects** | The calibration table below, then the domain doc(s) and the gates | The change plus a verdict per applicable gate |
+| **Building or changing objects** | The calibration table below, then the domain doc(s) and the gates | The change, plus what stayed open or couldn't be checked |
 
 In both modes, capabilities marked tier- or version-dependent are confirmed against the environment
 before a design relies on them (`00` lists them).
@@ -34,7 +34,7 @@ The most expensive mistake in a quality guide is applying all of it to everythin
 
 | The change… | Procedure |
 |---|---|
-| Is cosmetic or local and touches no data, permissions or queries (text, spacing, a label) | Cardinal Rules + gate 1 (platform correctness) — the only verdict recorded. Don't open this skill's reference docs. |
+| Is cosmetic or local and touches no data, permissions or queries (text, spacing, a label) | Cardinal Rules + gate 1 (platform correctness), nothing else. Don't open this skill's reference docs. |
 | Creates or modifies an object without exposing new data or changing authorization | The doc for its domain + the applicable gates (`10`). |
 | **Writes data, exposes information, changes permissions, queries at volume, or uses AI** | Domain docs + `10` + `11` (reliability) and full verification. |
 | Is architecture, a new data model, an integration with an external system, or an AI design | Add `00` and the documentary validation for high-risk decisions (see *Tools*). |
@@ -45,10 +45,10 @@ ordinary change is done inline, without fanning out parallel reviews. This calib
 skill's** docs and gates; a write through a design MCP still follows the official skill's own loading
 and verification steps, whatever the size of the change.
 
-**Not every FAIL blocks the same way.** Platform correctness and security block the close outright.
-Functional behavior, interfaces and operations block once and then become recorded debt. Performance and
-maintainability are contextual — *measure before optimizing* — and never block: they're recorded with an
-owner. The table is in `10`; its point is that a matter of style can't consume a remediation cycle.
+**Not every failed gate blocks the same way.** Platform correctness and security block the close outright.
+Functional behavior, interfaces and operations block once: fix it, or say what stays open and who owns it.
+Performance and maintainability are contextual — *measure before optimizing* — and never block: they're
+mentioned. The table is in `10`; its point is that a matter of style can't consume a remediation cycle.
 
 ## Routing by Domain
 
@@ -128,13 +128,17 @@ Check what is available in the session; don't invent tools or assume they exist.
 dependencies, validate against the environment. Ask for **the specific objects** you need; don't list the
 whole application to find one; don't repeat a call whose answer you have. Before modifying an existing
 object, check its **dependents** (gate 1 in `10`); before deleting one, follow the official skill's
-delete confirmation. Without a design MCP the work is the same, described as changes for
+delete confirmation. The environment is shared and has no branches: **send back the `versionId` you read**
+when updating an existing object. The update tools take it as an optional field with no description: with
+it, Appian answers 409 if someone saved the object in between (seen on expression rules and interfaces) —
+re-read and redo the change on the new version; without it, the update overwrites their work without a
+word. Without a design MCP the work is the same, described as changes for
 Designer: the rules and the gates don't depend on the tool.
 
 **Before writing through a design MCP, the official Appian skill is required.**
 [`appian/dev-mcp-skills`](https://github.com/appian/dev-mcp-skills/) carries what the tool schemas can't
 express: naming conventions, relationships declared on both sides, the order objects must be created in,
-real UUIDs versus invented ones. The gates here check the contract and the evidence, not those mechanics,
+real UUIDs versus invented ones. The gates here check the result, not those mechanics,
 so a write issued without it fails in ways nothing here catches. That skill checks that functions and
 components exist against the documentation site itself (its `functions.json`) and treats documentation
 search as an optional extra. If the official skill isn't installed, say so and don't write until the
@@ -233,7 +237,7 @@ quality. Both are needed. If something is left unverified, **say so** — don't 
 | **Approved requirements and the project's `DT-nn` decisions** (`analisis/funcional.md`, `analisis/tecnico.md`) | What the application must do, and the design choices already made with their reasons | Doc 10 *Hierarchy when requirements conflict*, levels 2–3: they never win over security or platform validity — if one breaks them, say so and propose a new decision |
 | **Official Appian skill** ([`dev-mcp-skills`](https://github.com/appian/dev-mcp-skills/)) | The mechanics of the design MCP: both sides of a relationship, creation order, UUID handling, dependency-ordered change planning (`change-planning.md`), post-change verification (`change-review.md`), the syntax of query recipes (`query-record-type-patterns.md`) and null handling (`null-safety-patterns.md`), accessibility audits, and the naming of what docs 01 and 08 don't cover (tables and fields) | It is the vendor's account of how its own API behaves — except where it departs from the documentation, listed in `references/14-official-skill-divergences.md` |
 | **Appian Community Knowledge Base** (Solution Engineering KB, Appian Max) | Field-proven patterns, known issues and their workarounds, Appian Cloud operations | Written by Appian's own support and delivery teams — but dated: check *Affected Versions* and the review date, and the docs win on conflict (doc 13 §11) |
-| **These `references/`** | Solution decisions, quality gates, outcomes and evidence, when something is finished | That is what this skill is for |
+| **These `references/`** | Solution decisions, quality gates and outcomes, when something is finished | That is what this skill is for |
 | **The project's local convention** | House style, prefixes, structure | Consistency inside one app beats canonical style — unless it breaks security or platform validity; then say so |
 
 Where they overlap, the higher one wins — except house style, where an existing app's own convention
@@ -272,7 +276,7 @@ documentation that contradicts them, never on intuition.
 - A query inside a loop, or the same query repeated instead of cached.
 - A reference to a rule or constant never verified to exist. `rule!Name` alone validates clean; only
   `rule!Name(param: null)`, with parentheses, proves it exists.
-- A gate marked PASS whose evidence doesn't cover the gate's criterion.
+- A gate called passed on a check that doesn't cover its criterion.
 - A destructive action whose confirmation sits on a component that ignores it.
 - A screen whose only path to its data is a chart; a grid without a label or a row header.
 - A title rendered as styled rich text instead of a heading component.
@@ -286,15 +290,13 @@ documentation that contradicts them, never on intuition.
 
 ## Verification
 
-Before calling the work finished, confirm and record:
+Before calling the work finished, confirm:
 
-- [ ] Every applicable gate in `10` has PASS, FAIL, N/A (with a reason about the object) or NOT MEASURED
-      with its class — for a cosmetic change, gate 1 only.
-- [ ] Every PASS names the evidence that produced it.
-- [ ] Every NOT MEASURED · DEFERRED names a criterion **from the closed list in `10`**, a reason, an owner
-      and a closing condition. Short of that it isn't a deferral: it's BLOCKING.
+- [ ] The applicable gates in `10` were walked — for a cosmetic change, gate 1 only — and what failed is
+      fixed. A gate that passes leaves nothing to write.
+- [ ] What couldn't be checked is said, with who can check it. It is never reported as passed.
 - [ ] Behaviour was exercised with populated data, not only with empty tables.
-- [ ] If it reaches production, doc 11's operational-readiness gate is recorded, or its gaps are stated.
+- [ ] If it reaches production, doc 11's operational-readiness gate is met, or its gaps are stated.
 - [ ] If the change touches data, permissions or actions, one authorized and one unauthorized role were tested.
 - [ ] Anything used from the documentation MCP is cited; anything that couldn't be verified is said.
 - [ ] Nothing changed outside the agreed scope; anything noticed and left alone is stated explicitly.

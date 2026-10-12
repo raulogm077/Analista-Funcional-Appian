@@ -13,63 +13,42 @@ record type that exposes compensation data does. The practical rule, for anythin
 gates** (it's cheap) and **thoroughly execute the ones the change could break** (that's the expensive
 part). A new object that writes data or exposes information touches almost all of them; a layout tweak,
 two or three. A **cosmetic or local change** (text, spacing, a label — SKILL.md's first calibration row)
-records **gate 1 only**; the other gates are not walked and get no verdict.
+walks **gate 1 only**.
 
-What **never** scales down: an invalid reference, an authorization gap and a non-idempotent write are
-FAIL in any change, no matter how small.
+What **never** scales down: an invalid reference, an authorization gap and a non-idempotent write
+block any change, no matter how small.
 
-## How it's recorded
+## What gets written down
 
-For each applicable gate, record one outcome with its evidence, wherever the project tracks progress
-(its status file, the ticket or the PR):
+No verdict per gate and no evidence log: a gate that passes leaves nothing to write. Two things are said
+when the work is handed over, in the reply itself or wherever the project already tracks pending work:
 
-- **PASS** — checked, with evidence (UUID, validator output, test result, screenshot). A PASS whose
-  evidence doesn't cover the gate's criterion is not a PASS.
-- **FAIL** — the effect depends on the gate's class (table below).
-- **NOT MEASURED** — the gate applies and no evidence covers it, including a gate nobody checked. It is
-  never a pass.
-- **N/A** — the gate doesn't apply to this object at all, because the condition it protects against isn't
-  present (e.g. field-level security on an object with no protected fields). It needs **a concrete
-  justification about the object** ("N/A: the object exposes no data"), **never** one about the process,
-  the schedule or the time available. "N/A: I didn't get to it" is a NOT MEASURED under another name.
+- **What stays open**, and who owns it — only possible outside gates 1 and 3 (table below).
+- **What couldn't be checked**, and who can check it. Not checked is never the same as passed. What could
+  be checked with the tools at hand is checked, not listed as pending.
 
-### NOT MEASURED has two classes
+What the builder structurally can't check:
 
-| Class | What it is | Effect |
-|---|---|---|
-| `NOT MEASURED · BLOCKING` | It could have been measured with the tools at hand and wasn't | Blocks the task. It's a process failure, not a limitation |
-| `NOT MEASURED · DEFERRED` | The criterion structurally needs a person or a capability the tools don't expose | Doesn't block the task. **Blocks phase closure and deployment** until it has an owner and a closing condition |
-
-A deferral is a named debt, not a permission: it is recorded with **criterion, reason, owner and closing
-condition**. A deferral missing any of them is **rejected** — the gate stays shut — and it is not quietly
-rewritten as something else.
-
-**Only these criteria may be deferred.** The list is closed: a criterion can't be declared deferrable to
-unblock a task. A deferral names the id it invokes.
-
-| Id | Why it can't be measured by the builder |
-|---|---|
-| `screen-reader-testing` | Needs a person with a real screen reader |
-| `design-guidance-warnings` | Design Guidance warnings aren't exposed by the API; someone must open the object in Designer |
-| `row-and-field-level-security-with-a-real-user` | Row/field security doesn't apply in Designer; needs a login per role |
-| `contrast-against-theme-supplied-colors` | Colors come from the environment's theme, not from the SAIL |
-| `process-model-connection-routing` | Connection waypoints aren't exposed by the API |
-| `visual-judgement-on-rendered-screen` | A person has to look at the rendered screen (not valid before the screen exists) |
-| `instrument-limit-known` | The tool that should measure it failed for a reason unrelated to this change and no alternative evidence exists |
+- a real **screen reader**;
+- **Design Guidance warnings**: the API doesn't expose them, someone opens the object in Designer;
+- **row- and field-level security**: it doesn't apply in Designer and needs a login per role;
+- **contrast against colours the environment's theme supplies**, which aren't in the SAIL;
+- the **routing of process model connections**: the API doesn't expose the waypoints;
+- **how the rendered screen looks**: a person has to look at it.
 
 ## The seven gates do not block alike
 
 A matter of style must not be able to consume a remediation cycle. Three classes:
 
-| Gate | Class | Effect of a FAIL |
+| Gate | Class | If it fails |
 |---|---|---|
 | 1. Platform correctness | CARDINAL | **Blocks the close.** No exception |
 | 3. Security | CARDINAL | **Blocks the close.** No exception |
-| 2. Functional behavior | RECOMMENDED | **Blocks once:** fix it, or record it as debt with an owner and closing condition |
-| 4. SAIL interfaces | RECOMMENDED | **Blocks once**, then closes with recorded debt |
-| 7. Operations and deployment | RECOMMENDED | **Blocks once**, then closes with recorded debt |
-| 5. Performance | CONTEXTUAL | **Doesn't block.** Recorded with its owner |
-| 6. Maintainability | CONTEXTUAL | **Doesn't block.** Recorded with its owner |
+| 2. Functional behavior | RECOMMENDED | **Blocks once:** fix it, or say what stays open and who owns it |
+| 4. SAIL interfaces | RECOMMENDED | **Blocks once:** fix it, or say what stays open and who owns it |
+| 7. Operations and deployment | RECOMMENDED | **Blocks once:** fix it, or say what stays open and who owns it |
+| 5. Performance | CONTEXTUAL | **Doesn't block.** Say it |
+| 6. Maintainability | CONTEXTUAL | **Doesn't block.** Say it |
 
 The three that are **never graded down** — an invalid reference, an authorization gap, a non-idempotent
 write — are CARDINAL wherever they are found, including inside a CONTEXTUAL gate.
@@ -79,7 +58,7 @@ The reason is in the doctrine itself: maintainability and performance are **cont
 docs* — and the point is to favour good Appian development, not to build ceremony around every
 recommendation.
 
-**Contents:** Apply the gates in proportion to the change · How it's recorded
+**Contents:** Apply the gates in proportion to the change · What gets written down
 · The seven gates do not block alike · 1. Platform correctness · 2. Functional behavior
 · 3. Security (by role, data and action) · 4. SAIL interfaces (full gate) · 5. Performance
 · 6. Maintainability · 7. Operations and deployment · Quick gates by object type
@@ -91,7 +70,7 @@ recommendation.
 
 > **Before adding a check of your own, read the official one.** The official Appian skill specifies
 > post-change verification in `references/change-review.md`. **Those are the mechanics; this section is
-> the gate** — what must pass before a change can close, and what counts as evidence. Without that skill
+> the gate** — what must pass before a change can close. Without that skill
 > installed, this section stands on its own.
 
 - ✅ The object **saves and validates without errors**. With a design MCP (e.g. `appian-dev`):
@@ -182,7 +161,7 @@ Every new or modified interface passes, **in order**:
      inequality, not "it rendered", is what proves the loops iterated.
    - The empty render shows a **useful empty state**, not a blank gap.
 6. **Don't read a large evaluated tree whole.** A medium screen's tree runs to hundreds of KB; reading a
-   slice and judging the whole is a truncated verdict that looks complete. Search it for the checks above
+   slice and judging the whole is a truncated judgement that looks complete. Search it for the checks above
    and **say which fragment you inspected**.
 
 > **Why two layers of validation:** environment validation checks that the expression evaluates; static

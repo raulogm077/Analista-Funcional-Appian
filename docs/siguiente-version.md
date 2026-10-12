@@ -23,6 +23,20 @@ Lo que sigue abierto tras la 0.7.0-beta.4 (planes `docs/plan/2026-10-11-0.7.0-be
 - `references/mermaid-rules.md`: «como mucho 5 cajas por capa» no garantiza el ancho de la arquitectura; partirla en dos
   no encaja con `arquitectura-<capa>.mmd`.
 
+## Agilidad (de medir un uso real y los despliegues, 12 de octubre de 2026)
+
+Medido en una sesión real con la 0.6.0-beta.1 (incorporar una fuente corta con su prototipo, 70 minutos): comprobar
+cada punto con la versión actual antes de cambiar nada.
+
+- Prototipos: para retocar un prototipo que ya existía, se leyeron la guía de diseño entera y el código de los scripts
+  antes de tocar nada (18 de 43 minutos). Falta decir qué se lee en un retoque.
+- Analista: se leyeron el técnico y el funcional enteros, aunque `references/actualizacion.md` dice que no (17 minutos).
+- Analista: en documentos cortos, la nota de la fuente salió de 3 a 7 veces más larga que el original.
+- El análisis esperó al prototipo para generar el DF (28 minutos): decidir si el DF sale antes y las capturas se
+  añaden después.
+- Pruebas: medir cuánto tarda cada grupo de `comprobar_plugin.py --completo` y lanzarlos en paralelo; con la misma
+  batería, Windows tarda el doble que Linux (17 y 8,5 minutos en GitHub).
+
 ## Menores
 
 - Diagramas: la salida de una puerta que comparte el tramo de su derecha sale ya por su vértice (el codo) y su etiqueta
