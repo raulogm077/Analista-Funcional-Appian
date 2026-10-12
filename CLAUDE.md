@@ -3,6 +3,8 @@
 Repositorio único del plugin. Todo hilo, en la nube o en el equipo de Raúl, parte de aquí y sube aquí.
 
 - Antes de empezar, `git pull`. Nunca se copia encima un plugin instalado ni una carpeta suelta: así se perdió trabajo con las dos 0.6.0-alpha.2.
+- Se trabaja en una rama local por trabajo y, mientras se pueda, una sesión cada vez. La rama se sube cuando convenga, como copia de seguridad: sin PR no se prueba nada ni se toca `main`. Si dos sesiones trabajan a la vez, cada una en su copia de la carpeta (worktree) y la principal se queda en `main`.
+- El PR se abre solo cuando Raúl dice que se suba; antes, la sesión le resume qué cambió y qué probó. Un PR por trabajo terminado, no por cada retoque.
 - Aquí solo está el código del plugin y sus pruebas. Lo que el plugin genera al trabajar en un proyecto, también en los proyectos de prueba, va a la carpeta de ese proyecto, nunca a este repositorio.
 - Ninguna skill lleva un proyecto, tampoco de ejemplo, ni la marca de un cliente. Las pruebas de cada skill y sus datos ficticios van en `pruebas/<skill>/`, que no entra en el paquete, y la marca de un cliente (`brand-<id>.json` y su logo), en `prototipo/` de su proyecto.
 - El diseño aprobado está en `docs/diseno/`, el plan de implementación en `docs/plan/` y los resultados de las evaluaciones en `docs/evaluaciones.md`, con lo aplazado de cada fase y la tarea que lo recoge.
