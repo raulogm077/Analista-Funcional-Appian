@@ -416,7 +416,7 @@ Source: https://docs.appian.com/suite/help/latest/SAIL_Performance.html#phase4 Â
 > audit procedure and the per-component checks. This section keeps the criterion and what closes the
 > gate. What this skill adds is that accessibility is *gated* (doc 10, gate 4):
 > the part that can be checked from the SAIL or the rendered interface is checked, and the part that
-> needs a person with a screen reader is recorded as an owned deferral instead of being quietly skipped.
+> needs a person with a screen reader is said, with who can check it, instead of being quietly skipped.
 > **Without that skill installed**, the platform sources cited under each rule are what it is built
 > from.
 

@@ -43,7 +43,7 @@ lista los títulos del doc).
 | 10. Integraciones, documentos e IA | 07; 01 §8.bis; 12 si hay IA |
 | 11. Site e informes | 09; 05 §4 |
 | 12. Volumen y operación | 05 §8; 11 §5 y §7; 13 |
-| 13. Plan de construcción | 08 §3 |
+| 13. Plan de construcción | Nada: el orden está en el propio apartado |
 | 14. Pruebas y trazabilidad | 10; 11 §6 |
 
 **Qué fuente manda** (BP 10 «Hierarchy when requirements conflict»): la seguridad y la validez de la
