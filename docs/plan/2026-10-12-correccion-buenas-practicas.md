@@ -201,11 +201,13 @@ avisos. El texto nuevo va en inglés, con los marcadores del doc (✅ ❌ ⚠️
 
 ## 4. Pasos de Raúl
 
-- **Acceso por URL a una página oculta de un sitio.** La documentación no lo resuelve. Probarlo en un entorno: usuario
-  con permiso sobre la interfaz, página con «Only show when» en falso, abrir la URL de la página. Con el resultado se
-  fija el texto de `09` §7.3 (T7 lo deja en la versión prudente).
-- **Al actualizar la skill oficial** (`appian-devmcp-update`): pasar `comprobar_divergencias.py` y retirar del doc 14
-  lo que Appian haya corregido.
+Ninguno. Los dos que se preveían quedaron resueltos sin él:
+
+- **Acceso por URL a una página oculta de un sitio.** La documentación dice que ver una página exige Viewer en el sitio
+  y visibilidad de la página, y no dice qué pasa con una URL directa; en la comunidad tampoco consta. La regla de `09`
+  §7.3 no depende de esa prueba: se diseña como si la página se pudiera alcanzar y se protegen los objetos que usa.
+- **Mantenimiento al actualizar la skill oficial y antes de publicar.** Es una regla del repositorio (`CLAUDE.md`):
+  `comprobar_divergencias.py` cuando cambie la skill oficial y `comprobar_anclas.py` antes de publicar una versión.
 
 ## 5. Riesgos a revisar
 

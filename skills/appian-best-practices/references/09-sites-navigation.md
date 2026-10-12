@@ -274,10 +274,11 @@ Source: https://docs.appian.com/suite/help/latest/sites_object.html#site-securit
   pages show, even if an individual page's condition is true. Check the group's condition before
   debugging why a page isn't appearing.
 - ⚠️ **A layer, not a substitute:** security in Appian is layered — the user needs permission on every
-  object the page uses. Hiding a page changes nothing in the role maps of its record type, interface or
-  process model: restrict those too (7.1/7.2, doc 06). Whether a hidden page can still be opened by its
-  URL is **not documented**; until that has been tested in the environment, don't rely on visibility
-  alone to protect data.
+  object the page uses. The documentation says that viewing a page takes Viewer on the site **and**
+  visibility of that page; it doesn't say how a direct URL to a hidden page behaves, so design as if the
+  page could be reached: hiding it changes nothing in the role maps of its record type, interface or
+  process model — restrict those too (7.1/7.2, doc 06). Test visibility with a user who is not a system
+  administrator (doc 11 §6).
 - ⚠️ **Performance:** these expressions are **evaluated on every load/refresh** of the site, just like the
   display name — **don't put long-running queries** in them (same trap as 6.1).
 - **Why:** adapting the bar to the role or the state (showing "Approvals" only to whoever approves)

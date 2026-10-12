@@ -8,6 +8,8 @@ Repositorio único del plugin. Todo hilo, en la nube o en el equipo de Raúl, pa
 - El diseño aprobado está en `docs/diseno/`, el plan de implementación en `docs/plan/` y los resultados de las evaluaciones en `docs/evaluaciones.md`, con lo aplazado de cada fase y la tarea que lo recoge.
 - Lo que surge y no entra en la versión en curso se apunta en `docs/siguiente-version.md`.
 - Antes de cada commit: `python3 pruebas/comprobar_plugin.py --completo`, que pasa también las pruebas de ingeniería inversa. Solas: `python3 -m pytest -q pruebas/appian-reverse-engineering`; la de una skill: `python3 pruebas/<skill>/selftest.py`. Con `--plugin <carpeta>`, las mismas pruebas sobre otra copia del plugin (la del paquete).
+- Cuando cambie la skill oficial `appian` (un bundle DevMCP nuevo): `python3 pruebas/comprobar_divergencias.py`. Dice qué filas de `skills/appian-best-practices/references/14-official-skill-divergences.md` hay que revisar y si algún fichero de la oficial que cita buenas prácticas ha dejado de existir; lo que Appian haya corregido se quita de ese documento y de `pruebas/divergencias-oficial.json`.
+- Antes de publicar una versión, con red: `python3 pruebas/comprobar_anclas.py`. Las anclas de docs.appian.com cambian con cada versión de Appian; las rotas se corrigen. No entra en `--completo` porque necesita red.
 - Nada del cliente en el repositorio: los ejemplos son ficticios y las transcripciones o salidas reales no se suben.
 - Commits en español. La versión va en `.claude-plugin/plugin.json` y en la primera fila de versiones del README.
 - El paquete `.plugin` se genera para entregarlo; no se versiona.

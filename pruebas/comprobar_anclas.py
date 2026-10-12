@@ -5,7 +5,7 @@
 
 Necesita red: por eso no entra en comprobar_plugin.py --completo. Descarga cada página una vez (sigue la redirección de
 /latest/ a la versión vigente) y busca el ancla como id="…" o name="…". Con --cache guarda las páginas en esa carpeta y
-las reutiliza. Por defecto mira appian-best-practices; --skill se puede repetir.
+las reutiliza. Por defecto mira todas las skills; --skill, que se puede repetir, lo limita a las que se digan.
 
 Salida: «fichero:línea URL — motivo» por cada enlace roto. Código 1 si hay alguno, 2 si no se pudo descargar nada.
 """
@@ -67,10 +67,10 @@ def main() -> int:
     for s in (sys.stdout, sys.stderr):  # consolas de Windows sin UTF-8
         s.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--skill", action="append", help="skill que se mira (por defecto, appian-best-practices)")
+    ap.add_argument("--skill", action="append", help="skill que se mira (por defecto, todas)")
     ap.add_argument("--cache", help="carpeta donde guardar y reutilizar las páginas descargadas")
     a = ap.parse_args()
-    skills = a.skill or ["appian-best-practices"]
+    skills = a.skill or sorted(d.parent.name for d in (RAIZ / "skills").glob("*/SKILL.md"))
     for nombre in skills:
         if not (RAIZ / "skills" / nombre).is_dir():
             print(f"No existe la skill {nombre}.", file=sys.stderr)
