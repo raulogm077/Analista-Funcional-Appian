@@ -1,15 +1,18 @@
 # Pruebas del plugin, según lo que cambia. No va en el paquete: .github/ es del repositorio.
-# - Siempre (segundos): la comprobación básica, que mira que las skills encajan y que no hay nada de un cliente.
-# - Si cambia algo más que texto (un script, una plantilla, un dato, una prueba): la comprobación completa, en una
-#   máquina (Linux, Python 3.12).
+# - En cada PR, siempre (segundos): la comprobación básica, que mira que las skills encajan y que no hay nada de un
+#   cliente.
+# - En cada PR que toca el plugin (skills/, pruebas/ y lo demás que no sea documentación): la comprobación completa, en
+#   una máquina (Linux, Python 3.12). Las pruebas leen también los textos de las skills, así que un cambio de texto en
+#   una skill la pasa igual que uno de script.
 # - A mano (Actions → Pruebas → Run workflow), antes de publicar una versión: la completa en Windows, macOS y Linux, con
 #   Python 3.9 y 3.12 (Tarea 26), que es cuando importa que los scripts funcionen en el equipo de cualquiera.
+# main está protegida: nada entra sin PR, sin estar al día con main ni sin que «Resultado» salga en verde. Con
+# `gh pr merge --auto --merge`, GitHub une el PR él solo cuando pasa. Al unir no se vuelve a probar: el PR, al día, ya
+# probó su unión con main. Si otro PR entra antes, este se pone al día con `gh pr update-branch` y se prueba otra vez.
 name: Pruebas
 
 on:
   pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 # Un commit nuevo en la misma rama o PR cancela la ejecución anterior
@@ -38,17 +41,16 @@ jobs:
       - name: Las skills encajan entre sí
         run: python pruebas/comprobar_plugin.py
 
-      # Texto es lo que solo lee el modelo o una persona. Lo demás (scripts, plantillas, datos, pruebas, este fichero)
-      # pide la completa; ante la duda, también.
+      # Documentación es lo que no va en el plugin ni lo lee ninguna prueba. Todo lo demás (skills/, pruebas/, hooks/,
+      # este fichero…) pide la completa; ante la duda, también.
       - name: Qué más hay que pasar
         id: alcance
         shell: bash
         env:
           EVENTO: ${{ github.event_name }}
           BASE: ${{ github.base_ref }}
-          ANTES: ${{ github.event.before }}
         run: |
-          SOLO_TEXTO='^(README\.md|CLAUDE\.md|docs/.*|\.github/assets/.*|skills/[^/]+/SKILL\.md|skills/[^/]+/(references|agents)/.*\.md)$'
+          SOLO_DOCUMENTACION='^(README\.md|CLAUDE\.md|docs/.*|\.github/assets/.*)$'
           UNA='{"include":[{"os":"ubuntu-latest","python":"3.12","utf8":"1"}]}'
           # La última es un Windows como el de un compañero: sin PYTHONUTF8, la consola y los ficheros sin decir la
           # codificación van en cp1252 (riesgo 2 del plan)
@@ -58,13 +60,9 @@ jobs:
           if [ "$EVENTO" = workflow_dispatch ]; then
             matriz=$SIETE
           else
-            if [ "$EVENTO" = pull_request ]; then
-              cambios=$(git diff --name-only "origin/$BASE...HEAD") || cambios=desconocido
-            else
-              cambios=$(git diff --name-only "$ANTES" "$GITHUB_SHA") || cambios=desconocido
-            fi
+            cambios=$(git diff --name-only "origin/$BASE...HEAD") || cambios=desconocido
             echo "$cambios"
-            if [ -n "$cambios" ] && ! grep -Evq "$SOLO_TEXTO" <<< "$cambios"; then
+            if [ -n "$cambios" ] && ! grep -Evq "$SOLO_DOCUMENTACION" <<< "$cambios"; then
               completa=false
             fi
           fi
@@ -135,3 +133,21 @@ jobs:
               trozo = t[k:k + 3000].replace("%", "%25").replace("\r", "").replace("\n", "%0A")
               print(f"::error title=comprobar_plugin {k // 3000 + 1}::{trozo}")
           PY
+
+  # La única comprobación que exige la protección de main: dice si pasó todo lo que tocaba pasar. La completa cuenta
+  # como pasada si no hacía falta (solo documentación).
+  resultado:
+    name: Resultado
+    needs: [basica, completa]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Todo lo que tocaba pasar ha pasado
+        shell: bash
+        env:
+          BASICA: ${{ needs.basica.result }}
+          COMPLETA: ${{ needs.completa.result }}
+        run: |
+          echo "básica: $BASICA · completa: $COMPLETA"
+          [ "$BASICA" = success ] && { [ "$COMPLETA" = success ] || [ "$COMPLETA" = skipped ]; }
