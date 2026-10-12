@@ -172,7 +172,10 @@ And a **manual review** (syntax validation doesn't replace it):
 
 - ✅ **loading, empty, error and success** states with a useful message and next step;
 - ✅ visual hierarchy, spacing, density and legibility; consistency with the rest of the app;
-- ✅ accessible labels/instructions/validations; **contrast** and **not relying on color alone** (WCAG 2.2 AA);
+- ✅ accessible labels/instructions/validations; **contrast** and **not relying on color alone** (WCAG 2.2 AA).
+  What can be checked from the SAIL is what the official Appian skill's accessibility audit covers
+  (`accessibility-audit.md`, `component-checks.md`): with that skill installed, use it for this check
+  instead of reviewing by hand; without it, doc 02 §9 has the criteria;
 - ✅ behavior at the **screen sizes** the requirements demand;
 - ✅ **confirmation** on destructive/irreversible actions, on a component that actually honours it;
 - ✅ user-facing text through the **translation set** if the app is multilingual;
