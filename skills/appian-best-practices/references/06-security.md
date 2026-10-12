@@ -22,7 +22,7 @@ Anti-pattern: adding `john.smith` directly to an interface's role map. Appian fl
 Source: [Object Security — Groups and role maps](https://docs.appian.com/suite/help/latest/object-security.html#groups-and-role-maps) · [Warnings](https://docs.appian.com/suite/help/latest/object-security.html#warnings)
 
 ✅ **Create a group for every business role in the organization and assign permissions to the group, not the user.**
-Appian's literal recommendation: "instead of assigning rights to each user, create a custom group for each role in your organization, assign rights by group, and add the users of that role to the group".
+Appian's recommendation, in short: rather than assigning rights to each user, create a custom group for each role in the organization, assign rights by group, and add the users in that role to the group. "Role" here means a **security role** — people whose access differs; a role that changes no access needs no group of its own.
 Source: [Manage user rights and security](https://docs.appian.com/suite/help/latest/User_Management.html#manage-user-rights-and-security)
 
 ✅ **Use group types to classify groups and share attributes across them.**
@@ -161,8 +161,8 @@ Source: [Field-level security in applications — common fields](https://docs.ap
 ### 5.3 Record view and record action security
 
 ✅ **Restrict sensitive views and actions with Security Rules; use Security Expression only for complex or legacy logic.**
-A view is only shown if its Security Expression evaluates to *true* for the user. For "NOT a member of a group" conditions use `not(a!isUserMemberOfGroup(...))`. As with record-level security, test it by switching users.
-Source: [Record View Security — Security expression](https://docs.appian.com/suite/help/latest/record-view-security.html#security-expression) · [Secure Your Data Fabric](https://docs.appian.com/suite/help/latest/secure-your-data-fabric.html)
+A view is only shown if its Security Expression evaluates to *true* for the user. For "NOT a member of a group" conditions use `not(a!isUserMemberOfGroup(...))`. As with record-level security, test it by switching users. Through a design MCP, a record action's `visibilityExpr` **is** its Security Expression (Appian renamed the old visibility expressions): valid, but the second choice after Security Rules.
+Source: [Record View Security — Security expression](https://docs.appian.com/suite/help/latest/record-view-security.html#security-expression) · [Record Action Security — Security expression](https://docs.appian.com/suite/help/latest/record-action-security.html#security-expression) · [Secure Your Data Fabric](https://docs.appian.com/suite/help/latest/secure-your-data-fabric.html)
 
 ✅ **Remember that seeing a record action requires `Initiator` on the underlying process model, in addition to the action's Security Rule/Expression.**
 Appian only shows a record action if all three conditions hold at once: the action's Security Rule/Expression includes the user, the user has **Initiator** on the process model the action starts, and — for related actions — the user can see the row (record-level security). The process model's security is edited from the record type itself (**Views and Actions Security → Actions**). If an action doesn't appear and the Security Rule is correct, check the process model's **Initiator**.
@@ -226,7 +226,7 @@ Source: [Manage user rights and security](https://docs.appian.com/suite/help/lat
 
 ✅ **Apply least privilege to service accounts as well.**
 If a service account only needs to rotate credentials, it should not have broader administrative access than required. The **Deploy As** account in the deployment configuration must be in the **service account** role.
-Source: [API security — Authentication and authorization](https://docs.appian.com/suite/help/latest/rpa-9.25/security-rpa.html#api-security-for-infrastructure-management) · [Deploy to Target Environments — Security](https://docs.appian.com/suite/help/latest/Deploy_to_Target_Environments.html#security)
+Source: [API security — Authentication and authorization](https://docs.appian.com/suite/help/latest/rpa-9.25/security-rpa.html#api-security-for-infrastructure-management) · [Deploy to Target Environments — Security](https://docs.appian.com/suite/help/latest/Deploy_to_Target_Environments.html#object-behavior-in-target-environments)
 
 ✅ **Separate development, test and production environments; change control between them is the customer's responsibility.**
 Appian Cloud assumes the customer manages their non-production environments for testing, and reviews/approves changes affecting security, availability or confidentiality before promoting them. Data classification and who accesses it are also the customer's responsibility.
@@ -234,7 +234,7 @@ Source: [Appian Cloud User Control Considerations](https://docs.appian.com/suite
 
 ✅ **Deploy security with an `<App>_Administrators` group present in both environments.**
 Official best practice: create the group in the source environment, export it in the application package before the app itself (so Appian recognizes it as the same group in both environments), add it with Administrator to every role map, temporarily add the importer to the group and remove them after importing. Remember: on deployment, **individual users in a role map are dropped** if they don't exist (or are disabled) in the target; groups only survive if they are in the package or already exist in the target — another reason to use groups, not users.
-Source: [Deploy to Target Environments — Security / Deploying security role maps](https://docs.appian.com/suite/help/latest/Deploy_to_Target_Environments.html#security)
+Source: [Deploy to Target Environments — Security / Deploying security role maps](https://docs.appian.com/suite/help/latest/Deploy_to_Target_Environments.html#object-behavior-in-target-environments)
 
 ✅ **Harden platform authentication in the Admin Console: MFA, session timeout and SSO/SAML.**
 Beyond object security, the access surface is governed in **Admin Console → Authentication**: require **MFA** (a code from an authenticator app such as Google/Microsoft Authenticator), set **session timeouts** (with different values for administrators and users) and delegate identity to **SSO/SAML** when the organization uses it. These are System Administrator settings, not designer settings, but they condition the whole application's security.
@@ -360,7 +360,7 @@ All URLs use the `latest` alias (redirects to Appian's latest monthly release).
 
 **Users, environments, deployment and governance**
 - [Manage user rights and security](https://docs.appian.com/suite/help/latest/User_Management.html#manage-user-rights-and-security)
-- [Deploy to Target Environments — Security](https://docs.appian.com/suite/help/latest/Deploy_to_Target_Environments.html#security)
+- [Deploy to Target Environments — Security](https://docs.appian.com/suite/help/latest/Deploy_to_Target_Environments.html#object-behavior-in-target-environments)
 - [Admin Console — Appian Authentication (MFA, session timeout)](https://docs.appian.com/suite/help/latest/admin-appian-authentication.html#multi-factor-authentication) · [Authentication (SSO/SAML)](https://docs.appian.com/suite/help/latest/Authentication.html)
 - [Appian Cloud User Control Considerations](https://docs.appian.com/suite/help/latest/Appian_Cloud_User_Control_Considerations.html)
 

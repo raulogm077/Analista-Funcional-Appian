@@ -32,7 +32,9 @@ Source: [Appian Max — Performance Testing Methodology](https://community.appia
 > is specific to querying from a screen and points here for the rest. The official Appian skill goes
 > deeper still in `references/query-record-type-patterns.md` (filters, sorting, relationships,
 > aggregations and paging, with a recipe per case) — **load it before writing a query whose shape is
-> not already in this section.**
+> not already in this section.** Two of its recipes go against the documentation — `fetchTotalCount`
+> on every query, and one unfiltered query split in memory instead of filtered ones: doc 14 says what to
+> do instead.
 > **Without that skill installed**, the platform sources cited under each rule are what it is built
 > from.
 
@@ -47,8 +49,8 @@ Source: [a!queryRecordByIdentifier() — Using the fields parameter](https://doc
 ✅ **Exclude expensive fields from high-volume queries:** *real-time custom record fields* and *Extra Long Text fields*. They're costly to return and penalize large grids and listings.
 Source: [Query Performance Best Practices — Best practice checklist](https://docs.appian.com/suite/help/latest/query-best-practices.html)
 
-✅ **Always paginate with `a!pagingInfo(startIndex, batchSize)` and filter to narrow the result set.** Returning 5,000 rows to display 5 wastes resources.
-Source: [Query Performance Best Practices](https://docs.appian.com/suite/help/latest/query-best-practices.html)
+✅ **Always paginate with `a!pagingInfo(startIndex, batchSize)` and filter to narrow the result set.** Returning 5,000 rows to display 5 wastes resources. In `a!queryRecordType()` the `batchSize` goes from 0 to 5000 and `-1` is not valid: 5000 is the ceiling, not a default to reach for.
+Source: [Query Performance Best Practices](https://docs.appian.com/suite/help/latest/query-best-practices.html) · [a!queryRecordType() — Using the pagingInfo parameter](https://docs.appian.com/suite/help/latest/fnc_system_queryrecordtype.html#using-the-paginginfo-parameter)
 
 ❌ **Don't query inside a loop (N+1 pattern).** `a!queryRecordByIdentifier()` **should not be used inside a loop**: if you need more than one base record or more than 100 related records, query the related record type separately in a single query.
 Source: [a!queryRecordByIdentifier() — Usage considerations](https://docs.appian.com/suite/help/latest/fnc_system_a_queryrecordbyidentifier.html)
@@ -60,19 +62,19 @@ Source: [a!queryRecordByIdentifier() versus a!queryRecordType()](https://docs.ap
 Source: [Query Performance Best Practices — Best practice checklist](https://docs.appian.com/suite/help/latest/query-best-practices.html)
 
 ⚠️ **5,000-row ceiling on record-type-powered components.** Every records-powered component (grid, chart, dropdown, checkbox…) displays a maximum of **5,000 rows**, and you shouldn't get close to that number: paginate, filter, or aggregate. It's a platform limit, not a target.
-Source: [Row limit for records-powered components](https://docs.appian.com/suite/help/latest/records-powered-components.html)
+Source: [Row limit for records-powered components](https://docs.appian.com/suite/help/latest/Paging_Grid_Component.html#row-limit-for-records-powered-components)
 
 ✅ **Filter by indexed fields.** Filtering and sorting by columns indexed in the source database is what keeps the query fast at volume. *(The index itself is a database design decision: doc 01 §8.1 and §12.3.)*
 Source: [Query Performance Best Practices](https://docs.appian.com/suite/help/latest/query-best-practices.html)
 
-⚠️ **Database queries have their own limits.** `a!queryEntity` and query rules time out after **10 s** (`conf.data.query.timeout`; not configurable on Appian Cloud; not applied to Query Database) and stop at **5 MB** of result per query (`conf.data.query.memory.limit`); record type queries time out at 65 s. `fetchTotalCount: true` runs the query twice — ask for it only where a total is shown. `ignoreFiltersWithEmptyValues` plus a missing input returns the whole table: always cap the batch.
-Source: [Post-Install Configurations — Query limits to external databases](https://docs.appian.com/suite/help/latest/Post-Install_Configurations.html#query-limits-to-external-databases) · [KB-1681](https://community.appian.com/infrastructure-37/kb-1681-unable-to-retrieve-data-due-to-query-timeout-859) · [Appian Max — An Introduction to Query Optimization](https://community.appian.com/architecture-29/an-introduction-to-query-optimization-1311) · [Appian Max — Antipatterns](https://community.appian.com/architecture-29/antipatterns-solution-design-mistakes-to-avoid-in-appian-1225)
+⚠️ **Database queries have their own limits.** `a!queryEntity` and query rules time out after **10 s** (`conf.data.query.timeout`; not configurable on Appian Cloud; not applied to Query Database) and stop at **5 MB** of result per query (`conf.data.query.memory.limit`); record type queries time out at 65 s. `fetchTotalCount` defaults to `false`; `true` makes Appian run an additional query for the total (costliest on legacy record types) — ask for it only where a total is shown. `ignoreFiltersWithEmptyValues` plus a missing input returns the whole table: always cap the batch.
+Source: [a!queryRecordType() — Using the fetchTotalCount parameter](https://docs.appian.com/suite/help/latest/fnc_system_queryrecordtype.html#using-the-fetchtotalcount-parameter) · [Post-Install Configurations — Query limits to external databases](https://docs.appian.com/suite/help/latest/Post-Install_Configurations.html#query-limits-to-external-databases) · [KB-1681](https://community.appian.com/infrastructure-37/kb-1681-unable-to-retrieve-data-due-to-query-timeout-859) · [Appian Max — An Introduction to Query Optimization](https://community.appian.com/architecture-29/an-introduction-to-query-optimization-1311) · [Appian Max — Antipatterns](https://community.appian.com/architecture-29/antipatterns-solution-design-mistakes-to-avoid-in-appian-1225)
 
 ---
 
 ## 3. Interfaces: evaluation cost
 
-Principle: **every user interaction re-evaluates the entire interface** (entering a value, pressing a button, changing a filter). Everything inside a component parameter is recomputed on every re-evaluation.
+Principle: **every user interaction re-evaluates the entire interface** (entering a value, pressing a button, changing a filter). Everything inside a component parameter is recomputed on every re-evaluation (the `data` parameter of records-powered components is the exception: doc 02 §1.1).
 
 ✅ **Put expensive computations in local variables, not in component parameters.** A local variable is only re-evaluated when the interface loads, when it's updated via `saveInto`, or when another local variable it references changes; a parameter is recomputed on every interaction.
 Source: [Interface Performance — Local variable best practices](https://docs.appian.com/suite/help/latest/interface-performance.html)
@@ -89,8 +91,8 @@ Source: [a!asyncVariable() — Performance considerations](https://docs.appian.c
 ✅ **In interfaces that display a lot of data (reporting dashboards), reduce user interactions.** Every filter or editable field triggers a full re-evaluation with all its queries. Fewer interactions = less waiting.
 Source: [Interface Performance — Don't add a lot of user interactions](https://docs.appian.com/suite/help/latest/interface-performance.html)
 
-✅ **In `and()`, `or()`, and `match()`, put expensive computations last.** These functions short-circuit: if a cheap earlier condition already decides the result, the expensive one never runs.
-Source: [Interface Performance — Put expensive computations last](https://docs.appian.com/suite/help/latest/interface-performance.html)
+✅ **In `and()`, `or()`, and `a!match()`, put expensive computations last.** These functions short-circuit: if a cheap earlier condition already decides the result, the expensive one never runs.
+Source: [Interface Performance — Put expensive computations last](https://docs.appian.com/suite/help/latest/interface-performance.html#when-using-and-or-and-match-functions-put-expensive-computations-last)
 
 ✅ **Don't wrap text in `a!richTextItem()` if you're not going to style it.** It's evaluation cost for nothing.
 Source: [Interface Performance — Don't wrap text in a!richTextItem()](https://docs.appian.com/suite/help/latest/interface-performance.html)
@@ -107,7 +109,7 @@ Source: [Interface Performance — Conditional logic](https://docs.appian.com/su
 ✅ **Control when a piece of data re-evaluates with `a!refreshVariable()` instead of reloading everything.** Its parameters (`refreshAlways`, `refreshInterval`, `refreshOnReferencedVarChange`, `refreshOnVarChange`, and `refreshAfter: "RECORD_ACTION"`) set exactly what triggers that variable's re-evaluation, avoiding recomputing expensive queries on every interaction. In grids and charts powered by record data, also use their refresh parameters to control when they re-query.
 Source: [Interface Performance — Local variable best practices](https://docs.appian.com/suite/help/latest/interface-performance.html) · [Local Variables — a!refreshVariable()](https://docs.appian.com/suite/help/latest/Local_Variables.html)
 
-✅ **Write memory-efficient expressions.** Three rules that bound memory consumption during evaluation: **never use `batchSize: -1`** (it fetches the result with no limit and can blow up memory — always paginate); **keep loops (`a!forEach`) under ~500 items**; and **don't nest more than 2 levels** of functions that iterate over arrays. Prefer array functions (`a!forEach`, `filter`, `reduce`) over iterating with indexes.
+✅ **Write memory-efficient expressions.** Three rules that bound memory consumption during evaluation: **never use `batchSize: -1`** (in `a!queryEntity()` it fetches the result with no limit and can blow up memory; in `a!queryRecordType()` it isn't even valid — always paginate); **keep loops (`a!forEach`) under ~500 items**; and **don't nest more than 2 levels** of functions that iterate over arrays. Prefer array functions (`a!forEach`, `filter`, `reduce`) over iterating with indexes.
 Source: [Expressions Best Practices — Designing memory-efficient expressions](https://docs.appian.com/suite/help/latest/expressions-best-practices.html)
 
 ⚠️ **Memory Circuit Breaker:** an expression that exceeds **100,000 AMUs** (≈ 1 KB each) fails on its own, whatever the heap size. It is the hard backstop behind the rules above.
@@ -294,7 +296,7 @@ in CPU or memory: its levers are in doc 12 §4.
 | Synced rows / record type | 4 M (Standard) · 20 M (Advanced) · no limit (Premium) | about-data-sync |
 | Fields per record type | 100 (incl. custom fields) | about-data-sync |
 | Related records per query | 100 (`queryRecordType`) · 250 (`byIdentifier`) | queryRecordByIdentifier |
-| Rows in records-powered component (grid/chart/dropdown…) | 5,000 | records-powered-components |
+| Rows in records-powered component (grid/chart/dropdown…) | 5,000 | Paging_Grid_Component (row limit) |
 | Async variables per interface | 7 (recommended) | async_loading |
 | Threshold for async loading | > 500 ms | async_loading |
 | Nodes per process model | 50 (recommended) | appian-recommendations |
@@ -318,7 +320,7 @@ in CPU or memory: its levers are in doc 12 §4.
 ## Sources
 
 - [Record Type Query Performance Best Practices](https://docs.appian.com/suite/help/latest/query-best-practices.html)
-- [Row limit for records-powered components (5,000 rows)](https://docs.appian.com/suite/help/latest/records-powered-components.html)
+- [Row limit for records-powered components (5,000 rows)](https://docs.appian.com/suite/help/latest/Paging_Grid_Component.html#row-limit-for-records-powered-components)
 - [a!queryRecordByIdentifier() Function](https://docs.appian.com/suite/help/latest/fnc_system_a_queryrecordbyidentifier.html)
 - [Interface Performance Best Practices](https://docs.appian.com/suite/help/latest/interface-performance.html)
 - [Local Variables (a!refreshVariable())](https://docs.appian.com/suite/help/latest/Local_Variables.html)

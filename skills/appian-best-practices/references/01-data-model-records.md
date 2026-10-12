@@ -27,9 +27,9 @@ Source: [About Record Types — When to use record types](https://docs.appian.co
 ## 1. Plan the model before creating objects
 
 > **Where the order of creation lives.** The official Appian skill carries the full dependency-ordered
-> change plan in `references/change-planning.md` — twelve steps and the complete graph, with the object
-> types that **cannot be automated** marked `(manual)`, Connected Systems, Decision Objects, Record
-> Actions and Portals among them. **Load it before sequencing any change that spans more than one
+> change plan in `references/change-planning.md`, including the object types it treats as manual steps
+> — check that list against the tools the session actually has, because the design MCP gains tools
+> faster than the list is updated. **Load it before sequencing any change that spans more than one
 > object type, and do not restate its graph here.**
 > **Without that skill installed**, the platform sources cited in this section give the same order for
 > the types it covers.
@@ -46,10 +46,10 @@ Source: [Plan Your Data Model — Define business concepts](https://docs.appian.
 ### 1.1 Catalog (lookup) data in its own record type
 
 - ✅ Extract static, shared values (states, provinces, types, categories) into a **lookup record type** and relate it, instead of repeating the text in every entity.
-- ❌ Don't duplicate a free-text field (`state`) in Customer and in Employee: it ends up with inconsistent data (a mix of abbreviations and full names). A related "State" record type avoids this.
+- ❌ Don't keep a status or a category as free text on the entity (`status` typed into every Case): it ends up with inconsistent values. A related lookup record type (Case → Case Status) avoids this, **even when a single entity uses it** — the documentation sets no minimum number of entities.
 - ✅ You can quickly generate the lookup record type by adding a **choice list field**.
 
-Source: [Store lookup data in a separate record type](https://docs.appian.com/suite/help/latest/build-best-data-fabric.html#store-lookup-data-in-a-separate-record-type)
+Source: [Store lookup data in a separate record type](https://docs.appian.com/suite/help/latest/data-modeling-with-appian-records.html#store-lookup-data-in-a-separate-record-type)
 
 ---
 
@@ -60,8 +60,8 @@ When you create a record type you choose a **source** and an **access method**. 
 | Access method | Resulting type | Consequence |
 |---|---|---|
 | **Optimized Data Access** (with sync) | Synced record type | Recommended. Syncs and optimizes the data in Appian; **full access** to the data fabric (relationships, calculated fields, row-level security, smart search, Process HQ). |
-| **Direct Data Access** (features enabled) | Unsynced record type | Direct query against MariaDB, MySQL, PostgreSQL or Snowflake; keeps **most** data fabric features; performance depends on the source DB; no row limit. |
-| **Direct Data Access** (features disabled) | Legacy record type | Web service, process or a DB other than the four above. **No relationships or related features**; requires additional objects. Use only when syncing isn't an option. |
+| **Direct Data Access** (features enabled) | Unsynced record type | Direct query against MariaDB, MySQL, PostgreSQL or Snowflake (ⓥ and Oracle, from 26.8); keeps **most** data fabric features; performance depends on the source DB; no row limit. |
+| **Direct Data Access** (features disabled) | Legacy record type | Web service, process or a DB other than those above. **No relationships or related features**; requires additional objects. Use only when syncing isn't an option. |
 
 - ✅ By default, create **synced record types** whenever you can.
 - ✅ Available data sources: **Database** (database-backed), **Web Service** (service-backed), **Process** (process-backed) and **data source shortcut** (e.g. Salesforce). If there's no source, generate a new table from the record type itself.
@@ -75,7 +75,7 @@ Choosing Direct Data Access instead of syncing isn't free. Compared to a synced 
 
 | Capability | Optimized (synced) | Direct Data Access (features enabled) |
 |---|---|---|
-| **Primary key** | Supports **composite keys** | **Single PK required** — no composite key support |
+| **Primary key** | Supports **composite keys** (ⓥ from 26.3; 25.4 required a single key) | **Single PK required** — no composite key support |
 | **Smart search** | Yes | No |
 | **Process HQ process analysis** | Yes | No |
 | **Sync-time calculated fields** | Yes | No (real-time only) |
@@ -123,7 +123,7 @@ Source: [Row considerations for optimized data access](https://docs.appian.com/s
 
 - **Maximum 100 fields** per record type, including calculated fields.
 - **Maximum 40 calculated fields** (custom record fields) out of those 100. E.g.: if the record type already has 98 regular fields, only 2 calculated fields fit.
-- **At least one primary key field** is required. **Composite keys** are only valid with **Optimized Data Access (synced)**; **Direct Data Access (features enabled) requires a single PK** — *"A single primary key field is required. The table cannot have a composite primary key."* The restriction depends on the **access method**, it isn't a general property of the record type (see §2.1). Source: [Direct data access — features enabled](https://docs.appian.com/suite/help/latest/about-data-sync.html#features-enabled).
+- **At least one primary key field** is required. **Composite keys** are only valid with **Optimized Data Access (synced)** (ⓥ from 26.3) over an existing table — a table generated from the record type always gets a single integer `id`; **Direct Data Access (features enabled) requires a single PK** — *"A single primary key field is required. The table cannot have a composite primary key."* The restriction depends on the **access method**, it isn't a general property of the record type (see §2.1). Source: [Direct data access — features enabled](https://docs.appian.com/suite/help/latest/about-data-sync.html#features-enabled).
 - **Unique fields**: maximum **765 characters**.
 - **Text tier** (aligned with §8): **Text** up to **255** characters; **Long Text** up to **4,000** (max. **2** per record type), where values that exceed that cap **get truncated**; **Extra Long Text** up to **64,000** (max. **3**; exceeding it fails the sync or write, and these fields can't be used in filters, sorts, aggregations or records-powered components). Move up a tier rather than risk truncation; the 4,000 cutoff belongs to **Long Text**, not Text.
 - **Unsupported columns** for sync: BLOB, spatial, XML and user-defined types; plus engine-specific restrictions (MySQL excludes UUID and YEAR; PostgreSQL excludes JSON, UUID and XML). Check the list before syncing.
@@ -132,7 +132,7 @@ Source: [Row considerations for optimized data access](https://docs.appian.com/s
 - ✅ Sync **only the fields the app uses**; every extra field adds weight to every sync and every query.
 - ❌ Don't sync huge text columns if you don't display them; if they exceed 64,000 characters, read/write them through a separate unsynced record type or CDT.
 
-Source: [About Data Sync — Usage considerations](https://docs.appian.com/suite/help/latest/about-data-sync.html) · [About custom record fields (100/40 limit)](https://docs.appian.com/suite/help/latest/custom-record-fields.html#about-custom-record-fields)
+Source: [About Data Sync — Usage considerations](https://docs.appian.com/suite/help/latest/about-data-sync.html) · [About custom record fields (100/40 limit)](https://docs.appian.com/suite/help/latest/custom-record-fields.html#what-are-custom-record-fields)
 
 ### 3.4 Keeping synced data current
 
@@ -140,7 +140,7 @@ Source: [About Data Sync — Usage considerations](https://docs.appian.com/suite
 - ⚠️ **Not auto-synced:** Query Database, Execute Stored Procedure, plug-ins, Call Integration (except to Salesforce) and manual edits in the database. Follow them with **Sync Records** / `a!syncRecords()` — max **1,000 identifiers per call**; exceeding it fails the sync and makes the data unavailable, so loop.
 - ✅ For changes made by **other systems**, use the **Sync Records smart service**, **scheduled incremental syncs** or a **scheduled full sync**. A full sync that runs over **4 hours** may time out: sync filters and fewer fields keep it short.
 - ✅ ⓣ **Incremental syncs** (Advanced/Premium): database **tables** (not views) and service-backed record types; they need a **Last Modified** Date and Time field, fail above **50,000 rows** or **10 minutes**, don't coexist with a relationship-based sync filter, and **don't capture hard deletes** — pair them with a less frequent full sync. ⓥ In 26.3 they also required *Keep data available at high volumes* to be off.
-- ✅ **Keep the audit fields** Appian generates (`createdBy`, `createdOn`, `modifiedBy`, `modifiedOn`) and fill `modifiedOn` on **every** write: if an incremental sync and a smart service sync hit the same row and either sees a null Last Modified value, both fail.
+- ✅ **Keep the audit fields** Appian generates (`createdBy`, `createdOn`, `modifiedBy`, `modifiedOn`). Filling `modifiedOn` on every write is **mandatory when it is the Last Modified field of a scheduled incremental sync** — if that sync and a smart service sync hit the same row and either sees a null value, both fail — and a recommendation everywhere else. Source: [Review the default fields](https://docs.appian.com/suite/help/latest/create-record-data-source.html#review-the-default-fields) · [Multiple syncs at the same time](https://docs.appian.com/suite/help/latest/records-data-sync.html#multiple-syncs-at-the-same-time)
 - ⚠️ **One table, several record types = several syncs:** every smart service sync on the table triggers a sync on each record type pointing at it. Don't duplicate record types over the same table without a reason.
 - ✅ For Salesforce: 1,000 rows = 1 API call; size your API limit and use sync filters.
 
@@ -179,13 +179,13 @@ Relationships connect data from different sources without SQL and are the founda
 - ✅ **Many-to-Many**: it isn't configured directly; model it with a **join record type** that has N:1 to each side (the "Order Line" pattern between Order and Product).
 - ✅ Relationships require **Optimized** or **Direct Data Access (features enabled)**. **Legacy** doesn't support relationships.
 
-Source: [Usage considerations for relationships](https://docs.appian.com/suite/help/latest/record-type-relationships.html#usage-considerations-for-relationships) · [Manage many-to-many with a join record type](https://docs.appian.com/suite/help/latest/data-modeling-with-appian-records.html#manage-many-to-many-relationships-with-a-join-record-type)
+Source: [Relationship requirements](https://docs.appian.com/suite/help/latest/record-type-relationships.html#relationship-requirements) · [Manage many-to-many with a join record type](https://docs.appian.com/suite/help/latest/data-modeling-with-appian-records.html#manage-many-to-many-relationships-with-a-join-record-type)
 
 ### 4.2 Bidirectionality and names
 
 - ✅ Create **bidirectional** relationships: by default a relationship only exists on the record type where it was created. If you add an N:1 from Case → Case Type, also add a 1:N from Case Type → Case. It helps both people and AI models find the data.
 - ✅ Use **suggested relationships** to create the bidirectional ones quickly.
-- ✅ Give relationships **readable names** (relationship names): data stewards and AI use them to recognize the link. Convention: **camelCase**, matching the related record type's name, **without the application prefix** (`supportCases`, not `RE_supportCases`).
+- ✅ Give relationships **readable names** (relationship names): data stewards and AI use them to recognize the link. Convention: **camelCase**, matching the related record type's name, **without the application prefix** (`supportCases`, not `RE_supportCases`). When a record type has **several relationships to the same record type** (assignee and creator, both to User), that name can't tell them apart: name each one by its role (`assignedUser`, `createdByUser`).
 
 Source: [Create bi-directional record type relationships](https://docs.appian.com/suite/help/latest/build-best-data-fabric.html#create-bi-directional-record-type-relationships) · [Relationship names](https://docs.appian.com/suite/help/latest/build-best-data-fabric.html#relationship-names)
 
@@ -197,7 +197,7 @@ Source: [Create bi-directional record type relationships](https://docs.appian.co
 - ✅ If you're relating different sources (Salesforce + DB), **manage consistency in the app's logic**: no single system can guarantee it.
 - ⚠️ **Deleting a parent: the relationship setting decides, the FK must agree.** When the relationship allows **writing and deleting related records** (the default when both record types share the source), **Delete Records** on the parent also deletes the related rows, in **one transaction**. When it doesn't, Appian sets the related foreign key to **null** (same database), leaves it untouched (different database), or the node **fails** (web service, process or Salesforce source). Declare the database FK as **`ON DELETE CASCADE`** or **`SET NULL`** so the source enforces the same behavior as the relationship. Views are not supported for writing or deleting related records.
 - ✅ **Soft delete** when deleted rows must stay for audit, retention or referential integrity: an `isDeleted` (or `deletedOn`) field written with Write Records, plus a **sync filter** that keeps only non-deleted rows (built in expression mode, because it needs OR for null/false). On unsynced record types, hide them with record-level security instead.
-- ✅ **Hard delete with a trail, dated reference data.** When rows must really go (privacy requests, volume), delete by indexed primary key, first copy the row as JSON into an audit table, and purge in batches of ≤ 1,000 rows off-hours. For reference data prefer `startDate`/`endDate` over an `isActive` flag, so historical rows keep their meaning; move rows older than the working window to mirror archive tables. Source: [Appian Max — Deleting Data in Appian Applications](https://community.appian.com/architecture-29/deleting-data-in-appian-applications-1277)
+- ✅ **Hard delete with a trail, dated reference data.** When rows must really go (privacy requests, volume), delete by indexed primary key, first copy the row as JSON into an audit table, and purge in batches of ≤ 1,000 rows off-hours. For reference data whose validity period matters (rates, tariffs, anything historical rows are read against) prefer `startDate`/`endDate` over an `isActive` flag, so historical rows keep their meaning; for a plain static lookup `isActive` is enough — Appian offers all three as commonly used fields; move rows older than the working window to mirror archive tables. Source: [Appian Max — Deleting Data in Appian Applications](https://community.appian.com/architecture-29/deleting-data-in-appian-applications-1277)
 
 Source: [Relationship considerations — composite keys & referential integrity](https://docs.appian.com/suite/help/latest/record-type-relationships.html#relationship-considerations) · [Maintaining referential integrity (cascade delete)](https://docs.appian.com/suite/help/latest/record-type-relationships.html#maintaining-referential-integrity) · [Delete Records Smart Service](https://docs.appian.com/suite/help/latest/Delete_Records_Smart_Service.html) · [Manage record data — Delete data (soft delete)](https://docs.appian.com/suite/help/latest/manage-record-data.html#delete-data)
 
@@ -307,9 +307,9 @@ Source: [Configure field properties (types and limits)](https://docs.appian.com/
 ### 8.1 Primary keys and indexes
 
 - ✅ **Every** source needs an explicit primary key to serve a record type; syncing requires it.
-- ❌ Don't let Appian **auto-generate** the PK: that column can't be queried or referenced, so you won't be able to update existing rows.
+- ❌ **CDT with a data store:** don't let Appian **auto-generate** the PK column for a CDT that has none: that column can't be queried or referenced, so you won't be able to update existing rows. This is not the auto-incrementing `id` of a table generated from a record type, which is the expected key there.
 - ✅ The PK can be **explicit** or **auto-generated by the DB**. If it's auto-generated, writing with a null PK creates a new row; if it isn't, writing with a null PK **fails**.
-- ⚠️ **Composite keys** are only supported by an **Optimized (synced)** record type; with **Direct Data Access (features enabled)** the source must have a **single PK** (see §2.1). It isn't a general property of the record type: **it depends on the access method**.
+- ⚠️ **Composite keys** are only supported by an **Optimized (synced)** record type over an existing table (ⓥ from 26.3); with **Direct Data Access (features enabled)** the source must have a **single PK** (see §2.1), and a table generated from the record type always gets a single integer `id` — codeless data modeling doesn't support composite keys. It isn't a general property of the record type: **it depends on the access method**.
 - ✅ When you generate/update the source from the record type, Appian automatically creates the **foreign key** using the relationship's common fields, providing referential integrity at the source. Add the **indexes** your usual filters/sorting need in the DB (especially on unsynced record types, whose performance depends on the source).
 - ✅ **Every table has a primary key or unique index, on a VARCHAR or integer column.** A duplicated or null key makes `totalCount` and paging wrong (it even changes with the batch size), and CHAR keys fail mapping verification ([KB-2120](https://community.appian.com/application-design-33/kb-2120-totalcount-returns-incorrect-results-1108), [KB-1413](https://community.appian.com/infrastructure-37/kb-1413-mysql-best-practices-primary-key-or-unique-index-on-every-table-675), [KB-1346](https://community.appian.com/application-design-33/kb-1346-char-datatype-does-not-map-as-a-foreign-key-616)).
 
@@ -326,7 +326,7 @@ Appian has **two** official ways to store and secure documents; which one you us
 - ✅ Use **folders** for documents that are uploaded in Appian Designer and are part of the app's **design**: a site's logo, a PDF/Word template for generating letters. They need to be **deployed** between environments because they're part of the design.
 - ✅ It requires two objects: a **knowledge center** (root folder) and, inside it, a **document folder** (subfolder) where you organize the documents. Appian can generate them automatically when you create the application.
 - ✅ Documents **inherit the folder's security**: secure the folder and the documents are secured.
-- ❌ Don't put documents created by the workflow (resumes, case attachments) into folders: they don't stay linked to the data row and can't be secured at row level.
+- ❌ Don't put documents created by the workflow (resumes, case attachments) into folders: they don't stay linked to the data row and can't be secured at row level. Where document management by record type isn't available (ⓣ Advanced/Premium, see §8.bis.2), a folder is the option that remains.
 
 Source: [Manage Documents with Folders](https://docs.appian.com/suite/help/latest/folder-and-document-management.html) · [About Document Management — two ways to manage documents](https://docs.appian.com/suite/help/latest/about-doc-management.html) · [Design Objects — Content-management objects](https://docs.appian.com/suite/help/latest/design-objects.html#content-management-objects)
 
@@ -439,7 +439,7 @@ Source: [About Record Events — Guidelines](https://docs.appian.com/suite/help/
 - ✅ Pick the primary key **by hand** and make sure it is **truly unique**: duplicate key values in a batch fail the sync. Views don't support composite primary keys.
 - ⚠️ Views are **read-only** for Appian: Write Records, Delete Records and related writes/deletes need tables; incremental syncs and record events don't support views either. Use a view for complex reads; write to the tables underneath.
 - ✅ Check each view's **explain plan at production volume** (≈ 1 year of data). A view that can't be merged into the outer query (GROUP BY, DISTINCT, UNION) is computed in full before outer filters apply, so **don't nest views** and don't expect filters to be pushed down.
-- ✅ For heavy aggregations, a **"materialized view"** on MariaDB: a real table, refreshed by a stored procedure that upserts the changed IDs, plus a nightly full refresh scheduled from a process.
+- ✅ For heavy aggregations, and **as a last resort** — after synced record types, indexes and reworking the view have fallen short — a **"materialized view"** on MariaDB: a real table, refreshed by a stored procedure that upserts the changed IDs, plus a nightly full refresh scheduled from a process.
 
 Source: [Appian Max — Use Database and Materialized Views](https://community.appian.com/architecture-29/use-database-and-materialized-views-in-appian-1324) · [Appian Max — Database Performance Best Practices](https://community.appian.com/architecture-29/database-performance-best-practices-1312) · [Records Monitoring — Other sync errors](https://docs.appian.com/suite/help/latest/Records_Monitoring_Details.html#other-sync-errors) · [Write Records Smart Service](https://docs.appian.com/suite/help/latest/Write_Records_Smart_Service.html)
 
@@ -458,7 +458,7 @@ Source: [Appian Max — Add Error Handling to Stored Procedures](https://communi
 - ✅ The Cloud database runs in **GMT**, and Appian stores date-times in GMT: keep it that way if you use `NOW()`/`CURTIME()`.
 - ✅ Diagnostics: `AppianProcess.slow_log` (statements over **7 s**), `AppianProcess.showTableMetadata('schema')` (rows, size, compression, fragmentation). **Page compression** (level 9) suits tables with over 2 M rows and 25 columns that are rarely updated; enabling it locks the table — test in a lower environment first.
 - ✅ Connection pool: a data source connected system defaults to **100** connections per application server or engine (a custom JDBC one, 20); size the database for the total.
-- ✅ **Schema shape:** normalized (3NF) tables for write-heavy data, and separate **reporting tables** refreshed by a scheduled stored procedure for heavy reads; indexes derived from the list of frequent queries; composite indexes with the most selective column first; `ANALYZE TABLE` after bulk loads. Sources: [Appian Max — A Case Study in Data Modeling](https://community.appian.com/architecture-29/a-case-study-in-data-modeling-for-an-appian-application-1285) · [Appian Max — An Introduction to Query Optimization](https://community.appian.com/architecture-29/an-introduction-to-query-optimization-1311).
+- ✅ **Schema shape:** normalized (3NF) tables for transactional data; separate **reporting tables** refreshed by a scheduled stored procedure are the **explicit exception** to 3NF, for heavy reads only and as a last resort (§12.1); indexes derived from the list of frequent queries; composite indexes with the most selective column first; `ANALYZE TABLE` after bulk loads. Sources: [Appian Max — A Case Study in Data Modeling](https://community.appian.com/architecture-29/a-case-study-in-data-modeling-for-an-appian-application-1285) · [Appian Max — An Introduction to Query Optimization](https://community.appian.com/architecture-29/an-introduction-to-query-optimization-1311).
 - ⚠️ **Cloud MariaDB specifics:** `utf8mb4` everywhere (index keys then fit 191 characters) and one collation for all tables behind a view; no time zone tables (`CONVERT_TZ` returns NULL — store UTC); `GROUP_CONCAT` stops at 1,024 bytes; table names differing only by case break phpMyAdmin. Symptoms and fixes in doc 13 §2.
 - ✅ **External database instead of the Cloud one:** keep the round trip under ~10 ms (25 ms at most); the Cloud database is written only through Appian and read from outside only through the Enhanced Data Pipeline. Source: [Appian Max — Customer Managed vs Cloud Managed Database](https://community.appian.com/architecture-29/customer-managed-vs-cloud-managed-database-1291).
 

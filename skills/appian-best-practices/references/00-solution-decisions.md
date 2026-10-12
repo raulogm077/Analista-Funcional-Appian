@@ -32,7 +32,7 @@
 | Bulk, set-based writes | Stored procedure + Sync Records | Row-by-row writes in MNI or loops | 01 §12.2, 03 §5 |
 | Delete for real (privacy, volume) | Hard delete by PK + JSON audit copy + batched purge | Deleting without a trail | 01 §4.3 |
 | Field-level change history | Database triggers into history tables (not synced) | Diffs computed in processes | 01 §11 |
-| Heavy aggregations for reporting | Reporting tables / "materialized view" refreshed by a scheduled procedure | Nested views | 01 §12 |
+| Heavy aggregations for reporting | Synced record types and indexes first; as a last resort, reporting tables / "materialized view" refreshed by a scheduled procedure | Nested views | 01 §12 |
 | Letters and documents with many inputs or dynamic sections | Out-of-the-box Word template up to ~10 static inputs; Advanced Document Templating plug-in beyond | Generating documents nobody needs to store | 01 §8.bis.4 |
 | Catalog / status / type values | A **lookup record type** related N:1 | Repeated free text | 01 §1.1 |
 | Many-to-many | A **join record type** with N:1 to each side | — | 01 §4.1 |
@@ -67,7 +67,8 @@
 | Need | Choose | Avoid | Detail |
 |---|---|---|---|
 | Orchestrate people, waits, writes | **Process model**, short, one responsibility, ≤ 50 nodes | Logic-only processes (use a rule) | 03 §1, §8 |
-| Start from the UI | **Record list action** (create) · **related action** (update/delete) | Custom buttons starting processes ad hoc | 01 §9.2 |
+| Write data from a screen | Create or edit a record with a form: a **record action** (next row). An edit made in place on a screen that isn't a record action, with nothing attached: `a!writeRecords()` in the `saveInto`. Record events, notification, integration, several records, approval or retry: **process model** (Write Records node) | A process, outside a record action, whose only job is one plain write; `a!writeRecords()` where events must be recorded (it can't write them) | 03 §8 |
+| Start from the UI | Create or edit a record with a form: **record list action** (create) · **related action** (update/delete). Unattended work on what the screen shows: `a!startProcess()` in a button | A custom button with `a!startProcess()` to create or edit a record, bypassing the record action and its security | 01 §9.2, 03 §8 |
 | Many instances | **Start Process** smart service; from outside, **Web API + `a!startProcess()`** with batching | Async subprocess with large MNI | 03 §2, §9 |
 | Deadlines on tasks | **Escalations** on the attended node | Hand-built timer loops | 03 §6 |
 | Who gets each task | **Groups** or data-based users; reassignment privileges set on purpose | Named users; the default "reassign to anyone" | 03 §7 |
@@ -94,7 +95,7 @@
 
 | Need | Choose | Avoid | Detail |
 |---|---|---|---|
-| A record list on the site | **Record List** page | Rebuilding the list in an interface | 09 §1.3 |
+| A record list on the site | **Record List** page by default; a records-powered grid in an interface when the standard list falls short | Rebuilding by hand what the record list already gives (search, filters, export, actions) | 09 §1.3 |
 | Many pages | Page groups (Interface pages only), ≤ 8 top-level items; sidebar if navigation is complex | Every subsection as a top-level page | 09 §2–§4 |
 
 ## Integrations

@@ -16,10 +16,11 @@ Markers: ✅ do · ❌ avoid · ⚠️ trap · ⓥ version-dependent · ⓣ tier
 
 ### 1.1 Expensive calculations and queries go in `a!localVariables`, not in component parameters
 - ✅ Put every function or rule that takes time to evaluate (a query, an aggregation) inside a local variable with `a!localVariables()`.
-- ❌ Don't put it directly in a component parameter (`value`, `data`, etc.).
+- ❌ Don't put it directly in a component parameter (`value`, `choiceLabels`, etc.).
+- ✅ Exception: the `data` parameter of records-powered components (read-only grids, charts, dropdowns). A record type or `a!recordData()` goes there directly (§2.1): `data` has the same default refresh behavior as a local variable. Offline interfaces are the one case where it doesn't apply — there `data` takes a local variable (§11.1).
 - **Why:** every time an evaluation fires (the user types, clicks a button…) **all** components are re-evaluated, so whatever lives in a parameter gets recalculated on every interaction. A local variable, by default, is only re-evaluated when the interface loads, when it is updated in a `saveInto`, or when another local variable it references changes.
 
-Source: https://docs.appian.com/suite/help/latest/interface-performance.html#local-variable-best-practices
+Source: https://docs.appian.com/suite/help/latest/interface-performance.html#put-expensive-computations-in-local-variables-not-component-parameters
 
 ### 1.2 Never put a component inside a local variable
 - ❌ Don't use a component (`a!textField(...)`, `a!cardLayout(...)`) as the **value** of a local variable.
@@ -54,8 +55,9 @@ Source: https://docs.appian.com/suite/help/latest/offline-mobile-design-best-pra
 
 > **Where the depth lives.** Query mechanics —fields, paging, filters, aggregations, relationships and
 > their ceilings— are specified once for this skill in **`05-performance.md` § 2**, and in full by the
-> official Appian skill in `references/query-record-type-patterns.md`. This section keeps only what is
-> specific to querying *from an interface*.
+> official Appian skill in `references/query-record-type-patterns.md` (where that file departs from the
+> documentation, doc 14 says which one to follow). This section keeps only what is specific to querying
+> *from an interface*.
 
 ### 2.1 Choose the query function for the case
 - ✅ List of records from a **record type** → `a!queryRecordType()`.
@@ -64,7 +66,7 @@ Source: https://docs.appian.com/suite/help/latest/offline-mobile-design-best-pra
 - ✅ List or aggregation from a **data store entity** (not a record type) → `a!queryEntity()` with `a!query()`.
 - **Why:** if the data lives in a record type, `a!queryRecordType()` / records-powered components are the preferred route; `a!queryEntity()` is left for entities without a record type.
 
-Source: https://docs.appian.com/suite/help/latest/about-queries.html#how-to-query-data · https://docs.appian.com/suite/help/latest/fnc_system_a_queryrecordbyidentifier.html#usage-considerations
+Source: https://docs.appian.com/suite/help/latest/about-queries.html#how-to-query-data · https://docs.appian.com/suite/help/latest/fnc_system_a_queryrecordbyidentifier.html#using-the-function
 
 ### 2.2 Fields, paging and the N+1: the rules live in `05-performance.md` § 2
 
@@ -141,9 +143,9 @@ Source: https://docs.appian.com/suite/help/latest/recipe-configure-buttons-with-
 ### 4.3 `saveInto` with `a!save()` to transform the saved value
 - ✅ Use `a!save(target, value)` in `saveInto` when you need to transform the input before saving it (e.g. `todecimal(save!value)`).
 - **Why:** it lets the consuming designer always work with the correct type; `save!value` is the value the user entered.
-- ⚠️ Inside `a!forEach`, save into `fv!item`, not into `local!list[fv!index]`, or values land in the wrong rows ([KB-1398](https://community.appian.com/application-design-33/kb-1398-a-foreach-does-not-save-inputs-in-the-order-they-are-entered-662)).
+- ⚠️ Inside `a!forEach`, save into `fv!item`, not into `local!list[fv!index]`: that is how `a!forEach()` keeps each value on its own row; indexing back into the original array lands values in the wrong rows ([KB-1398](https://community.appian.com/application-design-33/kb-1398-a-foreach-does-not-save-inputs-in-the-order-they-are-entered-662)).
 
-Source: https://docs.appian.com/suite/help/latest/using_interfaces_in_appian.html#reusability
+Source: https://docs.appian.com/suite/help/latest/using_interfaces_in_appian.html#reusability · https://docs.appian.com/suite/help/latest/fnc_looping_a_foreach.html#using-aforeach-with-interface-components
 
 ### 4.4 `showWhen` to show/hide at no cost
 - ✅ Use `showWhen: false` to conditionally hide layouts or components.
@@ -152,19 +154,20 @@ Source: https://docs.appian.com/suite/help/latest/using_interfaces_in_appian.htm
 Source: https://docs.appian.com/suite/help/latest/Columns_Layout.html#main_content
 
 ### 4.5 In scrolling dialogs, fix the title bar and buttons
-- ✅ Enable "Fix title bar when scrolling" and "Fix buttons to bottom" on long forms, and consider "Automatically focus on first input" to speed up typing.
+- ✅ Keep the title bar and the buttons fixed on long forms ("Fix title bar when scrolling", "Fix buttons to bottom"). With the default option they are already fixed inside record action dialogs and not fixed elsewhere, so the setting only needs a decision outside a dialog.
+- ⚠️ "Automatically focus on first input" is **on by default** (`focusOnFirstInput: true`). The decision is when to turn it **off**: when information the user must read sits before the first field, because focus jumps past it for keyboard and screen-reader users. That condition is this guide's accessibility criterion (the official Appian skill audits it as FORM-FOCUS in `references/component-checks.md`), not a rule the documentation states.
 
-Source: https://docs.appian.com/suite/help/latest/sail/ux-form-layout.html#behavior-configurations
+Source: https://docs.appian.com/suite/help/latest/sail/ux-form-layout.html#in-scrolling-dialogs-use-a-fixed-title-bar-and-buttons · https://docs.appian.com/suite/help/latest/sail/ux-form-layout.html#automatically-focus-on-first-input-parameter · https://docs.appian.com/suite/help/latest/Form_Layout.html#parameters
 
 ### 4.6 Choose the form layout based on the flow
 - ✅ Single-screen form → `a!formLayout()`; **sequential multi-step** form → `a!wizardLayout()`, which provides a progress bar (milestone), step navigation, a fixed footer and per-step validation.
 - ✅ Prefer `a!wizardLayout()` over building a "wizard" by hand with sections toggled by `showWhen`: the native wizard gives you, for free, the progress, navigation and per-step validation that are expensive and fragile to reproduce by hand.
-- ✅ With **more than 5 steps**, use a **vertical** step style; for 1–2 steps use the Minimal style with step headings shown.
+- ✅ With **more than 5 steps**, or whenever the step labels are too long for a horizontal milestone, use a **vertical** step style; for 1–2 steps use the Minimal style with step headings shown.
 - ✅ Group related fields with `a!sectionLayout()`; use `a!tabLayout()` when the content consists of **parallel** views, not sequential steps.
 - ❌ For a wizard opened from a record action, don't choose **"Auto" dialog height** (a setting of the record action's dialog, not of the wizard): the height jumps between steps. Forms and wizards inside dialogs use "Full" `contentsWidth`.
 - **Why:** each layout is built for a different way of moving through the form; picking the right one saves code and gives a consistent UX.
 
-Source: https://docs.appian.com/suite/help/latest/sail/ux-wizard-layout.html#style-guidelines · https://docs.appian.com/suite/help/latest/sail/forms.html · https://docs.appian.com/suite/help/latest/sail/ux-record-actions.html#action-behavior
+Source: https://docs.appian.com/suite/help/latest/sail/ux-wizard-layout.html#selecting-a-wizard-style · https://docs.appian.com/suite/help/latest/sail/forms.html · https://docs.appian.com/suite/help/latest/sail/ux-record-actions.html#action-behavior
 
 ### 4.7 Progressive disclosure: in sequential flows, disable — don't hide
 - ✅ In a **sequential** flow (one step enables the next), show fields that aren't yet available as **disabled** (`disabled: true`), not hidden.
@@ -303,14 +306,14 @@ Source: https://docs.appian.com/suite/help/latest/Column_Chart_Component.html#us
 - ❌ Don't try to inject HTML or arbitrary styles: SAIL doesn't support them; only each component's enumerated parameters and values exist.
 - **Why:** the rich text editor only applies that set of styles; any other formatting must be achieved through the component's parameters (`style`, `size`, `color`).
 
-Source: https://docs.appian.com/suite/help/latest/Rich_Text_Component.html#usage-considerations · https://docs.appian.com/suite/help/latest/Styled_Text_Component.html#main_content
+Source: https://docs.appian.com/suite/help/latest/Rich_Text_Component.html#using-the-rich-text-display-component · https://docs.appian.com/suite/help/latest/Styled_Text_Component.html#main_content
 
 ### 6.2 Use valid icons and valid colors
-- ✅ The `icon` parameter must be a key from the official "Available Icons" list; `color` accepts hex or the enumerated values `STANDARD`, `ACCENT`, `POSITIVE`, `NEGATIVE`, `SECONDARY` (and `WARN` in recent releases); `size` accepts `STANDARD`/`SMALL`/…/`EXTRA_LARGE`.
+- ✅ The `icon` parameter must be a key from the official "Available Icons" list; `color` accepts hex or the enumerated values `STANDARD`, `ACCENT`, `POSITIVE`, `NEGATIVE`, `SECONDARY` (and `WARN`, ⓥ from 26.6); `size` accepts `STANDARD`/`SMALL`/…/`EXTRA_LARGE`.
 - ❌ Don't invent icon keys or color values: an invalid `color` in rich text is not caught by `validateExpression`.
 - **Why:** out-of-enum values or nonexistent icons break or silently degrade the screen.
 
-Source: https://docs.appian.com/suite/help/latest/Styled_Icon_Component.html#main_content
+Source: https://docs.appian.com/suite/help/latest/Styled_Icon_Component.html#parameters · https://docs.appian.com/suite/help/latest/Styled_Text_Component.html#parameters
 
 ### 6.3 Don't overuse "Positive"/"Negative", and don't use color as the only channel
 - ✅ Reserve Positive (green) and Negative (red) colors for values with **business meaning** (gain/loss, success/failure).
@@ -432,7 +435,7 @@ Source: https://docs.appian.com/suite/help/latest/sail/ux-accessibility.html#alw
 Source: https://docs.appian.com/suite/help/latest/sail/ux-accessibility.html#avoid-relying-on-color-to-communicate-information
 
 ### 9.3 Describe inputs explicitly
-- ✅ Use `label`, `instructions` and `validations` on every input; if you don't want to show the label, use `labelPosition: "COLLAPSED"` so the screen reader still reads it.
+- ✅ Use `label`, `instructions` and `validations` on every input, with the label **visible**. `labelPosition: "COLLAPSED"` hides the label on screen while the screen reader still reads it; on an input, use it only when something visible already names the field (a preceding heading, a grid column header) — Appian Max's Accessibility Checklist asks for persistently visible labels on form inputs (WCAG 3.3.2; link in §9.4).
 - ✅ Use "Accessibility Text" for extra context (e.g. which section a field belongs to).
 - **Why:** accessibility is automatically optimized by using label/instructions/validations; visual proximity isn't enough for a screen-reader user.
 

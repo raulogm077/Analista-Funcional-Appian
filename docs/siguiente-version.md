@@ -1,7 +1,7 @@
 # Para la siguiente versión
 
-Lo que sigue abierto tras la 0.7.0-beta.3 (plan `docs/plan/2026-10-11-0.7.0-beta.3.md`). Cada línea dice qué, dónde y
-de dónde sale.
+Lo que sigue abierto tras la 0.7.0-beta.4 (planes `docs/plan/2026-10-11-0.7.0-beta.3.md` y
+`docs/plan/2026-10-12-correccion-buenas-practicas.md`). Cada línea dice qué, dónde y de dónde sale.
 
 ## Pasos de Raúl (para publicar la 0.7.0)
 

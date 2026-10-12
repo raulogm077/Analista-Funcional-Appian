@@ -1,0 +1,20 @@
+[
+  {"tema": "`and()` / `or()`", "fichero": "references/short-circuit-patterns.md", "marcador": "DO NOT short-circuit"},
+  {"tema": "`fetchTotalCount`", "fichero": "references/query-record-type-patterns.md", "marcador": "fetchTotalCount: true\\s+/\\* REQUIRED"},
+  {"tema": "One query or several", "fichero": "references/expressions.md", "marcador": "Query once, transform many"},
+  {"tema": "`a!forEach()` over null", "fichero": "references/expressions.md", "marcador": "a!forEach\\(null, \\.\\.\\.\\)` returns null"},
+  {"tema": "`length()` on a list", "fichero": "references/expressions.md", "marcador": "length\\(\\{1, 2, 3\\}\\)` → error"},
+  {"tema": "`choose()`", "fichero": "references/function-reference.md", "marcador": "`choose\\(\\)` - Use `a!match\\(\\)` instead"},
+  {"tema": "Today's date", "fichero": "references/date-time-patterns.md", "marcador": "todate\\(now\\(\\)\\)\\s+/\\* Current date"},
+  {"tema": "Composite primary key", "fichero": "references/data-modeling.md", "marcador": "Never use composite primary keys"},
+  {"tema": "Audit field names", "fichero": "references/data-modeling.md", "marcador": "updatedAt \\(DATETIME"},
+  {"tema": "Record list", "fichero": "references/record-summary-views.md", "marcador": "Record List~~ \\(DEPRECATED\\)"},
+  {"tema": "Where rules, interfaces and constants get security", "fichero": "references/security.md", "marcador": "rely entirely on the application's default security role map"},
+  {"tema": "Record action security", "fichero": "references/record-types.md", "marcador": "Omitting `visibilityExpr`", "sin": "[Ss]ecurity rules?[^.\\n]{0,60}\\bactions?\\b|\\bactions?\\b[^.\\n]{0,60}[Ss]ecurity rules?"},
+  {"tema": "Destructive button", "fichero": "references/sail.md", "marcador": "\"SOLID\"` \\+ `color: \"NEGATIVE\"` for destructive"},
+  {"tema": "Saving inside `a!forEach()`", "fichero": "references/sail.md", "marcador": "a!save\\(local!lineItems\\[fv!index\\]"},
+  {"tema": "Rows per page", "fichero": "references/components/grid-field-instructions.md", "marcador": "10-25 typical"},
+  {"tema": "Wizard step style", "fichero": "references/layouts/wizard-layout-instructions.md", "marcador": "style: \"DOT_VERTICAL\",\\s+// 4\\+ steps"},
+  {"tema": "Rich text colors", "fichero": "references/components/rich-text-instructions.md", "marcador": "Icon color \\(STANDARD, ACCENT, POSITIVE, NEGATIVE, SECONDARY, or hex\\)"},
+  {"tema": "Recursive rules", "fichero": "references/expression-rules.md", "marcador": "Circular references\\*\\* — A calls B, B calls A = runtime error"}
+]
