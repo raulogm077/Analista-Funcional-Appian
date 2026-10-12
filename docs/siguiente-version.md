@@ -1,7 +1,7 @@
 # Para la siguiente versión
 
-Lo que sigue abierto tras la 0.7.0-beta.3 (plan `docs/plan/2026-10-11-0.7.0-beta.3.md`). Cada línea dice qué, dónde y
-de dónde sale.
+Lo que sigue abierto tras la 0.7.0-beta.4 (planes `docs/plan/2026-10-11-0.7.0-beta.3.md` y
+`docs/plan/2026-10-12-correccion-buenas-practicas.md`). Cada línea dice qué, dónde y de dónde sale.
 
 ## Pasos de Raúl (para publicar la 0.7.0)
 
@@ -15,6 +15,13 @@ de dónde sale.
   - volver a medir la evaluación de malas prácticas con propuestas reales (las `claves` se fijaron a ciegas).
 - Archivar `~/Proyectos IA/appian-reverse-engineering` en el equipo donde esté (Paso 3 de la Tarea 31): no está en su
   cuenta de claude.ai ni en el portátil de trabajo. Avisar a quien tenga la skill suelta.
+- Probar en un entorno si una página oculta de un sitio se abre por su URL (usuario con permiso sobre la interfaz,
+  «Only show when» en falso): la documentación no lo dice y `09` §7.3 de buenas prácticas lo deja como no documentado
+  (plan del 12 de octubre, §4).
+- Cada vez que se actualice la skill oficial `appian` (`appian-devmcp-update`): `python3
+  pruebas/comprobar_divergencias.py`, y quitar de `14-official-skill-divergences.md` y de
+  `pruebas/divergencias-oficial.json` lo que Appian haya corregido. De vez en cuando, con red, `python3
+  pruebas/comprobar_anclas.py` (las anclas de la documentación cambian con cada versión de Appian).
 
 ## Ingeniería inversa (del recién llegado de la 0.7.0-beta.3)
 
