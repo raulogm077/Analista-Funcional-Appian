@@ -48,11 +48,12 @@ name of new objects.
 - Source: <https://docs.appian.com/suite/help/latest/Standard_Object_Names.html>
 
 ❌ **Don't put the application prefix on objects the end user sees.** Published applications,
-sites (visible name), business groups, reports, actions and feeds use a descriptive, meaningful
-name, without a prefix.
+sites (visible name), reports, actions and feeds use a descriptive, meaningful
+name, without a prefix. **Groups keep the prefix** (`HRO Administrators`, `HRO Human Resources`)
+unless end users see the group directly — a Tempo audience group, for instance.
 - **Why:** Appian uses the published app's name to group actions in Tempo; a technical prefix
   leaks straight into the user's face. Example: internal site `HRO Onboarding`, visible name `Onboarding`.
-- Source: <https://docs.appian.com/suite/help/latest/Standard_Object_Names.html>
+- Source: <https://docs.appian.com/suite/help/latest/Standard_Object_Names.html> · [Group objects](https://docs.appian.com/suite/help/latest/Standard_Object_Names.html#group-objects)
 
 ✅ **Use singular, descriptive names for record types; Appian generates the visible plural.** `HRO Employee`
 → the user sees "Employees".

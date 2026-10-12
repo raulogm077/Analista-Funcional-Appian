@@ -45,7 +45,7 @@ Appian recommends processes that are "clear and focused, doing a single job." Sp
 flow involves several users, contains timers/wait rules, or reuses standard operations.
 When the process is an **AI agent tool**, Appian adds: keep deterministic logic (validations,
 calculations, conditional flows) inside the process and leave the agent only the reasoning (doc 12 §3).
-- Source: [Prepare process models for AI agent tools](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#before-you-begin-prepare-your-tools-and-actions) (applies the "focused process, single task" doctrine)
+- Source: [Prepare process models for AI agent tools](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#before-you-begin-prepare-your-tools-and-resources) (applies the "focused process, single task" doctrine)
 
 ---
 
@@ -163,7 +163,7 @@ tables or none.
   if the write succeeds and the **sync** fails (e.g. the tier's synced row limit is exceeded),
   record data becomes **unavailable** — unless "Keep data available at high volumes" absorbs it
   (see doc 01).
-- Source: [Write Records Smart Service — Possible errors](https://docs.appian.com/suite/help/latest/Write_Records_Smart_Service.html#possible-errors)
+- Source: [Write Records Smart Service — Possible errors](https://docs.appian.com/suite/help/latest/Write_Records_Smart_Service.html#possible-errors-for-write-records)
 
 **✅ These smart services sync on their own: Write Records, Write to Data Store Entity, Write to Multiple Data Store Entities, Delete Records, Delete from Data Store Entities.**
 When used in processes, interfaces or rules, Appian syncs the change and it is available
@@ -188,7 +188,7 @@ error node and the user a lost submission.
 **✅ One "action tool" process, one write.**
 For processes that create/update data, avoid multiple Write Records nodes for different record
 types in the same model. One node, one record type, one purpose.
-- Source: [Prepare process models for AI agent tools](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#before-you-begin-prepare-your-tools-and-actions)
+- Source: [Prepare process models for AI agent tools](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#before-you-begin-prepare-your-tools-and-resources)
 
 ---
 
@@ -217,7 +217,7 @@ database (stored procedure / ETL). Branches drawn in parallel **run in sequence*
 real parallelism comes from starting separate processes with **Start Process**. An **AND
 gateway** is still useful to push independent activities out of an activity chain, so the user
 doesn't wait for them.
-- Source: [Health Check — Process flows with loops](https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html#process-flows-with-loops) · [Health Check — User experience](https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html#user-experience) · [Start Process Smart Service — Usage considerations](https://docs.appian.com/suite/help/latest/Start_Process_Smart_Service.html#usage-considerations)
+- Source: [Health Check — Process flows with loops](https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html#process-flows-with-loops) · [Health Check — User experience](https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html#user-experience-findings) · [Start Process Smart Service — Usage considerations](https://docs.appian.com/suite/help/latest/Start_Process_Smart_Service.html#usage-considerations)
 
 **✅ Route multiple outgoing flows with a gateway, never at random.**
 With several outgoing flows and activity chaining, Appian picks one **at random** — which is
@@ -367,7 +367,10 @@ from 26.4, and user input tasks after the start form only from 26.9.
 
 **✅ Process model security: its own role map (it does NOT inherit), by groups, minimum Initiator to start it.**
 The process model **does not inherit** security from its parent folder: you must set it on each
-model individually. Use **groups, not users** (so you control access by moving group
+model individually. It is not born empty, though: if the application has default security groups they
+pre-populate the role map when the model is created (without them, only the creator is
+Administrator), so "set" means **review what it was born with**. The group that starts the process is
+the group of the people who start it — users or a role — not the administrators group. Use **groups, not users** (so you control access by moving group
 membership, not by re-editing the role map). To **start** the process — including via the Start
 Process smart service or a record action — **Initiator** is enough. The role map's six roles:
 **Initiator** (start only; cannot see the model or reports), **Viewer** (view model/reports and
@@ -415,10 +418,20 @@ the user is waiting. Use the Script Task's Inputs and Outputs tabs to reduce the
 move complex expressions into testable rules.
 - Source: [Health Check — Sequential script tasks](https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html#sequential-script-tasks)
 
-**✅ To read data, use an expression rule; to modify it, use a process model.**
-Platform doctrine: use an expression to **read** (query, business logic) and a process model to
-**modify** (write to the database, generate documents).
-- Source: [Design Patterns (RPA) — Leveraging the low-code power of Appian](https://docs.appian.com/suite/help/latest/rpa-9.25/design-patterns.html#robotic-task-design-patterns)
+**✅ To read data, use an expression rule; to write it, choose between the function and a process.**
+Reading (a query, business logic) is always an expression. For writing, Appian documents both
+mechanisms: `a!writeRecords()` runs inside a `saveInto` or a Web API, and the Write Records node runs
+in a process. This guide's criterion: creating or editing a record **with a form** is a record action —
+a process with a Write Records node, secured from the record type; an edit made **in place** on a
+screen that isn't a record action (a toggle, a quick status change), with nothing else attached, can be
+written inline; and anything that must also record **record events** (the function cannot write them),
+notify, call an integration, change several records as one unit, wait for an approval, or be retried
+and audited (idempotency: doc 11 §2) goes through a **process model**. Generating documents is process
+work too. The mechanics of each option are in the official Appian skill
+(`references/write-records-patterns.md`); its test — "does an update process already exist?" — is a
+build shortcut, not a design criterion. `a!startProcess()` in a button is for unattended work on what
+the screen shows, not for saving a form.
+- Source: [Write Records — a!writeRecords() function](https://docs.appian.com/suite/help/latest/Write_Records_Smart_Service.html#awriterecords) · [Write records and record events](https://docs.appian.com/suite/help/latest/Write_Records_Smart_Service.html#write-records-and-record-events) · [Manage record data](https://docs.appian.com/suite/help/latest/manage-record-data.html#using-the-write-records-and-delete-records-smart-services) · [Ways to Start a Process — from an interface](https://docs.appian.com/suite/help/latest/Ways_to_Start_a_Process_From_a_Process.html#starting-a-process-from-an-interface)
 
 ---
 
@@ -562,7 +575,7 @@ a receive message / rule / timer event. **MNI** over chained unattended nodes is
 cause of exceeding the limit (a separate finding, *"Number of activity chained unattended nodes
 using MNI"*).
 - ❌ Anti-pattern: an MNI that inserts N rows one at a time between two chained forms.
-- Source: [Health Check — Activity chaining limit reached](https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html#design) · [Post-Install Configurations — Activity-chain limits](https://docs.appian.com/suite/help/latest/Post-Install_Configurations.html#maximum-activity-instances)
+- Source: [Health Check — Activity chaining limit reached](https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html#design-findings) · [Post-Install Configurations — Activity-chain limits](https://docs.appian.com/suite/help/latest/Post-Install_Configurations.html#maximum-activity-instances)
 
 **✅ Mitigation: reduce the chained nodes in the affected processes.**
 Review the flagged processes and **reduce the number of nodes with activity chaining enabled**.

@@ -36,7 +36,9 @@ Source: https://docs.appian.com/suite/help/latest/sites_object.html#pages
 ### 1.3 Records and actions are better exposed as their own page type
 - ✅ To give access to a record list use a **Record List** page (it inherits the search field, user
   filters, and views already defined on the record type); to launch a process, use an **Action** page.
-- ❌ Don't replicate a record list inside an interface just to place it on a site.
+- ✅ Prefer the Record List page. A records-powered grid inside an interface is the documented
+  alternative when the standard list falls short (several lists on one page, content around the grid);
+  then set the grid's record actions yourself, because a custom grid doesn't show them on its own.
 - **Why:** the Record List reuses the record type's entire configuration without duplicating SAIL, and
   record views (summary, related actions) remain accessible from it.
 
@@ -216,7 +218,7 @@ Source: https://docs.appian.com/suite/help/latest/sites_object.html#pages
   access to load or refresh, not just the current one: a query there penalizes the loading of the entire
   environment.
 
-Source: https://docs.appian.com/suite/help/latest/sites_object.html#display-name
+Source: https://docs.appian.com/suite/help/latest/sites_object.html#using-site-display-names-in-urls-and-navigation-menus
 
 ### 6.2 Changing the site's display name does NOT change its URL
 - ⚠️ Editing a site's **display name** (its visible name) **doesn't update the web address
@@ -238,15 +240,18 @@ Source: [KB-2146](https://community.appian.com/application-design-33/kb-2146-can
 
 ## 7. Site security
 
-### 7.1 Sites NEVER inherit security: you must set their role map explicitly
-- ✅ Always configure the site's role map by hand: in the official inheritance list by object type,
+### 7.1 Sites NEVER inherit security: review the role map they are born with
+- ✅ Check the site's role map explicitly: in the official inheritance list by object type,
   **Site** is in the **"Never Inherit Security"** column.
-- ❌ Don't assume the site takes security from the application or from a parent folder: it doesn't.
-- **Why:** since it doesn't inherit, a newly created site has no "borrowed" permissions; if you don't set
-  a role map, it ends up poorly protected or inaccessible. The doctrine on groups, permission levels, and
-  least privilege is in **doc 06 (Security)** — this section only flags the site's particularity.
+- ✅ Know what it starts with: if the application has **default security groups**, Appian pre-populates
+  the new site's role map with them; if it has none, only the creator has access. Either way it is a
+  one-time copy: later changes to the application's groups don't reach existing role maps.
+- ❌ Don't assume the site keeps following the application or a parent folder: it doesn't.
+- **Why:** a role map filled in at creation looks finished, but nobody chose it for this site; and
+  without default groups the site is reachable by its creator alone. The doctrine on groups, permission
+  levels, and least privilege is in **doc 06 (Security)** — this section only flags the site's particularity.
 
-Source: https://docs.appian.com/suite/help/latest/object-security.html#security-inheritance-by-object-type
+Source: https://docs.appian.com/suite/help/latest/object-security.html#security-inheritance-by-object-type · https://docs.appian.com/suite/help/latest/object-security.html#setting-security-during-object-creation · https://docs.appian.com/suite/help/latest/sites_object.html#site-security · https://docs.appian.com/suite/help/latest/creating-applications.html#default-security-groups
 
 ### 7.2 A user needs at least Viewer on the site and visibility of the page
 - ✅ To access a site, the user needs at least **Viewer** permission on the site object **and**
@@ -257,26 +262,29 @@ Source: https://docs.appian.com/suite/help/latest/object-security.html#security-
 - **Why:** site security controls the **gate** (what navigation they see), not the **content**; the two
   layers are configured separately.
 
-Source: https://docs.appian.com/suite/help/latest/sites_object.html#security
+Source: https://docs.appian.com/suite/help/latest/sites_object.html#site-security
 
 ### 7.3 Conditional visibility of pages and page groups: distinct from the role map
 - ✅ In addition to the role map, every **page** and every **page group** supports an **"Only show
-  when"** condition (a boolean expression): the page/group only appears in navigation when the
-  expression is true. It's a mechanism that is **native and distinct from security**: visibility hides the
-  item from the bar; the role map controls the real permission on the objects the page invokes.
+  when"** condition (a boolean expression): the page/group only appears when the expression is true.
+  Appian presents visibility expressions as a way to *further* secure an object — who sees one element
+  of it — and viewing a page requires both Viewer on the site and visibility of that page. It is a
+  mechanism **distinct from the role map**, which controls the permission on the objects the page invokes.
 - ⚠️ **Group precedence over page:** if a **page group's** expression hides the group, **none** of its
   pages show, even if an individual page's condition is true. Check the group's condition before
   debugging why a page isn't appearing.
-- ⚠️ **This is not security:** hiding a page with "Only show when" doesn't prevent direct URL access for
-  a user with permission on the underlying object. To actually restrict access, use the role map
-  (7.1/7.2); visibility is navigation UX, not an access barrier.
+- ⚠️ **A layer, not a substitute:** security in Appian is layered — the user needs permission on every
+  object the page uses. Hiding a page changes nothing in the role maps of its record type, interface or
+  process model: restrict those too (7.1/7.2, doc 06). Whether a hidden page can still be opened by its
+  URL is **not documented**; until that has been tested in the environment, don't rely on visibility
+  alone to protect data.
 - ⚠️ **Performance:** these expressions are **evaluated on every load/refresh** of the site, just like the
   display name — **don't put long-running queries** in them (same trap as 6.1).
 - **Why:** adapting the bar to the role or the state (showing "Approvals" only to whoever approves)
-  improves UX without duplicating sites; but confusing visibility with security leaves the data accessible
-  via URL.
+  improves UX without duplicating sites; treating visibility as the only barrier leaves the underlying
+  objects exactly as open as their own role maps make them.
 
-Source: https://docs.appian.com/suite/help/latest/sites_object.html#page-and-page-group-visibility · https://docs.appian.com/suite/help/latest/object-security.html#visibility
+Source: https://docs.appian.com/suite/help/latest/sites_object.html#page-and-page-group-visibility · https://docs.appian.com/suite/help/latest/object-security.html#visibility · https://docs.appian.com/suite/help/latest/object-security.html#layered-object-security · https://docs.appian.com/suite/help/latest/sites_object.html#site-security
 
 ---
 

@@ -45,7 +45,7 @@ los nodos de un proceso y las respuestas de la plataforma (validación, ejecucio
 | Sin ejecuciones o huérfano | `datos/procesos.json` (`ejecuciones: 0`), `H-ARQ` de `02`, huérfanos de `09` | Código muerto o abandonado que se mantiene igual | BP 08 §6; BP 11 §8 |
 | «Cancelar» del formulario de inicio que el proceso no lee (ninguna puerta lleva `pv!cancel` a un fin) | expresiones de la interfaz de inicio y nodos de la ficha del process model | El proceso arranca igual y sigue como si se hubiera enviado | BP 03 §7 |
 | Paso de proceso que se hace siempre, aunque no haga falta | nodos de la ficha del process model, `08-procesos-bpmn/` | Trabajo y esperas que no aportan; qué casos se lo saltan lo decide el negocio (DEC) | BP 03 §5 |
-| Botón con `a!startProcess` para actuar sobre un registro | expresiones de la ficha de la interfaz, `10` | Acciones fuera del record, sin su seguridad | BP 01 §9.2 |
+| Botón con `a!startProcess` para crear o editar un registro con formulario (no cuenta el trabajo desatendido) | expresiones de la ficha de la interfaz, `10` | Acciones fuera del record, sin su seguridad | BP 01 §9.2 |
 | Instancias completadas sin archivar (si la trae) | ficha del process model | Memoria del motor | BP 03 §9 |
 
 ## Pantallas y reglas
@@ -54,7 +54,7 @@ los nodos de un proceso y las respuestas de la plataforma (validación, ejecucio
 |---|---|---|---|
 | Funciones, componentes o smart services de la lista de deprecados de Appian; una versión antigua (`_17r1`, `_22r2`…), solo si está en esa lista | avisos de validación (`09`, ficha `@validation`), expresiones y nodos de la ficha | Funcionalidad que Appian retirará | BP 08 §7 |
 | Consultas sin paginar (`batchSize: -1`), sin `fields` o dentro de un bucle | expresiones de la ficha | Memoria y lentitud | BP 05 §2 |
-| Consultas o cálculos caros en los parámetros de un componente | expresiones de la ficha | Se recalculan en cada interacción | BP 02 §1.1 |
+| Consultas o cálculos caros en los parámetros de un componente (no cuenta `data` con un record type o `a!recordData()`) | expresiones de la ficha | Se recalculan en cada interacción | BP 02 §1.1 |
 | Interfaz de más de 80 KB o con muchas responsabilidades | `H-GEN` de `09`, ficha de la interfaz | Difícil de mantener y de probar | BP 02 §1.3 |
 | Listas y paneles hechos a mano con consultas a data stores | `10`, expresiones de la ficha | Más código y sin las funcionalidades del record | BP 02 §5.3 |
 | Literales de negocio repetidos (estados, umbrales, grupos) | `11` | Reglas escondidas que hay que cambiar en varios sitios | BP 04 §9 |

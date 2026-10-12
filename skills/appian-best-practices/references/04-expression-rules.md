@@ -68,8 +68,11 @@ Source: [Standard Object Names — Content-management objects (Folder)](https://
 *Why:* comments explain intent to other developers and feed the test case Copilot.
 ⚠️ **Keep them to the minimum that explains the current logic.** A comment that narrates the object's
 history —what it used to do, who changed it, when and why— makes the expression harder to read and
-goes stale silently. That record belongs to the project's documentation.
-Source: [Parts of an Expression — Comments](https://docs.appian.com/suite/help/latest/parts-of-an-expression.html#comments)
+goes stale silently. That record belongs to the project's documentation, and Appian already keeps and
+compares every version of the object. The same applies to the object's **description** (it says what the
+rule does, not what it used to do) and to version suffixes in the name (`_v2`). This is this guide's own
+criterion: the documentation doesn't say where change history goes.
+Source: [Parts of an Expression — Comments](https://docs.appian.com/suite/help/latest/parts-of-an-expression.html#comments) · [Managing Object Versions](https://docs.appian.com/suite/help/latest/Managing_Object_Versions.html)
 
 **✅ Use the *Format expression* button and the editor's indentation guides** to keep SAIL readable before saving.
 Source: [Expression Editor — Toolbar actions](https://docs.appian.com/suite/help/latest/expression-editor.html#toolbar-actions)
@@ -96,8 +99,8 @@ Source: [Updating Expressions to Use a!localVariables](https://docs.appian.com/s
 *Anti-pattern:* `if(x=1, a, if(x=2, b, if(x=3, c, d)))` — use `a!match(value: x, equals: 1, then: a, ...)`.
 Source: [a!match() Function — Usage considerations (Configuring / Evaluation order)](https://docs.appian.com/suite/help/latest/fnc_logical_match.html#usage-considerations)
 
-**✅ Reserve `if()` for a single condition and `choose()` for selecting by index.** `if` evaluates only the matching branch; `choose` evaluates only the value whose index matches.
-Source: [Interface Performance — Conditional logic](https://docs.appian.com/suite/help/latest/interface-performance.html#conditional-logic)
+**✅ Reserve `if()` for a single condition and `choose()` for selecting by index.** `if` evaluates only the matching branch; `choose` evaluates only the value whose index matches. Appian's own page for `choose()` points to `a!match()` as the more flexible alternative that needs no index: prefer it in new code and keep `choose()` where an index is the natural key.
+Source: [Interface Performance — Conditional logic](https://docs.appian.com/suite/help/latest/interface-performance.html#conditional-logic) · [choose() — Evaluation order](https://docs.appian.com/suite/help/latest/fnc_logical_choose.html#evaluation-order)
 
 **✅ Avoid excessive nesting.** Official doctrine sets thresholds: avoid nesting looping functions more than 2 levels deep.
 Source: [Expressions Best Practices — Designing memory-efficient expressions (Limit looping iterations)](https://docs.appian.com/suite/help/latest/expressions-best-practices.html#designing-memory-efficient-expressions)
@@ -112,7 +115,9 @@ Source: [Decisions](https://docs.appian.com/suite/help/latest/Decisions.html) ·
 
 > **Where the depth lives.** The official Appian skill specifies null handling in full in
 > `references/null-safety-patterns.md`: which functions reject null, the safe pattern for
-> each one, and the casting traps. This section keeps the criterion and what closes the gate.
+> each one, and the casting traps. This section keeps the criterion and what closes the gate. Where its
+> recipes depart from the documentation — short-circuiting in `and()`/`or()`, `a!forEach()` over null,
+> `length()` on a list — doc 14 says which one to follow.
 > **Reading this without that skill installed** (against Appian Designer, say): the platform sources
 > cited under each rule are what it is built from, and remain sufficient to apply them.
 
@@ -127,7 +132,7 @@ Source: [a!isNullOrEmpty() Function](https://docs.appian.com/suite/help/latest/f
 Source: [How to Handle Null Values — Common scenarios](https://docs.appian.com/suite/help/latest/null-handling.html#common-scenarios)
 
 **✅ Remember that `a!forEach()` over `null` or an empty list returns an empty list and does NOT evaluate the expression.** This is useful for null-safety, but it also means **the body of an `a!forEach` over an empty list never runs**: a broken rule can pass its tests if you only test it with empty lists (see §8).
-Source: [a!forEach() Function — Using the items parameter](https://docs.appian.com/suite/help/latest/fnc_looping_a_foreach.html#usage-considerations)
+Source: [a!forEach() Function — Null or empty items list](https://docs.appian.com/suite/help/latest/fnc_looping_a_foreach.html#null-or-empty-items-list)
 
 **❌ Don't trust that data exists.** Design assuming missing data: you can't transform a null string, iterate a null list, or render a link with a null address. Test casts with nulls in particular (make sure they don't end up as the string `"null"`).
 Source: [How to Handle Null Values in Appian — Why are nulls an issue / Casting](https://docs.appian.com/suite/help/latest/null-handling.html)
@@ -160,7 +165,7 @@ Source: [Advanced Expression Evaluation — Indirectly evaluating arguments](htt
 **✅ Cache expensive computations and queries in a local variable; don't repeat them.** Instead of `if(isnull(rule!slowQuery()), "def", rule!slowQuery())` (which runs the query twice), store it once in `local!data` and reference it.
 Source: [SAIL Performance — Local Variables](https://docs.appian.com/suite/help/latest/SAIL_Performance.html#local-variables)
 
-**✅ Put expensive computations in local variables, not in component parameters.** Every user interaction re-evaluates all component parameters; a local variable, by default, is only evaluated on load, when it's given a `saveInto`, or when a variable it depends on changes.
+**✅ Put expensive computations in local variables, not in component parameters.** Every user interaction re-evaluates all component parameters (except `data` on records-powered components, doc 02 §1.1); a local variable, by default, is only evaluated on load, when it's given a `saveInto`, or when a variable it depends on changes.
 Source: [Interface Performance — Put expensive computations in local variables](https://docs.appian.com/suite/help/latest/interface-performance.html#local-variable-best-practices)
 
 **✅ Let independent queries evaluate in parallel.** Appian automatically parallelizes queries that don't depend on each other: items in a list, parameters, independent local variable definitions, loop iterations. If a local variable references another, they get serialized; rewrite them so they don't reference each other.
@@ -170,8 +175,8 @@ Source: [Parallel Evaluation of Expressions](https://docs.appian.com/suite/help/
 **✅ In `and()`, `or()` and `a!match()`, put expensive computations last.** They cut off evaluation as soon as `and` finds a `false`, `or` finds a `true`, or `match` finds a match; whatever comes after is not evaluated and adds no time.
 Source: [Interface Performance — put expensive computations last](https://docs.appian.com/suite/help/latest/interface-performance.html#when-using-and-or-and-match-functions-put-expensive-computations-last)
 
-**✅ Paginate and filter queries; never use `batchSize: -1` without control.** Unbounded queries return an unpredictable amount of data (more in production than in development) and fill up `local!` memory.
-Source: [Expressions Best Practices — Page and filter query results](https://docs.appian.com/suite/help/latest/expressions-best-practices.html#designing-memory-efficient-expressions)
+**✅ Paginate and filter queries; never use `batchSize: -1` without control.** Unbounded queries return an unpredictable amount of data (more in production than in development) and fill up `local!` memory. In `a!queryRecordType()` the `batchSize` goes from 0 to 5000 and `-1` is not valid at all: "everything" only exists in `a!queryEntity()` and query rules.
+Source: [Expressions Best Practices — Page and filter query results](https://docs.appian.com/suite/help/latest/expressions-best-practices.html#designing-memory-efficient-expressions) · [a!queryRecordType() — Using the pagingInfo parameter](https://docs.appian.com/suite/help/latest/fnc_system_queryrecordtype.html#using-the-paginginfo-parameter)
 
 **✅ Limit looping: avoid iterating over more than ~500 items and don't nest loops more than 2 levels deep.** Each iteration accumulates its result in memory; nested loops don't free memory until the parent finishes. Check first whether you actually need a loop (functions like `text()` or `if()` already operate over arrays).
 Source: [Expressions Best Practices — Limit looping iterations](https://docs.appian.com/suite/help/latest/expressions-best-practices.html#designing-memory-efficient-expressions)
@@ -189,8 +194,8 @@ Source: [SAIL Performance — Local Variables](https://docs.appian.com/suite/hel
 
 ## 8. Testing expression rules
 
-**✅ Save test cases with every rule; don't leave them as disposable, ad-hoc checks.** Test cases serve as living documentation, TDD (write them before the rule), use cases, edge cases and **regression** (run in bulk to catch unintended changes).
-Source: [Expression Rule Testing with Appian — What can test cases be used for](https://docs.appian.com/suite/help/latest/Expression_Rule_Testing.html)
+**✅ Save test cases with every rule that has logic of its own; don't leave them as disposable, ad-hoc checks.** Test cases serve as living documentation, TDD (write them before the rule), use cases, edge cases and **regression** (run in bulk to catch unintended changes). The documentation's exception: a rule that only queries transactional (non-reference) data doesn't need them, because the data differs in each environment — at most it gets the smoke case below (the query completes, `typeof()` of the result). Don't write cases that test Appian's built-in logic either.
+Source: [Expression Rule Testing — What can test cases be used for](https://docs.appian.com/suite/help/latest/Expression_Rule_Testing.html#what-can-test-cases-be-used-for) · [General testing guidance](https://docs.appian.com/suite/help/latest/Expression_Rule_Testing.html#general-testing-guidance)
 
 **✅ Choose the right assertion:**
 - "passes if it evaluates without errors" (the default, most common),
@@ -199,7 +204,7 @@ Source: [Expression Rule Testing with Appian — What can test cases be used for
 Source: [Expression Rules — Test cases (Create a test case)](https://docs.appian.com/suite/help/latest/Expression_Rules.html#test-cases)
 
 **✅ Explicitly cover edge cases and real data, not just the happy path.** Write cases for unusual inputs that could break the rule, and test with populated data: since `a!forEach` doesn't evaluate its body on empty lists (§5), a broken rule can pass all its cases if you only test it empty. The test case Copilot is designed to surface edge cases (nulls, extreme values), but it doesn't know your domain: review and refine what it generates.
-Source: [Expression Rule Testing — Edge Cases / Use Cases](https://docs.appian.com/suite/help/latest/Expression_Rule_Testing.html) · [a!forEach() Function — Using the items parameter](https://docs.appian.com/suite/help/latest/fnc_looping_a_foreach.html#usage-considerations)
+Source: [Expression Rule Testing — Edge Cases / Use Cases](https://docs.appian.com/suite/help/latest/Expression_Rule_Testing.html) · [a!forEach() Function — Null or empty items list](https://docs.appian.com/suite/help/latest/fnc_looping_a_foreach.html#null-or-empty-items-list)
 
 **✅ Run test cases in bulk for regression** after editing rules that other objects depend on, to catch unintended impacts.
 Source: [Automated Testing for Expression Rules](https://docs.appian.com/suite/help/latest/Automated_Testing_for_Expression_Rules.html)
@@ -224,7 +229,7 @@ Source: [Standard Object Names — Constant](https://docs.appian.com/suite/help/
 *Anti-pattern:* duplicating the constant once per environment, or typing the PROD endpoint directly into the SAIL.
 Source: [Constant Object — Environment Specific](https://docs.appian.com/suite/help/latest/Constants.html) · [Application Deployment Guidelines — Environment specific constants](https://docs.appian.com/suite/help/latest/Application_Deployment_Guidelines.html#rules) · [Managing Import Customization Files](https://docs.appian.com/suite/help/latest/Managing_Import_Customization_Files.html)
 
-**✅ Group constants over user constants; counters without versions.** A user constant breaks when the user is renamed. Update Constant creates a new version whenever *Create New Version* is on, and hundreds of versions inflate content engine memory: keep it off, and for counters use Increment Constant, which never creates versions ([KB-1854](https://community.appian.com/application-design-33/kb-1854-opening-a-user-constant-throws-an-all-users-and-groups-must-be-valid-and-visible-to-the-viewer-error-960), [KB-1226](https://community.appian.com/administration-32/kb-1226-content-collaboration-engine-consumes-high-memory-514)).
+**✅ Prefer group constants to user constants; counters without versions.** The documentation doesn't rank the two — it even gives usernames as an example of a per-environment value — but a user constant stops opening once the user is renamed (KB-1854), so this guide points a constant at a group unless one specific account is the requirement. Update Constant creates a new version whenever *Create New Version* is on, and hundreds of versions inflate content engine memory: keep it off, and for counters use Increment Constant, which never creates versions ([KB-1854](https://community.appian.com/application-design-33/kb-1854-opening-a-user-constant-throws-an-all-users-and-groups-must-be-valid-and-visible-to-the-viewer-error-960), [KB-1226](https://community.appian.com/administration-32/kb-1226-content-collaboration-engine-consumes-high-memory-514)).
 
 ---
 
@@ -245,7 +250,7 @@ Source: [Functions and Side Effects — Smart services](https://docs.appian.com/
 
 ## 11. Data-type traps: dates, decimals, identifiers
 
-- ⚠️ **GMT by default.** `today()` returns the GMT day, `todate()` of a date-time returns the GMT date, and a Date converted to Date and Time becomes midnight GMT. For the user's local day use `todate(local(now()))` (or `todate(local(x))`), and wrap conversions for display in `gmt()` ([KB-1363](https://community.appian.com/application-design-33/kb-1363-today-returns-one-day-prior-when-locale-is-set-to-particular-time-zones-630), [KB-1344](https://community.appian.com/application-design-33/kb-1344-datetext-returns-one-day-before-expected-date-613), [Appian Max — Handling Date and Time](https://community.appian.com/architecture-29/handling-date-and-time-1283)).
+- ⚠️ **GMT by default.** `today()` returns the GMT day, `todate()` of a date-time returns the GMT date, and a Date converted to Date and Time becomes midnight GMT. For the user's local day use `todate(local(now()))` (or `todate(local(x))`) — the comparison the [`local()` page](https://docs.appian.com/suite/help/latest/fnc_date_and_time_local.html#use-local-to-get-the-current-context-for-date-time-functions) itself shows; see also [`todate()` — Understanding results](https://docs.appian.com/suite/help/latest/fnc_conversion_todate.html#understanding-results) — and wrap conversions for display in `gmt()` ([KB-1363](https://community.appian.com/application-design-33/kb-1363-today-returns-one-day-prior-when-locale-is-set-to-particular-time-zones-630), [KB-1344](https://community.appian.com/application-design-33/kb-1344-datetext-returns-one-day-before-expected-date-613), [Appian Max — Handling Date and Time](https://community.appian.com/architecture-29/handling-date-and-time-1283)).
 - ⚠️ **`intervalds()` overflows** to a negative value above 2,147,483 seconds (~24.8 days): SLA and duration maths over long periods use days or `a!addDateTime()` ([KB-1386](https://community.appian.com/application-design-33/kb-1386-negative-value-returned-for-intervalds-function-when-passing-inputs-amounting-to-greater-than-591-hours-31-minutes-and-23-seconds-651)).
 - ⚠️ **Decimals are IEEE-754 doubles:** a computed value that should end in 5 can round down (`round(123/240*100, 1)`). For money, round in two steps (to 6 decimals, then to the target) or use `roundup`/`rounddown`, and `fixed()` only to display ([KB-1426](https://community.appian.com/application-design-33/kb-1426-unexpected-results-on-decimal-calculations-and-rounding-678)).
 - ✅ **No native UUID function:** build a v4 UUID from `rand()` + `dec2hex()` (lowercase, 8-4-4-4-12) and store it once generated — `rand()` changes on every evaluation ([Appian Max — Generating UUIDs](https://community.appian.com/architecture-29/generating-uuids-guids-15733)).

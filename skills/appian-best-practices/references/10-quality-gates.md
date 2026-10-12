@@ -95,9 +95,12 @@ recommendation.
 > installed, this section stands on its own.
 
 - ✅ The object **saves and validates without errors**. With a design MCP (e.g. `appian-dev`):
-  `validateDesignObject`, and for interfaces `validateExpression` **with `isInterface: true`** (without
-  that flag a correct interface fails with *"Could not find variable 'env!features'"*). Without MCP: save
-  in Designer without errors and review its Design Guidance.
+  `validateDesignObject` on the saved object. An interface created or updated through the MCP has
+  already been parsed, design-checked and evaluated by that call: **don't validate the same expression
+  again**. `validateExpression` is for code that wasn't written that way — a draft, pasted code — and
+  for an interface it needs **`isInterface: true`** (without that flag a correct interface fails with
+  *"Could not find variable 'env!features'"*). Without MCP: save in Designer without errors and review
+  its Design Guidance.
 - ✅ Expressions, references, constants, record fields and rule inputs **exist and are of the expected
   type**. Known blind spot: validation **doesn't see a nonexistent rule invoked inside an `a!forEach` over
   an empty list** — catch it by evaluating the call to that rule separately, with its parentheses
@@ -128,7 +131,7 @@ Test data: representative, controlled, **no personal data or production secrets*
 > assertions** (controlled inputs, not `now()`/`today()`). A rule that queries live transactional data
 > gets a smoke case instead — the query completes and returns the expected types (`typeof()`, doc 04 §8).
 > A fragile or tautological case does not count as coverage.
-> Source: [Expression Rule Testing — general guidance](https://docs.appian.com/suite/help/latest/Expression_Rule_Testing.html#general-guidance)
+> Source: [Expression Rule Testing — general guidance](https://docs.appian.com/suite/help/latest/Expression_Rule_Testing.html#general-testing-guidance)
 
 ## 3. Security (by role, data and action)
 
@@ -156,24 +159,24 @@ Detail: doc **06-security**.
 
 Every new or modified interface passes, **in order**:
 
-1. **Syntax validation** — `validateExpression` with `isInterface: true` (or save in Designer without errors).
-2. **Static analysis**, if the environment offers SAIL validators (linters or agents covering
-   schema/parameters, icon keys and structure). They apply **in addition** to environment validation. If
-   none is available, review by hand what they cover: existing functions and parameters, valid icon keys,
-   correct enumerations.
+1. **Syntax validation** — done by the call itself when the interface was created or updated through a
+   design MCP (gate 1). Otherwise: `validateExpression` with `isInterface: true`, or save in Designer
+   without errors.
+2. **Static analysis** of what evaluation doesn't catch: existing functions and parameters, valid icon
+   keys, correct enumerations. The official Appian skill verifies functions, components and parameters
+   before it writes; when it ran, that is this step — **don't repeat it by hand**. Without it, use the SAIL
+   validators the environment offers (linters or agents), or review those points by hand.
 3. Fix **every blocking finding** and re-validate what you touched.
-4. **Render twice** (`testInterface` or open the interface): once with **populated real data** and once
-   with **null data / a nonexistent identifier**. The second render alone proves nothing — see the
-   `a!forEach` blind spot in gate 2.
-5. **Runtime checks.** The ones the official skill's `change-review.md` defines (these five when this was
-   written), on the populated render:
-   - `diagnostics.error` is null — any value is a runtime rendering failure.
-   - No `-1` in rendered text (a broken `totalCount`).
-   - Count/alert cards show non-negative integers.
-   - A filtered grid returns **fewer** rows than the unfiltered total.
-   - No serialized `[@attributes=` inside a cell: grid columns carry strings or proper components.
-
-   And three this skill adds, because the populated/empty pair is what exposes them:
+4. **Render with data and without** (`testInterface` or open the interface): once with **populated
+   real data**, once with **null data / a nonexistent identifier**, and once more for each conditional
+   branch neither of them reaches (an `isUpdate` path, a section behind `showWhen`). The renders the
+   official skill asks for after creating the interface count: **don't render the same inputs twice**.
+   The empty render alone proves nothing — see the `a!forEach` blind spot in gate 2.
+5. **Runtime checks** on the populated render: the ones the official skill lists under *Runtime
+   Verification* in `change-review.md` (without that skill: no rendering error in `diagnostics.error`, no
+   `-1` and no serialized object in the rendered text, counts that are non-negative, a filter that returns
+   fewer rows than the total), plus three this skill adds, because the populated/empty pair is what
+   exposes them:
    - A render that timed out or came back truncated is not a render.
    - The **populated render carries more nodes with a non-empty value than the empty one**. That
      inequality, not "it rendered", is what proves the loops iterated.
@@ -223,11 +226,13 @@ Detail: docs **05-performance**, **12-ai-agents-and-skills**.
 ## 6. Maintainability
 
 - ✅ **Naming** conforms to the current convention: the project's if it's documented, or the one existing
-  objects already follow; failing that, the official standard (Standard Object Names, doc 08).
+  objects already follow; failing that, the official standard (Standard Object Names, doc 08; relationship
+  names, doc 01 §4.2); and for what neither covers (table and field names), the official Appian skill's.
 - ✅ **Typed** rule inputs with clear names; each rule, **one responsibility**.
 - ❌ No duplicated business logic or embedded environment values (use constants; complex logic → Decision object).
 - ✅ Comments that explain **non-obvious decisions**, not that repeat the code, and **not the object's
-  change history** — what changed and when belongs to the project's documentation, not inside the object.
+  change history** — what changed and when belongs to the project's documentation, not inside the object:
+  not in its comments, its description or a `_v2` suffix (doc 04 §3).
   Errors turned into controlled results/messages.
 
 Detail: docs **04-expression-rules**, **08-alm-testing-naming**.
@@ -239,7 +244,7 @@ Detail: docs **04-expression-rules**, **08-alm-testing-naming**.
 - ✅ **Inspect the package before deploying.** Review **security warnings**, **failing test cases** and
   **missing precedents**. Warnings alert but let you continue; **deployment errors block** it (references
   to deleted objects or invalid record fields). Don't deploy with deployment errors.
-  Source: [Inspect deployment packages](https://docs.appian.com/suite/help/latest/inspect-deployment-packages.html) · [Deploy to target environments — inspect the package](https://docs.appian.com/suite/help/latest/Deploy_to_Target_Environments.html#inspect-the-package)
+  Source: [Inspect deployment packages](https://docs.appian.com/suite/help/latest/inspect-deployment-packages.html) · [Deploy to target environments — inspect the package](https://docs.appian.com/suite/help/latest/Deploy_to_Target_Environments.html)
 - ✅ **Compare the package against the target** before deploying: which objects **exist, change or
   conflict** there, so you don't overwrite someone else's changes in a shared environment.
   Source: [Prepare the Deployment — Comparing across environments](https://docs.appian.com/suite/help/latest/prepare-deployment.html#comparing-across-environments) · [Prepare deployment packages](https://docs.appian.com/suite/help/latest/prepare-deployment-packages.html)
@@ -280,7 +285,7 @@ Specific minimums, in addition to the seven cross-cutting gates:
   setting + FK) aligned; no duplication without a documented reason; record events decided for the main
   business entity.
 - **Expression rule:** typed inputs; nominal/null/empty/invalid/boundary cases; no repeated or looped
-  queries; stable output contract documented for its use; test cases saved.
+  queries; stable output contract documented for its use; test cases saved where doc 04 §8 asks for them.
 - **Process model:** success/exception/cancellation/retry paths where applicable; every gateway with a
   default path and every node with an exit; reusable logic **outside** the process; start/tasks/escalation
   security, tasks assigned to groups or data-based users with deliberate reassignment privileges; messages

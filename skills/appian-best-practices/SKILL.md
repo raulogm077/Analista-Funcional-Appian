@@ -15,7 +15,8 @@ about the project, discover it (see *Discovering Project Context*); never assume
 
 **Markers in the references:** ✅ do · ❌ avoid · ⚠️ trap · ⓥ version-dependent · ⓣ tier-dependent
 (Advanced/Premium) · **[engineering]** general engineering doctrine with no Appian page (doc 11). Baseline:
-checked against the 26.3 and 26.6 documentation and the release notes up to 26.9; each ⓥ names its release.
+checked against the 26.3 and 26.6 documentation and the release notes up to 26.9 (the rules the official
+skill contests, doc 14, against the 26.9 documentation); each ⓥ names its release.
 
 ## Two modes
 
@@ -33,14 +34,16 @@ The most expensive mistake in a quality guide is applying all of it to everythin
 
 | The change… | Procedure |
 |---|---|
-| Is cosmetic or local and touches no data, permissions or queries (text, spacing, a label) | Cardinal Rules + gate 1 (platform correctness) — the only verdict recorded. Don't open the reference docs. |
+| Is cosmetic or local and touches no data, permissions or queries (text, spacing, a label) | Cardinal Rules + gate 1 (platform correctness) — the only verdict recorded. Don't open this skill's reference docs. |
 | Creates or modifies an object without exposing new data or changing authorization | The doc for its domain + the applicable gates (`10`). |
 | **Writes data, exposes information, changes permissions, queries at volume, or uses AI** | Domain docs + `10` + `11` (reliability) and full verification. |
 | Is architecture, a new data model, an integration with an external system, or an AI design | Add `00` and the documentary validation for high-risk decisions (see *Tools*). |
 
 When in doubt between two rows, go up one. What is **never** graded down: an invalid reference, an
 authorization gap and a non-idempotent write block any change. And the effort itself is proportional: an
-ordinary change is done inline, without fanning out parallel reviews.
+ordinary change is done inline, without fanning out parallel reviews. This calibration governs **this
+skill's** docs and gates; a write through a design MCP still follows the official skill's own loading
+and verification steps, whatever the size of the change.
 
 **Not every FAIL blocks the same way.** Platform correctness and security block the close outright.
 Functional behavior, interfaces and operations block once and then become recorded debt. Performance and
@@ -69,11 +72,13 @@ To read one section instead of a whole doc: `python3 scripts/seccion.py 06` list
 | **Anything that writes, calls out or reaches production: concurrency, idempotency, retries, observability, negative security tests, rollback and per-environment configuration, plug-in governance** | `references/11-reliability-operations.md` |
 | Decide on or design AI: agents, chat agents, MCP tools, AI skills (execution modes, models), DocCenter, guardrails, AI cost | `references/12-ai-agents-and-skills.md` |
 | **Diagnose or maintain a live app: an error message, a symptom, Cloud operations** (symptom → cause → action, from Appian's Community Knowledge Base) | `references/13-maintenance-runbooks.md` |
+| **Write through a design MCP with the official Appian skill loaded: where that skill departs from the documentation, and which one to follow** | `references/14-official-skill-divergences.md` |
 
 `10` applies to anything declared finished (in proportion to the change); `11`'s idempotency and
 concurrency sections, to anything that writes data or calls out, and its operational-readiness gate to
 releases that reach production; `00`, to every design conversation; `13`, whenever something already
-fails or a review asks what breaks in production.
+fails or a review asks what breaks in production; `14`, before the first write of a session through a
+design MCP.
 
 ## Discovering Project Context
 
@@ -95,6 +100,9 @@ instead of perpetuating it.
 
 ❌ **Don't explore the entire application "for context."** Modifying an interface doesn't justify
 inventorying every record type, process and integration. Widen the context when a real dependency shows up.
+With a design MCP, how to discover the environment (what to list before creating, where a UUID comes
+from) is the official skill's ground: listing the objects of one type before creating one is part of a
+safe write, not exploration.
 
 **A build order from the analyst.** If the project has `construccion/<U>.md` (written by the analyst's
 `indice.py encargo`), that file is the scope: build only its objects, in the order of the official skill's
@@ -119,17 +127,20 @@ Check what is available in the session; don't invent tools or assume they exist.
 **Design MCP (e.g. `appian-dev`) — "how is this actually implemented?"** Inspect and modify real objects,
 dependencies, validate against the environment. Ask for **the specific objects** you need; don't list the
 whole application to find one; don't repeat a call whose answer you have. Before modifying an existing
-object, check its **dependents**. Without a design MCP the work is the same, described as changes for
+object, check its **dependents** (gate 1 in `10`); before deleting one, follow the official skill's
+delete confirmation. Without a design MCP the work is the same, described as changes for
 Designer: the rules and the gates don't depend on the tool.
 
 **Before writing through a design MCP, the official Appian skill is required.**
 [`appian/dev-mcp-skills`](https://github.com/appian/dev-mcp-skills/) carries what the tool schemas can't
 express: naming conventions, relationships declared on both sides, the order objects must be created in,
 real UUIDs versus invented ones. The gates here check the contract and the evidence, not those mechanics,
-so a write issued without it fails in ways nothing here catches. That skill leans on the documentation MCP
-for its function-availability checks, so the chain is **design MCP → official skill → documentation
-MCP**. If the official skill isn't installed, say so and don't write until the user decides: the
-mechanics it covers would go unchecked.
+so a write issued without it fails in ways nothing here catches. That skill checks that functions and
+components exist against the documentation site itself (its `functions.json`) and treats documentation
+search as an optional extra. If the official skill isn't installed, say so and don't write until the
+user decides: the mechanics it covers would go unchecked. **It is not always right:** where it departs
+from the documentation, `references/14-official-skill-divergences.md` says which one to follow — read
+it before the first write of a session.
 
 **Documentation MCP (e.g. `appian-docs`) — "how does Appian work?"** Syntax, functions, parameters,
 components, limits, version-specific behaviour. It's the source of truth for a **concrete** doubt, not a
@@ -149,15 +160,16 @@ How to query it well:
 - If the chunks are only loosely related, reformulate **once**; if still nothing, report it as **not
   verified** instead of filling the gap from memory.
 
-**For writing, the documentation MCP must be connected** (connected, not queried on every write): without
-it, the official skill's function checks come back empty — which reads as *"the function doesn't exist"* instead of *"nothing was checked"*. If
-it's missing, say so and stop rather than write on an unverified function. **For reading and reviewing**
-without it, consult `docs.appian.com/suite/help/latest/…` by whatever means you have; if there is none,
-**say explicitly what you couldn't verify**.
+**Without a documentation MCP** you can still write: the official skill's existence checks don't depend
+on it. What is lost is the search for a concrete doubt, so consult
+`docs.appian.com/suite/help/latest/…` by whatever means you have; if there is none, **say explicitly
+what you couldn't verify**, and don't write on a function or parameter you could not confirm.
 
 ⚠️ **Don't invent Appian.** `a!` functions, parameters, components, properties, smart services,
 capabilities, limits and tiers: either you know them with certainty or you verify them. The typical
-failure is carrying syntax from other languages into SAIL as if the platform had it.
+failure is carrying syntax from other languages into SAIL as if the platform had it. When writing
+through a design MCP, the official skill's verification of functions and components is how this rule
+is met — once, before the write.
 
 **Community Knowledge Base — "has anyone hit this before?"** For an error message or a production
 symptom, look in doc 13 first; for anything newer, search the KB (`site:community.appian.com KB-…` or the
@@ -219,7 +231,7 @@ quality. Both are needed. If something is left unverified, **say so** — don't 
 |---|---|---|
 | **Official documentation** (`docs.appian.com`, documentation MCP) | Everything, for the environment's version | It is the platform's own account of itself |
 | **Approved requirements and the project's `DT-nn` decisions** (`analisis/funcional.md`, `analisis/tecnico.md`) | What the application must do, and the design choices already made with their reasons | Doc 10 *Hierarchy when requirements conflict*, levels 2–3: they never win over security or platform validity — if one breaks them, say so and propose a new decision |
-| **Official Appian skill** ([`dev-mcp-skills`](https://github.com/appian/dev-mcp-skills/)) | Naming (where the project has no convention of its own), both sides of a relationship, creation order, UUID handling, dependency-ordered change planning (`change-planning.md`), post-change verification (`change-review.md`), query recipes (`query-record-type-patterns.md`), null handling (`null-safety-patterns.md`) and accessibility audits | It is the vendor's account of how its own API behaves |
+| **Official Appian skill** ([`dev-mcp-skills`](https://github.com/appian/dev-mcp-skills/)) | The mechanics of the design MCP: both sides of a relationship, creation order, UUID handling, dependency-ordered change planning (`change-planning.md`), post-change verification (`change-review.md`), the syntax of query recipes (`query-record-type-patterns.md`) and null handling (`null-safety-patterns.md`), accessibility audits, and the naming of what docs 01 and 08 don't cover (tables and fields) | It is the vendor's account of how its own API behaves — except where it departs from the documentation, listed in `references/14-official-skill-divergences.md` |
 | **Appian Community Knowledge Base** (Solution Engineering KB, Appian Max) | Field-proven patterns, known issues and their workarounds, Appian Cloud operations | Written by Appian's own support and delivery teams — but dated: check *Affected Versions* and the review date, and the docs win on conflict (doc 13 §11) |
 | **These `references/`** | Solution decisions, quality gates, outcomes and evidence, when something is finished | That is what this skill is for |
 | **The project's local convention** | House style, prefixes, structure | Consistency inside one app beats canonical style — unless it breaks security or platform validity; then say so |
