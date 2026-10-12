@@ -1,27 +1,84 @@
-# Pruebas del plugin en Windows, macOS y Linux, con Python 3.9 y 3.12 (Tarea 26).
-# No va en el paquete: .github/ es del repositorio.
+# Pruebas del plugin, según lo que cambia. No va en el paquete: .github/ es del repositorio.
+# - Siempre (segundos): la comprobación básica, que mira que las skills encajan y que no hay nada de un cliente.
+# - Si cambia algo más que texto (un script, una plantilla, un dato, una prueba): la comprobación completa, en una
+#   máquina (Linux, Python 3.12).
+# - A mano (Actions → Pruebas → Run workflow), antes de publicar una versión: la completa en Windows, macOS y Linux, con
+#   Python 3.9 y 3.12 (Tarea 26), que es cuando importa que los scripts funcionen en el equipo de cualquiera.
 name: Pruebas
 
 on:
-  push:
   pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
+# Un commit nuevo en la misma rama o PR cancela la ejecución anterior
+concurrency:
+  group: pruebas-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  pruebas:
+  basica:
+    name: Comprobación básica
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      completa: ${{ steps.alcance.outputs.completa }}
+      matriz: ${{ steps.alcance.outputs.matriz }}
+    steps:
+      # Con todo el historial, para saber qué ficheros cambian
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Las skills encajan entre sí
+        run: python pruebas/comprobar_plugin.py
+
+      # Texto es lo que solo lee el modelo o una persona. Lo demás (scripts, plantillas, datos, pruebas, este fichero)
+      # pide la completa; ante la duda, también.
+      - name: Qué más hay que pasar
+        id: alcance
+        shell: bash
+        env:
+          EVENTO: ${{ github.event_name }}
+          BASE: ${{ github.base_ref }}
+          ANTES: ${{ github.event.before }}
+        run: |
+          SOLO_TEXTO='^(README\.md|CLAUDE\.md|docs/.*|\.github/assets/.*|skills/[^/]+/SKILL\.md|skills/[^/]+/(references|agents)/.*\.md)$'
+          UNA='{"include":[{"os":"ubuntu-latest","python":"3.12","utf8":"1"}]}'
+          # La última es un Windows como el de un compañero: sin PYTHONUTF8, la consola y los ficheros sin decir la
+          # codificación van en cp1252 (riesgo 2 del plan)
+          SIETE='{"include":[{"os":"ubuntu-latest","python":"3.9","utf8":"1"},{"os":"ubuntu-latest","python":"3.12","utf8":"1"},{"os":"windows-latest","python":"3.9","utf8":"1"},{"os":"windows-latest","python":"3.12","utf8":"1"},{"os":"macos-latest","python":"3.9","utf8":"1"},{"os":"macos-latest","python":"3.12","utf8":"1"},{"os":"windows-latest","python":"3.12","utf8":"0"}]}'
+          completa=true
+          matriz=$UNA
+          if [ "$EVENTO" = workflow_dispatch ]; then
+            matriz=$SIETE
+          else
+            if [ "$EVENTO" = pull_request ]; then
+              cambios=$(git diff --name-only "origin/$BASE...HEAD") || cambios=desconocido
+            else
+              cambios=$(git diff --name-only "$ANTES" "$GITHUB_SHA") || cambios=desconocido
+            fi
+            echo "$cambios"
+            if [ -n "$cambios" ] && ! grep -Evq "$SOLO_TEXTO" <<< "$cambios"; then
+              completa=false
+            fi
+          fi
+          echo "completa=$completa"
+          echo "completa=$completa" >> "$GITHUB_OUTPUT"
+          echo "matriz=$matriz" >> "$GITHUB_OUTPUT"
+
+  completa:
     name: ${{ matrix.os }} · Python ${{ matrix.python }}${{ matrix.utf8 == '0' && ' · consola sin UTF-8' || '' }}
+    needs: basica
+    if: needs.basica.outputs.completa == 'true'
     strategy:
       fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python: ["3.9", "3.12"]
-        utf8: ["1"]
-        # Un Windows como el de un compañero: sin PYTHONUTF8, la consola y los ficheros sin decir la codificación van en
-        # cp1252 (riesgo 2 del plan)
-        include:
-          - os: windows-latest
-            python: "3.12"
-            utf8: "0"
+      matrix: ${{ fromJSON(needs.basica.outputs.matriz) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     env:
