@@ -6,8 +6,9 @@
 #   una skill la pasa igual que uno de script.
 # - A mano (Actions → Pruebas → Run workflow), antes de publicar una versión: la completa en Windows, macOS y Linux, con
 #   Python 3.9 y 3.12 (Tarea 26), que es cuando importa que los scripts funcionen en el equipo de cualquiera.
-# main está protegida: nada entra sin PR ni sin que «Resultado» salga en verde. Con `gh pr merge --auto --merge`,
-# GitHub une el PR él solo cuando pasa. Al unir no se vuelve a probar: el PR ya probó su unión con main.
+# main está protegida: nada entra sin PR, sin estar al día con main ni sin que «Resultado» salga en verde. Con
+# `gh pr merge --auto --merge`, GitHub une el PR él solo cuando pasa. Al unir no se vuelve a probar: el PR, al día, ya
+# probó su unión con main. Si otro PR entra antes, este se pone al día con `gh pr update-branch` y se prueba otra vez.
 name: Pruebas
 
 on:
