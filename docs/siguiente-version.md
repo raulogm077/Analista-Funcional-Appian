@@ -34,6 +34,10 @@ cada punto con la versión actual antes de cambiar nada.
 - Analista: en documentos cortos, la nota de la fuente salió de 3 a 7 veces más larga que el original.
 - El análisis esperó al prototipo para generar el DF (28 minutos): decidir si el DF sale antes y las capturas se
   añaden después.
+- Método de trabajo: probar una vez el plugin cargado desde la carpeta local (`claude --plugin-dir <carpeta>`) con una
+  tarea real en un proyecto de prueba, y ver qué pasa con el plugin instalado del mismo nombre y si la app de escritorio
+  tiene un equivalente. Si funciona, pasa a `CLAUDE.md` como condición para subir un cambio que altera cómo se comporta
+  una skill.
 - Pruebas: medir cuánto tarda cada grupo de `comprobar_plugin.py --completo` y lanzarlos en paralelo; con la misma
   batería, Windows tarda el doble que Linux (17 y 8,5 minutos en GitHub).
 
