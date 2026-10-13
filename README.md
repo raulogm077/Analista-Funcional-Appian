@@ -6,7 +6,7 @@ cliente a lo que se valida y a lo que se construye:
 ```
 transcripciones · correos · actas · diagramas de flujo · DF / ERS del cliente · aplicación existente
         │
-        ▼  appian-functional-analyst                       (una carpeta por proyecto)
+        ▼  appian-functional-analyst                       (un repositorio git por proyecto)
 fuentes/ (FU-01…) → analisis/funcional.md ──► DF en Word para que el cliente lo valide
                   → analisis/tecnico.md   ──► especificación para construir con el MCP de desarrollo
                   → analisis/decisiones.md     (versiones y decisiones del cliente)
@@ -18,6 +18,13 @@ prototipo/ navegable con la marca del cliente o la estándar de Appian · captur
 
 Cada reunión, correo o comentario del cliente al DF se incorpora con un informe de impacto que aprueba
 el analista: solo cambia lo afectado, en el funcional, el técnico, los diagramas y las pantallas.
+
+Cada proyecto es un repositorio git que crea `proyecto.py iniciar`, siempre con la misma forma: el código vive en
+Appian y el repositorio guarda todo lo demás, sobre main y sin ramas. Lleva un `AGENTS.md` (dónde está cada cosa, las
+reglas y los flujos) y, en `.agents/workflows/`, los nueve flujos del método, de la aplicación nueva al pase a
+producción, para que cualquier persona o agente trabaje igual. Los flujos tienen una sola fuente,
+`skills/appian-functional-analyst/assets/flujos/`: dicen quién hace cada paso y con qué skill, citan el detalle sin
+repetirlo, y `iniciar` los pone al día en el proyecto con cada versión del plugin.
 
 Sirve para cualquier proceso (compras, subvenciones, incidencias,
 informes, expedientes…): el dominio sale siempre de las fuentes del proyecto. Las
@@ -148,7 +155,7 @@ va aparte.
 ## Confidencialidad
 
 - La carpeta del proyecto (fuentes, análisis y prototipo) contiene información del cliente: no se
-  publican fuera del proyecto.
+  publican fuera del proyecto. Es un repositorio git: dónde se sube lo decide cada proyecto, y es privado.
 - Un prototipo publicado como artefacto es privado hasta que su autor lo
   comparte.
 - Los prototipos usan siempre personas y datos ficticios.

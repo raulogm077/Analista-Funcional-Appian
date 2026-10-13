@@ -1,5 +1,9 @@
 [
   {"patron": "proyecto.md", "dueno": "appian-functional-analyst"},
+  {"patron": "AGENTS.md", "dueno": "appian-functional-analyst"},
+  {"patron": "CLAUDE.md", "dueno": "appian-functional-analyst"},
+  {"patron": ".agents/workflows/", "dueno": "appian-functional-analyst"},
+  {"patron": ".gitignore", "dueno": "appian-functional-analyst"},
   {"patron": "fuentes/", "dueno": "appian-functional-analyst"},
   {"patron": "notas/", "dueno": "appian-functional-analyst"},
   {"patron": "impacto/", "dueno": "appian-functional-analyst"},
