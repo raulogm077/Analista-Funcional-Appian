@@ -4,7 +4,7 @@ Fecha: 14 de octubre de 2026. Parte de `main` (`d6126a8`, 0.7.0-beta.4). Rama `m
 
 **Objetivo.** Adoptar de L.U.C.I.A. lo que encaja en Appian, sin burocracia nueva: la frontera en el paquete, el contexto bajo demanda, un repositorio git por proyecto, flujos con una sola fuente, criterios en Gherkin, issues repartidas por un script y QA con SAIL CLI.
 
-**Cómo se trabaja.** Una rama local y la PR cuando Raúl lo diga, como pide el `CLAUDE.md`. Las fases 1, 3 y 4 no necesitan Appian; las demás usan el Dev MCP de Indra-spain y SAIL CLI desde Claude Code. Las pruebas con reuniones reales se hacen en una carpeta fuera de este repositorio; aquí solo llegan las lecciones, sin datos del cliente. Antes de cerrar cada fase, `python3 pruebas/comprobar_plugin.py` y, si cambia un script o una plantilla, el selftest de su skill.
+**Cómo se trabaja.** Una rama local y la PR cuando Raúl lo diga, como pide el `CLAUDE.md`. Las fases 1, 3 y 4 no necesitan Appian; las demás usan el Dev MCP de Indra-spain y SAIL CLI desde Claude Code. Las pruebas con reuniones reales se hacen en una carpeta fuera de este repositorio; aquí solo llegan las lecciones, sin datos del cliente. Antes de cerrar cada fase, `python3 pruebas/comprobar_plugin.py` y, si cambia un script o una plantilla, el selftest de su skill. Antes de empezar, el anexo «Hechos comprobados» del diseño: lo que ya se comprobó, lo que se descartó y lo que falta comprobar. Si algo no está en estos dos ficheros, se pregunta a Raúl en vez de suponerlo.
 
 ## 1. Decisiones
 

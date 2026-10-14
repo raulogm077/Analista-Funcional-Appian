@@ -254,6 +254,66 @@ Cada cambio pasa la pregunta del `CLAUDE.md`: qué se rompe si no está y quién
 - Se mide antes y después. Lo que no baje el tiempo, las llamadas o el riesgo, se quita.
 - Git guarda el proyecto, no el código: nada del ciclo de código en git (ramas, Merge Request, build, cobertura) entra sin traducirse antes a un mecanismo de Appian.
 
+## Anexo: hechos comprobados
+
+Lo que se comprobó al analizar, con su fuente, para no repetirlo ni contradecirlo al ejecutar el plan.
+
+### SAIL CLI (26.6.110, `sail --help` en el paquete del Dev MCP)
+
+- Es un binario aparte del servidor MCP, en `bin/` del paquete (`sail-windows-amd64.exe`, `sail-linux-amd64`, `sail-darwin-arm64`); `bin/setup-*` lo deja en el PATH como `sail`.
+- Entrar: `sail login <host>` con `SAIL_USERNAME` y `SAIL_PASSWORD` de una cuenta local de Appian. En un sitio solo con SSO, `sail login <host> --from-devmcp` importa la sesión que abrió el Dev MCP en el navegador (`LCP_AUTH_METHOD=browser`); `--user` si hay varias identidades guardadas.
+- `--data-dir` (por defecto `$SAIL_HOME` o `~/.sail`) aísla las sesiones: una por rol o por prueba en paralelo.
+- Órdenes: `pages`, `load <site> [page]`, `interact`, `navigate` (enlace de registro, de proceso o acción de registro; la acción sin formulario de inicio lleva al formulario de tarea), `show` (sin ir al servidor), `back` y `logout`.
+- `interact`: campos por etiqueta y valor; desplegables, radios y casillas por índice desde 1; fechas `AAAA-MM-DD`; fecha y hora con su zona; ficheros por ruta; rejillas y gráficos por su `handle:`. Varias parejas en una orden van en una sola petición. «✓ Interacted» es que el servidor cambió algo; si aceptó la orden sin mover ningún valor, cuenta como fallo.
+- Las referencias que imprime, también las «⌗» que inventa para componentes sin nombre, se mantienen entre cargas y se pueden escribir en un guion; el `_cId`, no.
+- `--json` da la salida para un script. Un destino con «confirm:» se rechaza salvo con `--confirm`. No sabe rellenar desplegables agrupados ni rangos numéricos. `load` sobre una página con datos tecleados se niega salvo con `--fresh`.
+- `logout` invalida la sesión en el servidor y borra el estado guardado, también lo tecleado: es el cierre de cada prueba.
+- Trabaja sobre lo que Appian envía a la pantalla, sin navegador: no ve la maquetación ni los estilos.
+
+### Dev MCP y Appian
+
+- `LCP_TOOL_MODE=readonly` «restricts to read-only tools, disabling any that create or modify objects» (Developer MCP Servers, 26.6). No consta que afecte a SAIL CLI.
+- Según el App Market (26.6.110): más de 120 herramientas; los casos de prueba se conservan al actualizar reglas e interfaces; hay `testInterface`, `testProcessModel` y análisis de impacto (los dependientes de un objeto); cada operación se hace con los permisos del usuario, y el acceso es para diseñadores y administradores. No consta una herramienta que ejecute los casos de prueba de las reglas.
+- Manage Test Cases da Passed, Failed, No test cases y Outdated. Outdated sale si cambió la regla, si cambió un objeto que usa (hasta 20 niveles) o si no tiene resultados de los últimos 14 días. Por eso T13 ejecuta lo de la issue y lo que la usa, y no «lo desactualizado», que incluiría reglas ajenas.
+- Testing Applications (26.6) nombra tres herramientas de prueba de interfaz: FitNesse for Appian, Cucumber for Appian y Appian Selenium API.
+
+### Claude Code y `AGENTS.md`
+
+- Claude Code lee `AGENTS.md` directamente solo si no hay `CLAUDE.md` en la carpeta ni por encima (desde la 2.1.277). Si hay `CLAUDE.md`, solo cuando este lo importa con `@AGENTS.md`. De ahí el `CLAUDE.md` de una línea en cada proyecto.
+
+### Playwright CLI
+
+- `@playwright/cli` (Node 20 o superior) está pensado para agentes: guarda las instantáneas en ficheros (`.playwright-cli/`) en vez de meterlas en el contexto, guarda y carga la sesión (`state-save`, `state-load`) y puede grabar los pasos como código Playwright. No publica cifras de tokens.
+
+### L.U.C.I.A. y las pruebas
+
+- El agente que construye escribe un test por escenario Gherkin antes del código; el reparto crea además una issue de QA por requisito, sin decir quién la hace; una persona verifica en beta. No habla de modelos distintos por papel.
+
+### Del plugin, lo que se reutiliza
+
+- `proyecto.py iniciar` no toca lo que ya existe. `proyecto.py cambio … aprobada` y `produccion` se niegan con `--desatendida` si falta el visto bueno: es el patrón para `--sin-prueba`. `construida` acepta `--manual` y deja `construccion/verificacion/<ID>.json`.
+- `comprobar.py --anterior versiones/vX.Y` compara con la versión anterior: así sabe qué criterio es nuevo o cambiado sin git.
+- `devmcp_extract.py` lista las herramientas del Dev MCP al conectarse y las clasifica por su firma con `devmcp_policy.json`; `verificar` debe reconocer así la de probar.
+- `requisitos.py` ya sabe leer el host del Dev MCP (`LCP_URL`).
+- `docs/ingenieria-inversa/SPEC-v2-devmcp.md` dejó SAIL CLI fuera de la ingeniería inversa porque un clic puede lanzar procesos o escribir datos.
+
+### Descartado, y por qué
+
+- GitHub Issues (B6): ata el método a una plataforma, duplica la fuente y añade llamadas en cada paso.
+- Guiones de SAIL CLI dentro de la issue: repetirían el escenario y se escribirían antes de que exista la pantalla.
+- Playwright por defecto: SAIL CLI cubre los escenarios con menos tokens, según Appian; queda para lo visual, si T16 lo justifica.
+- Ramas y PR en el repositorio del proyecto: allí no hay código.
+- Una sección propia del proyecto dentro de `AGENTS.md`: obligaría a fusionar al regenerarlo; lo propio va en `proyecto.md`.
+- Comprobar la terminal para `--sin-prueba`: basta `--desatendida`, que ya existe.
+- Ejecutar por issue «lo desactualizado»: entrarían reglas ajenas y las que llevan 14 días sin pasar.
+
+### Por comprobar en T5
+
+- Qué herramientas del Dev MCP crean y ejecutan casos de prueba, si las ejecutan en bloque y cómo dan los dependientes.
+- Si `LCP_TOOL_MODE=readonly` deja fuera también a SAIL CLI.
+- Si Indra-spain admite cuentas locales de prueba o hay que importar sesiones SSO con `--from-devmcp`.
+- Qué devuelve `--json` al terminar un recorrido, para que `verificar` lo lea.
+
 ## Fuentes
 
 - [L.U.C.I.A. al detalle técnico](https://dev.to/raguilera82/lucia-al-detalle-tecnico-8dk), Rubén Aguilera, DEV Community.

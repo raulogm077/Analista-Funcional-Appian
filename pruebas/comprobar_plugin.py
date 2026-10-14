@@ -97,7 +97,7 @@ MARCA = re.compile(r"^brand-.+\.json$", re.I)
 # (icons.json) y sus fuentes (fonts/*.woff2) no son imágenes con esos nombres.
 LOGO = re.compile(r"^(logo(tipo)?|isotipo|imagotipo|s[ií]mbolo|symbol)([-_.]|$)", re.I)
 IMAGENES = (".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico")
-NO_VAN_EN_EL_PAQUETE = (".git", ".github", ".claude", "docs", "pruebas", "CLAUDE.md")
+NO_VAN_EN_EL_PAQUETE = (".git", ".github", ".claude", "docs", "pruebas", "CLAUDE.md", "CLAUDE.local.md")
 # La marca de inferido es 🔶 en todas las skills (la del analista); el círculo azul era la de ingeniería inversa. Se
 # mira en los textos que escriben marcas: documentos, plantillas, scripts y datos.
 MARCA_ANTIGUA = "\U0001F535"

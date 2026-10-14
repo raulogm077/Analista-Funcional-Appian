@@ -113,8 +113,8 @@ PDF.
   instala desde el catálogo de plugins. También se puede instalar a título
   personal abriendo el `.plugin` en una conversación. El `.plugin` es la carpeta
   del plugin comprimida en zip, sin lo de desarrollo (`docs/`, `pruebas/`, `CLAUDE.md`,
-  `.github/`, `.claude/`), ni `.git`, cachés u otros `.plugin`:
-  `zip -r appian-analisis-funcional.plugin . -x ".git/*" ".github/*" ".claude/*" "docs/*" "pruebas/*" "CLAUDE.md" "*__pycache__*" "*.pytest_cache*" "*.plugin"`
+  `CLAUDE.local.md`, `.github/`, `.claude/`), ni `.git`, cachés u otros `.plugin`:
+  `zip -r appian-analisis-funcional.plugin . -x ".git/*" ".github/*" ".claude/*" "docs/*" "pruebas/*" "CLAUDE.md" "CLAUDE.local.md" "*__pycache__*" "*.pytest_cache*" "*.plugin"`
   o, igual y también en Windows, `python3 pruebas/empaquetar.py` (lo deja junto a la carpeta del repositorio).
 - **Claude Code**: el repositorio es también un marketplace. Hace falta git en el equipo, porque Claude Code
   descarga el plugin con él.

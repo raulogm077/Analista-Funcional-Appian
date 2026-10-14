@@ -4,6 +4,35 @@ Resultados de las evaluaciones de los planes de `docs/plan/` y, al cerrar cada
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 
+## Método L.U.C.I.A. (14 de octubre de 2026)
+
+Rama `metodo-lucia`, de `main` d6126a8 (0.7.0-beta.4). Plan: `docs/plan/2026-10-14-metodo-lucia.md`. Las pruebas con
+reuniones reales y con el entorno de desarrollo se hacen fuera del repositorio; aquí, solo las cifras y las lecciones.
+
+### Fase 2 · T5: el Dev MCP y SAIL CLI reales
+
+Mirados el 14 de octubre en el entorno de desarrollo, en solo lectura: Dev MCP 26.6.110 (build 20261008, el último
+publicado) y SAIL CLI 26.6.110. Lo que cambia el plan lo confirmó un segundo agente por separado.
+
+| Pregunta | Lo que hay |
+|---|---|
+| Casos de prueba | Se crean y se ejecutan en reglas e interfaces. La ejecución da, por caso, si pasa, la salida obtenida y el error con regla, función y línea; la salida esperada no viene (está en la definición del caso). Solo las reglas llevan aserción: una interfaz solo comprueba que no da error |
+| En bloque | No. Se ejecutan los casos de un objeto por llamada. Una aplicación de 106 reglas y 32 interfaces (609 casos): 138 llamadas, 73 s y 1,5 MB de respuestas (unos 380.000 tokens si pasan por el contexto). Una regla de 6 casos, 1 KB; una interfaz de 7, 270 KB |
+| Dependientes | Sí, solo los directos, con tipo y nombre; incluye siempre la propia aplicación |
+| `LCP_TOOL_MODE=readonly` | **No hace nada en este bundle.** La documentación de Appian (26.6 y la vigente) la describe, pero la variable no está en su código: el servidor ofrece las mismas 200 herramientas con ella y sin ella, y 121 no son de lectura |
+| Reconocer por la firma | `devmcp_extract.py` clasifica cada herramienta por su verbo, sus anotaciones y sus parámetros. Su `devmcp_policy.json` cuenta `run` como escritura: tal cual, deja fuera las de ejecutar casos, que el servidor anota como de solo lectura |
+| SAIL CLI | La cuenta local entra con `SAIL_USERNAME` y `SAIL_PASSWORD`, sin teclado; cada sesión, en su `--data-dir`. `load --json` da cada componente con su `ref`: en dos cargas de la misma página coinciden 32 de 35 (cambian las que el propio JSON marca como propias de cada carga). Una `ref` que lleva un dato dentro («En riesgo (22)») no sirve para un guion. Los errores salen como texto aunque se pida JSON |
+
+Lo que el plan daba por hecho y no es así:
+- **T12.** `LCP_TOOL_MODE` no protege. Lo único que aplica el servidor son los permisos del usuario con el que se conecta, y
+  solo sobre lo que ya existe: un diseñador puede crear objetos nuevos aunque solo vea la aplicación. Las anotaciones
+  de las herramientas y las reglas de cada cliente (`permissions.deny` en Claude Code y sus equivalentes) son barreras
+  contra el descuido. `SKILL.md`, `devmcp-setup.md` y `devmcp_extract.py` de ingeniería inversa recomiendan hoy la
+  variable; la extracción es de solo lectura por su propia política, no por ella.
+- **T13.** La regresión de toda la aplicación no se puede lanzar en bloque por el Dev MCP; lo nativo de Appian que lo hace
+  es solo para reglas. Los casos de una issue los tiene que ejecutar un script, para que las respuestas no pasen por el
+  contexto.
+
 ## 0.7.0-beta.3 · Retoques ligeros y menores (11 de octubre de 2026)
 
 Rama `v0.7.0-beta.3`, de `main` 222a8e6. Plan: `docs/plan/2026-10-11-0.7.0-beta.3.md`. Todas las evaluaciones, a ciegas
