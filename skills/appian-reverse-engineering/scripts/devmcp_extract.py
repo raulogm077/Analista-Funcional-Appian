@@ -25,7 +25,8 @@ Subcomandos:
               con su id y su version), el resultado lo lleva en «issue»: asi se sabe de que version de lo esperado es
               la verificacion. Y, si la issue no dice «pruebas»: false, en «pruebas» el resultado de los casos de
               prueba guardados de sus reglas e interfaces y de lo que las usa (los dependientes directos), sin las
-              salidas de cada caso (pruebas_de()). Por la salida, solo el resumen. No escribe en ninguna extraccion.
+              salidas de cada caso (pruebas_de()); con «pruebas»: false, solo lee lo que compara (solo_lo_esperado()).
+              Por la salida, solo el resumen. No escribe en ninguna extraccion.
   regresion   --app <app> --out <fichero.json>: los casos de prueba de toda la aplicacion, objeto a objeto, con el
               resumen en el fichero y por la salida solo lo que falla. Se pasa antes de preparar el paquete.
   deriva      --out <as-is> [--objetos …] [--ignorar <nombre>@<fecha ISO>,…]: la lista de objetos de la aplicacion
@@ -843,9 +844,9 @@ class Extractor:
         results = await asyncio.gather(*(self.run_call(t, "env") for t in tools))
         return {t.name: r for t, r in zip(tools, results)}
 
-    async def list_apps(self) -> list[dict]:
+    async def list_apps(self, de_una_vez: bool = False) -> list[dict]:
         tools = [t for t in self.usable("env") if {"application", "app"}.intersection(t.toks)]
-        results = await asyncio.gather(*(self.run_call(t, "env") for t in tools))
+        results = await asyncio.gather(*((self.entera(t) if de_una_vez else self.run_call(t, "env")) for t in tools))
         apps: dict[str, dict] = {}
         for t, r in zip(tools, results):
             if not r.ok:
@@ -855,6 +856,14 @@ class Extractor:
                 apps.setdefault(u, {"uuid": u, "name": pick(it, NAME_KEYS), "prefix": it.get("prefix"),
                                     "source": t.name})
         return list(apps.values())
+
+    async def entera(self, ti: ToolInfo) -> CallResult:
+        """Una lista del entorno, sin guardarla, en páginas tan grandes como admita el servidor (su parámetro de tamaño, a
+        pagination.maxItems): las 482 aplicaciones del entorno de desarrollo, en una llamada y no en diez. Si no admite
+        ese tamaño, en las suyas."""
+        grande = {p: self.policy.pag["maxItems"] for p, k in ti.params.items() if k == "size"}
+        res = await self.call_paginated(ti, grande) if grande else None
+        return res if res is not None and res.ok else await self.run_call(ti, "env")
 
     async def app_calls(self, app_uuid: str) -> dict[str, CallResult]:
         tools = self.usable("app")
@@ -999,10 +1008,10 @@ def plan_json(ex: Extractor, app: dict, objects: list[dict], groups, inicio: str
             "tools": sorted(tools, key=lambda e: (not e["use"], e["scope"], e["name"]))}
 
 
-async def prepare(ex: Extractor, args) -> tuple[dict, list[dict], list]:
-    """Catalogo -> app -> llamadas de app -> objetos -> reclasificacion con los tipos reales."""
+async def aplicacion_de(ex: Extractor, args, de_una_vez: bool = False) -> dict:
+    """Catalogo -> la aplicacion de --app, entre las del entorno (con `de_una_vez`, en una sola pagina si se puede)."""
     await ex.load_catalog()
-    apps = await ex.list_apps()
+    apps = await ex.list_apps(de_una_vez)
     if not apps:
         raise SystemExit(EXIT_NO_APPS)
     app, msg = resolve_app(apps, args.app)
@@ -1013,6 +1022,13 @@ async def prepare(ex: Extractor, args) -> tuple[dict, list[dict], list]:
     if antes.get("uuid") not in (None, app["uuid"]):   # las respuestas guardadas serían las de la otra
         eprint(f"Esta carpeta ya tiene la extraccion de '{antes.get('name')}': para otra aplicacion, usa otra carpeta.")
         raise SystemExit(EXIT_APP)
+    return app
+
+
+async def prepare(ex: Extractor, args, app: dict | None = None) -> tuple[dict, list[dict], list]:
+    """Catalogo -> app -> llamadas de app -> objetos -> reclasificacion con los tipos reales. Con `app` (el catalogo ya
+    cargado y la aplicacion resuelta), desde las llamadas de app."""
+    app = app or await aplicacion_de(ex, args)
     app_results = await ex.app_calls(app["uuid"])
     app_obj, objects = ex.harvest_objects(app["uuid"], app_results)
     app_obj["name"] = app_obj["name"] or app["name"]
@@ -1028,6 +1044,26 @@ async def prepare(ex: Extractor, args) -> tuple[dict, list[dict], list]:
             app_obj.setdefault(k, v)
     groups = ex.plan_object_calls(objects)
     return app_obj, objects, groups
+
+
+async def solo_lo_esperado(ex: Extractor, args, tipos: dict[str, str]) -> tuple[dict, list[dict]]:
+    """Para verificar una issue sin pruebas, la aplicacion y sus objetos leyendo solo lo necesario: las aplicaciones de una
+    vez y, de la aplicacion, solo las listas de los tipos esperados ({pedido: tipo canonico}; en el Dev MCP real, la de
+    record types en vez de 25 listas). Si un pedido no esta en ellas (es de otro tipo o no existe), la lista entera, como
+    prepare(): «falta» y un «tipo» distinto salen igual."""
+    app = await aplicacion_de(ex, args, de_una_vez=True)
+    sin_app = {t: ps for t, ps in ex.base_type_phrases().items() if t != "application"}
+    listas = [t for t in ex.usable("app") if t.role == "other"
+              and set(match_types(t.toks[1:], sin_app) or ["?"]) <= set(tipos.values())]
+    res = await asyncio.gather(*(ex.run_call(t, "app", app_uuid=app["uuid"]) for t in listas))
+    app_obj, objects = ex.harvest_objects(app["uuid"], {t.name: r for t, r in zip(listas, res)})
+    por = resolver(list(tipos), objects)
+    if len(por) < len(tipos) or any(o["type"] != tipos[p] for p, o in por.items()):
+        app_obj, objects, _ = await prepare(ex, args, app)
+        return app_obj, objects
+    app_obj["name"], app_obj["prefix"] = app_obj["name"] or app["name"], app_obj.get("prefix") or app.get("prefix")
+    ex.classify(ex.type_phrases_for(objects))
+    return app_obj, objects
 
 
 def open_session(args, errlog=None) -> tuple[McpSession | None, ServerChoice | None, int, str]:
@@ -1562,10 +1598,12 @@ def acciones(data) -> list[dict]:
 
 
 async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: list[str],
-                   esperado: dict | None = None) -> dict:
+                   esperado: dict | None = None, ligero: bool = False) -> dict:
     """Por objeto pedido: si existe, su tipo y su nombre; la última modificación (un dato, no una prueba); los campos
     de un record type o un CDT y, si lo esperado las nombra, sus acciones de registro (la herramienta que las lista o,
-    si no la hay, la definición; sin ninguna de las dos, «accionesNoDisponibles»). Lo compara diferencias()."""
+    si no la hay, la definición; sin ninguna de las dos, «accionesNoDisponibles»). Lo compara diferencias(). Con
+    `ligero` (una issue sin pruebas), solo lo que se compara: sin la última modificación y sin la definición si lo
+    esperado no nombra campos (salvo para leer las acciones, si no hay herramienta que las liste)."""
     esperado = esperado or {}
     por = resolver(pedidos, objects)
     usables = ex.usable("object")
@@ -1578,14 +1616,19 @@ async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: l
         if not o:
             return {"pedido": p, "existe": False}
         r = {"pedido": p, "existe": True, "nombre": o.get("name"), "tipo": o["type"], "uuid": o["uuid"]}
-        datos, errores = await llama(ex, versiones, o)
-        r["ultimaModificacion"] = next((v for v in map(version, datos) if v), None)
+        quiere = esperado.get(p) if isinstance(esperado.get(p), dict) else {}
+        con_acciones = o["type"] == "recordType" and isinstance(quiere.get("acciones"), list)
+        errores: list[str] = []
+        if not ligero:
+            datos, errores = await llama(ex, versiones, o)
+            r["ultimaModificacion"] = next((v for v in map(version, datos) if v), None)
         definicion: list = []
-        if o["type"] in ("recordType", "cdt"):
+        if o["type"] in ("recordType", "cdt") and (not ligero or isinstance(quiere.get("campos"), list)
+                                                     or (con_acciones and not de_acciones)):
             definicion, err = await llama(ex, definiciones, o)
             errores += err
             r["campos"] = campos(max(definicion, key=lambda d: len(json.dumps(d, default=str)))) if definicion else None
-        if o["type"] == "recordType" and isinstance((esperado.get(p) or {}).get("acciones"), list):
+        if con_acciones:
             if de_acciones:
                 datos, err = await llama(ex, de_acciones, o)
                 errores += err
@@ -1826,6 +1869,10 @@ async def cmd_verificar(args) -> int:
     if not pedidos:
         eprint("Sin objetos: --objetos o --esperado.")
         return EXIT_USAGE
+    # lo esperado de una issue dice si tiene pruebas que ejecutar; sin ellas, solo se lee lo que se compara. Para eso,
+    # el tipo de cada objeto: el suyo o, si solo nombra acciones de registro, record type
+    sin_pruebas = isinstance(issue, dict) and issue.get("pruebas", True) is False
+    quiere = {p: esperado[p] if isinstance(esperado.get(p), dict) else {} for p in pedidos}
     with Registro(args.registro) as reg:
         sess, choice, code, msg = open_session(args, reg.destino)
         if not sess:
@@ -1834,12 +1881,16 @@ async def cmd_verificar(args) -> int:
         try:
             async with sess:
                 ex = Extractor(sess, Policy(args.policy), None)
-                app_obj, objects, _ = await prepare(ex, args)
-                resultado = await verifica(ex, app_obj, objects, pedidos, esperado)
-                if isinstance(issue, dict):     # lo esperado de una issue dice si tiene pruebas que ejecutar
+                tipos = {p: ex.policy.canon_type(q.get("tipo") or ("recordType" if q.get("acciones") else None))
+                         for p, q in quiere.items()}
+                if sin_pruebas and all(tipos.values()):
+                    app_obj, objects = await solo_lo_esperado(ex, args, tipos)
+                else:
+                    app_obj, objects, _ = await prepare(ex, args)
+                resultado = await verifica(ex, app_obj, objects, pedidos, esperado, ligero=sin_pruebas)
+                if isinstance(issue, dict):
                     resultado["pruebas"] = (
-                        {"ejecutadas": False, "motivo": "la issue no cambia criterios ni reglas"}
-                        if issue.get("pruebas", True) is False else
+                        {"ejecutadas": False, "motivo": "la issue no cambia criterios ni reglas"} if sin_pruebas else
                         await pruebas_de(ex, list(resolver(list(esperado), objects).values()), app_obj.get("uuid")))
         except SystemExit as se:
             return int(se.code)

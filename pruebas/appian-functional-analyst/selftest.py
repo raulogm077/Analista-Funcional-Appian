@@ -1265,8 +1265,10 @@ def pruebas_repositorio(tmp):
        "`qa/<U>/`" in guia and "appian-qa/scripts/qa.py" in guia and "git pull" in guia
        and guia.index("proyecto.py estado") < guia.index("git pull"), guia)
     ok("AGENTS.md, que se carga en cada sesión, no pasa de 30 líneas; él y la copia de cada flujo dicen en una línea de "
-       "dónde salen las órdenes (de la skill que nombran, sin buscar el plugin en el disco); el flujo, tras «Empieza»",
+       "dónde salen las órdenes (de la skill que nombran, sin buscar el plugin en el disco; la completa, sin cargarla); "
+       "el flujo, tras «Empieza»",
        guia.count("\n") <= 30 and guia.count("no busques el plugin en el disco") == 1 and "`skills/<skill>/`" in guia
+       and "Una orden completa, con su ruta (las de `--siguiente`), se lanza sin cargar ninguna skill." in guia
        and all(re.search(r"^\*\*Empieza\.\*\* .*\n\*\*Órdenes\.\*\* [^\n]*no busques el plugin en el disco[^\n]*\n\n\| # ",
                          textos[x].decode("utf-8"), re.M) for x in flujos), guia)
     # dos fuentes, una con cada final de línea: tienen que llegar igual, byte a byte, a quien clone el proyecto
@@ -2668,8 +2670,9 @@ def pruebas_issues(tmp):
        len(textos) == 5 and all("no hay que leer el funcional ni el técnico" in x and "## Lo que dice el técnico" in x
                                 and not re.search(r"(?i)\bver (?:el )?(?:técnico|funcional)\b", x)
                                 for x in textos), "\n".join(x[:300] for x in textos))
-    ok("cada issue nombra sus órdenes con su skill y dice, en una línea, de dónde salen: sin buscar el plugin en el disco",
-       all(x.count("no busques el plugin en el disco") == 1
+    ok("cada issue nombra sus órdenes con su skill y dice, en una línea, de dónde salen: sin buscar el plugin en el disco "
+       "y, la que llega completa, sin cargar ninguna skill",
+       all(x.count("no busques el plugin en el disco") == 1 and "se lanza sin cargar ninguna skill" in x
            and "`appian-functional-analyst/scripts/indice.py issues <p> EV-01 ISS-0" in x for x in textos),
        "\n".join(x[-700:] for x in textos))
     i4 = lee(d / "ISS-04.md")

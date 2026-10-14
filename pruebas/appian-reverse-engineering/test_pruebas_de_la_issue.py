@@ -5,7 +5,8 @@ los casos de prueba guardados de reglas e interfaces (con readOnlyHint), da los 
 lista las acciones de un record type sin envolverlas y no quita herramientas con LCP_TOOL_MODE=readonly.
 
 - verificar ejecuta solo los casos de las reglas e interfaces de la issue y de lo que las usa (sus dependientes
-  directos), y no los de las demás; un retoque que no cambia criterios ni reglas («pruebas»: false) no ejecuta nada.
+  directos), y no los de las demás; un retoque que no cambia criterios ni reglas («pruebas»: false) no ejecuta nada y
+  solo lee lo que compara.
 - Un caso que el ejecutor de Appian no sabe evaluar (la rejilla de registros con filtros de usuario) es «no evaluable»,
   no un fallo; un error de verdad en la misma interfaz, sí.
 - Por la salida, solo el resumen; ni las respuestas ni el registro del servidor.
@@ -116,6 +117,47 @@ def test_un_retoque_no_ejecuta_nada(project, tmp_path):
     assert ejecutados(project) == set() and not any(c["tool"] == "getObjectDependents" for c in project.calls_list())
     assert v["pruebas"] == {"ejecutadas": False, "motivo": "la issue no cambia criterios ni reglas"}
     assert "Pruebas: ninguna; la issue no cambia criterios ni reglas." in p.stdout
+
+
+CUENTA = ("pedido", "existe", "nombre", "tipo", "uuid", "acciones", "diferencias")
+
+
+def test_un_retoque_lee_solo_lo_que_compara(project, tmp_path):
+    """Sin pruebas, verificar lee solo lo que compara: las aplicaciones en una página, la lista de record types de la
+    aplicación y las acciones; ni las demás listas, ni la definición, ni el historial (en el Dev MCP real, de 36 llamadas
+    a 3). Dice lo mismo que la verificación entera: que existe, su tipo, y el nombre y el tipo de la acción."""
+    project.add_devmcp(**COMO_EL_REAL, MOCK_APPS_PAGINA="1")
+    objetos = {"DEM Solicitud": {"tipo": "recordType", "acciones": [{"nombre": "Pedir material", "tipo": "De lista"}]}}
+    _, v = verifica(project, tmp_path, objetos, False)
+    llamadas = project.calls_list()
+    assert [c["tool"] for c in llamadas] == ["listApplications", "listRecordTypes", "listRecordTypeActions"], llamadas
+    assert llamadas[0]["args"]["limit"] > 2
+    ligera = v["objetos"][0]
+    assert ligera["diferencias"] == {"faltanAcciones": ["Pedir material"]} and v["aplicacion"]["prefijo"] == "DEM"
+    assert "campos" not in ligera and "ultimaModificacion" not in ligera
+    _, v = verifica(project, tmp_path, objetos)                          # con pruebas: lo lee todo
+    assert {"listApplicationObjects", "getObjectVersionHistory", "getRecordType"} <= {
+        c["tool"] for c in project.calls_list()[len(llamadas):]}
+    assert {k: v["objetos"][0].get(k) for k in CUENTA} == {k: ligera.get(k) for k in CUENTA}
+    # de una acción sin tipo de objeto en lo esperado, el record type; y del objeto que no está en su lista, la entera
+    n = len(project.calls_list())
+    objetos = {"DEM Solicitud": {"acciones": [{"nombre": "Nueva solicitud"}]}, "DEM_Dashboard": {"tipo": "recordType"},
+               "DEM_Nada": {"tipo": "interface"}}
+    _, v = verifica(project, tmp_path, objetos, False)
+    assert "listApplicationObjects" in {c["tool"] for c in project.calls_list()[n:]}
+    por = {o["pedido"]: o for o in v["objetos"]}
+    assert por["DEM Solicitud"]["diferencias"] == {} and por["DEM_Nada"]["diferencias"] == {"falta": True}
+    assert por["DEM_Dashboard"]["diferencias"] == {"tipo": {"esperado": "recordType", "real": "interface"}}
+
+
+@pytest.mark.parametrize("pagina, llamadas", [("1", 1), ("1:1", 3)])
+def test_las_aplicaciones_de_una_vez(project, tmp_path, pagina, llamadas):
+    """Sin pruebas, las aplicaciones del entorno se piden en una página (482 en el entorno de desarrollo: una llamada y no
+    diez); si el servidor no admite una tan grande, en las suyas."""
+    project.add_devmcp(**COMO_EL_REAL, MOCK_APPS_PAGINA=pagina)
+    _, v = verifica(project, tmp_path, {"DEM Estado": {"tipo": "recordType"}}, False)
+    assert v["aplicacion"]["prefijo"] == "DEM" and v["objetos"][0]["existe"] is True
+    assert sum(c["tool"] == "listApplications" for c in project.calls_list()) == llamadas
 
 
 def test_sin_herramienta_de_ejecutar_lo_dice(project, tmp_path):

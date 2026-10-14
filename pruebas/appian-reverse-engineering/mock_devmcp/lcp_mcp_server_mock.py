@@ -20,6 +20,8 @@ Variables de entorno:
   MOCK_FALLAN=K:caso,…      Con MOCK_PRUEBAS, esos casos fallan (un cambio en lo que usan los ha roto).
   MOCK_FALLAN_DEPENDIENTES=1  Con MOCK_PRUEBAS, la herramienta de dependientes falla.
   MOCK_ACCION=<nombre>      El nombre de la acción de lista de DEM Solicitud («Nueva solicitud» si no se dice).
+  MOCK_APPS_PAGINA=<n>[:<máx>]  Variante A: listApplications como la real, con limit (por defecto n) y offset; un limit
+                            por encima de <máx> es un error.
 """
 from __future__ import annotations
 
@@ -234,8 +236,18 @@ GET_TYPES = [
 GET_TYPES += [(n, t) for n, t in (("DataType", "DATA_TYPE"), ("DataStore", "DATA_STORE")) if con_definicion(t)]
 
 if VARIANT == "a":
-    register("listApplications", [], lambda: {"applications": [
-        {"uuid": APP["uuid"], "name": APP["name"], "prefix": APP["prefix"]}, OTHER_APP]})
+    APPS = [{"uuid": APP["uuid"], "name": APP["name"], "prefix": APP["prefix"]}, OTHER_APP]
+    if os.environ.get("MOCK_APPS_PAGINA"):
+        PAGINA, _, MAXIMO = os.environ["MOCK_APPS_PAGINA"].partition(":")
+
+        def _apps(limit, offset):
+            if MAXIMO and limit > int(MAXIMO):
+                raise ValueError(f"limit must be less than or equal to {MAXIMO}")
+            return {"items": APPS[offset:offset + limit], "total": len(APPS), "limit": limit, "offset": offset}
+
+        register("listApplications", [("limit", "int", int(PAGINA)), ("offset", "int", 0)], _apps)
+    else:
+        register("listApplications", [], lambda: {"applications": APPS})
     register("listNodeTypes", [], lambda: {"nodeTypes": [
         {"id": "core.0", "name": "Start Event"}, {"id": "core.1", "name": "End Event"},
         {"id": "core.4", "name": "XOR Gateway"}, {"id": "internal.16", "name": "Script Task"},

@@ -660,11 +660,13 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
 
 
 # De dónde salen las órdenes que nombran un script sin ruta: AGENTS.md, la copia de cada flujo en el proyecto y cada
-# issue, ficheros que se comparten entre equipos y no pueden llevar la ruta del plugin de nadie (proyecto.py generados)
-ORDENES = ("Una ruta o un script que van con el nombre de una skill (`appian-qa/scripts/qa.py`, o `appian-qa` · `qa.py`) "
-           "son de esa skill: cárgala antes, su `SKILL.md` dice cuál es su carpeta, y no busques el plugin en el disco. Un "
-           "agente que no carga skills los tiene en `skills/<skill>/` del plugin instalado (los scripts, en `scripts/`), "
-           "en la ruta que sepa quien trabaja.")
+# issue, ficheros que se comparten entre equipos y no pueden llevar la ruta del plugin de nadie (proyecto.py generados).
+# La que ya llega con su ruta (--siguiente) no pide cargar nada: en T17, quien construía cargaba tres o cuatro skills,
+# la del analista y la de ingeniería inversa solo para lanzarla
+ORDENES = ("Una orden completa, con su ruta (las de `--siguiente`), se lanza sin cargar ninguna skill. Lo que lleva el "
+           "nombre de una skill (`appian-qa/scripts/qa.py`, `appian-qa` · `qa.py`) es de esa skill: para componer su "
+           "orden o leerlo, cárgala (su `SKILL.md` dice su carpeta) y no busques el plugin en el disco; sin skills, en "
+           "`skills/<skill>/` del plugin instalado.")
 PRUEBAS_NO = "No hay pruebas que ejecutar: la issue no cambia criterios ni reglas."
 PRUEBAS_SI = ("«verificar» ejecuta también los casos de prueba guardados de sus reglas e interfaces y de lo que las usa; "
               "si uno falla, `appian-functional-analyst/references/cambios.md` §6.")
