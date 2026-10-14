@@ -2435,6 +2435,12 @@ def pruebas_de_la_issue(tmp):
        c == 0 and "su QA falla" not in out and c2 == 0 and "| Construida |" in fila_de(v, "EV-02")
        and "    su QA falla en HU-04.1 (ISS-02) (qa/EV-02/resultado.json): esas issues vuelven a pendiente" in out2,
        out + out2)
+    qa.write_text(json.dumps({"unidad": "EV-02", "escenarios": {"HU-04.1": {
+        "resultado": "sin repetir", "guion": "HU-04.1.json", "issue": "ISS-02", "ultimoPasa": "2026-10-14T10:00:00Z",
+        "sinRepetir": "SAIL CLI no respondió en 120 s a «load» en «cuando 1»"}}}, ensure_ascii=False), encoding="utf-8")
+    c, out = corre(S / "proyecto.py", "estado", v)
+    ok("un escenario sin repetir porque SAIL CLI no respondía no devuelve su issue a pendiente, pero estado lo avisa",
+       c == 0 and "su QA falla" not in out and "sin repetir: HU-04.1" in out, out)
     resultado_qa("está «Aprobar» y no debería")
     # La de una urgencia corregida en el entorno de corrección (URG-01) se pasa allí, con el Dev MCP de ese entorno; la
     # de un evolutivo, con el de desarrollo. Cada uno, por la etiqueta exacta de su URL en técnico §0

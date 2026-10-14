@@ -33,10 +33,11 @@ Lo esperado y la verificación, que es de donde sale si una issue está hecha (e
                             objetos («de»: issue) que una persona no haya marcado como no necesario. Lo que falla en lo
                             que la usa («de»: usa) es un aviso, y si el Dev MCP no ejecuta casos, esperan a la regresión.
   qa/<U>/resultado.json     lo deja appian-qa al repetir los guiones del QA de la unidad: {"escenarios": {"HU-01.1":
-                            {"resultado": "pasa" | "falla" | "desfasado" | "guion por terminar", "paso", "motivo", …}}}.
-                            Un escenario suyo que «falla» la devuelve a pendiente, salvo que una persona lo haya marcado
-                            como no necesario (en el índice, como un caso de prueba, con «QA» por objeto); sin QA, o con
-                            su guion desfasado o por terminar, no cuenta, y avisos_qa() lo dice al marcar la unidad.
+                            {"resultado": "pasa" | "falla" | "desfasado" | "guion por terminar" | "sin repetir", "paso",
+                            "motivo", …}}}. Un escenario suyo que «falla» la devuelve a pendiente, salvo que una persona
+                            lo haya marcado como no necesario (en el índice, como un caso de prueba, con «QA» por
+                            objeto); sin QA, o con su guion desfasado, por terminar o sin repetir, no cuenta, y
+                            avisos_qa() lo dice al marcar la unidad.
 
 Lo usan indice.py issues (generar, dar la siguiente) y proyecto.py cambio (al aprobar la unidad y al marcarla construida).
 """
@@ -1022,7 +1023,7 @@ def falla_en_qa(raiz, uid, issue, marcas=()):
 
 def avisos_qa(raiz, plan):
     """Lo que falta del QA de una unidad con escenarios (F8, paso 8): sin resultado, o con escenarios sin guion,
-    desfasados o con el guion por terminar. Son avisos: solo bloquea un escenario que falla (estado())."""
+    desfasados, con el guion por terminar o sin repetir. Son avisos: solo bloquea un escenario que falla (estado())."""
     escenarios = [c for i in plan.issues for c in i.criterios]
     r = pathlib.Path(raiz) / "qa" / plan.uid / "resultado.json"
     if not escenarios:
@@ -1036,7 +1037,8 @@ def avisos_qa(raiz, plan):
         esc = {}
     de = lambda c: (esc.get(c) or {}).get("resultado") if isinstance(esc.get(c), dict) else None
     faltan = [(que, [c for c in escenarios if de(c) == res]) for que, res in
-              (("sin guion", None), ("desfasados", "desfasado"), ("con el guion por terminar", "guion por terminar"))]
+              (("sin guion", None), ("desfasados", "desfasado"), ("con el guion por terminar", "guion por terminar"),
+               ("sin repetir", "sin repetir"))]
     faltan = [f"{que}: {', '.join(cs)}" for que, cs in faltan if cs]
     return [f"el QA de {plan.uid} no está completo ({'; '.join(faltan)}): lo hace QA (appian-qa)"] if faltan else []
 

@@ -172,8 +172,11 @@ y no lleva rutas del equipo de nadie:
 - **desfasado**: el escenario ya no dice lo del guion; no cuenta como fallo, y QA lo rehace.
 - **guion por terminar**: el guion está mal escrito o no llega a afirmar nada en el «entonces»; no devuelve la issue a
   quien construye: lo termina QA.
-- **sinRepetir**: esta vez no se pudo y se queda el resultado anterior: una sesión caducada (dice cómo entrar), o SAIL
-  CLI que no responde en 120 s o no llega al servidor, y entonces se para en ese paso, no repite nada más y lo dice.
+- **sinRepetir**: esta vez no se pudo, y dice por qué. Con una sesión caducada se queda el resultado anterior y dice
+  cómo entrar. Si SAIL CLI no responde en 120 s o no llega al servidor, se para en ese paso y no repite nada más; lo que
+  no repite deja de «pasar» (una pantalla que se cuelga no se esconde): sale **sin repetir**, con la fecha de su
+  último «pasa» (`ultimoPasa`), y un «falla» se queda. Sin repetir no devuelve la issue a pendiente, pero
+  `proyecto.py … construida` y `estado` lo avisan.
 - **sinGuion**: escenarios de la unidad que QA aún no ha recorrido.
 
 Si una pantalla cambió a propósito, se rehace solo su guion.
