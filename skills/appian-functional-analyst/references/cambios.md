@@ -21,7 +21,7 @@ escribe `proyecto.py cambio` (`<p>`, el proyecto). Cada error dice la salida.
 | Orden | Estado | Cuándo | Bloquea si… |
 |---|---|---|---|
 | `cambio <p> EV-02 abrir --titulo "…"` | Abierta | Empieza el cambio | ya existe |
-| `… aprobada --fuente FU-nn [--comparte "…"]` | Aprobada | El jefe de proyecto aprueba la unidad entera, con su alcance y coste; su aprobación (chat o correo) es la fuente FU-nn. Deja escritas sus issues de construcción (§5) y, si cambia datos, permisos, procesos en curso o lo que usan otros (los puntos de «Cambio sobre lo construido», §4), o usa IA, avisa: «que una persona revise DT-nn antes de construir», también en su issue. Es un aviso, no frena nada | hay puntos «Pendiente» en sus informes; o un objeto suyo de §13 está también en otra unidad Aprobada o Construida sin una decisión escrita (`--comparte "EV-03 en X: secuenciar (EV-02 primero)"`), salvo que una de las dos solo cambie en él una parte que no guarda datos ni da permisos (§4): eso se avisa |
+| `… aprobada --fuente FU-nn [--comparte "…"]` | Aprobada | El jefe de proyecto aprueba la unidad entera, con su alcance y coste; su aprobación (chat o correo) es la fuente FU-nn. Deja escritas sus issues de construcción (§5) y, si cambia datos, permisos, procesos en curso o lo que usan otros (los puntos de «Cambio sobre lo construido», §4), o usa IA, avisa: «que una persona revise DT-nn antes de construir», también en su issue. Es un aviso, no frena nada | hay puntos «Pendiente» en sus informes; o un objeto suyo de §13 está también en otra unidad Aprobada o Construida sin una decisión escrita (`--comparte "EV-03 en X: secuenciar (EV-02 primero)"`), salvo que las dos solo cambien en él el nombre de una acción, una vista o un filtro (§4): eso se avisa |
 | `… construida [--reaplicada URG-nn …] [--manual]` | Construida | Todas sus issues, construidas y verificadas en desarrollo, con sus pruebas (§6). Da la orden de la regresión, que se pasa antes de preparar el paquete | no está Aprobada; ha crecido desde que se aprobó; alguna issue no está hecha (dice cuál y por qué; con `--manual`, sin Dev MCP, no se mira, y la marca lo dice); o falta confirmar una corrección urgente que hay que reaplicar |
 | `… produccion --ref "<pase>" --fecha <AAAA-MM-DD del pase>` | En producción | Tras el pase | no está Construida |
 | `… descartada [--informe impacto/FU-nn.md]` | Descartada | No se hace | no está Abierta; o tiene algo aplicado y no se da el informe (aplicado) que lo deshace, o §13 sigue con sus filas |
@@ -101,10 +101,12 @@ historias (Nueva, Cambia, Se conserva) ya no se escribe: lo da `indice.py cambio
   aprobación.
 
   Se gradúa por lo que cambia, no por el tipo del objeto. Si de un objeto solo cambia una parte, la fila de §13 la
-  nombra y manda la parte: el nombre de una acción de registro (`DEM Solicitud — acción «Nueva solicitud»`), una vista
-  o un filtro son un retoque aunque vivan en un record type, sin DT y sin decidir el orden con la unidad que modifica
-  ese record type (se avisa: el paquete lleva el objeto entero). Un campo o una relación (`… — campo importe`) sí piden
-  «Datos existentes»; la seguridad de una acción o de una vista, «Permisos».
+  nombra. Solo es un retoque, sin DT, una acción, una vista o un filtro de un record type nombrados así y sin más
+  texto: `DEM Solicitud — acción «Pedir material»`. Si otra unidad cambia también el mismo record type, el orden solo
+  no se decide cuando las dos cambian así una parte (se avisa: el paquete lleva el objeto entero); si una añade un
+  campo, sí. Cualquier otra parte pide lo de su objeto entero, o «Permisos» si habla de permisos: `… — acción
+  «Aprobar», ahora también para los revisores`, `… — columna importe`, un nodo de un proceso o un parámetro de una
+  Web API no son un retoque.
 
 ## 5. Derivados: al enviar o al construir, no con cada fuente
 
@@ -141,7 +143,9 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
    la tiene y desde cuándo y hace un commit y un push solo de `construccion/EV-02/`. Antes se pone al día; si el push
    falla porque otro reservó antes, quita su commit, se pone al día y da la siguiente: dos que la piden a la vez no se
    llevan la misma. Nunca falla por git, y dice cómo queda: sin remoto, un commit sin subir; si el proyecto no es un
-   repositorio, sin reservar. El nombre es el de git; dos sesiones con el mismo se distinguen con `--quien <nombre>`.
+   repositorio, o está dentro de otro, sin reservar; con una fusión o un rebase a medias, sin reservar ni tocar git
+   (termínala y vuelve a pedirla). Quien ya tiene una reservada sin hacer recibe esa, no otra. El nombre es el de git;
+   dos sesiones con el mismo se distinguen con `--quien <nombre>`.
    `--liberar ISS-nn` quita la reserva de una issue que nadie va a seguir. El push sube también los commits que esa
    copia tuviera sin subir.
 2. **Construir** la issue en desarrollo (en una urgencia, en el entorno de corrección): `appian-best-practices` (que la

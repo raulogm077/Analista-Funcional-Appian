@@ -388,8 +388,8 @@ def fila_13(m, ctx, construidas, unidad):
     print(f"  → Técnico §13: cada objeto construido que cambie lleva su fila de {unidad} (los que no cambian, "
           f"ninguna), así: «{ejemplo}»" + (". Los de la fila de su pantalla en el técnico: " + ", ".join(
               f"`{x}` ({tipos.get(x, '?')})" for x in objetos) if objetos else "")
-          + (". Si de un record type solo cambia una parte que no guarda datos ni da permisos (el nombre de una acción "
-             "de registro), nómbrala («`<objeto> — acción «…»`»): no pide DT" if de_datos else ""))
+          + (". Si de un record type solo cambia el nombre de una acción, una vista o un filtro, nómbrala así y sin más "
+             "texto («`<objeto> — acción «…»`»): no pide DT" if de_datos else ""))
 
 
 def c_siguientes(m, a):

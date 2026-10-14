@@ -562,6 +562,12 @@ def comprobar_para(m, ctx):
         return
     nombre = ("técnico §13: cada objeto dice «Para» qué requisito es (HU, PAN o ACT) o «Base»: de ahí sale una issue por "
               "requisito")
+    objetos = {}      # una unidad de un solo objeto da una sola issue: no hay nada que repartir
+    for f in filas:
+        objetos.setdefault(f["unidad"], set()).update(un.objeto(o) for o in f["objetos"])
+    filas = [f for f in filas if len(objetos[f["unidad"]]) > 1]
+    if not filas:
+        return
     if not ctx.con_para:
         informe(nombre, ["la tabla no tiene la columna «Para»: todo lo de un cambio saldría en una sola issue"],
                 grave=False)

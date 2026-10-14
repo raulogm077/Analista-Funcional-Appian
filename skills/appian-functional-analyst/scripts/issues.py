@@ -62,7 +62,9 @@ REGLAS = ("regla de expresion", "expression rule", "decision")
 SIN_APARTADO = ("", "0", "1", "2", "13", "14", "15")   # del técnico, lo que no es de ningún objeto (las DT van aparte)
 INTENTOS = 5            # veces que se vuelve a mirar si otro sube su reserva antes
 ESPERA_REMOTO = 30      # segundos que se espera al remoto en cada orden
-ESPERA_CANDADO, CANDADO_VIEJO = 120, 300   # segundos que se espera a otra sesión de esta carpeta, y cuándo se da por muerta
+# segundos que se espera a otra sesión de esta carpeta (menos que los 120 que deja Claude Code a una orden), y cuándo
+# se da por muerta
+ESPERA_CANDADO, CANDADO_VIEJO = 20, 300
 RX_ISSUE = re.compile(r"ISS-(\d+)")
 RX_NOMBRE = re.compile(r"`([^`]+)`")
 RX_SEPARADOR = re.compile(r"^\|[\s:|-]+\|?\s*$")
@@ -280,7 +282,10 @@ def lineas_del_tecnico(d):
     """Las líneas de los apartados 3 a 12 del técnico, cada una con lo que hace falta para saber de qué issue es:
     {i, donde («§7», «§3.1»), texto, cabecera (si es la fila de una tabla), titulo (la línea que precede a su tabla),
     ids que cita, objetos que nombra, de (el objeto de su apartado «### 3.n <nombre>») y estado frente a la copia de la
-    versión base: "" (no hay copia), igual, nuevo o cambia (con «era», sus celdas de antes)}."""
+    versión base: "" (no hay copia), igual, nuevo o cambia (con «era», sus celdas de antes)}. Nombra un objeto la línea
+    que lo dice entre comillas invertidas o en negrita, la fila con una celda que es su nombre, la fila de una tabla cuyo
+    título lo nombra («**AUT Tramitar Solicitud** (…)» encima de sus nodos) y lo que sigue a un título en negrita que lo
+    nombra, hasta el siguiente o el apartado siguiente (la cancelación y el archivado de un proceso)."""
     m = d.m
     if "T" not in m.docs:
         return []
@@ -291,15 +296,18 @@ def lineas_del_tecnico(d):
         A = d.ant.docs["T"]
         for i, l in enumerate(A.lineas):
             antes.setdefault(A.seccion_de_linea[i], []).append(l.strip())
-    out, cabecera, titulo, apartado, de, previa = [], None, None, "", None, None
+    out, cabecera, titulo, apartado, de, previa, bloque = [], None, None, "", None, None, set()
     for i, l in enumerate(T.lineas):
         s = T.seccion_de_linea[i]
         if l.startswith("## "):
-            cabecera, apartado, de, previa = None, "", None, None
+            cabecera, apartado, de, previa, bloque = None, "", None, None, set()
         if l.startswith("### "):
             sub = re.match(r"^###\s+([\d.]+)\s+(.+)$", l)
             apartado = sub.group(1).rstrip(".") if sub else ""
             de = nombres.get(mo.normaliza(sub.group(2).strip(" `"))) if sub else None
+            bloque = set()
+        if re.match(r"^\*\*[^*\n]+\*\*", l):     # un título en negrita: lo que sigue es de lo que nombra
+            bloque = nombrados(re.match(r"^\*\*[^*\n]+\*\*", l).group(0), d.todos)
         if not l.startswith("|"):
             cabecera = None
             previa = (i, l) if l.strip() else previa
@@ -310,9 +318,13 @@ def lineas_del_tecnico(d):
         if s in SIN_APARTADO or not l.strip() or l.startswith("#") or RX_SEPARADOR.match(l):
             continue
         fila = mo.celdas(l) if l.startswith("|") else None
+        objetos = nombrados(l, d.todos) | bloque
+        if fila:
+            objetos |= {nombres[mo.normaliza(c.strip(" `*"))] for c in fila if mo.normaliza(c.strip(" `*")) in nombres}
+            objetos |= nombrados(T.lineas[titulo], d.todos) if titulo is not None else set()
         item = {"i": i, "donde": f"§{apartado or s}", "texto": l.strip(), "cabecera": cabecera if fila else None,
                 "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
-                "objetos": nombrados(l, d.todos), "estado": "", "era": None}
+                "objetos": objetos, "estado": "", "era": None}
         if antes:
             if l.strip() in antes.get(s, ()):
                 item["estado"] = "igual"
@@ -376,18 +388,27 @@ def en_palabras(item):
     return " · ".join(trozos)
 
 
+def citadas_por(m, requisitos):
+    """Las reglas comunes, avisos, documentos e integraciones que citan unos requisitos o sus criterios."""
+    return {x for h in requisitos for x in m.piezas[h].refs | {r for c in m.piezas[h].hijos for r in m.piezas[c].refs}
+            if x in m.piezas and x not in requisitos and m.piezas[x].tipo in ("RB", "AV", "DOC", "INT")
+            and not m.piezas[x].anulada}
+
+
 def del_tecnico(d, issue, lineas, dts):
-    """(líneas para la issue, dónde nombra el técnico cada fila suya de §13, objetos de la unidad que nombra). Son las
-    líneas que nombran un objeto suyo o citan un requisito suyo; de un objeto del que solo construye una parte («X —
-    acción «Adjuntar informe»»), las que nombran esa parte, no todo lo que se dice de X. Si hay copia de la versión base
-    y algo es nuevo o cambia, solo eso: lo que no cambia ya está construido."""
+    """(líneas para la issue, dónde nombra el técnico cada fila suya de §13, objetos de la unidad que nombra, las líneas
+    suyas). Son las líneas que nombran un objeto suyo o citan un requisito suyo o lo que este cita (sus avisos, sus
+    documentos); de un objeto del que solo construye una parte («X — acción «Adjuntar informe»»), las que nombran esa
+    parte, no todo lo que se dice de X. Si hay copia de la versión base y algo es nuevo o cambia, solo eso: lo que no
+    cambia ya está construido."""
     m = d.m
     nombres = [o for f in issue.filas for o in f["objetos"]]
     enteros = {o for o in nombres if not un.parte(o)}
     # una parte se reconoce por lo que lleva entre comillas («Adjuntar informe») o, si no lleva nada, por su texto
     senas = {o: [mo.normaliza(x) for x in re.findall(r"«([^»]+)»", un.parte(o)) or [un.parte(o)]]
              for o in nombres if un.parte(o) and un.objeto(o) not in enteros}
-    cita = set(issue.requisitos) | {c for h in issue.requisitos for c in m.piezas[h].hijos}
+    cita = set(issue.requisitos) | {c for h in issue.requisitos for c in m.piezas[h].hijos} | \
+        citadas_por(m, issue.requisitos)
     de_parte = lambda x, o: any(s in mo.normaliza(x["texto"]) for s in senas[o])
     suya = lambda x: x["objetos"] & enteros or x["de"] in enteros or any(de_parte(x, o) for o in senas)
     mias = [x for x in lineas + dts if suya(x) or x["ids"] & cita]
@@ -415,7 +436,7 @@ def del_tecnico(d, issue, lineas, dts):
         out.append(f"- Y {callan} líneas más del técnico que no cambian con {d.uid}: lo que dicen ya está construido."
                    if callan > 1 else
                    f"- Y una línea más del técnico que no cambia con {d.uid}: lo que dice ya está construido.")
-    return out, donde, set().union(*(x["objetos"] for x in van)) - set(issue.objetos)
+    return out, donde, set().union(*(x["objetos"] for x in van)) - set(issue.objetos), {x["i"] for x in mias if "dt" not in x}
 
 
 # ------------------------------------------------------------------ el texto de una issue
@@ -543,7 +564,7 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
     m, ctx, uid, r = d.m, d.ctx, d.uid, d.resumen
     pide = que_se_pide(d, issue)
     esc, issue.feature, issue.sin_gherkin = escenarios(d, issue, pruebas)
-    tec, donde, _ = del_tecnico(d, issue, lineas, dts)
+    tec, donde, _, _ = del_tecnico(d, issue, lineas, dts)
     filas = []
     for f in issue.filas:
         for o in f["objetos"]:
@@ -732,12 +753,25 @@ def calcula(m, ctx, uid):
                 {i: p["reservada"] for i, p in previas.items() if p["reservada"] and any(x.id == i for x in issues)},
                 [x for x in marcas_de(m.raiz, uid) if any(i.id == x["issue"] for i in issues)], ctx.revisar_antes(uid))
     lineas, dts, pruebas = lineas_del_tecnico(d), decisiones(d), como_se_comprueba(m)
+    cubiertas = set()
     for i in issues:      # lo que nombra el técnico al hablar de cada una dice con cuáles comparte objetos
-        i.nombra = del_tecnico(d, i, lineas, dts)[2]
+        _, _, i.nombra, suyas = del_tecnico(d, i, lineas, dts)
+        cubiertas |= suyas
     ordena(issues)
     for i in issues:
         redacta(d, i, plan, lineas, dts, pruebas)
-    if not ctx.con_para:
+    # lo que el técnico dice para esta unidad (todo, en la construcción inicial; lo nuevo o lo que cambia, si no) y no
+    # llega a ninguna issue: quien construye no lo vería, y la issue dice que no hace falta leer el técnico
+    perdidas = [x for x in lineas if x["i"] not in cubiertas and (d.inicial or x["estado"] in ("nuevo", "cambia"))]
+    if perdidas:
+        corta = lambda t: (t if len(t) <= 60 else t[:57].rstrip() + "…").replace("|", "/")   # noqa: E731
+        plan.avisos.append(f"{len(perdidas)} {'línea' if len(perdidas) == 1 else 'líneas'} del técnico no van en ninguna "
+                           f"issue de {uid}: no nombran ninguno de sus objetos ni citan sus requisitos (que lo hagan, o "
+                           "falta su objeto en §13): " + "; ".join(f"{x['donde']} «{corta(limpio(x['texto']).strip('| '))}»"
+                                                                    for x in perdidas))
+    if len(d.todos) <= 1:     # con un solo objeto no hay nada que repartir: sin aviso de «Para»
+        pass
+    elif not ctx.con_para:
         plan.avisos.append("técnico §13 no tiene la columna «Para» (el requisito de cada objeto, o «Base»): toda la unidad "
                            "va en una sola issue")
     elif sin_para:
@@ -1115,12 +1149,37 @@ def deshace(raiz, uid, commit):
             f.unlink()
 
 
-def con_reserva(raiz, uid, cambia, sin_git=None):
+def a_medias(raiz):
+    """La operación de git que el repositorio tiene a medias (una fusión, un rebase…), o "": con una, no se toca git (un
+    merge --abort se llevaría la resolución que hubiera a mano)."""
+    for ref, que in (("MERGE_HEAD", "una fusión"), ("CHERRY_PICK_HEAD", "un cherry-pick"), ("REVERT_HEAD", "un revert")):
+        if mo.git(raiz, "rev-parse", "-q", "--verify", ref) is not None:
+            return que
+    for d in ("rebase-merge", "rebase-apply"):
+        ruta = (mo.git(raiz, "rev-parse", "--git-path", d) or "").strip()
+        if ruta and (pathlib.Path(raiz) / ruta).exists():
+            return "un rebase"
+    return ""
+
+
+def fuera_de_su_repositorio(raiz):
+    """La carpeta del repositorio que contiene el proyecto, si no es la del proyecto (está dentro de otro), o ""."""
+    arriba = (mo.git(raiz, "rev-parse", "--show-toplevel") or "").strip()
+    try:
+        mismo = os.path.normcase(str(pathlib.Path(arriba).resolve())) == os.path.normcase(str(pathlib.Path(raiz).resolve()))
+        return arriba if arriba and not mismo else ""
+    except OSError:
+        return ""
+
+
+def con_reserva(raiz, uid, cambia, sin_git=None, escribe_=False):
     """Cambia las reservas o las pruebas marcadas del índice de una unidad (cambia(plan) → (issue o None, reservas,
     mensaje del commit); las marcas, en plan.marcas) y lo confirma y lo sube sin pisar a nadie: antes se pone al día; si
     el push falla porque otro subió antes, quita su commit, se pone al día y vuelve a decidir. Devuelve (m, ctx, plan,
-    issue, cómo ha quedado). Nunca falla por git: sin repositorio no reserva (con `sin_git`, lo escribe y dice eso), sin
-    remoto no sube y sin acceso lo deja en este equipo, y lo dice."""
+    issue, cómo ha quedado). Nunca falla por git: sin repositorio, o dentro de otro que no es el suyo, no reserva (con
+    `sin_git`, lo escribe y dice eso); sin remoto no sube y sin acceso lo deja en este equipo, y lo dice. Con una fusión
+    o un rebase a medias no toca git ni escribe nada: da la issue sin reservar o, si lo que se pide es escribir
+    (`escribe_`: liberar, marcar una prueba), se niega."""
     raiz = pathlib.Path(raiz)
     ruta = f"{CARPETA}/{uid}"
 
@@ -1135,11 +1194,24 @@ def con_reserva(raiz, uid, cambia, sin_git=None):
             escribe(plan, raiz, reservas)
         return m, ctx, plan, issue, mensaje
 
-    if not shutil.which("git") or mo.git(raiz, "rev-parse", "--is-inside-work-tree") is None:
+    sin_repo = not shutil.which("git") or mo.git(raiz, "rev-parse", "--is-inside-work-tree") is None
+    otro = "" if sin_repo else fuera_de_su_repositorio(raiz)
+    if sin_repo or otro:
+        por_que = (f"el proyecto está dentro de otro repositorio ({otro}), que no es el suyo: el commit y el push serían "
+                   "de ese" if otro else "el proyecto no es un repositorio git (`proyecto.py iniciar` lo crea)")
         if sin_git:
-            return (*decide()[:4], sin_git)
-        return (*decide(reservar=False)[:4], "sin reservar: el proyecto no es un repositorio git (`proyecto.py iniciar` "
-                                             "lo crea), y otra persona puede llevarse la misma")
+            return (*decide()[:4], f"{sin_git}: {por_que}")
+        return (*decide(reservar=False)[:4], f"sin reservar: {por_que}, y otra persona puede llevarse la misma")
+    medias = a_medias(raiz)
+    if medias:     # no se toca git ni se escribe nada: se dice
+        if escribe_:
+            raise NoSePuede(f"el repositorio tiene {medias} a medias: termínala (git add y git commit, o git rebase "
+                            "--continue) y repite")
+        m = mo.Proyecto(raiz)
+        ctx = un.Contexto(m)
+        plan = calcula(m, ctx, uid)
+        return m, ctx, plan, cambia(plan)[0], (f"sin reservar ni escribir nada: el repositorio tiene {medias} a medias; "
+                                               "termínala (git add y git commit, o git rebase --continue) y vuelve a pedirla")
     with Candado(raiz):
         remoto = remoto_de(raiz)
         for _ in range(INTENTOS):
@@ -1167,16 +1239,27 @@ def con_reserva(raiz, uid, cambia, sin_git=None):
 
 def siguiente(raiz, uid, quien=None):
     """Da la próxima issue de la unidad y la reserva a nombre de `quien` (por defecto, el usuario de git):
-    (m, ctx, plan, issue o None, cómo ha quedado la reserva)."""
-    nombre = quien_soy(raiz, quien)
+    (m, ctx, plan, issue o None, cómo ha quedado la reserva). Si ya tiene una reservada que no está hecha (una sesión
+    que se reinicia y vuelve a pedir), da esa: no se lleva otra dejando la suya colgada. Dos sesiones del mismo usuario
+    se distinguen con `quien`."""
+    nombre, suya = quien_soy(raiz, quien), []
 
     def cambia(plan):
+        e = estados(plan, raiz)
+        mia = next((i for i in plan.issues if not e[i.id][0]
+                    and (plan.reservas.get(i.id) or "").split(" · ")[0].strip() == nombre), None)
+        if mia is not None:
+            suya[:] = [mia.id]
+            return mia, plan.reservas, f"{uid}: {mia.id}, ya reservada por {nombre}"
         issue = elige(plan, raiz)
         if issue is None:
             return None, plan.reservas, f"{uid}: issues al día"
         ahora = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
         return issue, {**plan.reservas, issue.id: f"{nombre} · {ahora}"}, f"{uid}: {issue.id} reservada por {nombre}"
-    return con_reserva(raiz, uid, cambia)
+    m, ctx, plan, issue, como = con_reserva(raiz, uid, cambia)
+    if issue is not None and suya == [issue.id] and not como:
+        como = "ya estaba reservada a tu nombre: es la que tenías"
+    return m, ctx, plan, issue, como
 
 
 def libera(raiz, uid, iid):
@@ -1185,7 +1268,7 @@ def libera(raiz, uid, iid):
         if iid not in {i.id for i in plan.issues}:
             raise NoSePuede(f"{uid} no tiene la issue {iid} (tiene {', '.join(i.id for i in plan.issues)})")
         return None, {k: v for k, v in plan.reservas.items() if k != iid}, f"{uid}: {iid} sin reserva"
-    return con_reserva(raiz, uid, cambia)
+    return con_reserva(raiz, uid, cambia, escribe_=True)
 
 
 RX_CASO = re.compile(r"^\s*(.*?)\s*«(.+)»\s*$")      # «DEM_ER_Firma «Sin firma»», como lo dicen estado() y verificar
@@ -1217,4 +1300,4 @@ def sin_prueba(raiz, uid, iid, caso, motivo, quien=None):
         plan.marcas = [x for x in plan.marcas if not (x["issue"] == iid and x["objeto"] == o and x["caso"] == c)] + [
             {"issue": iid, "objeto": o, "caso": c, "motivo": motivo.strip(), "quien": nombre, "cuando": ahora}]
         return issue, plan.reservas, f"{uid}: {iid}, {o} «{c}» no necesaria para avanzar ({nombre})"
-    return con_reserva(raiz, uid, cambia, sin_git="en el índice, sin commit: el proyecto no es un repositorio git")
+    return con_reserva(raiz, uid, cambia, sin_git="en el índice, sin commit", escribe_=True)

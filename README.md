@@ -33,7 +33,9 @@ siguiente, que queda reservada con un commit para que nadie más se la lleve, y 
 sus objetos, como dice el técnico, y sus pruebas, los casos de prueba guardados de sus reglas e interfaces y de lo que
 las usa. Un caso suyo que falla la deja pendiente, salvo que una persona lo marque como no necesario, con su motivo; un
 retoque que no cambia criterios ni reglas no ejecuta ninguno. Antes de preparar el paquete, la regresión ejecuta todos
-los de la aplicación.
+los de la aplicación. Las verificaciones hechas con el encargo de antes de las issues (`construccion/verificacion/<U>.json`)
+ya no cuentan: una unidad aprobada entonces se verifica de nuevo, issue a issue, con la orden que imprime
+`indice.py issues <p> <U> ISS-nn`.
 
 Sirve para cualquier proceso (compras, subvenciones, incidencias,
 informes, expedientes…): el dominio sale siempre de las fuentes del proyecto. Las

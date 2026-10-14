@@ -775,22 +775,23 @@ def aprobar(a, ctx, u, hoy, no, raiz, orden):
            "decídelos (✔, ✗ o ❓ en «Decisión») y vuelve a aprobarla")
     if (a.comparte or "").strip():
         u.comparte = a.comparte.strip() if un.vacio(u.comparte) else f"{u.comparte}; {a.comparte.strip()}"
-    # un objeto del que una de las dos solo cambia una parte que no guarda datos ni da permisos (el nombre de una acción
-    # de registro) no pide decidir el orden: se avisa, para quien prepare el paquete
+    # un objeto del que las dos solo cambian partes que no guardan datos ni dan permisos (el nombre de una acción de
+    # registro) no pide decidir el orden: se avisa, para quien prepare el paquete. Si una de las dos cambia algo más
+    # (un campo en el mismo record type), sí
     mias, leves, choques = set(ctx.cambian(u.id)), ctx.retoques(u.id), []
     for v in ctx.unidades:
         if v.id == u.id or v.urgente or v.estado not in (un.APROBADA, un.CONSTRUIDA):
             continue
         comunes = [o for o in ctx.cambian(v.id) if o in mias]
-        sin_riesgo = [o for o in comunes if o in leves | ctx.retoques(v.id)]
+        sin_riesgo = [o for o in comunes if o in leves & ctx.retoques(v.id)]
         comunes = [o for o in comunes if o not in sin_riesgo]
         decidido = v.id in un.RX_UNIDAD.findall(u.comparte) or u.id in un.RX_UNIDAD.findall(v.comparte)
         if comunes and not decidido:
             choques.append((v.id, comunes))
         if sin_riesgo and not decidido:
-            print(f"· {u.id} y {v.id} cambian {', '.join(sin_riesgo)}, una de las dos solo una parte que no guarda datos "
-                  "ni da permisos: no hace falta decidir el orden. El paquete de la que pase antes lleva el objeto entero, "
-                  "con lo que la otra haya cambiado en él")
+            print(f"· {u.id} y {v.id} cambian {', '.join(sin_riesgo)}, las dos solo el nombre de una acción, una vista o "
+                  "un filtro: no hace falta decidir el orden. El paquete de la que pase antes lleva el objeto entero, con "
+                  "lo que la otra haya cambiado en él")
     if choques:
         v0, o0 = choques[0]
         no("comparte objetos con otra unidad aprobada y no hay decisión: "

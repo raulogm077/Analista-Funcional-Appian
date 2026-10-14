@@ -40,9 +40,11 @@ SIN_PIEZAS = ("sin impacto", "proyecto")        # tipos de punto que no cambian 
 PUNTOS_CONSTRUIDO = [(("record type", "cdt", "tabla"), "Datos existentes"),
                      (("process model", "modelo de proceso"), "Procesos en curso"),
                      (("web api",), "Compatibilidad"), (("grupo", "seguridad"), "Permisos")]
-# Una fila que nombra solo una parte del objeto («X — acción «Nueva»») se gradúa por lo que cambia, no por el tipo del
-# objeto: pide el punto si la parte guarda datos o da permisos; el nombre de una acción, una vista o un filtro, ninguno.
-PARTE_DATOS = ("campo", "dato", "relacion", "origen", "tabla", "sincroniz", "clave", "indice")
+# Una fila que nombra solo una parte del objeto («X — acción «Nueva»») no pide ningún punto si la parte es, sin más
+# texto, una acción, una vista o un filtro de un record type («acción «Pedir material»»: su nombre, un retoque). Cualquier
+# otra parte pide lo de su objeto entero, o «Permisos» si habla de permisos: «acción «Aprobar», ahora también para los
+# revisores», una columna, un nodo de un proceso o un parámetro de una Web API no son un retoque.
+RX_PARTE_INOCUA = re.compile(r"^(accion|vista|filtro(?: de usuario)?)\s+«[^»]+»$")
 PARTE_PERMISOS = ("seguridad", "permiso", "visibilidad", "quien la ve", "quien lo ve", "quien puede")
 # Cómo se dice cada punto en el aviso de revisión (T14), y qué es IA: la capa de una DT o el tipo de un objeto de §13
 FRASE_PUNTO = {"Datos existentes": "datos existentes", "Procesos en curso": "procesos en curso", "Permisos": "permisos",
@@ -179,15 +181,18 @@ def nombre_accion(texto):
 
 def puntos_de(tipo, nombre):
     """Los puntos de «Cambio sobre lo construido» que pide cambiar un objeto ya construido, por lo que cambia: los de
-    su tipo (PUNTOS_CONSTRUIDO) si la fila es el objeto entero; si nombra solo una parte, el de datos o el de permisos
-    cuando la parte lo es, y ninguno si no (el nombre de una acción de registro es un retoque, aunque viva en un record
-    type)."""
-    t, p = mo.normaliza(tipo), mo.normaliza(parte(nombre))
+    su tipo (PUNTOS_CONSTRUIDO). Si la fila nombra solo una parte: ninguno si es, sin más texto, una acción, una vista o
+    un filtro de un record type (RX_PARTE_INOCUA: el nombre de una acción de registro es un retoque, aunque viva en un
+    record type); «Permisos» si la parte habla de permisos; y si no, los de su objeto entero."""
+    t, p = mo.normaliza(tipo), " ".join(mo.normaliza(parte(nombre)).split())
     if not p:
         return [punto for claves, punto in PUNTOS_CONSTRUIDO if any(k in t for k in claves)]
+    de_record_type = any(k in t for k in ("record type", "accion de registro", "vista de registro", "filtro"))
+    if RX_PARTE_INOCUA.match(p) and de_record_type:
+        return []
     if any(k in p for k in PARTE_PERMISOS):
         return ["Permisos"]
-    return ["Datos existentes"] if any(k in p for k in PARTE_DATOS) else []
+    return puntos_de("Record type" if de_record_type else tipo, objeto(nombre))
 
 
 def filas_6(P):

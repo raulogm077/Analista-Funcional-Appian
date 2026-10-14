@@ -260,6 +260,7 @@ def main():
         pruebas_unidades(tmp)
         pruebas_issues(tmp)
         pruebas_de_la_issue(tmp)
+        pruebas_reserva_segura(tmp)
 
         # proyecto.py version: la copia, la versión +0.1 en funcional y técnico, su fila en decisiones.md y la fuente en
         # «Fuentes procesadas»; una fuente sin catalogar o que ya tiene versión, error sin tocar nada
@@ -2148,6 +2149,60 @@ def filas_del_indice(texto):
                               for l in texto.split("\n## ", 1)[0].splitlines() if l.startswith("| ISS-"))}
 
 
+def pruebas_reserva_segura(tmp):
+    """Revisión de la Fase 5 (T11): reservar no toca git si el repositorio tiene una fusión o un rebase a medias (un
+    merge --abort se llevaba la resolución hecha a mano) ni si el proyecto está dentro de otro repositorio (la reserva
+    subía al remoto de fuera, con un commit ajeno). Lo dice y no escribe nada."""
+    if not shutil.which("git"):
+        print("· Reservar con git a medias o dentro de otro repositorio: no hay git en este equipo; no se prueba")
+        return
+    issues = lambda p, *args: corre(S / "indice.py", "issues", p, "EV-01", *args)
+    lee = lambda f: f.read_text(encoding="utf-8") if f.is_file() else ""
+    nombre = ["-c", "user.name=Prueba", "-c", "user.email=prueba@example.org"]
+    a = nueva_con_issues(tmp / "reserva a medias")
+    corre(S / "proyecto.py", "iniciar", a)
+    (a / "fuentes" / "FU-05-aprobacion.md").write_text("# FU-05\n", encoding="utf-8")
+    corre(S / "proyecto.py", "cambio", a, "EV-01", "aprobada", "--fuente", "FU-05")
+    git(a, "add", "-A")
+    git(a, *nombre, "commit", "--quiet", "-m", "Base")
+    pm = a / "proyecto.md"
+    git(a, "checkout", "--quiet", "-b", "otra")
+    pm.write_text(lee(pm) + "\nUna línea de la otra rama.\n", encoding="utf-8")
+    git(a, *nombre, "commit", "--quiet", "-am", "Otra")
+    git(a, "checkout", "--quiet", "main")
+    pm.write_text(lee(pm) + "\nUna línea de main.\n", encoding="utf-8")
+    git(a, *nombre, "commit", "--quiet", "-am", "Main")
+    choca = git(a, "merge", "otra")[0]
+    resuelto = lee(pm).split("<<<<<<<")[0] + "Una línea de main.\nUna línea de la otra rama.\n"
+    pm.write_text(resuelto, encoding="utf-8")       # resuelto a mano, sin git add
+    indice = lee(a / "construccion" / "EV-01" / "indice.md")
+    c, out = issues(a, "--siguiente", "--quien", "Ana")
+    c2, out2 = issues(a, "--liberar", "ISS-01")
+    ok("con una fusión a medias, --siguiente no toca git ni escribe nada: da la issue sin reservar y lo dice; la "
+       "resolución hecha a mano sigue ahí, y --liberar se niega",
+       choca != 0 and c == 0 and out.startswith("ISS-01 de EV-01: sin reservar ni escribir nada: el repositorio tiene "
+                                                "una fusión a medias")
+       and git(a, "rev-parse", "-q", "--verify", "MERGE_HEAD")[0] == 0 and lee(pm) == resuelto
+       and lee(a / "construccion" / "EV-01" / "indice.md") == indice and "Ana" not in indice
+       and c2 == 1 and "una fusión a medias" in out2, out + out2)
+
+    fuera = tmp / "repositorio de fuera"
+    fuera.mkdir()
+    git(fuera, "init", "--quiet")
+    (fuera / "otra cosa.txt").write_text("de otro\n", encoding="utf-8")
+    git(fuera, "add", "-A")
+    git(fuera, *nombre, "commit", "--quiet", "-m", "Lo de fuera")
+    b = nueva_con_issues(fuera / "proyecto")
+    (b / "fuentes").mkdir(exist_ok=True)
+    (b / "fuentes" / "FU-05-aprobacion.md").write_text("# FU-05\n", encoding="utf-8")
+    corre(S / "proyecto.py", "cambio", b, "EV-01", "aprobada", "--fuente", "FU-05")
+    antes = git(fuera, "rev-list", "--all", "--count")[1]
+    c, out = issues(b, "--siguiente", "--quien", "Ana")
+    ok("con el proyecto dentro de otro repositorio, no reserva (el commit y el push serían de ese) y lo dice",
+       c == 0 and "sin reservar: el proyecto está dentro de otro repositorio" in out.splitlines()[0]
+       and git(fuera, "rev-list", "--all", "--count")[1] == antes, out[:500])
+
+
 def pruebas_de_la_issue(tmp):
     """Fase 5 del método L.U.C.I.A. (T13 y T14): una issue con pruebas no está hecha si falla un caso de prueba de sus
     objetos, salvo que una persona lo marque como no necesario (--sin-prueba, nunca desatendida), que queda en el índice
@@ -2178,7 +2233,8 @@ def pruebas_de_la_issue(tmp):
     editar(retoque / "analisis" / "tecnico.md", "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |",
            "| 8 | `DEM Solicitud — acción «Nueva solicitud»` | Record type | Modifica | — | EV-03 |")
     editar(retoque / "impacto" / "FU-06.md", "| Sí (alcance) | Pendiente |", "| Sí (alcance) | ✔ FU-05 |")
-    c, out = corre(S / "proyecto.py", "cambio", retoque, "EV-03", "aprobada", "--fuente", "FU-05")
+    c, out = corre(S / "proyecto.py", "cambio", retoque, "EV-03", "aprobada", "--fuente", "FU-05", "--comparte",
+                   "EV-02 en DEM Solicitud: secuenciar (EV-02 primero)")
     ok("T14: el nombre de una acción de registro (un retoque) no avisa de nada que revisar",
        c == 0 and "Que una persona revise" not in out and "Antes de construir" not in lee(
            retoque / "construccion" / "EV-03" / "ISS-01.md"), out)
@@ -2267,7 +2323,8 @@ def pruebas_de_la_issue(tmp):
         "## Puntos\n| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión |\n"
         "|---|---|---|---|---|---|---|---|\n| 1 | CAMBIA | El botón dice «Pedir material» [FU-08] | PAN-03 | PAN-03 | — | — | ✔ |"
         "\n\n## Aplicado\nVersión 1.2: técnico §7 y §13\n", encoding="utf-8")
-    c, out = corre(S / "proyecto.py", "cambio", r, "EV-04", "aprobada", "--fuente", "FU-08")
+    c, out = corre(S / "proyecto.py", "cambio", r, "EV-04", "aprobada", "--fuente", "FU-08", "--comparte",
+                   "EV-02 en DEM Solicitud: secuenciar (EV-02 primero)")
     esp = json.loads(lee(r / "construccion" / "EV-04" / "ISS-01-esperado.json") or "{}")
     ok("una acción que se renombra: lo esperado lleva la de técnico §7 con su nombre nuevo y su tipo (la fila de §13 dice "
        "la de antes), sin campos del record type que comparar ni pruebas que ejecutar",
@@ -2336,14 +2393,36 @@ def pruebas_issues(tmp):
        "inexistente", c == 0 and dt and "EV-03" not in dt and "DEM Solicitud — acción" not in out
        and "ninguna unidad ha construido" not in out, out)
     c, out = aprobar(g, "EV-03")
+    ok("… pero si la otra unidad cambia algo más del record type (EV-02 le añade un campo), sí hay que decidir el orden",
+       c == 1 and "comparte objetos con otra unidad aprobada y no hay decisión: EV-02 (DEM Solicitud)" in out
+       and "| Abierta |" in fila_de(g, "EV-03"), out)
+    editar(g / "analisis" / "cambios.md", "| EV-02 | Firma de la revisión | Evolutivo | Aprobada |",
+           "| EV-02 | Firma de la revisión | Evolutivo | En producción |")
+    otra = "| 9 | `DEM Solicitud — vista «Resumen»` | Record type | Modifica | — | EV-05 |"
+    editar(g / "analisis" / "tecnico.md", accion, accion + "\n" + otra)
+    with open(g / "analisis" / "cambios.md", "a", encoding="utf-8", newline="\n") as fh:
+        fh.write("| EV-05 | La vista | Evolutivo | Aprobada | 2026-10-12 · FU-05 | — | — | — |\n")
+    c, out = aprobar(g, "EV-03")
     esp = json.loads(lee(g / "construccion" / "EV-03" / "ISS-01-esperado.json") or "{}")
-    ok("… ni decidir el orden con la unidad que modifica ese record type: se aprueba, lo avisa y sale su issue, sin "
-       "pruebas que ejecutar y sin campos que comparar",
-       c == 0 and "| Aprobada |" in fila_de(g, "EV-03") and "EV-03 y EV-02 cambian DEM Solicitud" in out
+    ok("… y si las dos solo cambian el nombre de una acción o una vista del mismo record type, no: se aprueba, lo avisa y "
+       "sale su issue, sin pruebas que ejecutar y sin campos que comparar",
+       c == 0 and "| Aprobada |" in fila_de(g, "EV-03") and "EV-03 y EV-05 cambian DEM Solicitud, las dos solo" in out
        and "no hace falta decidir el orden" in out and "Issues de construcción: construccion/EV-03/, 1 issue" in out
        and "no cambia criterios ni reglas: no hay pruebas que ejecutar" in lee(g / "construccion" / "EV-03" / "ISS-01.md")
        and {k: v for k, v in esp.items() if k != "_issue"} == {"DEM Solicitud": {"tipo": "recordType"}},
        out + json.dumps(esp, ensure_ascii=False))
+    sys.path.insert(0, str(S))
+    import unidades as un
+    casos_parte = [("Record type", "acción «Pedir material»", []), ("Record type", "vista «Resumen»", []),
+                   ("Acción de registro", "filtro de usuario «Estado»", []),
+                   ("Record type", "acción «Aprobar», ahora también para los revisores", ["Datos existentes"]),
+                   ("Record type", "columna importeAprobado", ["Datos existentes"]),
+                   ("Record type", "seguridad de la acción «Nueva solicitud»", ["Permisos"]),
+                   ("Process model", "nodo «Revisar»", ["Procesos en curso"]),
+                   ("Web API", "parámetro fechaDesde", ["Compatibilidad"]), ("Interfaz", "acción «Guardar»", [])]
+    mal = [(t, x, un.puntos_de(t, f"X — {x}")) for t, x, esperado in casos_parte if un.puntos_de(t, f"X — {x}") != esperado]
+    ok("solo es un retoque una acción, una vista o un filtro de un record type nombrados sin más texto; cualquier otra "
+       "parte pide lo de su objeto entero, o «Permisos» si habla de permisos", not mal, str(mal))
     for nombre, punto in (("campo importe", "Datos existentes"), ("seguridad de la acción «Nueva solicitud»", "Permisos")):
         h = con_unidades(tmp / f"issues parte {punto}")
         editar(h / "analisis" / "tecnico.md", fila, accion.replace("acción «Nueva solicitud»", nombre))
@@ -2381,8 +2460,8 @@ def pruebas_issues(tmp):
                                "`AUT Solicitud`, `AUT Documento`", lee(d / "indice.md"))
     ok("en orden y diciendo cuáles pueden ir a la vez: todas esperan a la Base, y las que comparten un objeto (el record "
        "type y una acción suya, o el que el técnico nombra al hablar de la otra) no van en paralelo",
-       [ind[i][3] for i in ind] == ["—", "ISS-01", "ISS-01, ISS-02", "ISS-01", "ISS-01, ISS-03"]
-       and [ind[i][4] for i in ind] == ["—", "ISS-04", "ISS-04", "ISS-02, ISS-03, ISS-05", "ISS-04"]
+       [ind[i][3] for i in ind] == ["—", "ISS-01", "ISS-01, ISS-02", "ISS-01, ISS-02", "ISS-01, ISS-03"]
+       and [ind[i][4] for i in ind] == ["—", "—", "ISS-04", "ISS-03, ISS-05", "ISS-04"]
        and "`AUT Solicitud`" in ind["ISS-03"][5] and all(ind[i][6] == "—" for i in ind), lee(d / "indice.md"))
     otra = nueva_con_issues(tmp / "issues app otra vez")
     aprobar(otra)
@@ -2393,7 +2472,7 @@ def pruebas_issues(tmp):
     ok("la issue lleva lo que necesita quien construye: qué se pide (la historia, su pantalla con la captura y sus partes, "
        "su paso), sus objetos, lo que dice de ellos el técnico y lo que no debe tocar por ser de otra issue",
        i2.startswith("# ISS-02 · Registrar una solicitud · EV-01\n")
-       and "Depende de: ISS-01 (Base) · En paralelo con: ISS-04 · Aplicación `AUT Autorizaciones`" in i2
+       and "Depende de: ISS-01 (Base) · En paralelo con: — · Aplicación `AUT Autorizaciones`" in i2
        and "- **HU-03 Subsanar una solicitud**\n  Como unidad solicitante, quiero corregir la solicitud" in i2
        and "  - Perfil: Unidad solicitante · Pantalla: PAN-03 · Paso: ACT-06\n" in i2
        and "- **PAN-03 Registrar o subsanar solicitud** · captura `prototipo/capturas/03-alta.png`" in i2
@@ -2417,6 +2496,20 @@ def pruebas_issues(tmp):
        len(textos) == 5 and all("no hay que leer el funcional ni el técnico" in x and "## Lo que dice el técnico" in x
                                 and not re.search(r"(?i)\bver (?:el )?(?:técnico|funcional)\b", x)
                                 for x in textos), "\n".join(x[:300] for x in textos))
+    i4 = lee(d / "ISS-04.md")
+    ok("lo que el técnico dice de un objeto llega a su issue aunque la fila no lo nombre: los nodos de la tabla de un "
+       "proceso (su título lo nombra) y lo que sigue a ella, y los avisos que citan sus historias (§9)",
+       "- §8 · Nodo: Esperar informe (ACT-08) · " in i2 and "- §8 · Nodo: Generar autorización (ACT-07) · " in i2
+       and "- §8 · Cancelación: no se contempla en esta fase." in i2 and "- §9 · Aviso: AV-01, AV-05 · " in i2
+       and "- §9 · Aviso: AV-02, AV-03 · " in i2 and "- §9 · Aviso: AV-04 · " in i4, i2[-2500:] + i4)
+    c, out = issues(p, "EV-01")
+    perdidas = next((l for l in out.splitlines() if "del técnico no van en ninguna issue" in l), "")
+    ok("y calcula avisa de cada línea del técnico que no llega a ninguna issue (no nombra un objeto suyo ni cita sus "
+       "requisitos), con dónde está",
+       c == 0 and perdidas.startswith("· 13 líneas del técnico no van en ninguna issue de EV-01")
+       and "§3.3 «Sin carga de datos antiguos (funcional §10).»" in perdidas
+       and "§6 «`AUT_CORREO_ORGANISMO` / Buzón del organismo" in perdidas and "§9" not in perdidas
+       and "§8" not in perdidas, out)
     ok("sus escenarios, cada uno con cómo se comprueba (técnico §14): un caso de prueba guardado o SAIL CLI, que es del "
        "QA de la unidad; sin «Con qué», lo que diga §14",
        "- `HU-01.2` Al enviarla recibe un número con la forma AUT-2026-0001, correlativo por año. → Caso de prueba de "
@@ -2502,7 +2595,7 @@ def pruebas_issues(tmp):
     ok("la issue que cambia (un criterio suyo, un objeto más) vuelve a estar pendiente; la que no, sigue hecha aunque "
        "cambie con cuáles va en paralelo",
        ahora["ISS-03"] != de_antes["ISS-03"] and ahora["ISS-05"] != de_antes["ISS-05"]
-       and all(ahora[n] == de_antes[n] for n in ("ISS-01", "ISS-02", "ISS-04")) and "ISS-06" in ind["ISS-02"][4]
+       and all(ahora[n] == de_antes[n] for n in ("ISS-01", "ISS-02", "ISS-04")) and "ISS-06" in ind["ISS-04"][4]
        and "  ISS-02 · HU-01, " in out and re.search(r"ISS-02 · [^\n]* · hecha\n", out)
        and re.search(r"ISS-03 · [^\n]* · pendiente: ha cambiado desde su última verificación", out), out)
     editar(t, "| 6 | `AUT_PlantillaAutorizacion` | Documento | Nuevo | — | | ACT-07 |\n", "")
@@ -2563,8 +2656,10 @@ def pruebas_issues(tmp):
     c, out = aprobar(r, "EV-04")
     dr = r / "construccion" / "EV-04"
     unica = lee(dr / "ISS-01.md")
-    ok("un retoque: una unidad con un solo cambio da una sola issue, ya escrita al aprobarla, sin escenarios ni .feature",
+    ok("un retoque: una unidad con un solo cambio da una sola issue, ya escrita al aprobarla, sin escenarios ni .feature, "
+       "y sin el aviso de «Para» (con un solo objeto no hay nada que repartir)",
        c == 0 and sorted(x.name for x in dr.iterdir()) == ["ISS-01-esperado.json", "ISS-01.md", "indice.md"]
+       and "«Para»" not in out
        and unica.startswith("# ISS-01 · El panel dice «Días en espera» · EV-04\n") and "Requisitos: PAN-03 · " in unica
        and "Esta issue no cambia criterios ni reglas: no hay pruebas que ejecutar." in unica
        and json.loads(lee(dr / "ISS-01-esperado.json")).get("DEM_Dashboard") == {"tipo": "interface"}, out + unica)
@@ -2670,8 +2765,9 @@ def pruebas_issues(tmp):
        c == 0 and "ninguna issue disponible ahora" in out
        and f"  ISS-01 · Base · Base · pendiente: sin verificar · reservada: {reserva}\n" in out, out)
     verifica(ana, "EV-01", "ISS-01")
+    verifica(ana, "EV-01", "ISS-02")      # con la Base y el registro hechos, ISS-03 e ISS-04 pueden ir a la vez
     git(ana, "add", "construccion")
-    git(ana, "commit", "--quiet", "-m", "ISS-01 verificada")
+    git(ana, "commit", "--quiet", "-m", "ISS-01 e ISS-02 verificadas")
     git(ana, "push", "--quiet")
     carla, dora = base / "carla", base / "dora"
     for copia in (carla, dora):
@@ -2680,13 +2776,18 @@ def pruebas_issues(tmp):
     ind = del_remoto()
     ok("dos personas que piden la siguiente a la vez, cada una en su copia, no se llevan la misma: la que llega tarde al "
        "push se pone al día y se lleva la siguiente",
-       uno[0] == 0 and otro[0] == 0 and sorted([str(uno[2]), str(otro[2])]) == ["ISS-02", "ISS-04"]
+       uno[0] == 0 and otro[0] == 0 and sorted([str(uno[2]), str(otro[2])]) == ["ISS-03", "ISS-04"]
        and ind[uno[2]][6].startswith("Luis · ") and ind[otro[2]][6].startswith("Dora · "),
        uno[1][:500] + otro[1][:500] + str(ind))
     ok("la reserva de la issue ya hecha se ha quitado sola", ind["ISS-01"][6] == "—", str(ind["ISS-01"]))
     de_luis = uno[2]
-    c, out = issues(luis, "EV-01", "--liberar", "ISS-04" if de_luis == "ISS-02" else "ISS-02")
-    libre = "ISS-04" if de_luis == "ISS-02" else "ISS-02"
+    c, out = issues(luis, "EV-01", "--siguiente", "--quien", "Luis")
+    ok("quien vuelve a pedir (una sesión que se reinicia) recibe la que ya tenía reservada, sin llevarse otra",
+       c == 0 and out.startswith(f"{de_luis} de EV-01, reservada a nombre de Luis · ")
+       and "ya estaba reservada a tu nombre" in out.splitlines()[0]
+       and [i for i, f in del_remoto().items() if f[6].startswith("Luis · ")] == [de_luis], out[:400] + str(del_remoto()))
+    c, out = issues(luis, "EV-01", "--liberar", "ISS-04" if de_luis == "ISS-03" else "ISS-03")
+    libre = "ISS-04" if de_luis == "ISS-03" else "ISS-03"
     ok("--liberar, desde otra copia: se pone al día, quita esa reserva y la sube",
        c == 0 and del_remoto()[libre][6] == "—" and del_remoto()[de_luis][6].startswith("Luis · "), out)
     # Carla clonó antes de esas reservas. Si no llega a traerlas (la primera vez, al_dia no trae nada), reserva la que ve
@@ -2711,11 +2812,11 @@ def pruebas_issues(tmp):
        and registro.count("reservada por Carla") == 1
        and git(carla, "status", "--porcelain")[1].strip() == "", registro + como + str(del_remoto()))
     git(dora, "remote", "set-url", "origin", str(base / "no existe.git"))
-    verifica(dora, "EV-01", "ISS-02")
+    verifica(dora, "EV-01", "ISS-03")
     verifica(dora, "EV-01", "ISS-04")
     c, out = issues(dora, "EV-01", "--siguiente", "--quien", "Dora")
     ok("sin poder llegar al remoto no falla: reserva con un commit en su equipo y dice que no está subido",
-       c == 0 and out.startswith("ISS-03 de EV-01, reservada a nombre de Dora · ")
+       c == 0 and out.startswith("ISS-05 de EV-01, reservada a nombre de Dora · ")
        and "con un commit en este equipo, sin subir: no se pudo consultar el remoto" in out.splitlines()[0], out)
 
 
