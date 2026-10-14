@@ -1,8 +1,8 @@
 # Prueba de enrutado
 
-Mide si cada petición entra por la skill que le toca cuando solo se conocen las seis descripciones (el `description` de
-cada SKILL.md). Son 30 peticiones como las diría alguien del equipo, sin nombrar la skill: 20 visibles en
-`pruebas/enrutado.json` y 10 en `ocultas/enrutado.json`, que no lee quien ajusta las descripciones hasta medir. Formato
+Mide si cada petición entra por la skill que le toca cuando solo se conocen las descripciones de las skills (el `description` de
+cada SKILL.md). Son 35 peticiones como las diría alguien del equipo, sin nombrar la skill: 23 visibles en
+`pruebas/enrutado.json` y 12 en `ocultas/enrutado.json`, que no lee quien ajusta las descripciones hasta medir. Formato
 de las dos: `[{"peticion": "…", "skill": "appian-…"}]`. Los resultados van a `docs/evaluaciones.md`.
 
 ## Qué hay

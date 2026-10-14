@@ -150,8 +150,9 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
    campos que los suyos no cuenta); la fecha de última modificación es un dato, no una prueba. Si no pudo leer los
    campos, se repite. Lo semántico lo garantizan las pruebas de quien construye.
    **Una issue está hecha** cuando su última verificación pasa y es de su versión de ahora: si al volver a generarla
-   cambia lo que hay que construir o comprobar, vuelve a estar pendiente. No hay otro estado que mantener: su reserva
-   se quita sola, y `indice.py issues <p> EV-02` dice cómo va cada una.
+   cambia lo que hay que construir o comprobar, vuelve a estar pendiente. También vuelve si uno de sus escenarios falla
+   en el QA de la unidad (`qa/EV-02/resultado.json`, de `appian-qa`), hasta que se corrige y sus guiones pasan. No hay
+   otro estado que mantener: su reserva se quita sola, y `indice.py issues <p> EV-02` dice cómo va cada una.
 4. **Marcar**, con todas hechas: `proyecto.py cambio <p> EV-02 construida` (la orden de la última issue la trae) y,
    tras el pase, `… produccion --ref "<pase>" --fecha <AAAA-MM-DD>`. Sin Dev MCP no hay verificación: construye una
    persona siguiendo el índice y la unidad se marca con `--manual`.

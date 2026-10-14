@@ -1226,8 +1226,9 @@ def pruebas_repositorio(tmp):
     con_cr = [x for x in arbol(a) if (a / x).is_file() and b"\r" in (a / x).read_bytes()]
     ok("nada de lo que escribe iniciar lleva \\r, tampoco en Windows: proyecto.md y las plantillas del análisis",
        not con_cr and b"\n" in (a / "analisis" / "funcional.md").read_bytes(), str(con_cr))
-    ok("AGENTS.md no nombra lo que todavía no escribe nadie (qa/) ni pide un git pull antes de mirar el estado",
-       "qa/" not in guia and "git pull" in guia and guia.index("proyecto.py estado") < guia.index("git pull"), guia)
+    ok("AGENTS.md dice dónde está el QA (qa/, de appian-qa) y no pide un git pull antes de mirar el estado",
+       "`qa/<U>/`" in guia and "appian-qa/scripts/qa.py" in guia and "git pull" in guia
+       and guia.index("proyecto.py estado") < guia.index("git pull"), guia)
     # dos fuentes, una con cada final de línea: tienen que llegar igual, byte a byte, a quien clone el proyecto
     fuentes = {"fuentes/FU-01-acta.md": "# FU-01\nActa de la reunión\n".encode("utf-8"),
                "fuentes/correo.eml": b"Subject: Plazos\r\n\r\nSe mantienen.\r\n"}

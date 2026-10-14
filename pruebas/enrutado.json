@@ -78,5 +78,17 @@
   {
     "peticion": "Before we deploy this package to production, what should we check? It adds a new integration with an external REST service and changes group permissions.",
     "skill": "appian-best-practices"
+  },
+  {
+    "peticion": "La unidad EV-03 de la aplicación de reclamaciones ya tiene todas sus issues hechas. Pruébala en desarrollo como lo haría cada perfil, el tramitador y el supervisor, con sus cuentas de prueba, y dime qué escenarios no se cumplen.",
+    "skill": "appian-qa"
+  },
+  {
+    "peticion": "Antes de preparar el paquete para el entorno de pruebas, vuelve a pasar los recorridos de pantalla que tenemos guardados en qa/ y dime si alguno ha dejado de funcionar.",
+    "skill": "appian-qa"
+  },
+  {
+    "peticion": "Hemos cambiado a propósito el formulario de alta de expedientes y ahora el recorrido guardado de HU-02.1 falla en el paso del botón. Rehazlo con SAIL CLI para que vuelva a pasar.",
+    "skill": "appian-qa"
   }
 ]

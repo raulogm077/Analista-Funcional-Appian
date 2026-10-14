@@ -25,6 +25,9 @@ Lo esperado y la verificación, que es de donde sale si una issue está hecha (e
                             "faltan", "conDiferencias"}. Hecha: «issue» es la de ahora (id y version) y cada objeto suyo
                             está en «objetos» con «existe» y sin diferencias (de uno que se modifica, «sobranCampos» no
                             cuenta; «camposSinLeer» es no haberlo podido leer).
+  qa/<U>/resultado.json     lo deja appian-qa al repetir los guiones del QA de la unidad: {"escenarios": {"HU-01.1":
+                            {"resultado": "pasa" | "falla" | "desfasado", …}}}. Un escenario suyo que «falla» la devuelve
+                            a pendiente; sin QA, o con su guion desfasado, no cuenta.
 
 Lo usan indice.py issues (generar, dar la siguiente) y proyecto.py cambio (al aprobar la unidad y al marcarla construida).
 """
@@ -757,8 +760,9 @@ def genera(m, ctx, uid):
 # ------------------------------------------------------------------ hecha o pendiente: lo dice la verificación
 def estado(raiz, uid, issue):
     """(hecha, por qué): una issue está hecha cuando su última verificación (construccion/<U>/verificacion/ISS-nn.json,
-    que deja «verificar --esperado») es de su versión de ahora y encuentra todos sus objetos como dice el técnico. De
-    un objeto que se modifica, que tenga más campos que los de esta unidad no cuenta."""
+    que deja «verificar --esperado») es de su versión de ahora y encuentra todos sus objetos como dice el técnico, y
+    ninguno de sus escenarios falla en el QA de la unidad (falla_en_qa). De un objeto que se modifica, que tenga más
+    campos que los de esta unidad no cuenta."""
     f = carpeta(raiz, uid) / "verificacion" / f"{issue.id}.json"
     if not f.is_file():
         return False, "sin verificar"
@@ -788,7 +792,23 @@ def estado(raiz, uid, issue):
         return False, f"lo construido no es lo del técnico: {'; '.join(malos)}"
     if sin_leer:
         return False, f"no se pudo leer {', '.join(sin_leer)} en el entorno"
+    qa = falla_en_qa(raiz, uid, issue)
+    if qa:
+        return False, (f"falla en QA: {', '.join(qa)} (qa/{uid}/resultado.json); corregido, se repiten sus guiones "
+                       f"(appian-qa: qa.py repetir <p> {uid})")
     return True, "hecha"
+
+
+def falla_en_qa(raiz, uid, issue):
+    """Los escenarios de la issue que fallan en el último resultado del QA de la unidad (qa/<U>/resultado.json, de
+    appian-qa); [] si no hay QA o no falla ninguno."""
+    r = pathlib.Path(raiz) / "qa" / uid / "resultado.json"
+    try:
+        esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") if r.is_file() else None
+    except (ValueError, AttributeError):
+        esc = None
+    return [c for c in issue.criterios if isinstance(esc, dict) and isinstance(esc.get(c), dict)
+            and esc[c].get("resultado") == "falla"]
 
 
 def estados(plan, raiz):

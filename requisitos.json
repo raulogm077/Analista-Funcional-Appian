@@ -3,7 +3,7 @@
     "id": "python",
     "nombre": "Python 3.9 o superior",
     "skills": ["appian-best-practices", "appian-diagramas-bpmn", "appian-functional-analyst", "appian-prototipos",
-               "appian-refactorizacion", "appian-reverse-engineering"],
+               "appian-qa", "appian-refactorizacion", "appian-reverse-engineering"],
     "imprescindible": true,
     "solo_pruebas": false,
     "para": "Todos los scripts; el extractor de ingeniería inversa usa 3.10 o superior, que trae uv",
@@ -154,6 +154,21 @@
       "windows": "Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía)",
       "macos": "Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía)",
       "linux": "Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía)"
+    }
+  },
+  {
+    "id": "sail",
+    "nombre": "SAIL CLI",
+    "skills": ["appian-qa"],
+    "imprescindible": false,
+    "bloquea": ["appian-qa"],
+    "solo_pruebas": false,
+    "para": "Recorrer los escenarios de una unidad como cada rol y repetir sus guiones (`qa/`)",
+    "sin_el": "No se puede usar el QA",
+    "instalar": {
+      "windows": "Viene en el paquete del Dev MCP (`bin/`): `bin/setup-*` lo deja en el PATH como `sail`",
+      "macos": "Viene en el paquete del Dev MCP (`bin/`): `bin/setup-*` lo deja en el PATH como `sail`",
+      "linux": "Viene en el paquete del Dev MCP (`bin/`): `bin/setup-*` lo deja en el PATH como `sail`"
     }
   },
   {
