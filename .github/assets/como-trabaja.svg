@@ -1,17 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="436" viewBox="0 0 900 436" role="img" aria-labelledby="titulo descripcion">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="572" viewBox="0 0 900 572" role="img" aria-labelledby="titulo descripcion">
   <title id="titulo">Cómo trabaja el plugin</title>
-  <desc id="descripcion">Las fuentes del cliente entran al analista funcional, cada una con su informe de impacto. Una aplicación existente pasa antes por ingeniería inversa, que la documenta en as-is, y, si se rehace, por refactorización, que escribe la propuesta. El analista escribe funcional.md, decisiones.md y tecnico.md. De ahí salen el prototipo navegable, el DF en Word, que recibe las capturas del prototipo, y la especificación técnica con la que se construye por el Dev MCP. Los procesos se dibujan con diagramas BPMN. Buenas prácticas orienta el análisis y el prototipo y revisa lo construido.</desc>
+  <desc id="descripcion">Las fuentes del cliente entran al analista funcional, cada una con su informe de impacto. Una aplicación existente pasa antes por ingeniería inversa, que la documenta en as-is en solo lectura, y, si se rehace, por refactorización, que escribe la propuesta. El analista escribe funcional.md, que valida el cliente, tecnico.md, con lo que se construye, y cambios.md, con las unidades que se aprueban. De ahí salen el prototipo navegable, que da las capturas al DF en Word, y los diagramas BPMN. Cuando el jefe de proyecto aprueba una unidad, se escriben sus issues, una por requisito. Cada issue se construye en desarrollo con buenas prácticas y la skill oficial appian, y se verifica con sus casos de prueba. Con todas hechas, el QA recorre la unidad con SAIL CLI como cada rol, en otra sesión, y deja los guiones en qa; un fallo devuelve su issue a pendiente. Desde el paquete no actúa la IA: una persona lo revisa en Compare and Deploy y hace el pase.</desc>
   <style>
     :root {
       --fondo: #f6f8fc; --marco: #dfe4ef; --tarjeta: #ffffff; --borde: #d4dbea; --ficha: #f3f6fc;
       --tinta: #131a30; --suave: #5c6787; --flecha: #8791b0;
-      --azul: #2f6fd6; --violeta: #6b4fbb; --verde: #0e8a66; --coral: #d2643f; --gris: #9aa4c0;
+      --azul: #2f6fd6; --violeta: #6b4fbb; --verde: #0e8a66; --coral: #d2643f; --cian: #0b7fa5; --gris: #9aa4c0;
     }
     @media (prefers-color-scheme: dark) {
       :root {
         --fondo: #0c1122; --marco: #222b47; --tarjeta: #141b31; --borde: #2a3454; --ficha: #1a2340;
         --tinta: #eef1fb; --suave: #98a3c3; --flecha: #6d78a0;
-        --azul: #7fa8ff; --violeta: #b49dff; --verde: #4fd1b0; --coral: #f0906c; --gris: #5f6a8f;
+        --azul: #7fa8ff; --violeta: #b49dff; --verde: #4fd1b0; --coral: #f0906c; --cian: #5cc8e6; --gris: #5f6a8f;
       }
     }
     text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; }
@@ -25,18 +25,22 @@
     .centro { fill: var(--tarjeta); stroke: var(--azul); stroke-opacity: .6; }
     .ficha { fill: var(--ficha); stroke: var(--borde); }
     .pastilla { fill: var(--fondo); stroke: var(--borde); }
-    .linea { fill: none; stroke: var(--flecha); stroke-width: 1.4; stroke-linecap: round; }
+    .linea { fill: none; stroke: var(--flecha); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+    .vuelta { stroke-dasharray: 4 4; }
+    .frontera { fill: none; stroke: var(--flecha); stroke-width: 1.2; stroke-dasharray: 2 5; stroke-linecap: round; }
     .punta { fill: var(--flecha); }
     .azul { fill: var(--azul); } .violeta { fill: var(--violeta); } .verde { fill: var(--verde); }
-    .coral { fill: var(--coral); } .gris { fill: var(--gris); }
+    .coral { fill: var(--coral); } .cian { fill: var(--cian); } .gris { fill: var(--gris); }
   </style>
 
-  <rect class="fondo" x=".5" y=".5" width="899" height="435" rx="14"/>
+  <rect class="fondo" x=".5" y=".5" width="899" height="571" rx="14"/>
 
   <text class="rotulo" x="20" y="42">ENTRA</text>
   <text class="rotulo" x="236" y="146">SI YA EXISTE</text>
   <text class="rotulo" x="440" y="42">SE ANALIZA</text>
   <text class="rotulo" x="684" y="42">SALE</text>
+  <text class="rotulo" x="136" y="384">CON CADA UNIDAD APROBADA, EN DESARROLLO</text>
+  <text class="rotulo" x="692" y="384">DESDE EL PAQUETE, SIN IA</text>
 
   <!-- Flechas -->
   <g class="linea">
@@ -49,8 +53,11 @@
     <path d="M651 188H675"/>
     <path d="M651 284H675"/>
     <path d="M782 127V147"/>
-    <path d="M782 319V339"/>
-    <path d="M544 325V339"/>
+    <path d="M544 319V352H114V386"/>
+    <path d="M211 434H235"/>
+    <path d="M435 434H459"/>
+    <path d="M659 434H683"/>
+    <path class="vuelta" d="M562 477V500H114V484"/>
   </g>
   <g class="punta">
     <path d="M437 92l-7-3.5v7z"/>
@@ -62,20 +69,27 @@
     <path d="M681 188l-7-3.5v7z"/>
     <path d="M681 284l-7-3.5v7z"/>
     <path d="M782 153l-3.5-7h7z"/>
-    <path d="M782 345l-3.5-7h7z"/>
-    <path d="M544 345l-3.5-7h7z"/>
-    <path d="M544 319l-3.5 7h7z"/>
+    <path d="M114 392l-3.5-7h7z"/>
+    <path d="M241 434l-7-3.5v7z"/>
+    <path d="M465 434l-7-3.5v7z"/>
+    <path d="M689 434l-7-3.5v7z"/>
+    <path d="M114 478l-3.5 7h7z"/>
   </g>
+  <path class="frontera" d="M674 372V486"/>
+
   <rect class="pastilla" x="255.5" y="81.5" width="129" height="21" rx="10.5"/>
   <text class="mono" x="320" y="95.5" text-anchor="middle">informe de impacto</text>
   <text class="mono" x="792" y="144">capturas</text>
-  <text class="mono" x="554" y="336">procesos</text>
+  <rect class="pastilla" x="208.5" y="341.5" width="242" height="21" rx="10.5"/>
+  <text class="mono" x="329.5" y="355.5" text-anchor="middle">el jefe de proyecto aprueba la unidad</text>
+  <rect class="pastilla" x="214.5" y="489.5" width="248" height="21" rx="10.5"/>
+  <text class="mono" x="338.5" y="503.5" text-anchor="middle">un fallo del QA devuelve su issue</text>
 
   <!-- Entra -->
   <rect class="tarjeta" x="20.5" y="60.5" width="180" height="64" rx="10"/>
   <rect class="gris" x="32" y="76" width="3" height="32" rx="1.5"/>
   <text class="titulo" x="44" y="88">Fuentes</text>
-  <text class="nota" x="44" y="107">reuniones · correos · actas</text>
+  <text class="nota" x="44" y="107">reuniones · correos · DF</text>
 
   <rect class="tarjeta" x="20.5" y="156.5" width="180" height="64" rx="10"/>
   <rect class="gris" x="32" y="172" width="3" height="32" rx="1.5"/>
@@ -103,16 +117,11 @@
   <text class="fichero" x="468" y="192">funcional.md</text>
   <text class="nota" x="622" y="192" text-anchor="end">se valida</text>
   <rect class="ficha" x="456.5" y="220.5" width="176" height="31" rx="8"/>
-  <text class="fichero" x="468" y="240">decisiones.md</text>
-  <text class="nota" x="622" y="240" text-anchor="end">versiones</text>
+  <text class="fichero" x="468" y="240">tecnico.md</text>
+  <text class="nota" x="622" y="240" text-anchor="end">se construye</text>
   <rect class="ficha" x="456.5" y="268.5" width="176" height="31" rx="8"/>
-  <text class="fichero" x="468" y="288">tecnico.md</text>
-  <text class="nota" x="622" y="288" text-anchor="end">se construye</text>
-
-  <rect class="tarjeta" x="440.5" y="348.5" width="208" height="64" rx="10"/>
-  <rect class="azul" x="452" y="364" width="3" height="32" rx="1.5"/>
-  <text class="titulo" x="464" y="376">Diagramas BPMN</text>
-  <text class="mono" x="464" y="395">.drawio · PNG · BPMN 2.0</text>
+  <text class="fichero" x="468" y="288">cambios.md</text>
+  <text class="nota" x="622" y="288" text-anchor="end">se aprueba</text>
 
   <!-- Sale -->
   <rect class="tarjeta" x="684.5" y="60.5" width="196" height="64" rx="10"/>
@@ -121,27 +130,54 @@
   <text class="nota" x="708" y="107">con la marca del cliente</text>
 
   <rect class="tarjeta" x="684.5" y="156.5" width="196" height="64" rx="10"/>
-  <rect class="verde" x="696" y="172" width="3" height="32" rx="1.5"/>
+  <rect class="azul" x="696" y="172" width="3" height="32" rx="1.5"/>
   <text class="titulo" x="708" y="184">DF en Word</text>
   <text class="nota" x="708" y="203">lo valida el cliente</text>
 
   <rect class="tarjeta" x="684.5" y="252.5" width="196" height="64" rx="10"/>
   <rect class="verde" x="696" y="268" width="3" height="32" rx="1.5"/>
-  <text class="titulo" x="708" y="280">Especificación técnica</text>
-  <text class="nota" x="708" y="299">para construir</text>
+  <text class="titulo" x="708" y="280">Diagramas BPMN</text>
+  <text class="mono" x="708" y="299">.drawio · PNG · BPMN 2.0</text>
 
-  <rect class="tarjeta" x="684.5" y="348.5" width="196" height="64" rx="10"/>
-  <rect class="verde" x="696" y="364" width="3" height="32" rx="1.5"/>
-  <text class="titulo" x="708" y="376">Construcción</text>
-  <text class="nota" x="708" y="395">con el Dev MCP</text>
+  <!-- Con cada unidad aprobada -->
+  <rect class="tarjeta" x="20.5" y="394.5" width="188" height="80" rx="10"/>
+  <rect class="azul" x="32" y="410" width="3" height="48" rx="1.5"/>
+  <text class="titulo" x="44" y="422">Issues</text>
+  <text class="nota" x="44" y="441">una por requisito, en orden</text>
+  <text class="mono" x="44" y="458">construccion/&lt;U&gt;/</text>
 
-  <!-- Buenas prácticas: el punto coral marca lo que orienta o revisa -->
-  <rect class="tarjeta" x="20.5" y="348.5" width="384" height="64" rx="10"/>
-  <rect class="coral" x="32" y="364" width="3" height="32" rx="1.5"/>
-  <text class="titulo" x="44" y="376">Buenas prácticas</text>
-  <circle class="coral" cx="48" cy="391" r="3.5"/>
-  <text class="nota" x="58" y="395">orienta el análisis y el prototipo, y revisa lo construido</text>
-  <circle class="coral" cx="632" cy="77" r="4"/>
-  <circle class="coral" cx="864" cy="77" r="4"/>
-  <circle class="coral" cx="864" cy="365" r="4"/>
+  <rect class="tarjeta" x="244.5" y="394.5" width="188" height="80" rx="10"/>
+  <rect class="coral" x="256" y="410" width="3" height="48" rx="1.5"/>
+  <text class="titulo" x="268" y="422">Construir y verificar</text>
+  <text class="nota" x="268" y="441">con buenas prácticas y</text>
+  <text class="nota" x="268" y="458">la skill oficial <tspan class="mono">appian</tspan></text>
+
+  <rect class="tarjeta" x="468.5" y="394.5" width="188" height="80" rx="10"/>
+  <rect class="cian" x="480" y="410" width="3" height="48" rx="1.5"/>
+  <text class="titulo" x="492" y="422">QA de la unidad</text>
+  <text class="nota" x="492" y="441">SAIL CLI, como cada rol</text>
+  <text class="nota" x="492" y="458">guiones en <tspan class="mono">qa/&lt;U&gt;/</tspan></text>
+
+  <rect class="tarjeta" x="692.5" y="394.5" width="188" height="80" rx="10"/>
+  <rect class="gris" x="704" y="410" width="3" height="48" rx="1.5"/>
+  <text class="titulo" x="716" y="422">Paquete y pase</text>
+  <text class="nota" x="716" y="441">lo revisa una persona</text>
+  <text class="nota" x="716" y="458">en Compare and Deploy</text>
+
+  <!-- Quién lo hace -->
+  <g class="nota">
+    <text x="20" y="547">Quién lo hace:</text>
+    <rect class="azul" x="100" y="537" width="3" height="12" rx="1.5"/>
+    <text x="109" y="547">analista</text>
+    <rect class="violeta" x="171" y="537" width="3" height="12" rx="1.5"/>
+    <text x="180" y="547">ingeniería inversa y refactorización</text>
+    <rect class="verde" x="374" y="537" width="3" height="12" rx="1.5"/>
+    <text x="383" y="547">prototipos y diagramas</text>
+    <rect class="coral" x="522" y="537" width="3" height="12" rx="1.5"/>
+    <text x="531" y="547">buenas prácticas</text>
+    <rect class="cian" x="637" y="537" width="3" height="12" rx="1.5"/>
+    <text x="646" y="547">QA</text>
+    <rect class="gris" x="687" y="537" width="3" height="12" rx="1.5"/>
+    <text x="696" y="547">fuera del plugin</text>
+  </g>
 </svg>
