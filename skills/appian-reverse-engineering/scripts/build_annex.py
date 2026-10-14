@@ -31,7 +31,7 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rutas import work_dir  # noqa: E402
+from rutas import escribe, work_dir  # noqa: E402
 
 MARCA = "<!-- anexo generado por build_annex.py -->"
 CODE_HINT = re.compile(r"a!|rule!|cons!|local!|ri!|fv!|pv!|recordType!|\bif\(|=\s*\{")
@@ -224,7 +224,7 @@ def main(salida_dir: str) -> int:
                 lines += [titulo, ""] + ([resumen, ""] if resumen else []) + \
                          ["```json", json.dumps(data, ensure_ascii=False, indent=2), "```", ""]
             (anexo / tipo).mkdir(parents=True, exist_ok=True)
-            (anexo / rel).write_text("\n".join(head + [""] + lines), encoding="utf-8")
+            escribe(anexo / rel, "\n".join(head + [""] + lines))
             por_tipo[tipo].append((o.get("name"), rel.as_posix()))
     app = (inv.get("objects", {}).get("application") or [{}])[0]
     # las mismas respuestas que tomó build_model.py: sin copias de OneDrive ni herramientas que ya no se usan
@@ -239,9 +239,9 @@ def main(salida_dir: str) -> int:
             al += [f"## `{f.stem}`", "", "```json", json.dumps(con_nombres(data, names), ensure_ascii=False, indent=2), "```", ""]
         slug = app.get("prefix") or re.sub(r"[^A-Za-z0-9_-]", "_", str(app.get("name", "aplicacion")))
         (anexo / "application").mkdir(parents=True, exist_ok=True)
-        (anexo / "application" / f"{slug}.md").write_text("\n".join(
+        escribe(anexo / "application" / f"{slug}.md", "\n".join(
             [MARCA, f"# {app.get('name')}", "", "> Aplicación: respuestas de la plataforma sobre la aplicación (evidencias "
-             "«mcp:application/…@other:<herramienta>»).", ""] + al), encoding="utf-8")
+             "«mcp:application/…@other:<herramienta>»).", ""] + al))
         por_tipo["application"].append((app.get("name"), f"application/{slug}.md"))
     anexo.mkdir(parents=True, exist_ok=True)
     idx = [MARCA, "# Anexo: definiciones originales", "",
@@ -253,7 +253,7 @@ def main(salida_dir: str) -> int:
         idx += [f"| {n} | [{Path(r).name}](./{r}) |" for n, r in sorted(por_tipo[tipo], key=lambda x: str(x[0]).lower())]
         idx.append("")
     idx += ["Las referencias entre objetos (evidencias «graph:») están en [grafo.md](./grafo.md).", ""]
-    (anexo / "indice.md").write_text("\n".join(idx), encoding="utf-8")
+    escribe(anexo / "indice.md", "\n".join(idx))
     graph_path = trabajo / "graph.json"
     if graph_path.exists():
         g = load(graph_path)
@@ -271,7 +271,7 @@ def main(salida_dir: str) -> int:
         orph = ", ".join(str(nombre.get(u, u)) for u in g.get("orphans", []))
         gl += ["", f"Hubs (5 o más referencias entrantes): {hubs or 'ninguno'}.",
                f"Sin referencias entrantes y sin ser punto de entrada: {orph or 'ninguno'}.", ""]
-        (anexo / "grafo.md").write_text("\n".join(gl), encoding="utf-8")
+        escribe(anexo / "grafo.md", "\n".join(gl))
     total = sum(len(v) for v in por_tipo.values())
     print(f"anexo: {total} objetos en {len(por_tipo)} tipos y grafo")
     return 0

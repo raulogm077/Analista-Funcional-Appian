@@ -6,7 +6,7 @@ coherente.
 
 - `funcional.md` y `tecnico.md` son el **estado actual**. «Lo validado» es lo marcado 🔒.
 - `decisiones.md` es el **historial**: qué cambió, cuándo y qué había antes.
-- El **informe de impacto** es la revisión antes de tocar nada.
+- El **informe de impacto** dice qué toca la fuente; se revisa antes de aplicar solo si algo requiere aprobación (§4).
 - El análisis **no se lee entero**: se consulta con `indice.py`.
 
 Una fuente cada vez, en orden de fecha: un informe de impacto que toca solo lo afectado y una versión (+0.1) solo si
@@ -65,7 +65,8 @@ que preguntar al cliente, el camino entero (§0-§8). Sin nota, sin `comprobar.p
    quién la usa), `indice.py derivadas <p> --escribir`, sin repetir la pasada.
 
 Ni el Word, ni el prototipo, ni las capturas: se rehacen al enviar el DF o al construir (`cambios.md` §5). Ni DT: una
-interfaz, una regla, una constante o un texto no la piden.
+interfaz, una regla, una constante o un texto no la piden; tampoco el nombre de una acción de registro, si la fila de
+§13 nombra esa parte del record type (`cambios.md` §4).
 
 ## 0. Antes de empezar
 ```bash
@@ -82,8 +83,8 @@ chat (también la aprobación del jefe de proyecto) es una fuente más: `ingesta
 
 ## 2. Nota de la fuente
 Una fuente corta (un correo, un chat, unas líneas) no lleva nota: el informe cita la fuente. Las demás,
-`notas/FU-04.md` con las secciones de `volumen-grande.md` §1. Aplica `ingesta-fuentes.md`: separa la
-decisión de la conversación; una reunión interna (sin cliente) solo produce propuestas ⚠️; un correo del
+`notas/FU-04.md`, como dice `volumen-grande.md` §1 (solo ese apartado). Lo de `ingesta-fuentes.md` que hace falta: separa
+la decisión de la conversación; una reunión interna (sin cliente) solo produce propuestas ⚠️; un correo del
 cliente que confirma o cambia algo pesa más que la reunión.
 - Transcripción automática: si una palabra mal reconocida cambia dónde encaja el punto, toma la lectura
   más probable, márcala 🔶 y dilo. Si quien decide aparece como «Desconocido», atribúyelo por el contexto;
@@ -146,6 +147,7 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
    retoques (un texto, una columna, el orden) no la requieren.
 
 ## 4. Informe de impacto: `impacto/FU-04.md`
+Si ningún punto requiere aprobación, se escribe una sola vez, al terminar de aplicar (final del §6); si alguno la requiere, ahora:
 ```markdown
 # Impacto de FU-04 · Seguimiento con la unidad gestora · 2026-10-01
 Análisis base: versión 1.1 · Estado: pendiente
@@ -193,7 +195,7 @@ Comprueba que los IDs existen, que las citas son reales y que ningún tramo de 1
 ha quedado sin cita (señal de que se ha leído entera).
 
 ## 5. Aprobación
-Presenta el **Resumen** y **solo los puntos que requieren aprobación**, cada uno con tu recomendación, y
+Si ningún punto la requiere, pasa al §6. Si no, presenta el **Resumen** y **solo esos puntos**, cada uno con tu recomendación, y
 pregunta «¿Aplico el informe con estas decisiones?». Con cualquier confirmación, aplica. La que llega por el chat se
 cataloga como Aprobación y la de un correo, como Correo; la Decisión la cita igual («✔ FU-09») y la fuente va a «Fuentes
 procesadas». Lo que decide el analista manda: si al aplicar ves un motivo para no seguirlo, pregúntale.
@@ -217,10 +219,12 @@ le vuelve a preguntar.
   propias palabras (`buscar` con las palabras del «Antes», también en el técnico) y corrige cada sitio que
   lo siga diciendo. Es el error más frecuente. Al verificar (paso 7), `comprobar.py --anterior` avisa de cada
   línea del funcional o del técnico, sin tocar en esta versión, que aún dice lo que una pieza cambiada ya no dice
-  (seis palabras seguidas, sin URL ni código):
+  (seis palabras seguidas, sin URL ni código; en un criterio, dentro de un mismo paso):
   «HU-07: "…" sigue en PAN-04, l.212». Corrige cada sitio, o déjalo si sigue siendo verdad allí.
 - **ANULA**: se tacha el ID y las piezas que lo citaban se corrigen o dicen que ya no aplica.
-- **Criterios**: si cambia el comportamiento, se reescribe el criterio (mismo ID) o se añade el siguiente.
+- **Criterios**: si cambia el comportamiento, se reescribe el criterio (mismo ID) o se añade el siguiente, en una
+  línea con dado, cuando y entonces (`funcional-plantilla.md` §4). Los que no cambian se quedan como están: al
+  verificar (paso 7), `comprobar.py --anterior` solo avisa del nuevo o del cambiado que no los lleva.
 - **Técnico**: los campos, decisiones, nodos, pruebas y apartados afectados. Si un cambio del cliente choca
   con una buena práctica o con la plataforma, se le explica en un PC con la alternativa.
 - **Diagramas**: si cambia el proceso, se pasan solo los cambios a `diagrama.py actualizar` (skill
@@ -242,10 +246,11 @@ python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/ --anterior <p>/v
 ```
 Tiene que salir sin errores: ningún ID desaparecido, la versión sube (si cambió el funcional o el técnico) y tiene
 su fila, cada dependencia con resultado, cada cambio declarado en el informe, nada marcado «sin cambios» que haya
-cambiado y nada 🔒 cambiado sin un punto aprobado. Después, en este orden:
+cambiado y nada 🔒 cambiado sin un punto aprobado. Aplicar, el informe y esta pasada van seguidos y antes del
+prototipo; después, en este orden:
 - el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y solo sus capturas. Las validadas por
   el cliente (🔒) no se tocan sin el visto bueno del analista;
-- el Word, solo al enviarlo o si se pide (`df_docx.js`; nunca pisa uno entregado).
+- el Word, solo al enviarlo o si se pide, ya con esas capturas (paso 8 del `SKILL.md`).
 
 ## 8. Entregar
 En pocas líneas: versión, puntos por tipo, lo que cambió de verdad (CAMBIA, ANULA, alcance), pendientes

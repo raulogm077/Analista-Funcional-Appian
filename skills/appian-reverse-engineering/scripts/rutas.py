@@ -1,4 +1,4 @@
-"""Rutas comunes de la skill.
+"""Rutas comunes de la skill, y cómo se escribe en ellas.
 
 Todo va en la carpeta de salida (<p>/as-is/ del proyecto): los documentos y, en <salida>/extraccion/, la extracción y
 los datos de trabajo (respuestas del Dev MCP, inventario, grafo, cachés, resumen). La extracción se escribe tal cual la
@@ -17,6 +17,13 @@ def work_dir(out, crear: bool = False) -> Path:
     if crear:
         d.mkdir(parents=True, exist_ok=True)
     return d
+
+
+def escribe(ruta, texto: str) -> None:
+    """Escribe un fichero de texto en UTF-8 con finales de línea \\n en cualquier sistema (write_text() los pone \\r\\n
+    en Windows): en un proyecto que comparten varios equipos, reescribirlo no cambia todas sus líneas."""
+    with open(ruta, "w", encoding="utf-8", newline="\n") as f:
+        f.write(texto)
 
 
 def safe_name(s: str, maximo: int = 48) -> str:

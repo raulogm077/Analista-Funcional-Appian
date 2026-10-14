@@ -136,7 +136,8 @@ def main():
                         png = dest / (src.stem + ".png")
                         pg.locator("#out").screenshot(path=str(png))
                         if a.svg:
-                            (dest / (src.stem + ".svg")).write_text(res["svg"], encoding="utf-8")
+                            with open(dest / (src.stem + ".svg"), "w", encoding="utf-8", newline="\n") as fh:
+                                fh.write(res["svg"])
                         print(f"OK {f} -> {png}")
                     aviso_ancho(f, res["ancho"])
                 for f in mds:

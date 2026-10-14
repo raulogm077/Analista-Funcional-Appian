@@ -97,7 +97,7 @@ MARCA = re.compile(r"^brand-.+\.json$", re.I)
 # (icons.json) y sus fuentes (fonts/*.woff2) no son imágenes con esos nombres.
 LOGO = re.compile(r"^(logo(tipo)?|isotipo|imagotipo|s[ií]mbolo|symbol)([-_.]|$)", re.I)
 IMAGENES = (".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico")
-NO_VAN_EN_EL_PAQUETE = (".git", ".github", ".claude", "docs", "pruebas", "CLAUDE.md")
+NO_VAN_EN_EL_PAQUETE = (".git", ".github", ".claude", "docs", "pruebas", "CLAUDE.md", "CLAUDE.local.md")
 # La marca de inferido es 🔶 en todas las skills (la del analista); el círculo azul era la de ingeniería inversa. Se
 # mira en los textos que escriben marcas: documentos, plantillas, scripts y datos.
 MARCA_ANTIGUA = "\U0001F535"
@@ -216,6 +216,11 @@ def comprobar_contenido(nombres):
             errores.append(f"{py.relative_to(RAIZ).as_posix()}:{','.join(map(str, lineas[:5]))}: lee la salida de otro "
                            "programa como texto sin encoding: en un Windows sin UTF-8 una ruta con tilde sale mal "
                            '(encoding="utf-8", errors="replace")')
+        if lineas := texto_sin_fin_de_linea(py):
+            errores.append(f"{py.relative_to(RAIZ).as_posix()}:{','.join(map(str, lineas[:5]))}: escribe un fichero de "
+                           "texto sin fijar el final de línea: en Windows sale con \\r\\n y en un proyecto compartido "
+                           "cambia entero según el sistema que lo reescribe (el escribe() del módulo común de su skill, "
+                           'o open(ruta, "w", encoding="utf-8", newline="\\n"); write_text() no lo fija en Python 3.9)')
 
 
 def sin_bytecode(py: Path) -> int | None:
@@ -247,6 +252,32 @@ def texto_sin_codificacion(py: Path) -> list[int]:
             if como_texto and "encoding" not in claves:
                 lineas.append(n.lineno)
     return lineas
+
+
+def texto_sin_fin_de_linea(py: Path) -> list[int]:
+    """Las líneas donde se escribe un fichero de texto sin fijar el final de línea: write_text() (su newline= no existe
+    en Python 3.9), open() o Path.open() para escribir en modo texto sin newline=, y el write() de ElementTree a una
+    ruta (lleva encoding= y no es "unicode"). En Windows cada «\\n» saldría «\\r\\n», y en un proyecto que comparten
+    varios sistemas el fichero cambiaría entero cada vez que lo reescribe otro."""
+    lineas = []
+    texto = lambda nodo: nodo.value if isinstance(nodo, ast.Constant) and isinstance(nodo.value, str) else None
+    for n in ast.walk(ast.parse(py.read_text(encoding="utf-8"))):
+        if not isinstance(n, ast.Call):
+            continue
+        metodo = isinstance(n.func, ast.Attribute)
+        nombre = n.func.attr if metodo else getattr(n.func, "id", None)
+        claves = {k.arg: k.value for k in n.keywords if k.arg}
+        if nombre == "write_text":
+            lineas.append(n.lineno)
+        elif nombre == "open":
+            # el modo es el segundo argumento de open(ruta, modo) y el primero de Path(ruta).open(modo); si no es un
+            # literal de modo ("w", "a", "x", "r+"…), no se sabe y no cuenta (urlopen, webbrowser.open, zip.open(nombre))
+            modo = texto(claves.get("mode") or next(iter(n.args[0 if metodo else 1:]), None)) or ""
+            if set(modo) <= set("rwaxt+") and set(modo) & set("wax+") and "newline" not in claves:
+                lineas.append(n.lineno)
+        elif nombre == "write" and metodo and "encoding" in claves and texto(claves["encoding"]) != "unicode":
+            lineas.append(n.lineno)
+    return sorted(lineas)
 
 
 def consola_sin_utf8(py: Path) -> bool:
@@ -622,7 +653,8 @@ def prueba_de_requisitos():
     espacios) y con la consola en cp1252, como en Windows: con todo lo opcional ausente, su --json es el de
     pruebas/requisitos-esperado.json salvo versión y rutas; si falta algo opcional sale con 0 y si falta Python, con 1;
     avisa de la copia suelta de una skill del plugin en ~/.claude/skills/, también con el nombre que tenía antes; y
-    --breve y el hook de inicio de sesión salen siempre con 0 y avisan una sola vez de lo que falta."""
+    --breve y el hook de inicio de sesión salen siempre con 0 y avisan una sola vez de lo que falta, y el hook no deja
+    nada en la salida de error."""
     fallos = []
     script, tabla = RAIZ / "requisitos.py", RAIZ / "requisitos.json"
     if not (script.is_file() and tabla.is_file()):
@@ -753,13 +785,17 @@ def prueba_de_requisitos():
                     fallos.append(f"en Windows, la prueba del hook necesita {nombre}, el shell con el que Claude Code lanza "
                                   "los hooks (el bash de System32 es WSL y no vale)")
                     continue
+                # la orden de Python que no está no deja nada en la salida de error (el «Python was not found» del python3
+                # de Windows); PowerShell, que solo lanza los hooks si no hay Git Bash, da el suyo si la orden ni existe
+                callado = lambda out, todo: todo == out or nombre == "PowerShell"
                 for orden in ordenes:
                     orden = orden.replace("${CLAUDE_PLUGIN_ROOT}", RAIZ.as_posix())
                     for vez in (1, 2):
                         c, out, todo = requisitos(sin="docx", casa=f"hook-{nombre}", orden=[*shell, orden])
-                        espera(c == 0 and out.count("Paquete docx de Node") == (1 if vez == 1 else 0),
+                        espera(c == 0 and out.count("Paquete docx de Node") == (1 if vez == 1 else 0) and callado(out, todo),
                                f"el hook de inicio de sesión ({nombre}), la {'primera' if vez == 1 else 'segunda'} vez, "
-                               f"no sale con 0 o no avisa de docx {'una vez' if vez == 1 else 'ninguna vez'}", todo)
+                               f"no sale con 0, no avisa de docx {'una vez' if vez == 1 else 'ninguna vez'} o deja algo en "
+                               "la salida de error", todo)
                     # con solo `python` en el PATH (sin python3, como en muchos Windows), el hook avisa una vez y
                     # «Detalle» dice python, el que funciona
                     carpeta = solo_python(Path(tmp) / "solo python" / nombre, nombre)
@@ -768,9 +804,10 @@ def prueba_de_requisitos():
                                                   path=str(carpeta))
                         bien = (out.count("Detalle: python ") == 1 and "Detalle: python3" not in out if vez == 1
                                 else "Detalle" not in out)
-                        espera(c == 0 and bien, f"el hook con solo python en el PATH ({nombre}), la "
-                               f"{'primera' if vez == 1 else 'segunda'} vez, no sale con 0 o no dice "
-                               f"{'una vez «Detalle: python»' if vez == 1 else 'nada'}", todo)
+                        espera(c == 0 and bien and callado(out, todo), f"el hook con solo python en el PATH ({nombre}), la "
+                               f"{'primera' if vez == 1 else 'segunda'} vez, no sale con 0, no dice "
+                               f"{'una vez «Detalle: python»' if vez == 1 else 'nada'} o deja algo en la salida de error",
+                               todo)
     print(f"Prueba de requisitos: {'bien' if not fallos else 'falla'}")
     errores.extend(f"Prueba de requisitos: {f}" for f in fallos)
 
@@ -941,6 +978,25 @@ def probar_comprobador(nombres):
         c, out = comprueba()
         espera(c == 0, "un script que imprime con reconfigure da error", out)
         (scripts / "zz_dice.py").unlink()
+        # un script que escribe texto sin fijar el final de línea lo deja con \r\n en Windows: write_text(), open() y
+        # Path.open() sin newline= y el write() de ElementTree a una ruta; con newline="\n", en binario o al leer, no
+        guarda = scripts / "zz_guarda.py"
+        guarda.write_text('from pathlib import Path\nPath("x.md").write_text("a\\n", encoding="utf-8")\n'
+                          'with open("x.md", "w", encoding="utf-8") as f:\n    f.write("a\\n")\n'
+                          'with Path("x.md").open("a", encoding="utf-8") as f:\n    f.write("a\\n")\n'
+                          'def guarda(arbol):\n    arbol.write("x.drawio", encoding="utf-8")\n', encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 1 and "zz_guarda.py:2,3,5,8:" in out and "final de línea" in out and 'newline="\\n"' in out,
+               "un script que escribe texto sin fijar el final de línea (write_text, open sin newline, Path.open y "
+               "ElementTree.write a una ruta) no da error en sus cuatro líneas", out)
+        guarda.write_text('with open("x.md", "w", encoding="utf-8", newline="\\n") as f:\n    f.write("a\\n")\n'
+                          'with open("x.png", "wb") as f:\n    f.write(b"")\n'
+                          'def lee_y_guarda(arbol, f, web):\n    arbol.write(f, encoding="unicode")\n'
+                          '    return open("x.md", encoding="utf-8").read() + web.open("https://example.org", "w").read()\n',
+                          encoding="utf-8")
+        c, out = comprueba()
+        espera(c == 0, 'un script que escribe con newline="\\n", en binario, o que solo lee o abre una URL, da error', out)
+        guarda.unlink()
         # un script que importa otro de su carpeta deja __pycache__ en el plugin si no lo evita
         (scripts / "zz_modulo.py").write_text("X = 1\n", encoding="utf-8")
         (scripts / "zz_usa.py").write_text("import sys\nimport zz_modulo\n", encoding="utf-8")

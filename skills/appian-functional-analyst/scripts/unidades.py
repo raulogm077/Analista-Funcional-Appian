@@ -9,10 +9,12 @@ analisis/cambios.md solo lo escribe proyecto.py cambio. Todo lo demás se calcul
     «sin cambios», de ninguna;
   - sus piezas: los IDs de «Aplicado» y de «Cambio propuesto» de esos puntos (sin SIN IMPACTO, PROYECTO ni descartes);
   - sus objetos: las filas de técnico §13 con su ID en la columna «Cambio» (las que no llevan ID, de EV-01 si existe);
+    de su columna «Para» (el requisito de cada objeto, o «Base») salen las issues de construcción (issues.py);
   - la línea base: el inventario de as-is/ más los objetos de las unidades Construidas o En producción;
   - por pieza, «Construido: … · En curso: …»; por unidad, las correcciones urgentes que hay que reaplicar o que congelan
     sus objetos.
-Sin analisis/cambios.md, nada de esto: el proyecto se comporta como antes. Lo usan proyecto.py, indice.py y comprobar.py.
+Sin analisis/cambios.md, nada de esto: el proyecto se comporta como antes. Lo usan proyecto.py, indice.py, issues.py y
+comprobar.py.
 """
 import json
 import pathlib
@@ -38,6 +40,16 @@ SIN_PIEZAS = ("sin impacto", "proyecto")        # tipos de punto que no cambian 
 PUNTOS_CONSTRUIDO = [(("record type", "cdt", "tabla"), "Datos existentes"),
                      (("process model", "modelo de proceso"), "Procesos en curso"),
                      (("web api",), "Compatibilidad"), (("grupo", "seguridad"), "Permisos")]
+# Una fila que nombra solo una parte del objeto («X — acción «Nueva»») no pide ningún punto si la parte es, sin más
+# texto, una acción, una vista o un filtro de un record type («acción «Pedir material»»: su nombre, un retoque). Cualquier
+# otra parte pide lo de su objeto entero, o «Permisos» si habla de permisos: «acción «Aprobar», ahora también para los
+# revisores», una columna, un nodo de un proceso o un parámetro de una Web API no son un retoque.
+RX_PARTE_INOCUA = re.compile(r"^(accion|vista|filtro(?: de usuario)?)\s+«[^»]+»$")
+PARTE_PERMISOS = ("seguridad", "permiso", "visibilidad", "quien la ve", "quien lo ve", "quien puede")
+# Cómo se dice cada punto en el aviso de revisión (T14), y qué es IA: la capa de una DT o el tipo de un objeto de §13
+FRASE_PUNTO = {"Datos existentes": "datos existentes", "Procesos en curso": "procesos en curso", "Permisos": "permisos",
+               "Compatibilidad": "lo que usan otros sistemas"}
+RX_IA = re.compile(r"(?<!\w)(ia|ai)(?!\w)|agente|ai skill")
 # Tipo de §13 → tipo del inventario (el que compara verificar --esperado); el primero que casa
 TIPOS_APPIAN = [("record type", "recordType"), ("cdt", "cdt"), ("interfaz", "interface"), ("interface", "interface"),
                 ("regla de expresion", "expressionRule"), ("expression rule", "expressionRule"),
@@ -137,7 +149,7 @@ def escribir(raiz, unidades, plantilla):
         fin += 1
     lineas[ini + 2:fin] = [u.fila() for u in unidades]
     f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text("\n".join(lineas) + "\n", encoding="utf-8")
+    mo.escribe(f, "\n".join(lineas) + "\n")
 
 
 def objetos_celda(celda):
@@ -151,6 +163,37 @@ def objetos_celda(celda):
 def objeto(nombre):
     """El objeto de un nombre de §13: «MNT Orden — acción «Corregir orden»» es una parte de MNT Orden."""
     return re.split(r"\s+[—–]\s+", nombre, maxsplit=1)[0].strip()
+
+
+def parte(nombre):
+    """La parte del objeto que nombra una fila de §13 («acción «Corregir orden»»), o "" si es el objeto entero."""
+    trozos = re.split(r"\s+[—–]\s+", nombre, maxsplit=1)
+    return trozos[1].strip() if len(trozos) > 1 else ""
+
+
+def nombre_accion(texto):
+    """El nombre de una acción de registro tal como lo escribe el técnico: «Pedir material» o `acción «Pedir material»`
+    → Pedir material (lo de entre comillas latinas, o el texto sin la palabra «acción»)."""
+    t = mo.sin_comentarios(texto or "").strip()
+    dentro = re.findall(r"«([^»]+)»", t)
+    return " ".join((dentro[0] if dentro else re.sub(r"(?i)^acci[oó]n\s+", "", t).strip(" `\"")).split())
+
+
+def puntos_de(tipo, nombre):
+    """Los puntos de «Cambio sobre lo construido» que pide cambiar un objeto ya construido, por lo que cambia: los de
+    su tipo (PUNTOS_CONSTRUIDO). Si la fila nombra solo una parte: ninguno si es, sin más texto, una acción, una vista o
+    un filtro de un record type (RX_PARTE_INOCUA: el nombre de una acción de registro es un retoque, aunque viva en un
+    record type; Contexto.puntos_fila mira además su fila de técnico §7); «Permisos» si es una acción, una vista o un
+    filtro con más texto o si la parte habla de permisos; y si no, los de su objeto entero."""
+    t, p = mo.normaliza(tipo), " ".join(mo.normaliza(parte(nombre)).split())
+    if not p:
+        return [punto for claves, punto in PUNTOS_CONSTRUIDO if any(k in t for k in claves)]
+    de_record_type = any(k in t for k in ("record type", "accion de registro", "vista de registro", "filtro"))
+    if RX_PARTE_INOCUA.match(p) and de_record_type:
+        return []
+    if any(k in p for k in PARTE_PERMISOS) or de_record_type and re.match(r"(accion|vista|filtro)\b", p):
+        return ["Permisos"]      # una acción, una vista o un filtro con más texto: quién la ve o qué deja hacer
+    return puntos_de("Record type" if de_record_type else tipo, objeto(nombre))
 
 
 def filas_6(P):
@@ -312,21 +355,23 @@ class Contexto:
 
     # ------------------------------------------------------------ objetos (técnico §13)
     def _filas_13(self):
-        """Las filas de técnico §13 (tabla con «Situación»): {objetos, tipo, situacion, sustituye, unidad, paso}; sin ID
-        en «Cambio», de EV-01 si existe (la construcción inicial)."""
+        """Las filas de técnico §13 (tabla con «Situación»): {objetos, tipo, situacion, sustituye, unidad, paso, para,
+        orden}; sin ID en «Cambio», de EV-01 si existe (la construcción inicial). «para» es su celda «Para» tal cual (el
+        requisito de cada objeto, o «Base»); con_para dice si la tabla tiene esa columna."""
         out = []
         tabla = next(((cab, filas) for _, cab, filas in self.m.tablas("T", "13")
                       if "situacion" in [mo.normaliza(c) for c in cab]), None)
+        self.con_para = bool(tabla) and "para" in [mo.normaliza(c) for c in tabla[0]]
         if not tabla:
             return out
         cab = [mo.normaliza(c) for c in tabla[0]]
         celda = lambda f, k: f[cab.index(k)] if k in cab and cab.index(k) < len(f) else ""
-        for f in tabla[1]:
+        for k, f in enumerate(tabla[1]):
             us = RX_UNIDAD.findall(celda(f, "cambio"))
             out.append({"objetos": objetos_celda(celda(f, "objeto")), "tipo": mo.sin_comentarios(celda(f, "tipo")).strip(),
                         "situacion": mo.normaliza(mo.sin_comentarios(celda(f, "situacion"))).strip(),
                         "sustituye": objetos_celda(celda(f, "sustituye a")), "unidad": us[0] if us else self.sin_id,
-                        "paso": celda(f, "paso")})
+                        "paso": celda(f, "paso"), "para": mo.sin_comentarios(celda(f, "para")).strip(), "orden": k})
         return out
 
     def filas_de(self, uid):
@@ -344,31 +389,106 @@ class Contexto:
                                              for o in f["objetos"]}
 
     def puntos_construido(self, uid):
-        """{punto de la DT «Cambio sobre lo construido»: [objetos]} que pide una unidad por el tipo de los objetos
-        construidos que modifica o sustituye (PUNTOS_CONSTRUIDO); con alguno, también «Despliegue y vuelta atrás»."""
+        """{punto de la DT «Cambio sobre lo construido»: [objetos]} que pide una unidad por lo que cambia en los objetos
+        construidos que modifica o sustituye (puntos_de); con alguno, también «Despliegue y vuelta atrás»."""
         base = self.linea_base()
         dep = self.raiz / "as-is" / "datos" / "dependencias.json"
         fuera = json.loads(dep.read_text(encoding="utf-8")).get("fueraDeLaAplicacion", []) if dep.is_file() else []
         usadas_fuera = {x for o in fuera for x in o.get("usa", [])}
         out = {}
         for f in self.filas_de(uid):
-            objs = [objeto(o) for o in f["objetos"] if objeto(o) in base]
-            if f["situacion"] not in ("modifica", "sustituye") or not objs:
+            if f["situacion"] not in ("modifica", "sustituye"):
                 continue
-            tipo = mo.normaliza(f["tipo"])
-            for claves, punto in PUNTOS_CONSTRUIDO:
-                if any(k in tipo for k in claves):
-                    out.setdefault(punto, []).extend(objs)
-            if "integracion" in tipo and set(objs) & usadas_fuera:     # una integración que usan otros
-                out.setdefault("Compatibilidad", []).extend(objs)
+            for nombre in f["objetos"]:
+                o = objeto(nombre)
+                if o not in base:
+                    continue
+                for punto in self.puntos_fila(uid, f, nombre):
+                    out.setdefault(punto, []).append(o)
+                if "integracion" in mo.normaliza(f["tipo"]) and o in usadas_fuera and not parte(nombre):
+                    out.setdefault("Compatibilidad", []).append(o)     # una integración que usan otros
         if out:
             out["Despliegue y vuelta atrás"] = [o for v in out.values() for o in v]
         return {k: list(dict.fromkeys(v)) for k, v in out.items()}
+
+    def retoques(self, uid):
+        """Los objetos de los que una unidad solo cambia partes que no guardan datos ni dan permisos (el nombre de una
+        acción de registro, una vista, un filtro): compartirlos con otra unidad no pide decidir el orden."""
+        de = {}
+        for f in self.filas_de(uid):
+            if f["situacion"] in CAMBIAN:
+                for nombre in f["objetos"]:
+                    de.setdefault(objeto(nombre), []).append(bool(parte(nombre)) and not self.puntos_fila(uid, f, nombre))
+        return {o for o, leves in de.items() if all(leves)}
+
+    def puntos_fila(self, uid, f, nombre):
+        """Los puntos que pide una fila de §13 (puntos_de). De una acción de registro que por su forma es un retoque, su
+        fila de la tabla de acciones de técnico §7, frente a la copia de la versión base: si cambia quién la ve,
+        «Permisos»; si cambia otra cosa que el nombre (su tipo, su proceso), lo de su record type."""
+        puntos = puntos_de(f["tipo"], nombre)
+        if puntos or not mo.normaliza(parte(nombre)).startswith("accion"):
+            return puntos
+        cambia = self.accion_cambia(uid, objeto(nombre), nombre_accion(parte(nombre)))
+        if any(k.startswith("quien") for k in cambia):
+            return ["Permisos"]
+        return puntos_de("Record type", objeto(nombre)) if cambia else []
+
+    def accion_cambia(self, uid, o, accion):
+        """Las columnas (normalizadas) de la fila de técnico §7 de una acción de `o` que no son su nombre y cambian frente
+        a la copia de la versión base: la de ese nombre o, si se ha renombrado, la única que no estaba (o ya no está).
+        Sin tabla o sin copia, no se sabe: ninguna."""
+        ahora, antes = self.acciones_7(self.tras(uid), o), self.acciones_7(self.copia(self.version_base(uid)), o)
+        if not ahora or not antes:
+            return []
+        clave = lambda a: mo.normaliza(a["nombre"])   # noqa: E731
+        una = lambda xs: xs[0] if len(xs) == 1 else None   # noqa: E731
+        a1 = next((a for a in antes if clave(a) == mo.normaliza(accion)), None) or una(
+            [a for a in antes if clave(a) not in {clave(b) for b in ahora}])
+        a2 = next((a for a in ahora if clave(a) == mo.normaliza(accion)), None) or una(
+            [a for a in ahora if clave(a) not in {clave(b) for b in antes}])
+        if not a1 or not a2:
+            return []
+        return [k for k in dict.fromkeys(list(a1["celdas"]) + list(a2["celdas"]))
+                if a1["celdas"].get(k) != a2["celdas"].get(k)]
+
+    def tras(self, uid):
+        """El análisis con lo de la unidad: la copia de la última versión que la aplicó, si hay otra después, o el de ahora."""
+        vs = self.versiones_de(uid)
+        return (self.copia(vs[-1]) if vs and vs[-1] != self.m.version("F") else None) or self.m
 
     def dt_construido(self, uid):
         """La DT «Cambio sobre lo construido» de una unidad (su ID en el título o en «Necesidad»), o None."""
         return next((p for p in self.m.vigentes("DT") if "cambio sobre lo construido" in mo.normaliza(p.titulo)
                      and uid in RX_UNIDAD.findall(p.titulo + " " + self.m.campos(p.id).get("necesidad", ""))), None)
+
+    def revisar_antes(self, uid):
+        """Lo que una persona revisa antes de construir una unidad (T14), que es un aviso y no una puerta: la DT «Cambio
+        sobre lo construido» si cambia datos, permisos, procesos en curso o lo que usan otros (sus puntos); y, si usa IA,
+        cada DT de capa IA de la unidad (la que cita sus piezas en «Necesidad» o nombra sus objetos), o ninguna, si no la
+        tiene. [{dt: "DT-04" o None, ia: bool, puntos: {punto: [objetos]}, objetos, requisitos}]."""
+        out = []
+        puntos = {p: o for p, o in self.puntos_construido(uid).items() if p != "Despliegue y vuelta atrás"}
+        if puntos:
+            dt = self.dt_construido(uid)
+            out.append({"dt": dt.id if dt else None, "ia": False, "puntos": puntos,
+                        "objetos": sorted({o for v in puntos.values() for o in v}), "requisitos": set()})
+        con_ia = [objeto(o) for f in self.filas_de(uid) if f["situacion"] in CAMBIAN
+                  and RX_IA.search(mo.normaliza(f["tipo"])) for o in f["objetos"]]
+        mias, piezas = set(self.cambian(uid)), self.raices_de(uid) | self.piezas_de(uid)
+        dts = []
+        for p in self.m.vigentes("DT"):
+            campos = self.m.campos(p.id)
+            if not RX_IA.search(mo.normaliza(campos.get("capa", ""))):
+                continue
+            necesidad = {self.m.raiz_de(x) for x in mo.ids_en(campos.get("necesidad", ""))}
+            nombra = {o for o in mias if o in self.m.texto(p.id)}
+            if necesidad & {self.m.raiz_de(x) for x in piezas} or nombra or p.id in piezas:
+                dts.append({"dt": p.id, "ia": True, "puntos": {}, "objetos": sorted(nombra | set(con_ia)),
+                            "requisitos": necesidad})
+        if con_ia and not dts:
+            dts.append({"dt": None, "ia": True, "puntos": {}, "objetos": sorted(set(con_ia)), "requisitos": set()})
+        return out + dts
+
 
     # ------------------------------------------------------------ urgentes
     def ficha_urg(self, uid):
@@ -439,9 +559,9 @@ class Contexto:
         """[(URG, objetos)]: las que se corrigen en desarrollo y no han pasado a producción: esos objetos no se tocan."""
         return self._urgentes(uid, "desarrollo")
 
-    # ------------------------------------------------------------ lo de una unidad (DF, encargo, pruebas)
+    # ------------------------------------------------------------ lo de una unidad (DF, issues, pruebas)
     def resumen(self, uid):
-        """Lo de una unidad (indice.py cambios --json, que leen df_docx.js --cambio e indice.py encargo): piezas nuevas,
+        """Lo de una unidad (indice.py cambios --json, que leen df_docx.js --cambio y las issues): piezas nuevas,
         que cambian (con un antes y después breve, frente a versiones/) y anuladas; historias que se conservan pero
         comparten pantalla o paso con ellas (T5); pantallas, diagramas, apartados del técnico, objetos, pruebas a repetir,
         colisiones y correcciones urgentes que reaplicar o que congelan objetos."""
@@ -552,28 +672,72 @@ class Contexto:
                 out.append({"nombre": c[0].strip("` "), **({"tipo": tipo} if tipo else {})})
         return out
 
-    def esperado(self, uid):
-        """{objeto: {"tipo", "campos"}} de lo que construye o cambia una unidad, para verificar --esperado: el tipo de su
-        fila de §13 y, de un record type o CDT con su apartado en técnico §3, sus campos; de uno que se modifica, solo
-        los de esta unidad (los que no estaban en la copia de su versión base)."""
+    def acciones_7(self, P, nombre):
+        """[{nombre, tipo, celdas}] de las acciones de registro de un record type en técnico §7 del análisis P (celdas: las
+        demás columnas, por su cabecera normalizada): las filas de las
+        tablas cuya cabecera empieza por «Acción» y tiene «Tipo» («| Acción | Tipo | Proceso | Quién la ve |»), bajo una
+        línea que nombra el record type («Acciones de registro de `DEM Solicitud`»). None si no tiene ninguna."""
+        if P is None or "T" not in P.docs:
+            return None
+        L, out = P.docs["T"].lineas, None
+        for ini, cab, filas in P.tablas("T", "7"):
+            ncab = [mo.normaliza(c) for c in cab]
+            if not ncab or not ncab[0].startswith("accion") or "tipo" not in ncab:
+                continue
+            k = ini - 1
+            while k > 0 and not L[k].strip():
+                k -= 1
+            if mo.normaliza(nombre) not in {mo.normaliza(objeto(x)) for x in objetos_celda(L[k])}:
+                continue
+            celdas = lambda f: {c: " ".join(mo.sin_comentarios(v).split()) for c, v in zip(ncab[1:], f[1:])}  # noqa: E731
+            out = (out or []) + [{"nombre": nombre_accion(f[0]), "tipo": mo.sin_comentarios(f[ncab.index("tipo")]).strip(),
+                                  "celdas": celdas(f)}
+                                 for f in filas if f and nombre_accion(f[0]) and len(f) > ncab.index("tipo")]
+        return out
+
+    def esperado(self, uid, filas=None):
+        """{objeto: {"tipo", "campos", "acciones"}} de lo que construye o cambia una unidad (o solo `filas`, las de una
+        issue), para verificar --esperado: el tipo de su fila de §13 y, de un record type o CDT con su apartado en técnico
+        §3, sus campos; de uno que se modifica, solo los de esta unidad (los que no estaban en la copia de su versión base)
+        y, si no añade ninguno, sin «campos»: no hay campos que comparar, y los que ya tiene no sobran. De una fila que
+        nombra una acción de registro («X — acción «Nueva solicitud»»), esa acción, con su tipo, de la tabla de acciones
+        de X en técnico §7: la de ese nombre o, si se modifica y ya no está (se ha renombrado), la que no estaba en la
+        copia de la versión base. Sin tabla, de una acción nueva, su nombre; de una que se modifica, nada."""
         out = {}
         base = self.copia(self.version_base(uid))
         vs = self.versiones_de(uid)
         despues = self.copia(vs[-1]) if vs and vs[-1] != self.m.version("F") else None
-        for f in self.filas_de(uid):
+        for f in self.filas_de(uid) if filas is None else filas:
             if f["situacion"] not in CAMBIAN:
                 continue
             t = mo.normaliza(f["tipo"])
             tipo = next((c for k, c in TIPOS_APPIAN if k in t), None)
-            for o in map(objeto, f["objetos"]):
+            for nombre in f["objetos"]:
+                o = objeto(nombre)
                 e = out.setdefault(o, {})
                 if tipo:
                     e["tipo"] = tipo
-                campos = self.campos_3(despues or self.m, o) if tipo in ("recordType", "cdt") else None
+                campos = self.campos_3(despues or self.m, o) if tipo in ("recordType", "cdt") and not parte(nombre) \
+                    else None
                 if campos is not None:
-                    antes = {c["nombre"] for c in (self.campos_3(base, o) or [])} if base and f["situacion"] == "modifica" \
-                        else set()
-                    e["campos"] = [c for c in campos if c["nombre"] not in antes]
+                    modifica = f["situacion"] == "modifica"
+                    antes = {c["nombre"] for c in (self.campos_3(base, o) or [])} if base and modifica else set()
+                    suyos = [c for c in campos if c["nombre"] not in antes]
+                    if suyos or not modifica:
+                        e["campos"] = suyos
+                accion = nombre_accion(parte(nombre)) if mo.normaliza(parte(nombre)).startswith("accion") else ""
+                if accion:
+                    ahora, antes = self.acciones_7(despues or self.m, o), self.acciones_7(base, o)
+                    clave = lambda a: mo.normaliza(a["nombre"])   # noqa: E731
+                    pedidas = [a for a in ahora or [] if clave(a) == mo.normaliza(accion)]
+                    if not pedidas and ahora is not None and antes is not None and f["situacion"] == "modifica":
+                        pedidas = [a for a in ahora if clave(a) not in {clave(b) for b in antes}]
+                    elif not pedidas and f["situacion"] != "modifica":
+                        pedidas = [{"nombre": accion}]
+                    pedidas = [{k: a[k] for k in ("nombre", "tipo") if a.get(k)} for a in pedidas]
+                    e["acciones"] = e.get("acciones", []) + [a for a in pedidas if a not in e.get("acciones", [])]
+                    if not e["acciones"]:
+                        del e["acciones"]
         return out
 
     # ------------------------------------------------------------ señales por pieza
@@ -611,3 +775,18 @@ class Contexto:
     def texto_senales(self, pid):
         c, e = self.senales(pid)
         return f"Construido: {', '.join(c) or '—'} · En curso: {', '.join(e) or '—'}"
+
+
+def texto_revision(uid, r, solo=None):
+    """La frase de lo que una persona revisa antes de construir (revisar_antes): «Que una persona revise DT-04 antes de
+    construir: EV-02 cambia datos existentes (`DEM Solicitud`)». Con `solo`, de esos objetos (los de una issue)."""
+    dentro = lambda objs: [o for o in objs if solo is None or o in solo]   # noqa: E731
+    lista = lambda objs: ", ".join(f"`{o}`" for o in objs)                 # noqa: E731
+    if r["ia"]:
+        que = f"{uid} usa IA" + (f" ({lista(dentro(r['objetos']))})" if dentro(r["objetos"]) else "")
+        cual = r["dt"] or "la decisión de IA (ninguna DT de capa IA la recoge todavía)"
+    else:
+        que = f"{uid} cambia " + " y ".join(f"{FRASE_PUNTO.get(p, p.lower())} ({lista(dentro(o))})"
+                                             for p, o in r["puntos"].items() if dentro(o))
+        cual = r["dt"] or f"la DT «Cambio sobre lo construido» de {uid} (aún no está: comprobar.py lo avisa)"
+    return f"Que una persona revise {cual} antes de construir: {que}. Es un aviso: no frena la construcción"

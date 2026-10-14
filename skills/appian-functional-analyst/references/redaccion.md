@@ -9,6 +9,8 @@ leerse deprisa y sin dudas. `comprobar.py` avisa de lo que incumple esta guía.
   «El técnico devuelve la solicitud», no «La solicitud será devuelta».
 - **Concreto.** Quién hace qué, cuándo y con qué resultado. Una cifra en vez de «pronto», «varios» o
   «rápido»; un texto literal entre comillas en vez de «un mensaje de aviso».
+- **Un criterio de aceptación**, en una sola frase con sus tres partes: «Dado…, cuando…, entonces…». Es la única
+  frase con más de una idea; cómo se escribe, en `funcional-plantilla.md` §4.
 - **Las palabras del cliente.** Si dice «expediente», es «expediente» en todo el documento.
 - **Perfiles, no personas.** Los nombres de las personas no salen en el análisis.
 - **Una sola vez.** Lo que ya está escrito se cita por su ID («ver HU-07»), no se repite. Si dos sitios

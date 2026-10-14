@@ -20,21 +20,29 @@ Subcomandos:
   datafabric  Metadatos y COUNT(*) por record type de la app a traves del Appian MCP Server.
   verificar   --app <app> [--objetos <nombres|@fichero>] [--esperado <fichero.json>] --out <fichero.json>: por objeto, si
               existe, su tipo, su nombre, su ultima modificacion (rol versions; un dato, no una prueba), los campos
-              de record types y CDT y sus casos de prueba si el Dev MCP los expone. Con --esperado, tambien sus
-              diferencias con lo esperado (diferencias()). No escribe en ninguna extraccion.
+              de record types y CDT y, si lo esperado las nombra, sus acciones de registro. Con --esperado, tambien
+              sus diferencias con lo esperado (diferencias()); si lo esperado es el de una issue (su clave «_issue»,
+              con su id y su version), el resultado lo lleva en «issue»: asi se sabe de que version de lo esperado es
+              la verificacion. Y, si la issue no dice «pruebas»: false, en «pruebas» el resultado de los casos de
+              prueba guardados de sus reglas e interfaces y de lo que las usa (los dependientes directos), sin las
+              salidas de cada caso (pruebas_de()); con «pruebas»: false, solo lee lo que compara (solo_lo_esperado()).
+              Por la salida, solo el resumen. No escribe en ninguna extraccion.
+  regresion   --app <app> --out <fichero.json>: los casos de prueba de toda la aplicacion, objeto a objeto, con el
+              resumen en el fichero y por la salida solo lo que falla. Se pasa antes de preparar el paquete.
   deriva      --out <as-is> [--objetos …] [--ignorar <nombre>@<fecha ISO>,…]: la lista de objetos de la aplicacion
               y su historial de versiones (rol versions), frente al as-is; cambiados, nuevos y retirados en
               <as-is>/datos/deriva.json. Sin historial en el Dev MCP, lo dice y no supone nada.
 
-Las respuestas se guardan tal cual las devuelve el Dev MCP, con rutas cortas (Windows y OneDrive).
+Las respuestas se guardan tal cual las devuelve el Dev MCP, con rutas cortas (Windows y OneDrive). verificar, regresion y
+deriva no sacan el registro del servidor salvo con --registro (o si no arranca: entonces, sus ultimas lineas).
 
 Codigos de salida (los mismos en todos los subcomandos):
-  0 ok (verificar, tambien si falta algun objeto o no es lo esperado: lo dice el JSON) | 2 uso incorrecto (deriva:
-  sin as-is en --out) | 11 Dev MCP no configurado | 12 varias configuraciones posibles
-  13 el Dev MCP no arranca o no autentica | 14 no hay aplicaciones visibles
+  0 ok (verificar, tambien si falta algun objeto, no es lo esperado o falla una prueba: lo dice el JSON) | 1 regresion:
+  algun caso falla | 2 uso incorrecto (deriva: sin as-is en --out) | 11 Dev MCP no configurado
+  12 varias configuraciones posibles | 13 el Dev MCP no arranca o no autentica | 14 no hay aplicaciones visibles
   15 app no encontrada o ambigua, o la carpeta ya tiene otra app u otro entorno (usa otra --out;
      para la misma app de otro entorno, tambien --refresh; deriva: el as-is es de otro entorno)
-  16 Appian MCP Server no disponible (solo datafabric)
+  16 Appian MCP Server no disponible (solo datafabric) | 17 regresion: el Dev MCP no ofrece ejecutar casos de prueba
 """
 from __future__ import annotations
 
@@ -44,6 +52,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 import time
 from collections import defaultdict
@@ -54,11 +63,12 @@ from typing import Any
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rutas import carpeta_objeto, safe_name, work_dir  # noqa: E402
+from rutas import carpeta_objeto, escribe, safe_name, work_dir  # noqa: E402
 import build_model as bm  # noqa: E402  (el modelo, que rehace extract --solo, y cómo se leen las respuestas)
 
 EXIT_OK, EXIT_USAGE, EXIT_NO_CONFIG, EXIT_AMBIGUOUS, EXIT_START, EXIT_NO_APPS, EXIT_APP, EXIT_NO_MCPSERVER = \
     0, 2, 11, 12, 13, 14, 15, 16
+EXIT_FALLAN, EXIT_SIN_PRUEBAS = 1, 17
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_POLICY = HERE / "devmcp_policy.json"
@@ -138,10 +148,22 @@ class Policy:
         self.pag = d["pagination"]
         self.probe = int(d["adaptiveDisable"]["probeCalls"])
         self.confirm_above = int(d["confirmAboveCalls"])
+        casos = d.get("testCases") or {}
+        self.run_verbs, self.test_tokens = set(casos.get("runVerbs", [])), set(casos.get("tokens", []))
+        self.no_evaluable = [(x.get("type"), re.compile(x["pattern"]), x["reason"]) for x in casos.get("noEvaluable", [])]
+
+    def runs_test_cases(self, name: str, ann) -> bool:
+        """Si ejecuta casos de prueba guardados (testCases de la política): el servidor no la declara destructiva ni de
+        escritura. La extracción no la usa; verificar y regresion, sí."""
+        toks = tokens(name)
+        return bool(self.run_verbs and toks and toks[0] in self.run_verbs and self.test_tokens <= set(toks)
+                    and not (ann is not None and (getattr(ann, "destructiveHint", None) is True
+                                                  or getattr(ann, "readOnlyHint", None) is False)))
 
     def is_writeish(self, name: str, ann) -> bool:
         toks = tokens(name)
-        return bool((toks and toks[0] in self.write) or self.interaction.intersection(toks)
+        return bool((toks and toks[0] in self.write and not self.runs_test_cases(name, ann))
+                    or self.interaction.intersection(toks)
                     or (ann is not None and getattr(ann, "destructiveHint", None) is True))
 
     def excluded_by_tokens(self, toks: list[str]) -> str | None:
@@ -160,6 +182,9 @@ class Policy:
         unido = "".join(t.capitalize() for t in toks)   # list_record_data → ListRecordData: las reglas valen igual
         if ann is not None and getattr(ann, "destructiveHint", None) is True:
             return False, "El servidor la declara destructiva (destructiveHint).", None
+        if self.runs_test_cases(name, ann):
+            return False, ("Ejecuta casos de prueba guardados: evalua logica, y la extraccion no lo hace. La usan verificar "
+                           "y regresion, en desarrollo."), "testRun"
         if first in self.write:
             return False, f"Verbo de escritura '{first}'.", None
         hit = self.interaction.intersection(toks)
@@ -182,7 +207,8 @@ class Policy:
             return True, f"Verbo de lectura '{first}'.", None
         if trusted:
             return True, "Modo de confianza: el catalogo no expone herramientas de escritura.", None
-        return False, f"Verbo desconocido '{first}' y el servidor no respeta el modo readonly (modo estricto).", None
+        return False, (f"Verbo desconocido '{first}' y el catalogo trae herramientas de escritura (modo estricto: solo "
+                       "las de lectura evidentes)."), None
 
     def canon_type(self, s: str | None) -> str | None:
         if not s:
@@ -332,9 +358,10 @@ class McpSession:
     """Sesion stdio o http con el SDK oficial de MCP (importado de forma diferida)."""
 
     def __init__(self, *, stdio: ServerChoice | None = None, http_url: str | None = None,
-                 headers: dict | None = None, call_timeout: float = 120, login_timeout: float = 600):
+                 headers: dict | None = None, call_timeout: float = 120, login_timeout: float = 600, errlog=None):
         self.stdio, self.http_url, self.headers = stdio, http_url, headers or {}
         self.call_timeout, self.login_timeout = call_timeout, login_timeout
+        self.errlog = errlog or sys.stderr   # a dónde va el registro del servidor (su salida de errores)
         self._stack = None
         self.session = None
         self._first_call_done = False
@@ -347,10 +374,12 @@ class McpSession:
             from mcp.client.stdio import StdioServerParameters, stdio_client
             env = dict(os.environ)
             env.update(expand_vars(self.stdio.env, dict(os.environ)))
-            env["LCP_TOOL_MODE"] = "readonly"  # siempre, aunque la configuracion diga full
+            # La documenta Appian, pero el Dev MCP 26.6.110 no la aplica (ofrece las mismas herramientas): no protege.
+            # Lo que impide escribir es la política (devmcp_policy.json); se pide por si un Dev MCP la aplica
+            env["LCP_TOOL_MODE"] = "readonly"
             params = StdioServerParameters(command=expand_vars(self.stdio.command, env),
                                            args=expand_vars(self.stdio.args, env), env=env, cwd=self.stdio.cwd)
-            read, write = await self._stack.enter_async_context(stdio_client(params, errlog=sys.stderr))
+            read, write = await self._stack.enter_async_context(stdio_client(params, errlog=self.errlog))
         else:
             from mcp.client.streamable_http import streamablehttp_client
             read, write, _ = await self._stack.enter_async_context(
@@ -487,7 +516,7 @@ def analyze_tool(tool, policy: Policy, trusted: bool, type_phrases: dict) -> Too
         ti.scope, ti.scope_reason = "app", "Admite filtrar por aplicacion."
     else:
         ti.scope, ti.scope_reason = "env", "Sin parametros obligatorios: contexto del entorno."
-    # rol
+    # rol (el de las que ejecutan casos de prueba, testRun, lo da la política)
     if exc_role:
         ti.role = exc_role
     else:
@@ -807,8 +836,7 @@ class Extractor:
                          "mcpType": obj.get("mcpType")})
         f.parent.mkdir(parents=True, exist_ok=True)
         self.escritas.add(f)
-        f.write_text(json.dumps({"_meta": meta, "response": res.data}, ensure_ascii=False, indent=1, default=str),
-                     encoding="utf-8")
+        escribe(f, json.dumps({"_meta": meta, "response": res.data}, ensure_ascii=False, indent=1, default=str))
 
     # ---- aplicaciones y objetos
     async def env_calls(self) -> dict[str, CallResult]:
@@ -816,9 +844,9 @@ class Extractor:
         results = await asyncio.gather(*(self.run_call(t, "env") for t in tools))
         return {t.name: r for t, r in zip(tools, results)}
 
-    async def list_apps(self) -> list[dict]:
+    async def list_apps(self, de_una_vez: bool = False) -> list[dict]:
         tools = [t for t in self.usable("env") if {"application", "app"}.intersection(t.toks)]
-        results = await asyncio.gather(*(self.run_call(t, "env") for t in tools))
+        results = await asyncio.gather(*((self.entera(t) if de_una_vez else self.run_call(t, "env")) for t in tools))
         apps: dict[str, dict] = {}
         for t, r in zip(tools, results):
             if not r.ok:
@@ -828,6 +856,14 @@ class Extractor:
                 apps.setdefault(u, {"uuid": u, "name": pick(it, NAME_KEYS), "prefix": it.get("prefix"),
                                     "source": t.name})
         return list(apps.values())
+
+    async def entera(self, ti: ToolInfo) -> CallResult:
+        """Una lista del entorno, sin guardarla, en páginas tan grandes como admita el servidor (su parámetro de tamaño, a
+        pagination.maxItems): las 482 aplicaciones del entorno de desarrollo, en una llamada y no en diez. Si no admite
+        ese tamaño, en las suyas."""
+        grande = {p: self.policy.pag["maxItems"] for p, k in ti.params.items() if k == "size"}
+        res = await self.call_paginated(ti, grande) if grande else None
+        return res if res is not None and res.ok else await self.run_call(ti, "env")
 
     async def app_calls(self, app_uuid: str) -> dict[str, CallResult]:
         tools = self.usable("app")
@@ -923,7 +959,7 @@ class Extractor:
 
 def write_json(p: Path, data):
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(data, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    escribe(p, json.dumps(data, ensure_ascii=False, indent=2, default=str))
 
 
 def resolve_app(apps: list[dict], wanted: str) -> tuple[dict | None, str]:
@@ -972,10 +1008,10 @@ def plan_json(ex: Extractor, app: dict, objects: list[dict], groups, inicio: str
             "tools": sorted(tools, key=lambda e: (not e["use"], e["scope"], e["name"]))}
 
 
-async def prepare(ex: Extractor, args) -> tuple[dict, list[dict], list]:
-    """Catalogo -> app -> llamadas de app -> objetos -> reclasificacion con los tipos reales."""
+async def aplicacion_de(ex: Extractor, args, de_una_vez: bool = False) -> dict:
+    """Catalogo -> la aplicacion de --app, entre las del entorno (con `de_una_vez`, en una sola pagina si se puede)."""
     await ex.load_catalog()
-    apps = await ex.list_apps()
+    apps = await ex.list_apps(de_una_vez)
     if not apps:
         raise SystemExit(EXIT_NO_APPS)
     app, msg = resolve_app(apps, args.app)
@@ -986,6 +1022,13 @@ async def prepare(ex: Extractor, args) -> tuple[dict, list[dict], list]:
     if antes.get("uuid") not in (None, app["uuid"]):   # las respuestas guardadas serían las de la otra
         eprint(f"Esta carpeta ya tiene la extraccion de '{antes.get('name')}': para otra aplicacion, usa otra carpeta.")
         raise SystemExit(EXIT_APP)
+    return app
+
+
+async def prepare(ex: Extractor, args, app: dict | None = None) -> tuple[dict, list[dict], list]:
+    """Catalogo -> app -> llamadas de app -> objetos -> reclasificacion con los tipos reales. Con `app` (el catalogo ya
+    cargado y la aplicacion resuelta), desde las llamadas de app."""
+    app = app or await aplicacion_de(ex, args)
     app_results = await ex.app_calls(app["uuid"])
     app_obj, objects = ex.harvest_objects(app["uuid"], app_results)
     app_obj["name"] = app_obj["name"] or app["name"]
@@ -1003,11 +1046,69 @@ async def prepare(ex: Extractor, args) -> tuple[dict, list[dict], list]:
     return app_obj, objects, groups
 
 
-def open_session(args) -> tuple[McpSession | None, ServerChoice | None, int, str]:
+async def solo_lo_esperado(ex: Extractor, args, tipos: dict[str, str]) -> tuple[dict, list[dict]]:
+    """Para verificar una issue sin pruebas, la aplicacion y sus objetos leyendo solo lo necesario: las aplicaciones de una
+    vez y, de la aplicacion, solo las listas de los tipos esperados ({pedido: tipo canonico}; en el Dev MCP real, la de
+    record types en vez de 25 listas). Si un pedido no esta en ellas (es de otro tipo o no existe), la lista entera, como
+    prepare(): «falta» y un «tipo» distinto salen igual."""
+    app = await aplicacion_de(ex, args, de_una_vez=True)
+    sin_app = {t: ps for t, ps in ex.base_type_phrases().items() if t != "application"}
+    listas = [t for t in ex.usable("app") if t.role == "other"
+              and set(match_types(t.toks[1:], sin_app) or ["?"]) <= set(tipos.values())]
+    res = await asyncio.gather(*(ex.run_call(t, "app", app_uuid=app["uuid"]) for t in listas))
+    app_obj, objects = ex.harvest_objects(app["uuid"], {t.name: r for t, r in zip(listas, res)})
+    por = resolver(list(tipos), objects)
+    if len(por) < len(tipos) or any(o["type"] != tipos[p] for p, o in por.items()):
+        app_obj, objects, _ = await prepare(ex, args, app)
+        return app_obj, objects
+    app_obj["name"], app_obj["prefix"] = app_obj["name"] or app["name"], app_obj.get("prefix") or app.get("prefix")
+    ex.classify(ex.type_phrases_for(objects))
+    return app_obj, objects
+
+
+def open_session(args, errlog=None) -> tuple[McpSession | None, ServerChoice | None, int, str]:
     choice, code, msg = choose_devmcp(args)
     if not choice:
         return None, None, code, msg
-    return McpSession(stdio=choice, call_timeout=args.call_timeout, login_timeout=args.login_timeout), choice, EXIT_OK, ""
+    return McpSession(stdio=choice, call_timeout=args.call_timeout, login_timeout=args.login_timeout,
+                      errlog=errlog), choice, EXIT_OK, ""
+
+
+class Registro:
+    """El registro del servidor (lo que escribe en su salida de errores; de 78 a 331 KB por objeto en el Dev MCP real):
+    con --registro, a la salida de errores; si no, a un fichero temporal que se borra, del que solo se enseñan las
+    últimas líneas si el servidor no arranca."""
+
+    def __init__(self, ver: bool):
+        self.f = None if ver else tempfile.TemporaryFile("w+b")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        if self.f:
+            self.f.close()
+
+    @property
+    def destino(self):
+        return self.f or sys.stderr
+
+    def cola(self, n: int = 12) -> str:
+        if not self.f:
+            return ""
+        try:
+            self.f.flush()
+            self.f.seek(0)
+            lineas = self.f.read().decode("utf-8", errors="replace").splitlines()
+        except (OSError, ValueError):
+            return ""
+        return "\n".join(lineas[-n:])
+
+    def no_arranca(self, ex_: Exception) -> int:
+        cola = self.cola()
+        eprint(f"No se pudo arrancar o autenticar el Dev MCP: {type(ex_).__name__}: {ex_}"
+               + (f"\nUltimas lineas de su registro (todo, con --registro):\n{cola}" if cola else ""))
+        return EXIT_START
 
 
 def server_info(choice: ServerChoice) -> dict:
@@ -1142,9 +1243,9 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         report = {"startedAt": previo.get("startedAt") or inicio, "reextraidoEn": inicio,
                   **{k: v for k, v in report.items() if k != "startedAt"}}
     write_json(interm / "extraction_report.json", report)
-    (interm / "LEEME.md").write_text(
-        "# Extracción\n\nRespuestas del Dev MCP de la aplicación, tal cual. Es la fuente de la documentación de la "
-        "carpeta superior; para consultar un objeto, su ficha de `anexo/`.\n", encoding="utf-8")
+    escribe(interm / "LEEME.md",
+            "# Extracción\n\nRespuestas del Dev MCP de la aplicación, tal cual. Es la fuente de la documentación de la "
+            "carpeta superior; para consultar un objeto, su ficha de `anexo/`.\n")
     ok = sum(v.get("ok", 0) + v.get("cached", 0) for v in ex.stats.values())
     print(f"Extraccion terminada: {len(objects)} objetos, {ok} respuestas correctas, "
           f"{len(ex.errors)} errores, {len(ex.disabled)} herramientas desactivadas por tipo. "
@@ -1214,7 +1315,7 @@ def por_rol(ex) -> dict:
 def print_plan(plan: dict):
     print(f"Aplicacion: {plan['app'].get('name')} [{plan['app'].get('uuid')}]")
     print(f"Objetos: {plan['objectCount']}  " + ", ".join(f"{k}={v}" for k, v in plan["objectsByType"].items()))
-    print(f"Modo de confianza: {'si' if plan['trustedMode'] else 'no (estricto)'}")
+    print(f"Modo de confianza: {'si' if plan['trustedMode'] else 'no (estricto: el catalogo trae herramientas de escritura)'}")
     print(f"Llamadas estimadas: {plan['estimatedCalls']}")
     for t in plan["tools"]:
         mark = "USA " if t["use"] else "NO  "
@@ -1299,9 +1400,9 @@ async def cmd_doctor(args) -> int:
                             "apps": [{"name": a["name"], "prefix": a.get("prefix"), "uuid": a["uuid"]} for a in apps][:50]})
                 if len(apps) > 50:
                     dev["appsNote"] = f"Se muestran 50 de {len(apps)}: la lista completa, con 'apps --json'."
-                if not ex.trusted:
-                    dev["warning"] = ("El servidor expone herramientas de escritura aunque se pidio readonly. "
-                                      "La politica las bloquea y solo se usan herramientas de lectura evidentes.")
+                if not ex.trusted:   # el Dev MCP 26.6.110 no aplica LCP_TOOL_MODE=readonly: es lo normal
+                    dev["warning"] = ("El servidor ofrece herramientas de escritura (LCP_TOOL_MODE=readonly no las "
+                                      "quita). La politica no las usa: solo las de lectura evidentes.")
                 if not apps:
                     code = EXIT_NO_APPS
         except Exception as ex_:
@@ -1484,38 +1585,208 @@ def campos(data) -> list[dict]:
     return out
 
 
-async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: list[str]) -> dict:
+NOMBRE_ACCION, TIPO_ACCION = ("displayName", "name", "label", "title"), ("actionType", "type", "kind")
+
+
+def acciones(data) -> list[dict]:
+    """Las acciones de registro de una respuesta (la lista de acciones de un record type, o su definición si las trae):
+    su nombre y su tipo, como los dé el Dev MCP (LIST_ACTION, RELATED_ACTION)."""
+    d = bm.unwrap(data)
+    lista = d if isinstance(d, list) else bm.find_list(d, ("actions", "recordActions", "recordTypeActions"))
+    return [{"nombre": bm.pick(a, NOMBRE_ACCION), "tipo": bm.pick(a, TIPO_ACCION)} for a in lista
+            if isinstance(a, dict) and bm.pick(a, NOMBRE_ACCION)]
+
+
+async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: list[str],
+                   esperado: dict | None = None, ligero: bool = False) -> dict:
     """Por objeto pedido: si existe, su tipo y su nombre; la última modificación (un dato, no una prueba); los campos
-    de un record type o un CDT, y sus casos de prueba si el Dev MCP los expone. Nada se compara: lo hace quien lee."""
+    de un record type o un CDT y, si lo esperado las nombra, sus acciones de registro (la herramienta que las lista o,
+    si no la hay, la definición; sin ninguna de las dos, «accionesNoDisponibles»). Lo compara diferencias(). Con
+    `ligero` (una issue sin pruebas), solo lo que se compara: sin la última modificación y sin la definición si lo
+    esperado no nombra campos (salvo para leer las acciones, si no hay herramienta que las liste)."""
+    esperado = esperado or {}
     por = resolver(pedidos, objects)
     usables = ex.usable("object")
     versiones = [t for t in usables if t.role == "versions"]
     definiciones = [t for t in usables if t.role == "definition"]
-    casos = [t for t in usables if {"test", "case"} <= set(t.toks)]
+    de_acciones = [t for t in usables if "action" in t.toks and "recordType" in t.types and t.role != "definition"]
 
     async def uno(p: str) -> dict:
         o = por.get(p)
         if not o:
             return {"pedido": p, "existe": False}
         r = {"pedido": p, "existe": True, "nombre": o.get("name"), "tipo": o["type"], "uuid": o["uuid"]}
-        datos, errores = await llama(ex, versiones, o)
-        r["ultimaModificacion"] = next((v for v in map(version, datos) if v), None)
-        if o["type"] in ("recordType", "cdt"):
-            datos, err = await llama(ex, definiciones, o)
+        quiere = esperado.get(p) if isinstance(esperado.get(p), dict) else {}
+        con_acciones = o["type"] == "recordType" and isinstance(quiere.get("acciones"), list)
+        errores: list[str] = []
+        if not ligero:
+            datos, errores = await llama(ex, versiones, o)
+            r["ultimaModificacion"] = next((v for v in map(version, datos) if v), None)
+        definicion: list = []
+        if o["type"] in ("recordType", "cdt") and (not ligero or isinstance(quiere.get("campos"), list)
+                                                     or (con_acciones and not de_acciones)):
+            definicion, err = await llama(ex, definiciones, o)
             errores += err
-            r["campos"] = campos(max(datos, key=lambda d: len(json.dumps(d, default=str)))) if datos else None
-        if any(aplica(ex, t, o) for t in casos):
-            datos, err = await llama(ex, casos, o)
-            errores += err
-            r["casosDePrueba"] = (bm.primary_list(datos[0]) or bm.unwrap(datos[0])) if datos else None
+            r["campos"] = campos(max(definicion, key=lambda d: len(json.dumps(d, default=str)))) if definicion else None
+        if con_acciones:
+            if de_acciones:
+                datos, err = await llama(ex, de_acciones, o)
+                errores += err
+                r["acciones"] = next((a for a in map(acciones, datos) if a), [] if datos else None)
+            else:
+                r["acciones"] = next((a for a in map(acciones, definicion) if a), None)
+                if r["acciones"] is None:
+                    r["accionesNoDisponibles"] = True
         if errores:
             r["errores"] = errores
         return r
 
     return {"aplicacion": {"nombre": app_obj.get("name"), "prefijo": app_obj.get("prefix"), "uuid": app_obj.get("uuid")},
-            "conHistorialDeVersiones": bool(versiones), "conCasosDePrueba": bool(casos),
+            "conHistorialDeVersiones": bool(versiones),
             "objetos": list(await asyncio.gather(*(uno(p) for p in pedidos))),
             "faltan": [p for p in pedidos if p not in por]}
+
+
+# --------------------------------------------------------------------------- casos de prueba (verificar y regresion)
+
+SIN_EJECUTOR = "el Dev MCP no ofrece ejecutar casos de prueba"
+# La regresión sin el Dev MCP: Manage Test Cases (y el smart service Start Rule Tests) ejecuta solo los de las reglas
+EN_APPIAN = ("la regresión se pasa en Appian: los casos de las reglas, con Manage Test Cases; los de las interfaces, "
+             "desde cada interfaz en Designer, que Manage Test Cases no los ejecuta")
+
+
+def ejecutores(ex: Extractor) -> dict[str, ToolInfo]:
+    """{tipo de objeto: herramienta} de las que ejecutan todos los casos de prueba de un objeto (rol testRun, con solo su
+    uuid: las que piden además el de un caso son de alcance manual). Se reconocen por su firma (devmcp_policy.json,
+    testCases), sin fijar nombres; la extracción no las usa."""
+    out: dict[str, ToolInfo] = {}
+    for t in ex.tools:
+        if t.role == "testRun" and t.scope == "object":
+            for tipo in t.types:
+                out.setdefault(tipo, t)
+    return out
+
+
+def dependientes_de(ex: Extractor) -> ToolInfo | None:
+    """La herramienta que da los dependientes directos de un objeto (rol dependents), con un solo parámetro obligatorio:
+    el objeto. En el Dev MCP real ese parámetro se llama «object» y la extracción no la usa (alcance manual)."""
+    return next((t for t in ex.tools if t.allowed and t.role == "dependents"
+                 and len(t.schema.get("required") or []) == 1), None)
+
+
+def caso(c: dict, policy: Policy) -> dict:
+    """Un caso de una respuesta de ejecución: {caso, resultado: pasa | falla | noEvaluable} y, si no pasa, su error (con
+    la salida obtenida, si la hay: de una regla, lo que no cumplió la aserción) o por qué el ejecutor no lo evalúa. Es
+    «noEvaluable» solo si todos sus errores casan con uno de testCases.noEvaluable de la política: un fallo de verdad no
+    se tapa."""
+    nombre = bm.pick(c, ("name", "testCaseName", "title")) or bm.pick(c, ("testCaseUuid", "uuid")) or "?"
+    exito = c.get("success", c.get("passed"))
+    if exito is None and isinstance(c.get("status"), str):
+        exito = c["status"].lower() in ("pass", "passed", "success", "ok")
+    if exito is True:
+        return {"caso": nombre, "resultado": "pasa"}
+    errores = [(e.get("type"), str(e.get("details") or e.get("message") or "")) for e in c.get("testErrors") or []
+               if isinstance(e, dict)] or ([(None, str(c["error"]))] if c.get("error") else [])
+    motivos = [next((m for t, rx, m in policy.no_evaluable if (not t or t == tipo) and rx.search(texto)), None)
+               for tipo, texto in errores]
+    if errores and all(motivos):
+        return {"caso": nombre, "resultado": "noEvaluable", "motivo": motivos[0]}
+    out = {"caso": nombre, "resultado": "falla",
+           "error": next((t for (_, t), m in zip(errores, motivos) if not m and t), "no da lo esperado")[:500]}
+    if c.get("output") not in (None, ""):
+        out["salida"] = str(c["output"])[:300]
+    return out
+
+
+async def ejecuta(ex: Extractor, ti: ToolInfo, o: dict) -> dict:
+    """Los casos de prueba guardados de un objeto, ejecutados: {objeto, tipo, casos, pasan, fallan, noEvaluables}, sin
+    la salida de los que pasan (de una interfaz, el árbol de componentes: 270 KB con 7 casos); o «error» si no se pudo."""
+    r = {"objeto": o.get("name") or o["uuid"], "tipo": o["type"]}
+    args = ex.build_args(ti, obj=o)
+    res = await ex.call_with_retry(ti.name, args) if args is not None else CallResult(False, error="No aplicable.")
+    if not res.ok:
+        return {**r, "error": (res.error or "")[:300]}
+    d = bm.unwrap(res.data)
+    lista = d if isinstance(d, list) else bm.find_list(d, ("results", "testResults", "testCases", "cases"))
+    casos = [caso(c, ex.policy) for c in lista if isinstance(c, dict)]
+    sin = lambda c: {k: v for k, v in c.items() if k != "resultado"}   # noqa: E731
+    r.update(casos=len(casos), pasan=sum(c["resultado"] == "pasa" for c in casos),
+             fallan=[sin(c) for c in casos if c["resultado"] == "falla"],
+             noEvaluables=[sin(c) for c in casos if c["resultado"] == "noEvaluable"])
+    return r
+
+
+def cuenta(objetos: list[dict]) -> dict:
+    return {"casos": sum(o.get("casos", 0) for o in objetos), "pasan": sum(o.get("pasan", 0) for o in objetos),
+            "fallan": sum(len(o.get("fallan", [])) for o in objetos),
+            "noEvaluables": sum(len(o.get("noEvaluables", [])) for o in objetos),
+            "sinEjecutar": [o["objeto"] for o in objetos if o.get("error")]}
+
+
+async def pruebas_de(ex: Extractor, suyos: list[dict], app_uuid: str | None) -> dict:
+    """Los casos de prueba guardados de las reglas e interfaces de una issue (`suyos`, objetos de la aplicación) y de lo
+    que las usa: sus dependientes directos, que es lo que da el Dev MCP, también de otra aplicación. Un fallo en los de la
+    issue («de»: issue) la deja pendiente (lo decide issues.py del analista); en lo que la usa («de»: usa), es un aviso."""
+    t0 = time.monotonic()
+    run = ejecutores(ex)
+    if not run:
+        return {"ejecutadas": False, "motivo": SIN_EJECUTOR + ": los de la issue esperan a la regresión, que se pasa en "
+                                                          "Appian"}
+    propios = [o for o in suyos if o["type"] in run]
+    dep, usan, sin_dependientes = dependientes_de(ex), {}, []
+    if dep and propios:
+        clave = (dep.schema.get("required") or [])[0]
+        mios = {o["uuid"] for o in propios}
+        respuestas = await asyncio.gather(*(ex.call_with_retry(dep.name, {clave: o["uuid"]}) for o in propios))
+        sin_dependientes = [o.get("name") or o["uuid"] for o, res in zip(propios, respuestas) if not res.ok]
+        for o, res in zip(propios, respuestas):
+            d = bm.unwrap(res.data) if res.ok else []
+            for it in (d if isinstance(d, list) else bm.find_list(d, ("dependents", "usages", "items", "results"))):
+                u = pick(it, UUID_KEYS) if isinstance(it, dict) else None
+                tipo = ex.policy.canon_type(pick(it, TYPE_KEYS)) if u else None
+                if u and u not in mios and u != app_uuid and tipo in run:
+                    x = usan.setdefault(u, {"uuid": u, "name": pick(it, NAME_KEYS) or u, "type": tipo, "usaA": []})
+                    x["usaA"] += [] if o.get("name") in x["usaA"] else [o.get("name")]
+    otros = list(usan.values())
+    hechos = await asyncio.gather(*(ejecuta(ex, run[o["type"]], o) for o in propios + otros))
+    objetos = [{**r, "de": "issue"} for r in hechos[:len(propios)]] + \
+              [{**r, "de": "usa", "usaA": o["usaA"]} for r, o in zip(hechos[len(propios):], otros)]
+    out = {"ejecutadas": True, "segundos": round(time.monotonic() - t0, 1), **cuenta(objetos), "objetos": objetos}
+    if not dep:
+        out["nota"] = "el Dev MCP no da los dependientes de un objeto: solo se ejecutan los casos de la issue"
+    elif sin_dependientes:     # lo que los usa queda sin probar: se dice
+        out["sinDependientes"] = sin_dependientes
+        out["nota"] = (f"no se pudieron leer los dependientes de {', '.join(sin_dependientes)}: lo que los usa no se ha "
+                       "probado (repite «verificar» o lo verá la regresión)")
+    return out
+
+
+def resumen_de_pruebas(p: dict | None, solo_fallos: bool = False) -> list[str]:
+    """Las líneas de la salida: el recuento y lo que falla, lo que no se pudo ejecutar y, salvo en la regresión
+    (solo_fallos), lo que no se puede evaluar y las reglas o interfaces de la issue sin casos. El detalle, en el fichero."""
+    if not p:
+        return []
+    if not p.get("ejecutadas", p.get("ejecutada")):
+        return [f"Pruebas: ninguna; {p.get('motivo')}."]
+    objetos = p.get("objetos") if isinstance(p.get("objetos"), list) else p.get("porObjeto") or []
+    de = {"issue": sum(o.get("de") == "issue" for o in objetos), "usa": sum(o.get("de") == "usa" for o in objetos)}
+    quien = (f"{de['issue']} de la issue y {de['usa']} que los usan" if de["issue"] or de["usa"] else
+             f"{len(objetos)} reglas e interfaces")
+    L = [f"Pruebas: {quien}, {p['casos']} casos: {p['pasan']} pasan, {p['fallan']} fallan, {p['noEvaluables']} no "
+         f"evaluables ({p.get('segundos', 0)} s)."]
+    for o in objetos:
+        donde = "" if not o.get("de") else (" (de la issue)" if o["de"] == "issue" else
+                                            f" (usa {', '.join(map(str, o.get('usaA', [])))}: aviso)")
+        L += [f"  ✗ {o['objeto']} «{c['caso']}»{donde}: {c['error'][:200]}" for c in o.get("fallan", [])]
+        if o.get("error"):
+            L.append(f"  ✗ {o['objeto']}{donde}: no se pudieron ejecutar sus casos ({o['error'][:200]})")
+        if not solo_fallos:
+            L += [f"  · {o['objeto']} «{c['caso']}»: no evaluable, {c['motivo']}" for c in o.get("noEvaluables", [])]
+            if o.get("de") == "issue" and o.get("casos") == 0 and not o.get("error"):
+                L.append(f"  · {o['objeto']}: sin casos de prueba")
+    if p.get("nota"):
+        L.append(f"  · {p['nota']}")
+    return L
 
 
 # Tipos de campo que son el mismo con otro nombre (el técnico escribe uno y Appian devuelve otro)
@@ -1535,15 +1806,38 @@ def tipo_de_objeto(t) -> str:
     return re.sub(r"[\s_-]", "", str(t or "")).lower()   # recordType = Record Type = record_type
 
 
+def tipo_de_accion(t) -> str:
+    """De lista o relacionada, se escriba como se escriba: «De lista» = LIST_ACTION; «Relacionada» = RELATED_ACTION."""
+    s = str(t or "").lower()
+    return "lista" if "list" in s else "relacionada" if re.search(r"relat|relacion", s) else s.strip()
+
+
+def nombre_de_accion(n) -> str:
+    return " ".join(re.sub(r"[«»\"“”`]", "", str(n or "")).split()).lower()
+
+
 def diferencias(o: dict, esperado: dict) -> dict:
-    """Lo que no coincide entre un objeto verificado y lo esperado ({"tipo", "campos": [{"nombre", "tipo"}]}):
-    {"falta": true}; o «tipo» {esperado, real}, faltanCampos, sobranCampos, camposDeOtroTipo [{nombre, esperado, real}]
-    y camposSinLeer (no se pudo leer la definición), solo los que no están vacíos. {} si coincide."""
+    """Lo que no coincide entre un objeto verificado y lo esperado ({"tipo", "campos": [{"nombre", "tipo"}], "acciones":
+    [{"nombre", "tipo"}]}): {"falta": true}; o «tipo» {esperado, real}, faltanCampos, sobranCampos, camposDeOtroTipo
+    [{nombre, esperado, real}], camposSinLeer (no se pudo leer la definición), faltanAcciones, accionesDeOtroTipo y
+    accionesSinLeer, solo los que no están vacíos. {} si coincide. De las acciones, solo las esperadas: las demás del
+    record type no son de quien lo pide. Si el Dev MCP no da las acciones, no se comparan (lo dice la salida)."""
     if not o.get("existe"):
         return {"falta": True}
     out: dict = {}
     if esperado.get("tipo") and tipo_de_objeto(esperado["tipo"]) != tipo_de_objeto(o.get("tipo")):
         out["tipo"] = {"esperado": esperado["tipo"], "real": o.get("tipo")}
+    if isinstance(esperado.get("acciones"), list) and not o.get("accionesNoDisponibles"):
+        if o.get("acciones") is None:
+            out["accionesSinLeer"] = True
+        else:
+            reales = {nombre_de_accion(a.get("nombre")): a for a in o["acciones"]}
+            pedidas = [a for a in esperado["acciones"] if isinstance(a, dict) and a.get("nombre")]
+            faltan = [a["nombre"] for a in pedidas if nombre_de_accion(a["nombre"]) not in reales]
+            otro = [{"nombre": a["nombre"], "esperado": a["tipo"], "real": reales[nombre_de_accion(a["nombre"])].get("tipo")}
+                    for a in pedidas if a.get("tipo") and nombre_de_accion(a["nombre"]) in reales
+                    and tipo_de_accion(a["tipo"]) != tipo_de_accion(reales[nombre_de_accion(a["nombre"])].get("tipo"))]
+            out.update({k: v for k, v in (("faltanAcciones", faltan), ("accionesDeOtroTipo", otro)) if v})
     if isinstance(esperado.get("campos"), list):
         if o.get("campos") is None:
             out["camposSinLeer"] = True
@@ -1570,30 +1864,45 @@ async def cmd_verificar(args) -> int:
     if not isinstance(esperado, dict):
         eprint("--esperado: un JSON {objeto: {\"tipo\": …, \"campos\": [{\"nombre\", \"tipo\"}]}}.")
         return EXIT_USAGE
+    issue = esperado.pop("_issue", None)   # de qué issue y de qué versión es lo esperado: no es un objeto; va al resultado
     pedidos += [p for p in esperado if p not in pedidos]
     if not pedidos:
         eprint("Sin objetos: --objetos o --esperado.")
         return EXIT_USAGE
-    sess, choice, code, msg = open_session(args)
-    if not sess:
-        eprint(msg)
-        return code
-    try:
-        async with sess:
-            ex = Extractor(sess, Policy(args.policy), None)
-            app_obj, objects, _ = await prepare(ex, args)
-            resultado = await verifica(ex, app_obj, objects, pedidos)
-    except SystemExit as se:
-        return int(se.code)
-    except Exception as ex_:
-        eprint(f"No se pudo arrancar o autenticar el Dev MCP: {type(ex_).__name__}: {ex_}")
-        return EXIT_START
+    # lo esperado de una issue dice si tiene pruebas que ejecutar; sin ellas, solo se lee lo que se compara. Para eso,
+    # el tipo de cada objeto: el suyo o, si solo nombra acciones de registro, record type
+    sin_pruebas = isinstance(issue, dict) and issue.get("pruebas", True) is False
+    quiere = {p: esperado[p] if isinstance(esperado.get(p), dict) else {} for p in pedidos}
+    with Registro(args.registro) as reg:
+        sess, choice, code, msg = open_session(args, reg.destino)
+        if not sess:
+            eprint(msg)
+            return code
+        try:
+            async with sess:
+                ex = Extractor(sess, Policy(args.policy), None)
+                tipos = {p: ex.policy.canon_type(q.get("tipo") or ("recordType" if q.get("acciones") else None))
+                         for p, q in quiere.items()}
+                if sin_pruebas and all(tipos.values()):
+                    app_obj, objects = await solo_lo_esperado(ex, args, tipos)
+                else:
+                    app_obj, objects, _ = await prepare(ex, args)
+                resultado = await verifica(ex, app_obj, objects, pedidos, esperado, ligero=sin_pruebas)
+                if isinstance(issue, dict):
+                    resultado["pruebas"] = (
+                        {"ejecutadas": False, "motivo": "la issue no cambia criterios ni reglas"} if sin_pruebas else
+                        await pruebas_de(ex, list(resolver(list(esperado), objects).values()), app_obj.get("uuid")))
+        except SystemExit as se:
+            return int(se.code)
+        except Exception as ex_:
+            return reg.no_arranca(ex_)
     if esperado:
         for o in resultado["objetos"]:
             if isinstance(esperado.get(o["pedido"]), dict):
                 o["diferencias"] = diferencias(o, esperado[o["pedido"]])
         resultado["conDiferencias"] = [o["pedido"] for o in resultado["objetos"] if o.get("diferencias")]
-    resultado = {"generadoEn": now_iso(), "entorno": entorno(server_info(choice)["url"]), **resultado}
+    resultado = {"generadoEn": now_iso(), "entorno": entorno(server_info(choice)["url"]),
+                 **({"issue": issue} if issue is not None else {}), **resultado}
     destino = Path(args.out).resolve()
     write_json(destino, resultado)
     if args.json:
@@ -1603,7 +1912,54 @@ async def cmd_verificar(args) -> int:
           + (f"; faltan: {', '.join(resultado['faltan'])}" if resultado["faltan"] else "")
           + (f"; distintos de lo esperado: {', '.join(resultado['conDiferencias'])}" if resultado.get("conDiferencias")
              else "") + f". Detalle: {destino}")
+    for o in resultado["objetos"]:
+        if o.get("accionesNoDisponibles"):
+            print(f"  · {o['pedido']}: el Dev MCP no da sus acciones de registro; no se comprueban")
+    for linea in resumen_de_pruebas(resultado.get("pruebas")):
+        print(linea)
     return EXIT_OK
+
+
+async def cmd_regresion(args) -> int:
+    """Los casos de prueba de toda la aplicación, objeto a objeto por el Dev MCP: el resumen, en --out; por la salida,
+    solo lo que falla. 1 si algún caso falla; 17 si el Dev MCP no ofrece ejecutar casos (la regresión, en Appian)."""
+    with Registro(args.registro) as reg:
+        sess, choice, code, msg = open_session(args, reg.destino)
+        if not sess:
+            eprint(msg)
+            return code
+        try:
+            async with sess:
+                ex = Extractor(sess, Policy(args.policy), None)
+                app_obj, objects, _ = await prepare(ex, args)
+                run, t0 = ejecutores(ex), time.monotonic()
+                con = [o for o in objects if o["type"] in run]
+                hechos = list(await asyncio.gather(*(ejecuta(ex, run[o["type"]], o) for o in con)))
+        except SystemExit as se:
+            return int(se.code)
+        except Exception as ex_:
+            return reg.no_arranca(ex_)
+    resultado = {"generadoEn": now_iso(), "entorno": entorno(server_info(choice)["url"]),
+                 "aplicacion": {"nombre": app_obj.get("name"), "prefijo": app_obj.get("prefix"),
+                                "uuid": app_obj.get("uuid")}}
+    if not run:
+        resultado.update(ejecutada=False, motivo=f"{SIN_EJECUTOR}: {EN_APPIAN}")
+    else:
+        resultado.update(ejecutada=True, segundos=round(time.monotonic() - t0, 1), objetos=len(hechos),
+                         sinCasos=[r["objeto"] for r in hechos if r.get("casos") == 0 and not r.get("error")],
+                         **cuenta(hechos), porObjeto=hechos)
+    destino = Path(args.out).resolve()
+    write_json(destino, resultado)
+    if not run:
+        print(f"Regresion sin hacer: {resultado['motivo']}. Detalle: {destino}")
+        return EXIT_SIN_PRUEBAS
+    print(f"Regresion de {app_obj.get('name')}: {resultado['objetos']} reglas e interfaces "
+          f"({len(resultado['sinCasos'])} sin casos), {resultado['casos']} casos: {resultado['pasan']} pasan, "
+          f"{resultado['fallan']} fallan, {resultado['noEvaluables']} no evaluables ({resultado['segundos']} s). "
+          f"Detalle: {destino}")
+    for linea in resumen_de_pruebas(resultado, solo_fallos=True)[1:]:
+        print(linea)
+    return EXIT_FALLAN if resultado["fallan"] or resultado["sinEjecutar"] else EXIT_OK
 
 
 def instante(texto) -> datetime | None:
@@ -1710,31 +2066,31 @@ async def cmd_deriva(args) -> int:
     except (OSError, ValueError) as ex_:
         eprint(str(ex_))
         return EXIT_USAGE
-    sess, choice, code, msg = open_session(args)
-    if not sess:
-        eprint(msg)
-        return code
-    url, antes = entorno(server_info(choice)["url"]), entorno(guardada.get("entorno"))
-    if url and antes and url.lower() != antes.lower():
-        eprint(f"El as-is es de {antes} y el Dev MCP de {url}: la deriva compara con el mismo entorno.")
-        return EXIT_APP
-    try:
-        report = json.loads((interm / "extraction_report.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        report = {}
-    args.app = app["uuid"]
-    try:
-        async with sess:
-            ex = Extractor(sess, Policy(args.policy), None)
-            _, objects, _ = await prepare(ex, args)
-            resultado = await deriva_de(ex, guardada, objects, pedidos, ignorar, interm / "mcp_raw",
-                                        bm.herramientas_usadas(report))
-    except SystemExit as se:
-        eprint(f"La aplicacion del as-is ({app.get('name')}) no esta visible en el entorno.")
-        return int(se.code)
-    except Exception as ex_:
-        eprint(f"No se pudo arrancar o autenticar el Dev MCP: {type(ex_).__name__}: {ex_}")
-        return EXIT_START
+    with Registro(args.registro) as reg:
+        sess, choice, code, msg = open_session(args, reg.destino)
+        if not sess:
+            eprint(msg)
+            return code
+        url, antes = entorno(server_info(choice)["url"]), entorno(guardada.get("entorno"))
+        if url and antes and url.lower() != antes.lower():
+            eprint(f"El as-is es de {antes} y el Dev MCP de {url}: la deriva compara con el mismo entorno.")
+            return EXIT_APP
+        try:
+            report = json.loads((interm / "extraction_report.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            report = {}
+        args.app = app["uuid"]
+        try:
+            async with sess:
+                ex = Extractor(sess, Policy(args.policy), None)
+                _, objects, _ = await prepare(ex, args)
+                resultado = await deriva_de(ex, guardada, objects, pedidos, ignorar, interm / "mcp_raw",
+                                            bm.herramientas_usadas(report))
+        except SystemExit as se:
+            eprint(f"La aplicacion del as-is ({app.get('name')}) no esta visible en el entorno.")
+            return int(se.code)
+        except Exception as ex_:
+            return reg.no_arranca(ex_)
     resultado = {"generadoEn": now_iso(), "entorno": url or antes,
                  "aplicacion": {k2: app.get(k) for k, k2 in (("name", "nombre"), ("prefix", "prefijo"), ("uuid", "uuid"))},
                  "asIs": {"extraidoEn": report.get("startedAt")}, **resultado}
@@ -1796,15 +2152,25 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("datafabric")
     common(sp)
     sp.add_argument("--out", required=True)
+    registro = "Saca el registro del servidor por la salida de errores (sin esto, solo si no arranca)"
     sp = sub.add_parser("verificar")
     common(sp)
     sp.add_argument("--app", required=True, help="uuid, prefijo o nombre de la aplicacion")
     sp.add_argument("--objetos", help="Nombres o uuids separados por comas, o @fichero (uno por linea)")
-    sp.add_argument("--esperado", help="Fichero JSON {objeto: {\"tipo\": …, \"campos\": [{\"nombre\", \"tipo\"}]}}: se verifican "
-                                       "tambien esos objetos y se escriben sus diferencias")
+    sp.add_argument("--esperado", help="Fichero JSON {objeto: {\"tipo\": …, \"campos\": [{\"nombre\", \"tipo\"}], "
+                                       "\"acciones\": [{\"nombre\", \"tipo\"}]}}: se verifican tambien esos objetos y "
+                                       "se escriben sus diferencias. Su clave «_issue», si la lleva, pasa tal cual al "
+                                       "resultado, en «issue», y con ella se ejecutan sus pruebas salvo «pruebas»: false")
     sp.add_argument("--out", required=True, help="Fichero JSON del resultado")
+    sp.add_argument("--registro", action="store_true", help=registro)
+    sp = sub.add_parser("regresion")
+    common(sp)
+    sp.add_argument("--app", required=True, help="uuid, prefijo o nombre de la aplicacion")
+    sp.add_argument("--out", required=True, help="Fichero JSON del resumen")
+    sp.add_argument("--registro", action="store_true", help=registro)
     sp = sub.add_parser("deriva")
     common(sp)
+    sp.add_argument("--registro", action="store_true", help=registro)
     sp.add_argument("--out", required=True, help="Carpeta as-is con la extraccion con la que se compara")
     sp.add_argument("--objetos", help="Solo estos objetos (nombres o uuids separados por comas, o @fichero)")
     sp.add_argument("--ignorar", help="<nombre>@<fecha ISO>, separados por comas (o @fichero): los de nuestras "
@@ -1824,6 +2190,8 @@ def main(argv=None) -> int:
         return asyncio.run(cmd_datafabric(args))
     if args.cmd == "verificar":
         return asyncio.run(cmd_verificar(args))
+    if args.cmd == "regresion":
+        return asyncio.run(cmd_regresion(args))
     if args.cmd == "deriva":
         return asyncio.run(cmd_deriva(args))
     return EXIT_USAGE

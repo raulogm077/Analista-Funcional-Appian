@@ -1,0 +1,31 @@
+# Lo que no se sube. Todo lo demás del proyecto sí, también las fuentes.
+
+# Secretos y configuración de cada equipo
+.env
+.env.*
+.mcp.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Grabaciones de vídeo y de audio: git no está pensado para ficheros tan grandes
+*.mp4
+*.m4v
+*.mov
+*.mkv
+*.avi
+*.wmv
+*.webm
+*.mp3
+*.m4a
+*.wav
+*.ogg
+*.flac
+*.aac
+*.wma
+
+# Restos del equipo
+~$*
+.DS_Store
+Thumbs.db

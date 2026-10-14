@@ -10,7 +10,7 @@ Las peticiones visibles están en pruebas/enrutado.json, las ocultas en ocultas/
 frontera con skills de fuera del plugin que el usuario puede tener a la vez, como appian-sail-generator o docx) en
 vecinas/enrutado.json (y, sin enseñarlas a quien ajusta las descripciones, en vecinas/ocultas.json), todas con el
 formato [{"peticion": "…", "skill": "…"}]. Con --vecinas o --vecinas-ocultas, las descripciones
-de vecinas.json ([{"skill", "descripcion"}], tal cual las ve el modelo) van con las seis en el enunciado y sus skills
+de vecinas.json ([{"skill", "descripcion"}], tal cual las ve el modelo) van con las del plugin en el enunciado y sus skills
 valen como respuesta. Las respuestas tienen el mismo formato y el mismo orden, una por petición y con la petición
 copiada tal cual. Vale la skill con el prefijo de su plugin («appian-analisis-funcional:appian-…»).
 
@@ -87,7 +87,7 @@ def vecinas() -> list[dict]:
 
 
 def enunciado(peticiones: list[dict], otras: list[dict] = ()) -> str:
-    """Lo que recibe el agente que enruta: las seis descripciones, las de otras skills (las vecinas) y las peticiones."""
+    """Lo que recibe el agente que enruta: las descripciones del plugin, las de otras skills (las vecinas) y las peticiones."""
     skills = []
     for md in sorted(SKILLS.glob("*/SKILL.md")):
         texto = descripcion(md)

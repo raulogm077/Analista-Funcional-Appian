@@ -33,7 +33,7 @@ sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fu
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rutas import work_dir  # noqa: E402
+from rutas import escribe, work_dir  # noqa: E402
 
 SEVERIDADES = ("Alta", "Media", "Baja")
 CERTEZAS = {"verificado": "✅", "inferido": "🔶", "pendiente": "❓"}
@@ -245,7 +245,7 @@ def renombra(salida: Path, trabajo: Path, cambios: dict[str, str]) -> None:
         texto = f.read_text(encoding="utf-8")
         nuevo = RE_CITA.sub(lambda m: cambios.get(m.group(0), m.group(0)), texto)
         if nuevo != texto:
-            f.write_text(nuevo, encoding="utf-8")
+            escribe(f, nuevo)
 
 
 def etiqueta_doc(doc: str) -> str:
@@ -324,14 +324,14 @@ def main(salida_dir: str) -> int:
                 "porCerteza": {c: sum(1 for h in hallazgos if h["certeza"] == c and not h.get("duplicadoDe"))
                                for c in CERTEZAS},
                 "retirados": retirados}
-    (trabajo / "registro.json").write_text(json.dumps(registro, ensure_ascii=False, indent=2), encoding="utf-8")
+    escribe(trabajo / "registro.json", json.dumps(registro, ensure_ascii=False, indent=2))
     doc09 = salida / "09-valor-adicional.md"
     if doc09.exists():
         texto = doc09.read_text(encoding="utf-8")
         if INICIO in texto and FIN in texto:
             antes, resto = texto.split(INICIO, 1)
             _, despues = resto.split(FIN, 1)
-            doc09.write_text(f"{antes}{INICIO}\n{tabla(hallazgos, retirados)}\n{FIN}{despues}", encoding="utf-8")
+            escribe(doc09, f"{antes}{INICIO}\n{tabla(hallazgos, retirados)}\n{FIN}{despues}")
             print(f"09-valor-adicional.md: registro con {sum(1 for h in hallazgos if not h.get('duplicadoDe'))} hallazgos")
         else:
             print("AVISO: 09-valor-adicional.md no tiene los marcadores del registro", file=sys.stderr)

@@ -59,8 +59,7 @@ Fuente de esta guía: [Appian Developer MCP Servers](https://docs.appian.com/sui
          "command": "uv",
          "args": ["run", "--directory", "/RUTA/ABSOLUTA/appian-dev-mcp-server", "python", "-m", "lcp_mcp_server"],
          "env": {
-           "LCP_URL": "https://tu-entorno.appiancloud.com",
-           "LCP_TOOL_MODE": "readonly"
+           "LCP_URL": "https://tu-entorno.appiancloud.com"
          }
        }
      }
@@ -69,7 +68,8 @@ Fuente de esta guía: [Appian Developer MCP Servers](https://docs.appian.com/sui
 
    - En Windows la ruta va con barras dobles o normales: `"C:/Users/<usuario>/appian-dev-mcp-server"`.
    - `LCP_URL` es solo el host, sin barra final.
-   - `LCP_TOOL_MODE: readonly` es recomendable para esta skill. En cualquier caso, **la skill fuerza `readonly`** en su propia conexión.
+   - Con qué cuenta entra en cada entorno (en desarrollo, una que construye; en los demás, una que solo lee), en
+     «Solo se escribe en desarrollo», más abajo. La skill nunca escribe: lo garantiza su política, en cualquier entorno.
    - Autenticación básica en lugar de SSO: añade `"LCP_AUTH_METHOD": "basic"`, `"USERNAME"` y `"PASSWORD"`. Mejor como variables de entorno (`"PASSWORD": "${APPIAN_PASSWORD}"`) que escritas en el fichero.
    - Con proxy corporativo: `HTTPS_PROXY`, `HTTP_PROXY` y `SSL_CERT_FILE`.
    - Otros clientes: Claude Desktop (`claude_desktop_config.json`), Cursor (`~/.cursor/mcp.json`), Kiro (`.kiro/settings/mcp.json`). La skill busca en todos ellos.
@@ -92,7 +92,31 @@ Debe mostrar `Dev MCP ... ok` y el número de aplicaciones visibles.
 | `ambiguo` | Hay varias configuraciones (p. ej. varios usuarios). Elige con `--server-name`. |
 | `No arranca o no autentica` | Revisa la ruta del bundle, `uv sync`, la URL y el inicio de sesión. Prueba el servidor desde tu cliente. |
 | `sin_apps` | El usuario no ve ninguna aplicación: revisa permisos en Appian. |
-| Aviso de herramientas de escritura | El servidor no respeta `readonly`. La skill pasa a modo estricto y solo usa herramientas de lectura evidentes. |
+| Aviso de herramientas de escritura | Es lo normal: el Dev MCP ofrece herramientas que escriben (también con `LCP_TOOL_MODE=readonly`). La skill pasa a modo estricto y solo usa las de lectura evidentes. |
+
+### Solo se escribe en desarrollo
+
+La IA escribe en Appian solo en el entorno de desarrollo y, en una urgencia, en el entorno de corrección. A pruebas y a
+producción llega un paquete cuyos objetos ha revisado una persona. Cómo se cumple:
+
+| Entorno | Dev MCP | SAIL CLI |
+|---|---|---|
+| Desarrollo | Con la cuenta de quien construye (Designer) | Sí: crea datos y lanza procesos |
+| Entorno de corrección | En una urgencia, como en desarrollo; si no, como en producción | Solo en una urgencia |
+| Pruebas, preproducción y producción | Con una cuenta que solo lee, la misma para todo el equipo en ese entorno | No |
+
+- **La cuenta que solo lee** es la única barrera que aplica Appian: el Dev MCP hace cada operación con los permisos de
+  la cuenta con la que entra. Una cuenta que no es Designer no sirve: el Dev MCP la rechaza con un 403 en toda
+  llamada (comprobado con el Dev MCP 26.6.110). Lo más cercano a «solo leer» es una cuenta Designer con permiso de solo ver
+  (*Viewer*) en la aplicación: según la documentación de Appian ([Object security](https://docs.appian.com/suite/help/latest/object-security.html)),
+  no puede cambiar ni borrar lo que existe, pero un Designer sí puede crear objetos nuevos. Esto último no se ha
+  probado. Una por entorno, para todo el equipo; no hace falta crear más.
+- **`LCP_TOOL_MODE=readonly` no protege.** La documentación de Appian la describe («restricts to read-only tools»),
+  pero el Dev MCP 26.6.110 no la aplica: ofrece las mismas 200 herramientas con ella y sin ella. Si un Dev MCP futuro
+  la aplica, añadirla en los entornos que no son de desarrollo no cuesta nada; hoy no cambia lo de arriba.
+- **Esta skill** (extracción, `verificar`, `regresion`, `deriva`) es de solo lectura por su política
+  (`scripts/devmcp_policy.json`), en cualquier entorno. `verificar` y `regresion` ejecutan casos de prueba que ya
+  existen, que no modifican nada: se pasan en desarrollo.
 
 ---
 

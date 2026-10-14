@@ -19,7 +19,19 @@ Con unidades de cambio (analisis/cambios.md, references/cambios.md):
   indice.py cambios    <p> EV-02 [--json]               lo de una unidad: piezas nuevas, que cambian (antes y después) y
                                                         anuladas, pantallas, técnico, objetos, pruebas, colisiones
   indice.py colision   <p> URG-01                       la corrección urgente frente a las unidades sin pasar a producción
-  indice.py encargo    <p> EV-02                        construccion/EV-02.md y EV-02-esperado.json (unidad aprobada)
+  indice.py issues     <p> EV-02 ISS-nn --sin-prueba "<objeto> «<caso>»" --motivo "…" [--desatendida]
+                                                        una persona marca un caso de prueba que falla, o un escenario
+                                                        que falla en el QA (--sin-prueba HU-nn.m), como no necesario
+                                                        para avanzar (en el índice; se niega con --desatendida)
+  indice.py issues     <p> EV-02 --regresion           la orden de la regresión de toda la aplicación para este
+                                                        equipo, antes de preparar el paquete (de una URG corregida en
+                                                        el entorno de corrección, con el Dev MCP de ese entorno)
+  indice.py issues     <p> EV-02 [ISS-nn | --siguiente [--quien <nombre>] | --liberar ISS-nn]
+                                                        las issues de construcción de una unidad aprobada, una por
+                                                        requisito, en construccion/EV-02/. Con ISS-nn, esa issue con su
+                                                        orden de terminar para este equipo; con --siguiente, la primera
+                                                        sin hacer cuyas dependencias están hechas, reservada con un
+                                                        commit y un push del índice; --liberar quita una reserva
   ficha e impacto imprimen además «Construido: … · En curso: …» por pieza.
 
 Estados: 🔒 Validado · ✅ Decidido · 🔶 Inferido · ⚠️ Pendiente · ❓ No definido · Anulada · Respondida.
@@ -34,6 +46,7 @@ import sys
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import issues as iss
 import modelo as mo
 import unidades as un
 
@@ -371,11 +384,16 @@ def fila_13(m, ctx, construidas, unidad):
                     objetos.append(o)
     pasos = [int(x) for f in ctx.filas for x in re.findall(r"^\s*(\d+)", mo.sin_comentarios(f["paso"]))]
     o = objetos[0] if objetos else None
+    # «Para», si la tabla tiene la columna: la pantalla que cambia o, si no es una pantalla, la pieza
+    para = sorted(pantallas, key=clave) or sorted({m.raiz_de(x) for x in construidas}, key=clave)
     ejemplo = (f"| {max(pasos or [0]) + 1} | `{o or '<objeto>'}` | {tipos.get(o, '<tipo>')} | Modifica | — | "
-               f"{unidad} |")
+               f"{unidad} |" + (f" {', '.join(para)} |" if ctx.con_para else ""))
+    de_datos = any(k in mo.normaliza(tipos.get(x, "")) for x in objetos for k in ("record type", "cdt", "tabla"))
     print(f"  → Técnico §13: cada objeto construido que cambie lleva su fila de {unidad} (los que no cambian, "
           f"ninguna), así: «{ejemplo}»" + (". Los de la fila de su pantalla en el técnico: " + ", ".join(
-              f"`{x}` ({tipos.get(x, '?')})" for x in objetos) if objetos else ""))
+              f"`{x}` ({tipos.get(x, '?')})" for x in objetos) if objetos else "")
+          + (". Si de un record type solo cambia el nombre de una acción, una vista o un filtro, nómbrala así y sin más "
+             "texto («`<objeto> — acción «…»`»): no pide DT" if de_datos else ""))
 
 
 def c_siguientes(m, a):
@@ -397,7 +415,7 @@ def c_grafo(m, a):
     aristas = [{"de": p.id, "a": r} for p in m.piezas.values() for r in sorted(p.refs) if r in m.piezas]
     aristas += [{"de": p.id, "a": h, "tipo": "contiene"} for p in m.piezas.values() for h in p.hijos]
     destino = pathlib.Path(a.o) if a.o else m.analisis / "grafo.json"   # en el proyecto: el plugin no escribe fuera
-    destino.write_text(json.dumps({"nodos": nodos, "aristas": aristas}, ensure_ascii=False, indent=1), encoding="utf-8")
+    mo.escribe(destino, json.dumps({"nodos": nodos, "aristas": aristas}, ensure_ascii=False, indent=1))
     print(f"{destino}: {len(nodos)} piezas, {len(aristas)} referencias")
 
 
@@ -450,7 +468,7 @@ def c_derivadas(m, a):
     if texto.rstrip("\n") == actual.rstrip("\n"):
         print("El anexo está al día.")
     elif a.escribir:
-        m.ruta("F").write_text(texto, encoding="utf-8")
+        mo.escribe(m.ruta("F"), texto)
         print(f"Anexo escrito en {m.ruta('F')} ({len(nuevo) - 6} filas).")
     else:
         print("\n".join(nuevo))
@@ -531,7 +549,7 @@ def c_pendientes(m, a):
 
 # ------------------------------------------------------- unidades de cambio (references/cambios.md)
 DX = ('uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python '
-      '"<skill de ingeniería inversa>/scripts/devmcp_extract.py"')
+      f'"{iss.VERIFICAR.as_posix()}"')
 
 
 def unidad(m, uid):
@@ -604,133 +622,90 @@ def c_colision(m, a):
         print("Deriva: el Dev MCP no da el historial de versiones; no se sabe si se han modificado en desarrollo")
     elif col["deriva"] == "sin fichero" and (m.raiz / "as-is").is_dir():
         print(f"Sin as-is/datos/deriva.json. Si el Dev MCP da el historial, solo de esos objetos:\n  {DX} deriva --out "
-              f"\"<p>/as-is\" --objetos \"{','.join(col['corregidos'] + col['usan'])}\"")
+              f"\"{(m.raiz / 'as-is').resolve().as_posix()}\" --objetos \"{','.join(col['corregidos'] + col['usan'])}\"")
     print(f"Colisión: {'sí' if col['choques'] else 'no'}")
     for c in col["choques"]:
         print(f"  {c}")
     print("→ " + ("«Dónde se corrige: Entorno de corrección» (igual que producción); cada unidad que cambia esos objetos "
-                  "recibe en su encargo «reaplicar " + uid + "». Sin entorno de corrección, la ficha registra lo que "
-                  "decide el equipo." if col["choques"] else
+                  "recibe en sus issues «Reaplicar " + uid + "» al volver a generarlas (indice.py issues <p> EV-nn). Sin "
+                  "entorno de corrección, la ficha registra lo que decide el equipo." if col["choques"] else
                   "«Dónde se corrige: Desarrollo»; esos objetos quedan congelados para las unidades en curso hasta el pase."))
     print(f"Escríbelo en «Colisión» y «Dónde se corrige» de impacto/{uid}.md.")
 
 
-def donde_en_tecnico(m, objeto, fuentes=(), suyas=()):
-    """Los apartados del técnico y las DT que nombran un objeto (sin Entorno, Convenciones ni §13; un record type, por su
-    «### 3.n <nombre>»), y qué cambia en él con esta unidad: la «Decisión» de una DT de la unidad (de sus piezas o que
-    cita una de sus fuentes) que lo nombra o, si no, una fila que lo nombra y cita una de sus fuentes; "" si no hay."""
-    if "T" not in m.docs:
-        return [], ""
-    T, rx = m.docs["T"], re.compile(rf"`{re.escape(objeto)}(?:\(\))?`")
-    secs, dts, fila = [], [], ""
-    cita = lambda texto: any(re.search(rf"\b{x}\b", texto) for x in fuentes)
-    for p in m.vigentes("DT"):
-        if (p.id in suyas or cita(m.texto(p.id))) and rx.search(m.texto(p.id)):
-            decision = mo.sin_comentarios(m.campos(p.id).get("decision", "")).replace("`", "").strip()
-            fila = fila or (f"{p.id}: {decision}" if decision else "")
-    for i, l in enumerate(T.lineas):
-        s = T.seccion_de_linea[i]
-        apartado = re.match(r"^###\s+([\d.]+)\s+(.+)$", l)
-        if apartado and mo.normaliza(apartado.group(2).strip(" `")) == mo.normaliza(objeto):
-            secs.append(f"§{apartado.group(1).rstrip('.')}")
-            continue
-        if s in ("0", "1", "13", "") or not rx.search(l):
-            continue
-        if s == "2":
-            dt = next((p.id for p in m.vigentes("DT") if p.ini <= i < p.fin), None)
-            dts += [dt] if dt else []
-        else:
-            secs.append(f"§{s}")
-            if not fila and l.startswith("|") and cita(l):
-                fila = " · ".join(c for c in mo.celdas(mo.sin_comentarios(l).replace("`", "")) if c.strip(" —-"))
-    return list(dict.fromkeys(dts + secs)), fila[:140]
-
-
-def c_encargo(m, a):
-    """construccion/<U>.md: qué construir (por objeto, su situación, qué cambia y dónde está en el técnico), los puntos
-    de «Cambio sobre lo construido», las pruebas, lo que hay que reaplicar y la orden de verificar; y
-    construccion/<U>-esperado.json para verificar --esperado. Sin orden ni lista de cierre propios: los dan la skill
-    oficial de Appian (change-planning) y las puertas de appian-best-practices. Se genera, no se edita."""
+def c_issues(m, a):
+    """Las issues de construcción de una unidad aprobada, en construccion/<U>/ (issues.py): el índice y, por issue,
+    ISS-nn.md, ISS-nn.feature y ISS-nn-esperado.json. Se generan del análisis y no se editan. Sin más, las (re)genera y
+    dice cómo va cada una; con ISS-nn, imprime esa issue con su orden de terminar para este equipo; con --siguiente, da
+    la primera sin hacer cuyas dependencias están hechas y la reserva (un commit y un push del índice); con --liberar,
+    quita una reserva."""
     ctx, uid = unidad(m, a.unidad)
-    u = ctx.por_id[uid]
-    if u.urgente:
-        sys.exit(f"{uid} es una URG: se corrige con su ficha, impacto/{uid}.md (references/urgentes.md)")
-    if u.estado not in (un.APROBADA, un.CONSTRUIDA):
-        sys.exit(f"{uid} está {u.estado}: solo se construye una unidad aprobada "
-                 f"(proyecto.py cambio <p> {uid} aprobada --fuente FU-nn)")
-    crecida = ctx.crecida(uid)
-    if crecida:   # lo añadido después de aprobarla no se construye sin aprobarlo (references/cambios.md)
-        sys.exit(f"{uid} ha crecido desde que se aprobó ({'; '.join(crecida)}): vuelve a aprobarla "
-                 f"(`proyecto.py cambio <p> {uid} aprobada --fuente FU-nn`) o lleva lo nuevo a otra unidad")
-    filas = [f for f in ctx.filas_de(uid) if f["situacion"] in un.CAMBIAN]
-    if not filas:
-        sys.exit(f"Técnico §13 no tiene objetos de {uid} (columna «Cambio»): no hay nada que construir")
-    r, esperado = ctx.resumen(uid), ctx.esperado(uid)
-    inv = m.raiz / "as-is" / "datos" / "inventario.json"
-    app = json.loads(inv.read_text(encoding="utf-8")).get("aplicacion", {}).get("nombre") if inv.is_file() else None
-    if not app:
-        fila0 = next((f for _, cab, fs in m.tablas("T", "0") for f in fs if f and mo.normaliza(f[0]) == "aplicacion"), None)
-        app = (re.findall(r"`([^`]+)`", fila0[1]) or ["<aplicación>"])[0] if fila0 and len(fila0) > 1 else "<aplicación>"
-    L = [f"# Encargo de construcción · {uid} · {u.titulo}", "",
-         "<!-- Lo genera indice.py encargo a partir del análisis; no se edita: se vuelve a generar. -->", "",
-         f"Unidad {uid} · {u.estado} ({u.aprobada}) · análisis {r['version']} · aplicación `{app}`", "",
-         "Se construye solo esto. El orden lo da la skill oficial de Appian (`change-planning`) y las puertas, la "
-         "calibración de `appian-best-practices`. Lo que hay que construir está en el técnico; aquí, dónde.", "",
-         "## Objetos", "", "| Objeto | Tipo | Situación | Qué cambia | Dónde, en el técnico |", "|---|---|---|---|---|"]
-    fuentes = sorted({x for n in r["informes"] for x in re.findall(r"FU-\d+", n)})
-    for f in filas:
-        for o in f["objetos"]:
-            donde, fila = donde_en_tecnico(m, un.objeto(o), fuentes, ctx.piezas_de(uid))
-            campos = esperado.get(un.objeto(o), {}).get("campos")
-            secs = [x for x in donde if x.startswith("§")]
-            que = (f"campos: {', '.join(c['nombre'] for c in campos)}" if campos else fila) or \
-                (f"ver técnico {', '.join(secs)}" if secs else "—")
-            sust = f" (sustituye a {', '.join(f['sustituye'])})" if f["sustituye"] else ""
-            L.append(f"| `{o}` | {f['tipo']} | {f['situacion'].capitalize()}{sust} | {que.replace('|', '/')} | "
-                     f"{', '.join(donde) or '—'} |")
-    puntos = ctx.puntos_construido(uid)
-    if puntos:
-        dt = ctx.dt_construido(uid)
-        campos = m.campos(dt.id) if dt else {}
-        L += ["", f"## Cambio sobre lo construido ({dt.id if dt else 'sin DT: comprobar.py lo avisa'})", ""]
-        L += [f"- **{p}** ({', '.join(o)}): {mo.sin_comentarios(campos.get(mo.normaliza(p), '')).strip() or 'falta en la DT'}"
-              for p, o in puntos.items()]
-    pr = r["pruebas"]
-    L += ["", "## Pruebas (técnico §14)", "", f"- Criterios: {', '.join(pr['criterios']) or '—'}",
-          f"- Escenarios: {', '.join(pr['escenarios']) or '—'}"]
-    L += [f"- {g['id']} sobre {', '.join(g['objetos'])}: {g['prueba'] or 'su prueba en técnico §14'}" for g in pr["urgentes"]]
-    if r["reaplicar"] or r["congelados"]:
-        L += ["", "## Correcciones urgentes", ""]
-        L += [f"- Reaplicar {t['urgente']} en {', '.join(f'`{o}`' for o in t['objetos'])}: la corrección se hizo en el "
-              f"entorno de corrección; cuando su prueba pase en desarrollo, se confirma con `--reaplicada {t['urgente']}`"
-              for t in r["reaplicar"]]
-        L += [f"- No tocar {', '.join(f'`{o}`' for o in t['objetos'])} hasta el pase de {t['urgente']} (se corrige en "
-              "desarrollo)" for t in r["congelados"]]
-    otras = [c for c in r["colisiones"] if not c["unidad"].startswith("URG")]
-    if otras:
-        L += ["", "## Otras unidades sobre los mismos objetos", ""]
-        L += [f"- {c['unidad']} ({c['estado']}): {', '.join(c['objetos'])} · {c['decision'] or 'sin decisión escrita'}"
-              for c in otras]
-    objetos = list(esperado)
-    reap = "".join(f" --reaplicada {t['urgente']}" for t in r["reaplicar"])
-    L += ["", "## Verificar y marcar", "",
-          "Al terminar, solo lectura, con el atajo «Verificar» de `appian-reverse-engineering` (`<p>` es esta carpeta "
-          "del proyecto; sin Dev MCP, `--manual`):", "", "```",
-          f"{DX} verificar --app \"{app}\" --objetos \"{','.join(objetos)}\" --esperado \"<p>/construccion/{uid}-esperado.json\" "
-          f"--out \"<p>/construccion/verificacion/{uid}.json\"",
-          f"python3 <skill del analista>/scripts/proyecto.py cambio <p> {uid} construida{reap}", "```", ""]
-    destino = m.raiz / "construccion" / f"{uid}.md"
-    texto = "\n".join(L)
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    esp = m.raiz / "construccion" / f"{uid}-esperado.json"
-    nuevo_esp = json.dumps(esperado, ensure_ascii=False, indent=1) + "\n"
-    cambia = [x for x, t in ((destino, texto), (esp, nuevo_esp))
-              if not x.is_file() or x.read_text(encoding="utf-8") != t]
-    for x, t in ((destino, texto), (esp, nuevo_esp)):
-        if x in cambia:
-            x.write_text(t, encoding="utf-8")
-    print(f"{'Escrito' if cambia else 'Al día, sin cambios'}: construccion/{uid}.md y construccion/{uid}-esperado.json "
-          f"({len(objetos)} objetos)")
+    if a.regresion:     # la orden de la regresión, lista para copiar: la pasa quien prepara el paquete (F9, F5)
+        # una urgencia corregida en el entorno de corrección se prueba allí, con el Dev MCP de ese entorno
+        correccion = ctx.por_id[uid].urgente and un.donde_se_corrige(ctx.ficha_urg(uid)) == "correccion"
+        orden, notas = iss.orden_de_regresion(m, uid, "corrección" if correccion else "desarrollo")
+        print(f"La regresión de la aplicación{' en el entorno de corrección' if correccion else ''} antes de preparar "
+              f"el paquete de {uid} (el resumen, en construccion/{uid}/regresion.json; por la salida, solo lo que "
+              f"falla):\n\n```\n{orden}\n```" + "".join(f"\n· {n}" for n in notas))
+        return
+    if a.sin_prueba is not None:   # B2: lo decide una persona, con su motivo; nunca una sesión desatendida
+        if a.desatendida:
+            sys.exit(f"✗ {uid}: en una sesión desatendida no se marca una prueba como no necesaria: lo decide una persona. "
+                     f"Salida: déjalo para ella; «indice.py issues <p> {uid}» dice qué falla")
+        if not a.issue or not (a.motivo or "").strip():
+            sys.exit(f"✗ {uid}: --sin-prueba va con la issue y el motivo: indice.py issues <p> {uid} ISS-nn --sin-prueba "
+                     "\"<objeto> «<caso>»\" (o el escenario de QA, HU-nn.m) --motivo \"…\"")
+        try:
+            m, ctx, plan, issue, como = iss.sin_prueba(m.raiz, uid, a.issue.upper(), a.sin_prueba, a.motivo, a.quien)
+        except iss.NoSePuede as e:
+            sys.exit(f"✗ {e}")
+        marca = plan.marcas[-1] if plan.marcas else {}
+        print(f"{issue.id} de {uid}: {marca.get('objeto')} «{marca.get('caso')}», marcada como no necesaria para avanzar"
+              + (f" ({como})" if como else "") + f". Se revisa al preparar el paquete (construccion/{uid}/indice.md).")
+        print("\n".join(iss.situacion(plan, m.raiz)))
+        return
+    try:
+        if a.siguiente or a.liberar:
+            if a.liberar:
+                m, ctx, plan, issue, como = iss.libera(m.raiz, uid, a.liberar.upper())
+                print(f"{a.liberar.upper()} de {uid}, sin reserva" + (f" ({como})" if como else ""))
+            else:
+                m, ctx, plan, issue, como = iss.siguiente(m.raiz, uid, a.quien)
+            # los avisos del cálculo son del analista (los da «indice.py issues <p> <U>»): a quien construye, su issue
+            if issue is not None:
+                de = f", reservada a nombre de {plan.reservas[issue.id]}" if issue.id in plan.reservas else ""
+                # F8, paso 1: sin --quien, una sesión que se reinicia se lleva otra y deja la suya reservada
+                pista = "" if a.quien else ("\n· Pide siempre con el mismo `--quien <el nombre de esta sesión>`: sin él, "
+                                            "si esta sesión se reinicia, se llevará otra issue y esta quedará reservada")
+                print(f"{issue.id} de {uid}{de}: {como}{pista}\n")
+                print(iss.para_construir(m, ctx, plan, issue))
+            elif not a.liberar:
+                hechas = all(e[0] for e in iss.estados(plan, m.raiz).values())
+                for x in iss.avisos_qa(m.raiz, plan) if hechas else []:
+                    print(f"· {x}")
+                print(f"{uid}: " + ("todas sus issues están hechas. Para marcar la unidad:\n  "
+                                    + iss.orden_de_marcar(m, ctx, uid) if hechas else
+                                    "ninguna issue disponible ahora: las que faltan están reservadas o esperan a otra"))
+                if not hechas:
+                    print("\n".join(iss.situacion(plan, m.raiz)))
+            return
+        plan, escritos, retirados = iss.genera(m, ctx, uid)
+    except iss.NoSePuede as e:
+        sys.exit(str(e))
+    if a.issue:
+        issue = next((i for i in plan.issues if i.id == a.issue.upper()), None)
+        if issue is None:
+            sys.exit(f"{uid} no tiene la issue {a.issue} (tiene {', '.join(i.id for i in plan.issues)})")
+        print(iss.para_construir(m, ctx, plan, issue))
+        return
+    n = len(plan.issues)
+    print(f"{'Escrito' if escritos or retirados else 'Al día, sin cambios'}: construccion/{uid}/, "
+          f"{n} {'issue' if n == 1 else 'issues'}" + (f" (cambian: {', '.join(escritos)})" if escritos else "")
+          + (f" (se quitan: {', '.join(retirados)})" if retirados else ""))
+    print("\n".join(iss.situacion(plan, m.raiz)))
+    for x in plan.avisos:
+        print(f"· {x}")
+    print(f"La siguiente, con su reserva: indice.py issues <p> {uid} --siguiente")
 
 
 def main():
@@ -760,7 +735,19 @@ def main():
     s = nuevo("grafo", c_grafo); s.add_argument("-o", help="por defecto, analisis/grafo.json del proyecto")
     s = nuevo("cambios", c_cambios); s.add_argument("unidad"); s.add_argument("--json", action="store_true")
     s = nuevo("colision", c_colision); s.add_argument("unidad")
-    s = nuevo("encargo", c_encargo); s.add_argument("unidad")
+    s = nuevo("issues", c_issues); s.add_argument("unidad")
+    s.add_argument("issue", nargs="?", help="ISS-nn: imprime esa issue con su orden de terminar para este equipo")
+    s.add_argument("--siguiente", action="store_true", help="da la próxima issue y la reserva")
+    s.add_argument("--quien", help="con --siguiente: a nombre de quién se reserva (por defecto, el usuario de git)")
+    s.add_argument("--liberar", metavar="ISS-nn", help="quita la reserva de una issue que nadie va a seguir")
+    s.add_argument("--regresion", action="store_true",
+                   help="la orden de la regresión de toda la aplicación, para este equipo: antes de preparar el paquete")
+    s.add_argument("--sin-prueba", metavar="«<objeto> «<caso>»»",
+                   help="con ISS-nn y --motivo: una persona marca ese caso de prueba, o ese escenario del QA (HU-nn.m), "
+                        "que falla, como no necesario para avanzar; la issue puede darse por hecha y la marca se revisa "
+                        "al preparar el paquete")
+    s.add_argument("--motivo", help="con --sin-prueba: por qué no hace falta para avanzar")
+    s.add_argument("--desatendida", action="store_true", help="la sesión no tiene a una persona: --sin-prueba se niega")
     a = ap.parse_args()
     m = mo.Proyecto(a.proyecto)
     if not m.docs:

@@ -32,7 +32,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from detect_secrets import buscar as secretos_en  # noqa: E402
-from rutas import carpeta_objeto, safe_name, work_dir  # noqa: E402
+from rutas import carpeta_objeto, escribe, safe_name, work_dir  # noqa: E402
 
 UUID_KEYS = ("uuid", "objectUuid", "designObjectUuid", "guid", "id", "objectId")
 NAME_KEYS = ("name", "objectName", "displayName", "label", "title")
@@ -584,8 +584,8 @@ def main(out_dir: str) -> int:
                        "edgesByOrigin": dict(Counter(e["origin"] for e in edge_list))},
              "orphans": orphans, "hubs": hubs}
 
-    (interm / "inventory.json").write_text(json.dumps(inventory, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
-    (interm / "graph.json").write_text(json.dumps(graph, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    escribe(interm / "inventory.json", json.dumps(inventory, ensure_ascii=False, indent=2, default=str))
+    escribe(interm / "graph.json", json.dumps(graph, ensure_ascii=False, indent=2, default=str))
     print(f"inventory.json: {sum(counts.values())} objetos ({parse_errors} sin definicion por error)")
     print(f"graph.json: {len(nodes)} nodos, {len(edge_list)} aristas {dict(Counter(e['origin'] for e in edge_list))}, "
           f"{len(orphans)} huerfanos, {len(hubs)} hubs")

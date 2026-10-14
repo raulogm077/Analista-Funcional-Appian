@@ -251,9 +251,11 @@ DETECTORES = {
     "docx": _docx,
     "libreoffice": _libreoffice,
     "pdf": _pdf,
+    "git": _ejecutable("git"),
     "uv": _ejecutable("uv"),
     "devmcp": _devmcp,
     "appian-mcp-server": _appian_mcp_server,
+    "sail": _ejecutable("sail"),
     "pytest": _modulo("pytest"),
     "mcp": _modulo("mcp"),
 }
@@ -436,7 +438,8 @@ def breve(skill, como=None) -> int:
             print(f"Detalle: {como or preferido()} \"{RAIZ / 'requisitos.py'}\"")
             sys.stdout.flush()
         hecho.parent.mkdir(parents=True, exist_ok=True)
-        hecho.write_text("Avisado de lo que falta en este equipo.\n", encoding="utf-8")
+        with open(hecho, "w", encoding="utf-8", newline="\n") as f:
+            f.write("Avisado de lo que falta en este equipo.\n")
     except Exception:  # noqa: BLE001 - el aviso no puede impedir que empiece la sesión
         import traceback
         traceback.print_exc()

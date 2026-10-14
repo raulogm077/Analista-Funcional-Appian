@@ -52,32 +52,33 @@ Los correos `.msg` no se leen de forma fiable: pide el correo como `.eml` o PDF.
 
 ## La carpeta del proyecto
 
-```
-<p>/proyecto.md      estado, fuentes procesadas, DF entregado, siguiente paso
-<p>/fuentes/         FU-nn.md e indice.md (leer_fuentes.py)
-<p>/notas/           una nota por fuente
-<p>/impacto/         un informe por fuente nueva
-<p>/as-is/           la aplicación existente (ingeniería inversa)
-<p>/analisis/        funcional.md, tecnico.md, decisiones.md y diagramas/
-<p>/prototipo/       el prototipo y sus capturas (skill de prototipos)
-<p>/entregables/     el DF en Word
-<p>/versiones/       copia del análisis antes de cada cambio
-```
+Un repositorio git por proyecto, siempre con la misma forma (la de «Qué escribe», más `as-is/` de ingeniería inversa y
+`qa/` de `appian-qa`): el código vive en Appian y aquí va todo lo demás, también las fuentes. Lo crea `proyecto.py iniciar`.
+`AGENTS.md` y `.agents/workflows/` salen enteros del plugin y no se editan: `proyecto.py iniciar <p>` en un proyecto
+que ya existe los pone al día y no toca nada más. Se trabaja sobre main, sin ramas ni PR, con `git commit` y `git push`
+al terminar; `iniciar` no confirma ni sube nada, y el remoto, privado, lo decide el proyecto.
 
 Formatos: `funcional-plantilla.md`, `tecnico-plantilla.md` y la cabecera de `decisiones.md` en
 `assets/plantillas/`. `proyecto.py estado <p>` dice en qué punto está el proyecto: empieza siempre por ahí
-si el proyecto ya existe.
+si el proyecto ya existe. Avisa también, sin frenar nada, de lo que falta por subir, de si va por detrás del remoto
+(entonces, `git pull`) y de lo que `iniciar` tiene que poner al día. Si dice que al proyecto le falta git, `AGENTS.md`
+o los flujos, lanza `proyecto.py iniciar <p>` antes de seguir: los añade y no toca nada más.
 
 ## Qué escribe
 
 En `<p>`:
 - `proyecto.md`: el estado del proyecto
+- `AGENTS.md`: dónde está cada cosa, las reglas y los flujos; lo genera entero `proyecto.py iniciar`
+- `CLAUDE.md`: solo «@AGENTS.md»; si ya existe, no se toca
+- `.agents/workflows/`: la copia de los flujos del plugin, generada
+- `.gitignore`: lo que no se sube; si ya existe, no se toca
+- `.gitattributes`: git no cambia los finales de línea; si ya existe, no se toca
 - `fuentes/`: las fuentes catalogadas, con su índice y sus adjuntos
 - `notas/`: una nota por fuente
 - `impacto/`: un informe por fuente nueva
 - `impacto/URG-nn.md`: la ficha de un cambio urgente (`urgentes.md`)
 - `analisis/cambios.md`: las unidades de cambio, solo con `proyecto.py cambio` (`cambios.md`)
-- `construccion/<U>.md` y `construccion/<U>-esperado.json`: el encargo de construcción de una unidad (`indice.py encargo`)
+- `construccion/<U>/`: las issues de construcción de una unidad aprobada: `indice.md` y, por issue, `ISS-nn.md`, `ISS-nn.feature` e `ISS-nn-esperado.json`; se escriben al aprobarla (`proyecto.py cambio`) y con `indice.py issues`, que con `--siguiente` anota además quién tiene cada una
 - `analisis/funcional.md`: el diseño funcional
 - `analisis/tecnico.md`: la especificación técnica
 - `analisis/decisiones.md`: las versiones y las decisiones del cliente
@@ -105,9 +106,14 @@ El `.drawio`, el `.png` y el `.bpmn` de cada proceso y la imagen de cada `.mmd` 
 
 Di el modo al empezar.
 
+## Flujos
+
+El recorrido entero de cada caso, de F1 (aplicación nueva) a F9 (pase a producción), está en `assets/flujos/`: quién
+hace cada paso, con qué skill y la referencia que lo detalla. `proyecto.py iniciar` los copia al proyecto.
+
 ## Proyecto nuevo
 
-1. **Carpeta y fuentes.**
+1. **Repositorio y fuentes.**
    ```bash
    python3 <skill>/scripts/proyecto.py iniciar <p> --nombre "…" --cliente "…"
    python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o <p>/fuentes/
@@ -136,12 +142,13 @@ Di el modo al empezar.
    python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/
    ```
    Sin errores antes de entregar. Revisa los avisos: los de redacción se corrigen casi siempre.
-8. **DF en Word**, solo para enviarlo o si se pide (síntesis, evolutivo y refactorización). La primera entrega es la
-   versión 1.0: sube la versión del funcional y del técnico y añade su fila en `decisiones.md`.
+8. **DF en Word**, solo para enviarlo o si se pide (síntesis, evolutivo y refactorización), una vez y, si hay
+   prototipo, después de él, con sus capturas. La primera entrega es la versión 1.0: sube la versión del funcional y del
+   técnico y añade su fila en `decisiones.md`. Nunca sobrescribe uno entregado. Mira algunas páginas del PDF antes de
+   enviarlo; sin LibreOffice no lo hay ni se saca por otra vía: lo revisa quien lo envía; díselo al entregar.
    ```bash
    node <skill>/scripts/df_docx.js <p> --pdf    # entregables/DF-<proyecto>-v<versión>.docx; el PDF, en revision/
    ```
-   Mira algunas páginas del PDF antes de enviarlo. Nunca sobrescribe un Word entregado.
 9. **Entregar.** Actualiza `proyecto.md` (fuentes procesadas y siguiente paso) y envía el Word y el `funcional.md`
    (SendUserFile en Claude). Cuando el Word sale hacia el cliente, `proyecto.py entregar <p>` apunta «DF entregado» y
    el fichero; nunca en una sesión desatendida. En pocas líneas: modo, historias, pantallas, pendientes de confirmar con el
@@ -204,13 +211,13 @@ lo que quede sin verificar es un PT, o un PC si cambia lo que se promete al clie
 
 ## Referencias
 
-| Fichero | Cuándo |
-|---|---|
-| `references/ingesta-fuentes.md` | Antes de leer las fuentes |
-| `references/funcional-plantilla.md` | Al escribir el funcional |
-| `references/tecnico-plantilla.md` | Al escribir el técnico (con la ruta a buenas prácticas de cada apartado) |
-| `references/redaccion.md` | Al escribir cualquiera de los dos |
-| `references/actualizacion.md` | Con cada fuente nueva |
-| `references/volumen-grande.md` | Muchas fuentes o muchos procesos |
-| `references/cambios.md`, `references/urgentes.md` | Si `proyecto.py estado` lista unidades en curso (`analisis/cambios.md`), al abrir una, o si se declara una urgencia (un retoque no los necesita: «Camino corto» de `actualizacion.md`) |
-| `references/mermaid-diagrams.md` | Diagramas de estados y de datos |
+| Fichero | Cuándo | Al incorporar una fuente, en vez de entero |
+|---|---|---|
+| `references/ingesta-fuentes.md` | Antes de leer las fuentes | Una reunión o un correo, nada: lo suyo está en `actualizacion.md` §2. Otro tipo de fuente, su fila de §2 y, si lo tiene, su apartado de §3 |
+| `references/funcional-plantilla.md` | Al escribir el funcional | Solo el apartado de una pieza de un tipo que el análisis aún no tiene (las demás copian el formato de las que hay, `indice.py ficha`) y, al cambiar el estado de una pieza, tacharla o responderla, «Lo que leen los scripts»: estados, trazabilidad y tachado |
+| `references/tecnico-plantilla.md` | Al escribir el técnico (con la ruta a buenas prácticas de cada apartado) | El apartado, igual; con una DT nueva, además «Buenas prácticas al diseñar» |
+| `references/redaccion.md` | Al escribir cualquiera de los dos | Nada: `comprobar.py` avisa de lo que la incumple |
+| `references/actualizacion.md` | Con cada fuente nueva | Entero |
+| `references/volumen-grande.md` | Muchas fuentes o muchos procesos | Solo §1, si la fuente lleva nota |
+| `references/cambios.md`, `references/urgentes.md` | Si `proyecto.py estado` lista unidades en curso (`analisis/cambios.md`), al abrir una, o si se declara una urgencia (un retoque no los necesita: «Camino corto» de `actualizacion.md`) | Entero, en esos casos |
+| `references/mermaid-diagrams.md` | Diagramas de estados y de datos | Solo si cambia uno de esos diagramas |

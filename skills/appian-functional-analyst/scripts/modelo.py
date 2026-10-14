@@ -1,6 +1,6 @@
 """Lee el análisis de un proyecto como piezas con ID, estado, fuentes y referencias.
 
-Lo usan indice.py, comprobar.py, proyecto.py y unir_modulos.py. Sin dependencias.
+Lo usan indice.py, comprobar.py, proyecto.py, issues.py y unir_modulos.py. Sin dependencias.
 
 El análisis son tres ficheros de `analisis/`:
   funcional.md  (doc F)  lo que valida el cliente
@@ -14,9 +14,15 @@ una mención:
   criterio: - `HU-07.1` texto   (dentro de su historia, o `INT-02.1` dentro de la ficha de un intercambio)
 Un INT es una fila o, si el intercambio tiene reglas, una ficha con criterios.
 El comentario <!-- … --> lleva el estado (🔒 ✅ 🔶 ⚠️ ❓) y las fuentes; el Word no lo muestra.
+
+Un criterio se escribe en una línea con dado, cuando y entonces (pasos_gherkin los separa), y de los de una ficha salen
+sus escenarios y su .feature en Gherkin, sin IA (Proyecto.escenarios y Proyecto.feature). Si sigue en las líneas
+sangradas de debajo, son parte de él, como en el Word.
 """
+import os
 import pathlib
 import re
+import subprocess
 import unicodedata
 from dataclasses import dataclass, field
 
@@ -44,6 +50,8 @@ RX_RANGO_CA = re.compile(rf"((?:{'|'.join(CON_CRITERIOS)})-\d+)\.(\d+)`?\s+a\s+`
 RX_FICHA = re.compile(rf"^\*\*(~~)?({ID_SIMPLE})(~~)?\s+—\s+(.+?)\*\*(.*)$")
 RX_FILA = re.compile(rf"^\|\s*(~~)?({ID_SIMPLE})(~~)?\s*\|")
 RX_CRITERIO = re.compile(rf"^\s*[-*]\s+(~~)?`({ID_CA})`(~~)?")
+# Un criterio sigue en las líneas sangradas de debajo que no son otra viñeta, como las une el Word (df_docx.js)
+RX_SIGUE = re.compile(r"\s+(?!(?:[-*]|\d+\.) )\S")
 RX_COMENTARIO = re.compile(r"<!--(.*?)-->", re.S)
 RX_FUENTE = re.compile(r"FU-\d+")
 RX_CITA = re.compile(r"FU-\d+(?:\s+\d{1,2}:\d{2}:\d{2})?")
@@ -120,9 +128,49 @@ def sin_comentarios(texto):
     return RX_COMENTARIO.sub("", texto)
 
 
+def une(lineas):
+    """Las líneas de una viñeta (un criterio que sigue en las de debajo) en una sola, como las une el Word."""
+    return " ".join(l.strip() for l in lineas)
+
+
 def estado_en(texto):
     pos = [(texto.find(e), e) for e in ESTADOS if e in texto]
     return min(pos)[1] if pos else ""
+
+
+# Un criterio es una línea con dado, cuando y entonces (references/funcional-plantilla.md §4):
+# «Dada una solicitud devuelta, cuando la unidad solicitante la reenvía, entonces vuelve a «En revisión».»
+RX_DADO = re.compile(r"(dad[oa]s?)\s+", re.I)
+RX_ENTRE_COMILLAS = re.compile(r"«[^»]*»|“[^”]*”|\"[^\"]*\"")
+
+
+def _corte(texto, palabra, desde):
+    """(inicio, fin) de «, cuando » o «, entonces » a partir de una posición: el primero que va tras una coma y, si
+    ninguno la lleva, el primero. La «y» o la «e» que lo une al paso anterior («y entonces», «, y cuando») se va con
+    el corte, no se queda colgando del paso. None si la palabra no está."""
+    for antes in (r"\s*[,;]\s*", r"\s+"):
+        m = re.compile(rf"{antes}(?:[ye]\s+)?{palabra}\b\s*", re.I).search(texto, desde)
+        if m:
+            return m.span()
+    return None
+
+
+def pasos_gherkin(texto):
+    """Los tres pasos de un criterio escrito en una línea con dado, cuando y entonces, como van en un .feature:
+    [("Dada", "una solicitud devuelta"), ("Cuando", "la unidad la reenvía"), ("Entonces", "vuelve a «En revisión»")].
+    None si le falta alguno. Empieza por «Dado», «Dada», «Dados» o «Dadas»; un «cuando» o un «entonces» dentro de un
+    texto entre comillas no cuenta, y una «y» dentro de un paso se queda en su paso."""
+    texto = sin_comentarios(texto).strip()
+    dado = RX_DADO.match(texto)
+    if not dado:
+        return None
+    tapado = RX_ENTRE_COMILLAS.sub(lambda m: "·" * len(m.group(0)), texto)
+    cuando = _corte(tapado, "cuando", dado.end())
+    entonces = _corte(tapado, "entonces", cuando[1]) if cuando else None
+    if not entonces:
+        return None
+    partes = [x.strip(" .,;:") for x in (texto[dado.end():cuando[0]], texto[cuando[1]:entonces[0]], texto[entonces[1]:])]
+    return list(zip((dado.group(1).capitalize(), "Cuando", "Entonces"), partes)) if all(partes) else None
 
 
 def numero(pid):
@@ -250,12 +298,16 @@ class Proyecto:
             # un criterio es de su ficha: INT-02.1 suelto en una historia no se cuelga de ella
             if mc and ficha and ficha.tipo in CON_CRITERIOS and mc.group(2).rsplit(".", 1)[0] == ficha.id:
                 cid = mc.group(2)
-                anulado = bool(mc.group(1) or mc.group(3)) or bool(re.search(r"Anulad[ao] por", l))
-                texto = sin_comentarios(l[mc.end():])
-                p = Pieza(cid, "CA", "criterio", re.sub(r"[*~\s]+", " ", texto).strip()[:110], D.doc, sec, i, i + 1,
+                fin = i + 1
+                while fin < len(L) and RX_SIGUE.match(L[fin]):
+                    fin += 1
+                entero = une(L[i:fin])
+                anulado = bool(mc.group(1) or mc.group(3)) or bool(re.search(r"Anulad[ao] por", entero))
+                texto = sin_comentarios(entero[RX_CRITERIO.match(entero).end():])
+                p = Pieza(cid, "CA", "criterio", re.sub(r"[*~\s]+", " ", texto).strip()[:110], D.doc, sec, i, fin,
                           padre=ficha.id, estado="Anulada" if anulado else "")
                 p.refs = ids_en(texto) - {cid, ficha.id}
-                p.fuentes = set(RX_CITA.findall(l))
+                p.fuentes = set(RX_CITA.findall(entero))
                 self._alta(p)
                 ficha.hijos.append(cid)
                 continue
@@ -334,6 +386,38 @@ class Proyecto:
             out = {normaliza(c): v for c, v in zip(cab, val)}
         return out
 
+    def criterio(self, cid):
+        """El texto de un criterio tal cual está escrito, sin su ID ni su comentario; entero, también si sigue en las
+        líneas de debajo: lo mismo que lee el cliente en el Word."""
+        entero = une(self.bloque(cid))
+        return sin_comentarios(entero[RX_CRITERIO.match(entero).end():]).strip()
+
+    def escenarios(self, pid, solo=None):
+        """Los criterios vigentes de una historia, o de la ficha de un intercambio, como escenarios de Gherkin en español,
+        cada uno con su ID: (líneas, sin_gherkin). Un criterio que no está escrito con dado, cuando y entonces pasa tal
+        cual, como un único paso «*» (Gherkin lo admite), y su ID va en sin_gherkin para que quien llama avise. Con
+        `solo`, nada más que esos criterios (los de una issue: los nuevos o cambiados de su unidad)."""
+        p = self.piezas[pid]
+        L, sin = [], []
+        for cid in ([] if p.anulada else dict.fromkeys(p.hijos)):
+            if self.piezas[cid].anulada or (solo is not None and cid not in solo):
+                continue
+            texto = self.criterio(cid)
+            pasos = pasos_gherkin(texto)
+            if not pasos:
+                sin.append(cid)
+                pasos = [("*", texto)]
+            L += ["", f"  Escenario: {cid}"] + [f"    {palabra} {paso}" for palabra, paso in pasos]
+        return L, sin
+
+    def feature(self, pid):
+        """El .feature de una historia, o de la ficha de un intercambio, sin IA: la cabecera de Gherkin en español y sus
+        escenarios. Devuelve (texto, sin_gherkin), como escenarios(); sin criterios vigentes, ("", [])."""
+        L, sin = self.escenarios(pid)
+        if not L:
+            return "", []
+        return "\n".join(["# language: es", f"Característica: {pid} {self.piezas[pid].titulo}"] + L) + "\n", sin
+
     def raiz_de(self, pid):
         p = self.piezas.get(pid)
         return p.padre if p and p.padre else pid
@@ -369,6 +453,29 @@ class Proyecto:
 
 def cargar(ruta):
     return Proyecto(ruta)
+
+
+def escribe(ruta, texto):
+    """Escribe un fichero de texto en UTF-8 con finales de línea \\n en cualquier sistema (write_text() los pone \\r\\n
+    en Windows): en un proyecto que comparten varios equipos, reescribirlo no cambia todas sus líneas."""
+    with open(ruta, "w", encoding="utf-8", newline="\n") as f:
+        f.write(texto)
+
+
+def git(raiz, *args, espera=20, salida=True):
+    """La salida de una orden de git lanzada en el proyecto; None si no hay git, falla o tarda más de `espera` segundos.
+    Nunca pregunta: va sin terminal y, sin credenciales a mano, falla en vez de pedir una contraseña. Con `salida=False`
+    no se lee lo que imprime, para que una orden que habla con el remoto no deje el script esperando a un proceso que
+    git haya lanzado."""
+    entorno = dict(os.environ, GIT_TERMINAL_PROMPT="0", GCM_INTERACTIVE="never")
+    sin_terminal = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {"start_new_session": True}
+    try:
+        r = subprocess.run(["git", *args], cwd=str(raiz), env=entorno, timeout=espera, stdin=subprocess.DEVNULL,
+                           stdout=subprocess.PIPE if salida else subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                           encoding="utf-8", errors="replace", **sin_terminal)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return (r.stdout or "") if r.returncode == 0 else None
 
 
 def informes(raiz):

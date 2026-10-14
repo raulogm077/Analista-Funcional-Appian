@@ -11,7 +11,7 @@
   - `validate.py app.json --brand <id>` y `build.py app.json -o prototipo-<app>.html --brand <id>`. Sin `--brand`, la
     estándar. Si `brand-<id>.json` no está junto al `app.json`, salen con un error que dice dónde ponerlo.
   - En el script que escribe el spec, antes de `from sail_helpers import *`:
-    `import sail_helpers; sail_helpers.usar_marca("<id>", r"<p>/prototipo")`. Así los helpers (botón principal, cabeceras
+    `import sail_helpers; sail_helpers.usar_marca("<id>", sail_helpers.Path(__file__).parent)`. Así los helpers (botón principal, cabeceras
     oscuras, estados, gráficos, calendario) usan sus colores. Lo que la marca no define lo toman de la estándar.
 
 ## Qué lleva la configuración de un cliente

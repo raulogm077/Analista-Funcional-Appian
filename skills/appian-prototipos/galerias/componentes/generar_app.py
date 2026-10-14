@@ -546,5 +546,5 @@ spec = {"app": {"name": "Componentes de Appian 26.9", "language": "es", "today":
         "data": {"incidencias": {"recordType": "INC Incidencia", "rows": INC_ROWS}, "visitas": {"recordType": "INC Visita", "rows": VISITAS}},
         "screens": pages + extra,
         "captures": [{"name": f"{k + 1:02d}-{p['id']}", "screen": p["id"]} for k, p in enumerate(pages + extra)]}
-Path(sys.argv[1] if len(sys.argv) > 1 else "app.json").write_text(json.dumps(clean(spec), ensure_ascii=False, indent=1), encoding="utf-8")
+escribe(sys.argv[1] if len(sys.argv) > 1 else "app.json", json.dumps(clean(spec), ensure_ascii=False, indent=1))
 print("ok")

@@ -23,7 +23,8 @@ Errores (✗, salida 1) y avisos (·):
   - con --fuentes: citas con el minuto de una intervención real y sin nombres de participantes;
   - con --anterior: ningún ID desaparece, la versión sube si cambia el funcional o el técnico (si no cambian y sube,
     aviso, salvo a la 1.0) y tiene su fila; lista lo nuevo y lo cambiado, y avisa del texto que queda viejo (lo que
-    una pieza cambiada ya no dice y sigue en otra línea, sin tocar en esta versión);
+    una pieza cambiada ya no dice y sigue en otra línea, sin tocar en esta versión) y del criterio nuevo o con otro
+    texto que no está en una línea con dado, cuando y entonces (los de antes que no se tocan, no);
   - con --impacto: los IDs del informe existen o son nuevos; «Requiere» es «—» o «Sí (motivo)», y «Sí» en lo que
     cambia o anula algo 🔒; después de aplicar, cada dependencia tiene resultado, cada cambio está declarado y lo 🔒
     solo cambia con aprobación; con «Estado: sin cambios», ningún punto por aplicar (y aviso si la versión ha subido);
@@ -39,7 +40,9 @@ Errores (✗, salida 1) y avisos (·):
   - con unidades de cambio (analisis/cambios.md, references/cambios.md): lo que exige el técnico es lo de las unidades
     en curso, y la Situación de §13 se compara con la línea base (as-is/ más lo que han construido las unidades); avisa
     (y el aviso se apaga solo) de un punto aplicado sin reflejo en el técnico, de un punto que falta en la DT «Cambio
-    sobre lo construido» y de un defecto urgente sin su prueba en §14. Sin cambios.md, nada de esto.
+    sobre lo construido» y de un defecto urgente sin su prueba en §14. Sin cambios.md, nada de esto;
+  - técnico §13 con tabla (aviso): cada objeto que se construye o cambia dice «Para» qué requisito es (HU, PAN o ACT) o
+    «Base»; de ahí salen las issues de construcción. Si la tabla aún no tiene la columna, un solo aviso.
 """
 import argparse
 import bisect
@@ -549,6 +552,34 @@ def comprobar_unidades(m, ctx):
              and mo.normaliza((ctx.ficha_urg(u.id) or {}).get("tipo", "")).startswith("defecto")], grave=False)
 
 
+def comprobar_para(m, ctx):
+    """Técnico §13, columna «Para»: el requisito (HU, PAN o ACT) de cada objeto que se construye o cambia, o «Base» para
+    lo común; de ella sale una issue por requisito (indice.py issues). Aviso. En un técnico cuya tabla aún no tiene la
+    columna, uno solo: toda la unidad iría en una issue. No mira lo que ya está construido ni lo que «Existe»."""
+    hechas = {u.id for u in ctx.unidades if u.estado in un.CONSTRUIDAS + (un.DESCARTADA,)}
+    filas = [f for f in ctx.filas if f["situacion"] in un.CAMBIAN and f["unidad"] not in hechas]
+    if not filas:
+        return
+    nombre = ("técnico §13: cada objeto dice «Para» qué requisito es (HU, PAN o ACT) o «Base»: de ahí sale una issue por "
+              "requisito")
+    objetos = {}      # una unidad de un solo objeto da una sola issue: no hay nada que repartir
+    for f in filas:
+        objetos.setdefault(f["unidad"], set()).update(un.objeto(o) for o in f["objetos"])
+    filas = [f for f in filas if len(objetos[f["unidad"]]) > 1]
+    if not filas:
+        return
+    if not ctx.con_para:
+        informe(nombre, ["la tabla no tiene la columna «Para»: todo lo de un cambio saldría en una sola issue"],
+                grave=False)
+        return
+    sin = []
+    for f in filas:
+        cita = {x for x in mo.ids_en(f["para"]) if x in m.piezas}
+        if not cita and not re.search(r"(?<!\w)base(?!\w)", mo.normaliza(f["para"])):
+            sin += f["objetos"]
+    informe(nombre, sin, grave=False)
+
+
 def comprobar_versiones(m):
     vf, vt = m.version("F"), m.version("T")
     filas = [f for _, cab, fs in m.tablas("D", "versiones") for f in fs if f]
@@ -694,9 +725,12 @@ def comprobar_situacion(m, ctx, inventario, fuera):
     if tabla:
         cab = [mo.normaliza(c) for c in tabla[0]]
         celda = lambda f, k: f[cab.index(k)] if k in cab and cab.index(k) < len(f) else ""
-        for f in tabla[1]:
-            if ctx.hay and (un.RX_UNIDAD.findall(celda(f, "cambio")) or [sin_id])[0] in hechas:
-                continue
+        sin_construir = [f for f in tabla[1]
+                         if not (ctx.hay and (un.RX_UNIDAD.findall(celda(f, "cambio")) or [sin_id])[0] in hechas)]
+        # lo que crea una unidad sin construir: una fila de una parte suya («X — acción «…»») no lo da por inexistente
+        se_crean = {o for f in sin_construir for o in objetos_celda(celda(f, "objeto")) if not un.parte(o)
+                    and mo.normaliza(mo.sin_comentarios(celda(f, "situacion"))).strip() in ("nuevo", "sustituye")}
+        for f in sin_construir:
             sit = mo.sin_comentarios(celda(f, "situacion")).strip()
             s = mo.normaliza(sit)
             objetos = objetos_celda(celda(f, "objeto"))
@@ -704,8 +738,21 @@ def comprobar_situacion(m, ctx, inventario, fuera):
             if s not in SITUACIONES:
                 malas.append(f"{nombre}: Situación «{sit}» (Nuevo, Modifica, Existe o Sustituye)")
                 continue
+            # una parte de un objeto es de ese objeto: nueva o no, lo modifica, y es él el que tiene que existir
+            partes = [un.objeto(o) for o in objetos if un.parte(o)]
+            objetos = [o for o in objetos if not un.parte(o)]
             if s in ("modifica", "existe"):
                 usados += objetos
+            usados += partes
+            for o in partes:
+                if o in base or o in se_crean:
+                    continue
+                if fuera is None:
+                    sin_inventario.append(o)
+                elif o not in fuera:
+                    malas.append(f"{o}: se cambia una parte suya y no está en el inventario ni fuera de la aplicación")
+                else:
+                    de_fuera.append(f"{o} es de otra aplicación: ¿quién la cambia?")
             for o in objetos:   # «Nuevo» y «Sustituye» crean el objeto: no puede existir ya
                 if s in ("nuevo", "sustituye") and o in base:
                     malas.append(f"{o}: «{sit}» y ya está en " + ("el inventario" if o in inventario else "lo construido"))
@@ -778,7 +825,7 @@ def comprobar_fuentes(m, carpeta, corregir):
                 if not ts or y in ts:
                     return mt.group(0)
                 return f"FU-{x} {ts[max(bisect.bisect_right(ts, y) - 1, 0)]}"
-            m.ruta(d).write_text(rx.sub(arregla, texto), encoding="utf-8")
+            mo.escribe(m.ruta(d), rx.sub(arregla, texto))
     if corregir and malas:
         print(f"· {len(set(malas))} citas llevadas a la intervención anterior: {sorted(set(malas))[:10]}")
     else:
@@ -866,18 +913,41 @@ def _palabras(linea):
     return [(mo.normaliza(w), w) for w in re.findall(r"\w+", texto)]
 
 
+def _tramos(linea):
+    """Las palabras de una línea en tramos que no se cruzan: la línea entera o, en un criterio con dado, cuando y
+    entonces, cada paso por separado. Lo que dice cada paso puede quedarse viejo; el arranque que comparten los
+    criterios («Dada una solicitud en revisión, cuando el técnico…»), no."""
+    cr = mo.RX_CRITERIO.match(linea)
+    pasos = mo.pasos_gherkin(linea[cr.end():]) if cr else None
+    return [_palabras(t) for _, t in pasos] if pasos else [_palabras(linea)]
+
+
 def _secuencias(lineas):
     out = set()
     for l in lineas:
-        ws = [w for w, _ in _palabras(l)]
-        out |= {tuple(ws[k:k + SECUENCIA]) for k in range(len(ws) - SECUENCIA + 1)}
+        for pal in _tramos(l):
+            ws = [w for w, _ in pal]
+            out |= {tuple(ws[k:k + SECUENCIA]) for k in range(len(ws) - SECUENCIA + 1)}
     return out
 
 
+def _frase_vieja(pal, quitadas):
+    """La frase de un tramo que aún dice lo quitado (las secuencias quitadas seguidas desde la primera), o None."""
+    ws = [w for w, _ in pal]
+    k = next((k for k in range(len(ws) - SECUENCIA + 1) if tuple(ws[k:k + SECUENCIA]) in quitadas), None)
+    if k is None:
+        return None
+    fin = k + 1
+    while fin < len(ws) - SECUENCIA + 1 and tuple(ws[fin:fin + SECUENCIA]) in quitadas:
+        fin += 1
+    return " ".join(o for _, o in pal[k:fin - 1 + SECUENCIA])
+
+
 def texto_viejo(m, ant, modif):
-    """Para cada pieza modificada, las secuencias de seis palabras que tenía antes y ya no tiene, y cada otra línea del
-    funcional o del técnico que aún las dice: «HU-07: "…" sigue en PAN-04, l.212». Una vez por línea, y solo de las
-    líneas que ya estaban tal cual en la versión anterior: lo reescrito en esta versión ya se ha revisado."""
+    """Para cada pieza modificada, las secuencias de seis palabras que tenía antes y ya no tiene (de un criterio con dado,
+    cuando y entonces, las de cada paso: _tramos), y cada otra línea del funcional o del técnico que aún las dice:
+    «HU-07: "…" sigue en PAN-04, l.212». Una vez por línea, y solo de las líneas que ya estaban tal cual en la versión
+    anterior: lo reescrito en esta versión ya se ha revisado."""
     duenio = {}     # (doc, línea) -> la pieza más pequeña que la contiene
     for p in m.piezas.values():
         for i in range(p.ini, p.fin):
@@ -902,19 +972,23 @@ def texto_viejo(m, ant, modif):
                 otro = duenio.get((d, i))
                 if (d, i) in propias or (d, i) in vistos or (d, l) not in de_antes or (otro and anulada(m, otro)):
                     continue
-                pal = _palabras(l)
-                ws = [w for w, _ in pal]
-                k = next((k for k in range(len(ws) - SECUENCIA + 1) if tuple(ws[k:k + SECUENCIA]) in quitadas), None)
-                if k is None:
+                frase = next((f for f in (_frase_vieja(pal, quitadas) for pal in _tramos(l)) if f), None)
+                if frase is None:
                     continue
                 vistos.add((d, i))
                 donde = otro or f"{mo.NOMBRE_DOC[d]} §{m.docs[d].seccion_de_linea[i]}"
-                fin = k + 1     # la frase entera: las secuencias quitadas seguidas desde la primera
-                while fin < len(ws) - SECUENCIA + 1 and tuple(ws[fin:fin + SECUENCIA]) in quitadas:
-                    fin += 1
-                frase = " ".join(o for _, o in pal[k:fin - 1 + SECUENCIA])
                 avisos.append(f'{pid}: "{frase}" sigue en {donde}, l.{i + 1}')
     return avisos
+
+
+def criterios_sin_gherkin(m, ant, nuevas, modif):
+    """Los criterios nuevos, o con otro texto que en la versión anterior, que no están escritos en una línea con dado,
+    cuando y entonces (funcional-plantilla.md §4): su escenario no sale sin interpretarlos. Los de antes que no se tocan
+    no avisan, se reescriben cuando se cambian; cambiar solo la cita de su comentario no es tocarlos."""
+    dice = lambda P, i: normaliza_pieza(mo.sin_comentarios(P.texto(i)))
+    return [f"{i} (l.{m.piezas[i].ini + 1})" for i in sorted(set(nuevas) | set(modif), key=clave_pid)
+            if m.piezas[i].tipo == "CA" and not anulada(m, i) and (i not in ant.piezas or dice(m, i) != dice(ant, i))
+            and not mo.pasos_gherkin(m.criterio(i))]
 
 
 def comprobar_requiere(base, puntos):
@@ -1075,6 +1149,7 @@ def main():
         comprobar_versiones(m)
         comprobar_as_is(m, ctx)
         comprobar_unidades(m, ctx)
+        comprobar_para(m, ctx)
         comprobar_citas_as_is(m, a.fuentes)
     if a.fuentes:
         comprobar_fuentes(m, a.fuentes, a.corregir_citas)
@@ -1082,6 +1157,9 @@ def main():
         nuevas, modif, anul, ant = comprobar_anterior(m, a.anterior)
         informe("texto que queda viejo (lo que una pieza cambiada ya no dice y sigue en otra: corrígelo o dilo)",
                 texto_viejo(m, ant, modif), grave=False)
+        informe("criterios nuevos o cambiados con dado, cuando y entonces (se reescriben en una línea: «Dado…, cuando…, "
+                "entonces…»; si no cabe en una frase, son dos criterios)", criterios_sin_gherkin(m, ant, nuevas, modif),
+                grave=False)
         if a.impacto:
             comprobar_impacto(m, ant, a.impacto, (nuevas, modif, anul))
     elif a.impacto:

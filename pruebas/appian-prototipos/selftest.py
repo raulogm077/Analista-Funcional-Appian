@@ -16,7 +16,8 @@ Prueba el kit de $PLUGIN_A_PROBAR/skills/appian-prototipos (por defecto, el de e
    palabras dicen «logo», y contra datos/web-ficticia/ y otra página (logo SVG en línea, hoja de localhost y un PDF),
    servidas en 127.0.0.1 por la propia prueba, contra un puerto cerrado y con solo el nombre de la empresa. Además, la
    guía (el texto del botón principal lo elige Appian, el tope de 8 series), el supuesto sin la fecha repetida, la _lum
-   única y capture.py --solo (qué elige y cómo fusiona el índice), sin navegador.
+   única, capture.py --solo (qué elige y cómo fusiona el índice) y cómo enlaza las capturas en las fichas del funcional,
+   y validate.py --anterior sin --confirmadas, sin navegador.
 4. Si hay Playwright y un navegador, pasa la prueba de humo y la auditoría de contraste a todo lo construido y comprueba
    las iniciales del avatar de la cabecera: con la marca estándar, siguen con el oscuro del site; con un realce de
    luminancia media, en negro puro.
@@ -639,8 +640,31 @@ def capturas_solo(tmp):
     code, ayuda = run([HERE / "capture.py", "--help"])
     if code or "--solo" not in ayuda:
         probs.append(f"capture.py --help no ofrece --solo (sale con {code})")
+    # enlazar: la línea de cada captura bajo el título de su ficha, tras las que ya tenga; la que ya está no se repite
+    funcional = pathlib.Path(tmp) / "enlazar-funcional.md"
+    antes = ("### 5. Pantallas\n\n**PAN-01 — Listado** <!-- ✅ FU-01 -->\n\n![PAN-01 Listado](../prototipo/capturas/01.png)\n\n"
+             "La lista.\n\n**PAN-02 — Ficha** <!-- 🔒 FU-01 -->\nLa ficha.\n\n**~~PAN-05~~ — Anulada**\n\n### 6. Información\n")
+    funcional.write_bytes(antes.encode("utf-8"))
+    linea = lambda pan, n: (pan, f"../prototipo/capturas/{n}.png", f"![{pan} captura {n}](../prototipo/capturas/{n}.png)")
+    enlaces = [linea("PAN-01", "01"), linea("PAN-01", "01b"), linea("PAN-02", "02"), linea("PAN-05", "05"), linea("PAN-09", "09")]
+    hecho = capture.enlazar(funcional, enlaces)
+    despues = antes.replace("01.png)\n", "01.png)\n\n![PAN-01 captura 01b](../prototipo/capturas/01b.png)\n").replace(
+        "<!-- 🔒 FU-01 -->\nLa ficha", "<!-- 🔒 FU-01 -->\n\n![PAN-02 captura 02](../prototipo/capturas/02.png)\n\nLa ficha")
+    enlazar = []
+    if hecho != (["PAN-01", "PAN-02"], ["PAN-05", "PAN-09"]) or funcional.read_bytes() != despues.encode("utf-8"):
+        enlazar.append(f"enlaza {hecho} y deja:\n{funcional.read_bytes().decode('utf-8')}")
+    if capture.enlazar(funcional, enlaces) != ([], ["PAN-05", "PAN-09"]) or funcional.read_bytes() != despues.encode("utf-8"):
+        enlazar.append("la segunda vez vuelve a enlazar o cambia el fichero")
+    # validate.py --anterior sin --confirmadas (ninguna pantalla validada) no es un error; --confirmadas sin --anterior, sí
+    spec = ROOT / "templates" / "catalogo-patrones.json"
+    code, out = run([HERE / "validate.py", spec, "--quiet", "--anterior", spec])
+    code2, out2 = run([HERE / "validate.py", spec, "--quiet", "--confirmadas", "PAN-01"])
+    anterior = [] if code == 0 and "Sin --confirmadas" in out and code2 == 2 and "--anterior" in out2 else \
+        [f"--anterior solo sale con {code} y --confirmadas solo con {code2}:\n{out}\n{out2}"]
     return [("capture.py --solo: elige por el ref de la pantalla o de la vista o por su id, dice lo que no encuentra y fusiona "
-             "el índice", probs)]
+             "el índice", probs),
+            ("capture.py enlaza cada captura en su ficha del funcional, una vez, con \\n y sin tocar lo demás", enlazar),
+            ("validate.py --anterior sin --confirmadas no compara nada y no falla", anterior)]
 
 
 # color calculado de las iniciales del avatar de la cabecera y su color propio (style), en el navegador
@@ -714,6 +738,13 @@ def main():
             else:
                 ok = False
                 print(f"✗ Validar y construir: {name}\n{out}")
+        # lo que escriben los scripts lleva \n en cualquier sistema, también en Windows: el app.json del generador
+        # (escribe() de sail_helpers), el HTML y la trazabilidad
+        escritos = [prueba] + [f for _, html, _ in built for f in (html, html.with_name(html.stem + "-trazabilidad.md"))]
+        con_cr = [f.name for f in escritos if f.is_file() and b"\r" in f.read_bytes()]
+        ok = ok and not con_cr
+        print("✗ Finales de línea: llevan \\r " + ", ".join(con_cr) if con_cr else
+              "✓ Finales de línea: el app.json, el HTML y la trazabilidad se escriben con \\n en cualquier sistema")
         for que, probs in brands(tmp, built) + marca_cliente(tmp, built) + marca_detalles(tmp) + capturas_solo(tmp):
             if probs:
                 ok = False

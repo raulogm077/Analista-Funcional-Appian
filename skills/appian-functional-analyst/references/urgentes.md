@@ -18,11 +18,12 @@ mismas comprobaciones (`comprobar.py --impacto`). Su sección «Urgencia» lleva
 |---|---|---|---|
 | Defecto | La aplicación no hace lo especificado | Síntoma, Quién la declara crítica, Causa, Objetos, Colisión, Dónde se corrige, Despliegue y vuelta atrás, Cierre | El funcional no cambia; técnico §14 gana la prueba que reproduce el fallo (`URG-nn` en su fila) |
 | Cambio de comportamiento | Hay que cambiar lo que hace | Los de defecto | Un punto CAMBIA que aprueba el jefe de proyecto (✅, R4); el cliente lo valida después |
-| Datos u operación | Datos, procesos en curso (BP 03 §12), configuración, certificado | Síntoma, Quién la declara crítica, Qué se hizo, Cierre | Nada, salvo que cambie una regla |
+| Datos u operación | Datos, procesos en curso (BP 03 §12), configuración, certificado | Síntoma, Quién la declara crítica, Dónde se corrige, Qué se hizo, Cierre | Nada, salvo que cambie una regla |
 
 «Objetos» son los que se corrigen, entre comillas invertidas. «Dónde se corrige» dice **«Desarrollo»** o **«Entorno de
 corrección»**, una de las dos: con eso los scripts saben qué unidades tienen que reaplicarla (otra cosa solo vale si nada
-choca; si choca, `produccion` falla).
+choca; si choca, `produccion` falla). En una de datos u operación, que no corrige objetos ni choca, dice dónde se hizo
+(«Producción», por ejemplo).
 
 **El «Estado» de su cabecera**, como en cualquier informe (`actualizacion.md`):
 - al abrirla, `Estado: pendiente`;
@@ -43,16 +44,22 @@ Tras `produccion`, `proyecto.py estado` ya no la lista como pendiente.
    `as-is/datos/deriva.json`, con lo modificado en desarrollo. Si no está la deriva, imprime la orden para pedirla solo de
    esos objetos (sin historial de versiones, lo dice y no supone nada). Copia el resultado en «Colisión».
 4. **Dónde se corrige.**
-   - Sin colisión: en desarrollo. Esos objetos quedan congelados para las unidades en curso hasta el pase (su encargo lo
-     avisa).
+   - Sin colisión: en desarrollo. Esos objetos quedan congelados para las unidades en curso hasta el pase (la issue que
+     los lleva lo avisa).
    - Con colisión: en el entorno de corrección, igual que producción. Cada unidad en curso que cambia esos objetos
-     recibe en su encargo «reaplicar URG-nn en <objeto>», y no pasa a Construida sin `--reaplicada URG-nn`, que confirma
-     quien construye cuando la prueba de la urgencia pasa en desarrollo.
+     recibe «Reaplicar URG-nn en <objeto>» en la issue que lo lleva, que por eso vuelve a estar pendiente, y no pasa a
+     Construida sin `--reaplicada URG-nn`, que confirma quien construye cuando la prueba de la urgencia pasa en
+     desarrollo. Sus issues se vuelven a generar con la ficha ya escrita: `indice.py issues <p> EV-nn` (`--siguiente`
+     lo hace solo).
    - Sin entorno de corrección: la ficha registra en «Colisión» lo que decide el equipo (el plugin no inventa un
      procedimiento) y «Dónde se corrige» dice igualmente una de las dos.
 5. **Despliegue** por el proceso de cambios urgentes del cliente (el plugin no lo gestiona), con la vuelta atrás
    preparada: el paquete con la versión de producción de esos objetos. Restaurar una copia de seguridad es lo último.
-6. **Cierre**: «Cierre» en la ficha y `proyecto.py cambio <p> URG-nn produccion --ref "<referencia>" --fecha <AAAA-MM-DD del pase>` (falla si la ficha no
+   Antes de desplegar, quien prepara el paquete revisa en Compare and Deploy la comparación de sus objetos, como en un
+   Merge Request, con los fallos de la regresión (su orden, `indice.py issues <p> URG-nn --regresion`, con el Dev MCP
+   del entorno donde se corrige), y lo promueve como el de un evolutivo: el mismo paquete con un ICF por
+   entorno y, si el despliegue es directo o por API, con «Require review» en el destino (`cambios.md` §6, paso 7).
+6. **Cierre**: «Cierre» en la ficha y `proyecto.py cambio <p> URG-nn produccion --ref "<referencia del pase en el cliente>" --fecha <AAAA-MM-DD del pase>` (falla si la ficha no
    dice «Dónde se corrige», o si no dice «Desarrollo» ni «Entorno de corrección» y algo choca). Se cierra en cuanto
    consta el pase: lo que quede por comprobar (la prueba de la urgencia en producción, los datos afectados) va en
    «Cierre» como pendiente, o como otra urgencia si se confirma un daño. Después, actualizar el entorno de corrección

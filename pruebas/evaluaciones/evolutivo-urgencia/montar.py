@@ -15,7 +15,7 @@ aprobada y sin construir.
   3. Escribe las capturas de las tres pantallas (prototipo/capturas/) y, con Node y el paquete docx, los dos Word
      entregados: el DF 1.0 y el DF del cambio EV-02 (1.1). Sin ellos, avisa y sigue sin Word.
   4. Aprueba EV-02 con la orden de verdad (proyecto.py cambio … EV-02 aprobada --fuente FU-04), que guarda con qué se
-     aprueba, y escribe su encargo (indice.py encargo): construccion/EV-02.md y EV-02-esperado.json.
+     aprueba y deja escritas sus issues de construcción: construccion/EV-02/ (indice.md, ISS-nn.md y lo esperado).
   5. Deja la fuente nueva en <destino>/: por defecto, el correo de la incidencia (correo-2026-10-08-incidencia.eml);
      la prueba de coste pasa el suyo con --fuente.
   6. Comprueba que el análisis pasa comprobar.py y escribe la huella de cada fichero (sha256) en
@@ -183,9 +183,8 @@ def montar(destino: Path, fuente: Path | None = INCIDENCIA) -> Path:
     r = corre(sys.executable, ANALISTA / "proyecto.py", "cambio", destino, "EV-02", "aprobada", "--fuente", APROBACION)
     if r.returncode:
         raise SystemExit(f"proyecto.py cambio EV-02 aprobada falla:\n{r.stdout}{r.stderr}")
-    r = corre(sys.executable, ANALISTA / "indice.py", "encargo", destino, "EV-02")
-    if r.returncode:
-        raise SystemExit(f"indice.py encargo falla:\n{r.stdout}{r.stderr}")
+    if not list((destino / "construccion" / "EV-02").glob("ISS-*.md")):
+        raise SystemExit(f"Al aprobar EV-02 no han quedado escritas sus issues (construccion/EV-02/):\n{r.stdout}{r.stderr}")
     if fuente is not None:
         shutil.copy2(fuente, destino / Path(fuente).name)
     r = corre(sys.executable, ANALISTA / "comprobar.py", destino, "--fuentes", destino / "fuentes")

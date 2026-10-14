@@ -365,7 +365,7 @@ if __name__ == "__main__":
     for _s in (sys.stdout, sys.stderr):  # consolas de Windows sin UTF-8: «→» o «✓» no caben en cp1252
         _s.reconfigure(encoding="utf-8", errors="replace")
     for name, s in TEMPLATES.items():
-        (HERE / name).write_text(json.dumps(clean(s), ensure_ascii=False, indent=1), encoding="utf-8")
+        escribe(HERE / name, json.dumps(clean(s), ensure_ascii=False, indent=1))
     cat = json.loads((HERE / "catalogo-patrones.json").read_text(encoding="utf-8"))
     order = [p06, p10, p01, p09, p02, p03, p04, p05, p07, p08, p11, p12]
     cat["app"]["name"] = "Catálogo de patrones"
@@ -385,5 +385,5 @@ if __name__ == "__main__":
                             {"title": "P11 IA", "icon": "magic", "screen": "ia", "includes": ["revision-ia"]}]
     capp = {"registro": {"params": {"id": PEND[0]["id"]}}, "tarea": {"params": {"id": PEND[0]["id"]}}, "dialogo": {"params": {"id": PEND[0]["id"]}, "hostParams": {"id": PEND[0]["id"]}}}
     cat["captures"] = [{"name": f"{k + 1:02d}-{s['pattern']}-{s['id']}", "screen": s["id"], **capp.get(s["id"], {})} for k, s in enumerate(order)]
-    (HERE / "catalogo-patrones.json").write_text(json.dumps(cat, ensure_ascii=False, indent=1), encoding="utf-8")
+    escribe(HERE / "catalogo-patrones.json", json.dumps(cat, ensure_ascii=False, indent=1))
     print("ok:", ", ".join(TEMPLATES), "+ catalogo-patrones.json")

@@ -32,7 +32,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 - [ ] `plan --app <app> --out <salida>` sin errores.
 - [ ] Resumen mostrado al usuario: objetos por tipo, herramientas usadas y excluidas (con motivo), llamadas estimadas.
-- [ ] Si `trustedMode` es `false`: avisado de que el servidor no respeta `readonly` y de que solo se usan herramientas de lectura evidentes.
+- [ ] Si `trustedMode` es `false` (lo normal: el catálogo trae herramientas de escritura): dicho que solo se usan las herramientas de lectura evidentes.
 - [ ] Si `needsConfirmation`: confirmación del usuario.
 - [ ] Herramientas `manual` o excluidas que parezcan útiles y seguras: anotadas para el usuario (puede ajustar `devmcp_policy.json`).
 

@@ -1,6 +1,6 @@
 ---
 name: appian-best-practices
-description: "Official Appian best practices, solution-design decisions and quality gates for Appian applications. Use when orienting or designing a solution, and when building, changing, reviewing or debugging, in an environment or as pasted code, record types, data models, sync, record events, SAIL interfaces, expression rules, decisions, process models, integrations, Web APIs, sites, security, performance, deployments, test cases, translations, AI agents and skills or document extraction. Also to diagnose an error or production symptom, maintain a live application (runbooks, Knowledge Base known issues) and before writing to an environment or declaring an object finished. Not for functional analysis, user stories, technical specs or logging an urgent incident (appian-functional-analyst), process diagrams (appian-diagramas-bpmn), prototypes (appian-prototipos), generating SAIL from requirements (appian-sail-generator) or assessing how to rebuild a whole application (appian-refactorizacion)."
+description: "Official Appian best practices, solution-design decisions and quality gates. Use when orienting or designing a solution, and when building, changing, reviewing or debugging, in an environment or as pasted code, record types, data models, sync, record events, SAIL interfaces, expression rules, decisions, process models, integrations, Web APIs, sites, security, performance, deployments, test cases, translations, AI agents and skills or document extraction. Also to diagnose an error or production symptom, maintain a live application (runbooks, known issues) and before writing to an environment or declaring an object finished. Not for functional analysis, user stories, technical specs or logging an urgent incident (appian-functional-analyst), process diagrams (appian-diagramas-bpmn), prototypes (appian-prototipos), generating SAIL from requirements (appian-sail-generator), rebuilding a whole application (appian-refactorizacion) or the QA of a built unit with SAIL CLI (appian-qa)."
 ---
 
 # Appian development best practices
@@ -104,11 +104,20 @@ With a design MCP, how to discover the environment (what to list before creating
 from) is the official skill's ground: listing the objects of one type before creating one is part of a
 safe write, not exploration.
 
-**A build order from the analyst.** If the project has `construccion/<U>.md` (written by the analyst's
-`indice.py encargo`), that file is the scope: build only its objects, in the order of the official skill's
-`change-planning`, with the gates the calibration gives, and honour its "reaplicar" and frozen objects. When done, run
-its `verificar` command and `proyecto.py cambio <p> <U> construida`. Progress across sessions shows by re-running
-`verificar`; there is no other state to keep.
+**Issues from the analyst.** If the project has `construccion/<U>/` (written by the analyst's `indice.py issues`), build
+from its issues, one at a time: `<skill>/../appian-functional-analyst/scripts/indice.py issues <p> <U> --siguiente
+--quien <this session's name>` prints the next one (the first not done whose dependencies are done) and reserves it;
+ask with the same `--quien` every time, so that a restarted session gets its own issue back instead of taking another
+and leaving its own reserved. That issue is the scope: build only its objects, in the order of the official
+skill's `change-planning`, with the gates the calibration gives, and honour its "No tocar", "Reaplicar" and frozen
+objects. It carries what the build needs from the functional design and the technical spec, with what changes: don't
+read those documents whole. If it says there are no tests to run, run none. When done, run the command it prints
+(`verificar`, read-only), ask for the next one, and when none is left and the unit has scenarios, its QA goes first, in
+another session (`appian-qa`; the last issue says so); then `proyecto.py cambio <p> <U> construida`. Progress across
+sessions is what each issue's verification and the QA result say; there is no other state to keep. `verificar` also
+runs the saved test cases of the issue's rules and interfaces and of what uses them; when one of them, or a QA
+scenario, fails: `<skill>/../appian-functional-analyst/references/cambios.md` §6.
+Build only in the development environment (in an emergency, the correction environment).
 
 ## Requirements
 

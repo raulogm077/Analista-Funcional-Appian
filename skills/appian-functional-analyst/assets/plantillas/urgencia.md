@@ -4,9 +4,9 @@ Análisis base: versión <x.y> · Cambio: URG-nn · Estado: pendiente
 ## Urgencia
 
 <!-- Los campos de su tipo (references/urgentes.md): Defecto y Cambio de comportamiento, todos; Datos u operación,
-Tipo, Síntoma, Quién la declara crítica, Qué se hizo y Cierre. Los Objetos, entre comillas invertidas. «Dónde se corrige»,
-una de las dos: Desarrollo o Entorno de corrección. El Estado de la cabecera: pendiente → aplicado en X.Y (si cambia el
-análisis, como la prueba de §14) o sin cambios. -->
+Tipo, Síntoma, Quién la declara crítica, Dónde se corrige, Qué se hizo y Cierre. Los Objetos, entre comillas invertidas.
+«Dónde se corrige», una de las dos: Desarrollo o Entorno de corrección (en Datos u operación, dónde se hizo). El Estado de
+la cabecera: pendiente → aplicado en X.Y (si cambia el análisis, como la prueba de §14) o sin cambios. -->
 
 | Campo | Valor |
 |---|---|
