@@ -1000,9 +1000,11 @@ Se acepta si:
                    xml[:300])
                 d = docx_de(gherkin, tmp / "gherkin.docx") if gherkin else None
                 xml = zipfile.ZipFile(d).read("word/document.xml").decode("utf-8").replace(GUION, "-") if d else ""
+                vinetas = [re.sub(r"<[^>]+>", "", x) for x in re.findall(r"<w:p>.*?</w:p>", xml, re.S) if "<w:numPr>" in x]
                 ok("un criterio con dado, cuando y entonces sale en el Word entero, en su viñeta y con su ID",
-                   any("<w:numPr>" in x and re.sub(r"<[^>]+>", "", x) == f"HU-03.2 {DEVUELTA}"
-                       for x in re.findall(r"<w:p>.*?</w:p>", xml, re.S)), xml[:300])
+                   f"HU-03.2 {DEVUELTA}" in vinetas, xml[:300])
+                ok("un criterio en dos líneas es en el Word la misma frase que en su .feature",
+                   f"HU-06.3 {' '.join(DOS_LINEAS)}" in vinetas, str([v for v in vinetas if v.startswith("HU-06.")]))
                 # Una viñeta en varias líneas es un párrafo con su numeración; el color de la marca del cliente (T12)
                 w = tmp / "Word con marca"
                 shutil.copytree(EJEMPLO, w)
@@ -1755,6 +1757,9 @@ def pruebas_unidades(tmp):
 DEVUELTA = ("Dada una solicitud devuelta, cuando la unidad solicitante la reenvía, entonces vuelve a «En revisión» con "
             "el mismo número.")
 EN_REVISION = "Dada una solicitud en revisión, cuando la unidad solicitante intenta cambiarla, entonces no puede."
+# Un criterio escrito en dos líneas: la segunda, sangrada, es parte de él, como en el Word
+DOS_LINEAS = ("Dada una solicitud devuelta, cuando el técnico abre su historial, entonces ve el comentario",
+              "y la fecha de la devolución.")
 FEATURE = """# language: es
 Característica: HU-03 Subsanar una solicitud
 
@@ -1800,6 +1805,12 @@ def pruebas_gherkin(tmp):
        pasos == [("Dada", "una solicitud devuelta cuando faltaba el plano y con memoria"),
                  ("Cuando", "el técnico la revisa y la da por completa"),
                  ("Entonces", "aparece «Completa, cuando entonces» y pasa a «En informe»")], str(pasos))
+    unidos = [separa(c) for c in ("Dada una solicitud en revisión, cuando el técnico la da por completa y entonces pasa a «En informe».",
+                                  "Dada una solicitud en revisión, y cuando el técnico la da por completa, y entonces pasa a «En informe».",
+                                  "Dada una solicitud en revisión e cuando el técnico la da por completa e entonces pasa a «En informe»")]
+    ok("pasos_gherkin: la «y» o la «e» de «y entonces» y de «, y cuando» no se queda colgando del paso anterior",
+       all(p == [("Dada", "una solicitud en revisión"), ("Cuando", "el técnico la da por completa"),
+                 ("Entonces", "pasa a «En informe»")] for p in unidos), str(unidos))
     sueltos = ["Al reenviarla vuelve a «En revisión» con el mismo número.", "Un organismo dado de baja no se puede elegir.",
                "Dada una solicitud devuelta, entonces vuelve a «En revisión».",
                "Dada una solicitud devuelta, cuando la unidad la reenvía.",
@@ -1820,10 +1831,10 @@ def pruebas_gherkin(tmp):
     mini = tmp / "feature" / "analisis"
     mini.mkdir(parents=True)
     if len(fichas) == 2:
-        (mini / "funcional.md").write_text(
-            "# Prueba — Diseño funcional\n\nVersión: 0.1 · Estado: borrador\n\n## 4. Funcionalidades\n\n" + fichas[0]
-            + "- ~~`HU-03.3`~~ Anulado por D-04: ~~Dada una solicitud, cuando se reenvía, entonces se duplica.~~\n\n"
-            "## 9. Relación con otros sistemas\n\n" + fichas[1], encoding="utf-8")
+        with open(mini / "funcional.md", "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("# Prueba — Diseño funcional\n\nVersión: 0.1 · Estado: borrador\n\n## 4. Funcionalidades\n\n" + fichas[0]
+                     + "- ~~`HU-03.3`~~ Anulado por D-04: ~~Dada una solicitud, cuando se reenvía, entonces se duplica.~~\n\n"
+                     "## 9. Relación con otros sistemas\n\n" + fichas[1])
     m = modelo.cargar(mini.parent)
     texto, sin = m.feature("HU-03") if "HU-03" in m.piezas else ("", ["sin la ficha HU-03 de la plantilla"])
     ok("Proyecto.feature: de la historia de la plantilla sale el .feature del diseño, sin el criterio anulado",
@@ -1831,11 +1842,12 @@ def pruebas_gherkin(tmp):
     texto, sin = m.feature("INT-02") if "INT-02" in m.piezas else ("", ["sin la ficha INT-02 de la plantilla"])
     ok("Proyecto.feature: la ficha de un intercambio, igual que una historia",
        texto.startswith("# language: es\nCaracterística: INT-02 Comprobar el organismo en su registro\n\n"
-                        "  Escenario: INT-02.1\n    Dado un organismo de baja en su registro\n    Cuando ") and sin == [],
-       texto + str(sin))
+                        "  Escenario: INT-02.1\n    Dad") and "\n    Cuando " in texto and "\n    Entonces " in texto
+       and sin == [], texto + str(sin))
 
     # Un análisis que ya existe: en la 1.2 cambian HU-03.2 (ya con dado, cuando y entonces) y HU-07.1 (sin ellos), son
-    # nuevos HU-03.3 (con) y HU-05.3 (sin), y HU-02.1 solo gana una cita. Lo demás sigue como estaba
+    # nuevos HU-03.3 (con), HU-05.3 (sin, y en dos líneas) y HU-06.3 y HU-06.4 (con, y en dos líneas: el Word las une y
+    # el .feature también), y HU-02.1 solo gana una cita. Lo demás sigue como estaba
     g = tmp / "gherkin"
     shutil.copytree(EJEMPLO, g)
     corre(S / "proyecto.py", "copia", g)
@@ -1848,11 +1860,16 @@ def pruebas_gherkin(tmp):
            f"- `HU-03.2` {DEVUELTA} <!-- ✅ FU-04 00:02:00 -->\n- `HU-03.3` {EN_REVISION} <!-- ✅ FU-04 00:03:00 -->")
     editar(f, "- `HU-07.1` Solo admite PDF de hasta 20 MB.", "- `HU-07.1` Solo admite PDF de hasta 30 MB.")
     editar(f, "recibe el aviso AV-05 con el comentario.", "recibe el aviso AV-05 con el comentario.\n"
-           "- `HU-05.3` La devolución queda en el historial de la solicitud.")
+           "- `HU-05.3` La devolución queda en el historial de la solicitud,\n  con su comentario y su fecha.")
+    editar(f, "la solicitud pasa a «Pendiente de resolver».", "la solicitud pasa a «Pendiente de resolver».\n"
+           f"- `HU-06.3` {DOS_LINEAS[0]}\n  {DOS_LINEAS[1]} <!-- ✅ FU-04 00:05:00 -->\n"
+           "- `HU-06.4` Dado un informe técnico sin terminar, cuando la unidad solicitante abre la solicitud,\n"
+           "  entonces no lo ve.")
     editar(f, "- `HU-02.1` La lista solo enseña solicitudes de la unidad de quien entra.",
            "- `HU-02.1` La lista solo enseña solicitudes de la unidad de quien entra. <!-- ✅ FU-04 00:04:00 -->")
     editar(t, "| HU-03.1, HU-03.2 |", "| HU-03.1, HU-03.2, HU-03.3 |")
     editar(t, "| HU-05.1, HU-05.2 |", "| HU-05.1, HU-05.2, HU-05.3 |")
+    editar(t, "| HU-06.1, HU-06.2 |", "| HU-06.1, HU-06.2, HU-06.3, HU-06.4 |")
     c, out = corre(S / "comprobar.py", g, "--anterior", g / "versiones" / "v1.1")
     linea = next((l for l in out.splitlines() if "dado, cuando y entonces" in l), "")
     ok("comprobar.py --anterior: el criterio nuevo y el cambiado sin dado, cuando y entonces son aviso, no error, con "
@@ -1876,10 +1893,24 @@ def pruebas_gherkin(tmp):
        and sin_cabecera == sin, str(lineas))
     ok("Proyecto.feature: una historia anulada o una pieza sin criterios no tienen .feature",
        mg.feature("HU-11") == ("", []) and mg.feature("PAN-01") == ("", []))
+    # Un criterio que sigue en la línea de debajo entra entero, como en el Word: ni se pierde la segunda línea del
+    # «entonces», ni deja de verse el «entonces» que está en ella, ni se corta el que pasa tal cual
+    texto, sin = mg.feature("HU-06")
+    ok("Proyecto.feature: un criterio en dos líneas sale entero, con el «entonces» en la primera o en la segunda",
+       "  Escenario: HU-06.3\n    Dada una solicitud devuelta\n    Cuando el técnico abre su historial\n"
+       "    Entonces ve el comentario y la fecha de la devolución\n" in texto
+       and "  Escenario: HU-06.4\n    Dado un informe técnico sin terminar\n    Cuando la unidad solicitante abre la "
+       "solicitud\n    Entonces no lo ve\n" in texto and sin == ["HU-06.1", "HU-06.2"] and "FU-04" not in texto,
+       texto + str(sin))
+    texto, sin = mg.feature("HU-05")
+    ok("Proyecto.feature: el criterio en dos líneas que pasa tal cual, también entero",
+       "  Escenario: HU-05.3\n    * La devolución queda en el historial de la solicitud, con su comentario y su fecha.\n"
+       in texto and "HU-05.3" in sin, texto + str(sin))
     editar(f, "- `HU-07.1` Solo admite PDF de hasta 30 MB.", "- `HU-07.1` Dado un informe del organismo que no es un PDF "
            "o pesa más de 30 MB, cuando el técnico lo adjunta, entonces no se guarda.")
-    editar(f, "- `HU-05.3` La devolución queda en el historial de la solicitud.", "- `HU-05.3` Dada una solicitud "
-           "devuelta, cuando alguien de su unidad abre el historial, entonces ve la devolución con su comentario.")
+    editar(f, "- `HU-05.3` La devolución queda en el historial de la solicitud,\n  con su comentario y su fecha.",
+           "- `HU-05.3` Dada una solicitud devuelta, cuando alguien de su unidad abre el historial,\n"
+           "  entonces ve la devolución con su comentario.")
     c, out = corre(S / "comprobar.py", g, "--anterior", g / "versiones" / "v1.1")
     ok("comprobar.py --anterior: con los dos reescritos, sin aviso",
        c == 0 and any(l.startswith("✓ criterios nuevos o cambiados con dado, cuando y entonces") for l in out.splitlines()),

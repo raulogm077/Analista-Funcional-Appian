@@ -84,12 +84,13 @@ Historias agrupadas por área (`### Área`). Cada una:
    regla común se cita («Se aplica RB-01»).
 5. «Se acepta si:» y los criterios `HU-nn.m`, uno por comportamiento. Cada uno, una línea con tres partes: «Dado
    <la situación de partida>, cuando <lo que hace el perfil o lo que ocurre>, entonces <lo que se puede comprobar
-   en la aplicación>»; «Dada», «Dados» o «Dadas», según lo que siga. En palabras del cliente, sin botones ni campos:
-   «cuando la reenvía», no «cuando pulsa Reenviar». Un solo «cuando»: si no cabe en una frase, son dos criterios.
-   Los textos literales (un mensaje, un estado), entre comillas. Toda acción que borre o anule algo dice su
-   confirmación literal; si no se sabe, va al 11. Con las tres partes, un script escribe la prueba de cada
-   criterio en Gherkin, sin interpretarlo. Los criterios que ya estaban escritos de otra forma (un análisis
-   anterior, el DF del cliente) se quedan como están y se reescriben así cuando cambian.
+   en la aplicación>»; «Dada», «Dados» o «Dadas», según lo que siga. En palabras del cliente y sin pasos de pantalla
+   (pulsar, rellenar): «cuando la reenvía», no «cuando pulsa Reenviar»; los datos, con el nombre que les da el
+   cliente. Un solo «cuando»: si no cabe en una frase, son dos criterios. Los textos literales (un mensaje, un
+   estado), entre comillas. Toda acción que borre o anule algo dice su confirmación literal; si no se sabe,
+   va al 11. Con las tres partes, un script escribe la prueba de cada criterio en Gherkin, sin interpretarlo. Los
+   criterios que ya estaban escritos de otra forma (un análisis anterior, el DF del cliente) se quedan como están
+   y se reescriben así cuando cambian.
 
 ```markdown
 **HU-03 — Subsanar una solicitud** <!-- ✅ FU-01 00:15:30 -->
@@ -165,7 +166,7 @@ historias siguen siendo de personas.
 | Registro de organismos | Al enviar la solicitud | El código del organismo | Si está de alta | Se envía y se comprueba al revisarla |
 
 Se acepta si:
-- `INT-02.1` Dado un organismo de baja en su registro, cuando la unidad solicitante rellena la solicitud, entonces no puede elegirlo.
+- `INT-02.1` Dada una solicitud con un organismo de baja en su registro, cuando la unidad solicitante la envía, entonces no se envía.
 ```
 
 ### 10. Condiciones de uso
