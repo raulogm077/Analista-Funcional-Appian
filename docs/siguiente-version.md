@@ -61,6 +61,11 @@ Lo que salió al ejecutar `docs/plan/2026-10-14-metodo-lucia.md` y no entra en �
 - Issues: un process model con varias actividades en «Para» junta en una sola issue varias historias y pantallas (en el
   proyecto de prueba, el 64 % del técnico); si molesta al construir, partirla por actividad.
 
+- Analista: `indice.py impacto` da el texto de la fila de técnico §13 pero no en qué línea va; en el retoque a ciegas
+  cuesta dos llamadas por pasada encontrarla.
+- Evaluaciones: `montar.py` de `pruebas/evaluaciones/` monta los proyectos sin `proyecto.py iniciar`, así que `estado`
+  avisa en ellos de que faltan git y `AGENTS.md`; montarlos como los deja el plugin.
+
 ## Menores
 
 - Diagramas: la salida de una puerta que comparte el tramo de su derecha sale ya por su vértice (el codo) y su etiqueta

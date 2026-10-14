@@ -9,6 +9,67 @@ están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 Rama `metodo-lucia`, de `main` d6126a8 (0.7.0-beta.4). Plan: `docs/plan/2026-10-14-metodo-lucia.md`. Las pruebas con
 reuniones reales y con el entorno de desarrollo se hacen fuera del repositorio; aquí, solo las cifras y las lecciones.
 
+### Fase 7 · T17, T18 y las medidas con el plugin terminado
+
+**T18.** `cambios.md` §6 y `urgentes.md`: quien prepara el paquete revisa en Compare and Deploy la comparación de sus
+objetos, como en un Merge Request, con los fallos de la regresión, los de los guiones de QA y las pruebas marcadas como no
+necesarias (la línea nombra los tres ficheros); se promueve el mismo paquete con un ICF por entorno y, si el despliegue es
+directo o por API, con «Require review» activado en el destino; `produccion --ref` lleva la referencia del pase. Sin script
+nuevo. De paso, `urgentes.md` pide ya «Dónde se corrige» también en una urgencia de datos u operación, como exigía
+`proyecto.py`.
+
+**T17, primera medida** (copia fija del commit `85d801e`; el retoque de T6 con el proyecto puesto al día: repositorio git,
+«Para» en §13, la acción en la tabla de §7 y la unidad aprobada de nuevo para que salgan sus issues):
+
+| | T6 | T17 (media de 3) |
+|---|---|---|
+| Minutos | 2,9 | 4,7 |
+| Llamadas | 54 | 38 |
+| Contexto máximo | 217.215 | 140.785 |
+| Coste (USD) | 2,51 | 1,92 |
+
+Leen la issue y el flujo, y del técnico solo el entorno (antes, entero); no ejecutan casos de prueba ni SAIL CLI;
+`verificar` comprueba el nombre de la acción (sin renombrarla, `construida` se niega). Una cuarta pasada no vale: leyó un
+fichero de la prueba que decía dónde estaba el texto. **El criterio se cumple en llamadas y coste, no en minutos**: las tres
+sesiones buscaron el plugin en el disco, porque `AGENTS.md`, el flujo y la issue nombraban los scripts sin ruta (son del
+proyecto y se comparten entre equipos), y una se quedó colgada tres minutos en una búsqueda por todo el disco.
+
+**El caso de T1 con el plugin terminado** (misma base, encargo y memoria que T1, T3 y T3b):
+
+| | T1 | T3 | T3b | Final |
+|---|---|---|---|---|
+| Minutos | 18,6 | 16,0 | 19,4 | 16,8 |
+| Llamadas | 124 | 155 | 135 | 87 |
+| Coste (USD) | 6,73 | 6,64 | 5,61 | 6,84 |
+
+Las fases 3 a 6 no lo encarecen en tiempo. Los siete criterios nuevos o cambiados salieron en Gherkin y `comprobar.py` no
+tuvo que avisar; el orden análisis, comprobación, prototipo y Word se mantiene; recoge los 15 puntos de la reunión. El
+coste sube porque hizo más mensajes con una orden cada uno, con otra versión de Claude Code (2.1.299 frente a 2.1.296): no
+se puede atribuir al plugin. Salieron dos fallos: los avisos de «texto que queda viejo» pasaron de 4 a 7 por sesión a 21,
+porque los criterios en Gherkin empiezan igual y se señalaban entre sí, y nadie los atendía; y el aviso de `estado` de que
+el proyecto no está en git se trató como información, así que un proyecto que ya existe nunca pasaría a git.
+
+**El retoque de análisis a ciegas** con el plugin terminado (`pruebas/evaluaciones/coste-retoque`): 22, 20 y 22 llamadas,
+ninguna pasada de `comprobar.py` con errores y 6/6 las tres (la ronda anterior, 22, 20 y 18). **El criterio de las 25
+llamadas se cumple** y lo nuevo (git, `AGENTS.md`, Gherkin, «Para», issues) no añade llamadas. Lo que sobra son cosas del
+equipo donde se mide y dos llamadas recurrentes para saber en qué línea va la fila de §13.
+
+**Revisión final de toda la rama**, independiente: recorrió como un equipo nuevo un proyecto nuevo, una reunión corta, un
+evolutivo hasta producción, una urgencia y un retoque; todas las órdenes coinciden con su ayuda real, todo lo que bloquea
+es uno de los dos bloqueos de B3 o su consecuencia directa y ninguno se queda sin salida, y el paquete (192 ficheros) no
+lleva nada de desarrollo ni datos de nadie. Encontró tres fallos: la barrera de `qa.py` contra pruebas y producción tenía
+fugas; la urgencia no tenía regresión; y el fichero de la regresión no tenía dueño. Y repeticiones: la regla «un fallo deja
+la issue pendiente salvo que una persona lo marque» estaba escrita en ocho sitios, y el `AGENTS.md` generado había vuelto a
+38 líneas.
+
+**Ajustes finales**, de esas medidas y de la revisión: el aviso de texto viejo compara paso a paso en un criterio en
+Gherkin (el arranque común ya no avisa; el criterio viejo escrito en otro sitio sí); `estado` dice «lanza `proyecto.py
+iniciar`» y el método lo manda; `AGENTS.md`, las copias de los flujos y cada issue dicen que las órdenes salen de la skill
+nombrada y que no se busca el plugin en el disco; `qa.py` solo repite contra desarrollo o el entorno de corrección (lista
+blanca); la regresión de una urgencia va contra el entorno de corrección; cada regla en un solo sitio; `AGENTS.md` en 30
+líneas. Pruebas con todo unido: `comprobar_plugin.py`, 0 errores; los cinco selftest; las ocho evaluaciones de
+`pruebas/evaluaciones/`; ingeniería inversa, 193 pasan y 2 se saltan.
+
 ### Fase 5 · T10 a T14: issues por requisito y pruebas de la issue
 
 Qué cambia:
