@@ -50,6 +50,11 @@ Lo que salió al ejecutar `docs/plan/2026-10-14-metodo-lucia.md` y no entra en �
 - Issues: el número de una issue que deja de existir se vuelve a dar si era el mayor de su unidad.
 - Un `.eml` con finales de línea de Windows deja `\r` en su `FU-nn.md`: viene de la lectura y sale igual en todos
   los sistemas, pero ensucia el fichero.
+- Ingeniería inversa: la extracción no usa la herramienta de dependientes del Dev MCP real (`getObjectDependents`): su
+  parámetro se llama `object` y el extractor no lo reconoce como el uuid del objeto (alcance manual). `verificar` sí la
+  usa. Decidir si la extracción la llama: una llamada más por objeto.
+- Pruebas de la issue: «no evaluable» reconoce solo la rejilla de registros con filtros de usuario
+  (`flow!userFilterSetData`, `devmcp_policy.json`). Si aparece otro límite del ejecutor de Appian, se añade allí.
 
 ## Menores
 

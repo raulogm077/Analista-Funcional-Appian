@@ -146,7 +146,10 @@ exportación y acciones de registro con quién las ve. Los filtros por defecto y
 conjuntos acotados (BP 05 §2–3). La composición: «ver prototipo, pantalla <id>».
 Cada acción que lanza un proceso desde una pantalla dice qué es y de qué record type: acción de lista de registros
 (crea) o acción relacionada (sobre un registro), puesta con el componente de acciones de registro; nunca un enlace de
-inicio de proceso en la interfaz (BP 00 «Process», 01 §9.2, 02 §5.4, 03 §8, 06 §5.3).
+inicio de proceso en la interfaz (BP 00 «Process», 01 §9.2, 02 §5.4, 03 §8, 06 §5.3). Las de cada record type, en una
+tabla `Acción · Tipo · Proceso · Quién la ve` bajo «Acciones de registro de `<record type>`», con el nombre entre
+comillas latinas y el tipo «De lista» o «Relacionada»: de ahí sale lo que `verificar` comprueba de una acción que se
+construye o cambia (su nombre y su tipo), también si se renombra.
 
 ### 8. Procesos
 Por process model, la tabla de nodos `Nodo · Qué hace · Asignado a · Plazo y escalado · Escribe · Evento`,

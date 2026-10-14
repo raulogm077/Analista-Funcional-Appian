@@ -51,31 +51,33 @@ def huella(carpeta: Path) -> dict[str, str]:
 
 def test_verificar(project, tmp_path):
     """Un objeto que falta sale «existe: false» y en «faltan» (salida 0); de un record type, sus campos para comparar
-    con §3; de cada uno, su última modificación; de una regla, sus casos de prueba si el Dev MCP los expone."""
-    project.add_devmcp(MOCK_CASOS_DE_PRUEBA="1")
+    con §3; de cada uno, su última modificación. Sin lo esperado de una issue no ejecuta casos de prueba ni copia sus
+    definiciones (eran 2.301 líneas para 20 objetos en T6)."""
+    project.add_devmcp(MOCK_PRUEBAS="1")
     destino = tmp_path / "construccion" / "verificacion" / "EV-02.json"
     p = project.run("verificar", "--app", "DEM", "--objetos", "DEM Solicitud,dem_er_esadmin,DEM_ER_Inventada",
                     "--out", str(destino), check=0)
     assert "DEM_ER_Inventada" in p.stdout
     v = json.loads(destino.read_text(encoding="utf-8"))
     assert v["entorno"] == "https://demo.appiancloud.com" and v["aplicacion"]["prefijo"] == "DEM"
-    assert v["conHistorialDeVersiones"] is True and v["conCasosDePrueba"] is True
+    assert v["conHistorialDeVersiones"] is True and "pruebas" not in v
     solicitud, regla, falta = v["objetos"]
     assert (solicitud["existe"], solicitud["tipo"], solicitud["nombre"]) == (True, "recordType", "DEM Solicitud")
     assert {"nombre": "titulo", "tipo": "TEXT", "longitud": 255} in solicitud["campos"]
     assert {"nombre": "id", "tipo": "INTEGER", "clavePrimaria": True} in solicitud["campos"]
     assert solicitud["ultimaModificacion"] == {"fecha": "2026-09-01T10:00:00Z", "autor": "marta.ruiz", "versiones": 3}
     assert (regla["pedido"], regla["nombre"], regla["tipo"]) == ("dem_er_esadmin", "DEM_ER_EsAdmin", "expressionRule")
-    assert "campos" not in regla and regla["casosDePrueba"][0]["name"].startswith("DEM_ER_EsAdmin")
+    assert "campos" not in regla and "casosDePrueba" not in regla and "acciones" not in solicitud
     assert falta == {"pedido": "DEM_ER_Inventada", "existe": False} and v["faltan"] == ["DEM_ER_Inventada"]
+    assert not any(c["tool"].startswith("run") for c in project.calls_list())
     assert not project.out.exists()                                 # no escribe en ninguna extracción
-    # @fichero, uno por línea; sin casos de prueba en el Dev MCP, no hay casos
+    # @fichero, uno por línea
     project.add_devmcp()
     lista = tmp_path / "objetos.txt"
     lista.write_text("# los de EV-02\nDEM Estado\n\n", encoding="utf-8-sig")       # con BOM, como el Bloc de notas
     project.run("verificar", "--app", "DEM", "--objetos", f"@{lista}", "--out", str(destino), check=0)
     v = json.loads(destino.read_text(encoding="utf-8"))
-    assert [o["nombre"] for o in v["objetos"]] == ["DEM Estado"] and v["conCasosDePrueba"] is False
+    assert [o["nombre"] for o in v["objetos"]] == ["DEM Estado"]
     assert [c["nombre"] for c in v["objetos"][0]["campos"]] == ["id", "label"]
 
 

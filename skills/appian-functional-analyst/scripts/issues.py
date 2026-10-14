@@ -1,7 +1,8 @@
 """Las issues de construcción de una unidad de cambio (references/cambios.md §5), en <p>/construccion/<U>/:
 
   indice.md                  cada issue con sus requisitos, de cuáles depende, con cuáles puede ir a la vez, sus objetos
-                             y quién la tiene reservada
+                             y quién la tiene reservada; y las pruebas que una persona ha marcado como no necesarias
+                             para avanzar, con su motivo (--sin-prueba)
   ISS-nn.md                  lo que necesita quien la construye y nada más: qué se pide, sus escenarios y cómo se
                              comprueba cada uno, sus objetos, lo que dice de ellos el técnico y lo que no debe tocar
   ISS-nn.feature             sus escenarios en Gherkin: los criterios de sus historias que la unidad construye o cambia
@@ -15,16 +16,22 @@ una issue está hecha cuando su última verificación pasa y es de su versión d
 en el índice, que se confirma y se sube con git para que dos no se lleven la misma.
 
 Lo esperado y la verificación, que es de donde sale si una issue está hecha (estado()):
-  ISS-nn-esperado.json      {"_issue": {"id": "ISS-03", "unidad": "EV-01", "version": "<12 hex>"},
+  ISS-nn-esperado.json      {"_issue": {"id": "ISS-03", "unidad": "EV-01", "version": "<12 hex>", "pruebas": true},
                              "<objeto>": {"tipo": "interface"},
-                             "<record type o CDT>": {"tipo": "recordType", "campos": [{"nombre": "x", "tipo": "Text"}]}}
+                             "<record type o CDT>": {"tipo": "recordType", "campos": [{"nombre": "x", "tipo": "Text"}]},
+                             "<record type de una acción>": {"acciones": [{"nombre": "Pedir material", "tipo": "De lista"}]}}
                             «version» es la huella de lo que hay que construir y comprobar (redacta()): cambia si cambia
-                            la issue, no si cambian su orden o su reserva.
+                            la issue, no si cambian su orden o su reserva. «pruebas» es false si la issue no cambia
+                            criterios ni reglas: «verificar» no ejecuta entonces ningún caso de prueba.
   verificacion/ISS-nn.json  el resultado de «verificar --esperado»: {"generadoEn", "entorno", "issue": <la de _issue, tal
                             cual>, "aplicacion", "objetos": [{"pedido", "existe", "tipo", "diferencias": {…}, …}],
-                            "faltan", "conDiferencias"}. Hecha: «issue» es la de ahora (id y version) y cada objeto suyo
-                            está en «objetos» con «existe» y sin diferencias (de uno que se modifica, «sobranCampos» no
-                            cuenta; «camposSinLeer» es no haberlo podido leer).
+                            "faltan", "conDiferencias", "pruebas": {"ejecutadas", "motivo" o "objetos": [{"objeto",
+                            "de": issue | usa, "casos", "pasan", "fallan": [{"caso", "error"}], "noEvaluables", "error"}]}}.
+                            Hecha: «issue» es la de ahora (id y version), cada objeto suyo está en «objetos» con «existe»
+                            y sin diferencias (de uno que se modifica, «sobranCampos» no cuenta; «camposSinLeer» y
+                            «accionesSinLeer» son no haberlo podido leer) y, si tiene pruebas, no falla ningún caso de sus
+                            objetos («de»: issue) que una persona no haya marcado como no necesario. Lo que falla en lo
+                            que la usa («de»: usa) es un aviso, y si el Dev MCP no ejecuta casos, esperan a la regresión.
 
 Lo usan indice.py issues (generar, dar la siguiente) y proyecto.py cambio (al aprobar la unidad y al marcarla construida).
 """
@@ -100,6 +107,9 @@ class Plan:
     issues: list
     avisos: list
     reservas: dict = field(default_factory=dict)   # issue → «quién · desde cuándo», del índice
+    marcas: list = field(default_factory=list)     # pruebas no necesarias para avanzar: [{issue, objeto, caso, motivo,
+    #                                                quien, cuando}], del índice (--sin-prueba)
+    revisar: list = field(default_factory=list)    # lo que una persona revisa antes de construir (T14, unidades.py)
 
 
 def clave(pid):
@@ -559,7 +569,10 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
     huella = json.dumps([issue.requisitos, pide, esc, issue.feature, filas, tec, construido, urgentes, objetos_esperados],
                         ensure_ascii=False, sort_keys=True)
     issue.version = hashlib.sha256(huella.encode("utf-8")).hexdigest()[:12]
-    issue.esperado = {"_issue": {"id": issue.id, "unidad": uid, "version": issue.version}, **objetos_esperados}
+    issue.esperado = {"_issue": {"id": issue.id, "unidad": uid, "version": issue.version, "pruebas": not issue.sin_pruebas},
+                      **objetos_esperados}
+    revisar = [un.texto_revision(uid, x, suyos) for x in plan.revisar      # T14: un aviso, no una puerta
+               if suyos & set(x["objetos"]) or set(issue.requisitos) & x["requisitos"]]
     de = {}      # de qué issue es cada objeto ajeno: de la primera que lo construye
     for i in plan.issues:
         for o in i.objetos if i is not issue else []:
@@ -573,6 +586,8 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
          "Se construye solo lo de «Objetos», en el orden de la skill oficial de Appian (`change-planning`) y con las "
          "puertas que da la calibración de `appian-best-practices`. Lo que hace falta del análisis está aquí: no hay que "
          "leer el funcional ni el técnico."]
+    if revisar:
+        L += ["", "## Antes de construir", ""] + [f"- {x}." for x in revisar]
     if pide:
         L += ["", "## Qué se pide", ""] + pide
     L += ["", f"## Escenarios{f' ({issue.id}.feature)' if issue.feature else ''} y cómo se comprueban", ""] + esc
@@ -591,9 +606,14 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
     L += ["", "## Terminar", "",
           "Con los objetos construidos, se verifica en desarrollo, en solo lectura. El resultado queda en "
           f"`{CARPETA}/{uid}/verificacion/{issue.id}.json`: con él la issue está hecha. La orden, lista para copiar en "
-          f"cada equipo, la imprime `indice.py issues <p> {uid} {issue.id}` (y `--siguiente`, al dar la issue)."
-          + (" No hay pruebas que ejecutar." if issue.sin_pruebas else ""), ""]
+          f"cada equipo, la imprime `indice.py issues <p> {uid} {issue.id}` (y `--siguiente`, al dar la issue). "
+          + (PRUEBAS_NO if issue.sin_pruebas else PRUEBAS_SI), ""]
     issue.texto = "\n".join(L)
+
+
+PRUEBAS_NO = "No hay pruebas que ejecutar: la issue no cambia criterios ni reglas."
+PRUEBAS_SI = ("«verificar» ejecuta los casos de prueba guardados de sus reglas e interfaces y de lo que las usa: un caso "
+              "suyo que falla la deja pendiente; uno de lo que las usa, es un aviso.")
 
 
 # ------------------------------------------------------------------ el plan de una unidad y sus ficheros
@@ -618,6 +638,31 @@ def lee_indice(texto):
 def indice_de(raiz, uid):
     f = carpeta(raiz, uid) / INDICE
     return lee_indice(f.read_text(encoding="utf-8") if f.is_file() else "")
+
+
+MARCAS = "Pruebas marcadas como no necesarias para avanzar"
+COLUMNAS_MARCAS = ["Issue", "Objeto", "Caso", "Motivo", "Quién", "Cuándo"]
+
+
+def lee_marcas(texto):
+    """Las pruebas marcadas del índice: [{issue, objeto, caso, motivo, quien, cuando}], de la tabla de MARCAS."""
+    out, cab = [], None
+    for l in (texto or "").split("\n"):
+        if not l.startswith("|"):
+            cab = None
+            continue
+        c = mo.celdas(l)
+        if cab is None:
+            cab = [mo.normaliza(x) for x in c]
+        elif cab[:3] == ["issue", "objeto", "caso"] and RX_ISSUE.fullmatch(c[0].strip()) and len(c) >= 6:
+            out.append({"issue": c[0].strip(), "objeto": c[1].strip("` "), "caso": c[2], "motivo": c[3], "quien": c[4],
+                        "cuando": c[5]})
+    return out
+
+
+def marcas_de(raiz, uid):
+    f = carpeta(raiz, uid) / INDICE
+    return lee_marcas(f.read_text(encoding="utf-8") if f.is_file() else "")
 
 
 def numera(issues, previas):
@@ -684,7 +729,8 @@ def calcula(m, ctx, uid):
     previas = indice_de(m.raiz, uid)
     numera(issues, previas)
     plan = Plan(uid, u.titulo, aplicacion(m), issues, [],
-                {i: p["reservada"] for i, p in previas.items() if p["reservada"] and any(x.id == i for x in issues)})
+                {i: p["reservada"] for i, p in previas.items() if p["reservada"] and any(x.id == i for x in issues)},
+                [x for x in marcas_de(m.raiz, uid) if any(i.id == x["issue"] for i in issues)], ctx.revisar_antes(uid))
     lineas, dts, pruebas = lineas_del_tecnico(d), decisiones(d), como_se_comprueba(m)
     for i in issues:      # lo que nombra el técnico al hablar de cada una dice con cuáles comparte objetos
         i.nombra = del_tecnico(d, i, lineas, dts)[2]
@@ -719,6 +765,15 @@ def texto_indice(plan, reservas):
     for i in plan.issues:
         L.append("| " + " | ".join([i.id, i.para, i.titulo.replace("|", "/"), lista(i.depende), lista(i.paralelo),
                                     ", ".join(f"`{o}`" for o in i.objetos), reservas.get(i.id) or "—"]) + " |")
+    if plan.marcas:      # lo decide una persona; se revisa al preparar el paquete
+        celda = lambda x: " ".join(str(x).replace("|", "/").split())   # noqa: E731
+        L += ["", f"## {MARCAS}", "",
+              f"Las marca una persona con `indice.py issues <p> {plan.uid} ISS-nn --sin-prueba \"<objeto> «<caso>»\" "
+              "--motivo \"…\"`, nunca en una sesión desatendida, y se revisan al preparar el paquete. Una se quita sola "
+              "cuando su caso vuelve a pasar.", "",
+              "| " + " | ".join(COLUMNAS_MARCAS) + " |", "|" + "---|" * len(COLUMNAS_MARCAS)]
+        L += ["| " + " | ".join([x["issue"], f"`{celda(x['objeto'])}`", celda(x["caso"]), celda(x["motivo"]),
+                                 celda(x["quien"]), celda(x["cuando"])]) + " |" for x in plan.marcas]
     return "\n".join(L) + "\n"
 
 
@@ -728,7 +783,8 @@ def escribe(plan, raiz, reservas=None):
     salvo las de las issues ya hechas, que se quitan solas. Devuelve (escritos, retirados)."""
     destino = carpeta(raiz, plan.uid)
     destino.mkdir(parents=True, exist_ok=True)
-    hechas = {i.id for i in plan.issues if estado(raiz, plan.uid, i)[0]}
+    plan.marcas = [x for x in plan.marcas if sigue_marcada(raiz, plan, x)]
+    hechas = {i.id for i in plan.issues if estado(raiz, plan.uid, i, plan.marcas)[0]}
     plan.reservas = {k: v for k, v in (plan.reservas if reservas is None else reservas).items() if k not in hechas}
     ficheros = {INDICE: texto_indice(plan, plan.reservas)}
     for i in plan.issues:
@@ -755,24 +811,48 @@ def genera(m, ctx, uid):
 
 
 # ------------------------------------------------------------------ hecha o pendiente: lo dice la verificación
-def estado(raiz, uid, issue):
-    """(hecha, por qué): una issue está hecha cuando su última verificación (construccion/<U>/verificacion/ISS-nn.json,
-    que deja «verificar --esperado») es de su versión de ahora y encuentra todos sus objetos como dice el técnico. De
-    un objeto que se modifica, que tenga más campos que los de esta unidad no cuenta."""
+def verificacion(raiz, uid, issue):
+    """(la verificación de una issue, o None; por qué no la hay o no vale): la de construccion/<U>/verificacion/ISS-nn.json
+    si es de esta issue y de su versión de ahora."""
     f = carpeta(raiz, uid) / "verificacion" / f"{issue.id}.json"
     if not f.is_file():
-        return False, "sin verificar"
+        return None, "sin verificar"
     try:
         v = json.loads(f.read_text(encoding="utf-8-sig"))
     except ValueError:
         v = None
     if not isinstance(v, dict):
-        return False, f"verificacion/{f.name} no es el JSON de «verificar»: repítelo"
+        return None, f"verificacion/{f.name} no es el JSON de «verificar»: repítelo"
     de = v.get("issue") or {}
     if de.get("id") != issue.id or de.get("unidad", uid) != uid:
-        return False, f"verificacion/{f.name} no es de esta issue: repite «verificar» con su «esperado»"
+        return None, f"verificacion/{f.name} no es de esta issue: repite «verificar» con su «esperado»"
     if de.get("version") != issue.version:
-        return False, "ha cambiado desde su última verificación"
+        return None, "ha cambiado desde su última verificación"
+    return v, ""
+
+
+def casos(v, de="issue"):
+    """[(objeto, caso, error)] de los casos que fallan en las pruebas de una verificación: los de los objetos de la issue
+    (de="issue") o los de lo que la usa (de="usa")."""
+    pr = (v or {}).get("pruebas")
+    objetos = pr.get("objetos") if isinstance(pr, dict) and isinstance(pr.get("objetos"), list) else []
+    return [(o.get("objeto"), c.get("caso"), c.get("error", "")) for o in objetos if isinstance(o, dict)
+            and o.get("de") == de for c in o.get("fallan") or [] if isinstance(c, dict)]
+
+
+def marcado(marcas, issue_id, objeto, caso):
+    return any(x["issue"] == issue_id and x["objeto"] == objeto and x["caso"] == caso for x in marcas)
+
+
+def estado(raiz, uid, issue, marcas=()):
+    """(hecha, por qué): una issue está hecha cuando su última verificación (construccion/<U>/verificacion/ISS-nn.json,
+    que deja «verificar --esperado») es de su versión de ahora, encuentra todos sus objetos como dice el técnico y, si
+    tiene pruebas, no falla ningún caso de prueba de sus objetos que una persona no haya marcado como no necesario
+    (`marcas`). De un objeto que se modifica, que tenga más campos que los de esta unidad no cuenta. Lo que falla en lo
+    que la usa, los casos que el ejecutor no evalúa y las pruebas marcadas son avisos: van tras «hecha · …»."""
+    v, por_que = verificacion(raiz, uid, issue)
+    if v is None:
+        return False, por_que
     vistos = {o.get("pedido"): o for o in v.get("objetos", []) if isinstance(o, dict)}
     sin = [o for o in issue.objetos if o not in vistos]
     if sin:
@@ -780,7 +860,7 @@ def estado(raiz, uid, issue):
     malos, sin_leer = [], []
     for o in issue.objetos:
         dif = dict(vistos[o].get("diferencias") or ({} if vistos[o].get("existe") else {"falta": True}))
-        if dif.pop("camposSinLeer", None):   # no se pudo leer: no es que esté mal construido
+        if [dif.pop(k, None) for k in ("camposSinLeer", "accionesSinLeer")] != [None, None]:   # no se pudo leer
             sin_leer.append(o)
         if dif and not (issue.situacion.get(o) == "modifica" and set(dif) <= {"sobranCampos"}):
             malos.append(f"{o}: {', '.join(dif)}")
@@ -788,11 +868,39 @@ def estado(raiz, uid, issue):
         return False, f"lo construido no es lo del técnico: {'; '.join(malos)}"
     if sin_leer:
         return False, f"no se pudo leer {', '.join(sin_leer)} en el entorno"
-    return True, "hecha"
+    if issue.sin_pruebas:
+        return True, "hecha"
+    pr = v.get("pruebas")
+    if not isinstance(pr, dict):
+        return False, "la verificación no dice cómo fueron sus pruebas: repite «verificar»"
+    if not pr.get("ejecutadas"):
+        return True, f"hecha · sus pruebas no se han ejecutado: {pr.get('motivo') or 'sin motivo'}"
+    sin_ejecutar = [o.get("objeto") for o in pr.get("objetos") or [] if isinstance(o, dict) and o.get("de") == "issue"
+                    and o.get("error")]
+    if sin_ejecutar:
+        return False, f"no se pudieron ejecutar los casos de prueba de {', '.join(sin_ejecutar)}: repite «verificar»"
+    fallan = [(o, c) for o, c, _ in casos(v) if not marcado(marcas, issue.id, o, c)]
+    if fallan:
+        return False, "fallan sus pruebas: " + "; ".join(f"{o} «{c}»" for o, c in fallan)
+    avisos = [f"marcada como no necesaria: {o} «{c}»" for o, c, _ in casos(v)]
+    avisos += [f"falla lo que la usa: {o} «{c}»" for o, c, _ in casos(v, "usa")]
+    noev = sum(len(o.get("noEvaluables") or []) for o in pr.get("objetos") or [] if isinstance(o, dict))
+    avisos += [f"{noev} {'caso' if noev == 1 else 'casos'} que el ejecutor de Appian no evalúa"] if noev else []
+    return True, " · ".join(["hecha"] + avisos)
+
+
+def sigue_marcada(raiz, plan, marca):
+    """Si una prueba marcada sigue en el índice: su issue existe y su última verificación no es de su versión de ahora
+    (no se sabe) o el caso sigue fallando. Cuando vuelve a pasar, la marca se quita sola."""
+    issue = next((i for i in plan.issues if i.id == marca["issue"]), None)
+    if issue is None:
+        return False
+    v, _ = verificacion(raiz, plan.uid, issue)
+    return v is None or any(o == marca["objeto"] and c == marca["caso"] for o, c, _ in casos(v))
 
 
 def estados(plan, raiz):
-    return {i.id: estado(raiz, plan.uid, i) for i in plan.issues}
+    return {i.id: estado(raiz, plan.uid, i, plan.marcas) for i in plan.issues}
 
 
 def elige(plan, raiz):
@@ -807,7 +915,7 @@ def situacion(plan, raiz):
     e, L = estados(plan, raiz), []
     for i in plan.issues:
         falta = [x for x in i.depende if not e[x][0]]
-        L.append(f"  {i.id} · {i.para} · {i.titulo} · " + ("hecha" if e[i.id][0] else f"pendiente: {e[i.id][1]}")
+        L.append(f"  {i.id} · {i.para} · {i.titulo} · " + (e[i.id][1] if e[i.id][0] else f"pendiente: {e[i.id][1]}")
                  + (f" · espera a {', '.join(falta)}" if falta and not e[i.id][0] else "")
                  + (f" · reservada: {plan.reservas[i.id]}" if i.id in plan.reservas else ""))
     return L
@@ -883,9 +991,23 @@ def para_construir(m, ctx, plan, issue):
          "Con los objetos construidos, en este equipo y desde esta carpeta"
          + (":" if len(ordenes) == 1 else " (no queda otra issue: la segunda orden marca la unidad):"), "", "```"]
     L += ordenes + ["```"] + [f"· {n}" for n in notas]
-    if issue.sin_pruebas:
-        L.append("No hay pruebas que ejecutar: la issue no cambia criterios ni reglas.")
+    L.append(PRUEBAS_NO if issue.sin_pruebas else PRUEBAS_SI)
     return "\n".join(L)
+
+
+def orden_de_regresion(m, uid):
+    """(orden, notas) de la regresión de toda la aplicación, lista para copiar en este equipo: se pasa antes de preparar
+    el paquete de la unidad y deja su resumen en construccion/<U>/regresion.json (por la salida, solo lo que falla)."""
+    servidor, nota = servidor_devmcp(m)
+    app = aplicacion(m)
+    notas = [nota] if nota else []
+    if not app:
+        notas.append("técnico §0 no dice la aplicación (fila «Aplicación»): ponla en --app")
+    orden = ('uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "' + VERIFICAR.resolve().as_posix()
+             + f'" regresion --app "{app or "<aplicación>"}" --out "'
+             + (carpeta(m.raiz, uid) / "regresion.json").resolve().as_posix() + '"'
+             + (f' --server-name "{servidor}"' if servidor else ""))
+    return orden, notas
 
 
 # ------------------------------------------------------------------ reservar: un commit y un push
@@ -993,11 +1115,12 @@ def deshace(raiz, uid, commit):
             f.unlink()
 
 
-def con_reserva(raiz, uid, cambia):
-    """Cambia las reservas del índice de una unidad (cambia(plan) → (issue o None, reservas, mensaje del commit)) y lo
-    confirma y lo sube sin pisar a nadie: antes se pone al día; si el push falla porque otro subió antes, quita su
-    commit, se pone al día y vuelve a decidir. Devuelve (m, ctx, plan, issue, cómo ha quedado). Nunca falla por git: sin
-    repositorio no reserva, sin remoto no sube y sin acceso lo deja en este equipo, y lo dice."""
+def con_reserva(raiz, uid, cambia, sin_git=None):
+    """Cambia las reservas o las pruebas marcadas del índice de una unidad (cambia(plan) → (issue o None, reservas,
+    mensaje del commit); las marcas, en plan.marcas) y lo confirma y lo sube sin pisar a nadie: antes se pone al día; si
+    el push falla porque otro subió antes, quita su commit, se pone al día y vuelve a decidir. Devuelve (m, ctx, plan,
+    issue, cómo ha quedado). Nunca falla por git: sin repositorio no reserva (con `sin_git`, lo escribe y dice eso), sin
+    remoto no sube y sin acceso lo deja en este equipo, y lo dice."""
     raiz = pathlib.Path(raiz)
     ruta = f"{CARPETA}/{uid}"
 
@@ -1006,12 +1129,15 @@ def con_reserva(raiz, uid, cambia):
         ctx = un.Contexto(m)
         plan = calcula(m, ctx, uid)
         escribe(plan, raiz)
+        marcas = list(plan.marcas)
         issue, reservas, mensaje = cambia(plan)
-        if reservar and reservas != plan.reservas:
+        if reservar and (reservas != plan.reservas or plan.marcas != marcas):
             escribe(plan, raiz, reservas)
         return m, ctx, plan, issue, mensaje
 
     if not shutil.which("git") or mo.git(raiz, "rev-parse", "--is-inside-work-tree") is None:
+        if sin_git:
+            return (*decide()[:4], sin_git)
         return (*decide(reservar=False)[:4], "sin reservar: el proyecto no es un repositorio git (`proyecto.py iniciar` "
                                              "lo crea), y otra persona puede llevarse la misma")
     with Candado(raiz):
@@ -1060,3 +1186,35 @@ def libera(raiz, uid, iid):
             raise NoSePuede(f"{uid} no tiene la issue {iid} (tiene {', '.join(i.id for i in plan.issues)})")
         return None, {k: v for k, v in plan.reservas.items() if k != iid}, f"{uid}: {iid} sin reserva"
     return con_reserva(raiz, uid, cambia)
+
+
+RX_CASO = re.compile(r"^\s*(.*?)\s*«(.+)»\s*$")      # «DEM_ER_Firma «Sin firma»», como lo dicen estado() y verificar
+
+
+def sin_prueba(raiz, uid, iid, caso, motivo, quien=None):
+    """Una persona marca un caso de prueba que falla en una issue como no necesario para avanzar, con su motivo: la
+    issue puede darse por hecha. Va al índice de la unidad, con su commit y su push, y se revisa al preparar el paquete.
+    `caso` es «<objeto> «<caso>»» o, si no hay dos con ese nombre, solo el caso. Solo uno que falla ahora, en un objeto
+    de la issue y en su verificación de ahora."""
+    nombre, ahora = quien_soy(raiz, quien), datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+
+    def cambia(plan):
+        issue = next((i for i in plan.issues if i.id == iid), None)
+        if issue is None:
+            raise NoSePuede(f"{uid} no tiene la issue {iid} (tiene {', '.join(i.id for i in plan.issues)})")
+        v, por_que = verificacion(raiz, uid, issue)
+        if v is None:
+            raise NoSePuede(f"{iid}: {por_que}. Se marca un caso que falla en su verificación de ahora")
+        fallan = [(o, c) for o, c, _ in casos(v)]
+        m = RX_CASO.match(caso)
+        objeto, nombre_caso = (m.group(1), m.group(2)) if m else ("", caso.strip())
+        elegidos = [(o, c) for o, c in fallan if c == nombre_caso and (not objeto or o == objeto)]
+        if len(elegidos) != 1:
+            lista_ = "; ".join(f"{o} «{c}»" for o, c in fallan) or "ninguno"
+            raise NoSePuede(f"«{caso}» no es {'un caso' if not elegidos else 'un solo caso'} que falle en {iid} (fallan: "
+                            f"{lista_}){': di también el objeto' if len(elegidos) > 1 else ''}")
+        o, c = elegidos[0]
+        plan.marcas = [x for x in plan.marcas if not (x["issue"] == iid and x["objeto"] == o and x["caso"] == c)] + [
+            {"issue": iid, "objeto": o, "caso": c, "motivo": motivo.strip(), "quien": nombre, "cuando": ahora}]
+        return issue, plan.reservas, f"{uid}: {iid}, {o} «{c}» no necesaria para avanzar ({nombre})"
+    return con_reserva(raiz, uid, cambia, sin_git="en el índice, sin commit: el proyecto no es un repositorio git")

@@ -29,7 +29,11 @@ repetirlo, y `iniciar` los pone al día en el proyecto con cada versión del plu
 Lo que se construye se reparte en issues. Al aprobar un cambio, un script escribe en `construccion/` una issue por
 requisito, con lo que necesita quien la construye y nada más (qué se pide, sus escenarios en Gherkin, sus objetos y lo
 que dice de ellos el técnico), en orden y diciendo cuáles pueden ir a la vez. Quien construye, persona o agente, pide la
-siguiente, que queda reservada con un commit para que nadie más se la lleve, y está hecha cuando su verificación pasa.
+siguiente, que queda reservada con un commit para que nadie más se la lleve, y está hecha cuando su verificación pasa:
+sus objetos, como dice el técnico, y sus pruebas, los casos de prueba guardados de sus reglas e interfaces y de lo que
+las usa. Un caso suyo que falla la deja pendiente, salvo que una persona lo marque como no necesario, con su motivo; un
+retoque que no cambia criterios ni reglas no ejecuta ninguno. Antes de preparar el paquete, la regresión ejecuta todos
+los de la aplicación.
 
 Sirve para cualquier proceso (compras, subvenciones, incidencias,
 informes, expedientes…): el dominio sale siempre de las fuentes del proyecto. Las
@@ -154,6 +158,13 @@ instalado en el entorno Appian por un administrador). Para construir con él, la
 entrada es la especificación técnica (`analisis/tecnico.md`) y el `app.json` del
 prototipo, que es un árbol SAIL real; buenas prácticas pide además la skill oficial
 `dev-mcp-skills` antes de escribir en un entorno.
+
+**Solo se escribe en desarrollo.** La IA construye en el entorno de desarrollo y, en una urgencia, en el
+entorno de corrección; a pruebas y a producción llega un paquete que ha revisado una persona. En los demás
+entornos, el Dev MCP entra con una cuenta que solo lee, la misma para todo el equipo, y SAIL CLI no se usa,
+porque crea datos y lanza procesos. `LCP_TOOL_MODE=readonly` no basta: la documentación de Appian la describe,
+pero el Dev MCP 26.6.110 no la aplica. Detalle en
+`skills/appian-reverse-engineering/references/devmcp-setup.md`, «Solo se escribe en desarrollo».
 
 **No se incluye `appian-sail-generator`**, la skill para escribir código SAIL suelto:
 va aparte.

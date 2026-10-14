@@ -19,6 +19,9 @@ Con unidades de cambio (analisis/cambios.md, references/cambios.md):
   indice.py cambios    <p> EV-02 [--json]               lo de una unidad: piezas nuevas, que cambian (antes y después) y
                                                         anuladas, pantallas, técnico, objetos, pruebas, colisiones
   indice.py colision   <p> URG-01                       la corrección urgente frente a las unidades sin pasar a producción
+  indice.py issues     <p> EV-02 ISS-nn --sin-prueba "<objeto> «<caso>»" --motivo "…" [--desatendida]
+                                                        una persona marca un caso de prueba que falla como no necesario
+                                                        para avanzar (en el índice; se niega con --desatendida)
   indice.py issues     <p> EV-02 [ISS-nn | --siguiente [--quien <nombre>] | --liberar ISS-nn]
                                                         las issues de construcción de una unidad aprobada, una por
                                                         requisito, en construccion/EV-02/. Con ISS-nn, esa issue con su
@@ -633,6 +636,22 @@ def c_issues(m, a):
     la primera sin hacer cuyas dependencias están hechas y la reserva (un commit y un push del índice); con --liberar,
     quita una reserva."""
     ctx, uid = unidad(m, a.unidad)
+    if a.sin_prueba is not None:   # B2: lo decide una persona, con su motivo; nunca una sesión desatendida
+        if a.desatendida:
+            sys.exit(f"✗ {uid}: en una sesión desatendida no se marca una prueba como no necesaria: lo decide una persona. "
+                     f"Salida: déjalo para ella; «indice.py issues <p> {uid}» dice qué falla")
+        if not a.issue or not (a.motivo or "").strip():
+            sys.exit(f"✗ {uid}: --sin-prueba va con la issue y el motivo: indice.py issues <p> {uid} ISS-nn --sin-prueba "
+                     "\"<objeto> «<caso>»\" --motivo \"…\"")
+        try:
+            m, ctx, plan, issue, como = iss.sin_prueba(m.raiz, uid, a.issue.upper(), a.sin_prueba, a.motivo, a.quien)
+        except iss.NoSePuede as e:
+            sys.exit(f"✗ {e}")
+        marca = plan.marcas[-1] if plan.marcas else {}
+        print(f"{issue.id} de {uid}: {marca.get('objeto')} «{marca.get('caso')}», marcada como no necesaria para avanzar"
+              + (f" ({como})" if como else "") + f". Se revisa al preparar el paquete (construccion/{uid}/indice.md).")
+        print("\n".join(iss.situacion(plan, m.raiz)))
+        return
     try:
         if a.siguiente or a.liberar:
             if a.liberar:
@@ -705,6 +724,11 @@ def main():
     s.add_argument("--siguiente", action="store_true", help="da la próxima issue y la reserva")
     s.add_argument("--quien", help="con --siguiente: a nombre de quién se reserva (por defecto, el usuario de git)")
     s.add_argument("--liberar", metavar="ISS-nn", help="quita la reserva de una issue que nadie va a seguir")
+    s.add_argument("--sin-prueba", metavar="«<objeto> «<caso>»»",
+                   help="con ISS-nn y --motivo: una persona marca ese caso de prueba, que falla, como no necesario para "
+                        "avanzar; la issue puede darse por hecha y la marca se revisa al preparar el paquete")
+    s.add_argument("--motivo", help="con --sin-prueba: por qué no hace falta para avanzar")
+    s.add_argument("--desatendida", action="store_true", help="la sesión no tiene a una persona: --sin-prueba se niega")
     a = ap.parse_args()
     m = mo.Proyecto(a.proyecto)
     if not m.docs:

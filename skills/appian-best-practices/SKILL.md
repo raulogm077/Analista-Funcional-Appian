@@ -111,7 +111,10 @@ skill's `change-planning`, with the gates the calibration gives, and honour its 
 objects. It carries what the build needs from the functional design and the technical spec, with what changes: don't
 read those documents whole. If it says there are no tests to run, run none. When done, run the command it prints
 (`verificar`, read-only), ask for the next one, and when none is left, `proyecto.py cambio <p> <U> construida`. Progress
-across sessions is what each issue's verification says; there is no other state to keep.
+across sessions is what each issue's verification says; there is no other state to keep. `verificar` also runs the
+saved test cases of the issue's rules and interfaces and of what uses them: a failing case of its own leaves the issue
+pending, so fix it; only a person may mark that test as not needed to move on (`--sin-prueba`), never an unattended
+session. Build only in the development environment (in an emergency, the correction environment).
 
 ## Requirements
 

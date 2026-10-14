@@ -21,8 +21,8 @@ escribe `proyecto.py cambio` (`<p>`, el proyecto). Cada error dice la salida.
 | Orden | Estado | Cuándo | Bloquea si… |
 |---|---|---|---|
 | `cambio <p> EV-02 abrir --titulo "…"` | Abierta | Empieza el cambio | ya existe |
-| `… aprobada --fuente FU-nn [--comparte "…"]` | Aprobada | El jefe de proyecto aprueba la unidad entera, con su alcance y coste; su aprobación (chat o correo) es la fuente FU-nn. Deja escritas sus issues de construcción (§5) | hay puntos «Pendiente» en sus informes; o un objeto suyo de §13 está también en otra unidad Aprobada o Construida sin una decisión escrita (`--comparte "EV-03 en X: secuenciar (EV-02 primero)"`), salvo que una de las dos solo cambie en él una parte que no guarda datos ni da permisos (§4): eso se avisa |
-| `… construida [--reaplicada URG-nn …] [--manual]` | Construida | Todas sus issues, construidas y verificadas en desarrollo (§6) | no está Aprobada; ha crecido desde que se aprobó; alguna issue no está hecha (dice cuál y por qué; con `--manual`, sin Dev MCP, no se mira, y la marca lo dice); o falta confirmar una corrección urgente que hay que reaplicar |
+| `… aprobada --fuente FU-nn [--comparte "…"]` | Aprobada | El jefe de proyecto aprueba la unidad entera, con su alcance y coste; su aprobación (chat o correo) es la fuente FU-nn. Deja escritas sus issues de construcción (§5) y, si cambia datos, permisos, procesos en curso o lo que usan otros (los puntos de «Cambio sobre lo construido», §4), o usa IA, avisa: «que una persona revise DT-nn antes de construir», también en su issue. Es un aviso, no frena nada | hay puntos «Pendiente» en sus informes; o un objeto suyo de §13 está también en otra unidad Aprobada o Construida sin una decisión escrita (`--comparte "EV-03 en X: secuenciar (EV-02 primero)"`), salvo que una de las dos solo cambie en él una parte que no guarda datos ni da permisos (§4): eso se avisa |
+| `… construida [--reaplicada URG-nn …] [--manual]` | Construida | Todas sus issues, construidas y verificadas en desarrollo, con sus pruebas (§6). Da la orden de la regresión, que se pasa antes de preparar el paquete | no está Aprobada; ha crecido desde que se aprobó; alguna issue no está hecha (dice cuál y por qué; con `--manual`, sin Dev MCP, no se mira, y la marca lo dice); o falta confirmar una corrección urgente que hay que reaplicar |
 | `… produccion --ref "<pase>" --fecha <AAAA-MM-DD del pase>` | En producción | Tras el pase | no está Construida |
 | `… descartada [--informe impacto/FU-nn.md]` | Descartada | No se hace | no está Abierta; o tiene algo aplicado y no se da el informe (aplicado) que lo deshace, o §13 sigue con sus filas |
 
@@ -124,8 +124,9 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
   dice de cuáles depende cada una y con cuáles puede ir a la vez (las que no comparten objetos). Cada `ISS-nn.md` lleva
   lo que necesita quien construye y nada más: **qué** se pide, sus escenarios (`ISS-nn.feature`, en Gherkin) con cómo se
   comprueba cada uno (técnico §14), sus objetos, lo que el técnico dice de ellos (lo que cambia, con lo de antes), lo
-  que no debe tocar por ser de otra issue, los puntos de «Cambio sobre lo construido» y las correcciones urgentes que
-  reaplicar o que congelan objetos. Si no cambia criterios ni reglas, lo dice: no hay pruebas que ejecutar. Sin orden
+  que no debe tocar por ser de otra issue, los puntos de «Cambio sobre lo construido», la DT que una persona revisa
+  antes de construir (si toca lo que pide revisarla, §1) y las correcciones urgentes que reaplicar o que congelan
+  objetos. Si no cambia criterios ni reglas, lo dice: no hay pruebas que ejecutar. Sin orden
   ni lista de cierre propios: los dan la skill oficial de Appian (`change-planning`) y las puertas de
   `appian-best-practices`. Se escriben solas al aprobar la unidad y `indice.py issues` las vuelve a generar: con los
   mismos datos salen las mismas, y si el análisis cambia cada una conserva su número. No se editan. Sirven a Claude, a
@@ -143,18 +144,30 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
    repositorio, sin reservar. El nombre es el de git; dos sesiones con el mismo se distinguen con `--quien <nombre>`.
    `--liberar ISS-nn` quita la reserva de una issue que nadie va a seguir. El push sube también los commits que esa
    copia tuviera sin subir.
-2. **Construir** la issue: `appian-best-practices` (que la lee como alcance) y el Dev MCP, o una persona.
+2. **Construir** la issue en desarrollo (en una urgencia, en el entorno de corrección): `appian-best-practices` (que la
+   lee como alcance) y el Dev MCP, o una persona.
 3. **Verificar** (solo lectura): la orden de la issue, que es el atajo «Verificar» de `appian-reverse-engineering` con
    lo esperado de la issue y con su resultado en `construccion/EV-02/verificacion/ISS-nn.json`. Comprueba que cada
-   objeto existe, su tipo y, de record types y CDT, los campos de esta unidad (de uno que se modifica, que tenga más
-   campos que los suyos no cuenta); la fecha de última modificación es un dato, no una prueba. Si no pudo leer los
-   campos, se repite. Lo semántico lo garantizan las pruebas de quien construye.
+   objeto existe, su tipo, de record types y CDT los campos de esta unidad (de uno que se modifica, que tenga más
+   campos que los suyos no cuenta) y, de una acción de registro, su nombre y su tipo (de la tabla de acciones de técnico
+   §7); la fecha de última modificación es un dato, no una prueba. Si no pudo leer algo, se repite.
+   **Sus pruebas**: si la issue cambia criterios o reglas, `verificar` ejecuta los casos de prueba guardados de sus
+   reglas e interfaces y de lo que las usa (los dependientes directos); si no, ninguno, y lo sabe por lo esperado. Un
+   caso suyo que falla la deja pendiente; uno de lo que las usa es un aviso, y uno que el ejecutor de Appian no sabe
+   evaluar (una rejilla de registros con filtros de usuario), otro. Si una persona decide que una prueba que falla no es
+   necesaria para avanzar, la marca con su motivo: `indice.py issues <p> EV-02 ISS-nn --sin-prueba "<objeto> «<caso>»"
+   --motivo "…"`. Queda en el índice de la unidad, se quita sola cuando el caso vuelve a pasar y se revisa al preparar
+   el paquete; con `--desatendida` se niega. Si el Dev MCP no ejecuta casos, la issue no espera: sus pruebas, a la
+   regresión.
    **Una issue está hecha** cuando su última verificación pasa y es de su versión de ahora: si al volver a generarla
    cambia lo que hay que construir o comprobar, vuelve a estar pendiente. No hay otro estado que mantener: su reserva
    se quita sola, y `indice.py issues <p> EV-02` dice cómo va cada una.
 4. **Marcar**, con todas hechas: `proyecto.py cambio <p> EV-02 construida` (la orden de la última issue la trae) y,
    tras el pase, `… produccion --ref "<pase>" --fecha <AAAA-MM-DD>`. Sin Dev MCP no hay verificación: construye una
    persona siguiendo el índice y la unidad se marca con `--manual`.
+5. **Regresión**, antes de preparar el paquete: la orden que da `construida` (el atajo «Regresión» de ingeniería
+   inversa) ejecuta todos los casos de prueba de la aplicación y deja el resumen en `construccion/EV-02/regresion.json`;
+   por la salida, solo lo que falla. Si el Dev MCP no ejecuta casos, se pasa en Appian (Manage Test Cases).
 
 **Deriva** (antes de abrir una unidad en una aplicación ajena, o para los objetos de una urgencia): `devmcp_extract.py
 deriva` de ingeniería inversa compara el historial de versiones con el de `as-is/` y escribe `as-is/datos/deriva.json`; si

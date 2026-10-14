@@ -25,8 +25,11 @@
                                             el jefe de proyecto la aprueba; otra vez si ha crecido (una fuente nueva
                                             para la unidad); sin --fuente, de Construida vuelve a Aprobada. Deja
                                             escritas sus issues de construcción (construccion/<ID>/, indice.py issues)
-      construida [--reaplicada URG-nn …] [--manual]   con todas sus issues hechas: construidas y verificadas
-                                            (construccion/<ID>/verificacion/ISS-nn.json)
+                                            y avisa de la DT que una persona revisa antes de construir, si cambia
+                                            datos, permisos, procesos en curso o lo que usan otros, o usa IA
+      construida [--reaplicada URG-nn …] [--manual]   con todas sus issues hechas: construidas y verificadas, con sus
+                                            pruebas (construccion/<ID>/verificacion/ISS-nn.json); da la orden de la
+                                            regresión, que se pasa antes de preparar el paquete
       produccion --ref "<referencia del pase>"        tras el pase (una URG, desde Abierta)
       descartada [--informe impacto/FU-nn.md]         desde Abierta, sin nada aplicado o con el informe que lo deshace
     Con --desatendida solo aprueba o pasa a producción con --fuente (el visto bueno del jefe de proyecto). Las
@@ -704,6 +707,23 @@ def cambio(a):
               "producción (references/urgentes.md)")
     if destino == "aprobada":
         issues_de(raiz, uid)
+        for r in un.Contexto(mo.Proyecto(raiz)).revisar_antes(uid):     # T14: un aviso, no una puerta
+            print(f"· {un.texto_revision(uid, r)}")
+    if destino == "construida" and not a.manual:
+        m = mo.Proyecto(raiz)
+        plan = iss.calcula(m, un.Contexto(m), uid)
+        for iid, (_, por_que) in iss.estados(plan, raiz).items():   # lo que falla en lo que la usan, y lo demás
+            if por_que.startswith("hecha · "):
+                print(f"· {iid}: {por_que[len('hecha · '):]}")
+        marcas = plan.marcas
+        if marcas:
+            print(f"Pruebas marcadas como no necesarias para avanzar (construccion/{uid}/indice.md), que se revisan al "
+                  "preparar el paquete:\n" + "\n".join(f"  {x['issue']} · {x['objeto']} «{x['caso']}»: {x['motivo']} "
+                                                       f"({x['quien']})" for x in marcas))
+        orden, notas = iss.orden_de_regresion(m, uid)
+        print("Antes de preparar el paquete, la regresión: todos los casos de prueba de la aplicación, con el resumen en "
+              f"construccion/{uid}/regresion.json y por la salida solo lo que falla:\n  {orden}"
+              + "".join(f"\n· {n}" for n in notas))
 
 
 def issues_de(raiz, uid):
@@ -801,17 +821,23 @@ def construir(a, ctx, u, hoy, no, raiz, orden):
             plan = iss.calcula(ctx.m, ctx, u.id)
         except iss.NoSePuede as e:
             no(str(e), "si se construyó sin issues, márcala con --manual")
-        faltan = [(i, por_que) for i in plan.issues for hecha, por_que in [iss.estado(raiz, u.id, i)] if not hecha]
+        faltan = [(i, por_que) for i in plan.issues for hecha, por_que in [iss.estado(raiz, u.id, i, plan.marcas)]
+                  if not hecha]
         if faltan:
             con = lambda texto: any(texto in por_que for _, por_que in faltan)
             no("issues sin hacer: " + "; ".join(f"{i.id} ({por_que})" for i, por_que in faltan)
                + f" (construccion/{u.id}/)",
                "corrígelo en el entorno y vuelve a verificar; si el técnico está mal, corrígelo con un informe"
-               if con("no es lo del técnico") else "repite «verificar» o usa --manual" if con("no se pudo leer") else
+               if con("no es lo del técnico") else
+               "corrígelo en el entorno y vuelve a verificar; si una persona decide que esa prueba no es necesaria para "
+               f"avanzar, la marca ella: «indice.py issues <p> {u.id} ISS-nn --sin-prueba \"<objeto> «<caso>»\" --motivo "
+               "\"…\"»" if con("fallan sus pruebas") else
+               "repite «verificar» o usa --manual" if con("no se pud") or con("no dice cómo fueron sus pruebas") else
                f"construye y verifica cada una: «indice.py issues <p> {u.id} --siguiente» la da con su orden de terminar "
                "(sin Dev MCP, --manual)" if con("sin verificar") else
                f"vuelve a pasar la orden de terminar de cada una: «indice.py issues <p> {u.id} ISS-nn» la imprime")
-        marca = "verificada"
+        marca = "verificada" + (f" · {len(plan.marcas)} {'prueba marcada' if len(plan.marcas) == 1 else 'pruebas marcadas'}"
+                                if plan.marcas else "")
     u.estado, u.construida = un.CONSTRUIDA, f"{hoy} · {marca}"
     for g in sorted(reaplicadas):
         ctx.por_id[g].construida = f"{hoy} · reaplicada en {u.id}"
