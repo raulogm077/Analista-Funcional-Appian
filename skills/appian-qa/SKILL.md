@@ -34,7 +34,8 @@ PATH como `sail`. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
 - **En otra sesión**, distinta de la que construyó; puede ser otro agente (el flujo F8 está en `.agents/workflows/` de
   cada proyecto) o una persona.
 - **Solo en desarrollo**, porque crea datos y lanza procesos; en una urgencia, en el entorno de corrección. Nunca en
-  pruebas ni en producción.
+  pruebas ni en producción: `qa.py repetir` no repite nada si un guion apunta a la URL de pruebas o de producción que
+  dice técnico §0.
 - **En un retoque cosmético no hay QA.** Si cambia un texto que usa un guion, la repetición falla en ese paso y se
   cambia ese texto en el guion; nada más.
 
@@ -62,7 +63,7 @@ conversación: la persona entra con cada cuenta (abajo) o te pasa la sesión ya 
    - **Entonces**: compruébalo en el `--json`. Tras enviar un formulario, el `--json` trae `completed` y la página de
      antes (`viewIsStale`): el «entonces» se mira tras un `load`.
    - **Escribe el guion** en `qa/<U>/<escenario>.json` («El guion»), pase o no. Si falla en el «cuando», el guion llega
-     hasta el paso que falla.
+     hasta el paso que falla; corregido el fallo, ese guion queda «por terminar» hasta que lo completes.
    - **Repítelo sin IA**: `python3 <skill>/scripts/qa.py repetir <p> <U> --escenario <escenario>`. Tiene que dar lo
      mismo que a mano; si no, el guion depende de algo que cambia (una referencia, un dato de la vez anterior): corrígelo
      hasta que dé lo mismo dos veces.
@@ -70,15 +71,17 @@ conversación: la persona entra con cada cuenta (abajo) o te pasa la sesión ya 
    cubren los casos de prueba.
 3. **La unidad entera**: `python3 <skill>/scripts/qa.py repetir <p> <U>`. Escribe `qa/<U>/resultado.json`, y la issue de
    cada escenario que falla vuelve a pendiente: `indice.py issues <p> <U>` de `appian-functional-analyst` lo enseña, y la
-   da otra vez con `--siguiente`. Quien la corrige repite los guiones; si el guion se había quedado a medias, lo termina
-   QA.
+   da otra vez con `--siguiente`. Quien la corrige repite los guiones. Un fallo en el «dado» puede venir de otra issue,
+   la que construyó lo que se prepara: míralo antes de reabrir la del escenario.
 4. **Entregar**, en pocas líneas: cada escenario y su resultado, de cada fallo qué se esperaba y qué salió, y lo que SAIL
    CLI no ve (las pantallas que recorrió, para que una persona mire en el navegador cómo se ven). Confirma y sube
-   `qa/<U>/` (`git commit` y `git push`).
-
-Las sesiones se quedan abiertas para repetir los guiones. `sail logout` cierra una en el servidor y borra lo guardado y lo
-tecleado: úsalo cuando el equipo deje de usar esa cuenta, nunca con una sesión importada del Dev MCP (no se sabe qué le
-pasa al Dev MCP).
+   `qa/<U>/` (`git commit` y `git push`). Con la unidad sin fallos se marca construida; `proyecto.py … construida` avisa,
+   sin impedirlo, si falta el QA o está a medias.
+5. **Cerrar las sesiones** al terminar la campaña de QA (la unidad entregada sin fallos y sus guiones repetidos): `sail
+   logout --data-dir <su carpeta>` de cada cuenta local. Cierra la sesión en el servidor y borra lo guardado y lo
+   tecleado, que es como termina cada prueba; no se hace tras cada escenario porque, para repetir los guiones antes del
+   paquete, quien los repite tiene que volver a entrar con la contraseña. Una sesión importada del Dev MCP no se cierra:
+   no se sabe qué le pasa al Dev MCP.
 
 ## El guion
 
@@ -106,7 +109,8 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
 }
 ```
 
-- **`dice`**: las líneas del escenario tal como están en su `.feature`. Si el escenario cambia, el guion sale
+- **`dice`**: las líneas del escenario tal como están en su `.feature`. Se comparan con lo que dice hoy el funcional
+  (sin funcional, con el `.feature`): si el escenario cambió, también a propósito en una unidad posterior, el guion sale
   «desfasado» y no se repite hasta que QA lo rehaga.
 - **`host`, `site` y `roles`**: el entorno, el site y el usuario de Appian de cada rol. El usuario no es secreto; el
   script busca su sesión en cada equipo (`session.json` bajo `$SAIL_HOME` y `~/.sail`, por usuario y host), así que no
@@ -119,7 +123,11 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   `"texto"` y `"sin_texto"`, en lo que se ve de la página y en sus validaciones; `"fila": {"con": "…", "<columna>":
   "<valor o su principio>"}`, una fila de una rejilla que lleva ese texto y tiene esos valores, y `"sin_fila": "…"`,
   ninguna fila con ese texto (lo que se buscó también está en la caja de búsqueda: para decir que no se ve, `sin_fila`,
-  no `sin_texto`). Cada paso falla además si SAIL CLI da error o si el servidor no cambió nada.
+  no `sin_texto`). Cada paso falla además si SAIL CLI da error, si el servidor no cambió nada o si SAIL CLI deja de
+  responder a mitad del recorrido.
+- **El «entonces» afirma algo**: al menos un `completado`, `hay`, `texto` o `fila`. Solo con `no_hay`, `sin_texto` o
+  `sin_fila` pasaría también con una página vacía. Una clave que no existe o una comprobación vacía (`"hay": []`,
+  `"texto": [""]`) tampoco valen: el guion sale «por terminar».
 - **`{pasada}`** es distinto en cada escenario de cada repetición; **`{hoy}`**, la fecha.
 
 Para que el guion dé lo mismo cada vez:
@@ -130,8 +138,9 @@ Para que el guion dé lo mismo cada vez:
   de búsqueda de la rejilla (`"🔍"`) antes de mirarla, para que una fila nueva no quede en otra página.
 - Un «no lo ve» lleva antes la prueba de que existe (en el «dado», quien lo creó lo ve): si no, el guion pasaría
   aunque el alta hubiera fallado.
-- Dos enlaces con el mismo texto no se distinguen: ese paso no se puede escribir. Dilo en la entrega, que además es un
-  problema de accesibilidad.
+- Dos enlaces con el mismo texto no se distinguen (el `--json` los da con `nth` y `of`): el script no pulsa uno al azar,
+  el paso falla. Dilo en la entrega, que además es un problema de accesibilidad. Lo mismo si «selecciona» encuentra
+  varias filas.
 - Si lo esperado aún no se ve tras cargar y, como mucho, buscar o marcar una fila, el script vuelve a cargar y a mirar
   antes de darlo por fallado: el proceso puede no haber terminado.
 - Nunca una contraseña ni un dato personal de verdad.
@@ -139,8 +148,9 @@ Para que el guion dé lo mismo cada vez:
 ## Repetir
 
 `python3 <skill>/scripts/qa.py repetir <p> [<U> …]`, sin IA: antes de cada paquete (F9), con todas las unidades de
-`qa/`, y tras corregir un fallo. Sale con 0 si todo pasa, 1 si algo falla y 2 si no pudo repetir algo (sin SAIL CLI o sin
-sesión). Escribe `qa/<U>/resultado.json`:
+`qa/`, y tras corregir un fallo. Sale con 0 si todo pasa, 1 si algo falla y 2 si no pudo repetir algo o está por hacer
+(sin SAIL CLI, sin sesión, un guion por terminar o una unidad sin guiones). Escribe `qa/<U>/resultado.json`, que se sube
+y no lleva rutas del equipo de nadie:
 
 ```json
 {"unidad": "EV-01", "generadoEn": "2026-10-14T15:30:12Z",
@@ -152,8 +162,10 @@ sesión). Escribe `qa/<U>/resultado.json`:
 - **pasa** o **falla**: la última vez que se repitió. Una issue con un escenario que falla está pendiente
   (`appian-functional-analyst/scripts/issues.py`, `estado()`).
 - **desfasado**: el escenario ya no dice lo del guion; no cuenta como fallo, y QA lo rehace.
-- **sinRepetir**: esta vez no se pudo (una sesión caducada, SAIL CLI que no responde); se queda el resultado anterior y
-  dice cómo entrar.
+- **guion por terminar**: el guion está mal escrito o no llega a afirmar nada en el «entonces»; no devuelve la issue a
+  quien construye: lo termina QA.
+- **sinRepetir**: esta vez no se pudo (una sesión caducada, SAIL CLI que no responde al primer paso); se queda el
+  resultado anterior y dice cómo entrar.
 - **sinGuion**: escenarios de la unidad que QA aún no ha recorrido.
 
 Si una pantalla cambió a propósito, se rehace solo su guion.

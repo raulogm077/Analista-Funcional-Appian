@@ -8,6 +8,9 @@ borradores y devuelve las enviadas. Su estado está en el fichero de SAIL_SIMULA
   {"filas": [{"Número", "Título", "Estado", "solicitante", "comentario"}], "defecto": {…}, "cargas": n}
   defecto "estado_alta": el estado con el que queda una solicitud enviada (en vez de «Enviada»)
   defecto "lento": una solicitud nueva no sale en la primera carga del panel (el proceso aún no ha terminado)
+  defecto "cuelga_desde": n, desde la llamada n (contando desde 1) SAIL CLI no responde
+  defecto "lee_stdin": SAIL CLI lee su entrada antes de nada (si se la dejan abierta, espera)
+El panel lleva dos enlaces «Ver detalle», que el --json da con nth y of: no se distinguen.
 La sesión de cada cuenta, en su --data-dir: session.json ({"hostname", "username", "cookies"}; con "caducada": true, la
 del servidor ya no vale) y la página en la que está (pagina.json).
 """
@@ -16,6 +19,7 @@ import os
 import pathlib
 import secrets
 import sys
+import time
 
 BOTONES = {"Enviar", "Guardar borrador", "Devolver", "Aprobar", "Cancelar"}
 COLUMNAS = ["Número", "Título", "Importe", "Estado"]
@@ -68,6 +72,12 @@ def main():
     app = lee(fapp, {"filas": []})
     app.setdefault("filas", [])
     defecto = app.get("defecto") or {}
+    app["llamadas"] = app.get("llamadas", 0) + 1
+    guarda(fapp, app)
+    if defecto.get("lee_stdin"):
+        sys.stdin.read()
+    if defecto.get("cuelga_desde") and app["llamadas"] >= defecto["cuelga_desde"]:
+        time.sleep(30)
     fpag = carpeta / "pagina.json"
     pag = lee(fpag, {"pagina": "panel", "campos": {}, "seleccion": None, "busqueda": ""})
 
@@ -83,6 +93,8 @@ def main():
                     # como «En riesgo (22)» en un panel de verdad: lleva un dato y su ref es la de esta carga
                     {"id": (i := secrets.token_hex(16)), "ref": i, "refIsPerRender": True, "nth": 1, "of": 2,
                      "label": f"Pendientes ({len(filas)})", "value": f"Pendientes ({len(filas)})", "verb": "display"}]
+        opciones += [{"label": "Ver detalle", "ref": f"⌗ Ver detalle {n}", "nth": n, "of": 2, "verb": "click"}
+                     for n in (1, 2)]
         if not revisor:
             opciones.append({"group": "Solicitudes", "label": "Nueva solicitud", "navKind": "StartProcessLink",
                              "ref": "⤴ Nueva solicitud", "verb": "navigate"})

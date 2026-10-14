@@ -153,7 +153,8 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
    cambia lo que hay que construir o comprobar, vuelve a estar pendiente. También vuelve si uno de sus escenarios falla
    en el QA de la unidad (`qa/EV-02/resultado.json`, de `appian-qa`), hasta que se corrige y sus guiones pasan. No hay
    otro estado que mantener: su reserva se quita sola, y `indice.py issues <p> EV-02` dice cómo va cada una.
-4. **Marcar**, con todas hechas: `proyecto.py cambio <p> EV-02 construida` (la orden de la última issue la trae) y,
+4. **Marcar**, con todas hechas: `proyecto.py cambio <p> EV-02 construida` (la orden de la última issue la trae; si la
+   unidad tiene escenarios, va antes su QA, en otra sesión, y `construida` avisa si falta o está a medias) y,
    tras el pase, `… produccion --ref "<pase>" --fecha <AAAA-MM-DD>`. Sin Dev MCP no hay verificación: construye una
    persona siguiendo el índice y la unidad se marca con `--manual`.
 

@@ -26,8 +26,9 @@ Lo esperado y la verificación, que es de donde sale si una issue está hecha (e
                             está en «objetos» con «existe» y sin diferencias (de uno que se modifica, «sobranCampos» no
                             cuenta; «camposSinLeer» es no haberlo podido leer).
   qa/<U>/resultado.json     lo deja appian-qa al repetir los guiones del QA de la unidad: {"escenarios": {"HU-01.1":
-                            {"resultado": "pasa" | "falla" | "desfasado", …}}}. Un escenario suyo que «falla» la devuelve
-                            a pendiente; sin QA, o con su guion desfasado, no cuenta.
+                            {"resultado": "pasa" | "falla" | "desfasado" | "guion por terminar", …}}}. Un escenario suyo
+                            que «falla» la devuelve a pendiente; sin QA, o con su guion desfasado o por terminar, no
+                            cuenta, y avisos_qa() lo dice al marcar la unidad.
 
 Lo usan indice.py issues (generar, dar la siguiente) y proyecto.py cambio (al aprobar la unidad y al marcarla construida).
 """
@@ -811,6 +812,27 @@ def falla_en_qa(raiz, uid, issue):
             and esc[c].get("resultado") == "falla"]
 
 
+def avisos_qa(raiz, plan):
+    """Lo que falta del QA de una unidad con escenarios (F8, paso 8): sin resultado, o con escenarios sin guion,
+    desfasados o con el guion por terminar. Son avisos: solo bloquea un escenario que falla (estado())."""
+    escenarios = [c for i in plan.issues for c in i.criterios]
+    r = pathlib.Path(raiz) / "qa" / plan.uid / "resultado.json"
+    if not escenarios:
+        return []
+    if not r.is_file():
+        return [f"{plan.uid} no tiene QA (qa/{plan.uid}/resultado.json): lo siguiente es el QA de la unidad, en otra "
+                "sesión y solo con sus .feature (appian-qa; F8, paso 8)"]
+    try:
+        esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") or {}
+    except (ValueError, AttributeError):
+        esc = {}
+    de = lambda c: (esc.get(c) or {}).get("resultado") if isinstance(esc.get(c), dict) else None
+    faltan = [(que, [c for c in escenarios if de(c) == res]) for que, res in
+              (("sin guion", None), ("desfasados", "desfasado"), ("con el guion por terminar", "guion por terminar"))]
+    faltan = [f"{que}: {', '.join(cs)}" for que, cs in faltan if cs]
+    return [f"el QA de {plan.uid} no está completo ({'; '.join(faltan)}): lo hace QA (appian-qa)"] if faltan else []
+
+
 def estados(plan, raiz):
     return {i.id: estado(raiz, plan.uid, i) for i in plan.issues}
 
@@ -877,8 +899,9 @@ def orden_de_marcar(m, ctx, uid):
 
 def orden_de_terminar(m, ctx, plan, issue):
     """(órdenes, notas) para terminar una issue en este equipo, listas para copiar: «verificar», con sus rutas y el Dev
-    MCP de desarrollo de su configuración, y, si es la última que queda, marcar la unidad. Las notas dicen lo que no se
-    ha podido resolver."""
+    MCP de desarrollo de su configuración, y, si es la última que queda, marcar la unidad; si la unidad tiene escenarios,
+    antes va su QA, en otra sesión, y la orden de marcar va en una nota. Las notas dicen también lo que no se ha podido
+    resolver."""
     ruta = lambda p: '"' + pathlib.Path(p).resolve().as_posix() + '"'
     aqui = carpeta(m.raiz, plan.uid)
     servidor, nota = servidor_devmcp(m)
@@ -892,7 +915,12 @@ def orden_de_terminar(m, ctx, plan, issue):
          + ruta(aqui / "verificacion" / (issue.id + ".json")) + (f' --server-name "{servidor}"' if servidor else "")]
     e = estados(plan, m.raiz)
     if all(e[i.id][0] for i in plan.issues if i is not issue):
-        L.append(orden_de_marcar(m, ctx, plan.uid))
+        if any(i.criterios for i in plan.issues):   # lo siguiente es el QA de la unidad, no marcarla (F8, paso 8)
+            notas.append("no queda otra issue: lo siguiente es el QA de la unidad, en otra sesión y solo con sus .feature "
+                         "(appian-qa; F8, paso 8). Con él, o tras corregir un fallo suyo y repetir sus guiones, se marca "
+                         f"la unidad: `{orden_de_marcar(m, ctx, plan.uid)}`")
+        else:
+            L.append(orden_de_marcar(m, ctx, plan.uid))
     return L, notas
 
 

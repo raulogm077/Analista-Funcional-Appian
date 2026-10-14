@@ -2367,15 +2367,18 @@ def pruebas_issues(tmp):
     c, out = issues(p, "EV-01", "ISS-06", env=aislado, cwd=p)
     bloque = out.split("```")[1].strip().split("\n") if out.count("```") == 2 else []
     python = "python" if os.name == "nt" else "python3"
-    ok("la última issue que queda lleva también la orden de marcar la unidad, con el Python de este equipo",
-       c == 0 and len(bloque) == 2 and bloque[0].endswith('ISS-06.json" --server-name "appian-dev-aut"')
-       and bloque[1] == f'{python} "{(S / "proyecto.py").resolve().as_posix()}" cambio "{aqui}" EV-01 construida', out)
+    marcar = f'{python} "{(S / "proyecto.py").resolve().as_posix()}" cambio "{aqui}" EV-01 construida'
+    ok("la última issue que queda dice que lo siguiente es el QA de la unidad, en otra sesión, y lleva aparte la orden de "
+       "marcarla, con el Python de este equipo",
+       c == 0 and len(bloque) == 1 and bloque[0].endswith('ISS-06.json" --server-name "appian-dev-aut"')
+       and "lo siguiente es el QA de la unidad, en otra sesión" in out and f"se marca la unidad: `{marcar}`" in out, out)
     verifica(p, "EV-01", "ISS-06")
     c, out = issues(p, "EV-01", "--siguiente")
     c2, out2 = corre(S / "proyecto.py", "cambio", p, "EV-01", "construida")
-    ok("con todas hechas, --siguiente lo dice con la orden de marcar la unidad, y cambio construida pasa",
-       c == 0 and "todas sus issues están hechas" in out and "EV-01 construida" in out
-       and c2 == 0 and re.search(r"\| Construida \| [^|]+ \| \d{4}-\d\d-\d\d · verificada \|", fila_de(p, "EV-01")), out + out2)
+    ok("con todas hechas, --siguiente lo dice con la orden de marcar la unidad, y cambio construida pasa; los dos avisan, "
+       "sin bloquear, de que la unidad no tiene QA",
+       c == 0 and "todas sus issues están hechas" in out and "EV-01 construida" in out and "EV-01 no tiene QA" in out
+       and "EV-01 no tiene QA" in out2 and c2 == 0 and re.search(r"\| Construida \| [^|]+ \| \d{4}-\d\d-\d\d · verificada \|", fila_de(p, "EV-01")), out + out2)
     corre(S / "proyecto.py", "cambio", p, "EV-02", "abrir", "--titulo", "El botón de la lista")
     editar(t, "| 7 | `AUT Autorizaciones` | Site | Nuevo | — | | PAN-01 |", "| 7 | `AUT Autorizaciones` | Site | Nuevo | — | "
            "| PAN-01 |\n| 8 | `AUT Solicitud — acción «Nueva solicitud»` | Record type | Modifica | — | EV-02 | PAN-01 |")
@@ -2462,7 +2465,7 @@ def pruebas_issues(tmp):
     verifica(v, "EV-02", "ISS-02")
     c, out = issues(v, "EV-02", "ISS-03", env=aislado, cwd=v)
     ok("la orden de marcar la unidad lleva el --reaplicada de la corrección urgente que la issue pide reaplicar",
-       c == 0 and out.count("```") == 2 and out.split("```")[1].strip().endswith(" EV-02 construida --reaplicada URG-01"), out)
+       c == 0 and out.count("```") == 2 and " EV-02 construida --reaplicada URG-01`" in out.split("```")[2], out)
 
     # Reservar: --siguiente escribe en el índice quién tiene la issue y desde cuándo, y hace commit y push de las issues
     # de la unidad. Dos que la piden a la vez no se llevan la misma. Nunca falla por git

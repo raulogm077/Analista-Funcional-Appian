@@ -648,6 +648,8 @@ def c_issues(m, a):
                 print(iss.para_construir(m, ctx, plan, issue))
             elif not a.liberar:
                 hechas = all(e[0] for e in iss.estados(plan, m.raiz).values())
+                for x in iss.avisos_qa(m.raiz, plan) if hechas else []:
+                    print(f"· {x}")
                 print(f"{uid}: " + ("todas sus issues están hechas. Para marcar la unidad:\n  "
                                     + iss.orden_de_marcar(m, ctx, uid) if hechas else
                                     "ninguna issue disponible ahora: las que faltan están reservadas o esperan a otra"))

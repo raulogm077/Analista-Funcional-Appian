@@ -6,36 +6,11 @@
   qa.py sesiones <host> <usuario> … [--sesiones <carpeta> …]
                  la carpeta de sesión de SAIL CLI (--data-dir) de cada cuenta en este equipo, o cómo entrar si no la hay
 
-El guion de un escenario, qa/<U>/<escenario>.json, lo escribe QA con lo que recorrió (SKILL.md «El guion»):
-  {"escenario": "HU-01.1", "dice": ["Dado …", "Cuando …", "Entonces …"],   las líneas del escenario en su .feature
-   "host": "<entorno de desarrollo>", "site": "<site>", "roles": {"<rol>": "<usuario de Appian>"},
-   "dado": [paso, …], "cuando": [paso, …], "entonces": [paso, …]}
-  paso  {"rol": "<rol>", "sail": ["interact", "Título", "QA {pasada}"], "espera": {…}}   la orden, sin el site
-        {"rol": "<rol>", "selecciona": "QA {pasada}"}       marca la fila de la rejilla que lleva ese texto
-  Las órdenes son load (siempre --fresh), navigate, interact, back y show; «rol» se puede omitir si hay uno solo.
-  espera: "completado": true · "hay" / "no_hay": [ref o etiqueta, o su principio] · "texto" / "sin_texto": [texto]
-          · "fila": {"con": "<texto de la fila>", "<columna>": "<valor o su principio>", …} · "sin_fila": "<texto>"
-  {pasada} es distinto en cada escenario de cada repetición, para que lo que se teclea y se busca no choque con lo de
-  otra vez, y {hoy} es la fecha (AAAA-MM-DD). Un paso falla si SAIL CLI da error, si el servidor no cambia nada o si no
-  se cumple lo que espera. Si lo esperado aún no se ve y desde el último load solo se ha mirado (buscar en la rejilla,
-  marcar una fila), se vuelve a cargar y a mirar antes de fallar: el proceso puede no haber terminado.
-  Un guion que no comprueba nada en «entonces» falla: es el de un recorrido que se quedó a medias.
-
-La sesión de cada cuenta se busca en este equipo por su usuario y su host (el session.json de cada carpeta de SAIL CLI
-bajo --sesiones, o bajo $SAIL_HOME y ~/.sail): no hay que decir en ningún fichero dónde está la de cada uno. Este script
-no entra ni sale: no ve contraseñas.
-
-El resultado, qa/<U>/resultado.json, es de donde saca issues.py (appian-functional-analyst) que un escenario falla y su
-issue vuelve a pendiente:
-  {"unidad": "EV-01", "generadoEn": "<UTC>",
-   "escenarios": {"HU-01.1": {"resultado": "pasa" | "falla" | "desfasado", "guion": "HU-01.1.json", "issue": "ISS-02",
-                              "fecha": "<UTC>", "segundos": 9.1, "paso": "cuando 3", "motivo": "…",
-                              "sinRepetir": "<por qué esta vez no se pudo; se queda el resultado anterior>"}},
-   "sinGuion": ["HU-02.1"]}
-  «desfasado»: el escenario del .feature ya no dice lo que dice el guion (QA lo rehace); no se repite ni cuenta como fallo.
-
-Sale con 0 si todo pasa, 1 si algún escenario falla y 2 si no se pudo repetir algo (sin SAIL CLI, sin sesión, sin
-guiones). SAIL_CLI, si existe, es la orden de SAIL CLI que se usa en vez de «sail» (un .py se lanza con este Python).
+El guion y el resultado, en SKILL.md («El guion» y «Repetir»). La sesión de cada cuenta se busca por su usuario y su host
+en los session.json de las carpetas de SAIL CLI (--sesiones, o $SAIL_HOME y ~/.sail); el script no entra ni sale. No
+repite nada contra el entorno de pruebas ni el de producción que dice técnico §0. Sale con 0 si todo pasa, 1 si algún
+escenario falla y 2 si algo no se pudo repetir o está por hacer. SAIL_CLI, si existe, es la orden de SAIL CLI que se usa
+en vez de «sail» (un .py se lanza con este Python).
 """
 import argparse
 import datetime
@@ -49,13 +24,21 @@ import sys
 import time
 import unicodedata
 from urllib.parse import urlparse
+sys.dont_write_bytecode = True  # importa el modelo del analista: sin __pycache__ en el plugin
 
+ANALISTA = pathlib.Path(__file__).resolve().parents[2] / "appian-functional-analyst" / "scripts"
 CARPETA, RESULTADO = "qa", "resultado.json"
 PARTES = ("dado", "cuando", "entonces")
 ORDENES = {"load": "load", "navigate": "navigate", "nav": "navigate", "interact": "interact", "back": "back",
            "show": "show"}
+CLAVES = {"escenario", "dice", "host", "site", "roles", *PARTES}
+CLAVES_PASO = {"rol", "sail", "selecciona", "espera"}
+ESPERAS = {"completado", "hay", "no_hay", "texto", "sin_texto", "fila", "sin_fila"}
+AFIRMA = {"completado", "hay", "texto", "fila"}      # lo que comprueba algo; las negativas solas pasan con una página vacía
+POR_TERMINAR = "guion por terminar"
+FUERA = ("pruebas", "producción")                    # entornos de técnico §0 donde no se repite: SAIL CLI escribe
 ESPERA_SAIL = 120          # segundos que se espera a una orden de SAIL CLI
-REINTENTOS, PAUSA = 3, 2   # un load que aún no muestra lo esperado se repite hasta 3 veces más, cada 2 segundos
+REINTENTOS, PAUSA = 3, 2   # lo que aún no se ve se vuelve a mirar hasta 3 veces más, cada 2 segundos
 NIVELES = 3                # hasta dónde se buscan sesiones por debajo de cada carpeta
 RX_ID = re.compile(r"^[0-9a-f]{32}$")    # un _cId o una ref de un solo render (refIsPerRender): cambian en cada carga
 RX_ESCENARIO = re.compile(r"^\s*(?:Escenario|Ejemplo):\s*(\S+)")
@@ -105,6 +88,12 @@ def norma(texto):
     return " ".join(t.split())
 
 
+def sin_rutas(texto):
+    """Lo que va a resultado.json, que se sube: sin la carpeta personal de quien lo repite."""
+    casa = str(pathlib.Path.home())
+    return texto.replace(casa, "~").replace(casa.replace("\\", "/"), "~")
+
+
 # ------------------------------------------------------------------ sesiones: la carpeta de cada cuenta en este equipo
 def host_de(texto):
     texto = str(texto or "").strip()
@@ -134,13 +123,13 @@ def sesiones(dadas=None):
     return {k: f.parent for k, f in vistas.items()}
 
 
-def como_entrar(usuario, host, carpeta=None):
-    donde = f'"{carpeta.as_posix()}"' if carpeta else f"<una carpeta solo para esa cuenta, p. ej. ~/.sail/<entorno>/{usuario}>"
+def como_entrar(usuario, host):
     return (f"con SAIL_USERNAME={usuario} y SAIL_PASSWORD en el entorno, solo para esa orden y nunca en un fichero del "
-            f"proyecto: sail login {host} --data-dir {donde}")
+            f"proyecto: sail login {host} --data-dir <su carpeta, la que da «qa.py sesiones {host} {usuario}», o una "
+            f"nueva solo para esa cuenta>")
 
 
-# ------------------------------------------------------------------ los escenarios de la unidad, de sus .feature
+# ------------------------------------------------------------------ los escenarios: sus .feature y el funcional de hoy
 def escenarios_de(raiz, uid):
     """{escenario: {"dice": [líneas], "issue": "ISS-nn"}} de construccion/<U>/*.feature, en su orden."""
     out = {}
@@ -157,6 +146,39 @@ def escenarios_de(raiz, uid):
             elif linea.strip() and actual is not None and actual["dice"]:
                 actual = None      # se acabó el escenario (una «Regla», otra cosa)
     return out
+
+
+def analisis(raiz):
+    """(el análisis del proyecto, el módulo de las issues) con el modelo del analista, que está junto a esta skill; (None,
+    None) si no está o el proyecto no tiene análisis."""
+    try:
+        sys.path.insert(0, str(ANALISTA))
+        import issues as iss
+        import modelo as mo
+        m = mo.Proyecto(raiz)
+        return (m, iss) if m.docs else (None, None)
+    except Exception:  # noqa: BLE001 - una copia suelta de la skill, o un análisis que no se lee: sin esas comprobaciones
+        return None, None
+
+
+def lo_que_dice_hoy(m, cid):
+    """Las líneas del escenario como las escribiría hoy el analista, del funcional; None si el proyecto no tiene
+    funcional y [] si el criterio ya no está o está anulado."""
+    if m is None or "F" not in m.docs:
+        return None
+    p = m.piezas.get(cid)
+    if p is None or p.anulada:
+        return []
+    texto = m.criterio(cid)
+    import modelo as mo
+    return [" ".join(f"{w} {x}".split()) for w, x in (mo.pasos_gherkin(texto) or [("*", texto)])]
+
+
+def prohibidos(m, iss):
+    """{host: entorno} de los entornos de técnico §0 donde no se repite (FUERA)."""
+    if m is None:
+        return {}
+    return {host_de(u): e for e in FUERA for u in [iss.url_de(m, e)] if u and host_de(u)}
 
 
 # ------------------------------------------------------------------ lo que hay en una página (el --json de SAIL CLI)
@@ -202,14 +224,24 @@ def hay(d, buscada):
     return any(norma(r).startswith(b) for r in refs(d))
 
 
+def repetido(d, objetivo):
+    """Cuántas veces está en la página lo que se nombra por su etiqueta («nth» y «of» del --json, o varias con la misma);
+    1 si se distingue (también si se nombra por su ref, que es única)."""
+    t = norma(objetivo)
+    opciones = [o for o in d.get("options") or [] if isinstance(o, dict)]
+    if sum(1 for o in opciones if norma(o.get("ref", "")) == t) == 1:
+        return 1
+    suyas = [o for o in opciones if norma(o.get("label", "")) == t]
+    return max([len(suyas)] + [int(o.get("of") or 1) for o in suyas])
+
+
 def lo_que_falta(espera, d):
     """Lo que no se cumple de «espera» en el --json de un paso; [] si todo se cumple."""
     mal = []
     if espera.get("completado") and not d.get("completed"):
         mal.append("el formulario no se ha completado" + (f" (validaciones: {'; '.join(map(str, d['validations']))})"
                                                            if d.get("validations") else ""))
-    de_la_pagina = [k for k in ("hay", "no_hay", "texto", "sin_texto", "fila", "sin_fila") if espera.get(k)]
-    if de_la_pagina and d.get("viewIsStale"):
+    if set(espera) - {"completado"} and d.get("viewIsStale"):
         return mal + ["la página es la de antes de enviar el formulario: compruébalo tras un «load»"]
     disponibles = sorted({r.lstrip(MARCAS) for r in refs(d)})
     for x in espera.get("hay") or []:
@@ -228,19 +260,19 @@ def lo_que_falta(espera, d):
     fila = espera.get("fila")
     if fila:
         busca = {k: v for k, v in fila.items() if k != "con"}
-        suyas = [f for f in filas(d.get("ui")) if con_texto(f, fila.get("con", ""))]
+        suyas = [f for f in filas(d.get("ui")) if con_texto(f, fila["con"])]
         if not suyas:
-            mal.append(f"ninguna fila lleva «{fila.get('con', '')}»")
+            mal.append(f"ninguna fila lleva «{fila['con']}»")
         elif not any(all(norma(f.get(k, "")).startswith(norma(v)) for k, v in busca.items()) for f in suyas):
             f = suyas[0]
-            mal.append(f"la fila con «{fila.get('con', '')}» tiene " + ", ".join(
-                f"{k} «{f.get(k, '—')}»" for k in busca) + " y se esperaba " + ", ".join(f"{k} «{v}»" for k, v in busca.items()))
+            mal.append(f"la fila con «{fila['con']}» tiene " + ", ".join(f"{k} «{f.get(k, '—')}»" for k in busca)
+                       + " y se esperaba " + ", ".join(f"{k} «{v}»" for k, v in busca.items()))
     if espera.get("sin_fila") and any(con_texto(f, espera["sin_fila"]) for f in filas(d.get("ui"))):
         mal.append(f"hay una fila con «{espera['sin_fila']}» y no debería")
     return mal
 
 
-# ------------------------------------------------------------------ repetir un guion
+# ------------------------------------------------------------------ un guion: si se puede repetir, y repetirlo
 def sail_cli():
     orden = os.environ.get("SAIL_CLI")
     if orden:
@@ -268,18 +300,45 @@ def solo_mira(orden):
         or (sub == "interact" and len(orden) == 2 and str(orden[1])[:1] in "☐☑")
 
 
+def textos_llenos(v):
+    return isinstance(v, list) and bool(v) and all(isinstance(x, str) and x.strip() for x in v)
+
+
+def mal_esperado(espera):
+    """Lo que está mal en una «espera»: claves que no existen y valores vacíos, que darían «pasa» sin mirar nada."""
+    if not isinstance(espera, dict) or not espera:
+        return ["«espera» es un objeto con lo que se comprueba"]
+    mal = [f"«{k}» no es una comprobación (son {', '.join(sorted(ESPERAS))})" for k in espera if k not in ESPERAS]
+    if "completado" in espera and espera["completado"] is not True:
+        mal.append("«completado» solo puede ser true")
+    mal += [f"«{k}» es una lista de textos, sin vacíos" for k in ("hay", "no_hay", "texto", "sin_texto")
+            if k in espera and not textos_llenos(espera[k])]
+    fila = espera.get("fila")
+    if "fila" in espera and not (isinstance(fila, dict) and isinstance(fila.get("con"), str) and fila["con"].strip()
+                                 and all(isinstance(v, str) and v.strip() for v in fila.values())):
+        mal.append("«fila» lleva «con» y, si acaso, columnas con su valor, sin vacíos")
+    if "sin_fila" in espera and not (isinstance(espera["sin_fila"], str) and espera["sin_fila"].strip()):
+        mal.append("«sin_fila» es un texto, no vacío")
+    return mal
+
+
 def defectos(g, nombre):
-    """Lo que impide repetir un guion tal como está escrito; [] si se puede."""
+    """Lo que impide dar por bueno un guion tal como está escrito; [] si se puede repetir."""
     mal = [f"falta «{k}»" for k in ("escenario", "dice", "host", "site", "roles") if not g.get(k)]
+    mal += [f"«{k}» no es una clave del guion" for k in g if k not in CLAVES]
     if g.get("escenario") and pathlib.Path(nombre).stem != g["escenario"]:
         mal.append(f"el fichero se llama {nombre} y el escenario es {g['escenario']}")
     roles = g.get("roles") if isinstance(g.get("roles"), dict) else {}
+    afirma = False
     for parte in PARTES:
         for k, p in enumerate(g.get(parte) or [], 1):
             donde = f"{parte} {k}"
             if not isinstance(p, dict) or ("sail" in p) == ("selecciona" in p):
                 mal.append(f"{donde}: un paso lleva «sail» (la orden) o «selecciona» (una fila)")
                 continue
+            mal += [f"{donde}: «{c}» no es una clave de un paso" for c in p if c not in CLAVES_PASO]
+            mal += [f"{donde}: {x}" for x in (mal_esperado(p["espera"]) if "espera" in p else [])]
+            afirma = afirma or (parte == "entonces" and isinstance(p.get("espera"), dict) and bool(AFIRMA & set(p["espera"])))
             rol = p.get("rol") or (next(iter(roles)) if len(roles) == 1 else None)
             if rol not in roles:
                 mal.append(f"{donde}: el rol «{p.get('rol')}» no está en «roles»")
@@ -290,6 +349,9 @@ def defectos(g, nombre):
                 ids = [x for x in orden[1:] if isinstance(x, str) and RX_ID.match(x)]
                 if ids:
                     mal.append(f"{donde}: «{ids[0]}» es un _cId o una ref que cambia en cada carga; usa la etiqueta")
+    if not afirma:
+        mal.append("el «entonces» no comprueba nada que se vea (completado, hay, texto o fila): el recorrido se quedó a "
+                   "medias, o solo dice lo que no está, que también pasaría con una página vacía")
     return mal
 
 
@@ -297,29 +359,29 @@ class Recorrido:
     """Un guion repetido una vez: las sesiones de sus roles, la última página de cada uno y lo que se sustituye."""
 
     def __init__(self, g, cuentas, valores):
-        self.g, self.valores, self.ultima, self.tras_carga = g, valores, {}, {}
+        self.g, self.valores, self.ultima, self.tras_carga, self.respondio = g, valores, {}, {}, False
         self.host = host_de(g["host"])
         self.carpeta = {}
         for rol, usuario in g["roles"].items():
             c = cuentas.get((str(usuario).casefold(), self.host))
             if c is None:
-                raise SinRepetir(f"no hay sesión de {usuario} en {self.host} en este equipo; "
-                                 + como_entrar(usuario, self.host))
+                raise SinRepetir(f"no hay sesión de {usuario} en {self.host} en este equipo; {como_entrar(usuario, self.host)}")
             self.carpeta[rol] = c
 
     def rol(self, p):
         return p.get("rol") or next(iter(self.g["roles"]))
 
     def sail(self, rol, orden):
-        base = sail_cli()
         sub, args = ORDENES[orden[0]], [str(x) for x in orden[1:]]
         if sub == "load" and "--fresh" not in args:
             args.append("--fresh")
-        cmd = base + ["--json", "--data-dir", str(self.carpeta[rol]), sub, self.g["site"], *args]
+        cmd = sail_cli() + ["--json", "--data-dir", str(self.carpeta[rol]), sub, self.g["site"], *args]
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                               timeout=ESPERA_SAIL)
+                               stdin=subprocess.DEVNULL, timeout=ESPERA_SAIL)
         except subprocess.TimeoutExpired:
+            if self.respondio:      # respondía y dejó de hacerlo en mitad del recorrido: eso es de la aplicación
+                raise Falla(f"SAIL CLI no respondió en {ESPERA_SAIL} s a «{sub}»")
             raise SinRepetir(f"SAIL CLI no respondió en {ESPERA_SAIL} s ({sub})")
         try:
             d = json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else None
@@ -329,9 +391,9 @@ class Recorrido:
             error = " ".join((r.stderr.strip() or r.stdout.strip() or f"código {r.returncode}").split())
             if RX_SIN_SESION.search(error):
                 usuario = self.g["roles"][rol]
-                raise SinRepetir(f"la sesión de {usuario} ({self.carpeta[rol].as_posix()}) ha caducado o no vale; "
-                                 + como_entrar(usuario, self.host, self.carpeta[rol]))
+                raise SinRepetir(f"la sesión de {usuario} ha caducado o no vale; {como_entrar(usuario, self.host)}")
             raise Falla(f"SAIL CLI: {error[:600]}")
+        self.respondio = True
         if d.get("status") not in (None, "ok"):
             raise Falla(f"SAIL CLI da «{d.get('status')}»" + (f": {'; '.join(map(str, d['validations']))}"
                                                             if d.get("validations") else ""))
@@ -342,16 +404,24 @@ class Recorrido:
     def paso(self, p):
         p = sustituye(p, self.valores)
         rol = self.rol(p)
+        pagina = self.ultima.get(rol)
         if "selecciona" in p:
-            pagina = self.ultima.get(rol)
             if pagina is None:
                 raise Falla(f"selecciona antes de cargar ninguna página como {rol}")
             suyas = [f for f in filas(pagina.get("ui")) if con_texto(f, p["selecciona"]) and f.get("handle")]
-            if not suyas:
-                raise Falla(f"ninguna fila lleva «{p['selecciona']}»")
+            if len(suyas) != 1:
+                raise Falla(f"ninguna fila lleva «{p['selecciona']}»" if not suyas else
+                            f"{len(suyas)} filas llevan «{p['selecciona']}»: no se sabe cuál marcar (más texto, o {{pasada}})")
             orden = ["interact", suyas[0]["handle"]]
         else:
             orden = p["sail"]
+        if pagina is not None and ORDENES[orden[0]] in ("navigate", "interact"):
+            for x in orden[1:]:
+                veces = repetido(pagina, x)
+                if veces > 1:
+                    raise Falla(f"«{x}» está {veces} veces en la página y SAIL CLI no distingue cuál pulsar; ese paso no "
+                                "se puede escribir (dos enlaces con el mismo texto son también un problema de "
+                                "accesibilidad)")
         espera = p.get("espera") or {}
         _, d = self.sail(rol, orden)
         # lo que ha hecho este rol desde su último load: si solo es mirar (cargar, buscar, marcar una fila), se puede
@@ -369,21 +439,15 @@ class Recorrido:
             mal = lo_que_falta(espera, d)
         if mal:
             raise Falla("; ".join(mal))
-        return bool(espera)
 
     def repite(self):
-        comprueba = False
         for parte in PARTES:
             for k, p in enumerate(self.g.get(parte) or [], 1):
                 try:
-                    comprobado = self.paso(p)
+                    self.paso(p)
                 except Falla as e:
                     e.paso = f"{parte} {k}"
                     raise
-                comprueba = comprueba or (parte == "entonces" and comprobado)
-        if not comprueba:
-            raise Falla("el guion no llega a comprobar el «entonces»: el recorrido se quedó a medias y QA lo termina",
-                        "entonces")
 
 
 def unica(ultima=[""]):
@@ -395,7 +459,7 @@ def unica(ultima=[""]):
     return t
 
 
-def repite_unidad(raiz, uid, solo, cuentas):
+def repite_unidad(raiz, uid, solo, cuentas, m=None):
     """Repite los guiones de una unidad (con `solo`, nada más que esos escenarios; los demás se quedan como estaban) y
     escribe su resultado. Devuelve (resultado, lo repetido esta vez, líneas para la consola)."""
     carpeta = pathlib.Path(raiz) / CARPETA / uid
@@ -418,12 +482,15 @@ def repite_unidad(raiz, uid, solo, cuentas):
             entrada["issue"] = del_feature[esc]["issue"]
         g = lee_json(guiones[esc])
         mal = ["no es un JSON"] if not isinstance(g, dict) else defectos(g, guiones[esc].name)
-        dice = del_feature.get(esc, {}).get("dice")
+        # lo que dice hoy el escenario: el funcional, que una unidad posterior puede haber cambiado a propósito; sin
+        # funcional, el .feature
+        hoy = lo_que_dice_hoy(m, esc)
+        dice = del_feature.get(esc, {}).get("dice") if hoy is None else hoy
         inicio = time.time()
         if mal:
-            entrada.update(resultado="falla", motivo="el guion está mal escrito: " + "; ".join(mal))
-        elif dice is None:
-            entrada.update(resultado="desfasado", motivo=f"{esc} ya no está en los .feature de {uid}")
+            entrada.update(resultado=POR_TERMINAR, motivo="; ".join(mal))
+        elif not dice:
+            entrada.update(resultado="desfasado", motivo=f"{esc} ya no está en el análisis de {uid}")
         elif [" ".join(x.split()) for x in g["dice"]] != dice:
             entrada.update(resultado="desfasado", motivo="el escenario ha cambiado; ahora dice: " + " / ".join(dice))
         else:
@@ -431,11 +498,11 @@ def repite_unidad(raiz, uid, solo, cuentas):
                 Recorrido(g, cuentas, {"pasada": unica(), "hoy": datetime.date.today().isoformat()}).repite()
                 entrada["resultado"] = "pasa"
             except Falla as e:
-                entrada.update(resultado="falla", paso=e.paso, motivo=e.motivo)
+                entrada.update(resultado="falla", paso=e.paso, motivo=sin_rutas(e.motivo))
             except SinRepetir as e:
                 entrada = dict(antes.get(esc) or entrada)
                 entrada.setdefault("resultado", "sin repetir")
-                entrada["sinRepetir"] = str(e)
+                entrada["sinRepetir"] = sin_rutas(str(e))
         if "sinRepetir" not in entrada:
             entrada.update(fecha=ahora(), segundos=round(time.time() - inicio, 1))
         entrada = {"resultado": entrada.pop("resultado"), **entrada}   # lo primero que se lee
@@ -446,7 +513,7 @@ def repite_unidad(raiz, uid, solo, cuentas):
     cuenta = lambda r: sum(1 for e in repetidos.values() if e.get("resultado") == r and not e.get("sinRepetir"))
     sin = sum(1 for e in repetidos.values() if e.get("sinRepetir"))
     L.append(f"{uid} · {len(repetidos)} guiones: {cuenta('pasa')} pasan, {cuenta('falla')} fallan"
-             + (f", {cuenta('desfasado')} desfasados" if cuenta("desfasado") else "")
+             + "".join(f", {cuenta(r)} {r}" for r in ("desfasado", POR_TERMINAR) if cuenta(r))
              + (f", {sin} sin repetir" if sin else "") + f" · {fichero.as_posix()}")
     for esc, e in repetidos.items():
         if e.get("sinRepetir"):
@@ -454,13 +521,22 @@ def repite_unidad(raiz, uid, solo, cuentas):
         elif e["resultado"] == "pasa":
             L.append(f"  {esc} · pasa ({e.get('segundos', 0):.0f} s)")
         elif e["resultado"] == "falla":
+            dado = str(e.get("paso", "")).startswith("dado")
             L.append(f"  {esc} · falla" + (f" en «{e['paso']}»" if e.get("paso") else "") + f": {e.get('motivo')}"
+                     + (" · al preparar el «dado»: puede venir de otra issue" if dado else "")
                      + (f" · {e['issue']} vuelve a pendiente" if e.get("issue") else ""))
+        elif e["resultado"] == POR_TERMINAR:
+            L.append(f"  {esc} · guion por terminar: {e.get('motivo')}; lo termina QA (no vuelve a pendiente su issue)")
         else:
             L.append(f"  {esc} · desfasado: {e.get('motivo')}; QA rehace su guion")
     for esc in resultado["sinGuion"] if not solo else []:
         L.append(f"  {esc} · sin guion: lo recorre QA (appian-qa)")
     return resultado, repetidos, L
+
+
+def peor(a, b):
+    """El código de salida de dos: un fallo (1) pesa más que algo sin repetir o por hacer (2), y eso más que nada (0)."""
+    return 1 if 1 in (a, b) else max(a, b)
 
 
 def repetir(a):
@@ -473,22 +549,32 @@ def repetir(a):
         print("Sin SAIL CLI en este equipo (viene en el paquete del Dev MCP, bin/; bin/setup-* lo deja en el PATH como "
               "«sail»): no se ha repetido nada")
         return 2
+    m, iss = analisis(raiz)
+    fuera = prohibidos(m, iss)
+    for uid in unidades:      # SAIL CLI crea datos y lanza procesos: ni en pruebas ni en producción (B3)
+        for f in sorted((raiz / CARPETA / uid).glob("*.json")):
+            g = lee_json(f) if f.name != RESULTADO else None
+            if isinstance(g, dict) and host_de(g.get("host")) in fuera:
+                print(f"No se repite nada: {CARPETA}/{uid}/{f.name} apunta a {host_de(g['host'])}, que es el entorno de "
+                      f"{fuera[host_de(g['host'])]} (técnico §0). Los guiones crean datos y lanzan procesos: solo se "
+                      "repiten en desarrollo y, en una urgencia, en el entorno de corrección")
+                return 2
     cuentas = sesiones(a.sesiones)
     codigo = 0
     for uid in unidades:
         if not any(f.name != RESULTADO for f in (raiz / CARPETA / uid).glob("*.json")):
             print(f"{uid} · sin guiones en {CARPETA}/{uid}/: su QA está por hacer (appian-qa)")
-            codigo = max(codigo, 2)
+            codigo = peor(codigo, 2)
             continue
-        _, repetidos, L = repite_unidad(raiz, uid, set(a.escenario or []), cuentas)
+        _, repetidos, L = repite_unidad(raiz, uid, set(a.escenario or []), cuentas, m)
         print("\n".join(L))
         if a.escenario and not repetidos:
             print(f"  {uid} no tiene guion de {', '.join(a.escenario)}")
-            codigo = max(codigo, 2)
+            codigo = peor(codigo, 2)
         if any(e.get("resultado") == "falla" and not e.get("sinRepetir") for e in repetidos.values()):
-            codigo = 1
-        elif any(e.get("sinRepetir") for e in repetidos.values()) and codigo != 1:
-            codigo = 2
+            codigo = peor(codigo, 1)
+        elif any(e.get("sinRepetir") or e.get("resultado") == POR_TERMINAR for e in repetidos.values()):
+            codigo = peor(codigo, 2)
     return codigo
 
 
