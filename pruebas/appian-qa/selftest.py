@@ -74,7 +74,10 @@ GUIONES = {
                                                   "Entonces se le pide el título"],
                 "host": HOST, "site": "solicitudes", "roles": {"gestor": "qa.gestor"},
                 "dado": [], "cuando": [{"sail": ["load"]}, {"sail": ["navigate", "Nueva solicitud"]}],
-                "entonces": [{"sail": ["interact", "Enviar"], "espera": {"texto": ["Indica el título"]}}]},
+                "entonces": [{"sail": ["interact", "Enviar"], "espera": {"texto": ["Indica el título"]}},
+                             # y no se ha dado de alta nada: lo buscado está en la caja de búsqueda, no en una fila
+                             {"sail": ["load"]}, {"sail": ["interact", "🔍", "{pasada}"]},
+                             {"sail": ["show"], "espera": {"sin_fila": "{pasada}", "texto": ["No hay solicitudes"]}}]},
     "HU-02.1": {"escenario": "HU-02.1", "dice": ["Dada una solicitud enviada por un gestor",
                                                   "Cuando el revisor la devuelve con un comentario",
                                                   "Entonces queda «Devuelta»"],
@@ -235,6 +238,8 @@ def main():
                  "no llega a comprobar el «entonces»", "un guion que no comprueba nada en «entonces» (a medias) falla")
         variante("HU-01.1", lambda g: g["cuando"][-1]["espera"].update(fila={"con": "QA {pasada}", "Estado": "Enviada"}),
                  "tras un «load»", "comprobar la página justo tras enviar el formulario (la de antes) falla y dice por qué")
+        variante("HU-01.1", lambda g: g["entonces"][-1]["espera"].update(sin_fila="QA {pasada}"),
+                 "hay una fila con", "una fila que no debería estar hace fallar «sin_fila»")
         variante("HU-02.1", lambda g: g["cuando"].insert(0, {"rol": "jefe", "sail": ["load"]}),
                  "no está en «roles»", "un paso con un rol que el guion no declara falla")
 

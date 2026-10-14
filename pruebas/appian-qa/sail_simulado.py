@@ -97,8 +97,10 @@ def main():
         ui = {"#t": "ContentLayout", "contents": [
             {"#t": "Heading", "text": "Panel de solicitudes", "testLabel": "heading-Panel"},
             {"#t": "PagingGridLayout", "_cId": secrets.token_hex(16), "columns": COLUMNAS,
-             "emptyGridMessage": "No hay solicitudes",
-             "rows": [{**{c: f.get(c, "–") for c in COLUMNAS}, "handle": marca(f)} for f in filas]}]}
+             "emptyGridMessage": "No hay solicitudes", "totalCount": len(filas),
+             # como la de verdad: una rejilla vacía no trae «rows»
+             **({"rows": [{**{c: f.get(c, "–") for c in COLUMNAS}, "handle": marca(f)} for f in filas]} if filas else {})},
+            {"#t": "SearchBoxWidget", "value": pag["busqueda"], "placeholder": "Search Solicitudes"}]}
         return {"status": "ok", "site": site, "page": "panel", "options": opciones, "ui": ui, "validations": None}
 
     def formulario():

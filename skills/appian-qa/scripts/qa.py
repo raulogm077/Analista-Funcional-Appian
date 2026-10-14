@@ -14,7 +14,7 @@ El guion de un escenario, qa/<U>/<escenario>.json, lo escribe QA con lo que reco
         {"rol": "<rol>", "selecciona": "QA {pasada}"}       marca la fila de la rejilla que lleva ese texto
   Las órdenes son load (siempre --fresh), navigate, interact, back y show; «rol» se puede omitir si hay uno solo.
   espera: "completado": true · "hay" / "no_hay": [ref o etiqueta, o su principio] · "texto" / "sin_texto": [texto]
-          · "fila": {"con": "<texto de la fila>", "<columna>": "<valor>", …}
+          · "fila": {"con": "<texto de la fila>", "<columna>": "<valor o su principio>", …} · "sin_fila": "<texto>"
   {pasada} es distinto en cada escenario de cada repetición, para que lo que se teclea y se busca no choque con lo de
   otra vez, y {hoy} es la fecha (AAAA-MM-DD). Un paso falla si SAIL CLI da error, si el servidor no cambia nada o si no
   se cumple lo que espera. Si lo esperado aún no se ve y desde el último load solo se ha mirado (buscar en la rejilla,
@@ -164,7 +164,7 @@ def textos(nodo):
     """Los textos que se ven en una página: los de sus componentes, sus valores y las filas de sus rejillas; el aviso de
     una rejilla vacía, solo si lo está."""
     if isinstance(nodo, dict):
-        if nodo.get("rows") == [] and isinstance(nodo.get("emptyGridMessage"), str):
+        if not nodo.get("rows") and isinstance(nodo.get("emptyGridMessage"), str):   # vacía, «rows» no viene
             yield nodo["emptyGridMessage"]
         for k, v in nodo.items():
             if k not in NO_ES_TEXTO and (k in SE_VE or not k.endswith(("Message", "Label"))):
@@ -208,7 +208,7 @@ def lo_que_falta(espera, d):
     if espera.get("completado") and not d.get("completed"):
         mal.append("el formulario no se ha completado" + (f" (validaciones: {'; '.join(map(str, d['validations']))})"
                                                            if d.get("validations") else ""))
-    de_la_pagina = [k for k in ("hay", "no_hay", "texto", "sin_texto", "fila") if espera.get(k)]
+    de_la_pagina = [k for k in ("hay", "no_hay", "texto", "sin_texto", "fila", "sin_fila") if espera.get(k)]
     if de_la_pagina and d.get("viewIsStale"):
         return mal + ["la página es la de antes de enviar el formulario: compruébalo tras un «load»"]
     disponibles = sorted({r.lstrip(MARCAS) for r in refs(d)})
@@ -231,10 +231,12 @@ def lo_que_falta(espera, d):
         suyas = [f for f in filas(d.get("ui")) if con_texto(f, fila.get("con", ""))]
         if not suyas:
             mal.append(f"ninguna fila lleva «{fila.get('con', '')}»")
-        elif not any(all(norma(f.get(k, "")) == norma(v) for k, v in busca.items()) for f in suyas):
+        elif not any(all(norma(f.get(k, "")).startswith(norma(v)) for k, v in busca.items()) for f in suyas):
             f = suyas[0]
             mal.append(f"la fila con «{fila.get('con', '')}» tiene " + ", ".join(
                 f"{k} «{f.get(k, '—')}»" for k in busca) + " y se esperaba " + ", ".join(f"{k} «{v}»" for k, v in busca.items()))
+    if espera.get("sin_fila") and any(con_texto(f, espera["sin_fila"]) for f in filas(d.get("ui"))):
+        mal.append(f"hay una fila con «{espera['sin_fila']}» y no debería")
     return mal
 
 
@@ -436,6 +438,7 @@ def repite_unidad(raiz, uid, solo, cuentas):
                 entrada["sinRepetir"] = str(e)
         if "sinRepetir" not in entrada:
             entrada.update(fecha=ahora(), segundos=round(time.time() - inicio, 1))
+        entrada = {"resultado": entrada.pop("resultado"), **entrada}   # lo primero que se lee
         nuevos[esc] = repetidos[esc] = entrada
     resultado = {"unidad": uid, "generadoEn": ahora(), "escenarios": nuevos,
                  "sinGuion": [e for e in del_feature if e not in guiones]}

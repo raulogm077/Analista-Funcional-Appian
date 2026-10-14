@@ -116,8 +116,10 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   rejilla se marca por su contenido, `{"rol": "revisor", "selecciona": "QA {pasada}"}`, nunca por el número que le dio
   Appian. Con un solo rol, «rol» se puede omitir.
 - **`espera`**: `"completado": true` (el formulario se envió); `"hay"` y `"no_hay"`, refs o etiquetas, o su principio;
-  `"texto"` y `"sin_texto"`, en cualquier parte de la página y sus validaciones; `"fila": {"con": "…", "<columna>":
-  "<valor>"}`. Cada paso falla además si SAIL CLI da error o si el servidor no cambió nada.
+  `"texto"` y `"sin_texto"`, en lo que se ve de la página y en sus validaciones; `"fila": {"con": "…", "<columna>":
+  "<valor o su principio>"}`, una fila de una rejilla que lleva ese texto y tiene esos valores, y `"sin_fila": "…"`,
+  ninguna fila con ese texto (lo que se buscó también está en la caja de búsqueda: para decir que no se ve, `sin_fila`,
+  no `sin_texto`). Cada paso falla además si SAIL CLI da error o si el servidor no cambió nada.
 - **`{pasada}`** es distinto en cada escenario de cada repetición; **`{hoy}`**, la fecha.
 
 Para que el guion dé lo mismo cada vez:
@@ -126,6 +128,8 @@ Para que el guion dé lo mismo cada vez:
 - Ninguna etiqueta con un dato dentro («Pendientes (22)»): su principio, «Pendientes», también vale para SAIL CLI.
 - Nada que dependa de la vez anterior: lo que se teclea y se busca lleva `{pasada}`, y en una lista se busca con la caja
   de búsqueda de la rejilla (`"🔍"`) antes de mirarla, para que una fila nueva no quede en otra página.
+- Un «no lo ve» lleva antes la prueba de que existe (en el «dado», quien lo creó lo ve): si no, el guion pasaría
+  aunque el alta hubiera fallado.
 - Dos enlaces con el mismo texto no se distinguen: ese paso no se puede escribir. Dilo en la entrega, que además es un
   problema de accesibilidad.
 - Si lo esperado aún no se ve tras cargar y, como mucho, buscar o marcar una fila, el script vuelve a cargar y a mirar
