@@ -11,8 +11,8 @@
 | 4 | Mirar si choca con las unidades en curso | Script | `appian-functional-analyst` · `indice.py colision` | `appian-functional-analyst/references/urgentes.md` §2 |
 | 5 | Decidir dónde se corrige: en desarrollo o en el entorno de corrección | El equipo | — | `appian-functional-analyst/references/urgentes.md` §2 |
 | 6 | Corregir solo esos objetos y probarlo | Quien construye: IA por el Dev MCP o una persona | `appian-best-practices`, con la skill oficial `appian` | `appian-best-practices/SKILL.md` «Tools» |
-| 7 | Desplegar por el proceso de cambios urgentes del cliente, con la vuelta atrás preparada | Una persona | — | `appian-functional-analyst/references/urgentes.md` §2 |
-| 8 | Cerrar la ficha y registrar el pase | Script | `appian-functional-analyst` · `proyecto.py cambio <p> URG-nn produccion --ref "<referencia>"` | `appian-functional-analyst/references/urgentes.md` §2 |
+| 7 | Revisar el paquete en Compare and Deploy, como el de un evolutivo, y desplegarlo por el proceso de cambios urgentes del cliente, con la vuelta atrás preparada | Una persona | Appian Designer · Compare and Deploy | `appian-functional-analyst/references/urgentes.md` §2 |
+| 8 | Cerrar la ficha y registrar el pase, con su referencia en el cliente | Script | `appian-functional-analyst` · `proyecto.py cambio <p> URG-nn produccion --ref "<referencia>"` | `appian-functional-analyst/references/urgentes.md` §2 |
 | 9 | Poner al día el entorno de corrección con el pase | Una persona | — | `appian-functional-analyst/references/urgentes.md` §2 y §3 |
 
 **Variante: datos u operación.** No se corrige ningún objeto de la aplicación: la ficha recoge qué se hizo y se cierra con los campos de su tipo. `appian-functional-analyst/references/urgentes.md` §1.

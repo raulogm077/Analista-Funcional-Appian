@@ -18,11 +18,12 @@ mismas comprobaciones (`comprobar.py --impacto`). Su sección «Urgencia» lleva
 |---|---|---|---|
 | Defecto | La aplicación no hace lo especificado | Síntoma, Quién la declara crítica, Causa, Objetos, Colisión, Dónde se corrige, Despliegue y vuelta atrás, Cierre | El funcional no cambia; técnico §14 gana la prueba que reproduce el fallo (`URG-nn` en su fila) |
 | Cambio de comportamiento | Hay que cambiar lo que hace | Los de defecto | Un punto CAMBIA que aprueba el jefe de proyecto (✅, R4); el cliente lo valida después |
-| Datos u operación | Datos, procesos en curso (BP 03 §12), configuración, certificado | Síntoma, Quién la declara crítica, Qué se hizo, Cierre | Nada, salvo que cambie una regla |
+| Datos u operación | Datos, procesos en curso (BP 03 §12), configuración, certificado | Síntoma, Quién la declara crítica, Dónde se corrige, Qué se hizo, Cierre | Nada, salvo que cambie una regla |
 
 «Objetos» son los que se corrigen, entre comillas invertidas. «Dónde se corrige» dice **«Desarrollo»** o **«Entorno de
 corrección»**, una de las dos: con eso los scripts saben qué unidades tienen que reaplicarla (otra cosa solo vale si nada
-choca; si choca, `produccion` falla).
+choca; si choca, `produccion` falla). En una de datos u operación, que no corrige objetos ni choca, dice dónde se hizo
+(«Producción», por ejemplo).
 
 **El «Estado» de su cabecera**, como en cualquier informe (`actualizacion.md`):
 - al abrirla, `Estado: pendiente`;
@@ -54,7 +55,10 @@ Tras `produccion`, `proyecto.py estado` ya no la lista como pendiente.
      procedimiento) y «Dónde se corrige» dice igualmente una de las dos.
 5. **Despliegue** por el proceso de cambios urgentes del cliente (el plugin no lo gestiona), con la vuelta atrás
    preparada: el paquete con la versión de producción de esos objetos. Restaurar una copia de seguridad es lo último.
-6. **Cierre**: «Cierre» en la ficha y `proyecto.py cambio <p> URG-nn produccion --ref "<referencia>" --fecha <AAAA-MM-DD del pase>` (falla si la ficha no
+   Antes de desplegar, quien prepara el paquete revisa en Compare and Deploy la comparación de sus objetos, como en un
+   Merge Request, con los fallos de la regresión, y lo promueve como el de un evolutivo: el mismo paquete con un ICF por
+   entorno y, si el despliegue es directo o por API, con «Require review» en el destino (`cambios.md` §6, paso 7).
+6. **Cierre**: «Cierre» en la ficha y `proyecto.py cambio <p> URG-nn produccion --ref "<referencia del pase en el cliente>" --fecha <AAAA-MM-DD del pase>` (falla si la ficha no
    dice «Dónde se corrige», o si no dice «Desarrollo» ni «Entorno de corrección» y algo choca). Se cierra en cuanto
    consta el pase: lo que quede por comprobar (la prueba de la urgencia en producción, los datos afectados) va en
    «Cierre» como pendiente, o como otra urgencia si se confirma un daño. Después, actualizar el entorno de corrección
