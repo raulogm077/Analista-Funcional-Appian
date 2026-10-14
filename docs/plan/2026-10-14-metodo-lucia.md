@@ -180,8 +180,9 @@ Lo que decidió Raúl el 14 de octubre de 2026, antes de la PR:
 3. **«El Word no espera al prototipo»** (T2): quitado, porque no tuvo efecto en cuatro medidas y añadía texto y el
    riesgo de enviar capturas viejas. El Word sale una vez, después del prototipo y con sus capturas; se queda el orden
    que sí funcionó: aplicar, informe de impacto y `comprobar.py` seguidos y antes del prototipo.
-4. **Los minutos de más de T17**: aceptados. +1,2 minutos por retoque tras optimizar `verificar` (4,1 frente a 2,9), con
-   un 30 % menos de llamadas y un 18 % menos de coste.
+4. **T17**: se cumple. Comparadas en las mismas condiciones, la versión nueva construye el retoque en 2,1 minutos frente a
+   3,2 de la antigua, con un 45 % menos de llamadas y un 39 % menos de coste; los 1,2 minutos de más que se midieron antes
+   eran del equipo aquella tarde (`docs/evaluaciones.md`, Fase 7).
 5. **La versión del plugin**: 0.8.0-beta.1, con su fila en el README.
 6. **El diseño y su anexo**: corregido lo que ya no es verdad (`LCP_TOOL_MODE`, la regresión «en bloque», las 5.600
    líneas, la ruta de verificación, el cierre de las sesiones de SAIL CLI y «Por comprobar en T5»), con el texto de la

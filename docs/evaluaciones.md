@@ -401,7 +401,21 @@ minutos (4,2 · 4,1 · 3,9), 38 llamadas y 2,07 USD, frente a 2,9, 54 y 2,51 de 
 cuatro). `verificar` tarda en la sesión de 21 a 27 segundos y fuera de ella de 16 a 18 en este equipo (de 8 a 10 en T6),
 casi todo en arrancar el Dev MCP, que el plugin no controla. **Queda en +1,2 minutos por retoque (+41 %), con un 30 %
 menos de llamadas y un 18 % menos de coste**: el tiempo de más es de las herramientas (1,3 minutos frente a 0,5) y de
-nueve peticiones más al modelo por el recorrido de la issue. Lo decide Raúl.
+nueve peticiones más al modelo por el recorrido de la issue.
+
+**T17, comparación en las mismas condiciones**: seis pasadas a ciegas del mismo retoque, alternando la versión antigua
+(0.7.0-beta.4) y la nueva (commit `70f5973`), a la misma hora y con `verificar` medido también fuera de las sesiones.
+
+| | Minutos | Llamadas | Coste (USD) | `verificar` en la sesión |
+|---|---|---|---|---|
+| Antigua (media de 3) | 3,2 | 38 | 1,87 | 9,7 s |
+| Nueva (media de 3) | 2,1 | 21 | 1,14 | 8,6 s |
+
+**El criterio de T17 se cumple: la versión nueva tarda un 34 % menos, hace un 45 % menos de llamadas y cuesta un 39 %
+menos.** Los 4,1 minutos de la tercera medida eran del equipo aquella tarde (el Dev MCP y la consola iban más lentos:
+`verificar` tardaba de 16 a 18 segundos fuera de las sesiones y hoy de 7 a 9) y de sesiones con más pasos, no del plugin.
+Dos de las pasadas antiguas buscaron los scripts y usaron los de la copia instalada (0.7.0-beta.3), con tiempos
+parecidos; sin la más lenta, la antigua sigue tardando más que la nueva (2,75 frente a 2,1 minutos).
 
 **El caso de T1 con el plugin terminado** (misma base, encargo y memoria que T1, T3 y T3b):
 
