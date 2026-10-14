@@ -41,6 +41,16 @@ cada punto con la versión actual antes de cambiar nada.
 - Pruebas: medir cuánto tarda cada grupo de `comprobar_plugin.py --completo` y lanzarlos en paralelo; con la misma
   batería, Windows tarda el doble que Linux (17 y 8,5 minutos en GitHub).
 
+## Del método L.U.C.I.A. (14 de octubre de 2026)
+
+Lo que salió al ejecutar `docs/plan/2026-10-14-metodo-lucia.md` y no entra en él.
+
+- Paso de Raúl: avisar a Appian de que `LCP_TOOL_MODE=readonly`, que su documentación describe, no está en el Dev MCP
+  26.6.110 (`docs/evaluaciones.md`, T5).
+- Analista: con los criterios en Gherkin, el aviso de «texto que queda viejo» de `comprobar.py --anterior` señala
+  criterios que comparten el arranque («Dada una solicitud en revisión, cuando el técnico…») y siguen siendo verdad:
+  no contar el tramo común o pedir más palabras seguidas.
+
 ## Menores
 
 - Diagramas: la salida de una puerta que comparte el tramo de su derecha sale ya por su vértice (el codo) y su etiqueta

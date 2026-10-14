@@ -21,7 +21,7 @@ publicado) y SAIL CLI 26.6.110. Lo que cambia el plan lo confirmó un segundo ag
 | Dependientes | Sí, solo los directos, con tipo y nombre; incluye siempre la propia aplicación |
 | `LCP_TOOL_MODE=readonly` | **No hace nada en este bundle.** La documentación de Appian (26.6 y la vigente) la describe, pero la variable no está en su código: el servidor ofrece las mismas 200 herramientas con ella y sin ella, y 121 no son de lectura |
 | Reconocer por la firma | `devmcp_extract.py` clasifica cada herramienta por su verbo, sus anotaciones y sus parámetros. Su `devmcp_policy.json` cuenta `run` como escritura: tal cual, deja fuera las de ejecutar casos, que el servidor anota como de solo lectura |
-| SAIL CLI | La cuenta local entra con `SAIL_USERNAME` y `SAIL_PASSWORD`, sin teclado; cada sesión, en su `--data-dir`. `load --json` da cada componente con su `ref`: en dos cargas de la misma página coinciden 32 de 35 (cambian las que el propio JSON marca como propias de cada carga). Una `ref` que lleva un dato dentro («En riesgo (22)») no sirve para un guion. Los errores salen como texto aunque se pida JSON |
+| SAIL CLI | La cuenta local entra con `SAIL_USERNAME` y `SAIL_PASSWORD`, sin teclado; cada sesión, en su `--data-dir`. `load --json` da cada componente con su `ref`: en dos cargas de la misma página coinciden 32 de 35 (cambian las que el propio JSON marca como propias de cada carga). Una `ref` que lleva un dato dentro («Pendientes (22)») no sirve para un guion. Los errores salen como texto aunque se pida JSON |
 
 Lo que el plan daba por hecho y no es así:
 - **T12.** `LCP_TOOL_MODE` no protege. Lo único que aplica el servidor son los permisos del usuario con el que se conecta, y
@@ -32,6 +32,29 @@ Lo que el plan daba por hecho y no es así:
 - **T13.** La regresión de toda la aplicación no se puede lanzar en bloque por el Dev MCP; lo nativo de Appian que lo hace
   es solo para reglas. Los casos de una issue los tiene que ejecutar un script, para que las respuestas no pasen por el
   contexto.
+
+### Fase 4 · T9: criterios en Gherkin de una línea
+
+Qué cambia: `funcional-plantilla.md` §4 es el único sitio que dice cómo se escribe un criterio (dado, cuando y entonces,
+con su ID; `redaccion.md` y `actualizacion.md` remiten a él); `comprobar.py --anterior` avisa del criterio nuevo o
+cambiado en su texto que no tiene las tres partes; y `modelo.py` convierte los criterios de una historia en Gherkin
+formal en español (`pasos_gherkin`, `Proyecto.feature`, `Proyecto.escenarios`), que T11 escribirá en cada issue. Sin
+órdenes ni ficheros nuevos; los datos de prueba no se han reescrito.
+
+Revisión independiente, con un proyecto ficticio fuera del repositorio:
+- El criterio de la fase se cumple: un analizador oficial de Gherkin (`gherkin-official` 42) acepta todos los `.feature`
+  que salen, también con finales de línea de Windows y caracteres no ASCII.
+- El aviso no hace ruido: calla con los criterios viejos y cuando solo cambia la cita; un retoque que no toca criterios
+  ve una línea «✓» más y `comprobar.py` tarda lo mismo (0,339 → 0,347 s de mediana en 20 pasadas).
+- Encontró un fallo que las pruebas no veían: un criterio escrito en dos líneas perdía la segunda al pasar a Gherkin, sin
+  avisar (el Word sí las unía). Corregido, con su caso.
+- «Sin botones ni campos», la frase del diseño, se entendía mal en una validación («sin comentario»): la plantilla dice
+  «sin pasos de pantalla (pulsar, rellenar); los datos, con el nombre que les da el cliente».
+
+Pruebas: `comprobar_plugin.py`, 0 errores; `selftest.py` del analista, 261 comprobaciones (19 nuevas), también con
+Python 3.9. En el Word, cada criterio pasa de unas 10 palabras a 19.
+
+Aplazado: el aviso de «texto que queda viejo» señala criterios que empiezan igual (`docs/siguiente-version.md`).
 
 ## 0.7.0-beta.3 · Retoques ligeros y menores (11 de octubre de 2026)
 

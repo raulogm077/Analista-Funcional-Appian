@@ -31,7 +31,7 @@ Todas confirmadas por Raúl el 14 de octubre de 2026.
 
 ### Fase 2 · El Dev MCP y SAIL CLI en Indra-spain
 
-- [ ] **T5. Mirar el Dev MCP y SAIL CLI reales**, como pide el `CLAUDE.md`: qué herramientas crean y ejecutan casos de prueba, si lanza las pruebas en bloque, si da los dependientes de un objeto y qué quita `LCP_TOOL_MODE=readonly`. Con SAIL CLI: entrar con una cuenta local por rol, cada una en su `--data-dir`, recorrer un escenario y leer su `--json`. `verificar` reconocerá las herramientas por su firma, como ya hace `devmcp_extract.py`, sin fijar nombres.
+- [x] **T5. Mirar el Dev MCP y SAIL CLI reales**, como pide el `CLAUDE.md`: qué herramientas crean y ejecutan casos de prueba, si lanza las pruebas en bloque, si da los dependientes de un objeto y qué quita `LCP_TOOL_MODE=readonly`. Con SAIL CLI: entrar con una cuenta local por rol, cada una en su `--data-dir`, recorrer un escenario y leer su `--json`. `verificar` reconocerá las herramientas por su firma, como ya hace `devmcp_extract.py`, sin fijar nombres.
 - [ ] **T6. Línea base del retoque construido**, a ciegas ×3 y antes de tocar nada: el texto de un botón ya construido (encargo, Dev MCP, `verificar` y `construida`). Decide B4.
 
 ### Fase 3 · Repositorio, flujos y estructura
@@ -41,7 +41,7 @@ Todas confirmadas por Raúl el 14 de octubre de 2026.
 
 ### Fase 4 · Requisitos en Gherkin
 
-- [ ] **T9. Criterios de una línea** con dado, cuando y entonces, y su ID, en las plantillas y las instrucciones del funcional y del DF. Con `--anterior`, `comprobar.py` avisa del criterio nuevo o cambiado que no lo cumple; los viejos se reescriben cuando se cambian.
+- [x] **T9. Criterios de una línea** con dado, cuando y entonces, y su ID, en las plantillas y las instrucciones del funcional y del DF. Con `--anterior`, `comprobar.py` avisa del criterio nuevo o cambiado que no lo cumple; los viejos se reescriben cuando se cambian.
 
 ### Fase 5 · Issues y construcción
 
