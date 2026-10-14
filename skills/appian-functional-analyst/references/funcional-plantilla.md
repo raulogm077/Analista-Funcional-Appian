@@ -12,7 +12,8 @@ autorización) y tienen el formato exacto que leen los scripts.
 - **Ficha**: `**HU-07 — Título**` y, en la misma línea, el comentario de trazabilidad
   `<!-- ✅ FU-03 00:14:32; FU-05 -->`. Llega hasta la siguiente ficha o título.
 - **Fila**: `| AV-03 | … |`, con la trazabilidad en un comentario dentro de la última celda.
-- **Criterio**: `` - `HU-07.1` texto ``, dentro de su historia (o `` `INT-02.1` ``, dentro de la ficha de un intercambio).
+- **Criterio**: `` - `HU-07.1` Dado…, cuando…, entonces… ``, en una línea y dentro de su historia (o `` `INT-02.1` ``,
+  dentro de la ficha de un intercambio). Cómo se escribe, en el apartado 4.
 - **Trazabilidad**: el comentario lleva el estado y las fuentes. El Word no lo enseña.
 
   | | Estado |
@@ -81,9 +82,14 @@ Historias agrupadas por área (`### Área`). Cada una:
 3. «Como <perfil>, quiero <qué> para <para qué>.»
 4. Descripción con sus reglas, en frases cortas; si hay varios casos, uno por línea. Lo que ya dice una
    regla común se cita («Se aplica RB-01»).
-5. «Se acepta si:» y los criterios `HU-nn.m`: frases que se pueden comprobar en la aplicación, con los
-   textos literales entre comillas. Uno por comportamiento. Toda acción que borre o anule algo dice su
-   confirmación literal; si no se sabe, va al 11.
+5. «Se acepta si:» y los criterios `HU-nn.m`, uno por comportamiento. Cada uno, una línea con tres partes: «Dado
+   <la situación de partida>, cuando <lo que hace el perfil o lo que ocurre>, entonces <lo que se puede comprobar
+   en la aplicación>»; «Dada», «Dados» o «Dadas», según lo que siga. En palabras del cliente, sin botones ni campos:
+   «cuando la reenvía», no «cuando pulsa Reenviar». Un solo «cuando»: si no cabe en una frase, son dos criterios.
+   Los textos literales (un mensaje, un estado), entre comillas. Toda acción que borre o anule algo dice su
+   confirmación literal; si no se sabe, va al 11. Con las tres partes, un script escribe la prueba de cada
+   criterio en Gherkin, sin interpretarlo. Los criterios que ya estaban escritos de otra forma (un análisis
+   anterior, el DF del cliente) se quedan como están y se reescriben así cuando cambian.
 
 ```markdown
 **HU-03 — Subsanar una solicitud** <!-- ✅ FU-01 00:15:30 -->
@@ -95,7 +101,8 @@ Historias agrupadas por área (`### Área`). Cada una:
 Como unidad solicitante, quiero corregir la solicitud devuelta para que siga su curso sin empezar de nuevo.
 
 Se acepta si:
-- `HU-03.1` Al reenviarla vuelve a «En revisión» con el mismo número.
+- `HU-03.1` Dada una solicitud devuelta, cuando la unidad solicitante la reenvía, entonces vuelve a «En revisión» con el mismo número.
+- `HU-03.2` Dada una solicitud en revisión, cuando la unidad solicitante intenta cambiarla, entonces no puede.
 ```
 
 Al final, `### Reglas comunes`: tabla `ID · Regla · Historias` con las `RB-nn` que afectan a varias
@@ -147,8 +154,8 @@ Tabla con IDs `DOC-nn`: `ID · Qué es · Quién lo genera o lo sube · Cuándo 
 ### 9. Relación con otros sistemas
 Tabla con IDs `INT-nn`: `ID · Sistema · Qué se intercambia · Cuándo · Si falla`. Si no hay, «No hay.». Un
 intercambio con reglas (qué pide el otro sistema, qué devuelve, qué pasa con cada error) va en una ficha debajo de la
-tabla, en vez de en una fila, con criterios `INT-nn.m` que se prueban como los de una historia. Las historias siguen
-siendo de personas.
+tabla, en vez de en una fila, con criterios `INT-nn.m` que se escriben y se prueban como los de una historia. Las
+historias siguen siendo de personas.
 
 ```markdown
 **INT-02 — Comprobar el organismo en su registro** <!-- ✅ FU-04 00:12:00 -->
@@ -158,7 +165,7 @@ siendo de personas.
 | Registro de organismos | Al enviar la solicitud | El código del organismo | Si está de alta | Se envía y se comprueba al revisarla |
 
 Se acepta si:
-- `INT-02.1` Un organismo dado de baja no se puede elegir.
+- `INT-02.1` Dado un organismo de baja en su registro, cuando la unidad solicitante rellena la solicitud, entonces no puede elegirlo.
 ```
 
 ### 10. Condiciones de uso

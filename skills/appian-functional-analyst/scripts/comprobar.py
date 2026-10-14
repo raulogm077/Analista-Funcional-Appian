@@ -23,7 +23,8 @@ Errores (✗, salida 1) y avisos (·):
   - con --fuentes: citas con el minuto de una intervención real y sin nombres de participantes;
   - con --anterior: ningún ID desaparece, la versión sube si cambia el funcional o el técnico (si no cambian y sube,
     aviso, salvo a la 1.0) y tiene su fila; lista lo nuevo y lo cambiado, y avisa del texto que queda viejo (lo que
-    una pieza cambiada ya no dice y sigue en otra línea, sin tocar en esta versión);
+    una pieza cambiada ya no dice y sigue en otra línea, sin tocar en esta versión) y del criterio nuevo o con otro
+    texto que no está en una línea con dado, cuando y entonces (los de antes que no se tocan, no);
   - con --impacto: los IDs del informe existen o son nuevos; «Requiere» es «—» o «Sí (motivo)», y «Sí» en lo que
     cambia o anula algo 🔒; después de aplicar, cada dependencia tiene resultado, cada cambio está declarado y lo 🔒
     solo cambia con aprobación; con «Estado: sin cambios», ningún punto por aplicar (y aviso si la versión ha subido);
@@ -917,6 +918,16 @@ def texto_viejo(m, ant, modif):
     return avisos
 
 
+def criterios_sin_gherkin(m, ant, nuevas, modif):
+    """Los criterios nuevos, o con otro texto que en la versión anterior, que no están escritos en una línea con dado,
+    cuando y entonces (funcional-plantilla.md §4): su escenario no sale sin interpretarlos. Los de antes que no se tocan
+    no avisan, se reescriben cuando se cambian; cambiar solo la cita de su comentario no es tocarlos."""
+    dice = lambda P, i: normaliza_pieza(mo.sin_comentarios(P.texto(i)))
+    return [f"{i} (l.{m.piezas[i].ini + 1})" for i in sorted(set(nuevas) | set(modif), key=clave_pid)
+            if m.piezas[i].tipo == "CA" and not anulada(m, i) and (i not in ant.piezas or dice(m, i) != dice(ant, i))
+            and not mo.pasos_gherkin(m.criterio(i))]
+
+
 def comprobar_requiere(base, puntos):
     """«Requiere» de cada punto: «—» o «Sí (motivo)»; y «Sí» si el punto CAMBIA o ANULA una pieza 🔒 de «Encaja en»
     (🔒 en base: el análisis antes de aplicar el informe)."""
@@ -1082,6 +1093,9 @@ def main():
         nuevas, modif, anul, ant = comprobar_anterior(m, a.anterior)
         informe("texto que queda viejo (lo que una pieza cambiada ya no dice y sigue en otra: corrígelo o dilo)",
                 texto_viejo(m, ant, modif), grave=False)
+        informe("criterios nuevos o cambiados con dado, cuando y entonces (se reescriben en una línea: «Dado…, cuando…, "
+                "entonces…»; si no cabe en una frase, son dos criterios)", criterios_sin_gherkin(m, ant, nuevas, modif),
+                grave=False)
         if a.impacto:
             comprobar_impacto(m, ant, a.impacto, (nuevas, modif, anul))
     elif a.impacto:

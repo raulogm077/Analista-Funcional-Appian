@@ -14,6 +14,9 @@ una mención:
   criterio: - `HU-07.1` texto   (dentro de su historia, o `INT-02.1` dentro de la ficha de un intercambio)
 Un INT es una fila o, si el intercambio tiene reglas, una ficha con criterios.
 El comentario <!-- … --> lleva el estado (🔒 ✅ 🔶 ⚠️ ❓) y las fuentes; el Word no lo muestra.
+
+Un criterio se escribe en una línea con dado, cuando y entonces (pasos_gherkin los separa), y de los de una ficha salen
+sus escenarios y su .feature en Gherkin, sin IA (Proyecto.escenarios y Proyecto.feature).
 """
 import pathlib
 import re
@@ -123,6 +126,40 @@ def sin_comentarios(texto):
 def estado_en(texto):
     pos = [(texto.find(e), e) for e in ESTADOS if e in texto]
     return min(pos)[1] if pos else ""
+
+
+# Un criterio es una línea con dado, cuando y entonces (references/funcional-plantilla.md §4):
+# «Dada una solicitud devuelta, cuando la unidad solicitante la reenvía, entonces vuelve a «En revisión».»
+RX_DADO = re.compile(r"(dad[oa]s?)\s+", re.I)
+RX_ENTRE_COMILLAS = re.compile(r"«[^»]*»|“[^”]*”|\"[^\"]*\"")
+
+
+def _corte(texto, palabra, desde):
+    """(inicio, fin) de «, cuando » o «, entonces » a partir de una posición: el primero que va tras una coma y, si
+    ninguno la lleva, el primero. None si la palabra no está."""
+    for antes in (r"\s*[,;]\s*", r"\s+"):
+        m = re.compile(rf"{antes}{palabra}\b\s*", re.I).search(texto, desde)
+        if m:
+            return m.span()
+    return None
+
+
+def pasos_gherkin(texto):
+    """Los tres pasos de un criterio escrito en una línea con dado, cuando y entonces, como van en un .feature:
+    [("Dada", "una solicitud devuelta"), ("Cuando", "la unidad la reenvía"), ("Entonces", "vuelve a «En revisión»")].
+    None si le falta alguno. Empieza por «Dado», «Dada», «Dados» o «Dadas»; un «cuando» o un «entonces» dentro de un
+    texto entre comillas no cuenta, y una «y» dentro de un paso se queda en su paso."""
+    texto = sin_comentarios(texto).strip()
+    dado = RX_DADO.match(texto)
+    if not dado:
+        return None
+    tapado = RX_ENTRE_COMILLAS.sub(lambda m: "·" * len(m.group(0)), texto)
+    cuando = _corte(tapado, "cuando", dado.end())
+    entonces = _corte(tapado, "entonces", cuando[1]) if cuando else None
+    if not entonces:
+        return None
+    partes = [x.strip(" .,;:") for x in (texto[dado.end():cuando[0]], texto[cuando[1]:entonces[0]], texto[entonces[1]:])]
+    return list(zip((dado.group(1).capitalize(), "Cuando", "Entonces"), partes)) if all(partes) else None
 
 
 def numero(pid):
@@ -333,6 +370,36 @@ class Proyecto:
             cab, val = celdas(filas[0]), celdas(filas[2])
             out = {normaliza(c): v for c, v in zip(cab, val)}
         return out
+
+    def criterio(self, cid):
+        """El texto de un criterio tal cual está escrito, sin su ID ni su comentario."""
+        l = self.bloque(cid)[0]
+        return sin_comentarios(l[RX_CRITERIO.match(l).end():]).strip()
+
+    def escenarios(self, pid):
+        """Los criterios vigentes de una historia, o de la ficha de un intercambio, como escenarios de Gherkin en español,
+        cada uno con su ID: (líneas, sin_gherkin). Un criterio que no está escrito con dado, cuando y entonces pasa tal
+        cual, como un único paso «*» (Gherkin lo admite), y su ID va en sin_gherkin para que quien llama avise."""
+        p = self.piezas[pid]
+        L, sin = [], []
+        for cid in ([] if p.anulada else dict.fromkeys(p.hijos)):
+            if self.piezas[cid].anulada:
+                continue
+            texto = self.criterio(cid)
+            pasos = pasos_gherkin(texto)
+            if not pasos:
+                sin.append(cid)
+                pasos = [("*", texto)]
+            L += ["", f"  Escenario: {cid}"] + [f"    {palabra} {paso}" for palabra, paso in pasos]
+        return L, sin
+
+    def feature(self, pid):
+        """El .feature de una historia, o de la ficha de un intercambio, sin IA: la cabecera de Gherkin en español y sus
+        escenarios. Devuelve (texto, sin_gherkin), como escenarios(); sin criterios vigentes, ("", [])."""
+        L, sin = self.escenarios(pid)
+        if not L:
+            return "", []
+        return "\n".join(["# language: es", f"Característica: {pid} {self.piezas[pid].titulo}"] + L) + "\n", sin
 
     def raiz_de(self, pid):
         p = self.piezas.get(pid)

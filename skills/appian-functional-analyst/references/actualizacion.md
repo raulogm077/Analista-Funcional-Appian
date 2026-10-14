@@ -220,7 +220,9 @@ le vuelve a preguntar.
   (seis palabras seguidas, sin URL ni código):
   «HU-07: "…" sigue en PAN-04, l.212». Corrige cada sitio, o déjalo si sigue siendo verdad allí.
 - **ANULA**: se tacha el ID y las piezas que lo citaban se corrigen o dicen que ya no aplica.
-- **Criterios**: si cambia el comportamiento, se reescribe el criterio (mismo ID) o se añade el siguiente.
+- **Criterios**: si cambia el comportamiento, se reescribe el criterio (mismo ID) o se añade el siguiente, en una
+  línea con dado, cuando y entonces (`funcional-plantilla.md` §4). Los que no cambian se quedan como están: al
+  verificar (paso 7), `comprobar.py --anterior` solo avisa del nuevo o del cambiado que no los lleva.
 - **Técnico**: los campos, decisiones, nodos, pruebas y apartados afectados. Si un cambio del cliente choca
   con una buena práctica o con la plataforma, se le explica en un PC con la alternativa.
 - **Diagramas**: si cambia el proceso, se pasan solo los cambios a `diagrama.py actualizar` (skill

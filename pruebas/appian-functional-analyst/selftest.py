@@ -678,6 +678,9 @@ Versión 1.2: PAN-01
         ok("modelo: un criterio INT-02.3 suelto en una historia no se cuelga de ella",
            "INT-02.3" not in m_hu.piezas["HU-07"].hijos and "INT-02.3" not in m_hu.piezas, str(m_hu.piezas["HU-07"].hijos))
 
+        # 5c. Criterios con dado, cuando y entonces (método L.U.C.I.A., fase 4): el .feature sale sin IA
+        gherkin = pruebas_gherkin(tmp)
+
         # 6. Unir módulos
         m = tmp / "modulos"
         corre(S / "proyecto.py", "iniciar", m, "--nombre", "Módulos")
@@ -995,6 +998,11 @@ Se acepta si:
                    any('w:val="Heading3"' in x and "INT-02 — Comprobar el organismo" in x  # como las fichas HU (####)
                        for x in re.findall(r"<w:p>.*?</w:p>", xml, re.S)),
                    xml[:300])
+                d = docx_de(gherkin, tmp / "gherkin.docx") if gherkin else None
+                xml = zipfile.ZipFile(d).read("word/document.xml").decode("utf-8").replace(GUION, "-") if d else ""
+                ok("un criterio con dado, cuando y entonces sale en el Word entero, en su viñeta y con su ID",
+                   any("<w:numPr>" in x and re.sub(r"<[^>]+>", "", x) == f"HU-03.2 {DEVUELTA}"
+                       for x in re.findall(r"<w:p>.*?</w:p>", xml, re.S)), xml[:300])
                 # Una viñeta en varias líneas es un párrafo con su numeración; el color de la marca del cliente (T12)
                 w = tmp / "Word con marca"
                 shutil.copytree(EJEMPLO, w)
@@ -1741,6 +1749,142 @@ def pruebas_unidades(tmp):
             ok("M5: el DF del cambio lleva los datos nuevos de §6 (no los que no cambian) y no la columna «Origen»",
                "Firma del revisor" in xml and "Comentario de devolución" not in xml and "Origen" not in xml,
                xml[:500])
+
+
+# Los dos criterios de ejemplo del diseño (docs/diseno/2026-10-14-metodo-lucia.md, «Requisitos en Gherkin») y su .feature
+DEVUELTA = ("Dada una solicitud devuelta, cuando la unidad solicitante la reenvía, entonces vuelve a «En revisión» con "
+            "el mismo número.")
+EN_REVISION = "Dada una solicitud en revisión, cuando la unidad solicitante intenta cambiarla, entonces no puede."
+FEATURE = """# language: es
+Característica: HU-03 Subsanar una solicitud
+
+  Escenario: HU-03.1
+    Dada una solicitud devuelta
+    Cuando la unidad solicitante la reenvía
+    Entonces vuelve a «En revisión» con el mismo número
+
+  Escenario: HU-03.2
+    Dada una solicitud en revisión
+    Cuando la unidad solicitante intenta cambiarla
+    Entonces no puede
+"""
+
+
+def pruebas_gherkin(tmp):
+    """Fase 4 del método L.U.C.I.A. (T9): cada criterio es una línea con dado, cuando y entonces. modelo.pasos_gherkin los
+    separa, Proyecto.feature escribe el .feature de una historia sin IA (lo usará indice.py issues) y comprobar.py
+    --anterior avisa del criterio nuevo o cambiado que no los lleva; los de antes que no se tocan, no. Devuelve el
+    proyecto de la prueba, para mirar su Word, o None."""
+    try:
+        import modelo
+        separa, _, _ = modelo.pasos_gherkin, modelo.Proyecto.escenarios, modelo.Proyecto.feature
+    except (ImportError, AttributeError) as e:
+        ok("modelo.pasos_gherkin, Proyecto.escenarios y Proyecto.feature existen", False, repr(e))
+        return None
+    ok("pasos_gherkin: el criterio de ejemplo del diseño, en sus tres pasos y sin el punto final",
+       separa(DEVUELTA) == [("Dada", "una solicitud devuelta"), ("Cuando", "la unidad solicitante la reenvía"),
+                            ("Entonces", "vuelve a «En revisión» con el mismo número")], str(separa(DEVUELTA)))
+    variantes = [("Dado", "Dado un borrador sin plano, cuando la unidad lo envía, entonces aparece «Adjunte el plano»."),
+                 ("Dados", "Dados dos técnicos de la unidad, cuando uno acepta la tarea, entonces desaparece para el otro."),
+                 ("Dadas", "Dadas dos solicitudes enviadas a la vez, cuando se registran, entonces reciben números seguidos."),
+                 ("Dado", "dado que la solicitud está devuelta, Cuando la unidad la reenvía; Entonces vuelve a «En revisión»"),
+                 ("Dada", "Dada una solicitud devuelta cuando la unidad la reenvía entonces vuelve a «En revisión»")]
+    leidas = [separa(c) or [("—", "")] for _, c in variantes]
+    ok("pasos_gherkin: Dado, Dada, Dados y Dadas; con mayúsculas, con punto y coma o sin comas",
+       [p[0][0] for p in leidas] == [k for k, _ in variantes] and all(len(p) == 3 for p in leidas)
+       and leidas[3] == [("Dado", "que la solicitud está devuelta"), ("Cuando", "la unidad la reenvía"),
+                         ("Entonces", "vuelve a «En revisión»")], str(leidas))
+    pasos = separa("Dada una solicitud devuelta cuando faltaba el plano y con memoria, cuando el técnico la revisa y la da "
+                   "por completa, entonces aparece «Completa, cuando entonces» y pasa a «En informe». <!-- ✅ FU-04 00:01:00 -->")
+    ok("pasos_gherkin: una «y» se queda en su paso; un «cuando» sin coma o entre comillas no corta; sin el comentario",
+       pasos == [("Dada", "una solicitud devuelta cuando faltaba el plano y con memoria"),
+                 ("Cuando", "el técnico la revisa y la da por completa"),
+                 ("Entonces", "aparece «Completa, cuando entonces» y pasa a «En informe»")], str(pasos))
+    sueltos = ["Al reenviarla vuelve a «En revisión» con el mismo número.", "Un organismo dado de baja no se puede elegir.",
+               "Dada una solicitud devuelta, entonces vuelve a «En revisión».",
+               "Dada una solicitud devuelta, cuando la unidad la reenvía.",
+               "Cuando la unidad la reenvía, entonces vuelve a «En revisión».", "Dada, cuando la reenvía, entonces vuelve."]
+    ok("pasos_gherkin: sin dado, sin cuando o sin entonces no es un escenario",
+       not any(separa(c) for c in sueltos), str([c for c in sueltos if separa(c)]))
+
+    # La plantilla enseña lo mismo que leen los scripts: sus criterios de ejemplo son los del diseño y de su historia
+    # sale, tal cual, el .feature del diseño; un criterio anulado no sale y la ficha de un intercambio vale igual
+    plantilla = (SKILL / "references" / "funcional-plantilla.md").read_text(encoding="utf-8")
+    ejemplos = [l for l in plantilla.split("\n") if re.match(r"- `(?:HU|INT)-\d+\.\d+` ", l)]
+    ok("funcional-plantilla.md: sus criterios de ejemplo son los del diseño, con dado, cuando y entonces",
+       f"- `HU-03.1` {DEVUELTA}" in ejemplos and f"- `HU-03.2` {EN_REVISION}" in ejemplos
+       and any(l.startswith("- `INT-") for l in ejemplos) and all(separa(l.split("` ", 1)[1]) for l in ejemplos),
+       "\n".join(ejemplos))
+    fichas = [x.group(1) for k in ("HU-03", "INT-02")
+              for x in [re.search(rf"```markdown\n(\*\*{k} — .*?)```", plantilla, re.S)] if x]
+    mini = tmp / "feature" / "analisis"
+    mini.mkdir(parents=True)
+    if len(fichas) == 2:
+        (mini / "funcional.md").write_text(
+            "# Prueba — Diseño funcional\n\nVersión: 0.1 · Estado: borrador\n\n## 4. Funcionalidades\n\n" + fichas[0]
+            + "- ~~`HU-03.3`~~ Anulado por D-04: ~~Dada una solicitud, cuando se reenvía, entonces se duplica.~~\n\n"
+            "## 9. Relación con otros sistemas\n\n" + fichas[1], encoding="utf-8")
+    m = modelo.cargar(mini.parent)
+    texto, sin = m.feature("HU-03") if "HU-03" in m.piezas else ("", ["sin la ficha HU-03 de la plantilla"])
+    ok("Proyecto.feature: de la historia de la plantilla sale el .feature del diseño, sin el criterio anulado",
+       texto == FEATURE and sin == [] and m.feature("HU-03") == (texto, sin), texto + str(sin))
+    texto, sin = m.feature("INT-02") if "INT-02" in m.piezas else ("", ["sin la ficha INT-02 de la plantilla"])
+    ok("Proyecto.feature: la ficha de un intercambio, igual que una historia",
+       texto.startswith("# language: es\nCaracterística: INT-02 Comprobar el organismo en su registro\n\n"
+                        "  Escenario: INT-02.1\n    Dado un organismo de baja en su registro\n    Cuando ") and sin == [],
+       texto + str(sin))
+
+    # Un análisis que ya existe: en la 1.2 cambian HU-03.2 (ya con dado, cuando y entonces) y HU-07.1 (sin ellos), son
+    # nuevos HU-03.3 (con) y HU-05.3 (sin), y HU-02.1 solo gana una cita. Lo demás sigue como estaba
+    g = tmp / "gherkin"
+    shutil.copytree(EJEMPLO, g)
+    corre(S / "proyecto.py", "copia", g)
+    f, t, d = (g / "analisis" / x for x in ("funcional.md", "tecnico.md", "decisiones.md"))
+    for x in (f, t):
+        editar(x, "Versión: 1.1", "Versión: 1.2")
+    editar(d, "se quita la urgencia | FU-03 | Analista, 2026-09-24 |", "se quita la urgencia | FU-03 | Analista, 2026-09-24 |\n"
+           "| 1.2 | 2026-10-14 | Reenvío de la solicitud devuelta y tamaño del informe | FU-04 | — |")
+    editar(f, "- `HU-03.2` Al reenviarla vuelve a «En revisión» con el mismo número.",
+           f"- `HU-03.2` {DEVUELTA} <!-- ✅ FU-04 00:02:00 -->\n- `HU-03.3` {EN_REVISION} <!-- ✅ FU-04 00:03:00 -->")
+    editar(f, "- `HU-07.1` Solo admite PDF de hasta 20 MB.", "- `HU-07.1` Solo admite PDF de hasta 30 MB.")
+    editar(f, "recibe el aviso AV-05 con el comentario.", "recibe el aviso AV-05 con el comentario.\n"
+           "- `HU-05.3` La devolución queda en el historial de la solicitud.")
+    editar(f, "- `HU-02.1` La lista solo enseña solicitudes de la unidad de quien entra.",
+           "- `HU-02.1` La lista solo enseña solicitudes de la unidad de quien entra. <!-- ✅ FU-04 00:04:00 -->")
+    editar(t, "| HU-03.1, HU-03.2 |", "| HU-03.1, HU-03.2, HU-03.3 |")
+    editar(t, "| HU-05.1, HU-05.2 |", "| HU-05.1, HU-05.2, HU-05.3 |")
+    c, out = corre(S / "comprobar.py", g, "--anterior", g / "versiones" / "v1.1")
+    linea = next((l for l in out.splitlines() if "dado, cuando y entonces" in l), "")
+    ok("comprobar.py --anterior: el criterio nuevo y el cambiado sin dado, cuando y entonces son aviso, no error, con "
+       "su ID, su línea y cómo se arreglan",
+       c == 0 and linea.startswith("· ") and "HU-05.3 (l." in linea and "HU-07.1 (l." in linea
+       and "«Dado…, cuando…, entonces…»" in linea, out)
+    ok("comprobar.py --anterior: no avisa de los criterios de antes que no se tocan, del que solo cambia su cita ni de "
+       "los que ya los llevan", re.findall(r"[A-Z]+-\d+\.\d+", linea) == ["HU-05.3", "HU-07.1"], linea)
+    c, out = corre(S / "comprobar.py", g)
+    ok("comprobar.py sin --anterior: de dado, cuando y entonces no dice nada", c == 0 and "cuando y entonces" not in out, out)
+    mg = modelo.cargar(g)
+    texto, sin = mg.feature("HU-03")
+    cabecera, escenarios = FEATURE.split("\n\n", 1)    # los dos del diseño son aquí HU-03.2 y HU-03.3
+    ok("Proyecto.feature: un criterio sin dado, cuando y entonces pasa tal cual, como un paso «*», y se avisa de él",
+       sin == ["HU-03.1"] and texto == cabecera + "\n\n  Escenario: HU-03.1\n    * El comentario del técnico aparece "
+       "encima del formulario mientras se subsana.\n\n" + escenarios.replace("HU-03.2", "HU-03.3").replace("HU-03.1", "HU-03.2"),
+       texto + str(sin))
+    lineas, sin_cabecera = mg.escenarios("HU-03")
+    ok("Proyecto.escenarios: los mismos escenarios sin la cabecera, para juntar los de varias historias en un .feature",
+       lineas[:2] == ["", "  Escenario: HU-03.1"] and cabecera + "\n" + "\n".join(lineas) + "\n" == texto
+       and sin_cabecera == sin, str(lineas))
+    ok("Proyecto.feature: una historia anulada o una pieza sin criterios no tienen .feature",
+       mg.feature("HU-11") == ("", []) and mg.feature("PAN-01") == ("", []))
+    editar(f, "- `HU-07.1` Solo admite PDF de hasta 30 MB.", "- `HU-07.1` Dado un informe del organismo que no es un PDF "
+           "o pesa más de 30 MB, cuando el técnico lo adjunta, entonces no se guarda.")
+    editar(f, "- `HU-05.3` La devolución queda en el historial de la solicitud.", "- `HU-05.3` Dada una solicitud "
+           "devuelta, cuando alguien de su unidad abre el historial, entonces ve la devolución con su comentario.")
+    c, out = corre(S / "comprobar.py", g, "--anterior", g / "versiones" / "v1.1")
+    ok("comprobar.py --anterior: con los dos reescritos, sin aviso",
+       c == 0 and any(l.startswith("✓ criterios nuevos o cambiados con dado, cuando y entonces") for l in out.splitlines()),
+       out)
+    return g
 
 
 def docx_de(proyecto, salida):
