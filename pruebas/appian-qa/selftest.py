@@ -30,6 +30,9 @@ ISSUES = PLUGIN / "skills" / "appian-functional-analyst" / "scripts"
 SIMULADO = AQUI / "sail_simulado.py"
 HOST = "dev.ejemplo.test"
 fallos = []
+# técnico §0 con las URL de los entornos: qa.py solo repite contra la de desarrollo o la del entorno de corrección
+TECNICO = "# Especificación técnica\n\n## 0. Entorno\n\n| Dato | Valor |\n|---|---|\n{filas}"
+DESARROLLO = f"| URL de desarrollo | https://{HOST}/suite |\n"
 
 FEATURES = {
     "ISS-01.feature": """# language: es
@@ -125,12 +128,16 @@ class Prueba:
             self.guion(nombre, g)
         for u in ("qa.gestor", "qa.revisor"):
             self.sesion(u)
+        self.tecnico(DESARROLLO)
         escribe(self.app, a_json({"filas": []}))
         self.entorno = dict(os.environ, SAIL_CLI=str(SIMULADO), SAIL_SIMULADO_APP=str(self.app), PYTHONUTF8="1",
                             PYTHONDONTWRITEBYTECODE="1")
 
     def guion(self, nombre, g):
         escribe(self.p / "qa" / "EV-01" / f"{nombre}.json", a_json(g))
+
+    def tecnico(self, filas):
+        escribe(self.p / "analisis" / "tecnico.md", TECNICO.format(filas=filas))
 
     def sesion(self, usuario, **mas):
         escribe(self.sesiones / "dev" / usuario / "session.json",
@@ -325,16 +332,36 @@ def main():
            and "EV-05 no tiene QA" in iss.avisos_qa(t.p, iss.Plan("EV-05", "Otra", "SIM", [ultima], []))[0],
            iss.avisos_qa(t.p, plan))
 
-        # fuera de desarrollo no se repite nada: SAIL CLI crea datos y lanza procesos (técnico §0)
-        tecnico = t.p / "analisis" / "tecnico.md"
-        escribe(tecnico, "# Especificación técnica\n\n## 0. Contexto\n\n| Dato | Valor |\n|---|---|\n"
-                         "| URL de desarrollo | https://otro.ejemplo.test |\n| URL de producción | https://dev.ejemplo.test/suite |\n")
+        # solo se repite en la URL de desarrollo o en la del entorno de corrección de técnico §0, por su etiqueta exacta:
+        # SAIL CLI crea datos y lanza procesos. Con otro host, sin esas filas o sin poder leer §0, no se repite nada
+        no_repite = [
+            ("un guion que apunta a la URL de producción", "| URL de desarrollo | https://otro.ejemplo.test |\n"
+             f"| URL de producción | https://{HOST}/suite |\n", "otro.ejemplo.test (desarrollo)"),
+            ("uno que apunta a producción, con «URL de preproducción» antes en §0",
+             "| URL de desarrollo | https://otro.ejemplo.test |\n| URL de preproducción | https://pre.ejemplo.test |\n"
+             f"| URL de producción | https://{HOST} |\n", "otro.ejemplo.test (desarrollo)"),
+            ("uno que apunta a un entorno que §0 no nombra", "| URL de desarrollo | https://otro.ejemplo.test |\n",
+             "otro.ejemplo.test (desarrollo)"),
+            ("uno con un §0 sin la URL de desarrollo ni la del entorno de corrección",
+             f"| URL de pruebas | https://{HOST} |\n| URL de desarrollo antigua | https://{HOST} |\n",
+             "técnico §0 no dice la «URL de desarrollo» ni la «URL del entorno de corrección»")]
+        for que, filas, dice in no_repite:
+            t.tecnico(filas)
+            antes = llamadas(t)
+            c, out = t.repetir()
+            ok(f"{que} no se repite, y dice por qué y dónde sí", c == 2 and f"apunta a {HOST}" in out
+               and dice in out and "Su QA queda por hacer" in out and llamadas(t) == antes, out)
+        (t.p / "analisis" / "tecnico.md").unlink()
+        (t.p / "analisis" / "tecnico.md").mkdir()     # un análisis que no se puede leer
         antes = llamadas(t)
         c, out = t.repetir()
-        ok("un guion que apunta a la URL de producción de técnico §0 no se repite, y dice por qué",
-           c == 2 and "entorno de producción (técnico §0)" in out and "solo se repiten en desarrollo" in out
+        ok("sin poder leer el análisis no se repite nada, y lo dice", c == 2 and "no se ha podido leer el análisis" in out
            and llamadas(t) == antes, out)
-        tecnico.unlink()
+        (t.p / "analisis" / "tecnico.md").rmdir()
+        t.tecnico(f"| URL de desarrollo | https://otro.ejemplo.test |\n| URL del entorno de corrección | https://{HOST} |\n")
+        c, out = t.repetir()
+        ok("en la URL del entorno de corrección sí se repite", c == 0 and set(resultados().values()) == {"pasa"}, out)
+        t.tecnico(DESARROLLO)
 
         # SAIL CLI que deja de responder a mitad del recorrido es un fallo; al primer paso, no se ha podido repetir
         spec = importlib.util.spec_from_file_location("qa_simulado", QA)

@@ -1263,9 +1263,9 @@ def pruebas_repositorio(tmp):
     ok("AGENTS.md dice dónde está el QA (qa/, de appian-qa) y no pide un git pull antes de mirar el estado",
        "`qa/<U>/`" in guia and "appian-qa/scripts/qa.py" in guia and "git pull" in guia
        and guia.index("proyecto.py estado") < guia.index("git pull"), guia)
-    ok("AGENTS.md y la copia de cada flujo dicen en una línea de dónde salen las órdenes (de la skill que nombran, sin "
-       "buscar el plugin en el disco); el flujo, tras «Empieza»",
-       guia.count("no busques el plugin en el disco") == 1 and "`skills/<skill>/`" in guia
+    ok("AGENTS.md, que se carga en cada sesión, no pasa de 30 líneas; él y la copia de cada flujo dicen en una línea de "
+       "dónde salen las órdenes (de la skill que nombran, sin buscar el plugin en el disco); el flujo, tras «Empieza»",
+       guia.count("\n") <= 30 and guia.count("no busques el plugin en el disco") == 1 and "`skills/<skill>/`" in guia
        and all(re.search(r"^\*\*Empieza\.\*\* .*\n\*\*Órdenes\.\*\* [^\n]*no busques el plugin en el disco[^\n]*\n\n\| # ",
                          textos[x].decode("utf-8"), re.M) for x in flujos), guia)
     # dos fuentes, una con cada final de línea: tienen que llegar igual, byte a byte, a quien clone el proyecto
@@ -2226,7 +2226,7 @@ def pruebas_reserva_segura(tmp):
     ok("con una fusión a medias, --siguiente no toca git ni escribe nada: da la issue sin reservar y lo dice; la "
        "resolución hecha a mano sigue ahí, y --liberar se niega",
        choca != 0 and c == 0 and out.startswith("ISS-01 de EV-01: sin reservar ni escribir nada: el repositorio tiene "
-                                                "una fusión a medias")
+                                                "una fusión a medias") and "--quien <" not in out
        and git(a, "rev-parse", "-q", "--verify", "MERGE_HEAD")[0] == 0 and lee(pm) == resuelto
        and lee(a / "construccion" / "EV-01" / "indice.md") == indice and "Ana" not in indice
        and c2 == 1 and "una fusión a medias" in out2, out + out2)
@@ -2312,7 +2312,8 @@ def pruebas_de_la_issue(tmp):
     esp = json.loads(lee(dv / "ISS-02-esperado.json"))
     ok("lo esperado de una issue dice si tiene pruebas que ejecutar: sí, si cambia criterios o reglas",
        esp["_issue"]["pruebas"] is True and json.loads(lee(dv / "ISS-01-esperado.json"))["_issue"]["pruebas"] is False
-       and "«verificar» ejecuta los casos de prueba guardados de sus reglas e interfaces y de lo que las usa" in e2, e2[-600:])
+       and "«verificar» ejecuta también los casos de prueba guardados de sus reglas e interfaces y de lo que las usa; si "
+           "uno falla, `appian-functional-analyst/references/cambios.md` §6." in e2, e2[-600:])
     verifica(v, "EV-02", "ISS-01")
     verifica(v, "EV-02", "ISS-02", pruebas=pruebas_de(("DEM_ER_Firma", "issue", ["Sin firma"], []),
                                                       ("DEM_RevisionForm", "issue", [], ["Panel"]),
@@ -2695,8 +2696,10 @@ def pruebas_issues(tmp):
     c, out = issues(p, "EV-01", "--siguiente")
     extractor = (PLUGIN / "skills" / "appian-reverse-engineering" / "scripts" / "devmcp_extract.py").resolve().as_posix()
     ok("con la Base hecha, la siguiente es la primera sin hacer cuyas dependencias están hechas, con la orden de terminar "
-       "completa, con las rutas de este equipo (y sin la línea de dónde salen las órdenes, que no hace falta)",
+       "completa, con las rutas de este equipo (y sin la línea de dónde salen las órdenes, que no hace falta); pedida sin "
+       "--quien, dice que se pida siempre con el mismo",
        c == 0 and out.startswith("ISS-02 de EV-01: sin reservar") and f'python "{extractor}" verificar --app ' in out
+       and "\n· Pide siempre con el mismo `--quien <el nombre de esta sesión>`" in out.split("\n\n")[0]
        and f'"{p.resolve().as_posix()}/construccion/EV-01/verificacion/ISS-02.json"' in out
        and "no busques el plugin" not in out, out)
     verifica(p, "EV-01", "ISS-02")

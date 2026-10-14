@@ -21,6 +21,7 @@
   {"patron": "modulos/", "dueno": "appian-functional-analyst"},
   {"patron": "construccion/", "dueno": "appian-functional-analyst"},
   {"patron": "construccion/*/verificacion/", "dueno": "appian-reverse-engineering"},
+  {"patron": "construccion/*/regresion.json", "dueno": "appian-reverse-engineering"},
   {"patron": "qa/", "dueno": "appian-qa"},
   {"patron": "as-is/", "dueno": "appian-reverse-engineering"},
   {"patron": "as-is/08-procesos-bpmn/*.json", "dueno": "appian-reverse-engineering", "tambien": ["appian-diagramas-bpmn"]},

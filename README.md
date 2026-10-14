@@ -31,10 +31,9 @@ requisito, con lo que necesita quien la construye y nada más (qué se pide, sus
 que dice de ellos el técnico), en orden y diciendo cuáles pueden ir a la vez. Quien construye, persona o agente, pide la
 siguiente, que queda reservada con un commit para que nadie más se la lleve, y está hecha cuando su verificación pasa:
 sus objetos, como dice el técnico, y sus pruebas, los casos de prueba guardados de sus reglas e interfaces y de lo que
-las usa. Un caso suyo que falla la deja pendiente, salvo que una persona lo marque como no necesario, con su motivo; un
-retoque que no cambia criterios ni reglas no ejecuta ninguno. Con todas sus issues hechas, el QA recorre la unidad con
-SAIL CLI como cada rol, en otra sesión y solo con sus escenarios; cada recorrido queda como guion en `qa/`, y un
-escenario que falla devuelve su issue a pendiente, con la misma salvedad. Después se marca la unidad construida y, antes
+las usa; un retoque que no cambia criterios ni reglas no ejecuta ninguno. Con todas sus issues hechas, el QA recorre la
+unidad con SAIL CLI como cada rol, en otra sesión y solo con sus escenarios; cada recorrido queda como guion en `qa/`.
+Si falla una prueba o un escenario, `skills/appian-functional-analyst/references/cambios.md` §6. Después se marca la unidad construida y, antes
 de preparar el paquete, la regresión ejecuta todos los casos de prueba de la aplicación y un script repite sin IA los
 guiones del QA. Las verificaciones hechas con el encargo de antes de las issues (`construccion/verificacion/<U>.json`)
 ya no cuentan: una unidad aprobada entonces se verifica de nuevo, issue a issue, con la orden que imprime

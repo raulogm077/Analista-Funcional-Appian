@@ -56,7 +56,8 @@ Tras `produccion`, `proyecto.py estado` ya no la lista como pendiente.
 5. **Despliegue** por el proceso de cambios urgentes del cliente (el plugin no lo gestiona), con la vuelta atrás
    preparada: el paquete con la versión de producción de esos objetos. Restaurar una copia de seguridad es lo último.
    Antes de desplegar, quien prepara el paquete revisa en Compare and Deploy la comparación de sus objetos, como en un
-   Merge Request, con los fallos de la regresión, y lo promueve como el de un evolutivo: el mismo paquete con un ICF por
+   Merge Request, con los fallos de la regresión (su orden, `indice.py issues <p> URG-nn --regresion`, con el Dev MCP
+   del entorno donde se corrige), y lo promueve como el de un evolutivo: el mismo paquete con un ICF por
    entorno y, si el despliegue es directo o por API, con «Require review» en el destino (`cambios.md` §6, paso 7).
 6. **Cierre**: «Cierre» en la ficha y `proyecto.py cambio <p> URG-nn produccion --ref "<referencia del pase en el cliente>" --fecha <AAAA-MM-DD del pase>` (falla si la ficha no
    dice «Dónde se corrige», o si no dice «Desarrollo» ni «Entorno de corrección» y algo choca). Se cierra en cuanto

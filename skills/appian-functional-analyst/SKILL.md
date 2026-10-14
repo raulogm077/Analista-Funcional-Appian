@@ -52,27 +52,8 @@ Los correos `.msg` no se leen de forma fiable: pide el correo como `.eml` o PDF.
 
 ## La carpeta del proyecto
 
-Un repositorio git por proyecto, siempre con la misma forma: el código vive en Appian y aquí va todo lo demás, también
-las fuentes. Lo crea `proyecto.py iniciar`:
-
-```
-<p>/AGENTS.md        dónde está cada cosa, las reglas y los flujos, para cualquier persona o agente (generado)
-<p>/CLAUDE.md        solo «@AGENTS.md», para Claude Code
-<p>/.agents/workflows/   copia de los flujos del plugin (generada)
-<p>/.gitignore       lo que no se sube: secretos y grabaciones de vídeo o audio
-<p>/.gitattributes   git no cambia los finales de línea: la huella de una fuente es la misma en cualquier equipo
-<p>/proyecto.md      lo propio del proyecto: estado, fuentes procesadas, DF entregado, siguiente paso
-<p>/fuentes/         FU-nn.md e indice.md (leer_fuentes.py)
-<p>/notas/           una nota por fuente
-<p>/impacto/         un informe por fuente nueva
-<p>/as-is/           la aplicación existente (ingeniería inversa)
-<p>/analisis/        funcional.md, tecnico.md, decisiones.md y diagramas/
-<p>/prototipo/       el prototipo y sus capturas (skill de prototipos)
-<p>/construccion/    las issues de construcción de cada unidad aprobada y su verificación
-<p>/entregables/     el DF en Word
-<p>/versiones/       copia del análisis antes de cada cambio
-```
-
+Un repositorio git por proyecto, siempre con la misma forma (la de «Qué escribe», más `as-is/` de ingeniería inversa y
+`qa/` del QA): el código vive en Appian y aquí va todo lo demás, también las fuentes. Lo crea `proyecto.py iniciar`.
 `AGENTS.md` y `.agents/workflows/` salen enteros del plugin y no se editan: `proyecto.py iniciar <p>` en un proyecto
 que ya existe los pone al día y no toca nada más. Se trabaja sobre main, sin ramas ni PR, con `git commit` y `git push`
 al terminar; `iniciar` no confirma ni sube nada, y el remoto, privado, lo decide el proyecto.

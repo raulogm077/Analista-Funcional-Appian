@@ -105,17 +105,18 @@ from) is the official skill's ground: listing the objects of one type before cre
 safe write, not exploration.
 
 **Issues from the analyst.** If the project has `construccion/<U>/` (written by the analyst's `indice.py issues`), build
-from its issues, one at a time: `<skill>/../appian-functional-analyst/scripts/indice.py issues <p> <U> --siguiente`
-prints the next one (the first not done whose dependencies are done) and reserves it. That issue is the scope: build only its objects, in the order of the official
+from its issues, one at a time: `<skill>/../appian-functional-analyst/scripts/indice.py issues <p> <U> --siguiente
+--quien <this session's name>` prints the next one (the first not done whose dependencies are done) and reserves it;
+ask with the same `--quien` every time, so that a restarted session gets its own issue back instead of taking another
+and leaving its own reserved. That issue is the scope: build only its objects, in the order of the official
 skill's `change-planning`, with the gates the calibration gives, and honour its "No tocar", "Reaplicar" and frozen
 objects. It carries what the build needs from the functional design and the technical spec, with what changes: don't
 read those documents whole. If it says there are no tests to run, run none. When done, run the command it prints
 (`verificar`, read-only), ask for the next one, and when none is left and the unit has scenarios, its QA goes first, in
 another session (`appian-qa`; the last issue says so); then `proyecto.py cambio <p> <U> construida`. Progress across
 sessions is what each issue's verification and the QA result say; there is no other state to keep. `verificar` also
-runs the saved test cases of the issue's rules and interfaces and of what uses them: a failing case of its own leaves
-the issue pending, so fix it, and so does one of its scenarios failing in the QA (fix it; the QA repeats its scripts).
-Only a person may mark that test or scenario as not needed to move on (`--sin-prueba`), never an unattended session.
+runs the saved test cases of the issue's rules and interfaces and of what uses them; when one of them, or a QA
+scenario, fails: `<skill>/../appian-functional-analyst/references/cambios.md` §6.
 Build only in the development environment (in an emergency, the correction environment).
 
 ## Requirements

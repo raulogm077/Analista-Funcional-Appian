@@ -33,9 +33,9 @@ PATH como `sail`. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
 - **Con la unidad completa**: todas sus issues hechas. Por unidad, no por issue: un escenario cruza pantallas de varias.
 - **En otra sesión**, distinta de la que construyó; puede ser otro agente (el flujo F8 está en `.agents/workflows/` de
   cada proyecto) o una persona.
-- **Solo en desarrollo**, porque crea datos y lanza procesos; en una urgencia, en el entorno de corrección. Nunca en
-  pruebas ni en producción: `qa.py repetir` no repite nada si un guion apunta a la URL de pruebas o de producción que
-  dice técnico §0.
+- **Solo en desarrollo**, porque crea datos y lanza procesos; en una urgencia, en el entorno de corrección. `qa.py
+  repetir` solo repite contra la «URL de desarrollo» o la «URL del entorno de corrección» de técnico §0: si un guion
+  apunta a otro host, o §0 no las dice, no repite nada.
 - **En un retoque cosmético no hay QA.** Si cambia un texto que usa un guion, la repetición falla en ese paso y se
   cambia ese texto en el guion; nada más.
 
@@ -159,11 +159,9 @@ y no lleva rutas del equipo de nadie:
  "sinGuion": ["HU-02.1"]}
 ```
 
-- **pasa** o **falla**: la última vez que se repitió. Una issue con un escenario que falla está pendiente
-  (`appian-functional-analyst/scripts/issues.py`, `estado()`), salvo que una persona lo marque como no necesario para
-  avanzar, con su motivo (`indice.py issues <p> <U> ISS-nn --sin-prueba HU-nn.m --motivo "…"`, de
-  `appian-functional-analyst`; nunca en una sesión desatendida). La marca vale para ese fallo: el motivo lleva
-  `{pasada}` y `{hoy}`, no lo que valieron, para que el mismo fallo diga lo mismo en cada repetición.
+- **pasa** o **falla**: la última vez que se repitió. Lo que pasa con su issue si falla, en
+  `appian-functional-analyst/references/cambios.md` §6. El motivo lleva `{pasada}` y `{hoy}`, no lo que valieron: el
+  mismo fallo dice lo mismo en cada repetición, y la marca de una persona sigue valiendo para él.
 - **desfasado**: el escenario ya no dice lo del guion; no cuenta como fallo, y QA lo rehace.
 - **guion por terminar**: el guion está mal escrito o no llega a afirmar nada en el «entonces»; no devuelve la issue a
   quien construye: lo termina QA.
