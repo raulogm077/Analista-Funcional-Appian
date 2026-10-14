@@ -4,6 +4,48 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Automejora con proyectos reales (14 de octubre de 2026)
+
+Sobre la 0.8.0-beta.1, sin cambiar el plugin. Plan: `docs/plan/2026-10-14-automejora.md`. Nueve pruebas con reuniones
+reales del cerebro corporativo, una aplicación de desarrollo y otra de un cliente en solo lectura; cada una la hizo un
+subagente siguiendo el plugin de la rama leyendo sus ficheros (las sesiones anidadas `claude -p` desatendidas las bloquea
+el clasificador de permisos), y la revisó otro de contexto limpio contra el código. Tiempos de reloj de herramienta,
+aproximados; sin coste en USD, porque no hubo sesiones anidadas. Lo que pide un cambio está en
+`docs/siguiente-version.md` («Del plan de automejora»).
+
+| Prueba | Qué | Min | Llamadas | Resultado |
+|---|---|---|---|---|
+| P1 · F1 | Proyecto nuevo, 4 reuniones (~46.000 palabras): 24 HU, 9 pantallas, 5 procesos, prototipo y Word | 17 | ~62 | Completo salvo enviar y aprobar (son de personas); `comprobar.py` sin errores |
+| P2 · F2 | Una fuente de 2.558 palabras, 6 puntos sin aprobación | 2 | ~14 | Sin errores; dos PC perdidos por `derivadas --escribir` |
+| P2 · retoque | Texto de un botón, camino corto | 0,7 | 7 | Sin errores |
+| P3 · F1 volumen | 18 transcripciones (~114.000 palabras), funcional y técnico por 4 módulos con 13 subagentes | 54 | ~360 | `comprobar.py` sin errores; 3 pares de HU y 9 de 31 decisiones repetidas entre módulos; 1 de 9 contradicciones perdida |
+| P4 · F3 | Campo nuevo con regla, 3 issues | 4,5 | 29 | Pasos 1-6; el 7 sin captura nueva y sin aviso |
+| P4 · F4 | Regla con un umbral mal escrito | 1,7 | 19 | Seguido |
+| P4 · F5 | Urgencia en una regla, regresión de 99 casos en 22 s | 1,8 | 19 | Seguido; `colision` dijo «no» sin mirar dependientes |
+| P5 · F6 y F7 | Aplicación del cliente de 42 objetos, solo lectura | 29 | ~100 (extractor: 321 de lectura, 142 fallidas) | 14 hallazgos y 8 REF; `comprobar_asis` 4 errores falsos; `comprobar_propuesta` 0 |
+| P6 · F8 y F9 | Base (25 objetos) y una issue en una aplicación nueva de desarrollo; QA con una cuenta | 20 | ~105 | La Base no pasa `verificar` por fallos del script; 1 de 8 issues hecha; 2 guiones de QA pasan |
+| P7 | El retoque de P2 por un subagente sin contexto | 0,9 (2 de pared) | 11 | Idéntico a P2 |
+| P8 | El retoque con Copilot CLI y Codex, solo con `AGENTS.md` | 0,6 | ~25 | Copilot: sin scripts, versión incoherente (`comprobar.py` ✗); Codex: no concluyente, su sandbox no arranca dentro de otra sesión |
+| P9 | Una persona sin IA: estado, retoque y guion de reunión | ~2 (10-15 para una persona) | 14 órdenes | Viable; se atasca en la ruta del plugin y en localizar menciones |
+
+### Lo aprendido
+
+- Los scripts de consulta (`indice.py ficha`, `impacto`, `seccion`, `estado`, `pendientes`) y `comprobar.py` sostienen
+  los flujos de mantenimiento: F3 entero sin leer el funcional y `comprobar.py` como único freno ante lo improvisado
+  (P4, P8). No conviene tocarlos.
+- El coste está en la redacción de la IA (funcional, técnico, documentos del as-is, notas), no en los scripts: en P3 los
+  scripts suman segundos de 54 minutos.
+- El contexto heredado abarata el retoque (7 frente a 11 llamadas) sin cambiar el resultado.
+- Con volumen, el riesgo no es leer de más sino duplicar: cada módulo redacta lo que comparte con otro.
+- `verificar` es el punto débil de la construcción: tres tipos de diferencia falsa en una misma Base la bloquearon, y con
+  ella las ocho issues.
+- Con una aplicación de 42 objetos, los presupuestos de palabras de la ingeniería inversa sobran (20-54 %), salvo LEEME
+  (96 %). `listObjectVersions` da el historial en el Dev MCP real.
+- El índice del cerebro corporativo da por transcritas 1.692 reuniones y en disco hay 1.095: las pruebas eligen por los
+  ficheros, no por el índice.
+- Un SAIL CLI con un solo usuario no prueba la seguridad por rol; y un defecto (columnas en blanco por `fields` vacío) lo
+  vio SAIL CLI y no `testInterface`.
+
 ## 0.8.0-beta.1 · Método L.U.C.I.A. (14 de octubre de 2026)
 
 Parte de la 0.7.0-beta.4 (`d6126a8`). Plan: `docs/plan/2026-10-14-metodo-lucia.md`; lo que decidió Raúl con estas
