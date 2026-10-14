@@ -50,6 +50,8 @@ y de seis peticiones más al modelo. Del técnico solo se leen trozos, no se lan
 misma: la acción renombrada, nada más tocado y la unidad Construida. Si esos minutos importan, Raúl decide (por ejemplo,
 reservar sin push cuando trabaja una sola persona).
 
+**T17, tercera medida**, tras quitarle a `verificar` lo que no necesita cuando no hay pruebas (de 36 llamadas al Dev MCP a 3) y decir que una orden completa de `--siguiente` se lanza sin cargar ninguna skill (copia del commit `70f5973`): 4,1 minutos (4,2 · 4,1 · 3,9), 38 llamadas y 2,07 USD, frente a 2,9, 54 y 2,51 de T6. Cargan tres skills (antes, tres o cuatro). `verificar` tarda en la sesión de 21 a 27 segundos y fuera de ella de 16 a 18 en este equipo (de 8 a 10 en T6), casi todo en arrancar el Dev MCP, que el plugin no controla. **Queda en +1,2 minutos por retoque (+41 %), con un 30 % menos de llamadas y un 18 % menos de coste**: el tiempo de más es de las herramientas (1,3 minutos frente a 0,5) y de nueve peticiones más al modelo por el recorrido de la issue. Lo decide Raúl.
+
 **El caso de T1 con el plugin terminado** (misma base, encargo y memoria que T1, T3 y T3b):
 
 | | T1 | T3 | T3b | Final |

@@ -99,7 +99,7 @@ Lo que decide Raúl antes de la PR:
 2. **El modelo del QA y Playwright** (T16): la recomendación es Sonnet 5.5 y Playwright solo para lo que solo se ve en
    pantalla; está escrito así en `appian-qa` y en F8.
 3. **«El Word no espera al prototipo»** (T2): sin efecto medido en cuatro sesiones; quitarlo o dejarlo.
-4. **Los minutos de más de T17** (+1,4 por retoque, por la reserva con git y `verificar`).
+4. **Los minutos de más de T17**: +1,2 por retoque tras optimizar `verificar` (4,1 frente a 2,9), con un 30 % menos de llamadas y un 18 % menos de coste; el resto es el arranque del Dev MCP y el recorrido de la issue.
 5. **La versión del plugin** (sigue en 0.7.0-beta.4) y su fila en el README.
 6. **El diseño y su anexo**: lo que ya no es verdad (`LCP_TOOL_MODE`, la regresión «en bloque», las 5.600 líneas, la ruta
    de verificación, el cierre de las sesiones de SAIL CLI); el texto que propone la revisión final está en el historial de
