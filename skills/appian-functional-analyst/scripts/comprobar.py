@@ -913,18 +913,41 @@ def _palabras(linea):
     return [(mo.normaliza(w), w) for w in re.findall(r"\w+", texto)]
 
 
+def _tramos(linea):
+    """Las palabras de una línea en tramos que no se cruzan: la línea entera o, en un criterio con dado, cuando y
+    entonces, cada paso por separado. Lo que dice cada paso puede quedarse viejo; el arranque que comparten los
+    criterios («Dada una solicitud en revisión, cuando el técnico…»), no."""
+    cr = mo.RX_CRITERIO.match(linea)
+    pasos = mo.pasos_gherkin(linea[cr.end():]) if cr else None
+    return [_palabras(t) for _, t in pasos] if pasos else [_palabras(linea)]
+
+
 def _secuencias(lineas):
     out = set()
     for l in lineas:
-        ws = [w for w, _ in _palabras(l)]
-        out |= {tuple(ws[k:k + SECUENCIA]) for k in range(len(ws) - SECUENCIA + 1)}
+        for pal in _tramos(l):
+            ws = [w for w, _ in pal]
+            out |= {tuple(ws[k:k + SECUENCIA]) for k in range(len(ws) - SECUENCIA + 1)}
     return out
 
 
+def _frase_vieja(pal, quitadas):
+    """La frase de un tramo que aún dice lo quitado (las secuencias quitadas seguidas desde la primera), o None."""
+    ws = [w for w, _ in pal]
+    k = next((k for k in range(len(ws) - SECUENCIA + 1) if tuple(ws[k:k + SECUENCIA]) in quitadas), None)
+    if k is None:
+        return None
+    fin = k + 1
+    while fin < len(ws) - SECUENCIA + 1 and tuple(ws[fin:fin + SECUENCIA]) in quitadas:
+        fin += 1
+    return " ".join(o for _, o in pal[k:fin - 1 + SECUENCIA])
+
+
 def texto_viejo(m, ant, modif):
-    """Para cada pieza modificada, las secuencias de seis palabras que tenía antes y ya no tiene, y cada otra línea del
-    funcional o del técnico que aún las dice: «HU-07: "…" sigue en PAN-04, l.212». Una vez por línea, y solo de las
-    líneas que ya estaban tal cual en la versión anterior: lo reescrito en esta versión ya se ha revisado."""
+    """Para cada pieza modificada, las secuencias de seis palabras que tenía antes y ya no tiene (de un criterio con dado,
+    cuando y entonces, las de cada paso: _tramos), y cada otra línea del funcional o del técnico que aún las dice:
+    «HU-07: "…" sigue en PAN-04, l.212». Una vez por línea, y solo de las líneas que ya estaban tal cual en la versión
+    anterior: lo reescrito en esta versión ya se ha revisado."""
     duenio = {}     # (doc, línea) -> la pieza más pequeña que la contiene
     for p in m.piezas.values():
         for i in range(p.ini, p.fin):
@@ -949,17 +972,11 @@ def texto_viejo(m, ant, modif):
                 otro = duenio.get((d, i))
                 if (d, i) in propias or (d, i) in vistos or (d, l) not in de_antes or (otro and anulada(m, otro)):
                     continue
-                pal = _palabras(l)
-                ws = [w for w, _ in pal]
-                k = next((k for k in range(len(ws) - SECUENCIA + 1) if tuple(ws[k:k + SECUENCIA]) in quitadas), None)
-                if k is None:
+                frase = next((f for f in (_frase_vieja(pal, quitadas) for pal in _tramos(l)) if f), None)
+                if frase is None:
                     continue
                 vistos.add((d, i))
                 donde = otro or f"{mo.NOMBRE_DOC[d]} §{m.docs[d].seccion_de_linea[i]}"
-                fin = k + 1     # la frase entera: las secuencias quitadas seguidas desde la primera
-                while fin < len(ws) - SECUENCIA + 1 and tuple(ws[fin:fin + SECUENCIA]) in quitadas:
-                    fin += 1
-                frase = " ".join(o for _, o in pal[k:fin - 1 + SECUENCIA])
                 avisos.append(f'{pid}: "{frase}" sigue en {donde}, l.{i + 1}')
     return avisos
 

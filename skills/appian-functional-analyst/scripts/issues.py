@@ -633,11 +633,17 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
     L += ["", "## Terminar", "",
           "Con los objetos construidos, se verifica en desarrollo, en solo lectura. El resultado queda en "
           f"`{CARPETA}/{uid}/verificacion/{issue.id}.json`: con él la issue está hecha. La orden, lista para copiar en "
-          f"cada equipo, la imprime `indice.py issues <p> {uid} {issue.id}` (y `--siguiente`, al dar la issue). "
-          + (PRUEBAS_NO if issue.sin_pruebas else PRUEBAS_SI), ""]
+          f"cada equipo, la imprime `appian-functional-analyst/scripts/indice.py issues <p> {uid} {issue.id}` (y "
+          "`--siguiente`, al dar la issue). " + (PRUEBAS_NO if issue.sin_pruebas else PRUEBAS_SI), "", ORDENES, ""]
     issue.texto = "\n".join(L)
 
 
+# De dónde salen las órdenes que nombran un script sin ruta: AGENTS.md, la copia de cada flujo en el proyecto y cada
+# issue, ficheros que se comparten entre equipos y no pueden llevar la ruta del plugin de nadie (proyecto.py generados)
+ORDENES = ("Una ruta o un script que van con el nombre de una skill (`appian-qa/scripts/qa.py`, o `appian-qa` · `qa.py`) "
+           "son de esa skill: cárgala antes, su `SKILL.md` dice cuál es su carpeta, y no busques el plugin en el disco. Un "
+           "agente que no carga skills los tiene en `skills/<skill>/` del plugin instalado (los scripts, en `scripts/`), "
+           "en la ruta que sepa quien trabaja.")
 PRUEBAS_NO = "No hay pruebas que ejecutar: la issue no cambia criterios ni reglas."
 PRUEBAS_SI = ("«verificar» ejecuta los casos de prueba guardados de sus reglas e interfaces y de lo que las usa: un caso "
               "suyo que falla la deja pendiente; uno de lo que las usa, es un aviso.")

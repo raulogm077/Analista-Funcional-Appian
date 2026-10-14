@@ -80,7 +80,8 @@ al terminar; `iniciar` no confirma ni sube nada, y el remoto, privado, lo decide
 Formatos: `funcional-plantilla.md`, `tecnico-plantilla.md` y la cabecera de `decisiones.md` en
 `assets/plantillas/`. `proyecto.py estado <p>` dice en qué punto está el proyecto: empieza siempre por ahí
 si el proyecto ya existe. Avisa también, sin frenar nada, de lo que falta por subir, de si va por detrás del remoto
-(entonces, `git pull`) y de lo que `iniciar` tiene que poner al día.
+(entonces, `git pull`) y de lo que `iniciar` tiene que poner al día. Si dice que al proyecto le falta git, `AGENTS.md`
+o los flujos, lanza `proyecto.py iniciar <p>` antes de seguir: los añade y no toca nada más.
 
 ## Qué escribe
 

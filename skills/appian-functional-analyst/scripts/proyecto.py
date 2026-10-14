@@ -148,7 +148,8 @@ def version_generada(ruta):
 
 def generados(version):
     """{ruta en el proyecto: texto} de lo que se genera entero: AGENTS.md, de su plantilla y con una línea por flujo de
-    los que hay en el plugin (su título y su «Cuándo»), y la copia de cada flujo."""
+    los que hay en el plugin (su título y su «Cuándo»), y la copia de cada flujo, con una línea tras «Empieza» que dice
+    de dónde salen sus órdenes (issues.ORDENES, como en AGENTS.md)."""
     marca = (f"<!-- appian-analisis-funcional {version or 'sin-version'} · Generado por proyecto.py iniciar: no se edita. "
              "Lo propio del proyecto va en proyecto.md -->\n")
     copias, filas = {}, []
@@ -157,9 +158,10 @@ def generados(version):
         cuando = re.search(r"^\*\*Cuándo\.\*\* (.+)$", texto, re.M)
         filas.append(f"- [{texto.splitlines()[0].lstrip('# ')}]({COPIA_FLUJOS}/{f.name}): "
                      f"{cuando.group(1).strip() if cuando else '—'}")
+        texto = re.sub(r"(?m)^(\*\*Empieza\.\*\* .*)$", lambda x: f"{x.group(1)}\n**Órdenes.** {iss.ORDENES}", texto, 1)
         copias[f"{COPIA_FLUJOS}/{f.name}"] = marca + texto
     guia = RX_TAREA.sub("", (PLANTILLAS / "agentes.md").read_text(encoding="utf-8"))
-    return {GUIA: marca + guia.replace("{flujos}", "\n".join(filas)), **copias}
+    return {GUIA: marca + guia.replace("{ordenes}", iss.ORDENES).replace("{flujos}", "\n".join(filas)), **copias}
 
 
 def poner_al_dia(raiz):
@@ -266,7 +268,7 @@ def avisos_proyecto(raiz):
         r for r in (".gitignore", ".gitattributes") if not (raiz / r).is_file()]
     faltan += [r for r in (GUIA, "CLAUDE.md") if not (raiz / r).is_file() and not (posterior and r == GUIA)]
     faltan += [f"algún flujo de {COPIA_FLUJOS}/"] if not posterior and any(r not in generado for r in flujos) else []
-    avisos = [f"Al proyecto le falta {', '.join(faltan)}: «proyecto.py iniciar <p>» lo añade sin tocar lo demás"
+    avisos = [f"Al proyecto le falta {', '.join(faltan)}: lanza «proyecto.py iniciar <p>», que lo añade sin tocar lo demás"
               ] if faltan else []
     avisos += [f"Repositorio: {x}" for x in (avisos_repositorio(raiz) if es_repo else [])]
     if ajenos:
@@ -274,7 +276,7 @@ def avisos_proyecto(raiz):
                       "quítalo o cámbiale el nombre")
     if otras and version:
         avisos.append(f"{GUIA} y los flujos son de otra versión del plugin ({', '.join(otras)}; la de este equipo, {version}): "
-                      + ("actualiza el plugin" if posterior else "«proyecto.py iniciar <p>» los pone al día"))
+                      + ("actualiza el plugin" if posterior else "lanza «proyecto.py iniciar <p>», que los pone al día"))
     claude = raiz / "CLAUDE.md"
     if claude.is_file() and not RX_IMPORTA.search(claude.read_text(encoding="utf-8", errors="replace")):
         avisos.append(f"CLAUDE.md no importa {GUIA}: añádele una línea «@{GUIA}»")

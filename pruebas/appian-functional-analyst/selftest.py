@@ -579,6 +579,38 @@ Versión 1.2: HU-07.1 a 30 MB · PC-04 nuevo · técnico §14 con 35 MB
         c, out = corre(S / "comprobar.py", r, "--anterior", r / "versiones" / "v1.1")
         ok("texto que queda viejo: cinco palabras que coinciden por casualidad no son aviso", "✓ texto que queda viejo" in out,
            next((l for l in out.splitlines() if "queda viejo" in l), out))
+        # Criterios en Gherkin: el arranque que comparten («Dada una solicitud en revisión, cuando el técnico…») no es
+        # texto viejo; lo que dice un paso que cambia y sigue escrito en una pantalla, sí
+        for caso in ("arranque", "paso"):
+            r = tmp / f"texto viejo gherkin {caso}"
+            shutil.copytree(EJEMPLO, r)
+            fr = r / "analisis" / "funcional.md"
+            editar(fr, "- `HU-04.3` Al darla por completa pasa a «En informe» y se envía la petición de informe al organismo "
+                   "(AV-02).", "- `HU-04.3` Dada una solicitud en revisión, cuando el técnico la da por completa, entonces "
+                   "pasa a «En informe» y se envía la petición de informe al organismo (AV-02).")
+            editar(fr, "- `HU-05.1` Sin comentario no se devuelve y aparece «Indique qué falta».",
+                   "- `HU-05.1` Dada una solicitud en revisión, cuando el técnico la devuelve sin comentario, entonces no "
+                   "se devuelve y aparece «Indique qué falta».")
+            editar(fr, "Tarea del técnico. Se abre desde su bandeja de tareas.", "Tarea del técnico. Se abre desde su "
+                   "bandeja de tareas. Al darla por completa, pasa a «En informe» y se envía la petición de informe al organismo.")
+            corre(S / "proyecto.py", "copia", r)
+            for x in (fr, r / "analisis" / "tecnico.md"):
+                editar(x, "Versión: 1.1", "Versión: 1.2")
+            if caso == "arranque":
+                editar(fr, "Dada una solicitud en revisión, cuando el técnico la da por completa",
+                       "Dada una solicitud asignada, cuando el técnico la da por completa")
+            else:
+                editar(fr, "entonces pasa a «En informe» y se envía la petición de informe al organismo (AV-02).",
+                       "entonces pasa a «En informe» y el organismo recibe la petición en su sede electrónica (AV-02).")
+            c, out = corre(S / "comprobar.py", r, "--anterior", r / "versiones" / "v1.1")
+            aviso = [l for l in out.splitlines() if "queda viejo" in l]
+            if caso == "arranque":
+                ok("texto que queda viejo: el arranque común de dos criterios en Gherkin (dado y cuando) no es aviso",
+                   aviso == [] or aviso[0].startswith("✓ "), str(aviso))
+            else:
+                ok("texto que queda viejo: lo que decía el «entonces» de un criterio y sigue en una pantalla, sí",
+                   len(aviso) == 1 and aviso[0].startswith("· ") and 'HU-04: "pasa a En informe y se envía la petición de '
+                   'informe al organismo" sigue en PAN-04' in aviso[0] and "HU-05" not in aviso[0], str(aviso))
 
         # 4b. Lo validado (🔒) solo cambia con un punto aprobado
         v = tmp / "validado"
@@ -1231,6 +1263,11 @@ def pruebas_repositorio(tmp):
     ok("AGENTS.md dice dónde está el QA (qa/, de appian-qa) y no pide un git pull antes de mirar el estado",
        "`qa/<U>/`" in guia and "appian-qa/scripts/qa.py" in guia and "git pull" in guia
        and guia.index("proyecto.py estado") < guia.index("git pull"), guia)
+    ok("AGENTS.md y la copia de cada flujo dicen en una línea de dónde salen las órdenes (de la skill que nombran, sin "
+       "buscar el plugin en el disco); el flujo, tras «Empieza»",
+       guia.count("no busques el plugin en el disco") == 1 and "`skills/<skill>/`" in guia
+       and all(re.search(r"^\*\*Empieza\.\*\* .*\n\*\*Órdenes\.\*\* [^\n]*no busques el plugin en el disco[^\n]*\n\n\| # ",
+                         textos[x].decode("utf-8"), re.M) for x in flujos), guia)
     # dos fuentes, una con cada final de línea: tienen que llegar igual, byte a byte, a quien clone el proyecto
     fuentes = {"fuentes/FU-01-acta.md": "# FU-01\nActa de la reunión\n".encode("utf-8"),
                "fuentes/correo.eml": b"Subject: Plazos\r\n\r\nSe mantienen.\r\n"}
@@ -1316,7 +1353,7 @@ def pruebas_repositorio(tmp):
     c, out = corre(s9 / "proyecto.py", "estado", a)
     ok("estado, con otra versión del plugin, avisa de que AGENTS.md y los flujos son de otra y dice cómo ponerlos al día",
        c == 0 and f"otra versión del plugin ({version}; la de este equipo, 9.9.9)" in out
-       and "«proyecto.py iniciar <p>» los pone al día" in out, out)
+       and "lanza «proyecto.py iniciar <p>», que los pone al día" in out, out)
     c, out = corre(s9 / "proyecto.py", "iniciar", a)
     ok("tras cambiar de versión, iniciar pone al día AGENTS.md y los flujos sin tocar proyecto.md ni nada más",
        c == 0 and de_la("9.9.9") and "Preparar la reunión del jueves." in antes["proyecto.md"].decode("utf-8")
@@ -1353,9 +1390,9 @@ def pruebas_repositorio(tmp):
        c == 0 and "ya está dentro de uno" in out and not (varios / "dentro" / ".git").exists()
        and (varios / "dentro" / "AGENTS.md").is_file(), out)
     c, out = estado(EVOLUTIVO)
-    ok("estado de un proyecto sin repositorio dice lo que le falta y cómo añadirlo, en una línea",
-       c == 0 and len(re.findall(r"^· Al proyecto le falta ser un repositorio git, AGENTS\.md, CLAUDE\.md, algún flujo",
-                                 out, re.M)) == 1 and "Repositorio:" not in out, out)
+    ok("estado de un proyecto sin repositorio dice lo que le falta y que se lance iniciar, en una línea",
+       c == 0 and len(re.findall(r"^· Al proyecto le falta ser un repositorio git, AGENTS\.md, CLAUDE\.md, algún flujo.*: "
+                                 r"lanza «proyecto\.py iniciar <p>»", out, re.M)) == 1 and "Repositorio:" not in out, out)
 
 
 GUION = chr(0x2011)   # df_docx.js pone guiones que no se parten en los IDs (PAN‑02)
@@ -2593,6 +2630,10 @@ def pruebas_issues(tmp):
        len(textos) == 5 and all("no hay que leer el funcional ni el técnico" in x and "## Lo que dice el técnico" in x
                                 and not re.search(r"(?i)\bver (?:el )?(?:técnico|funcional)\b", x)
                                 for x in textos), "\n".join(x[:300] for x in textos))
+    ok("cada issue nombra sus órdenes con su skill y dice, en una línea, de dónde salen: sin buscar el plugin en el disco",
+       all(x.count("no busques el plugin en el disco") == 1
+           and "`appian-functional-analyst/scripts/indice.py issues <p> EV-01 ISS-0" in x for x in textos),
+       "\n".join(x[-700:] for x in textos))
     i4 = lee(d / "ISS-04.md")
     ok("lo que el técnico dice de un objeto llega a su issue aunque la fila no lo nombre: los nodos de la tabla de un "
        "proceso (su título lo nombra) y lo que sigue a ella, y los avisos que citan sus historias (§9)",
@@ -2652,8 +2693,12 @@ def pruebas_issues(tmp):
        and "  ISS-03 · HU-06, HU-07, PAN-02 · Redactar el informe técnico · pendiente: sin verificar · espera a ISS-02\n"
        in out, out)
     c, out = issues(p, "EV-01", "--siguiente")
-    ok("con la Base hecha, la siguiente es la primera sin hacer cuyas dependencias están hechas",
-       c == 0 and out.startswith("ISS-02 de EV-01: sin reservar"), out)
+    extractor = (PLUGIN / "skills" / "appian-reverse-engineering" / "scripts" / "devmcp_extract.py").resolve().as_posix()
+    ok("con la Base hecha, la siguiente es la primera sin hacer cuyas dependencias están hechas, con la orden de terminar "
+       "completa, con las rutas de este equipo (y sin la línea de dónde salen las órdenes, que no hace falta)",
+       c == 0 and out.startswith("ISS-02 de EV-01: sin reservar") and f'python "{extractor}" verificar --app ' in out
+       and f'"{p.resolve().as_posix()}/construccion/EV-01/verificacion/ISS-02.json"' in out
+       and "no busques el plugin" not in out, out)
     verifica(p, "EV-01", "ISS-02")
     verifica(p, "EV-01", "ISS-03")
 
