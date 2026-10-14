@@ -146,7 +146,7 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
    retoques (un texto, una columna, el orden) no la requieren.
 
 ## 4. Informe de impacto: `impacto/FU-04.md`
-Si ningún punto requiere aprobación, se escribe una sola vez, ya aplicado (al final del §6); si alguno la requiere, ahora:
+Si ningún punto requiere aprobación, se escribe una sola vez, al terminar de aplicar (final del §6); si alguno la requiere, ahora:
 ```markdown
 # Impacto de FU-04 · Seguimiento con la unidad gestora · 2026-10-01
 Análisis base: versión 1.1 · Estado: pendiente
@@ -243,7 +243,7 @@ python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/ --anterior <p>/v
 ```
 Tiene que salir sin errores: ningún ID desaparecido, la versión sube (si cambió el funcional o el técnico) y tiene
 su fila, cada dependencia con resultado, cada cambio declarado en el informe, nada marcado «sin cambios» que haya
-cambiado y nada 🔒 cambiado sin un punto aprobado. Después:
+cambiado y nada 🔒 cambiado sin un punto aprobado. Aplicar, el informe y esta pasada van seguidos; solo después:
 - el Word, solo al enviarlo o si se pide (paso 8 del `SKILL.md`). No espera al prototipo, pero el que sale antes que las
   capturas nuevas es para leerlo: di qué pantallas llevan aún la anterior, y ni se entrega ni se revisa hasta repetirlo;
 - el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y solo sus capturas. Las validadas por
