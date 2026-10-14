@@ -93,14 +93,19 @@ Hechas T1 a T18 en la rama `metodo-lucia` (en GitHub, sin PR); lo medido, lo rev
 datos reales y con el entorno de desarrollo, fuera del repositorio, en `Proyectos IA/Pruebas-plugin/` del equipo de Raúl;
 la aplicación ficticia DEM del entorno de desarrollo queda sin defectos y con la acción «Nueva solicitud».
 
-Lo que decide Raúl antes de la PR:
-1. **B4**: con las cifras de T6 y T17 (unos 4 minutos y 2 USD por retoque construido), si un retoque cosmético se hace a
-   mano en Designer.
-2. **El modelo del QA y Playwright** (T16): la recomendación es Sonnet 5.5 y Playwright solo para lo que solo se ve en
-   pantalla; está escrito así en `appian-qa` y en F8.
-3. **«El Word no espera al prototipo»** (T2): sin efecto medido en cuatro sesiones; quitarlo o dejarlo.
-4. **Los minutos de más de T17**: +1,2 por retoque tras optimizar `verificar` (4,1 frente a 2,9), con un 30 % menos de llamadas y un 18 % menos de coste; el resto es el arranque del Dev MCP y el recorrido de la issue.
-5. **La versión del plugin** (sigue en 0.7.0-beta.4) y su fila en el README.
-6. **El diseño y su anexo**: lo que ya no es verdad (`LCP_TOOL_MODE`, la regresión «en bloque», las 5.600 líneas, la ruta
-   de verificación, el cierre de las sesiones de SAIL CLI); el texto que propone la revisión final está en el historial de
-   este plan (commit `b8d12c8`, apartado 6 de entonces).
+Lo que decidió Raúl el 14 de octubre de 2026, antes de la PR:
+1. **B4**: con las cifras de T6 y T17 (unos 4 minutos y 2 USD por retoque construido), el retoque construido se hace con
+   la IA, como está. Si alguien lo hace a mano en Designer, lo marca con `construida --manual`.
+2. **El modelo del QA y Playwright** (T16): Sonnet 5.5, en otra sesión o en un subagente, y Playwright solo si técnico
+   §14 lo pide; ya está escrito así en `appian-qa` y en F8.
+3. **«El Word no espera al prototipo»** (T2): quitado, porque no tuvo efecto en cuatro medidas y añadía texto y el riesgo
+   de enviar capturas viejas. El Word sale una vez, después del prototipo y con sus capturas; se queda el orden que sí
+   funcionó: aplicar, informe de impacto y `comprobar.py` seguidos y antes del prototipo.
+4. **Los minutos de más de T17**: aceptados. +1,2 minutos por retoque tras optimizar `verificar` (4,1 frente a 2,9), con
+   un 30 % menos de llamadas y un 18 % menos de coste.
+5. **La versión del plugin**: 0.8.0-beta.1, con su fila en el README.
+6. **El diseño y su anexo**: corregido lo que ya no es verdad (`LCP_TOOL_MODE`, la regresión «en bloque», las 5.600
+   líneas, la ruta de verificación, el cierre de las sesiones de SAIL CLI y «Por comprobar en T5»), con el texto de la
+   revisión final (commit `b8d12c8`, apartado 6 de entonces); cada corrección, en su sitio y marcada «comprobado el
+   14-oct» con su tarea. Lo de la cuenta de solo lectura fuera de desarrollo lo completa Raúl con una prueba en marcha.
+7. **La PR**: a abrir.

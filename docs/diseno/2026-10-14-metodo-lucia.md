@@ -11,7 +11,7 @@ El plugin ya aplica, a la manera de Appian, buena parte de L.U.C.I.A. Lo que apo
 3. **Copiado tal cual, repetiría appian-harness.** Rama y Merge Request por tarea, TDD en todo, cobertura del 85 % y lint suponen un repositorio git con tests locales. Appian no tiene ramas, valida al guardar y guarda las pruebas dentro de la plataforma.
 4. **Las observaciones de Raúl encajan, con ajustes por Appian.** Las issues se agrupan si comparten pantalla o proceso, con una «Base» primero: en un entorno compartido, dos issues no deben tocar el mismo objeto. El repositorio de cada proyecto se trabaja sobre main, sin ramas, porque el código está en Appian. Y SAIL CLI va en el QA de la unidad, en otra sesión, no en la issue.
 5. **Quedan once cambios acotados y tres mediciones.** Están en «Lo que se adopta». Según lo medido, el que más ahorra sigue siendo que la IA consulte bajo demanda; la issue lo lleva a la construcción, porque trae solo el extracto que necesita.
-6. **El mayor riesgo de burocracia está ahora en la construcción.** La skill oficial de Appian obliga a cargar su `SKILL.md` y siete referencias antes de cualquier llamada al Dev MCP: unas 5.600 líneas (228 KB) en cada sesión, sea cual sea el cambio. Por eso varias issues pueden ir en la misma sesión. Ahí puede volver la «hora por un cambio menor»: se mide antes de decidir y, si domina, un retoque cosmético se hace a mano en Designer.
+6. **El mayor riesgo de burocracia está ahora en la construcción.** La skill oficial de Appian obliga a cargar su `SKILL.md` y siete referencias antes de cualquier llamada al Dev MCP: 2.480 líneas de media, el 25 % del coste (comprobado el 14-oct, T6), en cada sesión, sea cual sea el cambio. Por eso varias issues pueden ir en la misma sesión. Ahí puede volver la «hora por un cambio menor»: se mide antes de decidir y, si domina, un retoque cosmético se hace a mano en Designer.
 
 ## Observaciones de Raúl: a favor, en contra y qué se hace
 
@@ -166,7 +166,7 @@ Cómo se usa:
 3. Con la unidad completa, QA abre otra sesión, solo con los `.feature` de la unidad. Puede ser otro agente, como Antigravity: el flujo está en `.agents/workflows/`. Por escenario, prepara el «dado» como un usuario, lo recorre con la cuenta de su rol y comprueba el «entonces» en el `--json`.
 4. Un recorrido que pasa se guarda como guion en `qa/<U>/`: las órdenes de SAIL CLI y lo que debe salir. Un fallo devuelve su issue a pendiente.
 5. Antes de cada paquete, un script del plugin repite los guiones sin IA, y los fallos salen en la revisión de T18. Si una pantalla cambió a propósito, QA rehace su guion.
-6. Solo en desarrollo, porque crea datos y lanza procesos; en una urgencia, en el entorno de corrección. Al terminar, `sail logout` borra la sesión y lo tecleado.
+6. Solo en desarrollo, porque crea datos y lanza procesos; en una urgencia, en el entorno de corrección. `sail logout` borra la sesión y lo tecleado: las de cuentas locales se cierran al terminar la campaña de QA, y la importada del Dev MCP no se cierra, porque cerrarla podría dejarlo sin acceso (comprobado el 14-oct, T15).
 7. En un retoque cosmético no hay QA. Si cambia un texto que usa un guion, se rehace solo ese guion.
 
 Lo que SAIL CLI no ve lo mira una persona con la captura, o Playwright si el ensayo de T16 lo justifica.
@@ -206,7 +206,7 @@ De 19 piezas, 4 ya existen, 11 se adoptan o adaptan, 1 la resuelve Appian de for
 
 | Pieza de L.U.C.I.A. | En el plugin o en Appian | Veredicto |
 | --- | --- | --- |
-| Frontera: la IA prepara; desde el Merge Request, todo determinista | En Appian, ese punto es el paquete. Falta que el Dev MCP no pueda escribir fuera de desarrollo | **Adoptar** (T12) |
+| Frontera: la IA prepara; desde el Merge Request, todo determinista | En Appian, ese punto es el paquete. Falta que el Dev MCP no pueda escribir fuera de desarrollo; `LCP_TOOL_MODE` no lo impide: no hace nada en el Dev MCP 26.6.110 (comprobado el 14-oct, T5) | **Adoptar** (T12) |
 | Lo repetible es un comando; lo determinista no va a la IA | Ya es regla del plugin («lo mecánico lo hace un script; lo que pide juicio, el modelo») | **Ya existe**; T1 lo comprueba |
 | El contexto se consulta bajo demanda; nunca el corpus entero | `indice.py` y `seccion.py` consultan por partes, pero en la medida real (0.6.0-beta.1) la IA leyó documentos enteros | **Adoptar como método** (T1 a T3); la issue lleva solo su extracto (T11) |
 | Código de cuatro colores: fichero, IA, persona, automatismo | Completa la pregunta del `CLAUDE.md` «¿qué se rompe si no se añade?» | **Adoptar como pregunta de diseño** (T1, T4) |
@@ -237,8 +237,8 @@ Cada cambio pasa la pregunta del `CLAUDE.md`: qué se rompe si no está y quién
 | Flujos con una sola fuente y `AGENTS.md` generado (T7, T8) | Cada persona o agente sigue su propio recorrido; los pasos de un evolutivo o de una urgencia están repartidos entre skills | Nueve ficheros cortos en el plugin; `proyecto.py iniciar` los copia y los pone al día |
 | Criterios en Gherkin de una línea (T9) | Cada criterio se interpreta al construir y al probar, y no pasa a una prueba sin IA | Escribirlo con dado, cuando y entonces; el `.feature` lo genera un script |
 | Issues por requisito, repartidas por un script (T10, T11) | El agente recibe la unidad entera y lee el técnico completo para saber qué le toca; no se ve qué puede ir en paralelo | Una columna en técnico §13; `indice.py issues` sustituye a `indice.py encargo` |
-| El Dev MCP no puede escribir fuera de desarrollo, salvo el entorno de corrección en una urgencia (T12) | Un `.mcp.json` que apunta a producción, por ejemplo el configurado para ingeniería inversa, deja a la IA escribir allí. Buenas prácticas ya lo prohíbe: nada se cambia a mano en producción (BP 08 §3) | Una línea por entorno: `LCP_TOOL_MODE=readonly` quita las herramientas que crean o modifican. Donde se pueda, además, un usuario que solo ve la aplicación |
-| Pruebas de la issue como red de regresión (T13) | Una issue cambia una regla y rompe otra que depende de ella sin que nadie lo vea hasta pruebas | Los casos los crea quien construye (la skill oficial ya lo pide) y funcionan sin IA. Por issue se ejecuta solo lo que cambia y lo que lo usa; la regresión completa, en bloque, antes del paquete. Una persona puede marcar una prueba como «no necesaria para avanzar», con motivo |
+| El Dev MCP no puede escribir fuera de desarrollo, salvo el entorno de corrección en una urgencia (T12) | Un `.mcp.json` que apunta a producción, por ejemplo el configurado para ingeniería inversa, deja a la IA escribir allí. Buenas prácticas ya lo prohíbe: nada se cambia a mano en producción (BP 08 §3) | `LCP_TOOL_MODE=readonly` no quita las herramientas que crean o modifican: no hace nada en el Dev MCP 26.6.110 (comprobado el 14-oct, T5). Donde se pueda, además, un usuario que solo ve la aplicación |
+| Pruebas de la issue como red de regresión (T13) | Una issue cambia una regla y rompe otra que depende de ella sin que nadie lo vea hasta pruebas | Los casos los crea quien construye (la skill oficial ya lo pide) y funcionan sin IA. Por issue se ejecuta solo lo que cambia y lo que lo usa; la regresión completa, antes del paquete, con un script que ejecuta los casos objeto a objeto (comprobado el 14-oct, T5: el Dev MCP no los ejecuta en bloque). Una persona puede marcar una prueba como «no necesaria para avanzar», con motivo |
 | QA de la unidad con SAIL CLI, en otra sesión (T15) | Quien construye prueba lo que entendió, no lo que se pidió, y un fallo de pantalla llega al cliente | Una sesión por unidad completa, sin cargar la skill oficial; los guiones se repiten sin IA; en un retoque, nada |
 | Aviso de revisión técnica solo en unidades de riesgo (T14) | La IA construye un cambio de datos, seguridad o integración desde una DT que nadie ha mirado; deshacerlo cuesta | Una línea al aprobar y en la issue; no bloquea |
 | Una persona revisa los objetos al preparar el paquete (T18) | Lo que construyó la IA llega al pase sin que nadie lo haya mirado | Mirar la comparación de objetos que Compare and Deploy ya enseña |
@@ -248,7 +248,7 @@ Cada cambio pasa la pregunta del `CLAUDE.md`: qué se rompe si no está y quién
 ## Reglas para no repetir appian-harness
 
 - Antes de añadir algo: ¿qué se rompe si no está?, ¿quién decide con ello? y ¿de qué color es (script, persona, IA o fichero)? Lo determinista va a un script; lo que nadie lee no se añade.
-- Solo dos bloqueos nuevos: el Dev MCP no escribe fuera de desarrollo (salvo el entorno de corrección en una urgencia), y una issue no se da por hecha con un fallo en sus propias pruebas, también las de QA, salvo que una persona marque esa prueba como «no necesaria para avanzar». Los dos evitan construir algo equivocado; lo demás son avisos.
+- Solo dos bloqueos nuevos: el Dev MCP no escribe fuera de desarrollo (salvo el entorno de corrección en una urgencia; `LCP_TOOL_MODE` no lo impide, porque no hace nada en el Dev MCP 26.6.110: comprobado el 14-oct, T5), y una issue no se da por hecha con un fallo en sus propias pruebas, también las de QA, salvo que una persona marque esa prueba como «no necesaria para avanzar». Los dos evitan construir algo equivocado; lo demás son avisos.
 - Ningún paso obligatorio nuevo en un retoque cosmético, ningún documento nuevo escrito a mano por cambio y ningún registro de veredictos aparte: el estado sale de los ficheros que ya dejan los scripts.
 - Lo que Appian ya da (casos de prueba, Manage Test Cases, SAIL CLI, Compare and Deploy, revisión de despliegues, ICF) se usa; no se rehace.
 - Se mide antes y después. Lo que no baje el tiempo, las llamadas o el riesgo, se quita.
@@ -267,13 +267,13 @@ Lo que se comprobó al analizar, con su fuente, para no repetirlo ni contradecir
 - `interact`: campos por etiqueta y valor; desplegables, radios y casillas por índice desde 1; fechas `AAAA-MM-DD`; fecha y hora con su zona; ficheros por ruta; rejillas y gráficos por su `handle:`. Varias parejas en una orden van en una sola petición. «✓ Interacted» es que el servidor cambió algo; si aceptó la orden sin mover ningún valor, cuenta como fallo.
 - Las referencias que imprime, también las «⌗» que inventa para componentes sin nombre, se mantienen entre cargas y se pueden escribir en un guion; el `_cId`, no.
 - `--json` da la salida para un script. Un destino con «confirm:» se rechaza salvo con `--confirm`. No sabe rellenar desplegables agrupados ni rangos numéricos. `load` sobre una página con datos tecleados se niega salvo con `--fresh`.
-- `logout` invalida la sesión en el servidor y borra el estado guardado, también lo tecleado: es el cierre de cada prueba.
+- `logout` invalida la sesión en el servidor y borra el estado guardado, también lo tecleado. Se cierran las de cuentas locales al terminar la campaña de QA, no tras cada prueba (para repetir los guiones habría que volver a entrar), y la importada del Dev MCP no se cierra (comprobado el 14-oct, T15).
 - Trabaja sobre lo que Appian envía a la pantalla, sin navegador: no ve la maquetación ni los estilos.
 
 ### Dev MCP y Appian
 
-- `LCP_TOOL_MODE=readonly` «restricts to read-only tools, disabling any that create or modify objects» (Developer MCP Servers, 26.6). No consta que afecte a SAIL CLI.
-- Según el App Market (26.6.110): más de 120 herramientas; los casos de prueba se conservan al actualizar reglas e interfaces; hay `testInterface`, `testProcessModel` y análisis de impacto (los dependientes de un objeto); cada operación se hace con los permisos del usuario, y el acceso es para diseñadores y administradores. No consta una herramienta que ejecute los casos de prueba de las reglas.
+- `LCP_TOOL_MODE=readonly` «restricts to read-only tools, disabling any that create or modify objects» (Developer MCP Servers, 26.6) (comprobado el 14-oct, T5: no la aplica; el Dev MCP 26.6.110 ofrece las mismas herramientas con ella y sin ella). No consta que afecte a SAIL CLI.
+- Según el App Market (26.6.110): más de 120 herramientas; los casos de prueba se conservan al actualizar reglas e interfaces; hay `testInterface`, `testProcessModel` y análisis de impacto (los dependientes de un objeto); cada operación se hace con los permisos del usuario, y el acceso es para diseñadores y administradores. Hay herramientas que ejecutan los casos de prueba de reglas e interfaces: se ejecutan objeto a objeto, no en bloque (comprobado el 14-oct, T5).
 - Manage Test Cases da Passed, Failed, No test cases y Outdated. Outdated sale si cambió la regla, si cambió un objeto que usa (hasta 20 niveles) o si no tiene resultados de los últimos 14 días. Por eso T13 ejecuta lo de la issue y lo que la usa, y no «lo desactualizado», que incluiría reglas ajenas.
 - Testing Applications (26.6) nombra tres herramientas de prueba de interfaz: FitNesse for Appian, Cucumber for Appian y Appian Selenium API.
 
@@ -291,7 +291,7 @@ Lo que se comprobó al analizar, con su fuente, para no repetirlo ni contradecir
 
 ### Del plugin, lo que se reutiliza
 
-- `proyecto.py iniciar` no toca lo que ya existe. `proyecto.py cambio … aprobada` y `produccion` se niegan con `--desatendida` si falta el visto bueno: es el patrón para `--sin-prueba`. `construida` acepta `--manual` y deja `construccion/verificacion/<ID>.json`.
+- `proyecto.py iniciar` no toca lo que ya existe. `proyecto.py cambio … aprobada` y `produccion` se niegan con `--desatendida` si falta el visto bueno: es el patrón para `--sin-prueba`. `construida` acepta `--manual`; la verificación de cada issue queda en `construccion/<U>/verificacion/ISS-nn.json` (comprobado el 14-oct, T11 y T13).
 - `comprobar.py --anterior versiones/vX.Y` compara con la versión anterior: así sabe qué criterio es nuevo o cambiado sin git.
 - `devmcp_extract.py` lista las herramientas del Dev MCP al conectarse y las clasifica por su firma con `devmcp_policy.json`; `verificar` debe reconocer así la de probar.
 - `requisitos.py` ya sabe leer el host del Dev MCP (`LCP_URL`).
@@ -307,12 +307,12 @@ Lo que se comprobó al analizar, con su fuente, para no repetirlo ni contradecir
 - Comprobar la terminal para `--sin-prueba`: basta `--desatendida`, que ya existe.
 - Ejecutar por issue «lo desactualizado»: entrarían reglas ajenas y las que llevan 14 días sin pasar.
 
-### Por comprobar en T5
+### Comprobado en T5 (14-oct)
 
-- Qué herramientas del Dev MCP crean y ejecutan casos de prueba, si las ejecutan en bloque y cómo dan los dependientes.
-- Si `LCP_TOOL_MODE=readonly` deja fuera también a SAIL CLI.
-- Si Indra-spain admite cuentas locales de prueba o hay que importar sesiones SSO con `--from-devmcp`.
-- Qué devuelve `--json` al terminar un recorrido, para que `verificar` lo lea.
+- Qué herramientas del Dev MCP crean y ejecutan casos de prueba, si las ejecutan en bloque y cómo dan los dependientes: las de reglas e interfaces; objeto a objeto, no en bloque; los dependientes, solo los directos, con tipo y nombre.
+- Si `LCP_TOOL_MODE=readonly` deja fuera también a SAIL CLI: no hace nada en el bundle 26.6.110; la variable no está en su código.
+- Si Indra-spain admite cuentas locales de prueba o hay que importar sesiones SSO con `--from-devmcp`: admite cuentas locales, que entran con `SAIL_USERNAME` y `SAIL_PASSWORD`, cada una en su `--data-dir`.
+- Qué devuelve `--json` al terminar un recorrido, para que `verificar` lo lea: cada componente con su `ref`, la misma entre cargas salvo las que el JSON marca como propias de cada una; los errores salen como texto aunque se pida JSON. Lo lee `qa.py` de `appian-qa` (T15), no `verificar`.
 
 ## Fuentes
 

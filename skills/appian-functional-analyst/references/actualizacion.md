@@ -246,10 +246,11 @@ python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/ --anterior <p>/v
 ```
 Tiene que salir sin errores: ningún ID desaparecido, la versión sube (si cambió el funcional o el técnico) y tiene
 su fila, cada dependencia con resultado, cada cambio declarado en el informe, nada marcado «sin cambios» que haya
-cambiado y nada 🔒 cambiado sin un punto aprobado. Aplicar, el informe y esta pasada van seguidos; solo después:
-- el Word, solo al enviarlo o si se pide, sin esperar al prototipo (paso 8 del `SKILL.md`);
+cambiado y nada 🔒 cambiado sin un punto aprobado. Aplicar, el informe y esta pasada van seguidos y antes del
+prototipo; después, en este orden:
 - el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y solo sus capturas. Las validadas por
-  el cliente (🔒) no se tocan sin el visto bueno del analista.
+  el cliente (🔒) no se tocan sin el visto bueno del analista;
+- el Word, solo al enviarlo o si se pide, ya con esas capturas (paso 8 del `SKILL.md`).
 
 ## 8. Entregar
 En pocas líneas: versión, puntos por tipo, lo que cambió de verdad (CAMBIA, ANULA, alcance), pendientes

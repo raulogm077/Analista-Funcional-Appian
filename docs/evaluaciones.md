@@ -430,6 +430,15 @@ Python 3.9. En el Word, cada criterio pasa de unas 10 palabras a 19.
 
 Aplazado: el aviso de «texto que queda viejo» señala criterios que empiezan igual (`docs/siguiente-version.md`).
 
+### Lo que decidió Raúl con estas medidas (14 de octubre de 2026)
+
+El retoque construido se hace con la IA, como está (B4); si alguien lo hace a mano en Designer, `construida --manual`.
+El QA, con Sonnet 5.5 en otra sesión o en un subagente, y Playwright solo si técnico §14 lo pide (T16). «El Word no
+espera al prototipo» se quita (T2: sin efecto en cuatro medidas, más texto y el riesgo de enviar capturas viejas): el Word
+sale una vez, después del prototipo y con sus capturas, y se queda el orden aplicar, informe y `comprobar.py` antes del
+prototipo. T17 se acepta: +1,2 minutos por retoque con un 30 % menos de llamadas y un 18 % menos de coste. La versión es
+la 0.8.0-beta.1; el diseño y su anexo se corrigen con lo comprobado; y la PR se abre.
+
 ## 0.7.0-beta.3 · Retoques ligeros y menores (11 de octubre de 2026)
 
 Rama `v0.7.0-beta.3`, de `main` 222a8e6. Plan: `docs/plan/2026-10-11-0.7.0-beta.3.md`. Todas las evaluaciones, a ciegas
