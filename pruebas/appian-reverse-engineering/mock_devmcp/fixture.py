@@ -276,6 +276,20 @@ VERSIONES = {"*": [(3, "marta.ruiz", "2026-09-01T10:00:00Z"), (2, "pablo.soto", 
 # Filas de cada tabla (para el COUNT(*) del Appian MCP Server simulado)
 COUNTS = {"DEM_SOLICITUD": 152, "DEM_ESTADO": 4}
 
+# Casos de prueba guardados (con MOCK_PRUEBAS=1): objeto → [(nombre, salida)]. La rejilla de registros del panel no la
+# evalúa el ejecutor de Appian: su caso da el error que da el Dev MCP real (T5 y T6). DEM_RevisionForm no tiene casos.
+GRID_NO_EVALUABLE = ("Expression evaluation error in rule 'dem_dashboard' at function a!gridField [line 26]: Could not "
+                     "find variable 'flow!userFilterSetData'")
+CASOS = {
+    "R_CONT": [("Sin solicitudes", "[]"), ("Dos estados", "[{estado: 1, total: 3}, {estado: 2, total: 1}]")],
+    "R_ADMIN": [("Administrador", "true"), ("Otro usuario", "false")],
+    "I_DASH": [("Panel con los datos de prueba", None)],
+    "I_FORM": [("Formulario vacío", "{@attributes={…}, label=Nueva solicitud, contents=[…]}"),
+               ("Alta rellena", "{@attributes={…}, label=Nueva solicitud, contents=[…]}")],
+    "I_RES": [("Resumen de una solicitud", "{@attributes={…}, label=Resumen, contents=[…]}")],
+    "I_REV": [],
+}
+
 
 def build():
     """Devuelve (objects_by_key, key_by_uuid) con '@KEY' resuelto a uuids."""

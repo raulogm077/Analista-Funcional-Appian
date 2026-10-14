@@ -251,6 +251,7 @@ DETECTORES = {
     "docx": _docx,
     "libreoffice": _libreoffice,
     "pdf": _pdf,
+    "git": _ejecutable("git"),
     "uv": _ejecutable("uv"),
     "devmcp": _devmcp,
     "appian-mcp-server": _appian_mcp_server,

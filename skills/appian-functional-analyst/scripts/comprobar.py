@@ -40,7 +40,9 @@ Errores (✗, salida 1) y avisos (·):
   - con unidades de cambio (analisis/cambios.md, references/cambios.md): lo que exige el técnico es lo de las unidades
     en curso, y la Situación de §13 se compara con la línea base (as-is/ más lo que han construido las unidades); avisa
     (y el aviso se apaga solo) de un punto aplicado sin reflejo en el técnico, de un punto que falta en la DT «Cambio
-    sobre lo construido» y de un defecto urgente sin su prueba en §14. Sin cambios.md, nada de esto.
+    sobre lo construido» y de un defecto urgente sin su prueba en §14. Sin cambios.md, nada de esto;
+  - técnico §13 con tabla (aviso): cada objeto que se construye o cambia dice «Para» qué requisito es (HU, PAN o ACT) o
+    «Base»; de ahí salen las issues de construcción. Si la tabla aún no tiene la columna, un solo aviso.
 """
 import argparse
 import bisect
@@ -550,6 +552,34 @@ def comprobar_unidades(m, ctx):
              and mo.normaliza((ctx.ficha_urg(u.id) or {}).get("tipo", "")).startswith("defecto")], grave=False)
 
 
+def comprobar_para(m, ctx):
+    """Técnico §13, columna «Para»: el requisito (HU, PAN o ACT) de cada objeto que se construye o cambia, o «Base» para
+    lo común; de ella sale una issue por requisito (indice.py issues). Aviso. En un técnico cuya tabla aún no tiene la
+    columna, uno solo: toda la unidad iría en una issue. No mira lo que ya está construido ni lo que «Existe»."""
+    hechas = {u.id for u in ctx.unidades if u.estado in un.CONSTRUIDAS + (un.DESCARTADA,)}
+    filas = [f for f in ctx.filas if f["situacion"] in un.CAMBIAN and f["unidad"] not in hechas]
+    if not filas:
+        return
+    nombre = ("técnico §13: cada objeto dice «Para» qué requisito es (HU, PAN o ACT) o «Base»: de ahí sale una issue por "
+              "requisito")
+    objetos = {}      # una unidad de un solo objeto da una sola issue: no hay nada que repartir
+    for f in filas:
+        objetos.setdefault(f["unidad"], set()).update(un.objeto(o) for o in f["objetos"])
+    filas = [f for f in filas if len(objetos[f["unidad"]]) > 1]
+    if not filas:
+        return
+    if not ctx.con_para:
+        informe(nombre, ["la tabla no tiene la columna «Para»: todo lo de un cambio saldría en una sola issue"],
+                grave=False)
+        return
+    sin = []
+    for f in filas:
+        cita = {x for x in mo.ids_en(f["para"]) if x in m.piezas}
+        if not cita and not re.search(r"(?<!\w)base(?!\w)", mo.normaliza(f["para"])):
+            sin += f["objetos"]
+    informe(nombre, sin, grave=False)
+
+
 def comprobar_versiones(m):
     vf, vt = m.version("F"), m.version("T")
     filas = [f for _, cab, fs in m.tablas("D", "versiones") for f in fs if f]
@@ -695,9 +725,12 @@ def comprobar_situacion(m, ctx, inventario, fuera):
     if tabla:
         cab = [mo.normaliza(c) for c in tabla[0]]
         celda = lambda f, k: f[cab.index(k)] if k in cab and cab.index(k) < len(f) else ""
-        for f in tabla[1]:
-            if ctx.hay and (un.RX_UNIDAD.findall(celda(f, "cambio")) or [sin_id])[0] in hechas:
-                continue
+        sin_construir = [f for f in tabla[1]
+                         if not (ctx.hay and (un.RX_UNIDAD.findall(celda(f, "cambio")) or [sin_id])[0] in hechas)]
+        # lo que crea una unidad sin construir: una fila de una parte suya («X — acción «…»») no lo da por inexistente
+        se_crean = {o for f in sin_construir for o in objetos_celda(celda(f, "objeto")) if not un.parte(o)
+                    and mo.normaliza(mo.sin_comentarios(celda(f, "situacion"))).strip() in ("nuevo", "sustituye")}
+        for f in sin_construir:
             sit = mo.sin_comentarios(celda(f, "situacion")).strip()
             s = mo.normaliza(sit)
             objetos = objetos_celda(celda(f, "objeto"))
@@ -705,8 +738,21 @@ def comprobar_situacion(m, ctx, inventario, fuera):
             if s not in SITUACIONES:
                 malas.append(f"{nombre}: Situación «{sit}» (Nuevo, Modifica, Existe o Sustituye)")
                 continue
+            # una parte de un objeto es de ese objeto: nueva o no, lo modifica, y es él el que tiene que existir
+            partes = [un.objeto(o) for o in objetos if un.parte(o)]
+            objetos = [o for o in objetos if not un.parte(o)]
             if s in ("modifica", "existe"):
                 usados += objetos
+            usados += partes
+            for o in partes:
+                if o in base or o in se_crean:
+                    continue
+                if fuera is None:
+                    sin_inventario.append(o)
+                elif o not in fuera:
+                    malas.append(f"{o}: se cambia una parte suya y no está en el inventario ni fuera de la aplicación")
+                else:
+                    de_fuera.append(f"{o} es de otra aplicación: ¿quién la cambia?")
             for o in objetos:   # «Nuevo» y «Sustituye» crean el objeto: no puede existir ya
                 if s in ("nuevo", "sustituye") and o in base:
                     malas.append(f"{o}: «{sit}» y ya está en " + ("el inventario" if o in inventario else "lo construido"))
@@ -1086,6 +1132,7 @@ def main():
         comprobar_versiones(m)
         comprobar_as_is(m, ctx)
         comprobar_unidades(m, ctx)
+        comprobar_para(m, ctx)
         comprobar_citas_as_is(m, a.fuentes)
     if a.fuentes:
         comprobar_fuentes(m, a.fuentes, a.corregir_citas)

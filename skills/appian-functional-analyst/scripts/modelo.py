@@ -1,6 +1,6 @@
 """Lee el análisis de un proyecto como piezas con ID, estado, fuentes y referencias.
 
-Lo usan indice.py, comprobar.py, proyecto.py y unir_modulos.py. Sin dependencias.
+Lo usan indice.py, comprobar.py, proyecto.py, issues.py y unir_modulos.py. Sin dependencias.
 
 El análisis son tres ficheros de `analisis/`:
   funcional.md  (doc F)  lo que valida el cliente
@@ -19,8 +19,10 @@ Un criterio se escribe en una línea con dado, cuando y entonces (pasos_gherkin 
 sus escenarios y su .feature en Gherkin, sin IA (Proyecto.escenarios y Proyecto.feature). Si sigue en las líneas
 sangradas de debajo, son parte de él, como en el Word.
 """
+import os
 import pathlib
 import re
+import subprocess
 import unicodedata
 from dataclasses import dataclass, field
 
@@ -390,14 +392,15 @@ class Proyecto:
         entero = une(self.bloque(cid))
         return sin_comentarios(entero[RX_CRITERIO.match(entero).end():]).strip()
 
-    def escenarios(self, pid):
+    def escenarios(self, pid, solo=None):
         """Los criterios vigentes de una historia, o de la ficha de un intercambio, como escenarios de Gherkin en español,
         cada uno con su ID: (líneas, sin_gherkin). Un criterio que no está escrito con dado, cuando y entonces pasa tal
-        cual, como un único paso «*» (Gherkin lo admite), y su ID va en sin_gherkin para que quien llama avise."""
+        cual, como un único paso «*» (Gherkin lo admite), y su ID va en sin_gherkin para que quien llama avise. Con
+        `solo`, nada más que esos criterios (los de una issue: los nuevos o cambiados de su unidad)."""
         p = self.piezas[pid]
         L, sin = [], []
         for cid in ([] if p.anulada else dict.fromkeys(p.hijos)):
-            if self.piezas[cid].anulada:
+            if self.piezas[cid].anulada or (solo is not None and cid not in solo):
                 continue
             texto = self.criterio(cid)
             pasos = pasos_gherkin(texto)
@@ -457,6 +460,22 @@ def escribe(ruta, texto):
     en Windows): en un proyecto que comparten varios equipos, reescribirlo no cambia todas sus líneas."""
     with open(ruta, "w", encoding="utf-8", newline="\n") as f:
         f.write(texto)
+
+
+def git(raiz, *args, espera=20, salida=True):
+    """La salida de una orden de git lanzada en el proyecto; None si no hay git, falla o tarda más de `espera` segundos.
+    Nunca pregunta: va sin terminal y, sin credenciales a mano, falla en vez de pedir una contraseña. Con `salida=False`
+    no se lee lo que imprime, para que una orden que habla con el remoto no deje el script esperando a un proceso que
+    git haya lanzado."""
+    entorno = dict(os.environ, GIT_TERMINAL_PROMPT="0", GCM_INTERACTIVE="never")
+    sin_terminal = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {"start_new_session": True}
+    try:
+        r = subprocess.run(["git", *args], cwd=str(raiz), env=entorno, timeout=espera, stdin=subprocess.DEVNULL,
+                           stdout=subprocess.PIPE if salida else subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                           encoding="utf-8", errors="replace", **sin_terminal)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return (r.stdout or "") if r.returncode == 0 else None
 
 
 def informes(raiz):

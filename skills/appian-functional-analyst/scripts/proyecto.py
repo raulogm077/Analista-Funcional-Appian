@@ -23,12 +23,16 @@
       abrir --titulo "…"                    Abierta
       aprobada --fuente FU-nn [--comparte "EV-03 en <objeto>: secuenciar (EV-02 primero)"]
                                             el jefe de proyecto la aprueba; otra vez si ha crecido (una fuente nueva
-                                            para la unidad); sin --fuente, de Construida vuelve a Aprobada
-      construida [--reaplicada URG-nn …] [--manual]   tras construir y verificar (construccion/verificacion/<ID>.json)
+                                            para la unidad); sin --fuente, de Construida vuelve a Aprobada. Deja
+                                            escritas sus issues de construcción (construccion/<ID>/, indice.py issues)
+                                            y avisa de la DT que una persona revisa antes de construir, si cambia
+                                            datos, permisos, procesos en curso o lo que usan otros, o usa IA
+      construida [--reaplicada URG-nn …] [--manual]   con todas sus issues hechas: construidas y verificadas, con sus
+                                            pruebas (construccion/<ID>/verificacion/ISS-nn.json)
       produccion --ref "<referencia del pase>"        tras el pase (una URG, desde Abierta)
       descartada [--informe impacto/FU-nn.md]         desde Abierta, sin nada aplicado o con el informe que lo deshace
-    Con --desatendida solo aprueba o pasa a producción con --fuente (el visto bueno del jefe de proyecto). Las
-    condiciones, en references/cambios.md.
+    Con --desatendida solo aprueba o pasa a producción con --fuente (el visto bueno del jefe de proyecto), y no marca
+    construida con --manual. Las condiciones, en references/cambios.md.
 
 `iniciar` no toca nada que ya exista, salvo AGENTS.md y los flujos, que genera enteros. `entregar` solo cuando el Word se
 envía, nunca en una sesión desatendida.
@@ -36,16 +40,15 @@ envía, nunca en una sesión desatendida.
 import argparse
 import datetime
 import json
-import os
 import pathlib
 import re
 import shutil
-import subprocess
 import sys
 import unicodedata
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import issues as iss
 import modelo as mo
 import unidades as un
 
@@ -188,20 +191,7 @@ def poner_al_dia(raiz):
         print(f"= {raiz / r} no lo generó el plugin y no se toca: para que se genere, quítalo o cámbiale el nombre")
 
 
-def git(raiz, *args, espera=20, salida=True):
-    """La salida de una orden de git lanzada en el proyecto; None si no hay git, falla o tarda más de `espera` segundos.
-    Nunca pregunta: va sin terminal y, sin credenciales a mano, falla en vez de pedir una contraseña. Con `salida=False`
-    no se lee lo que imprime, para que una orden que habla con el remoto no deje el script esperando a un proceso que
-    git haya lanzado."""
-    entorno = dict(os.environ, GIT_TERMINAL_PROMPT="0", GCM_INTERACTIVE="never")
-    sin_terminal = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {"start_new_session": True}
-    try:
-        r = subprocess.run(["git", *args], cwd=str(raiz), env=entorno, timeout=espera, stdin=subprocess.DEVNULL,
-                           stdout=subprocess.PIPE if salida else subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                           encoding="utf-8", errors="replace", **sin_terminal)
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-    return (r.stdout or "") if r.returncode == 0 else None
+git = mo.git   # las órdenes de git, sin terminal y sin preguntar nunca (modelo.py)
 
 
 def repositorio(raiz):
@@ -620,8 +610,9 @@ def entregar_cambio(uid, raiz, m, vs, fecha, texto):
 def cambio(a):
     """Mueve una unidad de cambio en analisis/cambios.md. Solo bloquea lo que haría perder trabajo o construir algo
     equivocado (references/cambios.md): aprobar con puntos pendientes o con objetos de otra unidad aprobada sin decisión,
-    construir lo que ha crecido desde la aprobación, marcar Construida sin verificar o sin reaplicar una corrección
-    urgente, pasar a producción sin construir. Cada error dice la salida."""
+    construir lo que ha crecido desde la aprobación, marcar Construida con issues sin hacer o sin reaplicar una
+    corrección urgente, pasar a producción sin construir. Cada error dice la salida. Al aprobarla quedan escritas sus
+    issues de construcción, para que existan antes de que nadie vaya a construir."""
     raiz, uid, destino = pathlib.Path(a.carpeta), a.id.upper(), a.estado
     hoy = datetime.date.today().isoformat()
     orden = f"proyecto.py cambio <p> {uid}"
@@ -630,11 +621,15 @@ def cambio(a):
         sys.exit(f"✗ {uid} {destino}: {motivo}. Salida: {salida}")
     if not re.fullmatch(r"(EV|URG)-\d+", uid):
         no("el ID de una unidad es EV-nn (evolutivo) o URG-nn (urgente)", "usa uno de esos, p. ej. EV-02")
+    if destino == "construida" and a.manual and a.desatendida:   # --manual no mira las issues ni sus pruebas (B3)
+        no("en una sesión desatendida no se marca construida sin verificar (--manual): lo decide una persona",
+           f"verifica cada issue (indice.py issues <p> {uid} --siguiente da su orden) y márcala sin --manual, o déjalo "
+           "para una persona")
     if destino in ("aprobada", "produccion") and a.desatendida:
         fu = (a.fuente or "").strip().upper()
         if not fu:
             no("en una sesión desatendida no se aprueba ni se pasa a producción sin el visto bueno del jefe de proyecto",
-               f"si lo ha dado (también en el encargo), catalógalo como Aprobación y repite con --fuente FU-nn; "
+               f"si lo ha dado (también en lo que se pide a la sesión), catalógalo como Aprobación y repite con --fuente FU-nn; "
                "si no, déjalo para él: proyecto.py estado lo lista")
         if (raiz / "fuentes").is_dir() and not list((raiz / "fuentes").glob(f"{fu}*.md")):
             no(f"{fu} no está en fuentes/", f"catalógala antes con leer_fuentes.py y repite con --fuente {fu}")
@@ -713,6 +708,38 @@ def cambio(a):
     if destino == "produccion":
         print("Actualiza el entorno de corrección con este pase: las correcciones urgentes se hacen sobre lo que hay en "
               "producción (references/urgentes.md)")
+    if destino == "aprobada":
+        issues_de(raiz, uid)
+        for r in un.Contexto(mo.Proyecto(raiz)).revisar_antes(uid):     # T14: un aviso, no una puerta
+            print(f"· {un.texto_revision(uid, r)}")
+    if destino == "construida" and not a.manual:
+        m = mo.Proyecto(raiz)
+        plan = iss.calcula(m, un.Contexto(m), uid)
+        for iid, (_, por_que) in iss.estados(plan, raiz).items():   # lo que falla en lo que la usan, y lo demás
+            if por_que.startswith("hecha · "):
+                print(f"· {iid}: {por_que[len('hecha · '):]}")
+        marcas = plan.marcas
+        if marcas:
+            print(f"Pruebas marcadas como no necesarias para avanzar (construccion/{uid}/indice.md), que se revisan al "
+                  "preparar el paquete:\n" + "\n".join(f"  {x['issue']} · {x['objeto']} «{x['caso']}»: {x['motivo']} "
+                                                       f"({x['quien']})" for x in marcas))
+
+
+def issues_de(raiz, uid):
+    """Deja escritas las issues de una unidad recién aprobada (construccion/<U>/) y dice cuáles son. Si no se pueden
+    generar (técnico §13 sin objetos de la unidad), lo dice y no frena la aprobación."""
+    m = mo.Proyecto(raiz)
+    try:
+        plan, escritos, _ = iss.genera(m, un.Contexto(m), uid)
+    except iss.NoSePuede as e:
+        print(f"· Sin issues de construcción: {e}")
+        return
+    n = len(plan.issues)
+    print(f"Issues de construcción: construccion/{uid}/, {n} {'issue' if n == 1 else 'issues'}"
+          + ("" if escritos else " (sin cambios)") + f". La primera, con su reserva: indice.py issues <p> {uid} --siguiente")
+    print("\n".join(iss.situacion(plan, m.raiz)))
+    for x in plan.avisos:
+        print(f"· {x}")
 
 
 def urgente_a_produccion(ctx, uid, no):
@@ -747,14 +774,23 @@ def aprobar(a, ctx, u, hoy, no, raiz, orden):
            "decídelos (✔, ✗ o ❓ en «Decisión») y vuelve a aprobarla")
     if (a.comparte or "").strip():
         u.comparte = a.comparte.strip() if un.vacio(u.comparte) else f"{u.comparte}; {a.comparte.strip()}"
-    mias, choques = set(ctx.cambian(u.id)), []
+    # un objeto del que las dos solo cambian partes que no guardan datos ni dan permisos (el nombre de una acción de
+    # registro) no pide decidir el orden: se avisa, para quien prepare el paquete. Si una de las dos cambia algo más
+    # (un campo en el mismo record type), sí
+    mias, leves, choques = set(ctx.cambian(u.id)), ctx.retoques(u.id), []
     for v in ctx.unidades:
         if v.id == u.id or v.urgente or v.estado not in (un.APROBADA, un.CONSTRUIDA):
             continue
         comunes = [o for o in ctx.cambian(v.id) if o in mias]
+        sin_riesgo = [o for o in comunes if o in leves & ctx.retoques(v.id)]
+        comunes = [o for o in comunes if o not in sin_riesgo]
         decidido = v.id in un.RX_UNIDAD.findall(u.comparte) or u.id in un.RX_UNIDAD.findall(v.comparte)
         if comunes and not decidido:
             choques.append((v.id, comunes))
+        if sin_riesgo and not decidido:
+            print(f"· {u.id} y {v.id} cambian {', '.join(sin_riesgo)}, las dos solo el nombre de una acción, una vista o "
+                  "un filtro: no hace falta decidir el orden. El paquete de la que pase antes lleva el objeto entero, con "
+                  "lo que la otra haya cambiado en él")
     if choques:
         v0, o0 = choques[0]
         no("comparte objetos con otra unidad aprobada y no hay decisión: "
@@ -772,45 +808,36 @@ def construir(a, ctx, u, hoy, no, raiz, orden):
     reaplicadas = {x.upper() for x in a.reaplicada or []}
     for g in reaplicadas:
         if g not in ctx.por_id or not ctx.por_id[g].urgente:
-            no(f"--reaplicada {g}: no es una URG de analisis/cambios.md", "pon solo las URG que pide el encargo")
+            no(f"--reaplicada {g}: no es una URG de analisis/cambios.md", "pon solo las URG que piden sus issues")
     falta = [(g, objs) for g, objs in ctx.reaplicar(u.id) if g not in reaplicadas]
     if falta:
         no("faltan correcciones urgentes por reaplicar en desarrollo: "
            + "; ".join(f"{g} en {', '.join(o)}" for g, o in falta),
            "reaplícalas y, cuando su prueba pase, confírmalo: " + " ".join(f"--reaplicada {g}" for g, _ in falta))
-    ver = raiz / "construccion" / "verificacion" / f"{u.id}.json"
     if a.manual:
         marca = "manual"
-    elif not ver.is_file():
-        no(f"falta construccion/verificacion/{u.id}.json",
-           f"pasa la orden «verificar» de construccion/{u.id}.md (sin Dev MCP, --manual)")
-    else:
+    else:      # construida es todas sus issues hechas: lo dice la verificación de cada una (issues.py)
         try:
-            d = json.loads(ver.read_text(encoding="utf-8"))
-        except ValueError as e:
-            no(f"{ver} no es JSON: {e}", f"vuelve a pasar la orden «verificar» de construccion/{u.id}.md")
-        objetos = d.get("objetos", [])
-        sin = [o for o in ctx.cambian(u.id) if o not in {x.get("pedido") for x in objetos}]
-        if sin:
-            no(f"la verificación no incluye {', '.join(sin)}",
-               f"vuelve a pasar «verificar» con los objetos de construccion/{u.id}.md (indice.py encargo)")
-        situacion = {un.objeto(o): f["situacion"] for f in ctx.filas_de(u.id) for o in f["objetos"]}
-        malos, sin_leer = [], []
-        for o in objetos:
-            dif = dict(o.get("diferencias") or ({} if o.get("existe") else {"falta": True}))
-            if o.get("pedido") not in ctx.cambian(u.id) and not o.get("diferencias"):
-                continue
-            if dif.pop("camposSinLeer", None):   # no se pudo leer: no es que esté mal construido
-                sin_leer.append(o.get("pedido"))
-            # §3 de un objeto que se modifica lleva solo los campos de esta unidad: los demás «sobran» y no cuentan
-            if dif and not (situacion.get(o.get("pedido")) in ("modifica", "existe") and set(dif) <= {"sobranCampos"}):
-                malos.append(f"{o.get('pedido')}: {', '.join(dif)}")
-        if malos:
-            no(f"lo construido no es lo del técnico: {'; '.join(malos)} (detalle en {ver})",
-               "corrígelo en el entorno y vuelve a verificar; si el técnico está mal, corrígelo con un informe")
-        if sin_leer:
-            no(f"no se pudo leer {', '.join(sin_leer)} en el entorno", "repite «verificar» o usa --manual")
-        marca = "verificada"
+            plan = iss.calcula(ctx.m, ctx, u.id)
+        except iss.NoSePuede as e:
+            no(str(e), "si se construyó sin issues, márcala con --manual")
+        faltan = [(i, por_que) for i in plan.issues for hecha, por_que in [iss.estado(raiz, u.id, i, plan.marcas)]
+                  if not hecha]
+        if faltan:
+            con = lambda texto: any(texto in por_que for _, por_que in faltan)
+            no("issues sin hacer: " + "; ".join(f"{i.id} ({por_que})" for i, por_que in faltan)
+               + f" (construccion/{u.id}/)",
+               "corrígelo en el entorno y vuelve a verificar; si el técnico está mal, corrígelo con un informe"
+               if con("no es lo del técnico") else
+               "corrígelo en el entorno y vuelve a verificar; si una persona decide que esa prueba no es necesaria para "
+               f"avanzar, la marca ella: «indice.py issues <p> {u.id} ISS-nn --sin-prueba \"<objeto> «<caso>»\" --motivo "
+               "\"…\"»" if con("fallan sus pruebas") else
+               "repite «verificar» o usa --manual" if con("no se pud") or con("no dice cómo fueron sus pruebas") else
+               f"construye y verifica cada una: «indice.py issues <p> {u.id} --siguiente» la da con su orden de terminar "
+               "(sin Dev MCP, --manual)" if con("sin verificar") else
+               f"vuelve a pasar la orden de terminar de cada una: «indice.py issues <p> {u.id} ISS-nn» la imprime")
+        marca = "verificada" + (f" · {len(plan.marcas)} {'prueba marcada' if len(plan.marcas) == 1 else 'pruebas marcadas'}"
+                                if plan.marcas else "")
     u.estado, u.construida = un.CONSTRUIDA, f"{hoy} · {marca}"
     for g in sorted(reaplicadas):
         ctx.por_id[g].construida = f"{hoy} · reaplicada en {u.id}"

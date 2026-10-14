@@ -444,5 +444,28 @@
       "reason": "Credenciales."
     }
   ],
-  "_excludeTokens": "Reglas por palabras del nombre (en minúscula y en singular), escriba como se escriba la herramienta: all = todas, any = alguna, none = ninguna, first = la primera palabra, last = la última."
+  "_excludeTokens": "Reglas por palabras del nombre (en minúscula y en singular), escriba como se escriba la herramienta: all = todas, any = alguna, none = ninguna, first = la primera palabra, last = la última.",
+  "testCases": {
+    "_doc": [
+      "Las herramientas que ejecutan los casos de prueba guardados de un objeto: su primer verbo es uno de runVerbs, su nombre lleva todas las palabras de tokens y el servidor no las declara destructivas ni de escritura (readOnlyHint false).",
+      "La extraccion no las usa (evalua logica y puede ser produccion): solo verificar, con los casos de una issue, y regresion, con los de toda la aplicacion, en desarrollo.",
+      "Las que reciben solo el uuid del objeto ejecutan todos sus casos; el tipo de objeto sale de su nombre, como en las demas.",
+      "noEvaluable: un caso que falla solo con estos errores no es un fallo, sino un caso que el ejecutor de Appian no sabe evaluar. type es el tipo del error (testErrors[].type) y pattern, una expresion regular sobre su texto: cada error del caso tiene que casar con una."
+    ],
+    "runVerbs": [
+      "run",
+      "execute"
+    ],
+    "tokens": [
+      "test",
+      "case"
+    ],
+    "noEvaluable": [
+      {
+        "type": "OUTPUT_EVAL",
+        "pattern": "\\bflow!userFilterSetData\\b",
+        "reason": "el ejecutor de casos de prueba de Appian no evalúa una rejilla de registros con filtros de usuario"
+      }
+    ]
+  }
 }

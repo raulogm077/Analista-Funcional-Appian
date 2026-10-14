@@ -51,31 +51,33 @@ def huella(carpeta: Path) -> dict[str, str]:
 
 def test_verificar(project, tmp_path):
     """Un objeto que falta sale «existe: false» y en «faltan» (salida 0); de un record type, sus campos para comparar
-    con §3; de cada uno, su última modificación; de una regla, sus casos de prueba si el Dev MCP los expone."""
-    project.add_devmcp(MOCK_CASOS_DE_PRUEBA="1")
+    con §3; de cada uno, su última modificación. Sin lo esperado de una issue no ejecuta casos de prueba ni copia sus
+    definiciones (eran 2.301 líneas para 20 objetos en T6)."""
+    project.add_devmcp(MOCK_PRUEBAS="1")
     destino = tmp_path / "construccion" / "verificacion" / "EV-02.json"
     p = project.run("verificar", "--app", "DEM", "--objetos", "DEM Solicitud,dem_er_esadmin,DEM_ER_Inventada",
                     "--out", str(destino), check=0)
     assert "DEM_ER_Inventada" in p.stdout
     v = json.loads(destino.read_text(encoding="utf-8"))
     assert v["entorno"] == "https://demo.appiancloud.com" and v["aplicacion"]["prefijo"] == "DEM"
-    assert v["conHistorialDeVersiones"] is True and v["conCasosDePrueba"] is True
+    assert v["conHistorialDeVersiones"] is True and "pruebas" not in v
     solicitud, regla, falta = v["objetos"]
     assert (solicitud["existe"], solicitud["tipo"], solicitud["nombre"]) == (True, "recordType", "DEM Solicitud")
     assert {"nombre": "titulo", "tipo": "TEXT", "longitud": 255} in solicitud["campos"]
     assert {"nombre": "id", "tipo": "INTEGER", "clavePrimaria": True} in solicitud["campos"]
     assert solicitud["ultimaModificacion"] == {"fecha": "2026-09-01T10:00:00Z", "autor": "marta.ruiz", "versiones": 3}
     assert (regla["pedido"], regla["nombre"], regla["tipo"]) == ("dem_er_esadmin", "DEM_ER_EsAdmin", "expressionRule")
-    assert "campos" not in regla and regla["casosDePrueba"][0]["name"].startswith("DEM_ER_EsAdmin")
+    assert "campos" not in regla and "casosDePrueba" not in regla and "acciones" not in solicitud
     assert falta == {"pedido": "DEM_ER_Inventada", "existe": False} and v["faltan"] == ["DEM_ER_Inventada"]
+    assert not any(c["tool"].startswith("run") for c in project.calls_list())
     assert not project.out.exists()                                 # no escribe en ninguna extracción
-    # @fichero, uno por línea; sin casos de prueba en el Dev MCP, no hay casos
+    # @fichero, uno por línea
     project.add_devmcp()
     lista = tmp_path / "objetos.txt"
     lista.write_text("# los de EV-02\nDEM Estado\n\n", encoding="utf-8-sig")       # con BOM, como el Bloc de notas
     project.run("verificar", "--app", "DEM", "--objetos", f"@{lista}", "--out", str(destino), check=0)
     v = json.loads(destino.read_text(encoding="utf-8"))
-    assert [o["nombre"] for o in v["objetos"]] == ["DEM Estado"] and v["conCasosDePrueba"] is False
+    assert [o["nombre"] for o in v["objetos"]] == ["DEM Estado"]
     assert [c["nombre"] for c in v["objetos"][0]["campos"]] == ["id", "label"]
 
 
@@ -107,7 +109,24 @@ def test_verificar_con_esperado(project, tmp_path):
     assert por["DEM_ER_EsAdmin"]["diferencias"] == {"tipo": {"esperado": "interface", "real": "expressionRule"}}
     assert por["DEM_ER_Inventada"]["diferencias"] == {"falta": True}
     assert v["conDiferencias"] == ["DEM Solicitud", "DEM_ER_EsAdmin", "DEM_ER_Inventada"]
+    assert "issue" not in v                                              # lo esperado no era el de una issue
     project.run("verificar", "--app", "DEM", "--out", str(destino), check=2)    # sin --objetos ni --esperado
+
+
+def test_verificar_dice_de_que_issue_es(project, tmp_path):
+    """Lo esperado de una issue (indice.py issues del analista) lleva en «_issue» su id, su unidad y su versión. No es un
+    objeto que verificar: pasa tal cual al resultado, en «issue», y así se sabe si la verificación es de la versión de
+    ahora de la issue o de una anterior."""
+    project.add_devmcp()
+    de = {"id": "ISS-02", "unidad": "EV-02", "version": "3f9a0c1d2b7e"}
+    esperado = tmp_path / "ISS-02-esperado.json"
+    esperado.write_text(json.dumps({"_issue": de, "DEM Estado": {"tipo": "recordType"}}), encoding="utf-8")
+    destino = tmp_path / "construccion" / "EV-02" / "verificacion" / "ISS-02.json"
+    project.run("verificar", "--app", "DEM", "--esperado", str(esperado), "--out", str(destino), check=0)
+    v = json.loads(destino.read_text(encoding="utf-8"))
+    assert v["issue"] == de
+    assert [o["pedido"] for o in v["objetos"]] == ["DEM Estado"] and v["faltan"] == [] and v["conDiferencias"] == []
+    assert list(v)[:3] == ["generadoEn", "entorno", "issue"]
 
 
 def test_atajo_con_comillas():

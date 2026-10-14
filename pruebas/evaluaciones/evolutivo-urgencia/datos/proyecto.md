@@ -15,4 +15,4 @@ Entregados: DF-Solicitudes-de-material-v1.0.docx, DF-Solicitudes-de-material-EV-
 
 ## Siguiente paso
 
-Construir EV-02 con su encargo (construccion/EV-02.md) después del pase de octubre.
+Construir EV-02 con sus issues (construccion/EV-02/) después del pase de octubre.

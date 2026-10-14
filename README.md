@@ -26,6 +26,17 @@ producción, para que cualquier persona o agente trabaje igual. Los flujos tiene
 `skills/appian-functional-analyst/assets/flujos/`: dicen quién hace cada paso y con qué skill, citan el detalle sin
 repetirlo, y `iniciar` los pone al día en el proyecto con cada versión del plugin.
 
+Lo que se construye se reparte en issues. Al aprobar un cambio, un script escribe en `construccion/` una issue por
+requisito, con lo que necesita quien la construye y nada más (qué se pide, sus escenarios en Gherkin, sus objetos y lo
+que dice de ellos el técnico), en orden y diciendo cuáles pueden ir a la vez. Quien construye, persona o agente, pide la
+siguiente, que queda reservada con un commit para que nadie más se la lleve, y está hecha cuando su verificación pasa:
+sus objetos, como dice el técnico, y sus pruebas, los casos de prueba guardados de sus reglas e interfaces y de lo que
+las usa. Un caso suyo que falla la deja pendiente, salvo que una persona lo marque como no necesario, con su motivo; un
+retoque que no cambia criterios ni reglas no ejecuta ninguno. Antes de preparar el paquete, la regresión ejecuta todos
+los de la aplicación. Las verificaciones hechas con el encargo de antes de las issues (`construccion/verificacion/<U>.json`)
+ya no cuentan: una unidad aprobada entonces se verifica de nuevo, issue a issue, con la orden que imprime
+`indice.py issues <p> <U> ISS-nn`.
+
 Sirve para cualquier proceso (compras, subvenciones, incidencias,
 informes, expedientes…): el dominio sale siempre de las fuentes del proyecto. Las
 plantillas y las galerías del plugin enseñan técnica, no un dominio
@@ -64,6 +75,7 @@ equipo. En el equipo, con Claude Code, hace falta lo de esta tabla; en negrita, 
 | Paquete docx de Node | `appian-functional-analyst` | DF en Word | Se entrega el funcional.md | `npm install docx` en la carpeta de trabajo, o `npm install -g docx` |
 | LibreOffice | `appian-functional-analyst` | Revisar el DF en Word como PDF y ver las diapositivas de un DF del cliente | Se revisa a mano | Windows: `winget install TheDocumentFoundation.LibreOffice`<br>macOS: `brew install --cask libreoffice`<br>Linux: `sudo apt install libreoffice` |
 | pdftotext o pypdf | `appian-functional-analyst` | Leer fuentes en PDF | Claude lee el PDF directamente, más despacio | Windows: `python -m pip install pypdf`<br>macOS: `brew install poppler` o `python3 -m pip install pypdf`<br>Linux: `sudo apt install poppler-utils` o `python3 -m pip install pypdf` |
+| git | `appian-functional-analyst` | El repositorio de cada proyecto (`proyecto.py iniciar` y `estado`) y la reserva de las issues de construcción (`indice.py issues --siguiente`) | El proyecto se crea sin repositorio, `estado` no sabe qué está subido y las issues se dan sin reservar: dos personas pueden llevarse la misma | Windows: `winget install Git.Git`<br>macOS: `brew install git`, o las herramientas de línea de comandos de Xcode<br>Linux: `sudo apt install git` |
 | uv | `appian-reverse-engineering` | Arrancar el Dev MCP y el extractor, con Python 3.10 o superior y el SDK mcp | No se puede usar ingeniería inversa | Windows: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 \| iex"`<br>macOS y Linux: `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | Appian Dev MCP configurado | `appian-reverse-engineering` | Leer la aplicación en solo lectura (entorno 26.5 o superior, usuario con rol Designer) | No se puede usar ingeniería inversa | Lo instala cada persona y lo configura en el `.mcp.json` de su carpeta: `skills/appian-reverse-engineering/references/devmcp-setup.md` |
 | Appian MCP Server del mismo entorno | `appian-reverse-engineering` | Volúmenes del data fabric | La documentación sale sin volúmenes | Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía) |
@@ -148,6 +160,13 @@ instalado en el entorno Appian por un administrador). Para construir con él, la
 entrada es la especificación técnica (`analisis/tecnico.md`) y el `app.json` del
 prototipo, que es un árbol SAIL real; buenas prácticas pide además la skill oficial
 `dev-mcp-skills` antes de escribir en un entorno.
+
+**Solo se escribe en desarrollo.** La IA construye en el entorno de desarrollo y, en una urgencia, en el
+entorno de corrección; a pruebas y a producción llega un paquete que ha revisado una persona. En los demás
+entornos, el Dev MCP entra con una cuenta que solo lee, la misma para todo el equipo, y SAIL CLI no se usa,
+porque crea datos y lanza procesos. `LCP_TOOL_MODE=readonly` no basta: la documentación de Appian la describe,
+pero el Dev MCP 26.6.110 no la aplica. Detalle en
+`skills/appian-reverse-engineering/references/devmcp-setup.md`, «Solo se escribe en desarrollo».
 
 **No se incluye `appian-sail-generator`**, la skill para escribir código SAIL suelto:
 va aparte.

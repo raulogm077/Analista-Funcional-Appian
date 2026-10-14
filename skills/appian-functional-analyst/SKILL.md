@@ -68,6 +68,7 @@ las fuentes. Lo crea `proyecto.py iniciar`:
 <p>/as-is/           la aplicación existente (ingeniería inversa)
 <p>/analisis/        funcional.md, tecnico.md, decisiones.md y diagramas/
 <p>/prototipo/       el prototipo y sus capturas (skill de prototipos)
+<p>/construccion/    las issues de construcción de cada unidad aprobada y su verificación
 <p>/entregables/     el DF en Word
 <p>/versiones/       copia del análisis antes de cada cambio
 ```
@@ -95,7 +96,7 @@ En `<p>`:
 - `impacto/`: un informe por fuente nueva
 - `impacto/URG-nn.md`: la ficha de un cambio urgente (`urgentes.md`)
 - `analisis/cambios.md`: las unidades de cambio, solo con `proyecto.py cambio` (`cambios.md`)
-- `construccion/<U>.md` y `construccion/<U>-esperado.json`: el encargo de construcción de una unidad (`indice.py encargo`)
+- `construccion/<U>/`: las issues de construcción de una unidad aprobada: `indice.md` y, por issue, `ISS-nn.md`, `ISS-nn.feature` e `ISS-nn-esperado.json`; se escriben al aprobarla (`proyecto.py cambio`) y con `indice.py issues`, que con `--siguiente` anota además quién tiene cada una
 - `analisis/funcional.md`: el diseño funcional
 - `analisis/tecnico.md`: la especificación técnica
 - `analisis/decisiones.md`: las versiones y las decisiones del cliente

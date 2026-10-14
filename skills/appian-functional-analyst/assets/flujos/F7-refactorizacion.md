@@ -11,4 +11,4 @@
 | 4 | Comprobar la propuesta | Script | `appian-refactorizacion` · `comprobar_propuesta.py` | El mismo apartado |
 | 5 | Validar la propuesta | El equipo y el cliente | — | Lo que decidan entra como fuente por F2 |
 | 6 | Escribir el funcional (lo que se conserva, lo que cambia y lo nuevo) y el técnico, que baja cada propuesta a objetos con su migración | IA | `appian-functional-analyst`, con la propuesta como fuente | `appian-functional-analyst/SKILL.md` «Aplicación existente» y `appian-functional-analyst/references/tecnico-plantilla.md` |
-| 7 | Abrir una unidad por fase de la hoja de ruta; cada una se aprueba y saca su encargo como en F3 | Jefe de proyecto; Script | `appian-functional-analyst` · `proyecto.py cambio` e `indice.py encargo` | `appian-functional-analyst/references/cambios.md` §2 |
+| 7 | Abrir una unidad por fase de la hoja de ruta; cada una se aprueba como en F3, y con eso quedan escritas sus issues | Jefe de proyecto; Script | `appian-functional-analyst` · `proyecto.py cambio` | `appian-functional-analyst/references/cambios.md` §2 |

@@ -11,7 +11,7 @@ uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scrip
 ```
 
 - Dev MCP en `ok`. Si no, el código de salida dice qué falta (11 sin configuración, 12 varias configuraciones, 13 no arranca o no autentica) y `references/devmcp-setup.md` cómo arreglarlo.
-- Si aparece el aviso «El servidor expone herramientas de escritura aunque se pidió readonly», para: la versión del Dev MCP no respeta `LCP_TOOL_MODE=readonly`. La skill no llamará a esas herramientas (el modo pasa a estricto), pero conviene saberlo.
+- El aviso «El servidor ofrece herramientas de escritura» es lo normal: el Dev MCP 26.6.110 no aplica `LCP_TOOL_MODE=readonly`. La skill no llamará a esas herramientas (el modo pasa a estricto). Fuera de desarrollo, el Dev MCP entra con una cuenta que solo lee (`references/devmcp-setup.md`, «Solo se escribe en desarrollo»).
 
 ## 2. Plan, sin extraer nada
 

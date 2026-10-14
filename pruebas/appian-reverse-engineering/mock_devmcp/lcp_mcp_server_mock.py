@@ -5,15 +5,21 @@ Variables de entorno:
                             Variante B: nombres y formas de respuesta distintos (prueba que la
                             skill no depende de nombres de herramientas).
   LCP_TOOL_MODE=readonly    Si no es readonly, expone también herramientas de escritura.
-  MOCK_IGNORE_READONLY=1    Expone herramientas de escritura aunque LCP_TOOL_MODE=readonly
-                            (simula un servidor que no respeta el modo).
+  MOCK_IGNORE_READONLY=1    Expone herramientas de escritura aunque LCP_TOOL_MODE=readonly. Es lo que hace el Dev MCP
+                            real (26.6.110): no aplica la variable.
   MOCK_FAIL_KEYS=K1,K2      Las herramientas de objeto fallan para esos objetos.
   MOCK_CALL_LOG=<fichero>   Registra cada llamada (jsonl).
   MOCK_APP=<módulo>         La aplicación que sirve: fixture (DEM, por defecto) o fixture_mal_hecha (MNT).
   MOCK_VERSION_NUEVA=K=F,…  El objeto K tiene una versión más, de la fecha F, de otro autor (alguien lo cambió).
   MOCK_OCULTAR=K1,K2        Esos objetos no salen en la lista de la aplicación (retirados, o nuevos si se
                             extrajo con ellos ocultos).
-  MOCK_CASOS_DE_PRUEBA=1    Expone getRuleTestCases: los casos de prueba de una expression rule.
+  MOCK_PRUEBAS=1           Variante A, como el Dev MCP 26.6.110 (T5): ejecutar todos los casos de una regla o una
+                            interfaz (runAll…TestCases, con readOnlyHint) y uno solo (run…TestCase, uuid y caso),
+                            listarlos, getObjectDependents con el parámetro «object» y listRecordTypeActions, que
+                            devuelve la lista sin envolver. Las respuestas, con la forma de las reales.
+  MOCK_FALLAN=K:caso,…      Con MOCK_PRUEBAS, esos casos fallan (un cambio en lo que usan los ha roto).
+  MOCK_FALLAN_DEPENDIENTES=1  Con MOCK_PRUEBAS, la herramienta de dependientes falla.
+  MOCK_ACCION=<nombre>      El nombre de la acción de lista de DEM Solicitud («Nueva solicitud» si no se dice).
 """
 from __future__ import annotations
 
@@ -37,8 +43,13 @@ FAIL_KEYS = {k for k in os.environ.get("MOCK_FAIL_KEYS", "").split(",") if k}
 CALL_LOG = os.environ.get("MOCK_CALL_LOG")
 VERSION_NUEVA = dict(x.split("=", 1) for x in os.environ.get("MOCK_VERSION_NUEVA", "").split(",") if "=" in x)
 OCULTAR = {k for k in os.environ.get("MOCK_OCULTAR", "").split(",") if k}
+PRUEBAS = os.environ.get("MOCK_PRUEBAS") == "1"
+FALLAN = {tuple(x.split(":", 1)) for x in os.environ.get("MOCK_FALLAN", "").split(",") if ":" in x}
 
 OBJ, KEY_BY_UUID, NAMES = fixture.build()
+if os.environ.get("MOCK_ACCION") and "RT_SOL" in OBJ:
+    OBJ["RT_SOL"]["actions"] = [{**a, "displayName": os.environ["MOCK_ACCION"]} if a.get("actionType") == "LIST_ACTION"
+                                else a for a in OBJ["RT_SOL"].get("actions", [])]
 APP = OBJ[fixture.APP_KEY]
 OTHER_APP = {"uuid": "_a-0000e999-otr0-8000-9bb2-011c48011c48_00999", "name": "OTR Otra Aplicación", "prefix": "OTR"}
 
@@ -169,6 +180,45 @@ def getter(expected: str):
     return lambda **kw: public(obj_for(next(iter(kw.values())), expected))
 
 
+def casos_de(uuid: str, expected: str):
+    o = obj_for(uuid, expected)
+    return o, list(getattr(fixture, "CASOS", {}).get(o["key"], []))
+
+
+def resultado_de(o: dict, k: int, nombre: str, salida):
+    """Un caso ejecutado, con la forma del Dev MCP real: el de la rejilla de registros, con su error de evaluación."""
+    error = None
+    if o["key"] == "I_DASH":
+        error = fixture.GRID_NO_EVALUABLE
+    elif (o["key"], nombre) in FALLAN:
+        error = (f"Expression evaluation error in rule '{o['name'].lower()}' at function a!queryRecordType [line 2]: "
+                 "Invalid field 'estadoId'")
+    base = {"testCaseUuid": f"{o['uuid']}-caso-{k}", "name": nombre}
+    if error:
+        return {**base, "success": False, "output": None, "durationMs": None,
+                "testErrors": [{"type": "OUTPUT_EVAL", "details": error}], "error": error}
+    return {**base, "success": True, "output": salida, "durationMs": 1.0, "testErrors": [], "error": None}
+
+
+def ejecuta_todos(uuid: str, expected: str):
+    o, casos = casos_de(uuid, expected)
+    res = [resultado_de(o, k, n, s) for k, (n, s) in enumerate(casos)]
+    ok = sum(r["success"] for r in res)
+    return {"results": res, "totalCount": len(res), "passCount": ok, "failCount": len(res) - ok}
+
+
+def lista_casos(uuid: str, expected: str):
+    o, casos = casos_de(uuid, expected)
+    return {"testCases": [{"uuid": f"{o['uuid']}-caso-{k}", "name": n, "isDefault": k == 0,
+                           "assertionType": "NO_ERRORS"} for k, (n, _s) in enumerate(casos)], "totalCount": len(casos)}
+
+
+def acciones_de(uuid: str):
+    return [{"uuid": f"{uuid}-accion-{k}", "key": a.get("key"), "displayName": a["displayName"],
+             "actionType": a.get("actionType"), "processModelUuid": a.get("processModelUuid")}
+            for k, a in enumerate(obj_for(uuid, "RECORD_TYPE").get("actions", []))]
+
+
 def con_definicion(tipo: str) -> bool:
     """Si la aplicación trae la definición de algún objeto de ese tipo, y no solo su nombre."""
     return any(o["objType"] == tipo and set(o) - {"key", "uuid", "name", "objType"} for o in OBJ.values())
@@ -228,7 +278,28 @@ if VARIANT == "a":
         return {"members": m[startIndex:startIndex + batchSize], "totalCount": len(m)}
 
     register("listGroupMembers", [("groupUuid", "str", ...), ("startIndex", "int", 0), ("batchSize", "int", 2)], _members)
-    register("getObjectDependents", [("uuid", "str", ...)], lambda uuid: {"dependents": dependents_of(uuid)})
+    if PRUEBAS:   # como el Dev MCP 26.6.110: el parámetro es «object» y la respuesta trae también la aplicación
+        def _dependientes(object):
+            if os.environ.get("MOCK_FALLAN_DEPENDIENTES") == "1":
+                raise RuntimeError("Simulated dependency index error")
+            return {"object": object, "dependents": dependents_of(object) + [
+                {"uuid": APP["uuid"], "type": "APPLICATION", "name": APP["name"], "breadcrumb": "Application Content"}]}
+
+        register("getObjectDependents", [("object", "str", ...)], _dependientes,
+                 annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False))
+        lectura = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True)
+        for tname, ttype in (("ExpressionRule", "FREEFORM_RULE"), ("Interface", "INTERFACE")):
+            register(f"runAll{tname}TestCases", [("uuid", "str", ...)],
+                     (lambda t: lambda uuid: ejecuta_todos(uuid, t))(ttype), annotations=lectura)
+            register(f"run{tname}TestCase", [("uuid", "str", ...), ("testCaseUuid", "str", ...)],
+                     (lambda t: lambda uuid, testCaseUuid: next(
+                         r for r in ejecuta_todos(uuid, t)["results"] if r["testCaseUuid"] == testCaseUuid))(ttype),
+                     annotations=lectura)
+            register(f"list{tname}TestCases", [("uuid", "str", ...)],
+                     (lambda t: lambda uuid: lista_casos(uuid, t))(ttype), annotations=lectura)
+        register("listRecordTypeActions", [("uuid", "str", ...)], acciones_de, annotations=lectura)
+    else:
+        register("getObjectDependents", [("uuid", "str", ...)], lambda uuid: {"dependents": dependents_of(uuid)})
     register("listProcessInstances", [("processModelUuid", "str", ...), ("limit", "int", 20)],
              lambda processModelUuid, limit=20: history_of(processModelUuid, limit))
     register("getObjectVersionHistory", [("uuid", "str", ...)], lambda uuid: {"versions": versions_of(uuid)})
@@ -243,9 +314,6 @@ if VARIANT == "a":
             "object": obj_for(objectUuid)["name"],
             "roleMap": [{"group": OBJ["G_ADM"]["name"], "permission": "ADMINISTRATOR"},
                         {"group": OBJ["G_USR"]["name"], "permission": "VIEWER"}]})
-    if os.environ.get("MOCK_CASOS_DE_PRUEBA") == "1":
-        register("getRuleTestCases", [("uuid", "str", ...)], lambda uuid: {"testCases": [
-            {"name": f"{obj_for(uuid, 'FREEFORM_RULE')['name']}: sin datos", "inputs": {}, "expectedOutput": "0"}]})
     if EXPOSE_WRITES:
         register("createInterface", [("name", "str", ...), ("expression", "str", ...)], lambda name, expression: {"uuid": "new"})
         register("updateProcessModel", [("uuid", "str", ...), ("nodes", "str", "")], lambda uuid, nodes="": {"ok": True})
