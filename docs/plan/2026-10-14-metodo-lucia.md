@@ -54,7 +54,7 @@ Todas confirmadas por Raúl el 14 de octubre de 2026.
 ### Fase 6 · QA con SAIL CLI
 
 - [x] **T15. Skill appian-qa**, con el método de «QA con SAIL CLI»: por unidad completa y en otra sesión, solo con sus `.feature`; cada rol con su cuenta y su `--data-dir`; el «entonces» se comprueba en el `--json`; cada recorrido que pasa queda como guion en `qa/<U>/`, y un script del plugin los repite sin IA antes de cada paquete. Un fallo devuelve su issue a pendiente. El flujo va también a `.agents/workflows/`, para cualquier agente.
-- [ ] **T16. Ensayo de QA en Indra-spain.** Una unidad de prueba con defectos sembrados: una regla que rompe otra, una transición de estado mal, un rol que ve de más y un fallo visual. Se prueba de tres formas: quien construye en su misma sesión, QA en otra sesión con el mismo modelo y QA con otro modelo (Sonnet 5.5, decidido por Raúl); y SAIL CLI frente a Playwright CLI en los mismos escenarios. Por forma: defectos encontrados, tokens y minutos. Decide el modelo del QA y si entra Playwright.
+- [x] **T16. Ensayo de QA en Indra-spain.** Una unidad de prueba con defectos sembrados: una regla que rompe otra, una transición de estado mal, un rol que ve de más y un fallo visual. Se prueba de tres formas: quien construye en su misma sesión, QA en otra sesión con el mismo modelo y QA con otro modelo (Sonnet 5.5, decidido por Raúl); y SAIL CLI frente a Playwright CLI en los mismos escenarios. Por forma: defectos encontrados, tokens y minutos. Decide el modelo del QA y si entra Playwright.
 
 ### Fase 7 · Medir y pasar a producción
 

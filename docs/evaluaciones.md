@@ -124,6 +124,43 @@ Lo que no se cumple tal cual: «fuera de desarrollo, el Dev MCP no ofrece herram
 sin maquinaria; queda la cuenta que solo ve la aplicación). «Una regla que rompe otra que la usa se detecta» está probado
 con el simulador: en solo lectura no se puede provocar; lo prueba T16 con un defecto sembrado.
 
+### Fase 6 · T16: el ensayo de QA con defectos sembrados
+
+En la aplicación ficticia del entorno de desarrollo, una unidad nueva de cinco historias (una transición de estado hecha
+por otro perfil, una regla que usa otra, lo que ve cada rol y un color que solo se ve en pantalla) se construyó con el plugin
+terminado (20,8 minutos y 9,52 USD) y se le sembraron cuatro defectos: la regla que usa otra da otro resultado (D1), la
+transición deja otro estado (D2), un rol ve una acción que no le toca (D3) y un estado sale en verde en vez de en rojo (D4).
+Ninguna forma de QA vio los defectos sembrados; todas tenían solo los `.feature` de la unidad.
+
+| Forma | Encontrados | Se le escapó | Min | Llamadas | Contexto máximo | USD | Repetir sus guiones (dos veces) |
+|---|---|---|---|---|---|---|---|
+| A, quien construye, en su misma sesión (Opus) | 4 | — | 4,6 | 24 | 396.120 | 4,09 | 82 y 84 s, iguales |
+| B, otra sesión con el mismo modelo (Opus) | 3 | D4 | 46,0 | 51 | 142.001 | 2,68 | 71 y 73 s, iguales |
+| C, otra sesión con otro modelo (Sonnet 5.5) | 3 | D4 | 4,5 | 26 | 82.675 | 0,93 | 76 y 77 s, iguales |
+| D, Playwright CLI en vez de SAIL CLI (Opus) | 4 | — | 31,6 | 55 | 169.605 | 3,61 | 538 y 535 s, iguales |
+
+- Ningún falso positivo. Cada fallo devolvió a pendiente la issue que tocaba.
+- **A lo encontró todo, pero no probando**: comparó el historial de versiones de los objetos con lo que había escrito y vio
+  cambios ajenos, algo que solo sirve con defectos introducidos después (un malentendido suyo no deja rastro). Lo primero
+  que intentó fue corregir, y arrastra 4,4 veces el contexto de C.
+- **Sonnet encuentra lo mismo que Opus por un tercio** (0,93 frente a 2,68 USD) y con menos de la mitad de contexto. Los 46
+  minutos de B son, 36 de ellos, espera a un SAIL CLI que no respondía.
+- **SAIL CLI no ve el color** (D4); Playwright sí, y además un problema de accesibilidad real (el nombre accesible de los
+  botones es la descripción interna de la acción). A cambio, cuesta más, repetir sus guiones lleva 9 minutos frente a 75
+  segundos, y `qa.py` no sabe repetirlos.
+- `verificar` habría cazado D1 y D2, no D3 (no mira quién ve una acción ni el iniciador de un proceso) ni D4.
+- Al terminar, la aplicación se devolvió a su estado sin defectos y se comprobó con `verificar` y con los guiones.
+
+Recomendación, para que la decida Raúl: el QA de la unidad, con Sonnet 5.5 en otra sesión o en un subagente que solo reciba
+los `.feature`; Playwright no por defecto, solo para criterios que solo se ven en pantalla, y lo demás visual lo mira una
+persona con la captura.
+
+Fallos que salieron y se corrigen: el QA no tenía de dónde sacar el site ni la cuenta de cada rol (Opus lo sacó del Dev
+MCP, que la skill prohíbe); `qa.py` esperaba 120 s por paso a un SAIL CLI que no responde (una repetición tardó 22
+minutos); una sesión se quedaba colgada si dejaba una vigilancia abierta; `issues.py` comparaba un nodo con el del mismo
+nombre de otro proceso; una unidad Construida cuyo QA falla después seguía figurando como Construida; y el flujo llevaba a
+quien construye a hacer el QA en el mismo turno.
+
 ### Fase 6 · T15: la skill appian-qa
 
 `skills/appian-qa/`: QA de una unidad completa, en otra sesión, solo con sus `.feature`. Por escenario, el «dado» como un
