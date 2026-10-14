@@ -50,6 +50,10 @@ Lo que salió al ejecutar `docs/plan/2026-10-14-metodo-lucia.md` y no entra en �
 - Analista: con los criterios en Gherkin, el aviso de «texto que queda viejo» de `comprobar.py --anterior` señala
   criterios que comparten el arranque («Dada una solicitud en revisión, cuando el técnico…») y siguen siendo verdad:
   no contar el tramo común o pedir más palabras seguidas.
+- `leer_fuentes.py --help` y `unir_modulos.py --help` salen con los acentos rotos en Windows (pasan la consola a
+  UTF-8 después de leer los argumentos); en `proyecto.py` ya está corregido.
+- Un `.eml` con finales de línea de Windows deja `` en su `FU-nn.md`: viene de la lectura y sale igual en todos
+  los sistemas, pero ensucia el fichero.
 
 ## Menores
 

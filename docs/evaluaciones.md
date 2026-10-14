@@ -9,6 +9,83 @@ están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 Rama `metodo-lucia`, de `main` d6126a8 (0.7.0-beta.4). Plan: `docs/plan/2026-10-14-metodo-lucia.md`. Las pruebas con
 reuniones reales y con el entorno de desarrollo se hacen fuera del repositorio; aquí, solo las cifras y las lecciones.
 
+### Fase 1 · T1: el caso de «Agilidad» con la 0.7.0-beta.4
+
+Una sesión nueva, con el plugin cargado desde una carpeta (`claude --plugin-dir`), incorpora una reunión de 2.467 palabras
+a un análisis con prototipo y DF enviado, retoca el prototipo y saca el DF nuevo. El análisis de partida lo montó otra
+sesión con tres reuniones del mismo proyecto (56 minutos, 142 llamadas). **18,6 minutos activos frente a los 70 de la
+0.6.0-beta.1**: 124 llamadas (100 de la IA y 24 de script), un turno sin aprobaciones y 6,73 USD. No es el mismo caso
+(otro proyecto, sin persona delante, una sola ejecución): la referencia para T3 son estos 18,6 minutos.
+
+| Paso | Min | Llamadas | Qué leyó | Quién lo hizo → quién debería |
+|---|---|---|---|---|
+| Método | 1,5 | 9 | 5 referencias enteras, 778 líneas | IA lee el fichero → por partes |
+| Fuente | 0,2 | 6 | entera, 49 líneas | script e IA |
+| Encajar | 3,9 | 18 | 216 de 1.995 líneas; 13 consultas de `indice.py` | script e IA |
+| Nota | 0,5 | 1 | — | IA |
+| Informe de impacto | 1,0 | 5 | — | IA, dos veces → una |
+| Versión, aplicar, diagrama, comprobar | 4,3 | 23 | 17 líneas | IA y script |
+| Prototipo: leer | 1,1 | 6 | el script del proyecto entero, 665 líneas | IA → por partes |
+| Prototipo: editar | 3,1 | 25 | — | IA |
+| Generar, capturar, revisar | 1,1 | 10 | 6 capturas | script e IA |
+| Enlazar capturas | 0,2 | 3 | — | IA → script |
+| Word y PDF | 0,7 | 2 | — | script; el PDF, IA → script |
+| Revisar páginas | 0,5 | 10 | 6 páginas | IA |
+| Cierre | 0,3 | 6 | — | IA y script |
+
+Los cuatro puntos de «Agilidad» (`docs/siguiente-version.md`), con la versión actual:
+1. Guía de diseño y código en un retoque de prototipo: ya no pasa (0 líneas de `design-rules.md` y del kit). Queda que lee
+   entero el script del proyecto y rehace 11 capturas para 3 pantallas afectadas: el método no dice cómo localizar una
+   pantalla ni qué se lee en un retoque.
+2. Funcional y técnico enteros: ya no pasa (233 de 1.995 líneas). Lo que se lee entero son las referencias del método,
+   porque la tabla de referencias las manda sin distinguir una actualización.
+3. Nota de la fuente: 747 palabras, 0,30 veces el original. El método sigue sin decir que es proporcional: 5 de sus 13
+   apartados salieron casi vacíos.
+4. El DF espera al prototipo: sigue pasando, 5,8 minutos (31 %). Lo manda `actualizacion.md` §7.
+
+Fallos que salieron: el script del prototipo que escribe el agente lleva la ruta absoluta del plugin (no vale en un
+proyecto compartido); `validate.py --anterior` exige `--confirmadas`; `df_docx.js --pdf` solo convierte con LibreOffice y,
+sin él, la sesión sacó el PDF por su cuenta; y el hook de arranque prueba `python3` antes y deja un error en Windows.
+
+`--plugin-dir`: la copia de la carpeta sustituye a la instalada o sincronizada con el mismo nombre (aparece como
+`<nombre>@inline`; está documentado). La app de escritorio no tiene un equivalente documentado: para probar un cambio sin
+instalarlo, la CLI.
+
+### Fase 3 · T7 y T8: flujos y un repositorio git por proyecto
+
+Qué cambia:
+- **Flujos F1 a F9** (`skills/appian-functional-analyst/assets/flujos/`): un fichero de 12 a 22 líneas por flujo, con
+  cuándo se usa, los pasos, quién hace cada uno y con qué skill; citan la referencia de cada paso sin repetirla.
+- **`proyecto.py iniciar`** deja el proyecto como repositorio git (rama `main`, sin primer commit ni repositorio dentro
+  de otro), con `.gitignore`, `.gitattributes`, `AGENTS.md` (28 líneas, generado entero), `CLAUDE.md` con «@AGENTS.md» y
+  `.agents/workflows/`. Si se vuelve a lanzar, pone al día `AGENTS.md` y los flujos y no toca lo demás; no pisa un
+  `AGENTS.md` ajeno ni lo que generó una versión posterior del plugin.
+- **`proyecto.py estado`** avisa de lo no confirmado, lo no subido, lo que falta traer, de `AGENTS.md` o flujos de otra
+  versión y de un `CLAUDE.md` que no importa `AGENTS.md`. Nunca bloquea.
+- **Los scripts escriben siempre con `
+`** (50 escrituras en cuatro skills y `requisitos.py`), y `comprobar_plugin.py`
+  comprueba que no vuelva a colarse: con proyectos compartidos entre Windows, macOS y Linux, cada reescritura en otro
+  sistema cambiaba el fichero entero.
+
+Revisión independiente, con proyectos creados fuera del repositorio: los tres criterios de la fase se cumplen y los siete
+bordes probados (carpeta que ya es repositorio, dentro de otro, sin git, sin remoto, remoto que no contesta, ruta con
+espacios y tildes, `iniciar` dos veces) no fallan. Encontró y quedó corregido:
+- Con el `core.autocrlf` de Git para Windows, un clon cambiaba los finales de línea y las fuentes ya catalogadas se
+  volvían a catalogar: de ahí el `.gitattributes`.
+- «Se sube todo menos los secretos» no era cierto con ingeniería inversa: un valor encontrado queda en claro en varios
+  documentos de `as-is/`. La regla y F6 dicen que, con hallazgos de seguridad con valores, el equipo decide antes de subir.
+- Tres pasos de F4, F5 y F6 no decían lo que su referencia, y dos avisos de `estado` eran falsos (rama subida sin
+  seguimiento; plugin anterior con un flujo retirado).
+- `AGENTS.md` pasó de 50 líneas a 28: se carga en cada sesión del proyecto.
+
+Coste de `estado`, que se ejecuta al empezar cada tarea: de 0,15 a 0,27 s sin repositorio, 0,52 s sin remoto y 1,41 s con
+un remoto en GitHub (antes, 0,22 s); 5,5 s si el remoto no contesta. El intento de traer lo nuevo se queda: sin él, «va
+por detrás» sería un dato viejo.
+
+Pruebas, sobre la rama ya unida: `comprobar_plugin.py`, 0 errores; selftest del analista (290 comprobaciones), de
+diagramas y de prototipos, correctos; ingeniería inversa, 173 pasan y 2 se saltan. Sin ejecutar en macOS ni Linux: lo
+pasa GitHub en la PR.
+
 ### Fase 2 · T5: el Dev MCP y SAIL CLI reales
 
 Mirados el 14 de octubre en el entorno de desarrollo, en solo lectura: Dev MCP 26.6.110 (build 20261008, el último

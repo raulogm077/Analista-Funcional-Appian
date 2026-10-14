@@ -36,8 +36,8 @@ Todas confirmadas por Raúl el 14 de octubre de 2026.
 
 ### Fase 3 · Repositorio, flujos y estructura
 
-- [ ] **T7. Catálogo de flujos F1 a F9:** un fichero corto por flujo en el plugin, con pasos, quién y qué skill; enlaza el detalle de cada skill sin repetirlo.
-- [ ] **T8. `proyecto.py iniciar`** deja el proyecto como repositorio git: lo crea si no lo es, con su `.gitignore`, y añade `AGENTS.md` (generado entero; lo propio del proyecto sigue en `proyecto.md`), `CLAUDE.md` con «@AGENTS.md», `.agents/workflows/` y `qa/`. Si se vuelve a lanzar, pone al día `AGENTS.md` y los flujos y no toca lo demás. `proyecto.py estado` avisa si hay cambios sin subir, si el proyecto va por detrás del remoto, si `AGENTS.md` o los flujos son de otra versión o si el `CLAUDE.md` no importa `AGENTS.md`.
+- [x] **T7. Catálogo de flujos F1 a F9:** un fichero corto por flujo en el plugin, con pasos, quién y qué skill; enlaza el detalle de cada skill sin repetirlo.
+- [x] **T8. `proyecto.py iniciar`** deja el proyecto como repositorio git: lo crea si no lo es, con su `.gitignore`, y añade `AGENTS.md` (generado entero; lo propio del proyecto sigue en `proyecto.md`), `CLAUDE.md` con «@AGENTS.md», `.agents/workflows/` y `qa/`. Si se vuelve a lanzar, pone al día `AGENTS.md` y los flujos y no toca lo demás. `proyecto.py estado` avisa si hay cambios sin subir, si el proyecto va por detrás del remoto, si `AGENTS.md` o los flujos son de otra versión o si el `CLAUDE.md` no importa `AGENTS.md`. *Hecho con dos diferencias: `qa/` y `construccion/<U>/` no se crean vacías (git no las guarda; las crea el script que escribe en ellas, como dice el diseño) y se añade un `.gitattributes` para que git no cambie los finales de línea.*
 
 ### Fase 4 · Requisitos en Gherkin
 
