@@ -6,7 +6,7 @@ coherente.
 
 - `funcional.md` y `tecnico.md` son el **estado actual**. «Lo validado» es lo marcado 🔒.
 - `decisiones.md` es el **historial**: qué cambió, cuándo y qué había antes.
-- El **informe de impacto** es la revisión antes de tocar nada.
+- El **informe de impacto** dice qué toca la fuente; se revisa antes de aplicar solo si algo requiere aprobación (§4).
 - El análisis **no se lee entero**: se consulta con `indice.py`.
 
 Una fuente cada vez, en orden de fecha: un informe de impacto que toca solo lo afectado y una versión (+0.1) solo si
@@ -82,8 +82,8 @@ chat (también la aprobación del jefe de proyecto) es una fuente más: `ingesta
 
 ## 2. Nota de la fuente
 Una fuente corta (un correo, un chat, unas líneas) no lleva nota: el informe cita la fuente. Las demás,
-`notas/FU-04.md` con las secciones de `volumen-grande.md` §1. Aplica `ingesta-fuentes.md`: separa la
-decisión de la conversación; una reunión interna (sin cliente) solo produce propuestas ⚠️; un correo del
+`notas/FU-04.md`, como dice `volumen-grande.md` §1 (solo ese apartado). Lo de `ingesta-fuentes.md` que hace falta: separa
+la decisión de la conversación; una reunión interna (sin cliente) solo produce propuestas ⚠️; un correo del
 cliente que confirma o cambia algo pesa más que la reunión.
 - Transcripción automática: si una palabra mal reconocida cambia dónde encaja el punto, toma la lectura
   más probable, márcala 🔶 y dilo. Si quien decide aparece como «Desconocido», atribúyelo por el contexto;
@@ -146,6 +146,7 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
    retoques (un texto, una columna, el orden) no la requieren.
 
 ## 4. Informe de impacto: `impacto/FU-04.md`
+Si ningún punto requiere aprobación, se escribe una sola vez, ya aplicado (al final del §6); si alguno la requiere, ahora:
 ```markdown
 # Impacto de FU-04 · Seguimiento con la unidad gestora · 2026-10-01
 Análisis base: versión 1.1 · Estado: pendiente
@@ -242,10 +243,10 @@ python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/ --anterior <p>/v
 ```
 Tiene que salir sin errores: ningún ID desaparecido, la versión sube (si cambió el funcional o el técnico) y tiene
 su fila, cada dependencia con resultado, cada cambio declarado en el informe, nada marcado «sin cambios» que haya
-cambiado y nada 🔒 cambiado sin un punto aprobado. Después, en este orden:
+cambiado y nada 🔒 cambiado sin un punto aprobado. Después:
+- el Word, solo al enviarlo o si se pide, y sin esperar al prototipo (paso 8 del `SKILL.md`);
 - el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y solo sus capturas. Las validadas por
-  el cliente (🔒) no se tocan sin el visto bueno del analista;
-- el Word, solo al enviarlo o si se pide (`df_docx.js`; nunca pisa uno entregado).
+  el cliente (🔒) no se tocan sin el visto bueno del analista.
 
 ## 8. Entregar
 En pocas líneas: versión, puntos por tipo, lo que cambió de verdad (CAMBIA, ANULA, alcance), pendientes

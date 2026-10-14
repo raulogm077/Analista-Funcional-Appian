@@ -136,12 +136,13 @@ Di el modo al empezar.
    python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/
    ```
    Sin errores antes de entregar. Revisa los avisos: los de redacción se corrigen casi siempre.
-8. **DF en Word**, solo para enviarlo o si se pide (síntesis, evolutivo y refactorización). La primera entrega es la
-   versión 1.0: sube la versión del funcional y del técnico y añade su fila en `decisiones.md`.
+8. **DF en Word**, solo para enviarlo o si se pide (síntesis, evolutivo y refactorización). No espera al prototipo: sale
+   con el análisis comprobado y se repite, en segundos, cuando lleguen las capturas. La primera entrega es la versión
+   1.0: sube la versión del funcional y del técnico y añade su fila en `decisiones.md`. Nunca sobrescribe uno entregado.
    ```bash
    node <skill>/scripts/df_docx.js <p> --pdf    # entregables/DF-<proyecto>-v<versión>.docx; el PDF, en revision/
    ```
-   Mira algunas páginas del PDF antes de enviarlo. Nunca sobrescribe un Word entregado.
+   Mira algunas páginas del PDF antes de enviarlo; sin LibreOffice no lo hay ni se saca por otra vía: lo revisa quien lo envía.
 9. **Entregar.** Actualiza `proyecto.md` (fuentes procesadas y siguiente paso) y envía el Word y el `funcional.md`
    (SendUserFile en Claude). Cuando el Word sale hacia el cliente, `proyecto.py entregar <p>` apunta «DF entregado» y
    el fichero; nunca en una sesión desatendida. En pocas líneas: modo, historias, pantallas, pendientes de confirmar con el
@@ -204,13 +205,13 @@ lo que quede sin verificar es un PT, o un PC si cambia lo que se promete al clie
 
 ## Referencias
 
-| Fichero | Cuándo |
-|---|---|
-| `references/ingesta-fuentes.md` | Antes de leer las fuentes |
-| `references/funcional-plantilla.md` | Al escribir el funcional |
-| `references/tecnico-plantilla.md` | Al escribir el técnico (con la ruta a buenas prácticas de cada apartado) |
-| `references/redaccion.md` | Al escribir cualquiera de los dos |
-| `references/actualizacion.md` | Con cada fuente nueva |
-| `references/volumen-grande.md` | Muchas fuentes o muchos procesos |
-| `references/cambios.md`, `references/urgentes.md` | Si `proyecto.py estado` lista unidades en curso (`analisis/cambios.md`), al abrir una, o si se declara una urgencia (un retoque no los necesita: «Camino corto» de `actualizacion.md`) |
-| `references/mermaid-diagrams.md` | Diagramas de estados y de datos |
+| Fichero | Cuándo | Al incorporar una fuente, en vez de entero |
+|---|---|---|
+| `references/ingesta-fuentes.md` | Antes de leer las fuentes | Una reunión o un correo, nada: lo suyo está en `actualizacion.md` §2. Otro tipo de fuente, su fila de §2 y, si lo tiene, su apartado de §3 |
+| `references/funcional-plantilla.md` | Al escribir el funcional | Solo el apartado de una pieza de un tipo que el análisis aún no tiene; las demás copian el formato de las que hay (`indice.py ficha`) |
+| `references/tecnico-plantilla.md` | Al escribir el técnico (con la ruta a buenas prácticas de cada apartado) | Igual; con una DT nueva, además «Buenas prácticas al diseñar» |
+| `references/redaccion.md` | Al escribir cualquiera de los dos | Nada: `comprobar.py` avisa de lo que la incumple |
+| `references/actualizacion.md` | Con cada fuente nueva | Entero |
+| `references/volumen-grande.md` | Muchas fuentes o muchos procesos | Solo §1, si la fuente lleva nota |
+| `references/cambios.md`, `references/urgentes.md` | Si `proyecto.py estado` lista unidades en curso (`analisis/cambios.md`), al abrir una, o si se declara una urgencia (un retoque no los necesita: «Camino corto» de `actualizacion.md`) | Entero, en esos casos |
+| `references/mermaid-diagrams.md` | Diagramas de estados y de datos | Solo si cambia uno de esos diagramas |

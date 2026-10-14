@@ -73,7 +73,7 @@ function aPdf(fichero) {
       fs.copyFileSync(path.join(salida, nombre), pdf);
       return { ok: true, pdf };
     }
-    return { ok: false, msg: "Sin LibreOffice (soffice): no se genera el PDF; revisa el Word a mano" };
+    return { ok: false, msg: "Sin LibreOffice (soffice) no hay PDF, y no se saca por otra vía: el Word lo revisa quien lo envía (un documento del cliente se le pide en PDF)" };
   } finally {
     try { fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5 }); } catch (e) { /* en Windows puede seguir abierto (EBUSY) */ }
   }
