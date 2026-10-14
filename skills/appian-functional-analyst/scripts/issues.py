@@ -148,6 +148,18 @@ def nombrados(texto, de):
     return (en_comillas | {x.strip() for x in re.findall(r"\*\*([^*\n]+)\*\*", texto)}) & de
 
 
+def bloques(D):
+    """De cada línea de un documento, el título en negrita bajo el que está en su apartado («**AUT Tramitar Solicitud**
+    (…)» encima de sus nodos), normalizado; "" si no está bajo ninguno. Dos procesos tienen nodos con el mismo nombre."""
+    out, actual = [], ""
+    for l in D.lineas:
+        actual = "" if l.startswith("#") else actual
+        t = re.match(r"^\*\*([^*\n]+)\*\*", l)
+        actual = mo.normaliza(t.group(1)) if t else actual
+        out.append(actual)
+    return out
+
+
 def aplicacion(m):
     """El nombre de la aplicación: el del inventario de as-is/ o el de la fila «Aplicación» de técnico §0."""
     inv = m.raiz / "as-is" / "datos" / "inventario.json"
@@ -293,7 +305,8 @@ def lineas_del_tecnico(d):
     """Las líneas de los apartados 3 a 12 del técnico, cada una con lo que hace falta para saber de qué issue es:
     {i, donde («§7», «§3.1»), texto, cabecera (si es la fila de una tabla), titulo (la línea que precede a su tabla),
     ids que cita, objetos que nombra, de (el objeto de su apartado «### 3.n <nombre>») y estado frente a la copia de la
-    versión base: "" (no hay copia), igual, nuevo o cambia (con «era», sus celdas de antes)}. Nombra un objeto la línea
+    versión base, en su apartado y bajo el mismo título en negrita (bloques()): "" (no hay copia), igual, nuevo o cambia
+    (con «era», sus celdas de antes)}. Nombra un objeto la línea
     que lo dice entre comillas invertidas o en negrita, la fila con una celda que es su nombre, la fila de una tabla cuyo
     título lo nombra («**AUT Tramitar Solicitud** (…)» encima de sus nodos) y lo que sigue a un título en negrita que lo
     nombra, hasta el siguiente o el apartado siguiente (la cancelación y el archivado de un proceso)."""
@@ -302,11 +315,12 @@ def lineas_del_tecnico(d):
         return []
     T = m.docs["T"]
     nombres = {mo.normaliza(o): o for o in d.todos}
-    antes = {}
+    # lo de antes, por apartado y por bloque: un nodo se compara con los de su proceso, no con el del mismo nombre de otro
+    antes, de_bloque = {}, bloques(T)
     if d.ant is not None and "T" in d.ant.docs:
         A = d.ant.docs["T"]
-        for i, l in enumerate(A.lineas):
-            antes.setdefault(A.seccion_de_linea[i], []).append(l.strip())
+        for i, (l, b) in enumerate(zip(A.lineas, bloques(A))):
+            antes.setdefault((A.seccion_de_linea[i], b), []).append(l.strip())
     out, cabecera, titulo, apartado, de, previa, bloque = [], None, None, "", None, None, set()
     for i, l in enumerate(T.lineas):
         s = T.seccion_de_linea[i]
@@ -337,10 +351,11 @@ def lineas_del_tecnico(d):
                 "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
                 "objetos": objetos, "estado": "", "era": None}
         if antes:
-            if l.strip() in antes.get(s, ()):
+            previas = antes.get((s, de_bloque[i]), ())
+            if l.strip() in previas:
                 item["estado"] = "igual"
             else:
-                era = next((mo.celdas(x) for x in antes.get(s, ()) if fila and x.startswith("|")
+                era = next((mo.celdas(x) for x in previas if fila and x.startswith("|")
                             and mo.celdas(x)[:1] == fila[:1]), None)
                 item["estado"], item["era"] = ("cambia", era) if era else ("nuevo", None)
         out.append(item)

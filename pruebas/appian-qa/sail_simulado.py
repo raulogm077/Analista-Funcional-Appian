@@ -9,6 +9,7 @@ borradores y devuelve las enviadas. Su estado está en el fichero de SAIL_SIMULA
   defecto "estado_alta": el estado con el que queda una solicitud enviada (en vez de «Enviada»)
   defecto "lento": una solicitud nueva no sale en la primera carga del panel (el proceso aún no ha terminado)
   defecto "cuelga_desde": n, desde la llamada n (contando desde 1) SAIL CLI no responde
+  defecto "sin_red": SAIL CLI no llega al servidor (el error de Go sin DNS)
   defecto "lee_stdin": SAIL CLI lee su entrada antes de nada (si se la dejan abierta, espera)
 El panel lleva dos enlaces «Ver detalle», que el --json da con nth y of: no se distinguen.
 La sesión de cada cuenta, en su --data-dir: session.json ({"hostname", "username", "cookies"}; con "caducada": true, la
@@ -78,6 +79,9 @@ def main():
         sys.stdin.read()
     if defecto.get("cuelga_desde") and app["llamadas"] >= defecto["cuelga_desde"]:
         time.sleep(30)
+    if defecto.get("sin_red"):
+        error(f'Post "https://{sesion["hostname"]}/suite/rest/a/sites/latest/{site}/nav": dial tcp: lookup '
+              f'{sesion["hostname"]}: no such host')
     fpag = carpeta / "pagina.json"
     pag = lee(fpag, {"pagina": "panel", "campos": {}, "seleccion": None, "busqueda": ""})
 

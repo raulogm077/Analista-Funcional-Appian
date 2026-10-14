@@ -65,6 +65,8 @@ Appian en cada entorno, tier y complementos, base de datos, inicio de sesión, i
 laboral, volumen, usuarios y concurrencia, tiempo de recuperación, accesibilidad, móvil y usuarios externos, licencias.
 Sale de funcional §10 y de lo que diga el equipo. Lo que no se sabe es un PT. El prototipo toma de aquí la versión de
 Appian, y la orden de terminar una issue, el Dev MCP de desarrollo de cada equipo (el que apunta a esa URL).
+«Site» es el nombre del site en su URL (`/suite/sites/<site>`), y «Cuentas de prueba en desarrollo», el usuario de la
+cuenta de cada rol (`Gestor: qa.gestor`), nunca su contraseña: de aquí los toma el QA (`appian-qa`).
 
 ### 1. Convenciones
 Tabla `Qué · Convención · Por qué`: prefijo, idioma de los nombres, mayúsculas por tipo de objeto, nombre
@@ -208,6 +210,8 @@ otro que no. «Con qué» dice cómo se comprueba cada criterio, y la issue lo c
 - `Caso de prueba de <regla o interfaz>`, con el objeto entre comillas invertidas: un caso de prueba guardado en él. De
   una regla comprueba la salida esperada; de una interfaz, que no da error.
 - `SAIL CLI`: se recorre la pantalla como un usuario. Es del QA de la unidad, no de quien construye.
+- `Playwright`: un criterio que solo se ve en pantalla (un color, la maquetación) y no basta con que lo mire una persona.
+  También del QA (`appian-qa`).
 
 ```markdown
 | Criterio | Cómo se prueba | Con qué |

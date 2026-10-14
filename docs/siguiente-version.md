@@ -55,6 +55,8 @@ Lo que salió al ejecutar `docs/plan/2026-10-14-metodo-lucia.md` y no entra en �
   usa. Decidir si la extracción la llama: una llamada más por objeto.
 - Pruebas de la issue: «no evaluable» reconoce solo la rejilla de registros con filtros de usuario
   (`flow!userFilterSetData`, `devmcp_policy.json`). Si aparece otro límite del ejecutor de Appian, se añade allí.
+- `verificar` no comprueba quién ve una acción de registro ni quién inicia un proceso: en el ensayo de QA (T16) habría
+  cazado dos de los cuatro defectos sembrados.
 
 - QA: `qa.py` dice «ISS-nn vuelve a pendiente» aunque el escenario esté marcado como no necesario (no lee el índice);
   quien manda es `issues.estado()`, que sí lo respeta.

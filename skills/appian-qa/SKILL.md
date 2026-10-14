@@ -7,7 +7,7 @@ description: "QA de una unidad de cambio Appian ya construida, con SAIL CLI: en 
 
 Prueba una unidad construida como la usaría cada rol, con SAIL CLI, y deja cada recorrido como un guion que un script
 repite sin IA. Prueba lo que se pidió, los escenarios, no lo que entendió quien construyó: no carga la skill oficial de
-Appian ni lee el funcional, el técnico ni las issues.
+Appian ni lee el funcional, las issues ni el técnico, salvo el site y las cuentas de su §0 («Entradas»).
 
 `<skill>` es la carpeta de este fichero; `<p>`, la del proyecto, y `<U>`, la unidad (`EV-nn`). En Windows, `python` en
 vez de `python3`.
@@ -20,7 +20,10 @@ vez de `python3`.
 | Deja cada recorrido como guion en `qa/<U>/` y lo repite sin IA | Los casos de prueba de reglas e interfaces: quien construye, con `appian-best-practices` |
 | Dice qué escenario falla y qué issue vuelve a pendiente | Corregirlo en el entorno: `appian-best-practices` |
 | — | Comprobar que los objetos son los del técnico: «verificar», de `appian-reverse-engineering` |
-| — | Maquetación, estilos y accesibilidad visual: una persona, en el navegador |
+
+SAIL CLI no ve colores, maquetación ni accesibilidad (no trae el color de una etiqueta): por defecto lo mira una persona
+en el navegador, con la captura de la pantalla; Playwright, solo para un criterio cuyo «Con qué» de técnico §14 lo pida,
+y sin guion: `qa.py` no lo repite.
 
 ## Requisitos
 
@@ -31,8 +34,9 @@ PATH como `sail`. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
 ## Cuándo, y cuándo no
 
 - **Con la unidad completa**: todas sus issues hechas. Por unidad, no por issue: un escenario cruza pantallas de varias.
-- **En otra sesión**, distinta de la que construyó; puede ser otro agente (el flujo F8 está en `.agents/workflows/` de
-  cada proyecto) o una persona.
+- **En otra sesión**: una nueva, o un subagente que solo recibe los `.feature`, el site y la cuenta de cada rol, nunca el
+  contexto de quien construyó; también otro agente (el flujo F8 está en `.agents/workflows/` de cada proyecto) o una
+  persona. Basta un modelo pequeño (medido: Sonnet encontró lo mismo que Opus por un tercio del coste).
 - **Solo en desarrollo**, porque crea datos y lanza procesos; en una urgencia, en el entorno de corrección. `qa.py
   repetir` solo repite contra la «URL de desarrollo» o la «URL del entorno de corrección» de técnico §0: si un guion
   apunta a otro host, o §0 no las dice, no repite nada.
@@ -41,15 +45,19 @@ PATH como `sail`. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
 
 ## Entradas
 
-- **Los escenarios**: `construccion/<U>/ISS-nn.feature`. Nada más del proyecto.
+- **Los escenarios**: `construccion/<U>/ISS-nn.feature`. Nada más del proyecto, salvo técnico §0 (abajo).
 - **El entorno y el site**: el host de desarrollo y el nombre del site en su URL (`/suite/sites/<site>`).
 - **Una cuenta local de Appian por rol** de los escenarios, en desarrollo. Si hace falta comprobar que alguien *no* ve
   algo de otro, dos cuentas del mismo rol.
 
-Si no te dan el site o las cuentas, pídelos en un solo mensaje. La contraseña nunca va a un fichero del proyecto ni a la
-conversación: la persona entra con cada cuenta (abajo) o te pasa la sesión ya abierta.
+Si no te los dan, están en técnico §0 («URL de desarrollo», «Site» y «Cuentas de prueba en desarrollo»: `indice.py
+seccion <p> T0` de `appian-functional-analyst`); si tampoco, pídelos en un solo mensaje. La contraseña nunca va a un
+fichero del proyecto ni a la conversación: la persona entra con cada cuenta (abajo) o te pasa la sesión ya abierta.
 
 ## Flujo
+
+Cada orden de SAIL CLI y de `qa.py` se espera en primer plano hasta que termina, sin vigilancias en segundo plano
+(`tail -f`, un Monitor): una que queda abierta deja la sesión colgada al terminar.
 
 1. **Sesiones.** `python3 <skill>/scripts/qa.py sesiones <host> <usuario> …` dice la carpeta de sesión de SAIL CLI de
    cada cuenta en este equipo, o la orden para entrar: `sail login <host> --data-dir <carpeta>` con `SAIL_USERNAME` y
@@ -123,8 +131,7 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   `"texto"` y `"sin_texto"`, en lo que se ve de la página y en sus validaciones; `"fila": {"con": "…", "<columna>":
   "<valor o su principio>"}`, una fila de una rejilla que lleva ese texto y tiene esos valores, y `"sin_fila": "…"`,
   ninguna fila con ese texto (lo que se buscó también está en la caja de búsqueda: para decir que no se ve, `sin_fila`,
-  no `sin_texto`). Cada paso falla además si SAIL CLI da error, si el servidor no cambió nada o si SAIL CLI deja de
-  responder a mitad del recorrido.
+  no `sin_texto`). Cada paso falla además si SAIL CLI da error o si el servidor no cambió nada.
 - **El «entonces» afirma algo**: al menos un `completado`, `hay`, `texto` o `fila`. Solo con `no_hay`, `sin_texto` o
   `sin_fila` pasaría también con una página vacía. Una clave que no existe o una comprobación vacía (`"hay": []`,
   `"texto": [""]`) tampoco valen: el guion sale «por terminar».
@@ -165,8 +172,8 @@ y no lleva rutas del equipo de nadie:
 - **desfasado**: el escenario ya no dice lo del guion; no cuenta como fallo, y QA lo rehace.
 - **guion por terminar**: el guion está mal escrito o no llega a afirmar nada en el «entonces»; no devuelve la issue a
   quien construye: lo termina QA.
-- **sinRepetir**: esta vez no se pudo (una sesión caducada, SAIL CLI que no responde al primer paso); se queda el
-  resultado anterior y dice cómo entrar.
+- **sinRepetir**: esta vez no se pudo y se queda el resultado anterior: una sesión caducada (dice cómo entrar), o SAIL
+  CLI que no responde en 120 s o no llega al servidor, y entonces se para en ese paso, no repite nada más y lo dice.
 - **sinGuion**: escenarios de la unidad que QA aún no ha recorrido.
 
 Si una pantalla cambió a propósito, se rehace solo su guion.

@@ -10,6 +10,8 @@ Versión: 0.1 · Estado: en curso
 | URL de desarrollo | | |
 | URL de pruebas | | |
 | URL de producción | | |
+| Site | | |
+| Cuentas de prueba en desarrollo | | |
 | Versión de Appian | | |
 | Tier y complementos | | |
 | Base de datos | | |

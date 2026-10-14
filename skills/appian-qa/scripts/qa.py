@@ -9,9 +9,9 @@
 El guion y el resultado, en SKILL.md («El guion» y «Repetir»). La sesión de cada cuenta se busca por su usuario y su host
 en los session.json de las carpetas de SAIL CLI (--sesiones, o $SAIL_HOME y ~/.sail); el script no entra ni sale. Solo
 repite contra la «URL de desarrollo» o la «URL del entorno de corrección» de técnico §0: si un guion apunta a otro host,
-o §0 no las dice o no se lee, no repite nada. Sale con 0 si todo pasa, 1 si algún escenario falla y 2 si algo no se pudo
-repetir o está por hacer. SAIL_CLI, si existe, es la orden de SAIL CLI que se usa
-en vez de «sail» (un .py se lanza con este Python).
+o §0 no las dice o no se lee, no repite nada. Si SAIL CLI no responde o no llega al servidor, se para en ese paso y no
+repite nada más. Sale con 0 si todo pasa, 1 si algún escenario falla y 2 si algo no se pudo repetir o está por hacer.
+SAIL_CLI, si existe, es la orden de SAIL CLI que se usa en vez de «sail» (un .py se lanza con este Python).
 """
 import argparse
 import datetime
@@ -45,6 +45,8 @@ RX_ID = re.compile(r"^[0-9a-f]{32}$")    # un _cId o una ref de un solo render (
 RX_ESCENARIO = re.compile(r"^\s*(?:Escenario|Ejemplo):\s*(\S+)")
 RX_PASO = re.compile(r"^\s*(?:Dad[oa]s?|Cuando|Entonces|Y|E|Pero|\*)\s")
 RX_SIN_SESION = re.compile(r"no session found|status 401|authentication failed", re.I)
+# SAIL CLI no llega al servidor (sin red, sin DNS): como si no respondiera, no dice nada de la aplicación
+RX_SIN_RED = re.compile(r"dial tcp|no such host|TLS handshake timeout|i/o timeout|connection (?:refused|reset)", re.I)
 RX_ISSUE = re.compile(r"ISS-\d+")
 # Lo que no se ve en la página: identificadores, iconos y textos que Appian solo enseña a veces (el aviso de una rejilla
 # vacía, el de un campo obligatorio, la ayuda emergente, las etiquetas de paginar). Una clave que acaba en «Message» o
@@ -57,6 +59,11 @@ MARCAS = "⤴⌗☐☑⇅├ "
 
 class SinRepetir(Exception):
     """Esta vez no se ha podido repetir (sin sesión, SAIL CLI que no responde): no dice nada de la aplicación."""
+
+
+class NoResponde(SinRepetir):
+    """SAIL CLI no responde o no llega al servidor: se para ahí, sin repetir el resto de ese guion ni los que quedan."""
+    paso = None
 
 
 class Falla(Exception):
@@ -360,7 +367,7 @@ class Recorrido:
     """Un guion repetido una vez: las sesiones de sus roles, la última página de cada uno y lo que se sustituye."""
 
     def __init__(self, g, cuentas, valores):
-        self.g, self.valores, self.ultima, self.tras_carga, self.respondio = g, valores, {}, {}, False
+        self.g, self.valores, self.ultima, self.tras_carga = g, valores, {}, {}
         self.host = host_de(g["host"])
         self.carpeta = {}
         for rol, usuario in g["roles"].items():
@@ -381,9 +388,7 @@ class Recorrido:
             r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
                                stdin=subprocess.DEVNULL, timeout=ESPERA_SAIL)
         except subprocess.TimeoutExpired:
-            if self.respondio:      # respondía y dejó de hacerlo en mitad del recorrido: eso es de la aplicación
-                raise Falla(f"SAIL CLI no respondió en {ESPERA_SAIL} s a «{sub}»")
-            raise SinRepetir(f"SAIL CLI no respondió en {ESPERA_SAIL} s ({sub})")
+            raise NoResponde(f"SAIL CLI no respondió en {ESPERA_SAIL} s a «{sub}»")
         try:
             d = json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else None
         except ValueError:
@@ -393,8 +398,9 @@ class Recorrido:
             if RX_SIN_SESION.search(error):
                 usuario = self.g["roles"][rol]
                 raise SinRepetir(f"la sesión de {usuario} ha caducado o no vale; {como_entrar(usuario, self.host)}")
+            if RX_SIN_RED.search(error):
+                raise NoResponde(f"SAIL CLI no llega a {self.host} a «{sub}» ({error[:300]})")
             raise Falla(f"SAIL CLI: {error[:600]}")
-        self.respondio = True
         if d.get("status") not in (None, "ok"):
             raise Falla(f"SAIL CLI da «{d.get('status')}»" + (f": {'; '.join(map(str, d['validations']))}"
                                                             if d.get("validations") else ""))
@@ -446,7 +452,7 @@ class Recorrido:
             for k, p in enumerate(self.g.get(parte) or [], 1):
                 try:
                     self.paso(p)
-                except Falla as e:
+                except (Falla, NoResponde) as e:
                     e.paso = f"{parte} {k}"
                     raise
 
@@ -460,9 +466,18 @@ def unica(ultima=[""]):
     return t
 
 
+def sin_repetir(previa, por_que):
+    """Un escenario que esta vez no se ha podido repetir: se queda lo de antes, con el porqué."""
+    entrada = dict(previa)
+    entrada.setdefault("resultado", "sin repetir")
+    entrada["sinRepetir"] = por_que
+    return entrada
+
+
 def repite_unidad(raiz, uid, solo, cuentas, m=None):
     """Repite los guiones de una unidad (con `solo`, nada más que esos escenarios; los demás se quedan como estaban) y
-    escribe su resultado. Devuelve (resultado, lo repetido esta vez, líneas para la consola)."""
+    escribe su resultado. Si SAIL CLI deja de responder, no repite los guiones que quedan. Devuelve (resultado, lo
+    repetido esta vez, líneas para la consola, dónde dejó de responder SAIL CLI o None)."""
     carpeta = pathlib.Path(raiz) / CARPETA / uid
     fichero = carpeta / RESULTADO
     previo = lee_json(fichero) or {}
@@ -470,7 +485,7 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None):
     del_feature = escenarios_de(raiz, uid)
     guiones = {f.stem: f for f in sorted(carpeta.glob("*.json")) if f.name != RESULTADO}
     orden = list(del_feature) + sorted(x for x in guiones if x not in del_feature)
-    nuevos, repetidos, L = {}, {}, []
+    nuevos, repetidos, L, parado = {}, {}, [], None
     for esc in orden:
         if esc not in guiones:
             continue
@@ -494,6 +509,8 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None):
             entrada.update(resultado="desfasado", motivo=f"{esc} ya no está en el análisis de {uid}")
         elif [" ".join(x.split()) for x in g["dice"]] != dice:
             entrada.update(resultado="desfasado", motivo="el escenario ha cambiado; ahora dice: " + " / ".join(dice))
+        elif parado:
+            entrada = sin_repetir(antes.get(esc) or entrada, f"no se ha repetido: {parado}")
         else:
             valores = {"pasada": unica(), "hoy": datetime.date.today().isoformat()}
             try:
@@ -507,9 +524,10 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None):
                     motivo = motivo.replace(v, "{" + k + "}")
                 entrada.update(resultado="falla", paso=e.paso, motivo=motivo)
             except SinRepetir as e:
-                entrada = dict(antes.get(esc) or entrada)
-                entrada.setdefault("resultado", "sin repetir")
-                entrada["sinRepetir"] = sin_rutas(str(e))
+                entrada = sin_repetir(antes.get(esc) or entrada, sin_rutas(str(e))
+                                      + (f" en «{e.paso}»" if isinstance(e, NoResponde) and e.paso else ""))
+                if isinstance(e, NoResponde):      # sin esperar otros 120 s en cada guion que queda
+                    parado = f"SAIL CLI dejó de responder en {uid} {esc}"
         if "sinRepetir" not in entrada:
             entrada.update(fecha=ahora(), segundos=round(time.time() - inicio, 1))
         entrada = {"resultado": entrada.pop("resultado"), **entrada}   # lo primero que se lee
@@ -538,7 +556,9 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None):
             L.append(f"  {esc} · desfasado: {e.get('motivo')}; QA rehace su guion")
     for esc in resultado["sinGuion"] if not solo else []:
         L.append(f"  {esc} · sin guion: lo recorre QA (appian-qa)")
-    return resultado, repetidos, L
+    if parado:
+        L.append(f"  {parado}: se ha parado ahí, sin repetir lo que quedaba; repítelo cuando responda")
+    return resultado, repetidos, L, parado
 
 
 def peor(a, b):
@@ -569,13 +589,17 @@ def repetir(a):
                       f"corrección» de técnico §0 ({si}). Su QA queda por hacer")
                 return 2
     cuentas = sesiones(a.sesiones)
-    codigo = 0
+    codigo, parado = 0, None
     for uid in unidades:
+        if parado:
+            print(f"{uid} · no se ha repetido: {parado}")
+            codigo = peor(codigo, 2)
+            continue
         if not any(f.name != RESULTADO for f in (raiz / CARPETA / uid).glob("*.json")):
             print(f"{uid} · sin guiones en {CARPETA}/{uid}/: su QA está por hacer (appian-qa)")
             codigo = peor(codigo, 2)
             continue
-        _, repetidos, L = repite_unidad(raiz, uid, set(a.escenario or []), cuentas, m)
+        _, repetidos, L, parado = repite_unidad(raiz, uid, set(a.escenario or []), cuentas, m)
         print("\n".join(L))
         if a.escenario and not repetidos:
             print(f"  {uid} no tiene guion de {', '.join(a.escenario)}")
