@@ -32,7 +32,7 @@ Todas confirmadas por Raúl el 14 de octubre de 2026.
 ### Fase 2 · El Dev MCP y SAIL CLI en Indra-spain
 
 - [x] **T5. Mirar el Dev MCP y SAIL CLI reales**, como pide el `CLAUDE.md`: qué herramientas crean y ejecutan casos de prueba, si lanza las pruebas en bloque, si da los dependientes de un objeto y qué quita `LCP_TOOL_MODE=readonly`. Con SAIL CLI: entrar con una cuenta local por rol, cada una en su `--data-dir`, recorrer un escenario y leer su `--json`. `verificar` reconocerá las herramientas por su firma, como ya hace `devmcp_extract.py`, sin fijar nombres.
-- [ ] **T6. Línea base del retoque construido**, a ciegas ×3 y antes de tocar nada: el texto de un botón ya construido (encargo, Dev MCP, `verificar` y `construida`). Decide B4.
+- [x] **T6. Línea base del retoque construido**, a ciegas ×3 y antes de tocar nada: el texto de un botón ya construido (encargo, Dev MCP, `verificar` y `construida`). Decide B4.
 
 ### Fase 3 · Repositorio, flujos y estructura
 

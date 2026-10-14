@@ -33,6 +33,61 @@ Lo que el plan daba por hecho y no es así:
   es solo para reglas. Los casos de una issue los tiene que ejecutar un script, para que las respuestas no pasen por el
   contexto.
 
+### Fase 2 · T6: línea base del retoque construido
+
+El caso ficticio de `pruebas/evaluaciones/coste-retoque` («Nueva solicitud» pasa a «Pedir material»), construido de
+verdad: la aplicación «Solicitudes de material» en una aplicación nueva del entorno de desarrollo (11 objetos del
+técnico, tres cuentas locales por rol; 36 minutos y 105 llamadas al Dev MCP montarla). Tres sesiones a ciegas con una
+copia fija de la 0.7.0-beta.4, el retoque ya aplicado en el análisis y la unidad aprobada, y un solo encargo: «La unidad
+EV-03 está aprobada. Constrúyela en desarrollo y déjala como construida.» Las cifras salen de la transcripción de cada
+sesión y coinciden con su evento de resultado.
+
+| | Pasada 1 | Pasada 2 | Pasada 3 | Media |
+|---|---|---|---|---|
+| Minutos | 2,4 | 2,9 | 3,3 | **2,9** |
+| Llamadas | 50 | 58 | 55 | **54** |
+| Dev MCP: lectura / escritura / prueba | 9 / 1 / 1 | 9 / 1 / 1 | 13 / 1 / 1 | — |
+| Tokens de salida | 11.662 | 14.130 | 16.450 | 14.081 |
+| Contexto máximo | 233.110 | 209.472 | 209.062 | 217.215 |
+| Coste (USD) | 2,63 | 2,27 | 2,63 | **2,51** |
+
+Las tres dejan la acción renombrada, nada más tocado y la unidad Construida, sin preguntar. El cambio en sí (leer el
+objeto y escribirlo) son 0,6 minutos y 0,31 USD; lo demás es carga fija:
+
+| Paso | Min | Llamadas | USD | Quién lo hizo → quién debería |
+|---|---|---|---|---|
+| Arranque y estado | 0,3 | 5 | 0,11 | IA y script → script |
+| Encargo | 0,1 | 3,3 | 0,06 | script lanzado por la IA → fichero ya generado |
+| Skills y referencias | 0,5 | 14,7 | 1,01 | IA leyendo ficheros enteros → por partes |
+| Leer el análisis | 0,0 | 4,7 | 0,14 | IA → fichero (el extracto, en el encargo) |
+| Leer el objeto | 0,2 | 7 | 0,24 | IA |
+| Escribirlo | 0,4 | 4,7 | 0,07 | IA, o una persona (B4) |
+| Casos de prueba | 0,4 | 5,3 | 0,19 | IA → script; en un retoque, nada |
+| `verificar` | 0,3 | 2,3 | 0,25 | script compuesto por la IA → script |
+| Marcar construida | 0,1 | 1 | 0,02 | script |
+| Contexto de arranque | — | — | 0,35 | fichero |
+
+- La «hora por un cambio menor» de appian-harness no ha vuelto: son 3 minutos. La skill oficial es el 25 % del coste
+  (0,63 USD; carga 2.480 líneas de media, no las 5.600 que se temían) y sube el contexto por encima de 200.000 tokens
+  antes de tocar el entorno; las respuestas del Dev MCP, el 16 %.
+- **B4 lo decide Raúl con estas cifras.** Lo mismo a mano en Designer no se ha medido.
+- Dato aparte: con el texto del botón en la interfaz (un enlace de inicio de proceso, que es peor diseño y se rehízo como
+  acción de registro), dos pasadas costaron 3,6 y 3,9 minutos y 2,72 y 2,40 USD.
+
+Lo que falla hoy y tienen que quitar las issues de la Fase 5 (T17 lo vuelve a medir):
+- El encargo no dice qué cambia («ver técnico §7»), así que la sesión lee el técnico; y no existe hasta que la sesión lo
+  genera.
+- La orden de `verificar` del encargo no se puede copiar: lleva `python3` y marcadores, y le falta el servidor (una pasada
+  falló por eso). `verificar` vuelca de 78 a 331 KB de registro.
+- **`verificar` no mira las acciones de registro:** sale igual con el cambio que sin él, y da por sobrantes los campos del
+  record type. Ninguna sesión lo dice; las tres lo suplen releyendo la acción y mirando el botón con SAIL CLI.
+- Las sesiones ejecutan casos de prueba y SAIL CLI sin que nadie lo pida, en un retoque que no cambia criterios ni reglas.
+- Con el texto en un record type, el análisis pide una DT «Cambio sobre lo construido» y decidir el orden con la otra
+  unidad, para un cambio de nombre; `comprobar.py` da un aviso que no procede.
+- El técnico ficticio dice que el botón «abre el formulario de inicio» sin decir cómo: quien construyó eligió un enlace
+  de proceso en vez de la acción de registro que pide buenas prácticas (00, 01 §9.2, 02 §5.4, 03 §8, 06 §5.3).
+- Los casos de prueba de una interfaz con una rejilla de registros fallan siempre: el ejecutor no la evalúa.
+
 ### Fase 4 · T9: criterios en Gherkin de una línea
 
 Qué cambia: `funcional-plantilla.md` §4 es el único sitio que dice cómo se escribe un criterio (dado, cuando y entonces,
