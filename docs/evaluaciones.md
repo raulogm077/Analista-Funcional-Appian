@@ -252,9 +252,9 @@ Qué cambia:
   unidad (commit y push) e imprime la orden de terminar con las rutas y el servidor del equipo. `construida` pide todas
   las issues hechas.
 - **T12** (decisión de Raúl): `LCP_TOOL_MODE` no hace nada en el Dev MCP 26.6.110 y se dejó de afirmar lo contrario en
-  ingeniería inversa. Fuera de desarrollo, una cuenta que solo ve la aplicación, la misma por entorno: el Dev MCP
-  rechaza con 403 a una cuenta que no es diseñadora, y una diseñadora que solo ve la aplicación no cambia lo que existe,
-  pero puede crear objetos nuevos (según la documentación; sin probar). SAIL CLI, solo en desarrollo.
+  ingeniería inversa. Fuera de desarrollo, el Dev MCP entra con una cuenta diseñadora (rechaza con 403 a una que no
+  lo es) y solo para leer: el 14 de octubre de 2026 Raúl decidió que basta una cuenta diseñadora y que la garantía es el método (solo se construye en
+  desarrollo). SAIL CLI, solo en desarrollo.
 - **T13.** `verificar` ejecuta los casos de prueba de las reglas e interfaces de la issue y de lo que las usa,
   reconociendo las herramientas por su firma, y deja el detalle en su fichero. Bloquea un fallo propio, salvo que una
   persona lo marque con `--sin-prueba` y motivo (se niega en una sesión desatendida y caduca si cambian la issue o el
@@ -290,7 +290,7 @@ Comprobado: mismas issues byte a byte con los mismos datos, en carpetas distinta
 cambiar el análisis; en 15 rondas con dos o tres agentes a la vez, ninguno se llevó la misma issue.
 
 Lo que no se cumple tal cual: «fuera de desarrollo, el Dev MCP no ofrece herramientas que escriban» (decisión de Raúl:
-sin maquinaria; queda la cuenta que solo ve la aplicación). «Una regla que rompe otra que la usa se detecta» está
+sin maquinaria y con una cuenta diseñadora; lo garantiza el método). «Una regla que rompe otra que la usa se detecta» está
 probado con el simulador: en solo lectura no se puede provocar; lo prueba T16 con un defecto sembrado.
 
 ### Fase 6 · T15: la skill appian-qa

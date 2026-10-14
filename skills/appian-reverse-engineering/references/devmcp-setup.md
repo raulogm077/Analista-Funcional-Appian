@@ -103,14 +103,12 @@ producción llega un paquete cuyos objetos ha revisado una persona. Cómo se cum
 |---|---|---|
 | Desarrollo | Con la cuenta de quien construye (Designer) | Sí: crea datos y lanza procesos |
 | Entorno de corrección | En una urgencia, como en desarrollo; si no, como en producción | Solo en una urgencia |
-| Pruebas, preproducción y producción | Con una cuenta que solo lee, la misma para todo el equipo en ese entorno | No |
+| Pruebas, preproducción y producción | Con una cuenta Designer, solo para leer (documentar, comparar) | No |
 
-- **La cuenta que solo lee** es la única barrera que aplica Appian: el Dev MCP hace cada operación con los permisos de
-  la cuenta con la que entra. Una cuenta que no es Designer no sirve: el Dev MCP la rechaza con un 403 en toda
-  llamada (comprobado con el Dev MCP 26.6.110). Lo más cercano a «solo leer» es una cuenta Designer con permiso de solo ver
-  (*Viewer*) en la aplicación: según la documentación de Appian ([Object security](https://docs.appian.com/suite/help/latest/object-security.html)),
-  no puede cambiar ni borrar lo que existe, pero un Designer sí puede crear objetos nuevos. Esto último no se ha
-  probado. Una por entorno, para todo el equipo; no hace falta crear más.
+- **La cuenta**: el Dev MCP solo admite cuentas Designer (una que no lo es recibe un 403 en toda llamada; comprobado
+  con el Dev MCP 26.6.110) y hace cada operación con sus permisos. Fuera de desarrollo se entra con una cuenta
+  Designer para leer; que la IA no escriba allí lo garantiza el método: solo se construye en desarrollo y, en una
+  urgencia, en el entorno de corrección.
 - **`LCP_TOOL_MODE=readonly` no protege.** La documentación de Appian la describe («restricts to read-only tools»),
   pero el Dev MCP 26.6.110 no la aplica: ofrece las mismas 200 herramientas con ella y sin ella. Si un Dev MCP futuro
   la aplica, añadirla en los entornos que no son de desarrollo no cuesta nada; hoy no cambia lo de arriba.
