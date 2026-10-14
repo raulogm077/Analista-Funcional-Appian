@@ -94,8 +94,8 @@ Todas confirmadas por Raúl el 14 de octubre de 2026.
   SAIL CLI, igual: en desarrollo y, en una urgencia, en el entorno de corrección. Técnico §0 lleva la URL de cada
   entorno, y `proyecto.py estado` avisa si el Dev MCP de otro entorno no está en solo lectura (`requisitos.py` ya sabe
   leer su host). *Hecho con la decisión de Raúl del 14 de octubre: `LCP_TOOL_MODE` no hace nada en el Dev MCP 26.6.110 y
-  no se añade maquinaria; fuera de desarrollo, una cuenta que solo ve la aplicación, la misma por entorno; sin aviso en
-  `estado`.*
+  no se añade maquinaria; fuera de desarrollo, una cuenta diseñadora solo para leer (Raúl desechó la cuenta de solo
+  lectura); sin aviso en `estado`.*
 - [x] **T13. Pruebas de la issue.** Técnico §14 dice cómo se comprueba cada criterio: caso de prueba guardado (regla:
   salida esperada; interfaz: sin errores) o SAIL CLI, que es del QA (T15). Al terminar la issue se ejecutan solo los
   casos de sus reglas e interfaces y de lo que las usa; un retoque que no cambia criterios ni reglas no ejecuta nada.
@@ -187,6 +187,5 @@ Lo que decidió Raúl el 14 de octubre de 2026, antes de la PR:
 6. **El diseño y su anexo**: corregido lo que ya no es verdad (`LCP_TOOL_MODE`, la regresión «en bloque», las 5.600
    líneas, la ruta de verificación, el cierre de las sesiones de SAIL CLI y «Por comprobar en T5»), con el texto de la
    revisión final (commit `b8d12c8`, apartado 6 de entonces); cada corrección, en su sitio y marcada «comprobado el 14
-   de octubre» con su tarea. Lo de la cuenta de solo lectura fuera de desarrollo queda sin probar
-   (`docs/siguiente-version.md`, «Pasos de Raúl»).
+   de octubre» con su tarea. La cuenta de solo lectura fuera de desarrollo se desecha: basta una cuenta diseñadora.
 7. **La PR**: el #12, unido a `main` (merge `eedff58`).

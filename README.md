@@ -129,7 +129,7 @@ oficial `appian` antes de escribir en un entorno.
 
 **Solo se escribe en desarrollo.** La IA construye en el entorno de desarrollo y, en una urgencia, en el entorno de
 corrección; a pruebas y a producción llega un paquete que ha revisado una persona. En los demás entornos, el Dev MCP
-entra con una cuenta que solo lee, la misma para todo el equipo, y SAIL CLI no se usa, porque crea datos y lanza
+entra con una cuenta Designer solo para leer, y SAIL CLI no se usa, porque crea datos y lanza
 procesos. `LCP_TOOL_MODE=readonly` no basta: la documentación de Appian la describe, pero el Dev MCP 26.6.110 no la
 aplica. Detalle en `skills/appian-reverse-engineering/references/devmcp-setup.md`, «Solo se escribe en desarrollo».
 
