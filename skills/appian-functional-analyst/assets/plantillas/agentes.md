@@ -12,7 +12,7 @@ Empieza por `appian-functional-analyst/scripts/proyecto.py estado .`: dice en qu
 | `analisis/` | `funcional.md` (la visión del producto, en §1), `tecnico.md`, `decisiones.md`, `cambios.md` (las unidades de cambio) y `diagramas/` |
 | `prototipo/` | El prototipo navegable y sus capturas |
 | `construccion/<U>/` | Las issues de construcción de cada unidad (`indice.md` y, por issue, `ISS-nn.md`, `ISS-nn.feature` y lo esperado) y su verificación. La siguiente la da y la reserva `appian-functional-analyst/scripts/indice.py issues . <U> --siguiente` |
-| `qa/<U>/` | El QA de cada unidad: un guion de SAIL CLI por escenario (`<escenario>.json`) y `resultado.json`, la última vez que se repitieron; un escenario que falla devuelve su issue a pendiente. Los repite `appian-qa/scripts/qa.py repetir . <U>` |
+| `qa/<U>/` | El QA de cada unidad, con todas sus issues hechas y antes de marcarla construida: un guion de SAIL CLI por escenario (`<escenario>.json`) y `resultado.json`, la última vez que se repitieron; un escenario que falla devuelve su issue a pendiente, salvo que una persona lo marque como no necesario. Los repite sin IA `appian-qa/scripts/qa.py repetir . <U>`, también antes de cada paquete, tras la regresión |
 | `as-is/`, `refactorizacion/` | Solo con una aplicación existente: cómo está hecha y cómo rehacerla |
 | `entregables/`, `versiones/` | El DF en Word y la copia del análisis antes de cada cambio |
 

@@ -34,7 +34,7 @@ sus objetos, como dice el técnico, y sus pruebas, los casos de prueba guardados
 las usa. Un caso suyo que falla la deja pendiente, salvo que una persona lo marque como no necesario, con su motivo; un
 retoque que no cambia criterios ni reglas no ejecuta ninguno. Con todas sus issues hechas, el QA recorre la unidad con
 SAIL CLI como cada rol, en otra sesión y solo con sus escenarios; cada recorrido queda como guion en `qa/`, y un
-escenario que falla devuelve su issue a pendiente. Después se marca la unidad construida y, antes
+escenario que falla devuelve su issue a pendiente, con la misma salvedad. Después se marca la unidad construida y, antes
 de preparar el paquete, la regresión ejecuta todos los casos de prueba de la aplicación y un script repite sin IA los
 guiones del QA. Las verificaciones hechas con el encargo de antes de las issues (`construccion/verificacion/<U>.json`)
 ya no cuentan: una unidad aprobada entonces se verifica de nuevo, issue a issue, con la orden que imprime

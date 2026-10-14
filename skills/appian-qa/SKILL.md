@@ -155,12 +155,15 @@ y no lleva rutas del equipo de nadie:
 ```json
 {"unidad": "EV-01", "generadoEn": "2026-10-14T15:30:12Z",
  "escenarios": {"HU-01.1": {"resultado": "pasa", "guion": "HU-01.1.json", "issue": "ISS-02", "fecha": "…", "segundos": 9.1},
-                "HU-03.2": {"resultado": "falla", "paso": "entonces 2", "motivo": "la fila con «QA …» tiene Estado «Enviada» y se esperaba Estado «Devuelta»", …}},
+                "HU-03.2": {"resultado": "falla", "paso": "entonces 2", "motivo": "la fila con «QA {pasada}» tiene Estado «Enviada» y se esperaba Estado «Devuelta»", …}},
  "sinGuion": ["HU-02.1"]}
 ```
 
 - **pasa** o **falla**: la última vez que se repitió. Una issue con un escenario que falla está pendiente
-  (`appian-functional-analyst/scripts/issues.py`, `estado()`).
+  (`appian-functional-analyst/scripts/issues.py`, `estado()`), salvo que una persona lo marque como no necesario para
+  avanzar, con su motivo (`indice.py issues <p> <U> ISS-nn --sin-prueba HU-nn.m --motivo "…"`, de
+  `appian-functional-analyst`; nunca en una sesión desatendida). La marca vale para ese fallo: el motivo lleva
+  `{pasada}` y `{hoy}`, no lo que valieron, para que el mismo fallo diga lo mismo en cada repetición.
 - **desfasado**: el escenario ya no dice lo del guion; no cuenta como fallo, y QA lo rehace.
 - **guion por terminar**: el guion está mal escrito o no llega a afirmar nada en el «entonces»; no devuelve la issue a
   quien construye: lo termina QA.

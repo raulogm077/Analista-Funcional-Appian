@@ -220,6 +220,23 @@ def main():
            hecha_qa[0] is False and "falla en QA: HU-01.1" in hecha_qa[1]
            and iss.estado(t.p, "EV-01", issue(iss, "ISS-03", ["HU-09.1"]))[0] is False   # sin verificar: no por QA
            and "QA" not in iss.estado(t.p, "EV-01", issue(iss, "ISS-03", ["HU-09.1"]))[1], hecha_qa)
+        # B2: una persona puede marcar el escenario como no necesario (indice.py … --sin-prueba HU-01.1), y la marca vale
+        # para ese fallo: el motivo lleva {pasada}, no lo que valió, y la misma repetición da el mismo
+        c, out = t.repetir("--escenario", "HU-01.1")
+        e2 = t.resultado()[0]["escenarios"]["HU-01.1"]
+        ok("el motivo de un fallo lleva {pasada}, no lo que valió: repetido con el mismo defecto, dice lo mismo",
+           c == 1 and "«QA {pasada}»" in e["motivo"] and e2["motivo"] == e["motivo"] and e2["paso"] == e["paso"],
+           (e, e2))
+        error = iss.error_de(f"{e['paso']}: {e['motivo']}")
+        marca = {"issue": "ISS-01", "version": "v1", "objeto": "QA", "caso": "HU-01.1", "error": error,
+                 "motivo": "x", "quien": "Ana", "cuando": "2026-10-14T10:00Z"}
+        ok("el escenario de QA marcado como no necesario para ese fallo no la deja pendiente, y lo dice",
+           iss.falla_en_qa(t.p, "EV-01", hecha, [marca]) == []
+           and iss.estado(t.p, "EV-01", hecha, [marca]) == (True, "hecha · marcada como no necesaria: QA «HU-01.1»"),
+           iss.estado(t.p, "EV-01", hecha, [marca]))
+        otras = [{**marca, "error": "entonces 1: otro fallo"}, {**marca, "version": "v0"}, {**marca, "issue": "ISS-02"}]
+        ok("… y no vale con otro fallo, para otra versión de la issue ni para otra issue",
+           all(iss.falla_en_qa(t.p, "EV-01", hecha, [x]) == ["HU-01.1"] for x in otras), otras)
         t.defecto()
         c, out = t.repetir("--escenario", "HU-01.1")
         ok("corregido, repetir solo su escenario lo deja pasando y la issue, hecha; los demás se quedan como estaban",

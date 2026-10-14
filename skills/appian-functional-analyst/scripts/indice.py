@@ -20,7 +20,8 @@ Con unidades de cambio (analisis/cambios.md, references/cambios.md):
                                                         anuladas, pantallas, técnico, objetos, pruebas, colisiones
   indice.py colision   <p> URG-01                       la corrección urgente frente a las unidades sin pasar a producción
   indice.py issues     <p> EV-02 ISS-nn --sin-prueba "<objeto> «<caso>»" --motivo "…" [--desatendida]
-                                                        una persona marca un caso de prueba que falla como no necesario
+                                                        una persona marca un caso de prueba que falla, o un escenario
+                                                        que falla en el QA (--sin-prueba HU-nn.m), como no necesario
                                                         para avanzar (en el índice; se niega con --desatendida)
   indice.py issues     <p> EV-02 --regresion           la orden de la regresión de toda la aplicación para este
                                                         equipo, antes de preparar el paquete
@@ -650,7 +651,7 @@ def c_issues(m, a):
                      f"Salida: déjalo para ella; «indice.py issues <p> {uid}» dice qué falla")
         if not a.issue or not (a.motivo or "").strip():
             sys.exit(f"✗ {uid}: --sin-prueba va con la issue y el motivo: indice.py issues <p> {uid} ISS-nn --sin-prueba "
-                     "\"<objeto> «<caso>»\" --motivo \"…\"")
+                     "\"<objeto> «<caso>»\" (o el escenario de QA, HU-nn.m) --motivo \"…\"")
         try:
             m, ctx, plan, issue, como = iss.sin_prueba(m.raiz, uid, a.issue.upper(), a.sin_prueba, a.motivo, a.quien)
         except iss.NoSePuede as e:
@@ -736,8 +737,9 @@ def main():
     s.add_argument("--regresion", action="store_true",
                    help="la orden de la regresión de toda la aplicación, para este equipo: antes de preparar el paquete")
     s.add_argument("--sin-prueba", metavar="«<objeto> «<caso>»»",
-                   help="con ISS-nn y --motivo: una persona marca ese caso de prueba, que falla, como no necesario para "
-                        "avanzar; la issue puede darse por hecha y la marca se revisa al preparar el paquete")
+                   help="con ISS-nn y --motivo: una persona marca ese caso de prueba, o ese escenario del QA (HU-nn.m), "
+                        "que falla, como no necesario para avanzar; la issue puede darse por hecha y la marca se revisa "
+                        "al preparar el paquete")
     s.add_argument("--motivo", help="con --sin-prueba: por qué no hace falta para avanzar")
     s.add_argument("--desatendida", action="store_true", help="la sesión no tiene a una persona: --sin-prueba se niega")
     a = ap.parse_args()

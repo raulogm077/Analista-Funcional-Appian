@@ -832,6 +832,9 @@ def construir(a, ctx, u, hoy, no, raiz, orden):
                "corrígelo en el entorno y vuelve a verificar; si una persona decide que esa prueba no es necesaria para "
                f"avanzar, la marca ella: «indice.py issues <p> {u.id} ISS-nn --sin-prueba \"<objeto> «<caso>»\" --motivo "
                "\"…\"»" if con("fallan sus pruebas") else
+               "corrígelo en desarrollo y repite sus guiones, como dice cada una; si una persona decide que ese escenario "
+               f"no es necesario para avanzar, lo marca ella: «indice.py issues <p> {u.id} ISS-nn --sin-prueba HU-nn.m "
+               "--motivo \"…\"»" if con("falla en QA") else
                "repite «verificar» o usa --manual" if con("no se pud") or con("no dice cómo fueron sus pruebas") else
                f"construye y verifica cada una: «indice.py issues <p> {u.id} --siguiente» la da con su orden de terminar "
                "(sin Dev MCP, --manual)" if con("sin verificar") else

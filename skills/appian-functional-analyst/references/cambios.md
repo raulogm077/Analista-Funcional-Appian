@@ -22,7 +22,7 @@ escribe `proyecto.py cambio` (`<p>`, el proyecto). Cada error dice la salida.
 |---|---|---|---|
 | `cambio <p> EV-02 abrir --titulo "…"` | Abierta | Empieza el cambio | ya existe |
 | `… aprobada --fuente FU-nn [--comparte "…"]` | Aprobada | El jefe de proyecto aprueba la unidad entera, con su alcance y coste; su aprobación (chat o correo) es la fuente FU-nn. Deja escritas sus issues de construcción (§5) y, si cambia datos, permisos, procesos en curso o lo que usan otros (los puntos de «Cambio sobre lo construido», §4), o usa IA, avisa: «que una persona revise DT-nn antes de construir», también en su issue. Es un aviso, no frena nada | hay puntos «Pendiente» en sus informes; o un objeto suyo de §13 está también en otra unidad Aprobada o Construida sin una decisión escrita (`--comparte "EV-03 en X: secuenciar (EV-02 primero)"`), salvo que las dos solo cambien en él el nombre de una acción, una vista o un filtro (§4): eso se avisa |
-| `… construida [--reaplicada URG-nn …] [--manual]` | Construida | Todas sus issues, construidas y verificadas en desarrollo, con sus pruebas (§6). Da la orden de la regresión, que se pasa antes de preparar el paquete | no está Aprobada; ha crecido desde que se aprobó; alguna issue no está hecha (dice cuál y por qué; con `--manual`, sin Dev MCP, no se mira, y la marca lo dice); o falta confirmar una corrección urgente que hay que reaplicar |
+| `… construida [--reaplicada URG-nn …] [--manual]` | Construida | Todas sus issues, construidas y verificadas en desarrollo, con sus pruebas y, si tiene escenarios, su QA (§6); si el QA falta o está a medias, lo avisa, sin impedirlo. La regresión va después, antes de preparar el paquete (`indice.py issues <p> EV-02 --regresion`) | no está Aprobada; ha crecido desde que se aprobó; alguna issue no está hecha (dice cuál y por qué, también si un escenario suyo falla en el QA; con `--manual`, sin Dev MCP, no se mira, y la marca lo dice); o falta confirmar una corrección urgente que hay que reaplicar |
 | `… produccion --ref "<pase>" --fecha <AAAA-MM-DD del pase>` | En producción | Tras el pase | no está Construida |
 | `… descartada [--informe impacto/FU-nn.md]` | Descartada | No se hace | no está Abierta; o tiene algo aplicado y no se da el informe (aplicado) que lo deshace, o §13 sigue con sus filas |
 
@@ -166,18 +166,24 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
    dos, o el caso vuelve a pasar, se quita sola) y se revisa al preparar el paquete; con `--desatendida` se niega. Si el
    Dev MCP no ejecuta casos, o no pudo ejecutar los de la issue, la issue no espera: sus pruebas, a la regresión.
    **Una issue está hecha** cuando su última verificación pasa y es de su versión de ahora: si al volver a generarla
-   cambia lo que hay que construir o comprobar, vuelve a estar pendiente. También vuelve si uno de sus escenarios falla
-   en el QA de la unidad (`qa/EV-02/resultado.json`, de `appian-qa`), hasta que se corrige y sus guiones pasan. No hay
-   otro estado que mantener: su reserva se quita sola, y `indice.py issues <p> EV-02` dice cómo va cada una.
-4. **Marcar**, con todas hechas: `proyecto.py cambio <p> EV-02 construida` (la orden de la última issue la trae; si la
-   unidad tiene escenarios, va antes su QA, en otra sesión, y `construida` avisa si falta o está a medias) y,
-   tras el pase, `… produccion --ref "<pase>" --fecha <AAAA-MM-DD>`. Sin Dev MCP no hay verificación: construye una
+   cambia lo que hay que construir o comprobar, vuelve a estar pendiente. No hay otro estado que mantener: su reserva se
+   quita sola, y `indice.py issues <p> EV-02` dice cómo va cada una.
+4. **QA**, con todas hechas y si la unidad tiene escenarios (un retoque no los tiene): en otra sesión y solo con sus
+   `.feature`, `appian-qa` recorre cada escenario con SAIL CLI como cada rol, deja su guion en `qa/EV-02/` y lo repite
+   sin IA, que escribe `qa/EV-02/resultado.json`. Un escenario que falla devuelve su issue a pendiente hasta que se
+   corrige y sus guiones pasan, salvo que una persona lo marque como no necesario, igual que una prueba:
+   `indice.py issues <p> EV-02 ISS-nn --sin-prueba HU-nn.m --motivo "…"` (vale para ese fallo; con `--desatendida` se
+   niega).
+5. **Marcar**, con todas hechas y su QA: `proyecto.py cambio <p> EV-02 construida` (la orden de la última issue la
+   trae; si la unidad tiene escenarios, en una nota, para después del QA, y `construida` avisa si falta o está a medias)
+   y, tras el pase, `… produccion --ref "<pase>" --fecha <AAAA-MM-DD>`. Sin Dev MCP no hay verificación: construye una
    persona siguiendo el índice y la unidad se marca con `--manual`.
-5. **Regresión**, antes de preparar el paquete: la orden que da `indice.py issues <p> EV-02 --regresion` (el atajo
+6. **Regresión**, antes de preparar el paquete: la orden que da `indice.py issues <p> EV-02 --regresion` (el atajo
    «Regresión» de ingeniería inversa) ejecuta todos los casos de prueba de la aplicación y deja el resumen en
    `construccion/EV-02/regresion.json`; por la salida, solo lo que falla. Si el Dev MCP no ejecuta casos, se pasa en
    Appian: los de las reglas, con Manage Test Cases; los de las interfaces, desde cada interfaz en Designer, porque
    Manage Test Cases no los ejecuta. Si en una issue no se pudieron ejecutar sus casos, también esperan a la regresión.
+   Después, `qa.py repetir <p>` de `appian-qa` repite sin IA los guiones del QA de todas las unidades (F9).
 
 **Deriva** (antes de abrir una unidad en una aplicación ajena, o para los objetos de una urgencia): `devmcp_extract.py
 deriva` de ingeniería inversa compara el historial de versiones con el de `as-is/` y escribe `as-is/datos/deriva.json`; si

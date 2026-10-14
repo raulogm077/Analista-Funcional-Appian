@@ -494,11 +494,17 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None):
         elif [" ".join(x.split()) for x in g["dice"]] != dice:
             entrada.update(resultado="desfasado", motivo="el escenario ha cambiado; ahora dice: " + " / ".join(dice))
         else:
+            valores = {"pasada": unica(), "hoy": datetime.date.today().isoformat()}
             try:
-                Recorrido(g, cuentas, {"pasada": unica(), "hoy": datetime.date.today().isoformat()}).repite()
+                Recorrido(g, cuentas, valores).repite()
                 entrada["resultado"] = "pasa"
             except Falla as e:
-                entrada.update(resultado="falla", paso=e.paso, motivo=sin_rutas(e.motivo))
+                # con {pasada} y {hoy} en vez de lo que valieron: el mismo fallo dice lo mismo en cada repetición, y la
+                # marca de una persona (indice.py issues … --sin-prueba HU-nn.m), que vale para ese fallo, sigue valiendo
+                motivo = sin_rutas(e.motivo)
+                for k, v in valores.items():
+                    motivo = motivo.replace(v, "{" + k + "}")
+                entrada.update(resultado="falla", paso=e.paso, motivo=motivo)
             except SinRepetir as e:
                 entrada = dict(antes.get(esc) or entrada)
                 entrada.setdefault("resultado", "sin repetir")

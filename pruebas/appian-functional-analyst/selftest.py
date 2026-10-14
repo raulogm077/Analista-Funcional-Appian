@@ -2335,11 +2335,57 @@ def pruebas_de_la_issue(tmp):
        c == 0 and "Firmar la revisión · hecha · sus pruebas no se han ejecutado: el Dev MCP no ofrece ejecutar casos de "
        "prueba: los de la issue esperan a la regresión" in out, out)
     verifica(v, "EV-02", "ISS-03")
+
+    # B2 y B3, también en el QA (T15): un escenario de la issue que falla en el QA de la unidad la deja pendiente, y
+    # construida dice qué hacer; una persona puede marcarlo como no necesario, con la regla de un caso de prueba
+    qa = v / "qa" / "EV-02" / "resultado.json"
+
+    def resultado_qa(motivo):
+        qa.parent.mkdir(parents=True, exist_ok=True)
+        qa.write_text(json.dumps({"unidad": "EV-02", "escenarios": {"HU-04.1": {
+            "resultado": "falla", "guion": "HU-04.1.json", "issue": "ISS-02", "paso": "entonces 1", "motivo": motivo}}},
+            ensure_ascii=False), encoding="utf-8")
+    resultado_qa("está «Aprobar» y no debería")
+    c, out = issues(v, "EV-02")
+    ok("T15: un escenario de la issue que falla en el QA de la unidad la deja pendiente, diciendo cuál y cómo se repite",
+       c == 0 and "Firmar la revisión · pendiente: falla en QA: HU-04.1 (qa/EV-02/resultado.json); corregido, se repiten "
+       "sus guiones (appian-qa: qa.py repetir <p> EV-02)" in out, out)
+    c, out = corre(S / "proyecto.py", "cambio", v, "EV-02", "construida", "--reaplicada", "URG-01")
+    ok("construida, con un escenario que falla en el QA: es error y la salida es corregir y repetir sus guiones, o que una "
+       "persona lo marque (--sin-prueba HU-nn.m); no la orden de terminar",
+       c == 1 and "ISS-02 (falla en QA: HU-04.1" in out and "Salida: corrígelo en desarrollo y repite sus guiones" in out
+       and "--sin-prueba HU-nn.m" in out and "orden de terminar" not in out and "| Aprobada |" in fila_de(v, "EV-02"), out)
+    for args, falla in [(("--motivo", "x", "--desatendida"), "en una sesión desatendida no se marca una prueba"),
+                        ((), "--sin-prueba va con la issue y el motivo"),
+                        (("--motivo", "x"), None)]:
+        c, out = issues(v, "EV-02", "ISS-01" if falla is None else "ISS-02", "--sin-prueba", "HU-04.1", *args)
+        ok(f"--sin-prueba HU-04.1 {' '.join(args) or 'sin --motivo'}"
+           + (" en otra issue" if falla is None else "") + ": se niega y no marca nada",
+           c == 1 and (falla or "«HU-04.1» no es un caso que falle en ISS-01") in out
+           and "Pruebas marcadas" not in lee(dv / "indice.md"), out)
+    c, out = issues(v, "EV-02", "ISS-02", "--sin-prueba", "HU-04.1", "--motivo", "Lo valida negocio en pruebas",
+                    "--quien", "Ana")
+    indice = lee(dv / "indice.md")
+    ok("una persona marca el escenario de QA como no necesario para avanzar, con su motivo: va al índice con «QA» por "
+       "objeto y el fallo, y la issue está hecha y lo dice",
+       c == 0 and "ISS-02 de EV-02: QA «HU-04.1», marcada como no necesaria para avanzar" in out
+       and re.search(r"\| ISS-02 \| `" + de_issue(v, "EV-02", "ISS-02")["version"] + r"` \| `QA` \| HU-04\.1 \| "
+                     r"entonces 1: está «Aprobar» y no debería \| Lo valida negocio en pruebas \| Ana \| ", indice)
+       is not None and re.search(r"Firmar la revisión · hecha · [^\n]*marcada como no necesaria: QA «HU-04\.1»", out)
+       is not None, out + indice)
+    resultado_qa("no está «Rechazar»")
+    c, out = issues(v, "EV-02")
+    ok("la marca de un escenario de QA vale para ese fallo: si falla de otra manera, la issue vuelve a estar pendiente y "
+       "la marca se quita", c == 0 and "Firmar la revisión · pendiente: falla en QA: HU-04.1" in out
+       and "Pruebas marcadas" not in lee(dv / "indice.md"), out)
+    resultado_qa("está «Aprobar» y no debería")
+    issues(v, "EV-02", "ISS-02", "--sin-prueba", "HU-04.1", "--motivo", "Lo valida negocio en pruebas", "--quien", "Ana")
     c, out = corre(S / "proyecto.py", "cambio", v, "EV-02", "construida", "--reaplicada", "URG-01")
     c2, out2 = issues(v, "EV-02", "--regresion")
     ok("la orden de la regresión de toda la aplicación, lista para copiar, la da indice.py issues --regresion a quien "
-       "prepara el paquete; marcar la unidad construida no la da",
-       c == 0 and "regresion" not in out and c2 == 0 and " regresion --app \"DEM Gestión de Solicitudes\" --out \"" in out2
+       "prepara el paquete; marcar la unidad construida no la da (con el escenario de QA marcado, se marca, y lo dice)",
+       c == 0 and "regresion" not in out and "· verificada · 1 prueba marcada |" in fila_de(v, "EV-02")
+       and c2 == 0 and " regresion --app \"DEM Gestión de Solicitudes\" --out \"" in out2
        and f"{(v / 'construccion' / 'EV-02' / 'regresion.json').resolve().as_posix()}\"" in out2, out + out2)
 
     # Una acción de registro que se renombra: lo esperado lleva su nombre nuevo y su tipo, de técnico §7
