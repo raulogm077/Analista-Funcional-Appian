@@ -8,8 +8,8 @@ Prueba la skill de $PLUGIN_A_PROBAR/skills/appian-qa (por defecto, la de este re
 encuentra por su usuario y su host; los guiones pasan y dos repeticiones dan lo mismo; un defecto los hace fallar, con
 su paso y su motivo, y devuelve su issue a pendiente (issues.py del analista); una ref que cambia en cada carga, un
 error en texto, un paso que no cambia nada, un «entonces» que mira la página de antes de enviar y un guion a medias
-fallan; una sesión caducada no cambia el resultado anterior; un escenario que cambió deja su guion desfasado; un load
-que aún no enseña lo nuevo se repite. Sale con 1 si algo falla.
+fallan; una sesión caducada no cambia el resultado anterior; SAIL CLI que no responde para la repetición; un escenario
+que cambió deja su guion desfasado; un load que aún no enseña lo nuevo se repite. Sale con 1 si algo falla.
 """
 import importlib.util
 import json
@@ -363,20 +363,52 @@ def main():
         ok("en la URL del entorno de corrección sí se repite", c == 0 and set(resultados().values()) == {"pasa"}, out)
         t.tecnico(DESARROLLO)
 
-        # SAIL CLI que deja de responder a mitad del recorrido es un fallo; al primer paso, no se ha podido repetir
+        # SAIL CLI que no responde no dice nada de la aplicación (T16: una repetición tardó 22 minutos): se para en ese
+        # paso, sin repetir el resto de ese guion ni los que quedan, y lo dice. Lo que no repite no conserva su «pasa»,
+        # para no esconder una pantalla que se cuelga (revisión de T15): sale «sin repetir», con su último «pasa»
         spec = importlib.util.spec_from_file_location("qa_simulado", QA)
         qa = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(qa)
         os.environ.update(SAIL_CLI=str(SIMULADO), SAIL_SIMULADO_APP=str(t.app))
         qa.ESPERA_SAIL = 3
-        t.defecto(cuelga_desde=llamadas(t) + 2)
-        e = qa.repite_unidad(t.p, "EV-01", {"HU-01.2"}, qa.sesiones([str(t.sesiones)]))[1]["HU-01.2"]
-        ok("si SAIL CLI responde al primer paso y deja de responder después, el escenario falla",
-           e["resultado"] == "falla" and "no respondió" in e["motivo"] and "sinRepetir" not in e, e)
-        t.defecto(cuelga_desde=llamadas(t) + 1)
-        e = qa.repite_unidad(t.p, "EV-01", {"HU-01.2"}, qa.sesiones([str(t.sesiones)]))[1]["HU-01.2"]
-        ok("si no responde ni al primero, no se ha podido repetir: se queda lo anterior",
-           e["resultado"] == "falla" and "no respondió" in e.get("sinRepetir", ""), e)
+        antes, previo = llamadas(t), t.resultado()[0]["escenarios"]
+        t.defecto(cuelga_desde=antes + 2)
+        _, rep, L, parado = qa.repite_unidad(t.p, "EV-01", set(), qa.sesiones([str(t.sesiones)]))
+        ok("si SAIL CLI deja de responder, se para en ese paso: no repite el resto de ese guion ni los que quedan, y lo dice",
+           llamadas(t) == antes + 2 and parado == "SAIL CLI dejó de responder en EV-01 HU-01.1"
+           and rep["HU-01.1"].get("sinRepetir") == "SAIL CLI no respondió en 3 s a «navigate» en «cuando 2»"
+           and all(rep[x].get("sinRepetir") == f"no se ha repetido: {parado}" for x in ("HU-01.2", "HU-02.1"))
+           and "se ha parado ahí" in L[-1], (llamadas(t) - antes, rep, L))
+        ok("… y lo que no repite no conserva su «pasa»: sale «sin repetir» con la fecha de su último «pasa», no devuelve "
+           "ninguna issue a pendiente y avisos_qa() (el de construida y estado) lo dice",
+           all(rep[x]["resultado"] == "sin repetir" and rep[x].get("ultimoPasa") == previo[x]["fecha"]
+               and "fecha" not in rep[x] for x in ("HU-01.1", "HU-01.2", "HU-02.1"))
+           and iss.falla_en_qa(t.p, "EV-01", hecha) == [] and iss.estado(t.p, "EV-01", hecha) == (True, "hecha")
+           and "sin repetir: HU-01.1, HU-01.2, HU-02.1" in "".join(iss.avisos_qa(t.p, plan)),
+           (rep, iss.avisos_qa(t.p, plan)))
+        # sin red, igual; un «falla» de antes sí se queda, y las unidades que quedan tampoco se repiten
+        t.defecto()
+        t.repetir()
+        t.defecto(estado_alta="Borrador")
+        t.repetir("--escenario", "HU-01.1")
+        escribe(t.p / "construccion" / "EV-02" / "ISS-01.feature", FEATURES["ISS-01.feature"])
+        escribe(t.p / "qa" / "EV-02" / "HU-01.1.json", a_json(GUIONES["HU-01.1"]))
+        t.defecto(sin_red=True)
+        antes = llamadas(t)
+        c, out = t.qa("repetir", str(t.p), "EV-01", "EV-02")
+        otra = json.loads((t.p / "qa" / "EV-02" / "resultado.json").read_text(encoding="utf-8"))["escenarios"]["HU-01.1"]
+        ok("sin red (SAIL CLI no llega al servidor), igual: sale con 2, un «falla» de antes se queda (su issue sigue "
+           "pendiente), lo demás sale «sin repetir» y las unidades que quedan tampoco se repiten",
+           c == 2 and llamadas(t) == antes + 1 and "no llega a" in out and "vuelve a pendiente" not in out
+           and resultados() == {"HU-01.1": "falla", "HU-01.2": "sin repetir", "HU-02.1": "sin repetir"}
+           and iss.falla_en_qa(t.p, "EV-01", hecha) == ["HU-01.1"] and otra["resultado"] == "sin repetir"
+           and otra["sinRepetir"] == "no se ha repetido: SAIL CLI dejó de responder en EV-01 HU-01.1"
+           and "HU-01.1 · sin repetir esta vez (no se ha repetido: SAIL CLI dejó de responder en EV-01 HU-01.1); no ha "
+               "pasado nunca" in out, out)
+        shutil.rmtree(t.p / "qa" / "EV-02")
+        shutil.rmtree(t.p / "construccion" / "EV-02")
+        t.defecto()
+        t.repetir()
         t.defecto(lee_stdin=True)
         salida = tmp / "salida stdin.txt"
         with open(salida, "w", encoding="utf-8") as s:

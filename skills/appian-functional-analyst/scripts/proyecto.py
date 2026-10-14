@@ -8,8 +8,9 @@
   proyecto.py iniciar  <carpeta>     en un proyecto que ya existe: pone al día AGENTS.md y los flujos con esta versión
                                      del plugin y añade lo que falte de lo anterior
   proyecto.py estado   <carpeta>     versión, cliente y marca, DF enviado, fuentes sin procesar, pendientes, pantallas;
-                                     y avisa de lo que no está confirmado o subido, de lo que hay en el remoto sin traer
-                                     y de si AGENTS.md o los flujos son de otra versión del plugin
+                                     y avisa de lo que no está confirmado o subido, de lo que hay en el remoto sin traer,
+                                     de si AGENTS.md o los flujos son de otra versión del plugin y de la unidad
+                                     Construida cuyo QA falla o tiene escenarios sin repetir
   proyecto.py copia    <carpeta>     guarda analisis/*.md en versiones/v<versión>/ antes de cambiarlo
   proyecto.py version  <carpeta> --fuente FU-nn [FU-nn …] --que "…" [--informe impacto/URG-nn.md]
                        [--decision CAMBIA PAN-01 "lo nuevo" "lo de antes [FU-01 00:12:30]" …]
@@ -386,8 +387,26 @@ def unidades(ctx):
               f" · objetos: {', '.join(obj) or '—'}")
         for g, objs in ctx.reaplicar(u.id):
             print(f"    reaplicar {g} en {', '.join(objs)} antes de marcarla Construida (--reaplicada {g})")
+        for x in avisos_qa(ctx, u.id) if u.estado == un.CONSTRUIDA else []:
+            print(f"    {x}")
     for n in ctx.sin_unidad():
         print(f"· impacto/{n}.md no dice «Cambio:» y hay varias unidades Abiertas: ¿de cuál es?")
+
+
+def avisos_qa(ctx, uid):
+    """Lo que `estado` avisa del último QA de una unidad Construida (qa/<U>/resultado.json), sin bloquear (B3): los
+    escenarios que fallan y nadie ha marcado como no necesarios, cuyas issues vuelven a pendiente, y lo que le falta
+    (issues.avisos_qa: sin repetir, sin guion…). [] si no tiene QA o no se pueden calcular sus issues."""
+    if not (ctx.m.raiz / "qa" / uid / "resultado.json").is_file():
+        return []
+    try:
+        plan = iss.calcula(ctx.m, ctx, uid)
+    except iss.NoSePuede:
+        return []
+    fallan = [f"{c} ({i.id})" for i in plan.issues for c in iss.falla_en_qa(ctx.m.raiz, uid, i, plan.marcas)]
+    return ([f"su QA falla en {', '.join(fallan)} (qa/{uid}/resultado.json): esas issues vuelven a pendiente y se "
+             f"corrigen como cualquier otra («indice.py issues <p> {uid} --siguiente»)"] if fallan else []) \
+        + iss.avisos_qa(ctx.m.raiz, plan)
 
 
 def _copia(raiz, m):

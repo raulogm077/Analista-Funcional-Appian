@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+from types import SimpleNamespace
 
 sys.dont_write_bytecode = True  # importa un módulo de la skill (redaccion): sin __pycache__ en el plugin
 AQUI = pathlib.Path(__file__).resolve().parent
@@ -2425,6 +2426,22 @@ def pruebas_de_la_issue(tmp):
        c == 0 and "regresion" not in out and "· verificada · 1 prueba marcada |" in fila_de(v, "EV-02")
        and c2 == 0 and " regresion --app \"DEM Gestión de Solicitudes\" --out \"" in out2
        and f"{(v / 'construccion' / 'EV-02' / 'regresion.json').resolve().as_posix()}\"" in out2, out + out2)
+    # B3: si el QA falla después de marcarla, la unidad sigue Construida y estado lo avisa (con el fallo marcado, no)
+    c, out = corre(S / "proyecto.py", "estado", v)
+    resultado_qa("no está «Rechazar»")
+    c2, out2 = corre(S / "proyecto.py", "estado", v)
+    ok("una unidad Construida cuyo QA falla después sigue Construida, y estado lo avisa con el escenario y su issue; con "
+       "el fallo marcado como no necesario, no",
+       c == 0 and "su QA falla" not in out and c2 == 0 and "| Construida |" in fila_de(v, "EV-02")
+       and "    su QA falla en HU-04.1 (ISS-02) (qa/EV-02/resultado.json): esas issues vuelven a pendiente" in out2,
+       out + out2)
+    qa.write_text(json.dumps({"unidad": "EV-02", "escenarios": {"HU-04.1": {
+        "resultado": "sin repetir", "guion": "HU-04.1.json", "issue": "ISS-02", "ultimoPasa": "2026-10-14T10:00:00Z",
+        "sinRepetir": "SAIL CLI no respondió en 120 s a «load» en «cuando 1»"}}}, ensure_ascii=False), encoding="utf-8")
+    c, out = corre(S / "proyecto.py", "estado", v)
+    ok("un escenario sin repetir porque SAIL CLI no respondía no devuelve su issue a pendiente, pero estado lo avisa",
+       c == 0 and "su QA falla" not in out and "sin repetir: HU-04.1" in out, out)
+    resultado_qa("está «Aprobar» y no debería")
     # La de una urgencia corregida en el entorno de corrección (URG-01) se pasa allí, con el Dev MCP de ese entorno; la
     # de un evolutivo, con el de desarrollo. Cada uno, por la etiqueta exacta de su URL en técnico §0
     editar(v / "analisis" / "tecnico.md", "| Aplicación | `DEM Gestión de Solicitudes`, prefijo `DEM` | FU-01 |",
@@ -2893,6 +2910,29 @@ def pruebas_issues(tmp):
     c, out = issues(v, "EV-02", "ISS-03", env=aislado, cwd=v)
     ok("la orden de marcar la unidad lleva el --reaplicada de la corrección urgente que la issue pide reaplicar",
        c == 0 and out.count("```") == 2 and " EV-02 construida --reaplicada URG-01`" in out.split("```")[2], out)
+
+    # Un nodo se compara con los de su proceso (T16): en uno nuevo, el «¿Hay algo que guardar?» no «cambia» frente al del
+    # mismo nombre de otro proceso, ni su «Guardar solicitud» es «igual» porque otro proceso ya lo tenga
+    sys.path.insert(0, str(S))
+    import issues as iss
+    import modelo as mo
+    alta = "**DEM Alta Solicitud** (ACT-01).\n\n| Nodo | Qué hace |\n|---|---|\n| ¿Hay algo que guardar? | {} |\n" \
+           "| Guardar solicitud | Write Records |\n"
+    entregar = alta.replace("Alta", "Entregar").replace("ACT-01", "ACT-04")
+    for nombre, texto in (("antes", alta.format("Termina si se canceló o no pasa la validación")),
+                          ("ahora", alta.format("Termina si se canceló") + "\n" + entregar.format("Termina si ya no está «Aprobada»"))):
+        f = tmp / "nodos" / nombre / "analisis" / "tecnico.md"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text("# Técnico\n\nVersión: 1.0\n\n## 8. Procesos\n\n" + texto, encoding="utf-8")
+    d = SimpleNamespace(m=mo.Proyecto(tmp / "nodos" / "ahora"), ant=mo.Proyecto(tmp / "nodos" / "antes"),
+                        todos={"DEM Alta Solicitud", "DEM Entregar Solicitud"})
+    nodos = [(x["estado"], iss.en_palabras(x)) for x in iss.lineas_del_tecnico(d) if x["cabecera"]]
+    ok("los nodos se comparan dentro de su proceso: en el nuevo, todos nuevos; en el que cambia, su «antes» es el suyo",
+       nodos == [("cambia", "Nodo: ¿Hay algo que guardar? · Qué hace: Termina si se canceló (antes: … se canceló o no "
+                            "pasa la validación)"),
+                 ("igual", "Nodo: Guardar solicitud · Qué hace: Write Records"),
+                 ("nuevo", "Nodo: ¿Hay algo que guardar? · Qué hace: Termina si ya no está «Aprobada»"),
+                 ("nuevo", "Nodo: Guardar solicitud · Qué hace: Write Records")], nodos)
 
     # Reservar: --siguiente escribe en el índice quién tiene la issue y desde cuándo, y hace commit y push de las issues
     # de la unidad. Dos que la piden a la vez no se llevan la misma. Nunca falla por git
