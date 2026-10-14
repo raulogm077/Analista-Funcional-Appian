@@ -1,24 +1,46 @@
 # Método L.U.C.I.A. en el plugin: diseño
 
-Análisis del 12 al 14 de octubre de 2026 sobre la 0.7.0-beta.4 (`d6126a8`) y el artículo [L.U.C.I.A. al detalle técnico](https://dev.to/raguilera82/lucia-al-detalle-tecnico-8dk). El plan está en `docs/plan/2026-10-14-metodo-lucia.md`; las decisiones B y las tareas T remiten a él.
+Análisis del 12 al 14 de octubre de 2026 sobre la 0.7.0-beta.4 (`d6126a8`) y el artículo [L.U.C.I.A. al detalle
+técnico](https://dev.to/raguilera82/lucia-al-detalle-tecnico-8dk). El plan está en
+`docs/plan/2026-10-14-metodo-lucia.md`; las decisiones B y las tareas T remiten a él.
 
-El plugin ya aplica, a la manera de Appian, buena parte de L.U.C.I.A. Lo que aporta es su frontera: la IA prepara, y desde el paquete todo lo hacen Appian y scripts, con la firma de personas. Con las dos rondas de observaciones de Raúl, el plan son once cambios acotados y tres mediciones; entre ellos, un repositorio git por proyecto, flujos con una sola fuente, requisitos en Gherkin, issues repartidas por un script y QA con SAIL CLI.
+El plugin ya aplica, a la manera de Appian, buena parte de L.U.C.I.A. Lo que aporta es su frontera: la IA prepara, y
+desde el paquete todo lo hacen Appian y scripts, con la firma de personas. Con las dos rondas de observaciones de Raúl,
+el plan son once cambios acotados y tres mediciones; entre ellos, un repositorio git por proyecto, flujos con una sola
+fuente, requisitos en Gherkin, issues repartidas por un script y QA con SAIL CLI.
 
 ## Conclusiones
 
-1. **El plugin ya hace buena parte de L.U.C.I.A., traducido a Appian.** Tiene los requisitos versionados con su fuente y lo mecánico en scripts (`proyecto.py`, `indice.py encargo`, `verificar`). Una persona aprueba lo que importa: el analista, el informe de impacto; el jefe de proyecto, la unidad. Las decisiones llevan su alternativa descartada (DT) y las urgencias van por un camino corto. El artículo confirma el rumbo; no pide rehacer nada.
-2. **Lo que vale del método no es su ceremonia, sino su frontera.** La IA propone y prepara; desde el Merge Request todo es determinista y lo firma una persona. En Appian, ese punto es el paquete. Y dos reglas de fondo: IA solo donde hay carga cognitiva, y el contexto se consulta bajo demanda, sin cargar el corpus entero.
-3. **Copiado tal cual, repetiría appian-harness.** Rama y Merge Request por tarea, TDD en todo, cobertura del 85 % y lint suponen un repositorio git con tests locales. Appian no tiene ramas, valida al guardar y guarda las pruebas dentro de la plataforma.
-4. **Las observaciones de Raúl encajan, con ajustes por Appian.** Las issues se agrupan si comparten pantalla o proceso, con una «Base» primero: en un entorno compartido, dos issues no deben tocar el mismo objeto. El repositorio de cada proyecto se trabaja sobre main, sin ramas, porque el código está en Appian. Y SAIL CLI va en el QA de la unidad, en otra sesión, no en la issue.
-5. **Quedan once cambios acotados y tres mediciones.** Están en «Lo que se adopta». Según lo medido, el que más ahorra sigue siendo que la IA consulte bajo demanda; la issue lo lleva a la construcción, porque trae solo el extracto que necesita.
-6. **El mayor riesgo de burocracia está ahora en la construcción.** La skill oficial de Appian obliga a cargar su `SKILL.md` y siete referencias antes de cualquier llamada al Dev MCP: 2.480 líneas de media, el 25 % del coste (comprobado el 14-oct, T6), en cada sesión, sea cual sea el cambio. Por eso varias issues pueden ir en la misma sesión. Ahí puede volver la «hora por un cambio menor»: se mide antes de decidir y, si domina, un retoque cosmético se hace a mano en Designer.
+1. **El plugin ya hace buena parte de L.U.C.I.A., traducido a Appian.** Tiene los requisitos versionados con su fuente y
+   lo mecánico en scripts (`proyecto.py`, `indice.py encargo`, `verificar`). Una persona aprueba lo que importa: el
+   analista, el informe de impacto; el jefe de proyecto, la unidad. Las decisiones llevan su alternativa descartada (DT)
+   y las urgencias van por un camino corto. El artículo confirma el rumbo; no pide rehacer nada.
+2. **Lo que vale del método no es su ceremonia, sino su frontera.** La IA propone y prepara; desde el Merge Request todo
+   es determinista y lo firma una persona. En Appian, ese punto es el paquete. Y dos reglas de fondo: IA solo donde hay
+   carga cognitiva, y el contexto se consulta bajo demanda, sin cargar el corpus entero.
+3. **Copiado tal cual, repetiría appian-harness.** Rama y Merge Request por tarea, TDD en todo, cobertura del 85 % y
+   lint suponen un repositorio git con tests locales. Appian no tiene ramas, valida al guardar y guarda las pruebas
+   dentro de la plataforma.
+4. **Las observaciones de Raúl encajan, con ajustes por Appian.** Las issues se agrupan si comparten pantalla o proceso,
+   con una «Base» primero: en un entorno compartido, dos issues no deben tocar el mismo objeto. El repositorio de cada
+   proyecto se trabaja sobre main, sin ramas, porque el código está en Appian. Y SAIL CLI va en el QA de la unidad, en
+   otra sesión, no en la issue.
+5. **Quedan once cambios acotados y tres mediciones.** Están en «Lo que se adopta». Según lo medido, el que más ahorra
+   sigue siendo que la IA consulte bajo demanda; la issue lo lleva a la construcción, porque trae solo el extracto que
+   necesita.
+6. **El mayor riesgo de burocracia está ahora en la construcción.** La skill oficial de Appian obliga a cargar su
+   `SKILL.md` y siete referencias antes de cualquier llamada al Dev MCP: 2.480 líneas de media, el 25 % del coste
+   (comprobado el 14 de octubre, T6), en cada sesión, sea cual sea el cambio. Por eso varias issues pueden ir en la
+   misma sesión. Ahí puede volver la «hora por un cambio menor»: se mide antes de decidir y, si domina, un retoque
+   cosmético se hace a mano en Designer.
 
 ## Observaciones de Raúl: a favor, en contra y qué se hace
 
-Entran casi todas, también las de la segunda ronda, al final de la tabla. Se ajustan dos: las issues se agrupan por pantalla o proceso, y SAIL CLI va en el QA de la unidad, no en la issue.
+Entran casi todas, también las de la segunda ronda, al final de la tabla. Se ajustan dos: las issues se agrupan por
+pantalla o proceso, y SAIL CLI va en el QA de la unidad, no en la issue.
 
 | Observación | A favor | En contra | Qué se hace |
-| --- | --- | --- | --- |
+|---|---|---|---|
 | El producto como pequeño cerebro: cada fuente nueva se encaja analizando su impacto | Es lo que ya hace el plugin: fuentes FU, informe de impacto que aprueba el analista, piezas 🔒 | Nada nuevo; el coste medido está en releer documentos enteros | **Ya existe.** La fase 1 lo abarata: consultar por partes |
 | Repositorio del proyecto con su estructura y la visión del producto; el código vive en Appian | Un sitio común para personas y agentes, igual en cada proyecto y con su historial | Un product\_vision.md aparte repetiría funcional §1. Ramas y PR serían burocracia: el código no está ahí. Word, capturas y vídeos no se fusionan bien en git | **Sí, obligatorio** (B9): `proyecto.py iniciar` crea el repositorio; se trabaja sobre main, sin ramas; sube todo, también las fuentes, menos las grabaciones; el Word y las capturas se regeneran en vez de fusionarse. La visión es funcional §1 |
 | Requisitos en Gherkin | Criterio comprobable y sin ambigüedad. Appian Max lo propone. Pasa a `.feature` sin IA y sirve a QA y a herramientas BDD | Alarga el DF. Los criterios actuales están escritos de otra forma. Los pasos de pantalla no los entiende el cliente | **Sí (B5):** un escenario de una línea por criterio, en lenguaje de negocio y con su ID de siempre. El `.feature` lo genera un script. Un criterio viejo se reescribe cuando se cambia |
@@ -39,7 +61,8 @@ Entran casi todas, también las de la segunda ronda, al final de la tabla. Se aj
 
 ## Cómo trabajaremos
 
-Un repositorio git por proyecto, siempre con la misma forma; nueve flujos con una sola fuente; criterios en Gherkin; un script que convierte cada requisito en una issue lista para construir; y QA con SAIL CLI.
+Un repositorio git por proyecto, siempre con la misma forma; nueve flujos con una sola fuente; criterios en Gherkin; un
+script que convierte cada requisito en una issue lista para construir; y QA con SAIL CLI.
 
 ### El repositorio del proyecto
 
@@ -61,14 +84,18 @@ Lo crea `proyecto.py iniciar`, ya como repositorio git. Lo marcado «nuevo» es 
 └── entregables/ versiones/
 ```
 
-Sin `.agents/skills/` ni `product_vision.md`. El código sigue en Appian; el repositorio guarda todo lo demás, también las fuentes. Se trabaja sobre main: pull antes, push después, sin ramas ni PR. Reservar una issue es un commit. El Word, las capturas y los PNG de los diagramas se regeneran en vez de fusionarse. Dónde se aloja lo decide cada proyecto: los scripts solo usan git.
+Sin `.agents/skills/` ni `product_vision.md`. El código sigue en Appian; el repositorio guarda todo lo demás, también
+las fuentes. Se trabaja sobre main: pull antes, push después, sin ramas ni PR. Reservar una issue es un commit. El Word,
+las capturas y los PNG de los diagramas se regeneran en vez de fusionarse. Dónde se aloja lo decide cada proyecto: los
+scripts solo usan git.
 
 ### Flujos
 
-Un fichero corto por flujo en el plugin: pasos, quién hace cada uno y qué skill. El detalle sigue en las referencias de cada skill.
+Un fichero corto por flujo en el plugin: pasos, quién hace cada uno y qué skill. El detalle sigue en las referencias de
+cada skill.
 
 | Flujo | Cuándo | Empieza en | Termina en |
-| --- | --- | --- | --- |
+|---|---|---|---|
 | F1 Aplicación nueva | Reuniones, correos o el DF del cliente para una aplicación que no existe | Analista | DF validado, técnico y la unidad EV-01 con sus issues |
 | F2 Incorporar una fuente | Reunión, correo, documento, demo o comentarios al DF | Analista | Informe de impacto aprobado y cambios puntuales; un retoque, por el camino corto |
 | F3 Evolutivo | Cambiar o ampliar una aplicación construida, propia o ajena ya documentada | Analista | Unidad EV aprobada, DF del cambio e issues |
@@ -79,14 +106,18 @@ Un fichero corto por flujo en el plugin: pasos, quién hace cada uno y qué skil
 | F8 Construir y verificar | Una unidad aprobada | Buenas prácticas, con la skill oficial; el QA, appian-qa | Issues construidas y verificadas, y la unidad con su QA, en desarrollo |
 | F9 Pase a producción | Una unidad construida | Una persona | Objetos revisados, pase por el método del cliente y su registro |
 
-Sin flujo propio, como variantes: DF del cliente ya hecho (F1), demo (F2), retoque (F2 y, si B4 lo decide, a mano en Designer), integración nueva (F3) y datos u operación en producción (F5). Más adelante: mantenimiento de plataforma (subida de versión, plug-ins, Health Check) y prueba de concepto técnica. «Probar el plugin con reuniones reales» es del propio plugin y va en su `CLAUDE.md`.
+Sin flujo propio, como variantes: DF del cliente ya hecho (F1), demo (F2), retoque (F2 y, si B4 lo decide, a mano en
+Designer), integración nueva (F3) y datos u operación en producción (F5). Más adelante: mantenimiento de plataforma
+(subida de versión, plug-ins, Health Check) y prueba de concepto técnica. «Probar el plugin con reuniones reales» es del
+propio plugin y va en su `CLAUDE.md`.
 
 ### Skills
 
-Una nueva, appian-qa, para el QA con SAIL CLI. El reparto en issues es un script del analista y los flujos son documentos.
+Una nueva, appian-qa, para el QA con SAIL CLI. El reparto en issues es un script del analista y los flujos son
+documentos.
 
 | Skill | Hace | Flujos |
-| --- | --- | --- |
+|---|---|---|
 | `appian-functional-analyst` | Fuentes → funcional con Gherkin, DF y técnico; unidades e issues | F1 a F5, F7 |
 | `appian-diagramas-bpmn` | Procesos en draw.io | F1, F3, F6 |
 | `appian-prototipos` | Pantallas y capturas | F1, F3, F7 |
@@ -123,10 +154,14 @@ Un «cuando» por criterio, en palabras del cliente y sin botones ni campos. Si 
 ### Del requisito a la issue
 
 1. Técnico §13 dice para qué requisito es cada objeto (columna «Para»). Lo común lleva «Base».
-2. `indice.py issues <p> <U>` hace una issue por requisito. Los que comparten pantalla o proceso van juntos, y lo «Base», en la issue 1.
+2. `indice.py issues <p> <U>` hace una issue por requisito. Los que comparten pantalla o proceso van juntos, y lo
+   «Base», en la issue 1.
 3. Las ordena por dependencias y marca cuáles pueden ir en paralelo: las que no comparten objetos.
-4. Cada issue lleva lo que necesita el agente y nada más: el extracto del técnico y del prototipo, no la orden de leerlos enteros.
-5. `--siguiente` da la próxima: la primera sin hacer cuyas dependencias están hechas. Una issue está hecha cuando su última verificación pasa y es de su versión actual; si al regenerarla cambia, vuelve a estar pendiente. Lo dice el fichero que deja `verificar`, sin otro estado que mantener a mano.
+4. Cada issue lleva lo que necesita el agente y nada más: el extracto del técnico y del prototipo, no la orden de
+   leerlos enteros.
+5. `--siguiente` da la próxima: la primera sin hacer cuyas dependencias están hechas. Una issue está hecha cuando su
+   última verificación pasa y es de su versión actual; si al regenerarla cambia, vuelve a estar pendiente. Lo dice el
+   fichero que deja `verificar`, sin otro estado que mantener a mano.
 6. Se genera y no se edita: si cambia el análisis, se vuelve a generar y cada issue conserva su número.
 
 Así se vería una, con datos ficticios:
@@ -155,18 +190,27 @@ verificar … --esperado ISS-03-esperado.json
 
 SAIL CLI viene en el paquete del Dev MCP. Su ayuda (versión 26.6.110) dice tres cosas que deciden el método:
 
-- Entra con una cuenta local de Appian, o importa la sesión SSO del Dev MCP, y cada sesión vive en su `--data-dir`: una por rol, y varias pruebas a la vez sin pisarse.
-- Las referencias que imprime se mantienen entre cargas, así que un recorrido se puede escribir como guion; y `--json` da una salida que lee un script.
+- Entra con una cuenta local de Appian, o importa la sesión SSO del Dev MCP, y cada sesión vive en su `--data-dir`: una
+  por rol, y varias pruebas a la vez sin pisarse.
+- Las referencias que imprime se mantienen entre cargas, así que un recorrido se puede escribir como guion; y `--json`
+  da una salida que lee un script.
 - No dibuja la pantalla: trabaja con lo que viaja entre Appian y el navegador. Maquetación y estilos quedan fuera.
 
 Cómo se usa:
 
 1. Técnico §14 dice qué criterios se comprueban con SAIL CLI; la issue lo lista, sin pasos.
-2. Quien construye cierra su issue con los casos de prueba guardados (T13). Puede usar SAIL CLI mientras construye, pero no le hace falta para terminar.
-3. Con la unidad completa, QA abre otra sesión, solo con los `.feature` de la unidad. Puede ser otro agente, como Antigravity: el flujo está en `.agents/workflows/`. Por escenario, prepara el «dado» como un usuario, lo recorre con la cuenta de su rol y comprueba el «entonces» en el `--json`.
-4. Un recorrido que pasa se guarda como guion en `qa/<U>/`: las órdenes de SAIL CLI y lo que debe salir. Un fallo devuelve su issue a pendiente.
-5. Antes de cada paquete, un script del plugin repite los guiones sin IA, y los fallos salen en la revisión de T18. Si una pantalla cambió a propósito, QA rehace su guion.
-6. Solo en desarrollo, porque crea datos y lanza procesos; en una urgencia, en el entorno de corrección. `sail logout` borra la sesión y lo tecleado: las de cuentas locales se cierran al terminar la campaña de QA, y la importada del Dev MCP no se cierra, porque cerrarla podría dejarlo sin acceso (comprobado el 14-oct, T15).
+2. Quien construye cierra su issue con los casos de prueba guardados (T13). Puede usar SAIL CLI mientras construye, pero
+   no le hace falta para terminar.
+3. Con la unidad completa, QA abre otra sesión, solo con los `.feature` de la unidad. Puede ser otro agente, como
+   Antigravity: el flujo está en `.agents/workflows/`. Por escenario, prepara el «dado» como un usuario, lo recorre con
+   la cuenta de su rol y comprueba el «entonces» en el `--json`.
+4. Un recorrido que pasa se guarda como guion en `qa/<U>/`: las órdenes de SAIL CLI y lo que debe salir. Un fallo
+   devuelve su issue a pendiente.
+5. Antes de cada paquete, un script del plugin repite los guiones sin IA, y los fallos salen en la revisión de T18. Si
+   una pantalla cambió a propósito, QA rehace su guion.
+6. Solo en desarrollo, porque crea datos y lanza procesos; en una urgencia, en el entorno de corrección. `sail logout`
+   borra la sesión y lo tecleado: las de cuentas locales se cierran al terminar la campaña de QA, y la importada del Dev
+   MCP no se cierra, porque cerrarla podría dejarlo sin acceso (comprobado el 14 de octubre, T15).
 7. En un retoque cosmético no hay QA. Si cambia un texto que usa un guion, se rehace solo ese guion.
 
 Lo que SAIL CLI no ve lo mira una persona con la captura, o Playwright si el ensayo de T16 lo justifica.
@@ -186,14 +230,16 @@ Análisis (IA; validan analista y cliente)
   → En producción (proyecto.py, con --ref)
 ```
 
-Hasta construir y verificar, la IA prepara y los scripts comprueban; desde el paquete, solo actúan personas, Appian y scripts. Los cambios T12, T13, T14, T15 y T18 están marcados en su paso.
+Hasta construir y verificar, la IA prepara y los scripts comprueban; desde el paquete, solo actúan personas, Appian y
+scripts. Los cambios T12, T13, T14, T15 y T18 están marcados en su paso.
 
 ## Por qué no se copia tal cual
 
-L.U.C.I.A. está pensado para código en repositorios git; Appian construye objetos en un entorno vivo. Es el mismo supuesto que hizo fallar appian-harness.
+L.U.C.I.A. está pensado para código en repositorios git; Appian construye objetos en un entorno vivo. Es el mismo
+supuesto que hizo fallar appian-harness.
 
 | El método da por hecho | En Appian |
-| --- | --- |
+|---|---|
 | Rama y Merge Request por tarea; nunca se trabaja en `main` | Un entorno de desarrollo compartido, sin ramas. Protegen el `versionId` (409 si otro guardó antes), las colisiones entre unidades y el entorno de corrección. El repositorio del proyecto se trabaja sobre `main`: guarda análisis e issues, no código |
 | `./tk v`: build, tests, cobertura de al menos el 85 % y lint en local | La plataforma valida al guardar. Las pruebas son casos de prueba guardados en reglas e interfaces. No hay cobertura de líneas: Designer solo dice qué reglas no tienen casos de prueba |
 | Una imagen que se construye una vez y se promueve | Un paquete, con un ICF por entorno, que se promueve con Compare and Deploy o la API de despliegue. A producción, por el método de cada cliente |
@@ -202,11 +248,12 @@ L.U.C.I.A. está pensado para código en repositorios git; Appian construye obje
 
 ## Pieza a pieza
 
-De 19 piezas, 4 ya existen, 11 se adoptan o adaptan, 1 la resuelve Appian de forma nativa y 3 se quedan fuera. Los números T remiten al plan.
+De 19 piezas, 4 ya existen, 11 se adoptan o adaptan, 1 la resuelve Appian de forma nativa y 3 se quedan fuera. Los
+números T remiten al plan.
 
 | Pieza de L.U.C.I.A. | En el plugin o en Appian | Veredicto |
-| --- | --- | --- |
-| Frontera: la IA prepara; desde el Merge Request, todo determinista | En Appian, ese punto es el paquete. Falta que el Dev MCP no pueda escribir fuera de desarrollo; `LCP_TOOL_MODE` no lo impide: no hace nada en el Dev MCP 26.6.110 (comprobado el 14-oct, T5) | **Adoptar** (T12) |
+|---|---|---|
+| Frontera: la IA prepara; desde el Merge Request, todo determinista | En Appian, ese punto es el paquete. Falta que el Dev MCP no pueda escribir fuera de desarrollo; `LCP_TOOL_MODE` no lo impide: no hace nada en el Dev MCP 26.6.110 (comprobado el 14 de octubre, T5) | **Adoptar** (T12) |
 | Lo repetible es un comando; lo determinista no va a la IA | Ya es regla del plugin («lo mecánico lo hace un script; lo que pide juicio, el modelo») | **Ya existe**; T1 lo comprueba |
 | El contexto se consulta bajo demanda; nunca el corpus entero | `indice.py` y `seccion.py` consultan por partes, pero en la medida real (0.6.0-beta.1) la IA leyó documentos enteros | **Adoptar como método** (T1 a T3); la issue lleva solo su extracto (T11) |
 | Código de cuatro colores: fichero, IA, persona, automatismo | Completa la pregunta del `CLAUDE.md` «¿qué se rompe si no se añade?» | **Adoptar como pregunta de diseño** (T1, T4) |
@@ -231,14 +278,14 @@ De 19 piezas, 4 ya existen, 11 se adoptan o adaptan, 1 la resuelve Appian de for
 Cada cambio pasa la pregunta del `CLAUDE.md`: qué se rompe si no está y quién decide con ello.
 
 | Cambio | Qué se rompe sin él | Coste |
-| --- | --- | --- |
+|---|---|---|
 | La IA consulta bajo demanda: los cuatro puntos de «Agilidad» (T2) | 70 minutos para incorporar una fuente corta con su prototipo (0.6.0-beta.1): 18 y 17 minutos leyendo documentos enteros, 28 esperando al prototipo y notas de 3 a 7 veces el original | Cambios en instrucciones y scripts que ya existen |
 | Un repositorio git por proyecto, sobre main (T8, T11) | Varias personas y agentes no pueden trabajar a la vez sobre el análisis y las issues, ni saber quién hace qué | `proyecto.py iniciar` lo crea; pull antes y push después; reservar una issue es un commit; sin ramas ni PR |
 | Flujos con una sola fuente y `AGENTS.md` generado (T7, T8) | Cada persona o agente sigue su propio recorrido; los pasos de un evolutivo o de una urgencia están repartidos entre skills | Nueve ficheros cortos en el plugin; `proyecto.py iniciar` los copia y los pone al día |
 | Criterios en Gherkin de una línea (T9) | Cada criterio se interpreta al construir y al probar, y no pasa a una prueba sin IA | Escribirlo con dado, cuando y entonces; el `.feature` lo genera un script |
 | Issues por requisito, repartidas por un script (T10, T11) | El agente recibe la unidad entera y lee el técnico completo para saber qué le toca; no se ve qué puede ir en paralelo | Una columna en técnico §13; `indice.py issues` sustituye a `indice.py encargo` |
-| El Dev MCP no puede escribir fuera de desarrollo, salvo el entorno de corrección en una urgencia (T12) | Un `.mcp.json` que apunta a producción, por ejemplo el configurado para ingeniería inversa, deja a la IA escribir allí. Buenas prácticas ya lo prohíbe: nada se cambia a mano en producción (BP 08 §3) | `LCP_TOOL_MODE=readonly` no quita las herramientas que crean o modifican: no hace nada en el Dev MCP 26.6.110 (comprobado el 14-oct, T5). Donde se pueda, además, un usuario que solo ve la aplicación |
-| Pruebas de la issue como red de regresión (T13) | Una issue cambia una regla y rompe otra que depende de ella sin que nadie lo vea hasta pruebas | Los casos los crea quien construye (la skill oficial ya lo pide) y funcionan sin IA. Por issue se ejecuta solo lo que cambia y lo que lo usa; la regresión completa, antes del paquete, con un script que ejecuta los casos objeto a objeto (comprobado el 14-oct, T5: el Dev MCP no los ejecuta en bloque). Una persona puede marcar una prueba como «no necesaria para avanzar», con motivo |
+| El Dev MCP no puede escribir fuera de desarrollo, salvo el entorno de corrección en una urgencia (T12) | Un `.mcp.json` que apunta a producción, por ejemplo el configurado para ingeniería inversa, deja a la IA escribir allí. Buenas prácticas ya lo prohíbe: nada se cambia a mano en producción (BP 08 §3) | `LCP_TOOL_MODE=readonly` no quita las herramientas que crean o modifican: no hace nada en el Dev MCP 26.6.110 (comprobado el 14 de octubre, T5). Donde se pueda, además, un usuario que solo ve la aplicación |
+| Pruebas de la issue como red de regresión (T13) | Una issue cambia una regla y rompe otra que depende de ella sin que nadie lo vea hasta pruebas | Los casos los crea quien construye (la skill oficial ya lo pide) y funcionan sin IA. Por issue se ejecuta solo lo que cambia y lo que lo usa; la regresión completa, antes del paquete, con un script que ejecuta los casos objeto a objeto (comprobado el 14 de octubre, T5: el Dev MCP no los ejecuta en bloque). Una persona puede marcar una prueba como «no necesaria para avanzar», con motivo |
 | QA de la unidad con SAIL CLI, en otra sesión (T15) | Quien construye prueba lo que entendió, no lo que se pidió, y un fallo de pantalla llega al cliente | Una sesión por unidad completa, sin cargar la skill oficial; los guiones se repiten sin IA; en un retoque, nada |
 | Aviso de revisión técnica solo en unidades de riesgo (T14) | La IA construye un cambio de datos, seguridad o integración desde una DT que nadie ha mirado; deshacerlo cuesta | Una línea al aprobar y en la issue; no bloquea |
 | Una persona revisa los objetos al preparar el paquete (T18) | Lo que construyó la IA llega al pase sin que nadie lo haya mirado | Mirar la comparación de objetos que Compare and Deploy ya enseña |
@@ -247,12 +294,19 @@ Cada cambio pasa la pregunta del `CLAUDE.md`: qué se rompe si no está y quién
 
 ## Reglas para no repetir appian-harness
 
-- Antes de añadir algo: ¿qué se rompe si no está?, ¿quién decide con ello? y ¿de qué color es (script, persona, IA o fichero)? Lo determinista va a un script; lo que nadie lee no se añade.
-- Solo dos bloqueos nuevos: el Dev MCP no escribe fuera de desarrollo (salvo el entorno de corrección en una urgencia; `LCP_TOOL_MODE` no lo impide, porque no hace nada en el Dev MCP 26.6.110: comprobado el 14-oct, T5), y una issue no se da por hecha con un fallo en sus propias pruebas, también las de QA, salvo que una persona marque esa prueba como «no necesaria para avanzar». Los dos evitan construir algo equivocado; lo demás son avisos.
-- Ningún paso obligatorio nuevo en un retoque cosmético, ningún documento nuevo escrito a mano por cambio y ningún registro de veredictos aparte: el estado sale de los ficheros que ya dejan los scripts.
-- Lo que Appian ya da (casos de prueba, Manage Test Cases, SAIL CLI, Compare and Deploy, revisión de despliegues, ICF) se usa; no se rehace.
+- Antes de añadir algo: ¿qué se rompe si no está?, ¿quién decide con ello? y ¿de qué color es (script, persona, IA o
+  fichero)? Lo determinista va a un script; lo que nadie lee no se añade.
+- Solo dos bloqueos nuevos: el Dev MCP no escribe fuera de desarrollo (salvo el entorno de corrección en una urgencia;
+  `LCP_TOOL_MODE` no lo impide, porque no hace nada en el Dev MCP 26.6.110: comprobado el 14 de octubre, T5), y una
+  issue no se da por hecha con un fallo en sus propias pruebas, también las de QA, salvo que una persona marque esa
+  prueba como «no necesaria para avanzar». Los dos evitan construir algo equivocado; lo demás son avisos.
+- Ningún paso obligatorio nuevo en un retoque cosmético, ningún documento nuevo escrito a mano por cambio y ningún
+  registro de veredictos aparte: el estado sale de los ficheros que ya dejan los scripts.
+- Lo que Appian ya da (casos de prueba, Manage Test Cases, SAIL CLI, Compare and Deploy, revisión de despliegues, ICF)
+  se usa; no se rehace.
 - Se mide antes y después. Lo que no baje el tiempo, las llamadas o el riesgo, se quita.
-- Git guarda el proyecto, no el código: nada del ciclo de código en git (ramas, Merge Request, build, cobertura) entra sin traducirse antes a un mecanismo de Appian.
+- Git guarda el proyecto, no el código: nada del ciclo de código en git (ramas, Merge Request, build, cobertura) entra
+  sin traducirse antes a un mecanismo de Appian.
 
 ## Anexo: hechos comprobados
 
@@ -260,68 +314,132 @@ Lo que se comprobó al analizar, con su fuente, para no repetirlo ni contradecir
 
 ### SAIL CLI (26.6.110, `sail --help` en el paquete del Dev MCP)
 
-- Es un binario aparte del servidor MCP, en `bin/` del paquete (`sail-windows-amd64.exe`, `sail-linux-amd64`, `sail-darwin-arm64`); `bin/setup-*` lo deja en el PATH como `sail`.
-- Entrar: `sail login <host>` con `SAIL_USERNAME` y `SAIL_PASSWORD` de una cuenta local de Appian. En un sitio solo con SSO, `sail login <host> --from-devmcp` importa la sesión que abrió el Dev MCP en el navegador (`LCP_AUTH_METHOD=browser`); `--user` si hay varias identidades guardadas.
+- Es un binario aparte del servidor MCP, en `bin/` del paquete (`sail-windows-amd64.exe`, `sail-linux-amd64`,
+  `sail-darwin-arm64`); `bin/setup-*` lo deja en el PATH como `sail`.
+- Entrar: `sail login <host>` con `SAIL_USERNAME` y `SAIL_PASSWORD` de una cuenta local de Appian. En un sitio solo con
+  SSO, `sail login <host> --from-devmcp` importa la sesión que abrió el Dev MCP en el navegador
+  (`LCP_AUTH_METHOD=browser`); `--user` si hay varias identidades guardadas.
 - `--data-dir` (por defecto `$SAIL_HOME` o `~/.sail`) aísla las sesiones: una por rol o por prueba en paralelo.
-- Órdenes: `pages`, `load <site> [page]`, `interact`, `navigate` (enlace de registro, de proceso o acción de registro; la acción sin formulario de inicio lleva al formulario de tarea), `show` (sin ir al servidor), `back` y `logout`.
-- `interact`: campos por etiqueta y valor; desplegables, radios y casillas por índice desde 1; fechas `AAAA-MM-DD`; fecha y hora con su zona; ficheros por ruta; rejillas y gráficos por su `handle:`. Varias parejas en una orden van en una sola petición. «✓ Interacted» es que el servidor cambió algo; si aceptó la orden sin mover ningún valor, cuenta como fallo.
-- Las referencias que imprime, también las «⌗» que inventa para componentes sin nombre, se mantienen entre cargas y se pueden escribir en un guion; el `_cId`, no.
-- `--json` da la salida para un script. Un destino con «confirm:» se rechaza salvo con `--confirm`. No sabe rellenar desplegables agrupados ni rangos numéricos. `load` sobre una página con datos tecleados se niega salvo con `--fresh`.
-- `logout` invalida la sesión en el servidor y borra el estado guardado, también lo tecleado. Se cierran las de cuentas locales al terminar la campaña de QA, no tras cada prueba (para repetir los guiones habría que volver a entrar), y la importada del Dev MCP no se cierra (comprobado el 14-oct, T15).
+- Órdenes: `pages`, `load <site> [page]`, `interact`, `navigate` (enlace de registro, de proceso o acción de registro;
+  la acción sin formulario de inicio lleva al formulario de tarea), `show` (sin ir al servidor), `back` y `logout`.
+- `interact`: campos por etiqueta y valor; desplegables, radios y casillas por índice desde 1; fechas `AAAA-MM-DD`;
+  fecha y hora con su zona; ficheros por ruta; rejillas y gráficos por su `handle:`. Varias parejas en una orden van en
+  una sola petición. «✓ Interacted» es que el servidor cambió algo; si aceptó la orden sin mover ningún valor, cuenta
+  como fallo.
+- Las referencias que imprime, también las «⌗» que inventa para componentes sin nombre, se mantienen entre cargas y se
+  pueden escribir en un guion; el `_cId`, no.
+- `--json` da la salida para un script. Un destino con «confirm:» se rechaza salvo con `--confirm`. No sabe rellenar
+  desplegables agrupados ni rangos numéricos. `load` sobre una página con datos tecleados se niega salvo con `--fresh`.
+- `logout` invalida la sesión en el servidor y borra el estado guardado, también lo tecleado. Se cierran las de cuentas
+  locales al terminar la campaña de QA, no tras cada prueba (para repetir los guiones habría que volver a entrar), y la
+  importada del Dev MCP no se cierra (comprobado el 14 de octubre, T15).
 - Trabaja sobre lo que Appian envía a la pantalla, sin navegador: no ve la maquetación ni los estilos.
 
 ### Dev MCP y Appian
 
-- `LCP_TOOL_MODE=readonly` «restricts to read-only tools, disabling any that create or modify objects» (Developer MCP Servers, 26.6) (comprobado el 14-oct, T5: no la aplica; el Dev MCP 26.6.110 ofrece las mismas herramientas con ella y sin ella). No consta que afecte a SAIL CLI.
-- Según el App Market (26.6.110): más de 120 herramientas; los casos de prueba se conservan al actualizar reglas e interfaces; hay `testInterface`, `testProcessModel` y análisis de impacto (los dependientes de un objeto); cada operación se hace con los permisos del usuario, y el acceso es para diseñadores y administradores. Hay herramientas que ejecutan los casos de prueba de reglas e interfaces: se ejecutan objeto a objeto, no en bloque (comprobado el 14-oct, T5).
-- Manage Test Cases da Passed, Failed, No test cases y Outdated. Outdated sale si cambió la regla, si cambió un objeto que usa (hasta 20 niveles) o si no tiene resultados de los últimos 14 días. Por eso T13 ejecuta lo de la issue y lo que la usa, y no «lo desactualizado», que incluiría reglas ajenas.
-- Testing Applications (26.6) nombra tres herramientas de prueba de interfaz: FitNesse for Appian, Cucumber for Appian y Appian Selenium API.
+- `LCP_TOOL_MODE=readonly` «restricts to read-only tools, disabling any that create or modify objects» (Developer MCP
+  Servers, 26.6) (comprobado el 14 de octubre, T5: no la aplica; el Dev MCP 26.6.110 ofrece las mismas herramientas con
+  ella y sin ella). No consta que afecte a SAIL CLI.
+- Según el App Market (26.6.110): más de 120 herramientas; los casos de prueba se conservan al actualizar reglas e
+  interfaces; hay `testInterface`, `testProcessModel` y análisis de impacto (los dependientes de un objeto); cada
+  operación se hace con los permisos del usuario, y el acceso es para diseñadores y administradores. Hay herramientas
+  que ejecutan los casos de prueba de reglas e interfaces: se ejecutan objeto a objeto, no en bloque (comprobado el 14
+  de octubre, T5).
+- Manage Test Cases da Passed, Failed, No test cases y Outdated. Outdated sale si cambió la regla, si cambió un objeto
+  que usa (hasta 20 niveles) o si no tiene resultados de los últimos 14 días. Por eso T13 ejecuta lo de la issue y lo
+  que la usa, y no «lo desactualizado», que incluiría reglas ajenas.
+- Testing Applications (26.6) nombra tres herramientas de prueba de interfaz: FitNesse for Appian, Cucumber for Appian y
+  Appian Selenium API.
 
 ### Claude Code y `AGENTS.md`
 
-- Claude Code lee `AGENTS.md` directamente solo si no hay `CLAUDE.md` en la carpeta ni por encima (desde la 2.1.277). Si hay `CLAUDE.md`, solo cuando este lo importa con `@AGENTS.md`. De ahí el `CLAUDE.md` de una línea en cada proyecto.
+- Claude Code lee `AGENTS.md` directamente solo si no hay `CLAUDE.md` en la carpeta ni por encima (desde la 2.1.277). Si
+  hay `CLAUDE.md`, solo cuando este lo importa con `@AGENTS.md`. De ahí el `CLAUDE.md` de una línea en cada proyecto.
 
 ### Playwright CLI
 
-- `@playwright/cli` (Node 20 o superior) está pensado para agentes: guarda las instantáneas en ficheros (`.playwright-cli/`) en vez de meterlas en el contexto, guarda y carga la sesión (`state-save`, `state-load`) y puede grabar los pasos como código Playwright. No publica cifras de tokens.
+- `@playwright/cli` (Node 20 o superior) está pensado para agentes: guarda las instantáneas en ficheros
+  (`.playwright-cli/`) en vez de meterlas en el contexto, guarda y carga la sesión (`state-save`, `state-load`) y puede
+  grabar los pasos como código Playwright. No publica cifras de tokens.
 
 ### L.U.C.I.A. y las pruebas
 
-- El agente que construye escribe un test por escenario Gherkin antes del código; el reparto crea además una issue de QA por requisito, sin decir quién la hace; una persona verifica en beta. No habla de modelos distintos por papel.
+- El agente que construye escribe un test por escenario Gherkin antes del código; el reparto crea además una issue de QA
+  por requisito, sin decir quién la hace; una persona verifica en beta. No habla de modelos distintos por papel.
 
 ### Del plugin, lo que se reutiliza
 
-- `proyecto.py iniciar` no toca lo que ya existe. `proyecto.py cambio … aprobada` y `produccion` se niegan con `--desatendida` si falta el visto bueno: es el patrón para `--sin-prueba`. `construida` acepta `--manual`; la verificación de cada issue queda en `construccion/<U>/verificacion/ISS-nn.json` (comprobado el 14-oct, T11 y T13).
-- `comprobar.py --anterior versiones/vX.Y` compara con la versión anterior: así sabe qué criterio es nuevo o cambiado sin git.
-- `devmcp_extract.py` lista las herramientas del Dev MCP al conectarse y las clasifica por su firma con `devmcp_policy.json`; `verificar` debe reconocer así la de probar.
+- `proyecto.py iniciar` no toca lo que ya existe. `proyecto.py cambio … aprobada` y `produccion` se niegan con
+  `--desatendida` si falta el visto bueno: es el patrón para `--sin-prueba`. `construida` acepta `--manual`; la
+  verificación de cada issue queda en `construccion/<U>/verificacion/ISS-nn.json` (comprobado el 14 de octubre, T11 y
+  T13).
+- `comprobar.py --anterior versiones/vX.Y` compara con la versión anterior: así sabe qué criterio es nuevo o cambiado
+  sin git.
+- `devmcp_extract.py` lista las herramientas del Dev MCP al conectarse y las clasifica por su firma con
+  `devmcp_policy.json`; `verificar` debe reconocer así la de probar.
 - `requisitos.py` ya sabe leer el host del Dev MCP (`LCP_URL`).
-- La especificación v2 de ingeniería inversa (borrada; está en el historial de git) dejó SAIL CLI fuera de la ingeniería inversa porque un clic puede lanzar procesos o escribir datos.
+- La especificación v2 de ingeniería inversa (borrada; está en el historial de git) dejó SAIL CLI fuera de la ingeniería
+  inversa porque un clic puede lanzar procesos o escribir datos.
 
 ### Descartado, y por qué
 
 - GitHub Issues (B6): ata el método a una plataforma, duplica la fuente y añade llamadas en cada paso.
 - Guiones de SAIL CLI dentro de la issue: repetirían el escenario y se escribirían antes de que exista la pantalla.
-- Playwright por defecto: SAIL CLI cubre los escenarios con menos tokens, según Appian; queda para lo visual, si T16 lo justifica.
+- Playwright por defecto: SAIL CLI cubre los escenarios con menos tokens, según Appian; queda para lo visual, si T16 lo
+  justifica.
 - Ramas y PR en el repositorio del proyecto: allí no hay código.
-- Una sección propia del proyecto dentro de `AGENTS.md`: obligaría a fusionar al regenerarlo; lo propio va en `proyecto.md`.
+- Una sección propia del proyecto dentro de `AGENTS.md`: obligaría a fusionar al regenerarlo; lo propio va en
+  `proyecto.md`.
 - Comprobar la terminal para `--sin-prueba`: basta `--desatendida`, que ya existe.
 - Ejecutar por issue «lo desactualizado»: entrarían reglas ajenas y las que llevan 14 días sin pasar.
 
-### Comprobado en T5 (14-oct)
+### Comprobado en T5 (14 de octubre de 2026)
 
-- Qué herramientas del Dev MCP crean y ejecutan casos de prueba, si las ejecutan en bloque y cómo dan los dependientes: las de reglas e interfaces; objeto a objeto, no en bloque; los dependientes, solo los directos, con tipo y nombre.
-- Si `LCP_TOOL_MODE=readonly` deja fuera también a SAIL CLI: no hace nada en el bundle 26.6.110; la variable no está en su código.
-- Si Indra-spain admite cuentas locales de prueba o hay que importar sesiones SSO con `--from-devmcp`: admite cuentas locales, que entran con `SAIL_USERNAME` y `SAIL_PASSWORD`, cada una en su `--data-dir`.
-- Qué devuelve `--json` al terminar un recorrido, para que `verificar` lo lea: cada componente con su `ref`, la misma entre cargas salvo las que el JSON marca como propias de cada una; los errores salen como texto aunque se pida JSON. Lo lee `qa.py` de `appian-qa` (T15), no `verificar`.
+- Qué herramientas del Dev MCP crean y ejecutan casos de prueba, si las ejecutan en bloque y cómo dan los dependientes:
+  las de reglas e interfaces; objeto a objeto, no en bloque; los dependientes, solo los directos, con tipo y nombre.
+- Si `LCP_TOOL_MODE=readonly` deja fuera también a SAIL CLI: no hace nada en el bundle 26.6.110; la variable no está en
+  su código.
+- Si Indra-spain admite cuentas locales de prueba o hay que importar sesiones SSO con `--from-devmcp`: admite cuentas
+  locales, que entran con `SAIL_USERNAME` y `SAIL_PASSWORD`, cada una en su `--data-dir`.
+- Qué devuelve `--json` al terminar un recorrido, para que `verificar` lo lea: cada componente con su `ref`, la misma
+  entre cargas salvo las que el JSON marca como propias de cada una; los errores salen como texto aunque se pida JSON.
+  Lo lee `qa.py` de `appian-qa` (T15), no `verificar`.
 
 ## Fuentes
 
-- [L.U.C.I.A. al detalle técnico](https://dev.to/raguilera82/lucia-al-detalle-tecnico-8dk), Rubén Aguilera, DEV Community.
-- Appian 26.6: [Review deployment requests](https://docs.appian.com/suite/help/26.6/deployments-view.html#review-deployment-requests) · [Deployment settings](https://docs.appian.com/suite/help/26.6/admin-infrastructure.html#deployment-settings) · [Direct Deployment Using Compare and Deploy](https://docs.appian.com/suite/help/26.6/direct-deployment.html) · [Deployments in Appian](https://docs.appian.com/suite/help/26.6/Deploy_to_Target_Environments.html) · [Manage Import Customization Files](https://docs.appian.com/suite/help/26.6/Managing_Import_Customization_Files.html) · [Expression Rule Testing: Manage Test Cases](https://docs.appian.com/suite/help/26.6/Expression_Rule_Testing.html#test-case-management) · [Start Rule Tests (Applications)](https://docs.appian.com/suite/help/26.6/Start_Rule_Tests_Applications_Smart_Service.html) · [Automated Testing for Expression Rules](https://docs.appian.com/suite/help/26.6/Automated_Testing_for_Expression_Rules.html) · [Testing Applications](https://docs.appian.com/suite/help/26.6/testing-applications.html#user-interface-ui-testing) · [Developer MCP Servers](https://docs.appian.com/suite/help/26.6/devmcp.html) (`LCP_TOOL_MODE`).
-- [Appian Dev MCP en el App Market](https://appmarket.appian.com/listings/appian-dev-mcp), versión 26.6.110 (8-10-2026), y la ayuda de SAIL CLI 26.6.110 en su paquete: `sail --help` y la de `login`, `load`, `interact`, `navigate`, `show` y `logout`.
-- Appian Max: [Writing Effective Acceptance Criteria](https://community.appian.com/delivery-28/writing-effective-acceptance-criteria-1266). Appian Community: [Automated Testing With Cucumber For Appian](https://community.appian.com/architecture-29/automated-testing-with-cucumber-for-appian-1314).
-- Gherkin: [Reference](https://cucumber.io/docs/gherkin/reference/) y [Localisation](https://cucumber.io/docs/gherkin/languages/) (palabras clave en español).
-- Claude Code: [How Claude remembers your project](https://code.claude.com/docs/en/memory) (`AGENTS.md` e importación desde `CLAUDE.md`).
-- Playwright: [Getting started, CLI](https://playwright.dev/docs/getting-started-cli) y [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli).
-- Skill oficial [appian/dev-mcp-skills](https://github.com/appian/dev-mcp-skills), commit 6e87fb6 (23-09-2026): `SKILL.md` (carga obligatoria), `references/tools-mcp.md`, `references/expression-rules.md` y `references/interfaces.md` (casos de prueba).
-- Repositorio del plugin (0.7.0-beta.4): `CLAUDE.md`, `docs/siguiente-version.md` («Agilidad»), la especificación v2 de ingeniería inversa (SAIL CLI), `skills/appian-functional-analyst/references/cambios.md` y `urgentes.md`, los scripts `proyecto.py`, `indice.py` y `comprobar.py` del analista, `skills/appian-best-practices/references/08-alm-testing-naming.md`, `skills/appian-reverse-engineering/references/devmcp-setup.md`, `scripts/devmcp_extract.py` de ingeniería inversa y el diseño aparcado «flujo completo y construcción» (commit 5d8acb0).
+- [L.U.C.I.A. al detalle técnico](https://dev.to/raguilera82/lucia-al-detalle-tecnico-8dk), Rubén Aguilera, DEV
+  Community.
+- Appian 26.6: [Review deployment
+  requests](https://docs.appian.com/suite/help/26.6/deployments-view.html#review-deployment-requests) · [Deployment
+  settings](https://docs.appian.com/suite/help/26.6/admin-infrastructure.html#deployment-settings) · [Direct Deployment
+  Using Compare and Deploy](https://docs.appian.com/suite/help/26.6/direct-deployment.html) · [Deployments in
+  Appian](https://docs.appian.com/suite/help/26.6/Deploy_to_Target_Environments.html) · [Manage Import Customization
+  Files](https://docs.appian.com/suite/help/26.6/Managing_Import_Customization_Files.html) · [Expression Rule Testing:
+  Manage Test Cases](https://docs.appian.com/suite/help/26.6/Expression_Rule_Testing.html#test-case-management) · [Start
+  Rule Tests (Applications)](https://docs.appian.com/suite/help/26.6/Start_Rule_Tests_Applications_Smart_Service.html) ·
+  [Automated Testing for Expression
+  Rules](https://docs.appian.com/suite/help/26.6/Automated_Testing_for_Expression_Rules.html) · [Testing
+  Applications](https://docs.appian.com/suite/help/26.6/testing-applications.html#user-interface-ui-testing) ·
+  [Developer MCP Servers](https://docs.appian.com/suite/help/26.6/devmcp.html) (`LCP_TOOL_MODE`).
+- [Appian Dev MCP en el App Market](https://appmarket.appian.com/listings/appian-dev-mcp), versión 26.6.110 (8 de
+  octubre de 2026), y la ayuda de SAIL CLI 26.6.110 en su paquete: `sail --help` y la de `login`, `load`, `interact`,
+  `navigate`, `show` y `logout`.
+- Appian Max: [Writing Effective Acceptance
+  Criteria](https://community.appian.com/delivery-28/writing-effective-acceptance-criteria-1266). Appian Community:
+  [Automated Testing With Cucumber For
+  Appian](https://community.appian.com/architecture-29/automated-testing-with-cucumber-for-appian-1314).
+- Gherkin: [Reference](https://cucumber.io/docs/gherkin/reference/) y
+  [Localisation](https://cucumber.io/docs/gherkin/languages/) (palabras clave en español).
+- Claude Code: [How Claude remembers your project](https://code.claude.com/docs/en/memory) (`AGENTS.md` e importación
+  desde `CLAUDE.md`).
+- Playwright: [Getting started, CLI](https://playwright.dev/docs/getting-started-cli) y
+  [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli).
+- Skill oficial [appian/dev-mcp-skills](https://github.com/appian/dev-mcp-skills), commit 6e87fb6 (23 de septiembre de
+  2026): `SKILL.md` (carga obligatoria), `references/tools-mcp.md`, `references/expression-rules.md` y
+  `references/interfaces.md` (casos de prueba).
+- Repositorio del plugin (0.7.0-beta.4): `CLAUDE.md`, `docs/siguiente-version.md` («Agilidad»), la especificación v2 de
+  ingeniería inversa (SAIL CLI), `skills/appian-functional-analyst/references/cambios.md` y `urgentes.md`, los scripts
+  `proyecto.py`, `indice.py` y `comprobar.py` del analista,
+  `skills/appian-best-practices/references/08-alm-testing-naming.md`,
+  `skills/appian-reverse-engineering/references/devmcp-setup.md`, `scripts/devmcp_extract.py` de ingeniería inversa y el
+  diseño aparcado «flujo completo y construcción» (commit 5d8acb0).

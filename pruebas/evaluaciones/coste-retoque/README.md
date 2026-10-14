@@ -8,8 +8,8 @@ repositorio.
 
 ## Lo que hay
 
-- El proyecto es el de `../evolutivo-urgencia/` («Solicitudes de material», caso C, sin `as-is/`): `EV-01` en
-  producción y `EV-02`, la firma de la revisión, aprobada. Sin urgencia. Se monta con su `montar.py`.
+- El proyecto es el de `../evolutivo-urgencia/` («Solicitudes de material», sin `as-is/`): `EV-01` en producción y
+  `EV-02`, la firma de la revisión, aprobada. Sin urgencia. Se monta con su `montar.py`.
 - `correo-2026-10-08-boton.eml`: la jefa de Servicios generales pide que el botón «Nueva solicitud» del panel diga
   «Pedir material». El panel (PAN-01, `DEM_Dashboard`) está construido en `EV-01`, validado por el equipo (✅, no 🔒) y
   fuera de `EV-02`: nada pide aprobación (`indice.py ficha PAN-01` dice «Construido: EV-01 · En curso: —»), y una
@@ -25,11 +25,11 @@ repositorio.
    ```
 
    Lo mismo que en `../evolutivo-urgencia/` (fuentes FU-01 a FU-04, capturas, los dos Word entregados si hay Node con
-   `docx`, las issues de `EV-02` y la huella `DEM-retoque.montaje.json` junto a la carpeta), con este correo en la carpeta
-   en vez de la incidencia. Con `PLUGIN_A_PROBAR=<carpeta>` usa esa copia del plugin.
+   `docx`, las issues de `EV-02` y la huella `DEM-retoque.montaje.json` junto a la carpeta), con este correo en la
+   carpeta en vez de la incidencia. Con `PLUGIN_A_PROBAR=<carpeta>` usa esa copia del plugin.
 2. **El retoque, a ciegas.** Un agente sigue el `SKILL.md` de `appian-functional-analyst` con una copia de las skills
-   del plugin y el proyecto, sin ver `pruebas/` ni `docs/` del repositorio, en una sesión desatendida: si pregunta, se le
-   dice que siga con la lectura más razonable. Recibe el encargo como lo daría el equipo:
+   del plugin y el proyecto, sin ver `pruebas/` ni `docs/` del repositorio, en una sesión desatendida: si pregunta, se
+   le dice que siga con la lectura más razonable. Recibe el encargo como lo daría el equipo:
 
    > Ha llegado este correo de Servicios generales sobre el panel (correo-2026-10-08-boton.eml); incorpóralo.
 
@@ -55,9 +55,11 @@ repositorio.
 | `sin_word_ni_capturas` | Ningún `.docx`, `.pdf` ni `.png` (salvo en `fuentes/`) nuevo o distinto del montaje: el Word y las capturas se regeneran al enviar o al construir, no con cada fuente |
 | `llamadas` | N ≤ 25 |
 
-Umbral: los seis. Cada punto es un coste que 3.0 quita (una aprobación, una DT, una vuelta de correcciones, un documento
-regenerado, llamadas de más); con que vuelva uno, el retoque ya no es ligero, que es lo que esta prueba mide. `hecho`
-evita que pase sin hacer el cambio. Criterio: la puntuación sale 0.
+## Criterio
+
+Umbral: los seis. Cada punto es un coste que un retoque no necesita (una aprobación, una DT, una vuelta de correcciones,
+un documento regenerado, llamadas de más); con que vuelva uno, el retoque ya no es ligero, que es lo que esta prueba
+mide. `hecho` evita que pase sin hacer el cambio. La puntuación sale 0.
 
 ## El tope: 25 llamadas
 
@@ -79,19 +81,21 @@ desde la 0.7.0-beta.3) lo deja así:
 | **Total** | **16** |
 
 `prueba_puntuar.py` recorre este camino con las órdenes del plugin y comprueba que son 16 llamadas y que la pasada de
-`comprobar.py` sale sin errores. El tope deja 9 de margen para lo razonable que no está en esa cuenta:
-`requisitos.py` al empezar, `indice.py resumen`, leer `cambios.md`, una búsqueda más o leer una plantilla. Lo que ya no
-cabe es lo que un retoque no necesita: regenerar el Word, el prototipo o las capturas, escribir una DT, presentar puntos para
-aprobarlos, leer el funcional o el técnico enteros o dar una vuelta de correcciones a `comprobar.py`. Cada uno suma de
-2 a 10 llamadas. En la 0.7.0-beta.2, con el camino entero (22 llamadas como mínimo), las tres pasadas costaron 34, 34
-y 47 (`docs/evaluaciones.md`).
+`comprobar.py` sale sin errores. El tope deja 9 de margen para lo razonable que no está en esa cuenta: `requisitos.py`
+al empezar, `indice.py resumen`, leer `cambios.md`, una búsqueda más o leer una plantilla. Lo que ya no cabe es lo que
+un retoque no necesita: regenerar el Word, el prototipo o las capturas, escribir una DT, presentar puntos para
+aprobarlos, leer el funcional o el técnico enteros o dar una vuelta de correcciones a `comprobar.py`. Cada uno suma de 2
+a 10 llamadas. En la 0.7.0-beta.2, con el camino entero (22 llamadas como mínimo), las tres pasadas costaron 34, 34 y 47
+(`docs/evaluaciones.md`).
 
 ## Lo que no mide
 
 La calidad del análisis más allá de `comprobar.py` (que «Nueva solicitud» se quede en técnico §7, por ejemplo) ni la
 issue de la unidad nueva, que se escribe al aprobarla.
 
+## Prueba del puntuador
+
 `python3 prueba_puntuar.py` monta el proyecto, comprueba el caso (PAN-01 construida, ✅ y fuera de `EV-02`, el correo, el
-tope, el camino más corto) y prueba `puntuar.py` con proyectos inventados: ese camino, que pasa, y variantes que no (una llamada de más, una pasada con errores, la
-aprobación por construido, una DT, el Word o una captura regenerados, la fila sin unidad o en `EV-02`, nada hecho). Lee el
-plugin de `PLUGIN_A_PROBAR`.
+tope, el camino más corto) y prueba `puntuar.py` con proyectos inventados: ese camino, que pasa, y variantes que no (una
+llamada de más, una pasada con errores, la aprobación por construido, una DT, el Word o una captura regenerados, la fila
+sin unidad o en `EV-02`, nada hecho). Lee el plugin de `PLUGIN_A_PROBAR`.
