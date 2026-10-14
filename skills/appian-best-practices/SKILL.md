@@ -104,11 +104,14 @@ With a design MCP, how to discover the environment (what to list before creating
 from) is the official skill's ground: listing the objects of one type before creating one is part of a
 safe write, not exploration.
 
-**A build order from the analyst.** If the project has `construccion/<U>.md` (written by the analyst's
-`indice.py encargo`), that file is the scope: build only its objects, in the order of the official skill's
-`change-planning`, with the gates the calibration gives, and honour its "reaplicar" and frozen objects. When done, run
-its `verificar` command and `proyecto.py cambio <p> <U> construida`. Progress across sessions shows by re-running
-`verificar`; there is no other state to keep.
+**Issues from the analyst.** If the project has `construccion/<U>/` (written by the analyst's `indice.py issues`), build
+from its issues, one at a time: `<skill>/../appian-functional-analyst/scripts/indice.py issues <p> <U> --siguiente`
+prints the next one (the first not done whose dependencies are done) and reserves it. That issue is the scope: build only its objects, in the order of the official
+skill's `change-planning`, with the gates the calibration gives, and honour its "No tocar", "Reaplicar" and frozen
+objects. It carries what the build needs from the functional design and the technical spec, with what changes: don't
+read those documents whole. If it says there are no tests to run, run none. When done, run the command it prints
+(`verificar`, read-only), ask for the next one, and when none is left, `proyecto.py cambio <p> <U> construida`. Progress
+across sessions is what each issue's verification says; there is no other state to keep.
 
 ## Requirements
 

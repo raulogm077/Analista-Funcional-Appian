@@ -9,10 +9,12 @@ analisis/cambios.md solo lo escribe proyecto.py cambio. Todo lo demás se calcul
     «sin cambios», de ninguna;
   - sus piezas: los IDs de «Aplicado» y de «Cambio propuesto» de esos puntos (sin SIN IMPACTO, PROYECTO ni descartes);
   - sus objetos: las filas de técnico §13 con su ID en la columna «Cambio» (las que no llevan ID, de EV-01 si existe);
+    de su columna «Para» (el requisito de cada objeto, o «Base») salen las issues de construcción (issues.py);
   - la línea base: el inventario de as-is/ más los objetos de las unidades Construidas o En producción;
   - por pieza, «Construido: … · En curso: …»; por unidad, las correcciones urgentes que hay que reaplicar o que congelan
     sus objetos.
-Sin analisis/cambios.md, nada de esto: el proyecto se comporta como antes. Lo usan proyecto.py, indice.py y comprobar.py.
+Sin analisis/cambios.md, nada de esto: el proyecto se comporta como antes. Lo usan proyecto.py, indice.py, issues.py y
+comprobar.py.
 """
 import json
 import pathlib
@@ -38,6 +40,10 @@ SIN_PIEZAS = ("sin impacto", "proyecto")        # tipos de punto que no cambian 
 PUNTOS_CONSTRUIDO = [(("record type", "cdt", "tabla"), "Datos existentes"),
                      (("process model", "modelo de proceso"), "Procesos en curso"),
                      (("web api",), "Compatibilidad"), (("grupo", "seguridad"), "Permisos")]
+# Una fila que nombra solo una parte del objeto («X — acción «Nueva»») se gradúa por lo que cambia, no por el tipo del
+# objeto: pide el punto si la parte guarda datos o da permisos; el nombre de una acción, una vista o un filtro, ninguno.
+PARTE_DATOS = ("campo", "dato", "relacion", "origen", "tabla", "sincroniz", "clave", "indice")
+PARTE_PERMISOS = ("seguridad", "permiso", "visibilidad", "quien la ve", "quien lo ve", "quien puede")
 # Tipo de §13 → tipo del inventario (el que compara verificar --esperado); el primero que casa
 TIPOS_APPIAN = [("record type", "recordType"), ("cdt", "cdt"), ("interfaz", "interface"), ("interface", "interface"),
                 ("regla de expresion", "expressionRule"), ("expression rule", "expressionRule"),
@@ -151,6 +157,25 @@ def objetos_celda(celda):
 def objeto(nombre):
     """El objeto de un nombre de §13: «MNT Orden — acción «Corregir orden»» es una parte de MNT Orden."""
     return re.split(r"\s+[—–]\s+", nombre, maxsplit=1)[0].strip()
+
+
+def parte(nombre):
+    """La parte del objeto que nombra una fila de §13 («acción «Corregir orden»»), o "" si es el objeto entero."""
+    trozos = re.split(r"\s+[—–]\s+", nombre, maxsplit=1)
+    return trozos[1].strip() if len(trozos) > 1 else ""
+
+
+def puntos_de(tipo, nombre):
+    """Los puntos de «Cambio sobre lo construido» que pide cambiar un objeto ya construido, por lo que cambia: los de
+    su tipo (PUNTOS_CONSTRUIDO) si la fila es el objeto entero; si nombra solo una parte, el de datos o el de permisos
+    cuando la parte lo es, y ninguno si no (el nombre de una acción de registro es un retoque, aunque viva en un record
+    type)."""
+    t, p = mo.normaliza(tipo), mo.normaliza(parte(nombre))
+    if not p:
+        return [punto for claves, punto in PUNTOS_CONSTRUIDO if any(k in t for k in claves)]
+    if any(k in p for k in PARTE_PERMISOS):
+        return ["Permisos"]
+    return ["Datos existentes"] if any(k in p for k in PARTE_DATOS) else []
 
 
 def filas_6(P):
@@ -312,21 +337,23 @@ class Contexto:
 
     # ------------------------------------------------------------ objetos (técnico §13)
     def _filas_13(self):
-        """Las filas de técnico §13 (tabla con «Situación»): {objetos, tipo, situacion, sustituye, unidad, paso}; sin ID
-        en «Cambio», de EV-01 si existe (la construcción inicial)."""
+        """Las filas de técnico §13 (tabla con «Situación»): {objetos, tipo, situacion, sustituye, unidad, paso, para,
+        orden}; sin ID en «Cambio», de EV-01 si existe (la construcción inicial). «para» es su celda «Para» tal cual (el
+        requisito de cada objeto, o «Base»); con_para dice si la tabla tiene esa columna."""
         out = []
         tabla = next(((cab, filas) for _, cab, filas in self.m.tablas("T", "13")
                       if "situacion" in [mo.normaliza(c) for c in cab]), None)
+        self.con_para = bool(tabla) and "para" in [mo.normaliza(c) for c in tabla[0]]
         if not tabla:
             return out
         cab = [mo.normaliza(c) for c in tabla[0]]
         celda = lambda f, k: f[cab.index(k)] if k in cab and cab.index(k) < len(f) else ""
-        for f in tabla[1]:
+        for k, f in enumerate(tabla[1]):
             us = RX_UNIDAD.findall(celda(f, "cambio"))
             out.append({"objetos": objetos_celda(celda(f, "objeto")), "tipo": mo.sin_comentarios(celda(f, "tipo")).strip(),
                         "situacion": mo.normaliza(mo.sin_comentarios(celda(f, "situacion"))).strip(),
                         "sustituye": objetos_celda(celda(f, "sustituye a")), "unidad": us[0] if us else self.sin_id,
-                        "paso": celda(f, "paso")})
+                        "paso": celda(f, "paso"), "para": mo.sin_comentarios(celda(f, "para")).strip(), "orden": k})
         return out
 
     def filas_de(self, uid):
@@ -344,26 +371,37 @@ class Contexto:
                                              for o in f["objetos"]}
 
     def puntos_construido(self, uid):
-        """{punto de la DT «Cambio sobre lo construido»: [objetos]} que pide una unidad por el tipo de los objetos
-        construidos que modifica o sustituye (PUNTOS_CONSTRUIDO); con alguno, también «Despliegue y vuelta atrás»."""
+        """{punto de la DT «Cambio sobre lo construido»: [objetos]} que pide una unidad por lo que cambia en los objetos
+        construidos que modifica o sustituye (puntos_de); con alguno, también «Despliegue y vuelta atrás»."""
         base = self.linea_base()
         dep = self.raiz / "as-is" / "datos" / "dependencias.json"
         fuera = json.loads(dep.read_text(encoding="utf-8")).get("fueraDeLaAplicacion", []) if dep.is_file() else []
         usadas_fuera = {x for o in fuera for x in o.get("usa", [])}
         out = {}
         for f in self.filas_de(uid):
-            objs = [objeto(o) for o in f["objetos"] if objeto(o) in base]
-            if f["situacion"] not in ("modifica", "sustituye") or not objs:
+            if f["situacion"] not in ("modifica", "sustituye"):
                 continue
-            tipo = mo.normaliza(f["tipo"])
-            for claves, punto in PUNTOS_CONSTRUIDO:
-                if any(k in tipo for k in claves):
-                    out.setdefault(punto, []).extend(objs)
-            if "integracion" in tipo and set(objs) & usadas_fuera:     # una integración que usan otros
-                out.setdefault("Compatibilidad", []).extend(objs)
+            for nombre in f["objetos"]:
+                o = objeto(nombre)
+                if o not in base:
+                    continue
+                for punto in puntos_de(f["tipo"], nombre):
+                    out.setdefault(punto, []).append(o)
+                if "integracion" in mo.normaliza(f["tipo"]) and o in usadas_fuera and not parte(nombre):
+                    out.setdefault("Compatibilidad", []).append(o)     # una integración que usan otros
         if out:
             out["Despliegue y vuelta atrás"] = [o for v in out.values() for o in v]
         return {k: list(dict.fromkeys(v)) for k, v in out.items()}
+
+    def retoques(self, uid):
+        """Los objetos de los que una unidad solo cambia partes que no guardan datos ni dan permisos (el nombre de una
+        acción de registro, una vista, un filtro): compartirlos con otra unidad no pide decidir el orden."""
+        de = {}
+        for f in self.filas_de(uid):
+            if f["situacion"] in CAMBIAN:
+                for nombre in f["objetos"]:
+                    de.setdefault(objeto(nombre), []).append(bool(parte(nombre)) and not puntos_de(f["tipo"], nombre))
+        return {o for o, leves in de.items() if all(leves)}
 
     def dt_construido(self, uid):
         """La DT «Cambio sobre lo construido» de una unidad (su ID en el título o en «Necesidad»), o None."""
@@ -439,9 +477,9 @@ class Contexto:
         """[(URG, objetos)]: las que se corrigen en desarrollo y no han pasado a producción: esos objetos no se tocan."""
         return self._urgentes(uid, "desarrollo")
 
-    # ------------------------------------------------------------ lo de una unidad (DF, encargo, pruebas)
+    # ------------------------------------------------------------ lo de una unidad (DF, issues, pruebas)
     def resumen(self, uid):
-        """Lo de una unidad (indice.py cambios --json, que leen df_docx.js --cambio e indice.py encargo): piezas nuevas,
+        """Lo de una unidad (indice.py cambios --json, que leen df_docx.js --cambio y las issues): piezas nuevas,
         que cambian (con un antes y después breve, frente a versiones/) y anuladas; historias que se conservan pero
         comparten pantalla o paso con ellas (T5); pantallas, diagramas, apartados del técnico, objetos, pruebas a repetir,
         colisiones y correcciones urgentes que reaplicar o que congelan objetos."""
@@ -552,28 +590,33 @@ class Contexto:
                 out.append({"nombre": c[0].strip("` "), **({"tipo": tipo} if tipo else {})})
         return out
 
-    def esperado(self, uid):
-        """{objeto: {"tipo", "campos"}} de lo que construye o cambia una unidad, para verificar --esperado: el tipo de su
-        fila de §13 y, de un record type o CDT con su apartado en técnico §3, sus campos; de uno que se modifica, solo
-        los de esta unidad (los que no estaban en la copia de su versión base)."""
+    def esperado(self, uid, filas=None):
+        """{objeto: {"tipo", "campos"}} de lo que construye o cambia una unidad (o solo `filas`, las de una issue), para
+        verificar --esperado: el tipo de su fila de §13 y, de un record type o CDT con su apartado en técnico §3, sus
+        campos; de uno que se modifica, solo los de esta unidad (los que no estaban en la copia de su versión base) y,
+        si no añade ninguno, sin «campos»: no hay campos que comparar, y los que ya tiene no sobran."""
         out = {}
         base = self.copia(self.version_base(uid))
         vs = self.versiones_de(uid)
         despues = self.copia(vs[-1]) if vs and vs[-1] != self.m.version("F") else None
-        for f in self.filas_de(uid):
+        for f in self.filas_de(uid) if filas is None else filas:
             if f["situacion"] not in CAMBIAN:
                 continue
             t = mo.normaliza(f["tipo"])
             tipo = next((c for k, c in TIPOS_APPIAN if k in t), None)
-            for o in map(objeto, f["objetos"]):
+            for nombre in f["objetos"]:
+                o = objeto(nombre)
                 e = out.setdefault(o, {})
                 if tipo:
                     e["tipo"] = tipo
-                campos = self.campos_3(despues or self.m, o) if tipo in ("recordType", "cdt") else None
+                campos = self.campos_3(despues or self.m, o) if tipo in ("recordType", "cdt") and not parte(nombre) \
+                    else None
                 if campos is not None:
-                    antes = {c["nombre"] for c in (self.campos_3(base, o) or [])} if base and f["situacion"] == "modifica" \
-                        else set()
-                    e["campos"] = [c for c in campos if c["nombre"] not in antes]
+                    modifica = f["situacion"] == "modifica"
+                    antes = {c["nombre"] for c in (self.campos_3(base, o) or [])} if base and modifica else set()
+                    suyos = [c for c in campos if c["nombre"] not in antes]
+                    if suyos or not modifica:
+                        e["campos"] = suyos
         return out
 
     # ------------------------------------------------------------ señales por pieza

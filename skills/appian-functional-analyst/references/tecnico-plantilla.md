@@ -2,8 +2,8 @@
 
 Es lo que se construye. Con ella, las historias del funcional y el prototipo, quien construye con el
 MCP de desarrollo de Appian no tiene que preguntar ni suponer nada. Es interna: no va al cliente.
-Los fragmentos de los apartados 2 y 13 son de un caso ficticio (solicitudes de autorización) y tienen el formato exacto
-que leen los scripts.
+Los fragmentos de los apartados 2, 13 y 14 son de un caso ficticio (solicitudes de autorización) y tienen el formato
+exacto que leen los scripts.
 
 ## Cómo se escribe
 
@@ -59,10 +59,12 @@ límites) se consulta en el MCP de documentación como dice el SKILL.md, y la UR
 ## Apartados
 
 ### 0. Entorno
-Tabla `Dato · Valor · Fuente`: versión de Appian en cada entorno, tier y complementos, base de datos,
-inicio de sesión, idioma y zona horaria, calendario laboral, volumen, usuarios y concurrencia, tiempo de
-recuperación, accesibilidad, móvil y usuarios externos, licencias. Sale de funcional §10 y de lo que diga
-el equipo. Lo que no se sabe es un PT. El prototipo toma de aquí la versión de Appian.
+Tabla `Dato · Valor · Fuente`: la aplicación (su nombre y su prefijo), la URL de cada entorno (una fila por entorno:
+«URL de desarrollo», «URL de pruebas», «URL de producción» y, si lo hay, «URL del entorno de corrección»), versión de
+Appian en cada entorno, tier y complementos, base de datos, inicio de sesión, idioma y zona horaria, calendario
+laboral, volumen, usuarios y concurrencia, tiempo de recuperación, accesibilidad, móvil y usuarios externos, licencias.
+Sale de funcional §10 y de lo que diga el equipo. Lo que no se sabe es un PT. El prototipo toma de aquí la versión de
+Appian, y la orden de terminar una issue, el Dev MCP de desarrollo de cada equipo (el que apunta a esa URL).
 
 ### 1. Convenciones
 Tabla `Qué · Convención · Por qué`: prefijo, idioma de los nombres, mayúsculas por tipo de objeto, nombre
@@ -142,6 +144,9 @@ Tabla `Pantalla · Qué es en Appian · Guarda con · Notas`, una fila por PAN: 
 vista de registro, acción de registro, formulario de tarea o de inicio. Filtros de usuario, búsqueda,
 exportación y acciones de registro con quién las ve. Los filtros por defecto y los contadores trabajan sobre
 conjuntos acotados (BP 05 §2–3). La composición: «ver prototipo, pantalla <id>».
+Cada acción que lanza un proceso desde una pantalla dice qué es y de qué record type: acción de lista de registros
+(crea) o acción relacionada (sobre un registro), puesta con el componente de acciones de registro; nunca un enlace de
+inicio de proceso en la interfaz (BP 00 «Process», 01 §9.2, 02 §5.4, 03 §8, 06 §5.3).
 
 ### 8. Procesos
 Por process model, la tabla de nodos `Nodo · Qué hace · Asignado a · Plazo y escalado · Escribe · Evento`,
@@ -170,24 +175,43 @@ hay que vigilar en producción.
 Lista numerada en orden de dependencias: grupos y constantes, datos, seguridad, lógica, interfaces,
 procesos, site. Los pasos manuales, marcados.
 
-Con `as-is/`, en lugar de la lista, tabla `Paso · Objeto · Tipo · Situación · Sustituye a`, una fila por objeto, en el
-mismo orden, y debajo los pasos manuales. Situación:
+Con `as-is/`, o cuando se va a construir (una unidad de cambio, `cambios.md`), en lugar de la lista, tabla `Paso ·
+Objeto · Tipo · Situación · Sustituye a · Cambio · Para`, una fila por objeto, en el mismo orden, y debajo los pasos
+manuales. De ella salen las issues de construcción (`cambios.md` §5). Situación:
 - **Nuevo**: no está en el inventario ni es de otra aplicación.
 - **Modifica**: está en el inventario y cambia. Un objeto de otra aplicación que cambia lo cambia su equipo: dilo.
 - **Existe**: se usa sin cambiarlo; también un objeto de otra aplicación.
 - **Sustituye**: un objeto nuevo que reemplaza al del inventario que va en «Sustituye a».
 
+**Cambio** es la unidad de la fila (`cambios.md` §4). **Para** es el requisito al que sirve el objeto: su `HU-nn`, su
+`PAN-nn` o su `ACT-nn`; si sirve a varios, todos, separados por comas (van en la misma issue). Lo común (datos, grupos,
+constantes, sistemas conectados) dice «Base» y se construye lo primero. En un defecto, el criterio que no se cumple
+(`HU-03.2`). Lo que «Existe» no la lleva. Si de un objeto solo cambia una parte, la fila la nombra: `AUT Solicitud —
+acción «Nueva solicitud»`.
+
 ```markdown
-| Paso | Objeto | Tipo | Situación | Sustituye a |
-|---|---|---|---|---|
-| 2 | `AUT_IdEstado` | Regla de expresión | Sustituye | `AUT_ESTADOS_VALIDOS` |
-| 2 | `UTL_DiasLaborables` | Regla de otra aplicación | Existe | — |
+| Paso | Objeto | Tipo | Situación | Sustituye a | Cambio | Para |
+|---|---|---|---|---|---|---|
+| 2 | `AUT_IdEstado` | Regla de expresión | Sustituye | `AUT_ESTADOS_VALIDOS` | EV-02 | Base |
+| 2 | `UTL_DiasLaborables` | Regla de otra aplicación | Existe | — | EV-02 | — |
+| 5 | `AUT_SubsanarSolicitud` | Interfaz | Nuevo | — | EV-02 | PAN-03 |
+| 6 | `AUT Tramitar Solicitud` | Process model | Modifica | — | EV-02 | ACT-02, ACT-06 |
 ```
 
 ### 14. Pruebas y trazabilidad
-Tabla `Criterio · Cómo se prueba` con todos los criterios `HU-nn.m` e `INT-nn.m` (se pueden agrupar) y los
+Tabla `Criterio · Cómo se prueba · Con qué` con todos los criterios `HU-nn.m` e `INT-nn.m` (se pueden agrupar) y los
 escenarios `ESC-nn` como pruebas de extremo a extremo. Cada acción protegida, con un perfil que puede y
-otro que no.
+otro que no. «Con qué» dice cómo se comprueba cada criterio, y la issue lo copia junto a su escenario:
+- `Caso de prueba de <regla o interfaz>`, con el objeto entre comillas invertidas: un caso de prueba guardado en él. De
+  una regla comprueba la salida esperada; de una interfaz, que no da error.
+- `SAIL CLI`: se recorre la pantalla como un usuario. Es del QA de la unidad, no de quien construye.
+
+```markdown
+| Criterio | Cómo se prueba | Con qué |
+|---|---|---|
+| HU-01.2 | Dos envíos a la vez no repiten número | Caso de prueba de `AUT_GenerarNumero` |
+| HU-03.1, HU-03.2 | Subsanar una solicitud devuelta y reenviarla | SAIL CLI |
+```
 
 ### 15. Pendientes técnicos
 Tabla `ID · Duda · Bloquea · Quién la resuelve` con los `PT-nn`. Lo que hay que preguntar al cliente no

@@ -52,6 +52,12 @@ Lo que salió al ejecutar `docs/plan/2026-10-14-metodo-lucia.md` y no entra en �
   no contar el tramo común o pedir más palabras seguidas.
 - `leer_fuentes.py --help` y `unir_modulos.py --help` salen con los acentos rotos en Windows (pasan la consola a
   UTF-8 después de leer los argumentos); en `proyecto.py` ya está corregido.
+- Issues sin Dev MCP: una issue solo queda hecha con lo que deja «verificar». Quien construye a mano sin Dev MCP sigue
+  el índice y marca la unidad con `--manual`, pero `indice.py issues --siguiente` no pasa de las que no dependen de
+  otra. Si un equipo trabaja así, falta poder dar una issue por hecha a mano.
+- Issues: las dependencias salen de los objetos que dos issues comparten o que el técnico nombra al hablar de una; si
+  el técnico las da de más, van en serie issues que podrían ir a la vez, y no hay cómo corregirlo a mano.
+- Issues: el número de una issue que deja de existir se vuelve a dar si era el mayor de su unidad.
 - Un `.eml` con finales de línea de Windows deja `` en su `FU-nn.md`: viene de la lectura y sale igual en todos
   los sistemas, pero ensucia el fichero.
 

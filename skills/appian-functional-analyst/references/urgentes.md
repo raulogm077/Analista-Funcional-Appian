@@ -43,11 +43,13 @@ Tras `produccion`, `proyecto.py estado` ya no la lista como pendiente.
    `as-is/datos/deriva.json`, con lo modificado en desarrollo. Si no está la deriva, imprime la orden para pedirla solo de
    esos objetos (sin historial de versiones, lo dice y no supone nada). Copia el resultado en «Colisión».
 4. **Dónde se corrige.**
-   - Sin colisión: en desarrollo. Esos objetos quedan congelados para las unidades en curso hasta el pase (su encargo lo
-     avisa).
+   - Sin colisión: en desarrollo. Esos objetos quedan congelados para las unidades en curso hasta el pase (la issue que
+     los lleva lo avisa).
    - Con colisión: en el entorno de corrección, igual que producción. Cada unidad en curso que cambia esos objetos
-     recibe en su encargo «reaplicar URG-nn en <objeto>», y no pasa a Construida sin `--reaplicada URG-nn`, que confirma
-     quien construye cuando la prueba de la urgencia pasa en desarrollo.
+     recibe «Reaplicar URG-nn en <objeto>» en la issue que lo lleva, que por eso vuelve a estar pendiente, y no pasa a
+     Construida sin `--reaplicada URG-nn`, que confirma quien construye cuando la prueba de la urgencia pasa en
+     desarrollo. Sus issues se vuelven a generar con la ficha ya escrita: `indice.py issues <p> EV-nn` (`--siguiente`
+     lo hace solo).
    - Sin entorno de corrección: la ficha registra en «Colisión» lo que decide el equipo (el plugin no inventa un
      procedimiento) y «Dónde se corrige» dice igualmente una de las dos.
 5. **Despliegue** por el proceso de cambios urgentes del cliente (el plugin no lo gestiona), con la vuelta atrás

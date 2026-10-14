@@ -6,6 +6,10 @@ Versión: 0.1 · Estado: en curso
 
 | Dato | Valor | Fuente |
 |---|---|---|
+| Aplicación | | |
+| URL de desarrollo | | |
+| URL de pruebas | | |
+| URL de producción | | |
 | Versión de Appian | | |
 | Tier y complementos | | |
 | Base de datos | | |
@@ -52,8 +56,8 @@ Versión: 0.1 · Estado: en curso
 
 ## 14. Pruebas y trazabilidad
 
-| Criterio | Cómo se prueba |
-|---|---|
+| Criterio | Cómo se prueba | Con qué |
+|---|---|---|
 
 ## 15. Pendientes técnicos
 

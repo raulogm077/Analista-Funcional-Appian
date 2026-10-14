@@ -25,7 +25,7 @@ resultados van a `docs/evaluaciones.md`; el proyecto de prueba, a `$PROYECTOS_PR
    ```
 
    Lo mismo que en `../evolutivo-urgencia/` (fuentes FU-01 a FU-04, capturas, los dos Word entregados si hay Node con
-   `docx`, el encargo de `EV-02` y la huella `DEM-retoque.montaje.json` junto a la carpeta), con este correo en la carpeta
+   `docx`, las issues de `EV-02` y la huella `DEM-retoque.montaje.json` junto a la carpeta), con este correo en la carpeta
    en vez de la incidencia. Con `PLUGIN_A_PROBAR=<carpeta>` usa esa copia del plugin.
 2. **El retoque, a ciegas.** Un agente sigue el `SKILL.md` de `appian-functional-analyst` con una copia de las skills
    del plugin y el proyecto, sin ver `pruebas/` ni `docs/` del repositorio, en una sesión desatendida: si pregunta, se le
@@ -48,7 +48,7 @@ resultados van a `docs/evaluaciones.md`; el proyecto de prueba, a `$PROYECTOS_PR
 
 | Punto | Se cumple si |
 |---|---|
-| `hecho` | El correo está catalogado, su informe de impacto (`impacto/<FU>.md`) aplicado, la ficha de PAN-01 dice «Pedir material» y técnico §13 tiene `DEM_Dashboard` «Modifica» en una unidad Abierta, que el jefe de proyecto aprobará una vez. No hacer nada no pasa, ni meterlo en `EV-02`, ya aprobada con su alcance (la devolvería a aprobación: `encargo` y `construida` fallan con «ha crecido»), ni dejar la fila sin unidad (quedaría en `EV-01`, en producción, y no se construiría) |
+| `hecho` | El correo está catalogado, su informe de impacto (`impacto/<FU>.md`) aplicado, la ficha de PAN-01 dice «Pedir material» y técnico §13 tiene `DEM_Dashboard` «Modifica» en una unidad Abierta, que el jefe de proyecto aprobará una vez. No hacer nada no pasa, ni meterlo en `EV-02`, ya aprobada con su alcance (la devolvería a aprobación: `issues` y `construida` fallan con «ha crecido»), ni dejar la fila sin unidad (quedaría en `EV-01`, en producción, y no se construiría) |
 | `sin_aprobacion` | Ningún punto de ese informe pide aprobación («Requiere: Sí…») ni queda «Pendiente». Que esté construido sale, como mucho, en «Posible petición de cambio» del Resumen |
 | `sin_dt` | Ninguna DT «Cambio sobre lo construido» nueva (la de `EV-02` ya estaba) |
 | `comprobar_una_pasada` | `comprobar.py` sin errores, con `--fuentes`, y K = 0 |
@@ -88,8 +88,8 @@ y 47 (`docs/evaluaciones.md`).
 
 ## Lo que no mide
 
-La calidad del análisis más allá de `comprobar.py` (que «Nueva solicitud» se quede en técnico §7, por ejemplo) ni el
-encargo de la unidad nueva, que se genera al construir, después de aprobarla.
+La calidad del análisis más allá de `comprobar.py` (que «Nueva solicitud» se quede en técnico §7, por ejemplo) ni la
+issue de la unidad nueva, que se escribe al aprobarla.
 
 `python3 prueba_puntuar.py` monta el proyecto, comprueba el caso (PAN-01 construida, ✅ y fuera de `EV-02`, el correo, el
 tope, el camino más corto) y prueba `puntuar.py` con proyectos inventados: ese camino, que pasa, y variantes que no (una llamada de más, una pasada con errores, la
