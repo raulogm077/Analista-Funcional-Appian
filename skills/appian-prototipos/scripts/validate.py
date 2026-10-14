@@ -9,7 +9,7 @@ Uso:  python3 validate.py app.json [--brand <id>] [--quiet] [--anterior app-v1.2
 Sin --brand, la marca estándar de Appian (assets/brand-appian.json); con --brand <id>, la del proyecto: brand-<id>.json
 junto al app.json (references/marca.md).
 Sale con código 1 si hay errores. Los avisos no bloquean. Con --anterior y --confirmadas, cambiar una pantalla confirmada
-por el cliente (su 'ref' lleva uno de esos IDs) o un diálogo que abre es error.
+por el cliente (su 'ref' lleva uno de esos IDs) o un diálogo que abre es error; --anterior solo no compara nada.
 """
 import json, re, sys, argparse
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
@@ -1260,16 +1260,19 @@ def main():
     ap.add_argument("--anterior", help="app.json de la versión anterior (copia app-vX.Y.json) para comparar las pantallas confirmadas")
     ap.add_argument("--confirmadas", help="IDs del análisis de las pantallas confirmadas por el cliente, separados por comas (PAN-02,PAN-05)")
     a = ap.parse_args()
-    if bool(a.anterior) != bool(a.confirmadas):
-        ap.error("--anterior y --confirmadas van juntas")
+    confirmadas = [x.strip() for x in (a.confirmadas or "").split(",") if x.strip()]
+    if confirmadas and not a.anterior:
+        ap.error("--confirmadas necesita --anterior: el app.json con el que se comparan")
     utf8_stdio()
     spec = json.loads(Path(a.spec).read_text(encoding="utf-8"))
     spec_dir = Path(a.spec).resolve().parent
     brand, _ = find_brand(a.brand, spec_dir)
     rep = validate(spec, brand, spec_dir)
-    if a.anterior:
+    if confirmadas:
         prev = json.loads(Path(a.anterior).read_text(encoding="utf-8"))
-        check_confirmed(spec, prev, [x.strip() for x in a.confirmadas.split(",") if x.strip()], rep, Path(a.anterior).name)
+        check_confirmed(spec, prev, confirmadas, rep, Path(a.anterior).name)
+    elif a.anterior:  # ninguna pantalla validada que conservar: no es un error
+        print(f"Sin --confirmadas, no se compara ninguna pantalla con {Path(a.anterior).name}")
     for line in rep.errors + ([] if a.quiet else rep.warnings):
         print(line)
     print(f"\n{len(rep.errors)} error(es), {len(rep.warnings)} aviso(s)")

@@ -1,5 +1,5 @@
 {
-  "description": "Al empezar la sesión, dice una vez por versión qué falta en el equipo para usar el plugin (requisitos.py --breve)",
+  "description": "Al empezar la sesión, dice una vez por versión qué falta en el equipo para usar el plugin (requisitos.py --breve). El error de la orden de Python que no está (python3 en Windows) se descarta: 2>${null:-/dev/null} vale en sh, Git Bash y PowerShell",
   "hooks": {
     "SessionStart": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/requisitos.py\" --breve --como python3; python \"${CLAUDE_PLUGIN_ROOT}/requisitos.py\" --breve --como python; exit 0",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/requisitos.py\" --breve --como python3 2>${null:-/dev/null}; python \"${CLAUDE_PLUGIN_ROOT}/requisitos.py\" --breve --como python 2>${null:-/dev/null}; exit 0",
             "timeout": 30
           }
         ]
