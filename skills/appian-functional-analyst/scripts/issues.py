@@ -32,6 +32,10 @@ Lo esperado y la verificación, que es de donde sale si una issue está hecha (e
                             «accionesSinLeer» son no haberlo podido leer) y, si tiene pruebas, no falla ningún caso de sus
                             objetos («de»: issue) que una persona no haya marcado como no necesario. Lo que falla en lo
                             que la usa («de»: usa) es un aviso, y si el Dev MCP no ejecuta casos, esperan a la regresión.
+  qa/<U>/resultado.json     lo deja appian-qa al repetir los guiones del QA de la unidad: {"escenarios": {"HU-01.1":
+                            {"resultado": "pasa" | "falla" | "desfasado" | "guion por terminar", …}}}. Un escenario suyo
+                            que «falla» la devuelve a pendiente; sin QA, o con su guion desfasado o por terminar, no
+                            cuenta, y avisos_qa() lo dice al marcar la unidad.
 
 Lo usan indice.py issues (generar, dar la siguiente) y proyecto.py cambio (al aprobar la unidad y al marcarla construida).
 """
@@ -900,11 +904,18 @@ def marcado(marcas, issue, objeto, caso, error):
 
 def estado(raiz, uid, issue, marcas=()):
     """(hecha, por qué): una issue está hecha cuando su última verificación (construccion/<U>/verificacion/ISS-nn.json,
-    que deja «verificar --esperado») es de su versión de ahora, encuentra todos sus objetos como dice el técnico y, si
+    que deja «verificar --esperado») es de su versión de ahora, encuentra todos sus objetos como dice el técnico, si
     tiene pruebas, no falla ningún caso de prueba de sus objetos que una persona no haya marcado como no necesario
-    (`marcas`). De un objeto que se modifica, que tenga más campos que los de esta unidad no cuenta. Lo que falla en lo
-    que la usa, los casos que el ejecutor no evalúa, los que no se pudieron ejecutar (esperan a la regresión, como sin
-    Dev MCP que los ejecute) y las pruebas marcadas son avisos: van tras «hecha · …»."""
+    (`marcas`), y no falla ninguno de sus escenarios en el QA de la unidad (falla_en_qa). De un objeto que se modifica,
+    que tenga más campos que los de esta unidad no cuenta. Lo que falla en lo que la usa, los casos que el ejecutor no
+    evalúa, los que no se pudieron ejecutar (esperan a la regresión, como sin Dev MCP que los ejecute) y las pruebas
+    marcadas son avisos: van tras «hecha · …»."""
+    def hecha(*avisos):     # con lo suyo bien, falta su QA: un escenario suyo que falla la deja pendiente
+        qa = falla_en_qa(raiz, uid, issue)
+        if qa:
+            return False, (f"falla en QA: {', '.join(qa)} (qa/{uid}/resultado.json); corregido, se repiten sus guiones "
+                           f"(appian-qa: qa.py repetir <p> {uid})")
+        return True, " · ".join(["hecha", *avisos])
     v, por_que = verificacion(raiz, uid, issue)
     if v is None:
         return False, por_que
@@ -924,12 +935,12 @@ def estado(raiz, uid, issue, marcas=()):
     if sin_leer:
         return False, f"no se pudo leer {', '.join(sin_leer)} en el entorno"
     if issue.sin_pruebas:
-        return True, "hecha"
+        return hecha()
     pr = v.get("pruebas")
     if not isinstance(pr, dict):
         return False, "la verificación no dice cómo fueron sus pruebas: repite «verificar»"
     if not pr.get("ejecutadas"):
-        return True, f"hecha · sus pruebas no se han ejecutado: {pr.get('motivo') or 'sin motivo'}"
+        return hecha(f"sus pruebas no se han ejecutado: {pr.get('motivo') or 'sin motivo'}")
     fallan = [(o, c) for o, c, e in casos(v) if not marcado(marcas, issue, o, c, e)]
     if fallan:
         return False, "fallan sus pruebas: " + "; ".join(f"{o} «{c}»" for o, c in fallan)
@@ -943,7 +954,7 @@ def estado(raiz, uid, issue, marcas=()):
     avisos += [f"falla lo que la usa: {o} «{c}»" for o, c, _ in casos(v, "usa")]
     noev = sum(len(o.get("noEvaluables") or []) for o in pr.get("objetos") or [] if isinstance(o, dict))
     avisos += [f"{noev} {'caso' if noev == 1 else 'casos'} que el ejecutor de Appian no evalúa"] if noev else []
-    return True, " · ".join(["hecha"] + avisos)
+    return hecha(*avisos)
 
 
 def sigue_marcada(raiz, plan, marca):
@@ -956,6 +967,39 @@ def sigue_marcada(raiz, plan, marca):
     v, _ = verificacion(raiz, plan.uid, issue)
     return v is None or marcado([marca], issue, *next(((o, c, e) for o, c, e in casos(v) if o == marca["objeto"]
                                                         and c == marca["caso"]), ("", "", "")))
+
+
+def falla_en_qa(raiz, uid, issue):
+    """Los escenarios de la issue que fallan en el último resultado del QA de la unidad (qa/<U>/resultado.json, de
+    appian-qa); [] si no hay QA o no falla ninguno."""
+    r = pathlib.Path(raiz) / "qa" / uid / "resultado.json"
+    try:
+        esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") if r.is_file() else None
+    except (ValueError, AttributeError):
+        esc = None
+    return [c for c in issue.criterios if isinstance(esc, dict) and isinstance(esc.get(c), dict)
+            and esc[c].get("resultado") == "falla"]
+
+
+def avisos_qa(raiz, plan):
+    """Lo que falta del QA de una unidad con escenarios (F8, paso 8): sin resultado, o con escenarios sin guion,
+    desfasados o con el guion por terminar. Son avisos: solo bloquea un escenario que falla (estado())."""
+    escenarios = [c for i in plan.issues for c in i.criterios]
+    r = pathlib.Path(raiz) / "qa" / plan.uid / "resultado.json"
+    if not escenarios:
+        return []
+    if not r.is_file():
+        return [f"{plan.uid} no tiene QA (qa/{plan.uid}/resultado.json): lo siguiente es el QA de la unidad, en otra "
+                "sesión y solo con sus .feature (appian-qa; F8, paso 8)"]
+    try:
+        esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") or {}
+    except (ValueError, AttributeError):
+        esc = {}
+    de = lambda c: (esc.get(c) or {}).get("resultado") if isinstance(esc.get(c), dict) else None
+    faltan = [(que, [c for c in escenarios if de(c) == res]) for que, res in
+              (("sin guion", None), ("desfasados", "desfasado"), ("con el guion por terminar", "guion por terminar"))]
+    faltan = [f"{que}: {', '.join(cs)}" for que, cs in faltan if cs]
+    return [f"el QA de {plan.uid} no está completo ({'; '.join(faltan)}): lo hace QA (appian-qa)"] if faltan else []
 
 
 def estados(plan, raiz):
@@ -1024,8 +1068,9 @@ def orden_de_marcar(m, ctx, uid):
 
 def orden_de_terminar(m, ctx, plan, issue):
     """(órdenes, notas) para terminar una issue en este equipo, listas para copiar: «verificar», con sus rutas y el Dev
-    MCP de desarrollo de su configuración, y, si es la última que queda, marcar la unidad. Las notas dicen lo que no se
-    ha podido resolver."""
+    MCP de desarrollo de su configuración, y, si es la última que queda, marcar la unidad; si la unidad tiene escenarios,
+    antes va su QA, en otra sesión, y la orden de marcar va en una nota. Las notas dicen también lo que no se ha podido
+    resolver."""
     ruta = lambda p: '"' + pathlib.Path(p).resolve().as_posix() + '"'
     aqui = carpeta(m.raiz, plan.uid)
     servidor, nota = servidor_devmcp(m)
@@ -1039,7 +1084,12 @@ def orden_de_terminar(m, ctx, plan, issue):
          + ruta(aqui / "verificacion" / (issue.id + ".json")) + (f' --server-name "{servidor}"' if servidor else "")]
     e = estados(plan, m.raiz)
     if all(e[i.id][0] for i in plan.issues if i is not issue):
-        L.append(orden_de_marcar(m, ctx, plan.uid))
+        if any(i.criterios for i in plan.issues):   # lo siguiente es el QA de la unidad, no marcarla (F8, paso 8)
+            notas.append("no queda otra issue: lo siguiente es el QA de la unidad, en otra sesión y solo con sus .feature "
+                         "(appian-qa; F8, paso 8). Con él, o tras corregir un fallo suyo y repetir sus guiones, se marca "
+                         f"la unidad: `{orden_de_marcar(m, ctx, plan.uid)}`")
+        else:
+            L.append(orden_de_marcar(m, ctx, plan.uid))
     return L, notas
 
 

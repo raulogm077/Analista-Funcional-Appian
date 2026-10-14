@@ -9,6 +9,7 @@
         "appian-diagramas-bpmn",
         "appian-functional-analyst",
         "appian-prototipos",
+        "appian-qa",
         "appian-refactorizacion",
         "appian-reverse-engineering"
       ],
@@ -212,6 +213,27 @@
         "windows": "Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía)",
         "macos": "Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía)",
         "linux": "Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía)"
+      },
+      "presente": false,
+      "ruta": null
+    },
+    {
+      "id": "sail",
+      "nombre": "SAIL CLI",
+      "skills": [
+        "appian-qa"
+      ],
+      "imprescindible": false,
+      "bloquea": [
+        "appian-qa"
+      ],
+      "solo_pruebas": false,
+      "para": "Recorrer los escenarios de una unidad como cada rol y repetir sus guiones (`qa/`)",
+      "sin_el": "No se puede usar el QA",
+      "instalar": {
+        "windows": "Viene en el paquete del Dev MCP (`bin/`): `bin/setup-*` lo deja en el PATH como `sail`",
+        "macos": "Viene en el paquete del Dev MCP (`bin/`): `bin/setup-*` lo deja en el PATH como `sail`",
+        "linux": "Viene en el paquete del Dev MCP (`bin/`): `bin/setup-*` lo deja en el PATH como `sail`"
       },
       "presente": false,
       "ruta": null

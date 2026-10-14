@@ -166,9 +166,11 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
    dos, o el caso vuelve a pasar, se quita sola) y se revisa al preparar el paquete; con `--desatendida` se niega. Si el
    Dev MCP no ejecuta casos, o no pudo ejecutar los de la issue, la issue no espera: sus pruebas, a la regresión.
    **Una issue está hecha** cuando su última verificación pasa y es de su versión de ahora: si al volver a generarla
-   cambia lo que hay que construir o comprobar, vuelve a estar pendiente. No hay otro estado que mantener: su reserva
-   se quita sola, y `indice.py issues <p> EV-02` dice cómo va cada una.
-4. **Marcar**, con todas hechas: `proyecto.py cambio <p> EV-02 construida` (la orden de la última issue la trae) y,
+   cambia lo que hay que construir o comprobar, vuelve a estar pendiente. También vuelve si uno de sus escenarios falla
+   en el QA de la unidad (`qa/EV-02/resultado.json`, de `appian-qa`), hasta que se corrige y sus guiones pasan. No hay
+   otro estado que mantener: su reserva se quita sola, y `indice.py issues <p> EV-02` dice cómo va cada una.
+4. **Marcar**, con todas hechas: `proyecto.py cambio <p> EV-02 construida` (la orden de la última issue la trae; si la
+   unidad tiene escenarios, va antes su QA, en otra sesión, y `construida` avisa si falta o está a medias) y,
    tras el pase, `… produccion --ref "<pase>" --fecha <AAAA-MM-DD>`. Sin Dev MCP no hay verificación: construye una
    persona siguiendo el índice y la unidad se marca con `--manual`.
 5. **Regresión**, antes de preparar el paquete: la orden que da `indice.py issues <p> EV-02 --regresion` (el atajo

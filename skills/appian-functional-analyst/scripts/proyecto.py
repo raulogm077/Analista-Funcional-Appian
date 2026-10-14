@@ -838,6 +838,11 @@ def construir(a, ctx, u, hoy, no, raiz, orden):
                f"vuelve a pasar la orden de terminar de cada una: «indice.py issues <p> {u.id} ISS-nn» la imprime")
         marca = "verificada" + (f" · {len(plan.marcas)} {'prueba marcada' if len(plan.marcas) == 1 else 'pruebas marcadas'}"
                                 if plan.marcas else "")
+    try:      # el QA de la unidad no bloquea: solo un escenario que falla (sus issues no estarían hechas); si falta, se avisa
+        for x in iss.avisos_qa(raiz, plan if not a.manual else iss.calcula(ctx.m, ctx, u.id)):
+            print(f"· {x}")
+    except iss.NoSePuede:
+        pass
     u.estado, u.construida = un.CONSTRUIDA, f"{hoy} · {marca}"
     for g in sorted(reaplicadas):
         ctx.por_id[g].construida = f"{hoy} · reaplicada en {u.id}"

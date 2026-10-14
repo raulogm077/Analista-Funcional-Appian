@@ -38,5 +38,13 @@
   {
     "peticion": "El cliente ha retocado el .drawio del proceso de compras. Saca otra vez la imagen para el documento y el BPMN 2.0 a partir de su versión.",
     "skill": "appian-diagramas-bpmn"
+  },
+  {
+    "peticion": "La unidad de cambio EV-04 de la aplicación de becas ya está construida en desarrollo. Quiero que la pruebe otra sesión distinta a la que la construyó: que recorra cada escenario de su Gherkin como lo haría el gestor y el revisor, con sus cuentas de prueba y sin abrir navegador, y que me diga qué escenarios no cumplen lo esperado. Si alguno falla, su tarea de construcción debe volver a pendiente.",
+    "skill": "appian-qa"
+  },
+  {
+    "peticion": "Antes de preparar el paquete para pruebas de la aplicación de becas, vuelve a pasar todos los recorridos ya guardados de sus unidades para comprobar que nada se ha roto, con el script de repetición y sin usar IA. Si alguno falla, marca como pendiente la tarea de construcción de esa unidad.",
+    "skill": "appian-qa"
   }
 ]

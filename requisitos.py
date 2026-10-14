@@ -255,6 +255,7 @@ DETECTORES = {
     "uv": _ejecutable("uv"),
     "devmcp": _devmcp,
     "appian-mcp-server": _appian_mcp_server,
+    "sail": _ejecutable("sail"),
     "pytest": _modulo("pytest"),
     "mcp": _modulo("mcp"),
 }

@@ -32,8 +32,11 @@ que dice de ellos el técnico), en orden y diciendo cuáles pueden ir a la vez. 
 siguiente, que queda reservada con un commit para que nadie más se la lleve, y está hecha cuando su verificación pasa:
 sus objetos, como dice el técnico, y sus pruebas, los casos de prueba guardados de sus reglas e interfaces y de lo que
 las usa. Un caso suyo que falla la deja pendiente, salvo que una persona lo marque como no necesario, con su motivo; un
-retoque que no cambia criterios ni reglas no ejecuta ninguno. Antes de preparar el paquete, la regresión ejecuta todos
-los de la aplicación. Las verificaciones hechas con el encargo de antes de las issues (`construccion/verificacion/<U>.json`)
+retoque que no cambia criterios ni reglas no ejecuta ninguno. Con todas sus issues hechas, el QA recorre la unidad con
+SAIL CLI como cada rol, en otra sesión y solo con sus escenarios; cada recorrido queda como guion en `qa/`, y un
+escenario que falla devuelve su issue a pendiente. Después se marca la unidad construida y, antes
+de preparar el paquete, la regresión ejecuta todos los casos de prueba de la aplicación y un script repite sin IA los
+guiones del QA. Las verificaciones hechas con el encargo de antes de las issues (`construccion/verificacion/<U>.json`)
 ya no cuentan: una unidad aprobada entonces se verifica de nuevo, issue a issue, con la orden que imprime
 `indice.py issues <p> <U> ISS-nn`.
 
@@ -55,6 +58,7 @@ Cada petición entra por una sola skill. Las demás se usan desde ella, y se pas
 | `appian-best-practices` | Cómo se hace bien en Appian: decisiones de solución, reglas por dominio, quality gates y runbooks de mantenimiento. Es la entrada para construir, revisar o diagnosticar objetos | Análisis funcional, diagramas y prototipos | El MCP de documentación; la skill oficial [`dev-mcp-skills`](https://github.com/appian/dev-mcp-skills/) antes de escribir en un entorno |
 | `appian-reverse-engineering` | Documentar cómo está hecha una aplicación Appian que ya existe, para que el equipo la entienda: la lee en vivo por el Dev MCP, en solo lectura, y deja en `as-is/` su funcional, arquitectura, datos, seguridad, integraciones, APIs, batches, procesos, pantallas y reglas de negocio, con el inventario y el anexo de definiciones; cada dato, con su evidencia | Proponer cómo debería estar hecha o rehacerla, escribir requisitos o especificaciones, crear o modificar objetos | El Dev MCP (obligatorio), el Appian MCP Server del mismo entorno (volúmenes) y el MCP de documentación; la skill de diagramas para dibujar los procesos en draw.io |
 | `appian-refactorizacion` | Plantear cómo debería estar hecha una aplicación existente, entera o una parte, con buenas prácticas y eficiencia. A partir de `as-is/`, escribe `refactorizacion/propuesta.md`: cada problema con su evidencia y la regla de buenas prácticas que incumple, la solución por capas, la migración y la convivencia con lo actual, la hoja de ruta y lo que falta por decidir. El técnico del analista baja a objetos cada decisión | Documentar la aplicación, escribir requisitos o la especificación objeto a objeto, revisar un objeto suelto, crear o modificar objetos | `as-is/` de ingeniería inversa (sus datos y su anexo, nunca la extracción en bruto); buenas prácticas para cada regla y decisión; el MCP de documentación |
+| `appian-qa` | El QA de una unidad construida: en otra sesión y solo con sus escenarios (`construccion/<U>/*.feature`), recorre cada uno con SAIL CLI como lo haría cada rol, con su cuenta, y comprueba el «entonces» en lo que devuelve Appian. Cada recorrido queda como guion en `qa/<U>/`, que `qa.py` repite sin IA antes de cada paquete; un escenario que falla devuelve su issue a pendiente | Construir o corregir objetos, escribir criterios, verificar los objetos contra el técnico, mirar la maquetación o los estilos | SAIL CLI, solo en desarrollo, y una cuenta local de Appian por rol |
 
 **MCP `appian-docs`**: la documentación oficial de Appian (servidor público de Appian alojado en Kapa). Lo que una skill no sepa con certeza de Appian se le pregunta antes de escribirlo, y lo que se escribe lleva la URL. Qué conviene hacer no es una duda de documentación: eso es de buenas prácticas.
 
@@ -79,6 +83,7 @@ equipo. En el equipo, con Claude Code, hace falta lo de esta tabla; en negrita, 
 | uv | `appian-reverse-engineering` | Arrancar el Dev MCP y el extractor, con Python 3.10 o superior y el SDK mcp | No se puede usar ingeniería inversa | Windows: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 \| iex"`<br>macOS y Linux: `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | Appian Dev MCP configurado | `appian-reverse-engineering` | Leer la aplicación en solo lectura (entorno 26.5 o superior, usuario con rol Designer) | No se puede usar ingeniería inversa | Lo instala cada persona y lo configura en el `.mcp.json` de su carpeta: `skills/appian-reverse-engineering/references/devmcp-setup.md` |
 | Appian MCP Server del mismo entorno | `appian-reverse-engineering` | Volúmenes del data fabric | La documentación sale sin volúmenes | Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía) |
+| SAIL CLI | `appian-qa` | Recorrer los escenarios de una unidad como cada rol y repetir sus guiones (`qa/`) | No se puede usar el QA | Viene en el paquete del Dev MCP (`bin/`): `bin/setup-*` lo deja en el PATH como `sail` |
 | Skill de PDF de Claude | `appian-reverse-engineering` | Exportar `as-is/` a PDF | Se entrega en Markdown | En Claude (web o escritorio) ya está; en Claude Code, una skill de PDF instalada, como `pdf` de anthropics/skills |
 | pytest | Las pruebas del repositorio | Pruebas de ingeniería inversa en `pruebas/comprobar_plugin.py --completo` | Las trae uv; sin uv, esas pruebas no se completan | Windows: `python -m pip install pytest`<br>macOS y Linux: `python3 -m pip install pytest` |
 | SDK mcp de Python (pide Python 3.10 o superior) | Las pruebas del repositorio | Pruebas de ingeniería inversa, con el Dev MCP simulado | Lo mismo que sin pytest | Windows: `python -m pip install "mcp>=1.2,<2"`<br>macOS y Linux: `python3 -m pip install "mcp>=1.2,<2"` |
@@ -102,8 +107,8 @@ python pruebas/comprobar_plugin.py --completo
 ```
 
 Comprueba que las skills encajan entre sí y pasa las pruebas de cada una, que están en `pruebas/<skill>/`:
-el `selftest.py` del analista, de los diagramas, de los prototipos (este tarda un par de minutos) y de
-refactorización, las de ingeniería inversa, con pytest y `mcp` (si faltan y hay `uv`, los trae él), y la de
+el `selftest.py` del analista, de los diagramas, de los prototipos (este tarda un par de minutos), del QA (con
+SAIL CLI simulado) y de refactorización, las de ingeniería inversa, con pytest y `mcp` (si faltan y hay `uv`, los trae él), y la de
 `requisitos.py` y el aviso al instalar. Con
 `--plugin <carpeta>` pasa
 esas pruebas a otra copia del plugin, por ejemplo la que se instala con el paquete, que no las lleva.

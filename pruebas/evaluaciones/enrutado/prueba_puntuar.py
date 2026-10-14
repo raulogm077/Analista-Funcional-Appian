@@ -59,7 +59,7 @@ def otra_skill(skill: str) -> str:
 
 
 def baterias() -> None:
-    espera(len(SKILLS) == 6, f"hay {len(SKILLS)} skills en skills/, no seis")
+    espera(len(SKILLS) == 7, f"hay {len(SKILLS)} skills en skills/, no siete")
     todas = VISIBLES + OCULTAS
     for nombre, lista, validas in (("enrutado.json", VISIBLES, SKILLS), ("ocultas/enrutado.json", OCULTAS, SKILLS),
                                    ("fronteras/enrutado.json", FRONTERAS, SKILLS),
