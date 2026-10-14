@@ -24,7 +24,8 @@ Con unidades de cambio (analisis/cambios.md, references/cambios.md):
                                                         que falla en el QA (--sin-prueba HU-nn.m), como no necesario
                                                         para avanzar (en el índice; se niega con --desatendida)
   indice.py issues     <p> EV-02 --regresion           la orden de la regresión de toda la aplicación para este
-                                                        equipo, antes de preparar el paquete
+                                                        equipo, antes de preparar el paquete (de una URG corregida en
+                                                        el entorno de corrección, con el Dev MCP de ese entorno)
   indice.py issues     <p> EV-02 [ISS-nn | --siguiente [--quien <nombre>] | --liberar ISS-nn]
                                                         las issues de construcción de una unidad aprobada, una por
                                                         requisito, en construccion/EV-02/. Con ISS-nn, esa issue con su
@@ -639,11 +640,13 @@ def c_issues(m, a):
     la primera sin hacer cuyas dependencias están hechas y la reserva (un commit y un push del índice); con --liberar,
     quita una reserva."""
     ctx, uid = unidad(m, a.unidad)
-    if a.regresion:     # la orden de la regresión, lista para copiar: la pasa quien prepara el paquete (F9)
-        orden, notas = iss.orden_de_regresion(m, uid)
-        print(f"La regresión de la aplicación antes de preparar el paquete de {uid} (el resumen, en "
-              f"construccion/{uid}/regresion.json; por la salida, solo lo que falla):\n\n```\n{orden}\n```"
-              + "".join(f"\n· {n}" for n in notas))
+    if a.regresion:     # la orden de la regresión, lista para copiar: la pasa quien prepara el paquete (F9, F5)
+        # una urgencia corregida en el entorno de corrección se prueba allí, con el Dev MCP de ese entorno
+        correccion = ctx.por_id[uid].urgente and un.donde_se_corrige(ctx.ficha_urg(uid)) == "correccion"
+        orden, notas = iss.orden_de_regresion(m, uid, "corrección" if correccion else "desarrollo")
+        print(f"La regresión de la aplicación{' en el entorno de corrección' if correccion else ''} antes de preparar "
+              f"el paquete de {uid} (el resumen, en construccion/{uid}/regresion.json; por la salida, solo lo que "
+              f"falla):\n\n```\n{orden}\n```" + "".join(f"\n· {n}" for n in notas))
         return
     if a.sin_prueba is not None:   # B2: lo decide una persona, con su motivo; nunca una sesión desatendida
         if a.desatendida:
@@ -671,7 +674,10 @@ def c_issues(m, a):
             # los avisos del cálculo son del analista (los da «indice.py issues <p> <U>»): a quien construye, su issue
             if issue is not None:
                 de = f", reservada a nombre de {plan.reservas[issue.id]}" if issue.id in plan.reservas else ""
-                print(f"{issue.id} de {uid}{de}: {como}\n")
+                # F8, paso 1: sin --quien, una sesión que se reinicia se lleva otra y deja la suya reservada
+                pista = "" if a.quien else ("\n· Pide siempre con el mismo `--quien <el nombre de esta sesión>`: sin él, "
+                                            "si esta sesión se reinicia, se llevará otra issue y esta quedará reservada")
+                print(f"{issue.id} de {uid}{de}: {como}{pista}\n")
                 print(iss.para_construir(m, ctx, plan, issue))
             elif not a.liberar:
                 hechas = all(e[0] for e in iss.estados(plan, m.raiz).values())

@@ -7,9 +7,10 @@
                  la carpeta de sesión de SAIL CLI (--data-dir) de cada cuenta en este equipo, o cómo entrar si no la hay
 
 El guion y el resultado, en SKILL.md («El guion» y «Repetir»). La sesión de cada cuenta se busca por su usuario y su host
-en los session.json de las carpetas de SAIL CLI (--sesiones, o $SAIL_HOME y ~/.sail); el script no entra ni sale. No
-repite nada contra el entorno de pruebas ni el de producción que dice técnico §0. Sale con 0 si todo pasa, 1 si algún
-escenario falla y 2 si algo no se pudo repetir o está por hacer. SAIL_CLI, si existe, es la orden de SAIL CLI que se usa
+en los session.json de las carpetas de SAIL CLI (--sesiones, o $SAIL_HOME y ~/.sail); el script no entra ni sale. Solo
+repite contra la «URL de desarrollo» o la «URL del entorno de corrección» de técnico §0: si un guion apunta a otro host,
+o §0 no las dice o no se lee, no repite nada. Sale con 0 si todo pasa, 1 si algún escenario falla y 2 si algo no se pudo
+repetir o está por hacer. SAIL_CLI, si existe, es la orden de SAIL CLI que se usa
 en vez de «sail» (un .py se lanza con este Python).
 """
 import argparse
@@ -36,7 +37,7 @@ CLAVES_PASO = {"rol", "sail", "selecciona", "espera"}
 ESPERAS = {"completado", "hay", "no_hay", "texto", "sin_texto", "fila", "sin_fila"}
 AFIRMA = {"completado", "hay", "texto", "fila"}      # lo que comprueba algo; las negativas solas pasan con una página vacía
 POR_TERMINAR = "guion por terminar"
-FUERA = ("pruebas", "producción")                    # entornos de técnico §0 donde no se repite: SAIL CLI escribe
+DONDE = ("desarrollo", "corrección")                 # los únicos entornos de técnico §0 donde se repite: SAIL CLI escribe
 ESPERA_SAIL = 120          # segundos que se espera a una orden de SAIL CLI
 REINTENTOS, PAUSA = 3, 2   # lo que aún no se ve se vuelve a mirar hasta 3 veces más, cada 2 segundos
 NIVELES = 3                # hasta dónde se buscan sesiones por debajo de cada carpeta
@@ -149,16 +150,16 @@ def escenarios_de(raiz, uid):
 
 
 def analisis(raiz):
-    """(el análisis del proyecto, el módulo de las issues) con el modelo del analista, que está junto a esta skill; (None,
-    None) si no está o el proyecto no tiene análisis."""
+    """(el análisis del proyecto, el módulo de las issues, por qué no) con el modelo del analista, que está junto a esta
+    skill; (None, None, por qué) si no está, el proyecto no tiene análisis o no se lee."""
     try:
         sys.path.insert(0, str(ANALISTA))
         import issues as iss
         import modelo as mo
         m = mo.Proyecto(raiz)
-        return (m, iss) if m.docs else (None, None)
-    except Exception:  # noqa: BLE001 - una copia suelta de la skill, o un análisis que no se lee: sin esas comprobaciones
-        return None, None
+        return (m, iss, "") if m.docs else (None, None, "el proyecto no tiene análisis")
+    except Exception as e:  # noqa: BLE001 - una copia suelta de la skill, o un análisis que no se lee: se dice
+        return None, None, f"no se ha podido leer el análisis ({type(e).__name__}: {e})"
 
 
 def lo_que_dice_hoy(m, cid):
@@ -174,11 +175,11 @@ def lo_que_dice_hoy(m, cid):
     return [" ".join(f"{w} {x}".split()) for w, x in (mo.pasos_gherkin(texto) or [("*", texto)])]
 
 
-def prohibidos(m, iss):
-    """{host: entorno} de los entornos de técnico §0 donde no se repite (FUERA)."""
+def permitidos(m, iss):
+    """{host: entorno} de los entornos de técnico §0 donde se repite (DONDE), por su etiqueta exacta; {} sin análisis."""
     if m is None:
         return {}
-    return {host_de(u): e for e in FUERA for u in [iss.url_de(m, e)] if u and host_de(u)}
+    return {host_de(u): e for e in DONDE for u in [iss.url_de(m, e)] if u and host_de(u)}
 
 
 # ------------------------------------------------------------------ lo que hay en una página (el --json de SAIL CLI)
@@ -555,15 +556,17 @@ def repetir(a):
         print("Sin SAIL CLI en este equipo (viene en el paquete del Dev MCP, bin/; bin/setup-* lo deja en el PATH como "
               "«sail»): no se ha repetido nada")
         return 2
-    m, iss = analisis(raiz)
-    fuera = prohibidos(m, iss)
-    for uid in unidades:      # SAIL CLI crea datos y lanza procesos: ni en pruebas ni en producción (B3)
+    m, iss, por_que = analisis(raiz)
+    donde = permitidos(m, iss)
+    for uid in unidades:      # SAIL CLI crea datos y lanza procesos: solo en desarrollo o en el de corrección (B3)
         for f in sorted((raiz / CARPETA / uid).glob("*.json")):
             g = lee_json(f) if f.name != RESULTADO else None
-            if isinstance(g, dict) and host_de(g.get("host")) in fuera:
-                print(f"No se repite nada: {CARPETA}/{uid}/{f.name} apunta a {host_de(g['host'])}, que es el entorno de "
-                      f"{fuera[host_de(g['host'])]} (técnico §0). Los guiones crean datos y lanzan procesos: solo se "
-                      "repiten en desarrollo y, en una urgencia, en el entorno de corrección")
+            if isinstance(g, dict) and g.get("host") and host_de(g["host"]) not in donde:
+                si = (", ".join(f"{h} ({e})" for h, e in donde.items()) if donde else
+                      por_que or "técnico §0 no dice la «URL de desarrollo» ni la «URL del entorno de corrección»")
+                print(f"No se repite nada: {CARPETA}/{uid}/{f.name} apunta a {host_de(g['host'])}, y los guiones crean "
+                      "datos y lanzan procesos: solo se repiten en la «URL de desarrollo» o la «URL del entorno de "
+                      f"corrección» de técnico §0 ({si}). Su QA queda por hacer")
                 return 2
     cuentas = sesiones(a.sesiones)
     codigo = 0

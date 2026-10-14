@@ -182,6 +182,7 @@ En `<p>` (sin proyecto, `<p>` es `./<PREFIJO>/`):
 - `as-is/diagrams/<nombre>.mmd`: los diagramas Mermaid
 - `as-is/extraccion/`: la extracción y los datos de trabajo
 - `construccion/<U>/verificacion/ISS-<nn>.json`: lo construido de una issue de una unidad de cambio, leído en el entorno (atajo «Verificar»)
+- `construccion/<U>/regresion.json`: el resumen de la regresión de toda la aplicación antes del paquete de una unidad (atajo «Regresión»)
 
 El `.drawio`, el `.png` y el `.bpmn` de cada proceso y las imágenes de los Mermaid los escribe `appian-diagramas-bpmn`.
 

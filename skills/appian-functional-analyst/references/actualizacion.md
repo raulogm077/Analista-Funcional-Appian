@@ -219,7 +219,7 @@ le vuelve a preguntar.
   propias palabras (`buscar` con las palabras del «Antes», también en el técnico) y corrige cada sitio que
   lo siga diciendo. Es el error más frecuente. Al verificar (paso 7), `comprobar.py --anterior` avisa de cada
   línea del funcional o del técnico, sin tocar en esta versión, que aún dice lo que una pieza cambiada ya no dice
-  (seis palabras seguidas, sin URL ni código):
+  (seis palabras seguidas, sin URL ni código; en un criterio, dentro de un mismo paso):
   «HU-07: "…" sigue en PAN-04, l.212». Corrige cada sitio, o déjalo si sigue siendo verdad allí.
 - **ANULA**: se tacha el ID y las piezas que lo citaban se corrigen o dicen que ya no aplica.
 - **Criterios**: si cambia el comportamiento, se reescribe el criterio (mismo ID) o se añade el siguiente, en una
@@ -247,8 +247,7 @@ python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/ --anterior <p>/v
 Tiene que salir sin errores: ningún ID desaparecido, la versión sube (si cambió el funcional o el técnico) y tiene
 su fila, cada dependencia con resultado, cada cambio declarado en el informe, nada marcado «sin cambios» que haya
 cambiado y nada 🔒 cambiado sin un punto aprobado. Aplicar, el informe y esta pasada van seguidos; solo después:
-- el Word, solo al enviarlo o si se pide (paso 8 del `SKILL.md`). No espera al prototipo, pero el que sale antes que las
-  capturas nuevas es para leerlo: di qué pantallas llevan aún la anterior, y ni se entrega ni se revisa hasta repetirlo;
+- el Word, solo al enviarlo o si se pide, sin esperar al prototipo (paso 8 del `SKILL.md`);
 - el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y solo sus capturas. Las validadas por
   el cliente (🔒) no se tocan sin el visto bueno del analista.
 

@@ -159,13 +159,18 @@ def aplicacion(m):
     return app
 
 
+# La fila de cada entorno en técnico §0 (tecnico-plantilla.md §0), con su etiqueta exacta: «URL de preproducción» no es
+# la de producción
+URL_DE = {"desarrollo": "URL de desarrollo", "pruebas": "URL de pruebas", "producción": "URL de producción",
+          "corrección": "URL del entorno de corrección"}
+
+
 def url_de(m, entorno):
-    """La URL de un entorno («desarrollo», «pruebas», «producción», «corrección»): la de la fila «URL de <entorno>» de
-    técnico §0, o None."""
+    """La URL de un entorno («desarrollo», «pruebas», «producción», «corrección»): la de su fila de técnico §0 (URL_DE),
+    o None."""
     for _, _, filas in m.tablas("T", "0"):
         for f in filas:
-            dato = mo.normaliza(f[0]) if f else ""
-            if dato.startswith("url de") and mo.normaliza(entorno) in dato and len(f) > 1:
+            if f and len(f) > 1 and mo.normaliza(limpio(f[0]).strip("* ")) == mo.normaliza(URL_DE[entorno]):
                 url = re.search(r"https?://[^\s`|<>)]+", f[1])
                 if url:
                     return url.group(0).rstrip(".,;")
@@ -633,14 +638,20 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
     L += ["", "## Terminar", "",
           "Con los objetos construidos, se verifica en desarrollo, en solo lectura. El resultado queda en "
           f"`{CARPETA}/{uid}/verificacion/{issue.id}.json`: con él la issue está hecha. La orden, lista para copiar en "
-          f"cada equipo, la imprime `indice.py issues <p> {uid} {issue.id}` (y `--siguiente`, al dar la issue). "
-          + (PRUEBAS_NO if issue.sin_pruebas else PRUEBAS_SI), ""]
+          f"cada equipo, la imprime `appian-functional-analyst/scripts/indice.py issues <p> {uid} {issue.id}` (y "
+          "`--siguiente`, al dar la issue). " + (PRUEBAS_NO if issue.sin_pruebas else PRUEBAS_SI), "", ORDENES, ""]
     issue.texto = "\n".join(L)
 
 
+# De dónde salen las órdenes que nombran un script sin ruta: AGENTS.md, la copia de cada flujo en el proyecto y cada
+# issue, ficheros que se comparten entre equipos y no pueden llevar la ruta del plugin de nadie (proyecto.py generados)
+ORDENES = ("Una ruta o un script que van con el nombre de una skill (`appian-qa/scripts/qa.py`, o `appian-qa` · `qa.py`) "
+           "son de esa skill: cárgala antes, su `SKILL.md` dice cuál es su carpeta, y no busques el plugin en el disco. Un "
+           "agente que no carga skills los tiene en `skills/<skill>/` del plugin instalado (los scripts, en `scripts/`), "
+           "en la ruta que sepa quien trabaja.")
 PRUEBAS_NO = "No hay pruebas que ejecutar: la issue no cambia criterios ni reglas."
-PRUEBAS_SI = ("«verificar» ejecuta los casos de prueba guardados de sus reglas e interfaces y de lo que las usa: un caso "
-              "suyo que falla la deja pendiente; uno de lo que las usa, es un aviso.")
+PRUEBAS_SI = ("«verificar» ejecuta también los casos de prueba guardados de sus reglas e interfaces y de lo que las usa; "
+              "si uno falla, `appian-functional-analyst/references/cambios.md` §6.")
 
 
 # ------------------------------------------------------------------ el plan de una unidad y sus ficheros
@@ -1045,9 +1056,10 @@ def python_de_aqui():
     return next((x for x in orden if shutil.which(x)), orden[0])
 
 
-def servidor_devmcp(m):
-    """(nombre del servidor del Dev MCP de desarrollo en la configuración de este equipo o None, nota): el que apunta a
-    la «URL de desarrollo» de técnico §0 o, si no la dice, el único que hay. Lo busca donde lo busca «verificar»."""
+def servidor_devmcp(m, entorno="desarrollo"):
+    """(nombre del servidor del Dev MCP de un entorno en la configuración de este equipo o None, nota): el que apunta a
+    su URL de técnico §0 (la «URL de desarrollo» o, en una urgencia, la del entorno de corrección) o, si §0 no la dice,
+    el único que hay. Lo busca donde lo busca «verificar»."""
     try:
         sys.path.append(str(VERIFICAR.parent))
         import devmcp_extract as dx      # el extractor de ingeniería inversa: dónde mira y qué es un Dev MCP
@@ -1062,15 +1074,16 @@ def servidor_devmcp(m):
     if not de:
         return None, ("este equipo no tiene ningún Dev MCP configurado desde esta carpeta: sin él, construye una persona "
                       "y la unidad se marca con `--manual`")
-    url = url_de(m, "desarrollo")
+    url = url_de(m, entorno)
     if url:
         suyos = [n for n, host in de.items() if host == (urlparse(url).hostname or "").lower()]
         return (suyos[0], "") if suyos else \
-            (None, f"ningún Dev MCP de este equipo apunta a desarrollo ({url}, técnico §0); hay: {', '.join(de)}")
+            (None, f"ningún Dev MCP de este equipo apunta a la «{URL_DE[entorno]}» ({url}, técnico §0); hay: "
+                   f"{', '.join(de)}")
     if len(de) == 1:
         return next(iter(de)), ""
-    return None, (f"este equipo tiene varios Dev MCP ({', '.join(de)}) y técnico §0 no dice la «URL de desarrollo»: "
-                  "añade `--server-name <el de desarrollo>`")
+    return None, (f"este equipo tiene varios Dev MCP ({', '.join(de)}) y técnico §0 no dice la «{URL_DE[entorno]}»: "
+                  f"añade `--server-name <el de {entorno}>`")
 
 
 def orden_de_marcar(m, ctx, uid):
@@ -1117,10 +1130,11 @@ def para_construir(m, ctx, plan, issue):
     return "\n".join(L)
 
 
-def orden_de_regresion(m, uid):
-    """(orden, notas) de la regresión de toda la aplicación, lista para copiar en este equipo: se pasa antes de preparar
-    el paquete de la unidad y deja su resumen en construccion/<U>/regresion.json (por la salida, solo lo que falla)."""
-    servidor, nota = servidor_devmcp(m)
+def orden_de_regresion(m, uid, entorno="desarrollo"):
+    """(orden, notas) de la regresión de toda la aplicación en un entorno (el de corrección, en una urgencia corregida
+    allí), lista para copiar en este equipo: se pasa antes de preparar el paquete de la unidad y deja su resumen en
+    construccion/<U>/regresion.json (por la salida, solo lo que falla)."""
+    servidor, nota = servidor_devmcp(m, entorno)
     app = aplicacion(m)
     notas = [nota] if nota else []
     if not app:
