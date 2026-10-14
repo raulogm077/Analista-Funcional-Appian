@@ -91,7 +91,7 @@ def main():
         print(f"decisiones.md: {len(nuevas)} decisiones nuevas, D-{n - len(nuevas) + 1:02d} a D-{n:02d}")
     if a.escribir:
         for d, lineas in textos.items():
-            m.ruta(d).write_text("\n".join(lineas).rstrip("\n") + "\n", encoding="utf-8")
+            mo.escribe(m.ruta(d), "\n".join(lineas).rstrip("\n") + "\n")
         print("Escrito. Ahora: indice.py derivadas --escribir y comprobar.py")
     else:
         print("(Sin --escribir no se ha cambiado nada.)")

@@ -167,5 +167,5 @@ spec = {"app": {"name": "Galería IA", "language": "es", "today": "2026-09-24", 
         "screens": [asistente, listado, ficha, docchat, revision, novedades],
         "captures": [{"name": "01-asistente", "screen": "asistente"}, {"name": "02-incidencias", "screen": "incidencias"}, {"name": "03-ficha", "screen": "incidencia", "params": {"id": 1}},
                      {"name": "04-documento", "screen": "documento"}, {"name": "05-revision", "screen": "revision"}, {"name": "06-novedades", "screen": "novedades"}] + [{"name": f"06-novedades-{k}", "screen": "novedades", "state": {"local!tab": k}} for k in (2, 3, 4, 5)]}
-Path(sys.argv[1] if len(sys.argv) > 1 else "app.json").write_text(json.dumps(clean(spec), ensure_ascii=False, indent=1), encoding="utf-8")
+escribe(sys.argv[1] if len(sys.argv) > 1 else "app.json", json.dumps(clean(spec), ensure_ascii=False, indent=1))
 print("ok")

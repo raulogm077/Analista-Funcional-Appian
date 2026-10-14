@@ -371,6 +371,13 @@ def cargar(ruta):
     return Proyecto(ruta)
 
 
+def escribe(ruta, texto):
+    """Escribe un fichero de texto en UTF-8 con finales de línea \\n en cualquier sistema (write_text() los pone \\r\\n
+    en Windows): en un proyecto que comparten varios equipos, reescribirlo no cambia todas sus líneas."""
+    with open(ruta, "w", encoding="utf-8", newline="\n") as f:
+        f.write(texto)
+
+
 def informes(raiz):
     """Los informes de impacto de un proyecto, todos los de <p>/impacto/*.md (FU-nn, varias fuentes juntas y los que
     vengan): [(nombre, texto, puntos, revisión)], por nombre. El único lector de informes que usan los scripts."""

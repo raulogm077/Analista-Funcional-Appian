@@ -3,6 +3,8 @@
 Uso en un generar_app.py (el flag, antes del import: si no, queda __pycache__ en el kit):
     import sys; sys.dont_write_bytecode = True; sys.path.insert(0, r"<KIT>/scripts")
     from sail_helpers import *
+    …
+    escribe("app.json", json.dumps(clean(spec), ensure_ascii=False, indent=1))   # con \\n en cualquier sistema
 Con la marca del proyecto (brand-<id>.json junto al app.json, en <p>/prototipo/), antes de esa línea:
     import sail_helpers; sail_helpers.usar_marca("<id>", r"<p>/prototipo")
 Sin usar_marca(), los colores son los de la marca estándar de Appian (assets/brand-appian.json).
@@ -33,6 +35,7 @@ from pathlib import Path  # noqa: F401
 import sys
 
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
+from entorno import escribe  # noqa: E402,F401 (el app.json, con \n en cualquier sistema: escribe(ruta, texto))
 
 
 def usar_marca(marca="appian", carpeta=None):

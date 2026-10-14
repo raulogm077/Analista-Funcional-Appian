@@ -397,7 +397,7 @@ def c_grafo(m, a):
     aristas = [{"de": p.id, "a": r} for p in m.piezas.values() for r in sorted(p.refs) if r in m.piezas]
     aristas += [{"de": p.id, "a": h, "tipo": "contiene"} for p in m.piezas.values() for h in p.hijos]
     destino = pathlib.Path(a.o) if a.o else m.analisis / "grafo.json"   # en el proyecto: el plugin no escribe fuera
-    destino.write_text(json.dumps({"nodos": nodos, "aristas": aristas}, ensure_ascii=False, indent=1), encoding="utf-8")
+    mo.escribe(destino, json.dumps({"nodos": nodos, "aristas": aristas}, ensure_ascii=False, indent=1))
     print(f"{destino}: {len(nodos)} piezas, {len(aristas)} referencias")
 
 
@@ -450,7 +450,7 @@ def c_derivadas(m, a):
     if texto.rstrip("\n") == actual.rstrip("\n"):
         print("El anexo está al día.")
     elif a.escribir:
-        m.ruta("F").write_text(texto, encoding="utf-8")
+        mo.escribe(m.ruta("F"), texto)
         print(f"Anexo escrito en {m.ruta('F')} ({len(nuevo) - 6} filas).")
     else:
         print("\n".join(nuevo))
@@ -728,7 +728,7 @@ def c_encargo(m, a):
               if not x.is_file() or x.read_text(encoding="utf-8") != t]
     for x, t in ((destino, texto), (esp, nuevo_esp)):
         if x in cambia:
-            x.write_text(t, encoding="utf-8")
+            mo.escribe(x, t)
     print(f"{'Escrito' if cambia else 'Al día, sin cambios'}: construccion/{uid}.md y construccion/{uid}-esperado.json "
           f"({len(objetos)} objetos)")
 

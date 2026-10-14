@@ -90,7 +90,7 @@ def iniciar(a):
         texto = (PLANTILLAS / plantilla).read_text(encoding="utf-8")
         for k, v in datos.items():
             texto = texto.replace("{" + k + "}", v)
-        destino.write_text(texto, encoding="utf-8")
+        mo.escribe(destino, texto)
         print(f"+ {destino}")
     print(f"Carpetas: {', '.join(CARPETAS)}")
     # lo que solo se escribe si falta: qué no se sube, que git no cambie los finales de línea y el CLAUDE.md que hace
@@ -114,8 +114,7 @@ def escribe(ruta, texto):
     if ruta.is_file() and ruta.read_text(encoding="utf-8", errors="replace") == texto:
         return False
     ruta.parent.mkdir(parents=True, exist_ok=True)
-    with open(ruta, "w", encoding="utf-8", newline="\n") as f:
-        f.write(texto)
+    mo.escribe(ruta, texto)
     return True
 
 
@@ -491,7 +490,7 @@ def version(a):
         lineas = ruta.read_text(encoding="utf-8").split("\n")
         i = next(i for i, l in enumerate(lineas[:20]) if RX_VERSION.search(l))
         lineas[i] = RX_VERSION.sub(lambda x: f"{x.group(1)}{nueva}", lineas[i], count=1)
-        ruta.write_text("\n".join(lineas), encoding="utf-8")
+        mo.escribe(ruta, "\n".join(lineas))
         subidos.append(nombre)
     hoy = datetime.date.today().isoformat()
     que = " ".join(a.que.split()).replace("|", "/")
@@ -518,7 +517,7 @@ def version(a):
     if ids_d:
         escrito.append(f"{', '.join(ids_d)} en decisiones.md")
     if texto_d != (dec.read_text(encoding="utf-8") if dec.exists() else ""):
-        dec.write_text(texto_d, encoding="utf-8")
+        mo.escribe(dec, texto_d)
     informe = (a.informe or f"impacto/{fuentes[0]}.md").replace("\\", "/")
     for fu in fuentes:
         e = cat[fu]
@@ -529,7 +528,7 @@ def version(a):
         else:
             texto_p = nuevo_p
     if texto_p and texto_p != (proy.read_text(encoding="utf-8") if proy.exists() else ""):
-        proy.write_text(texto_p, encoding="utf-8")
+        mo.escribe(proy, texto_p)
         escrito.append(f"{', '.join(fuentes)} en «Fuentes procesadas» de proyecto.md")
     print(f"Versión {nueva}: {' y '.join(subidos)} en {nueva}" + (f"; {'; '.join(escrito)}" if escrito else "")
           + f". Copia de la {v[0]}.{v[1]} en {destino}.")
@@ -591,7 +590,7 @@ def entregar(a):
         print(f"· No encuentro entregables/{word}: genéralo con df_docx.js antes de enviarlo")
     else:
         texto = entregados(texto, word)
-    pm.write_text(texto, encoding="utf-8")
+    mo.escribe(pm, texto)
     print(f"{valor} en {pm}")
 
 
@@ -613,8 +612,8 @@ def entregar_cambio(uid, raiz, m, vs, fecha, texto):
     if nota not in c[-1]:
         c[-1] = nota if c[-1].strip(" —-") == "" else f"{c[-1]} · {nota}"
         lineas[k] = "| " + " | ".join(c) + " |"
-        dm.write_text("\n".join(lineas), encoding="utf-8")
-    (raiz / "proyecto.md").write_text(entregados(texto, word), encoding="utf-8")
+        mo.escribe(dm, "\n".join(lineas))
+    mo.escribe(raiz / "proyecto.md", entregados(texto, word))
     print(f"{nota}: en la versión {vs} de decisiones.md y {word} en «Entregados» de proyecto.md")
 
 

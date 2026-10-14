@@ -197,7 +197,7 @@ def cargar_json(ruta):
 
 
 def guardar_json(proc, ruta):
-    with open(ruta, "w", encoding="utf-8") as f:
+    with open(ruta, "w", encoding="utf-8", newline="\n") as f:  # con \n en cualquier sistema
         json.dump(proc, f, ensure_ascii=False, indent=2)
         f.write("\n")
 
@@ -724,7 +724,7 @@ def xml_drawio(paginas):
 
 def escribir_paginas(paginas, ruta):
     """Escribe un .drawio nuevo con una página por elemento de `paginas` ([(proceso, geometría)])."""
-    with open(ruta, "w", encoding="utf-8") as fh:
+    with open(ruta, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(xml_drawio(paginas))
 
 
@@ -874,7 +874,9 @@ class Fichero:
 
     def guardar(self, ruta=None):
         ET.indent(self.tree, space="")  # sin sangría: draw.io lo lee igual y el diff queda limpio
-        self.tree.write(ruta or self.ruta, encoding="utf-8", xml_declaration=False)
+        # el fichero se abre aquí: si lo abre ElementTree, en Windows cada salto de línea sale \r\n
+        with open(ruta or self.ruta, "w", encoding="utf-8", newline="\n") as fh:
+            self.tree.write(fh, encoding="unicode", xml_declaration=False)
 
     def huella(self):
         """Resumen de la colocación (posiciones y puntos de los flujos): cambia si alguien mueve algo en draw.io."""

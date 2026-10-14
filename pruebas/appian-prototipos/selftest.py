@@ -714,6 +714,13 @@ def main():
             else:
                 ok = False
                 print(f"✗ Validar y construir: {name}\n{out}")
+        # lo que escriben los scripts lleva \n en cualquier sistema, también en Windows: el app.json del generador
+        # (escribe() de sail_helpers), el HTML y la trazabilidad
+        escritos = [prueba] + [f for _, html, _ in built for f in (html, html.with_name(html.stem + "-trazabilidad.md"))]
+        con_cr = [f.name for f in escritos if f.is_file() and b"\r" in f.read_bytes()]
+        ok = ok and not con_cr
+        print("✗ Finales de línea: llevan \\r " + ", ".join(con_cr) if con_cr else
+              "✓ Finales de línea: el app.json, el HTML y la trazabilidad se escriben con \\n en cualquier sistema")
         for que, probs in brands(tmp, built) + marca_cliente(tmp, built) + marca_detalles(tmp) + capturas_solo(tmp):
             if probs:
                 ok = False

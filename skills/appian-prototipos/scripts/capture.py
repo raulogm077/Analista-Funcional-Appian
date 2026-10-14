@@ -21,7 +21,7 @@ Requiere Playwright para Python (pip install playwright) y un navegador: el Chro
 import json, os, re, sys, argparse
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from pathlib import Path
-from entorno import utf8_stdio, sync_playwright, launch_browser
+from entorno import escribe, utf8_stdio, sync_playwright, launch_browser
 
 
 def ref_de(texto):
@@ -142,7 +142,7 @@ def main():
     texto = "\n".join(index) + "\n"
     if solo and (out / "indice.md").is_file():   # solo las de ahora: el resto del índice se queda como estaba
         texto = fusionar((out / "indice.md").read_text(encoding="utf-8"), texto)
-    (out / "indice.md").write_text(texto, encoding="utf-8")
+    escribe(out / "indice.md", texto)
     print(f"OK → {out / 'indice.md'}")
     if errors:
         print("\nErrores en la página:")

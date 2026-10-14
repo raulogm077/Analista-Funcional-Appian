@@ -1,4 +1,4 @@
-"""Utilidades comunes de los scripts: salida UTF-8 y navegador para Playwright."""
+"""Utilidades comunes de los scripts: salida UTF-8, ficheros con el mismo final de línea y navegador para Playwright."""
 import sys
 
 
@@ -6,6 +6,13 @@ def utf8_stdio():
     """Evita errores de codificación al imprimir en consolas Windows o a través de tuberías."""
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8", errors="replace")
+
+
+def escribe(ruta, texto):
+    """Escribe un fichero de texto en UTF-8 con finales de línea \\n en cualquier sistema (write_text() los pone \\r\\n
+    en Windows): en un proyecto que comparten varios equipos, reescribirlo no cambia todas sus líneas."""
+    with open(ruta, "w", encoding="utf-8", newline="\n") as f:
+        f.write(texto)
 
 
 def sync_playwright():

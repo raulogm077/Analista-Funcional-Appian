@@ -238,6 +238,6 @@ def exportar(proc, geo, destino):
            f'<bpmn:process id="Proceso" name={quoteattr(nombre)} isExecutable="false">\n' + "\n".join(proc_xml) + "\n</bpmn:process>\n"
            '<bpmndi:BPMNDiagram id="Diagrama"><bpmndi:BPMNPlane id="Plano" bpmnElement="Colaboracion">\n' + "\n".join(di) +
            "\n</bpmndi:BPMNPlane></bpmndi:BPMNDiagram>\n</bpmn:definitions>\n")
-    with open(destino, "w", encoding="utf-8") as fh:
+    with open(destino, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(xml)
     return destino

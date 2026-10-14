@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rutas import work_dir  # noqa: E402
+from rutas import escribe, work_dir  # noqa: E402
 
 
 def load_json(p: Path) -> dict:
@@ -162,7 +162,7 @@ def main(doc_root: str) -> int:
                         for o in objs] for t, objs in objects.items()},
     }
     out_path = interm / "summary.json"
-    out_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+    escribe(out_path, json.dumps(summary, indent=2, ensure_ascii=False, default=str))
     print(f"summary.json: {summary['meta']['appName']}, {len(all_objs)} objetos, confianza {nivel} ({'; '.join(motivos)}), "
           f"{len(critical)} procesos críticos, {len(vivos)} hallazgos, {len(secret_objs)} objetos con secretos")
     if not registro:

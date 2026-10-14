@@ -54,7 +54,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rutas import carpeta_objeto, safe_name, work_dir  # noqa: E402
+from rutas import carpeta_objeto, escribe, safe_name, work_dir  # noqa: E402
 import build_model as bm  # noqa: E402  (el modelo, que rehace extract --solo, y cómo se leen las respuestas)
 
 EXIT_OK, EXIT_USAGE, EXIT_NO_CONFIG, EXIT_AMBIGUOUS, EXIT_START, EXIT_NO_APPS, EXIT_APP, EXIT_NO_MCPSERVER = \
@@ -807,8 +807,7 @@ class Extractor:
                          "mcpType": obj.get("mcpType")})
         f.parent.mkdir(parents=True, exist_ok=True)
         self.escritas.add(f)
-        f.write_text(json.dumps({"_meta": meta, "response": res.data}, ensure_ascii=False, indent=1, default=str),
-                     encoding="utf-8")
+        escribe(f, json.dumps({"_meta": meta, "response": res.data}, ensure_ascii=False, indent=1, default=str))
 
     # ---- aplicaciones y objetos
     async def env_calls(self) -> dict[str, CallResult]:
@@ -923,7 +922,7 @@ class Extractor:
 
 def write_json(p: Path, data):
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(data, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    escribe(p, json.dumps(data, ensure_ascii=False, indent=2, default=str))
 
 
 def resolve_app(apps: list[dict], wanted: str) -> tuple[dict | None, str]:
@@ -1142,9 +1141,9 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         report = {"startedAt": previo.get("startedAt") or inicio, "reextraidoEn": inicio,
                   **{k: v for k, v in report.items() if k != "startedAt"}}
     write_json(interm / "extraction_report.json", report)
-    (interm / "LEEME.md").write_text(
-        "# Extracción\n\nRespuestas del Dev MCP de la aplicación, tal cual. Es la fuente de la documentación de la "
-        "carpeta superior; para consultar un objeto, su ficha de `anexo/`.\n", encoding="utf-8")
+    escribe(interm / "LEEME.md",
+            "# Extracción\n\nRespuestas del Dev MCP de la aplicación, tal cual. Es la fuente de la documentación de la "
+            "carpeta superior; para consultar un objeto, su ficha de `anexo/`.\n")
     ok = sum(v.get("ok", 0) + v.get("cached", 0) for v in ex.stats.values())
     print(f"Extraccion terminada: {len(objects)} objetos, {ok} respuestas correctas, "
           f"{len(ex.errors)} errores, {len(ex.disabled)} herramientas desactivadas por tipo. "

@@ -72,6 +72,11 @@ def test_datos_formato(project):
     assert procesos and all(set(p) == {"nombre", "json", "nodos", "ejecuciones"} for p in procesos)
     solicitud = next(o for o in inv["objetos"] if o["nombre"] == "DEM Solicitud")
     assert {"DEM_SOLICITUD", "Resumen"} <= set(solicitud["tambien"])        # la tabla y la vista, con su record type
+    # lo que escriben los scripts lleva \n en cualquier sistema, también en Windows: rehacerlo en otro equipo no cambia
+    # todas sus líneas
+    con_cr = sorted(f.relative_to(project.out).as_posix() for d in ("extraccion", "anexo", "datos")
+                    for f in (project.out / d).rglob("*") if f.is_file() and b"\r" in f.read_bytes())
+    assert not con_cr, con_cr[:10]
 
 
 def test_retirados(project):

@@ -758,6 +758,9 @@ Se acepta si:
            and re.search(r"\| aprobacion-2026-10-01-informe\.txt \| Aprobación \| de Jefe de proyecto[^|]*\| 2026-10-10 \|",
                          indice), indice)
         ok("leer_fuentes.py: el temporal de Office (~$…) de una carpeta no se cataloga", "~$" not in indice, indice)
+        con_cr = [f.name for f in sorted((tmp / "fuentes").glob("*")) if f.is_file() and b"\r" in f.read_bytes()]
+        ok("leer_fuentes.py escribe con \\n en cualquier sistema, también en Windows: cada fuente y los índices",
+           c == 0 and not con_cr, str(con_cr))
         c, out = corre(S / "leer_fuentes.py", entrada / "~$DF-revisado.docx", "-o", tmp / "fuentes")
         ok("leer_fuentes.py: un temporal de Office suelto da aviso y no se cataloga",
            "~$" not in (tmp / "fuentes" / "indice.md").read_text(encoding="utf-8") and "~$DF-revisado.docx" in out
@@ -1209,6 +1212,9 @@ def pruebas_repositorio(tmp):
        and all(textos[x].decode("utf-8").startswith(f"<!-- appian-analisis-funcional {version} · ") for x in generados)
        and textos["CLAUDE.md"] == b"@AGENTS.md\n" and textos[".gitattributes"].endswith(b"\n* -text\n")
        and all(f"]({x})" in guia for x in flujos), guia[:600])
+    con_cr = [x for x in arbol(a) if (a / x).is_file() and b"\r" in (a / x).read_bytes()]
+    ok("nada de lo que escribe iniciar lleva \\r, tampoco en Windows: proyecto.md y las plantillas del análisis",
+       not con_cr and b"\n" in (a / "analisis" / "funcional.md").read_bytes(), str(con_cr))
     ok("AGENTS.md no nombra lo que todavía no escribe nadie (qa/) ni pide un git pull antes de mirar el estado",
        "qa/" not in guia and "git pull" in guia and guia.index("proyecto.py estado") < guia.index("git pull"), guia)
     # dos fuentes, una con cada final de línea: tienen que llegar igual, byte a byte, a quien clone el proyecto

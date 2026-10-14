@@ -213,5 +213,5 @@ spec = {"app": {"name": "Bloques del kit", "language": "es", "today": "2026-09-2
         "data": {"incidencias": {"recordType": "INC Incidencia", "rows": rows}},
         "screens": pages,
         "captures": [{"name": f"{k + 1:02d}-{p['id']}", "screen": p["id"]} for k, p in enumerate(pages)]}
-Path(sys.argv[1] if len(sys.argv) > 1 else "app.json").write_text(json.dumps(clean(spec), ensure_ascii=False, indent=1), encoding="utf-8")
+escribe(sys.argv[1] if len(sys.argv) > 1 else "app.json", json.dumps(clean(spec), ensure_ascii=False, indent=1))
 print("ok")

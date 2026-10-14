@@ -28,7 +28,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validate import contrast, _lineal, check_css_profile, Report  # noqa: E402
 from build import css_profile_text, mix_white, on_color  # noqa: E402
-from entorno import utf8_stdio  # noqa: E402
+from entorno import escribe, utf8_stdio  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent  # la skill
 # la carpeta del plugin: la que contiene skills/, lleve o no .claude-plugin/plugin.json (si la skill no está en una carpeta
@@ -433,7 +433,7 @@ def crear(a):
     try:
         carpeta.mkdir(parents=True, exist_ok=True)
         for nombre, texto, nota in ficheros:
-            (carpeta / nombre).write_text(texto, encoding="utf-8")
+            escribe(carpeta / nombre, texto)
             escritos.append((nombre, nota))
     except OSError as e:
         print(f"marca.py crear: no se pudo escribir {e.filename or carpeta} ({e.strerror or e}). Llegaron a escribirse en {carpeta}: "

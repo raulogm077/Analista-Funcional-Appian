@@ -778,7 +778,7 @@ def comprobar_fuentes(m, carpeta, corregir):
                 if not ts or y in ts:
                     return mt.group(0)
                 return f"FU-{x} {ts[max(bisect.bisect_right(ts, y) - 1, 0)]}"
-            m.ruta(d).write_text(rx.sub(arregla, texto), encoding="utf-8")
+            mo.escribe(m.ruta(d), rx.sub(arregla, texto))
     if corregir and malas:
         print(f"· {len(set(malas))} citas llevadas a la intervención anterior: {sorted(set(malas))[:10]}")
     else:
