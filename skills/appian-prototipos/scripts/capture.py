@@ -10,7 +10,8 @@ Uso:
 - Por defecto captura la página completa (formularios largos incluidos). --viewport limita a 1440x900;
   en una captura concreta, "full": false hace lo mismo.
 - Escribe capturas/indice.md: cada figura con su pie, su ficha PAN (el 'ref' de la pantalla) y la línea que la enlaza
-  en esa ficha de analisis/funcional.md (ruta relativa desde analisis/, con el prototipo en <proyecto>/prototipo/).
+  en esa ficha de analisis/funcional.md (ruta relativa desde analisis/, con el prototipo en <proyecto>/prototipo/). Con
+  -o en <proyecto>/prototipo/capturas/ pone además esa línea bajo el título de la ficha, si no estaba (enlazar).
 - --solo: solo las capturas de esas pantallas o vistas (el código de su 'ref', como PAN-02, o su id), separadas por
   comas; el indice.md que ya hay se fusiona: se sustituyen solo las filas con el mismo «Fichero» y se añaden las nuevas.
   Si alguna no es de ninguna captura, sale con 1 sin capturar nada.
@@ -56,6 +57,31 @@ def fusionar(viejo, nuevo):
     return "\n".join([l for l in nuevo.splitlines() if not fichero(l)] + filas + list(nuevas.values())) + "\n"
 
 
+def enlazar(funcional, enlaces):
+    """Pone en analisis/funcional.md la línea de cada captura bajo el título de su ficha (**PAN-04 — …**), tras las imágenes
+    que ya tenga. `enlaces`: [(código de la ficha, ruta desde analisis/, línea «![…](ruta)»)]. La que ya está, por su ruta,
+    no se toca. Devuelve (códigos enlazados ahora, códigos sin ficha); solo escribe si enlaza alguna."""
+    lineas = funcional.read_text(encoding="utf-8").split("\n")
+    imagen = re.compile(r"!\[[^\]]*\]\(([^)]+)\)\s*$")
+    puestas, sin_ficha = [], []
+    for codigo, ruta, linea in enlaces:
+        ini = next((i for i, l in enumerate(lineas) if re.match(rf"\*\*{re.escape(codigo)}\s+—", l)), None)
+        if ini is None:
+            sin_ficha.append(codigo)
+            continue
+        fin = next((i for i in range(ini + 1, len(lineas)) if re.match(r"\*\*(~~)?[A-Z]+-\d+|#{1,6} ", lineas[i])), len(lineas))
+        ya = [i for i in range(ini + 1, fin) if imagen.match(lineas[i])]
+        if ruta in (imagen.match(lineas[i]).group(1) for i in ya):
+            continue
+        pos = (ya[-1] if ya else ini) + 1
+        lineas[pos:pos] = ["", linea] + ([""] if pos < len(lineas) and lineas[pos].strip() else [])
+        puestas.append(codigo)
+    if puestas:
+        with open(funcional, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(lineas))
+    return list(dict.fromkeys(puestas)), list(dict.fromkeys(sin_ficha))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("html")
@@ -81,10 +107,10 @@ def main():
             sys.exit(1)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    errors = []
+    errors, enlaces = [], []
     analisis = out.resolve().parent.parent / "analisis"  # <proyecto>/prototipo/capturas → <proyecto>/analisis
     index = [f"# Capturas · {spec.get('app', {}).get('name', '')}", "",
-             "«Ficha»: bajo qué ficha PAN de analisis/funcional.md va cada imagen. «Para la ficha»: la línea que se pega debajo de su título.", "",
+             "«Ficha»: bajo qué ficha PAN de analisis/funcional.md va cada imagen. «Para la ficha»: la línea que capture.py pone debajo de su título.", "",
              "| Fichero | Pie de figura | Ficha | Para la ficha | Patrón | Requisitos |", "|---|---|---|---|---|---|"]
     with sync_playwright() as p:
         b = launch_browser(p)
@@ -136,6 +162,8 @@ def main():
             ruta = os.path.relpath(f.resolve(), analisis).replace(os.sep, "/")
             alt = f"{m.group(1)} {m.group(2)}".strip() + ("" if estado == "inicial" else f" ({estado})") if m else ""
             enlace = f"`![{alt}]({ruta})`" if m else "—"
+            if m:
+                enlaces.append((m.group(1), ruta, enlace.strip("`")))
             index.append(f"| {f.name} | {pie} | {ref} | {enlace} | {s.get('pattern', '')} | {', '.join((v or {}).get('req') or s.get('req', []))} |")
             print(f"  ✓ {f}")
         b.close()
@@ -144,6 +172,12 @@ def main():
         texto = fusionar((out / "indice.md").read_text(encoding="utf-8"), texto)
     escribe(out / "indice.md", texto)
     print(f"OK → {out / 'indice.md'}")
+    funcional = analisis / "funcional.md"
+    if enlaces and out.resolve().name == "capturas" and funcional.is_file():   # las capturas del proyecto, en sus fichas
+        puestas, sin_ficha = enlazar(funcional, enlaces)
+        resto = "ya lo estaban" if {c for c, _, _ in enlaces} - set(sin_ficha) else "ninguna"
+        print(f"Capturas enlazadas en {funcional}: {', '.join(puestas) or resto}"
+              + (f"; sin ficha: {', '.join(sin_ficha)} (su línea, en indice.md)" if sin_ficha else ""))
     if errors:
         print("\nErrores en la página:")
         for e in errors:

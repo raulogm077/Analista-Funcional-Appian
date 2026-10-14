@@ -653,7 +653,8 @@ def prueba_de_requisitos():
     espacios) y con la consola en cp1252, como en Windows: con todo lo opcional ausente, su --json es el de
     pruebas/requisitos-esperado.json salvo versión y rutas; si falta algo opcional sale con 0 y si falta Python, con 1;
     avisa de la copia suelta de una skill del plugin en ~/.claude/skills/, también con el nombre que tenía antes; y
-    --breve y el hook de inicio de sesión salen siempre con 0 y avisan una sola vez de lo que falta."""
+    --breve y el hook de inicio de sesión salen siempre con 0 y avisan una sola vez de lo que falta, y el hook no deja
+    nada en la salida de error."""
     fallos = []
     script, tabla = RAIZ / "requisitos.py", RAIZ / "requisitos.json"
     if not (script.is_file() and tabla.is_file()):
@@ -784,13 +785,17 @@ def prueba_de_requisitos():
                     fallos.append(f"en Windows, la prueba del hook necesita {nombre}, el shell con el que Claude Code lanza "
                                   "los hooks (el bash de System32 es WSL y no vale)")
                     continue
+                # la orden de Python que no está no deja nada en la salida de error (el «Python was not found» del python3
+                # de Windows); PowerShell, que solo lanza los hooks si no hay Git Bash, da el suyo si la orden ni existe
+                callado = lambda out, todo: todo == out or nombre == "PowerShell"
                 for orden in ordenes:
                     orden = orden.replace("${CLAUDE_PLUGIN_ROOT}", RAIZ.as_posix())
                     for vez in (1, 2):
                         c, out, todo = requisitos(sin="docx", casa=f"hook-{nombre}", orden=[*shell, orden])
-                        espera(c == 0 and out.count("Paquete docx de Node") == (1 if vez == 1 else 0),
+                        espera(c == 0 and out.count("Paquete docx de Node") == (1 if vez == 1 else 0) and callado(out, todo),
                                f"el hook de inicio de sesión ({nombre}), la {'primera' if vez == 1 else 'segunda'} vez, "
-                               f"no sale con 0 o no avisa de docx {'una vez' if vez == 1 else 'ninguna vez'}", todo)
+                               f"no sale con 0, no avisa de docx {'una vez' if vez == 1 else 'ninguna vez'} o deja algo en "
+                               "la salida de error", todo)
                     # con solo `python` en el PATH (sin python3, como en muchos Windows), el hook avisa una vez y
                     # «Detalle» dice python, el que funciona
                     carpeta = solo_python(Path(tmp) / "solo python" / nombre, nombre)
@@ -799,9 +804,10 @@ def prueba_de_requisitos():
                                                   path=str(carpeta))
                         bien = (out.count("Detalle: python ") == 1 and "Detalle: python3" not in out if vez == 1
                                 else "Detalle" not in out)
-                        espera(c == 0 and bien, f"el hook con solo python en el PATH ({nombre}), la "
-                               f"{'primera' if vez == 1 else 'segunda'} vez, no sale con 0 o no dice "
-                               f"{'una vez «Detalle: python»' if vez == 1 else 'nada'}", todo)
+                        espera(c == 0 and bien and callado(out, todo), f"el hook con solo python en el PATH ({nombre}), la "
+                               f"{'primera' if vez == 1 else 'segunda'} vez, no sale con 0, no dice "
+                               f"{'una vez «Detalle: python»' if vez == 1 else 'nada'} o deja algo en la salida de error",
+                               todo)
     print(f"Prueba de requisitos: {'bien' if not fallos else 'falla'}")
     errores.extend(f"Prueba de requisitos: {f}" for f in fallos)
 

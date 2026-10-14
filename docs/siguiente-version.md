@@ -25,19 +25,9 @@ Lo que sigue abierto tras la 0.7.0-beta.4 (planes `docs/plan/2026-10-11-0.7.0-be
 
 ## Agilidad (de medir un uso real y los despliegues, 12 de octubre de 2026)
 
-Medido en una sesión real con la 0.6.0-beta.1 (incorporar una fuente corta con su prototipo, 70 minutos): comprobar
-cada punto con la versión actual antes de cambiar nada.
+Los cuatro puntos de la sesión real con la 0.6.0-beta.1 y la prueba con `claude --plugin-dir` se comprobaron y se
+corrigieron con el método L.U.C.I.A. (`docs/evaluaciones.md`, Fase 1). Queda:
 
-- Prototipos: para retocar un prototipo que ya existía, se leyeron la guía de diseño entera y el código de los scripts
-  antes de tocar nada (18 de 43 minutos). Falta decir qué se lee en un retoque.
-- Analista: se leyeron el técnico y el funcional enteros, aunque `references/actualizacion.md` dice que no (17 minutos).
-- Analista: en documentos cortos, la nota de la fuente salió de 3 a 7 veces más larga que el original.
-- El análisis esperó al prototipo para generar el DF (28 minutos): decidir si el DF sale antes y las capturas se
-  añaden después.
-- Método de trabajo: probar una vez el plugin cargado desde la carpeta local (`claude --plugin-dir <carpeta>`) con una
-  tarea real en un proyecto de prueba, y ver qué pasa con el plugin instalado del mismo nombre y si la app de escritorio
-  tiene un equivalente. Si funciona, pasa a `CLAUDE.md` como condición para subir un cambio que altera cómo se comporta
-  una skill.
 - Pruebas: medir cuánto tarda cada grupo de `comprobar_plugin.py --completo` y lanzarlos en paralelo; con la misma
   batería, Windows tarda el doble que Linux (17 y 8,5 minutos en GitHub).
 
@@ -58,7 +48,7 @@ Lo que salió al ejecutar `docs/plan/2026-10-14-metodo-lucia.md` y no entra en �
 - Issues: las dependencias salen de los objetos que dos issues comparten o que el técnico nombra al hablar de una; si
   el técnico las da de más, van en serie issues que podrían ir a la vez, y no hay cómo corregirlo a mano.
 - Issues: el número de una issue que deja de existir se vuelve a dar si era el mayor de su unidad.
-- Un `.eml` con finales de línea de Windows deja `` en su `FU-nn.md`: viene de la lectura y sale igual en todos
+- Un `.eml` con finales de línea de Windows deja `\r` en su `FU-nn.md`: viene de la lectura y sale igual en todos
   los sistemas, pero ensucia el fichero.
 
 ## Menores
