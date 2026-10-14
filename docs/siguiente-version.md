@@ -20,8 +20,12 @@ Lo que sigue abierto tras la 0.8.0-beta.1. Cada línea dice qué, dónde y de d�
 
 ## Ingeniería inversa (del recién llegado de la 0.7.0-beta.3)
 
-- Un proceso de 130 nodos no cabe en el presupuesto de su `.md` (1.350 palabras) con «cada nodo citado» de
-  `agents/process-modeler.md`: decidir si el presupuesto crece con los nodos o el paso a paso agrupa lo repetido.
+- Un proceso grande no cabe en el presupuesto de su `.md` (1.350 palabras) con «cada nodo citado» de
+  `agents/process-modeler.md`. Medido en el plan de automejora (P5b): el mayor de 1.464 process models de un entorno de
+  cliente tiene 58 nodos; un paso por nodo da 1.450 palabras (107 %) y agrupar lo repetido, 1.080 (80 %), citando cada
+  nodo. Basta una frase en `process-modeler.md`: una secuencia que se repite 3 veces o más se describe una vez, con una
+  tabla de una fila por repetición y el código e `id` de cada nodo. El presupuesto que crece con los nodos, solo si
+  aparece un proceso que no quepa así.
 - `references/mermaid-rules.md`: «como mucho 5 cajas por capa» no garantiza el ancho de la arquitectura; partirla en dos
   no encaja con `arquitectura-<capa>.mmd`.
 
@@ -148,6 +152,11 @@ medidas, en `docs/evaluaciones.md` («Automejora con proyectos reales»). Por gr
 - LEEME iba al 96 % de su presupuesto con 42 objetos; los demás documentos, al 20-54 %. Medir LEEME con una aplicación
   grande antes de tocarlo. Sale de P5.
 - `df_docx.js --cambio` no avisa de que una pantalla modificada lleva la captura anterior al cambio. Sale de P4 (F3).
+- `devmcp_extract.py` sale con código 14 y sin mensaje cuando `--only` deja fuera la lista de aplicaciones
+  (`aplicacion_de`); las demás salidas de ese tramo explican el motivo. Sale de P5b.
+- Diagramas por tramos (`drawio_modelo.py`, `partir`): el enlace de entrada dice «Viene del tramo M» sin el paso de
+  origen; con varios pasos de igual nombre no se sigue el proceso. Sale de P5b (58 nodos, 5 tramos).
+- `bpmn-mapping.md` no tiene fila para el nodo que lanza otro proceso. Baja. Sale de P5b.
 
 ### Para Raúl
 

@@ -62,3 +62,22 @@ Reserva: unos 20 USD para repetir una prueba que falle por el entorno.
 - Revisar las lecciones y decir cuáles se aplican.
 - Revisar y, si quiere, borrar la aplicación de prueba de Indra.
 - Decir cuándo se abre la PR.
+
+## Estado al terminar (15 de octubre de 2026)
+
+Hechas P1 a P9 y una más, P5b (el proceso más grande de un entorno de cliente, para la línea abierta del proceso de 130
+nodos). Sin sesiones anidadas: el clasificador de permisos las bloquea, así que cada prueba la hizo un subagente leyendo
+el plugin de la rama y no hubo gasto en USD aparte. Cuatro revisores de contexto limpio (análisis y modos, mantenimiento e
+inversa, construcción y QA, volumen grande) contrastaron cada lección con el código y descartaron cerca de la mitad, por
+ser diseño, error de quien probó o ceremonia. Lo medido, en `docs/evaluaciones.md` («Automejora con proyectos reales»);
+lo que pide un cambio, en `docs/siguiente-version.md` («Del plan de automejora» y las líneas que ya había, al día).
+
+Lo que no se cumplió tal cual:
+
+- P8 con Codex no concluye: su sandbox de Windows no arranca dentro de otra sesión. Se repite desde un terminal normal.
+- P6 no llegó al final de F8: `verificar` bloqueó la Base por fallos del script; se siguió con `construida --manual`
+  para probar una issue y el QA con una sola cuenta.
+- No hay un proceso de 130 nodos en los entornos disponibles: la regla sale de uno de 58.
+- El plugin no se tocó. Las pruebas, sus proyectos y los informes de los revisores están en
+  `Proyectos IA/Pruebas-plugin/automejora/`, fuera del repositorio; la extracción en bruto del entorno del cliente no sale
+  de allí.

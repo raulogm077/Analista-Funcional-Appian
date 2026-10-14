@@ -23,6 +23,7 @@ aproximados; sin coste en USD, porque no hubo sesiones anidadas. Lo que pide un 
 | P4 · F4 | Regla con un umbral mal escrito | 1,7 | 19 | Seguido |
 | P4 · F5 | Urgencia en una regla, regresión de 99 casos en 22 s | 1,8 | 19 | Seguido; `colision` dijo «no» sin mirar dependientes |
 | P5 · F6 y F7 | Aplicación del cliente de 42 objetos, solo lectura | 29 | ~100 (extractor: 321 de lectura, 142 fallidas) | 14 hallazgos y 8 REF; `comprobar_asis` 4 errores falsos; `comprobar_propuesta` 0 |
+| P5b · proceso grande | El mayor de 1.464 process models de un entorno de cliente (58 nodos), solo lectura | ~45 | ~900 (extractor) | Un paso por nodo: 107 % del presupuesto; agrupando lo repetido: 80 %; diagrama en 5 tramos sin avisos |
 | P6 · F8 y F9 | Base (25 objetos) y una issue en una aplicación nueva de desarrollo; QA con una cuenta | 20 | ~105 | La Base no pasa `verificar` por fallos del script; 1 de 8 issues hecha; 2 guiones de QA pasan |
 | P7 | El retoque de P2 por un subagente sin contexto | 0,9 (2 de pared) | 11 | Idéntico a P2 |
 | P8 | El retoque con Copilot CLI y Codex, solo con `AGENTS.md` | 0,6 | ~25 | Copilot: sin scripts, versión incoherente (`comprobar.py` ✗); Codex: no concluyente, su sandbox no arranca dentro de otra sesión |
