@@ -10,10 +10,10 @@ marca del prototipo (`references/marca.md`).
 - Los 147 componentes de Appian 26.9, uno a uno: `galerias/componentes/`.
 - Todos funcionan desde **Appian 26.6** salvo que se indique otra versión (§6 y §7).
 
-Uso en un `generar_app.py`:
+Uso en un `generar_app.py`, que se lanza con `python3 generar_app.py <KIT>/scripts`:
 
 ```python
-import sys; sys.dont_write_bytecode = True; sys.path.insert(0, r"<KIT>/scripts")
+import sys; sys.dont_write_bytecode = True; sys.path.insert(0, sys.argv[1])
 from sail_helpers import *
 ```
 
