@@ -85,3 +85,42 @@ Todas confirmadas por Raúl el 14 de octubre de 2026.
 - **Fase 6:** el QA encuentra los defectos sembrados que le tocan, sus guiones se repiten sin IA con el mismo resultado y un retoque no lanza QA.
 - **Fase 7:** el retoque de T17 no cuesta más que el de T6, y quien prepara el paquete sabe qué revisar sin preguntar.
 - **Siempre:** ningún paso obligatorio nuevo en un retoque cosmético y ningún documento nuevo escrito a mano por cambio.
+
+## 6. Para retomar (14 de octubre de 2026, por la mañana)
+
+La rama `metodo-lucia` está en GitHub, sin PR. Hechas T1 a T15 y T18; lo medido y lo decidido, en `docs/evaluaciones.md`
+(«Método L.U.C.I.A.»). Las pruebas con datos reales y con el entorno de desarrollo están fuera del repositorio, en
+`Proyectos IA/Pruebas-plugin/` del equipo de Raúl, con copias fijas del plugin (`plugin-0.7.0-beta.4`, `plugin-T2`,
+`plugin-T2b`, `plugin-final`).
+
+Lo que queda, en orden:
+1. **Ajustes finales** (rama `wip/ajustes-finales` en GitHub; en local, el worktree `agent-af801739bf6e716bd`). De las
+   medidas con el plugin terminado: los avisos de «texto que queda viejo» saltan por el arranque común de los criterios
+   en Gherkin (21 por sesión frente a 4 a 7); el aviso de `estado` de que falta git se ignora (que diga «lanza
+   `proyecto.py iniciar`»); y las sesiones buscan el plugin en el disco porque `AGENTS.md`, los flujos y la issue nombran
+   los scripts sin ruta. De la revisión final de la rama: la barrera de `qa.py` contra pruebas y producción, en lista
+   blanca (solo desarrollo o el entorno de corrección de técnico §0); la regresión de una urgencia; el dueño de
+   `construccion/<U>/regresion.json`; la regla «un fallo deja la issue pendiente salvo que una persona lo marque»,
+   entera solo en `cambios.md` §6; `AGENTS.md` en 30 líneas como mucho; `--quien` en la pista de `--siguiente`. Al
+   terminar: las pruebas de `CLAUDE.md` y unirlo a `metodo-lucia`.
+2. **T17 otra vez**, con los ajustes, igual que esta noche (`Pruebas-plugin/T6-retoque-construido/medicion/T17/`). La
+   medida de esta noche: 4,7 minutos frente a 2,9 de T6, 38 llamadas frente a 54 y 1,92 USD frente a 2,51; tardaba más
+   por buscar el plugin en el disco.
+3. **T16**, el ensayo de QA en la aplicación de prueba del entorno de desarrollo: dónde se quedó y cómo devolver la
+   aplicación a su estado sin defectos, en `Pruebas-plugin/T16-ensayo-qa/ESTADO.md`.
+4. **Anotar en `docs/evaluaciones.md`**: T16, T17; la medida final del caso de T1 con el plugin terminado (16,8 minutos,
+   87 llamadas y 6,84 USD frente a 18,6, 124 y 6,73 de T1; criterios nuevos en Gherkin sin avisos; el orden análisis,
+   comprobación, prototipo y Word se mantiene; los 15 puntos de la reunión recogidos; otra versión de Claude Code, 2.1.299);
+   y el retoque de análisis a ciegas con el plugin terminado (22, 20 y 22 llamadas, 6/6 las tres: el criterio de 25 se
+   cumple).
+5. **Lo que decide Raúl**: B4, con las cifras de T6 y T17; si se queda «el Word no espera al prototipo», que no tuvo efecto
+   en ninguna de las cuatro medidas; la versión del plugin; y si corrige en el diseño y su anexo lo que ya no es verdad.
+   Lo que propone la revisión final: en las filas de T12 («Lo que se adopta» y «Pieza a pieza») y en «Reglas para no
+   repetir appian-harness», «fuera de desarrollo, una cuenta que solo ve la aplicación, la misma por entorno;
+   `LCP_TOOL_MODE` no hace nada en el Dev MCP 26.6.110 (T5)»; en el anexo, tras `LCP_TOOL_MODE`, «comprobado en T5: no
+   la aplica», «se ejecutan objeto a objeto, no en bloque (T5)», la ruta `construccion/<U>/verificacion/ISS-nn.json` y
+   «Por comprobar en T5» como comprobado; en T13 del diseño, la regresión con un script objeto a objeto; en la conclusión
+   6, «2.480 líneas de media, el 25 % del coste (T6)» en vez de 5.600; y en el QA, que la sesión importada del Dev MCP no
+   se cierra y las de cuentas locales, al terminar la campaña.
+6. **Limpieza** al acabar: las copias de revisión `Pruebas-plugin/revision-*` (`git worktree remove`) y los worktrees de
+   `.claude/worktrees/` ya unidos.
