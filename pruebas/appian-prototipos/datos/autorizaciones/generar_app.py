@@ -190,5 +190,5 @@ spec = {"app": app,
                      {"name": "03-ficha-documentos", "screen": "solicitud", "params": {"id": 5}, "view": "documentos"}]}
 salida = Path(sys.argv[1] if len(sys.argv) > 1 else "app.json")
 salida.parent.mkdir(parents=True, exist_ok=True)
-salida.write_text(json.dumps(clean(spec), ensure_ascii=False, indent=1), encoding="utf-8")
+escribe(salida, json.dumps(clean(spec), ensure_ascii=False, indent=1))   # de sail_helpers: con \n en cualquier sistema
 print("ok:", len(rows), "solicitudes ·", len(spec["requirements"]), "requisitos ·", len(spec["openQuestions"]), "preguntas abiertas")

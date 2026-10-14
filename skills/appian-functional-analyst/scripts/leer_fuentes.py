@@ -54,6 +54,13 @@ LEGACY = {".doc": ".docx o PDF", ".ppt": ".pptx o PDF", ".xls": ".xlsx", ".vsd":
 MAX_ROWS = 300
 
 
+def escribe(ruta, texto):
+    """Escribe un fichero de texto en UTF-8 con finales de línea \\n en cualquier sistema, como modelo.escribe (este
+    script no importa ningún otro)."""
+    with open(ruta, "w", encoding="utf-8", newline="\n") as f:
+        f.write(texto)
+
+
 def md_table(rows):
     rows = [[c.replace("|", "\\|").replace("\n", " ").strip() for c in r] for r in rows if any(c.strip() for c in r)]
     if not rows:
@@ -602,9 +609,8 @@ def main():
         fid = f"FU-{len(state['fuentes']) + 1:02d}"
         entry = {"id": fid, "fichero": nombre, "tipo": "Carpeta", "detalle": detail, "fecha": date, "hash": h,
                  "salida": f"{fid}-{slug(carpeta.name)}.md"}
-        (out / entry["salida"]).write_text(
-            f"# {fid} · {nombre}\n\n- Tipo: Carpeta\n- Detalle: {detail}\n- Fecha: {date}\n\n---\n\n{body}\n",
-            encoding="utf-8")
+        escribe(out / entry["salida"],
+                f"# {fid} · {nombre}\n\n- Tipo: Carpeta\n- Detalle: {detail}\n- Fecha: {date}\n\n---\n\n{body}\n")
         state["fuentes"].append(entry)
         by_hash[h] = entry
         print(f"+ {fid} {nombre}: Carpeta, {detail}")
@@ -645,9 +651,8 @@ def main():
             if kind == "Transcripción":  # para que comprobar.py vigile que sus nombres no pasan al análisis
                 nombres = sorted({x.strip() for x in re.findall(r"^\[\d{1,2}:\d{2}:\d{2}\] ([^:\n\[\]]{2,60}):", body, re.M)})
                 gente = f"- Participantes: {'; '.join(nombres) if nombres else 'sin identificar'}\n"
-            (out / entry["salida"]).write_text(
-                f"# {fid} · {f.name}\n\n- Tipo: {kind}\n- Detalle: {detail}\n- Fecha: {date}\n{gente}\n---\n\n{body}\n",
-                encoding="utf-8")
+            escribe(out / entry["salida"],
+                    f"# {fid} · {f.name}\n\n- Tipo: {kind}\n- Detalle: {detail}\n- Fecha: {date}\n{gente}\n---\n\n{body}\n")
         if old:
             state["fuentes"][state["fuentes"].index(old)] = entry
         else:
@@ -655,10 +660,10 @@ def main():
         by_hash[h] = entry
         print(f"+ {fid} {f.name}: {kind}, {detail}")
 
-    state_file.write_text(json.dumps(state, ensure_ascii=False, indent=1), encoding="utf-8")
+    escribe(state_file, json.dumps(state, ensure_ascii=False, indent=1))
     rows = [["ID", "Fichero", "Tipo", "Detalle", "Fecha", "Texto"]] + [
         [e["id"], e["fichero"], e["tipo"], e["detalle"], e["fecha"], e["salida"] or "—"] for e in state["fuentes"]]
-    (out / "indice.md").write_text("# Fuentes del análisis\n\n" + md_table(rows) + "\n", encoding="utf-8")
+    escribe(out / "indice.md", "# Fuentes del análisis\n\n" + md_table(rows) + "\n")
     print(f"Índice: {out / 'indice.md'} ({len(state['fuentes'])} fuentes)")
     if not state["fuentes"]:
         print("ERROR: no se ha catalogado ninguna fuente: revisa las rutas y los formatos admitidos", file=sys.stderr)

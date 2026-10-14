@@ -52,8 +52,16 @@ Los correos `.msg` no se leen de forma fiable: pide el correo como `.eml` o PDF.
 
 ## La carpeta del proyecto
 
+Un repositorio git por proyecto, siempre con la misma forma: el código vive en Appian y aquí va todo lo demás, también
+las fuentes. Lo crea `proyecto.py iniciar`:
+
 ```
-<p>/proyecto.md      estado, fuentes procesadas, DF entregado, siguiente paso
+<p>/AGENTS.md        dónde está cada cosa, las reglas y los flujos, para cualquier persona o agente (generado)
+<p>/CLAUDE.md        solo «@AGENTS.md», para Claude Code
+<p>/.agents/workflows/   copia de los flujos del plugin (generada)
+<p>/.gitignore       lo que no se sube: secretos y grabaciones de vídeo o audio
+<p>/.gitattributes   git no cambia los finales de línea: la huella de una fuente es la misma en cualquier equipo
+<p>/proyecto.md      lo propio del proyecto: estado, fuentes procesadas, DF entregado, siguiente paso
 <p>/fuentes/         FU-nn.md e indice.md (leer_fuentes.py)
 <p>/notas/           una nota por fuente
 <p>/impacto/         un informe por fuente nueva
@@ -64,14 +72,24 @@ Los correos `.msg` no se leen de forma fiable: pide el correo como `.eml` o PDF.
 <p>/versiones/       copia del análisis antes de cada cambio
 ```
 
+`AGENTS.md` y `.agents/workflows/` salen enteros del plugin y no se editan: `proyecto.py iniciar <p>` en un proyecto
+que ya existe los pone al día y no toca nada más. Se trabaja sobre main, sin ramas ni PR, con `git commit` y `git push`
+al terminar; `iniciar` no confirma ni sube nada, y el remoto, privado, lo decide el proyecto.
+
 Formatos: `funcional-plantilla.md`, `tecnico-plantilla.md` y la cabecera de `decisiones.md` en
 `assets/plantillas/`. `proyecto.py estado <p>` dice en qué punto está el proyecto: empieza siempre por ahí
-si el proyecto ya existe.
+si el proyecto ya existe. Avisa también, sin frenar nada, de lo que falta por subir, de si va por detrás del remoto
+(entonces, `git pull`) y de lo que `iniciar` tiene que poner al día.
 
 ## Qué escribe
 
 En `<p>`:
 - `proyecto.md`: el estado del proyecto
+- `AGENTS.md`: dónde está cada cosa, las reglas y los flujos; lo genera entero `proyecto.py iniciar`
+- `CLAUDE.md`: solo «@AGENTS.md»; si ya existe, no se toca
+- `.agents/workflows/`: la copia de los flujos del plugin, generada
+- `.gitignore`: lo que no se sube; si ya existe, no se toca
+- `.gitattributes`: git no cambia los finales de línea; si ya existe, no se toca
 - `fuentes/`: las fuentes catalogadas, con su índice y sus adjuntos
 - `notas/`: una nota por fuente
 - `impacto/`: un informe por fuente nueva
@@ -105,9 +123,14 @@ El `.drawio`, el `.png` y el `.bpmn` de cada proceso y la imagen de cada `.mmd` 
 
 Di el modo al empezar.
 
+## Flujos
+
+El recorrido entero de cada caso, de F1 (aplicación nueva) a F9 (pase a producción), está en `assets/flujos/`: quién
+hace cada paso, con qué skill y la referencia que lo detalla. `proyecto.py iniciar` los copia al proyecto.
+
 ## Proyecto nuevo
 
-1. **Carpeta y fuentes.**
+1. **Repositorio y fuentes.**
    ```bash
    python3 <skill>/scripts/proyecto.py iniciar <p> --nombre "…" --cliente "…"
    python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o <p>/fuentes/

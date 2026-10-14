@@ -28,7 +28,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_model import find_key, find_list, load, pick, unwrap  # noqa: E402
-from rutas import work_dir  # noqa: E402
+from rutas import escribe, work_dir  # noqa: E402
 
 CAMPOS_HALLAZGO = ("id", "titulo", "area", "severidad", "certeza", "objetos", "documento", "evidencia")
 CAMPOS_NV = ("id", "pregunta", "porQue", "queHaceFalta", "aQuien", "dondeSeBusco", "objetos", "indicios", "estado",
@@ -185,7 +185,7 @@ def rellena_leeme(salida: Path, nvs: list[dict]) -> None:
         return
     antes, resto = texto.split(LEEME[0], 1)
     _, despues = resto.split(LEEME[1], 1)
-    leeme.write_text(f"{antes}{LEEME[0]}\n{tabla_sin_verificar(nvs)}\n{LEEME[1]}{despues}", encoding="utf-8")
+    escribe(leeme, f"{antes}{LEEME[0]}\n{tabla_sin_verificar(nvs)}\n{LEEME[1]}{despues}")
 
 
 def construir(salida: Path) -> dict:
@@ -244,7 +244,7 @@ def construir(salida: Path) -> dict:
     carpeta = salida / "datos"
     carpeta.mkdir(parents=True, exist_ok=True)
     for fichero, contenido in datos.items():
-        (carpeta / fichero).write_text(json.dumps(contenido, ensure_ascii=False, indent=1), encoding="utf-8")
+        escribe(carpeta / fichero, json.dumps(contenido, ensure_ascii=False, indent=1))
     rellena_leeme(salida, nvs)
     return datos
 

@@ -982,6 +982,12 @@ def sin_navegador(tmp):
     check(dm.comparar(json.loads(PEDIDO.read_text(encoding="utf-8")), dm.leer(str(p))[0]) == [] and solapes(p) == [],
           "sin navegador: pedido, con externo y notas, sin nada que se pise " + "; ".join(solapes(p)))
     check(not conexiones_falsas(p), "sin navegador: pedido, sin conexiones falsas " + "; ".join(conexiones_falsas(p)))
+    # lo que escriben los scripts lleva \n en cualquier sistema, también en Windows: reescribirlo en otro equipo no cambia
+    # todas sus líneas (el .drawio lo guardó actualizar; el .json y el .bpmn tienen varias líneas)
+    escritos = {f.name: f.read_bytes() for f in (d, d.with_suffix(".json"), d.with_suffix(".bpmn"), p, p.with_suffix(".json"))}
+    con_cr = [n for n, datos in escritos.items() if b"\r" in datos]
+    check(not con_cr and all(b"\n" in escritos[f.name] for f in (d, d.with_suffix(".json"), d.with_suffix(".bpmn"))),
+          "finales de línea: el .drawio, el .json y el .bpmn se escriben con \\n en cualquier sistema " + ", ".join(con_cr))
     (tmp / "no-hace-falta.mmd").write_text("flowchart TD\n  A --> B\n", encoding="utf-8")
     r = subprocess.run([sys.executable, str(SCRIPTS / "mermaid.py"), "--check", str(tmp / "no-hace-falta.mmd")],
                        capture_output=True, text=True, encoding="utf-8", env=sin)

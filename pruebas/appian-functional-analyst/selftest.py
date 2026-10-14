@@ -36,6 +36,13 @@ def corre(*args, entrada=None, env=None):
     return r.returncode, r.stdout + r.stderr
 
 
+def git(carpeta, *args):
+    """Una orden de git en una carpeta de la prueba, con el entorno que pone main: sin la configuración del equipo."""
+    r = subprocess.run(["git", *args], cwd=str(carpeta), capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                       encoding="utf-8", errors="replace")
+    return r.returncode, r.stdout + r.stderr
+
+
 def ok(nombre, cond, detalle=""):
     print(("✓ " if cond else "✗ ") + nombre + ("" if cond else f"\n    {detalle[-800:]}"))
     if not cond:
@@ -53,6 +60,16 @@ def main():
         st.reconfigure(encoding="utf-8", errors="replace")
     ok("Python 3.9 o posterior", sys.version_info >= (3, 9), sys.version)
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="analista-"))
+    # git, igual en cualquier equipo y sin red: sin la configuración de quien lanza la prueba (firma de commits, rama
+    # inicial, plantillas), con un autor fijo y sin subir más allá de la carpeta temporal ni de los datos de prueba, para
+    # que proyecto.py no tome un proyecto de prueba por parte del repositorio del plugin ni pregunte a su remoto. Y con
+    # core.autocrlf, como instala Git para Windows: sin el .gitattributes del proyecto, un clon cambiaría los finales
+    # de línea
+    (tmp / "gitconfig").write_text("[core]\n\tautocrlf = true\n", encoding="utf-8")
+    os.environ.update(GIT_CONFIG_GLOBAL=str(tmp / "gitconfig"), GIT_CONFIG_NOSYSTEM="1", GIT_TERMINAL_PROMPT="0",
+                      GIT_CEILING_DIRECTORIES=os.pathsep.join(map(str, (tmp.resolve(), tmp, DATOS))),
+                      GIT_AUTHOR_NAME="Prueba", GIT_AUTHOR_EMAIL="prueba@example.com",
+                      GIT_COMMITTER_NAME="Prueba", GIT_COMMITTER_EMAIL="prueba@example.com")
     try:
         # 1. El ejemplo está bien
         c, out = corre(S / "comprobar.py", EJEMPLO)
@@ -170,6 +187,13 @@ def main():
            c == 0 and (nuevo / "analisis" / "funcional.md").exists() and (nuevo / "fuentes").is_dir(), out)
         c, out = corre(S / "proyecto.py", "estado", nuevo)
         ok("proyecto.py estado", c == 0 and "versión 0.1" in out, out)
+        c, out = corre(S / "proyecto.py", "--help", env={"PYTHONIOENCODING": "cp1252"})
+        ok("proyecto.py --help con la consola en cp1252 conserva las tildes",
+           c == 0 and "versión, cliente y marca" in out and "«DF entregado»" in out, out)
+
+        # 3a. El método: los flujos del plugin y el repositorio git de cada proyecto, con AGENTS.md y su copia de los flujos
+        pruebas_flujos()
+        pruebas_repositorio(tmp)
 
         # 3b. proyecto.py estado: cliente y marca; el DF enviado se informa; --confirmadas sin las PAN de un cambio
         # aprobado después del prototipo que se enseñó (app-vX.Y.json), leyendo todos los informes (impacto/*.md);
@@ -737,6 +761,9 @@ Se acepta si:
            and re.search(r"\| aprobacion-2026-10-01-informe\.txt \| Aprobación \| de Jefe de proyecto[^|]*\| 2026-10-10 \|",
                          indice), indice)
         ok("leer_fuentes.py: el temporal de Office (~$…) de una carpeta no se cataloga", "~$" not in indice, indice)
+        con_cr = [f.name for f in sorted((tmp / "fuentes").glob("*")) if f.is_file() and b"\r" in f.read_bytes()]
+        ok("leer_fuentes.py escribe con \\n en cualquier sistema, también en Windows: cada fuente y los índices",
+           c == 0 and not con_cr, str(con_cr))
         c, out = corre(S / "leer_fuentes.py", entrada / "~$DF-revisado.docx", "-o", tmp / "fuentes")
         ok("leer_fuentes.py: un temporal de Office suelto da aviso y no se cataloga",
            "~$" not in (tmp / "fuentes" / "indice.md").read_text(encoding="utf-8") and "~$DF-revisado.docx" in out
@@ -1089,9 +1116,242 @@ Se acepta si:
         else:
             ok("mermaid.py valida un diagrama y los ejemplos de mermaid-diagrams.md", c == 0, out)
     finally:
+        for carpeta, _, ficheros in os.walk(tmp):   # en Windows los objetos de git son de solo lectura y no se borran
+            for f in ficheros:
+                try:
+                    os.chmod(os.path.join(carpeta, f), 0o600)
+                except OSError:
+                    pass
         shutil.rmtree(tmp, ignore_errors=True)
     print("\nTodo correcto." if not fallos else f"\n{len(fallos)} pruebas fallan: {', '.join(fallos)}")
     return 1 if fallos else 0
+
+
+def pruebas_flujos():
+    """El catálogo de flujos del plugin (assets/flujos/): los nueve, cada uno con cuándo se usa, quién empieza, dónde
+    termina y sus pasos numerados con quién hace cada uno y con qué; y lo que citan existe: las skills, sus scripts y el
+    fichero y el apartado de cada «Detalle»."""
+    flujos = sorted((SKILL / "assets" / "flujos").glob("F*.md"))
+    ok("hay nueve flujos, de F1 a F9", [f.name.split("-")[0] for f in flujos] == [f"F{n}" for n in range(1, 10)],
+       str([f.name for f in flujos]))
+    mal = []
+    for f in flujos:
+        t = f.read_text(encoding="utf-8")
+        filas = [[c.strip() for c in l.strip().strip("|").split("|")] for l in t.splitlines() if re.match(r"\| \d+ \|", l)]
+        if not re.match(rf"# {f.name.split('-')[0]} · \S", t):
+            mal.append(f"{f.name}: el título no es «# {f.name.split('-')[0]} · …»")
+        if not all(re.search(rf"^\*\*{x}\.\*\* \S", t, re.M) for x in ("Cuándo", "Empieza")) or "**Termina en.** " not in t:
+            mal.append(f"{f.name}: falta «Cuándo», «Empieza» o «Termina en»")
+        if ("| # | Paso | Quién | Con qué | Detalle |" not in t or len(filas) < 3 or any(len(r) != 5 or not all(r) for r in filas)
+                or [r[0] for r in filas] != [str(n) for n in range(1, len(filas) + 1)]):
+            mal.append(f"{f.name}: los pasos no son una tabla «# · Paso · Quién · Con qué · Detalle» numerada desde 1")
+        for skill in set(re.findall(r"`(appian(?:-[a-z]+)*)`", t)) - {"appian"}:   # `appian` es la oficial de Appian
+            if not (PLUGIN / "skills" / skill / "SKILL.md").is_file():
+                mal.append(f"{f.name}: nombra la skill {skill}, que no está en el plugin")
+        for r in filas:   # «`skill` · `script.py orden`; `otra skill` · `otro.py`»: cada script, en su skill
+            for trozo in r[3].split(";") if len(r) == 5 else []:
+                skill = re.search(r"`(appian-[a-z-]+)`", trozo)
+                for script in re.findall(r"`([\w-]+\.(?:py|js))\b", trozo):
+                    if not (skill and (PLUGIN / "skills" / skill.group(1) / "scripts" / script).is_file()):
+                        mal.append(f"{f.name}, paso {r[0]}: {script} no está en scripts/ de la skill que se nombra")
+        for ruta, apartados in re.findall(r"`(appian-[a-z-]+/[^`\s]+)`((?:[ ,y]*(?:§\d+|«[^»]+»))*)", t):
+            destino = PLUGIN / "skills" / ruta
+            if not destino.is_file():
+                mal.append(f"{f.name}: cita {ruta}, que no existe")
+                continue
+            texto = destino.read_text(encoding="utf-8")
+            for ap in re.findall(r"§\d+|«[^»]+»", apartados):
+                titulo = rf"{ap[1:]}\. " if ap.startswith("§") else re.escape(ap[1:-1])
+                if not re.search(rf"^#+ {titulo}", texto, re.M):
+                    mal.append(f"{f.name}: cita {ruta} {ap}, y ese fichero no tiene ese apartado")
+    ok("cada flujo dice cuándo se usa, quién hace cada paso, con qué y dónde termina, y lo que cita existe", not mal,
+       "\n".join(mal))
+
+
+def arbol(p):
+    """Los ficheros y las carpetas de un proyecto, sin lo de dentro de .git."""
+    return sorted(x.relative_to(p).as_posix() + ("/" if x.is_dir() else "") for x in p.rglob("*")
+                  if ".git" not in x.relative_to(p).parts)
+
+
+def pruebas_repositorio(tmp):
+    """Fase 3 del método: dos proyectos nuevos tienen la misma estructura y son repositorios git; tras cambiar de versión
+    del plugin, AGENTS.md y los flujos se ponen al día sin tocar proyecto.md; y estado avisa de lo que no está subido.
+    Sin red: el remoto es otra carpeta."""
+    iniciar = lambda p, *args, **k: corre(S / "proyecto.py", "iniciar", p, *args, **k)
+    estado = lambda p, **k: corre(S / "proyecto.py", "estado", p, **k)
+    version = json.loads((PLUGIN / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
+    base = tmp / "Repositorios con espacios"
+    (base / "sin programas").mkdir(parents=True)
+
+    # Sin git en el equipo (un PATH sin nada) nada falla: iniciar crea lo demás y lo dice
+    sin_git = {"PATH": str(base / "sin programas")}
+    c, out = iniciar(base / "sin git", "--nombre", "Sin git", env=sin_git)
+    c2, out2 = estado(base / "sin git", env=sin_git)
+    ok("sin git en el equipo, iniciar crea el proyecto sin repositorio y lo dice, y estado no falla",
+       c == 0 and "Sin git en este equipo" in out and (base / "sin git" / "AGENTS.md").is_file()
+       and not (base / "sin git" / ".git").exists() and c2 == 0 and "sin git en este equipo" in out2, out + out2)
+    c, out = iniciar(base / "sin nombre")
+    ok("iniciar sin --nombre en una carpeta que no es un proyecto: lo pide y no crea nada",
+       c != 0 and "--nombre" in out and not (base / "sin nombre").exists(), out)
+    if not shutil.which("git"):
+        print("· Repositorio del proyecto: no hay git en este equipo; no se prueba")
+        return
+
+    # Dos proyectos nuevos: la misma estructura, repositorios git en main y lo generado, igual en los dos
+    a, b = base / "uno", base / "dos"
+    ca, outa = iniciar(a, "--nombre", "Permisos de obra", "--cliente", "Organización de ejemplo")
+    cb, outb = iniciar(b, "--nombre", "Reserva de salas")
+    flujos = [f".agents/workflows/{f.name}" for f in sorted((SKILL / "assets" / "flujos").glob("F*.md"))]
+    generados = ["AGENTS.md", *flujos]
+    propios_de_git = [".gitignore", ".gitattributes"]
+    completos = all((p / x).is_file() for p in (a, b) for x in [*generados, "CLAUDE.md", *propios_de_git, "proyecto.md"])
+    ok("dos proyectos nuevos tienen la misma estructura: AGENTS.md, CLAUDE.md, lo de git, los flujos y nada de más",
+       ca == 0 and cb == 0 and completos and arbol(a) == arbol(b) and len(flujos) == 9
+       and not any((a / x).exists() for x in (".agents/skills", "product_vision.md", "qa", "construccion")),
+       outa + outb + str(arbol(a)) + str(arbol(b)))
+    if not completos:   # sin lo que genera iniciar no hay nada más que probar
+        return
+    ramas = [git(p, "symbolic-ref", "--short", "HEAD") for p in (a, b)]
+    ok("los dos son repositorios git, en la rama main",
+       all((p / ".git").is_dir() for p in (a, b)) and all(c == 0 and o.strip() == "main" for c, o in ramas), str(ramas))
+    guia = (a / "AGENTS.md").read_text(encoding="utf-8")
+    textos = {x: (a / x).read_bytes() for x in [*generados, "CLAUDE.md", *propios_de_git]}
+    ok("lo generado es igual en los dos proyectos y en cualquier sistema, con la versión del plugin y sin notas del plan",
+       all(v == (b / x).read_bytes() and b"\r" not in v and b"<!-- (T" not in v for x, v in textos.items())
+       and all(textos[x].decode("utf-8").startswith(f"<!-- appian-analisis-funcional {version} · ") for x in generados)
+       and textos["CLAUDE.md"] == b"@AGENTS.md\n" and textos[".gitattributes"].endswith(b"\n* -text\n")
+       and all(f"]({x})" in guia for x in flujos), guia[:600])
+    con_cr = [x for x in arbol(a) if (a / x).is_file() and b"\r" in (a / x).read_bytes()]
+    ok("nada de lo que escribe iniciar lleva \\r, tampoco en Windows: proyecto.md y las plantillas del análisis",
+       not con_cr and b"\n" in (a / "analisis" / "funcional.md").read_bytes(), str(con_cr))
+    ok("AGENTS.md no nombra lo que todavía no escribe nadie (qa/) ni pide un git pull antes de mirar el estado",
+       "qa/" not in guia and "git pull" in guia and guia.index("proyecto.py estado") < guia.index("git pull"), guia)
+    # dos fuentes, una con cada final de línea: tienen que llegar igual, byte a byte, a quien clone el proyecto
+    fuentes = {"fuentes/FU-01-acta.md": "# FU-01\nActa de la reunión\n".encode("utf-8"),
+               "fuentes/correo.eml": b"Subject: Plazos\r\n\r\nSe mantienen.\r\n"}
+    for x, dato in {**fuentes, "fuentes/reunion.mp4": b"video", ".env": b"CLAVE=x\n"}.items():
+        (a / x).write_bytes(dato)
+    fuera = {x: git(a, "check-ignore", "-q", x)[0] == 0 for x in ("fuentes/reunion.mp4", ".env", "fuentes/FU-01-acta.md")}
+    ok(".gitignore deja fuera las grabaciones y los secretos, y no las fuentes",
+       fuera == {"fuentes/reunion.mp4": True, ".env": True, "fuentes/FU-01-acta.md": False}, str(fuera))
+
+    # estado avisa de lo que no está confirmado ni subido, sin fallar; con todo subido, calla
+    c, out = estado(a)
+    ok("estado de un proyecto recién creado: nada confirmado y sin remoto, y no le falta nada de iniciar",
+       c == 0 and "cambios sin confirmar" in out and "sin remoto, nada está subido" in out and "le falta" not in out
+       and "otra versión" not in out, out)
+    remoto = base / "remoto.git"
+    git(base, "init", "--quiet", "--bare", str(remoto))
+    git(a, "remote", "add", "origin", str(remoto))
+    git(a, "add", "-A")
+    c0, o0 = git(a, "commit", "--quiet", "-m", "Inicio del proyecto")
+    c, out = estado(a)
+    ok("estado con todo confirmado y nada subido: la rama no está en el remoto",
+       c0 == 0 and c == 0 and "sin confirmar" not in out and "la rama main no está en el remoto" in out, o0 + out)
+    c0, o0 = git(a, "push", "--quiet", "origin", "main")   # sin -u: está subida, aunque la rama no «siga» a la del remoto
+    c, out = estado(a)
+    ok("estado con la rama subida sin -u no dice que no está en el remoto", c0 == 0 and c == 0
+       and not re.search(r"^· ", out, re.M), o0 + out)
+    (a / "notas" / "aviso.md").write_bytes(b"# Aviso\n")
+    git(a, "add", "-A")
+    git(a, "commit", "--quiet", "-m", "Aviso")
+    c, out = estado(a)
+    ok("y de un commit posterior dice que está sin subir, con la orden que dice a dónde",
+       c == 0 and "Repositorio: 1 commit sin subir a origin/main (git push -u origin main)" in out, out)
+    c0, o0 = git(a, "push", "--quiet", "-u", "origin", "main")
+    c, out = estado(a)
+    ok("estado con todo subido no avisa de nada", c0 == 0 and c == 0 and not re.search(r"^· ", out, re.M), o0 + out)
+    editar(a / "proyecto.md", "Catalogar las fuentes.", "Preparar la reunión del jueves.")
+    c, out = estado(a)
+    ok("estado avisa de un cambio sin confirmar", c == 0 and "Repositorio: 1 cambio sin confirmar" in out, out)
+    git(a, "commit", "--quiet", "-am", "Siguiente paso")
+    c, out = estado(a)
+    ok("estado avisa de un commit sin subir",
+       c == 0 and "Repositorio: 1 commit sin subir a origin/main" in out and "sin confirmar" not in out, out)
+    otra = base / "otra persona"   # otra persona sube un cambio: estado lo ve sin que nadie lo traiga antes
+    git(base, "clone", "--quiet", "-b", "main", str(remoto), str(otra))
+    ok("un clon tiene las fuentes byte a byte, también con core.autocrlf: su huella es la misma en cualquier equipo",
+       all((otra / x).is_file() and (otra / x).read_bytes() == dato for x, dato in fuentes.items()),
+       str({x: (otra / x).read_bytes() if (otra / x).is_file() else None for x in fuentes}))
+    (otra / "notas").mkdir(exist_ok=True)
+    (otra / "notas" / "FU-01.md").write_text("# Nota de FU-01\n", encoding="utf-8")
+    git(otra, "add", "-A")
+    git(otra, "commit", "--quiet", "-m", "Nota de FU-01")
+    c0, o0 = git(otra, "push", "--quiet")
+    c, out = estado(a)
+    ok("estado avisa de que el proyecto va por detrás del remoto",
+       c0 == 0 and c == 0 and "Repositorio: va 1 commit por detrás de origin/main" in out and "1 commit sin subir" in out,
+       o0 + out)
+    git(a, "remote", "set-url", "origin", str(base / "no existe.git"))
+    c, out = estado(a)
+    ok("sin poder consultar el remoto, estado no falla: lo dice y compara con lo último que se trajo",
+       c == 0 and "no se pudo consultar el remoto" in out and "va 1 commit por detrás" in out
+       and "1 commit sin subir" in out, out)
+    git(a, "remote", "set-url", "origin", str(remoto))
+
+    # Otra versión del plugin (una copia de la skill con otro plugin.json y un flujo cambiado): su estado lo avisa y su
+    # iniciar pone al día AGENTS.md y los flujos, sin tocar proyecto.md, el CLAUDE.md del equipo ni nada más
+    otro = base / "plugin 9.9.9"
+    shutil.copytree(SKILL, otro / "skills" / SKILL.name, ignore=shutil.ignore_patterns("__pycache__"))
+    (otro / ".claude-plugin").mkdir()
+    (otro / ".claude-plugin" / "plugin.json").write_text('{"name": "appian-analisis-funcional", "version": "9.9.9"}',
+                                                         encoding="utf-8")
+    s9 = otro / "skills" / SKILL.name / "scripts"
+    f2 = otro / "skills" / SKILL.name / "assets" / "flujos" / "F2-incorporar-una-fuente.md"
+    f2.write_text(f2.read_text(encoding="utf-8") + "\nUn paso que llega con la versión nueva.\n", encoding="utf-8")
+    (a / "CLAUDE.md").write_text("@AGENTS.md\n\nNotas del equipo.\n", encoding="utf-8")
+    retirado = a / ".agents" / "workflows" / "F0-retirado.md"   # un flujo de antes, que este plugin ya no trae
+    retirado.write_bytes((a / flujos[0]).read_bytes())
+    (a / ".agents" / "workflows" / "notas.md").write_text("# Notas del equipo\n", encoding="utf-8")
+    propios = ["proyecto.md", "CLAUDE.md", *propios_de_git, "analisis/funcional.md", "analisis/tecnico.md",
+               "analisis/decisiones.md", ".agents/workflows/notas.md"]
+    antes = {x: (a / x).read_bytes() for x in propios}
+    de_la = lambda v, rutas=generados: all(
+        (a / x).read_text(encoding="utf-8").startswith(f"<!-- appian-analisis-funcional {v} · ") for x in rutas)
+    c, out = corre(s9 / "proyecto.py", "estado", a)
+    ok("estado, con otra versión del plugin, avisa de que AGENTS.md y los flujos son de otra y dice cómo ponerlos al día",
+       c == 0 and f"otra versión del plugin ({version}; la de este equipo, 9.9.9)" in out
+       and "«proyecto.py iniciar <p>» los pone al día" in out, out)
+    c, out = corre(s9 / "proyecto.py", "iniciar", a)
+    ok("tras cambiar de versión, iniciar pone al día AGENTS.md y los flujos sin tocar proyecto.md ni nada más",
+       c == 0 and de_la("9.9.9") and "Preparar la reunión del jueves." in antes["proyecto.md"].decode("utf-8")
+       and "Un paso que llega con la versión nueva." in (a / flujos[1]).read_text(encoding="utf-8")
+       and not retirado.exists() and all((a / x).read_bytes() == v for x, v in antes.items()), out)
+    c, out = corre(s9 / "proyecto.py", "estado", a)
+    ok("y estado deja de avisar de la versión", c == 0 and "otra versión" not in out, out)
+    (a / flujos[-1]).unlink()   # la versión posterior retiró un flujo que este plugin, anterior, todavía trae
+    c, out = estado(a)
+    c2, out2 = iniciar(a)
+    ok("con un plugin anterior al que generó AGENTS.md y los flujos, estado solo pide actualizar el plugin (no dice que "
+       "falte un flujo) e iniciar no los toca",
+       c == 0 and "actualiza el plugin" in out and "le falta" not in out and c2 == 0 and "no se tocan" in out2
+       and not (a / flujos[-1]).exists() and de_la("9.9.9", generados[:-1]), out + out2)
+
+    # Lo que no generó el plugin no se pisa: un CLAUDE.md y un AGENTS.md propios
+    (b / "CLAUDE.md").write_text("# Notas del equipo\n", encoding="utf-8")
+    (b / "AGENTS.md").write_text("# Nuestras reglas\n", encoding="utf-8")
+    c, out = iniciar(b)
+    c2, out2 = estado(b)
+    ok("un CLAUDE.md y un AGENTS.md que no generó el plugin no se pisan, y estado avisa de los dos",
+       c == 0 and (b / "CLAUDE.md").read_text(encoding="utf-8") == "# Notas del equipo\n"
+       and (b / "AGENTS.md").read_text(encoding="utf-8") == "# Nuestras reglas\n" and "no lo generó el plugin" in out
+       and c2 == 0 and "CLAUDE.md no importa AGENTS.md" in out2 and "AGENTS.md no lo generó el plugin" in out2,
+       out + out2)
+
+    # Dentro de otro repositorio no se crea uno anidado; y un proyecto de los datos de prueba no es del repositorio del
+    # plugin (GIT_CEILING_DIRECTORIES, en main): estado no pregunta a su remoto
+    varios = base / "varios proyectos"
+    varios.mkdir()
+    git(varios, "init", "--quiet")
+    c, out = iniciar(varios / "dentro", "--nombre", "Dentro de otro")
+    ok("dentro de otro repositorio, iniciar no crea uno anidado y lo dice",
+       c == 0 and "ya está dentro de uno" in out and not (varios / "dentro" / ".git").exists()
+       and (varios / "dentro" / "AGENTS.md").is_file(), out)
+    c, out = estado(EVOLUTIVO)
+    ok("estado de un proyecto sin repositorio dice lo que le falta y cómo añadirlo, en una línea",
+       c == 0 and len(re.findall(r"^· Al proyecto le falta ser un repositorio git, AGENTS\.md, CLAUDE\.md, algún flujo",
+                                 out, re.M)) == 1 and "Repositorio:" not in out, out)
 
 
 GUION = chr(0x2011)   # df_docx.js pone guiones que no se parten en los IDs (PAN‑02)

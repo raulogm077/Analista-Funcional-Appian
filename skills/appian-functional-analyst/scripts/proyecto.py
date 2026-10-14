@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
-"""Crea la carpeta de un proyecto y dice en qué punto está.
+"""Crea el repositorio de un proyecto y dice en qué punto está.
 
   proyecto.py iniciar  <carpeta> --nombre "Solicitudes de autorización" [--cliente …] [--direccion …] [--tipo "evolutivo de X"]
-  proyecto.py estado   <carpeta>     versión, cliente y marca, DF enviado, fuentes sin procesar, pendientes, pantallas
+                                     las carpetas y las plantillas, el repositorio git (rama main) con su .gitignore y
+                                     su .gitattributes, AGENTS.md, CLAUDE.md («@AGENTS.md») y los flujos en
+                                     .agents/workflows/
+  proyecto.py iniciar  <carpeta>     en un proyecto que ya existe: pone al día AGENTS.md y los flujos con esta versión
+                                     del plugin y añade lo que falte de lo anterior
+  proyecto.py estado   <carpeta>     versión, cliente y marca, DF enviado, fuentes sin procesar, pendientes, pantallas;
+                                     y avisa de lo que no está confirmado o subido, de lo que hay en el remoto sin traer
+                                     y de si AGENTS.md o los flujos son de otra versión del plugin
   proyecto.py copia    <carpeta>     guarda analisis/*.md en versiones/v<versión>/ antes de cambiarlo
   proyecto.py version  <carpeta> --fuente FU-nn [FU-nn …] --que "…" [--informe impacto/URG-nn.md]
                        [--decision CAMBIA PAN-01 "lo nuevo" "lo de antes [FU-01 00:12:30]" …]
@@ -23,14 +30,17 @@
     Con --desatendida solo aprueba o pasa a producción con --fuente (el visto bueno del jefe de proyecto). Las
     condiciones, en references/cambios.md.
 
-`iniciar` no toca nada que ya exista. `entregar` solo cuando el Word se envía, nunca en una sesión desatendida.
+`iniciar` no toca nada que ya exista, salvo AGENTS.md y los flujos, que genera enteros. `entregar` solo cuando el Word se
+envía, nunca en una sesión desatendida.
 """
 import argparse
 import datetime
 import json
+import os
 import pathlib
 import re
 import shutil
+import subprocess
 import sys
 import unicodedata
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
@@ -39,30 +49,246 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import modelo as mo
 import unidades as un
 
-PLANTILLAS = pathlib.Path(__file__).resolve().parents[1] / "assets" / "plantillas"
+SKILL = pathlib.Path(__file__).resolve().parents[1]
+PLANTILLAS = SKILL / "assets" / "plantillas"
+FLUJOS = SKILL / "assets" / "flujos"                             # los flujos del método, la única fuente
+MANIFIESTO = SKILL.parents[1] / ".claude-plugin" / "plugin.json"  # una copia suelta de la skill no lo tiene
 CARPETAS = ["fuentes", "notas", "impacto", "analisis/diagramas", "prototipo", "entregables", "versiones"]
+# Lo que `iniciar` genera entero en el proyecto y pone al día con cada versión del plugin. Cada fichero lleva en su
+# primera línea la versión que lo escribió (RX_GENERADO): `estado` avisa si es otra. Las notas del plan para quien
+# mantiene el plugin («<!-- (T11) … -->», RX_TAREA) no van al proyecto.
+GUIA, COPIA_FLUJOS = "AGENTS.md", ".agents/workflows"
+RX_GENERADO = re.compile(r"<!-- appian-analisis-funcional (\S+) · ")
+RX_TAREA = re.compile(r"[ \t]*<!-- \(T\d.*?-->")
+RX_IMPORTA = re.compile(r"(?m)^\s*@(?:\./)?AGENTS\.md\b")           # el CLAUDE.md del proyecto importa AGENTS.md
+# El .gitattributes del proyecto. Con core.autocrlf (el de Git para Windows) un clon cambiaría los finales de línea, y la
+# huella de una fuente (leer_fuentes.py, comprobar.py) dejaría de ser la misma en cada equipo
+SIN_CONVERTIR = ("# Git no cambia los finales de línea de ningún fichero: la huella de cada fuente es la misma en "
+                 "cualquier equipo\n* -text\n")
+ESPERA_REMOTO = 5   # segundos que `estado` espera al remoto; sin respuesta, compara con lo último que se trajo
 # «DF entregado: 1.1 · 2026-10-10» (entregar) o, en proyectos anteriores, «DF entregado: 1.0 (2026-09-12)»
 RX_ENTREGADO = re.compile(r"DF entregado:\s*v?(\d+\.\d+)(?:\s*(?:·\s*|\()(\d{4}-\d{2}-\d{2}))?")
 
 
 def iniciar(a):
     raiz = pathlib.Path(a.carpeta)
+    pm = raiz / "proyecto.md"
+    titulo = re.match(r"# (.+)", pm.read_text(encoding="utf-8")) if pm.is_file() else None
+    nombre = a.nombre or (titulo.group(1).strip() if titulo else None)
+    if not nombre:
+        sys.exit(f"{raiz} no es todavía un proyecto: dale nombre con --nombre \"…\"")
     for c in CARPETAS:
         (raiz / c).mkdir(parents=True, exist_ok=True)
-    datos = {"proyecto": a.nombre, "cliente": a.cliente or "—", "direccion": a.direccion or "—",
+    datos = {"proyecto": nombre, "cliente": a.cliente or "—", "direccion": a.direccion or "—",
              "tipo": a.tipo or "nuevo", "fecha": datetime.date.today().isoformat()}
-    destinos = {"proyecto.md": raiz / "proyecto.md", "funcional.md": raiz / "analisis" / "funcional.md",
+    destinos = {"proyecto.md": pm, "funcional.md": raiz / "analisis" / "funcional.md",
                 "tecnico.md": raiz / "analisis" / "tecnico.md", "decisiones.md": raiz / "analisis" / "decisiones.md"}
-    for nombre, destino in destinos.items():
+    for plantilla, destino in destinos.items():
         if destino.exists():
             print(f"= {destino} (ya existe, no se toca)")
             continue
-        texto = (PLANTILLAS / nombre).read_text(encoding="utf-8")
+        texto = (PLANTILLAS / plantilla).read_text(encoding="utf-8")
         for k, v in datos.items():
             texto = texto.replace("{" + k + "}", v)
-        destino.write_text(texto, encoding="utf-8")
+        mo.escribe(destino, texto)
         print(f"+ {destino}")
     print(f"Carpetas: {', '.join(CARPETAS)}")
+    # lo que solo se escribe si falta: qué no se sube, que git no cambie los finales de línea y el CLAUDE.md que hace
+    # que Claude Code lea AGENTS.md
+    for destino, texto in ((raiz / ".gitignore", (PLANTILLAS / "gitignore").read_text(encoding="utf-8")),
+                           (raiz / ".gitattributes", SIN_CONVERTIR), (raiz / "CLAUDE.md", f"@{GUIA}\n")):
+        if not destino.exists():
+            escribe(destino, texto)
+            print(f"+ {destino}")
+        elif destino.name == "CLAUDE.md" and not RX_IMPORTA.search(destino.read_text(encoding="utf-8", errors="replace")):
+            print(f"= {destino} (ya existe, no se toca): no importa {GUIA}; añádele una línea «@{GUIA}»")
+        else:
+            print(f"= {destino} (ya existe, no se toca)")
+    poner_al_dia(raiz)
+    repositorio(raiz)
+
+
+def escribe(ruta, texto):
+    """Escribe un fichero generado, con finales de línea \\n en cualquier sistema para que sea el mismo en todos; False si
+    ya decía eso y no lo toca."""
+    if ruta.is_file() and ruta.read_text(encoding="utf-8", errors="replace") == texto:
+        return False
+    ruta.parent.mkdir(parents=True, exist_ok=True)
+    mo.escribe(ruta, texto)
+    return True
+
+
+def version_plugin():
+    """La versión del plugin, o None en una copia suelta de la skill."""
+    try:
+        return json.loads(MANIFIESTO.read_text(encoding="utf-8"))["version"]
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def orden_version(v):
+    """«0.7.0-beta.4» → (0, 7, 0, "beta", 4), para saber cuál es posterior (la final, después de sus alfas y betas);
+    None si no tiene esa forma."""
+    m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:-([a-z]+)\.?(\d*))?", v or "")
+    return m and (int(m.group(1)), int(m.group(2)), int(m.group(3)), m.group(4) or "~", int(m.group(5) or 0))
+
+
+def version_generada(ruta):
+    """La versión del plugin que generó un fichero, de su primera línea; None si no existe o no lo generó el plugin."""
+    try:
+        with open(ruta, encoding="utf-8", errors="replace") as f:
+            m = RX_GENERADO.match(f.readline())
+    except OSError:
+        return None
+    return m.group(1) if m else None
+
+
+def generados(version):
+    """{ruta en el proyecto: texto} de lo que se genera entero: AGENTS.md, de su plantilla y con una línea por flujo de
+    los que hay en el plugin (su título y su «Cuándo»), y la copia de cada flujo."""
+    marca = (f"<!-- appian-analisis-funcional {version or 'sin-version'} · Generado por proyecto.py iniciar: no se edita. "
+             "Lo propio del proyecto va en proyecto.md -->\n")
+    copias, filas = {}, []
+    for f in sorted(FLUJOS.glob("F*.md"), key=lambda f: mo.numero(f.stem.split("-")[0])):
+        texto = RX_TAREA.sub("", f.read_text(encoding="utf-8"))
+        cuando = re.search(r"^\*\*Cuándo\.\*\* (.+)$", texto, re.M)
+        filas.append(f"- [{texto.splitlines()[0].lstrip('# ')}]({COPIA_FLUJOS}/{f.name}): "
+                     f"{cuando.group(1).strip() if cuando else '—'}")
+        copias[f"{COPIA_FLUJOS}/{f.name}"] = marca + texto
+    guia = RX_TAREA.sub("", (PLANTILLAS / "agentes.md").read_text(encoding="utf-8"))
+    return {GUIA: marca + guia.replace("{flujos}", "\n".join(filas)), **copias}
+
+
+def poner_al_dia(raiz):
+    """AGENTS.md y los flujos, con la versión de este plugin. No pisa un fichero con ese nombre que no generó el plugin,
+    ni lo que generó una versión posterior (otra persona del equipo tiene el plugin más nuevo, o esta copia de la skill
+    no sabe su versión): los dos irían deshaciendo lo del otro."""
+    version = version_plugin()
+    nuevos = generados(version)
+    en_proyecto = {r: version_generada(raiz / r) for r in nuevos}
+    actual = orden_version(version)
+    posterior = [v for v in set(en_proyecto.values())
+                 if orden_version(v) and (actual is None or orden_version(v) > actual)]
+    if posterior:
+        print(f"= {raiz / GUIA} y los flujos son de la versión {max(posterior, key=orden_version)} del plugin, posterior "
+              f"a la de este equipo ({version or 'sin versión'}): no se tocan; actualiza el plugin")
+        return
+    ajenos = [r for r in nuevos if (raiz / r).exists() and not en_proyecto[r]]
+    cambiados = [r for r, texto in nuevos.items() if r not in ajenos and escribe(raiz / r, texto)]
+    retirados = [f for f in sorted((raiz / COPIA_FLUJOS).glob("*.md"))   # un flujo que el plugin ya no tiene
+                 if f"{COPIA_FLUJOS}/{f.name}" not in nuevos and version_generada(f)]
+    for f in retirados:
+        f.unlink()
+    que = f"{raiz / GUIA} y {raiz / COPIA_FLUJOS} ({len(nuevos) - 1} flujos)"
+    if not (cambiados or retirados):
+        print(f"= {que}: ya están al día con la versión {version or 'sin versión'} del plugin")
+    else:
+        print(f"{'~' if any(en_proyecto.values()) else '+'} {que}, con la versión {version or 'sin versión'} del plugin")
+    for r in ajenos:
+        print(f"= {raiz / r} no lo generó el plugin y no se toca: para que se genere, quítalo o cámbiale el nombre")
+
+
+def git(raiz, *args, espera=20, salida=True):
+    """La salida de una orden de git lanzada en el proyecto; None si no hay git, falla o tarda más de `espera` segundos.
+    Nunca pregunta: va sin terminal y, sin credenciales a mano, falla en vez de pedir una contraseña. Con `salida=False`
+    no se lee lo que imprime, para que una orden que habla con el remoto no deje el script esperando a un proceso que
+    git haya lanzado."""
+    entorno = dict(os.environ, GIT_TERMINAL_PROMPT="0", GCM_INTERACTIVE="never")
+    sin_terminal = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {"start_new_session": True}
+    try:
+        r = subprocess.run(["git", *args], cwd=str(raiz), env=entorno, timeout=espera, stdin=subprocess.DEVNULL,
+                           stdout=subprocess.PIPE if salida else subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                           encoding="utf-8", errors="replace", **sin_terminal)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return (r.stdout or "") if r.returncode == 0 else None
+
+
+def repositorio(raiz):
+    """Deja el proyecto como repositorio git, en la rama main, si no lo es ya. No crea uno dentro de otro, no confirma
+    nada y no toca un repositorio que ya existe."""
+    if not shutil.which("git"):
+        print("· Sin git en este equipo no se crea el repositorio: instálalo y repite «proyecto.py iniciar»")
+        return
+    dentro = git(raiz, "rev-parse", "--show-toplevel")
+    if dentro is not None:
+        print("= repositorio git (ya lo es)" if (raiz / ".git").exists() else
+              f"= repositorio git: la carpeta ya está dentro de uno ({dentro.strip()}) y no se crea otro dentro")
+        return
+    if git(raiz, "init", "--quiet") is None or git(raiz, "symbolic-ref", "HEAD", "refs/heads/main") is None:
+        print("· No se pudo crear el repositorio (git init): créalo a mano en la carpeta del proyecto")
+        return
+    print("+ repositorio git, en la rama main. Falta decirle dónde se sube: git remote add origin <URL>; después, "
+          "git add -A, git commit y git push -u origin main")
+
+
+def avisos_repositorio(raiz):
+    """Lo que no está confirmado o subido y lo que hay en el remoto sin traer. Son avisos: sin git, sin repositorio o
+    sin remoto no falla. Al remoto se le pregunta como mucho ESPERA_REMOTO segundos; sin red o sin acceso, se compara
+    con lo último que se trajo y se dice."""
+    if not shutil.which("git"):
+        return ["sin git en este equipo no se sabe qué está subido"]
+    con_remoto = bool((git(raiz, "remote") or "").strip())
+    consultado = con_remoto and git(raiz, "fetch", "--quiet", "--all", espera=ESPERA_REMOTO, salida=False) is not None
+    situacion = git(raiz, "--no-optional-locks", "status", "--porcelain=v2", "--branch", "--", ".")
+    if situacion is None:
+        return []
+    lineas = situacion.splitlines()
+    cab = dict(l[2:].split(" ", 1) for l in lineas if l.startswith("# ") and " " in l[2:])
+    rama, cambios = cab.get("branch.head", "main"), sum(1 for l in lineas if l and not l.startswith("#"))
+    plural = lambda n, palabra: f"{n} {palabra}{'' if n == 1 else 's'}"
+    avisos = [f"{plural(cambios, 'cambio')} sin confirmar (git add y git commit)"] if cambios else []
+    if not con_remoto:
+        avisos.append(f"sin remoto, nada está subido (git remote add origin <URL> y git push -u origin {rama})")
+    elif not rama.startswith("("):   # con «(detached)» no hay rama activa ni con qué comparar
+        # la rama del remoto que sigue esta o, si se subió sin -u, la del mismo nombre que se conozca de un remoto
+        sigue = cab.get("branch.upstream")
+        conocidas = [] if sigue else (git(raiz, "for-each-ref", "--format=%(refname:short)", f"refs/remotes/*/{rama}")
+                                      or "").split()
+        suya = sigue or (conocidas[0] if conocidas else None)
+        cuenta = (git(raiz, "rev-list", "--left-right", "--count", f"HEAD...{suya}") or "").split() if suya else []
+        if len(cuenta) != 2:
+            avisos.append(f"la rama {rama} no está en el remoto, nada está subido (git push -u origin {rama})")
+        else:
+            a_donde = "" if sigue else " " + suya.replace("/", " ", 1)   # sin -u, git pide decir el remoto y la rama
+            if int(cuenta[0]):
+                avisos.append(f"{plural(int(cuenta[0]), 'commit')} sin subir a {suya} "
+                              f"(git push{' -u' + a_donde if a_donde else ''})")
+            if int(cuenta[1]):
+                avisos.append(f"va {plural(int(cuenta[1]), 'commit')} por detrás de {suya} (git pull{a_donde})")
+    if con_remoto and not consultado:
+        avisos.append("no se pudo consultar el remoto (sin red o sin acceso): se compara con lo último que se trajo")
+    return avisos
+
+
+def avisos_proyecto(raiz):
+    """Los avisos de `estado` sobre el repositorio del proyecto y lo que genera `iniciar`: lo que falta, lo que no está
+    subido, AGENTS.md o los flujos de otra versión del plugin y un CLAUDE.md que no importa AGENTS.md."""
+    version = version_plugin()
+    flujos = [f"{COPIA_FLUJOS}/{f.name}" for f in FLUJOS.glob("F*.md")]
+    es_repo = not shutil.which("git") or git(raiz, "rev-parse", "--is-inside-work-tree") is not None
+    generado = {r: version_generada(raiz / r) for r in [GUIA, *flujos] if (raiz / r).is_file()}
+    ajenos, otras = sorted(r for r, v in generado.items() if not v), sorted({v for v in generado.values() if v} - {version})
+    # generado por una versión posterior del plugin: la lista de flujos es la suya, y `iniciar` no lo toca
+    actual = orden_version(version)
+    posterior = bool(actual) and any(orden_version(v) and orden_version(v) > actual for v in otras)
+    faltan = ["ser un repositorio git"] if not es_repo else [
+        r for r in (".gitignore", ".gitattributes") if not (raiz / r).is_file()]
+    faltan += [r for r in (GUIA, "CLAUDE.md") if not (raiz / r).is_file() and not (posterior and r == GUIA)]
+    faltan += [f"algún flujo de {COPIA_FLUJOS}/"] if not posterior and any(r not in generado for r in flujos) else []
+    avisos = [f"Al proyecto le falta {', '.join(faltan)}: «proyecto.py iniciar <p>» lo añade sin tocar lo demás"
+              ] if faltan else []
+    avisos += [f"Repositorio: {x}" for x in (avisos_repositorio(raiz) if es_repo else [])]
+    if ajenos:
+        avisos.append(f"{', '.join(ajenos)} no lo generó el plugin y «proyecto.py iniciar» no lo toca: para que lo genere, "
+                      "quítalo o cámbiale el nombre")
+    if otras and version:
+        avisos.append(f"{GUIA} y los flujos son de otra versión del plugin ({', '.join(otras)}; la de este equipo, {version}): "
+                      + ("actualiza el plugin" if posterior else "«proyecto.py iniciar <p>» los pone al día"))
+    claude = raiz / "CLAUDE.md"
+    if claude.is_file() and not RX_IMPORTA.search(claude.read_text(encoding="utf-8", errors="replace")):
+        avisos.append(f"CLAUDE.md no importa {GUIA}: añádele una línea «@{GUIA}»")
+    return avisos
 
 
 def tabla(texto, titulo):
@@ -89,6 +315,8 @@ def estado(a):
     if entregado:   # el Word se genera al enviarlo o si se pide: aquí solo se informa
         fecha = f" ({entregado.group(2)})" if entregado.group(2) else ""
         print(f"DF en Word: último enviado {entregado.group(1)}{fecha}, versión actual {vs}")
+    for x in avisos_proyecto(raiz):
+        print(f"· {x}")
 
     # informes de impacto: los pendientes; las PAN de un cambio aprobado (✔) en una versión posterior al prototipo que se
     # enseñó (el último prototipo/app-vX.Y.json; sin ninguno, todas), que el prototipo rehace; y las fuentes que cuentan
@@ -262,7 +490,7 @@ def version(a):
         lineas = ruta.read_text(encoding="utf-8").split("\n")
         i = next(i for i, l in enumerate(lineas[:20]) if RX_VERSION.search(l))
         lineas[i] = RX_VERSION.sub(lambda x: f"{x.group(1)}{nueva}", lineas[i], count=1)
-        ruta.write_text("\n".join(lineas), encoding="utf-8")
+        mo.escribe(ruta, "\n".join(lineas))
         subidos.append(nombre)
     hoy = datetime.date.today().isoformat()
     que = " ".join(a.que.split()).replace("|", "/")
@@ -289,7 +517,7 @@ def version(a):
     if ids_d:
         escrito.append(f"{', '.join(ids_d)} en decisiones.md")
     if texto_d != (dec.read_text(encoding="utf-8") if dec.exists() else ""):
-        dec.write_text(texto_d, encoding="utf-8")
+        mo.escribe(dec, texto_d)
     informe = (a.informe or f"impacto/{fuentes[0]}.md").replace("\\", "/")
     for fu in fuentes:
         e = cat[fu]
@@ -300,7 +528,7 @@ def version(a):
         else:
             texto_p = nuevo_p
     if texto_p and texto_p != (proy.read_text(encoding="utf-8") if proy.exists() else ""):
-        proy.write_text(texto_p, encoding="utf-8")
+        mo.escribe(proy, texto_p)
         escrito.append(f"{', '.join(fuentes)} en «Fuentes procesadas» de proyecto.md")
     print(f"Versión {nueva}: {' y '.join(subidos)} en {nueva}" + (f"; {'; '.join(escrito)}" if escrito else "")
           + f". Copia de la {v[0]}.{v[1]} en {destino}.")
@@ -362,7 +590,7 @@ def entregar(a):
         print(f"· No encuentro entregables/{word}: genéralo con df_docx.js antes de enviarlo")
     else:
         texto = entregados(texto, word)
-    pm.write_text(texto, encoding="utf-8")
+    mo.escribe(pm, texto)
     print(f"{valor} en {pm}")
 
 
@@ -384,8 +612,8 @@ def entregar_cambio(uid, raiz, m, vs, fecha, texto):
     if nota not in c[-1]:
         c[-1] = nota if c[-1].strip(" —-") == "" else f"{c[-1]} · {nota}"
         lineas[k] = "| " + " | ".join(c) + " |"
-        dm.write_text("\n".join(lineas), encoding="utf-8")
-    (raiz / "proyecto.md").write_text(entregados(texto, word), encoding="utf-8")
+        mo.escribe(dm, "\n".join(lineas))
+    mo.escribe(raiz / "proyecto.md", entregados(texto, word))
     print(f"{nota}: en la versión {vs} de decisiones.md y {word} en «Entregados» de proyecto.md")
 
 
@@ -589,9 +817,12 @@ def construir(a, ctx, u, hoy, no, raiz, orden):
 
 
 def main():
+    for st in (sys.stdout, sys.stderr):   # antes de leer los argumentos: la ayuda y sus errores también llevan tildes
+        st.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    s = sub.add_parser("iniciar"); s.add_argument("carpeta"); s.add_argument("--nombre", required=True)
+    s = sub.add_parser("iniciar"); s.add_argument("carpeta")
+    s.add_argument("--nombre", help="el nombre del proyecto; hace falta solo la primera vez")
     s.add_argument("--cliente"); s.add_argument("--direccion"); s.add_argument("--tipo")
     s.set_defaults(f=iniciar)
     s = sub.add_parser("estado"); s.add_argument("carpeta"); s.set_defaults(f=estado)
@@ -613,8 +844,6 @@ def main():
     s.add_argument("--informe"); s.add_argument("--desatendida", action="store_true")
     s.add_argument("--fecha", help="produccion: la fecha del pase (AAAA-MM-DD); sin ella, hoy")
     a = ap.parse_args()
-    for st in (sys.stdout, sys.stderr):
-        st.reconfigure(encoding="utf-8", errors="replace")
     a.f(a)
 
 

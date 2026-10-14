@@ -137,7 +137,7 @@ def escribir(raiz, unidades, plantilla):
         fin += 1
     lineas[ini + 2:fin] = [u.fila() for u in unidades]
     f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text("\n".join(lineas) + "\n", encoding="utf-8")
+    mo.escribe(f, "\n".join(lineas) + "\n")
 
 
 def objetos_celda(celda):

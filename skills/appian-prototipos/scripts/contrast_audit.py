@@ -14,7 +14,7 @@ Sale con 1 si hay fallos. Requiere Playwright y un navegador, como smoke_test.py
 import json, sys, argparse
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from pathlib import Path
-from entorno import utf8_stdio, sync_playwright, launch_browser
+from entorno import escribe, utf8_stdio, sync_playwright, launch_browser
 
 JS = r"""
 () => {
@@ -130,7 +130,7 @@ def main():
             print(f"  ✗ {f['ratio']:>5}:1 (mín. {f['need']}) {f['kind']:<14} {f['comp']:<28} {f['fg']} sobre {f['bg']}  «{f['text']}»")
     print(f"\nContraste: {len(ids)} pantallas, {total} combinación(es) de color por debajo de WCAG 2.2 AA" + (f"; {imgs} texto(s) sobre imagen no medidos" if imgs else ""))
     if a.json:
-        Path(a.json).write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+        escribe(a.json, json.dumps(report, ensure_ascii=False, indent=1))
     sys.exit(1 if total else 0)
 
 

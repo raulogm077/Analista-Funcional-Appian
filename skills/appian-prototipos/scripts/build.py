@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validate import validate, trace_markdown, find_brand, ux_summary, _lum  # noqa: E402
-from entorno import utf8_stdio  # noqa: E402
+from entorno import escribe, utf8_stdio  # noqa: E402
 
 # Open Sans (licencia SIL OFL, assets/fonts/OFL-OpenSans.txt) embebida: el prototipo y sus capturas usan la fuente
 # de la marca sin internet (las capturas bloquean la red); variable de 300 a 800, subconjuntos latin y latin-ext
@@ -198,13 +198,13 @@ def build(spec_path, out_path, brand_id="appian", do_validate=True):
 {js}
 </script>
 """
-    Path(out_path).write_text(html, encoding="utf-8")
+    escribe(out_path, html)
     trace = Path(out_path).with_name(Path(out_path).stem + "-trazabilidad.md")
-    trace.write_text(trace_markdown(spec), encoding="utf-8")
+    escribe(trace, trace_markdown(spec))
     profile = None
     if brand.get("cssProfile"):
         profile = Path(out_path).with_name(Path(out_path).stem + "-perfil-css.txt")
-        profile.write_text(css_profile_text(brand), encoding="utf-8")
+        escribe(profile, css_profile_text(brand))
     kb = len(html.encode()) / 1024
     print(f"OK → {out_path} ({kb:.0f} KB, {len(spec.get('screens', []))} pantallas, {len(icons)} iconos)")
     print(f"OK → {trace}")
