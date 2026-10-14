@@ -2,8 +2,9 @@
 """Crea el repositorio de un proyecto y dice en qué punto está.
 
   proyecto.py iniciar  <carpeta> --nombre "Solicitudes de autorización" [--cliente …] [--direccion …] [--tipo "evolutivo de X"]
-                                     las carpetas y las plantillas, el repositorio git (rama main) con su .gitignore,
-                                     AGENTS.md, CLAUDE.md («@AGENTS.md») y los flujos en .agents/workflows/
+                                     las carpetas y las plantillas, el repositorio git (rama main) con su .gitignore y
+                                     su .gitattributes, AGENTS.md, CLAUDE.md («@AGENTS.md») y los flujos en
+                                     .agents/workflows/
   proyecto.py iniciar  <carpeta>     en un proyecto que ya existe: pone al día AGENTS.md y los flujos con esta versión
                                      del plugin y añade lo que falte de lo anterior
   proyecto.py estado   <carpeta>     versión, cliente y marca, DF enviado, fuentes sin procesar, pendientes, pantallas;
@@ -60,6 +61,10 @@ GUIA, COPIA_FLUJOS = "AGENTS.md", ".agents/workflows"
 RX_GENERADO = re.compile(r"<!-- appian-analisis-funcional (\S+) · ")
 RX_TAREA = re.compile(r"[ \t]*<!-- \(T\d.*?-->")
 RX_IMPORTA = re.compile(r"(?m)^\s*@(?:\./)?AGENTS\.md\b")           # el CLAUDE.md del proyecto importa AGENTS.md
+# El .gitattributes del proyecto. Con core.autocrlf (el de Git para Windows) un clon cambiaría los finales de línea, y la
+# huella de una fuente (leer_fuentes.py, comprobar.py) dejaría de ser la misma en cada equipo
+SIN_CONVERTIR = ("# Git no cambia los finales de línea de ningún fichero: la huella de cada fuente es la misma en "
+                 "cualquier equipo\n* -text\n")
 ESPERA_REMOTO = 5   # segundos que `estado` espera al remoto; sin respuesta, compara con lo último que se trajo
 # «DF entregado: 1.1 · 2026-10-10» (entregar) o, en proyectos anteriores, «DF entregado: 1.0 (2026-09-12)»
 RX_ENTREGADO = re.compile(r"DF entregado:\s*v?(\d+\.\d+)(?:\s*(?:·\s*|\()(\d{4}-\d{2}-\d{2}))?")
@@ -88,9 +93,10 @@ def iniciar(a):
         destino.write_text(texto, encoding="utf-8")
         print(f"+ {destino}")
     print(f"Carpetas: {', '.join(CARPETAS)}")
-    # lo que solo se escribe si falta: qué no se sube y el CLAUDE.md que hace que Claude Code lea AGENTS.md
+    # lo que solo se escribe si falta: qué no se sube, que git no cambie los finales de línea y el CLAUDE.md que hace
+    # que Claude Code lea AGENTS.md
     for destino, texto in ((raiz / ".gitignore", (PLANTILLAS / "gitignore").read_text(encoding="utf-8")),
-                           (raiz / "CLAUDE.md", f"@{GUIA}\n")):
+                           (raiz / ".gitattributes", SIN_CONVERTIR), (raiz / "CLAUDE.md", f"@{GUIA}\n")):
         if not destino.exists():
             escribe(destino, texto)
             print(f"+ {destino}")
@@ -139,16 +145,16 @@ def version_generada(ruta):
 
 
 def generados(version):
-    """{ruta en el proyecto: texto} de lo que se genera entero: AGENTS.md, de su plantilla y con la tabla de los flujos
-    que hay en el plugin, y la copia de cada flujo."""
+    """{ruta en el proyecto: texto} de lo que se genera entero: AGENTS.md, de su plantilla y con una línea por flujo de
+    los que hay en el plugin (su título y su «Cuándo»), y la copia de cada flujo."""
     marca = (f"<!-- appian-analisis-funcional {version or 'sin-version'} · Generado por proyecto.py iniciar: no se edita. "
              "Lo propio del proyecto va en proyecto.md -->\n")
     copias, filas = {}, []
     for f in sorted(FLUJOS.glob("F*.md"), key=lambda f: mo.numero(f.stem.split("-")[0])):
         texto = RX_TAREA.sub("", f.read_text(encoding="utf-8"))
         cuando = re.search(r"^\*\*Cuándo\.\*\* (.+)$", texto, re.M)
-        filas.append(f"| [{texto.splitlines()[0].lstrip('# ')}]({COPIA_FLUJOS}/{f.name}) "
-                     f"| {cuando.group(1).strip() if cuando else '—'} |")
+        filas.append(f"- [{texto.splitlines()[0].lstrip('# ')}]({COPIA_FLUJOS}/{f.name}): "
+                     f"{cuando.group(1).strip() if cuando else '—'}")
         copias[f"{COPIA_FLUJOS}/{f.name}"] = marca + texto
     guia = RX_TAREA.sub("", (PLANTILLAS / "agentes.md").read_text(encoding="utf-8"))
     return {GUIA: marca + guia.replace("{flujos}", "\n".join(filas)), **copias}
@@ -235,16 +241,22 @@ def avisos_repositorio(raiz):
     avisos = [f"{plural(cambios, 'cambio')} sin confirmar (git add y git commit)"] if cambios else []
     if not con_remoto:
         avisos.append(f"sin remoto, nada está subido (git remote add origin <URL> y git push -u origin {rama})")
-    elif rama.startswith("("):
-        pass   # sin rama activa (HEAD suelta): no hay con qué comparar
-    elif "branch.ab" not in cab:
-        avisos.append(f"la rama {rama} no está en el remoto, nada está subido (git push -u origin {rama})")
-    else:
-        delante, detras = (abs(int(x)) for x in cab["branch.ab"].split())
-        if delante:
-            avisos.append(f"{plural(delante, 'commit')} sin subir a {cab.get('branch.upstream')} (git push)")
-        if detras:
-            avisos.append(f"va {plural(detras, 'commit')} por detrás de {cab.get('branch.upstream')} (git pull)")
+    elif not rama.startswith("("):   # con «(detached)» no hay rama activa ni con qué comparar
+        # la rama del remoto que sigue esta o, si se subió sin -u, la del mismo nombre que se conozca de un remoto
+        sigue = cab.get("branch.upstream")
+        conocidas = [] if sigue else (git(raiz, "for-each-ref", "--format=%(refname:short)", f"refs/remotes/*/{rama}")
+                                      or "").split()
+        suya = sigue or (conocidas[0] if conocidas else None)
+        cuenta = (git(raiz, "rev-list", "--left-right", "--count", f"HEAD...{suya}") or "").split() if suya else []
+        if len(cuenta) != 2:
+            avisos.append(f"la rama {rama} no está en el remoto, nada está subido (git push -u origin {rama})")
+        else:
+            a_donde = "" if sigue else " " + suya.replace("/", " ", 1)   # sin -u, git pide decir el remoto y la rama
+            if int(cuenta[0]):
+                avisos.append(f"{plural(int(cuenta[0]), 'commit')} sin subir a {suya} "
+                              f"(git push{' -u' + a_donde if a_donde else ''})")
+            if int(cuenta[1]):
+                avisos.append(f"va {plural(int(cuenta[1]), 'commit')} por detrás de {suya} (git pull{a_donde})")
     if con_remoto and not consultado:
         avisos.append("no se pudo consultar el remoto (sin red o sin acceso): se compara con lo último que se trajo")
     return avisos
@@ -256,20 +268,22 @@ def avisos_proyecto(raiz):
     version = version_plugin()
     flujos = [f"{COPIA_FLUJOS}/{f.name}" for f in FLUJOS.glob("F*.md")]
     es_repo = not shutil.which("git") or git(raiz, "rev-parse", "--is-inside-work-tree") is not None
-    faltan = [] if es_repo else ["ser un repositorio git"]
-    faltan += [r for r in (GUIA, "CLAUDE.md") if not (raiz / r).is_file()]
-    faltan += [f"algún flujo de {COPIA_FLUJOS}/"] if any(not (raiz / r).is_file() for r in flujos) else []
+    generado = {r: version_generada(raiz / r) for r in [GUIA, *flujos] if (raiz / r).is_file()}
+    ajenos, otras = sorted(r for r, v in generado.items() if not v), sorted({v for v in generado.values() if v} - {version})
+    # generado por una versión posterior del plugin: la lista de flujos es la suya, y `iniciar` no lo toca
+    actual = orden_version(version)
+    posterior = bool(actual) and any(orden_version(v) and orden_version(v) > actual for v in otras)
+    faltan = ["ser un repositorio git"] if not es_repo else [
+        r for r in (".gitignore", ".gitattributes") if not (raiz / r).is_file()]
+    faltan += [r for r in (GUIA, "CLAUDE.md") if not (raiz / r).is_file() and not (posterior and r == GUIA)]
+    faltan += [f"algún flujo de {COPIA_FLUJOS}/"] if not posterior and any(r not in generado for r in flujos) else []
     avisos = [f"Al proyecto le falta {', '.join(faltan)}: «proyecto.py iniciar <p>» lo añade sin tocar lo demás"
               ] if faltan else []
     avisos += [f"Repositorio: {x}" for x in (avisos_repositorio(raiz) if es_repo else [])]
-    generado = {r: version_generada(raiz / r) for r in [GUIA, *flujos] if (raiz / r).is_file()}
-    ajenos, otras = sorted(r for r, v in generado.items() if not v), sorted({v for v in generado.values() if v} - {version})
     if ajenos:
         avisos.append(f"{', '.join(ajenos)} no lo generó el plugin y «proyecto.py iniciar» no lo toca: para que lo genere, "
                       "quítalo o cámbiale el nombre")
     if otras and version:
-        actual = orden_version(version)
-        posterior = bool(actual) and any(orden_version(v) and orden_version(v) > actual for v in otras)
         avisos.append(f"{GUIA} y los flujos son de otra versión del plugin ({', '.join(otras)}; la de este equipo, {version}): "
                       + ("actualiza el plugin" if posterior else "«proyecto.py iniciar <p>» los pone al día"))
     claude = raiz / "CLAUDE.md"

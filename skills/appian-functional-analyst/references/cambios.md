@@ -55,6 +55,9 @@ Construidas; lo que hay en producción, el inicial más las unidades En producci
   desde `EV-01` (o la siguiente libre), con una columna «Cambio» por punto en su informe.
 - **Aplicación nueva**: el análisis como siempre; la construcción inicial es `EV-01`. Cuando pasa a producción, un
   cambio sobre lo hecho es `EV-02`, y así.
+- **Defecto que nadie declara crítico** (la aplicación no hace lo acordado): va en una unidad `EV-nn`, la Abierta o una
+  nueva. El funcional no cambia; el técnico gana en §14 la prueba que reproduce el fallo, junto al criterio que no se
+  cumple, y en §13 los objetos que se corrigen.
 - **Urgencias**: `URG-01`, `URG-02`…, numeradas aparte.
 
 ## 3. El informe de impacto con unidades

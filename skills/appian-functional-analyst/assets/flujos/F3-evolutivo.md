@@ -1,6 +1,6 @@
 # F3 · Evolutivo
 
-**Cuándo.** Hay que cambiar o ampliar una aplicación ya construida: propia, o ajena y ya documentada en `as-is/` (si no lo está, antes F6). También una integración nueva.
+**Cuándo.** Hay que cambiar o ampliar una aplicación ya construida, propia o ajena (documentada en `as-is/`; si no lo está, antes F6); también una integración nueva.
 **Empieza.** El analista, con `appian-functional-analyst`. **Termina en.** La unidad `EV-nn` aprobada, el DF del cambio y su encargo de construcción; sigue F8. <!-- (T11) El encargo pasa a ser las issues de la unidad, una por requisito, en construccion/<U>/. -->
 
 | # | Paso | Quién | Con qué | Detalle |

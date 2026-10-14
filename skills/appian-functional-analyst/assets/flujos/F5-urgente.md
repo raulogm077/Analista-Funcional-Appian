@@ -1,7 +1,7 @@
 # F5 · Urgente
 
-**Cuándo.** El cliente o el equipo declaran crítico algo que pasa en producción: la aplicación parada, un comportamiento que impide trabajar, errores visibles. También lo que es de datos u operación: datos incorrectos, procesos en curso, configuración o un certificado caducado.
-**Empieza.** El analista, con `appian-functional-analyst`. **Termina en.** La ficha `impacto/URG-nn.md` cerrada, la corrección en producción y reaplicada en desarrollo. Sin DF ni prototipo.
+**Cuándo.** El cliente o el equipo declaran crítico algo que pasa en producción; también datos u operación (datos incorrectos, procesos en curso, un certificado caducado).
+**Empieza.** El analista, con `appian-functional-analyst`. **Termina en.** La ficha `impacto/URG-nn.md` cerrada y la corrección en producción; si se corrigió en el entorno de corrección, cada unidad en curso que cambia esos objetos la reaplica al construirse (F8). Sin DF ni prototipo.
 
 | # | Paso | Quién | Con qué | Detalle |
 |---|---|---|---|---|
@@ -13,6 +13,6 @@
 | 6 | Corregir solo esos objetos y probarlo | Quien construye: IA por el Dev MCP o una persona | `appian-best-practices`, con la skill oficial `appian` | `appian-best-practices/SKILL.md` «Tools» |
 | 7 | Desplegar por el proceso de cambios urgentes del cliente, con la vuelta atrás preparada | Una persona | — | `appian-functional-analyst/references/urgentes.md` §2 |
 | 8 | Cerrar la ficha y registrar el pase | Script | `appian-functional-analyst` · `proyecto.py cambio <p> URG-nn produccion --ref "<referencia>"` | `appian-functional-analyst/references/urgentes.md` §2 |
-| 9 | Reaplicar la corrección en desarrollo en cada unidad en curso que toca esos objetos, y poner al día el entorno de corrección | Quien construye; Script lo confirma | `appian-functional-analyst` · `proyecto.py cambio <p> EV-nn construida --reaplicada URG-nn` | `appian-functional-analyst/references/urgentes.md` §2 y §3 |
+| 9 | Poner al día el entorno de corrección con el pase | Una persona | — | `appian-functional-analyst/references/urgentes.md` §2 y §3 |
 
 **Variante: datos u operación.** No se corrige ningún objeto de la aplicación: la ficha recoge qué se hizo y se cierra con los campos de su tipo. `appian-functional-analyst/references/urgentes.md` §1.

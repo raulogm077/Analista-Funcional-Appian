@@ -1,6 +1,6 @@
 # F7 · Refactorización
 
-**Cuándo.** Se quiere plantear cómo debería estar hecha una aplicación existente, entera o una parte, o decidir si se rehace o se evoluciona. Necesita `as-is/` (F6).
+**Cuándo.** Se quiere plantear cómo rehacer una aplicación existente, entera o una parte, o decidir si se rehace; necesita `as-is/` (F6).
 **Empieza.** Refactorización, con `appian-refactorizacion`. **Termina en.** La propuesta validada, el técnico con la migración y una unidad por fase de la hoja de ruta; cada fase sigue F8.
 
 | # | Paso | Quién | Con qué | Detalle |

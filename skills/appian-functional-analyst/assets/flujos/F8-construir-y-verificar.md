@@ -11,7 +11,7 @@
 | 4 | Probar lo construido y pasar las puertas de calidad que tocan <!-- (T13) Pruebas de la issue: técnico §14 dice cómo se comprueba cada criterio; se ejecutan solo los casos de sus reglas e interfaces y de lo que las usa, y un fallo en lo de la issue bloquea. --> | Quien construye | `appian-best-practices` | `appian-best-practices/references/10-quality-gates.md` |
 | 5 | Reaplicar las correcciones urgentes que pida el encargo | Quien construye | `appian-best-practices` | `appian-functional-analyst/references/urgentes.md` §2 |
 | 6 | Verificar lo construido contra el técnico, en solo lectura | Script | `appian-reverse-engineering` · `devmcp_extract.py verificar` | `appian-reverse-engineering/SKILL.md` «Verificar o deriva» y `appian-functional-analyst/references/cambios.md` §6 |
-| 7 | Marcar la unidad | Script | `appian-functional-analyst` · `proyecto.py cambio <p> <U> construida` | `appian-functional-analyst/references/cambios.md` §6 |
+| 7 | Marcar la unidad construida, confirmando cada corrección urgente reaplicada | Script | `appian-functional-analyst` · `proyecto.py cambio <p> <U> construida [--reaplicada URG-nn]` | `appian-functional-analyst/references/cambios.md` §1 y §6 |
 
 El avance entre sesiones se ve volviendo a verificar: no hay otro estado que mantener.
 

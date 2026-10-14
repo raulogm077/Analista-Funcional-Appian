@@ -62,8 +62,10 @@ def main():
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="analista-"))
     # git, igual en cualquier equipo y sin red: sin la configuración de quien lanza la prueba (firma de commits, rama
     # inicial, plantillas), con un autor fijo y sin subir más allá de la carpeta temporal ni de los datos de prueba, para
-    # que proyecto.py no tome un proyecto de prueba por parte del repositorio del plugin ni pregunte a su remoto
-    (tmp / "gitconfig").write_text("", encoding="utf-8")
+    # que proyecto.py no tome un proyecto de prueba por parte del repositorio del plugin ni pregunte a su remoto. Y con
+    # core.autocrlf, como instala Git para Windows: sin el .gitattributes del proyecto, un clon cambiaría los finales
+    # de línea
+    (tmp / "gitconfig").write_text("[core]\n\tautocrlf = true\n", encoding="utf-8")
     os.environ.update(GIT_CONFIG_GLOBAL=str(tmp / "gitconfig"), GIT_CONFIG_NOSYSTEM="1", GIT_TERMINAL_PROMPT="0",
                       GIT_CEILING_DIRECTORIES=os.pathsep.join(map(str, (tmp.resolve(), tmp, DATOS))),
                       GIT_AUTHOR_NAME="Prueba", GIT_AUTHOR_EMAIL="prueba@example.com",
@@ -1189,8 +1191,9 @@ def pruebas_repositorio(tmp):
     cb, outb = iniciar(b, "--nombre", "Reserva de salas")
     flujos = [f".agents/workflows/{f.name}" for f in sorted((SKILL / "assets" / "flujos").glob("F*.md"))]
     generados = ["AGENTS.md", *flujos]
-    completos = all((p / x).is_file() for p in (a, b) for x in [*generados, "CLAUDE.md", ".gitignore", "proyecto.md"])
-    ok("dos proyectos nuevos tienen la misma estructura: AGENTS.md, CLAUDE.md, .gitignore, los flujos y nada de más",
+    propios_de_git = [".gitignore", ".gitattributes"]
+    completos = all((p / x).is_file() for p in (a, b) for x in [*generados, "CLAUDE.md", *propios_de_git, "proyecto.md"])
+    ok("dos proyectos nuevos tienen la misma estructura: AGENTS.md, CLAUDE.md, lo de git, los flujos y nada de más",
        ca == 0 and cb == 0 and completos and arbol(a) == arbol(b) and len(flujos) == 9
        and not any((a / x).exists() for x in (".agents/skills", "product_vision.md", "qa", "construccion")),
        outa + outb + str(arbol(a)) + str(arbol(b)))
@@ -1200,13 +1203,19 @@ def pruebas_repositorio(tmp):
     ok("los dos son repositorios git, en la rama main",
        all((p / ".git").is_dir() for p in (a, b)) and all(c == 0 and o.strip() == "main" for c, o in ramas), str(ramas))
     guia = (a / "AGENTS.md").read_text(encoding="utf-8")
-    textos = {x: (a / x).read_bytes() for x in [*generados, "CLAUDE.md", ".gitignore"]}
+    textos = {x: (a / x).read_bytes() for x in [*generados, "CLAUDE.md", *propios_de_git]}
     ok("lo generado es igual en los dos proyectos y en cualquier sistema, con la versión del plugin y sin notas del plan",
        all(v == (b / x).read_bytes() and b"\r" not in v and b"<!-- (T" not in v for x, v in textos.items())
        and all(textos[x].decode("utf-8").startswith(f"<!-- appian-analisis-funcional {version} · ") for x in generados)
-       and textos["CLAUDE.md"] == b"@AGENTS.md\n" and all(f"]({x})" in guia for x in flujos), guia[:600])
-    for x, dato in (("fuentes/reunion.mp4", "vídeo"), ("fuentes/FU-01-acta.md", "# FU-01\n"), (".env", "CLAVE=x\n")):
-        (a / x).write_text(dato, encoding="utf-8")
+       and textos["CLAUDE.md"] == b"@AGENTS.md\n" and textos[".gitattributes"].endswith(b"\n* -text\n")
+       and all(f"]({x})" in guia for x in flujos), guia[:600])
+    ok("AGENTS.md no nombra lo que todavía no escribe nadie (qa/) ni pide un git pull antes de mirar el estado",
+       "qa/" not in guia and "git pull" in guia and guia.index("proyecto.py estado") < guia.index("git pull"), guia)
+    # dos fuentes, una con cada final de línea: tienen que llegar igual, byte a byte, a quien clone el proyecto
+    fuentes = {"fuentes/FU-01-acta.md": "# FU-01\nActa de la reunión\n".encode("utf-8"),
+               "fuentes/correo.eml": b"Subject: Plazos\r\n\r\nSe mantienen.\r\n"}
+    for x, dato in {**fuentes, "fuentes/reunion.mp4": b"video", ".env": b"CLAVE=x\n"}.items():
+        (a / x).write_bytes(dato)
     fuera = {x: git(a, "check-ignore", "-q", x)[0] == 0 for x in ("fuentes/reunion.mp4", ".env", "fuentes/FU-01-acta.md")}
     ok(".gitignore deja fuera las grabaciones y los secretos, y no las fuentes",
        fuera == {"fuentes/reunion.mp4": True, ".env": True, "fuentes/FU-01-acta.md": False}, str(fuera))
@@ -1224,6 +1233,16 @@ def pruebas_repositorio(tmp):
     c, out = estado(a)
     ok("estado con todo confirmado y nada subido: la rama no está en el remoto",
        c0 == 0 and c == 0 and "sin confirmar" not in out and "la rama main no está en el remoto" in out, o0 + out)
+    c0, o0 = git(a, "push", "--quiet", "origin", "main")   # sin -u: está subida, aunque la rama no «siga» a la del remoto
+    c, out = estado(a)
+    ok("estado con la rama subida sin -u no dice que no está en el remoto", c0 == 0 and c == 0
+       and not re.search(r"^· ", out, re.M), o0 + out)
+    (a / "notas" / "aviso.md").write_bytes(b"# Aviso\n")
+    git(a, "add", "-A")
+    git(a, "commit", "--quiet", "-m", "Aviso")
+    c, out = estado(a)
+    ok("y de un commit posterior dice que está sin subir, con la orden que dice a dónde",
+       c == 0 and "Repositorio: 1 commit sin subir a origin/main (git push -u origin main)" in out, out)
     c0, o0 = git(a, "push", "--quiet", "-u", "origin", "main")
     c, out = estado(a)
     ok("estado con todo subido no avisa de nada", c0 == 0 and c == 0 and not re.search(r"^· ", out, re.M), o0 + out)
@@ -1236,6 +1255,9 @@ def pruebas_repositorio(tmp):
        c == 0 and "Repositorio: 1 commit sin subir a origin/main" in out and "sin confirmar" not in out, out)
     otra = base / "otra persona"   # otra persona sube un cambio: estado lo ve sin que nadie lo traiga antes
     git(base, "clone", "--quiet", "-b", "main", str(remoto), str(otra))
+    ok("un clon tiene las fuentes byte a byte, también con core.autocrlf: su huella es la misma en cualquier equipo",
+       all((otra / x).is_file() and (otra / x).read_bytes() == dato for x, dato in fuentes.items()),
+       str({x: (otra / x).read_bytes() if (otra / x).is_file() else None for x in fuentes}))
     (otra / "notas").mkdir(exist_ok=True)
     (otra / "notas" / "FU-01.md").write_text("# Nota de FU-01\n", encoding="utf-8")
     git(otra, "add", "-A")
@@ -1266,11 +1288,11 @@ def pruebas_repositorio(tmp):
     retirado = a / ".agents" / "workflows" / "F0-retirado.md"   # un flujo de antes, que este plugin ya no trae
     retirado.write_bytes((a / flujos[0]).read_bytes())
     (a / ".agents" / "workflows" / "notas.md").write_text("# Notas del equipo\n", encoding="utf-8")
-    propios = ["proyecto.md", "CLAUDE.md", ".gitignore", "analisis/funcional.md", "analisis/tecnico.md",
+    propios = ["proyecto.md", "CLAUDE.md", *propios_de_git, "analisis/funcional.md", "analisis/tecnico.md",
                "analisis/decisiones.md", ".agents/workflows/notas.md"]
     antes = {x: (a / x).read_bytes() for x in propios}
-    de_la = lambda v: all((a / x).read_text(encoding="utf-8").startswith(f"<!-- appian-analisis-funcional {v} · ")
-                          for x in generados)
+    de_la = lambda v, rutas=generados: all(
+        (a / x).read_text(encoding="utf-8").startswith(f"<!-- appian-analisis-funcional {v} · ") for x in rutas)
     c, out = corre(s9 / "proyecto.py", "estado", a)
     ok("estado, con otra versión del plugin, avisa de que AGENTS.md y los flujos son de otra y dice cómo ponerlos al día",
        c == 0 and f"otra versión del plugin ({version}; la de este equipo, 9.9.9)" in out
@@ -1282,10 +1304,13 @@ def pruebas_repositorio(tmp):
        and not retirado.exists() and all((a / x).read_bytes() == v for x, v in antes.items()), out)
     c, out = corre(s9 / "proyecto.py", "estado", a)
     ok("y estado deja de avisar de la versión", c == 0 and "otra versión" not in out, out)
+    (a / flujos[-1]).unlink()   # la versión posterior retiró un flujo que este plugin, anterior, todavía trae
     c, out = estado(a)
     c2, out2 = iniciar(a)
-    ok("con un plugin anterior al que generó AGENTS.md y los flujos, estado pide actualizar el plugin e iniciar no los toca",
-       c == 0 and "actualiza el plugin" in out and c2 == 0 and "no se tocan" in out2 and de_la("9.9.9"), out + out2)
+    ok("con un plugin anterior al que generó AGENTS.md y los flujos, estado solo pide actualizar el plugin (no dice que "
+       "falte un flujo) e iniciar no los toca",
+       c == 0 and "actualiza el plugin" in out and "le falta" not in out and c2 == 0 and "no se tocan" in out2
+       and not (a / flujos[-1]).exists() and de_la("9.9.9", generados[:-1]), out + out2)
 
     # Lo que no generó el plugin no se pisa: un CLAUDE.md y un AGENTS.md propios
     (b / "CLAUDE.md").write_text("# Notas del equipo\n", encoding="utf-8")

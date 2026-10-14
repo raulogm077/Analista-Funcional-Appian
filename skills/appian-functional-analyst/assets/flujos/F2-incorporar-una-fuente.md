@@ -1,6 +1,6 @@
 # F2 · Incorporar una fuente
 
-**Cuándo.** Ya hay análisis y llega una reunión, un correo, un documento, una demo o los comentarios del cliente al DF; también un retoque (un texto, una etiqueta, una columna).
+**Cuándo.** Ya hay análisis y llega una reunión, un correo, un documento, una demo o los comentarios del cliente al DF; también un retoque.
 **Empieza.** El analista, con `appian-functional-analyst`. **Termina en.** El informe de impacto aprobado y aplicado, con el análisis coherente y su versión.
 
 | # | Paso | Quién | Con qué | Detalle |
@@ -17,6 +17,6 @@
 
 El prototipo y el Word no se rehacen con cada fuente: las pantallas afectadas, después de verificar; el Word, al enviarlo.
 
-**Variante: un retoque.** Pocos puntos y ninguno requiere aprobación: sin nota ni presentación, con el informe ya aplicado y una sola comprobación. `appian-functional-analyst/references/actualizacion.md` «Camino corto».
+**Variante: un retoque.** Pocos puntos (un texto, una etiqueta, una columna) y ninguno requiere aprobación: sin nota ni presentación, con el informe ya aplicado y una sola comprobación. `appian-functional-analyst/references/actualizacion.md` «Camino corto».
 
 **Variante: una demo del prototipo.** Cada comentario es un punto del informe y, una vez aplicado, `appian-prototipos` rehace solo esas pantallas: `appian-functional-analyst/references/actualizacion.md` «Feedback de una demo» y `appian-prototipos/SKILL.md` «Después de una demo».
