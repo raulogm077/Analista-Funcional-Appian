@@ -183,15 +183,16 @@ def puntos_de(tipo, nombre):
     """Los puntos de «Cambio sobre lo construido» que pide cambiar un objeto ya construido, por lo que cambia: los de
     su tipo (PUNTOS_CONSTRUIDO). Si la fila nombra solo una parte: ninguno si es, sin más texto, una acción, una vista o
     un filtro de un record type (RX_PARTE_INOCUA: el nombre de una acción de registro es un retoque, aunque viva en un
-    record type); «Permisos» si la parte habla de permisos; y si no, los de su objeto entero."""
+    record type; Contexto.puntos_fila mira además su fila de técnico §7); «Permisos» si es una acción, una vista o un
+    filtro con más texto o si la parte habla de permisos; y si no, los de su objeto entero."""
     t, p = mo.normaliza(tipo), " ".join(mo.normaliza(parte(nombre)).split())
     if not p:
         return [punto for claves, punto in PUNTOS_CONSTRUIDO if any(k in t for k in claves)]
     de_record_type = any(k in t for k in ("record type", "accion de registro", "vista de registro", "filtro"))
     if RX_PARTE_INOCUA.match(p) and de_record_type:
         return []
-    if any(k in p for k in PARTE_PERMISOS):
-        return ["Permisos"]
+    if any(k in p for k in PARTE_PERMISOS) or de_record_type and re.match(r"(accion|vista|filtro)\b", p):
+        return ["Permisos"]      # una acción, una vista o un filtro con más texto: quién la ve o qué deja hacer
     return puntos_de("Record type" if de_record_type else tipo, objeto(nombre))
 
 
@@ -402,7 +403,7 @@ class Contexto:
                 o = objeto(nombre)
                 if o not in base:
                     continue
-                for punto in puntos_de(f["tipo"], nombre):
+                for punto in self.puntos_fila(uid, f, nombre):
                     out.setdefault(punto, []).append(o)
                 if "integracion" in mo.normaliza(f["tipo"]) and o in usadas_fuera and not parte(nombre):
                     out.setdefault("Compatibilidad", []).append(o)     # una integración que usan otros
@@ -417,8 +418,43 @@ class Contexto:
         for f in self.filas_de(uid):
             if f["situacion"] in CAMBIAN:
                 for nombre in f["objetos"]:
-                    de.setdefault(objeto(nombre), []).append(bool(parte(nombre)) and not puntos_de(f["tipo"], nombre))
+                    de.setdefault(objeto(nombre), []).append(bool(parte(nombre)) and not self.puntos_fila(uid, f, nombre))
         return {o for o, leves in de.items() if all(leves)}
+
+    def puntos_fila(self, uid, f, nombre):
+        """Los puntos que pide una fila de §13 (puntos_de). De una acción de registro que por su forma es un retoque, su
+        fila de la tabla de acciones de técnico §7, frente a la copia de la versión base: si cambia quién la ve,
+        «Permisos»; si cambia otra cosa que el nombre (su tipo, su proceso), lo de su record type."""
+        puntos = puntos_de(f["tipo"], nombre)
+        if puntos or not mo.normaliza(parte(nombre)).startswith("accion"):
+            return puntos
+        cambia = self.accion_cambia(uid, objeto(nombre), nombre_accion(parte(nombre)))
+        if any(k.startswith("quien") for k in cambia):
+            return ["Permisos"]
+        return puntos_de("Record type", objeto(nombre)) if cambia else []
+
+    def accion_cambia(self, uid, o, accion):
+        """Las columnas (normalizadas) de la fila de técnico §7 de una acción de `o` que no son su nombre y cambian frente
+        a la copia de la versión base: la de ese nombre o, si se ha renombrado, la única que no estaba (o ya no está).
+        Sin tabla o sin copia, no se sabe: ninguna."""
+        ahora, antes = self.acciones_7(self.tras(uid), o), self.acciones_7(self.copia(self.version_base(uid)), o)
+        if not ahora or not antes:
+            return []
+        clave = lambda a: mo.normaliza(a["nombre"])   # noqa: E731
+        una = lambda xs: xs[0] if len(xs) == 1 else None   # noqa: E731
+        a1 = next((a for a in antes if clave(a) == mo.normaliza(accion)), None) or una(
+            [a for a in antes if clave(a) not in {clave(b) for b in ahora}])
+        a2 = next((a for a in ahora if clave(a) == mo.normaliza(accion)), None) or una(
+            [a for a in ahora if clave(a) not in {clave(b) for b in antes}])
+        if not a1 or not a2:
+            return []
+        return [k for k in dict.fromkeys(list(a1["celdas"]) + list(a2["celdas"]))
+                if a1["celdas"].get(k) != a2["celdas"].get(k)]
+
+    def tras(self, uid):
+        """El análisis con lo de la unidad: la copia de la última versión que la aplicó, si hay otra después, o el de ahora."""
+        vs = self.versiones_de(uid)
+        return (self.copia(vs[-1]) if vs and vs[-1] != self.m.version("F") else None) or self.m
 
     def dt_construido(self, uid):
         """La DT «Cambio sobre lo construido» de una unidad (su ID en el título o en «Necesidad»), o None."""
@@ -637,7 +673,8 @@ class Contexto:
         return out
 
     def acciones_7(self, P, nombre):
-        """[{nombre, tipo}] de las acciones de registro de un record type en técnico §7 del análisis P: las filas de las
+        """[{nombre, tipo, celdas}] de las acciones de registro de un record type en técnico §7 del análisis P (celdas: las
+        demás columnas, por su cabecera normalizada): las filas de las
         tablas cuya cabecera empieza por «Acción» y tiene «Tipo» («| Acción | Tipo | Proceso | Quién la ve |»), bajo una
         línea que nombra el record type («Acciones de registro de `DEM Solicitud`»). None si no tiene ninguna."""
         if P is None or "T" not in P.docs:
@@ -652,7 +689,9 @@ class Contexto:
                 k -= 1
             if mo.normaliza(nombre) not in {mo.normaliza(objeto(x)) for x in objetos_celda(L[k])}:
                 continue
-            out = (out or []) + [{"nombre": nombre_accion(f[0]), "tipo": mo.sin_comentarios(f[ncab.index("tipo")]).strip()}
+            celdas = lambda f: {c: " ".join(mo.sin_comentarios(v).split()) for c, v in zip(ncab[1:], f[1:])}  # noqa: E731
+            out = (out or []) + [{"nombre": nombre_accion(f[0]), "tipo": mo.sin_comentarios(f[ncab.index("tipo")]).strip(),
+                                  "celdas": celdas(f)}
                                  for f in filas if f and nombre_accion(f[0]) and len(f) > ncab.index("tipo")]
         return out
 
@@ -695,7 +734,7 @@ class Contexto:
                         pedidas = [a for a in ahora if clave(a) not in {clave(b) for b in antes}]
                     elif not pedidas and f["situacion"] != "modifica":
                         pedidas = [{"nombre": accion}]
-                    pedidas = [{k: v for k, v in a.items() if v} for a in pedidas]
+                    pedidas = [{k: a[k] for k in ("nombre", "tipo") if a.get(k)} for a in pedidas]
                     e["acciones"] = e.get("acciones", []) + [a for a in pedidas if a not in e.get("acciones", [])]
                     if not e["acciones"]:
                         del e["acciones"]

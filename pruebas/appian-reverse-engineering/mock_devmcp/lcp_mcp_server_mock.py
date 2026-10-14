@@ -18,6 +18,7 @@ Variables de entorno:
                             listarlos, getObjectDependents con el parámetro «object» y listRecordTypeActions, que
                             devuelve la lista sin envolver. Las respuestas, con la forma de las reales.
   MOCK_FALLAN=K:caso,…      Con MOCK_PRUEBAS, esos casos fallan (un cambio en lo que usan los ha roto).
+  MOCK_FALLAN_DEPENDIENTES=1  Con MOCK_PRUEBAS, la herramienta de dependientes falla.
   MOCK_ACCION=<nombre>      El nombre de la acción de lista de DEM Solicitud («Nueva solicitud» si no se dice).
 """
 from __future__ import annotations
@@ -278,10 +279,14 @@ if VARIANT == "a":
 
     register("listGroupMembers", [("groupUuid", "str", ...), ("startIndex", "int", 0), ("batchSize", "int", 2)], _members)
     if PRUEBAS:   # como el Dev MCP 26.6.110: el parámetro es «object» y la respuesta trae también la aplicación
-        register("getObjectDependents", [("object", "str", ...)], lambda object: {
-            "object": object, "dependents": dependents_of(object) + [
-                {"uuid": APP["uuid"], "type": "APPLICATION", "name": APP["name"], "breadcrumb": "Application Content"}]},
-            annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False))
+        def _dependientes(object):
+            if os.environ.get("MOCK_FALLAN_DEPENDIENTES") == "1":
+                raise RuntimeError("Simulated dependency index error")
+            return {"object": object, "dependents": dependents_of(object) + [
+                {"uuid": APP["uuid"], "type": "APPLICATION", "name": APP["name"], "breadcrumb": "Application Content"}]}
+
+        register("getObjectDependents", [("object", "str", ...)], _dependientes,
+                 annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False))
         lectura = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True)
         for tname, ttype in (("ExpressionRule", "FREEFORM_RULE"), ("Interface", "INTERFACE")):
             register(f"runAll{tname}TestCases", [("uuid", "str", ...)],

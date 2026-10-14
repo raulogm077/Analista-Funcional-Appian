@@ -28,12 +28,11 @@
                                             y avisa de la DT que una persona revisa antes de construir, si cambia
                                             datos, permisos, procesos en curso o lo que usan otros, o usa IA
       construida [--reaplicada URG-nn …] [--manual]   con todas sus issues hechas: construidas y verificadas, con sus
-                                            pruebas (construccion/<ID>/verificacion/ISS-nn.json); da la orden de la
-                                            regresión, que se pasa antes de preparar el paquete
+                                            pruebas (construccion/<ID>/verificacion/ISS-nn.json)
       produccion --ref "<referencia del pase>"        tras el pase (una URG, desde Abierta)
       descartada [--informe impacto/FU-nn.md]         desde Abierta, sin nada aplicado o con el informe que lo deshace
-    Con --desatendida solo aprueba o pasa a producción con --fuente (el visto bueno del jefe de proyecto). Las
-    condiciones, en references/cambios.md.
+    Con --desatendida solo aprueba o pasa a producción con --fuente (el visto bueno del jefe de proyecto), y no marca
+    construida con --manual. Las condiciones, en references/cambios.md.
 
 `iniciar` no toca nada que ya exista, salvo AGENTS.md y los flujos, que genera enteros. `entregar` solo cuando el Word se
 envía, nunca en una sesión desatendida.
@@ -622,6 +621,10 @@ def cambio(a):
         sys.exit(f"✗ {uid} {destino}: {motivo}. Salida: {salida}")
     if not re.fullmatch(r"(EV|URG)-\d+", uid):
         no("el ID de una unidad es EV-nn (evolutivo) o URG-nn (urgente)", "usa uno de esos, p. ej. EV-02")
+    if destino == "construida" and a.manual and a.desatendida:   # --manual no mira las issues ni sus pruebas (B3)
+        no("en una sesión desatendida no se marca construida sin verificar (--manual): lo decide una persona",
+           f"verifica cada issue (indice.py issues <p> {uid} --siguiente da su orden) y márcala sin --manual, o déjalo "
+           "para una persona")
     if destino in ("aprobada", "produccion") and a.desatendida:
         fu = (a.fuente or "").strip().upper()
         if not fu:
@@ -720,10 +723,6 @@ def cambio(a):
             print(f"Pruebas marcadas como no necesarias para avanzar (construccion/{uid}/indice.md), que se revisan al "
                   "preparar el paquete:\n" + "\n".join(f"  {x['issue']} · {x['objeto']} «{x['caso']}»: {x['motivo']} "
                                                        f"({x['quien']})" for x in marcas))
-        orden, notas = iss.orden_de_regresion(m, uid)
-        print("Antes de preparar el paquete, la regresión: todos los casos de prueba de la aplicación, con el resumen en "
-              f"construccion/{uid}/regresion.json y por la salida solo lo que falla:\n  {orden}"
-              + "".join(f"\n· {n}" for n in notas))
 
 
 def issues_de(raiz, uid):

@@ -22,6 +22,8 @@ Con unidades de cambio (analisis/cambios.md, references/cambios.md):
   indice.py issues     <p> EV-02 ISS-nn --sin-prueba "<objeto> «<caso>»" --motivo "…" [--desatendida]
                                                         una persona marca un caso de prueba que falla como no necesario
                                                         para avanzar (en el índice; se niega con --desatendida)
+  indice.py issues     <p> EV-02 --regresion           la orden de la regresión de toda la aplicación para este
+                                                        equipo, antes de preparar el paquete
   indice.py issues     <p> EV-02 [ISS-nn | --siguiente [--quien <nombre>] | --liberar ISS-nn]
                                                         las issues de construcción de una unidad aprobada, una por
                                                         requisito, en construccion/EV-02/. Con ISS-nn, esa issue con su
@@ -636,6 +638,12 @@ def c_issues(m, a):
     la primera sin hacer cuyas dependencias están hechas y la reserva (un commit y un push del índice); con --liberar,
     quita una reserva."""
     ctx, uid = unidad(m, a.unidad)
+    if a.regresion:     # la orden de la regresión, lista para copiar: la pasa quien prepara el paquete (F9)
+        orden, notas = iss.orden_de_regresion(m, uid)
+        print(f"La regresión de la aplicación antes de preparar el paquete de {uid} (el resumen, en "
+              f"construccion/{uid}/regresion.json; por la salida, solo lo que falla):\n\n```\n{orden}\n```"
+              + "".join(f"\n· {n}" for n in notas))
+        return
     if a.sin_prueba is not None:   # B2: lo decide una persona, con su motivo; nunca una sesión desatendida
         if a.desatendida:
             sys.exit(f"✗ {uid}: en una sesión desatendida no se marca una prueba como no necesaria: lo decide una persona. "
@@ -659,8 +667,7 @@ def c_issues(m, a):
                 print(f"{a.liberar.upper()} de {uid}, sin reserva" + (f" ({como})" if como else ""))
             else:
                 m, ctx, plan, issue, como = iss.siguiente(m.raiz, uid, a.quien)
-            for x in plan.avisos:
-                print(f"· {x}", file=sys.stderr)
+            # los avisos del cálculo son del analista (los da «indice.py issues <p> <U>»): a quien construye, su issue
             if issue is not None:
                 de = f", reservada a nombre de {plan.reservas[issue.id]}" if issue.id in plan.reservas else ""
                 print(f"{issue.id} de {uid}{de}: {como}\n")
@@ -724,6 +731,8 @@ def main():
     s.add_argument("--siguiente", action="store_true", help="da la próxima issue y la reserva")
     s.add_argument("--quien", help="con --siguiente: a nombre de quién se reserva (por defecto, el usuario de git)")
     s.add_argument("--liberar", metavar="ISS-nn", help="quita la reserva de una issue que nadie va a seguir")
+    s.add_argument("--regresion", action="store_true",
+                   help="la orden de la regresión de toda la aplicación, para este equipo: antes de preparar el paquete")
     s.add_argument("--sin-prueba", metavar="«<objeto> «<caso>»»",
                    help="con ISS-nn y --motivo: una persona marca ese caso de prueba, que falla, como no necesario para "
                         "avanzar; la issue puede darse por hecha y la marca se revisa al preparar el paquete")

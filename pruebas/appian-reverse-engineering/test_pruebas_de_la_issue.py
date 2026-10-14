@@ -100,6 +100,15 @@ def test_un_cambio_que_rompe_lo_que_lo_usa_se_ve(project, tmp_path):
     assert "✗ DEM_SolicitudResumen «Resumen de una solicitud» (usa DEM_ER_EsAdmin: aviso)" in p.stdout
 
 
+def test_sin_dependientes_lo_dice(project, tmp_path):
+    """Si falla la llamada que da los dependientes, lo que usa la issue no desaparece sin más: se dice, en el fichero y
+    por la salida, y los casos de la issue se ejecutan igual."""
+    project.add_devmcp(**COMO_EL_REAL, MOCK_FALLAN_DEPENDIENTES="1")
+    p, v = verifica(project, tmp_path, {"DEM_ER_ContarPorEstado": {"tipo": "expressionRule"}})
+    assert v["pruebas"]["sinDependientes"] == ["DEM_ER_ContarPorEstado"] and ejecutados(project) == {"DEM_ER_ContarPorEstado"}
+    assert "no se pudieron leer los dependientes de DEM_ER_ContarPorEstado: lo que los usa no se ha probado" in p.stdout
+
+
 def test_un_retoque_no_ejecuta_nada(project, tmp_path):
     """Una issue que no cambia criterios ni reglas lo dice en lo esperado («pruebas»: false): no se ejecuta ningún caso."""
     project.add_devmcp(**COMO_EL_REAL)
@@ -164,6 +173,7 @@ def test_regresion(project, tmp_path):
     project.add_devmcp(MOCK_IGNORE_READONLY="1")
     p = project.run("regresion", "--app", "DEM", "--out", str(destino), check=17)
     assert json.loads(destino.read_text(encoding="utf-8"))["ejecutada"] is False and "en Appian" in p.stdout
+    assert "los de las interfaces, desde cada interfaz en Designer, que Manage Test Cases no los ejecuta" in p.stdout
 
 
 def test_la_extraccion_no_ejecuta_casos(project):

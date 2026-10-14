@@ -1607,6 +1607,9 @@ async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: l
 # --------------------------------------------------------------------------- casos de prueba (verificar y regresion)
 
 SIN_EJECUTOR = "el Dev MCP no ofrece ejecutar casos de prueba"
+# La regresión sin el Dev MCP: Manage Test Cases (y el smart service Start Rule Tests) ejecuta solo los de las reglas
+EN_APPIAN = ("la regresión se pasa en Appian: los casos de las reglas, con Manage Test Cases; los de las interfaces, "
+             "desde cada interfaz en Designer, que Manage Test Cases no los ejecuta")
 
 
 def ejecutores(ex: Extractor) -> dict[str, ToolInfo]:
@@ -1687,11 +1690,12 @@ async def pruebas_de(ex: Extractor, suyos: list[dict], app_uuid: str | None) -> 
         return {"ejecutadas": False, "motivo": SIN_EJECUTOR + ": los de la issue esperan a la regresión, que se pasa en "
                                                           "Appian"}
     propios = [o for o in suyos if o["type"] in run]
-    dep, usan = dependientes_de(ex), {}
+    dep, usan, sin_dependientes = dependientes_de(ex), {}, []
     if dep and propios:
         clave = (dep.schema.get("required") or [])[0]
         mios = {o["uuid"] for o in propios}
         respuestas = await asyncio.gather(*(ex.call_with_retry(dep.name, {clave: o["uuid"]}) for o in propios))
+        sin_dependientes = [o.get("name") or o["uuid"] for o, res in zip(propios, respuestas) if not res.ok]
         for o, res in zip(propios, respuestas):
             d = bm.unwrap(res.data) if res.ok else []
             for it in (d if isinstance(d, list) else bm.find_list(d, ("dependents", "usages", "items", "results"))):
@@ -1707,6 +1711,10 @@ async def pruebas_de(ex: Extractor, suyos: list[dict], app_uuid: str | None) -> 
     out = {"ejecutadas": True, "segundos": round(time.monotonic() - t0, 1), **cuenta(objetos), "objetos": objetos}
     if not dep:
         out["nota"] = "el Dev MCP no da los dependientes de un objeto: solo se ejecutan los casos de la issue"
+    elif sin_dependientes:     # lo que los usa queda sin probar: se dice
+        out["sinDependientes"] = sin_dependientes
+        out["nota"] = (f"no se pudieron leer los dependientes de {', '.join(sin_dependientes)}: lo que los usa no se ha "
+                       "probado (repite «verificar» o lo verá la regresión)")
     return out
 
 
@@ -1884,7 +1892,7 @@ async def cmd_regresion(args) -> int:
                  "aplicacion": {"nombre": app_obj.get("name"), "prefijo": app_obj.get("prefix"),
                                 "uuid": app_obj.get("uuid")}}
     if not run:
-        resultado.update(ejecutada=False, motivo=f"{SIN_EJECUTOR}: la regresión se pasa en Appian (Manage Test Cases)")
+        resultado.update(ejecutada=False, motivo=f"{SIN_EJECUTOR}: {EN_APPIAN}")
     else:
         resultado.update(ejecutada=True, segundos=round(time.monotonic() - t0, 1), objetos=len(hechos),
                          sinCasos=[r["objeto"] for r in hechos if r.get("casos") == 0 and not r.get("error")],

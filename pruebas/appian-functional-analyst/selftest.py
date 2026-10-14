@@ -1464,13 +1464,13 @@ def de_issue(p, uid, iid):
     return json.loads((p / "construccion" / uid / f"{iid}-esperado.json").read_text(encoding="utf-8"))["_issue"]
 
 
-def pruebas_de(*objetos, ejecutadas=True):
+def pruebas_de(*objetos, ejecutadas=True, error="Expression evaluation error"):
     """El bloque «pruebas» de una verificación, como lo deja «verificar»: (objeto, de, [casos que fallan], no evaluables)."""
     if not ejecutadas:
         return {"ejecutadas": False, "motivo": "el Dev MCP no ofrece ejecutar casos de prueba: los de la issue esperan a "
                                                "la regresión, que se pasa en Appian"}
     objs = [{"objeto": o, "tipo": "expressionRule", "de": de, "casos": len(f) + 1, "pasan": 1,
-             "fallan": [{"caso": c, "error": "Expression evaluation error"} for c in f],
+             "fallan": [{"caso": c, "error": error} for c in f],
              "noEvaluables": [{"caso": c, "motivo": "el ejecutor no la evalúa"} for c in n]} for o, de, f, n in objetos]
     return {"ejecutadas": True, "segundos": 1.0, "casos": sum(x["casos"] for x in objs), "objetos": objs}
 
@@ -1702,19 +1702,21 @@ def pruebas_unidades(tmp):
             ("un caso de prueba suyo que falla", {**bien, "pruebas": pruebas_de(
                 ("DEM_ER_Firma", "issue", ["Sin firma"], []), ("DEM_ER_PrepararRevision", "usa", ["Devolver"], []))},
              "fallan sus pruebas: DEM_ER_Firma «Sin firma»"),
-            ("casos que no se pudieron ejecutar", {**bien, "pruebas": {**pruebas_de(), "objetos": [
-                {"objeto": "DEM_ER_Firma", "de": "issue", "error": "TimeoutError"}]}},
-             "no se pudieron ejecutar los casos de prueba de DEM_ER_Firma"),
             ("una verificación sin sus pruebas", {k: v for k, v in bien.items() if k != "pruebas"},
              "no dice cómo fueron sus pruebas")]:
         ver.write_text(json.dumps(datos), encoding="utf-8")
         c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "construida", "--reaplicada", "URG-01")
         ok(f"cambio construida: verificación con {nombre} es error", c == 1 and falla in out and "Salida:" in out
-           and ("--manual" in out) == (nombre in ("campos que no se pudieron leer", "casos que no se pudieron ejecutar",
-                                                  "una verificación sin sus pruebas"))
+           and ("--manual" in out) == (nombre in ("campos que no se pudieron leer", "una verificación sin sus pruebas"))
            and ("--sin-prueba" in out) == (nombre == "un caso de prueba suyo que falla")
            and "DEM_ER_PrepararRevision" not in out
            and ("no es lo del técnico" in out) == (nombre in ("un objeto nuevo que no existe", "un campo de otro tipo")), out)
+    ver.write_text(json.dumps({**bien, "pruebas": {**pruebas_de(), "objetos": [
+        {"objeto": "DEM_ER_Firma", "de": "issue", "error": "TimeoutError"}]}}), encoding="utf-8")
+    c, out = corre(S / "indice.py", "issues", p, "EV-02")
+    ok("si los casos de la issue no se pudieron ejecutar, no bloquea: esperan a la regresión, como sin Dev MCP que los "
+       "ejecute, y lo dice",
+       c == 0 and "· hecha · no se pudieron ejecutar los casos de DEM_ER_Firma: esperan a la regresión" in out, out)
     ver.write_text(json.dumps(bien), encoding="utf-8")
     c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "construida")
     ok("cambio construida: sin --reaplicada de la URG corregida en el entorno de corrección es error",
@@ -1733,6 +1735,11 @@ def pruebas_unidades(tmp):
     c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "aprobada")
     ok("cambio aprobada desde Construida: vuelve a Aprobada (otra URG obliga a reaplicar) sin perder la aprobación",
        c == 0 and "| Aprobada | " in fila_de(p, "EV-02") and "· FU-05 | — |" in fila_de(p, "EV-02"), out)
+    c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "construida", "--manual", "--desatendida")
+    ok("cambio construida --manual --desatendida: error, como aprobada y produccion (--manual no mira las issues ni sus "
+       "pruebas: lo decide una persona)",
+       c == 1 and "en una sesión desatendida no se marca construida sin verificar" in out
+       and "| Aprobada | " in fila_de(p, "EV-02"), out)
     c, out = corre(S / "proyecto.py", "cambio", p, "EV-02", "construida", "--manual")
     ok("cambio construida --manual: la URG ya reaplicada no se pide otra vez y la marca dice «manual»",
        c == 0 and "· manual |" in fila_de(p, "EV-02"), out)
@@ -2186,6 +2193,22 @@ def pruebas_reserva_segura(tmp):
        and lee(a / "construccion" / "EV-01" / "indice.md") == indice and "Ana" not in indice
        and c2 == 1 and "una fusión a medias" in out2, out + out2)
 
+    s3 = nueva_con_issues(tmp / "reserva sin quien")
+    corre(S / "proyecto.py", "iniciar", s3)
+    for clave, valor in (("user.name", "Prueba"), ("user.email", "prueba@example.org")):
+        git(s3, "config", clave, valor)
+    (s3 / "fuentes" / "FU-05-aprobacion.md").write_text("# FU-05\n", encoding="utf-8")
+    corre(S / "proyecto.py", "cambio", s3, "EV-01", "aprobada", "--fuente", "FU-05")
+    git(s3, "add", "-A")
+    git(s3, "commit", "--quiet", "-m", "Base")
+    (c1, o1), (c2, o2), (c3, o3) = issues(s3, "--siguiente"), issues(s3, "--siguiente"), \
+        issues(s3, "--siguiente", "--quien", "Prueba")
+    ok("sin --quien, dos sesiones del mismo usuario no se llevan la misma issue (la segunda, ninguna libre); con --quien, "
+       "la que se reinicia recupera la suya",
+       c1 == 0 and o1.startswith("ISS-01 de EV-01, reservada a nombre de Prueba · ") and c2 == 0
+       and "ninguna issue disponible ahora" in o2 and c3 == 0 and o3.startswith("ISS-01 de EV-01")
+       and "ya estaba reservada a tu nombre" in o3.splitlines()[0], o1[:300] + o2[:300] + o3[:300])
+
     fuera = tmp / "repositorio de fuera"
     fuera.mkdir()
     git(fuera, "init", "--quiet")
@@ -2277,7 +2300,8 @@ def pruebas_de_la_issue(tmp):
        "issue está hecha y lo dice, y lo que falla en lo que la usa y lo que no se evalúa son avisos",
        c == 0 and "ISS-02 de EV-02: DEM_ER_Firma «Sin firma», marcada como no necesaria para avanzar" in out
        and "## Pruebas marcadas como no necesarias para avanzar" in indice
-       and re.search(r"\| ISS-02 \| `DEM_ER_Firma` \| Sin firma \| Necesita la firma de un revisor real \| Ana \| "
+       and re.search(r"\| ISS-02 \| `" + de_issue(v, "EV-02", "ISS-02")["version"] + r"` \| `DEM_ER_Firma` \| Sin firma \| "
+                     r"Expression evaluation error \| Necesita la firma de un revisor real \| Ana \| "
                      r"\d{4}-\d\d-\d\dT\d\d:\d\dZ \|", indice) is not None
        and "ISS-02 · HU-04, PAN-01 · Firmar la revisión · hecha · marcada como no necesaria: DEM_ER_Firma «Sin firma» · "
            "falla lo que la usa: DEM_ER_PrepararRevision «Devolver» · 1 caso que el ejecutor de Appian no evalúa" in out
@@ -2285,9 +2309,24 @@ def pruebas_de_la_issue(tmp):
     c, out = issues(v, "EV-02")
     ok("la marca se conserva al volver a generar las issues", c == 0 and "Ana" in lee(dv / "indice.md")
        and "Firmar la revisión · hecha" in out, out)
+    con_otro_error = pruebas_de(("DEM_ER_Firma", "issue", ["Sin firma"], []), error="Could not find rule 'dem_er_firma'")
+    verifica(v, "EV-02", "ISS-02", pruebas=con_otro_error)
+    c, out = issues(v, "EV-02")
+    ok("la marca vale para ese error: si el mismo caso falla de otra manera, la issue vuelve a estar pendiente y la marca "
+       "se quita", c == 0 and "Firmar la revisión · pendiente: fallan sus pruebas: DEM_ER_Firma «Sin firma»" in out
+       and "Pruebas marcadas" not in lee(dv / "indice.md"), out)
+    verifica(v, "EV-02", "ISS-02", pruebas=pruebas_de(("DEM_ER_Firma", "issue", ["Sin firma"], [])))
+    issues(v, "EV-02", "ISS-02", "--sin-prueba", "Sin firma", "--motivo", "Otra vez", "--quien", "Ana")
+    marcas = [l for l in lee(dv / "indice.md").splitlines() if l.startswith("| ISS-02 | `")]
+    otra_version = lee(dv / "indice.md").replace(de_issue(v, "EV-02", "ISS-02")["version"], "0" * 12)
+    (dv / "indice.md").write_text(otra_version, encoding="utf-8")
+    c, out = issues(v, "EV-02")
+    ok("… y para esa versión de la issue: la de otra versión no cuenta y se quita",
+       c == 0 and len(marcas) == 1 and "Firmar la revisión · pendiente: fallan sus pruebas" in out
+       and "Pruebas marcadas" not in lee(dv / "indice.md"), out)
     verifica(v, "EV-02", "ISS-02")
     c, out = issues(v, "EV-02")
-    ok("cuando el caso vuelve a pasar, la marca se quita sola", c == 0 and "Pruebas marcadas" not in lee(dv / "indice.md")
+    ok("cuando el caso vuelve a pasar, no queda nada marcado", c == 0 and "Pruebas marcadas" not in lee(dv / "indice.md")
        and "Firmar la revisión · hecha\n" in out, out)
     verifica(v, "EV-02", "ISS-02", pruebas=pruebas_de(ejecutadas=False))
     c, out = issues(v, "EV-02")
@@ -2296,41 +2335,52 @@ def pruebas_de_la_issue(tmp):
        "prueba: los de la issue esperan a la regresión" in out, out)
     verifica(v, "EV-02", "ISS-03")
     c, out = corre(S / "proyecto.py", "cambio", v, "EV-02", "construida", "--reaplicada", "URG-01")
-    ok("al marcarla Construida, la orden de la regresión de toda la aplicación, lista para copiar, que se pasa antes de "
-       "preparar el paquete",
-       c == 0 and " regresion --app \"DEM Gestión de Solicitudes\" --out \"" in out
-       and f"{(v / 'construccion' / 'EV-02' / 'regresion.json').resolve().as_posix()}\"" in out
-       and "Antes de preparar el paquete, la regresión" in out, out)
+    c2, out2 = issues(v, "EV-02", "--regresion")
+    ok("la orden de la regresión de toda la aplicación, lista para copiar, la da indice.py issues --regresion a quien "
+       "prepara el paquete; marcar la unidad construida no la da",
+       c == 0 and "regresion" not in out and c2 == 0 and " regresion --app \"DEM Gestión de Solicitudes\" --out \"" in out2
+       and f"{(v / 'construccion' / 'EV-02' / 'regresion.json').resolve().as_posix()}\"" in out2, out + out2)
 
     # Una acción de registro que se renombra: lo esperado lleva su nombre nuevo y su tipo, de técnico §7
-    r = con_unidades(tmp / "t13 accion")
-    t = r / "analisis" / "tecnico.md"
-    tabla = ("\n\nAcciones de registro de `DEM Solicitud`:\n\n| Acción | Tipo | Proceso | Quién la ve |\n|---|---|---|---|\n"
-             "| «Nueva solicitud» | De lista | `DEM Alta Solicitud` | `DEM Gestores` |\n"
-             "| «Corregir» | Relacionada | `DEM Alta Solicitud` | Quien la pidió |")
-    panel = "| PAN-03 | `DEM_Dashboard`, página «Panel» del site | — | Columna «Días pendiente» con `DEM_ER_DiasPendiente` |"
-    editar(t, panel, panel + tabla)
-    corre(S / "proyecto.py", "copia", r)
-    corre(S / "proyecto.py", "cambio", r, "EV-04", "abrir", "--titulo", "El botón dice «Pedir material»")
-    for x in ("funcional.md", "tecnico.md"):
-        editar(r / "analisis" / x, "Versión: 1.1", "Versión: 1.2")
-    editar(t, "| «Nueva solicitud» | De lista |", "| «Pedir material» | De lista |")
-    editar(t, "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |",
-           "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |\n"
-           "| 9 | `DEM Solicitud — acción «Nueva solicitud»` | Record type | Modifica | — | EV-04 |")
-    (r / "impacto" / "FU-08.md").write_text(
-        "# Impacto de FU-08 · El botón · 2026-10-14\nAnálisis base: versión 1.1 · Cambio: EV-04 · Estado: aplicado en 1.2\n\n"
-        "## Puntos\n| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión |\n"
-        "|---|---|---|---|---|---|---|---|\n| 1 | CAMBIA | El botón dice «Pedir material» [FU-08] | PAN-03 | PAN-03 | — | — | ✔ |"
-        "\n\n## Aplicado\nVersión 1.2: técnico §7 y §13\n", encoding="utf-8")
-    c, out = corre(S / "proyecto.py", "cambio", r, "EV-04", "aprobada", "--fuente", "FU-08", "--comparte",
-                   "EV-02 en DEM Solicitud: secuenciar (EV-02 primero)")
+    def renombra(carpeta, ve_tambien=""):
+        r = con_unidades(tmp / carpeta)
+        t = r / "analisis" / "tecnico.md"
+        tabla = ("\n\nAcciones de registro de `DEM Solicitud`:\n\n| Acción | Tipo | Proceso | Quién la ve |\n|---|---|---|---|\n"
+                 "| «Nueva solicitud» | De lista | `DEM Alta Solicitud` | `DEM Gestores` |\n"
+                 "| «Corregir» | Relacionada | `DEM Alta Solicitud` | Quien la pidió |")
+        panel = "| PAN-03 | `DEM_Dashboard`, página «Panel» del site | — | Columna «Días pendiente» con `DEM_ER_DiasPendiente` |"
+        editar(t, panel, panel + tabla)
+        corre(S / "proyecto.py", "copia", r)
+        corre(S / "proyecto.py", "cambio", r, "EV-04", "abrir", "--titulo", "El botón dice «Pedir material»")
+        for x in ("funcional.md", "tecnico.md"):
+            editar(r / "analisis" / x, "Versión: 1.1", "Versión: 1.2")
+        editar(t, "| «Nueva solicitud» | De lista | `DEM Alta Solicitud` | `DEM Gestores` |",
+               f"| «Pedir material» | De lista | `DEM Alta Solicitud` | `DEM Gestores`{ve_tambien} |")
+        editar(t, "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |",
+               "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |\n"
+               "| 9 | `DEM Solicitud — acción «Nueva solicitud»` | Record type | Modifica | — | EV-04 |")
+        (r / "impacto" / "FU-08.md").write_text(
+            "# Impacto de FU-08 · El botón · 2026-10-14\nAnálisis base: versión 1.1 · Cambio: EV-04 · Estado: aplicado en "
+            "1.2\n\n## Puntos\n| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | "
+            "Decisión |\n|---|---|---|---|---|---|---|---|\n| 1 | CAMBIA | El botón dice «Pedir material» [FU-08] | PAN-03 | "
+            "PAN-03 | — | — | ✔ |\n\n## Aplicado\nVersión 1.2: técnico §7 y §13\n", encoding="utf-8")
+        c, out = corre(S / "proyecto.py", "cambio", r, "EV-04", "aprobada", "--fuente", "FU-08", "--comparte",
+                       "EV-02 en DEM Solicitud: secuenciar (EV-02 primero)")
+        return r, c, out
+    r, c, out = renombra("t13 accion")
     esp = json.loads(lee(r / "construccion" / "EV-04" / "ISS-01-esperado.json") or "{}")
     ok("una acción que se renombra: lo esperado lleva la de técnico §7 con su nombre nuevo y su tipo (la fila de §13 dice "
-       "la de antes), sin campos del record type que comparar ni pruebas que ejecutar",
+       "la de antes), sin campos del record type que comparar, sin pruebas que ejecutar y sin nada que revisar",
        c == 0 and {k: x for k, x in esp.items() if k != "_issue"} == {"DEM Solicitud": {
            "tipo": "recordType", "acciones": [{"nombre": "Pedir material", "tipo": "De lista"}]}}
-       and esp["_issue"]["pruebas"] is False, out + json.dumps(esp, ensure_ascii=False))
+       and esp["_issue"]["pruebas"] is False and "Que una persona revise" not in out, out + json.dumps(esp, ensure_ascii=False))
+    r, c, out = renombra("t13 accion y permisos", " y `DEM Revisores`")
+    c2, out2 = corre(S / "comprobar.py", r)
+    ok("si además cambia quién la ve (su fila de técnico §7 frente a la copia base), ya no es un retoque: pide «Permisos» "
+       "en la DT «Cambio sobre lo construido» y que una persona la revise antes de construir",
+       c == 0 and "EV-04 cambia permisos (`DEM Solicitud`)" in out
+       and any("Cambio sobre lo construido" in l and "EV-04: «Permisos» (DEM Solicitud)" in l for l in out2.splitlines()),
+       out + out2)
 
 
 def a_la_vez(*peticiones):
@@ -2415,7 +2465,7 @@ def pruebas_issues(tmp):
     import unidades as un
     casos_parte = [("Record type", "acción «Pedir material»", []), ("Record type", "vista «Resumen»", []),
                    ("Acción de registro", "filtro de usuario «Estado»", []),
-                   ("Record type", "acción «Aprobar», ahora también para los revisores", ["Datos existentes"]),
+                   ("Record type", "acción «Aprobar», ahora también para los revisores", ["Permisos"]),
                    ("Record type", "columna importeAprobado", ["Datos existentes"]),
                    ("Record type", "seguridad de la acción «Nueva solicitud»", ["Permisos"]),
                    ("Process model", "nodo «Revisar»", ["Procesos en curso"]),
@@ -2503,10 +2553,17 @@ def pruebas_issues(tmp):
        and "- §8 · Cancelación: no se contempla en esta fase." in i2 and "- §9 · Aviso: AV-01, AV-05 · " in i2
        and "- §9 · Aviso: AV-02, AV-03 · " in i2 and "- §9 · Aviso: AV-04 · " in i4, i2[-2500:] + i4)
     c, out = issues(p, "EV-01")
-    perdidas = next((l for l in out.splitlines() if "del técnico no van en ninguna issue" in l), "")
-    ok("y calcula avisa de cada línea del técnico que no llega a ninguna issue (no nombra un objeto suyo ni cita sus "
-       "requisitos), con dónde está",
-       c == 0 and perdidas.startswith("· 13 líneas del técnico no van en ninguna issue de EV-01")
+    perdidas = next((l for l in out.splitlines() if "líneas del técnico no nombran ningún objeto" in l), "")
+    i1 = lee(d / "ISS-01.md")
+    ok("lo que no nombra ningún objeto (la matriz de seguridad de §4, que la plantilla pide sin nombres) va en la Base: "
+       "quien construye no tiene que leer el técnico",
+       "- §4 · Qué: Acción «Nueva solicitud» · Unidad: Sí · Técnicos: No · Responsables: No · Consulta: No" in i1
+       and "- §4 · Qué: Informe técnico · Unidad: Ver al terminar · Técnicos: Editar" in i1
+       and "Acción «Nueva solicitud» · Unidad: Sí" not in i2, i1[-2500:])
+    ok("y calcula avisa al analista de cada línea del técnico que no nombra ningún objeto ni requisito de las issues, con "
+       "dónde está y a cuál va",
+       c == 0 and perdidas.startswith("· 13 líneas del técnico no nombran ningún objeto ni requisito de las issues de "
+                                      "EV-01 y van en la Base, ISS-01")
        and "§3.3 «Sin carga de datos antiguos (funcional §10).»" in perdidas
        and "§6 «`AUT_CORREO_ORGANISMO` / Buzón del organismo" in perdidas and "§9" not in perdidas
        and "§8" not in perdidas, out)
@@ -2534,8 +2591,10 @@ def pruebas_issues(tmp):
 
     # Hecha o pendiente: lo dice la verificación que deja «verificar» (de su versión de ahora y sin diferencias)
     c, out = issues(p, "EV-01", "--siguiente")
-    ok("--siguiente en un proyecto que no es un repositorio git: da la primera sin reservar, y lo dice",
+    ok("--siguiente en un proyecto que no es un repositorio git: da la primera sin reservar, y lo dice; sin los avisos del "
+       "analista, que no son de quien construye",
        c == 0 and out.startswith("ISS-01 de EV-01: sin reservar: el proyecto no es un repositorio git")
+       and "criterios sin dado" not in out and "no nombran ningún objeto" not in out
        and "# ISS-01 · Base · EV-01" in out and filas_del_indice(lee(d / "indice.md"))["ISS-01"][6] == "—", out)
     verifica(p, "EV-01", "ISS-01")
     verifica(p, "EV-01", "ISS-02", **{"AUT_RevisarForm": {"falta": True}})
@@ -2600,9 +2659,13 @@ def pruebas_issues(tmp):
        and re.search(r"ISS-03 · [^\n]* · pendiente: ha cambiado desde su última verificación", out), out)
     editar(t, "| 6 | `AUT_PlantillaAutorizacion` | Documento | Nuevo | — | | ACT-07 |\n", "")
     c, out = issues(p, "EV-01")
-    ok("una issue que deja de existir se quita, con sus ficheros, y su número no se da a otra",
+    ok("una issue que deja de existir se quita, con sus ficheros, y su número no se da a otra; lo que el técnico decía "
+       "solo para ella (la carpeta de documentos de §10) pasa a la Base, que vuelve a estar pendiente",
        c == 0 and "se quitan: ISS-04-esperado.json, ISS-04.md" in out and not (d / "ISS-04.md").exists()
-       and "ISS-04" not in filas_del_indice(lee(d / "indice.md")), out)
+       and "ISS-04" not in filas_del_indice(lee(d / "indice.md"))
+       and "- §10 · Documentos: carpeta `AUT Documentos`" in lee(d / "ISS-01.md")
+       and "ISS-01 · Base · Base · pendiente: ha cambiado desde su última verificación" in out, out)
+    verifica(p, "EV-01", "ISS-01")
 
     # Construida es todas sus issues hechas; al quedar una sola, la orden de terminar lleva también la de marcar la unidad
     c, out = corre(S / "proyecto.py", "cambio", p, "EV-01", "construida")

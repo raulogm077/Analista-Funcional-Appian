@@ -5,7 +5,7 @@
 
 | # | Paso | Quién | Con qué | Detalle |
 |---|---|---|---|---|
-| 1 | Pedir la siguiente issue: la primera sin hacer cuyas dependencias están hechas, reservada para que nadie más se la lleve. Se repite tras cada una, hasta que no quede ninguna | Script | `appian-functional-analyst` · `indice.py issues <p> <U> --siguiente` | `appian-functional-analyst/references/cambios.md` §6 |
+| 1 | Pedir la siguiente issue: la primera sin hacer cuyas dependencias están hechas, reservada para que nadie más se la lleve. Se repite tras cada una, hasta que no quede ninguna. Cada sesión pide con su nombre (`--quien`): una que se reinicia recupera la suya pidiendo con el mismo | Script | `appian-functional-analyst` · `indice.py issues <p> <U> --siguiente` | `appian-functional-analyst/references/cambios.md` §6 |
 | 2 | Leer la issue: es el alcance, se construyen solo sus objetos y lleva lo que hace falta del funcional y del técnico | Quien construye: IA o una persona | `appian-best-practices` | `appian-best-practices/SKILL.md` «Discovering Project Context» |
 | 3 | Medir el esfuerzo según el cambio | Quien construye | `appian-best-practices` | `appian-best-practices/SKILL.md` «Calibrate the effort to the change» |
 | 4 | Construir en desarrollo, en el orden que da la skill oficial | IA por el Dev MCP, o una persona en Designer | `appian-best-practices`, con la skill oficial `appian` | `appian-best-practices/SKILL.md` «Tools» y `appian-best-practices/references/14-official-skill-divergences.md` |

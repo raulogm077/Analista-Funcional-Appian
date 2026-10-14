@@ -94,6 +94,7 @@ class Issue:
     texto: str = ""                                # ISS-nn.md
     feature: str = ""                              # ISS-nn.feature, o "" sin escenarios
     esperado: dict = field(default_factory=dict)   # ISS-nn-esperado.json
+    sueltas: set = field(default_factory=set)      # líneas del técnico que no son de ninguna issue y van en esta
 
     @property
     def para(self):
@@ -411,7 +412,7 @@ def del_tecnico(d, issue, lineas, dts):
         citadas_por(m, issue.requisitos)
     de_parte = lambda x, o: any(s in mo.normaliza(x["texto"]) for s in senas[o])
     suya = lambda x: x["objetos"] & enteros or x["de"] in enteros or any(de_parte(x, o) for o in senas)
-    mias = [x for x in lineas + dts if suya(x) or x["ids"] & cita]
+    mias = [x for x in lineas + dts if suya(x) or x["ids"] & cita or x["i"] in issue.sueltas and "dt" not in x]
     donde = {o: list(dict.fromkeys(x["donde"] for x in mias if (de_parte(x, o) if o in senas else
                                                                un.objeto(o) in x["objetos"] or x["de"] == un.objeto(o))))
              for o in nombres}
@@ -662,11 +663,22 @@ def indice_de(raiz, uid):
 
 
 MARCAS = "Pruebas marcadas como no necesarias para avanzar"
-COLUMNAS_MARCAS = ["Issue", "Objeto", "Caso", "Motivo", "Quién", "Cuándo"]
+COLUMNAS_MARCAS = ["Issue", "Versión", "Objeto", "Caso", "Error", "Motivo", "Quién", "Cuándo"]
+CLAVES_MARCAS = ["issue", "version", "objeto", "caso", "error", "motivo", "quien", "cuando"]
+
+
+def celda(x):
+    return " ".join(str(x).replace("|", "/").split())
+
+
+def error_de(e):
+    """El error de un caso como se guarda en su marca: en una línea y sin «|», hasta 160 caracteres."""
+    return celda(e)[:160]
 
 
 def lee_marcas(texto):
-    """Las pruebas marcadas del índice: [{issue, objeto, caso, motivo, quien, cuando}], de la tabla de MARCAS."""
+    """Las pruebas marcadas del índice: [{issue, version, objeto, caso, error, motivo, quien, cuando}], de la tabla de
+    MARCAS. Una marca vale para esa versión de la issue y ese error: si cambia una de las dos, ya no."""
     out, cab = [], None
     for l in (texto or "").split("\n"):
         if not l.startswith("|"):
@@ -675,9 +687,10 @@ def lee_marcas(texto):
         c = mo.celdas(l)
         if cab is None:
             cab = [mo.normaliza(x) for x in c]
-        elif cab[:3] == ["issue", "objeto", "caso"] and RX_ISSUE.fullmatch(c[0].strip()) and len(c) >= 6:
-            out.append({"issue": c[0].strip(), "objeto": c[1].strip("` "), "caso": c[2], "motivo": c[3], "quien": c[4],
-                        "cuando": c[5]})
+        elif cab == CLAVES_MARCAS and RX_ISSUE.fullmatch(c[0].strip()) and len(c) >= len(cab):
+            x = dict(zip(cab, c))
+            out.append({**x, "issue": x["issue"].strip(), "objeto": x["objeto"].strip("` "),
+                        "version": x["version"].strip("` ")})
     return out
 
 
@@ -758,17 +771,22 @@ def calcula(m, ctx, uid):
         _, _, i.nombra, suyas = del_tecnico(d, i, lineas, dts)
         cubiertas |= suyas
     ordena(issues)
+    # lo que el técnico dice para esta unidad (todo, en la construcción inicial; lo nuevo o lo que cambia, si no) y no
+    # nombra ningún objeto suyo (la matriz de seguridad de §4, una constante que falta en §13): va en la Base o, sin
+    # Base, en todas, porque la issue dice que no hace falta leer el técnico. Y se avisa al analista
+    perdidas = [x for x in lineas if x["i"] not in cubiertas and (d.inicial or x["estado"] in ("nuevo", "cambia"))]
+    base = [i for i in issues if i.comun] or issues
+    for i in base:
+        i.sueltas = {x["i"] for x in perdidas}
     for i in issues:
         redacta(d, i, plan, lineas, dts, pruebas)
-    # lo que el técnico dice para esta unidad (todo, en la construcción inicial; lo nuevo o lo que cambia, si no) y no
-    # llega a ninguna issue: quien construye no lo vería, y la issue dice que no hace falta leer el técnico
-    perdidas = [x for x in lineas if x["i"] not in cubiertas and (d.inicial or x["estado"] in ("nuevo", "cambia"))]
     if perdidas:
         corta = lambda t: (t if len(t) <= 60 else t[:57].rstrip() + "…").replace("|", "/")   # noqa: E731
-        plan.avisos.append(f"{len(perdidas)} {'línea' if len(perdidas) == 1 else 'líneas'} del técnico no van en ninguna "
-                           f"issue de {uid}: no nombran ninguno de sus objetos ni citan sus requisitos (que lo hagan, o "
-                           "falta su objeto en §13): " + "; ".join(f"{x['donde']} «{corta(limpio(x['texto']).strip('| '))}»"
-                                                                    for x in perdidas))
+        plan.avisos.append(f"{len(perdidas)} {'línea' if len(perdidas) == 1 else 'líneas'} del técnico no nombran ningún "
+                           f"objeto ni requisito de las issues de {uid} y van en "
+                           + (f"la Base, {base[0].id}" if base is not issues else "todas")
+                           + " (que nombren su objeto, o falta en §13): "
+                           + "; ".join(f"{x['donde']} «{corta(limpio(x['texto']).strip('| '))}»" for x in perdidas))
     if len(d.todos) <= 1:     # con un solo objeto no hay nada que repartir: sin aviso de «Para»
         pass
     elif not ctx.con_para:
@@ -800,14 +818,14 @@ def texto_indice(plan, reservas):
         L.append("| " + " | ".join([i.id, i.para, i.titulo.replace("|", "/"), lista(i.depende), lista(i.paralelo),
                                     ", ".join(f"`{o}`" for o in i.objetos), reservas.get(i.id) or "—"]) + " |")
     if plan.marcas:      # lo decide una persona; se revisa al preparar el paquete
-        celda = lambda x: " ".join(str(x).replace("|", "/").split())   # noqa: E731
         L += ["", f"## {MARCAS}", "",
               f"Las marca una persona con `indice.py issues <p> {plan.uid} ISS-nn --sin-prueba \"<objeto> «<caso>»\" "
-              "--motivo \"…\"`, nunca en una sesión desatendida, y se revisan al preparar el paquete. Una se quita sola "
-              "cuando su caso vuelve a pasar.", "",
+              "--motivo \"…\"`, nunca en una sesión desatendida, y se revisan al preparar el paquete. Cada una vale para "
+              "esa versión de la issue y ese error, y se quita sola cuando el caso vuelve a pasar o cambia.", "",
               "| " + " | ".join(COLUMNAS_MARCAS) + " |", "|" + "---|" * len(COLUMNAS_MARCAS)]
-        L += ["| " + " | ".join([x["issue"], f"`{celda(x['objeto'])}`", celda(x["caso"]), celda(x["motivo"]),
-                                 celda(x["quien"]), celda(x["cuando"])]) + " |" for x in plan.marcas]
+        L += ["| " + " | ".join([x["issue"], f"`{x['version']}`", f"`{celda(x['objeto'])}`", celda(x["caso"]),
+                                 error_de(x["error"]), celda(x["motivo"]), celda(x["quien"]), celda(x["cuando"])]) + " |"
+              for x in plan.marcas]
     return "\n".join(L) + "\n"
 
 
@@ -874,8 +892,10 @@ def casos(v, de="issue"):
             and o.get("de") == de for c in o.get("fallan") or [] if isinstance(c, dict)]
 
 
-def marcado(marcas, issue_id, objeto, caso):
-    return any(x["issue"] == issue_id and x["objeto"] == objeto and x["caso"] == caso for x in marcas)
+def marcado(marcas, issue, objeto, caso, error):
+    """Si una persona ha marcado ese caso, con ese error, en esta versión de la issue."""
+    return any(x["issue"] == issue.id and x["version"] == issue.version and x["objeto"] == objeto and x["caso"] == caso
+               and x["error"] == error_de(error) for x in marcas)
 
 
 def estado(raiz, uid, issue, marcas=()):
@@ -883,7 +903,8 @@ def estado(raiz, uid, issue, marcas=()):
     que deja «verificar --esperado») es de su versión de ahora, encuentra todos sus objetos como dice el técnico y, si
     tiene pruebas, no falla ningún caso de prueba de sus objetos que una persona no haya marcado como no necesario
     (`marcas`). De un objeto que se modifica, que tenga más campos que los de esta unidad no cuenta. Lo que falla en lo
-    que la usa, los casos que el ejecutor no evalúa y las pruebas marcadas son avisos: van tras «hecha · …»."""
+    que la usa, los casos que el ejecutor no evalúa, los que no se pudieron ejecutar (esperan a la regresión, como sin
+    Dev MCP que los ejecute) y las pruebas marcadas son avisos: van tras «hecha · …»."""
     v, por_que = verificacion(raiz, uid, issue)
     if v is None:
         return False, por_que
@@ -909,14 +930,16 @@ def estado(raiz, uid, issue, marcas=()):
         return False, "la verificación no dice cómo fueron sus pruebas: repite «verificar»"
     if not pr.get("ejecutadas"):
         return True, f"hecha · sus pruebas no se han ejecutado: {pr.get('motivo') or 'sin motivo'}"
-    sin_ejecutar = [o.get("objeto") for o in pr.get("objetos") or [] if isinstance(o, dict) and o.get("de") == "issue"
-                    and o.get("error")]
-    if sin_ejecutar:
-        return False, f"no se pudieron ejecutar los casos de prueba de {', '.join(sin_ejecutar)}: repite «verificar»"
-    fallan = [(o, c) for o, c, _ in casos(v) if not marcado(marcas, issue.id, o, c)]
+    fallan = [(o, c) for o, c, e in casos(v) if not marcado(marcas, issue, o, c, e)]
     if fallan:
         return False, "fallan sus pruebas: " + "; ".join(f"{o} «{c}»" for o, c in fallan)
-    avisos = [f"marcada como no necesaria: {o} «{c}»" for o, c, _ in casos(v)]
+    sin_ejecutar = [o.get("objeto") for o in pr.get("objetos") or [] if isinstance(o, dict) and o.get("de") == "issue"
+                    and o.get("error")]
+    avisos = [f"no se pudieron ejecutar los casos de {', '.join(sin_ejecutar)}: esperan a la regresión"] if sin_ejecutar \
+        else []
+    avisos += [f"marcada como no necesaria: {o} «{c}»" for o, c, _ in casos(v)]
+    avisos += [f"no se sabe qué la usa (no se pudieron leer los dependientes de {', '.join(pr['sinDependientes'])})"] \
+        if pr.get("sinDependientes") else []
     avisos += [f"falla lo que la usa: {o} «{c}»" for o, c, _ in casos(v, "usa")]
     noev = sum(len(o.get("noEvaluables") or []) for o in pr.get("objetos") or [] if isinstance(o, dict))
     avisos += [f"{noev} {'caso' if noev == 1 else 'casos'} que el ejecutor de Appian no evalúa"] if noev else []
@@ -924,13 +947,15 @@ def estado(raiz, uid, issue, marcas=()):
 
 
 def sigue_marcada(raiz, plan, marca):
-    """Si una prueba marcada sigue en el índice: su issue existe y su última verificación no es de su versión de ahora
-    (no se sabe) o el caso sigue fallando. Cuando vuelve a pasar, la marca se quita sola."""
+    """Si una prueba marcada sigue en el índice: es de la versión de ahora de su issue y su última verificación no es de
+    esa versión (no se sabe) o el caso sigue fallando con el mismo error. Si la issue cambia, el caso vuelve a pasar o
+    falla de otra manera, la marca se quita sola."""
     issue = next((i for i in plan.issues if i.id == marca["issue"]), None)
-    if issue is None:
+    if issue is None or marca["version"] != issue.version:
         return False
     v, _ = verificacion(raiz, plan.uid, issue)
-    return v is None or any(o == marca["objeto"] and c == marca["caso"] for o, c, _ in casos(v))
+    return v is None or marcado([marca], issue, *next(((o, c, e) for o, c, e in casos(v) if o == marca["objeto"]
+                                                        and c == marca["caso"]), ("", "", "")))
 
 
 def estados(plan, raiz):
@@ -1239,14 +1264,15 @@ def con_reserva(raiz, uid, cambia, sin_git=None, escribe_=False):
 
 def siguiente(raiz, uid, quien=None):
     """Da la próxima issue de la unidad y la reserva a nombre de `quien` (por defecto, el usuario de git):
-    (m, ctx, plan, issue o None, cómo ha quedado la reserva). Si ya tiene una reservada que no está hecha (una sesión
-    que se reinicia y vuelve a pedir), da esa: no se lleva otra dejando la suya colgada. Dos sesiones del mismo usuario
-    se distinguen con `quien`."""
+    (m, ctx, plan, issue o None, cómo ha quedado la reserva). Con `quien` dicho, si ya tiene una reservada a ese nombre
+    que no está hecha (una sesión que se reinicia y vuelve a pedir), da esa: no se lleva otra dejando la suya colgada.
+    Sin `quien`, el nombre es el de git, el mismo en todas las sesiones de una persona: dos que piden se llevan dos
+    distintas."""
     nombre, suya = quien_soy(raiz, quien), []
 
     def cambia(plan):
         e = estados(plan, raiz)
-        mia = next((i for i in plan.issues if not e[i.id][0]
+        mia = next((i for i in plan.issues if quien and not e[i.id][0]
                     and (plan.reservas.get(i.id) or "").split(" · ")[0].strip() == nombre), None)
         if mia is not None:
             suya[:] = [mia.id]
@@ -1288,16 +1314,17 @@ def sin_prueba(raiz, uid, iid, caso, motivo, quien=None):
         v, por_que = verificacion(raiz, uid, issue)
         if v is None:
             raise NoSePuede(f"{iid}: {por_que}. Se marca un caso que falla en su verificación de ahora")
-        fallan = [(o, c) for o, c, _ in casos(v)]
+        fallan = casos(v)
         m = RX_CASO.match(caso)
         objeto, nombre_caso = (m.group(1), m.group(2)) if m else ("", caso.strip())
-        elegidos = [(o, c) for o, c in fallan if c == nombre_caso and (not objeto or o == objeto)]
+        elegidos = [(o, c, e) for o, c, e in fallan if c == nombre_caso and (not objeto or o == objeto)]
         if len(elegidos) != 1:
-            lista_ = "; ".join(f"{o} «{c}»" for o, c in fallan) or "ninguno"
+            lista_ = "; ".join(f"{o} «{c}»" for o, c, _ in fallan) or "ninguno"
             raise NoSePuede(f"«{caso}» no es {'un caso' if not elegidos else 'un solo caso'} que falle en {iid} (fallan: "
                             f"{lista_}){': di también el objeto' if len(elegidos) > 1 else ''}")
-        o, c = elegidos[0]
+        o, c, e = elegidos[0]
         plan.marcas = [x for x in plan.marcas if not (x["issue"] == iid and x["objeto"] == o and x["caso"] == c)] + [
-            {"issue": iid, "objeto": o, "caso": c, "motivo": motivo.strip(), "quien": nombre, "cuando": ahora}]
+            {"issue": iid, "version": issue.version, "objeto": o, "caso": c, "error": error_de(e),
+             "motivo": celda(motivo), "quien": nombre, "cuando": ahora}]
         return issue, plan.reservas, f"{uid}: {iid}, {o} «{c}» no necesaria para avanzar ({nombre})"
     return con_reserva(raiz, uid, cambia, sin_git="en el índice, sin commit", escribe_=True)

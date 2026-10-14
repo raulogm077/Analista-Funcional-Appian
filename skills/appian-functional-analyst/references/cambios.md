@@ -31,7 +31,7 @@ unidad Aprobada (otro informe con su `Cambio:`, o un punto «Pendiente») la dev
 `construida` fallan con «ha crecido desde que se aprobó» hasta que se vuelve a aprobar con `--fuente`. Si no conviene,
 lo nuevo va en otra unidad. Sin `--fuente`, de Construida se vuelve a Aprobada cuando una urgencia obliga a reaplicar.
 Con `--desatendida` no se aprueba ni se pasa a producción sin el visto bueno del jefe de proyecto; si lo da (también
-en lo que se le pide a la sesión), se cataloga como fuente de tipo Aprobación y se pasa con ella. «En producción» registra un pase
+en lo que se le pide a la sesión), se cataloga como fuente de tipo Aprobación y se pasa con ella. Tampoco se marca Construida con `--manual`, que no mira las issues ni sus pruebas. «En producción» registra un pase
 que ya ha ocurrido: lo que quede por comprobar se apunta, no lo frena. `proyecto.py estado` imprime
 las unidades en curso con sus fuentes, versiones y objetos (no se guardan: se derivan) y lo que hay que reaplicar.
 
@@ -125,7 +125,8 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
   comparten pantalla o proceso van en la misma; lo «Base», en la primera; las demás, en orden, y el índice (`indice.md`)
   dice de cuáles depende cada una y con cuáles puede ir a la vez (las que no comparten objetos). Cada `ISS-nn.md` lleva
   lo que necesita quien construye y nada más: **qué** se pide, sus escenarios (`ISS-nn.feature`, en Gherkin) con cómo se
-  comprueba cada uno (técnico §14), sus objetos, lo que el técnico dice de ellos (lo que cambia, con lo de antes), lo
+  comprueba cada uno (técnico §14), sus objetos, lo que el técnico dice de ellos (lo que cambia, con lo de antes; lo que
+  no nombra ningún objeto, como la matriz de seguridad de §4, va en la Base, y el analista recibe el aviso), lo
   que no debe tocar por ser de otra issue, los puntos de «Cambio sobre lo construido», la DT que una persona revisa
   antes de construir (si toca lo que pide revisarla, §1) y las correcciones urgentes que reaplicar o que congelan
   objetos. Si no cambia criterios ni reglas, lo dice: no hay pruebas que ejecutar. Sin orden
@@ -144,8 +145,9 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
    falla porque otro reservó antes, quita su commit, se pone al día y da la siguiente: dos que la piden a la vez no se
    llevan la misma. Nunca falla por git, y dice cómo queda: sin remoto, un commit sin subir; si el proyecto no es un
    repositorio, o está dentro de otro, sin reservar; con una fusión o un rebase a medias, sin reservar ni tocar git
-   (termínala y vuelve a pedirla). Quien ya tiene una reservada sin hacer recibe esa, no otra. El nombre es el de git;
-   dos sesiones con el mismo se distinguen con `--quien <nombre>`.
+   (termínala y vuelve a pedirla). El nombre es el de git; dos sesiones con el mismo se distinguen con `--quien
+   <nombre>`, y con él una sesión que se reinicia recupera la suya: quien pide con `--quien` y ya tiene una reservada
+   a ese nombre sin hacer recibe esa, no otra.
    `--liberar ISS-nn` quita la reserva de una issue que nadie va a seguir. El push sube también los commits que esa
    copia tuviera sin subir.
 2. **Construir** la issue en desarrollo (en una urgencia, en el entorno de corrección): `appian-best-practices` (que la
@@ -160,18 +162,20 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
    caso suyo que falla la deja pendiente; uno de lo que las usa es un aviso, y uno que el ejecutor de Appian no sabe
    evaluar (una rejilla de registros con filtros de usuario), otro. Si una persona decide que una prueba que falla no es
    necesaria para avanzar, la marca con su motivo: `indice.py issues <p> EV-02 ISS-nn --sin-prueba "<objeto> «<caso>»"
-   --motivo "…"`. Queda en el índice de la unidad, se quita sola cuando el caso vuelve a pasar y se revisa al preparar
-   el paquete; con `--desatendida` se niega. Si el Dev MCP no ejecuta casos, la issue no espera: sus pruebas, a la
-   regresión.
+   --motivo "…"`. Queda en el índice de la unidad, vale para esa versión de la issue y ese error (si cambia una de las
+   dos, o el caso vuelve a pasar, se quita sola) y se revisa al preparar el paquete; con `--desatendida` se niega. Si el
+   Dev MCP no ejecuta casos, o no pudo ejecutar los de la issue, la issue no espera: sus pruebas, a la regresión.
    **Una issue está hecha** cuando su última verificación pasa y es de su versión de ahora: si al volver a generarla
    cambia lo que hay que construir o comprobar, vuelve a estar pendiente. No hay otro estado que mantener: su reserva
    se quita sola, y `indice.py issues <p> EV-02` dice cómo va cada una.
 4. **Marcar**, con todas hechas: `proyecto.py cambio <p> EV-02 construida` (la orden de la última issue la trae) y,
    tras el pase, `… produccion --ref "<pase>" --fecha <AAAA-MM-DD>`. Sin Dev MCP no hay verificación: construye una
    persona siguiendo el índice y la unidad se marca con `--manual`.
-5. **Regresión**, antes de preparar el paquete: la orden que da `construida` (el atajo «Regresión» de ingeniería
-   inversa) ejecuta todos los casos de prueba de la aplicación y deja el resumen en `construccion/EV-02/regresion.json`;
-   por la salida, solo lo que falla. Si el Dev MCP no ejecuta casos, se pasa en Appian (Manage Test Cases).
+5. **Regresión**, antes de preparar el paquete: la orden que da `indice.py issues <p> EV-02 --regresion` (el atajo
+   «Regresión» de ingeniería inversa) ejecuta todos los casos de prueba de la aplicación y deja el resumen en
+   `construccion/EV-02/regresion.json`; por la salida, solo lo que falla. Si el Dev MCP no ejecuta casos, se pasa en
+   Appian: los de las reglas, con Manage Test Cases; los de las interfaces, desde cada interfaz en Designer, porque
+   Manage Test Cases no los ejecuta. Si en una issue no se pudieron ejecutar sus casos, también esperan a la regresión.
 
 **Deriva** (antes de abrir una unidad en una aplicación ajena, o para los objetos de una urgencia): `devmcp_extract.py
 deriva` de ingeniería inversa compara el historial de versiones con el de `as-is/` y escribe `as-is/datos/deriva.json`; si
