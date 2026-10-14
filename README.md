@@ -1,72 +1,66 @@
 # appian-analisis-funcional
 
-Análisis funcional, especificación técnica y prototipo de aplicaciones Appian, del material del
-cliente a lo que se valida y a lo que se construye:
+Plugin de Claude para equipos que analizan, documentan, rehacen, construyen y prueban aplicaciones Appian: del material
+del cliente al diseño funcional que valida (DF en Word) y a lo que se construye y se prueba, hasta el paquete que revisa
+una persona. Sirve para cualquier proceso y cualquier cliente: el dominio sale siempre de las fuentes del proyecto. Las
+plantillas y las galerías del plugin enseñan técnica, no un dominio (`skills/appian-prototipos/galerias/README.md`), y
+el plugin no lleva ningún proyecto, tampoco de ejemplo.
 
-```
-transcripciones · correos · actas · diagramas de flujo · DF / ERS del cliente · aplicación existente
-        │
-        ▼  appian-functional-analyst                       (un repositorio git por proyecto)
-fuentes/ (FU-01…) → analisis/funcional.md ──► DF en Word para que el cliente lo valide
-                  → analisis/tecnico.md   ──► especificación para construir con el MCP de desarrollo
-                  → analisis/decisiones.md     (versiones y decisiones del cliente)
-        │   ├─► appian-diagramas-bpmn: cada proceso en draw.io (editable en la reunión) + PNG
-        │   └─► appian-best-practices: la doctrina de Appian que aplica el técnico, por secciones
-        ▼  appian-prototipos
-prototipo/ navegable con la marca del cliente o la estándar de Appian · capturas que vuelven a las fichas de pantalla del funcional
-```
+## Cómo trabaja
 
-Cada reunión, correo o comentario del cliente al DF se incorpora con un informe de impacto que aprueba
-el analista: solo cambia lo afectado, en el funcional, el técnico, los diagramas y las pantallas.
+Cada fuente nueva (una reunión, un correo, un acta, una demo o los comentarios del cliente al DF) entra con un informe
+de impacto que aprueba el analista: solo cambia lo afectado, en el funcional, el técnico, los diagramas y las pantallas.
 
-Cada proyecto es un repositorio git que crea `proyecto.py iniciar`, siempre con la misma forma: el código vive en
-Appian y el repositorio guarda todo lo demás, sobre main y sin ramas. Lleva un `AGENTS.md` (dónde está cada cosa, las
-reglas y los flujos) y, en `.agents/workflows/`, los nueve flujos del método, de la aplicación nueva al pase a
-producción, para que cualquier persona o agente trabaje igual. Los flujos tienen una sola fuente,
-`skills/appian-functional-analyst/assets/flujos/`: dicen quién hace cada paso y con qué skill, citan el detalle sin
-repetirlo, y `iniciar` los pone al día en el proyecto con cada versión del plugin.
+Cada proyecto es un repositorio git que crea `proyecto.py iniciar`, siempre con la misma forma: `fuentes/`, `notas/` e
+`impacto/` (lo que entra y cómo encaja), `analisis/` (funcional, técnico, decisiones y unidades de cambio),
+`prototipo/`, `entregables/` y `versiones/`, y, cuando hacen falta, `construccion/<U>/`, `qa/<U>/`, `as-is/` y
+`refactorizacion/`. El código vive en Appian y el repositorio guarda todo lo demás, sobre `main` y sin ramas. Lleva un
+`AGENTS.md` generado (dónde está cada cosa, las reglas y los flujos), un `CLAUDE.md` que lo importa y, en
+`.agents/workflows/`, los nueve flujos del método: F1 aplicación nueva, F2 incorporar una fuente, F3 evolutivo, F4
+defecto, F5 urgente, F6 ingeniería inversa, F7 refactorización, F8 construir y verificar y F9 pase a producción. Cada
+flujo dice quién hace cada paso y con qué skill, y cita el detalle sin repetirlo. Su única fuente es
+`skills/appian-functional-analyst/assets/flujos/`: volver a lanzar `iniciar` pone al día `AGENTS.md` y los flujos con la
+versión del plugin, sin tocar lo demás.
 
-Lo que se construye se reparte en issues. Al aprobar un cambio, un script escribe en `construccion/` una issue por
-requisito, con lo que necesita quien la construye y nada más (qué se pide, sus escenarios en Gherkin, sus objetos y lo
-que dice de ellos el técnico), en orden y diciendo cuáles pueden ir a la vez. Quien construye, persona o agente, pide la
-siguiente, que queda reservada con un commit para que nadie más se la lleve, y está hecha cuando su verificación pasa:
-sus objetos, como dice el técnico, y sus pruebas, los casos de prueba guardados de sus reglas e interfaces y de lo que
-las usa; un retoque que no cambia criterios ni reglas no ejecuta ninguno. Con todas sus issues hechas, el QA recorre la
-unidad con SAIL CLI como cada rol, en otra sesión y solo con sus escenarios; cada recorrido queda como guion en `qa/`.
-Si falla una prueba o un escenario, `skills/appian-functional-analyst/references/cambios.md` §6. Después se marca la unidad construida y, antes
-de preparar el paquete, la regresión ejecuta todos los casos de prueba de la aplicación y un script repite sin IA los
-guiones del QA. Las verificaciones hechas con el encargo de antes de las issues (`construccion/verificacion/<U>.json`)
-ya no cuentan: una unidad aprobada entonces se verifica de nuevo, issue a issue, con la orden que imprime
-`indice.py issues <p> <U> ISS-nn`.
+Cada cambio es una unidad (`EV-nn`, `URG-nn`) en `analisis/cambios.md`. Al aprobarla el jefe de proyecto, un script
+escribe en `construccion/<U>/` una issue por requisito, con lo que necesita quien la construye y nada más (qué se pide,
+sus escenarios en Gherkin, sus objetos y lo que dice de ellos el técnico), en orden y diciendo cuáles pueden ir a la
+vez. Quien construye, persona o agente, pide la siguiente (`indice.py issues <p> <U> --siguiente`), que queda reservada
+con un commit para que nadie más se la lleve, y la construye solo en desarrollo. La issue está hecha cuando pasa su
+verificación: sus objetos, como dice el técnico, y sus pruebas, los casos de prueba guardados de sus reglas e interfaces
+y de lo que las usa; un retoque que no cambia criterios ni reglas no ejecuta ninguno. Con todas hechas, el QA recorre la
+unidad con SAIL CLI como cada rol, en otra sesión y solo con sus escenarios, y deja cada recorrido como guion en
+`qa/<U>/`. Un fallo devuelve su issue a pendiente, salvo que una persona marque esa prueba como no necesaria, con motivo
+(`skills/appian-functional-analyst/references/cambios.md` §6). Después, la unidad se marca construida.
 
-Sirve para cualquier proceso (compras, subvenciones, incidencias,
-informes, expedientes…): el dominio sale siempre de las fuentes del proyecto. Las
-plantillas y las galerías del plugin enseñan técnica, no un dominio
-(`skills/appian-prototipos/galerias/README.md`), y el plugin no lleva ningún
-proyecto, tampoco de ejemplo.
+Desde el paquete no actúa la IA. Antes de prepararlo, la regresión ejecuta todos los casos de prueba de la aplicación y
+`qa.py` repite sin IA los guiones del QA; quien lo prepara revisa en Compare and Deploy la comparación de sus objetos
+con esos fallos, y `proyecto.py cambio <p> <U> produccion --ref` registra el pase.
 
 ## Qué hace cada skill
 
-Cada petición entra por una sola skill. Las demás se usan desde ella, y se pasan el trabajo en ficheros con un formato fijo.
+Cada petición entra por una sola skill. Las demás se usan desde ella, y se pasan el trabajo en ficheros con un formato
+fijo.
 
 | Skill | Se ocupa de | No hace | Usa |
 |---|---|---|---|
-| `appian-functional-analyst` | Leer las fuentes del proyecto y escribir el análisis funcional (`analisis/funcional.md`), del que sale el DF en Word para el cliente, y la especificación técnica para construir (`analisis/tecnico.md`). Encajar cada reunión, correo o comentario nuevo en lo que ya hay | Dibujar procesos, hacer prototipos, construir o revisar objetos de Appian, documentar una aplicación existente | La skill de diagramas para los procesos; buenas prácticas para orientar la solución (`00` y la sección que decide); el MCP de documentación |
-| `appian-diagramas-bpmn` | Dibujar los procesos en draw.io con notación BPMN y un carril por perfil: `.drawio` editable, PNG para el documento y BPMN 2.0. Decir qué se cambió a mano en una reunión | Decidir qué pasos tiene un proceso | Nada |
+| `appian-functional-analyst` | Leer las fuentes del proyecto y escribir el análisis funcional (`analisis/funcional.md`), del que sale el DF en Word para el cliente, y la especificación técnica (`analisis/tecnico.md`). Encajar cada reunión, correo o comentario nuevo en lo que ya hay. Llevar cada cambio como unidad, repartir lo que se construye en issues y registrar una urgencia | Dibujar procesos, hacer prototipos, construir o revisar objetos de Appian, documentar una aplicación existente | La skill de diagramas para los procesos; buenas prácticas para orientar la solución (`00` y la sección que decide); el MCP de documentación; git |
+| `appian-diagramas-bpmn` | Dibujar los procesos en draw.io con notación BPMN y un carril por perfil: `.drawio` editable, PNG para el documento y BPMN 2.0. Decir qué se cambió a mano en una reunión | Decidir qué pasos tiene un proceso | Ninguna otra skill |
 | `appian-prototipos` | Las pantallas: patrón, componentes de Appian, marca, navegación, validaciones, capturas para el documento y trazabilidad con los requisitos. La marca es la estándar de Appian o la del cliente: con su nombre, saca de su guía de marca o de su web su configuración completa (el Site con su logo, el perfil CSS, la paleta, los estados, los gráficos y una guía para quien construye), con el contraste comprobado, y la deja en `prototipo/` de su proyecto | Redactar requisitos, decidir el modelo de datos o la seguridad, construir en Appian | El análisis como entrada; buenas prácticas para las reglas de pantalla (`02` y `09`); el MCP de documentación |
-| `appian-best-practices` | Cómo se hace bien en Appian: decisiones de solución, reglas por dominio, quality gates y runbooks de mantenimiento. Es la entrada para construir, revisar o diagnosticar objetos | Análisis funcional, diagramas y prototipos | El MCP de documentación; la skill oficial [`dev-mcp-skills`](https://github.com/appian/dev-mcp-skills/) antes de escribir en un entorno |
-| `appian-reverse-engineering` | Documentar cómo está hecha una aplicación Appian que ya existe, para que el equipo la entienda: la lee en vivo por el Dev MCP, en solo lectura, y deja en `as-is/` su funcional, arquitectura, datos, seguridad, integraciones, APIs, batches, procesos, pantallas y reglas de negocio, con el inventario y el anexo de definiciones; cada dato, con su evidencia | Proponer cómo debería estar hecha o rehacerla, escribir requisitos o especificaciones, crear o modificar objetos | El Dev MCP (obligatorio), el Appian MCP Server del mismo entorno (volúmenes) y el MCP de documentación; la skill de diagramas para dibujar los procesos en draw.io |
+| `appian-best-practices` | Cómo se hace bien en Appian: decisiones de solución, reglas por dominio, quality gates y runbooks de mantenimiento. Es la entrada para construir cada issue en desarrollo, revisar o diagnosticar objetos | Análisis funcional, diagramas y prototipos | El MCP de documentación; la skill oficial `appian` ([appian/dev-mcp-skills](https://github.com/appian/dev-mcp-skills/)) para escribir en un entorno |
+| `appian-reverse-engineering` | Documentar cómo está hecha una aplicación Appian que ya existe, para que el equipo la entienda: la lee en vivo por el Dev MCP, en solo lectura, y deja en `as-is/` su funcional, arquitectura, datos, seguridad, integraciones, APIs, batches, procesos, pantallas y reglas de negocio, con el inventario y el anexo de definiciones; cada dato, con su evidencia. Con el mismo extractor, verificar cada issue contra el técnico (`verificar`), pasar la regresión antes del paquete (`regresion`) y detectar lo cambiado fuera (`deriva`) | Proponer cómo debería estar hecha o rehacerla, escribir requisitos o especificaciones, crear o modificar objetos | El Dev MCP (obligatorio), el Appian MCP Server del mismo entorno (volúmenes) y el MCP de documentación; la skill de diagramas para dibujar los procesos en draw.io |
 | `appian-refactorizacion` | Plantear cómo debería estar hecha una aplicación existente, entera o una parte, con buenas prácticas y eficiencia. A partir de `as-is/`, escribe `refactorizacion/propuesta.md`: cada problema con su evidencia y la regla de buenas prácticas que incumple, la solución por capas, la migración y la convivencia con lo actual, la hoja de ruta y lo que falta por decidir. El técnico del analista baja a objetos cada decisión | Documentar la aplicación, escribir requisitos o la especificación objeto a objeto, revisar un objeto suelto, crear o modificar objetos | `as-is/` de ingeniería inversa (sus datos y su anexo, nunca la extracción en bruto); buenas prácticas para cada regla y decisión; el MCP de documentación |
-| `appian-qa` | El QA de una unidad construida: en otra sesión y solo con sus escenarios (`construccion/<U>/*.feature`), recorre cada uno con SAIL CLI como lo haría cada rol, con su cuenta, y comprueba el «entonces» en lo que devuelve Appian. Cada recorrido queda como guion en `qa/<U>/`, que `qa.py` repite sin IA antes de cada paquete; un escenario que falla devuelve su issue a pendiente | Construir o corregir objetos, escribir criterios, verificar los objetos contra el técnico, mirar la maquetación o los estilos | SAIL CLI, solo en desarrollo, y una cuenta local de Appian por rol |
+| `appian-qa` | El QA de una unidad construida: en otra sesión y solo con sus escenarios (`construccion/<U>/*.feature`), recorre cada uno con SAIL CLI como lo haría cada rol, con su cuenta, y comprueba el «entonces» en lo que devuelve Appian. Cada recorrido queda como guion en `qa/<U>/`, que `qa.py` repite sin IA antes de cada paquete; un escenario que falla devuelve su issue a pendiente | Construir o corregir objetos, escribir criterios, verificar los objetos contra el técnico, mirar la maquetación o los estilos | SAIL CLI, solo en desarrollo (en una urgencia, en el entorno de corrección), y una cuenta local de Appian por rol |
 
-**MCP `appian-docs`**: la documentación oficial de Appian (servidor público de Appian alojado en Kapa). Lo que una skill no sepa con certeza de Appian se le pregunta antes de escribirlo, y lo que se escribe lleva la URL. Qué conviene hacer no es una duda de documentación: eso es de buenas prácticas.
-
-`pruebas/comprobar_plugin.py` comprueba que todo esto se cumple: nombres y descripciones de las skills, ficheros y rutas que se citan entre ellas, servidores MCP, la regla de dudas de Appian y la versión. También, que ninguna skill lleve pruebas, ejemplos, un proyecto ni la marca de un cliente: las pruebas de cada skill y sus datos ficticios están en `pruebas/<skill>/`, que no va en el paquete, y la marca de un cliente, en `prototipo/` de su proyecto.
+**MCP `appian-docs`**: la documentación oficial de Appian (servidor público de Appian alojado en Kapa). Lo que una skill
+no sepa con certeza de Appian se le pregunta antes de escribirlo, y lo que se escribe lleva la URL. Qué conviene hacer
+no es una duda de documentación: eso es de buenas prácticas.
 
 ## Requisitos
 
-En Claude (web o escritorio, sesiones en la nube) ya está todo, salvo lo de ingeniería inversa, que solo funciona en el
-equipo. En el equipo, con Claude Code, hace falta lo de esta tabla; en negrita, lo imprescindible:
+En Claude (web o escritorio, sesiones en la nube) ya está todo, salvo lo que necesita el Dev MCP o SAIL CLI en el
+equipo: ingeniería inversa, construir y verificar las issues y el QA. En el equipo, con Claude Code, hace falta lo de
+esta tabla; en negrita, lo imprescindible:
 
 <!-- requisitos:inicio -->
 | Requisito | Lo usa | Para qué | Si falta | Cómo se instala |
@@ -88,100 +82,77 @@ equipo. En el equipo, con Claude Code, hace falta lo de esta tabla; en negrita, 
 | SDK mcp de Python (pide Python 3.10 o superior) | Las pruebas del repositorio | Pruebas de ingeniería inversa, con el Dev MCP simulado | Lo mismo que sin pytest | Windows: `python -m pip install "mcp>=1.2,<2"`<br>macOS y Linux: `python3 -m pip install "mcp>=1.2,<2"` |
 <!-- requisitos:fin -->
 
-La tabla sale de `requisitos.json` (`python3 requisitos.py --tabla-readme`). `requisitos.py`, en la carpeta del
-plugin, dice qué falta en un equipo, qué se pierde y cómo se instala: `python3 requisitos.py` para todo el plugin y
-`--skill <nombre>` para una skill (en Windows, `python`). Cada skill lo ejecuta antes de su primera tarea, y avisa
-también si hay una copia suelta de una skill del plugin en `~/.claude/skills/`.
+La tabla sale de `requisitos.json` (`python3 requisitos.py --tabla-readme`). `requisitos.py`, en la carpeta del plugin,
+dice qué falta en un equipo, qué se pierde y cómo se instala: `python3 requisitos.py` para todo el plugin y
+`--skill <nombre>` para una skill (en Windows, `python`). Cada skill lo ejecuta antes de su primera tarea. Con el plugin
+instalado, basta pedir a Claude «comprueba qué le falta al plugin en este equipo».
 
 **Aviso al instalar**: al empezar una sesión, el plugin comprueba el equipo (`requisitos.py --breve`, en
 `hooks/hooks.json`) y Claude dice lo que falta la primera vez de cada versión. Los hooks de un plugin se cargan en
 Claude Code (también en la pestaña Code de la app de escritorio) y en Cowork; en el chat no, y allí lo comprueba cada
 skill antes de su primera tarea.
 
-Comprobación en un equipo nuevo: con el plugin instalado, pide a Claude «comprueba qué le falta al plugin en este
-equipo». Para pasar además todas sus pruebas, con el repositorio abierto:
-
-```bash
-python pruebas/comprobar_plugin.py --completo
-```
-
-Comprueba que las skills encajan entre sí y pasa las pruebas de cada una, que están en `pruebas/<skill>/`:
-el `selftest.py` del analista, de los diagramas, de los prototipos (este tarda un par de minutos), del QA (con
-SAIL CLI simulado) y de refactorización, las de ingeniería inversa, con pytest y `mcp` (si faltan y hay `uv`, los trae él), y la de
-`requisitos.py` y el aviso al instalar. Con
-`--plugin <carpeta>` pasa
-esas pruebas a otra copia del plugin, por ejemplo la que se instala con el paquete, que no las lleva.
-
-Nada de lo anterior envía información del cliente fuera del equipo: Mermaid
-(licencia MIT) y el visor de draw.io (licencia Apache 2.0) van incluidos en el plugin
-y los diagramas se dibujan con el navegador local. Para editar un `.drawio` a mano
-sirve draw.io Desktop, app.diagrams.net (no sube el fichero) o la integración de
-draw.io con SharePoint y OneDrive.
-
-**Correos de Outlook (.msg)**: el paquete `extract-msg` no instala en muchos
-equipos. Lo fiable es guardar el correo como `.eml` (Archivo → Guardar como) o
-PDF.
+**Correos de Outlook (.msg)**: el paquete `extract-msg` no se instala en muchos equipos. Lo fiable es guardar el correo
+como `.eml` (Archivo → Guardar como) o PDF.
 
 ## Instalación
 
-- **Claude (organización)**: un administrador publica el fichero
-  `appian-analisis-funcional.plugin` para la organización; cada persona lo
-  instala desde el catálogo de plugins. También se puede instalar a título
-  personal abriendo el `.plugin` en una conversación. El `.plugin` es la carpeta
-  del plugin comprimida en zip, sin lo de desarrollo (`docs/`, `pruebas/`, `CLAUDE.md`,
-  `CLAUDE.local.md`, `.github/`, `.claude/`), ni `.git`, cachés u otros `.plugin`:
+- **Claude Code y la app de Claude** (escritorio o web): el repositorio es también un marketplace. Los pasos, y cómo
+  llegan las versiones nuevas, están en su portada de GitHub (`.github/README.md`). Una versión llega cuando cambia
+  `version` en `.claude-plugin/plugin.json`.
+- **Claude, para una organización**: un administrador publica el fichero `appian-analisis-funcional.plugin` para la
+  organización y cada persona lo instala desde el catálogo de plugins; también se puede instalar a título personal
+  abriendo el `.plugin` en una conversación. El `.plugin` es la carpeta del plugin comprimida en zip, sin lo de
+  desarrollo (`docs/`, `pruebas/`, `CLAUDE.md`, `CLAUDE.local.md`, `.github/`, `.claude/`), ni `.git`, cachés u otros
+  `.plugin`. Lo hace `python3 pruebas/empaquetar.py`, también en Windows (lo deja junto a la carpeta del repositorio), o
+  esta orden:
   `zip -r appian-analisis-funcional.plugin . -x ".git/*" ".github/*" ".claude/*" "docs/*" "pruebas/*" "CLAUDE.md" "CLAUDE.local.md" "*__pycache__*" "*.pytest_cache*" "*.plugin"`
-  o, igual y también en Windows, `python3 pruebas/empaquetar.py` (lo deja junto a la carpeta del repositorio).
-- **Claude Code**: el repositorio es también un marketplace. Hace falta git en el equipo, porque Claude Code
-  descarga el plugin con él.
-  ```bash
-  claude plugin marketplace add <ruta o URL git del repositorio>
-  claude plugin install appian-analisis-funcional@appian-analisis-funcional
-  ```
-  Para que las versiones nuevas lleguen solas: `/plugin` → Marketplaces → `appian-analisis-funcional` →
-  **Enable auto-update** (viene desactivado). Sin él, `/plugin marketplace update appian-analisis-funcional`.
-  Una versión llega cuando cambia `version` en `.claude-plugin/plugin.json`.
 
-**Retirar las skills sueltas**: si la organización tenía `appian-functional-analyst`,
-`appian-prototipos-<cliente>` (hoy `appian-prototipos`) o `appian-best-practices` como skills
-independientes, hay que eliminarlas al publicar el plugin. Si no, existen dos veces con
-versiones distintas y no se sabe cuál se activa.
-
-**Si Claude dice que «el kit de la skill no está disponible»**: esa persona tiene
-una skill suelta de antes del plugin (solo el SKILL.md, que descargaba el kit de un
-artefacto privado). Hay que retirarla e instalar el `.plugin`, que lleva todo dentro.
+**Retirar las skills sueltas**: si alguien tenía instalada como skill independiente una del plugin
+(`appian-functional-analyst`, `appian-best-practices`, `appian-reverse-engineering` o `appian-prototipos-<cliente>`, hoy
+`appian-prototipos`), hay que eliminarla: si no, existe dos veces con versiones distintas y no se sabe cuál se activa.
+`requisitos.py` avisa si encuentra una en `~/.claude/skills/`.
 
 ### MCP de documentación de Appian
 
-Se conecta solo al instalar el plugin. La primera consulta pide iniciar sesión
-con Google o GitHub (lo exige el proveedor, Kapa; no guarda datos personales).
-Límite: 300 consultas al día y 60 por minuto por persona. Es opcional: sin él,
-las skills consultan docs.appian.com por la web.
+Se conecta solo al instalar el plugin. La primera consulta pide iniciar sesión con Google o GitHub (lo exige el
+proveedor, Kapa; no guarda datos personales). Límite: 300 consultas al día y 60 por minuto por persona. Es opcional: sin
+él, las skills consultan docs.appian.com por la web.
 
-**No se incluye el Appian Dev MCP** (lectura y escritura de objetos de diseño):
-se instala en local por persona (Python 3.13, `uv`, ruta propia y el plug-in
-instalado en el entorno Appian por un administrador). Para construir con él, la
-entrada es la especificación técnica (`analisis/tecnico.md`) y el `app.json` del
-prototipo, que es un árbol SAIL real; buenas prácticas pide además la skill oficial
-`dev-mcp-skills` antes de escribir en un entorno.
+### Dev MCP y SAIL CLI
 
-**Solo se escribe en desarrollo.** La IA construye en el entorno de desarrollo y, en una urgencia, en el
-entorno de corrección; a pruebas y a producción llega un paquete que ha revisado una persona. En los demás
-entornos, el Dev MCP entra con una cuenta que solo lee, la misma para todo el equipo, y SAIL CLI no se usa,
-porque crea datos y lanza procesos. `LCP_TOOL_MODE=readonly` no basta: la documentación de Appian la describe,
-pero el Dev MCP 26.6.110 no la aplica. Detalle en
-`skills/appian-reverse-engineering/references/devmcp-setup.md`, «Solo se escribe en desarrollo».
+**No se incluyen.** El Appian Dev MCP (lectura y escritura de objetos de diseño) lo instala cada persona en local
+(Python 3.13, `uv`, su ruta y el plug-in instalado en el entorno Appian por un administrador), y SAIL CLI viene en su
+paquete. Guía: `skills/appian-reverse-engineering/references/devmcp-setup.md`. Para construir, la entrada es cada issue
+de `construccion/<U>/`, que trae lo que hace falta del técnico y del prototipo; buenas prácticas pide además la skill
+oficial `appian` antes de escribir en un entorno.
 
-**No se incluye `appian-sail-generator`**, la skill para escribir código SAIL suelto:
-va aparte.
+**Solo se escribe en desarrollo.** La IA construye en el entorno de desarrollo y, en una urgencia, en el entorno de
+corrección; a pruebas y a producción llega un paquete que ha revisado una persona. En los demás entornos, el Dev MCP
+entra con una cuenta que solo lee, la misma para todo el equipo, y SAIL CLI no se usa, porque crea datos y lanza
+procesos. `LCP_TOOL_MODE=readonly` no basta: la documentación de Appian la describe, pero el Dev MCP 26.6.110 no la
+aplica. Detalle en `skills/appian-reverse-engineering/references/devmcp-setup.md`, «Solo se escribe en desarrollo».
+
+**No se incluye `appian-sail-generator`**, la skill para escribir código SAIL suelto: va aparte.
 
 ## Confidencialidad
 
-- La carpeta del proyecto (fuentes, análisis y prototipo) contiene información del cliente: no se
-  publican fuera del proyecto. Es un repositorio git: dónde se sube lo decide cada proyecto, y es privado.
-- Un prototipo publicado como artefacto es privado hasta que su autor lo
-  comparte.
-- Los prototipos usan siempre personas y datos ficticios.
+- La carpeta del proyecto (fuentes, análisis, prototipo, issues y QA) contiene información del cliente: no sale del
+  proyecto. Es un repositorio git privado; dónde se aloja lo decide cada proyecto.
+- Si ingeniería inversa encuentra secretos escritos en la aplicación, sus valores quedan en claro en `as-is/`: el equipo
+  decide antes de subirla.
+- Los diagramas se dibujan con el navegador local: Mermaid (licencia MIT) y el visor de draw.io (licencia Apache 2.0)
+  van incluidos en el plugin. Para editar un `.drawio` a mano sirven draw.io Desktop, app.diagrams.net (no sube el
+  fichero) o la integración de draw.io con SharePoint y OneDrive.
+- Un prototipo publicado como artefacto es privado hasta que su autor lo comparte, y usa siempre personas y datos
+  ficticios.
+
+## Desarrollo
+
+Cómo se trabaja en este repositorio (la rama, las pruebas, la versión y el PR) está en `CLAUDE.md`. Qué comprueba
+`pruebas/comprobar_plugin.py` lo dice su cabecera; las pruebas de cada skill están en `pruebas/<skill>/` y las
+evaluaciones, en `pruebas/evaluaciones/`. En `docs/`: el diseño y el plan de la versión en curso (`docs/diseno/` y
+`docs/plan/`), los resultados de las evaluaciones (`docs/evaluaciones.md`) y lo pendiente (`docs/siguiente-version.md`).
 
 ## Versiones
 
@@ -192,24 +163,5 @@ va aparte.
 | 0.7.0-beta.3 | **Retoques ligeros y menores.** Analista: un retoque que nadie tiene que aprobar va por un camino corto (`actualizacion.md`): `proyecto.py version` hace en una orden la copia, la versión de los dos documentos, sus filas en `decisiones.md` (también las D con `--decision`) y la fuente en `proyecto.md`; el informe se escribe ya aplicado y se comprueba una vez; `indice.py impacto --cambio` dice la fila de técnico §13. Medido a ciegas: de 34, 34 y 47 llamadas a 16, 19 y 21. Ingeniería inversa: el informe de extracción lista las herramientas omitidas con su motivo (`toolsOmitted`), también con `--solo`. Diagramas: la etiqueta de cada salida de una puerta, en su propio tramo. `requisitos.py`: un servidor http ajeno (GitHub, Notion) ya no deja el Appian MCP Server sin comprobar |
 | 0.7.0-beta.2 | **Evolutivos, construcción y urgencias, y calidad de producción.** Cada cambio sobre una aplicación es una unidad (`EV-nn`, `URG-nn`) en `analisis/cambios.md` con su estado (Abierta, Aprobada, Construida, En producción), que solo mueve `proyecto.py cambio`: el jefe de proyecto aprueba la unidad una vez; lo ya construido se señala como posible petición de cambio sin pedir aprobación punto a punto; dos unidades sobre el mismo objeto necesitan una decisión antes de construir. Por script, sin leer documentos: el DF del cambio (`df_docx.js --cambio`), el encargo de construcción (`indice.py encargo`, que construye `appian-best-practices` en el orden de la skill oficial de Appian), las pruebas que hay que repetir y las colisiones. Ingeniería inversa verifica lo construido contra el técnico (`verificar --esperado`), detecta cambios hechos fuera (`deriva`), reextrae solo unos objetos y mantiene los IDs de los hallazgos. Las urgencias van por un camino corto: ficha, colisión, corrección en desarrollo o en el entorno de corrección, y la tarea de reaplicarla en el evolutivo, que no se construye sin ella. Analista: la versión sube solo si cambia algo y el Word se genera al enviarlo y nunca pisa uno entregado; lo que llega por el chat es una fuente; ficha INT con criterios para los sistemas externos; el Word con el color de la marca del cliente. Prototipos: la marca del cliente con solo su nombre y `capture.py --solo`. Diagramas: temporizador que interrumpe, avisos sin capa y ocho correcciones de dibujo y BPMN. Buenas prácticas: seis prácticas nuevas, cada una con su fuente oficial. Plugin neutral para cualquier equipo y cliente; descripciones de menos de 1.000 bytes probadas también frente a `appian-sail-generator` y la skill de Word; pruebas de las evaluaciones en `--completo` y CI con Node 24 |
 | 0.7.0-beta.1 | **Integración de ingeniería inversa, versión para el equipo.** Seis skills que se pasan el trabajo por el proyecto: **ingeniería inversa** documenta una aplicación existente en solo lectura, con cada dato con su evidencia, lo que no se pudo verificar registrado y los procesos grandes en tramos; **refactorización** (nueva) propone cómo rehacerla, entera o un módulo, con su migración y su hoja de ruta; el **analista** parte de un DF ya hecho, de una demo o de una aplicación existente, y prepara el guion de la próxima reunión; **diagramas** dibuja y exporta todos los procesos, también sin navegador; **prototipos** construye con la marca de cualquier cliente o la estándar de Appian y rehace solo lo que cambia tras una demo; **buenas prácticas** revisa objetos sueltos y remite la evaluación de una aplicación entera. `requisitos.py` y el aviso al empezar dicen qué falta en el equipo; el paquete no lleva nada personal ni de un cliente; las pruebas pasan en Windows, macOS y Linux; `pruebas/empaquetar.py` hace el `.plugin` |
-| 0.7.0-alpha.7 | **Sin solapes.** Cada skill dice en «Qué escribe» qué rutas del proyecto escribe y `comprobar_plugin.py` comprueba que cada una tiene un solo dueño (`pruebas/propietarios.json`), que solo diagramas pinta Mermaid y exporta BPMN y que las muletillas solo están en `redaccion.md`. Las seis descripciones dicen qué hace cada skill, cuándo usarla y qué no hace y quién lo hace: con solo ellas, un agente elige la skill de 38 peticiones de prueba sin fallar ninguna, también las de las fronteras difíciles. `indice.py grafo` escribe en el proyecto |
-| 0.7.0-alpha.6 | **Para todo el equipo.** `requisitos.py` dice qué falta en el equipo para cada skill, qué se pierde y cómo se instala en Windows, macOS y Linux, sin abrir nada; al empezar una sesión, el plugin lo avisa una vez por versión (hook `SessionStart`, en Claude Code, la pestaña Code de la app de escritorio y Cowork), y cada skill lo comprueba antes de su primera tarea. La tabla de requisitos de este README sale de `requisitos.json`. El paquete no lleva nada personal ni de un cliente, tampoco en los nombres de los ficheros, y los datos de ejemplo de prototipos son de una empresa ficticia. Los scripts funcionan en una consola de Windows sin UTF-8 y con `python` en vez de `python3`. Las pruebas pasan en Windows, macOS y Linux con Python 3.9 y 3.12 (GitHub Actions) |
-| 0.7.0-alpha.5 | **Analista: DF ya hecho, demo y aplicación existente.** Un DF del cliente entra como versión 1.0 en el formato del plugin, cada pieza validada con su ID original en la trazabilidad, y las reuniones de antes pasan por el informe de impacto: lo que no coincide con el DF requiere aprobación. Los comentarios de una demo son puntos del informe; prototipos rehace solo las pantallas del informe y no toca las validadas sin aprobación. Con `as-is/` (evolutivo o refactorización), cada historia dice si se conserva, cambia o es nueva, y el técnico, la situación de cada objeto (Nuevo, Modifica, Existe, Sustituye), la carga inicial y lo que viene de cada REF; avisa si se toca un objeto con un hallazgo grave o algo sin verificar. `indice.py pendientes` da el guion de la próxima reunión, `comprobar.py --anterior` avisa del texto que queda viejo, la columna «Requiere» del informe tiene formato fijo, y en una sesión desatendida lo que requiere aprobación queda pendiente y no se aplica. Los IDs de otra skill citados en su fuente («[FU-07 PAN-03]») no cuentan como referencias. Pruebas: tres evaluaciones del analista (incoherencias, demo y evolutivo) |
-| 0.7.0-alpha.4 | **Refactorización.** Skill nueva, `appian-refactorizacion`: a partir de `as-is/` y nada más, dice qué está mal hecho y por qué, con su evidencia y la sección de buenas prácticas que lo trata; cómo debería estar hecho, capa a capa, con lo que se descarta; cómo se pasa de lo que hay a lo nuevo y cómo conviven; la hoja de ruta, y lo que falta por decidir, con lo que no se pudo verificar. Una propuesta por problema, aunque ingeniería inversa lo vea por dos señales. `comprobar_propuesta.py` revisa la propuesta antes de entregarla: evidencias que llevan a `as-is/`, reglas que existen, objetos del inventario, cada problema con su solución, y avisa de lo no verificado que se pierde o se da por hecho. Ingeniería inversa registra un hallazgo por problema. Pruebas: la evaluación de malas prácticas sembradas (`pruebas/evaluaciones/malas-practicas/`) |
-| 0.7.0-alpha.3 | **Diagramas de procesos grandes.** Ingeniería inversa dibuja y exporta con la skill de diagramas, sin pintor ni exportador propios: un solo `.drawio` y un solo `.bpmn`. Un proceso que existe y no cabe en una página (`"tramos": true`) se dibuja en tramos, una página por tramo unidas por eventos de enlace, y `crear` dice qué pasos lleva cada uno; el `.bpmn` sigue siendo uno, con todos los pasos. Cada paso guarda los datos de Appian que lo sitúan (el nodo, la expresión del temporizador, el proceso al que llama) y cada salida de una puerta, su condición: no se ven en el dibujo, están en «Editar datos» de draw.io y van al `.bpmn`. Hay un paso para los errores, y la nota se dibuja como un corchete. Sin navegador, la colocación por capas hace el `.drawio` igual y avisa «sin PNG» (y quita el PNG viejo). `mermaid.py`, en la skill de diagramas, comprueba y pinta los Mermaid de un Markdown (`--md`) y avisa si uno queda demasiado ancho. Se retiran `bpmn_layout.py`, `validate_mermaid.py` y `render_diagrams.sh`. `comprobar_plugin.py` funciona también con Python 3.9 |
-| 0.7.0-alpha.2 | **Ingeniería inversa precisa y sin relleno.** Cada documento empieza por las preguntas que responde y da hechos, no consejos; toda certeza lleva su evidencia en el anexo; lo que no se pudo verificar queda registrado (NV) con lo que hace falta para resolverlo, y nada se da por inexistente sin decir dónde se buscó. La marca de inferido pasa a 🔶, como en el analista. LEEME y el resumen ejecutivo son un solo documento de entrada. `as-is/datos/` es lo que leen las demás skills (inventario, dependencias y lo que queda fuera de la aplicación, hallazgos, procesos y lo no verificado), y `comprobar_asis.py` revisa la documentación antes de entregarla. Reglas de prosa comunes con el analista (`redaccion.py`). El extractor reconoce los tipos habituales aunque la aplicación no tenga ninguno y avisa de las respuestas reutilizadas solo si son antiguas. Ningún script deja `__pycache__` dentro del plugin. Pruebas: una aplicación ficticia mal hecha a propósito y la evaluación del recién llegado (`pruebas/evaluaciones/`) |
-| 0.7.0-alpha.1 | **Ingeniería inversa en el plugin y la marca de cualquier cliente.** Ingeniería inversa documenta la aplicación tal como está, sin juzgarla ni rehacerla, y todo queda en el proyecto: la extracción va en `as-is/extraccion/` tal cual la devuelve el Dev MCP, sin ocultar usuarios, datos ni secretos (se trabaja en entornos controlados; un secreto escrito en la aplicación sigue siendo un hallazgo de seguridad), con rutas cortas para Windows y OneDrive. Al repetir o retomar, en otra sesión o en otro equipo, no se vuelve a pedir lo que ya está. Una carpeta es de una aplicación y un entorno: si la aplicación ha cambiado, `extract --refresh` lo pide todo otra vez. Prototipos: la skill pasa a llamarse `appian-prototipos` (antes `appian-prototipos-<cliente>`) y construye con la marca estándar de Appian si no se le da otra; la de un cliente va en `prototipo/` de su proyecto. `marca.py web` saca de la web del cliente sus colores, su logo y su tipografía, y `marca.py crear` escribe su configuración completa (el Site con su logo, el perfil CSS para Admin Console, la paleta, los estados, los gráficos y `marca-<id>.md` para quien construye) con el contraste WCAG 2.2 AA ya ajustado. Formas SQUARED por defecto e iniciales del avatar legibles con cualquier realce. Plugin: ninguna skill lleva pruebas, ejemplos, proyectos ni la marca de un cliente (las pruebas están en `pruebas/<skill>/`); `comprobar_plugin.py --completo` pasa también las de ingeniería inversa y, con `--plugin`, las mismas sobre la copia del paquete. La regla de dudas de Appian es la misma en las tres skills que la llevan y vale con el plugin instalado, y la orden zip del README deja fuera lo de desarrollo |
-| 0.6.0-beta.1 | **Dos salidas, una fuente, y skills que encajan.** Analista: cada proyecto es una carpeta (`proyecto.py iniciar`, `estado`, `copia`) con `analisis/funcional.md` (lo que valida el cliente: objetivo y alcance, perfiles, proceso paso a paso con su diagrama, estados, escenarios, historias de usuario con criterios «Se acepta si», pantallas con sus partes y su captura, información que gestiona, avisos, documentos, otros sistemas, condiciones de uso y pendientes), `analisis/tecnico.md` (entorno, convenciones en español, decisiones `DT-nn` con su buena práctica y su verificación, modelo de datos con el uso funcional o técnico de cada campo, seguridad por capa, lógica, interfaces, procesos, avisos, integraciones, operación, plan de construcción y pruebas) y `analisis/decisiones.md` (versiones y decisiones del cliente). El DF en Word sale del funcional sin fuentes, estados ni lo anulado (`df_docx.js`), y el Word devuelto con comentarios o cambios marcados se lee como una fuente más. `indice.py` consulta el análisis sin leerlo entero y `comprobar.py` revisa IDs, limpieza del DF, redacción (muletillas, frases largas o repetidas), coherencia entre funcional y técnico e informes de impacto. Guía de redacción, ejemplo ficticio completo y `selftest.py`. `leer_fuentes.py` ya no cataloga como imagen los `.txt`/`.md` sin fecha en el nombre. Buenas prácticas: alcance en la descripción, el proyecto como fuente (requisitos aprobados y `DT-nn`), Mercury corregido según la documentación y `seccion.py` para leer una sección. Prototipos: «Doctrina Appian» en la guía, diálogos a FULL, Mercury sin iconos, gráficos con tabla alternativa y solos con más de 7 puntos, visibilidad con su capa de seguridad, comprobaciones nuevas del validador y `--confirmadas` para no cambiar pantallas que el cliente ya confirmó; la entrada es el funcional y la versión de Appian sale del técnico; caso de ejemplo migrado. Diagramas: lo automático va en el carril «Aplicación», los nombres largos de carril se parten en dos líneas y la descripción remite al analista cuando el proceso sale de reuniones. Plugin: mapa de qué hace cada skill, regla común de dudas de Appian (MCP `appian-docs`, con URL o «sin verificar») y `pruebas/comprobar_plugin.py` |
-| 0.6.0-alpha.2 | **`appian-diagramas-bpmn`: dibujos sin solapes y BPMN más completo** (sugerencias de la skill `appian-reverse-engineering`). Las tareas ya no se montan unas sobre otras cuando su nombre es corto, ni las etiquetas largas de eventos y puertas sobre la tarea vecina: la colocación del motor se ajusta al tamaño real de las formas de draw.io (`scripts/colocacion.py`) y las etiquetas se ajustan a 110 px. La etiqueta de un evento o una puerta va al lado por el que no llega ningún flujo. Tipos nuevos: `inicio_temporizador`, `inicio_mensaje`, `script` y `llamada` (llamada a otro proceso); flujo por defecto (`"defecto": true`); participantes externos (`externos`) con flujos de mensaje, y notas unidas a un paso (`notas`), todo con su lectura, comparación y cambios (`externo`, `quitar_externo`, `nota`, `quitar_nota`), también con la colocación hecha a mano. La exportación a BPMN 2.0 conserva todo eso (inicio con temporizador o mensaje, `scriptTask`, `callActivity`, `default`, participantes y `messageFlow`, `textAnnotation` con su asociación y el lado de cada etiqueta). Aviso cuando el diagrama pasa de 1.600 px de ancho y PNG limitado a unos 3.200 px. Ejemplo nuevo `ejemplos/pedido.json` y autotest ampliado |
-| 0.6.0-alpha.1 | **Skill nueva `appian-diagramas-bpmn`**: diagramas de proceso en draw.io con las formas BPMN de draw.io (eventos, puertas, tareas de usuario, de sistema y manuales, subprocesos) y un carril por perfil. `diagrama.py crear` coloca los pasos con el motor de carriles de Mermaid y escribe `.drawio`, PNG y `.json` (el proceso que conoce el análisis); `actualizar` aplica una lista corta de cambios, recoloca todo si nadie ha movido nada y, si se colocó a mano, lo respeta y pone lo nuevo junto a su paso anterior; `comparar` dice qué se cambió a mano en draw.io (también en ficheros comprimidos o con formas básicas), da código a lo añadido y con `--aceptar` lo incorpora; `leer` devuelve el proceso en JSON para no leer XML; `bpmn` exporta BPMN 2.0 con posiciones (se abre en Camunda Modeler o bpmn.io). PNG sin conexión con el visor de draw.io incluido. El analista dibuja con ella el flujo de la Sec 6 (los demás diagramas siguen en Mermaid, cuyo motor pasa a esta skill). Prueba automática `selftest.py` |
-| 0.5.0-beta.7 | **Nueva skill `appian-best-practices`**: las buenas prácticas oficiales de Appian pasan a vivir en este plugin (y solo aquí). Incluye el mapa de decisiones de solución, trece referencias por dominio con sus fuentes (documentación oficial y Knowledge Base de Appian Community), las quality gates y los runbooks de mantenimiento; marca lo que depende de la versión o del *tier* de Appian y usa el MCP `appian-docs` para verificar. Las skills del analista y de prototipos no cambian |
-| 0.5.0-beta.6 | **Probado de punta a punta con transcripciones reales de dos procesos** (síntesis, actualización con una reunión nueva y prototipo de 8 pantallas cada uno; material sin incorporar al plugin). Analista: `leer_fuentes.py` ya no da «0 fuentes» sin avisar cuando las fuentes están en la propia carpeta de salida (y sale con error si no cataloga ninguna), y reconoce las transcripciones `.txt` con marcas `[hh:mm:ss]` y su duración; la plantilla dice el formato exacto que leen los scripts (títulos `## N. Título`, reglas de negocio en filas) y `comprobar_ddf.py` avisa si faltan secciones con ese título, de IDs citados que no existen en ningún sitio, de fuentes sin participantes identificados (la comprobación de nombres no las cubre) y ya no toma las capturas del prototipo como cambios de las fichas; `ddf_indice.py derivadas` no reescribe una Sec 7 hecha a mano ni reutiliza IDs de casos de uso; instrucciones para diagramas sin Word, aplicaciones ya construidas que se explican en demos, transcripciones ilegibles y aprobaciones en modo desatendido (una decisión explícita del cliente no se le vuelve a preguntar). Prototipos: la fuente Open Sans va dentro del HTML (licencia OFL): capturas con la fuente de la marca y sin depender de internet; se corrige el espaciado raro de las etiquetas en las capturas; un alta con record type abierta sin `id` ya no sale rellena con otro registro; `action_banner` informativo o de error con botón llega al contraste AA; `contrast_audit.py` sale con error si hay fallos; pies de captura y trazabilidad con el nombre de la vista y el `ref` de la ficha (también por vista); `noScreen` para requisitos sin pantalla propia; el validador avisa si la primera columna de un listado no enlaza a la ficha o si un texto visible muestra IDs del análisis; instrucciones: partir del código de cada patrón en `generar_plantillas.py`, tareas de captura de datos → P03, cuadro de mando → P08, API `PROTO.show` para la prueba dirigida y ruta de las capturas en el `ddf.md` |
-| 0.5.0-beta.5 | **Coherencia y dependencias revisadas**. Auditoría de las dos skills: todo fichero, carpeta, script y parámetro que citan existe dentro del plugin; no hay rutas de un equipo concreto ni enlaces a artefactos; las dependencias externas son solo las documentadas y opcionales (Playwright y navegador para capturas, pypdf/poppler para PDF, Node con `docx` para el Word, Open Sans de Google Fonts, MCP de documentación). Correcciones: la comprobación del `ddf.md` (`comprobar_ddf.py`) pasa al paso de verificación, porque estaba dentro del paso del Word y se saltaba cuando solo se pedía el `ddf.md`; `comprobar_ddf.py` y `ddf_indice.py` leen «Se verifica en» también de los RF en tabla (modo fiel), con lo que el caso de ejemplo pasa su propia comprobación; el nombre de la herramienta del MCP de documentación ya no se fija (cambia en el servidor). README: qué hacer si alguien tiene la skill suelta de antes del plugin («el kit de la skill no está disponible») |
-| 0.5.0-beta.4 | **Plugin genérico para cualquier proceso**. El primer proceso deja de ser el modelo: su recorrido completo pasa a `examples/casos/<caso>/`, un caso más al mismo nivel que los que se añadan (otros procesos, informes…), y `examples/README.md` explica qué enseña cada ejemplo y cómo añadir un caso. `selftest.py` descubre solo los casos de `examples/casos/` y les pasa validación, construcción, prueba de humo y contraste. Los ejemplos de la documentación (formato del spec, reglas de textos, plantilla del DDF del analista) usan un dominio genérico y ficticio de expedientes, el mismo que las plantillas, y el formato del spec pasa a Appian 26.9. Las dos skills dicen explícitamente que el dominio sale del `ddf.md` del proyecto y la rúbrica UX suma el criterio 25: nada de restos de plantillas o ejemplos |
-| 0.5.0-beta.3 | **Appian 26.9 completo y revisión de color y contraste**. Versión por defecto 26.9 y catálogo de los 147 componentes de interfaz de Appian por categoría (`schemas/catalogo-appian.json`); `selftest.py` comprueba que los 147 están en los schemas, el motor y la galería. Componentes nuevos en el motor: navegadores en columnas de usuarios, grupos, documentos y carpetas, jerarquías en columnas y en árbol (`$tree`, `$icon`), organigrama (a!orgChartField), a!pickerFieldDocumentsAndFolders, enlaces de autorización, noticias e informes, vídeo y contenido web, además de `targetLocation` en a!recordLink y `bannerMessage` en a!startProcessLink. Galería navegable de todos los componentes (`examples/componentes/`, 14 pantallas) y patrones del SAIL Design System 26.9 como helpers: calendario mensual y semanal con agenda del día (`calendar_month`, `calendar_week`), hilo de comentarios con adjuntos y respuestas plegables (`comment_thread`) y tablero kanban (`kanban`). Perfil CSS de Appian: la marca define su `cssProfile`, el validador lo comprueba contra las 156 propiedades de 26.9 (`schemas/css-profile-properties.json`) y `build.py` escribe `<prototipo>-perfil-css.txt` listo para Admin Console › Branding. Color y contraste según la guía de Appian (design-rules §4 reescrito): paleta corta con significado fijo, gráficos con el color de cada estado (`state_chart_colors`, `$series`) y series en un orden con 3:1 sobre blanco (`CHART`), texto calculado para el máximo contraste sobre cualquier fondo, también con transparencias. Nuevo `scripts/contrast_audit.py`, que mide en el navegador el contraste real de cada pantalla (texto 4,5:1, texto grande 3:1, bordes de campo y textos de gráficos 3:1) y que el autotest pasa, junto con la prueba de humo, en los cinco ejemplos; el validador añade reglas estáticas de contraste (texto e iconos sobre su contenedor, etiquetas, sellos, series de gráficos sin etiquetas de datos). Pasada visual de las plantillas: datos de ejemplo más variados y coherentes (fechas de la tarea tomadas del expediente), accesos rápidos sin repetir la acción principal, anillo con etiquetas, avatares con color por persona, eventos con el tinte de su tipo. Guía: patrones y componentes de 26.9 (§16) y rúbrica de 24 criterios (§17); formato del spec con `users`, `groups` y `documents`, `$local`, acciones `prepend` y filtros de fecha en texto (`longdate`, `monthyear`, `dayname`, `daymonth`, `time`) |
-| 0.5.0-beta.2 | **Más repertorio de interfaz y componentes de IA**. El motor pinta con su anatomía real los chats de IA de Appian (a!agentChatField con selector de conversaciones, llamadas a herramientas, modo depuración, botón Detener y `outputsSaveInto`; a!chatField con mensajes de componentes; a!dataFabricChatField con preguntas sugeridas; a!recordsChatField; a!documentsChatField), el visor de documentos con página inicial y resaltado, la búsqueda inteligente de grids (`smartSearchType`, puntuación por fila y orden por relevancia), el drilldown de gráficos (`fv!selection`) y las novedades de 26.7–26.9 (pestañas verticales, bordes y pesos de etiqueta, `a!pageLink`, `a!recordKnowledgeGraph`, filtro por leyenda, estilos de subida, celdas compuestas en grids). Catálogo de bloques (`references/bloques.md`, ~40 helpers con SAIL real: cabeceras hero y de filtros, navegación lateral, KPI con minigráfico o progreso, duración, pasos, clasificación, grid con detalle, selección, drilldown, lista doble, entradas dinámicas, documentos, comentarios, cards-botón e informativas, bloques de IA) con galerías navegables (`examples/bloques/`, `examples/ia/`). Patrones nuevos P09 maestro-detalle, P10 portada de módulo, P11 asistente de IA y P12 revisión de datos sugeridos por IA; las 12 plantillas y el catálogo se generan con `templates/generar_plantillas.py` y datos coherentes entre pantallas. Guía: IA (§14: componente según el origen de la respuesta, colocación, estado inicial, fiabilidad, fuente, la IA propone y el usuario decide), cabeceras y navegación secundaria (§15) y rúbrica de 22 criterios. El validador añade reglas de IA (chat de datos solo en su panel, nada de chats en side-by-side, `debugMode`, textos por defecto en inglés, puntuaciones visibles) y `$uxIgnore` para desviaciones justificadas. Cifras con separador de miles también en 4 dígitos |
-| 0.5.0-beta.1 | **Diseño de pantallas (fases F0–F2 y rediseño de ficha e inicio)**. Guía UX nueva (`references/design-rules.md`): SAIL Design System de Appian 26.6 adaptado a un cliente, con jerarquía de títulos, cards blancas con sombra sobre fondo gris, paleta semántica de estados (`brand-<id>.json → states`), un único botón SOLID por pantalla, destructivas en GHOST rojo, grids de ≤7 columnas consolidadas, fichas con franja de datos clave y áreas 1:N en vistas, y rúbrica de revisión de 20 criterios. El validador emite avisos `UX ·`, cierra con «Calidad UX», comprueba la versión mínima de Appian por componente, parámetro y valor (`schemas/appian-versions.json`, por defecto 26.6) y rechaza funciones y parámetros que no existen en Appian. El motor pinta a!sidebarTemplate, a!tabLayout, plantillas de a!cardChoiceField, a!chartReferenceLine, a!scatterChartField, historial en timeline, KPI con tendencia, selección de filas, mapas de calor, chat con IA (a!chatField, a!agentChatField), pickers de documentos, carpetas y personalizados, y usa por defecto los valores documentados de Appian. `sail_helpers.py` gana bloques (`key_facts`, `field_summary`, `kpi_strip`, `section_card`, `action_banner`, `empty_state`, `two_line`, `alert_icons`, `choice_cards`…). Ejemplo de proceso rehecho, y plantillas P02 y P06 renovadas |
-| 0.4.0 | Discovery incremental, probado con 4 reuniones reales sobre un análisis de 11.600 líneas: procedimiento `references/actualizacion.md` (nota de la fuente, puntos clasificados NUEVO/COMPLETA/CONFIRMA/VALIDA/CAMBIA/ANULA/RESPONDE/ALCANCE±, dependencias, informe de impacto `impacto/FU-xx.md` que aprueba el analista, aplicar y verificar); estado por pieza con 🔒 Validado y anulaciones tachadas; registro de decisiones (D-xxx) en la Sec 17; `ddf_indice.py` (consultar el análisis sin leerlo entero: buscar, ficha, sección, impacto, siguientes IDs, grafo, secciones derivadas, diagramas); `unir_modulos.py`; `comprobar_ddf.py` con `--anterior` e `--impacto` (IDs desaparecidos, cambios no declarados, lo 🔒 sin aprobación, tramos de la reunión sin leer) y `--corregir-citas`; Word con tachados y columnas que no se parten |
-| 0.3.0 | Probado de punta a punta con 25 transcripciones reales (modo síntesis): lectura de transcripciones .txt de Teams (tipo, participantes y fecha desde el nombre), rutas con corchetes, procedimiento para volumen grande (notas por fuente con agentes en paralelo, módulos con rangos de IDs, fusión), `comprobar_ddf.py` (IDs duplicados, criterios, citas y nombres) y `ddf_docx.js` (Word con portada, índice, figuras numeradas y pie de confidencialidad; requiere Node.js y el paquete `docx`) |
-| 0.2.0 | Fichas de pantalla (campos con origen y valor si vacío, filtros, ordenación, acciones con qué pasa después, confirmación de borrados, visibilidad por rol) y fichas de tarea (estado de entrada, opciones con estado de salida, criterio mínimo), cada una con sus criterios de aceptación; la Sec 8 remite a ellos y la Sec 16 es la matriz de cobertura; actores con «Participa en»; diagramas sin comentarios y con IDs de actividad; modo «ficha suelta»; los criterios sirven de lista de comprobación del prototipo |
-| 0.1.0 | Primera versión: analista con lectura de fuentes, modos fiel y actualización, `ddf.md` como fuente de verdad y Mermaid sin conexión; prototipos con el kit completo, entrada desde el `ddf.md`, soporte de Chrome / Edge y `selftest.py`; MCP público de documentación de Appian |
+
+Las versiones anteriores, de la 0.1.0 a la 0.7.0-alpha.7, están en el historial de git de este fichero.

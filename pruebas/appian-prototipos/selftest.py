@@ -584,7 +584,7 @@ def marca_detalles(tmp):
     probs = [] if build._lum is validate._lum and "def _lum" not in texto and [build.on_color(c) for c in ("#1D659C", "#F2B134")] \
         == ["#ffffff", "#1a1a1a"] else ["build.py tiene su propia _lum (o on_color cambia): tiene que usar la de validate.py"]
     out.append(("build.py usa la luminancia (_lum) de validate.py y on_color da lo mismo", probs))
-    # 5. la marca de un cliente con solo su nombre (R5): SKILL.md dice cómo buscarla, marca.py web con un nombre lo dice y la
+    # 5. la marca de un cliente con solo su nombre: SKILL.md dice cómo buscarla, marca.py web con un nombre lo dice y la
     # descripción la nombra
     probs = []
     code, salida = run([marca, "web", "Nubarrón Mensajería"])

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="144" viewBox="0 0 900 144" role="img" aria-labelledby="titulo descripcion">
   <title id="titulo">Cómo se cambia el plugin</title>
-  <desc id="descripcion">Siete pasos: git pull, cambios con Claude Code, probar con --plugin-dir, pasar las pruebas con --completo, subir la versión en plugin.json, push a main y, con eso, la versión le llega al equipo.</desc>
+  <desc id="descripcion">Ocho pasos: git pull; los cambios, en una rama; probarlos con claude --plugin-dir; la comprobación básica antes de cada commit; subir la versión en plugin.json y en el README; abrir el PR con el merge automático; GitHub pasa la batería completa y, si sale en verde, lo une a main; y la versión le llega al equipo con auto-update.</desc>
   <style>
     :root {
       --fondo: #f6f8fc; --marco: #dfe4ef; --tarjeta: #ffffff; --via: #bcc6dd;
@@ -26,40 +26,45 @@
 
   <rect class="fondo" x=".5" y=".5" width="899" height="143" rx="14"/>
 
-  <path class="via" d="M92 52h82M218 52h84M346 52h82M472 52h82M598 52h84M726 52h82"/>
+  <path class="via" d="M82 52h68M193 52h68M304 52h68M415 52h68M526 52h68M637 52h68M748 52h67"/>
 
-  <circle class="paso" cx="70" cy="52" r="15"/>
-  <text class="numero" x="70" y="56.3">1</text>
-  <text class="titulo" x="70" y="96">Al día</text>
-  <text class="mono" x="70" y="115">git pull</text>
+  <circle class="paso" cx="60" cy="52" r="15"/>
+  <text class="numero" x="60" y="56.3">1</text>
+  <text class="titulo" x="60" y="96">Al día</text>
+  <text class="mono" x="60" y="115">git pull</text>
 
-  <circle class="paso" cx="196" cy="52" r="15"/>
-  <text class="numero" x="196" y="56.3">2</text>
-  <text class="titulo" x="196" y="96">Cambios</text>
-  <text class="nota" x="196" y="115">con Claude Code</text>
+  <circle class="paso" cx="171" cy="52" r="15"/>
+  <text class="numero" x="171" y="56.3">2</text>
+  <text class="titulo" x="171" y="96">Cambios</text>
+  <text class="nota" x="171" y="115">en una rama</text>
 
-  <circle class="paso" cx="324" cy="52" r="15"/>
-  <text class="numero" x="324" y="56.3">3</text>
-  <text class="titulo" x="324" y="96">Probar</text>
-  <text class="mono" x="324" y="115">--plugin-dir .</text>
+  <circle class="paso" cx="282" cy="52" r="15"/>
+  <text class="numero" x="282" y="56.3">3</text>
+  <text class="titulo" x="282" y="96">Probar</text>
+  <text class="mono" x="282" y="115">--plugin-dir</text>
 
-  <circle class="paso" cx="450" cy="52" r="15"/>
-  <text class="numero" x="450" y="56.3">4</text>
-  <text class="titulo" x="450" y="96">Pruebas</text>
-  <text class="mono" x="450" y="115">--completo</text>
+  <circle class="paso" cx="393" cy="52" r="15"/>
+  <text class="numero" x="393" y="56.3">4</text>
+  <text class="titulo" x="393" y="96">Comprobar</text>
+  <text class="nota" x="393" y="115">antes del commit</text>
 
-  <circle class="paso" cx="576" cy="52" r="15"/>
-  <text class="numero" x="576" y="56.3">5</text>
-  <text class="titulo" x="576" y="96">Versión</text>
-  <text class="mono" x="576" y="115">plugin.json</text>
+  <circle class="paso" cx="504" cy="52" r="15"/>
+  <text class="numero" x="504" y="56.3">5</text>
+  <text class="titulo" x="504" y="96">Versión</text>
+  <text class="mono" x="504" y="115">plugin.json</text>
 
-  <circle class="paso" cx="704" cy="52" r="15"/>
-  <text class="numero" x="704" y="56.3">6</text>
-  <text class="titulo" x="704" y="96">Push</text>
-  <text class="nota" x="704" y="115">a main</text>
+  <circle class="paso" cx="615" cy="52" r="15"/>
+  <text class="numero" x="615" y="56.3">6</text>
+  <text class="titulo" x="615" y="96">PR</text>
+  <text class="nota" x="615" y="115">merge automático</text>
 
-  <circle class="fin" cx="830" cy="52" r="16"/>
-  <path class="visto" d="M823 52.3l4.8 4.8 9-9.8"/>
-  <text class="titulo" x="830" y="96">Al equipo</text>
-  <text class="nota" x="830" y="115">con auto-update</text>
+  <circle class="paso" cx="726" cy="52" r="15"/>
+  <text class="numero" x="726" y="56.3">7</text>
+  <text class="titulo" x="726" y="96">GitHub prueba</text>
+  <text class="mono" x="726" y="115">--completo</text>
+
+  <circle class="fin" cx="838" cy="52" r="16"/>
+  <path class="visto" d="M831 52.3l4.8 4.8 9-9.8"/>
+  <text class="titulo" x="838" y="96">Al equipo</text>
+  <text class="nota" x="838" y="115">con auto-update</text>
 </svg>

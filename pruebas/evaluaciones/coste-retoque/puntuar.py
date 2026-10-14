@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Puntúa la prueba de coste «texto de un botón construido» (tarea 5.12): el cliente pide cambiar el texto del botón
+"""Puntúa la prueba de coste «texto de un botón construido»: el cliente pide cambiar el texto del botón
 «Nueva solicitud» del panel (PAN-01, `DEM_Dashboard`, construido en EV-01 y en producción).
 
 Uso:

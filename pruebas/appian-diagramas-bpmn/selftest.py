@@ -63,7 +63,7 @@ def celdas(ruta):
     return root, {c.get("id"): c for c in root}
 
 
-# ---------------------------------------------------------------- Tarea 10: datos de Appian y notas
+# ---------------------------------------------------------------- datos de Appian y notas
 NS_BPMN = {"bpmn": "http://www.omg.org/spec/BPMN/20100524/MODEL", "bpmndi": "http://www.omg.org/spec/BPMN/20100524/DI",
            "di": "http://www.omg.org/spec/DD/20100524/DI"}
 XSI_TYPE = "{http://www.w3.org/2001/XMLSchema-instance}type"
@@ -874,7 +874,7 @@ def etiquetas_de_puertas(tmp):
           f"({len(mal)}) " + "; ".join(mal[:4]))
 
 
-# ---------------------------------------------------------------- Tarea 12: sin navegador y procesos grandes
+# ---------------------------------------------------------------- sin navegador y procesos grandes
 def bpmn_valido(ruta):
     """Lo que necesitan Camunda Modeler y bpmn.io para abrir y dibujar un BPMN 2.0: ids únicos, referencias que
     existen, cada nodo en un carril, incoming y outgoing iguales a los flujos, un BPMNShape por nodo y carril y un
@@ -1277,7 +1277,7 @@ def main():
     probar_mermaid()
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="diagramas-"))
     try:
-        # Tarea 12: sin navegador y procesos que no caben en una página
+        # sin navegador y procesos que no caben en una página
         sin_navegador(tmp / "sin")
         conexiones(tmp / "conexiones")
         etiquetas_de_puertas(tmp / "etiquetas")
@@ -1434,7 +1434,7 @@ def main():
         out = run("actualizar", ped, tmp / "c7.json")
         check("participante externo quitado: «Banco»" in out and "nota quitada de ACT-02" in out
               and run("comparar", ped).startswith("Sin cambios"), "actualizar (manual): quitar un externo y un paso con nota")
-        # Tarea 10: datos de Appian en el diagrama y en el BPMN; notas de texto largo
+        # datos de Appian en el diagrama y en el BPMN; notas de texto largo
         datos_de_appian(tmp)
         nota_larga(tmp)
         # 9. la etiqueta de un evento va al lado por el que no llega ningún flujo

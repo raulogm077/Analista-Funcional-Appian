@@ -204,7 +204,7 @@ def test_objeto_de_fuera_de_la_aplicacion(tmp_path):
     assert comprueba(salida) == ([], [])
 
 
-# ---------------------------------------------------------------- sin agujeros (tarea 1.5 de la 0.7.0-beta.2)
+# ---------------------------------------------------------------- sin agujeros
 
 def test_nombre_inventado_fuera_del_codigo(tmp_path):
     """Un nombre con el prefijo también se mira fuera del código: en texto plano, en negrita o como texto de un enlace.

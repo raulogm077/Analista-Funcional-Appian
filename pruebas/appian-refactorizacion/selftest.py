@@ -81,7 +81,7 @@ def main():
            r.stdout + r.stderr)
         ok("comprobar_propuesta.py no deja __pycache__ en la skill", not (SKILL / "scripts" / "__pycache__").exists())
 
-        # 2. Los cinco errores del plan
+        # 2. Los cinco errores que tiene que ver
         da_error("evidencia rota: enlace a una ficha del anexo que no existe",
                  [("anexo/cdt/REX_Revision.md", "anexo/cdt/REX_Revisiones.md")], "REX_Revisiones.md", "no existe")
         da_error("«BP 99 §1» que buenas prácticas no tiene",

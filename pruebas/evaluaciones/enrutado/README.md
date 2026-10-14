@@ -1,11 +1,11 @@
 # Prueba de enrutado
 
-Mide si cada petición entra por la skill que le toca cuando solo se conocen las descripciones de las skills (el `description` de
-cada SKILL.md). Son 35 peticiones como las diría alguien del equipo, sin nombrar la skill: 23 visibles en
-`pruebas/enrutado.json` y 12 en `ocultas/enrutado.json`, que no lee quien ajusta las descripciones hasta medir. Formato
-de las dos: `[{"peticion": "…", "skill": "appian-…"}]`. Los resultados van a `docs/evaluaciones.md`.
+Mide si cada petición entra por la skill que le toca cuando solo se conocen las descripciones de las skills (el
+`description` de cada SKILL.md). Son 35 peticiones como las diría alguien del equipo, sin nombrar la skill: 23 visibles
+en `pruebas/enrutado.json` y 12 en `ocultas/enrutado.json`, que no lee quien ajusta las descripciones hasta medir.
+Formato de las dos: `[{"peticion": "…", "skill": "appian-…"}]`. Los resultados van a `docs/evaluaciones.md`.
 
-## Qué hay
+## Lo que hay
 
 | Skill | Visibles | Ocultas |
 |---|---|---|
@@ -14,9 +14,10 @@ de las dos: `[{"peticion": "…", "skill": "appian-…"}]`. Los resultados van a
 | `appian-prototipos` | 3 | 2 |
 | `appian-reverse-engineering` | 3 | 2 |
 | `appian-refactorizacion` | 3 | 2 |
-| `appian-best-practices` (tres en inglés) | 4 | 1 |
+| `appian-best-practices` (dos visibles y la oculta, en inglés) | 4 | 1 |
+| `appian-qa` | 3 | 2 |
 
-Las seis fronteras del plan, con su petición visible; las ocultas llevan otra variante de cada una:
+Las seis fronteras entre skills, con su petición visible; las ocultas llevan otra variante de cada una:
 
 | Frontera | Skill | Visible |
 |---|---|---|
@@ -29,15 +30,17 @@ Las seis fronteras del plan, con su petición visible; las ocultas llevan otra v
 
 Otras visibles tocan una frontera vecina: un cambio en una aplicación ya documentada con historias y técnico (12,
 analista), «cómo debería estar hecho con buenas prácticas» un módulo con su `as-is/` (13, refactorización), una
-aplicación lenta que se quiere rehacer (19, refactorización) y las capturas para el DF (11, prototipos).
+aplicación lenta que se quiere rehacer (19, refactorización) y las capturas para el DF (11, prototipos). Las tres de
+`appian-qa` (21 a 23) piden probar una unidad como cada rol, repetir los recorridos guardados antes del paquete y
+rehacer uno que falla tras un cambio hecho a propósito.
 
-Un tercer lote, `fronteras/enrutado.json`, trae 8 peticiones de los solapes más probables sin las palabras que delatan la
-skill («as-is», «draw.io», «DF», «prototipo»…; lo comprueba `prueba_puntuar.py`): `python3 puntuar.py --enunciado
---fronteras` y `python3 puntuar.py respuestas-fronteras.json --fronteras`.
+Un tercer lote, `fronteras/enrutado.json`, trae 8 peticiones de los solapes más probables sin las palabras que delatan
+la skill («as-is», «draw.io», «DF», «prototipo»…; lo comprueba `prueba_puntuar.py`):
+`python3 puntuar.py --enunciado --fronteras` y `python3 puntuar.py respuestas-fronteras.json --fronteras`.
 
 Un cuarto lote, `vecinas/enrutado.json`, mide la frontera con skills de fuera del plugin que el usuario puede tener a la
 vez: `vecinas.json` trae sus descripciones tal cual las ve el modelo (hoy `appian-sail-generator` y `docx`), que van en
-el enunciado con las seis y valen como respuesta. Son 13 peticiones, con las palabras de cada frontera (maqueta, SAIL,
+el enunciado con las siete y valen como respuesta. Son 13 peticiones, con las palabras de cada frontera (maqueta, SAIL,
 Word, DF): una maqueta para enseñar o validar es de prototipos y el SAIL para pegar, de `appian-sail-generator`; el DF
 en Word lo genera el analista y un Word suelto, `docx`; construir un evolutivo es de buenas prácticas y una incidencia
 urgente la registra el analista. `python3 puntuar.py --enunciado --vecinas` y
@@ -47,8 +50,8 @@ publicada. `vecinas/ocultas.json` trae 10 peticiones más de esa frontera, que n
 
 ## Cómo se hace
 
-1. **El enunciado.** `python3 puntuar.py --enunciado > <carpeta temporal>/enunciado.md`: las seis descripciones,
-   leídas de `skills/`, y las peticiones visibles, sin la skill esperada.
+1. **El enunciado.** `python3 puntuar.py --enunciado > <carpeta temporal>/enunciado.md`: las siete descripciones, leídas
+   de `skills/`, y las peticiones visibles, sin la skill esperada.
 2. **El enrutado.** Un agente que no ha visto el repositorio recibe solo ese enunciado y devuelve
    `[{"peticion", "skill"}]` en el mismo orden, una skill por petición. Se guarda como `respuestas.json`, fuera del
    repositorio.
@@ -60,11 +63,15 @@ publicada. `vecinas/ocultas.json` trae 10 peticiones más de esa frontera, que n
    `python3 puntuar.py --enunciado --ocultas` y `python3 puntuar.py respuestas-ocultas.json --ocultas`. Sin ellas no se
    sabe si el ajuste vale para peticiones nuevas o solo para las que fallaron.
 
-Criterio de la Tarea 29: todas, también las ocultas cuando se pasan.
+`claude plugin eval` espera otro formato de casos y llama a la API. Si se quiere, `enrutado.json` se convierte en casos
+con el evaluador `tool_used: Skill`.
 
-`claude plugin eval` espera otro formato de casos y llama a la API. Si se quiere, `enrutado.json` se convierte en
-casos con el evaluador `tool_used: Skill`.
+## Criterio
 
-`python3 prueba_puntuar.py` prueba `puntuar.py` y las baterías (al menos 4 peticiones por skill, sin repetir y un
-tercio ocultas; las de las vecinas, con cada vecina esperada alguna vez) sin imprimir las ocultas. En Windows, `python`
-en vez de `python3`.
+Todas, también las ocultas cuando se pasan.
+
+## Prueba del puntuador
+
+`python3 prueba_puntuar.py` prueba `puntuar.py` y las baterías (al menos 4 peticiones por skill, sin repetir y un tercio
+ocultas; las de las vecinas, con cada vecina esperada alguna vez) sin imprimir las ocultas. En Windows, `python` en vez
+de `python3`.
