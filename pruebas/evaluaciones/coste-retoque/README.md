@@ -1,10 +1,10 @@
 # Prueba de coste: el texto de un botón construido
 
-Mide si un retoque sobre algo ya construido sigue siendo ligero con unidades de cambio (tarea 5.12 del plan
-`docs/plan/2026-10-10-0.7.0-beta.2.md`; principio de ligereza, 3.0). El cliente pide cambiar el texto de un botón de una
-pantalla que está en producción: eso no pide aprobación por punto ni DT, se aplica con `comprobar.py` sin errores en una
-sola pasada, no regenera ningún documento y cabe en un tope de llamadas fijado antes de medir. Todo es ficticio. Los
-resultados van a `docs/evaluaciones.md`; el proyecto de prueba, a `$PROYECTOS_PRUEBA`, fuera del repositorio.
+Mide si un retoque sobre algo ya construido sigue siendo ligero con unidades de cambio. El cliente pide cambiar el texto
+de un botón de una pantalla que está en producción: eso no pide aprobación por punto ni DT, se aplica con `comprobar.py`
+sin errores en una sola pasada, no regenera ningún documento y cabe en un tope de llamadas fijado antes de medir. Todo
+es ficticio. Los resultados van a `docs/evaluaciones.md`; el proyecto de prueba, a `$PROYECTOS_PRUEBA`, fuera del
+repositorio.
 
 ## Lo que hay
 
@@ -81,7 +81,7 @@ desde la 0.7.0-beta.3) lo deja así:
 `prueba_puntuar.py` recorre este camino con las órdenes del plugin y comprueba que son 16 llamadas y que la pasada de
 `comprobar.py` sale sin errores. El tope deja 9 de margen para lo razonable que no está en esa cuenta:
 `requisitos.py` al empezar, `indice.py resumen`, leer `cambios.md`, una búsqueda más o leer una plantilla. Lo que ya no
-cabe es lo que 3.0 quita: regenerar el Word, el prototipo o las capturas, escribir una DT, presentar puntos para
+cabe es lo que un retoque no necesita: regenerar el Word, el prototipo o las capturas, escribir una DT, presentar puntos para
 aprobarlos, leer el funcional o el técnico enteros o dar una vuelta de correcciones a `comprobar.py`. Cada uno suma de
 2 a 10 llamadas. En la 0.7.0-beta.2, con el camino entero (22 llamadas como mínimo), las tres pasadas costaron 34, 34
 y 47 (`docs/evaluaciones.md`).

@@ -1,7 +1,7 @@
 # Evaluación de incoherencias con un DF ya validado
 
 Mide si el analista, con el DF del cliente ya validado y reuniones anteriores a él, encuentra lo que las reuniones dicen
-distinto del DF, lo pone en su pieza como pendiente de aprobación y no lo aplica (modo «DF ya hecho», Tarea 21). Todo es
+distinto del DF, lo pone en su pieza como pendiente de aprobación y no lo aplica (modo «DF ya hecho»). Todo es
 ficticio: el Consorcio Cultural de Montelar y sus ayudas a proyectos culturales. Los resultados van a
 `docs/evaluaciones.md`; el proyecto de prueba, a `$PROYECTOS_PRUEBA`, fuera del repositorio.
 
@@ -41,7 +41,7 @@ además que ninguna se aplicó: las piezas con su ID original siguen como en `ve
 dicen lo de la reunión (`reunion` en `esperado.json`). Y que las tres coincidencias no salen como cambio. El tipo del
 punto se imprime, pero no cuenta.
 
-Criterio de la Tarea 22: todas, las 10 visibles y las 3 ocultas, sin ninguna aplicada ni ninguna coincidencia como
+Criterio: todas, las 10 visibles y las 3 ocultas, sin ninguna aplicada ni ninguna coincidencia como
 cambio; las dos puntuaciones salen 0.
 
 `python3 prueba_puntuar.py` comprueba que lo esperado encaja con las fuentes y prueba `puntuar.py` con proyectos

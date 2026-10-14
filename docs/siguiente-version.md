@@ -1,20 +1,19 @@
 # Para la siguiente versión
 
-Lo que sigue abierto tras la 0.8.0-beta.1 (planes `docs/plan/2026-10-11-0.7.0-beta.3.md`,
-`docs/plan/2026-10-12-correccion-buenas-practicas.md` y `docs/plan/2026-10-14-metodo-lucia.md`). Cada línea dice qué, dónde y de dónde sale.
+Lo que sigue abierto tras la 0.8.0-beta.1. Cada línea dice qué, dónde y de dónde sale.
 
-## Pasos de Raúl (para publicar la 0.7.0)
+## Pasos de Raúl (antes de la primera versión estable)
 
 - Instalar el paquete en la app de escritorio y en un Windows con algo de la tabla de requisitos sin instalar, y ver que
-  el primer mensaje lo dice (Paso 4 de la Tarea 24). En Linux con Claude Code ya está visto; en el portátil con Windows
-  el hook corrió con la 0.7.0-beta.1 (dejó su marca el 10 de octubre), falta ver el mensaje con algo sin instalar.
-- Ingeniería inversa y refactorización con una aplicación real (Paso 3 de la Tarea 30). Con ella:
+  el primer mensaje lo dice. En Linux con Claude Code ya está visto; en el portátil con Windows el hook corrió con la
+  0.7.0-beta.1 (dejó su marca el 10 de octubre de 2026), falta ver el mensaje con algo sin instalar.
+- Ingeniería inversa y refactorización con una aplicación real. Con ella:
   - confirmar que el Dev MCP real da el historial de versiones de cada objeto (lo usan `deriva` y la colisión real de
     una urgencia; sin él, el plugin lo dice y no supone nada);
   - afinar los presupuestos de palabras de ingeniería inversa (hoy la mayoría de documentos van al 20-50 %);
   - volver a medir la evaluación de malas prácticas con propuestas reales (las `claves` se fijaron a ciegas).
-- Archivar `~/Proyectos IA/appian-reverse-engineering` en el equipo donde esté (Paso 3 de la Tarea 31): no está en su
-  cuenta de claude.ai ni en el portátil de trabajo. Avisar a quien tenga la skill suelta.
+- Archivar `~/Proyectos IA/appian-reverse-engineering` en el equipo donde esté: no está en su cuenta de claude.ai ni en
+  el portátil de trabajo. Avisar a quien tenga la skill suelta.
 
 ## Ingeniería inversa (del recién llegado de la 0.7.0-beta.3)
 

@@ -295,7 +295,7 @@ Lo que se comprobó al analizar, con su fuente, para no repetirlo ni contradecir
 - `comprobar.py --anterior versiones/vX.Y` compara con la versión anterior: así sabe qué criterio es nuevo o cambiado sin git.
 - `devmcp_extract.py` lista las herramientas del Dev MCP al conectarse y las clasifica por su firma con `devmcp_policy.json`; `verificar` debe reconocer así la de probar.
 - `requisitos.py` ya sabe leer el host del Dev MCP (`LCP_URL`).
-- `docs/ingenieria-inversa/SPEC-v2-devmcp.md` dejó SAIL CLI fuera de la ingeniería inversa porque un clic puede lanzar procesos o escribir datos.
+- La especificación v2 de ingeniería inversa (borrada; está en el historial de git) dejó SAIL CLI fuera de la ingeniería inversa porque un clic puede lanzar procesos o escribir datos.
 
 ### Descartado, y por qué
 
@@ -324,4 +324,4 @@ Lo que se comprobó al analizar, con su fuente, para no repetirlo ni contradecir
 - Claude Code: [How Claude remembers your project](https://code.claude.com/docs/en/memory) (`AGENTS.md` e importación desde `CLAUDE.md`).
 - Playwright: [Getting started, CLI](https://playwright.dev/docs/getting-started-cli) y [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli).
 - Skill oficial [appian/dev-mcp-skills](https://github.com/appian/dev-mcp-skills), commit 6e87fb6 (23-09-2026): `SKILL.md` (carga obligatoria), `references/tools-mcp.md`, `references/expression-rules.md` y `references/interfaces.md` (casos de prueba).
-- Repositorio del plugin (0.7.0-beta.4): `CLAUDE.md`, `docs/siguiente-version.md` («Agilidad»), `docs/ingenieria-inversa/SPEC-v2-devmcp.md` (SAIL CLI), `skills/appian-functional-analyst/references/cambios.md` y `urgentes.md`, los scripts `proyecto.py`, `indice.py` y `comprobar.py` del analista, `skills/appian-best-practices/references/08-alm-testing-naming.md`, `skills/appian-reverse-engineering/references/devmcp-setup.md`, `scripts/devmcp_extract.py` de ingeniería inversa y el diseño aparcado «flujo completo y construcción» (commit 5d8acb0).
+- Repositorio del plugin (0.7.0-beta.4): `CLAUDE.md`, `docs/siguiente-version.md` («Agilidad»), la especificación v2 de ingeniería inversa (SAIL CLI), `skills/appian-functional-analyst/references/cambios.md` y `urgentes.md`, los scripts `proyecto.py`, `indice.py` y `comprobar.py` del analista, `skills/appian-best-practices/references/08-alm-testing-naming.md`, `skills/appian-reverse-engineering/references/devmcp-setup.md`, `scripts/devmcp_extract.py` de ingeniería inversa y el diseño aparcado «flujo completo y construcción» (commit 5d8acb0).

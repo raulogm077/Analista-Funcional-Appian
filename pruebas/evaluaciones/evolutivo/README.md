@@ -1,8 +1,8 @@
 # Evaluación de un evolutivo sobre una aplicación existente
 
 Mide si el analista, con la aplicación documentada en `as-is/` y una reunión en la que el cliente pide tres cambios,
-escribe un plan de construcción que dice bien qué objetos se crean, cuáles se modifican y cuáles se usan como están
-(Tarea 19). La aplicación es la ficticia MNT (`MOCK_APP=fixture_mal_hecha`, Tarea 7). Los resultados van a
+escribe un plan de construcción que dice bien qué objetos se crean, cuáles se modifican y cuáles se usan como están. La aplicación es la
+ficticia MNT (`MOCK_APP=fixture_mal_hecha`). Los resultados van a
 `docs/evaluaciones.md`; el proyecto de prueba, a `$PROYECTOS_PRUEBA`, fuera del repositorio.
 
 ## Lo que hay
@@ -46,7 +46,7 @@ Umbral: el 80 % de lo esperado (8 de 10; en las ocultas, 3 de 3). Deja margen pa
 listar en §13 un objeto que se usa sin cambios). Marcarlo todo «Nuevo» no pasa: falla en los objetos que se modifican
 y en la regla de los que ya existen.
 
-Criterio de la Tarea 22: las dos puntuaciones salen 0.
+Criterio: las dos puntuaciones salen 0.
 
 `python3 prueba_puntuar.py` comprueba que lo esperado son objetos de MNT y prueba `puntuar.py` con proyectos inventados:
 uno que pasa y varios que no.

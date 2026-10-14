@@ -16,7 +16,7 @@ de las dos: `[{"peticion": "…", "skill": "appian-…"}]`. Los resultados van a
 | `appian-refactorizacion` | 3 | 2 |
 | `appian-best-practices` (tres en inglés) | 4 | 1 |
 
-Las seis fronteras del plan, con su petición visible; las ocultas llevan otra variante de cada una:
+Las seis fronteras entre skills, con su petición visible; las ocultas llevan otra variante de cada una:
 
 | Frontera | Skill | Visible |
 |---|---|---|
@@ -60,7 +60,7 @@ publicada. `vecinas/ocultas.json` trae 10 peticiones más de esa frontera, que n
    `python3 puntuar.py --enunciado --ocultas` y `python3 puntuar.py respuestas-ocultas.json --ocultas`. Sin ellas no se
    sabe si el ajuste vale para peticiones nuevas o solo para las que fallaron.
 
-Criterio de la Tarea 29: todas, también las ocultas cuando se pasan.
+Criterio: todas, también las ocultas cuando se pasan.
 
 `claude plugin eval` espera otro formato de casos y llama a la API. Si se quiere, `enrutado.json` se convierte en
 casos con el evaluador `tool_used: Skill`.

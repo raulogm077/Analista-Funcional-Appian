@@ -1,7 +1,7 @@
 # Evaluación de los comentarios de una demo
 
 Mide si, tras la demo de un prototipo, el analista lleva cada comentario a su pantalla y prototipos rehace solo esas
-pantallas, sin tocar las validadas por el cliente (🔒) mientras el analista no lo apruebe (Tarea 21). Todo es ficticio:
+pantallas, sin tocar las validadas por el cliente (🔒) mientras el analista no lo apruebe. Todo es ficticio:
 el préstamo de equipos audiovisuales de una organización de ejemplo. Los resultados van a `docs/evaluaciones.md`; el
 proyecto de prueba, a `$PROYECTOS_PRUEBA`, fuera del repositorio.
 
@@ -51,7 +51,7 @@ informe de impacto de la demo («Encaja en» con su PAN y «Requiere: Sí»); ca
 no cambian si sigue «Pendiente». En la segunda ronda, solo cambia la pantalla del correo. Además, el `app.json` pasa
 `validate.py` sin errores.
 
-Criterio de la Tarea 22: las dos puntuaciones salen 0.
+Criterio: las dos puntuaciones salen 0.
 
 `python3 prueba_puntuar.py` comprueba el caso (el análisis pasa `comprobar.py`, el prototipo de partida sale siempre
 igual y sin avisos de `validate.py`, hay un comentario por pantalla) y prueba `puntuar.py` con proyectos inventados: uno

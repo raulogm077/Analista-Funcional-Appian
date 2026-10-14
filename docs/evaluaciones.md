@@ -1,6 +1,6 @@
 # Evaluaciones y cierre de fases
 
-Resultados de las evaluaciones de los planes de `docs/plan/` y, al cerrar cada
+Resultados de las evaluaciones de cada versión y, al cerrar cada
 fase, el resumen de cambios, lo aprendido y lo que queda aplazado, con la tarea que lo recoge. Los proyectos de prueba
 están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 
@@ -441,7 +441,7 @@ la 0.8.0-beta.1; el diseño y su anexo se corrigen con lo comprobado; y la PR se
 
 ## 0.7.0-beta.3 · Retoques ligeros y menores (11 de octubre de 2026)
 
-Rama `v0.7.0-beta.3`, de `main` 222a8e6. Plan: `docs/plan/2026-10-11-0.7.0-beta.3.md`. Todas las evaluaciones, a ciegas
+Rama `v0.7.0-beta.3`, de `main` 222a8e6. Todas las evaluaciones, a ciegas
 con una copia del paquete (`/home/claude/eval-plugin`), sin `pruebas/` ni `docs/`.
 
 ### Prueba de coste: texto de un botón construido (camino corto)
@@ -592,7 +592,7 @@ herramientas ni skills (`claude -p` desde una carpeta vacía) que solo recibe `p
 
 ## 0.7.0-beta.2 · G0-G5 (10-11 de octubre de 2026)
 
-Plan único `docs/plan/2026-10-10-0.7.0-beta.2.md`. Cada fase, en su rama, con su revisión independiente; los hallazgos
+Cada fase, en su rama, con su revisión independiente; los hallazgos
 de las revisiones se corrigieron en la misma rama antes de unirla (el más grave: los IDs de hallazgos que debían quedar
 estables se podían intercambiar al reextraer, G1).
 
@@ -677,15 +677,6 @@ Lo que se corrigió:
 pruebas, docs, cachés ni `.git`). Desde el paquete descomprimido en una carpeta con espacios, `requisitos.py --json` con
 todo lo opcional ausente es igual a `pruebas/requisitos-esperado.json`, y `comprobar_plugin.py --completo --plugin
 <copia>` pasa las pruebas del repositorio contra lo que se instala.
-
-### Pendiente de Raúl
-
-- Paso 4 de la Tarea 24: instalar el paquete en Claude Code y en la app de escritorio, con algo de la tabla sin instalar,
-  y ver que el primer mensaje lo dice (mejor también en un Windows).
-- Paso 3 de la Tarea 30: ingeniería inversa y refactorización con una aplicación real, en su equipo. Aquí va si pasó o
-  no y qué se corrigió, sin nada del cliente.
-- Paso 3 de la Tarea 31: desinstalar la skill suelta de ingeniería inversa y archivar su carpeta.
-- El criterio de palabras de F3.
 
 ### Lo aprendido
 
@@ -782,8 +773,6 @@ Rama `f7-equipo`, de `main` ee4b19b al merge. Versión 0.7.0-alpha.6.
   reprodujo con una locale CP1252 antes de subir el arreglo.
 - Los registros de un job no se pueden leer desde la API: si la comprobación falla, el workflow deja la cola de la
   salida en anotaciones.
-- **Pendiente de Raúl (Paso 4 de la Tarea 24):** instalar el paquete en Claude Code y en la app de escritorio, con algo de
-  la tabla sin instalar, y ver que el primer mensaje lo dice; si puede ser, también en un Windows.
 
 ### Lo aprendido
 

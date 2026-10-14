@@ -1,8 +1,7 @@
 # Evaluación del recién llegado
 
 Mide si alguien que llega nuevo al equipo encuentra en `as-is/` lo que necesita para mantener una aplicación, con su
-evidencia, y si la documentación es más corta. La aplicación es la ficticia MNT (`MOCK_APP=fixture_mal_hecha`, Tarea
-7) y las preguntas, las de `../aplicacion-ficticia/preguntas.json` y las 7 de `ocultas/`. Los resultados van a
+evidencia, y si la documentación es más corta. La aplicación es la ficticia MNT (`MOCK_APP=fixture_mal_hecha`) y las preguntas, las de `../aplicacion-ficticia/preguntas.json` y las 7 de `ocultas/`. Los resultados van a
 `docs/evaluaciones.md`; los proyectos de prueba, a `$PROYECTOS_PRUEBA`, fuera del repositorio.
 
 ## Cómo se hace
@@ -31,5 +30,5 @@ evidencia, y si la documentación es más corta. La aplicación es la ficticia M
    python3 palabras.py <proyecto>/as-is
    ```
 
-Criterio de la Tarea 9 («después»): las dos puntuaciones salen 0, `evidencia.py` sale 0, `comprobar_asis.py` da 0
+Criterio («después»): las dos puntuaciones salen 0, `evidencia.py` sale 0, `comprobar_asis.py` da 0
 errores y hay menos palabras que «antes».

@@ -3,14 +3,14 @@
 Mide si, con un evolutivo aprobado y sin construir, una incidencia crítica en producción cuya corrección toca un objeto de
 ese evolutivo sigue el flujo corto de las urgencias sin que la corrección se pierda: la ficha `URG-nn`, la colisión
 detectada, la corrección en el entorno de corrección, la tarea de reaplicarla en la issue del evolutivo y el evolutivo
-que no pasa a Construida ni a producción sin reaplicarla (tarea 5.11 del plan `docs/plan/2026-10-10-0.7.0-beta.2.md`,
-apartado 3.5). Y que lo hace sin regenerar lo que no hace falta (3.0). Todo es ficticio. Los resultados van a
-`docs/evaluaciones.md`; el proyecto de prueba, a `$PROYECTOS_PRUEBA`, fuera del repositorio.
+que no pasa a Construida ni a producción sin reaplicarla. Y que lo hace sin regenerar lo que no hace falta. Todo es
+ficticio. Los resultados van a `docs/evaluaciones.md`; el proyecto de prueba, a `$PROYECTOS_PRUEBA`, fuera del
+repositorio.
 
 ## Lo que hay
 
 - `datos/`: el proyecto tal como está. «Solicitudes de material» (`DEM Gestión de Solicitudes`) es una aplicación nueva
-  hecha desde reuniones (caso C del plan, sin `as-is/`: no hace falta el simulador). Análisis 1.1 (funcional, técnico
+  hecha desde reuniones (sin `as-is/`: no hace falta el simulador). Análisis 1.1 (funcional, técnico
   completo y decisiones); `analisis/cambios.md` con `EV-01`, la construcción inicial, en producción (PASE-2026-031), y
   `EV-02`, la firma de la revisión, Abierta (`montar.py` la aprueba): modifica `DEM Solicitud`, `DEM_RevisionForm` y
   `DEM_SolicitudForm` y crea `DEM_ER_Firma`; su informe `impacto/FU-03.md`, aplicado en la 1.1; la copia de la 1.0 en
@@ -95,7 +95,7 @@ Con `--ocultas`:
 Obligatorios: `ficha`, `colision`, `donde`, `issue`, `bloqueo`, `estados` y `comprobar` (en las ocultas,
 `produccion`, `cierre`, `ev02_sin_construir`, `bloqueo_pase` y `comprobar`). Son lo que protege la corrección: si falla
 uno, el pase de `EV-02` puede pisarla en producción o no queda escrito quién la declaró crítica, dónde se hizo y cuándo
-se cerró. Es justo el caso en que el plan quiere un error, el riesgo de perder trabajo (3.0), y `comprobar.py` es la
+se cerró. Es justo el caso que debe dar error, el riesgo de perder trabajo, y `comprobar.py` es la
 puerta de todas las evaluaciones. No tienen margen: cada uno es un paso escrito del flujo corto de
 `references/urgentes.md` que da un script (`indice.py colision`, `indice.py issues`, `proyecto.py cambio`), así que no
 hay dos lecturas razonables como en `../evolutivo/`, que por eso pide el 80 %.
