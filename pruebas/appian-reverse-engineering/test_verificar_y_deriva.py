@@ -1,4 +1,4 @@
-"""Verificar, deriva y reextracción (tarea 1.9 de la 0.7.0-beta.2; diseño 3.4 y 3.6), con el Dev MCP simulado.
+"""Verificar, deriva y reextracción, con el Dev MCP simulado.
 
 - verificar: por objeto, si existe, su tipo, su última modificación y, de record types y CDT, sus campos; sale 0
   aunque falte alguno y 2 sin conexión. No escribe en ninguna extracción.

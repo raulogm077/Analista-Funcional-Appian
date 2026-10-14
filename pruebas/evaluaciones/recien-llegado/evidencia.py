@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lo que la disciplina de evidencia (Tarea 8b) tiene que dejar en el as-is de la aplicación ficticia MNT.
+"""Lo que la disciplina de evidencia tiene que dejar en el as-is de la aplicación ficticia MNT.
 
 Uso: python3 evidencia.py <as-is>
 

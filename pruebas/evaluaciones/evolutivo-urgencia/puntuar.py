@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Puntúa la evaluación «evolutivo con urgencia» (tarea 5.11): una incidencia crítica en producción cuya corrección toca
+"""Puntúa la evaluación «evolutivo con urgencia»: una incidencia crítica en producción cuya corrección toca
 DEM_SolicitudForm, que también modifica EV-02, aprobada y sin construir.
 
 Uso:

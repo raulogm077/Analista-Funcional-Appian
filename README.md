@@ -1,12 +1,10 @@
 # appian-analisis-funcional
 
 Plugin de Claude para equipos que analizan, documentan, rehacen, construyen y prueban aplicaciones Appian: del material
-del cliente al diseño funcional que valida (DF en Word) y a lo que se construye, se prueba y pasa a producción. Sirve
-para cualquier proceso y cualquier cliente: el dominio sale siempre de las fuentes del proyecto. Las plantillas y las
-galerías del plugin enseñan técnica, no un dominio (`skills/appian-prototipos/galerias/README.md`), y el plugin no lleva
-ningún proyecto, tampoco de ejemplo.
-
-<img src=".github/assets/como-trabaja.svg" alt="Las fuentes del cliente entran al analista funcional con su informe de impacto; una aplicación existente pasa antes por ingeniería inversa y, si se rehace, por refactorización. El analista escribe el funcional, el técnico y las unidades de cambio; de ahí salen el prototipo, el DF en Word y los diagramas BPMN. Al aprobar una unidad se escriben sus issues, que se construyen y verifican en desarrollo; el QA recorre la unidad con SAIL CLI y un fallo devuelve su issue. Desde el paquete no actúa la IA: una persona lo revisa y hace el pase." width="100%">
+del cliente al diseño funcional que valida (DF en Word) y a lo que se construye y se prueba, hasta el paquete que revisa
+una persona. Sirve para cualquier proceso y cualquier cliente: el dominio sale siempre de las fuentes del proyecto. Las
+plantillas y las galerías del plugin enseñan técnica, no un dominio (`skills/appian-prototipos/galerias/README.md`), y
+el plugin no lleva ningún proyecto, tampoco de ejemplo.
 
 ## Cómo trabaja
 
@@ -60,8 +58,9 @@ no es una duda de documentación: eso es de buenas prácticas.
 
 ## Requisitos
 
-En Claude (web o escritorio, sesiones en la nube) ya está todo, salvo ingeniería inversa y el QA, que necesitan el Dev
-MCP o SAIL CLI en el equipo. En el equipo, con Claude Code, hace falta lo de esta tabla; en negrita, lo imprescindible:
+En Claude (web o escritorio, sesiones en la nube) ya está todo, salvo lo que necesita el Dev MCP o SAIL CLI en el
+equipo: ingeniería inversa, construir y verificar las issues y el QA. En el equipo, con Claude Code, hace falta lo de
+esta tabla; en negrita, lo imprescindible:
 
 <!-- requisitos:inicio -->
 | Requisito | Lo usa | Para qué | Si falta | Cómo se instala |

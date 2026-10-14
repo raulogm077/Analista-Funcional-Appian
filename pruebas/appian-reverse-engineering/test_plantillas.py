@@ -42,7 +42,7 @@ def fijo(texto: str, relleno: str = "x") -> str:
 
 
 def test_senales_en_los_agentes():
-    """Las señales que la ingeniería inversa no registraba (siguiente-version.md, evaluación de la Tarea 15) están en
+    """Las señales que la ingeniería inversa no registraba (apuntadas en la evaluación de malas prácticas) están en
     la comprobación final de su agente: los nombres sin prefijo (sinPrefijo, H-ARQ), los nombres fijos del proceso y
     sus tareas (H-PRO) y los role maps que el Dev MCP no da (NV-SEG fijo, T23). El campo senal (T27) está documentado
     para quien escribe los hallazgos y para quien lee datos/."""

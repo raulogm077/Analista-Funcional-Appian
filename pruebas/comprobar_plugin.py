@@ -114,7 +114,7 @@ PERSONALES = re.compile(r"(?<![a-z0-9])(?:rgmoya|raulogm)\d*(?![a-z0-9])|(?<![a-
 PISTAS = ("rgmoya", "raul", "users", "home", "proyectos")  # una línea sin ninguna no hace falta mirarla (rapidez)
 # Las únicas excepciones, el autor del plugin y el dueño del marketplace: fichero → objeto cuyo «name» no se mira.
 AUTORIA = {".claude-plugin/plugin.json": "author", ".claude-plugin/marketplace.json": "owner"}
-# El plugin no lleva clientes (Tarea 0b, R5): ni su nombre ni lo que lo delata en los datos de ejemplo, que dice
+# El plugin no lleva clientes: ni su nombre ni lo que lo delata en los datos de ejemplo, que dice
 # pruebas/clientes.txt. Los nombres se miran en todo el paquete, también el README, en docs/ y pruebas/ del repositorio
 # y en los nombres de los ficheros; los códigos de tres letras, que en un documento pueden ser otra cosa (unas siglas),
 # solo en los datos: los .json y lo que hay en galerias/ y templates/.
@@ -828,7 +828,7 @@ def copia_del_plugin(destino):
 def probar_comprobador(nombres):
     """Prueba del propio comprobador, con una copia temporal del plugin sin pruebas/ (como la del paquete)."""
     fallos = []
-    # un nombre y un código de tres letras de pruebas/clientes.txt: el repositorio tampoco los escribe (R5)
+    # un nombre y un código de tres letras de pruebas/clientes.txt: el repositorio tampoco los escribe
     terminos = terminos_de_clientes()
     cliente = next((t for t, _p, _r, es_nombre in terminos if es_nombre), "")
     codigo = next((t for t, _p, _r, es_nombre in terminos if not es_nombre), "")
@@ -945,7 +945,7 @@ def probar_comprobador(nombres):
         c, out = comprueba()
         espera(c == 1 and "la tabla de requisitos no es la salida" in out,
                "una tabla de requisitos del README retocada a mano no da error", out)
-        # el README tampoco nombra clientes (R5); sí cita el nombre anterior de prototipos, para retirar las copias sueltas
+        # el README tampoco nombra clientes; sí cita el nombre anterior de prototipos, para retirar las copias sueltas
         readme.write_text(texto + f"\nHecho para {cliente}.\n", encoding="utf-8")
         c, out = comprueba()
         espera(c == 1 and "README.md:" in out and "clientes.txt" in out, "un README que nombra a un cliente no da error", out)
@@ -1101,7 +1101,7 @@ def probar_comprobador(nombres):
         c, out = comprueba()
         espera(c == 1 and "zz-cliente.json:2" in out and "clientes.txt" in out, "un fichero de hooks/ que nombra a un cliente no da error", out)
         gancho.unlink()
-        # ni docs/, pruebas/, .github/ ni CLAUDE.md del repositorio, aunque no vayan en el paquete (R5); y el límite es
+        # ni docs/, pruebas/, .github/ ni CLAUDE.md del repositorio, aunque no vayan en el paquete; y el límite es
         # solo una letra: OP_<cliente>, <cliente>2026 o brand_<cliente>.json también lo nombran
         casos = {copia / "docs" / "zz-plan.md": (f"# Plan\n\nPara {cliente}.\n", "3"),
                  copia / ".github" / "workflows" / "zz.yml": (f"# Pruebas\n\nname: {cliente}\n", "3"),
