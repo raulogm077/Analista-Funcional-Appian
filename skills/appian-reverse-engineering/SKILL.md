@@ -45,7 +45,7 @@ Antes de la primera tarea, desde la carpeta del usuario: `python3 "<skill>/../..
 
 Para comprobar lo construido de un cambio o ver qué cambió desde el `as-is/`, sin las fases 0-8 (solo `doctor` si falla la conexión). Todo es lectura. `<dx>` = `uv run --no-project --python ">=3.10" --with "mcp>=1.2,<2" python "<skill>/scripts/devmcp_extract.py"`.
 
-- **Verificar**: `<dx> verificar --app <app> --objetos "<nombres separados por comas o @fichero>" --esperado "<fichero.json>" --out <p>/construccion/verificacion/<U>.json`: si existe cada objeto (los que no, en `faltan`), su tipo, su última modificación (un dato, no una prueba), los campos de record types y CDT y los casos de prueba si el Dev MCP los expone; con `--esperado` (lo que dice el técnico), sus `diferencias`.
+- **Verificar**: `<dx> verificar --app <app> --objetos "<nombres separados por comas o @fichero>" --esperado "<fichero.json>" --out <p>/construccion/<U>/verificacion/ISS-<nn>.json`: si existe cada objeto (los que no, en `faltan`), su tipo, su última modificación (un dato, no una prueba), los campos de record types y CDT y los casos de prueba si el Dev MCP los expone; con `--esperado` (lo que dice el técnico: el de una issue es `<p>/construccion/<U>/ISS-<nn>-esperado.json`, que genera el analista), sus `diferencias` y, en `issue`, de qué issue y de qué versión es lo esperado (su clave `_issue`): con eso el analista sabe si la issue está hecha. La orden completa, con las rutas de este equipo, la imprime `indice.py issues <p> <U> ISS-<nn>` del analista.
 - **Deriva**: `<dx> deriva --out <p>/as-is [--objetos "…"] [--ignorar "<nombre>@<fecha ISO>,…"]` → `<p>/as-is/datos/deriva.json`: cambiados, nuevos y retirados; `--ignorar` descarta los de nuestras unidades modificados después de esa fecha. Sin historial de versiones, lo dice y no supone nada.
 - **Reextraer** los cambiados y los nuevos: `<dx> extract --app <app> --out <p>/as-is --solo "<objetos>"`, que rehace el modelo; después, las fases 3-8 solo para ellos.
 
@@ -180,7 +180,7 @@ En `<p>` (sin proyecto, `<p>` es `./<PREFIJO>/`):
 - `as-is/datos/`: lo que leen las demás skills
 - `as-is/diagrams/<nombre>.mmd`: los diagramas Mermaid
 - `as-is/extraccion/`: la extracción y los datos de trabajo
-- `construccion/verificacion/<U>.json`: lo construido de una unidad de cambio, leído en el entorno (atajo «Verificar»)
+- `construccion/<U>/verificacion/ISS-<nn>.json`: lo construido de una issue de una unidad de cambio, leído en el entorno (atajo «Verificar»)
 
 El `.drawio`, el `.png` y el `.bpmn` de cada proceso y las imágenes de los Mermaid los escribe `appian-diagramas-bpmn`.
 

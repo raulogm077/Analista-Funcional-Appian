@@ -99,6 +99,20 @@
     }
   },
   {
+    "id": "git",
+    "nombre": "git",
+    "skills": ["appian-functional-analyst"],
+    "imprescindible": false,
+    "solo_pruebas": false,
+    "para": "El repositorio de cada proyecto (`proyecto.py iniciar` y `estado`) y la reserva de las issues de construcción (`indice.py issues --siguiente`)",
+    "sin_el": "El proyecto se crea sin repositorio, `estado` no sabe qué está subido y las issues se dan sin reservar: dos personas pueden llevarse la misma",
+    "instalar": {
+      "windows": "`winget install Git.Git`",
+      "macos": "`brew install git`, o las herramientas de línea de comandos de Xcode",
+      "linux": "`sudo apt install git`"
+    }
+  },
+  {
     "id": "uv",
     "nombre": "uv",
     "skills": ["appian-reverse-engineering"],

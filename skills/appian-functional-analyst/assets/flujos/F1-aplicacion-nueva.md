@@ -1,7 +1,7 @@
 # F1 · Aplicación nueva
 
 **Cuándo.** Hay reuniones, correos, notas o el DF del cliente para una aplicación que todavía no existe.
-**Empieza.** El analista, con `appian-functional-analyst`. **Termina en.** El DF validado por el cliente, el técnico y la unidad `EV-01` aprobada con su encargo de construcción; sigue F8. <!-- (T11) El encargo pasa a ser las issues de la unidad, una por requisito, en construccion/<U>/. -->
+**Empieza.** El analista, con `appian-functional-analyst`. **Termina en.** El DF validado por el cliente, el técnico y la unidad `EV-01` aprobada, con sus issues de construcción (`construccion/EV-01/`); sigue F8.
 
 | # | Paso | Quién | Con qué | Detalle |
 |---|---|---|---|---|
@@ -17,6 +17,6 @@
 | 10 | Generar el DF en Word | Script | `appian-functional-analyst` · `df_docx.js` | El mismo apartado |
 | 11 | Enviar el DF al cliente y anotarlo | Analista lo envía; Script lo anota | `appian-functional-analyst` · `proyecto.py entregar` | El mismo apartado |
 | 12 | Validar el DF | Cliente | — | Sus comentarios entran por F2 |
-| 13 | Abrir la unidad `EV-01`, aprobarla y sacar su encargo | Jefe de proyecto la aprueba; Script | `appian-functional-analyst` · `proyecto.py cambio` e `indice.py encargo` | `appian-functional-analyst/references/cambios.md` §1, §2 y §5 |
+| 13 | Abrir la unidad `EV-01` y aprobarla: al aprobarla quedan escritas sus issues, una por requisito | Jefe de proyecto la aprueba; Script | `appian-functional-analyst` · `proyecto.py cambio` | `appian-functional-analyst/references/cambios.md` §1, §2 y §5 |
 
 **Variante: el cliente trae su DF ya hecho.** Entra como versión 1.0, sin reinterpretar, y los pasos 3 a 5 parten de él: `appian-functional-analyst/SKILL.md` «Modos» y `appian-functional-analyst/references/ingesta-fuentes.md` §3.

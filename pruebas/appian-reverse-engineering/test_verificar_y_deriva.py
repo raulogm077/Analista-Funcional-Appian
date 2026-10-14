@@ -107,7 +107,24 @@ def test_verificar_con_esperado(project, tmp_path):
     assert por["DEM_ER_EsAdmin"]["diferencias"] == {"tipo": {"esperado": "interface", "real": "expressionRule"}}
     assert por["DEM_ER_Inventada"]["diferencias"] == {"falta": True}
     assert v["conDiferencias"] == ["DEM Solicitud", "DEM_ER_EsAdmin", "DEM_ER_Inventada"]
+    assert "issue" not in v                                              # lo esperado no era el de una issue
     project.run("verificar", "--app", "DEM", "--out", str(destino), check=2)    # sin --objetos ni --esperado
+
+
+def test_verificar_dice_de_que_issue_es(project, tmp_path):
+    """Lo esperado de una issue (indice.py issues del analista) lleva en «_issue» su id, su unidad y su versión. No es un
+    objeto que verificar: pasa tal cual al resultado, en «issue», y así se sabe si la verificación es de la versión de
+    ahora de la issue o de una anterior."""
+    project.add_devmcp()
+    de = {"id": "ISS-02", "unidad": "EV-02", "version": "3f9a0c1d2b7e"}
+    esperado = tmp_path / "ISS-02-esperado.json"
+    esperado.write_text(json.dumps({"_issue": de, "DEM Estado": {"tipo": "recordType"}}), encoding="utf-8")
+    destino = tmp_path / "construccion" / "EV-02" / "verificacion" / "ISS-02.json"
+    project.run("verificar", "--app", "DEM", "--esperado", str(esperado), "--out", str(destino), check=0)
+    v = json.loads(destino.read_text(encoding="utf-8"))
+    assert v["issue"] == de
+    assert [o["pedido"] for o in v["objetos"]] == ["DEM Estado"] and v["faltan"] == [] and v["conDiferencias"] == []
+    assert list(v)[:3] == ["generadoEn", "entorno", "issue"]
 
 
 def test_atajo_con_comillas():

@@ -16,7 +16,7 @@ Puntos de la primera parte (la incidencia):
   colision    «Colisión» nombra la unidad con la que choca (EV-02) y el objeto
   donde       «Dónde se corrige» dice «Entorno de corrección» (una de las dos opciones de la plantilla, como la lee
               unidades.py; con las dos sin elegir, no)
-  encargo     construccion/EV-02.md lleva «Reaplicar URG-nn en `<objeto>`»
+  issue       una issue de EV-02 (construccion/EV-02/ISS-nn.md) lleva «Reaplicar URG-nn en `<objeto>`»
   bloqueo     en una copia del proyecto, «proyecto.py cambio <copia> EV-02 construida --manual» falla y pide
               «--reaplicada URG-nn», y con «--reaplicada URG-nn» pasa
   estados     EV-01 sigue En producción, EV-02 Aprobada y la URG Abierta: en una sesión desatendida no se aprueba ni se
@@ -28,7 +28,7 @@ Puntos de la primera parte (la incidencia):
 Con --ocultas (después del pase a producción):
   produccion  la URG está En producción con la referencia del pase
   cierre      su ficha tiene «Cierre» con la referencia
-  ev02_sin_construir  EV-02 sigue Aprobada, EV-01 En producción y el encargo de EV-02 sigue con «Reaplicar URG-nn»
+  ev02_sin_construir  EV-02 sigue Aprobada, EV-01 En producción y la issue de EV-02 sigue con «Reaplicar URG-nn»
   bloqueo_pase  en una copia, EV-02 no pasa a producción, ni a Construida sin «--reaplicada URG-nn»; con ella pasa a
               Construida y después a producción
   ligereza    ni Word ni capturas nuevos o cambiados, y el funcional sin cambios
@@ -129,9 +129,9 @@ def funcional_igual(p: Path) -> bool:
 
 
 def reaplica(p: Path, uid: str, objeto: str) -> bool:
-    f = p / "construccion" / "EV-02.md"
-    return f.is_file() and re.search(rf"Reaplicar\s+{re.escape(uid)}\s+en\s+[^\n]*{re.escape(objeto)}",
-                                     f.read_text(encoding="utf-8")) is not None
+    """Si alguna issue de EV-02 (construccion/EV-02/ISS-nn.md) pide reaplicar la urgencia en el objeto."""
+    return any(re.search(rf"Reaplicar\s+{re.escape(uid)}\s+en\s+[^\n]*{re.escape(objeto)}", f.read_text(encoding="utf-8"))
+               for f in sorted((p / "construccion" / "EV-02").glob("ISS-*.md")))
 
 
 def en_copia(p: Path, ordenes: list[tuple]) -> list[tuple[int, str]]:
@@ -180,9 +180,9 @@ def visibles(p: Path, huella: dict, esperado: dict, P: Puntuacion, m, ctx):
             f"«{campos.get('colision', '—')[:120]}»" if u else "sin URG")
     P.punto("donde", bool(u) and donde_es(campos) == esperado["donde"], f"«{campos.get('donde se corrige', '—')[:120]}»"
             if u else "sin URG")
-    # encargo y bloqueo
-    P.punto("encargo", bool(u) and reaplica(p, u.id, obj),
-            f"construccion/EV-02.md {'lleva' if u and reaplica(p, u.id, obj) else 'no lleva'} "
+    # la issue del objeto y el bloqueo
+    P.punto("issue", bool(u) and reaplica(p, u.id, obj),
+            f"construccion/EV-02/ {'lleva' if u and reaplica(p, u.id, obj) else 'no lleva'} "
             f"«Reaplicar {u.id if u else 'URG-nn'} en `{obj}`»")
     if u:
         (c1, s1), (c2, s2) = en_copia(p, [("EV-02", "construida", "--manual"),
@@ -217,7 +217,7 @@ def ocultas(p: Path, huella: dict, esperado: dict, P: Puntuacion, m, ctx):
     ok = (bool(ev1 and ev2 and u) and ev1.estado == esperado["estados"]["EV-01"]
           and ev2.estado == esperado["estados"]["EV-02"] and reaplica(p, u.id, obj))
     P.punto("ev02_sin_construir", ok, f"EV-01 {ev1.estado if ev1 else '—'} · EV-02 {ev2.estado if ev2 else '—'} · "
-            f"encargo {'con' if u and reaplica(p, u.id, obj) else 'sin'} «Reaplicar {u.id if u else 'URG-nn'}»")
+            f"issue {'con' if u and reaplica(p, u.id, obj) else 'sin'} «Reaplicar {u.id if u else 'URG-nn'}»")
     if u:
         (c1, s1), (c2, s2), (c3, s3), (c4, s4) = en_copia(p, [
             ("EV-02", "produccion", "--ref", "PASE-PRUEBA"), ("EV-02", "construida", "--manual"),

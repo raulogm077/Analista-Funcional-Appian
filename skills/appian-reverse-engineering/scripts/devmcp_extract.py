@@ -21,7 +21,9 @@ Subcomandos:
   verificar   --app <app> [--objetos <nombres|@fichero>] [--esperado <fichero.json>] --out <fichero.json>: por objeto, si
               existe, su tipo, su nombre, su ultima modificacion (rol versions; un dato, no una prueba), los campos
               de record types y CDT y sus casos de prueba si el Dev MCP los expone. Con --esperado, tambien sus
-              diferencias con lo esperado (diferencias()). No escribe en ninguna extraccion.
+              diferencias con lo esperado (diferencias()); si lo esperado es el de una issue (su clave «_issue», con
+              su id y su version), el resultado lo lleva en «issue»: asi se sabe de que version de lo esperado es
+              la verificacion. No escribe en ninguna extraccion.
   deriva      --out <as-is> [--objetos …] [--ignorar <nombre>@<fecha ISO>,…]: la lista de objetos de la aplicacion
               y su historial de versiones (rol versions), frente al as-is; cambiados, nuevos y retirados en
               <as-is>/datos/deriva.json. Sin historial en el Dev MCP, lo dice y no supone nada.
@@ -1569,6 +1571,7 @@ async def cmd_verificar(args) -> int:
     if not isinstance(esperado, dict):
         eprint("--esperado: un JSON {objeto: {\"tipo\": …, \"campos\": [{\"nombre\", \"tipo\"}]}}.")
         return EXIT_USAGE
+    issue = esperado.pop("_issue", None)   # de qué issue y de qué versión es lo esperado: no es un objeto; va al resultado
     pedidos += [p for p in esperado if p not in pedidos]
     if not pedidos:
         eprint("Sin objetos: --objetos o --esperado.")
@@ -1592,7 +1595,8 @@ async def cmd_verificar(args) -> int:
             if isinstance(esperado.get(o["pedido"]), dict):
                 o["diferencias"] = diferencias(o, esperado[o["pedido"]])
         resultado["conDiferencias"] = [o["pedido"] for o in resultado["objetos"] if o.get("diferencias")]
-    resultado = {"generadoEn": now_iso(), "entorno": entorno(server_info(choice)["url"]), **resultado}
+    resultado = {"generadoEn": now_iso(), "entorno": entorno(server_info(choice)["url"]),
+                 **({"issue": issue} if issue is not None else {}), **resultado}
     destino = Path(args.out).resolve()
     write_json(destino, resultado)
     if args.json:
@@ -1800,7 +1804,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--app", required=True, help="uuid, prefijo o nombre de la aplicacion")
     sp.add_argument("--objetos", help="Nombres o uuids separados por comas, o @fichero (uno por linea)")
     sp.add_argument("--esperado", help="Fichero JSON {objeto: {\"tipo\": …, \"campos\": [{\"nombre\", \"tipo\"}]}}: se verifican "
-                                       "tambien esos objetos y se escriben sus diferencias")
+                                       "tambien esos objetos y se escriben sus diferencias. Su clave «_issue», si la "
+                                       "lleva, pasa tal cual al resultado, en «issue»")
     sp.add_argument("--out", required=True, help="Fichero JSON del resultado")
     sp = sub.add_parser("deriva")
     common(sp)

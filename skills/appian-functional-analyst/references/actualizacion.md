@@ -65,7 +65,8 @@ que preguntar al cliente, el camino entero (§0-§8). Sin nota, sin `comprobar.p
    quién la usa), `indice.py derivadas <p> --escribir`, sin repetir la pasada.
 
 Ni el Word, ni el prototipo, ni las capturas: se rehacen al enviar el DF o al construir (`cambios.md` §5). Ni DT: una
-interfaz, una regla, una constante o un texto no la piden.
+interfaz, una regla, una constante o un texto no la piden; tampoco el nombre de una acción de registro, si la fila de
+§13 nombra esa parte del record type (`cambios.md` §4).
 
 ## 0. Antes de empezar
 ```bash

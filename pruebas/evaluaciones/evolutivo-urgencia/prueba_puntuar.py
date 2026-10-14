@@ -2,10 +2,10 @@
 """Prueba de puntuar.py con proyectos inventados: `python3 prueba_puntuar.py`. Sale 0 si todo va bien.
 
 Primero monta el proyecto de partida con montar.py (con el plugin de PLUGIN_A_PROBAR) y comprueba el propio caso: EV-01
-en producción y EV-02 aprobada con DEM_SolicitudForm entre sus objetos, el encargo de EV-02 sin nada que reaplicar, la
+en producción y EV-02 aprobada con DEM_SolicitudForm entre sus objetos, las issues de EV-02 sin nada que reaplicar, la
 incidencia que nombra ese objeto, un entorno de corrección del que hablan las fuentes, lo esperado coherente consigo
 mismo. Después hace, sobre copias del proyecto, lo que haría el agente con los scripts del plugin (catalogar la fuente,
-abrir la URG, su ficha, la prueba en §14, rehacer el encargo) y variantes que no deben pasar, y mira la salida de
+abrir la URG, su ficha, la prueba en §14, volver a generar las issues) y variantes que no deben pasar, y mira la salida de
 puntuar.py."""
 from __future__ import annotations
 
@@ -84,11 +84,11 @@ def copia(base: Path, raiz: Path) -> Path:
     return p
 
 
-def agente(p: Path, catalogar=True, encargo=True, crece=False, **ficha):
+def agente(p: Path, catalogar=True, issues=True, crece=False, **ficha):
     """Lo que haría el agente con los scripts del plugin (references/urgentes.md): catalogar la incidencia, abrir
     URG-01 y su ficha; la prueba que reproduce el fallo en técnico §14, que cambia el técnico y sube la versión (R2,
-    con su copia y su fila en decisiones.md; el funcional no cambia), y rehacer el encargo de EV-02. Con crece, antes
-    del encargo llega otra fuente para EV-02, ya aprobada: la devuelve a aprobación y el encargo ya no se rehace."""
+    con su copia y su fila en decisiones.md; el funcional no cambia), y volver a generar las issues de EV-02. Con
+    crece, antes llega otra fuente para EV-02, ya aprobada: la devuelve a aprobación y sus issues ya no se regeneran."""
     if catalogar:
         corre(PY, mt.ANALISTA / "leer_fuentes.py", p / VISIBLE["fuente"], "-o", p / "fuentes")
     for orden in (("cambio", p, "URG-01", "abrir", "--titulo", "No se pueden enviar solicitudes de 1.000 € o más"),
@@ -106,10 +106,10 @@ def agente(p: Path, catalogar=True, encargo=True, crece=False, **ficha):
             "Estado: pendiente\n\n## Puntos\n\n| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también "
             "| Requiere | Decisión |\n|---|---|---|---|---|---|---|---|\n| 1 | COMPLETA | La firma lleva la fecha [FU-05] "
             "| HU-05 | HU-05.1 con la fecha | — | — | ✔ |\n", encoding="utf-8")
-    if encargo:
-        c, s = corre(PY, mt.ANALISTA / "indice.py", "encargo", p, "EV-02")
+    if issues:
+        c, s = corre(PY, mt.ANALISTA / "indice.py", "issues", p, "EV-02")
         if c and not (crece and "ha crecido" in s):
-            sys.exit(f"indice.py encargo falla:\n{s}")
+            sys.exit(f"indice.py issues falla:\n{s}")
     return p
 
 
@@ -150,9 +150,9 @@ def comprobar_caso(base: Path) -> list[str]:
     c, s = corre(PY, mt.ANALISTA / "proyecto.py", "estado", base)
     if c or not re.search(rf"EV-02 · .* · Aprobada · .*objetos: .*{VISIBLE['objeto']}", s):
         mal.append(f"proyecto.py estado no lista EV-02 con {VISIBLE['objeto']}:\n{s}")
-    enc = base / "construccion" / "EV-02.md"
-    if not enc.is_file() or "Reaplicar" in enc.read_text(encoding="utf-8"):
-        mal.append("el encargo de EV-02 no está al montar, o ya tiene algo que reaplicar")
+    suyas = sorted((base / "construccion" / "EV-02").glob("ISS-*.md"))
+    if not suyas or any("Reaplicar" in f.read_text(encoding="utf-8") for f in suyas):
+        mal.append("las issues de EV-02 no están al montar, o ya tienen algo que reaplicar")
     incidencia = (base / VISIBLE["fuente"]).read_text(encoding="utf-8")
     if VISIBLE["objeto"] not in incidencia or not any(mo.normaliza(r) in mo.normaliza(incidencia)
                                                       for r in VISIBLE["declara"]):
@@ -220,14 +220,14 @@ def main() -> int:
         casos = [
             ("lo que se espera", agente(nuevo()), (), 0, "Total: 9/9"),
             ("sin hacer nada", nuevo(), (), 1, "FALLO ficha: ninguna URG nueva"),
-            ("corregida en desarrollo: sin reaplicar en el encargo ni bloqueo",
+            ("corregida en desarrollo: sin reaplicar en la issue ni bloqueo",
              agente(nuevo(), donde="Desarrollo"), (), 1, "FALLO bloqueo"),
             ("«Dónde se corrige» con las dos opciones de la plantilla sin elegir",
              agente(nuevo(), donde="Desarrollo / Entorno de corrección"), (), 1, "FALLO donde"),
-            ("una fuente nueva para EV-02 la devuelve a aprobación: ni encargo nuevo ni Construida",
+            ("una fuente nueva para EV-02 la devuelve a aprobación: ni issues nuevas ni Construida",
              agente(nuevo(), crece=True), (), 1, "ha crecido desde que se aprobó"),
-            ("sin rehacer el encargo de EV-02", agente(nuevo(), encargo=False), (), 1,
-             "FALLO encargo: construccion/EV-02.md no lleva «Reaplicar URG-01"),
+            ("sin volver a generar las issues de EV-02", agente(nuevo(), issues=False), (), 1,
+             "FALLO issue: construccion/EV-02/ no lleva «Reaplicar URG-01"),
             ("la colisión no nombra EV-02", agente(nuevo(), colision="No hay"), (), 1, "FALLO colision"),
             ("un defecto como cambio de comportamiento", agente(nuevo(), tipo="Cambio de comportamiento"), (), 1,
              "FALLO ficha: Tipo «Cambio de comportamiento»"),

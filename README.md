@@ -26,6 +26,11 @@ producción, para que cualquier persona o agente trabaje igual. Los flujos tiene
 `skills/appian-functional-analyst/assets/flujos/`: dicen quién hace cada paso y con qué skill, citan el detalle sin
 repetirlo, y `iniciar` los pone al día en el proyecto con cada versión del plugin.
 
+Lo que se construye se reparte en issues. Al aprobar un cambio, un script escribe en `construccion/` una issue por
+requisito, con lo que necesita quien la construye y nada más (qué se pide, sus escenarios en Gherkin, sus objetos y lo
+que dice de ellos el técnico), en orden y diciendo cuáles pueden ir a la vez. Quien construye, persona o agente, pide la
+siguiente, que queda reservada con un commit para que nadie más se la lleve, y está hecha cuando su verificación pasa.
+
 Sirve para cualquier proceso (compras, subvenciones, incidencias,
 informes, expedientes…): el dominio sale siempre de las fuentes del proyecto. Las
 plantillas y las galerías del plugin enseñan técnica, no un dominio
@@ -64,6 +69,7 @@ equipo. En el equipo, con Claude Code, hace falta lo de esta tabla; en negrita, 
 | Paquete docx de Node | `appian-functional-analyst` | DF en Word | Se entrega el funcional.md | `npm install docx` en la carpeta de trabajo, o `npm install -g docx` |
 | LibreOffice | `appian-functional-analyst` | Revisar el DF en Word como PDF y ver las diapositivas de un DF del cliente | Se revisa a mano | Windows: `winget install TheDocumentFoundation.LibreOffice`<br>macOS: `brew install --cask libreoffice`<br>Linux: `sudo apt install libreoffice` |
 | pdftotext o pypdf | `appian-functional-analyst` | Leer fuentes en PDF | Claude lee el PDF directamente, más despacio | Windows: `python -m pip install pypdf`<br>macOS: `brew install poppler` o `python3 -m pip install pypdf`<br>Linux: `sudo apt install poppler-utils` o `python3 -m pip install pypdf` |
+| git | `appian-functional-analyst` | El repositorio de cada proyecto (`proyecto.py iniciar` y `estado`) y la reserva de las issues de construcción (`indice.py issues --siguiente`) | El proyecto se crea sin repositorio, `estado` no sabe qué está subido y las issues se dan sin reservar: dos personas pueden llevarse la misma | Windows: `winget install Git.Git`<br>macOS: `brew install git`, o las herramientas de línea de comandos de Xcode<br>Linux: `sudo apt install git` |
 | uv | `appian-reverse-engineering` | Arrancar el Dev MCP y el extractor, con Python 3.10 o superior y el SDK mcp | No se puede usar ingeniería inversa | Windows: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 \| iex"`<br>macOS y Linux: `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | Appian Dev MCP configurado | `appian-reverse-engineering` | Leer la aplicación en solo lectura (entorno 26.5 o superior, usuario con rol Designer) | No se puede usar ingeniería inversa | Lo instala cada persona y lo configura en el `.mcp.json` de su carpeta: `skills/appian-reverse-engineering/references/devmcp-setup.md` |
 | Appian MCP Server del mismo entorno | `appian-reverse-engineering` | Volúmenes del data fabric | La documentación sale sin volúmenes | Lo activa un administrador del entorno; se añade a la configuración MCP como `<URL del entorno>/mcp` (misma guía) |
