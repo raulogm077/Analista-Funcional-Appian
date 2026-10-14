@@ -59,7 +59,7 @@ Todas confirmadas por Raúl el 14 de octubre de 2026.
 ### Fase 7 · Medir y pasar a producción
 
 - [ ] **T17. Volver a medir** el retoque construido como en T6: no debe costar más.
-- [ ] **T18. Revisión humana y trazabilidad.** Una línea en `cambios.md` §6 y en `urgentes.md`: quien prepara el paquete revisa en Compare and Deploy la comparación de los objetos, como en un Merge Request, junto con los fallos de la regresión (casos de prueba y guiones de QA) y las pruebas marcadas como no necesarias; se promueve el mismo paquete con un ICF por entorno; y, si el despliegue es directo o por API, se activa «Require review». `produccion --ref` lleva la referencia del pase en el cliente. Sin script nuevo.
+- [x] **T18. Revisión humana y trazabilidad.** Una línea en `cambios.md` §6 y en `urgentes.md`: quien prepara el paquete revisa en Compare and Deploy la comparación de los objetos, como en un Merge Request, junto con los fallos de la regresión (casos de prueba y guiones de QA) y las pruebas marcadas como no necesarias; se promueve el mismo paquete con un ICF por entorno; y, si el despliegue es directo o por API, se activa «Require review». `produccion --ref` lleva la referencia del pase en el cliente. Sin script nuevo.
 
 ## 3. Más adelante, solo si pasa
 
