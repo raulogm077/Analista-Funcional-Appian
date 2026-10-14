@@ -56,6 +56,11 @@ Lo que salió al ejecutar `docs/plan/2026-10-14-metodo-lucia.md` y no entra en �
 - Pruebas de la issue: «no evaluable» reconoce solo la rejilla de registros con filtros de usuario
   (`flow!userFilterSetData`, `devmcp_policy.json`). Si aparece otro límite del ejecutor de Appian, se añade allí.
 
+- QA: `qa.py` dice «ISS-nn vuelve a pendiente» aunque el escenario esté marcado como no necesario (no lee el índice);
+  quien manda es `issues.estado()`, que sí lo respeta.
+- Issues: un process model con varias actividades en «Para» junta en una sola issue varias historias y pantallas (en el
+  proyecto de prueba, el 64 % del técnico); si molesta al construir, partirla por actividad.
+
 ## Menores
 
 - Diagramas: la salida de una puerta que comparte el tramo de su derecha sale ya por su vértice (el codo) y su etiqueta

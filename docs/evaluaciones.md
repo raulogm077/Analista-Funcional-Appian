@@ -9,6 +9,84 @@ están en `$PROYECTOS_PRUEBA`, fuera del repositorio; aquí solo los resultados.
 Rama `metodo-lucia`, de `main` d6126a8 (0.7.0-beta.4). Plan: `docs/plan/2026-10-14-metodo-lucia.md`. Las pruebas con
 reuniones reales y con el entorno de desarrollo se hacen fuera del repositorio; aquí, solo las cifras y las lecciones.
 
+### Fase 5 · T10 a T14: issues por requisito y pruebas de la issue
+
+Qué cambia:
+- **T10.** Técnico §13 gana la columna «Para» (el requisito de cada objeto, o «Base»); `comprobar.py` avisa del objeto sin
+  ella, una sola vez en un técnico antiguo. La plantilla dice además, en un solo sitio cada cosa: cada acción que lanza un
+  proceso es una acción de registro (de lista o relacionada) de un record type, nunca un enlace de proceso; la URL de cada
+  entorno en §0; y cómo se comprueba cada criterio en §14.
+- **T11.** `indice.py issues` sustituye al encargo, que desaparece. Las issues se generan al aprobar la unidad, una por
+  requisito (juntas las que comparten pantalla o proceso, lo común en la Base), con el extracto del técnico y del
+  prototipo, sus escenarios y su `.feature`. `--siguiente` da la próxima, la reserva con una línea en el índice de la
+  unidad (commit y push) e imprime la orden de terminar con las rutas y el servidor del equipo. `construida` pide todas
+  las issues hechas.
+- **T12** (decisión de Raúl): `LCP_TOOL_MODE` no hace nada en el Dev MCP 26.6.110 y se dejó de afirmar lo contrario en
+  ingeniería inversa. Fuera de desarrollo, una cuenta que solo ve la aplicación, la misma por entorno: el Dev MCP rechaza
+  con 403 a una cuenta que no es diseñadora, y una diseñadora que solo ve la aplicación no cambia lo que existe, pero puede
+  crear objetos nuevos (según la documentación; sin probar). SAIL CLI, solo en desarrollo.
+- **T13.** `verificar` ejecuta los casos de prueba de las reglas e interfaces de la issue y de lo que las usa, reconociendo
+  las herramientas por su firma, y deja el detalle en su fichero. Bloquea un fallo propio, salvo que una persona lo marque
+  con `--sin-prueba` y motivo (se niega en una sesión desatendida y caduca si cambian la issue o el fallo); un fallo en lo
+  que la usa es un aviso; la rejilla que el ejecutor no evalúa es «no evaluable». Comprueba nombre y tipo de las acciones
+  de registro. La regresión de toda la aplicación la pasa un script antes del paquete.
+- **T14.** Al aprobar una unidad que cambia datos, seguridad, integraciones o procesos en curso, o que usa IA, y en su
+  issue: «que una persona revise DT-nn antes de construir». Aviso, no puerta.
+- Un retoque solo se libra de la DT si renombra una acción, vista o filtro de un record type y su fila del técnico no
+  cambia nada más; si cambia quién la ve, pide «Permisos».
+
+Prueba real, en solo lectura, contra la aplicación ficticia del entorno de desarrollo:
+
+| Orden | Tiempo | Por pantalla | Casos |
+|---|---|---|---|
+| `verificar` de la unidad del retoque (regla con dependientes, panel y acción) | 11 s | 425 bytes | 40: 39 pasan, 1 no evaluable |
+| `regresion` de la aplicación | 12 s | 250 bytes | 75: 74 pasan, 1 no evaluable |
+
+El registro del Dev MCP, que en T6 llegaba a 331 KB, ya no sale. Una acción renombrada a mano sale como diferencia. En el
+retoque de T6, la issue ocupa 2,2 KB (el técnico, 16 KB) y dice que no hay pruebas que ejecutar.
+
+Tres revisiones independientes (una de cada mitad y otra de la fase entera) encontraron, y quedó corregido:
+- Parte del técnico no llegaba a ninguna issue mientras la issue decía que no hacía falta leerlo: primero 21 de 67 líneas
+  del proyecto de prueba, y después la matriz de seguridad, que no nombra objetos. Lo que no cae en ninguna issue va a la
+  Base y el analista recibe el aviso.
+- La reserva deshacía una fusión de git a medias, subía commits ajenos si el proyecto estaba dentro de otro repositorio y
+  daba a una sesión reiniciada, o a dos sesiones del mismo usuario, una issue que no era suya.
+- La regla de «retoque en una parte» dejaba pasar cambios de datos y de permisos, y saltaba la decisión de orden entre dos
+  unidades sobre el mismo record type.
+- `construida --manual --desatendida` se saltaba el bloqueo de las pruebas; y unos casos que no se pudieron ejecutar
+  bloqueaban sin salida (ahora esperan a la regresión, con aviso).
+
+Comprobado: mismas issues byte a byte con los mismos datos, en carpetas distintas; cada issue conserva su número al
+cambiar el análisis; en 15 rondas con dos o tres agentes a la vez, ninguno se llevó la misma issue.
+
+Lo que no se cumple tal cual: «fuera de desarrollo, el Dev MCP no ofrece herramientas que escriban» (decisión de Raúl:
+sin maquinaria; queda la cuenta que solo ve la aplicación). «Una regla que rompe otra que la usa se detecta» está probado
+con el simulador: en solo lectura no se puede provocar; lo prueba T16 con un defecto sembrado.
+
+### Fase 6 · T15: la skill appian-qa
+
+`skills/appian-qa/`: QA de una unidad completa, en otra sesión, solo con sus `.feature`. Por escenario, el «dado» como un
+usuario, el «cuando» con la cuenta de su rol y su `--data-dir`, y el «entonces» en el `--json` de SAIL CLI. Cada recorrido
+queda como guion en `qa/<U>/` y `qa.py` los repite sin IA antes del paquete; un fallo devuelve su issue a pendiente y se
+puede marcar como no necesario con `--sin-prueba` y motivo, como un caso de prueba. La sesión de cada rol se busca en el
+equipo de quien repite, sin fichero por proyecto y sin que el script vea contraseñas. No repite contra pruebas ni
+producción. En un retoque cosmético, nada.
+
+Prueba real con la aplicación ficticia y tres cuentas locales por rol: tres escenarios recorridos y escritos como guion en
+1, 1 y 0,5 minutos; repetirlos sin IA, 15 segundos la unidad entera, dos veces con el mismo resultado; un fallo provocado
+falla donde debe. Para que el guion sea estable hizo falta no fijar los números que da Appian (se comparan por el
+principio), marcar las filas por su contenido y tener en cuenta que una rejilla vacía no trae filas y que lo buscado se
+queda en la caja de búsqueda.
+
+La revisión independiente encontró, y quedó corregido: la unidad podía quedar Construida sin QA (ahora la última issue lo
+dice y `construida` avisa); un guion podía dar «pasa» sin afirmar nada; nada impedía repetirlo contra producción; y un
+código de salida tapaba un fallo. Las sesiones de cuentas locales se cierran al terminar la campaña de QA y la importada
+del Dev MCP no se cierra: cerrarla podría dejar sin acceso al Dev MCP.
+
+Pruebas, con la Fase 5 y T15 unidas: `comprobar_plugin.py`, 7 skills y 0 errores; selftest del analista (382), de
+`appian-qa` (48), de prototipos y de diagramas, correctos; los siete `prueba_puntuar.py`; ingeniería inversa, 193 pasan y
+2 se saltan.
+
 ### Fase 1 · T1: el caso de «Agilidad» con la 0.7.0-beta.4
 
 Una sesión nueva, con el plugin cargado desde una carpeta (`claude --plugin-dir`), incorpora una reunión de 2.467 palabras
