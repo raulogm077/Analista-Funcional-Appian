@@ -110,7 +110,7 @@ def main():
     errors, enlaces = [], []
     analisis = out.resolve().parent.parent / "analisis"  # <proyecto>/prototipo/capturas → <proyecto>/analisis
     index = [f"# Capturas · {spec.get('app', {}).get('name', '')}", "",
-             "«Ficha»: bajo qué ficha PAN de analisis/funcional.md va cada imagen. «Para la ficha»: la línea que se pega debajo de su título.", "",
+             "«Ficha»: bajo qué ficha PAN de analisis/funcional.md va cada imagen. «Para la ficha»: la línea que capture.py pone debajo de su título.", "",
              "| Fichero | Pie de figura | Ficha | Para la ficha | Patrón | Requisitos |", "|---|---|---|---|---|---|"]
     with sync_playwright() as p:
         b = launch_browser(p)

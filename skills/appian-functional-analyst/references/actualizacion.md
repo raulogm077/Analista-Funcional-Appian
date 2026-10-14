@@ -194,7 +194,7 @@ Comprueba que los IDs existen, que las citas son reales y que ningún tramo de 1
 ha quedado sin cita (señal de que se ha leído entera).
 
 ## 5. Aprobación
-Presenta el **Resumen** y **solo los puntos que requieren aprobación**, cada uno con tu recomendación, y
+Si ningún punto la requiere, pasa al §6. Si no, presenta el **Resumen** y **solo esos puntos**, cada uno con tu recomendación, y
 pregunta «¿Aplico el informe con estas decisiones?». Con cualquier confirmación, aplica. La que llega por el chat se
 cataloga como Aprobación y la de un correo, como Correo; la Decisión la cita igual («✔ FU-09») y la fuente va a «Fuentes
 procesadas». Lo que decide el analista manda: si al aplicar ves un motivo para no seguirlo, pregúntale.
@@ -244,7 +244,8 @@ python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/ --anterior <p>/v
 Tiene que salir sin errores: ningún ID desaparecido, la versión sube (si cambió el funcional o el técnico) y tiene
 su fila, cada dependencia con resultado, cada cambio declarado en el informe, nada marcado «sin cambios» que haya
 cambiado y nada 🔒 cambiado sin un punto aprobado. Después:
-- el Word, solo al enviarlo o si se pide, y sin esperar al prototipo (paso 8 del `SKILL.md`);
+- el Word, solo al enviarlo o si se pide (paso 8 del `SKILL.md`). No espera al prototipo, pero el que sale antes que las
+  capturas nuevas es para leerlo: di qué pantallas llevan aún la anterior, y ni se entrega ni se revisa hasta repetirlo;
 - el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y solo sus capturas. Las validadas por
   el cliente (🔒) no se tocan sin el visto bueno del analista.
 

@@ -1,7 +1,7 @@
 """Funciones auxiliares para escribir el app.json con la guía de diseño (references/design-rules.md).
 
 Uso en un generar_app.py (el flag, antes del import: si no, queda __pycache__ en el kit):
-    import sys; sys.dont_write_bytecode = True; sys.path.insert(0, sys.argv[1])   # python3 generar_app.py <KIT>/scripts
+    import sys; sys.dont_write_bytecode = True; sys.path.insert(0, sys.argv[1] if sys.argv[1:] else sys.exit("Uso: python3 generar_app.py <KIT>/scripts"))
     from sail_helpers import *
 Con la marca del proyecto (brand-<id>.json junto al app.json, en <p>/prototipo/), antes de esa línea:
     import sail_helpers; sail_helpers.usar_marca("<id>", sail_helpers.Path(__file__).parent)   # la carpeta del script

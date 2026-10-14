@@ -73,7 +73,7 @@ function aPdf(fichero) {
       fs.copyFileSync(path.join(salida, nombre), pdf);
       return { ok: true, pdf };
     }
-    return { ok: false, msg: "Sin LibreOffice (soffice) no hay PDF, y no se saca por otra vía: el Word lo revisa quien lo envía (un documento del cliente se le pide en PDF)" };
+    return { ok: false, sin: true, msg: "Sin LibreOffice (soffice) no hay PDF, y no se saca por otra vía" };
   } finally {
     try { fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5 }); } catch (e) { /* en Windows puede seguir abierto (EBUSY) */ }
   }
@@ -82,7 +82,7 @@ if (args.includes("--pdf-de")) {
   const f = opt("--pdf-de") ? path.resolve(opt("--pdf-de")) : "";
   if (!f || !fs.existsSync(f)) { console.error(`No existe ${f || "el fichero de --pdf-de"}`); process.exit(2); }
   const r = aPdf(f);
-  console.log(r.ok ? `OK ${r.pdf}` : r.msg);
+  console.log(r.ok ? `OK ${r.pdf}` : r.msg + (r.sin ? ": un documento del cliente se le pide en PDF" : ""));
   process.exit(r.ok ? 0 : 1);
 }
 
@@ -466,7 +466,8 @@ Packer.toBuffer(doc).then((buf) => {
   if (MARCA) console.log(`Marca: ${MARCA.fichero} (#${MARCA.color} en títulos y cabeceras de tabla)`);
   if (args.includes("--pdf")) {
     const r = aPdf(out);
-    console.log(r.ok ? `PDF para revisar: ${r.pdf}` : `· ${r.msg}`);
+    console.log(r.ok ? `PDF para revisar: ${r.pdf}`
+      : `· ${r.msg}${r.sin ? ": el Word va sin revisar; lo revisa quien lo envía y hay que decírselo al entregar" : ""}`);
   }
   process.exit(missing ? 1 : 0);
 });

@@ -136,13 +136,14 @@ Di el modo al empezar.
    python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/
    ```
    Sin errores antes de entregar. Revisa los avisos: los de redacción se corrigen casi siempre.
-8. **DF en Word**, solo para enviarlo o si se pide (síntesis, evolutivo y refactorización). No espera al prototipo: sale
-   con el análisis comprobado y se repite, en segundos, cuando lleguen las capturas. La primera entrega es la versión
-   1.0: sube la versión del funcional y del técnico y añade su fila en `decisiones.md`. Nunca sobrescribe uno entregado.
+8. **DF en Word**, solo para enviarlo o si se pide (síntesis, evolutivo y refactorización). La primera entrega es la
+   versión 1.0: sube la versión del funcional y del técnico y añade su fila en `decisiones.md`. No espera al prototipo,
+   pero el que sale antes que las capturas nuevas es para leerlo: di qué pantallas llevan aún la anterior, y ni se entrega
+   ni se revisan sus páginas hasta repetirlo con ellas (uno entregado no se sobrescribe). Mira algunas páginas del PDF
+   antes de enviarlo; sin LibreOffice no lo hay ni se saca por otra vía: lo revisa quien lo envía; díselo al entregar.
    ```bash
    node <skill>/scripts/df_docx.js <p> --pdf    # entregables/DF-<proyecto>-v<versión>.docx; el PDF, en revision/
    ```
-   Mira algunas páginas del PDF antes de enviarlo; sin LibreOffice no lo hay ni se saca por otra vía: lo revisa quien lo envía.
 9. **Entregar.** Actualiza `proyecto.md` (fuentes procesadas y siguiente paso) y envía el Word y el `funcional.md`
    (SendUserFile en Claude). Cuando el Word sale hacia el cliente, `proyecto.py entregar <p>` apunta «DF entregado» y
    el fichero; nunca en una sesión desatendida. En pocas líneas: modo, historias, pantallas, pendientes de confirmar con el

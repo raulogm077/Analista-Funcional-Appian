@@ -4,12 +4,12 @@ Cuándo: más de unas 5 reuniones largas para arrancar, más de 5 procesos o el 
 (§4). Probado con 25 reuniones (≈27.000 líneas) y una aplicación de 5 módulos.
 
 ## 1. Una nota por fuente, antes de escribir
-Nadie retiene 25 reuniones a la vez. Primero una nota por fuente en `notas/FU-xx.md`, proporcional a la fuente (siempre
-más corta que ella) y solo con las secciones de esta lista que tengan contenido:
+Nadie retiene 25 reuniones a la vez. Primero una nota por fuente en `notas/FU-xx.md`, proporcional a la fuente (siempre más
+corta que ella, sin dejar fuera decisiones, cambios ni preguntas) y solo con las secciones de esta lista con contenido:
 Resumen · Hablantes → rol (la única con nombres) · Decisiones (con cita y rol que decide) · Perfiles ·
 Procesos, pasos y estados · Pantallas (partes, datos, filtros, acciones, quién ve qué, textos literales) ·
 Datos · Reglas · Avisos, documentos y otros sistemas · Condiciones de uso · Contradicciones y cambios de
-criterio · Pendientes · Fuera de alcance. Todo con cita `[FU-xx hh:mm:ss]` y aplicando `ingesta-fuentes.md`.
+criterio · Pendientes · Fuera de alcance. Todo con cita `[FU-xx hh:mm:ss]`; en un análisis nuevo, con `ingesta-fuentes.md`.
 
 Si la sesión permite lanzar agentes, reparte las fuentes en bloques **cronológicos** de unas 3.000 a 4.000
 líneas, cada uno con estas instrucciones. Si no, fuente a fuente, guardando cada nota antes de seguir.
