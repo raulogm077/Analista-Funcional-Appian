@@ -53,7 +53,7 @@ Los correos `.msg` no se leen de forma fiable: pide el correo como `.eml` o PDF.
 ## La carpeta del proyecto
 
 Un repositorio git por proyecto, siempre con la misma forma (la de «Qué escribe», más `as-is/` de ingeniería inversa y
-`qa/` del QA): el código vive en Appian y aquí va todo lo demás, también las fuentes. Lo crea `proyecto.py iniciar`.
+`qa/` de `appian-qa`): el código vive en Appian y aquí va todo lo demás, también las fuentes. Lo crea `proyecto.py iniciar`.
 `AGENTS.md` y `.agents/workflows/` salen enteros del plugin y no se editan: `proyecto.py iniciar <p>` en un proyecto
 que ya existe los pone al día y no toca nada más. Se trabaja sobre main, sin ramas ni PR, con `git commit` y `git push`
 al terminar; `iniciar` no confirma ni sube nada, y el remoto, privado, lo decide el proyecto.

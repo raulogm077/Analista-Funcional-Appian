@@ -2425,6 +2425,26 @@ def pruebas_de_la_issue(tmp):
        c == 0 and "regresion" not in out and "· verificada · 1 prueba marcada |" in fila_de(v, "EV-02")
        and c2 == 0 and " regresion --app \"DEM Gestión de Solicitudes\" --out \"" in out2
        and f"{(v / 'construccion' / 'EV-02' / 'regresion.json').resolve().as_posix()}\"" in out2, out + out2)
+    # La de una urgencia corregida en el entorno de corrección (URG-01) se pasa allí, con el Dev MCP de ese entorno; la
+    # de un evolutivo, con el de desarrollo. Cada uno, por la etiqueta exacta de su URL en técnico §0
+    editar(v / "analisis" / "tecnico.md", "| Aplicación | `DEM Gestión de Solicitudes`, prefijo `DEM` | FU-01 |",
+           "| Aplicación | `DEM Gestión de Solicitudes`, prefijo `DEM` | FU-01 |\n"
+           "| URL de desarrollo | https://dem-desarrollo.example.com | Equipo |\n"
+           "| URL del entorno de corrección | https://dem-correccion.example.com | Equipo |")
+    devmcp = lambda url: {"command": "uv", "args": ["run", "python", "-m", "lcp_mcp_server"], "env": {"LCP_URL": url}}
+    (v / ".mcp.json").write_text(json.dumps({"mcpServers": {"appian-dev-dem": devmcp("https://dem-desarrollo.example.com"),
+                                                            "appian-dev-correccion": devmcp("https://dem-correccion.example.com")}}),
+                                 encoding="utf-8")
+    vacia = tmp / "casa vacía regresión"
+    vacia.mkdir()
+    aislado = {"APPIAN_RE_HOME": str(vacia), "APPDATA": str(vacia / "AppData")}
+    c, out = issues(v, "URG-01", "--regresion", env=aislado, cwd=v)
+    c2, out2 = issues(v, "EV-02", "--regresion", env=aislado, cwd=v)
+    ok("la regresión de una urgencia corregida en el entorno de corrección va con el Dev MCP de ese entorno, y la de un "
+       "evolutivo, con el de desarrollo",
+       c == 0 and "en el entorno de corrección" in out and out.count('--server-name "appian-dev-correccion"') == 1
+       and f"{(v / 'construccion' / 'URG-01' / 'regresion.json').resolve().as_posix()}\"" in out
+       and c2 == 0 and '--server-name "appian-dev-dem"' in out2 and "entorno de corrección" not in out2, out + out2)
 
     # Una acción de registro que se renombra: lo esperado lleva su nombre nuevo y su tipo, de técnico §7
     def renombra(carpeta, ve_tambien=""):
