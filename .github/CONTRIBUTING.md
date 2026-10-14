@@ -45,10 +45,13 @@ auto-update**. Lo que falta en tu equipo te lo dice el plugin al empezar; la lis
    git commit -m "Prototipos: contraste de los botones secundarios"
    git push -u origin lucia/contraste-prototipos
    ```
-6. Abre el PR en GitHub. En la descripción: qué cambiaste, por qué y cómo lo probaste.
+6. Abre el PR en GitHub solo cuando el trabajo esté terminado: un PR por trabajo, no por cada retoque. En la
+   descripción: qué cambiaste, por qué y cómo lo probaste.
+7. En el PR, pulsa **Enable auto-merge**. Entra solo en cuanto Raúl lo apruebe y las pruebas salgan en verde; no hay
+   que volver a entrar.
 
-GitHub pasa todas las pruebas al PR. Si sale algo en rojo, se corrige en la misma rama y se vuelve a subir. Raúl
-revisa y aprueba; sin su aprobación no entra.
+Si una prueba sale en rojo, se corrige en la misma rama y se vuelve a subir. Subir la rama sin abrir PR, como copia de
+seguridad, se puede hacer siempre: no pasa pruebas ni molesta a nadie.
 
 ## 3. Reglas para no pisarse
 
@@ -60,8 +63,8 @@ revisa y aprueba; sin su aprobación no entra.
   git worktree add ../prueba-lucia lucia/contraste-prototipos
   ```
   y usa `claude --plugin-dir ../prueba-lucia`.
-- **Si otro PR entra antes que el tuyo**, pulsa «Update branch» en tu PR: se pone al día y vuelve a pasar las
-  pruebas.
+- **Si GitHub dice que tu PR tiene conflictos** (otro cambió las mismas líneas), pulsa «Resolve conflicts» o pide
+  ayuda a tu Claude.
 - **Nada de clientes en el repositorio**: ni transcripciones, ni salidas reales, ni marcas. Los ejemplos son
   ficticios. Lo que el plugin genera en un proyecto se queda en la carpeta de ese proyecto.
 - **Una lección de una prueba real** que pida cambiar el plugin: cuéntala en la descripción del PR o en una issue,
