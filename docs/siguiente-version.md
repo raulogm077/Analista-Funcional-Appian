@@ -14,6 +14,10 @@ Lo que sigue abierto tras la 0.8.0-beta.1. Cada línea dice qué, dónde y de d�
   - volver a medir la evaluación de malas prácticas con propuestas reales (las `claves` se fijaron a ciegas).
 - Archivar `~/Proyectos IA/appian-reverse-engineering` en el equipo donde esté: no está en su cuenta de claude.ai ni en
   el portátil de trabajo. Avisar a quien tenga la skill suelta.
+- Probar que una cuenta Designer que solo ve la aplicación (*Viewer*) no puede cambiar lo que existe, y si puede crear
+  objetos nuevos (`skills/appian-reverse-engineering/references/devmcp-setup.md`, «Solo se escribe en desarrollo»). Se
+  intentó el 14 de octubre de 2026: el control de permisos de Claude Code no dejó crear la cuenta, y Raúl decidió
+  dejarlo sin probar.
 - Avisar a Appian de que `LCP_TOOL_MODE=readonly`, que su documentación describe, no está en el Dev MCP 26.6.110
   (`docs/evaluaciones.md`, «Fase 2 · T5»).
 

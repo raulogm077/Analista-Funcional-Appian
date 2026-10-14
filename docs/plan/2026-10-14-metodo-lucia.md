@@ -166,10 +166,11 @@ Todas confirmadas por Raúl el 14 de octubre de 2026.
 
 ## 6. Estado al terminar (14 de octubre de 2026)
 
-Hechas T1 a T18 en la rama `metodo-lucia` (en GitHub, sin PR); lo medido, lo revisado y lo que no se cumple tal cual, en
-`docs/evaluaciones.md` («Método L.U.C.I.A.»); lo que surgió y no entra, en `docs/siguiente-version.md`. Las pruebas con
-datos reales y con el entorno de desarrollo, fuera del repositorio, en `Proyectos IA/Pruebas-plugin/` del equipo de
-Raúl; la aplicación ficticia DEM del entorno de desarrollo queda sin defectos y con la acción «Nueva solicitud».
+Hechas T1 a T18 en la rama `metodo-lucia`, unida a `main` con el PR #12 (merge `eedff58`); lo medido, lo revisado y lo
+que no se cumple tal cual, en `docs/evaluaciones.md` («Método L.U.C.I.A.»); lo que surgió y no entra, en
+`docs/siguiente-version.md`. Las pruebas con datos reales y con el entorno de desarrollo, fuera del repositorio, en
+`Proyectos IA/Pruebas-plugin/` del equipo de Raúl; la aplicación ficticia DEM del entorno de desarrollo queda sin
+defectos y con la acción «Nueva solicitud».
 
 Lo que decidió Raúl el 14 de octubre de 2026, antes de la PR:
 1. **B4**: con las cifras de T6 y T17 (unos 4 minutos y 2 USD por retoque construido), el retoque construido se hace con
@@ -185,6 +186,6 @@ Lo que decidió Raúl el 14 de octubre de 2026, antes de la PR:
 6. **El diseño y su anexo**: corregido lo que ya no es verdad (`LCP_TOOL_MODE`, la regresión «en bloque», las 5.600
    líneas, la ruta de verificación, el cierre de las sesiones de SAIL CLI y «Por comprobar en T5»), con el texto de la
    revisión final (commit `b8d12c8`, apartado 6 de entonces); cada corrección, en su sitio y marcada «comprobado el 14
-   de octubre» con su tarea. Lo de la cuenta de solo lectura fuera de desarrollo lo completa Raúl con una prueba en
-   marcha.
-7. **La PR**: a abrir.
+   de octubre» con su tarea. Lo de la cuenta de solo lectura fuera de desarrollo queda sin probar
+   (`docs/siguiente-version.md`, «Pasos de Raúl»).
+7. **La PR**: el #12, unido a `main` (merge `eedff58`).

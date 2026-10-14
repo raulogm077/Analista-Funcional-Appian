@@ -2,7 +2,7 @@
 «reingeniería», que es rehacer: la skill documenta lo que hay."""
 import re
 
-from conftest import SKILL  # carpeta de la skill (Tarea 0)
+from conftest import SKILL  # carpeta de la skill
 
 PROHIBIDO = re.compile(
     r"12-especificacion|13-modernizacion|14-diseno|rebuild-architect|target-designer|modernizacion\.json|"

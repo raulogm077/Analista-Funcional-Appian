@@ -237,7 +237,7 @@ Revisión independiente, con un proyecto ficticio fuera del repositorio:
 Pruebas: `comprobar_plugin.py`, 0 errores; `selftest.py` del analista, 261 comprobaciones (19 nuevas), también con
 Python 3.9. En el Word, cada criterio pasa de unas 10 palabras a 19.
 
-Aplazado: el aviso de «texto que queda viejo» señala criterios que empiezan igual (`docs/siguiente-version.md`).
+El aviso de «texto que queda viejo» señalaba criterios que empiezan igual: resuelto en la Fase 7 (ajustes finales).
 
 ### Fase 5 · T10 a T14: issues por requisito y pruebas de la issue
 
