@@ -34,6 +34,22 @@ fichero de la prueba que decía dónde estaba el texto. **El criterio se cumple 
 sesiones buscaron el plugin en el disco, porque `AGENTS.md`, el flujo y la issue nombraban los scripts sin ruta (son del
 proyecto y se comparten entre equipos), y una se quedó colgada tres minutos en una búsqueda por todo el disco.
 
+**T17 repetida** con los ajustes finales (copia del commit `11e34a9`; tres pasadas válidas, cada una en una carpeta
+aislada): ninguna busca ya el plugin en el disco.
+
+| | T6 | T17, primera | T17, repetida |
+|---|---|---|---|
+| Minutos | 2,9 | 4,7 | 4,3 (4,0 · 4,5 · 4,4) |
+| Llamadas | 54 | 38 | 38 |
+| Contexto máximo | 217.215 | 140.785 | 159.059 |
+| Coste (USD) | 2,51 | 1,92 | 1,97 |
+
+**El criterio «no cuesta más que en T6» se cumple en llamadas (−30 %) y en dinero (−22 %), no en minutos (+1,4).** El
+tiempo de más es de las herramientas (de 0,5 a 1,3 minutos: pedir la issue, que reserva con commit y push, y `verificar`)
+y de seis peticiones más al modelo. Del técnico solo se leen trozos, no se lanzan pruebas ni SAIL CLI y la calidad es la
+misma: la acción renombrada, nada más tocado y la unidad Construida. Si esos minutos importan, Raúl decide (por ejemplo,
+reservar sin push cuando trabaja una sola persona).
+
 **El caso de T1 con el plugin terminado** (misma base, encargo y memoria que T1, T3 y T3b):
 
 | | T1 | T3 | T3b | Final |
