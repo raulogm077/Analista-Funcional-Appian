@@ -51,6 +51,54 @@ sin él, la sesión sacó el PDF por su cuenta; y el hook de arranque prueba `py
 `<nombre>@inline`; está documentado). La app de escritorio no tiene un equivalente documentado: para probar un cambio sin
 instalarlo, la CLI.
 
+### Fase 1 · T2 y T3: lo que se corrigió y lo que mide
+
+T2 (sobre la 0.7.0-beta.4): el Word no espera al prototipo y se repite con las capturas; en un retoque de prototipo se lee
+solo el tramo de cada pantalla del script del proyecto y el apartado de la guía que cambie; la tabla de referencias del
+analista dice qué se lee por partes al incorporar una fuente; el informe de impacto se escribe una vez si nada requiere
+aprobación; la nota es proporcional y sin apartados vacíos; `capture.py` enlaza cada captura en su ficha; sin LibreOffice
+no se saca el PDF por otra vía y se dice a quien envía que el Word va sin revisar; el script del prototipo ya no lleva la
+ruta del plugin; `validate.py --anterior` vale sin `--confirmadas`; el hook no deja el error de `python3` en Windows. Los
+ficheros de instrucciones no crecen (analista `SKILL.md` 216 → 218 líneas; prototipos, 180 → 180).
+
+T3 repite el caso de T1 con una copia del plugin que lleva solo T2; T3b, con T2 tras su revisión y dos ajustes que salieron
+de T3. Mismo punto de partida, encargo, modelo y memoria; una ejecución de cada una.
+
+| | T1 | T3 | T3b |
+|---|---|---|---|
+| Minutos activos | 18,6 | 16,0 | 19,4 |
+| Llamadas | 124 | 155 | 135 |
+| Líneas del método | 838 | 331 | 287 |
+| Líneas del análisis | 427 | 1.105 | 413 |
+| Líneas de código del plugin | 0 | 215 | 0 |
+| Líneas del script del prototipo | 665 | 494 | 524 |
+| Coste (USD) | 6,73 | 6,64 | 5,61 |
+
+- **El criterio «T3 baja en minutos y llamadas frente a T1» no queda demostrado**: el total se mueve entre 16 y 19 minutos
+  y entre 124 y 155 llamadas de una ejecución a otra, y eso es más que lo que T2 quita. Lo que queda del caso es tiempo
+  del modelo pensando y editando.
+- Se repite en las dos y es de T2: el método se lee en un tercio; el informe, de 5 llamadas a 2; el enlace de capturas, de
+  3 a 1; el script del prototipo ya no se lee entero.
+- **El Word no se adelantó en ninguna de las tres**: con todo pedido en un turno, nadie lee uno intermedio y la sesión se lo
+  salta. Sin efecto medido; pendiente de que Raúl decida si se queda.
+- Lo que T3 enseñó y se corrigió antes de T3b: al escribirse el informe «una vez, ya aplicado», la sesión lo dejó (con
+  `comprobar.py`) para después del prototipo, que se retocó sobre un análisis sin comprobar. `actualizacion.md` §7 fija el
+  orden en un solo sitio y en T3b se cumple (informe en el minuto 8,4, comprobación en el 9,1, prototipo después). Y sin la
+  plantilla del funcional, la sesión buscó en el código de `comprobar.py` cómo se tacha una pregunta: la tabla de
+  referencias cita ahora ese tramo.
+- Calidad: las tres pasan `comprobar.py` y `validate.py` sin errores. Contrastadas con la reunión, las tres recogen sus 15
+  puntos en la nota, en el informe y aplicados; T3b toca menos piezas (16 frente a 22 y 21) porque no repite un supuesto
+  que ya estaba en una pregunta abierta. Un punto depende de una palabra mal transcrita y cada sesión lo trató distinto.
+- Revisión independiente de T2: dos correcciones de texto antes de unir (el Word que sale antes podía entregarse con las
+  capturas viejas y ya no se dejaba repetir; sin LibreOffice nadie sabía que iba sin revisar) y cuatro restos de lo
+  anterior. El código nuevo, sin fallos.
+- T4: `CLAUDE.md` lleva las preguntas del color y de la IA, dónde van las lecciones de cada prueba y cómo se prueba un
+  cambio de una skill con `claude --plugin-dir`.
+
+Pruebas, con T2 unida: `comprobar_plugin.py`, 0 errores; selftest del analista y de prototipos, correctos;
+`coste-retoque/prueba_puntuar.py`, bien (el camino corto sigue en 16 llamadas). El retoque de análisis a ciegas (tope de
+25 llamadas) se repite al final, con el plugin completo.
+
 ### Fase 3 · T7 y T8: flujos y un repositorio git por proyecto
 
 Qué cambia:

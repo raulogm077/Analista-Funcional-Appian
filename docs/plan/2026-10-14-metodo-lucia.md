@@ -26,7 +26,7 @@ Todas confirmadas por Raúl el 14 de octubre de 2026.
 
 - [x] **T1. Medir y clasificar.** Repetir con la versión actual el caso de «Agilidad» (fuente corta y retoque de prototipo) con una reunión de `Cerebro_Corporativo_Transcripciones` y el plugin cargado desde la carpeta (`claude --plugin-dir`, pendiente en `siguiente-version.md`). Por paso: minutos, llamadas, qué se leyó y de qué color es.
 - [x] **T2. Corregir los cuatro puntos de «Agilidad»** de `docs/siguiente-version.md`, según T1: qué se lee en un retoque de prototipo; el analista consulta con `indice.py` en vez de leer funcional y técnico enteros; la nota de la fuente, proporcional al original; el DF sin esperar al prototipo, con las capturas después.
-- [ ] **T3. Volver a medir** el mismo caso y anotarlo en `docs/evaluaciones.md`, sin datos del cliente.
+- [x] **T3. Volver a medir** el mismo caso y anotarlo en `docs/evaluaciones.md`, sin datos del cliente.
 - [x] **T4. Tres líneas en el `CLAUDE.md`:** antes de añadir algo, «¿de qué color es este paso?» y «¿seguiría funcionando sin IA?»; y, tras cada prueba con reuniones reales, la lección que pide un cambio va a `siguiente-version.md`, sin datos del cliente.
 
 ### Fase 2 · El Dev MCP y SAIL CLI en Indra-spain
