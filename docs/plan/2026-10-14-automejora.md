@@ -14,7 +14,7 @@ cambio.
 - Modos: los flujos F1 a F9 en Claude Code, otros agentes con `AGENTS.md` (Codex y Copilot CLI), subagente frente a
   sesión aparte y sin IA (una persona con lo que deja el plugin).
 - Se escribe solo en Indra-spain: una aplicación de prueba con prefijo propio, que se deja para que Raúl la revise.
-  BCP, sin escribir. El entorno del cliente: solo lectura, sin ninguna herramienta que cree, cambie, borre,
+  El otro entorno de desarrollo, sin escribir. El del cliente: solo lectura, sin ninguna herramienta que cree, cambie, borre,
   publique o ejecute.
 
 **Dónde va cada cosa.** Las pruebas, sus proyectos y lo medido, en `Proyectos IA/Pruebas-plugin/automejora/`, fuera del
