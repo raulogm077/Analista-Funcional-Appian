@@ -4,14 +4,15 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
-## Automejora con proyectos reales (14 de octubre de 2026)
+## Automejora con proyectos reales (14 y 15 de octubre de 2026)
 
 Sobre la 0.8.0-beta.1, sin cambiar el plugin. Plan: `docs/plan/2026-10-14-automejora.md`. Nueve pruebas con reuniones
 reales del cerebro corporativo, una aplicación de desarrollo y otra de un cliente en solo lectura; cada una la hizo un
 subagente siguiendo el plugin de la rama leyendo sus ficheros (las sesiones anidadas `claude -p` desatendidas las bloquea
 el clasificador de permisos), y la revisó otro de contexto limpio contra el código. Tiempos de reloj de herramienta,
-aproximados; sin coste en USD, porque no hubo sesiones anidadas. Lo que pide un cambio está en
-`docs/siguiente-version.md` («Del plan de automejora»).
+aproximados; sin coste en USD, porque no hubo sesiones anidadas. P10, el 15 de octubre: un análisis real hecho con IA
+(DF, técnico y prototipo) la víspera de construirlo, en copias fuera del repositorio y sin escribir en Appian. Lo que
+pide un cambio está en `docs/siguiente-version.md` («Del plan de automejora»).
 
 | Prueba | Qué | Min | Llamadas | Resultado |
 |---|---|---|---|---|
@@ -28,6 +29,9 @@ aproximados; sin coste en USD, porque no hubo sesiones anidadas. Lo que pide un 
 | P7 | El retoque de P2 por un subagente sin contexto | 0,9 (2 de pared) | 11 | Idéntico a P2 |
 | P8 | El retoque con Copilot CLI y Codex, solo con `AGENTS.md` | 0,6 | ~25 | Copilot: sin scripts, versión incoherente (`comprobar.py` ✗); Codex: no concluyente, su sandbox no arranca dentro de otra sesión |
 | P9 | Una persona sin IA: estado, retoque y guion de reunión | ~2 (10-15 para una persona) | 14 órdenes | Viable; se atasca en la ruta del plugin y en localizar menciones |
+| P10 · lo recibido | Análisis real hecho con IA (45 HU, 27 pantallas, 53 PC): estado, comprobar, Word, prototipo y guion | ~10 | ~25 | `comprobar.py` sin errores; Word y prototipo idénticos al regenerarlos (el prototipo, con la ruta del kit a mano) |
+| P10 · F1 paso 13 a F8 | De la versión del DF a la primera issue, por un subagente limpio | 5 | 34 | Cero issues con §13 en lista; 25 tras reescribirlo como tabla (141 filas); los supuestos para construir no llegan |
+| P10 · F2 en construcción | Respuesta del cliente a 3 PC con EV-01 aprobada y una issue reservada | 12 | 64 | Versión nueva sin errores, EV-01 reaprobada y EV-02 con `--comparte`; lo de EV-02 entra en las issues de EV-01 |
 
 ### Lo aprendido
 
@@ -46,6 +50,11 @@ aproximados; sin coste en USD, porque no hubo sesiones anidadas. Lo que pide un 
   ficheros, no por el índice.
 - Un SAIL CLI con un solo usuario no prueba la seguridad por rol; y un defecto (columnas en blanco por `fields` vacío) lo
   vio SAIL CLI y no `testInterface`.
+- Un análisis hecho con IA que llega al plugin se mantiene sin pérdidas: el Word y el prototipo salen iguales, el guion de
+  preguntas y el impacto de una respuesta funcionan. Lo que falla es el paso a construir: §13 en lista da cero issues sin
+  avisar, y los supuestos con que se construye mientras el cliente no responde no llegan a quien construye (P10).
+- Con dos unidades en curso sobre la misma pieza, los frenos de las unidades funcionan («ha crecido», `--comparte`), pero
+  las issues mezclan lo de las dos (P10).
 
 ## 0.8.0-beta.1 · Método L.U.C.I.A. (14 de octubre de 2026)
 

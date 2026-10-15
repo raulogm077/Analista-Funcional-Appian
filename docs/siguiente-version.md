@@ -58,16 +58,19 @@ Lo que salió al ejecutar `docs/plan/2026-10-14-metodo-lucia.md` y no entra en �
 - QA: `qa.py` dice «ISS-nn vuelve a pendiente» aunque el escenario esté marcado como no necesario (no lee el índice);
   quien manda es `issues.estado()`, que sí lo respeta.
 - Issues: un process model con varias actividades en «Para» junta en una sola issue varias historias y pantallas (en el
-  proyecto de prueba, el 64 % del técnico); si molesta al construir, partirla por actividad.
+  proyecto de prueba, el 64 % del técnico); si molesta al construir, partirla por actividad. En P10 (automejora) salen
+  issues de 12 y 20 requisitos con el título de su primera historia, que no dice lo que agrupan, y «En paralelo con»
+  enumera hasta 22 issues: nadie lo lee.
 - Analista: `indice.py impacto` da el texto de la fila de técnico §13 pero no en qué línea va; en el retoque a ciegas
   cuesta dos llamadas por pasada encontrarla.
 - Evaluaciones: `montar.py` de `pruebas/evaluaciones/` monta los proyectos sin `proyecto.py iniciar`, así que `estado`
   avisa en ellos de que faltan git y `AGENTS.md`; montarlos como los deja el plugin.
 
-## Del plan de automejora (14 de octubre de 2026)
+## Del plan de automejora (14 y 15 de octubre de 2026)
 
-Lo que salió de `docs/plan/2026-10-14-automejora.md`, verificado en el código por un revisor de contexto limpio; las
-medidas, en `docs/evaluaciones.md` («Automejora con proyectos reales»). Por gravedad.
+Lo que salió de `docs/plan/2026-10-14-automejora.md`, verificado en el código por un revisor de contexto limpio; lo de
+P10 (un análisis real hecho con IA, con prototipo y DF, la víspera de construirlo), comprobado en los ficheros que dejaron
+las pruebas. Las medidas, en `docs/evaluaciones.md` («Automejora con proyectos reales»). Por gravedad.
 
 ### Datos que se pierden o avisos que faltan
 
@@ -80,6 +83,43 @@ medidas, en `docs/evaluaciones.md` («Automejora con proyectos reales»). Por gr
 
 ### Construcción
 
+- Del análisis a la construcción (F1 paso 13): con técnico §13 en lista, como pide la plantilla mientras no se construye,
+  `proyecto.py cambio <p> EV-01 aprobada` aprueba la unidad con cero issues y dice «Técnico §13 no tiene objetos de EV-01
+  (columna «Cambio»): no hay nada que construir». Ni F1 paso 13 ni «Proyecto nuevo» del `SKILL.md` dicen que antes se
+  pasa §13 a la tabla (`tecnico-plantilla.md` §13), y `cambios.md` §5 dice que sin «Para» sale una sola issue con toda la
+  unidad: con una lista salen cero. Media línea en F1 paso 13 y en `cambios.md` §1; que `issues_de` (`proyecto.py`), en
+  la construcción inicial, diga que falta la tabla en vez de «no hay nada que construir»; corregir la frase de §5; y que
+  `comprobar.py` avise de una unidad en curso con §13 sin tabla. Tras escribirla, `indice.py issues` (repetir `aprobada`
+  dice «sin cambios»). Sale de P10.
+- Dos unidades en curso sobre la misma pieza: las issues de cada una copian el texto vigente de la historia, la pantalla
+  o el paso, que ya lleva lo de la otra. En P10, con EV-02 (una respuesta del cliente que amplía el alcance) aprobada sobre
+  piezas de EV-01 sin construir, una issue de EV-01 pidió construir los criterios nuevos de EV-02, y las de EV-02
+  llevaron 4 líneas del técnico de EV-01: quien construye EV-01 construiría lo de EV-02. Los frenos de `cambios.md` («ha
+  crecido», `--comparte`) funcionaron. Decisión de diseño: que la issue tome el texto de la pieza de la versión con que se
+  aprobó su unidad (`versiones/v<versión>/`; `cambios.md` ya guarda «aprobada 1.7») o que marque lo que es de otra unidad.
+  Mientras, lo que cambia una pieza de una unidad sin construir va en esa misma unidad. Sale de P10.
+- «Supuestos para construir»: para construir mientras el cliente no responde, el equipo de P10 añadió bajo técnico §13 una
+  tabla `Pregunta · Se construye con · Dónde cambia`, que el plugin no tiene. No llega a ninguna issue (una dice «pendiente
+  de definir (PC-nn)» con el supuesto escrito en §13, y el valor de una constante no llega a la Base), ni las «Reglas para
+  quien construye» del mismo apartado; al responderse el PC nada dice qué hacer con su fila ni
+  `comprobar.py` lo avisa. `indice.py impacto <PC>` sí la encuentra, pero nada pide pasarle el PC. Propuesta: la tabla en
+  `tecnico-plantilla.md` §13; `issues.py` copia en cada issue las filas cuyo PC cita o cuyo «Dónde cambia» es un objeto
+  suyo, y lo general de §13 en todas; `actualizacion.md`, al responder un PC, `impacto` con el PC; `comprobar.py` avisa de
+  una fila cuyo PC ya no está abierto. Sale de P10.
+- La tabla de §13 la escribe la IA a mano: 141 filas en P10, con el «Para» de cada objeto elegido sin ayuda, y de él sale
+  el tamaño de las issues (una Base de 68 objetos y 5.600 palabras; otra de 20 requisitos). §3, §4, §6, §7 y §8 ya dicen
+  qué es común y qué es de cada pantalla y paso, pero no el nombre de cada objeto. Un borrador por script (lo común,
+  «Base»; cada interfaz, su PAN; cada process model, sus ACT) que la IA completa con los nombres. Medir antes con P10. Sale
+  de P10.
+- Una issue reservada que cambia al regenerarse (la unidad reaprobada con otra fuente) no se lo dice a quien la tiene:
+  cambian su `.md` y la `version` de su esperado, y se entera al verificar, porque falla. `aprobada` no lista qué issues
+  cambian (una segunda pasada de `indice.py issues` sí). Que regenerar diga qué issues cambian y quién tiene cada una, y
+  que `--siguiente` con el mismo `--quien` avise si la suya ha cambiado. Sale de P10.
+- `comprobar.py` no avisa de criterios sin «Dado…, cuando…, entonces…» (`funcional-plantilla.md`) ni de técnico §14 sin
+  «Con qué» (`tecnico-plantilla.md` §14). Sin los dos, en P10, los `.feature` salen con pasos `*` (`issues.py` avisa de
+  ~140 criterios al generar, tarde) y `verificar` no ejecuta ningún caso de prueba. Dos avisos. Sale de P10.
+- `tecnico-plantilla.md` §0 no da la etiqueta «Aplicación», que lee la orden de terminar una issue (`--app`), y esa orden
+  toma la celda entera, también un paréntesis. Sale de P10.
 - `verificar` da a una constante el tipo de su valor (`TEXT`, `GROUP`…) y no «constant»: toda Base con una constante
   falla, y con ella todas las issues. `devmcp_extract.py`, al listar (`pick(it, TYPE_KEYS)` toma `type` antes que el
   contexto de la herramienta); en ingeniería inversa, una constante de grupo se inventaría como grupo. El fixture del
@@ -97,6 +137,19 @@ medidas, en `docs/evaluaciones.md` («Automejora con proyectos reales»). Por gr
   documento 14. Sale de P6.
 - `appian-qa/SKILL.md` («El guion») no dice que se cambia de página con `["load","<página>"]`. Sale de P6.
 - `indice.py issues <p> <U> ISS-nn` enseña una issue que espera a otra sin avisarlo arriba. Sale de P6.
+
+### Análisis
+
+- `indice.py siguientes` y `proyecto.py version --decision` dan IDs de dos dígitos (`HU-55`, `D-75`) en un proyecto que
+  numera con tres (`HU-054`, `D-074`, como suele llegar un DF hecho fuera): cada versión hay que corregirlos a mano. Que
+  tomen el ancho que ya usa el proyecto. Sale de P10.
+- La aprobación con que se aprueba una unidad (`cambio … aprobada --fuente FU-nn`) queda «sin procesar» en
+  `proyecto.py estado` para siempre: solo cuentan «Fuentes procesadas» y las que cita la Decisión de un informe. Que cuente
+  la fuente de una aprobación registrada en `cambios.md`. Sale de P10.
+- `cambios.md` §1 da la columna «Cambio» por punto (una fuente que toca dos unidades) sin ejemplo; en P10 se sacó del
+  código (`unidades.py`, `_de_informe`). Un ejemplo de dos filas. Sale de P10.
+- `leer_fuentes.py` sobre una carpeta con un `.md` y las imágenes que enlaza (`![…](img/…)`) cataloga cada imagen como
+  una fuente más (18 en P10). Que las tome como parte de su `.md`. Sale de P10.
 
 ### Otros agentes y personas
 
@@ -169,5 +222,11 @@ medidas, en `docs/evaluaciones.md` («Automejora con proyectos reales»). Por gr
   va en un tramo suyo; en 1.000 procesos al azar (semilla 11 del generador de `selftest.py`) quedan 8 (antes, 46) con
   una etiqueta donde pasa otro flujo: puertas con tres o más salidas por la derecha, con salidas por los tres vértices y
   el hueco lleno, o cuyo codo añadiría un cruce.
+- Finales de línea: en un proyecto con ficheros en CRLF (de otro equipo o de un editor de Windows), los scripts que
+  escriben LF (`proyecto.py version`, `leer_fuentes.py`) dan la primera vez un diff de todo el fichero; con `* -text` en
+  `.gitattributes`, git no lo iguala. Que conserven el final de línea del fichero que reescriben. Sale de P10.
+- Prototipos: el runtime no tiene dos cosas que un proyecto real parcheó tras `build.py` con un script propio: el chat del
+  asistente de IA en un `paneLayout` ocupa el alto visible (si no, queda cortado o con hueco), y un enlace abre una
+  pantalla del prototipo en otra pestaña (`#ver=<pantalla>&<parámetro>=<valor>`, para «Ver en <sistema>»). Sale de P10.
 - Las URL de la documentación de Appian con versión fija (`/help/26.6/`) en `references/data-fabric.md`,
   `devmcp-setup.md` y `agents/data-modeler.md` son del Appian MCP Server: revisar al cambiar de versión.

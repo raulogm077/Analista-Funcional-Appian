@@ -73,6 +73,10 @@ inversa, construcción y QA, volumen grande) contrastaron cada lección con el c
 ser diseño, error de quien probó o ceremonia. Lo medido, en `docs/evaluaciones.md` («Automejora con proyectos reales»);
 lo que pide un cambio, en `docs/siguiente-version.md` («Del plan de automejora» y las líneas que ya había, al día).
 
+Después, a petición de Raúl, P10: un análisis real hecho con IA (DF, técnico y prototipo) la víspera de construirlo. Se
+probaron lo recibido, el paso a la primera issue y la llegada de una respuesta del cliente con la construcción en marcha,
+en copias fuera del repositorio y sin escribir en Appian. Sus lecciones van con las demás, en las mismas secciones.
+
 Lo que no se cumplió tal cual:
 
 - P8 con Codex no concluye: su sandbox de Windows no arranca dentro de otra sesión. Se repite desde un terminal normal.
