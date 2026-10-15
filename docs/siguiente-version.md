@@ -212,6 +212,25 @@ las pruebas. Las medidas, en `docs/evaluaciones.md` («Automejora con proyectos 
 - Repetir P8 con Codex desde un terminal normal: su sandbox de Windows no arranca dentro de otra sesión.
 - El índice del cerebro corporativo da por transcritas 1.692 reuniones y en disco hay 1.095.
 
+## Verificación (contraste con «Agentic verification», de Addy Osmani, 16 de octubre de 2026)
+
+Lo que el plugin no cubre de https://addyo.substack.com/p/agentic-verification; lo demás del artículo ya lo hace. Un
+cuarto hueco, que `verificar` no mira quién ve una acción ni quién inicia un proceso, ya está en «Del método L.U.C.I.A.».
+
+- `verificar`: una regla o interfaz de la issue sin casos de prueba sale solo como «· sin casos de prueba» y la issue
+  queda hecha (`resumen_de_pruebas` de `devmcp_extract.py`), aunque técnico §14 pida en «Con qué» un caso de prueba de
+  ella. Quien construye puede saltarse la prueba que fijó el técnico: que un objeto nombrado en «Con qué» y sin casos
+  deje la issue pendiente.
+- Los casos de prueba de reglas e interfaces los escribe quien construye, que puede compartir el malentendido con lo que
+  construyó (los escenarios no: los escribe el analista y los recorre el QA en otra sesión). Opción ligera: que «Cómo se
+  prueba» de técnico §14 diga la entrada y la salida esperadas cuando el criterio depende de una regla, y quien
+  construye solo las copie al caso.
+- Refactorización (F7): no hay prueba diferencial, con la aplicación antigua como oráculo. La propuesta plantea
+  migración y convivencia, `verificar` compara con el técnico y `deriva` con el historial de versiones: ninguno compara
+  cómo se comportan la vieja y la nueva. Las piezas existen: los mismos guiones de `qa.py` contra las dos (solo repite
+  contra desarrollo, así que las dos tendrían que estar allí) o los mismos casos con `testRule` sobre la regla vieja y
+  la nueva, y una lista de diferencias aceptadas, cada una con su motivo, como la de `--sin-prueba`.
+
 ## Menores
 
 - Ingeniería inversa: la política por defecto permite `testInterface`, que evalúa cada interfaz con la cuenta de quien
