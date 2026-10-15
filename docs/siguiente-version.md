@@ -154,8 +154,8 @@ medidas, en `docs/evaluaciones.md` («Automejora con proyectos reales»). Por gr
 
 ### Para Raúl
 
-- Revisar y, si quiere, borrar en Indra-spain la aplicación de prueba de prefijo CPR, con «prueba automejora P6» en su nombre (25 objetos de la Base, una interfaz, el site,
-  6 tablas `cpr_*` y el paquete sin desplegar) que dejó P6.
+- Borrar las 6 tablas `cpr_*` (vacías) de la aplicación de prueba de P6 en la base de datos de Indra-spain: el Dev MCP no
+  borra tablas. La aplicación y sus objetos ya están borrados.
 - Repetir P8 con Codex desde un terminal normal: su sandbox de Windows no arranca dentro de otra sesión.
 - El índice del cerebro corporativo da por transcritas 1.692 reuniones y en disco hay 1.095.
 
