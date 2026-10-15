@@ -69,14 +69,8 @@ Lo que salió al ejecutar `docs/plan/2026-10-14-metodo-lucia.md` y no entra en �
 Lo que salió de `docs/plan/2026-10-14-automejora.md`, verificado en el código por un revisor de contexto limpio; las
 medidas, en `docs/evaluaciones.md` («Automejora con proyectos reales»). Por gravedad.
 
-### Seguridad y datos
+### Datos que se pierden o avisos que faltan
 
-- Ingeniería inversa: la política por defecto permite `testInterface` (`allowExceptions`), que evalúa cada interfaz en el
-  servidor con la cuenta de quien lee y guarda la respuesta en el anexo; con consultas, puede traer filas de negocio al
-  repositorio. `SKILL.md` («Principios») lo dice, pero la descripción de la skill, F6 paso 1 («todo es lectura») y
-  `devmcp-setup.md` («solo lectura en cualquier entorno») no, y nada dice cómo quitarlo. Basta documentar
-  `--skip "^testInterface$"` para un entorno ajeno o con datos reales (`--skip` va después de la política); sin opción
-  nueva. Sale de P5, en un entorno del cliente.
 - Urgencias: `indice.py colision` (`c_colision`) dice «Colisión: no» sin `as-is/datos/dependencias.json`, que no tiene
   ninguna aplicación nacida en el plugin, sin decir que no ha mirado lo que usa lo corregido. Una línea de aviso en la
   salida y en `urgentes.md` §2 paso 3. Sale de P4 (F5).
@@ -167,6 +161,10 @@ medidas, en `docs/evaluaciones.md` («Automejora con proyectos reales»). Por gr
 
 ## Menores
 
+- Ingeniería inversa: la política por defecto permite `testInterface`, que evalúa cada interfaz con la cuenta de quien
+  lee y guarda la respuesta en el anexo. No es prioritario (Raúl, 15 de octubre): se trabaja en entornos de desarrollo,
+  con datos ficticios. Si algún día se lee un entorno con datos reales, documentar `--skip "^testInterface$"` en F6 y
+  `devmcp-setup.md`. Sale de P5.
 - Diagramas: la salida de una puerta que comparte el tramo de su derecha sale ya por su vértice (el codo) y su etiqueta
   va en un tramo suyo; en 1.000 procesos al azar (semilla 11 del generador de `selftest.py`) quedan 8 (antes, 46) con
   una etiqueta donde pasa otro flujo: puertas con tres o más salidas por la derecha, con salidas por los tres vértices y

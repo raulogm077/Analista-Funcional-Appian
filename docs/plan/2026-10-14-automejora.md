@@ -60,7 +60,8 @@ Reserva: unos 20 USD para repetir una prueba que falle por el entorno.
 ## Pasos de Raúl
 
 - Revisar las lecciones y decir cuáles se aplican.
-- Revisar y, si quiere, borrar la aplicación de prueba de Indra.
+- Borrar las seis tablas de la aplicación de prueba en la base de datos de Indra (vacías): el Dev MCP no borra tablas.
+  La aplicación y sus objetos, borrados el 15 de octubre a petición de Raúl.
 - Decir cuándo se abre la PR.
 
 ## Estado al terminar (15 de octubre de 2026)
