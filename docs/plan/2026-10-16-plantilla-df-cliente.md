@@ -265,3 +265,14 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   también las automáticas y las de las reglas comunes. El resto se juzga con un caso real.
 - (16/10) Si el Word está abierto, Windows no deja sobrescribirlo: el generador lo dice en vez de fallar con un error
   de Python.
+- (16/10) Primer caso real, 15 fuentes. Las transcripciones de Teams llegan casi siempre en Word, no en .vtt: sin
+  reconocerlas, salían como documentos, sin duración ni participantes. Una reunión cuyo nombre no lleva la fecha tomaba
+  la de hoy y quedaba la última, cuando era de las primeras: se leen por la columna Fecha, y la fecha sale de la cabecera.
+- (16/10) Las fuentes internas (una reunión del equipo, una sesión técnica con otro proveedor, el propio análisis previo)
+  pesan mucho en volumen y poco en decisión: todo lo suyo es propuesta hasta que lo confirma el cliente. Entre reuniones
+  con el cliente el criterio cambió tres veces (dónde se dan de alta los datos y cuándo se crean en el otro sistema):
+  la nota tiene que decir a qué reunión sustituye cada cambio, o el DF mezcla enfoques.
+- (16/10) Un prototipo de Figma Make en React no se puede leer como documento: hacen falta sus textos visibles por
+  componente; y suele estar montado sobre otro proyecto, así que arrastra secciones que no son de este.
+- (16/10) Un análisis previo en Word lleva las capturas de las pantallas: sin sacarlas, la descripción pierde
+  etiquetas, columnas y textos de ayuda.

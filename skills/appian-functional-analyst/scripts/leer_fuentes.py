@@ -16,7 +16,12 @@ Genera en la carpeta de salida:
   FU-01-<nombre>.md …   el contenido de cada fuente
   indice.md            tabla de fuentes (ID, fichero, tipo, detalle, fecha)
   indice.json          estado para mantener los IDs entre ejecuciones
-  adjuntos/FU-xx/       adjuntos de los correos .eml
+  adjuntos/FU-xx/       adjuntos de los correos .eml e imágenes de un Word (01.png…, marcadas en su texto)
+
+Una transcripción de Teams descargada en Word («Hablante   0:04» o solo «0:18» antes de cada intervención) es una
+Transcripción: pasa al formato «[00:00:04] Hablante:», sin las fotos de los hablantes, y si el nombre no lleva fecha,
+toma la de su cabecera. Con --una-fuente, un prototipo en código (.tsx, .jsx) añade los textos de pantalla de cada
+componente.
 
 Volver a ejecutarlo con fuentes nuevas conserva los IDs de las ya catalogadas
 (se reconocen por contenido) y numera las nuevas a continuación.
@@ -96,8 +101,29 @@ def rels(z, path):
 
 # ---------------------------------------------------------------- lectores
 
-def read_docx(path):
+def read_docx(path, img_dir=None):
+    """Texto de un Word, con títulos y tablas. Las imágenes incrustadas (capturas de pantallas, flujos) se guardan en
+    img_dir (adjuntos/FU-xx/) en el orden en que aparecen y quedan marcadas en el texto donde están."""
     z = zipfile.ZipFile(path)
+    rels = {}
+    if "word/_rels/document.xml.rels" in z.namelist():
+        for r in ET.fromstring(z.read("word/_rels/document.xml.rels")):
+            rels[r.get("Id")] = r.get("Target", "")
+    imagenes = {}   # la imagen del paquete → su fichero en img_dir: la que se repite se guarda una vez
+
+    def imagen(rid):
+        destino = rels.get(rid, "")
+        nombre = "word/" + destino.lstrip("/").removeprefix("word/") if destino else ""
+        if nombre not in z.namelist():
+            return ""
+        nueva = nombre not in imagenes
+        fichero = imagenes.setdefault(nombre, f"{len(imagenes) + 1:02d}{pathlib.PurePosixPath(nombre).suffix.lower()}")
+        if img_dir is not None:
+            if nueva:
+                img_dir.mkdir(parents=True, exist_ok=True)
+                (img_dir / fichero).write_bytes(z.read(nombre))
+            return f"_[imagen adjuntos/{img_dir.name}/{fichero}: si es una pantalla o un flujo, revísala con Read]_"
+        return "_[imagen: si es una pantalla o un flujo, revísala visualmente]_"
     styles = {}
     if "word/styles.xml" in z.namelist():
         for s in ET.fromstring(z.read("word/styles.xml")).findall("w:style", NS):
@@ -114,6 +140,10 @@ def read_docx(path):
                 parts.append("\t")
             elif tag in ("br", "cr"):
                 parts.append("\n")
+            elif tag == "blip" and imagenes is not None:
+                marca = imagen(el.get(f"{{{RNS}}}embed"))
+                if marca:
+                    parts.append(f"\n{marca}\n")
         return "".join(parts).strip()
 
     body = ET.fromstring(z.read("word/document.xml")).find("w:body", NS)
@@ -133,10 +163,63 @@ def read_docx(path):
             rows = [[ptext(tc) for tc in tr.findall("w:tc", NS)] for tr in el.findall("w:tr", NS)]
             out.append(md_table(rows))
     notas, n_com, n_cambios = docx_revision(z, body, styles)
-    detalle = f"{paras} párrafos" + (f", {n_com} comentarios" if n_com else "") + (f", {n_cambios} cambios marcados" if n_cambios else "")
+    detalle = (f"{paras} párrafos" + (f", {n_com} comentarios" if n_com else "")
+               + (f", {n_cambios} cambios marcados" if n_cambios else "")
+               + (f", {len(imagenes)} {'imagen' if len(imagenes) == 1 else 'imágenes'}"
+                  + (f" en adjuntos/{img_dir.name}/" if img_dir is not None else "") if imagenes else ""))
     return "\n\n".join(out + notas), detalle
 
 
+RX_TURNO_WORD = re.compile(r"^(\S[^\n]{1,60}?)[ \t]{2,}(\d{1,2}:\d{2}(?::\d{2})?)$", re.M)
+RX_MARCA_WORD = re.compile(r"^(\d{1,2}:\d{2}(?::\d{2})?)$", re.M)
+MESES_ES = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre",
+            "noviembre", "diciembre")
+
+
+def hhmmss(t):
+    partes = [int(x) for x in t.split(":")]
+    h, m, s = ([0] + partes)[-3:]
+    return f"{h:02d}:{m:02d}:{s:02d}"
+
+
+def transcripcion_word(body):
+    """La transcripción de Teams o Stream descargada como Word: «Hablante   0:04» o solo «0:18» en su línea antes de
+    cada intervención. Se pasa al formato de las demás transcripciones («[00:00:04] Hablante:»), para que la
+    participación y las citas sean iguales. None si el Word no es una transcripción."""
+    turnos, marcas = RX_TURNO_WORD.findall(body), RX_MARCA_WORD.findall(body)
+    if len(turnos) >= 5:
+        texto = RX_TURNO_WORD.sub(lambda m: f"[{hhmmss(m.group(2))}] {m.group(1).strip()}:", body)
+        detalle = f"{len(turnos)} intervenciones, {len({h.strip() for h, _ in turnos})} participantes"
+    elif len(marcas) >= 5:
+        texto = RX_MARCA_WORD.sub(lambda m: f"[{hhmmss(m.group(1))}]", body)
+        detalle = "sin hablantes identificados"
+    else:
+        return None
+    cab = body[:1500]
+    d = re.search(r"(\d+)\s*h\s*(\d+)\s*min(?:\s*(\d+)\s*s)?|^(\d+)\s*min\s*(\d+)\s*s", cab, re.M)
+    if d:
+        h, m, s_ = (int(d.group(1)), int(d.group(2)), int(d.group(3) or 0)) if d.group(1) else (0, int(d.group(4)), int(d.group(5)))
+        duracion = f"{h:02d}:{m:02d}:{s_:02d}"
+    else:
+        ult = (marcas or [t for _, t in turnos])[-1]
+        duracion = hhmmss(ult)
+    return texto, f"duración {duracion}, {detalle}"
+
+
+def fecha_contenido(body):
+    """La fecha que da la cabecera de una transcripción («20260729_…» en el título o «29 de julio de 2026»), para
+    cuando el nombre del fichero no la lleva: la del fichero es la de la descarga, no la de la reunión."""
+    cab = body[:1500]
+    m = re.search(r"(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(?!\d)", cab)
+    if m:
+        return "-".join(m.groups())
+    m = re.search(r"(\d{1,2}) de (" + "|".join(MESES_ES) + r") de (20\d{2})", cab, re.I)
+    if m:
+        return f"{m.group(3)}-{MESES_ES.index(m.group(2).lower()) + 1:02d}-{int(m.group(1)):02d}"
+    return None
+
+
+RNS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 RX_PIEZA = re.compile(r"^~*((?:ACT|ESC|HU|RB|PAN|AV|DOC|INT|PC|DT|PT)-\d+)")
 
 
@@ -444,7 +527,8 @@ def read_drawio(path):
                 edges.append([label(cells.get(c.get("source"))) or "?", label(cells.get(c.get("target"))) or "?", txt])
         total += len(nodes) - 1
         out.append(f"## Página «{name}»\n\n### Elementos\n\n{md_table(nodes)}\n\n### Conexiones\n\n{md_table(edges)}")
-    return "\n\n".join(out), f"{total} elementos"
+    # Con varias páginas (la vigente y una copia antigua, o un flujo por fase) hay que saber cuál vale
+    return "\n\n".join(out), f"{total} elementos" + (f" en {len(out)} páginas" if len(out) > 1 else "")
 
 
 def read_vsdx(path):
@@ -499,7 +583,15 @@ def convert(path, out_dir, fid):
                 dur = re.search(r"^Duración[^:\n]*:\s*(\d{1,2}:\d{2}(?::\d{2})?)", body[:2000], re.I | re.M)
                 detail = f"duración {dur.group(1) if dur else (stamps[-1] if stamps else '¿?')}, sin hablantes identificados"
         elif ext == ".docx":
-            body, detail = read_docx(path); kind = "Documento Word"
+            body, detail = read_docx(path, out_dir / "adjuntos" / fid); kind = "Documento Word"
+            tr = transcripcion_word(body)
+            if tr:  # la de Teams descargada en Word: una transcripción más, con la fecha de su cabecera; sus
+                # imágenes son las fotos de los hablantes, no se guardan
+                body, detail = tr
+                body = re.sub(r"\n*_\[imagen [^\]\n]*\]_\n*", "\n\n", body)
+                shutil.rmtree(out_dir / "adjuntos" / fid, ignore_errors=True)
+                kind = "Transcripción"
+                fecha_cabecera = fecha_contenido(body) if not re.search(r"20\d{2}[-_]?\d{2}[-_]?\d{2}", path.name) else None
         elif ext == ".pptx":
             body, detail = read_pptx(path); kind = "Presentación"
         elif ext == ".xlsx":
@@ -523,7 +615,7 @@ def convert(path, out_dir, fid):
     except Exception as e:  # noqa: BLE001 - un fichero dañado no debe parar el resto
         body, detail, kind = None, f"no leído: {type(e).__name__}: {e}", ext[1:].upper()
     m = re.search(r"(20\d{2})[-_]?(0[1-9]|1[0-2])[-_]?(0[1-9]|[12]\d|3[01])(?!\d)", path.name)
-    if m and ext not in (".eml", ".msg"):  # fecha en el nombre (p. ej. grabaciones de Teams): mejor que la del fichero
+    if m and ext not in (".eml", ".msg") and not (ext == ".docx" and fecha_cabecera):  # fecha en el nombre (p. ej. grabaciones de Teams): mejor que la del fichero
         date = "-".join(m.groups())
     return body, kind, detail, fecha_cabecera or date
 
@@ -564,8 +656,47 @@ def una_fuente(carpeta):
         rows.append([f"{carpeta.name}/{f.relative_to(carpeta).as_posix()}", titulo or f.suffix[1:].upper()])
     body = ("Una sola fuente: lo que se cita de ella lleva su ID dentro de la cita («[FU-nn H-SEG-01]»).\n\n"
             "## Documentos\n\n" + md_table(rows))
+    textos = textos_prototipo(carpeta, docs)
+    if textos:
+        body += textos
     fecha = max((f.stat().st_mtime for f in docs), default=carpeta.stat().st_mtime)
     return docs, body, f"{len(docs)} documentos", datetime.datetime.fromtimestamp(fecha).strftime("%Y-%m-%d")
+
+
+RX_TEXTO_JSX = re.compile(r""">([^<>{}]*[A-Za-zÁÉÍÓÚáéíóúñÑ][^<>{}]*)<|(['"`])((?:(?!\2)[^<>{}\n]){2,200}?)\2""")
+
+
+def textos_jsx(codigo):
+    """Los textos que ve el usuario en un componente React (.tsx, .jsx): el texto entre etiquetas y los literales con
+    palabras (etiquetas, títulos, opciones, mensajes), en orden y sin repetir. Fuera clases CSS, imports y rutas."""
+    codigo = re.sub(r"""className=\{?["'`][^"'`]*["'`]\}?""", "", codigo)
+    codigo = re.sub(r"^\s*import .*$", "", codigo, flags=re.M)
+    vistos, out = set(), []
+    for m in RX_TEXTO_JSX.finditer(codigo):
+        t = " ".join((m.group(1) or m.group(3) or "").split())
+        if (not t or t in vistos or "=>" in t or re.match(r"^(https?:|[a-z][\w\-]*$|#|\.|/|@|\w+\.\w+$)", t)
+                or not re.search(r"[A-Za-zÁÉÍÓÚáéíóúñÑ]{3,}", t)):
+            continue
+        vistos.add(t)
+        out.append(t)
+    return out
+
+
+def textos_prototipo(carpeta, docs):
+    """Un prototipo en código (Figma Make, React): los textos visibles de cada componente, para citarlos por su nombre
+    («[FU-01 CrearTramiteModal]») sin leer el código. Las librerías de componentes (components/ui/) no se listan."""
+    filas = []
+    for f in docs:
+        rel = f.relative_to(carpeta).as_posix()
+        if f.suffix.lower() not in (".tsx", ".jsx") or "/ui/" in f"/{rel}" or "node_modules" in rel:
+            continue
+        t = textos_jsx(f.read_text(encoding="utf-8", errors="replace"))
+        if t:
+            filas.append(f"### {f.stem}\n\n{rel}\n\n" + " · ".join(t))
+    if not filas:
+        return ""
+    return ("\n\n## Textos de pantalla del prototipo\n\nLo que ve el usuario en cada componente, en orden. Los datos de "
+            "ejemplo también salen: no son reglas.\n\n" + "\n\n".join(filas))
 
 
 def generated(f, out):

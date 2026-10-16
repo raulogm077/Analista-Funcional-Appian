@@ -74,6 +74,21 @@ análisis. Quien lea el análisis debe poder ir de cualquier regla a la frase ex
 - Con varias reuniones, lee todas antes de escribir y agrupa por tema, no por
   reunión. El criterio evoluciona: queda la última decisión, pero el cambio se
   registra (ver §4).
+- **Léelas por la columna Fecha del índice**, no por el ID: los IDs siguen el nombre del fichero y un nombre sin fecha
+  delante (las grabaciones de Teams llevan la suya en medio) queda fuera de orden. La de Teams descargada en Word ya
+  es una Transcripción, con la fecha de su cabecera; un Word que no la lleve en ningún sitio toma la de hoy: dedúcela
+  del contenido («la reunión de mañana», el acta anterior) y dilo en la nota.
+- **Interna o con el cliente.** Una reunión solo del equipo («[INTERNA]» en el título, nadie del cliente entre los
+  hablantes) o una sesión técnica con otro proveedor sin el cliente da propuestas ⚠️, nunca decisiones: las confirma o
+  las cambia la siguiente reunión con él. Lo mismo un documento de trabajo del equipo (un análisis o un resumen que
+  consolida reuniones): es una fuente más, no la base, y sus preguntas abiertas son pendientes. Dilo en la cabecera de
+  la nota.
+- **Quién decide.** Sin hablantes, el rol sale de lo que se dice («como jefe de departamento…»); cuando un tema lo
+  zanja alguien de más arriba que no está («lo ha decidido la directora»), la decisión es de ese rol y vale sobre lo
+  acordado antes. Un cambio de criterio entre reuniones (dónde se dan de alta los datos, cuándo se crea un registro en
+  otro sistema) se apunta en la nota con la reunión a la que sustituye.
+- **Los términos del cliente**: cuando el cliente corrige una palabra («no digáis unidad técnica, para nosotros es
+  otra cosa»), es una decisión: anótala en la nota y úsala en todo el análisis, también al citar fuentes anteriores.
 
 ### Correos
 - Ordena el hilo por fecha y lee solo el texto nuevo de cada mensaje: el texto
@@ -92,6 +107,22 @@ análisis. Quien lea el análisis debe poder ir de cualquier regla a la frase ex
   organismo externo o se hacen en papel): «Fuera de la aplicación» en su Pantalla.
 - De Visio solo se extraen los textos. Si el flujo importa, pide una exportación
   a PDF o PNG y revísala con Read.
+- **Varias páginas** (el índice dice «en N páginas»): suele haber una vigente y una copia antigua o un flujo de otra
+  fase. La vigente es la que casa con las reuniones más recientes; di en la nota cuál es y qué queda fuera, y compara
+  sus estados y acciones con los de las reuniones: cada diferencia, a la nota.
+
+### Prototipo en código (Figma Make, React)
+- Entra como una sola fuente: `leer_fuentes.py --una-fuente <carpeta>`. Su `.md` lleva los textos de pantalla de cada
+  componente; se citan por el componente: `[FU-01 CrearTramiteModal]`. Lee el código del componente solo si hace falta
+  saber qué pasa al pulsar algo.
+- Un prototipo hecho sobre otro proyecto arrastra secciones, datos de ejemplo y textos de aquel: lo que no sale en
+  ninguna reunión no entra. Es una fuente de pantallas (qué se ve, etiquetas, columnas, mensajes), no de reglas, y
+  pierde frente a cualquier reunión posterior.
+
+### Documento de trabajo con capturas (un análisis previo, un resumen)
+- Sus imágenes quedan en `fuentes/adjuntos/FU-xx/` y marcadas en su texto donde están: mira cada una con Read antes de
+  escribir la pantalla. La captura da lo que el texto no dice (etiquetas, columnas, textos de ayuda); si los dos no
+  coinciden, manda el texto más reciente y la diferencia va a la nota.
 
 ### Diseño funcional o ERS existente (modo «DF ya hecho»)
 - **Entra como versión 1.0.** El DF es la base: se pasa al formato del plugin (funcional, técnico y Word) como
