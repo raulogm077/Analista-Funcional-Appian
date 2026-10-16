@@ -44,6 +44,9 @@ Además de `redaccion.md`:
   continuación: cambio de estado, correo, a quién le llega.
 - **Textos literales entre comillas**: estados, botones, mensajes, asuntos de correo.
 - **Nada inventado.** Lo que las fuentes no dicen se pregunta. «N/A» solo cuando de verdad no aplica.
+- **Lo que aún no se ha diseñado** (un tramo que depende de otro sistema o de otra sesión) se nombra donde toca, con
+  lo que entra y lo que devuelve si se sabe, y «pendiente de definición»: sin acciones, estados ni pantallas
+  supuestos. Es distinto de «pendiente de confirmar», que es un dato concreto que falta.
 
 ## Portada y control de cambios
 

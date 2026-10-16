@@ -276,3 +276,9 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   componente; y suele estar montado sobre otro proyecto, así que arrastra secciones que no son de este.
 - (16/10) Un análisis previo en Word lleva las capturas de las pantallas: sin sacarlas, la descripción pierde
   etiquetas, columnas y textos de ayuda.
+- (16/10) En el checkpoint del caso real resumí el papel de cada sistema con el enfoque de las primeras reuniones (el
+  BPM solo orquesta y consulta) cuando el vigente, desde la sesión 7, es el contrario (los datos se introducen en el BPM
+  y se envían al otro sistema). El checkpoint se escribe desde la última decisión de cada tema, no desde el resumen
+  general de las primeras notas.
+- (16/10) Una parte que el cliente aún no ha diseñado (la Comisión, que va por otro BPM) no se rellena con lo que
+  propuso el equipo: se nombra y queda «pendiente de definición».
