@@ -59,18 +59,18 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
 
 ### Fase 0 · Preparación
 
-- [ ] **T0. Equipo y punto de partida.** Python (aquí solo existe `py`: ver «Aprendizajes»), python-docx, Node y
+- [x] **T0. Equipo y punto de partida.** Python (aquí solo existe `py`: ver «Aprendizajes»), python-docx, Node y
   LibreOffice; `comprobar_plugin.py` y el selftest del analista en verde antes de tocar nada. Comparar la variante con
   la 0.8.0-beta.1 fichero a fichero y decidir qué se trae y qué se rehace.
 
 ### Fase 1 · Plantilla universal
 
-- [ ] **T1. `assets/plantillas/df-cliente.docx` neutro**, a partir de la plantilla del equipo: sin las tres imágenes de
+- [ ] **T1. `assets/plantillas/df-cliente.docx` neutro** (hecho; falta verlo en PDF), a partir de la plantilla del equipo: sin las tres imágenes de
   marca, colores y tipos de letra neutros, encabezado y pie genéricos, textos de ejemplo entre corchetes que el script
   reconoce. Comprobar que no queda nada de ningún cliente (`pruebas/clientes.txt`, también dentro del `.docx`).
 - [ ] **T2. Plantilla de un cliente.** Cómo se crea en un proyecto (copia de la neutra cambiando solo logos, colores,
   letra y pie) y que el script la usa si existe; si no, la neutra con el color de `prototipo/brand-<id>.json`.
-- [ ] **T3. Añadir «2.6 Periodo de estabilización»** a la plantilla neutra, con el texto que usa el equipo: «Teniendo en
+- [x] **T3. Añadir «2.6 Periodo de estabilización»** a la plantilla neutra, con el texto que usa el equipo: «Teniendo en
   cuenta que se trata de un proceso **[anual / mensual / diario…]** se establece un **período de estabilización de [X]
   meses**.» La periodicidad y los meses salen de las fuentes; si no lo dicen, «pendiente de confirmar».
 
@@ -133,6 +133,9 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
   - **Botones con efecto y después**: Cancelar, la «X» y el botón principal, con lo que pasa tras guardar (se cierra,
     se abre el registro nuevo, en qué estado queda); estados de un botón (inicial, en curso con indicador, disponible);
     confirmaciones con su texto literal y sus botones, y variantes por caso.
+  - **Pantallas agrupadas por área** (lo que en el proyecto serían épicas): el 2.3 se parte en `2.3.n Pantallas
+    <área>` según las áreas de cada proyecto, y dentro van sus pantallas y modales. Los patrones de abajo son un
+    catálogo para cuando un tipo de pantalla aparece, no una lista de pantallas que tenga que haber.
   - **Pantallas compuestas**: un registro con cabecera (chips de estado, botones de flujo, iconos de alertas, línea de
     progreso), tarjetas, banner de estado y secciones desplegables (cuál se abre por defecto); un cuadro de mando con
     secciones, tarjetas de cifras y gráficos (tipo, ejes, colores por valor, tooltip, valores a cero); un modal con
@@ -142,10 +145,12 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
   - **Exportaciones**: qué contiene el fichero (hojas, columnas, una fila por qué), qué filtros respeta y qué no.
   - **Componentes comunes** que ya existen en otras aplicaciones del cliente (una bandeja de tareas, una tabla con
     «Limpiar» y «Guardar»): se nombran y se dice que no se redefinen.
-  - **Referencias** siempre con la misma fórmula, «(se describe en la pantalla N)», y nunca «en la siguiente
-    diapositiva».
-  - **Visibilidad por rol**: el DF real dice en la pantalla qué botón o sección ve solo un rol, y remite a Roles y
-    Permisos; la plantilla dice que no va en la pantalla. Se decide con Yaroslav (ver «Abierto»).
+  - **Referencias por nombre, nunca por número**: «(se describe en la pantalla "Nuevo expediente")», porque los números
+    cambian al reordenar el documento. Nunca «en la siguiente diapositiva».
+  - **Visibilidad por rol: solo en Roles y Permisos (2.4.1).** Es la única fuente: quién ve una pantalla, una sección o
+    un botón se escribe allí y se cambia allí, sin tocar las pantallas. Las pantallas describen todo lo que existe y no
+    dicen quién lo ve (la nota fija de la plantilla lo recuerda). Decidido por Yaroslav el 16/10.
+  - **«Búsqueda y Filtros» si hay buscador, «Filtros» si no.** Decidido por Yaroslav el 16/10.
 - [ ] **T14. Modo «Pantalla suelta»** con esta guía: la ficha en el formato del 2.3, en el chat y, si hay proyecto, en
   el DF del cliente.
 
@@ -178,10 +183,21 @@ registro y las lecciones en «Aprendizajes».
 
 ## Abierto
 
-- **Visibilidad por rol en la pantalla** (T13): una línea en la pantalla que remite a Roles y Permisos, como hace el DF
-  real, o nada en la pantalla, como dice la nota de la plantilla.
-- **«Búsqueda y Filtros» o «Filtros»**: el DF real usa «Filtros» cuando no hay búsqueda; la plantilla, siempre el
-  primero.
+- **¿Las pantallas en el índice?** Con el índice a tres niveles salen las áreas (`2.3.n`) y no cada pantalla. Se puede
+  ampliar a cuatro.
+
+**Resultado de T0 (16/10).** `comprobar_plugin.py` y el selftest del analista, en verde (el selftest no prueba el
+Word: falta el paquete docx de Node). python-docx 1.2.0, sí; LibreOffice, no. La variante ata el DF del cliente al
+funcional (mismos ACT y PAN, avisos si no casan, tabla de correspondencia), justo lo que D1 descarta. Se aprovechan su
+plantilla sin marca (ya con azul en vez del verde del cliente, sin los tres logos y sin autor en los metadatos), la
+mecánica de su generador y el esqueleto de su guía de pantallas; `df-cliente-plantilla.md` y los cambios de
+`SKILL.md` se rehacen.
+
+**Resultado de T1 y T3 (16/10).** Sobre la plantilla de la variante: el 2.3 por áreas (`2.3.n PANTALLAS [ÁREA]`, en
+«heading 30») con cada pantalla en un estilo nuevo «heading 40» (`2.3.n.m [Nombre de la pantalla]`, nivel 4 del
+índice: el campo del índice es `\o "1-3"`, así que no sale en él, ver «Abierto»); las referencias «(se describe en la
+pantalla [N])» pasan a «(se describe en la pantalla "[Nombre de la pantalla]")»; y el 2.6 al final. Revisado: ningún
+término de `pruebas/clientes.txt` ni de la consultora dentro del `.docx`, sin imágenes.
 
 ## 3. Aprendizajes
 
@@ -197,3 +213,6 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   hecha una explicación de viva voz que en un proyecto casi nunca existe. → T13.
 - (16/10) Las correcciones a mano de un DF entregado son la mejor fuente para afinar la guía: dicen qué echó en falta
   quien lo revisó.
+- (16/10) En un Windows corporativo, PowerShell puede estar en modo de lenguaje restringido: no deja usar Word por COM
+  para sacar un PDF. Sin LibreOffice no hay forma de ver el DF como queda. El plugin ya lo trata como opcional («se
+  revisa a mano»); para iterar el DF del cliente, en la práctica es imprescindible. → T15 y `siguiente-version.md`.
