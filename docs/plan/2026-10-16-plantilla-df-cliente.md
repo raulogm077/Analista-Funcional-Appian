@@ -103,9 +103,9 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
 
 ### Fase 4 · Descripción de pantallas universal
 
-- [ ] **T11. Revisar las instrucciones generales** de la skill suelta y de la variante: qué sirve, qué sobra y qué está
+- [x] **T11. Revisar las instrucciones generales** de la skill suelta y de la variante: qué sirve, qué sobra y qué está
   pensado para un proyecto concreto.
-- [ ] **T12. `references/requerimientos-pantallas.md`**, dentro de la skill del analista. Tiene que decir de forma
+- [x] **T12. `references/requerimientos-pantallas.md`**, dentro de la skill del analista. Tiene que decir de forma
   explícita:
   - que **cada funcionalidad de la pantalla se describe, sin saltarse ninguna**: cada campo, columna, botón de cabecera
     y de fila, enlace, icono, pestaña, filtro, orden, tooltip, mensaje, estado vacío y modal que se abre; lo que se ve en
@@ -116,7 +116,7 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
     qué pasa al pulsarlo o cambiarlo, qué se ve si está vacío), con un ejemplo ficticio completo en vez del de un
     proyecto real;
   - una **lista de repaso** final para comprobar que no falta nada.
-- [ ] **T13. Lo que se añade o cambia respecto a la skill suelta.** Sale de un DF real de Yaroslav que usó la skill y
+- [x] **T13. Lo que se añade o cambia respecto a la skill suelta.** Sale de un DF real de Yaroslav que usó la skill y
   corrigió a mano (fuera del repositorio; aquí solo los patrones):
   - **Fuera lo que no aplica**: la skill suelta da por hecho que alguien explica la pantalla de viva voz («tu voz =
     verdad»). Aquí la explicación puede venir de una transcripción, un correo, un documento o el chat; manda la fuente
@@ -228,3 +228,8 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
 - (16/10) Al repasar la guía contra el DF real faltaban: el objetivo, los actores y las tecnologías en 1.1; partir un
   flujo grande en fases; una descripción de la solución por áreas antes de las pantallas, un área de pantallas
   comunes y las herramientas de configuración como área; los roles que se dan al asignar algo.
+- (16/10) De la skill suelta se quita: la «voz» como fuente de verdad, el ejemplo de un proyecto real, «diapositiva» y
+  los números de pantalla, y la visibilidad por rol en la pantalla. Se añade: un inventario de la pantalla antes de
+  escribir, que el repaso contrasta; qué se dice de cada tipo de elemento (tabla de 16); un mensaje literal por cada
+  incumplimiento de un campo; estados de un botón; un catálogo de patrones (listado, modal, modal según origen,
+  registro, cuadro de mando, datos maestros, exportación, componente común).
