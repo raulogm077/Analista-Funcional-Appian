@@ -60,6 +60,34 @@ General» van siempre; los demás, solo si la pantalla los tiene. No se inventan
 | Ordenación | El orden por defecto y el de cada columna | — |
 | Reglas de Validación | Obligatorios, formatos, longitudes y sus mensajes; cálculos; truncados; casuística (Caso A, B…); confirmaciones; estados de un botón; reglas que dependen de otra parte | Quién ve qué: va en Roles y Permisos (2.4.1) |
 
+**La frontera entre Lógica General y Reglas de Validación.** Lógica General dice **qué hay y qué hace**; Reglas de
+Validación, **qué se exige, qué se impide y qué se calcula**. Ninguna restricción se escribe en Lógica General, ni
+siquiera de pasada en la línea del campo: tampoco «campo obligatorio», «máximo 255 caracteres» u «opcional».
+
+| De un campo o una acción | Lógica General | Reglas de Validación |
+|---|---|---|
+| Qué es y qué representa | Sí | — |
+| Tipo de control (texto libre, desplegable, fecha, solo lectura) | Sí | — |
+| De dónde salen el valor y las opciones | Sí | Las opciones que se excluyen y por qué |
+| Formato en que se muestra («(DD/MM/AAAA)») y qué se ve si está vacío («-») | Sí | — |
+| Qué pasa al pulsarlo, qué campos muestra u oculta | Sí | Las condiciones con casos |
+| Obligatorio u opcional | No | Sí |
+| Longitud, caracteres, formato o tamaño admitidos, rangos («no anterior a hoy») | No | Sí |
+| Valor preseleccionado de un campo de formulario | No | Sí |
+| Mensajes de error y de confirmación | No | Sí |
+| Cálculos automáticos con condiciones, casuística, cuándo un botón está activo | No | Sí |
+
+```
+Mal (Lógica General):  - Motivo: área de texto libre, obligatoria, de 500 caracteres como máximo.
+Bien (Lógica General): - Motivo: área de texto libre, para explicar para qué se pide el espacio.
+Bien (Reglas de Validación):
+                       1. Motivo: campo obligatorio, de 500 caracteres como máximo.
+                          - Si está vacío: "Debes indicar el motivo.".
+```
+
+El valor por defecto de un **filtro** y el **orden por defecto** sí van en sus apartados (Búsqueda y Filtros,
+Ordenación): son su estado inicial, no una restricción.
+
 ### Ejemplo ilustrativo
 
 1. «Caso 1: …» describe el estado que enseña la captura: la bandeja con datos, la bandeja vacía, el formulario con
@@ -126,7 +154,8 @@ En este orden; se salta lo que la pantalla no tiene:
 
 ### Reglas de Validación
 
-1. **Cada campo de un formulario**, en su punto, en el orden del formulario:
+1. **Cada campo de un formulario**, en su punto, en el orden del formulario, también los opcionales («campo
+   opcional»):
    - obligatorio u opcional; longitud máxima; caracteres permitidos; formato (fecha, número, importe, correo, URL);
    - **un mensaje literal por cada incumplimiento**: vacío, demasiado largo, carácter no permitido, formato erróneo:
      «Si al pulsar "Enviar" el campo está vacío, se muestra el mensaje de error: "Debes indicar el espacio."»;
@@ -148,7 +177,9 @@ En este orden; se salta lo que la pantalla no tiene:
 6. **Confirmaciones**: el texto literal y sus botones, junto a la acción que lo pide; si cambia según el caso, uno por
    caso.
 7. **Estados de un botón**: los que tiene (inicial, en curso con un indicador, disponible) y qué cambia en cada uno.
-8. **Reglas que dependen de otra parte**: qué cambia en la pantalla según el estado del registro («si la solicitud
+8. **Si algo falla al guardar o al consultar otro sistema**: qué ve el usuario (el mensaje literal) y qué pasa con
+   lo que estaba haciendo (se guarda, no se guarda, se reintenta).
+9. **Reglas que dependen de otra parte**: qué cambia en la pantalla según el estado del registro («si la solicitud
    está cancelada, todas las secciones pasan a solo lectura»), según otro campo o según una configuración de datos
    maestros.
 
@@ -173,7 +204,11 @@ Cada elemento, en su punto, con lo que le aplique de su fila:
 | Línea de progreso | Qué fases muestra y cómo marca las hechas, la actual y las pendientes |
 | Bloque que se repite | El primero que se ve, el botón que añade otro, cómo se numeran y cómo se quita uno |
 | Exportación | El formato; qué contiene (hojas, columnas en orden, una fila por qué); qué filtros respeta y cuáles no; cómo se representan los vacíos |
+| Mensaje de éxito o aviso | El texto literal y cuándo aparece («Solicitud enviada correctamente») |
 | Componente común | Se nombra y se dice que funciona como en el resto de aplicaciones del cliente, sin redefinirlo |
+
+Nada de esta tabla es una restricción: si un campo es obligatorio, su longitud, sus caracteres, su valor preseleccionado
+o sus mensajes de error, se escriben en Reglas de Validación (§4, «La frontera»).
 
 ## 6. Patrones
 
@@ -195,6 +230,9 @@ Un catálogo para cuando aparece un tipo de pantalla, no una lista de pantallas 
   que incluya.
 - **Datos maestros o configuración**: las pestañas, quién la usa (en Roles y Permisos), cada tabla y su modal de alta.
 - **Exportación**: el botón y sus estados, el modal con sus opciones y el contenido del fichero.
+- **Historial o histórico**: qué cambios se registran, las columnas (qué, quién, cuándo) y el orden.
+- **Asistente por pasos**: cada paso como un punto (sus campos), los botones «Anterior» y «Siguiente», qué se valida
+  al pasar de un paso a otro (en Reglas de Validación) y qué pasa si se sale a medias.
 - **Bandeja de tareas u otro componente común**: qué tareas aporta esta solución y qué pasa al completarlas; el resto,
   como en el componente común.
 
@@ -209,7 +247,9 @@ Un catálogo para cuando aparece un tipo de pantalla, no una lista de pantallas 
    tiene su fila en la matriz.
 5. **Lógica General siempre**, como mínimo con qué es la pantalla y desde dónde se entra. Si ni eso está claro, se
    pregunta.
-6. **Nada de Appian**: ni objetos ni componentes por su nombre técnico (`redaccion.md`).
+6. **Ninguna restricción en Lógica General.** Obligatoriedad, longitudes, caracteres, formatos admitidos, valores
+   preseleccionados y mensajes de error van siempre en Reglas de Validación (§4, «La frontera»).
+7. **Nada de Appian**: ni objetos ni componentes por su nombre técnico (`redaccion.md`).
 
 ## 8. Cómo se escribe
 
@@ -237,7 +277,11 @@ Antes de cerrar una pantalla, con el inventario del §2:
 - [ ] Cada columna ordenable tiene su criterio y está el orden por defecto.
 - [ ] Cada campo obligatorio o con formato tiene un mensaje literal por incumplimiento.
 - [ ] Cada borrado o cancelación tiene su confirmación literal.
-- [ ] Ninguna validación ni casuística se ha colado en Lógica General.
+- [ ] Lógica General no dice de ningún campo si es obligatorio u opcional, su longitud, sus caracteres, su formato
+      admitido, su valor preseleccionado ni ningún mensaje de error; nada de casuística.
+- [ ] Cada campo de un formulario está en Reglas de Validación con su obligatoriedad, aunque sea opcional («campo
+      opcional»).
+- [ ] Están los mensajes de éxito y qué pasa si algo falla al guardar.
 - [ ] Ninguna pantalla dice qué rol ve qué; cada acción está en la matriz de 2.4.1.
 - [ ] Cada modal tiene su pantalla y se cita por su nombre.
 
@@ -344,16 +388,17 @@ Caso 1: modal vacío, abierto desde la bandeja.
 1. El modal "Nueva solicitud" se abre al pulsar el botón "Nueva solicitud" de la pantalla "Bandeja de solicitudes" y
    permite registrar una solicitud de ocupación.
 2. El modal incluye los siguientes campos:
-   - Unidad: campo de texto, no editable. Se rellena con la unidad del usuario que crea la solicitud.
+   - Unidad: campo de solo lectura. Muestra la unidad del usuario que crea la solicitud.
    - Espacio: desplegable de selección única. Opciones: los espacios activos de datos maestros, ordenados
      alfabéticamente.
    - Fecha de inicio y Fecha de fin: campos de fecha (DD/MM/AAAA).
    - Motivo: área de texto libre.
-   - Documentación: carga de ficheros, uno o varios.
+   - Documentación: carga de ficheros, para adjuntar la memoria y el plano; admite varios ficheros a la vez.
 3. El modal incluye los botones "Cancelar" y "Enviar" en la parte inferior, además del icono de cierre ("X") en la
    esquina superior derecha:
    - "Cancelar" (o el icono "X"): cierra el modal sin guardar.
-   - "Enviar": valida los campos y, si todo es correcto, crea la solicitud en "En revisión", cierra el modal, envía la
+   - "Enviar": valida los campos (se describe en la sección Reglas de Validación) y, si todo es correcto, crea la
+     solicitud en "En revisión", cierra el modal, muestra el mensaje "Solicitud enviada correctamente", envía la
      notificación NOT-01 y abre la solicitud creada.
 
 ###### Reglas de Validación
@@ -372,6 +417,9 @@ Caso 1: modal vacío, abierto desde la bandeja.
    - Si no hay ningún fichero: "Debes adjuntar la documentación.".
    - Si un fichero tiene otro formato o pesa más: "El fichero [nombre] no es válido: solo PDF, DOCX o JPG de hasta 20
      MB.".
-5. Al pulsar "Enviar", si algún campo incumple alguna regla, se muestra su mensaje junto al campo y la solicitud no se
+5. Unidad: se rellena con la unidad del usuario y no se puede cambiar.
+6. Al pulsar "Enviar", si algún campo incumple alguna regla, se muestra su mensaje junto al campo y la solicitud no se
    crea.
+7. Si el registro de organismos no responde al enviar, se muestra el mensaje "No se ha podido comprobar la unidad.
+   Inténtalo de nuevo en unos minutos." y la solicitud no se crea (ver integración "Registro de organismos").
 ```

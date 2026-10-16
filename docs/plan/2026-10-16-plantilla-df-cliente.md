@@ -233,3 +233,8 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   escribir, que el repaso contrasta; qué se dice de cada tipo de elemento (tabla de 16); un mensaje literal por cada
   incumplimiento de un campo; estados de un botón; un catálogo de patrones (listado, modal, modal según origen,
   registro, cuadro de mando, datos maestros, exportación, componente común).
+- (16/10) Yaroslav: Lógica General dice qué hay y qué hace; Reglas de Validación, qué se exige, se impide y se calcula.
+  Ninguna restricción en Lógica General, ni de pasada (obligatorio u opcional, longitudes, caracteres). Al repasarlo, la
+  propia plantilla de Word pedía el valor por defecto de un campo en Lógica General, mientras que el DF real lo pone en
+  Reglas de Validación: se quita de la plantilla. También faltaban en la guía los mensajes de éxito, qué pasa si algo
+  falla al guardar y los patrones de historial y de asistente por pasos.
