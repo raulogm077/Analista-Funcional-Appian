@@ -7,7 +7,7 @@ Word sobre la plantilla del DF (`assets/plantillas/df-cliente.docx`, o la del cl
 
 Se escribe **desde las fuentes del proyecto**: reuniones, correos, documentos, capturas, diagramas y lo que se pase
 como contexto. No se deriva del análisis funcional (`funcional.md`): si el proyecto lo tiene, es una fuente más. Cómo
-se construye desde cero y cómo entra cada fuente nueva: `df-cliente-fuentes.md`. Cómo se describe una pantalla:
+se construye desde cero y cómo entra cada fuente nueva: `df-cliente-construir.md`. Cómo se describe una pantalla:
 `requerimientos-pantallas.md`.
 
 Los ejemplos son de un caso ficticio (solicitudes de autorización) y tienen el formato exacto que lee el script.
@@ -18,14 +18,15 @@ Los ejemplos son de un caso ficticio (solicitudes de autorización) y tienen el 
   …` y la línea `Versión: 0.1 · Estado: borrador` (estados: borrador, en revisión, validado).
 - **Apartados** con los números de la plantilla: `## 1.`, `### 1.1`, `#### …`. Los títulos de la plantilla no se
   cambian.
-- **Trazabilidad**: cada bloque (una regla común, una actividad, una pantalla, una fila de tabla) lleva su estado y
-  sus fuentes en un comentario, al final de su título o dentro de la última celda: `<!-- ✅ FU-03 00:14:32; FU-05 -->`.
-  Los estados y las citas, como en el resto del plugin (`funcional-plantilla.md` «Lo que leen los scripts» e
-  `ingesta-fuentes.md` §2). El Word no enseña los comentarios.
+- **Solo lo que lee el cliente.** El DF no lleva fuentes, estados, preguntas abiertas ni notas del equipo, tampoco
+  escondidos en comentarios: todo eso vive en dos ficheros aparte, junto a él, que no salen en el Word:
+  - `analisis/df-cliente-fuentes.md`: de dónde sale cada bloque (§«Fuentes de cada bloque», abajo);
+  - `analisis/df-cliente-pendientes.md`: lo que falta por confirmar (§«Pendientes», abajo).
 - **Lo que deja de valer** se borra del texto: el DF dice siempre lo vigente. Lo de antes queda en `decisiones.md`
-  (`df-cliente-fuentes.md` §3).
-- **Lo pendiente** se escribe «pendiente de confirmar» en la frase que afecta (sale resaltado en el Word) y su pregunta
-  va en «Pendiente de confirmar», al final del fichero. Esa sección no sale en el Word.
+  (`df-cliente-construir.md` §3).
+- **Lo pendiente**, mientras se trabaja, se escribe «pendiente de confirmar» en la frase que afecta (sale resaltado
+  en el Word, para que se vea en una revisión) y su pregunta va a `df-cliente-pendientes.md`. Al resolverse, la frase
+  se completa y la pregunta sale de ese fichero. En la entrega no queda ninguno.
 - **Referencias por nombre, nunca por número**: «(se describe en la pantalla "Nueva solicitud")», «(ver regla común
   "Plazos")». Los números cambian al reordenar.
 - **Una sola vez**: cada cosa se dice en su sitio y los demás la citan. Lo común a todo el flujo, en 2.1; quién ve
@@ -79,16 +80,21 @@ Para qué lo lee el cliente: comprobar que el equipo ha entendido su proceso tal
 
 Las unidades de la organización piden autorización para ocupar espacios comunes con actividades temporales. Hoy la
 solicitud llega por correo con un formulario en hoja de cálculo; el área de autorizaciones la revisa, pide lo que
-falta por correo y resuelve con un escrito firmado. El seguimiento se lleva en una hoja compartida. <!-- ✅ FU-01 00:03:10 -->
+falta por correo y resuelve con un escrito firmado. El seguimiento se lleva en una hoja compartida.
 
 #### Integraciones
 
-- **Registro de organismos** – Al enviar la solicitud se comprueba que la unidad está de alta. <!-- ✅ FU-02 00:21:40 -->
-- **Gestor documental** – El escrito de resolución firmado se archiva en el expediente de la unidad. <!-- ✅ FU-02 00:24:05 -->
+- **Registro de organismos** – Al enviar la solicitud se comprueba que la unidad está de alta.
+- **Gestor documental** – El escrito de resolución firmado se archiva en el expediente de la unidad.
 ```
 
 - **Descripción del proceso**: qué es, quién lo inicia, para qué sirve y cómo se hace hoy (lo que salió del
-  descubrimiento), en dos o tres párrafos. Sin la solución: eso es el 1.2 y el 2.
+  descubrimiento), en dos o tres párrafos. Sin la solución: eso es el 1.2 y el 2. Después, si las fuentes lo dan:
+  - el objetivo funcional, como lista de lo que el cliente quiere poder hacer («Gestionar las solicitudes y su
+    documentación», «Dar seguimiento a los plazos»);
+  - quién interviene: las áreas o roles de la organización y los actores de fuera (organismos, empresas externas), una
+    viñeta cada uno;
+  - las tecnologías con las que se hace hoy o con las que se hará, si el cliente las nombra.
 - **Integraciones**: una viñeta por sistema, `**Sistema** – qué se intercambia y cuándo`. Si no hay, «No hay
   integraciones con otros sistemas.».
 
@@ -110,7 +116,7 @@ Aplica a las solicitudes nuevas desde la puesta en marcha; las que estén en cur
 #### Fuera del alcance
 
 - Queda fuera del alcance aquellos aspectos no contemplados en este documento.
-- El cobro de las tasas, que irá en una fase posterior. <!-- ✅ FU-03 00:40:12 -->
+- El cobro de las tasas, que irá en una fase posterior.
 ```
 
 - **Dentro del alcance**, tres párrafos: el objetivo respecto al proceso; la solución y los datos principales que se
@@ -134,12 +140,12 @@ resolución, y termina con la solicitud autorizada, denegada o archivada.
 
 #### Lógica general del flujo
 
-##### Regla común 1 · Plazos <!-- ✅ FU-01 00:12:10; FU-03 00:05:00 -->
+##### Regla común 1 · Plazos
 
 - Los plazos de este documento se cuentan en días hábiles, según el calendario laboral de la organización.
 - Si un plazo vence en un día no hábil, pasa al siguiente día hábil.
 
-##### Regla común 2 · Cancelar la solicitud <!-- ✅ FU-03 00:18:30 -->
+##### Regla común 2 · Cancelar la solicitud
 
 - La unidad solicitante puede cancelar su solicitud en cualquier estado anterior a "Resuelta".
 - Al cancelarla, la solicitud pasa al estado "Cancelada", deja de recibir tareas y se envía la notificación de
@@ -150,6 +156,9 @@ resolución, y termina con la solicitud autorizada, denegada o archivada.
 - Un párrafo con el flujo futuro: el evento que lo inicia, las fases y el resultado final.
 - El diagrama: el PNG que dibuja `appian-diagramas-bpmn`. El texto entre corchetes es el pie de figura. Sin diagrama,
   la línea queda y el Word deja el hueco.
+- **Un flujo grande** se parte: primero una visión general con todas las fases y después un diagrama por fase, cada
+  uno con su pie y las actividades que abarca («Actividades ACT-03 a ACT-08»). Si el diagrama distingue tipos de
+  estado o subestado (obligatorio, opcional, automático), la leyenda va con él.
 - **Lógica general del flujo**: lo que vale en todo el flujo o en varias actividades (estados y etiquetas, plazos,
   asignación, cancelar, pausar y reanudar, volver atrás, cómo se muestra algo en todas las tareas). Una regla por
   `##### Regla común n · Título`, en el Word «REGLA COMÚN n» con su título en mayúsculas. Cada regla:
@@ -167,7 +176,7 @@ Una ficha por actividad del diagrama, en el orden del flujo, con el identificado
 `ACT-nn`) y el mismo nombre que el diagrama. Diez filas, en este orden:
 
 ```markdown
-#### ACT-03 Revisar la solicitud <!-- ✅ FU-01 00:12:10; FU-03 00:09:20 -->
+#### ACT-03 Revisar la solicitud
 
 | Campo | Valor |
 |---|---|
@@ -213,7 +222,7 @@ maestros, el cuadro de mando). Las áreas salen de cada proyecto: no hay una lis
 
 #### 2.3.1 Pantallas Solicitudes
 
-##### Bandeja de solicitudes <!-- ✅ FU-01 00:04:10 -->
+##### Bandeja de solicitudes
 
 ###### Ejemplo ilustrativo
 Caso 1: bandeja del área de autorizaciones con solicitudes pendientes.
@@ -226,10 +235,23 @@ Caso 1: bandeja del área de autorizaciones con solicitudes pendientes.
 ###### Búsqueda y Filtros
 …
 
-##### Nueva solicitud <!-- ✅ FU-01 00:07:45 -->
+##### Nueva solicitud
 …
 ```
 
+- **Antes de las áreas**, un párrafo con lo que es la solución y de cuántas partes se compone, y una línea por área
+  con para qué sirve:
+
+  ```markdown
+  La solución centraliza la gestión de las autorizaciones y se compone de tres apartados:
+
+  - **Solicitudes**: registro, revisión y resolución de cada solicitud, con su documentación y sus plazos.
+  - **Cuadro de mando**: visión agregada de las solicitudes por estado, espacio y unidad.
+  - **Datos maestros**: configuración de los espacios, los tipos de documento y los grupos.
+  ```
+- Las áreas son las de cada proyecto. Si varias áreas comparten secciones iguales (la documentación o los comentarios
+  de varios tipos de registro), van una sola vez en un área «Pantallas comunes» y las demás la citan. Una herramienta
+  de configuración de la propia solución (de flujos, de plantillas, de permisos) es un área más.
 - `#### 2.3.n Pantallas <Área>` abre cada área; `##### <Nombre de la pantalla>`, cada pantalla, modal o sección de un
   registro que se describe por separado; `###### …`, sus apartados.
 - Los apartados, su orden, qué va en cada uno y cómo se describe cada elemento: `requerimientos-pantallas.md`.
@@ -279,7 +301,9 @@ y los datos maestros quedan reservados a los roles de la tabla.
 ```
 
 - **Descripción general**: qué regulan los roles y para qué; el acceso por defecto; lo que queda restringido.
-- **Roles**: uno por fila, con el nombre que usan las actividades y las pantallas. «Dónde se define»: datos maestros
+- **Roles**: uno por fila, con el nombre que usan las actividades y las pantallas. Si un rol se da solo al pasar algo
+  (al asignar una tarea, al consultar a alguien), se dice en su descripción y qué otro rol recibe con ello («Tras su
+  asignación, también pasa a ser visualizador de la solicitud»). «Dónde se define»: datos maestros
   (con la ruta), un campo del registro (quien crea, el asignado) o el sistema de usuarios del cliente. Un rol que no
   entra en la aplicación pero aparece en el proceso, también, con «Solamente informativo».
 - **Matriz**: una columna por rol, en el orden de la tabla. Las filas se agrupan por área o por pantalla: una fila con
@@ -296,8 +320,8 @@ Para qué lo lee el cliente: validar cuándo sale cada correo, a quién y con qu
 
 | ID | Comunicación | Disparador | Destinatarios | Asunto | Cuerpo |
 |---|---|---|---|---|---|
-| NOT-01 | Solicitud registrada | La unidad envía la solicitud (ACT-02) | Área de autorizaciones | Autorizaciones – [Número] – Nueva solicitud | Buenos días.<br>Se ha registrado la solicitud [Número] de la unidad [Unidad], para el espacio [Espacio] del [Fecha inicio] al [Fecha fin].<br>Puede acceder a la solicitud a través del siguiente enlace: [Enlace a la solicitud]. <!-- ✅ FU-03 00:30:15 --> |
-| NOT-02 | Solicitud devuelta | El área devuelve la solicitud (ACT-03) | Unidad solicitante | Autorizaciones – [Número] – Solicitud devuelta | Buenos días.<br>La solicitud [Número] se ha devuelto por este motivo: "[Motivo]".<br>Puede corregirla a través del siguiente enlace: [Enlace a la solicitud]. <!-- ✅ FU-03 00:31:40 --> |
+| NOT-01 | Solicitud registrada | La unidad envía la solicitud (ACT-02) | Área de autorizaciones | Autorizaciones – [Número] – Nueva solicitud | Buenos días.<br>Se ha registrado la solicitud [Número] de la unidad [Unidad], para el espacio [Espacio] del [Fecha inicio] al [Fecha fin].<br>Puede acceder a la solicitud a través del siguiente enlace: [Enlace a la solicitud]. |
+| NOT-02 | Solicitud devuelta | El área devuelve la solicitud (ACT-03) | Unidad solicitante | Autorizaciones – [Número] – Solicitud devuelta | Buenos días.<br>La solicitud [Número] se ha devuelto por este motivo: "[Motivo]".<br>Puede corregirla a través del siguiente enlace: [Enlace a la solicitud]. |
 ```
 
 - Una fila por correo. Las tareas que solo llegan a la bandeja no van aquí.
@@ -326,7 +350,7 @@ Para qué lo lee el cliente: ver qué gana con la automatización.
 ```
 
 - Dos tablas con estas columnas exactas. Otras métricas, como filas de la segunda.
-- Solo cifras que dé el cliente o que salgan de sus datos, con su fuente en el comentario. Lo que no se sabe:
+- Solo cifras que dé el cliente o que salgan de sus datos, con su fuente en `analisis/df-cliente-fuentes.md`. Lo que no se sabe:
   «pendiente de confirmar» y su pregunta («¿Cuántas horas al año dedica hoy el área a las autorizaciones?»).
 
 ### 2.6 Periodo de estabilización
@@ -337,23 +361,50 @@ Para qué lo lee el cliente: saber cuánto dura el acompañamiento tras la puest
 ### 2.6 Periodo de estabilización
 
 Teniendo en cuenta que se trata de un proceso **mensual** se establece un **período de estabilización de 3 meses**.
-<!-- ✅ FU-04 00:15:20 -->
 ```
 
 - La periodicidad del proceso (anual, mensual, diario…) y los meses salen de las fuentes; si no, «pendiente de
   confirmar».
 
-## Pendiente de confirmar
+## Fuentes de cada bloque (`analisis/df-cliente-fuentes.md`)
 
-Al final del fichero; no sale en el Word. Una pregunta por fila, cerrada y con opciones cuando se puede:
+No sale en el Word. Una fila por bloque del DF (una regla común, una actividad, una pantalla, un rol, un correo, una
+cifra), con su estado y las fuentes de las que sale; los estados y las citas, como en el resto del plugin
+(`funcional-plantilla.md` «Lo que leen los scripts» e `ingesta-fuentes.md` §2). Sirve para saber de dónde sale cada
+cosa cuando el cliente pregunta y para encontrar qué bloques toca una fuente nueva.
 
 ```markdown
-## Pendiente de confirmar
+# Solicitudes de autorización — Fuentes del DF del cliente
 
-| ID | Pregunta | Opciones | A quién | Afecta a |
-|---|---|---|---|---|
-| PC-01 | ¿Qué pasa si la unidad no subsana en 10 días hábiles? | Se archiva / Se le recuerda cada 10 días | Área de autorizaciones | ACT-04, regla común "Plazos" <!-- ❓ FU-03 00:16:20 --> |
+| Apartado | Bloque | Estado | Fuentes |
+|---|---|---|---|
+| 1.1 | Descripción del proceso | ✅ | FU-01 00:03:10 |
+| 1.1 | Integración Registro de organismos | ✅ | FU-02 00:21:40 |
+| 2.1 | Regla común "Plazos" | 🔒 | FU-01 00:12:10; FU-03 00:05:00 |
+| 2.2 | ACT-03 Revisar la solicitud | ✅ | FU-01 00:12:10; FU-03 00:09:20 |
+| 2.3 | Pantalla "Bandeja de solicitudes" | ✅ | FU-01 00:04:10; FU-05 captura 2 |
+| 2.4.2 | NOT-02 Solicitud devuelta | ✅ | FU-03 00:31:40 |
+| 2.6 | Periodo de estabilización | ✅ | FU-04 00:15:20 |
 ```
 
-Lo respondido se tacha con la decisión que lo responde (`| ~~PC-01~~ | … | Respondida por D-03 |`) y el texto
-afectado ya no dice «pendiente de confirmar». Antes de la entrega final no queda ninguna abierta.
+Los bloques se nombran como en el DF (el título de la pantalla, el identificador de la actividad): si cambia un
+nombre en el DF, cambia aquí. Un bloque que se borra del DF sale de la tabla.
+
+## Pendientes (`analisis/df-cliente-pendientes.md`)
+
+No sale en el Word. Lo que falta por confirmar, una pregunta por fila, cerrada y con opciones cuando se puede:
+
+```markdown
+# Solicitudes de autorización — Pendiente de confirmar
+
+| ID | Pregunta | Opciones | A quién | Afecta a | Fuente |
+|---|---|---|---|---|---|
+| PC-01 | ¿Qué pasa si la unidad no subsana en 10 días hábiles? | Se archiva / Se le recuerda cada 10 días | Área de autorizaciones | ACT-04, regla común "Plazos" | FU-03 00:16:20 |
+```
+
+- Cada fuente nueva que responde una pregunta la **quita** de aquí: la respuesta entra en el DF y queda en
+  `decisiones.md` como RESPONDE, con la pregunta en «Antes». Lo que se responde a medias se reescribe con lo que queda.
+- Los IDs no se reutilizan: el siguiente es el mayor que haya habido más uno (`decisiones.md` guarda los ya
+  respondidos).
+- Antes de una entrega, lo que siga aquí es lo que se lleva a la próxima reunión; en la entrega final, el fichero
+  queda vacío.

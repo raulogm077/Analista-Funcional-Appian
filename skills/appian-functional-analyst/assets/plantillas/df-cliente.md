@@ -66,8 +66,3 @@ Versión: 0.1 · Estado: borrador
 
 Teniendo en cuenta que se trata de un proceso **pendiente de confirmar** se establece un **período de estabilización de
 pendiente de confirmar**.
-
-## Pendiente de confirmar
-
-| ID | Pregunta | Opciones | A quién | Afecta a |
-|---|---|---|---|---|

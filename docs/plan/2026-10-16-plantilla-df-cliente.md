@@ -38,6 +38,9 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
   (`analisis/funcional.md`) ni hay una tabla que ate sus secciones a las del funcional. Se escribe analizando una a una
   las fuentes del proyecto (transcripciones, correos, documentos, capturas, diagramas y lo que se pase como contexto).
   Si el proyecto ya tiene funcional, es una fuente más, no el origen. Vive en `analisis/df-cliente.md`.
+- **D1b. El DF solo lleva lo que lee el cliente** (Yaroslav, 16/10). Ni fuentes ni preguntas abiertas, tampoco en
+  comentarios escondidos: de dónde sale cada bloque va en `analisis/df-cliente-fuentes.md` y lo pendiente, en
+  `analisis/df-cliente-pendientes.md`, del que cada respuesta quita su fila. En la entrega final no queda ninguno.
 - **D2. Trabajo iterativo: la última fuente manda.** Cada fuente nueva se lee contra el DF tal como está y, si
   contradice lo que se acordó antes (también lo aceptado en la reunión anterior), se reescribe con la decisión nueva.
   Nada se cambia en silencio: cada cambio dice qué fuente lo trae y qué decisión anterior sustituye, y la entrega
@@ -220,3 +223,8 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   hace falta instalar LibreOffice para trabajar el DF del cliente.
 - (16/10) `proyecto.py copia` y `version` cuentan con que el proyecto tiene `funcional.md`: un proyecto que solo lleva
   el DF del cliente no puede usarlos hoy. → T8.
+- (16/10) Las citas escondidas en comentarios del Markdown no salen en el Word, pero quien lee el `.md` las ve como
+  ruido: si un documento es para el cliente, su trazabilidad va en un fichero aparte.
+- (16/10) Al repasar la guía contra el DF real faltaban: el objetivo, los actores y las tecnologías en 1.1; partir un
+  flujo grande en fases; una descripción de la solución por áreas antes de las pantallas, un área de pantallas
+  comunes y las herramientas de configuración como área; los roles que se dan al asignar algo.

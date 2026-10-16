@@ -29,13 +29,13 @@ Se apoya en lo que el plugin ya hace con las fuentes: `leer_fuentes.py` para cat
 4. **Checkpoint** en un solo mensaje, una o dos líneas por punto: el proceso, los roles, las actividades, las áreas de
    pantallas, las reglas comunes, las contradicciones y lo que falta. Termina con «¿Es correcto o ajusto algo antes de
    escribir?». Con cualquier confirmación, sigue; si nadie responde, sigue con la lectura más razonable y deja las
-   dudas en «Pendiente de confirmar».
+   dudas en `df-cliente-pendientes.md`.
 5. **Escribir** `analisis/df-cliente.md` desde `assets/plantillas/df-cliente.md`, apartado a apartado y guardando al
-   terminar cada uno, con `df-cliente-plantilla.md` y, en las pantallas, `requerimientos-pantallas.md`. Cada bloque
-   con su cita.
+   terminar cada uno, con `df-cliente-plantilla.md` y, en las pantallas, `requerimientos-pantallas.md`. A la vez, la
+   fila de cada bloque en `analisis/df-cliente-fuentes.md`, con su estado y sus citas: el DF no lleva ninguna.
 6. **Lo que falta se pregunta**: un dato que las fuentes no dan (un texto literal, quién ve una acción, una cifra) es
-   «pendiente de confirmar» en la frase y una fila en «Pendiente de confirmar». Un detalle menor se resuelve con la
-   opción más razonable, dicha en el texto.
+   «pendiente de confirmar» en la frase y una fila en `analisis/df-cliente-pendientes.md`. Un detalle menor se resuelve
+   con la opción más razonable, dicha en el texto.
 
 ## 2. Una fuente nueva
 
@@ -43,7 +43,8 @@ Una fuente cada vez, en orden de fecha.
 
 1. **Catalogar** sobre la misma carpeta (`leer_fuentes.py <fichero> -o <p>/fuentes/`) y **leerla entera**.
 2. **Puntos**: uno por decisión, cambio, dato nuevo, respuesta o pregunta, con su cita. Para cada uno, dónde encaja en
-   el DF (el apartado y el bloque: «2.2 ACT-03», «2.3 pantalla "Nueva solicitud"», «2.4.1 matriz») y su tipo, como en
+   el DF (el apartado y el bloque: «2.2 ACT-03», «2.3 pantalla "Nueva solicitud"», «2.4.1 matriz»; para encontrarlo,
+   `df-cliente-fuentes.md` dice qué bloques salen de cada tema y de cada fuente) y su tipo, como en
    `actualizacion.md` §3: NUEVO, COMPLETA, CONFIRMA, VALIDA, CAMBIA, ANULA, RESPONDE, ALCANCE+ o ALCANCE−, PREGUNTA,
    SIN IMPACTO.
 3. **La última decisión manda.** Un CAMBIA o un ANULA de una fuente del cliente (una reunión con él, un correo suyo,
@@ -57,14 +58,16 @@ Una fuente cada vez, en orden de fecha.
    para que el analista lo vea antes de la próxima entrega. Si nada lo hace, «Cambia lo aceptado: nada».
 5. **Aplicar**:
    - antes de tocar nada, la copia de la versión vigente: `proyecto.py copia <p>`;
-   - se reescribe el bloque con lo nuevo y su cita se suma al comentario (`<!-- ✅ FU-02 00:12:10; FU-06 00:04:30 -->`);
-     si era 🔒 y lo cambia el cliente, sigue 🔒;
+   - se reescribe el bloque con lo nuevo y la cita se suma a su fila de `df-cliente-fuentes.md`
+     (`FU-02 00:12:10; FU-06 00:04:30`); si era 🔒 y lo cambia el cliente, sigue 🔒. Un bloque nuevo, fila nueva; uno
+     que se borra, sale de la tabla;
    - **lo de antes no se queda en el DF**: va a `decisiones.md` (§3);
    - **texto que queda viejo**: busca en todo el DF las palabras de lo de antes y corrige cada sitio que lo siga
      diciendo (otra pantalla, una regla común, la matriz, un correo). Es el error más frecuente;
    - lo que el cambio arrastra: una acción nueva en una pantalla es una fila nueva en la matriz; un correo nuevo, su
      NOT y su mención en la actividad; un estado nuevo, en las actividades que lo producen;
-   - una PC respondida se tacha y la frase deja de decir «pendiente de confirmar»;
+   - una pregunta respondida sale de `df-cliente-pendientes.md` (queda en `decisiones.md` como RESPONDE) y la frase
+     del DF deja de decir «pendiente de confirmar»; una pregunta nueva, fila nueva;
    - la versión de la cabecera sube 0.1 (`Versión: 0.3` → `0.4`).
 6. **Entregar**: en pocas líneas, los puntos por tipo, «Cambia lo aceptado» y lo que queda pendiente. El Word, solo al
    enviarlo o si se pide (§4).
@@ -99,6 +102,6 @@ python3 <skill>/scripts/df_cliente_docx.py <p>   # entregables/DF-cliente-<proce
 ## 5. Los comentarios del cliente al Word
 
 El Word devuelto es una fuente más: `leer_fuentes.py` saca cada comentario y cada cambio marcado con el apartado donde
-está. Cada comentario es un punto del §2; un «de acuerdo» sobre un bloque es VALIDA (pasa a 🔒). Cuando el cliente
+está. Cada comentario es un punto del §2; un «de acuerdo» sobre un bloque es VALIDA (pasa a 🔒 en `df-cliente-fuentes.md`). Cuando el cliente
 valida el documento entero, la cabecera pasa a `Estado: validado` y la fila de esa entrega en el control de cambios
 lleva el responsable y la fecha de validación.
