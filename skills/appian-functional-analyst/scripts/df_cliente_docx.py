@@ -17,7 +17,7 @@ y pie: el script reconoce sus piezas por el texto de ejemplo («[CÓDIGO DEL DOC
 
 El DF del cliente solo lleva lo que lee el cliente: sus fuentes (df-cliente-fuentes.md) y sus preguntas
 (df-cliente-pendientes.md) están aparte y no salen. Si quedara un comentario <!-- … --> o algo tachado (~~…~~), tampoco
-sale. «pendiente de confirmar» sale resaltado en amarillo. Avisa de lo que queda pendiente, de las actividades y
+sale. «pendiente de confirmar» y «pendiente de definición» salen resaltados en amarillo. Avisa de lo que queda pendiente, de las actividades y
 pantallas incompletas y de los textos de ejemplo de la plantilla («[…]») que quedan sin rellenar.
 
 Salida: <proyecto>/entregables/DF-cliente-<proceso>-v<versión>.docx (el nombre que espera proyecto.py entregar
@@ -204,7 +204,7 @@ def rpr_base(el, conservar=False):
     return rpr
 
 
-INLINE = re.compile(r"(\*\*.+?\*\*|(?<![\w*])\*[^*\s][^*]*?\*(?![\w*])|pendiente de confirmar[^.;)]*)", re.I)
+INLINE = re.compile(r"(\*\*.+?\*\*|(?<![\w*])\*[^*\s][^*]*?\*(?![\w*])|pendiente de (?:confirmar|definición)[^.;)]*)", re.I)
 
 
 def poner_texto(p, texto: str, rpr=None, conservar=False, negrita=False):
@@ -225,7 +225,7 @@ def poner_texto(p, texto: str, rpr=None, conservar=False, negrita=False):
         elif trozo.startswith("*") and trozo.endswith("*") and len(trozo) > 2:
             trozo = trozo[1:-1]
             pr.append(pr.makeelement(qn("w:i"), {}))
-        elif trozo.lower().startswith("pendiente de confirmar"):
+        elif trozo.lower().startswith(("pendiente de confirmar", "pendiente de definición")):
             pr.append(pr.makeelement(qn("w:highlight"), {qn("w:val"): "yellow"}))
         if negrita and pr.find(qn("w:b")) is None:
             pr.append(pr.makeelement(qn("w:b"), {}))
@@ -767,6 +767,9 @@ def generar(proyecto: Path, salida: Path | None, plantilla_arg: Path | None) -> 
 
     # lo que queda por confirmar: en el texto y en df-cliente-pendientes.md, que no sale en el Word
     en_texto = sum(len(re.findall(r"pendiente de confirmar", texto_de(e), re.I)) for e in T.body.iterchildren())
+    sin_definir = sum(len(re.findall(r"pendiente de definición", texto_de(e), re.I)) for e in T.body.iterchildren())
+    if sin_definir:
+        avisos.append(f"el Word dice «pendiente de definición» {sin_definir} veces (sale resaltado): partes sin diseñar todavía")
     if en_texto:
         avisos.append(f"el Word dice «pendiente de confirmar» {en_texto} veces (sale resaltado): antes de la entrega "
                       "final no queda ninguno")

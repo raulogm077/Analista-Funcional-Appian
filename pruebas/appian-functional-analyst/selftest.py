@@ -1354,6 +1354,9 @@ def pruebas_df_cliente_word(tmp):
     shutil.copytree(DATOS / "df-cliente", p)
     dfc = p / "analisis" / "df-cliente.md"
     editar(dfc, "#### Integraciones", "<!-- ✅ FU-01 00:03:10 -->\n\n#### Integraciones")
+    editar(dfc, "- **Registro de organismos** – Al enviar la solicitud se comprueba que la unidad está de alta.",
+           "- **Registro de organismos** – Al enviar la solicitud se comprueba que la unidad está de alta.\n"
+           "- **Archivo** – Recibe las solicitudes resueltas. Pendiente de definición.")
     c, out = corre(S / "df_cliente_docx.py", p)
     word = p / "entregables" / "DF-cliente-Solicitudes-de-autorizacion-v1.0.docx"
     texto = ""
@@ -1377,6 +1380,10 @@ def pruebas_df_cliente_word(tmp):
        f"salen: {fuera}")
     ok("df_cliente_docx.py avisa de lo pendiente: el texto «pendiente de confirmar» y las preguntas abiertas",
        "pendiente de confirmar" in out and "PC-01" in out, out)
+    xml = zipfile.ZipFile(word).read("word/document.xml").decode("utf-8") if word.is_file() else ""
+    ok("df_cliente_docx.py: «pendiente de definición» sale resaltado, como «pendiente de confirmar», y lo avisa",
+       re.search(r'<w:highlight w:val="yellow"/>(?:(?!</w:r>).)*<w:t[^>]*>Pendiente de definición', xml, re.S) is not None
+       and "«pendiente de definición» 1 veces" in out, out)
     editar(p / "proyecto.md", "DF entregado: —", f"DF entregado: —\nEntregados: {word.name}")
     c, out = corre(S / "df_cliente_docx.py", p)
     ok("df_cliente_docx.py no sobrescribe un Word entregado: sale con -1",
