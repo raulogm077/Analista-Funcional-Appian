@@ -1310,12 +1310,14 @@ def pruebas_df_cliente_word(tmp):
                                                      if re.match(r"word/(document|header\d*)\.xml$", n)))
     ok("df_cliente_docx.py: el Word con el nombre que espera proyecto.py entregar --df-cliente", c == 0 and word.is_file(),
        out)
-    esperado = ["DF-AUT-001", "1. INTRODUCCIÓN AL PROCESO", "REGLA COMÚN 2", "CANCELAR LA SOLICITUD",
+    # «REGLA COMÚN 2» y su título, juntos en la primera columna; el texto, en la segunda
+    esperado = ["DF-AUT-001", "1. INTRODUCCIÓN AL PROCESO", "REGLA COMÚN 2CANCELAR LA SOLICITUDLa unidad",
                 "ACT-03 Revisar la solicitud", "2.3.1 PANTALLAS SOLICITUDES", "2.3.1.1 Bandeja de solicitudes",
                 "2.3.1.2 Nueva solicitud", "2.3.2 PANTALLAS DATOS MAESTROS", "2.3.2.1 Espacios", "Gestionar espacios",
                 "NOT-02", "2.5 MÉTRICAS Y KPIs", "2.6 PERIODO DE ESTABILIZACIÓN", "período de estabilización"]
     faltan = [x for x in esperado if x not in texto]
-    ok("df_cliente_docx.py: todas las secciones, las reglas comunes con su título, las pantallas numeradas por área y el 2.6",
+    ok("df_cliente_docx.py: todas las secciones, las reglas comunes con su título en la primera columna, las pantallas "
+       "numeradas por área y el 2.6",
        not faltan, f"faltan: {faltan}")
     fuera = [x for x in ("FU-01", "PC-01", "<!--", "[Nombre de la pantalla]", "[ÁREA", "PANTALLA 1:") if x in texto]
     ok("df_cliente_docx.py: sin fuentes, preguntas, comentarios ni textos de ejemplo de pantallas", not fuera,

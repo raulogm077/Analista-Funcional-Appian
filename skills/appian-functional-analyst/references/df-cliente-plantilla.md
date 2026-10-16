@@ -161,7 +161,8 @@ resolución, y termina con la solicitud autorizada, denegada o archivada.
   estado o subestado (obligatorio, opcional, automático), la leyenda va con él.
 - **Lógica general del flujo**: lo que vale en todo el flujo o en varias actividades (estados y etiquetas, plazos,
   asignación, cancelar, pausar y reanudar, volver atrás, cómo se muestra algo en todas las tareas). Una regla por
-  `##### Regla común n · Título`, en el Word «REGLA COMÚN n» con su título en mayúsculas. Cada regla:
+  `##### Regla común n · Título`. En el Word, la primera columna lleva «REGLA COMÚN n» y, debajo, su título en
+  mayúsculas; la segunda, solo su texto. Cada regla:
   - cuándo aplica (en qué estados, mientras qué no haya pasado);
   - qué pasa, en orden, con los estados y etiquetas exactos;
   - qué no cambia o qué no se puede hacer después;
@@ -180,12 +181,12 @@ Una ficha por actividad del diagrama, en el orden del flujo, con el identificado
 
 | Campo | Valor |
 |---|---|
-| Descripción | El área de autorizaciones comprueba que la solicitud está completa y que la documentación es válida.<br>Si falta algo, la devuelve a la unidad con el motivo; si está completa, la pasa a resolución. |
+| Descripción | En este paso, el Área de autorizaciones comprueba que la solicitud está completa y que la documentación es válida.<br>Se llega desde el registro de la solicitud y, si se devolvió, desde su subsanación.<br>Si falta algo, la devuelve a la Unidad solicitante con el motivo; si está completa, la pasa a resolución. |
 | Actores | Área de autorizaciones |
-| Entrada / Salida | Entrada: solicitud enviada (ACT-02) o subsanada (ACT-04).<br>Salida: solicitud devuelta (ACT-04) / solicitud para resolver (ACT-05). |
-| Estados de la entrada / Estados de salida | Entrada: "En revisión".<br>Salida (según la acción seleccionada):<br>- Acción "Devolver" → "Pendiente de subsanar".<br>- Acción "Pasar a resolución" → "Pendiente de resolución". |
-| Formas de arranque / Formas de finalización | Arranque: envío de la solicitud (ACT-02) / reenvío tras subsanar (ACT-04).<br>Finalización: acciones "Devolver" y "Pasar a resolución". |
-| Lógica de asignación | Bandeja común del área; la tarea es de quien la abre primero. |
+| Entrada / Salida | **Entrada:**<br>- Solicitud enviada desde Registrar la solicitud (ACT-02).<br>- Solicitud subsanada desde Subsanar la solicitud (ACT-04).<br>**Salida:**<br>- Solicitud devuelta: Subsanar la solicitud (ACT-04).<br>- Solicitud completa: Resolver la solicitud (ACT-05). |
+| Estados de la entrada / Estados de salida | **Entrada:** En revisión / Pendiente de revisar.<br>**Salida** (según la acción seleccionada):<br>- Acción "Devolver" → Pendiente de subsanar / Devuelta.<br>- Acción "Pasar a resolución" → En resolución / Pendiente de resolver. |
+| Formas de arranque / Formas de finalización | **Arranque:**<br>- Acción "Enviar" de la Unidad solicitante en Registrar la solicitud (ACT-02).<br>- Acción "Reenviar" de la Unidad solicitante en Subsanar la solicitud (ACT-04), una vez corregido lo que faltaba.<br>**Finalización:**<br>- Acción "Devolver", con el motivo obligatorio: la solicitud pasa a Subsanar la solicitud (ACT-04).<br>- Acción "Pasar a resolución": la solicitud pasa a Resolver la solicitud (ACT-05).<br>- Cancelación de la solicitud por la Unidad solicitante, en cualquier momento (ver regla común "Cancelar la solicitud"). |
+| Lógica de asignación | La tarea llega a la bandeja común del Área de autorizaciones y es de quien la abre primero; mientras la tiene abierta, nadie más puede tomarla. |
 | Documentos | Memoria de la actividad, plano del espacio. |
 | Reglas de negocio | - Para devolver es obligatorio escribir el motivo.<br>- Una solicitud solo puede devolverse dos veces; a la tercera, se resuelve. |
 | Notificaciones | NOT-02 Solicitud devuelta. |
@@ -194,17 +195,29 @@ Una ficha por actividad del diagrama, en el orden del flujo, con el identificado
 
 | Fila | Qué se escribe |
 |---|---|
-| Descripción | Qué se hace y para qué, desde dónde se llega y qué se decide. Si una acción vuelve a este paso desde otros, se dice aquí. |
+| Descripción | Qué se hace y para qué, desde dónde se llega y qué se decide, en dos o cuatro frases. Si una acción vuelve a este paso desde otros, se dice aquí. |
 | Actores | El rol que la hace (los nombres de 2.4.1), «Aplicación» si es automática o el organismo de fuera. |
-| Entrada / Salida | De qué actividad viene y a cuál lleva, con su identificador, separadas por « / ». |
-| Estados de la entrada / Estados de salida | El estado con el que llega y, por cada acción, el estado al que pasa: `Acción "X" → Estado`. Con estado y subestado, `Estado / Subestado`. |
-| Formas de arranque / Formas de finalización | Qué la pone en marcha (una actividad, una fecha, un documento que llega) y qué la termina (las acciones, un plazo, una respuesta). |
+| Entrada / Salida | **Entrada:** cada actividad de la que se llega, una por línea, con lo que llega y su identificador. **Salida:** cada actividad a la que se puede ir, una por línea, con el caso que lleva a ella. |
+| Estados de la entrada / Estados de salida | **Entrada:** el estado (y subestado) con el que llega. **Salida:** una línea por acción, `Acción "X" → Estado / Subestado`; si es automática, el evento en vez de la acción. |
+| Formas de arranque / Formas de finalización | **Arranque:** cada forma en que empieza, una por línea: la acción exacta y en qué actividad se pulsa, el evento automático (un documento que llega, una fecha que se alcanza, la respuesta de otro sistema) o la regla común que la abre, con su condición. **Finalización:** cada acción o evento que la termina, una por línea, con su nombre exacto y adónde lleva; también las de las reglas comunes que la cortan (cancelar, pausar). |
 | Lógica de asignación | A quién le llega: un grupo, una persona, por reparto; qué pasa si nadie la coge. «N/A» si no hay tarea. |
 | Documentos | Los que se consultan, se adjuntan o se generan aquí. |
 | Reglas de negocio | Solo las de esta actividad; las comunes están en 2.1. |
 | Notificaciones | Los NOT-nn que salen aquí (2.4.2), con su nombre. |
 | Ejecución esperada | El plazo y qué pasa si se supera. «N/A» si no tiene. |
 
+Cómo se escribe cada campo:
+- **Estructurado, no en párrafo corrido.** En los campos con dos partes, cada una con su etiqueta en negrita y dos
+  puntos (`**Entrada:**`, `**Salida:**`, `**Arranque:**`, `**Finalización:**`) y debajo una línea por elemento.
+- **Mayúsculas donde aplican**: los estados y subestados, los roles y los nombres de las actividades se escriben como
+  en el flujo y en 2.4.1, con su mayúscula inicial («En revisión / Pendiente de revisar», «Área de autorizaciones»); la
+  frase, con la normal de cualquier frase.
+- **Las acciones con su nombre exacto**, entre comillas y como dice el botón: «Acción "Pasar a resolución"». Es el
+  mismo nombre en Estados de salida, en Formas de finalización, en la pantalla donde está el botón y en la matriz de
+  permisos. Nunca «se aprueba» o «se valida» sin decir qué acción lo hace.
+- **Todo el detalle**: cada forma de arrancar y de terminar, también las automáticas y las de las reglas comunes; cada
+  una con su origen o su destino (la actividad y su identificador) y la condición si la tiene. Si una actividad tiene
+  tres salidas, hay tres líneas.
 - `<br>` separa líneas dentro de una celda; una línea que empieza por «- » sale con viñeta.
 - Una fila sin contenido real: «N/A». Si falta el dato: «pendiente de confirmar».
 - Cada ficha sale en su propia página.

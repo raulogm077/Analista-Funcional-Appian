@@ -68,14 +68,14 @@ cancelada.
 
 | Campo | Valor |
 |---|---|
-| Descripción | El área de autorizaciones comprueba que la solicitud está completa. |
+| Descripción | En este paso, el Área de autorizaciones comprueba que la solicitud está completa y que la documentación es válida.<br>Se llega desde el registro de la solicitud y, si se devolvió, desde su subsanación.<br>Si falta algo, la devuelve a la Unidad solicitante con el motivo; si está completa, la pasa a resolución. |
 | Actores | Área de autorizaciones |
-| Entrada / Salida | Entrada: solicitud enviada (ACT-02).<br>Salida: solicitud devuelta (ACT-04) / solicitud para resolver (ACT-05). |
-| Estados de la entrada / Estados de salida | Entrada: "En revisión".<br>Salida (según la acción seleccionada):<br>- Acción "Devolver" → "Pendiente de subsanar".<br>- Acción "Pasar a resolución" → "Pendiente de resolución". |
-| Formas de arranque / Formas de finalización | Arranque: envío de la solicitud (ACT-02).<br>Finalización: acciones "Devolver" y "Pasar a resolución". |
-| Lógica de asignación | Bandeja común del área; la tarea es de quien la abre primero. |
+| Entrada / Salida | **Entrada:**<br>- Solicitud enviada desde Registrar la solicitud (ACT-02).<br>- Solicitud subsanada desde Subsanar la solicitud (ACT-04).<br>**Salida:**<br>- Solicitud devuelta: Subsanar la solicitud (ACT-04).<br>- Solicitud completa: Resolver la solicitud (ACT-05). |
+| Estados de la entrada / Estados de salida | **Entrada:** En revisión / Pendiente de revisar.<br>**Salida** (según la acción seleccionada):<br>- Acción "Devolver" → Pendiente de subsanar / Devuelta.<br>- Acción "Pasar a resolución" → En resolución / Pendiente de resolver. |
+| Formas de arranque / Formas de finalización | **Arranque:**<br>- Acción "Enviar" de la Unidad solicitante en Registrar la solicitud (ACT-02).<br>- Acción "Reenviar" de la Unidad solicitante en Subsanar la solicitud (ACT-04), una vez corregido lo que faltaba.<br>**Finalización:**<br>- Acción "Devolver", con el motivo obligatorio: la solicitud pasa a Subsanar la solicitud (ACT-04).<br>- Acción "Pasar a resolución": la solicitud pasa a Resolver la solicitud (ACT-05).<br>- Cancelación de la solicitud por la Unidad solicitante, en cualquier momento (ver regla común "Cancelar la solicitud"). |
+| Lógica de asignación | La tarea llega a la bandeja común del Área de autorizaciones y es de quien la abre primero; mientras la tiene abierta, nadie más puede tomarla. |
 | Documentos | Memoria de la actividad, plano del espacio. |
-| Reglas de negocio | - Para devolver es obligatorio escribir el motivo. |
+| Reglas de negocio | - Para devolver es obligatorio escribir el motivo.<br>- Una solicitud solo puede devolverse dos veces; a la tercera, se resuelve. |
 | Notificaciones | NOT-02 Solicitud devuelta. |
 | Ejecución esperada | 5 días hábiles desde que llega (ver regla común "Plazos"). |
 

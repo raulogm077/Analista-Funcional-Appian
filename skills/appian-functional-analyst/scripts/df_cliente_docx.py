@@ -582,7 +582,8 @@ def generar(proyecto: Path, salida: Path | None, plantilla_arg: Path | None) -> 
         sub_barra(n)
     T.add(copy.deepcopy(T.cortes[0]))
 
-    # 2.1 Flujo y reglas comunes: cada «Regla común n · Título», una fila «REGLA COMÚN n» con su título y su texto
+    # 2.1 Flujo y reglas comunes: cada «Regla común n · Título», una fila con «REGLA COMÚN n» y su título en la primera
+    # columna y su texto en la segunda
     T.par("h1", "2. DISEÑO DE LA SOLUCIÓN")
     n = seccion("2.1", "2.1 FLUJO DEL PROCESO")
     if n:
@@ -597,7 +598,7 @@ def generar(proyecto: Path, salida: Path | None, plantilla_arg: Path | None) -> 
             for r in h[3]:
                 m = RX_REGLA.match(r[1])
                 titulo = (m.group(1) if m else r[1]).strip()
-                trozos = [f"**{titulo.upper()}**"]
+                trozos = []
                 for b in bloques(todo(r)):
                     if b[0] == "lista":
                         trozos += [t for _, t in b[2]]
@@ -605,13 +606,11 @@ def generar(proyecto: Path, salida: Path | None, plantilla_arg: Path | None) -> 
                         trozos.append(b[1])
                     else:
                         avisos.append(f"regla común «{titulo}»: solo admite párrafos y listas; lo demás no sale")
-                reglas.append("<br>".join(trozos))
+                reglas.append((titulo.upper(), "<br>".join(trozos)))
             if reglas:
                 tbl = copy.deepcopy(T.T["reglas"])
-                rellenar_filas(tbl, [[f"REGLA COMÚN {k}", x] for k, x in enumerate(reglas, 1)], proto=0)
-                for tr in filas_de(tbl):           # la etiqueta conserva su formato de cabecera
-                    tc = tr.findall(qn("w:tc"))[0]
-                    poner_celda(tc, texto_de(tc), conservar=True)
+                rellenar_filas(tbl, [[f"REGLA COMÚN {k}<br>{titulo}", x] for k, (titulo, x) in enumerate(reglas, 1)],
+                               proto=0)
                 T.add(tbl)
             else:
                 avisos.append("2.1: la lógica general del flujo no tiene ninguna «##### Regla común n · Título»")
@@ -785,7 +784,10 @@ def generar(proyecto: Path, salida: Path | None, plantilla_arg: Path | None) -> 
         salida = salida.with_name(re.sub(r"(-\d+)?\.docx$", f"-{k}.docx", salida.name))
         k += 1
     salida.parent.mkdir(parents=True, exist_ok=True)
-    T.d.save(str(salida))
+    try:
+        T.d.save(str(salida))
+    except PermissionError:
+        raise SystemExit(f"No se puede escribir {salida}: está abierto en Word. Ciérralo y vuelve a generarlo.")
     if neutra:
         color = color_de_marca(proyecto)
         if color:

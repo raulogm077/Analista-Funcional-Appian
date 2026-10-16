@@ -258,3 +258,10 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   «PANTALLA n: NOMBRE»; el nuevo lee las reglas como bloques («##### Regla común n · Título»), no compara con el
   funcional, numera las pantallas por área («2.3.n.m Nombre», con el estilo «heading 40» de la plantilla) y añade el
   2.6. Reconoce las piezas de la plantilla por sus textos de ejemplo: si una plantilla de cliente pierde una, lo dice.
+- (16/10) Revisión del Word de ejemplo por Yaroslav: el título de una regla común va en la primera columna, con
+  «REGLA COMÚN n», y la segunda solo lleva su texto; los campos de una actividad, estructurados (etiquetas «Entrada:»,
+  «Salida:», «Arranque:», «Finalización:» y una línea por elemento), con las mayúsculas de los estados, roles y
+  actividades, y las acciones que mueven el flujo con su nombre exacto; en arranque y finalización, todas las formas,
+  también las automáticas y las de las reglas comunes. El resto se juzga con un caso real.
+- (16/10) Si el Word está abierto, Windows no deja sobrescribirlo: el generador lo dice en vez de fallar con un error
+  de Python.
