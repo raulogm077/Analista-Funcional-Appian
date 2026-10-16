@@ -282,3 +282,9 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   general de las primeras notas.
 - (16/10) Una parte que el cliente aún no ha diseñado (la Comisión, que va por otro BPM) no se rellena con lo que
   propuso el equipo: se nombra y queda «pendiente de definición».
+- (16/10) El prototipo salió desde el DF del cliente sin funcional: el `ref` de cada pantalla es su nombre en 2.3 y las
+  capturas se llaman como las líneas de imagen del DF, así que el Word las recoge solas. Hubo que ajustar el DF a lo que
+  se puede construir (listado de 12 columnas consolidado en 7, filtros en la barra del listado en vez de una búsqueda
+  avanzada plegable): conviene escribir las pantallas del DF ya con esas reglas, o hacer el prototipo antes de cerrar 2.3.
+- (16/10) Cuando el cliente trabaja con secciones desplegables en sus otros BPM, se mantienen aunque la guía del
+  prototipo pida vistas: se dice en el `$uxIgnore` de cada sección y el validador no avisa.
