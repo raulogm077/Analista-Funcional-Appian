@@ -70,6 +70,15 @@ Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no en
   funcionan tal cual: el SKILL.md dice «en Windows, `python`», que tampoco existe ahí.
 - Con Python 3.14, `proyecto.py iniciar` avisa de un `re.sub` con `count` posicional (DeprecationWarning, en
   `poner_al_dia`).
+- Plantilla del cliente: la Word original que trae el cliente no sirve tal cual (le faltan las piezas que se añadieron
+  a la neutra, como el nivel de pantalla o el 2.6), y pasarle a mano a la neutra sus logos de portada y pie y sus
+  colores es lento. Valorar una orden que lo haga (`df_cliente_docx.py --marca-de <original.docx>` → `<p>/plantillas/`):
+  imágenes de portada y pie, colores de títulos y tablas, tipos de letra. En el primer caso real salió con un script
+  suelto, porque la neutra se hizo desde esa misma plantilla y los colores iban en el mismo orden.
+- `appian-prototipos` parte siempre de `funcional.md` (fichas PAN); con solo el DF del cliente no dice cómo se hace el
+  inventario (las pantallas de 2.3 por nombre, las actividades de 2.2, la matriz de 2.4.1, los pendientes). Y el DF
+  describe las secciones de un registro como desplegables editables, como las piden algunos clientes, mientras la guía
+  del prototipo pide vistas de solo lectura con diálogos: decidir cuál manda o cómo se dice en el DF.
 
 ## Menores
 
