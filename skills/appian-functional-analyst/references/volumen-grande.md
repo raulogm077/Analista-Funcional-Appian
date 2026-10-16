@@ -10,6 +10,10 @@ Resumen · Hablantes → rol (la única con nombres) · Decisiones (con cita y r
 Procesos, pasos y estados · Pantallas (partes, datos, filtros, acciones, quién ve qué, textos literales) ·
 Datos · Reglas · Avisos, documentos y otros sistemas · Condiciones de uso · Contradicciones y cambios de
 criterio · Pendientes · Fuera de alcance. Todo con cita `[FU-xx hh:mm:ss]`; en un análisis nuevo, con `ingesta-fuentes.md`.
+Para el DF del cliente, además: Actividades (quién, cuándo empieza, cada acción con su nombre exacto y el estado al
+que lleva) · Reglas que valen para todo el proceso · Avisos con su texto, si se dice · Integraciones (qué se pide y qué
+devuelve cada sistema) · Cifras para los indicadores. La cabecera de la nota dice si la fuente es del cliente o interna
+(`ingesta-fuentes.md` §3) y qué reunión anterior sustituye, si cambia de criterio.
 
 Si la sesión permite lanzar agentes, reparte las fuentes en bloques **cronológicos** de unas 3.000 a 4.000
 líneas, cada uno con estas instrucciones. Si no, fuente a fuente, guardando cada nota antes de seguir.

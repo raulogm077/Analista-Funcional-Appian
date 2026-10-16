@@ -9,6 +9,8 @@ Comprueba los scripts del análisis (proyecto, índice, comprobación, actualiza
 impacto, unión de módulos, lectura de fuentes y el DF del cliente) y, si están instalados, el Word (Node con
 docx; el del DF del cliente, con python-docx) y los diagramas de estados (Playwright). Sale con 1 si algo falla.
 """
+import base64
+import html
 import json
 import os
 import pathlib
@@ -817,6 +819,45 @@ Se acepta si:
         txt = fu.read_text(encoding="utf-8") if fu else ""
         ok("leer_fuentes.py saca los comentarios del Word con su historia",
            "## Comentarios del documento" in txt and "HU-07" in txt and "Mejor 30 MB" in txt, txt[-600:])
+
+        # 7a. Lo que trae un proyecto real: la transcripción de Teams descargada en Word, sin fecha en el nombre
+        # (la de su cabecera) y con la foto de cada hablante (no se guarda); un Word con capturas (se guardan una vez,
+        # marcadas donde están); un prototipo en código (los textos de cada componente, sin la librería ui/)
+        real = tmp / "real"
+        (real / "proto" / "src" / "components" / "ui").mkdir(parents=True)
+        crear_docx(real / "Reunión de seguimiento.docx",
+                   ["20260729_Seguimiento [INTERNA]", "29 de julio de 2026, 9:54a.m.", "1 h 2 min 5 s"]
+                   + [x for k in range(6) for x in (f"Persona {k % 2}   {k}:0{k}", f"Frase {k}.")], imagen=True)
+        crear_docx(real / "Analisis-2026-10-16.docx", ["Pantalla principal", "", "Detalle", ""], imagen=True)
+        (real / "proto" / "src" / "components" / "CrearModal.tsx").write_text(
+            'import x from "y";\nexport function CrearModal() {\n  return (<div className="p-4"><h2>Crear nueva '
+            'solicitud</h2><label>Número de expediente</label>\n<button onClick={() => f("a")}>Cancelar</button>'
+            '{err && <p>{"El expediente no existe"}</p>}</div>);\n}\n', encoding="utf-8")
+        (real / "proto" / "src" / "components" / "ui" / "button.tsx").write_text(
+            'export const Button = () => <button>Botón genérico</button>;\n', encoding="utf-8")
+        c, out = corre(S / "leer_fuentes.py", real / "Reunión de seguimiento.docx", real / "Analisis-2026-10-16.docx",
+                       "--una-fuente", real / "proto", "-o", real / "fuentes")
+        ind = (real / "fuentes" / "indice.md").read_text(encoding="utf-8") if (real / "fuentes" / "indice.md").exists() else ""
+        tr = next((real / "fuentes").glob("FU-*-reunión-de-seguimiento.md"), None)
+        trt = tr.read_text(encoding="utf-8") if tr else ""
+        ok("leer_fuentes.py: la transcripción de Teams en Word, con sus hablantes, su duración y la fecha de la cabecera",
+           re.search(r"\| Reunión de seguimiento\.docx \| Transcripción \| duración 01:02:05, 6 intervenciones, "
+                     r"2 participantes \| 2026-07-29 \|", ind) and "[00:05:05] Persona 1:" in trt
+           and "- Participantes: Persona 0; Persona 1" in trt and "imagen" not in trt, out + ind + trt[:600])
+        ok("leer_fuentes.py: la transcripción no deja las fotos de los hablantes en adjuntos/",
+           tr is not None and not (real / "fuentes" / "adjuntos" / tr.name[:5]).exists(), out)
+        an = next((real / "fuentes").glob("FU-*-analisis-2026-10-16.md"), None)
+        ant = an.read_text(encoding="utf-8") if an else ""
+        imgs = sorted(x.name for x in (real / "fuentes" / "adjuntos" / an.name[:5]).glob("*")) if an else []
+        ok("leer_fuentes.py: las imágenes de un Word, guardadas una vez en adjuntos/FU-xx/ y marcadas donde están",
+           imgs == ["01.png"] and ant.count(f"_[imagen adjuntos/{an.name[:5]}/01.png") == 2
+           and "1 imagen en adjuntos/" in ind, out + ant)
+        pr = next((real / "fuentes").glob("FU-*-proto.md"), None)
+        prt = pr.read_text(encoding="utf-8") if pr else ""
+        ok("leer_fuentes.py --una-fuente: los textos de pantalla de un prototipo en código, sin la librería ui/",
+           "## Textos de pantalla del prototipo" in prt and "### CrearModal" in prt
+           and "Crear nueva solicitud · Número de expediente · Cancelar · El expediente no existe" in prt
+           and "Botón genérico" not in prt and "p-4" not in prt, prt[-500:])
 
         # 7b. as-is/ entra como una sola fuente, con el índice de sus documentos y sin su extracción; la propuesta de
         # refactorización, como cualquier fichero
@@ -3346,6 +3387,31 @@ def docx_de(proyecto, salida):
         print(r.stdout + r.stderr)
         return None
     return salida
+
+
+PNG_1X1 = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==")
+
+
+def crear_docx(ruta, parrafos, imagen=False):
+    """Un Word mínimo, sin dependencias: un párrafo por texto; con imagen, la misma imagen en cada párrafo vacío."""
+    w = ('xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+         'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+         'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"')
+    dibujo = '<w:r><w:drawing><a:graphic><a:graphicData><a:blip r:embed="rId9"/></a:graphicData></a:graphic></w:drawing></w:r>'
+    cuerpo = "".join(f"<w:p><w:r><w:t>{html.escape(t)}</w:t></w:r></w:p>" if t else f"<w:p>{dibujo}</w:p>"
+                     for t in parrafos)
+    if imagen and "" not in parrafos:
+        cuerpo += f"<w:p>{dibujo}</w:p>"
+    with zipfile.ZipFile(ruta, "w") as z:
+        z.writestr("[Content_Types].xml", '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                   '<Default Extension="xml" ContentType="application/xml"/></Types>')
+        z.writestr("word/document.xml", f"<w:document {w}><w:body>{cuerpo}</w:body></w:document>")
+        if imagen:
+            z.writestr("word/_rels/document.xml.rels",
+                       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                       '<Relationship Id="rId9" Type="http://schemas.openxmlformats.org/officeDocument/2006/'
+                       'relationships/image" Target="media/image1.png"/></Relationships>')
+            z.writestr("word/media/image1.png", PNG_1X1)
 
 
 def crear_docx_con_comentario(ruta):

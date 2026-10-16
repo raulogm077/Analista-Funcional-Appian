@@ -21,7 +21,8 @@ Se apoya en lo que el plugin ya hace con las fuentes: `leer_fuentes.py` para cat
    | Reunión de diseño o revisión | 2.1 reglas comunes, 2.2 actividades, 2.3 pantallas, 2.4.1 quién hace qué |
    | Correo del cliente | Confirma o cambia lo dicho en una reunión; pesa más que la reunión (`ingesta-fuentes.md` §4) |
    | Diagrama del proceso | 2.1 diagrama y 2.2 una ficha por actividad, con sus identificadores |
-   | Captura o prototipo | 2.3 lo que se ve y nadie dijo: textos, columnas, botones, estados |
+   | Captura o prototipo, también en código (`ingesta-fuentes.md` §3) | 2.3 lo que se ve y nadie dijo: textos, columnas, botones, estados. El primer concepto pierde frente a las reuniones |
+   | Reunión interna, sesión técnica sin el cliente, documento de trabajo del equipo | Propuestas: el porqué de una solución y las preguntas abiertas; lo que el cliente no confirmó entra como pendiente |
    | Plantilla de correo, hoja de datos del cliente | 2.4.2 textos literales, listas de valores de las pantallas |
    | DF anterior o del cliente | La base, como versión 1.0 validada (🔒 en cada bloque) |
    | Análisis funcional del proyecto (`funcional.md`), si lo hay | Una fuente más: se cita como cualquier otra |
