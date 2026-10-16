@@ -53,7 +53,7 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
   que escribe el DF. La usan el apartado 2.3 y el modo «Pantalla suelta». La skill suelta se retira cuando esto esté en
   `main`.
 - **D5. El Word se genera con Python** (`df_cliente_docx.py`, python-docx), porque rellena la plantilla en vez de
-  dibujarla desde cero. python-docx entra en `requisitos.json`. (Propuesta.)
+  dibujarla desde cero. python-docx entra en `requisitos.json`, en la tabla del README y en las pruebas de GitHub.
 - **D6. Antes del PR, pruebas con casos reales** que pasa Yaroslav (transcripciones de un proyecto), fuera del
   repositorio: se prueba, se revisa el resultado, se corrige el plugin y se repite hasta que el DF salga bien. Al
   repositorio solo llegan los cambios del plugin y las lecciones, sin datos del cliente.
@@ -71,7 +71,7 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
 - [ ] **T1. `assets/plantillas/df-cliente.docx` neutro** (hecho; Yaroslav lo revisa abriéndolo en Word: sin PDF, decidido el 16/10), a partir de la plantilla del equipo: sin las tres imágenes de
   marca, colores y tipos de letra neutros, encabezado y pie genéricos, textos de ejemplo entre corchetes que el script
   reconoce. Comprobar que no queda nada de ningún cliente (`pruebas/clientes.txt`, también dentro del `.docx`).
-- [ ] **T2. Plantilla de un cliente.** Cómo se crea en un proyecto (copia de la neutra cambiando solo logos, colores,
+- [x] **T2. Plantilla de un cliente.** Cómo se crea en un proyecto (copia de la neutra cambiando solo logos, colores,
   letra y pie) y que el script la usa si existe; si no, la neutra con el color de `prototipo/brand-<id>.json`.
 - [x] **T3. Añadir «2.6 Periodo de estabilización»** a la plantilla neutra, con el texto que usa el equipo: «Teniendo en
   cuenta que se trata de un proceso **[anual / mensual / diario…]** se establece un **período de estabilización de [X]
@@ -89,7 +89,7 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
   reescribe con la decisión nueva, aunque se hubiera aceptado antes; el informe de impacto dice qué cambia, de qué
   fuente sale y qué sustituye; la entrega siguiente sube la versión y añade su fila al control de cambios. Reutiliza
   `actualizacion.md` donde encaje, sin atar el DF al funcional.
-- [ ] **T8. `SKILL.md` del analista**: el DF del cliente en «Qué escribe», en los modos, en los pasos y en la tabla de
+- [x] **T8. `SKILL.md` del analista**: el DF del cliente en «Qué escribe», en los modos, en los pasos y en la tabla de
   referencias; los flujos que lo nombran; `proyecto.py` (iniciar, estado, entregar) y `comprobar.py` si tienen que
   conocerlo.
 
@@ -154,16 +154,16 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
     un botón se escribe allí y se cambia allí, sin tocar las pantallas. Las pantallas describen todo lo que existe y no
     dicen quién lo ve (la nota fija de la plantilla lo recuerda). Decidido por Yaroslav el 16/10.
   - **«Búsqueda y Filtros» si hay buscador, «Filtros» si no.** Decidido por Yaroslav el 16/10.
-- [ ] **T14. Modo «Pantalla suelta»** con esta guía: la ficha en el formato del 2.3, en el chat y, si hay proyecto, en
+- [x] **T14. Modo «Pantalla suelta»** con esta guía: la ficha en el formato del 2.3, en el chat y, si hay proyecto, en
   el DF del cliente.
 
 ### Fase 5 · El Word
 
-- [ ] **T15. `scripts/df_cliente_docx.py`** traído de la variante y puesto al día con `main`: lee `df-cliente.md`,
+- [x] **T15. `scripts/df_cliente_docx.py`** traído de la variante y puesto al día con `main`: lee `df-cliente.md`,
   rellena la plantilla (con el 2.6), no enseña comentarios ni lo tachado, resalta «pendiente de confirmar», avisa de
   textos de ejemplo sin rellenar y de pantallas sin Lógica General; no sobrescribe un Word entregado; PDF con
   LibreOffice.
-- [ ] **T16. Selftest** en `pruebas/appian-functional-analyst/` con un proyecto ficticio: genera el Word y comprueba
+- [x] **T16. Selftest** en `pruebas/appian-functional-analyst/` con un proyecto ficticio: genera el Word y comprueba
   secciones, fichas, matriz, notificaciones y avisos.
 
 ### Fase 6 · Probar con casos reales e iterar
@@ -238,3 +238,23 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   propia plantilla de Word pedía el valor por defecto de un campo en Lógica General, mientras que el DF real lo pone en
   Reglas de Validación: se quita de la plantilla. También faltaban en la guía los mensajes de éxito, qué pasa si algo
   falla al guardar y los patrones de historial y de asistente por pasos.
+- (16/10) Lo que estaba conectado con el DF del cliente y se revisó al tocar la skill: `proyecto.py` (`copia`,
+  `version` y `entregar` solo conocían el funcional; `iniciar` crea siempre el funcional, así que el script no puede
+  adivinar con qué documento se trabaja: opción explícita `--df-cliente`, sin cambiar lo de antes), la descripción de la
+  skill (974 de 1000 bytes: se reescribió y queda en 994), los flujos F1 y F2 que se copian a cada proyecto, la regla de
+  un dueño por salida de `comprobar_plugin.py` (avisó de una frase sobre el índice de capturas del prototipo) y el
+  prototipo, que enlaza sus capturas solo en las fichas PAN del funcional. Yaroslav pidió dejarlo como regla para
+  cambios futuros: va en `CLAUDE.md` y en `.github/CONTRIBUTING.md`.
+- (16/10) `capture.py` de `appian-prototipos` no enlaza capturas en el DF del cliente (sus pantallas van por nombre, no
+  por PAN): de momento la línea de la imagen la pone el analista. → `siguiente-version.md`.
+- (16/10) Con Python 3.14, `proyecto.py iniciar` avisa de un `re.sub` con `count` posicional (DeprecationWarning, línea
+  del `**Órdenes.**` de AGENTS.md). Viene de antes de este trabajo. → `siguiente-version.md`.
+- (16/10) Añadir un requisito toca cuatro sitios que tienen que coincidir: `requisitos.json`, su detector en
+  `requisitos.py`, la tabla del README (el comprobador exige que sea la salida de `requisitos.py --tabla-readme`) y
+  `pruebas/requisitos-esperado.json`, con sus marcadores de versión y ruta. Y, para que su prueba corra en el PR, la
+  instalación en `.github/workflows/pruebas.yml`. Reescribir un JSON entero con otro formato ensucia el cambio: se
+  inserta solo lo nuevo.
+- (16/10) El generador de la variante se apoyaba en la tabla de reglas comunes, en los IDs del funcional y en
+  «PANTALLA n: NOMBRE»; el nuevo lee las reglas como bloques («##### Regla común n · Título»), no compara con el
+  funcional, numera las pantallas por área («2.3.n.m Nombre», con el estilo «heading 40» de la plantilla) y añade el
+  2.6. Reconoce las piezas de la plantilla por sus textos de ejemplo: si una plantilla de cliente pierde una, lo dice.

@@ -59,6 +59,18 @@ Lo que salió al ejecutar `docs/plan/2026-10-14-metodo-lucia.md` y no entra en �
 - Evaluaciones: `montar.py` de `pruebas/evaluaciones/` monta los proyectos sin `proyecto.py iniciar`, así que `estado`
   avisa en ellos de que faltan git y `AGENTS.md`; montarlos como los deja el plugin.
 
+## Del DF del cliente (16 de octubre de 2026)
+
+Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no entra en él.
+
+- `appian-prototipos`: `capture.py` enlaza las capturas solo en las fichas PAN del funcional; las pantallas del DF del
+  cliente van por nombre y la línea de la imagen la pone el analista. Decidir si `capture.py` las enlaza también por el
+  nombre de la pantalla.
+- En un Windows sin `python` ni `python3` (solo el lanzador `py`), las órdenes del SKILL.md y de `CLAUDE.md` no
+  funcionan tal cual: el SKILL.md dice «en Windows, `python`», que tampoco existe ahí.
+- Con Python 3.14, `proyecto.py iniciar` avisa de un `re.sub` con `count` posicional (DeprecationWarning, en
+  `poner_al_dia`).
+
 ## Menores
 
 - Diagramas: la salida de una puerta que comparte el tramo de su derecha sale ya por su vértice (el codo) y su etiqueta

@@ -20,3 +20,5 @@ El prototipo y el Word no se rehacen con cada fuente: las pantallas afectadas, d
 **Variante: un retoque.** Pocos puntos (un texto, una etiqueta, una columna) y ninguno requiere aprobación: sin nota ni presentación, con el informe ya aplicado y una sola comprobación. `appian-functional-analyst/references/actualizacion.md` «Camino corto».
 
 **Variante: una demo del prototipo.** Cada comentario es un punto del informe y, una vez aplicado, `appian-prototipos` rehace solo esas pantallas: `appian-functional-analyst/references/actualizacion.md` «Feedback de una demo» y `appian-prototipos/SKILL.md` «Después de una demo».
+
+**Variante: el DF del cliente.** La fuente se encaja en el DF del cliente y la última decisión del cliente manda, también sobre lo ya aceptado; la versión se abre con `proyecto.py version --df-cliente`: `appian-functional-analyst/references/df-cliente-construir.md` §2.

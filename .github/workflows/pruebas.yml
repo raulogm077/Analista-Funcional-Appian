@@ -96,10 +96,10 @@ jobs:
       - name: docx para el Word del DF
         run: npm install -g docx
 
-      - name: Playwright, Chromium y pytest
+      - name: Playwright, Chromium, pytest y python-docx (el Word del DF del cliente)
         run: |
           python -m pip install --upgrade pip
-          python -m pip install playwright pytest
+          python -m pip install playwright pytest python-docx
           python -m playwright install ${{ runner.os == 'Linux' && '--with-deps' || '' }} chromium
 
       # mcp pide Python 3.10 o superior: con 3.9, ingeniería inversa se prueba por la vía de uv con 3.12

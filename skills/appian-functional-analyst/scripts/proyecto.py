@@ -7,19 +7,26 @@
                                      .agents/workflows/
   proyecto.py iniciar  <carpeta>     en un proyecto que ya existe: pone al día AGENTS.md y los flujos con esta versión
                                      del plugin y añade lo que falte de lo anterior
+  proyecto.py iniciar  <carpeta> --df-cliente [--proceso "…"]   además, el DF del cliente (analisis/df-cliente.md) y
+                                     sus dos ficheros aparte: df-cliente-fuentes.md y df-cliente-pendientes.md
   proyecto.py estado   <carpeta>     versión, cliente y marca, DF enviado, fuentes sin procesar, pendientes, pantallas;
                                      y avisa de lo que no está confirmado o subido, de lo que hay en el remoto sin traer,
                                      de si AGENTS.md o los flujos son de otra versión del plugin y de la unidad
                                      Construida cuyo QA falla o tiene escenarios sin repetir
   proyecto.py copia    <carpeta>     guarda analisis/*.md en versiones/v<versión>/ antes de cambiarlo
+  proyecto.py copia    <carpeta> --df-cliente   guarda el DF del cliente y sus dos ficheros en
+                                     versiones/df-cliente-v<versión>/
   proyecto.py version  <carpeta> --fuente FU-nn [FU-nn …] --que "…" [--informe impacto/URG-nn.md]
                        [--decision CAMBIA PAN-01 "lo nuevo" "lo de antes [FU-01 00:12:30]" …]
                                      antes de aplicar un informe que cambia el análisis: la copia, la versión +0.1 en
                                      funcional y técnico, su fila en decisiones.md, cada fuente en «Fuentes procesadas»
                                      y, con --decision (una por punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE, con
-                                     la primera fuente), su fila D
+                                     la primera fuente), su fila D. Con --df-cliente, lo mismo para el DF del cliente,
+                                     que tiene su propia versión: sube solo la de df-cliente.md y sus filas dicen
+                                     «DF cliente <versión>»
   proyecto.py entregar <carpeta> [--cambio EV-02]   el Word sale hacia el cliente: «DF entregado» (el de un cambio, en su
                                      fila de Versiones de decisiones.md) y el fichero en «Entregados»
+  proyecto.py entregar <carpeta> --df-cliente       lo mismo con el DF del cliente: «DF cliente entregado»
   proyecto.py cambio   <carpeta> <EV-nn|URG-nn> <estado> [opciones]   una unidad de cambio (analisis/cambios.md):
       abrir --titulo "…"                    Abierta
       aprobada --fuente FU-nn [--comparte "EV-03 en <objeto>: secuenciar (EV-02 primero)"]
@@ -35,6 +42,8 @@
     Con --desatendida solo aprueba o pasa a producción con --fuente (el visto bueno del jefe de proyecto), y no marca
     construida con --manual. Las condiciones, en references/cambios.md.
 
+Sin --df-cliente, copia, version y entregar trabajan con el funcional y el técnico, como siempre: el DF del cliente
+tiene su propia versión y se pide de forma explícita.
 `iniciar` no toca nada que ya exista, salvo AGENTS.md y los flujos, que genera enteros. `entregar` solo cuando el Word se
 envía, nunca en una sesión desatendida.
 """
@@ -72,6 +81,31 @@ SIN_CONVERTIR = ("# Git no cambia los finales de línea de ningún fichero: la h
 ESPERA_REMOTO = 5   # segundos que `estado` espera al remoto; sin respuesta, compara con lo último que se trajo
 # «DF entregado: 1.1 · 2026-10-10» (entregar) o, en proyectos anteriores, «DF entregado: 1.0 (2026-09-12)»
 RX_ENTREGADO = re.compile(r"DF entregado:\s*v?(\d+\.\d+)(?:\s*(?:·\s*|\()(\d{4}-\d{2}-\d{2}))?")
+# El DF del cliente (references/df-cliente-plantilla.md): el documento y sus dos ficheros aparte, con su propia versión
+DF_CLIENTE = ("df-cliente.md", "df-cliente-fuentes.md", "df-cliente-pendientes.md")
+RX_ENTREGADO_C = re.compile(r"DF cliente entregado:\s*v?(\d+\.\d+)(?:\s*·\s*(\d{4}-\d{2}-\d{2}))?")
+MESES = ("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre",
+         "Noviembre", "Diciembre")
+
+
+def version_df(raiz):
+    """La versión del DF del cliente («Versión: x.y» en las 20 primeras líneas de df-cliente.md), o None."""
+    f = pathlib.Path(raiz) / "analisis" / "df-cliente.md"
+    if not f.is_file():
+        return None
+    for linea in f.read_text(encoding="utf-8").split("\n")[:20]:
+        x = re.search(r"Versi[oó]n:\s*v?(\d+)\.(\d+)", linea)
+        if x:
+            return int(x.group(1)), int(x.group(2))
+    return None
+
+
+def pendientes_df(raiz):
+    """Las preguntas abiertas de df-cliente-pendientes.md: los IDs de sus filas (las respondidas ya no están)."""
+    f = pathlib.Path(raiz) / "analisis" / "df-cliente-pendientes.md"
+    if not f.is_file():
+        return []
+    return re.findall(r"^\|\s*(PC-\d+)\s*\|", f.read_text(encoding="utf-8"), re.M)
 
 
 def iniciar(a):
@@ -96,6 +130,20 @@ def iniciar(a):
             texto = texto.replace("{" + k + "}", v)
         mo.escribe(destino, texto)
         print(f"+ {destino}")
+    if a.df_cliente:   # el DF del cliente y sus dos ficheros, con lo que se sabe; el resto, pendiente de confirmar
+        hoy = datetime.date.today()
+        datos_c = {"proceso": a.proceso or nombre, "proyecto": nombre, "codigo": "pendiente de confirmar",
+                   "ciudad": "pendiente de confirmar", "mes y año": f"{MESES[hoy.month - 1]} {hoy.year}"}
+        for plantilla in DF_CLIENTE:
+            destino = raiz / "analisis" / plantilla
+            if destino.exists():
+                print(f"= {destino} (ya existe, no se toca)")
+                continue
+            texto = (PLANTILLAS / plantilla).read_text(encoding="utf-8")
+            for k, v in datos_c.items():
+                texto = texto.replace("{" + k + "}", v)
+            mo.escribe(destino, texto)
+            print(f"+ {destino}")
     print(f"Carpetas: {', '.join(CARPETAS)}")
     # lo que solo se escribe si falta: qué no se sube, que git no cambie los finales de línea y el CLAUDE.md que hace
     # que Claude Code lea AGENTS.md
@@ -308,6 +356,14 @@ def estado(a):
     if entregado:   # el Word se genera al enviarlo o si se pide: aquí solo se informa
         fecha = f" ({entregado.group(2)})" if entregado.group(2) else ""
         print(f"DF en Word: último enviado {entregado.group(1)}{fecha}, versión actual {vs}")
+    vdf = version_df(raiz)
+    if vdf:
+        ent_c, pend_c = RX_ENTREGADO_C.search(texto), pendientes_df(raiz)
+        enviado = ""
+        if ent_c:
+            enviado = f", último enviado {ent_c.group(1)}" + (f" ({ent_c.group(2)})" if ent_c.group(2) else "")
+        print(f"DF del cliente: versión {vdf[0]}.{vdf[1]}{enviado}; pendiente de confirmar: {len(pend_c)}"
+              + (f" ({', '.join(pend_c)})" if pend_c else ""))
     for x in avisos_proyecto(raiz):
         print(f"· {x}")
 
@@ -409,13 +465,21 @@ def avisos_qa(ctx, uid):
         + iss.avisos_qa(ctx.m.raiz, plan)
 
 
-def _copia(raiz, m):
-    v = m.version("F")
-    if not v:
-        sys.exit("funcional.md no tiene «Versión: x.y»")
-    destino = raiz / "versiones" / f"v{v[0]}.{v[1]}"
+def _copia(raiz, m, df=False):
+    """La copia de la versión vigente antes de cambiarla: el funcional, el técnico y decisiones.md en versiones/vX.Y/
+    o, con df, el DF del cliente y sus dos ficheros en versiones/df-cliente-vX.Y/."""
+    if df:
+        v = version_df(m.raiz)
+        if not v:
+            sys.exit("analisis/df-cliente.md no existe o no tiene «Versión: x.y» (se crea con iniciar --df-cliente)")
+        destino, nombres = m.raiz / "versiones" / f"df-cliente-v{v[0]}.{v[1]}", DF_CLIENTE
+    else:
+        v = m.version("F")
+        if not v:
+            sys.exit("funcional.md no tiene «Versión: x.y»")
+        destino, nombres = raiz / "versiones" / f"v{v[0]}.{v[1]}", mo.DOCS.values()
     destino.mkdir(parents=True, exist_ok=True)
-    for nombre in mo.DOCS.values():
+    for nombre in nombres:
         f = m.analisis / nombre
         if f.exists():
             shutil.copy2(f, destino / nombre)
@@ -424,7 +488,10 @@ def _copia(raiz, m):
 
 def copia(a):
     raiz = pathlib.Path(a.carpeta)
-    v, destino = _copia(raiz, mo.Proyecto(raiz))
+    v, destino = _copia(raiz, mo.Proyecto(raiz), a.df_cliente)
+    if a.df_cliente:
+        print(f"Copia del DF del cliente {v[0]}.{v[1]} en {destino}.")
+        return
     print(f"Copia de la versión {v[0]}.{v[1]} en {destino}. Al terminar: comprobar.py {raiz} --anterior {destino}")
 
 
@@ -479,8 +546,12 @@ def version(a):
     proy, dec = raiz / "proyecto.md", m.ruta("D")
     texto_p = proy.read_text(encoding="utf-8") if proy.exists() else ""
     texto_d = dec.read_text(encoding="utf-8") if dec.exists() else ""
-    ya = {f[0]: f[-1] for f in tabla(texto_p, "Fuentes procesadas") if f}
+    df = a.df_cliente   # el DF del cliente lleva su propia versión: sus filas dicen «DF cliente x.y»
+    del_doc = lambda vers: vers.strip().startswith("DF cliente") == bool(df)
+    ya = {f[0]: f[-1] for f in tabla(texto_p, "Fuentes procesadas") if f and del_doc(f[-1])}
     for f in tabla(texto_d, "Versiones"):
+        if not del_doc(f[0]):
+            continue
         for x in re.findall(r"FU-\d+", f[3] if len(f) > 3 else ""):
             ya.setdefault(x, f[0])
     repetidas = [f"{f} (versión {ya[f]})" for f in fuentes if f in ya]
@@ -491,13 +562,14 @@ def version(a):
     malas = [d[0] for d in decisiones if d[0].upper() not in mo.TIPOS_D]
     if malas:
         sys.exit(f"--decision {', '.join(malas)}: el tipo es uno de {', '.join(mo.TIPOS_D)}")
-    v, destino = _copia(raiz, m)
+    v, destino = _copia(raiz, m, df)
     nueva = f"{v[0]}.{v[1] + 1}"
+    nueva_fila = f"DF cliente {nueva}" if df else nueva
     subidos, escrito, a_mano = [], [], []
-    for doc, nombre in (("F", "funcional"), ("T", "técnico")):
-        if doc not in m.docs or not m.version(doc):
+    for doc, nombre in ((None, "DF del cliente"),) if df else (("F", "funcional"), ("T", "técnico")):
+        if doc and (doc not in m.docs or not m.version(doc)):
             continue   # técnico sin empezar
-        ruta = m.ruta(doc)
+        ruta = m.analisis / "df-cliente.md" if doc is None else m.ruta(doc)
         lineas = ruta.read_text(encoding="utf-8").split("\n")
         i = next(i for i, l in enumerate(lineas[:20]) if RX_VERSION.search(l))
         lineas[i] = RX_VERSION.sub(lambda x: f"{x.group(1)}{nueva}", lineas[i], count=1)
@@ -505,9 +577,9 @@ def version(a):
         subidos.append(nombre)
     hoy = datetime.date.today().isoformat()
     que = " ".join(a.que.split()).replace("|", "/")
-    nuevo_d = anade_fila(texto_d, "Versiones", f"| {nueva} | {hoy} | {que} | {', '.join(fuentes)} | — |")
+    nuevo_d = anade_fila(texto_d, "Versiones", f"| {nueva_fila} | {hoy} | {que} | {', '.join(fuentes)} | — |")
     if nuevo_d is None:
-        a_mano.append(f"la fila de la versión {nueva} en «## Versiones» de decisiones.md")
+        a_mano.append(f"la fila de la versión {nueva_fila} en «## Versiones» de decisiones.md")
     else:
         escrito.append("su fila en decisiones.md")
         texto_d = nuevo_d
@@ -532,7 +604,7 @@ def version(a):
     informe = (a.informe or f"impacto/{fuentes[0]}.md").replace("\\", "/")
     for fu in fuentes:
         e = cat[fu]
-        fila = f"| {fu} | {str(e.get('fecha', ''))[:10]} | {que_es_fuente(e).replace('|', '/')} | {informe} | {nueva} |"
+        fila = f"| {fu} | {str(e.get('fecha', ''))[:10]} | {que_es_fuente(e).replace('|', '/')} | {informe} | {nueva_fila} |"
         nuevo_p = anade_fila(texto_p, "Fuentes procesadas", fila)
         if nuevo_p is None:
             a_mano.append(f"{fu} en «## Fuentes procesadas» de proyecto.md")
@@ -546,6 +618,11 @@ def version(a):
     for x in a_mano:
         print(f"· No hay dónde escribirla, añádela a mano: {x}")
     filas_d = "" if ids_d else " y, si hay CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE, sus filas D"
+    if df:
+        print(f"Ahora: edita solo los bloques del informe en df-cliente.md, sus filas en df-cliente-fuentes.md y las "
+              f"preguntas que se responden o surgen en df-cliente-pendientes.md{filas_d}; escribe {informe} con "
+              f"«Estado: aplicado en {nueva_fila}» (references/df-cliente-construir.md §2).")
+        return
     print(f"Ahora: edita solo las piezas del informe (indice.py ficha --lineas){filas_d}; escribe {informe} con "
           f"«Estado: aplicado en {nueva}» y verifica:")
     print(f"  comprobar.py {citada(raiz)} --fuentes {citada(raiz / 'fuentes')} --anterior {citada(destino)} "
@@ -580,6 +657,8 @@ def entregar(a):
     pm = raiz / "proyecto.md"
     if not pm.exists():
         sys.exit(f"No existe {pm}")
+    if a.df_cliente:
+        return entregar_df_cliente(raiz, pm)
     m = mo.Proyecto(raiz)
     v = m.version("F")
     if not v:
@@ -599,6 +678,43 @@ def entregar(a):
     word = nombre_df(m, vs)
     if not (raiz / "entregables" / word).is_file():
         print(f"· No encuentro entregables/{word}: genéralo con df_docx.js antes de enviarlo")
+    else:
+        texto = entregados(texto, word)
+    mo.escribe(pm, texto)
+    print(f"{valor} en {pm}")
+
+
+def nombre_df_cliente(raiz, vs):
+    """El nombre del Word que escribe df_cliente_docx.py por defecto: DF-cliente-<proceso sin tildes ni signos>-v<x.y>.docx."""
+    tit = re.search(r"^# (.+)$", (raiz / "analisis" / "df-cliente.md").read_text(encoding="utf-8"), re.M)
+    tit = re.sub(r"\s+—\s+Documento de diseño funcional\s*$", "", tit.group(1)) if tit else "Diseño funcional"
+    slug = re.sub(r"[^A-Za-z0-9_]+", "-", re.sub(r"[\u0300-\u036f]", "", unicodedata.normalize("NFD", tit))).strip("-")
+    return f"DF-cliente-{slug}-v{vs}.docx"
+
+
+def entregar_df_cliente(raiz, pm):
+    """El DF del cliente sale hacia el cliente: «DF cliente entregado: <versión> · <fecha>» en proyecto.md, en su propia
+    línea, y el Word en «Entregados:», que df_cliente_docx.py no vuelve a escribir."""
+    v = version_df(raiz)
+    if not v:
+        sys.exit("analisis/df-cliente.md no existe o no tiene «Versión: x.y»")
+    vs = f"{v[0]}.{v[1]}"
+    valor = f"DF cliente entregado: {vs} · {datetime.date.today().isoformat()}"
+    texto = pm.read_text(encoding="utf-8")
+    if "DF cliente entregado:" in texto:
+        texto = re.sub(r"DF cliente entregado:[^\n]*", valor, texto, count=1)
+    else:   # tras la línea del DF entregado o la del cliente; si no están, tras el título
+        lineas = texto.split("\n")
+        k = next((i for i, l in enumerate(lineas) if "DF entregado:" in l),
+                 next((i for i, l in enumerate(lineas) if l.startswith("Cliente:")), 0))
+        lineas.insert(k + 1, valor)
+        texto = "\n".join(lineas)
+    pend = pendientes_df(raiz)
+    if pend:
+        print(f"· Quedan preguntas en df-cliente-pendientes.md: {', '.join(pend)}")
+    word = nombre_df_cliente(raiz, vs)
+    if not (raiz / "entregables" / word).is_file():
+        print(f"· No encuentro entregables/{word}: genéralo con df_cliente_docx.py antes de enviarlo")
     else:
         texto = entregados(texto, word)
     mo.escribe(pm, texto)
@@ -880,10 +996,14 @@ def main():
     s = sub.add_parser("iniciar"); s.add_argument("carpeta")
     s.add_argument("--nombre", help="el nombre del proyecto; hace falta solo la primera vez")
     s.add_argument("--cliente"); s.add_argument("--direccion"); s.add_argument("--tipo")
+    s.add_argument("--df-cliente", action="store_true", help="crea también el DF del cliente y sus dos ficheros")
+    s.add_argument("--proceso", help="el nombre del proceso, título del DF del cliente; sin él, el del proyecto")
     s.set_defaults(f=iniciar)
     s = sub.add_parser("estado"); s.add_argument("carpeta"); s.set_defaults(f=estado)
     s = sub.add_parser("copia"); s.add_argument("carpeta"); s.set_defaults(f=copia)
+    s.add_argument("--df-cliente", action="store_true", help="la copia del DF del cliente, no la del funcional")
     s = sub.add_parser("version"); s.add_argument("carpeta"); s.set_defaults(f=version)
+    s.add_argument("--df-cliente", action="store_true", help="sube la versión del DF del cliente, no la del funcional")
     s.add_argument("--fuente", nargs="+", required=True, metavar="FU-nn", help="las fuentes del informe")
     s.add_argument("--que", required=True, help="qué cambia, en una frase y en palabras del cliente (sale en el Word): "
                                                  "la fila de la versión en decisiones.md")
@@ -893,6 +1013,7 @@ def main():
                         "--fuente; «lo de antes» con su cita")
     s = sub.add_parser("entregar"); s.add_argument("carpeta"); s.set_defaults(f=entregar)
     s.add_argument("--cambio", help="el DF de un cambio (df_docx.js --cambio): se anota en decisiones.md")
+    s.add_argument("--df-cliente", action="store_true", help="el DF del cliente (df_cliente_docx.py)")
     s = sub.add_parser("cambio"); s.add_argument("carpeta"); s.add_argument("id"); s.set_defaults(f=cambio)
     s.add_argument("estado", choices=["abrir", "aprobada", "construida", "produccion", "descartada"])
     s.add_argument("--titulo"); s.add_argument("--fuente"); s.add_argument("--comparte"); s.add_argument("--ref")

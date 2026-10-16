@@ -28,26 +28,30 @@ auto-update**. Lo que falta en tu equipo te lo dice el plugin al empezar; la lis
    ```bash
    git checkout -b lucia/contraste-prototipos
    ```
-3. Haz el cambio y pruébalo en un proyecto de prueba **fuera de esta carpeta**, con tu copia del plugin. Solo afecta
+3. **Antes de cambiar algo, mira qué lo usa.** Las piezas están conectadas: un script lee la plantilla que cambias, otra
+   skill cita la sección que renombras, los flujos de `assets/flujos/` se copian a cada proyecto. Busca el nombre del
+   fichero o de la sección en `skills/` y `pruebas/`. Lo nuevo, como una opción que se añade, sin cambiar lo que ya hace
+   lo de antes, y con su prueba en `pruebas/<skill>/selftest.py`.
+4. Haz el cambio y pruébalo en un proyecto de prueba **fuera de esta carpeta**, con tu copia del plugin. Solo afecta
    a esa sesión; tu plugin instalado no cambia:
    ```bash
    claude --plugin-dir <ruta a tu copia de Analista-Funcional-Appian>
    ```
-4. Antes de guardar, la comprobación básica (segundos). Si cambiaste un script, una plantilla o un dato de una skill,
+5. Antes de guardar, la comprobación básica (segundos). Si cambiaste un script, una plantilla o un dato de una skill,
    también su prueba:
    ```bash
    python3 pruebas/comprobar_plugin.py
    python3 pruebas/<skill>/selftest.py
    ```
-5. Guarda y sube tu rama (mensajes de commit en español):
+6. Guarda y sube tu rama (mensajes de commit en español):
    ```bash
    git add -A
    git commit -m "Prototipos: contraste de los botones secundarios"
    git push -u origin lucia/contraste-prototipos
    ```
-6. Abre el PR en GitHub solo cuando el trabajo esté terminado: un PR por trabajo, no por cada retoque. En la
+7. Abre el PR en GitHub solo cuando el trabajo esté terminado: un PR por trabajo, no por cada retoque. En la
    descripción: qué cambiaste, por qué y cómo lo probaste.
-7. En el PR, pulsa **Enable auto-merge**. Entra solo en cuanto Raúl lo apruebe y las pruebas salgan en verde; no hay
+8. En el PR, pulsa **Enable auto-merge**. Entra solo en cuanto Raúl lo apruebe y las pruebas salgan en verde; no hay
    que volver a entrar.
 
 Si una prueba sale en rojo, se corrige en la misma rama y se vuelve a subir. Subir la rama sin abrir PR, como copia de

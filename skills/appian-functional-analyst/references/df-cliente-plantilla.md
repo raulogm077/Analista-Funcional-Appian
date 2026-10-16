@@ -255,8 +255,10 @@ Caso 1: bandeja del área de autorizaciones con solicitudes pendientes.
 - `#### 2.3.n Pantallas <Área>` abre cada área; `##### <Nombre de la pantalla>`, cada pantalla, modal o sección de un
   registro que se describe por separado; `###### …`, sus apartados.
 - Los apartados, su orden, qué va en cada uno y cómo se describe cada elemento: `requerimientos-pantallas.md`.
-- La captura la pone `appian-prototipos` en `../prototipo/capturas/`, o es la que pasa el cliente. Sin captura, el caso
-  y la línea de la imagen quedan y el Word deja el hueco.
+- La captura la pone `appian-prototipos` en `../prototipo/capturas/`, o es la que pasa el cliente. El prototipo solo
+  enlaza sus capturas en las fichas PAN del funcional: en el DF del cliente, la línea de la imagen la pone el analista,
+  con la ruta que `appian-prototipos` deja en `prototipo/capturas/indice.md`. Sin captura, el caso y la línea de la imagen quedan y el Word deja el
+  hueco.
 - Al final de cada pantalla el Word añade la nota fija: la visibilidad por rol no va aquí, va en 2.4.1.
 
 ### 2.4 Otras consideraciones

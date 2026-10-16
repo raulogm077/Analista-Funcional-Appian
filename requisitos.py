@@ -249,6 +249,7 @@ DETECTORES = {
     "navegador": _navegador,
     "node": _ejecutable("node"),
     "docx": _docx,
+    "python-docx": _modulo("docx"),
     "libreoffice": _libreoffice,
     "pdf": _pdf,
     "git": _ejecutable("git"),

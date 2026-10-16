@@ -1,12 +1,16 @@
 ---
 name: appian-functional-analyst
-description: "Analista funcional de Appian. Convierte las fuentes (reuniones, correos, actas, notas, diagramas de flujo, un DF o ERS del cliente, la documentación de una aplicación o una propuesta de refactorización) en el diseño funcional en Word que valida el cliente (proceso, historias, pantallas y escenarios) y la especificación técnica. Úsala para levantar requisitos, escribir o actualizar un análisis o un DF, incorporar una reunión, un correo, una demo o los comentarios al DF, añadir historias a una aplicación existente, redactar las historias de una pantalla que alguien explica, preparar la especificación técnica o llevar un evolutivo o una incidencia urgente (la registra y prepara su corrección). No dibuja procesos (appian-diagramas-bpmn), no hace prototipos (appian-prototipos), no construye, revisa ni diagnostica objetos (appian-best-practices), no documenta lo que ya existe (appian-reverse-engineering) ni decide si rehacerlo (appian-refactorizacion)."
+description: "Analista funcional de Appian. Convierte las fuentes (reuniones, correos, actas, notas, diagramas de flujo, un DF o ERS del cliente, la documentación de una aplicación o una propuesta de refactorización) en el DF que valida el cliente (sobre la plantilla de Word del equipo, con actividades y pantallas al detalle), el análisis funcional y la especificación técnica. Úsala para levantar requisitos, escribir o actualizar un análisis o un DF, incorporar una reunión, un correo, una demo o los comentarios al DF, añadir historias a una aplicación existente, describir una pantalla que alguien explica, preparar la especificación técnica o llevar un evolutivo o una incidencia urgente (la registra y prepara su corrección). No dibuja procesos (appian-diagramas-bpmn), no hace prototipos (appian-prototipos), no construye, revisa ni diagnostica objetos (appian-best-practices), no documenta lo que ya existe (appian-reverse-engineering) ni decide si rehacerlo (appian-refactorizacion)."
 ---
 
 # Analista funcional · Appian
 
-Convierte lo que el cliente dice y escribe en dos documentos con una sola fuente:
-- **el diseño funcional** (`analisis/funcional.md`), que el cliente valida y del que sale el DF en Word;
+Convierte lo que el cliente dice y escribe en estos documentos:
+- **el DF del cliente** (`analisis/df-cliente.md`), el documento que el cliente revisa y valida, sobre la plantilla de
+  Word del equipo: proceso, actividades, pantallas al detalle, roles y permisos, correos, KPIs y estabilización. Se
+  escribe desde las fuentes, reunión a reunión, y la última decisión manda (`references/df-cliente-construir.md`);
+- **el diseño funcional** (`analisis/funcional.md`), el análisis completo con historias, criterios y trazabilidad, del
+  que salen el prototipo, el técnico y las issues, y su DF en Word;
 - **la especificación técnica** (`analisis/tecnico.md`), con todo lo necesario para construir con el MCP de
   desarrollo de Appian sin preguntar ni suponer.
 
@@ -82,10 +86,13 @@ En `<p>`:
 - `analisis/funcional.md`: el diseño funcional
 - `analisis/tecnico.md`: la especificación técnica
 - `analisis/decisiones.md`: las versiones y las decisiones del cliente
+- `analisis/df-cliente.md`: el DF del cliente, solo con lo que lee el cliente
+- `analisis/df-cliente-fuentes.md`: de dónde sale cada bloque del DF del cliente
+- `analisis/df-cliente-pendientes.md`: lo que falta por confirmar en el DF del cliente
 - `analisis/grafo.json`: las piezas y sus referencias, si se pide (`indice.py grafo`)
 - `analisis/diagramas/<proceso>.json`: cada proceso, en el formato de `appian-diagramas-bpmn`
 - `analisis/diagramas/<nombre>.mmd`: los diagramas de estados y de datos
-- `entregables/`: el DF en Word y, para revisarlo, su PDF (`entregables/revision/`)
+- `entregables/`: el DF en Word (el del funcional y el del cliente) y, para revisarlo, su PDF (`entregables/revision/`)
 - `versiones/`: la copia del análisis antes de cada cambio
 - `modulos/`: el funcional y el técnico de cada módulo, en un análisis grande (`volumen-grande.md`)
 - `prototipo/`: solo la crea vacía al iniciar el proyecto; la llena `appian-prototipos`
@@ -101,7 +108,8 @@ El `.drawio`, el `.png` y el `.bpmn` de cada proceso y la imagen de cada `.mmd` 
 | **Evolutivo** | Hay que cambiar o ampliar una aplicación existente (`as-is/`) | Como síntesis, con lo de «Aplicación existente»: la situación de cada objeto; cada cambio que se construye, una unidad (`cambios.md`) |
 | **Refactorización** | Hay una propuesta de refactorización (`refactorizacion/propuesta.md`) | Como evolutivo: el DF dice lo que se conserva, lo que cambia y lo nuevo; el técnico baja cada REF a objetos, con «Sustituye a» y la migración de datos |
 | **Actualización** | Ya hay análisis y llega una reunión, un correo o los comentarios al DF | Informe de impacto y cambios puntuales: `actualizacion.md`; un retoque que nadie tiene que aprobar, por su «Camino corto» |
-| **Pantalla suelta** | Alguien explica una pantalla, con o sin captura | La ficha PAN y sus historias, en el chat y en el funcional si existe |
+| **DF del cliente** | Se pide el DF para el cliente sobre la plantilla del equipo, o llega una fuente para un proyecto que lo lleva | `analisis/df-cliente.md` desde las fuentes y, en cada fuente nueva, lo que cambia: «DF del cliente», abajo |
+| **Pantalla suelta** | Alguien explica una pantalla, con o sin captura | Su descripción con `requerimientos-pantallas.md`, en el chat y en el DF del cliente si existe; la ficha PAN y sus historias, en el funcional si existe |
 | **Urgente** | El cliente o el equipo declaran crítico algo de producción | La ficha `impacto/URG-nn.md` y el flujo corto de `urgentes.md`, sin DF ni prototipo |
 
 Di el modo al empezar.
@@ -180,21 +188,43 @@ En los modos evolutivo y de refactorización, los pasos de «Proyecto nuevo» co
    usuario y propón pasar esa parte por refactorización (`appian-refactorizacion`) antes de construir encima. Si
    tiene algo sin verificar, que sea un PT o, si lo resuelve negocio, también un PC.
 
+## DF del cliente
+
+Un documento propio, escrito desde las fuentes: no se deriva del funcional, que si existe es una fuente más.
+1. **Crear**: `python3 <skill>/scripts/proyecto.py iniciar <p> --df-cliente --proceso "…"`. Crea `df-cliente.md` y sus
+   dos ficheros aparte; en un proyecto que ya existe, solo añade lo que falta.
+2. **Escribir desde cero**: `references/df-cliente-construir.md` §1, con `df-cliente-plantilla.md` para cada sección y
+   `requerimientos-pantallas.md` para cada pantalla. El DF solo lleva lo que lee el cliente: las fuentes de cada bloque
+   van en `df-cliente-fuentes.md` y lo que falta, en `df-cliente-pendientes.md`.
+3. **Cada fuente nueva**: `df-cliente-construir.md` §2. La última decisión del cliente manda, también sobre lo ya
+   aceptado, y el informe lo dice en «Cambia lo aceptado». Antes de aplicar, `proyecto.py version <p> --df-cliente
+   --fuente FU-nn --que "…"`: copia y sube solo la versión del DF del cliente, que lleva la suya.
+4. **Entregar el Word**, solo para enviarlo o si se pide: `df-cliente-construir.md` §4.
+   ```bash
+   python3 <skill>/scripts/df_cliente_docx.py <p>   # entregables/DF-cliente-<proceso>-v<versión>.docx
+   ```
+   Usa la plantilla del cliente si está en `<p>/plantillas/df-cliente.docx` y, si no, la neutra. Quien lo envía lo abre
+   en Word antes; al enviarlo, `proyecto.py entregar <p> --df-cliente`.
+
+Si el proyecto lleva también el funcional, cada documento se actualiza por su camino: sin `--df-cliente`, las órdenes
+trabajan con el funcional y el técnico, como siempre.
+
 ## Pantalla suelta
 
 1. Si hay captura, mírala antes de escribir: textos, columnas, botones y valores que no se han dicho. Si
    contradice lo explicado, manda lo explicado y se anota.
-2. Escribe la ficha PAN y sus historias con el formato del funcional. Un diálogo que se abre desde la
-   pantalla es otra ficha.
-3. Lo que falte (quién ve una acción, el texto de una confirmación) se pregunta antes de cerrar; los
+2. Descríbela con `references/requerimientos-pantallas.md`: el inventario, los apartados y el repaso. Un modal que se
+   abre desde la pantalla es otra pantalla. Si el proyecto lleva funcional, además su ficha PAN y sus historias.
+3. Lo que falte (el texto de una confirmación, un mensaje de error) se pregunta antes de cerrar; los
    detalles menores, con la opción más razonable dicha en el texto.
 4. Entrégala en el chat. Si el proyecto ya tiene análisis, la explicación es una fuente más (de chat,
-   `ingesta-fuentes.md` §1): catalógala y sigue `actualizacion.md`.
+   `ingesta-fuentes.md` §1): catalógala y sigue `df-cliente-construir.md` §2 o `actualizacion.md`, según el documento.
 
 ## Comentarios del cliente al DF
 
 El Word devuelto es una fuente más: se cataloga con `leer_fuentes.py`, que saca cada comentario y cada
-cambio marcado con la historia o el apartado donde está, y se sigue `actualizacion.md`.
+cambio marcado con la historia o el apartado donde está, y se sigue `actualizacion.md` (el DF del cliente,
+`df-cliente-construir.md` §5).
 
 ## Dudas de Appian
 
@@ -221,3 +251,6 @@ lo que quede sin verificar es un PT, o un PC si cambia lo que se promete al clie
 | `references/volumen-grande.md` | Muchas fuentes o muchos procesos | Solo §1, si la fuente lleva nota |
 | `references/cambios.md`, `references/urgentes.md` | Si `proyecto.py estado` lista unidades en curso (`analisis/cambios.md`), al abrir una, o si se declara una urgencia (un retoque no los necesita: «Camino corto» de `actualizacion.md`) | Entero, en esos casos |
 | `references/mermaid-diagrams.md` | Diagramas de estados y de datos | Solo si cambia uno de esos diagramas |
+| `references/df-cliente-construir.md` | Al empezar el DF del cliente y con cada fuente nueva para él | Solo §2 |
+| `references/df-cliente-plantilla.md` | Al escribir el DF del cliente | Solo la sección que cambia |
+| `references/requerimientos-pantallas.md` | Al describir una pantalla (DF del cliente, pantalla suelta) | Entero, al describir o cambiar una pantalla |

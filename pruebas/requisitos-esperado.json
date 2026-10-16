@@ -104,6 +104,24 @@
       "ruta": null
     },
     {
+      "id": "python-docx",
+      "nombre": "python-docx",
+      "skills": [
+        "appian-functional-analyst"
+      ],
+      "imprescindible": false,
+      "solo_pruebas": false,
+      "para": "DF del cliente en Word, sobre la plantilla",
+      "sin_el": "Se entrega el df-cliente.md",
+      "instalar": {
+        "windows": "`python -m pip install python-docx`",
+        "macos": "`python3 -m pip install python-docx`",
+        "linux": "`python3 -m pip install python-docx`"
+      },
+      "presente": false,
+      "ruta": null
+    },
+    {
       "id": "libreoffice",
       "nombre": "LibreOffice",
       "skills": [

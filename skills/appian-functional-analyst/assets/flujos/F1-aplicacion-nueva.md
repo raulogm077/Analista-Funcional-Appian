@@ -20,3 +20,5 @@
 | 13 | Abrir la unidad `EV-01` y aprobarla: al aprobarla quedan escritas sus issues, una por requisito | Jefe de proyecto la aprueba; Script | `appian-functional-analyst` · `proyecto.py cambio` | `appian-functional-analyst/references/cambios.md` §1, §2 y §5 |
 
 **Variante: el cliente trae su DF ya hecho.** Entra como versión 1.0, sin reinterpretar, y los pasos 3 a 5 parten de él: `appian-functional-analyst/SKILL.md` «Modos» y `appian-functional-analyst/references/ingesta-fuentes.md` §3.
+
+**Variante: el DF del cliente.** Si se entrega el DF sobre la plantilla del equipo, se escribe desde las fuentes, sin partir del funcional: `appian-functional-analyst/SKILL.md` «DF del cliente» y `appian-functional-analyst/references/df-cliente-construir.md` §1; su Word y su entrega, el §4.

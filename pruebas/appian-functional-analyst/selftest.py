@@ -6,8 +6,8 @@ evolutivo/ (sobre una aplicación existente, con as-is/ y una propuesta de refac
 
 Prueba la skill de $PLUGIN_A_PROBAR/skills/appian-functional-analyst (por defecto, la de este repositorio).
 Comprueba los scripts del análisis (proyecto, índice, comprobación, actualización con informe de
-impacto, unión de módulos y lectura de fuentes) y, si están instalados, el Word (Node con docx) y los
-diagramas de estados (Playwright). Sale con 1 si algo falla.
+impacto, unión de módulos, lectura de fuentes y el DF del cliente) y, si están instalados, el Word (Node con
+docx; el del DF del cliente, con python-docx) y los diagramas de estados (Playwright). Sale con 1 si algo falla.
 """
 import json
 import os
@@ -195,6 +195,8 @@ def main():
         # 3a. El método: los flujos del plugin y el repositorio git de cada proyecto, con AGENTS.md y su copia de los flujos
         pruebas_flujos()
         pruebas_repositorio(tmp)
+        pruebas_df_cliente(tmp)
+        pruebas_df_cliente_word(tmp)
 
         # 3b. proyecto.py estado: cliente y marca; el DF enviado se informa; --confirmadas sin las PAN de un cambio
         # aprobado después del prototipo que se enseñó (app-vX.Y.json), leyendo todos los informes (impacto/*.md);
@@ -1208,6 +1210,131 @@ def arbol(p):
     """Los ficheros y las carpetas de un proyecto, sin lo de dentro de .git."""
     return sorted(x.relative_to(p).as_posix() + ("/" if x.is_dir() else "") for x in p.rglob("*")
                   if ".git" not in x.relative_to(p).parts)
+
+
+def pruebas_df_cliente(tmp):
+    """El DF del cliente (references/df-cliente-plantilla.md) en proyecto.py: iniciar --df-cliente crea el documento y
+    sus dos ficheros aparte; tiene su propia versión, que copia, version y entregar llevan con --df-cliente sin tocar la
+    del funcional; y estado dice su versión y sus preguntas abiertas."""
+    pr = lambda *args: corre(S / "proyecto.py", *args)
+    p = tmp / "DF del cliente"
+    a = p / "analisis"
+    c, out = pr("iniciar", p, "--nombre", "Gestión de autorizaciones", "--df-cliente", "--proceso",
+                "Solicitudes de autorización")
+    dfc = a / "df-cliente.md"
+    textos = [(a / n).read_text(encoding="utf-8") for n in ("df-cliente.md", "df-cliente-fuentes.md",
+                                                             "df-cliente-pendientes.md") if (a / n).exists()]
+    ok("iniciar --df-cliente: el DF del cliente con el proceso de título y sus dos ficheros, sin marcadores sin rellenar",
+       c == 0 and len(textos) == 3 and textos[0].startswith("# Solicitudes de autorización — Documento de diseño funcional")
+       and "Proyecto: Gestión de autorizaciones" in textos[0] and not any("{" in t for t in textos)
+       and (a / "funcional.md").exists(), out)
+    dfc.write_text(dfc.read_text(encoding="utf-8") + "\nTexto propio.\n", encoding="utf-8")
+    c, out = pr("iniciar", p, "--df-cliente")
+    ok("iniciar --df-cliente otra vez no toca el DF del cliente", c == 0 and "Texto propio." in dfc.read_text(encoding="utf-8"),
+       out)
+
+    pend = a / "df-cliente-pendientes.md"
+    pend.write_text(pend.read_text(encoding="utf-8") + "| PC-01 | ¿Cuántas devoluciones? | 1 / 2 | Área | ACT-03 | FU-01 |\n",
+                    encoding="utf-8")
+    c, out = pr("estado", p)
+    ok("estado: la versión del DF del cliente y sus preguntas abiertas",
+       c == 0 and "DF del cliente: versión 0.1; pendiente de confirmar: 1 (PC-01)" in out, out)
+
+    c, out = pr("copia", p, "--df-cliente")
+    copia = p / "versiones" / "df-cliente-v0.1"
+    ok("copia --df-cliente: el DF del cliente y sus dos ficheros, aparte de las copias del funcional",
+       c == 0 and sorted(f.name for f in copia.iterdir()) == ["df-cliente-fuentes.md", "df-cliente-pendientes.md",
+                                                             "df-cliente.md"] and not (p / "versiones" / "v0.1").exists(),
+       out)
+
+    chat = tmp / "chat-2026-10-16-devoluciones.txt"
+    chat.write_text("Tipo de fuente: chat\nDe: Responsable del área\nFecha: 2026-10-16\n\nComo mucho dos devoluciones.\n",
+                    encoding="utf-8")
+    corre(S / "leer_fuentes.py", chat, "-o", p / "fuentes")
+    c, out = pr("version", p, "--df-cliente", "--fuente", "FU-01", "--que", "Dos devoluciones como máximo",
+                "--decision", "CAMBIA", "DF 2.2 ACT-03", "Dos devoluciones", "Sin límite [FU-01]")
+    dec = (a / "decisiones.md").read_text(encoding="utf-8")
+    proy = (p / "proyecto.md").read_text(encoding="utf-8")
+    ok("version --df-cliente: sube solo el DF del cliente, con su fila «DF cliente 0.2», su D y la fuente",
+       c == 0 and "Versión: 0.2" in dfc.read_text(encoding="utf-8")
+       and "Versión: 0.1" in (a / "funcional.md").read_text(encoding="utf-8")
+       and "| DF cliente 0.2 |" in dec and "| D-01 |" in dec and "| DF cliente 0.2 |" in proy
+       and (p / "versiones" / "df-cliente-v0.1").is_dir(), out)
+    c, out = pr("version", p, "--df-cliente", "--fuente", "FU-01", "--que", "otra vez")
+    ok("version --df-cliente dos veces con la misma fuente: error, el DF sigue en 0.2",
+       c != 0 and "Versión: 0.2" in dfc.read_text(encoding="utf-8"), out)
+    c, out = pr("version", p, "--fuente", "FU-01", "--que", "Al funcional")
+    ok("version sin --df-cliente con esa fuente: la del funcional, que va aparte",
+       c == 0 and "Versión: 0.2" in (a / "funcional.md").read_text(encoding="utf-8")
+       and "Versión: 0.2" in dfc.read_text(encoding="utf-8"), out)
+
+    c, out = pr("entregar", p, "--df-cliente")
+    proy = (p / "proyecto.md").read_text(encoding="utf-8")
+    ok("entregar --df-cliente: su línea en proyecto.md, sin tocar «DF entregado»; avisa de las preguntas y del Word que falta",
+       c == 0 and "DF cliente entregado: 0.2 · " in proy and "DF entregado: —" in proy and "PC-01" in out
+       and "DF-cliente-Solicitudes-de-autorizacion-v0.2.docx" in out, out)
+    (p / "entregables" / "DF-cliente-Solicitudes-de-autorizacion-v0.2.docx").write_bytes(b"x")
+    c, out = pr("entregar", p, "--df-cliente")
+    proy = (p / "proyecto.md").read_text(encoding="utf-8")
+    ok("entregar --df-cliente con el Word: en «Entregados», una sola línea «DF cliente entregado»",
+       c == 0 and "DF-cliente-Solicitudes-de-autorizacion-v0.2.docx" in proy.split("Entregados:", 1)[-1].split("\n")[0]
+       and proy.count("DF cliente entregado:") == 1, out)
+    c, out = pr("estado", p)
+    ok("estado: el último DF del cliente enviado", "DF del cliente: versión 0.2, último enviado 0.2 (" in out, out)
+
+    sin = tmp / "Sin DF del cliente"
+    pr("iniciar", sin, "--nombre", "Sin DF")
+    c, out = pr("copia", sin, "--df-cliente")
+    ok("copia --df-cliente sin DF del cliente: error que dice cómo crearlo", c != 0 and "iniciar --df-cliente" in out, out)
+
+
+def pruebas_df_cliente_word(tmp):
+    """df_cliente_docx.py con el proyecto ficticio de datos/df-cliente/: rellena la plantilla neutra con todas las
+    secciones, numera las pantallas por área, deja fuera lo que no lee el cliente (fuentes, preguntas, comentarios),
+    avisa de lo pendiente y no sobrescribe un Word entregado. Sin python-docx, no se prueba."""
+    try:
+        import docx  # noqa: F401
+    except ImportError:
+        print("· DF del cliente en Word: falta python-docx (python -m pip install python-docx); no se prueba")
+        return
+    p = tmp / "DF cliente Word"
+    shutil.copytree(DATOS / "df-cliente", p)
+    dfc = p / "analisis" / "df-cliente.md"
+    editar(dfc, "#### Integraciones", "<!-- ✅ FU-01 00:03:10 -->\n\n#### Integraciones")
+    c, out = corre(S / "df_cliente_docx.py", p)
+    word = p / "entregables" / "DF-cliente-Solicitudes-de-autorizacion-v1.0.docx"
+    texto = ""
+    if word.is_file():
+        with zipfile.ZipFile(word) as z:
+            texto = re.sub(r"<[^>]+>", "", "".join(z.read(n).decode("utf-8") for n in z.namelist()
+                                                     if re.match(r"word/(document|header\d*)\.xml$", n)))
+    ok("df_cliente_docx.py: el Word con el nombre que espera proyecto.py entregar --df-cliente", c == 0 and word.is_file(),
+       out)
+    esperado = ["DF-AUT-001", "1. INTRODUCCIÓN AL PROCESO", "REGLA COMÚN 2", "CANCELAR LA SOLICITUD",
+                "ACT-03 Revisar la solicitud", "2.3.1 PANTALLAS SOLICITUDES", "2.3.1.1 Bandeja de solicitudes",
+                "2.3.1.2 Nueva solicitud", "2.3.2 PANTALLAS DATOS MAESTROS", "2.3.2.1 Espacios", "Gestionar espacios",
+                "NOT-02", "2.5 MÉTRICAS Y KPIs", "2.6 PERIODO DE ESTABILIZACIÓN", "período de estabilización"]
+    faltan = [x for x in esperado if x not in texto]
+    ok("df_cliente_docx.py: todas las secciones, las reglas comunes con su título, las pantallas numeradas por área y el 2.6",
+       not faltan, f"faltan: {faltan}")
+    fuera = [x for x in ("FU-01", "PC-01", "<!--", "[Nombre de la pantalla]", "[ÁREA", "PANTALLA 1:") if x in texto]
+    ok("df_cliente_docx.py: sin fuentes, preguntas, comentarios ni textos de ejemplo de pantallas", not fuera,
+       f"salen: {fuera}")
+    ok("df_cliente_docx.py avisa de lo pendiente: el texto «pendiente de confirmar» y las preguntas abiertas",
+       "pendiente de confirmar" in out and "PC-01" in out, out)
+    editar(p / "proyecto.md", "DF entregado: —", f"DF entregado: —\nEntregados: {word.name}")
+    c, out = corre(S / "df_cliente_docx.py", p)
+    ok("df_cliente_docx.py no sobrescribe un Word entregado: sale con -1",
+       c == 0 and (p / "entregables" / word.name.replace(".docx", "-1.docx")).is_file(), out)
+    rota = tmp / "plantilla-rota.docx"
+    d = docx.Document(str(SKILL / "assets" / "plantillas" / "df-cliente.docx"))
+    for par in d.paragraphs:
+        if par.text.startswith("2.3.1.1"):
+            par.text = "Otra cosa"
+    d.save(str(rota))
+    c, out = corre(S / "df_cliente_docx.py", p, "--plantilla", rota)
+    ok("df_cliente_docx.py con una plantilla a la que le falta una pieza: error que dice de dónde partir",
+       c != 0 and "h4" in out and "df-cliente.docx" in out, out)
 
 
 def pruebas_repositorio(tmp):
