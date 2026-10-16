@@ -170,8 +170,15 @@ def read_docx(path, img_dir=None):
     return "\n\n".join(out + notas), detalle
 
 
-RX_TURNO_WORD = re.compile(r"^(\S[^\n]{1,60}?)[ \t]{2,}(\d{1,2}:\d{2}(?::\d{2})?)$", re.M)
-RX_MARCA_WORD = re.compile(r"^(\d{1,2}:\d{2}(?::\d{2})?)$", re.M)
+TS = r"\d{1,2}:\d{2}(?::\d{2})?"
+# Cómo empieza una intervención en cada exportación: (expresión, grupo de la hora, grupo del hablante, grupo del texto)
+FORMAS_TURNO = (
+    (re.compile(rf"^\[({TS})\]\s+([^:\n\[\]]{{2,60}}):[ \t]*(.*)$"), 1, 2, 3),   # [00:00:04] Hablante: (texto)
+    (re.compile(rf"^\[({TS})\][ \t]*(.*)$"), 1, None, 2),                          # [00:00:18] (texto)
+    (re.compile(rf"^(\S[^\n]{{1,60}}?)[ \t]{{2,}}({TS})$"), 2, 1, None),           # Hablante   0:04 (Teams en Word)
+    (re.compile(rf"^({TS})$"), 1, None, None),                                     # 0:18 (Teams en Word, sin hablantes)
+)
+RX_RUIDO = re.compile(r"ha (iniciado|detenido) la transcripción|^_\[imagen [^\]\n]*\]_$")
 MESES_ES = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre",
             "noviembre", "diciembre")
 
@@ -182,28 +189,54 @@ def hhmmss(t):
     return f"{h:02d}:{m:02d}:{s:02d}"
 
 
-def transcripcion_word(body):
-    """La transcripción de Teams o Stream descargada como Word: «Hablante   0:04» o solo «0:18» en su línea antes de
-    cada intervención. Se pasa al formato de las demás transcripciones («[00:00:04] Hablante:»), para que la
-    participación y las citas sean iguales. None si el Word no es una transcripción."""
-    turnos, marcas = RX_TURNO_WORD.findall(body), RX_MARCA_WORD.findall(body)
-    if len(turnos) >= 5:
-        texto = RX_TURNO_WORD.sub(lambda m: f"[{hhmmss(m.group(2))}] {m.group(1).strip()}:", body)
-        detalle = f"{len(turnos)} intervenciones, {len({h.strip() for h, _ in turnos})} participantes"
-    elif len(marcas) >= 5:
-        texto = RX_MARCA_WORD.sub(lambda m: f"[{hhmmss(m.group(1))}]", body)
-        detalle = "sin hablantes identificados"
-    else:
+def formato_transcripcion(turnos):
+    """El formato único de toda transcripción, venga de donde venga: una intervención por párrafo,
+    «[00:14:32] Hablante: texto» o, sin hablante, «[00:14:32] texto»; las seguidas del mismo hablante, juntas."""
+    juntos = []
+    for t, quien, texto in turnos:
+        if juntos and quien and juntos[-1][1] == quien:
+            juntos[-1][2] = f"{juntos[-1][2]} {texto}".strip()
+        else:
+            juntos.append([t, quien, texto])
+    return "\n\n".join(f"[{t}] {q + ': ' if q else ''}{x}".rstrip() for t, q, x in juntos), juntos
+
+
+def transcripcion(body):
+    """Una transcripción en texto o en Word, en cualquiera de las formas de FORMAS_TURNO, pasada al formato único
+    (formato_transcripcion). Lo de antes de la primera intervención (título, fecha, duración) se queda como cabecera; se
+    quitan los avisos de Teams («ha iniciado la transcripción») y las fotos de los hablantes. None si no lo es."""
+    lineas = body.replace("\r\n", "\n").split("\n")
+    forma = max(FORMAS_TURNO, key=lambda f: sum(1 for l in lineas if f[0].match(l.strip())))
+    if sum(1 for l in lineas if forma[0].match(l.strip())) < 5:
         return None
+    rx, g_t, g_q, g_x = forma
+    cabecera, turnos = [], []
+    for l in lineas:
+        l = l.strip()
+        if not l or RX_RUIDO.search(l):
+            continue
+        m = rx.match(l)
+        if m:
+            turnos.append([hhmmss(m.group(g_t)), m.group(g_q).strip() if g_q else "", m.group(g_x).strip() if g_x else ""])
+        elif turnos:
+            turnos[-1][2] = f"{turnos[-1][2]} {l}".strip()
+        else:
+            cabecera.append(l)
+    texto, juntos = formato_transcripcion(turnos)
+    hablantes = {q for _, q, _ in juntos if q}
+    detalle = (f"{len(juntos)} intervenciones, {len(hablantes)} participantes" if hablantes
+               else "sin hablantes identificados")
     cab = body[:1500]
     d = re.search(r"(\d+)\s*h\s*(\d+)\s*min(?:\s*(\d+)\s*s)?|^(\d+)\s*min\s*(\d+)\s*s", cab, re.M)
-    if d:
+    dur = re.search(rf"^Duración[^:\n]*:\s*({TS})", cab, re.I | re.M)
+    if dur:
+        duracion = hhmmss(dur.group(1))
+    elif d:
         h, m, s_ = (int(d.group(1)), int(d.group(2)), int(d.group(3) or 0)) if d.group(1) else (0, int(d.group(4)), int(d.group(5)))
         duracion = f"{h:02d}:{m:02d}:{s_:02d}"
     else:
-        ult = (marcas or [t for _, t in turnos])[-1]
-        duracion = hhmmss(ult)
-    return texto, f"duración {duracion}, {detalle}"
+        duracion = turnos[-1][0]
+    return "\n\n".join(cabecera + [texto]), f"duración {duracion}, {detalle}"
 
 
 def fecha_contenido(body):
@@ -348,7 +381,7 @@ def read_xlsx(path):
                 rows.append([cells.get(i, "") for i in range(max(cells) + 1)])
         extra = f"\n\n_[{len(rows) - MAX_ROWS} filas más no incluidas]_" if len(rows) > MAX_ROWS else ""
         out.append(f"## Hoja «{sh.get('name')}»\n\n" + md_table(rows[:MAX_ROWS]) + extra)
-    return "\n\n".join(out), f"{nsheets} hojas"
+    return "\n\n".join(out), f"{nsheets} {'hoja' if nsheets == 1 else 'hojas'}"
 
 
 def read_pdf(path):
@@ -564,8 +597,6 @@ def convert(path, out_dir, fid):
         elif ext in (".txt", ".md"):
             body = path.read_text(encoding="utf-8-sig", errors="replace"); kind = "Texto"
             detail = f"{body.count(chr(10)) + 1} líneas"
-            turns = re.findall(r"^\[(\d{1,2}:\d{2}:\d{2})\] ([^:\n]{2,60}):\s*$", body, re.M)
-            stamps = re.findall(r"^\[(\d{1,2}:\d{2}:\d{2})\]", body, re.M)
             chat = re.search(r"^Tipo de fuente:\s*(chat|aprobaci[oó]n)\b", body[:2000], re.I | re.M)
             if chat:  # lo pegado en el chat o la aprobación del jefe de proyecto: quién y cuándo, de la cabecera
                 kind = "Chat" if chat.group(1).lower() == "chat" else "Aprobación"
@@ -574,21 +605,18 @@ def convert(path, out_dir, fid):
                 f = re.search(r"^Fecha:\s*(?:(\d{4})-(\d{2})-(\d{2})|(\d{1,2})/(\d{1,2})/(\d{4}))", body[:2000], re.M)
                 fecha_cabecera = (f"{f.group(1)}-{f.group(2)}-{f.group(3)}" if f and f.group(1) else
                                   f"{f.group(6)}-{int(f.group(5)):02d}-{int(f.group(4)):02d}" if f else None)
-            elif len(turns) >= 5:  # transcripción exportada (Teams, Stream, Otter…) con «[hh:mm:ss] Hablante:»
+            elif transcripcion(body):  # exportada (Teams, Stream, Otter…), con hablantes o sin ellos: al formato único
+                body, detail = transcripcion(body)
                 kind = "Transcripción"
-                detail = f"{len(turns)} intervenciones, {len({s for _, s in turns})} participantes"
-            elif len(stamps) >= 5 or re.search(r"^Tipo de fuente:.*transcripci", body[:2000], re.I | re.M):
-                # transcripción automática sin hablantes («[hh:mm:ss]» en su línea): duración de la cabecera o de la última marca
+            elif re.search(r"^Tipo de fuente:.*transcripci", body[:2000], re.I | re.M):
                 kind = "Transcripción"
-                dur = re.search(r"^Duración[^:\n]*:\s*(\d{1,2}:\d{2}(?::\d{2})?)", body[:2000], re.I | re.M)
-                detail = f"duración {dur.group(1) if dur else (stamps[-1] if stamps else '¿?')}, sin hablantes identificados"
+                detail = "sin marcas de tiempo, sin hablantes identificados"
         elif ext == ".docx":
             body, detail = read_docx(path, out_dir / "adjuntos" / fid); kind = "Documento Word"
-            tr = transcripcion_word(body)
+            tr = transcripcion(body)
             if tr:  # la de Teams descargada en Word: una transcripción más, con la fecha de su cabecera; sus
                 # imágenes son las fotos de los hablantes, no se guardan
                 body, detail = tr
-                body = re.sub(r"\n*_\[imagen [^\]\n]*\]_\n*", "\n\n", body)
                 shutil.rmtree(out_dir / "adjuntos" / fid, ignore_errors=True)
                 kind = "Transcripción"
                 fecha_cabecera = fecha_contenido(body) if not re.search(r"20\d{2}[-_]?\d{2}[-_]?\d{2}", path.name) else None

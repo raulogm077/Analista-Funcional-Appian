@@ -852,6 +852,18 @@ Se acepta si:
         ok("leer_fuentes.py: las imágenes de un Word, guardadas una vez en adjuntos/FU-xx/ y marcadas donde están",
            imgs == ["01.png"] and ant.count(f"_[imagen adjuntos/{an.name[:5]}/01.png") == 2
            and "1 imagen en adjuntos/" in ind, out + ant)
+        # El mismo diálogo exportado de tres formas (.vtt, .txt con el hablante en su línea, Word de Teams) queda igual
+        dialogo = [(f"00:00:0{k}", f"Persona {k % 2}", f"Frase {k}.") for k in range(6)]
+        (real / "f1.vtt").write_text("WEBVTT\n\n" + "".join(
+            f"{t}.000 --> {t}.900\n<v {q}>{x}</v>\n\n" for t, q, x in dialogo), encoding="utf-8")
+        (real / "f2.txt").write_text("".join(f"[{t}] {q}:\n{x}\n\n" for t, q, x in dialogo), encoding="utf-8")
+        crear_docx(real / "f3.docx", [y for t, q, x in dialogo for y in (f"{q}   {t[3:]}", x)])
+        c, out = corre(S / "leer_fuentes.py", real / "f1.vtt", real / "f2.txt", real / "f3.docx", "-o", real / "f-iguales")
+        cuerpos = [x.read_text(encoding="utf-8").split("---\n", 1)[-1].strip()
+                   for x in sorted((real / "f-iguales").glob("FU-*.md"))]
+        ok("leer_fuentes.py: toda transcripción, venga de .vtt, .txt o Word, queda en el mismo formato",
+           len(cuerpos) == 3 and len(set(cuerpos)) == 1 and cuerpos[0].startswith("[00:00:00] Persona 0: Frase 0."),
+           out + "\n=====\n".join(cuerpos))
         pr = next((real / "fuentes").glob("FU-*-proto.md"), None)
         prt = pr.read_text(encoding="utf-8") if pr else ""
         ok("leer_fuentes.py --una-fuente: los textos de pantalla de un prototipo en código, sin la librería ui/",
