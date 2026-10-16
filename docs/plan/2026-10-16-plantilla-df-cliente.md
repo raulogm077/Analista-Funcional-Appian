@@ -70,8 +70,9 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
   reconoce. Comprobar que no queda nada de ningún cliente (`pruebas/clientes.txt`, también dentro del `.docx`).
 - [ ] **T2. Plantilla de un cliente.** Cómo se crea en un proyecto (copia de la neutra cambiando solo logos, colores,
   letra y pie) y que el script la usa si existe; si no, la neutra con el color de `prototipo/brand-<id>.json`.
-- [ ] **T3. Añadir «2.6 Periodo de estabilización»** a la plantilla neutra, con sus textos de ejemplo. Su contenido se
-  acuerda con Yaroslav (ver «Abierto»).
+- [ ] **T3. Añadir «2.6 Periodo de estabilización»** a la plantilla neutra, con el texto que usa el equipo: «Teniendo en
+  cuenta que se trata de un proceso **[anual / mensual / diario…]** se establece un **período de estabilización de [X]
+  meses**.» La periodicidad y los meses salen de las fuentes; si no lo dicen, «pendiente de confirmar».
 
 ### Fase 2 · El DF del cliente como entregable
 
@@ -112,11 +113,39 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
     qué pasa al pulsarlo o cambiarlo, qué se ve si está vacío), con un ejemplo ficticio completo en vez del de un
     proyecto real;
   - una **lista de repaso** final para comprobar que no falta nada.
-- [ ] **T13. Lo que se añade o cambia respecto a la skill suelta**, con lo que pida Yaroslav. De partida: estado inicial
-  y pantalla vacía, paginación, modo lectura y edición con Guardar y Cancelar, tipos de control cerrados, búsqueda
-  libre, mensajes de error de validación, navegación entre pantallas y modales; la visibilidad por rol pasa de
-  «Reglas de Validación» a la matriz (2.4.1), como dice la plantilla; borrado con confirmación y texto literal; la
-  explicación manda sobre la captura.
+- [ ] **T13. Lo que se añade o cambia respecto a la skill suelta.** Sale de un DF real de Yaroslav que usó la skill y
+  corrigió a mano (fuera del repositorio; aquí solo los patrones):
+  - **Fuera lo que no aplica**: la skill suelta da por hecho que alguien explica la pantalla de viva voz («tu voz =
+    verdad»). Aquí la explicación puede venir de una transcripción, un correo, un documento o el chat; manda la fuente
+    más reciente, y la captura completa lo que nadie dijo.
+  - **Cada columna o campo**: nombre (las columnas de una tabla, en mayúsculas), qué representa, de dónde sale su valor
+    (elegido al crear, calculado, de datos maestros, heredado de otro registro), formato entre paréntesis
+    («(DD/MM/AAAA)», «(nombre y apellidos)»), qué se ve si está vacío («-») y qué pasa al pulsarlo (vínculo al registro,
+    descarga, copiar).
+  - **Cada filtro**: tipo y selección única o múltiple, de dónde salen las opciones y en qué orden, valor por defecto
+    («Todos»), qué muestra la tabla al seleccionar, la regla de «Todos» frente al resto, si se bloquea cuando solo hay
+    una opción, cómo se combinan y qué se ve sin resultados. La búsqueda: sobre qué campos (también los que no son
+    columna), coincidencia parcial o exacta, mayúsculas.
+  - **Ordenación por columna**, con su criterio (A-Z, fechas, números, proporciones) y cómo se trata el «-»; el orden
+    por defecto; que reordenar mantiene filtros y búsqueda; si ordena dentro de cada agrupación.
+  - **Cada validación de un campo de formulario**: obligatorio, longitud máxima, caracteres permitidos y, para cada
+    incumplimiento, su mensaje literal; al final, qué pasa si algo falla al guardar.
+  - **Botones con efecto y después**: Cancelar, la «X» y el botón principal, con lo que pasa tras guardar (se cierra,
+    se abre el registro nuevo, en qué estado queda); estados de un botón (inicial, en curso con indicador, disponible);
+    confirmaciones con su texto literal y sus botones, y variantes por caso.
+  - **Pantallas compuestas**: un registro con cabecera (chips de estado, botones de flujo, iconos de alertas, línea de
+    progreso), tarjetas, banner de estado y secciones desplegables (cuál se abre por defecto); un cuadro de mando con
+    secciones, tarjetas de cifras y gráficos (tipo, ejes, colores por valor, tooltip, valores a cero); un modal con
+    secciones desplegables o bloques que se repiten («Añadir…»). Cada parte se describe con su nombre, en orden.
+  - **Un modal que cambia según desde dónde se abre** (precargado y bloqueado desde otro registro): cada variante como un
+    caso, con lo que se precarga, lo que se puede editar y qué pasa al cancelar.
+  - **Exportaciones**: qué contiene el fichero (hojas, columnas, una fila por qué), qué filtros respeta y qué no.
+  - **Componentes comunes** que ya existen en otras aplicaciones del cliente (una bandeja de tareas, una tabla con
+    «Limpiar» y «Guardar»): se nombran y se dice que no se redefinen.
+  - **Referencias** siempre con la misma fórmula, «(se describe en la pantalla N)», y nunca «en la siguiente
+    diapositiva».
+  - **Visibilidad por rol**: el DF real dice en la pantalla qué botón o sección ve solo un rol, y remite a Roles y
+    Permisos; la plantilla dice que no va en la pantalla. Se decide con Yaroslav (ver «Abierto»).
 - [ ] **T14. Modo «Pantalla suelta»** con esta guía: la ficha en el formato del 2.3, en el chat y, si hay proyecto, en
   el DF del cliente.
 
@@ -149,9 +178,10 @@ registro y las lecciones en «Aprendizajes».
 
 ## Abierto
 
-- Qué contiene el **2.6 Periodo de estabilización** (por ejemplo: duración, quién da soporte y cómo se piden las
-  correcciones, qué cuenta como incidencia y cuándo se da por cerrado).
-- La lista de Yaroslav de lo que falta o cambia en la guía de pantallas (T13).
+- **Visibilidad por rol en la pantalla** (T13): una línea en la pantalla que remite a Roles y Permisos, como hace el DF
+  real, o nada en la pantalla, como dice la nota de la plantilla.
+- **«Búsqueda y Filtros» o «Filtros»**: el DF real usa «Filtros» cuando no hay búsqueda; la plantilla, siempre el
+  primero.
 
 ## 3. Aprendizajes
 
@@ -162,3 +192,8 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   `python` en vez de `python3`» y `CLAUDE.md` usa `python3`: aquí fallan los dos. → `siguiente-version.md`.
 - (16/10) Ya había un primer intento de este trabajo en un plugin aparte (0.7.0-beta.4) que no llegó al repositorio.
   Lo que se hace fuera del repositorio se pierde o se duplica: es lo que el `CLAUDE.md` quiere evitar.
+- (16/10) Un DF real de muchas pantallas muestra que la skill suelta se queda corta en pantallas compuestas (registro,
+  cuadro de mando, modal con secciones) y en validaciones de formulario (un mensaje por incumplimiento), y que da por
+  hecha una explicación de viva voz que en un proyecto casi nunca existe. → T13.
+- (16/10) Las correcciones a mano de un DF entregado son la mejor fuente para afinar la guía: dicen qué echó en falta
+  quien lo revisó.
