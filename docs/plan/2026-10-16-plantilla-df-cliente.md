@@ -65,7 +65,7 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
 
 ### Fase 1 · Plantilla universal
 
-- [ ] **T1. `assets/plantillas/df-cliente.docx` neutro** (hecho; falta verlo en PDF), a partir de la plantilla del equipo: sin las tres imágenes de
+- [ ] **T1. `assets/plantillas/df-cliente.docx` neutro** (hecho; Yaroslav lo revisa abriéndolo en Word: sin PDF, decidido el 16/10), a partir de la plantilla del equipo: sin las tres imágenes de
   marca, colores y tipos de letra neutros, encabezado y pie genéricos, textos de ejemplo entre corchetes que el script
   reconoce. Comprobar que no queda nada de ningún cliente (`pruebas/clientes.txt`, también dentro del `.docx`).
 - [ ] **T2. Plantilla de un cliente.** Cómo se crea en un proyecto (copia de la neutra cambiando solo logos, colores,
@@ -76,13 +76,13 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
 
 ### Fase 2 · El DF del cliente como entregable
 
-- [ ] **T4. `references/df-cliente-plantilla.md`**: para cada sección, qué es, para qué la lee el cliente, qué se
+- [x] **T4. `references/df-cliente-plantilla.md`**: para cada sección, qué es, para qué la lee el cliente, qué se
   escribe, de qué tipo de fuente suele salir y el formato exacto que lee el script, con un caso ficticio.
-- [ ] **T5. `assets/plantillas/df-cliente.md`**: el esqueleto que copia `proyecto.py iniciar`.
-- [ ] **T6. Del material al DF.** Cómo se construye el DF desde cero con todas las fuentes: leerlas todas antes de
+- [x] **T5. `assets/plantillas/df-cliente.md`**: el esqueleto que copia `proyecto.py iniciar`.
+- [x] **T6. Del material al DF.** Cómo se construye el DF desde cero con todas las fuentes: leerlas todas antes de
   escribir, en orden de fecha; qué sale de cada tipo (una transcripción, un correo, un documento del cliente, una
   captura, un diagrama, un funcional que ya exista) y qué se pregunta en vez de inventarse.
-- [ ] **T7. Iteración: una fuente nueva sobre un DF que ya existe.** La fuente se lee contra el DF; lo que cambia se
+- [x] **T7. Iteración: una fuente nueva sobre un DF que ya existe.** La fuente se lee contra el DF; lo que cambia se
   reescribe con la decisión nueva, aunque se hubiera aceptado antes; el informe de impacto dice qué cambia, de qué
   fuente sale y qué sustituye; la entrega siguiente sube la versión y añade su fila al control de cambios. Reutiliza
   `actualizacion.md` donde encaje, sin atar el DF al funcional.
@@ -183,8 +183,8 @@ registro y las lecciones en «Aprendizajes».
 
 ## Abierto
 
-- **¿Las pantallas en el índice?** Con el índice a tres niveles salen las áreas (`2.3.n`) y no cada pantalla. Se puede
-  ampliar a cuatro.
+- Ninguno. (El índice se queda en tres niveles, con las áreas y sin cada pantalla: puede haber muchas. Decidido por
+  Yaroslav el 16/10.)
 
 **Resultado de T0 (16/10).** `comprobar_plugin.py` y el selftest del analista, en verde (el selftest no prueba el
 Word: falta el paquete docx de Node). python-docx 1.2.0, sí; LibreOffice, no. La variante ata el DF del cliente al
@@ -215,4 +215,8 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   quien lo revisó.
 - (16/10) En un Windows corporativo, PowerShell puede estar en modo de lenguaje restringido: no deja usar Word por COM
   para sacar un PDF. Sin LibreOffice no hay forma de ver el DF como queda. El plugin ya lo trata como opcional («se
-  revisa a mano»); para iterar el DF del cliente, en la práctica es imprescindible. → T15 y `siguiente-version.md`.
+  revisa a mano»), y así se queda (ver el aprendizaje siguiente).
+- (16/10) El PDF no es un entregable: solo servía para ver el Word sin abrirlo. Quien revisa el DF lo abre en Word. No
+  hace falta instalar LibreOffice para trabajar el DF del cliente.
+- (16/10) `proyecto.py copia` y `version` cuentan con que el proyecto tiene `funcional.md`: un proyecto que solo lleva
+  el DF del cliente no puede usarlos hoy. → T8.
