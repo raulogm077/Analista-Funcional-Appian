@@ -45,6 +45,20 @@ inventario no va en el DF; sirve para el repaso del §9.
   demás pantallas la citan por ese nombre: «(se describe en la pantalla "Nueva solicitud")». Nunca por número.
 - Lo que se repite igual en varias pantallas se describe una vez (en «Pantallas comunes» o en la primera) y las demás
   lo citan: «mismo comportamiento que en la pantalla "Bandeja de solicitudes"».
+- **La ficha y la tarea son pantallas distintas.** La ficha de un registro es para consultarlo: se abre desde el
+  listado y no lleva acciones de flujo. Lo que se hace en un paso (editar los datos del paso, elegir la acción que lo
+  hace avanzar) va en la tarea, que se abre desde la bandeja de tareas. Una sección «Acciones» solo existe en la tarea.
+- **Los modales que siempre hay.** Aunque nadie los nombre en una reunión, cada pantalla con elementos que se crean,
+  cambian o borran lleva, cada uno con su pantalla:
+  - el alta de cada elemento de una tabla («Añadir comentario») y su edición si se puede editar («Editar comentario»);
+  - la confirmación de cada borrado («Eliminar documento», «Eliminar comentario»): qué se borra, qué consecuencia tiene y
+    sus botones;
+  - el detalle que abre cada vínculo de una tabla («Detalle de la consulta»);
+  - la edición de los datos propios de una fila que tiene los suyos (un lote, una línea), que no se mezclan con los del
+    registro («Editar lote hijo»);
+  - el paso de un documento de una sección a otra si pide datos («Mover a Documentación», con la etiqueta).
+  Si las fuentes no dan su texto, la pantalla existe igual y su texto queda «pendiente de confirmar». Mira también los
+  modales del prototipo o del concepto del cliente, si los hay: suelen estar todos.
 
 ## 4. Los apartados
 
@@ -224,6 +238,16 @@ Un catálogo para cuando aparece un tipo de pantalla, no una lista de pantallas 
 - **Registro**: la cabecera (título, chips de estado, botones de flujo, iconos, línea de progreso), las confirmaciones
   de cada botón de flujo, las tarjetas, el banner de estado (cancelado, finalizado) y las secciones, cada una con su
   pantalla si tiene tabla o formulario propios.
+  - La cabecera, estructurada: el tipo de registro (y el paso, en la tarea), el título con su estado al lado, una línea
+    con su descripción y una fila de datos clave (número, expediente, fechas, quién lo tiene); la línea de progreso,
+    debajo y centrada.
+  - Secciones que se abren y se cierran: cómo se ven cerradas y abiertas (icono de cada sección, marca de la abierta),
+    cuáles están abiertas al entrar en la ficha y en la tarea.
+  - Una sección con muchos datos se agrupa en bloques con su título (identificación, datos de otro sistema, importes,
+    fechas, datos propios, filas hijas, firmantes, cierre) y dice de dónde sale cada bloque (otro sistema o la propia
+    aplicación). Cada bloque, sus datos en columnas, etiqueta encima del valor.
+  - Las filas hijas con datos propios (lotes, líneas): un resumen encima de la tabla (cuántas hay, cuántas afectan, el
+    total), qué es común a todas y qué propio de cada una, y la edición de cada fila en su modal.
 - **Sección de un registro con tabla agrupada**: las agrupaciones, sus contadores y si se despliegan; filtros que
   afectan a todas por igual; orden dentro de cada agrupación.
 - **Cuadro de mando**: la barra de filtros que afecta a todo; cada sección con sus tarjetas y sus gráficos; las tablas
@@ -240,7 +264,8 @@ Un catálogo para cuando aparece un tipo de pantalla, no una lista de pantallas 
 
 1. **Nada sin describir.** Todo lo del inventario está en un apartado o en «pendiente de confirmar».
 2. **Todo borrado o cancelación pide confirmación**, con su texto literal y sus botones, en Reglas de Validación. Si
-   no se sabe el texto, se pregunta: un borrado no se cierra sin su confirmación.
+   no se sabe el texto, se pregunta: un borrado no se cierra sin su confirmación. La confirmación de un borrado es un
+   modal con su propia pantalla («Eliminar documento»), como los demás que siempre hay (§3).
 3. **Un modal es otra pantalla.** La que lo abre dice qué botón lo abre y su nombre; su contenido va en la suya.
 4. **Quién ve qué, solo en Roles y Permisos (2.4.1).** Las pantallas describen todo lo que existe (todos los botones,
    todas las secciones) y no dicen qué rol lo ve; la nota fija de la plantilla lo recuerda. Cada acción de la pantalla
@@ -284,6 +309,10 @@ Antes de cerrar una pantalla, con el inventario del §2:
 - [ ] Están los mensajes de éxito y qué pasa si algo falla al guardar.
 - [ ] Ninguna pantalla dice qué rol ve qué; cada acción está en la matriz de 2.4.1.
 - [ ] Cada modal tiene su pantalla y se cita por su nombre.
+- [ ] Están los modales que siempre hay (§3): alta y edición de cada tabla, confirmación de cada borrado, detalle de
+      cada vínculo, edición de las filas con datos propios.
+- [ ] La ficha no tiene acciones de flujo; la sección de acciones está solo en la tarea, que se abre desde la bandeja.
+- [ ] Una sección con muchos datos está agrupada en bloques con título y su origen.
 
 Lo que falte va a `df-cliente-pendientes.md`, en una pregunta cerrada: «¿Qué mensaje se muestra si se intenta enviar
 sin espacio?», «¿La búsqueda distingue mayúsculas?», «¿Qué columnas se pueden ordenar?».

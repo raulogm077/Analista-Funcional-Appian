@@ -79,6 +79,9 @@ Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no en
   inventario (las pantallas de 2.3 por nombre, las actividades de 2.2, la matriz de 2.4.1, los pendientes). Y el DF
   describe las secciones de un registro como desplegables editables, como las piden algunos clientes, mientras la guía
   del prototipo pide vistas de solo lectura con diálogos: decidir cuál manda o cómo se dice en el DF.
+- `appian-prototipos`: un helper de secciones desplegables como las de los BPM de algunos clientes (tarjeta con icono,
+  chevron y, abierta, la barra decorativa a la izquierda), que en el caso real se hizo en el script del proyecto con
+  dos tarjetas por sección y una variable por sección; y una cabecera de registro estructurada con el hito centrado.
 
 ## Menores
 

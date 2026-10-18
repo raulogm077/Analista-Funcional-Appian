@@ -288,3 +288,9 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   avanzada plegable): conviene escribir las pantallas del DF ya con esas reglas, o hacer el prototipo antes de cerrar 2.3.
 - (16/10) Cuando el cliente trabaja con secciones desplegables en sus otros BPM, se mantienen aunque la guía del
   prototipo pida vistas: se dice en el `$uxIgnore` de cada sección y el validador no avisa.
+- (18/10) Revisión del prototipo por Yaroslav: faltaban modales que el concepto del cliente tenía y que no salen en
+  ninguna reunión (la confirmación de borrar un documento o un comentario, el alta y la edición de un comentario, el
+  detalle de una consulta o de una comunicación); la sección Acciones estaba también en la ficha, cuando solo va en la
+  tarea (se abre desde la bandeja); la información básica, una lista larga sin agrupar; los lotes hijo, sin resumen ni
+  edición propia. Pasa a la guía de pantallas como «los modales que siempre hay», «la ficha y la tarea son pantallas
+  distintas» y cómo se agrupa una sección con muchos datos.
