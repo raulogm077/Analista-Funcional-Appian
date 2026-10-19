@@ -58,7 +58,7 @@ def test_help_y_nombre_guion(capsys):
 def test_no_apps_explica_filtro(capsys):
     async def nada(*_):
         return []
-    ex = SimpleNamespace(load_catalog=nada, list_apps=nada,
+    ex = SimpleNamespace(load_catalog=nada, list_apps=nada, check_interrupted=lambda: None,
                          tools=[SimpleNamespace(scope="env", toks=["list", "application"], allowed=False,
                                                 name="listApplications", safety_reason="Excluida por --only.")])
     with pytest.raises(SystemExit) as err:

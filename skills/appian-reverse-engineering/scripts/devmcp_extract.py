@@ -102,9 +102,25 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def terminal_auth_error(error: str | None) -> bool:
+    """Errores de acceso o login, no pruebas de que un objeto falte. Formas del cliente HTTP y del login browser."""
+    return bool(re.search(
+        r"(?i)\bHTTP(?:/\d(?:\.\d)?)?\s*(?:status|error)?\s*[:=]?\s*[\"']?(?:401|403)\b"
+        r"|\bstatus(?:_code| code)?\s*[:=]\s*(?:401|403)\b"
+        r"|\b(?:401\s+unauthori[sz]ed|403\s+forbidden)\b"
+        r"|\bTargetClosedError\b|Target page, context or browser has been closed"
+        r"|Browser authentication timed out|Authentication failed: expected user"
+        r"|Browser login appeared to succeed but no Appian session cookies",
+        error or ""))
+
+
 def is_transient(error: str | None) -> bool:
-    return bool(re.search(r"(?i)timeout|timed out|\b50[0-9]\b|temporar|connection|reset|unavailable|rate limit|429",
-                          error or ""))
+    return not terminal_auth_error(error) and bool(re.search(
+        r"(?i)timeout|timed out|\b50[0-9]\b|temporar|connection|reset|unavailable|rate limit|429", error or ""))
+
+
+class ExtractionInterrupted(RuntimeError):
+    pass
 
 
 def eprint(*a):
@@ -333,6 +349,8 @@ class CallResult:
     error: str | None = None
     pages: int = 1
     seconds: float = 0.0
+    attempted: bool = True
+    interrupted: bool = False
 
 
 def parse_result(res) -> tuple[bool, Any, str | None]:
@@ -671,6 +689,11 @@ class Extractor:
         self.tools: list[ToolInfo] = []
         self.trusted = False
         self.catalog = []
+        self.interruption: dict | None = None
+
+    def check_interrupted(self):
+        if self.interruption:
+            raise ExtractionInterrupted(self.interruption["error"])
 
     # ---- catalogo
     async def load_catalog(self, type_phrases=None):
@@ -739,6 +762,8 @@ class Extractor:
                 break
             r2 = await self.call_with_retry(ti.name, nxt)
             if not r2.ok:
+                if r2.interrupted:
+                    res.ok, res.error, res.interrupted = False, r2.error, True
                 break
             _, lst, _ = find_primary_list(r2.data)
             new = [x for x in (lst or []) if json.dumps(x, sort_keys=True, default=str) not in seen]
@@ -758,8 +783,20 @@ class Extractor:
         res = CallResult(False, error="sin ejecutar")
         for attempt in range(self.retries + 1):
             async with self.sem:
+                # Se comprueba bajo el mismo semaforo que protege las llamadas: la cola no arranca tras el fallo.
+                if self.interruption:
+                    if attempt:
+                        res.interrupted = True
+                        return res   # ya hubo un intento; conservarlo, sin repetirlo
+                    return CallResult(False, error=self.interruption["error"], attempted=False, interrupted=True)
                 res = await self.sess.call(name, args)
+                if not res.ok and terminal_auth_error(res.error):
+                    res.interrupted = True
+                    if self.interruption is None:
+                        self.interruption = {"tool": name, "error": res.error, "at": now_iso()}
             if res.ok:
+                return res
+            if self.interruption:
                 return res
             if not is_transient(res.error) or attempt == self.retries:
                 return res
@@ -795,7 +832,8 @@ class Extractor:
                     self.stats[ti.name]["cached"] += 1
                     self.reusada(f, meta)
                     return CallResult(True, cached.get("response"), None, meta.get("pages", 1))
-                if (not meta.get("transient", True) and not self.retry_failed) or fuera:
+                if ((not meta.get("transient", True) and not self.retry_failed
+                     and not meta.get("interrupted") and not terminal_auth_error(meta.get("error"))) or fuera):
                     self.stats[ti.name]["cachedFailed"] += 1
                     self.reusada(f, meta)
                     self.errors.append(error_de(ti, scope, obj, meta.get("error")))   # el informe, igual al retomar
@@ -810,6 +848,9 @@ class Extractor:
             self.stats[ti.name]["notApplicable"] += 1
             return CallResult(False, error="No aplicable a este objeto.")
         res = await self.call_paginated(ti, args)
+        if not res.attempted:
+            self.stats[ti.name]["notAttempted"] += 1
+            return res   # no cachear como fallo de objeto una llamada que no se hizo
         self.stats[ti.name]["ok" if res.ok else "failed"] += 1
         if not res.ok:
             self.errors.append(error_de(ti, scope, obj, res.error))
@@ -833,12 +874,23 @@ class Extractor:
         meta = {"tool": ti.name, "args": args, "scope": scope, "role": ti.role, "ok": res.ok,
                 "error": res.error, "transient": bool(not res.ok and is_transient(res.error)),
                 "pages": res.pages, "fetchedAt": now_iso(), "seconds": round(res.seconds, 2)}
+        if res.interrupted:
+            meta["interrupted"] = True
         if obj:
             meta.update({"objectUuid": obj["uuid"], "objectName": obj.get("name"), "objectType": obj["type"],
                          "mcpType": obj.get("mcpType")})
         f.parent.mkdir(parents=True, exist_ok=True)
         self.escritas.add(f)
-        escribe(f, json.dumps({"_meta": meta, "response": res.data}, ensure_ascii=False, indent=1, default=str))
+        data = {"_meta": meta, "response": res.data}
+        if res.interrupted and f.exists():
+            try:
+                anterior = json.loads(f.read_text(encoding="utf-8"))
+                correcta = anterior if anterior.get("_meta", {}).get("ok") else anterior.get("previousSuccessfulResponse")
+                if correcta:
+                    data["previousSuccessfulResponse"] = correcta  # evidencia anterior, nunca respuesta actual
+            except (OSError, ValueError):
+                pass
+        escribe(f, json.dumps(data, ensure_ascii=False, indent=1, default=str))
 
     # ---- aplicaciones y objetos
     async def env_calls(self) -> dict[str, CallResult]:
@@ -959,6 +1011,8 @@ class Extractor:
         probe = objs[: self.policy.probe]
         rest = objs[self.policy.probe:]
         results = await asyncio.gather(*(self.run_call(ti, "object", obj=o) for o in probe))
+        if self.interruption:
+            return   # no confundir autenticacion interrumpida con tipo no admitido por la herramienta
         if probe and not any(r.ok for r in results):
             if rest:
                 self.disabled.append({"tool": ti.name, "type": typ, "skippedCalls": len(rest),
@@ -1025,6 +1079,7 @@ async def aplicacion_de(ex: Extractor, args, de_una_vez: bool = False) -> dict:
     """Catalogo -> la aplicacion de --app, entre las del entorno (con `de_una_vez`, en una sola pagina si se puede)."""
     await ex.load_catalog()
     apps = await ex.list_apps(de_una_vez)
+    ex.check_interrupted()
     if not apps:
         excluded = [f"{t.name}: {t.safety_reason}" for t in ex.tools
                     if t.scope == "env" and {"application", "app"}.intersection(t.toks) and not t.allowed]
@@ -1047,6 +1102,7 @@ async def prepare(ex: Extractor, args, app: dict | None = None) -> tuple[dict, l
     cargado y la aplicacion resuelta), desde las llamadas de app."""
     app = app or await aplicacion_de(ex, args)
     app_results = await ex.app_calls(app["uuid"])
+    ex.check_interrupted()
     app_obj, objects = ex.harvest_objects(app["uuid"], app_results)
     app_obj["name"] = app_obj["name"] or app["name"]
     app_obj["prefix"] = app_obj.get("prefix") or app.get("prefix")
@@ -1055,6 +1111,7 @@ async def prepare(ex: Extractor, args, app: dict | None = None) -> tuple[dict, l
     extra = [t for t in ex.usable("app") if t.name not in app_results]
     if extra:
         more = await asyncio.gather(*(ex.run_call(t, "app", app_uuid=app["uuid"]) for t in extra))
+        ex.check_interrupted()
         app_results.update({t.name: r for t, r in zip(extra, more)})
         app_obj2, objects = ex.harvest_objects(app["uuid"], app_results)
         for k, v in app_obj2.items():
@@ -1073,6 +1130,7 @@ async def solo_lo_esperado(ex: Extractor, args, tipos: dict[str, str], auxiliare
     listas = [t for t in ex.usable("app") if t.role == "other"
               and set(match_types(t.toks[1:], sin_app) or ["?"]) <= set(tipos.values()) | set(auxiliares)]
     res = await asyncio.gather(*(ex.run_call(t, "app", app_uuid=app["uuid"]) for t in listas))
+    ex.check_interrupted()
     app_obj, objects = ex.harvest_objects(app["uuid"], {t.name: r for t, r in zip(listas, res)})
     por = resolver(list(tipos), objects)
     if len(por) < len(tipos) or any(o["type"] != tipos[p] for p, o in por.items()):
@@ -1134,6 +1192,26 @@ def server_info(choice: ServerChoice) -> dict:
     return {"configFile": choice.source, "serverName": choice.name, "url": url,
             "authMethod": env.get("LCP_AUTH_METHOD", "browser"),
             "envKeys": sorted(env.keys()), "toolModeForced": "readonly"}
+
+
+def interrupcion_de_lectura(destino: Path, ex: Extractor) -> int:
+    """Conserva el resultado anterior y marca que la nueva lectura no permite compararlo."""
+    marca = destino.with_name(destino.stem + ".interrumpido" + destino.suffix)
+    write_json(marca, {"status": "partial", "generatedAt": now_iso(), "interruption": ex.interruption,
+                       "previousResult": str(destino), "previousResultIsCurrent": False})
+    eprint(f"Lectura interrumpida: {ex.interruption['error']}. No se deducen objetos ausentes ni retirados. "
+           f"El resultado anterior se conserva, pero no es el de esta lectura. Detalle: {marca}")
+    return EXIT_START
+
+
+def supera_interrupcion(marca: Path):
+    """Una lectura completa posterior deja constancia de que el marcador parcial ya no manda."""
+    if marca.exists():
+        try:
+            previo = json.loads(marca.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        write_json(marca, {**previo, "status": "superseded", "supersededAt": now_iso()})
 
 
 # --------------------------------------------------------------------------- subcomandos
@@ -1204,6 +1282,16 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         return EXIT_APP
     try:
         app_obj, objects, groups = await prepare(ex, args)
+    except ExtractionInterrupted:
+        # La lista puede estar incompleta: no reemplazar _objects ni deducir objetos ausentes.
+        report = {"status": "partial", "startedAt": inicio, "durationSeconds": round(time.monotonic() - t0, 1),
+                  "interruption": ex.interruption, "objectListComplete": False,
+                  "toolsUsed": usadas(ex), "callStats": {k: dict(v) for k, v in sorted(ex.stats.items())}}
+        destino = work_dir(out, crear=True) / "extraction_interrupted.json"
+        write_json(destino, report)
+        eprint(f"Extraccion interrumpida al listar: {ex.interruption['error']}. No se deducen objetos ausentes. "
+               f"Respuestas conservadas; detalle: {destino}")
+        return EXIT_START
     except SystemExit as se:
         return int(se.code)
     if ex.solo is not None:
@@ -1233,6 +1321,7 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
     await ex.env_calls()
     await asyncio.gather(*(ex.run_group(ti, t, objs) for ti, t, objs in groups))
     report = {
+        "status": "partial" if ex.interruption else "complete",
         "startedAt": inicio,
         "durationSeconds": round(time.monotonic() - t0, 1),
         "server": server_info(choice), "trustedMode": ex.trusted,
@@ -1247,6 +1336,8 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         "disabledAfterProbe": ex.disabled,
         "errors": ex.errors[:300], "errorCount": len(ex.errors),
     }
+    if ex.interruption:
+        report.update(interruption=ex.interruption, objectListComplete=True)
     if ex.solo is not None:
         report["solo"] = sorted(o.get("name") or o["uuid"] for o in objects if o["uuid"] in ex.solo)
         try:   # lo desactivado en la extracción completa sigue valiendo para los objetos que no se piden
@@ -1260,6 +1351,12 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         report = {"startedAt": previo.get("startedAt") or inicio, "reextraidoEn": inicio,
                   **{k: v for k, v in report.items() if k != "startedAt"}}
     write_json(interm / "extraction_report.json", report)
+    if ex.interruption:
+        eprint(f"Extraccion parcial, interrumpida por acceso o login: {ex.interruption['error']}. "
+               f"No se lanzan llamadas nuevas; las ya iniciadas pueden haber terminado. "
+               f"Respuestas conservadas; informe: {interm / 'extraction_report.json'}")
+        return EXIT_START
+    supera_interrupcion(interm / "extraction_interrupted.json")
     escribe(interm / "LEEME.md",
             "# Extracción\n\nRespuestas del Dev MCP de la aplicación, tal cual. Es la fuente de la documentación de la "
             "carpeta superior; para consultar un objeto, su ficha de `anexo/`.\n")
@@ -1726,6 +1823,7 @@ async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: l
     si no la hay, la definición; sin ninguna de las dos, «accionesNoDisponibles»). Lo compara diferencias(). Con
     `ligero` (una issue sin pruebas), solo lo que se compara: sin la última modificación y sin la definición si lo
     esperado no nombra campos (salvo para leer las acciones, si no hay herramienta que las liste)."""
+    ex.check_interrupted()
     esperado = esperado or {}
     por = resolver(pedidos, objects)
     usables = ex.usable("object")
@@ -1804,9 +1902,11 @@ async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: l
             r["errores"] = errores
         return r
 
+    hechos = list(await asyncio.gather(*(uno(p) for p in pedidos)))
+    ex.check_interrupted()
     return {"aplicacion": {"nombre": app_obj.get("name"), "prefijo": app_obj.get("prefix"), "uuid": app_obj.get("uuid")},
             "conHistorialDeVersiones": bool(versiones),
-            "objetos": list(await asyncio.gather(*(uno(p) for p in pedidos))),
+            "objetos": hechos,
             "faltan": [p for p in pedidos if p not in por]}
 
 
@@ -2058,6 +2158,9 @@ async def cmd_verificar(args) -> int:
                     resultado["pruebas"] = (
                         {"ejecutadas": False, "motivo": "la issue no cambia criterios ni reglas"} if sin_pruebas else
                         await pruebas_de(ex, list(resolver(list(esperado), objects).values()), app_obj.get("uuid")))
+                ex.check_interrupted()
+        except ExtractionInterrupted:
+            return interrupcion_de_lectura(Path(args.out).resolve(), ex)
         except SystemExit as se:
             return int(se.code)
         except Exception as ex_:
@@ -2075,6 +2178,7 @@ async def cmd_verificar(args) -> int:
                  **({"issue": issue} if issue is not None else {}), **resultado}
     destino = Path(args.out).resolve()
     write_json(destino, resultado)
+    supera_interrupcion(destino.with_name(destino.stem + ".interrumpido" + destino.suffix))
     if args.json:
         print(json.dumps(resultado, ensure_ascii=False, indent=1))
     existen = sum(1 for o in resultado["objetos"] if o["existe"])
@@ -2110,6 +2214,9 @@ async def cmd_regresion(args) -> int:
                 run, t0 = ejecutores(ex), time.monotonic()
                 con = [o for o in objects if o["type"] in run]
                 hechos = list(await asyncio.gather(*(ejecuta(ex, run[o["type"]], o) for o in con)))
+                ex.check_interrupted()
+        except ExtractionInterrupted:
+            return interrupcion_de_lectura(Path(args.out).resolve(), ex)
         except SystemExit as se:
             return int(se.code)
         except Exception as ex_:
@@ -2125,6 +2232,7 @@ async def cmd_regresion(args) -> int:
                          **cuenta(hechos), porObjeto=hechos)
     destino = Path(args.out).resolve()
     write_json(destino, resultado)
+    supera_interrupcion(destino.with_name(destino.stem + ".interrumpido" + destino.suffix))
     if not run:
         print(f"Regresion sin hacer: {resultado['motivo']}. Detalle: {destino}")
         return EXIT_SIN_PRUEBAS
@@ -2178,6 +2286,7 @@ def cambio(antes: dict, ahora: dict) -> bool:
 async def deriva_de(ex: Extractor, guardada: dict, objects: list[dict], pedidos: list[str],
                     ignorar: dict, raw: Path, usadas: set[str] | None) -> dict:
     """Cambiados, nuevos y retirados frente al as-is. Los de --ignorar modificados después de su fecha van aparte."""
+    ex.check_interrupted()
     base = {o["uuid"]: o for o in guardada.get("objects", [])}
     ahora = {o["uuid"]: o for o in objects}
     if pedidos:
@@ -2194,6 +2303,7 @@ async def deriva_de(ex: Extractor, guardada: dict, objects: list[dict], pedidos:
         respuestas = await asyncio.gather(*(llama(ex, versiones, ahora[u]) for u in orden))
     else:
         respuestas = [([], [])] * len(orden)
+    ex.check_interrupted()
     nuevos, cambiados, ignorados, sin_dato = [], [], [], []
     for u, (datos, errores) in zip(orden, respuestas):
         o = ahora[u]
@@ -2261,6 +2371,8 @@ async def cmd_deriva(args) -> int:
                 _, objects, _ = await prepare(ex, args)
                 resultado = await deriva_de(ex, guardada, objects, pedidos, ignorar, interm / "mcp_raw",
                                             bm.herramientas_usadas(report))
+        except ExtractionInterrupted:
+            return interrupcion_de_lectura(salida / "datos" / "deriva.json", ex)
         except SystemExit as se:
             eprint(f"La aplicacion del as-is ({app.get('name')}) no esta visible en el entorno.")
             return int(se.code)
@@ -2271,6 +2383,7 @@ async def cmd_deriva(args) -> int:
                  "asIs": {"extraidoEn": report.get("startedAt")}, **resultado}
     destino = salida / "datos" / "deriva.json"
     write_json(destino, resultado)
+    supera_interrupcion(destino.with_name(destino.stem + ".interrumpido" + destino.suffix))
     if args.json:
         print(json.dumps(resultado, ensure_ascii=False, indent=1))
     n = lambda k: len(resultado[k] or [])  # noqa: E731
