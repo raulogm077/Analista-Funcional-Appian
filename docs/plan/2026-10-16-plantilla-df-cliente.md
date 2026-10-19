@@ -68,7 +68,7 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
 
 ### Fase 1 · Plantilla universal
 
-- [ ] **T1. `assets/plantillas/df-cliente.docx` neutro** (hecho; Yaroslav lo revisa abriéndolo en Word: sin PDF, decidido el 16/10), a partir de la plantilla del equipo: sin las tres imágenes de
+- [x] **T1. `assets/plantillas/df-cliente.docx` neutro** (hecho; Yaroslav lo revisa abriéndolo en Word: sin PDF, decidido el 16/10), a partir de la plantilla del equipo: sin las tres imágenes de
   marca, colores y tipos de letra neutros, encabezado y pie genéricos, textos de ejemplo entre corchetes que el script
   reconoce. Comprobar que no queda nada de ningún cliente (`pruebas/clientes.txt`, también dentro del `.docx`).
 - [x] **T2. Plantilla de un cliente.** Cómo se crea en un proyecto (copia de la neutra cambiando solo logos, colores,
@@ -95,11 +95,11 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
 
 ### Fase 3 · Tono y descripción de cada sección
 
-- [ ] **T9. Guía de tono por sección**, a partir de los ejemplos del PowerPoint reescritos con un caso ficticio: regla
+- [x] **T9. Guía de tono por sección**, a partir de los ejemplos del PowerPoint reescritos con un caso ficticio: regla
   común (título en mayúsculas, cuándo aplica, qué pasa, excepciones), ficha de actividad (entrada y salida con sus IDs,
   estados por acción «Acción "X" → Estado / Subestado», «N/A» cuando no aplica), roles («Dónde se define»), matriz
   (agrupada por pantalla o sección, con notas con asterisco) y notificaciones (asunto con variables, cuerpo literal).
-- [ ] **T10. Revisar la guía con Yaroslav** con una sección de cada tipo escrita con ella.
+- [x] **T10. Revisar la guía con Yaroslav** con una sección de cada tipo escrita con ella.
 
 ### Fase 4 · Descripción de pantallas universal
 
@@ -171,7 +171,7 @@ Confirmadas por Yaroslav el 16 de octubre de 2026, salvo las marcadas «propuest
 Fuera del repositorio, con el plugin cargado desde esta carpeta (`claude --plugin-dir`). Cada vuelta, una fila en el
 registro y las lecciones en «Aprendizajes».
 
-- [ ] **T17. Primera pasada**: con las transcripciones y artefactos que pase Yaroslav de un proyecto, el DF del cliente
+- [x] **T17. Primera pasada**: con las transcripciones y artefactos que pase Yaroslav de un proyecto, el DF del cliente
   desde cero y en Word. Revisar el PDF juntos: qué falta, qué sobra, qué está mal contado, qué pantalla no está entera.
 - [ ] **T18. Iteración**: pasar las fuentes una a una, como llegarían en el proyecto, y comprobar que cada una reescribe
   lo que cambia (también lo aceptado antes) y que el control de cambios lo recoge.
