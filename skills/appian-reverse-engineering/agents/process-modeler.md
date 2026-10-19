@@ -82,6 +82,8 @@ Si `crear` o `actualizar` terminan con código 2 y «sin PNG», no hay navegador
 
 ## Documentos
 
+Si una secuencia se repite 3 veces o más, descríbela una vez y añade una tabla de una fila por repetición, con el código del diagrama y el `id` de cada nodo. Todos los nodos siguen citados, sin repetir la explicación.
+
 - **`<slug>.md`**, uno por process model, con `pm-template.md`. Incrusta la imagen (si va en tramos, una por tramo y en orden, cada una con los pasos que cubre) con los enlaces al `.drawio` y al `.bpmn`; sin imagen, la frase de la plantilla. Cada evidencia enlaza la ficha del anexo (`../anexo/processModel/<slug>.md`). El diagrama se llama «Diagrama del proceso». En el paso a paso cada nodo se cita como `nodes[id=N]` y con su código en el diagrama (`ACT-`, `GW-`, `EV-`).
 - **`indice.md`** con su plantilla: catálogo de todos los procesos (≤ 8 columnas; «Hallazgos» con los IDs H-PRO de cada uno; «Crítico» de `criticality.critical`).
 - **Mapa de procesos** `<salida>/diagrams/mapa-procesos.mmd` (`mermaid-rules.md`, «Mapa de procesos»): un nodo por process model (con su forma de inicio en la etiqueta si cabe) y una flecha por arista `subProcess` o `startProcess` de `graph.json`. Más de 30 nodos: solo los procesos que se relacionan con otro, y el resto queda en el catálogo. Píntalo con `python3 <diagramas>/scripts/mermaid.py <salida>/diagrams/mapa-procesos.mmd --svg` (`.png` y `.svg`; sin navegador sale con 2 y el índice lleva el bloque mermaid). Si ningún proceso lanza a otro, no hay mapa: el índice va sin «Vista» y lo dice en el TL;DR.

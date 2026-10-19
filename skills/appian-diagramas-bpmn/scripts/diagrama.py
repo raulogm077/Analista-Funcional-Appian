@@ -85,8 +85,7 @@ def _escribir_json(proc, ruta, drawio=None, automatica=False):
     datos = _limpio(proc)
     if drawio is not None:
         datos["colocacion"] = {"modo": "automatica", "huella": dm.Fichero(str(drawio)).huella()} if automatica else {"modo": "manual"}
-    with open(ruta, "w", encoding="utf-8", newline="\n") as f:  # con \n en cualquier sistema
-        f.write(_json_compacto(datos))
+    dm.escribir_texto(ruta, _json_compacto(datos))
 
 
 def _rutas(drawio):

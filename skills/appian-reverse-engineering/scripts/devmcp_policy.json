@@ -229,7 +229,12 @@
     "constant": ["constant"],
     "group": ["group"],
     "connectedSystem": ["connected system"],
-    "aiAgent": ["ai agent"],
+    "aiAgent": ["ai agent", "agent"],
+    "aiSkill": ["ai skill"],
+    "package": ["package"],
+    "portal": ["portal"],
+    "release": ["release"],
+    "roboticTask": ["robotic task"],
     "expressionRule": [
       "freeform rule",
       "expression rule",

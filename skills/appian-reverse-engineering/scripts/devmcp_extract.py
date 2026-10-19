@@ -900,7 +900,12 @@ class Extractor:
                 if u == app_uuid:
                     continue
                 mcp_type = pick(it, TYPE_KEYS)
-                ctype = self.policy.canon_type(mcp_type) or self.policy.canon_type(ctx) or tool_type or "unknown"
+                # Una lista específica de objetos manda sobre `type`: en constantes es el tipo del valor.
+                context_type = self.policy.phrase_to_type.get(" ".join(tokens(ctx or "")))
+                listed_types = match_types(ti.toks[1:], {k: v for k, v in self.policy.syn.items()
+                                                        if k != "application"}) if ti else []
+                specific_type = listed_types[0] if len(listed_types) == 1 else None
+                ctype = context_type or specific_type or self.policy.canon_type(mcp_type) or tool_type or "unknown"
                 cur = objs.get(u)
                 if cur is None:
                     cur = objs[u] = {"uuid": u, "name": pick(it, NAME_KEYS), "type": ctype,
@@ -1013,6 +1018,10 @@ async def aplicacion_de(ex: Extractor, args, de_una_vez: bool = False) -> dict:
     await ex.load_catalog()
     apps = await ex.list_apps(de_una_vez)
     if not apps:
+        excluded = [f"{t.name}: {t.safety_reason}" for t in ex.tools
+                    if t.scope == "env" and {"application", "app"}.intersection(t.toks) and not t.allowed]
+        eprint("No se obtuvo la lista de aplicaciones." + (" " + "; ".join(excluded) if excluded else
+               " Comprueba las respuestas de la lista, la conexión y los permisos del usuario."))
         raise SystemExit(EXIT_NO_APPS)
     app, msg = resolve_app(apps, args.app)
     if not app:

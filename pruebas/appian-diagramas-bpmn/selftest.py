@@ -1133,7 +1133,8 @@ def tramos(tmp, con_png=True):
         sale = next((a for s, a in aristas if s == f["de"] and a and re.fullmatch(r"ENL-\d+-S", a)
                      and (a[:-1] + "E", f["a"]) in aristas), None)
         if sale is None or pagina_de.get(sale) != pagina_de[f["de"]] or pagina_de.get(sale[:-1] + "E") != pagina_de[f["a"]] \
-                or f"tramo {pagina_de[f['a']]}" not in texto.get(sale, ""):
+                or f"tramo {pagina_de[f['a']]}" not in texto.get(sale, "") \
+                or f"{f['de']} — " not in texto.get(sale[:-1] + "E", ""):
             mal.append(f"{f['de']} → {f['a']}")
     enlaces = [cid for cid in pagina_de if re.fullmatch(r"ENL-\d+-[SE]", cid)]
     vuelta = next(f for f in proc["flujos"] if f.get("etiqueta") == "Rechazado")
@@ -1232,6 +1233,31 @@ def tramos(tmp, con_png=True):
           + ", ".join(hechos))
 
 
+def finales_conservados(tmp):
+    import drawio_modelo as dm
+    from texto import escribir
+    env = entorno(sin_navegador=True)
+    d = tmp / "prueba.drawio"
+    run("crear", EJEMPLO, "-o", d, esperado=2, env=env)
+    run("bpmn", d, env=env)
+    for salto in (b"\r\n", b"\n"):
+        rutas = [d, d.with_suffix(".json"), d.with_suffix(".bpmn")]
+        for p in rutas:
+            p.write_bytes((p.read_bytes().replace(b"\r\n", b"\n").rstrip(b"\n") + b"\n").replace(b"\n", salto))
+        run("actualizar", d, EJEMPLO, esperado=2, env=env)
+        run("bpmn", d, env=env)
+        # SVG y escritura JSON directa usan el mismo contrato, sin necesitar navegador.
+        svg = tmp / "prueba.svg"
+        svg.write_bytes(b"<svg>" + salto + b"</svg>" + salto)
+        escribir(svg, "<svg>\n<g/>\n</svg>\n")
+        js = tmp / "directo.json"
+        js.write_bytes(b"{}" + salto)
+        dm.guardar_json({"a": 1}, js)
+        rutas += [svg, js]
+        malos = [p.name for p in rutas if (b"\r\n" in p.read_bytes()) != (salto == b"\r\n") or b"\r\r\n" in p.read_bytes()]
+        check(not malos, f"finales de línea: actualizar y exportar conservan {salto!r}, también con provisional: {malos}")
+
+
 def g3(tmp):
     """Lo de la 0.7.0-beta.2 (G3) que no necesita navegador: la nota y la etiqueta de su puerta, el .drawio.tmp, el error
     suelto, la holgura de las etiquetas y las filas por capas, el temporizador que interrumpe, los avisos y el fichero de
@@ -1239,7 +1265,7 @@ def g3(tmp):
     for nombre, prueba in (("nota", lambda t: nota_y_etiqueta(t, entorno(sin_navegador=True))), ("nota a mano", nota_a_mano),
                            ("provisional", provisional),
                            ("error suelto", error_suelto), ("holgura", holgura), ("interrumpe", interrumpe),
-                           ("avisos", avisos), ("cambios", cambios_temporales)):
+                           ("avisos", avisos), ("cambios", cambios_temporales), ("finales", finales_conservados)):
         (tmp / nombre).mkdir(parents=True)
         prueba(tmp / nombre)
 

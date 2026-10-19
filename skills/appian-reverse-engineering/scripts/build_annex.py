@@ -32,6 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from rutas import escribe, work_dir  # noqa: E402
+from build_model import localized  # noqa: E402
 
 MARCA = "<!-- anexo generado por build_annex.py -->"
 CODE_HINT = re.compile(r"a!|rule!|cons!|local!|ri!|fv!|pv!|recordType!|\bif\(|=\s*\{")
@@ -140,7 +141,7 @@ def load_node_names(raw: Path) -> None:
             if isinstance(v, list):
                 for it in v:
                     if isinstance(it, dict) and it.get("id") and (it.get("name") or it.get("label")):
-                        NODE_NAMES[str(it["id"])] = str(it.get("name") or it.get("label"))
+                        NODE_NAMES[str(it["id"])] = str(localized(it.get("name") or it.get("label")))
 
 
 def node_table(defn) -> list[str]:
@@ -155,7 +156,7 @@ def node_table(defn) -> list[str]:
         if isinstance(conns, list):
             conns = ", ".join(str(c.get("target", c.get("id", c)) if isinstance(c, dict) else c) for c in conns)
         pick = lambda *ks: next((n[k] for k in ks if n.get(k) not in (None, "")), "")  # noqa: E731
-        name = str(pick("name", "objectName", "label")).replace("|", "/")
+        name = str(localized(pick("name", "objectName", "label"))).replace("|", "/")
         tipo = str(pick("type", "objectType", "nodeType"))
         tipo_txt = f"{NODE_NAMES[tipo]} (`{tipo}`)" if tipo in NODE_NAMES else f"`{tipo}`"
         rows.append(f"| {pick('id', 'nodeId')} | {tipo_txt} | {name} | {conns or '—'} |")
@@ -171,11 +172,13 @@ def main(salida_dir: str) -> int:
         return 2
     inv = load(inv_path)
     anexo = salida / "anexo"
+    crlf = []
     if anexo.exists():
         idx = anexo / "indice.md"
         if not idx.exists() or MARCA not in idx.read_text(encoding="utf-8"):
             print(f"ERROR: {anexo} existe y no lo generó este script; no se toca", file=sys.stderr)
             return 2
+        crlf = [p.relative_to(anexo) for p in anexo.rglob("*.md") if b"\r\n" in p.read_bytes()]
         shutil.rmtree(anexo)
     names = {o["uuid"]: o.get("name") for objs in inv.get("objects", {}).values() for o in objs if o.get("uuid")}
     load_node_names(trabajo / "mcp_raw")
@@ -272,6 +275,11 @@ def main(salida_dir: str) -> int:
         gl += ["", f"Hubs (5 o más referencias entrantes): {hubs or 'ninguno'}.",
                f"Sin referencias entrantes y sin ser punto de entrada: {orph or 'ninguno'}.", ""]
         escribe(anexo / "grafo.md", "\n".join(gl))
+    # El anexo se reconstruye entero: conserva también el salto anterior de las fichas que siguen existiendo.
+    for rel in crlf:
+        p = anexo / rel
+        if p.exists():
+            p.write_bytes(p.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
     total = sum(len(v) for v in por_tipo.values())
     print(f"anexo: {total} objetos en {len(por_tipo)} tipos y grafo")
     return 0

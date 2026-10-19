@@ -26,6 +26,7 @@ import xml.etree.ElementTree as ET
 
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 import colocacion  # noqa: E402
+from texto import escribir as escribir_texto  # noqa: E402
 
 # ---------------------------------------------------------------- tipos y estilos
 INICIOS = {"inicio", "inicio_temporizador", "inicio_mensaje"}
@@ -197,9 +198,7 @@ def cargar_json(ruta):
 
 
 def guardar_json(proc, ruta):
-    with open(ruta, "w", encoding="utf-8", newline="\n") as f:  # con \n en cualquier sistema
-        json.dump(proc, f, ensure_ascii=False, indent=2)
-        f.write("\n")
+    escribir_texto(ruta, json.dumps(proc, ensure_ascii=False, indent=2) + "\n")
 
 
 def estructura(proc):
@@ -445,7 +444,7 @@ def partir(proc, grupos):
                                      "nombre": f"Sigue en el tramo {a}" + (f": {destino}" if destino else "")})
         out[de - 1]["flujos"].append({**f, "a": sale})
         out[a - 1]["pasos"].append({"id": entra, "tipo": "enlace_entrada", "carril": pasos[f["a"]]["carril"],
-                                    "nombre": f"Viene del tramo {de}"})
+                                    "nombre": f"Viene del tramo {de}: {f['de']} — {pasos[f['de']].get('nombre', '')}"})
         out[a - 1]["flujos"].append({"de": entra, "a": f["a"]})
     for n in proc.get("notas") or []:
         out[tramo[n["paso"]] - 1]["notas"].append(dict(n))
@@ -724,8 +723,7 @@ def xml_drawio(paginas):
 
 def escribir_paginas(paginas, ruta):
     """Escribe un .drawio nuevo con una página por elemento de `paginas` ([(proceso, geometría)])."""
-    with open(ruta, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(xml_drawio(paginas))
+    escribir_texto(ruta, xml_drawio(paginas))
 
 
 def escribir_drawio(proc, geo, ruta):
@@ -874,9 +872,7 @@ class Fichero:
 
     def guardar(self, ruta=None):
         ET.indent(self.tree, space="")  # sin sangría: draw.io lo lee igual y el diff queda limpio
-        # el fichero se abre aquí: si lo abre ElementTree, en Windows cada salto de línea sale \r\n
-        with open(ruta or self.ruta, "w", encoding="utf-8", newline="\n") as fh:
-            self.tree.write(fh, encoding="unicode", xml_declaration=False)
+        escribir_texto(ruta or self.ruta, ET.tostring(self.tree.getroot(), encoding="unicode"), referencia=self.ruta)
 
     def huella(self):
         """Resumen de la colocación (posiciones y puntos de los flujos): cambia si alguien mueve algo en draw.io."""
