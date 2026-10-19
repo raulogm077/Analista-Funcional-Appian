@@ -653,6 +653,30 @@ def extraccion_guardada(raw: Path) -> dict:
     return d if isinstance(d, dict) else {}
 
 
+def conservar_objetos_parciales(anteriores: list[dict], actuales: list[dict]) -> list[dict]:
+    """Une una lista acotada con el inventario previo sin deducir bajas ni degradar tipos conocidos."""
+    por_uuid = {o["uuid"]: dict(o) for o in anteriores if isinstance(o, dict) and o.get("uuid")}
+    for o in actuales:
+        if not isinstance(o, dict) or not o.get("uuid"):
+            continue
+        previo = por_uuid.get(o["uuid"])
+        if not previo:
+            por_uuid[o["uuid"]] = dict(o)
+            continue
+        unido = {**previo, **o}
+        if o.get("type") in (None, "unknown") and previo.get("type") not in (None, "unknown"):
+            unido["type"] = previo["type"]
+        if not o.get("name") and previo.get("name"):
+            unido["name"] = previo["name"]
+        if not o.get("mcpType") and unido.get("type") == previo.get("type") and previo.get("mcpType"):
+            unido["mcpType"] = previo["mcpType"]
+        elif unido.get("type") != previo.get("type") and not o.get("mcpType"):
+            unido["mcpType"] = None
+        unido["sources"] = list(dict.fromkeys((previo.get("sources") or []) + (o.get("sources") or [])))
+        por_uuid[o["uuid"]] = unido
+    return sorted(por_uuid.values(), key=lambda o: (o.get("type") or "", o.get("name") or ""))
+
+
 def aplicacion_extraida(raw: Path) -> dict:
     """La aplicación que ya está extraída en esta carpeta ({} si no hay ninguna)."""
     app = extraccion_guardada(raw).get("application")
@@ -1305,10 +1329,21 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         for aplazada in ex.aplazadas:
             ex.guarda(*aplazada)
         ex.aplazadas = None
+    lista_acotada = ex.solo is not None or ex.only is not None or ex.skip is not None
+    if lista_acotada:
+        anterior_guardado = extraccion_guardada(ex.raw)
+        if (anterior_guardado.get("application") or {}).get("uuid") == app_obj["uuid"]:
+            objects = conservar_objetos_parciales(anterior_guardado.get("objects") or [], objects)
+            for campo, valor in anterior_guardado["application"].items():
+                if not app_obj.get(campo) and valor:
+                    app_obj[campo] = valor
+        ex.classify(ex.type_phrases_for(objects))
+        groups = ex.plan_object_calls(objects)
     interm = work_dir(out, crear=True)
     write_json(interm / "mcp_catalog.json", catalog_json(ex))
     anterior = inicio_anterior(interm / "extraction_plan.json")   # antes de sobrescribirlo
     plan = plan_json(ex, app_obj, objects, groups, inicio)
+    plan["objectListComplete"] = not lista_acotada
     write_json(interm / "extraction_plan.json", plan)
     write_json(interm / "mcp_raw" / "_objects.json", {"application": app_obj, "entorno": url, "objects": objects})
     if not execute:
@@ -1326,6 +1361,7 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         "durationSeconds": round(time.monotonic() - t0, 1),
         "server": server_info(choice), "trustedMode": ex.trusted,
         "app": app_obj, "objectCount": len(objects), "objectsByType": plan["objectsByType"],
+        "objectListComplete": not lista_acotada,
         "toolsUsed": usadas(ex),
         "toolsOmitted": omitidas(ex, plan),
         "toolsExcluded": [{"name": t.name, "reason": t.safety_reason} for t in ex.tools if not t.allowed],

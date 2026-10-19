@@ -248,6 +248,50 @@ def test_extract_solo(project):
     extrae(project, "--solo", "DEM_Dashboard", "--refresh", check=2)
 
 
+def test_extract_solo_con_listas_filtradas_conserva_inventario(project):
+    """Una lista parcial no retira los modelos ni cambia a unknown los tipos leidos antes."""
+    project.add_devmcp()
+    extrae(project)
+    anterior = {o["uuid"]: o for o in project.load("mcp_raw/_objects.json")["objects"]}
+    n = len(project.calls_list())
+    extrae(project, "--solo", "DEM Solicitud", "--only",
+           "^(listApplications|getApplication|listRecordTypes|getRecordType)$")
+
+    actual = {o["uuid"]: o for o in project.load("mcp_raw/_objects.json")["objects"]}
+    assert set(anterior) <= set(actual)
+    assert {u: o["type"] for u, o in anterior.items()} == {u: actual[u]["type"] for u in anterior}
+    assert actual[OBJS["PM_BATCH"]["uuid"]]["type"] == "processModel"
+    inventario = project.load("inventory.json")
+    inventariados = {o["uuid"] for lista in inventario["objects"].values() for o in lista}
+    assert set(anterior) <= inventariados
+    assert project.load("extraction_report.json")["objectListComplete"] is False
+    assert uuids_de(project.calls_list()[n:]) <= {APP, OBJS["RT_SOL"]["uuid"]}
+
+
+def test_inventario_parcial_no_degrada_tipo_conocido():
+    from devmcp_extract import conservar_objetos_parciales
+
+    anteriores = [{"uuid": "obj-regla", "name": "DEM Regla", "type": "expressionRule",
+                   "mcpType": "FREEFORM_RULE", "sources": ["listExpressionRules"]},
+                  {"uuid": "obj-proceso", "name": "DEM Proceso", "type": "processModel",
+                   "sources": ["listProcessModels"]},
+                  {"uuid": "obj-cambiado", "name": "DEM Antes", "type": "processModel",
+                   "mcpType": "PROCESS_MODEL", "sources": ["listProcessModels"]}]
+    actuales = [{"uuid": "obj-regla", "name": "DEM Regla", "type": "unknown",
+                 "mcpType": None, "sources": ["listApplicationObjects"]},
+                {"uuid": "obj-nuevo", "name": "DEM Nueva interfaz", "type": "interface",
+                 "sources": ["listInterfaces"]},
+                {"uuid": "obj-cambiado", "name": "DEM Ahora", "type": "interface",
+                 "sources": ["listInterfaces"]}]
+    merged = {o["uuid"]: o for o in conservar_objetos_parciales(anteriores, actuales)}
+    assert set(merged) == {"obj-regla", "obj-proceso", "obj-nuevo", "obj-cambiado"}
+    assert merged["obj-regla"]["type"] == "expressionRule"
+    assert merged["obj-regla"]["mcpType"] == "FREEFORM_RULE"
+    assert merged["obj-proceso"] == anteriores[1]
+    assert merged["obj-nuevo"] == actuales[1]
+    assert merged["obj-cambiado"]["type"] == "interface" and merged["obj-cambiado"]["mcpType"] is None
+
+
 def test_extract_solo_con_fallos_guardados(project):
     """Con --solo, lo guardado de los demás objetos se lee sin sonda: los fallos guardados de otras interfaces (las
     tres primeras, que desactivaron getInterface en la extracción completa) no dejan sin llamadas al objeto pedido."""
