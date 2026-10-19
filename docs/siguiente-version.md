@@ -27,9 +27,10 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
 - D1, D7 y C8 ya están implementados: secuenciación de piezas compartidas, subtareas con avance guardado y
   diferencias confirmadas de permisos con aceptación humana acotada. Resultados y comprobaciones en el plan de esta
   fase y en `docs/evaluaciones.md`. El acceso efectivo sigue requiriendo QA con usuarios de cada rol.
-- Prueba diferencial de una refactorización (E3): no se encontró un cambio Appian real con antes/después y criterios
-  en la aplicación elegida. Los cambios del portal o de herramientas no lo sustituyen. Concretar un caso antes de
-  ejecutarlo; cualquier ejecución de reglas o procesos se delimitará por separado.
+- Prueba diferencial de una refactorización (E3) realizada con autorización sobre una regla de texto real: versión
+  inicial y propuesta coincidieron en 3 casos guardados y cinco bordes; se restauró exactamente la definición
+  original y los 3 casos siguieron pasando. `deriva` detectó el historial de edición 1→3. Queda limitada a una regla;
+  no acredita sensibilidad global de la aplicación.
 - «No evaluable» reconoce el límite de la rejilla con filtros de usuario (`flow!userFilterSetData`). Añadir otro límite
   a `devmcp_policy.json` solo si aparece y se comprueba.
 
@@ -37,12 +38,16 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
 
 - Ejecutar `deriva` de punta a punta y medir LEEME con la aplicación real elegida (extracción incompleta y detenida).
   El historial existe en el Dev MCP real; el LEEME anterior llegó al 96 % con 42 objetos y los demás documentos
-  quedaron al 20–54 %. No se cambia el presupuesto antes de medirlo (E6).
+  quedaron al 20–54 %. Una lectura nueva de una sola regla terminó sin errores, pero no mide el conjunto: al menos
+  unas 1.073 lecturas de objetos serían necesarias para la extracción completa de 248 objetos. No se cambia el
+  presupuesto antes de medirlo (E6).
 - `getAgent` sigue devolviendo 401 por la API nativa, aunque Raúl ve el agente en Designer y `getApplication`
   funciona por el servlet. Raúl lo ha reportado a Appian y ha decidido aparcarlo. La medición de esta fase excluye
   esa llamada; el extractor detiene la cola ante errores de acceso/login y conserva la evidencia parcial. No
   reanudar en bucle una extracción que pide login.
 - Volver a medir la evaluación de malas prácticas con propuestas reales; sus `claves` se fijaron sin esas propuestas.
+  No se encontró la copia `as-is/` de MNT tras buscar en proyectos, documentos, descargas y temporales; reconstruirla
+  desde el simulador antes de repetir la evaluación ciega.
 - La campaña de 1.000 procesos (semilla 11) ya deja cero etiquetas atravesadas. Persisten 126 conexiones falsas
   detectadas, frente a 142 antes de esta fase. La revisión confirmó 38 intersecciones de etiquetas y 88 tramos
   coincidentes en 71 procesos; los casos 43 y 677 contienen defectos reales, y el 46 un posible sobreconteo corto.

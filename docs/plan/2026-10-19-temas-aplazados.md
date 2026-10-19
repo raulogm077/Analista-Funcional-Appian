@@ -7,7 +7,9 @@ Esta fase parte de `84d2b24`, con la primera tanda aplicada y comprobada. Rama d
 **Estado de integración posterior:** a petición de Raúl, la rama de Claude `automejora-pruebas` absorbió por avance
 rápido los 21 commits de `codex/aplazados` y es ahora la única rama de trabajo. Las ramas auxiliares se eliminaron;
 el repositorio original está en `automejora-pruebas`. Las rutas y ramas del párrafo anterior documentan dónde se hizo
-la fase, no dónde continuarla. No se ha publicado una nueva versión.
+la fase, no dónde continuarla. Tras comprobar que estaban limpios y que solo contenían cachés ignoradas, se retiraron
+los nueve worktrees auxiliares. Las pruebas y evidencias quedan bajo `Proyectos IA/Pruebas-plugin/`. No se ha publicado
+una nueva versión.
 
 ## Decisiones y respuestas
 
@@ -30,7 +32,7 @@ en las tareas independientes y en la lectura de evidencia ya guardada.
 | D7: issues grandes | Una issue con avance por pasos, sin duplicar objetos ni sustituir la verificación final; en P10, 13 de 25 issues reciben 43 subtareas | Integrado en 9242e5a; ocho casos focales y suite analista conjunta correctos |
 | D1: secuenciar piezas | Impedir que el texto de una segunda unidad contamine el encargo de la primera, también con cierre manual; conservar retoques independientes | Integrado en 8738a06 y 9088bd2; 14 casos focales y suite analista conjunta correctos |
 | C8: permisos | Contratos y respuestas reales; comparar configuración decidible y registrar aceptación humana acotada, sin perder historial | Integrado en 12646ae, c6ac2a4 y 616680e; 15 casos focales y suite analista conjunta correctos |
-| E3: comparación de refactorización | Buscar un caso real en la aplicación elegida y delimitar qué se ejecutaría en cada versión | Sin caso Appian acreditado; lectura detenida por el incidente de autenticación |
+| E3: comparación de refactorización | Ensayo autorizado sobre una regla pura de texto, con casos guardados y de borde antes/después; restauración posterior | 3/3 casos guardados y cinco bordes iguales. Regla restaurada y verificada; `deriva` detecta edición por historial 1→3, no un cambio semántico persistente. Medida acotada, no global |
 | E5: ancho de arquitectura | Cinco cajas pueden producir 4.442 px; aplicar el límite ya existente de 1.600 px a la vista general y usar detalles por capa | Integrado en 40578bd; renders medidos |
 | Etiquetas de puertas | 1.000 casos, semilla 11: etiquetas ambiguas 8→0, sin empeorar cruces ni solapes caso por caso | Integrado en 40578bd; selftest y revisión de PNG correctos |
 | D11: nueva pestaña | Navegación y parámetros, recarga, historial, aislamiento de claves y números que deben conservarse como texto | Integrado en f87d903; suite de prototipos correcta, ocho casos nuevos |

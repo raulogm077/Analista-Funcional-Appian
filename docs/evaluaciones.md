@@ -38,6 +38,11 @@ el cierre de los cambios que el plan mantiene en curso.
 | Aviso de requisitos en Windows | Con `REQUISITOS_SIN=docx` y carpeta personal temporal, `requisitos.py --breve --como python` mostró la carencia y creó la marca de aviso. La orden real del hook, tras sustituir `${CLAUDE_PLUGIN_ROOT}` como hace Claude, también salió con código 0, mostró el aviso y creó la marca en PowerShell 5.1. Es una comprobación local del hook, no una instalación visual en Desktop. |
 | Anclas de documentación | `python pruebas/comprobar_anclas.py` descargó 312 páginas y revisó 1.265 citas, 517 con ancla; código 0, cero enlaces o anclas rotos y sin errores de red. Evidencia en `anclas/RESULTADO.md`. |
 | PDF y batería en CI | El workflow prepara un job Linux con LibreOffice que debe convertir un DF ficticio y comprobar el texto del PDF; incluye una medición manual 1, 2, 2, 1 de la batería completa. YAML y generación local de Word comprobados; la conversión real y el rendimiento de las cuatro pasadas siguen **no medidos** hasta ejecutar Actions. |
+| Word local | El DF ficticio se abrió en Microsoft Word en modo de solo lectura: 13 páginas, 36 tablas y dos figuras. Confirma apertura y estructura del documento; no sustituye la conversión real del PDF en CI ni una revisión visual de cada página. |
+| Lectura acotada de aplicación real | Una extracción restringida a una regla terminó en 29,7 s con diez respuestas correctas, cero errores y sin login. Dos lecturas de la versión actual coinciden. LEEME completo y deriva global siguen **NOT MEASURED**: al menos unas 1.073 lecturas de objetos serían necesarias para la extracción completa de 248 objetos con la política segura actual. Evidencia fuera del repo en `gde-metrica-acotada/RESULTADO-MEDICION.md`. |
+| Refactorización real acotada (E3) | Se releyeron regla, dependientes y casos antes del ensayo autorizado. La versión inicial y la propuesta dieron 3/3 casos guardados y cinco bordes con resultados iguales; se restauró la expresión inicial exactamente y 3/3 casos siguen pasando. `deriva` detectó 1 cambio por historial 1→3, sin nuevos ni retirados; el contenido final no cambió. Demuestra detección de edición de una regla, no sensibilidad global ni equivalencia universal. Evidencia fuera del repo en `gde-metrica-acotada/refactor/ensayo-20261019/INFORME-ENSAYO.md`. |
+| Inventario de extracción restringida | Una lectura real con `--solo` y `--only` en copia aislada redujo el catálogo de 248 a 217 objetos, omitió 32 modelos y degradó a `unknown` el tipo de 114 UUID existentes. Es una pérdida de cobertura de la lista filtrada, no evidencia de bajas reales. El arreglo conserva inventario previo y marca cobertura parcial; regresiones ficticias y focales de extracción correctas. |
+| Evaluación ciega de malas prácticas | No se encontró una copia válida del `as-is` de MNT en las carpetas de proyectos, documentos, descargas y temporales revisadas. Los candidatos eran de otras aplicaciones; no se generó una propuesta sustituta ni se puntuó. |
 
 El nuevo ejecutor limita la concurrencia a dos grupos, imprime sus tiempos y conserva `--trabajos 1` para comparar.
 Los tiempos de la pareja no se extrapolan a la batería completa: ese rendimiento se medirá en CI. No se ejecutó
@@ -46,9 +51,9 @@ cargado siguen pendientes antes de publicar. No se ha cambiado la versión ni pu
 
 La extracción real quedó incompleta y se detuvo al repetirse el inicio de sesión. Se corrigieron la selección de
 herramientas y la parada de la cola, pero las dos lecturas puntuales posteriores no acreditan una extracción completa.
-LEEME completo y deriva de punta a punta siguen **no medidos**. Tampoco se encontró una refactorización Appian real
-con antes/después y criterios: los cambios del portal o de herramientas no sirven como ese caso. La evidencia y el
-diagnóstico detallado se conservan fuera del repositorio.
+LEEME completo y deriva de punta a punta siguen **no medidos**. La primera lectura no permitió identificar una
+refactorización Appian; después se realizó el ensayo acotado de la regla de texto descrito arriba. No sustituye la
+comparación de toda la aplicación. La evidencia y el diagnóstico detallado se conservan fuera del repositorio.
 
 Los ajustes finales de inversa solo cambiaron el simulador de prueba y una palabra de un comentario; se repitieron
 los módulos afectados, sin volver a ejecutar toda la suite. Evidencias: `gde-lectura/inversa-integrada.log`,
