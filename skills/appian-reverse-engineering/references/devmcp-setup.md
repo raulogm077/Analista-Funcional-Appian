@@ -115,6 +115,11 @@ producción llega un paquete cuyos objetos ha revisado una persona. Cómo se cum
 - **Esta skill** (extracción, `verificar`, `regresion`, `deriva`) es de solo lectura por su política
   (`scripts/devmcp_policy.json`), en cualquier entorno. `verificar` y `regresion` ejecutan casos de prueba que ya
   existen, que no modifican nada: se pasan en desarrollo.
+- **Extracción con datos reales:** añade `--skip "^testInterface$"` tanto a `plan` como a `extract`, también al reextraer.
+  La excepción de la política que permite `testInterface` es para desarrollo con datos ficticios: evaluar una pantalla
+  puede consultar datos y guardarlos en su respuesta `screen`, aunque no se pulse ningún botón. Con la exclusión,
+  documenta las pantallas desde sus definiciones y declara en `LEEME` que no se evaluaron. Si ya había respuestas
+  `screen` guardadas, usa una carpeta de salida nueva: `--skip` no borra una extracción anterior.
 
 ---
 

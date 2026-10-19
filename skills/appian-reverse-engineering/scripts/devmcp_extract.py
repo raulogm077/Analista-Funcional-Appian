@@ -894,7 +894,9 @@ class Extractor:
                     stack.extend(v for v in d.values() if isinstance(v, (dict, list)))
                 elif isinstance(d, list):
                     stack.extend(d)
-            tool_type = self.policy.canon_type(" ".join((ti.toks[1:] if ti else [])))
+            # Una lista genérica no identifica el tipo de sus elementos: «application objects»
+            # no es un tipo nuevo y no debe impedir que una lista específica lo resuelva después.
+            tool_type = self.policy.canon_type(" ".join(ti.toks[1:])) if ti and "object" not in ti.toks else None
             for it, ctx in harvest_items(r.data):
                 u = pick(it, UUID_KEYS)
                 if u == app_uuid:
@@ -913,7 +915,8 @@ class Extractor:
                 else:
                     if mcp_type and not cur.get("mcpType"):
                         cur["mcpType"] = mcp_type
-                    if cur["type"] == "unknown" and ctype != "unknown":
+                    if (cur["type"] == "unknown" and ctype != "unknown"
+                            or cur["type"] not in self.policy.syn and ctype in self.policy.syn):
                         cur["type"] = ctype
                 if tname not in cur["sources"]:
                     cur["sources"].append(tname)
@@ -924,7 +927,10 @@ class Extractor:
         for o in objects + [{"type": "application", "mcpType": "APPLICATION"}]:
             t = o["type"]
             phrases = tp.setdefault(t, [])
-            for src in (t, o.get("mcpType")):
+            # El campo type de una constante describe su valor (GROUP, DOCUMENT, PROCESS_MODEL…).
+            # Un alias contradictorio daría a TODAS las constantes las herramientas de esos tipos.
+            mcp_type = o.get("mcpType")
+            for src in (t, mcp_type if self.policy.canon_type(mcp_type) == t else None):
                 if src:
                     ph = tokens(src)
                     if ph and ph not in phrases:

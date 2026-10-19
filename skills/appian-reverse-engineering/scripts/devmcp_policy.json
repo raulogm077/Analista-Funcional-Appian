@@ -228,6 +228,7 @@
     "site": ["site"],
     "constant": ["constant"],
     "group": ["group"],
+    "document": ["document"],
     "connectedSystem": ["connected system"],
     "aiAgent": ["ai agent", "agent"],
     "aiSkill": ["ai skill"],
