@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="572" viewBox="0 0 900 572" role="img" aria-labelledby="titulo descripcion">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="688" viewBox="0 0 900 688" role="img" aria-labelledby="titulo descripcion">
   <title id="titulo">Cómo trabaja el plugin</title>
-  <desc id="descripcion">El analista convierte las fuentes en funcional, técnico y unidades de cambio; cada fuente posterior entra con un informe de impacto. Una aplicación existente pasa antes por ingeniería inversa en solo lectura y, si se rehace, por refactorización. El prototipo aporta capturas al DF en Word que valida el cliente, junto con los diagramas BPMN. Con la unidad aprobada y los objetos del técnico en tabla, se generan issues agrupadas por objetos y requisitos, con sus dependencias y supuestos. Se construyen en desarrollo con buenas prácticas y la skill oficial appian; ingeniería inversa verifica objetos y pruebas exigidas. El QA recorre los escenarios por rol en otra sesión; un fallo sin excepción humana justificada mantiene pendiente la issue. Desde el paquete no actúa la IA: los scripts repiten la regresión y los guiones, y una persona revisa el paquete y hace el pase.</desc>
+  <desc id="descripcion">El analista convierte las fuentes en funcional, técnico y unidades de cambio; cada fuente posterior entra con un informe de impacto. Una aplicación existente pasa antes por ingeniería inversa en solo lectura y, si se rehace, por refactorización. Una extracción parcial conserva la evidencia y declara su alcance. El prototipo aporta capturas al DF en Word que valida el cliente, junto con los diagramas BPMN. Con la unidad aprobada y los objetos del técnico en tabla, se generan issues con dependencias y supuestos. Las piezas compartidas se cambian por turnos entre unidades; las subtareas guardan el avance, pero no cierran ni verifican una issue. Se construye con buenas prácticas; ingeniería inversa verifica objetos, pruebas exigidas y permisos. La aceptación humana de permisos corresponde a una diferencia concreta registrada. El QA recorre los escenarios por rol en otra sesión. Los fallos mantienen pendiente la issue salvo una excepción prevista y justificada. Desde el paquete, los scripts repiten regresión y guiones; una persona revisa el paquete y hace el pase.</desc>
   <style>
     :root {
       --fondo: #f6f8fc; --marco: #dfe4ef; --tarjeta: #ffffff; --borde: #d4dbea; --ficha: #f3f6fc;
@@ -33,31 +33,31 @@
     .coral { fill: var(--coral); } .cian { fill: var(--cian); } .gris { fill: var(--gris); }
   </style>
 
-  <rect class="fondo" x=".5" y=".5" width="899" height="571" rx="14"/>
+  <rect class="fondo" x=".5" y=".5" width="899" height="687" rx="14"/>
 
   <text class="rotulo" x="20" y="42">ENTRA</text>
   <text class="rotulo" x="236" y="146">SI YA EXISTE</text>
   <text class="rotulo" x="440" y="42">SE ANALIZA</text>
   <text class="rotulo" x="684" y="42">SALE</text>
-  <text class="rotulo" x="136" y="384">CON CADA UNIDAD APROBADA, EN DESARROLLO</text>
-  <text class="rotulo" x="692" y="384">DESDE EL PAQUETE, SIN IA</text>
+  <text class="rotulo" x="136" y="402">CON CADA UNIDAD APROBADA, EN DESARROLLO</text>
+  <text class="rotulo" x="692" y="402">DESDE EL PAQUETE, SIN IA</text>
 
   <!-- Flechas -->
   <g class="linea">
     <path d="M203 92H431"/>
     <path d="M203 188H227"/>
     <path d="M407 188H431"/>
-    <path d="M320 223V243"/>
+    <path d="M320 239V243"/>
     <path d="M407 284H431"/>
     <path d="M651 92H675"/>
     <path d="M651 188H675"/>
     <path d="M651 284H675"/>
     <path d="M782 127V147"/>
-    <path d="M544 319V352H114V386"/>
-    <path d="M211 434H235"/>
-    <path d="M435 434H459"/>
-    <path d="M659 434H683"/>
-    <path class="vuelta" d="M562 477V500H114V484"/>
+    <path d="M544 319V370H114V406"/>
+    <path d="M211 462H235"/>
+    <path d="M435 462H459"/>
+    <path d="M659 462H683"/>
+    <path class="vuelta" d="M562 513V536H114V520"/>
   </g>
   <g class="punta">
     <path d="M437 92l-7-3.5v7z"/>
@@ -69,21 +69,21 @@
     <path d="M681 188l-7-3.5v7z"/>
     <path d="M681 284l-7-3.5v7z"/>
     <path d="M782 153l-3.5-7h7z"/>
-    <path d="M114 392l-3.5-7h7z"/>
-    <path d="M241 434l-7-3.5v7z"/>
-    <path d="M465 434l-7-3.5v7z"/>
-    <path d="M689 434l-7-3.5v7z"/>
-    <path d="M114 478l-3.5 7h7z"/>
+    <path d="M114 412l-3.5-7h7z"/>
+    <path d="M241 462l-7-3.5v7z"/>
+    <path d="M465 462l-7-3.5v7z"/>
+    <path d="M689 462l-7-3.5v7z"/>
+    <path d="M114 514l-3.5 7h7z"/>
   </g>
-  <path class="frontera" d="M674 372V486"/>
+  <path class="frontera" d="M674 390V522"/>
 
   <rect class="pastilla" x="255.5" y="81.5" width="129" height="21" rx="10.5"/>
   <text class="mono" x="320" y="95.5" text-anchor="middle">informe de impacto</text>
   <text class="mono" x="792" y="144">capturas</text>
-  <rect class="pastilla" x="184.5" y="341.5" width="290" height="21" rx="10.5"/>
-  <text class="mono" x="329.5" y="355.5" text-anchor="middle">unidad aprobada + objetos del técnico en tabla</text>
-  <rect class="pastilla" x="204.5" y="489.5" width="268" height="21" rx="10.5"/>
-  <text class="mono" x="338.5" y="503.5" text-anchor="middle">fallo sin excepción: issue pendiente</text>
+  <rect class="pastilla" x="184.5" y="359.5" width="290" height="21" rx="10.5"/>
+  <text class="mono" x="329.5" y="373.5" text-anchor="middle">unidad aprobada + objetos del técnico en tabla</text>
+  <rect class="pastilla" x="204.5" y="525.5" width="268" height="21" rx="10.5"/>
+  <text class="mono" x="338.5" y="539.5" text-anchor="middle">fallo pendiente; excepción justificada</text>
 
   <!-- Entra -->
   <rect class="tarjeta" x="20.5" y="60.5" width="180" height="64" rx="10"/>
@@ -97,10 +97,11 @@
   <text class="nota" x="44" y="203">en un entorno Appian</text>
 
   <!-- Si ya existe -->
-  <rect class="tarjeta" x="236.5" y="156.5" width="168" height="64" rx="10"/>
-  <rect class="violeta" x="248" y="172" width="3" height="32" rx="1.5"/>
+  <rect class="tarjeta" x="236.5" y="156.5" width="168" height="80" rx="10"/>
+  <rect class="violeta" x="248" y="172" width="3" height="48" rx="1.5"/>
   <text class="titulo" x="260" y="184">Ingeniería inversa</text>
   <text class="nota" x="260" y="203"><tspan class="mono">as-is/</tspan> · solo lectura</text>
+  <text class="nota" x="260" y="219">conserva la evidencia</text>
 
   <rect class="tarjeta" x="236.5" y="252.5" width="168" height="64" rx="10"/>
   <rect class="violeta" x="248" y="268" width="3" height="32" rx="1.5"/>
@@ -140,45 +141,56 @@
   <text class="mono" x="708" y="299">.drawio · PNG · BPMN 2.0</text>
 
   <!-- Con cada unidad aprobada -->
-  <rect class="tarjeta" x="20.5" y="394.5" width="188" height="80" rx="10"/>
-  <rect class="azul" x="32" y="410" width="3" height="48" rx="1.5"/>
-  <text class="titulo" x="44" y="422">Issues</text>
-  <text class="nota" x="44" y="441">objetos y requisitos, en orden</text>
-  <text class="mono" x="44" y="458">construccion/&lt;U&gt;/</text>
+  <rect class="tarjeta" x="20.5" y="414.5" width="188" height="96" rx="10"/>
+  <rect class="azul" x="32" y="430" width="3" height="64" rx="1.5"/>
+  <text class="titulo" x="44" y="442">Issues</text>
+  <text class="nota" x="44" y="461">piezas compartidas, por turno</text>
+  <text class="nota" x="44" y="478">subtareas con avance guardado</text>
+  <text class="mono" x="44" y="495">construccion/&lt;U&gt;/</text>
 
-  <rect class="tarjeta" x="244.5" y="394.5" width="188" height="80" rx="10"/>
-  <rect class="coral" x="256" y="410" width="3" height="35" rx="1.5"/>
-  <rect class="violeta" x="256" y="449" width="3" height="12" rx="1.5"/>
-  <text class="titulo" x="268" y="422">Construir y verificar</text>
-  <text class="nota" x="268" y="441">construye: buenas prácticas</text>
-  <text class="nota" x="268" y="458">verifica: ingeniería inversa</text>
+  <rect class="tarjeta" x="244.5" y="414.5" width="188" height="96" rx="10"/>
+  <rect class="coral" x="256" y="430" width="3" height="35" rx="1.5"/>
+  <rect class="violeta" x="256" y="469" width="3" height="28" rx="1.5"/>
+  <text class="titulo" x="268" y="442">Construir y verificar</text>
+  <text class="nota" x="268" y="461">construye: buenas prácticas</text>
+  <text class="nota" x="268" y="478">verifica: ingeniería inversa</text>
+  <text class="nota" x="268" y="495">objetos, pruebas y permisos</text>
 
-  <rect class="tarjeta" x="468.5" y="394.5" width="188" height="80" rx="10"/>
-  <rect class="cian" x="480" y="410" width="3" height="48" rx="1.5"/>
-  <text class="titulo" x="492" y="422">QA de la unidad</text>
-  <text class="nota" x="492" y="441">SAIL CLI, como cada rol</text>
-  <text class="nota" x="492" y="458">guiones en <tspan class="mono">qa/&lt;U&gt;/</tspan></text>
+  <rect class="tarjeta" x="468.5" y="414.5" width="188" height="96" rx="10"/>
+  <rect class="cian" x="480" y="430" width="3" height="64" rx="1.5"/>
+  <text class="titulo" x="492" y="442">QA de la unidad</text>
+  <text class="nota" x="492" y="461">SAIL CLI, como cada rol</text>
+  <text class="nota" x="492" y="478">en otra sesión</text>
+  <text class="nota" x="492" y="495">guiones en <tspan class="mono">qa/&lt;U&gt;/</tspan></text>
 
-  <rect class="tarjeta" x="692.5" y="394.5" width="188" height="80" rx="10"/>
-  <rect class="gris" x="704" y="410" width="3" height="48" rx="1.5"/>
-  <text class="titulo" x="716" y="422">Paquete y pase</text>
-  <text class="nota" x="716" y="441">regresión y guiones, sin IA</text>
-  <text class="nota" x="716" y="458">lo revisa una persona</text>
+  <rect class="tarjeta" x="692.5" y="414.5" width="188" height="96" rx="10"/>
+  <rect class="gris" x="704" y="430" width="3" height="64" rx="1.5"/>
+  <text class="titulo" x="716" y="442">Paquete y pase</text>
+  <text class="nota" x="716" y="461">regresión y guiones, sin IA</text>
+  <text class="nota" x="716" y="478">lo revisa una persona</text>
+
+  <!-- Decisiones que se conservan al retomar el trabajo -->
+  <rect class="ficha" x="20.5" y="565.5" width="412" height="63" rx="10"/>
+  <text class="titulo" x="40" y="589">El avance no sustituye al cierre</text>
+  <text class="nota" x="40" y="609">Terminar subtareas exige verificar la issue completa.</text>
+  <rect class="ficha" x="468.5" y="565.5" width="412" height="63" rx="10"/>
+  <text class="titulo" x="488" y="589">Permisos: aceptación por diferencia</text>
+  <text class="nota" x="488" y="609">La aceptación humana se limita al caso registrado.</text>
 
   <!-- Quién lo hace -->
   <g class="nota">
-    <text x="20" y="547">Quién lo hace:</text>
-    <rect class="azul" x="100" y="537" width="3" height="12" rx="1.5"/>
-    <text x="109" y="547">analista</text>
-    <rect class="violeta" x="171" y="537" width="3" height="12" rx="1.5"/>
-    <text x="180" y="547">ingeniería inversa y refactorización</text>
-    <rect class="verde" x="374" y="537" width="3" height="12" rx="1.5"/>
-    <text x="383" y="547">prototipos y diagramas</text>
-    <rect class="coral" x="522" y="537" width="3" height="12" rx="1.5"/>
-    <text x="531" y="547">buenas prácticas</text>
-    <rect class="cian" x="637" y="537" width="3" height="12" rx="1.5"/>
-    <text x="646" y="547">QA</text>
-    <rect class="gris" x="687" y="537" width="3" height="12" rx="1.5"/>
-    <text x="696" y="547">fuera del plugin</text>
+    <text x="20" y="663">Quién lo hace:</text>
+    <rect class="azul" x="100" y="653" width="3" height="12" rx="1.5"/>
+    <text x="109" y="663">analista</text>
+    <rect class="violeta" x="171" y="653" width="3" height="12" rx="1.5"/>
+    <text x="180" y="663">ingeniería inversa y refactorización</text>
+    <rect class="verde" x="374" y="653" width="3" height="12" rx="1.5"/>
+    <text x="383" y="663">prototipos y diagramas</text>
+    <rect class="coral" x="522" y="653" width="3" height="12" rx="1.5"/>
+    <text x="531" y="663">buenas prácticas</text>
+    <rect class="cian" x="637" y="653" width="3" height="12" rx="1.5"/>
+    <text x="646" y="663">QA</text>
+    <rect class="gris" x="687" y="653" width="3" height="12" rx="1.5"/>
+    <text x="696" y="663">fuera del plugin</text>
   </g>
 </svg>

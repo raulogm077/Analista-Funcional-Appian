@@ -1,7 +1,8 @@
 # Para la siguiente versión
 
 Trabajo que queda abierto después de aplicar las lecciones de automejora del 19 de octubre de 2026, sobre la
-0.8.0-beta.1. Raúl pidió abordar los temas aplazados antes de publicar: la fase activa está en
+0.8.0-beta.1; la entrega 0.8.0-beta.2 está preparada y aún no publicada. Raúl pidió abordar los temas aplazados antes
+de publicar: la fase activa está en
 `docs/plan/2026-10-19-temas-aplazados.md`. Los cambios terminados y sus pruebas están en `docs/evaluaciones.md`;
 la primera tanda quedó cerrada en `docs/plan/2026-10-19-aplicar-automejora.md`. Esta lista no autoriza publicar ni actuar en un entorno.
 
@@ -15,10 +16,12 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
   repositorio. La campaña D1/D7/C8 está preparada y sus diez controles offline pasan; el runner externo
   `claude-comportamiento/campana_claude.py` permite ejecutarla desde el 20/10 a las 16:00 de Madrid, cuando se
   restablece la cuota acreditada. Los selftests y las regresiones no sustituyen esa conducta aún no medida.
-- Cuando Raúl autorice subir: PR y batería completa en Linux. Antes de publicar una versión, las siete combinaciones
-  de sistema/Python, como indica `CLAUDE.md`. Las anclas ya pasaron: 1.265 citas en 312 páginas, cero rotas. El job
+- Raúl autorizó el 19/10 subir la rama, abrir un único PR, ejecutar la matriz e integrar y publicar cuando las pruebas
+  pasen. Se ejecutan la batería completa en Linux y las siete combinaciones de sistema/Python de `CLAUDE.md`.
+  Las anclas ya pasaron: 1.265 citas en 312 páginas, cero rotas. El job
   nuevo de PDF real con LibreOffice y la medición manual de concurrencia quedan por ejecutar en Actions. La versión
-  sigue sin cambiar. LibreOffice ya convirtió el DF ficticio localmente y conservó todo su texto y las dos figuras:
+  0.8.0-beta.2 está preparada, pendiente de las pruebas de entrega. LibreOffice ya convirtió el DF ficticio localmente
+  y conservó todo su texto y las dos figuras:
   12 páginas frente a las 13 de Word. Falta medir el job de CI; el índice de LibreOffice queda sin números de página
   y el script ya avisa de revisarlo antes de entregar.
 - Instalar el paquete en un Windows con algún requisito realmente ausente y comprobar el primer mensaje. La orden

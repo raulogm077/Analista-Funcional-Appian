@@ -22,6 +22,7 @@ en las tareas independientes y en la lectura de evidencia ya guardada.
 | D1: dos unidades cambian una misma pieza | Secuenciar la pieza compartida, manteniendo el trabajo independiente; no guardar encargos históricos por unidad | Opción 2 elegida por Raúl tras comparar pros y contras |
 | Aplicación/proyecto para deriva, LEEME y comparación de refactorización | Usar la aplicación y el entorno de desarrollo indicados por Raúl; concretar aparte cualquier ejecución de reglas o procesos | Aplicación y entorno elegidos; lectura autorizada |
 | D7: issues grandes | Mantener una issue con subtareas y avance guardado, sin sustituir la verificación final | Elegido por Raúl tras comparar pros y contras |
+| Entrega de la versión | Commit y subida de la rama existente, un PR, matriz de combinaciones e integración y publicación condicionadas a pruebas correctas; gráficos explicativos actualizados | Autorizado por Raúl el 19/10; se prepara 0.8.0-beta.2. La conducta Claude sigue pendiente de cuota hasta el 20/10 a las 16:00 de Madrid |
 
 ## Trabajo
 

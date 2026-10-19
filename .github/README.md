@@ -102,13 +102,15 @@ escribirlo.
 
 ## Cómo trabaja
 
-<img src="assets/como-trabaja.svg" alt="Las fuentes entran al analista; una aplicación existente pasa antes por ingeniería inversa y, si se rehace, por refactorización. El análisis produce el técnico, las unidades de cambio, el prototipo, el DF y los diagramas. Con la unidad aprobada y los objetos del técnico en tabla, se generan issues por objetos y requisitos. Se construyen en desarrollo, se verifican y pasan QA por rol. Un fallo sin excepción humana justificada mantiene pendiente la issue. Los scripts repiten regresión y QA antes del paquete, que revisa y pasa una persona." width="100%">
+<img src="assets/como-trabaja.svg" alt="Las fuentes pasan al analista; una aplicación existente se documenta en solo lectura, conservando la evidencia cuando la extracción es parcial. El análisis produce el técnico, las unidades, el prototipo, el DF y los diagramas. La unidad aprobada genera issues: las piezas compartidas se cambian por turnos y las subtareas guardan avance sin cerrar la issue. Se verifican objetos, pruebas y permisos; la aceptación humana de permisos se limita a la diferencia registrada. El QA recorre cada rol en otra sesión. Los scripts repiten regresión y guiones antes del paquete, que revisa una persona." width="100%">
 
-El detalle, con la estructura de cada proyecto y sus nueve flujos, está en el [manual](../README.md#cómo-trabaja).
+Las piezas compartidas se secuencian entre unidades y las subtareas conservan el avance sin sustituir la verificación
+final. La aceptación humana de permisos queda registrada para la diferencia concreta. El detalle, con la estructura
+de cada proyecto y sus nueve flujos, está en el [manual](../README.md#cómo-trabaja).
 
 ## Desarrollo
 
-<img src="assets/desarrollo.svg" alt="Actualizar con git pull, cambiar en una rama, probar con --plugin-dir, comprobar, guardar el commit, abrir PR con autorización, pasar las comprobaciones de GitHub e integrar con aprobación. La versión cambia solo al publicar; el equipo la recibe con auto-update." width="100%">
+<img src="assets/desarrollo.svg" alt="Actualizar, cambiar en una rama, probar con --plugin-dir y comprobar antes del commit. Abrir PR con autorización; CI pasa batería y PDF real. Integrar con pruebas en verde y aprobación. Antes de publicar, pasar siete combinaciones de sistema y Python, enlaces y paquete. Publicar versión con autorización; el equipo la recibe por auto-update." width="100%">
 
 Los pasos y las reglas del repositorio están en [`CLAUDE.md`](../CLAUDE.md): `main` está protegida y nada entra sin PR
 ni sin las pruebas en verde.

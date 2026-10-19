@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="176" viewBox="0 0 900 176" role="img" aria-labelledby="titulo descripcion">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="260" viewBox="0 0 900 260" role="img" aria-labelledby="titulo descripcion">
   <title id="titulo">Cómo se cambia el plugin</title>
-  <desc id="descripcion">Actualizar con git pull; cambiar en una rama, con worktrees separados si hay varias sesiones; probar con claude --plugin-dir; pasar las comprobaciones del cambio; guardar el commit; abrir el PR solo con autorización; GitHub comprueba el cambio; integrar con las pruebas en verde y la aprobación correspondiente. La versión de plugin.json y del README se cambia solo al publicar, con autorización, y llega al equipo mediante auto-update.</desc>
+  <desc id="descripcion">Actualizar con git pull, cambiar en una rama, probar el comportamiento con claude --plugin-dir y pasar las comprobaciones correspondientes antes del commit. Abrir el PR con autorización. GitHub ejecuta la batería y la conversión real a PDF; la integración requiere pruebas en verde y aprobación. Antes de publicar, pasar las siete combinaciones de sistema y Python, comprobar los enlaces y probar el paquete. Con autorización, actualizar la versión en el manifiesto y el manual y publicar la release. El equipo recibe la versión mediante auto-update.</desc>
   <style>
     :root {
       --fondo: #f6f8fc; --marco: #dfe4ef; --tarjeta: #ffffff; --via: #bcc6dd;
@@ -14,6 +14,7 @@
     }
     text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; text-anchor: middle; }
     .titulo { font-size: 13px; font-weight: 600; fill: var(--tinta); }
+    .rotulo { font-size: 10px; font-weight: 600; letter-spacing: 1.1px; fill: var(--suave); }
     .nota { font-size: 11px; fill: var(--suave); }
     .mono { font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 10.5px; fill: var(--suave); }
     .numero { font-size: 12px; font-weight: 700; fill: var(--azul); }
@@ -24,7 +25,7 @@
     .visto { fill: none; stroke: var(--sobre-verde); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   </style>
 
-  <rect class="fondo" x=".5" y=".5" width="899" height="175" rx="14"/>
+  <rect class="fondo" x=".5" y=".5" width="899" height="259" rx="14"/>
 
   <path class="via" d="M82 52h68M193 52h68M304 52h68M415 52h68M526 52h68M637 52h68M748 52h67"/>
 
@@ -60,12 +61,25 @@
 
   <circle class="paso" cx="726" cy="52" r="15"/>
   <text class="numero" x="726" y="56.3">7</text>
-  <text class="titulo" x="726" y="96">GitHub prueba</text>
-  <text class="nota" x="726" y="115">según el cambio</text>
+  <text class="titulo" x="726" y="96">CI del PR</text>
+  <text class="nota" x="726" y="115">batería + PDF real</text>
 
   <circle class="fin" cx="838" cy="52" r="16"/>
   <path class="visto" d="M831 52.3l4.8 4.8 9-9.8"/>
   <text class="titulo" x="838" y="96">Integrar</text>
   <text class="nota" x="838" y="115">verde y aprobado</text>
-  <text class="nota" x="450" y="153">Versión y entrega: solo al publicar, con autorización · El equipo recibe la versión con auto-update</text>
+  <path class="via" d="M854 52H890V139H159V149"/>
+  <path d="M159 152l-3.5-7h7z" fill="var(--via)"/>
+  <rect class="fondo" x="20.5" y="155.5" width="859" height="66" rx="10"/>
+  <text class="rotulo" x="159" y="179">ANTES DE PUBLICAR</text>
+  <text class="nota" x="159" y="201">7 combinaciones · enlaces · paquete</text>
+  <path class="via" d="M296 188H347"/>
+  <path d="M353 188l-7-3.5v7z" fill="var(--via)"/>
+  <text class="titulo" x="463" y="179">Publicar versión</text>
+  <text class="nota" x="463" y="201">manifiesto, manual y release</text>
+  <path class="via" d="M577 188H628"/>
+  <path d="M634 188l-7-3.5v7z" fill="var(--via)"/>
+  <text class="titulo" x="751" y="179">Llega al equipo</text>
+  <text class="nota" x="751" y="201">auto-update al abrir Claude Code</text>
+  <text class="nota" x="450" y="242">Integrar y publicar requieren autorización y las comprobaciones en verde.</text>
 </svg>

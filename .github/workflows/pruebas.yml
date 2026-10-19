@@ -98,6 +98,77 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Aviso real de un requisito ausente en Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          python - <<'PY'
+          import importlib.util
+          import json
+          import os
+          from pathlib import Path
+          import shutil
+          import subprocess
+
+          raiz = Path.cwd()
+          evidencia = Path(os.environ["RUNNER_TEMP"], "windows-requisitos-hook")
+          evidencia.mkdir()
+          proyecto = evidencia / "proyecto"
+          proyecto.mkdir()
+          os.chdir(proyecto)
+          if os.environ.get("REQUISITOS_SIN"):
+              raise SystemExit("Esta comprobación necesita detección real, sin REQUISITOS_SIN")
+          spec = importlib.util.spec_from_file_location("requisitos", raiz / "requisitos.py")
+          requisitos = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(requisitos)
+          presente, ruta = requisitos._docx()
+          resultado = {"docx_presente": presente, "ruta": ruta, "simulacion": False}
+          if presente:
+              resultado["estado"] = "NOT MEASURED: el runner ya tiene docx"
+          else:
+              hook = json.loads((raiz / "hooks/hooks.json").read_text(encoding="utf-8"))
+              orden = hook["hooks"]["SessionStart"][0]["hooks"][0]["command"]
+              orden = orden.replace("${CLAUDE_PLUGIN_ROOT}", raiz.as_posix())
+              shell = shutil.which("powershell")
+              if not shell:
+                  raise SystemExit("No se encuentra Windows PowerShell para ejecutar el hook real")
+              entorno = dict(os.environ, APPIAN_RE_HOME=str(evidencia / "personal"))
+              # PowerShell 5.1 recibe y devuelve el UTF-8 de Python sin depender de la página de códigos del runner.
+              comando = "[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new(); " + orden
+              salidas = []
+              for nombre in ("primera", "segunda"):
+                  proceso = subprocess.run([shell, "-NoProfile", "-NonInteractive", "-Command", comando],
+                                           env=entorno, capture_output=True, text=True, encoding="utf-8",
+                                           errors="replace", timeout=90)
+                  (evidencia / f"{nombre}.log").write_text(proceso.stdout + proceso.stderr, encoding="utf-8")
+                  salidas.append(proceso)
+              version = json.loads((raiz / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["version"]
+              marca = Path(entorno["APPIAN_RE_HOME"], ".cache", "appian-analisis-funcional", f"avisado-{version}")
+              assert all(p.returncode == 0 for p in salidas), "El hook debe salir con código 0"
+              assert "Falta Paquete docx de Node" in salidas[0].stdout, "Falta el aviso real de docx"
+              assert marca.is_file(), "Falta la marca de aviso por versión"
+              assert not salidas[1].stdout.strip(), "El hook repite el aviso de la misma versión"
+              resultado.update(estado="PASS", marca=str(marca), shell=shell,
+                               codigos=[p.returncode for p in salidas])
+          (evidencia / "resultado.json").write_text(json.dumps(resultado, ensure_ascii=False, indent=2) + "\n",
+                                                   encoding="utf-8")
+          resumen = "Windows, hook real antes de instalar docx: " + resultado["estado"]
+          print(resumen)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+              f.write(resumen + "\n\nPrueba de terminal; no mide una instalación visual en Desktop.\n")
+          PY
+
+      - name: Conservar el aviso de requisitos de Windows
+        if: always() && runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-requisitos-python${{ matrix.python }}-utf8${{ matrix.utf8 }}
+          path: ${{ runner.temp }}/windows-requisitos-hook/
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: docx para el Word del DF
         run: npm install -g docx
 
