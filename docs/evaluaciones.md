@@ -4,6 +4,31 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Temas aplazados: medidas y cambios antes de publicar (19 de octubre de 2026)
+
+Segunda fase local, solicitada por Raúl después de cerrar la primera tanda. Alcance y decisiones en
+`docs/plan/2026-10-19-temas-aplazados.md`; integración en `codex/aplazados`, partiendo de `84d2b24`. Las evidencias
+quedan en `$PROYECTOS_PRUEBA/aplazados-codex-20261019/`. Esta sección recoge solo las medidas terminadas; no acredita
+el cierre de los cambios que el plan mantiene en curso.
+
+| Tema | Medida y resultado |
+|---|---|
+| Borrador automático de §13 (E1) | P10 tiene 141 objetos. Buscar nombres literales encuentra 91, pero no identifica su función. Leer únicamente columnas de definición produce 51 candidatos: 50 objetos correctos (35,5 % del total) y un campo que no es objeto. No se añade un generador general con esa cobertura; situación, cambio, finalidad y objetos restantes necesitan interpretación. |
+| Dependencias corregidas por una persona (E2) | En copia de P10 se retira una arista y se restaura el cálculo automático, conservando versiones y objetos. Historial con motivo, actor y fecha; ciclos rechazados; correcciones caducan al cambiar el encargo o las dependencias relacionadas. 95 ficheros originales conservan su SHA256. |
+| Suite analista tras E2 | 393 comprobaciones correctas, incluidos siete casos nuevos de correcciones. PDF con LibreOffice sigue sin medirse. |
+| Tamaño de issues (D7) | 25 issues: mediana de 63 líneas; Base, 289 líneas y 68 objetos. Dos agrupadas tienen 19 objetos/20 requisitos y 13 objetos/12 requisitos. No se decide la partición solo por longitud. |
+| Etiquetas BPMN | Mismos 1.000 casos con semilla 11: etiquetas atravesadas por otro flujo, 8→0; conexiones falsas detectadas, 142→126; solapes de nodos, 0→0; cruces, 2.246→2.246. Sin empeoramiento caso a caso en esas medidas. Los 126 defectos de conexión restantes siguen siendo una limitación de la colocación. |
+| Suite diagramas | Completa con navegador: 135 comprobaciones correctas; sin navegador: 58; cinco casos focales finales. Son recorridos que se solapan, no cifras para sumar. PNG difíciles revisados antes y después. |
+| Arquitectura (E5) | Cinco capas con cinco cajas: 1.322 px con conexiones paralelas, 1.586 px con etiquetas de 45 caracteres y 4.442 px con conexiones densas. Vista general agrupada: 346 px. La referencia aplica el límite existente de 1.600 px al render y conserva objetos y relaciones en el detalle por capa o las tablas. |
+| Enlaces del prototipo (D11) | Ocho casos de navegador correctos: pestaña nueva, parámetros escapados, números conservados como texto, recarga, historial y aislamiento de claves. Suite de prototipos: 46 comprobaciones correctas, incluidos los seis casos del chat. |
+| Contraste sobre imágenes | Las doce apariciones sin medir corresponden a cuatro textos repetidos en pantalla y dos diálogos. El auditor no mide el fondo compuesto de imagen y capa superpuesta ni descuenta la ocultación por el diálogo. Se conserva expresamente «no medido». |
+| Ejecutor de batería (E7) | Cinco pruebas del contrato correctas: concurrencia real, modo secuencial, aislamiento de salida, entorno/carpeta y conservación de fallos. QA+refactorización reales: 176,7 s en serie frente a 126,4 s con dos grupos (28,4 % menos); ambos grupos pasan en ambos recorridos. |
+
+El nuevo ejecutor limita la concurrencia a dos grupos, imprime sus tiempos y conserva `--trabajos 1` para comparar.
+Los tiempos de la pareja no se extrapolan a la batería completa: ese rendimiento se medirá en CI. No se ejecutó
+`--completo` en el equipo. Las siete combinaciones de sistema/Python y la prueba de comportamiento con el plugin
+cargado siguen pendientes antes de publicar. No se ha cambiado la versión ni publicado esta fase.
+
 ## Aplicación de las lecciones de automejora (19 de octubre de 2026)
 
 Cambios locales sobre `automejora-pruebas`, autorizados tras revisar las recomendaciones A–E. La matriz completa

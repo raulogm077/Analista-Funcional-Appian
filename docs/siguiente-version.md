@@ -1,8 +1,9 @@
 # Para la siguiente versión
 
 Trabajo que queda abierto después de aplicar las lecciones de automejora del 19 de octubre de 2026, sobre la
-0.8.0-beta.1. Los cambios aplicados y sus pruebas están en `docs/evaluaciones.md`; el alcance y el relevo, en
-`docs/plan/2026-10-19-aplicar-automejora.md`. Esta lista no autoriza publicar ni actuar en un entorno.
+0.8.0-beta.1. Raúl pidió abordar los temas aplazados antes de publicar: la fase activa está en
+`docs/plan/2026-10-19-temas-aplazados.md`. Los cambios terminados y sus pruebas están en `docs/evaluaciones.md`;
+la primera tanda quedó cerrada en `docs/plan/2026-10-19-aplicar-automejora.md`. Esta lista no autoriza publicar ni actuar en un entorno.
 
 ## Antes de subir y publicar
 
@@ -14,44 +15,40 @@ Trabajo que queda abierto después de aplicar las lecciones de automejora del 19
   mensaje lo explica. En Linux con Claude Code ya se vio; el hook de Windows dejó su marca con 0.7.0-beta.1, pero falta
   ver el mensaje con un requisito ausente.
 
-## Construcción y verificación: esperar a un caso real
+## Construcción y verificación: decisiones e implementación en curso
 
-- Dos unidades sobre la misma pieza sin construir: por ahora el cambio va en la misma unidad. Tomar el texto de la
-  versión con que se aprobó cada unidad solo si vuelve a ocurrir la mezcla observada en P10 (D1).
-- Borrador de técnico §13 por script: medir primero si ayuda con el volumen de P10; no añadir generación automática
-  sin esa medida (E1).
-- Dependencias de issues dadas de más: permitir corregirlas a mano solo cuando dificulten una construcción real (E2).
-- Las issues agrupadas ya tienen un título representativo y una lista paralela resumida. Partir un process model por
-  actividad sigue pendiente de que el tamaño moleste al construir (D7).
-- Prueba diferencial de una refactorización: plantearla cuando haya una refactorización real, con diferencias
-  aceptadas y motivo. No crear ahora un segundo recorrido de QA (E3).
-- Comprobar en `verificar` quién ve una acción de registro y quién inicia un proceso: aparcado. El QA sigue siendo la
-  comprobación prevista para estos permisos (C8).
+- Dos unidades sobre la misma pieza sin construir (D1): Raúl eligió secuenciar esa pieza. Se implementan guardias
+  para que una propuesta ajena no contamine el encargo aprobado. La aprobación sigue siendo de la unidad entera;
+  no hay aprobación parcial ni nuevos encargos históricos por unidad.
+- Issues grandes (D7): medidas las 25 de P10 y explicados los pros y contras. Espera elección entre subtareas con
+  avance guardado e issues independientes tras separar sus objetos. No se ha aplicado una opción por silencio.
+- Prueba diferencial de una refactorización (E3): buscar un caso real en la aplicación de Indra elegida por Raúl,
+  con diferencias aceptadas y motivo. Las lecturas están autorizadas; cualquier ejecución se concretará por separado.
+- Permisos (C8): Raúl eligió bloquear una diferencia confirmada salvo aceptación humana expresa del comportamiento.
+  Se implementa comparación de configuración decidible y excepción acotada a la diferencia; lo ilegible o no
+  resoluble será «no comprobado». El acceso efectivo sigue requiriendo QA con usuarios de cada rol.
 - «No evaluable» reconoce el límite de la rejilla con filtros de usuario (`flow!userFilterSetData`). Añadir otro límite
   a `devmcp_policy.json` solo si aparece y se comprueba.
 
 ## Ingeniería inversa y diagramas
 
-- Ejecutar `deriva` de punta a punta con una aplicación real. El historial sí existe en el Dev MCP real, comprobado
-  con `listObjectVersions` en P4 y P5.
-- Medir LEEME con una aplicación grande antes de cambiar su presupuesto: llegó al 96 % con 42 objetos; los demás
-  documentos quedaron al 20–54 % (E6).
+- Ejecutar `deriva` de punta a punta y medir LEEME con la aplicación real elegida en Indra (lectura en curso).
+  El historial existe en el Dev MCP real; el LEEME anterior llegó al 96 % con 42 objetos y los demás documentos
+  quedaron al 20–54 %. No se cambia el presupuesto antes de medirlo (E6).
 - Volver a medir la evaluación de malas prácticas con propuestas reales; sus `claves` se fijaron sin esas propuestas.
-- Ancho de la arquitectura en `mermaid-rules.md`: aparcado hasta acordar un criterio visual. «Cinco cajas por capa» no
-  garantiza el ancho y partirla exige decidir cómo encaja con `arquitectura-<capa>.mmd` (E5).
-- En 1.000 procesos al azar (semilla 11), quedan ocho con una etiqueta cruzada por otro flujo, frente a 46 antes. Son
-  puertas con varias salidas y sin espacio libre para un codo; no cambiar la colocación sin volver a medirlas.
+- La campaña de 1.000 procesos (semilla 11) ya deja cero etiquetas atravesadas. Persisten 126 conexiones falsas
+  detectadas, frente a 142 antes de esta fase; medir esos casos por separado antes de ampliar el cambio de rutas.
 - La política permite `testInterface` en desarrollo con datos ficticios. Si se lee un entorno con datos reales,
   documentar `--skip "^testInterface$"` en F6 y `devmcp-setup.md` antes de esa lectura.
 - Revisar las URL fijas `/help/26.6/` de `data-fabric.md`, `devmcp-setup.md` y `agents/data-modeler.md` cuando cambie
   la versión del Appian MCP Server.
 
-## Prototipos y batería
+## Comprobaciones pendientes de los cambios terminados
 
-- Abrir una pantalla del prototipo en otra pestaña mediante `#ver=<pantalla>&<parámetro>=<valor>`: aparcado. El ajuste
-  del chat al alto disponible sí se aplica en este trabajo (D11).
-- Medir la duración de cada grupo de `comprobar_plugin.py --completo` antes de paralelizarlo. La batería tardaba
-  17 minutos en Windows y 8,5 en Linux; no es urgente (E7).
+- Medir el fondo compuesto real bajo los cuatro textos sobre imágenes que el auditor de contraste no mide:
+  doce apariciones entre pantalla y diálogos. El diagnóstico conserva esa limitación explícita.
+- Medir en CI la batería completa con la concurrencia limitada y los tiempos por grupo (E7). La pareja QA y
+  refactorización pasa en serie y en paralelo; esa mejora local no acredita aún el tiempo del conjunto.
 
 ## Pasos de Raúl
 
