@@ -674,13 +674,33 @@ def c_issues(m, a):
     la primera sin hacer cuyas dependencias están hechas y la reserva (un commit y un push del índice); con --liberar,
     quita una reserva."""
     ctx, uid = unidad(m, a.unidad)
-    if a.regresion:     # la orden de la regresión, lista para copiar: la pasa quien prepara el paquete (F9, F5)
+    if a.regresion and a.depende_de is None and not a.dependencias_automaticas:
         # una urgencia corregida en el entorno de corrección se prueba allí, con el Dev MCP de ese entorno
         correccion = ctx.por_id[uid].urgente and un.donde_se_corrige(ctx.ficha_urg(uid)) == "correccion"
         orden, notas = iss.orden_de_regresion(m, uid, "corrección" if correccion else "desarrollo")
         print(f"La regresión de la aplicación{' en el entorno de corrección' if correccion else ''} antes de preparar "
               f"el paquete de {uid} (el resumen, en construccion/{uid}/regresion.json; por la salida, solo lo que "
               f"falla):\n\n```\n{orden}\n```" + "".join(f"\n· {n}" for n in notas))
+        return
+    if a.depende_de is not None or a.dependencias_automaticas:
+        if a.desatendida:
+            sys.exit("Las dependencias las corrige una persona; no se cambian con --desatendida")
+        if (not a.issue or (a.depende_de is not None and a.dependencias_automaticas)
+                or a.manual or a.automatico or a.sin_prueba or a.siguiente or a.liberar or a.regresion):
+            sys.exit("Usa ISS-nn --depende-de ISS-aa ISS-bb --motivo «…», o ISS-nn --dependencias-automaticas")
+        destinos = a.depende_de or []
+        if [x.lower() for x in destinos] == ["ninguna"]:
+            destinos = []
+        try:
+            _, _, plan, issue, como = iss.corrige_dependencias(m.raiz, uid, a.issue.upper(),
+                                                               [x.upper() for x in destinos], a.motivo, a.quien,
+                                                               retirar=a.dependencias_automaticas)
+        except iss.NoSePuede as e:
+            sys.exit(str(e))
+        print(f"{issue.id}: depende de {', '.join(issue.depende) or 'ninguna'}. {como}")
+        for aviso in plan.avisos:
+            print(f"· {aviso}")
+        print("\n".join(iss.situacion(plan, m.raiz)))
         return
     if a.manual or a.automatico:
         if a.desatendida:
@@ -718,6 +738,9 @@ def c_issues(m, a):
                 print(f"{a.liberar.upper()} de {uid}, sin reserva" + (f" ({como})" if como else ""))
             else:
                 m, ctx, plan, issue, como = iss.siguiente(m.raiz, uid, a.quien)
+            for aviso in plan.avisos:
+                if "corrección de dependencias" in aviso:
+                    print(f"· {aviso}")
             # los avisos del cálculo son del analista (los da «indice.py issues <p> <U>»): a quien construye, su issue
             if issue is not None:
                 de = f", reservada a nombre de {plan.reservas[issue.id]}" if issue.id in plan.reservas else ""
@@ -743,6 +766,9 @@ def c_issues(m, a):
         issue = next((i for i in plan.issues if i.id == a.issue.upper()), None)
         if issue is None:
             sys.exit(f"{uid} no tiene la issue {a.issue} (tiene {', '.join(i.id for i in plan.issues)})")
+        for aviso in plan.avisos:
+            if "corrección de dependencias" in aviso:
+                print(f"· {aviso}")
         print(iss.para_construir(m, ctx, plan, issue))
         return
     n = len(plan.issues)
@@ -795,7 +821,9 @@ def main():
                         "al preparar el paquete")
     s.add_argument("--manual", action="store_true", help="con ISS-nn y --motivo: cierre humano de esta versión")
     s.add_argument("--automatico", action="store_true", help="con ISS-nn: retira el cierre manual")
-    s.add_argument("--motivo", help="con --sin-prueba: por qué no hace falta para avanzar")
+    s.add_argument("--depende-de", nargs="+", metavar="ISS-nn", help="lista exacta humana de dependencias; ninguna para vacía; requiere --motivo")
+    s.add_argument("--dependencias-automaticas", action="store_true", help="retira la corrección humana de dependencias")
+    s.add_argument("--motivo", help="razón de la excepción, cierre manual o corrección de dependencias")
     s.add_argument("--desatendida", action="store_true", help="la sesión no tiene a una persona: --sin-prueba se niega")
     a = ap.parse_args()
     m = mo.Proyecto(a.proyecto)

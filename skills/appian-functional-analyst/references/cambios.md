@@ -147,6 +147,19 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
   con tabla en §13 pero sin columna «Para» da una sola issue con toda la unidad; con lista, hay que pasarla a tabla
   antes de generar issues. Si se aprobó antes de hacerlo, tras completar la tabla ejecuta `indice.py issues <p> <U>`.
 
+Si una dependencia calculada sobra o falta, una persona puede fijar la **lista exacta** de esa issue:
+`indice.py issues <p> EV-02 ISS-03 --depende-de ISS-01 ISS-02 --motivo "…" --quien "…"`.
+`--depende-de ninguna` deja la lista vacía; `--dependencias-automaticas` retira la corrección. No decide qué objetos
+están construidos ni cierra ninguna issue: cambia el orden y recalcula cuáles pueden ir en paralelo y cuál sigue.
+Se rechazan referencias inexistentes, a la propia issue y ciclos en el grafo completo, también al retirar una corrección.
+Con `--desatendida` no se admite; el motivo debe explicar por qué se puede construir en ese orden.
+
+La tabla «Correcciones de dependencias» de `construccion/<U>/indice.md` conserva la lista, motivo, autor, fecha y
+versiones de la issue y de sus dependencias originales y corregidas. Si cambia cualquiera de esos encargos, desaparece
+una issue relacionada o cambia la lista calculada, la anotación queda **caducada**, se avisa y vuelve el cálculo
+automático. No se reactiva sola aunque el análisis vuelva al texto anterior: una persona revisa el nuevo encargo y
+registra otra decisión. Las anotaciones caducadas, retiradas y sustituidas quedan visibles como rastro.
+
 ## 6. Construir, verificar y marcar
 
 1. **Pedir la siguiente issue**: `indice.py issues <p> EV-02 --siguiente` da la primera sin hacer cuyas dependencias

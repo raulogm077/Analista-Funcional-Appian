@@ -121,6 +121,7 @@ class Plan:
     ultimo_numero: int = 0
     revisar: list = field(default_factory=list)    # lo que una persona revisa antes de construir (T14, unidades.py)
     manuales: list = field(default_factory=list)   # cierre humano de una versión concreta, sin fingir verificación
+    dependencias: list = field(default_factory=list)  # correcciones humanas y su historial, en el índice
 
 
 def clave(pid):
@@ -816,6 +817,90 @@ def manuales_de(raiz, uid):
     return out
 
 
+DEPENDENCIAS = "Correcciones de dependencias"
+CAMPOS_DEPENDENCIAS = ("issue", "version", "depende", "automaticas", "versiones", "motivo", "quien", "cuando", "estado")
+COLUMNAS_DEPENDENCIAS = ("Issue", "Versión", "Depende de", "Automáticas", "Versiones relacionadas", "Motivo", "Quién", "Cuándo", "Estado")
+
+
+def dependencias_de(raiz, uid):
+    f = carpeta(raiz, uid) / INDICE
+    texto = f.read_text(encoding="utf-8") if f.is_file() else ""
+    dentro, out = False, []
+    for l in texto.splitlines():
+        if l.startswith("## "):
+            dentro = l == "## " + DEPENDENCIAS
+        if not dentro or not l.startswith("|"):
+            continue
+        c = mo.celdas(l)
+        if c and RX_ISSUE.fullmatch(c[0]):
+            if len(c) != len(CAMPOS_DEPENDENCIAS):
+                raise NoSePuede("fila incompleta en Correcciones de dependencias; no se descarta la anotación humana")
+            x = dict(zip(CAMPOS_DEPENDENCIAS, c))
+            for campo in ("depende", "automaticas"):
+                x[campo] = [] if celdavacia(x[campo]) else [v.strip() for v in x[campo].split(",")]
+            try:
+                x["versiones"] = dict(v.strip().split(":", 1) for v in x["versiones"].split(",")) if not celdavacia(x["versiones"]) else {}
+            except ValueError:
+                raise NoSePuede(f"{x['issue']}: versiones relacionadas mal formadas; revisa su anotación") from None
+            out.append(x)
+    return out
+
+
+def celdavacia(texto):
+    return texto.strip() in ("", "—", "ninguna")
+
+
+def aplica_dependencias(plan):
+    """Las anotaciones vigentes sustituyen la lista exacta; al cambiar el encargo se conserva la anotación caducada."""
+    ordena(plan.issues)
+    por_id = {i.id: i for i in plan.issues}
+    antes = {i.id: set(i.depende) for i in plan.issues}
+    corregidas = set()
+    plan.avisos = [a for a in plan.avisos if "corrección de dependencias" not in a]
+    for x in plan.dependencias:
+        if x["estado"] != "Vigente":
+            continue
+        i = por_id.get(x["issue"])
+        causa = ("la issue ya no existe" if not i else "cambió su encargo" if i.version != x["version"] else
+                 "cambiaron las dependencias calculadas" if set(x["automaticas"]) != antes[i.id] else "")
+        if not causa:
+            for iid, version in x["versiones"].items():
+                if iid not in por_id or por_id[iid].version != version:
+                    causa = f"cambió o desapareció {iid}"
+                    break
+        if causa:
+            x["estado"] = "Caducada: " + causa
+            continue
+        if i.id in corregidas:
+            raise NoSePuede(f"{i.id}: más de una corrección de dependencias vigente")
+        if not x["motivo"].strip(" —") or not x["quien"].strip(" —"):
+            raise NoSePuede(f"{i.id}: la corrección de dependencias necesita motivo y quién la decidió")
+        for iid in x["depende"]:
+            if iid not in por_id:
+                raise NoSePuede(f"dependencia inexistente: {iid}")
+            if iid == i.id:
+                raise NoSePuede(f"{i.id} no puede depender de sí misma")
+        if set(x["versiones"]) != set(x["automaticas"]) | set(x["depende"]):
+            raise NoSePuede(f"{i.id}: faltan las versiones relacionadas de su corrección")
+        antes[i.id] = set(x["depende"])
+        corregidas.add(i.id)
+    ordena_grafo(plan.issues, antes)
+    avisadas = set()
+    for x in plan.dependencias:
+        if x["estado"].startswith("Caducada") and x["issue"] not in corregidas | avisadas:
+            detalle = x["estado"].replace("Caducada", "caducada", 1)
+            plan.avisos.append(f"{x['issue']}: corrección de dependencias {detalle}; se usa el cálculo automático")
+            avisadas.add(x["issue"])
+    for i in plan.issues:
+        con_nombre = lambda ids: lista([x + (" (Base)" if por_id[x].titulo == "Base" else "") for x in ids])
+        cab = f"Requisitos: {i.para} · Depende de: {con_nombre(i.depende)} · En paralelo con: {paralelo(i.paralelo)}"
+        if plan.app:
+            cab += f" · Aplicación `{plan.app}`"
+        if i.id in corregidas:
+            cab += " · Dependencias corregidas por una persona (ver indice.md)"
+        i.texto = re.sub(r"^Requisitos:.*$", lambda _: cab, i.texto, flags=re.M)
+
+
 def numera(issues, previas, ultimo=0):
     """Da a cada issue su número: el que tenía la del índice con la que más requisitos (y, a igualdad, objetos)
     comparte; a las nuevas, los siguientes al mayor. Así, si cambia el análisis, cada issue conserva el suyo."""
@@ -848,13 +933,25 @@ def ordena(issues):
             comparten = set(i.objetos) & set(j.objetos) or i.nombra & set(j.objetos) or j.nombra & set(i.objetos)
             if j.comun or comparten:
                 antes[i.id].add(j.id)
+    ordena_grafo(issues, antes)
 
-    def todas(iid, vistas):
-        for x in antes[iid] - vistas:
-            vistas.add(x)
-            todas(x, vistas)
-        return vistas
-    previas = {i.id: todas(i.id, set()) for i in issues}
+
+def ordena_grafo(issues, antes):
+    """Valida el grafo completo antes de cambiar las issues y recalcula su paralelismo transitivo."""
+    previas = {}
+    def todas(iid, camino):
+        if iid in camino:
+            raise NoSePuede("ciclo de dependencias: " + " → ".join(camino + [iid]))
+        if iid not in antes:
+            raise NoSePuede(f"dependencia inexistente: {iid}")
+        if iid not in previas:
+            alcance = set(antes[iid])
+            for x in sorted(antes[iid], key=numero):
+                alcance |= todas(x, camino + [iid])
+            previas[iid] = alcance
+        return previas[iid]
+    for i in issues:
+        todas(i.id, [])
     for i in issues:
         i.depende = sorted(antes[i.id], key=numero)
         i.paralelo = sorted((j.id for j in issues if j is not i and j.id not in previas[i.id]
@@ -904,6 +1001,8 @@ def calcula(m, ctx, uid):
         i.sueltas = {x["i"] for x in perdidas}
     for i in issues:
         redacta(d, i, plan, lineas, dts, pruebas)
+    plan.dependencias = dependencias_de(m.raiz, uid)
+    aplica_dependencias(plan)
     plan.manuales = [x for x in manuales_de(m.raiz, uid)
                      if any(i.id == x["issue"] and i.version == x["version"] for i in issues)]
     if perdidas:
@@ -943,6 +1042,14 @@ def texto_indice(plan, reservas):
     for i in plan.issues:
         L.append("| " + " | ".join([i.id, i.para, i.titulo.replace("|", "/"), lista(i.depende), lista(i.paralelo),
                                     ", ".join(f"`{o}`" for o in i.objetos), reservas.get(i.id) or "—"]) + " |")
+    if plan.dependencias:
+        L += ["", f"## {DEPENDENCIAS}", "", "Decisiones humanas sobre el orden. Las caducadas o retiradas se conservan "
+              "como rastro y no sustituyen el cálculo automático.", "", "| " + " | ".join(COLUMNAS_DEPENDENCIAS) + " |",
+              "|" + "---|" * len(COLUMNAS_DEPENDENCIAS)]
+        for x in plan.dependencias:
+            valores = {**x, "depende": lista(x["depende"]), "automaticas": lista(x["automaticas"]),
+                       "versiones": ", ".join(k + ":" + v for k, v in x["versiones"].items()) or "—"}
+            L.append("| " + " | ".join(celda(valores[k]) for k in CAMPOS_DEPENDENCIAS) + " |")
     if plan.manuales:
         L += ["", f"## {MANUALES}", "", "Cierres humanos, sin verificación automática; caducan si cambia la issue. "
               "Revisarlos antes del paquete.", "", "| " + " | ".join(COLUMNAS_MANUALES) + " |", "|---|---|---|---|---|"]
@@ -1438,8 +1545,10 @@ def con_reserva(raiz, uid, cambia, sin_git=None, escribe_=False):
         plan = calcula(m, ctx, uid)
         escribe(plan, raiz)
         marcas, manuales = list(plan.marcas), list(plan.manuales)
+        dependencias = [dict(x) for x in plan.dependencias]
         issue, reservas, mensaje = cambia(plan)
-        if reservar and (reservas != plan.reservas or plan.marcas != marcas or plan.manuales != manuales):
+        if reservar and (reservas != plan.reservas or plan.marcas != marcas or plan.manuales != manuales
+                         or plan.dependencias != dependencias):
             escribe(plan, raiz, reservas)
         return m, ctx, plan, issue, mensaje
 
@@ -1530,6 +1639,38 @@ def libera(raiz, uid, iid):
 
 
 RX_CASO = re.compile(r"^\s*(.*?)\s*«(.+)»\s*$")      # «DEM_ER_Firma «Sin firma»», como lo dicen estado() y verificar
+
+
+def corrige_dependencias(raiz, uid, iid, destinos, motivo, quien=None, retirar=False):
+    """Lista exacta humana y reversible, válida para los encargos de ambos extremos de cada relación."""
+    if not retirar and not str(motivo or "").strip():
+        raise NoSePuede("corregir dependencias necesita un motivo")
+    nombre = quien_soy(raiz, quien)
+    ahora = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+    def cambia(plan):
+        por_id = {i.id: i for i in plan.issues}
+        if iid not in por_id:
+            raise NoSePuede(f"{uid} no tiene la issue {iid}")
+        issue = por_id[iid]
+        for x in plan.dependencias:
+            if x["issue"] == iid and (x["estado"] == "Vigente" or x["estado"].startswith("Caducada")):
+                anterior = "" if x["estado"] == "Vigente" else "; antes: " + x["estado"]
+                x["estado"] = f"{'Retirada' if retirar else 'Sustituida'} por {nombre} el {ahora}" + anterior
+        if not retirar:
+            for destino in destinos:
+                if destino not in por_id:
+                    raise NoSePuede(f"dependencia inexistente: {destino}")
+                if destino == iid:
+                    raise NoSePuede(f"{iid} no puede depender de sí misma")
+            ordena(plan.issues)
+            automaticas = list(issue.depende)
+            relacionadas = sorted(set(automaticas) | set(destinos), key=numero)
+            plan.dependencias.append({"issue": iid, "version": issue.version, "depende": sorted(set(destinos), key=numero),
+                                      "automaticas": automaticas, "versiones": {x: por_id[x].version for x in relacionadas},
+                                      "motivo": celda(motivo), "quien": nombre, "cuando": ahora, "estado": "Vigente"})
+        aplica_dependencias(plan)
+        return issue, plan.reservas, f"{uid}: {iid}, dependencias {'automáticas' if retirar else 'corregidas por ' + nombre}"
+    return con_reserva(raiz, uid, cambia, sin_git="en el índice, sin commit", escribe_=True)
 
 
 def cierre_manual(raiz, uid, iid, motivo, quien=None, retirar=False):
