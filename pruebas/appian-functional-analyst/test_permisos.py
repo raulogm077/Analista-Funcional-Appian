@@ -187,6 +187,69 @@ class Permisos(unittest.TestCase):
         with self.assertRaises(iss.NoSePuede):
             iss.acepta_permiso(self.p, "EV-01", issue.id, "PER-inventado", "Aceptado", "Ana")
 
+    def interrumpida(self, issue):
+        f = iss.carpeta(self.p, "EV-01") / "verificacion" / f"{issue.id}.interrumpido.json"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(json.dumps({"status": "partial", "previousResultIsCurrent": False,
+                                "generatedAt": "2026-10-19T10:00:00Z", "interruption": {"error": "HTTP 403"}}), encoding="utf-8")
+        return f
+
+    def test_interrupcion_conserva_pass_avisa_y_superseded_retira_aviso(self):
+        _, plan = self.preparada()
+        issue = plan.issues[0]
+        anterior = fixture.verifica(self.p, "EV-01", issue.id)
+        bytes_antes = anterior.read_bytes()
+        estado_antes = iss.estado(self.p, "EV-01", issue)
+        marca = self.interrumpida(issue)
+        hecha, motivo = iss.estado(self.p, "EV-01", issue)
+        self.assertTrue(hecha, motivo)
+        self.assertIn("última lectura interrumpida; situación según verificación anterior,", motivo)
+        self.assertIn("acceso actual no comprobado", motivo)
+        dato = json.loads(marca.read_text(encoding="utf-8"))
+        dato.update(status="superseded", supersededAt="2026-10-19T11:00:00Z")
+        marca.write_text(json.dumps(dato), encoding="utf-8")
+        self.assertEqual(iss.estado(self.p, "EV-01", issue), estado_antes)
+        self.assertEqual(anterior.read_bytes(), bytes_antes)
+
+    def test_interrupcion_conserva_bloqueos_permisos_y_qa_incluso_manual(self):
+        _, plan = self.preparada()
+        issue = next(i for i in plan.issues if i.criterios)
+        _, _, per = self.hallazgo(issue)
+        self.interrumpida(issue)
+        iss.cierre_manual(self.p, "EV-01", issue.id, "Revisado", "Ana")
+        hecha, motivo = iss.estado(self.p, "EV-01", issue)
+        self.assertFalse(hecha)
+        self.assertTrue(motivo.startswith("diferencias confirmadas de permisos:"), motivo)
+        self.assertIn("última lectura interrumpida", motivo)
+        codigo, salida = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-01", "construida", "--manual")
+        self.assertNotEqual(codigo, 0, salida)
+        self.assertIn(per, salida)
+        iss.acepta_permiso(self.p, "EV-01", issue.id, per, "Aceptado", "Ana")
+        qa = self.p / "qa" / "EV-01" / "resultado.json"
+        qa.parent.mkdir(parents=True)
+        qa.write_text(json.dumps({"escenarios": {issue.criterios[0]: {"resultado": "falla", "motivo": "Oculto",
+                                                                  "versionIssue": issue.version}}}), encoding="utf-8")
+        hecha, motivo = iss.estado(self.p, "EV-01", issue)
+        self.assertFalse(hecha)
+        self.assertIn("falla en QA", motivo)
+        self.assertIn("última lectura interrumpida", motivo)
+
+    def test_interrupcion_sin_previo_y_marca_ilegible_no_afirma_lectura_actual(self):
+        _, plan = self.preparada()
+        issue = plan.issues[0]
+        marca = self.interrumpida(issue)
+        hecha, motivo = iss.estado(self.p, "EV-01", issue)
+        self.assertFalse(hecha)
+        self.assertTrue(motivo.startswith("sin verificar"), motivo)
+        self.assertIn("sin verificación anterior válida", motivo)
+        fixture.verifica(self.p, "EV-01", issue.id)
+        for texto in ("{", "[]", '{"status":"partial"}', '{"status":"desconocido"}'):
+            marca.write_text(texto, encoding="utf-8")
+            hecha, motivo = iss.estado(self.p, "EV-01", issue)
+            self.assertTrue(hecha, motivo)
+            self.assertIn("marca de interrupción ilegible", motivo)
+            self.assertIn("acceso actual no comprobado", motivo)
+
     def test_hallazgo_ilegible_no_se_limpia_sin_aviso(self):
         _, plan = self.preparada()
         issue = plan.issues[0]

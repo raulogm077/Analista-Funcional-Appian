@@ -1387,6 +1387,28 @@ def marcado(marcas, issue, objeto, caso, error):
 
 
 def estado(raiz, uid, issue, marcas=(), manuales=None, permisos=None):
+    """Conserva el estado anterior y advierte si el último intento de lectura se interrumpió."""
+    hecha, motivo = _estado_verificado(raiz, uid, issue, marcas, manuales, permisos)
+    f = carpeta(raiz, uid) / "verificacion" / f"{issue.id}.interrumpido.json"
+    if not f.is_file():
+        return hecha, motivo
+    try:
+        marca = json.loads(f.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        marca = None
+    if isinstance(marca, dict) and marca.get("status") == "superseded":
+        return hecha, motivo
+    if isinstance(marca, dict) and marca.get("status") == "partial" and marca.get("previousResultIsCurrent") is False:
+        anterior, _ = verificacion(raiz, uid, issue)
+        aviso = ("última lectura interrumpida; "
+                 + ("situación según verificación anterior" if anterior is not None else "sin verificación anterior válida")
+                 + ", acceso actual no comprobado")
+    else:
+        aviso = f"marca de interrupción ilegible ({f.name}); acceso actual no comprobado"
+    return hecha, motivo + " · " + aviso
+
+
+def _estado_verificado(raiz, uid, issue, marcas=(), manuales=None, permisos=None):
     """(hecha, por qué): una issue está hecha cuando su última verificación (construccion/<U>/verificacion/ISS-nn.json,
     que deja «verificar --esperado») es de su versión de ahora, encuentra todos sus objetos como dice el técnico, si
     tiene pruebas, no falla ningún caso de prueba de sus objetos y no falla ninguno de sus escenarios en el QA de la
