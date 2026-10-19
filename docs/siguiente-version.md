@@ -12,12 +12,15 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
 ## Antes de subir y publicar
 
 - Probar el comportamiento de las skills modificadas con `claude --plugin-dir <carpeta>` en un proyecto fuera del
-  repositorio. Los selftests y las regresiones sobre copias de P10 no sustituyen esa prueba.
+  repositorio. La campaña D1/D7/C8 está preparada y sus diez controles offline pasan; el runner externo
+  `claude-comportamiento/campana_claude.py` permite ejecutarla desde el 20/10 a las 16:00 de Madrid, cuando se
+  restablece la cuota acreditada. Los selftests y las regresiones no sustituyen esa conducta aún no medida.
 - Cuando Raúl autorice subir: PR y batería completa en Linux. Antes de publicar una versión, las siete combinaciones
   de sistema/Python, como indica `CLAUDE.md`. Las anclas ya pasaron: 1.265 citas en 312 páginas, cero rotas. El job
   nuevo de PDF real con LibreOffice y la medición manual de concurrencia quedan por ejecutar en Actions. La versión
-  sigue sin cambiar. La exportación local con Word sí produjo un PDF de 13 páginas con texto y dos figuras, pero no
-  acredita LibreOffice.
+  sigue sin cambiar. LibreOffice ya convirtió el DF ficticio localmente y conservó todo su texto y las dos figuras:
+  12 páginas frente a las 13 de Word. Falta medir el job de CI; el índice de LibreOffice queda sin números de página
+  y el script ya avisa de revisarlo antes de entregar.
 - Instalar el paquete en un Windows con algún requisito realmente ausente y comprobar el primer mensaje. La orden
   del hook en PowerShell 5.1, con `docx` simulado como ausente, ya mostró el aviso y dejó la marca de una vez por
   versión; aún falta la instalación real con esa carencia. Comprobar visualmente la instalación en la app de
@@ -40,8 +43,8 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
 - LEEME completo y deriva de cambios internos en la aplicación real siguen sin medir: la extracción anterior tiene
   respuestas correctas para 24 de 248 UUID y carece de historiales de versión. Una extracción amplia se estimó en
   al menos unas 1.073 lecturas de objeto, pero **no fue necesaria** para comparar inventarios: con 23 respuestas de
-  listas, GDE pasó de 248 a 249 objetos (una interfaz nueva, ninguna baja). El `as-is` ficticio de MNT, reconstruido
-  y validado, usa 731 de 1.350 palabras de LEEME con 44 objetos; no se presenta como medida real de GDE ni se cambia
+  listas, la aplicación pasó de 248 a 249 objetos (una interfaz nueva, ninguna baja). El `as-is` ficticio de MNT,
+  reconstruido y validado, usa 731 de 1.350 palabras de LEEME con 44 objetos; no mide el conjunto real ni se cambia
   el presupuesto por ella (E6).
 - `getAgent` sigue devolviendo 401 por la API nativa, aunque Raúl ve el agente en Designer y `getApplication`
   funciona por el servlet. Raúl lo ha reportado a Appian y ha decidido aparcarlo. La medición de esta fase excluye
@@ -52,11 +55,10 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
   propuesta anterior encontró ocho problemas o matices adicionales; valorarlos si se usa esa propuesta para un
   trabajo real. Resultado y límites en `docs/evaluaciones.md` y
   `$PROYECTOS_PRUEBA/aplazados-codex-20261019/RESULTADO-MNT-CIEGA.md`.
-- La campaña de 1.000 procesos (semilla 11) ya deja cero etiquetas atravesadas. Persisten 126 conexiones falsas
-  detectadas, frente a 142 antes de esta fase. La revisión confirmó 38 intersecciones de etiquetas y 88 tramos
-  coincidentes en 71 procesos; los casos 43, 46 y 677 contienen solapes reales de la geometría. El diseño de
-  corrección propone enrutar y reservar las etiquetas conjuntamente, con reversión si un caso empeora. No hay parche
-  integrado: se requiere comparar la campaña caso a caso, cruces y dimensiones, antes de cambiar el generador.
+- El nuevo enrutado conservador reduce las conexiones ambiguas en las campañas de 1.000 procesos: 126→30 avisos
+  (semilla 11) y 103→38 (semilla 23), sin regresiones por caso ni aumento de dimensiones. Los casos 43/46/677 quedan
+  resueltos, con rutas manuales/importadas protegidas. Persisten 30 y 38 avisos: ampliar el espacio o los candidatos
+  para esos casos requiere otra mejora medida, sin suprimir el detector. Resultado y límites en `docs/evaluaciones.md`.
 - F6 y `devmcp-setup.md` ya documentan `--skip "^testInterface$"` con datos reales; la política permite esa prueba
   en desarrollo con datos ficticios. La exclusión no borra respuestas de pantalla guardadas en otra lectura.
 - Revisar las URL fijas `/help/26.6/` de `data-fabric.md`, `devmcp-setup.md` y `agents/data-modeler.md` cuando cambie
@@ -78,7 +80,5 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
 - Las seis tablas `cpr_*` de P6 dejan de figurar como borrado pendiente: Raúl indica que probablemente ya las borró y
   no encuentra ninguna con ese nombre en su consola. No se ha comprobado el catálogo desde esta sesión ni se hará
   un borrado adicional sin identificar de nuevo una tabla concreta.
-- Repetir P8 con Codex desde un terminal normal: el intento anterior dentro de otra sesión no fue concluyente porque
-  no arrancó su sandbox. La ruta local del plugin ya tiene solución; falta repetir la prueba de comportamiento.
 - Conciliar el índice del cerebro corporativo: marca 1.692 reuniones transcritas y se encontraron 1.095 en disco.
   Copilot lleva esta tarea; comprobar su resultado antes de darla por cerrada, sin editar el índice a la vez.

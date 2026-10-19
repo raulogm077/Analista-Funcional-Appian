@@ -607,7 +607,8 @@ def _cajas(proc, geo):
 def _celdas(proc, geo, pre=""):
     """Las celdas de una página, sin las dos de la raíz. `geo` = {"carriles": {nombre: (y, h)}, "ancho": w,
     "pasos": {id: (cx, cy)} (centro absoluto), "flujos": [[(x, y), ...] por flujo en el orden de proc],
-    y si los hay: "etiquetas": {id: "arriba"|"abajo"}, "externos": {nombre: (y, h)}, "anotaciones": [(x, y, w, h)]}.
+    y si los hay: "etiquetas": {id: "arriba"|"abajo"}, "externos": {nombre: (y, h)}, "anotaciones": [(x, y, w, h)],
+    "etiquetas_flujo": {índice desde cero: posición relativa validada, de -1 a 1}}.
     `pre` va delante de los ids que no son de un paso (carriles, externos, notas y flujos), para que no se repitan
     entre las páginas de un proceso en tramos."""
     celdas = []
@@ -670,8 +671,10 @@ def _celdas(proc, geo, pre=""):
         mensaje = f["de"] in ext_id or f["a"] in ext_id
         pts = geo["flujos"][i - 1] if i - 1 < len(geo.get("flujos", [])) and not mensaje else []
         if f.get("etiqueta") and i in caminos:
-            sitio = _sitio_etiqueta(caminos[i], [c for j, c in caminos.items() if j != i],
-                                    (colocacion.ancho_etiqueta_flujo(f["etiqueta"]), cajas))
+            sitio = geo.get("etiquetas_flujo", {}).get(i - 1)
+            if sitio is None:
+                sitio = _sitio_etiqueta(caminos[i], [c for j, c in caminos.items() if j != i],
+                                        (colocacion.ancho_etiqueta_flujo(f["etiqueta"]), cajas))
             pos = f' x="{sitio:.3f}"' if sitio is not None else pos
         arr = ('<Array as="points">' + "".join(f'<mxPoint x="{x:.0f}" y="{y:.0f}"/>' for x, y in pts) + "</Array>") if pts else ""
         de, a = ext_id.get(f["de"], f["de"]), ext_id.get(f["a"], f["a"])

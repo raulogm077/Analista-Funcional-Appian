@@ -890,6 +890,126 @@ def etiquetas_de_puertas(tmp):
           "una vertical vecina que ocupa todo el ancho de la etiqueta no se acepta como hueco libre")
 
 
+def reservas_del_dibujo(drawio):
+    """Incidencias que el detector histórico no cubría: volver por una caja propia,
+    texto sobre cajas/notas/otro texto y aire de flecha. Lee el XML guardado."""
+    import drawio_modelo as dm
+    f = dm.Fichero(str(drawio))
+    proc, geo, _ = f.leer()
+    caminos = _caminos(proc, geo)
+    cajas = {pid: (x - w / 2, y - h / 2, w, h) for pid, (x, y, w, h) in geo["pasos"].items()}
+    notas = [(x - w / 2, y - h / 2, w, h) for x, y, w, h in geo.get("anotaciones") or []]
+    etiquetas, problemas = {}, set()
+    for fl, camino in caminos:
+        for pid in (fl["de"], fl["a"]):
+            if any(_cruza(p, q, cajas[pid]) for p, q in zip(camino, camino[1:])):
+                problemas.add(("propio", fl["id"], pid))
+        if not fl.get("etiqueta"):
+            continue
+        sitio = float(f.por_id(fl["id"])[1].find("mxGeometry").get("x", 0))
+        x, y = _punto_a(camino, (sitio + 1) / 2)
+        w = len(fl["etiqueta"]) * ANCHO_LETRA_FLUJO + 4
+        etiquetas[fl["id"]] = (x - w / 2, y - 7, w, 14)
+        largo = sum(abs(q[0] - p[0]) + abs(q[1] - p[1]) for p, q in zip(camino, camino[1:]))
+        centro = (sitio + 1) / 2 * largo
+        if largo - centro - w / 2 < FLECHA or fl.get("defecto") and centro - w / 2 < MARCA_DEFECTO:
+            problemas.add(("extremo", fl["id"]))
+
+    def pisan(a, b):
+        return a[0] < b[0] + b[2] and a[0] + a[2] > b[0] and a[1] < b[1] + b[3] and a[1] + a[3] > b[1]
+
+    for fid, caja in etiquetas.items():
+        for pid, otra in cajas.items():
+            if pisan(caja, otra):
+                problemas.add(("texto-paso", fid, pid))
+        for k, otra in enumerate(notas):
+            if pisan(caja, otra):
+                problemas.add(("texto-nota", fid, k))
+        for otro, otra in etiquetas.items():
+            if fid < otro and pisan(caja, otra):
+                problemas.add(("texto-texto", fid, otro))
+    return problemas
+
+
+def corredores_ortogonales(tmp):
+    """Regresiones de la campaña: comparar el dibujo final, incluidos redondeos;
+    nunca aprobar una mejora total que estropee otra ruta del mismo proceso."""
+    import copy, random
+    from collections import Counter
+    from unittest.mock import patch
+    import colocacion as co, drawio_modelo as dm, enrutado
+    tmp.mkdir(parents=True, exist_ok=True)
+    rnd, fallan = random.Random(11), []
+    elegidos = {43, 46, 90, 115, 159, 221, 360, 677}
+    for k in range(max(elegidos) + 1):
+        proc = proceso_aleatorio(rnd, k)
+        if k not in elegidos:
+            continue
+        with patch.object(enrutado, "mejorar", lambda p, g, t, c: g):
+            base = co.ajustar(proc, co.por_capas(proc, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA),
+                              dm.TAM, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA)
+        nuevo = copy.deepcopy(base)
+        enrutado.mejorar(proc, nuevo, dm.TAM, dm.CABECERA)
+        antes, despues = tmp / f"{k}-antes.drawio", tmp / f"{k}.drawio"
+        dm.escribir_drawio(proc, base, antes)
+        dm.escribir_drawio(proc, nuevo, despues)
+        # La longitud forma parte del mensaje, pero su identidad es el par de
+        # flujos. No se permite añadir otro par ni más avisos del mismo par.
+        identidad = lambda aviso: re.sub(r" van juntos \d+ px", " van juntos", aviso)
+        a = Counter(map(identidad, conexiones_falsas(antes)))
+        d = Counter(map(identidad, conexiones_falsas(despues)))
+        if (d - a or etiquetas_en_tramo_ajeno(despues) or solapes(despues)
+                or reservas_del_dibujo(despues) - reservas_del_dibujo(antes)
+                or co.cruces(proc, nuevo) > co.cruces(proc, base)
+                or dm.comparar(proc, dm.leer(despues)[0])
+                or nuevo["pasos"] != base["pasos"] or nuevo["carriles"] != base["carriles"]
+                or nuevo["ancho"] != base["ancho"]):
+            fallan.append(str(k))
+        if k in (43, 46, 677) and d:
+            fallan.append(f"{k}: conserva conexiones falsas")
+        if k == 43:
+            # La primera solución libre pasa por y=83. Esta nota ocupa ese
+            # corredor y deja libre la ruta antigua en y=71; el enrutador debe
+            # buscar otra solución o devolverla sin cruzar la nota. El mensaje
+            # al participante externo permanece fuera de la búsqueda.
+            con_nota, g_nota = copy.deepcopy(proc), copy.deepcopy(base)
+            con_nota["notas"] = [{"paso": "GW-01", "texto": "Nota en el corredor"}]
+            g_nota["anotaciones"] = [(500, 76, 120, 40)]
+            con_nota["externos"] = ["Sistema externo"]
+            con_nota["flujos"].append({"de": "ACT-04", "a": "Sistema externo", "etiqueta": "Aviso"})
+            g_nota["flujos"].append([])
+            co.colocar_externos(con_nota, g_nota)
+            guardada = copy.deepcopy(g_nota)
+            obstaculo = g_nota["anotaciones"][0]
+            sin_nota, posiciones_sin, _ = dm.leer(despues)
+            tapa_candidato = any(_cruza(p, q, obstaculo) for fl, camino in _caminos(sin_nota, posiciones_sin)
+                                 for p, q in zip(camino, camino[1:]))
+            enrutado.mejorar(con_nota, g_nota, dm.TAM, dm.CABECERA)
+            nota_d = tmp / "nota-y-externo.drawio"
+            dm.escribir_drawio(con_nota, g_nota, nota_d)
+            leido, posiciones, _ = dm.leer(nota_d)
+            toca_nota = any(_cruza(p, q, obstaculo) for fl, camino in _caminos(leido, posiciones)
+                            for p, q in zip(camino, camino[1:]))
+            check(tapa_candidato and not toca_nota and g_nota["anotaciones"] == guardada["anotaciones"]
+                  and g_nota["externos"] == guardada["externos"]
+                  and g_nota["flujos"][-1] == guardada["flujos"][-1]
+                  and not solapes(nota_d),
+                  "una nota bloquea un corredor candidato sin ser atravesada ni movida; el participante y su mensaje se conservan")
+    check(not fallan, "corredores ortogonales: resuelve 43, 46 y 677 sin añadir conexiones, cajas pisadas, "
+          "texto pisado, cercanía a flechas, cruces ni dimensiones en los ocho casos de regresión: " + "; ".join(fallan))
+    # El presupuesto agotado exige la geometría completa anterior, incluidas
+    # rutas y ausencia de posiciones explícitas de etiquetas.
+    with patch.object(enrutado, "MAX_INTENTOS", 0):
+        intacta = copy.deepcopy(base)
+        enrutado.mejorar(proc, intacta, dm.TAM, dm.CABECERA)
+    check(intacta == base, "sin candidato validado, la geometría anterior se conserva exactamente")
+    manual = copy.deepcopy(base)
+    manual.pop("etiqueta_en_horizontal", None)
+    copia = copy.deepcopy(manual)
+    enrutado.mejorar(proc, manual, dm.TAM, dm.CABECERA)
+    check(manual == copia, "el enrutador no modifica una geometría importada o manual")
+
+
 # ---------------------------------------------------------------- sin navegador y procesos grandes
 def bpmn_valido(ruta):
     """Lo que necesitan Camunda Modeler y bpmn.io para abrir y dibujar un BPMN 2.0: ids únicos, referencias que
@@ -1294,6 +1414,7 @@ def main_sin_navegador():
         sin_navegador(tmp / "sin")
         conexiones(tmp / "conexiones")
         etiquetas_de_puertas(tmp / "etiquetas")
+        corredores_ortogonales(tmp / "corredores")
         tramos(tmp / "tramos", con_png=False)
         g3(tmp)
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
@@ -1323,6 +1444,7 @@ def main():
         sin_navegador(tmp / "sin")
         conexiones(tmp / "conexiones")
         etiquetas_de_puertas(tmp / "etiquetas")
+        corredores_ortogonales(tmp / "corredores")
         png_viejo(tmp / "png viejo")
         tramos(tmp / "tramos")
         tramos(tmp / "tramos sin navegador", con_png=False)

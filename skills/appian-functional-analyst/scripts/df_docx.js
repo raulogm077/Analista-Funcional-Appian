@@ -51,6 +51,7 @@ if (fs.statSync(analisis).isFile()) analisis = path.dirname(analisis);
 if (fs.existsSync(path.join(analisis, "analisis"))) analisis = path.join(analisis, "analisis");
 const raiz = path.basename(analisis) === "analisis" ? path.dirname(analisis) : analisis;
 const REVISION = path.join(raiz, "entregables", "revision");   // los PDF para revisar, dentro del proyecto
+const AVISO_INDICE_PDF = "Revisa el índice del PDF: LibreOffice puede conservar las entradas sin sus números de página.";
 
 // PDF con LibreOffice en un perfil y un HOME temporales, que se borran: no deja nada fuera del proyecto ni choca con
 // un LibreOffice abierto
@@ -83,6 +84,7 @@ if (args.includes("--pdf-de")) {
   if (!f || !fs.existsSync(f)) { console.error(`No existe ${f || "el fichero de --pdf-de"}`); process.exit(2); }
   const r = aPdf(f);
   console.log(r.ok ? `OK ${r.pdf}` : r.msg + (r.sin ? ": un documento del cliente se le pide en PDF" : ""));
+  if (r.ok) console.log(AVISO_INDICE_PDF);
   process.exit(r.ok ? 0 : 1);
 }
 
@@ -471,6 +473,7 @@ Packer.toBuffer(doc).then((buf) => {
     const r = aPdf(out);
     console.log(r.ok ? `PDF para revisar: ${r.pdf}`
       : `· ${r.msg}${r.sin ? ": el Word va sin revisar; lo revisa quien lo envía y hay que decírselo al entregar" : ""}`);
+    if (r.ok) console.log(AVISO_INDICE_PDF);
   }
   process.exit(missing ? 1 : 0);
 });

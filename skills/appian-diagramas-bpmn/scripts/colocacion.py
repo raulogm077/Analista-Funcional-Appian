@@ -13,7 +13,10 @@
 Solo usa la biblioteca estándar.
 """
 import bisect
+import sys
 from collections import defaultdict
+
+sys.dont_write_bytecode = True
 
 ANCHO_ETIQUETA = 110     # ancho al que se ajusta la etiqueta de un evento o una puerta
 LINEA = 15               # alto de una línea de texto (12 px)
@@ -782,6 +785,9 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
     separar(proc, geo, extensiones(proc, lados, notas_lado, tam, eventos, puertas), cabecera)
     geo["etiquetas"] = lados
     colocar_notas(proc, geo, notas_lado, tam)
+    if geo.get("etiqueta_en_horizontal"):
+        import enrutado
+        enrutado.mejorar(proc, geo, tam, cabecera)
     colocar_externos(proc, geo)
     return geo
 

@@ -20,7 +20,7 @@ en las tareas independientes y en la lectura de evidencia ya guardada.
 |---|---|---|
 | C8: una diferencia confirmada de permisos de acción o inicio de proceso | Bloquear la issue salvo aceptación humana expresa de ese comportamiento, registrada para la diferencia concreta; permisos ilegibles como no comprobados | Aceptado por Raúl |
 | D1: dos unidades cambian una misma pieza | Secuenciar la pieza compartida, manteniendo el trabajo independiente; no guardar encargos históricos por unidad | Opción 2 elegida por Raúl tras comparar pros y contras |
-| Aplicación/proyecto para deriva, LEEME y comparación de refactorización | Usar la aplicación indicada por Raúl en Indra; concretar aparte cualquier ejecución de reglas o procesos | Aplicación y entorno elegidos; lectura autorizada |
+| Aplicación/proyecto para deriva, LEEME y comparación de refactorización | Usar la aplicación y el entorno de desarrollo indicados por Raúl; concretar aparte cualquier ejecución de reglas o procesos | Aplicación y entorno elegidos; lectura autorizada |
 | D7: issues grandes | Mantener una issue con subtareas y avance guardado, sin sustituir la verificación final | Elegido por Raúl tras comparar pros y contras |
 
 ## Trabajo
@@ -35,15 +35,20 @@ en las tareas independientes y en la lectura de evidencia ya guardada.
 | E3: comparación de refactorización | Ensayo autorizado sobre una regla pura de texto, con casos guardados y de borde antes/después; restauración posterior | 3/3 casos guardados y cinco bordes iguales. Regla restaurada y verificada; `deriva` detecta edición por historial 1→3, no un cambio semántico persistente. Medida acotada, no global |
 | E5: ancho de arquitectura | Cinco cajas pueden producir 4.442 px; aplicar el límite ya existente de 1.600 px a la vista general y usar detalles por capa | Integrado en 40578bd; renders medidos |
 | Etiquetas de puertas | 1.000 casos, semilla 11: etiquetas ambiguas 8→0, sin empeorar cruces ni solapes caso por caso | Integrado en 40578bd; selftest y revisión de PNG correctos |
+| Conexiones BPMN | Enrutar y reservar etiquetas conjuntamente, conservar puertos y geometría anterior si el candidato empeora | Semilla 11: 126→30 avisos; semilla 23: 103→38, con 1.000 procesos cada una y cero regresiones por caso en la auditoría final. 43/46/677 resueltos; persisten casos fuera de la mejora conservadora |
+| PDF con LibreOffice | Convertir el Word ficticio por la orden real del plugin y revisar texto, figuras y páginas | Código 0; 12 páginas, 725 párrafos, 51 títulos y dos figuras conservados. Índice sin números de página frente a Word; el script avisa de revisarlo. Selftest analista y básica correctos; CI de esta rama pendiente |
 | Evaluación ciega de malas prácticas | Reconstruir el as-is ficticio de MNT y redactar una propuesta sin acceso a las claves | As-is validado (44 objetos, 0 errores/avisos); última propuesta ciega 10/11 visibles, 3/3 ocultas y 0 errores/avisos tras precisar la comparación de catálogos compartidos. Auditoría independiente dejó ocho matices fuera del puntuador |
 | D11: nueva pestaña | Navegación y parámetros, recarga, historial, aislamiento de claves y números que deben conservarse como texto | Integrado en f87d903; suite de prototipos correcta, ocho casos nuevos |
 | E6: LEEME | Medir la aplicación elegida antes de cambiar el presupuesto | LEEME real completo no medido: la extracción tiene definiciones correctas de 24/248 UUID. MNT ficticia validada: 731/1.350 palabras con 44 objetos; no justifica cambiar el presupuesto |
 | E7: batería | Dos grupos reales: 176,7 s en serie y 126,4 s en paralelo; cinco pruebas del ejecutor correctas | Integrado en 327cfa4; rendimiento de batería completa pendiente de CI |
 
 La CLI de Claude cargó el plugin de esta rama con `--plugin-dir`, pero la primera petición terminó en HTTP 429 antes
-de actuar. D1, D7 y C8 siguen sin medirse con Claude; no se repitió la llamada. Un proceso separado de Codex tampoco
-pudo completar P8: su política rechazó la lectura de los ficheros iniciales, aunque el localizador y el script sí
-funcionan al ejecutarlos directamente. La prueba del hook de requisitos en PowerShell 5.1 sí mostró el aviso con una
+de actuar. D1, D7 y C8 siguen sin medirse con Claude; no se repitió la llamada. Se preparó una campaña de seis fases,
+con diez controles offline correctos y parada previa al restablecimiento de cuota (20/10, 16:00 de Madrid). P8 sí
+se completó después con una sesión real de Codex: leyó ambos localizadores y ejecutó `proyecto.py estado .` con
+código 0 y hashes idénticos. Elegir MXC por invocación permitió completar el ensayo, manteniendo solo lectura y
+aprobación `never`; el ejecutor legacy fallaba al arrancar su helper. La prueba del hook de requisitos en
+PowerShell 5.1 sí mostró el aviso con una
 dependencia simulada como ausente y dejó la marca de una vez por versión. Evidencias en
 `$PROYECTOS_PRUEBA/aplazados-codex-20261019/claude-comportamiento/`.
 
@@ -81,7 +86,7 @@ Sus 32 pruebas focales pasan; no controla llamadas ya iniciadas ni la reautentic
 No reanudar una extracción masiva solo porque ya se corrigió el selector de eventos. El detalle y los límites están
 en `aplazados-codex-20261019/gde-lectura/ESTADO-MEDICION.md`, fuera del repositorio.
 
-Como medida más pequeña, se compararon dos enumeraciones completas del inventario de GDE: 22 listas de aplicación y
+Como medida más pequeña, se compararon dos enumeraciones completas del inventario real: 22 listas de aplicación y
 una respuesta de entorno en la nueva lectura, sin definiciones ni historiales por objeto. Los 248 UUID de las listas
 de las 12:42 pasaron a 249 a las 17:05: una interfaz nueva, ninguna baja. Esto detecta pertenencia al inventario,
 pero no cambios internos; no se etiqueta como deriva global. El informe y ambos puntos de comparación están en
