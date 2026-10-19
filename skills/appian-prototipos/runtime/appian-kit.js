@@ -358,6 +358,33 @@
   }
   // $action.step: salta al paso N (1 = primero) del asistente de la pantalla (enlaces «Editar» del paso de revisión)
   function wizardStep(step, ctx) { const base = String(ctx.scope || "").split(":")[0]; UI["wiz:" + base] = Math.max(0, Number(interp(step, ctx)) - 1); }
+  function prototypeUri(uri, ctx) {
+    // Interpolar cada valor antes de serializar impide que un & o = del dato se vuelva otro parámetro.
+    const raw = String(uri || "");
+    if (!raw.startsWith("#ver=")) return interp(raw, ctx);
+    const query = new URLSearchParams(raw.slice(1)), result = new URLSearchParams();
+    for (const [key, value] of query) result.set(key, String(interp(value, ctx) ?? ""));
+    if (!Object.prototype.hasOwnProperty.call(byId, result.get("ver"))) { console.warn("Pantalla no encontrada:", result.get("ver")); return null; }
+    return "#" + result.toString();
+  }
+  function showHash(hash) {
+    const value = String(hash || "").replace(/^#/, "");
+    if (!value.startsWith("ver=")) {
+      try {
+        const id = decodeURIComponent(value);
+        return Object.prototype.hasOwnProperty.call(byId, id) ? showScreen(id) : false;
+      } catch (_) { return false; }
+    }
+    const query = new URLSearchParams(value), id = query.get("ver"), params = Object.create(null);
+    if (!Object.prototype.hasOwnProperty.call(byId, id)) { console.warn("Pantalla no encontrada:", id); return false; }
+    for (const [key, text] of query) {
+      if (key === "ver") continue;
+      // IDs numéricos como en los datasets; códigos con ceros iniciales y enteros grandes siguen siendo texto.
+      const numeric = /^(0|-?[1-9]\d*)$/.test(text) && Number.isSafeInteger(Number(text));
+      params[key] = numeric ? Number(text) : text;
+    }
+    return showScreen(id, { params });
+  }
   function clickable(node, ctx) {
     // a!dynamicLink, a!recordLink, a!startProcessLink, a!safeLink, buttons...
     return (ev) => {
@@ -368,7 +395,16 @@
         const scr = findScreenForRecord(node.recordType);
         if (scr) return runAction(Object.assign({ goto: scr.id, params: { id: node.identifier }, view: node.dashboard }, node.$action || {}), ctx);
       }
-      if (node.type === "a!safeLink" && node.uri && !node.$action) { window.open(interp(node.uri, ctx), "_blank", "noopener"); return; }
+      if (node.type === "a!safeLink" && node.uri && !node.$action) {
+        const uri = prototypeUri(node.uri, ctx);
+        if (uri == null) return;
+        if (up(P(node, "openLinkIn", ctx, "NEW_TAB")) === "SAME_TAB") {
+          if (String(uri).startsWith("#ver=")) {
+            if (location.hash === uri) showHash(uri); else location.hash = uri;
+          } else location.assign(uri);
+        } else window.open(uri, "_blank", "noopener");
+        return;
+      }
       if (node.type === "a!pageLink" && !node.$action) {
         const pg = String(interp(node.page || "", ctx)).split(/[.!]/).pop().toLowerCase();
         const sp = arr(SPEC.site && SPEC.site.pages).find((x) => [x.id, x.screen, x.label, x.name].filter(Boolean).map((v) => String(v).toLowerCase()).includes(pg));
@@ -389,9 +425,12 @@
     enterScreen(byId[screenId], route.params);
     window.scrollTo(0, 0);
   }
-  function enterScreen(scr, params) {
+  function setRuleInputs(params) {
     for (const k in S) if (k.startsWith("ri!")) delete S[k];
     if (params) for (const k in params) S["ri!" + k] = params[k];
+  }
+  function enterScreen(scr, params) {
+    setRuleInputs(params);
     const lctx = screenCtx(scr, params);
     // los textos con {expresión} se evalúan también dentro de mapas y listas (p. ej. local!correo.asunto = "Estudio {rv!record.codigo}")
     const init = (v) => (typeof v === "string" ? (v.includes("{") ? interp(v, lctx) : v) : Array.isArray(v) ? v.map(init) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([a, b]) => [a, init(b)])) : v);
@@ -399,7 +438,7 @@
     delete invalid[scr.id];
     delete UI["wiz:" + scr.id];
   }
-  function back() { if (hist.length) { route = hist.pop(); dialogs = []; } }
+  function back() { if (hist.length) { route = hist.pop(); dialogs = []; setRuleInputs(route.params); } }
   function openDialog(id, params) {
     if (!byId[id]) { console.warn("Diálogo no encontrado:", id); return; }
     dialogs.push({ screen: id, params: params || {} });
@@ -2432,9 +2471,13 @@
     for (const [k, v] of [["POSITIVE", "--positive"], ["NEGATIVE", "--negative"], ["WARN", "--warn"], ["INFO", "--info"]]) { const x = cs.getPropertyValue(v).trim(); if (rgbOf(x)) SEMHEX[k] = x; }
     const lk = linkOn((BRAND.site && BRAND.site.backgroundColor) || "#0f203a");
     if (lk) document.documentElement.style.setProperty("--lnk-dark", lk);
-    const hash = (location.hash || "").replace(/^#/, "");
+    const hash = location.hash;
     const home = (SPEC.site && SPEC.site.home) || ((SPEC.site && arr(SPEC.site.pages)[0]) || {}).screen || (screens[0] || {}).id;
-    if (!(hash && showScreen(hash))) { go(home, {}); rerender(); }
+    if (!(hash && showHash(hash))) { go(home, {}); rerender(); }
+    window.addEventListener("hashchange", () => {
+      if (!location.hash) { showScreen(home); return; }
+      showHash(location.hash);
+    });
     if (/capture/.test(location.search)) { capture = true; rerender(); }
   }
 

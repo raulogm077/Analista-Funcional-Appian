@@ -791,6 +791,9 @@ def main():
             code, out = run([AQUI / "test_chat_altura.py"])
             ok = ok and code == 0
             print("✓ Chat FILL: seis combinaciones de contenedor y viewport" if code == 0 else f"✗ Chat FILL:\n{out}")
+            code, out = run([AQUI / "test_enlaces_pestana.py"])
+            ok = ok and code == 0
+            print("✓ Enlaces en otra pestaña: parámetros, recarga, hash e historial" if code == 0 else f"✗ Enlaces en otra pestaña:\n{out}")
     print("\nKit listo." if ok else "\nEl kit tiene errores: revisa los mensajes anteriores.")
     sys.exit(0 if ok else 1)
 
