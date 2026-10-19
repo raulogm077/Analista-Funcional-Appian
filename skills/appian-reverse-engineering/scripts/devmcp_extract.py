@@ -145,6 +145,7 @@ class Policy:
         self.phrase_to_type = {" ".join(p): t for t, ps in self.syn.items() for p in ps}
         self.container_keys = set(d["listContainerKeys"])
         self.generic_skip = set(d["genericToolsSkipTypes"])
+        self.tool_types = d.get("objectToolTypes", {})
         self.pag = d["pagination"]
         self.probe = int(d["adaptiveDisable"]["probeCalls"])
         self.confirm_above = int(d["confirmAboveCalls"])
@@ -501,7 +502,8 @@ def analyze_tool(tool, policy: Policy, trusted: bool, type_phrases: dict) -> Too
         ti.scope, ti.scope_reason = "manual", "Requiere varios identificadores a la vez."
     elif kinds.count("obj_uuid") == 1:
         req_obj = next(p for p in required if ti.params[p] == "obj_uuid")
-        own = match_types(ti.toks[1:] + tokens(req_obj), {k: v for k, v in type_phrases.items() if k != "application"})
+        own = policy.tool_types.get(ti.name) or match_types(
+            ti.toks[1:] + tokens(req_obj), {k: v for k, v in type_phrases.items() if k != "application"})
         if ("application" in toks_set or "app" in toks_set) and not own:
             ti.scope, ti.scope_reason = "app", "Recibe el uuid de la aplicacion."
         else:

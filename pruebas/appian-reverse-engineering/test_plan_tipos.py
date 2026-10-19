@@ -41,3 +41,22 @@ def test_lista_generica_no_impide_identificar_agente(orden):
     ex.classify(ex.type_phrases_for(objetos))
     assert [(t.name, tipo, [o["name"] for o in objs]) for t, tipo, objs in ex.plan_object_calls(objetos)] == [
         ("getAgent", "aiAgent", ["DEM_AGT_Asistente"])]
+
+
+def test_eventos_solo_se_planifican_para_record_types():
+    ex = dx.Extractor(None, dx.Policy(dx.DEFAULT_POLICY), None)
+    eventos = tool("getRecordEventsConfig", "uuid")
+    # Contrato del catalogo: UUID sin tipo en su nombre; la descripcion identifica el objeto.
+    eventos.description = "Get the record event configuration for an Appian record type."
+    ex.catalog = [eventos, tool("getObjectSecurity", "uuid")]
+    tipos = ("constant", "document", "expressionRule", "folder", "group", "interface", "processModel",
+             "recordType", "site", "aiAgent", "unknown")
+    objetos = [{"uuid": "demo-" + t, "name": "DEM_" + t, "type": t} for t in tipos]
+    ex.classify(ex.type_phrases_for(objetos))
+    llamadas = ex.plan_object_calls(objetos)
+    assert [(tipo, [o["type"] for o in objs]) for t, tipo, objs in llamadas
+            if t.name == "getRecordEventsConfig"] == [("recordType", ["recordType"])]
+    # No convierte otras herramientas genericas ni crea llamadas si no hay record types.
+    assert next(t for t in ex.tools if t.name == "getObjectSecurity").generic
+    assert not any(t.name == "getRecordEventsConfig" for t, _, _ in
+                   ex.plan_object_calls([o for o in objetos if o["type"] != "recordType"]))
