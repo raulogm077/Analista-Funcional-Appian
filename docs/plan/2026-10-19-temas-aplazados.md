@@ -2,14 +2,15 @@
 
 El 19 de octubre Raúl pidió trabajar los temas aplazados antes de publicar y preguntar por las decisiones necesarias.
 Esta fase parte de `84d2b24`, con la primera tanda aplicada y comprobada. Rama de integración: `codex/aplazados`, en
-`Proyectos IA/Plugin-aplazados-codex`. La rama anterior conserva su cierre. `main` permanece intacta y sincronizada.
+`Proyectos IA/Plugin-aplazados-codex`. La rama anterior conserva su cierre.
 
-**Estado de integración posterior:** a petición de Raúl, la rama de Claude `automejora-pruebas` absorbió por avance
-rápido los 21 commits de `codex/aplazados` y es ahora la única rama de trabajo. Las ramas auxiliares se eliminaron;
-el repositorio original está en `automejora-pruebas`. Las rutas y ramas del párrafo anterior documentan dónde se hizo
+**Integración de las ramas de trabajo:** a petición de Raúl, la rama de Claude `automejora-pruebas` absorbió por avance
+rápido los 21 commits de `codex/aplazados` como única rama de trabajo de esta entrega. Las ramas auxiliares se
+eliminaron y el trabajo se consolidó en el repositorio original. Las rutas y ramas del párrafo anterior documentan dónde se hizo
 la fase, no dónde continuarla. Tras comprobar que estaban limpios y que solo contenían cachés ignoradas, se retiraron
-los nueve worktrees auxiliares. Las pruebas y evidencias quedan bajo `Proyectos IA/Pruebas-plugin/`. No se ha publicado
-una nueva versión.
+los nueve worktrees auxiliares. Las pruebas y evidencias quedan bajo `Proyectos IA/Pruebas-plugin/`. El estado de entrega se consulta en el
+[PR #19](https://github.com/raulogm077/Analista-Funcional-Appian/pull/19) y en
+[Releases](https://github.com/raulogm077/Analista-Funcional-Appian/releases).
 
 ## Decisiones y respuestas
 
@@ -22,7 +23,7 @@ en las tareas independientes y en la lectura de evidencia ya guardada.
 | D1: dos unidades cambian una misma pieza | Secuenciar la pieza compartida, manteniendo el trabajo independiente; no guardar encargos históricos por unidad | Opción 2 elegida por Raúl tras comparar pros y contras |
 | Aplicación/proyecto para deriva, LEEME y comparación de refactorización | Usar la aplicación y el entorno de desarrollo indicados por Raúl; concretar aparte cualquier ejecución de reglas o procesos | Aplicación y entorno elegidos; lectura autorizada |
 | D7: issues grandes | Mantener una issue con subtareas y avance guardado, sin sustituir la verificación final | Elegido por Raúl tras comparar pros y contras |
-| Entrega de la versión | Commit y subida de la rama existente, un PR, matriz de combinaciones e integración y publicación condicionadas a pruebas correctas; gráficos explicativos actualizados | Autorizado por Raúl el 19/10; se prepara 0.8.0-beta.2. La conducta Claude sigue pendiente de cuota hasta el 20/10 a las 16:00 de Madrid |
+| Entrega de la versión | Commit y subida de la rama existente, un PR, matriz de combinaciones e integración y publicación condicionadas a pruebas correctas; gráficos explicativos actualizados | Autorizado por Raúl el 19/10; PR #19, batería Linux/PDF, matriz 7/7 y benchmark correctos sobre `62ec54b39b354dad5a5393f005e4456b87515ebe`. Raúl autorizó integrar y publicar 0.8.0-beta.2 con estos resultados; estado de entrega en PR #19 y Releases. Raúl decidió el 19/10 omitir la prueba Claude para esta entrega: NOT MEASURED, pendiente posterior y sin bloquear integración o publicación |
 
 ## Trabajo
 
@@ -37,26 +38,33 @@ en las tareas independientes y en la lectura de evidencia ya guardada.
 | E5: ancho de arquitectura | Cinco cajas pueden producir 4.442 px; aplicar el límite ya existente de 1.600 px a la vista general y usar detalles por capa | Integrado en 40578bd; renders medidos |
 | Etiquetas de puertas | 1.000 casos, semilla 11: etiquetas ambiguas 8→0, sin empeorar cruces ni solapes caso por caso | Integrado en 40578bd; selftest y revisión de PNG correctos |
 | Conexiones BPMN | Enrutar y reservar etiquetas conjuntamente, conservar puertos y geometría anterior si el candidato empeora | Semilla 11: 126→30 avisos; semilla 23: 103→38, con 1.000 procesos cada una y cero regresiones por caso en la auditoría final. 43/46/677 resueltos; persisten casos fuera de la mejora conservadora |
-| PDF con LibreOffice | Convertir el Word ficticio por la orden real del plugin y revisar texto, figuras y páginas | Código 0; 12 páginas, 725 párrafos, 51 títulos y dos figuras conservados. Índice sin números de página frente a Word; el script avisa de revisarlo. Selftest analista y básica correctos; CI de esta rama pendiente |
+| PDF con LibreOffice | Convertir el Word ficticio por la orden real del plugin y revisar texto, figuras y páginas | Conversión local correcta (12 páginas) y CI correcta (13 páginas), ambas con 725 párrafos, 51 títulos y dos figuras del fixture conocido. Índice sin números de página; el script avisa de revisarlo. Artefacto de CI revisado por muestra y contrastado con el DOCX local; no acredita índice paginado ni lectura visual de cada celda |
 | Evaluación ciega de malas prácticas | Reconstruir el as-is ficticio de MNT y redactar una propuesta sin acceso a las claves | As-is validado (44 objetos, 0 errores/avisos); última propuesta ciega 10/11 visibles, 3/3 ocultas y 0 errores/avisos tras precisar la comparación de catálogos compartidos. Auditoría independiente dejó ocho matices fuera del puntuador |
 | D11: nueva pestaña | Navegación y parámetros, recarga, historial, aislamiento de claves y números que deben conservarse como texto | Integrado en f87d903; suite de prototipos correcta, ocho casos nuevos |
 | E6: LEEME | Medir la aplicación elegida antes de cambiar el presupuesto | LEEME real completo no medido: la extracción tiene definiciones correctas de 24/248 UUID. MNT ficticia validada: 731/1.350 palabras con 44 objetos; no justifica cambiar el presupuesto |
-| E7: batería | Dos grupos reales: 176,7 s en serie y 126,4 s en paralelo; cinco pruebas del ejecutor correctas | Integrado en 327cfa4; rendimiento de batería completa pendiente de CI |
+| E7: batería | Dos grupos reales: 176,7 s en serie y 126,4 s en paralelo; cinco pruebas del ejecutor correctas | Integrado en 327cfa4; batería del PR, matriz 7/7 y benchmark correctos. Run 39290798292, mismo SHA: orden 1, 2, 2, 1, tiempos 684/441/455/677 s y mismos 13 grupos; medias 680,5/448 s, reducción del 34,2 %. Un runner Ubuntu/Python 3.12 y dos muestras por configuración; sin extrapolación general |
 
 La CLI de Claude cargó el plugin de esta rama con `--plugin-dir`, pero la primera petición terminó en HTTP 429 antes
-de actuar. D1, D7 y C8 siguen sin medirse con Claude; no se repitió la llamada. Se preparó una campaña de seis fases,
-con diez controles offline correctos y parada previa al restablecimiento de cuota (20/10, 16:00 de Madrid). P8 sí
-se completó después con una sesión real de Codex: leyó ambos localizadores y ejecutó `proyecto.py estado .` con
-código 0 y hashes idénticos. Elegir MXC por invocación permitió completar el ensayo, manteniendo solo lectura y
-aprobación `never`; el ejecutor legacy fallaba al arrancar su helper. La prueba del hook de requisitos en
-PowerShell 5.1 sí mostró el aviso con una
-dependencia simulada como ausente y dejó la marca de una vez por versión. Evidencias en
+de actuar. D1, D7 y C8 siguen **NOT MEASURED** con Claude. Raúl decidió el 19/10 omitir esta prueba para la entrega
+y continuar con la integración: queda preparada para una comprobación posterior sin bloquear esta versión. La
+campaña conserva seis fases y diez controles offline correctos; estos no acreditan la conducta del agente. P8 sí
+se completó con una sesión real de Codex: leyó ambos localizadores y ejecutó `proyecto.py estado .` con código 0
+y hashes idénticos. Elegir MXC por invocación permitió completar el ensayo, manteniendo solo lectura y aprobación
+`never`; el ejecutor legacy fallaba al arrancar su helper. Evidencias en
 `$PROYECTOS_PRUEBA/aplazados-codex-20261019/claude-comportamiento/`.
 
-La medida de E7 solo comprende QA y refactorización, con todos sus resultados correctos. No se extrapola al conjunto:
-los logs antiguos de CI imprimían los grupos al terminar y no permiten recuperar sus tiempos individuales. El
-ejecutor ahora informa de cada duración, limita la concurrencia a dos grupos y admite `--trabajos 1` para comparar.
-No se ha ejecutado `--completo` localmente.
+El hook real de requisitos pasa en las tres combinaciones Windows de la matriz, con `docx` realmente ausente y
+sin simulación: PowerShell 5.1 muestra el aviso, guarda la marca de 0.8.0-beta.2 y no repite el aviso en la segunda
+ejecución. No es una instalación visual en Desktop, pendiente y no bloqueante por sí sola.
+
+El [PR #19](https://github.com/raulogm077/Analista-Funcional-Appian/pull/19) pasa la batería Linux, el PDF real con
+LibreOffice y `Resultado` en run 39287727774. La matriz run 39287787906 pasa las siete combinaciones y `Resultado`;
+ambas ejecuciones usan `62ec54b39b354dad5a5393f005e4456b87515ebe`. El benchmark run 39290798292 termina correctamente
+en ese SHA, con los mismos 13 grupos y comprobaciones adicionales correctas en cuatro pasadas: medias de 680,5 s
+en serie y 448 s con dos grupos, reducción del 34,2 %. Son dos muestras por configuración en un runner
+Ubuntu/Python 3.12; no se extrapola a otros equipos. Evidencias y límites de PDF y Windows en
+`entrega-ci/ci/matriz-39287787906/`, y benchmark en `entrega-ci/ci/benchmark-39290798292/RESULTADO-BENCHMARK.md`,
+fuera del repositorio. No se ha ejecutado `--completo` localmente.
 
 La suite analista integrada terminó con 399 comprobaciones correctas (498,3 s, exit 0). La integración incluyó
 dos correcciones de borde: el cierre manual no salta una protección de encargo y una fila ilegible del historial de
@@ -105,4 +113,4 @@ La sesión principal integra y mantiene el estado; tres subagentes entregaron co
 permisos, cada uno desde su worktree, además de diagramas y prototipos. Pruebas y datos reales van en
 `Proyectos IA/Pruebas-plugin/aplazados-codex-20261019/`, nunca
 en el repositorio. Se mantienen las comprobaciones de `CLAUDE.md`: básica antes de cada commit, pruebas de las
-capacidades tocadas y batería completa en CI, sin `--completo` local. Esta petición no publica una versión.
+capacidades tocadas y batería completa en CI, sin `--completo` local. Raúl autorizó integrar y publicar 0.8.0-beta.2 con estos resultados; el estado de entrega se consulta en PR #19 y Releases. La prueba Claude queda omitida para esta entrega por decisión de Raúl.

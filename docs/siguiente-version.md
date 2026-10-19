@@ -1,33 +1,33 @@
 # Para la siguiente versión
 
 Trabajo que queda abierto después de aplicar las lecciones de automejora del 19 de octubre de 2026, sobre la
-0.8.0-beta.1; la entrega 0.8.0-beta.2 está preparada y aún no publicada. Raúl pidió abordar los temas aplazados antes
-de publicar: la fase activa está en
+0.8.0-beta.1, consolidadas para la entrega 0.8.0-beta.2. Raúl pidió abordar los temas aplazados antes de publicar;
+el plan de esa fase está en
 `docs/plan/2026-10-19-temas-aplazados.md`. Los cambios terminados y sus pruebas están en `docs/evaluaciones.md`;
 la primera tanda quedó cerrada en `docs/plan/2026-10-19-aplicar-automejora.md`. Esta lista no autoriza publicar ni actuar en un entorno.
 
-La rama de trabajo única es `automejora-pruebas`: contiene la primera tanda de Claude y los cambios posteriores. La
+La rama de trabajo de esta entrega fue `automejora-pruebas`, con la primera tanda de Claude y los cambios posteriores. La
 app de escritorio queda como comprobación visual pendiente, sin bloquear por sí sola la publicación. `getAgent`
 queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medición de esta fase.
 
 ## Antes de subir y publicar
 
-- Probar el comportamiento de las skills modificadas con `claude --plugin-dir <carpeta>` en un proyecto fuera del
-  repositorio. La campaña D1/D7/C8 está preparada y sus diez controles offline pasan; el runner externo
-  `claude-comportamiento/campana_claude.py` permite ejecutarla desde el 20/10 a las 16:00 de Madrid, cuando se
-  restablece la cuota acreditada. Los selftests y las regresiones no sustituyen esa conducta aún no medida.
-- Raúl autorizó el 19/10 subir la rama, abrir un único PR, ejecutar la matriz e integrar y publicar cuando las pruebas
-  pasen. Se ejecutan la batería completa en Linux y las siete combinaciones de sistema/Python de `CLAUDE.md`.
-  Las anclas ya pasaron: 1.265 citas en 312 páginas, cero rotas. El job
-  nuevo de PDF real con LibreOffice y la medición manual de concurrencia quedan por ejecutar en Actions. La versión
-  0.8.0-beta.2 está preparada, pendiente de las pruebas de entrega. LibreOffice ya convirtió el DF ficticio localmente
-  y conservó todo su texto y las dos figuras:
-  12 páginas frente a las 13 de Word. Falta medir el job de CI; el índice de LibreOffice queda sin números de página
-  y el script ya avisa de revisarlo antes de entregar.
-- Instalar el paquete en un Windows con algún requisito realmente ausente y comprobar el primer mensaje. La orden
-  del hook en PowerShell 5.1, con `docx` simulado como ausente, ya mostró el aviso y dejó la marca de una vez por
-  versión; aún falta la instalación real con esa carencia. Comprobar visualmente la instalación en la app de
-  escritorio cuando esté disponible; registrar ese resultado por separado, sin usarlo como puerta de publicación.
+- La prueba de comportamiento con `claude --plugin-dir` sigue **NOT MEASURED**. Raúl decidió el 19/10 omitirla
+  para esta entrega y continuar con la integración; deja de ser una puerta de publicación. La campaña D1/D7/C8
+  queda preparada para una comprobación posterior, sin bloquear esta versión. Sus diez controles offline no
+  acreditan la conducta de Claude.
+- El [PR #19](https://github.com/raulogm077/Analista-Funcional-Appian/pull/19) pasa la batería Linux, el PDF con
+  LibreOffice y `Resultado`; la matriz manual pasa sus siete combinaciones de sistema/Python y `Resultado`.
+  Ambos resultados corresponden a `62ec54b39b354dad5a5393f005e4456b87515ebe`. Las anclas ya pasaron: 1.265 citas
+  en 312 páginas, cero rotas. El benchmark 1, 2, 2, 1 también termina correctamente: medias de 680,5 s en serie
+  y 448 s con dos grupos (34,2 % menos), sobre un runner y dos muestras por configuración. Raúl autorizó integrar
+  y publicar la 0.8.0-beta.2 con estos resultados; el estado de entrega se consulta en el PR y en
+  [Releases](https://github.com/raulogm077/Analista-Funcional-Appian/releases). El PDF real de CI conserva los 725 párrafos,
+  51 títulos y dos figuras del fixture conocido, con 13 páginas; su índice queda sin números de página y requiere
+  revisión antes de entregar.
+- El hook real de requisitos pasa en las tres combinaciones Windows de la matriz, con `docx` realmente ausente,
+  sin simulación: aviso en PowerShell 5.1, marca por versión y segunda ejecución silenciosa. Esto no acredita una
+  instalación visual en la app de escritorio, que sigue pendiente y sin bloquear por sí sola la publicación.
 
 ## Construcción y verificación
 
@@ -71,8 +71,11 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
 
 - Contraste sobre imagen medido: cuatro textos visibles cumplen el umbral; ocho apariciones detrás de diálogos están
   ocultas y no cuentan como contenido visible. El auditor automático aún no mide ese fondo compuesto.
-- Medir en CI la batería completa con la concurrencia limitada y los tiempos por grupo (E7). La pareja QA y
-  refactorización pasa en serie y en paralelo; esa mejora local no acredita aún el tiempo del conjunto.
+- La medición de rendimiento de batería completa (E7) pasa en
+  [Actions](https://github.com/raulogm077/Analista-Funcional-Appian/actions/runs/39290798292), mismo SHA:
+  orden 1, 2, 2, 1, tiempos 684/441/455/677 s y cuatro códigos 0. Medias: 680,5 s en serie y 448 s con dos grupos,
+  reducción del 34,2 %. Las cuatro pasadas ejecutan los mismos 13 grupos y terminan sin errores ni avisos.
+  Son dos muestras por configuración en un runner Ubuntu/Python 3.12; no se extrapolan a otros equipos.
 
 ## Pasos de Raúl
 
