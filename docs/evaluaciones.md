@@ -4,6 +4,25 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Campaña Codex: ingesta y preparación de continuidad (19 de octubre de 2026)
+
+Campaña parcial sobre `ba2755442d8f5a9d413bbd8eb944c597f974de14`, en la rama única
+`codex/campana-mejora-20261019`. Fuentes, respuestas y resultados en
+`$PROYECTOS_PRUEBA/campana-codex-20261019/INDICE.md`; no se incorporan datos del cliente.
+
+| Comprobación | Resultado y límite |
+|---|---|
+| Ingesta sin texto | Tres repeticiones antes/después de ocho casos: **15/24 → 24/24 PASS**. Vacío TXT, espacios Markdown y VTT sin intervenciones dejan de presentarse como leídos; se conservan fuente, huella e ID. La variante VTT reservada y los vecinos válidos TXT/SRT pasan. |
+| Catálogo anterior y duplicados | Recatalogar un vacío previo conserva el ID; el archivo derivado antiguo no se borra. Lotes de 1/4/12 reuniones, con orden invertido y duplicado, conservan la relación hash→ID en nueve reimportaciones por fase. Nueve tests focales de ingesta pasan. |
+| Suite del analista | **PASS**, exit 0, 399 comprobaciones del ejecutor, incluidos los seis módulos de regresión. Incluye los tests focales: no se suman como cobertura adicional. PDF real omitido porque no hay `soffice` en el entorno de esa ejecución. |
+| Rendimiento | No se alcanza el objetivo de reducir el 20 %: mismas llamadas y medianas entre un 14,9 % y un 46,8 % mayores. Mismo equipo, Python, entradas y CLI, con otras cargas no aisladas. Se acepta una corrección funcional, sin atribuir el incremento al cambio ni declarar optimización. |
+| Lectura acotada | Doce consultas MCP correctas: tres inventarios parciales, cinco definiciones y dependientes. No se ejecutó lógica ni se modificó Appian. No acredita un as-is completo, refactorización ni QA por rol. La oficial conserva los 66 hashes de su manifiesto. |
+| Modelos y montajes | Astra coordinó trabajadores de menor coste; las sesiones se interrumpieron por cuota. D1 llegó a seis comandos sin respuesta final: conducta **NOT MEASURED**. Los diez controles offline pasan, sin sustituir al modelo. Enrutado rechazó un modelo incompatible con la cuenta antes de clasificar; el puntuador sí pasa sus propios controles. |
+| Cobertura pendiente | Revisión estática de siete skills y ocho agentes; casos reales y reservados preparados. Síntesis, coherencia entre entregables, retoques, D1/D7/C8 completos y laboratorio/QA siguen **NOT MEASURED**. No se ejecutó Claude ni se publicó nada. |
+
+La corrección está en `leer_fuentes.py`; no añade pasos, agentes ni referencias. Las pruebas de ejecución viven
+fuera del repositorio; aquí se conservan las dos regresiones sintéticas de vacío y migración de catálogo.
+
 ## Temas aplazados: medidas y cambios antes de publicar (19 de octubre de 2026)
 
 Segunda fase local, solicitada por Raúl después de cerrar la primera tanda. Alcance y decisiones en

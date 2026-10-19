@@ -525,6 +525,8 @@ def convert(path, out_dir, fid):
             body, detail, kind = None, "imagen: revísala visualmente con Read", "Imagen"
     except Exception as e:  # noqa: BLE001 - un fichero dañado no debe parar el resto
         body, detail, kind = None, f"no leído: {type(e).__name__}: {e}", ext[1:].upper()
+    if body is not None and not body.strip():
+        body, detail = None, f"no leído: sin texto extraíble ({detail}); revisa el original"
     m = re.search(r"(20\d{2})[-_]?(0[1-9]|1[0-2])[-_]?(0[1-9]|[12]\d|3[01])(?!\d)", path.name)
     if m and ext not in (".eml", ".msg"):  # fecha en el nombre (p. ej. grabaciones de Teams): mejor que la del fichero
         date = "-".join(m.groups())
@@ -724,7 +726,7 @@ def main():
         if old and old["fichero"] != f.name:
             print(f"= {old['id']} {f.name} (mismo contenido que {old['fichero']})")
             continue
-        if old and (old["salida"] or old["tipo"] == "Imagen"):
+        if old and ((old["salida"] and textos.get(old["id"], "").strip()) or old["tipo"] == "Imagen"):
             print(f"= {old['id']} {f.name} (ya catalogada)")
             continue
         fid = old["id"] if old else f"FU-{len(state['fuentes']) + 1:02d}"  # reintento de una fuente no leída

@@ -10,6 +10,25 @@ La rama de trabajo de esta entrega fue `automejora-pruebas`, con la primera tand
 app de escritorio queda como comprobación visual pendiente, sin bloquear por sí sola la publicación. `getAgent`
 queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medición de esta fase.
 
+## Campaña Codex en curso
+
+La campaña posterior usa una sola rama, `codex/campana-mejora-20261019`, desde `ba275544`; índice y estado
+en `$PROYECTOS_PRUEBA/campana-codex-20261019/`. No está cerrada: la corrección de fuentes sin texto pasa
+su comparación, pero no acredita ahorro del 20 %. No repetir esa ingesta para suplir los casos sin ejecutar.
+
+- Reanudar D1 desde el estado conservado, o preparar una nueva pasada aislada para medirlo, cuando haya
+  sesiones disponibles; después D7/C8 y enrutado con modelo compatible. El límite de cuota y el rechazo
+  del modelo no son fallos funcionales de esas capacidades. Mantener Astra como orquestador solicitado.
+- Ejecutar actualización incremental, retoque de etiqueta con límite de 25 llamadas, contradicciones y
+  cadena de entregables con los casos reales/reservados preparados. Catalogar reuniones no acredita síntesis.
+- Identificar laboratorio aislado y cuentas por rol antes de construir; QA en otra sesión de Codex con
+  escenarios/sitio/cuentas, sin recibir la solución. F9 acaba en evidencias para revisión humana.
+- Contrastar con casos la frase de renumeración del registro en refactorización y la autonomía sin red del
+  dashboard opcional; no modificar contratos ni incorporar material por revisión estática solamente.
+
+Esta fase es solo Codex; no añade una obligación de Claude. Sigue sin autorizar despliegues, publicaciones,
+envíos o borrados. La batería completa se reserva a CI cuando se autorice el PR.
+
 ## Antes de subir y publicar
 
 - La prueba de comportamiento con `claude --plugin-dir` sigue **NOT MEASURED**. Raúl decidió el 19/10 omitirla
