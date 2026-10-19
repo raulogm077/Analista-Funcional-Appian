@@ -14,6 +14,11 @@ name: Pruebas
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      medir_paralelo:
+        description: "Medir la batería completa con 1 y 2 trabajos (cuatro pasadas adicionales en Linux)"
+        type: boolean
+        default: false
 
 # Un commit nuevo en la misma rama o PR cancela la ejecución anterior
 concurrency:
@@ -73,7 +78,7 @@ jobs:
   completa:
     name: ${{ matrix.os }} · Python ${{ matrix.python }}${{ matrix.utf8 == '0' && ' · consola sin UTF-8' || '' }}
     needs: basica
-    if: needs.basica.outputs.completa == 'true'
+    if: needs.basica.outputs.completa == 'true' && (github.event_name != 'workflow_dispatch' || !inputs.medir_paralelo)
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.basica.outputs.matriz) }}
@@ -134,11 +139,128 @@ jobs:
               print(f"::error title=comprobar_plugin {k // 3000 + 1}::{trozo}")
           PY
 
+  pdf:
+    name: PDF real con LibreOffice
+    needs: basica
+    if: needs.basica.outputs.completa == 'true' && (github.event_name != 'workflow_dispatch' || !inputs.medir_paralelo)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Instalar docx y LibreOffice
+        run: |
+          npm install -g docx
+          sudo apt-get update
+          sudo apt-get install -y libreoffice-writer poppler-utils
+          command -v soffice
+
+      - name: Generar y comprobar un PDF del proyecto ficticio
+        shell: bash
+        run: |
+          proyecto="$RUNNER_TEMP/proyecto-pdf"
+          cp -R pruebas/appian-functional-analyst/datos/autorizaciones "$proyecto"
+          node skills/appian-functional-analyst/scripts/df_docx.js "$proyecto" --pdf 2>&1 | tee "$RUNNER_TEMP/pdf.log"
+          pdf="$proyecto/entregables/revision/DF-Solicitudes-de-autorizacion-v1.1.pdf"
+          test -s "$pdf"
+          pdfinfo "$pdf" | tee "$RUNNER_TEMP/pdfinfo.txt"
+          pdftotext "$pdf" "$RUNNER_TEMP/pdf.txt"
+          grep -Fq 'Solicitudes de autorización' "$RUNNER_TEMP/pdf.txt"
+          grep -Fq 'Objetivo y alcance' "$RUNNER_TEMP/pdf.txt"
+
+      - name: Conservar PDF y resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf-real-libreoffice
+          path: |
+            ${{ runner.temp }}/proyecto-pdf/entregables/revision/*.pdf
+            ${{ runner.temp }}/pdf.log
+            ${{ runner.temp }}/pdfinfo.txt
+            ${{ runner.temp }}/pdf.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+  medir_paralelo:
+    name: Medición manual · 1 frente a 2 trabajos
+    needs: basica
+    if: needs.basica.result == 'success' && github.event_name == 'workflow_dispatch' && inputs.medir_paralelo
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Preparar el mismo entorno para las cuatro pasadas
+        run: |
+          npm install -g docx
+          python -m pip install --upgrade pip
+          python -m pip install playwright pytest "mcp>=1.2,<2"
+          python -m playwright install --with-deps chromium
+
+      - name: Medir en orden 1, 2, 2, 1
+        shell: bash
+        run: |
+          : > "$RUNNER_TEMP/medidas.tsv"
+          pasada=0
+          for trabajos in 1 2 2 1; do
+            pasada=$((pasada + 1))
+            inicio=$(date +%s)
+            set +e
+            python pruebas/comprobar_plugin.py --completo --trabajos "$trabajos" 2>&1 | tee "$RUNNER_TEMP/pasada-$pasada.log"
+            codigo=${PIPESTATUS[0]}
+            set -e
+            fin=$(date +%s)
+            printf '%s\t%s\t%s\t%s\n' "$pasada" "$trabajos" "$((fin - inicio))" "$codigo" >> "$RUNNER_TEMP/medidas.tsv"
+          done
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          raiz = Path(os.environ["RUNNER_TEMP"])
+          filas = [tuple(map(int, linea.split("\t"))) for linea in (raiz / "medidas.tsv").read_text().splitlines()]
+          medias = {n: sum(s for _, modo, s, _ in filas if modo == n) / 2 for n in (1, 2)}
+          resumen = ["## Batería completa: serie y paralelo", "", "Mismo commit y runner; orden 1, 2, 2, 1.", "",
+                     "| Pasada | Trabajos | Segundos | Código |", "|---:|---:|---:|---:|"]
+          resumen += [f"| {i} | {modo} | {segundos} | {codigo} |" for i, modo, segundos, codigo in filas]
+          resumen += ["", f"Media serie: {medias[1]:.1f} s; media paralelo: {medias[2]:.1f} s; "
+                     f"reducción: {(1 - medias[2] / medias[1]) * 100:.1f} %.",
+                     "Los registros de cada pasada incluyen el tiempo por grupo."]
+          (raiz / "resumen.md").write_text("\n".join(resumen) + "\n", encoding="utf-8")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+              f.write("\n".join(resumen) + "\n")
+          if any(codigo != 0 for _, _, _, codigo in filas):
+              raise SystemExit("Al menos una pasada de la batería completa ha fallado")
+          PY
+
+      - name: Conservar tiempos y registros
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: medicion-bateria-linux
+          path: |
+            ${{ runner.temp }}/medidas.tsv
+            ${{ runner.temp }}/resumen.md
+            ${{ runner.temp }}/pasada-*.log
+          if-no-files-found: warn
+          retention-days: 14
+
   # La única comprobación que exige la protección de main: dice si pasó todo lo que tocaba pasar. La completa cuenta
   # como pasada si no hacía falta (solo documentación).
   resultado:
     name: Resultado
-    needs: [basica, completa]
+    needs: [basica, completa, pdf, medir_paralelo]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -148,6 +270,10 @@ jobs:
         env:
           BASICA: ${{ needs.basica.result }}
           COMPLETA: ${{ needs.completa.result }}
+          PDF: ${{ needs.pdf.result }}
+          MEDICION: ${{ needs.medir_paralelo.result }}
         run: |
-          echo "básica: $BASICA · completa: $COMPLETA"
-          [ "$BASICA" = success ] && { [ "$COMPLETA" = success ] || [ "$COMPLETA" = skipped ]; }
+          echo "básica: $BASICA · completa: $COMPLETA · PDF: $PDF · medición: $MEDICION"
+          [ "$BASICA" = success ] && { [ "$COMPLETA" = success ] || [ "$COMPLETA" = skipped ]; } && \
+            { [ "$PDF" = success ] || [ "$PDF" = skipped ]; } && \
+            { [ "$MEDICION" = success ] || [ "$MEDICION" = skipped ]; }

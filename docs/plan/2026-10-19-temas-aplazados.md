@@ -4,6 +4,11 @@ El 19 de octubre Raúl pidió trabajar los temas aplazados antes de publicar y p
 Esta fase parte de `84d2b24`, con la primera tanda aplicada y comprobada. Rama de integración: `codex/aplazados`, en
 `Proyectos IA/Plugin-aplazados-codex`. La rama anterior conserva su cierre. `main` permanece intacta y sincronizada.
 
+**Estado de integración posterior:** a petición de Raúl, la rama de Claude `automejora-pruebas` absorbió por avance
+rápido los 21 commits de `codex/aplazados` y es ahora la única rama de trabajo. Las ramas auxiliares se eliminaron;
+el repositorio original está en `automejora-pruebas`. Las rutas y ramas del párrafo anterior documentan dónde se hizo
+la fase, no dónde continuarla. No se ha publicado una nueva versión.
+
 ## Decisiones y respuestas
 
 Las preguntas enviadas al usuario no se consideran aceptadas por silencio. Mientras llegan las respuestas, se avanza
@@ -31,6 +36,13 @@ en las tareas independientes y en la lectura de evidencia ya guardada.
 | D11: nueva pestaña | Navegación y parámetros, recarga, historial, aislamiento de claves y números que deben conservarse como texto | Integrado en f87d903; suite de prototipos correcta, ocho casos nuevos |
 | E6: LEEME | Medir la aplicación elegida antes de cambiar el presupuesto | No medido: extracción incompleta y detenida |
 | E7: batería | Dos grupos reales: 176,7 s en serie y 126,4 s en paralelo; cinco pruebas del ejecutor correctas | Integrado en 327cfa4; rendimiento de batería completa pendiente de CI |
+
+La CLI de Claude cargó el plugin de esta rama con `--plugin-dir`, pero la primera petición terminó en HTTP 429 antes
+de actuar. D1, D7 y C8 siguen sin medirse con Claude; no se repitió la llamada. Un proceso separado de Codex tampoco
+pudo completar P8: su política rechazó la lectura de los ficheros iniciales, aunque el localizador y el script sí
+funcionan al ejecutarlos directamente. La prueba del hook de requisitos en PowerShell 5.1 sí mostró el aviso con una
+dependencia simulada como ausente y dejó la marca de una vez por versión. Evidencias en
+`$PROYECTOS_PRUEBA/aplazados-codex-20261019/claude-comportamiento/`.
 
 La medida de E7 solo comprende QA y refactorización, con todos sus resultados correctos. No se extrapola al conjunto:
 los logs antiguos de CI imprimían los grupos al terminar y no permiten recuperar sus tiempos individuales. El

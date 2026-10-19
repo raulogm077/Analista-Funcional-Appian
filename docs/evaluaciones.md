@@ -7,7 +7,8 @@ repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/si
 ## Temas aplazados: medidas y cambios antes de publicar (19 de octubre de 2026)
 
 Segunda fase local, solicitada por Raúl después de cerrar la primera tanda. Alcance y decisiones en
-`docs/plan/2026-10-19-temas-aplazados.md`; integración en `codex/aplazados`, partiendo de `84d2b24`. Las evidencias
+`docs/plan/2026-10-19-temas-aplazados.md`; integración inicial en `codex/aplazados`, partiendo de `84d2b24`,
+incorporada después a la rama única `automejora-pruebas`. Las evidencias
 quedan en `$PROYECTOS_PRUEBA/aplazados-codex-20261019/`. Esta sección recoge solo las medidas terminadas; no acredita
 el cierre de los cambios que el plan mantiene en curso.
 
@@ -29,8 +30,12 @@ el cierre de los cambios que el plan mantiene en curso.
 | Suite diagramas | Completa con navegador: 135 comprobaciones correctas; sin navegador: 58; cinco casos focales finales. Son recorridos que se solapan, no cifras para sumar. PNG difíciles revisados antes y después. |
 | Arquitectura (E5) | Cinco capas con cinco cajas: 1.322 px con conexiones paralelas, 1.586 px con etiquetas de 45 caracteres y 4.442 px con conexiones densas. Vista general agrupada: 346 px. La referencia aplica el límite existente de 1.600 px al render y conserva objetos y relaciones en el detalle por capa o las tablas. |
 | Enlaces del prototipo (D11) | Ocho casos de navegador correctos: pestaña nueva, parámetros escapados, números conservados como texto, recarga, historial y aislamiento de claves. Suite de prototipos: 46 comprobaciones correctas, incluidos los seis casos del chat. |
-| Contraste sobre imágenes | Las doce apariciones sin medir corresponden a cuatro textos repetidos en pantalla y dos diálogos. El auditor no mide el fondo compuesto de imagen y capa superpuesta ni descuenta la ocultación por el diálogo. Se conserva expresamente «no medido». |
+| Contraste sobre imágenes | Medición real con Playwright y fondo compuesto: cuatro textos visibles **PASS**, mínimos 17,58; 17,28; 11,73; 11,73 frente a umbrales de 3 o 4,5. Las otras ocho apariciones están ocultas por diálogos y siguen **NOT MEASURED** como contenido no visible; cero fallos visibles. Evidencia en `diagramas/REVISION-CONEXIONES-Y-CONTRASTE.md`. |
+| Conexiones BPMN pendientes | Reproducidos los 126 avisos en 71 de 1.000 procesos: 38 intersecciones de etiquetas y 88 tramos coincidentes. Los casos 43 y 677 confirman defectos reales; el 46 muestra posible sobreconteo corto en un codo. El trazador no se cambió: una corrección de rutas y etiquetas requiere comparar la campaña caso a caso. Evidencia en `diagramas/REVISION-CONEXIONES-Y-CONTRASTE.md`. |
 | Ejecutor de batería (E7) | Cinco pruebas del contrato correctas: concurrencia real, modo secuencial, aislamiento de salida, entorno/carpeta y conservación de fallos. QA+refactorización reales: 176,7 s en serie frente a 126,4 s con dos grupos (28,4 % menos); ambos grupos pasan en ambos recorridos. |
+| Claude con `--plugin-dir` | La CLI identificó el plugin local 0.8.0-beta.1 y cero servidores MCP. La primera petición devolvió HTTP 429 `usage_limit_reached` antes de responder o usar herramientas. D1, D7 y C8 siguen **no medidos** como comportamiento de Claude; no hubo reintentos. Evidencia en `claude-comportamiento/RESULTADOS.md`. |
+| P8 con Codex en terminal | El proyecto ficticio generado resuelve la ruta del plugin y `proyecto.py estado` funciona directamente. El proceso separado de Codex no pudo leer `AGENTS.md` ni `.appian-plugin.json` por la política del entorno; no ejecutó el script. **No medido**, aunque el proceso devolviera código 0. Evidencia en `claude-comportamiento/RESULTADOS.md`. |
+| Aviso de requisitos en Windows | Con `REQUISITOS_SIN=docx` y carpeta personal temporal, `requisitos.py --breve --como python` mostró la carencia y creó la marca de aviso. La orden real del hook, tras sustituir `${CLAUDE_PLUGIN_ROOT}` como hace Claude, también salió con código 0, mostró el aviso y creó la marca en PowerShell 5.1. Es una comprobación local del hook, no una instalación visual en Desktop. |
 
 El nuevo ejecutor limita la concurrencia a dos grupos, imprime sus tiempos y conserva `--trabajos 1` para comparar.
 Los tiempos de la pareja no se extrapolan a la batería completa: ese rendimiento se medirá en CI. No se ejecutó
