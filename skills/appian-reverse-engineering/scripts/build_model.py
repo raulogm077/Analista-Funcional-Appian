@@ -40,7 +40,7 @@ TYPE_KEYS = ("type", "objectType", "designObjectType", "typeName", "kind")
 CRUMB_KEYS = ("breadcrumb", "location", "path", "context", "reference", "usage", "detail")
 WRAPPERS = ("result", "data", "response", "object", "item", "definition", "value")
 NO_SCAN_TYPES = {"application", "folder", "processModelFolder", "knowledgeCenter", "document"}
-ENTRY_TYPES = {"application", "site", "webApi", "folder", "processModelFolder", "knowledgeCenter", "document"}
+ENTRY_TYPES = {"application", "site", "webApi", "folder", "processModelFolder", "knowledgeCenter", "document", "group"}
 ORIGIN_RANK = {"dependents": 0, "dependencies": 1, "uuid": 2, "name": 3, "literal": 4, "derived": 5}
 SECRET_NAME = re.compile(r"(?i)(token|secret|passw|pwd|api[_\-]?key|credential|private[_\-]?key)")
 SECRET_VALUE = re.compile(r"sk_(live|test)_\w+|AKIA[0-9A-Z]{16}|(?i:bearer)\s+\S{8,}|-----BEGIN|eyJ[\w\-]{10,}\.[\w\-]{10,}"
@@ -81,12 +81,27 @@ def load(p: Path) -> Any:
     return json.loads(p.read_text(encoding="utf-8"))
 
 
+def localized(value: Any) -> Any:
+    """Valor localizado: español, inglés y después la primera lengua por orden estable.
+
+    Solo desenvuelve mapas cuyas claves son códigos de idioma; nunca objetos de negocio.
+    La respuesta original del MCP se conserva en el anexo.
+    """
+    if isinstance(value, dict) and value and all(re.fullmatch(r"[a-z]{2}(?:[-_][A-Za-z]{2})?", k) for k in value):
+        keys = sorted(value, key=lambda k: (0 if k.split('-')[0].split('_')[0] == 'es' else
+                                           1 if k.split('-')[0].split('_')[0] == 'en' else 2, k))
+        return next((value[k] for k in keys if value[k] not in (None, "")), None)
+    return value
+
+
 def pick(d: Any, keys, want=str) -> Any:
     if not isinstance(d, dict):
         return None
     low = {k.lower(): v for k, v in d.items()}
     for k in keys:
         v = low.get(k.lower())
+        if k.lower() in {"name", "objectname", "displayname", "label", "title", "description"}:
+            v = localized(v)
         if isinstance(v, want) and v not in ("", None):
             return v
     return None
@@ -277,7 +292,7 @@ def enrich_by_type(o: dict, defn: Any, name_by_uuid: dict):
         sf = next((v for node in walk(defn) if isinstance(node, dict) for k, v in node.items()
                    if k.lower() == "startform" and isinstance(v, dict)), None)
         if sf:
-            u = pick(sf, ("interfaceUuid", "uuid"))
+            u = pick(localized(sf), ("interfaceUuid", "uuid"))
             o["startFormInterface"] = name_by_uuid.get(u, u)
         grp = pick(defn, ("securityGroupName", "initiatorGroup", "securityGroup"))
         if grp:
@@ -356,7 +371,7 @@ def ultima_version(data: Any) -> dict | None:
         return max(ds) if ds else ""
     last = max(lst, key=d_of)
     return {"count": len(lst), "lastModifiedOn": d_of(last) or None,
-            "lastModifiedBy": pick(last, ("modifiedBy", "author", "user", "updatedBy", "username"))}
+            "lastModifiedBy": pick(last, ("modifiedBy", "savedBy", "author", "user", "updatedBy", "username"))}
 
 
 _ROOT: Path = Path(".")

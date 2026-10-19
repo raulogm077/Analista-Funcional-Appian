@@ -9,10 +9,13 @@ def utf8_stdio():
 
 
 def escribe(ruta, texto):
-    """Escribe un fichero de texto en UTF-8 con finales de línea \\n en cualquier sistema (write_text() los pone \\r\\n
-    en Windows): en un proyecto que comparten varios equipos, reescribirlo no cambia todas sus líneas."""
-    with open(ruta, "w", encoding="utf-8", newline="\n") as f:
-        f.write(texto)
+    """UTF-8; conserva CRLF del destino existente. Nuevos y finales mezclados usan LF."""
+    from pathlib import Path
+    ruta = Path(ruta)
+    previo = ruta.read_bytes() if ruta.is_file() else b""
+    salto = "\r\n" if b"\r\n" in previo and b"\n" not in previo.replace(b"\r\n", b"") else "\n"
+    with open(ruta, "w", encoding="utf-8", newline="") as f:
+        f.write(texto.replace("\r\n", "\n").replace("\r", "\n").replace("\n", salto))
 
 
 def sync_playwright():

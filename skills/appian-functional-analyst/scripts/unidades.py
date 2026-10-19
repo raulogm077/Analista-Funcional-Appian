@@ -548,7 +548,8 @@ class Contexto:
             if tocados:
                 choques.append(f"modificados en desarrollo después del último pase (as-is/datos/deriva.json): "
                                f"{', '.join(tocados)}")
-        return {"corregidos": corregidos, "usan": usan, "choques": choques, "deriva": estado}
+        return {"corregidos": corregidos, "usan": usan, "choques": choques, "deriva": estado,
+                "dependenciasDisponibles": (datos / "dependencias.json").is_file()}
 
     def reaplicar(self, uid):
         """[(URG, objetos)]: las corregidas en el entorno de corrección sobre objetos que cambia esta unidad y que aún no
@@ -695,6 +696,26 @@ class Contexto:
                                  for f in filas if f and nombre_accion(f[0]) and len(f) > ncab.index("tipo")]
         return out
 
+    def permisos_4(self, P, nombre):
+        """Configuración explícita de roles de un proceso; los nombres de grupo se resuelven en el entorno.
+        No interpreta la matriz libre ni convierte una celda vacía en «ningún grupo»."""
+        out = []
+        if P is None or "T" not in P.docs:
+            return out
+        for _, cab, filas in P.tablas("T", "4"):
+            cab = [mo.normaliza(c) for c in cab]
+            if not all(k in cab for k in ("proceso", "rol appian", "grupos")):
+                continue
+            for fila in filas:
+                c = dict(zip(cab, fila))
+                if c.get("proceso", "").strip(" `") != nombre:
+                    continue
+                texto = c.get("grupos", "").strip()
+                grupos = [] if texto == "—" else [x.strip().strip("`") for x in texto.split(";")] if texto else None
+                out.append({"rol": c.get("rol appian", "").strip(" `").lower(), "grupos": grupos,
+                            "declaracion": texto})
+        return out
+
     def esperado(self, uid, filas=None):
         """{objeto: {"tipo", "campos", "acciones"}} de lo que construye o cambia una unidad (o solo `filas`, las de una
         issue), para verificar --esperado: el tipo de su fila de §13 y, de un record type o CDT con su apartado en técnico
@@ -717,6 +738,10 @@ class Contexto:
                 e = out.setdefault(o, {})
                 if tipo:
                     e["tipo"] = tipo
+                if tipo == "processModel":
+                    permisos = self.permisos_4(despues or self.m, o)
+                    if permisos:
+                        e["permisosInicio"] = permisos
                 campos = self.campos_3(despues or self.m, o) if tipo in ("recordType", "cdt") and not parte(nombre) \
                     else None
                 if campos is not None:
@@ -732,9 +757,12 @@ class Contexto:
                     pedidas = [a for a in ahora or [] if clave(a) == mo.normaliza(accion)]
                     if not pedidas and ahora is not None and antes is not None and f["situacion"] == "modifica":
                         pedidas = [a for a in ahora if clave(a) not in {clave(b) for b in antes}]
-                    elif not pedidas and f["situacion"] != "modifica":
+                    elif not pedidas and accion and f["situacion"] != "modifica":
                         pedidas = [{"nombre": accion}]
-                    pedidas = [{k: a[k] for k in ("nombre", "tipo") if a.get(k)} for a in pedidas]
+                    pedidas = [{**{k: a[k] for k in ("nombre", "tipo") if a.get(k)},
+                                "visibilidad": {"declaracion": a.get("celdas", {}).get("quien la ve", ""),
+                                                "configuracion": a.get("celdas", {}).get("visibilidad verificable", "")}}
+                               for a in pedidas]
                     e["acciones"] = e.get("acciones", []) + [a for a in pedidas if a not in e.get("acciones", [])]
                     if not e["acciones"]:
                         del e["acciones"]
@@ -771,6 +799,55 @@ class Contexto:
             construido.append("as-is")
         construido += [u.id for u in suyas if u.estado in CONSTRUIDAS]
         return list(dict.fromkeys(construido)), curso
+
+    def ambito_secuencia(self, uid, propuestas=True, informe=None, objetos_conocidos=(), solo_decididas=False):
+        """Lo que cambia, sin «Revisar también», referencias de contexto ni filas «Existe»."""
+        piezas, objetos = set(), set()
+        if informe is None:
+            for f in self.filas_de(uid):
+                if f["situacion"] in CAMBIAN:
+                    objetos |= {objeto(o) for o in f["objetos"]}
+                    piezas |= {self.m.raiz_de(p) for p in mo.ids_en(f["para"])}
+            if uid == self.sin_id:
+                piezas |= {self.m.raiz_de(p.id) for p in self.m.piezas.values()
+                           if p.doc == "F" and uid in self.senales(p.id)[1]}
+        conocidos = {objeto(o) for f in self.filas for o in f["objetos"]} | set(objetos_conocidos)
+        for nombre, texto, punto in self.puntos_de(uid):
+            if informe is not None and pathlib.Path(nombre).stem != pathlib.Path(informe).stem:
+                continue
+            if not propuestas and not mo.normaliza(mo.estado_informe(texto)).startswith("aplicado"):
+                continue
+            if punto:
+                tipo = mo.normaliza(punto.get("tipo", "")).strip(" *`")
+                decision = mo.normaliza(punto.get("decision", "")).strip(" *")
+                if tipo in SIN_PIEZAS + ("existe", "contexto") or "✗" in decision:
+                    continue
+                if (not propuestas or solo_decididas) and (decision.startswith("pendiente") or "❓" in decision):
+                    continue
+                destino = punto.get("encaja en", "") if not tipo.startswith("nuevo") else ""
+                if not mo.ids_en(destino) and not re.findall(r"`([^`]+)`", destino):
+                    destino = punto.get("cambio propuesto", "")
+                piezas |= {self.m.raiz_de(p) for p in mo.ids_en(destino)}
+                objetos |= {objeto(o) for o in objetos_celda(destino)} & conocidos
+            elif mo.normaliza(mo.estado_informe(texto)).startswith("aplicado"):
+                aplicado = re.search(r"^## Aplicado\s*$(.*?)(?=^## |\Z)", texto, re.M | re.S)
+                piezas |= {self.m.raiz_de(p) for p in mo.ids_en(aplicado.group(1))} if aplicado else set()
+        return {"piezas": piezas, "objetos": objetos}
+
+    def solapes_secuencia(self, uid, ambito=None):
+        """Compartir texto aún por construir exige secuencia; dos propuestas abiertas pueden esperar sin aplicarse."""
+        mio = ambito if ambito is not None else self.ambito_secuencia(uid)
+        out = []
+        for u in self.unidades:
+            if u.id == uid or u.urgente or u.estado not in (ABIERTA, APROBADA):
+                continue
+            suyo = self.ambito_secuencia(u.id)
+            piezas, objetos = mio["piezas"] & suyo["piezas"], mio["objetos"] & suyo["objetos"]
+            # Dos retoques de partes distintas del mismo registro conservan la excepción ya existente.
+            objetos -= self.retoques(uid) & self.retoques(u.id)
+            if piezas or objetos:
+                out.append({"unidad": u.id, "estado": u.estado, "piezas": piezas, "objetos": objetos})
+        return out
 
     def texto_senales(self, pid):
         c, e = self.senales(pid)

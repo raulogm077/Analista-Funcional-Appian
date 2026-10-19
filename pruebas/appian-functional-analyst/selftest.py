@@ -75,8 +75,8 @@ def main():
         # 1. El ejemplo está bien
         c, out = corre(S / "comprobar.py", EJEMPLO)
         ok("el ejemplo pasa comprobar.py sin errores", c == 0, out)
-        ok("solo avisa de las capturas que faltan", "· pantallas con su captura" in out and
-           len(re.findall(r"^· ", out, re.M)) == 1, out)
+        ok("el ejemplo avisa de capturas y del formato antiguo de criterios/pruebas", "· pantallas con su captura" in out
+           and "· criterios con dado" in out and "· técnico §14: cada criterio con «Con qué»" in out, out)
 
         # 1b. Reglas de prosa en un solo sitio (redaccion.py, que usa también ingeniería inversa)
         sys.path.insert(0, str(S))
@@ -1032,9 +1032,10 @@ Se acepta si:
         # 7e. Sin as-is/ (riesgo 4): las comprobaciones de as-is/ no saltan y el ejemplo da los mismos errores y avisos
         # que antes de tenerlas (los de la versión e058107)
         c, out = corre(S / "comprobar.py", EJEMPLO)
-        ok("sin as-is/, autorizaciones da los mismos errores y avisos que antes",
-           c == 0 and "as-is" not in out and [l for l in out.splitlines() if l.startswith(("✗", "·"))]
-           == ["· pantallas con su captura del prototipo: 5 → PAN-01, PAN-02, PAN-03, PAN-04, PAN-05"], out)
+        avisos = [l for l in out.splitlines() if l.startswith(("✗", "·"))]
+        ok("sin as-is/, no ejecuta sus controles; solo capturas y avisos del formato antiguo de criterios/pruebas",
+           c == 0 and "as-is" not in out and len(avisos) == 3 and all(any(l.startswith(prefijo) for l in avisos)
+               for prefijo in ("· pantallas con su captura", "· criterios con dado", "· técnico §14: cada criterio con «Con qué»")), out)
 
         # 8. Word del DF (opcional)
         if shutil.which("node"):
@@ -1159,6 +1160,11 @@ Se acepta si:
                 except OSError:
                     pass
         shutil.rmtree(tmp, ignore_errors=True)
+    for nombre in ("test_automejora.py", "test_ingesta.py", "test_dependencias.py", "test_secuenciacion.py", "test_permisos.py", "test_subtareas.py"):
+        prueba = AQUI / nombre
+        if prueba.is_file():
+            c, out = corre(prueba)
+            ok(nombre, c == 0, out)
     print("\nTodo correcto." if not fallos else f"\n{len(fallos)} pruebas fallan: {', '.join(fallos)}")
     return 1 if fallos else 0
 
@@ -1526,7 +1532,7 @@ def verifica(p, uid, iid, objetos=None, pruebas=None, **diferencias):
         json.dump({"generadoEn": "2026-10-14T10:00:00Z", "issue": esperado["_issue"], "objetos": [
             {"pedido": o, "existe": True, "diferencias": diferencias.get(o, {})}
             for o in objetos or [k for k in esperado if k != "_issue"]],
-            **({} if esperado["_issue"].get("pruebas") is False else {"pruebas": pruebas or pruebas_de()})},
+            **({} if esperado["_issue"].get("pruebas") is False else {"pruebas": pruebas if pruebas is not None else pruebas_de(*[(o, "issue", [], []) for o in esperado["_issue"].get("casosExigidos", [])])})},
             fh, ensure_ascii=False, indent=1)
     return f
 
@@ -1661,12 +1667,12 @@ def pruebas_unidades(tmp):
            "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |\n"
            "| 8 | `DEM_SolicitudForm` | Interfaz | Modifica | — | EV-03 |")
     c, out = corre(S / "proyecto.py", "cambio", p, "EV-03", "aprobada", "--fuente", "FU-05")
-    ok("cambio aprobada: un objeto de otra unidad aprobada sin decisión es error, y dice cómo escribirla",
-       c == 1 and "EV-02 (DEM_SolicitudForm)" in out and "--comparte" in out and "| Abierta |" in fila_de(p, "EV-03"), out)
+    ok("cambio aprobada: un objeto compartido con otra unidad aprobada espera a que se construya la primera",
+       c == 1 and "EV-02: DEM_SolicitudForm" in out and "sigue sin construir" in out and "| Abierta |" in fila_de(p, "EV-03"), out)
     c, out = corre(S / "proyecto.py", "cambio", p, "EV-03", "aprobada", "--fuente", "FU-05", "--comparte",
                    "EV-02 en DEM_SolicitudForm: secuenciar (EV-02 primero)")
-    ok("cambio aprobada: con la decisión (--comparte) pasa y queda escrita",
-       c == 0 and "| Aprobada |" in fila_de(p, "EV-03") and "secuenciar (EV-02 primero) |" in fila_de(p, "EV-03"), out)
+    ok("cambio aprobada: --comparte no permite mezclar dos encargos pendientes; la segunda sigue Abierta",
+       c == 1 and "| Abierta |" in fila_de(p, "EV-03") and "No hay aprobación parcial" in out, out)
     ok("cambio aprobada: guarda la versión y los informes con que se aprobó",
        "<!-- aprobada 1.1: FU-04 -->" in fila_de(p, "EV-02"), fila_de(p, "EV-02"))
 
@@ -2152,7 +2158,8 @@ def pruebas_unidades(tmp):
     ok("lo esperado dice de qué issue y de qué versión es, el tipo de cada objeto y, del record type que se modifica, "
        "solo sus campos nuevos",
        re.fullmatch(r"[0-9a-f]{12}", esp.get("_issue", {}).get("version", "")) is not None
-       and esp == {"_issue": {"id": "ISS-01", "unidad": "EV-02", "version": esp["_issue"]["version"], "pruebas": True},
+       and esp == {"_issue": {"id": "ISS-01", "unidad": "EV-02", "version": esp["_issue"]["version"], "pruebas": True,
+                             "ambito": esp["_issue"]["ambito"]},
                    "DEM Solicitud": {"tipo": "recordType", "campos": [{"nombre": "firmaRevisor", "tipo": "Text"}]},
                    "DEM_ER_Firma": {"tipo": "expressionRule"}, "DEM_RevisionForm": {"tipo": "interface"},
                    "DEM_SolicitudForm": {"tipo": "interface"}}, json.dumps(esp, ensure_ascii=False))
@@ -2229,7 +2236,7 @@ def pruebas_reserva_segura(tmp):
     ok("con una fusión a medias, --siguiente no toca git ni escribe nada: da la issue sin reservar y lo dice; la "
        "resolución hecha a mano sigue ahí, y --liberar se niega",
        choca != 0 and c == 0 and out.startswith("ISS-01 de EV-01: sin reservar ni escribir nada: el repositorio tiene "
-                                                "una fusión a medias") and "--quien <" not in out
+                                                "una fusión a medias") and "Pide siempre con el mismo" not in out
        and git(a, "rev-parse", "-q", "--verify", "MERGE_HEAD")[0] == 0 and lee(pm) == resuelto
        and lee(a / "construccion" / "EV-01" / "indice.md") == indice and "Ana" not in indice
        and c2 == 1 and "una fusión a medias" in out2, out + out2)
@@ -2294,6 +2301,8 @@ def pruebas_de_la_issue(tmp):
        c == 0 and f"· {aviso}. Es un aviso: no frena la construcción" in out and "| Aprobada |" in fila_de(v, "EV-02")
        and f"## Antes de construir\n\n- {aviso}. Es un aviso" in e1 and "Antes de construir" not in e2, out + e1[:900])
     retoque = con_unidades(tmp / "t14 retoque")
+    c, out = corre(S / "proyecto.py", "cambio", retoque, "EV-02", "construida", "--manual", "--reaplicada", "URG-01")
+    ok("T14: el primer encargo se construye antes de aplicar el renombre compartido", c == 0, out)
     editar(retoque / "analisis" / "tecnico.md", "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |",
            "| 8 | `DEM Solicitud — acción «Nueva solicitud»` | Record type | Modifica | — | EV-03 |")
     editar(retoque / "impacto" / "FU-06.md", "| Sí (alcance) | Pendiente |", "| Sí (alcance) | ✔ FU-05 |")
@@ -2468,6 +2477,8 @@ def pruebas_de_la_issue(tmp):
     # Una acción de registro que se renombra: lo esperado lleva su nombre nuevo y su tipo, de técnico §7
     def renombra(carpeta, ve_tambien=""):
         r = con_unidades(tmp / carpeta)
+        c, out = corre(S / "proyecto.py", "cambio", r, "EV-02", "construida", "--manual", "--reaplicada", "URG-01")
+        ok("acción renombrada: se construye primero el encargo anterior del registro", c == 0, out)
         t = r / "analisis" / "tecnico.md"
         tabla = ("\n\nAcciones de registro de `DEM Solicitud`:\n\n| Acción | Tipo | Proceso | Quién la ve |\n|---|---|---|---|\n"
                  "| «Nueva solicitud» | De lista | `DEM Alta Solicitud` | `DEM Gestores` |\n"
@@ -2496,7 +2507,8 @@ def pruebas_de_la_issue(tmp):
     ok("una acción que se renombra: lo esperado lleva la de técnico §7 con su nombre nuevo y su tipo (la fila de §13 dice "
        "la de antes), sin campos del record type que comparar, sin pruebas que ejecutar y sin nada que revisar",
        c == 0 and {k: x for k, x in esp.items() if k != "_issue"} == {"DEM Solicitud": {
-           "tipo": "recordType", "acciones": [{"nombre": "Pedir material", "tipo": "De lista"}]}}
+           "tipo": "recordType", "acciones": [{"nombre": "Pedir material", "tipo": "De lista",
+                                                "visibilidad": {"declaracion": "`DEM Gestores`", "configuracion": ""}}]}}
        and esp["_issue"]["pruebas"] is False and "Que una persona revise" not in out, out + json.dumps(esp, ensure_ascii=False))
     r, c, out = renombra("t13 accion y permisos", " y `DEM Revisores`")
     c2, out2 = corre(S / "comprobar.py", r)
@@ -2567,8 +2579,8 @@ def pruebas_issues(tmp):
        "inexistente", c == 0 and dt and "EV-03" not in dt and "DEM Solicitud — acción" not in out
        and "ninguna unidad ha construido" not in out, out)
     c, out = aprobar(g, "EV-03")
-    ok("… pero si la otra unidad cambia algo más del record type (EV-02 le añade un campo), sí hay que decidir el orden",
-       c == 1 and "comparte objetos con otra unidad aprobada y no hay decisión: EV-02 (DEM Solicitud)" in out
+    ok("… pero si la otra unidad cambia algo más del record type (EV-02 le añade un campo), espera a que se construya",
+       c == 1 and "la pieza compartida sigue sin construir (EV-02: DEM Solicitud)" in out
        and "| Abierta |" in fila_de(g, "EV-03"), out)
     editar(g / "analisis" / "cambios.md", "| EV-02 | Firma de la revisión | Evolutivo | Aprobada |",
            "| EV-02 | Firma de la revisión | Evolutivo | En producción |")
@@ -2603,9 +2615,9 @@ def pruebas_issues(tmp):
         editar(h / "impacto" / "FU-06.md", "| Sí (alcance) | Pendiente |", "| Sí (alcance) | ✔ FU-05 |")
         c, out = corre(S / "comprobar.py", h)
         c2, out2 = aprobar(h, "EV-03")
-        ok(f"si la parte que cambia guarda datos o da permisos ({nombre}), sí: pide «{punto}» y decidir el orden",
+        ok(f"si la parte que cambia guarda datos o da permisos ({nombre}), pide «{punto}» y espera a la primera unidad",
            any("Cambio sobre lo construido" in l and f"EV-03: «{punto}» (DEM Solicitud)" in l for l in out.splitlines())
-           and c2 == 1 and "EV-02 (DEM Solicitud)" in out2 and "--comparte" in out2, out + out2)
+           and c2 == 1 and "EV-02: DEM Solicitud" in out2 and "sigue sin construir" in out2, out + out2)
 
     # T11 · Las issues de una aplicación nueva: al aprobar la unidad, sin otro paso
     p = nueva_con_issues(tmp / "issues app")
@@ -2645,7 +2657,7 @@ def pruebas_issues(tmp):
     i1, i2, i3 = (lee(d / f"ISS-0{n}.md") for n in (1, 2, 3))
     ok("la issue lleva lo que necesita quien construye: qué se pide (la historia, su pantalla con la captura y sus partes, "
        "su paso), sus objetos, lo que dice de ellos el técnico y lo que no debe tocar por ser de otra issue",
-       i2.startswith("# ISS-02 · Registrar una solicitud · EV-01\n")
+       i2.startswith("# ISS-02 · Registrar una solicitud; Subsanar una solicitud y 3 requisitos más · EV-01\n")
        and "Depende de: ISS-01 (Base) · En paralelo con: — · Aplicación `AUT Autorizaciones`" in i2
        and "- **HU-03 Subsanar una solicitud**\n  Como unidad solicitante, quiero corregir la solicitud" in i2
        and "  - Perfil: Unidad solicitante · Pantalla: PAN-03 · Paso: ACT-06\n" in i2
@@ -2664,7 +2676,8 @@ def pruebas_issues(tmp):
        and "Campo: titulo" not in i3 and "Campo: titulo" in i1
        and {k: v for k, v in json.loads(lee(d / "ISS-03-esperado.json")).items() if k != "_issue"}
        == {"AUT_FichaSolicitud": {"tipo": "interface"},
-           "AUT Solicitud": {"acciones": [{"nombre": "Adjuntar informe del organismo"}]}}, i3)
+           "AUT Solicitud": {"acciones": [{"nombre": "Adjuntar informe del organismo",
+                                            "visibilidad": {"declaracion": "", "configuracion": ""}}]}}, i3)
     textos = [lee(d / n) for n in nombres if n.endswith(".md") and n != "indice.md"]
     ok("ninguna issue pide leer un documento entero: lleva el extracto, no «ver técnico §7»",
        len(textos) == 5 and all("no hay que leer el funcional ni el técnico" in x and "## Lo que dice el técnico" in x
@@ -2707,7 +2720,7 @@ def pruebas_issues(tmp):
     feature = lee(d / "ISS-02.feature")
     ok("el .feature: una sola Característica y una Regla por historia; el criterio con dado, cuando y entonces, en sus tres "
        "pasos; el que aún no los tiene pasa tal cual, con aviso",
-       feature.startswith("# language: es\nCaracterística: EV-01 ISS-02 Registrar una solicitud\n\n  Regla: HU-01 Registrar "
+       feature.startswith("# language: es\nCaracterística: EV-01 ISS-02 Registrar una solicitud; Subsanar una solicitud y 3 requisitos más\n\n  Regla: HU-01 Registrar "
                           "una solicitud\n\n    Escenario: HU-01.1\n      * Sin memoria o sin plano")
        and "\n  Regla: HU-03 Subsanar una solicitud\n\n    Escenario: HU-03.1\n      Dada una solicitud devuelta\n      Cuando "
            "la unidad solicitante la reenvía\n      Entonces vuelve a «En revisión» con el mismo número\n" in feature
@@ -2731,7 +2744,7 @@ def pruebas_issues(tmp):
     ok("indice.py issues dice cómo va cada una: hecha, pendiente y por qué, y a cuál espera",
        c == 0 and "Al día, sin cambios" in out and "  ISS-01 · Base · Base · hecha\n" in out
        and "  ISS-02 · HU-01, " in out and "· pendiente: lo construido no es lo del técnico: AUT_RevisarForm: falta\n" in out
-       and "  ISS-03 · HU-06, HU-07, PAN-02 · Redactar el informe técnico · pendiente: sin verificar · espera a ISS-02\n"
+       and "  ISS-03 · HU-06, HU-07, PAN-02 · Redactar el informe técnico; Adjuntar el informe del organismo · pendiente: sin verificar · espera a ISS-02\n"
        in out, out)
     c, out = issues(p, "EV-01", "--siguiente")
     extractor = (PLUGIN / "skills" / "appian-reverse-engineering" / "scripts" / "devmcp_extract.py").resolve().as_posix()
@@ -2979,7 +2992,7 @@ def pruebas_issues(tmp):
     reserva = del_remoto()["ISS-01"][6]
     ok("la reserva dice quién tiene la issue y desde cuándo, y sube con un commit que solo lleva el índice de la unidad: lo "
        "que haya a medias en la carpeta no entra",
-       re.fullmatch(rf"{quien} · \d{{4}}-\d\d-\d\dT\d\d:\d\dZ", reserva) is not None
+       re.fullmatch(rf"{quien} · \d{{4}}-\d\d-\d\dT\d\d:\d\dZ · versión [a-f0-9]{{12}}", reserva) is not None
        and ultimo() == (f"EV-01: ISS-01 reservada por {quien}", ["construccion/EV-01/indice.md"])
        and "?? notas/" in git(ana, "status", "--porcelain")[1]
        and f"ISS-01 de EV-01, reservada a nombre de {reserva}: con un commit, subido a origin/main" in uno[1] + otro[1],
@@ -3170,7 +3183,8 @@ def pruebas_gherkin(tmp):
     ok("comprobar.py --anterior: no avisa de los criterios de antes que no se tocan, del que solo cambia su cita ni de "
        "los que ya los llevan", re.findall(r"[A-Z]+-\d+\.\d+", linea) == ["HU-05.3", "HU-07.1"], linea)
     c, out = corre(S / "comprobar.py", g)
-    ok("comprobar.py sin --anterior: de dado, cuando y entonces no dice nada", c == 0 and "cuando y entonces" not in out, out)
+    ok("comprobar.py sin --anterior: avisa también de criterios sin dado, cuando y entonces",
+       c == 0 and "· criterios con dado, cuando y entonces" in out and "HU-07.1 (l." in out, out)
     mg = modelo.cargar(g)
     texto, sin = mg.feature("HU-03")
     cabecera, escenarios = FEATURE.split("\n\n", 1)    # los dos del diseño son aquí HU-03.2 y HU-03.3

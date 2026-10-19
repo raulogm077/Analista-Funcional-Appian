@@ -16,7 +16,7 @@ En `08-procesos-bpmn/`, con el `<slug>` del process model en `inventory.json`:
 | `<slug>.bpmn` | BPMN 2.0 con coordenadas de dibujo, uno con todos los nodos |
 | `<slug>.md` | El documento del proceso |
 
-**Procesos grandes.** El JSON lleva siempre `"tramos": true`: es un proceso que ya existe y no se le inventan subprocesos. Si no cabe en una página, la skill de diagramas lo dibuja en tramos de una página unidos por eventos de enlace («Sigue en el tramo N», «Viene del tramo M»), que son del dibujo y no del proceso. El `.bpmn` sigue siendo uno y completo, sin los enlaces. El `.md` muestra las imágenes en orden, cada una con una frase que dice qué pasos cubre.
+**Procesos grandes.** El JSON lleva siempre `"tramos": true`: es un proceso que ya existe y no se le inventan subprocesos. Si no cabe en una página, la skill de diagramas lo dibuja en tramos de una página unidos por eventos de enlace («Sigue en el tramo N: paso de destino», «Viene del tramo M: código y paso de origen»), que son del dibujo y no del proceso. El `.bpmn` sigue siendo uno y completo, sin los enlaces. El `.md` muestra las imágenes en orden, cada una con una frase que dice qué pasos cubre.
 
 **El `.bpmn`** lo exporta `diagrama.py bpmn` del `.drawio`: un participante para el proceso con un carril por carril, los sistemas externos como participantes caja negra con sus flujos de mensaje, los tipos de inicio y de tarea, el flujo por defecto, los eventos de borde y los datos de Appian (el id del nodo en `documentation`, la condición de cada salida, la expresión del temporizador y el proceso llamado). Se abre en **Camunda Modeler** (Archivo → Abrir) y en **bpmn.io** (arrastrar el fichero a https://demo.bpmn.io).
 
@@ -39,6 +39,7 @@ En `08-procesos-bpmn/`, con el `<slug>` del process model en `inventory.json`:
 | `internal3.sendemail3` | Send E-Mail | `mensaje` (EV), en «Aplicación» | `nodo` |
 | `internal3.integration` | Call Integration | `sistema` (ACT), en «Aplicación» | `nodo`; un flujo hasta su sistema externo con la operación como `etiqueta` |
 | `internal3.subprocess` | Subproceso | `llamada` (ACT) | `nodo`, `proceso_llamado` (el nombre del process model hijo) |
+| `appian.system.smart-services.start-process-5` | Start Process | `llamada` (ACT) | `nodo`, `proceso_llamado`; describe la sincronía que indique su configuración, sin deducirla del nombre |
 | (ver catálogo) | Pasarela paralela / inclusiva | `paralela` / `inclusiva` (GW) | `nodo`; en las inclusivas, como en las exclusivas |
 | (ver catálogo) | Write to Data Store Entity | `sistema` (ACT) | `nodo` |
 

@@ -59,7 +59,8 @@ límites) se consulta en el MCP de documentación como dice el SKILL.md, y la UR
 ## Apartados
 
 ### 0. Entorno
-Tabla `Dato · Valor · Fuente`: la aplicación (su nombre y su prefijo), la URL de cada entorno (una fila por entorno:
+Tabla `Dato · Valor · Fuente`: una fila «Aplicación» con su nombre exacto entre comillas invertidas, sin comentarios
+añadidos (conserva los paréntesis que formen parte del nombre), y otra «Prefijo»; la URL de cada entorno (una fila por entorno:
 «URL de desarrollo», «URL de pruebas», «URL de producción» y, si lo hay, «URL del entorno de corrección»), versión de
 Appian en cada entorno, tier y complementos, base de datos, inicio de sesión, idioma y zona horaria, calendario
 laboral, volumen, usuarios y concurrencia, tiempo de recuperación, accesibilidad, móvil y usuarios externos, licencias.
@@ -117,6 +118,7 @@ Por record type, `### 3.n <Record type>`:
   `Funcional: <Dato del funcional §6>` (varios separados por comas) o `Técnico: <para qué>`. Todo dato del
   funcional tiene su campo y todo campo tiene su uso.
 - Los estados y las listas de valores son record types de referencia, no texto.
+- Cada tabla lleva los campos de auditoría definidos en §1. Un texto de más de 255 caracteres se diseña como Long Text.
 
 Al final: referencias y carga inicial (`Record type · Valores iniciales · Quién lo mantiene`).
 
@@ -131,6 +133,14 @@ propuesta de refactorización es obligatoria.
 - Cada «solo lo ve…» o «solo puede…» del funcional, con la capa de Appian que lo aplica (seguridad de
   registro, de campo, de vista, de acción o de la interfaz). Si es una decisión, su DT.
 - La cuenta del sistema que llama a una Web API expuesta (§10), con su grupo: va aquí y solo aquí.
+
+Para comparar la configuración de inicio de los procesos de §13, tabla `Proceso · Rol Appian · Grupos`: nombre exacto
+del proceso y de cada grupo, separados por `;`, sin UUID. `—` significa ningún grupo; una celda vacía no lo significa.
+Declara los roles que se acuerden (`administrator`, `editor`, `manager`, `viewer`, `initiator`, `deny`): comparar solo
+`initiator` no comprueba toda la configuración, pues otros roles también permiten iniciar. El verificador resuelve
+los nombres contra la lista real; un grupo ausente, ambiguo o externo no resuelto queda **no comprobado**. Compara
+conjuntos de grupos directos de las filas declaradas; herencia o miembros no legibles no se interpretan. Esta
+comprobación de configuración no acredita acceso efectivo: grupos anidados, denegaciones y cada rol se prueban en QA.
 
 ### 5. Estados y transiciones
 Qué hace cada transición del funcional (acción, nodo del proceso, regla). Ninguna interfaz cambia el
@@ -152,6 +162,16 @@ inicio de proceso en la interfaz (BP 00 «Process», 01 §9.2, 02 §5.4, 03 §8,
 tabla `Acción · Tipo · Proceso · Quién la ve` bajo «Acciones de registro de `<record type>`», con el nombre entre
 comillas latinas y el tipo «De lista» o «Relacionada»: de ahí sale lo que `verificar` comprueba de una acción que se
 construye o cambia (su nombre y su tipo), también si se renombra.
+
+Si ya está decidida la configuración de visibilidad, añade `Visibilidad verificable`: `EXPRESSION: true()`,
+`EXPRESSION: false()` o una expresión simple de pertenencia a grupos como
+`EXPRESSION: a!isUserMemberOfGroup(loggedInUser(), cons!DEM_GESTORES)` (también un `or(...)` plano de esas llamadas).
+No inventes código para llenar la celda: conserva `Quién la ve` y deja sin comprobar lo que aún no es decidible.
+El verificador solo compara esta gramática: resuelve constantes `GROUP` escalares cuyo valor sea un nombre de grupo
+exacto y único. Alias de constantes al mismo grupo, términos repetidos y orden distinto del `or` no son diferencias.
+`RULES`, expresiones con reglas o datos del registro, filtros/membresías no soportados y valores no resueltos quedan
+**no comprobados**. Una diferencia de conjuntos es de configuración de grupos referenciados, no una prueba de quién
+ve la acción; el acceso efectivo sigue en el QA con cada rol.
 
 ### 8. Procesos
 Por process model, la tabla de nodos `Nodo · Qué hace · Asignado a · Plazo y escalado · Escribe · Evento`,
@@ -194,6 +214,8 @@ constantes, sistemas conectados) dice «Base» y se construye lo primero. En un 
 (`HU-03.2`). Lo que «Existe» no la lleva. Si de un objeto solo cambia una parte, la fila la nombra: `AUT Solicitud —
 acción «Nueva solicitud»`.
 
+El site y sus páginas van en la issue de la primera pantalla que publican.
+
 ```markdown
 | Paso | Objeto | Tipo | Situación | Sustituye a | Cambio | Para |
 |---|---|---|---|---|---|---|
@@ -202,6 +224,17 @@ acción «Nueva solicitud»`.
 | 5 | `AUT_SubsanarSolicitud` | Interfaz | Nuevo | — | EV-02 | PAN-03 |
 | 6 | `AUT Tramitar Solicitud` | Process model | Modifica | — | EV-02 | ACT-02, ACT-06 |
 ```
+
+Si hay preguntas sin respuesta y se acuerda construir con un supuesto, debajo de la tabla:
+
+#### Supuestos para construir
+
+| Pregunta | Se construye con | Dónde cambia |
+|---|---|---|
+| PC-nn | Valor o comportamiento acordado mientras llega la respuesta | Nombre exacto del objeto entre comillas invertidas |
+
+Las filas llegan a las issues que citan el PC o construyen el objeto. Las instrucciones generales se escriben bajo
+«Reglas para quien construye» y llegan a todas. Al responder el PC se revisa el supuesto con `indice.py impacto`.
 
 ### 14. Pruebas y trazabilidad
 Tabla `Criterio · Cómo se prueba · Con qué` con todos los criterios `HU-nn.m` e `INT-nn.m` (se pueden agrupar) y los
@@ -212,6 +245,9 @@ otro que no. «Con qué» dice cómo se comprueba cada criterio, y la issue lo c
 - `SAIL CLI`: se recorre la pantalla como un usuario. Es del QA de la unidad, no de quien construye.
 - `Playwright`: un criterio que solo se ve en pantalla (un color, la maquetación) y no basta con que lo mire una persona.
   También del QA (`appian-qa`).
+
+Cuando un criterio depende de una regla, «Cómo se prueba» fija la entrada y la salida esperadas concretas;
+quien construye las copia al caso de prueba, sin decidir el resultado esperado.
 
 ```markdown
 | Criterio | Cómo se prueba | Con qué |

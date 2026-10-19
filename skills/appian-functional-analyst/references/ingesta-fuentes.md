@@ -10,6 +10,12 @@ python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o <proyecto>/fuen
 
 - Cada fuente recibe un ID estable `FU-01`, `FU-02`… y un `.md` con marcas de
   posición. `fuentes/indice.md` es el catálogo; `proyecto.md` dice cuáles se han procesado.
+- El catálogo indica las palabras de cada fuente. Las imágenes locales enlazadas por un Markdown forman parte de
+  esa fuente y se copian junto a su texto; las imágenes independientes mantienen su propio ID.
+- Una similitud alta solo avisa: compara las fuentes, sobre todo sus decisiones. Si una no aporta nada nuevo,
+  `leer_fuentes.py -o <p>/fuentes --duplicada FU-02=FU-01 --motivo "Misma reunión, solo cambia el título"`
+  deja constancia de cuál la cubre; desde entonces no se vuelve a leer ni se exige cobertura propia. Para recuperar
+  su lectura y cobertura: `leer_fuentes.py -o <p>/fuentes --restaurar FU-02`. No marques como duplicada una corrección.
 - En iteraciones, ejecútalo con las fuentes nuevas sobre la **misma carpeta**
   `fuentes/`: las ya catalogadas conservan su ID y las nuevas se numeran a
   continuación. Nunca renumeres a mano.

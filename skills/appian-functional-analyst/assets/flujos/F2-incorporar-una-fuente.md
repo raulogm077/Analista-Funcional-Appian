@@ -6,7 +6,7 @@
 | # | Paso | Quién | Con qué | Detalle |
 |---|---|---|---|---|
 | 1 | Ver cómo está el análisis, sin leerlo entero | Script | `appian-functional-analyst` · `indice.py resumen` | `appian-functional-analyst/references/actualizacion.md` §0 |
-| 2 | Catalogar la fuente | Script | `appian-functional-analyst` · `leer_fuentes.py` | `appian-functional-analyst/references/actualizacion.md` §1 |
+| 2 | Si llegó por chat, guardar el texto como fuente; catalogarla | Script | `appian-functional-analyst` · `leer_fuentes.py` | `appian-functional-analyst/references/ingesta-fuentes.md` §1 |
 | 3 | Nota de la fuente; una fuente corta no la lleva | IA | `appian-functional-analyst` | `appian-functional-analyst/references/actualizacion.md` §2 |
 | 4 | Sacar los puntos, dónde encaja cada uno y de qué depende | IA, con lo que imprimen `indice.py buscar`, `ficha` e `impacto` | `appian-functional-analyst` | `appian-functional-analyst/references/actualizacion.md` §3 |
 | 5 | Escribir el informe de impacto, `impacto/FU-nn.md` | IA | `appian-functional-analyst` | `appian-functional-analyst/references/actualizacion.md` §4 |

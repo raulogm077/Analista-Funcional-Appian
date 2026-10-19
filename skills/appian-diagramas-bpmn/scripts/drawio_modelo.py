@@ -26,6 +26,7 @@ import xml.etree.ElementTree as ET
 
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 import colocacion  # noqa: E402
+from texto import escribir as escribir_texto  # noqa: E402
 
 # ---------------------------------------------------------------- tipos y estilos
 INICIOS = {"inicio", "inicio_temporizador", "inicio_mensaje"}
@@ -197,9 +198,7 @@ def cargar_json(ruta):
 
 
 def guardar_json(proc, ruta):
-    with open(ruta, "w", encoding="utf-8", newline="\n") as f:  # con \n en cualquier sistema
-        json.dump(proc, f, ensure_ascii=False, indent=2)
-        f.write("\n")
+    escribir_texto(ruta, json.dumps(proc, ensure_ascii=False, indent=2) + "\n")
 
 
 def estructura(proc):
@@ -445,7 +444,7 @@ def partir(proc, grupos):
                                      "nombre": f"Sigue en el tramo {a}" + (f": {destino}" if destino else "")})
         out[de - 1]["flujos"].append({**f, "a": sale})
         out[a - 1]["pasos"].append({"id": entra, "tipo": "enlace_entrada", "carril": pasos[f["a"]]["carril"],
-                                    "nombre": f"Viene del tramo {de}"})
+                                    "nombre": f"Viene del tramo {de}: {f['de']} — {pasos[f['de']].get('nombre', '')}"})
         out[a - 1]["flujos"].append({"de": entra, "a": f["a"]})
     for n in proc.get("notas") or []:
         out[tramo[n["paso"]] - 1]["notas"].append(dict(n))
@@ -566,20 +565,28 @@ def _sitio_etiqueta(camino, otros=(), etiqueta=None):
 def _sitio_en_vertical(camino, largos, otros, ancho, cajas):
     """(largo, distancia desde el origen) del centro del primer trozo vertical del flujo que no cruza ni comparte otro y
     en el que cabe su etiqueta (`ancho`) sin pisar otro flujo ni ninguna de las `cajas` (x, y, w, h); None si no hay."""
-    def pisa(r, t, caja):
-        """Si el tramo r-t (o la caja de esquinas r y t) entra en la caja."""
-        x, y, w, h = caja
-        return min(r[0], t[0]) < x + w and max(r[0], t[0]) > x and min(r[1], t[1]) < y + h and max(r[1], t[1]) > y
+    semiancho = ancho / 2 + colocacion.AIRE_ETIQUETA
+    semialto = ALTO_ETIQUETA_FLUJO / 2 + colocacion.AIRE_ETIQUETA
+    obstaculos = [(min(r[0], t[0]), min(r[1], t[1]), max(r[0], t[0]), max(r[1], t[1]))
+                 for otro in otros for r, t in zip(otro, otro[1:])]
+    obstaculos += [(x, y, x + w, y + h) for x, y, w, h in cajas]
     for k, (p, q) in enumerate(zip(camino, camino[1:])):
         if abs(p[0] - q[0]) > 1:
             continue
         for a, b in _trozos_libres(p, q, otros):
-            y = (a + b) / 2
-            caja = (p[0] - ancho / 2 - colocacion.AIRE_ETIQUETA, y - ALTO_ETIQUETA_FLUJO / 2 - colocacion.AIRE_ETIQUETA,
-                    ancho + 2 * colocacion.AIRE_ETIQUETA, ALTO_ETIQUETA_FLUJO + 2 * colocacion.AIRE_ETIQUETA)
-            if b - a >= caja[3] and not any(pisa(r, t, caja) for otro in otros for r, t in zip(otro, otro[1:])) \
-                    and not any(pisa((x, y0), (x + w, y0 + h), caja) for x, y0, w, h in cajas):
-                return (b - a, sum(largos[:k]) + abs(y - p[1]))
+            libres = [(a + semialto, b - semialto)] if b - a >= 2 * semialto else []
+            # Un obstáculo cerca del centro no ocupa necesariamente todo el tramo.
+            # Restar su proyección deja también los huecos a ambos lados disponibles.
+            for x0, y0, x1, y1 in obstaculos:
+                if x0 >= p[0] + semiancho or x1 <= p[0] - semiancho:
+                    continue
+                lo, hi = y0 - semialto, y1 + semialto
+                libres = [(u, v) for desde, hasta in libres
+                          for u, v in ((desde, min(hasta, lo)), (max(desde, hi), hasta)) if v > u]
+            if libres:
+                desde, hasta = max(libres, key=lambda tramo: tramo[1] - tramo[0])
+                y = (desde + hasta) / 2
+                return (hasta - desde, sum(largos[:k]) + abs(y - p[1]))
     return None
 
 
@@ -600,7 +607,8 @@ def _cajas(proc, geo):
 def _celdas(proc, geo, pre=""):
     """Las celdas de una página, sin las dos de la raíz. `geo` = {"carriles": {nombre: (y, h)}, "ancho": w,
     "pasos": {id: (cx, cy)} (centro absoluto), "flujos": [[(x, y), ...] por flujo en el orden de proc],
-    y si los hay: "etiquetas": {id: "arriba"|"abajo"}, "externos": {nombre: (y, h)}, "anotaciones": [(x, y, w, h)]}.
+    y si los hay: "etiquetas": {id: "arriba"|"abajo"}, "externos": {nombre: (y, h)}, "anotaciones": [(x, y, w, h)],
+    "etiquetas_flujo": {índice desde cero: posición relativa validada, de -1 a 1}}.
     `pre` va delante de los ids que no son de un paso (carriles, externos, notas y flujos), para que no se repitan
     entre las páginas de un proceso en tramos."""
     celdas = []
@@ -663,8 +671,10 @@ def _celdas(proc, geo, pre=""):
         mensaje = f["de"] in ext_id or f["a"] in ext_id
         pts = geo["flujos"][i - 1] if i - 1 < len(geo.get("flujos", [])) and not mensaje else []
         if f.get("etiqueta") and i in caminos:
-            sitio = _sitio_etiqueta(caminos[i], [c for j, c in caminos.items() if j != i],
-                                    (colocacion.ancho_etiqueta_flujo(f["etiqueta"]), cajas))
+            sitio = geo.get("etiquetas_flujo", {}).get(i - 1)
+            if sitio is None:
+                sitio = _sitio_etiqueta(caminos[i], [c for j, c in caminos.items() if j != i],
+                                        (colocacion.ancho_etiqueta_flujo(f["etiqueta"]), cajas))
             pos = f' x="{sitio:.3f}"' if sitio is not None else pos
         arr = ('<Array as="points">' + "".join(f'<mxPoint x="{x:.0f}" y="{y:.0f}"/>' for x, y in pts) + "</Array>") if pts else ""
         de, a = ext_id.get(f["de"], f["de"]), ext_id.get(f["a"], f["a"])
@@ -724,8 +734,7 @@ def xml_drawio(paginas):
 
 def escribir_paginas(paginas, ruta):
     """Escribe un .drawio nuevo con una página por elemento de `paginas` ([(proceso, geometría)])."""
-    with open(ruta, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(xml_drawio(paginas))
+    escribir_texto(ruta, xml_drawio(paginas))
 
 
 def escribir_drawio(proc, geo, ruta):
@@ -874,9 +883,7 @@ class Fichero:
 
     def guardar(self, ruta=None):
         ET.indent(self.tree, space="")  # sin sangría: draw.io lo lee igual y el diff queda limpio
-        # el fichero se abre aquí: si lo abre ElementTree, en Windows cada salto de línea sale \r\n
-        with open(ruta or self.ruta, "w", encoding="utf-8", newline="\n") as fh:
-            self.tree.write(fh, encoding="unicode", xml_declaration=False)
+        escribir_texto(ruta or self.ruta, ET.tostring(self.tree.getroot(), encoding="unicode"), referencia=self.ruta)
 
     def huella(self):
         """Resumen de la colocación (posiciones y puntos de los flujos): cambia si alguien mueve algo en draw.io."""

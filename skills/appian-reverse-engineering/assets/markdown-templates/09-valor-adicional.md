@@ -64,9 +64,13 @@
 
 Sin referencias entrantes en la aplicación{{, y process models sin ejecuciones en producción}}; pueden usarse desde fuera de ella. Hallazgo: [{{H-ARQ-02}}](./02-arquitectura.md#hallazgos){{; procesos sin ejecuciones: [H-GEN-NN](#hallazgos)}}.
 
+<!-- huerfanos:inicio -->
+
 | Objeto | Tipo | Última modificación | Ejecuciones | Ficha |
 |---|---|---|---|---|
 | `{{objeto}}` | {{tipo}} | {{AAAA-MM-DD o «—»}} | {{N; «—» si no es process model}} | [anexo](./anexo/{{tipo}}/{{slug}}.md) |
+
+<!-- huerfanos:fin -->
 
 ### Avisos de validación de la plataforma
 

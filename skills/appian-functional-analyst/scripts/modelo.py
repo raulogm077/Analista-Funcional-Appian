@@ -173,6 +173,12 @@ def pasos_gherkin(texto):
     return list(zip((dado.group(1).capitalize(), "Cuando", "Entonces"), partes)) if all(partes) else None
 
 
+def ancho_ids(ids, tipo, minimo=2):
+    """Conserva el ancho ya usado por ese tipo; no renumera identificadores existentes."""
+    return max([len(x.group(1)) for pid in ids
+                for x in [re.fullmatch(re.escape(tipo) + r"-(\d+)", pid)] if x] or [minimo])
+
+
 def numero(pid):
     return int(re.search(r"(\d+)$", pid.split(".")[0]).group(1))
 
@@ -456,10 +462,12 @@ def cargar(ruta):
 
 
 def escribe(ruta, texto):
-    """Escribe un fichero de texto en UTF-8 con finales de línea \\n en cualquier sistema (write_text() los pone \\r\\n
-    en Windows): en un proyecto que comparten varios equipos, reescribirlo no cambia todas sus líneas."""
-    with open(ruta, "w", encoding="utf-8", newline="\n") as f:
-        f.write(texto)
+    """UTF-8: conserva CRLF en destinos existentes; los nuevos usan LF en todos los sistemas."""
+    ruta = pathlib.Path(ruta)
+    previo = ruta.read_bytes() if ruta.is_file() else b""
+    final = "\r\n" if b"\r\n" in previo and b"\n" not in previo.replace(b"\r\n", b"") else "\n"
+    with open(ruta, "w", encoding="utf-8", newline="") as f:
+        f.write(texto.replace("\r\n", "\n").replace("\n", final))
 
 
 def git(raiz, *args, espera=20, salida=True):

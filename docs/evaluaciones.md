@@ -4,6 +4,189 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Temas aplazados: medidas y cambios antes de publicar (19 de octubre de 2026)
+
+Segunda fase local, solicitada por Raúl después de cerrar la primera tanda. Alcance y decisiones en
+`docs/plan/2026-10-19-temas-aplazados.md`; integración inicial en `codex/aplazados`, partiendo de `84d2b24`,
+incorporada después a la rama única `automejora-pruebas`. Las evidencias
+quedan en `$PROYECTOS_PRUEBA/aplazados-codex-20261019/`. Esta sección recoge solo las medidas terminadas; no acredita
+el cierre de los cambios que el plan mantiene en curso.
+
+| Tema | Medida y resultado |
+|---|---|
+| Borrador automático de §13 (E1) | P10 tiene 141 objetos. Buscar nombres literales encuentra 91, pero no identifica su función. Leer únicamente columnas de definición produce 51 candidatos: 50 objetos correctos (35,5 % del total) y un campo que no es objeto. No se añade un generador general con esa cobertura; situación, cambio, finalidad y objetos restantes necesitan interpretación. |
+| Dependencias corregidas por una persona (E2) | En copia de P10 se retira una arista y se restaura el cálculo automático, conservando versiones y objetos. Historial con motivo, actor y fecha; ciclos rechazados; correcciones caducan al cambiar el encargo o las dependencias relacionadas. 95 ficheros originales conservan su SHA256. |
+| Suite analista tras E2 | 393 comprobaciones correctas, incluidos siete casos nuevos de correcciones. PDF con LibreOffice sigue sin medirse. |
+| Suite analista integrada | 399 comprobaciones correctas, exit 0, 498,3 s, tras integrar D1, D7, C8 y la lectura interrumpida. Incluye sus regresiones focales; PDF con LibreOffice sigue sin medirse. |
+| Inversa integrada | Corrida completa: 243 correctas, ocho fallos y dos omisiones, en 689,8 s. Siete fallos eran el simulador de permisos sin el nuevo método de interrupción; otro, un comentario que activaba el detector de vocabulario. Corregidos, los dos módulos pasan sus 23 casos (quince ya habían pasado). El caso Mermaid omitido por falta de Playwright en uv pasa aparte con Python local. Resultado conjunto: 252 casos distintos correctos; solo se omite el wrapper exclusivo de POSIX. La corrida completa inicial no se registra como verde. |
+| Tamaño de issues (D7) | 25 issues: mediana de 63 líneas; Base, 289 líneas y 68 objetos. Dos agrupadas tienen 19 objetos/20 requisitos y 13 objetos/12 requisitos. No se decide la partición solo por longitud. |
+| Subtareas (D7) | 13 de esas 25 issues reciben 43 subtareas derivadas de §13; las doce de un solo paso no añaden tabla. Avance guardado por versión y conjunto de objetos, reversible; un objeto repetido se asigna una vez y conserva las instrucciones de sus pasos. Marcar todo no verifica, cierra ni desbloquea otra issue. Ocho casos focales correctos. |
+| Secuenciación (D1) | La segunda unidad espera si comparte una pieza pendiente. Las huellas de los artefactos protegen el encargo anterior al regenerar, también cuando desaparece evidencia; el cierre manual no evita esa protección. Se conservan retoques independientes del mismo registro. Catorce casos focales correctos. |
+| Permisos (C8) | Compara roles y grupos declarados del proceso y expresiones de visibilidad soportadas de sus acciones. La aceptación humana queda ligada a versión, objeto, entorno y configuración, con historial y revocación. Los cierres manuales no saltan diferencias confirmadas. Quince casos focales del analista y 57 de inversa afectada correctos; no se suman a las suites completas. El acceso efectivo por rol sigue sin medirse. |
+| Tipos del extractor | Constantes y listas específicas conservan el tipo de objeto; el tipo del valor no selecciona herramientas de grupos, documentos o procesos. `getRecordEventsConfig` solo se planifica para record types. Once casos focales correctos. |
+| Parada ante error de acceso | 32 casos focales correctos: cola, reintentos, paginación, respuesta previa, reanudación, `verificar` y `deriva`. Un error de autenticación no se convierte en objeto ausente. El analista avisa de la última lectura interrumpida conservando resultados y bloqueos previos. No controla llamadas ya iniciadas ni el login interno de DevMCP. |
+| Lectura real acotada | Dos llamadas por el MCP conectado, una por herramienta y sin reintentos: `getApplication` correcto en 0,7 s; `getAgent` devuelve HTTP 401 en 383 ms, aunque el usuario puede verlo en Designer. El bundle usa clientes y autenticaciones distintos. No se cambiaron credenciales, permisos ni DevMCP. |
+| Etiquetas BPMN | Mismos 1.000 casos con semilla 11: etiquetas atravesadas por otro flujo, 8→0; conexiones falsas detectadas, 142→126; solapes de nodos, 0→0; cruces, 2.246→2.246. Sin empeoramiento caso a caso en esas medidas. Los 126 defectos de conexión restantes siguen siendo una limitación de la colocación. |
+| Suite diagramas | Completa con navegador: 135 comprobaciones correctas; sin navegador: 58; cinco casos focales finales. Son recorridos que se solapan, no cifras para sumar. PNG difíciles revisados antes y después. |
+| Arquitectura (E5) | Cinco capas con cinco cajas: 1.322 px con conexiones paralelas, 1.586 px con etiquetas de 45 caracteres y 4.442 px con conexiones densas. Vista general agrupada: 346 px. La referencia aplica el límite existente de 1.600 px al render y conserva objetos y relaciones en el detalle por capa o las tablas. |
+| Enlaces del prototipo (D11) | Ocho casos de navegador correctos: pestaña nueva, parámetros escapados, números conservados como texto, recarga, historial y aislamiento de claves. Suite de prototipos: 46 comprobaciones correctas, incluidos los seis casos del chat. |
+| Contraste sobre imágenes | Medición real con Playwright y fondo compuesto: cuatro textos visibles **PASS**, mínimos 17,58; 17,28; 11,73; 11,73 frente a umbrales de 3 o 4,5. Las otras ocho apariciones están ocultas por diálogos y siguen **NOT MEASURED** como contenido no visible; cero fallos visibles. Evidencia en `diagramas/REVISION-CONEXIONES-Y-CONTRASTE.md`. |
+| Enrutado BPMN conservador | Dos campañas de 1.000 procesos: semilla 11, **126→30 avisos**, 71→29 casos afectados y 2.246→2.222 cruces; semilla 23, **103→38 avisos**, 60→32 afectados y 2.339→2.325 cruces. Cero regresiones por caso en avisos, cajas propias/texto/notas, reservas de etiquetas, márgenes de flecha, redondeo final o dimensiones. Los casos 43/46/677 quedan sin avisos; los residuos no se ocultan. Una revisión independiente comprobó 4.328 evaluaciones de caché contra recálculo completo y 134 parejas de draw.io de ambas campañas. El caso focal de nota protege su caja y conserva participante externo/mensaje; las geometrías manuales/importadas quedan fuera del cambio y el presupuesto agotado devuelve la original. La suite completa de diagramas pasa después del cambio. Evidencia en `bpmn-enrutado/RESULTADO-ENRUTADO.md`. |
+| Coste del nuevo enrutado | Perfil aislado, medianas de tres repeticiones: dos procesos sin avisos añaden 2,9 y 7,8 ms; uno de 53 nodos y 63 flujos con nota/externo añade 29,3 ms. Los casos conflictivos cuestan más: el peor foco medido añade 2,23 s, frente a los 8–16 s del prototipo descartado. La búsqueda tiene presupuestos deterministas de candidatos y evaluaciones, reducidos en procesos densos. No se extrapola al rendimiento de toda la batería. Evidencia en `bpmn-enrutado/perfil-aislado.json`. |
+| Gráficos de la entrega | Actualizados el flujo de producto y el de desarrollo con secuenciación, subtareas, aceptación de permisos por diferencia, evidencia parcial y CI previa a publicar. Los tres SVG de portada se renderizaron en claro y oscuro (seis PNG): XML válido, cero textos fuera del lienzo o solapados y revisión visual correcta. Banner revisado sin cambio. Evidencia en `entrega-ci/graficos/RESULTADO.md`. |
+| Ejecutor de batería (E7) | Cinco pruebas del contrato correctas: concurrencia real, modo secuencial, aislamiento de salida, entorno/carpeta y conservación de fallos. QA+refactorización reales: 176,7 s en serie frente a 126,4 s con dos grupos (28,4 % menos); ambos grupos pasan en ambos recorridos. |
+| Claude con `--plugin-dir` | La CLI identificó el plugin local 0.8.0-beta.1 y cero servidores MCP. La primera petición devolvió HTTP 429 `usage_limit_reached`; el límite semanal se restablece el 20/10 a las 16:00 de Madrid. La campaña externa prepara seis fases D1/D7/C8 y conserva herramientas, hashes y estado; diez controles offline pasan y el runner impide llamadas antes del horario. D1, D7 y C8 siguen **no medidos** como conducta de Claude. Evidencia en `claude-comportamiento/INFORME-20261019-P8-Y-CLAUDE.md`. |
+| P8 con Codex en terminal | **PASS**: una nueva sesión real leyó `AGENTS.md` y `.appian-plugin.json`, descubrió la ruta y ejecutó `proyecto.py estado .`; ambas herramientas terminaron con código 0 y la salida mostró versión 1.1. Los hashes del proyecto no cambiaron. Se seleccionó MXC solo por invocación, conservando `read-only` y aprobación `never`, sin configuración global ni bypass. El ejecutor legacy falló al arrancar su helper; no se demostró su causa interna. Evidencia y comando reproducible en `claude-comportamiento/INFORME-20261019-P8-Y-CLAUDE.md`. |
+| Aviso de requisitos en Windows | Con `REQUISITOS_SIN=docx` y carpeta personal temporal, `requisitos.py --breve --como python` mostró la carencia y creó la marca de aviso. La orden real del hook, tras sustituir `${CLAUDE_PLUGIN_ROOT}` como hace Claude, también salió con código 0, mostró el aviso y creó la marca en PowerShell 5.1. Es una comprobación local del hook, no una instalación visual en Desktop. |
+| Anclas de documentación | `python pruebas/comprobar_anclas.py` descargó 312 páginas y revisó 1.265 citas, 517 con ancla; código 0, cero enlaces o anclas rotos y sin errores de red. Evidencia en `anclas/RESULTADO.md`. |
+| PDF y batería en CI | El workflow prepara un job Linux con LibreOffice que debe convertir un DF ficticio y comprobar el texto del PDF; incluye una medición manual 1, 2, 2, 1 de la batería completa. `actionlint` pasa sin advertencias y la matriz conserva siete combinaciones; el job y las cuatro pasadas siguen pendientes de Actions sobre esta rama. Los dos lanzamientos manuales deben ser secuenciales para evitar que su grupo de concurrencia cancele el anterior. |
+| PDF local con LibreOffice | **PASS de conversión y contenido** mediante `df_docx.js --pdf-de`, LibreOffice 26.8.1.1 extraído bajo `Pruebas-plugin` y Ubuntu WSL, sin instalación global: código 0, 586.376 bytes y 12 páginas. Se conservan los 725 párrafos, 51 títulos y dos figuras; las 12 páginas se revisaron sin recortes observados. Word da 13 páginas porque calcula números del índice y lo extiende a dos páginas; LibreOffice conserva las entradas sin esos números. El script ahora avisa de revisar el índice; su sintaxis, la suite del analista y la básica pasan. La medida local no acredita CI ni un índice paginado para entregar. Evidencia en `libreoffice-real/RESULTADO-LIBREOFFICE.md`. |
+| PDF local con Word | El DF ficticio se abrió en Word en modo de solo lectura (13 páginas, 36 tablas, dos figuras) y `ExportAsFixedFormat` produjo un PDF de 566.695 bytes y 13 páginas. Las 13 tienen texto extraíble (28.465 caracteres); las dos figuras aparecen en las páginas 5 y 6. Se renderizaron todas; la vista de conjunto y las páginas 5, 6, 11 y 13 a mayor tamaño no muestran cortes aparentes. El DOCX conservó su SHA-256. Acredita Word en Windows, no LibreOffice ni cada celda a zoom de lectura. Evidencia en `word-pdf-revision/analisis/RESULTADO-WORD-PDF.md`. |
+| Lectura acotada de aplicación real | Una extracción restringida a una regla terminó en 29,7 s con diez respuestas correctas, cero errores y sin login. Dos lecturas de la versión actual coinciden. La extracción amplia de las 248 piezas se estimó en al menos unas 1.073 lecturas de objeto, pero no hace falta para comparar altas y bajas del inventario. LEEME completo y deriva de cambios internos siguen **NOT MEASURED**. Evidencia en `gde-metrica-acotada/RESULTADO-MEDICION.md`. |
+| Inventario de aplicación real entre dos lecturas | Una nueva enumeración usó 22 respuestas de listas de aplicación y una de entorno, todas correctas; ninguna lectura de objeto, `getAgent` o nuevo login. Frente al inventario base de 12:42, el de 17:05 pasa de 248 a 249 UUID: una interfaz nueva, cero bajas y cero cambios de nombre o tipo entre UUID comunes. Es una **diferencia de inventario**, no deriva de definiciones, versiones o permisos; el punto de partida carece de historiales de versión. Los nombres y UUID quedan solo en la evidencia externa `gde-inventario-minimo/RESULTADO-INVENTARIO.md`. |
+| Refactorización real acotada (E3) | Se releyeron regla, dependientes y casos antes del ensayo autorizado. La versión inicial y la propuesta dieron 3/3 casos guardados y cinco bordes con resultados iguales; se restauró la expresión inicial exactamente y 3/3 casos siguen pasando. `deriva` detectó 1 cambio por historial 1→3, sin nuevos ni retirados; el contenido final no cambió. Demuestra detección de edición de una regla, no sensibilidad global ni equivalencia universal. Evidencia fuera del repo en `gde-metrica-acotada/refactor/ensayo-20261019/INFORME-ENSAYO.md`. |
+| Inventario de extracción restringida | Una lectura real con `--solo` y `--only` en copia aislada redujo el catálogo de 248 a 217 objetos, omitió 32 modelos y degradó a `unknown` el tipo de 114 UUID existentes. Es una pérdida de cobertura de la lista filtrada, no evidencia de bajas reales. El arreglo conserva inventario previo y marca cobertura parcial; regresiones ficticias y focales de extracción correctas. |
+| Evaluación ciega de malas prácticas | La copia anterior de MNT no apareció; se reconstruyó desde el simulador y se validó sin errores ni avisos: 44 objetos, 24 hallazgos, 10 NV y cuatro procesos. LEEME ocupa 731/1.350 palabras. Primera propuesta: 9/11 visibles y 2/3 ocultas; revisión propia: 10/11 y 2/3. Una matriz genérica de señales sola no mejoró la primera pasada (9/11 y 2/3). Al precisar en la guía el contraste de catálogos fijos entre pantallas y campos de record types, **otro agente ciego desde cero alcanzó 10/11 visibles y 3/3 ocultas**, con 27 REF y `comprobar_propuesta.py` en 0 errores y 0 avisos. Cumple el criterio fijado, aunque la auditoría independiente encontró ocho puntos adicionales que el puntuador no cubre. Evidencia en `RESULTADO-MNT-CIEGA.md` fuera del repo. |
+
+El nuevo ejecutor limita la concurrencia a dos grupos, imprime sus tiempos y conserva `--trabajos 1` para comparar.
+Los tiempos de la pareja no se extrapolan a la batería completa: ese rendimiento se medirá en CI. No se ejecutó
+`--completo` en el equipo. Las siete combinaciones de sistema/Python y la prueba de comportamiento con el plugin
+cargado siguen pendientes antes de publicar. Con la autorización de Raúl se prepara 0.8.0-beta.2; todavía no se ha
+publicado esta fase.
+
+La extracción real quedó incompleta y se detuvo al repetirse el inicio de sesión. Se corrigieron la selección de
+herramientas y la parada de la cola, pero las dos lecturas puntuales posteriores no acreditan una extracción completa.
+LEEME completo y deriva de punta a punta siguen **no medidos**. La primera lectura no permitió identificar una
+refactorización Appian; después se realizó el ensayo acotado de la regla de texto descrito arriba. No sustituye la
+comparación de toda la aplicación. La evidencia y el diagnóstico detallado se conservan fuera del repositorio.
+
+Los ajustes finales de inversa solo cambiaron el simulador de prueba y una palabra de un comentario; se repitieron
+los módulos afectados, sin volver a ejecutar toda la suite. Evidencias: `gde-lectura/inversa-integrada.log`,
+`inversa-integracion-focal.log`, `inversa-omisiones.log` y `mermaid-local.log`. La suite del analista está en
+`construccion/analista-integrado-final.log`. La comprobación básica de integración da siete skills, cero errores y
+cero avisos. Los resultados no sustituyen la batería de CI ni las pruebas de comportamiento del plugin.
+
+## Aplicación de las lecciones de automejora (19 de octubre de 2026)
+
+Cambios locales sobre `automejora-pruebas`, autorizados tras revisar las recomendaciones A–E. La matriz completa
+está en `docs/plan/2026-10-19-aplicar-automejora.md`. Tres worktrees separaron analista/QA, inversa/diagramas e
+ingesta/plantillas/prototipos; la rama `codex/aplicar-automejora` integra el resultado. Sin cambio de versión, PR,
+publicación ni escrituras en Appian. Los proyectos, capturas y logs quedan fuera del repositorio, en
+`$PROYECTOS_PRUEBA/automejora-codex-20261019/`.
+
+### Qué cambia
+
+- Construcción: se protege el anexo manual, se distinguen colisiones desconocidas, constantes y campos adicionales;
+  se exige convertir §13 a tabla y se conservan los números de issues y el ancho de IDs. Las reservas avisan de cambios.
+- Las issues reciben sus supuestos por PC/objeto y las reglas generales de §13. Los casos expresamente exigidos por
+  §14 y confirmados ausentes bloquean; una lectura fallida sigue siendo desconocida. La excepción humana lleva motivo.
+  El cierre manual por issue es visible, caduca al cambiar el encargo y no suplanta la verificación ni los fallos de QA.
+- Ingesta: palabras por fuente, imágenes enlazadas como parte del Markdown, EML normalizado, duplicadas candidatas
+  con exclusión explícita y reversible. `version --inicial` registra las fuentes de 1.0; `iniciar` deja la ruta local
+  del plugin para personas y otros agentes. Los escritores modificados conservan LF/CRLF del destino.
+- Inversa: herramientas específicas por tipo, nombres completos de aplicaciones, textos localizados y autor de
+  versiones; los grupos no cuentan como huérfanos. El inventario se genera por script y conserva aportes humanos por
+  UUID. Los documentos antiguos sin marcas requieren revisión mediante `--borrador`, sin sobrescribirlos.
+- Las plantillas y F1–F9 recogen las decisiones pequeñas de la revisión. Los dos SVG de `.github/assets/` reflejan el
+  flujo vigente. El chat usa el alto disponible y mantiene accesibles la entrada y el botón de envío.
+
+### Comprobaciones específicas
+
+| Prueba | Resultado |
+|---|---|
+| Analista: selftest del bloque de código, incluidas las 19 regresiones nuevas | 391 comprobaciones, exit 0 |
+| Analista integrado: scripts, plantillas, inversa y ambas regresiones nuevas en la misma rama | 392 comprobaciones, exit 0; incluye 19 casos de automejora y 7 de ingesta |
+| QA: selftest con excepciones, versiones de issue y CRLF | 57 comprobaciones, exit 0 |
+| Inversa: pytest completo | 203 passed, 2 skipped; 1.124 s |
+| Inversa: suplementos tras revisión | 29 casos focales; últimos ajustes del inventario 7/7 y del anexo CRLF 2/2. Se solapan con la suite; no se suman como casos distintos |
+| Diagramas: selftest completo y conservación LF/CRLF dirigida | Exit 0; PNG, Mermaid, tramos, BPMN y edición correctos |
+| Ingesta: Markdown/imágenes, EML, CRLF, palabras, duplicados/reversión, ayuda Windows y capturas DF | 7/7 |
+| Prototipos: selftest, humo, contraste y regresión de chat | 45 comprobaciones, exit 0 |
+| Chat directo y en tarjeta: 1280×720, 1280×500 y 390×844 | 6/6; sin scroll exterior, input y envío accesibles por `elementFromPoint`; al ocultar la barra recupera el alto completo |
+| SVG de funcionamiento y desarrollo, claro y oscuro | 52 y 24 textos; ninguno fuera del lienzo en los cuatro renders; revisión visual correcta |
+| Inventario regenerado | Conserva «Para qué», enlaces y pantalla por UUID, incluso si la extracción trae otra descripción; rechaza originales sin marcas y ofrece borradores aparte |
+| Diagrama por tramos | El enlace de entrada muestra código y nombre del paso de origen; PNG revisado |
+
+P10 se repitió en una copia externa, sin configurar MCP ni modificar el proyecto original. Las cuatro órdenes
+(`issues`, `siguientes`, `estado`, `comprobar`) salieron con código cero antes y después; la diferencia está en el
+contenido que reciben los constructores y en los avisos que antes faltaban:
+
+| Medida en las 25 issues | Antes | Después |
+|---|---|---|
+| Copias de supuestos que deben llegar por PC u objeto (22 filas de origen) | 0/25 | 25/25 |
+| Issues que reciben las reglas generales de construcción | 0 | 25 |
+| Listas de «En paralelo con» de más de cuatro issues | 24 | 0; remiten al índice |
+| Dígitos del siguiente HU, en un proyecto de tres dígitos | 2 | 3 |
+| Aviso Gherkin en primera versión | No | Sí |
+| Aviso de «Con qué» ausente en §14 | No | Sí |
+
+La revisión sobre una copia de P10 detectó que «Reglas para quien construye» también aparece como párrafo con el
+contenido en la misma línea. Se corrigió el lector y se añadió una prueba ficticia: las reglas llegan a las issues sin
+arrastrar la tabla siguiente. La revisión visual del chat detectó otro fallo que una prueba de límites no veía:
+la barra del prototipo tapaba los controles. Por eso la regresión comprueba qué elemento recibe el clic.
+
+### Límites de esta medida
+
+Son pruebas locales y sobre copias de material ya recogido. No acreditan seguridad por rol, efectos de ejecución ni
+una nueva construcción en Appian. El PDF real no se midió por falta de LibreOffice; la suite de contraste conserva
+doce textos sobre imágenes sin medir. Pytest omitió un wrapper de shell exclusivo de POSIX y una comprobación Mermaid
+por falta de navegador en el entorno de uv; esta última pasó aparte con Python local (seis bloques Mermaid).
+La prueba de comportamiento con `claude --plugin-dir` queda pendiente antes
+de subir; la batería completa en Linux corresponde al PR. Los puntos aparcados están en `docs/siguiente-version.md`.
+
+## Automejora con proyectos reales (14 y 15 de octubre de 2026)
+
+Sobre la 0.8.0-beta.1, sin cambiar el plugin. Plan: `docs/plan/2026-10-14-automejora.md`. Nueve pruebas con reuniones
+reales del cerebro corporativo, una aplicación de desarrollo y otra de un cliente en solo lectura; cada una la hizo un
+subagente siguiendo el plugin de la rama leyendo sus ficheros (las sesiones anidadas `claude -p` desatendidas las bloquea
+el clasificador de permisos), y la revisó otro de contexto limpio contra el código. Tiempos de reloj de herramienta,
+aproximados; sin coste en USD, porque no hubo sesiones anidadas. P10, el 15 de octubre: un análisis real hecho con IA
+(DF, técnico y prototipo) la víspera de construirlo, en copias fuera del repositorio y sin escribir en Appian. Lo que
+pidió un cambio se sigue en `docs/plan/2026-10-19-aplicar-automejora.md`; arriba constan los resultados al aplicarlo,
+y `docs/siguiente-version.md` conserva lo aplazado.
+
+| Prueba | Qué | Min | Llamadas | Resultado |
+|---|---|---|---|---|
+| P1 · F1 | Proyecto nuevo, 4 reuniones (~46.000 palabras): 24 HU, 9 pantallas, 5 procesos, prototipo y Word | 17 | ~62 | Completo salvo enviar y aprobar (son de personas); `comprobar.py` sin errores |
+| P2 · F2 | Una fuente de 2.558 palabras, 6 puntos sin aprobación | 2 | ~14 | Sin errores; dos PC perdidos por `derivadas --escribir` |
+| P2 · retoque | Texto de un botón, camino corto | 0,7 | 7 | Sin errores |
+| P3 · F1 volumen | 18 transcripciones (~114.000 palabras), funcional y técnico por 4 módulos con 13 subagentes | 54 | ~360 | `comprobar.py` sin errores; 3 pares de HU y 9 de 31 decisiones repetidas entre módulos; 1 de 9 contradicciones perdida |
+| P4 · F3 | Campo nuevo con regla, 3 issues | 4,5 | 29 | Pasos 1-6; el 7 sin captura nueva y sin aviso |
+| P4 · F4 | Regla con un umbral mal escrito | 1,7 | 19 | Seguido |
+| P4 · F5 | Urgencia en una regla, regresión de 99 casos en 22 s | 1,8 | 19 | Seguido; `colision` dijo «no» sin mirar dependientes |
+| P5 · F6 y F7 | Aplicación del cliente de 42 objetos, solo lectura | 29 | ~100 (extractor: 321 de lectura, 142 fallidas) | 14 hallazgos y 8 REF; `comprobar_asis` 4 errores falsos; `comprobar_propuesta` 0 |
+| P5b · proceso grande | El mayor de 1.464 process models de un entorno de cliente (58 nodos), solo lectura | ~45 | ~900 (extractor) | Un paso por nodo: 107 % del presupuesto; agrupando lo repetido: 80 %; diagrama en 5 tramos sin avisos |
+| P6 · F8 y F9 | Base (25 objetos) y una issue en una aplicación nueva de desarrollo; QA con una cuenta | 20 | ~105 | La Base no pasa `verificar` por fallos del script; 1 de 8 issues hecha; 2 guiones de QA pasan |
+| P7 | El retoque de P2 por un subagente sin contexto | 0,9 (2 de pared) | 11 | Idéntico a P2 |
+| P8 | El retoque con Copilot CLI y Codex, solo con `AGENTS.md` | 0,6 | ~25 | Copilot: sin scripts, versión incoherente (`comprobar.py` ✗); Codex: no concluyente, su sandbox no arranca dentro de otra sesión |
+| P9 | Una persona sin IA: estado, retoque y guion de reunión | ~2 (10-15 para una persona) | 14 órdenes | Viable; se atasca en la ruta del plugin y en localizar menciones |
+| P10 · lo recibido | Análisis real hecho con IA (45 HU, 27 pantallas, 53 PC): estado, comprobar, Word, prototipo y guion | ~10 | ~25 | `comprobar.py` sin errores; Word y prototipo idénticos al regenerarlos (el prototipo, con la ruta del kit a mano) |
+| P10 · F1 paso 13 a F8 | De la versión del DF a la primera issue, por un subagente limpio | 5 | 34 | Cero issues con §13 en lista; 25 tras reescribirlo como tabla (141 filas); los supuestos para construir no llegan |
+| P10 · F2 en construcción | Respuesta del cliente a 3 PC con EV-01 aprobada y una issue reservada | 12 | 64 | Versión nueva sin errores, EV-01 reaprobada y EV-02 con `--comparte`; lo de EV-02 entra en las issues de EV-01 |
+
+### Lo aprendido
+
+- Los scripts de consulta (`indice.py ficha`, `impacto`, `seccion`, `estado`, `pendientes`) y `comprobar.py` sostienen
+  los flujos de mantenimiento: F3 entero sin leer el funcional y `comprobar.py` como único freno ante lo improvisado
+  (P4, P8). No conviene tocarlos.
+- El coste está en la redacción de la IA (funcional, técnico, documentos del as-is, notas), no en los scripts: en P3 los
+  scripts suman segundos de 54 minutos.
+- El contexto heredado abarata el retoque (7 frente a 11 llamadas) sin cambiar el resultado.
+- Con volumen, el riesgo no es leer de más sino duplicar: cada módulo redacta lo que comparte con otro.
+- `verificar` es el punto débil de la construcción: tres tipos de diferencia falsa en una misma Base la bloquearon, y con
+  ella las ocho issues.
+- Con una aplicación de 42 objetos, los presupuestos de palabras de la ingeniería inversa sobran (20-54 %), salvo LEEME
+  (96 %). `listObjectVersions` da el historial en el Dev MCP real.
+- El índice del cerebro corporativo da por transcritas 1.692 reuniones y en disco hay 1.095: las pruebas eligen por los
+  ficheros, no por el índice.
+- Un SAIL CLI con un solo usuario no prueba la seguridad por rol; y un defecto (columnas en blanco por `fields` vacío) lo
+  vio SAIL CLI y no `testInterface`.
+- Un análisis hecho con IA que llega al plugin se mantiene sin pérdidas: el Word y el prototipo salen iguales, el guion de
+  preguntas y el impacto de una respuesta funcionan. Lo que falla es el paso a construir: §13 en lista da cero issues sin
+  avisar, y los supuestos con que se construye mientras el cliente no responde no llegan a quien construye (P10).
+- Con dos unidades en curso sobre la misma pieza, los frenos de las unidades funcionan («ha crecido», `--comparte`), pero
+  las issues mezclan lo de las dos (P10).
+
 ## 0.8.0-beta.1 · Método L.U.C.I.A. (14 de octubre de 2026)
 
 Parte de la 0.7.0-beta.4 (`d6126a8`). Plan: `docs/plan/2026-10-14-metodo-lucia.md`; lo que decidió Raúl con estas

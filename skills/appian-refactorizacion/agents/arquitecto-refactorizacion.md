@@ -87,8 +87,12 @@ donde las use. Funcionalidad sin uso (0 ejecuciones) no se retira sin más: es u
 1. Recorre los hallazgos del alcance. Todo hallazgo Alta o Media acaba en una REF; en Pendientes, si no se puede
    decidir sin una respuesta, o en la línea «- **Fuera del alcance:** H-…» del Alcance, si el alcance lo deja fuera.
    Los Baja, si compensan.
-2. Recorre `references/senales.md` capa por capa. Si una señal aparece, compruébala en la ficha del anexo y escribe su
-   REF, aunque no tenga hallazgo.
+2. Recorre **cada fila** de `references/senales.md` capa por capa. Lleva una matriz de trabajo con señal, objetos
+   examinados, evidencia y resultado (presente, ausente o no evaluable). Si la señal cruza objetos, compara sus
+   definiciones entre sí: campos y relaciones de los record types, opciones de las pantallas, reglas y nodos que los
+   usan. Una coincidencia o diferencia relevante puede no figurar en los hallazgos de `as-is/`. Si se acredita el
+   problema, escribe su REF aunque no tenga hallazgo; si faltan datos, no lo conviertas en defecto. La matriz es
+   material de análisis, no otro entregable.
 3. Revisa también el diseño: responsabilidades mezcladas en un proceso, reglas duplicadas (`11`), entidades sin
    relaciones, interfaces que lo hacen todo, lógica de negocio en la interfaz.
 4. Une lo que es el mismo problema: una REF por problema.
@@ -135,6 +139,8 @@ donde las use. Funcionalidad sin uso (0 ejecuciones) no se retira sin más: es u
       Prioridad y Esfuerzo; ningún objeto del Diagnóstico que no esté en el inventario.
 - [ ] Cada REF en la Solución y en la Hoja de ruta; las de un hallazgo 🔶 o ❓, después de su «Verificar H-…».
 - [ ] Todo hallazgo Alta o Media, en una REF, en Pendientes o en «Fuera del alcance».
+- [ ] Cada señal de `references/senales.md` contrastada con los objetos que indica; ninguna señal acreditada queda
+      sin REF o sin explicación de por qué la cubre otra REF del mismo problema.
 - [ ] La estrategia, explícita y con su porqué; los NV que condicionan la solución, en Pendientes.
 - [ ] `python3 <skill>/scripts/comprobar_propuesta.py <p>` sin errores ni avisos.
 

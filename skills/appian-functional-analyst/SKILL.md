@@ -68,6 +68,8 @@ o los flujos, lanza `proyecto.py iniciar <p>` antes de seguir: los añade y no t
 
 En `<p>`:
 - `proyecto.md`: el estado del proyecto
+- `.appian-plugin.json`: la ruta local del plugin para resolver scripts y referencias desde cualquier agente;
+  `iniciar` la escribe y git la ignora (cada equipo tiene su ruta).
 - `AGENTS.md`: dónde está cada cosa, las reglas y los flujos; lo genera entero `proyecto.py iniciar`
 - `CLAUDE.md`: solo «@AGENTS.md»; si ya existe, no se toca
 - `.agents/workflows/`: la copia de los flujos del plugin, generada
@@ -119,7 +121,9 @@ hace cada paso, con qué skill y la referencia que lo detalla. `proyecto.py inic
    python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o <p>/fuentes/
    ```
    Lee `ingesta-fuentes.md` y después **todas** las fuentes antes de escribir: las reuniones posteriores
-   cambian lo anterior. Con muchas fuentes o más de 5 procesos, `volumen-grande.md`.
+   cambian lo anterior. Guarda una nota por fuente (`volumen-grande.md` §1), salvo las cortas (correo o chat);
+   las marcadas explícitamente como duplicadas ya están cubiertas por la fuente indicada en el catálogo.
+   Con muchas fuentes o más de 5 procesos, `volumen-grande.md`.
 2. **Checkpoint.** En un solo mensaje, una o dos líneas por punto: modo y fuentes, problema, perfiles,
    procesos, reglas clave, contradicciones y lo que falta. Termina con «¿Es correcto o ajusto algo antes de
    escribir?». Con cualquier confirmación, sigue. Si el usuario no está, sigue con la lectura más razonable
@@ -143,13 +147,14 @@ hace cada paso, con qué skill y la referencia que lo detalla. `proyecto.py inic
    ```
    Sin errores antes de entregar. Revisa los avisos: los de redacción se corrigen casi siempre.
 8. **DF en Word**, solo para enviarlo o si se pide (síntesis, evolutivo y refactorización), una vez y, si hay
-   prototipo, después de él, con sus capturas. La primera entrega es la versión 1.0: sube la versión del funcional y del
-   técnico y añade su fila en `decisiones.md`. Nunca sobrescribe uno entregado. Mira algunas páginas del PDF antes de
+   prototipo, después de él, con sus capturas. La primera entrega es la versión 1.0: con funcional y técnico en 1.0,
+   `proyecto.py version <p> --inicial --fuente FU-01 --fuente FU-02 --que "Análisis inicial"` registra sus fuentes y
+   su fila en `decisiones.md` sin abrir la 1.1 (incluye todas las fuentes procesadas). Nunca sobrescribe uno entregado. Mira algunas páginas del PDF antes de
    enviarlo; sin LibreOffice no lo hay ni se saca por otra vía: lo revisa quien lo envía; díselo al entregar.
    ```bash
    node <skill>/scripts/df_docx.js <p> --pdf    # entregables/DF-<proyecto>-v<versión>.docx; el PDF, en revision/
    ```
-9. **Entregar.** Actualiza `proyecto.md` (fuentes procesadas y siguiente paso) y envía el Word y el `funcional.md`
+9. **Entregar.** Actualiza el siguiente paso de `proyecto.md` (las fuentes ya las registró `version --inicial`) y envía el Word y el `funcional.md`
    (SendUserFile en Claude). Cuando el Word sale hacia el cliente, `proyecto.py entregar <p>` apunta «DF entregado» y
    el fichero; nunca en una sesión desatendida. En pocas líneas: modo, historias, pantallas, pendientes de confirmar con el
    cliente y siguiente paso.

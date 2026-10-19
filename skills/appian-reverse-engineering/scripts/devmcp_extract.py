@@ -102,9 +102,25 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def terminal_auth_error(error: str | None) -> bool:
+    """Errores de acceso o login, no pruebas de que un objeto falte. Formas del cliente HTTP y del login browser."""
+    return bool(re.search(
+        r"(?i)\bHTTP(?:/\d(?:\.\d)?)?\s*(?:status|error)?\s*[:=]?\s*[\"']?(?:401|403)\b"
+        r"|\bstatus(?:_code| code)?\s*[:=]\s*(?:401|403)\b"
+        r"|\b(?:401\s+unauthori[sz]ed|403\s+forbidden)\b"
+        r"|\bTargetClosedError\b|Target page, context or browser has been closed"
+        r"|Browser authentication timed out|Authentication failed: expected user"
+        r"|Browser login appeared to succeed but no Appian session cookies",
+        error or ""))
+
+
 def is_transient(error: str | None) -> bool:
-    return bool(re.search(r"(?i)timeout|timed out|\b50[0-9]\b|temporar|connection|reset|unavailable|rate limit|429",
-                          error or ""))
+    return not terminal_auth_error(error) and bool(re.search(
+        r"(?i)timeout|timed out|\b50[0-9]\b|temporar|connection|reset|unavailable|rate limit|429", error or ""))
+
+
+class ExtractionInterrupted(RuntimeError):
+    pass
 
 
 def eprint(*a):
@@ -145,6 +161,7 @@ class Policy:
         self.phrase_to_type = {" ".join(p): t for t, ps in self.syn.items() for p in ps}
         self.container_keys = set(d["listContainerKeys"])
         self.generic_skip = set(d["genericToolsSkipTypes"])
+        self.tool_types = d.get("objectToolTypes", {})
         self.pag = d["pagination"]
         self.probe = int(d["adaptiveDisable"]["probeCalls"])
         self.confirm_above = int(d["confirmAboveCalls"])
@@ -332,6 +349,8 @@ class CallResult:
     error: str | None = None
     pages: int = 1
     seconds: float = 0.0
+    attempted: bool = True
+    interrupted: bool = False
 
 
 def parse_result(res) -> tuple[bool, Any, str | None]:
@@ -501,7 +520,8 @@ def analyze_tool(tool, policy: Policy, trusted: bool, type_phrases: dict) -> Too
         ti.scope, ti.scope_reason = "manual", "Requiere varios identificadores a la vez."
     elif kinds.count("obj_uuid") == 1:
         req_obj = next(p for p in required if ti.params[p] == "obj_uuid")
-        own = match_types(ti.toks[1:] + tokens(req_obj), {k: v for k, v in type_phrases.items() if k != "application"})
+        own = policy.tool_types.get(ti.name) or match_types(
+            ti.toks[1:] + tokens(req_obj), {k: v for k, v in type_phrases.items() if k != "application"})
         if ("application" in toks_set or "app" in toks_set) and not own:
             ti.scope, ti.scope_reason = "app", "Recibe el uuid de la aplicacion."
         else:
@@ -633,6 +653,30 @@ def extraccion_guardada(raw: Path) -> dict:
     return d if isinstance(d, dict) else {}
 
 
+def conservar_objetos_parciales(anteriores: list[dict], actuales: list[dict]) -> list[dict]:
+    """Une una lista acotada con el inventario previo sin deducir bajas ni degradar tipos conocidos."""
+    por_uuid = {o["uuid"]: dict(o) for o in anteriores if isinstance(o, dict) and o.get("uuid")}
+    for o in actuales:
+        if not isinstance(o, dict) or not o.get("uuid"):
+            continue
+        previo = por_uuid.get(o["uuid"])
+        if not previo:
+            por_uuid[o["uuid"]] = dict(o)
+            continue
+        unido = {**previo, **o}
+        if o.get("type") in (None, "unknown") and previo.get("type") not in (None, "unknown"):
+            unido["type"] = previo["type"]
+        if not o.get("name") and previo.get("name"):
+            unido["name"] = previo["name"]
+        if not o.get("mcpType") and unido.get("type") == previo.get("type") and previo.get("mcpType"):
+            unido["mcpType"] = previo["mcpType"]
+        elif unido.get("type") != previo.get("type") and not o.get("mcpType"):
+            unido["mcpType"] = None
+        unido["sources"] = list(dict.fromkeys((previo.get("sources") or []) + (o.get("sources") or [])))
+        por_uuid[o["uuid"]] = unido
+    return sorted(por_uuid.values(), key=lambda o: (o.get("type") or "", o.get("name") or ""))
+
+
 def aplicacion_extraida(raw: Path) -> dict:
     """La aplicación que ya está extraída en esta carpeta ({} si no hay ninguna)."""
     app = extraccion_guardada(raw).get("application")
@@ -669,6 +713,11 @@ class Extractor:
         self.tools: list[ToolInfo] = []
         self.trusted = False
         self.catalog = []
+        self.interruption: dict | None = None
+
+    def check_interrupted(self):
+        if self.interruption:
+            raise ExtractionInterrupted(self.interruption["error"])
 
     # ---- catalogo
     async def load_catalog(self, type_phrases=None):
@@ -737,6 +786,8 @@ class Extractor:
                 break
             r2 = await self.call_with_retry(ti.name, nxt)
             if not r2.ok:
+                if r2.interrupted:
+                    res.ok, res.error, res.interrupted = False, r2.error, True
                 break
             _, lst, _ = find_primary_list(r2.data)
             new = [x for x in (lst or []) if json.dumps(x, sort_keys=True, default=str) not in seen]
@@ -756,8 +807,20 @@ class Extractor:
         res = CallResult(False, error="sin ejecutar")
         for attempt in range(self.retries + 1):
             async with self.sem:
+                # Se comprueba bajo el mismo semaforo que protege las llamadas: la cola no arranca tras el fallo.
+                if self.interruption:
+                    if attempt:
+                        res.interrupted = True
+                        return res   # ya hubo un intento; conservarlo, sin repetirlo
+                    return CallResult(False, error=self.interruption["error"], attempted=False, interrupted=True)
                 res = await self.sess.call(name, args)
+                if not res.ok and terminal_auth_error(res.error):
+                    res.interrupted = True
+                    if self.interruption is None:
+                        self.interruption = {"tool": name, "error": res.error, "at": now_iso()}
             if res.ok:
+                return res
+            if self.interruption:
                 return res
             if not is_transient(res.error) or attempt == self.retries:
                 return res
@@ -793,7 +856,8 @@ class Extractor:
                     self.stats[ti.name]["cached"] += 1
                     self.reusada(f, meta)
                     return CallResult(True, cached.get("response"), None, meta.get("pages", 1))
-                if (not meta.get("transient", True) and not self.retry_failed) or fuera:
+                if ((not meta.get("transient", True) and not self.retry_failed
+                     and not meta.get("interrupted") and not terminal_auth_error(meta.get("error"))) or fuera):
                     self.stats[ti.name]["cachedFailed"] += 1
                     self.reusada(f, meta)
                     self.errors.append(error_de(ti, scope, obj, meta.get("error")))   # el informe, igual al retomar
@@ -808,6 +872,9 @@ class Extractor:
             self.stats[ti.name]["notApplicable"] += 1
             return CallResult(False, error="No aplicable a este objeto.")
         res = await self.call_paginated(ti, args)
+        if not res.attempted:
+            self.stats[ti.name]["notAttempted"] += 1
+            return res   # no cachear como fallo de objeto una llamada que no se hizo
         self.stats[ti.name]["ok" if res.ok else "failed"] += 1
         if not res.ok:
             self.errors.append(error_de(ti, scope, obj, res.error))
@@ -831,12 +898,23 @@ class Extractor:
         meta = {"tool": ti.name, "args": args, "scope": scope, "role": ti.role, "ok": res.ok,
                 "error": res.error, "transient": bool(not res.ok and is_transient(res.error)),
                 "pages": res.pages, "fetchedAt": now_iso(), "seconds": round(res.seconds, 2)}
+        if res.interrupted:
+            meta["interrupted"] = True
         if obj:
             meta.update({"objectUuid": obj["uuid"], "objectName": obj.get("name"), "objectType": obj["type"],
                          "mcpType": obj.get("mcpType")})
         f.parent.mkdir(parents=True, exist_ok=True)
         self.escritas.add(f)
-        escribe(f, json.dumps({"_meta": meta, "response": res.data}, ensure_ascii=False, indent=1, default=str))
+        data = {"_meta": meta, "response": res.data}
+        if res.interrupted and f.exists():
+            try:
+                anterior = json.loads(f.read_text(encoding="utf-8"))
+                correcta = anterior if anterior.get("_meta", {}).get("ok") else anterior.get("previousSuccessfulResponse")
+                if correcta:
+                    data["previousSuccessfulResponse"] = correcta  # evidencia anterior, nunca respuesta actual
+            except (OSError, ValueError):
+                pass
+        escribe(f, json.dumps(data, ensure_ascii=False, indent=1, default=str))
 
     # ---- aplicaciones y objetos
     async def env_calls(self) -> dict[str, CallResult]:
@@ -894,13 +972,20 @@ class Extractor:
                     stack.extend(v for v in d.values() if isinstance(v, (dict, list)))
                 elif isinstance(d, list):
                     stack.extend(d)
-            tool_type = self.policy.canon_type(" ".join((ti.toks[1:] if ti else [])))
+            # Una lista genérica no identifica el tipo de sus elementos: «application objects»
+            # no es un tipo nuevo y no debe impedir que una lista específica lo resuelva después.
+            tool_type = self.policy.canon_type(" ".join(ti.toks[1:])) if ti and "object" not in ti.toks else None
             for it, ctx in harvest_items(r.data):
                 u = pick(it, UUID_KEYS)
                 if u == app_uuid:
                     continue
                 mcp_type = pick(it, TYPE_KEYS)
-                ctype = self.policy.canon_type(mcp_type) or self.policy.canon_type(ctx) or tool_type or "unknown"
+                # Una lista específica de objetos manda sobre `type`: en constantes es el tipo del valor.
+                context_type = self.policy.phrase_to_type.get(" ".join(tokens(ctx or "")))
+                listed_types = match_types(ti.toks[1:], {k: v for k, v in self.policy.syn.items()
+                                                        if k != "application"}) if ti else []
+                specific_type = listed_types[0] if len(listed_types) == 1 else None
+                ctype = context_type or specific_type or self.policy.canon_type(mcp_type) or tool_type or "unknown"
                 cur = objs.get(u)
                 if cur is None:
                     cur = objs[u] = {"uuid": u, "name": pick(it, NAME_KEYS), "type": ctype,
@@ -908,7 +993,8 @@ class Extractor:
                 else:
                     if mcp_type and not cur.get("mcpType"):
                         cur["mcpType"] = mcp_type
-                    if cur["type"] == "unknown" and ctype != "unknown":
+                    if (cur["type"] == "unknown" and ctype != "unknown"
+                            or cur["type"] not in self.policy.syn and ctype in self.policy.syn):
                         cur["type"] = ctype
                 if tname not in cur["sources"]:
                     cur["sources"].append(tname)
@@ -919,7 +1005,10 @@ class Extractor:
         for o in objects + [{"type": "application", "mcpType": "APPLICATION"}]:
             t = o["type"]
             phrases = tp.setdefault(t, [])
-            for src in (t, o.get("mcpType")):
+            # El campo type de una constante describe su valor (GROUP, DOCUMENT, PROCESS_MODEL…).
+            # Un alias contradictorio daría a TODAS las constantes las herramientas de esos tipos.
+            mcp_type = o.get("mcpType")
+            for src in (t, mcp_type if self.policy.canon_type(mcp_type) == t else None):
                 if src:
                     ph = tokens(src)
                     if ph and ph not in phrases:
@@ -946,6 +1035,8 @@ class Extractor:
         probe = objs[: self.policy.probe]
         rest = objs[self.policy.probe:]
         results = await asyncio.gather(*(self.run_call(ti, "object", obj=o) for o in probe))
+        if self.interruption:
+            return   # no confundir autenticacion interrumpida con tipo no admitido por la herramienta
         if probe and not any(r.ok for r in results):
             if rest:
                 self.disabled.append({"tool": ti.name, "type": typ, "skippedCalls": len(rest),
@@ -1012,7 +1103,12 @@ async def aplicacion_de(ex: Extractor, args, de_una_vez: bool = False) -> dict:
     """Catalogo -> la aplicacion de --app, entre las del entorno (con `de_una_vez`, en una sola pagina si se puede)."""
     await ex.load_catalog()
     apps = await ex.list_apps(de_una_vez)
+    ex.check_interrupted()
     if not apps:
+        excluded = [f"{t.name}: {t.safety_reason}" for t in ex.tools
+                    if t.scope == "env" and {"application", "app"}.intersection(t.toks) and not t.allowed]
+        eprint("No se obtuvo la lista de aplicaciones." + (" " + "; ".join(excluded) if excluded else
+               " Comprueba las respuestas de la lista, la conexión y los permisos del usuario."))
         raise SystemExit(EXIT_NO_APPS)
     app, msg = resolve_app(apps, args.app)
     if not app:
@@ -1030,6 +1126,7 @@ async def prepare(ex: Extractor, args, app: dict | None = None) -> tuple[dict, l
     cargado y la aplicacion resuelta), desde las llamadas de app."""
     app = app or await aplicacion_de(ex, args)
     app_results = await ex.app_calls(app["uuid"])
+    ex.check_interrupted()
     app_obj, objects = ex.harvest_objects(app["uuid"], app_results)
     app_obj["name"] = app_obj["name"] or app["name"]
     app_obj["prefix"] = app_obj.get("prefix") or app.get("prefix")
@@ -1038,6 +1135,7 @@ async def prepare(ex: Extractor, args, app: dict | None = None) -> tuple[dict, l
     extra = [t for t in ex.usable("app") if t.name not in app_results]
     if extra:
         more = await asyncio.gather(*(ex.run_call(t, "app", app_uuid=app["uuid"]) for t in extra))
+        ex.check_interrupted()
         app_results.update({t.name: r for t, r in zip(extra, more)})
         app_obj2, objects = ex.harvest_objects(app["uuid"], app_results)
         for k, v in app_obj2.items():
@@ -1046,7 +1144,7 @@ async def prepare(ex: Extractor, args, app: dict | None = None) -> tuple[dict, l
     return app_obj, objects, groups
 
 
-async def solo_lo_esperado(ex: Extractor, args, tipos: dict[str, str]) -> tuple[dict, list[dict]]:
+async def solo_lo_esperado(ex: Extractor, args, tipos: dict[str, str], auxiliares=()) -> tuple[dict, list[dict]]:
     """Para verificar una issue sin pruebas, la aplicacion y sus objetos leyendo solo lo necesario: las aplicaciones de una
     vez y, de la aplicacion, solo las listas de los tipos esperados ({pedido: tipo canonico}; en el Dev MCP real, la de
     record types en vez de 25 listas). Si un pedido no esta en ellas (es de otro tipo o no existe), la lista entera, como
@@ -1054,8 +1152,9 @@ async def solo_lo_esperado(ex: Extractor, args, tipos: dict[str, str]) -> tuple[
     app = await aplicacion_de(ex, args, de_una_vez=True)
     sin_app = {t: ps for t, ps in ex.base_type_phrases().items() if t != "application"}
     listas = [t for t in ex.usable("app") if t.role == "other"
-              and set(match_types(t.toks[1:], sin_app) or ["?"]) <= set(tipos.values())]
+              and set(match_types(t.toks[1:], sin_app) or ["?"]) <= set(tipos.values()) | set(auxiliares)]
     res = await asyncio.gather(*(ex.run_call(t, "app", app_uuid=app["uuid"]) for t in listas))
+    ex.check_interrupted()
     app_obj, objects = ex.harvest_objects(app["uuid"], {t.name: r for t, r in zip(listas, res)})
     por = resolver(list(tipos), objects)
     if len(por) < len(tipos) or any(o["type"] != tipos[p] for p, o in por.items()):
@@ -1117,6 +1216,26 @@ def server_info(choice: ServerChoice) -> dict:
     return {"configFile": choice.source, "serverName": choice.name, "url": url,
             "authMethod": env.get("LCP_AUTH_METHOD", "browser"),
             "envKeys": sorted(env.keys()), "toolModeForced": "readonly"}
+
+
+def interrupcion_de_lectura(destino: Path, ex: Extractor) -> int:
+    """Conserva el resultado anterior y marca que la nueva lectura no permite compararlo."""
+    marca = destino.with_name(destino.stem + ".interrumpido" + destino.suffix)
+    write_json(marca, {"status": "partial", "generatedAt": now_iso(), "interruption": ex.interruption,
+                       "previousResult": str(destino), "previousResultIsCurrent": False})
+    eprint(f"Lectura interrumpida: {ex.interruption['error']}. No se deducen objetos ausentes ni retirados. "
+           f"El resultado anterior se conserva, pero no es el de esta lectura. Detalle: {marca}")
+    return EXIT_START
+
+
+def supera_interrupcion(marca: Path):
+    """Una lectura completa posterior deja constancia de que el marcador parcial ya no manda."""
+    if marca.exists():
+        try:
+            previo = json.loads(marca.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        write_json(marca, {**previo, "status": "superseded", "supersededAt": now_iso()})
 
 
 # --------------------------------------------------------------------------- subcomandos
@@ -1187,6 +1306,16 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         return EXIT_APP
     try:
         app_obj, objects, groups = await prepare(ex, args)
+    except ExtractionInterrupted:
+        # La lista puede estar incompleta: no reemplazar _objects ni deducir objetos ausentes.
+        report = {"status": "partial", "startedAt": inicio, "durationSeconds": round(time.monotonic() - t0, 1),
+                  "interruption": ex.interruption, "objectListComplete": False,
+                  "toolsUsed": usadas(ex), "callStats": {k: dict(v) for k, v in sorted(ex.stats.items())}}
+        destino = work_dir(out, crear=True) / "extraction_interrupted.json"
+        write_json(destino, report)
+        eprint(f"Extraccion interrumpida al listar: {ex.interruption['error']}. No se deducen objetos ausentes. "
+               f"Respuestas conservadas; detalle: {destino}")
+        return EXIT_START
     except SystemExit as se:
         return int(se.code)
     if ex.solo is not None:
@@ -1200,10 +1329,21 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         for aplazada in ex.aplazadas:
             ex.guarda(*aplazada)
         ex.aplazadas = None
+    lista_acotada = ex.solo is not None or ex.only is not None or ex.skip is not None
+    if lista_acotada:
+        anterior_guardado = extraccion_guardada(ex.raw)
+        if (anterior_guardado.get("application") or {}).get("uuid") == app_obj["uuid"]:
+            objects = conservar_objetos_parciales(anterior_guardado.get("objects") or [], objects)
+            for campo, valor in anterior_guardado["application"].items():
+                if not app_obj.get(campo) and valor:
+                    app_obj[campo] = valor
+        ex.classify(ex.type_phrases_for(objects))
+        groups = ex.plan_object_calls(objects)
     interm = work_dir(out, crear=True)
     write_json(interm / "mcp_catalog.json", catalog_json(ex))
     anterior = inicio_anterior(interm / "extraction_plan.json")   # antes de sobrescribirlo
     plan = plan_json(ex, app_obj, objects, groups, inicio)
+    plan["objectListComplete"] = not lista_acotada
     write_json(interm / "extraction_plan.json", plan)
     write_json(interm / "mcp_raw" / "_objects.json", {"application": app_obj, "entorno": url, "objects": objects})
     if not execute:
@@ -1216,10 +1356,12 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
     await ex.env_calls()
     await asyncio.gather(*(ex.run_group(ti, t, objs) for ti, t, objs in groups))
     report = {
+        "status": "partial" if ex.interruption else "complete",
         "startedAt": inicio,
         "durationSeconds": round(time.monotonic() - t0, 1),
         "server": server_info(choice), "trustedMode": ex.trusted,
         "app": app_obj, "objectCount": len(objects), "objectsByType": plan["objectsByType"],
+        "objectListComplete": not lista_acotada,
         "toolsUsed": usadas(ex),
         "toolsOmitted": omitidas(ex, plan),
         "toolsExcluded": [{"name": t.name, "reason": t.safety_reason} for t in ex.tools if not t.allowed],
@@ -1230,6 +1372,8 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         "disabledAfterProbe": ex.disabled,
         "errors": ex.errors[:300], "errorCount": len(ex.errors),
     }
+    if ex.interruption:
+        report.update(interruption=ex.interruption, objectListComplete=True)
     if ex.solo is not None:
         report["solo"] = sorted(o.get("name") or o["uuid"] for o in objects if o["uuid"] in ex.solo)
         try:   # lo desactivado en la extracción completa sigue valiendo para los objetos que no se piden
@@ -1243,6 +1387,12 @@ async def plan_o_extrae(ex: "Extractor", args, execute: bool, choice: "ServerCho
         report = {"startedAt": previo.get("startedAt") or inicio, "reextraidoEn": inicio,
                   **{k: v for k, v in report.items() if k != "startedAt"}}
     write_json(interm / "extraction_report.json", report)
+    if ex.interruption:
+        eprint(f"Extraccion parcial, interrumpida por acceso o login: {ex.interruption['error']}. "
+               f"No se lanzan llamadas nuevas; las ya iniciadas pueden haber terminado. "
+               f"Respuestas conservadas; informe: {interm / 'extraction_report.json'}")
+        return EXIT_START
+    supera_interrupcion(interm / "extraction_interrupted.json")
     escribe(interm / "LEEME.md",
             "# Extracción\n\nRespuestas del Dev MCP de la aplicación, tal cual. Es la fuente de la documentación de la "
             "carpeta superior; para consultar un objeto, su ficha de `anexo/`.\n")
@@ -1593,8 +1743,113 @@ def acciones(data) -> list[dict]:
     su nombre y su tipo, como los dé el Dev MCP (LIST_ACTION, RELATED_ACTION)."""
     d = bm.unwrap(data)
     lista = d if isinstance(d, list) else bm.find_list(d, ("actions", "recordActions", "recordTypeActions"))
-    return [{"nombre": bm.pick(a, NOMBRE_ACCION), "tipo": bm.pick(a, TIPO_ACCION)} for a in lista
+    return [{"nombre": bm.pick(a, NOMBRE_ACCION), "tipo": bm.pick(a, TIPO_ACCION),
+             **{k: a[k] for k in ("securityMode", "visibilityExpr", "securityRule") if k in a}} for a in lista
             if isinstance(a, dict) and bm.pick(a, NOMBRE_ACCION)]
+
+
+ROLES_PROCESO = {"administrator", "editor", "manager", "viewer", "initiator", "deny"}
+MIEMBRO_GRUPO = r"a!isUserMemberOfGroup\((?:fn!)?loggedInUser\(\),cons![A-Za-z_][A-Za-z_0-9]*\)"
+
+
+def expresion_visible(texto):
+    """Contrato de configuración literal acotado. No ejecuta SAIL ni afirma acceso efectivo."""
+    if not isinstance(texto, str):
+        return None
+    valor = re.sub(r"\s*([!(),=])\s*", r"\1", texto.strip()).removeprefix("=")
+    literal = re.fullmatch(r"(?:fn!)?(true|false)\(\)", valor)
+    if literal:
+        return {"literal": literal[1] == "true"}
+    patron = rf"(?:{MIEMBRO_GRUPO}|(?:fn!)?or\({MIEMBRO_GRUPO}(?:,{MIEMBRO_GRUPO})+\))"
+    if re.fullmatch(patron, valor):
+        return {"constantes": sorted(set(re.findall(r"cons!([A-Za-z_][A-Za-z_0-9]*)", valor)))}
+    return None
+
+
+def diferencias_permisos(o, esperado):
+    """Diferencias de configuración confirmadas y lo que no se puede comparar, por separado."""
+    distintos, desconocidos = [], []
+    if "permisosInicio" in esperado or tipo_de_objeto(esperado.get("tipo")) == "processmodel":
+        pedidos = esperado.get("permisosInicio")
+        if not isinstance(pedidos, list) or not pedidos:
+            desconocidos.append("inicio: falta contrato explícito de roles y grupos en técnico §4")
+        else:
+            if {p.get("rol") for p in pedidos if isinstance(p, dict) and isinstance(p.get("rol"), str)} != ROLES_PROCESO:
+                desconocidos.append("inicio: contrato parcial; los roles no declarados no se han comparado")
+            seguridad = o.get("seguridadInicio")
+            roles = seguridad.get("roles") if isinstance(seguridad, dict) else None
+            if (not isinstance(roles, list) or seguridad.get("uuid") != o.get("uuid")
+                    or seguridad.get("objectType") != "process_model"):
+                desconocidos.append("inicio: seguridad del proceso no legible")
+            elif seguridad.get("inheritSecurity") or seguridad.get("parentFolderUuid"):
+                desconocidos.append("inicio: herencia de seguridad no comparable")
+            else:
+                for p in pedidos:
+                    rol = p.get("rol") if isinstance(p, dict) else None
+                    grupos = p.get("grupos") if isinstance(p, dict) else None
+                    filas = [x for x in roles if isinstance(x, dict) and x.get("roleName") == rol]
+                    if (not isinstance(rol, str) or rol not in ROLES_PROCESO or not isinstance(grupos, list) or any(not isinstance(g, str) or not g for g in grupos)
+                            or sum(1 for q in pedidos if isinstance(q, dict) and q.get("rol") == rol) != 1):
+                        desconocidos.append(f"inicio {rol}: contrato ilegible o duplicado")
+                        continue
+                    resolucion = o.get("gruposParaPermisos")
+                    resolucion = resolucion if isinstance(resolucion, dict) else {}
+                    sin_resolver = [g for g in grupos if not isinstance(resolucion.get(g), str) or not resolucion[g]]
+                    if sin_resolver:
+                        desconocidos.append(f"inicio {rol}: grupo ausente, ambiguo o externo no resuelto: "
+                                            + ", ".join(sin_resolver))
+                        continue
+                    if (len(filas) != 1 or not isinstance(filas[0].get("groupUuids"), list)
+                            or any(not isinstance(g, str) or not g.strip() for g in filas[0]["groupUuids"])
+                            or filas[0].get("inheritedGroupUuids") != [] or filas[0].get("userUuids")
+                            or filas[0].get("users")):
+                        desconocidos.append(f"inicio {rol}: rol no legible, herencia o miembros no comparables")
+                        continue
+                    pedidos_uuid = sorted(set(resolucion[g] for g in grupos))
+                    reales = sorted(set(filas[0]["groupUuids"]))
+                    if pedidos_uuid != reales:
+                        distintos.append({"comprobacion": f"inicio: rol {rol}",
+                                          "esperado": {"grupos": grupos, "groupUuids": pedidos_uuid},
+                                          "real": {"groupUuids": reales}})
+    acciones_esperadas = esperado.get("acciones", [])
+    if not isinstance(acciones_esperadas, list):
+        desconocidos.append("visibilidad: contrato de acciones ilegible")
+        acciones_esperadas = []
+    for a in acciones_esperadas:
+        if not isinstance(a, dict) or "visibilidad" not in a:
+            continue
+        etiqueta = "visibilidad de " + str(a.get("nombre", "?"))
+        cfg = a["visibilidad"].get("configuracion", "") if isinstance(a["visibilidad"], dict) else ""
+        texto = cfg.removeprefix("EXPRESSION:").strip() if isinstance(cfg, str) and cfg.startswith("EXPRESSION:") else None
+        declarada = expresion_visible(texto)
+        observadas = o.get("acciones")
+        reales = [r for r in observadas if isinstance(r, dict) and nombre_de_accion(r.get("nombre")) == nombre_de_accion(a.get("nombre"))] if isinstance(observadas, list) else []
+        if declarada is None:
+            desconocidos.append(etiqueta + ": falta un contrato EXPRESSION literal soportado")
+        elif len(reales) != 1:
+            desconocidos.append(etiqueta + ": acción no legible o nombre ambiguo")
+        else:
+            real = reales[0]
+            observada = expresion_visible(real.get("visibilityExpr"))
+            if real.get("securityMode") != "EXPRESSION" or real.get("securityRule") or observada is None:
+                desconocidos.append(etiqueta + ": RULES, regla de seguridad o expresión no decidible; no se evalúa")
+            else:
+                def resuelta(exp):
+                    if "literal" in exp:
+                        return exp
+                    constantes = o.get("constantesDeVisibilidad")
+                    constantes = constantes if isinstance(constantes, dict) else {}
+                    valores = [constantes.get(c) for c in exp["constantes"]]
+                    validos = all(isinstance(x, dict) and isinstance(x.get("uuid"), str) and x["uuid"] for x in valores)
+                    return {"gruposReferenciados": sorted(set(x["uuid"] for x in valores))} if validos else None
+                configurada, actual = resuelta(declarada), resuelta(observada)
+                if configurada is None or actual is None:
+                    desconocidos.append(etiqueta + ": constante GROUP escalar o grupo no resuelto inequívocamente")
+                elif configurada != actual:
+                    distintos.append({"comprobacion": "configuración de " + etiqueta,
+                                      "esperado": {"securityMode": "EXPRESSION", "configuracion": configurada},
+                                      "real": {"securityMode": "EXPRESSION", "configuracion": actual}})
+    return {k: v for k, v in (("permisosDiferentes", distintos), ("permisosNoComprobados", desconocidos)) if v}
 
 
 async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: list[str],
@@ -1604,12 +1859,35 @@ async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: l
     si no la hay, la definición; sin ninguna de las dos, «accionesNoDisponibles»). Lo compara diferencias(). Con
     `ligero` (una issue sin pruebas), solo lo que se compara: sin la última modificación y sin la definición si lo
     esperado no nombra campos (salvo para leer las acciones, si no hay herramienta que las liste)."""
+    ex.check_interrupted()
     esperado = esperado or {}
     por = resolver(pedidos, objects)
     usables = ex.usable("object")
     versiones = [t for t in usables if t.role == "versions"]
     definiciones = [t for t in usables if t.role == "definition"]
     de_acciones = [t for t in usables if "action" in t.toks and "recordType" in t.types and t.role != "definition"]
+    de_seguridad = [t for t in usables if "security" in t.toks and t.generic]
+    constantes_pedidas = {}
+
+    async def grupo_de_constante(nombre):
+        candidatas = [c for c in objects if c.get("type") == "constant" and c.get("name") == nombre]
+        if len(candidatas) != 1:
+            return None
+        datos, _ = await llama(ex, definiciones, candidatas[0])
+        for dato in map(bm.unwrap, datos):
+            if (not isinstance(dato, dict) or dato.get("uuid") != candidatas[0]["uuid"]
+                    or dato.get("type") != "GROUP" or dato.get("multiple") is not False
+                    or not isinstance(dato.get("value"), str) or not dato["value"].strip()):
+                continue
+            grupos = [g for g in objects if g.get("type") == "group" and g.get("name") == dato["value"]]
+            if len(grupos) == 1:
+                return {"grupo": dato["value"], "uuid": grupos[0]["uuid"]}
+        return None
+
+    async def constante(nombre):
+        if nombre not in constantes_pedidas:
+            constantes_pedidas[nombre] = asyncio.create_task(grupo_de_constante(nombre))
+        return await constantes_pedidas[nombre]
 
     async def uno(p: str) -> dict:
         o = por.get(p)
@@ -1637,13 +1915,34 @@ async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: l
                 r["acciones"] = next((a for a in map(acciones, definicion) if a), None)
                 if r["acciones"] is None:
                     r["accionesNoDisponibles"] = True
+            expresiones = [a["visibilidad"]["configuracion"].removeprefix("EXPRESSION:").strip()
+                           for a in quiere["acciones"] if isinstance(a, dict) and isinstance(a.get("visibilidad"), dict)
+                           and isinstance(a["visibilidad"].get("configuracion"), str)]
+            pedidas = {nombre_de_accion(a.get("nombre")) for a in quiere["acciones"] if isinstance(a, dict)}
+            expresiones += [a.get("visibilityExpr") for a in r.get("acciones") or [] if a.get("securityMode") == "EXPRESSION"
+                            and nombre_de_accion(a.get("nombre")) in pedidas]
+            nombres = {c for e in expresiones for c in (expresion_visible(e) or {}).get("constantes", [])}
+            if nombres:
+                r["constantesDeVisibilidad"] = dict(zip(sorted(nombres), await asyncio.gather(*(constante(c) for c in sorted(nombres)))))
+        if o["type"] == "processModel" and quiere.get("permisosInicio"):
+            datos, err = await llama(ex, de_seguridad, o)
+            errores += err
+            r["seguridadInicio"] = next((d for d in map(bm.unwrap, datos) if isinstance(d, dict) and "roles" in d), None)
+            nombres = {g for p in quiere["permisosInicio"] if isinstance(p, dict) and isinstance(p.get("grupos"), list)
+                       for g in p["grupos"] if isinstance(g, str)} if isinstance(quiere["permisosInicio"], list) else set()
+            r["gruposParaPermisos"] = {}
+            for nombre in nombres:
+                grupos = [g for g in objects if g.get("type") == "group" and g.get("name") == nombre]
+                r["gruposParaPermisos"][nombre] = grupos[0]["uuid"] if len(grupos) == 1 else None
         if errores:
             r["errores"] = errores
         return r
 
+    hechos = list(await asyncio.gather(*(uno(p) for p in pedidos)))
+    ex.check_interrupted()
     return {"aplicacion": {"nombre": app_obj.get("name"), "prefijo": app_obj.get("prefix"), "uuid": app_obj.get("uuid")},
             "conHistorialDeVersiones": bool(versiones),
-            "objetos": list(await asyncio.gather(*(uno(p) for p in pedidos))),
+            "objetos": hechos,
             "faltan": [p for p in pedidos if p not in por]}
 
 
@@ -1824,7 +2123,7 @@ def diferencias(o: dict, esperado: dict) -> dict:
     record type no son de quien lo pide. Si el Dev MCP no da las acciones, no se comparan (lo dice la salida)."""
     if not o.get("existe"):
         return {"falta": True}
-    out: dict = {}
+    out: dict = diferencias_permisos(o, esperado)
     if esperado.get("tipo") and tipo_de_objeto(esperado["tipo"]) != tipo_de_objeto(o.get("tipo")):
         out["tipo"] = {"esperado": esperado["tipo"], "real": o.get("tipo")}
     if isinstance(esperado.get("acciones"), list) and not o.get("accionesNoDisponibles"):
@@ -1884,7 +2183,10 @@ async def cmd_verificar(args) -> int:
                 tipos = {p: ex.policy.canon_type(q.get("tipo") or ("recordType" if q.get("acciones") else None))
                          for p, q in quiere.items()}
                 if sin_pruebas and all(tipos.values()):
-                    app_obj, objects = await solo_lo_esperado(ex, args, tipos)
+                    visibilidad = any(a.get("visibilidad", {}).get("configuracion") for q in quiere.values()
+                                      for a in q.get("acciones", []) if isinstance(a, dict) and isinstance(a.get("visibilidad"), dict))
+                    auxiliares = ("group", "constant") if visibilidad else (("group",) if any(q.get("permisosInicio") for q in quiere.values()) else ())
+                    app_obj, objects = await solo_lo_esperado(ex, args, tipos, auxiliares)
                 else:
                     app_obj, objects, _ = await prepare(ex, args)
                 resultado = await verifica(ex, app_obj, objects, pedidos, esperado, ligero=sin_pruebas)
@@ -1892,6 +2194,9 @@ async def cmd_verificar(args) -> int:
                     resultado["pruebas"] = (
                         {"ejecutadas": False, "motivo": "la issue no cambia criterios ni reglas"} if sin_pruebas else
                         await pruebas_de(ex, list(resolver(list(esperado), objects).values()), app_obj.get("uuid")))
+                ex.check_interrupted()
+        except ExtractionInterrupted:
+            return interrupcion_de_lectura(Path(args.out).resolve(), ex)
         except SystemExit as se:
             return int(se.code)
         except Exception as ex_:
@@ -1900,11 +2205,16 @@ async def cmd_verificar(args) -> int:
         for o in resultado["objetos"]:
             if isinstance(esperado.get(o["pedido"]), dict):
                 o["diferencias"] = diferencias(o, esperado[o["pedido"]])
-        resultado["conDiferencias"] = [o["pedido"] for o in resultado["objetos"] if o.get("diferencias")]
+        resultado["conDiferencias"] = [o["pedido"] for o in resultado["objetos"]
+                                       if any(k != "permisosNoComprobados" for k in o.get("diferencias", {}))]
+        sin_permisos = [o["pedido"] for o in resultado["objetos"] if o.get("diferencias", {}).get("permisosNoComprobados")]
+        if sin_permisos:
+            resultado["permisosNoComprobados"] = sin_permisos
     resultado = {"generadoEn": now_iso(), "entorno": entorno(server_info(choice)["url"]),
                  **({"issue": issue} if issue is not None else {}), **resultado}
     destino = Path(args.out).resolve()
     write_json(destino, resultado)
+    supera_interrupcion(destino.with_name(destino.stem + ".interrumpido" + destino.suffix))
     if args.json:
         print(json.dumps(resultado, ensure_ascii=False, indent=1))
     existen = sum(1 for o in resultado["objetos"] if o["existe"])
@@ -1915,6 +2225,11 @@ async def cmd_verificar(args) -> int:
     for o in resultado["objetos"]:
         if o.get("accionesNoDisponibles"):
             print(f"  · {o['pedido']}: el Dev MCP no da sus acciones de registro; no se comprueban")
+        for motivo in (o.get("diferencias") or {}).get("permisosNoComprobados", []):
+            print(f"  · {o['pedido']}: permisos no comprobados: {motivo}")
+    if any("permisosInicio" in q or tipo_de_objeto(q.get("tipo")) == "processmodel"
+           or any("visibilidad" in a for a in q.get("acciones", [])) for q in quiere.values()):
+        print("  · Permisos: se compara configuración declarada; el acceso efectivo exige QA con cada rol.")
     for linea in resumen_de_pruebas(resultado.get("pruebas")):
         print(linea)
     return EXIT_OK
@@ -1935,6 +2250,9 @@ async def cmd_regresion(args) -> int:
                 run, t0 = ejecutores(ex), time.monotonic()
                 con = [o for o in objects if o["type"] in run]
                 hechos = list(await asyncio.gather(*(ejecuta(ex, run[o["type"]], o) for o in con)))
+                ex.check_interrupted()
+        except ExtractionInterrupted:
+            return interrupcion_de_lectura(Path(args.out).resolve(), ex)
         except SystemExit as se:
             return int(se.code)
         except Exception as ex_:
@@ -1950,6 +2268,7 @@ async def cmd_regresion(args) -> int:
                          **cuenta(hechos), porObjeto=hechos)
     destino = Path(args.out).resolve()
     write_json(destino, resultado)
+    supera_interrupcion(destino.with_name(destino.stem + ".interrumpido" + destino.suffix))
     if not run:
         print(f"Regresion sin hacer: {resultado['motivo']}. Detalle: {destino}")
         return EXIT_SIN_PRUEBAS
@@ -2003,6 +2322,7 @@ def cambio(antes: dict, ahora: dict) -> bool:
 async def deriva_de(ex: Extractor, guardada: dict, objects: list[dict], pedidos: list[str],
                     ignorar: dict, raw: Path, usadas: set[str] | None) -> dict:
     """Cambiados, nuevos y retirados frente al as-is. Los de --ignorar modificados después de su fecha van aparte."""
+    ex.check_interrupted()
     base = {o["uuid"]: o for o in guardada.get("objects", [])}
     ahora = {o["uuid"]: o for o in objects}
     if pedidos:
@@ -2019,6 +2339,7 @@ async def deriva_de(ex: Extractor, guardada: dict, objects: list[dict], pedidos:
         respuestas = await asyncio.gather(*(llama(ex, versiones, ahora[u]) for u in orden))
     else:
         respuestas = [([], [])] * len(orden)
+    ex.check_interrupted()
     nuevos, cambiados, ignorados, sin_dato = [], [], [], []
     for u, (datos, errores) in zip(orden, respuestas):
         o = ahora[u]
@@ -2086,6 +2407,8 @@ async def cmd_deriva(args) -> int:
                 _, objects, _ = await prepare(ex, args)
                 resultado = await deriva_de(ex, guardada, objects, pedidos, ignorar, interm / "mcp_raw",
                                             bm.herramientas_usadas(report))
+        except ExtractionInterrupted:
+            return interrupcion_de_lectura(salida / "datos" / "deriva.json", ex)
         except SystemExit as se:
             eprint(f"La aplicacion del as-is ({app.get('name')}) no esta visible en el entorno.")
             return int(se.code)
@@ -2096,6 +2419,7 @@ async def cmd_deriva(args) -> int:
                  "asIs": {"extraidoEn": report.get("startedAt")}, **resultado}
     destino = salida / "datos" / "deriva.json"
     write_json(destino, resultado)
+    supera_interrupcion(destino.with_name(destino.stem + ".interrumpido" + destino.suffix))
     if args.json:
         print(json.dumps(resultado, ensure_ascii=False, indent=1))
     n = lambda k: len(resultado[k] or [])  # noqa: E731

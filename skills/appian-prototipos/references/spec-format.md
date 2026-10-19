@@ -129,6 +129,27 @@ Un `a!buttonWidget` con `"submit": true` valida los campos `required` visibles d
 
 Las acciones no modifican `data`: tras «Guardar» o «Enviar decisión» el registro sigue igual y la tarea sigue en la bandeja. Para enseñar el resultado se navega con parámetros (`"params": {"mensaje": "..."}` → banner con `ri!mensaje`) o se prepara una captura con `state`. Los valores derivados que el prototipo no sabe calcular (días hasta el vencimiento, antigüedad) se precalculan en los datos de ejemplo (p. ej. `diasParaVencer`) respecto a `app.today`.
 
+## Abrir una pantalla en otra pestaña
+
+Para simular «Ver en otro sistema» dentro del mismo prototipo, usa el enlace SAIL:
+
+```json
+{"type": "a!safeLink", "label": "Ver detalle", "openLinkIn": "NEW_TAB",
+ "uri": "#ver=detalle&id={rv!record.id}&consulta={local!consulta}"}
+```
+
+`ver` es el ID de `screens`; los demás valores llegan como `ri!id`, `ri!consulta`, etc. El runtime interpola cada valor
+y lo codifica como parámetro: un `&`, `=`, `+` o carácter Unicode del dato conserva su significado. En un enlace escrito
+a mano, codifica los caracteres reservados (`%26` para `&`). Por compatibilidad con IDs del prototipo, un entero decimal
+sin ceros iniciales y dentro del rango seguro de JavaScript llega como número; los demás valores llegan como texto
+(incluidos `007`, decimales y enteros muy grandes). La pestaña nueva comienza con el estado inicial del prototipo;
+solo comparte lo que lleva el enlace, no las ediciones de la pestaña de origen.
+
+La recarga, un cambio del fragmento y atrás/adelante del navegador vuelven a leer ese enlace. Se conserva `#pantalla`
+para enlaces anteriores. Un destino inexistente no abre otra pestaña; al cargar una URL inválida se muestra el inicio.
+Con `openLinkIn: "SAME_TAB"` se abre en la pestaña actual. `$action.goto` sigue navegando en la misma pestaña y su
+`back` restaura los parámetros de la pantalla anterior; esa navegación interna no cambia la URL del enlace.
+
 ## Capturas
 
 ```json

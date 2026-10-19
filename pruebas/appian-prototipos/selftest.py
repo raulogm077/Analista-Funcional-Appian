@@ -655,6 +655,17 @@ def capturas_solo(tmp):
         enlazar.append(f"enlaza {hecho} y deja:\n{funcional.read_bytes().decode('utf-8')}")
     if capture.enlazar(funcional, enlaces) != ([], ["PAN-05", "PAN-09"]) or funcional.read_bytes() != despues.encode("utf-8"):
         enlazar.append("la segunda vez vuelve a enlazar o cambia el fichero")
+    funcional.write_bytes(antes.replace("\n", "\r\n").encode("utf-8"))
+    capture.enlazar(funcional, enlaces)
+    if funcional.read_bytes() != despues.replace("\n", "\r\n").encode("utf-8"):
+        enlazar.append("al enlazar una captura cambia los finales CRLF del funcional")
+    from entorno import escribe
+    for previo, esperado in ((b"a\r\nb\r\n", b"c\r\nd\r\n"), (b"a\nb\n", b"c\nd\n"),
+                             (b"a\r\nb\n", b"c\nd\n")):
+        funcional.write_bytes(previo)
+        escribe(funcional, "c\nd\n")
+        if funcional.read_bytes() != esperado:
+            enlazar.append(f"entorno.escribe no conserva la política de saltos para {previo!r}")
     # validate.py --anterior sin --confirmadas (ninguna pantalla validada) no es un error; --confirmadas sin --anterior, sí
     spec = ROOT / "templates" / "catalogo-patrones.json"
     code, out = run([HERE / "validate.py", spec, "--quiet", "--anterior", spec])
@@ -776,6 +787,13 @@ def main():
         for que, probs in (avatares(built) or []) if browser else []:
             ok = ok and not probs
             print(f"✗ Cabecera: {que}\n  " + "\n  ".join(probs) if probs else f"✓ Cabecera: {que}")
+        if browser:
+            code, out = run([AQUI / "test_chat_altura.py"])
+            ok = ok and code == 0
+            print("✓ Chat FILL: seis combinaciones de contenedor y viewport" if code == 0 else f"✗ Chat FILL:\n{out}")
+            code, out = run([AQUI / "test_enlaces_pestana.py"])
+            ok = ok and code == 0
+            print("✓ Enlaces en otra pestaña: parámetros, recarga, hash e historial" if code == 0 else f"✗ Enlaces en otra pestaña:\n{out}")
     print("\nKit listo." if ok else "\nEl kit tiene errores: revisa los mensajes anteriores.")
     sys.exit(0 if ok else 1)
 

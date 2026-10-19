@@ -78,8 +78,10 @@ def ahora():
 
 def escribe(ruta, texto):
     ruta.parent.mkdir(parents=True, exist_ok=True)
-    with open(ruta, "w", encoding="utf-8", newline="\n") as f:
-        f.write(texto)
+    previo = ruta.read_bytes() if ruta.is_file() else b""
+    final = "\r\n" if b"\r\n" in previo and b"\n" not in previo.replace(b"\r\n", b"") else "\n"
+    with open(ruta, "w", encoding="utf-8", newline="") as f:
+        f.write(texto.replace("\r\n", "\n").replace("\n", final))
 
 
 def lee_json(ruta):
@@ -481,10 +483,34 @@ def sin_repetir(previa, por_que, no_responde=False):
     return entrada
 
 
+def excepciones_qa(raiz, uid, m, iss):
+    """Escenarios cuyo fallo actual tiene una excepción humana de su versión vigente."""
+    excepciones = set()
+    if m is not None and iss is not None:
+        try:
+            ctx = iss.un.Contexto(m)
+            if uid in ctx.por_id:
+                plan = iss.calcula(m, ctx, uid)
+                excepciones = {(i.id, c) for i in plan.issues for o, c, error in iss.fallos_qa(raiz, uid, i)
+                               if iss.marcado(plan.marcas, i, o, c, error)}
+        except iss.NoSePuede:
+            pass
+    return excepciones
+
+
 def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
     """Repite los guiones de una unidad (con `solo`, nada más que esos escenarios; los demás se quedan como estaban) y
     escribe su resultado. Si SAIL CLI deja de responder, aquí o antes (`parado`), no repite los guiones que quedan.
     Devuelve (resultado, lo repetido esta vez, líneas para la consola, dónde dejó de responder SAIL CLI o None)."""
+    versiones_issues = {}
+    _, iss, _ = analisis(raiz)
+    if m is not None and iss is not None:
+        try:
+            ctx = iss.un.Contexto(m)
+            if uid in ctx.por_id:
+                versiones_issues = {i.id: i.version for i in iss.calcula(m, ctx, uid).issues}
+        except iss.NoSePuede:
+            pass
     carpeta = pathlib.Path(raiz) / CARPETA / uid
     fichero = carpeta / RESULTADO
     previo = lee_json(fichero) or {}
@@ -538,6 +564,8 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
                     parado = f"SAIL CLI dejó de responder en {uid} {esc}"
         if "sinRepetir" not in entrada:
             entrada.update(fecha=ahora(), segundos=round(time.time() - inicio, 1))
+            if entrada.get("issue") in versiones_issues:
+                entrada["versionIssue"] = versiones_issues[entrada["issue"]]
         entrada = {"resultado": entrada.pop("resultado"), **entrada}   # lo primero que se lee
         nuevos[esc] = repetidos[esc] = entrada
     resultado = {"unidad": uid, "generadoEn": ahora(), "escenarios": nuevos,
@@ -548,6 +576,8 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
     L.append(f"{uid} · {len(repetidos)} guiones: {cuenta('pasa')} pasan, {cuenta('falla')} fallan"
              + "".join(f", {cuenta(r)} {r}" for r in ("desfasado", POR_TERMINAR) if cuenta(r))
              + (f", {sin} sin repetir" if sin else "") + f" · {fichero.as_posix()}")
+    _, iss, _ = analisis(raiz)
+    excepciones = excepciones_qa(raiz, uid, m, iss)
     for esc, e in repetidos.items():
         if e.get("sinRepetir"):
             queda = (f"se queda: {e.get('resultado')}" if e.get("resultado") != SIN_REPETIR else
@@ -559,7 +589,9 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
             dado = str(e.get("paso", "")).startswith("dado")
             L.append(f"  {esc} · falla" + (f" en «{e['paso']}»" if e.get("paso") else "") + f": {e.get('motivo')}"
                      + (" · al preparar el «dado»: puede venir de otra issue" if dado else "")
-                     + (f" · {e['issue']} vuelve a pendiente" if e.get("issue") else ""))
+                     + (f" · {e['issue']} " + ("con excepción registrada; el fallo no la devuelve a pendiente"
+                         if (e["issue"], esc) in excepciones else "vuelve a pendiente")
+                         if e.get("issue") else ""))
         elif e["resultado"] == POR_TERMINAR:
             L.append(f"  {esc} · guion por terminar: {e.get('motivo')}; lo termina QA (no vuelve a pendiente su issue)")
         else:

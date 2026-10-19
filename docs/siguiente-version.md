@@ -1,69 +1,87 @@
 # Para la siguiente versión
 
-Lo que sigue abierto tras la 0.8.0-beta.1. Cada línea dice qué, dónde y de dónde sale.
+Trabajo que queda abierto después de aplicar las lecciones de automejora del 19 de octubre de 2026, sobre la
+0.8.0-beta.1; la entrega 0.8.0-beta.2 está preparada y aún no publicada. Raúl pidió abordar los temas aplazados antes
+de publicar: la fase activa está en
+`docs/plan/2026-10-19-temas-aplazados.md`. Los cambios terminados y sus pruebas están en `docs/evaluaciones.md`;
+la primera tanda quedó cerrada en `docs/plan/2026-10-19-aplicar-automejora.md`. Esta lista no autoriza publicar ni actuar en un entorno.
 
-## Pasos de Raúl (antes de la primera versión estable)
+La rama de trabajo única es `automejora-pruebas`: contiene la primera tanda de Claude y los cambios posteriores. La
+app de escritorio queda como comprobación visual pendiente, sin bloquear por sí sola la publicación. `getAgent`
+queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medición de esta fase.
 
-- Instalar el paquete en la app de escritorio y en un Windows con algo de la tabla de requisitos sin instalar, y ver que
-  el primer mensaje lo dice. En Linux con Claude Code ya está visto; en el portátil con Windows el hook corrió con la
-  0.7.0-beta.1 (dejó su marca el 10 de octubre de 2026), falta ver el mensaje con algo sin instalar.
-- Ingeniería inversa y refactorización con una aplicación real. Con ella:
-  - confirmar que el Dev MCP real da el historial de versiones de cada objeto (lo usan `deriva` y la colisión real de
-    una urgencia; sin él, el plugin lo dice y no supone nada);
-  - afinar los presupuestos de palabras de ingeniería inversa (hoy la mayoría de documentos van al 20-50 %);
-  - volver a medir la evaluación de malas prácticas con propuestas reales (las `claves` se fijaron a ciegas).
-- Archivar `~/Proyectos IA/appian-reverse-engineering` en el equipo donde esté: no está en su cuenta de claude.ai ni en
-  el portátil de trabajo. Avisar a quien tenga la skill suelta.
-- Avisar a Appian de que `LCP_TOOL_MODE=readonly`, que su documentación describe, no está en el Dev MCP 26.6.110
+## Antes de subir y publicar
+
+- Probar el comportamiento de las skills modificadas con `claude --plugin-dir <carpeta>` en un proyecto fuera del
+  repositorio. La campaña D1/D7/C8 está preparada y sus diez controles offline pasan; el runner externo
+  `claude-comportamiento/campana_claude.py` permite ejecutarla desde el 20/10 a las 16:00 de Madrid, cuando se
+  restablece la cuota acreditada. Los selftests y las regresiones no sustituyen esa conducta aún no medida.
+- Raúl autorizó el 19/10 subir la rama, abrir un único PR, ejecutar la matriz e integrar y publicar cuando las pruebas
+  pasen. Se ejecutan la batería completa en Linux y las siete combinaciones de sistema/Python de `CLAUDE.md`.
+  Las anclas ya pasaron: 1.265 citas en 312 páginas, cero rotas. El job
+  nuevo de PDF real con LibreOffice y la medición manual de concurrencia quedan por ejecutar en Actions. La versión
+  0.8.0-beta.2 está preparada, pendiente de las pruebas de entrega. LibreOffice ya convirtió el DF ficticio localmente
+  y conservó todo su texto y las dos figuras:
+  12 páginas frente a las 13 de Word. Falta medir el job de CI; el índice de LibreOffice queda sin números de página
+  y el script ya avisa de revisarlo antes de entregar.
+- Instalar el paquete en un Windows con algún requisito realmente ausente y comprobar el primer mensaje. La orden
+  del hook en PowerShell 5.1, con `docx` simulado como ausente, ya mostró el aviso y dejó la marca de una vez por
+  versión; aún falta la instalación real con esa carencia. Comprobar visualmente la instalación en la app de
+  escritorio cuando esté disponible; registrar ese resultado por separado, sin usarlo como puerta de publicación.
+
+## Construcción y verificación
+
+- D1, D7 y C8 ya están implementados: secuenciación de piezas compartidas, subtareas con avance guardado y
+  diferencias confirmadas de permisos con aceptación humana acotada. Resultados y comprobaciones en el plan de esta
+  fase y en `docs/evaluaciones.md`. El acceso efectivo sigue requiriendo QA con usuarios de cada rol.
+- Prueba diferencial de una refactorización (E3) realizada con autorización sobre una regla de texto real: versión
+  inicial y propuesta coincidieron en 3 casos guardados y cinco bordes; se restauró exactamente la definición
+  original y los 3 casos siguieron pasando. `deriva` detectó el historial de edición 1→3. Queda limitada a una regla;
+  no acredita sensibilidad global de la aplicación.
+- «No evaluable» reconoce el límite de la rejilla con filtros de usuario (`flow!userFilterSetData`). Añadir otro límite
+  a `devmcp_policy.json` solo si aparece y se comprueba.
+
+## Ingeniería inversa y diagramas
+
+- LEEME completo y deriva de cambios internos en la aplicación real siguen sin medir: la extracción anterior tiene
+  respuestas correctas para 24 de 248 UUID y carece de historiales de versión. Una extracción amplia se estimó en
+  al menos unas 1.073 lecturas de objeto, pero **no fue necesaria** para comparar inventarios: con 23 respuestas de
+  listas, la aplicación pasó de 248 a 249 objetos (una interfaz nueva, ninguna baja). El `as-is` ficticio de MNT,
+  reconstruido y validado, usa 731 de 1.350 palabras de LEEME con 44 objetos; no mide el conjunto real ni se cambia
+  el presupuesto por ella (E6).
+- `getAgent` sigue devolviendo 401 por la API nativa, aunque Raúl ve el agente en Designer y `getApplication`
+  funciona por el servlet. Raúl lo ha reportado a Appian y ha decidido aparcarlo. La medición de esta fase excluye
+  esa llamada; el extractor detiene la cola ante errores de acceso/login y conserva la evidencia parcial. No
+  reanudar en bucle una extracción que pide login.
+- La evaluación ciega de malas prácticas ya cumple el criterio fijado: 10/11 visibles, 3/3 ocultas y cero errores o
+  avisos del comprobador tras precisar la comparación de catálogos compartidos. Una auditoría independiente de la
+  propuesta anterior encontró ocho problemas o matices adicionales; valorarlos si se usa esa propuesta para un
+  trabajo real. Resultado y límites en `docs/evaluaciones.md` y
+  `$PROYECTOS_PRUEBA/aplazados-codex-20261019/RESULTADO-MNT-CIEGA.md`.
+- El nuevo enrutado conservador reduce las conexiones ambiguas en las campañas de 1.000 procesos: 126→30 avisos
+  (semilla 11) y 103→38 (semilla 23), sin regresiones por caso ni aumento de dimensiones. Los casos 43/46/677 quedan
+  resueltos, con rutas manuales/importadas protegidas. Persisten 30 y 38 avisos: ampliar el espacio o los candidatos
+  para esos casos requiere otra mejora medida, sin suprimir el detector. Resultado y límites en `docs/evaluaciones.md`.
+- F6 y `devmcp-setup.md` ya documentan `--skip "^testInterface$"` con datos reales; la política permite esa prueba
+  en desarrollo con datos ficticios. La exclusión no borra respuestas de pantalla guardadas en otra lectura.
+- Revisar las URL fijas `/help/26.6/` de `data-fabric.md`, `devmcp-setup.md` y `agents/data-modeler.md` cuando cambie
+  la versión del Appian MCP Server.
+
+## Comprobaciones pendientes de los cambios terminados
+
+- Contraste sobre imagen medido: cuatro textos visibles cumplen el umbral; ocho apariciones detrás de diálogos están
+  ocultas y no cuentan como contenido visible. El auditor automático aún no mide ese fondo compuesto.
+- Medir en CI la batería completa con la concurrencia limitada y los tiempos por grupo (E7). La pareja QA y
+  refactorización pasa en serie y en paralelo; esa mejora local no acredita aún el tiempo del conjunto.
+
+## Pasos de Raúl
+
+- La antigua skill suelta `~/Proyectos IA/appian-reverse-engineering` quedó descartada: Raúl confirmó que ya no existe
+  ni se usa. No hace falta archivarla ni avisar por ella.
+- Avisar a Appian de que `LCP_TOOL_MODE=readonly`, descrito en su documentación, no está en Dev MCP 26.6.110
   (`docs/evaluaciones.md`, «Fase 2 · T5»).
-
-## Ingeniería inversa (del recién llegado de la 0.7.0-beta.3)
-
-- Un proceso de 130 nodos no cabe en el presupuesto de su `.md` (1.350 palabras) con «cada nodo citado» de
-  `agents/process-modeler.md`: decidir si el presupuesto crece con los nodos o el paso a paso agrupa lo repetido.
-- `references/mermaid-rules.md`: «como mucho 5 cajas por capa» no garantiza el ancho de la arquitectura; partirla en dos
-  no encaja con `arquitectura-<capa>.mmd`.
-
-## Pruebas del plugin
-
-- Medir cuánto tarda cada grupo de `comprobar_plugin.py --completo` y lanzarlos en paralelo; con la misma batería,
-  Windows tarda el doble que Linux (17 y 8,5 minutos en GitHub).
-
-## Del método L.U.C.I.A. (14 de octubre de 2026)
-
-Lo que salió al ejecutar `docs/plan/2026-10-14-metodo-lucia.md` y no entra en él.
-
-- `leer_fuentes.py --help` y `unir_modulos.py --help` salen con los acentos rotos en Windows (pasan la consola a UTF-8
-  después de leer los argumentos); en `proyecto.py` ya está corregido.
-- Issues sin Dev MCP: una issue solo queda hecha con lo que deja «verificar». Quien construye a mano sin Dev MCP sigue
-  el índice y marca la unidad con `--manual`, pero `indice.py issues --siguiente` no pasa de las que no dependen de
-  otra. Si un equipo trabaja así, falta poder dar una issue por hecha a mano.
-- Issues: las dependencias salen de los objetos que dos issues comparten o que el técnico nombra al hablar de una; si el
-  técnico las da de más, van en serie issues que podrían ir a la vez, y no hay cómo corregirlo a mano.
-- Issues: el número de una issue que deja de existir se vuelve a dar si era el mayor de su unidad.
-- Un `.eml` con finales de línea de Windows deja el retorno de carro (`\r`) en su `FU-nn.md`: viene de la lectura y sale
-  igual en todos los sistemas, pero ensucia el fichero.
-- Ingeniería inversa: la extracción no usa la herramienta de dependientes del Dev MCP real (`getObjectDependents`): su
-  parámetro se llama `object` y el extractor no lo reconoce como el uuid del objeto (alcance manual). `verificar` sí la
-  usa. Decidir si la extracción la llama: una llamada más por objeto.
-- Pruebas de la issue: «no evaluable» reconoce solo la rejilla de registros con filtros de usuario
-  (`flow!userFilterSetData`, `devmcp_policy.json`). Si aparece otro límite del ejecutor de Appian, se añade allí.
-- `verificar` no comprueba quién ve una acción de registro ni quién inicia un proceso: en el ensayo de QA (T16) habría
-  cazado dos de los cuatro defectos sembrados.
-- QA: `qa.py` dice «ISS-nn vuelve a pendiente» aunque el escenario esté marcado como no necesario (no lee el índice);
-  quien manda es `issues.estado()`, que sí lo respeta.
-- Issues: un process model con varias actividades en «Para» junta en una sola issue varias historias y pantallas (en el
-  proyecto de prueba, el 64 % del técnico); si molesta al construir, partirla por actividad.
-- Analista: `indice.py impacto` da el texto de la fila de técnico §13 pero no en qué línea va; en el retoque a ciegas
-  cuesta dos llamadas por pasada encontrarla.
-- Evaluaciones: `montar.py` de `pruebas/evaluaciones/` monta los proyectos sin `proyecto.py iniciar`, así que `estado`
-  avisa en ellos de que faltan git y `AGENTS.md`; montarlos como los deja el plugin.
-
-## Menores
-
-- Diagramas: la salida de una puerta que comparte el tramo de su derecha sale ya por su vértice (el codo) y su etiqueta
-  va en un tramo suyo; en 1.000 procesos al azar (semilla 11 del generador de `selftest.py`) quedan 8 (antes, 46) con
-  una etiqueta donde pasa otro flujo: puertas con tres o más salidas por la derecha, con salidas por los tres vértices y
-  el hueco lleno, o cuyo codo añadiría un cruce.
-- Las URL de la documentación de Appian con versión fija (`/help/26.6/`) en `references/data-fabric.md`,
-  `devmcp-setup.md` y `agents/data-modeler.md` son del Appian MCP Server: revisar al cambiar de versión.
+- Las seis tablas `cpr_*` de P6 dejan de figurar como borrado pendiente: Raúl indica que probablemente ya las borró y
+  no encuentra ninguna con ese nombre en su consola. No se ha comprobado el catálogo desde esta sesión ni se hará
+  un borrado adicional sin identificar de nuevo una tabla concreta.
+- Conciliar el índice del cerebro corporativo: marca 1.692 reuniones transcritas y se encontraron 1.095 en disco.
+  Copilot lleva esta tarea; comprobar su resultado antes de darla por cerrada, sin editar el índice a la vez.

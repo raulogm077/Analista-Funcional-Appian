@@ -132,7 +132,7 @@ Los pinta la skill de diagramas del plugin (`<diagramas>` = `<skill>/../appian-d
 1. **Pasada de coherencia** (`references/execution-principles.md`, sección 5): corrige en su sitio las contradicciones entre documentos, fusiona duplicados (hallazgos y NV) y quita severidades repetidas. Completa en `01`–`11` las menciones a otras áreas con el ID canónico del hallazgo o del NV y su enlace. Nada de notas de parche. Termina con `build_registry.py` sin errores.
 2. `python3 <skill>/scripts/build_summary.py <salida>` → `<trabajo>/summary.json`, la fuente de las cifras de `LEEME` y de los publicadores.
 3. Escribe con sus plantillas:
-   - `INVENTARIO.md`: todos los objetos con su uuid, enlace al anexo y para qué sirven, y la cobertura de la extracción.
+   - `python3 <skill>/scripts/build_inventario.py <salida>` escribe `INVENTARIO.md` y la tabla de huérfanos de 09. Completa las celdas «Para qué» que avise (inferencia con 🔶) y los enlaces a PAN/RN: al repetir conserva «Nombre», «Para qué» y «Pantalla» por uuid. La prosa va fuera de los marcadores de las plantillas. Un documento antiguo sin marcadores se migra comparando `--borrador`, sin sobrescribirlo.
    - `LEEME.md`, la entrada a la documentación: de `summary.json`, las cifras, la confianza y su motivo, los procesos críticos, los hallazgos principales y el uso real; y las preguntas de esta revisión, por dónde empezar, cómo leer y lo que no incluye (cada línea, solo si es verdad en esta extracción).
 4. `python3 <skill>/scripts/build_datos.py <salida>` → `<salida>/datos/`, lo que leen las demás skills (`references/datos.md`), y la tabla «Sin verificar» de `LEEME.md`. Si da error con un NV, corrígelo en el JSON de su agente y repítelo.
 
@@ -217,7 +217,7 @@ Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `a
 | `assets/markdown-templates/*.md` | Base de cada documento. |
 | `scripts/devmcp_extract.py`, `devmcp_policy.json` | Fases 0–2. |
 | `scripts/build_model.py`, `build_annex.py` | Fase 3. |
-| `scripts/build_registry.py`, `build_summary.py`, `build_datos.py` | Fases 4.3, 6 y 8. |
+| `scripts/build_registry.py`, `build_summary.py`, `build_inventario.py`, `build_datos.py` | Fases 4.3, 6 y 8. |
 | `scripts/detect_secrets.py` (o `.sh`), `comprobar_asis.py` | Fases 3 y 8. |
 | `<skill>/../appian-diagramas-bpmn/scripts/diagrama.py` y `mermaid.py` | Fases 4 y 5: procesos en draw.io y BPMN; Mermaid. |
 

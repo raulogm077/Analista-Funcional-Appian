@@ -214,7 +214,10 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
                 if nombre and nombre not in conocidos:
                     e(n, f"`{nombre}` no es un objeto del inventario ni se cita con uno")
         for n, l in numeradas if prefijo and con_tablas else []:
-            for m in en_prosa.finditer(prosa(l)):
+            linea_prosa = prosa(l)
+            for conocido in sorted((x for x in con_slug if x), key=len, reverse=True):
+                linea_prosa = re.sub(rf"(?<![\w!/]){re.escape(conocido)}(?!\w)", " ", linea_prosa)
+            for m in en_prosa.finditer(linea_prosa):
                 nombre = nombre_citado(m.group(0), prefijo, con_slug)
                 if nombre and nombre not in con_slug:
                     e(n, f"`{nombre}` no es un objeto del inventario ni se cita con uno")
@@ -440,6 +443,9 @@ def redaccion(salida: Path, textos: dict[str, str], cuentas: dict, avisos: list)
 
 
 def main(argv: list[str]) -> int:
+    if argv in (["--help"], ["-h"]):
+        print(__doc__)
+        return 0
     if len(argv) != 1:
         print(__doc__, file=sys.stderr)
         return 2

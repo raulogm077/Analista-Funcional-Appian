@@ -20,10 +20,12 @@ def work_dir(out, crear: bool = False) -> Path:
 
 
 def escribe(ruta, texto: str) -> None:
-    """Escribe un fichero de texto en UTF-8 con finales de línea \\n en cualquier sistema (write_text() los pone \\r\\n
-    en Windows): en un proyecto que comparten varios equipos, reescribirlo no cambia todas sus líneas."""
-    with open(ruta, "w", encoding="utf-8", newline="\n") as f:
-        f.write(texto)
+    """UTF-8: conserva CRLF al reescribir; un fichero nuevo usa LF en todos los sistemas."""
+    p = Path(ruta)
+    anterior = p.read_bytes() if p.exists() else b""
+    salto = "\r\n" if b"\r\n" in anterior else "\n"
+    with open(p, "w", encoding="utf-8", newline="") as f:
+        f.write(texto.replace("\r\n", "\n").replace("\n", salto))
 
 
 def safe_name(s: str, maximo: int = 48) -> str:

@@ -127,6 +127,7 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   `--fresh`), `navigate`, `interact`, `back` y `show`; `--confirm` va en la orden si el destino lo pide. Una fila de una
   rejilla se marca por su contenido, `{"rol": "revisor", "selecciona": "QA {pasada}"}`, nunca por el número que le dio
   Appian. Con un solo rol, «rol» se puede omitir.
+- Para cambiar de página del site: `"sail": ["load", "<página>"]`; `load` sin página recarga la predeterminada.
 - **`espera`**: `"completado": true` (el formulario se envió); `"hay"` y `"no_hay"`, refs o etiquetas, o su principio;
   `"texto"` y `"sin_texto"`, en lo que se ve de la página y en sus validaciones; `"fila": {"con": "…", "<columna>":
   "<valor o su principio>"}`, una fila de una rejilla que lleva ese texto y tiene esos valores, y `"sin_fila": "…"`,

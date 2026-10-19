@@ -71,6 +71,15 @@ def test_documento_correcto(tmp_path):
     assert comprueba(as_is(tmp_path)) == ([], [])
 
 
+def test_aplicacion_con_guion_en_prosa(tmp_path):
+    salida = as_is(tmp_path, {"02-arquitectura.md": "# Arquitectura\n\nDEM_Nombre - Texto organiza las solicitudes.\n"})
+    p = salida / "datos" / "inventario.json"
+    d = json.loads(p.read_text(encoding="utf-8"))
+    d["aplicacion"]["nombre"] = "DEM_Nombre - Texto"
+    p.write_text(json.dumps(d), encoding="utf-8")
+    assert comprueba(salida) == ([], [])
+
+
 def test_objeto_inventado(tmp_path):
     salida = as_is(tmp_path, {"02-arquitectura.md": "# Arquitectura\n\nLa regla `DEM_ER_Inventada` calcula el plazo y "
                                                     "`rule!DEM_ER_Otra()` la avisa.\n"})

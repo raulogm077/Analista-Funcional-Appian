@@ -16,12 +16,13 @@ pasado a producción ni se ha descartado: Abierta, Aprobada o Construida.
 
 Un cambio sobre la aplicación es una unidad: `EV-nn` (un evolutivo; también la construcción inicial de una aplicación
 nueva y cada fase de una refactorización) o `URG-nn` (un cambio urgente). Se registran en `analisis/cambios.md`, que solo
-escribe `proyecto.py cambio` (`<p>`, el proyecto). Cada error dice la salida.
+escribe `proyecto.py cambio` (`<p>`, el proyecto). Antes de aprobar la construcción inicial, pasa técnico §13 de lista
+a tabla de objetos con «Cambio» y «Para» (`tecnico-plantilla.md` §13). Cada error dice la salida.
 
 | Orden | Estado | Cuándo | Bloquea si… |
 |---|---|---|---|
 | `cambio <p> EV-02 abrir --titulo "…"` | Abierta | Empieza el cambio | ya existe |
-| `… aprobada --fuente FU-nn [--comparte "…"]` | Aprobada | El jefe de proyecto aprueba la unidad entera, con su alcance y coste; su aprobación (chat o correo) es la fuente FU-nn. Deja escritas sus issues de construcción (§5) y, si cambia datos, permisos, procesos en curso o lo que usan otros (los puntos de «Cambio sobre lo construido», §4), o usa IA, avisa: «que una persona revise DT-nn antes de construir», también en su issue. Es un aviso, no frena nada | hay puntos «Pendiente» en sus informes; o un objeto suyo de §13 está también en otra unidad Aprobada o Construida sin una decisión escrita (`--comparte "EV-03 en X: secuenciar (EV-02 primero)"`), salvo que las dos solo cambien en él el nombre de una acción, una vista o un filtro (§4): eso se avisa |
+| `… aprobada --fuente FU-nn [--comparte "…"]` | Aprobada | El jefe de proyecto aprueba la unidad entera, con su alcance y coste; su aprobación (chat o correo) es la fuente FU-nn. Deja escritas sus issues de construcción (§5) y, si cambia datos, permisos, procesos en curso o lo que usan otros (los puntos de «Cambio sobre lo construido», §4), o usa IA, avisa: «que una persona revise DT-nn antes de construir», también en su issue. Es un aviso, no frena nada | hay puntos «Pendiente» en sus informes; comparte una pieza con otra unidad Aprobada aún sin construir (§1); o un objeto suyo de §13 está también en otra unidad Construida sin una decisión escrita (`--comparte "EV-03 en X: secuenciar (EV-02 primero)"`), salvo que las dos solo cambien en él el nombre de una acción, una vista o un filtro (§4): eso se avisa |
 | `… construida [--reaplicada URG-nn …] [--manual]` | Construida | Todas sus issues, construidas y verificadas en desarrollo, con sus pruebas y, si tiene escenarios, su QA (§6); si el QA falta o está a medias, lo avisa, sin impedirlo. La regresión va después, antes de preparar el paquete (`indice.py issues <p> EV-02 --regresion`) | no está Aprobada; ha crecido desde que se aprobó; alguna issue no está hecha (dice cuál y por qué, también si un escenario suyo falla en el QA; con `--manual`, sin Dev MCP, no se mira, y la marca lo dice); o falta confirmar una corrección urgente que hay que reaplicar |
 | `… produccion --ref "<pase>" --fecha <AAAA-MM-DD del pase>` | En producción | Tras el pase | no está Construida |
 | `… descartada [--informe impacto/FU-nn.md]` | Descartada | No se hace | no está Abierta; o tiene algo aplicado y no se da el informe (aplicado) que lo deshace, o §13 sigue con sus filas |
@@ -29,7 +30,19 @@ escribe `proyecto.py cambio` (`<p>`, el proyecto). Cada error dice la salida.
 **Aprobar guarda con qué se aprueba** (la versión y sus informes, en la celda de su ID). Una fuente nueva para una
 unidad Aprobada (otro informe con su `Cambio:`, o un punto «Pendiente») la devuelve a aprobación: `issues` y
 `construida` fallan con «ha crecido desde que se aprobó» hasta que se vuelve a aprobar con `--fuente`. Si no conviene,
-lo nuevo va en otra unidad. Sin `--fuente`, de Construida se vuelve a Aprobada cuando una urgencia obliga a reaplicar.
+lo nuevo va en otra unidad. Si comparte una pieza aún sin construir, se secuencia: la segunda queda **Abierta** y
+su cambio en el informe previo, sin sustituir todavía el texto funcional o técnico de esa pieza. Primero se construye
+la anterior; después se aplica y se aprueba la segunda unidad entera. No hay aprobación parcial: otras unidades y
+piezas independientes pueden continuar. `--comparte` no permite aprobar dos encargos pendientes con distinto texto
+de la misma pieza. Las menciones de contexto y objetos que solo «Existen» no son cambios.
+
+Las issues copian el texto vigente. Al regenerar, las huellas por pieza y objeto guardadas en su esperado detectan
+si se alteró contenido compartido: el rechazo conserva las issues y sus esperados. No guardan versiones históricas
+por unidad ni impiden cualquier edición manual. Si alguien ya cambió esa pieza, recupera el encargo anterior de git
+o `versiones/`, o reasigna el cambio a la primera unidad y vuelve a aprobarla. En proyectos anteriores, sin huellas,
+solo se incorporan si la versión y el encargo guardado siguen iguales; si falta esa evidencia, se pide recuperarla.
+Dos propuestas Abiertas pueden coexistir y la primera aprobarse si el cambio de la otra aún no está aplicado.
+Sin `--fuente`, de Construida se vuelve a Aprobada cuando una urgencia obliga a reaplicar.
 Con `--desatendida` no se aprueba ni se pasa a producción sin el visto bueno del jefe de proyecto; si lo da (también
 en lo que se le pide a la sesión), se cataloga como fuente de tipo Aprobación y se pasa con ella. Tampoco se marca Construida con `--manual`, que no mira las issues ni sus pruebas. «En producción» registra un pase
 que ya ha ocurrido: lo que quede por comprobar se apunta, no lo frena. `proyecto.py estado` imprime
@@ -42,6 +55,13 @@ las unidades en curso con sus fuentes, versiones y objetos (no se guardan: se de
   punto.
 - Sus piezas: los IDs de «Aplicado» y de «Cambio propuesto» de esos puntos.
 - Sus objetos: las filas de técnico §13 con su ID en la columna «Cambio» (§4).
+
+Una fuente que toca dos unidades, en su informe (se muestran las columnas que reparten el cambio):
+
+| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión | Cambio |
+|---|---|---|---|---|---|---|---|---|
+| 1 | COMPLETA | Añadir la fecha al listado [FU-09] | PAN-01 | Mostrar fecha | T §7 | No | ✔ | EV-02 |
+| 2 | COMPLETA | Aclarar el aviso de cierre [FU-09] | AV-02 | Cambiar el texto del aviso | T §9 | No | ✔ | EV-03 |
 
 **Línea base.** Lo construido es el análisis inicial (en una aplicación ajena, el de `as-is/`) más las unidades
 Construidas; lo que hay en producción, el inicial más las unidades En producción.
@@ -134,7 +154,37 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
   `appian-best-practices`. Se escriben solas al aprobar la unidad y `indice.py issues` las vuelve a generar: con los
   mismos datos salen las mismas, y si el análisis cambia cada una conserva su número. No se editan. Sirven a Claude, a
   otros agentes y a personas. No se generan si la unidad no está aprobada o ha crecido desde que se aprobó. Un técnico
-  cuyo §13 aún no dice «Para» da una sola issue con toda la unidad.
+  con tabla en §13 pero sin columna «Para» da una sola issue con toda la unidad; con lista, hay que pasarla a tabla
+  antes de generar issues. Si se aprobó antes de hacerlo, tras completar la tabla ejecuta `indice.py issues <p> <U>`.
+
+Si una dependencia calculada sobra o falta, una persona puede fijar la **lista exacta** de esa issue:
+`indice.py issues <p> EV-02 ISS-03 --depende-de ISS-01 ISS-02 --motivo "…" --quien "…"`.
+`--depende-de ninguna` deja la lista vacía; `--dependencias-automaticas` retira la corrección. No decide qué objetos
+están construidos ni cierra ninguna issue: cambia el orden y recalcula cuáles pueden ir en paralelo y cuál sigue.
+Se rechazan referencias inexistentes, a la propia issue y ciclos en el grafo completo, también al retirar una corrección.
+Con `--desatendida` no se admite; el motivo debe explicar por qué se puede construir en ese orden.
+
+La tabla «Correcciones de dependencias» de `construccion/<U>/indice.md` conserva la lista, motivo, autor, fecha y
+versiones de la issue y de sus dependencias originales y corregidas. Si cambia cualquiera de esos encargos, desaparece
+una issue relacionada o cambia la lista calculada, la anotación queda **caducada**, se avisa y vuelve el cálculo
+automático. No se reactiva sola aunque el análisis vuelva al texto anterior: una persona revisa el nuevo encargo y
+registra otra decisión. Las anotaciones caducadas, retiradas y sustituidas quedan visibles como rastro.
+
+**Retomar una issue por subtareas.** Si sus objetos se reparten en varios pasos de §13, la issue muestra una
+subtarea por paso. Conserva una sola reserva, propietario, conjunto de objetos y verificación: no son issues nuevas
+ni generan dependencias. Un objeto que aparece en varios pasos se agrupa una vez, cita sus pasos originales y
+conserva todas las instrucciones de sus filas. Si falta un reparto completo o solo hay un paso, no añade subtareas.
+
+Quien construye, persona u otro agente, guarda el avance con
+`indice.py issues <p> EV-02 ISS-03 --subtarea "5" --avance hecha --quien "sesión de Ana"`.
+`--avance pendiente` deshace la marca. No pide motivo ni aprobación y admite `--desatendida`: declara progreso,
+no verifica ni cierra. Abrir la issue o pedir `--siguiente` muestra el primer paso pendiente; aunque todos estén
+declarados hechos, la issue sigue necesitando su verificación o cierre humano y las puertas de pruebas y QA.
+
+La tabla «Avance de subtareas» del índice guarda paso, objetos, versión, autor y fecha. Si cambia el encargo o el
+reparto, mantiene las anotaciones como **Revisar** y dejan de contar. Tras revisar cada paso se vuelve a marcar
+para la versión vigente; las antiguas quedan como rastro. El avance se comparte con el mismo mecanismo de git
+del índice: si no se pudo subir, la salida dice que solo quedó en esa copia.
 
 ## 6. Construir, verificar y marcar
 
@@ -147,26 +197,42 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
    repositorio, o está dentro de otro, sin reservar; con una fusión o un rebase a medias, sin reservar ni tocar git
    (termínala y vuelve a pedirla). El nombre es el de git; dos sesiones con el mismo se distinguen con `--quien
    <nombre>`, y con él una sesión que se reinicia recupera la suya: quien pide con `--quien` y ya tiene una reservada
-   a ese nombre sin hacer recibe esa, no otra.
+  a ese nombre sin hacer recibe esa, no otra. Si cambió desde su reserva, avisa de que debe releerla.
+  Al regenerar se listan las issues cambiadas y quién las tiene; al abrir una issue que depende de otra pendiente,
+  el encabezado dice a cuál espera.
    `--liberar ISS-nn` quita la reserva de una issue que nadie va a seguir. El push sube también los commits que esa
    copia tuviera sin subir.
 2. **Construir** la issue en desarrollo (en una urgencia, en el entorno de corrección): `appian-best-practices` (que la
    lee como alcance) y el Dev MCP, o una persona.
 3. **Verificar** (solo lectura): la orden de la issue, que es el atajo «Verificar» de `appian-reverse-engineering` con
    lo esperado de la issue y con su resultado en `construccion/EV-02/verificacion/ISS-nn.json`. Comprueba que cada
-   objeto existe, su tipo, de record types y CDT los campos de esta unidad (de uno que se modifica, que tenga más
-   campos que los suyos no cuenta) y, de una acción de registro, su nombre y su tipo (de la tabla de acciones de técnico
+   objeto existe, su tipo, de record types y CDT los campos de esta unidad (los campos adicionales no bloquean,
+   también en objetos nuevos) y, de una acción de registro, su nombre y su tipo (de la tabla de acciones de técnico
    §7); la fecha de última modificación es un dato, no una prueba. Si no pudo leer algo, se repite.
+   **Permisos**: compara los roles y grupos declarados de procesos (§4) y la configuración simple de visibilidad
+   de acciones (§7), como indica `tecnico-plantilla.md`. Lo ilegible o no decidible sale **no comprobado**; no acredita
+   acceso efectivo y sigue requiriendo QA con cada rol. Una diferencia confirmada deja la issue pendiente, también
+   con cierre manual de issue o unidad. Corregir y verificar, o una persona acepta expresamente ese comportamiento:
+   `indice.py issues <p> EV-02 ISS-nn --aceptar-permiso PER-huella --motivo "…" [--quien "…"]` (la huella la muestra
+   el estado). La aceptación guarda objeto, versión de issue, configuración esperada/observada, entorno, motivo,
+   persona y fecha; no modifica el resultado de verificación ni tapa otra diferencia, pruebas o QA. Otra versión,
+   objeto, entorno o hallazgo vuelve a bloquear. `--revocar-permiso PER-huella` la retira; las decisiones caducadas
+   y revocadas permanecen en el índice y se revisan antes del paquete. Ambas órdenes se niegan con `--desatendida`.
    **Sus pruebas**: si la issue cambia criterios o reglas, `verificar` ejecuta los casos de prueba guardados de sus
    reglas e interfaces y de lo que las usa (los dependientes directos); si no, ninguno, y lo sabe por lo esperado. Un
-   caso suyo que falla la deja pendiente; uno de lo que las usa es un aviso, y uno que el ejecutor de Appian no sabe
+   caso suyo que falla la deja pendiente, también un objeto nombrado como caso de prueba en técnico §14 que no tenga
+   casos guardados; uno de lo que las usa es un aviso, y uno que el ejecutor de Appian no sabe
    evaluar (una rejilla de registros con filtros de usuario), otro. Si una persona decide que una prueba que falla no es
    necesaria para avanzar, la marca con su motivo: `indice.py issues <p> EV-02 ISS-nn --sin-prueba "<objeto> «<caso>»"
-   --motivo "…"`. Queda en el índice de la unidad, vale para esa versión de la issue y ese error (si cambia una de las
+   --motivo "…"` (para los ausentes, `<objeto> «casos exigidos ausentes»`). Queda en el índice de la unidad, vale para esa versión de la issue y ese error (si cambia una de las
    dos, o el caso vuelve a pasar, se quita sola) y se revisa al preparar el paquete; con `--desatendida` se niega. Si el
    Dev MCP no ejecuta casos, o no pudo ejecutar los de la issue, la issue no espera: sus pruebas, a la regresión.
-   **Una issue está hecha** cuando su última verificación pasa y es de su versión de ahora: si al volver a generarla
-   cambia lo que hay que construir o comprobar, vuelve a estar pendiente. No hay otro estado que mantener: su reserva se
+   **Una issue está hecha** cuando su última verificación pasa y es de su versión de ahora, o una persona registra su
+   cierre manual: `indice.py issues <p> EV-02 ISS-nn --manual --motivo "…" [--quien "…"]`. Queda quién, cuándo,
+   por qué y para qué versión se aceptó; permite continuar sus dependencias y se identifica como cierre manual.
+   Los fallos vigentes de pruebas o QA siguen necesitando corregirse o su excepción separada `--sin-prueba`.
+   `--automatico` retira el cierre; con `--desatendida` no se admite cerrarla manualmente. Si al volver a generarla
+   cambia lo que hay que construir o comprobar, vuelve a estar pendiente. Su reserva se
    quita sola, y `indice.py issues <p> EV-02` dice cómo va cada una.
 4. **QA**, con todas hechas y si la unidad tiene escenarios (un retoque no los tiene): en otra sesión y solo con sus
    `.feature`, `appian-qa` recorre cada escenario con SAIL CLI como cada rol, deja su guion en `qa/EV-02/` y lo repite
@@ -177,7 +243,8 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
 5. **Marcar**, con todas hechas y su QA: `proyecto.py cambio <p> EV-02 construida` (la orden de la última issue la
    trae; si la unidad tiene escenarios, en una nota, para después del QA, y `construida` avisa si falta o está a medias)
    y, tras el pase, `… produccion --ref "<pase>" --fecha <AAAA-MM-DD>`. Sin Dev MCP no hay verificación: construye una
-   persona siguiendo el índice y la unidad se marca con `--manual`.
+   persona siguiendo el índice y cierra cada issue con `--manual --motivo`. El cierre de la unidad identifica cuáles
+   se aceptaron manualmente. El `--manual` de la unidad sigue disponible y lista las issues que quedan pendientes.
 6. **Regresión**, antes de preparar el paquete: la orden que da `indice.py issues <p> EV-02 --regresion` (el atajo
    «Regresión» de ingeniería inversa) ejecuta todos los casos de prueba de la aplicación y deja el resumen en
    `construccion/EV-02/regresion.json`; por la salida, solo lo que falla. Si el Dev MCP no ejecuta casos, se pasa en
