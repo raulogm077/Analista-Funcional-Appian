@@ -691,7 +691,8 @@ def c_issues(m, a):
         print(como)
         print("\n".join(iss.texto_avance(plan, issue)))
         return
-    if a.regresion and a.depende_de is None and not a.dependencias_automaticas:
+    if (a.regresion and a.depende_de is None and not a.dependencias_automaticas
+            and not a.aceptar_permiso and not a.revocar_permiso):
         # una urgencia corregida en el entorno de corrección se prueba allí, con el Dev MCP de ese entorno
         correccion = ctx.por_id[uid].urgente and un.donde_se_corrige(ctx.ficha_urg(uid)) == "correccion"
         orden, notas = iss.orden_de_regresion(m, uid, "corrección" if correccion else "desarrollo")

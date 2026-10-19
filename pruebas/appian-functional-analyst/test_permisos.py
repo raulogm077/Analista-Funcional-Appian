@@ -141,6 +141,42 @@ class Permisos(unittest.TestCase):
         self.assertEqual(c, 0, out)
         self.assertIn("aceptada por Ana", out)
 
+    def test_cli_regresion_no_acepta_ni_revoca_permisos_silenciosamente(self):
+        _, plan = self.preparada()
+        issue = plan.issues[0]
+        _, _, per = self.hallazgo(issue)
+        indice = iss.carpeta(self.p, "EV-01") / iss.INDICE
+        for opcion in ("--aceptar-permiso", "--revocar-permiso"):
+            if opcion == "--revocar-permiso":
+                iss.acepta_permiso(self.p, "EV-01", issue.id, per, "Aceptado", "Ana")
+            antes = indice.read_bytes()
+            c, out = fixture.corre(fixture.S / "indice.py", "issues", self.p, "EV-01", issue.id,
+                                   "--regresion", opcion, per, "--motivo", "Revisado", "--quien", "Ana")
+            self.assertNotEqual(c, 0, out)
+            self.assertIn("Usa ISS-nn", out)
+            self.assertEqual(indice.read_bytes(), antes)
+
+    def test_historial_ilegible_impide_regenerar_sin_perder_filas(self):
+        _, plan = self.preparada()
+        issue = plan.issues[0]
+        _, _, per = self.hallazgo(issue)
+        iss.acepta_permiso(self.p, "EV-01", issue.id, per, "Aceptación que conservar", "Ana")
+        indice = iss.carpeta(self.p, "EV-01") / iss.INDICE
+        original = indice.read_text(encoding="utf-8")
+        inicio, tabla = original.split("## " + iss.PERMISOS, 1)
+        fila = next(l for l in tabla.splitlines() if l.startswith("| " + issue.id + " |"))
+        celdas = mo.celdas(fila)
+        for rotas in (celdas[:-1], celdas + ["celda sobrante"]):
+            with self.subTest(columnas=len(rotas)):
+                indice.write_text(inicio + "## " + iss.PERMISOS + tabla.replace(fila, "| " + " | ".join(rotas) + " |"), encoding="utf-8")
+                antes = {f: f.read_bytes() for f in iss.carpeta(self.p, "EV-01").rglob("*") if f.is_file()}
+                with self.assertRaisesRegex(iss.NoSePuede, "fila ilegible.*permisos"):
+                    iss.permisos_de(self.p, "EV-01")
+                codigo, salida = fixture.corre(fixture.S / "indice.py", "issues", self.p, "EV-01")
+                self.assertNotEqual(codigo, 0, salida)
+                self.assertIn("fila ilegible", salida)
+                self.assertEqual({f: f.read_bytes() for f in iss.carpeta(self.p, "EV-01").rglob("*") if f.is_file()}, antes)
+
     def test_no_comprobado_es_aviso_y_no_aceptable(self):
         _, plan = self.preparada()
         issue = plan.issues[0]

@@ -825,13 +825,17 @@ COLUMNAS_PERMISOS = ["Issue", "Versión", "Objeto", "Hallazgo", "Detalle", "Moti
 def permisos_de(raiz, uid):
     f = carpeta(raiz, uid) / INDICE
     dentro, out = False, []
-    for l in (f.read_text(encoding="utf-8") if f.is_file() else "").splitlines():
+    for numero, l in enumerate((f.read_text(encoding="utf-8") if f.is_file() else "").splitlines(), 1):
         if l.startswith("## "):
             dentro = l == "## " + PERMISOS
-        if dentro and l.startswith("|"):
+        if dentro and l.lstrip().startswith("|"):
+            l = l.strip()
             c = mo.celdas(l)
-            if len(c) == len(COLUMNAS_PERMISOS) and RX_ISSUE.fullmatch(c[0]):
-                out.append(dict(zip(("issue", "version", "objeto", "hallazgo", "detalle", "motivo", "quien", "cuando", "estado"), c)))
+            if c == COLUMNAS_PERMISOS or RX_SEPARADOR.fullmatch(l):
+                continue
+            if len(c) != len(COLUMNAS_PERMISOS) or not RX_ISSUE.fullmatch(c[0]):
+                raise NoSePuede(f"{f}:{numero}: fila ilegible en {PERMISOS}; corrígela antes de reescribir el historial")
+            out.append(dict(zip(("issue", "version", "objeto", "hallazgo", "detalle", "motivo", "quien", "cuando", "estado"), c)))
     return out
 
 
