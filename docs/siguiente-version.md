@@ -10,10 +10,10 @@ La rama de trabajo de esta entrega fue `automejora-pruebas`, con la primera tand
 app de escritorio queda como comprobación visual pendiente, sin bloquear por sí sola la publicación. `getAgent`
 queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medición de esta fase.
 
-## Campaña Codex en curso
+## Campaña Codex: pasada ejecutada y pendientes
 
 La campaña posterior usa una sola rama, `codex/campana-mejora-20261019`, desde `ba275544`; índice y estado
-en `$PROYECTOS_PRUEBA/campana-codex-20261019/`. No está cerrada. La corrección del resumen de impacto alcanza
+en `$PROYECTOS_PRUEBA/campana-codex-20261019/`. La pasada queda documentada con fallos y límites abiertos. La corrección del resumen de impacto alcanza
 el 20 % de reducción mediana de llamadas en el retoque medido 3+3; la ingesta sigue siendo una corrección
 funcional sin ahorro acreditado. No extrapolar esas cifras a los casos restantes.
 
@@ -23,14 +23,27 @@ funcional sin ahorro acreditado. No extrapolar esas cifras a los casos restantes
   pendiente ya está corregido y comparado con ocho casos y el artefacto original; no convierte en correcta
   la ejecución fallida ni justifica añadir instrucciones que ya existen en `urgentes.md`.
 - La actualización incremental de tres dominios conserva decisiones y pendientes; son anexos parciales.
-  Completar la cadena de entregables donde el encargo lo permita, sin convertir la ingesta de 12 reuniones
-  en una síntesis completa. Demo y reserva tienen fallos semánticos; diagrama conserva las ediciones pero
-  tiene recorridos superpuestos. Reparar y repetir los criterios afectados conservando la evidencia inicial.
-- Identificar laboratorio aislado y cuentas por rol antes de construir; QA en otra sesión de Codex con
-  escenarios/sitio/cuentas, sin recibir la solución. F9 acaba en evidencias para revisión humana.
+  Las síntesis de 1/4/12 fuentes y la variante de orden/duplicado están ejecutadas. La variante pierde una
+  contradicción de alcance conservada en los otros lotes: FAIL de reconciliación, con fe de erratas de proyecto.
+  Citas y hashes correctos no acreditan cobertura semántica exhaustiva. La demo reparada conserva los fallos iniciales; sus figuras actuales y quince
+  páginas son legibles, pero el índice PDF sigue sin números. La exportación alternativa de Word no produjo
+  PDF y dejó intacto el DOCX. La reparación del diagrama pasa revisión visual acotada y suite completa de su
+  capacidad con navegador: 145 comprobaciones, exit 0, conservando geometría manual/importada. No elimina
+  todos los avisos de otros casos ni acredita ahorro de tiempo.
+- El DF comentado conserva el requisito aprobado frente a comentario y reuniones; falló al importar la
+  versión inicial y señalar el punto pendiente. La copia corregida pasa seis invariantes independientes.
+  Son fallos de ejecución ante instrucciones existentes: no añadir otra regla por duplicado.
+- El laboratorio ficticio ya está autorizado y construido. Diez casos guardados de reglas pasan; la interfaz
+  tiene verificación estructural y el retoque técnico consume ocho llamadas. El orden de cierre local falló;
+  no corregir retroactivamente la traza ni atribuir a ocho llamadas el coste completo de construcción y QA.
+  QA independiente de implementación detectó dos defectos sucesivos; versión 5 y repetición final: 14 PASS/0 FAIL.
+  El cierre completo supera el límite de 25 llamadas (al menos 91 conocidas); el coste técnico focal no lo
+  sustituye. Roles sin cuenta y efectos internos comprobados por QA siguen NOT MEASURED. F9 acaba en evidencias
+  para revisión humana, sin despliegue ni publicación.
 - La frase de renumeración del registro ya está corregida contra casos de IDs conservados/retirados.
-  Sigue pendiente medir la autonomía sin red del dashboard opcional y terminar el as-is/refactorización
-  acotado. No incorporar material por revisión estática solamente.
+  El as-is y diagnóstico acotados están revisados: inventario parcial, definiciones leídas y no leídas
+  se distinguen, sin forzar una refactorización global. La autonomía sin red del dashboard opcional
+  sigue NOT MEASURED; queda bajo demanda, sin ampliar esta campaña. No incorporar material por revisión estática solamente.
 
 Esta fase es solo Codex; no añade una obligación de Claude. Sigue sin autorizar despliegues, publicaciones,
 envíos o borrados. La batería completa se reserva a CI cuando se autorice el PR.

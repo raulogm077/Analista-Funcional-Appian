@@ -4,6 +4,32 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Campaña Codex: diagramas, laboratorio y volumen (20 de octubre de 2026)
+
+Continuación sobre la misma rama `codex/campana-mejora-20261019`. Astra coordina trabajadores Sol/Luna,
+con encargos y resultados externos en `$PROYECTOS_PRUEBA/campana-codex-20261019/`. El laboratorio ficticio
+cuenta con autorización expresa; el resto de aplicaciones se mantuvo en lectura. No se desplegó,
+publicó, envió ni borró. La oficial `appian` conserva 66/66 huellas de su manifiesto.
+
+| Caso | Resultado y límite |
+|---|---|
+| Diagramas automáticos | Los retornos opuestos y una ruta que atravesaba un evento de borde se separan mediante candidatos que no empeoren cruces o solapes ajenos. El ciclo mínimo reveló falta de margen: se reserva espacio en el carril único automático sin relajar detectores. Caso principal, reservado, ciclo mínimo y actualización manual tienen revisión visual acotada correcta. El vecino original de dos eventos conserva dos avisos previos, sin diferencias en su salida tras el último ajuste; no se declara limpieza global ni aceleración. |
+| DF comentado y reunión posterior | Siete criterios de fidelidad de fuente correctos; la ejecución falló en versión inicial y cabecera. La copia corregida pasa seis invariantes independientes, conservando cuerpo, decisiones y fuentes. Corrección del artefacto, sin añadir reglas duplicadas al plugin. |
+| Demo y Word | La copia reparada corrige semántica de filas y etiqueta, conserva las otras pantallas y exporta figuras actuales. Quince páginas PDF legibles; índice sin números FAIL. La alternativa de Word no produjo PDF y dejó intacto el DOCX. No es un documento definitivo aprobado. |
+| As-is acotado | Se mantienen separados inventario parcial, cinco definiciones leídas y 130 no leídas de tres aplicaciones. Diagnóstico contrastado e interrupción local reanudada, sin extracción masiva ni volver a llamar `getAgent`. No se fuerza una refactorización ni se acredita runtime o lectura completa. |
+| Laboratorio y QA | Dos reglas puras y una interfaz local ficticia. Diez casos guardados de reglas correctos; la QA independiente descubrió fallos de limpieza y de validación al primer clic pese al verde técnico. Versión final 5: regresión técnica correcta y QA focal 14 PASS/0 FAIL. Se conservan las versiones fallidas; el evaluador repite sin recibir implementación. Vista previa, sin sitio publicado; roles sin cuenta NOT MEASURED. F9 acaba en evidencias para revisión humana. |
+| D1/D7 y coste del laboratorio | D1 real FAIL de orquestación por secuencia local de cierre tardía; no se reescribe la traza. D7 conserva avance, pero reserva Git NOT MEASURED en ese montaje. El retoque técnico son ocho llamadas; el alcance completo supera 25 y se registra aparte. No se atribuye al tramo focal el coste de construcción, verificación y QA. |
+| Síntesis de volumen | Cuatro sesiones Sol medium sobre 1/4/12 fuentes y variante de orden con duplicado. 30 hashes y 632 citas localizables, con proyectos separados; revisión semántica por muestras, no exhaustiva. La variante pierde una contradicción de alcance conservada en lotes 4 y 12: FAIL de reconciliación, con fe de erratas externa sin alterar la salida. Tiempos 195,41/574,49/548,17/478,38 s y llamadas 11/24/40/32. Una pasada por caso, sin inferencia de ahorro ni causalidad exclusiva del orden. |
+
+Evidencias: `diagrama-editado/REVISION-FINAL-ROOT.md`, `df-comentado/`, `demo/`, `t3-as-is/`,
+`t4-laboratorio/F9-PAQUETE-REVISION.md` y `t5-sintesis/RESULTADO.md`. El índice y `estado.json`
+fijan el commit y separan PASS, FAIL y NOT MEASURED. Las siete skills y ocho documentos de agentes
+se evalúan sin equiparar lectura de contrato con ejecución. No se añaden agentes ni referencias por intuición.
+
+Suite completa de la capacidad de diagramas, con navegador, **PASS**, exit 0 y 145 comprobaciones emitidas.
+La primera suite fallida por el ciclo mínimo se conserva. Revisión independiente de cuatro PNG y del vecino
+original de dos eventos completada. No se ejecutó `--completo` local: la batería global se reserva a CI al autorizar PR.
+
 ## Campaña Codex: impacto, continuidad y límites de los puntuadores (20 de octubre de 2026)
 
 Continuación de la misma rama y carpeta externa, tras el commit `5d345d6`. Astra coordina y trabajadores
