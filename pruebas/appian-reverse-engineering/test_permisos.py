@@ -99,6 +99,7 @@ def test_pm_ambiguo_heredado_o_ilegible_no_se_toma_por_vacio(cambio):
 class ExtractorFicticio:
     def __init__(self, valor="DEM Gestores", multiple=False):
         self.policy = SimpleNamespace(generic_skip=set())
+        self.interruption = None
         self.calls = []
         self.tools = [SimpleNamespace(name=n, toks=de.tokens(n), role=rol, types=tipos, generic=not tipos)
                       for n, rol, tipos in [("getConstant", "definition", ["constant"]),
@@ -110,6 +111,9 @@ class ExtractorFicticio:
                       "getObjectSecurity": proceso()["seguridadInicio"]}
 
     def usable(self, scope): return self.tools
+
+    def check_interrupted(self):
+        de.Extractor.check_interrupted(self)
 
     async def run_call(self, t, scope, obj):
         self.calls.append((t.name, obj["uuid"]))

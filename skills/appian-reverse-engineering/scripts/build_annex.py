@@ -275,7 +275,7 @@ def main(salida_dir: str) -> int:
         gl += ["", f"Hubs (5 o más referencias entrantes): {hubs or 'ninguno'}.",
                f"Sin referencias entrantes y sin ser punto de entrada: {orph or 'ninguno'}.", ""]
         escribe(anexo / "grafo.md", "\n".join(gl))
-    # El anexo se reconstruye entero: conserva también el salto anterior de las fichas que siguen existiendo.
+    # El anexo se regenera entero: conserva también el salto anterior de las fichas que siguen existiendo.
     for rel in crlf:
         p = anexo / rel
         if p.exists():
