@@ -180,8 +180,29 @@ def comprobar_caso(base: Path) -> list[str]:
     return mal
 
 
-def main() -> int:
+def prueba_destino() -> int:
+    from puntuar import donde_es
+    casos = [
+        ("Pendiente: el equipo debe decidir Desarrollo o Entorno de corrección después de resolver la colisión con EV-02.", ""),
+        ("Por decidir: Entorno de corrección", ""),
+        ("Desarrollo o Entorno de corrección", ""),
+        ("Desarrollo / Entorno de corrección", ""),
+        ("Entorno de corrección [FU-06].", "correccion"),
+        ("Entorno de corrección; pendiente la prueba del importe", "correccion"),
+        ("Desarrollo", "desarrollo"),
+        ("", ""),
+    ]
     fallos = 0
+    for valor, esperado in casos:
+        obtenido = donde_es({"donde se corrige": valor})
+        bien = obtenido == esperado
+        fallos += not bien
+        print(("OK   " if bien else "FALLO ") + f"destino {valor!r}: {obtenido!r}, esperado {esperado!r}")
+    return fallos
+
+
+def main() -> int:
+    fallos = prueba_destino()
     with tempfile.TemporaryDirectory(prefix="puntuar con espacios ") as t:
         t = Path(t)
         base = t / "base" / "DEM urgencia"

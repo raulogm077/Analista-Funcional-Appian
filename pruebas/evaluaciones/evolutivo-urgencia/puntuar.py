@@ -109,9 +109,11 @@ def ficha_de(p: Path, u) -> tuple[str, dict]:
 
 def donde_es(campos: dict) -> str:
     """«correccion» o «desarrollo», como lo lee el plugin (unidades.donde_se_corrige); "" si no dice una de las dos o
-    sigue con las dos opciones de la plantilla («Desarrollo / Entorno de corrección»)."""
+    sigue pendiente de decidir o con las dos opciones de la plantilla."""
     valor = norm(campos.get("donde se corrige", ""))
-    return "" if re.search(r"desarrollo\s*[/·|]\s*entorno", valor) else un.donde_se_corrige(campos)
+    sin_elegir = re.match(r"(?:pendiente|por decidir|sin decidir)\b", valor) or re.search(
+        r"desarrollo\s*(?:[/·|]|\bo\b)\s*entorno", valor)
+    return "" if sin_elegir else un.donde_se_corrige(campos)
 
 
 def contenido(texto: str) -> str:

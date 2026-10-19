@@ -19,8 +19,9 @@ funcional sin ahorro acreditado. No extrapolar esas cifras a los casos restantes
 
 - D1/D7/C8 y sus tres reservados ya tienen sesiones locales terminadas; no repetir por las interrupciones
   anteriores. Enrutado y retoque 3+3 terminados con Luna. Mantener Astra como orquestador solicitado.
-- Urgencia visible/reservada falla por ejecución incompleta y hay un falso positivo del puntuador de entorno
-  pendiente; corregir y comparar el evaluador sin añadir instrucciones que ya existen en `urgentes.md`.
+- Urgencia visible/reservada falla por ejecución incompleta. El falso positivo del puntuador de entorno
+  pendiente ya está corregido y comparado con ocho casos y el artefacto original; no convierte en correcta
+  la ejecución fallida ni justifica añadir instrucciones que ya existen en `urgentes.md`.
 - La actualización incremental de tres dominios conserva decisiones y pendientes; son anexos parciales.
   Completar la cadena de entregables donde el encargo lo permita, sin convertir la ingesta de 12 reuniones
   en una síntesis completa. Demo y reserva tienen fallos semánticos; diagrama conserva las ediciones pero
