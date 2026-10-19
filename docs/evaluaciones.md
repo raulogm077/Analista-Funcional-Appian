@@ -16,7 +16,15 @@ el cierre de los cambios que el plan mantiene en curso.
 | Borrador automático de §13 (E1) | P10 tiene 141 objetos. Buscar nombres literales encuentra 91, pero no identifica su función. Leer únicamente columnas de definición produce 51 candidatos: 50 objetos correctos (35,5 % del total) y un campo que no es objeto. No se añade un generador general con esa cobertura; situación, cambio, finalidad y objetos restantes necesitan interpretación. |
 | Dependencias corregidas por una persona (E2) | En copia de P10 se retira una arista y se restaura el cálculo automático, conservando versiones y objetos. Historial con motivo, actor y fecha; ciclos rechazados; correcciones caducan al cambiar el encargo o las dependencias relacionadas. 95 ficheros originales conservan su SHA256. |
 | Suite analista tras E2 | 393 comprobaciones correctas, incluidos siete casos nuevos de correcciones. PDF con LibreOffice sigue sin medirse. |
+| Suite analista integrada | 399 comprobaciones correctas, exit 0, 498,3 s, tras integrar D1, D7, C8 y la lectura interrumpida. Incluye sus regresiones focales; PDF con LibreOffice sigue sin medirse. |
+| Inversa integrada | Corrida completa: 243 correctas, ocho fallos y dos omisiones, en 689,8 s. Siete fallos eran el simulador de permisos sin el nuevo método de interrupción; otro, un comentario que activaba el detector de vocabulario. Corregidos, los dos módulos pasan sus 23 casos (quince ya habían pasado). El caso Mermaid omitido por falta de Playwright en uv pasa aparte con Python local. Resultado conjunto: 252 casos distintos correctos; solo se omite el wrapper exclusivo de POSIX. La corrida completa inicial no se registra como verde. |
 | Tamaño de issues (D7) | 25 issues: mediana de 63 líneas; Base, 289 líneas y 68 objetos. Dos agrupadas tienen 19 objetos/20 requisitos y 13 objetos/12 requisitos. No se decide la partición solo por longitud. |
+| Subtareas (D7) | 13 de esas 25 issues reciben 43 subtareas derivadas de §13; las doce de un solo paso no añaden tabla. Avance guardado por versión y conjunto de objetos, reversible; un objeto repetido se asigna una vez y conserva las instrucciones de sus pasos. Marcar todo no verifica, cierra ni desbloquea otra issue. Ocho casos focales correctos. |
+| Secuenciación (D1) | La segunda unidad espera si comparte una pieza pendiente. Las huellas de los artefactos protegen el encargo anterior al regenerar, también cuando desaparece evidencia; el cierre manual no evita esa protección. Se conservan retoques independientes del mismo registro. Catorce casos focales correctos. |
+| Permisos (C8) | Compara roles y grupos declarados del proceso y expresiones de visibilidad soportadas de sus acciones. La aceptación humana queda ligada a versión, objeto, entorno y configuración, con historial y revocación. Los cierres manuales no saltan diferencias confirmadas. Quince casos focales del analista y 57 de inversa afectada correctos; no se suman a las suites completas. El acceso efectivo por rol sigue sin medirse. |
+| Tipos del extractor | Constantes y listas específicas conservan el tipo de objeto; el tipo del valor no selecciona herramientas de grupos, documentos o procesos. `getRecordEventsConfig` solo se planifica para record types. Once casos focales correctos. |
+| Parada ante error de acceso | 32 casos focales correctos: cola, reintentos, paginación, respuesta previa, reanudación, `verificar` y `deriva`. Un error de autenticación no se convierte en objeto ausente. El analista avisa de la última lectura interrumpida conservando resultados y bloqueos previos. No controla llamadas ya iniciadas ni el login interno de DevMCP. |
+| Lectura real acotada | Dos llamadas por el MCP conectado, una por herramienta y sin reintentos: `getApplication` correcto en 0,7 s; `getAgent` devuelve HTTP 401 en 383 ms, aunque el usuario puede verlo en Designer. El bundle usa clientes y autenticaciones distintos. No se cambiaron credenciales, permisos ni DevMCP. |
 | Etiquetas BPMN | Mismos 1.000 casos con semilla 11: etiquetas atravesadas por otro flujo, 8→0; conexiones falsas detectadas, 142→126; solapes de nodos, 0→0; cruces, 2.246→2.246. Sin empeoramiento caso a caso en esas medidas. Los 126 defectos de conexión restantes siguen siendo una limitación de la colocación. |
 | Suite diagramas | Completa con navegador: 135 comprobaciones correctas; sin navegador: 58; cinco casos focales finales. Son recorridos que se solapan, no cifras para sumar. PNG difíciles revisados antes y después. |
 | Arquitectura (E5) | Cinco capas con cinco cajas: 1.322 px con conexiones paralelas, 1.586 px con etiquetas de 45 caracteres y 4.442 px con conexiones densas. Vista general agrupada: 346 px. La referencia aplica el límite existente de 1.600 px al render y conserva objetos y relaciones en el detalle por capa o las tablas. |
@@ -28,6 +36,18 @@ El nuevo ejecutor limita la concurrencia a dos grupos, imprime sus tiempos y con
 Los tiempos de la pareja no se extrapolan a la batería completa: ese rendimiento se medirá en CI. No se ejecutó
 `--completo` en el equipo. Las siete combinaciones de sistema/Python y la prueba de comportamiento con el plugin
 cargado siguen pendientes antes de publicar. No se ha cambiado la versión ni publicado esta fase.
+
+La extracción real quedó incompleta y se detuvo al repetirse el inicio de sesión. Se corrigieron la selección de
+herramientas y la parada de la cola, pero las dos lecturas puntuales posteriores no acreditan una extracción completa.
+LEEME completo y deriva de punta a punta siguen **no medidos**. Tampoco se encontró una refactorización Appian real
+con antes/después y criterios: los cambios del portal o de herramientas no sirven como ese caso. La evidencia y el
+diagnóstico detallado se conservan fuera del repositorio.
+
+Los ajustes finales de inversa solo cambiaron el simulador de prueba y una palabra de un comentario; se repitieron
+los módulos afectados, sin volver a ejecutar toda la suite. Evidencias: `gde-lectura/inversa-integrada.log`,
+`inversa-integracion-focal.log`, `inversa-omisiones.log` y `mermaid-local.log`. La suite del analista está en
+`construccion/analista-integrado-final.log`. La comprobación básica de integración da siete skills, cero errores y
+cero avisos. Los resultados no sustituyen la batería de CI ni las pruebas de comportamiento del plugin.
 
 ## Aplicación de las lecciones de automejora (19 de octubre de 2026)
 

@@ -15,31 +15,31 @@ la primera tanda quedó cerrada en `docs/plan/2026-10-19-aplicar-automejora.md`.
   mensaje lo explica. En Linux con Claude Code ya se vio; el hook de Windows dejó su marca con 0.7.0-beta.1, pero falta
   ver el mensaje con un requisito ausente.
 
-## Construcción y verificación: decisiones e implementación en curso
+## Construcción y verificación
 
-- Dos unidades sobre la misma pieza sin construir (D1): Raúl eligió secuenciar esa pieza. Se implementan guardias
-  para que una propuesta ajena no contamine el encargo aprobado. La aprobación sigue siendo de la unidad entera;
-  no hay aprobación parcial ni nuevos encargos históricos por unidad.
-- Issues grandes (D7): medidas las 25 de P10 y explicados los pros y contras. Espera elección entre subtareas con
-  avance guardado e issues independientes tras separar sus objetos. No se ha aplicado una opción por silencio.
-- Prueba diferencial de una refactorización (E3): buscar un caso real en la aplicación de Indra elegida por Raúl,
-  con diferencias aceptadas y motivo. Las lecturas están autorizadas; cualquier ejecución se concretará por separado.
-- Permisos (C8): Raúl eligió bloquear una diferencia confirmada salvo aceptación humana expresa del comportamiento.
-  Se implementa comparación de configuración decidible y excepción acotada a la diferencia; lo ilegible o no
-  resoluble será «no comprobado». El acceso efectivo sigue requiriendo QA con usuarios de cada rol.
+- D1, D7 y C8 ya están implementados: secuenciación de piezas compartidas, subtareas con avance guardado y
+  diferencias confirmadas de permisos con aceptación humana acotada. Resultados y comprobaciones en el plan de esta
+  fase y en `docs/evaluaciones.md`. El acceso efectivo sigue requiriendo QA con usuarios de cada rol.
+- Prueba diferencial de una refactorización (E3): no se encontró un cambio Appian real con antes/después y criterios
+  en la aplicación elegida. Los cambios del portal o de herramientas no lo sustituyen. Concretar un caso antes de
+  ejecutarlo; cualquier ejecución de reglas o procesos se delimitará por separado.
 - «No evaluable» reconoce el límite de la rejilla con filtros de usuario (`flow!userFilterSetData`). Añadir otro límite
   a `devmcp_policy.json` solo si aparece y se comprueba.
 
 ## Ingeniería inversa y diagramas
 
-- Ejecutar `deriva` de punta a punta y medir LEEME con la aplicación real elegida en Indra (lectura en curso).
+- Ejecutar `deriva` de punta a punta y medir LEEME con la aplicación real elegida (extracción incompleta y detenida).
   El historial existe en el Dev MCP real; el LEEME anterior llegó al 96 % con 42 objetos y los demás documentos
   quedaron al 20–54 %. No se cambia el presupuesto antes de medirlo (E6).
+- Resolver la lectura del agente por la API nativa: `getApplication` funciona por el servlet y `getAgent` devuelve
+  401, aunque Raúl ve su configuración en Designer. No se han cambiado credenciales ni DevMCP. El extractor ya
+  detiene la cola ante errores de acceso/login y conserva la evidencia parcial; esa parada no resuelve la
+  autenticación interna del conector. No reanudar en bucle una extracción que pide login.
 - Volver a medir la evaluación de malas prácticas con propuestas reales; sus `claves` se fijaron sin esas propuestas.
 - La campaña de 1.000 procesos (semilla 11) ya deja cero etiquetas atravesadas. Persisten 126 conexiones falsas
   detectadas, frente a 142 antes de esta fase; medir esos casos por separado antes de ampliar el cambio de rutas.
-- La política permite `testInterface` en desarrollo con datos ficticios. Si se lee un entorno con datos reales,
-  documentar `--skip "^testInterface$"` en F6 y `devmcp-setup.md` antes de esa lectura.
+- F6 y `devmcp-setup.md` ya documentan `--skip "^testInterface$"` con datos reales; la política permite esa prueba
+  en desarrollo con datos ficticios. La exclusión no borra respuestas de pantalla guardadas en otra lectura.
 - Revisar las URL fijas `/help/26.6/` de `data-fabric.md`, `devmcp-setup.md` y `agents/data-modeler.md` cuando cambie
   la versión del Appian MCP Server.
 

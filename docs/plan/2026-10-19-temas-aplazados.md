@@ -14,7 +14,7 @@ en las tareas independientes y en la lectura de evidencia ya guardada.
 | C8: una diferencia confirmada de permisos de acción o inicio de proceso | Bloquear la issue salvo aceptación humana expresa de ese comportamiento, registrada para la diferencia concreta; permisos ilegibles como no comprobados | Aceptado por Raúl |
 | D1: dos unidades cambian una misma pieza | Secuenciar la pieza compartida, manteniendo el trabajo independiente; no guardar encargos históricos por unidad | Opción 2 elegida por Raúl tras comparar pros y contras |
 | Aplicación/proyecto para deriva, LEEME y comparación de refactorización | Usar la aplicación indicada por Raúl en Indra; concretar aparte cualquier ejecución de reglas o procesos | Aplicación y entorno elegidos; lectura autorizada |
-| D7: issues grandes | Subtareas con avance guardado, o issues independientes tras separar sus objetos | Pros y contras explicados; espera elección |
+| D7: issues grandes | Mantener una issue con subtareas y avance guardado, sin sustituir la verificación final | Elegido por Raúl tras comparar pros y contras |
 
 ## Trabajo
 
@@ -22,14 +22,14 @@ en las tareas independientes y en la lectura de evidencia ya guardada.
 |---|---|---|
 | E1: borrador §13 | Medida sobre P10: las columnas de definición dan 50/141 objetos correctos y un falso positivo; los restantes requieren interpretación | No se añade un generador general con esa cobertura |
 | E2: corregir dependencias | Corrección humana motivada, reversible, sin ciclos y con caducidad si cambia el encargo o sus dependencias | Integrado en 1868acd; 393 comprobaciones del analista correctas |
-| D7: issues grandes | P10: Base de 68 objetos; otras de 12–20 requisitos agrupados por objetos compartidos | Espera elección tras la medida |
-| D1: secuenciar piezas | Impedir que el texto de una segunda unidad contamine el encargo de la primera, también antes de aprobarla | Implementación en curso |
-| C8: permisos | Contratos y respuestas reales; comparar configuración decidible y registrar aceptación humana acotada | Implementación en curso |
-| E3: comparación de refactorización | Buscar un caso real en la aplicación elegida y delimitar qué se ejecutaría en cada versión | Lectura en curso; sin ejecutar reglas ni procesos |
+| D7: issues grandes | Una issue con avance por pasos, sin duplicar objetos ni sustituir la verificación final; en P10, 13 de 25 issues reciben 43 subtareas | Integrado en 9242e5a; ocho casos focales y suite analista conjunta correctos |
+| D1: secuenciar piezas | Impedir que el texto de una segunda unidad contamine el encargo de la primera, también con cierre manual; conservar retoques independientes | Integrado en 8738a06 y 9088bd2; 14 casos focales y suite analista conjunta correctos |
+| C8: permisos | Contratos y respuestas reales; comparar configuración decidible y registrar aceptación humana acotada, sin perder historial | Integrado en 12646ae, c6ac2a4 y 616680e; 15 casos focales y suite analista conjunta correctos |
+| E3: comparación de refactorización | Buscar un caso real en la aplicación elegida y delimitar qué se ejecutaría en cada versión | Sin caso Appian acreditado; lectura detenida por el incidente de autenticación |
 | E5: ancho de arquitectura | Cinco cajas pueden producir 4.442 px; aplicar el límite ya existente de 1.600 px a la vista general y usar detalles por capa | Integrado en 40578bd; renders medidos |
 | Etiquetas de puertas | 1.000 casos, semilla 11: etiquetas ambiguas 8→0, sin empeorar cruces ni solapes caso por caso | Integrado en 40578bd; selftest y revisión de PNG correctos |
 | D11: nueva pestaña | Navegación y parámetros, recarga, historial, aislamiento de claves y números que deben conservarse como texto | Integrado en f87d903; suite de prototipos correcta, ocho casos nuevos |
-| E6: LEEME | Medir la aplicación elegida antes de cambiar el presupuesto | Lectura en curso |
+| E6: LEEME | Medir la aplicación elegida antes de cambiar el presupuesto | No medido: extracción incompleta y detenida |
 | E7: batería | Dos grupos reales: 176,7 s en serie y 126,4 s en paralelo; cinco pruebas del ejecutor correctas | Integrado en 327cfa4; rendimiento de batería completa pendiente de CI |
 
 La medida de E7 solo comprende QA y refactorización, con todos sus resultados correctos. No se extrapola al conjunto:
@@ -37,8 +37,45 @@ los logs antiguos de CI imprimían los grupos al terminar y no permiten recupera
 ejecutor ahora informa de cada duración, limita la concurrencia a dos grupos y admite `--trabajos 1` para comparar.
 No se ha ejecutado `--completo` localmente.
 
-La sesión principal integra y mantiene el estado; tres subagentes trabajan en construcción, medición de inversa y
-permisos, cada uno en su worktree (diagramas y prototipos ya entregados). Pruebas y datos reales van en
+La suite analista integrada terminó con 399 comprobaciones correctas (498,3 s, exit 0). La integración incluyó
+dos correcciones de borde: el cierre manual no salta una protección de encargo y una fila ilegible del historial de
+permisos no desaparece al regenerar. Las marcas de lectura interrumpida añaden un aviso sin borrar bloqueos previos.
+La corrida completa de inversa dio 243 correctas, ocho fallos y dos omisiones. Los ocho fallos pertenecían a dos
+módulos: el simulador de permisos no implementaba el método nuevo y un comentario activaba un detector de vocabulario.
+Tras corregirlos, pasan sus 23 casos; el caso Mermaid omitido en uv pasa con Python local. Son 252 casos distintos
+correctos entre los recorridos y una omisión exclusiva de POSIX. No se registra la corrida inicial como verde ni se
+suman dos veces los quince casos que se repitieron. Detalle y límites en `docs/evaluaciones.md`.
+
+## Incidente de lectura en el entorno elegido
+
+La lista conjunta contiene 248 objetos: los 245 de Designer, un agente y dos carpetas de listas específicas. La
+medición detectó y corrigió dos errores del extractor: tipos de valor de constantes usados como tipos de objeto
+(09872ee) y `getRecordEventsConfig` considerado genérico en vez de exclusivo de record types (13115f9).
+Las pruebas son ficticias y locales; la corrección no acredita aún una extracción completa.
+
+La extracción disparó repetidamente el inicio de sesión. El código instalado de DevMCP considera cualquier 401/403
+como sesión caducada y vuelve a abrir el navegador; no distingue una denegación de permisos. Al avisar Raúl se
+detuvieron ambos árboles de procesos del extractor y sus helpers de autenticación. La comprobación posterior dio
+cero procesos de esta medición activos. No se modificó DevMCP ni se cambiaron credenciales o permisos.
+
+Se conservan 76 respuestas (66 correctas y diez fallidas por cierre del navegador), inventario y lecturas puntuales;
+no hay informe final de extracción ni historial suficiente para declarar medidos LEEME o deriva. La extracción
+masiva permanece detenida. La parada ante acceso/login interrumpido está integrada en 250f8e9: cancela llamadas aún
+en cola, conserva evidencia previa, informa de lectura parcial y evita deducir ausencias en `verificar` o `deriva`.
+Sus 32 pruebas focales pasan; no controla llamadas ya iniciadas ni la reautenticación interna de DevMCP.
+No reanudar una extracción masiva solo porque ya se corrigió el selector de eventos. El detalle y los límites están
+en `aplazados-codex-20261019/gde-lectura/ESTADO-MEDICION.md`, fuera del repositorio.
+
+Raúl confirmó que puede abrir el agente y ver su configuración en Designer. El bundle instalado usa dos vías:
+las listas se leen con el cliente del servlet autenticado en navegador; `getAgent` usa el cliente de la API nativa,
+que espera un token del contexto de la petición. El acceso por Designer no acredita esa segunda vía. Esta limitación
+es distinta del bucle de reautenticación del cliente del servlet; ninguna demuestra una contraseña incorrecta.
+Una única llamada `getApplication` por el MCP ya conectado respondió correctamente en 0,7 s, sin reintentos.
+Una llamada posterior `getAgent`, sin expansión ni reintentos, devolvió HTTP 401 en 383 ms. El contraste confirma
+la limitación de esa lectura nativa en la sesión actual. No acredita una extracción completa ni ausencia del agente.
+
+La sesión principal integra y mantiene el estado; tres subagentes entregaron construcción, medición de inversa y
+permisos, cada uno desde su worktree, además de diagramas y prototipos. Pruebas y datos reales van en
 `Proyectos IA/Pruebas-plugin/aplazados-codex-20261019/`, nunca
 en el repositorio. Se mantienen las comprobaciones de `CLAUDE.md`: básica antes de cada commit, pruebas de las
 capacidades tocadas y batería completa en CI, sin `--completo` local. Esta petición no publica una versión.
