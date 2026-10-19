@@ -4,6 +4,7 @@
     python3 pruebas/comprobar_plugin.py                                 # comprobaciones estáticas (segundos)
     python3 pruebas/comprobar_plugin.py --completo                      # además, las pruebas de cada skill
     python3 pruebas/comprobar_plugin.py --completo --plugin <carpeta>   # lo mismo, sobre otra copia del plugin
+    python3 pruebas/comprobar_plugin.py --completo --trabajos 1         # secuencial, para comparar tiempos
 
 Qué mira:
 - cada SKILL.md: nombre igual a su carpeta, descripción de 1000 bytes UTF-8 como mucho (MAX_DESCRIPCION) y que diga
@@ -36,6 +37,8 @@ Qué mira:
 Con --completo pasa además las pruebas de pruebas/ (cada selftest.py, cada evaluaciones/*/prueba_puntuar.py y, con
 pytest, las de ingeniería inversa) al plugin que se comprueba, que reciben en PLUGIN_A_PROBAR, la de su requisitos.py,
 mira que no dejen __pycache__ en skills/ y prueba el propio comprobador con una copia temporal.
+Las pruebas de skills/evaluaciones van en hasta dos subprocesos a la vez, con tiempo por grupo y total de reloj.
+--trabajos 1 permite medir la misma batería en serie; requisitos y comprobador siguen después, de forma secuencial.
 Con --plugin <carpeta> todo se hace sobre esa copia del plugin (p. ej. la del paquete, que no lleva pruebas/), con
 las pruebas de este repositorio.
 Sale con 1 si hay errores.
@@ -44,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import importlib.metadata
 import json
 import os
@@ -52,6 +56,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unicodedata
 from pathlib import Path
 
@@ -547,10 +552,11 @@ def comprobar_uv_run():
                            "dentro de un proyecto, --directory antes del programa o uv sync antes en el mismo apartado")
 
 
-def anota_prueba(nombre, r, ruta, pytest=False):
+def anota_prueba(nombre, r, ruta, pytest=False, segundos=None):
     """0 bien y 1 error. Un selftest.py sale con otro código (2) si falta un requisito: aviso. Con pytest, todo lo que
     no es 0 es un fallo (2: no se pudieron recoger las pruebas)."""
-    print(f"Prueba de {nombre}: {'bien' if r.returncode == 0 else f'falla (código {r.returncode})'}")
+    tiempo = f" · {segundos:.2f} s" if segundos is not None else ""
+    print(f"Prueba de {nombre}: {'bien' if r.returncode == 0 else f'falla (código {r.returncode})'}{tiempo}", flush=True)
     if r.returncode == 1 or (r.returncode and pytest):
         errores.append(f"{ruta} falla:\n" + (r.stdout + r.stderr)[-1500:])
     elif r.returncode:
@@ -579,27 +585,60 @@ def orden_de_pytest(pytest, mcp, uv, carpeta):
     return None
 
 
-def pruebas_de_las_skills():
+def ejecuta_grupos(grupos, entorno, trabajos=2):
+    """Subprocesos independientes con concurrencia limitada; errores y avisos se anotan en el hilo principal.
+    Devuelve medidas en el orden de entrada. No comparte cwd ni altera el entorno del proceso padre.
+    """
+    if trabajos < 1:
+        raise ValueError("trabajos debe ser al menos 1")
+
+    def ejecuta(grupo):
+        inicio = time.perf_counter()
+        try:
+            resultado = corre(grupo["orden"], env=entorno, cwd=grupo.get("cwd"))
+        except OSError as e:
+            resultado = subprocess.CompletedProcess(grupo["orden"], 1, "", str(e))
+        return resultado, time.perf_counter() - inicio
+
+    inicio = time.perf_counter()
+    medidas = [None] * len(grupos)
+    with ThreadPoolExecutor(max_workers=trabajos) as pool:
+        pendientes = {pool.submit(ejecuta, g): (k, g) for k, g in enumerate(grupos)}
+        for futuro in as_completed(pendientes):
+            k, grupo = pendientes[futuro]
+            resultado, segundos = futuro.result()
+            anota_prueba(grupo["nombre"], resultado, grupo["ruta"], grupo.get("pytest", False), segundos)
+            medidas[k] = {"nombre": grupo["nombre"], "segundos": segundos, "codigo": resultado.returncode}
+    print(f"Grupos: {len(grupos)} · hasta {trabajos} en paralelo · "
+          f"{time.perf_counter() - inicio:.2f} s de reloj", flush=True)
+    return medidas
+
+
+def pruebas_de_las_skills(trabajos=2):
     """Las pruebas de pruebas/<skill>/ contra el plugin que se comprueba, que reciben en PLUGIN_A_PROBAR."""
     # PYTHONUTF8=1 salvo que se pida otra cosa: la matriz de GitHub prueba un Windows con PYTHONUTF8=0, como el de un
     # compañero, para que las pruebas vean la consola y los ficheros en cp1252. Sin bytecode: las pruebas importan
     # módulos del plugin y dejarían __pycache__ dentro (restos_de_bytecode)
     entorno = dict(os.environ, PLUGIN_A_PROBAR=str(RAIZ), PYTHONUTF8=os.environ.get("PYTHONUTF8", "1"),
                    PYTHONDONTWRITEBYTECODE="1")
+    grupos = []
     for p in sorted(PRUEBAS.glob("*/selftest.py")):
-        anota_prueba(p.parent.name, corre([sys.executable, str(p)], env=entorno), p.relative_to(REPO).as_posix())
+        grupos.append({"nombre": p.parent.name, "orden": [sys.executable, str(p)],
+                       "ruta": p.relative_to(REPO).as_posix()})
     for p in sorted(PRUEBAS.glob("evaluaciones/*/prueba_puntuar.py")):  # las de los puntuadores de las evaluaciones
-        anota_prueba(p.parent.relative_to(PRUEBAS).as_posix(), corre([sys.executable, str(p)], env=entorno),
-                     p.relative_to(REPO).as_posix())
+        grupos.append({"nombre": p.parent.relative_to(PRUEBAS).as_posix(), "orden": [sys.executable, str(p)],
+                       "ruta": p.relative_to(REPO).as_posix()})
     inversa = PRUEBAS / "appian-reverse-engineering"
     orden = orden_de_pytest(version_de("pytest"), version_de("mcp"), shutil.which("uv"), inversa)
     if orden is None:
         print("Prueba de appian-reverse-engineering: no se pudo completar")
         avisos.append(f"{inversa.relative_to(REPO).as_posix()} no se pudo completar: faltan pytest o mcp y no hay uv "
                       "para traerlos (pip install pytest \"mcp>=1.2,<2\")")
-        return
-    anota_prueba("appian-reverse-engineering", corre(orden, env=entorno, cwd=str(inversa)),
-                 inversa.relative_to(REPO).as_posix(), pytest=True)
+    else:
+        # Inversa suele ser el grupo más largo: empieza junto al primero, no al terminar los demás.
+        grupos.insert(0, {"nombre": "appian-reverse-engineering", "orden": orden,
+                          "ruta": inversa.relative_to(REPO).as_posix(), "cwd": str(inversa), "pytest": True})
+    return ejecuta_grupos(grupos, entorno, trabajos)
 
 
 def restos_de_bytecode():
@@ -1265,7 +1304,7 @@ def sin_urls(texto):
     return re.sub(r"https?://\S+", " ", texto)
 
 
-def main(completo, plugin=None):
+def main(completo, plugin=None, trabajos=2):
     global RAIZ, SKILLS
     if plugin:
         RAIZ = Path(plugin).resolve()
@@ -1410,11 +1449,17 @@ def main(completo, plugin=None):
                        "pon esa salida entre <!-- requisitos:inicio --> y <!-- requisitos:fin -->")
 
     if completo:
-        pruebas_de_las_skills()
+        pruebas_de_las_skills(trabajos)
+        inicio = time.perf_counter()
         prueba_de_requisitos()
+        print(f"Tiempo de requisitos: {time.perf_counter() - inicio:.2f} s", flush=True)
         restos_de_bytecode()
         if not plugin:  # el comprobador se prueba una vez, desde el repositorio
+            inicio = time.perf_counter()
+            anota_prueba("ejecución de grupos", corre([sys.executable, str(PRUEBAS / "test_bateria.py")],
+                        env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1")), "pruebas/test_bateria.py", pytest=True)
             probar_comprobador(nombres)
+            print(f"Tiempo del comprobador: {time.perf_counter() - inicio:.2f} s", flush=True)
 
     for a in avisos:
         print("Aviso ·", a)
@@ -1430,5 +1475,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--completo", action="store_true", help="además, las pruebas de cada skill")
     ap.add_argument("--plugin", help="otra copia del plugin, p. ej. la del paquete (por defecto, este repositorio)")
+    ap.add_argument("--trabajos", type=int, choices=range(1, 9), default=2,
+                    help="grupos simultáneos con --completo (1 a 8; por defecto 2; 1 conserva ejecución secuencial)")
     args = ap.parse_args()
-    sys.exit(main(args.completo, args.plugin))
+    sys.exit(main(args.completo, args.plugin, args.trabajos))
