@@ -124,7 +124,10 @@ En este orden; se salta lo que la pantalla no tiene:
 4. **Elementos de la parte superior**: la barra de búsqueda y filtros («se describe en la sección Búsqueda y
    Filtros») y cada botón con su efecto. Un botón que abre otra pantalla o un modal: «al pulsarlo, se abre el modal
    "Nueva solicitud" (se describe en la pantalla "Nueva solicitud")», sin describir su contenido.
-5. **Columnas o campos**, uno por punto y en el orden en que se ven, cada uno como dice el §5.
+5. **Columnas o campos**, uno por punto y en el orden en que se ven, cada uno como dice el §5. Siempre como lista:
+   una línea «La tabla incluye las siguientes columnas:» (o «… los siguientes campos:») y debajo una sub-viñeta por
+   columna o campo, con su nombre y su descripción; nunca seguidos en una frase («La tabla incluye las columnas A, B y
+   C»). Vale para cada tabla y cada bloque de campos, también dentro de un modal o de una sección.
 6. **Acciones por fila**: «columna con dos botones por fila: "Ver detalle" y "Borrar"», y cada botón con su efecto;
    si tiene casuística, «el comportamiento detallado se describe en la sección Reglas de Validación».
 7. **Tooltips**: el texto literal entre comillas y qué lo muestra («al pasar el ratón sobre …»).
@@ -204,7 +207,7 @@ Cada elemento, en su punto, con lo que le aplique de su fila:
 | Elemento | Qué se dice |
 |---|---|
 | Columna de una tabla | El nombre en mayúsculas (`NÚMERO:`); qué representa; de dónde sale (elegido al crear, calculado, de datos maestros, heredado de otro registro); el formato entre paréntesis («(DD/MM/AAAA)», «(nombre y apellidos)»); qué se ve si está vacío («-»); qué pasa al pulsarlo (vínculo al registro, descarga, copiar). Los valores posibles, entre comillas |
-| Campo de un formulario | Nombre; qué es; tipo de control: campo de texto libre, área de texto, desplegable de selección única o múltiple, campo combinado de búsqueda y texto libre, botones de opción, casilla de verificación, campo de fecha, campo numérico, importe, carga de ficheros, solo lectura; de dónde salen sus opciones y en qué orden; si se rellena solo y si se puede cambiar; si muestra u oculta otros campos |
+| Campo de un formulario | Nombre; qué es; tipo de control (en un desplegable, un selector o unas casillas, siempre si es de selección única o múltiple): campo de texto libre, área de texto, desplegable de selección única o múltiple, campo combinado de búsqueda y texto libre, botones de opción, casilla de verificación, campo de fecha, campo numérico, importe, carga de ficheros, solo lectura; de dónde salen sus opciones y en qué orden; si se rellena solo y si se puede cambiar; si muestra u oculta otros campos |
 | Botón | El texto literal; dónde está; qué pasa al pulsarlo y después (cambio de estado, correo, se cierra, se abre otra pantalla) |
 | Vínculo | Qué texto lleva y adónde lleva |
 | Icono o indicador | Qué significa cada icono o color y cuándo aparece |
@@ -296,6 +299,9 @@ Antes de cerrar una pantalla, con el inventario del §2:
       registros.
 - [ ] Cada columna dice qué es, de dónde sale, su formato y qué se ve vacía; cada campo, su tipo de control y de
       dónde salen sus opciones.
+- [ ] Cada desplegable, selector y grupo de casillas dice si es de selección única o múltiple.
+- [ ] Las columnas de cada tabla y los campos de cada bloque van en sub-viñetas, uno por línea, nunca seguidos en una
+      frase.
 - [ ] Cada botón y cada vínculo dicen qué pasa al pulsarlos y después.
 - [ ] Cada filtro dice tipo, selección, opciones, valor por defecto y efecto; está la combinación y el caso sin
       resultados.
