@@ -1063,7 +1063,7 @@ async def prepare(ex: Extractor, args, app: dict | None = None) -> tuple[dict, l
     return app_obj, objects, groups
 
 
-async def solo_lo_esperado(ex: Extractor, args, tipos: dict[str, str]) -> tuple[dict, list[dict]]:
+async def solo_lo_esperado(ex: Extractor, args, tipos: dict[str, str], auxiliares=()) -> tuple[dict, list[dict]]:
     """Para verificar una issue sin pruebas, la aplicacion y sus objetos leyendo solo lo necesario: las aplicaciones de una
     vez y, de la aplicacion, solo las listas de los tipos esperados ({pedido: tipo canonico}; en el Dev MCP real, la de
     record types en vez de 25 listas). Si un pedido no esta en ellas (es de otro tipo o no existe), la lista entera, como
@@ -1071,7 +1071,7 @@ async def solo_lo_esperado(ex: Extractor, args, tipos: dict[str, str]) -> tuple[
     app = await aplicacion_de(ex, args, de_una_vez=True)
     sin_app = {t: ps for t, ps in ex.base_type_phrases().items() if t != "application"}
     listas = [t for t in ex.usable("app") if t.role == "other"
-              and set(match_types(t.toks[1:], sin_app) or ["?"]) <= set(tipos.values())]
+              and set(match_types(t.toks[1:], sin_app) or ["?"]) <= set(tipos.values()) | set(auxiliares)]
     res = await asyncio.gather(*(ex.run_call(t, "app", app_uuid=app["uuid"]) for t in listas))
     app_obj, objects = ex.harvest_objects(app["uuid"], {t.name: r for t, r in zip(listas, res)})
     por = resolver(list(tipos), objects)
@@ -1610,8 +1610,113 @@ def acciones(data) -> list[dict]:
     su nombre y su tipo, como los dé el Dev MCP (LIST_ACTION, RELATED_ACTION)."""
     d = bm.unwrap(data)
     lista = d if isinstance(d, list) else bm.find_list(d, ("actions", "recordActions", "recordTypeActions"))
-    return [{"nombre": bm.pick(a, NOMBRE_ACCION), "tipo": bm.pick(a, TIPO_ACCION)} for a in lista
+    return [{"nombre": bm.pick(a, NOMBRE_ACCION), "tipo": bm.pick(a, TIPO_ACCION),
+             **{k: a[k] for k in ("securityMode", "visibilityExpr", "securityRule") if k in a}} for a in lista
             if isinstance(a, dict) and bm.pick(a, NOMBRE_ACCION)]
+
+
+ROLES_PROCESO = {"administrator", "editor", "manager", "viewer", "initiator", "deny"}
+MIEMBRO_GRUPO = r"a!isUserMemberOfGroup\((?:fn!)?loggedInUser\(\),cons![A-Za-z_][A-Za-z_0-9]*\)"
+
+
+def expresion_visible(texto):
+    """Contrato de configuración literal acotado. No ejecuta SAIL ni afirma acceso efectivo."""
+    if not isinstance(texto, str):
+        return None
+    valor = re.sub(r"\s*([!(),=])\s*", r"\1", texto.strip()).removeprefix("=")
+    literal = re.fullmatch(r"(?:fn!)?(true|false)\(\)", valor)
+    if literal:
+        return {"literal": literal[1] == "true"}
+    patron = rf"(?:{MIEMBRO_GRUPO}|(?:fn!)?or\({MIEMBRO_GRUPO}(?:,{MIEMBRO_GRUPO})+\))"
+    if re.fullmatch(patron, valor):
+        return {"constantes": sorted(set(re.findall(r"cons!([A-Za-z_][A-Za-z_0-9]*)", valor)))}
+    return None
+
+
+def diferencias_permisos(o, esperado):
+    """Diferencias de configuración confirmadas y lo que no se puede comparar, por separado."""
+    distintos, desconocidos = [], []
+    if "permisosInicio" in esperado or tipo_de_objeto(esperado.get("tipo")) == "processmodel":
+        pedidos = esperado.get("permisosInicio")
+        if not isinstance(pedidos, list) or not pedidos:
+            desconocidos.append("inicio: falta contrato explícito de roles y grupos en técnico §4")
+        else:
+            if {p.get("rol") for p in pedidos if isinstance(p, dict) and isinstance(p.get("rol"), str)} != ROLES_PROCESO:
+                desconocidos.append("inicio: contrato parcial; los roles no declarados no se han comparado")
+            seguridad = o.get("seguridadInicio")
+            roles = seguridad.get("roles") if isinstance(seguridad, dict) else None
+            if (not isinstance(roles, list) or seguridad.get("uuid") != o.get("uuid")
+                    or seguridad.get("objectType") != "process_model"):
+                desconocidos.append("inicio: seguridad del proceso no legible")
+            elif seguridad.get("inheritSecurity") or seguridad.get("parentFolderUuid"):
+                desconocidos.append("inicio: herencia de seguridad no comparable")
+            else:
+                for p in pedidos:
+                    rol = p.get("rol") if isinstance(p, dict) else None
+                    grupos = p.get("grupos") if isinstance(p, dict) else None
+                    filas = [x for x in roles if isinstance(x, dict) and x.get("roleName") == rol]
+                    if (not isinstance(rol, str) or rol not in ROLES_PROCESO or not isinstance(grupos, list) or any(not isinstance(g, str) or not g for g in grupos)
+                            or sum(1 for q in pedidos if isinstance(q, dict) and q.get("rol") == rol) != 1):
+                        desconocidos.append(f"inicio {rol}: contrato ilegible o duplicado")
+                        continue
+                    resolucion = o.get("gruposParaPermisos")
+                    resolucion = resolucion if isinstance(resolucion, dict) else {}
+                    sin_resolver = [g for g in grupos if not isinstance(resolucion.get(g), str) or not resolucion[g]]
+                    if sin_resolver:
+                        desconocidos.append(f"inicio {rol}: grupo ausente, ambiguo o externo no resuelto: "
+                                            + ", ".join(sin_resolver))
+                        continue
+                    if (len(filas) != 1 or not isinstance(filas[0].get("groupUuids"), list)
+                            or any(not isinstance(g, str) or not g.strip() for g in filas[0]["groupUuids"])
+                            or filas[0].get("inheritedGroupUuids") != [] or filas[0].get("userUuids")
+                            or filas[0].get("users")):
+                        desconocidos.append(f"inicio {rol}: rol no legible, herencia o miembros no comparables")
+                        continue
+                    pedidos_uuid = sorted(set(resolucion[g] for g in grupos))
+                    reales = sorted(set(filas[0]["groupUuids"]))
+                    if pedidos_uuid != reales:
+                        distintos.append({"comprobacion": f"inicio: rol {rol}",
+                                          "esperado": {"grupos": grupos, "groupUuids": pedidos_uuid},
+                                          "real": {"groupUuids": reales}})
+    acciones_esperadas = esperado.get("acciones", [])
+    if not isinstance(acciones_esperadas, list):
+        desconocidos.append("visibilidad: contrato de acciones ilegible")
+        acciones_esperadas = []
+    for a in acciones_esperadas:
+        if not isinstance(a, dict) or "visibilidad" not in a:
+            continue
+        etiqueta = "visibilidad de " + str(a.get("nombre", "?"))
+        cfg = a["visibilidad"].get("configuracion", "") if isinstance(a["visibilidad"], dict) else ""
+        texto = cfg.removeprefix("EXPRESSION:").strip() if isinstance(cfg, str) and cfg.startswith("EXPRESSION:") else None
+        declarada = expresion_visible(texto)
+        observadas = o.get("acciones")
+        reales = [r for r in observadas if isinstance(r, dict) and nombre_de_accion(r.get("nombre")) == nombre_de_accion(a.get("nombre"))] if isinstance(observadas, list) else []
+        if declarada is None:
+            desconocidos.append(etiqueta + ": falta un contrato EXPRESSION literal soportado")
+        elif len(reales) != 1:
+            desconocidos.append(etiqueta + ": acción no legible o nombre ambiguo")
+        else:
+            real = reales[0]
+            observada = expresion_visible(real.get("visibilityExpr"))
+            if real.get("securityMode") != "EXPRESSION" or real.get("securityRule") or observada is None:
+                desconocidos.append(etiqueta + ": RULES, regla de seguridad o expresión no decidible; no se evalúa")
+            else:
+                def resuelta(exp):
+                    if "literal" in exp:
+                        return exp
+                    constantes = o.get("constantesDeVisibilidad")
+                    constantes = constantes if isinstance(constantes, dict) else {}
+                    valores = [constantes.get(c) for c in exp["constantes"]]
+                    validos = all(isinstance(x, dict) and isinstance(x.get("uuid"), str) and x["uuid"] for x in valores)
+                    return {"gruposReferenciados": sorted(set(x["uuid"] for x in valores))} if validos else None
+                configurada, actual = resuelta(declarada), resuelta(observada)
+                if configurada is None or actual is None:
+                    desconocidos.append(etiqueta + ": constante GROUP escalar o grupo no resuelto inequívocamente")
+                elif configurada != actual:
+                    distintos.append({"comprobacion": "configuración de " + etiqueta,
+                                      "esperado": {"securityMode": "EXPRESSION", "configuracion": configurada},
+                                      "real": {"securityMode": "EXPRESSION", "configuracion": actual}})
+    return {k: v for k, v in (("permisosDiferentes", distintos), ("permisosNoComprobados", desconocidos)) if v}
 
 
 async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: list[str],
@@ -1627,6 +1732,28 @@ async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: l
     versiones = [t for t in usables if t.role == "versions"]
     definiciones = [t for t in usables if t.role == "definition"]
     de_acciones = [t for t in usables if "action" in t.toks and "recordType" in t.types and t.role != "definition"]
+    de_seguridad = [t for t in usables if "security" in t.toks and t.generic]
+    constantes_pedidas = {}
+
+    async def grupo_de_constante(nombre):
+        candidatas = [c for c in objects if c.get("type") == "constant" and c.get("name") == nombre]
+        if len(candidatas) != 1:
+            return None
+        datos, _ = await llama(ex, definiciones, candidatas[0])
+        for dato in map(bm.unwrap, datos):
+            if (not isinstance(dato, dict) or dato.get("uuid") != candidatas[0]["uuid"]
+                    or dato.get("type") != "GROUP" or dato.get("multiple") is not False
+                    or not isinstance(dato.get("value"), str) or not dato["value"].strip()):
+                continue
+            grupos = [g for g in objects if g.get("type") == "group" and g.get("name") == dato["value"]]
+            if len(grupos) == 1:
+                return {"grupo": dato["value"], "uuid": grupos[0]["uuid"]}
+        return None
+
+    async def constante(nombre):
+        if nombre not in constantes_pedidas:
+            constantes_pedidas[nombre] = asyncio.create_task(grupo_de_constante(nombre))
+        return await constantes_pedidas[nombre]
 
     async def uno(p: str) -> dict:
         o = por.get(p)
@@ -1654,6 +1781,25 @@ async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: l
                 r["acciones"] = next((a for a in map(acciones, definicion) if a), None)
                 if r["acciones"] is None:
                     r["accionesNoDisponibles"] = True
+            expresiones = [a["visibilidad"]["configuracion"].removeprefix("EXPRESSION:").strip()
+                           for a in quiere["acciones"] if isinstance(a, dict) and isinstance(a.get("visibilidad"), dict)
+                           and isinstance(a["visibilidad"].get("configuracion"), str)]
+            pedidas = {nombre_de_accion(a.get("nombre")) for a in quiere["acciones"] if isinstance(a, dict)}
+            expresiones += [a.get("visibilityExpr") for a in r.get("acciones") or [] if a.get("securityMode") == "EXPRESSION"
+                            and nombre_de_accion(a.get("nombre")) in pedidas]
+            nombres = {c for e in expresiones for c in (expresion_visible(e) or {}).get("constantes", [])}
+            if nombres:
+                r["constantesDeVisibilidad"] = dict(zip(sorted(nombres), await asyncio.gather(*(constante(c) for c in sorted(nombres)))))
+        if o["type"] == "processModel" and quiere.get("permisosInicio"):
+            datos, err = await llama(ex, de_seguridad, o)
+            errores += err
+            r["seguridadInicio"] = next((d for d in map(bm.unwrap, datos) if isinstance(d, dict) and "roles" in d), None)
+            nombres = {g for p in quiere["permisosInicio"] if isinstance(p, dict) and isinstance(p.get("grupos"), list)
+                       for g in p["grupos"] if isinstance(g, str)} if isinstance(quiere["permisosInicio"], list) else set()
+            r["gruposParaPermisos"] = {}
+            for nombre in nombres:
+                grupos = [g for g in objects if g.get("type") == "group" and g.get("name") == nombre]
+                r["gruposParaPermisos"][nombre] = grupos[0]["uuid"] if len(grupos) == 1 else None
         if errores:
             r["errores"] = errores
         return r
@@ -1841,7 +1987,7 @@ def diferencias(o: dict, esperado: dict) -> dict:
     record type no son de quien lo pide. Si el Dev MCP no da las acciones, no se comparan (lo dice la salida)."""
     if not o.get("existe"):
         return {"falta": True}
-    out: dict = {}
+    out: dict = diferencias_permisos(o, esperado)
     if esperado.get("tipo") and tipo_de_objeto(esperado["tipo"]) != tipo_de_objeto(o.get("tipo")):
         out["tipo"] = {"esperado": esperado["tipo"], "real": o.get("tipo")}
     if isinstance(esperado.get("acciones"), list) and not o.get("accionesNoDisponibles"):
@@ -1901,7 +2047,10 @@ async def cmd_verificar(args) -> int:
                 tipos = {p: ex.policy.canon_type(q.get("tipo") or ("recordType" if q.get("acciones") else None))
                          for p, q in quiere.items()}
                 if sin_pruebas and all(tipos.values()):
-                    app_obj, objects = await solo_lo_esperado(ex, args, tipos)
+                    visibilidad = any(a.get("visibilidad", {}).get("configuracion") for q in quiere.values()
+                                      for a in q.get("acciones", []) if isinstance(a, dict) and isinstance(a.get("visibilidad"), dict))
+                    auxiliares = ("group", "constant") if visibilidad else (("group",) if any(q.get("permisosInicio") for q in quiere.values()) else ())
+                    app_obj, objects = await solo_lo_esperado(ex, args, tipos, auxiliares)
                 else:
                     app_obj, objects, _ = await prepare(ex, args)
                 resultado = await verifica(ex, app_obj, objects, pedidos, esperado, ligero=sin_pruebas)
@@ -1917,7 +2066,11 @@ async def cmd_verificar(args) -> int:
         for o in resultado["objetos"]:
             if isinstance(esperado.get(o["pedido"]), dict):
                 o["diferencias"] = diferencias(o, esperado[o["pedido"]])
-        resultado["conDiferencias"] = [o["pedido"] for o in resultado["objetos"] if o.get("diferencias")]
+        resultado["conDiferencias"] = [o["pedido"] for o in resultado["objetos"]
+                                       if any(k != "permisosNoComprobados" for k in o.get("diferencias", {}))]
+        sin_permisos = [o["pedido"] for o in resultado["objetos"] if o.get("diferencias", {}).get("permisosNoComprobados")]
+        if sin_permisos:
+            resultado["permisosNoComprobados"] = sin_permisos
     resultado = {"generadoEn": now_iso(), "entorno": entorno(server_info(choice)["url"]),
                  **({"issue": issue} if issue is not None else {}), **resultado}
     destino = Path(args.out).resolve()
@@ -1932,6 +2085,11 @@ async def cmd_verificar(args) -> int:
     for o in resultado["objetos"]:
         if o.get("accionesNoDisponibles"):
             print(f"  · {o['pedido']}: el Dev MCP no da sus acciones de registro; no se comprueban")
+        for motivo in (o.get("diferencias") or {}).get("permisosNoComprobados", []):
+            print(f"  · {o['pedido']}: permisos no comprobados: {motivo}")
+    if any("permisosInicio" in q or tipo_de_objeto(q.get("tipo")) == "processmodel"
+           or any("visibilidad" in a for a in q.get("acciones", [])) for q in quiere.values()):
+        print("  · Permisos: se compara configuración declarada; el acceso efectivo exige QA con cada rol.")
     for linea in resumen_de_pruebas(resultado.get("pruebas")):
         print(linea)
     return EXIT_OK

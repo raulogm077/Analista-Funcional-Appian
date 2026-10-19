@@ -687,6 +687,20 @@ def c_issues(m, a):
               f"el paquete de {uid} (el resumen, en construccion/{uid}/regresion.json; por la salida, solo lo que "
               f"falla):\n\n```\n{orden}\n```" + "".join(f"\n· {n}" for n in notas))
         return
+    if a.aceptar_permiso or a.revocar_permiso:
+        if a.desatendida:
+            sys.exit("La diferencia de permisos la acepta una persona; no se cambia con --desatendida")
+        if (not a.issue or (a.aceptar_permiso and a.revocar_permiso) or a.manual or a.automatico or a.sin_prueba
+                or a.depende_de is not None or a.dependencias_automaticas or a.siguiente or a.liberar or a.regresion):
+            sys.exit("Usa ISS-nn --aceptar-permiso PER-huella --motivo «…», o ISS-nn --revocar-permiso PER-huella")
+        try:
+            _, _, plan, issue, como = iss.acepta_permiso(m.raiz, uid, a.issue.upper(),
+                a.aceptar_permiso or a.revocar_permiso, a.motivo, a.quien, retirar=bool(a.revocar_permiso))
+        except iss.NoSePuede as e:
+            sys.exit(str(e))
+        print(como)
+        print("\n".join(iss.situacion(plan, m.raiz)))
+        return
     if a.depende_de is not None or a.dependencias_automaticas:
         if a.desatendida:
             sys.exit("Las dependencias las corrige una persona; no se cambian con --desatendida")
@@ -824,12 +838,14 @@ def main():
                    help="con ISS-nn y --motivo: una persona marca ese caso de prueba, o ese escenario del QA (HU-nn.m), "
                         "que falla, como no necesario para avanzar; la issue puede darse por hecha y la marca se revisa "
                         "al preparar el paquete")
+    s.add_argument("--aceptar-permiso", metavar="PER-huella", help="con ISS-nn y --motivo: aceptación humana de la diferencia observada")
+    s.add_argument("--revocar-permiso", metavar="PER-huella", help="con ISS-nn: retira esa aceptación de permisos")
     s.add_argument("--manual", action="store_true", help="con ISS-nn y --motivo: cierre humano de esta versión")
     s.add_argument("--automatico", action="store_true", help="con ISS-nn: retira el cierre manual")
     s.add_argument("--depende-de", nargs="+", metavar="ISS-nn", help="lista exacta humana de dependencias; ninguna para vacía; requiere --motivo")
     s.add_argument("--dependencias-automaticas", action="store_true", help="retira la corrección humana de dependencias")
-    s.add_argument("--motivo", help="razón de la excepción, cierre manual o corrección de dependencias")
-    s.add_argument("--desatendida", action="store_true", help="la sesión no tiene a una persona: --sin-prueba se niega")
+    s.add_argument("--motivo", help="razón de la excepción de prueba o permiso, cierre manual o corrección de dependencias")
+    s.add_argument("--desatendida", action="store_true", help="la sesión no tiene a una persona: se niegan sus decisiones")
     a = ap.parse_args()
     m = mo.Proyecto(a.proyecto)
     if not m.docs:

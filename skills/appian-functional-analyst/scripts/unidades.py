@@ -696,6 +696,26 @@ class Contexto:
                                  for f in filas if f and nombre_accion(f[0]) and len(f) > ncab.index("tipo")]
         return out
 
+    def permisos_4(self, P, nombre):
+        """Configuración explícita de roles de un proceso; los nombres de grupo se resuelven en el entorno.
+        No interpreta la matriz libre ni convierte una celda vacía en «ningún grupo»."""
+        out = []
+        if P is None or "T" not in P.docs:
+            return out
+        for _, cab, filas in P.tablas("T", "4"):
+            cab = [mo.normaliza(c) for c in cab]
+            if not all(k in cab for k in ("proceso", "rol appian", "grupos")):
+                continue
+            for fila in filas:
+                c = dict(zip(cab, fila))
+                if c.get("proceso", "").strip(" `") != nombre:
+                    continue
+                texto = c.get("grupos", "").strip()
+                grupos = [] if texto == "—" else [x.strip().strip("`") for x in texto.split(";")] if texto else None
+                out.append({"rol": c.get("rol appian", "").strip(" `").lower(), "grupos": grupos,
+                            "declaracion": texto})
+        return out
+
     def esperado(self, uid, filas=None):
         """{objeto: {"tipo", "campos", "acciones"}} de lo que construye o cambia una unidad (o solo `filas`, las de una
         issue), para verificar --esperado: el tipo de su fila de §13 y, de un record type o CDT con su apartado en técnico
@@ -718,6 +738,10 @@ class Contexto:
                 e = out.setdefault(o, {})
                 if tipo:
                     e["tipo"] = tipo
+                if tipo == "processModel":
+                    permisos = self.permisos_4(despues or self.m, o)
+                    if permisos:
+                        e["permisosInicio"] = permisos
                 campos = self.campos_3(despues or self.m, o) if tipo in ("recordType", "cdt") and not parte(nombre) \
                     else None
                 if campos is not None:
@@ -733,9 +757,12 @@ class Contexto:
                     pedidas = [a for a in ahora or [] if clave(a) == mo.normaliza(accion)]
                     if not pedidas and ahora is not None and antes is not None and f["situacion"] == "modifica":
                         pedidas = [a for a in ahora if clave(a) not in {clave(b) for b in antes}]
-                    elif not pedidas and f["situacion"] != "modifica":
+                    elif not pedidas and accion and f["situacion"] != "modifica":
                         pedidas = [{"nombre": accion}]
-                    pedidas = [{k: a[k] for k in ("nombre", "tipo") if a.get(k)} for a in pedidas]
+                    pedidas = [{**{k: a[k] for k in ("nombre", "tipo") if a.get(k)},
+                                "visibilidad": {"declaracion": a.get("celdas", {}).get("quien la ve", ""),
+                                                "configuracion": a.get("celdas", {}).get("visibilidad verificable", "")}}
+                               for a in pedidas]
                     e["acciones"] = e.get("acciones", []) + [a for a in pedidas if a not in e.get("acciones", [])]
                     if not e["acciones"]:
                         del e["acciones"]

@@ -1160,7 +1160,7 @@ Se acepta si:
                 except OSError:
                     pass
         shutil.rmtree(tmp, ignore_errors=True)
-    for nombre in ("test_automejora.py", "test_ingesta.py", "test_dependencias.py", "test_secuenciacion.py"):
+    for nombre in ("test_automejora.py", "test_ingesta.py", "test_dependencias.py", "test_secuenciacion.py", "test_permisos.py"):
         prueba = AQUI / nombre
         if prueba.is_file():
             c, out = corre(prueba)
@@ -2503,7 +2503,8 @@ def pruebas_de_la_issue(tmp):
     ok("una acción que se renombra: lo esperado lleva la de técnico §7 con su nombre nuevo y su tipo (la fila de §13 dice "
        "la de antes), sin campos del record type que comparar, sin pruebas que ejecutar y sin nada que revisar",
        c == 0 and {k: x for k, x in esp.items() if k != "_issue"} == {"DEM Solicitud": {
-           "tipo": "recordType", "acciones": [{"nombre": "Pedir material", "tipo": "De lista"}]}}
+           "tipo": "recordType", "acciones": [{"nombre": "Pedir material", "tipo": "De lista",
+                                                "visibilidad": {"declaracion": "`DEM Gestores`", "configuracion": ""}}]}}
        and esp["_issue"]["pruebas"] is False and "Que una persona revise" not in out, out + json.dumps(esp, ensure_ascii=False))
     r, c, out = renombra("t13 accion y permisos", " y `DEM Revisores`")
     c2, out2 = corre(S / "comprobar.py", r)
@@ -2671,7 +2672,8 @@ def pruebas_issues(tmp):
        and "Campo: titulo" not in i3 and "Campo: titulo" in i1
        and {k: v for k, v in json.loads(lee(d / "ISS-03-esperado.json")).items() if k != "_issue"}
        == {"AUT_FichaSolicitud": {"tipo": "interface"},
-           "AUT Solicitud": {"acciones": [{"nombre": "Adjuntar informe del organismo"}]}}, i3)
+           "AUT Solicitud": {"acciones": [{"nombre": "Adjuntar informe del organismo",
+                                            "visibilidad": {"declaracion": "", "configuracion": ""}}]}}, i3)
     textos = [lee(d / n) for n in nombres if n.endswith(".md") and n != "indice.md"]
     ok("ninguna issue pide leer un documento entero: lleva el extracto, no «ver técnico §7»",
        len(textos) == 5 and all("no hay que leer el funcional ni el técnico" in x and "## Lo que dice el técnico" in x

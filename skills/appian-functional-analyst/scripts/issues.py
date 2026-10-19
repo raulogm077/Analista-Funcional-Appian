@@ -122,6 +122,7 @@ class Plan:
     revisar: list = field(default_factory=list)    # lo que una persona revisa antes de construir (T14, unidades.py)
     manuales: list = field(default_factory=list)   # cierre humano de una versión concreta, sin fingir verificación
     dependencias: list = field(default_factory=list)  # correcciones humanas y su historial, en el índice
+    permisos: list = field(default_factory=list)    # aceptación humana de un hallazgo observado, nunca verificación
 
 
 def clave(pid):
@@ -808,6 +809,54 @@ def marcas_de(raiz, uid):
 
 MANUALES = "Issues cerradas manualmente"
 COLUMNAS_MANUALES = ["Issue", "Versión", "Motivo", "Quién", "Cuándo"]
+PERMISOS = "Diferencias de permisos aceptadas"
+COLUMNAS_PERMISOS = ["Issue", "Versión", "Objeto", "Hallazgo", "Detalle", "Motivo", "Quién", "Cuándo", "Estado"]
+
+
+def permisos_de(raiz, uid):
+    f = carpeta(raiz, uid) / INDICE
+    dentro, out = False, []
+    for l in (f.read_text(encoding="utf-8") if f.is_file() else "").splitlines():
+        if l.startswith("## "):
+            dentro = l == "## " + PERMISOS
+        if dentro and l.startswith("|"):
+            c = mo.celdas(l)
+            if len(c) == len(COLUMNAS_PERMISOS) and RX_ISSUE.fullmatch(c[0]):
+                out.append(dict(zip(("issue", "version", "objeto", "hallazgo", "detalle", "motivo", "quien", "cuando", "estado"), c)))
+    return out
+
+
+def hallazgos_permisos(v, avisos=None):
+    """Solo diferencias confirmadas; la huella incluye entorno, UUID y configuración esperada/observada."""
+    out = []
+    avisos = [] if avisos is None else avisos
+    objetos = (v or {}).get("objetos", [])
+    if not isinstance(objetos, list):
+        avisos.append("permisos no comprobados: lista de objetos ilegible")
+        return out
+    for o in objetos:
+        if not isinstance(o, dict):
+            continue
+        dif = o.get("diferencias") or {}
+        if not isinstance(dif, dict):
+            avisos.append(f"permisos no comprobados de {o.get('pedido')}: diferencias ilegibles")
+            continue
+        hallazgos = dif.get("permisosDiferentes", [])
+        if not isinstance(hallazgos, list):
+            avisos.append(f"permisos no comprobados de {o.get('pedido')}: lista de hallazgos ilegible")
+            continue
+        for h in hallazgos:
+            if (not isinstance(h, dict) or not isinstance(h.get("comprobacion"), str) or not h["comprobacion"]
+                    or not isinstance(h.get("esperado"), dict) or not isinstance(h.get("real"), dict)
+                    or not isinstance(o.get("uuid"), str) or not o["uuid"]
+                    or not isinstance(v.get("entorno"), str) or not v["entorno"]):
+                avisos.append(f"permisos no comprobados de {o.get('pedido')}: hallazgo incompleto")
+                continue
+            datos = [v.get("entorno"), o.get("pedido"), o.get("uuid"), h]
+            huella = hashlib.sha256(json.dumps(datos, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
+            out.append({"objeto": o.get("pedido"), "hallazgo": "PER-" + huella,
+                        "detalle": json.dumps({"entorno": v["entorno"], "uuid": o["uuid"], **h}, ensure_ascii=False, sort_keys=True)})
+    return out
 
 
 def manuales_de(raiz, uid):
@@ -1015,6 +1064,7 @@ def calcula(m, ctx, uid, estreno=False):
     aplica_dependencias(plan)
     plan.manuales = [x for x in manuales_de(m.raiz, uid)
                      if any(i.id == x["issue"] and i.version == x["version"] for i in issues)]
+    plan.permisos = permisos_de(m.raiz, uid)  # conservar decisiones caducadas/revocadas para revisión humana
     if perdidas:
         corta = lambda t: (t if len(t) <= 60 else t[:57].rstrip() + "…").replace("|", "/")   # noqa: E731
         plan.avisos.append(f"{len(perdidas)} {'línea' if len(perdidas) == 1 else 'líneas'} del técnico no nombran ningún "
@@ -1108,6 +1158,14 @@ def texto_indice(plan, reservas):
             valores = {**x, "depende": lista(x["depende"]), "automaticas": lista(x["automaticas"]),
                        "versiones": ", ".join(k + ":" + v for k, v in x["versiones"].items()) or "—"}
             L.append("| " + " | ".join(celda(valores[k]) for k in CAMPOS_DEPENDENCIAS) + " |")
+    if plan.permisos:
+        L += ["", f"## {PERMISOS}", "", "Aceptaciones humanas del hallazgo indicado, no permisos verificados. "
+              "Solo valen para esa versión, objeto, entorno y configuración observada; no tapan pruebas ni QA. "
+              "Se revocan con --revocar-permiso y se revisan antes del paquete.", "",
+              "| " + " | ".join(COLUMNAS_PERMISOS) + " |", "|" + "---|" * len(COLUMNAS_PERMISOS)]
+        L += ["| " + " | ".join(x[k].replace("|", r"\u007c") if k == "detalle" else celda(x[k]) for k in
+              ("issue", "version", "objeto", "hallazgo", "detalle", "motivo", "quien", "cuando", "estado")) + " |"
+              for x in plan.permisos]
     if plan.manuales:
         L += ["", f"## {MANUALES}", "", "Cierres humanos, sin verificación automática; caducan si cambia la issue. "
               "Revisarlos antes del paquete.", "", "| " + " | ".join(COLUMNAS_MANUALES) + " |", "|---|---|---|---|---|"]
@@ -1133,7 +1191,15 @@ def escribe(plan, raiz, reservas=None):
     destino = carpeta(raiz, plan.uid)
     destino.mkdir(parents=True, exist_ok=True)
     plan.marcas = [x for x in plan.marcas if sigue_marcada(raiz, plan, x)]
-    hechas = {i.id for i in plan.issues if estado(raiz, plan.uid, i, plan.marcas, plan.manuales)[0]}
+    for x in plan.permisos:
+        if x["estado"] != "Vigente":
+            continue
+        issue = next((i for i in plan.issues if i.id == x["issue"] and i.version == x["version"]), None)
+        v, _ = verificacion(raiz, plan.uid, issue) if issue else (None, "")
+        if issue is None or (v is not None and not any(h["hallazgo"] == x["hallazgo"] and h["objeto"] == x["objeto"]
+                                                     for h in hallazgos_permisos(v))):
+            x["estado"] = "Caducada"
+    hechas = {i.id for i in plan.issues if estado(raiz, plan.uid, i, plan.marcas, plan.manuales, plan.permisos)[0]}
     plan.reservas = {k: v for k, v in (plan.reservas if reservas is None else reservas).items() if k not in hechas}
     ficheros = {INDICE: texto_indice(plan, plan.reservas)}
     for i in plan.issues:
@@ -1210,7 +1276,7 @@ def marcado(marcas, issue, objeto, caso, error):
                and x["error"] == error_de(error) for x in marcas)
 
 
-def estado(raiz, uid, issue, marcas=(), manuales=None):
+def estado(raiz, uid, issue, marcas=(), manuales=None, permisos=None):
     """(hecha, por qué): una issue está hecha cuando su última verificación (construccion/<U>/verificacion/ISS-nn.json,
     que deja «verificar --esperado») es de su versión de ahora, encuentra todos sus objetos como dice el técnico, si
     tiene pruebas, no falla ningún caso de prueba de sus objetos y no falla ninguno de sus escenarios en el QA de la
@@ -1220,14 +1286,37 @@ def estado(raiz, uid, issue, marcas=(), manuales=None):
     pruebas marcadas son avisos: van tras «hecha · …»."""
     manual = next((x for x in (manuales_de(raiz, uid) if manuales is None else manuales)
                    if x["issue"] == issue.id and x["version"] == issue.version), None)
+    avisos_permisos = []
     def hecha(*avisos):     # con lo suyo bien, falta su QA: un escenario suyo que falla, sin marcar, la deja pendiente
         qa = falla_en_qa(raiz, uid, issue, marcas)
         if qa:
             return False, (f"falla en QA: {', '.join(qa)} (qa/{uid}/resultado.json); corregido, se repiten sus guiones "
                            f"(appian-qa: qa.py repetir <p> {uid})")
-        return True, " · ".join([f"hecha manualmente por {manual['quien']}: {manual['motivo']}" if manual else "hecha", *avisos, *(f"marcada como no necesaria: {o} «{c}»"
+        return True, " · ".join([f"hecha manualmente por {manual['quien']}: {manual['motivo']}" if manual else "hecha", *avisos, *avisos_permisos, *(f"marcada como no necesaria: {o} «{c}»"
                                                       for o, c, _ in fallos_qa(raiz, uid, issue))])
     v, por_que = verificacion(raiz, uid, issue)
+    aceptados = [x for x in (permisos_de(raiz, uid) if permisos is None else permisos)
+                if x["issue"] == issue.id and x["version"] == issue.version and x["estado"] == "Vigente"]
+    pendientes_permisos = []
+    for h in hallazgos_permisos(v, avisos_permisos):
+        aceptacion = next((x for x in aceptados if x["objeto"] == h["objeto"] and x["hallazgo"] == h["hallazgo"]), None)
+        if aceptacion:
+            avisos_permisos.append(f"diferencia de permisos aceptada por {aceptacion['quien']}: {h['objeto']} "
+                                   f"{h['hallazgo']} ({aceptacion['motivo']})")
+        else:
+            pendientes_permisos.append(f"{h['objeto']} {h['hallazgo']}: {h['detalle']}")
+    if pendientes_permisos:
+        return False, "diferencias confirmadas de permisos: " + "; ".join(pendientes_permisos)
+    objetos_v = (v or {}).get("objetos", [])
+    for o in objetos_v if isinstance(objetos_v, list) else []:
+        if not isinstance(o, dict) or not isinstance(o.get("diferencias") or {}, dict):
+            continue
+        motivos = (o.get("diferencias") or {}).get("permisosNoComprobados", [])
+        for motivo in motivos if isinstance(motivos, list) else ["diagnóstico de permisos ilegible"]:
+            avisos_permisos.append(f"permisos no comprobados de {o.get('pedido')}: {motivo}")
+    if any(isinstance(e, dict) and ("permisosInicio" in e or any("visibilidad" in a for a in e.get("acciones", [])))
+           for e in issue.esperado.values()):
+        avisos_permisos.append("acceso efectivo por rol no comprobado: requiere QA con cada rol")
     if manual:
         # El cierre humano suple la lectura estructural. Nunca tapa un fallo vigente de pruebas o QA.
         fallan = [(o, c) for o, c, e in casos(v) + (casos_ausentes(v, issue) if v else [])
@@ -1237,16 +1326,21 @@ def estado(raiz, uid, issue, marcas=(), manuales=None):
         return hecha("sin verificación estructural automática")
     if v is None:
         return False, por_que
-    vistos = {o.get("pedido"): o for o in v.get("objetos", []) if isinstance(o, dict)}
+    vistos = {o.get("pedido"): o for o in (objetos_v if isinstance(objetos_v, list) else []) if isinstance(o, dict)}
     sin = [o for o in issue.objetos if o not in vistos]
     if sin:
         return False, f"la verificación no incluye {', '.join(sin)}"
     malos, sin_leer = [], []
     for o in issue.objetos:
-        dif = dict(vistos[o].get("diferencias") or ({} if vistos[o].get("existe") else {"falta": True}))
+        dato = vistos[o].get("diferencias")
+        if dato and not isinstance(dato, dict):
+            return False, f"verificación ilegible de {o}: repite verificar"
+        dif = dict(dato or ({} if vistos[o].get("existe") else {"falta": True}))
         if [dif.pop(k, None) for k in ("camposSinLeer", "accionesSinLeer")] != [None, None]:   # no se pudo leer
             sin_leer.append(o)
         dif.pop("sobranCampos", None)   # campos adicionales no impiden lo acordado; nunca pedir borrarlos
+        dif.pop("permisosDiferentes", None)  # comprobados antes incluso si hay cierre manual
+        dif.pop("permisosNoComprobados", None)  # explícitamente no decidibles, nunca una coincidencia
         if dif:
             malos.append(f"{o}: {', '.join(dif)}")
     if malos:
@@ -1336,7 +1430,7 @@ def avisos_qa(raiz, plan):
 
 
 def estados(plan, raiz):
-    return {i.id: estado(raiz, plan.uid, i, plan.marcas, plan.manuales) for i in plan.issues}
+    return {i.id: estado(raiz, plan.uid, i, plan.marcas, plan.manuales, plan.permisos) for i in plan.issues}
 
 
 def elige(plan, raiz):
@@ -1604,9 +1698,10 @@ def con_reserva(raiz, uid, cambia, sin_git=None, escribe_=False):
         escribe(plan, raiz)
         marcas, manuales = list(plan.marcas), list(plan.manuales)
         dependencias = [dict(x) for x in plan.dependencias]
+        permisos = [dict(x) for x in plan.permisos]
         issue, reservas, mensaje = cambia(plan)
         if reservar and (reservas != plan.reservas or plan.marcas != marcas or plan.manuales != manuales
-                         or plan.dependencias != dependencias):
+                         or plan.dependencias != dependencias or plan.permisos != permisos):
             escribe(plan, raiz, reservas)
         return m, ctx, plan, issue, mensaje
 
@@ -1728,6 +1823,38 @@ def corrige_dependencias(raiz, uid, iid, destinos, motivo, quien=None, retirar=F
                                       "motivo": celda(motivo), "quien": nombre, "cuando": ahora, "estado": "Vigente"})
         aplica_dependencias(plan)
         return issue, plan.reservas, f"{uid}: {iid}, dependencias {'automáticas' if retirar else 'corregidas por ' + nombre}"
+    return con_reserva(raiz, uid, cambia, sin_git="en el índice, sin commit", escribe_=True)
+
+
+def acepta_permiso(raiz, uid, iid, hallazgo, motivo, quien=None, retirar=False):
+    """Acepta la diferencia observada, nunca fabrica una verificación ni acepta diferencias futuras."""
+    if not retirar and not str(motivo or "").strip():
+        raise NoSePuede("aceptar una diferencia de permisos necesita un motivo humano")
+    nombre, ahora = quien_soy(raiz, quien), datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+    def cambia(plan):
+        issue = next((i for i in plan.issues if i.id == iid), None)
+        if issue is None:
+            raise NoSePuede(f"{uid} no tiene la issue {iid}")
+        anteriores = [x for x in plan.permisos if x["issue"] == iid and x["hallazgo"] == hallazgo and x["estado"] == "Vigente"]
+        if retirar:
+            if not anteriores:
+                raise NoSePuede(f"{iid}: {hallazgo} no tiene una aceptación vigente")
+        else:
+            v, motivo_v = verificacion(raiz, uid, issue)
+            if v is None:
+                raise NoSePuede(f"{iid}: {motivo_v}; se acepta un hallazgo de su verificación actual")
+            h = next((x for x in hallazgos_permisos(v) if x["hallazgo"] == hallazgo), None)
+            if h is None:
+                raise NoSePuede(f"{iid}: {hallazgo} no es una diferencia de permisos confirmada ahora")
+        if retirar:
+            for x in anteriores:
+                x["estado"] = f"Revocada por {nombre} · {ahora}"
+        else:
+            if anteriores:
+                raise NoSePuede(f"{iid}: {hallazgo} ya está aceptado; revoca esa aceptación antes de sustituirla")
+            plan.permisos.append({"issue": iid, "version": issue.version, **h,
+                                  "motivo": celda(motivo), "quien": nombre, "cuando": ahora, "estado": "Vigente"})
+        return issue, plan.reservas, f"{uid}: {iid}, {hallazgo}, " + ("aceptación revocada" if retirar else f"diferencia aceptada por {nombre}")
     return con_reserva(raiz, uid, cambia, sin_git="en el índice, sin commit", escribe_=True)
 
 

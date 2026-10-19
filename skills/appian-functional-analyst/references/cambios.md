@@ -193,6 +193,15 @@ registra otra decisión. Las anotaciones caducadas, retiradas y sustituidas qued
    objeto existe, su tipo, de record types y CDT los campos de esta unidad (los campos adicionales no bloquean,
    también en objetos nuevos) y, de una acción de registro, su nombre y su tipo (de la tabla de acciones de técnico
    §7); la fecha de última modificación es un dato, no una prueba. Si no pudo leer algo, se repite.
+   **Permisos**: compara los roles y grupos declarados de procesos (§4) y la configuración simple de visibilidad
+   de acciones (§7), como indica `tecnico-plantilla.md`. Lo ilegible o no decidible sale **no comprobado**; no acredita
+   acceso efectivo y sigue requiriendo QA con cada rol. Una diferencia confirmada deja la issue pendiente, también
+   con cierre manual de issue o unidad. Corregir y verificar, o una persona acepta expresamente ese comportamiento:
+   `indice.py issues <p> EV-02 ISS-nn --aceptar-permiso PER-huella --motivo "…" [--quien "…"]` (la huella la muestra
+   el estado). La aceptación guarda objeto, versión de issue, configuración esperada/observada, entorno, motivo,
+   persona y fecha; no modifica el resultado de verificación ni tapa otra diferencia, pruebas o QA. Otra versión,
+   objeto, entorno o hallazgo vuelve a bloquear. `--revocar-permiso PER-huella` la retira; las decisiones caducadas
+   y revocadas permanecen en el índice y se revisan antes del paquete. Ambas órdenes se niegan con `--desatendida`.
    **Sus pruebas**: si la issue cambia criterios o reglas, `verificar` ejecuta los casos de prueba guardados de sus
    reglas e interfaces y de lo que las usa (los dependientes directos); si no, ninguno, y lo sabe por lo esperado. Un
    caso suyo que falla la deja pendiente, también un objeto nombrado como caso de prueba en técnico §14 que no tenga

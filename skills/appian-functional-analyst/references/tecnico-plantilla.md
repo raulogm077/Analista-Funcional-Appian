@@ -134,6 +134,14 @@ propuesta de refactorización es obligatoria.
   registro, de campo, de vista, de acción o de la interfaz). Si es una decisión, su DT.
 - La cuenta del sistema que llama a una Web API expuesta (§10), con su grupo: va aquí y solo aquí.
 
+Para comparar la configuración de inicio de los procesos de §13, tabla `Proceso · Rol Appian · Grupos`: nombre exacto
+del proceso y de cada grupo, separados por `;`, sin UUID. `—` significa ningún grupo; una celda vacía no lo significa.
+Declara los roles que se acuerden (`administrator`, `editor`, `manager`, `viewer`, `initiator`, `deny`): comparar solo
+`initiator` no comprueba toda la configuración, pues otros roles también permiten iniciar. El verificador resuelve
+los nombres contra la lista real; un grupo ausente, ambiguo o externo no resuelto queda **no comprobado**. Compara
+conjuntos de grupos directos de las filas declaradas; herencia o miembros no legibles no se interpretan. Esta
+comprobación de configuración no acredita acceso efectivo: grupos anidados, denegaciones y cada rol se prueban en QA.
+
 ### 5. Estados y transiciones
 Qué hace cada transición del funcional (acción, nodo del proceso, regla). Ninguna interfaz cambia el
 estado por su cuenta. Un estado que la aplicación actual no guarda lleva una DT (cómo se guarda o se calcula) y su
@@ -154,6 +162,16 @@ inicio de proceso en la interfaz (BP 00 «Process», 01 §9.2, 02 §5.4, 03 §8,
 tabla `Acción · Tipo · Proceso · Quién la ve` bajo «Acciones de registro de `<record type>`», con el nombre entre
 comillas latinas y el tipo «De lista» o «Relacionada»: de ahí sale lo que `verificar` comprueba de una acción que se
 construye o cambia (su nombre y su tipo), también si se renombra.
+
+Si ya está decidida la configuración de visibilidad, añade `Visibilidad verificable`: `EXPRESSION: true()`,
+`EXPRESSION: false()` o una expresión simple de pertenencia a grupos como
+`EXPRESSION: a!isUserMemberOfGroup(loggedInUser(), cons!DEM_GESTORES)` (también un `or(...)` plano de esas llamadas).
+No inventes código para llenar la celda: conserva `Quién la ve` y deja sin comprobar lo que aún no es decidible.
+El verificador solo compara esta gramática: resuelve constantes `GROUP` escalares cuyo valor sea un nombre de grupo
+exacto y único. Alias de constantes al mismo grupo, términos repetidos y orden distinto del `or` no son diferencias.
+`RULES`, expresiones con reglas o datos del registro, filtros/membresías no soportados y valores no resueltos quedan
+**no comprobados**. Una diferencia de conjuntos es de configuración de grupos referenciados, no una prueba de quién
+ve la acción; el acceso efectivo sigue en el QA con cada rol.
 
 ### 8. Procesos
 Por process model, la tabla de nodos `Nodo · Qué hace · Asignado a · Plazo y escalado · Escribe · Evento`,

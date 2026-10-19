@@ -924,6 +924,11 @@ def construir(a, ctx, u, hoy, no, raiz, orden):
         try:
             pendientes = [(i, razon) for i, (hecha, razon) in iss.estados(iss.calcula(ctx.m, ctx, u.id), raiz).items()
                           if not hecha]
+            permisos = [(iid, razon) for iid, razon in pendientes if razon.startswith("diferencias confirmadas de permisos:")]
+            if permisos:
+                no("permisos pendientes: " + "; ".join(f"{iid}: {razon}" for iid, razon in permisos),
+                   "corrige y vuelve a verificar, o acepta expresamente cada PER con indice.py issues "
+                   "--aceptar-permiso PER-huella --motivo «…»; --manual no acepta permisos")
             for iid, razon in pendientes:
                 print(f"· {iid}: pendiente de verificación ({razon}); la unidad se marca manual, no verificada")
         except iss.NoSePuede as e:
@@ -955,6 +960,9 @@ def construir(a, ctx, u, hoy, no, raiz, orden):
         marca = ("con cierres manuales: " + ", ".join(manuales) + "; revisar antes del paquete" if manuales else "verificada")
         marca += (f" · {len(plan.marcas)} {'prueba marcada' if len(plan.marcas) == 1 else 'pruebas marcadas'}"
                                 if plan.marcas else "")
+        aceptadas = [iid for iid, (_, razon) in iss.estados(plan, raiz).items() if "diferencia de permisos aceptada" in razon]
+        if aceptadas:
+            marca += " · con diferencias de permisos aceptadas: " + ", ".join(aceptadas) + "; revisar antes del paquete"
     try:      # el QA de la unidad no bloquea: solo un escenario que falla (sus issues no estarían hechas); si falta, se avisa
         for x in iss.avisos_qa(raiz, plan if not a.manual else iss.calcula(ctx.m, ctx, u.id)):
             print(f"· {x}")

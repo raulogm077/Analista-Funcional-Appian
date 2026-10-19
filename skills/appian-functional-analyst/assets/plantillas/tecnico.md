@@ -39,6 +39,9 @@ Versión: 0.1 · Estado: en curso
 
 ## 4. Grupos y seguridad
 
+| Proceso | Rol Appian | Grupos |
+|---|---|---|
+
 ## 5. Estados y transiciones
 
 ## 6. Lógica
