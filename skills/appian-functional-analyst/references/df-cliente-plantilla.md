@@ -158,7 +158,11 @@ resolución, y termina con la solicitud autorizada, denegada o archivada.
 
 - Un párrafo con el flujo futuro: el evento que lo inicia, las fases y el resultado final.
 - El diagrama: el PNG que dibuja `appian-diagramas-bpmn`. El texto entre corchetes es el pie de figura. Sin diagrama,
-  la línea queda y el Word deja el hueco.
+  la línea queda y el Word deja el hueco. Si el flujo ya está dibujado (el .drawio del equipo o del cliente), se usa ese:
+  su página vigente, sola, en `analisis/diagramas/`, y su PNG con `diagrama.py png` de `appian-diagramas-bpmn`.
+- **Los estados y las acciones son los del diagrama**, con el mismo nombre en las reglas comunes, las actividades, las
+  pantallas, la matriz y el prototipo. Si un documento o una reunión usa otros, manda el diagrama vigente; la diferencia
+  va a `df-cliente-pendientes.md` y, si hay que cambiar el flujo, se cambia primero el diagrama.
 - **Un flujo grande** se parte: primero una visión general con todas las fases y después un diagrama por fase, cada
   uno con su pie y las actividades que abarca («Actividades ACT-03 a ACT-08»). Si el diagrama distingue tipos de
   estado o subestado (obligatorio, opcional, automático), la leyenda va con él.

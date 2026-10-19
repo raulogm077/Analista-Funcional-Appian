@@ -294,3 +294,8 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   tarea (se abre desde la bandeja); la información básica, una lista larga sin agrupar; los lotes hijo, sin resumen ni
   edición propia. Pasa a la guía de pantallas como «los modales que siempre hay», «la ficha y la tarea son pantallas
   distintas» y cómo se agrupa una sección con muchos datos.
+- (19/10) Segunda revisión: el DF usaba los estados y las acciones del análisis v1 del equipo y no los del diagrama del
+  flujo, que es el vigente; faltaba la imagen del diagrama, que ya estaba entre las fuentes; algunos desplegables no
+  decían si eran de selección única o múltiple, y varias tablas daban sus columnas seguidas en una frase. Pasa a la
+  guía del DF (el diagrama manda en estados y acciones; la imagen sale de su .drawio) y a la de pantallas (selección
+  única o múltiple siempre; columnas y campos en sub-viñetas, uno por línea).
