@@ -1,5 +1,8 @@
 # Plan: automejora del plugin con proyectos reales
 
+Este plan conserva el protocolo y el resultado de las pruebas del 14–15 de octubre. La aplicación de sus lecciones,
+autorizada después, se sigue en `docs/plan/2026-10-19-aplicar-automejora.md`; ese es el punto de entrada al retomar.
+
 Fecha: 14 de octubre de 2026. Parte de `main` (`2f9151d`, 0.8.0-beta.1). Rama `automejora-pruebas`, en su propia copia
 de la carpeta (worktree `Proyectos IA/Plugin-automejora`), porque otra sesión trabaja en la principal.
 
@@ -20,8 +23,8 @@ cambio.
 **Dónde va cada cosa.** Las pruebas, sus proyectos y lo medido, en `Proyectos IA/Pruebas-plugin/automejora/`, fuera del
 repositorio. Aquí llegan solo las lecciones, sin datos del cliente: cada proyecto se describe por su forma (cuántas
 reuniones, cuántos roles, qué tipo de proceso), nunca por su código ni su cliente. Lo medido, en
-`docs/evaluaciones.md` («Automejora con proyectos reales»); lo que pide un cambio, en `docs/siguiente-version.md`
-(«Del plan de automejora»), con qué, dónde y de dónde sale.
+`docs/evaluaciones.md` («Automejora con proyectos reales»); las lecciones se recogieron en `docs/siguiente-version.md`
+y ahora su estado se consulta en el plan de aplicación del 19 de octubre.
 
 **Cómo se trabaja.** La sesión principal coordina; cada prueba la hace un subagente que sigue el plugin de la rama
 leyendo sus ficheros (no con la herramienta Skill, que cargaría la versión instalada) y mide cada paso. Iba a lanzarlas
@@ -71,7 +74,7 @@ nodos). Sin sesiones anidadas: el clasificador de permisos las bloquea, así que
 el plugin de la rama y no hubo gasto en USD aparte. Cuatro revisores de contexto limpio (análisis y modos, mantenimiento e
 inversa, construcción y QA, volumen grande) contrastaron cada lección con el código y descartaron cerca de la mitad, por
 ser diseño, error de quien probó o ceremonia. Lo medido, en `docs/evaluaciones.md` («Automejora con proyectos reales»);
-lo que pide un cambio, en `docs/siguiente-version.md` («Del plan de automejora» y las líneas que ya había, al día).
+las lecciones se recogieron en `docs/siguiente-version.md` y su aplicación se sigue en el plan del 19 de octubre.
 
 Después, a petición de Raúl, P10: un análisis real hecho con IA (DF, técnico y prototipo) la víspera de construirlo. Se
 probaron lo recibido, el paso a la primera issue y la llegada de una respuesta del cliente con la construcción en marcha,

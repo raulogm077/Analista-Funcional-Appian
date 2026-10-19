@@ -4,6 +4,12 @@ Análisis del 12 al 14 de octubre de 2026 sobre la 0.7.0-beta.4 (`d6126a8`) y el
 técnico](https://dev.to/raguilera82/lucia-al-detalle-tecnico-8dk). El plan está en
 `docs/plan/2026-10-14-metodo-lucia.md`; las decisiones B y las tareas T remiten a él.
 
+Los ajustes posteriores a las pruebas P1–P10 se siguen en `docs/plan/2026-10-19-aplicar-automejora.md`. Mantienen
+este método: la tabla de §13 precede a las issues; cada issue recibe sus supuestos; las fuentes casi duplicadas se
+excluyen solo tras una selección motivada; la ausencia confirmada de casos exigidos por §14 cuenta como prueba
+pendiente y admite una excepción humana con motivo. La ruta local del plugin permite seguir los mismos flujos desde
+otros agentes. Las referencias y los flujos F1–F9 contienen las órdenes vigentes.
+
 El plugin ya aplica, a la manera de Appian, buena parte de L.U.C.I.A. Lo que aporta es su frontera: la IA prepara, y
 desde el paquete todo lo hacen Appian y scripts, con la firma de personas. Con las dos rondas de observaciones de Raúl,
 el plan son once cambios acotados y tres mediciones; entre ellos, un repositorio git por proyecto, flujos con una sola

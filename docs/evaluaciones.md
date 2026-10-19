@@ -4,6 +4,74 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Aplicación de las lecciones de automejora (19 de octubre de 2026)
+
+Cambios locales sobre `automejora-pruebas`, autorizados tras revisar las recomendaciones A–E. La matriz completa
+está en `docs/plan/2026-10-19-aplicar-automejora.md`. Tres worktrees separaron analista/QA, inversa/diagramas e
+ingesta/plantillas/prototipos; la rama `codex/aplicar-automejora` integra el resultado. Sin cambio de versión, PR,
+publicación ni escrituras en Appian. Los proyectos, capturas y logs quedan fuera del repositorio, en
+`$PROYECTOS_PRUEBA/automejora-codex-20261019/`.
+
+### Qué cambia
+
+- Construcción: se protege el anexo manual, se distinguen colisiones desconocidas, constantes y campos adicionales;
+  se exige convertir §13 a tabla y se conservan los números de issues y el ancho de IDs. Las reservas avisan de cambios.
+- Las issues reciben sus supuestos por PC/objeto y las reglas generales de §13. Los casos expresamente exigidos por
+  §14 y confirmados ausentes bloquean; una lectura fallida sigue siendo desconocida. La excepción humana lleva motivo.
+  El cierre manual por issue es visible, caduca al cambiar el encargo y no suplanta la verificación ni los fallos de QA.
+- Ingesta: palabras por fuente, imágenes enlazadas como parte del Markdown, EML normalizado, duplicadas candidatas
+  con exclusión explícita y reversible. `version --inicial` registra las fuentes de 1.0; `iniciar` deja la ruta local
+  del plugin para personas y otros agentes. Los escritores modificados conservan LF/CRLF del destino.
+- Inversa: herramientas específicas por tipo, nombres completos de aplicaciones, textos localizados y autor de
+  versiones; los grupos no cuentan como huérfanos. El inventario se genera por script y conserva aportes humanos por
+  UUID. Los documentos antiguos sin marcas requieren revisión mediante `--borrador`, sin sobrescribirlos.
+- Las plantillas y F1–F9 recogen las decisiones pequeñas de la revisión. Los dos SVG de `.github/assets/` reflejan el
+  flujo vigente. El chat usa el alto disponible y mantiene accesibles la entrada y el botón de envío.
+
+### Comprobaciones específicas
+
+| Prueba | Resultado |
+|---|---|
+| Analista: selftest del bloque de código, incluidas las 19 regresiones nuevas | 391 comprobaciones, exit 0 |
+| Analista integrado: scripts, plantillas, inversa y ambas regresiones nuevas en la misma rama | 392 comprobaciones, exit 0; incluye 19 casos de automejora y 7 de ingesta |
+| QA: selftest con excepciones, versiones de issue y CRLF | 57 comprobaciones, exit 0 |
+| Inversa: pytest completo | 203 passed, 2 skipped; 1.124 s |
+| Inversa: suplementos tras revisión | 29 casos focales; últimos ajustes del inventario 7/7 y del anexo CRLF 2/2. Se solapan con la suite; no se suman como casos distintos |
+| Diagramas: selftest completo y conservación LF/CRLF dirigida | Exit 0; PNG, Mermaid, tramos, BPMN y edición correctos |
+| Ingesta: Markdown/imágenes, EML, CRLF, palabras, duplicados/reversión, ayuda Windows y capturas DF | 7/7 |
+| Prototipos: selftest, humo, contraste y regresión de chat | 45 comprobaciones, exit 0 |
+| Chat directo y en tarjeta: 1280×720, 1280×500 y 390×844 | 6/6; sin scroll exterior, input y envío accesibles por `elementFromPoint`; al ocultar la barra recupera el alto completo |
+| SVG de funcionamiento y desarrollo, claro y oscuro | 52 y 24 textos; ninguno fuera del lienzo en los cuatro renders; revisión visual correcta |
+| Inventario regenerado | Conserva «Para qué», enlaces y pantalla por UUID, incluso si la extracción trae otra descripción; rechaza originales sin marcas y ofrece borradores aparte |
+| Diagrama por tramos | El enlace de entrada muestra código y nombre del paso de origen; PNG revisado |
+
+P10 se repitió en una copia externa, sin configurar MCP ni modificar el proyecto original. Las cuatro órdenes
+(`issues`, `siguientes`, `estado`, `comprobar`) salieron con código cero antes y después; la diferencia está en el
+contenido que reciben los constructores y en los avisos que antes faltaban:
+
+| Medida en las 25 issues | Antes | Después |
+|---|---|---|
+| Copias de supuestos que deben llegar por PC u objeto (22 filas de origen) | 0/25 | 25/25 |
+| Issues que reciben las reglas generales de construcción | 0 | 25 |
+| Listas de «En paralelo con» de más de cuatro issues | 24 | 0; remiten al índice |
+| Dígitos del siguiente HU, en un proyecto de tres dígitos | 2 | 3 |
+| Aviso Gherkin en primera versión | No | Sí |
+| Aviso de «Con qué» ausente en §14 | No | Sí |
+
+La revisión sobre una copia de P10 detectó que «Reglas para quien construye» también aparece como párrafo con el
+contenido en la misma línea. Se corrigió el lector y se añadió una prueba ficticia: las reglas llegan a las issues sin
+arrastrar la tabla siguiente. La revisión visual del chat detectó otro fallo que una prueba de límites no veía:
+la barra del prototipo tapaba los controles. Por eso la regresión comprueba qué elemento recibe el clic.
+
+### Límites de esta medida
+
+Son pruebas locales y sobre copias de material ya recogido. No acreditan seguridad por rol, efectos de ejecución ni
+una nueva construcción en Appian. El PDF real no se midió por falta de LibreOffice; la suite de contraste conserva
+doce textos sobre imágenes sin medir. Pytest omitió un wrapper de shell exclusivo de POSIX y una comprobación Mermaid
+por falta de navegador en el entorno de uv; esta última pasó aparte con Python local (seis bloques Mermaid).
+La prueba de comportamiento con `claude --plugin-dir` queda pendiente antes
+de subir; la batería completa en Linux corresponde al PR. Los puntos aparcados están en `docs/siguiente-version.md`.
+
 ## Automejora con proyectos reales (14 y 15 de octubre de 2026)
 
 Sobre la 0.8.0-beta.1, sin cambiar el plugin. Plan: `docs/plan/2026-10-14-automejora.md`. Nueve pruebas con reuniones
@@ -12,7 +80,8 @@ subagente siguiendo el plugin de la rama leyendo sus ficheros (las sesiones anid
 el clasificador de permisos), y la revisó otro de contexto limpio contra el código. Tiempos de reloj de herramienta,
 aproximados; sin coste en USD, porque no hubo sesiones anidadas. P10, el 15 de octubre: un análisis real hecho con IA
 (DF, técnico y prototipo) la víspera de construirlo, en copias fuera del repositorio y sin escribir en Appian. Lo que
-pide un cambio está en `docs/siguiente-version.md` («Del plan de automejora»).
+pidió un cambio se sigue en `docs/plan/2026-10-19-aplicar-automejora.md`; arriba constan los resultados al aplicarlo,
+y `docs/siguiente-version.md` conserva lo aplazado.
 
 | Prueba | Qué | Min | Llamadas | Resultado |
 |---|---|---|---|---|

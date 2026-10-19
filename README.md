@@ -20,18 +20,26 @@ Cada proyecto es un repositorio git que crea `proyecto.py iniciar`, siempre con 
 defecto, F5 urgente, F6 ingeniería inversa, F7 refactorización, F8 construir y verificar y F9 pase a producción. Cada
 flujo dice quién hace cada paso y con qué skill, y cita el detalle sin repetirlo. Su única fuente es
 `skills/appian-functional-analyst/assets/flujos/`: volver a lanzar `iniciar` pone al día `AGENTS.md` y los flujos con la
-versión del plugin, sin tocar lo demás.
+versión del plugin, sin tocar el análisis. Además, `.appian-plugin.json`, local e ignorado por git, indica dónde está
+el plugin instalado en ese equipo; `AGENTS.md` lo usa para que una persona u otro agente encuentre los scripts.
 
 Cada cambio es una unidad (`EV-nn`, `URG-nn`) en `analisis/cambios.md`. Al aprobarla el jefe de proyecto, un script
-escribe en `construccion/<U>/` una issue por requisito, con lo que necesita quien la construye y nada más (qué se pide,
-sus escenarios en Gherkin, sus objetos y lo que dice de ellos el técnico), en orden y diciendo cuáles pueden ir a la
-vez. Quien construye, persona o agente, pide la siguiente (`indice.py issues <p> <U> --siguiente`), que queda reservada
+escribe en `construccion/<U>/` sus issues a partir de la tabla de objetos de técnico §13: lo común en la Base y juntos
+los requisitos que comparten objetos. Si §13 sigue en lista, primero se convierte a tabla. Cada issue lleva qué se
+pide, sus escenarios, objetos, extracto del técnico y supuestos pendientes, en orden de dependencias.
+Quien construye, persona o agente, pide la siguiente (`indice.py issues <p> <U> --siguiente`), que queda reservada
 con un commit para que nadie más se la lleve, y la construye solo en desarrollo. La issue está hecha cuando pasa su
-verificación: sus objetos, como dice el técnico, y sus pruebas, los casos de prueba guardados de sus reglas e interfaces
-y de lo que las usa; un retoque que no cambia criterios ni reglas no ejecuta ninguno. Con todas hechas, el QA recorre la
+verificación: sus objetos, como dice el técnico, y sus pruebas. La ausencia confirmada de casos exigidos expresamente
+en técnico §14 mantiene la issue pendiente; la excepción humana lleva motivo. Los fallos en objetos dependientes
+se muestran como avisos. Un retoque que no cambia criterios ni reglas no ejecuta casos. Si se regenera una issue
+reservada con otro contenido, se avisa a quien la tiene y debe releerla. Con todas hechas, el QA recorre la
 unidad con SAIL CLI como cada rol, en otra sesión y solo con sus escenarios, y deja cada recorrido como guion en
 `qa/<U>/`. Un fallo devuelve su issue a pendiente, salvo que una persona marque esa prueba como no necesaria, con motivo
 (`skills/appian-functional-analyst/references/cambios.md` §6). Después, la unidad se marca construida.
+
+Una persona también puede cerrar una issue con `--manual --motivo`: queda «hecha manualmente», permite avanzar a las
+dependientes y caduca si cambia el encargo. Ese cierre no crea una verificación ni elimina un fallo vigente de pruebas
+o QA sin su propia excepción motivada. Los cierres manuales se revisan antes del paquete.
 
 Desde el paquete no actúa la IA. Antes de prepararlo, la regresión ejecuta todos los casos de prueba de la aplicación y
 `qa.py` repite sin IA los guiones del QA; quien lo prepara revisa en Compare and Deploy la comparación de sus objetos

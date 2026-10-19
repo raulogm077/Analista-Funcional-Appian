@@ -60,7 +60,7 @@ límites) se consulta en el MCP de documentación como dice el SKILL.md, y la UR
 
 ### 0. Entorno
 Tabla `Dato · Valor · Fuente`: una fila «Aplicación» con su nombre exacto entre comillas invertidas, sin comentarios
-ni paréntesis, y otra «Prefijo»; la URL de cada entorno (una fila por entorno:
+añadidos (conserva los paréntesis que formen parte del nombre), y otra «Prefijo»; la URL de cada entorno (una fila por entorno:
 «URL de desarrollo», «URL de pruebas», «URL de producción» y, si lo hay, «URL del entorno de corrección»), versión de
 Appian en cada entorno, tier y complementos, base de datos, inicio de sesión, idioma y zona horaria, calendario
 laboral, volumen, usuarios y concurrencia, tiempo de recuperación, accesibilidad, móvil y usuarios externos, licencias.
