@@ -179,6 +179,12 @@ def poner_al_dia(raiz):
         print(f"= {raiz / GUIA} y los flujos son de la versión {max(posterior, key=orden_version)} del plugin, posterior "
               f"a la de este equipo ({version or 'sin versión'}): no se tocan; actualiza el plugin")
         return
+    localizador = ".appian-plugin.json"
+    ign = raiz / ".gitignore"
+    texto_ign = ign.read_text(encoding="utf-8") if ign.is_file() else ""
+    if localizador not in texto_ign.splitlines():
+        escribe(ign, texto_ign.rstrip("\n") + "\n" + localizador + "\n")
+    escribe(raiz / localizador, json.dumps({"ruta": str(SKILL.parents[1].resolve())}, ensure_ascii=False) + "\n")
     ajenos = [r for r in nuevos if (raiz / r).exists() and not en_proyecto[r]]
     cambiados = [r for r, texto in nuevos.items() if r not in ajenos and escribe(raiz / r, texto)]
     retirados = [f for f in sorted((raiz / COPIA_FLUJOS).glob("*.md"))   # un flujo que el plugin ya no tiene
@@ -318,7 +324,9 @@ def estado(a):
                  for x in [re.match(r"app-v(\d+)\.(\d+)\.json$", b.name)] if x]
     ultima = max(ensenadas) if ensenadas else None
     aprobadas, procesadas, pendientes = set(), {f[0] for f in tabla(texto, "Fuentes procesadas")}, []
-    cerradas = {u.id for u in un.leer(raiz) or [] if u.estado in (un.PRODUCCION, un.DESCARTADA)}
+    unidades_leidas = un.leer(raiz) or []
+    procesadas |= {f for u in unidades_leidas for f in re.findall(r"FU-\d+", u.aprobada)}
+    cerradas = {u.id for u in unidades_leidas if u.estado in (un.PRODUCCION, un.DESCARTADA)}
     for nombre, t, puntos, _ in mo.informes(raiz):
         if nombre in cerradas:   # la ficha de una URG ya pasada a producción (o descartada) no queda pendiente
             continue
@@ -467,6 +475,7 @@ def version(a):
     puede escribir (falta la tabla) lo dice, para hacerlo a mano."""
     m = mo.Proyecto(pathlib.Path(a.carpeta))
     raiz = m.raiz
+    inicial = getattr(a, "inicial", False)
     fuentes = list(dict.fromkeys(f.strip().upper() for f in a.fuente))
     try:
         cat = {f["id"]: f for f in json.loads((raiz / "fuentes" / "indice.json").read_text(encoding="utf-8"))
@@ -482,7 +491,8 @@ def version(a):
     ya = {f[0]: f[-1] for f in tabla(texto_p, "Fuentes procesadas") if f}
     for f in tabla(texto_d, "Versiones"):
         for x in re.findall(r"FU-\d+", f[3] if len(f) > 3 else ""):
-            ya.setdefault(x, f[0])
+            if not inicial:
+                ya.setdefault(x, f[0])
     repetidas = [f"{f} (versión {ya[f]})" for f in fuentes if f in ya]
     if repetidas:
         sys.exit(f"{', '.join(repetidas)} ya tiene versión: si sigues aplicándola, edita esa versión sin abrir otra (una "
@@ -491,8 +501,13 @@ def version(a):
     malas = [d[0] for d in decisiones if d[0].upper() not in mo.TIPOS_D]
     if malas:
         sys.exit(f"--decision {', '.join(malas)}: el tipo es uno de {', '.join(mo.TIPOS_D)}")
-    v, destino = _copia(raiz, m)
-    nueva = f"{v[0]}.{v[1] + 1}"
+    if inicial:
+        if m.version("F") != (1, 0) or m.version("T") not in (None, (1, 0)) or any((raiz / "versiones").glob("v*")):
+            sys.exit("--inicial registra las fuentes de la primera 1.0, sin copias de versiones anteriores")
+        v, destino, nueva = (1, 0), None, "1.0"
+    else:
+        v, destino = _copia(raiz, m)
+        nueva = f"{v[0]}.{v[1] + 1}"
     subidos, escrito, a_mano = [], [], []
     for doc, nombre in (("F", "funcional"), ("T", "técnico")):
         if doc not in m.docs or not m.version(doc):
@@ -505,7 +520,24 @@ def version(a):
         subidos.append(nombre)
     hoy = datetime.date.today().isoformat()
     que = " ".join(a.que.split()).replace("|", "/")
-    nuevo_d = anade_fila(texto_d, "Versiones", f"| {nueva} | {hoy} | {que} | {', '.join(fuentes)} | — |")
+    nuevo_d = None
+    if inicial:
+        # Completar solo la fila 1.0 de Versiones; conservar su fecha, descripción y validación existentes.
+        L = texto_d.split("\n")
+        dentro = False
+        for i, linea in enumerate(L):
+            if linea.startswith("## "):
+                dentro = linea.strip() == "## Versiones"
+            c = mo.celdas(linea) if dentro and linea.startswith("|") else []
+            if len(c) >= 5 and c[0].strip() == "1.0":
+                c[1] = c[1] if not un.vacio(c[1]) else hoy
+                c[2] = c[2] if not un.vacio(c[2]) else que
+                c[3] = ", ".join(dict.fromkeys(re.findall(r"FU-\d+", c[3]) + fuentes))
+                L[i] = "| " + " | ".join(c) + " |"
+                nuevo_d = "\n".join(L)
+                break
+    if nuevo_d is None:
+        nuevo_d = anade_fila(texto_d, "Versiones", f"| {nueva} | {hoy} | {que} | {', '.join(fuentes)} | — |")
     if nuevo_d is None:
         a_mano.append(f"la fila de la versión {nueva} en «## Versiones» de decisiones.md")
     else:
@@ -513,10 +545,11 @@ def version(a):
         texto_d = nuevo_d
     ids_d = []
     n = max([int(x) for f in tabla(texto_d, "Decisiones del cliente") for x in re.findall(r"^D-(\d+)", f[0])] or [0])
+    ancho_d = mo.ancho_ids(m.piezas, "D")
     fecha_fu = str(cat[fuentes[0]].get("fecha", ""))[:10] or hoy
     for tipo, afecta, nuevo_txt, antes in decisiones:
         celdas = [" ".join(x.split()).replace("|", "/") for x in (tipo.upper(), nuevo_txt, antes, afecta)]
-        fila = (f"| D-{n + 1:02d} | {fecha_fu} | {fuentes[0]} | {celdas[0]} | {celdas[1]} | {celdas[2]} | {celdas[3]} "
+        fila = (f"| D-{n + 1:0{ancho_d}d} | {fecha_fu} | {fuentes[0]} | {celdas[0]} | {celdas[1]} | {celdas[2]} | {celdas[3]} "
                 "| Sí |")
         nuevo_d = anade_fila(texto_d, "Decisiones del cliente", fila)
         if nuevo_d is None:
@@ -524,12 +557,12 @@ def version(a):
             continue
         n += 1
         texto_d = nuevo_d
-        ids_d.append(f"D-{n:02d}")
+        ids_d.append(f"D-{n:0{ancho_d}d}")
     if ids_d:
         escrito.append(f"{', '.join(ids_d)} en decisiones.md")
     if texto_d != (dec.read_text(encoding="utf-8") if dec.exists() else ""):
         mo.escribe(dec, texto_d)
-    informe = (a.informe or f"impacto/{fuentes[0]}.md").replace("\\", "/")
+    informe = (a.informe or ("—" if inicial else f"impacto/{fuentes[0]}.md")).replace("\\", "/")
     for fu in fuentes:
         e = cat[fu]
         fila = f"| {fu} | {str(e.get('fecha', ''))[:10]} | {que_es_fuente(e).replace('|', '/')} | {informe} | {nueva} |"
@@ -542,14 +575,18 @@ def version(a):
         mo.escribe(proy, texto_p)
         escrito.append(f"{', '.join(fuentes)} en «Fuentes procesadas» de proyecto.md")
     print(f"Versión {nueva}: {' y '.join(subidos)} en {nueva}" + (f"; {'; '.join(escrito)}" if escrito else "")
-          + f". Copia de la {v[0]}.{v[1]} en {destino}.")
+          + (f". Copia de la {v[0]}.{v[1]} en {destino}." if destino else ". Primera 1.0, sin incremento ni copia."))
     for x in a_mano:
         print(f"· No hay dónde escribirla, añádela a mano: {x}")
+    if inicial:
+        print(f"Verifica la primera versión: comprobar.py {citada(raiz)} --fuentes {citada(raiz / 'fuentes')}")
+        return
     filas_d = "" if ids_d else " y, si hay CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE, sus filas D"
     print(f"Ahora: edita solo las piezas del informe (indice.py ficha --lineas){filas_d}; escribe {informe} con "
           f"«Estado: aplicado en {nueva}» y verifica:")
-    print(f"  comprobar.py {citada(raiz)} --fuentes {citada(raiz / 'fuentes')} --anterior {citada(destino)} "
-          f"--impacto {citada(raiz / informe)}")
+    print(f"  comprobar.py {citada(raiz)} --fuentes {citada(raiz / 'fuentes')} "
+          + (f"--anterior {citada(destino)} " if destino else "")
+          + f"--impacto {citada(raiz / informe)}")
 
 
 def nombre_df(m, vs):
@@ -837,6 +874,13 @@ def construir(a, ctx, u, hoy, no, raiz, orden):
            "reaplícalas y, cuando su prueba pase, confírmalo: " + " ".join(f"--reaplicada {g}" for g, _ in falta))
     if a.manual:
         marca = "manual"
+        try:
+            pendientes = [(i, razon) for i, (hecha, razon) in iss.estados(iss.calcula(ctx.m, ctx, u.id), raiz).items()
+                          if not hecha]
+            for iid, razon in pendientes:
+                print(f"· {iid}: pendiente de verificación ({razon}); la unidad se marca manual, no verificada")
+        except iss.NoSePuede as e:
+            print(f"· No se han comprobado issues: {e}")
     else:      # construida es todas sus issues hechas: lo dice la verificación de cada una (issues.py)
         try:
             plan = iss.calcula(ctx.m, ctx, u.id)
@@ -852,7 +896,7 @@ def construir(a, ctx, u, hoy, no, raiz, orden):
                if con("no es lo del técnico") else
                "corrígelo en el entorno y vuelve a verificar; si una persona decide que esa prueba no es necesaria para "
                f"avanzar, la marca ella: «indice.py issues <p> {u.id} ISS-nn --sin-prueba \"<objeto> «<caso>»\" --motivo "
-               "\"…\"»" if con("fallan sus pruebas") else
+               "\"…\"»" if con("fallan sus pruebas") or con("faltan casos exigidos") else
                "corrígelo en desarrollo y repite sus guiones, como dice cada una; si una persona decide que ese escenario "
                f"no es necesario para avanzar, lo marca ella: «indice.py issues <p> {u.id} ISS-nn --sin-prueba HU-nn.m "
                "--motivo \"…\"»" if con("falla en QA") else
@@ -860,7 +904,9 @@ def construir(a, ctx, u, hoy, no, raiz, orden):
                f"construye y verifica cada una: «indice.py issues <p> {u.id} --siguiente» la da con su orden de terminar "
                "(sin Dev MCP, --manual)" if con("sin verificar") else
                f"vuelve a pasar la orden de terminar de cada una: «indice.py issues <p> {u.id} ISS-nn» la imprime")
-        marca = "verificada" + (f" · {len(plan.marcas)} {'prueba marcada' if len(plan.marcas) == 1 else 'pruebas marcadas'}"
+        manuales = [i.id for i in plan.issues if any(x["issue"] == i.id and x["version"] == i.version for x in plan.manuales)]
+        marca = ("con cierres manuales: " + ", ".join(manuales) + "; revisar antes del paquete" if manuales else "verificada")
+        marca += (f" · {len(plan.marcas)} {'prueba marcada' if len(plan.marcas) == 1 else 'pruebas marcadas'}"
                                 if plan.marcas else "")
     try:      # el QA de la unidad no bloquea: solo un escenario que falla (sus issues no estarían hechas); si falta, se avisa
         for x in iss.avisos_qa(raiz, plan if not a.manual else iss.calcula(ctx.m, ctx, u.id)):
@@ -885,6 +931,7 @@ def main():
     s = sub.add_parser("copia"); s.add_argument("carpeta"); s.set_defaults(f=copia)
     s = sub.add_parser("version"); s.add_argument("carpeta"); s.set_defaults(f=version)
     s.add_argument("--fuente", nargs="+", required=True, metavar="FU-nn", help="las fuentes del informe")
+    s.add_argument("--inicial", action="store_true", help="registra las fuentes de la primera 1.0 sin incrementar versión")
     s.add_argument("--que", required=True, help="qué cambia, en una frase y en palabras del cliente (sale en el Word): "
                                                  "la fila de la versión en decisiones.md")
     s.add_argument("--informe", help="el informe, si no es impacto/<primera fuente>.md (una urgencia: impacto/URG-nn.md)")

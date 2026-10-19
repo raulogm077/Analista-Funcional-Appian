@@ -312,6 +312,13 @@ def c_impacto(m, a):
             print(f"  {etiqueta(m, pid, 60)}  ← {'; '.join(sorted(d[pid]))}")
     lista("Revisar: dependen de ellas (las citan)", citan)
     lista("Revisar si cambia el contenido: ellas remiten a", remite)
+    if con:
+        # El texto de una sección puede repetir lo cambiado sin citar su ID: localizarlo también.
+        pats = [patron(x) for x in a.con]
+        for d, D in m.docs.items():
+            for l, texto in enumerate(D.lineas):
+                if not texto.startswith("#") and all(pt.search(mo.normaliza(texto)) for pt in pats):
+                    sueltas.setdefault((d, l), set()).update(a.con)
     if sueltas:
         print(f"\nTexto sin ID que las menciona ({len(sueltas)} líneas; cítalo por su sección):")
         for (d, l) in sorted(sueltas)[:30]:
@@ -382,6 +389,13 @@ def fila_13(m, ctx, construidas, unidad):
                 o = un.objeto(o)
                 if o in hechos and o not in ya and o not in objetos:
                     objetos.append(o)
+    rango = T.seccion("13")
+    if rango:
+        for n in range(*rango):
+            l = T.lineas[n]
+            if l.startswith("|") and (mo.ids_en(l) & (set(construidas) | pantallas)
+                                     or any(f"`{o}`" in l for o in objetos)):
+                print(f"      Técnico §13 l.{n + 1}: {l.strip()}")
     pasos = [int(x) for f in ctx.filas for x in re.findall(r"^\s*(\d+)", mo.sin_comentarios(f["paso"]))]
     o = objetos[0] if objetos else None
     # «Para», si la tabla tiene la columna: la pantalla que cambia o, si no es una pantalla, la pieza
@@ -404,7 +418,7 @@ def c_siguientes(m, a):
     for t in ORDEN:
         if t != "CA":
             n = (max(usados[t]) + 1) if usados[t] else 1
-            print(f"{t}-{n:0{ANCHO}d}")
+            print(f"{t}-{n:0{mo.ancho_ids(m.piezas, t, ANCHO)}d}")
     print("Criterios: el siguiente .n de su historia o de su ficha INT (HU-07.4 tras HU-07.3)")
 
 
@@ -462,6 +476,20 @@ def c_derivadas(m, a):
         resultado = L + [""] + nuevo + [""]
     else:
         fin = next((i for i in range(ini + 1, len(L)) if L[i].startswith("## ")), len(L))
+        # Solo se reemplaza el bloque que genera esta orden; una nota o una pregunta no se descarta.
+        viejo = L[ini:fin]
+        comentario = "<!-- Lo genera indice.py derivadas a partir de las pantallas (apartado 5); no se edita a mano. -->"
+        cabecera = next((mo.celdas(l) for l in viejo if l.startswith("| Pantalla y parte |")), [])
+        def generada(l):
+            c = mo.celdas(l)
+            return (l.startswith("|") and bool(cabecera) and len(c) == len(cabecera)
+                    and re.match(r"^PAN-\d+ .+ · .+$", c[0])
+                    and all(x.strip() in ("", "✔") for x in c[1:]))
+        manual = [l for l in viejo[1:] if l.strip() and l != comentario
+                  and not (l.startswith("| Pantalla y parte |") or re.match(r"^\|[-: |]+$", l) or generada(l))]
+        if a.escribir and (L[ini] != TITULO_ANEXO or comentario not in viejo or manual):
+            sys.exit("No se reemplaza el anexo: contiene texto ajeno al generado o no tiene su marca. "
+                     "Mueve las notas a otra sección antes de repetir derivadas --escribir.")
         resultado = L[:ini] + nuevo + [""] + L[fin:]
     texto = "\n".join(resultado).rstrip("\n") + "\n"
     actual = "\n".join(m.docs["F"].lineas)
@@ -623,9 +651,15 @@ def c_colision(m, a):
     elif col["deriva"] == "sin fichero" and (m.raiz / "as-is").is_dir():
         print(f"Sin as-is/datos/deriva.json. Si el Dev MCP da el historial, solo de esos objetos:\n  {DX} deriva --out "
               f"\"{(m.raiz / 'as-is').resolve().as_posix()}\" --objetos \"{','.join(col['corregidos'] + col['usan'])}\"")
-    print(f"Colisión: {'sí' if col['choques'] else 'no'}")
+    conocidas = col["dependenciasDisponibles"]
+    if not conocidas:
+        print("Dependencias: no disponibles; no se ha comprobado qué usa lo corregido.")
+    print(f"Colisión: {'sí' if col['choques'] else 'no' if conocidas else 'desconocida fuera de los objetos directos'}")
     for c in col["choques"]:
         print(f"  {c}")
+    if not conocidas and not col["choques"]:
+        print("→ Falta comprobar dependientes antes de decidir dónde corregir; registra la decisión del equipo.")
+        return
     print("→ " + ("«Dónde se corrige: Entorno de corrección» (igual que producción); cada unidad que cambia esos objetos "
                   "recibe en sus issues «Reaplicar " + uid + "» al volver a generarlas (indice.py issues <p> EV-nn). Sin "
                   "entorno de corrección, la ficha registra lo que decide el equipo." if col["choques"] else
@@ -647,6 +681,19 @@ def c_issues(m, a):
         print(f"La regresión de la aplicación{' en el entorno de corrección' if correccion else ''} antes de preparar "
               f"el paquete de {uid} (el resumen, en construccion/{uid}/regresion.json; por la salida, solo lo que "
               f"falla):\n\n```\n{orden}\n```" + "".join(f"\n· {n}" for n in notas))
+        return
+    if a.manual or a.automatico:
+        if a.desatendida:
+            sys.exit("El cierre manual de una issue lo decide una persona; no se cambia con --desatendida")
+        if not a.issue or (a.manual and not (a.motivo or "").strip()) or (a.manual and a.automatico):
+            sys.exit("Usa ISS-nn --manual --motivo «…», o ISS-nn --automatico para retirar su cierre manual")
+        try:
+            _, _, plan, issue, como = iss.cierre_manual(m.raiz, uid, a.issue.upper(), a.motivo, a.quien,
+                                                       retirar=a.automatico)
+        except iss.NoSePuede as e:
+            sys.exit(str(e))
+        print(como)
+        print("\n".join(iss.situacion(plan, m.raiz)))
         return
     if a.sin_prueba is not None:   # B2: lo decide una persona, con su motivo; nunca una sesión desatendida
         if a.desatendida:
@@ -746,6 +793,8 @@ def main():
                    help="con ISS-nn y --motivo: una persona marca ese caso de prueba, o ese escenario del QA (HU-nn.m), "
                         "que falla, como no necesario para avanzar; la issue puede darse por hecha y la marca se revisa "
                         "al preparar el paquete")
+    s.add_argument("--manual", action="store_true", help="con ISS-nn y --motivo: cierre humano de esta versión")
+    s.add_argument("--automatico", action="store_true", help="con ISS-nn: retira el cierre manual")
     s.add_argument("--motivo", help="con --sin-prueba: por qué no hace falta para avanzar")
     s.add_argument("--desatendida", action="store_true", help="la sesión no tiene a una persona: --sin-prueba se niega")
     a = ap.parse_args()

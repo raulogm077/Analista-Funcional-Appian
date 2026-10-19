@@ -483,6 +483,16 @@ def comprobar_tecnico(m, ctx):
     informe("técnico §14: cada criterio de aceptación" + ("" if al is None else " (de las historias que tocan las unidades)"),
             falta_en("14", [p.id for p in m.por_tipo("CA") if not anulada(m, p.id)]), grave=completo)
     informe("técnico §14: cada escenario", falta_en("14", [p.id for p in m.vigentes("ESC")]), grave=False)
+    sin_metodo = []
+    for ini, cab, filas in m.tablas("T", "14"):
+        cols = [mo.normaliza(c) for c in cab]
+        if not cols or not cols[0].startswith("criterio"):
+            continue
+        k = cols.index("con que") if "con que" in cols else None
+        for f in filas:
+            if f and any(dentro(m.raiz_de(cid)) for cid in mo.ids_en(f[0])) and (k is None or len(f) <= k or un.vacio(f[k])):
+                sin_metodo.append(f[0])
+    informe("técnico §14: cada criterio con «Con qué» se prueba", sin_metodo, grave=False)
     r4 = T.seccion("4")
     t4 = mo.normaliza("\n".join(T.lineas[r4[0]:r4[1]])) if r4 else ""
     suyos = None if al is None else {mo.normaliza(x) for h in m.vigentes("HU") if h.id in al
@@ -523,6 +533,16 @@ def comprobar_unidades(m, ctx):
     if not ctx.hay:
         return
     curso = [u for u in ctx.unidades if u.estado in un.EN_CURSO]
+    informe("unidades en curso: técnico §13 con tabla de construcción (convierte la lista antes de generar issues)",
+            [u.id for u in curso if not u.urgente and not ctx.filas], grave=False)
+    supuestos_cerrados = []
+    for _, cab, filas in m.tablas("T", "13"):
+        if [mo.normaliza(x) for x in cab] == ["pregunta", "se construye con", "donde cambia"]:
+            for f in filas:
+                for pid in mo.ids_en(f[0]) if f else []:
+                    if pid.startswith("PC-") and (pid not in m.piezas or m.piezas[pid].anulada):
+                        supuestos_cerrados.append(pid)
+    informe("supuestos para construir: revisar la fila de una pregunta ya respondida", supuestos_cerrados, grave=False)
     sin_reflejo, sin_punto = [], []
     for u in curso:
         filas = ctx.filas_de(u.id)
@@ -848,7 +868,14 @@ def comprobar_fuentes(m, carpeta, corregir):
         for x, y in rx.findall(tx):
             citas[x].add(seg(y))
     huecos = []
+    catalogo = lee_json(pathlib.Path(carpeta) / "indice.json") or {}
+    fuentes = {f.get("id"): f for f in catalogo.get("fuentes", [])}
+    duplicadas = {f["id"].split("-", 1)[1] for f in fuentes.values()
+                  if f.get("duplicada_de") in fuentes and f.get("duplicada_de") != f.get("id")
+                  and str(f.get("motivo_duplicada", "")).strip()}
     for num, marcas in src.items():
+        if num in duplicadas:
+            continue
         habla = collections.Counter(seg(h) for h in marcas)
         huecos += [f"FU-{num} {s * 10:02d}–{s * 10 + 10:02d} min" for s, n in sorted(habla.items())
                    if n >= 5 and s not in citas[num]]
@@ -1153,6 +1180,10 @@ def main():
         comprobar_citas_as_is(m, a.fuentes)
     if a.fuentes:
         comprobar_fuentes(m, a.fuentes, a.corregir_citas)
+    if not a.anterior:
+        informe("criterios con dado, cuando y entonces (primera versión o sin comparación anterior)",
+                [f"{p.id} (l.{p.ini + 1})" for p in m.por_tipo("CA")
+                 if not anulada(m, p.id) and not mo.pasos_gherkin(m.criterio(p.id))], grave=False)
     if a.anterior:
         nuevas, modif, anul, ant = comprobar_anterior(m, a.anterior)
         informe("texto que queda viejo (lo que una pieza cambiada ya no dice y sigue en otra: corrígelo o dilo)",

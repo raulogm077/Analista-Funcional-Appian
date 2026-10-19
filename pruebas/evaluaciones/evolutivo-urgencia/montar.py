@@ -173,6 +173,9 @@ def montar(destino: Path, fuente: Path | None = INCIDENCIA) -> Path:
     if destino.exists() and any(destino.iterdir()):
         raise SystemExit(f"{destino} ya tiene contenido: monta el proyecto en una carpeta nueva")
     shutil.copytree(DATOS, destino, dirs_exist_ok=True)
+    r = corre(sys.executable, ANALISTA / "proyecto.py", "iniciar", destino)
+    if r.returncode:
+        raise SystemExit(f"proyecto.py iniciar falla:\n{r.stdout}{r.stderr}")
     r = corre(sys.executable, ANALISTA / "leer_fuentes.py", *FUENTES, "-o", destino / "fuentes")
     if r.returncode:
         raise SystemExit(f"leer_fuentes.py falla:\n{r.stdout}{r.stderr}")

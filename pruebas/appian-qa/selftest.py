@@ -20,6 +20,7 @@ import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
+from unittest.mock import patch
 
 sys.dont_write_bytecode = True  # importa issues.py del analista: sin __pycache__ dentro del plugin
 
@@ -369,6 +370,22 @@ def main():
         spec = importlib.util.spec_from_file_location("qa_simulado", QA)
         qa = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(qa)
+        crlf = t.p / "qa" / "crlf.txt"
+        crlf.write_bytes(b"uno\r\ndos\r\n")
+        qa.escribe(crlf, "uno\ntres\n")
+        ok("qa.escribe conserva CRLF al actualizar un destino existente", crlf.read_bytes() == b"uno\r\ntres\r\n")
+        # Se reutiliza el motor de excepciones: una marca humana no falsea el fallo del escenario.
+        falso = {"escenarios": {"HU-01.1": {"resultado": "falla", "paso": "entonces 1", "motivo": "error"}}}
+        marca_qa = {"issue": hecha.id, "version": hecha.version, "objeto": "QA", "caso": "HU-01.1",
+                    "error": "entonces 1: error"}
+        with patch.object(iss.un, "Contexto", return_value=SimpleNamespace(por_id={"EV-01": object()})), \
+             patch.object(iss, "calcula", return_value=SimpleNamespace(issues=[hecha], marcas=[marca_qa])), \
+             patch.object(iss.json, "loads", return_value=falso):
+            ok("QA reconoce la excepción del fallo actual para no anunciar vuelta a pendiente",
+               qa.excepciones_qa(t.p, "EV-01", object(), iss) == {(hecha.id, "HU-01.1")})
+            marca_qa["version"] = "otra"
+            ok("QA no oculta la vuelta a pendiente si cambió la versión de la excepción",
+               qa.excepciones_qa(t.p, "EV-01", object(), iss) == set())
         os.environ.update(SAIL_CLI=str(SIMULADO), SAIL_SIMULADO_APP=str(t.app))
         qa.ESPERA_SAIL = 3
         antes, previo = llamadas(t), t.resultado()[0]["escenarios"]

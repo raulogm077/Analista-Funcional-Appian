@@ -548,7 +548,8 @@ class Contexto:
             if tocados:
                 choques.append(f"modificados en desarrollo después del último pase (as-is/datos/deriva.json): "
                                f"{', '.join(tocados)}")
-        return {"corregidos": corregidos, "usan": usan, "choques": choques, "deriva": estado}
+        return {"corregidos": corregidos, "usan": usan, "choques": choques, "deriva": estado,
+                "dependenciasDisponibles": (datos / "dependencias.json").is_file()}
 
     def reaplicar(self, uid):
         """[(URG, objetos)]: las corregidas en el entorno de corrección sobre objetos que cambia esta unidad y que aún no

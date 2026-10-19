@@ -75,8 +75,8 @@ def main():
         # 1. El ejemplo está bien
         c, out = corre(S / "comprobar.py", EJEMPLO)
         ok("el ejemplo pasa comprobar.py sin errores", c == 0, out)
-        ok("solo avisa de las capturas que faltan", "· pantallas con su captura" in out and
-           len(re.findall(r"^· ", out, re.M)) == 1, out)
+        ok("el ejemplo avisa de capturas y del formato antiguo de criterios/pruebas", "· pantallas con su captura" in out
+           and "· criterios con dado" in out and "· técnico §14: cada criterio con «Con qué»" in out, out)
 
         # 1b. Reglas de prosa en un solo sitio (redaccion.py, que usa también ingeniería inversa)
         sys.path.insert(0, str(S))
@@ -1032,9 +1032,10 @@ Se acepta si:
         # 7e. Sin as-is/ (riesgo 4): las comprobaciones de as-is/ no saltan y el ejemplo da los mismos errores y avisos
         # que antes de tenerlas (los de la versión e058107)
         c, out = corre(S / "comprobar.py", EJEMPLO)
-        ok("sin as-is/, autorizaciones da los mismos errores y avisos que antes",
-           c == 0 and "as-is" not in out and [l for l in out.splitlines() if l.startswith(("✗", "·"))]
-           == ["· pantallas con su captura del prototipo: 5 → PAN-01, PAN-02, PAN-03, PAN-04, PAN-05"], out)
+        avisos = [l for l in out.splitlines() if l.startswith(("✗", "·"))]
+        ok("sin as-is/, no ejecuta sus controles; solo capturas y avisos del formato antiguo de criterios/pruebas",
+           c == 0 and "as-is" not in out and len(avisos) == 3 and all(any(l.startswith(prefijo) for l in avisos)
+               for prefijo in ("· pantallas con su captura", "· criterios con dado", "· técnico §14: cada criterio con «Con qué»")), out)
 
         # 8. Word del DF (opcional)
         if shutil.which("node"):
@@ -1159,6 +1160,11 @@ Se acepta si:
                 except OSError:
                     pass
         shutil.rmtree(tmp, ignore_errors=True)
+    for nombre in ("test_automejora.py", "test_ingesta.py"):
+        prueba = AQUI / nombre
+        if prueba.is_file():
+            c, out = corre(prueba)
+            ok(nombre, c == 0, out)
     print("\nTodo correcto." if not fallos else f"\n{len(fallos)} pruebas fallan: {', '.join(fallos)}")
     return 1 if fallos else 0
 
@@ -1526,7 +1532,7 @@ def verifica(p, uid, iid, objetos=None, pruebas=None, **diferencias):
         json.dump({"generadoEn": "2026-10-14T10:00:00Z", "issue": esperado["_issue"], "objetos": [
             {"pedido": o, "existe": True, "diferencias": diferencias.get(o, {})}
             for o in objetos or [k for k in esperado if k != "_issue"]],
-            **({} if esperado["_issue"].get("pruebas") is False else {"pruebas": pruebas or pruebas_de()})},
+            **({} if esperado["_issue"].get("pruebas") is False else {"pruebas": pruebas if pruebas is not None else pruebas_de(*[(o, "issue", [], []) for o in esperado["_issue"].get("casosExigidos", [])])})},
             fh, ensure_ascii=False, indent=1)
     return f
 
@@ -2645,7 +2651,7 @@ def pruebas_issues(tmp):
     i1, i2, i3 = (lee(d / f"ISS-0{n}.md") for n in (1, 2, 3))
     ok("la issue lleva lo que necesita quien construye: qué se pide (la historia, su pantalla con la captura y sus partes, "
        "su paso), sus objetos, lo que dice de ellos el técnico y lo que no debe tocar por ser de otra issue",
-       i2.startswith("# ISS-02 · Registrar una solicitud · EV-01\n")
+       i2.startswith("# ISS-02 · Registrar una solicitud; Subsanar una solicitud y 3 requisitos más · EV-01\n")
        and "Depende de: ISS-01 (Base) · En paralelo con: — · Aplicación `AUT Autorizaciones`" in i2
        and "- **HU-03 Subsanar una solicitud**\n  Como unidad solicitante, quiero corregir la solicitud" in i2
        and "  - Perfil: Unidad solicitante · Pantalla: PAN-03 · Paso: ACT-06\n" in i2
@@ -2707,7 +2713,7 @@ def pruebas_issues(tmp):
     feature = lee(d / "ISS-02.feature")
     ok("el .feature: una sola Característica y una Regla por historia; el criterio con dado, cuando y entonces, en sus tres "
        "pasos; el que aún no los tiene pasa tal cual, con aviso",
-       feature.startswith("# language: es\nCaracterística: EV-01 ISS-02 Registrar una solicitud\n\n  Regla: HU-01 Registrar "
+       feature.startswith("# language: es\nCaracterística: EV-01 ISS-02 Registrar una solicitud; Subsanar una solicitud y 3 requisitos más\n\n  Regla: HU-01 Registrar "
                           "una solicitud\n\n    Escenario: HU-01.1\n      * Sin memoria o sin plano")
        and "\n  Regla: HU-03 Subsanar una solicitud\n\n    Escenario: HU-03.1\n      Dada una solicitud devuelta\n      Cuando "
            "la unidad solicitante la reenvía\n      Entonces vuelve a «En revisión» con el mismo número\n" in feature
@@ -2731,7 +2737,7 @@ def pruebas_issues(tmp):
     ok("indice.py issues dice cómo va cada una: hecha, pendiente y por qué, y a cuál espera",
        c == 0 and "Al día, sin cambios" in out and "  ISS-01 · Base · Base · hecha\n" in out
        and "  ISS-02 · HU-01, " in out and "· pendiente: lo construido no es lo del técnico: AUT_RevisarForm: falta\n" in out
-       and "  ISS-03 · HU-06, HU-07, PAN-02 · Redactar el informe técnico · pendiente: sin verificar · espera a ISS-02\n"
+       and "  ISS-03 · HU-06, HU-07, PAN-02 · Redactar el informe técnico; Adjuntar el informe del organismo · pendiente: sin verificar · espera a ISS-02\n"
        in out, out)
     c, out = issues(p, "EV-01", "--siguiente")
     extractor = (PLUGIN / "skills" / "appian-reverse-engineering" / "scripts" / "devmcp_extract.py").resolve().as_posix()
@@ -2979,7 +2985,7 @@ def pruebas_issues(tmp):
     reserva = del_remoto()["ISS-01"][6]
     ok("la reserva dice quién tiene la issue y desde cuándo, y sube con un commit que solo lleva el índice de la unidad: lo "
        "que haya a medias en la carpeta no entra",
-       re.fullmatch(rf"{quien} · \d{{4}}-\d\d-\d\dT\d\d:\d\dZ", reserva) is not None
+       re.fullmatch(rf"{quien} · \d{{4}}-\d\d-\d\dT\d\d:\d\dZ · versión [a-f0-9]{{12}}", reserva) is not None
        and ultimo() == (f"EV-01: ISS-01 reservada por {quien}", ["construccion/EV-01/indice.md"])
        and "?? notas/" in git(ana, "status", "--porcelain")[1]
        and f"ISS-01 de EV-01, reservada a nombre de {reserva}: con un commit, subido a origin/main" in uno[1] + otro[1],
@@ -3170,7 +3176,8 @@ def pruebas_gherkin(tmp):
     ok("comprobar.py --anterior: no avisa de los criterios de antes que no se tocan, del que solo cambia su cita ni de "
        "los que ya los llevan", re.findall(r"[A-Z]+-\d+\.\d+", linea) == ["HU-05.3", "HU-07.1"], linea)
     c, out = corre(S / "comprobar.py", g)
-    ok("comprobar.py sin --anterior: de dado, cuando y entonces no dice nada", c == 0 and "cuando y entonces" not in out, out)
+    ok("comprobar.py sin --anterior: avisa también de criterios sin dado, cuando y entonces",
+       c == 0 and "· criterios con dado, cuando y entonces" in out and "HU-07.1 (l." in out, out)
     mg = modelo.cargar(g)
     texto, sin = mg.feature("HU-03")
     cabecera, escenarios = FEATURE.split("\n\n", 1)    # los dos del diseño son aquí HU-03.2 y HU-03.3
