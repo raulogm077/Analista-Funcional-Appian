@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="572" viewBox="0 0 900 572" role="img" aria-labelledby="titulo descripcion">
   <title id="titulo">Cómo trabaja el plugin</title>
-  <desc id="descripcion">Las fuentes del cliente entran al analista funcional, cada una con su informe de impacto. Una aplicación existente pasa antes por ingeniería inversa, que la documenta en as-is en solo lectura, y, si se rehace, por refactorización, que escribe la propuesta. El analista escribe funcional.md, que valida el cliente, tecnico.md, con lo que se construye, y cambios.md, con las unidades que se aprueban. De ahí salen el prototipo navegable, que da las capturas al DF en Word, y los diagramas BPMN. Cuando el jefe de proyecto aprueba una unidad, se escriben sus issues, una por requisito. Cada issue la construye en desarrollo buenas prácticas, con la skill oficial appian, y la verifica ingeniería inversa, con sus casos de prueba. Con todas hechas, el QA recorre la unidad con SAIL CLI como cada rol, en otra sesión, y deja los guiones en qa; un fallo devuelve su issue a pendiente. Desde el paquete no actúa la IA: la regresión y los guiones del QA se repiten con scripts, y una persona revisa el paquete en Compare and Deploy y hace el pase.</desc>
+  <desc id="descripcion">El analista convierte las fuentes en funcional, técnico y unidades de cambio; cada fuente posterior entra con un informe de impacto. Una aplicación existente pasa antes por ingeniería inversa en solo lectura y, si se rehace, por refactorización. El prototipo aporta capturas al DF en Word que valida el cliente, junto con los diagramas BPMN. Con la unidad aprobada y los objetos del técnico en tabla, se generan issues agrupadas por objetos y requisitos, con sus dependencias y supuestos. Se construyen en desarrollo con buenas prácticas y la skill oficial appian; ingeniería inversa verifica objetos y pruebas exigidas. El QA recorre los escenarios por rol en otra sesión; un fallo sin excepción humana justificada mantiene pendiente la issue. Desde el paquete no actúa la IA: los scripts repiten la regresión y los guiones, y una persona revisa el paquete y hace el pase.</desc>
   <style>
     :root {
       --fondo: #f6f8fc; --marco: #dfe4ef; --tarjeta: #ffffff; --borde: #d4dbea; --ficha: #f3f6fc;
@@ -80,10 +80,10 @@
   <rect class="pastilla" x="255.5" y="81.5" width="129" height="21" rx="10.5"/>
   <text class="mono" x="320" y="95.5" text-anchor="middle">informe de impacto</text>
   <text class="mono" x="792" y="144">capturas</text>
-  <rect class="pastilla" x="208.5" y="341.5" width="242" height="21" rx="10.5"/>
-  <text class="mono" x="329.5" y="355.5" text-anchor="middle">el jefe de proyecto aprueba la unidad</text>
-  <rect class="pastilla" x="214.5" y="489.5" width="248" height="21" rx="10.5"/>
-  <text class="mono" x="338.5" y="503.5" text-anchor="middle">un fallo del QA devuelve su issue</text>
+  <rect class="pastilla" x="184.5" y="341.5" width="290" height="21" rx="10.5"/>
+  <text class="mono" x="329.5" y="355.5" text-anchor="middle">unidad aprobada + objetos del técnico en tabla</text>
+  <rect class="pastilla" x="204.5" y="489.5" width="268" height="21" rx="10.5"/>
+  <text class="mono" x="338.5" y="503.5" text-anchor="middle">fallo sin excepción: issue pendiente</text>
 
   <!-- Entra -->
   <rect class="tarjeta" x="20.5" y="60.5" width="180" height="64" rx="10"/>
@@ -143,7 +143,7 @@
   <rect class="tarjeta" x="20.5" y="394.5" width="188" height="80" rx="10"/>
   <rect class="azul" x="32" y="410" width="3" height="48" rx="1.5"/>
   <text class="titulo" x="44" y="422">Issues</text>
-  <text class="nota" x="44" y="441">una por requisito, en orden</text>
+  <text class="nota" x="44" y="441">objetos y requisitos, en orden</text>
   <text class="mono" x="44" y="458">construccion/&lt;U&gt;/</text>
 
   <rect class="tarjeta" x="244.5" y="394.5" width="188" height="80" rx="10"/>

@@ -102,13 +102,13 @@ escribirlo.
 
 ## Cómo trabaja
 
-<img src="assets/como-trabaja.svg" alt="Las fuentes del cliente entran al analista funcional con su informe de impacto; una aplicación existente pasa antes por ingeniería inversa y, si se rehace, por refactorización. El analista escribe el funcional, el técnico y las unidades de cambio; de ahí salen el prototipo, el DF en Word y los diagramas BPMN. Al aprobar una unidad se escriben sus issues: las construye en desarrollo buenas prácticas y las verifica ingeniería inversa; el QA recorre la unidad con SAIL CLI y un fallo devuelve su issue. Desde el paquete no actúa la IA: la regresión y los guiones del QA se repiten con scripts, y una persona revisa el paquete y hace el pase." width="100%">
+<img src="assets/como-trabaja.svg" alt="Las fuentes entran al analista; una aplicación existente pasa antes por ingeniería inversa y, si se rehace, por refactorización. El análisis produce el técnico, las unidades de cambio, el prototipo, el DF y los diagramas. Con la unidad aprobada y los objetos del técnico en tabla, se generan issues por objetos y requisitos. Se construyen en desarrollo, se verifican y pasan QA por rol. Un fallo sin excepción humana justificada mantiene pendiente la issue. Los scripts repiten regresión y QA antes del paquete, que revisa y pasa una persona." width="100%">
 
 El detalle, con la estructura de cada proyecto y sus nueve flujos, está en el [manual](../README.md#cómo-trabaja).
 
 ## Desarrollo
 
-<img src="assets/desarrollo.svg" alt="Ocho pasos: git pull, los cambios en una rama, probarlos con --plugin-dir, la comprobación básica antes de cada commit, subir la versión en plugin.json, el PR con merge automático, GitHub pasa la batería completa y lo une, y la versión le llega al equipo con auto-update." width="100%">
+<img src="assets/desarrollo.svg" alt="Actualizar con git pull, cambiar en una rama, probar con --plugin-dir, comprobar, guardar el commit, abrir PR con autorización, pasar las comprobaciones de GitHub e integrar con aprobación. La versión cambia solo al publicar; el equipo la recibe con auto-update." width="100%">
 
 Los pasos y las reglas del repositorio están en [`CLAUDE.md`](../CLAUDE.md): `main` está protegida y nada entra sin PR
 ni sin las pruebas en verde.

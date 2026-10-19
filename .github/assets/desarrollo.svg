@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="144" viewBox="0 0 900 144" role="img" aria-labelledby="titulo descripcion">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="176" viewBox="0 0 900 176" role="img" aria-labelledby="titulo descripcion">
   <title id="titulo">Cómo se cambia el plugin</title>
-  <desc id="descripcion">Ocho pasos: git pull; los cambios, en una rama; probarlos con claude --plugin-dir; la comprobación básica antes de cada commit; subir la versión en plugin.json y en el README; abrir el PR con el merge automático; GitHub pasa la batería completa y, si sale en verde, lo une a main; y la versión le llega al equipo con auto-update.</desc>
+  <desc id="descripcion">Actualizar con git pull; cambiar en una rama, con worktrees separados si hay varias sesiones; probar con claude --plugin-dir; pasar las comprobaciones del cambio; guardar el commit; abrir el PR solo con autorización; GitHub comprueba el cambio; integrar con las pruebas en verde y la aprobación correspondiente. La versión de plugin.json y del README se cambia solo al publicar, con autorización, y llega al equipo mediante auto-update.</desc>
   <style>
     :root {
       --fondo: #f6f8fc; --marco: #dfe4ef; --tarjeta: #ffffff; --via: #bcc6dd;
@@ -24,7 +24,7 @@
     .visto { fill: none; stroke: var(--sobre-verde); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   </style>
 
-  <rect class="fondo" x=".5" y=".5" width="899" height="143" rx="14"/>
+  <rect class="fondo" x=".5" y=".5" width="899" height="175" rx="14"/>
 
   <path class="via" d="M82 52h68M193 52h68M304 52h68M415 52h68M526 52h68M637 52h68M748 52h67"/>
 
@@ -50,21 +50,22 @@
 
   <circle class="paso" cx="504" cy="52" r="15"/>
   <text class="numero" x="504" y="56.3">5</text>
-  <text class="titulo" x="504" y="96">Versión</text>
-  <text class="mono" x="504" y="115">plugin.json</text>
+  <text class="titulo" x="504" y="96">Commit</text>
+  <text class="nota" x="504" y="115">trabajo probado</text>
 
   <circle class="paso" cx="615" cy="52" r="15"/>
   <text class="numero" x="615" y="56.3">6</text>
   <text class="titulo" x="615" y="96">PR</text>
-  <text class="nota" x="615" y="115">merge automático</text>
+  <text class="nota" x="615" y="115">con autorización</text>
 
   <circle class="paso" cx="726" cy="52" r="15"/>
   <text class="numero" x="726" y="56.3">7</text>
   <text class="titulo" x="726" y="96">GitHub prueba</text>
-  <text class="mono" x="726" y="115">--completo</text>
+  <text class="nota" x="726" y="115">según el cambio</text>
 
   <circle class="fin" cx="838" cy="52" r="16"/>
   <path class="visto" d="M831 52.3l4.8 4.8 9-9.8"/>
-  <text class="titulo" x="838" y="96">Al equipo</text>
-  <text class="nota" x="838" y="115">con auto-update</text>
+  <text class="titulo" x="838" y="96">Integrar</text>
+  <text class="nota" x="838" y="115">verde y aprobado</text>
+  <text class="nota" x="450" y="153">Versión y entrega: solo al publicar, con autorización · El equipo recibe la versión con auto-update</text>
 </svg>
