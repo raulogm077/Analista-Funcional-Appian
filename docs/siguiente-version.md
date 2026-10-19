@@ -14,7 +14,9 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
 - Probar el comportamiento de las skills modificadas con `claude --plugin-dir <carpeta>` en un proyecto fuera del
   repositorio. Los selftests y las regresiones sobre copias de P10 no sustituyen esa prueba.
 - Cuando Raúl autorice subir: PR y batería completa en Linux. Antes de publicar una versión, las siete combinaciones
-  de sistema/Python y la comprobación de anclas, como indica `CLAUDE.md`. La versión sigue sin cambiar.
+  de sistema/Python, como indica `CLAUDE.md`. Las anclas ya pasaron: 1.265 citas en 312 páginas, cero rotas. El job
+  nuevo de PDF real con LibreOffice y la medición manual de concurrencia quedan por ejecutar en Actions. La versión
+  sigue sin cambiar.
 - Instalar el paquete en un Windows con algún requisito sin instalar y comprobar que el primer mensaje lo explica. En
   Linux con Claude Code ya se vio; el hook de Windows dejó su marca con 0.7.0-beta.1, pero falta ver el mensaje con un
   requisito ausente. Comprobar visualmente la instalación en la app de escritorio cuando esté disponible; registrar
