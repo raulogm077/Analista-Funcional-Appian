@@ -16,11 +16,12 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
 - Cuando Raúl autorice subir: PR y batería completa en Linux. Antes de publicar una versión, las siete combinaciones
   de sistema/Python, como indica `CLAUDE.md`. Las anclas ya pasaron: 1.265 citas en 312 páginas, cero rotas. El job
   nuevo de PDF real con LibreOffice y la medición manual de concurrencia quedan por ejecutar en Actions. La versión
-  sigue sin cambiar.
-- Instalar el paquete en un Windows con algún requisito sin instalar y comprobar que el primer mensaje lo explica. En
-  Linux con Claude Code ya se vio; el hook de Windows dejó su marca con 0.7.0-beta.1, pero falta ver el mensaje con un
-  requisito ausente. Comprobar visualmente la instalación en la app de escritorio cuando esté disponible; registrar
-  ese resultado por separado, sin usarlo como puerta de publicación.
+  sigue sin cambiar. La exportación local con Word sí produjo un PDF de 13 páginas con texto y dos figuras, pero no
+  acredita LibreOffice.
+- Instalar el paquete en un Windows con algún requisito realmente ausente y comprobar el primer mensaje. La orden
+  del hook en PowerShell 5.1, con `docx` simulado como ausente, ya mostró el aviso y dejó la marca de una vez por
+  versión; aún falta la instalación real con esa carencia. Comprobar visualmente la instalación en la app de
+  escritorio cuando esté disponible; registrar ese resultado por separado, sin usarlo como puerta de publicación.
 
 ## Construcción y verificación
 
@@ -36,22 +37,26 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
 
 ## Ingeniería inversa y diagramas
 
-- Ejecutar `deriva` de punta a punta y medir LEEME con la aplicación real elegida (extracción incompleta y detenida).
-  El historial existe en el Dev MCP real; el LEEME anterior llegó al 96 % con 42 objetos y los demás documentos
-  quedaron al 20–54 %. Una lectura nueva de una sola regla terminó sin errores, pero no mide el conjunto: al menos
-  unas 1.073 lecturas de objetos serían necesarias para la extracción completa de 248 objetos. No se cambia el
-  presupuesto antes de medirlo (E6).
+- LEEME completo y deriva de cambios internos en la aplicación real siguen sin medir: la extracción anterior tiene
+  respuestas correctas para 24 de 248 UUID y carece de historiales de versión. Una extracción amplia se estimó en
+  al menos unas 1.073 lecturas de objeto, pero **no fue necesaria** para comparar inventarios: con 23 respuestas de
+  listas, GDE pasó de 248 a 249 objetos (una interfaz nueva, ninguna baja). El `as-is` ficticio de MNT, reconstruido
+  y validado, usa 731 de 1.350 palabras de LEEME con 44 objetos; no se presenta como medida real de GDE ni se cambia
+  el presupuesto por ella (E6).
 - `getAgent` sigue devolviendo 401 por la API nativa, aunque Raúl ve el agente en Designer y `getApplication`
   funciona por el servlet. Raúl lo ha reportado a Appian y ha decidido aparcarlo. La medición de esta fase excluye
   esa llamada; el extractor detiene la cola ante errores de acceso/login y conserva la evidencia parcial. No
   reanudar en bucle una extracción que pide login.
-- Volver a medir la evaluación de malas prácticas con propuestas reales; sus `claves` se fijaron sin esas propuestas.
-  No se encontró la copia `as-is/` de MNT tras buscar en proyectos, documentos, descargas y temporales; reconstruirla
-  desde el simulador antes de repetir la evaluación ciega.
+- La evaluación ciega de malas prácticas ya cumple el criterio fijado: 10/11 visibles, 3/3 ocultas y cero errores o
+  avisos del comprobador tras precisar la comparación de catálogos compartidos. Una auditoría independiente de la
+  propuesta anterior encontró ocho problemas o matices adicionales; valorarlos si se usa esa propuesta para un
+  trabajo real. Resultado y límites en `docs/evaluaciones.md` y
+  `$PROYECTOS_PRUEBA/aplazados-codex-20261019/RESULTADO-MNT-CIEGA.md`.
 - La campaña de 1.000 procesos (semilla 11) ya deja cero etiquetas atravesadas. Persisten 126 conexiones falsas
   detectadas, frente a 142 antes de esta fase. La revisión confirmó 38 intersecciones de etiquetas y 88 tramos
-  coincidentes en 71 procesos; los casos 43 y 677 contienen defectos reales, y el 46 un posible sobreconteo corto.
-  Un cambio de rutas y posición de etiquetas debe compararse caso a caso con la campaña guardada.
+  coincidentes en 71 procesos; los casos 43, 46 y 677 contienen solapes reales de la geometría. El diseño de
+  corrección propone enrutar y reservar las etiquetas conjuntamente, con reversión si un caso empeora. No hay parche
+  integrado: se requiere comparar la campaña caso a caso, cruces y dimensiones, antes de cambiar el generador.
 - F6 y `devmcp-setup.md` ya documentan `--skip "^testInterface$"` con datos reales; la política permite esa prueba
   en desarrollo con datos ficticios. La exclusión no borra respuestas de pantalla guardadas en otra lectura.
 - Revisar las URL fijas `/help/26.6/` de `data-fabric.md`, `devmcp-setup.md` y `agents/data-modeler.md` cuando cambie

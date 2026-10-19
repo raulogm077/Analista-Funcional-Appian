@@ -35,8 +35,9 @@ en las tareas independientes y en la lectura de evidencia ya guardada.
 | E3: comparación de refactorización | Ensayo autorizado sobre una regla pura de texto, con casos guardados y de borde antes/después; restauración posterior | 3/3 casos guardados y cinco bordes iguales. Regla restaurada y verificada; `deriva` detecta edición por historial 1→3, no un cambio semántico persistente. Medida acotada, no global |
 | E5: ancho de arquitectura | Cinco cajas pueden producir 4.442 px; aplicar el límite ya existente de 1.600 px a la vista general y usar detalles por capa | Integrado en 40578bd; renders medidos |
 | Etiquetas de puertas | 1.000 casos, semilla 11: etiquetas ambiguas 8→0, sin empeorar cruces ni solapes caso por caso | Integrado en 40578bd; selftest y revisión de PNG correctos |
+| Evaluación ciega de malas prácticas | Reconstruir el as-is ficticio de MNT y redactar una propuesta sin acceso a las claves | As-is validado (44 objetos, 0 errores/avisos); última propuesta ciega 10/11 visibles, 3/3 ocultas y 0 errores/avisos tras precisar la comparación de catálogos compartidos. Auditoría independiente dejó ocho matices fuera del puntuador |
 | D11: nueva pestaña | Navegación y parámetros, recarga, historial, aislamiento de claves y números que deben conservarse como texto | Integrado en f87d903; suite de prototipos correcta, ocho casos nuevos |
-| E6: LEEME | Medir la aplicación elegida antes de cambiar el presupuesto | No medido: extracción incompleta y detenida |
+| E6: LEEME | Medir la aplicación elegida antes de cambiar el presupuesto | LEEME real completo no medido: la extracción tiene definiciones correctas de 24/248 UUID. MNT ficticia validada: 731/1.350 palabras con 44 objetos; no justifica cambiar el presupuesto |
 | E7: batería | Dos grupos reales: 176,7 s en serie y 126,4 s en paralelo; cinco pruebas del ejecutor correctas | Integrado en 327cfa4; rendimiento de batería completa pendiente de CI |
 
 La CLI de Claude cargó el plugin de esta rama con `--plugin-dir`, pero la primera petición terminó en HTTP 429 antes
@@ -79,6 +80,12 @@ en cola, conserva evidencia previa, informa de lectura parcial y evita deducir a
 Sus 32 pruebas focales pasan; no controla llamadas ya iniciadas ni la reautenticación interna de DevMCP.
 No reanudar una extracción masiva solo porque ya se corrigió el selector de eventos. El detalle y los límites están
 en `aplazados-codex-20261019/gde-lectura/ESTADO-MEDICION.md`, fuera del repositorio.
+
+Como medida más pequeña, se compararon dos enumeraciones completas del inventario de GDE: 22 listas de aplicación y
+una respuesta de entorno en la nueva lectura, sin definiciones ni historiales por objeto. Los 248 UUID de las listas
+de las 12:42 pasaron a 249 a las 17:05: una interfaz nueva, ninguna baja. Esto detecta pertenencia al inventario,
+pero no cambios internos; no se etiqueta como deriva global. El informe y ambos puntos de comparación están en
+`aplazados-codex-20261019/gde-inventario-minimo/`, fuera del repositorio. La extracción amplia no se reanudó.
 
 Raúl confirmó que puede abrir el agente y ver su configuración en Designer. El bundle instalado usa dos vías:
 las listas se leen con el cliente del servlet autenticado en navegador; `getAgent` usa el cliente de la API nativa,
