@@ -931,11 +931,15 @@ def construir(a, ctx, u, hoy, no, raiz, orden):
                    "--aceptar-permiso PER-huella --motivo «…»; --manual no acepta permisos")
             for iid, razon in pendientes:
                 print(f"· {iid}: pendiente de verificación ({razon}); la unidad se marca manual, no verificada")
+        except iss.EncargoProtegido as e:
+            no(str(e), "recupera el encargo compartido antes de marcar la unidad construida")
         except iss.NoSePuede as e:
             print(f"· No se han comprobado issues: {e}")
     else:      # construida es todas sus issues hechas: lo dice la verificación de cada una (issues.py)
         try:
             plan = iss.calcula(ctx.m, ctx, u.id)
+        except iss.EncargoProtegido as e:
+            no(str(e), "recupera el encargo compartido antes de marcar la unidad construida")
         except iss.NoSePuede as e:
             no(str(e), "si se construyó sin issues, márcala con --manual")
         faltan = [(i, por_que) for i in plan.issues for hecha, por_que in [iss.estado(raiz, u.id, i, plan.marcas)]

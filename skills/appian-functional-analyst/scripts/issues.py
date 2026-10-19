@@ -81,6 +81,10 @@ class NoSePuede(Exception):
     """La unidad no tiene issues que generar: no está aprobada, ha crecido o no tiene objetos en técnico §13."""
 
 
+class EncargoProtegido(NoSePuede):
+    """El encargo compartido no se puede acreditar intacto; un cierre manual tampoco resuelve esa mezcla."""
+
+
 @dataclass
 class Issue:
     filas: list                                    # sus filas de técnico §13
@@ -1121,6 +1125,7 @@ def calcula(m, ctx, uid, estreno=False):
                         f"(`proyecto.py cambio <p> {uid} aprobada --fuente FU-nn`) o lleva lo nuevo a otra unidad")
     d = Unidad(m, ctx, uid)
     if not d.filas:
+        protege_encargo(Plan(uid, u.titulo, aplicacion(m), [], []), m, ctx, estreno)
         if not ctx.filas:
             raise NoSePuede("Técnico §13 no tiene tabla de construcción: convierte la lista en la tabla "
                             "Paso · Objeto · Tipo · Situación · Sustituye a · Cambio · Para y regenera las issues")
@@ -1195,21 +1200,29 @@ def protege_encargo(plan, m, ctx, estreno=False):
     for f in carpeta(m.raiz, plan.uid).glob("ISS-*-esperado.json"):
         try:
             esperado = json.loads(f.read_text(encoding="utf-8"))
-        except (ValueError, OSError):
-            raise NoSePuede(f"no se puede leer {f.name}; recupera el encargo desde git o versiones antes de regenerarlo") from None
+        except (ValueError, OSError, UnicodeError):
+            raise EncargoProtegido(f"no se puede leer {f.name}; recupera el encargo desde git o versiones antes de regenerarlo") from None
+        if not isinstance(esperado, dict) or not isinstance(esperado.get("_issue"), dict):
+            raise EncargoProtegido(f"{f.name} no contiene el encargo anterior; recupera su esperado desde git o versiones")
+        guardado = esperado["_issue"].get("ambito")
+        if guardado is not None and (not isinstance(guardado, dict) or any(
+                not isinstance(guardado.get(k), dict) for k in ("piezas", "objetos"))):
+            raise EncargoProtegido(f"{f.name} tiene huellas ilegibles; recupera su esperado desde git o versiones")
         anteriores[f.name.removesuffix("-esperado.json")] = esperado
     nuevas = {i.id: i for i in plan.issues}
     indice_anterior = indice_de(m.raiz, plan.uid)
-    for iid in set(anteriores) | set(nuevas):
+    for iid in set(anteriores) | set(nuevas) | set(indice_anterior):
         antes, i = anteriores.get(iid), nuevas.get(iid)
         meta = (antes or {}).get("_issue", {})
         actual = i.esperado["_issue"]["ambito"] if i else {"piezas": {}, "objetos": {}}
         anterior = meta.get("ambito")
         ambito = {"piezas": set((anterior or actual)["piezas"]) | set(indice_anterior.get(iid, {}).get("requisitos", [])),
-                  "objetos": set((anterior or actual)["objetos"]) | (set(antes or {}) - {"_issue"})}
+                  "objetos": set((anterior or actual)["objetos"]) | (set(antes or {}) - {"_issue"})
+                  | set(indice_anterior.get(iid, {}).get("objetos", []))}
         for otra in otras:
             ajeno = ctx.ambito_secuencia(otra.id, objetos_conocidos=ambito["objetos"])
             comunes = {k: ambito[k] & ajeno[k] for k in ambito}
+            comunes["objetos"] -= ctx.retoques(plan.uid) & ctx.retoques(otra.id)
             if not any(comunes.values()):
                 continue
             falta = antes is None
@@ -1226,7 +1239,7 @@ def protege_encargo(plan, m, ctx, estreno=False):
                 detalle = ", ".join(sorted(cambiadas or set().union(*comunes.values())))
                 motivo = "falta el artefacto anterior" if falta else "no hay huellas suficientes del encargo anterior" \
                     if sin_evidencia else "cambió o desapareció el contenido compartido"
-                raise NoSePuede(f"{plan.uid} {iid}: {detalle} también se propone en {otra.id}; {motivo}. "
+                raise EncargoProtegido(f"{plan.uid} {iid}: {detalle} también se propone en {otra.id}; {motivo}. "
                                 "No se reescriben las issues: recupera el texto de git/versiones o reasigna el cambio "
                                 "a la primera unidad y vuelve a aprobarla. La segunda espera Abierta hasta construir la primera")
 

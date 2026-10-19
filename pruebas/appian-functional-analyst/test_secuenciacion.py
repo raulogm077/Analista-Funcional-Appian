@@ -182,6 +182,102 @@ class Secuenciacion(unittest.TestCase):
         actual = iss.calcula(m, ctx, "EV-01")
         self.assertEqual(antes, {i.id: i.esperado["_issue"]["ambito"] for i in actual.issues})
 
+    def test_construir_manual_no_salta_mezcla_y_limpia_sigue_permitida(self):
+        m, _ = self.preparada()
+        self.segunda()
+        original = m.ruta("F").read_bytes()
+        self.cambia_titulo("HU-01")
+        cambios = (self.p / "analisis/cambios.md").read_bytes()
+        antes = self.artefactos()
+        for extra in ((), ("--manual",)):
+            code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-01", "construida", *extra)
+            self.assertNotEqual(code, 0, out)
+            self.assertIn("contenido compartido", out)
+            self.assertNotIn("márcala con --manual", out)
+            self.assertEqual((self.p / "analisis/cambios.md").read_bytes(), cambios)
+            self.assertEqual(self.artefactos(), antes)
+        m.ruta("F").write_bytes(original)
+        code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-01", "construida", "--manual")
+        self.assertEqual(code, 0, out)
+        _, ctx = self.carga()
+        self.assertEqual(ctx.por_id["EV-01"].estado, un.CONSTRUIDA)
+        self.assertEqual(ctx.por_id["EV-02"].estado, un.ABIERTA)
+
+    def test_manual_no_salta_evidencia_ilegible_o_ausente(self):
+        self.preparada()
+        self.segunda()
+        f = self.p / "construccion/EV-01/ISS-02-esperado.json"
+        original = f.read_bytes()
+        cambios = (self.p / "analisis/cambios.md").read_bytes()
+        for dato in (b"{", b"[]", b'{"_issue":{"ambito":[]}}', None):
+            if dato is None:
+                f.unlink()
+            else:
+                f.write_bytes(dato)
+            antes = self.artefactos()
+            code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-01", "construida", "--manual")
+            self.assertNotEqual(code, 0, out)
+            self.assertIn("recupera", out)
+            self.assertNotIn("Traceback", out)
+            self.assertEqual(self.artefactos(), antes)
+            self.assertEqual((self.p / "analisis/cambios.md").read_bytes(), cambios)
+            f.write_bytes(original)
+
+    def test_tabla_desaparecida_con_encargo_compartido_no_es_ausencia_legitima(self):
+        m, _ = self.preparada()
+        self.segunda()
+        ini, fin = m.docs["T"].seccion("13")
+        lineas = m.lineas("T")
+        lineas[ini:fin] = [l for l in lineas[ini:fin] if not l.startswith("|")]
+        mo.escribe(m.ruta("T"), "\n".join(lineas))
+        for f in (self.p / "construccion/EV-01").glob("*-esperado.json"):
+            f.unlink()  # queda el índice: no se puede ignorar el encargo porque falten otros artefactos
+        antes = self.artefactos()
+        cambios = (self.p / "analisis/cambios.md").read_bytes()
+        code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-01", "construida", "--manual")
+        self.assertNotEqual(code, 0, out)
+        self.assertIn("falta el artefacto", out)
+        self.assertEqual(self.artefactos(), antes)
+        self.assertEqual((self.p / "analisis/cambios.md").read_bytes(), cambios)
+        self.informe("HU-99", "✔", "NUEVO")  # nada compartido: el cierre humano sin tabla sigue disponible
+        code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-01", "construida", "--manual")
+        self.assertEqual(code, 0, out)
+
+    def test_renombres_de_partes_distintas_del_mismo_registro_generan_issues(self):
+        fixture.con_unidades(self.p)
+        t = self.p / "analisis/tecnico.md"
+        fila = "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |"
+        accion = "| 8 | `DEM Solicitud — acción «Nueva solicitud»` | Record type | Modifica | — | EV-03 |"
+        otra = "| 9 | `DEM Solicitud — vista «Resumen»` | Record type | Modifica | — | EV-05 |"
+        fixture.editar(t, fila, accion + "\n" + otra)
+        fixture.editar(self.p / "impacto/FU-06.md", "| Sí (alcance) | Pendiente |", "| Sí (alcance) | ✔ FU-05 |")
+        c = self.p / "analisis/cambios.md"
+        fixture.editar(c, "| EV-02 | Firma de la revisión | Evolutivo | Aprobada |",
+                       "| EV-02 | Firma de la revisión | Evolutivo | En producción |")
+        mo.escribe(c, c.read_text(encoding="utf-8") +
+                   "| EV-05 | La vista | Evolutivo | Aprobada | 2026-10-12 · FU-05 | — | — | — |\n")
+        code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-03", "aprobada", "--fuente", "FU-05")
+        self.assertEqual(code, 0, out)
+        self.assertIn("Issues de construcción: construccion/EV-03/", out)
+        self.assertTrue((self.p / "construccion/EV-03/ISS-01-esperado.json").exists())
+        code, out = fixture.corre(fixture.S / "indice.py", "issues", self.p, "EV-03")
+        self.assertEqual(code, 0, out)
+
+    def test_primera_construida_antes_de_aplicar_retoque_compartido(self):
+        fixture.con_unidades(self.p)
+        code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-02", "construida", "--manual",
+                                  "--reaplicada", "URG-01")
+        self.assertEqual(code, 0, out)
+        fixture.editar(self.p / "analisis/tecnico.md",
+                       "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |",
+                       "| 8 | `DEM Solicitud — acción «Nueva solicitud»` | Record type | Modifica | — | EV-03 |")
+        fixture.editar(self.p / "impacto/FU-06.md", "| Sí (alcance) | Pendiente |", "| Sí (alcance) | ✔ FU-05 |")
+        code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-03", "aprobada", "--fuente", "FU-05",
+                                  "--comparte", "EV-02 construido primero")
+        self.assertEqual(code, 0, out)
+        self.assertIn("Issues de construcción", out)
+        self.assertNotIn("Que una persona revise", out)
+
 
 if __name__ == "__main__":
     unittest.main()

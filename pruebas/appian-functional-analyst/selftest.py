@@ -1667,12 +1667,12 @@ def pruebas_unidades(tmp):
            "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |\n"
            "| 8 | `DEM_SolicitudForm` | Interfaz | Modifica | — | EV-03 |")
     c, out = corre(S / "proyecto.py", "cambio", p, "EV-03", "aprobada", "--fuente", "FU-05")
-    ok("cambio aprobada: un objeto de otra unidad aprobada sin decisión es error, y dice cómo escribirla",
-       c == 1 and "EV-02 (DEM_SolicitudForm)" in out and "--comparte" in out and "| Abierta |" in fila_de(p, "EV-03"), out)
+    ok("cambio aprobada: un objeto compartido con otra unidad aprobada espera a que se construya la primera",
+       c == 1 and "EV-02: DEM_SolicitudForm" in out and "sigue sin construir" in out and "| Abierta |" in fila_de(p, "EV-03"), out)
     c, out = corre(S / "proyecto.py", "cambio", p, "EV-03", "aprobada", "--fuente", "FU-05", "--comparte",
                    "EV-02 en DEM_SolicitudForm: secuenciar (EV-02 primero)")
-    ok("cambio aprobada: con la decisión (--comparte) pasa y queda escrita",
-       c == 0 and "| Aprobada |" in fila_de(p, "EV-03") and "secuenciar (EV-02 primero) |" in fila_de(p, "EV-03"), out)
+    ok("cambio aprobada: --comparte no permite mezclar dos encargos pendientes; la segunda sigue Abierta",
+       c == 1 and "| Abierta |" in fila_de(p, "EV-03") and "No hay aprobación parcial" in out, out)
     ok("cambio aprobada: guarda la versión y los informes con que se aprobó",
        "<!-- aprobada 1.1: FU-04 -->" in fila_de(p, "EV-02"), fila_de(p, "EV-02"))
 
@@ -2236,7 +2236,7 @@ def pruebas_reserva_segura(tmp):
     ok("con una fusión a medias, --siguiente no toca git ni escribe nada: da la issue sin reservar y lo dice; la "
        "resolución hecha a mano sigue ahí, y --liberar se niega",
        choca != 0 and c == 0 and out.startswith("ISS-01 de EV-01: sin reservar ni escribir nada: el repositorio tiene "
-                                                "una fusión a medias") and "--quien <" not in out
+                                                "una fusión a medias") and "Pide siempre con el mismo" not in out
        and git(a, "rev-parse", "-q", "--verify", "MERGE_HEAD")[0] == 0 and lee(pm) == resuelto
        and lee(a / "construccion" / "EV-01" / "indice.md") == indice and "Ana" not in indice
        and c2 == 1 and "una fusión a medias" in out2, out + out2)
@@ -2301,6 +2301,8 @@ def pruebas_de_la_issue(tmp):
        c == 0 and f"· {aviso}. Es un aviso: no frena la construcción" in out and "| Aprobada |" in fila_de(v, "EV-02")
        and f"## Antes de construir\n\n- {aviso}. Es un aviso" in e1 and "Antes de construir" not in e2, out + e1[:900])
     retoque = con_unidades(tmp / "t14 retoque")
+    c, out = corre(S / "proyecto.py", "cambio", retoque, "EV-02", "construida", "--manual", "--reaplicada", "URG-01")
+    ok("T14: el primer encargo se construye antes de aplicar el renombre compartido", c == 0, out)
     editar(retoque / "analisis" / "tecnico.md", "| 8 | `DEM Alta Solicitud` | Process model | Modifica | — | EV-03 |",
            "| 8 | `DEM Solicitud — acción «Nueva solicitud»` | Record type | Modifica | — | EV-03 |")
     editar(retoque / "impacto" / "FU-06.md", "| Sí (alcance) | Pendiente |", "| Sí (alcance) | ✔ FU-05 |")
@@ -2475,6 +2477,8 @@ def pruebas_de_la_issue(tmp):
     # Una acción de registro que se renombra: lo esperado lleva su nombre nuevo y su tipo, de técnico §7
     def renombra(carpeta, ve_tambien=""):
         r = con_unidades(tmp / carpeta)
+        c, out = corre(S / "proyecto.py", "cambio", r, "EV-02", "construida", "--manual", "--reaplicada", "URG-01")
+        ok("acción renombrada: se construye primero el encargo anterior del registro", c == 0, out)
         t = r / "analisis" / "tecnico.md"
         tabla = ("\n\nAcciones de registro de `DEM Solicitud`:\n\n| Acción | Tipo | Proceso | Quién la ve |\n|---|---|---|---|\n"
                  "| «Nueva solicitud» | De lista | `DEM Alta Solicitud` | `DEM Gestores` |\n"
@@ -2575,8 +2579,8 @@ def pruebas_issues(tmp):
        "inexistente", c == 0 and dt and "EV-03" not in dt and "DEM Solicitud — acción" not in out
        and "ninguna unidad ha construido" not in out, out)
     c, out = aprobar(g, "EV-03")
-    ok("… pero si la otra unidad cambia algo más del record type (EV-02 le añade un campo), sí hay que decidir el orden",
-       c == 1 and "comparte objetos con otra unidad aprobada y no hay decisión: EV-02 (DEM Solicitud)" in out
+    ok("… pero si la otra unidad cambia algo más del record type (EV-02 le añade un campo), espera a que se construya",
+       c == 1 and "la pieza compartida sigue sin construir (EV-02: DEM Solicitud)" in out
        and "| Abierta |" in fila_de(g, "EV-03"), out)
     editar(g / "analisis" / "cambios.md", "| EV-02 | Firma de la revisión | Evolutivo | Aprobada |",
            "| EV-02 | Firma de la revisión | Evolutivo | En producción |")
@@ -2611,9 +2615,9 @@ def pruebas_issues(tmp):
         editar(h / "impacto" / "FU-06.md", "| Sí (alcance) | Pendiente |", "| Sí (alcance) | ✔ FU-05 |")
         c, out = corre(S / "comprobar.py", h)
         c2, out2 = aprobar(h, "EV-03")
-        ok(f"si la parte que cambia guarda datos o da permisos ({nombre}), sí: pide «{punto}» y decidir el orden",
+        ok(f"si la parte que cambia guarda datos o da permisos ({nombre}), pide «{punto}» y espera a la primera unidad",
            any("Cambio sobre lo construido" in l and f"EV-03: «{punto}» (DEM Solicitud)" in l for l in out.splitlines())
-           and c2 == 1 and "EV-02 (DEM Solicitud)" in out2 and "--comparte" in out2, out + out2)
+           and c2 == 1 and "EV-02: DEM Solicitud" in out2 and "sigue sin construir" in out2, out + out2)
 
     # T11 · Las issues de una aplicación nueva: al aprobar la unidad, sin otro paso
     p = nueva_con_issues(tmp / "issues app")
