@@ -168,7 +168,7 @@ def por_capas(proc, eventos, puertas, cabecera):
                 cadena = ([("paso", f["de"])] + [("hueco", i, c) for c in range(capa[f["de"]] + 1, capa[f["a"]])]
                           + [("paso", f["a"])])
                 for k, (e, sig) in enumerate(zip(cadena, cadena[1:])):
-                    if abs(yy(e) - yy(sig)) <= 1:
+                    if abs(yy(e) - yy(sig)) <= 1 and not (k == 0 and i in codo):
                         continue
                     if k == 0 and i in codo:      # por su vértice hasta el codo y por él al hueco
                         ruta += [("columna", capa[f["de"]], codo[i]), ("hueco", capa[f["de"]], codo[i]),
@@ -197,9 +197,15 @@ def por_capas(proc, eventos, puertas, cabecera):
             izquierda = xs[hueco] if hueco >= 0 else xs[0] - COLUMNA
             derecha = xs[hueco + 1] if hueco + 1 < len(xs) else izquierda + COLUMNA
             centro, libre = (izquierda + derecha) / 2, (derecha - izquierda - 120) / 2 - 6
-            paso_ = min(10, 2 * libre / max(len(extremos) - 1, 1))
-            for k, i in enumerate(orden_en_hueco(extremos, a_su_izquierda)):
-                sitio[(hueco, i)] = centro + (k - (len(extremos) - 1) / 2) * paso_
+            orden = orden_en_hueco(extremos, a_su_izquierda)
+            separaciones = separacion_hueco.get(hueco, {})
+            distancias = [max(10, separaciones.get(i, 10), separaciones.get(j, 10)) for i, j in zip(orden, orden[1:])]
+            escala = min(1, 2 * libre / max(sum(distancias), 1))
+            x = centro - sum(distancias) * escala / 2
+            for k, i in enumerate(orden):
+                sitio[(hueco, i)] = x
+                if k < len(distancias):
+                    x += distancias[k] * escala
         geo["flujos"] = [[(sitio[(p[1], i)], p[2]) if p[0] == "hueco" else (xs[p[1]], p[2]) if p[0] == "columna" else p
                           for p in ruta] for i, ruta in enumerate(rutas)]
         geo["ancho"] = max([cx for cx, _ in geo["pasos"].values()] + [xs[0]]) + COLUMNA / 2 + MARGEN
@@ -208,11 +214,13 @@ def por_capas(proc, eventos, puertas, cabecera):
     # la marca del flujo por defecto, al salir de la puerta); si un flujo que sube o baja por el hueco la corta, más
     ultima = max(capa.values(), default=0)
     ancho_col = [COLUMNA] * (ultima + 2)
+    separacion_hueco = {}
     for i, f in secuencia:
         if f.get("etiqueta") and tipo[f["de"]] in puertas and i not in atras:
             ancho_col[capa[f["de"]]] = max(ancho_col[capa[f["de"]]], ancho_columna_puerta(proc, f))
     # una salida va por el codo solo si así no se cruza con más flujos: si no, se queda en el tramo que comparte
-    codo = salidas_por_codo(proc, secuencia, atras, capa, tipo, puertas, yy, tapado, cabe_debajo)
+    colocar_columnas(ancho_col, trazar({}))
+    codo = salidas_por_codo(proc, secuencia, atras, capa, tipo, puertas, eventos, yy, tapado, cabe_debajo, geo)
     for i in sorted(codo):
         sin = {j: y for j, y in codo.items() if j != i}
         cuenta = []
@@ -225,7 +233,12 @@ def por_capas(proc, eventos, puertas, cabecera):
     trazado = trazar(codo)
     for _ in range(3):
         colocar_columnas(ancho_col, trazado)
-        falta = etiquetas_cortadas(proc, geo, capa, atras, eventos, puertas, codo)
+        falta = etiquetas_cortadas(proc, geo, capa, atras, eventos, puertas, codo, separacion_hueco)
+        for c, distancias in separacion_hueco.items():
+            orden = orden_en_hueco(trazado[1][c], trazado[2])
+            necesita = sum(max(10, distancias.get(i, 10), distancias.get(j, 10)) for i, j in zip(orden, orden[1:])) + 132
+            if necesita > ancho_col[c]:
+                falta[c] = max(falta.get(c, 0), necesita - ancho_col[c])
         if not falta:
             break
         for c, px in falta.items():
@@ -256,7 +269,7 @@ CODO = 40                # lo que baja o sube por su vértice una salida de una 
                          # puerta (25) y con sitio para su etiqueta (14 de alto) sin llegar a lo de la fila de al lado
 
 
-def salidas_por_codo(proc, secuencia, atras, capa, tipo, puertas, yy, tapado, cabe_debajo):
+def salidas_por_codo(proc, secuencia, atras, capa, tipo, puertas, eventos, yy, tapado, cabe_debajo, geo):
     """{flujo: y del codo} de las salidas de una puerta que dejan de compartir el tramo que sale por su derecha. Por la
     derecha sale la que sigue en su fila, una vuelta atrás y las que van por el hueco porque algo de su columna les
     tapa la vertical (`tapado`): si son más de una, la que va más lejos hacia abajo sale por el vértice de abajo y, si
@@ -270,6 +283,24 @@ def salidas_por_codo(proc, secuencia, atras, capa, tipo, puertas, yy, tapado, ca
             # una vuelta atrás sale por la derecha, hacia el hueco de su pasillo: como la que sigue en su fila
             por_puerta[f["de"]].append((i, 0 if i in atras else yy(sig) - yy(("paso", f["de"]))))
     codo = {}
+    def recto_compartido(i):
+        f = proc["flujos"][i]
+        x, y = geo["pasos"][f["de"]]
+        mitad = 25 if tipo[f["a"]] in puertas else 20 if tipo[f["a"]] in eventos else 60
+        fin = geo["pasos"][f["a"]][0] - mitad
+        ocupado = []
+        for j, g in secuencia:
+            if i == j:
+                continue
+            camino = [geo["pasos"][g["de"]]] + geo["flujos"][j] + [geo["pasos"][g["a"]]]
+            ocupado += [sorted((p[0], q[0])) for p, q in zip(camino, camino[1:])
+                        if abs(p[1] - y) <= 1 and abs(q[1] - y) <= 1]
+        hasta = x + 25
+        for a, b in sorted(ocupado):
+            if a > hasta + 1:
+                break
+            hasta = max(hasta, b)
+        return hasta >= fin
     for pid, salidas in por_puerta.items():
         y = yy(("paso", pid))
         derecha = [(i, dy) for i, dy in salidas if abs(dy) <= 1 or tapado(pid, y + dy)]
@@ -278,6 +309,11 @@ def salidas_por_codo(proc, secuencia, atras, capa, tipo, puertas, yy, tapado, ca
         por_abajo = any(dy > 1 and not tapado(pid, y + dy) for _, dy in salidas)
         for signo in (1, -1):
             lejos = max((s for s in derecha if s[1] * signo > 1), key=lambda s: s[1] * signo, default=None)
+            if lejos is None and signo == 1:
+                # Una salida recta puede compartir el inicio con otra salida y el final con
+                # otra entrada al destino: también necesita un tramo propio para su etiqueta.
+                lejos = next((s for s in derecha if abs(s[1]) <= 1 and s[0] not in atras
+                              and recto_compartido(s[0])), None)
             if lejos and (signo == 1 or not por_abajo and cabe_debajo(pid)) and not tapado(pid, y + signo * CODO):
                 codo[lejos[0]] = y + signo * CODO
                 por_abajo = por_abajo or signo == 1
@@ -291,7 +327,7 @@ def ancho_columna_puerta(proc, f):
     return ancho_etiqueta_flujo(f["etiqueta"]) + 100 + (MARCA_DEFECTO if defecto else 0)
 
 
-def etiquetas_cortadas(proc, geo, capa, atras, eventos, puertas, codo=()):
+def etiquetas_cortadas(proc, geo, capa, atras, eventos, puertas, codo=(), separacion_hueco=None):
     """{capa: px}: lo que hay que ensanchar la columna que sigue a una puerta para que la etiqueta de una de sus salidas
     quepa en un trozo de su tramo que no cruza ni comparte otro flujo (donde la pone draw.io): el de la que va en recto
     al paso siguiente, el del codo al hueco (`codo`) o, en la que sale por la derecha y sube o baja por el hueco hasta
@@ -339,6 +375,11 @@ def etiquetas_cortadas(proc, geo, capa, atras, eventos, puertas, codo=()):
         if al_paso:   # al ensanchar, solo crece el trozo que llega al paso (ninguno si otro flujo llega por él)
             mayor = next((b - a for a, b in medidas[-1][0] if b == tramos[-1][2]), 0)
             if mayor <= 0:
+                if separacion_hueco is not None:
+                    # Los dos horizontales están ocupados. La etiqueta debe caber en la
+                    # vertical entre columnas, sin tocar la vertical vecina a 10 px.
+                    c = capa[f["de"]]
+                    separacion_hueco.setdefault(c, {})[i] = max(separacion_hueco.get(c, {}).get(i, 10), necesita / 2 + 1)
                 continue
         falta[capa[f["de"]]] = max(falta.get(capa[f["de"]], 0), 2 * (necesita - mayor))
     return falta

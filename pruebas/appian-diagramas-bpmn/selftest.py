@@ -7,7 +7,7 @@ comprueba los errores de validación. Con el segundo ejemplo comprueba que nada 
 etiquetas, los tipos de inicio y tarea, el flujo por defecto, los participantes externos, las notas y el
 ancho del PNG. Comprueba también lo que se hace sin navegador, un proceso que no cabe en una página (tramos), que la
 colocación por capas no dibuje conexiones falsas ni deje las etiquetas pegadas a la flecha, que la etiqueta de cada
-salida de una puerta vaya sobre un tramo suyo (también en 170 procesos al azar), que la línea de una nota no cruce la
+salida de una puerta vaya sobre un tramo suyo (también en 1.170 procesos al azar), que la línea de una nota no cruce la
 etiqueta de su paso, el temporizador que interrumpe, los avisos sin capa y el error suelto en BPMN.
 Sale con 0 si todo va bien (tarda unos tres minutos).
 
@@ -839,7 +839,7 @@ def etiquetas_de_puertas(tmp):
     """Por capas, la etiqueta de cada salida de una puerta va sobre un tramo suyo, junto a la puerta. Con las dos
     salidas hacia otro carril y un paso de su columna que les tapa la vertical, salían las dos por la derecha y la
     etiqueta «Sí» caía en el tramo que comparten: ahora la que va más lejos sale por el vértice de abajo, con su tramo.
-    Y en 170 procesos al azar (semilla fija) ninguna etiqueta de una salida de una puerta cae donde pasa otro flujo."""
+    Y en dos muestras de semilla fija ninguna etiqueta de una salida de una puerta cae donde pasa otro flujo."""
     import random
     import drawio_modelo as dm, colocacion as co
     d = tmp / "puerta" / "puerta-otro-carril.drawio"
@@ -872,6 +872,22 @@ def etiquetas_de_puertas(tmp):
         mal += [f"proceso {k}: {m}" for m in etiquetas_en_tramo_ajeno(tmp / "muestra" / f"p{k}.drawio")]
     check(not mal, "170 procesos al azar: ninguna etiqueta de una salida de una puerta cae donde pasa otro flujo "
           f"({len(mal)}) " + "; ".join(mal[:4]))
+    rnd, mal = random.Random(11), []
+    for k in range(1000):
+        proc = proceso_aleatorio(rnd, k)
+        geo = co.ajustar(proc, co.por_capas(proc, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA), dm.TAM, dm.FORMAS_EVENTO,
+                         dm.PUERTAS, dm.CABECERA)
+        destino = tmp / "muestra" / f"semilla11-{k}.drawio"
+        dm.escribir_paginas([(proc, geo)], str(destino))
+        mal += [f"proceso {k}: {m}" for m in etiquetas_en_tramo_ajeno(destino)]
+    check(not mal, "1000 procesos, semilla 11: ninguna etiqueta en tramo ajeno "
+          f"({len(mal)}) " + "; ".join(mal[:4]))
+    camino = [(100, 0), (100, 200)]
+    sitio = dm._sitio_en_vertical(camino, [200], [[(50, 100), (150, 100)]], 40, [])
+    check(sitio is not None and abs(sitio[1] - 100) > 13,
+          "un obstáculo en el centro deja disponibles los extremos de un tramo vertical")
+    check(dm._sitio_en_vertical(camino, [200], [[(110, 0), (110, 200)]], 40, []) is None,
+          "una vertical vecina que ocupa todo el ancho de la etiqueta no se acepta como hueco libre")
 
 
 # ---------------------------------------------------------------- sin navegador y procesos grandes

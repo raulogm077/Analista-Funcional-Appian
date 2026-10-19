@@ -565,20 +565,28 @@ def _sitio_etiqueta(camino, otros=(), etiqueta=None):
 def _sitio_en_vertical(camino, largos, otros, ancho, cajas):
     """(largo, distancia desde el origen) del centro del primer trozo vertical del flujo que no cruza ni comparte otro y
     en el que cabe su etiqueta (`ancho`) sin pisar otro flujo ni ninguna de las `cajas` (x, y, w, h); None si no hay."""
-    def pisa(r, t, caja):
-        """Si el tramo r-t (o la caja de esquinas r y t) entra en la caja."""
-        x, y, w, h = caja
-        return min(r[0], t[0]) < x + w and max(r[0], t[0]) > x and min(r[1], t[1]) < y + h and max(r[1], t[1]) > y
+    semiancho = ancho / 2 + colocacion.AIRE_ETIQUETA
+    semialto = ALTO_ETIQUETA_FLUJO / 2 + colocacion.AIRE_ETIQUETA
+    obstaculos = [(min(r[0], t[0]), min(r[1], t[1]), max(r[0], t[0]), max(r[1], t[1]))
+                 for otro in otros for r, t in zip(otro, otro[1:])]
+    obstaculos += [(x, y, x + w, y + h) for x, y, w, h in cajas]
     for k, (p, q) in enumerate(zip(camino, camino[1:])):
         if abs(p[0] - q[0]) > 1:
             continue
         for a, b in _trozos_libres(p, q, otros):
-            y = (a + b) / 2
-            caja = (p[0] - ancho / 2 - colocacion.AIRE_ETIQUETA, y - ALTO_ETIQUETA_FLUJO / 2 - colocacion.AIRE_ETIQUETA,
-                    ancho + 2 * colocacion.AIRE_ETIQUETA, ALTO_ETIQUETA_FLUJO + 2 * colocacion.AIRE_ETIQUETA)
-            if b - a >= caja[3] and not any(pisa(r, t, caja) for otro in otros for r, t in zip(otro, otro[1:])) \
-                    and not any(pisa((x, y0), (x + w, y0 + h), caja) for x, y0, w, h in cajas):
-                return (b - a, sum(largos[:k]) + abs(y - p[1]))
+            libres = [(a + semialto, b - semialto)] if b - a >= 2 * semialto else []
+            # Un obstáculo cerca del centro no ocupa necesariamente todo el tramo.
+            # Restar su proyección deja también los huecos a ambos lados disponibles.
+            for x0, y0, x1, y1 in obstaculos:
+                if x0 >= p[0] + semiancho or x1 <= p[0] - semiancho:
+                    continue
+                lo, hi = y0 - semialto, y1 + semialto
+                libres = [(u, v) for desde, hasta in libres
+                          for u, v in ((desde, min(hasta, lo)), (max(desde, hi), hasta)) if v > u]
+            if libres:
+                desde, hasta = max(libres, key=lambda tramo: tramo[1] - tramo[0])
+                y = (desde + hasta) / 2
+                return (hasta - desde, sum(largos[:k]) + abs(y - p[1]))
     return None
 
 
