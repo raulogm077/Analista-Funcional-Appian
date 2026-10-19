@@ -305,6 +305,11 @@ def c_impacto(m, a):
     if otras:
         print(f"  → En curso en {', '.join(otras)}: si el punto es de {propia or 'otra unidad'}, «Requiere: Sí "
               f"({', '.join(otras)})»: hay que decidir el orden")
+        pendientes = [uid for uid in otras if ctx.por_id[uid].estado in (un.ABIERTA, un.APROBADA)]
+        if pendientes:
+            print("  → Secuenciar la pieza compartida: no edites su texto para otra unidad antes de construir "
+                  + ", ".join(pendientes) + ". Deja la propuesta en un informe previo (camino completo); "
+                  "la segunda unidad queda Abierta. Las piezas independientes pueden continuar")
 
     def lista(titulo, d):
         print(f"\n{titulo} ({len(d)}):")

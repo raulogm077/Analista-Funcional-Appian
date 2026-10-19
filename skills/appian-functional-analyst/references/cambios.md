@@ -22,7 +22,7 @@ a tabla de objetos con «Cambio» y «Para» (`tecnico-plantilla.md` §13). Cada
 | Orden | Estado | Cuándo | Bloquea si… |
 |---|---|---|---|
 | `cambio <p> EV-02 abrir --titulo "…"` | Abierta | Empieza el cambio | ya existe |
-| `… aprobada --fuente FU-nn [--comparte "…"]` | Aprobada | El jefe de proyecto aprueba la unidad entera, con su alcance y coste; su aprobación (chat o correo) es la fuente FU-nn. Deja escritas sus issues de construcción (§5) y, si cambia datos, permisos, procesos en curso o lo que usan otros (los puntos de «Cambio sobre lo construido», §4), o usa IA, avisa: «que una persona revise DT-nn antes de construir», también en su issue. Es un aviso, no frena nada | hay puntos «Pendiente» en sus informes; o un objeto suyo de §13 está también en otra unidad Aprobada o Construida sin una decisión escrita (`--comparte "EV-03 en X: secuenciar (EV-02 primero)"`), salvo que las dos solo cambien en él el nombre de una acción, una vista o un filtro (§4): eso se avisa |
+| `… aprobada --fuente FU-nn [--comparte "…"]` | Aprobada | El jefe de proyecto aprueba la unidad entera, con su alcance y coste; su aprobación (chat o correo) es la fuente FU-nn. Deja escritas sus issues de construcción (§5) y, si cambia datos, permisos, procesos en curso o lo que usan otros (los puntos de «Cambio sobre lo construido», §4), o usa IA, avisa: «que una persona revise DT-nn antes de construir», también en su issue. Es un aviso, no frena nada | hay puntos «Pendiente» en sus informes; comparte una pieza con otra unidad Aprobada aún sin construir (§1); o un objeto suyo de §13 está también en otra unidad Construida sin una decisión escrita (`--comparte "EV-03 en X: secuenciar (EV-02 primero)"`), salvo que las dos solo cambien en él el nombre de una acción, una vista o un filtro (§4): eso se avisa |
 | `… construida [--reaplicada URG-nn …] [--manual]` | Construida | Todas sus issues, construidas y verificadas en desarrollo, con sus pruebas y, si tiene escenarios, su QA (§6); si el QA falta o está a medias, lo avisa, sin impedirlo. La regresión va después, antes de preparar el paquete (`indice.py issues <p> EV-02 --regresion`) | no está Aprobada; ha crecido desde que se aprobó; alguna issue no está hecha (dice cuál y por qué, también si un escenario suyo falla en el QA; con `--manual`, sin Dev MCP, no se mira, y la marca lo dice); o falta confirmar una corrección urgente que hay que reaplicar |
 | `… produccion --ref "<pase>" --fecha <AAAA-MM-DD del pase>` | En producción | Tras el pase | no está Construida |
 | `… descartada [--informe impacto/FU-nn.md]` | Descartada | No se hace | no está Abierta; o tiene algo aplicado y no se da el informe (aplicado) que lo deshace, o §13 sigue con sus filas |
@@ -30,9 +30,19 @@ a tabla de objetos con «Cambio» y «Para» (`tecnico-plantilla.md` §13). Cada
 **Aprobar guarda con qué se aprueba** (la versión y sus informes, en la celda de su ID). Una fuente nueva para una
 unidad Aprobada (otro informe con su `Cambio:`, o un punto «Pendiente») la devuelve a aprobación: `issues` y
 `construida` fallan con «ha crecido desde que se aprobó» hasta que se vuelve a aprobar con `--fuente`. Si no conviene,
-lo nuevo va en otra unidad si no cambia piezas de la anterior sin construir. Lo que cambia una pieza de una unidad
-sin construir se incorpora a esa misma unidad y se vuelve a aprobar: las issues copian el texto vigente, no una
-versión histórica de cada pieza. Sin `--fuente`, de Construida se vuelve a Aprobada cuando una urgencia obliga a reaplicar.
+lo nuevo va en otra unidad. Si comparte una pieza aún sin construir, se secuencia: la segunda queda **Abierta** y
+su cambio en el informe previo, sin sustituir todavía el texto funcional o técnico de esa pieza. Primero se construye
+la anterior; después se aplica y se aprueba la segunda unidad entera. No hay aprobación parcial: otras unidades y
+piezas independientes pueden continuar. `--comparte` no permite aprobar dos encargos pendientes con distinto texto
+de la misma pieza. Las menciones de contexto y objetos que solo «Existen» no son cambios.
+
+Las issues copian el texto vigente. Al regenerar, las huellas por pieza y objeto guardadas en su esperado detectan
+si se alteró contenido compartido: el rechazo conserva las issues y sus esperados. No guardan versiones históricas
+por unidad ni impiden cualquier edición manual. Si alguien ya cambió esa pieza, recupera el encargo anterior de git
+o `versiones/`, o reasigna el cambio a la primera unidad y vuelve a aprobarla. En proyectos anteriores, sin huellas,
+solo se incorporan si la versión y el encargo guardado siguen iguales; si falta esa evidencia, se pide recuperarla.
+Dos propuestas Abiertas pueden coexistir y la primera aprobarse si el cambio de la otra aún no está aplicado.
+Sin `--fuente`, de Construida se vuelve a Aprobada cuando una urgencia obliga a reaplicar.
 Con `--desatendida` no se aprueba ni se pasa a producción sin el visto bueno del jefe de proyecto; si lo da (también
 en lo que se le pide a la sesión), se cataloga como fuente de tipo Aprobación y se pasa con ella. Tampoco se marca Construida con `--manual`, que no mira las issues ni sus pruebas. «En producción» registra un pase
 que ya ha ocurrido: lo que quede por comprobar se apunta, no lo frena. `proyecto.py estado` imprime

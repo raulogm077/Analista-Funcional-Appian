@@ -468,6 +468,36 @@ def citada(ruta):
     return f'"{ruta}"' if " " in str(ruta) else str(ruta)
 
 
+def comprueba_secuencia_version(m, a):
+    """Antes de copiar o editar: lo que otro encargo aún construye espera en un informe previo."""
+    ctx = un.Contexto(m)
+    if not ctx.hay:
+        return
+    nombres = {pathlib.Path(a.informe).stem} if a.informe else {f.upper() for f in a.fuente}
+    ambitos = {}
+    for nombre, texto, puntos, _ in ctx.informes:
+        if pathlib.Path(nombre).stem not in nombres:
+            continue
+        for _, unidades in ctx._de_informe(nombre, texto, puntos):
+            for uid in unidades:
+                ambito = ctx.ambito_secuencia(uid, informe=nombre, solo_decididas=True)
+                previo = ambitos.setdefault(uid, {"piezas": set(), "objetos": set()})
+                for k in previo:
+                    previo[k] |= ambito[k]
+    afectadas = {m.raiz_de(p) for decision in a.decision or [] for p in mo.ids_en(decision[1])}
+    if afectadas:
+        abiertas = [u.id for u in ctx.unidades if u.estado == un.ABIERTA]
+        uid = next(iter(ambitos)) if len(ambitos) == 1 else abiertas[0] if len(abiertas) == 1 else None
+        ambitos.setdefault(uid, {"piezas": set(), "objetos": set()})["piezas"] |= afectadas
+    for uid, ambito in ambitos.items():
+        bloqueos = [s for s in ctx.solapes_secuencia(uid, ambito) if s["estado"] == un.APROBADA]
+        if bloqueos:
+            detalle = "; ".join(s["unidad"] + ": " + ", ".join(sorted(s["piezas"] | s["objetos"])) for s in bloqueos)
+            sys.exit(f"No se abre versión: la pieza compartida sigue sin construir ({detalle}). "
+                     "Deja el segundo cambio Abierto y su propuesta en el informe, sin editar esa pieza. "
+                     "Usa el camino completo con informe previo; las piezas independientes pueden continuar")
+
+
 def version(a):
     """Abre la versión siguiente para aplicar el informe de una o varias fuentes: copia la actual (como copia), sube
     0.1 la del funcional y la del técnico y escribe la fila de la versión en decisiones.md, las D de --decision y cada
@@ -501,6 +531,7 @@ def version(a):
     malas = [d[0] for d in decisiones if d[0].upper() not in mo.TIPOS_D]
     if malas:
         sys.exit(f"--decision {', '.join(malas)}: el tipo es uno de {', '.join(mo.TIPOS_D)}")
+    comprueba_secuencia_version(m, a)
     if inicial:
         if m.version("F") != (1, 0) or m.version("T") not in (None, (1, 0)) or any((raiz / "versiones").glob("v*")):
             sys.exit("--inicial registra las fuentes de la primera 1.0, sin copias de versiones anteriores")
@@ -694,6 +725,7 @@ def cambio(a):
     m = mo.Proyecto(raiz)
     ctx = un.Contexto(m)
     u = ctx.por_id.get(uid)
+    estado_previo = u.estado if u else None
     if destino == "abrir":
         if u:
             no(f"ya existe ({u.estado})", "usa el siguiente ID libre (proyecto.py estado)")
@@ -767,7 +799,7 @@ def cambio(a):
         print("Actualiza el entorno de corrección con este pase: las correcciones urgentes se hacen sobre lo que hay en "
               "producción (references/urgentes.md)")
     if destino == "aprobada":
-        issues_de(raiz, uid)
+        issues_de(raiz, uid, estreno=estado_previo == un.ABIERTA)
         for r in un.Contexto(mo.Proyecto(raiz)).revisar_antes(uid):     # T14: un aviso, no una puerta
             print(f"· {un.texto_revision(uid, r)}")
     if destino == "construida" and not a.manual:
@@ -783,12 +815,12 @@ def cambio(a):
                                                        f"({x['quien']})" for x in marcas))
 
 
-def issues_de(raiz, uid):
+def issues_de(raiz, uid, estreno=False):
     """Deja escritas las issues de una unidad recién aprobada (construccion/<U>/) y dice cuáles son. Si no se pueden
     generar (técnico §13 sin objetos de la unidad), lo dice y no frena la aprobación."""
     m = mo.Proyecto(raiz)
     try:
-        plan, escritos, _ = iss.genera(m, un.Contexto(m), uid)
+        plan, escritos, _ = iss.genera(m, un.Contexto(m), uid, estreno=estreno)
     except iss.NoSePuede as e:
         print(f"· Sin issues de construcción: {e}")
         return
@@ -825,6 +857,21 @@ def aprobar(a, ctx, u, hoy, no, raiz, orden):
            f"catalógala con leer_fuentes.py y {orden} aprobada --fuente FU-nn")
     if (raiz / "fuentes").is_dir() and not list((raiz / "fuentes").glob(f"{fu}*.md")):
         no(f"{fu} no está en fuentes/", f"catalógala antes con leer_fuentes.py y repite {orden} aprobada --fuente {fu}")
+    esperan = [s for s in ctx.solapes_secuencia(u.id) if s["estado"] == un.APROBADA]
+    if esperan:
+        detalle = "; ".join(s["unidad"] + ": " + ", ".join(sorted(s["piezas"] | s["objetos"])) for s in esperan)
+        no(f"la pieza compartida sigue sin construir ({detalle})",
+           "mantén esta unidad Abierta y la propuesta en su informe hasta construir la primera; "
+           "--comparte no evita que ambas lean el mismo texto. No hay aprobación parcial")
+    for solape in ctx.solapes_secuencia(u.id):
+        if solape["estado"] != un.ABIERTA:
+            continue
+        aplicado = ctx.ambito_secuencia(solape["unidad"], propuestas=False)
+        comunes = (solape["piezas"] & aplicado["piezas"]) | (solape["objetos"] & aplicado["objetos"])
+        if comunes:
+            no(f"el texto compartido ya tiene cambios de {solape['unidad']} aún Abierta ({', '.join(sorted(comunes))})",
+               "restaura el texto desde git/versiones o reasigna ese cambio a la primera unidad antes de aprobar; "
+               "la propuesta de la segunda espera sin aplicarse")
     pend = [f"{n} punto {p.get('#', '?')}" for n, t, p in ctx.puntos_de(u.id)
             if p and mo.normaliza(p.get("decision", "")).strip(" *").startswith("pendiente")]
     if pend:

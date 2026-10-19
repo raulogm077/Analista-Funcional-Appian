@@ -26,6 +26,8 @@ que preguntar al cliente, el camino entero (§0-§8). Sin nota, sin `comprobar.p
    python3 <skill>/scripts/indice.py impacto <p> PAN-01 --cambio EV-03    # sin unidades, sin --cambio
    ```
    `impacto` dice lo que depende, las señales «Construido · En curso» y, con unidades, la fila de técnico §13.
+   Si otra unidad aún sin construir cambia la misma pieza, sigue el camino completo: deja el informe **antes** de
+   abrir versión o editarla. La segunda unidad queda Abierta hasta construir la primera (`cambios.md` §1).
 4. **Versión y decisiones**, en una orden: `proyecto.py version <p> --fuente FU-04 --que "<qué cambia>" [--decision
    CAMBIA PAN-01 "<lo nuevo>" "<lo de antes> [FU-01 00:06:40]"]`. Copia la 1.1, sube el funcional y el técnico a la 1.2,
    escribe la fila de la versión y la D de cada CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE en `decisiones.md` y la
@@ -152,6 +154,8 @@ en técnico §13, además de las piezas afectadas.
 
 ## 4. Informe de impacto: `impacto/FU-04.md`
 Si ningún punto requiere aprobación, se escribe una sola vez, al terminar de aplicar (final del §6); si alguno la requiere, ahora:
+Una pieza compartida con otra unidad aún sin construir siempre necesita ese informe previo: la propuesta conserva
+su destino y unidad, pero no se aplica todavía sobre el texto del primer encargo.
 ```markdown
 # Impacto de FU-04 · Seguimiento con la unidad gestora · 2026-10-01
 Análisis base: versión 1.1 · Estado: pendiente
@@ -211,6 +215,11 @@ pendientes de aprobación: puntos 4 y 7», o «Estado: pendiente» si no se ha a
 le vuelve a preguntar.
 
 ## 6. Aplicar
+- Antes de aplicar una pieza compartida, comprueba que la primera unidad está Construida. Hasta entonces, conserva
+  la segunda Abierta y el texto de esa pieza intacto; las unidades independientes continúan. Pasa el informe previo
+  con `version --informe impacto/FU-04.md` (y las decisiones con `--decision`): la orden rechaza cambios declarados
+  sobre un encargo aprobado pendiente. Sin un informe o decisión que identifique el destino, no puede anticipar una
+  edición manual; si ya ocurrió, la guardia de regeneración conserva los artefactos aprobados y pide recuperación.
 - Si el informe cambia el funcional o el técnico, antes de tocar nada `proyecto.py version <p> --fuente FU-04 --que
   "…"`: guarda la 1.1 en `versiones/v1.1/`, sube los dos a la 1.2 y escribe la fila de la versión en `decisiones.md` y
   la fuente en «Fuentes procesadas». Si no (SIN IMPACTO, PROYECTO o descartes), «Estado: sin cambios», sin copia ni

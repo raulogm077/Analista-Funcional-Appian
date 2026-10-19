@@ -773,6 +773,55 @@ class Contexto:
         construido += [u.id for u in suyas if u.estado in CONSTRUIDAS]
         return list(dict.fromkeys(construido)), curso
 
+    def ambito_secuencia(self, uid, propuestas=True, informe=None, objetos_conocidos=(), solo_decididas=False):
+        """Lo que cambia, sin «Revisar también», referencias de contexto ni filas «Existe»."""
+        piezas, objetos = set(), set()
+        if informe is None:
+            for f in self.filas_de(uid):
+                if f["situacion"] in CAMBIAN:
+                    objetos |= {objeto(o) for o in f["objetos"]}
+                    piezas |= {self.m.raiz_de(p) for p in mo.ids_en(f["para"])}
+            if uid == self.sin_id:
+                piezas |= {self.m.raiz_de(p.id) for p in self.m.piezas.values()
+                           if p.doc == "F" and uid in self.senales(p.id)[1]}
+        conocidos = {objeto(o) for f in self.filas for o in f["objetos"]} | set(objetos_conocidos)
+        for nombre, texto, punto in self.puntos_de(uid):
+            if informe is not None and pathlib.Path(nombre).stem != pathlib.Path(informe).stem:
+                continue
+            if not propuestas and not mo.normaliza(mo.estado_informe(texto)).startswith("aplicado"):
+                continue
+            if punto:
+                tipo = mo.normaliza(punto.get("tipo", "")).strip(" *`")
+                decision = mo.normaliza(punto.get("decision", "")).strip(" *")
+                if tipo in SIN_PIEZAS + ("existe", "contexto") or "✗" in decision:
+                    continue
+                if (not propuestas or solo_decididas) and (decision.startswith("pendiente") or "❓" in decision):
+                    continue
+                destino = punto.get("encaja en", "") if not tipo.startswith("nuevo") else ""
+                if not mo.ids_en(destino) and not re.findall(r"`([^`]+)`", destino):
+                    destino = punto.get("cambio propuesto", "")
+                piezas |= {self.m.raiz_de(p) for p in mo.ids_en(destino)}
+                objetos |= {objeto(o) for o in objetos_celda(destino)} & conocidos
+            elif mo.normaliza(mo.estado_informe(texto)).startswith("aplicado"):
+                aplicado = re.search(r"^## Aplicado\s*$(.*?)(?=^## |\Z)", texto, re.M | re.S)
+                piezas |= {self.m.raiz_de(p) for p in mo.ids_en(aplicado.group(1))} if aplicado else set()
+        return {"piezas": piezas, "objetos": objetos}
+
+    def solapes_secuencia(self, uid, ambito=None):
+        """Compartir texto aún por construir exige secuencia; dos propuestas abiertas pueden esperar sin aplicarse."""
+        mio = ambito if ambito is not None else self.ambito_secuencia(uid)
+        out = []
+        for u in self.unidades:
+            if u.id == uid or u.urgente or u.estado not in (ABIERTA, APROBADA):
+                continue
+            suyo = self.ambito_secuencia(u.id)
+            piezas, objetos = mio["piezas"] & suyo["piezas"], mio["objetos"] & suyo["objetos"]
+            # Dos retoques de partes distintas del mismo registro conservan la excepción ya existente.
+            objetos -= self.retoques(uid) & self.retoques(u.id)
+            if piezas or objetos:
+                out.append({"unidad": u.id, "estado": u.estado, "piezas": piezas, "objetos": objetos})
+        return out
+
     def texto_senales(self, pid):
         c, e = self.senales(pid)
         return f"Construido: {', '.join(c) or '—'} · En curso: {', '.join(e) or '—'}"

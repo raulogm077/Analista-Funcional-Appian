@@ -719,6 +719,16 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
           f"cada equipo, la imprime `appian-functional-analyst/scripts/indice.py issues <p> {uid} {issue.id}` (y "
           "`--siguiente`, al dar la issue). " + (PRUEBAS_NO if issue.sin_pruebas else PRUEBAS_SI), "", ORDENES, ""]
     issue.texto = "\n".join(L)
+    # Solo huellas del contenido: sin texto histórico, reserva, dependencias ni estado operativo.
+    huella_de = lambda x: hashlib.sha256(json.dumps(x, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+    piezas = {m.raiz_de(p) for p in mo.ids_en("\n".join(pide + tec)) if p in m.piezas} | set(issue.requisitos)
+    issue.esperado["_issue"]["ambito"] = {
+        "piezas": {p: huella_de(mo.sin_comentarios(m.texto(p)).strip()) for p in sorted(piezas) if p in m.piezas},
+        "objetos": {o: huella_de([
+            [{k: f[k] for k in ("tipo", "situacion", "sustituye")} for f in issue.filas
+             if o in {un.objeto(n) for n in f["objetos"]}],
+            [mo.sin_comentarios(x["texto"]).strip() for x in lineas + dts if o in x["objetos"] or x["de"] == o],
+            objetos_esperados.get(o, {})]) for o in issue.objetos}}
 
 
 # De dónde salen las órdenes que nombran un script sin ruta: AGENTS.md, la copia de cada flujo en el proyecto y cada
@@ -958,7 +968,7 @@ def ordena_grafo(issues, antes):
                              and i.id not in previas[j.id]), key=numero)
 
 
-def calcula(m, ctx, uid):
+def calcula(m, ctx, uid, estreno=False):
     """El plan de issues de una unidad aprobada, sin escribir nada. NoSePuede si no hay qué construir o no se debe."""
     u = ctx.por_id[uid]
     if u.urgente:
@@ -1028,7 +1038,55 @@ def calcula(m, ctx, uid):
     sin = sorted({c for i in issues for c in i.sin_gherkin}, key=clave)
     if sin:
         plan.avisos.append(f"criterios sin dado, cuando y entonces (pasan tal cual al .feature): {', '.join(sin)}")
+    protege_encargo(plan, m, ctx, estreno)
     return plan
+
+
+def protege_encargo(plan, m, ctx, estreno=False):
+    """La propuesta de otra unidad puede esperar; su texto no puede entrar en una issue anterior sin construir."""
+    if ctx.por_id[plan.uid].estado != un.APROBADA:
+        return
+    otras = [u for u in ctx.unidades if u.id != plan.uid and not u.urgente and u.estado in (un.ABIERTA, un.APROBADA)]
+    if not otras:
+        return
+    anteriores = {}
+    for f in carpeta(m.raiz, plan.uid).glob("ISS-*-esperado.json"):
+        try:
+            esperado = json.loads(f.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            raise NoSePuede(f"no se puede leer {f.name}; recupera el encargo desde git o versiones antes de regenerarlo") from None
+        anteriores[f.name.removesuffix("-esperado.json")] = esperado
+    nuevas = {i.id: i for i in plan.issues}
+    indice_anterior = indice_de(m.raiz, plan.uid)
+    for iid in set(anteriores) | set(nuevas):
+        antes, i = anteriores.get(iid), nuevas.get(iid)
+        meta = (antes or {}).get("_issue", {})
+        actual = i.esperado["_issue"]["ambito"] if i else {"piezas": {}, "objetos": {}}
+        anterior = meta.get("ambito")
+        ambito = {"piezas": set((anterior or actual)["piezas"]) | set(indice_anterior.get(iid, {}).get("requisitos", [])),
+                  "objetos": set((anterior or actual)["objetos"]) | (set(antes or {}) - {"_issue"})}
+        for otra in otras:
+            ajeno = ctx.ambito_secuencia(otra.id, objetos_conocidos=ambito["objetos"])
+            comunes = {k: ambito[k] & ajeno[k] for k in ambito}
+            if not any(comunes.values()):
+                continue
+            falta = antes is None
+            if falta and estreno and otra.estado == un.ABIERTA:
+                continue  # la primera aprobación humana decide el encargo actual; la propuesta ajena sigue abierta
+            cambiadas = [p for k in comunes for p in comunes[k]
+                         if anterior and anterior[k].get(p) != actual[k].get(p)]
+            texto_anterior = carpeta(m.raiz, plan.uid) / (iid + ".md")
+            contenido = lambda t: re.sub(r"^Requisitos:.*$", "", t, flags=re.M).strip()
+            sin_evidencia = not anterior and (not i or meta.get("version") != i.version
+                or not texto_anterior.is_file()
+                or contenido(texto_anterior.read_text(encoding="utf-8")) != contenido(i.texto))
+            if falta or cambiadas or sin_evidencia or i is None:
+                detalle = ", ".join(sorted(cambiadas or set().union(*comunes.values())))
+                motivo = "falta el artefacto anterior" if falta else "no hay huellas suficientes del encargo anterior" \
+                    if sin_evidencia else "cambió o desapareció el contenido compartido"
+                raise NoSePuede(f"{plan.uid} {iid}: {detalle} también se propone en {otra.id}; {motivo}. "
+                                "No se reescriben las issues: recupera el texto de git/versiones o reasigna el cambio "
+                                "a la primera unidad y vuelve a aprobarla. La segunda espera Abierta hasta construir la primera")
 
 
 def texto_indice(plan, reservas):
@@ -1095,9 +1153,9 @@ def escribe(plan, raiz, reservas=None):
     return escritos, retirados
 
 
-def genera(m, ctx, uid):
+def genera(m, ctx, uid, estreno=False):
     """Calcula las issues de la unidad y las deja escritas: (plan, escritos, retirados)."""
-    plan = calcula(m, ctx, uid)
+    plan = calcula(m, ctx, uid, estreno=estreno)
     for i in plan.issues:
         f = carpeta(m.raiz, uid) / (i.id + "-esperado.json")
         if f.is_file() and json.loads(f.read_text(encoding="utf-8")).get("_issue", {}).get("version") != i.version:

@@ -1160,7 +1160,7 @@ Se acepta si:
                 except OSError:
                     pass
         shutil.rmtree(tmp, ignore_errors=True)
-    for nombre in ("test_automejora.py", "test_ingesta.py", "test_dependencias.py"):
+    for nombre in ("test_automejora.py", "test_ingesta.py", "test_dependencias.py", "test_secuenciacion.py"):
         prueba = AQUI / nombre
         if prueba.is_file():
             c, out = corre(prueba)
@@ -2158,7 +2158,8 @@ def pruebas_unidades(tmp):
     ok("lo esperado dice de qué issue y de qué versión es, el tipo de cada objeto y, del record type que se modifica, "
        "solo sus campos nuevos",
        re.fullmatch(r"[0-9a-f]{12}", esp.get("_issue", {}).get("version", "")) is not None
-       and esp == {"_issue": {"id": "ISS-01", "unidad": "EV-02", "version": esp["_issue"]["version"], "pruebas": True},
+       and esp == {"_issue": {"id": "ISS-01", "unidad": "EV-02", "version": esp["_issue"]["version"], "pruebas": True,
+                             "ambito": esp["_issue"]["ambito"]},
                    "DEM Solicitud": {"tipo": "recordType", "campos": [{"nombre": "firmaRevisor", "tipo": "Text"}]},
                    "DEM_ER_Firma": {"tipo": "expressionRule"}, "DEM_RevisionForm": {"tipo": "interface"},
                    "DEM_SolicitudForm": {"tipo": "interface"}}, json.dumps(esp, ensure_ascii=False))
