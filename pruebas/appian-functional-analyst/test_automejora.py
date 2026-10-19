@@ -103,6 +103,26 @@ class Automejora(unittest.TestCase):
         self.assertIn("desconocida", out)
         self.assertNotIn("Dónde se corrige: Desarrollo", out)
 
+    def test_resumen_impacto_incluye_plan_de_construccion(self):
+        fixture.con_unidades(self.p)
+        m = mo.Proyecto(self.p)
+        # HU-01 es independiente; HU-02 comparte EV-02. Ambas están construidas.
+        for pieza in ("HU-01", "HU-02"):
+            with self.subTest(pieza=pieza):
+                out = self.captura(indice.c_impacto, m,
+                                   SimpleNamespace(con=None, ids=[pieza], nivel=1, cambio="EV-03"))
+                self.assertIn("→ Técnico §13:", out)
+                resumen = next(l for l in out.splitlines() if l.startswith("Especificación técnica afectada:"))
+                self.assertIn("técnico §13", resumen)
+
+    def test_resumen_impacto_sin_plan_construido(self):
+        m = self.copia()
+        out = self.captura(indice.c_impacto, m,
+                           SimpleNamespace(con=None, ids=["PAN-01"], nivel=1, cambio=None))
+        self.assertNotIn("→ Técnico §13:", out)
+        resumen = next((l for l in out.splitlines() if l.startswith("Especificación técnica afectada:")), "")
+        self.assertNotIn("técnico §13", resumen)
+
     def test_tabla_ausente_diagnostico(self):
         m, _ = self.preparada()
         f = self.p / "analisis" / "tecnico.md"

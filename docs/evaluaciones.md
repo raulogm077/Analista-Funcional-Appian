@@ -4,6 +4,29 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Campaña Codex: impacto, continuidad y límites de los puntuadores (20 de octubre de 2026)
+
+Continuación de la misma rama y carpeta externa, tras el commit `5d345d6`. Astra coordina y trabajadores
+Sol/Luna ejecutan encargos acotados. Las interrupciones anteriores se conservan; no son el estado de estas
+nuevas sesiones terminadas. Solo Codex, sin escrituras en Appian ni publicación.
+
+| Comprobación | Resultado y límite |
+|---|---|
+| Resumen de impacto de un retoque | `indice.py impacto` emitía la fila de construcción y omitía técnico §13 del resumen final. Se incluye cuando la fila procede. Dos regresiones focales, con piezas independientes/compartidas y un vecino sin plan construido, pasan; suite del analista exit 0, PDF real omitido por ausencia de `soffice` en esa ejecución. No se añade una aprobación ni otra lectura. |
+| Comparación 3+3 | Mismo Luna low, configuración, encargo y montaje; solo cambia `indice.py` entre las copias de skills. Antes: 5/6, 4/6 y 6/6; después: tres 6/6. Medianas: **15→12 llamadas (−20 %)** y **92,62→79,54 s (−14,12 %)**. Acredita el objetivo de llamadas en este caso, no ahorro general ni una conclusión estadística. El puntuador no acredita exportación visual ni cadena de entregables; una pasada posterior dejó una captura por actualizar. |
+| Enrutado y reserva | 8/8 peticiones de frontera y 10/10 reservadas clasificadas correctamente a partir de las descripciones. No equivale a ejecutar los siete flujos. Seguimiento reservado sin impacto: análisis, versión, capturas y Word conservados, 11 llamadas; una lectura de ruta errónea queda registrada. |
+| Contrato de IDs de refactorización | La skill afirmaba renumeración al rehacer as-is; `build_registry.py` conserva IDs reconocidos. Se corrige la frase para revisar cambios/retirados. Mismos dos casos antes/después y un vecino de objetos cruzados correctos; suite 48/48. Corrige documentación contra comportamiento existente, sin acreditar aceleración ni conducta del agente ante la frase. |
+| D1/D7/C8 en sesiones nuevas | Seis fases locales correctas: 212,4 s, 35 llamadas shell, tres fallidas recuperadas, cero MCP. Los tres reservados conservan un cambio independiente, avance sin confundirlo con verificación y aceptación limitada al entorno. Un falso negativo del puntuador D7 por frase literal conserva su resultado bruto y adjudicación manual separada. No mide seguridad efectiva de roles. |
+| Urgencia durante un evolutivo | **FAIL** visible y reservado: ejecución incompleta del agente al trasladar reaplicación/prueba/cierre a los archivos que ya piden las instrucciones. El motor conserva los bloqueos. Un falso positivo del puntuador acepta un entorno todavía pendiente por coincidencia de texto; se investiga separado del fallo de conducta. |
+| Síntesis incremental real | Tres anexos parciales con segunda reunión, correo sintético contradictorio y extracto reservado. La revisión independiente no encuentra contradicción material en reglas principales y señala cuatro problemas menores de atribución/trazabilidad, corregidos. Se preservan fuentes, IDs e historial; no se presenta el anexo como DF completo ni como construcción aprobada. |
+| Demo y diagrama | Los controles automáticos de cambio pasan, pero la revisión detecta una atribución de aprobación incorrecta en datos de demo y recorridos superpuestos en el PNG del diagrama. Son **FAIL** en esos criterios; el verde estructural no los sustituye. Se conservan las salidas antes de reparar. |
+
+Evidencia externa: `enrutado/reanudacion-01/retoque-reservado/resultados-enrutado-retoque.json`,
+`impacto-resumen/`, `refactorizacion-ids/`, `construccion/`, `fuentes-reales/analisis-casos/`, `demo/`
+y `diagrama-editado/`, bajo `$PROYECTOS_PRUEBA/campana-codex-20261019/`.
+La medición corrige también el recuento externo de eventos Codex: cuenta comandos completados y fallidos;
+una traza incompleta deja total desconocido, no cero. No se incorporan datos de los casos reales al plugin.
+
 ## Campaña Codex: ingesta y preparación de continuidad (19 de octubre de 2026)
 
 Campaña parcial sobre `ba2755442d8f5a9d413bbd8eb944c597f974de14`, en la rama única

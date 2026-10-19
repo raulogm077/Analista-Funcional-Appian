@@ -299,7 +299,8 @@ def c_impacto(m, a):
               "devuelve a aprobación")
     # la fila de §13 sin leer §13 (la unidad: --cambio, la única EV Abierta o la que se acaba de sugerir abrir)
     unidad13 = (a.cambio or "").upper() or (ev_abiertas[0] if len(ev_abiertas) == 1 else None) or sugerida
-    if ctx.hay and construidas and unidad13 and "T" in m.docs:
+    plan_construccion = ctx.hay and construidas and unidad13 and "T" in m.docs
+    if plan_construccion:
         fila_13(m, ctx, construidas, unidad13)
     otras = sorted(en_curso - {propia})
     if otras:
@@ -347,7 +348,8 @@ def c_impacto(m, a):
     if pan:
         print(f"\nPantallas afectadas (prototipo): {', '.join(pan)}")
     tec = sorted({x for x in todas if m.piezas.get(x) and m.piezas[x].doc == "T"} |
-                 {f"técnico §{m.docs['T'].seccion_de_linea[l]}" for (d, l) in sueltas if d == "T"}, key=str)
+                 {f"técnico §{m.docs['T'].seccion_de_linea[l]}" for (d, l) in sueltas if d == "T"} |
+                 ({"técnico §13"} if plan_construccion else set()), key=str)
     if tec:
         print(f"Especificación técnica afectada: {', '.join(tec)}")
     val = [x for x in todas if m.piezas.get(x) and m.piezas[x].estado == "🔒"]

@@ -13,18 +13,23 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
 ## Campaña Codex en curso
 
 La campaña posterior usa una sola rama, `codex/campana-mejora-20261019`, desde `ba275544`; índice y estado
-en `$PROYECTOS_PRUEBA/campana-codex-20261019/`. No está cerrada: la corrección de fuentes sin texto pasa
-su comparación, pero no acredita ahorro del 20 %. No repetir esa ingesta para suplir los casos sin ejecutar.
+en `$PROYECTOS_PRUEBA/campana-codex-20261019/`. No está cerrada. La corrección del resumen de impacto alcanza
+el 20 % de reducción mediana de llamadas en el retoque medido 3+3; la ingesta sigue siendo una corrección
+funcional sin ahorro acreditado. No extrapolar esas cifras a los casos restantes.
 
-- Reanudar D1 desde el estado conservado, o preparar una nueva pasada aislada para medirlo, cuando haya
-  sesiones disponibles; después D7/C8 y enrutado con modelo compatible. El límite de cuota y el rechazo
-  del modelo no son fallos funcionales de esas capacidades. Mantener Astra como orquestador solicitado.
-- Ejecutar actualización incremental, retoque de etiqueta con límite de 25 llamadas, contradicciones y
-  cadena de entregables con los casos reales/reservados preparados. Catalogar reuniones no acredita síntesis.
+- D1/D7/C8 y sus tres reservados ya tienen sesiones locales terminadas; no repetir por las interrupciones
+  anteriores. Enrutado y retoque 3+3 terminados con Luna. Mantener Astra como orquestador solicitado.
+- Urgencia visible/reservada falla por ejecución incompleta y hay un falso positivo del puntuador de entorno
+  pendiente; corregir y comparar el evaluador sin añadir instrucciones que ya existen en `urgentes.md`.
+- La actualización incremental de tres dominios conserva decisiones y pendientes; son anexos parciales.
+  Completar la cadena de entregables donde el encargo lo permita, sin convertir la ingesta de 12 reuniones
+  en una síntesis completa. Demo y reserva tienen fallos semánticos; diagrama conserva las ediciones pero
+  tiene recorridos superpuestos. Reparar y repetir los criterios afectados conservando la evidencia inicial.
 - Identificar laboratorio aislado y cuentas por rol antes de construir; QA en otra sesión de Codex con
   escenarios/sitio/cuentas, sin recibir la solución. F9 acaba en evidencias para revisión humana.
-- Contrastar con casos la frase de renumeración del registro en refactorización y la autonomía sin red del
-  dashboard opcional; no modificar contratos ni incorporar material por revisión estática solamente.
+- La frase de renumeración del registro ya está corregida contra casos de IDs conservados/retirados.
+  Sigue pendiente medir la autonomía sin red del dashboard opcional y terminar el as-is/refactorización
+  acotado. No incorporar material por revisión estática solamente.
 
 Esta fase es solo Codex; no añade una obligación de Claude. Sigue sin autorizar despliegues, publicaciones,
 envíos o borrados. La batería completa se reserva a CI cuando se autorice el PR.
