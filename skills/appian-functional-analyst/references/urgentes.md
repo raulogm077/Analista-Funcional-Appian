@@ -43,6 +43,7 @@ Tras `produccion`, `proyecto.py estado` ya no la lista como pendiente.
    los usan** (`as-is/datos/dependencias.json`) con los de las unidades sin pasar a producción y, si hay
    `as-is/datos/deriva.json`, con lo modificado en desarrollo. Si no está la deriva, imprime la orden para pedirla solo de
    esos objetos (sin historial de versiones, lo dice y no supone nada). Copia el resultado en «Colisión».
+   Sin `dependencias.json`, lo que usa esos objetos queda sin comprobar: «desconocida» no equivale a «sin colisión».
 4. **Dónde se corrige.**
    - Sin colisión: en desarrollo. Esos objetos quedan congelados para las unidades en curso hasta el pase (la issue que
      los lleva lo avisa).

@@ -16,7 +16,8 @@ cambia el funcional o el técnico. En los ejemplos, la fuente nueva es FU-04 y l
 Cuándo: la fuente trae pocos puntos y **ninguno requiere aprobación** (§3.4): un texto, una etiqueta, una columna, el
 orden, un detalle que completa. Con unidades de cambio, que esté construido no la pide. Si un punto la requiere, o hay
 que preguntar al cliente, el camino entero (§0-§8). Sin nota, sin `comprobar.py` previo y sin presentar nada:
-1. **Catalogar**: `leer_fuentes.py <fichero> -o <p>/fuentes/` y leer la fuente.
+1. **Catalogar**: si llegó por chat, guardar primero el texto como fuente (`ingesta-fuentes.md` §1).
+   `leer_fuentes.py <fichero> -o <p>/fuentes/` y leer la fuente.
 2. **Unidad** (solo si `proyecto.py estado` lista unidades): el retoque va en la unidad Abierta o, si no hay ninguna,
    en una nueva: `proyecto.py cambio <p> EV-03 abrir --titulo "…"`. Una Aprobada no se toca: volvería a aprobación.
 3. **Las piezas**, con dos órdenes:
@@ -145,6 +146,9 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
    algo decidido con el cliente; dos personas del cliente dicen cosas distintas; o el cambio obliga a
    rediseñar una pantalla validada por el cliente (🔒) o construida (con unidades, lo construido no: abajo). Los
    retoques (un texto, una columna, el orden) no la requieren.
+
+Al responder un PC, pasa también su ID a `indice.py impacto`: revisa y actualiza su fila de «Supuestos para construir»
+en técnico §13, además de las piezas afectadas.
 
 ## 4. Informe de impacto: `impacto/FU-04.md`
 Si ningún punto requiere aprobación, se escribe una sola vez, al terminar de aplicar (final del §6); si alguno la requiere, ahora:

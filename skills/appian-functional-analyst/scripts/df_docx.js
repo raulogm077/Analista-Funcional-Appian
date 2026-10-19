@@ -120,6 +120,9 @@ if (CAMBIO !== null) {
     break;
   }
   if (!R) { console.error("--cambio necesita Python (python3 o python) para leer la unidad con indice.py"); process.exit(2); }
+  const pantallasModificadas = (R.piezas.cambian || []).filter((p) => /^PAN-/.test(p.id)).map((p) => p.id);
+  if (pantallasModificadas.length) console.warn(`AVISO: ${pantallasModificadas.join(", ")}: revisa y regenera sus capturas ` +
+    "antes de entregar el DF. La unidad modifica estas pantallas y el Word no acredita que las imágenes reflejen el cambio.");
 }
 const out = path.resolve(opt("-o", path.join(raiz, "entregables", `DF-${slug}${CAMBIO ? "-" + CAMBIO : ""}-v${version}.docx`)));
 

@@ -1,5 +1,5 @@
 # Cómo se trabaja en este proyecto
-Proyecto de una aplicación Appian, llevado con el plugin `appian-analisis-funcional`; lo propio del proyecto (cliente, estado y siguiente paso) está en `proyecto.md`. Empieza por `appian-functional-analyst/scripts/proyecto.py estado .`: dice en qué punto está el proyecto, qué falta por subir y si va por detrás del remoto (entonces, `git pull`).
+Proyecto de una aplicación Appian, llevado con el plugin `appian-analisis-funcional`; lo propio del proyecto (cliente, estado y siguiente paso) está en `proyecto.md`. Lee la `ruta` del plugin en `.appian-plugin.json` (local, no se sube a git): las rutas de skills se resuelven bajo `<ruta>/skills/`. Empieza por `python <ruta>/skills/appian-functional-analyst/scripts/proyecto.py estado .`: dice en qué punto está el proyecto, qué falta por subir y si va por detrás del remoto (entonces, `git pull`). Si falta el localizador o su ruta ya no existe, pide dónde está instalado el plugin y ejecuta desde allí `proyecto.py iniciar .`.
 
 ## Dónde está cada cosa
 | Ruta | Qué hay |

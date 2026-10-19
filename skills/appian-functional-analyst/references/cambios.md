@@ -16,7 +16,8 @@ pasado a producción ni se ha descartado: Abierta, Aprobada o Construida.
 
 Un cambio sobre la aplicación es una unidad: `EV-nn` (un evolutivo; también la construcción inicial de una aplicación
 nueva y cada fase de una refactorización) o `URG-nn` (un cambio urgente). Se registran en `analisis/cambios.md`, que solo
-escribe `proyecto.py cambio` (`<p>`, el proyecto). Cada error dice la salida.
+escribe `proyecto.py cambio` (`<p>`, el proyecto). Antes de aprobar la construcción inicial, pasa técnico §13 de lista
+a tabla de objetos con «Cambio» y «Para» (`tecnico-plantilla.md` §13). Cada error dice la salida.
 
 | Orden | Estado | Cuándo | Bloquea si… |
 |---|---|---|---|
@@ -29,7 +30,9 @@ escribe `proyecto.py cambio` (`<p>`, el proyecto). Cada error dice la salida.
 **Aprobar guarda con qué se aprueba** (la versión y sus informes, en la celda de su ID). Una fuente nueva para una
 unidad Aprobada (otro informe con su `Cambio:`, o un punto «Pendiente») la devuelve a aprobación: `issues` y
 `construida` fallan con «ha crecido desde que se aprobó» hasta que se vuelve a aprobar con `--fuente`. Si no conviene,
-lo nuevo va en otra unidad. Sin `--fuente`, de Construida se vuelve a Aprobada cuando una urgencia obliga a reaplicar.
+lo nuevo va en otra unidad si no cambia piezas de la anterior sin construir. Lo que cambia una pieza de una unidad
+sin construir se incorpora a esa misma unidad y se vuelve a aprobar: las issues copian el texto vigente, no una
+versión histórica de cada pieza. Sin `--fuente`, de Construida se vuelve a Aprobada cuando una urgencia obliga a reaplicar.
 Con `--desatendida` no se aprueba ni se pasa a producción sin el visto bueno del jefe de proyecto; si lo da (también
 en lo que se le pide a la sesión), se cataloga como fuente de tipo Aprobación y se pasa con ella. Tampoco se marca Construida con `--manual`, que no mira las issues ni sus pruebas. «En producción» registra un pase
 que ya ha ocurrido: lo que quede por comprobar se apunta, no lo frena. `proyecto.py estado` imprime
@@ -42,6 +45,13 @@ las unidades en curso con sus fuentes, versiones y objetos (no se guardan: se de
   punto.
 - Sus piezas: los IDs de «Aplicado» y de «Cambio propuesto» de esos puntos.
 - Sus objetos: las filas de técnico §13 con su ID en la columna «Cambio» (§4).
+
+Una fuente que toca dos unidades, en su informe (se muestran las columnas que reparten el cambio):
+
+| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión | Cambio |
+|---|---|---|---|---|---|---|---|---|
+| 1 | COMPLETA | Añadir la fecha al listado [FU-09] | PAN-01 | Mostrar fecha | T §7 | No | ✔ | EV-02 |
+| 2 | COMPLETA | Aclarar el aviso de cierre [FU-09] | AV-02 | Cambiar el texto del aviso | T §9 | No | ✔ | EV-03 |
 
 **Línea base.** Lo construido es el análisis inicial (en una aplicación ajena, el de `as-is/`) más las unidades
 Construidas; lo que hay en producción, el inicial más las unidades En producción.
@@ -134,7 +144,8 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
   `appian-best-practices`. Se escriben solas al aprobar la unidad y `indice.py issues` las vuelve a generar: con los
   mismos datos salen las mismas, y si el análisis cambia cada una conserva su número. No se editan. Sirven a Claude, a
   otros agentes y a personas. No se generan si la unidad no está aprobada o ha crecido desde que se aprobó. Un técnico
-  cuyo §13 aún no dice «Para» da una sola issue con toda la unidad.
+  con tabla en §13 pero sin columna «Para» da una sola issue con toda la unidad; con lista, hay que pasarla a tabla
+  antes de generar issues. Si se aprobó antes de hacerlo, tras completar la tabla ejecuta `indice.py issues <p> <U>`.
 
 ## 6. Construir, verificar y marcar
 
@@ -147,26 +158,33 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
    repositorio, o está dentro de otro, sin reservar; con una fusión o un rebase a medias, sin reservar ni tocar git
    (termínala y vuelve a pedirla). El nombre es el de git; dos sesiones con el mismo se distinguen con `--quien
    <nombre>`, y con él una sesión que se reinicia recupera la suya: quien pide con `--quien` y ya tiene una reservada
-   a ese nombre sin hacer recibe esa, no otra.
+  a ese nombre sin hacer recibe esa, no otra. Si cambió desde su reserva, avisa de que debe releerla.
+  Al regenerar se listan las issues cambiadas y quién las tiene; al abrir una issue que depende de otra pendiente,
+  el encabezado dice a cuál espera.
    `--liberar ISS-nn` quita la reserva de una issue que nadie va a seguir. El push sube también los commits que esa
    copia tuviera sin subir.
 2. **Construir** la issue en desarrollo (en una urgencia, en el entorno de corrección): `appian-best-practices` (que la
    lee como alcance) y el Dev MCP, o una persona.
 3. **Verificar** (solo lectura): la orden de la issue, que es el atajo «Verificar» de `appian-reverse-engineering` con
    lo esperado de la issue y con su resultado en `construccion/EV-02/verificacion/ISS-nn.json`. Comprueba que cada
-   objeto existe, su tipo, de record types y CDT los campos de esta unidad (de uno que se modifica, que tenga más
-   campos que los suyos no cuenta) y, de una acción de registro, su nombre y su tipo (de la tabla de acciones de técnico
+   objeto existe, su tipo, de record types y CDT los campos de esta unidad (los campos adicionales no bloquean,
+   también en objetos nuevos) y, de una acción de registro, su nombre y su tipo (de la tabla de acciones de técnico
    §7); la fecha de última modificación es un dato, no una prueba. Si no pudo leer algo, se repite.
    **Sus pruebas**: si la issue cambia criterios o reglas, `verificar` ejecuta los casos de prueba guardados de sus
    reglas e interfaces y de lo que las usa (los dependientes directos); si no, ninguno, y lo sabe por lo esperado. Un
-   caso suyo que falla la deja pendiente; uno de lo que las usa es un aviso, y uno que el ejecutor de Appian no sabe
+   caso suyo que falla la deja pendiente, también un objeto nombrado como caso de prueba en técnico §14 que no tenga
+   casos guardados; uno de lo que las usa es un aviso, y uno que el ejecutor de Appian no sabe
    evaluar (una rejilla de registros con filtros de usuario), otro. Si una persona decide que una prueba que falla no es
    necesaria para avanzar, la marca con su motivo: `indice.py issues <p> EV-02 ISS-nn --sin-prueba "<objeto> «<caso>»"
-   --motivo "…"`. Queda en el índice de la unidad, vale para esa versión de la issue y ese error (si cambia una de las
+   --motivo "…"` (para los ausentes, `<objeto> «casos exigidos ausentes»`). Queda en el índice de la unidad, vale para esa versión de la issue y ese error (si cambia una de las
    dos, o el caso vuelve a pasar, se quita sola) y se revisa al preparar el paquete; con `--desatendida` se niega. Si el
    Dev MCP no ejecuta casos, o no pudo ejecutar los de la issue, la issue no espera: sus pruebas, a la regresión.
-   **Una issue está hecha** cuando su última verificación pasa y es de su versión de ahora: si al volver a generarla
-   cambia lo que hay que construir o comprobar, vuelve a estar pendiente. No hay otro estado que mantener: su reserva se
+   **Una issue está hecha** cuando su última verificación pasa y es de su versión de ahora, o una persona registra su
+   cierre manual: `indice.py issues <p> EV-02 ISS-nn --manual --motivo "…" [--quien "…"]`. Queda quién, cuándo,
+   por qué y para qué versión se aceptó; permite continuar sus dependencias y se identifica como cierre manual.
+   Los fallos vigentes de pruebas o QA siguen necesitando corregirse o su excepción separada `--sin-prueba`.
+   `--automatico` retira el cierre; con `--desatendida` no se admite cerrarla manualmente. Si al volver a generarla
+   cambia lo que hay que construir o comprobar, vuelve a estar pendiente. Su reserva se
    quita sola, y `indice.py issues <p> EV-02` dice cómo va cada una.
 4. **QA**, con todas hechas y si la unidad tiene escenarios (un retoque no los tiene): en otra sesión y solo con sus
    `.feature`, `appian-qa` recorre cada escenario con SAIL CLI como cada rol, deja su guion en `qa/EV-02/` y lo repite
@@ -177,7 +195,8 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
 5. **Marcar**, con todas hechas y su QA: `proyecto.py cambio <p> EV-02 construida` (la orden de la última issue la
    trae; si la unidad tiene escenarios, en una nota, para después del QA, y `construida` avisa si falta o está a medias)
    y, tras el pase, `… produccion --ref "<pase>" --fecha <AAAA-MM-DD>`. Sin Dev MCP no hay verificación: construye una
-   persona siguiendo el índice y la unidad se marca con `--manual`.
+   persona siguiendo el índice y cierra cada issue con `--manual --motivo`. El cierre de la unidad identifica cuáles
+   se aceptaron manualmente. El `--manual` de la unidad sigue disponible y lista las issues que quedan pendientes.
 6. **Regresión**, antes de preparar el paquete: la orden que da `indice.py issues <p> EV-02 --regresion` (el atajo
    «Regresión» de ingeniería inversa) ejecuta todos los casos de prueba de la aplicación y deja el resumen en
    `construccion/EV-02/regresion.json`; por la salida, solo lo que falla. Si el Dev MCP no ejecuta casos, se pasa en

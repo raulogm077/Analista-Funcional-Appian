@@ -1639,6 +1639,10 @@
   R["a!paneLayout"] = (n, ctx) => h("div", { class: "pane-layout" + (P(n, "showPaneDividers", ctx, true) ? " div" : "") }, arr(n.panes).filter((p) => visible(p, ctx)).map((p, i) => {
     const bg = P(p, "backgroundColor", ctx, "WHITE");
     const el = h("div", { class: `pane w-${up(P(p, "width", ctx, "AUTO"))} ${String(bg).startsWith("#") ? "" : "bg-" + up(bg)} ${padCls(P(p, "padding", ctx), "STANDARD")}`, style: String(bg).startsWith("#") ? { background: bg } : null, "data-sail": "a!pane", "data-k": `${ctx.key}.${i}` }, stack(p.contents, ctx, `${ctx.key}.${i}.c`));
+    // Propaga el espacio disponible por los contenedores del chat (también una card), sin fijar píxeles.
+    el.querySelectorAll(".aic.h-FILL").forEach((chat) => {
+      for (let padre = chat.parentElement; padre && padre !== el; padre = padre.parentElement) padre.classList.add("pane-fill-path");
+    });
     NODES[`${ctx.key}.${i}`] = p;
     return el;
   }));
@@ -2354,6 +2358,16 @@
 
   /* ---------------- main render ---------------- */
   const root = h("div", { id: "px-root", style: { height: "100%" } });
+  function layoutChatPanes() {
+    const bar = root.querySelector(".px-bar"), b = bar && bar.getBoundingClientRect();
+    const bottom = b && b.height ? Math.min(innerHeight, b.top - 8) : innerHeight;
+    root.querySelectorAll(".pane-layout").forEach((el) => {
+      if (!el.querySelector(".aic.h-FILL")) return;
+      // La barra del prototipo también ocupa espacio visible; en capturas se deja crecer el contenido.
+      el.style.height = capture ? "" : Math.max(0, bottom - el.getBoundingClientRect().top) + "px";
+      el.style.flex = capture ? "" : "0 0 auto";
+    });
+  }
   function rerender() {
     const active = document.activeElement;
     const fid = active && active.id && active.id.startsWith("f-") ? active.id : null;
@@ -2377,6 +2391,7 @@
     if (!inspector) tip.hidden = true;
     drawCharts();
     layoutNav();
+    layoutChatPanes();
     window.scrollTo(0, y);
     document.querySelectorAll(".dlg-c").forEach((x, i) => (x.scrollTop = scrolls[i] || 0));
     if (fid) { const el = document.getElementById(fid); if (el) { el.focus({ preventScroll: true }); if (sel && el.setSelectionRange) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
@@ -2386,7 +2401,7 @@
   }
   function drawCharts() { document.querySelectorAll(".chart").forEach((c) => c.__draw && c.clientWidth && c.__draw(c.clientWidth)); }
   function layoutNav() { document.querySelectorAll(".hb, .cbr").forEach((c) => c.__layout && c.__layout()); }
-  let rsz; window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { drawCharts(); layoutNav(); }, 120); });
+  let rsz; window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { drawCharts(); layoutNav(); layoutChatPanes(); }, 120); });
   function firstRecordId(scr) { const r = rowsOf(scr.dataset ? "data!" + scr.dataset : "recordType!" + scr.recordType)[0]; return r && r.id; }
   function showScreen(id, opts) {
     opts = opts || {};

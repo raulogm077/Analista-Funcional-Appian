@@ -7,6 +7,7 @@ Versión: 0.1 · Estado: en curso
 | Dato | Valor | Fuente |
 |---|---|---|
 | Aplicación | | |
+| Prefijo | | |
 | URL de desarrollo | | |
 | URL de pruebas | | |
 | URL de producción | | |
@@ -55,6 +56,11 @@ Versión: 0.1 · Estado: en curso
 ## 12. Volumen y operación
 
 ## 13. Plan de construcción
+
+### Supuestos para construir
+
+| Pregunta | Se construye con | Dónde cambia |
+|---|---|---|
 
 ## 14. Pruebas y trazabilidad
 

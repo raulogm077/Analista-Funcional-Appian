@@ -77,8 +77,7 @@ def enlazar(funcional, enlaces):
         lineas[pos:pos] = ["", linea] + ([""] if pos < len(lineas) and lineas[pos].strip() else [])
         puestas.append(codigo)
     if puestas:
-        with open(funcional, "w", encoding="utf-8", newline="\n") as f:
-            f.write("\n".join(lineas))
+        escribe(funcional, "\n".join(lineas))
     return list(dict.fromkeys(puestas)), list(dict.fromkeys(sin_ficha))
 
 

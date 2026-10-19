@@ -59,7 +59,8 @@ límites) se consulta en el MCP de documentación como dice el SKILL.md, y la UR
 ## Apartados
 
 ### 0. Entorno
-Tabla `Dato · Valor · Fuente`: la aplicación (su nombre y su prefijo), la URL de cada entorno (una fila por entorno:
+Tabla `Dato · Valor · Fuente`: una fila «Aplicación» con su nombre exacto entre comillas invertidas, sin comentarios
+ni paréntesis, y otra «Prefijo»; la URL de cada entorno (una fila por entorno:
 «URL de desarrollo», «URL de pruebas», «URL de producción» y, si lo hay, «URL del entorno de corrección»), versión de
 Appian en cada entorno, tier y complementos, base de datos, inicio de sesión, idioma y zona horaria, calendario
 laboral, volumen, usuarios y concurrencia, tiempo de recuperación, accesibilidad, móvil y usuarios externos, licencias.
@@ -117,6 +118,7 @@ Por record type, `### 3.n <Record type>`:
   `Funcional: <Dato del funcional §6>` (varios separados por comas) o `Técnico: <para qué>`. Todo dato del
   funcional tiene su campo y todo campo tiene su uso.
 - Los estados y las listas de valores son record types de referencia, no texto.
+- Cada tabla lleva los campos de auditoría definidos en §1. Un texto de más de 255 caracteres se diseña como Long Text.
 
 Al final: referencias y carga inicial (`Record type · Valores iniciales · Quién lo mantiene`).
 
@@ -194,6 +196,8 @@ constantes, sistemas conectados) dice «Base» y se construye lo primero. En un 
 (`HU-03.2`). Lo que «Existe» no la lleva. Si de un objeto solo cambia una parte, la fila la nombra: `AUT Solicitud —
 acción «Nueva solicitud»`.
 
+El site y sus páginas van en la issue de la primera pantalla que publican.
+
 ```markdown
 | Paso | Objeto | Tipo | Situación | Sustituye a | Cambio | Para |
 |---|---|---|---|---|---|---|
@@ -202,6 +206,17 @@ acción «Nueva solicitud»`.
 | 5 | `AUT_SubsanarSolicitud` | Interfaz | Nuevo | — | EV-02 | PAN-03 |
 | 6 | `AUT Tramitar Solicitud` | Process model | Modifica | — | EV-02 | ACT-02, ACT-06 |
 ```
+
+Si hay preguntas sin respuesta y se acuerda construir con un supuesto, debajo de la tabla:
+
+#### Supuestos para construir
+
+| Pregunta | Se construye con | Dónde cambia |
+|---|---|---|
+| PC-nn | Valor o comportamiento acordado mientras llega la respuesta | Nombre exacto del objeto entre comillas invertidas |
+
+Las filas llegan a las issues que citan el PC o construyen el objeto. Las instrucciones generales se escriben bajo
+«Reglas para quien construye» y llegan a todas. Al responder el PC se revisa el supuesto con `indice.py impacto`.
 
 ### 14. Pruebas y trazabilidad
 Tabla `Criterio · Cómo se prueba · Con qué` con todos los criterios `HU-nn.m` e `INT-nn.m` (se pueden agrupar) y los
@@ -212,6 +227,9 @@ otro que no. «Con qué» dice cómo se comprueba cada criterio, y la issue lo c
 - `SAIL CLI`: se recorre la pantalla como un usuario. Es del QA de la unidad, no de quien construye.
 - `Playwright`: un criterio que solo se ve en pantalla (un color, la maquetación) y no basta con que lo mire una persona.
   También del QA (`appian-qa`).
+
+Cuando un criterio depende de una regla, «Cómo se prueba» fija la entrada y la salida esperadas concretas;
+quien construye las copia al caso de prueba, sin decidir el resultado esperado.
 
 ```markdown
 | Criterio | Cómo se prueba | Con qué |

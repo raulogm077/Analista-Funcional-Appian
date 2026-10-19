@@ -8,13 +8,15 @@ marcas de posición para poder citarlo: «Diapositiva 34», «Página 12»,
 Uso:
   python3 leer_fuentes.py <ficheros o carpetas...> -o fuentes/
   python3 leer_fuentes.py --una-fuente <p>/as-is [<ficheros…>] -o fuentes/
+  python3 leer_fuentes.py -o fuentes/ --duplicada FU-02=FU-01 --motivo "Mismo contenido revisado"
+  python3 leer_fuentes.py -o fuentes/ --restaurar FU-02
 
 Con --una-fuente, la carpeta entera es una sola fuente (p. ej. as-is/, la aplicación existente): su .md es el índice
 de sus documentos, sin su extracción en bruto (extraccion/), que el análisis no cita.
 
 Genera en la carpeta de salida:
   FU-01-<nombre>.md …   el contenido de cada fuente
-  indice.md            tabla de fuentes (ID, fichero, tipo, detalle, fecha)
+  indice.md            tabla de fuentes, palabras y selección explícita de duplicadas
   indice.json          estado para mantener los IDs entre ejecuciones
   adjuntos/FU-xx/       adjuntos de los correos .eml
 
@@ -55,10 +57,11 @@ MAX_ROWS = 300
 
 
 def escribe(ruta, texto):
-    """Escribe un fichero de texto en UTF-8 con finales de línea \\n en cualquier sistema, como modelo.escribe (este
-    script no importa ningún otro)."""
-    with open(ruta, "w", encoding="utf-8", newline="\n") as f:
-        f.write(texto)
+    """UTF-8; conserva CRLF del destino existente. Los ficheros nuevos usan LF."""
+    previo = ruta.read_bytes() if ruta.is_file() else b""
+    salto = "\r\n" if b"\r\n" in previo and b"\n" not in previo.replace(b"\r\n", b"") else "\n"
+    with open(ruta, "w", encoding="utf-8", newline="") as f:
+        f.write(texto.replace("\r\n", "\n").replace("\r", "\n").replace("\n", salto))
 
 
 def md_table(rows):
@@ -341,7 +344,7 @@ def read_eml(path, attach_dir):
     body = msg.get_body(preferencelist=("plain", "html"))
     text = ""
     if body is not None:
-        text = body.get_content()
+        text = body.get_content().replace("\r\n", "\n").replace("\r", "\n")
         if body.get_content_type() == "text/html":
             text = html_text(text)
     names = []
@@ -577,23 +580,96 @@ def generated(f, out):
     return f.parent == out and (re.match(r"FU-\d+-.*\.md$", f.name) is not None or f.name in ("indice.md", "indice.json"))
 
 
+def imagenes_md(path):
+    """Destinos locales de imágenes Markdown, incluidas referencias; no descarga URL."""
+    if path.suffix.lower() != ".md":
+        return {}
+    texto = path.read_text(encoding="utf-8-sig", errors="replace")
+    destinos = re.findall(r'!\[[^\]]*\]\(\s*(<[^>]+>|[^\s)]+)', texto)
+    referencias = {k.casefold(): v for k, v in re.findall(r'^\s*\[([^\]]+)\]:\s*(<[^>]+>|\S+)', texto, re.M)}
+    for etiqueta, clave in re.findall(r'!\[([^\]]*)\]\[([^\]]*)\]', texto):
+        if (clave or etiqueta).casefold() in referencias:
+            destinos.append(referencias[(clave or etiqueta).casefold()])
+    resultado = {}
+    for destino in destinos:
+        url = urllib.parse.urlsplit(destino.strip("<>"))
+        if url.scheme or url.netloc or not url.path:
+            continue
+        imagen = (path.parent / urllib.parse.unquote(url.path)).resolve()
+        if imagen.is_file() and imagen.suffix.lower() in IMAGES:
+            resultado[destino] = imagen
+    return resultado
+
+
+def adjunta_imagenes(body, imagenes, out, fid):
+    cambios = {}
+    for destino, imagen in imagenes.items():
+        nombre = hashlib.sha1(imagen.read_bytes()).hexdigest()[:12] + imagen.suffix.lower()
+        relativo = pathlib.Path("adjuntos") / fid / nombre
+        (out / relativo).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(imagen, out / relativo)
+        cambios[destino] = relativo.as_posix()
+    def sustituye(m):
+        return m.group(1) + cambios.get(m.group(2), m.group(2))
+    body = re.sub(r'(!\[[^\]]*\]\(\s*)(<[^>]+>|[^\s)]+)', sustituye, body)
+    body = re.sub(r'(^\s*\[[^\]]+\]:\s*)(<[^>]+>|\S+)', sustituye, body, flags=re.M)
+    return body
+
+
+def palabras(texto):
+    return re.findall(r"\w+", texto.casefold(), re.UNICODE)
+
+
+def parecidas(texto, anteriores):
+    """Aviso por contenido, nunca descarta: conjuntos de secuencias de cinco palabras."""
+    def secuencias(ws):
+        return {tuple(ws[i:i + 5]) for i in range(len(ws) - 4)}
+    ws = palabras(texto)
+    if len(ws) < 80:
+        return []
+    actual = secuencias(ws)
+    candidatas = []
+    for fid, previo in anteriores.items():
+        otras = palabras(previo)
+        if len(otras) < 80:
+            continue
+        conjunto = secuencias(otras)
+        similitud = len(actual & conjunto) / max(1, len(actual | conjunto))
+        if similitud >= .90:
+            candidatas.append((fid, round(similitud * 100)))
+    return candidatas
+
+
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("inputs", nargs="*")
     ap.add_argument("--una-fuente", action="append", default=[], metavar="CARPETA",
                     help="la carpeta entera como una sola fuente (as-is/), con el índice de sus documentos")
     ap.add_argument("-o", "--out", default="fuentes")
+    ap.add_argument("--duplicada", action="append", default=[], metavar="FU-NN=FU-MM",
+                    help="tras revisar ambas, omite la cobertura de FU-NN porque la cubre FU-MM")
+    ap.add_argument("--motivo", help="motivo de la selección explícita de duplicadas")
+    ap.add_argument("--restaurar", action="append", default=[], metavar="FU-NN",
+                    help="vuelve a exigir lectura y cobertura de una fuente marcada como duplicada")
     a = ap.parse_args()
-    if not a.inputs and not a.una_fuente:
+    if not a.inputs and not a.una_fuente and not a.duplicada and not a.restaurar:
         ap.error("indica los ficheros o carpetas, o --una-fuente <carpeta>")
-    for stream in (sys.stdout, sys.stderr):
-        stream.reconfigure(encoding="utf-8", errors="replace")
+    if a.duplicada and not (a.motivo or "").strip():
+        ap.error("--duplicada necesita --motivo después de revisar que no pierde decisiones")
 
     out = pathlib.Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     state_file = out / "indice.json"
     state = json.loads(state_file.read_text(encoding="utf-8")) if state_file.exists() else {"fuentes": []}
     by_hash = {f["hash"]: f for f in state["fuentes"]}
+    textos = {}
+    for entry in state["fuentes"]:
+        salida = out / entry["salida"] if entry.get("salida") else None
+        if salida and salida.is_file():
+            textos[entry["id"]] = salida.read_text(encoding="utf-8").split("\n---\n", 1)[-1]
+            entry["palabras"] = len(palabras(textos[entry["id"]]))
 
     for carpeta in map(pathlib.Path, a.una_fuente):
         if not carpeta.is_dir():
@@ -608,7 +684,7 @@ def main():
             continue
         fid = f"FU-{len(state['fuentes']) + 1:02d}"
         entry = {"id": fid, "fichero": nombre, "tipo": "Carpeta", "detalle": detail, "fecha": date, "hash": h,
-                 "salida": f"{fid}-{slug(carpeta.name)}.md"}
+                 "salida": f"{fid}-{slug(carpeta.name)}.md", "palabras": len(palabras(body))}
         escribe(out / entry["salida"],
                 f"# {fid} · {nombre}\n\n- Tipo: Carpeta\n- Detalle: {detail}\n- Fecha: {date}\n\n---\n\n{body}\n")
         state["fuentes"].append(entry)
@@ -630,11 +706,20 @@ def main():
         else:
             print(f"AVISO: no existe {inp}", file=sys.stderr)
 
+    asociaciones = {f: imagenes_md(f) for f in files if f.suffix.lower() == ".md"}
+    vinculadas = {imagen for grupo in asociaciones.values() for imagen in grupo.values()}
     for f in files:
+        if f.resolve() in vinculadas:
+            print(f"= {f.name} (imagen de una fuente Markdown)")
+            continue
         if f.suffix.lower() not in SUPPORTED | set(LEGACY):
             print(f"AVISO: formato no soportado, se omite: {f.name}", file=sys.stderr)
             continue
         h = hashlib.sha1(f.read_bytes()).hexdigest()
+        imagenes = asociaciones.get(f, {})
+        if imagenes:
+            h = hashlib.sha1((h + "".join(k + hashlib.sha1(v.read_bytes()).hexdigest()
+                                        for k, v in sorted(imagenes.items()))).encode("utf-8")).hexdigest()
         old = by_hash.get(h)
         if old and old["fichero"] != f.name:
             print(f"= {old['id']} {f.name} (mismo contenido que {old['fichero']})")
@@ -645,8 +730,14 @@ def main():
         fid = old["id"] if old else f"FU-{len(state['fuentes']) + 1:02d}"  # reintento de una fuente no leída
         body, kind, detail, date = convert(f, out, fid)
         entry = {"id": fid, "fichero": f.name, "tipo": kind, "detalle": detail, "fecha": date, "hash": h,
-                 "salida": f"{fid}-{slug(f.name)}.md" if body is not None else ""}
+                 "salida": f"{fid}-{slug(f.name)}.md" if body is not None else "",
+                 "palabras": len(palabras(body or ""))}
         if body is not None:
+            for otra, porcentaje in parecidas(body, textos):
+                print(f"AVISO: {fid} se parece a {otra} ({porcentaje}% del contenido). Revisa decisiones nuevas; "
+                      "se mantiene su lectura y cobertura hasta marcar --duplicada con --motivo.")
+            body = adjunta_imagenes(body, imagenes, out, fid)
+            textos[fid] = body
             gente = ""
             if kind == "Transcripción":  # para que comprobar.py vigile que sus nombres no pasan al análisis
                 nombres = sorted({x.strip() for x in re.findall(r"^\[\d{1,2}:\d{2}:\d{2}\] ([^:\n\[\]]{2,60}):", body, re.M)})
@@ -660,9 +751,27 @@ def main():
         by_hash[h] = entry
         print(f"+ {fid} {f.name}: {kind}, {detail}")
 
+    por_id = {e["id"]: e for e in state["fuentes"]}
+    for fid in a.restaurar:
+        if fid not in por_id:
+            ap.error(f"{fid} no está catalogada")
+        por_id[fid].pop("duplicada_de", None)
+        por_id[fid].pop("motivo_duplicada", None)
+    for seleccion in a.duplicada:
+        ids = seleccion.upper().split("=")
+        if len(ids) != 2 or any(fid not in por_id for fid in ids) or ids[0] == ids[1]:
+            ap.error("--duplicada necesita dos fuentes catalogadas distintas: FU-NN=FU-MM")
+        fid, canonica = ids
+        por_id[fid]["duplicada_de"] = canonica
+        por_id[fid]["motivo_duplicada"] = a.motivo.strip()
+    for e in por_id.values():
+        if e.get("duplicada_de") and (e["duplicada_de"] not in por_id or por_id[e["duplicada_de"]].get("duplicada_de")):
+            ap.error("la fuente que cubre una duplicada debe seguir activa; no se permiten cadenas ni ciclos")
     escribe(state_file, json.dumps(state, ensure_ascii=False, indent=1))
-    rows = [["ID", "Fichero", "Tipo", "Detalle", "Fecha", "Texto"]] + [
-        [e["id"], e["fichero"], e["tipo"], e["detalle"], e["fecha"], e["salida"] or "—"] for e in state["fuentes"]]
+    rows = [["ID", "Fichero", "Tipo", "Detalle", "Fecha", "Texto", "Palabras", "Cobertura"]] + [
+        [e["id"], e["fichero"], e["tipo"], e["detalle"], e["fecha"], e["salida"] or "—", str(e.get("palabras", 0)),
+         f"Cubierta por {e['duplicada_de']}: {e['motivo_duplicada']}" if e.get("duplicada_de") else "Propia"]
+        for e in state["fuentes"]]
     escribe(out / "indice.md", "# Fuentes del análisis\n\n" + md_table(rows) + "\n")
     print(f"Índice: {out / 'indice.md'} ({len(state['fuentes'])} fuentes)")
     if not state["fuentes"]:
