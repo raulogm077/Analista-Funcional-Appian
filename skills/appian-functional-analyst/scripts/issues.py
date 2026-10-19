@@ -123,6 +123,7 @@ class Plan:
     manuales: list = field(default_factory=list)   # cierre humano de una versión concreta, sin fingir verificación
     dependencias: list = field(default_factory=list)  # correcciones humanas y su historial, en el índice
     permisos: list = field(default_factory=list)    # aceptación humana de un hallazgo observado, nunca verificación
+    avances: list = field(default_factory=list)    # progreso declarado por paso; nunca verificación ni cierre
 
 
 def clave(pid):
@@ -714,6 +715,14 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
         L += ["", "## Correcciones urgentes", ""] + urgentes
     if otras:
         L += ["", "## Otras unidades sobre los mismos objetos", ""] + otras
+    if subtareas(issue):
+        L += ["", "## Subtareas por paso", "", "Reparto de §13 para retomar el trabajo, con una sola reserva y verificación "
+              "para toda la issue. Cada objeto aparece una vez; se conservan arriba todas sus instrucciones.", "",
+              "| Paso | Objetos (pasos originales si se repiten) |", "|---|---|"]
+        L += [f"| {celda(x['paso'])} | {celda(x['objetos'])} |" for x in subtareas(issue)]
+        L += ["", f"Avance vigente y siguiente paso: `indice.py issues <p> {uid} {issue.id}`. "
+              "Para guardarlo: `--subtarea <paso> --avance hecha` (o `pendiente` para deshacer), con `--quien <sesión>`. "
+              "Marcar subtareas no cierra ni verifica la issue."]
     L += ["", "## Terminar", "",
           "Con los objetos construidos, se verifica en desarrollo, en solo lectura. El resultado queda en "
           f"`{CARPETA}/{uid}/verificacion/{issue.id}.json`: con él la issue está hecha. La orden, lista para copiar en "
@@ -874,6 +883,83 @@ def manuales_de(raiz, uid):
         elif cab and len(c) == len(cab) and RX_ISSUE.fullmatch(c[0]):
             out.append(dict(zip(("issue", "version", "motivo", "quien", "cuando"), c)))
     return out
+
+
+AVANCES = "Avance de subtareas"
+CAMPOS_AVANCES = ("issue", "version", "paso", "objetos", "avance", "quien", "cuando", "estado")
+COLUMNAS_AVANCES = ("Issue", "Versión", "Paso", "Objetos", "Avance", "Quién", "Cuándo", "Estado")
+
+
+def subtareas(issue):
+    """Los pasos existentes de §13, sin duplicar objetos ni inventar particiones."""
+    por_objeto, grupos = {}, {}
+    for f in issue.filas:
+        paso = limpio(f["paso"]).strip("` ")
+        if celdavacia(paso):
+            return []  # sin reparto completo no inventamos un paso para las filas restantes
+        for nombre in f["objetos"]:
+            o = un.objeto(nombre)
+            if o not in por_objeto:
+                por_objeto[o] = []
+                grupos.setdefault(paso, []).append(o)
+            if paso not in por_objeto[o]:
+                por_objeto[o].append(paso)
+    if len(grupos) < 2 or len(por_objeto) < 2:
+        return []
+    return [{"paso": p, "objetos": ", ".join("`" + o + "`" +
+             (" (pasos " + ", ".join(por_objeto[o]) + ")" if len(por_objeto[o]) > 1 else "") for o in objetos)}
+            for p, objetos in grupos.items()]
+
+
+def avances_de(raiz, uid):
+    f = carpeta(raiz, uid) / INDICE
+    texto = f.read_text(encoding="utf-8") if f.is_file() else ""
+    dentro, out = False, []
+    for l in texto.splitlines():
+        if l.startswith("## "):
+            dentro = l == "## " + AVANCES
+        if not dentro or not l.startswith("|"):
+            continue
+        c = mo.celdas(l)
+        if c and RX_ISSUE.fullmatch(c[0]):
+            if len(c) != len(CAMPOS_AVANCES):
+                raise NoSePuede("fila incompleta en Avance de subtareas; recupera la anotación antes de regenerar")
+            out.append(dict(zip(CAMPOS_AVANCES, c)))
+    return out
+
+
+def revisa_avances(plan):
+    por_id = {i.id: i for i in plan.issues}
+    for x in plan.avances:
+        i = por_id.get(x["issue"])
+        if x["estado"] == "Vigente" and (not i or x["version"] != i.version
+                or not any(t["paso"] == x["paso"] and celda(t["objetos"]) == x["objetos"] for t in subtareas(i))):
+            x["estado"] = "Revisar: cambió el encargo o el reparto"
+
+
+def texto_avance(plan, issue):
+    tareas = subtareas(issue)
+    if not tareas:
+        return []
+    actuales = {x["paso"]: x for x in plan.avances if x["issue"] == issue.id and x["estado"] == "Vigente"
+                and x["version"] == issue.version}
+    revisar = [x for x in plan.avances if x["issue"] == issue.id and x["estado"].startswith("Revisar")]
+    L = ["## Avance guardado de subtareas", "", "Declarado por quien construye; no es prueba ni cierre de la issue.", "",
+         "| Paso | Objetos | Avance |", "|---|---|---|"]
+    pendientes = []
+    for t in tareas:
+        x = actuales.get(t["paso"])
+        hecho = x and x["avance"] == "hecha"
+        if not hecho:
+            pendientes.append(t["paso"])
+        estado = f"{x['avance']} · {x['quien']} · {x['cuando']}" if x else "pendiente"
+        L.append(f"| {celda(t['paso'])} | {celda(t['objetos'])} | {celda(estado)} |")
+    L += ["", "Siguiente subtarea pendiente: " + pendientes[0] if pendientes else
+          "Todos los pasos declarados hechos; queda verificar y cerrar la issue con sus puertas habituales."]
+    if revisar:
+        L += [f"Avance anterior para revisar: {len(revisar)} anotaciones en `{INDICE}`. "
+              "Tras revisar cada paso, vuelve a marcarlo para esta versión."]
+    return L
 
 
 DEPENDENCIAS = "Correcciones de dependencias"
@@ -1089,6 +1175,8 @@ def calcula(m, ctx, uid, estreno=False):
     if sin:
         plan.avisos.append(f"criterios sin dado, cuando y entonces (pasan tal cual al .feature): {', '.join(sin)}")
     protege_encargo(plan, m, ctx, estreno)
+    plan.avances = avances_de(m.raiz, uid)
+    revisa_avances(plan)
     return plan
 
 
@@ -1150,6 +1238,11 @@ def texto_indice(plan, reservas):
     for i in plan.issues:
         L.append("| " + " | ".join([i.id, i.para, i.titulo.replace("|", "/"), lista(i.depende), lista(i.paralelo),
                                     ", ".join(f"`{o}`" for o in i.objetos), reservas.get(i.id) or "—"]) + " |")
+    if plan.avances:
+        L += ["", f"## {AVANCES}", "", "Progreso declarado, sin verificar ni cerrar. Las anotaciones para revisar "
+              "no cuentan como avance vigente.", "", "| " + " | ".join(COLUMNAS_AVANCES) + " |",
+              "|" + "---|" * len(COLUMNAS_AVANCES)]
+        L += ["| " + " | ".join(celda(x[k]) for k in CAMPOS_AVANCES) + " |" for x in plan.avances]
     if plan.dependencias:
         L += ["", f"## {DEPENDENCIAS}", "", "Decisiones humanas sobre el orden. Las caducadas o retiradas se conservan "
               "como rastro y no sustituyen el cálculo automático.", "", "| " + " | ".join(COLUMNAS_DEPENDENCIAS) + " |",
@@ -1527,7 +1620,7 @@ def para_construir(m, ctx, plan, issue):
     ordenes, notas = orden_de_terminar(m, ctx, plan, issue)
     pendientes = [iid for iid in issue.depende if not estados(plan, m.raiz).get(iid, (False, ""))[0]]
     aviso = [f"ESPERA a {', '.join(pendientes)} antes de construir esta issue.", ""] if pendientes else []
-    L = aviso + [issue.texto.split("\n## Terminar\n", 1)[0].rstrip("\n"), "", "## Terminar", "",
+    L = aviso + [issue.texto.split("\n## Terminar\n", 1)[0].rstrip("\n"), ""] + texto_avance(plan, issue) + ["", "## Terminar", "",
          "Con los objetos construidos, en este equipo y desde esta carpeta"
          + (":" if len(ordenes) == 1 else " (no queda otra issue: la segunda orden marca la unidad):"), "", "```"]
     L += ordenes + ["```"] + [f"· {n}" for n in notas]
@@ -1699,9 +1792,10 @@ def con_reserva(raiz, uid, cambia, sin_git=None, escribe_=False):
         marcas, manuales = list(plan.marcas), list(plan.manuales)
         dependencias = [dict(x) for x in plan.dependencias]
         permisos = [dict(x) for x in plan.permisos]
+        avances = [dict(x) for x in plan.avances]
         issue, reservas, mensaje = cambia(plan)
         if reservar and (reservas != plan.reservas or plan.marcas != marcas or plan.manuales != manuales
-                         or plan.dependencias != dependencias or plan.permisos != permisos):
+                         or plan.dependencias != dependencias or plan.permisos != permisos or plan.avances != avances):
             escribe(plan, raiz, reservas)
         return m, ctx, plan, issue, mensaje
 
@@ -1792,6 +1886,26 @@ def libera(raiz, uid, iid):
 
 
 RX_CASO = re.compile(r"^\s*(.*?)\s*«(.+)»\s*$")      # «DEM_ER_Firma «Sin firma»», como lo dicen estado() y verificar
+
+
+def marca_subtarea(raiz, uid, iid, paso, avance, quien=None):
+    """Avance del constructor, humano o agente; no cambia reservas, verificación ni estado de cierre."""
+    if avance not in ("hecha", "pendiente"):
+        raise NoSePuede("el avance de una subtarea es hecha o pendiente")
+    nombre = quien_soy(raiz, quien)
+    ahora = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+    def cambia(plan):
+        issue = next((i for i in plan.issues if i.id == iid), None)
+        if issue is None:
+            raise NoSePuede(f"{uid} no tiene la issue {iid}")
+        tarea = next((x for x in subtareas(issue) if x["paso"] == paso), None)
+        if tarea is None:
+            raise NoSePuede(f"{iid} no tiene la subtarea {paso}; pasos: " + lista([x["paso"] for x in subtareas(issue)]))
+        plan.avances = [x for x in plan.avances if not (x["issue"] == iid and x["paso"] == paso and x["estado"] == "Vigente")]
+        plan.avances.append({"issue": iid, "version": issue.version, "paso": paso, "objetos": celda(tarea["objetos"]),
+                             "avance": avance, "quien": nombre, "cuando": ahora, "estado": "Vigente"})
+        return issue, plan.reservas, f"{uid}: {iid} paso {paso}, avance {avance} por {nombre} (sin verificar)"
+    return con_reserva(raiz, uid, cambia, sin_git="en el índice, sin commit", escribe_=True)
 
 
 def corrige_dependencias(raiz, uid, iid, destinos, motivo, quien=None, retirar=False):

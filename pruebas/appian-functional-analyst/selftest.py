@@ -1160,7 +1160,7 @@ Se acepta si:
                 except OSError:
                     pass
         shutil.rmtree(tmp, ignore_errors=True)
-    for nombre in ("test_automejora.py", "test_ingesta.py", "test_dependencias.py", "test_secuenciacion.py", "test_permisos.py"):
+    for nombre in ("test_automejora.py", "test_ingesta.py", "test_dependencias.py", "test_secuenciacion.py", "test_permisos.py", "test_subtareas.py"):
         prueba = AQUI / nombre
         if prueba.is_file():
             c, out = corre(prueba)

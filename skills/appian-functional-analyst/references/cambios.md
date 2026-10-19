@@ -170,6 +170,22 @@ una issue relacionada o cambia la lista calculada, la anotación queda **caducad
 automático. No se reactiva sola aunque el análisis vuelva al texto anterior: una persona revisa el nuevo encargo y
 registra otra decisión. Las anotaciones caducadas, retiradas y sustituidas quedan visibles como rastro.
 
+**Retomar una issue por subtareas.** Si sus objetos se reparten en varios pasos de §13, la issue muestra una
+subtarea por paso. Conserva una sola reserva, propietario, conjunto de objetos y verificación: no son issues nuevas
+ni generan dependencias. Un objeto que aparece en varios pasos se agrupa una vez, cita sus pasos originales y
+conserva todas las instrucciones de sus filas. Si falta un reparto completo o solo hay un paso, no añade subtareas.
+
+Quien construye, persona u otro agente, guarda el avance con
+`indice.py issues <p> EV-02 ISS-03 --subtarea "5" --avance hecha --quien "sesión de Ana"`.
+`--avance pendiente` deshace la marca. No pide motivo ni aprobación y admite `--desatendida`: declara progreso,
+no verifica ni cierra. Abrir la issue o pedir `--siguiente` muestra el primer paso pendiente; aunque todos estén
+declarados hechos, la issue sigue necesitando su verificación o cierre humano y las puertas de pruebas y QA.
+
+La tabla «Avance de subtareas» del índice guarda paso, objetos, versión, autor y fecha. Si cambia el encargo o el
+reparto, mantiene las anotaciones como **Revisar** y dejan de contar. Tras revisar cada paso se vuelve a marcar
+para la versión vigente; las antiguas quedan como rastro. El avance se comparte con el mismo mecanismo de git
+del índice: si no se pudo subir, la salida dice que solo quedó en esa copia.
+
 ## 6. Construir, verificar y marcar
 
 1. **Pedir la siguiente issue**: `indice.py issues <p> EV-02 --siguiente` da la primera sin hacer cuyas dependencias

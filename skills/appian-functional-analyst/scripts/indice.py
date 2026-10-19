@@ -679,6 +679,18 @@ def c_issues(m, a):
     la primera sin hacer cuyas dependencias están hechas y la reserva (un commit y un push del índice); con --liberar,
     quita una reserva."""
     ctx, uid = unidad(m, a.unidad)
+    if a.subtarea is not None or a.avance is not None:
+        if (not a.issue or a.subtarea is None or a.avance is None or a.manual or a.automatico
+                or a.sin_prueba or a.siguiente or a.liberar or a.regresion or a.depende_de is not None
+                or a.dependencias_automaticas or getattr(a, "aceptar_permiso", None) or getattr(a, "revocar_permiso", None)):
+            sys.exit("Usa ISS-nn --subtarea <paso de §13> --avance hecha|pendiente [--quien <sesión>]")
+        try:
+            _, _, plan, issue, como = iss.marca_subtarea(m.raiz, uid, a.issue.upper(), a.subtarea, a.avance, a.quien)
+        except iss.NoSePuede as e:
+            sys.exit(str(e))
+        print(como)
+        print("\n".join(iss.texto_avance(plan, issue)))
+        return
     if a.regresion and a.depende_de is None and not a.dependencias_automaticas:
         # una urgencia corregida en el entorno de corrección se prueba allí, con el Dev MCP de ese entorno
         correccion = ctx.por_id[uid].urgente and un.donde_se_corrige(ctx.ficha_urg(uid)) == "correccion"
@@ -844,6 +856,8 @@ def main():
     s.add_argument("--automatico", action="store_true", help="con ISS-nn: retira el cierre manual")
     s.add_argument("--depende-de", nargs="+", metavar="ISS-nn", help="lista exacta humana de dependencias; ninguna para vacía; requiere --motivo")
     s.add_argument("--dependencias-automaticas", action="store_true", help="retira la corrección humana de dependencias")
+    s.add_argument("--subtarea", metavar="PASO", help="con ISS-nn: paso de §13 cuyo avance se declara")
+    s.add_argument("--avance", choices=("hecha", "pendiente"), help="con --subtarea: guarda progreso sin verificar ni cerrar")
     s.add_argument("--motivo", help="razón de la excepción de prueba o permiso, cierre manual o corrección de dependencias")
     s.add_argument("--desatendida", action="store_true", help="la sesión no tiene a una persona: se niegan sus decisiones")
     a = ap.parse_args()
