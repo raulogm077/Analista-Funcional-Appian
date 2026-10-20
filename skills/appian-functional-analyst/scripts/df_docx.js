@@ -192,7 +192,7 @@ function control() {
 
 // El DF de un cambio: «Qué cambia» en un párrafo y, de cada apartado, solo las fichas y filas de la unidad (nuevas y las
 // que cambian) y las historias y pantallas que se conservan pero comparten pantalla o paso con ellas, con su marca
-function delCambio(md, R) {
+function delCambio(md, R, preguntas = null) {
   const marca = {};
   for (const p of R.piezas.cambian) marca[p.id] = "Cambia";
   for (const p of R.piezas.nuevas) marca[p.id] = "Nueva";
@@ -213,17 +213,21 @@ function delCambio(md, R) {
     }
     return res;
   }
+  if (preguntas) for (const id of preguntas) if (!marca[id]) marca[id] = "Se conserva";
   const L = md.split("\n"), out = [];
   const ficha = (l) => (l.match(/^\*\*(?:~~)?([A-Z]+-\d+)(?:~~)?\s+—\s/) || [])[1];
   const fila = (l) => (l.match(/^\|\s*(?:~~)?([A-Z]+-\d+)(?:~~)?\s*\|/) || [])[1];
   let i = 0;
   while (i < L.length && !/^## /.test(L[i])) out.push(L[i++]);   // título y versión
-  const lista = (xs) => xs.map((p) => `- ${p.id} — ${p.titulo}`).join("\n");
+  // El índice incluye decisiones técnicas; el DF sólo resume piezas del funcional.
+  const funcionales = new Set(L.map((l) => ficha(l) || fila(l)).filter(Boolean));
+  const lista = (xs) => xs.filter((p) => funcionales.has(p.id)).map((p) => `- ${p.id} — ${p.titulo}`).join("\n");
   out.push("## Qué cambia", "", `${R.titulo}.`, "");
-  if (R.piezas.nuevas.length) out.push("Nuevo:", "", lista(R.piezas.nuevas), "");
-  if (R.piezas.cambian.length) out.push("Cambia:", "", lista(R.piezas.cambian), "");
-  if (R.piezas.anuladas.length) out.push("Se quita:", "", lista(R.piezas.anuladas), "");
-  out.push(`El resto de la aplicación no cambia: sigue como en la versión ${R.base || "anterior"} de este diseño funcional.`, "");
+  for (const [rotulo, piezas] of [["Nuevo", R.piezas.nuevas], ["Cambia", R.piezas.cambian], ["Se quita", R.piezas.anuladas]]) {
+    const resumen = lista(piezas);
+    if (resumen) out.push(`${rotulo}:`, "", resumen, "");
+  }
+  out.push(`El resto del alcance de este diseño funcional se conserva como en la versión ${R.base || "anterior"}.`, "");
   while (i < L.length) {
     const titulo = L[i++], cuerpo = [];
     while (i < L.length && !/^## /.test(L[i])) cuerpo.push(L[i++]);
@@ -258,7 +262,15 @@ function delCambio(md, R) {
     }
     if (kept.length) out.push(titulo, "", ...kept);
   }
-  return out.join("\n");
+  const resultado = out.join("\n");
+  // Las preguntas citadas deben poder leerse en el mismo DF. La trazabilidad y
+  // las piezas anuladas no amplían el alcance: se buscan después de limpiar.
+  const citadas = new Set(preguntas || []);
+  for (const id of limpiar(resultado).match(/\bPC-\d+\b/g) || []) citadas.add(id);
+  // Una pregunta puede citar otra. Sólo se repite si aparece un ID nuevo;
+  // una cadena queda completa y un ciclo termina al estabilizarse el conjunto.
+  if ([...citadas].some((id) => !preguntas || !preguntas.has(id))) return delCambio(md, R, citadas);
+  return resultado;
 }
 
 const md = control() + "\n" + limpiar(R ? delCambio(funcional, R) : funcional).replace(/^# .+$/m, "");

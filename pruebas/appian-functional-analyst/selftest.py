@@ -2199,6 +2199,64 @@ def pruebas_unidades(tmp):
                "Firma del revisor" in xml and "Comentario de devolución" not in xml and "Origen" not in xml,
                xml[:500])
 
+            pruebas_df_preguntas(tmp)
+
+
+def pruebas_df_preguntas(tmp):
+    # El DF es funcional aunque indice.py incluya DT; las preguntas citadas
+    # por una pantalla conservada deben acompañarla con sus opciones.
+    q = con_unidades(tmp / "df preguntas")
+    editar(q / "impacto" / "FU-04.md", "Versión 1.1: HU-02.2", "Versión 1.1: DT-04 · HU-02.2")
+    c, out = corre(S / "indice.py", "cambios", q, "EV-02", "--json")
+    piezas = json.loads(out).get("piezas", {}) if c == 0 else {}
+    ok("DF: la entrada real del exportador incluye la DT técnica del informe",
+       any(p["id"] == "DT-04" for grupo in piezas.values() for p in grupo), out)
+    f = q / "analisis" / "funcional.md"
+    editar(f, "Historias: HU-01, HU-04.",
+           "Historias: HU-01, HU-04. Pendiente: PC-01. <!-- PC-03 -->\n- ~~Pendiente: PC-04~~")
+    with f.open("a", encoding="utf-8") as fh:
+        fh.write("| PC-02 | ¿Se archiva el expediente? | Sí / No | Responsable | PAN-03 |\n"
+                 "| PC-03 | ¿Se avisa al cerrar? | Avisar / No avisar | Responsable | PAN-01 |\n"
+                 "| ~~PC-04~~ | ¿Se pide una copia? | Una / Dos | Responsable | PAN-01 |\n")
+    for referencia in (True, False):
+        if not referencia:
+            editar(f, " Pendiente: PC-01.", "")
+        for parcial in (True, False):
+            salida = tmp / f"df-preguntas-{referencia}-{parcial}.docx"
+            orden = ["node", str(S / "df_docx.js"), str(q), "-o", str(salida)]
+            if parcial:
+                orden.extend(["--cambio", "EV-02"])
+            r = subprocess.run(orden, capture_output=True, text=True, encoding="utf-8", errors="replace")
+            xml = zipfile.ZipFile(salida).read("word/document.xml").decode("utf-8").replace(GUION, "-") if salida.exists() else ""
+            modo = f"DF {'del cambio' if parcial else 'completo'}, PC {'citada' if referencia else 'sin citar'}"
+            ok(f"{modo}: pregunta y opciones según el alcance",
+               r.returncode == 0 and ("¿Quién recibe el correo" in xml) == (referencia or not parcial)
+               and ("Solo el gestor / El gestor y el buzón de soporte" in xml) == (referencia or not parcial),
+               r.stdout + r.stderr)
+            ok(f"{modo}: sin DT ni anuladas; PC ajenas y de comentarios sólo en el completo",
+               "DT-04" not in xml and "¿Se pide una copia?" not in xml
+               and ("¿Se archiva el expediente?" in xml) == (not parcial)
+               and ("¿Se avisa al cerrar?" in xml) == (not parcial), xml[:500])
+            if parcial:
+                ok(f"{modo}: conservación limitada al alcance del diseño",
+                   "El resto del alcance de este diseño funcional" in xml and "resto de la aplicación" not in xml,
+                   xml[:500])
+
+    editar(f, "Historias: HU-01, HU-04.", "Historias: HU-01, HU-04. Pendiente: PC-01.")
+    editar(f, "¿Quién recibe el correo cuando el revisor aprueba o rechaza una solicitud?", "¿Cómo se aplica PC-02?")
+    for ciclo in (False, True):
+        if ciclo:
+            editar(f, "¿Se archiva el expediente?", "¿Se archiva el expediente según PC-01?")
+        salida = tmp / f"df-preguntas-cadena-{ciclo}.docx"
+        r = subprocess.run(["node", str(S / "df_docx.js"), str(q), "--cambio", "EV-02", "-o", str(salida)],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
+        xml = zipfile.ZipFile(salida).read("word/document.xml").decode("utf-8").replace(GUION, "-") if salida.exists() else ""
+        ok(f"DF: cadena de preguntas {'con ciclo' if ciclo else 'sin ciclo'} termina e incluye preguntas y opciones",
+           r.returncode == 0 and "¿Cómo se aplica PC-02?" in xml and "¿Se archiva el expediente" in xml
+           and "Sí / No" in xml, r.stdout + r.stderr)
+        ok(f"DF: cadena {'con ciclo' if ciclo else 'sin ciclo'} sólo amplía las preguntas citadas",
+           "¿Se avisa al cerrar?" not in xml and "DT-04" not in xml and "HU-03" not in xml, xml[:500])
+
 
 def filas_del_indice(texto):
     """{issue: [celdas]} de un índice de issues (construccion/<U>/indice.md): su primera tabla."""
