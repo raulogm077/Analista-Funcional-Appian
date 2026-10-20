@@ -24,6 +24,16 @@ import comprobar
 
 
 class Automejora(unittest.TestCase):
+    def test_aplicacion_en_plan_genera_tipo_esperado(self):
+        m = self.copia()
+        ctx = un.Contexto(m)
+        for tipo, esperado in (("Aplicación", "application"), ("Aplicacion", "application"),
+                               ("Application", "application"), ("Grupo de la aplicación", "group"),
+                               ("Regla de expresión de la aplicación", "expressionRule")):
+            with self.subTest(tipo=tipo):
+                filas = [{"tipo": tipo, "situacion": "nuevo", "objetos": ["AUT Objeto ficticio"]}]
+                self.assertEqual(ctx.esperado("EV-01", filas=filas), {"AUT Objeto ficticio": {"tipo": esperado}})
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="automejora-")
         self.root = Path(self.temp.name)

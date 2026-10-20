@@ -26,6 +26,8 @@ Subcomandos:
               la verificacion. Y, si la issue no dice «pruebas»: false, en «pruebas» el resultado de los casos de
               prueba guardados de sus reglas e interfaces y de lo que las usa (los dependientes directos), sin las
               salidas de cada caso (pruebas_de()); con «pruebas»: false, solo lee lo que compara (solo_lo_esperado()).
+              Incluye la aplicacion contextual y busca faltantes tipados por nombre exacto fuera de ella. Sin tipo o
+              busqueda global disponible, el alcance sigue siendo esa aplicacion y se avisa. No elige homonimos.
               Por la salida, solo el resumen. No escribe en ninguna extraccion.
   regresion   --app <app> --out <fichero.json>: los casos de prueba de toda la aplicacion, objeto a objeto, con el
               resumen en el fichero y por la salida solo lo que falla. Se pasa antes de preparar el paquete.
@@ -40,7 +42,8 @@ Codigos de salida (los mismos en todos los subcomandos):
   0 ok (verificar, tambien si falta algun objeto, no es lo esperado o falla una prueba: lo dice el JSON) | 1 regresion:
   algun caso falla | 2 uso incorrecto (deriva: sin as-is en --out) | 11 Dev MCP no configurado
   12 varias configuraciones posibles | 13 el Dev MCP no arranca o no autentica | 14 no hay aplicaciones visibles
-  15 app no encontrada o ambigua, o la carpeta ya tiene otra app u otro entorno (usa otra --out;
+  15 app no encontrada o ambigua, objeto ambiguo o busqueda global incompleta; tambien si la carpeta tiene otra app
+     u otro entorno (usa otra --out;
      para la misma app de otro entorno, tambien --refresh; deriva: el as-is es de otro entorno)
   16 Appian MCP Server no disponible (solo datafabric) | 17 regresion: el Dev MCP no ofrece ejecutar casos de prueba
 """
@@ -1701,6 +1704,71 @@ def resolver(pedidos: list[str], objects: list[dict]) -> dict[str, dict]:
     return out
 
 
+# Valores de types demostrados por el catalogo de listObjects (no admite APPLICATION).
+TIPOS_BUSQUEDA = ("AI_AGENT", "AI_SKILL", "CONNECTED_SYSTEM", "CONSTANT", "DATA_STORE", "DATA_TYPE", "DECISION",
+                  "DOCUMENT", "EXPRESSION_RULE", "FOLDER", "GROUP", "INTEGRATION", "INTERFACE", "PORTAL",
+                  "PROCESS_MODEL", "RECORD_TYPE", "ROBOTIC_TASK", "SITE", "WEB_API")
+
+
+async def resuelve_verificacion(ex: Extractor, app: dict, objects: list[dict], pedidos: list[str], tipos: dict) -> dict:
+    """Una resolucion para comparar y probar: app contextual y, solo si falta, busqueda global tipada y acotada."""
+    def no_resuelto(motivo, codigo=EXIT_APP):
+        eprint(motivo)
+        raise SystemExit(codigo)
+
+    por = {}
+    for p in pedidos:
+        ex.check_interrupted()
+        incluye_app = p == app.get("uuid") or (tipos.get(p) in (None, "application")
+                      and p.casefold() == str(app.get("name") or "").casefold())
+        candidatos = objects + ([app] if incluye_app and app.get("uuid") else [])
+        locales = {o["uuid"]: o for o in candidatos if o["uuid"] == p}
+        if not locales:
+            locales = {o["uuid"]: o for o in candidatos if str(o.get("name") or "").casefold() == p.casefold()}
+        if len(locales) > 1:
+            locales = {u: o for u, o in locales.items() if o["type"] == tipos.get(p)}
+            if len(locales) != 1:
+                no_resuelto(f"{p}: varios objetos coinciden; indica su tipo o UUID")
+        if locales:
+            por[p] = next(iter(locales.values()))
+            continue
+        tipo = tipos.get(p)
+        if not p.strip() or tipo not in ex.policy.syn:
+            eprint(f"{p}: no localizado en el inventario de la aplicacion; sin tipo conocido no se busca fuera")
+            continue
+        listas = [t for t in ex.tools if t.allowed and t.toks[:2] in (["list", "object"], ["search", "object"])
+                  and {"query", "types"} <= set(t.schema.get("properties") or {})
+                  and not set(t.schema.get("required") or []) - {"query", "types", "limit", "offset"}]
+        valores = [v for v in TIPOS_BUSQUEDA if ex.policy.canon_type(v) == tipo]
+        if not listas or not valores:
+            eprint(f"{p}: no localizado en el inventario de la aplicacion; el catalogo no permite buscar ese tipo fuera")
+            continue
+        ti = listas[0]
+        args = {"query": p, "types": [valores[0]]}
+        args.update({k: 10 if v == "size" else 0 for k, v in ti.params.items() if v in ("size", "offset")})
+        r = await ex.call_paginated(ti, args)
+        ex.check_interrupted()
+        if not r.ok:
+            no_resuelto(f"{p}: no se pudo completar la busqueda global: {r.error}", EXIT_START)
+        _, filas, _ = find_primary_list(r.data)
+        total = find_key_ci(r.data, ex.policy.pag["totalKeys"])
+        if (filas is None or not isinstance(total, int) or isinstance(total, bool) or total != len(filas)
+                or find_key_ci(r.data, ex.policy.pag["cursorKeys"])):
+            no_resuelto(f"{p}: busqueda global sin cobertura completa; no se afirma ausencia ni unicidad")
+        if any(not isinstance(o, dict) or not all(pick(o, keys) for keys in (UUID_KEYS, NAME_KEYS, TYPE_KEYS)) for o in filas):
+            no_resuelto(f"{p}: busqueda global con elementos sin identidad o tipo; no se afirma ausencia")
+        exactos = {}
+        for o in filas:
+            u, nombre, real = pick(o, UUID_KEYS), pick(o, NAME_KEYS), pick(o, TYPE_KEYS)
+            if u and str(nombre).casefold() == p.casefold() and ex.policy.canon_type(real) == tipo:
+                exactos[u] = {"uuid": u, "name": nombre, "type": tipo, "mcpType": real, "sources": [ti.name]}
+        if len(exactos) > 1:
+            no_resuelto(f"{p}: varios objetos globales del mismo nombre y tipo; verifica desde su aplicacion de origen")
+        if exactos:
+            por[p] = next(iter(exactos.values()))
+    return por
+
+
 def aplica(ex: Extractor, ti: ToolInfo, o: dict) -> bool:
     return o["type"] in ti.types or (ti.generic and o["type"] not in ex.policy.generic_skip)
 
@@ -1853,7 +1921,7 @@ def diferencias_permisos(o, esperado):
 
 
 async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: list[str],
-                   esperado: dict | None = None, ligero: bool = False) -> dict:
+                   esperado: dict | None = None, ligero: bool = False, resueltos: dict | None = None) -> dict:
     """Por objeto pedido: si existe, su tipo y su nombre; la última modificación (un dato, no una prueba); los campos
     de un record type o un CDT y, si lo esperado las nombra, sus acciones de registro (la herramienta que las lista o,
     si no la hay, la definición; sin ninguna de las dos, «accionesNoDisponibles»). Lo compara diferencias(). Con
@@ -1861,7 +1929,7 @@ async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: l
     esperado no nombra campos (salvo para leer las acciones, si no hay herramienta que las liste)."""
     ex.check_interrupted()
     esperado = esperado or {}
-    por = resolver(pedidos, objects)
+    por = resolver(pedidos, objects) if resueltos is None else resueltos
     usables = ex.usable("object")
     versiones = [t for t in usables if t.role == "versions"]
     definiciones = [t for t in usables if t.role == "definition"]
@@ -2189,11 +2257,12 @@ async def cmd_verificar(args) -> int:
                     app_obj, objects = await solo_lo_esperado(ex, args, tipos, auxiliares)
                 else:
                     app_obj, objects, _ = await prepare(ex, args)
-                resultado = await verifica(ex, app_obj, objects, pedidos, esperado, ligero=sin_pruebas)
+                resueltos = await resuelve_verificacion(ex, app_obj, objects, pedidos, tipos)
+                resultado = await verifica(ex, app_obj, objects, pedidos, esperado, ligero=sin_pruebas, resueltos=resueltos)
                 if isinstance(issue, dict):
                     resultado["pruebas"] = (
                         {"ejecutadas": False, "motivo": "la issue no cambia criterios ni reglas"} if sin_pruebas else
-                        await pruebas_de(ex, list(resolver(list(esperado), objects).values()), app_obj.get("uuid")))
+                        await pruebas_de(ex, [resueltos[p] for p in esperado if p in resueltos], app_obj.get("uuid")))
                 ex.check_interrupted()
         except ExtractionInterrupted:
             return interrupcion_de_lectura(Path(args.out).resolve(), ex)

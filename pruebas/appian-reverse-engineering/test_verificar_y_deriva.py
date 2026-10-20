@@ -15,6 +15,11 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+import asyncio
+from types import SimpleNamespace
+
+import pytest
+import devmcp_extract as dx
 
 from conftest import BUILD_MODEL, SKILL
 
@@ -24,6 +29,157 @@ import fixture  # noqa: E402
 OBJS, KEY_BY_UUID, _ = fixture.build()
 APP = OBJS[fixture.APP_KEY]["uuid"]
 SCRIPTS = SKILL / "scripts"
+
+
+class SesionVerificarExterno:
+    """Cliente en memoria: el inventario contextual y la busqueda global son distintos."""
+    app = {"uuid": "app-contexto", "name": "LAB Catalogo", "type": "application", "mcpType": "APPLICATION"}
+    panel = {"uuid": "panel-externo", "name": "LAB_Panel", "type": "INTERFACE"}
+
+    def __init__(self, paginas=None):
+        self.calls = []
+        self.paginas = paginas or [{"items": [self.panel], "total": 1}]
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_):
+        pass
+
+    async def list_tools(self):
+        def tool(name, properties, required=()):
+            return SimpleNamespace(name=name, description="", annotations=None,
+                                   inputSchema={"properties": properties, "required": list(required)})
+        return [tool("listObjects", {"query": {"type": "string"}, "types": {"type": "array", "items": {"type": "string"}},
+                                     "limit": {"type": "integer"}, "offset": {"type": "integer"},
+                                     "appUuid": {"type": "string"}}),
+                tool("getObjectVersionHistory", {"uuid": {"type": "string"}}, ["uuid"]),
+                tool("runAllInterfaceTestCases", {"uuid": {"type": "string"}}, ["uuid"])]
+
+    async def call(self, name, args):
+        self.calls.append({"tool": name, "args": args.copy()})
+        if name == "listObjects":
+            pagina = self.paginas[min(len([c for c in self.calls if c["tool"] == name]) - 1, len(self.paginas) - 1)]
+            return pagina if isinstance(pagina, dx.CallResult) else dx.CallResult(True, pagina)
+        if name == "runAllInterfaceTestCases":
+            return dx.CallResult(True, {"results": [{"name": "Caso ficticio", "success": True}]})
+        return dx.CallResult(True, {"versions": []})
+
+
+def ejecutar_verificador_externo(monkeypatch, tmp_path, session, objetos, locales=()):
+    async def preparar(ex, *_):
+        await ex.load_catalog()
+        return session.app, list(locales), []
+    monkeypatch.setattr(dx, "prepare", preparar)
+    choice = dx.ServerChoice("mock", "mock", "", [], {"LCP_URL": "https://demo.example.org"})
+    monkeypatch.setattr(dx, "open_session", lambda *_: (session, choice, 0, ""))
+    esperado = tmp_path / "esperado.json"
+    esperado.write_text(json.dumps({"_issue": {"id": "ISS-01", "unidad": "EV-01", "version": "ficticia"}, **objetos}),
+                        encoding="utf-8")
+    salida = tmp_path / "resultado.json"
+    args = SimpleNamespace(objetos=None, esperado=str(esperado), registro=False, policy=dx.DEFAULT_POLICY,
+                           out=str(salida), json=False)
+    code = asyncio.run(dx.cmd_verificar(args))
+    return code, json.loads(salida.read_text(encoding="utf-8")) if salida.exists() else None
+
+
+def test_verificador_app_contextual_y_panel_externo_comparten_resolucion(monkeypatch, tmp_path):
+    s = SesionVerificarExterno()
+    code, r = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.app["name"]: {}, s.panel["name"]: {"tipo": "interface"}})
+    assert code == 0 and r["faltan"] == [] and r["conDiferencias"] == []
+    assert {o["uuid"] for o in r["objetos"]} == {s.app["uuid"], s.panel["uuid"]}
+    assert [(o["objeto"], o["de"], o["casos"]) for o in r["pruebas"]["objetos"]] == [(s.panel["name"], "issue", 1)]
+    consultas = [c["args"] for c in s.calls if c["tool"] == "listObjects"]
+    assert consultas == [{"query": s.panel["name"], "types": ["INTERFACE"], "limit": 10, "offset": 0}]
+
+
+@pytest.mark.parametrize("tipo", ["application", "interface"])
+def test_verificador_app_homonima_no_sustituye_objeto_de_otro_tipo(monkeypatch, tmp_path, tipo):
+    s = SesionVerificarExterno()
+    homonimo = {"uuid": "interfaz-homonima", "name": s.app["name"], "type": "interface"}
+    _, r = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.app["name"]: {"tipo": tipo}}, [homonimo])
+    assert r["objetos"][0]["uuid"] == (s.app["uuid"] if tipo == "application" else homonimo["uuid"])
+    assert not any(c["tool"] == "listObjects" for c in s.calls)
+
+
+def test_verificador_busqueda_paginada_exige_nombre_y_tipo_exacto(monkeypatch, tmp_path):
+    s = SesionVerificarExterno([{"items": [{"uuid": "parecido", "name": "LAB_Panel_Anterior", "type": "INTERFACE"}], "total": 2},
+                              {"items": [SesionVerificarExterno.panel], "total": 2}])
+    _, r = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.panel["name"]: {"tipo": "interface"}})
+    assert r["objetos"][0]["uuid"] == s.panel["uuid"] and not r["faltan"]
+    assert [c["args"]["offset"] for c in s.calls if c["tool"] == "listObjects"] == [0, 1]
+
+
+@pytest.mark.parametrize("paginas", [
+    [{"items": [SesionVerificarExterno.panel, {**SesionVerificarExterno.panel, "uuid": "otro-panel"}], "total": 2}],
+    [dx.CallResult(False, error="lectura fallida")],
+    [{"items": [SesionVerificarExterno.panel], "total": 2}],
+    [{"items": [SesionVerificarExterno.panel]}],
+    [{"items": [{"name": "LAB_Panel"}], "total": 1}],
+    [dx.CallResult(False, error="HTTP 403 Forbidden")],
+])
+def test_verificador_busqueda_incierta_no_sobrescribe_resultado(monkeypatch, tmp_path, paginas):
+    s = SesionVerificarExterno(paginas)
+    previo = tmp_path / "resultado.json"
+    previo.write_text('{"anterior": true}', encoding="utf-8")
+    antes = previo.read_bytes()
+    code, _ = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.panel["name"]: {"tipo": "interface"}})
+    expected_code = dx.EXIT_START if isinstance(paginas[0], dx.CallResult) else dx.EXIT_APP
+    assert code == expected_code and previo.read_bytes() == antes
+    assert not any(c["tool"] == "runAllInterfaceTestCases" for c in s.calls)
+
+
+@pytest.mark.parametrize("tipo", [None, "tipo no reconocido", "interface"])
+def test_verificador_ausencia_y_tipo_desconocido_sin_busqueda_amplia(monkeypatch, tmp_path, tipo):
+    s = SesionVerificarExterno([{"items": [{"uuid": "otro", "name": "LAB_Panel_Anterior", "type": "INTERFACE"}], "total": 1}])
+    _, r = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.panel["name"]: {"tipo": tipo} if tipo else {}})
+    assert r["faltan"] == [s.panel["name"]]
+    assert bool([c for c in s.calls if c["tool"] == "listObjects"]) == (tipo == "interface")
+
+
+def test_verificador_uuid_contextual_prevalece_sin_busqueda(monkeypatch, tmp_path):
+    s = SesionVerificarExterno()
+    _, r = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.app["uuid"]: {"tipo": "application"}})
+    assert r["objetos"][0]["uuid"] == s.app["uuid"] and not r["faltan"]
+    assert not any(c["tool"] == "listObjects" for c in s.calls)
+
+
+def test_verificador_nombre_vacio_no_abre_busqueda_global(monkeypatch, tmp_path):
+    s = SesionVerificarExterno()
+    _, r = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {"": {"tipo": "interface"}})
+    assert r["faltan"] == [""] and not any(c["tool"] == "listObjects" for c in s.calls)
+
+
+@pytest.mark.parametrize("inversa", [False, True])
+def test_verificador_homonimos_locales_no_dependen_del_orden(monkeypatch, tmp_path, inversa):
+    s = SesionVerificarExterno()
+    locales = [{**s.panel, "type": "recordType", "uuid": "record-homonimo"}, {**s.panel, "type": "interface"}]
+    _, r = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.panel["name"]: {"tipo": "interface"}},
+                                       locales[::-1] if inversa else locales)
+    assert r["objetos"][0]["uuid"] == s.panel["uuid"]
+    assert not any(c["tool"] == "listObjects" for c in s.calls)
+
+
+def test_verificador_app_homonima_sin_tipo_conserva_resultado(monkeypatch, tmp_path):
+    s = SesionVerificarExterno()
+    previo = tmp_path / "resultado.json"
+    previo.write_text('{"anterior": true}', encoding="utf-8")
+    homonimo = {"uuid": "interfaz-homonima", "name": s.app["name"], "type": "interface"}
+    code, r = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.app["name"]: {}}, [homonimo])
+    assert code == dx.EXIT_APP and r == {"anterior": True} and not s.calls
+
+
+def test_verificador_respeta_exclusion_de_busqueda(monkeypatch, tmp_path, capsys):
+    original = dx.Policy
+    def policy(path):
+        p = original(path)
+        p.excludes.append((re.compile(r"^listObjects$"), "Exclusion ficticia"))
+        return p
+    monkeypatch.setattr(dx, "Policy", policy)
+    s = SesionVerificarExterno()
+    _, r = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.panel["name"]: {"tipo": "interface"}})
+    assert r["faltan"] == [s.panel["name"]] and not s.calls
+    assert "catalogo no permite buscar" in capsys.readouterr().err
 
 
 def uuids_de(llamadas: list[dict]) -> set[str]:
@@ -399,3 +555,47 @@ def test_omitidas_con_su_motivo():
     om = {t["name"]: t["reason"] for t in dx.omitidas(ex, plan)}
     assert dx.usadas(ex) == ["a"] and set(om) == {"b", "c", "d", "e"}
     assert om["b"] == "Escribe." and "--solo" in om["c"] and "No aplicaba" in om["d"] and om["e"]
+
+
+@pytest.mark.parametrize("inversa", [False, True])
+def test_verificador_app_tipada_con_varios_objetos_homonimos(monkeypatch, tmp_path, inversa):
+    s = SesionVerificarExterno()
+    locales = [{"uuid": "interfaz-homonima", "name": s.app["name"], "type": "interface"},
+               {"uuid": "registro-homonimo", "name": s.app["name"], "type": "recordType"}]
+    code, r = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.app["name"]: {"tipo": "application"}},
+                                         locales[::-1] if inversa else locales)
+    assert code == 0 and r["objetos"][0]["uuid"] == s.app["uuid"]
+    assert not any(c["tool"] == "listObjects" for c in s.calls)
+
+
+def test_verificador_interfaz_externa_homonima_a_la_aplicacion(monkeypatch, tmp_path):
+    s = SesionVerificarExterno()
+    s.paginas = [{"items": [{**s.panel, "name": s.app["name"]}], "total": 1}]
+    code, r = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.app["name"]: {"tipo": "interface"}})
+    assert code == 0 and r["objetos"][0]["uuid"] == s.panel["uuid"]
+    assert r["pruebas"]["objetos"][0]["de"] == "issue"
+
+
+def test_verificador_ambiguedad_no_diagnostica_fallo_de_arranque(monkeypatch, tmp_path, capsys):
+    s = SesionVerificarExterno()
+    homonimo = {"uuid": "interfaz-homonima", "name": s.app["name"], "type": "interface"}
+    code, _ = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.app["name"]: {}}, [homonimo])
+    err = capsys.readouterr().err
+    assert code == dx.EXIT_APP
+    assert "tipo o UUID" in err and "arrancar" not in err
+
+
+def test_verificador_fallo_de_prueba_del_consumidor_externo_no_se_pierde(monkeypatch, tmp_path):
+    class SesionConFallo(SesionVerificarExterno):
+        async def call(self, name, args):
+            if name == "runAllInterfaceTestCases":
+                self.calls.append({"tool": name, "args": args.copy()})
+                return dx.CallResult(True, {"results": [{"name": "Caso ficticio", "success": False}]})
+            return await super().call(name, args)
+
+    s = SesionConFallo()
+    code, r = ejecutar_verificador_externo(monkeypatch, tmp_path, s, {s.panel["name"]: {"tipo": "interface"}})
+    assert code == 0 and r["faltan"] == []
+    assert r["pruebas"]["fallan"] == 1
+    assert r["pruebas"]["objetos"][0]["de"] == "issue"
+    assert len(r["pruebas"]["objetos"][0]["fallan"]) == 1

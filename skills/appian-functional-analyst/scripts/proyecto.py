@@ -306,11 +306,25 @@ def avisos_proyecto(raiz):
     return avisos
 
 
+def _bloque_tabla(lineas, titulo):
+    """Inicio y fin exclusivo del mismo bloque pipe para leerlo y añadir filas."""
+    ini = next((i + 1 for i, l in enumerate(lineas) if l.strip() == f"## {titulo}"), None)
+    if ini is None:
+        return None
+    while ini < len(lineas) and not lineas[ini].startswith(("|", "## ")):
+        ini += 1
+    fin = ini
+    while fin < len(lineas) and lineas[fin].startswith("|"):
+        fin += 1
+    return (ini, fin) if fin > ini else None
+
+
 def tabla(texto, titulo):
-    m = re.search(rf"^## {re.escape(titulo)}\s*$(.*?)(?=^## |\Z)", texto, re.M | re.S)
-    if not m:
+    lineas = texto.split("\n")
+    bloque = _bloque_tabla(lineas, titulo)
+    if bloque is None:
         return []
-    filas = [mo.celdas(l) for l in m.group(1).split("\n") if l.startswith("|")]
+    filas = [mo.celdas(l) for l in lineas[bloque[0]:bloque[1]]]
     return [f for f in filas[2:] if any(f)]
 
 
@@ -458,14 +472,11 @@ RX_VERSION = re.compile(r"(Versi[oó]n:\s*v?)(\d+)\.(\d+)")
 def anade_fila(texto, titulo, fila):
     """Añade una fila al final de la tabla de la sección «## <titulo>» (tras su cabecera si está vacía)."""
     lineas = texto.split("\n")
-    ini = next((i for i, l in enumerate(lineas) if l.strip() == f"## {titulo}"), None)
-    if ini is None:
+    bloque = _bloque_tabla(lineas, titulo)
+    if bloque is None:
         return None
-    fin = next((i for i in range(ini + 1, len(lineas)) if lineas[i].startswith("## ")), len(lineas))
-    ultima = max((i for i in range(ini + 1, fin) if lineas[i].startswith("|")), default=None)
-    if ultima is None:
-        return None
-    return "\n".join(lineas[:ultima + 1] + [fila] + lineas[ultima + 1:])
+    fin = bloque[1]
+    return "\n".join(lineas[:fin] + [fila] + lineas[fin:])
 
 
 def que_es_fuente(e):

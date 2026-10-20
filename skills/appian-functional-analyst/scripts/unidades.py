@@ -57,7 +57,8 @@ TIPOS_APPIAN = [("record type", "recordType"), ("cdt", "cdt"), ("interfaz", "int
                 ("integracion", "integration"), ("integration", "integration"), ("constante", "constant"),
                 ("constant", "constant"), ("grupo", "group"), ("group", "group"), ("decision", "decision"),
                 ("site", "site"), ("sistema conectado", "connectedSystem"), ("connected system", "connectedSystem"),
-                ("data store", "dataStore"), ("agente", "aiAgent"), ("ai agent", "aiAgent")]
+                ("data store", "dataStore"), ("agente", "aiAgent"), ("ai agent", "aiAgent"),
+                ("aplicacion", "application"), ("application", "application")]
 # Tipo de un campo de técnico §3 → el que entiende verificar (sus sinónimos); los demás no se comparan
 TIPOS_CAMPO = {"texto": "Text", "text": "Text", "entero": "Integer", "numero (entero)": "Integer", "integer": "Integer",
                "decimal": "Decimal", "numero (decimal)": "Decimal", "booleano": "Boolean", "boolean": "Boolean",
