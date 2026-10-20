@@ -188,6 +188,93 @@ class FechasFuentes(unittest.TestCase):
         self.assertEqual(derivado.read_bytes(), antes)
 
 
+    def test_formatos_cabecera_en_alta_y_reparacion_conservan_duplicada_y_bytes(self):
+        formatos = ("Participantes:\nFecha: 2026-10-01", "Tema:\nFecha: 2026-10-01", "Reunión de seguimiento\nFecha: 2026-10-01",
+                    "---\nFecha: 2026-10-01\n---", "Fecha: 2026-10-01 10:00")
+        for n, cabecera in enumerate(formatos):
+            with self.subTest(cabecera=cabecera):
+                self.fuentes = self.raiz / f"formato-{n}"
+                f = self.original(f"sesion-{n}.txt", cabecera + "\nTipo de fuente: transcripción\n\n" + self.turnos)
+                otro = self.original(f"resumen-{n}.txt", "Resumen ficticio independiente.\n")
+                original = f.read_bytes()
+                filas = self.ingerir(f, otro)
+                self.assertEqual((filas[0]["tipo"], filas[0]["fecha"]), ("Transcripción", "2026-10-01"))
+                filas = self.ingerir("--duplicada", "FU-01=FU-02", "--motivo", "Resumen revisado")
+                filas[0]["fecha"] = "2026-10-20"
+                (self.fuentes / "indice.json").write_text(json.dumps({"fuentes": filas}), encoding="utf-8")
+                derivado = self.fuentes / filas[0]["salida"]
+                antes = derivado.read_bytes().replace(b"- Fecha: 2026-10-01", b"- Fecha: 2026-10-20", 1)
+                derivado.write_bytes(antes)
+                nuevas = self.ingerir(f)
+                self.assertEqual(nuevas[0], {**filas[0], "fecha": "2026-10-01"})
+                self.assertEqual(derivado.read_bytes(), antes.replace(b"- Fecha: 2026-10-20", b"- Fecha: 2026-10-01", 1))
+                self.assertEqual(f.read_bytes(), original)
+
+    def test_cabecera_acotada_no_promueve_narrativa_ni_hora_invalida(self):
+        invalidas = ("Fecha: 2026-02-30", "Fecha: 2026-10-01 24:00", "Fecha: 2026-10-01 10:60",
+                     "Fecha: 2026-10-01 10:00:00", "Fecha: 2026-10-01 10:00Z",
+                     "Fecha: 2026-10-01 fue acordada", "En la reunión se acordó lo siguiente\nFecha: 2026-10-01",
+                     "Texto citado de otra reunión:\nFecha: 2026-10-01", "> Fecha: 2026-10-01",
+                     "[00:00:01] Persona:\nFecha: 2026-10-01", "---\nFecha: 2026-10-01",
+                     "---\nTema: reunión\n---\nFecha: 2026-10-01",
+                     "Reunión inicial\nSesión posterior\nFecha: 2026-10-01",
+                     "Una frase libre\nFecha: 2026-10-01")
+        for cabecera in invalidas:
+            with self.subTest(cabecera=cabecera):
+                self.assertIsNone(lf.fecha_transcripcion(cabecera + "\n\n" + self.turnos))
+        for titulo in ("Transcripción", "Sesión de coordinación", "# Reunión ficticia"):
+            with self.subTest(titulo=titulo):
+                self.assertEqual(lf.fecha_transcripcion(titulo + "\nFecha: 1/10/2026 00:00\n\n" + self.turnos),
+                                 "2026-10-01")
+
+    def test_regenerar_misma_fuente_conserva_seleccion_sin_heredarla_al_contenido_nuevo(self):
+        for ausente in (True, False):
+            for modificada in (False, True):
+                with self.subTest(ausente=ausente, modificada=modificada):
+                    self.fuentes = self.raiz / f"regenerar-{ausente}-{modificada}"
+                    f = self.original(f"sesion-{ausente}-{modificada}.txt", "Fecha: 2026-10-01\n\n" + self.turnos)
+                    otro = self.original(f"resumen-{ausente}-{modificada}.txt", "Resumen ficticio.\n")
+                    self.ingerir(f, otro)
+                    filas = self.ingerir("--duplicada", "FU-01=FU-02", "--motivo", "Resumen revisado")
+                    if ausente:
+                        filas[0]["salida"] = "registrada-pero-ausente.md"
+                    else:
+                        (self.fuentes / filas[0]["salida"]).write_bytes(b"")
+                    (self.fuentes / "indice.json").write_text(json.dumps({"fuentes": filas}), encoding="utf-8")
+                    if modificada:
+                        f.write_bytes(f.read_bytes() + b"\nCambio nuevo que requiere revisar la cobertura.\n")
+                    nuevas = self.ingerir(f)
+                    if modificada:
+                        self.assertEqual(len(nuevas), 3)
+                        self.assertEqual(nuevas[0]["duplicada_de"], "FU-02")
+                        self.assertEqual(nuevas[-1]["id"], "FU-03")
+                        self.assertNotEqual(nuevas[0]["hash"], nuevas[-1]["hash"])
+                        self.assertNotIn("duplicada_de", nuevas[-1])
+                        self.assertNotIn("motivo_duplicada", nuevas[-1])
+                    else:
+                        self.assertEqual(len(nuevas), 2)
+                        self.assertEqual(nuevas[0]["id"], "FU-01")
+                        self.assertEqual(nuevas[0]["hash"], filas[0]["hash"])
+                        self.assertEqual(nuevas[0]["duplicada_de"], "FU-02")
+                        self.assertEqual(nuevas[0]["motivo_duplicada"], "Resumen revisado")
+                        self.assertTrue((self.fuentes / nuevas[0]["salida"]).read_text(encoding="utf-8").strip())
+
+    def test_regenerar_no_borra_selecciones_invalidas_para_eludir_validacion(self):
+        for destino in ("inexistente", "cadena", "ciclo"):
+            with self.subTest(destino=destino):
+                self.fuentes = self.raiz / destino
+                fuentes = [self.original(f"{destino}-{n}.txt", f"Fuente ficticia independiente {n}.\n") for n in range(3)]
+                filas = self.ingerir(*fuentes)
+                filas[0].update(duplicada_de="FU-99" if destino == "inexistente" else "FU-02", motivo_duplicada="Selección previa")
+                if destino != "inexistente":
+                    filas[1].update(duplicada_de="FU-01" if destino == "ciclo" else "FU-03", motivo_duplicada="Selección previa")
+                (self.fuentes / filas[0]["salida"]).write_bytes(b"")
+                (self.fuentes / "indice.json").write_text(json.dumps({"fuentes": filas}), encoding="utf-8")
+                code, out = fixture.corre(fixture.S / "leer_fuentes.py", fuentes[0], "-o", self.fuentes)
+                self.assertNotEqual(code, 0, out)
+                self.assertIn("debe seguir activa", out)
+
+
 class Consumidores(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(prefix="consumidores-")

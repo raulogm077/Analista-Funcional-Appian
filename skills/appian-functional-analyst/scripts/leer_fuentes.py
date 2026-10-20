@@ -475,17 +475,37 @@ def slug(s):
 
 def fecha_transcripcion(body):
     """«Fecha:» del bloque inicial de metadatos, no de una intervención o un documento citado."""
-    cabecera = []
+    cabecera, yaml, cerrado, titulo = [], False, False, False
     for linea in body[:2000].splitlines():
-        if not cabecera and (not linea.strip() or linea.startswith("# ")):
+        if not cabecera and not linea.strip():
             continue
-        if not re.match(r"^[^#\[\]:\n]{1,80}:[ \t]*\S.*$", linea):
+        if not cabecera and not yaml and linea.startswith("# "):
+            continue
+        if not cabecera and not yaml and not titulo and re.fullmatch(
+                r"(?:Transcripci[oó]n|Reuni[oó]n|Sesi[oó]n)(?:[ \t]+[^:.!?\n]+)?", linea, re.I):
+            titulo = True
+            continue
+        if linea == "---":
+            if yaml:
+                cerrado = True
+                break
+            if not cabecera:
+                yaml = True
+                continue
+            break
+        campo = re.fullmatch(r"([^#\[\]:\n]{1,80}):[ \t]*(.*)", linea)
+        if not campo or (not campo.group(2).strip() and campo.group(1).casefold() not in
+                         ("tema", "tipo de fuente", "fecha", "origen", "duración", "participantes")):
             break
         cabecera.append(linea)
-    f = re.search(r"^Fecha:[ \t]*(?:(\d{4})-(\d{2})-(\d{2})|(\d{1,2})/(\d{1,2})/(\d{4}))[ \t]*$",
-                  "\n".join(cabecera), re.M)
+    if yaml and not cerrado:
+        return None
+    f = re.search(r"^Fecha:[ \t]*(?:(\d{4})-(\d{2})-(\d{2})|(\d{1,2})/(\d{1,2})/(\d{4}))"
+                  r"(?:[ \t]+(\d{2}):(\d{2}))?[ \t]*$", "\n".join(cabecera), re.M)
     if f:
         try:
+            if f.group(7):
+                datetime.time(*map(int, f.group(7, 8)))
             return (datetime.date(*map(int, f.group(1, 2, 3))) if f.group(1) else
                     datetime.date(*map(int, f.group(6, 5, 4)))).isoformat()
         except ValueError:
@@ -774,6 +794,8 @@ def main():
         entry = {"id": fid, "fichero": f.name, "tipo": kind, "detalle": detail, "fecha": date, "hash": h,
                  "salida": f"{fid}-{slug(f.name)}.md" if body is not None else "",
                  "palabras": len(palabras(body or ""))}
+        if old:  # mismo contenido y misma identidad: regenerar el texto no revoca su selección explícita
+            entry.update({k: old[k] for k in ("duplicada_de", "motivo_duplicada") if k in old})
         if body is not None:
             for otra, porcentaje in parecidas(body, textos):
                 print(f"AVISO: {fid} se parece a {otra} ({porcentaje}% del contenido). Revisa decisiones nuevas; "
