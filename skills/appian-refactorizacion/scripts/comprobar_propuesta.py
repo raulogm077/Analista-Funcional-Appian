@@ -164,7 +164,7 @@ def comprobar(p: Path) -> tuple[list[str], list[str]]:
     """(errores, avisos) de <p>/refactorizacion/propuesta.md."""
     p = Path(p).resolve()
     propuesta = p / "refactorizacion" / "propuesta.md"
-    asis = p / "as-is"
+    asis = (p / "as-is").resolve()
     datos = asis / "datos"
     inv = json.loads((datos / "inventario.json").read_text(encoding="utf-8"))
     app = inv.get("aplicacion") or {}

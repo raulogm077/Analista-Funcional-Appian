@@ -4,6 +4,27 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Campaña Codex: evidencias con alias de directorio (20 de octubre de 2026)
+
+El comprobador de refactorización rechazaba evidencias existentes cuando `as-is` era una junction:
+resolvía el destino del enlace, pero comparaba su pertenencia con una base sin resolver. Una raíz
+de proyecto con alias sí funcionaba. La corrección normaliza también la base, manteniendo el
+rechazo de evidencias que salen de ella y de enlaces a la extracción en bruto.
+
+La reproducción mínima conserva los cuatro resultados anteriores: directorio regular y alias
+de raíz válidos, falso rechazo de `as-is` con alias y rechazo correcto de un escape interno.
+Con el candidato, siete ejecuciones del CLI producen el resultado esperado, incluidas variantes
+de extracción en bruto y escape relativo. La propuesta que antes recibía veinte errores de
+ruta pasa el CLI con cero errores y avisos, sin cambiar su contenido para esta comprobación.
+Esto acredita resolución de rutas, no calidad semántica de la propuesta.
+
+El primer recorrido de la suite encontró una caché preexistente en la skill; se conservó fuera
+del repositorio mediante un movimiento reversible antes de repetir. La suite final pasa sus
+53 controles y no regenera la caché; la básica pasa con siete skills, cero errores y cero avisos.
+Las evidencias y la
+reproducción ficticia quedan en `e2e-20261020/iteracion-04-agentes/diagnostico-junction/`.
+No se cambia ningún contrato ni se incorpora información del proyecto al plugin.
+
 ## Campaña Codex: comprobar el valor vacío de un campo en QA (20 de octubre de 2026)
 
 Un guion repetible comprobaba el texto del resultado tras limpiar un formulario, pero no podía
