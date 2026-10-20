@@ -148,10 +148,13 @@ hace cada paso, con qué skill y la referencia que lo detalla. `proyecto.py inic
    Sin errores antes de entregar. Revisa los avisos: los de redacción se corrigen casi siempre.
 8. **DF en Word**, solo para enviarlo o si se pide (síntesis, evolutivo y refactorización), una vez y, si hay
    prototipo, después de él, con sus capturas. La primera entrega es la versión 1.0:
-   `proyecto.py version <p> --inicial --fuente FU-01 --fuente FU-02 --que "Análisis inicial"` lleva el borrador 0.1 a
+   `proyecto.py version <p> --inicial --fuente FU-01 FU-02 --que "Análisis inicial"` lleva el borrador 0.x a
    1.0, o registra la primera 1.0 ya preparada, con sus fuentes y su fila en `decisiones.md`, sin abrir la 1.1 ni guardar
    una copia (incluye todas las fuentes procesadas). Conserva el contenido y sus aprobaciones; el técnico sin empezar
-   sigue sin empezar. Nunca sobrescribe uno entregado. Mira algunas páginas del PDF antes de
+   sigue sin empezar. Si ya se registraron fuentes o hubo actualizaciones del borrador, añade la fila 1.0 y conserva
+   las filas 0.x y sus copias;
+   reúne sus fuentes sin duplicarlas ni cambiar la primera versión en que se procesó cada una.
+   Nunca sobrescribe uno entregado. Mira algunas páginas del PDF antes de
    enviarlo; sin LibreOffice no lo hay ni se saca por otra vía: lo revisa quien lo envía; díselo al entregar.
    ```bash
    node <skill>/scripts/df_docx.js <p> --pdf    # entregables/DF-<proyecto>-v<versión>.docx; el PDF, en revision/

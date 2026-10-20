@@ -4,11 +4,40 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Campaña Codex: primera entrega después de actualizar el borrador (20 de octubre de 2026)
+
+El recorrido estándar incorpora una fuente nueva antes de la primera entrega: `version` conserva
+la 0.1 y abre la 0.2, pero `version --inicial` rechaza después tanto esa versión como las fuentes
+ya procesadas. El fallo se reproduce con una fuente aún no procesada, con el caso documental
+y con un reservado 0.3 de otro dominio. Los intentos fallidos no modifican el proyecto.
+
+Otro vecino reproduce la orden literal de la skill con dos opciones `--fuente`: termina con exit 0,
+pero sólo registra la última fuente. La corrección conserva el historial y sus aprobaciones, las
+copias anteriores y la primera versión de cada fuente, sin duplicar registros ni aceptar otra
+primera entrega de una versión ya registrada. Las opciones repetidas acumulan las fuentes.
+
+Pasan los 23 tests del módulo con `PLUGIN_A_PROBAR`, los quince controles del reservado del ejecutor,
+los doce del reservado independiente y cuatro de la repetición de la orden documentada. Son
+comprobaciones solapadas de esos casos, no escenarios independientes sumables. El candidato inicial
+perdía la fila 0.1 con fuentes registradas y exigía versiones contiguas; ambos límites quedan
+reproducidos y corregidos antes de congelar. La suite completa del analista pasa 401 controles,
+cero fallos y exit 0, con las tres huellas de código, skill y pruebas iguales antes y después.
+La básica pasa con siete skills, cero errores y cero avisos.
+
+La repetición viva de la promoción documental también pasa: conserva contenido, decisiones,
+primeras versiones de fuentes y copias. Una huella previa del ejecutor había normalizado finales
+de línea; se aclara en la evidencia y no se presenta como integridad de bytes del archivo original.
+El reservado independiente sí compara los mismos bytes de entrada y de sus copias.
+
+Los fallos y las comparaciones se conservan fuera del repositorio, en
+`e2e-20261020/iteracion-02-documental/`. Esta comprobación no mide eficiencia ni sustituye la
+revisión del Word o la QA de comportamiento del prototipo.
+
 ## Campaña Codex: fecha explícita de las transcripciones (20 de octubre de 2026)
 
 El flujo documental estándar, iniciado con `proyecto.py iniciar`, conserva la contradicción entre
 reuniones, la incertidumbre de alcance y la copia exacta sin contarla como otra confirmación.
-Los seis criterios de la primera entrega pasan; todavía no acredita técnico, diagramas, prototipo
+Los seis criterios de la primera síntesis pasan; todavía no acredita técnico, diagramas, prototipo
 ni Word. Las fuentes y salidas previas quedan congeladas fuera del repositorio.
 
 La lectura descubre un defecto independiente: tres Markdown reconocidos como transcripción tienen

@@ -34,11 +34,18 @@ pruebas de urgencias en Desarrollo. Pasan 26 pruebas de secuenciación directas/
 completa con 401 controles y exit 0. La repetición viva sobre `2c4bde3` conserva tres issues hechas
 y verificaciones intactas, sin repetir MCP. QA de usuario y producción no están acreditadas.
 
-El flujo documental estándar ya arranca mediante `iniciar`: su primera entrega conserva contradicción,
+El flujo documental estándar ya arranca mediante `iniciar`: su primera síntesis conserva contradicción,
 duplicado y trazabilidad, con seis criterios correctos. Descubre un fallo de fecha de las transcripciones:
 la candidata corrige nuevas ingestas y el mismo catálogo, conservando IDs y cuerpo. Módulo de veinte
 pruebas y controles externos correctos; suite completa limpia con 401 controles y exit 0,
-sin cambios de código o prueba durante la corrida.
+sin cambios de código o prueba durante la corrida. La incorporación posterior de una fuente antes
+de la primera entrega reproduce un bloqueo de `--inicial` con borradores 0.2 o posteriores;
+el ejemplo con varias opciones `--fuente` también pierde todas salvo la última. Ambas correcciones
+pasan el módulo de 23 tests, las comparaciones externas y la suite completa con 401 controles y
+exit 0, conservando sus fallos originales. La promoción viva a 1.0 pasa. El PDF real sigue con
+índice sin números de página y diagramas pequeños al ancho de página: la entrega visual no está
+cerrada. La revisión estática del prototipo no acredita su QA
+independiente: el navegador rechazó abrir el archivo local por política de seguridad.
 Continúa la decisión sintética hasta técnico, BPMN, prototipo y Word/PDF. Después siguen QA automatizada
 por roles, los ocho agentes y la medida 3+3. Los resultados de la pasada anterior siguientes se conservan
 como históricos; no sustituyen estas repeticiones nuevas.

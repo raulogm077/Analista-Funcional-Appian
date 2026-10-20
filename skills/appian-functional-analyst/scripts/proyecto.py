@@ -525,6 +525,49 @@ def comprueba_secuencia_version(m, a):
                      "Usa el camino completo con informe previo; las piezas independientes pueden continuar")
 
 
+def prepara_inicial(m, texto_p, texto_d, cat, fuentes):
+    """Primera 1.0: conserva el historial de borradores y la primera versión registrada de cada fuente."""
+    vf, vt = m.version("F"), m.version("T")
+    filas = tabla(texto_d, "Versiones")
+    versiones = [f[0].strip() for f in filas]
+    procesadas = tabla(texto_p, "Fuentes procesadas")
+    snapshots = {f.name for f in (m.raiz / "versiones").glob("v*")}
+    entregados = re.findall(r"^Entregados:[ \t]*(.*)$", texto_p, re.M)
+    if RX_ENTREGADO.search(texto_p) or any(not un.vacio(x) for x in entregados):
+        sys.exit("--inicial no prepara otra primera entrega: el proyecto ya registra un DF entregado")
+    if not vf or (vf[0] != 0 and vf != (1, 0)) or (vf[0] == 0 and vf[1] < 1):
+        sys.exit("--inicial prepara la primera 1.0 desde un borrador 0.x o una 1.0 aún sin registrar")
+    legado = vf in ((0, 1), (1, 0))
+    admitidas = ({"0.1", "1.0"} if legado else
+                 {v for v in versiones if re.fullmatch(r"0\.[1-9]\d*", v) and int(v.split(".")[1]) <= vf[1]})
+    if (not filas or any(len(f) < 5 for f in filas) or len(set(versiones)) != len(versiones)
+            or not set(versiones) <= admitidas or (not legado and f"0.{vf[1]}" not in versiones)
+            or vt not in ((None, (0, 1), (1, 0)) if legado else (None, vf))
+            or snapshots - ({f"v0.{n}" for n in range(1, vf[1])} if not legado else set())):
+        sys.exit("--inicial no reinterpreta un historial ambiguo o no inicial: revisa las versiones del análisis, "
+                 "las filas únicas de decisiones.md y las copias de borradores 0.x")
+    if (vf == (1, 0) and procesadas) or any(f[-1] == "1.0" for f in procesadas):
+        sys.exit("--inicial: la primera 1.0 ya tiene sus fuentes registradas; no se registra otra vez")
+    primeras = {}
+    for fila in filas:
+        for fu in re.findall(r"FU-\d+", fila[3]):
+            anterior = primeras.get(fu)
+            if anterior is None or tuple(map(int, fila[0].split("."))) < tuple(map(int, anterior.split("."))):
+                primeras[fu] = fila[0]
+    ids = [f[0] for f in procesadas]
+    if len(set(ids)) != len(ids) or any(len(f) < 5 or not re.fullmatch(r"FU-\d+", f[0])
+                                       or f[-1] not in versiones for f in procesadas):
+        sys.exit("--inicial no reinterpreta fuentes procesadas con una primera versión ambigua o no inicial")
+    for f in procesadas:
+        primeras[f[0]] = f[-1]  # la fila existente conserva su primera versión, informe y descripción
+    fuentes = list(dict.fromkeys(fuentes + list(primeras)))
+    fuera = [f for f in fuentes if f not in cat]
+    if fuera:
+        sys.exit(f"{', '.join(fuera)} del historial no está en fuentes/: revisa el catálogo antes de preparar la 1.0")
+    reutiliza = "1.0" if "1.0" in versiones else "0.1" if vf == (0, 1) and not primeras else None
+    return fuentes, primeras, reutiliza
+
+
 def version(a):
     """Abre la versión siguiente para aplicar el informe de una o varias fuentes: copia la actual (como copia), sube
     0.1 la del funcional y la del técnico y escribe la fila de la versión en decisiones.md, las D de --decision y cada
@@ -546,11 +589,14 @@ def version(a):
     texto_p = proy.read_text(encoding="utf-8") if proy.exists() else ""
     texto_d = dec.read_text(encoding="utf-8") if dec.exists() else ""
     ya = {f[0]: f[-1] for f in tabla(texto_p, "Fuentes procesadas") if f}
+    primeras, fila_inicial = {}, None
+    if inicial:
+        fuentes, primeras, fila_inicial = prepara_inicial(m, texto_p, texto_d, cat, fuentes)
     for f in tabla(texto_d, "Versiones"):
         for x in re.findall(r"FU-\d+", f[3] if len(f) > 3 else ""):
             if not inicial:
                 ya.setdefault(x, f[0])
-    repetidas = [f"{f} (versión {ya[f]})" for f in fuentes if f in ya]
+    repetidas = [f"{f} (versión {ya[f]})" for f in fuentes if f in ya and not inicial]
     if repetidas:
         sys.exit(f"{', '.join(repetidas)} ya tiene versión: si sigues aplicándola, edita esa versión sin abrir otra (una "
                  "fila D que falte, a mano con el formato de references/actualizacion.md §6)")
@@ -559,16 +605,7 @@ def version(a):
     if malas:
         sys.exit(f"--decision {', '.join(malas)}: el tipo es uno de {', '.join(mo.TIPOS_D)}")
     comprueba_secuencia_version(m, a)
-    promueve = inicial and m.version("F") == (0, 1)
     if inicial:
-        if (m.version("F") not in ((0, 1), (1, 0)) or m.version("T") not in (None, (0, 1), (1, 0))
-                or any((raiz / "versiones").glob("v*"))):
-            sys.exit("--inicial prepara la primera 1.0 desde 0.1 o 1.0, sin copias de versiones anteriores")
-        filas_d = tabla(texto_d, "Versiones")
-        if promueve and (any(f[0].strip() not in ("0.1", "1.0") for f in filas_d)
-                         or sum(f[0].strip() == "0.1" for f in filas_d) > 1
-                         or sum(f[0].strip() == "1.0" for f in filas_d) > 1):
-            sys.exit("--inicial no reinterpreta el historial de decisiones.md: debe ser la primera 0.1 o 1.0")
         v, destino, nueva = (1, 0), None, "1.0"
     else:
         v, destino = _copia(raiz, m)
@@ -586,9 +623,8 @@ def version(a):
     hoy = datetime.date.today().isoformat()
     que = " ".join(a.que.split()).replace("|", "/")
     nuevo_d = None
-    if inicial:
-        # Reutilizar la 1.0; al promover el borrador, su única 0.1 pasa a 1.0. Conserva fecha, descripción y validación.
-        fila_inicial = "0.1" if promueve and not any(f[0].strip() == "1.0" for f in filas_d) else "1.0"
+    if inicial and fila_inicial:
+        # Reutiliza la plantilla 0.1 sin fuentes o la 1.0 importada; conserva las filas de borradores ya registrados.
         L = texto_d.split("\n")
         dentro = False
         for i, linea in enumerate(L):
@@ -631,8 +667,11 @@ def version(a):
         mo.escribe(dec, texto_d)
     informe = (a.informe or ("—" if inicial else f"impacto/{fuentes[0]}.md")).replace("\\", "/")
     for fu in fuentes:
+        if inicial and fu in ya:
+            continue
         e = cat[fu]
-        fila = f"| {fu} | {str(e.get('fecha', ''))[:10]} | {que_es_fuente(e).replace('|', '/')} | {informe} | {nueva} |"
+        primera = primeras.get(fu, nueva)
+        fila = f"| {fu} | {str(e.get('fecha', ''))[:10]} | {que_es_fuente(e).replace('|', '/')} | {informe} | {primera} |"
         nuevo_p = anade_fila(texto_p, "Fuentes procesadas", fila)
         if nuevo_p is None:
             a_mano.append(f"{fu} en «## Fuentes procesadas» de proyecto.md")
@@ -1025,8 +1064,8 @@ def main():
     s = sub.add_parser("estado"); s.add_argument("carpeta"); s.set_defaults(f=estado)
     s = sub.add_parser("copia"); s.add_argument("carpeta"); s.set_defaults(f=copia)
     s = sub.add_parser("version"); s.add_argument("carpeta"); s.set_defaults(f=version)
-    s.add_argument("--fuente", nargs="+", required=True, metavar="FU-nn", help="las fuentes del informe")
-    s.add_argument("--inicial", action="store_true", help="prepara la primera 1.0 desde 0.1 o 1.0 y registra sus fuentes")
+    s.add_argument("--fuente", nargs="+", action="extend", required=True, metavar="FU-nn", help="las fuentes del informe")
+    s.add_argument("--inicial", action="store_true", help="prepara la primera 1.0 desde 0.x o 1.0 y registra sus fuentes")
     s.add_argument("--que", required=True, help="qué cambia, en una frase y en palabras del cliente (sale en el Word): "
                                                  "la fila de la versión en decisiones.md")
     s.add_argument("--informe", help="el informe, si no es impacto/<primera fuente>.md (una urgencia: impacto/URG-nn.md)")
