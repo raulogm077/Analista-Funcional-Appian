@@ -804,7 +804,8 @@ class Contexto:
         construido += [u.id for u in suyas if u.estado in CONSTRUIDAS]
         return list(dict.fromkeys(construido)), curso
 
-    def ambito_secuencia(self, uid, propuestas=True, informe=None, objetos_conocidos=(), solo_decididas=False):
+    def ambito_secuencia(self, uid, propuestas=True, informe=None, objetos_conocidos=(), solo_decididas=False,
+                        solo_aprobadas=False):
         """Lo que cambia, sin «Revisar también», referencias de contexto ni filas «Existe»."""
         piezas, objetos = set(), set()
         if informe is None:
@@ -826,6 +827,8 @@ class Contexto:
                 decision = mo.normaliza(punto.get("decision", "")).strip(" *")
                 if tipo in SIN_PIEZAS + ("existe", "contexto") or "✗" in decision:
                     continue
+                if solo_aprobadas and not any(s in decision for s in ("✔", "✅")):
+                    continue
                 if (not propuestas or solo_decididas) and (decision.startswith("pendiente") or "❓" in decision):
                     continue
                 destino = punto.get("encaja en", "") if not tipo.startswith("nuevo") else ""
@@ -833,7 +836,7 @@ class Contexto:
                     destino = punto.get("cambio propuesto", "")
                 piezas |= {self.m.raiz_de(p) for p in mo.ids_en(destino)}
                 objetos |= {objeto(o) for o in objetos_celda(destino)} & conocidos
-            elif mo.normaliza(mo.estado_informe(texto)).startswith("aplicado"):
+            elif not solo_aprobadas and mo.normaliza(mo.estado_informe(texto)).startswith("aplicado"):
                 aplicado = re.search(r"^## Aplicado\s*$(.*?)(?=^## |\Z)", texto, re.M | re.S)
                 piezas |= {self.m.raiz_de(p) for p in mo.ids_en(aplicado.group(1))} if aplicado else set()
         return {"piezas": piezas, "objetos": objetos}

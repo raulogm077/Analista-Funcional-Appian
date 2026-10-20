@@ -19,6 +19,13 @@ La auditoría del recuento retira el objetivo del 20 %: al incluir las ediciones
 solo eventos de comandos. La corrección del resumen de impacto se acepta por calidad funcional;
 la ingesta tampoco acredita ahorro. No extrapolar esas cifras a los casos restantes.
 
+La nueva acreditación de principio a fin está en `e2e-20261020/estado.json`, bajo la misma campaña externa.
+La base `5034276` ya tiene una corrida completa limpia del analista (401 controles, exit 0).
+El proyecto nuevo D1 respeta el orden temporal y otra sesión completa la recuperación técnica D7;
+la QA de usuario sigue pendiente. La urgencia compartida ha reproducido un bloqueo del motor:
+el parche pasa los casos focales y la suite completa (401 controles, exit 0), antes de repetirlo en el laboratorio.
+Después siguen el flujo documental, QA automatizada por roles, los ocho agentes y la medida 3+3.
+
 - La revisión externa se contrastó contra código y reproducciones. Quedan corregidos la localización del plugin,
   el aviso de localizador inválido, la tabla técnica, el destino pendiente de urgencias y el consumo de derivados
   antiguos. `version --inicial` promueve el borrador sin editar números a mano. Los IDs retirados sí llegan a

@@ -4,6 +4,38 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Campaña Codex: continuidad real y urgencia compartida (20 de octubre de 2026)
+
+Nueva iteración en la misma rama, desde `5034276`, con Astra y trabajadores Sol en contextos nuevos.
+Proyectos, fuentes, errores y respuestas originales en
+`$PROYECTOS_PRUEBA/campana-codex-20261019/e2e-20261020/`; los fallos anteriores permanecen registrados.
+
+- La suite completa del analista sobre la base termina con 401 controles correctos, cero fallos y exit 0.
+  Cierra la corrida pendiente de la revisión anterior. La conversión PDF real opcional no se ejecuta en
+  esa suite Windows; LibreOffice local vía WSL está disponible para el recorrido documental.
+- D1, en un proyecto nuevo creado con `iniciar`: la issue independiente termina mientras la predecesora
+  está pendiente; ésta se verifica y cierra antes de cambiar el objeto compartido. El primer cambio
+  compartido es de descripción. No sustituye las pruebas de colisiones de comportamiento.
+- D7: otra sesión recupera reserva y subtarea desde los archivos, conserva el objeto existente y completa
+  sólo el que falta. Verificación real de dos objetos y diez casos correcta; QA de usuario pendiente.
+  Un fallo del logger se conserva. Las respuestas originales recuperadas de la traza permiten comparar
+  el objeto antes y después, sin tomar un hash transcrito como prueba suficiente.
+- La urgencia posterior descubre un defecto del motor: la secuenciación entre evolutivos impedía
+  versionar un cambio urgente aprobado sobre una pieza de una unidad Aprobada. El parche exime sólo el
+  ámbito aprobado de una urgencia registrada y Abierta, sin añadir pasos ni exigir decidir el entorno
+  para versionar. Las piezas ya atribuidas en un informe mixto no se duplican como cambios sin unidad.
+  Mantiene los bloqueos entre evolutivos, los puntos pendientes/rechazados y la reaplicación.
+- Reproducción en copia: exit 1 con la base, exit 0 con el parche. Secuenciación 22/22 y subtareas 8/8
+  correctas; también se prueba el módulo de secuenciación sobre la copia indicada por `PLUGIN_A_PROBAR`.
+  La suite completa posterior al parche termina también con 401 controles correctos, cero fallos y
+  exit 0; básica: siete skills, cero errores y cero avisos. Las tres huellas de código/prueba coinciden
+  antes y después. Su repetición real en Appian sigue pendiente.
+
+Es una corrección funcional, sin medida de aceleración. La revisión del parche separa el defecto original
+de los problemas de sus candidatos intermedios; no los presenta como comparaciones entre commits.
+El flujo documental completo, QA automatizada por roles y ejecución de los ocho agentes siguen pendientes.
+No se ejecuta la batería global local ni se despliega, publica, envía o borra.
+
 ## Campaña Codex: contraste de la auditoría externa (20 de octubre de 2026)
 
 Revisión sobre `d334d05`, conservando la misma rama y el informe recibido. Las afirmaciones se contrastan

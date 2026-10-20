@@ -501,11 +501,22 @@ def comprueba_secuencia_version(m, a):
                 for k in previo:
                     previo[k] |= ambito[k]
     afectadas = {m.raiz_de(p) for decision in a.decision or [] for p in mo.ids_en(decision[1])}
+    afectadas -= {p for ambito in ambitos.values() for p in ambito["piezas"]}
     if afectadas:
         abiertas = [u.id for u in ctx.unidades if u.estado == un.ABIERTA]
         uid = next(iter(ambitos)) if len(ambitos) == 1 else abiertas[0] if len(abiertas) == 1 else None
         ambitos.setdefault(uid, {"piezas": set(), "objetos": set()})["piezas"] |= afectadas
     for uid, ambito in ambitos.items():
+        u = ctx.por_id.get(uid)
+        if u and u.urgente and u.estado == un.ABIERTA and ctx.ficha_urg(uid):
+            # La urgencia tiene su propio recorrido: ficha, aprobación del punto y reaplicación en el evolutivo.
+            # Solo exime el alcance decidido del informe, nunca un ID URG inventado ni otra pieza de --decision.
+            aprobado = {k: set() for k in ambito}
+            for nombre in nombres:
+                dentro = ctx.ambito_secuencia(uid, informe=nombre, solo_decididas=True, solo_aprobadas=True)
+                for k in aprobado:
+                    aprobado[k] |= dentro[k]
+            ambito = {k: v - aprobado[k] for k, v in ambito.items()}
         bloqueos = [s for s in ctx.solapes_secuencia(uid, ambito) if s["estado"] == un.APROBADA]
         if bloqueos:
             detalle = "; ".join(s["unidad"] + ": " + ", ".join(sorted(s["piezas"] | s["objetos"])) for s in bloqueos)
