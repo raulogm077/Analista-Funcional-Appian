@@ -193,6 +193,18 @@ class Secuenciacion(unittest.TestCase):
         plan, _, _ = iss.genera(m, ctx, "EV-01")
         self.assertIn("No tocar `AUT_GenerarNumero` hasta el pase de URG-01",
                       next(i for i in plan.issues if "HU-01" in i.requisitos).texto)
+        for i in plan.issues:
+            fixture.verifica(self.p, "EV-01", i.id)
+        verificaciones = {f.name: f.read_bytes() for f in (self.p / "construccion/EV-01/verificacion").glob("*.json")}
+        code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "URG-01", "produccion", "--ref", "PASE-FICTICIO")
+        self.assertEqual(code, 0, out)
+        m, ctx = self.carga()
+        self.assertEqual(ctx.congelados("EV-01"), [])
+        cerrado, _, _ = iss.genera(m, ctx, "EV-01")
+        self.assertEqual({i.id: i.version for i in cerrado.issues}, {i.id: i.version for i in plan.issues})
+        self.assertTrue(all(hecha for hecha, _ in iss.estados(cerrado, self.p).values()))
+        self.assertNotIn("No tocar `AUT_GenerarNumero` hasta el pase de URG-01", "\n".join(i.texto for i in cerrado.issues))
+        self.assertEqual(verificaciones, {f.name: f.read_bytes() for f in (self.p / "construccion/EV-01/verificacion").glob("*.json")})
 
     def test_reaplicar_urgencia_no_pierde_avance_ajeno_ni_cierra_sin_confirmacion(self):
         _, plan = self.preparada()
@@ -224,9 +236,113 @@ class Secuenciacion(unittest.TestCase):
             self.assertEqual(self.archivos(), antes)
         for i in nuevo.issues:
             fixture.verifica(self.p, "EV-01", i.id)
+        verificaciones = {f.name: f.read_bytes() for f in (self.p / "construccion/EV-01/verificacion").glob("*.json")}
+        esperados = {f.name: f.read_bytes() for f in (self.p / "construccion/EV-01").glob("*-esperado.json")}
+        avances = iss.avances_de(self.p, "EV-01")
         code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-01", "construida", "--reaplicada", "URG-01")
         self.assertEqual(code, 0, out)
-        self.assertEqual(self.carga()[1].por_id["EV-01"].estado, un.CONSTRUIDA)
+        m, ctx = self.carga()
+        self.assertEqual(ctx.por_id["EV-01"].estado, un.CONSTRUIDA)
+        cerrado, _, _ = iss.genera(m, ctx, "EV-01")
+        self.assertEqual({i.id: i.version for i in cerrado.issues}, {i.id: i.version for i in nuevo.issues})
+        self.assertTrue(all(hecha for hecha, _ in iss.estados(cerrado, self.p).values()))
+        self.assertEqual(cerrado.avances, avances)
+        self.assertNotIn("Reaplicar URG-01", "\n".join(i.texto for i in cerrado.issues))
+        self.assertEqual(verificaciones, {f.name: f.read_bytes() for f in (self.p / "construccion/EV-01/verificacion").glob("*.json")})
+        self.assertEqual(esperados, {f.name: f.read_bytes() for f in (self.p / "construccion/EV-01").glob("*-esperado.json")})
+
+    def test_prueba_urgente_reaplicada_cambia_encargo_sin_aviso_pendiente(self):
+        self.preparada()
+        self.urgencia()
+        tecnico = self.p / "analisis/tecnico.md"
+        texto = tecnico.read_text(encoding="utf-8")
+        m, _ = self.carga()
+        _, fin = m.docs["T"].seccion("14")
+        lineas = texto.splitlines()
+        lineas.insert(fin, "| URG-01 | Prueba urgente original | Caso de prueba de `AUT_GenerarNumero` |")
+        mo.escribe(tecnico, "\n".join(lineas) + "\n")
+        m, ctx = self.carga()
+        plan, _, _ = iss.genera(m, ctx, "EV-01")
+        for i in plan.issues:
+            fixture.verifica(self.p, "EV-01", i.id)
+        code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-01", "construida", "--reaplicada", "URG-01")
+        self.assertEqual(code, 0, out)
+        fixture.editar(tecnico, "Prueba urgente original", "Prueba urgente corregida")
+        m, ctx = self.carga()
+        cambiado = iss.calcula(m, ctx, "EV-01")
+        afectada = next(i for i in cambiado.issues if "HU-01" in i.requisitos)
+        self.assertNotEqual(afectada.version, next(i for i in plan.issues if i.id == afectada.id).version)
+        self.assertFalse(iss.estados(cambiado, self.p)[afectada.id][0])
+        self.assertEqual(ctx.reaplicar("EV-01"), [])
+
+    def test_urgencia_desconocida_o_descartada_no_inventa_encargo(self):
+        for lugar in ("Pendiente", "En otro sitio", "Entorno de corrección"):
+            with self.subTest(lugar=lugar):
+                self.p = self.root / lugar
+                _, original = self.preparada()
+                self.urgencia(donde=lugar)
+                if lugar == "Entorno de corrección":
+                    code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "URG-01", "descartada")
+                    self.assertEqual(code, 0, out)
+                m, ctx = self.carga()
+                plan = iss.calcula(m, ctx, "EV-01")
+                self.assertEqual(ctx.reaplicar("EV-01"), [])
+                self.assertEqual(ctx.congelados("EV-01"), [])
+                self.assertEqual({i.id: i.version for i in plan.issues}, {i.id: i.version for i in original.issues})
+
+    def test_cambio_real_tras_reaplicacion_invalida_verificacion(self):
+        for cambio in ("requisito", "objeto técnico", "objetos urgencia", "nueva urgencia"):
+            with self.subTest(cambio=cambio):
+                self.p = self.root / cambio
+                self.preparada()
+                self.urgencia()
+                m, ctx = self.carga()
+                plan, _, _ = iss.genera(m, ctx, "EV-01")
+                afectada = next(i for i in plan.issues if "HU-01" in i.requisitos)
+                for i in plan.issues:
+                    fixture.verifica(self.p, "EV-01", i.id)
+                code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-01", "construida", "--reaplicada", "URG-01")
+                self.assertEqual(code, 0, out)
+                if cambio == "requisito":
+                    self.cambia_titulo("HU-01")
+                elif cambio == "objeto técnico":
+                    fixture.editar(self.p / "analisis/tecnico.md", "`AUT_GenerarNumero` | Regla de expresión |",
+                                   "`AUT_GenerarNumero` | Constante |")
+                elif cambio == "objetos urgencia":
+                    fixture.editar(self.p / "impacto/URG-01.md", "`AUT_GenerarNumero`", "`AUT_CalcularFechaLimite`")
+                else:
+                    self.urgencia(uid="URG-02", informe="URG-02")
+                m, ctx = self.carga()
+                nuevo = iss.calcula(m, ctx, "EV-01")
+                self.assertNotEqual(next(i for i in nuevo.issues if i.id == afectada.id).version, afectada.version)
+                self.assertFalse(iss.estados(nuevo, self.p)[afectada.id][0])
+
+    def test_prueba_urgente_desarrollo_tras_pase_invalida_verificacion(self):
+        self.preparada()
+        self.urgencia(donde="Desarrollo")
+        tecnico = self.p / "analisis/tecnico.md"
+        m, _ = self.carga()
+        _, fin = m.docs["T"].seccion("14")
+        lineas = tecnico.read_text(encoding="utf-8").splitlines()
+        lineas.insert(fin, "| URG-01 | Prueba urgente original | Caso de prueba de `AUT_GenerarNumero` |")
+        mo.escribe(tecnico, "\n".join(lineas) + "\n")
+        m, ctx = self.carga()
+        plan, _, _ = iss.genera(m, ctx, "EV-01")
+        afectada = next(i for i in plan.issues if "HU-01" in i.requisitos)
+        for i in plan.issues:
+            fixture.verifica(self.p, "EV-01", i.id)
+        code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "URG-01", "produccion", "--ref", "PASE-FICTICIO")
+        self.assertEqual(code, 0, out)
+        m, ctx = self.carga()
+        vigente, _, _ = iss.genera(m, ctx, "EV-01")
+        afectada = next(i for i in vigente.issues if "HU-01" in i.requisitos)
+        for i in vigente.issues:
+            fixture.verifica(self.p, "EV-01", i.id)
+        fixture.editar(tecnico, "Prueba urgente original", "Prueba urgente corregida")
+        m, ctx = self.carga()
+        nuevo = iss.calcula(m, ctx, "EV-01")
+        self.assertNotEqual(next(i for i in nuevo.issues if i.id == afectada.id).version, afectada.version)
+        self.assertFalse(iss.estados(nuevo, self.p)[afectada.id][0])
 
     def test_propuesta_abierta_deja_construir_encargo_intacto(self):
         self.preparada()

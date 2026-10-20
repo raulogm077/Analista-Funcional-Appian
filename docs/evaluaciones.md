@@ -4,6 +4,33 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Campaña Codex: conservar la verificación al cerrar una urgencia (20 de octubre de 2026)
+
+Tras verificar tres issues en el laboratorio, marcar la unidad Construida con `--reaplicada` y
+regenerarlas, dos volvían a quedar pendientes. En `a175330`, la comparación de los componentes de
+la huella demuestra que sólo cambiaba el aviso administrativo de reaplicación. Requisitos, técnico,
+pruebas y objetos esperados eran iguales.
+
+La corrección separa el aviso visible de las correcciones urgentes que forman parte del encargo.
+El aviso desaparece al cumplirlo; su desaparición no caduca las verificaciones. En la reproducción
+externa del caso real, PRE y POST conservan las tres huellas PRE auténticas y las tres issues hechas,
+sin editar ningún resultado guardado.
+
+Un vecino detecta además una limitación anterior: tras un pase ficticio de una urgencia corregida
+en desarrollo, cambiar sólo su prueba de §14 no invalidaba la verificación vigente. Se reproduce
+aislando primero una verificación posterior al pase; la primera tentativa, confundida por la caducidad
+del propio pase, no sirve como evidencia de ese comportamiento. La prueba no vacía se incorpora
+ahora a la huella de ese caso. Las issues antiguas de Desarrollo con prueba necesitarán verificarse
+una vez con el nuevo formato; no se migran ni se reescriben sus resultados. Los casos de corrección
+y los que no tienen prueba conservan el formato anterior.
+
+Las 26 pruebas de secuenciación pasan directamente y con `PLUGIN_A_PROBAR`: estabilidad al cerrar,
+caducidad ante cambios reales y bloqueos de reaplicación y congelación. La suite completa del analista
+termina con 401 controles correctos, cero fallos y exit 0, con las dos huellas de código y prueba
+intactas durante la corrida. Básica: siete skills, cero errores y cero avisos. La repetición en el
+proyecto vivo queda pendiente. Evidencias en `e2e-20261020/iteracion-01-construccion/cierre-local/error-post-reaplicacion/`,
+dentro de la campaña externa.
+
 ## Campaña Codex: técnico completo sin datos persistentes (20 de octubre de 2026)
 
 La continuación sobre `15b191d` reproduce una omisión del comprobador: un técnico declarado

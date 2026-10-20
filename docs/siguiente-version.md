@@ -26,8 +26,13 @@ la QA de usuario sigue pendiente. La urgencia compartida ha reproducido un bloqu
 el parche pasa los casos focales y la suite completa (401 controles, exit 0). Su repetición real sobre
 `15b191d` reaplica el cambio y otro contexto completa el reservado D7 con doce casos únicos correctos.
 La revisión detecta además que un técnico declarado completo sin DT ni datos omitía sus comprobaciones:
-corrección focal y vecinos correctos, suite completa limpia con 401 controles y exit 0. Quedan la corrección del perfil del montaje
-sin inventar grupos y las transiciones locales de cierre; QA de usuario y producción no están acreditadas.
+corrección focal y vecinos correctos, suite completa limpia con 401 controles y exit 0. El perfil del montaje
+queda documentado sin inventar grupos y el cierre local con reaplicación pasa. La regeneración posterior
+descubre otra incoherencia: la retirada del aviso administrativo caduca dos verificaciones sin cambiar el
+encargo. La candidata conserva las huellas y resultados auténticos; también corrige la sensibilidad a
+pruebas de urgencias en Desarrollo. Pasan 26 pruebas de secuenciación directas/externas y la suite
+completa con 401 controles y exit 0. Repetición viva pendiente; QA de usuario y producción no están
+acreditadas.
 Después siguen el flujo documental, QA automatizada por roles, los ocho agentes y la medida 3+3.
 
 - La revisión externa se contrastó contra código y reproducciones. Quedan corregidos la localización del plugin,

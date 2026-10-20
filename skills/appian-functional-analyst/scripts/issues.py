@@ -670,17 +670,27 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
     construido = [f"- **{p}** ({con_comillas(objs)}): {limpio(campos.get(mo.normaliza(p), '')) or 'falta en la DT'}"
                   for p, objs in ctx.puntos_construido(uid).items() if suyos & set(objs)]
     prueba = {g["id"]: g["prueba"] for g in r["pruebas"]["urgentes"]}
-    urgentes = [f"- Reaplicar {t['urgente']} en {con_comillas(t['objetos'])}: la corrección se hizo en el entorno de "
+    def textos_urgentes(reaplicar, congelados, con_prueba_desarrollo=False):
+        return [f"- Reaplicar {t['urgente']} en {con_comillas(t['objetos'])}: la corrección se hizo en el entorno de "
                 "corrección; cuando su prueba pase en desarrollo"
                 + (f" ({prueba[t['urgente']]})" if prueba.get(t["urgente"]) else "")
                 + f", se confirma al marcar la unidad con `--reaplicada {t['urgente']}`"
-                for t in r["reaplicar"] if suyos & set(t["objetos"])]
-    urgentes += [f"- No tocar {con_comillas(t['objetos'])} hasta el pase de {t['urgente']} (se corrige en desarrollo)"
-                 for t in r["congelados"] if suyos & set(t["objetos"])]
+                for t in reaplicar if suyos & set(t["objetos"])] + [
+                    f"- No tocar {con_comillas(t['objetos'])} hasta el pase de {t['urgente']} (se corrige en desarrollo)"
+                    + (f" ({prueba[t['urgente']]})" if con_prueba_desarrollo and prueba.get(t["urgente"]) else "")
+                    for t in congelados if suyos & set(t["objetos"])]
+    urgentes = textos_urgentes(r["reaplicar"], r["congelados"])
+    # La obligación visible termina al registrarla; el encargo y su prueba conservan la misma huella.
+    del_encargo = {"correccion": [], "desarrollo": []}
+    for g in r["pruebas"]["urgentes"]:
+        lugar = un.donde_se_corrige(ctx.ficha_urg(g["id"]))
+        if lugar in del_encargo:
+            del_encargo[lugar].append({"urgente": g["id"], "objetos": g["objetos"]})
+    urgentes_de_encargo = textos_urgentes(del_encargo["correccion"], del_encargo["desarrollo"], con_prueba_desarrollo=True)
     otras = [f"- {c['unidad']} ({c['estado']}): {con_comillas(c['objetos'])} · {c['decision'] or 'sin decisión escrita'}"
              for c in r["colisiones"] if not c["unidad"].startswith("URG") and suyos & set(c["objetos"])]
     objetos_esperados = ctx.esperado(uid, issue.filas)
-    huella = json.dumps([issue.requisitos, pide, esc, issue.feature, filas, tec, construido, urgentes, objetos_esperados,
+    huella = json.dumps([issue.requisitos, pide, esc, issue.feature, filas, tec, construido, urgentes_de_encargo, objetos_esperados,
                          casos_exigidos(m, issue, d)],
                         ensure_ascii=False, sort_keys=True)
     issue.version = hashlib.sha256(huella.encode("utf-8")).hexdigest()[:12]
