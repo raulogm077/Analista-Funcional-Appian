@@ -474,17 +474,26 @@ def slug(s):
 
 
 def fecha_transcripcion(body):
-    """«Fecha:» del bloque inicial de metadatos, no de una intervención o un documento citado."""
+    """Fecha del bloque inicial: un título opcional y campos contiguos.
+
+    Sin marcado, un título o un campo no se distingue semánticamente de prosa
+    con la misma estructura. Las citas marcadas, el cuerpo y nuestro convertido no se recorren.
+    """
     cabecera, yaml, cerrado, titulo = [], False, False, False
+    titulo_md = False
     for linea in body[:2000].splitlines():
         if not cabecera and not linea.strip():
+            if yaml or (titulo and not titulo_md):
+                break
             continue
-        if not cabecera and not yaml and linea.startswith("# "):
-            continue
-        if not cabecera and not yaml and not titulo and re.fullmatch(
-                r"(?:Transcripci[oó]n|Reuni[oó]n|Sesi[oó]n)(?:[ \t]+[^:.!?\n]+)?", linea, re.I):
-            titulo = True
-            continue
+        # Hasta tres espacios son sangría Markdown de una cita/título/lista;
+        # cuatro espacios o un tabulador abren código, no metadatos.
+        if re.match(r"^(?: {4}| {0,3}\t)", linea):
+            break
+        inicio = linea.lstrip(" ")
+        # La fecha editorial del envoltorio no es la fecha de su contenido.
+        if not cabecera and not titulo and re.match(r"^# FU-\d+ · ", inicio):
+            return None
         if linea == "---":
             if yaml:
                 cerrado = True
@@ -493,11 +502,28 @@ def fecha_transcripcion(body):
                 yaml = True
                 continue
             break
-        campo = re.fullmatch(r"([^#\[\]:\n]{1,80}):[ \t]*(.*)", linea)
-        if not campo or (not campo.group(2).strip() and campo.group(1).casefold() not in
-                         ("tema", "tipo de fuente", "fecha", "origen", "duración", "participantes")):
-            break
-        cabecera.append(linea)
+        # Sólo se normaliza el marcado de la etiqueta; el valor queda intacto.
+        texto = re.sub(r"^[-*+][ \t]+", "", inicio)
+        etiqueta, separador, valor = texto.partition(":")
+        etiqueta = etiqueta.strip()
+        for marca in ("**", "__"):
+            if etiqueta.startswith(marca):
+                if etiqueta.endswith(marca) and len(etiqueta) > 2 * len(marca):
+                    etiqueta = etiqueta[len(marca):-len(marca)]
+                elif valor.startswith(marca):
+                    etiqueta, valor = etiqueta[len(marca):], valor[len(marca):]
+                break
+        etiqueta = etiqueta.strip()
+        if separador and re.fullmatch(r"[^#\[\]:>*`~\n]{1,80}", etiqueta):
+            cabecera.append(f"{'Fecha' if etiqueta.casefold() == 'fecha' else etiqueta}:{valor}")
+            continue
+        if not cabecera and not yaml and not titulo and not re.match(r"^(?:[#>\[`~|]|[-*+]\s)", inicio):
+            titulo = True
+            continue
+        if not cabecera and not yaml and not titulo and inicio.startswith("# "):
+            titulo, titulo_md = True, True
+            continue
+        break
     if yaml and not cerrado:
         return None
     f = re.search(r"^Fecha:[ \t]*(?:(\d{4})-(\d{2})-(\d{2})|(\d{1,2})/(\d{1,2})/(\d{4}))"

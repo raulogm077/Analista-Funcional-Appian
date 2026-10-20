@@ -118,7 +118,6 @@ class FechasFuentes(unittest.TestCase):
         casos = (
             "Tipo de fuente: transcripción parcial\n\n" + self.turnos + "Fecha: 2026-07-24\n",
             "Tipo de fuente: transcripción parcial\n\n## Documento citado\nFecha: 2026-07-24\n" + self.turnos,
-            "Tipo de fuente: transcripción parcial\nTexto citado de otra reunión:\nFecha: 2026-07-24\n" + self.turnos,
             "Tipo de fuente: transcripción parcial\nFecha: 2026-02-31\n\n" + self.turnos,
             "Tipo de fuente: transcripción parcial\nFecha: 31/2/2026\n\n" + self.turnos,
             "Tipo de fuente: transcripción parcial\nFecha: 24-07-2026\n\n" + self.turnos,
@@ -213,19 +212,77 @@ class FechasFuentes(unittest.TestCase):
     def test_cabecera_acotada_no_promueve_narrativa_ni_hora_invalida(self):
         invalidas = ("Fecha: 2026-02-30", "Fecha: 2026-10-01 24:00", "Fecha: 2026-10-01 10:60",
                      "Fecha: 2026-10-01 10:00:00", "Fecha: 2026-10-01 10:00Z",
-                     "Fecha: 2026-10-01 fue acordada", "En la reunión se acordó lo siguiente\nFecha: 2026-10-01",
-                     "Texto citado de otra reunión:\nFecha: 2026-10-01", "> Fecha: 2026-10-01",
+                     "Fecha: 2026-10-01 fue acordada", "> Fecha: 2026-10-01",
                      "[00:00:01] Persona:\nFecha: 2026-10-01", "---\nFecha: 2026-10-01",
                      "---\nTema: reunión\n---\nFecha: 2026-10-01",
                      "Reunión inicial\nSesión posterior\nFecha: 2026-10-01",
-                     "Una frase libre\nFecha: 2026-10-01")
+                     "Una frase libre\n\nFecha: 2026-10-01", "```\nFecha: 2026-10-01\n```",
+                     "~~~texto\nFecha: 2026-10-01\n~~~", "## Sección del cuerpo\nFecha: 2026-10-01",
+                     "Tipo de fuente: transcripción\n\nFecha: 2026-10-01")
         for cabecera in invalidas:
             with self.subTest(cabecera=cabecera):
                 self.assertIsNone(lf.fecha_transcripcion(cabecera + "\n\n" + self.turnos))
+        for sangria in ("", " ", "  ", "   ", "    ", "\t", " \t", "  \t", "   \t"):
+            for marca in ("> cita", "```texto", "[00:00:00] Persona:", "## Cuerpo"):
+                with self.subTest(sangria=sangria, marca=marca):
+                    self.assertIsNone(lf.fecha_transcripcion(sangria + marca + "\nFecha: 04/08/2026"))
+        for sangria in ("    ", "\t", " \t", "  \t", "   \t"):
+            with self.subTest(codigo=sangria):
+                self.assertIsNone(lf.fecha_transcripcion(sangria + "Fecha: 04/08/2026"))
         for titulo in ("Transcripción", "Sesión de coordinación", "# Reunión ficticia"):
             with self.subTest(titulo=titulo):
                 self.assertEqual(lf.fecha_transcripcion(titulo + "\nFecha: 1/10/2026 00:00\n\n" + self.turnos),
                                  "2026-10-01")
+
+    def test_cabecera_estructural_sin_vocabulario_de_titulos_ni_claves(self):
+        for cabecera in ("- Fecha: 04/08/2026", "* Fecha: 04/08/2026", "**Fecha:** 04/08/2026",
+                         "**Fecha**: 04/08/2026", "+ __Fecha:__ 04/08/2026", "Comité de seguimiento\nFecha: 04/08/2026",
+                         "  - **Fecha:** 04/08/2026", "   # Título\nFecha: 04/08/2026",
+                         "Asistentes:\nFecha: 04/08/2026", "Clave desconocida:\nFecha: 04/08/2026",
+                         "---\nClave desconocida:\nFecha: 04/08/2026\n---"):
+            with self.subTest(cabecera=cabecera):
+                self.assertEqual(lf.fecha_transcripcion(cabecera + "\n\n" + self.turnos), "2026-08-04")
+
+        # Cambio de contrato deliberado: sin marcado, estas líneas son un título
+        # o campos iniciales. No se promete distinguir su significado narrativo.
+        for cabecera in ("Una frase libre\nFecha: 04/08/2026",
+                         "En la reunión se acordó lo siguiente\nFecha: 04/08/2026",
+                         "Texto citado de otra reunión:\nFecha: 04/08/2026",
+                         "Tipo de fuente: transcripción parcial\nTexto citado de otra reunión:\nFecha: 04/08/2026"):
+            with self.subTest(ambigua=cabecera):
+                self.assertEqual(lf.fecha_transcripcion(cabecera + "\n\n" + self.turnos), "2026-08-04")
+
+        self.assertIsNone(lf.fecha_transcripcion("x" * 2000 + "\nFecha: 04/08/2026"))
+        for cabecera in ("Fecha: **04/08/2026**",
+                         "# FU-01 · sesion.txt\n\n- Tipo: Transcripción\n- Fecha: 2026-10-01\n\n---\n\nFecha: 04/08/2026"):
+            with self.subTest(limite=cabecera[:80]):
+                self.assertIsNone(lf.fecha_transcripcion(cabecera))
+
+    def test_cinco_cabeceras_en_cli_alta_y_reparacion_preservan_ids_cuerpo_y_duplicada(self):
+        cabeceras = ("- Fecha: 04/08/2026", "* Fecha: 04/08/2026", "**Fecha:** 04/08/2026",
+                     "Comité de seguimiento\nFecha: 04/08/2026", "Asistentes:\nFecha: 04/08/2026")
+        for n, cabecera in enumerate(cabeceras):
+            with self.subTest(cabecera=cabecera):
+                self.fuentes = self.raiz / f"cli-cabecera-{n}"
+                f = self.original(f"sesion-{n}-2026-10-01.txt", cabecera + "\n\n" + self.turnos)
+                otro = self.original(f"resumen-{n}.txt", "Resumen ficticio independiente.\n")
+                original = f.read_bytes()
+                filas = self.ingerir(f, otro)
+                alta = filas[0].copy()
+                filas = self.ingerir("--duplicada", "FU-01=FU-02", "--motivo", "Resumen revisado")
+                filas[0]["fecha"] = "2026-10-20"
+                (self.fuentes / "indice.json").write_text(json.dumps({"fuentes": filas}), encoding="utf-8")
+                derivado = self.fuentes / filas[0]["salida"]
+                antes = derivado.read_bytes().replace(f"- Fecha: {alta['fecha']}".encode(), b"- Fecha: 2026-10-20", 1)
+                derivado.write_bytes(antes)
+                nuevas = self.ingerir(f)
+                self.assertEqual(f.read_bytes(), original)
+                self.assertEqual(nuevas[0]["duplicada_de"], "FU-02")
+                with self.subTest(operacion="alta"):
+                    self.assertEqual((alta["id"], alta["tipo"], alta["fecha"]), ("FU-01", "Transcripción", "2026-08-04"))
+                with self.subTest(operacion="reparacion"):
+                    self.assertEqual(nuevas, [{**filas[0], "fecha": "2026-08-04"}, filas[1]])
+                    self.assertEqual(derivado.read_bytes(), antes.replace(b"- Fecha: 2026-10-20", b"- Fecha: 2026-08-04", 1))
 
     def test_regenerar_misma_fuente_conserva_seleccion_sin_heredarla_al_contenido_nuevo(self):
         for ausente in (True, False):
