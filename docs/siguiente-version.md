@@ -31,9 +31,17 @@ queda documentado sin inventar grupos y el cierre local con reaplicación pasa. 
 descubre otra incoherencia: la retirada del aviso administrativo caduca dos verificaciones sin cambiar el
 encargo. La candidata conserva las huellas y resultados auténticos; también corrige la sensibilidad a
 pruebas de urgencias en Desarrollo. Pasan 26 pruebas de secuenciación directas/externas y la suite
-completa con 401 controles y exit 0. Repetición viva pendiente; QA de usuario y producción no están
-acreditadas.
-Después siguen el flujo documental, QA automatizada por roles, los ocho agentes y la medida 3+3.
+completa con 401 controles y exit 0. La repetición viva sobre `2c4bde3` conserva tres issues hechas
+y verificaciones intactas, sin repetir MCP. QA de usuario y producción no están acreditadas.
+
+El flujo documental estándar ya arranca mediante `iniciar`: su primera entrega conserva contradicción,
+duplicado y trazabilidad, con seis criterios correctos. Descubre un fallo de fecha de las transcripciones:
+la candidata corrige nuevas ingestas y el mismo catálogo, conservando IDs y cuerpo. Módulo de veinte
+pruebas y controles externos correctos; suite completa limpia con 401 controles y exit 0,
+sin cambios de código o prueba durante la corrida.
+Continúa la decisión sintética hasta técnico, BPMN, prototipo y Word/PDF. Después siguen QA automatizada
+por roles, los ocho agentes y la medida 3+3. Los resultados de la pasada anterior siguientes se conservan
+como históricos; no sustituyen estas repeticiones nuevas.
 
 - La revisión externa se contrastó contra código y reproducciones. Quedan corregidos la localización del plugin,
   el aviso de localizador inválido, la tabla técnica, el destino pendiente de urgencias y el consumo de derivados

@@ -473,10 +473,47 @@ def slug(s):
     return s[:50] or "fuente"
 
 
+def fecha_transcripcion(body):
+    """«Fecha:» del bloque inicial de metadatos, no de una intervención o un documento citado."""
+    cabecera = []
+    for linea in body[:2000].splitlines():
+        if not cabecera and (not linea.strip() or linea.startswith("# ")):
+            continue
+        if not re.match(r"^[^#\[\]:\n]{1,80}:[ \t]*\S.*$", linea):
+            break
+        cabecera.append(linea)
+    f = re.search(r"^Fecha:[ \t]*(?:(\d{4})-(\d{2})-(\d{2})|(\d{1,2})/(\d{1,2})/(\d{4}))[ \t]*$",
+                  "\n".join(cabecera), re.M)
+    if f:
+        try:
+            return (datetime.date(*map(int, f.group(1, 2, 3))) if f.group(1) else
+                    datetime.date(*map(int, f.group(6, 5, 4)))).isoformat()
+        except ValueError:
+            pass
+    return None
+
+
+def actualiza_fecha_transcripcion(entry, original, out):
+    """Repara una fuente ya catalogada sin reconvertir su texto ni perder su selección de duplicadas."""
+    if entry["tipo"] != "Transcripción" or original.suffix.lower() not in (".txt", ".md"):
+        return
+    fecha = fecha_transcripcion(original.read_text(encoding="utf-8-sig", errors="replace"))
+    if not fecha:
+        return
+    salida = out / entry["salida"]
+    raw = salida.read_bytes()
+    partes = re.split(rb"(\r?\n---\r?\n)", raw, maxsplit=1)
+    if len(partes) == 3:
+        cabecera = re.sub(rb"(?m)^- Fecha:[^\r\n]*", b"- Fecha: " + fecha.encode("ascii"), partes[0], count=1)
+        if cabecera != partes[0]:
+            salida.write_bytes(cabecera + partes[1] + partes[2])
+    entry["fecha"] = fecha
+
+
 def convert(path, out_dir, fid):
     ext = path.suffix.lower()
     date = datetime.datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d")
-    fecha_cabecera = None   # «Fecha:» de la cabecera de un chat o una aprobación: manda sobre la del nombre
+    fecha_cabecera = None   # la cabecera explícita manda sobre el nombre y la fecha del fichero
     try:
         if ext in (".vtt", ".srt"):
             body, detail = read_subtitles(path); kind = "Transcripción"
@@ -501,6 +538,8 @@ def convert(path, out_dir, fid):
                 kind = "Transcripción"
                 dur = re.search(r"^Duración[^:\n]*:\s*(\d{1,2}:\d{2}(?::\d{2})?)", body[:2000], re.I | re.M)
                 detail = f"duración {dur.group(1) if dur else (stamps[-1] if stamps else '¿?')}, sin hablantes identificados"
+            if kind == "Transcripción":
+                fecha_cabecera = fecha_transcripcion(body)
         elif ext == ".docx":
             body, detail = read_docx(path); kind = "Documento Word"
         elif ext == ".pptx":
@@ -727,6 +766,7 @@ def main():
             print(f"= {old['id']} {f.name} (mismo contenido que {old['fichero']})")
             continue
         if old and ((old["salida"] and textos.get(old["id"], "").strip()) or old["tipo"] == "Imagen"):
+            actualiza_fecha_transcripcion(old, f, out)
             print(f"= {old['id']} {f.name} (ya catalogada)")
             continue
         fid = old["id"] if old else f"FU-{len(state['fuentes']) + 1:02d}"  # reintento de una fuente no leída

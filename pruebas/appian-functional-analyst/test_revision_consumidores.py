@@ -1,8 +1,10 @@
 """Destinos URG sin elegir y textos de fuentes vigentes. Proyectos ficticios, sin red."""
 import contextlib
+import datetime
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -16,6 +18,7 @@ sys.path.insert(0, str(fixture.S))
 import comprobar as cp
 import modelo as mo
 import unidades as un
+import leer_fuentes as lf
 
 
 DESTINOS = (
@@ -34,6 +37,122 @@ DESTINOS = (
     ("Producción", ""),
     ("", ""),
 )
+
+
+class FechasFuentes(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix="fechas-fuentes-")
+        self.addCleanup(self.tmp.cleanup)
+        self.raiz = Path(self.tmp.name)
+        self.entrada = self.raiz / "entrada"
+        self.entrada.mkdir()
+        self.fuentes = self.raiz / "fuentes"
+        self.turnos = "".join(f"[00:0{i}:00] Persona {i % 2}:\nFrase ficticia {i}.\n" for i in range(6))
+
+    def original(self, nombre, texto):
+        f = self.entrada / nombre
+        f.write_text(texto, encoding="utf-8")
+        ts = datetime.datetime(2026, 10, 20, 12).timestamp()
+        os.utime(f, (ts, ts))
+        return f
+
+    def ingerir(self, *args):
+        code, out = fixture.corre(fixture.S / "leer_fuentes.py", *args, "-o", self.fuentes)
+        self.assertEqual(code, 0, out)
+        return json.loads((self.fuentes / "indice.json").read_text(encoding="utf-8"))["fuentes"]
+
+    def test_cabecera_transcripcion_valida_precede_nombre_y_mtime(self):
+        for i, (fecha, cuerpo) in enumerate((("2026-08-04", self.turnos),
+                                           ("24/7/2026", self.turnos),
+                                           ("2026-07-29", "[00:01:00]\nTexto ficticio.\n" * 5),
+                                           ("4/8/2026", "Sin marcas, transcripción parcial.\n"))):
+            with self.subTest(fecha=fecha):
+                f = self.original(f"sesion-{i}-2026-10-01.md", "# Sesión ficticia\n\n"
+                                  f"Tipo de fuente: transcripción parcial\nFecha: {fecha}\nOrigen: ficticio\n\n{cuerpo}")
+                body, kind, _, date = lf.convert(f, self.fuentes, "FU-01")
+                self.assertEqual(kind, "Transcripción")
+                self.assertEqual(date, "2026-07-24" if i == 1 else "2026-07-29" if i == 2 else "2026-08-04")
+                self.assertEqual(body, f.read_text(encoding="utf-8"))
+
+    def test_cabecera_sin_tipo_con_cinco_marcas(self):
+        for cuerpo in (self.turnos, "[00:01:00]\nTexto ficticio.\n" * 5):
+            with self.subTest(con_hablantes="Persona" in cuerpo):
+                f = self.original("sesion.txt", "Fecha: 2026-07-29\n\n" + cuerpo)
+                _, kind, _, date = lf.convert(f, self.fuentes, "FU-01")
+                self.assertEqual((kind, date), ("Transcripción", "2026-07-29"))
+
+    def test_fecha_interna_invalida_o_ausente_conserva_nombre_o_mtime(self):
+        casos = (
+            "Tipo de fuente: transcripción parcial\n\n" + self.turnos + "Fecha: 2026-07-24\n",
+            "Tipo de fuente: transcripción parcial\n\n## Documento citado\nFecha: 2026-07-24\n" + self.turnos,
+            "Tipo de fuente: transcripción parcial\nTexto citado de otra reunión:\nFecha: 2026-07-24\n" + self.turnos,
+            "Tipo de fuente: transcripción parcial\nFecha: 2026-02-31\n\n" + self.turnos,
+            "Tipo de fuente: transcripción parcial\nFecha: 31/2/2026\n\n" + self.turnos,
+            "Tipo de fuente: transcripción parcial\nFecha: 24-07-2026\n\n" + self.turnos,
+            self.turnos,
+        )
+        for i, texto in enumerate(casos):
+            for nombre, esperado in ((f"sesion-{i}.md", "2026-10-20"),
+                                      (f"sesion-{i}-20260729.md", "2026-07-29")):
+                with self.subTest(caso=i, nombre=nombre):
+                    f = self.original(nombre, texto)
+                    self.assertEqual(lf.convert(f, self.fuentes, "FU-01")[3], esperado)
+
+    def test_no_promueve_fecha_del_cuerpo_de_un_convertido(self):
+        texto = ("# FU-01 · sesion.txt\n\n- Tipo: Transcripción\n- Fecha: 2026-10-01\n\n---\n\n"
+                 "Tipo de fuente: transcripción parcial\nFecha: 2026-07-24\n\n" + self.turnos)
+        f = self.original("convertido.md", texto)
+        self.assertEqual(lf.convert(f, self.fuentes, "FU-01")[3], "2026-10-20")
+
+    def test_chat_aprobacion_y_texto_conservan_su_contrato(self):
+        for tipo, fecha, esperado in (("chat", "2026-07-24", "2026-07-24"),
+                                      ("aprobación", "4/8/2026", "2026-08-04"),
+                                      ("documento", "2026-07-24", "2026-10-01")):
+            with self.subTest(tipo=tipo):
+                f = self.original("fuente-2026-10-01.txt", f"Tipo de fuente: {tipo}\nDe: Responsable ficticio\n"
+                                  f"Fecha: {fecha}\n\nTexto ficticio.\n")
+                _, kind, _, date = lf.convert(f, self.fuentes, "FU-01")
+                self.assertEqual(date, esperado)
+                self.assertEqual(kind, {"chat": "Chat", "aprobación": "Aprobación", "documento": "Texto"}[tipo])
+
+    def test_mismo_catalogo_corrige_solo_fecha_y_preserva_duplicada_original_y_copia(self):
+        f = self.original("sesion.md", "# Sesión ficticia\n\nTipo de fuente: transcripción parcial\n"
+                          "Fecha: 24/7/2026\n\n" + self.turnos + "\n- Fecha: cita interna intacta\n")
+        otro = self.original("otra.md", "Otra fuente ficticia.\n")
+        filas = self.ingerir(f, otro)
+        filas = self.ingerir("--duplicada", "FU-01=FU-02", "--motivo", "Copia revisada ficticia")
+        indice = self.fuentes / "indice.json"
+        filas[0]["fecha"] = "2026-10-20"
+        indice.write_text(json.dumps({"fuentes": filas}, ensure_ascii=False), encoding="utf-8")
+        derivado = self.fuentes / filas[0]["salida"]
+        raw = derivado.read_bytes().replace(b"- Fecha: 2026-07-24", b"- Fecha: 2026-10-20", 1).replace(b"\n", b"\r\n")
+        derivado.write_bytes(raw)
+        original = f.read_bytes()
+        reparadas = self.ingerir(f)
+        esperado = {**filas[0], "fecha": "2026-07-24"}
+        self.assertEqual(reparadas, [esperado, filas[1]])
+        self.assertEqual(derivado.read_bytes(), raw.replace(b"- Fecha: 2026-10-20", b"- Fecha: 2026-07-24", 1))
+        self.assertEqual(f.read_bytes(), original)
+        snapshot = {p.name: p.read_bytes() for p in self.fuentes.iterdir() if p.is_file()}
+        tiempos = {p.name: p.stat().st_mtime_ns for p in self.fuentes.glob("FU-*.md")}
+        self.assertEqual(self.ingerir(f), reparadas)
+        self.assertEqual({p.name: p.read_bytes() for p in self.fuentes.iterdir() if p.is_file()}, snapshot)
+        self.assertEqual({p.name: p.stat().st_mtime_ns for p in self.fuentes.glob("FU-*.md")}, tiempos)
+        copia = self.entrada / "copia-renombrada.md"
+        shutil.copyfile(f, copia)
+        self.assertEqual(self.ingerir(copia), reparadas)
+        self.assertEqual({p.name: p.read_bytes() for p in self.fuentes.iterdir() if p.is_file()}, snapshot)
+        self.assertEqual(copia.read_bytes(), original)
+
+    def test_mismo_catalogo_sin_cabecera_no_recalcula_fallback(self):
+        f = self.original("sesion.txt", self.turnos + "Fecha: 2026-07-24\n")
+        filas = self.ingerir(f)
+        derivado = self.fuentes / filas[0]["salida"]
+        antes = derivado.read_bytes()
+        ts = datetime.datetime(2026, 11, 1, 12).timestamp()
+        os.utime(f, (ts, ts))
+        self.assertEqual(self.ingerir(f), filas)
+        self.assertEqual(derivado.read_bytes(), antes)
 
 
 class Consumidores(unittest.TestCase):

@@ -4,6 +4,35 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Campaña Codex: fecha explícita de las transcripciones (20 de octubre de 2026)
+
+El flujo documental estándar, iniciado con `proyecto.py iniciar`, conserva la contradicción entre
+reuniones, la incertidumbre de alcance y la copia exacta sin contarla como otra confirmación.
+Los seis criterios de la primera entrega pasan; todavía no acredita técnico, diagramas, prototipo
+ni Word. Las fuentes y salidas previas quedan congeladas fuera del repositorio.
+
+La lectura descubre un defecto independiente: tres Markdown reconocidos como transcripción tienen
+fecha explícita de reunión, pero el catálogo conserva la fecha del archivo. La cabecera sólo se
+interpretaba para chat y aprobación. Esa fecha se consume también al registrar decisiones y fuentes
+procesadas; no basta con corregirla a mano en las notas.
+
+La corrección interpreta una fecha válida en el bloque inicial de metadatos de una transcripción
+TXT/Markdown, antes que la del nombre o archivo. Conserva los contratos de las otras fuentes y no
+usa fechas citadas en el cuerpo. Al repetir sobre el mismo catálogo, modifica sólo la fecha del
+índice y la cabecera derivada: conserva IDs, texto, selección de duplicados y originales.
+
+Siete métodos nuevos pasan y están incluidos en los veinte del módulo completo, repetido con
+`PLUGIN_A_PROBAR`. Dieciséis controles externos pasan, incluidos el consumidor de decisiones y la
+recatalogación. El primer candidato confundía una frase terminada en dos puntos con metadatos;
+su fallo se conserva y la candidata final lo corrige. La reparación viva cambia las tres fechas
+sin alterar el análisis. Una variante independiente con BOM/CRLF, fecha bisiesta y cita interna pasa;
+se preparó después de revisar el candidato y no constituye una evaluación ciega anterior al diseño.
+
+La básica pasa con siete skills, cero errores y cero avisos. La suite completa del analista termina
+con 401 controles correctos, cero fallos y exit 0, con código y prueba intactos durante la corrida.
+No se afirma aceleración. Evidencias en
+`e2e-20261020/iteracion-02-documental/` y `validacion-ciclo-05/`, dentro de la campaña externa.
+
 ## Campaña Codex: conservar la verificación al cerrar una urgencia (20 de octubre de 2026)
 
 Tras verificar tres issues en el laboratorio, marcar la unidad Construida con `--reaplicada` y
@@ -28,7 +57,9 @@ Las 26 pruebas de secuenciación pasan directamente y con `PLUGIN_A_PROBAR`: est
 caducidad ante cambios reales y bloqueos de reaplicación y congelación. La suite completa del analista
 termina con 401 controles correctos, cero fallos y exit 0, con las dos huellas de código y prueba
 intactas durante la corrida. Básica: siete skills, cero errores y cero avisos. La repetición en el
-proyecto vivo queda pendiente. Evidencias en `e2e-20261020/iteracion-01-construccion/cierre-local/error-post-reaplicacion/`,
+proyecto vivo sobre `2c4bde3` recupera las tres issues hechas y sus huellas PRE, con los bytes de
+las verificaciones intactos, sin repetir MCP ni la transición. Evidencias en
+`e2e-20261020/iteracion-01-construccion/cierre-local/error-post-reaplicacion/`,
 dentro de la campaña externa.
 
 ## Campaña Codex: técnico completo sin datos persistentes (20 de octubre de 2026)
@@ -81,7 +112,7 @@ Proyectos, fuentes, errores y respuestas originales en
 - El reservado D7 se ejecuta en otra sesión desde los archivos: relee los objetos, recupera reservas,
   verifica y deja todas las issues hechas. Hay doce casos únicos correctos, reejecutados por dos
   issues; no son veinticuatro casos distintos. Los objetos se validan sin errores ni advertencias.
-  La QA de usuario y las transiciones locales de cierre siguen pendientes; no hay pase de producción.
+  El cierre técnico local posterior queda comprobado; la QA de usuario sigue pendiente y no hay pase de producción.
   El registro externo de respuestas falla al reutilizar nombres entre verificaciones: parte de la
   primera se sobrescribe. Los archivos supervivientes no acreditan el total de llamadas. Se conserva
   este fallo de instrumentación separado de las verificaciones finales y las lecturas disponibles.
