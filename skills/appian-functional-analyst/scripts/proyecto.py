@@ -175,16 +175,16 @@ def poner_al_dia(raiz):
     actual = orden_version(version)
     posterior = [v for v in set(en_proyecto.values())
                  if orden_version(v) and (actual is None or orden_version(v) > actual)]
-    if posterior:
-        print(f"= {raiz / GUIA} y los flujos son de la versión {max(posterior, key=orden_version)} del plugin, posterior "
-              f"a la de este equipo ({version or 'sin versión'}): no se tocan; actualiza el plugin")
-        return
     localizador = ".appian-plugin.json"
     ign = raiz / ".gitignore"
     texto_ign = ign.read_text(encoding="utf-8") if ign.is_file() else ""
     if localizador not in texto_ign.splitlines():
         escribe(ign, texto_ign.rstrip("\n") + "\n" + localizador + "\n")
     escribe(raiz / localizador, json.dumps({"ruta": str(SKILL.parents[1].resolve())}, ensure_ascii=False) + "\n")
+    if posterior:
+        print(f"= {raiz / GUIA} y los flujos son de la versión {max(posterior, key=orden_version)} del plugin, posterior "
+              f"a la de este equipo ({version or 'sin versión'}): no se tocan; actualiza el plugin")
+        return
     ajenos = [r for r in nuevos if (raiz / r).exists() and not en_proyecto[r]]
     cambiados = [r for r, texto in nuevos.items() if r not in ajenos and escribe(raiz / r, texto)]
     retirados = [f for f in sorted((raiz / COPIA_FLUJOS).glob("*.md"))   # un flujo que el plugin ya no tiene
@@ -537,17 +537,19 @@ def prepara_inicial(m, texto_p, texto_d, cat, fuentes):
         sys.exit("--inicial no prepara otra primera entrega: el proyecto ya registra un DF entregado")
     if not vf or (vf[0] != 0 and vf != (1, 0)) or (vf[0] == 0 and vf[1] < 1):
         sys.exit("--inicial prepara la primera 1.0 desde un borrador 0.x o una 1.0 aún sin registrar")
-    legado = vf in ((0, 1), (1, 0))
+    borradores = [int(v.split(".")[1]) for v in versiones if re.fullmatch(r"0\.[1-9]\d*", v)]
+    ultimo_borrador = max(borradores, default=1) if vf == (1, 0) else vf[1]
+    legado = vf == (0, 1) or (vf == (1, 0) and ultimo_borrador == 1)
     admitidas = ({"0.1", "1.0"} if legado else
-                 {v for v in versiones if re.fullmatch(r"0\.[1-9]\d*", v) and int(v.split(".")[1]) <= vf[1]})
+                 {v for v in versiones if re.fullmatch(r"0\.[1-9]\d*", v) and int(v.split(".")[1]) <= ultimo_borrador})
+    if vf == (1, 0):
+        admitidas.add("1.0")
     if (not filas or any(len(f) < 5 for f in filas) or len(set(versiones)) != len(versiones)
-            or not set(versiones) <= admitidas or (not legado and f"0.{vf[1]}" not in versiones)
+            or not set(versiones) <= admitidas or (not legado and vf != (1, 0) and f"0.{vf[1]}" not in versiones)
             or vt not in ((None, (0, 1), (1, 0)) if legado else (None, vf))
-            or snapshots - ({f"v0.{n}" for n in range(1, vf[1])} if not legado else set())):
+            or snapshots - ({f"v0.{n}" for n in range(1, ultimo_borrador)} if not legado else set())):
         sys.exit("--inicial no reinterpreta un historial ambiguo o no inicial: revisa las versiones del análisis, "
                  "las filas únicas de decisiones.md y las copias de borradores 0.x")
-    if (vf == (1, 0) and procesadas) or any(f[-1] == "1.0" for f in procesadas):
-        sys.exit("--inicial: la primera 1.0 ya tiene sus fuentes registradas; no se registra otra vez")
     primeras = {}
     for fila in filas:
         for fu in re.findall(r"FU-\d+", fila[3]):
@@ -560,6 +562,9 @@ def prepara_inicial(m, texto_p, texto_d, cat, fuentes):
         sys.exit("--inicial no reinterpreta fuentes procesadas con una primera versión ambigua o no inicial")
     for f in procesadas:
         primeras[f[0]] = f[-1]  # la fila existente conserva su primera versión, informe y descripción
+    if ((vf == (1, 0) and procesadas) or any(f[-1] == "1.0" for f in procesadas)) and not any(
+            fu not in primeras for fu in fuentes):
+        sys.exit("--inicial: la primera 1.0 ya tiene esas fuentes registradas; no se registra otra vez sin fuentes nuevas")
     fuentes = list(dict.fromkeys(fuentes + list(primeras)))
     fuera = [f for f in fuentes if f not in cat]
     if fuera:

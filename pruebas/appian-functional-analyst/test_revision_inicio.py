@@ -76,6 +76,22 @@ class RevisionInicio(unittest.TestCase):
         self.localizador({"ruta": str(self.base / "plugin retirado")})
         self.assertIn("Localizador:", self.estado())
 
+    def test_localizador_se_repara_con_flujos_posteriores_sin_sobrescribirlos(self):
+        guia = self.p / "AGENTS.md"
+        guia.write_text(re.sub(r"0\.\d+\.\d+(?:-[\w.]+)?", "99.0.0", guia.read_text(encoding="utf-8"), count=1),
+                        encoding="utf-8")
+        (self.p / ".appian-plugin.json").rename(self.p / "localizador-anterior.json")
+        ign = self.p / ".gitignore"
+        ign.write_text("# Exclusión del proyecto\nlocal/\n", encoding="utf-8")
+        antes = self.huellas()
+        self.assertIn("Localizador:", self.estado())
+        self.corre("iniciar", self.p)
+        self.assertNotIn("Localizador:", self.estado())
+        self.assertEqual(ign.read_text(encoding="utf-8"), "# Exclusión del proyecto\nlocal/\n.appian-plugin.json\n")
+        for rel, contenido in antes.items():
+            if rel != pathlib.Path(".gitignore"):
+                self.assertEqual((self.p / rel).read_bytes(), contenido, rel)
+
     def test_localizador_invalido_no_rompe_estado(self):
         for dato in ([], {}, {"ruta": None}, {"ruta": 1}, {"ruta": ""}, {"ruta": "\u0000"}):
             with self.subTest(dato=dato):
@@ -201,10 +217,83 @@ class RevisionInicio(unittest.TestCase):
         self.assertIn(fila, despues)
         self.assertIn("| FU-02 | 2026-10-20 | Acta | — | 1.0 |", despues)
         antes = self.huellas()
-        for fuentes in (("FU-01", "FU-02"), ("FU-03",)):
+        for fuentes in (("FU-01", "FU-02"), ("FU-01",)):
             r = self.corre("version", self.p, "--inicial", "--fuente", *fuentes, "--que", "Repetida", check=False)
             self.assertNotEqual(r.returncode, 0)
             self.assertEqual(antes, self.huellas())
+
+    def test_inicial_completa_fuente_omitida_antes_de_entregar(self):
+        self.fuente(2)
+        self.corre("version", self.p, "--inicial", "--fuente", "FU-01", "--que", "Primera entrega")
+        antes = self.huellas()
+        self.corre("version", self.p, "--inicial", "--fuente", "FU-02", "--que", "Fuente omitida")
+        despues = self.huellas()
+        self.assertIn(b"| FU-02 |", despues[pathlib.Path("proyecto.md")])
+        self.assertEqual(despues[pathlib.Path("analisis/decisiones.md")].count(b"| 1.0 |"), 1)
+        for rel, contenido in antes.items():
+            if rel not in (pathlib.Path("proyecto.md"), pathlib.Path("analisis/decisiones.md")):
+                self.assertEqual(despues[rel], contenido, rel)
+        self.assertFalse(list((self.p / "versiones").iterdir()))
+        r = self.corre("version", self.p, "--inicial", "--fuente", "FU-02", "--que", "Repetida", check=False)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertEqual(despues, self.huellas())
+
+    def test_inicial_fuentes_mixtas_conservan_orden_y_primera_version(self):
+        self.fuente(3)
+        for borrador in (False, True):
+            with self.subTest(borrador=borrador):
+                if borrador:
+                    self.p = self.base / "Con borrador"
+                    self.corre("iniciar", self.p, "--nombre", "Reserva de salas")
+                    self.fuente(3)
+                    self.corre("version", self.p, "--fuente", "FU-01", "--que", "Borrador")
+                self.corre("version", self.p, "--inicial", "--fuente", "FU-01", "FU-02", "--que", "Primera entrega")
+                antes = self.huellas()
+                self.corre("version", self.p, "--inicial", "--fuente", "FU-01", "FU-03", "--que", "Completar mixta")
+                pm = (self.p / "proyecto.md").read_text(encoding="utf-8")
+                for fu in ("FU-01", "FU-02", "FU-03"):
+                    self.assertEqual(pm.count(f"| {fu} |"), 1)
+                primera = next(l for l in antes[pathlib.Path("proyecto.md")].decode("utf-8").splitlines()
+                               if l.startswith("| FU-01 |"))
+                self.assertIn(primera, pm)
+                dec = (self.p / "analisis/decisiones.md").read_text(encoding="utf-8")
+                fila = next(l for l in dec.splitlines() if l.startswith("| 1.0 |"))
+                self.assertIn("| FU-01, FU-02, FU-03 |", fila)
+                self.assertEqual(dec.count("| 1.0 |"), 1)
+                for rel, contenido in antes.items():
+                    if rel.parts[0] == "versiones":
+                        self.assertEqual((self.p / rel).read_bytes(), contenido)
+
+    def test_inicial_completa_1_0_nacida_de_borradores_con_aprobaciones_y_copias(self):
+        self.fuente(4)
+        self.corre("version", self.p, "--fuente", "FU-01", "--que", "Primer ajuste")
+        self.corre("version", self.p, "--fuente", "FU-02", "--que", "Segundo ajuste")
+        self.corre("version", self.p, "--inicial", "--fuente", "FU-03", "--que", "Primera entrega")
+        dec = self.p / "analisis/decisiones.md"
+        dec.write_text(dec.read_text(encoding="utf-8").replace("| FU-03, FU-01, FU-02 | — |",
+                       "| FU-03, FU-01, FU-02 | Aceptada |"), encoding="utf-8")
+        antes = self.huellas()
+        self.corre("version", self.p, "--inicial", "--fuente", "FU-04", "--que", "Fuente omitida")
+        despues = self.huellas()
+        self.assertEqual(set(antes), set(despues))
+        for rel, contenido in antes.items():
+            if rel not in (pathlib.Path("proyecto.md"), pathlib.Path("analisis/decisiones.md")):
+                self.assertEqual(despues[rel], contenido, rel)
+        nuevo = dec.read_text(encoding="utf-8")
+        self.assertIn("| FU-03, FU-01, FU-02, FU-04 | Aceptada |", nuevo)
+        self.assertEqual(nuevo.count("| 1.0 |"), 1)
+        for fila in antes[pathlib.Path("proyecto.md")].decode("utf-8").splitlines():
+            self.assertIn(fila, (self.p / "proyecto.md").read_text(encoding="utf-8"))
+        for fila in antes[pathlib.Path("analisis/decisiones.md")].decode("utf-8").splitlines():
+            if fila.startswith("| 0."):
+                self.assertIn(fila, nuevo)
+        for entrega in ("DF entregado: 1.0", "Entregados: DF-ficticio-v1.0.docx"):
+            pm = self.p / "proyecto.md"
+            pm.write_bytes(despues[pathlib.Path("proyecto.md")] + ("\n" + entrega + "\n").encode("utf-8"))
+            previa = self.huellas()
+            r = self.corre("version", self.p, "--inicial", "--fuente", "FU-04", "--que", "Entregada", check=False)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertEqual(previa, self.huellas())
 
     def test_inicial_recupera_primera_version_explicita_de_fuente_solo_en_historial(self):
         self.fuente(2)

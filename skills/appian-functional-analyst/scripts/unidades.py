@@ -217,11 +217,25 @@ def filas_6(P):
 def donde_se_corrige(campos):
     """«desarrollo», «correccion» o "" (sin elegir o no se reconoce) según «Dónde se corrige» de una ficha URG."""
     lugar = mo.normaliza(mo.sin_comentarios((campos or {}).get("donde se corrige", ""))).strip(" *`")
+    lugar = re.sub(r"[*`]", "", lugar)
     sin_elegir = re.match(r"(?:pendiente|por decidir|sin decidir)\b", lugar) or re.search(
-        r"desarrollo\s*(?:[/·|]|\bo\b)\s*entorno|entorno de correccion\s*(?:[/·|]|\bo\b)\s*desarrollo", lugar)
+        r"desarrollo\s*(?:[/·|]|\bo\b|\(\s*o\b)\s*entorno|entorno de correccion\s*(?:[/·|]|\bo\b|\(\s*o\b)\s*desarrollo", lugar)
     if sin_elegir:
         return ""
-    return "correccion" if "correccion" in lugar else "desarrollo" if "desarrollo" in lugar else ""
+    # F5 también nombra los destinos con «en». La aclaración no puede dejar la elección pendiente.
+    elegido = re.match(r"^(?:en (?:el )?)?(desarrollo|entorno de correccion|correccion)\b", lugar)
+    if not elegido:
+        return ""
+    cola = lugar[elegido.end():].strip()
+    if cola and cola != ".":
+        if cola[0] not in "(,.;:—-":
+            return ""
+        cola = cola[1:].strip().rstrip(")").strip()
+        if (not cola or re.match(r"(?:no|o|pendiente|por decidir|sin decidir|sin elegir)\b", cola)
+                or re.search(r"\b(?:pendiente|por decidir|sin decidir|sin elegir|no elegido|no decidido|no se ha decidido)\b", cola)
+                or re.match(r"(?:en (?:el )?)?(?:desarrollo|entorno de correccion|correccion)\b", cola)):
+            return ""
+    return "desarrollo" if elegido[1] == "desarrollo" else "correccion"
 
 
 def campos_urgencia(texto):

@@ -34,6 +34,39 @@ DESTINOS = (
     ("Entorno de corrección", "correccion"),
     ("`Entorno de corrección`, reaplicar después en Desarrollo", "correccion"),
     ("Desarrollo <!-- plantilla: Entorno de corrección -->", "desarrollo"),
+    ("Desarrollo (después se reaplica en el entorno de corrección)", "desarrollo"),
+    ("Entorno de corrección (después se reaplica en desarrollo)", "correccion"),
+    ("Desarrollo, después se reaplica en el entorno de corrección", "desarrollo"),
+    ("Desarrollo.", "desarrollo"),
+    ("Desarrollo — se reaplica después", "desarrollo"),
+    ("Desarrollo - se reaplica después", "desarrollo"),
+    ("En desarrollo", "desarrollo"),
+    ("En el entorno de corrección", "correccion"),
+    ("Corrección", "correccion"),
+    ("Desarrollo; no se ha decidido", ""),
+    ("Desarrollo: no elegido", ""),
+    ("Desarrollo — o Entorno de corrección", ""),
+    ("Desarrollo - Entorno de corrección", ""),
+    ("En desarrollo o en el entorno de corrección", ""),
+    ("Corrección o Desarrollo", ""),
+    ("No Corrección", ""),
+    ("Desarrollo —", ""),
+    ("Desarrollo (servidor de ensayo)", "desarrollo"),
+    ("Desarrollo (aún no decidido)", ""),
+    ("Desarrollo: pendiente", ""),
+    ("Desarrollo — o Corrección", ""),
+    ("Desarrollo (el entorno de corrección se mantiene sin cambios)", "desarrollo"),
+    ("Desarrollo (el entorno de corrección no está disponible)", "desarrollo"),
+    ("Desarrollo (o Entorno de corrección)", ""),
+    ("Entorno de corrección (o Desarrollo)", ""),
+    ("**Desarrollo** (o Entorno de corrección)", ""),
+    ("Entorno de corrección o Desarrollo", ""),
+    ("Entorno de corrección · Desarrollo", ""),
+    ("No Desarrollo", ""),
+    ("No Entorno de corrección; Desarrollo", ""),
+    ("Pendiente (Desarrollo o Entorno de corrección)", ""),
+    ("Se decidirá entre Desarrollo y Entorno de corrección", ""),
+    ("Desarrollo sin elegir todavía", ""),
     ("Producción", ""),
     ("", ""),
 )
@@ -182,7 +215,10 @@ class Consumidores(unittest.TestCase):
         self.assertEqual(ruta.read_bytes(), antes)
 
     def test_cli_produccion_rechaza_indecision_con_colision_sin_escribir(self):
-        for n, valor in enumerate((DESTINOS[0][0], DESTINOS[3][0], DESTINOS[6][0])):
+        for n, valor in enumerate((DESTINOS[0][0], DESTINOS[3][0], DESTINOS[6][0],
+                                  "No Desarrollo", "Desarrollo (o Entorno de corrección)",
+                                  "Entorno de corrección (o Desarrollo)", "Desarrollo; no se ha decidido",
+                                  "Desarrollo — o Entorno de corrección", "En desarrollo o en el entorno de corrección")):
             with self.subTest(valor=valor):
                 p = fixture.con_unidades(self.raiz / str(n))
                 f = p / "impacto/URG-01.md"
@@ -205,6 +241,21 @@ class Consumidores(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn("En producción", fixture.fila_de(p, "URG-01"))
         self.assertIn("Pendiente: comprobar", f.read_text(encoding="utf-8"))
+
+    def test_cli_destinos_compatibles_con_aclaracion_conservan_ficha(self):
+        for n, valor in enumerate(("Desarrollo.", "Desarrollo — se reaplica después", "En desarrollo",
+                                  "En el entorno de corrección", "Corrección")):
+            with self.subTest(valor=valor):
+                p = fixture.con_unidades(self.raiz / str(n))
+                f = p / "impacto/URG-01.md"
+                f.write_text(f.read_text(encoding="utf-8").replace("| Dónde se corrige | Entorno de corrección |",
+                             f"| Dónde se corrige | {valor} |"), encoding="utf-8")
+                antes = f.read_bytes()
+                code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", p, "URG-01", "produccion",
+                                          "--ref", "PASE-FICTICIO")
+                self.assertEqual(code, 0, out)
+                self.assertIn("En producción", fixture.fila_de(p, "URG-01"))
+                self.assertEqual(f.read_bytes(), antes)
 
     def proyecto(self):
         p = self.raiz / "proyecto"
