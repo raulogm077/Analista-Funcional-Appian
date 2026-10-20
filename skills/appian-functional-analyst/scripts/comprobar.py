@@ -418,13 +418,8 @@ def datos_de_las_unidades(m, ctx, al):
 
 
 def estado_tecnico(m):
-    """(empezado, completo): empezado si tiene decisiones o modelo de datos; completo si dice «Estado: completo»."""
-    if "T" not in m.docs:
-        return False, False
-    empezado = bool(m.vigentes("DT")) or any(
-        "campo" in [mo.normaliza(c) for c in cab] for _, cab, _ in m.tablas("T", "3"))
-    est = re.search(r"Estado:\s*([^·\n]+)", "\n".join(m.docs["T"].lineas[:12]))
-    return empezado, bool(est) and mo.normaliza(est.group(1)).strip().startswith("completo")
+    """Compatibilidad: el estado del técnico se interpreta una sola vez en el modelo."""
+    return mo.estado_tecnico(m)
 
 
 def comprobar_tecnico(m, ctx):

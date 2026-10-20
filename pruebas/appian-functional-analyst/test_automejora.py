@@ -55,6 +55,75 @@ class Automejora(unittest.TestCase):
             fn(*args)
         return out.getvalue()
 
+    def test_tecnico_completo_sin_dt_ni_datos_activa_criterios_y_estado_cli(self):
+        self.copia()
+        f = self.p / "analisis/tecnico.md"
+        f.write_text("# Técnico ficticio\n\nVersión: 1.1 · Estado: completo para reglas puras\n\n"
+                     "## 2. Decisiones técnicas\nSin decisiones específicas.\n"
+                     "## 3. Modelo de datos\nNo hay datos persistentes.\n"
+                     "## 6. Lógica\nReglas puras para HU-01.\n"
+                     "## 13. Plan de construcción\n"
+                     "| Paso | Objeto | Tipo | Situación | Sustituye a | Para |\n|---|---|---|---|---|---|\n"
+                     "| 1 | `AUT_GenerarNumero` | Regla de expresión | Nuevo | — | HU-01 |\n"
+                     "## 14. Pruebas y trazabilidad\n"
+                     "| Criterio | Cómo se prueba | Con qué |\n|---|---|---|\n"
+                     "| HU-01.2 | Prueba ficticia | Caso de prueba de `AUT_GenerarNumero` |\n",
+                     encoding="utf-8")
+        m = mo.Proyecto(self.p)
+        self.assertFalse(m.vigentes("DT"))
+        self.assertFalse(m.tablas("T", "3"))
+        self.assertEqual(mo.estado_tecnico(m), (True, True))
+        self.assertEqual(comprobar.estado_tecnico(m), mo.estado_tecnico(m))
+        code, out = fixture.corre(fixture.S / "proyecto.py", "estado", self.p)
+        self.assertEqual(code, 0, out)
+        self.assertIn("Técnico: versión 1.1", out)
+        self.assertNotIn("Técnico: versión 1.1, sin empezar", out)
+        code, out = fixture.corre(fixture.S / "comprobar.py", self.p)
+        self.assertNotEqual(code, 0, out)
+        self.assertTrue(any(l.startswith("✗ técnico §14: cada criterio") and "HU-01.1" in l
+                            for l in out.splitlines()), out)
+
+    def test_tecnico_plantilla_y_ausente_conservan_sin_empezar(self):
+        self.copia()
+        tecnico = self.p / "analisis/tecnico.md"
+        plantilla = fixture.SKILL / "assets/plantillas/tecnico.md"
+        shutil.copyfile(plantilla, tecnico)
+        m = mo.Proyecto(self.p)
+        self.assertEqual(mo.estado_tecnico(m), (False, False))
+        self.assertEqual(comprobar.estado_tecnico(m), (False, False))
+        self.assertIn("sin empezar", self.captura(comprobar.comprobar_tecnico, m, un.Contexto(m)))
+        code, out = fixture.corre(fixture.S / "proyecto.py", "estado", self.p)
+        self.assertEqual(code, 0, out)
+        self.assertIn("Técnico: versión 0.1, sin empezar", out)
+        tecnico.unlink()
+        self.assertEqual(mo.estado_tecnico(mo.Proyecto(self.p)), (False, False))
+
+    def test_tecnico_dt_campos_y_cabecera_ambigua_conservan_semantica(self):
+        self.copia()
+        f = self.p / "analisis/tecnico.md"
+        for estado in ("completo", "en curso", "pendiente de revisión", None):
+            for contenido in ("vacío", "DT", "campos"):
+                with self.subTest(estado=estado, contenido=contenido):
+                    cabecera = "" if estado is None else " · Estado: " + estado
+                    texto = "# Técnico ficticio\n\nVersión: 1.1" + cabecera + "\n\n## 2. Decisiones técnicas\n"
+                    if contenido == "DT":
+                        texto += "**DT-01 — Decisión ficticia**\nDetalle pendiente.\n"
+                    texto += "\n## 3. Modelo de datos\n"
+                    if contenido == "campos":
+                        texto += "| Campo | Tipo | Uso |\n|---|---|---|\n| valor | Integer | Técnico: ensayo |\n"
+                    f.write_text(texto, encoding="utf-8")
+                    m = mo.Proyecto(self.p)
+                    esperado = (estado == "completo" or contenido != "vacío", estado == "completo")
+                    self.assertEqual(mo.estado_tecnico(m), esperado)
+                    self.assertEqual(comprobar.estado_tecnico(m), esperado)
+                    with unittest.mock.patch.object(comprobar, "errores", 0):
+                        out = self.captura(comprobar.comprobar_tecnico, m, un.Contexto(m))
+                    if esperado[0]:
+                        self.assertIn("técnico completo: lo que falta es error" if esperado[1]
+                                      else "técnico en curso: lo que falta es aviso", out)
+                    else:
+                        self.assertIn("sin empezar", out)
+
     def test_anexo_preserva_notas_y_consulta(self):
         self.copia()
         f = self.p / "analisis" / "funcional.md"

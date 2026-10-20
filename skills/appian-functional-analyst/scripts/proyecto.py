@@ -390,7 +390,7 @@ def estado(a):
               "  para el prototipo: ninguna va en --confirmadas")
     if "T" in m.docs:
         tv = m.version("T")
-        empezado = bool(m.vigentes("DT")) or any("campo" in [mo.normaliza(c) for c in cab] for _, cab, _ in m.tablas("T", "3"))
+        empezado, _ = mo.estado_tecnico(m)
         print("Técnico: " + (f"versión {tv[0]}.{tv[1]}" if tv else "sin versión") + ("" if empezado else ", sin empezar"))
     sig = re.search(r"^## Siguiente paso\s*\n+(.+)", texto, re.M)
     if sig:

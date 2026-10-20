@@ -461,6 +461,17 @@ def cargar(ruta):
     return Proyecto(ruta)
 
 
+def estado_tecnico(m):
+    """(empezado, completo): declarar completo activa su comprobación, también sin DT ni modelo de datos."""
+    if "T" not in m.docs:
+        return False, False
+    est = re.search(r"Estado:\s*([^·\n]+)", "\n".join(m.docs["T"].lineas[:12]))
+    completo = bool(est) and normaliza(est.group(1)).strip().startswith("completo")
+    empezado = completo or bool(m.vigentes("DT")) or any(
+        "campo" in [normaliza(c) for c in cab] for _, cab, _ in m.tablas("T", "3"))
+    return empezado, completo
+
+
 def escribe(ruta, texto):
     """UTF-8: conserva CRLF en destinos existentes; los nuevos usan LF en todos los sistemas."""
     ruta = pathlib.Path(ruta)

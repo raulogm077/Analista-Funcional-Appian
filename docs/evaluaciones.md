@@ -4,6 +4,26 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Campaña Codex: técnico completo sin datos persistentes (20 de octubre de 2026)
+
+La continuación sobre `15b191d` reproduce una omisión del comprobador: un técnico declarado
+`Estado: completo`, con lógica, plan y pruebas, pero sin fichas DT ni campos persistentes, se trataba
+como «sin empezar». Una copia con un criterio de aceptación retirado obtenía cero errores porque
+no se ejecutaba la revisión técnica. Activar esa revisión descubre el criterio omitido y otro
+problema independiente del montaje: un perfil no identificado en seguridad.
+
+La interpretación se comparte en `modelo.py`: declarar completo implica haber empezado. `estado`
+y el comprobador consumen la misma función; se conservan los indicadores DT/campos y el comportamiento
+de cabeceras ausentes o ambiguas. No se requieren decisiones, datos, grupos ni comandos artificiales.
+
+Tres regresiones nuevas cubren el caso y sus vecinos, incluida la CLI; también pasa el vecino de
+primer versionado. Se repiten sobre la copia indicada por `PLUGIN_A_PROBAR`. El caso externo conserva
+la misma huella antes y después: `(False, True)` y cero errores pasan a `(True, True)` y dos errores
+reales. Esto acredita detección, no que el montaje ya esté corregido. La suite completa de la
+capacidad termina con 401 controles correctos, cero fallos y exit 0; las cuatro huellas de código
+y pruebas coinciden antes y después. La básica pasa con siete skills, cero errores y cero avisos.
+Evidencias en `e2e-20261020/diagnostico-tecnico/` y `validacion-ciclo-03/`, dentro de la campaña externa.
+
 ## Campaña Codex: continuidad real y urgencia compartida (20 de octubre de 2026)
 
 Nueva iteración en la misma rama, desde `5034276`, con Astra y trabajadores Sol en contextos nuevos.
@@ -29,7 +49,15 @@ Proyectos, fuentes, errores y respuestas originales en
   correctas; también se prueba el módulo de secuenciación sobre la copia indicada por `PLUGIN_A_PROBAR`.
   La suite completa posterior al parche termina también con 401 controles correctos, cero fallos y
   exit 0; básica: siete skills, cero errores y cero avisos. Las tres huellas de código/prueba coinciden
-  antes y después. Su repetición real en Appian sigue pendiente.
+  antes y después. La repetición real posterior sobre `15b191d` supera el bloqueo y reaplica el
+  cambio funcional conservando entradas, consumidor y avance válido del evolutivo.
+- El reservado D7 se ejecuta en otra sesión desde los archivos: relee los objetos, recupera reservas,
+  verifica y deja todas las issues hechas. Hay doce casos únicos correctos, reejecutados por dos
+  issues; no son veinticuatro casos distintos. Los objetos se validan sin errores ni advertencias.
+  La QA de usuario y las transiciones locales de cierre siguen pendientes; no hay pase de producción.
+  El registro externo de respuestas falla al reutilizar nombres entre verificaciones: parte de la
+  primera se sobrescribe. Los archivos supervivientes no acreditan el total de llamadas. Se conserva
+  este fallo de instrumentación separado de las verificaciones finales y las lecturas disponibles.
 
 Es una corrección funcional, sin medida de aceleración. La revisión del parche separa el defecto original
 de los problemas de sus candidatos intermedios; no los presenta como comparaciones entre commits.
