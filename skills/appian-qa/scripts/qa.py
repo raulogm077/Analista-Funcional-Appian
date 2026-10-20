@@ -16,6 +16,7 @@ SAIL_CLI, si existe, es la orden de SAIL CLI que se usa en vez de «sail» (un .
 import argparse
 import datetime
 import json
+import math
 import os
 import pathlib
 import re
@@ -34,8 +35,9 @@ ORDENES = {"load": "load", "navigate": "navigate", "nav": "navigate", "interact"
            "show": "show"}
 CLAVES = {"escenario", "dice", "host", "site", "roles", *PARTES}
 CLAVES_PASO = {"rol", "sail", "selecciona", "espera"}
-ESPERAS = {"completado", "hay", "no_hay", "texto", "sin_texto", "fila", "sin_fila"}
-AFIRMA = {"completado", "hay", "texto", "fila"}      # lo que comprueba algo; las negativas solas pasan con una página vacía
+ESPERAS = {"completado", "hay", "no_hay", "texto", "sin_texto", "fila", "sin_fila", "campo"}
+AFIRMA = {"completado", "hay", "texto", "fila", "campo"}  # las negativas solas pasan con una página vacía
+CAMPOS = {"TextField", "ParagraphField"}                 # tipos observados en el ui de SAIL CLI
 POR_TERMINAR, SIN_REPETIR = "guion por terminar", "sin repetir"
 DONDE = ("desarrollo", "corrección")                 # los únicos entornos de técnico §0 donde se repite: SAIL CLI escribe
 ESPERA_SAIL = 120          # segundos que se espera a una orden de SAIL CLI
@@ -245,6 +247,49 @@ def repetido(d, objetivo):
     return max([len(suyas)] + [int(o.get("of") or 1) for o in suyas])
 
 
+def componentes(nodo):
+    """Componentes tipados del ui, nunca las opciones ni los cambios de otra respuesta de SAIL CLI."""
+    if isinstance(nodo, dict):
+        if isinstance(nodo.get("#t"), str):
+            yield nodo
+        for v in nodo.values():
+            yield from componentes(v)
+    elif isinstance(nodo, list):
+        for v in nodo:
+            yield from componentes(v)
+
+
+def escalar_json(v):
+    return type(v) in (str, int, bool, type(None)) or (type(v) is float and math.isfinite(v))
+
+
+def mismo_valor(a, b):
+    """JSON tiene números, no distingue entero/decimal; sí distingue un booleano de un número."""
+    numeros = (int, float)
+    return (escalar_json(a) and escalar_json(b)
+            and (type(a) is type(b) or (type(a) in numeros and type(b) in numeros)) and a == b)
+
+
+def falta_campo(campo, ui):
+    selector = "label" if "label" in campo else "testLabel"
+    nombre = campo[selector]
+    suyos = [c for c in componentes(ui) if c.get(selector) == nombre]
+    quien = f"el campo con {selector} «{nombre}»"
+    if not suyos:
+        return [f"no está {quien}"]
+    if len(suyos) != 1:
+        return [f"{len(suyos)} componentes tienen {selector} «{nombre}»: el campo es ambiguo"]
+    c = suyos[0]
+    if c["#t"] not in CAMPOS:
+        return [f"{quien} tiene tipo «{c['#t']}» no soportado (solo {', '.join(sorted(CAMPOS))})"]
+    if "value" not in c:
+        return [f"{quien} no trae «value» (valor ausente)"]
+    if not mismo_valor(c["value"], campo["valor"]):
+        actual, esperado = (json.dumps(v, ensure_ascii=False) for v in (c["value"], campo["valor"]))
+        return [f"{quien} tiene value {actual} y se esperaba {esperado}"]
+    return []
+
+
 def lo_que_falta(espera, d):
     """Lo que no se cumple de «espera» en el --json de un paso; [] si todo se cumple."""
     mal = []
@@ -279,6 +324,8 @@ def lo_que_falta(espera, d):
                        + " y se esperaba " + ", ".join(f"{k} «{v}»" for k, v in busca.items()))
     if espera.get("sin_fila") and any(con_texto(f, espera["sin_fila"]) for f in filas(d.get("ui"))):
         mal.append(f"hay una fila con «{espera['sin_fila']}» y no debería")
+    if "campo" in espera:
+        mal += falta_campo(espera["campo"], d.get("ui"))
     return mal
 
 
@@ -329,6 +376,15 @@ def mal_esperado(espera):
         mal.append("«fila» lleva «con» y, si acaso, columnas con su valor, sin vacíos")
     if "sin_fila" in espera and not (isinstance(espera["sin_fila"], str) and espera["sin_fila"].strip()):
         mal.append("«sin_fila» es un texto, no vacío")
+    if "campo" in espera:
+        c = espera["campo"]
+        selectores = {"label", "testLabel"}
+        if (not isinstance(c, dict) or len(selectores & c.keys()) != 1
+                or set(c) - (selectores | {"valor"}) or "valor" not in c
+                or not all(isinstance(c[k], str) and c[k].strip() for k in selectores & c.keys())
+                or not escalar_json(c["valor"])):
+            mal.append("«campo» lleva exactamente «label» o «testLabel» (texto no vacío) y «valor» "
+                       "(cadena, número finito, booleano o null)")
     return mal
 
 
@@ -360,7 +416,7 @@ def defectos(g, nombre):
                 if ids:
                     mal.append(f"{donde}: «{ids[0]}» es un _cId o una ref que cambia en cada carga; usa la etiqueta")
     if not afirma:
-        mal.append("el «entonces» no comprueba nada que se vea (completado, hay, texto o fila): el recorrido se quedó a "
+        mal.append("el «entonces» no comprueba nada que se vea (completado, hay, texto, fila o campo): el recorrido se quedó a "
                    "medias, o solo dice lo que no está, que también pasaría con una página vacía")
     return mal
 

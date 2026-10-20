@@ -173,6 +173,58 @@ def issue(iss, iid, criterios):
                      situacion={"SIM_Form": "nuevo"})
 
 
+def prueba_campo(qa):
+    """Valores ficticios con la forma del ui de SAIL: la etiqueta no demuestra el valor del campo."""
+    espera = {"campo": {"label": "Cantidad", "valor": ""}}
+
+    def pagina(*campos, **mas):
+        return {"ui": {"#t": "ContentLayout", "contents": list(campos)}, **mas}
+
+    campo = {"#t": "TextField", "label": "Cantidad", "testLabel": "campo-cantidad", "value": ""}
+    ok("campo admite una cadena vacía y la encuentra en ui, aunque options omita value",
+       qa.mal_esperado(espera) == [] and qa.lo_que_falta(espera, pagina(campo, options=[{"label": "Cantidad"}])) == [])
+    casos = [
+        ("campo ausente", pagina(), "no está el campo"),
+        ("value ausente", pagina({k: v for k, v in campo.items() if k != "value"}), "valor ausente"),
+        ("null", pagina({**campo, "value": None}), "value null"),
+        ("0", pagina({**campo, "value": 0}), "value 0"),
+        ("false", pagina({**campo, "value": False}), "value false"),
+        ("no vacío", pagina({**campo, "value": "5"}), 'value "5"'),
+        ("etiquetas duplicadas", pagina(campo, dict(campo)), "ambiguo"),
+        ("tipo no soportado", pagina({**campo, "#t": "DropdownWidget"}), "no soportado"),
+        ("solo options o deltas", pagina(options=[campo], changed=[campo]), "no está el campo"),
+        ("solo el prefijo de la etiqueta", pagina({**campo, "label": "Cantidad extra"}), "no está el campo"),
+    ]
+    for nombre, d, motivo in casos:
+        faltas = qa.lo_que_falta(espera, d)
+        ok(f"campo vacío falla si hay {nombre}, con su motivo", bool(faltas) and motivo in "; ".join(faltas), faltas)
+    por_test = {"campo": {"testLabel": "campo-cantidad", "valor": ""}}
+    ok("testLabel exacto selecciona ParagraphField y distingue labels repetidas con testLabels diferentes",
+       qa.lo_que_falta(por_test, pagina({**campo, "#t": "ParagraphField"},
+                                      {**campo, "testLabel": "otra-cantidad", "value": "5"})) == [])
+    ok("testLabel duplicado también es ambiguo",
+       "ambiguo" in "; ".join(qa.lo_que_falta(por_test, pagina(campo, dict(campo)))))
+    for esperado, actual, pasa in [(0, False, False), (False, 0, False), (0, 0.0, True), (0.0, 0, True),
+                                   (None, None, True), (False, False, True), (None, "", False),
+                                   ("a", "A", False), (" a ", "a", False), ("", [], False)]:
+        ex = {"campo": {"label": "Cantidad", "valor": esperado}}
+        faltas = qa.lo_que_falta(ex, pagina({**campo, "value": actual}))
+        ok(f"campo compara {a_json(esperado).strip()} con {a_json(actual).strip()} por tipo JSON y valor",
+           (not faltas) == pasa, faltas)
+    invalidos = [None, [], {}, {"valor": ""}, {"label": "Cantidad"}, {"label": "", "valor": ""},
+                 {"label": "Cantidad", "testLabel": "campo-cantidad", "valor": ""},
+                 {"label": "Cantidad", "valor": "", "ruta": "$.ui"},
+                 {"label": "Cantidad", "valor": []}, {"label": "Cantidad", "valor": {}},
+                 {"label": "Cantidad", "valor": float("nan")}, {"label": "Cantidad", "valor": float("inf")}]
+    ok("campo rechaza selectores y valores mal formados antes de repetir",
+       all(qa.mal_esperado({"campo": c}) for c in invalidos))
+    g = json.loads(a_json(GUIONES["HU-01.2"]))
+    g["entonces"] = [{"sail": ["show"], "espera": espera}]
+    ok("campo es una afirmación positiva: basta en entonces", qa.defectos(g, "HU-01.2.json") == [])
+    ok("campo no acepta el ui viejo tras enviar",
+       "antes de enviar" in "; ".join(qa.lo_que_falta(espera, pagina(campo, viewIsStale=True))))
+
+
 def main():
     for st in (sys.stdout, sys.stderr):
         st.reconfigure(encoding="utf-8", errors="replace")
@@ -370,6 +422,29 @@ def main():
         spec = importlib.util.spec_from_file_location("qa_simulado", QA)
         qa = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(qa)
+        prueba_campo(qa)
+        # Camino CLI: ui tiene value vacío aunque options no lo traiga; falla con otro valor y rechaza el mal esquema.
+        g = json.loads(a_json(GUIONES["HU-01.2"]))
+        g["entonces"].insert(1, {"sail": ["show"], "espera": {"campo": {"label": "Título", "valor": ""}}})
+        t.guion("HU-01.2", g)
+        c, out = t.repetir("--escenario", "HU-01.2")
+        ok("CLI repite la afirmación de campo vacío junto a las comprobaciones anteriores",
+           c == 0 and resultados()["HU-01.2"] == "pasa", out)
+        g["entonces"][1]["espera"]["campo"]["valor"] = "5"
+        t.guion("HU-01.2", g)
+        c, out = t.repetir("--escenario", "HU-01.2")
+        e = t.resultado()[0]["escenarios"]["HU-01.2"]
+        ok("CLI informa el paso y valor que no coincide, sin confundirlo con campo ausente",
+           c == 1 and e["resultado"] == "falla" and e["paso"] == "entonces 2"
+           and 'value "" y se esperaba "5"' in e["motivo"], out)
+        g["entonces"][1]["espera"]["campo"]["testLabel"] = "titulo"
+        t.guion("HU-01.2", g)
+        antes = llamadas(t)
+        c, out = t.repetir("--escenario", "HU-01.2")
+        ok("CLI deja por terminar un campo con ambos selectores y no llama a SAIL",
+           c == 2 and resultados()["HU-01.2"] == "guion por terminar" and llamadas(t) == antes, out)
+        t.guion("HU-01.2", GUIONES["HU-01.2"])
+        t.repetir("--escenario", "HU-01.2")
         crlf = t.p / "qa" / "crlf.txt"
         crlf.write_bytes(b"uno\r\ndos\r\n")
         qa.escribe(crlf, "uno\ntres\n")

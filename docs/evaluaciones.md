@@ -4,6 +4,28 @@ Resultados de las evaluaciones de cada versión, la más nueva primero: las cifr
 aprendido. Las evaluaciones están en `pruebas/evaluaciones/`; los proyectos de prueba, en `$PROYECTOS_PRUEBA`, fuera del
 repositorio; aquí solo los resultados. Lo que queda pendiente está en `docs/siguiente-version.md`.
 
+## Campaña Codex: comprobar el valor vacío de un campo en QA (20 de octubre de 2026)
+
+Un guion repetible comprobaba el texto del resultado tras limpiar un formulario, pero no podía
+afirmar que su campo de entrada quedaba vacío. La observación manual sí traía `value: ""` en el
+`ui` de SAIL; las opciones de interacción omitían `value`. Los operadores existentes no permitían
+expresar esa diferencia y una comprobación de texto vacío se rechazaba como guion incompleto.
+
+`qa.py` admite ahora `campo` con `label` o `testLabel`, exactamente uno, y un valor escalar JSON.
+Busca un único `TextField` o `ParagraphField` en `ui`, exige la propiedad `value` y distingue
+vacío, nulo, cero, falso y propiedad ausente. Mantiene las demás afirmaciones y el rechazo de vistas
+caducadas. No incorpora selectores generales ni interpreta la ausencia de una opción como campo vacío.
+
+La suite de QA pasa de 57 a 86 controles, ambos recorridos completos con exit 0; la básica pasa
+con siete skills, cero errores y cero avisos. Trece casos reservados independientes pasan sobre
+el candidato congelado; en la versión anterior el operador no está disponible. La repetición
+en el laboratorio con el guion corregido pasa y observa directamente el campo vacío después de
+limpiar, sin cambiar la interfaz. Es una mejora de cobertura, sin medida de aceleración.
+
+Evidencias, versión anterior y guiones fuera del repositorio, en
+`e2e-20261020/iteracion-03-qa/diagnostico-valor-campo/`. La prueba no acredita accesibilidad,
+apariencia ni ausencia universal de efectos en el backend.
+
 ## Campaña Codex: primera entrega después de actualizar el borrador (20 de octubre de 2026)
 
 El recorrido estándar incorpora una fuente nueva antes de la primera entrega: `version` conserva
