@@ -1160,7 +1160,8 @@ Se acepta si:
                 except OSError:
                     pass
         shutil.rmtree(tmp, ignore_errors=True)
-    for nombre in ("test_automejora.py", "test_ingesta.py", "test_dependencias.py", "test_secuenciacion.py", "test_permisos.py", "test_subtareas.py"):
+    for nombre in ("test_automejora.py", "test_ingesta.py", "test_dependencias.py", "test_secuenciacion.py",
+                   "test_permisos.py", "test_subtareas.py", "test_revision_inicio.py", "test_revision_consumidores.py"):
         prueba = AQUI / nombre
         if prueba.is_file():
             c, out = corre(prueba)
@@ -1267,15 +1268,16 @@ def pruebas_repositorio(tmp):
     con_cr = [x for x in arbol(a) if (a / x).is_file() and b"\r" in (a / x).read_bytes()]
     ok("nada de lo que escribe iniciar lleva \\r, tampoco en Windows: proyecto.md y las plantillas del análisis",
        not con_cr and b"\n" in (a / "analisis" / "funcional.md").read_bytes(), str(con_cr))
+    estado_en_guia = re.search(r'proyecto\.py"? estado \.', guia)
     ok("AGENTS.md dice dónde está el QA (qa/, de appian-qa) y no pide un git pull antes de mirar el estado",
        "`qa/<U>/`" in guia and "appian-qa/scripts/qa.py" in guia and "git pull" in guia
-       and guia.index("proyecto.py estado") < guia.index("git pull"), guia)
+       and estado_en_guia is not None and estado_en_guia.start() < guia.index("git pull"), guia)
     ok("AGENTS.md, que se carga en cada sesión, no pasa de 30 líneas; él y la copia de cada flujo dicen en una línea de "
-       "dónde salen las órdenes (de la skill que nombran, sin buscar el plugin en el disco; la completa, sin cargarla); "
+       "dónde salen las órdenes (de la skill que nombran y el localizador; la completa, sin cargarla); "
        "el flujo, tras «Empieza»",
-       guia.count("\n") <= 30 and guia.count("no busques el plugin en el disco") == 1 and "`skills/<skill>/`" in guia
+       guia.count("\n") <= 30 and "no busques el plugin en el disco" not in guia and "`<ruta>/skills/<skill>/`" in guia
        and "Una orden completa, con su ruta (las de `--siguiente`), se lanza sin cargar ninguna skill." in guia
-       and all(re.search(r"^\*\*Empieza\.\*\* .*\n\*\*Órdenes\.\*\* [^\n]*no busques el plugin en el disco[^\n]*\n\n\| # ",
+       and all(re.search(r"^\*\*Empieza\.\*\* .*\n\*\*Órdenes\.\*\* [^\n]*\.appian-plugin\.json[^\n]*\n\n\| # ",
                          textos[x].decode("utf-8"), re.M) for x in flujos), guia)
     # dos fuentes, una con cada final de línea: tienen que llegar igual, byte a byte, a quien clone el proyecto
     fuentes = {"fuentes/FU-01-acta.md": "# FU-01\nActa de la reunión\n".encode("utf-8"),
@@ -2683,9 +2685,10 @@ def pruebas_issues(tmp):
        len(textos) == 5 and all("no hay que leer el funcional ni el técnico" in x and "## Lo que dice el técnico" in x
                                 and not re.search(r"(?i)\bver (?:el )?(?:técnico|funcional)\b", x)
                                 for x in textos), "\n".join(x[:300] for x in textos))
-    ok("cada issue nombra sus órdenes con su skill y dice, en una línea, de dónde salen: sin buscar el plugin en el disco "
+    ok("cada issue nombra sus órdenes con su skill y dice, en una línea, de dónde salen: con la ruta del localizador "
        "y, la que llega completa, sin cargar ninguna skill",
-       all(x.count("no busques el plugin en el disco") == 1 and "se lanza sin cargar ninguna skill" in x
+       all("no busques el plugin en el disco" not in x and x.count("`.appian-plugin.json`") == 1
+           and "`<ruta>/skills/<skill>/`" in x and "se lanza sin cargar ninguna skill" in x
            and "`appian-functional-analyst/scripts/indice.py issues <p> EV-01 ISS-0" in x for x in textos),
        "\n".join(x[-700:] for x in textos))
     i4 = lee(d / "ISS-04.md")

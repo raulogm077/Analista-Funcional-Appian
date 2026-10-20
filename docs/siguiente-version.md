@@ -13,18 +13,29 @@ queda aparcado tras el reporte de Raúl a Appian; no se repetirá en la medició
 ## Campaña Codex: pasada ejecutada y pendientes
 
 La campaña posterior usa una sola rama, `codex/campana-mejora-20261019`, desde `ba275544`; índice y estado
-en `$PROYECTOS_PRUEBA/campana-codex-20261019/`. La pasada queda documentada con fallos y límites abiertos. La corrección del resumen de impacto alcanza
-el 20 % de reducción mediana de llamadas en el retoque medido 3+3; la ingesta sigue siendo una corrección
-funcional sin ahorro acreditado. No extrapolar esas cifras a los casos restantes.
+en `$PROYECTOS_PRUEBA/campana-codex-20261019/`. La pasada queda documentada con fallos y límites abiertos.
+La auditoría del recuento retira el objetivo del 20 %: al incluir las ediciones, la mediana del retoque
+3+3 baja de 17 a 15 actividades observables (11,76 %), y el tiempo un 14,12 %. El 20 % anterior contaba
+solo eventos de comandos. La corrección del resumen de impacto se acepta por calidad funcional;
+la ingesta tampoco acredita ahorro. No extrapolar esas cifras a los casos restantes.
 
+- La revisión externa se contrastó contra código y reproducciones. Quedan corregidos la localización del plugin,
+  el aviso de localizador inválido, la tabla técnica, el destino pendiente de urgencias y el consumo de derivados
+  antiguos. `version --inicial` promueve el borrador sin editar números a mano. Los IDs retirados sí llegan a
+  `datos/` y las anotaciones ya se trasladaban; no aplicar esas dos recetas del informe. Evidencia y dictámenes
+  en `revision-antigravity-20261020/RESULTADO.md`. La reserva Git D7 pasa en un montaje nuevo creado con
+  `iniciar`; los montajes históricos siguen sin medir ese punto.
 - D1/D7/C8 y sus tres reservados ya tienen sesiones locales terminadas; no repetir por las interrupciones
   anteriores. Enrutado y retoque 3+3 terminados con Luna. Mantener Astra como orquestador solicitado.
 - Urgencia visible/reservada falla por ejecución incompleta. El falso positivo del puntuador de entorno
-  pendiente ya está corregido y comparado con ocho casos y el artefacto original; no convierte en correcta
-  la ejecución fallida ni justifica añadir instrucciones que ya existen en `urgentes.md`.
+  pendiente ya está corregido y comparado con ocho casos y el artefacto original. La auditoría posterior
+  reproduce y corrige el mismo defecto en el motor. No convierte en correcta la ejecución fallida ni
+  justifica añadir instrucciones que ya existen en `urgentes.md`.
 - La actualización incremental de tres dominios conserva decisiones y pendientes; son anexos parciales.
   Las síntesis de 1/4/12 fuentes y la variante de orden/duplicado están ejecutadas. La variante pierde una
   contradicción de alcance conservada en los otros lotes: FAIL de reconciliación, con fe de erratas de proyecto.
+  Se usó un formato de síntesis ad hoc con la skill cargada; el flujo completo del plugin con catálogo,
+  notas, funcional y comprobador sigue NOT MEASURED.
   Citas y hashes correctos no acreditan cobertura semántica exhaustiva. La demo reparada conserva los fallos iniciales; sus figuras actuales y quince
   páginas son legibles, pero el índice PDF sigue sin números. La exportación alternativa de Word no produjo
   PDF y dejó intacto el DOCX. La reparación del diagrama pasa revisión visual acotada y suite completa de su
@@ -37,6 +48,8 @@ funcional sin ahorro acreditado. No extrapolar esas cifras a los casos restantes
   tiene verificación estructural y el retoque técnico consume ocho llamadas. El orden de cierre local falló;
   no corregir retroactivamente la traza ni atribuir a ocho llamadas el coste completo de construcción y QA.
   QA independiente de implementación detectó dos defectos sucesivos; versión 5 y repetición final: 14 PASS/0 FAIL.
+  Fue interacción CUA en preview de Designer; `qa.py`, SAIL y los guiones repetibles de `appian-qa`
+  siguen NOT MEASURED.
   El cierre completo supera el límite de 25 llamadas (al menos 91 conocidas); el coste técnico focal no lo
   sustituye. Roles sin cuenta y efectos internos comprobados por QA siguen NOT MEASURED. F9 acaba en evidencias
   para revisión humana, sin despliegue ni publicación.

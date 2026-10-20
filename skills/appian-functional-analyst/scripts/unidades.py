@@ -215,8 +215,12 @@ def filas_6(P):
 
 
 def donde_se_corrige(campos):
-    """«desarrollo», «correccion» o "" (no se reconoce) según el campo «Dónde se corrige» de una ficha URG."""
-    lugar = mo.normaliza((campos or {}).get("donde se corrige", ""))
+    """«desarrollo», «correccion» o "" (sin elegir o no se reconoce) según «Dónde se corrige» de una ficha URG."""
+    lugar = mo.normaliza(mo.sin_comentarios((campos or {}).get("donde se corrige", ""))).strip(" *`")
+    sin_elegir = re.match(r"(?:pendiente|por decidir|sin decidir)\b", lugar) or re.search(
+        r"desarrollo\s*(?:[/·|]|\bo\b)\s*entorno|entorno de correccion\s*(?:[/·|]|\bo\b)\s*desarrollo", lugar)
+    if sin_elegir:
+        return ""
     return "correccion" if "correccion" in lugar else "desarrollo" if "desarrollo" in lugar else ""
 
 

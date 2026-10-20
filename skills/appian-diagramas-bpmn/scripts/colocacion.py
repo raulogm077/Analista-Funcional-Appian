@@ -859,11 +859,10 @@ def separar_ida_vuelta(proc, geo, tam, cabecera):
             if f["de"] == g["a"] and f["a"] == g["de"] and _solape_tramos(camino(i), camino(j)) > 1:
                 parejas.append((i, j))
 
-    # Mermaid can pack a one-lane cycle so tightly that its only detours sit
-    # outside the six-pixel drawable margin (for example y=4/108 in a 112 px
-    # lane). Reserve room for both the connector and its label in that lane.
-    # Keep the existing bounds check strict; imported and multi-lane layouts
-    # are left alone.
+    # Mermaid puede comprimir un ciclo de un carril hasta dejar los desvíos
+    # fuera del margen dibujable de seis píxeles (y=4/108 en un carril de 112).
+    # Reservar espacio para la conexión y su etiqueta sin relajar ese límite.
+    # Las posiciones importadas y los diseños con varios carriles se conservan.
     if len(proc["carriles"]) == 1 and parejas:
         carril = proc["carriles"][0]
         necesita_margen = False
@@ -1005,9 +1004,9 @@ def despejar_eventos_de_borde(proc, geo, tam, cabecera):
             caja_evento = (ex - ew / 2 - 12, ey - eh / 2 - 12, ew + 24, eh + 24)
             actual = dm._camino(geo["pasos"][origen], tam[tipo[origen]], geo["flujos"][i],
                                 geo["pasos"][f["a"]], tam[tipo[f["a"]]])
-            # draw.io treats a waypoint exactly on a shape's edge as an
-            # attachment hint and can discard the intended detour. Give the
-            # connector real clearance beyond both the shape and event.
+            # draw.io puede interpretar un punto sobre el borde de una forma
+            # como anclaje y descartar el desvío. Dejar espacio real más allá
+            # de la forma y del evento para conservar el recorrido.
             puntos = geo["flujos"][i]
             sobre_borde = any(abs(px - cx) <= 1 and abs(py - borde) <= 1
                               for px, py in puntos

@@ -801,7 +801,7 @@ def comprobar_situacion(m, ctx, inventario, fuera):
 
 def comprobar_citas_as_is(m, carpeta_fuentes):
     """Las citas «[FU-nn H-…]» y «[FU-nn NV-…]» son del as-is/ que catalogó FU-nn (leer_fuentes.py --una-fuente). Si se
-    repite la ingeniería inversa, los H- y NV- se numeran de nuevo y el as-is/ de ahora tiene otra huella: aviso. Sin
+    repite la ingeniería inversa, conserva los IDs reconocidos y retira los que ya no están; si cambia la huella, aviso. Sin
     as-is/, sin el índice de las fuentes o sin esas citas, nada."""
     asis = m.raiz / "as-is"
     indice = pathlib.Path(carpeta_fuentes or m.raiz / "fuentes") / "indice.json"
@@ -822,11 +822,29 @@ def comprobar_citas_as_is(m, carpeta_fuentes):
 
 
 # ------------------------------------------------------------------ fuentes
+def textos_fuentes(carpeta):
+    """(número FU, ruta) de los textos del catálogo vigente. Sin índice, admite los FU-*.md de proyectos antiguos.
+    Un derivado conservado en disco con «salida» vacía o fuera del catálogo no es texto de una fuente activa."""
+    carpeta = pathlib.Path(carpeta)
+    indice = carpeta / "indice.json"
+    if indice.is_file():
+        try:
+            catalogo = lee_json(indice)
+        except json.JSONDecodeError as e:
+            sys.exit(f"No puedo leer el catálogo de fuentes {indice}: JSON inválido ({e}).")
+        if not isinstance(catalogo, dict) or not isinstance(catalogo.get("fuentes"), list):
+            sys.exit(f"No puedo leer el catálogo de fuentes {indice}: falta la lista «fuentes».")
+        return [(f["id"].split("-", 1)[1], carpeta / f["salida"])
+                for f in catalogo["fuentes"]
+                if f.get("salida") and (carpeta / f["salida"]).is_file()]
+    return [(m.group(1), f) for f in sorted(carpeta.glob("FU-*.md"))
+            if (m := re.match(r"FU-(\d+)", f.name)) and f.is_file()]
+
+
 def comprobar_fuentes(m, carpeta, corregir):
     src, gente, sin_gente = {}, set(), []
-    for f in pathlib.Path(carpeta).glob("FU-*.md"):
+    for num, f in textos_fuentes(carpeta):
         txt = f.read_text(encoding="utf-8")
-        num = re.match(r"FU-(\d+)", f.name).group(1)
         src[num] = sorted(set(re.findall(r"^\[(\d{2}:\d{2}:\d{2})\]", txt, re.M)))
         mm = re.search(r"^- Participantes: (.*)$", txt, re.M)
         if mm and "sin identificar" not in mm.group(1):
@@ -1071,9 +1089,9 @@ def comprobar_informe_previo(m, ruta_imp, carpeta_fuentes):
             nota = pathlib.Path(ruta_imp).parent.parent / "notas" / f"FU-{mfu.group(1)}.md"
             if nota.exists():
                 textos.append(nota.read_text(encoding="utf-8"))
-        src = {re.match(r"FU-(\d+)", f.name).group(1):
+        src = {num:
                set(re.findall(r"^\[(\d{2}:\d{2}:\d{2})\]", f.read_text(encoding="utf-8"), re.M))
-               for f in pathlib.Path(carpeta_fuentes).glob("FU-*.md")}
+               for num, f in textos_fuentes(carpeta_fuentes)}
         rx = re.compile(r"FU-(\d+) (\d\d:\d\d:\d\d)")
         malas = sorted({f"FU-{x} {y}" for tx in textos for x, y in rx.findall(tx) if src.get(x) and y not in src[x]})
         informe("citas del informe y de la nota con el minuto de una intervención real", malas)

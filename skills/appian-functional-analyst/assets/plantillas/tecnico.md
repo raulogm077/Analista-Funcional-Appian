@@ -60,6 +60,9 @@ Versión: 0.1 · Estado: en curso
 
 ## 13. Plan de construcción
 
+| Paso | Objeto | Tipo | Situación | Sustituye a | Cambio | Para |
+|---|---|---|---|---|---|---|
+
 ### Supuestos para construir
 
 | Pregunta | Se construye con | Dónde cambia |

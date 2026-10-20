@@ -751,8 +751,9 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
 # la del analista y la de ingeniería inversa solo para lanzarla
 ORDENES = ("Una orden completa, con su ruta (las de `--siguiente`), se lanza sin cargar ninguna skill. Lo que lleva el "
            "nombre de una skill (`appian-qa/scripts/qa.py`, `appian-qa` · `qa.py`) es de esa skill: para componer su "
-           "orden o leerlo, cárgala (su `SKILL.md` dice su carpeta) y no busques el plugin en el disco; sin skills, en "
-           "`skills/<skill>/` del plugin instalado.")
+           "orden o leerlo, cárgala. Su carpeta es `<ruta>/skills/<skill>/`, con la `ruta` de `.appian-plugin.json`; "
+           "si falta el localizador o su ruta ya no sirve, pide la ruta del plugin y, desde la carpeta del proyecto, "
+           "ejecuta `python \"<ruta>/skills/appian-functional-analyst/scripts/proyecto.py\" iniciar .`.")
 PRUEBAS_NO = "No hay pruebas que ejecutar: la issue no cambia criterios ni reglas."
 PRUEBAS_SI = ("«verificar» ejecuta también los casos de prueba guardados de sus reglas e interfaces y de lo que las usa; "
               "si uno falla, `appian-functional-analyst/references/cambios.md` §6.")

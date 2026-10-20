@@ -277,6 +277,22 @@ def avisos_proyecto(raiz):
     faltan += [f"algún flujo de {COPIA_FLUJOS}/"] if not posterior and any(r not in generado for r in flujos) else []
     avisos = [f"Al proyecto le falta {', '.join(faltan)}: lanza «proyecto.py iniciar <p>», que lo añade sin tocar lo demás"
               ] if faltan else []
+    localizador = raiz / ".appian-plugin.json"
+    try:
+        dato = json.loads(localizador.read_text(encoding="utf-8"))
+        ruta = dato.get("ruta") if isinstance(dato, dict) else None
+        if not isinstance(ruta, str) or not ruta.strip():
+            raise ValueError("falta una ruta válida")
+        plugin = pathlib.Path(ruta).expanduser()
+        if not plugin.is_absolute():
+            plugin = raiz / plugin
+        valido = (plugin / "skills" / "appian-functional-analyst" / "scripts" / "proyecto.py").is_file()
+    except (OSError, ValueError, RuntimeError):
+        valido = False
+    if not valido:
+        avisos.append("Localizador: .appian-plugin.json falta, no es válido o no apunta a un plugin disponible: "
+                      'desde la carpeta del proyecto, lanza «python "<ruta>/skills/appian-functional-analyst/scripts/'
+                      'proyecto.py" iniciar .» con la ruta del plugin instalado para regenerarlo')
     avisos += [f"Repositorio: {x}" for x in (avisos_repositorio(raiz) if es_repo else [])]
     if ajenos:
         avisos.append(f"{', '.join(ajenos)} no lo generó el plugin y «proyecto.py iniciar» no lo toca: para que lo genere, "
@@ -532,9 +548,16 @@ def version(a):
     if malas:
         sys.exit(f"--decision {', '.join(malas)}: el tipo es uno de {', '.join(mo.TIPOS_D)}")
     comprueba_secuencia_version(m, a)
+    promueve = inicial and m.version("F") == (0, 1)
     if inicial:
-        if m.version("F") != (1, 0) or m.version("T") not in (None, (1, 0)) or any((raiz / "versiones").glob("v*")):
-            sys.exit("--inicial registra las fuentes de la primera 1.0, sin copias de versiones anteriores")
+        if (m.version("F") not in ((0, 1), (1, 0)) or m.version("T") not in (None, (0, 1), (1, 0))
+                or any((raiz / "versiones").glob("v*"))):
+            sys.exit("--inicial prepara la primera 1.0 desde 0.1 o 1.0, sin copias de versiones anteriores")
+        filas_d = tabla(texto_d, "Versiones")
+        if promueve and (any(f[0].strip() not in ("0.1", "1.0") for f in filas_d)
+                         or sum(f[0].strip() == "0.1" for f in filas_d) > 1
+                         or sum(f[0].strip() == "1.0" for f in filas_d) > 1):
+            sys.exit("--inicial no reinterpreta el historial de decisiones.md: debe ser la primera 0.1 o 1.0")
         v, destino, nueva = (1, 0), None, "1.0"
     else:
         v, destino = _copia(raiz, m)
@@ -553,14 +576,16 @@ def version(a):
     que = " ".join(a.que.split()).replace("|", "/")
     nuevo_d = None
     if inicial:
-        # Completar solo la fila 1.0 de Versiones; conservar su fecha, descripción y validación existentes.
+        # Reutilizar la 1.0; al promover el borrador, su única 0.1 pasa a 1.0. Conserva fecha, descripción y validación.
+        fila_inicial = "0.1" if promueve and not any(f[0].strip() == "1.0" for f in filas_d) else "1.0"
         L = texto_d.split("\n")
         dentro = False
         for i, linea in enumerate(L):
             if linea.startswith("## "):
                 dentro = linea.strip() == "## Versiones"
             c = mo.celdas(linea) if dentro and linea.startswith("|") else []
-            if len(c) >= 5 and c[0].strip() == "1.0":
+            if len(c) >= 5 and c[0].strip() == fila_inicial:
+                c[0] = "1.0"
                 c[1] = c[1] if not un.vacio(c[1]) else hoy
                 c[2] = c[2] if not un.vacio(c[2]) else que
                 c[3] = ", ".join(dict.fromkeys(re.findall(r"FU-\d+", c[3]) + fuentes))
@@ -990,7 +1015,7 @@ def main():
     s = sub.add_parser("copia"); s.add_argument("carpeta"); s.set_defaults(f=copia)
     s = sub.add_parser("version"); s.add_argument("carpeta"); s.set_defaults(f=version)
     s.add_argument("--fuente", nargs="+", required=True, metavar="FU-nn", help="las fuentes del informe")
-    s.add_argument("--inicial", action="store_true", help="registra las fuentes de la primera 1.0 sin incrementar versión")
+    s.add_argument("--inicial", action="store_true", help="prepara la primera 1.0 desde 0.1 o 1.0 y registra sus fuentes")
     s.add_argument("--que", required=True, help="qué cambia, en una frase y en palabras del cliente (sale en el Word): "
                                                  "la fila de la versión en decisiones.md")
     s.add_argument("--informe", help="el informe, si no es impacto/<primera fuente>.md (una urgencia: impacto/URG-nn.md)")
