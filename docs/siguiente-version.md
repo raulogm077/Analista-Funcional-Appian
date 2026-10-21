@@ -11,7 +11,8 @@ Esta lista no autoriza publicar, desplegar, enviar ni borrar.
 ## Mejoras que requieren un caso o una decisión
 
 - Índice Word/PDF: decidir la salida que se quiere entregar y medir la solución del exportador estándar.
-  El procedimiento externo revisado no rellena la caché DOCX ni acredita todos los sistemas.
+  Guardar y reabrir copias conserva la caché DOCX en dos ensayos externos; Microsoft Word, figuras y
+  otros sistemas siguen sin medir. El exportador estándar no actualiza el índice.
 - Diagramas: reducir los 30/38 avisos residuales sólo con mejora medida, sin relajar detectores ni cambiar
   un motor por intuición. Un orden distinto de notas no implica pérdida si asociación y texto se conservan.
 - LEEME completo y deriva interna de una aplicación real siguen sin medir. Mantener la extracción masiva

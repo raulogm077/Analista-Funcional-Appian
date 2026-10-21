@@ -52,11 +52,18 @@ vigencia causal de la variante interrumpida, atomicidad/concurrencia, roles sin 
 La lectura final de contratos igual a la base no prueba el efecto de las escrituras sin respuesta.
 La QA runtime del prototipo HTML permanece sin medir por la política de la herramienta.
 El procedimiento externo PDF suma 23 páginas y 68 destinos revisados; no acredita portabilidad ni reparación del producto.
+En dos copias de ensayo, otro procedimiento externo conserva la caché editable del índice Word al guardar
+y reabrir: 17 y 100 entradas, con páginas/destinos correctos y 19 páginas revisadas. Originales intactos;
+Microsoft Word, figuras y otros sistemas sin medir. El exportador estándar no se ha modificado.
 
 **Eficiencia:** el objetivo del 20 % no está acreditado. La primera comparación corregida da
 17→15 actividades observables (−11,76 %) y tiempo −14,12 %; omitía ediciones en su recuento inicial.
 La comparación posterior 3+3 da medianas 104,87→105,87 s (+0,96 %) y 11→10 actividades (−9,09 %).
 La candidata de optimización no se incorpora. Actividad observable, `call_tool` y HTTP son denominadores distintos.
+Otra candidata de lectura por apartados, sobre `aee6c56`, tampoco se incorpora: tres repeticiones por versión
+dan medianas 91,54→115,82 s (+26,51 %) y 10→11 eventos (+10 %). Las tres candidatas siguieron leyendo
+la referencia completa; la mediana de `input_tokens` acumulados por sesión tampoco baja (431.244→435.020).
+Una candidata necesitó corregir su propia edición; ese fallo y su coste se conservan, sin atribuirlo a la celda.
 La demora de 13.028 s no se reprodujo (714 y 455,56 s); causa no determinada.
 
 La revisión final aceptó los defectos reproducidos de filas sin cabecera, promoción inicial,
