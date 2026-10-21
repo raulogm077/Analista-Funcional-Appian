@@ -317,9 +317,9 @@ def reparte(d):
 
 
 # ------------------------------------------------------------------ lo que dice el técnico de una issue
-def de_otra_unidad(linea, uid):
-    """La línea dice que es de otra unidad: «otra unidad» o un EV-nn/URG-nn que no es el de las issues."""
-    return bool(re.search(r"\botra unidad\b", mo.normaliza(linea))) or any(u != uid for u in un.RX_UNIDAD.findall(linea))
+def es_marca_otra_unidad(texto):
+    """La marca explícita: el texto empieza por «Otra unidad», con su id si quiere («Otra unidad (EV-02).»)."""
+    return bool(re.match(r"otra unidad\b", mo.normaliza(texto.strip(" *-_"))))
 
 
 def lineas_del_tecnico(d):
@@ -344,13 +344,14 @@ def lineas_del_tecnico(d):
             antes.setdefault((A.seccion_de_linea[i], b), []).append(l.strip())
     out, cabecera, titulo, apartado, de, previa, bloque = [], None, None, "", None, None, set()
     otra_sub = False      # el apartado «### 3.n» ya dijo que es de otra unidad
+    abre_sub = False      # aún no se ha leído la primera línea de texto del apartado «### 3.n»
     for i, l in enumerate(T.lineas):
         s = T.seccion_de_linea[i]
         if l.startswith("## "):
             cabecera, apartado, de, previa, bloque = None, "", None, None, set()
             otra_sub = False
         if l.startswith("### "):
-            otra_sub = False
+            otra_sub, abre_sub = False, True
             sub = re.match(r"^###\s+([\d.]+)\s+(.+)$", l)
             apartado = sub.group(1).rstrip(".") if sub else ""
             de = nombres.get(mo.normaliza(sub.group(2).strip(" `"))) if sub else None
@@ -371,10 +372,10 @@ def lineas_del_tecnico(d):
         if fila:
             objetos |= {nombres[mo.normaliza(c.strip(" `*"))] for c in fila if mo.normaliza(c.strip(" `*")) in nombres}
             objetos |= nombrados(T.lineas[titulo], d.todos) if titulo is not None else set()
-        if not l.startswith("|") and re.match(r"otra unidad\b", mo.normaliza(l.strip(" *-"))):
-            otra_sub = True        # «Otra unidad. Una por mes.» al abrir un apartado: todo él es de otra
+        if abre_sub:
+            otra_sub, abre_sub = es_marca_otra_unidad(l) and not l.startswith("|"), False     # «Otra unidad. Una por mes.» abre el apartado: todo él es de otra
         item = {"i": i, "donde": f"§{apartado or s}", "texto": l.strip(), "cabecera": cabecera if fila else None,
-                "otra": otra_sub or de_otra_unidad(l, getattr(d, "uid", None)), "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
+                "otra": otra_sub or es_marca_otra_unidad(l), "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
                 "objetos": objetos, "estado": "", "era": None}
         if antes:
             previas = antes.get((s, de_bloque[i]), ())

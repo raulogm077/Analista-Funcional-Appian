@@ -122,6 +122,9 @@ Por record type, `### 3.n <Record type>`:
 
 Al final: referencias y carga inicial (`Record type · Valores iniciales · Quién lo mantiene`).
 
+En §3 a §12, lo que es de otra unidad se marca así: la línea, o el primer texto de su `### 3.n`, empieza por «Otra unidad»
+(con su id si se quiere: «Otra unidad (EV-02).») y no entra en las issues de esta. Nombrar otro EV o escribir «otra unidad» a mitad de frase no marca nada.
+
 Con `as-is/`, §3 termina con `### 3.n Carga inicial y migración`: tabla `Origen en la app actual · Destino ·
 Transformación · Volumen · Cómo se verifica`, una fila por lo que se carga o se mueve («—» en el origen si el dato es
 nuevo), también el valor que toman los registros que ya hay en un estado que la aplicación actual no guarda (§5). Con

@@ -17,18 +17,27 @@ class OtraUnidad(unittest.TestCase):
                       "### 3.4 AUT Registro Ajeno\n\nOtra unidad. Una por mes.\n\n| Campo | Tipo |\n|---|---|\n"
                       "| campoajeno | Text |\n\n## 4. Grupos y seguridad", 1)
         t = t.replace("## 10. Integraciones, documentos e IA",
-                      "| AV-90 | Correo de EV-02 sin objeto | Buzón ajeno | Texto |\n"
+                      "| Aviso | Qué | A quién | Tipo |\n|---|---|---|---|\n"
+                      "| AV-90 | Correo de EV-02 sin marca ni objeto | Buzón ajeno | Texto |\n"
                       "| AV-91 | Correo de control sin marca ni objeto | Buzón de control | Texto |\n\n"
+                      "Otra unidad (EV-02). Canal remoto sin objeto.\n\n"
                       "## 10. Integraciones, documentos e IA", 1)
+        t = t.replace("## 5. Estados", "En EV-01, mantener la segregación de funciones ya implantada en EV-02.\n\n"
+                      "## 5. Estados", 1)
         f.write_text(t, encoding="utf-8", newline="")
         m = mo.Proyecto(self.p)
         plan = iss.calcula(m, un.Contexto(m), "EV-01")
         aviso = next(a for a in plan.avisos if "no nombran ningún objeto" in a)
         self.assertIn("Correo de control", aviso)
-        for ajeno in ("campoajeno", "EV-02", "Una por mes"):
+        for ajeno in ("campoajeno", "Canal remoto", "Una por mes"):
             self.assertNotIn(ajeno, aviso)
+        self.assertIn("Correo de EV-02", aviso)
+        # una mención suelta de otro EV, o «otra unidad» a mitad de frase, no es la marca: sigue en el aviso
+        self.assertIn("En EV-01, mantener la segregación", aviso)
         base_issue = next(i for i in plan.issues if i.comun)
         self.assertTrue(base_issue.sueltas)
+        self.assertIn("En EV-01, mantener la segregación de funciones ya implantada en EV-02.",
+                      "".join(m.docs["T"].lineas[i] for i in base_issue.sueltas))
         self.assertNotIn("campoajeno", "".join(m.docs["T"].lineas[i] for i in base_issue.sueltas
                                                if m.docs["T"].lineas[i].startswith("| campoajeno")))
 
