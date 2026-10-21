@@ -136,8 +136,8 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
 - **Valor de un campo de texto**: `"campo": {"label": "Cantidad", "valor": ""}` comprueba que el `TextField` o
   `ParagraphField` del `ui` trae `value` vacío. En vez de `label` se puede usar `testLabel`: exactamente uno, completo
   y literal. Si no aparece, hay varios componentes con ese selector, el tipo no está soportado o falta `value`, falla;
-  no busca en `options` ni en los cambios. `valor` es una cadena, número finito, booleano o `null`, por tipo y valor
-  exactos: `""`, `null`, `0` y `false` son distintos; `0` y `0.0` son el mismo número. No normaliza las cadenas.
+  no busca en `options` ni en los cambios. `valor` es texto, como lo da SAIL CLI también en los campos numéricos
+  (`"4"`, no `4`), o `null`; se compara exacto, sin normalizar: `""` y `null` son distintos.
 - **El «entonces» afirma algo**: al menos un `completado`, `hay`, `texto`, `fila` o `campo`. Solo con `no_hay`, `sin_texto` o
   `sin_fila` pasaría también con una página vacía. Una clave que no existe o una comprobación vacía (`"hay": []`,
   `"texto": [""]`) tampoco valen: el guion sale «por terminar».

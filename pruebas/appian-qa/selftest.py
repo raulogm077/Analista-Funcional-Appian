@@ -218,9 +218,16 @@ def prueba_campo(qa):
                  {"label": "Cantidad", "testLabel": "campo-cantidad", "valor": ""},
                  {"label": "Cantidad", "valor": "", "ruta": "$.ui"},
                  {"label": "Cantidad", "valor": []}, {"label": "Cantidad", "valor": {}},
-                 {"label": "Cantidad", "valor": float("nan")}, {"label": "Cantidad", "valor": float("inf")}]
+                 {"label": "Cantidad", "valor": float("nan")}, {"label": "Cantidad", "valor": float("inf")},
+                 {"label": "Cantidad", "valor": 4}, {"label": "Cantidad", "valor": 0}, {"label": "Cantidad", "valor": False}]
     ok("campo rechaza selectores y valores mal formados antes de repetir",
        all(qa.mal_esperado({"campo": c}) for c in invalidos))
+    # Forma real de SAIL CLI: un TextField con teclado numérico da su value como texto.
+    numerico = {**campo, "keyboard": "INTEGER", "value": "4"}
+    ok("campo numérico: el guion lleva el valor como texto y pasa; como número se rechaza antes de repetir",
+       qa.mal_esperado({"campo": {"label": "Cantidad", "valor": "4"}}) == []
+       and qa.lo_que_falta({"campo": {"label": "Cantidad", "valor": "4"}}, pagina(numerico)) == []
+       and "\"4\" y no 4" in "; ".join(qa.mal_esperado({"campo": {"label": "Cantidad", "valor": 4}})))
     g = json.loads(a_json(GUIONES["HU-01.2"]))
     g["entonces"] = [{"sail": ["show"], "espera": espera}]
     ok("campo es una afirmación positiva: basta en entonces", qa.defectos(g, "HU-01.2.json") == [])

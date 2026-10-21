@@ -380,9 +380,9 @@ def mal_esperado(espera):
         if (not isinstance(c, dict) or len(selectores & c.keys()) != 1
                 or set(c) - (selectores | {"valor"}) or "valor" not in c
                 or not all(isinstance(c[k], str) and c[k].strip() for k in selectores & c.keys())
-                or not escalar_json(c["valor"])):
-            mal.append("«campo» lleva exactamente «label» o «testLabel» (texto no vacío) y «valor» "
-                       "(cadena, número finito, booleano o null)")
+                or not (c["valor"] is None or isinstance(c["valor"], str))):
+            mal.append("«campo» lleva exactamente «label» o «testLabel» (texto no vacío) y «valor» (texto, "
+                       "también en un campo numérico, \"4\" y no 4, o null)")
     return mal
 
 
