@@ -80,7 +80,6 @@ drop it and tell the user.
 | `insertRecordData` into a group-type field wants the group's numeric ID and no `get` returns it | `validateExpression` with `{1,2}[tointeger(cons!X)]`: the error shows the value | 20261008-132401 |
 | After `updateExpressionRuleTestCase` a case lost its inputs, or the UUIDs no longer resolve | The update drops inputs you don't repeat and every write renews all the UUIDs: repeat all inputs and re-list. The expected result is `test!output = …`, not `fv!output` | 20261008-132401 |
 | A record list column from a related record is refused | Not available through the MCP: show it in an interface with a records grid | 20261008-132401 |
-| `testInterface` returns far more than `maxResponseSizeBytes`, or `updateInterface` returns the whole expression (about 19,000 characters) | Pass `expressionFilePath`; call each once per change | 20261008-132401 |
 
 ---
 

@@ -16,11 +16,12 @@
 | 9 | Con todas hechas, marcar la unidad construida, confirmando cada corrección urgente reaplicada | Script | `appian-functional-analyst` · `proyecto.py cambio <p> <U> construida [--reaplicada URG-nn]` | `appian-functional-analyst/references/cambios.md` §1 y §6 |
 
 **Una sesión por issue.** Cada issue se construye en una sesión limpia (`/clear` o una nueva) que pide la suya con
-`--siguiente --quien`; la sesión que hizo el análisis no construye. Las llamadas que no dependen unas de otras van en el
-mismo turno, y las herramientas del Dev MCP y las referencias de la skill oficial que pida la issue se cargan de una vez.
-Una decisión que quien construye no puede tomar se escribe como DT en el técnico (las issues no se editan: se regeneran con
-`indice.py issues <p> <U>`) y la sesión para; `--liberar ISS-nn` si nadie va a seguir esa issue. Un subagente, solo para lo
-autocontenido que devuelve poco: el QA del paso 8 o una investigación larga.
+`--siguiente --quien`; la sesión que hizo el análisis no construye, salvo en un retoque de pocos objetos. Las llamadas que
+no dependen unas de otras van en el mismo turno, y las herramientas del Dev MCP y las referencias de la skill oficial que
+pida la issue se cargan de una vez. Una decisión que no le toca a quien construye se pregunta; lo decidido va como DT al
+técnico (las issues no se editan: se regeneran con `indice.py issues <p> <U>`). Sin nadie a quien preguntar, la sesión
+para y libera la issue (`--liberar ISS-nn`). Un subagente, solo para lo autocontenido que devuelve poco: el QA del paso 8
+o una investigación larga.
 
 El avance entre sesiones lo dicen la verificación o el cierre manual de cada issue y el resultado del QA
 (`indice.py issues <p> <U>` identifica cada procedencia).
