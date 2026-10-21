@@ -7,9 +7,10 @@ al commit y al alcance indicados; no se suman controles repetidos ni se traslada
 
 ## Campaña de mejora del 19–21 de octubre de 2026
 
-Código final evaluado: `093b56f`, del 21 de octubre. Es trabajo local posterior a la entrega anterior;
-no implica integración en main, publicación ni despliegue. Esta sección consolida las pruebas de la campaña,
-conservando los fallos iniciales y las correcciones posteriores como resultados distintos.
+Código final evaluado: `093b56f`, del 21 de octubre, y después `2b9319c` (QA, con su suite). Es trabajo
+local posterior a la entrega anterior; no implica integración en main, publicación ni despliegue. Esta sección
+consolida las pruebas de la campaña, conservando los fallos iniciales y las correcciones posteriores como
+resultados distintos.
 
 | Problema | Commit | Prueba y alcance acreditado |
 |---|---|---|
@@ -20,9 +21,10 @@ conservando los fallos iniciales y las correcciones posteriores como resultados 
 | Retornos y evento de borde en diagramas automáticos | `d334d05` | Suite con navegador 145 controles y revisión visual acotada; se conservan avisos previos y geometría manual/importada. |
 | Una urgencia aprobada no podía versionarse sobre un evolutivo pendiente | `15b191d` | Secuenciación 22/22 y subtareas 8/8; suite analista 401/0; reaplicación viva posterior PASS. No acredita producción. |
 | Un técnico declarado completo sin DT ni datos omitía revisión | `a175330` | Tres regresiones y un vecino; CLI detecta dos errores antes omitidos. Suite 401/0. Detectar el montaje inválido no lo corrige. |
-| El cierre administrativo de una urgencia caducaba verificaciones | `2c4bde3` | 26 pruebas de secuenciación y suite 401/0; repetición viva conserva tres issues hechas y verificaciones intactas. Cambios reales de encargo/pruebas siguen invalidando. |
+| El cierre administrativo de una urgencia caducaba verificaciones | `2c4bde3` | 26 pruebas de secuenciación y suite 401/0; repetición viva conserva tres issues hechas y verificaciones intactas. Cambios reales de encargo/pruebas siguen invalidando. Al actualizar desde 0.8.0-beta.2 se verifica una vez más la issue con una urgencia ya cumplida o de desarrollo con prueba (siete estados medidos); una huella por datos, en vez del texto, no evitaba ninguno y añadía tres: descartada. |
 | Fecha explícita de transcripción ignorada | `25ad755`, `b4ffd2a`, `516bbad` | Alta y recatalogación conservan ID/cuerpo; cabeceras estructurales, campos vacíos, YAML y vecinos negativos probados. La prosa sin marcado estructuralmente indistinguible se acepta por contrato. |
 | Primera entrega desde borradores actualizados y varias opciones `--fuente` | `e6ff000`, `952854d` | Módulo de 23 pruebas, reservados y promoción viva con historial/copias conservados; corrección posterior de fuente omitida/mixta, localizador y destino de urgencias. Controles solapados. |
+| Un `valor` numérico en `campo` pasaba la revisión del guion y daba un falso defecto: SAIL CLI da `value` como texto también en campos numéricos | `2b9319c` | Reproducido con la respuesta real de la refactorización DEM (`"4"`); QA 87→88/0. La revisión rechaza números antes de repetir; el comparador no cambia. |
 | QA no podía afirmar el valor vacío de un campo | `b1fb552` | Suite 57→86 controles, reservado de 13 y repetición viva PASS; distingue vacío, nulo, cero, falso y propiedad ausente. No mide apariencia ni backend universal. |
 | Evidencia válida rechazada cuando `as-is` era un alias | `77c8d41` | Siete casos CLI y suite 53/53; mantiene rechazo de escapes/extracción bruta. La propuesta pasa de veinte errores de ruta a cero; no mide calidad semántica. |
 | Puntuación ignoraba campos de evidencia repetidos | `0a07319` | Consumidor corregido y propuestas congeladas reevaluadas: persisten 8/11 visibles FAIL y 3/3 reservadas PASS. No se retocan claves para convertir el fallo en éxito. |

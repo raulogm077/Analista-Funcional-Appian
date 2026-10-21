@@ -3129,7 +3129,7 @@ def pruebas_issues(tmp):
        and "con un commit en este equipo, sin subir: no se pudo consultar el remoto" in out.splitlines()[0], out)
 
 
-# Los dos criterios de ejemplo del diseño (docs/diseno/2026-10-14-metodo-lucia.md, «Requisitos en Gherkin») y su .feature
+# Los dos criterios de ejemplo de la plantilla del funcional (references/funcional-plantilla.md, HU-03) y su .feature
 DEVUELTA = ("Dada una solicitud devuelta, cuando la unidad solicitante la reenvía, entonces vuelve a «En revisión» con "
             "el mismo número.")
 EN_REVISION = "Dada una solicitud en revisión, cuando la unidad solicitante intenta cambiarla, entonces no puede."

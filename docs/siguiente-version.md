@@ -5,8 +5,10 @@ Esta lista no autoriza publicar, desplegar, enviar ni borrar.
 
 ## Cierre de la campaña actual
 
-- Retirar los planes y diseños publicados y las cachés inventariadas sólo cuando se confirme el borrado.
-  Se conservan galerías, esquemas y flujos: sí tienen consumidores.
+- Borrar las cachés locales inventariadas (`__pycache__`, `.pytest_cache`; no versionadas) sólo cuando se
+  confirme. Se conservan galerías, esquemas y flujos: sí tienen consumidores.
+- Terminar la QA independiente del Word C abierto con Microsoft Word real (índice con páginas, figuras y
+  destinos): valida un procedimiento externo, no el plugin, y quedó a medias.
 
 ## Mejoras que requieren un caso o una decisión
 
