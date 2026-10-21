@@ -91,7 +91,7 @@ if (args.includes("--pdf-de")) {
 const D = cargarDocx();
 const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType,
   ImageRun, AlignmentType, TableOfContents, Header, Footer, PageNumber, LevelFormat, BorderStyle, PageBreak,
-  PageOrientation } = D;
+  PageOrientation, ExternalHyperlink } = D;
 const leer = (f) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n") : "");
 const funcional = leer(path.join(analisis, "funcional.md"));
 if (!funcional) { console.error(`No encuentro ${path.join(analisis, "funcional.md")}`); process.exit(2); }
@@ -356,12 +356,19 @@ function image(file, caption) {
   const buf = fs.readFileSync(p);
   const w = buf.readUInt32BE(16), h = buf.readUInt32BE(20); // PNG IHDR
   const maxW = 640, maxH = 820;
-  let W = maxW, H = Math.round((h * maxW) / w);
-  if (H > maxH) { H = maxH; W = Math.round((w * maxH) / h); }
+  let W = maxW, H = (h * maxW) / w;
+  if (H > maxH) { H = maxH; W = (w * maxH) / h; }
   fig++;
+  const leyenda = [new TextRun({ text: `Figura ${fig} — ${caption}`, italics: true, size: 18 })];
+  const editable = p.replace(/\.png$/i, ".drawio");
+  if (editable !== p && fs.existsSync(editable)) {
+    const link = path.relative(path.dirname(out), editable).split(path.sep).map(encodeURIComponent).join("/");
+    leyenda.push(new TextRun({ text: " · ", size: 18 }),
+      new ExternalHyperlink({ link, children: [new TextRun({ text: "Ver detalle", style: "Hyperlink", size: 18 })] }));
+  }
   return [
     new Paragraph({ alignment: AlignmentType.CENTER, keepNext: true, children: [new ImageRun({ type: "png", data: buf, transformation: { width: W, height: H } })] }),
-    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 200 }, children: [new TextRun({ text: `Figura ${fig} — ${caption}`, italics: true, size: 18 })] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 200 }, children: leyenda }),
   ];
 }
 

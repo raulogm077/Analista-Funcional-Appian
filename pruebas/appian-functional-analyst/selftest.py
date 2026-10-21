@@ -1045,6 +1045,7 @@ Se acepta si:
                 print("· DF en Word: falta el paquete docx de Node (npm install docx); no se prueba")
             else:
                 ok("df_docx.js genera el DF", r.returncode == 0 and (tmp / "df.docx").exists(), r.stdout + r.stderr)
+                imagenes_docx(tmp / "imagenes Word")
                 if (tmp / "df.docx").exists():
                     xml = zipfile.ZipFile(tmp / "df.docx").read("word/document.xml").decode("utf-8").replace("\u2011", "-")
                     ok("el DF no enseña fuentes, anuladas ni respondidas",
@@ -3303,6 +3304,60 @@ def docx_de(proyecto, salida):
         print(r.stdout + r.stderr)
         return None
     return salida
+
+
+def imagenes_docx(tmp):
+    """El DF conserva los píxeles del proceso completo y enlaza su editable, si existe."""
+    import struct
+    import zlib
+    import xml.etree.ElementTree as ET
+    from urllib.parse import quote
+
+    p = tmp / "proyecto"
+    diagramas = p / "analisis" / "diagramas"
+    diagramas.mkdir(parents=True)
+    imagenes = {}
+    for nombre, ancho, alto in (("Proceso revisión #1", 4096, 80), ("Sin editable", 112, 96)):
+        def bloque(tipo, datos):
+            return struct.pack(">I", len(datos)) + tipo + datos + struct.pack(">I", zlib.crc32(tipo + datos))
+        png = (b"\x89PNG\r\n\x1a\n" + bloque(b"IHDR", struct.pack(">IIBBBBB", ancho, alto, 8, 2, 0, 0, 0))
+               + bloque(b"IDAT", zlib.compress((b"\0" + b"\x20\x40\x60" * ancho) * alto)) + bloque(b"IEND", b""))
+        (diagramas / f"{nombre}.png").write_bytes(png)
+        imagenes[nombre] = png
+    (diagramas / "Proceso revisión #1.drawio").write_text('<mxfile><diagram name="Proceso"/></mxfile>', encoding="utf-8")
+    (p / "analisis" / "funcional.md").write_text(
+        "# Imágenes completas\n\nVersión: 0.1\n\n## 3. Proceso\n\n"
+        "![Proceso largo](diagramas/Proceso revisión #1.png)\n\n"
+        "![Otra figura](diagramas/Sin editable.png)\n", encoding="utf-8")
+    d = docx_de(p, p / "entregables" / "df.docx")
+    ok("Word: genera figuras completas con rutas que contienen espacios, tildes y #", d is not None)
+    if d is None:
+        return
+    ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+          "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+          "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+          "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
+    with zipfile.ZipFile(d) as z:
+        doc = ET.fromstring(z.read("word/document.xml"))
+        relaciones = {r.get("Id"): r for r in ET.fromstring(z.read("word/_rels/document.xml.rels"))}
+        dibujos = doc.findall(".//w:drawing", ns)
+        bytes_embebidos = [z.read("word/" + relaciones[b.get("{%s}embed" % ns["r"])].get("Target"))
+                           for b in doc.findall(".//a:blip", ns)]
+        ok("Word: una figura por imagen y PNG ancho embebido íntegro, sin reducir sus píxeles",
+           len(dibujos) == 2 and bytes_embebidos == list(imagenes.values()))
+        medidas = [x.find(".//wp:extent", ns) for x in dibujos]
+        ok("Word: mantiene la proporción de las imágenes ancha y pequeña",
+           len(medidas) == 2 and all(abs(int(m.get("cx")) / int(m.get("cy")) - ancho / alto) < 0.1
+                                    for m, (ancho, alto) in zip(medidas, ((4096, 80), (112, 96)))))
+        enlaces = [relaciones[h.get("{%s}id" % ns["r"])] for h in doc.findall(".//w:hyperlink", ns)
+                   if h.get("{%s}id" % ns["r"]) in relaciones]
+        esperado = "../analisis/diagramas/" + quote("Proceso revisión #1.drawio")
+        ok("Word: enlace relativo al drawio existente, codificado y sin inventarlo para otras figuras",
+           len(enlaces) == 1 and enlaces[0].get("Target") == esperado
+           and enlaces[0].get("TargetMode") == "External", str([dict(x.attrib) for x in enlaces]))
+        texto = "".join(doc.itertext())
+        ok("Word: conserva numeración y leyendas de las figuras",
+           "Figura 1 — Proceso largo" in texto and "Figura 2 — Otra figura" in texto)
 
 
 def crear_docx_con_comentario(ruta):

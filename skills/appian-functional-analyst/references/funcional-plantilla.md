@@ -54,7 +54,7 @@ carriles del diagrama.
 
 ### 3. Proceso
 Por cada proceso, `### 3.n <Proceso>`:
-- La imagen del diagrama, `![Proceso de …](diagramas/<proceso>.png)`, que dibuja `appian-diagramas-bpmn`.
+- La imagen completa del diagrama, `![Proceso de …](diagramas/<proceso>.png)`, que dibuja `appian-diagramas-bpmn`. Aunque quede pequeña, se conserva su resolución para ampliar; el Word añade «Ver detalle» al `.drawio` de la misma carpeta si existe. Entrega ese editable junto al documento, conservando la estructura de carpetas.
 - Una ficha por paso, con el mismo `ACT-nn` que el diagrama. Tabla `Quién · Empieza cuando · Pantalla ·
   Plazo` y un párrafo con lo que hace. Si decide algo, una línea por opción y adónde lleva. Los plazos y
   los avisos (AV-nn) van en el paso, y solo ahí: las historias y los escenarios citan el paso en vez de

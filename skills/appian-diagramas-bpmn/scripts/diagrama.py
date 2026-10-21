@@ -102,9 +102,6 @@ def _informe_validacion(proc):
     return not err
 
 
-ANCHO_PNG_MAX = 3200   # px del PNG: más no se aprecia en un documento y solo pesa
-
-
 def _pngs(drawio, hojas):
     """Los PNG de un .drawio: X.png, o X-1.png, X-2.png… si está en tramos."""
     d = pathlib.Path(drawio)
@@ -137,8 +134,7 @@ def _png(drawio):
         aviso = colocacion.aviso_ancho(ancho)
         if aviso:
             print(f"aviso: {aviso}" + (f" ({destino.name})" if len(hojas) > 1 else ""))
-        escala = max(0.75, min(2.0, ANCHO_PNG_MAX / (ancho + 24)))   # nítido en un documento, sin pesar de más
-        trabajos.append((xml, destino, escala))
+        trabajos.append((xml, destino, 2.0))   # conserva el detalle al ampliar el proceso completo
     navegador.pintar_pngs(trabajos)
     # los de cuando tenía otros tramos (o ninguno) ya no son de este diagrama
     viejos = [p for p in _pngs_suyos(drawio) if p not in destinos]

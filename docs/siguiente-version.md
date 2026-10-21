@@ -17,6 +17,8 @@ Esta lista no autoriza publicar, desplegar, enviar ni borrar.
   otros sistemas siguen sin medir. El exportador estándar no actualiza el índice.
 - Diagramas: reducir los 30/38 avisos residuales sólo con mejora medida, sin relajar detectores ni cambiar
   un motor por intuición. Un orden distinto de notas no implica pérdida si asociación y texto se conservan.
+- PDF de procesos grandes: resolver la reducción de resolución observada al exportar desde Word; la opción
+  de calidad no la evitó. Falta medir LibreOffice. El DOCX sí conserva los píxeles; véase `evaluaciones.md`.
 - LEEME completo y deriva interna de una aplicación real siguen sin medir. Mantener la extracción masiva
   detenida; `getAgent` está aparcado tras el reporte a Appian. No ampliar presupuesto por el caso ficticio.
 - QA: completar sólo las dimensiones necesarias para la entrega: visual/accesibilidad, roles con cuenta,

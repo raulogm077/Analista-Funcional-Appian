@@ -1079,5 +1079,5 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
 def aviso_ancho(ancho):
     if ancho > ANCHO_LEGIBLE:
         return (f"el diagrama mide {ancho:.0f} px de ancho: en una página vertical el texto quedará pequeño. "
-                "Parte el proceso en subprocesos o usa una página apaisada")
+                "Amplía la imagen para ver el detalle")
     return None

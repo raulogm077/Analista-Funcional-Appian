@@ -1185,6 +1185,24 @@ def ancho_png(ruta):
     return unpack(">I", pathlib.Path(ruta).read_bytes()[16:20])[0]
 
 
+def resolucion_png(tmp):
+    """La imagen completa conserva 2x también cuando el proceso supera el ancho de una página."""
+    from unittest.mock import patch
+    import diagrama
+    proc = proceso_grande()
+    proc.pop("tramos")
+    tmp.mkdir(parents=True)
+    origen = tmp / "completo.json"
+    origen.write_text(json.dumps(proc, ensure_ascii=False), encoding="utf-8")
+    d = tmp / "salida" / "completo.drawio"
+    run("crear", origen, "-o", d, esperado=2, env=entorno(sin_navegador=True))
+    with patch.object(diagrama.navegador, "pintar_pngs") as pintar:
+        destinos = diagrama._png(d)
+    trabajos = pintar.call_args.args[0]
+    check(destinos == [d.with_suffix(".png")] and len(trabajos) == 1 and trabajos[0][2] == 2.0,
+          "PNG completo: una imagen a 2x aunque el diagrama sea ancho")
+
+
 def sin_navegador(tmp):
     """Sin navegador (DIAGRAMAS_SIN_NAVEGADOR=1 simula que no hay): crear escribe el .drawio y el .json con la
     colocación de reserva, sin pasos que se pisen, dice «sin PNG» y sale con 2; bpmn da un BPMN válido; actualizar
@@ -1519,6 +1537,7 @@ def main_sin_navegador():
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="diagramas-sin-navegador-"))
     try:
         sin_navegador(tmp / "sin")
+        resolucion_png(tmp / "resolucion")
         conexiones(tmp / "conexiones")
         etiquetas_de_puertas(tmp / "etiquetas")
         corredores_ortogonales(tmp / "corredores")
@@ -1549,6 +1568,7 @@ def main():
     try:
         # sin navegador y procesos que no caben en una página
         sin_navegador(tmp / "sin")
+        resolucion_png(tmp / "resolucion")
         conexiones(tmp / "conexiones")
         etiquetas_de_puertas(tmp / "etiquetas")
         corredores_ortogonales(tmp / "corredores")
@@ -1759,7 +1779,7 @@ def main():
                       and geo_r["flujos"][i] and geo_r["flujos"][i][-1][1] > geo_r["pasos"][f["a"]][1] + 25]
         check(por_debajo and all(geo_r["etiquetas"].get(e) == "arriba" for e in por_debajo) and not solapes(tmp / "rev" / "rev.drawio"),
               f"etiquetas: los eventos a los que llega un flujo por debajo llevan la etiqueta encima ({', '.join(por_debajo) or 'ninguno'})")
-        # 10. un proceso muy largo: aviso de ancho y PNG de tamaño razonable
+        # 10. un proceso muy largo: aviso de ancho y detalle a 2x al regenerar el PNG completo
         largo = {"proceso": "Largo", "carriles": ["Aplicación"],
                  "pasos": [{"id": "EV-01", "tipo": "inicio", "carril": "Aplicación", "nombre": "Inicio"}] +
                           [{"id": f"ACT-{i:02d}", "tipo": "sistema", "carril": "Aplicación", "nombre": f"Paso {i}"} for i in range(1, 25)] +
@@ -1770,7 +1790,12 @@ def main():
         out = run("crear", tmp / "largo.json", "-o", tmp / "largo")
         from struct import unpack
         ancho_png = unpack(">I", (tmp / "largo" / "largo.png").read_bytes()[16:20])[0]
-        check("aviso: el diagrama mide" in out and ancho_png <= 3300, f"ancho: aviso y PNG de {ancho_png} px como mucho 3300")
+        ancho_dibujo = dm.Fichero(str(tmp / "largo" / "largo.drawio")).hojas_png()[0][1]
+        dimensiones = unpack(">II", (tmp / "largo" / "largo.png").read_bytes()[16:24])
+        run("png", tmp / "largo" / "largo.drawio")
+        check("aviso: el diagrama mide" in out and ancho_png >= 2 * ancho_dibujo
+              and dimensiones == unpack(">II", (tmp / "largo" / "largo.png").read_bytes()[16:24]),
+              f"ancho: aviso y PNG completo a 2x ({ancho_png} px), también al regenerar")
         # 7. errores de validación
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}

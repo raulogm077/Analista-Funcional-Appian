@@ -86,6 +86,18 @@ Coste: cero llamadas MCP y pasos añadidos al recorrido normal de construcción;
 locales para advertir filas sueltas. El marcador sólo se escribe en el aborto de resolución; no hay nuevo estado,
 opción ni aprobación. No se atribuye ahorro a esta tanda.
 
+## Diagramas completos en el documento, 21 de octubre de 2026
+
+Sobre `02fa685`, se conserva el PNG completo a resolución doble también en procesos grandes, sin cambiar el
+motor ni la geometría. Word mantiene sus píxeles y proporciones, y enlaza el `.drawio` existente. Se retira la
+instrucción de partir por número de tareas. Suites: diagramas **156/0**, analista **424/0** y básica **7/0/0**.
+El caso de 53 pasos pasa de 79.915 a 284.714 bytes; no se acredita ahorro de tiempo ni se añaden pasos al flujo.
+La regeneración en una copia del documento con el motor actual pasa de 15 a 13 páginas, con el mismo texto y
+27 tablas; no se recolocan los originales manuales. Revisión visual de las 13 páginas, sin recortes nuevos.
+Límite comprobado: Word conserva las imágenes al guardar el DOCX, pero su PDF reduce las mayores a unos
+1.332 píxeles incluso con la opción de calidad activada. No se acredita la misma nitidez en ese PDF ni se ha
+medido la conversión estándar de LibreOffice, ausente en el equipo. No se añade un conversor alternativo.
+
 ## Entrega 0.8.0-beta.2 y trabajo anterior
 
 Este apartado resume resultados históricos; no se han repetido al redactar este corte.

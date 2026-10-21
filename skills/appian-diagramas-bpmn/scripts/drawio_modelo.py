@@ -405,10 +405,6 @@ def validar(proc):
             av.append(f"{pid}: temporizador solo se usa en un paso de tipo temporizador o inicio_temporizador")
         if es_si(p.get("interrumpe")) and (p["tipo"] != "temporizador" or not unido):
             av.append(f"{pid}: interrumpe solo se usa en un temporizador unido a su tarea con un flujo discontinuo")
-    n = sum(1 for p in pasos.values() if p["tipo"] in TAREAS)
-    if n > 20 and not proc.get("tramos"):
-        av.append(f"{n} tareas en un diagrama: pártelo en subprocesos para que se lea bien (si es un proceso que ya "
-                  "existe y no se pueden inventar subprocesos, «\"tramos\": true» lo dibuja en tramos de una página)")
     return err, av
 
 
