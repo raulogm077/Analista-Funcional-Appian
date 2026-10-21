@@ -61,6 +61,12 @@ Característica: HU-02 Revisar una solicitud
     Dada una solicitud devuelta
     Cuando el gestor la corrige
     Entonces vuelve a «Enviada»
+
+  @caso-de-prueba
+  Escenario: HU-02.3
+    Dado el día 28
+    Cuando un gestor intenta registrar
+    Entonces no puede
 """,
 }
 
@@ -329,6 +335,12 @@ def main():
                  "no component matches", "un error de SAIL CLI, que sale en texto, es el motivo del fallo")
         variante("HU-01.2", lambda g: g["cuando"].append({"sail": ["interact", "Título", ""]}),
                  "no cambió nada", "un paso que el servidor acepta sin cambiar nada falla")
+        variante("HU-01.2", lambda g: g["entonces"][0].update(espera={"texto": ["Importe (€)"]}),
+                 "no cambió nada", "un guardado rechazado no pasa si lo esperado no está en las validaciones (aunque esté en la página)")
+        variante("HU-01.2", lambda g: g["entonces"][0].update(espera={"texto": ["Otra cosa"]}),
+                 "no cambió nada", "ni con una validación ajena a lo esperado")
+        variante("HU-01.2", lambda g: g["entonces"][0].update(espera={"texto": ["indica el título"]}),
+                 "", "sí pasa si lo esperado es el rechazo, en las validaciones", resultado="pasa", codigo=0)
         variante("HU-01.1", lambda g: g["cuando"][-1]["espera"].update(fila={"con": "QA {pasada}", "Estado": "Enviada"}),
                  "tras un «load»", "comprobar la página justo tras enviar el formulario (la de antes) falla y dice por qué")
         variante("HU-01.1", lambda g: g["entonces"][-1]["espera"].update(sin_fila="QA {pasada}"),
@@ -377,7 +389,8 @@ def main():
 
         # lo siguiente a la última issue es el QA de la unidad, en otra sesión; marcarla sin QA se avisa, no se impide
         m_, ctx_ = SimpleNamespace(raiz=t.p, tablas=lambda *a, **k: [], docs={}), SimpleNamespace(reaplicar=lambda u: [])
-        ultima = issue(iss, "ISS-02", ["HU-02.1", "HU-02.2"])
+        ultima = issue(iss, "ISS-02", ["HU-02.1", "HU-02.2", "HU-02.3"])
+        ultima.feature = (t.p / "construccion" / "EV-01" / "ISS-02.feature").read_text(encoding="utf-8")   # HU-02.3: caso de prueba
         plan = iss.Plan("EV-01", "Solicitudes", "SIM", [hecha, ultima], [])
         ordenes, notas = iss.orden_de_terminar(m_, ctx_, plan, ultima)
         ok("la última issue de una unidad con escenarios dice que lo siguiente es su QA, en otra sesión, y no pone la orden "
@@ -391,8 +404,9 @@ def main():
            len(ordenes) == 2 and ordenes[1].endswith(" EV-01 construida") and iss.avisos_qa(t.p, sin_escenarios) == [],
            "\n".join(ordenes))
         ok("al marcarla, avisa si a su QA le faltan escenarios (sin guion) o si la unidad no tiene QA",
-           iss.avisos_qa(t.p, plan) == ["el QA de EV-01 no está completo (sin guion: HU-02.2): lo hace QA (appian-qa)"]
-           and "EV-05 no tiene QA" in iss.avisos_qa(t.p, iss.Plan("EV-05", "Otra", "SIM", [ultima], []))[0],
+           iss.avisos_qa(t.p, plan)[1:] == ["el QA de EV-01 no está completo (sin guion: HU-02.2): lo hace QA (appian-qa)"]
+           and "HU-02.3 los prueba un caso de prueba de regla" in iss.avisos_qa(t.p, plan)[0]
+           and "EV-05 no tiene QA" in iss.avisos_qa(t.p, iss.Plan("EV-05", "Otra", "SIM", [ultima], []))[-1],
            iss.avisos_qa(t.p, plan))
 
         # solo se repite en la URL de desarrollo o en la del entorno de corrección de técnico §0, por su etiqueta exacta:

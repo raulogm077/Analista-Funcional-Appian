@@ -459,7 +459,7 @@ def anexo(m):
             c = mo.celdas(l) if l.startswith("|") else []
             if len(c) < 3 or mo.normaliza(c[0]) in ("parte", "") or set(c[0]) <= set("-: "):
                 continue
-            quien = mo.normaliza(mo.sin_comentarios(c[2])).strip()
+            quien = re.sub(r"\([^)]*\)", "", mo.normaliza(mo.sin_comentarios(c[2]))).strip()   # sin aclaraciones entre paréntesis
             lista = {x.strip() for x in re.split(r",|;", re.sub(r"^todos\s*(menos|salvo|excepto)?", "", quien)) if x.strip()}
             if quien.startswith("todos"):
                 marcas = ["" if mo.normaliza(x) in lista else "✔" for x in pf]

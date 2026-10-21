@@ -194,7 +194,7 @@ def main():
         elif objetivo == "Enviar":
             if not pag["campos"].get("Título"):
                 pag["validaciones"] = ["Indica el título y el importe"]
-                fin(formulario(), changedFields=[{"key": "validations"}])
+                fin(formulario(), changedFields=[{"key": "validations"}], movedNothing=True)   # como el de verdad
             n = len(app["filas"]) + 1
             app["filas"].insert(0, {"Número": f"SIM-{n:04d}", "Título": pag["campos"]["Título"],
                                     "Importe": pag["campos"].get("Importe (€)", ""),

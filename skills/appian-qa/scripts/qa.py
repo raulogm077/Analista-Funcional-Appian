@@ -143,16 +143,20 @@ def como_entrar(usuario, host):
 
 # ------------------------------------------------------------------ los escenarios: sus .feature y el funcional de hoy
 def escenarios_de(raiz, uid):
-    """{escenario: {"dice": [líneas], "issue": "ISS-nn"}} de construccion/<U>/*.feature, en su orden."""
+    """{escenario: {"dice": [líneas], "issue": "ISS-nn", "caso": True si lo prueba un caso de prueba}} de
+    construccion/<U>/*.feature, en su orden."""
     out = {}
     carpeta = pathlib.Path(raiz) / "construccion" / uid
     orden = lambda f: [int(x) for x in re.findall(r"\d+", f.stem)] or [10 ** 6]
     for f in sorted(carpeta.glob("*.feature"), key=orden):
-        actual = None
+        actual, caso = None, False
         for linea in f.read_text(encoding="utf-8").splitlines():
             m = RX_ESCENARIO.match(linea)
-            if m:
+            if linea.strip() == "@caso-de-prueba":
+                caso, actual = True, None
+            elif m:
                 actual = out.setdefault(m.group(1), {"dice": [], "issue": (RX_ISSUE.search(f.stem) or [f.stem])[0]})
+                actual["caso"], caso = caso, False
             elif actual is not None and RX_PASO.match(linea):
                 actual["dice"].append(" ".join(linea.split()))
             elif linea.strip() and actual is not None and actual["dice"]:
@@ -435,7 +439,7 @@ class Recorrido:
     def rol(self, p):
         return p.get("rol") or next(iter(self.g["roles"]))
 
-    def sail(self, rol, orden):
+    def sail(self, rol, orden, espera=None):
         sub, args = ORDENES[orden[0]], [str(x) for x in orden[1:]]
         if sub == "load" and "--fresh" not in args:
             args.append("--fresh")
@@ -460,7 +464,10 @@ class Recorrido:
         if d.get("status") not in (None, "ok"):
             raise Falla(f"SAIL CLI da «{d.get('status')}»" + (f": {'; '.join(map(str, d['validations']))}"
                                                             if d.get("validations") else ""))
-        if d.get("movedNothing"):
+        rechazo = [norma(x) for x in espera.get("texto") or []] if espera else []
+        validaciones = [norma(t) for t in textos(d.get("validations"))]
+        # sin cambios por una validación que rechaza es lo esperado solo si lo esperado es ese rechazo
+        if d.get("movedNothing") and not any(x in v for x in rechazo for v in validaciones):
             raise Falla("el servidor aceptó la orden y no cambió nada")
         return sub, d
 
@@ -486,7 +493,7 @@ class Recorrido:
                                 "se puede escribir (dos enlaces con el mismo texto son también un problema de "
                                 "accesibilidad)")
         espera = p.get("espera") or {}
-        _, d = self.sail(rol, orden)
+        _, d = self.sail(rol, orden, espera)
         # lo que ha hecho este rol desde su último load: si solo es mirar (cargar, buscar, marcar una fila), se puede
         # volver a hacer cuando aún no se ve lo esperado, porque el proceso puede no haber terminado
         hechas = [orden] if ORDENES[orden[0]] == "load" else self.tras_carga.get(rol, []) + [orden]
@@ -497,7 +504,7 @@ class Recorrido:
             intentos += 1
             time.sleep(PAUSA)
             for o in hechas:
-                _, d = self.sail(rol, o)
+                _, d = self.sail(rol, o, espera)
             self.ultima[rol] = d
             mal = lo_que_falta(espera, d)
         if mal:
@@ -623,7 +630,7 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
         entrada = {"resultado": entrada.pop("resultado"), **entrada}   # lo primero que se lee
         nuevos[esc] = repetidos[esc] = entrada
     resultado = {"unidad": uid, "generadoEn": ahora(), "escenarios": nuevos,
-                 "sinGuion": [e for e in del_feature if e not in guiones]}
+                 "sinGuion": [e for e, d in del_feature.items() if e not in guiones and not d["caso"]]}
     escribe(fichero, json.dumps(resultado, ensure_ascii=False, indent=1) + "\n")
     cuenta = lambda r: sum(1 for e in repetidos.values() if e.get("resultado") == r and not e.get("sinRepetir"))
     sin = sum(1 for e in repetidos.values() if e.get("sinRepetir"))
@@ -650,6 +657,8 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
             L.append(f"  {esc} · guion por terminar: {e.get('motivo')}; lo termina QA (no vuelve a pendiente su issue)")
         else:
             L.append(f"  {esc} · desfasado: {e.get('motivo')}; QA rehace su guion")
+    for esc in [e for e, d in del_feature.items() if d["caso"]] if not solo else []:
+        L.append(f"  {esc} · lo prueba un caso de prueba de regla (técnico §14), no el QA: aquí no se da por probado")
     for esc in resultado["sinGuion"] if not solo else []:
         L.append(f"  {esc} · sin guion: lo recorre QA (appian-qa)")
     if parado and not de_antes:

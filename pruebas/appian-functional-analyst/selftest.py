@@ -328,6 +328,16 @@ def main():
         ok("comprobar.py: el anexo viejo tras renombrar una parte de una pantalla es aviso (derivadas --escribir)",
            c == 0 and "· el anexo «Quién puede hacer qué» al día" in out, out)
         corre(S / "indice.py", "derivadas", px, "--escribir")
+        # un perfil con una aclaración entre paréntesis sigue siendo ese perfil en el anexo
+        parte = next(l for l in fx.read_text(encoding="utf-8").split("\n") if l.startswith("| Pedir autorización |"))
+        antes_anexo = fx.read_text(encoding="utf-8")
+        editar(fx, parte, parte.rsplit("|", 2)[0] + "| Unidad solicitante (solo las suyas, no otras) |")
+        corre(S / "indice.py", "derivadas", px, "--escribir")
+        fila_anexo = next(l for l in fx.read_text(encoding="utf-8").split("\n") if "· Pedir autorización |" in l)
+        ok("indice.py derivadas: un perfil con una aclaración entre paréntesis sale en el anexo",
+           "✔" in fila_anexo, fila_anexo)
+        fx.write_text(antes_anexo, encoding="utf-8")
+        corre(S / "indice.py", "derivadas", px, "--escribir")
         c, out = corre(S / "comprobar.py", px)
         ok("comprobar.py: con el anexo regenerado, sin aviso", "✓ el anexo «Quién puede hacer qué» al día" in out, out)
 
@@ -2708,6 +2718,19 @@ def pruebas_issues(tmp):
                        "ISS-05-esperado.json", "ISS-05.feature", "ISS-05.md", "indice.md"], out + str(nombres))
     if not (d / "indice.md").is_file():      # sin issues no hay nada más que probar
         return
+    ok("el escenario que prueba un caso de prueba de regla (técnico §14, «Con qué») lo lleva en su .feature; el de SAIL CLI, no",
+       re.search(r"@caso-de-prueba\s+Escenario: HU-01\.2", lee(d / "ISS-02.feature"))
+       and not re.search(r"@caso-de-prueba\s+Escenario: HU-01\.1", lee(d / "ISS-02.feature")), lee(d / "ISS-02.feature"))
+    # una línea en blanco que parte la tabla de §13: las filas de después no cuentan, y no se genera nada en silencio
+    partida = tmp / "tabla 13 partida"
+    shutil.copytree(p, partida)
+    editar(partida / "analisis" / "tecnico.md", "| 5 | `AUT_SolicitudForm` |", "\n| 5 | `AUT_SolicitudForm` |")
+    c, out = corre(S / "comprobar.py", partida)
+    ok("técnico §13 partida por una línea en blanco: comprobar.py da error con la línea",
+       c == 1 and "✗ técnico §13: la tabla no está partida" in out and "→ l." in out, out)
+    c, out = issues(partida, "EV-01")
+    ok("y las issues no se regeneran con la mitad de la tabla: se dice la línea",
+       "la tabla está partida" in out and "desde la línea" in out, out)
     ind = filas_del_indice(lee(d / "indice.md"))
     ok("una issue por requisito: lo «Base», la primera; los requisitos que comparten pantalla o proceso, juntos",
        list(ind) == ["ISS-01", "ISS-02", "ISS-03", "ISS-04", "ISS-05"] and ind["ISS-01"][1:3] == ["Base", "Base"]

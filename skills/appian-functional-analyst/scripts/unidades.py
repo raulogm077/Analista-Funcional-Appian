@@ -267,6 +267,7 @@ class Contexto:
         # primer evolutivo puede ser EV-01 y las filas sin ID no son suyas
         self.sin_id = "EV-01" if "EV-01" in self.por_id and self.inventario is None else None
         self.filas = self._filas_13()
+        self.partida_13 = self._partida_13()
         self._copias = {}
 
     # ------------------------------------------------------------ informes → unidades
@@ -392,6 +393,18 @@ class Contexto:
                         "sustituye": objetos_celda(celda(f, "sustituye a")), "unidad": us[0] if us else self.sin_id,
                         "paso": celda(f, "paso"), "para": mo.sin_comentarios(celda(f, "para")).strip(), "orden": k})
         return out
+
+    def _partida_13(self):
+        """Las líneas de técnico §13 (desde 1) donde empieza un trozo de tabla sin su separador `|---|`: la tabla la parte
+        una línea en blanco o texto y sus filas de después no cuentan."""
+        if "T" not in self.m.docs:
+            return []
+        D = self.m.docs["T"]
+        ini, fin = D.seccion("13") or (0, 0)
+        sep = re.compile(r"^\|[\s:|-]+\|?\s*$")
+        return [i + 1 for i in range(ini, fin) if D.lineas[i].startswith("|")
+                and (i == ini or not D.lineas[i - 1].startswith("|"))
+                and not (i + 1 < fin and sep.match(D.lineas[i + 1]))]
 
     def filas_de(self, uid):
         return [f for f in self.filas if f["unidad"] == uid]

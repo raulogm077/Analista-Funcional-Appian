@@ -398,11 +398,12 @@ class Proyecto:
         entero = une(self.bloque(cid))
         return sin_comentarios(entero[RX_CRITERIO.match(entero).end():]).strip()
 
-    def escenarios(self, pid, solo=None):
+    def escenarios(self, pid, solo=None, caso=()):
         """Los criterios vigentes de una historia, o de la ficha de un intercambio, como escenarios de Gherkin en español,
         cada uno con su ID: (líneas, sin_gherkin). Un criterio que no está escrito con dado, cuando y entonces pasa tal
         cual, como un único paso «*» (Gherkin lo admite), y su ID va en sin_gherkin para que quien llama avise. Con
-        `solo`, nada más que esos criterios (los de una issue: los nuevos o cambiados de su unidad)."""
+        `solo`, nada más que esos criterios (los de una issue: los nuevos o cambiados de su unidad). Los de `caso` los
+        prueba un caso de prueba de regla, no la pantalla: llevan la etiqueta `@caso-de-prueba`."""
         p = self.piezas[pid]
         L, sin = [], []
         for cid in ([] if p.anulada else dict.fromkeys(p.hijos)):
@@ -413,7 +414,7 @@ class Proyecto:
             if not pasos:
                 sin.append(cid)
                 pasos = [("*", texto)]
-            L += ["", f"  Escenario: {cid}"] + [f"    {palabra} {paso}" for palabra, paso in pasos]
+            L += [""] + (["  @caso-de-prueba"] if cid in caso else []) + [f"  Escenario: {cid}"] + [f"    {palabra} {paso}" for palabra, paso in pasos]
         return L, sin
 
     def feature(self, pid):

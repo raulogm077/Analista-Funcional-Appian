@@ -183,7 +183,8 @@ y no lleva rutas del equipo de nadie:
   no repite deja de «pasar» (una pantalla que se cuelga no se esconde): sale **sin repetir**, con la fecha de su
   último «pasa» (`ultimoPasa`), y un «falla» se queda. Sin repetir no devuelve la issue a pendiente, pero
   `proyecto.py … construida` y `estado` lo avisan.
-- **sinGuion**: escenarios de la unidad que QA aún no ha recorrido.
+- **sinGuion**: escenarios de la unidad que QA aún no ha recorrido. Los que llevan `@caso-de-prueba` en el `.feature` los prueba un caso de prueba de regla (técnico §14): no
+  esperan guion, y el QA no los da por probados.
 
 Si una pantalla cambió a propósito, se rehace solo su guion.
 

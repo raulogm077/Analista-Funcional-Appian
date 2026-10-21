@@ -588,13 +588,14 @@ def escenarios(d, issue, pruebas):
         return (["Esta issue no cambia criterios ni reglas: no hay pruebas que ejecutar." if issue.sin_pruebas else
                  f"No cambia criterios, pero sí reglas ({', '.join(reglas)}): se prueban con sus casos de prueba."], "", [])
     L = [f"- `{c}` {limpio(m.criterio(c))} → {pruebas.get(c) or 'sin prueba en técnico §14'}" for c in issue.criterios]
+    caso = {c for c in issue.criterios if (pruebas.get(c) or "").startswith("Caso de prueba")}
     historias = list(dict.fromkeys(m.piezas[c].padre for c in issue.criterios))
     una = len(historias) == 1
     F = ["# language: es", f"Característica: {historias[0]} {m.piezas[historias[0]].titulo}" if una else
          f"Característica: {d.uid} {issue.id} {issue.titulo}"]
     sin = []
     for h in historias:
-        lineas, s = m.escenarios(h, solo=set(issue.criterios))
+        lineas, s = m.escenarios(h, solo=set(issue.criterios), caso=caso)
         sin += s
         F += lineas if una else ["", f"  Regla: {h} {m.piezas[h].titulo}"] + [f"  {l}" if l else l for l in lineas]
     return L, "\n".join(F) + "\n", sin
@@ -1134,6 +1135,9 @@ def calcula(m, ctx, uid, estreno=False):
     if crecida:   # lo añadido después de aprobarla no se construye sin aprobarlo (references/cambios.md)
         raise NoSePuede(f"{uid} ha crecido desde que se aprobó ({'; '.join(crecida)}): vuelve a aprobarla "
                         f"(`proyecto.py cambio <p> {uid} aprobada --fuente FU-nn`) o lleva lo nuevo a otra unidad")
+    if ctx.partida_13:
+        raise NoSePuede("Técnico §13: la tabla está partida (lo que sigue desde la línea "
+                        f"{', '.join(map(str, ctx.partida_13))} no cuenta): quita la línea en blanco o el texto que la corta")
     d = Unidad(m, ctx, uid)
     if not d.filas:
         protege_encargo(Plan(uid, u.titulo, aplicacion(m), [], []), m, ctx, estreno)
@@ -1553,12 +1557,16 @@ def falla_en_qa(raiz, uid, issue, marcas=()):
 def avisos_qa(raiz, plan):
     """Lo que falta del QA de una unidad con escenarios (F8, paso 8): sin resultado, o con escenarios sin guion,
     desfasados, con el guion por terminar o sin repetir. Son avisos: solo bloquea un escenario que falla (estado())."""
-    escenarios = [c for i in plan.issues for c in i.criterios]
+    # los que prueba un caso de prueba (`@caso-de-prueba` en el .feature) no esperan guion de QA
+    de_caso = {c for i in plan.issues for c in re.findall(r"@caso-de-prueba\s+Escenario:\s*(\S+)", i.feature)}
+    escenarios = [c for i in plan.issues for c in i.criterios if c not in de_caso]
+    nota = [f"{plan.uid}: {', '.join(sorted(de_caso))} los prueba un caso de prueba de regla (técnico §14), no el QA: "
+            "el QA no los da por probados"] if de_caso else []
     r = pathlib.Path(raiz) / "qa" / plan.uid / "resultado.json"
     if not escenarios:
-        return []
+        return nota
     if not r.is_file():
-        return [f"{plan.uid} no tiene QA (qa/{plan.uid}/resultado.json): lo siguiente es el QA de la unidad, en otra "
+        return nota + [f"{plan.uid} no tiene QA (qa/{plan.uid}/resultado.json): lo siguiente es el QA de la unidad, en otra "
                 "sesión y solo con sus .feature (appian-qa; F8, paso 8)"]
     try:
         esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") or {}
@@ -1569,7 +1577,7 @@ def avisos_qa(raiz, plan):
               (("sin guion", None), ("desfasados", "desfasado"), ("con el guion por terminar", "guion por terminar"),
                ("sin repetir", "sin repetir"))]
     faltan = [f"{que}: {', '.join(cs)}" for que, cs in faltan if cs]
-    return [f"el QA de {plan.uid} no está completo ({'; '.join(faltan)}): lo hace QA (appian-qa)"] if faltan else []
+    return nota + ([f"el QA de {plan.uid} no está completo ({'; '.join(faltan)}): lo hace QA (appian-qa)"] if faltan else [])
 
 
 def estados(plan, raiz):

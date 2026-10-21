@@ -534,6 +534,8 @@ def comprobar_unidades(m, ctx):
     curso = [u for u in ctx.unidades if u.estado in un.EN_CURSO]
     informe("unidades en curso: técnico §13 con tabla de construcción (convierte la lista antes de generar issues)",
             [u.id for u in curso if not u.urgente and not ctx.filas], grave=False)
+    informe("técnico §13: la tabla no está partida (una línea en blanco o texto corta sus filas)",
+            [f"l.{n}" for n in ctx.partida_13])
     supuestos_cerrados = []
     for _, cab, filas in m.tablas("T", "13"):
         if [mo.normaliza(x) for x in cab] == ["pregunta", "se construye con", "donde cambia"]:
