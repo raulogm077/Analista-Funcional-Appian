@@ -159,8 +159,9 @@ aplica. Detalle en `skills/appian-reverse-engineering/references/devmcp-setup.md
 
 Cómo se trabaja en este repositorio (la rama, las pruebas, la versión y el PR) está en `CLAUDE.md`. Qué comprueba
 `pruebas/comprobar_plugin.py` lo dice su cabecera; las pruebas de cada skill están en `pruebas/<skill>/` y las
-evaluaciones, en `pruebas/evaluaciones/`. En `docs/`: el diseño y el plan de la versión en curso (`docs/diseno/` y
-`docs/plan/`), los resultados de las evaluaciones (`docs/evaluaciones.md`) y lo pendiente (`docs/siguiente-version.md`).
+evaluaciones, en `pruebas/evaluaciones/`. Los resultados están en `docs/evaluaciones.md` y lo pendiente, en
+`docs/siguiente-version.md`. Cuando hagan falta, el diseño y plan en curso se guardan en `docs/diseno/` y
+`docs/plan/`; los de entregas cerradas se consultan en el historial de git.
 
 ## Versiones
 
