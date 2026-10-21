@@ -270,8 +270,12 @@ class RevisionInicio(unittest.TestCase):
         self.corre("version", self.p, "--fuente", "FU-02", "--que", "Segundo ajuste")
         self.corre("version", self.p, "--inicial", "--fuente", "FU-03", "--que", "Primera entrega")
         dec = self.p / "analisis/decisiones.md"
-        dec.write_text(dec.read_text(encoding="utf-8").replace("| FU-03, FU-01, FU-02 | — |",
-                       "| FU-03, FU-01, FU-02 | Aceptada |"), encoding="utf-8")
+        texto = dec.read_text(encoding="utf-8")
+        fila = next(l for l in texto.splitlines() if l.startswith("| 1.0 |"))
+        celdas = [c.strip() for c in fila.strip("|").split("|")]
+        celdas[3:5] = ["FU-03, FU-01, FU-02", "Aceptada"]  # entrega importada con su orden histórico
+        dec.write_text(texto.replace(fila, "| " + " | ".join(celdas) + " |", 1), encoding="utf-8")
+        self.assertIn("| FU-03, FU-01, FU-02 | Aceptada |", dec.read_text(encoding="utf-8"))
         antes = self.huellas()
         self.corre("version", self.p, "--inicial", "--fuente", "FU-04", "--que", "Fuente omitida")
         despues = self.huellas()
@@ -303,6 +307,88 @@ class RevisionInicio(unittest.TestCase):
         pm.write_text("\n".join(l for l in texto.split("\n") if not l.startswith("| FU-01 |")), encoding="utf-8")
         self.corre("version", self.p, "--inicial", "--fuente", "FU-02", "--que", "Primera entrega")
         self.assertIn("| FU-01 | 2026-10-20 | Acta | — | 0.2 |", pm.read_text(encoding="utf-8"))
+
+    def test_inicial_ordena_historia_por_primera_version_sin_cambiar_procedencia_de_decision(self):
+        for caso in ("normal", "invertido", "empate"):
+            with self.subTest(caso=caso):
+                self.p = self.base / caso
+                self.corre("iniciar", self.p, "--nombre", "Reserva ficticia")
+                self.fuente(3)
+                indice = self.p / "fuentes/indice.json"
+                datos = json.loads(indice.read_text(encoding="utf-8"))
+                for n, f in enumerate(datos["fuentes"], 1):
+                    f["fecha"] = f"2026-08-{n:02d}"
+                indice.write_text(json.dumps(datos), encoding="utf-8")
+                primeras = ("FU-02", "FU-01") if caso == "empate" else ("FU-01",)
+                self.corre("version", self.p, "--fuente", *primeras, "--que", "Primer ajuste")
+                if caso != "empate":
+                    self.corre("version", self.p, "--fuente", "FU-02", "--que", "Segundo ajuste")
+                dec = self.p / "analisis/decisiones.md"
+                if caso == "invertido":
+                    texto = dec.read_text(encoding="utf-8")
+                    filas = [l for l in texto.splitlines() if l.startswith("| 0.")]
+                    dec.write_text(texto.replace("\n".join(filas), "\n".join(reversed(filas))), encoding="utf-8")
+                self.corre("version", self.p, "--inicial", "--fuente", "FU-03", "--que", "Primera entrega",
+                           "--decision", "CAMBIA", "HU-01", "Reserva con responsable", "Reserva sin responsable")
+                texto = dec.read_text(encoding="utf-8")
+                fila = next(l for l in texto.splitlines() if l.startswith("| 1.0 |"))
+                self.assertEqual(re.findall(r"FU-\d+", fila),
+                                 ["FU-02", "FU-01", "FU-03"] if caso == "empate" else ["FU-01", "FU-02", "FU-03"])
+                decision = next(l for l in texto.splitlines() if l.startswith("| D-"))
+                self.assertIn("| 2026-08-03 | FU-03 | CAMBIA |", decision)
+
+    def test_inicial_tecnico_0_1_solo_si_no_ha_empezado(self):
+        for caso in ("intacto", "iniciado-desfasado", "iniciado-coherente"):
+            with self.subTest(caso=caso):
+                self.p = self.base / caso
+                self.corre("iniciar", self.p, "--nombre", "Reserva ficticia")
+                tecnico = self.p / "analisis/tecnico.md"
+                intacto = tecnico.read_bytes()
+                self.fuente(2)
+                self.corre("version", self.p, "--fuente", "FU-01", "--que", "Primer ajuste")
+                if caso != "iniciado-coherente":
+                    tecnico.write_bytes(intacto)
+                if caso.startswith("iniciado"):
+                    texto = tecnico.read_text(encoding="utf-8").replace("## 2. Decisiones técnicas",
+                            "## 2. Decisiones técnicas\n\n**DT-01 — Persistencia ficticia** <!-- ✅ FU-01 -->\n\nDecisión ficticia.")
+                    tecnico.write_text(texto, encoding="utf-8")
+                antes = self.huellas()
+                respuesta = self.corre("version", self.p, "--inicial", "--fuente", "FU-02", "--que", "Primera entrega", check=False)
+                if caso == "iniciado-desfasado":
+                    self.assertNotEqual(respuesta.returncode, 0)
+                    self.assertIn("versión del técnico", respuesta.stderr)
+                    self.assertEqual(antes, self.huellas())
+                else:
+                    self.assertEqual(respuesta.returncode, 0, respuesta.stdout + respuesta.stderr)
+                    self.assertIn("Versión: 1.0", tecnico.read_text(encoding="utf-8"))
+
+    def test_inicial_recupera_solo_informe_exacto_unico_y_respeta_cli(self):
+        for caso in ("ninguno", "impacto", "notas", "ambos", "parecido", "directorio", "explicito"):
+            with self.subTest(caso=caso):
+                self.p = self.base / caso
+                self.corre("iniciar", self.p, "--nombre", "Reserva ficticia")
+                self.fuente(2)
+                self.corre("version", self.p, "--fuente", "FU-01", "--que", "Primer ajuste")
+                pm = self.p / "proyecto.md"
+                pm.write_text("\n".join(l for l in pm.read_text(encoding="utf-8").splitlines() if not l.startswith("| FU-01 |")), encoding="utf-8")
+                archivos = {}
+                for carpeta in ("impacto", "notas"):
+                    if caso in (carpeta, "ambos", "explicito"):
+                        informe = self.p / carpeta / "FU-01.md"
+                        informe.write_text("# Informe ficticio\n", encoding="utf-8")
+                        archivos[informe] = informe.read_bytes()
+                if caso == "parecido":
+                    (self.p / "impacto/FU-010.md").write_text("Otro informe\n", encoding="utf-8")
+                if caso == "directorio":
+                    (self.p / "impacto/FU-01.md").mkdir()
+                extra = ("--informe", "notas/eleccion-explicita.md") if caso == "explicito" else ()
+                respuesta = self.corre("version", self.p, "--inicial", "--fuente", "FU-02", "--que", "Primera entrega", *extra)
+                fila = next(l for l in pm.read_text(encoding="utf-8").splitlines() if l.startswith("| FU-01 |"))
+                esperado = "notas/eleccion-explicita.md" if caso == "explicito" else f"{caso}/FU-01.md" if caso in ("impacto", "notas") else "—"
+                self.assertIn(f"| {esperado} | 0.2 |", fila)
+                self.assertEqual("informes exactos" in respuesta.stdout, caso == "ambos")
+                for informe, contenido in archivos.items():
+                    self.assertEqual(informe.read_bytes(), contenido)
 
     def test_inicial_rechaza_entrega_previa_o_fuente_historica_inexistente_sin_escribir(self):
         self.fuente(2)

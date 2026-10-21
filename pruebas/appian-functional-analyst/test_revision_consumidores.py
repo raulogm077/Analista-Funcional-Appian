@@ -176,6 +176,47 @@ class FechasFuentes(unittest.TestCase):
         self.assertEqual({p.name: p.read_bytes() for p in self.fuentes.iterdir() if p.is_file()}, snapshot)
         self.assertEqual(copia.read_bytes(), original)
 
+    def test_copia_renombrada_repara_fecha_sin_reconvertir_ni_cambiar_identidad(self):
+        for salida in ("presente", "ausente", "vacia"):
+            with self.subTest(salida=salida):
+                self.fuentes = self.raiz / salida
+                f = self.original("sesion.md", "Tipo de fuente: transcripción\nFecha: 24/7/2026\n\n" + self.turnos)
+                otro = self.original("otra.md", "Resumen ficticio independiente.\n")
+                filas = self.ingerir(f, otro)
+                filas = self.ingerir("--duplicada", "FU-01=FU-02", "--motivo", "Resumen revisado")
+                filas[0]["fecha"] = "2026-10-20"
+                derivado = self.fuentes / filas[0]["salida"]
+                raw = derivado.read_bytes().replace(b"- Fecha: 2026-07-24", b"- Fecha: 2026-10-20", 1)
+                if salida == "ausente":
+                    filas[0]["salida"] = "FU-01-no-existe.md"
+                    derivado = self.fuentes / filas[0]["salida"]
+                elif salida == "vacia":
+                    raw = b""
+                if salida != "ausente":
+                    derivado.write_bytes(raw)
+                (self.fuentes / "indice.json").write_text(json.dumps({"fuentes": filas}), encoding="utf-8")
+                copia = self.entrada / "renombrada.md"
+                original = f.read_bytes()
+                copia.write_bytes(original)
+                fecha = "2026-07-24" if salida == "presente" else "2026-10-20"
+                esperadas = [{**filas[0], "fecha": fecha, **({"palabras": 0} if salida == "vacia" else {})}, filas[1]]
+                self.assertEqual(self.ingerir(copia), esperadas)
+                self.assertEqual(self.ingerir(copia), esperadas)
+                if salida == "ausente":
+                    self.assertFalse(derivado.exists())
+                else:
+                    esperado = raw.replace(b"- Fecha: 2026-10-20", b"- Fecha: 2026-07-24", 1) if raw else raw
+                    self.assertEqual(derivado.read_bytes(), esperado)
+                self.assertEqual(f.read_bytes(), original)
+                self.assertEqual(copia.read_bytes(), original)
+                if salida == "presente":
+                    copia.write_bytes(original + b"\nContenido nuevo ficticio.\n")
+                    nuevas = self.ingerir(copia)
+                    self.assertEqual(nuevas[:2], esperadas)
+                    self.assertEqual((nuevas[2]["id"], nuevas[2]["fecha"]), ("FU-03", "2026-07-24"))
+                    self.assertNotIn("duplicada_de", nuevas[2])
+                    self.assertNotIn("motivo_duplicada", nuevas[2])
+
     def test_mismo_catalogo_sin_cabecera_no_recalcula_fallback(self):
         f = self.original("sesion.txt", self.turnos + "Fecha: 2026-07-24\n")
         filas = self.ingerir(f)

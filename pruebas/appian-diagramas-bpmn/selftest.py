@@ -549,6 +549,47 @@ def nota_a_mano(tmp):
           + "; ".join(mal))
 
 
+def nota_entre_filas(tmp):
+    """Una nota manual evita cajas existentes cuando el otro lado está libre; no recoloca lo anterior."""
+    import copy, diagrama, drawio_modelo as dm
+    for nombre, superior, inferior, nota_previa, esperado in (
+            ("paso arriba", 180, None, False, 383),
+            ("arriba libre", 100, None, False, 204),
+            ("ambos ocupados", 180, 410, False, 204),
+            ("contacto borde", 164, None, False, 204),
+            ("nota arriba", 100, None, True, 383)):
+        proc = {"proceso": "Notas entre filas", "carriles": ["Gestor"],
+                "pasos": [{"id": "ACT-01", "tipo": "tarea", "carril": "Gestor", "nombre": "Configurar"},
+                          {"id": "ACT-02", "tipo": "tarea", "carril": "Gestor", "nombre": "Activar"}],
+                "flujos": []}
+        geo = {"carriles": {"Gestor": (0, 500)}, "ancho": 800,
+               "pasos": {"ACT-01": (240, superior), "ACT-02": (240, 325)}, "flujos": []}
+        if inferior is not None:
+            proc["pasos"].append({"id": "ACT-03", "tipo": "tarea", "carril": "Gestor", "nombre": "Guardar"})
+            geo["pasos"]["ACT-03"] = (240, inferior)
+        if nota_previa:
+            proc["notas"] = [{"paso": "ACT-01", "texto": "Nota anterior"}]
+            geo["anotaciones"] = [(180, 204, 160, 63)]
+        ruta = tmp / (nombre + ".drawio")
+        dm.escribir_drawio(proc, geo, str(ruta))
+        editor = diagrama.Editor(ruta)
+        proc0, geo0 = copy.deepcopy(editor.proc), copy.deepcopy(editor.geo)
+        nota = {"paso": "ACT-02", "texto": "Reactivar exige vigencia actual; consulta según RB-02"}
+        editor.anadir_nota(nota)
+        editor.f.guardar()
+        final = diagrama.Editor(ruta)
+        indice = final.proc["notas"].index(nota)
+        cid = final.geo["ids_nota"][indice]
+        _, oy = final._abs_padre(cid)
+        ny = oy + float(final._geom(cid).get("y"))
+        check(ny == esperado, f"nota entre filas: {nombre}, y={ny}, esperado {esperado}")
+        check(all(proc0.get(k) == final.proc.get(k) for k in ("proceso", "carriles", "pasos", "flujos", "externos"))
+              and all(geo0.get(k) == final.geo.get(k) for k in ("pasos", "carriles", "flujos", "etiquetas"))
+              and final.proc["notas"].count(nota) == 1
+              and all(n in final.proc["notas"] for n in proc0.get("notas", [])),
+              f"nota entre filas: {nombre}, conserva semántica y geometría manual previas")
+
+
 def provisional(tmp):
     """Si falla la relectura de comprobación de actualizar, no queda X.drawio.tmp y el .drawio sigue como estaba."""
     import argparse, diagrama, drawio_modelo as dm
@@ -1465,7 +1506,7 @@ def g3(tmp):
     suelto, la holgura de las etiquetas y las filas por capas, el temporizador que interrumpe, los avisos y el fichero de
     cambios temporal."""
     for nombre, prueba in (("nota", lambda t: nota_y_etiqueta(t, entorno(sin_navegador=True))), ("nota a mano", nota_a_mano),
-                           ("provisional", provisional),
+                           ("nota entre filas", nota_entre_filas), ("provisional", provisional),
                            ("error suelto", error_suelto), ("holgura", holgura), ("interrumpe", interrumpe),
                            ("avisos", avisos), ("cambios", cambios_temporales), ("finales", finales_conservados)):
         (tmp / nombre).mkdir(parents=True)

@@ -35,7 +35,7 @@ equipo, qué se pierde y cómo se instala. Si falta algo para esta tarea, dísel
   - `as-is/LEEME.md` (entorno, versión de Appian, confianza y lo que no incluye), los documentos `01`–`11`,
     `INVENTARIO.md` y el `anexo/`: se leen para entender y se enlazan como evidencia.
   - «Base:» de la propuesta lleva la fecha del `as-is/` que da `LEEME.md`. Si el `as-is/` se rehace, la propuesta se
-    revisa contra el nuevo `as-is/`: `build_registry.py` conserva los IDs de los `H-…` y NV que reconoce del registro
+    revisa contra el nuevo `as-is/`: `<skill>/../appian-reverse-engineering/scripts/build_registry.py` conserva los IDs de los `H-…` y NV que reconoce del registro
     anterior. Comprueba sus cambios y los IDs listados como retirados en `datos/`; las citas de estos últimos ya no valen.
   - La extracción en bruto es interna de ingeniería inversa: no se lee ni se enlaza.
 - **El alcance**: la aplicación entera o qué módulos y procesos.

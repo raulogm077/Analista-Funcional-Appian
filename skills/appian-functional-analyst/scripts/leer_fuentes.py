@@ -808,11 +808,12 @@ def main():
             h = hashlib.sha1((h + "".join(k + hashlib.sha1(v.read_bytes()).hexdigest()
                                         for k, v in sorted(imagenes.items()))).encode("utf-8")).hexdigest()
         old = by_hash.get(h)
+        if old and ((old["salida"] and textos.get(old["id"], "").strip()) or old["tipo"] == "Imagen"):
+            actualiza_fecha_transcripcion(old, f, out)
         if old and old["fichero"] != f.name:
             print(f"= {old['id']} {f.name} (mismo contenido que {old['fichero']})")
             continue
         if old and ((old["salida"] and textos.get(old["id"], "").strip()) or old["tipo"] == "Imagen"):
-            actualiza_fecha_transcripcion(old, f, out)
             print(f"= {old['id']} {f.name} (ya catalogada)")
             continue
         fid = old["id"] if old else f"FU-{len(state['fuentes']) + 1:02d}"  # reintento de una fuente no leída

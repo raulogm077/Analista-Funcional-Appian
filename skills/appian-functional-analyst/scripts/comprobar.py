@@ -143,6 +143,10 @@ def comprobar_ids(m):
     informe("IDs definidos una sola vez", [f"{i} ({mo.DOCS[d]} l.{n})" for i, d, n in m.duplicados])
     informe("cada ficha o fila con ID está en su apartado (si no, es una cita y no debe abrir ficha o fila)",
             [f"{i} ({mo.DOCS[d]} l.{n + 1})" for i, d, n in m.fuera_de_casa])
+    sueltas = [f"{p.id} ({p.donde()}): restaura la cabecera o une la fila a su tabla"
+               for p in m.piezas.values() if p.forma == "fila" and mo.RX_FILA.match(p.cabecera)]
+    if sueltas:
+        informe("filas con ID dentro de una tabla con cabecera", sueltas)
     rotas = collections.defaultdict(list)
     for d, D in m.docs.items():
         for k, l in enumerate(D.lineas):

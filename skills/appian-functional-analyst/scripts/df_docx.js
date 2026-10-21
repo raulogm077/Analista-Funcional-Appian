@@ -439,7 +439,7 @@ const portada = [
   new Paragraph({ children: [new TextRun({ text: `Versión ${version} · ${estadoDoc}`, size: 24 })] }),
   new Paragraph({ children: [new TextRun({ text: `Fecha: ${fechaVersion}`, size: 24 })] }),
   new Paragraph({ children: [new PageBreak()] }),
-  new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Índice")] }),
+  new Paragraph({ spacing: { before: 240, after: 160 }, keepNext: true, keepLines: true, children: [new TextRun({ text: "Índice", size: 32, bold: true, color: COLOR, font: FONT })] }),
   new TableOfContents("Índice", { hyperlink: true, headingStyleRange: "1-3", cachedEntries: entradas }),
 ];
 

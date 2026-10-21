@@ -599,3 +599,48 @@ def test_verificador_fallo_de_prueba_del_consumidor_externo_no_se_pierde(monkeyp
     assert r["pruebas"]["fallan"] == 1
     assert r["pruebas"]["objetos"][0]["de"] == "issue"
     assert len(r["pruebas"]["objetos"][0]["fallan"]) == 1
+
+
+@pytest.mark.parametrize("fallo", ["ambiguo", "incompleto"])
+def test_verificador_resolucion_incierta_avisa_al_consumidor_y_se_recupera(monkeypatch, tmp_path, fallo):
+    from conftest import PLUGIN
+    monkeypatch.syspath_prepend(str(PLUGIN / "skills/appian-functional-analyst/scripts"))
+    import issues
+
+    destino = tmp_path / "construccion/EV-01/verificacion/ISS-01.json"
+    destino.parent.mkdir(parents=True)
+    marca = destino.with_name("ISS-01.interrumpido.json")
+    esperado = {"_issue": {"id": "ISS-01", "unidad": "EV-01", "version": "ficticia"},
+                "LAB_Panel": {"tipo": "interface"}}
+    entrada = tmp_path / "esperado.json"
+    entrada.write_text(json.dumps(esperado), encoding="utf-8")
+    issue = issues.Issue(filas=[], id="ISS-01", version="ficticia", objetos=["LAB_Panel"], esperado=esperado)
+    args = SimpleNamespace(objetos=None, esperado=str(entrada), registro=False, policy=dx.DEFAULT_POLICY,
+                           out=str(destino), json=False)
+    choice = dx.ServerChoice("mock", "mock", "", [], {"LCP_URL": "https://demo.example.org"})
+
+    def ejecutar(s):
+        async def preparar(ex, *_):
+            await ex.load_catalog()
+            return s.app, [], []
+        monkeypatch.setattr(dx, "prepare", preparar)
+        monkeypatch.setattr(dx, "open_session", lambda *_: (s, choice, 0, ""))
+        return asyncio.run(dx.cmd_verificar(args))
+
+    assert ejecutar(SesionVerificarExterno()) == 0
+    assert issues.estado(tmp_path, "EV-01", issue) == (True, "hecha")
+    anterior, fuente = destino.read_bytes(), entrada.read_bytes()
+    paginas = ([{"items": [SesionVerificarExterno.panel, {**SesionVerificarExterno.panel, "uuid": "otro"}], "total": 2}]
+               if fallo == "ambiguo" else [{"items": [SesionVerificarExterno.panel]}])
+    sesion = SesionVerificarExterno(paginas)
+    assert ejecutar(sesion) == dx.EXIT_APP
+    assert destino.read_bytes() == anterior and entrada.read_bytes() == fuente
+    parcial = json.loads(marca.read_text(encoding="utf-8"))
+    assert parcial["status"] == "partial" and parcial["previousResultIsCurrent"] is False
+    assert "LAB_Panel" in parcial["interruption"]["error"]
+    hecha, motivo = issues.estado(tmp_path, "EV-01", issue)
+    assert hecha and "última lectura interrumpida" in motivo and "verificación anterior" in motivo
+    assert [c["tool"] for c in sesion.calls] == ["listObjects"]
+    assert ejecutar(SesionVerificarExterno()) == 0
+    assert json.loads(marca.read_text(encoding="utf-8"))["status"] == "superseded"
+    assert issues.estado(tmp_path, "EV-01", issue) == (True, "hecha")

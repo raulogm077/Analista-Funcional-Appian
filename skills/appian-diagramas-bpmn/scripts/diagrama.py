@@ -586,7 +586,13 @@ class Editor:
             etiqueta = colocacion.alto_texto(paso.get("nombre")) + 2 if etiquetas.get(n["paso"]) == lado_ else 0
             hueco = 0 if desplazamiento.startswith("fuera") else colocacion.NOTA_HUECO + etiqueta
             return cy - h / 2 - hueco - alto if lado_ == "arriba" else cy + h / 2 + hueco
-        cabe = lambda lado_: y + 4 <= arriba_de(lado_) and arriba_de(lado_) + alto <= y + hc - 4   # noqa: E731
+        cajas = dm._cajas(self.proc, self.geo)
+
+        def cabe(lado_):
+            ny = arriba_de(lado_)
+            return (y + 4 <= ny and ny + alto <= y + hc - 4
+                    and not any(nx < bx + bw and bx < nx + ancho and ny < by + bh and by < ny + alto
+                                for bx, by, bw, bh in cajas))
         otro = "abajo" if lado == "arriba" else "arriba"
         if not cabe(lado) and cabe(otro) and etiquetas.get(n["paso"]) != otro:
             lado = otro

@@ -1054,6 +1054,16 @@ Se acepta si:
                     ok("el índice del DF lleva sus entradas (soffice no rellena un campo vacío)",
                        toc is not None and "1. Objetivo y alcance" in toc.group(0) and "HU-07 — " in toc.group(0),
                        toc.group(0)[:600] if toc else xml[:600])
+                    parrafos = re.findall(r"<w:p[ >].*?</w:p>", xml, re.S)
+                    titulo_indice = [p for p in parrafos if re.sub(r"<[^>]+>", "", p) == "Índice"]
+                    ok("el título Índice no es un encabezado indexable",
+                       len(titulo_indice) == 1 and "<w:pStyle" not in titulo_indice[0]
+                       and "<w:outlineLvl" not in titulo_indice[0], str(titulo_indice))
+                    ok("Índice conserva formato y los títulos del cuerpo siguen indexables",
+                       len(titulo_indice) == 1 and all(x in titulo_indice[0] for x in
+                           ('w:before="240"', 'w:after="160"', 'w:sz w:val="32"', '<w:b/>', 'w:color w:val="1F3864"'))
+                       and any('w:val="Heading1"' in p and "1. Objetivo y alcance" in p for p in parrafos),
+                       str(titulo_indice))
                     estilos = zipfile.ZipFile(tmp / "df.docx").read("word/styles.xml").decode("utf-8")
                     ok("sin marca, los colores de siempre", 'w:fill="1F3864"' in xml and "1F3864" in estilos)
                 d = docx_de(intp, tmp / "int.docx")

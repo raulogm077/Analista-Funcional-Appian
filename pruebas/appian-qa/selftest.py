@@ -183,6 +183,9 @@ def prueba_campo(qa):
     campo = {"#t": "TextField", "label": "Cantidad", "testLabel": "campo-cantidad", "value": ""}
     ok("campo admite una cadena vacía y la encuentra en ui, aunque options omita value",
        qa.mal_esperado(espera) == [] and qa.lo_que_falta(espera, pagina(campo, options=[{"label": "Cantidad"}])) == [])
+    contenedor = {"#t": "SectionLayout", "label": "Cantidad", "contents": [campo]}
+    ok("ignora la label del contenedor al resolver un campo",
+       qa.lo_que_falta(espera, {"ui": contenedor}) == [])
     casos = [
         ("campo ausente", pagina(), "no está el campo"),
         ("value ausente", pagina({k: v for k, v in campo.items() if k != "value"}), "valor ausente"),
@@ -191,7 +194,7 @@ def prueba_campo(qa):
         ("false", pagina({**campo, "value": False}), "value false"),
         ("no vacío", pagina({**campo, "value": "5"}), 'value "5"'),
         ("etiquetas duplicadas", pagina(campo, dict(campo)), "ambiguo"),
-        ("tipo no soportado", pagina({**campo, "#t": "DropdownWidget"}), "no soportado"),
+        ("tipo no soportado", pagina({**campo, "#t": "DropdownWidget"}), "no está el campo"),
         ("solo options o deltas", pagina(options=[campo], changed=[campo]), "no está el campo"),
         ("solo el prefijo de la etiqueta", pagina({**campo, "label": "Cantidad extra"}), "no está el campo"),
     ]

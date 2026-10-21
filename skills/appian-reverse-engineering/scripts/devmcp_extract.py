@@ -1713,6 +1713,8 @@ TIPOS_BUSQUEDA = ("AI_AGENT", "AI_SKILL", "CONNECTED_SYSTEM", "CONSTANT", "DATA_
 async def resuelve_verificacion(ex: Extractor, app: dict, objects: list[dict], pedidos: list[str], tipos: dict) -> dict:
     """Una resolucion para comparar y probar: app contextual y, solo si falta, busqueda global tipada y acotada."""
     def no_resuelto(motivo, codigo=EXIT_APP):
+        if codigo == EXIT_APP:
+            ex.interruption = {"error": motivo, "at": now_iso()}
         eprint(motivo)
         raise SystemExit(codigo)
 
@@ -2267,6 +2269,8 @@ async def cmd_verificar(args) -> int:
         except ExtractionInterrupted:
             return interrupcion_de_lectura(Path(args.out).resolve(), ex)
         except SystemExit as se:
+            if int(se.code) == EXIT_APP and ex.interruption:
+                interrupcion_de_lectura(Path(args.out).resolve(), ex)
             return int(se.code)
         except Exception as ex_:
             return reg.no_arranca(ex_)

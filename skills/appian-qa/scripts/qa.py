@@ -273,15 +273,13 @@ def mismo_valor(a, b):
 def falta_campo(campo, ui):
     selector = "label" if "label" in campo else "testLabel"
     nombre = campo[selector]
-    suyos = [c for c in componentes(ui) if c.get(selector) == nombre]
+    suyos = [c for c in componentes(ui) if c.get("#t") in CAMPOS and c.get(selector) == nombre]
     quien = f"el campo con {selector} «{nombre}»"
     if not suyos:
-        return [f"no está {quien}"]
+        return [f"no está {quien} entre los campos admitidos (TextField, ParagraphField)"]
     if len(suyos) != 1:
         return [f"{len(suyos)} componentes tienen {selector} «{nombre}»: el campo es ambiguo"]
     c = suyos[0]
-    if c["#t"] not in CAMPOS:
-        return [f"{quien} tiene tipo «{c['#t']}» no soportado (solo {', '.join(sorted(CAMPOS))})"]
     if "value" not in c:
         return [f"{quien} no trae «value» (valor ausente)"]
     if not mismo_valor(c["value"], campo["valor"]):

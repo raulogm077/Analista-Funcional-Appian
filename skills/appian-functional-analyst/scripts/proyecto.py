@@ -262,7 +262,7 @@ def avisos_repositorio(raiz):
 
 def avisos_proyecto(raiz):
     """Los avisos de `estado` sobre el repositorio del proyecto y lo que genera `iniciar`: lo que falta, lo que no está
-    subido, AGENTS.md o los flujos de otra versión del plugin y un CLAUDE.md que no importa AGENTS.md."""
+    subido, AGENTS.md o los flujos de otra versión, un CLAUDE.md que no importa AGENTS.md y filas de historial fuera de tabla."""
     version = version_plugin()
     flujos = [f"{COPIA_FLUJOS}/{f.name}" for f in FLUJOS.glob("F*.md")]
     es_repo = not shutil.which("git") or git(raiz, "rev-parse", "--is-inside-work-tree") is not None
@@ -303,6 +303,23 @@ def avisos_proyecto(raiz):
     claude = raiz / "CLAUDE.md"
     if claude.is_file() and not RX_IMPORTA.search(claude.read_text(encoding="utf-8", errors="replace")):
         avisos.append(f"CLAUDE.md no importa {GUIA}: añádele una línea «@{GUIA}»")
+    for nombre, titulo in (("proyecto.md", "Fuentes procesadas"), ("analisis/decisiones.md", "Versiones")):
+        ruta = raiz / nombre
+        if not ruta.is_file():
+            continue
+        lineas = ruta.read_text(encoding="utf-8").split("\n")
+        bloque = _bloque_tabla(lineas, titulo)
+        if bloque is None:
+            continue
+        fuera = []
+        for i in range(bloque[1], len(lineas)):
+            if lineas[i].startswith("## "):
+                break
+            if lineas[i].startswith("|"):
+                fuera.append(str(i + 1))
+        if fuera:
+            avisos.append(f"Historial: {nombre}, sección «{titulo}», líneas {', '.join(fuera)} fuera de la tabla: "
+                          "no se cuentan. Si son historial, únelas a la tabla; si no, conserva el texto fuera de ella")
     return avisos
 
 
@@ -555,12 +572,19 @@ def prepara_inicial(m, texto_p, texto_d, cat, fuentes):
                  {v for v in versiones if re.fullmatch(r"0\.[1-9]\d*", v) and int(v.split(".")[1]) <= ultimo_borrador})
     if vf == (1, 0):
         admitidas.add("1.0")
-    if (not filas or any(len(f) < 5 for f in filas) or len(set(versiones)) != len(versiones)
-            or not set(versiones) <= admitidas or (not legado and vf != (1, 0) and f"0.{vf[1]}" not in versiones)
-            or vt not in ((None, (0, 1), (1, 0)) if legado else (None, vf))
-            or snapshots - ({f"v0.{n}" for n in range(1, ultimo_borrador)} if not legado else set())):
-        sys.exit("--inicial no reinterpreta un historial ambiguo o no inicial: revisa las versiones del análisis, "
-                 "las filas únicas de decisiones.md y las copias de borradores 0.x")
+    if not filas or any(len(f) < 5 for f in filas):
+        sys.exit("--inicial: revisa la tabla Versiones de decisiones.md: falta o tiene filas incompletas")
+    if len(set(versiones)) != len(versiones):
+        sys.exit("--inicial: decisiones.md tiene versiones repetidas; conserva una fila por versión")
+    if not set(versiones) <= admitidas:
+        sys.exit("--inicial: el historial de decisiones.md contiene versiones ajenas a los borradores iniciales")
+    if not legado and vf != (1, 0) and f"0.{vf[1]}" not in versiones:
+        sys.exit("--inicial: falta en decisiones.md la fila de la versión actual del funcional")
+    if (vt not in ((None, (0, 1), (1, 0)) if legado else (None, vf))
+            and not (vt == (0, 1) and not mo.estado_tecnico(m)[0])):
+        sys.exit("--inicial: la versión del técnico no coincide con el funcional; revisa su cabecera antes de promover")
+    if snapshots - ({f"v0.{n}" for n in range(1, ultimo_borrador)} if not legado else set()):
+        sys.exit("--inicial: hay copias en versiones/ que no corresponden a los borradores iniciales")
     primeras = {}
     for fila in filas:
         for fu in re.findall(r"FU-\d+", fila[3]):
@@ -576,7 +600,8 @@ def prepara_inicial(m, texto_p, texto_d, cat, fuentes):
     if ((vf == (1, 0) and procesadas) or any(f[-1] == "1.0" for f in procesadas)) and not any(
             fu not in primeras for fu in fuentes):
         sys.exit("--inicial: la primera 1.0 ya tiene esas fuentes registradas; no se registra otra vez sin fuentes nuevas")
-    fuentes = list(dict.fromkeys(fuentes + list(primeras)))
+    historicas = sorted(primeras, key=lambda fu: tuple(map(int, primeras[fu].split("."))))
+    fuentes = list(dict.fromkeys(historicas + fuentes))
     fuera = [f for f in fuentes if f not in cat]
     if fuera:
         sys.exit(f"{', '.join(fuera)} del historial no está en fuentes/: revisa el catálogo antes de preparar la 1.0")
@@ -593,6 +618,7 @@ def version(a):
     raiz = m.raiz
     inicial = getattr(a, "inicial", False)
     fuentes = list(dict.fromkeys(f.strip().upper() for f in a.fuente))
+    fuente_decision = fuentes[0]  # la procedencia explícita de --decision no depende del orden del historial
     try:
         cat = {f["id"]: f for f in json.loads((raiz / "fuentes" / "indice.json").read_text(encoding="utf-8"))
                .get("fuentes", [])}
@@ -665,10 +691,10 @@ def version(a):
     ids_d = []
     n = max([int(x) for f in tabla(texto_d, "Decisiones del cliente") for x in re.findall(r"^D-(\d+)", f[0])] or [0])
     ancho_d = mo.ancho_ids(m.piezas, "D")
-    fecha_fu = str(cat[fuentes[0]].get("fecha", ""))[:10] or hoy
+    fecha_fu = str(cat[fuente_decision].get("fecha", ""))[:10] or hoy
     for tipo, afecta, nuevo_txt, antes in decisiones:
         celdas = [" ".join(x.split()).replace("|", "/") for x in (tipo.upper(), nuevo_txt, antes, afecta)]
-        fila = (f"| D-{n + 1:0{ancho_d}d} | {fecha_fu} | {fuentes[0]} | {celdas[0]} | {celdas[1]} | {celdas[2]} | {celdas[3]} "
+        fila = (f"| D-{n + 1:0{ancho_d}d} | {fecha_fu} | {fuente_decision} | {celdas[0]} | {celdas[1]} | {celdas[2]} | {celdas[3]} "
                 "| Sí |")
         nuevo_d = anade_fila(texto_d, "Decisiones del cliente", fila)
         if nuevo_d is None:
@@ -687,7 +713,15 @@ def version(a):
             continue
         e = cat[fu]
         primera = primeras.get(fu, nueva)
-        fila = f"| {fu} | {str(e.get('fecha', ''))[:10]} | {que_es_fuente(e).replace('|', '/')} | {informe} | {primera} |"
+        informe_fu = informe
+        if inicial and fu in primeras and not a.informe:
+            candidatos = [f"{carpeta}/{fu}.md" for carpeta in ("impacto", "notas")
+                          if (raiz / carpeta / f"{fu}.md").is_file()]
+            if len(candidatos) == 1:
+                informe_fu = candidatos[0]
+            elif len(candidatos) > 1:
+                print(f"Aviso: {fu} tiene informes exactos en impacto/ y notas/: conserva «—»; revisa cuál corresponde")
+        fila = f"| {fu} | {str(e.get('fecha', ''))[:10]} | {que_es_fuente(e).replace('|', '/')} | {informe_fu} | {primera} |"
         nuevo_p = anade_fila(texto_p, "Fuentes procesadas", fila)
         if nuevo_p is None:
             a_mano.append(f"{fu} en «## Fuentes procesadas» de proyecto.md")
