@@ -120,7 +120,9 @@ Por record type, `### 3.n <Record type>`:
 - Los estados y las listas de valores son record types de referencia, no texto.
 - Cada tabla lleva los campos de auditoría definidos en §1. Un texto de más de 255 caracteres se diseña como Long Text.
 
-Al final: referencias y carga inicial (`Record type · Valores iniciales · Quién lo mantiene`).
+Al final: referencias y carga inicial (`Record type · Valores iniciales · Quién lo mantiene`). Un valor que cambia
+de un entorno a otro (el ID numérico de un grupo) se dice en «Valores iniciales», y quien despliega lo cambia
+por entorno, como una constante.
 
 En §3 a §12, lo que es de otra unidad se marca así: la línea, o el primer texto de su `### 3.n`, empieza por «Otra unidad»
 (con su id si se quiere: «Otra unidad (EV-02).») y no entra en las issues de esta. Nombrar otro EV o escribir «otra unidad» a mitad de frase no marca nada.
@@ -248,7 +250,8 @@ otro que no. «Con qué» dice cómo se comprueba cada criterio, y la issue lo c
   También del QA (`appian-qa`).
 
 Cuando un criterio depende de una regla, «Cómo se prueba» fija la entrada y la salida esperadas concretas;
-quien construye las copia al caso de prueba, sin decidir el resultado esperado.
+quien construye las copia al caso de prueba, sin decidir el resultado esperado. Si depende de la fecha de hoy,
+el criterio lleva una fecha fija y se prueba así (el QA de pantalla no puede fijar la fecha).
 
 ```markdown
 | Criterio | Cómo se prueba | Con qué |

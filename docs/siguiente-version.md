@@ -25,6 +25,11 @@ Esta lista no autoriza publicar, desplegar, enviar ni borrar.
 - Revisar las URL `/help/26.6/` de `data-fabric.md`, `devmcp-setup.md` y `agents/data-modeler.md`
   al cambiar la versión del servidor MCP.
 - Comunicar la discrepancia comprobada de `LCP_TOOL_MODE=readonly` en Dev MCP 26.6.110, si aún procede.
+- Buenas prácticas de SAIL y seguridad, de una prueba real de construcción: un grid no acepta una lista vacía de mapas
+  aunque esté oculto; la seguridad «quien ve el registro relacionado» encadenada en dos niveles no deja ver nada; las
+  cuentas de prueba con el idioma de la máquina dan los importes en formato inglés.
+- Tarea no prioritaria, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los sitios
+  (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
 
 La activación/comportamiento con Claude y la instalación visual de escritorio permanecen sin medir;
 no son obligatorias en esta fase ni autorizan comparaciones entre herramientas. Una nueva medida de eficiencia

@@ -29,7 +29,8 @@ class RevisionInicio(unittest.TestCase):
 
     def corre(self, *args, check=True):
         r = subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], capture_output=True,
-                           text=True, encoding="utf-8", env=dict(os.environ, PYTHONUTF8="1"), timeout=30)
+                           text=True, encoding="utf-8", env=dict(os.environ, PYTHONUTF8="1", GIT_AUTHOR_NAME="Prueba", GIT_AUTHOR_EMAIL="prueba@example.com",
+                                     GIT_COMMITTER_NAME="Prueba", GIT_COMMITTER_EMAIL="prueba@example.com"), timeout=30)
         if check:
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         return r
@@ -60,7 +61,8 @@ class RevisionInicio(unittest.TestCase):
         cmd[0] = sys.executable
         self.localizador({"ruta": str(self.base / "plugin retirado")})
         r = subprocess.run(cmd, cwd=self.p, capture_output=True, text=True, encoding="utf-8",
-                           env=dict(os.environ, PYTHONUTF8="1"), timeout=30)
+                           env=dict(os.environ, PYTHONUTF8="1", GIT_AUTHOR_NAME="Prueba", GIT_AUTHOR_EMAIL="prueba@example.com",
+                                     GIT_COMMITTER_NAME="Prueba", GIT_COMMITTER_EMAIL="prueba@example.com"), timeout=30)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertNotIn("Localizador:", self.estado())
 
@@ -120,14 +122,16 @@ class RevisionInicio(unittest.TestCase):
         self.assertTrue(any("FIC_Reserva" in f["objetos"] for f in contexto.filas), contexto.filas)
 
     @unittest.skipUnless(shutil.which("git"), "requiere git")
-    def test_iniciar_crea_git_main_sin_commit_ni_inicializacion_extra(self):
+    def test_iniciar_crea_git_main_con_el_primer_commit(self):
         self.assertTrue((self.p / ".git").is_dir())
         rama = subprocess.run(["git", "-C", str(self.p), "symbolic-ref", "--short", "HEAD"],
                               capture_output=True, text=True)
         self.assertEqual(rama.stdout.strip(), "main")
         commit = subprocess.run(["git", "-C", str(self.p), "rev-parse", "--verify", "HEAD"],
                                 capture_output=True)
-        self.assertNotEqual(commit.returncode, 0)
+        self.assertEqual(commit.returncode, 0)
+        sujeto = subprocess.run(["git", "-C", str(self.p), "log", "--format=%s"], capture_output=True, text=True)
+        self.assertEqual(sujeto.stdout.strip(), "Inicio del proyecto")
 
     def fuente(self, cantidad=1):
         (self.p / "fuentes/indice.json").write_text(json.dumps({"fuentes": [

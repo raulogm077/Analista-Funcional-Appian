@@ -89,7 +89,8 @@ Historias agrupadas por área (`### Área`). Cada una:
    (pulsar, rellenar): «cuando la reenvía», no «cuando pulsa Reenviar»; los datos, con el nombre que les da el
    cliente. Un solo «cuando»: si no cabe en una frase, son dos criterios. Los textos literales (un mensaje, un
    estado), entre comillas. Toda acción que borre o anule algo dice su confirmación literal; si no se sabe,
-   va al 11. Con las tres partes, un script escribe la prueba de cada criterio en Gherkin, sin interpretarlo. Los
+   va al 11. Lo que depende de la fecha de hoy se escribe con una fecha fija («Dado que hoy es el 15/03/2026…»);
+   el técnico lo prueba con un caso de prueba de regla (§14). Con las tres partes, un script escribe la prueba de cada criterio en Gherkin, sin interpretarlo. Los
    criterios que ya estaban escritos de otra forma (un análisis anterior, el DF del cliente) se quedan como están
    y se reescriben así cuando cambian.
 
