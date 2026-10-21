@@ -95,8 +95,33 @@ El caso de 53 pasos pasa de 79.915 a 284.714 bytes; no se acredita ahorro de tie
 La regeneración en una copia del documento con el motor actual pasa de 15 a 13 páginas, con el mismo texto y
 27 tablas; no se recolocan los originales manuales. Revisión visual de las 13 páginas, sin recortes nuevos.
 Límite comprobado: Word conserva las imágenes al guardar el DOCX, pero su PDF reduce las mayores a unos
-1.332 píxeles incluso con la opción de calidad activada. No se acredita la misma nitidez en ese PDF ni se ha
-medido la conversión estándar de LibreOffice, ausente en el equipo. No se añade un conversor alternativo.
+1.332 píxeles incluso con la opción de calidad activada. No se acredita la misma nitidez en ese PDF. En aquel
+corte LibreOffice estaba ausente; su conversión estándar se mide y corrige en la prueba siguiente.
+
+## PDF estándar con diagramas completos, 21 de octubre de 2026
+
+La conversión real de LibreOffice sobre `10cce89` reducía las imágenes grandes a unos 1.980 píxeles,
+dejaba el índice sin páginas ni navegación y conservaba enlaces al editable relativos al DOCX, incorrectos
+desde la carpeta final del PDF. La corrección usa el mismo LibreOffice y su perfil desechable: actualiza el
+índice, conserva los píxeles y ajusta los enlaces a `.drawio` al destino final, sin guardar el DOCX.
+Las macros y actualizaciones externas del documento de entrada permanecen desactivadas.
+
+Tres conversiones de prueba (salida normal, salida en subcarpeta y documento con tablas) conservan
+los DOCX originales y las imágenes de hasta 20.156 píxeles. Las 53 entradas de índice tienen página y
+navegación correctas; nueve enlaces a editables se resuelven también en una copia movida del proyecto.
+El test específico queda en el job PDF existente de CI; su lector de PDF es una dependencia de prueba.
+La ejecución local usa LibreOffice 26.2.6.3 en Ubuntu mediante WSL; LibreOffice nativo Windows/macOS
+no se ha medido. El PDF nativo de Microsoft Word mantiene la limitación anterior.
+
+Revisión visual de las 19 páginas renderizadas, sin recortes nuevos en las vistas revisadas. El cuerpo de ambos
+documentos conserva texto y número de páginas frente a la conversión anterior. Prueba PDF específica PASS:
+dos salidas, copia movida, DOCX intacto, documento externo sin índice y error con PDF anterior conservado.
+El primer ensayo de error agotó 300 s; se corrigió el cierre de la rutina y se repitió sin esa espera.
+Suite del analista **424/0** en 901 s; básica **7 skills/0 errores/0 avisos**. CI queda pendiente del PR.
+
+Coste: dos invocaciones locales de LibreOffice por DOCX, frente a una; ningún paso de usuario, llamada MCP,
+opción ni dependencia de ejecución nueva. Los demás formatos conservan la conversión directa existente.
+El DOCX sigue siendo editable y el proceso completo sigue en una figura: no se añade paginación del diagrama.
 
 ## Entrega 0.8.0-beta.2 y trabajo anterior
 
