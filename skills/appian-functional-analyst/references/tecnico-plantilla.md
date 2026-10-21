@@ -163,7 +163,7 @@ tabla `Acción · Tipo · Proceso · Quién la ve` bajo «Acciones de registro d
 comillas latinas y el tipo «De lista» o «Relacionada»: de ahí sale lo que `verificar` comprueba de una acción que se
 construye o cambia (su nombre y su tipo), también si se renombra.
 
-Si ya está decidida la configuración de visibilidad, añade `Visibilidad verificable`: `EXPRESSION: true()`,
+Si ya está decidida la configuración de visibilidad, añade a esa tabla la columna `Visibilidad verificable` (sin ella no se compara): `EXPRESSION: true()`,
 `EXPRESSION: false()` o una expresión simple de pertenencia a grupos como
 `EXPRESSION: a!isUserMemberOfGroup(loggedInUser(), cons!DEM_GESTORES)` (también un `or(...)` plano de esas llamadas).
 No inventes código para llenar la celda: conserva `Quién la ve` y deja sin comprobar lo que aún no es decidible.
@@ -197,12 +197,10 @@ Volúmenes frente a los límites, índices, tareas programadas, configuración q
 hay que vigilar en producción.
 
 ### 13. Plan de construcción
-Lista numerada en orden de dependencias: grupos y constantes, datos, seguridad, lógica, interfaces,
-procesos, site. Los pasos manuales, marcados.
-
-Con `as-is/`, o cuando se va a construir (una unidad de cambio, `cambios.md`), en lugar de la lista, tabla `Paso ·
-Objeto · Tipo · Situación · Sustituye a · Cambio · Para`, una fila por objeto, en el mismo orden, y debajo los pasos
-manuales. De ella salen las issues de construcción (`cambios.md` §5). Situación:
+Tabla `Paso · Objeto · Tipo · Situación · Sustituye a · Cambio · Para`, una fila por objeto, en orden de
+dependencias: grupos y constantes, datos, seguridad, lógica, interfaces, procesos, site. Debajo, los pasos manuales,
+marcados. Un «Cambio» vacío es `EV-01` en una aplicación nueva. De la tabla salen las issues de construcción
+(`cambios.md` §5). Situación:
 - **Nuevo**: no está en el inventario ni es de otra aplicación.
 - **Modifica**: está en el inventario y cambia. Un objeto de otra aplicación que cambia lo cambia su equipo: dilo.
 - **Existe**: se usa sin cambiarlo; también un objeto de otra aplicación.

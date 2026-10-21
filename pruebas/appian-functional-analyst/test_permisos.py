@@ -47,6 +47,24 @@ class Permisos(unittest.TestCase):
         self.assertNotIn("acciones", un.Contexto(m).esperado("EV-01", base.filas)["AUT Solicitud"])
         self.assertIn("acciones", un.Contexto(m).esperado("EV-01", posterior.filas)["AUT Solicitud"])
 
+    def test_visibilidad_solo_se_espera_con_su_columna(self):
+        self.preparada()
+        t = self.p / "analisis" / "tecnico.md"
+        bloque = """Acciones de registro de `AUT Solicitud`:
+
+| Acción | Tipo | Proceso | Quién la ve |
+|---|---|---|---|
+| «Adjuntar informe del organismo» | Relacionada | `AUT Tramitar Solicitud` | Técnicos |
+
+Visibilidad verificable: `EXPRESSION: true()`
+
+## 8."""
+        texto = t.read_text(encoding="utf-8").replace("## 8.", bloque)
+        t.write_text(texto, encoding="utf-8")
+        accion = un.Contexto(mo.Proyecto(self.p)).esperado("EV-01")["AUT Solicitud"]["acciones"][0]
+        self.assertEqual(accion["nombre"], "Adjuntar informe del organismo")
+        self.assertNotIn("visibilidad", accion)
+
     def test_sin_tabla_pm_no_cambia_esperado_con_metadata_vacia(self):
         m, _ = self.preparada()
         self.assertEqual(un.Contexto(m).esperado("EV-01")["AUT Tramitar Solicitud"], {"tipo": "processModel"})

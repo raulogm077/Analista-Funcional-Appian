@@ -31,7 +31,8 @@ que preguntar al cliente, el camino entero (§0-§8). Sin nota, sin `comprobar.p
 4. **Versión y decisiones**, en una orden: `proyecto.py version <p> --fuente FU-04 --que "<qué cambia>" [--decision
    CAMBIA PAN-01 "<lo nuevo>" "<lo de antes> [FU-01 00:06:40]"]`. Copia la 1.1, sube el funcional y el técnico a la 1.2,
    escribe la fila de la versión y la D de cada CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE en `decisiones.md` y la
-   fuente en `proyecto.md`. «Qué cambia» sale en el Word: en palabras del cliente, sin IDs. La cita de «lo de antes»
+   fuente en `proyecto.md`; con VALIDA, además pone las marcas 🔒 de las piezas de «Afecta a» (admite rangos, «HU-01 a
+   HU-13»). «Qué cambia» sale en el Word: en palabras del cliente, sin IDs. La cita de «lo de antes»
    es la del comentario de la pieza: no hace falta buscarla en la fuente.
 5. **Editar solo esas líneas**. La herramienta de edición pide leer antes el fichero: lee solo ese tramo, con los
    números de `ficha --lineas`. La pieza, con la fuente nueva en su comentario (`<!-- ✅ FU-01 00:06:40; FU-04 -->`);
@@ -115,7 +116,7 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
    | NUEVO | No hay pieza para ello | Pieza nueva con el siguiente ID (`indice.py siguientes`) | No |
    | COMPLETA | Añade detalle sin contradecir | Se añade a la pieza con su cita | No |
    | CONFIRMA | Ratifica algo ⚠️, 🔶 o ❓ | Pasa a ✅ y suma la cita | No |
-   | VALIDA | El cliente lo aprueba por escrito o en la revisión del DF | Pasa a 🔒 | Sí (una por bloque) |
+   | VALIDA | El cliente lo aprueba por escrito o en la revisión del DF | Pasa a 🔒: `version --decision VALIDA "HU-01 a HU-13, PAN-01 a PAN-08" …` pone las marcas (✅ y 🔶 a 🔒, con la cita de la fuente), no se editan a mano | Sí (una por bloque) |
    | CAMBIA | Contradice una decisión anterior | Se reescribe la pieza; lo anterior va a «Antes». Si era 🔒 y lo aprueba el cliente (una fuente suya que lo apruebe; pedirlo en una reunión o una demo no basta), sigue 🔒 con la cita; si solo el equipo, ✅ | Sí |
    | ANULA | Deja de hacerse algo que tiene ID | Se tacha: `Anulada por D-nn` | Sí |
    | RESPONDE | Contesta un PC entero | Se aplica; el PC se tacha: `Respondida por D-nn` | Sí |

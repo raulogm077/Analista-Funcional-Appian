@@ -45,8 +45,9 @@ _PRE = "|".join(sorted(CASA, key=len, reverse=True))
 ID_SIMPLE = rf"(?:{_PRE})-\d+"
 ID_CA = rf"(?:{'|'.join(CON_CRITERIOS)})-\d+\.\d+"
 RX_ID = re.compile(rf"(?<![\w-])(?:{ID_CA}|{ID_SIMPLE})(?![\w-]|\.\d)")
-RX_RANGO = re.compile(rf"(?<![\w-])((?:{_PRE})-)(\d+)`?\s+a\s+`?(?:\1)?(\d+)(?![\w.-])")
-RX_RANGO_CA = re.compile(rf"((?:{'|'.join(CON_CRITERIOS)})-\d+)\.(\d+)`?\s+a\s+`?(?:\1\.)?(\d+)(?![\w.])")
+# «HU-01 a HU-03», «HU-01 a 03», «HU-01 al HU-03», «HU-01 hasta HU-03», «HU-01–HU-03»; un punto final no lo rompe
+RX_RANGO = re.compile(rf"(?<![\w-])((?:{_PRE})-)(\d+)`?(?:\s+a\s+`?(?:\1)?|\s+(?:al|hasta)\s+`?\1|\s*[–—]\s*`?\1)(\d+)(?![\w-]|\.\d)")
+RX_RANGO_CA = re.compile(rf"((?:{'|'.join(CON_CRITERIOS)})-\d+)\.(\d+)`?(?:\s+a\s+`?(?:\1\.)?|\s+(?:al|hasta)\s+`?\1\.|\s*[–—]\s*`?\1\.)(\d+)(?![\w]|\.\d)")
 RX_FICHA = re.compile(rf"^\*\*(~~)?({ID_SIMPLE})(~~)?\s+—\s+(.+?)\*\*(.*)$")
 RX_FILA = re.compile(rf"^\|\s*(~~)?({ID_SIMPLE})(~~)?\s*\|")
 RX_CRITERIO = re.compile(rf"^\s*[-*]\s+(~~)?`({ID_CA})`(~~)?")

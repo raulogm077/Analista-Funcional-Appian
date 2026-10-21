@@ -1844,8 +1844,6 @@ def diferencias_permisos(o, esperado):
         if not isinstance(pedidos, list) or not pedidos:
             desconocidos.append("inicio: falta contrato explícito de roles y grupos en técnico §4")
         else:
-            if {p.get("rol") for p in pedidos if isinstance(p, dict) and isinstance(p.get("rol"), str)} != ROLES_PROCESO:
-                desconocidos.append("inicio: contrato parcial; los roles no declarados no se han comparado")
             seguridad = o.get("seguridadInicio")
             roles = seguridad.get("roles") if isinstance(seguridad, dict) else None
             if (not isinstance(roles, list) or seguridad.get("uuid") != o.get("uuid")

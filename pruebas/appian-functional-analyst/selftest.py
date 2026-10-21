@@ -317,6 +317,25 @@ def main():
            c == 0 and "| D-03 | 2026-10-01 | FU-04 | CAMBIA | Los planos, hasta 30 MB | Hasta 20 MB [FU-01 00:20:10] | "
            "HU-07 | Sí |" in dd and "| D-04 | 2026-10-01 | FU-04 | RESPONDE | Lo firma el responsable | — | PC-03 | Sí |" in dd
            and "D-03, D-04" in out, out + dd)
+        # L7: --decision VALIDA pone las marcas 🔒 de las piezas de «Afecta a», con rangos, sin tocar lo demás
+        pv5 = tmp / "version valida"
+        shutil.copytree(EJEMPLO, pv5)
+        shutil.copytree(pv / "fuentes", pv5 / "fuentes")
+        c, out = corre(S / "proyecto.py", "version", pv5, "--fuente", "FU-04", "--que", "Validación del DF",
+                       "--decision", "VALIDA", "HU-01 a HU-02, ACT-01 a ACT-02. PC-99", "Validado", "Borrador [FU-01 00:04:10]")
+        ff = (pv5 / "analisis" / "funcional.md").read_text(encoding="utf-8")
+        ok("proyecto.py version --decision VALIDA: las piezas de un rango pasan a 🔒 con la cita de la fuente; las demás, "
+           "no; y dice la que no existe",
+           c == 0 and "<!-- 🔒 FU-01 00:04:10; FU-04 -->" in ff.split("**HU-01 ")[1].split("\n")[0]
+           and "**HU-02 — Consultar las solicitudes de mi unidad** <!-- 🔒 FU-02 00:08:15; FU-04 -->" in ff
+           and "**ACT-02 — Revisar documentación** <!-- 🔒 FU-01 00:12:40; FU-04 -->" in ff
+           and "**HU-03 — Subsanar una solicitud** <!-- ✅ FU-01 00:15:30 -->" in ff
+           and "marcas a 🔒" in out and "PC-99" in out, out + ff[:300])
+        import modelo
+        ok("modelo.ids_en: rangos con «al», «hasta», raya larga y punto final",
+           all(modelo.ids_en(x) == {"HU-01", "HU-02", "HU-03"} for x in
+               ("HU-01 a HU-03.", "HU-01 al HU-03", "HU-01 hasta HU-03", "HU-01–HU-03", "HU-01 — HU-03."))
+           and modelo.ids_en("HU-01 – 5 días") == {"HU-01"}, "")
 
         # el anexo «Quién puede hacer qué» que se queda viejo al renombrar una parte de una pantalla: aviso, no error
         px = tmp / "anexo viejo"
@@ -2589,8 +2608,7 @@ def pruebas_de_la_issue(tmp):
     ok("una acción que se renombra: lo esperado lleva la de técnico §7 con su nombre nuevo y su tipo (la fila de §13 dice "
        "la de antes), sin campos del record type que comparar, sin pruebas que ejecutar y sin nada que revisar",
        c == 0 and {k: x for k, x in esp.items() if k != "_issue"} == {"DEM Solicitud": {
-           "tipo": "recordType", "acciones": [{"nombre": "Pedir material", "tipo": "De lista",
-                                                "visibilidad": {"declaracion": "`DEM Gestores`", "configuracion": ""}}]}}
+           "tipo": "recordType", "acciones": [{"nombre": "Pedir material", "tipo": "De lista"}]}}
        and esp["_issue"]["pruebas"] is False and "Que una persona revise" not in out, out + json.dumps(esp, ensure_ascii=False))
     r, c, out = renombra("t13 accion y permisos", " y `DEM Revisores`")
     c2, out2 = corre(S / "comprobar.py", r)
@@ -2771,8 +2789,7 @@ def pruebas_issues(tmp):
        and "Campo: titulo" not in i3 and "Campo: titulo" in i1
        and {k: v for k, v in json.loads(lee(d / "ISS-03-esperado.json")).items() if k != "_issue"}
        == {"AUT_FichaSolicitud": {"tipo": "interface"},
-           "AUT Solicitud": {"acciones": [{"nombre": "Adjuntar informe del organismo",
-                                            "visibilidad": {"declaracion": "", "configuracion": ""}}]}}, i3)
+           "AUT Solicitud": {"acciones": [{"nombre": "Adjuntar informe del organismo"}]}}, i3)
     textos = [lee(d / n) for n in nombres if n.endswith(".md") and n != "indice.md"]
     ok("ninguna issue pide leer un documento entero: lleva el extracto, no «ver técnico §7»",
        len(textos) == 5 and all("no hay que leer el funcional ni el técnico" in x and "## Lo que dice el técnico" in x

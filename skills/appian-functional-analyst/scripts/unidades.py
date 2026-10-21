@@ -791,9 +791,11 @@ class Contexto:
                         pedidas = [a for a in ahora if clave(a) not in {clave(b) for b in antes}]
                     elif not pedidas and accion and f["situacion"] != "modifica":
                         pedidas = [{"nombre": accion}]
+                    # La visibilidad solo se espera si §7 trae la columna «Visibilidad verificable»
                     pedidas = [{**{k: a[k] for k in ("nombre", "tipo") if a.get(k)},
-                                "visibilidad": {"declaracion": a.get("celdas", {}).get("quien la ve", ""),
-                                                "configuracion": a.get("celdas", {}).get("visibilidad verificable", "")}}
+                                **({"visibilidad": {"declaracion": a.get("celdas", {}).get("quien la ve", ""),
+                                                    "configuracion": a["celdas"]["visibilidad verificable"]}}
+                                   if "visibilidad verificable" in a.get("celdas", {}) else {})}
                                for a in pedidas]
                     e["acciones"] = e.get("acciones", []) + [a for a in pedidas if a not in e.get("acciones", [])]
                     if not e["acciones"]:

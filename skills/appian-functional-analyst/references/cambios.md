@@ -154,8 +154,8 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
   `appian-best-practices`. Se escriben solas al aprobar la unidad y `indice.py issues` las vuelve a generar: con los
   mismos datos salen las mismas, y si el análisis cambia cada una conserva su número. No se editan. Sirven a Claude, a
   otros agentes y a personas. No se generan si la unidad no está aprobada o ha crecido desde que se aprobó. Un técnico
-  con tabla en §13 pero sin columna «Para» da una sola issue con toda la unidad; con lista, hay que pasarla a tabla
-  antes de generar issues. Si se aprobó antes de hacerlo, tras completar la tabla ejecuta `indice.py issues <p> <U>`.
+  con tabla en §13 pero sin columna «Para» da una sola issue con toda la unidad. Si se aprobó antes de completar
+  la columna, ejecuta `indice.py issues <p> <U>`.
 
 Si una dependencia calculada sobra o falta, una persona puede fijar la **lista exacta** de esa issue:
 `indice.py issues <p> EV-02 ISS-03 --depende-de ISS-01 ISS-02 --motivo "…" --quien "…"`.

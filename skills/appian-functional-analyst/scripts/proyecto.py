@@ -609,6 +609,40 @@ def prepara_inicial(m, texto_p, texto_d, cat, fuentes):
     return fuentes, primeras, reutiliza
 
 
+def marca_validadas(m, decisiones, fuente):
+    """Las marcas de un VALIDA: cada pieza de «Afecta a» (los rangos, expandidos) pasa de ✅ o 🔶 a 🔒 en cada comentario
+    de sus líneas, y suma la cita de la fuente. Lo que ya es 🔒, ⚠️ o ❓ no se toca. Devuelve (marcas, piezas, sin pieza)."""
+    pedidas = {x for d in decisiones if d[0].upper() == "VALIDA" for x in mo.ids_en(d[1])}
+    piezas = [m.piezas[x] for x in sorted(pedidas) if x in m.piezas and m.piezas[x].doc != "D"
+              and not m.piezas[x].anulada]
+    lineas = {}
+    for p in piezas:
+        lineas.setdefault(p.doc, set()).update(range(p.ini, p.fin))
+    marcas, tocadas = 0, set()
+    for doc, numeros in lineas.items():
+        ruta = m.ruta(doc)
+        L = ruta.read_text(encoding="utf-8").split(chr(10))
+        if len(L) != len(m.docs[doc].lineas):
+            continue
+        for i in sorted(numeros):
+            def cambia(mc):
+                nonlocal marcas
+                c = mc.group(1)
+                e = mo.estado_en(c)
+                if e not in ("✅", "🔶"):
+                    return mc.group(0)
+                c = c.replace(e, "🔒", 1).rstrip()
+                if fuente not in re.findall(r"FU-\d+", c):
+                    c += f"; {fuente}"
+                marcas += 1
+                tocadas.add((doc, i))
+                return f"<!--{c if c.startswith(' ') else ' ' + c} -->"
+            L[i] = mo.RX_COMENTARIO.sub(cambia, L[i])
+        mo.escribe(ruta, chr(10).join(L))
+    hechas = {p.id for p in piezas if any((p.doc, i) in tocadas for i in range(p.ini, p.fin))}
+    return marcas, len(hechas), sorted(pedidas - {p.id for p in piezas})
+
+
 def version(a):
     """Abre la versión siguiente para aplicar el informe de una o varias fuentes: copia la actual (como copia), sube
     0.1 la del funcional y la del técnico y escribe la fila de la versión en decisiones.md, las D de --decision y cada
@@ -707,6 +741,11 @@ def version(a):
         escrito.append(f"{', '.join(ids_d)} en decisiones.md")
     if texto_d != (dec.read_text(encoding="utf-8") if dec.exists() else ""):
         mo.escribe(dec, texto_d)
+    if any(d[0].upper() == "VALIDA" for d in decisiones):
+        marcas, n_piezas, sin_pieza = marca_validadas(m, decisiones, fuente_decision)
+        escrito.append(f"{marcas} marcas a 🔒 en {n_piezas} piezas")
+        if sin_pieza:
+            a_mano.append(f"las marcas 🔒 de {', '.join(sin_pieza)} (VALIDA: no es una pieza del análisis)")
     informe = (a.informe or ("—" if inicial else f"impacto/{fuentes[0]}.md")).replace("\\", "/")
     for fu in fuentes:
         if inicial and fu in ya:
