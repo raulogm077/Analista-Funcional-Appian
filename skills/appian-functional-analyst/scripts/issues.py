@@ -374,7 +374,7 @@ def lineas_del_tecnico(d):
         if not l.startswith("|") and re.match(r"otra unidad\b", mo.normaliza(l.strip(" *-"))):
             otra_sub = True        # «Otra unidad. Una por mes.» al abrir un apartado: todo él es de otra
         item = {"i": i, "donde": f"§{apartado or s}", "texto": l.strip(), "cabecera": cabecera if fila else None,
-                "otra": otra_sub or de_otra_unidad(l, d.uid), "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
+                "otra": otra_sub or de_otra_unidad(l, getattr(d, "uid", None)), "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
                 "objetos": objetos, "estado": "", "era": None}
         if antes:
             previas = antes.get((s, de_bloque[i]), ())
@@ -600,7 +600,7 @@ def escenarios(d, issue, pruebas):
         return (["Esta issue no cambia criterios ni reglas: no hay pruebas que ejecutar." if issue.sin_pruebas else
                  f"No cambia criterios, pero sí reglas ({', '.join(reglas)}): se prueban con sus casos de prueba."], "", [])
     L = [f"- `{c}` {limpio(m.criterio(c))} → {pruebas.get(c) or 'sin prueba en técnico §14'}" for c in issue.criterios]
-    caso = {c for c in issue.criterios if (pruebas.get(c) or "").startswith("Caso de prueba")}
+    caso = {c for c in issue.criterios if mo.normaliza(pruebas.get(c) or "").startswith("caso de prueba")}
     historias = list(dict.fromkeys(m.piezas[c].padre for c in issue.criterios))
     una = len(historias) == 1
     F = ["# language: es", f"Característica: {historias[0]} {m.piezas[historias[0]].titulo}" if una else

@@ -33,5 +33,18 @@ class OtraUnidad(unittest.TestCase):
                                                if m.docs["T"].lineas[i].startswith("| campoajeno")))
 
 
+    def test_caso_de_prueba_en_minuscula_marca_el_escenario(self):
+        self.preparada()
+        f = self.p / "analisis/tecnico.md"
+        t = f.read_text(encoding="utf-8")
+        self.assertIn("Caso de prueba de `AUT_GenerarNumero`", t)
+        f.write_text(t.replace("Caso de prueba de `AUT_GenerarNumero`", "caso de prueba de `AUT_GenerarNumero`"),
+                     encoding="utf-8", newline="")
+        m = mo.Proyecto(self.p)
+        plan = iss.calcula(m, un.Contexto(m), "EV-01")
+        feature = "".join(i.feature for i in plan.issues)
+        self.assertRegex(feature, r"@caso-de-prueba\s+Escenario: HU-01\.2")
+
+
 if __name__ == "__main__":
     unittest.main()

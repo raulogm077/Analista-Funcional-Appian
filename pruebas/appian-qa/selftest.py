@@ -603,6 +603,18 @@ def main():
         ok("sin SAIL CLI lo dice y sale con 2", c == 2 and "Sin SAIL CLI" in out, out)
         c, out = t.qa("repetir", str(t.p), "EV-09")
         ok("una unidad sin guiones sale con 2 y lo dice", c == 2 and "EV-09 · sin guiones" in out, out)
+        # una unidad cuyos escenarios son todos de caso de prueba no espera guion: ni pendiente ni pasada
+        solo = ("# language: es\nCaracterística: HU-05 Fecha\n\n  @caso-de-prueba\n  Escenario: HU-05.1\n"
+                "    Dado el día 28\n    Cuando se genera\n    Entonces sale\n")
+        escribe(t.p / "construccion" / "EV-07" / "ISS-01.feature", solo)
+        c, out = t.qa("repetir", str(t.p), "EV-07")
+        ok("una unidad con todos sus escenarios de caso de prueba no queda pendiente: lo dice y sale con 0",
+           c == 0 and "los prueba un caso de prueba" in out and "sin guiones" not in out, out)
+        escribe(t.p / "construccion" / "EV-07" / "ISS-02.feature", solo.replace("@caso-de-prueba\n  ", "")
+                .replace("HU-05.1", "HU-05.2"))
+        c, out = t.qa("repetir", str(t.p), "EV-07")
+        ok("si falta un escenario de pantalla sin guion, sigue diciendo «sin guiones» y sale con 2",
+           c == 2 and "EV-07 · sin guiones" in out, out)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print(f"\n{'Todo bien' if not fallos else f'{len(fallos)} fallos'}")

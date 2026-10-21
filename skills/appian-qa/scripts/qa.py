@@ -697,6 +697,11 @@ def repetir(a):
     codigo, parado = 0, None
     for uid in unidades:
         if not any(f.name != RESULTADO for f in (raiz / CARPETA / uid).glob("*.json")):
+            esc = escenarios_de(raiz, uid)
+            if esc and all(e["caso"] for e in esc.values()):      # no espera guion: los prueba un caso de prueba
+                print(f"{uid} · sus {len(esc)} escenarios los prueba un caso de prueba de regla (@caso-de-prueba): "
+                      "no hay guiones de QA que repetir")
+                continue
             print(f"{uid} · sin guiones en {CARPETA}/{uid}/: su QA está por hacer (appian-qa)")
             codigo = peor(codigo, 2)
             continue

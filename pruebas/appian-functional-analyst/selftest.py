@@ -2978,7 +2978,7 @@ def pruebas_issues(tmp):
        "Revisor |\n  - ahora: | Lista | Ver título, estado, gestor y días en espera | Revisor |\n" in unica
        and "- §7 (cambia) · Pantalla: PAN-03 · Qué es en Appian: `DEM_Dashboard`, página «Panel» del site · Notas: Columna "
            "«Días en espera» con `DEM_ER_DiasPendiente` (antes: Columna «Días pendiente» con `DEM_ER_DiasPendiente`)\n"
-       in unica and "- Y 2 líneas más del técnico que no cambian con EV-04: lo que dicen ya está construido." in unica
+       in unica and "- Y una línea más del técnico que no cambia con EV-04: lo que dice ya está construido." in unica
        and "HU-03" not in unica and "Cambio sobre lo construido" not in unica, unica)
     c, out = issues(r, "EV-04", "--siguiente", env=aislado, cwd=r)
     bloque = out.split("```")[1].strip().split("\n") if out.count("```") == 2 else []
