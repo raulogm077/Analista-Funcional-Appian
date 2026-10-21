@@ -15,6 +15,13 @@
 | 8 | Con todas hechas, el QA de la unidad: recorrer cada escenario con SAIL CLI como cada rol; cada recorrido queda como guion en `qa/<U>/`. Quien construye no lo hace ni corrige en esa pasada lo que encuentre: un escenario que falla devuelve su issue a pendiente (`cambios.md` §6), y se corrige como cualquier otra, desde el paso 1 | QA, no quien construye: otra sesión, o un subagente que solo recibe los `.feature`, el site y la cuenta de cada rol (técnico §0), con un modelo pequeño y sin la skill oficial; el script repite; marcar un escenario, una persona | `appian-qa` · `qa.py repetir <p> <U>`; `appian-functional-analyst` · `indice.py issues <p> <U> ISS-nn --sin-prueba HU-nn.m --motivo "…"` | `appian-qa/SKILL.md` «Cuándo, y cuándo no», «Flujo» y «El guion» y `appian-functional-analyst/references/cambios.md` §6 |
 | 9 | Con todas hechas, marcar la unidad construida, confirmando cada corrección urgente reaplicada | Script | `appian-functional-analyst` · `proyecto.py cambio <p> <U> construida [--reaplicada URG-nn]` | `appian-functional-analyst/references/cambios.md` §1 y §6 |
 
+**Una sesión por issue.** Cada issue se construye en una sesión limpia (`/clear` o una nueva) que pide la suya con
+`--siguiente --quien`; la sesión que hizo el análisis no construye. Las llamadas que no dependen unas de otras van en el
+mismo turno, y las herramientas del Dev MCP y las referencias de la skill oficial que pida la issue se cargan de una vez.
+Una decisión que quien construye no puede tomar se escribe como DT en el técnico (las issues no se editan: se regeneran con
+`indice.py issues <p> <U>`) y la sesión para; `--liberar ISS-nn` si nadie va a seguir esa issue. Un subagente, solo para lo
+autocontenido que devuelve poco: el QA del paso 8 o una investigación larga.
+
 El avance entre sesiones lo dicen la verificación o el cierre manual de cada issue y el resultado del QA
 (`indice.py issues <p> <U>` identifica cada procedencia).
 

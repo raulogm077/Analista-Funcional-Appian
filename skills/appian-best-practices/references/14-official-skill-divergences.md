@@ -67,6 +67,21 @@ mechanics still do.
 - **Listing a type before creating an object.** A collision check, not the exploration this skill warns
   against — SKILL.md, *Discovering Project Context*.
 
+## 3. Dev MCP behaviour the official skill does not cover
+
+Only when you see the symptom; the normal path doesn't change (the prefix check is the exception, one call).
+*Seen* is the DevMCP bundle build where it happened. If the symptom no longer appears, the row is obsolete:
+drop it and tell the user.
+
+| Symptom | Do | Seen |
+|---|---|---|
+| `createApplication` fails with a 500 ("Duplicate names for public and team groups") and the application exists, empty | The prefix was used by an application with another name. Choose another. To check one beforehand: `listObjects` with `query` = the prefix finds its `<prefix> Users` and `<prefix> Administrators` groups (`listGroups` needs an application) | 20261008-132401 |
+| A field created by `createRecordType` as `GROUP` is an `INTEGER` | `updateRecordTypeField` to `GROUP`; read it back | 20261008-132401 |
+| `insertRecordData` into a group-type field wants the group's numeric ID and no `get` returns it | `validateExpression` with `{1,2}[tointeger(cons!X)]`: the error shows the value | 20261008-132401 |
+| After `updateExpressionRuleTestCase` a case lost its inputs, or the UUIDs no longer resolve | The update drops inputs you don't repeat and every write renews all the UUIDs: repeat all inputs and re-list. The expected result is `test!output = …`, not `fv!output` | 20261008-132401 |
+| A record list column from a related record is refused | Not available through the MCP: show it in an interface with a records grid | 20261008-132401 |
+| `testInterface` returns far more than `maxResponseSizeBytes`, or `updateInterface` returns the whole expression (about 19,000 characters) | Pass `expressionFilePath`; call each once per change | 20261008-132401 |
+
 ---
 
 ## Sources
