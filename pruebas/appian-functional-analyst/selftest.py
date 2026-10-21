@@ -1183,7 +1183,7 @@ Se acepta si:
         shutil.rmtree(tmp, ignore_errors=True)
     for nombre in ("test_automejora.py", "test_ingesta.py", "test_dependencias.py", "test_secuenciacion.py",
                    "test_permisos.py", "test_subtareas.py", "test_revision_inicio.py", "test_revision_consumidores.py",
-                   "test_tablas_proyecto.py"):
+                   "test_tablas_proyecto.py", "test_huella_dt.py", "test_otra_unidad.py", "test_alcance_perfiles.py"):
         prueba = AQUI / nombre
         if prueba.is_file():
             c, out = corre(prueba)

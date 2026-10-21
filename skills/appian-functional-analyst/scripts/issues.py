@@ -317,6 +317,11 @@ def reparte(d):
 
 
 # ------------------------------------------------------------------ lo que dice el técnico de una issue
+def de_otra_unidad(linea, uid):
+    """La línea dice que es de otra unidad: «otra unidad» o un EV-nn/URG-nn que no es el de las issues."""
+    return bool(re.search(r"\botra unidad\b", mo.normaliza(linea))) or any(u != uid for u in un.RX_UNIDAD.findall(linea))
+
+
 def lineas_del_tecnico(d):
     """Las líneas de los apartados 3 a 12 del técnico, cada una con lo que hace falta para saber de qué issue es:
     {i, donde («§7», «§3.1»), texto, cabecera (si es la fila de una tabla), titulo (la línea que precede a su tabla),
@@ -338,11 +343,14 @@ def lineas_del_tecnico(d):
         for i, (l, b) in enumerate(zip(A.lineas, bloques(A))):
             antes.setdefault((A.seccion_de_linea[i], b), []).append(l.strip())
     out, cabecera, titulo, apartado, de, previa, bloque = [], None, None, "", None, None, set()
+    otra_sub = False      # el apartado «### 3.n» ya dijo que es de otra unidad
     for i, l in enumerate(T.lineas):
         s = T.seccion_de_linea[i]
         if l.startswith("## "):
             cabecera, apartado, de, previa, bloque = None, "", None, None, set()
+            otra_sub = False
         if l.startswith("### "):
+            otra_sub = False
             sub = re.match(r"^###\s+([\d.]+)\s+(.+)$", l)
             apartado = sub.group(1).rstrip(".") if sub else ""
             de = nombres.get(mo.normaliza(sub.group(2).strip(" `"))) if sub else None
@@ -363,8 +371,10 @@ def lineas_del_tecnico(d):
         if fila:
             objetos |= {nombres[mo.normaliza(c.strip(" `*"))] for c in fila if mo.normaliza(c.strip(" `*")) in nombres}
             objetos |= nombrados(T.lineas[titulo], d.todos) if titulo is not None else set()
+        if not l.startswith("|") and re.match(r"otra unidad\b", mo.normaliza(l.strip(" *-"))):
+            otra_sub = True        # «Otra unidad. Una por mes.» al abrir un apartado: todo él es de otra
         item = {"i": i, "donde": f"§{apartado or s}", "texto": l.strip(), "cabecera": cabecera if fila else None,
-                "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
+                "otra": otra_sub or de_otra_unidad(l, d.uid), "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
                 "objetos": objetos, "estado": "", "era": None}
         if antes:
             previas = antes.get((s, de_bloque[i]), ())
@@ -452,7 +462,9 @@ def del_tecnico(d, issue, lineas, dts):
     cita = set(issue.requisitos) | {c for h in issue.requisitos for c in m.piezas[h].hijos} | \
         citadas_por(m, issue.requisitos)
     de_parte = lambda x, o: any(s in mo.normaliza(x["texto"]) for s in senas[o])
-    suya = lambda x: x["objetos"] & enteros or x["de"] in enteros or any(de_parte(x, o) for o in senas)
+    # una decisión técnica entra por lo que cita su «Necesidad», no por nombrar un objeto en su texto: si no, una DT nueva
+    # que nombra un objeto de la Base dejaría pendiente lo ya verificado. Lo que cambia un objeto está en §3 a §12
+    suya = lambda x: "dt" not in x and (x["objetos"] & enteros or x["de"] in enteros or any(de_parte(x, o) for o in senas))
     mias = [x for x in lineas + dts if suya(x) or x["ids"] & cita or x["i"] in issue.sueltas and "dt" not in x]
     donde = {o: list(dict.fromkeys(x["donde"] for x in mias if (de_parte(x, o) if o in senas else
                                                                un.objeto(o) in x["objetos"] or x["de"] == un.objeto(o))))
@@ -460,7 +472,7 @@ def del_tecnico(d, issue, lineas, dts):
     cambian = [x for x in mias if x["estado"] in ("nuevo", "cambia")]
     hay_copia = any(x["estado"] for x in mias)
     # sin nada que cambie en el técnico (lo que cambia está en el funcional), lo que ya dice de sus objetos
-    van = cambian or [x for x in mias if not hay_copia or suya(x)]
+    van = cambian or [x for x in mias if not hay_copia or suya(x) or "dt" in x]
     T, puestas, out = (m.docs["T"].lineas if "T" in m.docs else []), {x["i"] for x in van if "dt" not in x}, []
     if hay_copia and van and not cambian:
         out.append(f"El técnico no cambia para esta issue con {d.uid}. Lo que ya dice de sus objetos:")
@@ -1164,7 +1176,9 @@ def calcula(m, ctx, uid, estreno=False):
     # lo que el técnico dice para esta unidad (todo, en la construcción inicial; lo nuevo o lo que cambia, si no) y no
     # nombra ningún objeto suyo (la matriz de seguridad de §4, una constante que falta en §13): va en la Base o, sin
     # Base, en todas, porque la issue dice que no hace falta leer el técnico. Y se avisa al analista
-    perdidas = [x for x in lineas if x["i"] not in cubiertas and (d.inicial or x["estado"] in ("nuevo", "cambia"))]
+    # (salvo lo que dice ser de otra unidad: se construye con la suya)
+    perdidas = [x for x in lineas if x["i"] not in cubiertas and not x["otra"]
+                and (d.inicial or x["estado"] in ("nuevo", "cambia"))]
     base = [i for i in issues if i.comun] or issues
     for i in base:
         i.sueltas = {x["i"] for x in perdidas}

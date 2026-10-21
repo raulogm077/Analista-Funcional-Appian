@@ -1,0 +1,37 @@
+"""Lo que el técnico dice de otra unidad no va a la Base ni avisa. Datos ficticios, sin red."""
+import unittest
+import test_automejora as base
+
+iss, mo, un, fixture = base.iss, base.mo, base.un, base.fixture
+
+
+class OtraUnidad(unittest.TestCase):
+    setUp = base.Automejora.setUp
+    preparada = base.Automejora.preparada
+
+    def test_la_marca_de_otra_unidad_no_va_a_la_base_ni_avisa(self):
+        f = self.p / "analisis/tecnico.md"
+        self.preparada()
+        t = f.read_text(encoding="utf-8")
+        t = t.replace("## 4. Grupos y seguridad",
+                      "### 3.4 AUT Registro Ajeno\n\nOtra unidad. Una por mes.\n\n| Campo | Tipo |\n|---|---|\n"
+                      "| campoajeno | Text |\n\n## 4. Grupos y seguridad", 1)
+        t = t.replace("## 10. Integraciones, documentos e IA",
+                      "| AV-90 | Correo de EV-02 sin objeto | Buzón ajeno | Texto |\n"
+                      "| AV-91 | Correo de control sin marca ni objeto | Buzón de control | Texto |\n\n"
+                      "## 10. Integraciones, documentos e IA", 1)
+        f.write_text(t, encoding="utf-8", newline="")
+        m = mo.Proyecto(self.p)
+        plan = iss.calcula(m, un.Contexto(m), "EV-01")
+        aviso = next(a for a in plan.avisos if "no nombran ningún objeto" in a)
+        self.assertIn("Correo de control", aviso)
+        for ajeno in ("campoajeno", "EV-02", "Una por mes"):
+            self.assertNotIn(ajeno, aviso)
+        base_issue = next(i for i in plan.issues if i.comun)
+        self.assertTrue(base_issue.sueltas)
+        self.assertNotIn("campoajeno", "".join(m.docs["T"].lineas[i] for i in base_issue.sueltas
+                                               if m.docs["T"].lineas[i].startswith("| campoajeno")))
+
+
+if __name__ == "__main__":
+    unittest.main()

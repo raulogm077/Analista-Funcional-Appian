@@ -175,11 +175,14 @@ def perfiles(m):
 
 def alcance(ctx):
     """Lo que tiene que estar en el técnico: con analisis/cambios.md, las piezas de las unidades en curso con sus
-    criterios (el técnico «completo» exige lo suyo, no la aplicación entera); sin cambios.md, o con la construcción
-    inicial (EV-01) en curso en una aplicación nueva, None: todo."""
-    if not ctx.hay or (ctx.base() == "EV-01" and ctx.por_id["EV-01"].estado in un.EN_CURSO):
+    criterios (el técnico «completo» exige lo suyo, no la aplicación entera, tampoco con la primera unidad); sin
+    cambios.md, None: todo."""
+    if not ctx.hay:
         return None
     ids = {x for u in ctx.unidades if u.estado in un.EN_CURSO for x in ctx.raices_de(u.id)}
+    # lo que construye según técnico §13 («Para»): la construcción inicial no tiene informes que la cuenten
+    en_curso = {u.id for u in ctx.unidades if u.estado in un.EN_CURSO}
+    ids |= {ctx.m.raiz_de(x) for f in ctx.filas if f["unidad"] in en_curso for x in mo.ids_en(f["para"])}
     return ids | {h for x in ids if x in ctx.m.piezas for h in ctx.m.piezas[x].hijos}
 
 
@@ -203,7 +206,7 @@ def comprobar_completo(m, ctx):
             continue
         for x in nombres(c["perfil"], pf):
             usados.add(mo.normaliza(x))
-            if pf and mo.normaliza(x) not in pf:
+            if pf and mo.normaliza(x) not in pf and mo.normaliza(x) != "aplicacion":   # lo que hace la propia aplicación
                 perfil_mal.append(f"{p.id} «{x}»")
         if c["pantalla"].strip() not in ("—", "-") and not mo.ids_en(c["pantalla"]):
             pan_mal.append(p.id)
