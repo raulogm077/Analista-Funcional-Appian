@@ -16,8 +16,9 @@ python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o <proyecto>/fuen
   `leer_fuentes.py -o <p>/fuentes --duplicada FU-02=FU-01 --motivo "Misma reunión, solo cambia el título"`
   deja constancia de cuál la cubre; desde entonces no se vuelve a leer ni se exige cobertura propia. Para recuperar
   su lectura y cobertura: `leer_fuentes.py -o <p>/fuentes --restaurar FU-02`. No marques como duplicada una corrección.
-  Una fuente inservible (una transcripción ilegible) no tiene marca propia: usa la misma, con el motivo real
-  (`--motivo "Ilegible, sin uso"`) y cita la que cubre lo que sí se sabe.
+  Marcar una fuente como duplicada afirma que otra la cubre. Una fuente ilegible o inservible solo se marca así si esa
+  cobertura se puede justificar (`--motivo` con la que cubre lo que sí se sabe); si no, queda descartada, con su
+  ilegibilidad como motivo, en «Fuentes procesadas» de `proyecto.md`: no tiene marca propia.
 - En iteraciones, ejecútalo con las fuentes nuevas sobre la **misma carpeta**
   `fuentes/`: las ya catalogadas conservan su ID y las nuevas se numeran a
   continuación. Nunca renumeres a mano.

@@ -322,6 +322,39 @@ def es_marca_otra_unidad(texto):
     return bool(re.match(r"otra unidad\b", mo.normaliza(texto.strip(" *-_"))))
 
 
+def continuaciones(lineas):
+    """{línea que continúa: línea con la que empieza su párrafo o viñeta}. Continúa la línea no vacía que no empieza un
+    elemento nuevo (viñeta, número, encabezado, fila de tabla, bloque de código, marca «Otra unidad» o comentario) y viene
+    justo detrás de un párrafo o una viñeta: el técnico se reparte por unidades, no por las líneas en que el editor
+    parte un mismo párrafo."""
+    out, cabeza, codigo = {}, None, False
+    for i, l in enumerate(lineas):
+        s = l.strip()
+        if not s:
+            cabeza = None
+        elif s.startswith(("```", "~~~")):
+            codigo, cabeza = not codigo, None
+        elif (codigo or s.startswith(("#", "|", ">", "<!--")) or re.match(r"^(-{3,}|\*{3,}|_{3,})$", s)
+              or re.match(r"^\*\*[^*\n]+\*\*[:.]?$", s)):      # un título en negrita solo en su línea no absorbe lo de debajo
+            cabeza = None
+        elif cabeza is not None and not (re.match(r"^([-*+]|\d+[.)])\s", s) or es_marca_otra_unidad(s)):
+            out[i] = cabeza
+        else:
+            cabeza = i
+    return out
+
+
+def unidades_de_texto(lineas):
+    """{línea cabeza: el texto de su párrafo o viñeta, con sus líneas unidas en una}; lo que continúa no aparece."""
+    cont, out = continuaciones(lineas), {}
+    for i, l in enumerate(lineas):
+        if i in cont:
+            out[cont[i]] += " " + l.strip()
+        else:
+            out[i] = l.strip()
+    return out
+
+
 def lineas_del_tecnico(d):
     """Las líneas de los apartados 3 a 12 del técnico, cada una con lo que hace falta para saber de qué issue es:
     {i, donde («§7», «§3.1»), texto, cabecera (si es la fila de una tabla), titulo (la línea que precede a su tabla),
@@ -340,13 +373,24 @@ def lineas_del_tecnico(d):
     antes, de_bloque = {}, bloques(T)
     if d.ant is not None and "T" in d.ant.docs:
         A = d.ant.docs["T"]
+        unidas = unidades_de_texto(A.lineas)
         for i, (l, b) in enumerate(zip(A.lineas, bloques(A))):
-            antes.setdefault((A.seccion_de_linea[i], b), []).append(l.strip())
+            if i in unidas:
+                antes.setdefault((A.seccion_de_linea[i], b), []).append(unidas[i])
     out, cabecera, titulo, apartado, de, previa, bloque = [], None, None, "", None, None, set()
     otra_sub = False      # el apartado «### 3.n» ya dijo que es de otra unidad
     abre_sub = False      # aún no se ha leído la primera línea de texto del apartado «### 3.n»
+    cont, cabezas, unidas = continuaciones(T.lineas), {}, unidades_de_texto(T.lineas)
+    en_13 = {"tabla": False, "reglas": False}    # §13: los pasos manuales van debajo de su tabla
     for i, l in enumerate(T.lineas):
         s = T.seccion_de_linea[i]
+        if i in cont:      # sigue el párrafo o la viñeta de la línea cabeza: es una sola unidad
+            previa = (i, l)
+            if cont[i] in cabezas:
+                x = cabezas[cont[i]]
+                x["ids"] = x["ids"] | mo.ids_en(mo.sin_comentarios(l))
+                x["objetos"] = x["objetos"] | nombrados(l, d.todos) | bloque
+            continue
         if l.startswith("## "):
             cabecera, apartado, de, previa, bloque = None, "", None, None, set()
             otra_sub = False
@@ -365,7 +409,19 @@ def lineas_del_tecnico(d):
             cabecera = mo.celdas(l)
             titulo = previa[0] if previa and i - previa[0] <= 3 and not previa[1].startswith("#") else None
             continue
-        if s in SIN_APARTADO or not l.strip() or l.startswith("#") or RX_SEPARADOR.match(l):
+        if s == "13":      # los pasos manuales de debajo de la tabla; no la tabla, ni los supuestos, ni las reglas generales
+            if l.startswith("|"):
+                en_13["tabla"] = True
+            if re.match(r"^(?:#{2,6}\s+|\*\*)?Reglas para quien construye", l, re.I):
+                en_13["reglas"] = True
+            elif re.match(r"^(?:#{2,6} |\*\*|\|)", l):
+                en_13["reglas"] = False
+            siguiente = next((x for x in T.lineas[i + 1:] if x.strip()), "")
+            if not en_13["tabla"] or en_13["reglas"] or l.startswith("|") or siguiente.startswith("|"):
+                continue      # ni las tablas, ni la línea que presenta una (los supuestos), son pasos
+        elif s in SIN_APARTADO:
+            continue
+        if not l.strip() or l.startswith("#") or RX_SEPARADOR.match(l):
             continue
         fila = mo.celdas(l) if l.startswith("|") else None
         objetos = nombrados(l, d.todos) | bloque
@@ -374,12 +430,13 @@ def lineas_del_tecnico(d):
             objetos |= nombrados(T.lineas[titulo], d.todos) if titulo is not None else set()
         if abre_sub:
             otra_sub, abre_sub = es_marca_otra_unidad(l) and not l.startswith("|"), False     # «Otra unidad. Una por mes.» abre el apartado: todo él es de otra
-        item = {"i": i, "donde": f"§{apartado or s}", "texto": l.strip(), "cabecera": cabecera if fila else None,
+        item = {"i": i, "donde": f"§{apartado or s}", "texto": unidas[i], "cabecera": cabecera if fila else None,
                 "otra": otra_sub or es_marca_otra_unidad(l), "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
                 "objetos": objetos, "estado": "", "era": None}
+        cabezas[i] = item
         if antes:
             previas = antes.get((s, de_bloque[i]), ())
-            if l.strip() in previas:
+            if unidas[i] in previas:
                 item["estado"] = "igual"
             else:
                 era = next((mo.celdas(x) for x in previas if fila and x.startswith("|")
@@ -407,6 +464,7 @@ def decisiones(d):
                 "igual" if limpio(d.ant.texto(p.id)) == limpio(m.texto(p.id)) else "cambia"
         out.append({"i": p.ini, "donde": p.id, "texto": dice, "dt": f"{p.id} {p.titulo}", "cabecera": None, "titulo": None,
                     "de": None, "era": None, "ids": {m.raiz_de(x) for x in mo.ids_en(campos.get("necesidad", ""))},
+                    "base": para_de(m, campos.get("necesidad", ""))[0],      # «Necesidad: Base», como «Para: Base» de §13
                     "objetos": nombrados(m.texto(p.id), d.todos), "estado": estado})
     return out
 
@@ -466,7 +524,14 @@ def del_tecnico(d, issue, lineas, dts):
     # una decisión técnica entra por lo que cita su «Necesidad», no por nombrar un objeto en su texto: si no, una DT nueva
     # que nombra un objeto de la Base dejaría pendiente lo ya verificado. Lo que cambia un objeto está en §3 a §12
     suya = lambda x: "dt" not in x and (x["objetos"] & enteros or x["de"] in enteros or any(de_parte(x, o) for o in senas))
-    mias = [x for x in lineas + dts if suya(x) or x["ids"] & cita or x["i"] in issue.sueltas and "dt" not in x]
+    # un objeto que una issue crea entero y otra solo cambia en una parte (su fila de §13 nombra la parte): la línea que lo
+    # nombra y no nombra esa parte, por citar un requisito de la otra, es de la que lo crea
+    sin_entero = {un.objeto(o) for o in nombres} - enteros
+    de_otra = {un.objeto(o) for f in d.filas for o in f["objetos"] if not un.parte(o)} & sin_entero
+    por_cita = lambda x: x["ids"] & cita and not ("dt" not in x and de_otra & (x["objetos"] | {x["de"]}) and
+                                                  not any(de_parte(x, o) for o in senas))
+    mias = [x for x in lineas + dts if suya(x) or por_cita(x) or x.get("base") and issue.comun
+            or x["i"] in issue.sueltas and "dt" not in x]
     donde = {o: list(dict.fromkeys(x["donde"] for x in mias if (de_parte(x, o) if o in senas else
                                                                un.objeto(o) in x["objetos"] or x["de"] == un.objeto(o))))
              for o in nombres}

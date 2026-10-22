@@ -81,7 +81,7 @@ un sistema. Tabla vertical:
 | Campo | Contenido |
 |---|---|
 | **Capa** | Datos, Seguridad, Lógica, Proceso, Interfaz, Navegación, Integración, IA u Operación |
-| **Necesidad** | Las HU, PAN, ACT o RB que la piden |
+| **Necesidad** | Las HU, PAN, ACT o RB que la piden; «Base» (sola o con ellas) si es de lo común: llega a la issue de la Base, como «Para: Base» de §13 |
 | **Decisión** | Qué se hace, con los nombres de los objetos |
 | **Por qué** | En una frase, con `BP nn §x` y la URL de la documentación |
 | **Descartada** | La alternativa y por qué no |
@@ -118,7 +118,9 @@ Por record type, `### 3.n <Record type>`:
   `Funcional: <Dato del funcional §6>` (varios separados por comas) o `Técnico: <para qué>`. Todo dato del
   funcional tiene su campo y todo campo tiene su uso.
 - Los estados y las listas de valores son record types de referencia, no texto.
-- Cada tabla lleva los campos de auditoría definidos en §1. Un texto de más de 255 caracteres se diseña como Long Text.
+- Cada tabla lleva los campos de auditoría definidos en §1. Un texto de más de 255 caracteres se diseña como Long Text. Appian no tiene otras longitudes para la tabla que
+  genera (Text 255, Long Text 4.000, Extra Long Text 64.000; `create-record-data-source.html`): un máximo menor,
+  como 100, no es la longitud de la columna sino una validación del campo en el formulario.
 
 Al final: referencias y carga inicial (`Record type · Valores iniciales · Quién lo mantiene`). Un valor que cambia
 de un entorno a otro (el ID numérico de un grupo) se dice en «Valores iniciales», y quien despliega lo cambia
@@ -134,7 +136,10 @@ propuesta de refactorización es obligatoria.
 
 ### 4. Grupos y seguridad
 - Tabla `Perfil · Grupo · Constante`, con todos los perfiles del funcional.
-- Matriz de qué ve y qué hace cada grupo (registros, campos, vistas, acciones).
+- Matriz de qué ve y qué hace cada grupo (registros, campos, vistas, acciones). Es la seguridad de los datos y de los
+  objetos; lo que ve cada perfil dentro de una pantalla (un filtro, una columna, un botón) va en el apartado de esa
+  pantalla (§7), nombrando su interfaz, y lleva un criterio en su historia del funcional, con su escenario y su
+  comprobación en §14: así llega a la issue de la pantalla y el QA lo prueba.
 - Cada «solo lo ve…» o «solo puede…» del funcional, con la capa de Appian que lo aplica (seguridad de
   registro, de campo, de vista, de acción o de la interfaz). Si es una decisión, su DT.
 - La cuenta del sistema que llama a una Web API expuesta (§10), con su grupo: va aquí y solo aquí.
@@ -160,7 +165,8 @@ constantes `Constante · Valor · Cambia por entorno`.
 Tabla `Pantalla · Qué es en Appian · Guarda con · Notas`, una fila por PAN: página de site (y de qué tipo),
 vista de registro, acción de registro, formulario de tarea o de inicio. Filtros de usuario, búsqueda,
 exportación y acciones de registro con quién las ve. Los filtros por defecto y los contadores trabajan sobre
-conjuntos acotados (BP 05 §2–3). La composición: «ver prototipo, pantalla <id>».
+conjuntos acotados (BP 05 §2–3). La composición: «ver prototipo, pantalla <id>». Quién ve cada control de la pantalla
+(un filtro, una columna, un botón) se escribe aquí, con el nombre de su interfaz.
 Cada acción que lanza un proceso desde una pantalla dice qué es y de qué record type: acción de lista de registros
 (crea) o acción relacionada (sobre un registro), puesta con el componente de acciones de registro; nunca un enlace de
 inicio de proceso en la interfaz (BP 00 «Process», 01 §9.2, 02 §5.4, 03 §8, 06 §5.3). Las de cada record type, en una
@@ -204,7 +210,7 @@ hay que vigilar en producción.
 ### 13. Plan de construcción
 Tabla `Paso · Objeto · Tipo · Situación · Sustituye a · Cambio · Para`, una fila por objeto, en orden de
 dependencias: grupos y constantes, datos, seguridad, lógica, interfaces, procesos, site. Debajo, los pasos manuales,
-marcados. Un «Cambio» vacío es `EV-01` en una aplicación nueva. De la tabla salen las issues de construcción
+marcados; cada uno llega a la issue de los objetos que nombra y, si no nombra ninguno, a la Base. Un «Cambio» vacío es `EV-01` en una aplicación nueva. De la tabla salen las issues de construcción
 (`cambios.md` §5). Situación:
 - **Nuevo**: no está en el inventario ni es de otra aplicación.
 - **Modifica**: está en el inventario y cambia. Un objeto de otra aplicación que cambia lo cambia su equipo: dilo.
@@ -236,8 +242,9 @@ Si hay preguntas sin respuesta y se acuerda construir con un supuesto, debajo de
 |---|---|---|
 | PC-nn | Valor o comportamiento acordado mientras llega la respuesta | Nombre exacto del objeto entre comillas invertidas |
 
-Las filas llegan a las issues que citan el PC o construyen el objeto. Las instrucciones generales se escriben bajo
-«Reglas para quien construye» y llegan a todas. Al responder el PC se revisa el supuesto con `indice.py impacto`.
+Las filas llegan a las issues que citan el PC o construyen el objeto. Las instrucciones generales, y toda regla que
+valga para varias issues (un formato, un nombre), se escriben bajo «Reglas para quien construye» y llegan a todas:
+una línea de otro apartado que no nombra ningún objeto solo llega a la Base. Al responder el PC se revisa el supuesto con `indice.py impacto`.
 
 ### 14. Pruebas y trazabilidad
 Tabla `Criterio · Cómo se prueba · Con qué` con todos los criterios `HU-nn.m` e `INT-nn.m` (se pueden agrupar) y los
@@ -250,8 +257,9 @@ otro que no. «Con qué» dice cómo se comprueba cada criterio, y la issue lo c
   También del QA (`appian-qa`).
 
 Cuando un criterio depende de una regla, «Cómo se prueba» fija la entrada y la salida esperadas concretas;
-quien construye las copia al caso de prueba, sin decidir el resultado esperado. Si depende de la fecha de hoy,
-el criterio lleva una fecha fija y se prueba así (el QA de pantalla no puede fijar la fecha).
+quien construye las copia al caso de prueba, sin decidir el resultado esperado. La lógica que depende de la fecha de
+hoy lleva una fecha fija en el criterio y se prueba así (el QA de pantalla no puede fijar la fecha); su efecto (no se
+guarda, no arranca el proceso, sale el mensaje) se prueba en su capa.
 
 ```markdown
 | Criterio | Cómo se prueba | Con qué |

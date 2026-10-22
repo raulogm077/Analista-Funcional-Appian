@@ -1202,7 +1202,8 @@ Se acepta si:
         shutil.rmtree(tmp, ignore_errors=True)
     for nombre in ("test_automejora.py", "test_ingesta.py", "test_dependencias.py", "test_secuenciacion.py",
                    "test_permisos.py", "test_subtareas.py", "test_revision_inicio.py", "test_revision_consumidores.py",
-                   "test_tablas_proyecto.py", "test_huella_dt.py", "test_otra_unidad.py", "test_alcance_perfiles.py"):
+                   "test_tablas_proyecto.py", "test_huella_dt.py", "test_otra_unidad.py", "test_alcance_perfiles.py",
+                   "test_reparto_tecnico.py"):
         prueba = AQUI / nombre
         if prueba.is_file():
             c, out = corre(prueba)
@@ -2817,11 +2818,11 @@ def pruebas_issues(tmp):
        and "Acción «Nueva solicitud» · Unidad: Sí" not in i2, i1[-2500:])
     ok("y calcula avisa al analista de cada línea del técnico que no nombra ningún objeto ni requisito de las issues, con "
        "dónde está y a cuál va",
-       c == 0 and perdidas.startswith("· 13 líneas del técnico no nombran ningún objeto ni requisito de las issues de "
+       c == 0 and perdidas.startswith("· 14 líneas del técnico no nombran ningún objeto ni requisito de las issues de "
                                       "EV-01 y van en la Base, ISS-01")
        and "§3.3 «Sin carga de datos antiguos (funcional §10).»" in perdidas
        and "§6 «`AUT_CORREO_ORGANISMO` / Buzón del organismo" in perdidas and "§9" not in perdidas
-       and "§8" not in perdidas, out)
+       and "§8" not in perdidas and "§13 «Manual: calendario de procesos" in perdidas, out)      # el paso manual de §13 ya se reparte
     ok("sus escenarios, cada uno con cómo se comprueba (técnico §14): un caso de prueba guardado o SAIL CLI, que es del "
        "QA de la unidad; sin «Con qué», lo que diga §14",
        "- `HU-01.2` Al enviarla recibe un número con la forma AUT-2026-0001, correlativo por año. → Caso de prueba de "

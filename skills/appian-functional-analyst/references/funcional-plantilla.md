@@ -90,7 +90,8 @@ Historias agrupadas por área (`### Área`). Cada una:
    cliente. Un solo «cuando»: si no cabe en una frase, son dos criterios. Los textos literales (un mensaje, un
    estado), entre comillas. Toda acción que borre o anule algo dice su confirmación literal; si no se sabe,
    va al 11. Lo que depende de la fecha de hoy se escribe con una fecha fija («Dado que hoy es el 15/03/2026…»);
-   el técnico lo prueba con un caso de prueba de regla (§14). Con las tres partes, un script escribe la prueba de cada criterio en Gherkin, sin interpretarlo. Los
+   el técnico prueba así la lógica que depende de la fecha (caso de prueba de regla, §14); su efecto (no se guarda,
+   no arranca el proceso, sale el mensaje) se prueba en su capa. Con las tres partes, un script escribe la prueba de cada criterio en Gherkin, sin interpretarlo. Los
    criterios que ya estaban escritos de otra forma (un análisis anterior, el DF del cliente) se quedan como están
    y se reescriben así cuando cambian.
 
@@ -116,7 +117,8 @@ Una ficha `PAN-nn` por pantalla, vista o diálogo:
 - La captura del prototipo, `![PAN-04 Revisar documentación](../prototipo/capturas/04-revisar.png)`, o
   varias si la pantalla tiene estados que el cliente debe ver (pasos, vistas, errores). Las pone el prototipo.
 - Para qué sirve, quién entra y desde dónde se abre, en una o dos frases.
-- Tabla `Parte · Qué permite · Quién`.
+- Tabla `Parte · Qué permite · Quién`. Lo que ve cada perfil dentro de la pantalla (un filtro, una columna, un botón)
+  va aquí y lleva un criterio en su historia, con su escenario: así llega a la issue de la pantalla y el QA lo prueba.
 - `Historias: HU-04, HU-05.`
 
 ```markdown

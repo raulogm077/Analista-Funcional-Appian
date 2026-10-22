@@ -156,6 +156,11 @@ python3 <skill>/scripts/indice.py issues <p> EV-02     # sus issues de construcc
   otros agentes y a personas. No se generan si la unidad no está aprobada o ha crecido desde que se aprobó. Un técnico
   con tabla en §13 pero sin columna «Para» da una sola issue con toda la unidad. Si se aprobó antes de completar
   la columna, ejecuta `indice.py issues <p> <U>`.
+  El técnico se reparte por párrafos y viñetas enteros (la marca «Otra unidad» de su primera línea vale para todo el
+  párrafo); una DT cuya «Necesidad» dice «Base» llega a la Base, igual que «Para: Base» de §13; los pasos manuales de
+  debajo de la tabla de §13 van a la issue de los objetos que nombran y, si no nombran ninguno, a la Base; y de un objeto
+  que una issue crea entero y otra solo cambia en una parte (`Objeto — parte` en §13), la línea que lo nombra va a la que
+  lo crea, salvo que nombre la parte.
 
 Si una dependencia calculada sobra o falta, una persona puede fijar la **lista exacta** de esa issue:
 `indice.py issues <p> EV-02 ISS-03 --depende-de ISS-01 ISS-02 --motivo "…" --quien "…"`.
