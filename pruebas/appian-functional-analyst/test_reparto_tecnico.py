@@ -1,5 +1,5 @@
-"""El reparto del técnico entre issues: unidades de párrafo, DT de la Base, pasos manuales de §13 y un objeto que
-una issue crea entero y otra solo cambia en una parte. Datos ficticios, sin red."""
+"""El reparto del técnico entre issues: unidades de párrafo, DT de la Base, pasos manuales de §13 y la línea de un
+objeto que una issue crea entero y otra solo cambia en una parte. Datos ficticios, sin red."""
 import unittest
 import test_automejora as base
 
@@ -135,16 +135,15 @@ class RepartoTecnico(unittest.TestCase):
             self.assertNotIn("Con preguntas sin respuesta", i.texto)       # presenta una tabla, no es un paso
             self.assertEqual(i.texto.count("Importes siempre en euros"), 1, i.id)    # las reglas generales siguen su camino
 
-    def test_una_linea_de_un_objeto_creado_entero_no_va_a_la_issue_que_solo_cambia_una_parte(self):
-        # AUT Solicitud: la Base lo crea; la issue de HU-07 solo le añade la acción «Adjuntar informe del organismo»
-        plan = self.calcula(("### 3.2 AUT Documento", "- Título del registro: número y asunto (HU-07).\n"
-                                                      "- La acción «Adjuntar informe del organismo» se ofrece al técnico (HU-07).\n\n"
-                                                      "### 3.2 AUT Documento"))
+    def test_una_linea_de_un_objeto_que_cita_un_requisito_llega_a_la_issue_que_solo_cambia_una_parte(self):
+        # AUT Solicitud: la Base lo crea; la issue de HU-07 solo le añade la acción «Adjuntar informe del organismo». Una
+        # línea que describe esa acción sin nombrarla como §13 tiene que llegarle: repetida en la Base, no perdida
+        plan = self.calcula(("### 3.2 AUT Documento", "Al adjuntar el PDF en `AUT Solicitud`, el comentario es obligatorio "
+                                                      "(HU-07).\n\n### 3.2 AUT Documento"))
         con_parte = next(i for i in plan.issues if any("Adjuntar" in o for f in i.filas for o in f["objetos"]))
         self.assertFalse(con_parte.comun)
-        self.assertNotIn("Título del registro", con_parte.texto)
-        self.assertIn("Título del registro", self.la_base(plan).texto)
-        self.assertIn("se ofrece al técnico", con_parte.texto)
+        self.assertIn("el comentario es obligatorio", con_parte.texto)
+        self.assertIn("el comentario es obligatorio", self.la_base(plan).texto)
 
 
 if __name__ == "__main__":

@@ -526,13 +526,7 @@ def del_tecnico(d, issue, lineas, dts):
     # una decisión técnica entra por lo que cita su «Necesidad», no por nombrar un objeto en su texto: si no, una DT nueva
     # que nombra un objeto de la Base dejaría pendiente lo ya verificado. Lo que cambia un objeto está en §3 a §12
     suya = lambda x: "dt" not in x and (x["objetos"] & enteros or x["de"] in enteros or any(de_parte(x, o) for o in senas))
-    # un objeto que una issue crea entero y otra solo cambia en una parte (su fila de §13 nombra la parte): la línea que lo
-    # nombra y no nombra esa parte, por citar un requisito de la otra, es de la que lo crea
-    sin_entero = {un.objeto(o) for o in nombres} - enteros
-    de_otra = {un.objeto(o) for f in d.filas for o in f["objetos"] if not un.parte(o)} & sin_entero
-    por_cita = lambda x: x["ids"] & cita and not ("dt" not in x and de_otra & (x["objetos"] | {x["de"]}) and
-                                                  not any(de_parte(x, o) for o in senas))
-    mias = [x for x in lineas + dts if suya(x) or por_cita(x) or x.get("base") and issue.comun
+    mias = [x for x in lineas + dts if suya(x) or x["ids"] & cita or x.get("base") and issue.comun
             or x["i"] in issue.sueltas and "dt" not in x]
     donde = {o: list(dict.fromkeys(x["donde"] for x in mias if (de_parte(x, o) if o in senas else
                                                                un.objeto(o) in x["objetos"] or x["de"] == un.objeto(o))))
