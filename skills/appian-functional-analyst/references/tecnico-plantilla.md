@@ -81,7 +81,7 @@ un sistema. Tabla vertical:
 | Campo | Contenido |
 |---|---|
 | **Capa** | Datos, Seguridad, Lógica, Proceso, Interfaz, Navegación, Integración, IA u Operación |
-| **Necesidad** | Las HU, PAN, ACT o RB que la piden; «Base» (sola o con ellas) si es de lo común: llega a la issue de la Base, como «Para: Base» de §13 |
+| **Necesidad** | Las HU, PAN, ACT o RB que la piden; «Base» (con mayúscula, sola o con ellas) si es de lo común: llega a la issue de la Base, como «Para: Base» de §13 |
 | **Decisión** | Qué se hace, con los nombres de los objetos |
 | **Por qué** | En una frase, con `BP nn §x` y la URL de la documentación |
 | **Descartada** | La alternativa y por qué no |
@@ -118,9 +118,10 @@ Por record type, `### 3.n <Record type>`:
   `Funcional: <Dato del funcional §6>` (varios separados por comas) o `Técnico: <para qué>`. Todo dato del
   funcional tiene su campo y todo campo tiene su uso.
 - Los estados y las listas de valores son record types de referencia, no texto.
-- Cada tabla lleva los campos de auditoría definidos en §1. Un texto de más de 255 caracteres se diseña como Long Text. Appian no tiene otras longitudes para la tabla que
-  genera (Text 255, Long Text 4.000, Extra Long Text 64.000; `create-record-data-source.html`): un máximo menor,
-  como 100, no es la longitud de la columna sino una validación del campo en el formulario.
+- Cada tabla lleva los campos de auditoría definidos en §1. En una tabla que genera Appian, «Long.» solo puede ser
+  Text (255), Long Text (4.000) o Extra Long Text (64.000) (`create-record-data-source.html`): un texto de más de 255
+  caracteres se diseña como Long Text. Un máximo menor que sea regla de negocio, como 100, no es la longitud de la
+  columna: se valida en las vías que escriben ese campo (el formulario y, si las hay, la integración o la API).
 
 Al final: referencias y carga inicial (`Record type · Valores iniciales · Quién lo mantiene`). Un valor que cambia
 de un entorno a otro (el ID numérico de un grupo) se dice en «Valores iniciales», y quien despliega lo cambia

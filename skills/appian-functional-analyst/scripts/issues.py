@@ -464,7 +464,9 @@ def decisiones(d):
                 "igual" if limpio(d.ant.texto(p.id)) == limpio(m.texto(p.id)) else "cambia"
         out.append({"i": p.ini, "donde": p.id, "texto": dice, "dt": f"{p.id} {p.titulo}", "cabecera": None, "titulo": None,
                     "de": None, "era": None, "ids": {m.raiz_de(x) for x in mo.ids_en(campos.get("necesidad", ""))},
-                    "base": para_de(m, campos.get("necesidad", ""))[0],      # «Necesidad: Base», como «Para: Base» de §13
+                    # «Necesidad: Base», como «Para: Base» de §13: con mayúscula y suelta, no «base de datos»
+                    "base": bool(re.search(r"(?<!\w)Base(?!\w)(?!\s+de\b)",
+                                           mo.sin_comentarios(campos.get("necesidad", "")))),
                     "objetos": nombrados(m.texto(p.id), d.todos), "estado": estado})
     return out
 

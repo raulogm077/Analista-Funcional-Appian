@@ -218,7 +218,7 @@ def repositorio(raiz):
         print("· No se pudo crear el repositorio (git init): créalo a mano en la carpeta del proyecto")
         return
     print("+ repositorio git, en la rama main. Falta decirle dónde se sube: git remote add origin <URL>; después, "
-          "git add -A, git commit y git push -u origin main")
+          "revisa lo que excluye .gitignore, añade lo que quieras versionar, git commit y git push -u origin main")
 
 
 def avisos_repositorio(raiz):

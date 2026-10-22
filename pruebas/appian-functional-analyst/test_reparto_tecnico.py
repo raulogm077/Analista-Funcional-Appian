@@ -108,6 +108,19 @@ class RepartoTecnico(unittest.TestCase):
         self.assertIn("DT-91", self.de(plan, "AUT_GenerarNumero").texto)      # la de HU-01
         self.assertEqual(self.la_base(plan).version, version_antes[self.la_base(plan).id])
 
+    def test_la_palabra_base_suelta_en_la_necesidad_no_lleva_la_dt_a_la_base(self):
+        antes = self.preparada()[1]
+        version_antes = {i.id: i.version for i in antes.issues}
+        f = self.p / "analisis/tecnico.md"
+        t = f.read_text(encoding="utf-8")
+        for necesidad in ("HU-01 (la base de datos de solicitudes)", "Base de datos compartida y HU-01"):
+            dt = DT_INTERFAZ.replace("| **Necesidad** | HU-01 |", f"| **Necesidad** | {necesidad} |")
+            f.write_text(t.replace("## 3. Modelo de datos", dt + "## 3. Modelo de datos", 1), encoding="utf-8", newline="")
+            m = mo.Proyecto(self.p)
+            plan = iss.calcula(m, un.Contexto(m), "EV-01")
+            self.assertNotIn("DT-91", self.la_base(plan).texto, necesidad)
+            self.assertEqual(self.la_base(plan).version, version_antes[self.la_base(plan).id], necesidad)
+
     def test_un_paso_manual_de_13_va_a_la_issue_de_su_objeto_y_si_no_nombra_ninguno_a_la_base(self):
         manual = "Manual: calendario de procesos y buzón del organismo en cada entorno.\n"
         plan = self.calcula((manual, manual + "\n- Cargar la plantilla de `AUT_PlantillaAutorizacion` en la carpeta del organismo.\n\n"
