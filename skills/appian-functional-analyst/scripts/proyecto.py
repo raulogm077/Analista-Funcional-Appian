@@ -204,8 +204,8 @@ git = mo.git   # las órdenes de git, sin terminal y sin preguntar nunca (modelo
 
 
 def repositorio(raiz):
-    """Deja el proyecto como repositorio git, en la rama main, si no lo es ya. No crea uno dentro de otro, hace el primer
-    commit con lo que crea `iniciar` y no toca un repositorio que ya existe."""
+    """Deja el proyecto como repositorio git, en la rama main, si no lo es ya. No crea uno dentro de otro, no confirma
+    nada y no toca un repositorio que ya existe."""
     if not shutil.which("git"):
         print("· Sin git en este equipo no se crea el repositorio: instálalo y repite «proyecto.py iniciar»")
         return
@@ -217,15 +217,8 @@ def repositorio(raiz):
     if git(raiz, "init", "--quiet") is None or git(raiz, "symbolic-ref", "HEAD", "refs/heads/main") is None:
         print("· No se pudo crear el repositorio (git init): créalo a mano en la carpeta del proyecto")
         return
-    # el primer commit, con lo que acaba de crear: sin él, una sesión que exige un worktree antes de editar no puede
-    # empezar (un repositorio sin commits no tiene de dónde sacarlo)
-    if git(raiz, "add", "-A") is not None and git(raiz, "commit", "--quiet", "-m", "Inicio del proyecto") is not None:
-        print("+ repositorio git, en la rama main, con el primer commit. Falta decirle dónde se sube: "
-              "git remote add origin <URL>; después, git push -u origin main")
-    else:
-        print("+ repositorio git, en la rama main, sin commits (git no tiene nombre o correo configurado, o falló). "
-              "Falta decirle dónde se sube: git remote add origin <URL>; después, git add -A, git commit y "
-              "git push -u origin main")
+    print("+ repositorio git, en la rama main. Falta decirle dónde se sube: git remote add origin <URL>; después, "
+          "git add -A, git commit y git push -u origin main")
 
 
 def avisos_repositorio(raiz):

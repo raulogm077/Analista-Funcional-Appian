@@ -1332,7 +1332,7 @@ def pruebas_repositorio(tmp):
     # estado avisa de lo que no está confirmado ni subido, sin fallar; con todo subido, calla
     c, out = estado(a)
     ok("estado de un proyecto recién creado: nada confirmado y sin remoto, y no le falta nada de iniciar",
-       c == 0 and "sin confirmar" in out and "sin remoto, nada está subido" in out and "le falta" not in out
+       c == 0 and "cambios sin confirmar" in out and "sin remoto, nada está subido" in out and "le falta" not in out
        and "otra versión" not in out, out)
     remoto = base / "remoto.git"
     git(base, "init", "--quiet", "--bare", str(remoto))
@@ -3071,8 +3071,6 @@ def pruebas_issues(tmp):
     base = tmp / "issues con git"
     ana = nueva_con_issues(base / "ana")
     corre(S / "proyecto.py", "iniciar", ana)
-    git(ana, "update-ref", "-d", "HEAD")           # iniciar ya hace el primer commit: aquí se prueba sin ninguno
-    git(ana, "rm", "--cached", "-r", "-q", ".")
     (ana / "fuentes" / "FU-05-aprobacion.md").write_bytes("# FU-05\nAprobada la construcción inicial.\n".encode("utf-8"))
     c, out = issues(ana, "EV-01", "--siguiente", "--quien", "Ana") if aprobar(ana)[0] == 0 else (9, "no se aprueba")
     ok("en un repositorio recién creado, sin remoto ni ningún commit, --siguiente no falla: reserva con el primer commit, "
