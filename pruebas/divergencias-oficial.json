@@ -16,5 +16,6 @@
   {"tema": "Rows per page", "fichero": "references/components/grid-field-instructions.md", "marcador": "10-25 typical"},
   {"tema": "Wizard step style", "fichero": "references/layouts/wizard-layout-instructions.md", "marcador": "style: \"DOT_VERTICAL\",\\s+// 4\\+ steps"},
   {"tema": "Rich text colors", "fichero": "references/components/rich-text-instructions.md", "marcador": "Icon color \\(STANDARD, ACCENT, POSITIVE, NEGATIVE, SECONDARY, or hex\\)"},
-  {"tema": "Recursive rules", "fichero": "references/expression-rules.md", "marcador": "Circular references\\*\\* — A calls B, B calls A = runtime error"}
+  {"tema": "Recursive rules", "fichero": "references/expression-rules.md", "marcador": "Circular references\\*\\* — A calls B, B calls A = runtime error"},
+  {"tema": "Filters on a records grid", "fichero": "references/sail.md", "marcador": "`filters` parameter passes syntax validation but is silently ignored"}
 ]

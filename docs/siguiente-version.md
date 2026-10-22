@@ -25,9 +25,18 @@ Esta lista no autoriza publicar, desplegar, enviar ni borrar.
 - Revisar las URL `/help/26.6/` de `data-fabric.md`, `devmcp-setup.md` y `agents/data-modeler.md`
   al cambiar la versión del servidor MCP.
 - Comunicar la discrepancia comprobada de `LCP_TOOL_MODE=readonly` en Dev MCP 26.6.110, si aún procede.
-- Buenas prácticas de SAIL y seguridad, de una prueba real de construcción: un grid no acepta una lista vacía de mapas
-  aunque esté oculto; la seguridad «quien ve el registro relacionado» encadenada en dos niveles no deja ver nada; las
-  cuentas de prueba con el idioma de la máquina dan los importes en formato inglés.
+- Buenas prácticas de SAIL y seguridad, de dos pruebas reales de construcción: un grid no acepta una lista vacía de mapas
+  aunque esté oculto, ni dos grupos de filtros anidados vacíos a la vez; dos filtros en `AND` sobre una relación uno a
+  muchos se cumplen con filas distintas (hace falta `AND_ALL`); `append()` con un texto como primer argumento concatena;
+  la seguridad «quien ve el registro relacionado» encadenada en dos niveles no deja ver nada; las cuentas de prueba con
+  el idioma de la máquina dan los importes en formato inglés.
+- F8, de la segunda prueba (decisión pendiente): que el orden calculado vea que un `a!recordLink` necesita la vista de
+  resumen que hace otra issue; que las correcciones de dependencias no caduquen por cualquier cambio de la issue; un
+  camino corto para cambiar una issue ya verificada (dónde se escribe, subtareas, qué cambió); y si `verificar` dice lo
+  que no comprueba (relaciones, seguridad de registro, grupos, datos, vistas ocultas) o lo comprueba.
+- Medir en la siguiente unidad real la regla de F8 «varias issues por sesión»: es una hipótesis, no un ahorro medido.
+- F9: si la IA puede dejar preparado el paquete en desarrollo (hoy lo prepara una persona); si sí, añadir que
+  `addPackageObjects` en lote no admite los objetos de contenido.
 - Tarea no prioritaria, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los sitios
   (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
 

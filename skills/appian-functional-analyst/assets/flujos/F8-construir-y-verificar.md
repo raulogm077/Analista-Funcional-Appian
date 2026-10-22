@@ -15,13 +15,17 @@
 | 8 | Con todas hechas, el QA de la unidad: recorrer cada escenario con SAIL CLI como cada rol; cada recorrido queda como guion en `qa/<U>/`. Quien construye no lo hace ni corrige en esa pasada lo que encuentre: un escenario que falla devuelve su issue a pendiente (`cambios.md` §6), y se corrige como cualquier otra, desde el paso 1 | QA, no quien construye: otra sesión, o un subagente que solo recibe los `.feature`, el site y la cuenta de cada rol (técnico §0), con un modelo pequeño y sin la skill oficial; el script repite; marcar un escenario, una persona | `appian-qa` · `qa.py repetir <p> <U>`; `appian-functional-analyst` · `indice.py issues <p> <U> ISS-nn --sin-prueba HU-nn.m --motivo "…"` | `appian-qa/SKILL.md` «Cuándo, y cuándo no», «Flujo» y «El guion» y `appian-functional-analyst/references/cambios.md` §6 |
 | 9 | Con todas hechas, marcar la unidad construida, confirmando cada corrección urgente reaplicada | Script | `appian-functional-analyst` · `proyecto.py cambio <p> <U> construida [--reaplicada URG-nn]` | `appian-functional-analyst/references/cambios.md` §1 y §6 |
 
-**Una sesión por issue.** Cada issue se construye en una sesión limpia (`/clear` o una nueva) que pide la suya con
-`--siguiente --quien`; la sesión que hizo el análisis no construye, salvo en un retoque de pocos objetos. Las llamadas que
-no dependen unas de otras van en el mismo turno, y las herramientas del Dev MCP y las referencias de la skill oficial que
-pida la issue se cargan de una vez. Una decisión que no le toca a quien construye se pregunta; lo decidido va como DT al
-técnico (las issues no se editan: se regeneran con `indice.py issues <p> <U>`). Sin nadie a quien preguntar, la sesión
-para y libera la issue (`--liberar ISS-nn`). Un subagente, solo para lo autocontenido que devuelve poco: el QA del paso 8
-o una investigación larga.
+**Varias issues por sesión.** La sesión que hizo el análisis no construye, salvo en un retoque de pocos objetos. Una
+sesión limpia (`/clear` o una nueva) pide la issue con `--siguiente --quien`, la construye, la verifica y pide la
+siguiente. La Base y las issues sin pantalla ni proceso propios se encadenan; una issue con pantalla o proceso propio
+empieza en una sesión limpia si esta ya construyó otra pantalla o proceso, y también la que sigue a una compactación.
+Cortar entre issues verificadas no pierde nada: el avance está en ellas. Si otra persona construye a la vez, cada una en
+su sesión, con la Base hecha antes. Las llamadas que no dependen unas de otras van en el mismo turno, y las herramientas
+del Dev MCP y las referencias de la skill oficial que pida la issue se cargan de una vez. Una decisión que no le toca a
+quien construye se pregunta; lo decidido va como DT al técnico (las issues no se editan: se regeneran con
+`indice.py issues <p> <U>`). Si hay que parar a mitad de una issue (sin nadie a quien preguntar, o la sesión se llena), se
+marcan sus subtareas hechas (`--subtarea`) y se libera (`--liberar ISS-nn`). Un subagente, solo para lo autocontenido que
+devuelve poco: el QA del paso 8 o una investigación larga.
 
 El avance entre sesiones lo dicen la verificación o el cierre manual de cada issue y el resultado del QA
 (`indice.py issues <p> <U>` identifica cada procedencia).

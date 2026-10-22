@@ -37,6 +37,7 @@ Follow the "Do" column. The file named is where the official skill says it.
 | Wizard step style | Vertical from 4 steps; Minimal for mobile (`wizard-layout-instructions.md`) | Vertical with more than five steps or labels too long for a horizontal milestone; Minimal for one or two steps | The documentation's thresholds (doc 02 §4.6) |
 | Rich text colors | `STANDARD`, `ACCENT`, `POSITIVE`, `NEGATIVE`, `SECONDARY` or hex (`rich-text-instructions.md`) | The same plus `WARN` (ⓥ from 26.6) | `WARN` is valid from 26.6; check the environment's version (doc 02 §6.2) |
 | Recursive rules | Circular references between rules are a runtime error (`expression-rules.md`) | Recursive rules are allowed; Health Check flags a total depth over 20 | Allowed with a bounded depth; prefer looping functions (doc 04 §7) |
+| Filters on a records grid | On `a!gridField` with record data, `filters` passes validation but is silently ignored; use `queryFilter` (`sail.md`, *Platform Quirks*) | `a!recordData()` takes `filters` for additional filtering in read-only grids, charts and selection components | Filter in `a!recordData(filters: …)`; checked on screen with SAIL CLI, rows kept and removed, with build 20261008-132401 (doc 02 §2.1) |
 
 ## 2. Conventions of the official skill this guide narrows
 
@@ -77,7 +78,10 @@ drop it and tell the user.
 |---|---|---|
 | `createApplication` fails with a 500 ("Duplicate names for public and team groups") and the application exists, empty | The prefix was used by an application with another name. Choose another. To check one beforehand: `listObjects` with `query` = the prefix finds its `<prefix> Users` and `<prefix> Administrators` groups (`listGroups` needs an application) | 20261008-132401 |
 | A field created by `createRecordType` as `GROUP` is an `INTEGER` | `updateRecordTypeField` to `GROUP`; read it back | 20261008-132401 |
-| `insertRecordData` into a group-type field wants the group's numeric ID and no `get` returns it | `validateExpression` with `{1,2}[tointeger(cons!X)]`: the error shows the value | 20261008-132401 |
+| `insertRecordData` into a group-type field wants the group's numeric ID and no `get` returns it | `validateExpression` with `{1,2}[tointeger(cons!X)]`, or with no constant `{1,2}[tointeger(a!groupsByName("<group>")[1])]`: the error shows the value | 20261008-132401 |
+| `createInterface` refuses an `a!recordLink`: the record type "has no summary view. Record links will not work until the record type has a summary view"; `validateExpression` had passed it | The record type needs its summary view first. If another issue creates it, that is an order dependency: stop and ask | 20261008-132401 |
+| The spec asks for *Default (All Other Users)* on an object; `getObjectSecurity` lists only group roles (on a record type: administrator, editor, viewer, data steward) | The default level can't be read or set through the MCP: report it as not verified, for a person in Designer | 20261008-132401 |
+| `runAllInterfaceTestCases` fails on an interface with a records `a!gridField` ("Could not find variable 'flow!userFilterSetData'") although `testInterface` renders it | Seen with one records grid. Don't keep that saved test case (it stays red in Designer): test the logic in rules with test cases and the screen in QA | 20261008-132401 |
 | After `updateExpressionRuleTestCase` a case lost its inputs, or the UUIDs no longer resolve | The update drops inputs you don't repeat and every write renews all the UUIDs: repeat all inputs and re-list. The expected result is `test!output = …`, not `fv!output` | 20261008-132401 |
 | A record list column from a related record is refused | Not available through the MCP: show it in an interface with a records grid | 20261008-132401 |
 
@@ -101,4 +105,5 @@ drop it and tell the user.
 - [Grids — Batch size](https://docs.appian.com/suite/help/latest/sail/ux-grids.html#batch-size)
 - [Wizard layout — Selecting a wizard style](https://docs.appian.com/suite/help/latest/sail/ux-wizard-layout.html#selecting-a-wizard-style)
 - [Rich Text Icon — Parameters](https://docs.appian.com/suite/help/latest/Styled_Icon_Component.html#parameters)
+- [a!recordData()](https://docs.appian.com/suite/help/latest/fnc_system_recorddata.html)
 - [Health Check — Recursive rule depth limit](https://docs.appian.com/suite/help/latest/understanding-the-health-check-report.html#recursive-rule-depth-limit)
