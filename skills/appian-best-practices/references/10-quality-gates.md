@@ -74,8 +74,8 @@ recommendation.
 > installed, this section stands on its own.
 
 - ✅ The object **saves and validates without errors**. With a design MCP (e.g. `appian-dev`):
-  `validateDesignObject` on the saved object. An interface created or updated through the MCP has
-  already been parsed, design-checked and evaluated by that call: **don't validate the same expression
+  `validateDesignObjects` with `objectUuid` on the saved object. An interface created or updated through
+  the MCP has already been parsed, design-checked and evaluated by that call: **don't validate the same expression
   again**. `validateExpression` is for code that wasn't written that way — a draft, pasted code — and
   for an interface it needs **`isInterface: true`** (without that flag a correct interface fails with
   *"Could not find variable 'env!features'"*). Without MCP: save in Designer without errors and review
