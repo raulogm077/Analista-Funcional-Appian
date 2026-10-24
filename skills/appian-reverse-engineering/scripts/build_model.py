@@ -156,6 +156,21 @@ def primary_list(data: Any) -> list:
     return best
 
 
+def validation_issues(data: Any) -> list:
+    """Avisos de la validacion de un objeto: los de check, lint y los casos de prueba que fallan
+    (validateDesignObjects, Dev MCP 26.9) o, con la herramienta anterior, su lista principal."""
+    d = unwrap(data)
+    if not (isinstance(d, dict) and any(k in d for k in ("check", "test", "lint"))):
+        return [x for x in primary_list(data) if isinstance(x, dict)]
+    chk = d.get("check") if isinstance(d.get("check"), dict) else {}
+    lint = d.get("lint") if isinstance(d.get("lint"), dict) else {}
+    out = [x for k in ("errors", "warnings") for x in chk.get(k) or []]
+    out += lint.get("findings") or []
+    out += [n for n in walk(d.get("test")) if isinstance(n, dict)
+            and re.search(r"(?i)fail|error", str(pick(n, ("status", "result", "state")) or ""))]
+    return out
+
+
 def items_with_uuid(data: Any):
     for node in walk(data):
         if isinstance(node, dict):
@@ -342,8 +357,9 @@ def enrich_roles(o: dict, files: list[dict], app_group_uuids: set[str], name_by_
             if v:
                 o["versions"] = {**v, "source": f["tool"]}
         elif r == "validation":
-            issues = [x for x in primary_list(data) if isinstance(x, dict)]
-            o["validationIssues"] = [str(pick(x, ("message", "text", "description")) or x)[:200] for x in issues][:10]
+            issues = validation_issues(data)
+            o["validationIssues"] = [str((pick(x, ("message", "text", "description")) if isinstance(x, dict) else None)
+                                         or x)[:200] for x in issues][:10]
         elif r == "screen":
             o["screen"] = rel_file(f)
         elif r == "members":

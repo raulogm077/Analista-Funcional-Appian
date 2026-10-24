@@ -456,6 +456,7 @@ class ToolInfo:
     params: dict = field(default_factory=dict)   # nombre -> tipo de parametro
     types: list[str] = field(default_factory=list)  # tipos canonicos (alcance object); [] = generica
     generic: bool = False
+    obj_param: str | None = None  # parametro opcional que recibe el uuid del objeto (alcance object)
 
     def to_json(self):
         return {"name": self.name, "description": self.description[:500], "allowed": self.allowed,
@@ -507,6 +508,11 @@ def match_types(toks: list[str], type_phrases: dict[str, list[list[str]]]) -> li
     return best
 
 
+# Una validacion que recibe un objeto o una aplicacion entera segun el parametro, sin obligatorios
+# (validateDesignObjects, Dev MCP 26.9), se usa por objeto con uno de estos parametros opcionales.
+OPTIONAL_OBJECT_PARAMS = ("objectUuid", "designObjectUuid")
+
+
 def analyze_tool(tool, policy: Policy, trusted: bool, type_phrases: dict) -> ToolInfo:
     schema = tool.inputSchema or {}
     ti = ToolInfo(tool.name, tool.description or "", schema, ann_to_dict(tool.annotations), tokens(tool.name))
@@ -517,6 +523,9 @@ def analyze_tool(tool, policy: Policy, trusted: bool, type_phrases: dict) -> Too
     kinds = [ti.params.get(p, "other") for p in required]
     toks_set = set(ti.toks)
     others = [p for p in required if ti.params.get(p) == "other"]
+    validacion = any(role == "validation" and rtoks.intersection(ti.toks) for role, rtoks in policy.roles)
+    obj_opcional = next((p for p in OPTIONAL_OBJECT_PARAMS
+                         if p in props and p not in required and ti.params.get(p) == "obj_uuid"), None)
     if others:
         ti.scope, ti.scope_reason = "manual", f"Requiere parametros que no se pueden deducir: {', '.join(others)}."
     elif kinds.count("obj_uuid") > 1 or kinds.count("app_uuid") > 1 or (kinds.count("obj_uuid") and kinds.count("app_uuid")):
@@ -535,6 +544,11 @@ def analyze_tool(tool, policy: Policy, trusted: bool, type_phrases: dict) -> Too
         ti.scope, ti.scope_reason = "app", "Recibe el uuid de la aplicacion."
     elif "type_enum" in kinds:
         ti.scope, ti.scope_reason = "manual", "Requiere un tipo sin identificador de objeto."
+    elif validacion and obj_opcional and not required:
+        ti.scope, ti.scope_reason = "object", f"Valida un objeto con el parametro opcional '{obj_opcional}'."
+        ti.obj_param = obj_opcional
+        ti.types = policy.tool_types.get(ti.name) or []
+        ti.generic = not ti.types
     elif any(k == "app_uuid" for k in ti.params.values()):
         ti.scope, ti.scope_reason = "app", "Admite filtrar por aplicacion."
     else:
@@ -749,7 +763,7 @@ class Extractor:
         for p, kind in ti.params.items():
             if kind == "app_uuid" and app_uuid:
                 args[p] = app_uuid
-            elif kind == "obj_uuid" and p in req:
+            elif kind == "obj_uuid" and (p in req or p == ti.obj_param):
                 args[p] = obj["uuid"] if obj else app_uuid
             elif kind == "type_enum" and p in req:
                 enum = (ti.schema.get("properties", {}).get(p) or {}).get("enum") or []
