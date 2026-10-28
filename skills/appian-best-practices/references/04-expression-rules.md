@@ -116,8 +116,7 @@ Source: [Decisions](https://docs.appian.com/suite/help/latest/Decisions.html) ·
 > **Where the depth lives.** The official Appian skill specifies null handling in full in
 > `references/null-safety-patterns.md`: which functions reject null, the safe pattern for
 > each one, and the casting traps. This section keeps the criterion and what closes the gate. Where its
-> recipes depart from the documentation — short-circuiting in `and()`/`or()`, `a!forEach()` over null,
-> `length()` on a list — doc 14 says which one to follow.
+> recipes depart from the documentation, doc 14 says which one to follow.
 > **Reading this without that skill installed** (against Appian Designer, say): the platform sources
 > cited under each rule are what it is built from, and remain sufficient to apply them.
 

@@ -32,9 +32,8 @@ Source: [Appian Max — Performance Testing Methodology](https://community.appia
 > is specific to querying from a screen and points here for the rest. The official Appian skill goes
 > deeper still in `references/query-record-type-patterns.md` (filters, sorting, relationships,
 > aggregations and paging, with a recipe per case) — **load it before writing a query whose shape is
-> not already in this section.** Two of its recipes go against the documentation — `fetchTotalCount`
-> on every query, and one unfiltered query split in memory instead of filtered ones: doc 14 says what to
-> do instead.
+> not already in this section.** One of its recipes goes against the documentation — deriving subsets
+> in memory from one query instead of filtering at the source: doc 14 says what to do instead.
 > **Without that skill installed**, the platform sources cited under each rule are what it is built
 > from.
 
