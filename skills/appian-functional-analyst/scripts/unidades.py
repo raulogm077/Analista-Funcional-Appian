@@ -158,6 +158,9 @@ def objetos_celda(celda):
     """Los objetos de una celda: los nombres entre comillas invertidas o, si no hay, la celda; sin el prefijo de tipo
     («rule!», «recordType!», como comprobar_asis.py) ni los paréntesis del final («MNT_IF_Panel()»)."""
     t = mo.sin_comentarios(celda).strip()
+    # «campo `descripcion`»: los nombres de campos de una parte no son objetos
+    campo = r"(?:`[\w.]+`|[\w.]+(?![\w.`]))"      # entero: no el final de «`X — campo importe`»
+    t = re.sub(rf"(?i)\bcampos?\s+{campo}(?:\s*(?:,|\by\b)\s*{campo})*", lambda m: m.group(0).replace("`", ""), t)
     limpio = lambda n: re.sub(r"\(.*\)\s*$", "", re.sub(r"^[A-Za-z]+!(\{[^}]*\})?", "", n.strip())).strip()  # noqa: E731
     # «`IFA Accion` — acción «Reenviar acción»»: la parte va fuera de las comillas y llega hasta el siguiente objeto
     nombres = re.findall(r"`([^`]+)`", t)
@@ -183,8 +186,13 @@ def campos_de_parte(texto):
     """Los campos que nombra la parte de una fila de §13 («campo descripcion», «campos fechaEnvio y fechaCierre»), o []
     si la parte no es de campos."""
     m = re.match(r"(?i)^campos?\s+(.+)$", mo.sin_comentarios(texto or "").strip())
-    trozos = re.split(r",|\s+y\s+", m.group(1)) if m else []
-    return [x.group(0) for x in (re.match(r"[\w.]+", t.strip(" `«»\"")) for t in trozos) if x]
+    out = []
+    for trozo in re.split(r",|\s+y\s+", m.group(1)) if m else []:
+        nombre = re.sub(r"\s*\(.*\)\s*$", "", trozo).strip(" `«»\"")
+        if not re.fullmatch(r"[\w.]+", nombre):   # «relación canceladoPorUsuario»: otra parte, ya no son campos
+            break
+        out.append(nombre)
+    return out
 
 
 def nombre_accion(texto):

@@ -26,11 +26,11 @@ rehacer L1, L17 y L8b. Lo aplicado, sobre la rama (28-oct):
 | «Comentar» casaba con «Comentarios»; un guion que gasta su precondición salía verde con la fila ya cerrada | `a7a67fb`, `7a306e6` | Selector por palabra completa; «gasta» en el paso que la comprueba (solo su fallo sale sin repetir) |
 | El localizador apuntaba a la copia temporal de otra sesión | `a4aa38a`, `85bd95e`, `d10472b` | `estado` rehace la ruta que ya no existe; si falta, `iniciar`. Sin probar el arranque de una sesión real |
 | `proyecto.md` seguía en «siguiente paso: construir» tras construir | `972ee8a`, `d10472b` | Línea «Unidades» automática; el siguiente paso lo escribe el analista, con aviso si aún nombra la unidad |
-| `git push` sin remoto; la sesión no aceptaba la autorización que le llegaba en nombre de la persona | `e134698`, `d10472b` | Push si hay remoto y no se ha pedido lo contrario; delegación limitada a la decisión y el alcance autorizados |
+| `git push` sin remoto; la sesión no aceptaba la autorización que le llegaba en nombre de la persona | `e134698`, `d10472b` | Push si hay remoto y la persona ha autorizado subir; delegación limitada a la decisión y el alcance autorizados |
 | Seis DT con un motivo del proyecto daban fallo por no citar BP ni URL | `d10472b` | El comprobador exige el «Por qué»; la cita de lo que afirma de Appian, la plantilla y la revisión (una lista de palabras daba falsos positivos y negativos) |
 | Una fila del doc 14 cambiaba el diseño por un límite del Dev MCP | `5ffd52f` | Regla general: lo que el Dev MCP no construye lo hace una persona en Designer |
 | La ingeniería inversa prometía no evaluar lógica y valida cada objeto | `acfdc34` | El contrato lo describe (decisión de Raúl: puede usar cualquier herramienta del Dev MCP) |
-| `verificar` tardaba 9–11 min por issue | `d7ee647` | Misma issue (7 objetos, 13 casos), mismo esperado y servidor 26.9.5: 368 s con el script del ensayo, que validaba la aplicación entera, frente a 17 s; otras tres issues, 9–12 s |
+| `verificar` tardaba 9–11 min por issue | `d7ee647` | Misma issue (7 objetos, 13 casos), mismo esperado y servidor 26.9.5: 368 s con el script del ensayo, que validaba la aplicación entera (con peticiones de página que se solapaban), frente a 17 s sin esa validación; otras tres issues, 9–12 s |
 
 Al actualizar el plugin en un proyecto a medias, las issues de una unidad con filas «`X` — parte» vuelven a pendiente
 porque cambia su texto: basta verificarlas otra vez.

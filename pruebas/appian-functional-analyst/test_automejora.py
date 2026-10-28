@@ -45,11 +45,16 @@ class Automejora(unittest.TestCase):
                                ("`AUT Accion` — acción «Cancelar», de quien la creó, `AUT Otra`",
                                 ["AUT Accion — acción «Cancelar», de quien la creó", "AUT Otra"]),
                                ("`AUT Accion — campo importe`", ["AUT Accion — campo importe"]),
+                               ("`AUT Accion` — campo `importe`", ["AUT Accion — campo importe"]),
                                ("`MNT_IF_Panel()`", ["MNT_IF_Panel"]), ("`rule!X`", ["X"]), ("—", [])):
             with self.subTest(celda=celda):
                 self.assertEqual(un.objetos_celda(celda), objetos)
         self.assertEqual(un.campos_de_parte("campos fechaEnvio y fechaCierre (DT-49)"), ["fechaEnvio", "fechaCierre"])
         self.assertEqual(un.campos_de_parte("acción «Reenviar»"), [])
+        # revisión de Codex: lo que sigue a los campos («relación …») no es un campo
+        self.assertEqual(un.campos_de_parte("campos motivo, canceladoPor y fecha y relación canceladoPorUsuario"),
+                         ["motivo", "canceladoPor", "fecha"])
+        self.assertEqual(un.campos_de_parte("campo descripcion (Text 255)"), ["descripcion"])
         ctx = un.Contexto(self.copia())
         campo = ctx.esperado("EV-01", filas=[{"tipo": "Record type (parte)", "situacion": "modifica",
                                               "objetos": ["AUT Solicitud — campo titulo"]}])

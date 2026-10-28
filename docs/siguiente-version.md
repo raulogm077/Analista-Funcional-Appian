@@ -39,8 +39,9 @@ Esta lista no autoriza publicar, desplegar, enviar ni borrar.
   `addPackageObjects` en lote no admite los objetos de contenido.
 - Sesiones en paralelo sin pedir confianza (ensayo con y sin el plugin, L7; Raúl quiere darla una vez al crear el
   proyecto): `proyecto.py iniciar` hace `git init` y un repositorio anidado no hereda la confianza de la carpeta padre,
-  así que `claude --bg` no arranca («Workspace not trusted»). La documentación de Claude Code no da una opción ni un
-  ajuste que la preacepte; la confianza se guarda en `~/.claude.json` (`projects.<raíz>.hasTrustDialogAccepted`).
+  así que `claude --bg` no arranca («Workspace not trusted»). Fuera del diálogo interactivo, la única vía que documenta
+  Claude Code es escribir `projects["<raíz>"].hasTrustDialogAccepted = true` en `~/.claude.json` (permissions, «Project
+  allow rules and workspace trust»); la confianza no comparte las aprobaciones de permisos.
   Opciones por decidir: abrir una vez la carpeta en una sesión interactiva al crear el proyecto; que la sesión que
   orquesta escriba esa clave con el visto bueno de la persona, si el `.claude/` del proyecto no trae permisos sin revisar;
   o no anidar el repositorio.
