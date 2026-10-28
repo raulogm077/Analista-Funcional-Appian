@@ -968,7 +968,11 @@ def cambio(a):
     print(f"{uid}: {u.estado} · analisis/cambios.md\n{u.fila()}")
     linea = pon_unidades(raiz, ctx.unidades)
     if linea and destino in ("construida", "produccion"):
-        print(f"proyecto.md: «{linea}». El «Siguiente paso» es tuyo: ponlo al día")
+        sig = re.search(r"^## Siguiente paso\s*\n(.*?)(?=^## |\Z)", (raiz / "proyecto.md").read_text(encoding="utf-8"),
+                        re.M | re.S)
+        print(f"proyecto.md: «{linea}». El «Siguiente paso» es tuyo: "
+              + (f"aún habla de {uid}, ponlo al día" if sig and re.search(rf"\b{uid}\b", sig.group(1)) else
+                 "ponlo al día"))
     if destino == "abrir":
         print("Sus fuentes llevan «Cambio: " + uid + "» en la cabecera del informe" +
               (f"; su ficha es impacto/{uid}.md (assets/plantillas/urgencia.md, references/urgentes.md)" if u.urgente

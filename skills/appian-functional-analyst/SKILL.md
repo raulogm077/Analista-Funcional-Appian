@@ -56,7 +56,7 @@ Un repositorio git por proyecto, siempre con la misma forma (la de «Qué escrib
 `qa/` de `appian-qa`): el código vive en Appian y aquí va todo lo demás, también las fuentes. Lo crea `proyecto.py iniciar`.
 `AGENTS.md` y `.agents/workflows/` salen enteros del plugin y no se editan: `proyecto.py iniciar <p>` en un proyecto
 que ya existe los pone al día y no toca nada más. Se trabaja sobre main, sin ramas ni PR, con `git commit` y, si hay
-remoto, `git push` al terminar; `iniciar` no confirma ni sube nada, y el remoto, privado, lo decide el proyecto.
+remoto y no se ha pedido lo contrario, `git push` al terminar; `iniciar` no confirma ni sube nada, y el remoto, privado, lo decide el proyecto.
 
 Formatos: `funcional-plantilla.md`, `tecnico-plantilla.md` y la cabecera de `decisiones.md` en
 `assets/plantillas/`. `proyecto.py estado <p>` dice en qué punto está el proyecto: empieza siempre por ahí

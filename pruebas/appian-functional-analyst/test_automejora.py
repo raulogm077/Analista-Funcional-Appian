@@ -158,9 +158,10 @@ class Automejora(unittest.TestCase):
                     else:
                         self.assertIn("sin empezar", out)
 
-    def test_por_que_de_una_dt_cita_solo_lo_que_afirma_de_appian(self):
-        """L8b del ensayo Informes: un motivo del proyecto basta dicho; lo que afirma algo de Appian lleva BP o URL, que
-        vale también en «Verificado»."""
+    def test_por_que_de_una_dt_lo_exige_el_comprobador_y_la_cita_la_revision(self):
+        """L8b del ensayo Informes: el comprobador exige un «Por qué»; la cita de lo que afirma de Appian (BP o URL, también
+        en «Verificado») la pide la plantilla y la mira la revisión, no una lista de palabras (que marcaba «el cliente no
+        permite…» y dejaba pasar «queryRecordType requiere pagingInfo»)."""
         self.copia()
         dt = lambda n, porque, verificado="pendiente": (
             f"**DT-0{n} — Decisión ficticia {n}**\n\n| Campo | Contenido |\n|---|---|\n| **Capa** | Datos |\n"
@@ -172,14 +173,14 @@ class Automejora(unittest.TestCase):
             + dt(2, "Appian no admite campos agregados sobre esta relación")
             + dt(3, "Appian no admite campos agregados sobre esta relación",
                  "https://docs.appian.com/suite/help/latest/custom-record-fields.html")
-            + "## 3. Modelo de datos\n", encoding="utf-8")
+            + dt(4, "—") + "## 3. Modelo de datos\n", encoding="utf-8")
         m = mo.Proyecto(self.p)
         with unittest.mock.patch.object(comprobar, "errores", 0):
             out = self.captura(comprobar.comprobar_tecnico, m, un.Contexto(m))
         linea = next(l for l in out.splitlines() if "decisiones técnicas con «Por qué»" in l)
-        self.assertIn("DT-02", linea)
-        self.assertNotIn("DT-01", linea)
-        self.assertNotIn("DT-03", linea)
+        self.assertIn("DT-04", linea)
+        for otra in ("DT-01", "DT-02", "DT-03"):
+            self.assertNotIn(otra, linea)
 
     def test_anexo_preserva_notas_y_consulta(self):
         self.copia()
@@ -376,6 +377,9 @@ class Automejora(unittest.TestCase):
 
     def test_manual_informa_pendientes_y_aprobacion_procesada(self):
         m, plan = self.preparada()
+        pm = self.p / "proyecto.md"
+        texto = pm.read_text(encoding="utf-8")
+        pm.write_text(texto.split("## Siguiente paso")[0] + "## Siguiente paso\n\nConstruir EV-01.\n", encoding="utf-8")
         c, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-01", "construida", "--manual")
         self.assertEqual(c, 0, out)
         self.assertIn("pendiente de verificación", out)
@@ -383,7 +387,8 @@ class Automejora(unittest.TestCase):
         # L15 del ensayo Informes: proyecto.md dice en qué punto está cada unidad; el siguiente paso sigue siendo suyo
         cabecera = (self.p / "proyecto.md").read_text(encoding="utf-8").split("## ")[0]
         self.assertIn("Unidades: EV-01 construida", cabecera)
-        self.assertIn("El «Siguiente paso» es tuyo", out)
+        self.assertIn("El «Siguiente paso» es tuyo: aún habla de EV-01", out)
+        self.assertIn("Construir EV-01.", pm.read_text(encoding="utf-8"))   # el texto del analista no lo cambia el script
         out = self.captura(proyecto.estado, SimpleNamespace(carpeta=str(self.p)))
         linea = next(l for l in out.splitlines() if l.startswith("Fuentes:"))
         self.assertNotIn("FU-05", linea.split("sin procesar:")[-1] if "sin procesar:" in linea else "")

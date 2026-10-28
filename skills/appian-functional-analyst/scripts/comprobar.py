@@ -510,19 +510,17 @@ def comprobar_tecnico(m, ctx):
     sin_porque, sin_verif, sin_verificado = [], [], []
     for p in m.vigentes("DT"):
         c = m.campos(p.id)
-        porque = c.get("por que", "").strip(" —-")
-        # un motivo del proyecto («el funcional fija el cuerpo, no el asunto») basta dicho; lo que afirma algo de Appian
-        # o del Dev MCP lleva su BP o la URL de la documentación, en «Por qué» o en «Verificado»
-        if not porque or RX_AFIRMA_APPIAN.search(mo.normaliza(porque)) and not re.search(
-                r"\bBP \d|https?://", porque + " " + c.get("verificado", "")):
+        # un motivo del proyecto basta dicho; si afirma algo de Appian o del Dev MCP, la cita (BP o URL, aquí o en
+        # «Verificado») la pide la plantilla y la mira la revisión: qué es una afirmación sobre la plataforma no lo
+        # decide una lista de palabras
+        if not c.get("por que", "").strip(" —-"):
             sin_porque.append(p.id)
         dep = c.get("depende de", "").strip(" —-")
         if dep and not c.get("verificar", "").strip(" —-"):
             sin_verif.append(p.id)
         if not c.get("verificado", "").strip():
             sin_verificado.append(p.id)
-    informe("decisiones técnicas con «Por qué» y, si afirma algo de Appian o del Dev MCP, su BP nn §x o la URL de la "
-            "documentación (en «Por qué» o en «Verificado»)", sin_porque)
+    informe("decisiones técnicas con «Por qué»", sin_porque)
     informe("decisiones que dependen de versión, tier u otra cosa, con «Verificar»", sin_verif, grave=False)
     informe("decisiones técnicas con «Verificado» (fuente o «pendiente»)", sin_verificado)
     entorno = [f for _, cab, filas in m.tablas("T", "0") for f in filas]
@@ -530,10 +528,6 @@ def comprobar_tecnico(m, ctx):
     informe("técnico §0: versión de Appian", [] if version_appian and version_appian[0][1].strip(" —-") else ["falta"],
             grave=False)
 
-
-# Un «Por qué» que afirma algo de la plataforma: lo que Appian o el Dev MCP hacen, admiten o no, o su versión o tier
-RX_AFIRMA_APPIAN = re.compile(r"\bappian\b|dev mcp|\bmcp\b|\bdesigner\b|\ba!\w|\bno (?:admite|permite|soporta|deja)\b"
-                              r"|\bsolo (?:admite|permite)\b|\bno se puede\b|\bversion\b|\btier\b")
 
 TIPOS_QUE_CAMBIAN = ("nuevo", "completa", "cambia", "anula", "responde", "alcance+", "alcance−", "alcance-")
 
