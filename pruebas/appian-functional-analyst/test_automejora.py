@@ -42,8 +42,10 @@ class Automejora(unittest.TestCase):
         campos, y la de una acción, la acción."""
         for celda, objetos in (("`AUT Accion` — acción «Reenviar»", ["AUT Accion — acción «Reenviar»"]),
                                ("`A`, `B`", ["A", "B"]), ("`A` y `B`", ["A", "B"]),
-                               ("`AUT Accion` — acción «Cancelar», de quien la creó, `AUT Otra`",
-                                ["AUT Accion — acción «Cancelar», de quien la creó", "AUT Otra"]),
+                               # una fila con parte nombra un solo objeto: la parte llega hasta el final
+                               ("`AUT Accion` — acción «Cancelar», de quien la creó",
+                                ["AUT Accion — acción «Cancelar», de quien la creó"]),
+                               ("`A` — campo `importe`, `fecha`", ["A — campo importe, fecha"]),
                                ("`AUT Accion — campo importe`", ["AUT Accion — campo importe"]),
                                ("`AUT Accion` — campo `importe`", ["AUT Accion — campo importe"]),
                                ("`MNT_IF_Panel()`", ["MNT_IF_Panel"]), ("`rule!X`", ["X"]), ("—", [])):

@@ -158,17 +158,13 @@ def objetos_celda(celda):
     """Los objetos de una celda: los nombres entre comillas invertidas o, si no hay, la celda; sin el prefijo de tipo
     («rule!», «recordType!», como comprobar_asis.py) ni los paréntesis del final («MNT_IF_Panel()»)."""
     t = mo.sin_comentarios(celda).strip()
-    # «campo `descripcion`»: los nombres de campos de una parte no son objetos
-    campo = r"(?:`[\w.]+`|[\w.]+(?![\w.`]))"      # entero: no el final de «`X — campo importe`»
-    t = re.sub(rf"(?i)\bcampos?\s+{campo}(?:\s*(?:,|\by\b)\s*{campo})*", lambda m: m.group(0).replace("`", ""), t)
     limpio = lambda n: re.sub(r"\(.*\)\s*$", "", re.sub(r"^[A-Za-z]+!(\{[^}]*\})?", "", n.strip())).strip()  # noqa: E731
-    # «`IFA Accion` — acción «Reenviar acción»»: la parte va fuera de las comillas y llega hasta el siguiente objeto
-    nombres = re.findall(r"`([^`]+)`", t)
-    con_parte = re.findall(r"`([^`]+)`(\s+[—–]\s+[^`]*?)?\s*(?=(?:[,;]|\s+y)\s*`|$)", t)
-    if any(p for _, p in con_parte) and len(con_parte) == len(nombres):
-        return [limpio(n) + (" — " + re.split(r"\s+[—–]\s+", p, maxsplit=1)[1].strip(" ,;") if p else "")
-                for n, p in con_parte]
-    return [limpio(n) for n in nombres or ([t] if t.strip(" —-") else [])]
+    # «`IFA Accion` — acción «Reenviar acción»»: una fila con parte nombra un solo objeto, y la parte, fuera de las
+    # comillas invertidas, llega hasta el final (también con «campo `descripcion`»)
+    con_parte = re.match(r"`([^`]+)`\s+[—–]\s+(.+)$", t)
+    if con_parte:
+        return [limpio(con_parte.group(1)) + " — " + con_parte.group(2).replace("`", "").strip(" ,;")]
+    return [limpio(n) for n in re.findall(r"`([^`]+)`", t) or ([t] if t.strip(" —-") else [])]
 
 
 def objeto(nombre):

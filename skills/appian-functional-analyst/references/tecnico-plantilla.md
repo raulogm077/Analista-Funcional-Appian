@@ -221,8 +221,8 @@ marcados; cada uno llega a la issue de los objetos que nombra y, si no nombra ni
 **Cambio** es la unidad de la fila (`cambios.md` §4). **Para** es el requisito al que sirve el objeto: su `HU-nn`, su
 `PAN-nn` o su `ACT-nn`; si sirve a varios, todos, separados por comas (van en la misma issue). Lo común (datos, grupos,
 constantes, sistemas conectados) dice «Base» y se construye lo primero. En un defecto, el criterio que no se cumple
-(`HU-03.2`). Lo que «Existe» no la lleva. Si de un objeto solo cambia una parte, la fila la nombra: `AUT Solicitud —
-acción «Nueva solicitud»`.
+(`HU-03.2`). Lo que «Existe» no la lleva. Si de un objeto solo cambia una parte, la fila la nombra, sola en su celda: `AUT Solicitud —
+acción «Nueva solicitud»` o `AUT Solicitud — campos importe y fecha`; otro objeto con su parte va en otra fila.
 
 El site y sus páginas van en la issue de la primera pantalla que publican.
 

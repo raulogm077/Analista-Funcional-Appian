@@ -45,6 +45,18 @@ Esta lista no autoriza publicar, desplegar, enviar ni borrar.
   Opciones por decidir: abrir una vez la carpeta en una sesión interactiva al crear el proyecto; que la sesión que
   orquesta escriba esa clave con el visto bueno de la persona, si el `.claude/` del proyecto no trae permisos sin revisar;
   o no anidar el repositorio.
+- Del mismo ensayo, sin aplicar todavía:
+  - Documentos al cerrar un incremento (L12; Raúl: que se actualicen bien es algo a mejorar). En los dos brazos quedó
+    parcial: con el plugin, decisiones antiguas marcadas como vigentes, contradicciones puntuales y el estado del
+    proyecto sin cerrar; los diagramas de estados sí se pusieron al día. Es juicio del modelo al cerrar la unidad.
+    Decidir dónde se le pide en F8 o en `cambios.md` sin añadir un control.
+  - Una ausencia en `listProcessInstances` no prueba que un proceso no se ejecutara (L16): faltan instancias, el orden
+    y el «total» no cuadran con los efectos. Una fila en el doc 14 §3 que diga que se contraste con el efecto (datos,
+    `listProcessEvents`, el buzón), con el build en el que se vio.
+  - Los casos de prueba de reglas guardados con aserción NO_ERRORS prueban que no falla, no el contenido (L17): que la
+    plantilla del técnico §14 o la de QA lo diga.
+  - Cada prueba dice qué datos presupone y cómo sigue con el estado real (L5): una tipología dejada para el QA rompió
+    una regla.
 - Coste del análisis con el plugin (mismo ensayo). Hipótesis para priorizar, de un reparto contable de las
   transcripciones (no ahorro causal): pesan los pasos del método por incremento (unos 155 de 482 turnos usan órdenes
   o ficheros propios del plugin) y los documentos vivos grandes (`funcional.md` ~94 KB y `tecnico.md` ~196 KB), que se
