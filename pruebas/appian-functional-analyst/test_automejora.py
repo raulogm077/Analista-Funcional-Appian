@@ -29,10 +29,26 @@ class Automejora(unittest.TestCase):
         ctx = un.Contexto(m)
         for tipo, esperado in (("Aplicación", "application"), ("Aplicacion", "application"),
                                ("Application", "application"), ("Grupo de la aplicación", "group"),
-                               ("Regla de expresión de la aplicación", "expressionRule")):
+                               ("Regla de expresión de la aplicación", "expressionRule"),
+                               ("Aplicación (con grupos y carpetas generados)", "application"),
+                               ("Interfaz sobre Record type", "interface")):
             with self.subTest(tipo=tipo):
                 filas = [{"tipo": tipo, "situacion": "nuevo", "objetos": ["AUT Objeto ficticio"]}]
                 self.assertEqual(ctx.esperado("EV-01", filas=filas), {"AUT Objeto ficticio": {"tipo": esperado}})
+
+    def test_esperado_sin_campos_de_otra_issue(self):
+        """Dos issues cambian el mismo record type: el campo nuevo que trae la decisión de una no se espera en la otra.
+        Una decisión antigua que nombra otro campo del mismo nombre no cuenta."""
+        dt = lambda id_, texto, estado="nuevo": {"donde": id_, "texto": texto, "estado": estado}
+        alta = iss.Issue(filas=[], id="ISS-03", objetos=["AUT Accion"], situacion={"AUT Accion": "modifica"},
+                         decisiones=[dt("DT-52", "Decisión: `AUT Accion` gana `descripcion` (Text 255)")])
+        reenviar = iss.Issue(filas=[], id="ISS-02", objetos=["AUT Accion"], situacion={"AUT Accion": "modifica"},
+                             decisiones=[dt("DT-49", "Decisión: reenviar la rechazada"),
+                                         dt("DT-16", "Decisión: el aviso lleva su `descripcion`", "igual")])
+        plan = SimpleNamespace(issues=[alta, reenviar])
+        campos = lambda: {"AUT Accion": {"tipo": "recordType", "campos": [{"nombre": "descripcion", "tipo": "Text"}]}}
+        self.assertEqual(iss.campos_de_otra(reenviar, plan, campos()), {"AUT Accion": {"tipo": "recordType"}})
+        self.assertEqual(iss.campos_de_otra(alta, plan, campos()), campos())
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="automejora-")

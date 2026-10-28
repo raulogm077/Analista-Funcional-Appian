@@ -50,7 +50,8 @@ PARTE_PERMISOS = ("seguridad", "permiso", "visibilidad", "quien la ve", "quien l
 FRASE_PUNTO = {"Datos existentes": "datos existentes", "Procesos en curso": "procesos en curso", "Permisos": "permisos",
                "Compatibilidad": "lo que usan otros sistemas"}
 RX_IA = re.compile(r"(?<!\w)(ia|ai)(?!\w)|agente|ai skill")
-# Tipo de §13 → tipo del inventario (el que compara verificar --esperado); el primero que casa
+# Tipo de §13 → tipo del inventario (el que compara verificar --esperado); manda el que aparece antes en la celda:
+# «Aplicación (con grupos…)» es una aplicación y «Grupo de la aplicación», un grupo
 TIPOS_APPIAN = [("record type", "recordType"), ("cdt", "cdt"), ("interfaz", "interface"), ("interface", "interface"),
                 ("regla de expresion", "expressionRule"), ("expression rule", "expressionRule"),
                 ("process model", "processModel"), ("modelo de proceso", "processModel"), ("web api", "webApi"),
@@ -764,7 +765,7 @@ class Contexto:
             if f["situacion"] not in CAMBIAN:
                 continue
             t = mo.normaliza(f["tipo"])
-            tipo = next((c for k, c in TIPOS_APPIAN if k in t), None)
+            tipo = min(((t.find(k), -len(k), c) for k, c in TIPOS_APPIAN if k in t), default=(0, 0, None))[2]
             for nombre in f["objetos"]:
                 o = objeto(nombre)
                 e = out.setdefault(o, {})
