@@ -349,6 +349,10 @@ class Automejora(unittest.TestCase):
         self.assertEqual(c, 0, out)
         self.assertIn("pendiente de verificación", out)
         self.assertIn(plan.issues[0].id, out)
+        # L15 del ensayo Informes: proyecto.md dice en qué punto está cada unidad; el siguiente paso sigue siendo suyo
+        cabecera = (self.p / "proyecto.md").read_text(encoding="utf-8").split("## ")[0]
+        self.assertIn("Unidades: EV-01 construida", cabecera)
+        self.assertIn("El «Siguiente paso» es tuyo", out)
         out = self.captura(proyecto.estado, SimpleNamespace(carpeta=str(self.p)))
         linea = next(l for l in out.splitlines() if l.startswith("Fuentes:"))
         self.assertNotIn("FU-05", linea.split("sin procesar:")[-1] if "sin procesar:" in linea else "")

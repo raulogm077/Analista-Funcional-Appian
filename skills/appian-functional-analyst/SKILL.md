@@ -67,7 +67,7 @@ o los flujos, lanza `proyecto.py iniciar <p>` antes de seguir: los añade y no t
 ## Qué escribe
 
 En `<p>`:
-- `proyecto.md`: el estado del proyecto
+- `proyecto.md`: el estado del proyecto; la línea «Unidades» la pone al día `proyecto.py cambio` y el siguiente paso, el analista
 - `.appian-plugin.json`: la ruta local del plugin para resolver scripts y referencias desde cualquier agente;
   `iniciar` la escribe y git la ignora (cada equipo tiene su ruta).
 - `AGENTS.md`: dónde está cada cosa, las reglas y los flujos; lo genera entero `proyecto.py iniciar`

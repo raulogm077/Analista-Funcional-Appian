@@ -966,6 +966,9 @@ def cambio(a):
         u.estado = un.DESCARTADA
     un.escribir(raiz, ctx.unidades, PLANTILLAS / "cambios.md")
     print(f"{uid}: {u.estado} · analisis/cambios.md\n{u.fila()}")
+    linea = pon_unidades(raiz, ctx.unidades)
+    if linea and destino in ("construida", "produccion"):
+        print(f"proyecto.md: «{linea}». El «Siguiente paso» es tuyo: ponlo al día")
     if destino == "abrir":
         print("Sus fuentes llevan «Cambio: " + uid + "» en la cabecera del informe" +
               (f"; su ficha es impacto/{uid}.md (assets/plantillas/urgencia.md, references/urgentes.md)" if u.urgente
@@ -988,6 +991,32 @@ def cambio(a):
             print(f"Pruebas marcadas como no necesarias para avanzar (construccion/{uid}/indice.md), que se revisan al "
                   "preparar el paquete:\n" + "\n".join(f"  {x['issue']} · {x['objeto']} «{x['caso']}»: {x['motivo']} "
                                                        f"({x['quien']})" for x in marcas))
+
+
+def pon_unidades(raiz, unidades):
+    """«Unidades: EV-01 construida · EV-02 aprobada» en la cabecera de proyecto.md, sacado de analisis/cambios.md: quien
+    abre el proyecto ve en qué punto está cada cambio (tras construir seguía diciendo «construir»). «Estado» (el del DF)
+    y «Siguiente paso» son del analista y no se tocan. Devuelve la línea, o None si no hay proyecto.md."""
+    pm = raiz / "proyecto.md"
+    if not pm.is_file():
+        return None
+    vivas = [u for u in unidades if u.estado != un.DESCARTADA]
+    linea = "Unidades: " + " · ".join(f"{u.id} {u.estado.lower()}" for u in vivas) if vivas else None
+    texto = pm.read_text(encoding="utf-8")
+    lineas = texto.split("\n")
+    donde = {}
+    for i, l in enumerate(lineas):
+        for clave in ("Unidades:", "Entregados:", "DF entregado:", "Cliente:"):
+            if l.startswith(clave):
+                donde.setdefault(clave, i)
+    if "Unidades:" in donde:
+        lineas[donde["Unidades:"]:donde["Unidades:"] + 1] = [linea] if linea else []
+    elif linea:
+        tras = next((donde[c] for c in ("Entregados:", "DF entregado:", "Cliente:") if c in donde), 0)
+        lineas.insert(tras + 1, linea)
+    if "\n".join(lineas) != texto:
+        mo.escribe(pm, "\n".join(lineas))
+    return linea
 
 
 def issues_de(raiz, uid, estreno=False):
