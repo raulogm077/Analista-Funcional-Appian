@@ -28,8 +28,8 @@ La skill no lee un export: la aplicación se ha extraído en vivo del entorno Ap
 | `dependencies` | Qué referencia este objeto. | Llamadas salientes |
 | `history` | Ejecuciones reales del process model (total, última, fallos). En los documentos llámalo «ejecuciones». | 07, 08, 09 (sin ejecuciones) |
 | `versions` | Historial de versiones (cuándo y por quién). En los documentos llámalo «versiones». | 09 (versionado) |
-| `validation` | Avisos de validación de la plataforma (funciones obsoletas, errores). | 09 |
-| `screen` | Árbol de componentes de la interfaz renderizada con entradas vacías: la única evaluación que permite la política. Appian la evalúa en el servidor (puede ejecutar sus consultas de lectura) y se guarda tal cual: estructura, etiquetas y los valores de esa evaluación. Así aparece en el anexo. | 10 (pantallas), 01 |
+| `validation` | Avisos de validación de la plataforma (funciones obsoletas, errores) y el resultado de los casos de prueba guardados que ejecuta `validateDesignObjects`. | 09 |
+| `screen` | Árbol de componentes de la interfaz renderizada con entradas vacías (la otra evaluación que hace la extracción es la de `validation`). Appian la evalúa en el servidor (puede ejecutar sus consultas de lectura) y se guarda tal cual: estructura, etiquetas y los valores de esa evaluación. Así aparece en el anexo. | 10 (pantallas), 01 |
 | `members` | Miembros de un grupo (grupos y usuarios). | 04 |
 | `other` | Cualquier otra herramienta (p. ej. una nueva que haya añadido Appian). **Ábrela y aprovecha lo que aporte**: seguridad, métricas, configuración… | Donde encaje |
 
