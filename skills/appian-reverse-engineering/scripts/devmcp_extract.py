@@ -579,11 +579,14 @@ def analyze_tool(tool, policy: Policy, trusted: bool, type_phrases: dict) -> Too
 UUID_KEYS = ("uuid", "objectUuid", "designObjectUuid", "guid", "id", "objectId")
 NAME_KEYS = ("name", "objectName", "displayName", "label", "title")
 TYPE_KEYS = ("type", "objectType", "designObjectType", "typeName", "kind")
+CONTENEDORES = ("items", "results", "data", "content", "values", "list")
 
 
 def pick(d: dict, keys) -> Any:
     for k in keys:
         v = d.get(k)
+        if k in NAME_KEYS:
+            v = bm.localized(v)   # el Dev MCP 26.9 da el nombre de los modelos de proceso como {en_US: …}
         if isinstance(v, str) and v:
             return v
     return None
@@ -608,7 +611,8 @@ def harvest_items(data: Any, context: str | None = None, depth: int = 0):
     elif isinstance(data, dict):
         for k, v in data.items():
             if isinstance(v, (list, dict)):
-                yield from harvest_items(v, k, depth + 1)
+                # {processModels: {total, items: […]}}: la lista genérica conserva el tipo de su grupo
+                yield from harvest_items(v, context if k in CONTENEDORES and context else k, depth + 1)
 
 
 def find_primary_list(data: Any, path=(), depth=0):
