@@ -12,9 +12,9 @@ Proyecto de una aplicación Appian, llevado con el plugin `appian-analisis-funci
 | `as-is/`, `refactorizacion/` | Solo con una aplicación existente: cómo está hecha y cómo rehacerla |
 
 ## Reglas
-- **El código vive en Appian; aquí, todo lo demás.** Sobre `main`, sin ramas ni PR: `git commit` y `git push` al terminar cada trabajo. Lo que se regenera no se fusiona: si chocan el Word, una captura o el PNG de un diagrama, se vuelve a generar.
+- **El código vive en Appian; aquí, todo lo demás.** Sobre `main`, sin ramas ni PR: `git commit` al terminar cada trabajo y `git push` si el proyecto tiene remoto (sin remoto, solo el commit). Lo que se regenera no se fusiona: si chocan el Word, una captura o el PNG de un diagrama, se vuelve a generar.
 - **Se sube todo, también las fuentes**, menos los secretos y las grabaciones (`.gitignore`). Si ingeniería inversa encontró secretos escritos en la aplicación, sus valores están en claro en `as-is/`: el equipo decide antes de subirla. El remoto es privado.
-- **La IA escribe en Appian solo en desarrollo** y, en una urgencia, en el entorno de corrección; a pruebas y a producción llega un paquete que ha revisado una persona. En los demás entornos, el Dev MCP entra con una cuenta que solo lee y SAIL CLI no se usa, porque crea datos y lanza procesos (`appian-reverse-engineering/references/devmcp-setup.md`, «Solo se escribe en desarrollo»).
+- **La IA escribe en Appian solo en desarrollo** y, en una urgencia, en el entorno de corrección; a pruebas y a producción llega un paquete que ha revisado una persona. En los demás entornos, el Dev MCP entra con una cuenta que solo lee y SAIL CLI no se usa, porque crea datos y lanza procesos (`appian-reverse-engineering/references/devmcp-setup.md`, «Solo se escribe en desarrollo»). Lo que el plugin reserva a una persona (aprobar, cerrar a mano, borrar, pasar a producción) lo decide ella o quien nombre en lo que se pide a la sesión, y esa autorización vale como suya; sin ella, la sesión no lo hace y lo deja dicho.
 - **Las skills no se copian aquí**: son las del plugin y la oficial de Appian (`appian`). {ordenes}
 
 ## Flujos
