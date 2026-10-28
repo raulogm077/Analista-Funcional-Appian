@@ -5,6 +5,36 @@ Resultados y límites que sirven para decidir sobre el plugin. Los escenarios re
 Lo pendiente se sigue en [siguiente-version.md](siguiente-version.md). Las cifras de cada fila pertenecen
 al commit y al alcance indicados; no se suman controles repetidos ni se trasladan resultados a otro código.
 
+## Ensayo con y sin el plugin, 22–27 de octubre de 2026
+
+El mismo bloque de una aplicación, en tres incrementos y con las mismas reuniones reales, construido en desarrollo por
+dos brazos: con el plugin congelado en `7b489e9` y sin él. Evaluó un subagente limpio por incremento con criterios
+comunes. Con el plugin, 1 FAIL en los tres incrementos (un recuento que su QA no cubrió); sin él, 2 defectos de
+análisis (supuestos sin preguntar), uno arrastrado a un segundo incremento. Coste observado de los brazos: +21 % con
+el plugin (+50 %, +82 % y −35 % por incremento), sobre todo en el análisis. Un reparto contable de las transcripciones
+(estimación por actividad del turno, con residual; no ahorro causal) asigna la mayor parte a los pasos del método por
+incremento y a releer documentos vivos grandes, y poco al texto de skills y referencias. Es el recorrido observado, no
+un efecto aislado: a mitad cambió el Dev MCP (26.6 → 26.9). Revisión independiente de Codex del 28-oct, que llevó a
+rehacer L1, L17 y L8b. Lo aplicado, sobre la rama (28-oct):
+
+| Problema | Commit | Prueba y alcance |
+|---|---|---|
+| El inventario del extractor perdía los modelos de proceso (nombre `{en_US: …}`) y dejaba el resto sin tipo (`{grupo: {total, items}}`) | `6503b5b` | Simulador con la forma del 26.9 (la huella cambia a propósito); sobre las respuestas guardadas del ensayo, 83→102 y 118→137 objetos. No es una extracción nueva |
+| «Aplicación (con grupos…)» se esperaba como grupo | `318aa54` | Siete tipos de celda |
+| `verificar` listaba los campos de más como «distintos de lo esperado» y se cerraron dos issues a mano sin hacer falta | `39d57da` | Se dicen aparte (`conCamposDeMas`) |
+| El esperado de una issue pedía el campo de otra: la parte de «`X` — acción «…»», fuera de las comillas invertidas, se perdía | `375863d` | Vecinos del parser; en el reparto real de 11 issues, la acción y el campo quedan cada uno en su issue. La heurística por menciones de `39d57da` se retiró: quitaba campos legítimos |
+| «Comentar» casaba con «Comentarios»; un guion que gasta su precondición salía verde con la fila ya cerrada | `a7a67fb`, `7a306e6` | Selector por palabra completa; «gasta» en el paso que la comprueba (solo su fallo sale sin repetir) |
+| El localizador apuntaba a la copia temporal de otra sesión | `a4aa38a`, `85bd95e`, `d10472b` | `estado` rehace la ruta que ya no existe; si falta, `iniciar`. Sin probar el arranque de una sesión real |
+| `proyecto.md` seguía en «siguiente paso: construir» tras construir | `972ee8a`, `d10472b` | Línea «Unidades» automática; el siguiente paso lo escribe el analista, con aviso si aún nombra la unidad |
+| `git push` sin remoto; la sesión no aceptaba la autorización que le llegaba en nombre de la persona | `e134698`, `d10472b` | Push si hay remoto y no se ha pedido lo contrario; delegación limitada a la decisión y el alcance autorizados |
+| Seis DT con un motivo del proyecto daban fallo por no citar BP ni URL | `d10472b` | El comprobador exige el «Por qué»; la cita de lo que afirma de Appian, la plantilla y la revisión (una lista de palabras daba falsos positivos y negativos) |
+| Una fila del doc 14 cambiaba el diseño por un límite del Dev MCP | `5ffd52f` | Regla general: lo que el Dev MCP no construye lo hace una persona en Designer |
+| La ingeniería inversa prometía no evaluar lógica y valida cada objeto | `acfdc34` | El contrato lo describe (decisión de Raúl: puede usar cualquier herramienta del Dev MCP) |
+| `verificar` tardaba 9–11 min por issue | `d7ee647` | Misma issue (7 objetos, 13 casos), mismo esperado y servidor 26.9.5: 368 s con el script del ensayo, que validaba la aplicación entera, frente a 17 s; otras tres issues, 9–12 s |
+
+Al actualizar el plugin en un proyecto a medias, las issues de una unidad con filas «`X` — parte» vuelven a pendiente
+porque cambia su texto: basta verificarlas otra vez.
+
 ## Campaña de mejora del 19–21 de octubre de 2026
 
 Código final evaluado: `093b56f`, del 21 de octubre, y después `2b9319c` (QA, con su suite). Es trabajo
