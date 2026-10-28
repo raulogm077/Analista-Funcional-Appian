@@ -294,11 +294,11 @@ def avisos_proyecto(raiz):
         valido = (plugin / "skills" / "appian-functional-analyst" / "scripts" / "proyecto.py").is_file()
     except (OSError, ValueError, RuntimeError):
         valido = False
-    if not valido and (raiz / "proyecto.md").is_file():
+    if not valido and localizador.is_file():
         # la ruta de otra copia del plugin que ya no existe (al actualizarlo, o la temporal de otra sesión): este script
-        # es un plugin que sí existe, y el localizador es local y no se sube
+        # es un plugin que sí existe, y el localizador es local y no se sube. Si no hay localizador, lo crea iniciar
         escribe_localizador(raiz)
-        avisos.append(f"Localizador: {LOCALIZADOR} faltaba o no apuntaba a un plugin disponible; ahora apunta a "
+        avisos.append(f"Localizador: {LOCALIZADOR} no apuntaba a un plugin disponible; ahora apunta a "
                       f"{SKILL.parents[1].resolve()}, el que acaba de ejecutarse")
     elif not valido:
         avisos.append("Localizador: .appian-plugin.json falta, no es válido o no apunta a un plugin disponible: "
