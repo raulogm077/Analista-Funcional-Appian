@@ -2294,8 +2294,13 @@ async def cmd_verificar(args) -> int:
         for o in resultado["objetos"]:
             if isinstance(esperado.get(o["pedido"]), dict):
                 o["diferencias"] = diferencias(o, esperado[o["pedido"]])
+        # Los campos de más no impiden lo esperado (una issue no pide borrarlos): se dicen aparte, no como diferencia
         resultado["conDiferencias"] = [o["pedido"] for o in resultado["objetos"]
-                                       if any(k != "permisosNoComprobados" for k in o.get("diferencias", {}))]
+                                       if any(k not in ("permisosNoComprobados", "sobranCampos")
+                                              for k in o.get("diferencias", {}))]
+        de_mas = [o["pedido"] for o in resultado["objetos"] if o.get("diferencias", {}).get("sobranCampos")]
+        if de_mas:
+            resultado["conCamposDeMas"] = de_mas
         sin_permisos = [o["pedido"] for o in resultado["objetos"] if o.get("diferencias", {}).get("permisosNoComprobados")]
         if sin_permisos:
             resultado["permisosNoComprobados"] = sin_permisos
@@ -2311,6 +2316,8 @@ async def cmd_verificar(args) -> int:
           + (f"; faltan: {', '.join(resultado['faltan'])}" if resultado["faltan"] else "")
           + (f"; distintos de lo esperado: {', '.join(resultado['conDiferencias'])}" if resultado.get("conDiferencias")
              else "") + f". Detalle: {destino}")
+    if resultado.get("conCamposDeMas"):
+        print(f"  · Con campos que lo esperado no nombra (no impiden lo esperado): {', '.join(resultado['conCamposDeMas'])}")
     for o in resultado["objetos"]:
         if o.get("accionesNoDisponibles"):
             print(f"  · {o['pedido']}: el Dev MCP no da sus acciones de registro; no se comprueban")

@@ -25,10 +25,11 @@ Lo esperado y la verificación, que es de donde sale si una issue está hecha (e
                             criterios ni reglas: «verificar» no ejecuta entonces ningún caso de prueba.
   verificacion/ISS-nn.json  el resultado de «verificar --esperado»: {"generadoEn", "entorno", "issue": <la de _issue, tal
                             cual>, "aplicacion", "objetos": [{"pedido", "existe", "tipo", "diferencias": {…}, …}],
-                            "faltan", "conDiferencias", "pruebas": {"ejecutadas", "motivo" o "objetos": [{"objeto",
-                            "de": issue | usa, "casos", "pasan", "fallan": [{"caso", "error"}], "noEvaluables", "error"}]}}.
+                            "faltan", "conDiferencias", "conCamposDeMas", "pruebas": {"ejecutadas", "motivo" o
+                            "objetos": [{"objeto", "de": issue | usa, "casos", "pasan", "fallan": [{"caso", "error"}],
+                            "noEvaluables", "error"}]}}.
                             Hecha: «issue» es la de ahora (id y version), cada objeto suyo está en «objetos» con «existe»
-                            y sin diferencias (de uno que se modifica, «sobranCampos» no cuenta; «camposSinLeer» y
+                            y sin diferencias («sobranCampos», los campos de más, no cuenta; «camposSinLeer» y
                             «accionesSinLeer» son no haberlo podido leer) y, si tiene pruebas, no falla ningún caso de sus
                             objetos («de»: issue) que una persona no haya marcado como no necesario. Lo que falla en lo
                             que la usa («de»: usa) es un aviso, y si el Dev MCP no ejecuta casos, esperan a la regresión.
@@ -105,6 +106,7 @@ class Issue:
     feature: str = ""                              # ISS-nn.feature, o "" sin escenarios
     esperado: dict = field(default_factory=dict)   # ISS-nn-esperado.json
     sueltas: set = field(default_factory=set)      # líneas del técnico que no son de ninguna issue y van en esta
+    decisiones: list = field(default_factory=list)  # sus decisiones técnicas (las que cita su «Necesidad»)
 
     @property
     def para(self):
@@ -508,6 +510,39 @@ def citadas_por(m, requisitos):
             and not m.piezas[x].anulada}
 
 
+def lo_que_cita(m, issue):
+    """Sus requisitos, sus criterios y las reglas, avisos, documentos e integraciones que citan."""
+    return set(issue.requisitos) | {c for h in issue.requisitos for c in m.piezas[h].hijos} | \
+        citadas_por(m, issue.requisitos)
+
+
+def decisiones_de(m, issue, dts):
+    """Las decisiones técnicas de una issue: las que cita su «Necesidad» y, de la Base, las de «Necesidad: Base»."""
+    cita = lo_que_cita(m, issue)
+    return [x for x in dts if x["ids"] & cita or x.get("base") and issue.comun]
+
+
+def campos_de_otra(issue, plan, esperado):
+    """Quita de lo esperado de una issue los campos nuevos que introduce la decisión técnica de otra issue que cambia el
+    mismo record type («`IFA Accion` gana `descripcion`» es del alta, no de reenviar). Cuentan las decisiones nuevas o
+    cambiadas en la unidad: una antigua que nombra otra `descripcion` no trae el campo. Un campo que no nombra ninguna,
+    o que nombra también una suya, se queda."""
+    nombra = lambda x, c: x["estado"] != "igual" and re.search(rf"(?<!\w){re.escape(mo.normaliza(c))}(?!\w)",
+                                                               mo.normaliza(x["texto"]))
+    for o, e in esperado.items():
+        otras = [i for i in plan.issues if i is not issue and o in i.objetos]
+        if not otras or not e.get("campos"):
+            continue
+        ajenos = {c["nombre"] for c in e["campos"]
+                  if any(nombra(x, c["nombre"]) for i in otras for x in i.decisiones)
+                  and not any(nombra(x, c["nombre"]) for x in issue.decisiones)}
+        if ajenos:
+            e["campos"] = [c for c in e["campos"] if c["nombre"] not in ajenos]
+            if not e["campos"] and issue.situacion.get(o) == "modifica":
+                del e["campos"]       # nada suyo que comparar; los que ya tiene no sobran
+    return esperado
+
+
 def del_tecnico(d, issue, lineas, dts):
     """(líneas para la issue, dónde nombra el técnico cada fila suya de §13, objetos de la unidad que nombra, las líneas
     suyas). Son las líneas que nombran un objeto suyo o citan un requisito suyo o lo que este cita (sus avisos, sus
@@ -520,8 +555,7 @@ def del_tecnico(d, issue, lineas, dts):
     # una parte se reconoce por lo que lleva entre comillas («Adjuntar informe») o, si no lleva nada, por su texto
     senas = {o: [mo.normaliza(x) for x in re.findall(r"«([^»]+)»", un.parte(o)) or [un.parte(o)]]
              for o in nombres if un.parte(o) and un.objeto(o) not in enteros}
-    cita = set(issue.requisitos) | {c for h in issue.requisitos for c in m.piezas[h].hijos} | \
-        citadas_por(m, issue.requisitos)
+    cita = lo_que_cita(m, issue)
     de_parte = lambda x, o: any(s in mo.normaliza(x["texto"]) for s in senas[o])
     # una decisión técnica entra por lo que cita su «Necesidad», no por nombrar un objeto en su texto: si no, una DT nueva
     # que nombra un objeto de la Base dejaría pendiente lo ya verificado. Lo que cambia un objeto está en §3 a §12
@@ -764,7 +798,7 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
     urgentes_de_encargo = textos_urgentes(del_encargo["correccion"], del_encargo["desarrollo"], con_prueba_desarrollo=True)
     otras = [f"- {c['unidad']} ({c['estado']}): {con_comillas(c['objetos'])} · {c['decision'] or 'sin decisión escrita'}"
              for c in r["colisiones"] if not c["unidad"].startswith("URG") and suyos & set(c["objetos"])]
-    objetos_esperados = ctx.esperado(uid, issue.filas)
+    objetos_esperados = campos_de_otra(issue, plan, ctx.esperado(uid, issue.filas))
     huella = json.dumps([issue.requisitos, pide, esc, issue.feature, filas, tec, construido, urgentes_de_encargo, objetos_esperados,
                          casos_exigidos(m, issue, d)],
                         ensure_ascii=False, sort_keys=True)
@@ -1233,6 +1267,7 @@ def calcula(m, ctx, uid, estreno=False):
     cubiertas = set()
     for i in issues:      # lo que nombra el técnico al hablar de cada una dice con cuáles comparte objetos
         _, _, i.nombra, suyas = del_tecnico(d, i, lineas, dts)
+        i.decisiones = decisiones_de(m, i, dts)
         cubiertas |= suyas
     ordena(issues)
     # lo que el técnico dice para esta unidad (todo, en la construcción inicial; lo nuevo o lo que cambia, si no) y no

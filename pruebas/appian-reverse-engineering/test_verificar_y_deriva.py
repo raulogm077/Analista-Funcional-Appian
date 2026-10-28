@@ -269,6 +269,21 @@ def test_verificar_con_esperado(project, tmp_path):
     project.run("verificar", "--app", "DEM", "--out", str(destino), check=2)    # sin --objetos ni --esperado
 
 
+def test_campos_de_mas_no_son_una_diferencia(project, tmp_path):
+    """Un record type con más campos de los que nombra lo esperado: la issue no pide borrarlos. No sale entre los
+    «distintos de lo esperado» del resumen (se leía como bloqueo); se dice aparte y el detalle sigue en el JSON."""
+    project.add_devmcp()
+    esperado = tmp_path / "esperado.json"
+    esperado.write_text(json.dumps({"DEM Solicitud": {"tipo": "recordType", "campos": [
+        {"nombre": "id", "tipo": "Number (Integer)"}, {"nombre": "titulo", "tipo": "Text"}]}}), encoding="utf-8")
+    destino = tmp_path / "v.json"
+    salida = project.run("verificar", "--app", "DEM", "--esperado", str(esperado), "--out", str(destino), check=0)
+    v = json.loads(destino.read_text(encoding="utf-8"))
+    assert v["objetos"][0]["diferencias"]["sobranCampos"]
+    assert v["conDiferencias"] == [] and v["conCamposDeMas"] == ["DEM Solicitud"]
+    assert "distintos de lo esperado" not in salida.stdout and "no impiden lo esperado): DEM Solicitud" in salida.stdout
+
+
 def test_verificar_dice_de_que_issue_es(project, tmp_path):
     """Lo esperado de una issue (indice.py issues del analista) lleva en «_issue» su id, su unidad y su versión. No es un
     objeto que verificar: pasa tal cual al resultado, en «issue», y así se sabe si la verificación es de la versión de
