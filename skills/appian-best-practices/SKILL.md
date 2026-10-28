@@ -142,7 +142,10 @@ when updating an existing object. The update tools take it as an optional field 
 it, Appian answers 409 if someone saved the object in between (seen on expression rules and interfaces) —
 re-read and redo the change on the new version; without it, the update overwrites their work without a
 word. Without a design MCP the work is the same, described as changes for
-Designer: the rules and the gates don't depend on the tool.
+Designer: the rules and the gates don't depend on the tool. The same holds for the part a design MCP can't
+build (an aggregated field, a record events setting, a list column from a related record): the design
+doesn't bend to the tool, whose limits change with each release. Build the rest and leave that part as a
+task for a person in Designer, said in the delivery with what to set.
 
 **Before writing through a design MCP, the official Appian skill is required.**
 [`appian/dev-mcp-skills`](https://github.com/appian/dev-mcp-skills/) carries what the tool schemas can't

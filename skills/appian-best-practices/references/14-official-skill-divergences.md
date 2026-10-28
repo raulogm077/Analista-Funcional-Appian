@@ -83,7 +83,7 @@ drop it and tell the user.
 | The spec asks for *Default (All Other Users)* on an object; `getObjectSecurity` returns it as `defaultRole` (e.g. `"no access"`), but `updateObjectSecurity` has no field to set it | Read it and compare it with the spec; if it differs, report it for a person in Designer | 20261019-134534 |
 | `runAllInterfaceTestCases` fails on an interface with a records `a!gridField` ("Could not find variable 'flow!userFilterSetData'") although `testInterface` renders it | Seen with one records grid. Don't offer that saved test case as coverage: test the logic in rules with test cases and the screen in QA. Report an existing one as not evaluable (it shows red in Designer) and ask before removing it | 20261008-132401 |
 | After `updateExpressionRuleTestCase` a case lost its inputs, or the UUIDs no longer resolve | The update drops inputs you don't repeat and every write renews all the UUIDs: repeat all inputs and re-list. The expected result is `test!output = …`, not `fv!output` | 20261008-132401 |
-| A record list column from a related record is refused | Not available through the MCP: show it in an interface with a records grid | 20261008-132401 |
+| A record list column from a related record is refused | Not available through the MCP. The design stays: a person adds the column in Designer (say which, in the delivery); don't swap the record list for an interface only because of this | 20261008-132401 |
 
 ---
 
