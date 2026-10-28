@@ -72,9 +72,13 @@ class RevisionInicio(unittest.TestCase):
         self.assertNotIn("Localizador:", self.estado())
         self.assertEqual(antes, {f.name: f.read_bytes() for f in (self.p / "analisis").glob("*.md")})
 
-    def test_localizador_ruta_retirada_avisa(self):
+    def test_localizador_ruta_retirada_se_rehace_con_el_plugin_que_se_ejecuta(self):
+        """L14 del ensayo Informes: apuntaba a la copia temporal de otra sesión. `estado` la rehace con la suya y lo dice."""
         self.localizador({"ruta": str(self.base / "plugin retirado")})
-        self.assertIn("Localizador:", self.estado())
+        self.assertIn("ahora apunta a", self.estado())
+        dato = json.loads((self.p / ".appian-plugin.json").read_text(encoding="utf-8"))
+        self.assertEqual(pathlib.Path(dato["ruta"]).resolve(), PLUGIN)
+        self.assertNotIn("Localizador:", self.estado())
 
     def test_localizador_se_repara_con_flujos_posteriores_sin_sobrescribirlos(self):
         guia = self.p / "AGENTS.md"

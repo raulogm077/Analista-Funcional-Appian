@@ -72,6 +72,16 @@ SIN_CONVERTIR = ("# Git no cambia los finales de línea de ningún fichero: la h
 ESPERA_REMOTO = 5   # segundos que `estado` espera al remoto; sin respuesta, compara con lo último que se trajo
 # «DF entregado: 1.1 · 2026-10-10» (entregar) o, en proyectos anteriores, «DF entregado: 1.0 (2026-09-12)»
 RX_ENTREGADO = re.compile(r"DF entregado:\s*v?(\d+\.\d+)(?:\s*(?:·\s*|\()(\d{4}-\d{2}-\d{2}))?")
+LOCALIZADOR = ".appian-plugin.json"
+
+
+def escribe_localizador(raiz):
+    """La ruta de este plugin en el localizador del proyecto, que git ignora: cada equipo tiene la suya."""
+    ign = raiz / ".gitignore"
+    texto_ign = ign.read_text(encoding="utf-8") if ign.is_file() else ""
+    if LOCALIZADOR not in texto_ign.splitlines():
+        escribe(ign, texto_ign.rstrip("\n") + "\n" + LOCALIZADOR + "\n")
+    escribe(raiz / LOCALIZADOR, json.dumps({"ruta": str(SKILL.parents[1].resolve())}, ensure_ascii=False) + "\n")
 
 
 def iniciar(a):
@@ -175,12 +185,7 @@ def poner_al_dia(raiz):
     actual = orden_version(version)
     posterior = [v for v in set(en_proyecto.values())
                  if orden_version(v) and (actual is None or orden_version(v) > actual)]
-    localizador = ".appian-plugin.json"
-    ign = raiz / ".gitignore"
-    texto_ign = ign.read_text(encoding="utf-8") if ign.is_file() else ""
-    if localizador not in texto_ign.splitlines():
-        escribe(ign, texto_ign.rstrip("\n") + "\n" + localizador + "\n")
-    escribe(raiz / localizador, json.dumps({"ruta": str(SKILL.parents[1].resolve())}, ensure_ascii=False) + "\n")
+    escribe_localizador(raiz)
     if posterior:
         print(f"= {raiz / GUIA} y los flujos son de la versión {max(posterior, key=orden_version)} del plugin, posterior "
               f"a la de este equipo ({version or 'sin versión'}): no se tocan; actualiza el plugin")
@@ -277,7 +282,7 @@ def avisos_proyecto(raiz):
     faltan += [f"algún flujo de {COPIA_FLUJOS}/"] if not posterior and any(r not in generado for r in flujos) else []
     avisos = [f"Al proyecto le falta {', '.join(faltan)}: lanza «proyecto.py iniciar <p>», que lo añade sin tocar lo demás"
               ] if faltan else []
-    localizador = raiz / ".appian-plugin.json"
+    localizador = raiz / LOCALIZADOR
     try:
         dato = json.loads(localizador.read_text(encoding="utf-8"))
         ruta = dato.get("ruta") if isinstance(dato, dict) else None
@@ -289,7 +294,13 @@ def avisos_proyecto(raiz):
         valido = (plugin / "skills" / "appian-functional-analyst" / "scripts" / "proyecto.py").is_file()
     except (OSError, ValueError, RuntimeError):
         valido = False
-    if not valido:
+    if not valido and (raiz / "proyecto.md").is_file():
+        # la ruta de otra copia del plugin que ya no existe (al actualizarlo, o la temporal de otra sesión): este script
+        # es un plugin que sí existe, y el localizador es local y no se sube
+        escribe_localizador(raiz)
+        avisos.append(f"Localizador: {LOCALIZADOR} faltaba o no apuntaba a un plugin disponible; ahora apunta a "
+                      f"{SKILL.parents[1].resolve()}, el que acaba de ejecutarse")
+    elif not valido:
         avisos.append("Localizador: .appian-plugin.json falta, no es válido o no apunta a un plugin disponible: "
                       'desde la carpeta del proyecto, lanza «python "<ruta>/skills/appian-functional-analyst/scripts/'
                       'proyecto.py" iniciar .» con la ruta del plugin instalado para regenerarlo')
