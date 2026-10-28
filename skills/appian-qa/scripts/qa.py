@@ -33,8 +33,8 @@ CARPETA, RESULTADO = "qa", "resultado.json"
 PARTES = ("dado", "cuando", "entonces")
 ORDENES = {"load": "load", "navigate": "navigate", "nav": "navigate", "interact": "interact", "back": "back",
            "show": "show"}
-CLAVES = {"escenario", "dice", "host", "site", "roles", "gasta", *PARTES}
-CLAVES_PASO = {"rol", "sail", "selecciona", "espera"}
+CLAVES = {"escenario", "dice", "host", "site", "roles", *PARTES}
+CLAVES_PASO = {"rol", "sail", "selecciona", "espera", "gasta"}
 ESPERAS = {"completado", "hay", "no_hay", "texto", "sin_texto", "fila", "sin_fila", "campo"}
 AFIRMA = {"completado", "hay", "texto", "fila", "campo"}  # las negativas solas pasan con una página vacía
 CAMPOS = {"TextField", "ParagraphField"}                 # tipos observados en el ui de SAIL CLI
@@ -69,9 +69,9 @@ class NoResponde(SinRepetir):
 
 
 class Falla(Exception):
-    def __init__(self, motivo, paso=None):
+    def __init__(self, motivo, paso=None, de_espera=False):
         super().__init__(motivo)
-        self.motivo, self.paso = motivo, paso
+        self.motivo, self.paso, self.de_espera = motivo, paso, de_espera   # de_espera: lo que se miraba no está
 
 
 def ahora():
@@ -423,12 +423,16 @@ def defectos(g, nombre):
                 ids = [x for x in orden[1:] if isinstance(x, str) and RX_ID.match(x)]
                 if ids:
                     mal.append(f"{donde}: «{ids[0]}» es un _cId o una ref que cambia en cada carga; usa la etiqueta")
-    if "gasta" in g and not (isinstance(g["gasta"], str) and g["gasta"].strip()):
-        mal.append("«gasta» dice, en texto, la precondición que gasta cada repetición")
-    elif "gasta" in g and not any(isinstance(p, dict) and isinstance(p.get("espera"), dict) and AFIRMA & set(p["espera"])
-                                  for p in g.get("dado") or []):
-        mal.append("con «gasta», el «dado» comprueba que la precondición sigue ahí (p. ej. «hay» con el enlace "
-                   "«Descartar alerta …»): si no, una segunda pasada saldría verde sin volver a ejercitarla")
+    for parte in PARTES:
+        for k, p in enumerate(g.get(parte) or [], 1):
+            if not isinstance(p, dict) or "gasta" not in p:
+                continue
+            if parte != "dado" or not (isinstance(p["gasta"], str) and p["gasta"].strip()):
+                mal.append(f"{parte} {k}: «gasta» va en un paso del «dado» y dice, en texto, la precondición que gasta "
+                           "cada repetición")
+            elif not (isinstance(p.get("espera"), dict) and AFIRMA & set(p["espera"])):
+                mal.append(f"{parte} {k}: con «gasta», el paso comprueba que la precondición sigue ahí (p. ej. «hay» con "
+                           "el enlace «Descartar alerta …»): si no, una segunda pasada saldría verde sin volver a ejercitarla")
     if not afirma:
         mal.append("el «entonces» no comprueba nada que se vea (completado, hay, texto, fila o campo): el recorrido se quedó a "
                    "medias, o solo dice lo que no está, que también pasaría con una página vacía")
@@ -520,7 +524,7 @@ class Recorrido:
             self.ultima[rol] = d
             mal = lo_que_falta(espera, d)
         if mal:
-            raise Falla("; ".join(mal))
+            raise Falla("; ".join(mal), de_espera=True)
 
     def repite(self):
         for parte in PARTES:
@@ -623,10 +627,12 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
                 Recorrido(g, cuentas, valores).repite()
                 entrada["resultado"] = "pasa"
             except Falla as e:
-                if g.get("gasta") and str(e.paso).startswith("dado"):
-                    # la precondición que gasta cada repetición ya no está: no dice nada de la aplicación
+                gasta = {f"dado {k}": p["gasta"] for k, p in enumerate(g.get("dado") or [], 1) if p.get("gasta")}
+                if e.paso in gasta and e.de_espera:
+                    # solo la comprobación de la precondición que gasta cada repetición: no dice nada de la aplicación.
+                    # Cualquier otro fallo del «dado», también en ese paso (la orden), sigue siendo un fallo
                     entrada = sin_repetir(antes.get(esc) or entrada, f"falta lo que gasta cada repetición, "
-                                          f"«{g['gasta']}» ({e.paso}: {sin_rutas(e.motivo)}); prepáralo y repite")
+                                          f"«{gasta[e.paso]}» ({e.paso}: {sin_rutas(e.motivo)}); prepáralo y repite")
                     nuevos[esc] = repetidos[esc] = {"resultado": entrada.pop("resultado"), **entrada}
                     continue
                 # con {pasada} y {hoy} en vez de lo que valieron: el mismo fallo dice lo mismo en cada repetición, y la

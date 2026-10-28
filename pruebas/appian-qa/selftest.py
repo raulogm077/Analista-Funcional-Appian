@@ -249,11 +249,14 @@ def prueba_selector(qa):
        qa.lo_que_falta({"hay": ["Pendientes", "Comentarios"]}, d) == []
        and qa.lo_que_falta({"no_hay": ["Comentar"]}, d) == [] and qa.lo_que_falta({"hay": ["Comentar"]}, d))
     g = json.loads(a_json(GUIONES["HU-02.1"]))
-    g["gasta"] = "una solicitud enviada"
-    ok("«gasta» se acepta si el «dado» comprueba que la precondición está", qa.defectos(g, "HU-02.1.json") == [])
-    g["dado"] = [{k: v for k, v in p.items() if k != "espera"} for p in g["dado"]]
-    ok("con «gasta» y un «dado» que no comprueba nada, el guion está por terminar",
+    g["dado"][-1]["gasta"] = "una solicitud enviada"
+    ok("«gasta» se acepta en el paso del «dado» que comprueba la precondición", qa.defectos(g, "HU-02.1.json") == [])
+    g["dado"][-1].pop("espera")
+    ok("un paso con «gasta» que no comprueba nada deja el guion por terminar",
        any("«gasta»" in x for x in qa.defectos(g, "HU-02.1.json")))
+    g = json.loads(a_json(GUIONES["HU-02.1"]))
+    g["entonces"][-1]["gasta"] = "una solicitud enviada"
+    ok("«gasta» fuera del «dado» deja el guion por terminar", any("«gasta»" in x for x in qa.defectos(g, "HU-02.1.json")))
 
 
 def main():
@@ -637,14 +640,22 @@ def main():
         t.guion("HU-01.2", GUIONES["HU-01.2"])
         c, antes = t.repetir("--escenario", "HU-01.2")
         g = json.loads(a_json(GUIONES["HU-01.2"]))
-        g["gasta"] = "una alerta activa en la solicitud de prueba"
-        g["dado"] = [{"sail": ["load"], "espera": {"hay": ["Descartar alerta de prueba"]}}]
+        g["dado"] = [{"sail": ["load"], "espera": {"hay": ["Nueva solicitud"]}},
+                     {"sail": ["show"], "espera": {"hay": ["Descartar alerta de prueba"]},
+                      "gasta": "una alerta activa en la solicitud de prueba"}]
         t.guion("HU-01.2", g)
         c, out = t.repetir("--escenario", "HU-01.2")
         e = t.resultado()[0]["escenarios"]["HU-01.2"]
         ok("si falta lo que gasta cada repetición, el guion sale sin repetir con el porqué y no devuelve su issue",
            c == 2 and e.get("sinRepetir", "").startswith("falta lo que gasta cada repetición")
            and e["resultado"] == "pasa" and "vuelve a pendiente" not in out, antes + out + str(e))
+        # otro fallo del «dado», antes de mirar la precondición, sigue siendo un fallo (revisión de Codex, 28-oct)
+        g["dado"][0]["espera"] = {"hay": ["Algo que no está en el panel"]}
+        t.guion("HU-01.2", g)
+        c, out = t.repetir("--escenario", "HU-01.2")
+        e = t.resultado()[0]["escenarios"]["HU-01.2"]
+        ok("un fallo del «dado» que no es la comprobación de «gasta» sale como fallo, en su paso",
+           c == 1 and e["resultado"] == "falla" and e["paso"] == "dado 1" and "sinRepetir" not in e, out + str(e))
         t.guion("HU-01.2", GUIONES["HU-01.2"])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

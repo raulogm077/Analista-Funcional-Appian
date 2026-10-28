@@ -152,9 +152,10 @@ Para que el guion dé lo mismo cada vez:
   de búsqueda de la rejilla (`"🔍"`) antes de mirarla, para que una fila nueva no quede en otra página.
 - Un «no lo ve» lleva antes la prueba de que existe (en el «dado», quien lo creó lo ve): si no, el guion pasaría
   aunque el alta hubiera fallado.
-- Un escenario que gasta lo que necesita (descartar una alerta que solo crea el proceso diario) lleva `"gasta": "<lo
-  que gasta>"`, y su «dado» comprueba que sigue ahí (`"hay": ["Descartar alerta …"]`): sin eso, una segunda pasada
-  saldría verde con la fila ya cerrada del histórico. Si falta, sale «sin repetir», no «falla», y dice qué preparar.
+- Un escenario que gasta lo que necesita (descartar una alerta que solo crea el proceso diario) comprueba en su «dado»
+  que sigue ahí, y ese paso lleva `"gasta": "<lo que gasta>"` (`{"sail": ["show"], "espera": {"hay": ["Descartar alerta
+  …"]}, "gasta": "una alerta activa"}`): sin eso, una segunda pasada saldría verde con la fila ya cerrada del histórico.
+  Si lo que falta es eso, sale «sin repetir», no «falla», y dice qué preparar; cualquier otro fallo es un fallo.
   Una comprobación que se quita porque falla no es un «pasa»: el escenario queda sin medir y se dice en la entrega.
 - Dos enlaces con el mismo texto no se distinguen (el `--json` los da con `nth` y `of`): el script no pulsa uno al azar,
   el paso falla. Dilo en la entrega, que además es un problema de accesibilidad. Lo mismo si «selecciona» encuentra
