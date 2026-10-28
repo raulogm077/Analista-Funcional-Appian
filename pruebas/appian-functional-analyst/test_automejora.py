@@ -36,19 +36,27 @@ class Automejora(unittest.TestCase):
                 filas = [{"tipo": tipo, "situacion": "nuevo", "objetos": ["AUT Objeto ficticio"]}]
                 self.assertEqual(ctx.esperado("EV-01", filas=filas), {"AUT Objeto ficticio": {"tipo": esperado}})
 
-    def test_esperado_sin_campos_de_otra_issue(self):
-        """Dos issues cambian el mismo record type: el campo nuevo que trae la decisión de una no se espera en la otra.
-        Una decisión antigua que nombra otro campo del mismo nombre no cuenta."""
-        dt = lambda id_, texto, estado="nuevo": {"donde": id_, "texto": texto, "estado": estado}
-        alta = iss.Issue(filas=[], id="ISS-03", objetos=["AUT Accion"], situacion={"AUT Accion": "modifica"},
-                         decisiones=[dt("DT-52", "Decisión: `AUT Accion` gana `descripcion` (Text 255)")])
-        reenviar = iss.Issue(filas=[], id="ISS-02", objetos=["AUT Accion"], situacion={"AUT Accion": "modifica"},
-                             decisiones=[dt("DT-49", "Decisión: reenviar la rechazada"),
-                                         dt("DT-16", "Decisión: el aviso lleva su `descripcion`", "igual")])
-        plan = SimpleNamespace(issues=[alta, reenviar])
-        campos = lambda: {"AUT Accion": {"tipo": "recordType", "campos": [{"nombre": "descripcion", "tipo": "Text"}]}}
-        self.assertEqual(iss.campos_de_otra(reenviar, plan, campos()), {"AUT Accion": {"tipo": "recordType"}})
-        self.assertEqual(iss.campos_de_otra(alta, plan, campos()), campos())
+    def test_esperado_de_una_parte_de_record_type(self):
+        """L1 del ensayo Informes: «`X` — acción «…»» perdía la parte (fuera de las comillas invertidas) y la issue de
+        la acción heredaba los campos nuevos de toda la unidad. La parte se conserva; una parte de campos espera esos
+        campos, y la de una acción, la acción."""
+        for celda, objetos in (("`AUT Accion` — acción «Reenviar»", ["AUT Accion — acción «Reenviar»"]),
+                               ("`A`, `B`", ["A", "B"]), ("`A` y `B`", ["A", "B"]),
+                               ("`AUT Accion` — acción «Cancelar», de quien la creó, `AUT Otra`",
+                                ["AUT Accion — acción «Cancelar», de quien la creó", "AUT Otra"]),
+                               ("`AUT Accion — campo importe`", ["AUT Accion — campo importe"]),
+                               ("`MNT_IF_Panel()`", ["MNT_IF_Panel"]), ("`rule!X`", ["X"]), ("—", [])):
+            with self.subTest(celda=celda):
+                self.assertEqual(un.objetos_celda(celda), objetos)
+        self.assertEqual(un.campos_de_parte("campos fechaEnvio y fechaCierre (DT-49)"), ["fechaEnvio", "fechaCierre"])
+        self.assertEqual(un.campos_de_parte("acción «Reenviar»"), [])
+        ctx = un.Contexto(self.copia())
+        campo = ctx.esperado("EV-01", filas=[{"tipo": "Record type (parte)", "situacion": "modifica",
+                                              "objetos": ["AUT Solicitud — campo titulo"]}])
+        self.assertEqual([c["nombre"] for c in campo["AUT Solicitud"]["campos"]], ["titulo"])
+        accion = ctx.esperado("EV-01", filas=[{"tipo": "Record type (parte)", "situacion": "modifica",
+                                               "objetos": ["AUT Solicitud — acción «Reenviar»"]}])
+        self.assertNotIn("campos", accion["AUT Solicitud"])
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="automejora-")

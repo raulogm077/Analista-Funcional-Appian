@@ -158,8 +158,14 @@ def objetos_celda(celda):
     """Los objetos de una celda: los nombres entre comillas invertidas o, si no hay, la celda; sin el prefijo de tipo
     («rule!», «recordType!», como comprobar_asis.py) ni los paréntesis del final («MNT_IF_Panel()»)."""
     t = mo.sin_comentarios(celda).strip()
-    nombres = re.findall(r"`([^`]+)`", t) or ([t] if t.strip(" —-") else [])
-    return [re.sub(r"\(.*\)\s*$", "", re.sub(r"^[A-Za-z]+!(\{[^}]*\})?", "", n.strip())).strip() for n in nombres]
+    limpio = lambda n: re.sub(r"\(.*\)\s*$", "", re.sub(r"^[A-Za-z]+!(\{[^}]*\})?", "", n.strip())).strip()  # noqa: E731
+    # «`IFA Accion` — acción «Reenviar acción»»: la parte va fuera de las comillas y llega hasta el siguiente objeto
+    nombres = re.findall(r"`([^`]+)`", t)
+    con_parte = re.findall(r"`([^`]+)`(\s+[—–]\s+[^`]*?)?\s*(?=(?:[,;]|\s+y)\s*`|$)", t)
+    if any(p for _, p in con_parte) and len(con_parte) == len(nombres):
+        return [limpio(n) + (" — " + re.split(r"\s+[—–]\s+", p, maxsplit=1)[1].strip(" ,;") if p else "")
+                for n, p in con_parte]
+    return [limpio(n) for n in nombres or ([t] if t.strip(" —-") else [])]
 
 
 def objeto(nombre):
@@ -171,6 +177,14 @@ def parte(nombre):
     """La parte del objeto que nombra una fila de §13 («acción «Corregir orden»»), o "" si es el objeto entero."""
     trozos = re.split(r"\s+[—–]\s+", nombre, maxsplit=1)
     return trozos[1].strip() if len(trozos) > 1 else ""
+
+
+def campos_de_parte(texto):
+    """Los campos que nombra la parte de una fila de §13 («campo descripcion», «campos fechaEnvio y fechaCierre»), o []
+    si la parte no es de campos."""
+    m = re.match(r"(?i)^campos?\s+(.+)$", mo.sin_comentarios(texto or "").strip())
+    trozos = re.split(r",|\s+y\s+", m.group(1)) if m else []
+    return [x.group(0) for x in (re.match(r"[\w.]+", t.strip(" `«»\"")) for t in trozos) if x]
 
 
 def nombre_accion(texto):
@@ -775,9 +789,15 @@ class Contexto:
                     permisos = self.permisos_4(despues or self.m, o)
                     if permisos:
                         e["permisosInicio"] = permisos
-                campos = self.campos_3(despues or self.m, o) if tipo in ("recordType", "cdt") and not parte(nombre) \
-                    else None
-                if campos is not None:
+                nombrados = campos_de_parte(parte(nombre))
+                campos = self.campos_3(despues or self.m, o) if tipo in ("recordType", "cdt") and (
+                    not parte(nombre) or nombrados) else None
+                if nombrados:      # «X — campo descripcion»: ese campo, con su tipo de §3 si lo tiene
+                    por_nombre = {mo.normaliza(c["nombre"]): c for c in campos or []}
+                    ya = {mo.normaliza(c["nombre"]) for c in e.get("campos", [])}
+                    e["campos"] = e.get("campos", []) + [por_nombre.get(mo.normaliza(n), {"nombre": n})
+                                                         for n in nombrados if mo.normaliza(n) not in ya]
+                elif campos is not None:
                     modifica = f["situacion"] == "modifica"
                     antes = {c["nombre"] for c in (self.campos_3(base, o) or [])} if base and modifica else set()
                     suyos = [c for c in campos if c["nombre"] not in antes]
