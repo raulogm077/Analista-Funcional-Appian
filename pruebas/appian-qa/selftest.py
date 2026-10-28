@@ -241,6 +241,21 @@ def prueba_campo(qa):
        "antes de enviar" in "; ".join(qa.lo_que_falta(espera, pagina(campo, viewIsStale=True))))
 
 
+def prueba_selector(qa):
+    """«hay» y «no_hay» casan con el principio de una etiqueta hasta el final de una palabra (L17 del ensayo Informes:
+    «Comentar» casaba con «Comentarios» y el QA quitó la comprobación)."""
+    d = {"options": [{"label": "Comentarios", "ref": "Comentarios"}, {"label": "Pendientes (22)", "ref": "Pendientes (22)"}]}
+    ok("«hay» casa por palabra completa: «Pendientes» con «Pendientes (22)», «Comentar» no con «Comentarios»",
+       qa.lo_que_falta({"hay": ["Pendientes", "Comentarios"]}, d) == []
+       and qa.lo_que_falta({"no_hay": ["Comentar"]}, d) == [] and qa.lo_que_falta({"hay": ["Comentar"]}, d))
+    g = json.loads(a_json(GUIONES["HU-02.1"]))
+    g["gasta"] = "una solicitud enviada"
+    ok("«gasta» se acepta si el «dado» comprueba que la precondición está", qa.defectos(g, "HU-02.1.json") == [])
+    g["dado"] = [{k: v for k, v in p.items() if k != "espera"} for p in g["dado"]]
+    ok("con «gasta» y un «dado» que no comprueba nada, el guion está por terminar",
+       any("«gasta»" in x for x in qa.defectos(g, "HU-02.1.json")))
+
+
 def main():
     for st in (sys.stdout, sys.stderr):
         st.reconfigure(encoding="utf-8", errors="replace")
@@ -447,6 +462,7 @@ def main():
         qa = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(qa)
         prueba_campo(qa)
+        prueba_selector(qa)
         # Camino CLI: ui tiene value vacío aunque options no lo traiga; falla con otro valor y rechaza el mal esquema.
         g = json.loads(a_json(GUIONES["HU-01.2"]))
         g["entonces"].insert(1, {"sail": ["show"], "espera": {"campo": {"label": "Título", "valor": ""}}})
@@ -615,6 +631,21 @@ def main():
         c, out = t.qa("repetir", str(t.p), "EV-07")
         ok("si falta un escenario de pantalla sin guion, sigue diciendo «sin guiones» y sale con 2",
            c == 2 and "EV-07 · sin guiones" in out, out)
+
+        # una precondición que se gasta («gasta») y ya no está: «sin repetir», no «falla», y su issue no vuelve a
+        # pendiente; el «pasa» anterior se queda, con el aviso
+        t.guion("HU-01.2", GUIONES["HU-01.2"])
+        c, antes = t.repetir("--escenario", "HU-01.2")
+        g = json.loads(a_json(GUIONES["HU-01.2"]))
+        g["gasta"] = "una alerta activa en la solicitud de prueba"
+        g["dado"] = [{"sail": ["load"], "espera": {"hay": ["Descartar alerta de prueba"]}}]
+        t.guion("HU-01.2", g)
+        c, out = t.repetir("--escenario", "HU-01.2")
+        e = t.resultado()[0]["escenarios"]["HU-01.2"]
+        ok("si falta lo que gasta cada repetición, el guion sale sin repetir con el porqué y no devuelve su issue",
+           c == 2 and e.get("sinRepetir", "").startswith("falta lo que gasta cada repetición")
+           and e["resultado"] == "pasa" and "vuelve a pendiente" not in out, antes + out + str(e))
+        t.guion("HU-01.2", GUIONES["HU-01.2"])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print(f"\n{'Todo bien' if not fallos else f'{len(fallos)} fallos'}")

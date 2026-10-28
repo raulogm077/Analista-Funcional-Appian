@@ -33,7 +33,7 @@ CARPETA, RESULTADO = "qa", "resultado.json"
 PARTES = ("dado", "cuando", "entonces")
 ORDENES = {"load": "load", "navigate": "navigate", "nav": "navigate", "interact": "interact", "back": "back",
            "show": "show"}
-CLAVES = {"escenario", "dice", "host", "site", "roles", *PARTES}
+CLAVES = {"escenario", "dice", "host", "site", "roles", "gasta", *PARTES}
 CLAVES_PASO = {"rol", "sail", "selecciona", "espera"}
 ESPERAS = {"completado", "hay", "no_hay", "texto", "sin_texto", "fila", "sin_fila", "campo"}
 AFIRMA = {"completado", "hay", "texto", "fila", "campo"}  # las negativas solas pasan con una página vacía
@@ -235,9 +235,15 @@ def refs(d):
     return [x for o in d.get("options") or [] if isinstance(o, dict) for x in (o.get("ref"), o.get("label")) if x]
 
 
+def empieza(texto, buscado):
+    """Lo buscado es el principio del texto hasta el final de una palabra: «Pendientes» vale para «Pendientes (22)»,
+    «Comentar» no vale para «Comentarios»."""
+    t, b = norma(texto), norma(buscado)
+    return t.startswith(b) and (len(t) == len(b) or not (t[len(b)].isalnum() or t[len(b)] == "_"))
+
+
 def hay(d, buscada):
-    b = norma(buscada)
-    return any(norma(r).startswith(b) for r in refs(d))
+    return any(empieza(r, buscada) for r in refs(d))
 
 
 def repetido(d, objetivo):
@@ -320,7 +326,7 @@ def lo_que_falta(espera, d):
         suyas = [f for f in filas(d.get("ui")) if con_texto(f, fila["con"])]
         if not suyas:
             mal.append(f"ninguna fila lleva «{fila['con']}»")
-        elif not any(all(norma(f.get(k, "")).startswith(norma(v)) for k, v in busca.items()) for f in suyas):
+        elif not any(all(empieza(f.get(k, ""), v) for k, v in busca.items()) for f in suyas):
             f = suyas[0]
             mal.append(f"la fila con «{fila['con']}» tiene " + ", ".join(f"{k} «{f.get(k, '—')}»" for k in busca)
                        + " y se esperaba " + ", ".join(f"{k} «{v}»" for k, v in busca.items()))
@@ -417,6 +423,12 @@ def defectos(g, nombre):
                 ids = [x for x in orden[1:] if isinstance(x, str) and RX_ID.match(x)]
                 if ids:
                     mal.append(f"{donde}: «{ids[0]}» es un _cId o una ref que cambia en cada carga; usa la etiqueta")
+    if "gasta" in g and not (isinstance(g["gasta"], str) and g["gasta"].strip()):
+        mal.append("«gasta» dice, en texto, la precondición que gasta cada repetición")
+    elif "gasta" in g and not any(isinstance(p, dict) and isinstance(p.get("espera"), dict) and AFIRMA & set(p["espera"])
+                                  for p in g.get("dado") or []):
+        mal.append("con «gasta», el «dado» comprueba que la precondición sigue ahí (p. ej. «hay» con el enlace "
+                   "«Descartar alerta …»): si no, una segunda pasada saldría verde sin volver a ejercitarla")
     if not afirma:
         mal.append("el «entonces» no comprueba nada que se vea (completado, hay, texto, fila o campo): el recorrido se quedó a "
                    "medias, o solo dice lo que no está, que también pasaría con una página vacía")
@@ -611,6 +623,12 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
                 Recorrido(g, cuentas, valores).repite()
                 entrada["resultado"] = "pasa"
             except Falla as e:
+                if g.get("gasta") and str(e.paso).startswith("dado"):
+                    # la precondición que gasta cada repetición ya no está: no dice nada de la aplicación
+                    entrada = sin_repetir(antes.get(esc) or entrada, f"falta lo que gasta cada repetición, "
+                                          f"«{g['gasta']}» ({e.paso}: {sin_rutas(e.motivo)}); prepáralo y repite")
+                    nuevos[esc] = repetidos[esc] = {"resultado": entrada.pop("resultado"), **entrada}
+                    continue
                 # con {pasada} y {hoy} en vez de lo que valieron: el mismo fallo dice lo mismo en cada repetición, y la
                 # marca de una persona (indice.py issues … --sin-prueba HU-nn.m), que vale para ese fallo, sigue valiendo
                 motivo = sin_rutas(e.motivo)

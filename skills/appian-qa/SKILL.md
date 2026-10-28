@@ -128,9 +128,10 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   rejilla se marca por su contenido, `{"rol": "revisor", "selecciona": "QA {pasada}"}`, nunca por el número que le dio
   Appian. Con un solo rol, «rol» se puede omitir.
 - Para cambiar de página del site: `"sail": ["load", "<página>"]`; `load` sin página recarga la predeterminada.
-- **`espera`**: `"completado": true` (el formulario se envió); `"hay"` y `"no_hay"`, refs o etiquetas, o su principio;
+- **`espera`**: `"completado": true` (el formulario se envió); `"hay"` y `"no_hay"`, refs o etiquetas, o su principio
+  hasta el final de una palabra («Pendientes» vale para «Pendientes (22)»; «Comentar» no vale para «Comentarios»);
   `"texto"` y `"sin_texto"`, en lo que se ve de la página y en sus validaciones; `"fila": {"con": "…", "<columna>":
-  "<valor o su principio>"}`, una fila de una rejilla que lleva ese texto y tiene esos valores, y `"sin_fila": "…"`,
+  "<valor o su principio, igual>"}`, una fila de una rejilla que lleva ese texto y tiene esos valores, y `"sin_fila": "…"`,
   ninguna fila con ese texto (lo que se buscó también está en la caja de búsqueda: para decir que no se ve, `sin_fila`,
   no `sin_texto`). Cada paso falla además si SAIL CLI da error o si el servidor no cambió nada.
 - **Valor de un campo de texto**: `"campo": {"label": "Cantidad", "valor": ""}` comprueba que el `TextField` o
@@ -151,6 +152,10 @@ Para que el guion dé lo mismo cada vez:
   de búsqueda de la rejilla (`"🔍"`) antes de mirarla, para que una fila nueva no quede en otra página.
 - Un «no lo ve» lleva antes la prueba de que existe (en el «dado», quien lo creó lo ve): si no, el guion pasaría
   aunque el alta hubiera fallado.
+- Un escenario que gasta lo que necesita (descartar una alerta que solo crea el proceso diario) lleva `"gasta": "<lo
+  que gasta>"`, y su «dado» comprueba que sigue ahí (`"hay": ["Descartar alerta …"]`): sin eso, una segunda pasada
+  saldría verde con la fila ya cerrada del histórico. Si falta, sale «sin repetir», no «falla», y dice qué preparar.
+  Una comprobación que se quita porque falla no es un «pasa»: el escenario queda sin medir y se dice en la entrega.
 - Dos enlaces con el mismo texto no se distinguen (el `--json` los da con `nth` y `of`): el script no pulsa uno al azar,
   el paso falla. Dilo en la entrega, que además es un problema de accesibilidad. Lo mismo si «selecciona» encuentra
   varias filas.
