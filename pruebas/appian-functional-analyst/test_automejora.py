@@ -150,6 +150,29 @@ class Automejora(unittest.TestCase):
                     else:
                         self.assertIn("sin empezar", out)
 
+    def test_por_que_de_una_dt_cita_solo_lo_que_afirma_de_appian(self):
+        """L8b del ensayo Informes: un motivo del proyecto basta dicho; lo que afirma algo de Appian lleva BP o URL, que
+        vale también en «Verificado»."""
+        self.copia()
+        dt = lambda n, porque, verificado="pendiente": (
+            f"**DT-0{n} — Decisión ficticia {n}**\n\n| Campo | Contenido |\n|---|---|\n| **Capa** | Datos |\n"
+            f"| **Necesidad** | Base |\n| **Decisión** | Algo |\n| **Por qué** | {porque} |\n"
+            f"| **Verificado** | {verificado} |\n\n")
+        (self.p / "analisis/tecnico.md").write_text(
+            "# Técnico ficticio\n\nVersión: 1.1 · Estado: completo\n\n## 2. Decisiones técnicas\n\n"
+            + dt(1, "El funcional fija el texto del cuerpo, no el asunto")
+            + dt(2, "Appian no admite campos agregados sobre esta relación")
+            + dt(3, "Appian no admite campos agregados sobre esta relación",
+                 "https://docs.appian.com/suite/help/latest/custom-record-fields.html")
+            + "## 3. Modelo de datos\n", encoding="utf-8")
+        m = mo.Proyecto(self.p)
+        with unittest.mock.patch.object(comprobar, "errores", 0):
+            out = self.captura(comprobar.comprobar_tecnico, m, un.Contexto(m))
+        linea = next(l for l in out.splitlines() if "decisiones técnicas con «Por qué»" in l)
+        self.assertIn("DT-02", linea)
+        self.assertNotIn("DT-01", linea)
+        self.assertNotIn("DT-03", linea)
+
     def test_anexo_preserva_notas_y_consulta(self):
         self.copia()
         f = self.p / "analisis" / "funcional.md"

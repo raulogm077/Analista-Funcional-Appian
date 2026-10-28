@@ -83,7 +83,7 @@ un sistema. Tabla vertical:
 | **Capa** | Datos, Seguridad, Lógica, Proceso, Interfaz, Navegación, Integración, IA u Operación |
 | **Necesidad** | Las HU, PAN, ACT o RB que la piden; «Base» (con mayúscula, sola o con ellas) si es de lo común: llega a la issue de la Base, como «Para: Base» de §13 |
 | **Decisión** | Qué se hace, con los nombres de los objetos |
-| **Por qué** | En una frase, con `BP nn §x` y la URL de la documentación |
+| **Por qué** | En una frase. Si afirma algo de Appian o del Dev MCP, con `BP nn §x` o la URL de la documentación (aquí o en «Verificado»); un motivo del proyecto basta dicho |
 | **Descartada** | La alternativa y por qué no |
 | **Riesgo** | Qué puede salir mal, o «Ninguno relevante» |
 | **Depende de** | Versión o tier (ⓥ, ⓣ de buenas prácticas), u otra cosa; «—» si nada |
