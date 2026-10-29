@@ -5,7 +5,7 @@ Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md).
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
 **Ahora:** paso 2, punto 2.1: Claude trae su recomendación, cuando Codex dé por revisados los ajustes del paso 1
-(`COMMITREV`).
+(`3f5d1ec`).
 
 ## 1. En la rama actual, por orden
 
