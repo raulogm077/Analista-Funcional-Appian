@@ -1193,7 +1193,8 @@ def ordena_grafo(issues, antes):
     previas = {}
     def todas(iid, camino):
         if iid in camino:
-            raise NoSePuede("ciclo de dependencias: " + " → ".join(camino + [iid]))
+            # solo el ciclo, sin el tramo que lleva hasta él: aplica_dependencias caduca las correcciones que nombra
+            raise NoSePuede("ciclo de dependencias: " + " → ".join(camino[camino.index(iid):] + [iid]))
         if iid not in antes:
             raise NoSePuede(f"dependencia inexistente: {iid}")
         if iid not in previas:

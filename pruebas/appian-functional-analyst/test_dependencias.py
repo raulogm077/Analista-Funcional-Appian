@@ -129,6 +129,24 @@ class Dependencias(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertTrue(self.carga().dependencias[0]["estado"].startswith("Retirada por Ana"))
 
+    def test_caduca_solo_la_correccion_del_ciclo_no_la_que_lleva_a_el(self):
+        """Revisión de Codex: el mensaje del ciclo traía el camino desde la primera issue recorrida, y caducaba también
+        la corrección de ISS-02, que solo lleva al ciclo ISS-03 → ISS-04 → ISS-03 y es válida sin la de ISS-03."""
+        issues = [iss.Issue(filas=[], id="ISS-02", objetos=["A"]), iss.Issue(filas=[], id="ISS-03", objetos=["B"]),
+                  iss.Issue(filas=[], id="ISS-04", objetos=["C"], nombra={"B"})]
+        for i in issues:
+            i.texto = "Requisitos: x"
+        corrige = lambda iid, depende, automaticas: {
+            "issue": iid, "version": "v", "depende": depende, "automaticas": automaticas,
+            "versiones": {x: "v" for x in set(depende) | set(automaticas)}, "motivo": "Decidido", "quien": "Ana",
+            "cuando": "2026-10-29T22:00Z", "estado": "Vigente"}
+        plan = base.SimpleNamespace(issues=issues, avisos=[], app="", dependencias=[
+            corrige("ISS-02", ["ISS-03"], []), corrige("ISS-03", ["ISS-04"], [])])
+        iss.aplica_dependencias(plan)
+        self.assertEqual(plan.dependencias[0]["estado"], "Vigente")
+        self.assertEqual(plan.dependencias[1]["estado"], "Caducada: forma un ciclo con las dependencias calculadas")
+        self.assertEqual((issues[0].depende, issues[1].depende, issues[2].depende), (["ISS-03"], [], ["ISS-03"]))
+
     def test_reversion_y_sustitucion_conservan_rastro(self):
         self.preparada()
         for destinos in ([], ["ISS-01"]):
