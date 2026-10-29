@@ -711,12 +711,14 @@ def marca_validadas(m, decisiones, fuente):
 
 def estado_validado(raiz):
     """Tras un VALIDA: si ninguna pieza vigente del funcional queda sin 🔒 (ni un PC abierto, que es ⚠️ o ❓), «Estado:
-    validado» en la cabecera del funcional y en proyecto.md; si no, las que quedan. No toca «DF entregado»."""
+    validado» en la cabecera del funcional y en proyecto.md; si no, las que quedan. No toca «DF entregado». Devuelve
+    (las que quedan, dónde lo escribió)."""
     m = mo.Proyecto(raiz)
     quedan = sorted(p.id for p in m.piezas.values() if p.doc == "F" and not p.anulada and p.estado in mo.ESTADOS[1:])
     if quedan:
-        return quedan
-    for ruta in (m.ruta("F"), raiz / "proyecto.md"):
+        return quedan, []
+    escritos = []
+    for ruta, nombre in ((m.ruta("F"), "el funcional"), (raiz / "proyecto.md", "proyecto.md")):
         if not ruta.is_file():
             continue
         lineas = ruta.read_text(encoding="utf-8").split("\n")
@@ -725,7 +727,8 @@ def estado_validado(raiz):
             lineas[i] = re.sub(r"(Estado:\s*)[^·\n]*?(?=\s*(?:·|$))", lambda x: x.group(1) + "validado", lineas[i],
                                count=1)
             mo.escribe(ruta, "\n".join(lineas))
-    return []
+            escritos.append(nombre)
+    return [], escritos
 
 
 def version(a):
@@ -855,11 +858,13 @@ def version(a):
         mo.escribe(proy, texto_p)
         escrito.append(f"{', '.join(fuentes)} en «Fuentes procesadas» de proyecto.md")
     if any(d[0].upper() == "VALIDA" for d in decisiones):   # después de escribir proyecto.md, que lo pisaría
-        quedan = estado_validado(raiz)
+        quedan, escritos = estado_validado(raiz)
         if quedan:
             avisos.append(f"El DF no pasa a «validado»: quedan sin 🔒 {', '.join(quedan)}")
-        else:
-            escrito.append("«Estado: validado» en el funcional y en proyecto.md")
+        if escritos:
+            escrito.append(f"«Estado: validado» en {' y en '.join(escritos)}")
+        if not quedan and len(escritos) < 2:
+            a_mano.append("«Estado: validado» donde falta la línea «Estado:» (el funcional o proyecto.md)")
     print(f"Versión {nueva}: {' y '.join(subidos)} en {nueva}" + (f"; {'; '.join(escrito)}" if escrito else "")
           + (f". Copia de la {v[0]}.{v[1]} en {destino}." if destino else ". Primera 1.0, sin incremento ni copia."))
     for x in a_mano:

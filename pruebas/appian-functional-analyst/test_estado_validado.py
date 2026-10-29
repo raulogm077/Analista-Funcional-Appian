@@ -47,6 +47,16 @@ class EstadoValidado(unittest.TestCase):
         self.assertEqual(self.cabeceras(p), ("Versión: 1.2 · Estado: validado",
                                              "DF entregado: 1.0 (2026-09-12) · Estado: validado"))
 
+    def test_sin_linea_de_estado_lo_dice_y_no_lo_da_por_escrito(self):
+        p = self.proyecto("sin estado", sin_pc=True)
+        pm = p / "proyecto.md"
+        pm.write_text(pm.read_text(encoding="utf-8").replace(" · Estado: en validación", ""), encoding="utf-8")
+        c, out = self.valida(p)
+        self.assertEqual(c, 0, out)
+        self.assertIn("«Estado: validado» en el funcional.", out)
+        self.assertIn("a mano: «Estado: validado» donde falta la línea «Estado:»", out)
+        self.assertEqual(self.cabeceras(p)[1], "DF entregado: 1.0 (2026-09-12)")
+
     def test_con_preguntas_abiertas_no_cambia_y_dice_cuales(self):
         p = self.proyecto("con PC")
         c, out = self.valida(p)
