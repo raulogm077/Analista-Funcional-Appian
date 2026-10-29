@@ -5,6 +5,14 @@ Resultados y límites que sirven para decidir sobre el plugin. Los escenarios re
 Lo pendiente se sigue en [siguiente-version.md](siguiente-version.md). Las cifras de cada fila pertenecen
 al commit y al alcance indicados; no se suman controles repetidos ni se trasladan resultados a otro código.
 
+## Pendientes de las pruebas aplicados en la rama, desde el 29 de octubre de 2026
+
+Cada fila es un punto de [siguiente-version.md](siguiente-version.md), con lo que lo respalda.
+
+| Punto | Commit | Prueba y alcance |
+|---|---|---|
+| 1.1 Trampas de SAIL y seguridad de los casos A y B de construcción | `663b4e3` | Contrastadas con docs.appian.com el 29-oct. **Documentado y citado:** `AND_ALL` en filtros sobre una relación uno a muchos (doc 05 §2, doc 06 §5.1); importes con `a!currency()` y la configuración regional, con `dollar()` y `euro()` obsoletos (doc 02 §10.3). La skill oficial recomienda `dollar()`: fila nueva del doc 14, marca comprobada (11 de 11, y desaparece si se corrige). **Visto una vez y sin documentar**, marcado así en el texto y no reproducido hoy: grid con lista vacía de mapas y con dos grupos de filtros vacíos (doc 02 §5.7), `append()` con un texto delante (doc 04 §11) y la cadena de herencia de seguridad en dos niveles, que queda como prueba obligada, no como regla (doc 06 §5.1). Sin prueba de comportamiento con `--plugin-dir` (paso 3) |
+
 ## Ensayo con y sin el plugin, 22–27 de octubre de 2026
 
 El mismo bloque de una aplicación, en tres incrementos y con las mismas reuniones reales, construido en desarrollo por

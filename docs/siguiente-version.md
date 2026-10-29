@@ -4,7 +4,7 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 1, punto 1.1, a la espera de que Raúl diga que se empiece.
+**Ahora:** paso 1, punto 1.2, a la espera de que Raúl diga que se siga.
 
 ## 1. En la rama actual, por orden
 
@@ -12,15 +12,6 @@ El reparto entre los pasos 1 y 2 lo propone Claude; Raúl puede mover un punto d
 
 ### Paso 1 · Lecciones que se pueden aplicar ya
 
-- **1.1 Trampas de SAIL y seguridad**, de dos pruebas reales de construcción. Llevarlas a las buenas prácticas; se
-  puede hacer ya, sin caso nuevo:
-  - un grid no acepta una lista vacía de mapas aunque esté oculto, ni dos grupos de filtros anidados vacíos a la vez;
-  - dos filtros en `AND` sobre una relación uno a muchos se cumplen con filas distintas: hace falta `AND_ALL`;
-  - `append()` con un texto como primer argumento concatena;
-  - la seguridad «quien ve el registro relacionado», encadenada en dos niveles, no deja ver nada;
-  - las cuentas con el idioma de la máquina dan los importes en formato inglés.
-
-  [`02-interfaces-sail.md`, `06-security.md`]
 - **1.2 `listProcessInstances`.** Que un proceso no salga en la lista no prueba que no se ejecutara: faltaron
   instancias, y el orden y el «total» no cuadraban con los efectos. Añadir una fila en el doc 14 §3: contrastar con el
   efecto (datos, `listProcessEvents`, el buzón), con el build en el que se vio. [doc 14]
@@ -28,7 +19,8 @@ El reparto entre los pasos 1 y 2 lo propone Claude; Raúl puede mover un punto d
   dice el propio doc. Comprobar también si `createExpressionRule` con `testInputs` sigue añadiendo un caso propio; si
   sigue, añadir su fila. [doc 14]
 - **1.4 Huecos de la plantilla técnica**, una frase cada uno:
-  - el formato de los importes, con una expresión probada (dio «8600; 000,00 €» en dos interfaces);
+  - el formato de los importes: `a!currency()` y cuentas con la configuración regional del cliente (doc 02 §10.3),
+    no una expresión hecha a mano (dio «8600; 000,00 €» en dos interfaces);
   - que la aplicación crea `<prefijo> Users` y `<prefijo> Administrators`, y qué vistas por defecto se ocultan;
   - una tabla de relaciones en §3, y en §0 la cuenta del Dev MCP, la versión y la fuente de datos (se ahorraban 11
     lecturas);
