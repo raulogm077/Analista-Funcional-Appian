@@ -363,6 +363,14 @@ def main():
                  "tras un «load»", "comprobar la página justo tras enviar el formulario (la de antes) falla y dice por qué")
         variante("HU-01.1", lambda g: g["entonces"][-1]["espera"].update(sin_fila="QA {pasada}"),
                  "hay una fila con", "una fila que no debería estar hace fallar «sin_fila»")
+        variante("HU-01.1", lambda g: g["entonces"][-1]["espera"].update(
+            fila=[{"con": "QA {pasada}"}, {"con": "QA {pasada}", "Estado": "Enviada"}]),
+                 "", "«fila» con una lista: pasa si se cumplen todas", resultado="pasa", codigo=0)
+        variante("HU-01.1", lambda g: g["entonces"][-1]["espera"].update(
+            fila=[{"con": "QA {pasada}", "Estado": "Enviada"}, {"con": "QA {pasada}", "Estado": "Devuelta"}]),
+                 "se esperaba Estado «Devuelta»", "«fila» con una lista: falla si una no se cumple, y dice cuál")
+        variante("HU-01.1", lambda g: g["entonces"][-1]["espera"].update(sin_fila=["nadie", "QA {pasada}"]),
+                 "hay una fila con", "«sin_fila» con una lista: falla si una de ellas está")
         variante("HU-01.1", lambda g: g["cuando"].insert(1, {"sail": ["interact", "Ver detalle"]}),
                  "está 2 veces", "dos enlaces con el mismo texto (nth y of): el paso falla, no se pulsa uno al azar")
         variante("HU-02.1", lambda g: g.update(cuando=[g["cuando"][0], {"rol": "revisor", "sail": ["interact", "🔍", "QA"]},

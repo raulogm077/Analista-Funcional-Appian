@@ -298,6 +298,11 @@ def falta_campo(campo, ui):
     return []
 
 
+def una_o_varias(x):
+    """«fila» y «sin_fila» admiten una comprobación o una lista de ellas."""
+    return x if isinstance(x, list) else [x] if x else []
+
+
 def lo_que_falta(espera, d):
     """Lo que no se cumple de «espera» en el --json de un paso; [] si todo se cumple."""
     mal = []
@@ -320,8 +325,7 @@ def lo_que_falta(espera, d):
     for x in espera.get("sin_texto") or []:
         if any(norma(x) in t for t in todo):
             mal.append(f"aparece «{x}» y no debería")
-    fila = espera.get("fila")
-    if fila:
+    for fila in una_o_varias(espera.get("fila")):
         busca = {k: v for k, v in fila.items() if k != "con"}
         suyas = [f for f in filas(d.get("ui")) if con_texto(f, fila["con"])]
         if not suyas:
@@ -330,8 +334,9 @@ def lo_que_falta(espera, d):
             f = suyas[0]
             mal.append(f"la fila con «{fila['con']}» tiene " + ", ".join(f"{k} «{f.get(k, '—')}»" for k in busca)
                        + " y se esperaba " + ", ".join(f"{k} «{v}»" for k, v in busca.items()))
-    if espera.get("sin_fila") and any(con_texto(f, espera["sin_fila"]) for f in filas(d.get("ui"))):
-        mal.append(f"hay una fila con «{espera['sin_fila']}» y no debería")
+    for x in una_o_varias(espera.get("sin_fila")):
+        if any(con_texto(f, x) for f in filas(d.get("ui"))):
+            mal.append(f"hay una fila con «{x}» y no debería")
     if "campo" in espera:
         mal += falta_campo(espera["campo"], d.get("ui"))
     return mal
@@ -379,11 +384,13 @@ def mal_esperado(espera):
     mal += [f"«{k}» es una lista de textos, sin vacíos" for k in ("hay", "no_hay", "texto", "sin_texto")
             if k in espera and not textos_llenos(espera[k])]
     fila = espera.get("fila")
-    if "fila" in espera and not (isinstance(fila, dict) and isinstance(fila.get("con"), str) and fila["con"].strip()
-                                 and all(isinstance(v, str) and v.strip() for v in fila.values())):
-        mal.append("«fila» lleva «con» y, si acaso, columnas con su valor, sin vacíos")
-    if "sin_fila" in espera and not (isinstance(espera["sin_fila"], str) and espera["sin_fila"].strip()):
-        mal.append("«sin_fila» es un texto, no vacío")
+    if "fila" in espera and not (una_o_varias(fila) and all(
+            isinstance(f, dict) and isinstance(f.get("con"), str) and f["con"].strip()
+            and all(isinstance(v, str) and v.strip() for v in f.values()) for f in una_o_varias(fila))):
+        mal.append("«fila» lleva «con» y, si acaso, columnas con su valor, sin vacíos (una, o una lista de ellas)")
+    if "sin_fila" in espera and not (una_o_varias(espera["sin_fila"]) and all(
+            isinstance(x, str) and x.strip() for x in una_o_varias(espera["sin_fila"]))):
+        mal.append("«sin_fila» es un texto, no vacío, o una lista de ellos")
     if "campo" in espera:
         c = espera["campo"]
         selectores = {"label", "testLabel"}

@@ -124,7 +124,8 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   script busca su sesión en cada equipo (`session.json` bajo `$SAIL_HOME` y `~/.sail`, por usuario y host), así que no
   hay que decir en ningún fichero dónde está la de cada uno.
 - **Un paso**: `{"rol", "sail": [orden y sus argumentos, sin el site], "espera"}`. Las órdenes son `load` (siempre
-  `--fresh`), `navigate`, `interact`, `back` y `show`; `--confirm` va en la orden si el destino lo pide. Una fila de una
+  `--fresh`), `navigate`, `interact`, `back` y `show` (vuelve a leer la última página cargada, sin pedir nada al servidor);
+  `--confirm` va en la orden si el destino lo pide. Una fila de una
   rejilla se marca por su contenido, `{"rol": "revisor", "selecciona": "QA {pasada}"}`, nunca por el número que le dio
   Appian. Con un solo rol, «rol» se puede omitir.
 - Para cambiar de página del site: `"sail": ["load", "<página>"]`; `load` sin página recarga la predeterminada.
@@ -133,7 +134,8 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   `"texto"` y `"sin_texto"`, en lo que se ve de la página y en sus validaciones; `"fila": {"con": "…", "<columna>":
   "<valor o su principio, igual>"}`, una fila de una rejilla que lleva ese texto y tiene esos valores, y `"sin_fila": "…"`,
   ninguna fila con ese texto (lo que se buscó también está en la caja de búsqueda: para decir que no se ve, `sin_fila`,
-  no `sin_texto`). Cada paso falla además si SAIL CLI da error o si el servidor no cambió nada.
+  no `sin_texto`). Las dos admiten una lista, para comprobar varias filas en un mismo paso. Cada paso falla además si
+  SAIL CLI da error o si el servidor no cambió nada.
 - **Valor de un campo de texto**: `"campo": {"label": "Cantidad", "valor": ""}` comprueba que el `TextField` o
   `ParagraphField` del `ui` trae `value` vacío. En vez de `label` se puede usar `testLabel`: exactamente uno, completo
   y literal. Si no aparece, hay varios componentes con ese selector, el tipo no está soportado o falta `value`, falla;
