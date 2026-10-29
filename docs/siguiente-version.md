@@ -12,6 +12,13 @@ Cada punto dice qué falta y a quién toca. Esta lista no autoriza publicar, des
 - **Cierre de la rama**, cuando Raúl diga «sube». Antes del PR, poner al día «Trabajo en curso» de
   `CLAUDE.local.md`. La batería completa pasa en GitHub. Antes de publicar una versión, las siete combinaciones y
   `pruebas/comprobar_anclas.py` (con red). [persona y sesión]
+- **Residuos de las pruebas**, al subir la rama. En `Pruebas-plugin`, revisar `automejora/`,
+  `automejora-codex-20261019/`, `T1-agilidad/`, `T5-devmcp-sail/`, `T6-retoque-construido/`, `T13-pruebas-issue/`,
+  `T15-qa/`, `T16-ensayo-qa/` y `retoque-analisis/`. Antes de borrar cada una, comprobar que sus lecciones estén aquí o
+  en `evaluaciones.md`, si la cita como evidencia algún documento que se conserva (el seguimiento del ensayo, la
+  revisión de Codex) y qué objetos dejó en Indra-spain (`T6-retoque-construido/objetos-creados.md`). Se guarda lo que
+  haga falta; lo demás, y sobre todo lo que lleve datos del cliente, se borra con la confirmación de Raúl, que lanza él
+  el borrado si la sesión no puede. [persona y sesión]
 
 ## Análisis y documentos
 
