@@ -79,9 +79,11 @@ Claude trae una recomendación por punto; se aplica lo que Raúl decida.
 ### Paso 3 · Prueba con el plugin cargado desde la carpeta
 
 - **Probar los cambios de comportamiento con el plugin cargado desde la carpeta** (`claude --plugin-dir`) en un
-  proyecto de prueba, como pide `CLAUDE.md`. Comprobar: el localizador con una sesión real; «gasta» en un guion de QA;
-  la línea «Unidades» y el aviso del siguiente paso; una tarea de una persona en Designer en la entrega; `git push`
-  con y sin autorización; y lo que cambien los pasos 1 y 2. [prueba]
+  proyecto de prueba, como pide `CLAUDE.md`. Comprobar: el localizador con una sesión real; «gasta» en un guion de QA,
+  que la skill lo pone al preparar el guion y no solo que el motor lo respeta; la línea «Unidades», el aviso y que el
+  analista pone al día «Siguiente paso»; una tarea de una persona en Designer en la entrega; `git push` con un remoto
+  local, con y sin autorización, y sin remoto; y lo que cambien los pasos 1 y 2. Aprobarla no autoriza escribir en
+  Indra-spain ni subir a GitHub. [prueba]
 
 ### Paso 4 · Residuos de las pruebas
 
@@ -99,7 +101,7 @@ Claude trae una recomendación por punto; se aplica lo que Raúl decida.
   red). [persona y sesión]
 - **Copia de seguridad.** La rama no está en GitHub; se sube como copia, sin PR, cuando Raúl lo autorice. [persona]
 - **Rama `yaroslav/plantilla-DF-cliente`** en GitHub: 17 commits del 19-oct sin PR, ni en `main` ni en esta rama.
-  Decidir si se revisa, se pide su PR o se descarta. [persona]
+  Decidir si se revisa, se pide su PR o se descarta. No frena el cierre de esta rama. [persona]
 
 ## 2. Cuando se dé su condición
 
