@@ -101,5 +101,9 @@ Cada punto dice qué falta y a quién toca. Esta lista no autoriza publicar, des
 
 ## Operación y entorno
 
+- **Riesgo que queda en `iniciar --confiar`.** Sustituye `~/.claude.json` entero. Si otra sesión de Claude Code lo
+  guarda justo entre la última lectura y la sustitución, se pierde lo que ella guardó. Releer reduce esa ventana pero
+  no la cierra. Cerrarla exige coordinarse con quien escribe ese fichero, y Claude Code no documenta cómo. Decidir si
+  basta con lanzar `--confiar` sin otras sesiones abiertas o si hace falta otra vía. [persona]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
