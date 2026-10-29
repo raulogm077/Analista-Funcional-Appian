@@ -4,8 +4,8 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 2, punto 2.1: Claude trae su recomendación, cuando Codex dé por revisados los ajustes del paso 1
-(`3f5d1ec`).
+**Ahora:** cierre del paso 1: Codex contrasta el último ajuste del 1.8 (`a981036`, el antecesor del ciclo). Después,
+paso 2, punto 2.1, con la recomendación de Claude.
 
 ## 1. En la rama actual, por orden
 
