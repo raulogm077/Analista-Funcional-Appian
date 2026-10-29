@@ -4,7 +4,7 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 1, punto 1.3.
+**Ahora:** paso 1, punto 1.4.
 
 ## 1. En la rama actual, por orden
 
@@ -12,9 +12,6 @@ El reparto entre los pasos 1 y 2 lo propone Claude; Raúl puede mover un punto d
 
 ### Paso 1 · Lecciones que se pueden aplicar ya
 
-- **1.3 Filas del doc 14 §3** vistas con builds anteriores al 26.9.5: se quitan cuando ya no se vea el síntoma, como
-  dice el propio doc. Comprobar también si `createExpressionRule` con `testInputs` sigue añadiendo un caso propio; si
-  sigue, añadir su fila. [doc 14]
 - **1.4 Huecos de la plantilla técnica**, una frase cada uno:
   - el formato de los importes: `a!currency()` y cuentas con la configuración regional del cliente (doc 02 §10.3),
     no una expresión hecha a mano (dio «8600; 000,00 €» en dos interfaces);
@@ -84,6 +81,8 @@ Claude trae una recomendación por punto; se aplica lo que Raúl decida.
   que se conserva (el seguimiento del ensayo, la revisión de Codex) y qué objetos dejó en Indra-spain
   (`T6-retoque-construido/objetos-creados.md`). Se guarda lo que haga falta; lo demás, y sobre todo lo que lleve datos
   del cliente, se borra con la confirmación de Raúl, que lanza él el borrado si la sesión no puede. [persona y sesión]
+- En Indra-spain, la regla desechable `IFA_PruebaTestInputsDevMcp` de la aplicación IFA, que dejó la comprobación del
+  1.3; se borra con la confirmación de Raúl. [sesión]
 
 ### Paso 5 · Cierre de la rama
 
