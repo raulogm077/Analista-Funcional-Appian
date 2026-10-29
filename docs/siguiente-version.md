@@ -53,8 +53,6 @@ Claude trae una recomendación por punto; se aplica lo que Raúl decida.
   que se conserva (el seguimiento del ensayo, la revisión de Codex) y qué objetos dejó en Indra-spain
   (`T6-retoque-construido/objetos-creados.md`). Se guarda lo que haga falta; lo demás, y sobre todo lo que lleve datos
   del cliente, se borra con la confirmación de Raúl, que lanza él el borrado si la sesión no puede. [persona y sesión]
-- En Indra-spain, la regla desechable `IFA_PruebaTestInputsDevMcp` de la aplicación IFA, que dejó la comprobación del
-  1.3; se borra con la confirmación de Raúl. [sesión]
 
 ### Paso 5 · Cierre de la rama
 
