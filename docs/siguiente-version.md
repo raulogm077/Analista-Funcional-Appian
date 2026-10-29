@@ -4,7 +4,7 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 1, punto 1.4.
+**Ahora:** paso 1, punto 1.5.
 
 ## 1. En la rama actual, por orden
 
@@ -12,15 +12,6 @@ El reparto entre los pasos 1 y 2 lo propone Claude; Raúl puede mover un punto d
 
 ### Paso 1 · Lecciones que se pueden aplicar ya
 
-- **1.4 Huecos de la plantilla técnica**, una frase cada uno:
-  - el formato de los importes: `a!currency()` y cuentas con la configuración regional del cliente (doc 02 §10.3),
-    no una expresión hecha a mano (dio «8600; 000,00 €» en dos interfaces);
-  - que la aplicación crea `<prefijo> Users` y `<prefijo> Administrators`, y qué vistas por defecto se ocultan;
-  - una tabla de relaciones en §3, y en §0 la cuenta del Dev MCP, la versión y la fuente de datos (se ahorraban 11
-    lecturas);
-  - qué hace F1 con fuentes que mejoran una aplicación que no se puede leer.
-
-  [plantilla técnica]
 - **1.5 Casos NO_ERRORS.** Los casos de prueba de reglas guardados con aserción NO_ERRORS prueban que no falla, no el
   contenido. Que lo diga la plantilla del técnico §14. [plantilla]
 - **1.6 Estado tras validar el DF.** `version --decision VALIDA` dejaba el funcional y `proyecto.md` en «borrador», y

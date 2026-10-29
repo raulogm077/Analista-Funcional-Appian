@@ -67,11 +67,15 @@ laboral, volumen, usuarios y concurrencia, tiempo de recuperación, accesibilida
 Sale de funcional §10 y de lo que diga el equipo. Lo que no se sabe es un PT. El prototipo toma de aquí la versión de
 Appian, y la orden de terminar una issue, el Dev MCP de desarrollo de cada equipo (el que apunta a esa URL).
 «Site» es el nombre del site en su URL (`/suite/sites/<site>`), y «Cuentas de prueba en desarrollo», el usuario de la
-cuenta de cada rol (`Gestor: qa.gestor`), nunca su contraseña: de aquí los toma el QA (`appian-qa`).
+cuenta de cada rol (`Gestor: qa.gestor`), nunca su contraseña, con la configuración regional del cliente (BP 02 §10.3):
+de aquí los toma el QA (`appian-qa`). La versión de Appian la da el equipo: `getDevMcpVersionInfo` da la del plugin del
+Dev MCP, no la de la plataforma. Dos filas más: «Cuenta del Dev MCP», el usuario con el que se construye (sin
+contraseña), y «Fuente de datos», de dónde leen los record types.
 
 ### 1. Convenciones
 Tabla `Qué · Convención · Por qué`: prefijo, idioma de los nombres, mayúsculas por tipo de objeto, nombre
-de la clave, campos de auditoría, borrado, carpetas.
+de la clave, campos de auditoría, borrado, carpetas y el formato de los importes: `a!currency()` con el código ISO de la
+moneda, que los da en la configuración regional de quien mira, nunca separadores puestos a mano (BP 02 §10.3).
 
 ### 2. Decisiones técnicas
 Una ficha `**DT-nn — Título**` por cada decisión que no sea obvia: cómo se modela algo, qué capa aplica una
@@ -123,9 +127,10 @@ Por record type, `### 3.n <Record type>`:
   caracteres se diseña como Long Text. Un máximo menor que sea regla de negocio, como 100, no es la longitud de la
   columna: se valida en las vías que escriben ese campo (el formulario y, si las hay, la integración o la API).
 
-Al final: referencias y carga inicial (`Record type · Valores iniciales · Quién lo mantiene`). Un valor que cambia
-de un entorno a otro (el ID numérico de un grupo) se dice en «Valores iniciales», y quien despliega lo cambia
-por entorno, como una constante.
+Al final, las relaciones (`Record type · Relación · Tipo · Destino`, con el nombre exacto de cada una, que las issues
+que no la crean citan así) y las referencias y carga inicial (`Record type · Valores iniciales · Quién lo mantiene`).
+Un valor que cambia de un entorno a otro (el ID numérico de un grupo) se dice en «Valores iniciales», y quien despliega
+lo cambia por entorno, como una constante.
 
 En §3 a §12, lo que es de otra unidad se marca así: la línea, o el primer texto de su `### 3.n`, empieza por «Otra unidad»
 (con su id si se quiere: «Otra unidad (EV-02).») y no entra en las issues de esta. Nombrar otro EV o escribir «otra unidad» a mitad de frase no marca nada.
@@ -136,7 +141,10 @@ nuevo), también el valor que toman los registros que ya hay en un estado que la
 propuesta de refactorización es obligatoria.
 
 ### 4. Grupos y seguridad
-- Tabla `Perfil · Grupo · Constante`, con todos los perfiles del funcional.
+- Tabla `Perfil · Grupo · Constante`, con todos los perfiles del funcional. La aplicación nace con `<prefijo> Users` y
+  `<prefijo> Administrators`, que Appian pone en la seguridad por defecto de sus objetos
+  ([creating-applications.html#generated-groups-and-folders](https://docs.appian.com/suite/help/latest/creating-applications.html#generated-groups-and-folders)):
+  la tabla dice a qué perfil corresponde cada uno o que no es de ninguno.
 - Matriz de qué ve y qué hace cada grupo (registros, campos, vistas, acciones). Es la seguridad de los datos y de los
   objetos; lo que ve cada perfil dentro de una pantalla (un filtro, una columna, un botón) va en el apartado de esa
   pantalla (§7), nombrando su interfaz, y lleva un criterio en su historia del funcional, con su escenario y su
@@ -168,6 +176,9 @@ vista de registro, acción de registro, formulario de tarea o de inicio. Filtros
 exportación y acciones de registro con quién las ve. Los filtros por defecto y los contadores trabajan sobre
 conjuntos acotados (BP 05 §2–3). La composición: «ver prototipo, pantalla <id>». Quién ve cada control de la pantalla
 (un filtro, una columna, un botón) se escribe aquí, con el nombre de su interfaz.
+Por record type con registros que se abren, si se ocultan sus vistas News y Related Actions, que Appian enseña por
+defecto ([record-view.html#hide-default-record-views](https://docs.appian.com/suite/help/latest/record-view.html#hide-default-record-views));
+si no se dice, quedan visibles.
 Cada acción que lanza un proceso desde una pantalla dice qué es y de qué record type: acción de lista de registros
 (crea) o acción relacionada (sobre un registro), puesta con el componente de acciones de registro; nunca un enlace de
 inicio de proceso en la interfaz (BP 00 «Process», 01 §9.2, 02 §5.4, 03 §8, 06 §5.3). Las de cada record type, en una
