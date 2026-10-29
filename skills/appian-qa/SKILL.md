@@ -66,6 +66,8 @@ Cada orden de SAIL CLI y de `qa.py` se espera en primer plano hasta que termina,
 2. **Por escenario**, en el orden de los `.feature`:
    - **Dado**: prepáralo como lo haría un usuario, desde el site y con la cuenta del rol que lo haría (nunca por el Dev
      MCP ni con SQL). Lo que teclees lleva `{pasada}` (abajo), para que no se confunda con lo de otra vez.
+     En una unidad de solo consulta nadie lo prepara desde el site: el «dado» son los datos de prueba de técnico §3
+     (carga inicial), que lees antes de escribir los guiones; si el estado real es otro, dilo antes de dar un fallo.
    - **Cuando**: recórrelo con la cuenta de su rol, `sail --data-dir <su carpeta> load|navigate|interact <site> …`.
      Para explorar, la salida normal, que es más corta; para comprobar, `--json`.
    - **Entonces**: compruébalo en el `--json`. Tras enviar un formulario, el `--json` trae `completed` y la página de

@@ -277,6 +277,9 @@ Cuando un criterio depende de una regla, «Cómo se prueba» fija la entrada y l
 quien construye las copia al caso de prueba, sin decidir el resultado esperado. La lógica que depende de la fecha de
 hoy lleva una fecha fija en el criterio y se prueba así (el QA de pantalla no puede fijar la fecha); su efecto (no se
 guarda, no arranca el proceso, sale el mensaje) se prueba en su capa.
+El caso de una regla que consulta registros depende de los datos de desarrollo: dice cuáles presupone y comprueba lo
+que no cambia si otra prueba añade registros (que esté lo esperado, no cuántos hay). Si falla por un dato ajeno, se
+mira el dato antes de reabrir la issue.
 
 ```markdown
 | Criterio | Cómo se prueba | Con qué |

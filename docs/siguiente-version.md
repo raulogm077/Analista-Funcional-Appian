@@ -4,17 +4,9 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 1, punto 1.11.
+**Ahora:** paso 2, punto 2.1: Claude trae su recomendación.
 
 ## 1. En la rama actual, por orden
-
-El reparto entre los pasos 1 y 2 lo propone Claude; Raúl puede mover un punto de uno a otro.
-
-### Paso 1 · Lecciones que se pueden aplicar ya
-
-- **1.11 Datos que presupone cada prueba.** Cada prueba dice qué datos presupone y cómo sigue con el estado real: una
-  tipología dejada para el QA rompió una regla. En una aplicación de solo consulta, los «dado» salen de los datos de
-  §3.9, que el QA no lee. [`appian-qa`, plantilla]
 
 ### Paso 2 · Decisiones de Raúl
 
