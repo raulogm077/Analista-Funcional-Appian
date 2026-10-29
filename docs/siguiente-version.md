@@ -4,7 +4,7 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 1, punto 1.7.
+**Ahora:** paso 1, punto 1.8.
 
 ## 1. En la rama actual, por orden
 
@@ -12,8 +12,6 @@ El reparto entre los pasos 1 y 2 lo propone Claude; Raúl puede mover un punto d
 
 ### Paso 1 · Lecciones que se pueden aplicar ya
 
-- **1.7 `verificar`** dice lo que no comprueba (relaciones, seguridad de registro, grupos, datos, vistas ocultas) o lo
-  comprueba. [script]
 - **1.8 Dependencias entre issues.** Que el orden calculado vea que un `a!recordLink` necesita la vista de resumen que
   hace otra issue. Que las correcciones de dependencias no caduquen por cualquier cambio de la issue. [`issues.py`]
 - **1.9 Registrar una decisión que cambia el orden.** El orden es DT, regenerar y después la corrección de la issue que

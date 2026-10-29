@@ -2326,6 +2326,8 @@ async def cmd_verificar(args) -> int:
     if any("permisosInicio" in q or tipo_de_objeto(q.get("tipo")) == "processmodel"
            or any("visibilidad" in a for a in q.get("acciones", [])) for q in quiere.values()):
         print("  · Permisos: se compara configuración declarada; el acceso efectivo exige QA con cada rol.")
+    print("  · No se comparan relaciones, seguridad de registro, miembros de grupos, datos ni vistas por defecto ocultas: "
+          "lo que la issue pida de eso se lee aparte (getRecordType) o lo prueba el QA.")
     for linea in resumen_de_pruebas(resultado.get("pruebas")):
         print(linea)
     return EXIT_OK
