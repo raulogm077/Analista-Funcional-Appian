@@ -4,7 +4,7 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 2, punto 2.1: Claude ha traído su recomendación; decide Raúl.
+**Ahora:** paso 2, punto 2.2: Claude trae su recomendación.
 
 ## 1. En la rama actual, por orden
 
@@ -12,10 +12,6 @@ lista no autoriza publicar, desplegar, enviar ni borrar.
 
 Claude trae una recomendación por punto; se aplica lo que Raúl decida.
 
-- **2.1 Documentos al cerrar un incremento.** En la prueba con y sin el plugin, los documentos quedaron a medias en los
-  dos brazos. Con el plugin: decisiones antiguas marcadas como vigentes, contradicciones puntuales y el estado del
-  proyecto sin cerrar. Los diagramas de estados sí se pusieron al día. Raúl lo quiere mejorar. Es juicio del modelo al
-  cerrar la unidad. Falta decidir dónde se le pide (F8 o `cambios.md`), sin añadir un control. [flujo]
 - **2.2 Coste del análisis.** Con el plugin, el análisis costó más en los tres incrementos. Un reparto contable de las
   transcripciones (hipótesis, no ahorro causal) apunta a dos causas:
   - los pasos del método por incremento: unos 155 de 482 turnos usan órdenes o ficheros propios del plugin;

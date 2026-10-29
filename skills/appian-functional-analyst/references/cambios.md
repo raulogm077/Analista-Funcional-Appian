@@ -27,6 +27,12 @@ a tabla de objetos con «Cambio» y «Para» (`tecnico-plantilla.md` §13). Cada
 | `… produccion --ref "<pase>" --fecha <AAAA-MM-DD del pase>` | En producción | Tras el pase | no está Construida |
 | `… descartada [--informe impacto/FU-nn.md]` | Descartada | No se hace | no está Abierta; o tiene algo aplicado y no se da el informe (aplicado) que lo deshace, o §13 sigue con sus filas |
 
+**Los documentos, alineados en los dos momentos.** Antes de aprobar (las issues copian el técnico), el analista marca
+lo que las decisiones de la unidad dejan sin efecto también en `decisiones.md` («Vigente»: No, o En parte si solo cambia
+una cláusula) y en el técnico (la DT antigua, tachada y con «Anulada por DT-nn», como las piezas del funcional), no solo
+en el funcional. Al marcarla construida, lleva al técnico lo que cambió al construir (las DT nuevas y las que
+sustituyen) y escribe el «Siguiente paso» de `proyecto.md`.
+
 **Aprobar guarda con qué se aprueba** (la versión y sus informes, en la celda de su ID). Una fuente nueva para una
 unidad Aprobada (otro informe con su `Cambio:`, o un punto «Pendiente») la devuelve a aprobación: `issues` y
 `construida` fallan con «ha crecido desde que se aprobó» hasta que se vuelve a aprobar con `--fuente`. Si no conviene,
