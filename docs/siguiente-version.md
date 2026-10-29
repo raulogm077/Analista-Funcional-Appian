@@ -4,6 +4,8 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
+**Ahora:** paso 1, punto 1.1, a la espera de que Raúl diga que se empiece.
+
 ## 1. En la rama actual, por orden
 
 El reparto entre los pasos 1 y 2 lo propone Claude; Raúl puede mover un punto de uno a otro.
@@ -100,8 +102,6 @@ Claude trae una recomendación por punto; se aplica lo que Raúl decida.
   completa pasa en GitHub. Antes de publicar una versión, las siete combinaciones y `pruebas/comprobar_anclas.py` (con
   red). [persona y sesión]
 - **Copia de seguridad.** La rama no está en GitHub; se sube como copia, sin PR, cuando Raúl lo autorice. [persona]
-- **Rama `yaroslav/plantilla-DF-cliente`** en GitHub: 17 commits del 19-oct sin PR, ni en `main` ni en esta rama.
-  Decidir si se revisa, se pide su PR o se descarta. No frena el cierre de esta rama. [persona]
 
 ## 2. Cuando se dé su condición
 
@@ -116,5 +116,7 @@ Claude trae una recomendación por punto; se aplica lo que Raúl decida.
   del entorno.
 - **Aviso a Appian** (`aviso-appian-devmcp.md`, en la carpeta de pruebas): revisarlo con el servidor 26.9.5, porque el
   punto 10 ya está en parte corregido. Añadir la discrepancia de `LCP_TOOL_MODE=readonly`. Lo envía Raúl. [persona]
+- **Rama `yaroslav/plantilla-DF-cliente`** en GitHub, solo si Raúl lo pide: 17 commits del 19-oct sin PR, ni en
+  `main` ni en esta rama; es independiente de ella. [persona]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
