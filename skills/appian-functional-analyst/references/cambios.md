@@ -172,11 +172,12 @@ pasa a depender: al revés, el grafo intermedio tiene un ciclo y se rechaza. El 
 junto a «Depende de».
 
 La tabla «Correcciones de dependencias» de `construccion/<U>/indice.md` conserva la lista, motivo, autor, fecha y
-versiones de la issue y de sus dependencias originales y corregidas. Si desaparece una de esas issues o cambia la lista
-calculada, que es lo que la persona corrigió, la anotación queda **caducada**, se avisa y vuelve el cálculo automático;
-otro cambio del encargo (una DT nueva que la cita) no la caduca. No se reactiva sola aunque la lista calculada vuelva a
-ser la de antes: una persona la revisa y registra otra decisión. Las anotaciones caducadas, retiradas y
-sustituidas quedan visibles como rastro.
+versiones de la issue y de sus dependencias originales y corregidas. Si desaparece una de esas issues, cambia la lista
+calculada, que es lo que la persona corrigió, o el análisis cambia y la corrección forma un ciclo con lo calculado, la
+anotación queda **caducada**, se avisa y vuelve el cálculo automático; otro cambio del encargo (una DT nueva que la
+cita) no la caduca. Si cambia el diseño que justificaba el motivo, quien lo revisa la confirma o la retira. No se
+reactiva sola aunque la lista calculada vuelva a ser la de antes: una persona la revisa y registra otra decisión. Las
+anotaciones caducadas, retiradas y sustituidas quedan visibles como rastro.
 
 **Retomar una issue por subtareas.** Si sus objetos se reparten en varios pasos de §13, la issue muestra una
 subtarea por paso. Conserva una sola reserva, propietario, conjunto de objetos y verificación: no son issues nuevas

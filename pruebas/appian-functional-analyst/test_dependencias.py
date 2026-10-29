@@ -105,6 +105,30 @@ class Dependencias(unittest.TestCase):
         self.assertEqual(plan.issues[1].depende, [])
         self.assertFalse(any("caducada" in a for a in plan.avisos))
 
+    def test_ciclo_que_aparece_al_regenerar_caduca_y_se_puede_retirar(self):
+        """Revisión de Codex del 1.8: una corrección sigue vigente, pero el análisis cambia y lo calculado va ahora en
+        sentido contrario. Antes calcula rechazaba el ciclo y ni --dependencias-automaticas podía cargar el plan."""
+        self.preparada()
+        iss.corrige_dependencias(self.p, "EV-01", "ISS-04", ["ISS-01", "ISS-02", "ISS-05"],
+                                 "El documento espera a la página", "Ana")
+        t = self.p / "analisis" / "tecnico.md"
+        texto = t.read_text(encoding="utf-8")
+        viejo = "con la condición «estado distinto de Borrador» |"
+        self.assertEqual(texto.count(viejo), 1)
+        t.write_text(texto.replace(viejo, "con la condición «estado distinto de Borrador». La página usa "
+                                          "`AUT_PlantillaAutorizacion`. |"), encoding="utf-8")
+        plan = self.carga()
+        self.assertIn("ISS-04", plan.issues[4].depende)
+        self.assertNotIn("ISS-05", plan.issues[3].depende)
+        self.assertEqual(plan.dependencias[0]["estado"], "Caducada: forma un ciclo con las dependencias calculadas")
+        self.assertTrue(any("ISS-04" in a and "forma un ciclo" in a for a in plan.avisos))
+        with self.assertRaisesRegex(iss.NoSePuede, "ciclo"):   # una persona sigue sin poder registrar un ciclo
+            iss.corrige_dependencias(self.p, "EV-01", "ISS-04", ["ISS-05"], "Otra vez la página", "Ana")
+        code, out = fixture.corre(fixture.S / "indice.py", "issues", self.p, "EV-01", "ISS-04",
+                                  "--dependencias-automaticas", "--quien", "Ana")
+        self.assertEqual(code, 0, out)
+        self.assertTrue(self.carga().dependencias[0]["estado"].startswith("Retirada por Ana"))
+
     def test_reversion_y_sustitucion_conservan_rastro(self):
         self.preparada()
         for destinos in ([], ["ISS-01"]):

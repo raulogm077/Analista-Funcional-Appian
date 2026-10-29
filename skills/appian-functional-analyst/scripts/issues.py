@@ -1090,12 +1090,15 @@ def celdavacia(texto):
     return texto.strip() in ("", "—", "ninguna")
 
 
-def aplica_dependencias(plan):
-    """Las anotaciones vigentes sustituyen la lista exacta. Caducan si desaparece una de sus issues o cambia la lista
-    calculada, que es lo que la persona corrigió; otro cambio del encargo no las caduca. La caducada se conserva."""
+def aplica_dependencias(plan, estricta=False):
+    """Las anotaciones vigentes sustituyen la lista exacta. Caducan si desaparece una de sus issues, cambia la lista
+    calculada, que es lo que la persona corrigió, o, al regenerar, el análisis cambia de forma que ya forman un ciclo con
+    lo calculado; otro cambio del encargo no las caduca. La caducada se conserva. `estricta` (al corregir una persona):
+    un ciclo se rechaza, no caduca nada."""
     ordena(plan.issues)
     por_id = {i.id: i for i in plan.issues}
     antes = {i.id: set(i.depende) for i in plan.issues}
+    calculadas = {k: set(v) for k, v in antes.items()}
     corregidas = {}
     plan.avisos = [a for a in plan.avisos if "corrección de dependencias" not in a]
     for x in plan.dependencias:
@@ -1121,7 +1124,19 @@ def aplica_dependencias(plan):
             raise NoSePuede(f"{i.id}: faltan las versiones relacionadas de su corrección")
         antes[i.id] = set(x["depende"])
         corregidas[i.id] = " ".join(x["motivo"].split()).rstrip(".")
-    ordena_grafo(plan.issues, antes)
+    while True:
+        try:
+            ordena_grafo(plan.issues, antes)
+            break
+        except NoSePuede as e:
+            en_ciclo = set(re.findall(r"ISS-\d+", str(e))) & set(corregidas) if str(e).startswith("ciclo") else set()
+            if estricta or not en_ciclo:
+                raise
+            for x in plan.dependencias:   # sin esto, ni regenerar ni retirar la corrección podrían cargar el plan
+                if x["estado"] == "Vigente" and x["issue"] in en_ciclo:
+                    x["estado"] = "Caducada: forma un ciclo con las dependencias calculadas"
+                    antes[x["issue"]] = calculadas[x["issue"]]
+                    corregidas.pop(x["issue"])
     avisadas = set()
     for x in plan.dependencias:
         if x["estado"].startswith("Caducada") and x["issue"] not in set(corregidas) | avisadas:
@@ -2067,7 +2082,7 @@ def corrige_dependencias(raiz, uid, iid, destinos, motivo, quien=None, retirar=F
             plan.dependencias.append({"issue": iid, "version": issue.version, "depende": sorted(set(destinos), key=numero),
                                       "automaticas": automaticas, "versiones": {x: por_id[x].version for x in relacionadas},
                                       "motivo": celda(motivo), "quien": nombre, "cuando": ahora, "estado": "Vigente"})
-        aplica_dependencias(plan)
+        aplica_dependencias(plan, estricta=True)
         return issue, plan.reservas, f"{uid}: {iid}, dependencias {'automáticas' if retirar else 'corregidas por ' + nombre}"
     return con_reserva(raiz, uid, cambia, sin_git="en el índice, sin commit", escribe_=True)
 
