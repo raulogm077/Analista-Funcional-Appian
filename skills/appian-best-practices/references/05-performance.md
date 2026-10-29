@@ -324,6 +324,7 @@ in CPU or memory: its levers are in doc 12 §4.
 - [Record Type Query Performance Best Practices](https://docs.appian.com/suite/help/latest/query-best-practices.html)
 - [Row limit for records-powered components (5,000 rows)](https://docs.appian.com/suite/help/latest/Paging_Grid_Component.html#row-limit-for-records-powered-components)
 - [a!queryRecordByIdentifier() Function](https://docs.appian.com/suite/help/latest/fnc_system_a_queryrecordbyidentifier.html)
+- [a!queryLogicalExpression() — How AND_ALL works](https://docs.appian.com/suite/help/latest/fnc_system_a_querylogicalexpression.html#how-and_all-works)
 - [Interface Performance Best Practices](https://docs.appian.com/suite/help/latest/interface-performance.html)
 - [Local Variables (a!refreshVariable())](https://docs.appian.com/suite/help/latest/Local_Variables.html)
 - [Expressions Best Practices (memory-efficient expressions)](https://docs.appian.com/suite/help/latest/expressions-best-practices.html)

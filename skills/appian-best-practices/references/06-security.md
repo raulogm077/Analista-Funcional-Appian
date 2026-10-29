@@ -343,9 +343,9 @@ All URLs use the `latest` alias (redirects to Appian's latest monthly release).
 
 **Record type / data fabric security**
 - [Secure Your Data Fabric — layers](https://docs.appian.com/suite/help/latest/secure-your-data-fabric.html)
-- [Record Type Object Security — permission levels / Data Steward](https://docs.appian.com/suite/help/latest/record-security.html#main_content) · [source security](https://docs.appian.com/suite/help/latest/record-security.html#source-security)
+- [Record Type Object Security — permission levels / Data Steward](https://docs.appian.com/suite/help/latest/record-security.html#main_content) · [source security](https://docs.appian.com/suite/help/latest/record-security.html#source-security) · [related record type security](https://docs.appian.com/suite/help/latest/record-security.html#related-record-type-security)
 - [Secure Data for Process HQ — Default No Access](https://docs.appian.com/suite/help/latest/secure-data-for-process-hq.html#show-record-types-as-datasets)
-- [Record-Level Security](https://docs.appian.com/suite/help/latest/record-level-security.html) · [options and expression](https://docs.appian.com/suite/help/latest/record-level-security.html#record-level-security-options)
+- [Record-Level Security](https://docs.appian.com/suite/help/latest/record-level-security.html) · [options and expression](https://docs.appian.com/suite/help/latest/record-level-security.html#record-level-security-options) · [users who can view related records](https://docs.appian.com/suite/help/latest/record-level-security.html#users-who-can-view-related-records) · [fields and AND_ALL](https://docs.appian.com/suite/help/latest/record-level-security.html#fields)
 - [Field-Level Security](https://docs.appian.com/suite/help/latest/field-level-security.html) · [where it applies](https://docs.appian.com/suite/help/latest/field-level-security.html#field-level-security-in-applications)
 - [a!doesUserHaveAccess()](https://docs.appian.com/suite/help/latest/fnc_system_doesUserHaveAccess.html)
 - [Record View Security — Security expression](https://docs.appian.com/suite/help/latest/record-view-security.html#security-expression)

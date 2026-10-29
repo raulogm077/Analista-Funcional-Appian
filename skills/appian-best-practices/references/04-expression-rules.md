@@ -291,3 +291,4 @@ Source: [Functions and Side Effects — Smart services](https://docs.appian.com/
 - Reusing Interfaces (Reusability) — https://docs.appian.com/suite/help/latest/using_interfaces_in_appian.html
 - Parts of an Expression (Comments) — https://docs.appian.com/suite/help/latest/parts-of-an-expression.html
 - Expression Editor (Toolbar actions / Design guidance) — https://docs.appian.com/suite/help/latest/expression-editor.html
+- append() Function — https://docs.appian.com/suite/help/latest/fnc_array_append.html
