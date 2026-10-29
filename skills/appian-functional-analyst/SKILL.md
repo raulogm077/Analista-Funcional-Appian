@@ -58,8 +58,9 @@ Un repositorio git por proyecto, siempre con la misma forma (la de «Qué escrib
 que ya existe los pone al día y no toca nada más. Se trabaja sobre main, sin ramas ni PR, con `git commit` y, si hay
 remoto y la persona ha autorizado subir, `git push` al terminar; `iniciar` no confirma ni sube nada, y el remoto, privado, lo decide el proyecto.
 Como el proyecto es un repositorio propio, no hereda la confianza de Claude Code de la carpeta de arriba: para lanzar
-en él sesiones en segundo plano (`claude --bg`), `proyecto.py iniciar <p> --confiar`, una vez y con el visto bueno de
-la persona. Sin ello no arrancan («Workspace not trusted»).
+en él sesiones en segundo plano (`claude --bg`), `proyecto.py iniciar <p> --confiar`, con el visto bueno de la persona.
+Una vez en cada equipo: la confianza se guarda en la configuración de cada persona, no en el proyecto; quien abre la
+carpeta con Claude Code y la acepta ya la tiene. Sin ella no arrancan («Workspace not trusted»).
 
 Formatos: `funcional-plantilla.md`, `tecnico-plantilla.md` y la cabecera de `decisiones.md` en
 `assets/plantillas/`. `proyecto.py estado <p>` dice en qué punto está el proyecto: empieza siempre por ahí
