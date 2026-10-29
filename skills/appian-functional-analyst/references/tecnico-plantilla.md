@@ -263,7 +263,9 @@ Tabla `Criterio · Cómo se prueba · Con qué` con todos los criterios `HU-nn.m
 escenarios `ESC-nn` como pruebas de extremo a extremo. Cada acción protegida, con un perfil que puede y
 otro que no. «Con qué» dice cómo se comprueba cada criterio, y la issue lo copia junto a su escenario:
 - `Caso de prueba de <regla o interfaz>`, con el objeto entre comillas invertidas: un caso de prueba guardado en él. De
-  una regla comprueba la salida esperada; de una interfaz, que no da error.
+  una regla comprueba la salida esperada; de una interfaz, que no da error. El de una regla se guarda con
+  `EXPECTED_OUTPUT` o `RESULT_ASSERTIONS`: con `NO_ERRORS`, la aserción por defecto del Dev MCP, solo prueba que la regla
+  no falla, no lo que devuelve.
 - `SAIL CLI`: se recorre la pantalla como un usuario. Es del QA de la unidad, no de quien construye.
 - `Playwright`: un criterio que solo se ve en pantalla (un color, la maquetación) y no basta con que lo mire una persona.
   También del QA (`appian-qa`).

@@ -4,7 +4,7 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 1, punto 1.5.
+**Ahora:** paso 1, punto 1.6.
 
 ## 1. En la rama actual, por orden
 
@@ -12,8 +12,6 @@ El reparto entre los pasos 1 y 2 lo propone Claude; Raúl puede mover un punto d
 
 ### Paso 1 · Lecciones que se pueden aplicar ya
 
-- **1.5 Casos NO_ERRORS.** Los casos de prueba de reglas guardados con aserción NO_ERRORS prueban que no falla, no el
-  contenido. Que lo diga la plantilla del técnico §14. [plantilla]
 - **1.6 Estado tras validar el DF.** `version --decision VALIDA` dejaba el funcional y `proyecto.md` en «borrador», y
   `estado` decía «fuentes: —». Comprobarlo con un proyecto ficticio. Si sigue, que el estado refleje la validación, sin
   inferir la entrega. [`proyecto.py`]
