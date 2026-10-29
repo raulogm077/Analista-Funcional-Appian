@@ -252,6 +252,21 @@ Source: https://docs.appian.com/suite/help/latest/Editable_Grid_Component.html#g
 
 Source: https://docs.appian.com/suite/help/latest/sail/ux-grids.html#batch-size · https://docs.appian.com/suite/help/latest/Paging_Grid_Component.html#configuring-grid-paging · https://docs.appian.com/suite/help/latest/Optimizing_Record_Lists_for_Export_to_Excel.html
 
+### 5.7 A list built in the interface: pass it through `todatasubset()`
+- ✅ When the grid's data is a list you built (not record data), pass `todatasubset(local!list, fv!pagingInfo)`
+  and give each column a `sortField` with the map key: the grid pages and sorts it, as in Appian's *Grid with
+  Selection* pattern.
+- ⚠️ *Seen once in a development environment (Oct 2026); not in the documentation.* Passed raw, an **empty**
+  list of maps reached the grid as null and the grid failed to render, even hidden with `showWhen`; through
+  `todatasubset()` it rendered.
+- ⚠️ *Seen once in a development environment (Oct 2026); not in the documentation.* A records grid whose
+  `a!recordData` filters nest two `a!queryLogicalExpression` groups failed with "An error occurred while
+  retrieving data" when **both** groups were empty at once (every filter inside with `applyWhen` false); either
+  one empty alone worked. Include each group only when it has an active filter:
+  `if(<no active filter>, {}, a!queryLogicalExpression(…))`.
+
+Source: [Grid with Selection Pattern](https://docs.appian.com/suite/help/latest/grid-with-selection-pattern.html) · [todatasubset()](https://docs.appian.com/suite/help/latest/fnc_scripting_todatasubset.html)
+
 ---
 
 ## 5A. Charts
@@ -497,6 +512,18 @@ Source: [Translation Set Object](https://docs.appian.com/suite/help/latest/trans
 
 Source: [Translation Set Object — Design best practices / Deployment](https://docs.appian.com/suite/help/latest/translation-set-object.html#deployment) · [Deployment Best Practices — Rules](https://docs.appian.com/suite/help/latest/Application_Deployment_Guidelines.html#rules)
 
+### 10.3 Numbers and amounts follow the viewer's locale
+- ✅ Show amounts with `a!currency(isoCode: …, value: …)`: separators, symbol and its position come from the
+  viewer's locale (the documentation's example: USD 1234.56 is `$1,234.56` in English (US) and `1.234,56 US$`
+  in Spanish).
+- ❌ Don't use `dollar()` or `euro()`, which are deprecated (`dollar()` always writes `$`), and don't build
+  separators by hand with text functions (doc 04 §11, `append()`).
+- ✅ Set the environment's primary locale to the client's and give **test accounts the client's locale**: with
+  English accounts every amount and date shows in English format, and scenarios written in the client's
+  format fail. A user who chose another locale sees theirs; that is the platform's design (§10.2).
+
+Source: [a!currency()](https://docs.appian.com/suite/help/latest/fnc_text_currency.html) · [dollar() — deprecated](https://docs.appian.com/suite/help/latest/fnc_text_dollar.html) · [Admin Console — Internationalization, number formats](https://docs.appian.com/suite/help/latest/admin-internationalization.html#date-and-time-settings)
+
 ---
 
 ## 11. Offline forms (Appian Mobile; ⓥ Appian for Windows from 26.6)
@@ -586,3 +613,5 @@ Official documentation pages used above (`docs.appian.com/suite/help/latest/…`
 - File Upload Component — https://docs.appian.com/suite/help/latest/File_Upload_Component.html · Admin Console — File Upload — https://docs.appian.com/suite/help/latest/admin-file-upload.html
 - Record Action Component — https://docs.appian.com/suite/help/latest/Record_Action_Component.html · Record actions (design) — https://docs.appian.com/suite/help/latest/sail/ux-record-actions.html · Refresh behavior — https://docs.appian.com/suite/help/latest/refresh-behavior-interfaces.html
 - Read-Only Grid (paging) — https://docs.appian.com/suite/help/latest/Paging_Grid_Component.html · Export to Excel limits — https://docs.appian.com/suite/help/latest/Optimizing_Record_Lists_for_Export_to_Excel.html
+- Grid with Selection Pattern — https://docs.appian.com/suite/help/latest/grid-with-selection-pattern.html · todatasubset() — https://docs.appian.com/suite/help/latest/fnc_scripting_todatasubset.html
+- a!currency() — https://docs.appian.com/suite/help/latest/fnc_text_currency.html · dollar() (deprecated) — https://docs.appian.com/suite/help/latest/fnc_text_dollar.html

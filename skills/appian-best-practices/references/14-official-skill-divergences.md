@@ -27,6 +27,7 @@ Follow the "Do" column. The file named is where the official skill says it.
 | Destructive button | Solid + Negative (`button-instructions.md`, `ui-patterns.md`) | Ghost + Negative; at most one Solid button per interface | Ghost + Negative, with a confirmation (doc 02 §4.9) |
 | Saving inside `a!forEach()` | Saves into `local!list[fv!index]` (`sail.md` example) | Components must save into `fv!item` | `fv!item` (doc 02 §4.3) |
 | Rows per page | 10–25 typical (`grid-field-instructions.md`) | 5–10 when the grid shares the page, 50 when it is alone, 25 if unsure | The documentation's figures (doc 02 §5.6) |
+| Formatting amounts | Decimal values display with `dollar()` (`interfaces.md`; also in the examples of `grid-field-instructions.md` and `patterns/kpis.md`) | `dollar()` is deprecated; `a!currency()` localizes the amount for the user's locale | `a!currency()` with the ISO code (doc 02 §10.3) |
 | Wizard step style | Vertical from 4 steps; Minimal for mobile (`wizard-layout-instructions.md`) | Vertical with more than five steps or labels too long for a horizontal milestone; Minimal for one or two steps | The documentation's thresholds (doc 02 §4.6) |
 
 ## 2. Conventions of the official skill this guide narrows
@@ -90,4 +91,5 @@ drop it and tell the user.
 - [Process model object — Process model security](https://docs.appian.com/suite/help/latest/process-model-object.html#process-model-security)
 - [Buttons — Position](https://docs.appian.com/suite/help/latest/sail/ux-buttons.html#position)
 - [Grids — Batch size](https://docs.appian.com/suite/help/latest/sail/ux-grids.html#batch-size)
+- [dollar() — deprecated](https://docs.appian.com/suite/help/latest/fnc_text_dollar.html) · [a!currency()](https://docs.appian.com/suite/help/latest/fnc_text_currency.html)
 - [Wizard layout — Selecting a wizard style](https://docs.appian.com/suite/help/latest/sail/ux-wizard-layout.html#selecting-a-wizard-style)

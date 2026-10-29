@@ -57,6 +57,9 @@ Source: [a!queryRecordByIdentifier() — Usage considerations](https://docs.appi
 ✅ **Know the ceiling of each query function.** `a!queryRecordByIdentifier()` returns **one** base record and up to **250** related records per relationship (automatic batching). `a!queryRecordType()` returns one or several and up to **100** related records per relationship (manual batching with `a!pagingInfo`). Choose based on what you need: `byIdentifier` for single-record detail views; `queryRecordType` for listings.
 Source: [a!queryRecordByIdentifier() versus a!queryRecordType()](https://docs.appian.com/suite/help/latest/fnc_system_a_queryrecordbyidentifier.html)
 
+✅ **Several conditions on the same one-to-many relationship: `"AND_ALL"` when one related record must meet them all.** With `"AND"`, a base record matches when *different* related records each meet one condition (a customer with an active case and another case created this week passes "active and created this week"); `"AND_ALL"` asks a **single** related record to meet every condition.
+Source: [a!queryLogicalExpression() — How AND_ALL works](https://docs.appian.com/suite/help/latest/fnc_system_a_querylogicalexpression.html#how-and_all-works)
+
 ✅ **On UNsynced record types, apply filters and sorts on the base record type, not on related ones.** For complex filtering or sorting on unsynced data, consider a database view instead of resolving it in the query.
 Source: [Query Performance Best Practices — Best practice checklist](https://docs.appian.com/suite/help/latest/query-best-practices.html)
 
