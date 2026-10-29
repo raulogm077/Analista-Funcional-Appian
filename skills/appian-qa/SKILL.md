@@ -7,7 +7,8 @@ description: "QA de una unidad de cambio Appian ya construida, con SAIL CLI: en 
 
 Prueba una unidad construida como la usaría cada rol, con SAIL CLI, y deja cada recorrido como un guion que un script
 repite sin IA. Prueba lo que se pidió, los escenarios, no lo que entendió quien construyó: no carga la skill oficial de
-Appian ni lee el funcional, las issues ni el técnico, salvo el site y las cuentas de su §0 («Entradas»).
+Appian ni lee el funcional, las issues ni el técnico, salvo el site y las cuentas de su §0 y, en una unidad de solo
+consulta, los datos de carga inicial de su §3 («Entradas»).
 
 `<skill>` es la carpeta de este fichero; `<p>`, la del proyecto, y `<U>`, la unidad (`EV-nn`). En Windows, `python` en
 vez de `python3`.
@@ -34,8 +35,8 @@ PATH como `sail`. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
 ## Cuándo, y cuándo no
 
 - **Con la unidad completa**: todas sus issues hechas. Por unidad, no por issue: un escenario cruza pantallas de varias.
-- **En otra sesión**: una nueva, o un subagente que solo recibe los `.feature`, el site y la cuenta de cada rol, nunca el
-  contexto de quien construyó; también otro agente (el flujo F8 está en `.agents/workflows/` de cada proyecto) o una
+- **En otra sesión**: una nueva, o un subagente que solo recibe los `.feature`, el site y la cuenta de cada rol (y, en
+  una unidad de solo consulta, los datos de carga inicial), nunca el contexto de quien construyó; también otro agente (el flujo F8 está en `.agents/workflows/` de cada proyecto) o una
   persona. Basta un modelo pequeño (medido: Sonnet encontró lo mismo que Opus por un tercio del coste).
 - **Solo en desarrollo**, porque crea datos y lanza procesos; en una urgencia, en el entorno de corrección. `qa.py
   repetir` solo repite contra la «URL de desarrollo» o la «URL del entorno de corrección» de técnico §0: si un guion
@@ -45,7 +46,8 @@ PATH como `sail`. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
 
 ## Entradas
 
-- **Los escenarios**: `construccion/<U>/ISS-nn.feature`. Nada más del proyecto, salvo técnico §0 (abajo).
+- **Los escenarios**: `construccion/<U>/ISS-nn.feature`. Nada más del proyecto, salvo técnico §0 (abajo) y, en una
+  unidad de solo consulta, la tabla de carga inicial de técnico §3: los datos que presuponen sus «dado», no el resto.
 - **El entorno y el site**: el host de desarrollo y el nombre del site en su URL (`/suite/sites/<site>`).
 - **Una cuenta local de Appian por rol** de los escenarios, en desarrollo. Si hace falta comprobar que alguien *no* ve
   algo de otro, dos cuentas del mismo rol.
@@ -66,8 +68,8 @@ Cada orden de SAIL CLI y de `qa.py` se espera en primer plano hasta que termina,
 2. **Por escenario**, en el orden de los `.feature`:
    - **Dado**: prepáralo como lo haría un usuario, desde el site y con la cuenta del rol que lo haría (nunca por el Dev
      MCP ni con SQL). Lo que teclees lleva `{pasada}` (abajo), para que no se confunda con lo de otra vez.
-     En una unidad de solo consulta nadie lo prepara desde el site: el «dado» son los datos de prueba de técnico §3
-     (carga inicial), que lees antes de escribir los guiones; si el estado real es otro, dilo antes de dar un fallo.
+     En una unidad de solo consulta nadie lo prepara desde el site: el «dado» son los datos de carga inicial. Si falta
+     uno, el guion no pasa: dilo en la entrega, con lo que falta preparar, y el escenario queda sin medir.
    - **Cuando**: recórrelo con la cuenta de su rol, `sail --data-dir <su carpeta> load|navigate|interact <site> …`.
      Para explorar, la salida normal, que es más corta; para comprobar, `--json`.
    - **Entonces**: compruébalo en el `--json`. Tras enviar un formulario, el `--json` trae `completed` y la página de

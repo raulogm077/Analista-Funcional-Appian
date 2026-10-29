@@ -73,7 +73,7 @@ class EstadoValidado(unittest.TestCase):
         self.assertEqual(c, 0, out)
         c, out = fixture.corre(S / "proyecto.py", "estado", p)
         self.assertEqual(c, 0, out)
-        self.assertRegex(out, r"EV-01 · .* · Aprobada · fuentes: todas las del análisis · versión: 1\.1, al aprobarla")
+        self.assertRegex(out, r"EV-01 · .* · Aprobada · fuentes: todas las del análisis inicial · versión: 1\.1, al aprobarla")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # F1 · Aplicación nueva
 
-**Cuándo.** Hay reuniones, correos, notas o el DF del cliente para una aplicación que todavía no existe. También cuando las fuentes mejoran una aplicación que existe pero no se puede leer (sin acceso a su entorno, no hay `as-is/` ni F3): el funcional describe la aplicación entera, lo de hoy y las mejoras, cada cosa con la evidencia de sus fuentes, y el checkpoint lo dice, porque construir aparte o dar acceso para F6 lo decide el cliente (un PC).
+**Cuándo.** Hay reuniones, correos, notas o el DF del cliente para una aplicación que todavía no existe. También permite iniciar el análisis de una aplicación existente sin acceso a ella ni análisis base: el funcional describe lo que respaldan las fuentes, diferenciando lo actual y las mejoras, y el checkpoint recoge el alcance y lo que no se conoce. Cómo continuar la construcción o conseguir acceso para F6 se acuerda con el cliente; no se decide reconstruir por no poder leerla. Si ya hay un análisis base, se sigue por F2 o F3.
 **Empieza.** El analista, con `appian-functional-analyst`. **Termina en.** El DF validado por el cliente, el técnico y la unidad `EV-01` aprobada, con sus issues de construcción (`construccion/EV-01/`); sigue F8.
 
 | # | Paso | Quién | Con qué | Detalle |

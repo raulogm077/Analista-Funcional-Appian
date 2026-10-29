@@ -4,7 +4,8 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 2, punto 2.1: Claude trae su recomendación.
+**Ahora:** paso 2, punto 2.1: Claude trae su recomendación, cuando Codex dé por revisados los ajustes del paso 1
+(`COMMITREV`).
 
 ## 1. En la rama actual, por orden
 
@@ -69,7 +70,8 @@ Claude trae una recomendación por punto; se aplica lo que Raúl decida.
   atomicidad y concurrencia. Solo las que necesite la entrega; no crear cuentas ni escribir datos por esta lista. El
   contraste automático de texto sobre fondo compuesto, si un caso visible lo pide. [pruebas]
 - **LEEME completo y deriva interna** de una aplicación real: siguen sin medir. La extracción masiva sigue detenida y
-  `getAgent`, aparcado tras el aviso a Appian.
+  `getAgent`, aparcado tras el aviso a Appian. Al reanudarla, decidir si reconoce el parámetro `object` de
+  `getObjectDependents` o se queda con el grafo actual (límite en `evaluaciones.md`).
 - **Diagramas.** Reducir los 30/38 avisos residuales solo con una mejora medida, sin relajar detectores.
 - **URL `/help/26.6/`** de `data-fabric.md` y `agents/data-modeler.md`: revisarlas cuando cambie la versión de Appian
   del entorno.

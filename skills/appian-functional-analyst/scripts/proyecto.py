@@ -502,7 +502,7 @@ def unidades(ctx):
         vs = ", ".join(f"{v[0]}.{v[1]}" for v in ctx.versiones_de(u.id))
         obj = ctx.cambian(u.id) if not u.urgente else ctx.objetos_urg(u.id)
         if u.id == ctx.sin_id and not fu:   # la construcción inicial no tiene informes: es todo el análisis
-            fu = ["todas las del análisis"]
+            fu = ["todas las del análisis inicial"]
             vs = vs or (f"{u.aprobada_en[0]}.{u.aprobada_en[1]}, al aprobarla" if u.aprobada_en else "")
         print(f"  {u.id} · {u.titulo} · {u.estado} · fuentes: {', '.join(fu) or '—'} · versión: {vs or '—'}"
               f" · objetos: {', '.join(obj) or '—'}")

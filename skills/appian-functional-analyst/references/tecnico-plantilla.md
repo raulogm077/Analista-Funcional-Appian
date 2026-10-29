@@ -141,10 +141,11 @@ nuevo), también el valor que toman los registros que ya hay en un estado que la
 propuesta de refactorización es obligatoria.
 
 ### 4. Grupos y seguridad
-- Tabla `Perfil · Grupo · Constante`, con todos los perfiles del funcional. La aplicación nace con `<prefijo> Users` y
-  `<prefijo> Administrators`, que Appian pone en la seguridad por defecto de sus objetos
+- Tabla `Perfil · Grupo · Constante`, con todos los perfiles del funcional. Si la aplicación se crea generando sus grupos
+  y carpetas (es una opción), Appian crea `<prefijo> Users` y `<prefijo> Administrators` y los pone en la seguridad por
+  defecto de sus objetos
   ([creating-applications.html#generated-groups-and-folders](https://docs.appian.com/suite/help/latest/creating-applications.html#generated-groups-and-folders)):
-  la tabla dice a qué perfil corresponde cada uno o que no es de ninguno.
+  la tabla dice a qué perfil corresponde cada uno de los que existan o que no es de ninguno.
 - Matriz de qué ve y qué hace cada grupo (registros, campos, vistas, acciones). Es la seguridad de los datos y de los
   objetos; lo que ve cada perfil dentro de una pantalla (un filtro, una columna, un botón) va en el apartado de esa
   pantalla (§7), nombrando su interfaz, y lleva un criterio en su historia del funcional, con su escenario y su
@@ -267,9 +268,9 @@ Tabla `Criterio · Cómo se prueba · Con qué` con todos los criterios `HU-nn.m
 escenarios `ESC-nn` como pruebas de extremo a extremo. Cada acción protegida, con un perfil que puede y
 otro que no. «Con qué» dice cómo se comprueba cada criterio, y la issue lo copia junto a su escenario:
 - `Caso de prueba de <regla o interfaz>`, con el objeto entre comillas invertidas: un caso de prueba guardado en él. De
-  una regla comprueba la salida esperada; de una interfaz, que no da error. El de una regla se guarda con
-  `EXPECTED_OUTPUT` o `RESULT_ASSERTIONS`: con `NO_ERRORS`, la aserción por defecto del Dev MCP, solo prueba que la regla
-  no falla, no lo que devuelve.
+  una regla comprueba la salida esperada; de una interfaz, que no da error. `NO_ERRORS`, la aserción por defecto del
+  Dev MCP, solo prueba que no falla: un criterio sobre lo que devuelve la regla lleva `EXPECTED_OUTPUT` o
+  `RESULT_ASSERTIONS`.
 - `SAIL CLI`: se recorre la pantalla como un usuario. Es del QA de la unidad, no de quien construye.
 - `Playwright`: un criterio que solo se ve en pantalla (un color, la maquetación) y no basta con que lo mire una persona.
   También del QA (`appian-qa`).
@@ -278,9 +279,9 @@ Cuando un criterio depende de una regla, «Cómo se prueba» fija la entrada y l
 quien construye las copia al caso de prueba, sin decidir el resultado esperado. La lógica que depende de la fecha de
 hoy lleva una fecha fija en el criterio y se prueba así (el QA de pantalla no puede fijar la fecha); su efecto (no se
 guarda, no arranca el proceso, sale el mensaje) se prueba en su capa.
-El caso de una regla que consulta registros depende de los datos de desarrollo: dice cuáles presupone y comprueba lo
-que no cambia si otra prueba añade registros (que esté lo esperado, no cuántos hay). Si falla por un dato ajeno, se
-mira el dato antes de reabrir la issue.
+El caso de una regla que consulta registros depende de los datos de desarrollo: dice cuáles presupone. Si el criterio
+pide un recuento, se cuenta sobre esos datos; si no, la aserción no depende de registros ajenos (que esté lo esperado).
+Si falla por un dato ajeno, se mira el dato antes de reabrir la issue.
 
 ```markdown
 | Criterio | Cómo se prueba | Con qué |
