@@ -1091,7 +1091,8 @@ def celdavacia(texto):
 
 
 def aplica_dependencias(plan):
-    """Las anotaciones vigentes sustituyen la lista exacta; al cambiar el encargo se conserva la anotación caducada."""
+    """Las anotaciones vigentes sustituyen la lista exacta. Caducan si desaparece una de sus issues o cambia la lista
+    calculada, que es lo que la persona corrigió; otro cambio del encargo no las caduca. La caducada se conserva."""
     ordena(plan.issues)
     por_id = {i.id: i for i in plan.issues}
     antes = {i.id: set(i.depende) for i in plan.issues}
@@ -1101,13 +1102,9 @@ def aplica_dependencias(plan):
         if x["estado"] != "Vigente":
             continue
         i = por_id.get(x["issue"])
-        causa = ("la issue ya no existe" if not i else "cambió su encargo" if i.version != x["version"] else
-                 "cambiaron las dependencias calculadas" if set(x["automaticas"]) != antes[i.id] else "")
-        if not causa:
-            for iid, version in x["versiones"].items():
-                if iid not in por_id or por_id[iid].version != version:
-                    causa = f"cambió o desapareció {iid}"
-                    break
+        causa = ("la issue ya no existe" if not i else
+                 "cambiaron las dependencias calculadas" if set(x["automaticas"]) != antes[i.id] else
+                 next((f"desapareció {iid}" for iid in x["versiones"] if iid not in por_id), ""))
         if causa:
             x["estado"] = "Caducada: " + causa
             continue

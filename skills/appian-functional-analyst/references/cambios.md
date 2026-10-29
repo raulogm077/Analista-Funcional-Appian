@@ -168,10 +168,11 @@ Se rechazan referencias inexistentes, a la propia issue y ciclos en el grafo com
 Con `--desatendida` no se admite; el motivo debe explicar por qué se puede construir en ese orden.
 
 La tabla «Correcciones de dependencias» de `construccion/<U>/indice.md` conserva la lista, motivo, autor, fecha y
-versiones de la issue y de sus dependencias originales y corregidas. Si cambia cualquiera de esos encargos, desaparece
-una issue relacionada o cambia la lista calculada, la anotación queda **caducada**, se avisa y vuelve el cálculo
-automático. No se reactiva sola aunque el análisis vuelva al texto anterior: una persona revisa el nuevo encargo y
-registra otra decisión. Las anotaciones caducadas, retiradas y sustituidas quedan visibles como rastro.
+versiones de la issue y de sus dependencias originales y corregidas. Si desaparece una de esas issues o cambia la lista
+calculada, que es lo que la persona corrigió, la anotación queda **caducada**, se avisa y vuelve el cálculo automático;
+otro cambio del encargo (una DT nueva que la cita) no la caduca. No se reactiva sola aunque la lista calculada vuelva a
+ser la de antes: una persona la revisa y registra otra decisión. Las anotaciones caducadas, retiradas y
+sustituidas quedan visibles como rastro.
 
 **Retomar una issue por subtareas.** Si sus objetos se reparten en varios pasos de §13, la issue muestra una
 subtarea por paso. Conserva una sola reserva, propietario, conjunto de objetos y verificación: no son issues nuevas

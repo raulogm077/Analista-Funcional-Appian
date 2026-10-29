@@ -236,6 +236,9 @@ constantes, sistemas conectados) dice «Base» y se construye lo primero. En un 
 acción «Nueva solicitud»` o `AUT Solicitud — campos importe y fecha`; otro objeto con su parte va en otra fila.
 
 El site y sus páginas van en la issue de la primera pantalla que publican.
+La vista de resumen de un record type y su interfaz van en §13 antes que la interfaz que enlaza a sus registros
+(`a!recordLink`): `createInterface` rechaza el enlace sin la vista (BP 14 §3), y de dos issues que comparten un objeto
+espera la que va después en §13.
 
 ```markdown
 | Paso | Objeto | Tipo | Situación | Sustituye a | Cambio | Para |

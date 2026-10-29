@@ -63,15 +63,19 @@ class Dependencias(unittest.TestCase):
             iss.corrige_dependencias(self.p, "EV-01", "ISS-03", [], None, "Ana", retirar=True)
         self.assertEqual(indice.read_bytes(), antes)
 
-    def test_cambio_aguas_arriba_caduca_con_aviso_y_rastro(self):
+    def calculadas_distintas(self, plan):
+        """Cambia en memoria lo que da la lista calculada de ISS-02 (la Base deja de ser común y nadie nombra nada)."""
+        plan.issues[0].comun = False
+        plan.issues[1].nombra.clear()
+        plan.issues[0].nombra.clear()
+
+    def test_cambio_de_las_calculadas_caduca_con_aviso_y_rastro(self):
         self.preparada()
         _, _, plan, _, _ = iss.corrige_dependencias(self.p, "EV-01", "ISS-02", [], "Base disponible", "Ana")
-        plan.issues[0].version = "encargo-nuevo"
+        self.calculadas_distintas(plan)
         iss.aplica_dependencias(plan)
-        self.assertEqual(plan.issues[1].depende, ["ISS-01"])
-        self.assertNotIn("ISS-01", plan.issues[1].paralelo)
-        self.assertTrue(any("ISS-01" in a and "caducada" in a for a in plan.avisos))
-        self.assertTrue(plan.dependencias[0]["estado"].startswith("Caducada"))
+        self.assertTrue(any("ISS-02" in a and "caducada" in a for a in plan.avisos))
+        self.assertIn("cambiaron las dependencias calculadas", plan.dependencias[0]["estado"])
         plan.dependencias.append(dict(plan.dependencias[0]))
         iss.aplica_dependencias(plan)
         self.assertEqual(sum("corrección de dependencias caducada" in a for a in plan.avisos), 1)
@@ -79,6 +83,7 @@ class Dependencias(unittest.TestCase):
         iss.escribe(plan, self.p)
         recargado = self.carga()
         self.assertEqual(recargado.issues[1].depende, ["ISS-01"])
+        self.assertNotIn("ISS-01", recargado.issues[1].paralelo)
         self.assertEqual(recargado.dependencias[0]["motivo"], "Base disponible")
         code, out = fixture.corre(fixture.S / "indice.py", "issues", self.p, "EV-01", "ISS-02")
         self.assertEqual(code, 0, out)
@@ -88,18 +93,17 @@ class Dependencias(unittest.TestCase):
         self.assertIn("antes: Caducada", revisado.dependencias[0]["estado"])
         self.assertEqual(revisado.dependencias[1]["estado"], "Vigente")
 
-    def test_cambio_propio_y_nueva_relacion_automatica_caducan(self):
+    def test_otro_cambio_del_encargo_no_caduca(self):
+        """Caso B: una DT nueva que citaba la issue cambió su encargo y caducó la corrección; volvía el orden calculado,
+        que era el equivocado. Si la lista calculada no cambia, la corrección sigue."""
         self.preparada()
         _, _, plan, _, _ = iss.corrige_dependencias(self.p, "EV-01", "ISS-02", [], "Base disponible", "Ana")
-        plan.issues[1].version = "encargo-nuevo"
+        plan.issues[0].version = "encargo-nuevo"
+        plan.issues[1].version = "otro-encargo"
         iss.aplica_dependencias(plan)
-        self.assertIn("cambió su encargo", plan.dependencias[0]["estado"])
-        plan = self.carga()
-        plan.issues[0].comun = False
-        plan.issues[1].nombra.clear()
-        plan.issues[0].nombra.clear()
-        iss.aplica_dependencias(plan)
-        self.assertIn("cambiaron las dependencias calculadas", plan.dependencias[0]["estado"])
+        self.assertEqual(plan.dependencias[0]["estado"], "Vigente")
+        self.assertEqual(plan.issues[1].depende, [])
+        self.assertFalse(any("caducada" in a for a in plan.avisos))
 
     def test_reversion_y_sustitucion_conservan_rastro(self):
         self.preparada()
