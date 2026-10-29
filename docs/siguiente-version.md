@@ -4,7 +4,7 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 1, punto 1.9.
+**Ahora:** paso 1, punto 1.10.
 
 ## 1. En la rama actual, por orden
 
@@ -12,8 +12,6 @@ El reparto entre los pasos 1 y 2 lo propone Claude; Raúl puede mover un punto d
 
 ### Paso 1 · Lecciones que se pueden aplicar ya
 
-- **1.9 Registrar una decisión que cambia el orden.** El orden es DT, regenerar y después la corrección de la issue que
-  depende. Si no, se forma un ciclo. La issue dice de cuál depende y por qué. [`cambios.md`]
 - **1.10 `fila` y `sin_fila`** aceptan una sola fila por paso, y `show` no tiene ejemplo. [`appian-qa`]
 - **1.11 Datos que presupone cada prueba.** Cada prueba dice qué datos presupone y cómo sigue con el estado real: una
   tipología dejada para el QA rompió una regla. En una aplicación de solo consulta, los «dado» salen de los datos de

@@ -166,6 +166,10 @@ Si una dependencia calculada sobra o falta, una persona puede fijar la **lista e
 están construidos ni cierra ninguna issue: cambia el orden y recalcula cuáles pueden ir en paralelo y cuál sigue.
 Se rechazan referencias inexistentes, a la propia issue y ciclos en el grafo completo, también al retirar una corrección.
 Con `--desatendida` no se admite; el motivo debe explicar por qué se puede construir en ese orden.
+Si la corrección sale de una decisión técnica nueva, el orden es: la DT en técnico §2, regenerar las issues y, al final,
+las correcciones. Si dos issues cambian de orden entre sí, primero la que deja de depender de la otra y después la que
+pasa a depender: al revés, el grafo intermedio tiene un ciclo y se rechaza. El motivo sale en la cabecera de la issue,
+junto a «Depende de».
 
 La tabla «Correcciones de dependencias» de `construccion/<U>/indice.md` conserva la lista, motivo, autor, fecha y
 versiones de la issue y de sus dependencias originales y corregidas. Si desaparece una de esas issues o cambia la lista

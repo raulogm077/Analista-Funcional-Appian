@@ -19,7 +19,7 @@ class Dependencias(unittest.TestCase):
         _, _, plan, i, _ = iss.corrige_dependencias(self.p, "EV-01", "ISS-02", [], "Objeto externo ya preparado", "Ana")
         self.assertEqual(i.depende, [])
         self.assertIn("ISS-01", i.paralelo)
-        self.assertIn("corregidas por una persona", i.texto)
+        self.assertIn("corregidas por una persona: Objeto externo ya preparado (ver indice.md)", i.texto)
         plan.reservas["ISS-01"] = "Otra persona"
         self.assertEqual(iss.elige(plan, self.p).id, "ISS-02")
         iss.escribe(plan, self.p)

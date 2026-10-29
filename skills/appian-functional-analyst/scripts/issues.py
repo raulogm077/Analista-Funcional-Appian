@@ -1096,7 +1096,7 @@ def aplica_dependencias(plan):
     ordena(plan.issues)
     por_id = {i.id: i for i in plan.issues}
     antes = {i.id: set(i.depende) for i in plan.issues}
-    corregidas = set()
+    corregidas = {}
     plan.avisos = [a for a in plan.avisos if "corrección de dependencias" not in a]
     for x in plan.dependencias:
         if x["estado"] != "Vigente":
@@ -1120,11 +1120,11 @@ def aplica_dependencias(plan):
         if set(x["versiones"]) != set(x["automaticas"]) | set(x["depende"]):
             raise NoSePuede(f"{i.id}: faltan las versiones relacionadas de su corrección")
         antes[i.id] = set(x["depende"])
-        corregidas.add(i.id)
+        corregidas[i.id] = " ".join(x["motivo"].split()).rstrip(".")
     ordena_grafo(plan.issues, antes)
     avisadas = set()
     for x in plan.dependencias:
-        if x["estado"].startswith("Caducada") and x["issue"] not in corregidas | avisadas:
+        if x["estado"].startswith("Caducada") and x["issue"] not in set(corregidas) | avisadas:
             detalle = x["estado"].replace("Caducada", "caducada", 1)
             plan.avisos.append(f"{x['issue']}: corrección de dependencias {detalle}; se usa el cálculo automático")
             avisadas.add(x["issue"])
@@ -1134,7 +1134,7 @@ def aplica_dependencias(plan):
         if plan.app:
             cab += f" · Aplicación `{plan.app}`"
         if i.id in corregidas:
-            cab += " · Dependencias corregidas por una persona (ver indice.md)"
+            cab += f" · Dependencias corregidas por una persona: {corregidas[i.id]} (ver indice.md)"
         i.texto = re.sub(r"^Requisitos:.*$", lambda _: cab, i.texto, flags=re.M)
 
 
