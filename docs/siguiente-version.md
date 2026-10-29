@@ -101,12 +101,5 @@ Cada punto dice qué falta y a quién toca. Esta lista no autoriza publicar, des
 
 ## Operación y entorno
 
-- **Confianza de la carpeta para sesiones en paralelo.** `proyecto.py iniciar` hace `git init`, y un repositorio
-  anidado no hereda la confianza de la carpeta padre, así que `claude --bg` no arranca («Workspace not trusted»).
-  - Fuera del diálogo interactivo, la única vía documentada es escribir
-    `projects["<raíz>"].hasTrustDialogAccepted = true` en `~/.claude.json`.
-  - Los subagentes no la necesitan: trabajan dentro de la sesión.
-  - Raúl quiere darla una vez al crear el proyecto. Falta su decisión entre las opciones: abrir la carpeta una vez,
-    que la escriba `proyecto.py iniciar` con su visto bueno, o no anidar el repositorio.
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).

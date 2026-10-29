@@ -7,6 +7,10 @@
                                      .agents/workflows/
   proyecto.py iniciar  <carpeta>     en un proyecto que ya existe: pone al día AGENTS.md y los flujos con esta versión
                                      del plugin y añade lo que falte de lo anterior
+  proyecto.py iniciar  <carpeta> --confiar
+                                     además, la deja como de confianza para Claude Code (~/.claude.json), para que las
+                                     sesiones en segundo plano (claude --bg) arranquen sin pedirlo; se da una vez, con
+                                     el visto bueno de la persona, y solo si no trae .claude/settings*.json ni .mcp.json
   proyecto.py estado   <carpeta>     versión, cliente y marca, DF enviado, fuentes sin procesar, pendientes, pantallas;
                                      y avisa de lo que no está confirmado o subido, de lo que hay en el remoto sin traer,
                                      de si AGENTS.md o los flujos son de otra versión del plugin y de la unidad
@@ -41,6 +45,7 @@ envía, nunca en una sesión desatendida.
 import argparse
 import datetime
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -120,6 +125,37 @@ def iniciar(a):
             print(f"= {destino} (ya existe, no se toca)")
     poner_al_dia(raiz)
     repositorio(raiz)
+    if a.confiar:
+        confiar(raiz)
+
+
+def confiar(raiz):
+    """La carpeta del proyecto, de confianza para Claude Code. Es un repositorio git propio y no hereda la de la carpeta
+    de arriba, así que una sesión en segundo plano no arrancaba («Workspace not trusted»). La vía que documenta Claude
+    Code fuera de su diálogo es `projects["<raíz>"].hasTrustDialogAccepted` en ~/.claude.json. Solo si la carpeta no
+    trae nada que la confianza active sin revisarlo (sus ajustes de Claude Code, sus servidores MCP): eso lo enseña el
+    diálogo."""
+    activa = [r for r in (".claude/settings.json", ".claude/settings.local.json", ".mcp.json") if (raiz / r).is_file()]
+    if activa:
+        print(f"· No se marca de confianza: trae {', '.join(activa)}, que se revisan en el diálogo de Claude Code. "
+              "Abre la carpeta una vez con Claude Code y acéptalo")
+        return
+    cfg = pathlib.Path(os.environ.get("CLAUDE_CONFIG_DIR") or pathlib.Path.home()) / ".claude.json"
+    try:
+        datos = json.loads(cfg.read_text(encoding="utf-8")) if cfg.is_file() else {}
+        clave = raiz.resolve().as_posix()
+        datos.setdefault("projects", {}).setdefault(clave, {})["hasTrustDialogAccepted"] = True
+        provisional = cfg.with_name(cfg.name + ".proyecto-py")
+        with open(provisional, "w", encoding="utf-8", newline="\n") as f:   # como lo guarda Claude Code
+            f.write(json.dumps(datos, ensure_ascii=False, indent=2))
+        os.replace(provisional, cfg)      # entero o nada: Claude Code también escribe este fichero
+        hecho = json.loads(cfg.read_text(encoding="utf-8"))["projects"][clave].get("hasTrustDialogAccepted") is True
+    except (OSError, ValueError, KeyError, AttributeError) as e:
+        print(f"· No se pudo marcar de confianza en {cfg} ({e}): abre la carpeta una vez con Claude Code y acéptalo")
+        return
+    print(f"+ De confianza para Claude Code: {clave}" if hecho else f"· {cfg} no la guardó: repite con --confiar")
+    if hecho:
+        print("  Si una sesión de Claude Code abierta la pisa al guardar su configuración, repite con --confiar")
 
 
 def escribe(ruta, texto):
@@ -1193,6 +1229,9 @@ def main():
     s = sub.add_parser("iniciar"); s.add_argument("carpeta")
     s.add_argument("--nombre", help="el nombre del proyecto; hace falta solo la primera vez")
     s.add_argument("--cliente"); s.add_argument("--direccion"); s.add_argument("--tipo")
+    s.add_argument("--confiar", action="store_true",
+                   help="la deja como de confianza para Claude Code, con el visto bueno de la persona, para que las "
+                        "sesiones en segundo plano arranquen sin pedirlo")
     s.set_defaults(f=iniciar)
     s = sub.add_parser("estado"); s.add_argument("carpeta"); s.set_defaults(f=estado)
     s = sub.add_parser("copia"); s.add_argument("carpeta"); s.set_defaults(f=copia)

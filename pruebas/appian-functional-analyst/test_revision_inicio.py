@@ -72,6 +72,35 @@ class RevisionInicio(unittest.TestCase):
         self.assertNotIn("Localizador:", self.estado())
         self.assertEqual(antes, {f.name: f.read_bytes() for f in (self.p / "analisis").glob("*.md")})
 
+    def test_confiar_marca_la_carpeta_una_vez_sin_tocar_lo_demas(self):
+        """L7 del ensayo Informes: con --confiar, iniciar deja la raíz del proyecto de confianza en la configuración de
+        Claude Code (CLAUDE_CONFIG_DIR, aquí una carpeta temporal), sin tocar el resto del fichero; sin --confiar no la
+        toca, y si la carpeta trae ajustes de Claude Code o servidores MCP, no la marca: los enseña el diálogo."""
+        cfg_dir = self.base / "config de claude"
+        cfg_dir.mkdir()
+        cfg = cfg_dir / ".claude.json"
+        previo = {"numStartups": 2, "projects": {"C:/otro": {"hasTrustDialogAccepted": False, "allowedTools": []}}}
+        cfg.write_text(json.dumps(previo, indent=2), encoding="utf-8")
+        env = dict(os.environ, PYTHONUTF8="1", CLAUDE_CONFIG_DIR=str(cfg_dir))
+        corre = lambda p, *mas: subprocess.run([sys.executable, str(SCRIPT), "iniciar", str(p), *mas],  # noqa: E731
+                                               capture_output=True, text=True, encoding="utf-8", env=env, timeout=30)
+        nuevo = self.base / "Proyecto con confianza"
+        r = corre(nuevo, "--nombre", "Proyecto ficticio")
+        self.assertEqual(json.loads(cfg.read_text(encoding="utf-8")), previo, r.stdout)       # sin --confiar
+        r = corre(nuevo, "--confiar")
+        datos = json.loads(cfg.read_text(encoding="utf-8"))
+        self.assertIs(datos["projects"][nuevo.resolve().as_posix()]["hasTrustDialogAccepted"], True, r.stdout + r.stderr)
+        self.assertEqual(datos["numStartups"], 2)
+        self.assertEqual(datos["projects"]["C:/otro"], previo["projects"]["C:/otro"])
+        self.assertIn("De confianza para Claude Code", r.stdout)
+        self.assertFalse(list(cfg_dir.glob("*.proyecto-py")))
+        con_ajustes = self.base / "Proyecto con ajustes"
+        (con_ajustes / ".claude").mkdir(parents=True)
+        (con_ajustes / ".claude" / "settings.json").write_text('{"permissions": {"allow": ["Bash"]}}', encoding="utf-8")
+        r = corre(con_ajustes, "--nombre", "Otro ficticio", "--confiar")
+        self.assertNotIn(con_ajustes.resolve().as_posix(), json.loads(cfg.read_text(encoding="utf-8"))["projects"])
+        self.assertIn("No se marca de confianza", r.stdout)
+
     def test_localizador_ruta_retirada_se_rehace_con_el_plugin_que_se_ejecuta(self):
         """L14 del ensayo Informes: apuntaba a la copia temporal de otra sesión. `estado` la rehace con la suya y lo dice."""
         self.localizador({"ruta": str(self.base / "plugin retirado")})
