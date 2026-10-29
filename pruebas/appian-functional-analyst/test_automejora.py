@@ -189,6 +189,35 @@ class Automejora(unittest.TestCase):
         for otra in ("DT-01", "DT-02", "DT-03"):
             self.assertNotIn(otra, linea)
 
+    def test_confiar_no_pisa_lo_que_guarda_otra_sesion(self):
+        """Revisión de Codex (L7): si otra sesión de Claude Code guarda su configuración entre la lectura y la sustitución,
+        se vuelve a leer, y no se pierde lo suyo."""
+        cfg_dir = self.root / "config"
+        cfg_dir.mkdir()
+        cfg = cfg_dir / ".claude.json"
+        cfg.write_text(json.dumps({"numStartups": 2, "projects": {"otro": {"hasTrustDialogAccepted": True}}}),
+                       encoding="utf-8")
+        raiz = self.root / "proyecto nuevo"
+        raiz.mkdir()
+        real, llamadas = proyecto.lee_config, []
+
+        def con_otra_sesion(c):
+            llamadas.append(c)
+            if len(llamadas) == 2:      # justo antes de sustituir, otra sesión guarda la suya
+                c.write_text(json.dumps({"numStartups": 3, "projects": {"otro": {"hasTrustDialogAccepted": True},
+                                                                         "paralelo": {"hasTrustDialogAccepted": True}}}),
+                             encoding="utf-8")
+            return real(c)
+        with unittest.mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(cfg_dir)}), \
+                unittest.mock.patch.object(proyecto, "lee_config", con_otra_sesion):
+            out = self.captura(proyecto.confiar, raiz)
+        datos = json.loads(cfg.read_text(encoding="utf-8"))
+        self.assertEqual(datos["numStartups"], 3)
+        self.assertIn("paralelo", datos["projects"])
+        self.assertIs(datos["projects"][raiz.resolve().as_posix()]["hasTrustDialogAccepted"], True)
+        self.assertIn("De confianza para Claude Code", out)
+        self.assertEqual(list(cfg_dir.iterdir()), [cfg])          # sin provisionales
+
     def test_anexo_preserva_notas_y_consulta(self):
         self.copia()
         f = self.p / "analisis" / "funcional.md"

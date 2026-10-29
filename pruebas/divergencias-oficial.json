@@ -1,12 +1,11 @@
 [
   {"tema": "One query or several", "fichero": "references/expressions.md", "marcador": "derive subsets \\(open vs closed\\) from one result with `where\\(\\)`"},
   {"tema": "`choose()`", "fichero": "references/function-reference.md", "marcador": "`choose\\(\\)` - Use `a!match\\(\\)` instead"},
-  {"tema": "Today's date", "fichero": "references/date-time-patterns.md", "marcador": "startDate: todate\\(now\\(\\)\\)"},
   {"tema": "Audit field names", "fichero": "references/data-modeling.md", "marcador": "createdAt \\(DATETIME, required\\)"},
-  {"tema": "Record list", "fichero": "references/appian-workflow-patterns.md", "marcador": "Record List is not an interface type"},
+  {"tema": "Record list", "fichero": "references/appian-workflow-patterns.md", "marcador": "a native\\s+Record List site page is rare"},
   {"tema": "Where rules, interfaces and constants get security", "fichero": "references/security.md", "marcador": "rely entirely on the application's default security role map"},
   {"tema": "Record action security", "fichero": "references/security.md", "marcador": "Record action security\\*\\* — expressions controlling who can execute record actions", "sin": "[Ss]ecurity rules?[^.\\n]{0,60}\\bactions?\\b|\\bactions?\\b[^.\\n]{0,60}[Ss]ecurity rules?"},
-  {"tema": "Destructive button", "fichero": "references/components/button-instructions.md", "marcador": "Danger/destructive button"},
+  {"tema": "Destructive button", "fichero": "references/components/button-instructions.md", "marcador": "Danger/destructive button \\| .style: \"SOLID\". \\+ .color: \"NEGATIVE\"."},
   {"tema": "Saving inside `a!forEach()`", "fichero": "references/sail.md", "marcador": "a!save\\(local!lineItems\\[fv!index\\]"},
   {"tema": "Rows per page", "fichero": "references/components/grid-field-instructions.md", "marcador": "10-25 is typical"},
   {"tema": "Wizard step style", "fichero": "references/layouts/wizard-layout-instructions.md", "marcador": "style: \"DOT_VERTICAL\",\\s+// 4\\+ steps"}

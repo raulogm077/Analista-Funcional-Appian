@@ -141,21 +141,37 @@ def confiar(raiz):
               "Abre la carpeta una vez con Claude Code y acéptalo")
         return
     cfg = pathlib.Path(os.environ.get("CLAUDE_CONFIG_DIR") or pathlib.Path.home()) / ".claude.json"
+    clave = raiz.resolve().as_posix()
+    provisional = cfg.with_name(f"{cfg.name}.proyecto-py-{os.getpid()}")   # propio: dos iniciar a la vez no lo comparten
+    hecho = False
     try:
-        datos = json.loads(cfg.read_text(encoding="utf-8")) if cfg.is_file() else {}
-        clave = raiz.resolve().as_posix()
-        datos.setdefault("projects", {}).setdefault(clave, {})["hasTrustDialogAccepted"] = True
-        provisional = cfg.with_name(cfg.name + ".proyecto-py")
-        with open(provisional, "w", encoding="utf-8", newline="\n") as f:   # como lo guarda Claude Code
-            f.write(json.dumps(datos, ensure_ascii=False, indent=2))
-        os.replace(provisional, cfg)      # entero o nada: Claude Code también escribe este fichero
-        hecho = json.loads(cfg.read_text(encoding="utf-8"))["projects"][clave].get("hasTrustDialogAccepted") is True
+        # Claude Code también escribe este fichero, entero: si cambia entre leerlo y sustituirlo, se vuelve a leer, para no
+        # borrar lo que guardó otra sesión. Queda el instante entre la última lectura y la sustitución
+        for _ in range(5):
+            antes = lee_config(cfg)
+            datos = json.loads(antes) if antes else {}
+            datos.setdefault("projects", {}).setdefault(clave, {})["hasTrustDialogAccepted"] = True
+            with open(provisional, "w", encoding="utf-8", newline="\n") as f:   # como lo guarda Claude Code
+                f.write(json.dumps(datos, ensure_ascii=False, indent=2))
+            if lee_config(cfg) == antes:
+                os.replace(provisional, cfg)      # entero o nada
+                hecho = json.loads(lee_config(cfg))["projects"][clave].get("hasTrustDialogAccepted") is True
+                break
     except (OSError, ValueError, KeyError, AttributeError) as e:
         print(f"· No se pudo marcar de confianza en {cfg} ({e}): abre la carpeta una vez con Claude Code y acéptalo")
         return
-    print(f"+ De confianza para Claude Code: {clave}" if hecho else f"· {cfg} no la guardó: repite con --confiar")
+    finally:
+        if provisional.exists():
+            provisional.unlink()
+    print(f"+ De confianza para Claude Code: {clave}" if hecho else
+          f"· {cfg} cambiaba mientras se escribía: repite con --confiar")
     if hecho:
         print("  Si una sesión de Claude Code abierta la pisa al guardar su configuración, repite con --confiar")
+
+
+def lee_config(cfg):
+    """El texto de la configuración de Claude Code, o "" si no existe."""
+    return cfg.read_text(encoding="utf-8") if cfg.is_file() else ""
 
 
 def escribe(ruta, texto):

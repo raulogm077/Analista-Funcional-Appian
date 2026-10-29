@@ -67,8 +67,8 @@ Cada punto dice qué falta y a quién toca. Esta lista no autoriza publicar, des
 - **Casos NO_ERRORS.** Los casos de prueba de reglas guardados con aserción NO_ERRORS prueban que no falla, no el
   contenido. Que lo diga la plantilla del técnico §14. [plantilla]
 - **`fila` y `sin_fila`** aceptan una sola fila por paso, y `show` no tiene ejemplo. [`appian-qa`]
-- **Dimensiones de QA sin medir:** visual y accesibilidad, roles con cuenta, autorización de servidor, vigencia y
-  atomicidad. Solo las que necesite la entrega; no crear cuentas ni escribir datos por esta lista. El contraste
+- **Dimensiones de QA sin medir:** visual y accesibilidad, roles con cuenta, autorización de servidor, vigencia causal,
+  atomicidad y concurrencia. Solo las que necesite la entrega; no crear cuentas ni escribir datos por esta lista. El contraste
   automático de texto sobre fondo compuesto, si un caso visible lo pide. [pruebas]
 
 ## Ingeniería inversa y diagramas

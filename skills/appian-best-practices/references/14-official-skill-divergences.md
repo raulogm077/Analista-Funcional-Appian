@@ -20,7 +20,6 @@ Follow the "Do" column. The file named is where the official skill says it.
 |---|---|---|---|
 | One query or several | Query once and derive the subsets in memory: hold one result and split it (open vs closed) with `where()` rather than querying again (`expressions.md`, `query-record-type-patterns.md`) | Query only the rows and fields you use and filter at the source; independent queries in separate local variables evaluate in parallel | Filter in the query and size the batch to what is displayed or processed; split in memory only a small set that is already loaded (doc 05 §2, doc 04 §7) |
 | `choose()` | Listed as not to be used (`function-reference.md`) | Current function; evaluates only the chosen option. `a!match()` is offered as the more flexible alternative | Prefer `a!match()` in new code; `choose()` is valid where an index is the natural key (doc 04 §4) |
-| Today's date | It explains that `todate(now())` is the GMT date, but its examples still pass it as today's date, marked correct (`date-time-patterns.md`) | `todate()` of a date-time works in GMT and can return a different day | `todate(local(now()))` for the user's local day (doc 04 §11) |
 | Audit field names | `createdBy` / `createdAt` / `modifiedBy` / `modifiedAt` (`data-modeling.md`) | The default fields are `createdBy`, `createdOn`, `modifiedBy`, `modifiedOn` | Use Appian's names unless the project's convention says otherwise (doc 01 §3.4) |
 | Record list | Not an interface type: embed a custom grid in a dashboard; a native Record List page is rare (`appian-workflow-patterns.md`) | A current feature: shown as a site or Tempo page, or through a records-powered grid | Record List page by default; a grid in an interface when the list falls short (doc 09 §1.3) |
 | Where rules, interfaces and constants get security | Only from the application's default role map (`security.md`) | They inherit from their rule folder by default | Secure the folder; the result matches because generated folders carry the same groups (doc 06 §3) |
@@ -84,7 +83,6 @@ drop it and tell the user.
 - [Query Performance Best Practices](https://docs.appian.com/suite/help/latest/query-best-practices.html)
 - [Using a!forEach() with interface components](https://docs.appian.com/suite/help/latest/fnc_looping_a_foreach.html#using-aforeach-with-interface-components)
 - [choose() — Evaluation order](https://docs.appian.com/suite/help/latest/fnc_logical_choose.html#evaluation-order)
-- [local()](https://docs.appian.com/suite/help/latest/fnc_date_and_time_local.html#use-local-to-get-the-current-context-for-date-time-functions)
 - [Create a record type — Review the default fields](https://docs.appian.com/suite/help/latest/create-record-data-source.html#review-the-default-fields)
 - [Record list](https://docs.appian.com/suite/help/latest/record-list.html#what-is-a-record-list)
 - [Object security — Security inheritance](https://docs.appian.com/suite/help/latest/object-security.html#security-inheritance)
