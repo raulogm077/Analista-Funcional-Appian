@@ -501,6 +501,9 @@ def unidades(ctx):
         fu = sorted({x for n in ctx.informes_de(u.id) for x in re.findall(r"(?:FU|URG)-\d+", n)}, key=mo.numero)
         vs = ", ".join(f"{v[0]}.{v[1]}" for v in ctx.versiones_de(u.id))
         obj = ctx.cambian(u.id) if not u.urgente else ctx.objetos_urg(u.id)
+        if u.id == ctx.sin_id and not fu:   # la construcción inicial no tiene informes: es todo el análisis
+            fu = ["todas las del análisis"]
+            vs = vs or (f"{u.aprobada_en[0]}.{u.aprobada_en[1]}, al aprobarla" if u.aprobada_en else "")
         print(f"  {u.id} · {u.titulo} · {u.estado} · fuentes: {', '.join(fu) or '—'} · versión: {vs or '—'}"
               f" · objetos: {', '.join(obj) or '—'}")
         for g, objs in ctx.reaplicar(u.id):
@@ -706,6 +709,25 @@ def marca_validadas(m, decisiones, fuente):
     return marcas, len(hechas), sorted(pedidas - {p.id for p in piezas})
 
 
+def estado_validado(raiz):
+    """Tras un VALIDA: si ninguna pieza vigente del funcional queda sin 🔒 (ni un PC abierto, que es ⚠️ o ❓), «Estado:
+    validado» en la cabecera del funcional y en proyecto.md; si no, las que quedan. No toca «DF entregado»."""
+    m = mo.Proyecto(raiz)
+    quedan = sorted(p.id for p in m.piezas.values() if p.doc == "F" and not p.anulada and p.estado in mo.ESTADOS[1:])
+    if quedan:
+        return quedan
+    for ruta in (m.ruta("F"), raiz / "proyecto.md"):
+        if not ruta.is_file():
+            continue
+        lineas = ruta.read_text(encoding="utf-8").split("\n")
+        i = next((i for i, l in enumerate(lineas[:12]) if re.search(r"(?:^|·)\s*Estado:", l)), None)
+        if i is not None:
+            lineas[i] = re.sub(r"(Estado:\s*)[^·\n]*?(?=\s*(?:·|$))", lambda x: x.group(1) + "validado", lineas[i],
+                               count=1)
+            mo.escribe(ruta, "\n".join(lineas))
+    return []
+
+
 def version(a):
     """Abre la versión siguiente para aplicar el informe de una o varias fuentes: copia la actual (como copia), sube
     0.1 la del funcional y la del técnico y escribe la fila de la versión en decisiones.md, las D de --decision y cada
@@ -749,7 +771,7 @@ def version(a):
     else:
         v, destino = _copia(raiz, m)
         nueva = f"{v[0]}.{v[1] + 1}"
-    subidos, escrito, a_mano = [], [], []
+    subidos, escrito, a_mano, avisos = [], [], [], []
     for doc, nombre in (("F", "funcional"), ("T", "técnico")):
         if doc not in m.docs or not m.version(doc):
             continue   # técnico sin empezar
@@ -832,10 +854,18 @@ def version(a):
     if texto_p and texto_p != (proy.read_text(encoding="utf-8") if proy.exists() else ""):
         mo.escribe(proy, texto_p)
         escrito.append(f"{', '.join(fuentes)} en «Fuentes procesadas» de proyecto.md")
+    if any(d[0].upper() == "VALIDA" for d in decisiones):   # después de escribir proyecto.md, que lo pisaría
+        quedan = estado_validado(raiz)
+        if quedan:
+            avisos.append(f"El DF no pasa a «validado»: quedan sin 🔒 {', '.join(quedan)}")
+        else:
+            escrito.append("«Estado: validado» en el funcional y en proyecto.md")
     print(f"Versión {nueva}: {' y '.join(subidos)} en {nueva}" + (f"; {'; '.join(escrito)}" if escrito else "")
           + (f". Copia de la {v[0]}.{v[1]} en {destino}." if destino else ". Primera 1.0, sin incremento ni copia."))
     for x in a_mano:
         print(f"· No hay dónde escribirla, añádela a mano: {x}")
+    for x in avisos:
+        print(f"· {x}")
     if inicial:
         print(f"Verifica la primera versión: comprobar.py {citada(raiz)} --fuentes {citada(raiz / 'fuentes')}")
         return

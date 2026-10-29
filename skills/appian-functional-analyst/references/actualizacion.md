@@ -32,7 +32,8 @@ que preguntar al cliente, el camino entero (§0-§8). Sin nota, sin `comprobar.p
    CAMBIA PAN-01 "<lo nuevo>" "<lo de antes> [FU-01 00:06:40]"]`. Copia la 1.1, sube el funcional y el técnico a la 1.2,
    escribe la fila de la versión y la D de cada CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE en `decisiones.md` y la
    fuente en `proyecto.md`; con VALIDA, además pone las marcas 🔒 de las piezas de «Afecta a» (admite rangos, «HU-01 a
-   HU-13»). «Qué cambia» sale en el Word: en palabras del cliente, sin IDs. La cita de «lo de antes»
+   HU-13») y, si ya no queda ninguna pieza del funcional sin 🔒 (un PC abierto cuenta), «Estado: validado» en el
+   funcional y en `proyecto.md`; si quedan, las dice. «Qué cambia» sale en el Word: en palabras del cliente, sin IDs. La cita de «lo de antes»
    es la del comentario de la pieza: no hace falta buscarla en la fuente.
 5. **Editar solo esas líneas**. La herramienta de edición pide leer antes el fichero: lee solo ese tramo, con los
    números de `ficha --lineas`. La pieza, con la fuente nueva en su comentario (`<!-- ✅ FU-01 00:06:40; FU-04 -->`);
