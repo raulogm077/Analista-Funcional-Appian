@@ -48,11 +48,17 @@ notas; el 2.1 sigue por revisar con las reservas siguientes. Nada de estas propu
   ahorro medido. Los documentos finales `funcional.md` y `tecnico.md` pesaban unos 94 y 196 KB. Los 761–928k tokens son
   caché/contexto final de las sesiones, no tokens de esos documentos ni KB releídos. El reparto contable identifica
   focos para revisar, sin aislar causas ni acreditar un techo de ahorro (límites de `coste-analisis.md`, §0 y §4.2).
-  **Por revisar, sin propuesta aprobada:** qué pasos agrupar o automatizar y qué lecturas limitar, manteniendo la
-  calidad. Buscar y leer el tramo de `ficha --lineas` ya está en el método; la utilidad adicional de una línea fija en
-  `resumen` no se ha probado. Medir el efecto en el paso 3 o en el próximo incremento real, sin deducir ahorro del
-  número de llamadas. El crecimiento de caracteres tras `97fa604` incorpora contenido antes omitido y no mide coste
-  entre alternativas de igual cobertura. «Varias issues por sesión» sigue siendo una hipótesis. [flujo y scripts]
+  **Candidato para medir, sin cambiar el método:** comparar el tratamiento separado con un solo informe para fuentes
+  ya disponibles del mismo tema, en orden de fecha (`actualizacion.md`, «Varias fuentes juntas»), partiendo de la misma
+  base, fuentes y modelo. Conservar igual cobertura y coherencia, con citas, decisiones y autorizaciones correctas,
+  y comparar el coste total observado del modelo principal y del asesor. No anticipar respuestas futuras ni agrupar
+  temas distintos. Hay un límite concreto: `version --decision` usa la primera `--fuente` para la fuente y fecha de las
+  D y para las marcas 🔒 de VALIDA; si las vías existentes no conservan la procedencia y autorización de cada decisión
+  y marca, se mantienen las fuentes separadas, sin forzar la agrupación. Medir en el paso 3 o en el próximo incremento
+  real, sin deducir ahorro del número de llamadas. La consulta por tramos ya está prevista; no se añade una línea fija
+  a `resumen`. El crecimiento de caracteres tras `97fa604` incorpora contenido antes omitido y no mide coste entre
+  alternativas de igual cobertura. «Varias issues por sesión» es otra hipótesis, sin ahorro acreditado para este
+  análisis. No se ha ejecutado esta comparación ni se ha aplicado una regla nueva. [flujo y scripts]
 - **2.6 F9.** Decidir si la IA puede dejar preparado el paquete en desarrollo; hoy lo prepara una persona.
   **Borrador por aprobar:** que la IA prepare un borrador en desarrollo, con la revisión del paso 4 siempre humana;
   exportar y desplegar siguen a cargo de una persona. La asignación del ICF y los scripts de base de datos a una persona
