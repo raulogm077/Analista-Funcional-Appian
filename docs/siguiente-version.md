@@ -9,6 +9,13 @@ cada hallazgo se corrige con su prueba. Después, paso 2; el 2.1 queda pendiente
 
 ## 1. En la rama actual, por orden
 
+### Feedback de las pruebas, en curso
+
+- **`git push` de las reservas sin autorización.** `indice.py` sube a cualquier remoto que exista en todos los caminos
+  de `con_reserva` (reservar, liberar, subtareas, correcciones, cierres manuales), y la lección L6 pide autorización
+  expresa, que nunca se deduce del remoto ni de reservar. Falta repararlo y probarlo con remoto local autorizado, no
+  autorizado y sin remoto. [`issues.py`]
+
 ### Paso 2 · Decisiones de Raúl
 
 Claude trae una recomendación por punto; se aplica lo que Raúl decida.
@@ -104,7 +111,9 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   flujos y los modos de cada skill, tanto su invocación directa como su uso dentro de un flujo.
 - **Ingeniería inversa y refactorización a fondo.** Probar extracción, continuación, deriva, dependencias,
   planificación y verificación de las refactorizaciones, incluidos errores y recuperación. Comprobar la conservación
-  del comportamiento y la documentación resultante, y corregir los márgenes de mejora encontrados.
+  del comportamiento y la documentación resultante, y corregir los márgenes de mejora encontrados. Usar como casos de
+  evaluación los ocho de `aplazados-codex-20261019/mnt-evaluacion-ciega/revision-ciega.md` (recordatorio repetido entre
+  ejecuciones, selector con límite o inactivos, usuario fijo…): el puntuador de entonces no los veía.
 - **Agentes y skills, por separado y juntos.** Evaluar qué recibe, decide y entrega cada uno; después, comprobar sus
   relaciones y traspasos dentro del flujo completo, su calidad, fricción y coste. Repetir los casos afectados tras
   las correcciones y recoger las conclusiones en este seguimiento y en `evaluaciones.md`.
