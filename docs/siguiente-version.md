@@ -81,7 +81,8 @@ localizador (`evaluaciones.md`). Falta repetirlo con el plugin cargado y lo que 
   que se conserva (el seguimiento del ensayo, la revisión de Codex) y qué objetos dejó en Indra-spain
   (`T6-retoque-construido/objetos-creados.md`). Se guarda lo que haga falta; lo demás, y sobre todo lo que lleve datos
   del cliente, se borra con la confirmación de Raúl, que lanza él el borrado si la sesión no puede. [persona y sesión]
-- En Indra-spain (leído el 3-nov): ya no están las aplicaciones PCA y CTC, las tablas `CTC_*` ni los grupos CTC. Siguen
+- En Indra-spain, las consultas de solo lectura del 3-nov no encontraron las aplicaciones PCA y CTC, las tablas `CTC_*`
+  ni los grupos CTC (no prueba que no existan con otros permisos). Siguen
   las aplicaciones IFA e IFB del ensayo con sus datos, y dos instancias activas de `IFA Revisar Fechas Limite` desde el
   24-oct, que se repiten cada día y envían correo; solo las cancela una persona. La de IFB no se puede leer (403). Qué
   se quita lo confirma Raúl. [persona]
