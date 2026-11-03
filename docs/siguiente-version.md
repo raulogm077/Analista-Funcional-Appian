@@ -96,10 +96,10 @@ localizador (`evaluaciones.md`). Falta repetirlo con el plugin cargado y lo que 
   que se conserva (el seguimiento del ensayo, la revisión de Codex) y qué objetos dejó en Indra-spain
   (`T6-retoque-construido/objetos-creados.md`). Se guarda lo que haga falta; lo demás, y sobre todo lo que lleve datos
   del cliente, se borra con la confirmación de Raúl, que lanza él el borrado si la sesión no puede. [persona y sesión]
-- En Indra-spain, comprobar qué sigue ahí: las aplicaciones PCA (vacía) y CTC, las 7 tablas `CTC_*` de `jdbc/Appian`, que
-  el Dev MCP no borra, `dem.gestor`, `dem.gestor2` y `dem.revisor` en los grupos CTC, y del ensayo Informes los datos,
-  los objetos y las instancias que solo cancela una persona, incluidas las cadenas diarias que envían correo. Se quita con
-  la confirmación de Raúl. [persona y sesión]
+- En Indra-spain (leído el 3-nov): ya no están las aplicaciones PCA y CTC, las tablas `CTC_*` ni los grupos CTC. Siguen
+  las aplicaciones IFA e IFB del ensayo con sus datos, y dos instancias activas de `IFA Revisar Fechas Limite` desde el
+  24-oct, que se repiten cada día y envían correo; solo las cancela una persona. La de IFB no se puede leer (403). Qué
+  se quita lo confirma Raúl. [persona]
 
 ### Paso 5 · Cierre de la rama
 
