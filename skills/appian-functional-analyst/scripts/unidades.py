@@ -235,8 +235,10 @@ def filas_6(P):
 
 
 def donde_se_corrige(campos):
-    """«desarrollo», «correccion» o "" (sin elegir o no se reconoce) según «Dónde se corrige» de una ficha URG."""
-    lugar = mo.normaliza(mo.sin_comentarios((campos or {}).get("donde se corrige", ""))).strip(" *`")
+    """«desarrollo», «correccion» o "" (sin elegir o no se reconoce) según «Dónde se corrige» de una ficha URG. La cita a
+    una fuente ([FU-06]) no cuenta, y en la aclaración «pendiente la prueba…» no deja la elección sin hacer; cualquier
+    otro «pendiente», o las dos opciones planteadas después, sí."""
+    lugar = mo.normaliza(mo.quita_citas(mo.sin_comentarios((campos or {}).get("donde se corrige", "")))).strip(" *`")
     lugar = re.sub(r"[*`]", "", lugar)
     sin_elegir = re.match(r"(?:pendiente|por decidir|sin decidir)\b", lugar) or re.search(
         r"desarrollo\s*(?:[/·|]|\bo\b|\(\s*o\b)\s*entorno|entorno de correccion\s*(?:[/·|]|\bo\b|\(\s*o\b)\s*desarrollo", lugar)
@@ -251,8 +253,14 @@ def donde_se_corrige(campos):
         if cola[0] not in "(,.;:—-":
             return ""
         cola = cola[1:].strip().rstrip(")").strip()
+        # «pendiente la prueba…» habla de la prueba, no de la elección; cualquier otro «pendiente» la deja sin hacer, y
+        # tampoco vale si después se plantean las dos opciones
+        cola = re.sub(r"\bpendiente\s+la\s+prueba\b", "la prueba", cola)
+        alternativas = (r"\b(?:desarrollo|(?:entorno de )?correccion)\s*(?:[/·|—-]|(?:\(\s*)?\bo\b)\s*(?:en (?:el )?)?"
+                        r"(?:desarrollo|(?:entorno de )?correccion)\b")
         if (not cola or re.match(r"(?:no|o|pendiente|por decidir|sin decidir|sin elegir)\b", cola)
                 or re.search(r"\b(?:pendiente|por decidir|sin decidir|sin elegir|no elegido|no decidido|no se ha decidido)\b", cola)
+                or re.search(alternativas, cola)
                 or re.match(r"(?:en (?:el )?)?(?:desarrollo|entorno de correccion|correccion)\b", cola)):
             return ""
     return "desarrollo" if elegido[1] == "desarrollo" else "correccion"

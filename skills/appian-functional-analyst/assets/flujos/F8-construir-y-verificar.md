@@ -34,7 +34,7 @@ El avance entre sesiones lo dicen la verificación o el cierre manual de cada is
 issue que cambia, y solo lo que toca: el funcional si cambia lo que hace el negocio (por `actualizacion.md`, con su
 versión); el técnico si cambia el diseño o la configuración, o ya se puede completar el «Verificado» de una DT que decía
 «pendiente»; el prototipo y sus capturas si cambia una pantalla acordada; el draw.io y su imagen si cambia el proceso, y
-los diagramas Mermaid si cambian estados o datos; el Word, si ya hay uno y cambia lo que dice (`cambios.md` §5). Un
+los diagramas Mermaid si cambian estados o datos; el Word, si ya hay alguno y cambia lo que exporta, también solo su versión (`cambios.md` §5). Un
 fallo frente a lo acordado se arregla en la aplicación o sigue la excepción prevista: no se cambia lo acordado para que
 pase, y cambiarlo pasa por su aprobación (`cambios.md` §1). Como tarde, todo al día antes de marcar la unidad
 Construida (paso 9).

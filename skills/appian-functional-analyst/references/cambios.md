@@ -132,14 +132,17 @@ historias (Nueva, Cambia, Se conserva) ya no se escribe: lo da `indice.py cambio
 
 Ninguno se regenera si no cambia (R2). Lo que cambia puede esperar mientras nadie lo use, pero se pone al día antes de
 construir, revisar o entregar con él y, como tarde, antes de marcar la unidad Construida. El Word no espera: si ya hay
-uno, cada cambio de lo que dice regenera el vigente afectado (el completo, con cualquier cambio del funcional; el de
-una unidad, con los de esa unidad) al terminar de aplicar y comprobar el cambio, con sus imágenes ya al día: las
-capturas de las pantallas que cambian, si hay prototipo del que sacarlas, y los diagramas. Un cambio solo del técnico
-no lo pide. Los entregados y los anteriores se conservan: `df_docx.js` no pisa uno entregado. Con versión nueva, el
-Word sale con su nombre. Sin ella (solo cambian sus imágenes) y con el de esta versión ya entregado, sale una revisión
-con otro nombre, que no esté en «Entregados»: `df_docx.js <p> [--cambio EV-02] -o entregables/<su nombre>-r2.docx`; al
-enviarla, `proyecto.py entregar <p> [--cambio EV-02] --word <ese fichero>` registra justo esa. La revisión no abre
-versión ni hace pasar un cambio del análisis sin la suya.
+alguno, cada cambio de lo que exporta (su texto, sus imágenes, su versión y su control de versiones, que lleva el «qué
+cambia» de cada versión) regenera los vigentes, el completo y el de cada unidad en curso que ya tenga uno, al terminar
+de aplicar y comprobar el cambio y con sus imágenes ya al día: las capturas de las pantallas que cambian, si hay
+prototipo del que sacarlas, y los diagramas. Una versión nueva lo pide aunque solo cambie el técnico; lo que no cambia
+nada de eso (una urgencia de datos u operación, sin `proyecto.py version`) no lo pide, y si no hay Word no se crea.
+Los entregados y los anteriores se conservan: `df_docx.js` no pisa ni reutiliza el nombre de uno entregado. Con
+versión nueva, cada Word sale con su nombre. Sin ella (solo cambian sus imágenes) y con el de esta versión ya
+entregado, sale una revisión con otro nombre, que no esté en «Entregados»: `df_docx.js <p> [--cambio EV-02] -o
+"<p>/entregables/<su nombre>-r2.docx"`, con la ruta del proyecto; al enviarla, `proyecto.py entregar <p> [--cambio
+EV-02] --word <ese fichero>` registra justo esa. La revisión no abre versión ni hace pasar un cambio del análisis sin la
+suya.
 ```bash
 python3 <skill>/scripts/indice.py cambios <p> EV-02 [--json]   # piezas nuevas, que cambian (antes y después) y anuladas,
                                      # datos de §6, pantallas, diagramas, técnico, objetos, pruebas a repetir, colisiones

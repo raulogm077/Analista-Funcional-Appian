@@ -265,7 +265,8 @@ cambiado y nada 🔒 cambiado sin un punto aprobado. Aplicar, el informe y esta 
 prototipo; después, en este orden:
 - el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y solo sus capturas. Las validadas por
   el cliente (🔒) no se tocan sin el visto bueno del analista;
-- el Word, ya con esas capturas: si ya hay uno y cambia lo que dice, se regenera ahora (`cambios.md` §5); si no, el
+- el Word, ya con esas capturas: si ya hay alguno y cambia lo que exporta (también solo su versión), se regeneran los
+  vigentes ahora (`cambios.md` §5); si no, el
   primero se genera al enviarlo o si se pide (paso 8 del `SKILL.md`).
 
 ## 8. Entregar

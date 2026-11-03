@@ -210,7 +210,7 @@ const entregados = ((proyecto.match(/^Entregados:\s*(.*)$/m) || [])[1] || "").sp
 if (entregados.some((x) => x.toLowerCase() === path.basename(out).toLowerCase())) {
   const nombre = path.basename(out, ".docx");
   const r = nombre.match(/^(.*)-r(\d+)$/);
-  const revision = r ? `${r[1]}-r${Number(r[2]) + 1}.docx` : `${nombre}-r2.docx`;
+  const revision = path.join(path.dirname(out), r ? `${r[1]}-r${Number(r[2]) + 1}.docx` : `${nombre}-r2.docx`);
   console.error(`${path.basename(out)} ya se entregó al cliente («Entregados» de proyecto.md): no se sobrescribe ni ` +
     `se vuelve a escribir ${out}. Si el análisis ha cambiado, sube la versión; si solo cambian sus imágenes, saca una ` +
     `revisión con -o (${revision}, un nombre que no esté en «Entregados»); para el PDF de ese Word, --pdf-de ${out}.`);

@@ -15,7 +15,7 @@
 | 8 | Verificar | Script | `appian-functional-analyst` · `comprobar.py --anterior --impacto` | `appian-functional-analyst/references/actualizacion.md` §7 |
 | 9 | Decir qué cambió y qué queda pendiente; el guion de la próxima reunión | IA; Script | `appian-functional-analyst` · `indice.py pendientes` | `appian-functional-analyst/references/actualizacion.md` §8 |
 
-El prototipo y el Word no se rehacen enteros con cada fuente: las pantallas afectadas, después de verificar, y el Word, si ya hay uno y cambia lo que dice (`cambios.md` §5); el primero, al enviarlo.
+El prototipo y el Word no se rehacen enteros con cada fuente: las pantallas afectadas, después de verificar, y el Word, si ya hay alguno y cambia lo que exporta, también solo su versión (`cambios.md` §5); el primero, al enviarlo.
 
 **Variante: un retoque.** Pocos puntos (un texto, una etiqueta, una columna) y ninguno requiere aprobación: sin nota ni presentación, con el informe ya aplicado y una sola comprobación. `appian-functional-analyst/references/actualizacion.md` «Camino corto».
 

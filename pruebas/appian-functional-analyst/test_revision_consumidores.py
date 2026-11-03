@@ -69,6 +69,18 @@ DESTINOS = (
     ("Desarrollo sin elegir todavía", ""),
     ("Producción", ""),
     ("", ""),
+    # la cita a la fuente no cuenta, y lo pendiente que no es la elección no la deja sin hacer
+    ("Entorno de corrección [FU-06].", "correccion"),
+    ("Entorno de corrección; pendiente la prueba del importe", "correccion"),
+    ("Entorno de corrección; pendiente de decidir", ""),
+    ("Entorno de corrección (pendiente)", ""),
+    ("Desarrollo [FU-02 00:01:10]; pendiente.", ""),
+    ("Entorno de corrección; pendiente la elección del entorno", ""),
+    ("Desarrollo; pendiente que el equipo decida dónde", ""),
+    ("Entorno de corrección; pendiente elección", ""),
+    ("Entorno de corrección; pendiente la prueba; Corrección o Desarrollo", ""),
+    ("Entorno de corrección; pendiente la prueba y Desarrollo o Corrección", ""),
+    ("Entorno de corrección; pendiente la prueba y por decidir destino", ""),
 )
 
 
