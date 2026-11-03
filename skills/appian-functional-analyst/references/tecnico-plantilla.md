@@ -85,7 +85,7 @@ un sistema. Tabla vertical:
 | Campo | Contenido |
 |---|---|
 | **Capa** | Datos, Seguridad, Lógica, Proceso, Interfaz, Navegación, Integración, IA u Operación |
-| **Necesidad** | Las HU, PAN, ACT o RB que la piden; «Base» (con mayúscula, sola o con ellas) si es de lo común: llega a la issue de la Base, como «Para: Base» de §13 |
+| **Necesidad** | Las HU, PAN, ACT o RB que la piden; «Base» (con mayúscula, sola o con ellas) si es de lo común: llega a la issue de la Base, como «Para: Base» de §13. Una DT llega a las issues de lo que cita aquí y a las de los objetos cuya especificación la cita, no a las de los objetos que nombra: si debe llegar a otra, cita aquí una historia de esa issue |
 | **Decisión** | Qué se hace, con los nombres de los objetos |
 | **Por qué** | En una frase. Si afirma algo de Appian o del Dev MCP, con `BP nn §x` o la URL de la documentación (aquí o en «Verificado»); un motivo del proyecto basta dicho |
 | **Descartada** | La alternativa y por qué no |
