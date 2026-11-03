@@ -92,8 +92,9 @@ Cada orden de SAIL CLI y de `qa.py` se espera en primer plano hasta que termina,
 5. **Cerrar las sesiones** al terminar la campaña de QA (la unidad entregada sin fallos y sus guiones repetidos): `sail
    logout --data-dir <su carpeta>` de cada cuenta local. Cierra la sesión en el servidor y borra lo guardado y lo
    tecleado, que es como termina cada prueba; no se hace tras cada escenario porque, para repetir los guiones antes del
-   paquete, quien los repite tiene que volver a entrar con la contraseña. Una sesión importada del Dev MCP no se cierra:
-   no se sabe qué le pasa al Dev MCP.
+   paquete, quien los repite tiene que volver a entrar con la contraseña. Se cierran solo las que abrió esta campaña con
+   `sail login`: las que ya existían las usan otros agentes o la fase siguiente. Una sesión importada del Dev MCP no se
+   cierra: no se sabe qué le pasa al Dev MCP.
 
 ## El guion
 
