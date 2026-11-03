@@ -9,13 +9,6 @@ cada hallazgo se corrige con su prueba. Después, paso 2; el 2.1 queda pendiente
 
 ## 1. En la rama actual, por orden
 
-### Feedback de las pruebas, en curso
-
-- **`git push` de las reservas sin autorización.** `indice.py` sube a cualquier remoto que exista en todos los caminos
-  de `con_reserva` (reservar, liberar, subtareas, correcciones, cierres manuales), y la lección L6 pide autorización
-  expresa, que nunca se deduce del remoto ni de reservar. Falta repararlo y probarlo con remoto local autorizado, no
-  autorizado y sin remoto. [`issues.py`]
-
 ### Paso 2 · Decisiones de Raúl
 
 Claude trae una recomendación por punto; se aplica lo que Raúl decida.
