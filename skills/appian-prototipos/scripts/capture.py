@@ -22,7 +22,8 @@ Requiere Playwright para Python (pip install playwright) y un navegador: el Chro
 import json, os, re, sys, argparse
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from pathlib import Path
-from entorno import escribe, utf8_stdio, sync_playwright, launch_browser
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from entorno import escribe, utf8_stdio, sync_playwright, launch_browser  # noqa: E402
 
 
 def ref_de(texto):

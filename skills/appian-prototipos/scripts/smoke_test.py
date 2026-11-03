@@ -10,7 +10,8 @@ Requiere Playwright para Python y un navegador (Chromium de Playwright, Chrome o
 import json, sys, argparse
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from pathlib import Path
-from entorno import utf8_stdio, sync_playwright, launch_browser
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from entorno import utf8_stdio, sync_playwright, launch_browser  # noqa: E402
 
 PAGE = "#px-root .site-body button:not([disabled]):visible, #px-root .site-body a[href]:visible, .site-nav button:visible"
 
