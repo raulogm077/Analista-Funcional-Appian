@@ -5,12 +5,13 @@
  "objeto": "DEM_Dashboard",
  "tope_llamadas": 25,
  "word_nuevo": "entregables/DF-Solicitudes-de-material-v1.2.docx",
+ "word_unidad": "entregables/DF-Solicitudes-de-material-EV-02-v1.2.docx",
  "puntos": {
   "hecho": "El correo está catalogado, su informe de impacto aplicado, PAN-01 dice «Pedir material» y técnico §13 tiene `DEM_Dashboard` «Modifica» en una unidad Abierta (no en EV-02, ya aprobada, ni sin unidad)",
   "sin_aprobacion": "Ningún punto del informe del correo pide aprobación (Requiere «Sí…») ni queda «Pendiente»",
   "sin_dt": "Ninguna DT «Cambio sobre lo construido» nueva",
   "comprobar_una_pasada": "comprobar.py sin errores, y ninguna pasada del agente con errores",
-  "word_al_dia": "Con Word al montar, el completo de la versión nueva (word_nuevo, y su PDF de revisión si sale), que se abre y dice el texto nuevo y su versión, y nada más: los entregados y las capturas del montaje siguen ahí e iguales (no hay prototipo del que sacarlas). Sin Word al montar, ningún .docx, .pdf ni .png nuevo, cambiado o que falte",
+  "word_al_dia": "Con Word al montar, los vigentes de la versión nueva, el completo (word_nuevo) y el de EV-02 (word_unidad), con su PDF de revisión si sale: se abren y dicen su versión, y el completo, el texto nuevo en la ficha de la pantalla; y nada más: los entregados y las capturas del montaje siguen ahí e iguales (no hay prototipo del que sacarlas). Sin Word al montar, ningún .docx, .pdf ni .png nuevo, cambiado o que falte",
   "llamadas": "Llamadas a herramientas del agente ≤ tope_llamadas"
  },
  "umbral": "todos"

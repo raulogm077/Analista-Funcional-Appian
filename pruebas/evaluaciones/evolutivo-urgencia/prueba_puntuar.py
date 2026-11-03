@@ -84,11 +84,13 @@ def copia(base: Path, raiz: Path) -> Path:
     return p
 
 
-def agente(p: Path, catalogar=True, issues=True, crece=False, **ficha):
+def agente(p: Path, catalogar=True, issues=True, crece=False, al_dia=True, **ficha):
     """Lo que haría el agente con los scripts del plugin (references/urgentes.md): catalogar la incidencia, abrir
     URG-01 y su ficha; la prueba que reproduce el fallo en técnico §14, que cambia el técnico y sube la versión (R2,
     con su copia y su fila en decisiones.md; el funcional no cambia), y volver a generar las issues de EV-02. Con
-    crece, antes llega otra fuente para EV-02, ya aprobada: la devuelve a aprobación y sus issues ya no se regeneran."""
+    crece, antes llega otra fuente para EV-02, ya aprobada: la devuelve a aprobación y sus issues ya no se regeneran.
+    Si ya hay Word, la versión nueva lo cambia: los vigentes de la 1.2, el completo y el de EV-02 (al_dia=False no
+    los pone al día; cambios.md §5)."""
     if catalogar:
         corre(PY, mt.ANALISTA / "leer_fuentes.py", p / VISIBLE["fuente"], "-o", p / "fuentes")
     for orden in (("cambio", p, "URG-01", "abrir", "--titulo", "No se pueden enviar solicitudes de 1.000 € o más"),
@@ -110,6 +112,11 @@ def agente(p: Path, catalogar=True, issues=True, crece=False, **ficha):
         c, s = corre(PY, mt.ANALISTA / "indice.py", "issues", p, "EV-02")
         if c and not (crece and "ha crecido" in s):
             sys.exit(f"indice.py issues falla:\n{s}")
+    if al_dia and (p / "entregables" / mt.WORD_10).is_file():
+        for extra in ((), ("--cambio", "EV-02")):
+            c, s = corre("node", mt.ANALISTA / "df_docx.js", p, *extra)
+            if c:
+                sys.exit(f"df_docx.js {' '.join(extra)} falla:\n{s}")
     return p
 
 
@@ -257,11 +264,13 @@ def main() -> int:
             ("la URG en producción en una sesión desatendida",
              pase(agente(nuevo()), ref="PASE-SUPUESTO"), (), 1, "FALLO estados: URG En producción"),
             ("EV-02 marcada Construida", construida(agente(nuevo())), (), 1, "FALLO estados: EV-02 Construida"),
-            ("un Word regenerado: de ligereza se tolera uno", word(agente(nuevo())), (), 0,
+            ("el Word de la 1.2 falso: de ligereza se tolera uno", word(agente(nuevo())), (), 0,
              "de ligereza fallan 1 (se tolera 1) → pasa"),
             ("una captura cambiada y el funcional cambiado: dos de ligereza no",
              funcional_cambiado(captura(agente(nuevo()))), (), 1, "de ligereza fallan 2"),
             ("comprobar.py con errores", roto(agente(nuevo())), (), 1, "FALLO comprobar"),
+            ("sin poner al día los Word vigentes: de ligereza se tolera uno", agente(nuevo(), al_dia=False), (), 0,
+             "de ligereza fallan 1 (se tolera 1) → pasa"),
         ]
         cerrada = pase(agente(nuevo()))
         casos += [
@@ -272,7 +281,7 @@ def main() -> int:
              "FALLO produccion"),
             ("--ocultas: EV-02 marcada Construida al cerrar", construida(pase(agente(nuevo()))), ("--ocultas",), 1,
              "FALLO ev02_sin_construir"),
-            ("--ocultas: un Word regenerado al cerrar se tolera", word(pase(agente(nuevo()))), ("--ocultas",), 0,
+            ("--ocultas: el Word de la 1.2 falso al cerrar se tolera", word(pase(agente(nuevo()))), ("--ocultas",), 0,
              "de ligereza fallan 1 (se tolera 1) → pasa"),
             ("--ocultas sin la URG", nuevo(), ("--ocultas",), 1, "FALLO produccion: ninguna URG nueva"),
         ]

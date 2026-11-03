@@ -7,17 +7,19 @@ PLUGIN_A_PROBAR) y comprueba el propio caso: PAN-01 construida en EV-01, validad
 no pide DT, y un correo que pide justo ese texto. Después recorre sobre una copia el camino corto de un retoque
 (actualizacion.md, «Camino corto») con las órdenes de ahora (estado, catalogar, abrir EV-03, ficha e impacto --cambio
 EV-03, version con la fila D, funcional, técnico §7 y §13, el informe ya aplicado, comprobar.py --anterior --impacto y,
-si el montaje tiene Word, df_docx.js para ponerlo al día), contando las llamadas como el README (también leer antes lo
-que se edita): tienen que ser las 16 que cuenta, 17 con Word, dentro del tope, y sin ninguna pasada de comprobar.py con
-errores. Después, variantes que no deben pasar, y mira la salida de puntuar.py."""
+si el montaje tiene Word, df_docx.js para poner al día los vigentes, el completo y el de EV-02), contando las llamadas
+como el README (también leer antes lo que se edita): tienen que ser las 16 que cuenta, 18 con Word, dentro del tope, y
+sin ninguna pasada de comprobar.py con errores. Después, variantes que no deben pasar, y mira la salida de puntuar.py."""
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -80,17 +82,19 @@ def editar(ruta: Path, viejo: str, nuevo: str):
 
 LEIDOS = 5    # lo que el agente lee sin script: la skill, actualizacion.md, el correo catalogado y, antes de editarlos,
               # el tramo del funcional y el del técnico (la herramienta de edición pide leer antes)
-MINIMO = 16   # el camino corto que cuenta el README («El tope: 25 llamadas»), sin Word; con Word, una más (df_docx.js)
+MINIMO = 16   # el camino corto que cuenta el README («El tope: 25 llamadas»), sin Word; con Word, dos más (df_docx.js)
 CAMINO = {}   # carpeta → {"llamadas": n, "salidas": {orden: salida}, "comprobar_con_errores": k} del camino simulado
 
 
-def retoque(p: Path, aplicar=True, requiere="—", decision="✔", unidad="EV-03", dt=False, al_dia=True) -> Path:
+def retoque(p: Path, aplicar=True, requiere="—", decision="✔", unidad="EV-03", dt=False, al_dia=True,
+            unidad_al_dia=True) -> Path:
     """El camino corto de un retoque, con las órdenes de ahora y en su orden, contando las llamadas como el README:
     estado, catalogar el correo, abrir EV-03, ficha e impacto --cambio EV-03 de PAN-01, version (la copia, la 1.2 en los
     dos, la fila de la versión, la D-01 del CAMBIA y la fuente en proyecto.md), PAN-01 en el funcional, §7 y la fila
-    «Modifica» de §13 en el técnico, el informe ya aplicado, comprobar.py --anterior --impacto y, si ya hay Word, el
-    completo de la 1.2 con df_docx.js (al_dia=False se lo salta). Con aplicar=False, solo el informe pendiente (el camino
-    entero, parado en la aprobación). Lo que cuenta queda en CAMINO[p]."""
+    «Modifica» de §13 en el técnico, el informe ya aplicado, comprobar.py --anterior --impacto y, si ya hay Word, los
+    vigentes de la 1.2 con df_docx.js, el completo y el de EV-02 (al_dia=False se los salta; unidad_al_dia=False, el de
+    EV-02). Con aplicar=False, solo el informe pendiente (el camino entero, parado en la aprobación). Lo que cuenta queda
+    en CAMINO[p]."""
     camino = CAMINO.setdefault(p, {"llamadas": LEIDOS, "salidas": {}, "comprobar_con_errores": 0})
 
     def script(nombre, *args, puede_fallar=False):
@@ -139,12 +143,13 @@ def retoque(p: Path, aplicar=True, requiere="—", decision="✔", unidad="EV-03
             aplicado="Versión 1.2: PAN-01 modificada · nueva: D-01")
     script("comprobar.py", p, "--fuentes", p / "fuentes", "--anterior", p / "versiones" / "v1.1", "--impacto",
            p / "impacto" / "FU-05.md", puede_fallar=True)
-    if al_dia and (p / "entregables" / mt.WORD_10).is_file():   # ya hay Word y el cambio cambia lo que dice
-        c, s = corre("node", mt.ANALISTA / "df_docx.js", p)
-        camino["llamadas"] += 1
-        if c:
-            sys.exit(f"df_docx.js falla:\n{s}")
-        camino["salidas"]["word"] = s
+    if al_dia and (p / "entregables" / mt.WORD_10).is_file():   # ya hay Word: la 1.2 cambia lo que exportan los vigentes
+        for extra in ((), ("--cambio", "EV-02"))[:2 if unidad_al_dia else 1]:
+            c, s = corre("node", mt.ANALISTA / "df_docx.js", p, *extra)
+            camino["llamadas"] += 1
+            if c:
+                sys.exit(f"df_docx.js {' '.join(extra)} falla:\n{s}")
+            camino["salidas"]["word" + "".join(extra)] = s
     return p
 
 
@@ -172,12 +177,13 @@ def comprobar_caso(base: Path, p_bien: Path) -> list[str]:
     # y con la fila de §13 que lleva DEM_Dashboard, y version con la 1.2
     camino = CAMINO[p_bien]
     con_word = (base / "entregables" / mt.WORD_10).is_file()
-    minimo = MINIMO + con_word
+    minimo = MINIMO + 2 * con_word
     if camino["llamadas"] != minimo or minimo > E["tope_llamadas"]:
         mal.append(f"el camino más corto son {camino['llamadas']} llamadas; el README cuenta {minimo} y el tope es "
                    f"{E['tope_llamadas']}")
-    if con_word and not (p_bien / E["word_nuevo"]).is_file():
-        mal.append(f"df_docx.js no deja {E['word_nuevo']} tras la 1.2:\n{camino['salidas'].get('word', '')}")
+    for w in (E["word_nuevo"], E["word_unidad"]):
+        if con_word and not (p_bien / w).is_file():
+            mal.append(f"df_docx.js no deja {w} tras la 1.2:\n{camino['salidas']}")
     if camino["comprobar_con_errores"]:
         mal.append(f"el camino más corto tiene {camino['comprobar_con_errores']} pasadas de comprobar.py con errores")
     if not re.search(r"EV-02 · [^\n]* · Aprobada", camino["salidas"]["estado"]):
@@ -232,8 +238,28 @@ def main() -> int:
             return p
 
         def mueve(p):       # el entregado, movido al nombre nuevo: regenerados no lo ve
-            (p / "entregables" / mt.WORD_10).rename(p / E["word_nuevo"])
+            os.replace(p / "entregables" / mt.WORD_10, p / E["word_nuevo"])
             return p
+
+        def reescribe(p, origen, cambia):
+            """El Word de origen, con el nombre de la 1.2 y su word/document.xml cambiado con cambia(xml)."""
+            with zipfile.ZipFile(origen) as z:
+                partes = {n: z.read(n) for n in z.namelist()}
+            partes["word/document.xml"] = cambia(partes["word/document.xml"].decode("utf-8")).encode("utf-8")
+            with zipfile.ZipFile(p / E["word_nuevo"], "w", zipfile.ZIP_DEFLATED) as z:
+                for n, b in partes.items():
+                    z.writestr(n, b)
+            return p
+
+        def zip_plano(p):   # un ZIP cuyo word/document.xml es texto, no el XML de un Word
+            with zipfile.ZipFile(p / E["word_nuevo"], "w") as z:
+                z.writestr("word/document.xml", f"PAN-01 — Panel {E['texto_nuevo']} Versión 1.2")
+            return p
+
+        def fuera_de_la_ficha(xml):   # el DF 1.0 con la versión 1.2 y el texto nuevo en un párrafo al final, fuera de PAN-01
+            cuerpo, sect, cola = xml.rpartition("<w:sectPr")
+            return (cuerpo.replace("Versión 1.0", "Versión 1.2")
+                    + f"<w:p><w:r><w:t>{E['texto_nuevo']}</w:t></w:r></w:p>" + sect + cola)
 
         def captura(p):
             f = p / "prototipo" / "capturas" / "PAN-01.png"
@@ -271,13 +297,23 @@ def main() -> int:
         ] + ([
             ("sin poner al día el Word", retoque(nuevo(), al_dia=False), cuenta(21), 1,
              f"FALLO word_al_dia: falta {E['word_nuevo']}"),
-            ("el DF 1.0 copiado con el nombre de la 1.2", copia10(retoque(nuevo(), al_dia=False)), cuenta(22), 1,
-             f"FALLO word_al_dia: {E['word_nuevo']} no dice «{E['texto_nuevo']}»"),
-            ("un Word vacío con el nombre de la 1.2", vacio(retoque(nuevo(), al_dia=False)), cuenta(22), 1,
+            ("sin poner al día el DF de EV-02, también vigente", retoque(nuevo(), unidad_al_dia=False), cuenta(22), 1,
+             f"FALLO word_al_dia: falta {E['word_unidad']}"),
+            ("el DF 1.0 copiado con el nombre de la 1.2", copia10(retoque(nuevo())), cuenta(22), 1,
+             f"la ficha de {E['pantalla']} de {E['word_nuevo']} no dice «{E['texto_nuevo']}»"),
+            ("un Word vacío con el nombre de la 1.2", vacio(retoque(nuevo())), cuenta(22), 1,
              f"FALLO word_al_dia: {E['word_nuevo']} no es un Word que se pueda abrir"),
-            ("un Word falso con el nombre de la 1.2", word(retoque(nuevo(), al_dia=False)), cuenta(22), 1,
+            ("un Word falso con el nombre de la 1.2", word(retoque(nuevo())), cuenta(22), 1,
              f"FALLO word_al_dia: {E['word_nuevo']} no es un Word que se pueda abrir"),
-            ("el entregado movido al nombre nuevo", mueve(retoque(nuevo(), al_dia=False)), cuenta(22), 1,
+            ("un ZIP con texto plano por Word", zip_plano(retoque(nuevo())), cuenta(22), 1,
+             f"FALLO word_al_dia: {E['word_nuevo']} no es un Word que se pueda abrir"),
+            ("el Word de la 1.2 cambiado para decir «Versión 1.20»",
+             (lambda q: reescribe(q, q / E["word_nuevo"], lambda x: x.replace("Versión 1.2", "Versión 1.20")))(
+                 retoque(nuevo())), cuenta(22), 1, f"FALLO word_al_dia: {E['word_nuevo']} no dice «Versión 1.2»"),
+            ("el texto nuevo fuera de la ficha de PAN-01",
+             (lambda q: reescribe(q, q / "entregables" / mt.WORD_10, fuera_de_la_ficha))(retoque(nuevo())),
+             cuenta(22), 1, f"FALLO word_al_dia: la ficha de {E['pantalla']} de {E['word_nuevo']} no dice"),
+            ("el entregado movido al nombre nuevo", mueve(retoque(nuevo())), cuenta(22), 1,
              f"FALLO word_al_dia: falta entregables/{mt.WORD_10}, que estaba al montar"),
         ] if (base / "entregables" / mt.WORD_10).is_file() else [
             ("un Word sin haber ninguno al montar", word(retoque(nuevo())), cuenta(22), 1,
