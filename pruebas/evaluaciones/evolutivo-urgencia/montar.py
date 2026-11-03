@@ -182,9 +182,10 @@ def ficha(parrafos: list[str], pieza: str) -> str:
 
 def words_al_dia(p: Path, inicio: dict, version: str | None, pantalla: str = "", texto: str = "") -> list[str]:
     """Lo que falla del Word al día (cambios.md §5, desde el 3-nov-2026). Con Word al montar y versión nueva, los
-    vigentes de esa versión, el completo y el de EV-02 (en curso), que se abren y dicen su versión exacta (el completo,
-    además, `texto` en la ficha de `pantalla`), con su PDF de revisión si sale, y nada más regenerado; lo del montaje en
-    entregables/ y prototipo/capturas/, ahí e igual. Sin Word al montar o sin versión nueva, nada regenerado."""
+    vigentes de esa versión, el completo y el de EV-02 (en curso), que se abren y dicen en la portada su versión exacta y
+    de qué Word son (el completo, además, `texto` en la ficha de `pantalla`), con su PDF de revisión si sale, y nada más
+    regenerado; lo del montaje en entregables/ y prototipo/capturas/, ahí e igual. Sin Word al montar o sin versión
+    nueva, nada regenerado. Lee la portada y una ficha: no valida el resto del Word."""
     con_word = f"entregables/{WORD_10}" in inicio
     nuevos = ([f"entregables/{f}-v{version}.docx" for f in FAMILIAS_WORD]
               if con_word and version and version != VERSION_MONTAJE else [])
@@ -201,8 +202,14 @@ def words_al_dia(p: Path, inicio: dict, version: str | None, pantalla: str = "",
         elif parrafos is None:
             mal.append(f"{n} no es un Word que se pueda abrir")
         else:
-            if not any(re.search(rf"Versión {re.escape(version)}(?![\d.]*\d)", x) for x in parrafos):
-                mal.append(f"{n} no dice «Versión {version}»")
+            # la portada: su versión exacta (el primer párrafo «Versión …») y de qué Word es (df_docx.js pone «Diseño
+            # funcional» en el completo y «Diseño funcional · cambio EV-02» en el de la unidad)
+            portada = next((x for x in parrafos if x.startswith("Versión ")), "")
+            if not re.match(rf"Versión {re.escape(version)}(?![\d.]*\d)", portada):
+                mal.append(f"{n} no dice «Versión {version}» en la portada")
+            modalidad = "Diseño funcional · cambio EV-02" if i else "Diseño funcional"
+            if modalidad not in parrafos or (not i and any(x.startswith("Diseño funcional · cambio") for x in parrafos)):
+                mal.append(f"{n} no es el Word {'del cambio EV-02' if i else 'completo'} («{modalidad}» en la portada)")
             if i == 0 and texto and texto not in ficha(parrafos, pantalla):
                 mal.append(f"la ficha de {pantalla} de {n} no dice «{texto}»")
     return mal

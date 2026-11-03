@@ -89,23 +89,25 @@ Con `--ocultas`:
 | `cierre` | Su ficha tiene «Cierre» con HF-2026-007 |
 | `ev02_sin_construir` | `EV-02` sigue Aprobada, `EV-01` En producción y la issue de `EV-02` sigue con «Reaplicar URG-nn» |
 | `bloqueo_pase` | En una copia, `EV-02` no pasa a producción, ni a Construida sin `--reaplicada URG-nn`; con ella pasa a Construida y después a producción |
-| `ligereza` | Ni más Word que los vigentes de la versión nueva ni capturas nuevas o cambiadas, y el funcional sin cambios |
+| `word_al_dia` | Como en la primera parte |
+| `ligereza` | El funcional sin cambios |
 | `comprobar` | `comprobar.py` sin errores |
 
 ## Criterio
 
-Obligatorios: `ficha`, `colision`, `donde`, `issue`, `bloqueo`, `estados` y `comprobar` (en las ocultas, `produccion`,
-`cierre`, `ev02_sin_construir`, `bloqueo_pase` y `comprobar`). Son lo que protege la corrección: si falla uno, el pase
+Obligatorios: `ficha`, `colision`, `donde`, `issue`, `bloqueo`, `estados`, `word_al_dia` y `comprobar` (en las
+ocultas, `produccion`, `cierre`, `ev02_sin_construir`, `bloqueo_pase`, `word_al_dia` y `comprobar`). Son lo que protege la corrección: si falla uno, el pase
 de `EV-02` puede pisarla en producción o no queda escrito quién la declaró crítica, dónde se hizo y cuándo se cerró: es
 el riesgo de perder trabajo, que tiene que dar error. `comprobar.py` es la puerta de todas las evaluaciones. No tienen
 margen: cada uno es un paso escrito del flujo corto de `references/urgentes.md` que da un script (`indice.py colision`,
 `indice.py issues`, `proyecto.py cambio`), así que no hay dos lecturas razonables como en `../evolutivo/`, que por eso
 pide el 80 %.
 
-De la ligereza (`word_al_dia` y `funcional_sin_cambios`; en las ocultas, `ligereza`) se tolera un fallo:
-regenerar de más, no poner al día el Word o tocar el funcional cuesta tiempo, pero no pierde trabajo ni construye nada equivocado, y la ligereza la mide
-`../coste-retoque/`. La primera parte pasa con 9/9, o con 8/9 si el que falla es de ligereza; las ocultas, con 6/6 o 5/6
-igual.
+`word_al_dia` es obligatorio desde el 3-nov-2026: el Word al día es una regla del método (`cambios.md` §5), no un
+coste. De la ligereza (`funcional_sin_cambios`; en las ocultas, `ligereza`) se tolera el fallo: tocar el funcional
+cuesta tiempo, pero no pierde trabajo ni construye nada equivocado, y la ligereza la mide `../coste-retoque/`. La
+primera parte pasa con 9/9, o con 8/9 si el que falla es `funcional_sin_cambios`; las ocultas, con 7/7 o 6/7 igual.
+Lo puntuado antes del 3-nov, con `sin_word_ni_capturas` como ligereza, no es comparable.
 
 Las dos puntuaciones salen 0.
 

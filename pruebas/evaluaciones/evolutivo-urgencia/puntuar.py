@@ -33,8 +33,8 @@ Con --ocultas (después del pase a producción):
   ev02_sin_construir  EV-02 sigue Aprobada, EV-01 En producción y la issue de EV-02 sigue con «Reaplicar URG-nn»
   bloqueo_pase  en una copia, EV-02 no pasa a producción, ni a Construida sin «--reaplicada URG-nn»; con ella pasa a
               Construida y después a producción
-  ligereza    ni más Word que los vigentes de la versión nueva ni capturas nuevas o cambiadas, y el funcional sin
-              cambios
+  word_al_dia como en la primera parte
+  ligereza    el funcional sin cambios
   comprobar   comprobar.py sin errores
 
 Umbral («umbral» de esperado.json): los puntos obligatorios se cumplen todos; de los de ligereza se tolera
@@ -236,9 +236,9 @@ def ocultas(p: Path, huella: dict, esperado: dict, P: Puntuacion, m, ctx):
         P.punto("bloqueo_pase", False, "sin URG")
     v = m.version("F")
     mal = mt.words_al_dia(p, huella, f"{v[0]}.{v[1]}" if v else None)
+    P.punto("word_al_dia", not mal, "; ".join(mal) or "los Word vigentes al día y nada más regenerado")
     igual = funcional_igual(p)
-    P.punto("ligereza", not mal and igual, ("; ".join(mal) or "los Word vigentes al día y nada más regenerado")
-            + ("; el funcional dice lo mismo que al montar" if igual else "; el funcional ha cambiado"))
+    P.punto("ligereza", igual, "el funcional dice lo mismo que al montar" if igual else "el funcional ha cambiado")
 
 
 def main() -> int:

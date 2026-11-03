@@ -103,4 +103,4 @@ tope, el camino más corto) y prueba `puntuar.py` con proyectos inventados: ese 
 llamada de más, una pasada con errores, la aprobación por construido, una DT, una captura regenerada sin prototipo, un
 Word entregado pisado o movido al nombre nuevo, el Word sin poner al día, el DF 1.0 copiado con el nombre de la 1.2, un
 Word vacío o falso o, sin Word al montar, uno nuevo, la fila sin unidad o en `EV-02`, nada hecho). Lee el plugin de
-`PLUGIN_A_PROBAR`. Las 17 llamadas son las del camino simulado, no una medida de un agente.
+`PLUGIN_A_PROBAR`. Las 18 llamadas son las del camino simulado, no una medida de un agente.

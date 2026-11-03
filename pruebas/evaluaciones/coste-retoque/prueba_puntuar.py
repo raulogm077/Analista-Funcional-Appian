@@ -251,6 +251,10 @@ def main() -> int:
                     z.writestr(n, b)
             return p
 
+        def completo_por_unidad(p):   # el DF completo de la 1.2 copiado con el nombre del de EV-02
+            shutil.copy2(p / E["word_nuevo"], p / E["word_unidad"])
+            return p
+
         def zip_plano(p):   # un ZIP cuyo word/document.xml es texto, no el XML de un Word
             with zipfile.ZipFile(p / E["word_nuevo"], "w") as z:
                 z.writestr("word/document.xml", f"PAN-01 — Panel {E['texto_nuevo']} Versión 1.2")
@@ -299,6 +303,8 @@ def main() -> int:
              f"FALLO word_al_dia: falta {E['word_nuevo']}"),
             ("sin poner al día el DF de EV-02, también vigente", retoque(nuevo(), unidad_al_dia=False), cuenta(22), 1,
              f"FALLO word_al_dia: falta {E['word_unidad']}"),
+            ("el DF completo copiado con el nombre del de EV-02", completo_por_unidad(retoque(nuevo())), cuenta(22), 1,
+             f"FALLO word_al_dia: {E['word_unidad']} no es el Word del cambio EV-02"),
             ("el DF 1.0 copiado con el nombre de la 1.2", copia10(retoque(nuevo())), cuenta(22), 1,
              f"la ficha de {E['pantalla']} de {E['word_nuevo']} no dice «{E['texto_nuevo']}»"),
             ("un Word vacío con el nombre de la 1.2", vacio(retoque(nuevo())), cuenta(22), 1,

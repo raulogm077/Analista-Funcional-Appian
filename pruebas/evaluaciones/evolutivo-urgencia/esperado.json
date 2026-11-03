@@ -18,8 +18,8 @@
   "comprobar": "comprobar.py sin errores"
  },
  "umbral": {
-  "obligatorios": ["ficha", "colision", "donde", "issue", "bloqueo", "estados", "comprobar"],
-  "ligereza": ["word_al_dia", "funcional_sin_cambios"],
+  "obligatorios": ["ficha", "colision", "donde", "issue", "bloqueo", "estados", "word_al_dia", "comprobar"],
+  "ligereza": ["funcional_sin_cambios"],
   "fallos_de_ligereza_tolerados": 1
  }
 }
