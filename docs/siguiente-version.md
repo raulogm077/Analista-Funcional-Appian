@@ -4,8 +4,9 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** el paso 3, la prueba con el plugin cargado desde la carpeta. La sesión la abre Raúl, con el guion de
-`Pruebas-plugin/paso3-20261103/PRUEBA.md`; mide también el 2.2.
+**Ahora:** el paso 3, la prueba con el plugin cargado desde la carpeta, con el guion de
+`Pruebas-plugin/paso3-20261103/PRUEBA.md`; mide también el 2.2. P1 a P7, en una sesión en segundo plano que arranca
+Claude; P8 y P9 necesitan a Raúl.
 
 ## 1. En la rama actual, por orden
 
@@ -38,7 +39,10 @@ paso 3.
 
 Con subagentes que leen la rama ya se vieron el push con y sin autorización, la autorización delegada, «gasta» y el
 localizador (`evaluaciones.md`). Falta repetirlo con el plugin cargado y lo que necesita Appian. Raúl la aprobó el
-3-nov. La sesión con `--plugin-dir` la abre él: lanzarla desatendida desde otra sesión lo denegó el clasificador (14-oct).
+3-nov. P1 a P7 los hace una sesión que arranca Claude con `claude --bg --plugin-dir`, con el permiso
+`Bash(claude --bg:*)` que Raúl dio el 22-oct (así se arrancaron las del ensayo; lo denegado el 14-oct fue otra cosa,
+`claude -p` con `bypassPermissions`). P8 y P9 necesitan a Raúl en persona: su delegación al abrir la sesión, y
+`--confiar` con una sesión en segundo plano que lanza él.
 
 - **Probar los cambios de comportamiento con el plugin cargado desde la carpeta** (`claude --plugin-dir`) en un
   proyecto de prueba, como pide `CLAUDE.md`. Comprobar: el localizador con una sesión real; «gasta» en un guion de QA,
