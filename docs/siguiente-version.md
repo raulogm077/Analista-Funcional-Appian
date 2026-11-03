@@ -19,16 +19,30 @@ notas; el 2.1 sigue por revisar con las reservas siguientes. Nada de estas propu
   y el estado del proyecto sin cerrar. Los diagramas de estados sí se pusieron al día. Raúl quiere que el funcional, el
   técnico, los prototipos y los diagramas draw.io digan cómo está hecho el proyecto, sin nada obsoleto y sin que cada
   construcción sea tediosa. Una primera redacción, en dos momentos (`ef0104b`), se retiró el 29-oct. [flujo]
-  **Por revisar, sin propuesta aprobada.** Falta concretar cuándo actualizar solo los documentos afectados por una
-  fuente, una decisión o un cambio real durante la construcción y el QA, para que los cuatro reflejen el proyecto sin
-  reescribir lo que no cambia. La caducidad de una huella no justifica dejar documentación obsoleta: hay que resolver
-  cómo registrar lo construido sin repetir trabajo innecesario. La alternativa de retirar «Vigente» y «Siguiente paso»
-  tampoco está validada: `modelo.py` lee «Vigente» y reconoce «No» como sustituida; `comprobar.py` rechaza que una pieza
-  vigente siga citando esa decisión sin indicar su anulación, no el «No» por sí solo. `estado` imprime el texto de
-  «Siguiente paso» de `proyecto.md`; no lo calcula ni sustituye sus posibles acciones de negocio. Antes de recomendar
-  retirar campos, hay que revisar sus consumidores y qué información los reemplazaría. No se retira ninguno. Entra
-  aquí también lo que solo puede hacer una persona en Designer: un campo de §3 que el Dev MCP no crea sale en lo
-  esperado de cada issue y para la cadena; no se rebaja lo esperado para que pase sin configurarlo.
+  **Borrador para decidir, sin aplicar.** La actualización por fuente ya corrige solo las piezas afectadas
+  (`actualizacion.md` §6). Falta enlazar con ella lo decidido durante construcción y QA: F8 manda registrar la DT y
+  regenerar las issues, pero no concreta la vuelta al resto de documentos. El análisis vivo incluye la aplicación y
+  las unidades en curso (introducción de `cambios.md`): no se presenta como construido lo que aún está pendiente.
+  **Recomendación:** al aceptar un cambio, corregir sus apartados antes de verificar el encargo actualizado: funcional
+  si cambia negocio; técnico si cambia diseño o configuración, o hay evidencia para resolver una comprobación
+  pendiente; prototipo existente y capturas si cambia la pantalla acordada; draw.io e imagen si cambia el proceso
+  representado, y Mermaid si cambian estados o datos. Un fallo frente al criterio se corrige en la aplicación o sigue
+  la excepción humana prevista; cambiar lo acordado conserva su aprobación. No se adapta el criterio al fallo.
+  Agrupar la regeneración de los derivados mientras no se necesiten y actualizarlos antes de usarlos para construir,
+  revisar o entregar. Como plazo propuesto, los documentos afectados quedan al día antes de marcar Construida la
+  unidad; este plazo requiere la decisión de Raúl. Se haría dentro de los pasos existentes, sin otra lista, script,
+  marca o aprobación adicional. Lo que no cambia no se reescribe ni regenera. El Word queda fuera de ese plazo: solo
+  al enviarlo o pedirlo, conservando lo ya entregado. Si cambia el encargo, su versión vigente necesita verificación
+  o el cierre manual previsto; documentar no conserva por sí solo la prueba anterior.
+  **Límites del borrador:** la ruta de una captura entra en la huella de la issue; el contenido de PNG, HTML y draw.io no;
+  tampoco se comparan automáticamente las contradicciones por paráfrasis. La alineación de contenido exige revisión
+  del LLM o de una persona. La comparación textual puede reabrir una issue por una reformulación o al completar
+  «Verificado» de una DT frente a su copia base; no hay un ahorro medido con este borrador (2.2). Hay que unificar el
+  momento del prototipo: el camino corto de `actualizacion.md` lo
+  difiere a enviar o construir, mientras §7 lo sitúa después de comprobar. No se retiran «Vigente» ni «Siguiente paso»:
+  `modelo.py` consume el primero, y `estado` imprime el segundo, no lo calcula. Entra aquí también lo que solo puede
+  hacer una persona en Designer: un campo de §3 que el Dev MCP no crea sale en lo esperado de cada issue y para la
+  cadena; no se rebaja lo esperado para que pase sin configurarlo. Nada de este borrador está incorporado a las skills.
 - **2.2 Coste del análisis.** Con el plugin, el análisis costó más en los tres incrementos. La clasificación heurística
   identifica 155 de 482 llamadas del modelo con órdenes o ficheros propios del método; no son pasos prescindibles ni
   ahorro medido. Los documentos finales `funcional.md` y `tecnico.md` pesaban unos 94 y 196 KB. Los 761–928k tokens son
