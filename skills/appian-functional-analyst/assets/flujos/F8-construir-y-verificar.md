@@ -32,6 +32,14 @@ El avance entre sesiones lo dicen la verificación o el cierre manual de cada is
 
 **Variante: un retoque cosmético.** El texto de un botón o una etiqueta: una fila «Modifica» en técnico §13, sin DT, una sola issue que dice qué cambia y que no hay pruebas que ejecutar, solo la primera puerta de calidad y sin QA. Si un guion de `qa/` usa el texto que cambia, al repetirlo falla en ese paso y se cambia el texto en el guion. `appian-functional-analyst/references/cambios.md` §4 y `appian-best-practices/SKILL.md` «Calibrate the effort to the change». <!-- (T6, T17) Según el coste medido, se hace a mano en Designer. -->
 
+**Variante: cambiar una issue ya verificada.** Un ajuste técnico dentro del encargo aprobado se escribe en el técnico
+según su plantilla (un retoque cosmético, sin DT) y se regenera con `indice.py issues <p> <U>`; un informe nuevo o un
+punto Pendiente de la unidad sigue la aprobación o la reasignación de `cambios.md` §1. Caducan las verificaciones de
+las issues cuyo encargo cambie; las demás no caducan por esa regeneración, aunque sus fallos vigentes de pruebas o QA
+siguen contando. Comparar en git con la revisión anterior del encargo puede ayudar a ver el cambio, también si ya está
+confirmado. Las subtareas son avance declarado: pueden quedar en «Revisar» y, con la versión actual verificada, no
+hace falta volver a marcarlas para cerrar la issue.
+
 **Variante: cierre manual de una issue.** Una persona puede aceptar lo construido con
 `indice.py issues <p> <U> ISS-nn --manual --motivo "…" [--quien "…"]`, también si no tiene Dev MCP.
 Se registra su identidad, fecha, motivo y versión; habilita las dependencias, caduca si cambia el encargo y
