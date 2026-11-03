@@ -1899,7 +1899,7 @@ def subir_autorizado(raiz):
     no lo autoriza."""
     p = pathlib.Path(raiz) / "proyecto.md"
     lineas = re.findall(r"^Subir al remoto:(.*)$", p.read_text(encoding="utf-8"), re.M) if p.is_file() else []
-    autorizada = r"\s*autorizado por (?=[^,]*\w)[^,<>{}—]+,\s*\d{4}-\d{2}-\d{2}\s*"
+    autorizada = r"\s*autorizado por (?=[^,]*[^\W_])[^,<>{}—]+,\s*\d{4}-\d{2}-\d{2}\s*"
     return bool(lineas) and re.fullmatch(autorizada, lineas[-1]) is not None
 
 

@@ -174,6 +174,15 @@ class SubirAlRemoto(unittest.TestCase):
     def subidos(self):
         return self.git("rev-list", "--count", "main", donde=self.remoto)
 
+    def test_nombre_con_letra_o_cifra_no_solo_guiones_bajos(self):
+        self.p.mkdir()
+        f = self.p / "proyecto.md"
+        for nombre, valida in (("_", False), ("__", False), ("José_García", True),
+                               ("_usuario_2", True), ("王", True), ("123", True)):
+            with self.subTest(nombre=nombre):
+                f.write_text(f"Subir al remoto: autorizado por {nombre}, 2026-11-03\n", encoding="utf-8")
+                self.assertEqual(iss.subir_autorizado(self.p), valida)
+
     def test_sin_autorizar_commit_local_en_todos_los_caminos(self):
         self.con_remoto()
         antes = self.subidos()
