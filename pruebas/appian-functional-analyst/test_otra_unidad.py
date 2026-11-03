@@ -42,6 +42,24 @@ class OtraUnidad(unittest.TestCase):
                                                if m.docs["T"].lineas[i].startswith("| campoajeno")))
 
 
+    def test_no_aplica_solo_en_su_apartado_no_va_a_la_base_ni_avisa(self):
+        """Casos A y B. Una condición parcial no es la marca de la plantilla: sigue en el aviso y en la Base."""
+        f = self.p / "analisis/tecnico.md"
+        self.preparada()
+        t = f.read_text(encoding="utf-8")
+        f.write_text(t.replace("## 10. Integraciones, documentos e IA",
+                               "### 9.8 Canales\n\nNo aplica: ningún canal externo en esta prueba.\n\n"
+                               "### 9.9 Canal parcial\n\nNo aplica en este incremento: el canal secundario.\n\n"
+                               "## 10. Integraciones, documentos e IA", 1), encoding="utf-8", newline="")
+        m = mo.Proyecto(self.p)
+        plan = iss.calcula(m, un.Contexto(m), "EV-01", estreno=True)
+        aviso = next(a for a in plan.avisos if "no nombran ningún objeto" in a)
+        self.assertNotIn("ningún canal externo", aviso)
+        self.assertIn("canal secundario", aviso)
+        base_issue = next(i for i in plan.issues if i.comun)
+        self.assertNotIn("ningún canal externo", base_issue.texto)
+        self.assertIn("canal secundario", base_issue.texto)
+
     def test_caso_de_prueba_en_minuscula_marca_el_escenario(self):
         self.preparada()
         f = self.p / "analisis/tecnico.md"

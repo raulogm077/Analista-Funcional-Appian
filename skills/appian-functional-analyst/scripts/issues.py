@@ -1291,7 +1291,9 @@ def calcula(m, ctx, uid, estreno=False):
     # nombra ningún objeto suyo (la matriz de seguridad de §4, una constante que falta en §13): va en la Base o, sin
     # Base, en todas, porque la issue dice que no hace falta leer el técnico. Y se avisa al analista
     # (salvo lo que dice ser de otra unidad: se construye con la suya)
-    perdidas = [x for x in lineas if x["i"] not in cubiertas and not x["otra"]
+    apartados = [x["donde"] for x in lineas]
+    no_aplica = lambda x: apartados.count(x["donde"]) == 1 and re.match(r"\W*No aplica:", x["texto"], re.I)   # noqa: E731
+    perdidas = [x for x in lineas if x["i"] not in cubiertas and not x["otra"] and not no_aplica(x)
                 and (d.inicial or x["estado"] in ("nuevo", "cambia"))]
     base = [i for i in issues if i.comun] or issues
     for i in base:
