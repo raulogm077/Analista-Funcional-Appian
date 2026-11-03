@@ -4,15 +4,15 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** aplicar lo que Raúl decidió el 3-nov en el paso 2: el 2.1, con el Word siempre al día, y el 2.6, con una
-prueba real antes de redactar F9. Después, el paso 3, que mide también el 2.2. Lo hecho está en `evaluaciones.md`.
+**Ahora:** aplicar el 2.1, con el Word siempre al día; el 2.6 ya está (`evaluaciones.md`). Después, el paso 3, que
+mide también el 2.2 y repite el 2.6 con el plugin cargado.
 
 ## 1. En la rama actual, por orden
 
 ### Paso 2 · Aplicar lo que decidió Raúl
 
 Raúl decidió el 3-nov, en el chat: el 2.1 se acepta con el Word siempre al día; el 2.2 se mide (paso 3); el 2.6 se
-acepta y hay que probarlo bien. Nada está aplicado todavía.
+acepta y hay que probarlo bien. El 2.6 está aplicado (`evaluaciones.md`); falta el 2.1.
 
 - **2.1 Documentos al cerrar un incremento.** En la prueba con y sin el plugin, los documentos quedaron a medias:
   decisiones antiguas marcadas como vigentes, contradicciones puntuales, DT con «pendiente: al construir» ya construidas
@@ -64,14 +64,6 @@ acepta y hay que probarlo bien. Nada está aplicado todavía.
   a `resumen`. El crecimiento de caracteres tras `97fa604` incorpora contenido antes omitido y no mide coste entre
   alternativas de igual cobertura. «Varias issues por sesión» es otra hipótesis, sin ahorro acreditado para este
   análisis. No se ha ejecutado esta comparación ni se ha aplicado una regla nueva. [flujo y scripts]
-- **2.6 F9.** Que la IA pueda dejar preparado el paquete en desarrollo; hoy lo prepara una persona.
-  **Aceptado por Raúl el 3-nov, probándolo bien; sin aplicar:** que la IA prepare un borrador en desarrollo, con la
-  revisión del paso 4 siempre humana; exportar y desplegar siguen a cargo de una persona. La asignación del ICF y los
-  scripts de base de datos a una persona es una elección de roles, no una falta de herramientas: el esquema disponible
-  expone ambos. `addPackageObjects` advierte de éxito parcial en `success`/`errors`; no basta el estado de la llamada
-  para dar el lote por completo. Primero se prueba con un paquete real en Indra-spain, sobre IFA o IFB, apuntando lo
-  que se cree para retirarlo en el paso 4; después se redactan F9 (Empieza y pasos 3 a 5) y
-  `08-alm-testing-naming.md` §3 con lo observado, y en el paso 3 lo repite la sesión con el plugin cargado. [F9]
 
 ### Paso 3 · Prueba con el plugin cargado desde la carpeta
 
@@ -141,7 +133,9 @@ lista exacta de lo que se borra.
   punto 10 ya está en parte corregido. Añadir la discrepancia de `LCP_TOOL_MODE=readonly` y lo visto en el ensayo: cada
   copia del servidor borra el `cookies.json` compartido al caducar su sesión (hay un parche local que cada bundle pisa),
   `listProcessInstances` omite instancias y su «total» cambia, no hay forma de cancelar instancias, el rechazo del MCP
-  por «builds distintas» a mitad de un trabajo y el caso que crea `testInputs`. Lo envía Raúl. [persona]
+  por «builds distintas» a mitad de un trabajo y el caso que crea `testInputs`. Y, del 2.6 (26.9.5), que en
+  `addPackageObjects` una entrada con el tipo cambiado hace fallar también las reglas, constantes e interfaces válidas
+  de la misma llamada con «Could not resolve the object's type… may not exist». Lo envía Raúl. [persona]
 - **Rama `yaroslav/plantilla-DF-cliente`** en GitHub, solo si Raúl lo pide: 17 commits del 19-oct sin PR, ni en
   `main` ni en esta rama; es independiente de ella. [persona]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
