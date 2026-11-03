@@ -4,7 +4,8 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 2, punto 2.1: Raúl lo reabrió y Claude trae una recomendación nueva.
+**Ahora:** corregir el feedback de las pruebas que siga sin resolver: Codex lo contrasta con estos dos documentos y
+cada hallazgo se corrige con su prueba. Después, paso 2; el 2.1 queda pendiente de la decisión de Raúl.
 
 ## 1. En la rama actual, por orden
 
