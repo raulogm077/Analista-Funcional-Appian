@@ -359,7 +359,8 @@ def unidades_de_texto(lineas):
 def lineas_del_tecnico(d):
     """Las líneas de los apartados 3 a 12 del técnico, cada una con lo que hace falta para saber de qué issue es:
     {i, donde («§7», «§3.1»), texto, cabecera (si es la fila de una tabla), titulo (la línea que precede a su tabla),
-    ids que cita, objetos que nombra, de (el objeto de su apartado «### 3.n <nombre>») y estado frente a la copia de la
+    ids que cita, objetos que nombra, definidos (el sujeto del apartado, bloque o celda que declara un objeto),
+    de (el objeto de su apartado «### 3.n <nombre>») y estado frente a la copia de la
     versión base, en su apartado y bajo el mismo título en negrita (bloques()): "" (no hay copia), igual, nuevo o cambia
     (con «era», sus celdas de antes)}. Nombra un objeto la línea
     que lo dice entre comillas invertidas o en negrita, la fila con una celda que es su nombre, la fila de una tabla cuyo
@@ -426,14 +427,32 @@ def lineas_del_tecnico(d):
             continue
         fila = mo.celdas(l) if l.startswith("|") else None
         objetos = nombrados(l, d.todos) | bloque
+        definidos = ({de} if de else set()) | bloque
         if fila:
             objetos |= {nombres[mo.normaliza(c.strip(" `*"))] for c in fila if mo.normaliza(c.strip(" `*")) in nombres}
-            objetos |= nombrados(T.lineas[titulo], d.todos) if titulo is not None else set()
+            del_titulo = nombrados(T.lineas[titulo], d.todos) if titulo is not None else set()
+            objetos |= del_titulo
+            # Igual que acciones_7: la tabla declara acciones del record type nombrado en su título.
+            if s == "7" and cabecera and mo.normaliza(cabecera[0]).startswith("accion") \
+                    and "tipo" in {mo.normaliza(c) for c in cabecera}:
+                definidos |= del_titulo
+            if not definidos:
+                for k, c in enumerate(fila):
+                    cab = mo.normaliza(cabecera[k]) if cabecera and k < len(cabecera) else ""
+                    if k == 0 or cab in ("grupo", "constante"):
+                        definidos |= {nombres[mo.normaliza(un.objeto(o))] for o in un.objetos_celda(c.strip("*"))
+                                      if mo.normaliza(un.objeto(o)) in nombres}
+                    elif cab == "que es en appian":
+                        # «`Interfaz`, vista de `Record`»: define la interfaz; el record aporta contexto.
+                        principal = re.match(r"^`([^`]+)`", c.strip())
+                        nombre = nombres.get(mo.normaliza(un.objeto(principal.group(1)))) if principal else None
+                        if nombre:
+                            definidos.add(nombre)
         if abre_sub:
             otra_sub, abre_sub = es_marca_otra_unidad(l) and not l.startswith("|"), False     # «Otra unidad. Una por mes.» abre el apartado: todo él es de otra
         item = {"i": i, "donde": f"§{apartado or s}", "texto": unidas[i], "cabecera": cabecera if fila else None,
                 "otra": otra_sub or es_marca_otra_unidad(l), "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
-                "objetos": objetos, "estado": "", "era": None}
+                "objetos": objetos, "definidos": definidos, "estado": "", "era": None}
         cabezas[i] = item
         if antes:
             previas = antes.get((s, de_bloque[i]), ())
@@ -524,11 +543,26 @@ def del_tecnico(d, issue, lineas, dts):
     cita = set(issue.requisitos) | {c for h in issue.requisitos for c in m.piezas[h].hijos} | \
         citadas_por(m, issue.requisitos)
     de_parte = lambda x, o: any(s in mo.normaliza(x["texto"]) for s in senas[o])
-    # una decisión técnica entra por lo que cita su «Necesidad», no por nombrar un objeto en su texto: si no, una DT nueva
-    # que nombra un objeto de la Base dejaría pendiente lo ya verificado. Lo que cambia un objeto está en §3 a §12
+    # una decisión técnica entra por su «Necesidad» o porque la especificación de esta issue la cita, no por nombrar
+    # el mismo objeto en su texto: una DT de otra pantalla no debe dejar pendiente la Base por esa sola mención
     suya = lambda x: "dt" not in x and (x["objetos"] & enteros or x["de"] in enteros or any(de_parte(x, o) for o in senas))
-    mias = [x for x in lineas + dts if suya(x) or x["ids"] & cita or x.get("base") and issue.comun
-            or x["i"] in issue.sueltas and "dt" not in x]
+    define = lambda x: x.get("definidos", set()) & enteros or any(
+        un.objeto(o) in x.get("definidos", set()) and de_parte(x, o) for o in senas)
+    necesarias = {x["donde"] for x in dts if x["ids"] & cita or x.get("base") and issue.comun}
+    referidas, comunes, ids_dt = set(), set(), {x["donde"] for x in dts}
+    while True:
+        mias = [x for x in lineas + dts if suya(x) or x["ids"] & cita or x.get("base") and issue.comun
+                or x["i"] in issue.sueltas and "dt" not in x or "dt" in x and x["donde"] in referidas
+                or "dt" not in x and x["donde"].split(".")[0] == "§4" and x["ids"] & comunes
+                and (not x.get("definidos") or define(x))]
+        nuevas = set().union(*(x["ids"] for x in mias if define(x) or "dt" in x and x["donde"] in referidas)) & ids_dt
+        # «Seguridad: DT-02» necesita la DT y sus condiciones de §4 aunque la issue no tenga historias.
+        # Ese contexto no incorpora otras DT por compartir la regla: siguen entrando por su propia necesidad o cita.
+        ligadas = citadas_por(m, referidas)
+        if nuevas <= referidas and ligadas <= comunes:
+            break
+        referidas |= nuevas
+        comunes |= ligadas
     donde = {o: list(dict.fromkeys(x["donde"] for x in mias if (de_parte(x, o) if o in senas else
                                                                un.objeto(o) in x["objetos"] or x["de"] == un.objeto(o))))
              for o in nombres}
@@ -553,7 +587,10 @@ def del_tecnico(d, issue, lineas, dts):
         out.append(f"- Y {callan} líneas más del técnico que no cambian con {d.uid}: lo que dicen ya está construido."
                    if callan > 1 else
                    f"- Y una línea más del técnico que no cambia con {d.uid}: lo que dice ya está construido.")
-    return out, donde, set().union(*(x["objetos"] for x in van)) - set(issue.objetos), {x["i"] for x in mias if "dt" not in x}
+    # Una DT añadida como contexto puede enumerar procesos independientes: no implica que se construyan en serie.
+    # Las dependencias conservan sus fuentes: la especificación y las DT seleccionadas por su «Necesidad».
+    nombra = set().union(*(x["objetos"] for x in van if "dt" not in x or x["donde"] in necesarias))
+    return out, donde, nombra - set(issue.objetos), {x["i"] for x in mias if "dt" not in x}
 
 
 # ------------------------------------------------------------------ el texto de una issue

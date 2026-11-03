@@ -1,5 +1,5 @@
-"""Una decisión técnica nueva solo cambia la huella de las issues cuyos requisitos cita su «Necesidad», no las de los
-objetos que nombra en su texto. Datos ficticios, sin red."""
+"""Sin cita explícita desde su especificación, una DT nueva solo cambia la huella de las issues cuyos requisitos cita
+su «Necesidad», no las de los objetos que nombra en su texto. Datos ficticios, sin red."""
 import re
 import unittest
 import test_automejora as base

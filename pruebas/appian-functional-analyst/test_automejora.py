@@ -96,6 +96,133 @@ class Automejora(unittest.TestCase):
             fn(*args)
         return out.getvalue()
 
+    def test_dt_referida_desde_objeto_base_lleva_su_seguridad(self):
+        """Caso B: la tabla del record type cita una DT cuya necesidad es una regla común, no «Base»."""
+        self.preparada()
+        tecnico = self.p / "analisis/tecnico.md"
+        texto = tecnico.read_text(encoding="utf-8")
+        self.assertIn("| **Necesidad** | RB-01, HU-02, HU-09 |", texto)
+        texto = texto.replace("| **Necesidad** | RB-01, HU-02, HU-09 |", "| **Necesidad** | RB-01 |")
+        condicion = "Nadie más entra (RB-01): los demás usuarios no tienen acceso al registro."
+        texto = texto.replace("## 5.", condicion + "\n\n## 5.", 1)
+        texto = texto.replace("## 3. Modelo de datos", "**DT-90 — Presentación ajena a la Base**\n\n"
+                              "| Campo | Contenido |\n|---|---|\n"
+                              "| **Necesidad** | HU-02 |\n"
+                              "| **Decisión** | La pantalla presenta `AUT Solicitud` en dos columnas |\n"
+                              "| **Por qué** | Presentación de HU-02 |\n\n## 3. Modelo de datos", 1)
+        tecnico.write_text(texto, encoding="utf-8")
+        m = mo.Proyecto(self.p)
+        plan = iss.calcula(m, un.Contexto(m), "EV-01", estreno=True)
+        base = next(i for i in plan.issues if i.comun)
+        self.assertIn("- DT-02 Visibilidad por unidad con seguridad de registro", base.texto)
+        self.assertIn("Users found in fields", base.texto)
+        self.assertIn(condicion, base.texto)
+        # Nombrar el mismo objeto sin que su especificación cite la DT sigue sin alterar la Base.
+        self.assertNotIn("DT-90 Presentación ajena", base.texto)
+
+    def test_dt_del_objeto_llega_tambien_a_una_issue_sin_base(self):
+        self.preparada()
+        tecnico = self.p / "analisis/tecnico.md"
+        texto = tecnico.read_text(encoding="utf-8")
+        texto = texto.replace("| **Necesidad** | RB-01, HU-02, HU-09 |", "| **Necesidad** | Seguridad del registro |")
+        texto = texto.replace("| **Decisión** | `AUT Solicitud` lleva", "| **Decisión** | Para cumplir RB-01, `AUT Solicitud` lleva", 1)
+        condicion = "Nadie más entra (RB-01): los demás usuarios no tienen acceso al registro."
+        texto = texto.replace("## 5.", condicion + "\n\n## 5.", 1)
+        texto = re.sub(r"## 13\..*?(?=## 14\.)", "## 13. Plan de construcción\n\n"
+                       "| Paso | Objeto | Tipo | Situación | Sustituye a | Cambio | Para |\n"
+                       "|---|---|---|---|---|---|---|\n"
+                       "| 1 | `AUT Solicitud` | Record type | Nuevo | — | EV-01 | HU-01 |\n\n",
+                       texto, flags=re.S)
+        tecnico.write_text(texto, encoding="utf-8")
+        m = mo.Proyecto(self.p)
+        plan = iss.calcula(m, un.Contexto(m), "EV-01", estreno=True)
+        self.assertEqual(len(plan.issues), 1)
+        propia = plan.issues[0]
+        self.assertFalse(propia.comun)
+        self.assertIn("- DT-02 Visibilidad por unidad con seguridad de registro", propia.texto)
+        self.assertIn(condicion, propia.texto)
+
+    def test_dt_de_otra_definicion_no_entra_por_una_linea_de_contexto(self):
+        self.preparada()
+        tecnico = self.p / "analisis/tecnico.md"
+        texto = tecnico.read_text(encoding="utf-8")
+        lineas = texto.splitlines()
+        for n, linea in enumerate(lineas):
+            if linea.startswith("| PAN-02 |"):
+                celdas = mo.celdas(linea)
+                celdas[-1] += " (HU-01; DT-92)"
+                lineas[n] = "| " + " | ".join(celdas) + " |"
+        texto = "\n".join(lineas) + "\n"
+        texto = texto.replace("## 3. Modelo de datos", "**DT-92 — Columnas propias de la ficha**\n\n"
+                              "| Campo | Contenido |\n|---|---|\n"
+                              "| **Necesidad** | Presentación de la ficha |\n"
+                              "| **Decisión** | `AUT_FichaSolicitud` presenta `AUT Solicitud` en dos columnas |\n"
+                              "| **Por qué** | Diseño de la ficha |\n\n## 3. Modelo de datos", 1)
+        tecnico.write_text(texto, encoding="utf-8")
+        m = mo.Proyecto(self.p)
+        plan = iss.calcula(m, un.Contexto(m), "EV-01", estreno=True)
+        ficha = next(i for i in plan.issues if "AUT_FichaSolicitud" in i.objetos)
+        regla = next(i for i in plan.issues if "AUT_GenerarNumero" in i.objetos)
+        base = next(i for i in plan.issues if i.comun)
+        self.assertIn("- DT-92 Columnas propias de la ficha", ficha.texto)
+        self.assertNotIn("- DT-92 Columnas propias de la ficha", regla.texto)
+        self.assertNotIn("- DT-92 Columnas propias de la ficha", base.texto)
+
+    def test_dt_de_contexto_no_convierte_sus_menciones_en_dependencias(self):
+        self.preparada()
+        tecnico = self.p / "analisis/tecnico.md"
+        texto = tecnico.read_text(encoding="utf-8")
+        lineas = texto.splitlines()
+        for n, linea in enumerate(lineas):
+            if linea.startswith("| PAN-02 |"):
+                lineas[n] = linea[:-1] + " (DT-92) |"
+        texto = "\n".join(lineas) + "\n"
+        texto = texto.replace("## 3. Modelo de datos", "**DT-92 — Alcance de la ficha**\n\n"
+                              "| Campo | Contenido |\n|---|---|\n"
+                              "| **Necesidad** | Presentación de la ficha |\n"
+                              "| **Decisión** | La ficha no modifica `AUT_PlantillaAutorizacion` |\n"
+                              "| **Por qué** | Son objetos independientes |\n\n## 3. Modelo de datos", 1)
+        tecnico.write_text(texto, encoding="utf-8")
+        def ficha():
+            m = mo.Proyecto(self.p)
+            plan = iss.calcula(m, un.Contexto(m), "EV-01", estreno=True)
+            return next(i for i in plan.issues if "AUT_FichaSolicitud" in i.objetos)
+        propia = ficha()
+        self.assertIn("La ficha no modifica `AUT_PlantillaAutorizacion`", propia.texto)
+        self.assertNotIn("AUT_PlantillaAutorizacion", propia.nombra)
+        # El comportamiento anterior de las DT seleccionadas por «Necesidad» se conserva.
+        tecnico.write_text(texto.replace("| **Necesidad** | Presentación de la ficha |",
+                                        "| **Necesidad** | HU-06 |").replace("La ficha no modifica", "La ficha usa"),
+                           encoding="utf-8")
+        self.assertIn("AUT_PlantillaAutorizacion", ficha().nombra)
+
+    def test_dt_de_una_accion_no_arrastra_la_de_otra_parte_del_record(self):
+        self.preparada()
+        tecnico = self.p / "analisis/tecnico.md"
+        texto = tecnico.read_text(encoding="utf-8")
+        for dt, accion in (("DT-95", "Nueva solicitud"), ("DT-96", "Reenviar")):
+            texto = texto.replace("## 3. Modelo de datos", f"**{dt} — Visibilidad de {accion}**\n\n"
+                                  "| Campo | Contenido |\n|---|---|\n"
+                                  "| **Necesidad** | Visibilidad de la acción |\n"
+                                  f"| **Decisión** | Solo técnicos en {accion} |\n"
+                                  "| **Por qué** | Segregación |\n\n## 3. Modelo de datos", 1)
+        texto = texto.replace("## 8. Procesos", "Acciones de registro de `AUT Solicitud`\n\n"
+                              "| Acción | Tipo | Proceso | Quién la ve |\n|---|---|---|---|\n"
+                              "| «Nueva solicitud» | De lista | `AUT Tramitar Solicitud` | Técnicos (DT-95) |\n"
+                              "| «Reenviar» | Relacionada | `AUT Tramitar Solicitud` | Técnicos (DT-96) |\n\n"
+                              "## 8. Procesos", 1)
+        texto = re.sub(r"## 13\..*?(?=## 14\.)", "## 13. Plan de construcción\n\n"
+                       "| Paso | Objeto | Tipo | Situación | Sustituye a | Cambio | Para |\n"
+                       "|---|---|---|---|---|---|---|\n"
+                       "| 1 | `AUT Solicitud` — acción «Nueva solicitud» | Record type | Modifica | — | EV-01 | HU-01 |\n\n",
+                       texto, flags=re.S)
+        tecnico.write_text(texto, encoding="utf-8")
+        m = mo.Proyecto(self.p)
+        plan = iss.calcula(m, un.Contexto(m), "EV-01", estreno=True)
+        self.assertEqual(len(plan.issues), 1)
+        self.assertIn("- DT-95 Visibilidad de Nueva solicitud", plan.issues[0].texto)
+        self.assertNotIn("- DT-96 Visibilidad de Reenviar", plan.issues[0].texto)
+
     def test_tecnico_completo_sin_dt_ni_datos_activa_criterios_y_estado_cli(self):
         self.copia()
         f = self.p / "analisis/tecnico.md"
