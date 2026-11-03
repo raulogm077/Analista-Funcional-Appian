@@ -26,7 +26,9 @@ notas; el 2.1 sigue por revisar con las reservas siguientes. Nada de estas propu
   tampoco está validada: `modelo.py` lee «Vigente» y reconoce «No» como sustituida; `comprobar.py` rechaza que una pieza
   vigente siga citando esa decisión sin indicar su anulación, no el «No» por sí solo. `estado` imprime el texto de
   «Siguiente paso» de `proyecto.md`; no lo calcula ni sustituye sus posibles acciones de negocio. Antes de recomendar
-  retirar campos, hay que revisar sus consumidores y qué información los reemplazaría. No se retira ninguno.
+  retirar campos, hay que revisar sus consumidores y qué información los reemplazaría. No se retira ninguno. Entra
+  aquí también lo que solo puede hacer una persona en Designer: un campo de §3 que el Dev MCP no crea sale en lo
+  esperado de cada issue y para la cadena; no se rebaja lo esperado para que pase sin configurarlo.
 - **2.2 Coste del análisis.** Con el plugin, el análisis costó más en los tres incrementos. Un reparto contable de las
   transcripciones (hipótesis, no ahorro causal) apunta a dos causas:
   - los pasos del método por incremento: unos 155 de 482 turnos usan órdenes o ficheros propios del plugin;
@@ -53,24 +55,6 @@ notas; el 2.1 sigue por revisar con las reservas siguientes. Nada de estas propu
   **Recomendación:** sí, sin exportar ni desplegar; el ICF y los scripts de base de datos los pone una persona, y la
   revisión del paso 4 es siempre de una persona (decirlo en F9 y en el README). Sin regla sobre el alta en lote: la
   herramienta ya devuelve el error. **Pregunta:** ¿se aplica? [F9]
-- **2.7 Decisiones pequeñas del barrido del feedback.** Cada una, una frase o nada:
-  - Lo que solo hace una persona en Designer bloquea la cadena: un campo de §3 que el Dev MCP no crea sale en lo esperado
-    de cada issue. Recomendación: que el técnico lo escriba como paso manual de §13, sin rebajar lo esperado de lo demás.
-    Depende del 2.1. [plantilla técnica]
-  - El Dev MCP no configura el inicio programado de un proceso y una sesión lo rodeó con un bucle que nadie puede parar.
-    Recomendación: añadirlo a los ejemplos de «lo hace una persona» en `appian-best-practices/SKILL.md`. [buenas prácticas]
-  - Con reuniones sin prioridades, la IA escribe «Pendiente» y `comprobar.py` falla. Recomendación: una frase en la
-    plantilla del funcional: propuesta 🔶 y una PC, como ya dice la ingesta de un DF. [plantilla funcional]
-  - Botón «Limpiar» tras uno que valida deja «A value is required»; `validationGroup` no bastó. Recomendación: una frase
-    en el doc 02 marcada «seen once». [buenas prácticas]
-  - `pdf-publisher` no comprueba los destinos de «ver página N» (una vez, corregido a mano). Recomendación: dejarlo como
-    límite conocido. [agente]
-  - Las galerías HTML de `appian-prototipos` (1,8 MB) no las cita nadie y se regeneran. Recomendación: retirarlas, con
-    confirmación. [prototipos]
-  - Volver a probar el método de volumen grande y la contradicción de alcance perdida cuesta 2,7–3,8 M de tokens.
-    Recomendación: esperar al próximo proyecto grande real. [prueba]
-  - La seguridad de acciones de registro con constante no salía a nadie (una vez, sin causa demostrada). Comprobarlo
-    escribe en Indra-spain. Recomendación: una prueba corta solo si Raúl la autoriza; hasta entonces, sin regla. [prueba]
 
 ### Paso 3 · Prueba con el plugin cargado desde la carpeta
 
@@ -102,6 +86,9 @@ localizador (`evaluaciones.md`). Falta repetirlo con el plugin cargado y lo que 
   24-oct, que se repiten cada día y envían correo; solo las cancela una persona. La de IFB no se puede leer (403). Qué
   se quita lo confirma Raúl. [persona]
 
+- En el repositorio, las galerías HTML de `appian-prototipos/galerias/` (1,8 MB, no las cita nadie y se regeneran con
+  `generar_app.py` y `build.py`): retirarlas o dejarlas lo confirma Raúl. [persona]
+
 ### Paso 5 · Cierre de la rama
 
 - **Cierre**, cuando Raúl diga «sube». Antes del PR, poner al día «Trabajo en curso» de `CLAUDE.local.md`. La batería
@@ -118,6 +105,11 @@ localizador (`evaluaciones.md`). Falta repetirlo con el plugin cargado y lo que 
 - **LEEME completo y deriva interna** de una aplicación real: siguen sin medir. La extracción masiva sigue detenida y
   `getAgent`, aparcado tras el aviso a Appian. Al reanudarla, decidir si reconoce el parámetro `object` de
   `getObjectDependents` o se queda con el grafo actual (límite en `evaluaciones.md`).
+- **Próximo proyecto grande real.** Contar las historias duplicadas entre módulos (P3: 4-6 % de 78) y comprobar que
+  una contradicción de alcance llega a su PC con las dos posturas citadas (T5). Se quedan como texto hasta entonces.
+  [prueba]
+- **Seguridad de acciones de registro con constante.** Diez acciones no salían a nadie (una vez, sin causa
+  demostrada). Contrastarlo escribe en Indra-spain: solo si Raúl lo autoriza; hasta entonces, sin regla. [prueba]
 - **Diagramas.** Reducir los 30/38 avisos residuales solo con una mejora medida, sin relajar detectores.
 - **URL `/help/26.6/`** de `data-fabric.md` y `agents/data-modeler.md`: revisarlas cuando cambie la versión de Appian
   del entorno.
@@ -138,6 +130,9 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
 - **Revisión de la versión 26.10.** Contrastar las versiones del entorno Appian y del bundle Dev MCP, la documentación
   nueva, las herramientas y la skill oficial. Actualizar el comportamiento del plugin con las capacidades nuevas
   que procedan, retirar indicaciones obsoletas o deprecadas y comprobar que lo que ya funcionaba sigue funcionando.
+  Comprobar ahí si el bundle configura ya el inicio programado de un proceso (mientras, rige L3: lo hace una persona,
+  sin un bucle de temporizador como sustituto) y volver a contrastar el botón «Limpiar» tras uno que valida, que dejó
+  «A value is required» aunque llevara `validationGroup` (laboratorio de la campaña de Codex).
 - **Todas las entradas del plugin.** Inventariar y probar las entradas y variantes documentadas en el README, los
   flujos y los modos de cada skill, tanto su invocación directa como su uso dentro de un flujo.
 - **Ingeniería inversa y refactorización a fondo.** Probar extracción, continuación, deriva, dependencias,
@@ -147,4 +142,5 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   ejecuciones, selector con límite o inactivos, usuario fijo…): el puntuador de entonces no los veía.
 - **Agentes y skills, por separado y juntos.** Evaluar qué recibe, decide y entrega cada uno; después, comprobar sus
   relaciones y traspasos dentro del flujo completo, su calidad, fricción y coste. Repetir los casos afectados tras
-  las correcciones y recoger las conclusiones en este seguimiento y en `evaluaciones.md`.
+  las correcciones y recoger las conclusiones en este seguimiento y en `evaluaciones.md`. Caso para `pdf-publisher`:
+  una vez remitió cuatro procesos a la misma página («ver página N» sin comprobar el destino).
