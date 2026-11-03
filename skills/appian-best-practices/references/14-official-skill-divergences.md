@@ -54,8 +54,6 @@ mechanics still do.
   of a user field belong to the object being built: completing them is not working outside the agreed
   scope. If one of them touches an object the issue freezes or leaves to another one (`construccion/<U>/ISS-nn.md`),
   stop and ask — SKILL.md, *Discovering Project Context*.
-- **Loading its references before every write.** That is its own rule, whatever the size of the change;
-  this skill's calibration only decides which of **this** skill's docs to open — SKILL.md, *Calibrate*.
 - **Listing a type before creating an object.** A collision check, not the exploration this skill warns
   against — SKILL.md, *Discovering Project Context*.
 

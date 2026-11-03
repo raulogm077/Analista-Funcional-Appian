@@ -29,32 +29,36 @@ notas; el 2.1 sigue por revisar con las reservas siguientes. Nada de estas propu
   retirar campos, hay que revisar sus consumidores y qué información los reemplazaría. No se retira ninguno. Entra
   aquí también lo que solo puede hacer una persona en Designer: un campo de §3 que el Dev MCP no crea sale en lo
   esperado de cada issue y para la cadena; no se rebaja lo esperado para que pase sin configurarlo.
-- **2.2 Coste del análisis.** Con el plugin, el análisis costó más en los tres incrementos. Un reparto contable de las
-  transcripciones (hipótesis, no ahorro causal) apunta a dos causas:
-  - los pasos del método por incremento: unos 155 de 482 turnos usan órdenes o ficheros propios del plugin;
-  - los documentos vivos grandes (`funcional.md` ~94 KB y `tecnico.md` ~196 KB), que se editan por parches y se
-    releen con un contexto de hasta 760–930k tokens.
-
-  **Recomendación:** no juntar pasos ni pasarlos a scripts (como mucho un 12 % de los turnos, sin ahorro acreditado) y no
-  tocar las issues sin medir, también tras `97fa604`, que las agranda un 2–15 %. Solo una línea fija en `resumen` con el
-  tamaño de los documentos y «no los leas enteros: buscar y `ficha --lineas`». Medir los KB leídos en el paso 3 o en el
-  próximo incremento real, sin ronda de pago. La regla de F8 «varias issues por sesión» sigue siendo una hipótesis.
-  **Pregunta:** ¿se añade esa línea, sin más cambios? [flujo y scripts]
-- **2.3 Aviso «criterios sin objeto».** No se apaga al marcar la unidad construida, porque las historias no tienen la
-  marca «Otra unidad». **Recomendación:** una frase al final del aviso (si esta unidad no las construye, no hace falta
-  nada; si las construye, falta su fila «Para»), sin marca para historias. **Pregunta:** ¿basta? [`issues.py`]
+- **2.2 Coste del análisis.** Con el plugin, el análisis costó más en los tres incrementos. La clasificación heurística
+  identifica 155 de 482 llamadas del modelo con órdenes o ficheros propios del método; no son pasos prescindibles ni
+  ahorro medido. Los documentos finales `funcional.md` y `tecnico.md` pesaban unos 94 y 196 KB. Los 761–928k tokens son
+  caché/contexto final de las sesiones, no tokens de esos documentos ni KB releídos. El reparto contable identifica
+  focos para revisar, sin aislar causas ni acreditar un techo de ahorro (límites de `coste-analisis.md`, §0 y §4.2).
+  **Por revisar, sin propuesta aprobada:** qué pasos agrupar o automatizar y qué lecturas limitar, manteniendo la
+  calidad. Buscar y leer el tramo de `ficha --lineas` ya está en el método; la utilidad adicional de una línea fija en
+  `resumen` no se ha probado. Medir el efecto en el paso 3 o en el próximo incremento real, sin deducir ahorro del
+  número de llamadas. El crecimiento de caracteres tras `97fa604` incorpora contenido antes omitido y no mide coste
+  entre alternativas de igual cobertura. «Varias issues por sesión» sigue siendo una hipótesis. [flujo y scripts]
+- **2.3 Aviso «criterios sin objeto».** El cálculo señala historias que considera de la unidad, con criterios nuevos
+  o cambiados cuyos escenarios no entran en ninguna issue. No consulta si la unidad está Construida; la ausencia de
+  «Otra unidad» en las historias no es su condición de disparo (esa marca reparte texto técnico).
+  **Por revisar:** distinguir un aviso residual del alcance de una falta real de cobertura. Si esos escenarios
+  corresponden a la unidad, revisar su asignación en §13; la marca Construida no acredita que se hayan cubierto.
+  No se propone ignorarlos ni añadir una marca nueva sin resolver ese alcance. [`issues.py`]
 - **2.4 Cambiar una issue ya verificada.** Falta un camino corto: dónde se escribe, qué subtareas lleva y qué cambió.
-  **Recomendación:** tres líneas en F8 que remiten a la plantilla técnica y a `cambios.md`: se escribe en el técnico, se
-  regenera y solo vuelve a pendiente la issue cuyo encargo cambia; lo cambiado se ve con `git diff`; las subtareas de una
-  issue ya verificada no hace falta volver a marcarlas. **Pregunta:** ¿se aplica? [F8]
-- **2.5 Referencias de la skill oficial por tipo de objeto.** Cargarla entera costaba un 37–72 % de una sesión hasta su
-  primera escritura. La oficial ya no lo pide: trae su mapa de referencias. **Recomendación:** no tocar F8 ni añadir una
-  tabla propia, que se desfasaría. Quitar del plugin las dos frases que dicen que la oficial obliga a cargar sus
-  referencias antes de cada escritura (`appian-best-practices/SKILL.md` y doc 14). **Pregunta:** ¿se quitan? [buenas prácticas]
+  **Borrador para F8:** los ajustes técnicos dentro del encargo aprobado se escriben en el técnico según su plantilla
+  y se regenera. Si hay informes nuevos o puntos Pendiente de la unidad, se respeta la aprobación o reasignación que ya
+  exige el método.
+  Vuelven a pendiente las issues cuyo encargo cambia; las demás conservan su verificación vigente. Para ver el cambio,
+  comparar en git con la revisión anterior. Las subtareas son avance declarado: pueden quedar en Revisar y la
+  verificación antigua no vale para la nueva versión. Tras verificar la versión vigente, no hace falta remarcar
+  subtareas para cerrar la issue. **Pregunta:** ¿se incorpora esta aclaración? [F8]
 - **2.6 F9.** Decidir si la IA puede dejar preparado el paquete en desarrollo; hoy lo prepara una persona.
-  **Recomendación:** sí, sin exportar ni desplegar; el ICF y los scripts de base de datos los pone una persona, y la
-  revisión del paso 4 es siempre de una persona (decirlo en F9 y en el README). Sin regla sobre el alta en lote: la
-  herramienta ya devuelve el error. **Pregunta:** ¿se aplica? [F9]
+  **Borrador por aprobar:** que la IA prepare un borrador en desarrollo, con la revisión del paso 4 siempre humana;
+  exportar y desplegar siguen a cargo de una persona. La asignación del ICF y los scripts de base de datos a una persona
+  es una elección de roles, no una falta de herramientas: el esquema disponible expone ambos. `addPackageObjects`
+  advierte de éxito parcial en `success`/`errors`; no basta el estado de la llamada para dar el lote por completo.
+  No se ha probado aquí una preparación real de paquete. **Pregunta:** ¿se autoriza ese reparto? [F9]
 
 ### Paso 3 · Prueba con el plugin cargado desde la carpeta
 
