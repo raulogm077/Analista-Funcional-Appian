@@ -1173,8 +1173,9 @@ def aprobar(a, ctx, u, hoy, no, raiz, orden):
     if pend:
         no(f"puntos pendientes de aprobación en sus informes: {', '.join(pend)}",
            "decídelos (✔, ✗ o ❓ en «Decisión») y vuelve a aprobarla")
-    if (a.comparte or "").strip():
-        u.comparte = a.comparte.strip() if un.vacio(u.comparte) else f"{u.comparte}; {a.comparte.strip()}"
+    comparte = (a.comparte or "").strip()
+    if comparte and f"; {comparte}; " not in f"; {u.comparte}; ":     # al volver a aprobar con la misma decisión, no se repite
+        u.comparte = comparte if un.vacio(u.comparte) else f"{u.comparte}; {comparte}"
     # un objeto del que las dos solo cambian partes que no guardan datos ni dan permisos (el nombre de una acción de
     # registro) no pide decidir el orden: se avisa, para quien prepare el paquete. Si una de las dos cambia algo más
     # (un campo en el mismo record type), sí

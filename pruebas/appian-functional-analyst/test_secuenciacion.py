@@ -579,6 +579,12 @@ class Secuenciacion(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn("Issues de construcción", out)
         self.assertNotIn("Que una persona revise", out)
+        # volver a aprobar con la misma decisión no la repite en cambios.md, aunque el motivo lleve «; »
+        for _ in range(2):
+            code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-03", "aprobada", "--fuente", "FU-05",
+                                      "--comparte", "EV-02 antes; mantener la regla actual")
+            self.assertEqual(code, 0, out)
+        self.assertEqual((self.p / "analisis/cambios.md").read_text(encoding="utf-8").count("mantener la regla actual"), 1)
 
 
 if __name__ == "__main__":
