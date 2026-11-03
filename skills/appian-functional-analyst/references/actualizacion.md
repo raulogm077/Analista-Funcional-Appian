@@ -69,9 +69,9 @@ que preguntar al cliente, el camino entero (§0-§8). Sin nota, sin `comprobar.p
    <p>/impacto/FU-04.md`. Si avisa de que el anexo no está al día (cambió el nombre de una parte de una pantalla o
    quién la usa), `indice.py derivadas <p> --escribir`, sin repetir la pasada.
 
-Ni el Word, ni el prototipo, ni las capturas: se rehacen al enviar el DF o al construir (`cambios.md` §5). Ni DT: una
-interfaz, una regla, una constante o un texto no la piden; tampoco el nombre de una acción de registro, si la fila de
-§13 nombra esa parte del record type (`cambios.md` §4).
+Después, como en §7: el prototipo y las capturas de las pantallas que cambian, si los hay, y el Word, si ya hay uno
+(`cambios.md` §5). Ni DT: una interfaz, una regla, una constante o un texto no la piden; tampoco el nombre de una
+acción de registro, si la fila de §13 nombra esa parte del record type (`cambios.md` §4).
 
 ## 0. Antes de empezar
 ```bash
@@ -265,7 +265,8 @@ cambiado y nada 🔒 cambiado sin un punto aprobado. Aplicar, el informe y esta 
 prototipo; después, en este orden:
 - el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y solo sus capturas. Las validadas por
   el cliente (🔒) no se tocan sin el visto bueno del analista;
-- el Word, solo al enviarlo o si se pide, ya con esas capturas (paso 8 del `SKILL.md`).
+- el Word, ya con esas capturas: si ya hay uno y cambia lo que dice, se regenera ahora (`cambios.md` §5); si no, el
+  primero se genera al enviarlo o si se pide (paso 8 del `SKILL.md`).
 
 ## 8. Entregar
 En pocas líneas: versión, puntos por tipo, lo que cambió de verdad (CAMBIA, ANULA, alcance), pendientes

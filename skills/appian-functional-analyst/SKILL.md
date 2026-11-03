@@ -150,8 +150,9 @@ hace cada paso, con qué skill y la referencia que lo detalla. `proyecto.py inic
    python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/
    ```
    Sin errores antes de entregar. Revisa los avisos: los de redacción se corrigen casi siempre.
-8. **DF en Word**, solo para enviarlo o si se pide (síntesis, evolutivo y refactorización), una vez y, si hay
-   prototipo, después de él, con sus capturas. La primera entrega es la versión 1.0:
+8. **DF en Word**: el primero, para enviarlo o si se pide (síntesis, evolutivo y refactorización); desde entonces, se
+   regenera con cada cambio de lo que dice (`cambios.md` §5). Si hay prototipo, después de él, con sus capturas. La
+   primera entrega es la versión 1.0:
    `proyecto.py version <p> --inicial --fuente FU-01 FU-02 --que "Análisis inicial"` lleva el borrador 0.x a
    1.0, o registra la primera 1.0 ya preparada, con sus fuentes y su fila en `decisiones.md`, sin abrir la 1.1 ni guardar
    una copia (incluye todas las fuentes procesadas). Conserva el contenido y sus aprobaciones; el técnico sin empezar

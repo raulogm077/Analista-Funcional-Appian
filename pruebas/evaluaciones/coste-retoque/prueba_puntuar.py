@@ -6,9 +6,10 @@ PLUGIN_A_PROBAR) y comprueba el propio caso: PAN-01 construida en EV-01, validad
 (✅, no 🔒), sin unidad en curso que la toque (`indice.py ficha` lo dice), `DEM_Dashboard` fuera de EV-02, una interfaz que
 no pide DT, y un correo que pide justo ese texto. Después recorre sobre una copia el camino corto de un retoque
 (actualizacion.md, «Camino corto») con las órdenes de ahora (estado, catalogar, abrir EV-03, ficha e impacto --cambio
-EV-03, version con la fila D, funcional, técnico §7 y §13, el informe ya aplicado y comprobar.py --anterior --impacto),
-contando las llamadas como el README (también leer antes lo que se edita): tienen que ser las 16 que cuenta, dentro del tope, y sin ninguna pasada de
-comprobar.py con errores. Después, variantes que no deben pasar, y mira la salida de puntuar.py."""
+EV-03, version con la fila D, funcional, técnico §7 y §13, el informe ya aplicado, comprobar.py --anterior --impacto y,
+si el montaje tiene Word, df_docx.js para ponerlo al día), contando las llamadas como el README (también leer antes lo
+que se edita): tienen que ser las 16 que cuenta, 17 con Word, dentro del tope, y sin ninguna pasada de comprobar.py con
+errores. Después, variantes que no deben pasar, y mira la salida de puntuar.py."""
 from __future__ import annotations
 
 import json
@@ -79,16 +80,17 @@ def editar(ruta: Path, viejo: str, nuevo: str):
 
 LEIDOS = 5    # lo que el agente lee sin script: la skill, actualizacion.md, el correo catalogado y, antes de editarlos,
               # el tramo del funcional y el del técnico (la herramienta de edición pide leer antes)
-MINIMO = 16   # el camino corto que cuenta el README («El tope: 25 llamadas»)
+MINIMO = 16   # el camino corto que cuenta el README («El tope: 25 llamadas»), sin Word; con Word, una más (df_docx.js)
 CAMINO = {}   # carpeta → {"llamadas": n, "salidas": {orden: salida}, "comprobar_con_errores": k} del camino simulado
 
 
-def retoque(p: Path, aplicar=True, requiere="—", decision="✔", unidad="EV-03", dt=False) -> Path:
+def retoque(p: Path, aplicar=True, requiere="—", decision="✔", unidad="EV-03", dt=False, al_dia=True) -> Path:
     """El camino corto de un retoque, con las órdenes de ahora y en su orden, contando las llamadas como el README:
     estado, catalogar el correo, abrir EV-03, ficha e impacto --cambio EV-03 de PAN-01, version (la copia, la 1.2 en los
     dos, la fila de la versión, la D-01 del CAMBIA y la fuente en proyecto.md), PAN-01 en el funcional, §7 y la fila
-    «Modifica» de §13 en el técnico, el informe ya aplicado y comprobar.py --anterior --impacto. Con aplicar=False,
-    solo el informe pendiente (el camino entero, parado en la aprobación). Lo que cuenta queda en CAMINO[p]."""
+    «Modifica» de §13 en el técnico, el informe ya aplicado, comprobar.py --anterior --impacto y, si ya hay Word, el
+    completo de la 1.2 con df_docx.js (al_dia=False se lo salta). Con aplicar=False, solo el informe pendiente (el camino
+    entero, parado en la aprobación). Lo que cuenta queda en CAMINO[p]."""
     camino = CAMINO.setdefault(p, {"llamadas": LEIDOS, "salidas": {}, "comprobar_con_errores": 0})
 
     def script(nombre, *args, puede_fallar=False):
@@ -137,6 +139,12 @@ def retoque(p: Path, aplicar=True, requiere="—", decision="✔", unidad="EV-03
             aplicado="Versión 1.2: PAN-01 modificada · nueva: D-01")
     script("comprobar.py", p, "--fuentes", p / "fuentes", "--anterior", p / "versiones" / "v1.1", "--impacto",
            p / "impacto" / "FU-05.md", puede_fallar=True)
+    if al_dia and (p / "entregables" / mt.WORD_10).is_file():   # ya hay Word y el cambio cambia lo que dice
+        c, s = corre("node", mt.ANALISTA / "df_docx.js", p)
+        camino["llamadas"] += 1
+        if c:
+            sys.exit(f"df_docx.js falla:\n{s}")
+        camino["salidas"]["word"] = s
     return p
 
 
@@ -163,9 +171,13 @@ def comprobar_caso(base: Path, p_bien: Path) -> list[str]:
     # errores, estado con EV-02 Aprobada, impacto --cambio EV-03 con «Posible petición de cambio», sin pedir aprobación
     # y con la fila de §13 que lleva DEM_Dashboard, y version con la 1.2
     camino = CAMINO[p_bien]
-    if camino["llamadas"] != MINIMO or MINIMO > E["tope_llamadas"]:
-        mal.append(f"el camino más corto son {camino['llamadas']} llamadas; el README cuenta {MINIMO} y el tope es "
+    con_word = (base / "entregables" / mt.WORD_10).is_file()
+    minimo = MINIMO + con_word
+    if camino["llamadas"] != minimo or minimo > E["tope_llamadas"]:
+        mal.append(f"el camino más corto son {camino['llamadas']} llamadas; el README cuenta {minimo} y el tope es "
                    f"{E['tope_llamadas']}")
+    if con_word and not (p_bien / E["word_nuevo"]).is_file():
+        mal.append(f"df_docx.js no deja {E['word_nuevo']} tras la 1.2:\n{camino['salidas'].get('word', '')}")
     if camino["comprobar_con_errores"]:
         mal.append(f"el camino más corto tiene {camino['comprobar_con_errores']} pasadas de comprobar.py con errores")
     if not re.search(r"EV-02 · [^\n]* · Aprobada", camino["salidas"]["estado"]):
@@ -203,7 +215,12 @@ def main() -> int:
             return p
 
         def word(p):
-            (p / "entregables" / "DF-Solicitudes-de-material-v1.2.docx").write_bytes(b"PK otro Word")
+            (p / E["word_nuevo"]).write_bytes(b"PK otro Word")
+            return p
+
+        def pisa(p):
+            f = p / "entregables" / mt.WORD_10
+            f.write_bytes((f.read_bytes() if f.is_file() else b"PK") + b"otro")
             return p
 
         def captura(p):
@@ -235,8 +252,17 @@ def main() -> int:
             ("aplicado, pero el punto pide aprobación", retoque(nuevo(), requiere="Sí (EV-01)"), cuenta(21), 1,
              "FALLO sin_aprobacion"),
             ("una DT «Cambio sobre lo construido»", retoque(nuevo(), dt=True), cuenta(22), 1, "FALLO sin_dt: DT-04"),
-            ("el Word regenerado", word(retoque(nuevo())), cuenta(22), 1, "FALLO sin_word_ni_capturas"),
-            ("la captura de PAN-01 regenerada", captura(retoque(nuevo())), cuenta(23), 1, "FALLO sin_word_ni_capturas"),
+            ("la captura de PAN-01 regenerada sin prototipo", captura(retoque(nuevo())), cuenta(23), 1,
+             "FALLO word_al_dia: regenerado de más: prototipo/capturas/PAN-01.png"),
+            ("un Word entregado pisado", pisa(retoque(nuevo())), cuenta(22), 1,
+             f"FALLO word_al_dia: regenerado de más: entregables/{mt.WORD_10}"),
+        ] + ([
+            ("sin poner al día el Word", retoque(nuevo(), al_dia=False), cuenta(21), 1,
+             f"FALLO word_al_dia: falta {E['word_nuevo']}"),
+        ] if (base / "entregables" / mt.WORD_10).is_file() else [
+            ("un Word sin haber ninguno al montar", word(retoque(nuevo())), cuenta(22), 1,
+             f"FALLO word_al_dia: regenerado de más: {E['word_nuevo']}"),
+        ]) + [
             ("la fila de §13 sin unidad (queda en EV-01, en producción)", retoque(nuevo(), unidad="EV-01"), cuenta(20),
              1, "FALLO hecho: técnico §13 sin `DEM_Dashboard` «Modifica» en una unidad Abierta (está en EV-01"),
             ("metido en EV-02, ya aprobada", retoque(nuevo(), unidad="EV-02"), cuenta(20), 1,

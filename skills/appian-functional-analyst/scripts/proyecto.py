@@ -421,7 +421,7 @@ def estado(a):
     marcas = sorted(f"prototipo/{b.name}" for b in (raiz / "prototipo").glob("brand-*.json"))
     print(f"Cliente: {cliente.group(1).strip() if cliente else '—'} · Marca: {', '.join(marcas) or 'sin marca'}")
     entregado = RX_ENTREGADO.search(texto)
-    if entregado:   # el Word se genera al enviarlo o si se pide: aquí solo se informa
+    if entregado:   # el Word lo genera df_docx.js (cambios.md §5): aquí solo se informa
         fecha = f" ({entregado.group(2)})" if entregado.group(2) else ""
         print(f"DF en Word: último enviado {entregado.group(1)}{fecha}, versión actual {vs}")
     for x in avisos_proyecto(raiz):

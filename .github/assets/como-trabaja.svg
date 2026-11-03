@@ -40,7 +40,7 @@
   <text class="rotulo" x="440" y="42">SE ANALIZA</text>
   <text class="rotulo" x="684" y="42">SALE</text>
   <text class="rotulo" x="136" y="402">CON CADA UNIDAD APROBADA, EN DESARROLLO</text>
-  <text class="rotulo" x="692" y="402">DESDE EL PAQUETE, SIN IA</text>
+  <text class="rotulo" x="692" y="402">REVISIÓN Y PASE, SIN IA</text>
 
   <!-- Flechas -->
   <g class="linea">

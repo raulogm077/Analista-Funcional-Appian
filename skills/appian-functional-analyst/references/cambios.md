@@ -128,9 +128,14 @@ historias (Nueva, Cambia, Se conserva) ya no se escribe: lo da `indice.py cambio
   «Aprobar», ahora también para los revisores`, `… — columna importe`, un nodo de un proceso o un parámetro de una
   Web API no son un retoque.
 
-## 5. Derivados: al enviar o al construir, no con cada fuente
+## 5. Derivados: solo lo que cambia, al día antes de usarlo
 
-Ninguno se regenera si no cambia (R2).
+Ninguno se regenera si no cambia (R2). Lo que cambia puede esperar mientras nadie lo use, pero se pone al día antes de
+construir, revisar o entregar con él y, como tarde, antes de marcar la unidad Construida. El Word no espera: si ya hay
+uno, cada cambio de lo que dice lo regenera tras `proyecto.py version` (el completo, con cualquier cambio del funcional;
+el de una unidad, con los de esa unidad), con las capturas de las pantallas que cambian hechas antes si hay prototipo
+del que sacarlas. Un cambio solo del técnico no lo pide. Los entregados no se pisan: `df_docx.js` se niega y la versión
+nueva sale con otro nombre.
 ```bash
 python3 <skill>/scripts/indice.py cambios <p> EV-02 [--json]   # piezas nuevas, que cambian (antes y después) y anuladas,
                                      # datos de §6, pantallas, diagramas, técnico, objetos, pruebas a repetir, colisiones

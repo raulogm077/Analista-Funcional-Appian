@@ -131,7 +131,7 @@ def montaje_de(p: Path) -> Path:
 
 
 # ---------------------------------------------------------------- lo que usan los puntuadores de las dos evaluaciones
-DOCUMENTOS = (".docx", ".pdf", ".png")      # el Word, su PDF y las capturas: se regeneran solo al enviar o al construir
+DOCUMENTOS = (".docx", ".pdf", ".png")      # el Word, su PDF y las capturas: se regeneran solo si cambia lo que dicen
 
 
 def lee_huella(p: Path, montaje: str | None = None) -> dict | None:
