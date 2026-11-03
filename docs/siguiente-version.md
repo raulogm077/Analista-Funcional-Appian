@@ -4,7 +4,7 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 2, punto 2.2: Claude trae su recomendación.
+**Ahora:** paso 2, punto 2.1: Raúl lo reabrió y Claude trae una recomendación nueva.
 
 ## 1. En la rama actual, por orden
 
@@ -12,6 +12,12 @@ lista no autoriza publicar, desplegar, enviar ni borrar.
 
 Claude trae una recomendación por punto; se aplica lo que Raúl decida.
 
+- **2.1 Documentos al cerrar un incremento.** En la prueba con y sin el plugin, los documentos quedaron a medias en los
+  dos brazos. Con el plugin: decisiones antiguas marcadas como vigentes, contradicciones puntuales y el estado del
+  proyecto sin cerrar. Los diagramas de estados sí se pusieron al día. Raúl quiere que el funcional, el técnico, los
+  prototipos y los diagramas draw.io digan cómo está hecho el proyecto, sin nada obsoleto y sin que cada construcción
+  sea tediosa. Falta decidir qué se actualiza en cada momento, sin añadir un control. Una primera redacción, en dos
+  momentos (`ef0104b`), se retiró el 29-oct: Raúl volvió atrás. [flujo]
 - **2.2 Coste del análisis.** Con el plugin, el análisis costó más en los tres incrementos. Un reparto contable de las
   transcripciones (hipótesis, no ahorro causal) apunta a dos causas:
   - los pasos del método por incremento: unos 155 de 482 turnos usan órdenes o ficheros propios del plugin;
@@ -74,3 +80,19 @@ Claude trae una recomendación por punto; se aplica lo que Raúl decida.
   `main` ni en esta rama; es independiente de ella. [persona]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
+
+## 3. Campañas posteriores al trabajo actual
+
+Se empiezan después de terminar las tareas actuales, por indicación de Raúl del 3 de noviembre.
+
+- **Revisión de la versión 26.10.** Contrastar las versiones del entorno Appian y del bundle Dev MCP, la documentación
+  nueva, las herramientas y la skill oficial. Actualizar el comportamiento del plugin con las capacidades nuevas
+  que procedan, retirar indicaciones obsoletas o deprecadas y comprobar que lo que ya funcionaba sigue funcionando.
+- **Todas las entradas del plugin.** Inventariar y probar las entradas y variantes documentadas en el README, los
+  flujos y los modos de cada skill, tanto su invocación directa como su uso dentro de un flujo.
+- **Ingeniería inversa y refactorización a fondo.** Probar extracción, continuación, deriva, dependencias,
+  planificación y verificación de las refactorizaciones, incluidos errores y recuperación. Comprobar la conservación
+  del comportamiento y la documentación resultante, y corregir los márgenes de mejora encontrados.
+- **Agentes y skills, por separado y juntos.** Evaluar qué recibe, decide y entrega cada uno; después, comprobar sus
+  relaciones y traspasos dentro del flujo completo, su calidad, fricción y coste. Repetir los casos afectados tras
+  las correcciones y recoger las conclusiones en este seguimiento y en `evaluaciones.md`.
