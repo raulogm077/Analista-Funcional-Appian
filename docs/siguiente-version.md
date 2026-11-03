@@ -53,14 +53,6 @@ notas; el 2.1 sigue por revisar con las reservas siguientes. Nada de estas propu
   `resumen` no se ha probado. Medir el efecto en el paso 3 o en el próximo incremento real, sin deducir ahorro del
   número de llamadas. El crecimiento de caracteres tras `97fa604` incorpora contenido antes omitido y no mide coste
   entre alternativas de igual cobertura. «Varias issues por sesión» sigue siendo una hipótesis. [flujo y scripts]
-- **2.4 Cambiar una issue ya verificada.** Falta un camino corto: dónde se escribe, qué subtareas lleva y qué cambió.
-  **Borrador para F8:** los ajustes técnicos dentro del encargo aprobado se escriben en el técnico según su plantilla
-  y se regenera. Si hay informes nuevos o puntos Pendiente de la unidad, se respeta la aprobación o reasignación que ya
-  exige el método.
-  Vuelven a pendiente las issues cuyo encargo cambia; las demás conservan su verificación vigente. Para ver el cambio,
-  comparar en git con la revisión anterior. Las subtareas son avance declarado: pueden quedar en Revisar y la
-  verificación antigua no vale para la nueva versión. Tras verificar la versión vigente, no hace falta remarcar
-  subtareas para cerrar la issue. **Pregunta:** ¿se incorpora esta aclaración? [F8]
 - **2.6 F9.** Decidir si la IA puede dejar preparado el paquete en desarrollo; hoy lo prepara una persona.
   **Borrador por aprobar:** que la IA prepare un borrador en desarrollo, con la revisión del paso 4 siempre humana;
   exportar y desplegar siguen a cargo de una persona. La asignación del ICF y los scripts de base de datos a una persona
