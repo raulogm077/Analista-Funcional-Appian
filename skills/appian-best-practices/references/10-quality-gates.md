@@ -30,7 +30,6 @@ when the work is handed over, in the reply itself or wherever the project alread
 What the builder structurally can't check:
 
 - a real **screen reader**;
-- **Design Guidance warnings**: the API doesn't expose them, someone opens the object in Designer;
 - **row- and field-level security**: it doesn't apply in Designer and needs a login per role;
 - **contrast against colours the environment's theme supplies**, which aren't in the SAIL;
 - the **routing of process model connections**: the API doesn't expose the waypoints;
@@ -188,7 +187,9 @@ And a **manual review** (syntax validation doesn't replace it):
 > Design Guidance is a gate, and its two alert types are **not** treated the same: **warnings (yellow
 > triangle) can't be dismissed** and must **always be resolved** (they flag patterns that cause errors or
 > unexpected behavior at runtime); only **recommendations (lightbulb) can be dismissed**, and dismissing
-> one is a justified, conscious decision. Never close an interface with open warnings.
+> one is a justified, conscious decision. Never close an interface with open warnings. With a design MCP,
+> `validateDesignObjects` returns them in its `lint` level: read every level and find the object behind each
+> finding (`verbose` or `findingKey` on an app scan). Without one, someone opens the object in Designer.
 > Source: [Design guidance — warnings vs. recommendations](https://docs.appian.com/suite/help/latest/appian-recommendations.html#warnings-vs-recommendations)
 
 Detail: docs **02-interfaces-sail**, **04-expression-rules**, **05-performance**.
