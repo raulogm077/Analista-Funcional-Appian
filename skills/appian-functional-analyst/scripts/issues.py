@@ -1075,7 +1075,8 @@ def texto_avance(plan, issue):
         return []
     actuales = {x["paso"]: x for x in plan.avances if x["issue"] == issue.id and x["estado"] == "Vigente"
                 and x["version"] == issue.version}
-    revisar = [x for x in plan.avances if x["issue"] == issue.id and x["estado"].startswith("Revisar")]
+    revisar = [x for x in plan.avances if x["issue"] == issue.id and x["estado"].startswith("Revisar")
+               and x["paso"] not in actuales]
     L = ["## Avance guardado de subtareas", "", "Declarado por quien construye; no es prueba ni cierre de la issue.", "",
          "| Paso | Objetos | Avance |", "|---|---|---|"]
     pendientes = []

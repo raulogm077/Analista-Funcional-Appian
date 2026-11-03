@@ -87,6 +87,9 @@ class Subtareas(unittest.TestCase):
         self.assertEqual(len(p.avances), 2)
         self.assertEqual(p.avances[-1]["estado"], "Vigente")
         self.assertEqual(p.avances[0]["quien"], "Ana")
+        # el aviso se apaga cuando el paso vuelve a estar marcado para esta versión; el rastro de «Revisar» se conserva
+        self.assertNotIn("Avance anterior para revisar",
+                         "\n".join(iss.texto_avance(p, next(x for x in p.issues if x.id == i.id))))
 
     def test_cambio_reparto_y_issue_retirada_no_pierden_rastro(self):
         _, plan = self.preparada()
