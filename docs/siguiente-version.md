@@ -4,28 +4,29 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** paso 2: decide Raúl con la recomendación de cada punto. El feedback de las pruebas que no pedía decisión
-ya está corregido (`evaluaciones.md`).
+**Ahora:** revisar las recomendaciones del paso 2 y cerrar las aclaraciones que ya tienen respuesta en el método.
+Los arreglos comprobados de esta tanda están en `evaluaciones.md`. El 2.1 sigue retirado y pendiente.
 
 ## 1. En la rama actual, por orden
 
 ### Paso 2 · Decisiones de Raúl
 
-Claude trae una recomendación por punto; se aplica lo que Raúl decida. Cada una está revisada por un agente escéptico
-contra el código y las notas; nada de esto está aplicado.
+Claude trae una recomendación por punto; se aplica lo que Raúl decida. Son borradores contrastados con el código y las
+notas; el 2.1 sigue por revisar con las reservas siguientes. Nada de estas propuestas está aplicado.
 
 - **2.1 Documentos al cerrar un incremento.** En la prueba con y sin el plugin, los documentos quedaron a medias:
   decisiones antiguas marcadas como vigentes, contradicciones puntuales, DT con «pendiente: al construir» ya construidas
   y el estado del proyecto sin cerrar. Los diagramas de estados sí se pusieron al día. Raúl quiere que el funcional, el
   técnico, los prototipos y los diagramas draw.io digan cómo está hecho el proyecto, sin nada obsoleto y sin que cada
   construcción sea tediosa. Una primera redacción, en dos momentos (`ef0104b`), se retiró el 29-oct. [flujo]
-  **Recomendación:** ningún paso nuevo. El contenido se deja al día al aplicar cada fuente, como ya está escrito; lo que
-  se decide al construir entra como DT en ese momento; tras construir nadie edita documentos, porque reescribir una DT
-  cambia la versión de su issue. Se quitan los campos de estado que se estropeaban: la columna «Vigente» de
-  `decisiones.md` (historial; marcar «No» hace fallar `comprobar.py`) y «Siguiente paso» de `proyecto.md` (estaba viejo
-  en los tres cortes, el método se contradice y `estado` ya lo da). «Verificado» pasa a decir dónde se comprueba, y no se
-  reescribe. Una frase dice cuándo toca el diagrama de datos, sin aviso ni código. **Límite:** las contradicciones por
-  paráfrasis siguen; solo las caza una lectura en frío, que queda fuera. **Pregunta:** ¿se aplica?
+  **Por revisar, sin propuesta aprobada.** Falta concretar cuándo actualizar solo los documentos afectados por una
+  fuente, una decisión o un cambio real durante la construcción y el QA, para que los cuatro reflejen el proyecto sin
+  reescribir lo que no cambia. La caducidad de una huella no justifica dejar documentación obsoleta: hay que resolver
+  cómo registrar lo construido sin repetir trabajo innecesario. La alternativa de retirar «Vigente» y «Siguiente paso»
+  tampoco está validada: `modelo.py` lee «Vigente» y reconoce «No» como sustituida; `comprobar.py` rechaza que una pieza
+  vigente siga citando esa decisión sin indicar su anulación, no el «No» por sí solo. `estado` imprime el texto de
+  «Siguiente paso» de `proyecto.md`; no lo calcula ni sustituye sus posibles acciones de negocio. Antes de recomendar
+  retirar campos, hay que revisar sus consumidores y qué información los reemplazaría. No se retira ninguno.
 - **2.2 Coste del análisis.** Con el plugin, el análisis costó más en los tres incrementos. Un reparto contable de las
   transcripciones (hipótesis, no ahorro causal) apunta a dos causas:
   - los pasos del método por incremento: unos 155 de 482 turnos usan órdenes o ficheros propios del plugin;
