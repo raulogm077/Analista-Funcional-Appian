@@ -73,6 +73,9 @@ contra el código y las notas; nada de esto está aplicado.
 
 ### Paso 3 · Prueba con el plugin cargado desde la carpeta
 
+Con subagentes que leen la rama ya se vieron el push con y sin autorización, la autorización delegada, «gasta» y el
+localizador (`evaluaciones.md`). Falta repetirlo con el plugin cargado y lo que necesita Appian.
+
 - **Probar los cambios de comportamiento con el plugin cargado desde la carpeta** (`claude --plugin-dir`) en un
   proyecto de prueba, como pide `CLAUDE.md`. Comprobar: el localizador con una sesión real; «gasta» en un guion de QA,
   que la skill lo pone al preparar el guion y no solo que el motor lo respeta; la línea «Unidades», el aviso y que el
