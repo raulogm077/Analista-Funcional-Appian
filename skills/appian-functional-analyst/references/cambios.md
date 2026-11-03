@@ -263,8 +263,8 @@ del índice: si no se pudo subir, la salida dice que solo quedó en esa copia.
    Appian: los de las reglas, con Manage Test Cases; los de las interfaces, desde cada interfaz en Designer, porque
    Manage Test Cases no los ejecuta. Si en una issue no se pudieron ejecutar sus casos, también esperan a la regresión.
    Después, `qa.py repetir <p>` de `appian-qa` repite sin IA los guiones del QA de todas las unidades (F9).
-7. **Paquete** (F9, sin IA): quien lo prepara revisa en Compare and Deploy la comparación de sus objetos, como en un
-   Merge Request, con lo que falla en la regresión (`construccion/EV-02/regresion.json`) y en los guiones de QA
+7. **Paquete** (F9): la IA puede dejar preparado el borrador en desarrollo; una persona revisa en Compare and Deploy la
+   comparación de sus objetos, como en un Merge Request, con lo que falla en la regresión (`construccion/EV-02/regresion.json`) y en los guiones de QA
    (`qa/EV-02/resultado.json`) y las pruebas marcadas como no necesarias (`construccion/EV-02/indice.md`). Se promueve el
    mismo paquete con un ICF por entorno y, si el despliegue es directo o por API, con «Require review» activado en el
    destino ([Deployment settings](https://docs.appian.com/suite/help/latest/admin-infrastructure.html#deployment-settings)).

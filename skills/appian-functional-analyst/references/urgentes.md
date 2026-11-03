@@ -56,7 +56,7 @@ Tras `produccion`, `proyecto.py estado` ya no la lista como pendiente.
      procedimiento) y «Dónde se corrige» dice igualmente una de las dos.
 5. **Despliegue** por el proceso de cambios urgentes del cliente (el plugin no lo gestiona), con la vuelta atrás
    preparada: el paquete con la versión de producción de esos objetos. Restaurar una copia de seguridad es lo último.
-   Antes de desplegar, quien prepara el paquete revisa en Compare and Deploy la comparación de sus objetos, como en un
+   Antes de desplegar, una persona revisa en Compare and Deploy la comparación de sus objetos, como en un
    Merge Request, con los fallos de la regresión (su orden, `indice.py issues <p> URG-nn --regresion`, con el Dev MCP
    del entorno donde se corrige), y lo promueve como el de un evolutivo: el mismo paquete con un ICF por
    entorno y, si el despliegue es directo o por API, con «Require review» en el destino (`cambios.md` §6, paso 7).

@@ -41,9 +41,10 @@ Una persona también puede cerrar una issue con `--manual --motivo`: queda «hec
 dependientes y caduca si cambia el encargo. Ese cierre no crea una verificación ni elimina un fallo vigente de pruebas
 o QA sin su propia excepción motivada. Los cierres manuales se revisan antes del paquete.
 
-Desde el paquete no actúa la IA. Antes de prepararlo, la regresión ejecuta todos los casos de prueba de la aplicación y
-`qa.py` repite sin IA los guiones del QA; quien lo prepara revisa en Compare and Deploy la comparación de sus objetos
-con esos fallos, y `proyecto.py cambio <p> <U> produccion --ref` registra el pase.
+La IA puede dejar preparado en desarrollo el borrador del paquete; revisarlo, exportarlo y desplegarlo es de una
+persona. Antes de prepararlo, la regresión ejecuta todos los casos de prueba de la aplicación y `qa.py` repite sin IA
+los guiones del QA; una persona revisa en Compare and Deploy la comparación de sus objetos con esos fallos, y
+`proyecto.py cambio <p> <U> produccion --ref` registra el pase.
 
 ## Qué hace cada skill
 
