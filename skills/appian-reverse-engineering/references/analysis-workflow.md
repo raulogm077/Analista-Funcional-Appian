@@ -30,7 +30,7 @@ Detalle operativo de las fases de `SKILL.md`, que manda si algo no coincide. Mar
 
 ## Fase 1 — Plan
 
-- [ ] `plan --app <app> --out <salida>` sin errores.
+- [ ] `plan --app <app> --out <salida>` sin errores (con datos reales, con `--skip "^testInterface$"`, como `extract`).
 - [ ] Resumen mostrado al usuario: objetos por tipo, herramientas usadas y excluidas (con motivo), llamadas estimadas.
 - [ ] Si `trustedMode` es `false` (lo normal: el catálogo trae herramientas de escritura): dicho que solo se usan las herramientas de lectura evidentes.
 - [ ] Si `needsConfirmation`: confirmación del usuario.
