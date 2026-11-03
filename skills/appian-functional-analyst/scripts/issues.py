@@ -1428,11 +1428,12 @@ def texto_indice(plan, reservas):
               "Revisarlos antes del paquete.", "", "| " + " | ".join(COLUMNAS_MANUALES) + " |", "|---|---|---|---|---|"]
         L += ["| " + " | ".join(celda(x[k]) for k in ("issue", "version", "motivo", "quien", "cuando")) + " |"
               for x in plan.manuales]
-    if plan.marcas:      # lo decide una persona; se revisa al preparar el paquete
+    if plan.marcas:      # lo decide una persona, y una persona la revisa antes de desplegar el paquete (F9, paso 4)
         L += ["", f"## {MARCAS}", "",
               f"Las marca una persona con `indice.py issues <p> {plan.uid} ISS-nn --sin-prueba \"<objeto> «<caso>»\" "
               "--motivo \"…\"` (un escenario que falla en el QA, con `--sin-prueba HU-nn.m`, y «QA» por objeto), nunca "
-              "en una sesión desatendida, y se revisan al preparar el paquete. Cada una vale para esa versión de la issue "
+              "en una sesión desatendida, y una persona las revisa antes de desplegar el paquete. Cada una vale para esa "
+              "versión de la issue "
               "y ese error, y se quita sola cuando el caso vuelve a pasar o cambia.", "",
               "| " + " | ".join(COLUMNAS_MARCAS) + " |", "|" + "---|" * len(COLUMNAS_MARCAS)]
         L += ["| " + " | ".join([x["issue"], f"`{x['version']}`", f"`{celda(x['objeto'])}`", celda(x["caso"]),
@@ -1798,10 +1799,13 @@ def orden_de_terminar(m, ctx, plan, issue):
     if all(e[i.id][0] for i in plan.issues if i is not issue):
         if any(i.criterios for i in plan.issues):   # lo siguiente es el QA de la unidad, no marcarla (F8, paso 8)
             notas.append("no queda otra issue: lo siguiente es el QA de la unidad, en otra sesión y solo con sus .feature "
-                         "(appian-qa; F8, paso 8). Con él, o tras corregir un fallo suyo y repetir sus guiones, se marca "
-                         f"la unidad: `{orden_de_marcar(m, ctx, plan.uid)}`")
+                         "(appian-qa; F8, paso 8). Con él, o tras corregir un fallo suyo y repetir sus guiones, y con lo "
+                         "que cambió la construcción ya en el análisis (F8, «Los documentos, al día»), se marca la unidad: "
+                         f"`{orden_de_marcar(m, ctx, plan.uid)}`")
         else:
             L.append(orden_de_marcar(m, ctx, plan.uid))
+            notas.append("antes de marcar la unidad, lo que se aceptó cambiar al construir, ya en el análisis (F8, «Los "
+                         "documentos, al día»)")
     return L, notas
 
 
@@ -2196,7 +2200,8 @@ def cierre_manual(raiz, uid, iid, motivo, quien=None, retirar=False):
 def sin_prueba(raiz, uid, iid, caso, motivo, quien=None):
     """Una persona marca un caso de prueba que falla en una issue, o uno de sus escenarios que falla en el QA de la unidad
     (HU-nn.m; su objeto es «QA»), como no necesario para avanzar, con su motivo: la issue puede darse por hecha. Va al
-    índice de la unidad, con su commit y, si está autorizado, su push, y se revisa al preparar el paquete. `caso` es «<objeto> «<caso>»» o, si
+    índice de la unidad, con su commit y, si está autorizado, su push, y la revisa una persona antes de desplegar el
+    paquete. `caso` es «<objeto> «<caso>»» o, si
     no hay dos con ese nombre, solo el caso. Solo uno que falla ahora: en un objeto de la issue y en su verificación de
     ahora, o en el último resultado del QA (qa/<U>/resultado.json)."""
     nombre, ahora = quien_soy(raiz, quien), datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")

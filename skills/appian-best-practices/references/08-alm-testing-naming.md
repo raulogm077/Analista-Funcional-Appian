@@ -157,11 +157,12 @@ surfaces missing precedents.
 
 ✅ **When an AI prepares the package draft through the Dev MCP** (a person still reviews, exports and deploys it):
 take every UUID and type from a list or get response, and judge each `addPackageObjects` call by its body, not its
-status. One entry with the wrong type also made the valid rules, constants and interfaces of the same call fail with
-«Could not resolve the object's type… may not exist», while its record types and process models went in: drop the
-wrong entry and retry the rest. Close by checking `getPackage` against the unit's objects (it doesn't name process
-models: match them by UUID) and give the reviewer `validateDesignObjects` run with the `packageUuid`. `icfContent`
-without `key=value` lines is refused: a unit with no per-environment values gets no ICF.
+status. In one test, a call with one entry of the wrong type also failed every valid rule, constant and interface in
+it with «Could not resolve the object's type… may not exist», while its record types and process models went in;
+resent without that entry, they all went in. Close by checking `getPackage` against what the unit needs (exactly its
+objects, and its DB scripts and ICF if it has them; it doesn't name process models: match them by UUID), say what is
+still missing, and give the reviewer `validateDesignObjects` run with the `packageUuid`. `icfContent` without
+`key=value` lines is refused: a unit with no per-environment values gets no ICF.
 - Source: Dev MCP 26.9.5 tool schemas and a test package in development (3-Nov-2026).
 
 ✅ **Package hygiene that prevents failed imports:** only the **published** process model version is exported (Save & Publish first); every child model must be published; include the record type behind any record action component; add the plug-ins the application references; deploy shared precedent apps first, and allow no circular dependencies between apps. Toward pre-production and Production, deploy the whole application with the same package, DDL, plug-ins and ICF.

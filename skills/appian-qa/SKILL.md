@@ -87,7 +87,7 @@ Cada orden de SAIL CLI y de `qa.py` se espera en primer plano hasta que termina,
    la que construyó lo que se prepara: míralo antes de reabrir la del escenario.
 4. **Entregar**, en pocas líneas: cada escenario y su resultado, de cada fallo qué se esperaba y qué salió, y lo que SAIL
    CLI no ve (las pantallas que recorrió, para que una persona mire en el navegador cómo se ven). Confirma y sube
-   `qa/<U>/` (`git commit` y, si hay remoto y está autorizado subir, `git push`). Con la unidad sin fallos se marca construida; `proyecto.py … construida` avisa,
+   `qa/<U>/` (`git commit` y, si hay remoto y está autorizado subir, `git push`). Con la unidad sin fallos y sus documentos al día (F8) se marca construida; `proyecto.py … construida` avisa,
    sin impedirlo, si falta el QA o está a medias.
 5. **Cerrar las sesiones** al terminar la campaña de QA (la unidad entregada sin fallos y sus guiones repetidos): `sail
    logout --data-dir <su carpeta>` de cada cuenta local. Cierra la sesión en el servidor y borra lo guardado y lo

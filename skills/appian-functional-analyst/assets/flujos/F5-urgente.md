@@ -1,7 +1,7 @@
 # F5 · Urgente
 
 **Cuándo.** El cliente o el equipo declaran crítico algo que pasa en producción; también datos u operación (datos incorrectos, procesos en curso, un certificado caducado).
-**Empieza.** El analista, con `appian-functional-analyst`. **Termina en.** La ficha `impacto/URG-nn.md` cerrada y la corrección en producción; si se corrigió en el entorno de corrección, cada unidad en curso que cambia esos objetos la reaplica al construirse (F8). Sin DF ni prototipo.
+**Empieza.** El analista, con `appian-functional-analyst`. **Termina en.** La ficha `impacto/URG-nn.md` cerrada y la corrección en producción; si se corrigió en el entorno de corrección, cada unidad en curso que cambia esos objetos la reaplica al construirse (F8). Sin DF ni prototipo propios (`urgentes.md`).
 
 | # | Paso | Quién | Con qué | Detalle |
 |---|---|---|---|---|

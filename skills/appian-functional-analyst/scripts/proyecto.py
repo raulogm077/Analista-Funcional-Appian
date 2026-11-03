@@ -22,8 +22,9 @@
                                      funcional y técnico, su fila en decisiones.md, cada fuente en «Fuentes procesadas»
                                      y, con --decision (una por punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE, con
                                      la primera fuente), su fila D
-  proyecto.py entregar <carpeta> [--cambio EV-02]   el Word sale hacia el cliente: «DF entregado» (el de un cambio, en su
-                                     fila de Versiones de decisiones.md) y el fichero en «Entregados»
+  proyecto.py entregar <carpeta> [--cambio EV-02] [--word <fichero>]   el Word sale hacia el cliente: «DF entregado»
+                                     (el de un cambio, en su fila de Versiones de decisiones.md) y el fichero en
+                                     «Entregados»: el de la versión o, con --word, el exacto que se envía (una revisión)
   proyecto.py cambio   <carpeta> <EV-nn|URG-nn> <estado> [opciones]   una unidad de cambio (analisis/cambios.md):
       abrir --titulo "…"                    Abierta
       aprobada --fuente FU-nn [--comparte "EV-03 en <objeto>: secuenciar (EV-02 primero)"]
@@ -904,9 +905,29 @@ def entregados(texto, word):
     return "\n".join(lineas)
 
 
+def word_que_sale(raiz, defecto, pedido, como):
+    """El Word que sale hacia el cliente: el de la versión (`defecto`) o, con --word, ese fichero exacto, que tiene que
+    ser de este proyecto, unidad y versión (el nombre del de la versión o una revisión suya, …-v1.1-r2.docx, de
+    df_docx.js -o) y estar en entregables/. Si no vale o no está, sale con error sin anotar nada."""
+    nombre = pathlib.Path(pedido).name if pedido else defecto
+    sitio = pathlib.Path(raiz) / "entregables" / nombre
+    if pedido and nombre != pedido and (os.path.normcase(str(pathlib.Path(pedido).resolve()))
+                                        != os.path.normcase(str(sitio.resolve()))):
+        sys.exit(f"{pedido} no es un fichero de entregables/ de este proyecto: --word lleva su nombre o su ruta; "
+                 "no se anota nada")
+    familia = defecto[:-len(".docx")]
+    if nombre != defecto and not re.fullmatch(re.escape(familia) + r"-r\d+\.docx", nombre):
+        sys.exit(f"{nombre} no es el Word de esta versión ni una revisión suya ({defecto} o {familia}-r<n>.docx): "
+                 "no se anota nada")
+    if not sitio.is_file():
+        sys.exit(f"No encuentro entregables/{nombre}: genéralo con «{como}» antes de enviarlo; no se anota nada")
+    return nombre
+
+
 def entregar(a):
     """El Word sale hacia el cliente: «DF entregado: <versión> · <fecha>» en proyecto.md (el de un cambio, en la fila de
-    su versión en decisiones.md) y el fichero en «Entregados:», que df_docx.js no vuelve a escribir."""
+    su versión en decisiones.md) y el fichero en «Entregados:», que df_docx.js no vuelve a escribir: el de la versión o,
+    con --word, el fichero exacto que se envía (una revisión suya). Sin ese Word no anota nada."""
     raiz = pathlib.Path(a.carpeta)
     pm = raiz / "proyecto.md"
     if not pm.exists():
@@ -918,7 +939,8 @@ def entregar(a):
     vs, fecha = f"{v[0]}.{v[1]}", datetime.date.today().isoformat()
     texto = pm.read_text(encoding="utf-8")
     if a.cambio:
-        return entregar_cambio(a.cambio.upper(), raiz, m, vs, fecha, texto)
+        return entregar_cambio(a.cambio.upper(), raiz, m, vs, fecha, texto, a.word)
+    word = word_que_sale(raiz, nombre_df(m, vs), a.word, f"df_docx.js {raiz}")
     valor = f"DF entregado: {vs} · {fecha}"
     if re.search(r"DF entregado:", texto):
         texto = re.sub(r"DF entregado:[^\n]*?(?=\s+·\s+Estado:|$)", valor, texto, count=1, flags=re.M)
@@ -927,23 +949,19 @@ def entregar(a):
         k = next((i for i, l in enumerate(lineas) if l.startswith("Cliente:")), 0)
         lineas.insert(k + 1, valor)
         texto = "\n".join(lineas)
-    word = nombre_df(m, vs)
-    if not (raiz / "entregables" / word).is_file():
-        print(f"· No encuentro entregables/{word}: genéralo con df_docx.js antes de enviarlo")
-    else:
-        texto = entregados(texto, word)
+    texto = entregados(texto, word)
     mo.escribe(pm, texto)
-    print(f"{valor} en {pm}")
+    print(f"{valor} y {word} en {pm}")
 
 
-def entregar_cambio(uid, raiz, m, vs, fecha, texto):
+def entregar_cambio(uid, raiz, m, vs, fecha, texto, pedido=None):
     """El DF de un cambio (df_docx.js --cambio): «DF del cambio <U> entregado <fecha>» en la columna «Aprobación» de la
-    fila de la versión en decisiones.md (no sale en el Word) y el fichero en «Entregados» de proyecto.md."""
+    fila de la versión en decisiones.md (no sale en el Word) y el fichero en «Entregados» de proyecto.md: el de la
+    versión o, con --word, el fichero exacto que se envía (una revisión suya)."""
     if uid not in {u.id for u in un.leer(raiz) or []}:
         sys.exit(f"{uid} no está en analisis/cambios.md")
-    word = nombre_df(m, vs).replace(f"-v{vs}.docx", f"-{uid}-v{vs}.docx")
-    if not (raiz / "entregables" / word).is_file():
-        sys.exit(f"No encuentro entregables/{word}: genéralo con «df_docx.js {raiz} --cambio {uid}» antes de enviarlo")
+    word = word_que_sale(raiz, nombre_df(m, vs).replace(f"-v{vs}.docx", f"-{uid}-v{vs}.docx"), pedido,
+                         f"df_docx.js {raiz} --cambio {uid}")
     dm = m.analisis / "decisiones.md"
     lineas = dm.read_text(encoding="utf-8").split("\n") if dm.is_file() else []
     k = next((i for i, l in enumerate(lineas) if re.match(rf"^\|\s*v?{re.escape(vs)}\s*\|", l)), None)
@@ -1080,8 +1098,8 @@ def cambio(a):
                 print(f"· {iid}: {por_que[len('hecha · '):]}")
         marcas = plan.marcas
         if marcas:
-            print(f"Pruebas marcadas como no necesarias para avanzar (construccion/{uid}/indice.md), que se revisan al "
-                  "preparar el paquete:\n" + "\n".join(f"  {x['issue']} · {x['objeto']} «{x['caso']}»: {x['motivo']} "
+            print(f"Pruebas marcadas como no necesarias para avanzar (construccion/{uid}/indice.md), que una persona "
+                  "revisa antes de desplegar el paquete:\n" + "\n".join(f"  {x['issue']} · {x['objeto']} «{x['caso']}»: {x['motivo']} "
                                                        f"({x['quien']})" for x in marcas))
 
 
@@ -1299,6 +1317,8 @@ def main():
                         "--fuente; «lo de antes» con su cita")
     s = sub.add_parser("entregar"); s.add_argument("carpeta"); s.set_defaults(f=entregar)
     s.add_argument("--cambio", help="el DF de un cambio (df_docx.js --cambio): se anota en decisiones.md")
+    s.add_argument("--word", help="el fichero exacto que se envía, si no es el de la versión: una revisión suya "
+                                  "(…-v1.1-r2.docx, de df_docx.js -o), en entregables/")
     s = sub.add_parser("cambio"); s.add_argument("carpeta"); s.add_argument("id"); s.set_defaults(f=cambio)
     s.add_argument("estado", choices=["abrir", "aprobada", "construida", "produccion", "descartada"])
     s.add_argument("--titulo"); s.add_argument("--fuente"); s.add_argument("--comparte"); s.add_argument("--ref")

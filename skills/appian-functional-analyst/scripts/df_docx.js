@@ -21,7 +21,8 @@
  * *cursiva* y `código`, listas (una viñeta puede seguir en líneas sangradas), tablas, citas (>), imágenes
  * ![pie](ruta.png) con figuras numeradas.
  *
- * No sobrescribe un Word entregado («Entregados» de proyecto.md, que escribe proyecto.py entregar): sale con 1.
+ * No sobrescribe un Word entregado («Entregados» de proyecto.md, que escribe proyecto.py entregar): sale con 1. Si el
+ * de esta versión ya se entregó y solo cambian sus imágenes, la revisión sale con -o (…-v1.1-r2.docx).
  * --pdf y --pdf-de convierten con LibreOffice (soffice) en un perfil temporal que se borra y dejan el PDF en
  * <p>/entregables/revision/.
  *
@@ -204,14 +205,18 @@ const out = path.resolve(opt("-o", path.join(raiz, "entregables", `DF-${slug}${C
 
 // Un Word entregado no se toca: los de «Entregados: a.docx, b.docx» de proyecto.md (proyecto.py entregar)
 const entregados = ((proyecto.match(/^Entregados:\s*(.*)$/m) || [])[1] || "").split(",").map((x) => x.trim()).filter(Boolean);
-if (fs.existsSync(out)) {
-  if (entregados.includes(path.basename(out))) {
-    console.error(`${path.basename(out)} ya se entregó al cliente («Entregados» de proyecto.md): no se sobrescribe ${out}. ` +
-      `Si el análisis ha cambiado, sube la versión; para el PDF de ese Word, --pdf-de ${out}.`);
-    process.exit(1);
-  }
-  console.log(`· ${path.basename(out)} existe y no se ha entregado: se reemplaza`);
+// El nombre de uno entregado queda reservado, aunque falte su fichero, y se compara sin mayúsculas (en Windows,
+// df-….docx es el mismo fichero que DF-….docx)
+if (entregados.some((x) => x.toLowerCase() === path.basename(out).toLowerCase())) {
+  const nombre = path.basename(out, ".docx");
+  const r = nombre.match(/^(.*)-r(\d+)$/);
+  const revision = r ? `${r[1]}-r${Number(r[2]) + 1}.docx` : `${nombre}-r2.docx`;
+  console.error(`${path.basename(out)} ya se entregó al cliente («Entregados» de proyecto.md): no se sobrescribe ni ` +
+    `se vuelve a escribir ${out}. Si el análisis ha cambiado, sube la versión; si solo cambian sus imágenes, saca una ` +
+    `revisión con -o (${revision}, un nombre que no esté en «Entregados»); para el PDF de ese Word, --pdf-de ${out}.`);
+  process.exit(1);
 }
+if (fs.existsSync(out)) console.log(`· ${path.basename(out)} existe y no se ha entregado: se reemplaza`);
 
 // La marca del cliente: su color oscuro (site.backgroundColor, que lleva texto blanco encima) en títulos y
 // cabeceras de tabla; sin marca, los azules de siempre

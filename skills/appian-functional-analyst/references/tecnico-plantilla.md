@@ -92,7 +92,7 @@ un sistema. Tabla vertical:
 | **Riesgo** | Qué puede salir mal, o «Ninguno relevante» |
 | **Depende de** | Versión o tier (ⓥ, ⓣ de buenas prácticas), u otra cosa; «—» si nada |
 | **Verificar** | Qué hay que comprobar en el entorno; «—» si nada |
-| **Verificado** | Dónde se comprobó (documentación de la versión, prueba) o «pendiente» |
+| **Verificado** | Dónde se comprobó (documentación de la versión, prueba) o «pendiente», que se completa al construirlo (F8, «Los documentos, al día») |
 
 ```markdown
 **DT-01 — Estados como record type de referencia**

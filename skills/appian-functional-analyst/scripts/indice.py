@@ -763,7 +763,8 @@ def c_issues(m, a):
             sys.exit(f"✗ {e}")
         marca = plan.marcas[-1] if plan.marcas else {}
         print(f"{issue.id} de {uid}: {marca.get('objeto')} «{marca.get('caso')}», marcada como no necesaria para avanzar"
-              + (f" ({como})" if como else "") + f". Se revisa al preparar el paquete (construccion/{uid}/indice.md).")
+              + (f" ({como})" if como else "") + f". La revisa una persona antes de desplegar el paquete "
+              f"(construccion/{uid}/indice.md).")
         print("\n".join(iss.situacion(plan, m.raiz)))
         return
     try:
@@ -852,8 +853,8 @@ def main():
                    help="la orden de la regresión de toda la aplicación, para este equipo: antes de preparar el paquete")
     s.add_argument("--sin-prueba", metavar="«<objeto> «<caso>»»",
                    help="con ISS-nn y --motivo: una persona marca ese caso de prueba, o ese escenario del QA (HU-nn.m), "
-                        "que falla, como no necesario para avanzar; la issue puede darse por hecha y la marca se revisa "
-                        "al preparar el paquete")
+                        "que falla, como no necesario para avanzar; la issue puede darse por hecha y la marca la revisa "
+                        "una persona antes de desplegar el paquete")
     s.add_argument("--aceptar-permiso", metavar="PER-huella", help="con ISS-nn y --motivo: aceptación humana de la diferencia observada")
     s.add_argument("--revocar-permiso", metavar="PER-huella", help="con ISS-nn: retira esa aceptación de permisos")
     s.add_argument("--manual", action="store_true", help="con ISS-nn y --motivo: cierre humano de esta versión")

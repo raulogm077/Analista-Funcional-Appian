@@ -7,7 +7,8 @@ escrito quién y por qué. Lo que nadie declara crítico es un evolutivo priorit
 
 Base (BP 08 §3; Appian, «Deploying an Application Hotfix»): un parche solo con los objetos de la corrección, construido
 sobre una versión igual a producción, llevado después a desarrollo, registrado y con regresión. El riesgo típico: el
-siguiente pase pisa la corrección. Sin DF ni prototipo.
+siguiente pase pisa la corrección. Sin DF ni prototipo propios; en un «Cambio de comportamiento», el Word y el
+prototipo que ya haya se ponen al día (`cambios.md` §5).
 
 ## 1. La ficha: un informe de impacto
 

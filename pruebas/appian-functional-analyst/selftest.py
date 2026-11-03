@@ -256,6 +256,36 @@ def main():
         c, out = corre(S / "proyecto.py", "entregar", e, "--cambio", "EV-02")
         ok("proyecto.py entregar --cambio de una unidad que no existe: error y no toca proyecto.md",
            c != 0 and "EV-02" in out and (e / "proyecto.md").read_text(encoding="utf-8") == pm, out)
+        # --word: el fichero exacto que se envía (una revisión de df_docx.js -o), no el más reciente
+        for r in ("r2", "r3"):
+            (e / "entregables" / f"DF-Solicitudes-de-autorizacion-v1.1-{r}.docx").write_bytes(b"revision")
+        c, out = corre(S / "proyecto.py", "entregar", e, "--word", "DF-Solicitudes-de-autorizacion-v1.1-r2.docx")
+        pm = (e / "proyecto.md").read_text(encoding="utf-8")
+        ok("proyecto.py entregar --word con la r2 y la r3 en entregables/: registra la r2 que se envía, no la r3",
+           c == 0 and "Entregados: DF-Solicitudes-de-autorizacion-v1.1.docx, DF-Solicitudes-de-autorizacion-v1.1-r2.docx"
+           in pm and "-r3" not in pm, out + pm)
+        for nombre, por in (("DF-Solicitudes-de-autorizacion-v1.0-r2.docx", "otra versión"),
+                            ("DF-Otra-cosa-v1.1-r2.docx", "otro proyecto"),
+                            ("DF-Solicitudes-de-autorizacion-EV-02-v1.1-r2.docx", "otra unidad")):
+            (e / "entregables" / nombre).write_bytes(b"de otra familia")   # existe: solo lo para la familia
+            c, out = corre(S / "proyecto.py", "entregar", e, "--word", nombre)
+            ok(f"proyecto.py entregar --word de {por}, aunque esté en entregables/: error y no anota nada",
+               c != 0 and "no es el Word de esta versión" in out
+               and (e / "proyecto.md").read_text(encoding="utf-8") == pm, out)
+        c, out = corre(S / "proyecto.py", "entregar", e, "--word", "DF-Solicitudes-de-autorizacion-v1.1-r9.docx")
+        ok("proyecto.py entregar --word de un fichero que no está: error y no anota nada",
+           c != 0 and "No encuentro" in out and (e / "proyecto.md").read_text(encoding="utf-8") == pm, out)
+        fuera = tmp / "otra carpeta" / "DF-Solicitudes-de-autorizacion-v1.1-r2.docx"
+        c, out = corre(S / "proyecto.py", "entregar", e, "--word", fuera)
+        ok("proyecto.py entregar --word con la ruta de otra carpeta, aunque entregables/ tenga uno con ese nombre: error "
+           "y no anota nada", c != 0 and "no es un fichero de entregables/" in out
+           and (e / "proyecto.md").read_text(encoding="utf-8") == pm, out)
+        word_11 = e / "entregables" / "DF-Solicitudes-de-autorizacion-v1.1.docx"
+        word_11.rename(word_11.with_suffix(".aparte"))
+        c, out = corre(S / "proyecto.py", "entregar", e)
+        ok("proyecto.py entregar sin el Word de la versión: error que dice cómo generarlo y no anota «DF entregado»",
+           c != 0 and "df_docx.js" in out and (e / "proyecto.md").read_text(encoding="utf-8") == pm, out)
+        word_11.with_suffix(".aparte").rename(word_11)
 
         # G5: unidades de cambio, señales, técnico por unidad, derivados y urgentes
         pruebas_unidades(tmp)
@@ -1143,9 +1173,47 @@ Se acepta si:
                 destino.write_bytes(b"el que se envio")
                 r = subprocess.run(["node", str(S / "df_docx.js"), str(w)], capture_output=True, text=True,
                                    encoding="utf-8", errors="replace")
-                ok("un Word de «Entregados» no se sobrescribe: sale con error y no lo toca",
-                   r.returncode == 1 and "ya se entregó" in r.stderr and destino.read_bytes() == b"el que se envio",
-                   r.stdout + r.stderr)
+                ok("un Word de «Entregados» no se sobrescribe: sale con error, no lo toca y dice cómo sacar una revisión",
+                   r.returncode == 1 and "ya se entregó" in r.stderr and "-r2.docx" in r.stderr
+                   and destino.read_bytes() == b"el que se envio", r.stdout + r.stderr)
+                # la revisión de un Word entregado cuya imagen cambia en su misma ruta, sin versión nueva: -o con otro
+                # nombre; lleva la imagen nueva tal cual y el entregado no cambia
+                import struct
+                import zlib
+
+                def png_liso(ancho, alto, color):
+                    def bloque(tipo, datos):
+                        return struct.pack(">I", len(datos)) + tipo + datos + struct.pack(">I", zlib.crc32(tipo + datos))
+                    return (b"\x89PNG\r\n\x1a\n" + bloque(b"IHDR", struct.pack(">IIBBBBB", ancho, alto, 8, 2, 0, 0, 0))
+                            + bloque(b"IDAT", zlib.compress((b"\0" + bytes(color) * ancho) * alto)) + bloque(b"IEND", b""))
+
+                def medios(docx):
+                    with zipfile.ZipFile(docx) as z:
+                        return [z.read(n) for n in z.namelist() if n.startswith("word/media/")]
+
+                imagen = w / "analisis" / "diagramas" / "solicitud.png"
+                original = imagen.read_bytes()
+                nueva = png_liso(16, 12, (200, 30, 30))
+                imagen.write_bytes(nueva)
+                r2 = w / "entregables" / "DF-Solicitudes-de-autorizacion-v1.1-r2.docx"
+                r = subprocess.run(["node", str(S / "df_docx.js"), str(w), "-o", str(r2)], capture_output=True,
+                                   text=True, encoding="utf-8", errors="replace")
+                ok("df_docx.js -o …-v1.1-r2.docx con el de la versión entregado y su imagen cambiada en la misma ruta: la "
+                   "revisión lleva la imagen nueva y el entregado no cambia",
+                   r.returncode == 0 and r2.is_file() and nueva in medios(r2) and original not in medios(r2)
+                   and destino.read_bytes() == b"el que se envio", r.stdout + r.stderr)
+                # una revisión entregada tampoco se pisa, ni con su nombre en minúsculas (en Windows, el mismo fichero)
+                editar(w / "proyecto.md", "\nEntregados: DF-Solicitudes-de-autorizacion-v1.1.docx",
+                       "\nEntregados: DF-Solicitudes-de-autorizacion-v1.1.docx, DF-Solicitudes-de-autorizacion-v1.1-r2.docx")
+                antes = r2.read_bytes()
+                for salida in (r2, r2.with_name(r2.name.lower())):
+                    r = subprocess.run(["node", str(S / "df_docx.js"), str(w), "-o", str(salida)], capture_output=True,
+                                       text=True, encoding="utf-8", errors="replace")
+                    ok(f"df_docx.js -o {salida.name} con la r2 ya entregada: sale con error y no la toca",
+                       r.returncode == 1 and "ya se entregó" in r.stderr and r2.read_bytes() == antes, r.stdout + r.stderr)
+                editar(w / "proyecto.md", ", DF-Solicitudes-de-autorizacion-v1.1-r2.docx", "")
+                r2.unlink()
+                imagen.write_bytes(original)
                 editar(w / "proyecto.md", "\nEntregados: DF-Solicitudes-de-autorizacion-v1.1.docx", "")
                 # Sin LibreOffice, el PDF que ya había se queda
                 revision = w / "entregables" / "revision"

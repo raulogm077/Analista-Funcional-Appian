@@ -270,7 +270,7 @@ prototipo; después, en este orden:
 
 ## 8. Entregar
 En pocas líneas: versión, puntos por tipo, lo que cambió de verdad (CAMBIA, ANULA, alcance), pendientes
-cerrados y nuevos, lo que quedó pendiente de aprobación y las pantallas a actualizar.
+cerrados y nuevos, lo que quedó pendiente de aprobación y lo que se puso al día (pantallas, capturas, Word).
 
 Para la próxima reunión, el guion de lo que hay que preguntar:
 ```bash
