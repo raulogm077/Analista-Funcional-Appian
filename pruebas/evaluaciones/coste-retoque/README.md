@@ -52,7 +52,7 @@ repositorio.
 | `sin_aprobacion` | Ningún punto de ese informe pide aprobación («Requiere: Sí…») ni queda «Pendiente». Que esté construido sale, como mucho, en «Posible petición de cambio» del Resumen |
 | `sin_dt` | Ninguna DT «Cambio sobre lo construido» nueva (la de `EV-02` ya estaba) |
 | `comprobar_una_pasada` | `comprobar.py` sin errores, con `--fuentes`, y K = 0 |
-| `word_al_dia` | Con Word al montar, el DF completo de la 1.2 (`entregables/DF-Solicitudes-de-material-v1.2.docx` y, si sale, su PDF de revisión) y nada más: los Word entregados y las capturas siguen como al montar, porque no hay prototipo del que sacarlas. Sin Word al montar, ningún `.docx`, `.pdf` ni `.png` nuevo o distinto (salvo en `fuentes/`). Desde que hay un Word, cada cambio de lo que dice lo regenera (`cambios.md` §5) |
+| `word_al_dia` | Con Word al montar, el DF completo de la 1.2 (`entregables/DF-Solicitudes-de-material-v1.2.docx` y, si sale, su PDF de revisión), un Word que se abre y dice «Pedir material» y «Versión 1.2», y nada más: los Word entregados y las capturas siguen ahí y como al montar, porque no hay prototipo del que sacarlas. Sin Word al montar, ningún `.docx`, `.pdf` ni `.png` nuevo, distinto o que falte (salvo en `fuentes/`). Desde que hay un Word, cada cambio de lo que dice lo regenera (`cambios.md` §5). Las pasadas puntuadas antes del 3-nov-2026 lo fueron con `sin_word_ni_capturas` (ningún Word regenerado): no son comparables con las de ahora |
 | `llamadas` | N ≤ 25 |
 
 ## Criterio
@@ -101,5 +101,6 @@ issue de la unidad nueva, que se escribe al aprobarla.
 `python3 prueba_puntuar.py` monta el proyecto, comprueba el caso (PAN-01 construida, ✅ y fuera de `EV-02`, el correo, el
 tope, el camino más corto) y prueba `puntuar.py` con proyectos inventados: ese camino, que pasa, y variantes que no (una
 llamada de más, una pasada con errores, la aprobación por construido, una DT, una captura regenerada sin prototipo, un
-Word entregado pisado, el Word sin poner al día o, sin Word al montar, uno nuevo, la fila sin unidad o en `EV-02`, nada
-hecho). Lee el plugin de `PLUGIN_A_PROBAR`.
+Word entregado pisado o movido al nombre nuevo, el Word sin poner al día, el DF 1.0 copiado con el nombre de la 1.2, un
+Word vacío o falso o, sin Word al montar, uno nuevo, la fila sin unidad o en `EV-02`, nada hecho). Lee el plugin de
+`PLUGIN_A_PROBAR`. Las 17 llamadas son las del camino simulado, no una medida de un agente.

@@ -19,9 +19,10 @@ Puntos (umbral: todos):
                         no la pide (como mucho, «Posible petición de cambio» en el Resumen)
   sin_dt                ninguna DT «Cambio sobre lo construido» nueva: una interfaz no la pide
   comprobar_una_pasada  comprobar.py sin errores ahora, y K = 0
-  word_al_dia           con Word al montar, el completo de la versión nueva (word_nuevo; su PDF de revisión, si sale)
-                        y nada más: ni los entregados ni las capturas cambian (no hay prototipo del que sacarlas);
-                        sin Word al montar, ningún .docx, .pdf ni .png nuevo o cambiado (salvo fuentes/)
+  word_al_dia           con Word al montar, el completo de la versión nueva (word_nuevo; su PDF de revisión, si sale),
+                        un Word que se abre y dice el texto nuevo y su versión, y nada más: los entregados y las
+                        capturas del montaje siguen ahí e iguales (no hay prototipo del que sacarlas); sin Word al
+                        montar, ningún .docx, .pdf ni .png nuevo, cambiado o que falte (salvo fuentes/)
   llamadas              N ≤ tope_llamadas
 
 Imprime cada punto y el total. Sale 0 si se cumplen todos; 1 si no; 2 si falta el proyecto o la huella del montaje.
@@ -32,6 +33,7 @@ import argparse
 import json
 import re
 import sys
+import zipfile
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -55,6 +57,16 @@ def requiere(fila: dict) -> bool:
 
 def dts_construido(m) -> set:
     return {p.id for p in m.vigentes("DT") if "cambio sobre lo construido" in mo.normaliza(p.titulo)}
+
+
+def texto_docx(f: Path) -> str:
+    """El texto del cuerpo de un .docx (word/document.xml, sin etiquetas); «» si no es un Word que se pueda abrir."""
+    try:
+        with zipfile.ZipFile(f) as z:
+            xml = z.read("word/document.xml").decode("utf-8", errors="replace")
+    except (zipfile.BadZipFile, KeyError, OSError):
+        return ""
+    return re.sub(r"<[^>]+>", "", xml)
 
 
 def main() -> int:
@@ -123,16 +135,27 @@ def main() -> int:
           ("sin errores" if ok else f"{len(errores)} con errores" + "".join(f"\n  {x}" for x in errores[:10]))
           + f"; pasadas del agente con errores: {a.comprobar_con_errores}")
     # el Word, al día (cambios.md §5): el cambio cambia lo que dice el DF completo, que se regenera en su versión
-    # nueva; el de EV-02 no (no es su cambio) y EV-03 aún no tiene. Sin prototipo, las capturas no se tocan
+    # nueva; el de EV-02 no (no es su cambio) y EV-03 aún no tiene. Sin prototipo, las capturas no se tocan. Lo que
+    # había al montar en entregables/ y prototipo/capturas/ sigue igual: un entregado movido no sale en regenerados
     regen = [r.split(" (nuevo)")[0] for r in mt.regenerados(p, huella)]
     nuevo = e["word_nuevo"]
     con_word = f"entregables/{mt.WORD_10}" in huella
     permitidos = {nuevo, f"entregables/revision/{Path(nuevo).stem}.pdf"} if con_word else set()
     sobran = [r for r in regen if r not in permitidos]
-    falta = con_word and nuevo not in regen
-    punto("word_al_dia", not sobran and not falta,
-          "; ".join(([f"falta {nuevo}: el cambio cambia lo que dice el Word"] if falta else [])
-                    + ([f"regenerado de más: {', '.join(sobran)}"] if sobran else []))
+    mal = [f"regenerado de más: {', '.join(sobran)}"] if sobran else []
+    ahora = mt.huellas(p)
+    mal += [f"falta {r}, que estaba al montar" for r in huella
+            if r.startswith(("entregables/", "prototipo/capturas/")) and r not in ahora]
+    if con_word:
+        version = re.search(r"-v(\d+\.\d+)\.docx$", nuevo).group(1)
+        texto = texto_docx(p / nuevo)
+        if not (p / nuevo).is_file():
+            mal.append(f"falta {nuevo}: el cambio cambia lo que dice el Word")
+        elif not texto:
+            mal.append(f"{nuevo} no es un Word que se pueda abrir")
+        else:
+            mal += [f"{nuevo} no dice «{t}»" for t in (e["texto_nuevo"], f"Versión {version}") if t not in texto]
+    punto("word_al_dia", not mal, "; ".join(mal)
           or (f"{nuevo} al día y nada más regenerado" if con_word else "sin Word al montar: nada regenerado"))
     punto("llamadas", a.llamadas <= e["tope_llamadas"], f"{a.llamadas} (tope {e['tope_llamadas']})")
     bien = sum(hechos.values())

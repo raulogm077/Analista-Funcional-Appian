@@ -10,7 +10,7 @@
   "sin_aprobacion": "Ningún punto del informe del correo pide aprobación (Requiere «Sí…») ni queda «Pendiente»",
   "sin_dt": "Ninguna DT «Cambio sobre lo construido» nueva",
   "comprobar_una_pasada": "comprobar.py sin errores, y ninguna pasada del agente con errores",
-  "word_al_dia": "Con Word al montar, el completo de la versión nueva (word_nuevo, y su PDF de revisión si sale) y nada más: ni los entregados ni las capturas cambian (no hay prototipo del que sacarlas). Sin Word al montar, ningún .docx, .pdf ni .png nuevo o cambiado",
+  "word_al_dia": "Con Word al montar, el completo de la versión nueva (word_nuevo, y su PDF de revisión si sale), que se abre y dice el texto nuevo y su versión, y nada más: los entregados y las capturas del montaje siguen ahí e iguales (no hay prototipo del que sacarlas). Sin Word al montar, ningún .docx, .pdf ni .png nuevo, cambiado o que falte",
   "llamadas": "Llamadas a herramientas del agente ≤ tope_llamadas"
  },
  "umbral": "todos"

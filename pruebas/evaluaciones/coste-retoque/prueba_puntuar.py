@@ -223,6 +223,18 @@ def main() -> int:
             f.write_bytes((f.read_bytes() if f.is_file() else b"PK") + b"otro")
             return p
 
+        def copia10(p):     # el DF 1.0 entregado, copiado con el nombre de la 1.2
+            shutil.copy2(p / "entregables" / mt.WORD_10, p / E["word_nuevo"])
+            return p
+
+        def vacio(p):
+            (p / E["word_nuevo"]).write_bytes(b"")
+            return p
+
+        def mueve(p):       # el entregado, movido al nombre nuevo: regenerados no lo ve
+            (p / "entregables" / mt.WORD_10).rename(p / E["word_nuevo"])
+            return p
+
         def captura(p):
             f = p / "prototipo" / "capturas" / "PAN-01.png"
             f.write_bytes(f.read_bytes() + b"otra")
@@ -259,6 +271,14 @@ def main() -> int:
         ] + ([
             ("sin poner al día el Word", retoque(nuevo(), al_dia=False), cuenta(21), 1,
              f"FALLO word_al_dia: falta {E['word_nuevo']}"),
+            ("el DF 1.0 copiado con el nombre de la 1.2", copia10(retoque(nuevo(), al_dia=False)), cuenta(22), 1,
+             f"FALLO word_al_dia: {E['word_nuevo']} no dice «{E['texto_nuevo']}»"),
+            ("un Word vacío con el nombre de la 1.2", vacio(retoque(nuevo(), al_dia=False)), cuenta(22), 1,
+             f"FALLO word_al_dia: {E['word_nuevo']} no es un Word que se pueda abrir"),
+            ("un Word falso con el nombre de la 1.2", word(retoque(nuevo(), al_dia=False)), cuenta(22), 1,
+             f"FALLO word_al_dia: {E['word_nuevo']} no es un Word que se pueda abrir"),
+            ("el entregado movido al nombre nuevo", mueve(retoque(nuevo(), al_dia=False)), cuenta(22), 1,
+             f"FALLO word_al_dia: falta entregables/{mt.WORD_10}, que estaba al montar"),
         ] if (base / "entregables" / mt.WORD_10).is_file() else [
             ("un Word sin haber ninguno al montar", word(retoque(nuevo())), cuenta(22), 1,
              f"FALLO word_al_dia: regenerado de más: {E['word_nuevo']}"),
