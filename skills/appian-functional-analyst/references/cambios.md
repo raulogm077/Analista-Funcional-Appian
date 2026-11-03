@@ -200,9 +200,12 @@ del índice: si no se pudo subir, la salida dice que solo quedó en esa copia.
 1. **Pedir la siguiente issue**: `indice.py issues <p> EV-02 --siguiente` da la primera sin hacer cuyas dependencias
    están hechas, entera y con su orden de terminar lista para copiar en ese equipo (sus rutas, su Python y el Dev MCP de
    desarrollo de su configuración, el de la «URL de desarrollo» de técnico §0). Y la reserva: escribe en el índice quién
-   la tiene y desde cuándo y hace un commit y un push solo de `construccion/EV-02/`. Antes se pone al día; si el push
-   falla porque otro reservó antes, quita su commit, se pone al día y da la siguiente: dos que la piden a la vez no se
-   llevan la misma. Nunca falla por git, y dice cómo queda: sin remoto, un commit sin subir; si el proyecto no es un
+   la tiene y desde cuándo y hace un commit solo de `construccion/EV-02/` y, si la persona autorizó subir, su push.
+   Antes se pone al día; si el push falla porque otro reservó antes, quita su commit, se pone al día y da la siguiente:
+   dos que la piden a la vez no se llevan la misma. Subir lo decide la persona, una vez por proyecto, y la sesión solo
+   apunta esa decisión en `proyecto.md`, con la línea `Subir al remoto: autorizado por <quién>, <AAAA-MM-DD>`; tener remoto no lo autoriza
+   y quitar la línea lo retira. Sin ella, la reserva solo vale en este equipo. Nunca falla por git, y dice cómo queda:
+   sin remoto o sin autorización, un commit sin subir; si el proyecto no es un
    repositorio, o está dentro de otro, sin reservar; con una fusión o un rebase a medias, sin reservar ni tocar git
    (termínala y vuelve a pedirla). El nombre es el de git; dos sesiones con el mismo se distinguen con `--quien
    <nombre>`, y con él una sesión que se reinicia recupera la suya: quien pide con `--quien` y ya tiene una reservada

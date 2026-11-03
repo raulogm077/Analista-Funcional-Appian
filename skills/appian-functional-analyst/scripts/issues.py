@@ -1832,7 +1832,7 @@ def orden_de_regresion(m, uid, entorno="desarrollo"):
     return orden, notas
 
 
-# ------------------------------------------------------------------ reservar: un commit y un push
+# ------------------------------------------------------------------ reservar: un commit y, si está autorizado, un push
 class Candado:
     """Una sola sesión de esta carpeta reserva a la vez: un fichero en la carpeta de git, que no se sube. Si otra lo
     tiene, se espera; si lleva demasiado (una sesión que murió), se le quita. Nunca impide seguir."""
@@ -1891,6 +1891,16 @@ def remoto_de(raiz):
     if "/" in sigue and sigue.split("/", 1)[0] in remotos:
         return tuple(sigue.split("/", 1))
     return ("origin" if "origin" in remotos else remotos[0]), rama
+
+
+def subir_autorizado(raiz):
+    """Si la persona ha autorizado subir: la última línea «Subir al remoto:» de proyecto.md dice, entera, «autorizado por
+    <quién>, <AAAA-MM-DD>». Vale una vez para el proyecto, y quitarla o cambiarla lo retira. Tener remoto, o reservar,
+    no lo autoriza."""
+    p = pathlib.Path(raiz) / "proyecto.md"
+    lineas = re.findall(r"^Subir al remoto:(.*)$", p.read_text(encoding="utf-8"), re.M) if p.is_file() else []
+    autorizada = r"\s*autorizado por (?=[^,]*\w)[^,<>{}—]+,\s*\d{4}-\d{2}-\d{2}\s*"
+    return bool(lineas) and re.fullmatch(autorizada, lineas[-1]) is not None
 
 
 def al_dia(raiz, remoto):
@@ -1966,7 +1976,8 @@ def con_reserva(raiz, uid, cambia, sin_git=None, escribe_=False):
     mensaje del commit); las marcas, en plan.marcas) y lo confirma y lo sube sin pisar a nadie: antes se pone al día; si
     el push falla porque otro subió antes, quita su commit, se pone al día y vuelve a decidir. Devuelve (m, ctx, plan,
     issue, cómo ha quedado). Nunca falla por git: sin repositorio, o dentro de otro que no es el suyo, no reserva (con
-    `sin_git`, lo escribe y dice eso); sin remoto no sube y sin acceso lo deja en este equipo, y lo dice. Con una fusión
+    `sin_git`, lo escribe y dice eso); sin remoto o sin autorización de subir, ni trae ni sube, y sin acceso lo deja en
+    este equipo, y lo dice. Con una fusión
     o un rebase a medias no toca git ni escribe nada: da la issue sin reservar o, si lo que se pide es escribir
     (`escribe_`: liberar, marcar una prueba), se niega."""
     raiz = pathlib.Path(raiz)
@@ -2008,7 +2019,7 @@ def con_reserva(raiz, uid, cambia, sin_git=None, escribe_=False):
     with Candado(raiz):
         remoto = remoto_de(raiz)
         for _ in range(INTENTOS):
-            traido, por_que = al_dia(raiz, remoto) if remoto else (True, "")
+            traido, por_que = al_dia(raiz, remoto) if remoto and subir_autorizado(raiz) else (True, "")
             m, ctx, plan, issue, mensaje = decide()
             commit = confirma(raiz, ruta, mensaje)
             if commit is None:      # nada que confirmar (no hay issue que dar ni nada que poner al día), o git no puede
@@ -2018,6 +2029,9 @@ def con_reserva(raiz, uid, cambia, sin_git=None, escribe_=False):
             if not remoto:
                 return m, ctx, plan, issue, ("con un commit, sin subir: el repositorio no tiene remoto (git remote add "
                                              "origin <URL>)")
+            if not subir_autorizado(raiz):      # también si lo que se acaba de traer lo retira
+                return m, ctx, plan, issue, ("con un commit en este equipo, sin subir: no hay autorización registrada en "
+                                             "la línea «Subir al remoto» de proyecto.md; otros equipos no ven este cambio")
             if not traido:
                 return m, ctx, plan, issue, f"con un commit en este equipo, sin subir: {por_que}"
             if mo.git(raiz, "push", "--quiet", remoto[0], f"HEAD:refs/heads/{remoto[1]}", espera=ESPERA_REMOTO,
@@ -2065,7 +2079,7 @@ def siguiente(raiz, uid, quien=None):
 
 
 def libera(raiz, uid, iid):
-    """Quita la reserva de una issue (quien la tenía no va a seguir), con su commit y su push."""
+    """Quita la reserva de una issue (quien la tenía no va a seguir), con su commit y, si está autorizado, su push."""
     def cambia(plan):
         if iid not in {i.id for i in plan.issues}:
             raise NoSePuede(f"{uid} no tiene la issue {iid} (tiene {', '.join(i.id for i in plan.issues)})")
@@ -2180,7 +2194,7 @@ def cierre_manual(raiz, uid, iid, motivo, quien=None, retirar=False):
 def sin_prueba(raiz, uid, iid, caso, motivo, quien=None):
     """Una persona marca un caso de prueba que falla en una issue, o uno de sus escenarios que falla en el QA de la unidad
     (HU-nn.m; su objeto es «QA»), como no necesario para avanzar, con su motivo: la issue puede darse por hecha. Va al
-    índice de la unidad, con su commit y su push, y se revisa al preparar el paquete. `caso` es «<objeto> «<caso>»» o, si
+    índice de la unidad, con su commit y, si está autorizado, su push, y se revisa al preparar el paquete. `caso` es «<objeto> «<caso>»» o, si
     no hay dos con ese nombre, solo el caso. Solo uno que falla ahora: en un objeto de la issue y en su verificación de
     ahora, o en el último resultado del QA (qa/<U>/resultado.json)."""
     nombre, ahora = quien_soy(raiz, quien), datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")

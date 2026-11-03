@@ -31,7 +31,8 @@ Con unidades de cambio (analisis/cambios.md, references/cambios.md):
                                                         requisito, en construccion/EV-02/. Con ISS-nn, esa issue con su
                                                         orden de terminar para este equipo; con --siguiente, la primera
                                                         sin hacer cuyas dependencias están hechas, reservada con un
-                                                        commit y un push del índice; --liberar quita una reserva
+                                                        commit del índice y, si la persona autorizó subir, su push;
+                                                        --liberar quita una reserva
   ficha e impacto imprimen además «Construido: … · En curso: …» por pieza.
 
 Estados: 🔒 Validado · ✅ Decidido · 🔶 Inferido · ⚠️ Pendiente · ❓ No definido · Anulada · Respondida.
@@ -678,7 +679,7 @@ def c_issues(m, a):
     """Las issues de construcción de una unidad aprobada, en construccion/<U>/ (issues.py): el índice y, por issue,
     ISS-nn.md, ISS-nn.feature y ISS-nn-esperado.json. Se generan del análisis y no se editan. Sin más, las (re)genera y
     dice cómo va cada una; con ISS-nn, imprime esa issue con su orden de terminar para este equipo; con --siguiente, da
-    la primera sin hacer cuyas dependencias están hechas y la reserva (un commit y un push del índice); con --liberar,
+    la primera sin hacer cuyas dependencias están hechas y la reserva (un commit y, si está autorizado, un push del índice); con --liberar,
     quita una reserva."""
     ctx, uid = unidad(m, a.unidad)
     if a.subtarea is not None or a.avance is not None:

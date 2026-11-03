@@ -3080,6 +3080,8 @@ def pruebas_issues(tmp):
        and "con un commit, sin subir: el repositorio no tiene remoto" in out.splitlines()[0]
        and git(ana, "log", "--format=%s")[1].strip() == "EV-01: ISS-01 reservada por Ana"
        and all(x.startswith("construccion/EV-01/") for x in git(ana, "show", "--name-only", "--format=")[1].split()), out)
+    (ana / "proyecto.md").write_text(lee(ana / "proyecto.md") + "\nSubir al remoto: autorizado por Ana, 2026-10-30\n",
+                                     encoding="utf-8")
     git(ana, "add", "-A")
     git(ana, "commit", "--quiet", "-m", "Análisis de la 1.1 y las issues de EV-01")
     remoto = base / "remoto.git"

@@ -1,4 +1,5 @@
 """Avance por pasos con una sola issue, reserva y verificación. Datos ficticios, sin red."""
+import subprocess
 import unittest
 import test_automejora as base
 
@@ -142,6 +143,109 @@ class Subtareas(unittest.TestCase):
         with self.assertRaisesRegex(iss.NoSePuede, "fila incompleta"):
             iss.genera(m, un.Contexto(m), "EV-01")
         self.assertEqual(self.archivos(), antes)
+
+
+class SubirAlRemoto(unittest.TestCase):
+    """Reservar no autoriza subir: lo autoriza la persona, una vez por proyecto, en proyecto.md."""
+    setUp = base.Automejora.setUp
+    preparada = base.Automejora.preparada
+    SIN_SUBIR = "sin subir: no hay autorización registrada"
+
+    def git(self, *args, donde=None):
+        return subprocess.run(["git", "-C", str(donde or self.p), *args], check=True, capture_output=True,
+                              text=True, encoding="utf-8").stdout.strip()
+
+    def con_remoto(self, linea=None):
+        self.preparada()
+        fixture.corre(fixture.S / "proyecto.py", "iniciar", self.p)
+        self.autoriza(linea)
+        self.git("add", "-A")
+        self.git("commit", "--quiet", "-m", "Punto de partida")
+        self.remoto = self.root / "remoto.git"
+        self.git("init", "--quiet", "--bare", str(self.remoto))
+        self.git("remote", "add", "origin", str(self.remoto))
+        self.git("push", "--quiet", "-u", "origin", "main")
+
+    def autoriza(self, linea):
+        f = self.p / "proyecto.md"
+        texto = "\n".join(l for l in f.read_text(encoding="utf-8").split("\n") if not l.startswith("Subir al remoto:"))
+        f.write_text(texto.rstrip("\n") + (f"\n\n{linea}\n" if linea else "\n"), encoding="utf-8")
+
+    def subidos(self):
+        return self.git("rev-list", "--count", "main", donde=self.remoto)
+
+    def test_sin_autorizar_commit_local_en_todos_los_caminos(self):
+        self.con_remoto()
+        antes = self.subidos()
+        local = self.git("rev-parse", "HEAD")
+        *_, como = iss.siguiente(self.p, "EV-01", "Ana")
+        self.assertIn(self.SIN_SUBIR, como)
+        self.assertNotEqual(self.git("rev-parse", "HEAD"), local)
+        *_, como = iss.marca_subtarea(self.p, "EV-01", "ISS-01", "1", "hecha", "Ana")
+        self.assertIn(self.SIN_SUBIR, como)
+        *_, como = iss.corrige_dependencias(self.p, "EV-01", "ISS-02", [], "Base disponible", "Ana")
+        self.assertIn(self.SIN_SUBIR, como)
+        *_, como = iss.libera(self.p, "EV-01", "ISS-01")
+        self.assertIn(self.SIN_SUBIR, como)
+        self.assertEqual(self.subidos(), antes)
+
+    def test_autorizada_sube_y_retirarla_deja_de_subir(self):
+        self.con_remoto("Subir al remoto: autorizado por Ana, 2026-10-30")
+        antes = int(self.subidos())
+        *_, como = iss.siguiente(self.p, "EV-01", "Ana")
+        self.assertEqual(como, "con un commit, subido a origin/main")
+        self.assertEqual(int(self.subidos()), antes + 1)
+        self.autoriza("Subir al remoto: no")
+        *_, como = iss.libera(self.p, "EV-01", "ISS-01")
+        self.assertIn(self.SIN_SUBIR, como)
+        self.assertEqual(int(self.subidos()), antes + 1)
+        self.autoriza(None)
+        *_, como = iss.siguiente(self.p, "EV-01", "Ana")
+        self.assertIn(self.SIN_SUBIR, como)
+        self.assertEqual(int(self.subidos()), antes + 1)
+
+    def test_lo_que_no_es_una_autorizacion_no_sube(self):
+        self.con_remoto()
+        antes = self.subidos()
+        for linea in ("Subir al remoto: no autorizado", "Subir al remoto: pendiente", "Subir al remoto: autorizado",
+                      "Subir al remoto: autorizado por <quién>, <AAAA-MM-DD>", "Subir al remoto: autorizado por {quien}",
+                      "Subir al remoto: no autorizado por Ana", "Subir al remoto:",
+                      "Subir al remoto: autorizado por —, 2026-10-30", "Subir al remoto: autorizado por Ana, <AAAA-MM-DD>",
+                      "Subir al remoto: autorizado por Ana", "Subir al remoto: autorizado por Ana, 2026-10-30 pero no"):
+            self.autoriza(linea)
+            self.assertFalse(iss.subir_autorizado(self.p), linea)
+        *_, como = iss.siguiente(self.p, "EV-01", "Ana")
+        self.assertIn(self.SIN_SUBIR, como)
+        self.assertEqual(self.subidos(), antes)
+
+    def test_una_retirada_que_llega_al_traer_no_sube(self):
+        self.con_remoto("Subir al remoto: autorizado por Ana, 2026-10-30")
+        antes = self.subidos()
+        local = self.git("rev-parse", "HEAD")
+
+        def trae_la_retirada(raiz, remoto):
+            self.autoriza("Subir al remoto: no")
+            return True, ""
+        de_verdad, iss.al_dia = iss.al_dia, trae_la_retirada
+        try:
+            *_, como = iss.siguiente(self.p, "EV-01", "Ana")
+        finally:
+            iss.al_dia = de_verdad
+        self.assertIn(self.SIN_SUBIR, como)
+        self.assertEqual(self.subidos(), antes)
+        self.assertNotEqual(self.git("rev-parse", "HEAD"), local)
+
+    def test_la_ultima_linea_manda_y_sin_remoto_lo_dice(self):
+        self.preparada()
+        fixture.corre(fixture.S / "proyecto.py", "iniciar", self.p)
+        self.autoriza("Subir al remoto: autorizado por Ana, 2026-10-30")
+        self.git("add", "-A")
+        self.git("commit", "--quiet", "-m", "Punto de partida")
+        *_, como = iss.siguiente(self.p, "EV-01", "Ana")
+        self.assertIn("sin subir: el repositorio no tiene remoto", como)
+        f = self.p / "proyecto.md"
+        f.write_text(f.read_text(encoding="utf-8") + "Subir al remoto: no\n", encoding="utf-8")
+        self.assertFalse(iss.subir_autorizado(self.p))
 
 
 if __name__ == "__main__":
