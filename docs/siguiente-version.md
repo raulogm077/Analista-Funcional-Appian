@@ -44,17 +44,25 @@ Claude trae una recomendación por punto; se aplica lo que Raúl decida.
   proyecto de prueba, como pide `CLAUDE.md`. Comprobar: el localizador con una sesión real; «gasta» en un guion de QA,
   que la skill lo pone al preparar el guion y no solo que el motor lo respeta; la línea «Unidades», el aviso y que el
   analista pone al día «Siguiente paso»; una tarea de una persona en Designer en la entrega; `git push` con un remoto
-  local, con y sin autorización, y sin remoto; y lo que cambien los pasos 1 y 2. Aprobarla no autoriza escribir en
+  local, con y sin autorización, y sin remoto; una autorización que llega por otro agente para un cierre manual o un
+  borrado, dentro y fuera de lo delegado (L6); y lo que cambien los pasos 1 y 2. Aprobarla no autoriza escribir en
   Indra-spain ni subir a GitHub. [prueba]
 
 ### Paso 4 · Residuos de las pruebas
 
-- En `Pruebas-plugin`, revisar `automejora/`, `automejora-codex-20261019/`, `T1-agilidad/`, `T5-devmcp-sail/`,
-  `T6-retoque-construido/`, `T13-pruebas-issue/`, `T15-qa/`, `T16-ensayo-qa/` y `retoque-analisis/`. Antes de borrar
+- En `Pruebas-plugin`, revisar `automejora/`, `automejora-codex-20261019/`, `campana-codex-20261019/`,
+  `aplazados-codex-20261019/`, `construccion-cerebro/`, `informes-comparativa-20261022/`, `informes-con-plugin/`,
+  `informes-sin-plugin/`, `T1-agilidad/`, `T5-devmcp-sail/`, `T6-retoque-construido/`, `T13-pruebas-issue/`, `T15-qa/`,
+  `T16-ensayo-qa/` y `retoque-analisis/`. Primero las que guardan fuentes reales del cliente
+  (`campana-codex-20261019/`, `informes-con-plugin/`). Antes de borrar
   cada una, comprobar que sus lecciones estén aquí o en `evaluaciones.md`, si la cita como evidencia algún documento
   que se conserva (el seguimiento del ensayo, la revisión de Codex) y qué objetos dejó en Indra-spain
   (`T6-retoque-construido/objetos-creados.md`). Se guarda lo que haga falta; lo demás, y sobre todo lo que lleve datos
   del cliente, se borra con la confirmación de Raúl, que lanza él el borrado si la sesión no puede. [persona y sesión]
+- En Indra-spain, comprobar qué sigue ahí: las aplicaciones PCA (vacía) y CTC, las 7 tablas `CTC_*` de `jdbc/Appian`, que
+  el Dev MCP no borra, `dem.gestor`, `dem.gestor2` y `dem.revisor` en los grupos CTC, y del ensayo Informes los datos,
+  los objetos y las instancias que solo cancela una persona, incluidas las cadenas diarias que envían correo. Se quita con
+  la confirmación de Raúl. [persona y sesión]
 
 ### Paso 5 · Cierre de la rama
 
@@ -76,7 +84,10 @@ Claude trae una recomendación por punto; se aplica lo que Raúl decida.
 - **URL `/help/26.6/`** de `data-fabric.md` y `agents/data-modeler.md`: revisarlas cuando cambie la versión de Appian
   del entorno.
 - **Aviso a Appian** (`aviso-appian-devmcp.md`, en la carpeta de pruebas): revisarlo con el servidor 26.9.5, porque el
-  punto 10 ya está en parte corregido. Añadir la discrepancia de `LCP_TOOL_MODE=readonly`. Lo envía Raúl. [persona]
+  punto 10 ya está en parte corregido. Añadir la discrepancia de `LCP_TOOL_MODE=readonly` y lo visto en el ensayo: cada
+  copia del servidor borra el `cookies.json` compartido al caducar su sesión (hay un parche local que cada bundle pisa),
+  `listProcessInstances` omite instancias y su «total» cambia, no hay forma de cancelar instancias, el rechazo del MCP
+  por «builds distintas» a mitad de un trabajo y el caso que crea `testInputs`. Lo envía Raúl. [persona]
 - **Rama `yaroslav/plantilla-DF-cliente`** en GitHub, solo si Raúl lo pide: 17 commits del 19-oct sin PR, ni en
   `main` ni en esta rama; es independiente de ella. [persona]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
