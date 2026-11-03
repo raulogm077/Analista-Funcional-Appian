@@ -4,36 +4,39 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** revisar las recomendaciones del paso 2 y cerrar las aclaraciones que ya tienen respuesta en el método.
-Los arreglos comprobados de esta tanda están en `evaluaciones.md`. El 2.1 sigue retirado y pendiente.
+**Ahora:** aplicar lo que Raúl decidió el 3-nov en el paso 2: el 2.1, con el Word siempre al día, y el 2.6, con una
+prueba real antes de redactar F9. Después, el paso 3, que mide también el 2.2. Lo hecho está en `evaluaciones.md`.
 
 ## 1. En la rama actual, por orden
 
-### Paso 2 · Decisiones de Raúl
+### Paso 2 · Aplicar lo que decidió Raúl
 
-Claude trae una recomendación por punto; se aplica lo que Raúl decida. Son borradores contrastados con el código y las
-notas; el 2.1 sigue por revisar con las reservas siguientes. Nada de estas propuestas está aplicado.
+Raúl decidió el 3-nov, en el chat: el 2.1 se acepta con el Word siempre al día; el 2.2 se mide (paso 3); el 2.6 se
+acepta y hay que probarlo bien. Nada está aplicado todavía.
 
 - **2.1 Documentos al cerrar un incremento.** En la prueba con y sin el plugin, los documentos quedaron a medias:
   decisiones antiguas marcadas como vigentes, contradicciones puntuales, DT con «pendiente: al construir» ya construidas
   y el estado del proyecto sin cerrar. Los diagramas de estados sí se pusieron al día. Raúl quiere que el funcional, el
   técnico, los prototipos y los diagramas draw.io digan cómo está hecho el proyecto, sin nada obsoleto y sin que cada
   construcción sea tediosa. Una primera redacción, en dos momentos (`ef0104b`), se retiró el 29-oct. [flujo]
-  **Borrador para decidir, sin aplicar.** La actualización por fuente ya corrige solo las piezas afectadas
-  (`actualizacion.md` §6). Falta enlazar con ella lo decidido durante construcción y QA: F8 manda registrar la DT y
-  regenerar las issues, pero no concreta la vuelta al resto de documentos. El análisis vivo incluye la aplicación y
-  las unidades en curso (introducción de `cambios.md`): no se presenta como construido lo que aún está pendiente.
-  **Recomendación:** al aceptar un cambio, corregir sus apartados antes de verificar el encargo actualizado: funcional
+  **Aceptado por Raúl el 3-nov, con el cambio del Word; sin aplicar.** La actualización por fuente ya corrige solo las
+  piezas afectadas (`actualizacion.md` §6). Falta enlazar con ella lo decidido durante construcción y QA: F8 manda
+  registrar la DT y regenerar las issues, pero no concreta la vuelta al resto de documentos. El análisis vivo incluye la
+  aplicación y las unidades en curso (introducción de `cambios.md`): no se presenta como construido lo que aún está
+  pendiente.
+  **Qué se aplica:** al aceptar un cambio, corregir sus apartados antes de verificar el encargo actualizado: funcional
   si cambia negocio; técnico si cambia diseño o configuración, o hay evidencia para resolver una comprobación
   pendiente; prototipo existente y capturas si cambia la pantalla acordada; draw.io e imagen si cambia el proceso
   representado, y Mermaid si cambian estados o datos. Un fallo frente al criterio se corrige en la aplicación o sigue
   la excepción humana prevista; cambiar lo acordado conserva su aprobación. No se adapta el criterio al fallo.
   Agrupar la regeneración de los derivados mientras no se necesiten y actualizarlos antes de usarlos para construir,
-  revisar o entregar. Como plazo propuesto, los documentos afectados quedan al día antes de marcar Construida la
-  unidad; este plazo requiere la decisión de Raúl. Se haría dentro de los pasos existentes, sin otra lista, script,
-  marca o aprobación adicional. Lo que no cambia no se reescribe ni regenera. El Word queda fuera de ese plazo: solo
-  al enviarlo o pedirlo, conservando lo ya entregado. Si cambia el encargo, su versión vigente necesita verificación
-  o el cierre manual previsto; documentar no conserva por sí solo la prueba anterior.
+  revisar o entregar. Los documentos afectados quedan al día antes de marcar Construida la unidad. Se hace dentro de
+  los pasos existentes, sin otra lista, script, marca o aprobación adicional. Lo que no cambia no se reescribe ni
+  regenera. **El Word, siempre al día (Raúl):** desde que existe uno, el completo o el de una unidad, cada cambio que
+  modifique su contenido lo regenera tras `proyecto.py version`. Los entregados no se sobrescriben: el nombre lleva la
+  versión y `df_docx.js` se niega a pisar uno entregado. Si cambia una pantalla, sus capturas se actualizan antes,
+  porque el Word las lleva. Si cambia el encargo, su versión vigente necesita verificación o el cierre manual
+  previsto; documentar no conserva por sí solo la prueba anterior.
   **Límites del borrador:** la ruta de una captura entra en la huella de la issue; el contenido de PNG, HTML y draw.io no;
   tampoco se comparan automáticamente las contradicciones por paráfrasis. La alineación de contenido exige revisión
   del LLM o de una persona. La comparación textual puede reabrir una issue por una reformulación o al completar
@@ -43,9 +46,10 @@ notas; el 2.1 sigue por revisar con las reservas siguientes. Nada de estas propu
   `modelo.py` consume el primero, y `estado` imprime el segundo, no lo calcula. Entra aquí también lo que solo puede
   hacer una persona en Designer: un campo de §3 que el Dev MCP no crea sale en lo esperado de cada issue y para la
   cadena; no se rebaja lo esperado para que pase sin configurarlo. Nada de este borrador está incorporado a las skills.
-- **2.2 Coste del análisis.** Con el plugin, el análisis costó más en los tres incrementos. La clasificación heurística
-  identifica 155 de 482 llamadas del modelo con órdenes o ficheros propios del método; no son pasos prescindibles ni
-  ahorro medido. Los documentos finales `funcional.md` y `tecnico.md` pesaban unos 94 y 196 KB. Los 761–928k tokens son
+- **2.2 Coste del análisis. Raúl aprueba medirlo (3-nov); se mide en el paso 3.** Con el plugin, el análisis costó
+  más en los tres incrementos. La clasificación heurística identifica 155 de 482 llamadas del modelo con órdenes o
+  ficheros propios del método; no son pasos prescindibles ni ahorro medido. Los documentos finales `funcional.md` y
+  `tecnico.md` pesaban unos 94 y 196 KB. Los 761–928k tokens son
   caché/contexto final de las sesiones, no tokens de esos documentos ni KB releídos. El reparto contable identifica
   focos para revisar, sin aislar causas ni acreditar un techo de ahorro (límites de `coste-analisis.md`, §0 y §4.2).
   **Candidato para medir, sin cambiar el método:** comparar el tratamiento separado con un solo informe para fuentes
@@ -54,22 +58,26 @@ notas; el 2.1 sigue por revisar con las reservas siguientes. Nada de estas propu
   y comparar el coste total observado del modelo principal y del asesor. No anticipar respuestas futuras ni agrupar
   temas distintos. Hay un límite concreto: `version --decision` usa la primera `--fuente` para la fuente y fecha de las
   D y para las marcas 🔒 de VALIDA; si las vías existentes no conservan la procedencia y autorización de cada decisión
-  y marca, se mantienen las fuentes separadas, sin forzar la agrupación. Medir en el paso 3 o en el próximo incremento
-  real, sin deducir ahorro del número de llamadas. La consulta por tramos ya está prevista; no se añade una línea fija
+  y marca, se mantienen las fuentes separadas, sin forzar la agrupación. Medir en el paso 3 o, si allí no hay fuentes
+  del mismo tema para compararlo, en el próximo incremento real, sin deducir ahorro del número de llamadas. La
+  consulta por tramos ya está prevista; no se añade una línea fija
   a `resumen`. El crecimiento de caracteres tras `97fa604` incorpora contenido antes omitido y no mide coste entre
   alternativas de igual cobertura. «Varias issues por sesión» es otra hipótesis, sin ahorro acreditado para este
   análisis. No se ha ejecutado esta comparación ni se ha aplicado una regla nueva. [flujo y scripts]
-- **2.6 F9.** Decidir si la IA puede dejar preparado el paquete en desarrollo; hoy lo prepara una persona.
-  **Borrador por aprobar:** que la IA prepare un borrador en desarrollo, con la revisión del paso 4 siempre humana;
-  exportar y desplegar siguen a cargo de una persona. La asignación del ICF y los scripts de base de datos a una persona
-  es una elección de roles, no una falta de herramientas: el esquema disponible expone ambos. `addPackageObjects`
-  advierte de éxito parcial en `success`/`errors`; no basta el estado de la llamada para dar el lote por completo.
-  No se ha probado aquí una preparación real de paquete. **Pregunta:** ¿se autoriza ese reparto? [F9]
+- **2.6 F9.** Que la IA pueda dejar preparado el paquete en desarrollo; hoy lo prepara una persona.
+  **Aceptado por Raúl el 3-nov, probándolo bien; sin aplicar:** que la IA prepare un borrador en desarrollo, con la
+  revisión del paso 4 siempre humana; exportar y desplegar siguen a cargo de una persona. La asignación del ICF y los
+  scripts de base de datos a una persona es una elección de roles, no una falta de herramientas: el esquema disponible
+  expone ambos. `addPackageObjects` advierte de éxito parcial en `success`/`errors`; no basta el estado de la llamada
+  para dar el lote por completo. Primero se prueba con un paquete real en Indra-spain, sobre IFA o IFB, apuntando lo
+  que se cree para retirarlo en el paso 4; después se redactan F9 (Empieza y pasos 3 a 5) y
+  `08-alm-testing-naming.md` §3 con lo observado, y en el paso 3 lo repite la sesión con el plugin cargado. [F9]
 
 ### Paso 3 · Prueba con el plugin cargado desde la carpeta
 
 Con subagentes que leen la rama ya se vieron el push con y sin autorización, la autorización delegada, «gasta» y el
-localizador (`evaluaciones.md`). Falta repetirlo con el plugin cargado y lo que necesita Appian.
+localizador (`evaluaciones.md`). Falta repetirlo con el plugin cargado y lo que necesita Appian. Raúl la aprobó el
+3-nov. La sesión con `--plugin-dir` la abre él: lanzarla desatendida desde otra sesión lo denegó el clasificador (14-oct).
 
 - **Probar los cambios de comportamiento con el plugin cargado desde la carpeta** (`claude --plugin-dir`) en un
   proyecto de prueba, como pide `CLAUDE.md`. Comprobar: el localizador con una sesión real; «gasta» en un guion de QA,
@@ -77,10 +85,14 @@ localizador (`evaluaciones.md`). Falta repetirlo con el plugin cargado y lo que 
   analista pone al día «Siguiente paso»; una tarea de una persona en Designer en la entrega; `git push` con un remoto
   local, con y sin autorización, y sin remoto; una autorización que llega por otro agente para un cierre manual o un
   borrado, dentro y fuera de lo delegado (L6); si Write y Edit quedan bloqueados en `claude --bg`, distinguiendo
-  un fallo del host de una denegación, que no se rodea; y lo que cambien los pasos 1 y 2. Aprobarla no autoriza escribir en
-  Indra-spain ni subir a GitHub. [prueba]
+  un fallo del host de una denegación, que no se rodea; un paquete preparado según F9 (2.6); la medición del 2.2, y lo
+  que cambie el paso 2. Puede escribir en Indra-spain si hace falta (Raúl, 3-nov); no sube nada a GitHub. [prueba]
 
 ### Paso 4 · Residuos de las pruebas
+
+Va después del paso 3: IFA e IFB sirven para probar el 2.6. Raúl autoriza (3-nov) borrar lo que ya no haga falta, sin
+perder contexto útil: antes, lo que pueda servir pasa a estos dos documentos, sin datos del cliente, y se le enseña la
+lista exacta de lo que se borra.
 
 - En `Pruebas-plugin`, revisar `automejora/`, `automejora-codex-20261019/`, `campana-codex-20261019/`,
   `aplazados-codex-20261019/`, `construccion-cerebro/`, `informes-comparativa-20261022/`, `informes-con-plugin/`,
@@ -89,21 +101,22 @@ localizador (`evaluaciones.md`). Falta repetirlo con el plugin cargado y lo que 
   (`campana-codex-20261019/`, `informes-con-plugin/`). Antes de borrar
   cada una, comprobar que sus lecciones estén aquí o en `evaluaciones.md`, si la cita como evidencia algún documento
   que se conserva (el seguimiento del ensayo, la revisión de Codex) y qué objetos dejó en Indra-spain
-  (`T6-retoque-construido/objetos-creados.md`). Se guarda lo que haga falta; lo demás, y sobre todo lo que lleve datos
-  del cliente, se borra con la confirmación de Raúl, que lanza él el borrado si la sesión no puede. [persona y sesión]
+  (`T6-retoque-construido/objetos-creados.md`). Se guarda lo que haga falta, como los ocho casos de
+  `aplazados-codex-20261019/mnt-evaluacion-ciega/revision-ciega.md`, que cita §3; lo demás, y sobre todo lo que lleve
+  datos del cliente, se borra con esa lista; si la sesión no puede, lo lanza Raúl. [sesión]
 - En Indra-spain, las consultas de solo lectura del 3-nov no encontraron las aplicaciones PCA y CTC, las tablas `CTC_*`
   ni los grupos CTC (no prueba que no existan con otros permisos). Siguen
   las aplicaciones IFA e IFB del ensayo con sus datos, y dos instancias activas de `IFA Revisar Fechas Limite` desde el
-  24-oct, que se repiten cada día y envían correo; solo las cancela una persona. La de IFB no se puede leer (403). Qué
-  se quita lo confirma Raúl. [persona]
-
+  24-oct, que se repiten cada día y envían correo; solo las cancela una persona. La de IFB no se puede leer (403). Las
+  dos instancias las cancela Raúl; lo demás entra en la lista. [persona y sesión]
 - En el repositorio, las galerías HTML de `appian-prototipos/galerias/` (1,8 MB, no las cita nadie y se regeneran con
-  `generar_app.py` y `build.py`): retirarlas o dejarlas lo confirma Raúl. [persona]
+  `generar_app.py` y `build.py`): entran en la lista. [sesión]
 
 ### Paso 5 · Cierre de la rama
 
-- **Cierre**, cuando Raúl diga «sube». Antes del PR, poner al día «Trabajo en curso» de `CLAUDE.local.md`. La batería
-  completa pasa en GitHub. Antes de publicar una versión, las siete combinaciones y `pruebas/comprobar_anclas.py` (con
+- **Cierre.** Se sigue en esta única rama y se integra con `main` cuando todo esté probado y validado (Raúl, 3-nov).
+  Antes del PR, poner al día «Trabajo en curso» de `CLAUDE.local.md`. La batería completa pasa en GitHub. Antes de
+  publicar una versión, las siete combinaciones y `pruebas/comprobar_anclas.py` (con
   red). [persona y sesión]
 - **Copia de seguridad.** La rama no está en GitHub; se sube como copia, sin PR, cuando Raúl lo autorice. [persona]
 
@@ -144,6 +157,15 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   Comprobar ahí si el bundle configura ya el inicio programado de un proceso (mientras, rige L3: lo hace una persona,
   sin un bucle de temporizador como sustituto) y volver a contrastar el botón «Limpiar» tras uno que valida, que dejó
   «A value is required» aunque llevara `validationGroup` (laboratorio de la campaña de Codex).
+- **Desplegar con el MCP de despliegue de Appian.** Raúl, 3-nov: puede ser la siguiente integración, tras el 2.6, para
+  desplegar en el siguiente entorno con la autorización de una persona. Según su página
+  (`https://docs.appian.com/suite/help/26.10/mcp-deployment.html`, leída el 3-nov): utilidad del App Market mantenida
+  por la comunidad, sin soporte de Appian, sobre la API de despliegue; exporta, inspecciona y despliega paquetes con su
+  ICF, scripts de base de datos y plug-ins, y encadena entornos con etapas que se aprueban. Pide activar los despliegues
+  externos en cada entorno (Admin Console) y la clave de una cuenta de servicio, en el llavero del sistema y nunca en
+  el repositorio. Aprobar una etapa es una herramienta más (`approve_pipeline_stage`): para que apruebe una persona, la
+  IA no debe poder usarla. Un despliegue empezado no se cancela, y hace falta un entorno de destino además de
+  Indra-spain. Los nombres de las herramientas salen de la página: verificarlos con su esquema real al instalarlo. [F9]
 - **Todas las entradas del plugin.** Inventariar y probar las entradas y variantes documentadas en el README, los
   flujos y los modos de cada skill, tanto su invocación directa como su uso dentro de un flujo.
 - **Ingeniería inversa y refactorización a fondo.** Probar extracción, continuación, deriva, dependencias,
