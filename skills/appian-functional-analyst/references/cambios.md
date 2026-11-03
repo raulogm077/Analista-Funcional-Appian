@@ -133,10 +133,11 @@ historias (Nueva, Cambia, Se conserva) ya no se escribe: lo da `indice.py cambio
 Ninguno se regenera si no cambia (R2). Lo que cambia puede esperar mientras nadie lo use, pero se pone al día antes de
 construir, revisar o entregar con él y, como tarde, antes de marcar la unidad Construida. El Word no espera: si ya hay
 alguno, cada cambio de lo que exporta (su texto, sus imágenes, su versión y su control de versiones, que lleva el «qué
-cambia» de cada versión) regenera los vigentes, el completo y el de cada unidad en curso que ya tenga uno, al terminar
-de aplicar y comprobar el cambio y con sus imágenes ya al día: las capturas de las pantallas que cambian, si hay
-prototipo del que sacarlas, y los diagramas. Una versión nueva lo pide aunque solo cambie el técnico; lo que no cambia
-nada de eso (una urgencia de datos u operación, sin `proyecto.py version`) no lo pide, y si no hay Word no se crea.
+cambia» de cada versión) regenera los vigentes, el completo y el de cada unidad en curso que ya tenga uno, aunque el
+cambio no sea de esa unidad, al terminar de aplicar y comprobar el cambio y con sus imágenes ya al día: las capturas de
+las pantallas que cambian, si hay prototipo del que sacarlas, y los diagramas. Una versión nueva lo pide aunque solo
+cambie el técnico; lo que no cambia nada de eso (una urgencia de datos u operación, sin `proyecto.py version`) no lo
+pide, y si no hay Word no se crea.
 Los entregados y los anteriores se conservan: `df_docx.js` no pisa ni reutiliza el nombre de uno entregado. Con
 versión nueva, cada Word sale con su nombre. Sin ella (solo cambian sus imágenes) y con el de esta versión ya
 entregado, sale una revisión con otro nombre, que no esté en «Entregados»: `df_docx.js <p> [--cambio EV-02] -o
