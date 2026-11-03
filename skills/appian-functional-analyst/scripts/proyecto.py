@@ -798,7 +798,7 @@ def version(a):
             if len(c) >= 5 and c[0].strip() == fila_inicial:
                 c[0] = "1.0"
                 c[1] = c[1] if not un.vacio(c[1]) else hoy
-                c[2] = c[2] if not un.vacio(c[2]) else que
+                c[2] = c[2] if not un.vacio(c[2]) and c[2].strip() != "Inicio del análisis" else que   # el de la plantilla
                 c[3] = ", ".join(dict.fromkeys(re.findall(r"FU-\d+", c[3]) + fuentes))
                 L[i] = "| " + " | ".join(c) + " |"
                 nuevo_d = "\n".join(L)

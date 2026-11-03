@@ -180,7 +180,7 @@ class RevisionInicio(unittest.TestCase):
             self.assertEqual((self.p / rel).read_bytes(), antes[rel].replace(b"0.1", b"1.0", 1))
         dec = (self.p / "analisis/decisiones.md").read_text(encoding="utf-8")
         self.assertNotIn("| 0.1 |", dec)
-        self.assertIn("| Inicio del análisis | FU-01 | — |", dec)
+        self.assertIn("| Primera entrega | FU-01 | — |", dec)
         self.assertEqual(dec.split("## Decisiones del cliente")[1],
                          antes[pathlib.Path("analisis/decisiones.md")].decode("utf-8").split("## Decisiones del cliente")[1])
         self.assertFalse(list((self.p / "versiones").iterdir()))
