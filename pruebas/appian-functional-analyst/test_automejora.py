@@ -96,6 +96,52 @@ class Automejora(unittest.TestCase):
             fn(*args)
         return out.getvalue()
 
+    def test_aviso_requisito_sin_escenarios_remite_al_alcance_aprobado(self):
+        """La inicial atribuye también requisitos sin objeto: puede faltar cobertura o estar diferidos expresamente.
+        El aviso conserva ambos casos, sin ampliar el alcance por la prosa ni apagarse al marcar Construida."""
+        for tipo, diferida in (("HU", False), ("HU", True), ("INT", False), ("INT", True)):
+            with self.subTest(tipo=tipo, diferida=diferida):
+                self.p = self.root / (tipo + ("-diferida" if diferida else "-omision"))
+                fixture.nueva_con_issues(self.p)
+                f = self.p / "analisis/funcional.md"
+                pid = tipo + "-90"
+                if tipo == "HU":
+                    seccion = "## 5. Pantallas"
+                    cuerpo = ("| Perfil | Pantalla | Paso | Prioridad |\n|---|---|---|---|\n"
+                              "| Consulta | — | — | Deseable |\n\n"
+                              "Como Consulta, quiero consultar el histórico para conocer las solicitudes anteriores.")
+                else:
+                    seccion = "## 10. Condiciones de uso"
+                    cuerpo = "| Campo | Valor |\n|---|---|\n| Sistema | Histórico ficticio |"
+                ficha = (f"**{pid} — Consultar el histórico ficticio** <!-- ✅ FU-05 -->\n\n{cuerpo}\n\n"
+                         f"Se acepta si:\n\n- `{pid}.1` Dada una solicitud anterior, cuando se consulta el histórico, "
+                         "entonces se obtiene la solicitud.\n\n")
+                fixture.editar(f, seccion, ficha + seccion)
+                alcance = (f"{pid} queda fuera de EV-01 y se planifica y prueba con una unidad posterior." if diferida else
+                           f"{pid} y su criterio {pid}.1 forman parte del alcance aprobado de EV-01.")
+                fixture.editar(self.p / "analisis/tecnico.md", "## 14.", alcance + "\n\n## 14.")
+                fuente = self.p / "fuentes/FU-05-aprobacion.md"
+                fuente.parent.mkdir(parents=True, exist_ok=True)
+                mo.escribe(fuente, "# FU-05 · Aprobación ficticia\n\nApruebo EV-01 con el alcance de técnico §13. "
+                           + alcance + "\n")
+                code, out = fixture.corre(fixture.S / "proyecto.py", "cambio", self.p, "EV-01", "aprobada",
+                                          "--fuente", "FU-05")
+                self.assertEqual(code, 0, out)
+                for estado in (un.APROBADA, un.CONSTRUIDA):
+                    with self.subTest(estado=estado):
+                        m = mo.Proyecto(self.p)
+                        ctx = un.Contexto(m)
+                        ctx.por_id["EV-01"].estado = estado
+                        plan = iss.calcula(m, ctx, "EV-01")
+                        self.assertFalse(any(pid in i.requisitos or pid + ".1" in i.criterios for i in plan.issues))
+                        avisos = [a for a in plan.avisos if pid in a and "escenarios" in a]
+                        self.assertEqual(len(avisos), 1)
+                        self.assertTrue(avisos[0].startswith("requisitos con criterios"))
+                        self.assertIn(f"sin escenarios en las issues de EV-01: {pid}", avisos[0])
+                        self.assertIn("alcance aprobado", avisos[0])
+                        self.assertIn("diferidos expresamente", avisos[0])
+                        self.assertNotIn("criterios que construye EV-01", avisos[0])
+
     def test_dt_referida_desde_objeto_base_lleva_su_seguridad(self):
         """Caso B: la tabla del record type cita una DT cuya necesidad es una regla común, no «Base»."""
         self.preparada()

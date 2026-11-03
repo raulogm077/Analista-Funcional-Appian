@@ -1323,8 +1323,10 @@ def calcula(m, ctx, uid, estreno=False):
     sueltas = sorted((h for h in d.suyas - en_issue if h.split("-")[0] in mo.CON_CRITERIOS
                       and any(not m.piezas[c].anulada and d.cambia(c) for c in m.piezas[h].hijos)), key=clave)
     if sueltas:
-        plan.avisos.append(f"con criterios que construye {uid} y sin ningún objeto «Para» ellas en técnico §13 (sus "
-                           f"escenarios no van en ninguna issue): {', '.join(sueltas)}")
+        plan.avisos.append(f"requisitos con criterios sin escenarios en las issues de {uid}: {', '.join(sueltas)}. "
+                           "Contrasta el alcance aprobado: si corresponden a esta unidad, revisa sus objetos y «Para» "
+                           "en técnico §13; si están diferidos expresamente, su cobertura queda pendiente para la "
+                           "unidad que los construya.")
     sin = sorted({c for i in issues for c in i.sin_gherkin}, key=clave)
     if sin:
         plan.avisos.append(f"criterios sin dado, cuando y entonces (pasan tal cual al .feature): {', '.join(sin)}")
