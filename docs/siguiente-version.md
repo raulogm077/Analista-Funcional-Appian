@@ -4,48 +4,17 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** aplicar el 2.1, con el Word siempre al día; el 2.6 ya está (`evaluaciones.md`). Después, el paso 3, que
-mide también el 2.2 y repite el 2.6 con el plugin cargado.
+**Ahora:** el paso 3, la prueba con el plugin cargado desde la carpeta. La sesión la abre Raúl, con el guion de
+`Pruebas-plugin/paso3-20261103/PRUEBA.md`; mide también el 2.2.
 
 ## 1. En la rama actual, por orden
 
 ### Paso 2 · Aplicar lo que decidió Raúl
 
 Raúl decidió el 3-nov, en el chat: el 2.1 se acepta con el Word siempre al día; el 2.2 se mide (paso 3); el 2.6 se
-acepta y hay que probarlo bien. El 2.6 está aplicado (`evaluaciones.md`); falta el 2.1.
+acepta y hay que probarlo bien. El 2.1 y el 2.6 están aplicados (`evaluaciones.md`) y su conducta se prueba en el
+paso 3.
 
-- **2.1 Documentos al cerrar un incremento.** En la prueba con y sin el plugin, los documentos quedaron a medias:
-  decisiones antiguas marcadas como vigentes, contradicciones puntuales, DT con «pendiente: al construir» ya construidas
-  y el estado del proyecto sin cerrar. Los diagramas de estados sí se pusieron al día. Raúl quiere que el funcional, el
-  técnico, los prototipos y los diagramas draw.io digan cómo está hecho el proyecto, sin nada obsoleto y sin que cada
-  construcción sea tediosa. Una primera redacción, en dos momentos (`ef0104b`), se retiró el 29-oct. [flujo]
-  **Aceptado por Raúl el 3-nov, con el cambio del Word; sin aplicar.** La actualización por fuente ya corrige solo las
-  piezas afectadas (`actualizacion.md` §6). Falta enlazar con ella lo decidido durante construcción y QA: F8 manda
-  registrar la DT y regenerar las issues, pero no concreta la vuelta al resto de documentos. El análisis vivo incluye la
-  aplicación y las unidades en curso (introducción de `cambios.md`): no se presenta como construido lo que aún está
-  pendiente.
-  **Qué se aplica:** al aceptar un cambio, corregir sus apartados antes de verificar el encargo actualizado: funcional
-  si cambia negocio; técnico si cambia diseño o configuración, o hay evidencia para resolver una comprobación
-  pendiente; prototipo existente y capturas si cambia la pantalla acordada; draw.io e imagen si cambia el proceso
-  representado, y Mermaid si cambian estados o datos. Un fallo frente al criterio se corrige en la aplicación o sigue
-  la excepción humana prevista; cambiar lo acordado conserva su aprobación. No se adapta el criterio al fallo.
-  Agrupar la regeneración de los derivados mientras no se necesiten y actualizarlos antes de usarlos para construir,
-  revisar o entregar. Los documentos afectados quedan al día antes de marcar Construida la unidad. Se hace dentro de
-  los pasos existentes, sin otra lista, script, marca o aprobación adicional. Lo que no cambia no se reescribe ni
-  regenera. **El Word, siempre al día (Raúl):** desde que existe uno, el completo o el de una unidad, cada cambio que
-  modifique su contenido lo regenera tras `proyecto.py version`. Los entregados no se sobrescriben: el nombre lleva la
-  versión y `df_docx.js` se niega a pisar uno entregado. Si cambia una pantalla, sus capturas se actualizan antes,
-  porque el Word las lleva. Si cambia el encargo, su versión vigente necesita verificación o el cierre manual
-  previsto; documentar no conserva por sí solo la prueba anterior.
-  **Límites del borrador:** la ruta de una captura entra en la huella de la issue; el contenido de PNG, HTML y draw.io no;
-  tampoco se comparan automáticamente las contradicciones por paráfrasis. La alineación de contenido exige revisión
-  del LLM o de una persona. La comparación textual puede reabrir una issue por una reformulación o al completar
-  «Verificado» de una DT frente a su copia base; no hay un ahorro medido con este borrador (2.2). Hay que unificar el
-  momento del prototipo: el camino corto de `actualizacion.md` lo
-  difiere a enviar o construir, mientras §7 lo sitúa después de comprobar. No se retiran «Vigente» ni «Siguiente paso»:
-  `modelo.py` consume el primero, y `estado` imprime el segundo, no lo calcula. Entra aquí también lo que solo puede
-  hacer una persona en Designer: un campo de §3 que el Dev MCP no crea sale en lo esperado de cada issue y para la
-  cadena; no se rebaja lo esperado para que pase sin configurarlo. Nada de este borrador está incorporado a las skills.
 - **2.2 Coste del análisis. Raúl aprueba medirlo (3-nov); se mide en el paso 3.** Con el plugin, el análisis costó
   más en los tres incrementos. La clasificación heurística identifica 155 de 482 llamadas del modelo con órdenes o
   ficheros propios del método; no son pasos prescindibles ni ahorro medido. Los documentos finales `funcional.md` y
@@ -83,8 +52,8 @@ localizador (`evaluaciones.md`). Falta repetirlo con el plugin cargado y lo que 
 ### Paso 4 · Residuos de las pruebas
 
 Va después del paso 3: IFA e IFB sirven para probar el 2.6. Raúl autoriza (3-nov) borrar lo que ya no haga falta, sin
-perder contexto útil: antes, lo que pueda servir pasa a estos dos documentos, sin datos del cliente, y se le enseña la
-lista exacta de lo que se borra.
+perder contexto útil: lo que pueda servir pasa a estos dos documentos, sin datos del cliente; la evidencia que todavía
+citan se conserva, no solo su resumen, y se le enseña la lista exacta de lo que se borra.
 
 - En `Pruebas-plugin`, revisar `automejora/`, `automejora-codex-20261019/`, `campana-codex-20261019/`,
   `aplazados-codex-20261019/`, `construccion-cerebro/`, `informes-comparativa-20261022/`, `informes-con-plugin/`,
@@ -133,9 +102,10 @@ lista exacta de lo que se borra.
   punto 10 ya está en parte corregido. Añadir la discrepancia de `LCP_TOOL_MODE=readonly` y lo visto en el ensayo: cada
   copia del servidor borra el `cookies.json` compartido al caducar su sesión (hay un parche local que cada bundle pisa),
   `listProcessInstances` omite instancias y su «total» cambia, no hay forma de cancelar instancias, el rechazo del MCP
-  por «builds distintas» a mitad de un trabajo y el caso que crea `testInputs`. Y, del 2.6 (26.9.5), que en
-  `addPackageObjects` una entrada con el tipo cambiado hace fallar también las reglas, constantes e interfaces válidas
-  de la misma llamada con «Could not resolve the object's type… may not exist». Lo envía Raúl. [persona]
+  por «builds distintas» a mitad de un trabajo y el caso que crea `testInputs`. Y, del 2.6 (26.9.5), un caso
+  observado: en `addPackageObjects`, un lote con una entrada de tipo cambiado devolvió como inexistentes («Could not
+  resolve the object's type… may not exist») también las reglas, constantes e interfaces válidas, que sin ella
+  entraron. Lo envía Raúl. [persona]
 - **Rama `yaroslav/plantilla-DF-cliente`** en GitHub, solo si Raúl lo pide: 17 commits del 19-oct sin PR, ni en
   `main` ni en esta rama; es independiente de ella. [persona]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
@@ -152,14 +122,20 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   sin un bucle de temporizador como sustituto) y volver a contrastar el botón «Limpiar» tras uno que valida, que dejó
   «A value is required» aunque llevara `validationGroup` (laboratorio de la campaña de Codex).
 - **Desplegar con el MCP de despliegue de Appian.** Raúl, 3-nov: puede ser la siguiente integración, tras el 2.6, para
-  desplegar en el siguiente entorno con la autorización de una persona. Según su página
-  (`https://docs.appian.com/suite/help/26.10/mcp-deployment.html`, leída el 3-nov): utilidad del App Market mantenida
-  por la comunidad, sin soporte de Appian, sobre la API de despliegue; exporta, inspecciona y despliega paquetes con su
-  ICF, scripts de base de datos y plug-ins, y encadena entornos con etapas que se aprueban. Pide activar los despliegues
-  externos en cada entorno (Admin Console) y la clave de una cuenta de servicio, en el llavero del sistema y nunca en
-  el repositorio. Aprobar una etapa es una herramienta más (`approve_pipeline_stage`): para que apruebe una persona, la
-  IA no debe poder usarla. Un despliegue empezado no se cancela, y hace falta un entorno de destino además de
-  Indra-spain. Los nombres de las herramientas salen de la página: verificarlos con su esquema real al instalarlo. [F9]
+  desplegar en el siguiente entorno con la autorización de una persona. Es una integración posterior: probar paquetes en
+  desarrollo no autoriza desplegar en otro entorno. Según su página
+  (`https://docs.appian.com/suite/help/26.10/mcp-deployment.html`, leída el 3-nov; nombres documentados, sin esquemas
+  ni prueba): utilidad del App Market mantenida por la comunidad, sin soporte de Appian, sobre la API de despliegue;
+  exporta, inspecciona y despliega paquetes con su ICF, scripts de base de datos y plug-ins (`deploy_package`,
+  `export_and_deploy`) y encadena entornos en pipelines con etapas que se aprueban (`run_pipeline`,
+  `run_adhoc_pipeline`, `approve_pipeline_stage`). Pide activar los despliegues externos en cada entorno (Admin
+  Console) y la clave o el token de una cuenta de servicio, nunca en el repositorio (la página propone el llavero del
+  sistema). Quitarle a la IA la herramienta de aprobar no basta, porque tiene vías directas de despliegue: hay que
+  comprobar los permisos reales y el gobierno de cada entorno, y no está probado que aprobar una etapa sustituya la
+  revisión de Appian («Require review», con quien pide y quien revisa distintos:
+  `https://docs.appian.com/suite/help/26.10/deployments-view.html#review-deployment-requests`). Cancelar un pipeline
+  detiene las promociones siguientes, no un despliegue ya empezado. Hace falta un entorno de destino además de
+  Indra-spain. [F9]
 - **Todas las entradas del plugin.** Inventariar y probar las entradas y variantes documentadas en el README, los
   flujos y los modos de cada skill, tanto su invocación directa como su uso dentro de un flujo.
 - **Ingeniería inversa y refactorización a fondo.** Probar extracción, continuación, deriva, dependencias,

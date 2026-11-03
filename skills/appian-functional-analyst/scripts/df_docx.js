@@ -2,7 +2,7 @@
 /*
  * Genera el DF en Word (.docx) a partir del análisis de un proyecto.
  *
- * Uso: node df_docx.js <carpeta del proyecto> [-o entregables/DF-<proyecto>-v1.1.docx] [--pdf]
+ * Uso: node df_docx.js <carpeta del proyecto> [-o <carpeta del proyecto>/entregables/DF-<proyecto>-v1.1.docx] [--pdf]
  *      node df_docx.js <carpeta del proyecto> --cambio EV-02 [--pdf]   el DF de un cambio (DF-<proyecto>-EV-02-v1.1.docx)
  *      node df_docx.js <carpeta del proyecto> --pdf-de <fichero>     solo convierte ese fichero a PDF
  *
