@@ -53,12 +53,6 @@ notas; el 2.1 sigue por revisar con las reservas siguientes. Nada de estas propu
   `resumen` no se ha probado. Medir el efecto en el paso 3 o en el próximo incremento real, sin deducir ahorro del
   número de llamadas. El crecimiento de caracteres tras `97fa604` incorpora contenido antes omitido y no mide coste
   entre alternativas de igual cobertura. «Varias issues por sesión» sigue siendo una hipótesis. [flujo y scripts]
-- **2.3 Aviso «criterios sin objeto».** El cálculo señala historias que considera de la unidad, con criterios nuevos
-  o cambiados cuyos escenarios no entran en ninguna issue. No consulta si la unidad está Construida; la ausencia de
-  «Otra unidad» en las historias no es su condición de disparo (esa marca reparte texto técnico).
-  **Por revisar:** distinguir un aviso residual del alcance de una falta real de cobertura. Si esos escenarios
-  corresponden a la unidad, revisar su asignación en §13; la marca Construida no acredita que se hayan cubierto.
-  No se propone ignorarlos ni añadir una marca nueva sin resolver ese alcance. [`issues.py`]
 - **2.4 Cambiar una issue ya verificada.** Falta un camino corto: dónde se escribe, qué subtareas lleva y qué cambió.
   **Borrador para F8:** los ajustes técnicos dentro del encargo aprobado se escriben en el técnico según su plantilla
   y se regenera. Si hay informes nuevos o puntos Pendiente de la unidad, se respeta la aprobación o reasignación que ya
