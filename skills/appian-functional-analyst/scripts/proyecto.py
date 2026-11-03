@@ -452,6 +452,7 @@ def estado(a):
         aplicado = re.match(r"aplicado en v?(\d+)\.(\d+)", e, re.I)
         if aplicado and (ultima is None or tuple(map(int, aplicado.groups())) > ultima):
             aprobadas |= {x for f in puntos if "✔" in f.get("decision", "")
+                          and f.get("tipo", "").upper() not in ("VALIDA", "CONFIRMA")   # no cambian la pantalla
                           for col in ("encaja en", "cambio propuesto") for x in mo.ids_en(f.get(col, ""))
                           if x.startswith("PAN-")}
     catalogadas = sorted({re.match(r"(FU-\d+)", f.name).group(1) for f in (raiz / "fuentes").glob("FU-*.md")})

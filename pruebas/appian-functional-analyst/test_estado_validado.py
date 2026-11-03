@@ -1,5 +1,6 @@
 """Estado del DF tras validarlo y la línea de la construcción inicial en `estado` (caso B), en proyectos ficticios."""
 import json
+import re
 import shutil
 import tempfile
 import unittest
@@ -64,6 +65,22 @@ class EstadoValidado(unittest.TestCase):
         self.assertIn("El DF no pasa a «validado»: quedan sin 🔒 PC-01, PC-02", out)
         self.assertEqual(self.cabeceras(p), ("Versión: 1.2 · Estado: en validación",
                                              "DF entregado: 1.0 (2026-09-12) · Estado: en validación"))
+
+    def test_pantalla_solo_validada_sigue_entre_las_confirmadas(self):
+        """Caso B: «estado» decía que el prototipo rehacía una pantalla que el informe solo validaba."""
+        p = self.proyecto("validada")
+        f = p / "analisis" / "funcional.md"
+        f.write_text(re.sub(r"(\*\*PAN-01 — [^*]+\*\* <!-- )✅", r"\1🔒", f.read_text(encoding="utf-8")), encoding="utf-8")
+        (p / "impacto").mkdir(exist_ok=True)
+        (p / "impacto" / "FU-04.md").write_text(
+            "# Impacto de FU-04\nAnálisis base: versión 1.0 · Estado: aplicado en 1.1\n\n## Puntos\n"
+            "| # | Tipo | Qué se dice | Encaja en | Cambio propuesto | Revisar también | Requiere | Decisión |\n"
+            "|---|---|---|---|---|---|---|---|\n"
+            "| 1 | VALIDA | Visto bueno [FU-04 00:01:00] | PAN-01 | — | — | Sí (🔒) | ✔ FU-04 |\n", encoding="utf-8")
+        c, out = fixture.corre(S / "proyecto.py", "estado", p)
+        self.assertEqual(c, 0, out)
+        self.assertNotIn("el prototipo las rehace", out)
+        self.assertRegex(next(l for l in out.splitlines() if "--confirmadas" in l), r"--confirmadas .*PAN-01")
 
     def test_estado_de_la_construccion_inicial(self):
         p = fixture.nueva_con_issues(self.tmp / "inicial")
