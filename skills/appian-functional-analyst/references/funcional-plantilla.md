@@ -77,7 +77,8 @@ Historias agrupadas por área (`### Área`). Cada una:
 1. Título `**HU-nn — Verbo y objeto**` con su trazabilidad.
 2. Tabla `Perfil · Pantalla · Paso · Prioridad`. El perfil es el de §2; «Aplicación» si lo hace la propia aplicación
    (sin darla de alta en §2). Pantalla y paso, el ID o «—». Prioridad: Imprescindible
-   o Deseable; con una aplicación existente (`as-is/`), «—» en lo que ya hace. Si es nueva, cambia o se conserva no se
+   o Deseable; si las fuentes no priorizan, la que se propone, inferida (`prioridad 🔶`), y una sola PC para validar la
+   priorización, nunca «Pendiente»; con una aplicación existente (`as-is/`), «—» en lo que ya hace. Si es nueva, cambia o se conserva no se
    escribe: lo deriva `indice.py cambios` (`cambios.md`). Si la historia corrige un hallazgo, su cita va en la
    trazabilidad, no en el DF: `**HU-02 — …** <!-- ✅ FU-03 00:09:20; [FU-01 H-DAT-01] -->`.
 3. «Como <perfil>, quiero <qué> para <para qué>.»
