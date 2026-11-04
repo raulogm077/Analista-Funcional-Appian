@@ -4,9 +4,9 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** del paso 4, los datos de clientes que no sostienen evidencia. Hechos: el paso 3 (`evaluaciones.md`,
-«Paso 3 con el plugin cargado» y las filas que cita), el paso 3 bis (el DevMCP 26.9.10 y Appian 26.10) y el primer
-lote del paso 4 (su fila de `evaluaciones.md`).
+**Ahora:** el paso 5, con Raúl. Hechos: el paso 3 (`evaluaciones.md`, «Paso 3 con el plugin cargado» y las filas que
+cita), el paso 3 bis (el DevMCP 26.9.10 y Appian 26.10) y el paso 4 (su fila de `evaluaciones.md`), salvo las tablas
+`DVG_*`, que quita una persona.
 
 ## 1. En la rama actual, por orden
 
@@ -16,13 +16,10 @@ Raúl autorizó (3-nov) borrar lo que ya no haga falta, sin perder contexto úti
 puede servir y qué se borra. La evidencia que citan, directa o indirectamente, este documento, `evaluaciones.md`, la
 memoria y los informes que se conservan se queda, no solo su resumen. Las carpetas de `Pruebas-plugin` se conservan
 por eso; las aplicaciones IFA e IFB de Indra-spain, porque sostienen el ensayo y P6 del paso 3; y las galerías HTML de
-`appian-prototipos/galerias/`, porque tienen lectores y Raúl no confirmó retirarlas (`SUPERVISION-CLAUDE.md`). Falta:
+`appian-prototipos/galerias/`, porque tienen lectores y Raúl no confirmó retirarlas (`SUPERVISION-CLAUDE.md`). Los
+datos de clientes que guardan esas carpetas se quedan con ellas: los 1.523 ficheros que los llevan los menciona algún
+otro fichero (`evaluaciones.md`, «Paso 4»). Falta:
 
-- **Datos de clientes sin papel de evidencia.** Dentro de esas carpetas, borrar lo que es dato de cliente (nombres de
-  la organización o de personas, el host, volcados de aplicaciones reales) y no cita ningún documento que se conserva,
-  ni directa ni indirectamente. Punto de partida: `paso3-20261103/inventario-paso4.json`, el inventario de solo lectura
-  con su revisión adversarial; sus propuestas «borrar_salvo» no valen tal cual, porque se llevaban evidencia citada
-  (revisión de Codex). Lista exacta registrada antes de borrar y contrastada por Codex. [sesión]
 - **Las tablas `DVG_CATEGORIA` y `DVG_SOLICITUD`** de `jdbc/Appian` (prueba de divergencias, sin valor): las quita una
   persona con acceso a la base de datos. [persona]
 
