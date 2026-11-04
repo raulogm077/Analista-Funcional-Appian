@@ -134,8 +134,16 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   en `evaluaciones.md`. [prototipos]
 - **Todas las entradas del plugin.** Inventariar y probar las entradas y variantes documentadas en el README, los
   flujos y los modos de cada skill, tanto su invocación directa como su uso dentro de un flujo.
+  Incluir un caso representativo del uso real con decenas de reuniones y documentos, hasta construir y comprobar
+  en Appian los casos de uso que describen. Revisar el trabajo por lotes, la continuidad entre sesiones, los cruces,
+  las contradicciones y los cambios entre fuentes, y la coherencia de los traspasos a diseño, construcción y QA.
+  Medir calidad, retrabajo y esfuerzo por fase, distinguiendo la ejecución del método de la revisión del ensayo.
+  El recorrido pequeño de la campaña actual no acredita esa escala (indicación de Raúl, 5-nov).
 - **Ingeniería inversa y refactorización a fondo.** Probar extracción, continuación, deriva, dependencias,
-  planificación y verificación de las refactorizaciones, incluidos errores y recuperación. Comprobar la conservación
+  planificación y verificación de las refactorizaciones, incluidos errores y recuperación. Recorrer tanto
+  `F6 → F3 → F8` (entender y evolucionar) como `F6 → F7 → F8` (entender, refactorizar y construir). Evaluar como
+  entradas aplicaciones existentes de Indra-spain y scripts o exportaciones que aporte Raúl, indicando qué permite
+  verificar cada origen y qué queda sin comprobar. Comprobar la conservación
   del comportamiento y la documentación resultante, y corregir los márgenes de mejora encontrados. Usar como casos de
   evaluación los ocho de `aplazados-codex-20261019/mnt-evaluacion-ciega/revision-ciega.md` (recordatorio repetido entre
   ejecuciones, selector con límite o inactivos, usuario fijo…): el puntuador de entonces no los veía.
