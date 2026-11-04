@@ -144,3 +144,11 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   relaciones y traspasos dentro del flujo completo, su calidad, fricción y coste. Repetir los casos afectados tras
   las correcciones y recoger las conclusiones en este seguimiento y en `evaluaciones.md`. Caso para `pdf-publisher`:
   una vez remitió cuatro procesos a la misma página («ver página N» sin comprobar el destino).
+- **Demostración para cliente con una versión madura.** Cuando Raúl considere madura la versión, intentar construir
+  una aplicación para enseñar al cliente a partir de los diseños funcionales del proyecto indicado abajo.
+  Carpeta del proyecto: `C:\Users\rgmoya\Proyectos IA\Proyecto Contratacion Proveedores`.
+  SharePoint es la fuente funcional de referencia; el enlace está en el `README.md` de esa carpeta. La información
+  local está incompleta (Raúl, 4-nov).
+  Usar también el caso para probar las capacidades y los traspasos del plugin que correspondan y sacar lecciones
+  para mejorar el método y el código. Acordar entonces el alcance y el entorno de la demostración, sin interrumpir
+  la campaña actual. Conclusiones en `evaluaciones.md` y mejoras pendientes aquí. [persona y sesión]
