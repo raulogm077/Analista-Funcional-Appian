@@ -4,10 +4,26 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** el paso 4. El paso 3 está hecho (`evaluaciones.md`, «Paso 3 con el plugin cargado» y las filas que
-cita).
+**Ahora:** del paso 3 bis, volver a probar con el DevMCP nuevo las diez observaciones que marca
+`comprobar_divergencias.py`, cuando Codex confirme que el bundle está cargado en los clientes. Después, el paso 4 (su
+inventario de solo lectura ya está en marcha). El paso 3 está hecho (`evaluaciones.md`, «Paso 3 con el plugin
+cargado» y las filas que cita).
 
 ## 1. En la rama actual, por orden
+
+### Paso 3 bis · DevMCP 26.9.10 y Appian 26.10
+
+Petición de Raúl del 4-nov: actualizar el DevMCP con su skill oficial e integrar las novedades de Appian. Codex
+instaló el build 20261103-144057 (SAIL 26.9.10) y la skill oficial, igual en los cuatro clientes, y conservó el parche
+local de `cookies.json`, que el bundle no corrige. Las correcciones de buenas prácticas por la 26.10 están en `79a2233`
+(`evaluaciones.md`). Falta:
+
+- **Las divergencias con la skill oficial, con el build nuevo.** `comprobar_divergencias.py`: las 11 divergencias
+  siguen como estaban en el texto de la oficial y los 20 ficheros citados siguen en ella. Diez observaciones de
+  conducta se vieron con builds anteriores: hay que volver a probarlas en Indra-spain con el nuevo (Raúl autorizó
+  escribir allí para pruebas, 3-nov). No se retira ningún aviso ni rodeo sin probarlo; lo corregido se quita de
+  `14-official-skill-divergences.md` y de `pruebas/divergencias-oficial.json`. Lo que se cree para probarlo entra en el
+  paso 4. [sesión]
 
 ### Paso 4 · Residuos de las pruebas
 
@@ -80,6 +96,10 @@ citan se conserva, no solo su resumen, y se le enseña la lista exacta de lo que
   límites. Aparte, en P9 ter la sesión, tras fallar `EnterWorktree`, siguió con órdenes del plugin que escriben en la
   copia compartida y dejó el proyecto a medias, aunque lo dijo. Si eso molesta, adelantar la frase de `AGENTS.md` al
   fallo del aislamiento. [persona]
+- **Otras novedades de Appian 26.10, sin consumidor todavía** (señaladas por Codex): el ancestro común en el ALM de
+  las expression rules; en agentes, «Stop chat» frente a las otras formas de pararlo, sin prometer que deshaga nada;
+  los tipos nuevos de Task Reports (cinco herramientas) y `updateBehavior` en las relaciones. Se contrastan y se
+  incorporan cuando una tarea las necesite. El Deployment MCP 2.0 existe desde el 2-sep: no es de la 26.10. [flujo]
 - **Fila D con otra fuente que la que cita.** Un aviso de `comprobar.py` si la «Decisión» de una fila D cita fuentes y
   ninguna es la de su «Fuente» (es comparar, no entender). Solo si, tras el arreglo de `version --decision`, vuelven a
   aparecer filas así escritas a mano. [flujo]
