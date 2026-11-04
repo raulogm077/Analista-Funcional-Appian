@@ -294,4 +294,8 @@ enseñado es `app-vX.Y.json`, con X.Y la versión del funcional de entonces):
 
 ## Varias fuentes juntas
 En orden de fecha y en un solo informe si tratan lo mismo (la reunión y el correo que la confirma); si no,
-un informe por fuente. Para arrancar un análisis con muchas reuniones ya acumuladas, `volumen-grande.md`.
+un informe por fuente. Si la posterior corrige algo de la anterior, esa rectificación no se resuelve en silencio aunque
+no cambie nada del análisis base: fila D con la fuente que corrige y su fecha, y lo que decía la anterior, con su cita,
+en «Antes» (`ingesta-fuentes.md` §4). `version --decision` usa la primera `--fuente`: si no es la fuente responsable de
+esa decisión, la fila se escribe a mano (§6). Para arrancar un análisis con muchas reuniones ya acumuladas,
+`volumen-grande.md`.
