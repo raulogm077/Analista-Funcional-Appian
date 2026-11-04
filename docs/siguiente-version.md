@@ -4,25 +4,10 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** del paso 3, lo que dejó P9: que `AGENTS.md` no se lea como permiso para escribir por otra vía cuando el
-host bloquea la edición en segundo plano, y medirlo una vez. Lo demás del paso 3 está hecho (`evaluaciones.md`).
-Después, el paso 4.
+**Ahora:** el paso 4. El paso 3 está hecho (`evaluaciones.md`, «Paso 3 con el plugin cargado» y las filas que
+cita).
 
 ## 1. En la rama actual, por orden
-
-### Paso 3 · Prueba con el plugin cargado desde la carpeta
-
-Hecho el 4-nov en sesiones en segundo plano que arrancó Claude con `claude --bg --plugin-dir`, aceptadas por el
-clasificador del modo auto (`evaluaciones.md`, «Paso 3 con el plugin cargado»). Falta:
-
-- **No rodear el aislamiento del host en segundo plano (P9).** En P9, el host bloqueó Edit, no se pudo crear el
-  worktree (repositorio sin commits) y la sesión escribió con Python, apoyándose en «Sobre `main`, sin ramas ni PR» de
-  `AGENTS.md`, que habla de ramas. Falta, en la plantilla `agentes.md`, junto a esa línea: si una sesión en segundo
-  plano no puede editar porque el host le pide una copia aparte, no escribe por otra vía; lo dice y para. Es una
-  plantilla: con el selftest completo, y medirlo una vez en una sesión en segundo plano con el aislamiento activo.
-  Quitar el aislamiento (`worktree.bgIsolation: none`) lo decide Raúl por proyecto: el 4-nov, solo en la copia de
-  prueba de P9 y con un solo escritor (P9 bis pasa). No se convierte en configuración global ni automática del
-  plugin. [flujo]
 
 ### Paso 4 · Residuos de las pruebas
 
@@ -87,6 +72,14 @@ citan se conserva, no solo su resumen, y se le enseña la lista exacta de lo que
   lo que propone el analista va con 🔶. Es el mismo caso ficticio tres veces (también en P7 sexies). En P7 septies el
   aviso fue con 🔶, pero otra deducción suya quedó bajo ✅ («la columna queda vacía si no lo tiene», en HU-04.3).
   Revisarlo si aparece en otra prueba o en un proyecto real; `comprobar.py` no lo puede ver. [flujo]
+- **Sesiones en segundo plano y aislamiento.** La vía del host (`EnterWorktree`) deja los cambios en una rama propia
+  que la sesión nunca fusiona: los integra la persona, por PR o a mano (documentación oficial, agent-view y worktrees).
+  Con «sobre `main`, sin ramas ni PR» no encaja sin decidir cómo integrarlos. Quitar el aislamiento
+  (`worktree.bgIsolation: none`) lo decide Raúl por proyecto; el 4-nov, solo en la copia de prueba de P9 y con un solo
+  escritor (P9 bis). Si quiere usar sesiones en segundo plano en proyectos reales, decide él cuál de las dos y con qué
+  límites. Aparte, en P9 ter la sesión, tras fallar `EnterWorktree`, siguió con órdenes del plugin que escriben en la
+  copia compartida y dejó el proyecto a medias, aunque lo dijo. Si eso molesta, adelantar la frase de `AGENTS.md` al
+  fallo del aislamiento. [persona]
 - **Fila D con otra fuente que la que cita.** Un aviso de `comprobar.py` si la «Decisión» de una fila D cita fuentes y
   ninguna es la de su «Fuente» (es comparar, no entender). Solo si, tras el arreglo de `version --decision`, vuelven a
   aparecer filas así escritas a mano. [flujo]
