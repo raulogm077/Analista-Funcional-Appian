@@ -6,8 +6,8 @@ lista no autoriza publicar, desplegar, enviar ni borrar.
 
 **Ahora:** rama `claude/pruebas-metodo-20261104`. Hecha la vigencia de las decisiones anteriores (`evaluaciones.md`,
 «El método de punta a punta»), probada leyendo la rama y con el plugin cargado. En curso, por decisión de Raúl del 4-nov: el método de punta a punta, que junta «Todas
-las entradas del plugin» y «Agentes y skills, por separado y juntos» (§3). Un proyecto ficticio recorre F1 a F9 y
-construye en una aplicación de prueba nueva de Indra-spain, que Raúl autorizó con datos ficticios, sin exportar ni
+las entradas del plugin» y «Agentes y skills, por separado y juntos» (§3). Un proyecto ficticio recorre F1, F2, F4,
+F8 y F9 (F5 a F7 siguen en §3) y construye en una aplicación de prueba nueva de Indra-spain, que Raúl autorizó con datos ficticios, sin exportar ni
 desplegar. Lo de §1 que queda es de una persona.
 
 ## 1. Del trabajo anterior
