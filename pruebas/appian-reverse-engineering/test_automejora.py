@@ -127,3 +127,21 @@ def test_inventario_tipos_cobertura_y_huerfanos_produccion(tmp_path):
     assert "DEM_processModel" in huerfanos and "DEM_recordType" not in huerfanos
     assert set(bi.anteriores(cuerpo)) == {o["uuid"] for ls in objetos.values() for o in ls}
     assert all(len(l.split("|")) - 2 <= 8 for l in cuerpo.splitlines() if l.startswith("|"))
+
+
+def test_validacion_26_9_por_objeto():
+    # validateDesignObjects (Dev MCP 26.9) no tiene obligatorios: valida un objeto o una aplicacion entera
+    p = dx.Policy(dx.DEFAULT_POLICY)
+    ex = dx.Extractor(None, p, None)
+    tool = SimpleNamespace(name="validateDesignObjects", description="", annotations=None, inputSchema={
+        "properties": {"objectUuid": {"type": "string"}, "appUuid": {"type": "string"},
+                       "packageUuid": {"type": "string"}, "objectTypes": {"type": "string"}}})
+    ti = dx.analyze_tool(tool, p, False, ex.base_type_phrases())
+    assert (ti.scope, ti.role, ti.obj_param) == ("object", "validation", "objectUuid")
+    assert "interface" in ti.types and "group" not in ti.types and not ti.generic
+    assert ex.build_args(ti, app_uuid="app-1", obj={"uuid": "obj-1"}) == {"objectUuid": "obj-1", "appUuid": "app-1"}
+    datos = {"objectUuid": "obj-1", "test": None,
+             "check": {"hasErrors": True, "errors": [{"message": "Falta la regla"}], "warnings": []},
+             "lint": {"findings": [{"key": "missing-description", "severity": "MEDIUM", "message": "Sin descripcion"}]}}
+    assert [x["message"] for x in bm.validation_issues(datos)] == ["Falta la regla", "Sin descripcion"]
+    assert bm.validation_issues({"valid": False, "issues": [{"message": "x"}]}) == [{"message": "x"}]

@@ -36,6 +36,41 @@ class Ingesta(unittest.TestCase):
     def fuentes(self):
         return json.loads((self.salida / "indice.json").read_text(encoding="utf-8"))["fuentes"]
 
+    def test_fuentes_sin_texto_quedan_catalogadas_como_no_leidas(self):
+        for nombre, contenido in (("vacio.txt", ""), ("espacios.md", " \n\t\n"),
+                                   ("sin_intervenciones.vtt", "WEBVTT\n\n")):
+            (self.entrada / nombre).write_text(contenido, encoding="utf-8")
+        (self.entrada / "nota.txt").write_text("El revisor decide.", encoding="utf-8")
+        self.corre(self.entrada)
+        inicial = self.fuentes()
+        self.assertEqual(len(inicial), 4)
+        for fuente in inicial:
+            if fuente["fichero"] == "nota.txt":
+                self.assertTrue(fuente["salida"])
+                self.assertGreater(fuente["palabras"], 0)
+            else:
+                self.assertEqual(fuente["salida"], "")
+                self.assertEqual(fuente["palabras"], 0)
+                self.assertIn("no leído: sin texto", fuente["detalle"])
+        self.corre(self.entrada)
+        self.assertEqual(self.fuentes(), inicial, "reintentar no duplica ni cambia los IDs")
+
+    def test_recataloga_vacio_de_catalogo_anterior_sin_renumerar(self):
+        fuente = self.entrada / "vacio.txt"
+        fuente.write_text("", encoding="utf-8")
+        self.corre(fuente)
+        catalogo = self.salida / "indice.json"
+        estado = json.loads(catalogo.read_text(encoding="utf-8"))
+        estado["fuentes"][0].update(salida="FU-01-vacio.md", detalle="1 líneas")
+        (self.salida / "FU-01-vacio.md").write_text("# FU-01\n\n---\n\n", encoding="utf-8")
+        catalogo.write_text(json.dumps(estado), encoding="utf-8")
+        self.corre(fuente)
+        actual = self.fuentes()
+        self.assertEqual(len(actual), 1)
+        self.assertEqual(actual[0]["id"], "FU-01")
+        self.assertEqual(actual[0]["salida"], "")
+        self.assertIn("sin texto", actual[0]["detalle"])
+
     def test_imagenes_asociadas_accesibles_e_independientes(self):
         (self.entrada / "img").mkdir()
         (self.entrada / "img/pantalla uno.png").write_bytes(b"imagen enlazada")

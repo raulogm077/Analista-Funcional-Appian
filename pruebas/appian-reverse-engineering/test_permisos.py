@@ -73,7 +73,8 @@ def test_pm_compara_todos_los_roles_declarados_no_solo_initiator():
     assert de.diferencias(real, exp) == {}
     exp["permisosInicio"] = [{"rol": "initiator", "grupos": []}]
     dif = de.diferencias(real, exp)
-    assert "permisosDiferentes" not in dif and "parcial" in dif["permisosNoComprobados"][0]
+    # L12: solo se comparan los roles declarados; los demás no se anotan como «no comprobados»
+    assert dif == {}
     exp["permisosInicio"].append({"rol": "viewer", "grupos": []})
     assert de.diferencias(real, exp)["permisosDiferentes"][0]["comprobacion"] == "inicio: rol viewer"
 

@@ -113,7 +113,8 @@ skill's `change-planning`, with the gates the calibration gives, and honour its 
 objects. It carries what the build needs from the functional design and the technical spec, with what changes: don't
 read those documents whole. If it says there are no tests to run, run none. When done, run the command it prints
 (`verificar`, read-only), ask for the next one, and when none is left and the unit has scenarios, its QA goes first, in
-another session (`appian-qa`; the last issue says so); then `proyecto.py cambio <p> <U> construida`. Progress across
+another session (`appian-qa`; the last issue says so); then, with the documents the build changed brought up to date
+(F8, «Los documentos, al día»), `proyecto.py cambio <p> <U> construida`. Progress across
 sessions is what each issue's verification and the QA result say; there is no other state to keep. `verificar` also
 runs the saved test cases of the issue's rules and interfaces and of what uses them; when one of them, or a QA
 scenario, fails: `<skill>/../appian-functional-analyst/references/cambios.md` §6.
@@ -142,7 +143,13 @@ when updating an existing object. The update tools take it as an optional field 
 it, Appian answers 409 if someone saved the object in between (seen on expression rules and interfaces) —
 re-read and redo the change on the new version; without it, the update overwrites their work without a
 word. Without a design MCP the work is the same, described as changes for
-Designer: the rules and the gates don't depend on the tool.
+Designer: the rules and the gates don't depend on the tool. The same holds for the part a design MCP can't
+build (an aggregated field, a record events setting, a list column from a related record): the design
+doesn't bend to the tool, whose limits change with each release. Build the rest and leave that part as a
+task for a person in Designer, said in the delivery with what to set. What the issue expects stays: don't lower the
+spec so it passes without it. Where the check compares that part, it fails until the person sets it and the issues
+that depend on it wait; where it doesn't (a process's scheduled start, for instance), a pass doesn't make it done: the
+delivery keeps it pending for that person.
 
 **Before writing through a design MCP, the official Appian skill is required.**
 [`appian/dev-mcp-skills`](https://github.com/appian/dev-mcp-skills/) carries what the tool schemas can't

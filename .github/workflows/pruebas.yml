@@ -227,7 +227,7 @@ jobs:
         run: |
           npm install -g docx
           sudo apt-get update
-          sudo apt-get install -y libreoffice-writer poppler-utils
+          sudo apt-get install -y libreoffice-writer poppler-utils python3-pypdf
           command -v soffice
 
       - name: Generar y comprobar un PDF del proyecto ficticio
@@ -243,6 +243,9 @@ jobs:
           grep -Fq 'Solicitudes de autorización' "$RUNNER_TEMP/pdf.txt"
           grep -Fq 'Objetivo y alcance' "$RUNNER_TEMP/pdf.txt"
 
+      - name: Comprobar imágenes, índice y editables del PDF final
+        run: /usr/bin/python3 -B pruebas/appian-functional-analyst/test_pdf_libreoffice.py
+
       - name: Conservar PDF y resultados
         if: always()
         uses: actions/upload-artifact@v4
@@ -253,6 +256,7 @@ jobs:
             ${{ runner.temp }}/pdf.log
             ${{ runner.temp }}/pdfinfo.txt
             ${{ runner.temp }}/pdf.txt
+            ${{ runner.temp }}/pdf-diagramas-*/**
           if-no-files-found: warn
           retention-days: 14
 

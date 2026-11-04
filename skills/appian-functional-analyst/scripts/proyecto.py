@@ -7,6 +7,10 @@
                                      .agents/workflows/
   proyecto.py iniciar  <carpeta>     en un proyecto que ya existe: pone al día AGENTS.md y los flujos con esta versión
                                      del plugin y añade lo que falte de lo anterior
+  proyecto.py iniciar  <carpeta> --confiar
+                                     además, la deja como de confianza para Claude Code (~/.claude.json), para que las
+                                     sesiones en segundo plano (claude --bg) arranquen sin pedirlo; se da una vez, con
+                                     el visto bueno de la persona, y solo si no trae .claude/settings*.json ni .mcp.json
   proyecto.py estado   <carpeta>     versión, cliente y marca, DF enviado, fuentes sin procesar, pendientes, pantallas;
                                      y avisa de lo que no está confirmado o subido, de lo que hay en el remoto sin traer,
                                      de si AGENTS.md o los flujos son de otra versión del plugin y de la unidad
@@ -17,9 +21,10 @@
                                      antes de aplicar un informe que cambia el análisis: la copia, la versión +0.1 en
                                      funcional y técnico, su fila en decisiones.md, cada fuente en «Fuentes procesadas»
                                      y, con --decision (una por punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE, con
-                                     la primera fuente), su fila D
-  proyecto.py entregar <carpeta> [--cambio EV-02]   el Word sale hacia el cliente: «DF entregado» (el de un cambio, en su
-                                     fila de Versiones de decisiones.md) y el fichero en «Entregados»
+                                     la fuente que cita «lo nuevo» si es una sola; si no, la primera), su fila D
+  proyecto.py entregar <carpeta> [--cambio EV-02] [--word <fichero>]   el Word sale hacia el cliente: «DF entregado»
+                                     (el de un cambio, en su fila de Versiones de decisiones.md) y el fichero en
+                                     «Entregados»: el de la versión o, con --word, el exacto que se envía (una revisión)
   proyecto.py cambio   <carpeta> <EV-nn|URG-nn> <estado> [opciones]   una unidad de cambio (analisis/cambios.md):
       abrir --titulo "…"                    Abierta
       aprobada --fuente FU-nn [--comparte "EV-03 en <objeto>: secuenciar (EV-02 primero)"]
@@ -41,6 +46,7 @@ envía, nunca en una sesión desatendida.
 import argparse
 import datetime
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -72,6 +78,16 @@ SIN_CONVERTIR = ("# Git no cambia los finales de línea de ningún fichero: la h
 ESPERA_REMOTO = 5   # segundos que `estado` espera al remoto; sin respuesta, compara con lo último que se trajo
 # «DF entregado: 1.1 · 2026-10-10» (entregar) o, en proyectos anteriores, «DF entregado: 1.0 (2026-09-12)»
 RX_ENTREGADO = re.compile(r"DF entregado:\s*v?(\d+\.\d+)(?:\s*(?:·\s*|\()(\d{4}-\d{2}-\d{2}))?")
+LOCALIZADOR = ".appian-plugin.json"
+
+
+def escribe_localizador(raiz):
+    """La ruta de este plugin en el localizador del proyecto, que git ignora: cada equipo tiene la suya."""
+    ign = raiz / ".gitignore"
+    texto_ign = ign.read_text(encoding="utf-8") if ign.is_file() else ""
+    if LOCALIZADOR not in texto_ign.splitlines():
+        escribe(ign, texto_ign.rstrip("\n") + "\n" + LOCALIZADOR + "\n")
+    escribe(raiz / LOCALIZADOR, json.dumps({"ruta": str(SKILL.parents[1].resolve())}, ensure_ascii=False) + "\n")
 
 
 def iniciar(a):
@@ -110,6 +126,53 @@ def iniciar(a):
             print(f"= {destino} (ya existe, no se toca)")
     poner_al_dia(raiz)
     repositorio(raiz)
+    if a.confiar:
+        confiar(raiz)
+
+
+def confiar(raiz):
+    """La carpeta del proyecto, de confianza para Claude Code. Es un repositorio git propio y no hereda la de la carpeta
+    de arriba, así que una sesión en segundo plano no arrancaba («Workspace not trusted»). La vía que documenta Claude
+    Code fuera de su diálogo es `projects["<raíz>"].hasTrustDialogAccepted` en ~/.claude.json. Solo si la carpeta no
+    trae nada que la confianza active sin revisarlo (sus ajustes de Claude Code, sus servidores MCP): eso lo enseña el
+    diálogo."""
+    activa = [r for r in (".claude/settings.json", ".claude/settings.local.json", ".mcp.json") if (raiz / r).is_file()]
+    if activa:
+        print(f"· No se marca de confianza: trae {', '.join(activa)}, que se revisan en el diálogo de Claude Code. "
+              "Abre la carpeta una vez con Claude Code y acéptalo")
+        return
+    cfg = pathlib.Path(os.environ.get("CLAUDE_CONFIG_DIR") or pathlib.Path.home()) / ".claude.json"
+    clave = raiz.resolve().as_posix()
+    provisional = cfg.with_name(f"{cfg.name}.proyecto-py-{os.getpid()}")   # propio: dos iniciar a la vez no lo comparten
+    hecho = False
+    try:
+        # Claude Code también escribe este fichero, entero: si cambia entre leerlo y sustituirlo, se vuelve a leer, para no
+        # borrar lo que guardó otra sesión. Queda el instante entre la última lectura y la sustitución
+        for _ in range(5):
+            antes = lee_config(cfg)
+            datos = json.loads(antes) if antes else {}
+            datos.setdefault("projects", {}).setdefault(clave, {})["hasTrustDialogAccepted"] = True
+            with open(provisional, "w", encoding="utf-8", newline="\n") as f:   # como lo guarda Claude Code
+                f.write(json.dumps(datos, ensure_ascii=False, indent=2))
+            if lee_config(cfg) == antes:
+                os.replace(provisional, cfg)      # entero o nada
+                hecho = json.loads(lee_config(cfg))["projects"][clave].get("hasTrustDialogAccepted") is True
+                break
+    except (OSError, ValueError, KeyError, AttributeError) as e:
+        print(f"· No se pudo marcar de confianza en {cfg} ({e}): abre la carpeta una vez con Claude Code y acéptalo")
+        return
+    finally:
+        if provisional.exists():
+            provisional.unlink()
+    print(f"+ De confianza para Claude Code: {clave}" if hecho else
+          f"· {cfg} cambiaba mientras se escribía: repite con --confiar")
+    if hecho:
+        print("  Si una sesión de Claude Code abierta la pisa al guardar su configuración, repite con --confiar")
+
+
+def lee_config(cfg):
+    """El texto de la configuración de Claude Code, o "" si no existe."""
+    return cfg.read_text(encoding="utf-8") if cfg.is_file() else ""
 
 
 def escribe(ruta, texto):
@@ -175,16 +238,11 @@ def poner_al_dia(raiz):
     actual = orden_version(version)
     posterior = [v for v in set(en_proyecto.values())
                  if orden_version(v) and (actual is None or orden_version(v) > actual)]
+    escribe_localizador(raiz)
     if posterior:
         print(f"= {raiz / GUIA} y los flujos son de la versión {max(posterior, key=orden_version)} del plugin, posterior "
               f"a la de este equipo ({version or 'sin versión'}): no se tocan; actualiza el plugin")
         return
-    localizador = ".appian-plugin.json"
-    ign = raiz / ".gitignore"
-    texto_ign = ign.read_text(encoding="utf-8") if ign.is_file() else ""
-    if localizador not in texto_ign.splitlines():
-        escribe(ign, texto_ign.rstrip("\n") + "\n" + localizador + "\n")
-    escribe(raiz / localizador, json.dumps({"ruta": str(SKILL.parents[1].resolve())}, ensure_ascii=False) + "\n")
     ajenos = [r for r in nuevos if (raiz / r).exists() and not en_proyecto[r]]
     cambiados = [r for r, texto in nuevos.items() if r not in ajenos and escribe(raiz / r, texto)]
     retirados = [f for f in sorted((raiz / COPIA_FLUJOS).glob("*.md"))   # un flujo que el plugin ya no tiene
@@ -218,7 +276,7 @@ def repositorio(raiz):
         print("· No se pudo crear el repositorio (git init): créalo a mano en la carpeta del proyecto")
         return
     print("+ repositorio git, en la rama main. Falta decirle dónde se sube: git remote add origin <URL>; después, "
-          "git add -A, git commit y git push -u origin main")
+          "revisa lo que excluye .gitignore, añade lo que quieras versionar, git commit y git push -u origin main")
 
 
 def avisos_repositorio(raiz):
@@ -262,7 +320,7 @@ def avisos_repositorio(raiz):
 
 def avisos_proyecto(raiz):
     """Los avisos de `estado` sobre el repositorio del proyecto y lo que genera `iniciar`: lo que falta, lo que no está
-    subido, AGENTS.md o los flujos de otra versión del plugin y un CLAUDE.md que no importa AGENTS.md."""
+    subido, AGENTS.md o los flujos de otra versión, un CLAUDE.md que no importa AGENTS.md y filas de historial fuera de tabla."""
     version = version_plugin()
     flujos = [f"{COPIA_FLUJOS}/{f.name}" for f in FLUJOS.glob("F*.md")]
     es_repo = not shutil.which("git") or git(raiz, "rev-parse", "--is-inside-work-tree") is not None
@@ -277,6 +335,28 @@ def avisos_proyecto(raiz):
     faltan += [f"algún flujo de {COPIA_FLUJOS}/"] if not posterior and any(r not in generado for r in flujos) else []
     avisos = [f"Al proyecto le falta {', '.join(faltan)}: lanza «proyecto.py iniciar <p>», que lo añade sin tocar lo demás"
               ] if faltan else []
+    localizador = raiz / LOCALIZADOR
+    try:
+        dato = json.loads(localizador.read_text(encoding="utf-8"))
+        ruta = dato.get("ruta") if isinstance(dato, dict) else None
+        if not isinstance(ruta, str) or not ruta.strip():
+            raise ValueError("falta una ruta válida")
+        plugin = pathlib.Path(ruta).expanduser()
+        if not plugin.is_absolute():
+            plugin = raiz / plugin
+        valido = (plugin / "skills" / "appian-functional-analyst" / "scripts" / "proyecto.py").is_file()
+    except (OSError, ValueError, RuntimeError):
+        valido = False
+    if not valido and localizador.is_file():
+        # la ruta de otra copia del plugin que ya no existe (al actualizarlo, o la temporal de otra sesión): este script
+        # es un plugin que sí existe, y el localizador es local y no se sube. Si no hay localizador, lo crea iniciar
+        escribe_localizador(raiz)
+        avisos.append(f"Localizador: {LOCALIZADOR} no apuntaba a un plugin disponible; ahora apunta a "
+                      f"{SKILL.parents[1].resolve()}, el que acaba de ejecutarse")
+    elif not valido:
+        avisos.append("Localizador: .appian-plugin.json falta, no es válido o no apunta a un plugin disponible: "
+                      'desde la carpeta del proyecto, lanza «python "<ruta>/skills/appian-functional-analyst/scripts/'
+                      'proyecto.py" iniciar .» con la ruta del plugin instalado para regenerarlo')
     avisos += [f"Repositorio: {x}" for x in (avisos_repositorio(raiz) if es_repo else [])]
     if ajenos:
         avisos.append(f"{', '.join(ajenos)} no lo generó el plugin y «proyecto.py iniciar» no lo toca: para que lo genere, "
@@ -287,14 +367,45 @@ def avisos_proyecto(raiz):
     claude = raiz / "CLAUDE.md"
     if claude.is_file() and not RX_IMPORTA.search(claude.read_text(encoding="utf-8", errors="replace")):
         avisos.append(f"CLAUDE.md no importa {GUIA}: añádele una línea «@{GUIA}»")
+    for nombre, titulo in (("proyecto.md", "Fuentes procesadas"), ("analisis/decisiones.md", "Versiones")):
+        ruta = raiz / nombre
+        if not ruta.is_file():
+            continue
+        lineas = ruta.read_text(encoding="utf-8").split("\n")
+        bloque = _bloque_tabla(lineas, titulo)
+        if bloque is None:
+            continue
+        fuera = []
+        for i in range(bloque[1], len(lineas)):
+            if lineas[i].startswith("## "):
+                break
+            if lineas[i].startswith("|"):
+                fuera.append(str(i + 1))
+        if fuera:
+            avisos.append(f"Historial: {nombre}, sección «{titulo}», líneas {', '.join(fuera)} fuera de la tabla: "
+                          "no se cuentan. Si son historial, únelas a la tabla; si no, conserva el texto fuera de ella")
     return avisos
 
 
+def _bloque_tabla(lineas, titulo):
+    """Inicio y fin exclusivo del mismo bloque pipe para leerlo y añadir filas."""
+    ini = next((i + 1 for i, l in enumerate(lineas) if l.strip() == f"## {titulo}"), None)
+    if ini is None:
+        return None
+    while ini < len(lineas) and not lineas[ini].startswith(("|", "## ")):
+        ini += 1
+    fin = ini
+    while fin < len(lineas) and lineas[fin].startswith("|"):
+        fin += 1
+    return (ini, fin) if fin > ini else None
+
+
 def tabla(texto, titulo):
-    m = re.search(rf"^## {re.escape(titulo)}\s*$(.*?)(?=^## |\Z)", texto, re.M | re.S)
-    if not m:
+    lineas = texto.split("\n")
+    bloque = _bloque_tabla(lineas, titulo)
+    if bloque is None:
         return []
-    filas = [mo.celdas(l) for l in m.group(1).split("\n") if l.startswith("|")]
+    filas = [mo.celdas(l) for l in lineas[bloque[0]:bloque[1]]]
     return [f for f in filas[2:] if any(f)]
 
 
@@ -311,7 +422,7 @@ def estado(a):
     marcas = sorted(f"prototipo/{b.name}" for b in (raiz / "prototipo").glob("brand-*.json"))
     print(f"Cliente: {cliente.group(1).strip() if cliente else '—'} · Marca: {', '.join(marcas) or 'sin marca'}")
     entregado = RX_ENTREGADO.search(texto)
-    if entregado:   # el Word se genera al enviarlo o si se pide: aquí solo se informa
+    if entregado:   # el Word lo genera df_docx.js (cambios.md §5): aquí solo se informa
         fecha = f" ({entregado.group(2)})" if entregado.group(2) else ""
         print(f"DF en Word: último enviado {entregado.group(1)}{fecha}, versión actual {vs}")
     for x in avisos_proyecto(raiz):
@@ -342,6 +453,7 @@ def estado(a):
         aplicado = re.match(r"aplicado en v?(\d+)\.(\d+)", e, re.I)
         if aplicado and (ultima is None or tuple(map(int, aplicado.groups())) > ultima):
             aprobadas |= {x for f in puntos if "✔" in f.get("decision", "")
+                          and f.get("tipo", "").upper() not in ("VALIDA", "CONFIRMA")   # no cambian la pantalla
                           for col in ("encaja en", "cambio propuesto") for x in mo.ids_en(f.get(col, ""))
                           if x.startswith("PAN-")}
     catalogadas = sorted({re.match(r"(FU-\d+)", f.name).group(1) for f in (raiz / "fuentes").glob("FU-*.md")})
@@ -374,11 +486,14 @@ def estado(a):
               "  para el prototipo: ninguna va en --confirmadas")
     if "T" in m.docs:
         tv = m.version("T")
-        empezado = bool(m.vigentes("DT")) or any("campo" in [mo.normaliza(c) for c in cab] for _, cab, _ in m.tablas("T", "3"))
+        empezado, _ = mo.estado_tecnico(m)
         print("Técnico: " + (f"versión {tv[0]}.{tv[1]}" if tv else "sin versión") + ("" if empezado else ", sin empezar"))
-    sig = re.search(r"^## Siguiente paso\s*\n+(.+)", texto, re.M)
-    if sig:
-        print(f"Siguiente paso: {sig.group(1).strip()}")
+    # El apartado entero, hasta el siguiente o el final: un párrafo partido o una lista no se cortan (paso 3)
+    sig = re.search(r"^## Siguiente paso[ \t]*\n(.*?)(?=^## |\Z)", texto, re.M | re.S)
+    lineas = sig.group(1).strip().split("\n") if sig and sig.group(1).strip() else []
+    if lineas:
+        print(f"Siguiente paso: {lineas[0].strip()}"
+              + "".join(f"\n  {l.rstrip()}" if l.strip() else "\n" for l in lineas[1:]))
 
 
 def unidades(ctx):
@@ -391,6 +506,9 @@ def unidades(ctx):
         fu = sorted({x for n in ctx.informes_de(u.id) for x in re.findall(r"(?:FU|URG)-\d+", n)}, key=mo.numero)
         vs = ", ".join(f"{v[0]}.{v[1]}" for v in ctx.versiones_de(u.id))
         obj = ctx.cambian(u.id) if not u.urgente else ctx.objetos_urg(u.id)
+        if u.id == ctx.sin_id and not fu:   # la construcción inicial no tiene informes: es todo el análisis
+            fu = ["todas las del análisis inicial"]
+            vs = vs or (f"{u.aprobada_en[0]}.{u.aprobada_en[1]}, al aprobarla" if u.aprobada_en else "")
         print(f"  {u.id} · {u.titulo} · {u.estado} · fuentes: {', '.join(fu) or '—'} · versión: {vs or '—'}"
               f" · objetos: {', '.join(obj) or '—'}")
         for g, objs in ctx.reaplicar(u.id):
@@ -442,14 +560,11 @@ RX_VERSION = re.compile(r"(Versi[oó]n:\s*v?)(\d+)\.(\d+)")
 def anade_fila(texto, titulo, fila):
     """Añade una fila al final de la tabla de la sección «## <titulo>» (tras su cabecera si está vacía)."""
     lineas = texto.split("\n")
-    ini = next((i for i, l in enumerate(lineas) if l.strip() == f"## {titulo}"), None)
-    if ini is None:
+    bloque = _bloque_tabla(lineas, titulo)
+    if bloque is None:
         return None
-    fin = next((i for i in range(ini + 1, len(lineas)) if lineas[i].startswith("## ")), len(lineas))
-    ultima = max((i for i in range(ini + 1, fin) if lineas[i].startswith("|")), default=None)
-    if ultima is None:
-        return None
-    return "\n".join(lineas[:ultima + 1] + [fila] + lineas[ultima + 1:])
+    fin = bloque[1]
+    return "\n".join(lineas[:fin] + [fila] + lineas[fin:])
 
 
 def que_es_fuente(e):
@@ -485,17 +600,162 @@ def comprueba_secuencia_version(m, a):
                 for k in previo:
                     previo[k] |= ambito[k]
     afectadas = {m.raiz_de(p) for decision in a.decision or [] for p in mo.ids_en(decision[1])}
+    afectadas -= {p for ambito in ambitos.values() for p in ambito["piezas"]}
     if afectadas:
         abiertas = [u.id for u in ctx.unidades if u.estado == un.ABIERTA]
         uid = next(iter(ambitos)) if len(ambitos) == 1 else abiertas[0] if len(abiertas) == 1 else None
         ambitos.setdefault(uid, {"piezas": set(), "objetos": set()})["piezas"] |= afectadas
     for uid, ambito in ambitos.items():
+        u = ctx.por_id.get(uid)
+        if u and u.urgente and u.estado == un.ABIERTA and ctx.ficha_urg(uid):
+            # La urgencia tiene su propio recorrido: ficha, aprobación del punto y reaplicación en el evolutivo.
+            # Solo exime el alcance decidido del informe, nunca un ID URG inventado ni otra pieza de --decision.
+            aprobado = {k: set() for k in ambito}
+            for nombre in nombres:
+                dentro = ctx.ambito_secuencia(uid, informe=nombre, solo_decididas=True, solo_aprobadas=True)
+                for k in aprobado:
+                    aprobado[k] |= dentro[k]
+            ambito = {k: v - aprobado[k] for k, v in ambito.items()}
         bloqueos = [s for s in ctx.solapes_secuencia(uid, ambito) if s["estado"] == un.APROBADA]
         if bloqueos:
             detalle = "; ".join(s["unidad"] + ": " + ", ".join(sorted(s["piezas"] | s["objetos"])) for s in bloqueos)
             sys.exit(f"No se abre versión: la pieza compartida sigue sin construir ({detalle}). "
                      "Deja el segundo cambio Abierto y su propuesta en el informe, sin editar esa pieza. "
                      "Usa el camino completo con informe previo; las piezas independientes pueden continuar")
+
+
+def prepara_inicial(m, texto_p, texto_d, cat, fuentes):
+    """Primera 1.0: conserva el historial de borradores y la primera versión registrada de cada fuente."""
+    vf, vt = m.version("F"), m.version("T")
+    filas = tabla(texto_d, "Versiones")
+    versiones = [f[0].strip() for f in filas]
+    procesadas = tabla(texto_p, "Fuentes procesadas")
+    snapshots = {f.name for f in (m.raiz / "versiones").glob("v*")}
+    entregados = re.findall(r"^Entregados:[ \t]*(.*)$", texto_p, re.M)
+    if RX_ENTREGADO.search(texto_p) or any(not un.vacio(x) for x in entregados):
+        sys.exit("--inicial no prepara otra primera entrega: el proyecto ya registra un DF entregado")
+    if not vf or (vf[0] != 0 and vf != (1, 0)) or (vf[0] == 0 and vf[1] < 1):
+        sys.exit("--inicial prepara la primera 1.0 desde un borrador 0.x o una 1.0 aún sin registrar")
+    borradores = [int(v.split(".")[1]) for v in versiones if re.fullmatch(r"0\.[1-9]\d*", v)]
+    ultimo_borrador = max(borradores, default=1) if vf == (1, 0) else vf[1]
+    legado = vf == (0, 1) or (vf == (1, 0) and ultimo_borrador == 1)
+    admitidas = ({"0.1", "1.0"} if legado else
+                 {v for v in versiones if re.fullmatch(r"0\.[1-9]\d*", v) and int(v.split(".")[1]) <= ultimo_borrador})
+    if vf == (1, 0):
+        admitidas.add("1.0")
+    if not filas or any(len(f) < 5 for f in filas):
+        sys.exit("--inicial: revisa la tabla Versiones de decisiones.md: falta o tiene filas incompletas")
+    if len(set(versiones)) != len(versiones):
+        sys.exit("--inicial: decisiones.md tiene versiones repetidas; conserva una fila por versión")
+    if not set(versiones) <= admitidas:
+        sys.exit("--inicial: el historial de decisiones.md contiene versiones ajenas a los borradores iniciales")
+    if not legado and vf != (1, 0) and f"0.{vf[1]}" not in versiones:
+        sys.exit("--inicial: falta en decisiones.md la fila de la versión actual del funcional")
+    if (vt not in ((None, (0, 1), (1, 0)) if legado else (None, vf))
+            and not (vt == (0, 1) and not mo.estado_tecnico(m)[0])):
+        sys.exit("--inicial: la versión del técnico no coincide con el funcional; revisa su cabecera antes de promover")
+    if snapshots - ({f"v0.{n}" for n in range(1, ultimo_borrador)} if not legado else set()):
+        sys.exit("--inicial: hay copias en versiones/ que no corresponden a los borradores iniciales")
+    primeras = {}
+    for fila in filas:
+        for fu in re.findall(r"FU-\d+", fila[3]):
+            anterior = primeras.get(fu)
+            if anterior is None or tuple(map(int, fila[0].split("."))) < tuple(map(int, anterior.split("."))):
+                primeras[fu] = fila[0]
+    ids = [f[0] for f in procesadas]
+    if len(set(ids)) != len(ids) or any(len(f) < 5 or not re.fullmatch(r"FU-\d+", f[0])
+                                       or f[-1] not in versiones for f in procesadas):
+        sys.exit("--inicial no reinterpreta fuentes procesadas con una primera versión ambigua o no inicial")
+    for f in procesadas:
+        primeras[f[0]] = f[-1]  # la fila existente conserva su primera versión, informe y descripción
+    if ((vf == (1, 0) and procesadas) or any(f[-1] == "1.0" for f in procesadas)) and not any(
+            fu not in primeras for fu in fuentes):
+        sys.exit("--inicial: la primera 1.0 ya tiene esas fuentes registradas; no se registra otra vez sin fuentes nuevas")
+    historicas = sorted(primeras, key=lambda fu: tuple(map(int, primeras[fu].split("."))))
+    fuentes = list(dict.fromkeys(historicas + fuentes))
+    fuera = [f for f in fuentes if f not in cat]
+    if fuera:
+        sys.exit(f"{', '.join(fuera)} del historial no está en fuentes/: revisa el catálogo antes de preparar la 1.0")
+    reutiliza = "1.0" if "1.0" in versiones else "0.1" if vf == (0, 1) and not primeras else None
+    return fuentes, primeras, reutiliza
+
+
+def fuente_de_decision(nuevo, fuentes, primera):
+    """La fuente de una fila D: la de --fuente que cita «lo nuevo», si cita una sola; si cita varias o ninguna,
+    `primera`, porque la más reciente no es por fuerza la que decide (ingesta-fuentes.md §4 ordena por rango y después
+    por fecha). Devuelve (fuente, si la dio la cita). Así, con la reunión y el correo que la corrige en un informe, la
+    rectificación que solo cita el correo queda con el correo."""
+    citadas = [f for f in dict.fromkeys(re.findall(r"FU-\d+", nuevo)) if f in fuentes]
+    return (citadas[0], True) if len(citadas) == 1 else (primera, False)
+
+
+def marca_validadas(m, decisiones, fuente_de):
+    """Las marcas de un VALIDA: cada pieza de «Afecta a» (los rangos, expandidos) pasa de ✅ o 🔶 a 🔒 en cada comentario
+    de sus líneas, y suma la cita de la fuente de su fila D (`fuente_de(lo nuevo)`); una línea que cubren varias
+    validaciones (un criterio y su historia, o la misma pieza dos veces) suma las de todas. Lo que ya es 🔒, ⚠️ o ❓ no
+    se toca. Devuelve (marcas, piezas, sin pieza)."""
+    de_pieza = {}
+    for d in decisiones:
+        if d[0].upper() == "VALIDA":
+            fu = fuente_de(d[2])
+            for x in mo.ids_en(d[1]):
+                de_pieza.setdefault(x, [])
+                if fu not in de_pieza[x]:
+                    de_pieza[x].append(fu)
+    pedidas = set(de_pieza)
+    piezas = [m.piezas[x] for x in sorted(pedidas) if x in m.piezas and m.piezas[x].doc != "D"
+              and not m.piezas[x].anulada]
+    lineas = {}
+    for p in piezas:
+        for i in range(p.ini, p.fin):
+            suyas = lineas.setdefault(p.doc, {}).setdefault(i, [])
+            suyas.extend(f for f in de_pieza[p.id] if f not in suyas)
+    marcas, tocadas = 0, set()
+    for doc, numeros in lineas.items():
+        ruta = m.ruta(doc)
+        L = ruta.read_text(encoding="utf-8").split(chr(10))
+        if len(L) != len(m.docs[doc].lineas):
+            continue
+        for i in sorted(numeros):
+            def cambia(mc, suyas=numeros[i]):
+                nonlocal marcas
+                c = mc.group(1)
+                e = mo.estado_en(c)
+                if e not in ("✅", "🔶"):
+                    return mc.group(0)
+                c = c.replace(e, "🔒", 1).rstrip()
+                for fuente in suyas:
+                    if fuente not in re.findall(r"FU-\d+", c):
+                        c += f"; {fuente}"
+                marcas += 1
+                tocadas.add((doc, i))
+                return f"<!--{c if c.startswith(' ') else ' ' + c} -->"
+            L[i] = mo.RX_COMENTARIO.sub(cambia, L[i])
+        mo.escribe(ruta, chr(10).join(L))
+    hechas = {p.id for p in piezas if any((p.doc, i) in tocadas for i in range(p.ini, p.fin))}
+    return marcas, len(hechas), sorted(pedidas - {p.id for p in piezas})
+
+
+def estado_validado(raiz):
+    """Tras un VALIDA: si ninguna pieza vigente del funcional queda sin 🔒 (ni un PC abierto, que es ⚠️ o ❓), «Estado:
+    validado» en la cabecera del funcional y en proyecto.md; si no, las que quedan. No toca «DF entregado». Devuelve
+    (las que quedan, dónde lo escribió)."""
+    m = mo.Proyecto(raiz)
+    quedan = sorted(p.id for p in m.piezas.values() if p.doc == "F" and not p.anulada and p.estado in mo.ESTADOS[1:])
+    if quedan:
+        return quedan, []
+    escritos = []
+    for ruta, nombre in ((m.ruta("F"), "el funcional"), (raiz / "proyecto.md", "proyecto.md")):
+        if not ruta.is_file():
+            continue
+        lineas = ruta.read_text(encoding="utf-8").split("\n")
+        i = next((i for i, l in enumerate(lineas[:12]) if re.search(r"(?:^|·)\s*Estado:", l)), None)
+        if i is not None:
+            lineas[i] = re.sub(r"(Estado:\s*)[^·\n]*?(?=\s*(?:·|$))", lambda x: x.group(1) + "validado", lineas[i],
+                               count=1)
+            mo.escribe(ruta, "\n".join(lineas))
+            escritos.append(nombre)
+    return [], escritos
 
 
 def version(a):
@@ -507,6 +767,7 @@ def version(a):
     raiz = m.raiz
     inicial = getattr(a, "inicial", False)
     fuentes = list(dict.fromkeys(f.strip().upper() for f in a.fuente))
+    fuente_decision = fuentes[0]  # la procedencia explícita de --decision no depende del orden del historial
     try:
         cat = {f["id"]: f for f in json.loads((raiz / "fuentes" / "indice.json").read_text(encoding="utf-8"))
                .get("fuentes", [])}
@@ -519,11 +780,14 @@ def version(a):
     texto_p = proy.read_text(encoding="utf-8") if proy.exists() else ""
     texto_d = dec.read_text(encoding="utf-8") if dec.exists() else ""
     ya = {f[0]: f[-1] for f in tabla(texto_p, "Fuentes procesadas") if f}
+    primeras, fila_inicial = {}, None
+    if inicial:
+        fuentes, primeras, fila_inicial = prepara_inicial(m, texto_p, texto_d, cat, fuentes)
     for f in tabla(texto_d, "Versiones"):
         for x in re.findall(r"FU-\d+", f[3] if len(f) > 3 else ""):
             if not inicial:
                 ya.setdefault(x, f[0])
-    repetidas = [f"{f} (versión {ya[f]})" for f in fuentes if f in ya]
+    repetidas = [f"{f} (versión {ya[f]})" for f in fuentes if f in ya and not inicial]
     if repetidas:
         sys.exit(f"{', '.join(repetidas)} ya tiene versión: si sigues aplicándola, edita esa versión sin abrir otra (una "
                  "fila D que falte, a mano con el formato de references/actualizacion.md §6)")
@@ -533,13 +797,11 @@ def version(a):
         sys.exit(f"--decision {', '.join(malas)}: el tipo es uno de {', '.join(mo.TIPOS_D)}")
     comprueba_secuencia_version(m, a)
     if inicial:
-        if m.version("F") != (1, 0) or m.version("T") not in (None, (1, 0)) or any((raiz / "versiones").glob("v*")):
-            sys.exit("--inicial registra las fuentes de la primera 1.0, sin copias de versiones anteriores")
         v, destino, nueva = (1, 0), None, "1.0"
     else:
         v, destino = _copia(raiz, m)
         nueva = f"{v[0]}.{v[1] + 1}"
-    subidos, escrito, a_mano = [], [], []
+    subidos, escrito, a_mano, avisos = [], [], [], []
     for doc, nombre in (("F", "funcional"), ("T", "técnico")):
         if doc not in m.docs or not m.version(doc):
             continue   # técnico sin empezar
@@ -552,17 +814,18 @@ def version(a):
     hoy = datetime.date.today().isoformat()
     que = " ".join(a.que.split()).replace("|", "/")
     nuevo_d = None
-    if inicial:
-        # Completar solo la fila 1.0 de Versiones; conservar su fecha, descripción y validación existentes.
+    if inicial and fila_inicial:
+        # Reutiliza la plantilla 0.1 sin fuentes o la 1.0 importada; conserva las filas de borradores ya registrados.
         L = texto_d.split("\n")
         dentro = False
         for i, linea in enumerate(L):
             if linea.startswith("## "):
                 dentro = linea.strip() == "## Versiones"
             c = mo.celdas(linea) if dentro and linea.startswith("|") else []
-            if len(c) >= 5 and c[0].strip() == "1.0":
+            if len(c) >= 5 and c[0].strip() == fila_inicial:
+                c[0] = "1.0"
                 c[1] = c[1] if not un.vacio(c[1]) else hoy
-                c[2] = c[2] if not un.vacio(c[2]) else que
+                c[2] = c[2] if not un.vacio(c[2]) and c[2].strip() != "Inicio del análisis" else que   # el de la plantilla
                 c[3] = ", ".join(dict.fromkeys(re.findall(r"FU-\d+", c[3]) + fuentes))
                 L[i] = "| " + " | ".join(c) + " |"
                 nuevo_d = "\n".join(L)
@@ -577,10 +840,16 @@ def version(a):
     ids_d = []
     n = max([int(x) for f in tabla(texto_d, "Decisiones del cliente") for x in re.findall(r"^D-(\d+)", f[0])] or [0])
     ancho_d = mo.ancho_ids(m.piezas, "D")
-    fecha_fu = str(cat[fuentes[0]].get("fecha", ""))[:10] or hoy
+
+    def fuente_de(nuevo_txt):
+        return fuente_de_decision(nuevo_txt, fuentes, fuente_decision)[0]
+
+    varias = len(fuentes) > 1
     for tipo, afecta, nuevo_txt, antes in decisiones:
+        fu, por_cita = fuente_de_decision(nuevo_txt, fuentes, fuente_decision)
+        fecha_fu = str(cat[fu].get("fecha", ""))[:10] or hoy
         celdas = [" ".join(x.split()).replace("|", "/") for x in (tipo.upper(), nuevo_txt, antes, afecta)]
-        fila = (f"| D-{n + 1:0{ancho_d}d} | {fecha_fu} | {fuentes[0]} | {celdas[0]} | {celdas[1]} | {celdas[2]} | {celdas[3]} "
+        fila = (f"| D-{n + 1:0{ancho_d}d} | {fecha_fu} | {fu} | {celdas[0]} | {celdas[1]} | {celdas[2]} | {celdas[3]} "
                 "| Sí |")
         nuevo_d = anade_fila(texto_d, "Decisiones del cliente", fila)
         if nuevo_d is None:
@@ -588,15 +857,34 @@ def version(a):
             continue
         n += 1
         texto_d = nuevo_d
-        ids_d.append(f"D-{n:0{ancho_d}d}")
+        # con varias fuentes, la salida dice de cuál es cada fila: la que cita «lo nuevo» o, si no la da una sola cita,
+        # la primera, para que lo corrija quien sabe cuál decide
+        ids_d.append(f"D-{n:0{ancho_d}d}" + (f" ({fu}, {fecha_fu}" + ("" if por_cita else ": la primera de --fuente")
+                                             + ")" if varias else ""))
     if ids_d:
         escrito.append(f"{', '.join(ids_d)} en decisiones.md")
     if texto_d != (dec.read_text(encoding="utf-8") if dec.exists() else ""):
         mo.escribe(dec, texto_d)
+    if any(d[0].upper() == "VALIDA" for d in decisiones):
+        marcas, n_piezas, sin_pieza = marca_validadas(m, decisiones, fuente_de)
+        escrito.append(f"{marcas} marcas a 🔒 en {n_piezas} piezas")
+        if sin_pieza:
+            a_mano.append(f"las marcas 🔒 de {', '.join(sin_pieza)} (VALIDA: no es una pieza del análisis)")
     informe = (a.informe or ("—" if inicial else f"impacto/{fuentes[0]}.md")).replace("\\", "/")
     for fu in fuentes:
+        if inicial and fu in ya:
+            continue
         e = cat[fu]
-        fila = f"| {fu} | {str(e.get('fecha', ''))[:10]} | {que_es_fuente(e).replace('|', '/')} | {informe} | {nueva} |"
+        primera = primeras.get(fu, nueva)
+        informe_fu = informe
+        if inicial and fu in primeras and not a.informe:
+            candidatos = [f"{carpeta}/{fu}.md" for carpeta in ("impacto", "notas")
+                          if (raiz / carpeta / f"{fu}.md").is_file()]
+            if len(candidatos) == 1:
+                informe_fu = candidatos[0]
+            elif len(candidatos) > 1:
+                print(f"Aviso: {fu} tiene informes exactos en impacto/ y notas/: conserva «—»; revisa cuál corresponde")
+        fila = f"| {fu} | {str(e.get('fecha', ''))[:10]} | {que_es_fuente(e).replace('|', '/')} | {informe_fu} | {primera} |"
         nuevo_p = anade_fila(texto_p, "Fuentes procesadas", fila)
         if nuevo_p is None:
             a_mano.append(f"{fu} en «## Fuentes procesadas» de proyecto.md")
@@ -605,10 +893,20 @@ def version(a):
     if texto_p and texto_p != (proy.read_text(encoding="utf-8") if proy.exists() else ""):
         mo.escribe(proy, texto_p)
         escrito.append(f"{', '.join(fuentes)} en «Fuentes procesadas» de proyecto.md")
+    if any(d[0].upper() == "VALIDA" for d in decisiones):   # después de escribir proyecto.md, que lo pisaría
+        quedan, escritos = estado_validado(raiz)
+        if quedan:
+            avisos.append(f"El DF no pasa a «validado»: quedan sin 🔒 {', '.join(quedan)}")
+        if escritos:
+            escrito.append(f"«Estado: validado» en {' y en '.join(escritos)}")
+        if not quedan and len(escritos) < 2:
+            a_mano.append("«Estado: validado» donde falta la línea «Estado:» (el funcional o proyecto.md)")
     print(f"Versión {nueva}: {' y '.join(subidos)} en {nueva}" + (f"; {'; '.join(escrito)}" if escrito else "")
           + (f". Copia de la {v[0]}.{v[1]} en {destino}." if destino else ". Primera 1.0, sin incremento ni copia."))
     for x in a_mano:
         print(f"· No hay dónde escribirla, añádela a mano: {x}")
+    for x in avisos:
+        print(f"· {x}")
     if inicial:
         print(f"Verifica la primera versión: comprobar.py {citada(raiz)} --fuentes {citada(raiz / 'fuentes')}")
         return
@@ -641,9 +939,29 @@ def entregados(texto, word):
     return "\n".join(lineas)
 
 
+def word_que_sale(raiz, defecto, pedido, como):
+    """El Word que sale hacia el cliente: el de la versión (`defecto`) o, con --word, ese fichero exacto, que tiene que
+    ser de este proyecto, unidad y versión (el nombre del de la versión o una revisión suya, …-v1.1-r2.docx, de
+    df_docx.js -o) y estar en entregables/. Si no vale o no está, sale con error sin anotar nada."""
+    nombre = pathlib.Path(pedido).name if pedido else defecto
+    sitio = pathlib.Path(raiz) / "entregables" / nombre
+    if pedido and nombre != pedido and (os.path.normcase(str(pathlib.Path(pedido).resolve()))
+                                        != os.path.normcase(str(sitio.resolve()))):
+        sys.exit(f"{pedido} no es un fichero de entregables/ de este proyecto: --word lleva su nombre o su ruta; "
+                 "no se anota nada")
+    familia = defecto[:-len(".docx")]
+    if nombre != defecto and not re.fullmatch(re.escape(familia) + r"-r\d+\.docx", nombre):
+        sys.exit(f"{nombre} no es el Word de esta versión ni una revisión suya ({defecto} o {familia}-r<n>.docx): "
+                 "no se anota nada")
+    if not sitio.is_file():
+        sys.exit(f"No encuentro entregables/{nombre}: genéralo con «{como}» antes de enviarlo; no se anota nada")
+    return nombre
+
+
 def entregar(a):
     """El Word sale hacia el cliente: «DF entregado: <versión> · <fecha>» en proyecto.md (el de un cambio, en la fila de
-    su versión en decisiones.md) y el fichero en «Entregados:», que df_docx.js no vuelve a escribir."""
+    su versión en decisiones.md) y el fichero en «Entregados:», que df_docx.js no vuelve a escribir: el de la versión o,
+    con --word, el fichero exacto que se envía (una revisión suya). Sin ese Word no anota nada."""
     raiz = pathlib.Path(a.carpeta)
     pm = raiz / "proyecto.md"
     if not pm.exists():
@@ -655,7 +973,8 @@ def entregar(a):
     vs, fecha = f"{v[0]}.{v[1]}", datetime.date.today().isoformat()
     texto = pm.read_text(encoding="utf-8")
     if a.cambio:
-        return entregar_cambio(a.cambio.upper(), raiz, m, vs, fecha, texto)
+        return entregar_cambio(a.cambio.upper(), raiz, m, vs, fecha, texto, a.word)
+    word = word_que_sale(raiz, nombre_df(m, vs), a.word, f"df_docx.js {raiz}")
     valor = f"DF entregado: {vs} · {fecha}"
     if re.search(r"DF entregado:", texto):
         texto = re.sub(r"DF entregado:[^\n]*?(?=\s+·\s+Estado:|$)", valor, texto, count=1, flags=re.M)
@@ -664,23 +983,19 @@ def entregar(a):
         k = next((i for i, l in enumerate(lineas) if l.startswith("Cliente:")), 0)
         lineas.insert(k + 1, valor)
         texto = "\n".join(lineas)
-    word = nombre_df(m, vs)
-    if not (raiz / "entregables" / word).is_file():
-        print(f"· No encuentro entregables/{word}: genéralo con df_docx.js antes de enviarlo")
-    else:
-        texto = entregados(texto, word)
+    texto = entregados(texto, word)
     mo.escribe(pm, texto)
-    print(f"{valor} en {pm}")
+    print(f"{valor} y {word} en {pm}")
 
 
-def entregar_cambio(uid, raiz, m, vs, fecha, texto):
+def entregar_cambio(uid, raiz, m, vs, fecha, texto, pedido=None):
     """El DF de un cambio (df_docx.js --cambio): «DF del cambio <U> entregado <fecha>» en la columna «Aprobación» de la
-    fila de la versión en decisiones.md (no sale en el Word) y el fichero en «Entregados» de proyecto.md."""
+    fila de la versión en decisiones.md (no sale en el Word) y el fichero en «Entregados» de proyecto.md: el de la
+    versión o, con --word, el fichero exacto que se envía (una revisión suya)."""
     if uid not in {u.id for u in un.leer(raiz) or []}:
         sys.exit(f"{uid} no está en analisis/cambios.md")
-    word = nombre_df(m, vs).replace(f"-v{vs}.docx", f"-{uid}-v{vs}.docx")
-    if not (raiz / "entregables" / word).is_file():
-        sys.exit(f"No encuentro entregables/{word}: genéralo con «df_docx.js {raiz} --cambio {uid}» antes de enviarlo")
+    word = word_que_sale(raiz, nombre_df(m, vs).replace(f"-v{vs}.docx", f"-{uid}-v{vs}.docx"), pedido,
+                         f"df_docx.js {raiz} --cambio {uid}")
     dm = m.analisis / "decisiones.md"
     lineas = dm.read_text(encoding="utf-8").split("\n") if dm.is_file() else []
     k = next((i for i, l in enumerate(lineas) if re.match(rf"^\|\s*v?{re.escape(vs)}\s*\|", l)), None)
@@ -791,6 +1106,13 @@ def cambio(a):
         u.estado = un.DESCARTADA
     un.escribir(raiz, ctx.unidades, PLANTILLAS / "cambios.md")
     print(f"{uid}: {u.estado} · analisis/cambios.md\n{u.fila()}")
+    linea = pon_unidades(raiz, ctx.unidades)
+    if linea and destino in ("construida", "produccion"):
+        sig = re.search(r"^## Siguiente paso\s*\n(.*?)(?=^## |\Z)", (raiz / "proyecto.md").read_text(encoding="utf-8"),
+                        re.M | re.S)
+        print(f"proyecto.md: «{linea}». El «Siguiente paso» es tuyo: "
+              + (f"aún habla de {uid}, ponlo al día" if sig and re.search(rf"\b{uid}\b", sig.group(1)) else
+                 "ponlo al día"))
     if destino == "abrir":
         print("Sus fuentes llevan «Cambio: " + uid + "» en la cabecera del informe" +
               (f"; su ficha es impacto/{uid}.md (assets/plantillas/urgencia.md, references/urgentes.md)" if u.urgente
@@ -810,9 +1132,35 @@ def cambio(a):
                 print(f"· {iid}: {por_que[len('hecha · '):]}")
         marcas = plan.marcas
         if marcas:
-            print(f"Pruebas marcadas como no necesarias para avanzar (construccion/{uid}/indice.md), que se revisan al "
-                  "preparar el paquete:\n" + "\n".join(f"  {x['issue']} · {x['objeto']} «{x['caso']}»: {x['motivo']} "
+            print(f"Pruebas marcadas como no necesarias para avanzar (construccion/{uid}/indice.md), que una persona "
+                  "revisa antes de desplegar el paquete:\n" + "\n".join(f"  {x['issue']} · {x['objeto']} «{x['caso']}»: {x['motivo']} "
                                                        f"({x['quien']})" for x in marcas))
+
+
+def pon_unidades(raiz, unidades):
+    """«Unidades: EV-01 construida · EV-02 aprobada» en la cabecera de proyecto.md, sacado de analisis/cambios.md: quien
+    abre el proyecto ve en qué punto está cada cambio (tras construir seguía diciendo «construir»). «Estado» (el del DF)
+    y «Siguiente paso» son del analista y no se tocan. Devuelve la línea, o None si no hay proyecto.md."""
+    pm = raiz / "proyecto.md"
+    if not pm.is_file():
+        return None
+    vivas = [u for u in unidades if u.estado != un.DESCARTADA]
+    linea = "Unidades: " + " · ".join(f"{u.id} {u.estado.lower()}" for u in vivas) if vivas else None
+    texto = pm.read_text(encoding="utf-8")
+    lineas = texto.split("\n")
+    donde = {}
+    for i, l in enumerate(lineas):
+        for clave in ("Unidades:", "Entregados:", "DF entregado:", "Cliente:"):
+            if l.startswith(clave):
+                donde.setdefault(clave, i)
+    if "Unidades:" in donde:
+        lineas[donde["Unidades:"]:donde["Unidades:"] + 1] = [linea] if linea else []
+    elif linea:
+        tras = next((donde[c] for c in ("Entregados:", "DF entregado:", "Cliente:") if c in donde), 0)
+        lineas.insert(tras + 1, linea)
+    if "\n".join(lineas) != texto:
+        mo.escribe(pm, "\n".join(lineas))
+    return linea
 
 
 def issues_de(raiz, uid, estreno=False):
@@ -877,8 +1225,9 @@ def aprobar(a, ctx, u, hoy, no, raiz, orden):
     if pend:
         no(f"puntos pendientes de aprobación en sus informes: {', '.join(pend)}",
            "decídelos (✔, ✗ o ❓ en «Decisión») y vuelve a aprobarla")
-    if (a.comparte or "").strip():
-        u.comparte = a.comparte.strip() if un.vacio(u.comparte) else f"{u.comparte}; {a.comparte.strip()}"
+    comparte = (a.comparte or "").strip()
+    if comparte and f"; {comparte}; " not in f"; {u.comparte}; ":     # al volver a aprobar con la misma decisión, no se repite
+        u.comparte = comparte if un.vacio(u.comparte) else f"{u.comparte}; {comparte}"
     # un objeto del que las dos solo cambian partes que no guardan datos ni dan permisos (el nombre de una acción de
     # registro) no pide decidir el orden: se avisa, para quien prepare el paquete. Si una de las dos cambia algo más
     # (un campo en el mismo record type), sí
@@ -985,20 +1334,26 @@ def main():
     s = sub.add_parser("iniciar"); s.add_argument("carpeta")
     s.add_argument("--nombre", help="el nombre del proyecto; hace falta solo la primera vez")
     s.add_argument("--cliente"); s.add_argument("--direccion"); s.add_argument("--tipo")
+    s.add_argument("--confiar", action="store_true",
+                   help="la deja como de confianza para Claude Code, con el visto bueno de la persona, para que las "
+                        "sesiones en segundo plano arranquen sin pedirlo")
     s.set_defaults(f=iniciar)
     s = sub.add_parser("estado"); s.add_argument("carpeta"); s.set_defaults(f=estado)
     s = sub.add_parser("copia"); s.add_argument("carpeta"); s.set_defaults(f=copia)
     s = sub.add_parser("version"); s.add_argument("carpeta"); s.set_defaults(f=version)
-    s.add_argument("--fuente", nargs="+", required=True, metavar="FU-nn", help="las fuentes del informe")
-    s.add_argument("--inicial", action="store_true", help="registra las fuentes de la primera 1.0 sin incrementar versión")
+    s.add_argument("--fuente", nargs="+", action="extend", required=True, metavar="FU-nn", help="las fuentes del informe")
+    s.add_argument("--inicial", action="store_true", help="prepara la primera 1.0 desde 0.x o 1.0 y registra sus fuentes")
     s.add_argument("--que", required=True, help="qué cambia, en una frase y en palabras del cliente (sale en el Word): "
                                                  "la fila de la versión en decisiones.md")
     s.add_argument("--informe", help="el informe, si no es impacto/<primera fuente>.md (una urgencia: impacto/URG-nn.md)")
     s.add_argument("--decision", nargs=4, action="append", metavar=("TIPO", "AFECTA_A", "LO_NUEVO", "LO_DE_ANTES"),
-                   help="la fila D de un punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE±, con la primera fuente de "
-                        "--fuente; «lo de antes» con su cita")
+                   help="la fila D de un punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE±, con la fuente de --fuente que "
+                        "cita «lo nuevo», si cita una sola, y su fecha (si cita varias o ninguna, la primera); «lo de "
+                        "antes» con su cita")
     s = sub.add_parser("entregar"); s.add_argument("carpeta"); s.set_defaults(f=entregar)
     s.add_argument("--cambio", help="el DF de un cambio (df_docx.js --cambio): se anota en decisiones.md")
+    s.add_argument("--word", help="el fichero exacto que se envía, si no es el de la versión: una revisión suya "
+                                  "(…-v1.1-r2.docx, de df_docx.js -o), en entregables/")
     s = sub.add_parser("cambio"); s.add_argument("carpeta"); s.add_argument("id"); s.set_defaults(f=cambio)
     s.add_argument("estado", choices=["abrir", "aprobada", "construida", "produccion", "descartada"])
     s.add_argument("--titulo"); s.add_argument("--fuente"); s.add_argument("--comparte"); s.add_argument("--ref")

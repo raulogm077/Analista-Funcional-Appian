@@ -45,8 +45,9 @@ _PRE = "|".join(sorted(CASA, key=len, reverse=True))
 ID_SIMPLE = rf"(?:{_PRE})-\d+"
 ID_CA = rf"(?:{'|'.join(CON_CRITERIOS)})-\d+\.\d+"
 RX_ID = re.compile(rf"(?<![\w-])(?:{ID_CA}|{ID_SIMPLE})(?![\w-]|\.\d)")
-RX_RANGO = re.compile(rf"(?<![\w-])((?:{_PRE})-)(\d+)`?\s+a\s+`?(?:\1)?(\d+)(?![\w.-])")
-RX_RANGO_CA = re.compile(rf"((?:{'|'.join(CON_CRITERIOS)})-\d+)\.(\d+)`?\s+a\s+`?(?:\1\.)?(\d+)(?![\w.])")
+# «HU-01 a HU-03», «HU-01 a 03», «HU-01 al HU-03», «HU-01 hasta HU-03», «HU-01–HU-03»; un punto final no lo rompe
+RX_RANGO = re.compile(rf"(?<![\w-])((?:{_PRE})-)(\d+)`?(?:\s+a\s+`?(?:\1)?|\s+(?:al|hasta)\s+`?\1|\s*[–—]\s*`?\1)(\d+)(?![\w-]|\.\d)")
+RX_RANGO_CA = re.compile(rf"((?:{'|'.join(CON_CRITERIOS)})-\d+)\.(\d+)`?(?:\s+a\s+`?(?:\1\.)?|\s+(?:al|hasta)\s+`?\1\.|\s*[–—]\s*`?\1\.)(\d+)(?![\w]|\.\d)")
 RX_FICHA = re.compile(rf"^\*\*(~~)?({ID_SIMPLE})(~~)?\s+—\s+(.+?)\*\*(.*)$")
 RX_FILA = re.compile(rf"^\|\s*(~~)?({ID_SIMPLE})(~~)?\s*\|")
 RX_CRITERIO = re.compile(rf"^\s*[-*]\s+(~~)?`({ID_CA})`(~~)?")
@@ -398,11 +399,12 @@ class Proyecto:
         entero = une(self.bloque(cid))
         return sin_comentarios(entero[RX_CRITERIO.match(entero).end():]).strip()
 
-    def escenarios(self, pid, solo=None):
+    def escenarios(self, pid, solo=None, caso=()):
         """Los criterios vigentes de una historia, o de la ficha de un intercambio, como escenarios de Gherkin en español,
         cada uno con su ID: (líneas, sin_gherkin). Un criterio que no está escrito con dado, cuando y entonces pasa tal
         cual, como un único paso «*» (Gherkin lo admite), y su ID va en sin_gherkin para que quien llama avise. Con
-        `solo`, nada más que esos criterios (los de una issue: los nuevos o cambiados de su unidad)."""
+        `solo`, nada más que esos criterios (los de una issue: los nuevos o cambiados de su unidad). Los de `caso` los
+        prueba un caso de prueba de regla, no la pantalla: llevan la etiqueta `@caso-de-prueba`."""
         p = self.piezas[pid]
         L, sin = [], []
         for cid in ([] if p.anulada else dict.fromkeys(p.hijos)):
@@ -413,7 +415,7 @@ class Proyecto:
             if not pasos:
                 sin.append(cid)
                 pasos = [("*", texto)]
-            L += ["", f"  Escenario: {cid}"] + [f"    {palabra} {paso}" for palabra, paso in pasos]
+            L += [""] + (["  @caso-de-prueba"] if cid in caso else []) + [f"  Escenario: {cid}"] + [f"    {palabra} {paso}" for palabra, paso in pasos]
         return L, sin
 
     def feature(self, pid):
@@ -459,6 +461,17 @@ class Proyecto:
 
 def cargar(ruta):
     return Proyecto(ruta)
+
+
+def estado_tecnico(m):
+    """(empezado, completo): declarar completo activa su comprobación, también sin DT ni modelo de datos."""
+    if "T" not in m.docs:
+        return False, False
+    est = re.search(r"Estado:\s*([^·\n]+)", "\n".join(m.docs["T"].lineas[:12]))
+    completo = bool(est) and normaliza(est.group(1)).strip().startswith("completo")
+    empezado = completo or bool(m.vigentes("DT")) or any(
+        "campo" in [normaliza(c) for c in cab] for _, cab, _ in m.tablas("T", "3"))
+    return empezado, completo
 
 
 def escribe(ruta, texto):

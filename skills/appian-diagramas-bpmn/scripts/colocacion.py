@@ -777,6 +777,283 @@ def colocar_externos(proc, geo):
     return geo
 
 
+def _cruza_caja(p, q, caja):
+    x, y, w, h = caja
+    if abs(p[0] - q[0]) <= 1:
+        return x < p[0] < x + w and min(p[1], q[1]) < y + h and max(p[1], q[1]) > y
+    if abs(p[1] - q[1]) <= 1:
+        return y < p[1] < y + h and min(p[0], q[0]) < x + w and max(p[0], q[0]) > x
+    return True
+
+
+def _solape_tramos(a, b):
+    total = 0
+    for p, q in zip(a, a[1:]):
+        for r, s in zip(b, b[1:]):
+            for eje in (0, 1):
+                if abs(p[eje] - q[eje]) > 1 or abs(r[eje] - s[eje]) > 1 or abs(p[eje] - r[eje]) > 1:
+                    continue
+                o = 1 - eje
+                total += max(0, min(max(p[o], q[o]), max(r[o], s[o])) - max(min(p[o], q[o]), min(r[o], s[o])))
+    return total
+
+
+def _cruces_tramos(a, b):
+    """Cuenta cruces ortogonales interiores en ambos sentidos."""
+    total = 0
+    for p, q in zip(a, a[1:]):
+        for r, s in zip(b, b[1:]):
+            horizontal_p = abs(p[1] - q[1]) <= 1 and abs(p[0] - q[0]) > 1
+            vertical_p = abs(p[0] - q[0]) <= 1 and abs(p[1] - q[1]) > 1
+            horizontal_r = abs(r[1] - s[1]) <= 1 and abs(r[0] - s[0]) > 1
+            vertical_r = abs(r[0] - s[0]) <= 1 and abs(r[1] - s[1]) > 1
+            if horizontal_p and vertical_r and min(p[0], q[0]) < r[0] < max(p[0], q[0]) and \
+                    min(r[1], s[1]) < p[1] < max(r[1], s[1]):
+                total += 1
+            elif vertical_p and horizontal_r and min(r[0], s[0]) < p[0] < max(r[0], s[0]) and \
+                    min(p[1], q[1]) < r[1] < max(p[1], q[1]):
+                total += 1
+    return total
+
+
+def _solape_ambiguo(a, b, origen_comun=False, destino_comun=False):
+    """No penaliza hasta 12 px del último/primer tramo si confluyen en un mismo nodo."""
+    total = _solape_tramos(a, b)
+    terminal = 0
+    if origen_comun and len(a) > 1 and len(b) > 1:
+        terminal = max(terminal, _solape_tramos(a[:2], b[:2]))
+    if destino_comun and len(a) > 1 and len(b) > 1:
+        terminal = max(terminal, _solape_tramos(a[-2:], b[-2:]))
+    return max(0, total - min(12, terminal))
+
+
+def separar_ida_vuelta(proc, geo, tam, cabecera):
+    """Despega los flujos opuestos que el motor dibujaría por el mismo corredor.
+
+    Solo se llama para geometría automática. Prueba desvíos ortogonales en los
+    laterales libres de los extremos y acepta el de menor conflicto; las
+    posiciones, la semántica BPMN y las geometrías manuales quedan intactas.
+    """
+    import drawio_modelo as dm
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    carril_de = {p["id"]: p["carril"] for p in proc["pasos"]}
+    indices = [i for i, f in enumerate(proc["flujos"])
+               if f["de"] in geo["pasos"] and f["a"] in geo["pasos"] and f["de"] != f["a"]]
+    if len(indices) < 2:
+        return geo
+
+    def camino(i, puntos=None):
+        f = proc["flujos"][i]
+        return dm._camino(geo["pasos"][f["de"]], tam[tipo[f["de"]]],
+                          geo["flujos"][i] if puntos is None else puntos,
+                          geo["pasos"][f["a"]], tam[tipo[f["a"]]])
+
+    cajas = dm._cajas(proc, geo)
+    alto = max((y + h for y, h in geo["carriles"].values()), default=0)
+    ancho = geo.get("ancho", 0)
+    parejas = []
+    for n, i in enumerate(indices):
+        f = proc["flujos"][i]
+        for j in indices[n + 1:]:
+            g = proc["flujos"][j]
+            if f["de"] == g["a"] and f["a"] == g["de"] and _solape_tramos(camino(i), camino(j)) > 1:
+                parejas.append((i, j))
+
+    # Mermaid puede comprimir un ciclo de un carril hasta dejar los desvíos
+    # fuera del margen dibujable de seis píxeles (y=4/108 en un carril de 112).
+    # Reservar espacio para la conexión y su etiqueta sin relajar ese límite.
+    # Las posiciones importadas y los diseños con varios carriles se conservan.
+    if len(proc["carriles"]) == 1 and parejas:
+        carril = proc["carriles"][0]
+        necesita_margen = False
+        for i, j in parejas:
+            f, g = proc["flujos"][i], proc["flujos"][j]
+            if f["de"] not in geo["pasos"] or f["a"] not in geo["pasos"]:
+                continue
+            if f["de"] not in tipo or f["a"] not in tipo:
+                continue
+            if carril_de.get(f["de"]) != carril or carril_de.get(f["a"]) != carril:
+                continue
+            ox, oy = geo["pasos"][f["de"]]
+            dx, dy = geo["pasos"][f["a"]]
+            if abs(oy - dy) > 1 or abs(ox - dx) <= 1:
+                continue
+            w1, h1 = tam[tipo[f["de"]]]
+            w2, h2 = tam[tipo[f["a"]]]
+            arriba = min(oy - h1 / 2, dy - h2 / 2) - 12
+            abajo = max(oy + h1 / 2, dy + h2 / 2) + 12
+            if arriba < 18 or abajo > alto - 18:
+                necesita_margen = True
+                break
+        if necesita_margen:
+            geo["pasos"] = {pid: (x, y + 12) for pid, (x, y) in geo["pasos"].items()}
+            geo["flujos"] = [[(x, y + 12) for x, y in pts] for pts in geo["flujos"]]
+            geo["anotaciones"] = [(x, y + 12, w, h) for x, y, w, h in geo.get("anotaciones", [])]
+            y, h = geo["carriles"][carril]
+            geo["carriles"][carril] = (y, h + 24)
+            alto += 24
+            cajas = dm._cajas(proc, geo)
+
+    for i, j in parejas:
+        # Se mueve preferentemente el flujo rotulado: su etiqueta se volverá a
+        # ubicar sobre el nuevo corredor al serializar el dibujo.
+        mover = j if proc["flujos"][j].get("etiqueta") else i if proc["flujos"][i].get("etiqueta") else j
+        otro = i if mover == j else j
+        f = proc["flujos"][mover]
+        origen, destino = f["de"], f["a"]
+        ox, oy = geo["pasos"][origen]
+        dx, dy = geo["pasos"][destino]
+        w1, h1 = tam[tipo[origen]]
+        w2, h2 = tam[tipo[destino]]
+        base = camino(mover)
+        vertical = abs(ox - dx) <= 1 and abs(oy - dy) > 1
+        horizontal = abs(oy - dy) <= 1 and abs(ox - dx) > 1
+        if not (vertical or horizontal):
+            continue
+        valores = []
+        if vertical:
+            izquierda = min(ox - w1 / 2, dx - w2 / 2) - 12
+            derecha = max(ox + w1 / 2, dx + w2 / 2) + 12
+            for delta in (12, 24, 40, 64, 96):
+                valores.extend((izquierda - delta + 12, derecha + delta - 12))
+            candidatos = [[(x, oy), (x, dy)] for x in dict.fromkeys(valores)]
+        else:
+            arriba = min(oy - h1 / 2, dy - h2 / 2) - 12
+            abajo = max(oy + h1 / 2, dy + h2 / 2) + 12
+            for delta in (12, 24, 40, 64, 96):
+                valores.extend((arriba - delta + 12, abajo + delta - 12))
+            candidatos = [[(ox, y), (dx, y)] for y in dict.fromkeys(valores)]
+
+        def puntuacion(ruta):
+            # Una ruta que atraviese una forma, etiqueta o salga del lienzo no
+            # es candidata. Los cruces y tramos comunes cuentan como coste.
+            if any(not cabecera + 6 <= x <= ancho - 6 or not 6 <= y <= alto - 6 for x, y in ruta):
+                return None
+            extremos = {f["de"], f["a"]}
+            cajas_ajenas = []
+            for p in proc["pasos"]:
+                if p["id"] in extremos:
+                    continue
+                cx, cy = geo["pasos"][p["id"]]
+                w, h = tam[tipo[p["id"]]]
+                cajas_ajenas.append((cx - w / 2 - 6, cy - h / 2 - 6, w + 12, h + 12))
+            cajas_ajenas.extend(geo.get("anotaciones") or [])
+            if any(_cruza_caja(p, q, box) for p, q in zip(ruta, ruta[1:]) for box in cajas_ajenas):
+                return None
+            caminos = {k: camino(k) for k in indices if k not in (mover, otro)}
+            if any(_cruza_caja(p, q, box) for p, q in zip(ruta, ruta[1:])
+                   for box in cajas if box not in cajas_ajenas):
+                return None
+            opuesto = camino(otro)
+            compartido = _solape_tramos(ruta, opuesto)
+            conflicto = 0
+            for k, c in caminos.items():
+                ajeno = proc["flujos"][k]
+                conflicto += _solape_ambiguo(ruta, c, ajeno["de"] == f["de"], ajeno["a"] == f["a"])
+            cruces = sum(_cruces_tramos(ruta, c) for c in caminos.values())
+            largo = sum(abs(q[0] - p[0]) + abs(q[1] - p[1]) for p, q in zip(ruta, ruta[1:]))
+            return (compartido, cruces, conflicto, largo)
+
+        otros = [camino(k) for k in indices if k not in (mover, otro)]
+        base_cruces = sum(_cruces_tramos(base, c) for c in otros)
+        base_conflicto = 0
+        for k, c in zip((k for k in indices if k not in (mover, otro)), otros):
+            ajeno = proc["flujos"][k]
+            base_conflicto += _solape_ambiguo(base, c, ajeno["de"] == f["de"], ajeno["a"] == f["a"])
+        mejor = None
+        for puntos in candidatos:
+            ruta = dm._camino(geo["pasos"][origen], tam[tipo[origen]], puntos,
+                              geo["pasos"][destino], tam[tipo[destino]])
+            if any(abs(p[0] - q[0]) > 1 and abs(p[1] - q[1]) > 1 for p, q in zip(ruta, ruta[1:])):
+                continue
+            valor = puntuacion(ruta)
+            if valor is not None and valor[0] < _solape_tramos(base, camino(otro)) and \
+                    valor[1] <= base_cruces and valor[2] <= base_conflicto and (mejor is None or valor < mejor[0]):
+                mejor = (valor, puntos)
+        if mejor:
+            geo["flujos"][mover] = mejor[1]
+            geo.get("etiquetas_flujo", {}).pop(mover, None)
+    return geo
+
+
+def despejar_eventos_de_borde(proc, geo, tam, cabecera):
+    """Separa una salida secuencial del evento de borde adjunto a su origen."""
+    import drawio_modelo as dm
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    pasos = {p["id"]: p for p in proc["pasos"]}
+    adjuntos = {(f["de"], f["a"]) for f in proc["flujos"]
+                if f.get("discontinuo") and f["de"] in tipo and f["a"] in tipo and tipo[f["a"]] in BORDE}
+    if not adjuntos:
+        return geo
+    alto = max((y + h for y, h in geo["carriles"].values()), default=0)
+    ancho = geo.get("ancho", 0)
+    for origen, evento in sorted(adjuntos):
+        if pasos[origen]["carril"] != pasos[evento]["carril"]:
+            continue
+        for i, f in enumerate(proc["flujos"]):
+            if f.get("discontinuo") or f["de"] != origen or f["a"] not in geo["pasos"] or f["a"] == evento:
+                continue
+            if f["de"] not in geo["pasos"]:
+                continue
+            x1, y1 = geo["pasos"][origen]
+            x2, y2 = geo["pasos"][f["a"]]
+            w1, h1 = tam[tipo[origen]]
+            w2, h2 = tam[tipo[f["a"]]]
+            ex, ey = geo["pasos"][evento]
+            ew, eh = tam[tipo[evento]]
+            caja_evento = (ex - ew / 2 - 12, ey - eh / 2 - 12, ew + 24, eh + 24)
+            actual = dm._camino(geo["pasos"][origen], tam[tipo[origen]], geo["flujos"][i],
+                                geo["pasos"][f["a"]], tam[tipo[f["a"]]])
+            # draw.io puede interpretar un punto sobre el borde de una forma
+            # como anclaje y descartar el desvío. Dejar espacio real más allá
+            # de la forma y del evento para conservar el recorrido.
+            puntos = geo["flujos"][i]
+            sobre_borde = any(abs(px - cx) <= 1 and abs(py - borde) <= 1
+                              for px, py in puntos
+                              for cx, borde in ((x1, y1 + h1 / 2), (x2, y2 + h2 / 2)))
+            if not sobre_borde and not any(_cruza_caja(p, q, caja_evento) for p, q in zip(actual, actual[1:])):
+                continue
+            candidatos = []
+            entrada = x2 - w2 / 2 - 12 if x2 > x1 else x2 + w2 / 2 + 12
+            for y in (max(y1 + h1 / 2, y2 + h2 / 2, ey + eh / 2) + 28,
+                      min(y1 - h1 / 2, y2 - h2 / 2, ey - eh / 2) - 28):
+                candidatos.append([(x1, y), (entrada, y), (entrada, y2)])
+            cajas = dm._cajas(proc, geo)
+            otras_rutas = []
+            for k, otra in enumerate(proc["flujos"]):
+                if k == i or otra.get("discontinuo") or otra["de"] not in geo["pasos"] or otra["a"] not in geo["pasos"]:
+                    continue
+                otras_rutas.append(dm._camino(geo["pasos"][otra["de"]], tam[tipo[otra["de"]]], geo["flujos"][k],
+                                               geo["pasos"][otra["a"]], tam[tipo[otra["a"]]]))
+            base_cruces = sum(_cruces_tramos(actual, otra) for otra in otras_rutas)
+            base_solape = sum(_solape_tramos(actual, otra) for otra in otras_rutas)
+            opciones = []
+            for pts in candidatos:
+                ruta = dm._camino(geo["pasos"][origen], tam[tipo[origen]], pts,
+                                  geo["pasos"][f["a"]], tam[tipo[f["a"]]])
+                if any(abs(p[0] - q[0]) > 1 and abs(p[1] - q[1]) > 1 for p, q in zip(ruta, ruta[1:])):
+                    continue
+                if any(not cabecera + 6 <= x <= ancho - 6 or not 6 <= y <= alto - 6 for x, y in ruta):
+                    continue
+                if any(_cruza_caja(p, q, box) for p, q in zip(ruta, ruta[1:]) for box in cajas
+                       if box != next((b for b in cajas if b[0] == x1 - w1 / 2 and b[1] == y1 - h1 / 2), None)
+                       and box != next((b for b in cajas if b[0] == x2 - w2 / 2 and b[1] == y2 - h2 / 2), None)):
+                    continue
+                if any(_cruza_caja(p, q, caja_evento) for p, q in zip(ruta, ruta[1:])):
+                    continue
+                cruces = sum(_cruces_tramos(ruta, otra) for otra in otras_rutas)
+                solape = sum(_solape_tramos(ruta, otra) for otra in otras_rutas)
+                if cruces > base_cruces or solape > base_solape:
+                    continue
+                longitud = sum(abs(q[0] - p[0]) + abs(q[1] - p[1]) for p, q in zip(ruta, ruta[1:]))
+                opciones.append(((cruces, solape, longitud), pts))
+            if opciones:
+                _, elegida = min(opciones, key=lambda x: x[0])
+                geo["flujos"][i] = elegida
+                geo.get("etiquetas_flujo", {}).pop(i, None)
+    return geo
+
+
 def ajustar(proc, geo, tam, eventos, puertas, cabecera):
     """Todo lo anterior, en orden: lados, separación, notas y externos."""
     usados = lados_usados(proc, geo)
@@ -785,9 +1062,16 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
     separar(proc, geo, extensiones(proc, lados, notas_lado, tam, eventos, puertas), cabecera)
     geo["etiquetas"] = lados
     colocar_notas(proc, geo, notas_lado, tam)
-    if geo.get("etiqueta_en_horizontal"):
-        import enrutado
-        enrutado.mejorar(proc, geo, tam, cabecera)
+    # El motor Mermaid no marca la geometría, pero esta función solo ajusta
+    # trazados recién generados. Las posiciones de entrada se conservan sin
+    # introducir rutas nuevas (p. ej. posiciones importadas de Appian).
+    generado = geo.get("etiqueta_en_horizontal") or not all(p.get("posicion") for p in proc["pasos"])
+    if generado:
+        if geo.get("etiqueta_en_horizontal"):
+            import enrutado
+            enrutado.mejorar(proc, geo, tam, cabecera)
+        despejar_eventos_de_borde(proc, geo, tam, cabecera)
+        separar_ida_vuelta(proc, geo, tam, cabecera)
     colocar_externos(proc, geo)
     return geo
 
@@ -795,5 +1079,5 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
 def aviso_ancho(ancho):
     if ancho > ANCHO_LEGIBLE:
         return (f"el diagrama mide {ancho:.0f} px de ancho: en una página vertical el texto quedará pequeño. "
-                "Parte el proceso en subprocesos o usa una página apaisada")
+                "Amplía la imagen para ver el detalle")
     return None

@@ -8,7 +8,9 @@
     "typeSynonyms lleva los tipos habituales aunque la aplicacion no tenga ninguno: si no, una herramienta de un tipo que falta (p. ej. getAiAgent sin agentes de IA) se toma por generica y se prueba en todos los demas."
   ],
   "objectToolTypes": {
-    "getRecordEventsConfig": ["recordType"]
+    "getRecordEventsConfig": ["recordType"],
+    "validateDesignObjects": ["expressionRule", "interface", "processModel", "recordType", "constant", "site",
+                              "connectedSystem", "integration"]
   },
   "writeVerbs": [
     "create",

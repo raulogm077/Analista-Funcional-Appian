@@ -14,7 +14,8 @@ Sale con 1 si hay fallos. Requiere Playwright y un navegador, como smoke_test.py
 import json, sys, argparse
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from pathlib import Path
-from entorno import escribe, utf8_stdio, sync_playwright, launch_browser
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from entorno import escribe, utf8_stdio, sync_playwright, launch_browser  # noqa: E402
 
 JS = r"""
 () => {

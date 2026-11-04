@@ -16,6 +16,7 @@ SAIL_CLI, si existe, es la orden de SAIL CLI que se usa en vez de «sail» (un .
 import argparse
 import datetime
 import json
+import math
 import os
 import pathlib
 import re
@@ -33,9 +34,10 @@ PARTES = ("dado", "cuando", "entonces")
 ORDENES = {"load": "load", "navigate": "navigate", "nav": "navigate", "interact": "interact", "back": "back",
            "show": "show"}
 CLAVES = {"escenario", "dice", "host", "site", "roles", *PARTES}
-CLAVES_PASO = {"rol", "sail", "selecciona", "espera"}
-ESPERAS = {"completado", "hay", "no_hay", "texto", "sin_texto", "fila", "sin_fila"}
-AFIRMA = {"completado", "hay", "texto", "fila"}      # lo que comprueba algo; las negativas solas pasan con una página vacía
+CLAVES_PASO = {"rol", "sail", "selecciona", "espera", "gasta"}
+ESPERAS = {"completado", "hay", "no_hay", "texto", "sin_texto", "fila", "sin_fila", "campo"}
+AFIRMA = {"completado", "hay", "texto", "fila", "campo"}  # las negativas solas pasan con una página vacía
+CAMPOS = {"TextField", "ParagraphField"}                 # tipos observados en el ui de SAIL CLI
 POR_TERMINAR, SIN_REPETIR = "guion por terminar", "sin repetir"
 DONDE = ("desarrollo", "corrección")                 # los únicos entornos de técnico §0 donde se repite: SAIL CLI escribe
 ESPERA_SAIL = 120          # segundos que se espera a una orden de SAIL CLI
@@ -67,9 +69,9 @@ class NoResponde(SinRepetir):
 
 
 class Falla(Exception):
-    def __init__(self, motivo, paso=None):
+    def __init__(self, motivo, paso=None, de_espera=False):
         super().__init__(motivo)
-        self.motivo, self.paso = motivo, paso
+        self.motivo, self.paso, self.de_espera = motivo, paso, de_espera   # de_espera: lo que se miraba no está
 
 
 def ahora():
@@ -141,16 +143,20 @@ def como_entrar(usuario, host):
 
 # ------------------------------------------------------------------ los escenarios: sus .feature y el funcional de hoy
 def escenarios_de(raiz, uid):
-    """{escenario: {"dice": [líneas], "issue": "ISS-nn"}} de construccion/<U>/*.feature, en su orden."""
+    """{escenario: {"dice": [líneas], "issue": "ISS-nn", "caso": True si lo prueba un caso de prueba}} de
+    construccion/<U>/*.feature, en su orden."""
     out = {}
     carpeta = pathlib.Path(raiz) / "construccion" / uid
     orden = lambda f: [int(x) for x in re.findall(r"\d+", f.stem)] or [10 ** 6]
     for f in sorted(carpeta.glob("*.feature"), key=orden):
-        actual = None
+        actual, caso = None, False
         for linea in f.read_text(encoding="utf-8").splitlines():
             m = RX_ESCENARIO.match(linea)
-            if m:
+            if linea.strip() == "@caso-de-prueba":
+                caso, actual = True, None
+            elif m:
                 actual = out.setdefault(m.group(1), {"dice": [], "issue": (RX_ISSUE.search(f.stem) or [f.stem])[0]})
+                actual["caso"], caso = caso, False
             elif actual is not None and RX_PASO.match(linea):
                 actual["dice"].append(" ".join(linea.split()))
             elif linea.strip() and actual is not None and actual["dice"]:
@@ -229,9 +235,15 @@ def refs(d):
     return [x for o in d.get("options") or [] if isinstance(o, dict) for x in (o.get("ref"), o.get("label")) if x]
 
 
+def empieza(texto, buscado):
+    """Lo buscado es el principio del texto hasta el final de una palabra: «Pendientes» vale para «Pendientes (22)»,
+    «Comentar» no vale para «Comentarios»."""
+    t, b = norma(texto), norma(buscado)
+    return t.startswith(b) and (len(t) == len(b) or not (t[len(b)].isalnum() or t[len(b)] == "_"))
+
+
 def hay(d, buscada):
-    b = norma(buscada)
-    return any(norma(r).startswith(b) for r in refs(d))
+    return any(empieza(r, buscada) for r in refs(d))
 
 
 def repetido(d, objetivo):
@@ -243,6 +255,52 @@ def repetido(d, objetivo):
         return 1
     suyas = [o for o in opciones if norma(o.get("label", "")) == t]
     return max([len(suyas)] + [int(o.get("of") or 1) for o in suyas])
+
+
+def componentes(nodo):
+    """Componentes tipados del ui, nunca las opciones ni los cambios de otra respuesta de SAIL CLI."""
+    if isinstance(nodo, dict):
+        if isinstance(nodo.get("#t"), str):
+            yield nodo
+        for v in nodo.values():
+            yield from componentes(v)
+    elif isinstance(nodo, list):
+        for v in nodo:
+            yield from componentes(v)
+
+
+def escalar_json(v):
+    return type(v) in (str, int, bool, type(None)) or (type(v) is float and math.isfinite(v))
+
+
+def mismo_valor(a, b):
+    """JSON tiene números, no distingue entero/decimal; sí distingue un booleano de un número."""
+    numeros = (int, float)
+    return (escalar_json(a) and escalar_json(b)
+            and (type(a) is type(b) or (type(a) in numeros and type(b) in numeros)) and a == b)
+
+
+def falta_campo(campo, ui):
+    selector = "label" if "label" in campo else "testLabel"
+    nombre = campo[selector]
+    suyos = [c for c in componentes(ui) if c.get("#t") in CAMPOS and c.get(selector) == nombre]
+    quien = f"el campo con {selector} «{nombre}»"
+    if not suyos:
+        return [f"no está {quien} entre los campos admitidos (TextField, ParagraphField)"]
+    if len(suyos) != 1:
+        return [f"{len(suyos)} componentes tienen {selector} «{nombre}»: el campo es ambiguo"]
+    c = suyos[0]
+    if "value" not in c:
+        return [f"{quien} no trae «value» (valor ausente)"]
+    if not mismo_valor(c["value"], campo["valor"]):
+        actual, esperado = (json.dumps(v, ensure_ascii=False) for v in (c["value"], campo["valor"]))
+        return [f"{quien} tiene value {actual} y se esperaba {esperado}"]
+    return []
+
+
+def una_o_varias(x):
+    """«fila» y «sin_fila» admiten una comprobación o una lista de ellas."""
+    return x if isinstance(x, list) else [x] if x else []
 
 
 def lo_que_falta(espera, d):
@@ -267,18 +325,20 @@ def lo_que_falta(espera, d):
     for x in espera.get("sin_texto") or []:
         if any(norma(x) in t for t in todo):
             mal.append(f"aparece «{x}» y no debería")
-    fila = espera.get("fila")
-    if fila:
+    for fila in una_o_varias(espera.get("fila")):
         busca = {k: v for k, v in fila.items() if k != "con"}
         suyas = [f for f in filas(d.get("ui")) if con_texto(f, fila["con"])]
         if not suyas:
             mal.append(f"ninguna fila lleva «{fila['con']}»")
-        elif not any(all(norma(f.get(k, "")).startswith(norma(v)) for k, v in busca.items()) for f in suyas):
+        elif not any(all(empieza(f.get(k, ""), v) for k, v in busca.items()) for f in suyas):
             f = suyas[0]
             mal.append(f"la fila con «{fila['con']}» tiene " + ", ".join(f"{k} «{f.get(k, '—')}»" for k in busca)
                        + " y se esperaba " + ", ".join(f"{k} «{v}»" for k, v in busca.items()))
-    if espera.get("sin_fila") and any(con_texto(f, espera["sin_fila"]) for f in filas(d.get("ui"))):
-        mal.append(f"hay una fila con «{espera['sin_fila']}» y no debería")
+    for x in una_o_varias(espera.get("sin_fila")):
+        if any(con_texto(f, x) for f in filas(d.get("ui"))):
+            mal.append(f"hay una fila con «{x}» y no debería")
+    if "campo" in espera:
+        mal += falta_campo(espera["campo"], d.get("ui"))
     return mal
 
 
@@ -324,11 +384,22 @@ def mal_esperado(espera):
     mal += [f"«{k}» es una lista de textos, sin vacíos" for k in ("hay", "no_hay", "texto", "sin_texto")
             if k in espera and not textos_llenos(espera[k])]
     fila = espera.get("fila")
-    if "fila" in espera and not (isinstance(fila, dict) and isinstance(fila.get("con"), str) and fila["con"].strip()
-                                 and all(isinstance(v, str) and v.strip() for v in fila.values())):
-        mal.append("«fila» lleva «con» y, si acaso, columnas con su valor, sin vacíos")
-    if "sin_fila" in espera and not (isinstance(espera["sin_fila"], str) and espera["sin_fila"].strip()):
-        mal.append("«sin_fila» es un texto, no vacío")
+    if "fila" in espera and not (una_o_varias(fila) and all(
+            isinstance(f, dict) and isinstance(f.get("con"), str) and f["con"].strip()
+            and all(isinstance(v, str) and v.strip() for v in f.values()) for f in una_o_varias(fila))):
+        mal.append("«fila» lleva «con» y, si acaso, columnas con su valor, sin vacíos (una, o una lista de ellas)")
+    if "sin_fila" in espera and not (una_o_varias(espera["sin_fila"]) and all(
+            isinstance(x, str) and x.strip() for x in una_o_varias(espera["sin_fila"]))):
+        mal.append("«sin_fila» es un texto, no vacío, o una lista de ellos")
+    if "campo" in espera:
+        c = espera["campo"]
+        selectores = {"label", "testLabel"}
+        if (not isinstance(c, dict) or len(selectores & c.keys()) != 1
+                or set(c) - (selectores | {"valor"}) or "valor" not in c
+                or not all(isinstance(c[k], str) and c[k].strip() for k in selectores & c.keys())
+                or not (c["valor"] is None or isinstance(c["valor"], str))):
+            mal.append("«campo» lleva exactamente «label» o «testLabel» (texto no vacío) y «valor» (texto, "
+                       "también en un campo numérico, \"4\" y no 4, o null)")
     return mal
 
 
@@ -359,8 +430,18 @@ def defectos(g, nombre):
                 ids = [x for x in orden[1:] if isinstance(x, str) and RX_ID.match(x)]
                 if ids:
                     mal.append(f"{donde}: «{ids[0]}» es un _cId o una ref que cambia en cada carga; usa la etiqueta")
+    for parte in PARTES:
+        for k, p in enumerate(g.get(parte) or [], 1):
+            if not isinstance(p, dict) or "gasta" not in p:
+                continue
+            if parte != "dado" or not (isinstance(p["gasta"], str) and p["gasta"].strip()):
+                mal.append(f"{parte} {k}: «gasta» va en un paso del «dado» y dice, en texto, la precondición que gasta "
+                           "cada repetición")
+            elif not (isinstance(p.get("espera"), dict) and AFIRMA & set(p["espera"])):
+                mal.append(f"{parte} {k}: con «gasta», el paso comprueba que la precondición sigue ahí (p. ej. «hay» con "
+                           "el enlace «Descartar alerta …»): si no, una segunda pasada saldría verde sin volver a ejercitarla")
     if not afirma:
-        mal.append("el «entonces» no comprueba nada que se vea (completado, hay, texto o fila): el recorrido se quedó a "
+        mal.append("el «entonces» no comprueba nada que se vea (completado, hay, texto, fila o campo): el recorrido se quedó a "
                    "medias, o solo dice lo que no está, que también pasaría con una página vacía")
     return mal
 
@@ -381,7 +462,7 @@ class Recorrido:
     def rol(self, p):
         return p.get("rol") or next(iter(self.g["roles"]))
 
-    def sail(self, rol, orden):
+    def sail(self, rol, orden, espera=None):
         sub, args = ORDENES[orden[0]], [str(x) for x in orden[1:]]
         if sub == "load" and "--fresh" not in args:
             args.append("--fresh")
@@ -406,7 +487,10 @@ class Recorrido:
         if d.get("status") not in (None, "ok"):
             raise Falla(f"SAIL CLI da «{d.get('status')}»" + (f": {'; '.join(map(str, d['validations']))}"
                                                             if d.get("validations") else ""))
-        if d.get("movedNothing"):
+        rechazo = [norma(x) for x in espera.get("texto") or []] if espera else []
+        validaciones = [norma(t) for t in textos(d.get("validations"))]
+        # sin cambios por una validación que rechaza es lo esperado solo si lo esperado es ese rechazo
+        if d.get("movedNothing") and not any(x in v for x in rechazo for v in validaciones):
             raise Falla("el servidor aceptó la orden y no cambió nada")
         return sub, d
 
@@ -432,7 +516,7 @@ class Recorrido:
                                 "se puede escribir (dos enlaces con el mismo texto son también un problema de "
                                 "accesibilidad)")
         espera = p.get("espera") or {}
-        _, d = self.sail(rol, orden)
+        _, d = self.sail(rol, orden, espera)
         # lo que ha hecho este rol desde su último load: si solo es mirar (cargar, buscar, marcar una fila), se puede
         # volver a hacer cuando aún no se ve lo esperado, porque el proceso puede no haber terminado
         hechas = [orden] if ORDENES[orden[0]] == "load" else self.tras_carga.get(rol, []) + [orden]
@@ -443,11 +527,11 @@ class Recorrido:
             intentos += 1
             time.sleep(PAUSA)
             for o in hechas:
-                _, d = self.sail(rol, o)
+                _, d = self.sail(rol, o, espera)
             self.ultima[rol] = d
             mal = lo_que_falta(espera, d)
         if mal:
-            raise Falla("; ".join(mal))
+            raise Falla("; ".join(mal), de_espera=True)
 
     def repite(self):
         for parte in PARTES:
@@ -550,6 +634,14 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
                 Recorrido(g, cuentas, valores).repite()
                 entrada["resultado"] = "pasa"
             except Falla as e:
+                gasta = {f"dado {k}": p["gasta"] for k, p in enumerate(g.get("dado") or [], 1) if p.get("gasta")}
+                if e.paso in gasta and e.de_espera:
+                    # solo la comprobación de la precondición que gasta cada repetición: no dice nada de la aplicación.
+                    # Cualquier otro fallo del «dado», también en ese paso (la orden), sigue siendo un fallo
+                    entrada = sin_repetir(antes.get(esc) or entrada, f"falta lo que gasta cada repetición, "
+                                          f"«{gasta[e.paso]}» ({e.paso}: {sin_rutas(e.motivo)}); prepáralo y repite")
+                    nuevos[esc] = repetidos[esc] = {"resultado": entrada.pop("resultado"), **entrada}
+                    continue
                 # con {pasada} y {hoy} en vez de lo que valieron: el mismo fallo dice lo mismo en cada repetición, y la
                 # marca de una persona (indice.py issues … --sin-prueba HU-nn.m), que vale para ese fallo, sigue valiendo
                 motivo = sin_rutas(e.motivo)
@@ -569,7 +661,7 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
         entrada = {"resultado": entrada.pop("resultado"), **entrada}   # lo primero que se lee
         nuevos[esc] = repetidos[esc] = entrada
     resultado = {"unidad": uid, "generadoEn": ahora(), "escenarios": nuevos,
-                 "sinGuion": [e for e in del_feature if e not in guiones]}
+                 "sinGuion": [e for e, d in del_feature.items() if e not in guiones and not d["caso"]]}
     escribe(fichero, json.dumps(resultado, ensure_ascii=False, indent=1) + "\n")
     cuenta = lambda r: sum(1 for e in repetidos.values() if e.get("resultado") == r and not e.get("sinRepetir"))
     sin = sum(1 for e in repetidos.values() if e.get("sinRepetir"))
@@ -596,6 +688,8 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
             L.append(f"  {esc} · guion por terminar: {e.get('motivo')}; lo termina QA (no vuelve a pendiente su issue)")
         else:
             L.append(f"  {esc} · desfasado: {e.get('motivo')}; QA rehace su guion")
+    for esc in [e for e, d in del_feature.items() if d["caso"]] if not solo else []:
+        L.append(f"  {esc} · lo prueba un caso de prueba de regla (técnico §14), no el QA: aquí no se da por probado")
     for esc in resultado["sinGuion"] if not solo else []:
         L.append(f"  {esc} · sin guion: lo recorre QA (appian-qa)")
     if parado and not de_antes:
@@ -634,6 +728,11 @@ def repetir(a):
     codigo, parado = 0, None
     for uid in unidades:
         if not any(f.name != RESULTADO for f in (raiz / CARPETA / uid).glob("*.json")):
+            esc = escenarios_de(raiz, uid)
+            if esc and all(e["caso"] for e in esc.values()):      # no espera guion: los prueba un caso de prueba
+                print(f"{uid} · sus {len(esc)} escenarios los prueba un caso de prueba de regla (@caso-de-prueba): "
+                      "no hay guiones de QA que repetir")
+                continue
             print(f"{uid} · sin guiones en {CARPETA}/{uid}/: su QA está por hacer (appian-qa)")
             codigo = peor(codigo, 2)
             continue

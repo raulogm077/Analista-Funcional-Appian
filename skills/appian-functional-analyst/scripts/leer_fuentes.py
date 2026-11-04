@@ -473,10 +473,93 @@ def slug(s):
     return s[:50] or "fuente"
 
 
+def fecha_transcripcion(body):
+    """Fecha del bloque inicial: un título opcional y campos contiguos.
+
+    Sin marcado, un título o un campo no se distingue semánticamente de prosa
+    con la misma estructura. Las citas marcadas, el cuerpo y nuestro convertido no se recorren.
+    """
+    cabecera, yaml, cerrado, titulo = [], False, False, False
+    titulo_md = False
+    for linea in body[:2000].splitlines():
+        if not cabecera and not linea.strip():
+            if yaml or (titulo and not titulo_md):
+                break
+            continue
+        # Hasta tres espacios son sangría Markdown de una cita/título/lista;
+        # cuatro espacios o un tabulador abren código, no metadatos.
+        if re.match(r"^(?: {4}| {0,3}\t)", linea):
+            break
+        inicio = linea.lstrip(" ")
+        # La fecha editorial del envoltorio no es la fecha de su contenido.
+        if not cabecera and not titulo and re.match(r"^# FU-\d+ · ", inicio):
+            return None
+        if linea == "---":
+            if yaml:
+                cerrado = True
+                break
+            if not cabecera:
+                yaml = True
+                continue
+            break
+        # Sólo se normaliza el marcado de la etiqueta; el valor queda intacto.
+        texto = re.sub(r"^[-*+][ \t]+", "", inicio)
+        etiqueta, separador, valor = texto.partition(":")
+        etiqueta = etiqueta.strip()
+        for marca in ("**", "__"):
+            if etiqueta.startswith(marca):
+                if etiqueta.endswith(marca) and len(etiqueta) > 2 * len(marca):
+                    etiqueta = etiqueta[len(marca):-len(marca)]
+                elif valor.startswith(marca):
+                    etiqueta, valor = etiqueta[len(marca):], valor[len(marca):]
+                break
+        etiqueta = etiqueta.strip()
+        if separador and re.fullmatch(r"[^#\[\]:>*`~\n]{1,80}", etiqueta):
+            cabecera.append(f"{'Fecha' if etiqueta.casefold() == 'fecha' else etiqueta}:{valor}")
+            continue
+        if not cabecera and not yaml and not titulo and not re.match(r"^(?:[#>\[`~|]|[-*+]\s)", inicio):
+            titulo = True
+            continue
+        if not cabecera and not yaml and not titulo and inicio.startswith("# "):
+            titulo, titulo_md = True, True
+            continue
+        break
+    if yaml and not cerrado:
+        return None
+    f = re.search(r"^Fecha:[ \t]*(?:(\d{4})-(\d{2})-(\d{2})|(\d{1,2})/(\d{1,2})/(\d{4}))"
+                  r"(?:[ \t]+(\d{2}):(\d{2}))?[ \t]*$", "\n".join(cabecera), re.M)
+    if f:
+        try:
+            if f.group(7):
+                datetime.time(*map(int, f.group(7, 8)))
+            return (datetime.date(*map(int, f.group(1, 2, 3))) if f.group(1) else
+                    datetime.date(*map(int, f.group(6, 5, 4)))).isoformat()
+        except ValueError:
+            pass
+    return None
+
+
+def actualiza_fecha_transcripcion(entry, original, out):
+    """Repara una fuente ya catalogada sin reconvertir su texto ni perder su selección de duplicadas."""
+    if entry["tipo"] != "Transcripción" or original.suffix.lower() not in (".txt", ".md"):
+        return
+    fecha = fecha_transcripcion(original.read_text(encoding="utf-8-sig", errors="replace"))
+    if not fecha:
+        return
+    salida = out / entry["salida"]
+    raw = salida.read_bytes()
+    partes = re.split(rb"(\r?\n---\r?\n)", raw, maxsplit=1)
+    if len(partes) == 3:
+        cabecera = re.sub(rb"(?m)^- Fecha:[^\r\n]*", b"- Fecha: " + fecha.encode("ascii"), partes[0], count=1)
+        if cabecera != partes[0]:
+            salida.write_bytes(cabecera + partes[1] + partes[2])
+    entry["fecha"] = fecha
+
+
 def convert(path, out_dir, fid):
     ext = path.suffix.lower()
     date = datetime.datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d")
-    fecha_cabecera = None   # «Fecha:» de la cabecera de un chat o una aprobación: manda sobre la del nombre
+    fecha_cabecera = None   # la cabecera explícita manda sobre el nombre y la fecha del fichero
     try:
         if ext in (".vtt", ".srt"):
             body, detail = read_subtitles(path); kind = "Transcripción"
@@ -501,6 +584,8 @@ def convert(path, out_dir, fid):
                 kind = "Transcripción"
                 dur = re.search(r"^Duración[^:\n]*:\s*(\d{1,2}:\d{2}(?::\d{2})?)", body[:2000], re.I | re.M)
                 detail = f"duración {dur.group(1) if dur else (stamps[-1] if stamps else '¿?')}, sin hablantes identificados"
+            if kind == "Transcripción":
+                fecha_cabecera = fecha_transcripcion(body)
         elif ext == ".docx":
             body, detail = read_docx(path); kind = "Documento Word"
         elif ext == ".pptx":
@@ -525,6 +610,8 @@ def convert(path, out_dir, fid):
             body, detail, kind = None, "imagen: revísala visualmente con Read", "Imagen"
     except Exception as e:  # noqa: BLE001 - un fichero dañado no debe parar el resto
         body, detail, kind = None, f"no leído: {type(e).__name__}: {e}", ext[1:].upper()
+    if body is not None and not body.strip():
+        body, detail = None, f"no leído: sin texto extraíble ({detail}); revisa el original"
     m = re.search(r"(20\d{2})[-_]?(0[1-9]|1[0-2])[-_]?(0[1-9]|[12]\d|3[01])(?!\d)", path.name)
     if m and ext not in (".eml", ".msg"):  # fecha en el nombre (p. ej. grabaciones de Teams): mejor que la del fichero
         date = "-".join(m.groups())
@@ -721,10 +808,12 @@ def main():
             h = hashlib.sha1((h + "".join(k + hashlib.sha1(v.read_bytes()).hexdigest()
                                         for k, v in sorted(imagenes.items()))).encode("utf-8")).hexdigest()
         old = by_hash.get(h)
+        if old and ((old["salida"] and textos.get(old["id"], "").strip()) or old["tipo"] == "Imagen"):
+            actualiza_fecha_transcripcion(old, f, out)
         if old and old["fichero"] != f.name:
             print(f"= {old['id']} {f.name} (mismo contenido que {old['fichero']})")
             continue
-        if old and (old["salida"] or old["tipo"] == "Imagen"):
+        if old and ((old["salida"] and textos.get(old["id"], "").strip()) or old["tipo"] == "Imagen"):
             print(f"= {old['id']} {f.name} (ya catalogada)")
             continue
         fid = old["id"] if old else f"FU-{len(state['fuentes']) + 1:02d}"  # reintento de una fuente no leída
@@ -732,6 +821,8 @@ def main():
         entry = {"id": fid, "fichero": f.name, "tipo": kind, "detalle": detail, "fecha": date, "hash": h,
                  "salida": f"{fid}-{slug(f.name)}.md" if body is not None else "",
                  "palabras": len(palabras(body or ""))}
+        if old:  # mismo contenido y misma identidad: regenerar el texto no revoca su selección explícita
+            entry.update({k: old[k] for k in ("duplicada_de", "motivo_duplicada") if k in old})
         if body is not None:
             for otra, porcentaje in parecidas(body, textos):
                 print(f"AVISO: {fid} se parece a {otra} ({porcentaje}% del contenido). Revisa decisiones nuevas; "

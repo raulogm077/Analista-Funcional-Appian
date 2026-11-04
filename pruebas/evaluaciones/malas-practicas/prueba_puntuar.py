@@ -18,6 +18,7 @@ FICTICIA = AQUI.parent / "aplicacion-ficticia"
 MALAS = json.loads((FICTICIA / "malas-practicas.json").read_text(encoding="utf-8"))
 OCULTAS = json.loads((FICTICIA / "ocultas" / "malas-practicas.json").read_text(encoding="utf-8"))
 CLAVES = json.loads((AQUI / "claves.json").read_text(encoding="utf-8"))
+import puntuar  # noqa: E402
 
 
 def seccion_equivocada(mp: dict) -> str:
@@ -98,6 +99,34 @@ def main() -> int:
     fallos += bool(mal)
     print(("OK   " if not mal else "FALLO ") + "claves.json da claves a cada mala práctica, y solo a ellas"
           + (f": {', '.join(mal)}" if mal else ""))
+    ficha_campos = ("**REF-01 — Caso genérico**\n"
+                    "- Evidencia: ObjetoA\n  Detalle A.\n"
+                    "- Regla: BP 01 §1.1\n  Nota de regla.\n"
+                    "- Evidencia: ObjetoB\n  Detalle B.\n"
+                    "- Regla: BP 07 §1\n"
+                    "- Efecto: Primer efecto.\n"
+                    "- Efecto: Segundo efecto.\n  Continuación final.\n"
+                    "- Prioridad: Media\n- Esfuerzo: S\n")
+    segunda_ficha = ("**REF-02 — Segundo caso**\n"
+                     "- Evidencia: SoloObjeto\n- Regla: BP 99 §9\n- Efecto:\n"
+                     "- Prioridad: Media\n- Esfuerzo: S\n")
+    refs_campos = puntuar.fichas(ficha_campos + segunda_ficha)
+    campos_ok = (puntuar.campo(ficha_campos, "Evidencia") == "ObjetoA Detalle A. ObjetoB Detalle B."
+                 and puntuar.campo(ficha_campos, "Regla") == "BP 01 §1.1 Nota de regla. BP 07 §1"
+                 and puntuar.campo(ficha_campos, "Efecto") == "Primer efecto. Segundo efecto. Continuación final."
+                 and puntuar.campo(ficha_campos, "Prioridad") == "Media"
+                 and puntuar.campo(ficha_campos, "Ausente") == ""
+                 and puntuar.campo(segunda_ficha, "Efecto") == ""
+                 and set(refs_campos) == {"REF-01", "REF-02"}
+                 and puntuar.campo(refs_campos["REF-01"], "Evidencia") == "ObjetoA Detalle A. ObjetoB Detalle B."
+                 and puntuar.campo(refs_campos["REF-01"], "Regla") == "BP 01 §1.1 Nota de regla. BP 07 §1"
+                 and puntuar.campo(refs_campos["REF-01"], "Efecto") == "Primer efecto. Segundo efecto. Continuación final."
+                 and puntuar.campo(refs_campos["REF-02"], "Evidencia") == "SoloObjeto"
+                 and puntuar.campo(refs_campos["REF-02"], "Regla") == "BP 99 §9"
+                 and puntuar.campo(refs_campos["REF-02"], "Efecto") == "")
+    fallos += not campos_ok
+    print(("OK   " if campos_ok else "FALLO ")
+          + "campos repetidos y continuaciones se unen en orden, sin invadir campos vecinos ni inventar campos ausentes")
     with tempfile.TemporaryDirectory(prefix="puntuar con espacios ") as t:
         carpeta = Path(t)
         as_is(carpeta)

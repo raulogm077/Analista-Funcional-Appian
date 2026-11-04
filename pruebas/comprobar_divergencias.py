@@ -103,6 +103,16 @@ def main() -> int:
         print(f"Revisar «{tema}»: {aviso}.")
     print(f"{len(reglas) - len(avisos)} de {len(reglas)} divergencias siguen como estaban en {oficial}")
 
+    # sección 3 (el Dev MCP): su última columna es el build del bundle donde se vio el síntoma
+    procedencia = oficial.parent / "appian.PROCEDENCIA.txt"
+    m = re.search(r"build (\d{8}-\d{6})", procedencia.read_text(encoding="utf-8", errors="replace")) if procedencia.is_file() else None
+    if m:
+        sec3 = DOC.read_text(encoding="utf-8").split("\n## 3.", 1)[-1].split("\n## ", 1)[0]
+        for fila in [l for l in sec3.splitlines() if l.startswith("|")][2:]:
+            c = [x.strip() for x in fila.strip("|").split("|")]
+            if c[-1] < m.group(1):
+                print(f"Vista con el build {c[-1]}; el instalado es {m.group(1)}: comprueba que sigue pasando «{c[0][:60]}».")
+
     estan = {Path(ruta).name for ruta in textos if ruta.startswith("references/")}
     citados = punteros()
     for nombre, donde in sorted(citados.items()):

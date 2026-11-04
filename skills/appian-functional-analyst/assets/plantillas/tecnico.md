@@ -13,9 +13,11 @@ Versión: 0.1 · Estado: en curso
 | URL de producción | | |
 | Site | | |
 | Cuentas de prueba en desarrollo | | |
+| Cuenta del Dev MCP | | |
 | Versión de Appian | | |
 | Tier y complementos | | |
 | Base de datos | | |
+| Fuente de datos | | |
 | Inicio de sesión | | |
 | Idioma y zona horaria | | |
 | Calendario laboral | | |
@@ -32,6 +34,7 @@ Versión: 0.1 · Estado: en curso
 |---|---|---|
 | Prefijo | | BP 08 §1 |
 | Idioma de los nombres | Español | Decisión del equipo |
+| Formato de los importes | `a!currency()` con el código ISO de la moneda | BP 02 §10.3 |
 
 ## 2. Decisiones técnicas
 
@@ -59,6 +62,9 @@ Versión: 0.1 · Estado: en curso
 ## 12. Volumen y operación
 
 ## 13. Plan de construcción
+
+| Paso | Objeto | Tipo | Situación | Sustituye a | Cambio | Para |
+|---|---|---|---|---|---|---|
 
 ### Supuestos para construir
 

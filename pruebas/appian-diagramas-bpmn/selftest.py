@@ -138,6 +138,8 @@ def datos_de_appian(tmp):
           and paso["ACT-03"].get("proceso_llamado") == "Notificación de resolución" and "nodo" not in paso["ACT-01"]
           and cond[("GW-01", "ACT-02")] == expresion and run("comparar", d).startswith("Sin cambios"),
           "actualizar (automática): pone, cambia y quita datos de Appian, también con < & \" y saltos de línea")
+    check(not conexiones_falsas(d) and not retornos_solapados(d) and not eventos_borde_en_ruta(d),
+          "actualizar (automática): separa ida/vuelta y despeja el evento de borde de la ruta Guardar → Notificar")
     run("bpmn", d)
     pr = ET.parse(bpmn).getroot().find("bpmn:process", ns)
     ciclo = pr.find("bpmn:startEvent[@id='EV-01']/bpmn:timerEventDefinition/bpmn:timeCycle", ns)
@@ -164,6 +166,9 @@ def datos_de_appian(tmp):
           and paso["EV-05"].get("temporizador") == "P10D" and paso["ACT-03"].get("proceso_llamado") == "Notificación de resolución"
           and any(f.get("condicion") == expresion for f in g["flujos"]),
           "comparar --aceptar: no pierde nodo, temporizador, proceso_llamado ni condicion")
+    proc_manual, geo_manual, _ = dm.leer(str(d))
+    rutas_manuales = {(f["de"], f["a"]): tuple(pts) for f, pts in zip(proc_manual["flujos"], geo_manual["flujos"])}
+    centro_manual = geo_manual["pasos"]["ACT-02"]
     # actualizar con la colocación hecha a mano: celdas que pasan a llevar datos, datos que se quitan y pasos nuevos
     (tmp / "d2.json").write_text(json.dumps({"cambios": [
         {"poner": {"id": "ACT-01", "nodo": "2"}},
@@ -182,6 +187,12 @@ def datos_de_appian(tmp):
           and paso["ACT-03"].get("proceso_llamado") == "Aviso de resolución" and cond[("ACT-02", "ACT-03")] == "pv!avisar"
           and cond[("GW-01", "ACT-02")] is None and cond[("ACT-04", "EV-03")] == "pv!plazo <> null",
           "actualizar (a mano): pone, cambia y quita datos de Appian en celdas que los tenían o no")
+    proc_final, geo_final, _ = dm.leer(str(d))
+    rutas_finales = {(f["de"], f["a"]): tuple(pts) for f, pts in zip(proc_final["flujos"], geo_final["flujos"])}
+    check(all(rutas_finales.get(k) == rutas_manuales.get(k) for k in (("ACT-01", "GW-01"), ("GW-01", "ACT-01"),
+                                                                       ("ACT-02", "ACT-03")))
+          and geo_final["pasos"]["ACT-02"] == centro_manual,
+          "actualizar (a mano): conserva rutas y posición editadas sin volver a recolocar")
     # validar: un evento de error tiene que ir en el borde de su tarea
     suelto = json.loads(origen.read_text(encoding="utf-8"))
     for f in suelto["flujos"]:
@@ -538,6 +549,47 @@ def nota_a_mano(tmp):
           + "; ".join(mal))
 
 
+def nota_entre_filas(tmp):
+    """Una nota manual evita cajas existentes cuando el otro lado está libre; no recoloca lo anterior."""
+    import copy, diagrama, drawio_modelo as dm
+    for nombre, superior, inferior, nota_previa, esperado in (
+            ("paso arriba", 180, None, False, 383),
+            ("arriba libre", 100, None, False, 204),
+            ("ambos ocupados", 180, 410, False, 204),
+            ("contacto borde", 164, None, False, 204),
+            ("nota arriba", 100, None, True, 383)):
+        proc = {"proceso": "Notas entre filas", "carriles": ["Gestor"],
+                "pasos": [{"id": "ACT-01", "tipo": "tarea", "carril": "Gestor", "nombre": "Configurar"},
+                          {"id": "ACT-02", "tipo": "tarea", "carril": "Gestor", "nombre": "Activar"}],
+                "flujos": []}
+        geo = {"carriles": {"Gestor": (0, 500)}, "ancho": 800,
+               "pasos": {"ACT-01": (240, superior), "ACT-02": (240, 325)}, "flujos": []}
+        if inferior is not None:
+            proc["pasos"].append({"id": "ACT-03", "tipo": "tarea", "carril": "Gestor", "nombre": "Guardar"})
+            geo["pasos"]["ACT-03"] = (240, inferior)
+        if nota_previa:
+            proc["notas"] = [{"paso": "ACT-01", "texto": "Nota anterior"}]
+            geo["anotaciones"] = [(180, 204, 160, 63)]
+        ruta = tmp / (nombre + ".drawio")
+        dm.escribir_drawio(proc, geo, str(ruta))
+        editor = diagrama.Editor(ruta)
+        proc0, geo0 = copy.deepcopy(editor.proc), copy.deepcopy(editor.geo)
+        nota = {"paso": "ACT-02", "texto": "Reactivar exige vigencia actual; consulta según RB-02"}
+        editor.anadir_nota(nota)
+        editor.f.guardar()
+        final = diagrama.Editor(ruta)
+        indice = final.proc["notas"].index(nota)
+        cid = final.geo["ids_nota"][indice]
+        _, oy = final._abs_padre(cid)
+        ny = oy + float(final._geom(cid).get("y"))
+        check(ny == esperado, f"nota entre filas: {nombre}, y={ny}, esperado {esperado}")
+        check(all(proc0.get(k) == final.proc.get(k) for k in ("proceso", "carriles", "pasos", "flujos", "externos"))
+              and all(geo0.get(k) == final.geo.get(k) for k in ("pasos", "carriles", "flujos", "etiquetas"))
+              and final.proc["notas"].count(nota) == 1
+              and all(n in final.proc["notas"] for n in proc0.get("notas", [])),
+              f"nota entre filas: {nombre}, conserva semántica y geometría manual previas")
+
+
 def provisional(tmp):
     """Si falla la relectura de comprobación de actualizar, no queda X.drawio.tmp y el .drawio sigue como estaba."""
     import argparse, diagrama, drawio_modelo as dm
@@ -747,6 +799,61 @@ def _caminos(proc, geo):
     return [(fl, _camino(geo["pasos"][fl["de"]][:2], geo["pasos"][fl["de"]][2:], pts, geo["pasos"][fl["a"]][:2],
                          geo["pasos"][fl["a"]][2:]))
             for fl, pts in zip(proc["flujos"], geo["flujos"]) if fl["de"] in geo["pasos"] and fl["a"] in geo["pasos"]]
+
+
+def retornos_solapados(drawio):
+    """Detecta por separado dos flujos inversos que comparten corredor, aunque el otro detector cambie."""
+    import drawio_modelo as dm
+    def solape(a, b):
+        total = 0
+        for p, q in zip(a, a[1:]):
+            for r, s in zip(b, b[1:]):
+                horizontal_a = abs(p[1] - q[1]) <= 1
+                horizontal_b = abs(r[1] - s[1]) <= 1
+                vertical_a = abs(p[0] - q[0]) <= 1
+                vertical_b = abs(r[0] - s[0]) <= 1
+                if horizontal_a and horizontal_b and abs(p[1] - r[1]) <= 1:
+                    total += max(0, min(max(p[0], q[0]), max(r[0], s[0])) - max(min(p[0], q[0]), min(r[0], s[0])))
+                elif vertical_a and vertical_b and abs(p[0] - r[0]) <= 1:
+                    total += max(0, min(max(p[1], q[1]), max(r[1], s[1])) - max(min(p[1], q[1]), min(r[1], s[1])))
+        return total
+    f = dm.Fichero(str(drawio))
+    mal = []
+    for hoja, modelo in f.hojas:
+        proc, geo, _ = f._leer_hoja(hoja, modelo.find("root"))
+        caminos = _caminos(proc, geo)
+        for i, (a, ca) in enumerate(caminos):
+            for b, cb in caminos[i + 1:]:
+                if a["de"] == b["a"] and a["a"] == b["de"] and solape(ca, cb) > 1:
+                    mal.append(f"{a['de']} → {a['a']} / {b['de']} → {b['a']}")
+    return sorted(set(mal))
+
+
+def eventos_borde_en_ruta(drawio):
+    """El corredor de una salida no pasa por el evento de borde unido a su tarea."""
+    import drawio_modelo as dm
+    def cruza_caja(p, q, box):
+        x, y, w, h = box
+        if abs(p[0] - q[0]) <= 1:
+            return x < p[0] < x + w and min(p[1], q[1]) < y + h and max(p[1], q[1]) > y
+        if abs(p[1] - q[1]) <= 1:
+            return y < p[1] < y + h and min(p[0], q[0]) < x + w and max(p[0], q[0]) > x
+        return True
+    f = dm.Fichero(str(drawio))
+    mal = []
+    for hoja, modelo in f.hojas:
+        proc, geo, _ = f._leer_hoja(hoja, modelo.find("root"))
+        tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+        adjuntos = {(fl["de"], fl["a"]) for fl in proc["flujos"] if fl.get("discontinuo")
+                    and fl["de"] in tipo and fl["a"] in tipo and tipo[fl["a"]] in {"temporizador", "mensaje", "intermedio", "error"}}
+        for origen, evento in adjuntos:
+            ex, ey, ew, eh = (*geo["pasos"][evento][:2], *dm.TAM[tipo[evento]])
+            caja = (ex - ew / 2 - 12, ey - eh / 2 - 12, ew + 24, eh + 24)
+            for fl, camino in _caminos(proc, geo):
+                if fl["de"] == origen and fl["a"] != evento and not fl.get("discontinuo") and \
+                        any(cruza_caja(p, q, caja) for p, q in zip(camino, camino[1:])):
+                    mal.append(f"{fl['de']} → {fl['a']} junto a {evento}")
+    return sorted(set(mal))
 
 
 def etiquetas_en_tramo_ajeno(drawio):
@@ -1078,6 +1185,24 @@ def ancho_png(ruta):
     return unpack(">I", pathlib.Path(ruta).read_bytes()[16:20])[0]
 
 
+def resolucion_png(tmp):
+    """La imagen completa conserva 2x también cuando el proceso supera el ancho de una página."""
+    from unittest.mock import patch
+    import diagrama
+    proc = proceso_grande()
+    proc.pop("tramos")
+    tmp.mkdir(parents=True)
+    origen = tmp / "completo.json"
+    origen.write_text(json.dumps(proc, ensure_ascii=False), encoding="utf-8")
+    d = tmp / "salida" / "completo.drawio"
+    run("crear", origen, "-o", d, esperado=2, env=entorno(sin_navegador=True))
+    with patch.object(diagrama.navegador, "pintar_pngs") as pintar:
+        destinos = diagrama._png(d)
+    trabajos = pintar.call_args.args[0]
+    check(destinos == [d.with_suffix(".png")] and len(trabajos) == 1 and trabajos[0][2] == 2.0,
+          "PNG completo: una imagen a 2x aunque el diagrama sea ancho")
+
+
 def sin_navegador(tmp):
     """Sin navegador (DIAGRAMAS_SIN_NAVEGADOR=1 simula que no hay): crear escribe el .drawio y el .json con la
     colocación de reserva, sin pasos que se pisen, dice «sin PNG» y sale con 2; bpmn da un BPMN válido; actualizar
@@ -1399,7 +1524,7 @@ def g3(tmp):
     suelto, la holgura de las etiquetas y las filas por capas, el temporizador que interrumpe, los avisos y el fichero de
     cambios temporal."""
     for nombre, prueba in (("nota", lambda t: nota_y_etiqueta(t, entorno(sin_navegador=True))), ("nota a mano", nota_a_mano),
-                           ("provisional", provisional),
+                           ("nota entre filas", nota_entre_filas), ("provisional", provisional),
                            ("error suelto", error_suelto), ("holgura", holgura), ("interrumpe", interrumpe),
                            ("avisos", avisos), ("cambios", cambios_temporales), ("finales", finales_conservados)):
         (tmp / nombre).mkdir(parents=True)
@@ -1412,6 +1537,7 @@ def main_sin_navegador():
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="diagramas-sin-navegador-"))
     try:
         sin_navegador(tmp / "sin")
+        resolucion_png(tmp / "resolucion")
         conexiones(tmp / "conexiones")
         etiquetas_de_puertas(tmp / "etiquetas")
         corredores_ortogonales(tmp / "corredores")
@@ -1442,6 +1568,7 @@ def main():
     try:
         # sin navegador y procesos que no caben en una página
         sin_navegador(tmp / "sin")
+        resolucion_png(tmp / "resolucion")
         conexiones(tmp / "conexiones")
         etiquetas_de_puertas(tmp / "etiquetas")
         corredores_ortogonales(tmp / "corredores")
@@ -1542,6 +1669,38 @@ def main():
         (tmp / "pos.json").write_text(json.dumps(pos), encoding="utf-8")
         run("crear", tmp / "pos.json", "-o", tmp / "pos.drawio")
         check(dm.comparar(base, dm.leer(str(tmp / "pos.drawio"))[0]) == [], "crear con posiciones dadas")
+        importado = {"proceso": "Posiciones importadas", "carriles": ["Aplicación"],
+                     "pasos": [{"id": "ACT-10", "tipo": "tarea", "carril": "Aplicación", "nombre": "Preparar", "posicion": [100, 50]},
+                               {"id": "ACT-11", "tipo": "tarea", "carril": "Aplicación", "nombre": "Revisar", "posicion": [350, 50]}],
+                     "flujos": [{"de": "ACT-10", "a": "ACT-11"}, {"de": "ACT-11", "a": "ACT-10", "etiqueta": "Corregir"}]}
+        (tmp / "importado.json").write_text(json.dumps(importado), encoding="utf-8")
+        run("crear", tmp / "importado.json", "-o", tmp / "importado.drawio")
+        proc_importado, geo_importado, _ = dm.leer(str(tmp / "importado.drawio"))
+        check(all(not pts for pts in geo_importado["flujos"])
+              and geo_importado["pasos"]["ACT-11"][0] - geo_importado["pasos"]["ACT-10"][0] == 250,
+              "crear con posiciones importadas: conserva los centros y no añade corredores al retorno")
+        automatico = {"proceso": "Ciclo automático", "carriles": ["Aplicación"],
+                      "pasos": [{"id": "ACT-20", "tipo": "tarea", "carril": "Aplicación", "nombre": "Revisar"},
+                                {"id": "ACT-21", "tipo": "tarea", "carril": "Aplicación", "nombre": "Corregir"}],
+                      "flujos": [{"de": "ACT-20", "a": "ACT-21"},
+                                 {"de": "ACT-21", "a": "ACT-20", "etiqueta": "Corregir"}]}
+        (tmp / "automatico.json").write_text(json.dumps(automatico), encoding="utf-8")
+        run("crear", tmp / "automatico.json", "-o", tmp / "automatico.drawio")
+        check(not retornos_solapados(tmp / "automatico.drawio")
+              and not conexiones_falsas(tmp / "automatico.drawio"),
+              "crear automático: separa un retorno y mantiene conexiones ortogonales")
+        import colocacion as co
+        check(co._cruces_tramos([(0, 5), (10, 5)], [(5, 0), (5, 10)]) == 1
+              and co._cruces_tramos([(5, 0), (5, 10)], [(0, 5), (10, 5)]) == 1,
+              "colocación: cuenta cruces ortogonales en ambas orientaciones")
+        convergente = [(20, 0), (20, 20), (32, 20)]
+        misma_entrada = [(0, 0), (0, 20), (32, 20)]
+        corredor_ajeno = [(100, 0), (100, 20), (70, 20), (70, 40), (30, 40), (30, 20), (60, 20), (72, 20)]
+        ruta_con_corredor = [(0, 0), (0, 20), (30, 20), (30, 40), (60, 40), (60, 20), (72, 20)]
+        check(co._solape_tramos(convergente, misma_entrada) == 12
+              and co._solape_ambiguo(convergente, misma_entrada, destino_comun=True) == 0
+              and co._solape_ambiguo(ruta_con_corredor, corredor_ajeno, destino_comun=True) > 0,
+              "colocación: tolera solo el tramo terminal compartido, no un corredor ajeno interior")
         # 7b. varias páginas: actualizar solo toca la primera
         pag = tmp / "sub" / "dos.drawio"
         run("crear", EJEMPLO, "-o", pag)
@@ -1620,7 +1779,7 @@ def main():
                       and geo_r["flujos"][i] and geo_r["flujos"][i][-1][1] > geo_r["pasos"][f["a"]][1] + 25]
         check(por_debajo and all(geo_r["etiquetas"].get(e) == "arriba" for e in por_debajo) and not solapes(tmp / "rev" / "rev.drawio"),
               f"etiquetas: los eventos a los que llega un flujo por debajo llevan la etiqueta encima ({', '.join(por_debajo) or 'ninguno'})")
-        # 10. un proceso muy largo: aviso de ancho y PNG de tamaño razonable
+        # 10. un proceso muy largo: aviso de ancho y detalle a 2x al regenerar el PNG completo
         largo = {"proceso": "Largo", "carriles": ["Aplicación"],
                  "pasos": [{"id": "EV-01", "tipo": "inicio", "carril": "Aplicación", "nombre": "Inicio"}] +
                           [{"id": f"ACT-{i:02d}", "tipo": "sistema", "carril": "Aplicación", "nombre": f"Paso {i}"} for i in range(1, 25)] +
@@ -1631,7 +1790,12 @@ def main():
         out = run("crear", tmp / "largo.json", "-o", tmp / "largo")
         from struct import unpack
         ancho_png = unpack(">I", (tmp / "largo" / "largo.png").read_bytes()[16:20])[0]
-        check("aviso: el diagrama mide" in out and ancho_png <= 3300, f"ancho: aviso y PNG de {ancho_png} px como mucho 3300")
+        ancho_dibujo = dm.Fichero(str(tmp / "largo" / "largo.drawio")).hojas_png()[0][1]
+        dimensiones = unpack(">II", (tmp / "largo" / "largo.png").read_bytes()[16:24])
+        run("png", tmp / "largo" / "largo.drawio")
+        check("aviso: el diagrama mide" in out and ancho_png >= 2 * ancho_dibujo
+              and dimensiones == unpack(">II", (tmp / "largo" / "largo.png").read_bytes()[16:24]),
+              f"ancho: aviso y PNG completo a 2x ({ancho_png} px), también al regenerar")
         # 7. errores de validación
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}

@@ -19,7 +19,7 @@ class Dependencias(unittest.TestCase):
         _, _, plan, i, _ = iss.corrige_dependencias(self.p, "EV-01", "ISS-02", [], "Objeto externo ya preparado", "Ana")
         self.assertEqual(i.depende, [])
         self.assertIn("ISS-01", i.paralelo)
-        self.assertIn("corregidas por una persona", i.texto)
+        self.assertIn("corregidas por una persona: Objeto externo ya preparado (ver indice.md)", i.texto)
         plan.reservas["ISS-01"] = "Otra persona"
         self.assertEqual(iss.elige(plan, self.p).id, "ISS-02")
         iss.escribe(plan, self.p)
@@ -63,15 +63,19 @@ class Dependencias(unittest.TestCase):
             iss.corrige_dependencias(self.p, "EV-01", "ISS-03", [], None, "Ana", retirar=True)
         self.assertEqual(indice.read_bytes(), antes)
 
-    def test_cambio_aguas_arriba_caduca_con_aviso_y_rastro(self):
+    def calculadas_distintas(self, plan):
+        """Cambia en memoria lo que da la lista calculada de ISS-02 (la Base deja de ser común y nadie nombra nada)."""
+        plan.issues[0].comun = False
+        plan.issues[1].nombra.clear()
+        plan.issues[0].nombra.clear()
+
+    def test_cambio_de_las_calculadas_caduca_con_aviso_y_rastro(self):
         self.preparada()
         _, _, plan, _, _ = iss.corrige_dependencias(self.p, "EV-01", "ISS-02", [], "Base disponible", "Ana")
-        plan.issues[0].version = "encargo-nuevo"
+        self.calculadas_distintas(plan)
         iss.aplica_dependencias(plan)
-        self.assertEqual(plan.issues[1].depende, ["ISS-01"])
-        self.assertNotIn("ISS-01", plan.issues[1].paralelo)
-        self.assertTrue(any("ISS-01" in a and "caducada" in a for a in plan.avisos))
-        self.assertTrue(plan.dependencias[0]["estado"].startswith("Caducada"))
+        self.assertTrue(any("ISS-02" in a and "caducada" in a for a in plan.avisos))
+        self.assertIn("cambiaron las dependencias calculadas", plan.dependencias[0]["estado"])
         plan.dependencias.append(dict(plan.dependencias[0]))
         iss.aplica_dependencias(plan)
         self.assertEqual(sum("corrección de dependencias caducada" in a for a in plan.avisos), 1)
@@ -79,6 +83,7 @@ class Dependencias(unittest.TestCase):
         iss.escribe(plan, self.p)
         recargado = self.carga()
         self.assertEqual(recargado.issues[1].depende, ["ISS-01"])
+        self.assertNotIn("ISS-01", recargado.issues[1].paralelo)
         self.assertEqual(recargado.dependencias[0]["motivo"], "Base disponible")
         code, out = fixture.corre(fixture.S / "indice.py", "issues", self.p, "EV-01", "ISS-02")
         self.assertEqual(code, 0, out)
@@ -88,18 +93,59 @@ class Dependencias(unittest.TestCase):
         self.assertIn("antes: Caducada", revisado.dependencias[0]["estado"])
         self.assertEqual(revisado.dependencias[1]["estado"], "Vigente")
 
-    def test_cambio_propio_y_nueva_relacion_automatica_caducan(self):
+    def test_otro_cambio_del_encargo_no_caduca(self):
+        """Caso B: una DT nueva que citaba la issue cambió su encargo y caducó la corrección; volvía el orden calculado,
+        que era el equivocado. Si la lista calculada no cambia, la corrección sigue."""
         self.preparada()
         _, _, plan, _, _ = iss.corrige_dependencias(self.p, "EV-01", "ISS-02", [], "Base disponible", "Ana")
-        plan.issues[1].version = "encargo-nuevo"
+        plan.issues[0].version = "encargo-nuevo"
+        plan.issues[1].version = "otro-encargo"
         iss.aplica_dependencias(plan)
-        self.assertIn("cambió su encargo", plan.dependencias[0]["estado"])
+        self.assertEqual(plan.dependencias[0]["estado"], "Vigente")
+        self.assertEqual(plan.issues[1].depende, [])
+        self.assertFalse(any("caducada" in a for a in plan.avisos))
+
+    def test_ciclo_que_aparece_al_regenerar_caduca_y_se_puede_retirar(self):
+        """Revisión de Codex del 1.8: una corrección sigue vigente, pero el análisis cambia y lo calculado va ahora en
+        sentido contrario. Antes calcula rechazaba el ciclo y ni --dependencias-automaticas podía cargar el plan."""
+        self.preparada()
+        iss.corrige_dependencias(self.p, "EV-01", "ISS-04", ["ISS-01", "ISS-02", "ISS-05"],
+                                 "El documento espera a la página", "Ana")
+        t = self.p / "analisis" / "tecnico.md"
+        texto = t.read_text(encoding="utf-8")
+        viejo = "con la condición «estado distinto de Borrador» |"
+        self.assertEqual(texto.count(viejo), 1)
+        t.write_text(texto.replace(viejo, "con la condición «estado distinto de Borrador». La página usa "
+                                          "`AUT_PlantillaAutorizacion`. |"), encoding="utf-8")
         plan = self.carga()
-        plan.issues[0].comun = False
-        plan.issues[1].nombra.clear()
-        plan.issues[0].nombra.clear()
+        self.assertIn("ISS-04", plan.issues[4].depende)
+        self.assertNotIn("ISS-05", plan.issues[3].depende)
+        self.assertEqual(plan.dependencias[0]["estado"], "Caducada: forma un ciclo con las dependencias calculadas")
+        self.assertTrue(any("ISS-04" in a and "forma un ciclo" in a for a in plan.avisos))
+        with self.assertRaisesRegex(iss.NoSePuede, "ciclo"):   # una persona sigue sin poder registrar un ciclo
+            iss.corrige_dependencias(self.p, "EV-01", "ISS-04", ["ISS-05"], "Otra vez la página", "Ana")
+        code, out = fixture.corre(fixture.S / "indice.py", "issues", self.p, "EV-01", "ISS-04",
+                                  "--dependencias-automaticas", "--quien", "Ana")
+        self.assertEqual(code, 0, out)
+        self.assertTrue(self.carga().dependencias[0]["estado"].startswith("Retirada por Ana"))
+
+    def test_caduca_solo_la_correccion_del_ciclo_no_la_que_lleva_a_el(self):
+        """Revisión de Codex: el mensaje del ciclo traía el camino desde la primera issue recorrida, y caducaba también
+        la corrección de ISS-02, que solo lleva al ciclo ISS-03 → ISS-04 → ISS-03 y es válida sin la de ISS-03."""
+        issues = [iss.Issue(filas=[], id="ISS-02", objetos=["A"]), iss.Issue(filas=[], id="ISS-03", objetos=["B"]),
+                  iss.Issue(filas=[], id="ISS-04", objetos=["C"], nombra={"B"})]
+        for i in issues:
+            i.texto = "Requisitos: x"
+        corrige = lambda iid, depende, automaticas: {
+            "issue": iid, "version": "v", "depende": depende, "automaticas": automaticas,
+            "versiones": {x: "v" for x in set(depende) | set(automaticas)}, "motivo": "Decidido", "quien": "Ana",
+            "cuando": "2026-10-29T22:00Z", "estado": "Vigente"}
+        plan = base.SimpleNamespace(issues=issues, avisos=[], app="", dependencias=[
+            corrige("ISS-02", ["ISS-03"], []), corrige("ISS-03", ["ISS-04"], [])])
         iss.aplica_dependencias(plan)
-        self.assertIn("cambiaron las dependencias calculadas", plan.dependencias[0]["estado"])
+        self.assertEqual(plan.dependencias[0]["estado"], "Vigente")
+        self.assertEqual(plan.dependencias[1]["estado"], "Caducada: forma un ciclo con las dependencias calculadas")
+        self.assertEqual((issues[0].depende, issues[1].depende, issues[2].depende), (["ISS-03"], [], ["ISS-03"]))
 
     def test_reversion_y_sustitucion_conservan_rastro(self):
         self.preparada()

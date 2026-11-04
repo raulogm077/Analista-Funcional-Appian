@@ -25,10 +25,11 @@ Lo esperado y la verificación, que es de donde sale si una issue está hecha (e
                             criterios ni reglas: «verificar» no ejecuta entonces ningún caso de prueba.
   verificacion/ISS-nn.json  el resultado de «verificar --esperado»: {"generadoEn", "entorno", "issue": <la de _issue, tal
                             cual>, "aplicacion", "objetos": [{"pedido", "existe", "tipo", "diferencias": {…}, …}],
-                            "faltan", "conDiferencias", "pruebas": {"ejecutadas", "motivo" o "objetos": [{"objeto",
-                            "de": issue | usa, "casos", "pasan", "fallan": [{"caso", "error"}], "noEvaluables", "error"}]}}.
+                            "faltan", "conDiferencias", "conCamposDeMas", "pruebas": {"ejecutadas", "motivo" o
+                            "objetos": [{"objeto", "de": issue | usa, "casos", "pasan", "fallan": [{"caso", "error"}],
+                            "noEvaluables", "error"}]}}.
                             Hecha: «issue» es la de ahora (id y version), cada objeto suyo está en «objetos» con «existe»
-                            y sin diferencias (de uno que se modifica, «sobranCampos» no cuenta; «camposSinLeer» y
+                            y sin diferencias («sobranCampos», los campos de más, no cuenta; «camposSinLeer» y
                             «accionesSinLeer» son no haberlo podido leer) y, si tiene pruebas, no falla ningún caso de sus
                             objetos («de»: issue) que una persona no haya marcado como no necesario. Lo que falla en lo
                             que la usa («de»: usa) es un aviso, y si el Dev MCP no ejecuta casos, esperan a la regresión.
@@ -317,10 +318,49 @@ def reparte(d):
 
 
 # ------------------------------------------------------------------ lo que dice el técnico de una issue
+def es_marca_otra_unidad(texto):
+    """La marca explícita: el texto empieza por «Otra unidad», con su id si quiere («Otra unidad (EV-02).»)."""
+    return bool(re.match(r"otra unidad\b", mo.normaliza(texto.strip(" *-_"))))
+
+
+def continuaciones(lineas):
+    """{línea que continúa: línea con la que empieza su párrafo o viñeta}. Continúa la línea no vacía que no empieza un
+    elemento nuevo (viñeta, número, encabezado, fila de tabla, bloque de código, marca «Otra unidad» o comentario) y viene
+    justo detrás de un párrafo o una viñeta: el técnico se reparte por unidades, no por las líneas en que el editor
+    parte un mismo párrafo."""
+    out, cabeza, codigo = {}, None, False
+    for i, l in enumerate(lineas):
+        s = l.strip()
+        if not s:
+            cabeza = None
+        elif s.startswith(("```", "~~~")):
+            codigo, cabeza = not codigo, None
+        elif (codigo or s.startswith(("#", "|", ">", "<!--")) or re.match(r"^(-{3,}|\*{3,}|_{3,})$", s)
+              or re.match(r"^\*\*[^*\n]+\*\*[:.]?$", s)):      # un título en negrita solo en su línea no absorbe lo de debajo
+            cabeza = None
+        elif cabeza is not None and not (re.match(r"^([-*+]|\d+[.)])\s", s) or es_marca_otra_unidad(s)):
+            out[i] = cabeza
+        else:
+            cabeza = i
+    return out
+
+
+def unidades_de_texto(lineas):
+    """{línea cabeza: el texto de su párrafo o viñeta, con sus líneas unidas en una}; lo que continúa no aparece."""
+    cont, out = continuaciones(lineas), {}
+    for i, l in enumerate(lineas):
+        if i in cont:
+            out[cont[i]] += " " + l.strip()
+        else:
+            out[i] = l.strip()
+    return out
+
+
 def lineas_del_tecnico(d):
     """Las líneas de los apartados 3 a 12 del técnico, cada una con lo que hace falta para saber de qué issue es:
     {i, donde («§7», «§3.1»), texto, cabecera (si es la fila de una tabla), titulo (la línea que precede a su tabla),
-    ids que cita, objetos que nombra, de (el objeto de su apartado «### 3.n <nombre>») y estado frente a la copia de la
+    ids que cita, objetos que nombra, definidos (el sujeto del apartado, bloque o celda que declara un objeto),
+    de (el objeto de su apartado «### 3.n <nombre>») y estado frente a la copia de la
     versión base, en su apartado y bajo el mismo título en negrita (bloques()): "" (no hay copia), igual, nuevo o cambia
     (con «era», sus celdas de antes)}. Nombra un objeto la línea
     que lo dice entre comillas invertidas o en negrita, la fila con una celda que es su nombre, la fila de una tabla cuyo
@@ -335,14 +375,29 @@ def lineas_del_tecnico(d):
     antes, de_bloque = {}, bloques(T)
     if d.ant is not None and "T" in d.ant.docs:
         A = d.ant.docs["T"]
+        unidas = unidades_de_texto(A.lineas)
         for i, (l, b) in enumerate(zip(A.lineas, bloques(A))):
-            antes.setdefault((A.seccion_de_linea[i], b), []).append(l.strip())
+            if i in unidas:
+                antes.setdefault((A.seccion_de_linea[i], b), []).append(unidas[i])
     out, cabecera, titulo, apartado, de, previa, bloque = [], None, None, "", None, None, set()
+    otra_sub = False      # el apartado «### 3.n» ya dijo que es de otra unidad
+    abre_sub = False      # aún no se ha leído la primera línea de texto del apartado «### 3.n»
+    cont, cabezas, unidas = continuaciones(T.lineas), {}, unidades_de_texto(T.lineas)
+    en_13 = {"tabla": False, "reglas": False}    # §13: los pasos manuales van debajo de su tabla
     for i, l in enumerate(T.lineas):
         s = T.seccion_de_linea[i]
+        if i in cont:      # sigue el párrafo o la viñeta de la línea cabeza: es una sola unidad
+            previa = (i, l)
+            if cont[i] in cabezas:
+                x = cabezas[cont[i]]
+                x["ids"] = x["ids"] | mo.ids_en(mo.sin_comentarios(l))
+                x["objetos"] = x["objetos"] | nombrados(l, d.todos) | bloque
+            continue
         if l.startswith("## "):
             cabecera, apartado, de, previa, bloque = None, "", None, None, set()
+            otra_sub = False
         if l.startswith("### "):
+            otra_sub, abre_sub = False, True
             sub = re.match(r"^###\s+([\d.]+)\s+(.+)$", l)
             apartado = sub.group(1).rstrip(".") if sub else ""
             de = nombres.get(mo.normaliza(sub.group(2).strip(" `"))) if sub else None
@@ -356,19 +411,52 @@ def lineas_del_tecnico(d):
             cabecera = mo.celdas(l)
             titulo = previa[0] if previa and i - previa[0] <= 3 and not previa[1].startswith("#") else None
             continue
-        if s in SIN_APARTADO or not l.strip() or l.startswith("#") or RX_SEPARADOR.match(l):
+        if s == "13":      # los pasos manuales de debajo de la tabla; no la tabla, ni los supuestos, ni las reglas generales
+            if l.startswith("|"):
+                en_13["tabla"] = True
+            if re.match(r"^(?:#{2,6}\s+|\*\*)?Reglas para quien construye", l, re.I):
+                en_13["reglas"] = True
+            elif re.match(r"^(?:#{2,6} |\*\*|\|)", l):
+                en_13["reglas"] = False
+            siguiente = next((x for x in T.lineas[i + 1:] if x.strip()), "")
+            if not en_13["tabla"] or en_13["reglas"] or l.startswith("|") or siguiente.startswith("|"):
+                continue      # ni las tablas, ni la línea que presenta una (los supuestos), son pasos
+        elif s in SIN_APARTADO:
+            continue
+        if not l.strip() or l.startswith("#") or RX_SEPARADOR.match(l):
             continue
         fila = mo.celdas(l) if l.startswith("|") else None
         objetos = nombrados(l, d.todos) | bloque
+        definidos = ({de} if de else set()) | bloque
         if fila:
             objetos |= {nombres[mo.normaliza(c.strip(" `*"))] for c in fila if mo.normaliza(c.strip(" `*")) in nombres}
-            objetos |= nombrados(T.lineas[titulo], d.todos) if titulo is not None else set()
-        item = {"i": i, "donde": f"§{apartado or s}", "texto": l.strip(), "cabecera": cabecera if fila else None,
-                "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
-                "objetos": objetos, "estado": "", "era": None}
+            del_titulo = nombrados(T.lineas[titulo], d.todos) if titulo is not None else set()
+            objetos |= del_titulo
+            # Igual que acciones_7: la tabla declara acciones del record type nombrado en su título.
+            if s == "7" and cabecera and mo.normaliza(cabecera[0]).startswith("accion") \
+                    and "tipo" in {mo.normaliza(c) for c in cabecera}:
+                definidos |= del_titulo
+            if not definidos:
+                for k, c in enumerate(fila):
+                    cab = mo.normaliza(cabecera[k]) if cabecera and k < len(cabecera) else ""
+                    if k == 0 or cab in ("grupo", "constante"):
+                        definidos |= {nombres[mo.normaliza(un.objeto(o))] for o in un.objetos_celda(c.strip("*"))
+                                      if mo.normaliza(un.objeto(o)) in nombres}
+                    elif cab == "que es en appian":
+                        # «`Interfaz`, vista de `Record`»: define la interfaz; el record aporta contexto.
+                        principal = re.match(r"^`([^`]+)`", c.strip())
+                        nombre = nombres.get(mo.normaliza(un.objeto(principal.group(1)))) if principal else None
+                        if nombre:
+                            definidos.add(nombre)
+        if abre_sub:
+            otra_sub, abre_sub = es_marca_otra_unidad(l) and not l.startswith("|"), False     # «Otra unidad. Una por mes.» abre el apartado: todo él es de otra
+        item = {"i": i, "donde": f"§{apartado or s}", "texto": unidas[i], "cabecera": cabecera if fila else None,
+                "otra": otra_sub or es_marca_otra_unidad(l), "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
+                "objetos": objetos, "definidos": definidos, "estado": "", "era": None}
+        cabezas[i] = item
         if antes:
             previas = antes.get((s, de_bloque[i]), ())
-            if l.strip() in previas:
+            if unidas[i] in previas:
                 item["estado"] = "igual"
             else:
                 era = next((mo.celdas(x) for x in previas if fila and x.startswith("|")
@@ -396,6 +484,9 @@ def decisiones(d):
                 "igual" if limpio(d.ant.texto(p.id)) == limpio(m.texto(p.id)) else "cambia"
         out.append({"i": p.ini, "donde": p.id, "texto": dice, "dt": f"{p.id} {p.titulo}", "cabecera": None, "titulo": None,
                     "de": None, "era": None, "ids": {m.raiz_de(x) for x in mo.ids_en(campos.get("necesidad", ""))},
+                    # «Necesidad: Base», como «Para: Base» de §13: con mayúscula y suelta, no «base de datos»
+                    "base": bool(re.search(r"(?<!\w)Base(?!\w)(?!\s+de\b)",
+                                           mo.sin_comentarios(campos.get("necesidad", "")))),
                     "objetos": nombrados(m.texto(p.id), d.todos), "estado": estado})
     return out
 
@@ -452,15 +543,33 @@ def del_tecnico(d, issue, lineas, dts):
     cita = set(issue.requisitos) | {c for h in issue.requisitos for c in m.piezas[h].hijos} | \
         citadas_por(m, issue.requisitos)
     de_parte = lambda x, o: any(s in mo.normaliza(x["texto"]) for s in senas[o])
-    suya = lambda x: x["objetos"] & enteros or x["de"] in enteros or any(de_parte(x, o) for o in senas)
-    mias = [x for x in lineas + dts if suya(x) or x["ids"] & cita or x["i"] in issue.sueltas and "dt" not in x]
+    # una decisión técnica entra por su «Necesidad» o porque la especificación de esta issue la cita, no por nombrar
+    # el mismo objeto en su texto: una DT de otra pantalla no debe dejar pendiente la Base por esa sola mención
+    suya = lambda x: "dt" not in x and (x["objetos"] & enteros or x["de"] in enteros or any(de_parte(x, o) for o in senas))
+    define = lambda x: x.get("definidos", set()) & enteros or any(
+        un.objeto(o) in x.get("definidos", set()) and de_parte(x, o) for o in senas)
+    necesarias = {x["donde"] for x in dts if x["ids"] & cita or x.get("base") and issue.comun}
+    referidas, comunes, ids_dt = set(), set(), {x["donde"] for x in dts}
+    while True:
+        mias = [x for x in lineas + dts if suya(x) or x["ids"] & cita or x.get("base") and issue.comun
+                or x["i"] in issue.sueltas and "dt" not in x or "dt" in x and x["donde"] in referidas
+                or "dt" not in x and x["donde"].split(".")[0] == "§4" and x["ids"] & comunes
+                and (not x.get("definidos") or define(x))]
+        nuevas = set().union(*(x["ids"] for x in mias if define(x) or "dt" in x and x["donde"] in referidas)) & ids_dt
+        # «Seguridad: DT-02» necesita la DT y sus condiciones de §4 aunque la issue no tenga historias.
+        # Ese contexto no incorpora otras DT por compartir la regla: siguen entrando por su propia necesidad o cita.
+        ligadas = citadas_por(m, referidas)
+        if nuevas <= referidas and ligadas <= comunes:
+            break
+        referidas |= nuevas
+        comunes |= ligadas
     donde = {o: list(dict.fromkeys(x["donde"] for x in mias if (de_parte(x, o) if o in senas else
                                                                un.objeto(o) in x["objetos"] or x["de"] == un.objeto(o))))
              for o in nombres}
     cambian = [x for x in mias if x["estado"] in ("nuevo", "cambia")]
     hay_copia = any(x["estado"] for x in mias)
     # sin nada que cambie en el técnico (lo que cambia está en el funcional), lo que ya dice de sus objetos
-    van = cambian or [x for x in mias if not hay_copia or suya(x)]
+    van = cambian or [x for x in mias if not hay_copia or suya(x) or "dt" in x]
     T, puestas, out = (m.docs["T"].lineas if "T" in m.docs else []), {x["i"] for x in van if "dt" not in x}, []
     if hay_copia and van and not cambian:
         out.append(f"El técnico no cambia para esta issue con {d.uid}. Lo que ya dice de sus objetos:")
@@ -478,7 +587,10 @@ def del_tecnico(d, issue, lineas, dts):
         out.append(f"- Y {callan} líneas más del técnico que no cambian con {d.uid}: lo que dicen ya está construido."
                    if callan > 1 else
                    f"- Y una línea más del técnico que no cambia con {d.uid}: lo que dice ya está construido.")
-    return out, donde, set().union(*(x["objetos"] for x in van)) - set(issue.objetos), {x["i"] for x in mias if "dt" not in x}
+    # Una DT añadida como contexto puede enumerar procesos independientes: no implica que se construyan en serie.
+    # Las dependencias conservan sus fuentes: la especificación y las DT seleccionadas por su «Necesidad».
+    nombra = set().union(*(x["objetos"] for x in van if "dt" not in x or x["donde"] in necesarias))
+    return out, donde, nombra - set(issue.objetos), {x["i"] for x in mias if "dt" not in x}
 
 
 # ------------------------------------------------------------------ el texto de una issue
@@ -588,13 +700,14 @@ def escenarios(d, issue, pruebas):
         return (["Esta issue no cambia criterios ni reglas: no hay pruebas que ejecutar." if issue.sin_pruebas else
                  f"No cambia criterios, pero sí reglas ({', '.join(reglas)}): se prueban con sus casos de prueba."], "", [])
     L = [f"- `{c}` {limpio(m.criterio(c))} → {pruebas.get(c) or 'sin prueba en técnico §14'}" for c in issue.criterios]
+    caso = {c for c in issue.criterios if mo.normaliza(pruebas.get(c) or "").startswith("caso de prueba")}
     historias = list(dict.fromkeys(m.piezas[c].padre for c in issue.criterios))
     una = len(historias) == 1
     F = ["# language: es", f"Característica: {historias[0]} {m.piezas[historias[0]].titulo}" if una else
          f"Característica: {d.uid} {issue.id} {issue.titulo}"]
     sin = []
     for h in historias:
-        lineas, s = m.escenarios(h, solo=set(issue.criterios))
+        lineas, s = m.escenarios(h, solo=set(issue.criterios), caso=caso)
         sin += s
         F += lineas if una else ["", f"  Regla: {h} {m.piezas[h].titulo}"] + [f"  {l}" if l else l for l in lineas]
     return L, "\n".join(F) + "\n", sin
@@ -670,17 +783,27 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
     construido = [f"- **{p}** ({con_comillas(objs)}): {limpio(campos.get(mo.normaliza(p), '')) or 'falta en la DT'}"
                   for p, objs in ctx.puntos_construido(uid).items() if suyos & set(objs)]
     prueba = {g["id"]: g["prueba"] for g in r["pruebas"]["urgentes"]}
-    urgentes = [f"- Reaplicar {t['urgente']} en {con_comillas(t['objetos'])}: la corrección se hizo en el entorno de "
+    def textos_urgentes(reaplicar, congelados, con_prueba_desarrollo=False):
+        return [f"- Reaplicar {t['urgente']} en {con_comillas(t['objetos'])}: la corrección se hizo en el entorno de "
                 "corrección; cuando su prueba pase en desarrollo"
                 + (f" ({prueba[t['urgente']]})" if prueba.get(t["urgente"]) else "")
                 + f", se confirma al marcar la unidad con `--reaplicada {t['urgente']}`"
-                for t in r["reaplicar"] if suyos & set(t["objetos"])]
-    urgentes += [f"- No tocar {con_comillas(t['objetos'])} hasta el pase de {t['urgente']} (se corrige en desarrollo)"
-                 for t in r["congelados"] if suyos & set(t["objetos"])]
+                for t in reaplicar if suyos & set(t["objetos"])] + [
+                    f"- No tocar {con_comillas(t['objetos'])} hasta el pase de {t['urgente']} (se corrige en desarrollo)"
+                    + (f" ({prueba[t['urgente']]})" if con_prueba_desarrollo and prueba.get(t["urgente"]) else "")
+                    for t in congelados if suyos & set(t["objetos"])]
+    urgentes = textos_urgentes(r["reaplicar"], r["congelados"])
+    # La obligación visible termina al registrarla; el encargo y su prueba conservan la misma huella.
+    del_encargo = {"correccion": [], "desarrollo": []}
+    for g in r["pruebas"]["urgentes"]:
+        lugar = un.donde_se_corrige(ctx.ficha_urg(g["id"]))
+        if lugar in del_encargo:
+            del_encargo[lugar].append({"urgente": g["id"], "objetos": g["objetos"]})
+    urgentes_de_encargo = textos_urgentes(del_encargo["correccion"], del_encargo["desarrollo"], con_prueba_desarrollo=True)
     otras = [f"- {c['unidad']} ({c['estado']}): {con_comillas(c['objetos'])} · {c['decision'] or 'sin decisión escrita'}"
              for c in r["colisiones"] if not c["unidad"].startswith("URG") and suyos & set(c["objetos"])]
     objetos_esperados = ctx.esperado(uid, issue.filas)
-    huella = json.dumps([issue.requisitos, pide, esc, issue.feature, filas, tec, construido, urgentes, objetos_esperados,
+    huella = json.dumps([issue.requisitos, pide, esc, issue.feature, filas, tec, construido, urgentes_de_encargo, objetos_esperados,
                          casos_exigidos(m, issue, d)],
                         ensure_ascii=False, sort_keys=True)
     issue.version = hashlib.sha256(huella.encode("utf-8")).hexdigest()[:12]
@@ -751,8 +874,9 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
 # la del analista y la de ingeniería inversa solo para lanzarla
 ORDENES = ("Una orden completa, con su ruta (las de `--siguiente`), se lanza sin cargar ninguna skill. Lo que lleva el "
            "nombre de una skill (`appian-qa/scripts/qa.py`, `appian-qa` · `qa.py`) es de esa skill: para componer su "
-           "orden o leerlo, cárgala (su `SKILL.md` dice su carpeta) y no busques el plugin en el disco; sin skills, en "
-           "`skills/<skill>/` del plugin instalado.")
+           "orden o leerlo, cárgala. Su carpeta es `<ruta>/skills/<skill>/`, con la `ruta` de `.appian-plugin.json`; "
+           "si falta el localizador o su ruta ya no sirve, pide la ruta del plugin y, desde la carpeta del proyecto, "
+           "ejecuta `python \"<ruta>/skills/appian-functional-analyst/scripts/proyecto.py\" iniciar .`.")
 PRUEBAS_NO = "No hay pruebas que ejecutar: la issue no cambia criterios ni reglas."
 PRUEBAS_SI = ("«verificar» ejecuta también los casos de prueba guardados de sus reglas e interfaces y de lo que las usa; "
               "si uno falla, `appian-functional-analyst/references/cambios.md` §6.")
@@ -951,7 +1075,8 @@ def texto_avance(plan, issue):
         return []
     actuales = {x["paso"]: x for x in plan.avances if x["issue"] == issue.id and x["estado"] == "Vigente"
                 and x["version"] == issue.version}
-    revisar = [x for x in plan.avances if x["issue"] == issue.id and x["estado"].startswith("Revisar")]
+    revisar = [x for x in plan.avances if x["issue"] == issue.id and x["estado"].startswith("Revisar")
+               and x["paso"] not in actuales]
     L = ["## Avance guardado de subtareas", "", "Declarado por quien construye; no es prueba ni cierre de la issue.", "",
          "| Paso | Objetos | Avance |", "|---|---|---|"]
     pendientes = []
@@ -1003,24 +1128,24 @@ def celdavacia(texto):
     return texto.strip() in ("", "—", "ninguna")
 
 
-def aplica_dependencias(plan):
-    """Las anotaciones vigentes sustituyen la lista exacta; al cambiar el encargo se conserva la anotación caducada."""
+def aplica_dependencias(plan, estricta=False):
+    """Las anotaciones vigentes sustituyen la lista exacta. Caducan si desaparece una de sus issues, cambia la lista
+    calculada, que es lo que la persona corrigió, o, al regenerar, el análisis cambia de forma que ya forman un ciclo con
+    lo calculado; otro cambio del encargo no las caduca. La caducada se conserva. `estricta` (al corregir una persona):
+    un ciclo se rechaza, no caduca nada."""
     ordena(plan.issues)
     por_id = {i.id: i for i in plan.issues}
     antes = {i.id: set(i.depende) for i in plan.issues}
-    corregidas = set()
+    calculadas = {k: set(v) for k, v in antes.items()}
+    corregidas = {}
     plan.avisos = [a for a in plan.avisos if "corrección de dependencias" not in a]
     for x in plan.dependencias:
         if x["estado"] != "Vigente":
             continue
         i = por_id.get(x["issue"])
-        causa = ("la issue ya no existe" if not i else "cambió su encargo" if i.version != x["version"] else
-                 "cambiaron las dependencias calculadas" if set(x["automaticas"]) != antes[i.id] else "")
-        if not causa:
-            for iid, version in x["versiones"].items():
-                if iid not in por_id or por_id[iid].version != version:
-                    causa = f"cambió o desapareció {iid}"
-                    break
+        causa = ("la issue ya no existe" if not i else
+                 "cambiaron las dependencias calculadas" if set(x["automaticas"]) != antes[i.id] else
+                 next((f"desapareció {iid}" for iid in x["versiones"] if iid not in por_id), ""))
         if causa:
             x["estado"] = "Caducada: " + causa
             continue
@@ -1036,11 +1161,23 @@ def aplica_dependencias(plan):
         if set(x["versiones"]) != set(x["automaticas"]) | set(x["depende"]):
             raise NoSePuede(f"{i.id}: faltan las versiones relacionadas de su corrección")
         antes[i.id] = set(x["depende"])
-        corregidas.add(i.id)
-    ordena_grafo(plan.issues, antes)
+        corregidas[i.id] = " ".join(x["motivo"].split()).rstrip(".")
+    while True:
+        try:
+            ordena_grafo(plan.issues, antes)
+            break
+        except NoSePuede as e:
+            en_ciclo = set(re.findall(r"ISS-\d+", str(e))) & set(corregidas) if str(e).startswith("ciclo") else set()
+            if estricta or not en_ciclo:
+                raise
+            for x in plan.dependencias:   # sin esto, ni regenerar ni retirar la corrección podrían cargar el plan
+                if x["estado"] == "Vigente" and x["issue"] in en_ciclo:
+                    x["estado"] = "Caducada: forma un ciclo con las dependencias calculadas"
+                    antes[x["issue"]] = calculadas[x["issue"]]
+                    corregidas.pop(x["issue"])
     avisadas = set()
     for x in plan.dependencias:
-        if x["estado"].startswith("Caducada") and x["issue"] not in corregidas | avisadas:
+        if x["estado"].startswith("Caducada") and x["issue"] not in set(corregidas) | avisadas:
             detalle = x["estado"].replace("Caducada", "caducada", 1)
             plan.avisos.append(f"{x['issue']}: corrección de dependencias {detalle}; se usa el cálculo automático")
             avisadas.add(x["issue"])
@@ -1050,7 +1187,7 @@ def aplica_dependencias(plan):
         if plan.app:
             cab += f" · Aplicación `{plan.app}`"
         if i.id in corregidas:
-            cab += " · Dependencias corregidas por una persona (ver indice.md)"
+            cab += f" · Dependencias corregidas por una persona: {corregidas[i.id]} (ver indice.md)"
         i.texto = re.sub(r"^Requisitos:.*$", lambda _: cab, i.texto, flags=re.M)
 
 
@@ -1094,7 +1231,8 @@ def ordena_grafo(issues, antes):
     previas = {}
     def todas(iid, camino):
         if iid in camino:
-            raise NoSePuede("ciclo de dependencias: " + " → ".join(camino + [iid]))
+            # solo el ciclo, sin el tramo que lleva hasta él: aplica_dependencias caduca las correcciones que nombra
+            raise NoSePuede("ciclo de dependencias: " + " → ".join(camino[camino.index(iid):] + [iid]))
         if iid not in antes:
             raise NoSePuede(f"dependencia inexistente: {iid}")
         if iid not in previas:
@@ -1123,6 +1261,9 @@ def calcula(m, ctx, uid, estreno=False):
     if crecida:   # lo añadido después de aprobarla no se construye sin aprobarlo (references/cambios.md)
         raise NoSePuede(f"{uid} ha crecido desde que se aprobó ({'; '.join(crecida)}): vuelve a aprobarla "
                         f"(`proyecto.py cambio <p> {uid} aprobada --fuente FU-nn`) o lleva lo nuevo a otra unidad")
+    if ctx.partida_13:
+        raise NoSePuede("Técnico §13: la tabla está partida (lo que sigue desde la línea "
+                        f"{', '.join(map(str, ctx.partida_13))} no cuenta): quita la línea en blanco o el texto que la corta")
     d = Unidad(m, ctx, uid)
     if not d.filas:
         protege_encargo(Plan(uid, u.titulo, aplicacion(m), [], []), m, ctx, estreno)
@@ -1149,7 +1290,11 @@ def calcula(m, ctx, uid, estreno=False):
     # lo que el técnico dice para esta unidad (todo, en la construcción inicial; lo nuevo o lo que cambia, si no) y no
     # nombra ningún objeto suyo (la matriz de seguridad de §4, una constante que falta en §13): va en la Base o, sin
     # Base, en todas, porque la issue dice que no hace falta leer el técnico. Y se avisa al analista
-    perdidas = [x for x in lineas if x["i"] not in cubiertas and (d.inicial or x["estado"] in ("nuevo", "cambia"))]
+    # (salvo lo que dice ser de otra unidad: se construye con la suya)
+    apartados = [x["donde"] for x in lineas]
+    no_aplica = lambda x: apartados.count(x["donde"]) == 1 and re.match(r"\W*No aplica:", x["texto"], re.I)   # noqa: E731
+    perdidas = [x for x in lineas if x["i"] not in cubiertas and not x["otra"] and not no_aplica(x)
+                and (d.inicial or x["estado"] in ("nuevo", "cambia"))]
     base = [i for i in issues if i.comun] or issues
     for i in base:
         i.sueltas = {x["i"] for x in perdidas}
@@ -1178,8 +1323,10 @@ def calcula(m, ctx, uid, estreno=False):
     sueltas = sorted((h for h in d.suyas - en_issue if h.split("-")[0] in mo.CON_CRITERIOS
                       and any(not m.piezas[c].anulada and d.cambia(c) for c in m.piezas[h].hijos)), key=clave)
     if sueltas:
-        plan.avisos.append(f"con criterios que construye {uid} y sin ningún objeto «Para» ellas en técnico §13 (sus "
-                           f"escenarios no van en ninguna issue): {', '.join(sueltas)}")
+        plan.avisos.append(f"requisitos con criterios sin escenarios en las issues de {uid}: {', '.join(sueltas)}. "
+                           "Contrasta el alcance aprobado: si corresponden a esta unidad, revisa sus objetos y «Para» "
+                           "en técnico §13; si están diferidos expresamente, su cobertura queda pendiente para la "
+                           "unidad que los construya.")
     sin = sorted({c for i in issues for c in i.sin_gherkin}, key=clave)
     if sin:
         plan.avisos.append(f"criterios sin dado, cuando y entonces (pasan tal cual al .feature): {', '.join(sin)}")
@@ -1281,11 +1428,12 @@ def texto_indice(plan, reservas):
               "Revisarlos antes del paquete.", "", "| " + " | ".join(COLUMNAS_MANUALES) + " |", "|---|---|---|---|---|"]
         L += ["| " + " | ".join(celda(x[k]) for k in ("issue", "version", "motivo", "quien", "cuando")) + " |"
               for x in plan.manuales]
-    if plan.marcas:      # lo decide una persona; se revisa al preparar el paquete
+    if plan.marcas:      # lo decide una persona, y una persona la revisa antes de desplegar el paquete (F9, paso 4)
         L += ["", f"## {MARCAS}", "",
               f"Las marca una persona con `indice.py issues <p> {plan.uid} ISS-nn --sin-prueba \"<objeto> «<caso>»\" "
               "--motivo \"…\"` (un escenario que falla en el QA, con `--sin-prueba HU-nn.m`, y «QA» por objeto), nunca "
-              "en una sesión desatendida, y se revisan al preparar el paquete. Cada una vale para esa versión de la issue "
+              "en una sesión desatendida, y una persona las revisa antes de desplegar el paquete. Cada una vale para esa "
+              "versión de la issue "
               "y ese error, y se quita sola cuando el caso vuelve a pasar o cambia.", "",
               "| " + " | ".join(COLUMNAS_MARCAS) + " |", "|" + "---|" * len(COLUMNAS_MARCAS)]
         L += ["| " + " | ".join([x["issue"], f"`{x['version']}`", f"`{celda(x['objeto'])}`", celda(x["caso"]),
@@ -1542,12 +1690,16 @@ def falla_en_qa(raiz, uid, issue, marcas=()):
 def avisos_qa(raiz, plan):
     """Lo que falta del QA de una unidad con escenarios (F8, paso 8): sin resultado, o con escenarios sin guion,
     desfasados, con el guion por terminar o sin repetir. Son avisos: solo bloquea un escenario que falla (estado())."""
-    escenarios = [c for i in plan.issues for c in i.criterios]
+    # los que prueba un caso de prueba (`@caso-de-prueba` en el .feature) no esperan guion de QA
+    de_caso = {c for i in plan.issues for c in re.findall(r"@caso-de-prueba\s+Escenario:\s*(\S+)", i.feature)}
+    escenarios = [c for i in plan.issues for c in i.criterios if c not in de_caso]
+    nota = [f"{plan.uid}: {', '.join(sorted(de_caso))} los prueba un caso de prueba de regla (técnico §14), no el QA: "
+            "el QA no los da por probados"] if de_caso else []
     r = pathlib.Path(raiz) / "qa" / plan.uid / "resultado.json"
     if not escenarios:
-        return []
+        return nota
     if not r.is_file():
-        return [f"{plan.uid} no tiene QA (qa/{plan.uid}/resultado.json): lo siguiente es el QA de la unidad, en otra "
+        return nota + [f"{plan.uid} no tiene QA (qa/{plan.uid}/resultado.json): lo siguiente es el QA de la unidad, en otra "
                 "sesión y solo con sus .feature (appian-qa; F8, paso 8)"]
     try:
         esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") or {}
@@ -1558,7 +1710,7 @@ def avisos_qa(raiz, plan):
               (("sin guion", None), ("desfasados", "desfasado"), ("con el guion por terminar", "guion por terminar"),
                ("sin repetir", "sin repetir"))]
     faltan = [f"{que}: {', '.join(cs)}" for que, cs in faltan if cs]
-    return [f"el QA de {plan.uid} no está completo ({'; '.join(faltan)}): lo hace QA (appian-qa)"] if faltan else []
+    return nota + ([f"el QA de {plan.uid} no está completo ({'; '.join(faltan)}): lo hace QA (appian-qa)"] if faltan else [])
 
 
 def estados(plan, raiz):
@@ -1647,10 +1799,13 @@ def orden_de_terminar(m, ctx, plan, issue):
     if all(e[i.id][0] for i in plan.issues if i is not issue):
         if any(i.criterios for i in plan.issues):   # lo siguiente es el QA de la unidad, no marcarla (F8, paso 8)
             notas.append("no queda otra issue: lo siguiente es el QA de la unidad, en otra sesión y solo con sus .feature "
-                         "(appian-qa; F8, paso 8). Con él, o tras corregir un fallo suyo y repetir sus guiones, se marca "
-                         f"la unidad: `{orden_de_marcar(m, ctx, plan.uid)}`")
+                         "(appian-qa; F8, paso 8). Con él, o tras corregir un fallo suyo y repetir sus guiones, y con lo "
+                         "que cambió la construcción ya en el análisis (F8, «Los documentos, al día»), se marca la unidad: "
+                         f"`{orden_de_marcar(m, ctx, plan.uid)}`")
         else:
             L.append(orden_de_marcar(m, ctx, plan.uid))
+            notas.append("antes de marcar la unidad, lo que se aceptó cambiar al construir, ya en el análisis (F8, «Los "
+                         "documentos, al día»)")
     return L, notas
 
 
@@ -1683,7 +1838,7 @@ def orden_de_regresion(m, uid, entorno="desarrollo"):
     return orden, notas
 
 
-# ------------------------------------------------------------------ reservar: un commit y un push
+# ------------------------------------------------------------------ reservar: un commit y, si está autorizado, un push
 class Candado:
     """Una sola sesión de esta carpeta reserva a la vez: un fichero en la carpeta de git, que no se sube. Si otra lo
     tiene, se espera; si lleva demasiado (una sesión que murió), se le quita. Nunca impide seguir."""
@@ -1742,6 +1897,16 @@ def remoto_de(raiz):
     if "/" in sigue and sigue.split("/", 1)[0] in remotos:
         return tuple(sigue.split("/", 1))
     return ("origin" if "origin" in remotos else remotos[0]), rama
+
+
+def subir_autorizado(raiz):
+    """Si la persona ha autorizado subir: la última línea «Subir al remoto:» de proyecto.md dice, entera, «autorizado por
+    <quién>, <AAAA-MM-DD>». Vale una vez para el proyecto, y quitarla o cambiarla lo retira. Tener remoto, o reservar,
+    no lo autoriza."""
+    p = pathlib.Path(raiz) / "proyecto.md"
+    lineas = re.findall(r"^Subir al remoto:(.*)$", p.read_text(encoding="utf-8"), re.M) if p.is_file() else []
+    autorizada = r"\s*autorizado por (?=[^,]*[^\W_])[^,<>{}—]+,\s*\d{4}-\d{2}-\d{2}\s*"
+    return bool(lineas) and re.fullmatch(autorizada, lineas[-1]) is not None
 
 
 def al_dia(raiz, remoto):
@@ -1817,7 +1982,8 @@ def con_reserva(raiz, uid, cambia, sin_git=None, escribe_=False):
     mensaje del commit); las marcas, en plan.marcas) y lo confirma y lo sube sin pisar a nadie: antes se pone al día; si
     el push falla porque otro subió antes, quita su commit, se pone al día y vuelve a decidir. Devuelve (m, ctx, plan,
     issue, cómo ha quedado). Nunca falla por git: sin repositorio, o dentro de otro que no es el suyo, no reserva (con
-    `sin_git`, lo escribe y dice eso); sin remoto no sube y sin acceso lo deja en este equipo, y lo dice. Con una fusión
+    `sin_git`, lo escribe y dice eso); sin remoto o sin autorización de subir, ni trae ni sube, y sin acceso lo deja en
+    este equipo, y lo dice. Con una fusión
     o un rebase a medias no toca git ni escribe nada: da la issue sin reservar o, si lo que se pide es escribir
     (`escribe_`: liberar, marcar una prueba), se niega."""
     raiz = pathlib.Path(raiz)
@@ -1859,7 +2025,7 @@ def con_reserva(raiz, uid, cambia, sin_git=None, escribe_=False):
     with Candado(raiz):
         remoto = remoto_de(raiz)
         for _ in range(INTENTOS):
-            traido, por_que = al_dia(raiz, remoto) if remoto else (True, "")
+            traido, por_que = al_dia(raiz, remoto) if remoto and subir_autorizado(raiz) else (True, "")
             m, ctx, plan, issue, mensaje = decide()
             commit = confirma(raiz, ruta, mensaje)
             if commit is None:      # nada que confirmar (no hay issue que dar ni nada que poner al día), o git no puede
@@ -1869,6 +2035,9 @@ def con_reserva(raiz, uid, cambia, sin_git=None, escribe_=False):
             if not remoto:
                 return m, ctx, plan, issue, ("con un commit, sin subir: el repositorio no tiene remoto (git remote add "
                                              "origin <URL>)")
+            if not subir_autorizado(raiz):      # también si lo que se acaba de traer lo retira
+                return m, ctx, plan, issue, ("con un commit en este equipo, sin subir: no hay autorización registrada en "
+                                             "la línea «Subir al remoto» de proyecto.md; otros equipos no ven este cambio")
             if not traido:
                 return m, ctx, plan, issue, f"con un commit en este equipo, sin subir: {por_que}"
             if mo.git(raiz, "push", "--quiet", remoto[0], f"HEAD:refs/heads/{remoto[1]}", espera=ESPERA_REMOTO,
@@ -1916,7 +2085,7 @@ def siguiente(raiz, uid, quien=None):
 
 
 def libera(raiz, uid, iid):
-    """Quita la reserva de una issue (quien la tenía no va a seguir), con su commit y su push."""
+    """Quita la reserva de una issue (quien la tenía no va a seguir), con su commit y, si está autorizado, su push."""
     def cambia(plan):
         if iid not in {i.id for i in plan.issues}:
             raise NoSePuede(f"{uid} no tiene la issue {iid} (tiene {', '.join(i.id for i in plan.issues)})")
@@ -1974,7 +2143,7 @@ def corrige_dependencias(raiz, uid, iid, destinos, motivo, quien=None, retirar=F
             plan.dependencias.append({"issue": iid, "version": issue.version, "depende": sorted(set(destinos), key=numero),
                                       "automaticas": automaticas, "versiones": {x: por_id[x].version for x in relacionadas},
                                       "motivo": celda(motivo), "quien": nombre, "cuando": ahora, "estado": "Vigente"})
-        aplica_dependencias(plan)
+        aplica_dependencias(plan, estricta=True)
         return issue, plan.reservas, f"{uid}: {iid}, dependencias {'automáticas' if retirar else 'corregidas por ' + nombre}"
     return con_reserva(raiz, uid, cambia, sin_git="en el índice, sin commit", escribe_=True)
 
@@ -2031,7 +2200,8 @@ def cierre_manual(raiz, uid, iid, motivo, quien=None, retirar=False):
 def sin_prueba(raiz, uid, iid, caso, motivo, quien=None):
     """Una persona marca un caso de prueba que falla en una issue, o uno de sus escenarios que falla en el QA de la unidad
     (HU-nn.m; su objeto es «QA»), como no necesario para avanzar, con su motivo: la issue puede darse por hecha. Va al
-    índice de la unidad, con su commit y su push, y se revisa al preparar el paquete. `caso` es «<objeto> «<caso>»» o, si
+    índice de la unidad, con su commit y, si está autorizado, su push, y la revisa una persona antes de desplegar el
+    paquete. `caso` es «<objeto> «<caso>»» o, si
     no hay dos con ese nombre, solo el caso. Solo uno que falla ahora: en un objeto de la issue y en su verificación de
     ahora, o en el último resultado del QA (qa/<U>/resultado.json)."""
     nombre, ahora = quien_soy(raiz, quien), datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")

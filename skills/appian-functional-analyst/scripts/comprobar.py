@@ -143,6 +143,10 @@ def comprobar_ids(m):
     informe("IDs definidos una sola vez", [f"{i} ({mo.DOCS[d]} l.{n})" for i, d, n in m.duplicados])
     informe("cada ficha o fila con ID está en su apartado (si no, es una cita y no debe abrir ficha o fila)",
             [f"{i} ({mo.DOCS[d]} l.{n + 1})" for i, d, n in m.fuera_de_casa])
+    sueltas = [f"{p.id} ({p.donde()}): restaura la cabecera o une la fila a su tabla"
+               for p in m.piezas.values() if p.forma == "fila" and mo.RX_FILA.match(p.cabecera)]
+    if sueltas:
+        informe("filas con ID dentro de una tabla con cabecera", sueltas)
     rotas = collections.defaultdict(list)
     for d, D in m.docs.items():
         for k, l in enumerate(D.lineas):
@@ -171,11 +175,14 @@ def perfiles(m):
 
 def alcance(ctx):
     """Lo que tiene que estar en el técnico: con analisis/cambios.md, las piezas de las unidades en curso con sus
-    criterios (el técnico «completo» exige lo suyo, no la aplicación entera); sin cambios.md, o con la construcción
-    inicial (EV-01) en curso en una aplicación nueva, None: todo."""
-    if not ctx.hay or (ctx.base() == "EV-01" and ctx.por_id["EV-01"].estado in un.EN_CURSO):
+    criterios (el técnico «completo» exige lo suyo, no la aplicación entera, tampoco con la primera unidad); sin
+    cambios.md, None: todo."""
+    if not ctx.hay:
         return None
     ids = {x for u in ctx.unidades if u.estado in un.EN_CURSO for x in ctx.raices_de(u.id)}
+    # lo que construye según técnico §13 («Para»): la construcción inicial no tiene informes que la cuenten
+    en_curso = {u.id for u in ctx.unidades if u.estado in un.EN_CURSO}
+    ids |= {ctx.m.raiz_de(x) for f in ctx.filas if f["unidad"] in en_curso for x in mo.ids_en(f["para"])}
     return ids | {h for x in ids if x in ctx.m.piezas for h in ctx.m.piezas[x].hijos}
 
 
@@ -199,7 +206,7 @@ def comprobar_completo(m, ctx):
             continue
         for x in nombres(c["perfil"], pf):
             usados.add(mo.normaliza(x))
-            if pf and mo.normaliza(x) not in pf:
+            if pf and mo.normaliza(x) not in pf and mo.normaliza(x) != "aplicacion":   # lo que hace la propia aplicación
                 perfil_mal.append(f"{p.id} «{x}»")
         if c["pantalla"].strip() not in ("—", "-") and not mo.ids_en(c["pantalla"]):
             pan_mal.append(p.id)
@@ -418,13 +425,8 @@ def datos_de_las_unidades(m, ctx, al):
 
 
 def estado_tecnico(m):
-    """(empezado, completo): empezado si tiene decisiones o modelo de datos; completo si dice «Estado: completo»."""
-    if "T" not in m.docs:
-        return False, False
-    empezado = bool(m.vigentes("DT")) or any(
-        "campo" in [mo.normaliza(c) for c in cab] for _, cab, _ in m.tablas("T", "3"))
-    est = re.search(r"Estado:\s*([^·\n]+)", "\n".join(m.docs["T"].lineas[:12]))
-    return empezado, bool(est) and mo.normaliza(est.group(1)).strip().startswith("completo")
+    """Compatibilidad: el estado del técnico se interpreta una sola vez en el modelo."""
+    return mo.estado_tecnico(m)
 
 
 def comprobar_tecnico(m, ctx):
@@ -508,14 +510,17 @@ def comprobar_tecnico(m, ctx):
     sin_porque, sin_verif, sin_verificado = [], [], []
     for p in m.vigentes("DT"):
         c = m.campos(p.id)
-        if not re.search(r"\bBP \d|https?://", c.get("por que", "")):
+        # un motivo del proyecto basta dicho; si afirma algo de Appian o del Dev MCP, la cita (BP o URL, aquí o en
+        # «Verificado») la pide la plantilla y la mira la revisión: qué es una afirmación sobre la plataforma no lo
+        # decide una lista de palabras
+        if not c.get("por que", "").strip(" —-"):
             sin_porque.append(p.id)
         dep = c.get("depende de", "").strip(" —-")
         if dep and not c.get("verificar", "").strip(" —-"):
             sin_verif.append(p.id)
         if not c.get("verificado", "").strip():
             sin_verificado.append(p.id)
-    informe("decisiones técnicas con «Por qué» (BP nn §x o URL de la documentación)", sin_porque)
+    informe("decisiones técnicas con «Por qué»", sin_porque)
     informe("decisiones que dependen de versión, tier u otra cosa, con «Verificar»", sin_verif, grave=False)
     informe("decisiones técnicas con «Verificado» (fuente o «pendiente»)", sin_verificado)
     entorno = [f for _, cab, filas in m.tablas("T", "0") for f in filas]
@@ -535,6 +540,8 @@ def comprobar_unidades(m, ctx):
     curso = [u for u in ctx.unidades if u.estado in un.EN_CURSO]
     informe("unidades en curso: técnico §13 con tabla de construcción (convierte la lista antes de generar issues)",
             [u.id for u in curso if not u.urgente and not ctx.filas], grave=False)
+    informe("técnico §13: la tabla no está partida (una línea en blanco o texto corta sus filas)",
+            [f"l.{n}" for n in ctx.partida_13])
     supuestos_cerrados = []
     for _, cab, filas in m.tablas("T", "13"):
         if [mo.normaliza(x) for x in cab] == ["pregunta", "se construye con", "donde cambia"]:
@@ -801,7 +808,7 @@ def comprobar_situacion(m, ctx, inventario, fuera):
 
 def comprobar_citas_as_is(m, carpeta_fuentes):
     """Las citas «[FU-nn H-…]» y «[FU-nn NV-…]» son del as-is/ que catalogó FU-nn (leer_fuentes.py --una-fuente). Si se
-    repite la ingeniería inversa, los H- y NV- se numeran de nuevo y el as-is/ de ahora tiene otra huella: aviso. Sin
+    repite la ingeniería inversa, conserva los IDs reconocidos y retira los que ya no están; si cambia la huella, aviso. Sin
     as-is/, sin el índice de las fuentes o sin esas citas, nada."""
     asis = m.raiz / "as-is"
     indice = pathlib.Path(carpeta_fuentes or m.raiz / "fuentes") / "indice.json"
@@ -822,11 +829,29 @@ def comprobar_citas_as_is(m, carpeta_fuentes):
 
 
 # ------------------------------------------------------------------ fuentes
+def textos_fuentes(carpeta):
+    """(número FU, ruta) de los textos del catálogo vigente. Sin índice, admite los FU-*.md de proyectos antiguos.
+    Un derivado conservado en disco con «salida» vacía o fuera del catálogo no es texto de una fuente activa."""
+    carpeta = pathlib.Path(carpeta)
+    indice = carpeta / "indice.json"
+    if indice.is_file():
+        try:
+            catalogo = lee_json(indice)
+        except json.JSONDecodeError as e:
+            sys.exit(f"No puedo leer el catálogo de fuentes {indice}: JSON inválido ({e}).")
+        if not isinstance(catalogo, dict) or not isinstance(catalogo.get("fuentes"), list):
+            sys.exit(f"No puedo leer el catálogo de fuentes {indice}: falta la lista «fuentes».")
+        return [(f["id"].split("-", 1)[1], carpeta / f["salida"])
+                for f in catalogo["fuentes"]
+                if f.get("salida") and (carpeta / f["salida"]).is_file()]
+    return [(m.group(1), f) for f in sorted(carpeta.glob("FU-*.md"))
+            if (m := re.match(r"FU-(\d+)", f.name)) and f.is_file()]
+
+
 def comprobar_fuentes(m, carpeta, corregir):
     src, gente, sin_gente = {}, set(), []
-    for f in pathlib.Path(carpeta).glob("FU-*.md"):
+    for num, f in textos_fuentes(carpeta):
         txt = f.read_text(encoding="utf-8")
-        num = re.match(r"FU-(\d+)", f.name).group(1)
         src[num] = sorted(set(re.findall(r"^\[(\d{2}:\d{2}:\d{2})\]", txt, re.M)))
         mm = re.search(r"^- Participantes: (.*)$", txt, re.M)
         if mm and "sin identificar" not in mm.group(1):
@@ -1071,9 +1096,9 @@ def comprobar_informe_previo(m, ruta_imp, carpeta_fuentes):
             nota = pathlib.Path(ruta_imp).parent.parent / "notas" / f"FU-{mfu.group(1)}.md"
             if nota.exists():
                 textos.append(nota.read_text(encoding="utf-8"))
-        src = {re.match(r"FU-(\d+)", f.name).group(1):
+        src = {num:
                set(re.findall(r"^\[(\d{2}:\d{2}:\d{2})\]", f.read_text(encoding="utf-8"), re.M))
-               for f in pathlib.Path(carpeta_fuentes).glob("FU-*.md")}
+               for num, f in textos_fuentes(carpeta_fuentes)}
         rx = re.compile(r"FU-(\d+) (\d\d:\d\d:\d\d)")
         malas = sorted({f"FU-{x} {y}" for tx in textos for x, y in rx.findall(tx) if src.get(x) and y not in src[x]})
         informe("citas del informe y de la nota con el minuto de una intervención real", malas)

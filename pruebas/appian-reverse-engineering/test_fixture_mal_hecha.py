@@ -48,7 +48,7 @@ HUELLA_DEM = {
           "getInterface": "404ce25ece2f", "getObjectDependents": "328a69cf5fab",
           "getObjectVersionHistory": "fa0108c2c7ec", "getProcessModel": "f158d80f5f07",
           "getProcessModelNodeTypeSchema": "0014ad02c3d5", "getRecordType": "fbeacd4f2ec3",
-          "getSite": "f16f2977dd24", "getWebApi": "5dcd60088a74", "listApplicationObjects": "ec47c3db2c23",
+          "getSite": "f16f2977dd24", "getWebApi": "5dcd60088a74", "listApplicationObjects": "162956e538c0",
           "listApplications": "1398d98d74bf", "listGroupMembers": "1d6ebabf3e1e", "listNodeTypes": "24c119150aa6",
           "listProcessInstances": "42128037ba9f", "listRecordData": "be8e27b05410", "listRecordTypes": "3646ead3f43c",
           "listUsers": "6015f8356ca6", "testInterface": "a5cd326f8216", "testRule": "1469083d3e49",

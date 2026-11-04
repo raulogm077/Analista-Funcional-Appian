@@ -60,18 +60,22 @@ límites) se consulta en el MCP de documentación como dice el SKILL.md, y la UR
 
 ### 0. Entorno
 Tabla `Dato · Valor · Fuente`: una fila «Aplicación» con su nombre exacto entre comillas invertidas, sin comentarios
-añadidos (conserva los paréntesis que formen parte del nombre), y otra «Prefijo»; la URL de cada entorno (una fila por entorno:
+añadidos (conserva los paréntesis que formen parte del nombre), y otra «Prefijo» (que esté libre se comprueba como dice `appian-best-practices/references/14-official-skill-divergences.md` §3, no solo con `listApplications`); la URL de cada entorno (una fila por entorno:
 «URL de desarrollo», «URL de pruebas», «URL de producción» y, si lo hay, «URL del entorno de corrección»), versión de
 Appian en cada entorno, tier y complementos, base de datos, inicio de sesión, idioma y zona horaria, calendario
 laboral, volumen, usuarios y concurrencia, tiempo de recuperación, accesibilidad, móvil y usuarios externos, licencias.
 Sale de funcional §10 y de lo que diga el equipo. Lo que no se sabe es un PT. El prototipo toma de aquí la versión de
 Appian, y la orden de terminar una issue, el Dev MCP de desarrollo de cada equipo (el que apunta a esa URL).
 «Site» es el nombre del site en su URL (`/suite/sites/<site>`), y «Cuentas de prueba en desarrollo», el usuario de la
-cuenta de cada rol (`Gestor: qa.gestor`), nunca su contraseña: de aquí los toma el QA (`appian-qa`).
+cuenta de cada rol (`Gestor: qa.gestor`), nunca su contraseña, con la configuración regional del cliente (BP 02 §10.3):
+de aquí los toma el QA (`appian-qa`). La versión de Appian la da el equipo: `getDevMcpVersionInfo` da la del plugin del
+Dev MCP, no la de la plataforma. Dos filas más: «Cuenta del Dev MCP», el usuario con el que se construye (sin
+contraseña), y «Fuente de datos», de dónde leen los record types.
 
 ### 1. Convenciones
 Tabla `Qué · Convención · Por qué`: prefijo, idioma de los nombres, mayúsculas por tipo de objeto, nombre
-de la clave, campos de auditoría, borrado, carpetas.
+de la clave, campos de auditoría, borrado, carpetas y el formato de los importes: `a!currency()` con el código ISO de la
+moneda, que los da en la configuración regional de quien mira, nunca separadores puestos a mano (BP 02 §10.3).
 
 ### 2. Decisiones técnicas
 Una ficha `**DT-nn — Título**` por cada decisión que no sea obvia: cómo se modela algo, qué capa aplica una
@@ -81,14 +85,14 @@ un sistema. Tabla vertical:
 | Campo | Contenido |
 |---|---|
 | **Capa** | Datos, Seguridad, Lógica, Proceso, Interfaz, Navegación, Integración, IA u Operación |
-| **Necesidad** | Las HU, PAN, ACT o RB que la piden |
+| **Necesidad** | Las HU, PAN, ACT o RB que la piden; «Base» (con mayúscula, sola o con ellas) si es de lo común: llega a la issue de la Base, como «Para: Base» de §13. Una DT llega a las issues de lo que cita aquí y a las de los objetos cuya especificación la cita, no a las de los objetos que nombra: si debe llegar a otra, cita aquí una historia de esa issue |
 | **Decisión** | Qué se hace, con los nombres de los objetos |
-| **Por qué** | En una frase, con `BP nn §x` y la URL de la documentación |
+| **Por qué** | En una frase. Si afirma algo de Appian o del Dev MCP, con `BP nn §x` o la URL de la documentación (aquí o en «Verificado»); un motivo del proyecto basta dicho |
 | **Descartada** | La alternativa y por qué no |
 | **Riesgo** | Qué puede salir mal, o «Ninguno relevante» |
 | **Depende de** | Versión o tier (ⓥ, ⓣ de buenas prácticas), u otra cosa; «—» si nada |
 | **Verificar** | Qué hay que comprobar en el entorno; «—» si nada |
-| **Verificado** | Dónde se comprobó (documentación de la versión, prueba) o «pendiente» |
+| **Verificado** | Dónde se comprobó (documentación de la versión, prueba) o «pendiente», que se completa al construirlo (F8, «Los documentos, al día») |
 
 ```markdown
 **DT-01 — Estados como record type de referencia**
@@ -118,9 +122,18 @@ Por record type, `### 3.n <Record type>`:
   `Funcional: <Dato del funcional §6>` (varios separados por comas) o `Técnico: <para qué>`. Todo dato del
   funcional tiene su campo y todo campo tiene su uso.
 - Los estados y las listas de valores son record types de referencia, no texto.
-- Cada tabla lleva los campos de auditoría definidos en §1. Un texto de más de 255 caracteres se diseña como Long Text.
+- Cada tabla lleva los campos de auditoría definidos en §1. En una tabla que genera Appian, «Long.» solo puede ser
+  Text (255), Long Text (4.000) o Extra Long Text (64.000) (`create-record-data-source.html`): un texto de más de 255
+  caracteres se diseña como Long Text. Un máximo menor que sea regla de negocio, como 100, no es la longitud de la
+  columna: se valida en las vías que escriben ese campo (el formulario y, si las hay, la integración o la API).
 
-Al final: referencias y carga inicial (`Record type · Valores iniciales · Quién lo mantiene`).
+Al final, las relaciones (`Record type · Relación · Tipo · Destino`, con el nombre exacto de cada una, que las issues
+que no la crean citan así) y las referencias y carga inicial (`Record type · Valores iniciales · Quién lo mantiene`).
+Un valor que cambia de un entorno a otro (el ID numérico de un grupo) se dice en «Valores iniciales», y quien despliega
+lo cambia por entorno, como una constante.
+
+En §3 a §12, lo que es de otra unidad se marca así: la línea, o el primer texto de su `### 3.n`, empieza por «Otra unidad»
+(con su id si se quiere: «Otra unidad (EV-02).») y no entra en las issues de esta. Nombrar otro EV o escribir «otra unidad» a mitad de frase no marca nada.
 
 Con `as-is/`, §3 termina con `### 3.n Carga inicial y migración`: tabla `Origen en la app actual · Destino ·
 Transformación · Volumen · Cómo se verifica`, una fila por lo que se carga o se mueve («—» en el origen si el dato es
@@ -128,8 +141,15 @@ nuevo), también el valor que toman los registros que ya hay en un estado que la
 propuesta de refactorización es obligatoria.
 
 ### 4. Grupos y seguridad
-- Tabla `Perfil · Grupo · Constante`, con todos los perfiles del funcional.
-- Matriz de qué ve y qué hace cada grupo (registros, campos, vistas, acciones).
+- Tabla `Perfil · Grupo · Constante`, con todos los perfiles del funcional. Si la aplicación se crea generando sus grupos
+  y carpetas (es una opción), Appian crea `<prefijo> Users` y `<prefijo> Administrators` y los pone en la seguridad por
+  defecto de sus objetos
+  ([creating-applications.html#generated-groups-and-folders](https://docs.appian.com/suite/help/latest/creating-applications.html#generated-groups-and-folders)):
+  la tabla dice a qué perfil corresponde cada uno de los que existan o que no es de ninguno.
+- Matriz de qué ve y qué hace cada grupo (registros, campos, vistas, acciones). Es la seguridad de los datos y de los
+  objetos; lo que ve cada perfil dentro de una pantalla (un filtro, una columna, un botón) va en el apartado de esa
+  pantalla (§7), nombrando su interfaz, y lleva un criterio en su historia del funcional, con su escenario y su
+  comprobación en §14: así llega a la issue de la pantalla y el QA lo prueba.
 - Cada «solo lo ve…» o «solo puede…» del funcional, con la capa de Appian que lo aplica (seguridad de
   registro, de campo, de vista, de acción o de la interfaz). Si es una decisión, su DT.
 - La cuenta del sistema que llama a una Web API expuesta (§10), con su grupo: va aquí y solo aquí.
@@ -155,7 +175,11 @@ constantes `Constante · Valor · Cambia por entorno`.
 Tabla `Pantalla · Qué es en Appian · Guarda con · Notas`, una fila por PAN: página de site (y de qué tipo),
 vista de registro, acción de registro, formulario de tarea o de inicio. Filtros de usuario, búsqueda,
 exportación y acciones de registro con quién las ve. Los filtros por defecto y los contadores trabajan sobre
-conjuntos acotados (BP 05 §2–3). La composición: «ver prototipo, pantalla <id>».
+conjuntos acotados (BP 05 §2–3). La composición: «ver prototipo, pantalla <id>». Quién ve cada control de la pantalla
+(un filtro, una columna, un botón) se escribe aquí, con el nombre de su interfaz.
+Por record type con registros que se abren, si se ocultan sus vistas News y Related Actions, que Appian enseña por
+defecto ([record-view.html#hide-default-record-views](https://docs.appian.com/suite/help/latest/record-view.html#hide-default-record-views));
+si no se dice, quedan visibles.
 Cada acción que lanza un proceso desde una pantalla dice qué es y de qué record type: acción de lista de registros
 (crea) o acción relacionada (sobre un registro), puesta con el componente de acciones de registro; nunca un enlace de
 inicio de proceso en la interfaz (BP 00 «Process», 01 §9.2, 02 §5.4, 03 §8, 06 §5.3). Las de cada record type, en una
@@ -163,7 +187,7 @@ tabla `Acción · Tipo · Proceso · Quién la ve` bajo «Acciones de registro d
 comillas latinas y el tipo «De lista» o «Relacionada»: de ahí sale lo que `verificar` comprueba de una acción que se
 construye o cambia (su nombre y su tipo), también si se renombra.
 
-Si ya está decidida la configuración de visibilidad, añade `Visibilidad verificable`: `EXPRESSION: true()`,
+Si ya está decidida la configuración de visibilidad, añade a esa tabla la columna `Visibilidad verificable` (sin ella no se compara): `EXPRESSION: true()`,
 `EXPRESSION: false()` o una expresión simple de pertenencia a grupos como
 `EXPRESSION: a!isUserMemberOfGroup(loggedInUser(), cons!DEM_GESTORES)` (también un `or(...)` plano de esas llamadas).
 No inventes código para llenar la celda: conserva `Quién la ve` y deja sin comprobar lo que aún no es decidible.
@@ -197,12 +221,10 @@ Volúmenes frente a los límites, índices, tareas programadas, configuración q
 hay que vigilar en producción.
 
 ### 13. Plan de construcción
-Lista numerada en orden de dependencias: grupos y constantes, datos, seguridad, lógica, interfaces,
-procesos, site. Los pasos manuales, marcados.
-
-Con `as-is/`, o cuando se va a construir (una unidad de cambio, `cambios.md`), en lugar de la lista, tabla `Paso ·
-Objeto · Tipo · Situación · Sustituye a · Cambio · Para`, una fila por objeto, en el mismo orden, y debajo los pasos
-manuales. De ella salen las issues de construcción (`cambios.md` §5). Situación:
+Tabla `Paso · Objeto · Tipo · Situación · Sustituye a · Cambio · Para`, una fila por objeto, en orden de
+dependencias: grupos y constantes, datos, seguridad, lógica, interfaces, procesos, site. Debajo, los pasos manuales,
+marcados; cada uno llega a la issue de los objetos que nombra y, si no nombra ninguno, a la Base. Un «Cambio» vacío es `EV-01` en una aplicación nueva. De la tabla salen las issues de construcción
+(`cambios.md` §5). Situación:
 - **Nuevo**: no está en el inventario ni es de otra aplicación.
 - **Modifica**: está en el inventario y cambia. Un objeto de otra aplicación que cambia lo cambia su equipo: dilo.
 - **Existe**: se usa sin cambiarlo; también un objeto de otra aplicación.
@@ -211,10 +233,14 @@ manuales. De ella salen las issues de construcción (`cambios.md` §5). Situaci�
 **Cambio** es la unidad de la fila (`cambios.md` §4). **Para** es el requisito al que sirve el objeto: su `HU-nn`, su
 `PAN-nn` o su `ACT-nn`; si sirve a varios, todos, separados por comas (van en la misma issue). Lo común (datos, grupos,
 constantes, sistemas conectados) dice «Base» y se construye lo primero. En un defecto, el criterio que no se cumple
-(`HU-03.2`). Lo que «Existe» no la lleva. Si de un objeto solo cambia una parte, la fila la nombra: `AUT Solicitud —
-acción «Nueva solicitud»`.
+(`HU-03.2`). Lo que «Existe» no la lleva. Si de un objeto solo cambia una parte, la fila la nombra, sola en su celda: `AUT Solicitud —
+acción «Nueva solicitud»` o `AUT Solicitud — campos importe y fecha`; otro objeto con su parte va en otra fila.
 
 El site y sus páginas van en la issue de la primera pantalla que publican.
+La vista de resumen de un record type (su fila `<record type> — vista «…»` y la de su interfaz) va en un paso de §13
+anterior al primer paso de la issue que enlaza a sus registros (`a!recordLink`): `createInterface` rechaza el enlace sin
+la vista (BP 14 §3), y de dos issues que comparten un objeto espera la que empieza en un paso posterior. Si no se puede,
+se corrige la dependencia (`cambios.md` §5).
 
 ```markdown
 | Paso | Objeto | Tipo | Situación | Sustituye a | Cambio | Para |
@@ -233,21 +259,29 @@ Si hay preguntas sin respuesta y se acuerda construir con un supuesto, debajo de
 |---|---|---|
 | PC-nn | Valor o comportamiento acordado mientras llega la respuesta | Nombre exacto del objeto entre comillas invertidas |
 
-Las filas llegan a las issues que citan el PC o construyen el objeto. Las instrucciones generales se escriben bajo
-«Reglas para quien construye» y llegan a todas. Al responder el PC se revisa el supuesto con `indice.py impacto`.
+Las filas llegan a las issues que citan el PC o construyen el objeto. Las instrucciones generales, y toda regla que
+valga para varias issues (un formato, un nombre), se escriben bajo «Reglas para quien construye» y llegan a todas:
+una línea de otro apartado que no nombra ningún objeto solo llega a la Base. Al responder el PC se revisa el supuesto con `indice.py impacto`.
 
 ### 14. Pruebas y trazabilidad
 Tabla `Criterio · Cómo se prueba · Con qué` con todos los criterios `HU-nn.m` e `INT-nn.m` (se pueden agrupar) y los
 escenarios `ESC-nn` como pruebas de extremo a extremo. Cada acción protegida, con un perfil que puede y
 otro que no. «Con qué» dice cómo se comprueba cada criterio, y la issue lo copia junto a su escenario:
 - `Caso de prueba de <regla o interfaz>`, con el objeto entre comillas invertidas: un caso de prueba guardado en él. De
-  una regla comprueba la salida esperada; de una interfaz, que no da error.
+  una regla comprueba la salida esperada; de una interfaz, que no da error. `NO_ERRORS`, la aserción por defecto del
+  Dev MCP, solo prueba que no falla: un criterio sobre lo que devuelve la regla lleva `EXPECTED_OUTPUT` o
+  `RESULT_ASSERTIONS`.
 - `SAIL CLI`: se recorre la pantalla como un usuario. Es del QA de la unidad, no de quien construye.
 - `Playwright`: un criterio que solo se ve en pantalla (un color, la maquetación) y no basta con que lo mire una persona.
   También del QA (`appian-qa`).
 
 Cuando un criterio depende de una regla, «Cómo se prueba» fija la entrada y la salida esperadas concretas;
-quien construye las copia al caso de prueba, sin decidir el resultado esperado.
+quien construye las copia al caso de prueba, sin decidir el resultado esperado. La lógica que depende de la fecha de
+hoy lleva una fecha fija en el criterio y se prueba así (el QA de pantalla no puede fijar la fecha); su efecto (no se
+guarda, no arranca el proceso, sale el mensaje) se prueba en su capa.
+El caso de una regla que consulta registros depende de los datos de desarrollo: dice cuáles presupone. Si el criterio
+pide un recuento, se cuenta sobre esos datos; si no, la aserción no depende de registros ajenos (que esté lo esperado).
+Si falla por un dato ajeno, se mira el dato antes de reabrir la issue.
 
 ```markdown
 | Criterio | Cómo se prueba | Con qué |

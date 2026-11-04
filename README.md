@@ -41,9 +41,10 @@ Una persona también puede cerrar una issue con `--manual --motivo`: queda «hec
 dependientes y caduca si cambia el encargo. Ese cierre no crea una verificación ni elimina un fallo vigente de pruebas
 o QA sin su propia excepción motivada. Los cierres manuales se revisan antes del paquete.
 
-Desde el paquete no actúa la IA. Antes de prepararlo, la regresión ejecuta todos los casos de prueba de la aplicación y
-`qa.py` repite sin IA los guiones del QA; quien lo prepara revisa en Compare and Deploy la comparación de sus objetos
-con esos fallos, y `proyecto.py cambio <p> <U> produccion --ref` registra el pase.
+La IA puede dejar preparado en desarrollo el borrador del paquete; revisarlo, exportarlo y desplegarlo es de una
+persona. Antes de prepararlo, la regresión ejecuta todos los casos de prueba de la aplicación y `qa.py` repite sin IA
+los guiones del QA; una persona revisa en Compare and Deploy la comparación de sus objetos con esos fallos, y
+`proyecto.py cambio <p> <U> produccion --ref` registra el pase.
 
 ## Qué hace cada skill
 
@@ -159,8 +160,12 @@ aplica. Detalle en `skills/appian-reverse-engineering/references/devmcp-setup.md
 
 Cómo se trabaja en este repositorio (la rama, las pruebas, la versión y el PR) está en `CLAUDE.md`. Qué comprueba
 `pruebas/comprobar_plugin.py` lo dice su cabecera; las pruebas de cada skill están en `pruebas/<skill>/` y las
-evaluaciones, en `pruebas/evaluaciones/`. En `docs/`: el diseño y el plan de la versión en curso (`docs/diseno/` y
-`docs/plan/`), los resultados de las evaluaciones (`docs/evaluaciones.md`) y lo pendiente (`docs/siguiente-version.md`).
+evaluaciones, en `pruebas/evaluaciones/`. Las lecciones aprendidas se mantienen en dos documentos:
+[mejoras pendientes](docs/siguiente-version.md), con el cambio o la decisión que falta, y
+[evaluaciones](docs/evaluaciones.md), con lo aplicado, las pruebas y sus límites. Son el seguimiento vigente del
+producto; las notas y los registros de cada ensayo quedan como evidencia en su carpeta de coordinación, fuera del
+repositorio. Cuando hagan falta, el diseño y plan en curso se guardan en `docs/diseno/` y
+`docs/plan/`; los de entregas cerradas se consultan en el historial de git.
 
 ## Versiones
 

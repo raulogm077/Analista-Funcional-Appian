@@ -121,8 +121,7 @@ Source: [Row considerations for optimized data access](https://docs.appian.com/s
 
 ### 3.3 Field and size limits (synced record type)
 
-- **Maximum 100 fields** per record type, including calculated fields.
-- **Maximum 40 calculated fields** (custom record fields) out of those 100. E.g.: if the record type already has 98 regular fields, only 2 calculated fields fit.
+- **Maximum fields per record type, calculated fields included** ⓥ: from 26.10, **500**, of which up to **50** can be custom record fields (calculated), on synced and unsynced record types; before 26.10, **100**, with at most **40** calculated. Calculated fields count toward the total: under the old limits, a record type with 98 regular fields fits only 2 calculated ones. Source: [Release notes 26.10](https://docs.appian.com/suite/help/26.10/Appian_Release_Notes.html) · [Field requirements for optimized data access](https://docs.appian.com/suite/help/latest/about-data-sync.html).
 - **At least one primary key field** is required. **Composite keys** are only valid with **Optimized Data Access (synced)** (ⓥ from 26.3) over an existing table — a table generated from the record type always gets a single integer `id`; **Direct Data Access (features enabled) requires a single PK** — *"A single primary key field is required. The table cannot have a composite primary key."* The restriction depends on the **access method**, it isn't a general property of the record type (see §2.1). Source: [Direct data access — features enabled](https://docs.appian.com/suite/help/latest/about-data-sync.html#features-enabled).
 - **Unique fields**: maximum **765 characters**.
 - **Text tier** (aligned with §8): **Text** up to **255** characters; **Long Text** up to **4,000** (max. **2** per record type), where values that exceed that cap **get truncated**; **Extra Long Text** up to **64,000** (max. **3**; exceeding it fails the sync or write, and these fields can't be used in filters, sorts, aggregations or records-powered components). Move up a tier rather than risk truncation; the 4,000 cutoff belongs to **Long Text**, not Text.
@@ -132,7 +131,7 @@ Source: [Row considerations for optimized data access](https://docs.appian.com/s
 - ✅ Sync **only the fields the app uses**; every extra field adds weight to every sync and every query.
 - ❌ Don't sync huge text columns if you don't display them; if they exceed 64,000 characters, read/write them through a separate unsynced record type or CDT.
 
-Source: [About Data Sync — Usage considerations](https://docs.appian.com/suite/help/latest/about-data-sync.html) · [About custom record fields (100/40 limit)](https://docs.appian.com/suite/help/latest/custom-record-fields.html#what-are-custom-record-fields)
+Source: [About Data Sync — Usage considerations](https://docs.appian.com/suite/help/latest/about-data-sync.html) · [About custom record fields (ⓥ 100/40 before 26.10)](https://docs.appian.com/suite/help/latest/custom-record-fields.html#what-are-custom-record-fields)
 
 ### 3.4 Keeping synced data current
 
@@ -290,7 +289,8 @@ When generating/updating the table from the record type, choose the type based o
 | **Long Text** | Up to **4,000** characters. Max. **2** per record type (MariaDB/MySQL row limits). Shows up as Text in the model. |
 | **Extra Long Text** | Up to **64,000** characters. Max. **3** per record type. |
 | **Number (Integer)** | Whole numbers: age, years, counters. |
-| **Number (Decimal)** | **Double-precision** floating point: amounts, measurements. |
+| **Number (Decimal Precise)** ⓥ 26.10 | Exact, arbitrary-precision decimals: money and any calculation that must be exact. Not supported in CDTs. |
+| **Number (Decimal Floating)** | **Double-precision** floating point (called **Number (Decimal)** before 26.10): measurements and values where rounding is acceptable. |
 | **Date** | Date only. |
 | **Date and Time** | Date and time, stored in **GMT**. Use it when the time matters. |
 | **Boolean** | `true` / `false`. |
@@ -298,11 +298,11 @@ When generating/updating the table from the record type, choose the type based o
 | **Group** | Appian groups. |
 | **Document** | Document identifiers. **Only one** Document field per record type; if there's more info, generate a separate document management record type. |
 
-- ✅ Choose **Integer** when you only need whole numbers and **Decimal** when you need precision (currency, measurements).
-- ⚠️ **Decimal is double-precision floating point**: for monetary calculations requiring maximum accuracy, control the rounding in your logic; don't assume perfect decimal precision.
+- ✅ Choose **Integer** when you only need whole numbers. For decimals ⓥ, from 26.10 use **Decimal Precise** for new money fields and exact calculations, and **Decimal Floating** for measurements; before 26.10 there is only **Decimal**, a double.
+- ⚠️ **Decimal Floating (the old Decimal) is double-precision floating point** and can round: for money on it, or before 26.10, control the rounding in your logic. Existing Decimal fields, values and expressions keep working as Decimal Floating without conversion, so don't migrate them automatically: changing an existing field's type is a data-model change, with its impact on the database, CDTs (which don't support Precise) and integrations. Database DOUBLE, FLOAT and REAL columns map to Decimal Floating.
 - ✅ **Date and Time is stored in GMT**: mind the time zone conversion when displaying and comparing. `today()` also returns the GMT day — the date traps are in doc 04 §11.
 
-Source: [Configure field properties (types and limits)](https://docs.appian.com/suite/help/latest/create-record-data-source.html#configure-field-properties) · [Appian Data Types](https://docs.appian.com/suite/help/latest/Appian_Data_Types.html)
+Source: [Configure field properties (types and limits)](https://docs.appian.com/suite/help/latest/create-record-data-source.html#configure-field-properties) · [Appian Data Types](https://docs.appian.com/suite/help/latest/Appian_Data_Types.html) · [Decimal data types](https://docs.appian.com/suite/help/latest/decimal-data-types.html)
 
 ### 8.1 Primary keys and indexes
 
@@ -398,7 +398,7 @@ Source: [Add User Filters](https://docs.appian.com/suite/help/latest/filter-the-
 
 - ✅ The data fabric is a **unified, shareable** model: it relates record types from different sources into a single view. The same record type (e.g. a "State" lookup) is **reused** across multiple apps through relationships, avoiding data duplication.
 - ✅ Give record types and relationships **standard names**, and give fields **display names + descriptions**: this is what lets Process HQ, the Data Fabric Chatbot and AI Copilot reason about your data. The data fabric is "the foundation for AI in Appian".
-- ✅ To expose a record type as a dataset in Process HQ, enable **Show in Data Catalog**.
+- ✅ To expose a record type as a dataset in Process HQ, enable **Publish for Analytics & AI** on its Workspaces tab (ⓥ called **Show in Data Catalog** before 26.10); synced or unsynced record types can be published. Source: [Record type workspace settings](https://docs.appian.com/suite/help/latest/record-type-workspace-settings.html).
 - ✅ Speed up the start: **Generate** multiple record types from several tables/views at once (including composite keys); Appian relates them by the existing foreign keys and secures them with the app's groups.
 
 Source: [Build Your Best Data Fabric](https://docs.appian.com/suite/help/latest/build-best-data-fabric.html) · [Use Data Fabric in Existing Apps](https://docs.appian.com/suite/help/latest/use-synced-record-types-in-existing-apps.html) · [Data Fabric](https://docs.appian.com/suite/help/latest/data-fabric.html)

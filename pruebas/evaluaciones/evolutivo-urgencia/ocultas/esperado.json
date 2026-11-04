@@ -9,11 +9,12 @@
   "cierre": "Su ficha tiene «Cierre» con la referencia HF-2026-007",
   "ev02_sin_construir": "EV-02 sigue Aprobada, EV-01 En producción y la issue de EV-02 sigue con «Reaplicar URG-nn»",
   "bloqueo_pase": "En una copia, EV-02 no pasa a producción, ni a Construida sin --reaplicada URG-nn; con ella pasa a Construida y después a producción",
-  "ligereza": "Ni Word ni capturas nuevos o cambiados desde el montaje, y el funcional dice lo mismo que al montar",
+  "word_al_dia": "Con Word al montar y la versión nueva, los Word vigentes de esa versión (el completo y el de EV-02), que se abren y la dicen en la portada, y nada más; los entregados y las capturas, como al montar",
+  "ligereza": "El funcional dice lo mismo que al montar",
   "comprobar": "comprobar.py sin errores"
  },
  "umbral": {
-  "obligatorios": ["produccion", "cierre", "ev02_sin_construir", "bloqueo_pase", "comprobar"],
+  "obligatorios": ["produccion", "cierre", "ev02_sin_construir", "bloqueo_pase", "word_al_dia", "comprobar"],
   "ligereza": ["ligereza"],
   "fallos_de_ligereza_tolerados": 1
  }

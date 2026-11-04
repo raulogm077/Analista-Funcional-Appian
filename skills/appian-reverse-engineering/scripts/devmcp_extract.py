@@ -26,6 +26,8 @@ Subcomandos:
               la verificacion. Y, si la issue no dice «pruebas»: false, en «pruebas» el resultado de los casos de
               prueba guardados de sus reglas e interfaces y de lo que las usa (los dependientes directos), sin las
               salidas de cada caso (pruebas_de()); con «pruebas»: false, solo lee lo que compara (solo_lo_esperado()).
+              Incluye la aplicacion contextual y busca faltantes tipados por nombre exacto fuera de ella. Sin tipo o
+              busqueda global disponible, el alcance sigue siendo esa aplicacion y se avisa. No elige homonimos.
               Por la salida, solo el resumen. No escribe en ninguna extraccion.
   regresion   --app <app> --out <fichero.json>: los casos de prueba de toda la aplicacion, objeto a objeto, con el
               resumen en el fichero y por la salida solo lo que falla. Se pasa antes de preparar el paquete.
@@ -40,7 +42,8 @@ Codigos de salida (los mismos en todos los subcomandos):
   0 ok (verificar, tambien si falta algun objeto, no es lo esperado o falla una prueba: lo dice el JSON) | 1 regresion:
   algun caso falla | 2 uso incorrecto (deriva: sin as-is en --out) | 11 Dev MCP no configurado
   12 varias configuraciones posibles | 13 el Dev MCP no arranca o no autentica | 14 no hay aplicaciones visibles
-  15 app no encontrada o ambigua, o la carpeta ya tiene otra app u otro entorno (usa otra --out;
+  15 app no encontrada o ambigua, objeto ambiguo o busqueda global incompleta; tambien si la carpeta tiene otra app
+     u otro entorno (usa otra --out;
      para la misma app de otro entorno, tambien --refresh; deriva: el as-is es de otro entorno)
   16 Appian MCP Server no disponible (solo datafabric) | 17 regresion: el Dev MCP no ofrece ejecutar casos de prueba
 """
@@ -453,6 +456,7 @@ class ToolInfo:
     params: dict = field(default_factory=dict)   # nombre -> tipo de parametro
     types: list[str] = field(default_factory=list)  # tipos canonicos (alcance object); [] = generica
     generic: bool = False
+    obj_param: str | None = None  # parametro opcional que recibe el uuid del objeto (alcance object)
 
     def to_json(self):
         return {"name": self.name, "description": self.description[:500], "allowed": self.allowed,
@@ -504,6 +508,11 @@ def match_types(toks: list[str], type_phrases: dict[str, list[list[str]]]) -> li
     return best
 
 
+# Una validacion que recibe un objeto o una aplicacion entera segun el parametro, sin obligatorios
+# (validateDesignObjects, Dev MCP 26.9), se usa por objeto con uno de estos parametros opcionales.
+OPTIONAL_OBJECT_PARAMS = ("objectUuid", "designObjectUuid")
+
+
 def analyze_tool(tool, policy: Policy, trusted: bool, type_phrases: dict) -> ToolInfo:
     schema = tool.inputSchema or {}
     ti = ToolInfo(tool.name, tool.description or "", schema, ann_to_dict(tool.annotations), tokens(tool.name))
@@ -514,6 +523,9 @@ def analyze_tool(tool, policy: Policy, trusted: bool, type_phrases: dict) -> Too
     kinds = [ti.params.get(p, "other") for p in required]
     toks_set = set(ti.toks)
     others = [p for p in required if ti.params.get(p) == "other"]
+    validacion = any(role == "validation" and rtoks.intersection(ti.toks) for role, rtoks in policy.roles)
+    obj_opcional = next((p for p in OPTIONAL_OBJECT_PARAMS
+                         if p in props and p not in required and ti.params.get(p) == "obj_uuid"), None)
     if others:
         ti.scope, ti.scope_reason = "manual", f"Requiere parametros que no se pueden deducir: {', '.join(others)}."
     elif kinds.count("obj_uuid") > 1 or kinds.count("app_uuid") > 1 or (kinds.count("obj_uuid") and kinds.count("app_uuid")):
@@ -532,6 +544,11 @@ def analyze_tool(tool, policy: Policy, trusted: bool, type_phrases: dict) -> Too
         ti.scope, ti.scope_reason = "app", "Recibe el uuid de la aplicacion."
     elif "type_enum" in kinds:
         ti.scope, ti.scope_reason = "manual", "Requiere un tipo sin identificador de objeto."
+    elif validacion and obj_opcional and not required:
+        ti.scope, ti.scope_reason = "object", f"Valida un objeto con el parametro opcional '{obj_opcional}'."
+        ti.obj_param = obj_opcional
+        ti.types = policy.tool_types.get(ti.name) or []
+        ti.generic = not ti.types
     elif any(k == "app_uuid" for k in ti.params.values()):
         ti.scope, ti.scope_reason = "app", "Admite filtrar por aplicacion."
     else:
@@ -562,11 +579,14 @@ def analyze_tool(tool, policy: Policy, trusted: bool, type_phrases: dict) -> Too
 UUID_KEYS = ("uuid", "objectUuid", "designObjectUuid", "guid", "id", "objectId")
 NAME_KEYS = ("name", "objectName", "displayName", "label", "title")
 TYPE_KEYS = ("type", "objectType", "designObjectType", "typeName", "kind")
+CONTENEDORES = ("items", "results", "data", "content", "values", "list")
 
 
 def pick(d: dict, keys) -> Any:
     for k in keys:
         v = d.get(k)
+        if k in NAME_KEYS:
+            v = bm.localized(v)   # el Dev MCP 26.9 da el nombre de los modelos de proceso como {en_US: …}
         if isinstance(v, str) and v:
             return v
     return None
@@ -591,7 +611,8 @@ def harvest_items(data: Any, context: str | None = None, depth: int = 0):
     elif isinstance(data, dict):
         for k, v in data.items():
             if isinstance(v, (list, dict)):
-                yield from harvest_items(v, k, depth + 1)
+                # {processModels: {total, items: […]}}: la lista genérica conserva el tipo de su grupo
+                yield from harvest_items(v, context if k in CONTENEDORES and context else k, depth + 1)
 
 
 def find_primary_list(data: Any, path=(), depth=0):
@@ -746,7 +767,7 @@ class Extractor:
         for p, kind in ti.params.items():
             if kind == "app_uuid" and app_uuid:
                 args[p] = app_uuid
-            elif kind == "obj_uuid" and p in req:
+            elif kind == "obj_uuid" and (p in req or p == ti.obj_param):
                 args[p] = obj["uuid"] if obj else app_uuid
             elif kind == "type_enum" and p in req:
                 enum = (ti.schema.get("properties", {}).get(p) or {}).get("enum") or []
@@ -1701,6 +1722,73 @@ def resolver(pedidos: list[str], objects: list[dict]) -> dict[str, dict]:
     return out
 
 
+# Valores de types demostrados por el catalogo de listObjects (no admite APPLICATION).
+TIPOS_BUSQUEDA = ("AI_AGENT", "AI_SKILL", "CONNECTED_SYSTEM", "CONSTANT", "DATA_STORE", "DATA_TYPE", "DECISION",
+                  "DOCUMENT", "EXPRESSION_RULE", "FOLDER", "GROUP", "INTEGRATION", "INTERFACE", "PORTAL",
+                  "PROCESS_MODEL", "RECORD_TYPE", "ROBOTIC_TASK", "SITE", "WEB_API")
+
+
+async def resuelve_verificacion(ex: Extractor, app: dict, objects: list[dict], pedidos: list[str], tipos: dict) -> dict:
+    """Una resolucion para comparar y probar: app contextual y, solo si falta, busqueda global tipada y acotada."""
+    def no_resuelto(motivo, codigo=EXIT_APP):
+        if codigo == EXIT_APP:
+            ex.interruption = {"error": motivo, "at": now_iso()}
+        eprint(motivo)
+        raise SystemExit(codigo)
+
+    por = {}
+    for p in pedidos:
+        ex.check_interrupted()
+        incluye_app = p == app.get("uuid") or (tipos.get(p) in (None, "application")
+                      and p.casefold() == str(app.get("name") or "").casefold())
+        candidatos = objects + ([app] if incluye_app and app.get("uuid") else [])
+        locales = {o["uuid"]: o for o in candidatos if o["uuid"] == p}
+        if not locales:
+            locales = {o["uuid"]: o for o in candidatos if str(o.get("name") or "").casefold() == p.casefold()}
+        if len(locales) > 1:
+            locales = {u: o for u, o in locales.items() if o["type"] == tipos.get(p)}
+            if len(locales) != 1:
+                no_resuelto(f"{p}: varios objetos coinciden; indica su tipo o UUID")
+        if locales:
+            por[p] = next(iter(locales.values()))
+            continue
+        tipo = tipos.get(p)
+        if not p.strip() or tipo not in ex.policy.syn:
+            eprint(f"{p}: no localizado en el inventario de la aplicacion; sin tipo conocido no se busca fuera")
+            continue
+        listas = [t for t in ex.tools if t.allowed and t.toks[:2] in (["list", "object"], ["search", "object"])
+                  and {"query", "types"} <= set(t.schema.get("properties") or {})
+                  and not set(t.schema.get("required") or []) - {"query", "types", "limit", "offset"}]
+        valores = [v for v in TIPOS_BUSQUEDA if ex.policy.canon_type(v) == tipo]
+        if not listas or not valores:
+            eprint(f"{p}: no localizado en el inventario de la aplicacion; el catalogo no permite buscar ese tipo fuera")
+            continue
+        ti = listas[0]
+        args = {"query": p, "types": [valores[0]]}
+        args.update({k: 10 if v == "size" else 0 for k, v in ti.params.items() if v in ("size", "offset")})
+        r = await ex.call_paginated(ti, args)
+        ex.check_interrupted()
+        if not r.ok:
+            no_resuelto(f"{p}: no se pudo completar la busqueda global: {r.error}", EXIT_START)
+        _, filas, _ = find_primary_list(r.data)
+        total = find_key_ci(r.data, ex.policy.pag["totalKeys"])
+        if (filas is None or not isinstance(total, int) or isinstance(total, bool) or total != len(filas)
+                or find_key_ci(r.data, ex.policy.pag["cursorKeys"])):
+            no_resuelto(f"{p}: busqueda global sin cobertura completa; no se afirma ausencia ni unicidad")
+        if any(not isinstance(o, dict) or not all(pick(o, keys) for keys in (UUID_KEYS, NAME_KEYS, TYPE_KEYS)) for o in filas):
+            no_resuelto(f"{p}: busqueda global con elementos sin identidad o tipo; no se afirma ausencia")
+        exactos = {}
+        for o in filas:
+            u, nombre, real = pick(o, UUID_KEYS), pick(o, NAME_KEYS), pick(o, TYPE_KEYS)
+            if u and str(nombre).casefold() == p.casefold() and ex.policy.canon_type(real) == tipo:
+                exactos[u] = {"uuid": u, "name": nombre, "type": tipo, "mcpType": real, "sources": [ti.name]}
+        if len(exactos) > 1:
+            no_resuelto(f"{p}: varios objetos globales del mismo nombre y tipo; verifica desde su aplicacion de origen")
+        if exactos:
+            por[p] = next(iter(exactos.values()))
+    return por
+
+
 def aplica(ex: Extractor, ti: ToolInfo, o: dict) -> bool:
     return o["type"] in ti.types or (ti.generic and o["type"] not in ex.policy.generic_skip)
 
@@ -1774,8 +1862,6 @@ def diferencias_permisos(o, esperado):
         if not isinstance(pedidos, list) or not pedidos:
             desconocidos.append("inicio: falta contrato explícito de roles y grupos en técnico §4")
         else:
-            if {p.get("rol") for p in pedidos if isinstance(p, dict) and isinstance(p.get("rol"), str)} != ROLES_PROCESO:
-                desconocidos.append("inicio: contrato parcial; los roles no declarados no se han comparado")
             seguridad = o.get("seguridadInicio")
             roles = seguridad.get("roles") if isinstance(seguridad, dict) else None
             if (not isinstance(roles, list) or seguridad.get("uuid") != o.get("uuid")
@@ -1853,7 +1939,7 @@ def diferencias_permisos(o, esperado):
 
 
 async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: list[str],
-                   esperado: dict | None = None, ligero: bool = False) -> dict:
+                   esperado: dict | None = None, ligero: bool = False, resueltos: dict | None = None) -> dict:
     """Por objeto pedido: si existe, su tipo y su nombre; la última modificación (un dato, no una prueba); los campos
     de un record type o un CDT y, si lo esperado las nombra, sus acciones de registro (la herramienta que las lista o,
     si no la hay, la definición; sin ninguna de las dos, «accionesNoDisponibles»). Lo compara diferencias(). Con
@@ -1861,7 +1947,7 @@ async def verifica(ex: Extractor, app_obj: dict, objects: list[dict], pedidos: l
     esperado no nombra campos (salvo para leer las acciones, si no hay herramienta que las liste)."""
     ex.check_interrupted()
     esperado = esperado or {}
-    por = resolver(pedidos, objects)
+    por = resolver(pedidos, objects) if resueltos is None else resueltos
     usables = ex.usable("object")
     versiones = [t for t in usables if t.role == "versions"]
     definiciones = [t for t in usables if t.role == "definition"]
@@ -2189,15 +2275,18 @@ async def cmd_verificar(args) -> int:
                     app_obj, objects = await solo_lo_esperado(ex, args, tipos, auxiliares)
                 else:
                     app_obj, objects, _ = await prepare(ex, args)
-                resultado = await verifica(ex, app_obj, objects, pedidos, esperado, ligero=sin_pruebas)
+                resueltos = await resuelve_verificacion(ex, app_obj, objects, pedidos, tipos)
+                resultado = await verifica(ex, app_obj, objects, pedidos, esperado, ligero=sin_pruebas, resueltos=resueltos)
                 if isinstance(issue, dict):
                     resultado["pruebas"] = (
                         {"ejecutadas": False, "motivo": "la issue no cambia criterios ni reglas"} if sin_pruebas else
-                        await pruebas_de(ex, list(resolver(list(esperado), objects).values()), app_obj.get("uuid")))
+                        await pruebas_de(ex, [resueltos[p] for p in esperado if p in resueltos], app_obj.get("uuid")))
                 ex.check_interrupted()
         except ExtractionInterrupted:
             return interrupcion_de_lectura(Path(args.out).resolve(), ex)
         except SystemExit as se:
+            if int(se.code) == EXIT_APP and ex.interruption:
+                interrupcion_de_lectura(Path(args.out).resolve(), ex)
             return int(se.code)
         except Exception as ex_:
             return reg.no_arranca(ex_)
@@ -2205,8 +2294,13 @@ async def cmd_verificar(args) -> int:
         for o in resultado["objetos"]:
             if isinstance(esperado.get(o["pedido"]), dict):
                 o["diferencias"] = diferencias(o, esperado[o["pedido"]])
+        # Los campos de más no impiden lo esperado (una issue no pide borrarlos): se dicen aparte, no como diferencia
         resultado["conDiferencias"] = [o["pedido"] for o in resultado["objetos"]
-                                       if any(k != "permisosNoComprobados" for k in o.get("diferencias", {}))]
+                                       if any(k not in ("permisosNoComprobados", "sobranCampos")
+                                              for k in o.get("diferencias", {}))]
+        de_mas = [o["pedido"] for o in resultado["objetos"] if o.get("diferencias", {}).get("sobranCampos")]
+        if de_mas:
+            resultado["conCamposDeMas"] = de_mas
         sin_permisos = [o["pedido"] for o in resultado["objetos"] if o.get("diferencias", {}).get("permisosNoComprobados")]
         if sin_permisos:
             resultado["permisosNoComprobados"] = sin_permisos
@@ -2222,6 +2316,8 @@ async def cmd_verificar(args) -> int:
           + (f"; faltan: {', '.join(resultado['faltan'])}" if resultado["faltan"] else "")
           + (f"; distintos de lo esperado: {', '.join(resultado['conDiferencias'])}" if resultado.get("conDiferencias")
              else "") + f". Detalle: {destino}")
+    if resultado.get("conCamposDeMas"):
+        print(f"  · Con campos que lo esperado no nombra (no impiden lo esperado): {', '.join(resultado['conCamposDeMas'])}")
     for o in resultado["objetos"]:
         if o.get("accionesNoDisponibles"):
             print(f"  · {o['pedido']}: el Dev MCP no da sus acciones de registro; no se comprueban")
@@ -2230,6 +2326,8 @@ async def cmd_verificar(args) -> int:
     if any("permisosInicio" in q or tipo_de_objeto(q.get("tipo")) == "processmodel"
            or any("visibilidad" in a for a in q.get("acciones", [])) for q in quiere.values()):
         print("  · Permisos: se compara configuración declarada; el acceso efectivo exige QA con cada rol.")
+    print("  · No se comparan relaciones, seguridad de registro, miembros de grupos, datos ni vistas por defecto ocultas: "
+          "lo que la issue pida de eso se lee aparte (getRecordType) o lo prueba el QA.")
     for linea in resumen_de_pruebas(resultado.get("pruebas")):
         print(linea)
     return EXIT_OK

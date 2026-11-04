@@ -32,9 +32,8 @@ Source: [Appian Max — Performance Testing Methodology](https://community.appia
 > is specific to querying from a screen and points here for the rest. The official Appian skill goes
 > deeper still in `references/query-record-type-patterns.md` (filters, sorting, relationships,
 > aggregations and paging, with a recipe per case) — **load it before writing a query whose shape is
-> not already in this section.** Two of its recipes go against the documentation — `fetchTotalCount`
-> on every query, and one unfiltered query split in memory instead of filtered ones: doc 14 says what to
-> do instead.
+> not already in this section.** One of its recipes goes against the documentation — deriving subsets
+> in memory from one query instead of filtering at the source: doc 14 says what to do instead.
 > **Without that skill installed**, the platform sources cited under each rule are what it is built
 > from.
 
@@ -57,6 +56,9 @@ Source: [a!queryRecordByIdentifier() — Usage considerations](https://docs.appi
 
 ✅ **Know the ceiling of each query function.** `a!queryRecordByIdentifier()` returns **one** base record and up to **250** related records per relationship (automatic batching). `a!queryRecordType()` returns one or several and up to **100** related records per relationship (manual batching with `a!pagingInfo`). Choose based on what you need: `byIdentifier` for single-record detail views; `queryRecordType` for listings.
 Source: [a!queryRecordByIdentifier() versus a!queryRecordType()](https://docs.appian.com/suite/help/latest/fnc_system_a_queryrecordbyidentifier.html)
+
+✅ **Several conditions on the same one-to-many relationship: `"AND_ALL"` when one related record must meet them all.** With `"AND"`, a base record matches when *different* related records each meet one condition (a customer with an active case and another case created this week passes "active and created this week"); `"AND_ALL"` asks a **single** related record to meet every condition.
+Source: [a!queryLogicalExpression() — How AND_ALL works](https://docs.appian.com/suite/help/latest/fnc_system_a_querylogicalexpression.html#how-and_all-works)
 
 ✅ **On UNsynced record types, apply filters and sorts on the base record type, not on related ones.** For complex filtering or sorting on unsynced data, consider a database view instead of resolving it in the query.
 Source: [Query Performance Best Practices — Best practice checklist](https://docs.appian.com/suite/help/latest/query-best-practices.html)
@@ -322,6 +324,7 @@ in CPU or memory: its levers are in doc 12 §4.
 - [Record Type Query Performance Best Practices](https://docs.appian.com/suite/help/latest/query-best-practices.html)
 - [Row limit for records-powered components (5,000 rows)](https://docs.appian.com/suite/help/latest/Paging_Grid_Component.html#row-limit-for-records-powered-components)
 - [a!queryRecordByIdentifier() Function](https://docs.appian.com/suite/help/latest/fnc_system_a_queryrecordbyidentifier.html)
+- [a!queryLogicalExpression() — How AND_ALL works](https://docs.appian.com/suite/help/latest/fnc_system_a_querylogicalexpression.html#how-and_all-works)
 - [Interface Performance Best Practices](https://docs.appian.com/suite/help/latest/interface-performance.html)
 - [Local Variables (a!refreshVariable())](https://docs.appian.com/suite/help/latest/Local_Variables.html)
 - [Expressions Best Practices (memory-efficient expressions)](https://docs.appian.com/suite/help/latest/expressions-best-practices.html)

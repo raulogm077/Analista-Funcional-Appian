@@ -28,6 +28,15 @@ def test_plan_constantes_no_adquieren_herramientas_de_sus_valores():
     assert [(t.name, tipo, len(objs)) for t, tipo, objs in plan] == [("getConstant", "constant", 5)]
 
 
+@pytest.mark.parametrize("skip, permitida", [(None, True), ("^testInterface$", False)])
+def test_skip_deja_fuera_testinterface(skip, permitida):
+    """Con datos reales se extrae con --skip: la política permite evaluar pantallas y guardaría lo que consulten."""
+    ex = dx.Extractor(None, dx.Policy(dx.DEFAULT_POLICY), None, skip=skip)
+    ex.catalog = [tool("testInterface", "uuid")]
+    ex.classify(ex.base_type_phrases())
+    assert ex.tools[0].allowed is permitida
+
+
 @pytest.mark.parametrize("orden", [("listApplicationObjects", "listAgents"), ("listAgents", "listApplicationObjects")])
 def test_lista_generica_no_impide_identificar_agente(orden):
     ex = dx.Extractor(None, dx.Policy(dx.DEFAULT_POLICY), None)

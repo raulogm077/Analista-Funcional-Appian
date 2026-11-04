@@ -31,7 +31,8 @@ Con unidades de cambio (analisis/cambios.md, references/cambios.md):
                                                         requisito, en construccion/EV-02/. Con ISS-nn, esa issue con su
                                                         orden de terminar para este equipo; con --siguiente, la primera
                                                         sin hacer cuyas dependencias están hechas, reservada con un
-                                                        commit y un push del índice; --liberar quita una reserva
+                                                        commit del índice y, si la persona autorizó subir, su push;
+                                                        --liberar quita una reserva
   ficha e impacto imprimen además «Construido: … · En curso: …» por pieza.
 
 Estados: 🔒 Validado · ✅ Decidido · 🔶 Inferido · ⚠️ Pendiente · ❓ No definido · Anulada · Respondida.
@@ -299,7 +300,8 @@ def c_impacto(m, a):
               "devuelve a aprobación")
     # la fila de §13 sin leer §13 (la unidad: --cambio, la única EV Abierta o la que se acaba de sugerir abrir)
     unidad13 = (a.cambio or "").upper() or (ev_abiertas[0] if len(ev_abiertas) == 1 else None) or sugerida
-    if ctx.hay and construidas and unidad13 and "T" in m.docs:
+    plan_construccion = ctx.hay and construidas and unidad13 and "T" in m.docs
+    if plan_construccion:
         fila_13(m, ctx, construidas, unidad13)
     otras = sorted(en_curso - {propia})
     if otras:
@@ -347,7 +349,8 @@ def c_impacto(m, a):
     if pan:
         print(f"\nPantallas afectadas (prototipo): {', '.join(pan)}")
     tec = sorted({x for x in todas if m.piezas.get(x) and m.piezas[x].doc == "T"} |
-                 {f"técnico §{m.docs['T'].seccion_de_linea[l]}" for (d, l) in sueltas if d == "T"}, key=str)
+                 {f"técnico §{m.docs['T'].seccion_de_linea[l]}" for (d, l) in sueltas if d == "T"} |
+                 ({"técnico §13"} if plan_construccion else set()), key=str)
     if tec:
         print(f"Especificación técnica afectada: {', '.join(tec)}")
     val = [x for x in todas if m.piezas.get(x) and m.piezas[x].estado == "🔒"]
@@ -457,7 +460,7 @@ def anexo(m):
             c = mo.celdas(l) if l.startswith("|") else []
             if len(c) < 3 or mo.normaliza(c[0]) in ("parte", "") or set(c[0]) <= set("-: "):
                 continue
-            quien = mo.normaliza(mo.sin_comentarios(c[2])).strip()
+            quien = re.sub(r"\([^)]*\)", "", mo.normaliza(mo.sin_comentarios(c[2]))).strip()   # sin aclaraciones entre paréntesis
             lista = {x.strip() for x in re.split(r",|;", re.sub(r"^todos\s*(menos|salvo|excepto)?", "", quien)) if x.strip()}
             if quien.startswith("todos"):
                 marcas = ["" if mo.normaliza(x) in lista else "✔" for x in pf]
@@ -676,7 +679,7 @@ def c_issues(m, a):
     """Las issues de construcción de una unidad aprobada, en construccion/<U>/ (issues.py): el índice y, por issue,
     ISS-nn.md, ISS-nn.feature y ISS-nn-esperado.json. Se generan del análisis y no se editan. Sin más, las (re)genera y
     dice cómo va cada una; con ISS-nn, imprime esa issue con su orden de terminar para este equipo; con --siguiente, da
-    la primera sin hacer cuyas dependencias están hechas y la reserva (un commit y un push del índice); con --liberar,
+    la primera sin hacer cuyas dependencias están hechas y la reserva (un commit y, si está autorizado, un push del índice); con --liberar,
     quita una reserva."""
     ctx, uid = unidad(m, a.unidad)
     if a.subtarea is not None or a.avance is not None:
@@ -760,7 +763,8 @@ def c_issues(m, a):
             sys.exit(f"✗ {e}")
         marca = plan.marcas[-1] if plan.marcas else {}
         print(f"{issue.id} de {uid}: {marca.get('objeto')} «{marca.get('caso')}», marcada como no necesaria para avanzar"
-              + (f" ({como})" if como else "") + f". Se revisa al preparar el paquete (construccion/{uid}/indice.md).")
+              + (f" ({como})" if como else "") + f". La revisa una persona antes de desplegar el paquete "
+              f"(construccion/{uid}/indice.md).")
         print("\n".join(iss.situacion(plan, m.raiz)))
         return
     try:
@@ -849,8 +853,8 @@ def main():
                    help="la orden de la regresión de toda la aplicación, para este equipo: antes de preparar el paquete")
     s.add_argument("--sin-prueba", metavar="«<objeto> «<caso>»»",
                    help="con ISS-nn y --motivo: una persona marca ese caso de prueba, o ese escenario del QA (HU-nn.m), "
-                        "que falla, como no necesario para avanzar; la issue puede darse por hecha y la marca se revisa "
-                        "al preparar el paquete")
+                        "que falla, como no necesario para avanzar; la issue puede darse por hecha y la marca la revisa "
+                        "una persona antes de desplegar el paquete")
     s.add_argument("--aceptar-permiso", metavar="PER-huella", help="con ISS-nn y --motivo: aceptación humana de la diferencia observada")
     s.add_argument("--revocar-permiso", metavar="PER-huella", help="con ISS-nn: retira esa aceptación de permisos")
     s.add_argument("--manual", action="store_true", help="con ISS-nn y --motivo: cierre humano de esta versión")

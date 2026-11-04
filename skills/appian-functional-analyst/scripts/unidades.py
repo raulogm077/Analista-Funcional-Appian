@@ -50,14 +50,16 @@ PARTE_PERMISOS = ("seguridad", "permiso", "visibilidad", "quien la ve", "quien l
 FRASE_PUNTO = {"Datos existentes": "datos existentes", "Procesos en curso": "procesos en curso", "Permisos": "permisos",
                "Compatibilidad": "lo que usan otros sistemas"}
 RX_IA = re.compile(r"(?<!\w)(ia|ai)(?!\w)|agente|ai skill")
-# Tipo de §13 → tipo del inventario (el que compara verificar --esperado); el primero que casa
+# Tipo de §13 → tipo del inventario (el que compara verificar --esperado); manda el que aparece antes en la celda:
+# «Aplicación (con grupos…)» es una aplicación y «Grupo de la aplicación», un grupo
 TIPOS_APPIAN = [("record type", "recordType"), ("cdt", "cdt"), ("interfaz", "interface"), ("interface", "interface"),
                 ("regla de expresion", "expressionRule"), ("expression rule", "expressionRule"),
                 ("process model", "processModel"), ("modelo de proceso", "processModel"), ("web api", "webApi"),
                 ("integracion", "integration"), ("integration", "integration"), ("constante", "constant"),
                 ("constant", "constant"), ("grupo", "group"), ("group", "group"), ("decision", "decision"),
                 ("site", "site"), ("sistema conectado", "connectedSystem"), ("connected system", "connectedSystem"),
-                ("data store", "dataStore"), ("agente", "aiAgent"), ("ai agent", "aiAgent")]
+                ("data store", "dataStore"), ("agente", "aiAgent"), ("ai agent", "aiAgent"),
+                ("aplicacion", "application"), ("application", "application")]
 # Tipo de un campo de técnico §3 → el que entiende verificar (sus sinónimos); los demás no se comparan
 TIPOS_CAMPO = {"texto": "Text", "text": "Text", "entero": "Integer", "numero (entero)": "Integer", "integer": "Integer",
                "decimal": "Decimal", "numero (decimal)": "Decimal", "booleano": "Boolean", "boolean": "Boolean",
@@ -156,8 +158,13 @@ def objetos_celda(celda):
     """Los objetos de una celda: los nombres entre comillas invertidas o, si no hay, la celda; sin el prefijo de tipo
     («rule!», «recordType!», como comprobar_asis.py) ni los paréntesis del final («MNT_IF_Panel()»)."""
     t = mo.sin_comentarios(celda).strip()
-    nombres = re.findall(r"`([^`]+)`", t) or ([t] if t.strip(" —-") else [])
-    return [re.sub(r"\(.*\)\s*$", "", re.sub(r"^[A-Za-z]+!(\{[^}]*\})?", "", n.strip())).strip() for n in nombres]
+    limpio = lambda n: re.sub(r"\(.*\)\s*$", "", re.sub(r"^[A-Za-z]+!(\{[^}]*\})?", "", n.strip())).strip()  # noqa: E731
+    # «`IFA Accion` — acción «Reenviar acción»»: una fila con parte nombra un solo objeto, y la parte, fuera de las
+    # comillas invertidas, llega hasta el final (también con «campo `descripcion`»)
+    con_parte = re.match(r"`([^`]+)`\s+[—–]\s+(.+)$", t)
+    if con_parte:
+        return [limpio(con_parte.group(1)) + " — " + con_parte.group(2).replace("`", "").strip(" ,;")]
+    return [limpio(n) for n in re.findall(r"`([^`]+)`", t) or ([t] if t.strip(" —-") else [])]
 
 
 def objeto(nombre):
@@ -169,6 +176,19 @@ def parte(nombre):
     """La parte del objeto que nombra una fila de §13 («acción «Corregir orden»»), o "" si es el objeto entero."""
     trozos = re.split(r"\s+[—–]\s+", nombre, maxsplit=1)
     return trozos[1].strip() if len(trozos) > 1 else ""
+
+
+def campos_de_parte(texto):
+    """Los campos que nombra la parte de una fila de §13 («campo descripcion», «campos fechaEnvio y fechaCierre»), o []
+    si la parte no es de campos."""
+    m = re.match(r"(?i)^campos?\s+(.+)$", mo.sin_comentarios(texto or "").strip())
+    out = []
+    for trozo in re.split(r",|\s+y\s+", m.group(1)) if m else []:
+        nombre = re.sub(r"\s*\(.*\)\s*$", "", trozo).strip(" `«»\"")
+        if not re.fullmatch(r"[\w.]+", nombre):   # «relación canceladoPorUsuario»: otra parte, ya no son campos
+            break
+        out.append(nombre)
+    return out
 
 
 def nombre_accion(texto):
@@ -215,9 +235,35 @@ def filas_6(P):
 
 
 def donde_se_corrige(campos):
-    """«desarrollo», «correccion» o "" (no se reconoce) según el campo «Dónde se corrige» de una ficha URG."""
-    lugar = mo.normaliza((campos or {}).get("donde se corrige", ""))
-    return "correccion" if "correccion" in lugar else "desarrollo" if "desarrollo" in lugar else ""
+    """«desarrollo», «correccion» o "" (sin elegir o no se reconoce) según «Dónde se corrige» de una ficha URG. La cita a
+    una fuente ([FU-06]) no cuenta, y en la aclaración «pendiente la prueba…» no deja la elección sin hacer; cualquier
+    otro «pendiente», o las dos opciones planteadas después, sí."""
+    lugar = mo.normaliza(mo.quita_citas(mo.sin_comentarios((campos or {}).get("donde se corrige", "")))).strip(" *`")
+    lugar = re.sub(r"[*`]", "", lugar)
+    sin_elegir = re.match(r"(?:pendiente|por decidir|sin decidir)\b", lugar) or re.search(
+        r"desarrollo\s*(?:[/·|]|\bo\b|\(\s*o\b)\s*entorno|entorno de correccion\s*(?:[/·|]|\bo\b|\(\s*o\b)\s*desarrollo", lugar)
+    if sin_elegir:
+        return ""
+    # F5 también nombra los destinos con «en». La aclaración no puede dejar la elección pendiente.
+    elegido = re.match(r"^(?:en (?:el )?)?(desarrollo|entorno de correccion|correccion)\b", lugar)
+    if not elegido:
+        return ""
+    cola = lugar[elegido.end():].strip()
+    if cola and cola != ".":
+        if cola[0] not in "(,.;:—-":
+            return ""
+        cola = cola[1:].strip().rstrip(")").strip()
+        # «pendiente la prueba…» habla de la prueba, no de la elección; cualquier otro «pendiente» la deja sin hacer, y
+        # tampoco vale si después se plantean las dos opciones
+        cola = re.sub(r"\bpendiente\s+la\s+prueba\b", "la prueba", cola)
+        alternativas = (r"\b(?:desarrollo|(?:entorno de )?correccion)\s*(?:[/·|—-]|(?:\(\s*)?\bo\b)\s*(?:en (?:el )?)?"
+                        r"(?:desarrollo|(?:entorno de )?correccion)\b")
+        if (not cola or re.match(r"(?:no|o|pendiente|por decidir|sin decidir|sin elegir)\b", cola)
+                or re.search(r"\b(?:pendiente|por decidir|sin decidir|sin elegir|no elegido|no decidido|no se ha decidido)\b", cola)
+                or re.search(alternativas, cola)
+                or re.match(r"(?:en (?:el )?)?(?:desarrollo|entorno de correccion|correccion)\b", cola)):
+            return ""
+    return "desarrollo" if elegido[1] == "desarrollo" else "correccion"
 
 
 def campos_urgencia(texto):
@@ -248,6 +294,7 @@ class Contexto:
         # primer evolutivo puede ser EV-01 y las filas sin ID no son suyas
         self.sin_id = "EV-01" if "EV-01" in self.por_id and self.inventario is None else None
         self.filas = self._filas_13()
+        self.partida_13 = self._partida_13()
         self._copias = {}
 
     # ------------------------------------------------------------ informes → unidades
@@ -373,6 +420,18 @@ class Contexto:
                         "sustituye": objetos_celda(celda(f, "sustituye a")), "unidad": us[0] if us else self.sin_id,
                         "paso": celda(f, "paso"), "para": mo.sin_comentarios(celda(f, "para")).strip(), "orden": k})
         return out
+
+    def _partida_13(self):
+        """Las líneas de técnico §13 (desde 1) donde empieza un trozo de tabla sin su separador `|---|`: la tabla la parte
+        una línea en blanco o texto y sus filas de después no cuentan."""
+        if "T" not in self.m.docs:
+            return []
+        D = self.m.docs["T"]
+        ini, fin = D.seccion("13") or (0, 0)
+        sep = re.compile(r"^\|[\s:|-]+\|?\s*$")
+        return [i + 1 for i in range(ini, fin) if D.lineas[i].startswith("|")
+                and (i == ini or not D.lineas[i - 1].startswith("|"))
+                and not (i + 1 < fin and sep.match(D.lineas[i + 1]))]
 
     def filas_de(self, uid):
         return [f for f in self.filas if f["unidad"] == uid]
@@ -732,7 +791,7 @@ class Contexto:
             if f["situacion"] not in CAMBIAN:
                 continue
             t = mo.normaliza(f["tipo"])
-            tipo = next((c for k, c in TIPOS_APPIAN if k in t), None)
+            tipo = min(((t.find(k), -len(k), c) for k, c in TIPOS_APPIAN if k in t), default=(0, 0, None))[2]
             for nombre in f["objetos"]:
                 o = objeto(nombre)
                 e = out.setdefault(o, {})
@@ -742,9 +801,15 @@ class Contexto:
                     permisos = self.permisos_4(despues or self.m, o)
                     if permisos:
                         e["permisosInicio"] = permisos
-                campos = self.campos_3(despues or self.m, o) if tipo in ("recordType", "cdt") and not parte(nombre) \
-                    else None
-                if campos is not None:
+                nombrados = campos_de_parte(parte(nombre))
+                campos = self.campos_3(despues or self.m, o) if tipo in ("recordType", "cdt") and (
+                    not parte(nombre) or nombrados) else None
+                if nombrados:      # «X — campo descripcion»: ese campo, con su tipo de §3 si lo tiene
+                    por_nombre = {mo.normaliza(c["nombre"]): c for c in campos or []}
+                    ya = {mo.normaliza(c["nombre"]) for c in e.get("campos", [])}
+                    e["campos"] = e.get("campos", []) + [por_nombre.get(mo.normaliza(n), {"nombre": n})
+                                                         for n in nombrados if mo.normaliza(n) not in ya]
+                elif campos is not None:
                     modifica = f["situacion"] == "modifica"
                     antes = {c["nombre"] for c in (self.campos_3(base, o) or [])} if base and modifica else set()
                     suyos = [c for c in campos if c["nombre"] not in antes]
@@ -759,9 +824,11 @@ class Contexto:
                         pedidas = [a for a in ahora if clave(a) not in {clave(b) for b in antes}]
                     elif not pedidas and accion and f["situacion"] != "modifica":
                         pedidas = [{"nombre": accion}]
+                    # La visibilidad solo se espera si §7 trae la columna «Visibilidad verificable»
                     pedidas = [{**{k: a[k] for k in ("nombre", "tipo") if a.get(k)},
-                                "visibilidad": {"declaracion": a.get("celdas", {}).get("quien la ve", ""),
-                                                "configuracion": a.get("celdas", {}).get("visibilidad verificable", "")}}
+                                **({"visibilidad": {"declaracion": a.get("celdas", {}).get("quien la ve", ""),
+                                                    "configuracion": a["celdas"]["visibilidad verificable"]}}
+                                   if "visibilidad verificable" in a.get("celdas", {}) else {})}
                                for a in pedidas]
                     e["acciones"] = e.get("acciones", []) + [a for a in pedidas if a not in e.get("acciones", [])]
                     if not e["acciones"]:
@@ -800,7 +867,8 @@ class Contexto:
         construido += [u.id for u in suyas if u.estado in CONSTRUIDAS]
         return list(dict.fromkeys(construido)), curso
 
-    def ambito_secuencia(self, uid, propuestas=True, informe=None, objetos_conocidos=(), solo_decididas=False):
+    def ambito_secuencia(self, uid, propuestas=True, informe=None, objetos_conocidos=(), solo_decididas=False,
+                        solo_aprobadas=False):
         """Lo que cambia, sin «Revisar también», referencias de contexto ni filas «Existe»."""
         piezas, objetos = set(), set()
         if informe is None:
@@ -822,6 +890,8 @@ class Contexto:
                 decision = mo.normaliza(punto.get("decision", "")).strip(" *")
                 if tipo in SIN_PIEZAS + ("existe", "contexto") or "✗" in decision:
                     continue
+                if solo_aprobadas and not any(s in decision for s in ("✔", "✅")):
+                    continue
                 if (not propuestas or solo_decididas) and (decision.startswith("pendiente") or "❓" in decision):
                     continue
                 destino = punto.get("encaja en", "") if not tipo.startswith("nuevo") else ""
@@ -829,7 +899,7 @@ class Contexto:
                     destino = punto.get("cambio propuesto", "")
                 piezas |= {self.m.raiz_de(p) for p in mo.ids_en(destino)}
                 objetos |= {objeto(o) for o in objetos_celda(destino)} & conocidos
-            elif mo.normaliza(mo.estado_informe(texto)).startswith("aplicado"):
+            elif not solo_aprobadas and mo.normaliza(mo.estado_informe(texto)).startswith("aplicado"):
                 aplicado = re.search(r"^## Aplicado\s*$(.*?)(?=^## |\Z)", texto, re.M | re.S)
                 piezas |= {self.m.raiz_de(p) for p in mo.ids_en(aplicado.group(1))} if aplicado else set()
         return {"piezas": piezas, "objetos": objetos}

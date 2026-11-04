@@ -12,13 +12,42 @@
 | 5 | Probar lo construido y pasar las puertas de calidad que tocan: los casos de prueba guardados de los criterios que la issue dice (técnico §14); si dice que no hay pruebas que ejecutar, ninguna | Quien construye | `appian-best-practices` | `appian-best-practices/references/10-quality-gates.md` |
 | 6 | Reaplicar las correcciones urgentes que pida la issue | Quien construye | `appian-best-practices` | `appian-functional-analyst/references/urgentes.md` §2 |
 | 7 | Verificar la issue contra el técnico, en solo lectura, con la orden que trae, que ejecuta también sus pruebas (los casos de sus reglas e interfaces y de lo que las usa): con eso está hecha. Si una falla, `cambios.md` §6 | Script; marcar una prueba, una persona | `appian-reverse-engineering` · `devmcp_extract.py verificar`; `appian-functional-analyst` · `indice.py issues <p> <U> ISS-nn --sin-prueba "<objeto> «<caso>»" --motivo "…"` | `appian-reverse-engineering/SKILL.md` «Verificar o deriva» y `appian-functional-analyst/references/cambios.md` §6 |
-| 8 | Con todas hechas, el QA de la unidad: recorrer cada escenario con SAIL CLI como cada rol; cada recorrido queda como guion en `qa/<U>/`. Quien construye no lo hace ni corrige en esa pasada lo que encuentre: un escenario que falla devuelve su issue a pendiente (`cambios.md` §6), y se corrige como cualquier otra, desde el paso 1 | QA, no quien construye: otra sesión, o un subagente que solo recibe los `.feature`, el site y la cuenta de cada rol (técnico §0), con un modelo pequeño y sin la skill oficial; el script repite; marcar un escenario, una persona | `appian-qa` · `qa.py repetir <p> <U>`; `appian-functional-analyst` · `indice.py issues <p> <U> ISS-nn --sin-prueba HU-nn.m --motivo "…"` | `appian-qa/SKILL.md` «Cuándo, y cuándo no», «Flujo» y «El guion» y `appian-functional-analyst/references/cambios.md` §6 |
-| 9 | Con todas hechas, marcar la unidad construida, confirmando cada corrección urgente reaplicada | Script | `appian-functional-analyst` · `proyecto.py cambio <p> <U> construida [--reaplicada URG-nn]` | `appian-functional-analyst/references/cambios.md` §1 y §6 |
+| 8 | Con todas hechas, el QA de la unidad: recorrer cada escenario con SAIL CLI como cada rol; cada recorrido queda como guion en `qa/<U>/`. Quien construye no lo hace ni corrige en esa pasada lo que encuentre: un escenario que falla devuelve su issue a pendiente (`cambios.md` §6), y se corrige como cualquier otra, desde el paso 1 | QA, no quien construye: otra sesión, o un subagente que solo recibe los `.feature`, el site y la cuenta de cada rol (técnico §0) y, en una unidad de solo consulta, los datos de carga inicial (técnico §3), con un modelo pequeño y sin la skill oficial; el script repite; marcar un escenario, una persona | `appian-qa` · `qa.py repetir <p> <U>`; `appian-functional-analyst` · `indice.py issues <p> <U> ISS-nn --sin-prueba HU-nn.m --motivo "…"` | `appian-qa/SKILL.md` «Cuándo, y cuándo no», «Flujo» y «El guion» y `appian-functional-analyst/references/cambios.md` §6 |
+| 9 | Con todas hechas y los documentos al día («Los documentos, al día»), marcar la unidad construida, confirmando cada corrección urgente reaplicada; pone al día la línea «Unidades» de `proyecto.md` y el siguiente paso lo escribe el analista | Script | `appian-functional-analyst` · `proyecto.py cambio <p> <U> construida [--reaplicada URG-nn]` | `appian-functional-analyst/references/cambios.md` §1 y §6 |
+
+**Varias issues por sesión.** La sesión que hizo el análisis no construye, salvo en un retoque de pocos objetos. Una
+sesión limpia (`/clear` o una nueva) pide la issue con `--siguiente --quien`, la construye, la verifica y pide la
+siguiente. La Base y las issues sin pantalla ni proceso propios se encadenan; una issue con pantalla o proceso propio
+empieza en una sesión limpia si esta ya construyó otra pantalla o proceso, y también la que sigue a una compactación.
+Cortar entre issues verificadas no pierde nada: el avance está en ellas. Si otra persona construye a la vez, cada una en
+su sesión, con la Base hecha antes. Las llamadas que no dependen unas de otras van en el mismo turno, y las herramientas
+del Dev MCP y las referencias de la skill oficial que pida la issue se cargan de una vez. Una decisión que no le toca a
+quien construye se pregunta; lo decidido va como DT al técnico (las issues no se editan: se regeneran con
+`indice.py issues <p> <U>`). Si hay que parar a mitad de una issue (sin nadie a quien preguntar, o la sesión se llena), se
+marcan sus subtareas hechas (`--subtarea`) y se libera (`--liberar ISS-nn`). Un subagente, solo para lo autocontenido que
+devuelve poco: el QA del paso 8 o una investigación larga.
 
 El avance entre sesiones lo dicen la verificación o el cierre manual de cada issue y el resultado del QA
 (`indice.py issues <p> <U>` identifica cada procedencia).
 
+**Los documentos, al día.** Lo que se acepta cambiar al construir o en el QA vuelve al análisis antes de verificar la
+issue que cambia, y solo lo que toca: el funcional si cambia lo que hace el negocio (por `actualizacion.md`, con su
+versión); el técnico si cambia el diseño o la configuración, o ya se puede completar el «Verificado» de una DT que decía
+«pendiente»; el prototipo y sus capturas si cambia una pantalla acordada; el draw.io y su imagen si cambia el proceso, y
+los diagramas Mermaid si cambian estados o datos; el Word, si ya hay alguno y cambia lo que exporta, también solo su versión (`cambios.md` §5). Un
+fallo frente a lo acordado se arregla en la aplicación o sigue la excepción prevista: no se cambia lo acordado para que
+pase, y cambiarlo pasa por su aprobación (`cambios.md` §1). Como tarde, todo al día antes de marcar la unidad
+Construida (paso 9).
+
 **Variante: un retoque cosmético.** El texto de un botón o una etiqueta: una fila «Modifica» en técnico §13, sin DT, una sola issue que dice qué cambia y que no hay pruebas que ejecutar, solo la primera puerta de calidad y sin QA. Si un guion de `qa/` usa el texto que cambia, al repetirlo falla en ese paso y se cambia el texto en el guion. `appian-functional-analyst/references/cambios.md` §4 y `appian-best-practices/SKILL.md` «Calibrate the effort to the change». <!-- (T6, T17) Según el coste medido, se hace a mano en Designer. -->
+
+**Variante: cambiar una issue ya verificada.** Un ajuste técnico dentro del encargo aprobado se escribe en el técnico
+según su plantilla (un retoque cosmético, sin DT) y se regenera con `indice.py issues <p> <U>`; un informe nuevo o un
+punto Pendiente de la unidad sigue la aprobación o la reasignación de `cambios.md` §1. Caducan las verificaciones de
+las issues cuyo encargo cambie; las demás no caducan por esa regeneración, aunque sus fallos vigentes de pruebas o QA
+siguen contando. Comparar en git con la revisión anterior del encargo puede ayudar a ver el cambio, también si ya está
+confirmado. Las subtareas son avance declarado: pueden quedar en «Revisar» y, con la versión actual verificada, no
+hace falta volver a marcarlas para cerrar la issue.
 
 **Variante: cierre manual de una issue.** Una persona puede aceptar lo construido con
 `indice.py issues <p> <U> ISS-nn --manual --motivo "…" [--quien "…"]`, también si no tiene Dev MCP.
