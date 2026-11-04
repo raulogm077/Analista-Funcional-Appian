@@ -136,9 +136,9 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
      del mismo tema (`buscar … --tipo PC`): suele haber duplicados.
    - **Validación condicionada** («lo apruebo cuando lo reenvíes con el filtro»): nada pasa a 🔒 hasta que
      llegue esa confirmación.
-   - **La fila de supuestos** (`funcional-plantilla.md` §11): si el cliente valida el DF, o esa fila, es RESPONDE de
-     ella y lo que la cita pasa a 🔒 con lo validado; lo que corrija en esa validación se aplica como cualquier otro
-     punto. Una fuente que corrige alguno sin validar el resto es una respuesta parcial: se aplica lo corregido y la
+   - **La fila de supuestos** (`funcional-plantilla.md` §11): si el cliente valida el DF, es RESPONDE de esa fila y
+     lo que la cita pasa a 🔒 con lo validado. Si valida solo la fila, confirma esos supuestos (RESPONDE de la fila y
+     CONFIRMA de cada uno), no las piezas enteras que la citan. Lo que corrija se aplica como cualquier otro punto. Una fuente que corrige alguno sin validar el resto es una respuesta parcial: se aplica lo corregido y la
      fila sigue con los demás, como propuestos.
    - **Comentario del cliente al DF**: cada comentario es un punto. Un «de acuerdo» sobre una historia o una
      pantalla es VALIDA de esa pieza.
