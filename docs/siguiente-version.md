@@ -4,9 +4,10 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** del paso 3, corregir y volver a medir las rectificaciones con fuentes agrupadas (P7, «juntas»); lo hace
-Claude. Lo que queda después necesita a Raúl en persona: P3 en una sesión atendida, P8 y P9, con el guion de
-`Pruebas-plugin/paso3-20261103/PRUEBA.md`. Lo demás del paso 3 está hecho (`evaluaciones.md`). Después, el paso 4.
+**Ahora:** lo que queda del paso 3 necesita a Raúl en persona, con el guion de
+`Pruebas-plugin/paso3-20261103/PRUEBA.md`: relanzar la batería del analista sobre `9d044d4` (Claude Code la paró por
+falta de memoria y no se relanza sin él), P7 quater, P3 en una sesión atendida, P8 y P9. Lo demás del paso 3 está
+hecho (`evaluaciones.md`). Después, el paso 4.
 
 ## 1. En la rama actual, por orden
 
@@ -15,11 +16,12 @@ Claude. Lo que queda después necesita a Raúl en persona: P3 en una sesión ate
 Hecho el 4-nov en sesiones en segundo plano que arrancó Claude con `claude --bg --plugin-dir`, aceptadas por el
 clasificador del modo auto (`evaluaciones.md`, «Paso 3 con el plugin cargado»). Falta:
 
-- **Las rectificaciones con fuentes agrupadas.** En P7, la copia «juntas» trató en un informe la reunión y el correo que
-  la corrige, y no dejó las filas de las dos rectificaciones que pide `ingesta-fuentes.md` §4 (qué se decide, cuándo,
-  qué había antes, con las dos citas); «una a una», sí. «Varias fuentes juntas» (`actualizacion.md`) solo dice que se
-  agrupan las que tratan lo mismo, con el ejemplo del correo que confirma. Corregirlo dentro del contrato, sin regla
-  nueva, y repetir un caso de reunión y correo juntos que mire esas filas y sus citas. [flujo]
+- **Las rectificaciones con fuentes agrupadas.** Corregido en `9d044d4` («Varias fuentes juntas»: la rectificación
+  lleva su fila D, a mano si `version --decision` le pondría la primera fuente). Falta: (1) la batería completa del
+  analista sobre ese árbol, que Claude Code paró por falta de memoria del equipo (437 bien y 0 mal, sin terminar) y
+  que no se relanza sin Raúl; (2) medirlo en conducta. P7 ter no llegó a aplicar, porque clasificó el punto como
+  ALCANCE+, que pide aprobación, y las filas quedaron sin medir. Se repite en una sesión que atiende Raúl (P7 quater),
+  que da él la aprobación si se la pide. [persona y flujo]
 - **P3 en una sesión atendida.** Marcar Construida con `--manual` lo decide una persona y está prohibido en una
   desatendida. La primera ejecución lo hizo por un error del guion y no cuenta. [persona]
 - **P8, una autorización que llega por otra sesión.** Raúl abre la sesión con su delegación en el primer mensaje.
