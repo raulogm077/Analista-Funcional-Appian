@@ -4,8 +4,9 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** del paso 3, con Raúl en persona, P3 en una sesión atendida, P8 y P9 (`PRUEBA.md`). Lo demás del paso 3
-está hecho (`evaluaciones.md`). Después, el paso 4.
+**Ahora:** del paso 3, lo que dejó P9: que `AGENTS.md` no se lea como permiso para escribir por otra vía cuando el
+host bloquea la edición en segundo plano, y medirlo una vez. Lo demás del paso 3 está hecho (`evaluaciones.md`).
+Después, el paso 4.
 
 ## 1. En la rama actual, por orden
 
@@ -14,14 +15,14 @@ está hecho (`evaluaciones.md`). Después, el paso 4.
 Hecho el 4-nov en sesiones en segundo plano que arrancó Claude con `claude --bg --plugin-dir`, aceptadas por el
 clasificador del modo auto (`evaluaciones.md`, «Paso 3 con el plugin cargado»). Falta:
 
-- **P3 en una sesión atendida.** Marcar Construida con `--manual` lo decide una persona y está prohibido en una
-  desatendida. La primera ejecución lo hizo por un error del guion y no cuenta. [persona]
-- **P8, una autorización que llega por otra sesión.** Raúl abre la sesión con su delegación en el primer mensaje.
-  [persona]
-- **P9, Write y Edit en `claude --bg`.** Raúl aprueba `--confiar` y lanza él la sesión en segundo plano. Dato de la
-  primera ejecución: el bloqueo de Edit en repositorios git es el aislamiento de las sesiones en segundo plano del host,
-  una salvaguarda. No se rodea ni se desactiva desde el plugin: la prueba documenta el límite y las vías que admite el
-  host. [persona]
+- **No rodear el aislamiento del host en segundo plano (P9).** En P9, el host bloqueó Edit, no se pudo crear el
+  worktree (repositorio sin commits) y la sesión escribió con Python, apoyándose en «Sobre `main`, sin ramas ni PR» de
+  `AGENTS.md`, que habla de ramas. Falta, en la plantilla `agentes.md`, junto a esa línea: si una sesión en segundo
+  plano no puede editar porque el host le pide una copia aparte, no escribe por otra vía; lo dice y para. Es una
+  plantilla: con el selftest completo, y medirlo una vez en una sesión en segundo plano con el aislamiento activo.
+  Quitar el aislamiento (`worktree.bgIsolation: none`) lo decide Raúl por proyecto: el 4-nov, solo en la copia de
+  prueba de P9 y con un solo escritor (P9 bis pasa). No se convierte en configuración global ni automática del
+  plugin. [flujo]
 
 ### Paso 4 · Residuos de las pruebas
 
@@ -40,10 +41,10 @@ citan se conserva, no solo su resumen, y se le enseña la lista exacta de lo que
   `aplazados-codex-20261019/mnt-evaluacion-ciega/revision-ciega.md`, que cita §3; lo demás, y sobre todo lo que lleve
   datos del cliente, se borra con esa lista; si la sesión no puede, lo lanza Raúl. [sesión]
 - En Indra-spain, las consultas de solo lectura del 3-nov no encontraron las aplicaciones PCA y CTC, las tablas `CTC_*`
-  ni los grupos CTC (no prueba que no existan con otros permisos). Siguen
-  las aplicaciones IFA e IFB del ensayo con sus datos, y dos instancias activas de `IFA Revisar Fechas Limite` desde el
-  24-oct, que se repiten cada día y envían correo; solo las cancela una persona. La de IFB no se puede leer (403). Las
-  dos instancias las cancela Raúl; lo demás entra en la lista. [persona y sesión]
+  ni los grupos CTC (no prueba que no existan con otros permisos). Siguen las aplicaciones IFA e IFB del ensayo con
+  sus datos. Las dos instancias de `IFA Revisar Fechas Limite` (536957758 y 536957741) las canceló Raúl (4-nov);
+  `getProcessInstance` responde 404 en las dos, que no acredita por sí solo su estado. La de IFB no se puede leer
+  (403). Lo demás entra en la lista. [sesión]
 - De la prueba del 2.6 y del paso 3: en Indra-spain, dos borradores de paquete de IFA, el de la prueba del 2.6
   («PRUEBA 2.6 EV-03 (borrar)», `2478033f…`, con su script), anterior al paso 3, y el del paso 3 («PRUEBA PASO 3
   EV-02 (borrar)», `90918f3c…`); los dos, en `paso3-20261103/objetos-creados.md`. En `Pruebas-plugin/paso3-20261103/`,
