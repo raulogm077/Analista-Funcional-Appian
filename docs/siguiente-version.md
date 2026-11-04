@@ -4,54 +4,30 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** el paso 3, la prueba con el plugin cargado desde la carpeta, con el guion de
-`Pruebas-plugin/paso3-20261103/PRUEBA.md`; mide también el 2.2. P1 a P7, en una sesión en segundo plano que arranca
-Claude; P8 y P9 necesitan a Raúl.
+**Ahora:** del paso 3, corregir y volver a medir las rectificaciones con fuentes agrupadas (P7, «juntas»); lo hace
+Claude. Lo que queda después necesita a Raúl en persona: P3 en una sesión atendida, P8 y P9, con el guion de
+`Pruebas-plugin/paso3-20261103/PRUEBA.md`. Lo demás del paso 3 está hecho (`evaluaciones.md`). Después, el paso 4.
 
 ## 1. En la rama actual, por orden
 
-### Paso 2 · Aplicar lo que decidió Raúl
-
-Raúl decidió el 3-nov, en el chat: el 2.1 se acepta con el Word siempre al día; el 2.2 se mide (paso 3); el 2.6 se
-acepta y hay que probarlo bien. El 2.1 y el 2.6 están aplicados (`evaluaciones.md`) y su conducta se prueba en el
-paso 3.
-
-- **2.2 Coste del análisis. Raúl aprueba medirlo (3-nov); se mide en el paso 3.** Con el plugin, el análisis costó
-  más en los tres incrementos. La clasificación heurística identifica 155 de 482 llamadas del modelo con órdenes o
-  ficheros propios del método; no son pasos prescindibles ni ahorro medido. Los documentos finales `funcional.md` y
-  `tecnico.md` pesaban unos 94 y 196 KB. Los 761–928k tokens son
-  caché/contexto final de las sesiones, no tokens de esos documentos ni KB releídos. El reparto contable identifica
-  focos para revisar, sin aislar causas ni acreditar un techo de ahorro (límites de `coste-analisis.md`, §0 y §4.2).
-  **Candidato para medir, sin cambiar el método:** comparar el tratamiento separado con un solo informe para fuentes
-  ya disponibles del mismo tema, en orden de fecha (`actualizacion.md`, «Varias fuentes juntas»), partiendo de la misma
-  base, fuentes y modelo. Conservar igual cobertura y coherencia, con citas, decisiones y autorizaciones correctas,
-  y comparar el coste total observado del modelo principal y del asesor. No anticipar respuestas futuras ni agrupar
-  temas distintos. Hay un límite concreto: `version --decision` usa la primera `--fuente` para la fuente y fecha de las
-  D y para las marcas 🔒 de VALIDA; si las vías existentes no conservan la procedencia y autorización de cada decisión
-  y marca, se mantienen las fuentes separadas, sin forzar la agrupación. Medir en el paso 3 o, si allí no hay fuentes
-  del mismo tema para compararlo, en el próximo incremento real, sin deducir ahorro del número de llamadas. La
-  consulta por tramos ya está prevista; no se añade una línea fija
-  a `resumen`. El crecimiento de caracteres tras `97fa604` incorpora contenido antes omitido y no mide coste entre
-  alternativas de igual cobertura. «Varias issues por sesión» es otra hipótesis, sin ahorro acreditado para este
-  análisis. No se ha ejecutado esta comparación ni se ha aplicado una regla nueva. [flujo y scripts]
-
 ### Paso 3 · Prueba con el plugin cargado desde la carpeta
 
-Con subagentes que leen la rama ya se vieron el push con y sin autorización, la autorización delegada, «gasta» y el
-localizador (`evaluaciones.md`). Falta repetirlo con el plugin cargado y lo que necesita Appian. Raúl la aprobó el
-3-nov. P1 a P7 los hace una sesión que arranca Claude con `claude --bg --plugin-dir`, con el permiso
-`Bash(claude --bg:*)` que Raúl dio el 22-oct (así se arrancaron las del ensayo; lo denegado el 14-oct fue otra cosa,
-`claude -p` con `bypassPermissions`). P8 y P9 necesitan a Raúl en persona: su delegación al abrir la sesión, y
-`--confiar` con una sesión en segundo plano que lanza él.
+Hecho el 4-nov en sesiones en segundo plano que arrancó Claude con `claude --bg --plugin-dir` y el permiso
+`Bash(claude --bg:*)` de Raúl (`evaluaciones.md`, «Paso 3 con el plugin cargado»). Falta:
 
-- **Probar los cambios de comportamiento con el plugin cargado desde la carpeta** (`claude --plugin-dir`) en un
-  proyecto de prueba, como pide `CLAUDE.md`. Comprobar: el localizador con una sesión real; «gasta» en un guion de QA,
-  que la skill lo pone al preparar el guion y no solo que el motor lo respeta; la línea «Unidades», el aviso y que el
-  analista pone al día «Siguiente paso»; una tarea de una persona en Designer en la entrega; `git push` con un remoto
-  local, con y sin autorización, y sin remoto; una autorización que llega por otro agente para un cierre manual o un
-  borrado, dentro y fuera de lo delegado (L6); si Write y Edit quedan bloqueados en `claude --bg`, distinguiendo
-  un fallo del host de una denegación, que no se rodea; un paquete preparado según F9 (2.6); la medición del 2.2, y lo
-  que cambie el paso 2. Puede escribir en Indra-spain si hace falta (Raúl, 3-nov); no sube nada a GitHub. [prueba]
+- **Las rectificaciones con fuentes agrupadas.** En P7, la copia «juntas» trató en un informe la reunión y el correo que
+  la corrige, y no dejó las filas de las dos rectificaciones que pide `ingesta-fuentes.md` §4 (qué se decide, cuándo,
+  qué había antes, con las dos citas); «una a una», sí. «Varias fuentes juntas» (`actualizacion.md`) solo dice que se
+  agrupan las que tratan lo mismo, con el ejemplo del correo que confirma. Corregirlo dentro del contrato, sin regla
+  nueva, y repetir un caso de reunión y correo juntos que mire esas filas y sus citas. [flujo]
+- **P3 en una sesión atendida.** Marcar Construida con `--manual` lo decide una persona y está prohibido en una
+  desatendida. La primera ejecución lo hizo por un error del guion y no cuenta. [persona]
+- **P8, una autorización que llega por otra sesión.** Raúl abre la sesión con su delegación en el primer mensaje.
+  [persona]
+- **P9, Write y Edit en `claude --bg`.** Raúl aprueba `--confiar` y lanza él la sesión en segundo plano. Dato de la
+  primera ejecución: el bloqueo de Edit en repositorios git es el aislamiento de las sesiones en segundo plano del host,
+  una salvaguarda. No se rodea ni se desactiva desde el plugin: la prueba documenta el límite y las vías que admite el
+  host. [persona]
 
 ### Paso 4 · Residuos de las pruebas
 
@@ -74,6 +50,10 @@ citan se conserva, no solo su resumen, y se le enseña la lista exacta de lo que
   las aplicaciones IFA e IFB del ensayo con sus datos, y dos instancias activas de `IFA Revisar Fechas Limite` desde el
   24-oct, que se repiten cada día y envían correo; solo las cancela una persona. La de IFB no se puede leer (403). Las
   dos instancias las cancela Raúl; lo demás entra en la lista. [persona y sesión]
+- Del paso 3: en Indra-spain, los dos borradores de paquete de IFA, el del 2.6 (EV-03, con su script) y «PRUEBA PASO 3
+  EV-02 (borrar)» (`90918f3c…`, en `paso3-20261103/objetos-creados.md`). En `Pruebas-plugin/paso3-20261103/`, los
+  proyectos y remotos de prueba. Se conservan `resultados.md`, `PRUEBA.md`, `PRUEBA-bis.md`, `objetos-creados.md`,
+  `validacion-paquete-2.6.json` y el arranque de Codex mientras los cite `evaluaciones.md`. [sesión]
 - En el repositorio, las galerías HTML de `appian-prototipos/galerias/` (1,8 MB, no las cita nadie y se regeneran con
   `generar_app.py` y `build.py`): entran en la lista. [sesión]
 
@@ -88,6 +68,10 @@ citan se conserva, no solo su resumen, y se le enseña la lista exacta de lo que
 ## 2. Cuando se dé su condición
 
 - **Índice del DOCX.** Evaluar la caché editable solo si una entrega la necesita. [Word]
+- **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
+  observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se
+  vuelve a plantear, medir el coste en un incremento real con fuentes del mismo tema, sin deducir ahorro del número
+  de llamadas. [flujo]
 - **Dimensiones de QA sin medir:** visual y accesibilidad, roles con cuenta, autorización de servidor, vigencia causal,
   atomicidad y concurrencia. Solo las que necesite la entrega; no crear cuentas ni escribir datos por esta lista. El
   contraste automático de texto sobre fondo compuesto, si un caso visible lo pide. [pruebas]
