@@ -4,47 +4,27 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** el paso 4; su inventario de solo lectura está en marcha. Hechos: el paso 3 (`evaluaciones.md`, «Paso 3
-con el plugin cargado» y las filas que cita) y el paso 3 bis, el DevMCP 26.9.10 y Appian 26.10 (Codex instaló el
-bundle; las correcciones de buenas prácticas y las divergencias, en sus filas de `evaluaciones.md`).
+**Ahora:** del paso 4, los datos de clientes que no sostienen evidencia. Hechos: el paso 3 (`evaluaciones.md`,
+«Paso 3 con el plugin cargado» y las filas que cita), el paso 3 bis (el DevMCP 26.9.10 y Appian 26.10) y el primer
+lote del paso 4 (su fila de `evaluaciones.md`).
 
 ## 1. En la rama actual, por orden
 
 ### Paso 4 · Residuos de las pruebas
 
-Va después del paso 3: IFA e IFB sirven para probar el 2.6. Raúl autoriza (3-nov) borrar lo que ya no haga falta, sin
-perder contexto útil: lo que pueda servir pasa a estos dos documentos, sin datos del cliente; la evidencia que todavía
-citan se conserva, no solo su resumen, y se le enseña la lista exacta de lo que se borra.
+Raúl autorizó (3-nov) borrar lo que ya no haga falta, sin perder contexto útil, y el 4-nov delegó en Claude decidir qué
+puede servir y qué se borra. La evidencia que citan, directa o indirectamente, este documento, `evaluaciones.md`, la
+memoria y los informes que se conservan se queda, no solo su resumen. Las carpetas de `Pruebas-plugin` se conservan
+por eso; las aplicaciones IFA e IFB de Indra-spain, porque sostienen el ensayo y P6 del paso 3; y las galerías HTML de
+`appian-prototipos/galerias/`, porque tienen lectores y Raúl no confirmó retirarlas (`SUPERVISION-CLAUDE.md`). Falta:
 
-- En `Pruebas-plugin`, revisar `automejora/`, `automejora-codex-20261019/`, `campana-codex-20261019/`,
-  `aplazados-codex-20261019/`, `construccion-cerebro/`, `informes-comparativa-20261022/`, `informes-con-plugin/`,
-  `informes-sin-plugin/`, `T1-agilidad/`, `T5-devmcp-sail/`, `T6-retoque-construido/`, `T13-pruebas-issue/`, `T15-qa/`,
-  `T16-ensayo-qa/` y `retoque-analisis/`. Primero las que guardan fuentes reales del cliente
-  (`campana-codex-20261019/`, `informes-con-plugin/`). Antes de borrar
-  cada una, comprobar que sus lecciones estén aquí o en `evaluaciones.md`, si la cita como evidencia algún documento
-  que se conserva (el seguimiento del ensayo, la revisión de Codex) y qué objetos dejó en Indra-spain
-  (`T6-retoque-construido/objetos-creados.md`). Se guarda lo que haga falta, como los ocho casos de
-  `aplazados-codex-20261019/mnt-evaluacion-ciega/revision-ciega.md`, que cita §3; lo demás, y sobre todo lo que lleve
-  datos del cliente, se borra con esa lista; si la sesión no puede, lo lanza Raúl. [sesión]
-- En Indra-spain, las consultas de solo lectura del 3-nov no encontraron las aplicaciones PCA y CTC, las tablas `CTC_*`
-  ni los grupos CTC (no prueba que no existan con otros permisos). Siguen las aplicaciones IFA e IFB del ensayo con
-  sus datos. Las dos instancias de `IFA Revisar Fechas Limite` (536957758 y 536957741) las canceló Raúl (4-nov);
-  `getProcessInstance` responde 404 en las dos, que no acredita por sí solo su estado. La de IFB no se puede leer
-  (403). Lo demás entra en la lista. [sesión]
-- De la prueba del 2.6 y del paso 3: en Indra-spain, dos borradores de paquete de IFA, el de la prueba del 2.6
-  («PRUEBA 2.6 EV-03 (borrar)», `2478033f…`, con su script), anterior al paso 3, y el del paso 3 («PRUEBA PASO 3
-  EV-02 (borrar)», `90918f3c…`); los dos, en `paso3-20261103/objetos-creados.md`. En `Pruebas-plugin/paso3-20261103/`,
-  los proyectos y remotos de prueba; fuera, la copia temporal de Codex
-  (`C:\Users\rgmoya\AppData\Local\Temp\codex-factibilidad-d-zuj_i2bw`). Se conserva lo que sostiene el registro:
-  la evidencia que citan, directa o indirectamente, `evaluaciones.md` y `resultados.md` (artefactos y
-  transcripciones incluidos), y lo que necesita esta limpieza (`objetos-creados.md`, con los UUID). [sesión]
-- Del paso 3 bis, en Indra-spain: la aplicación «DVG Divergencias DevMCP 26.9.10 (borrar)», con sus record types,
-  interfaz y regla de prueba; la aplicación vacía «DVG Prefijo usado (borrar)», con el prefijo DEM; y dos documentos
-  SQL que `createRecordType` dejó en una carpeta de sistema, que no se van con la aplicación. Las tablas `DVG_*` de
-  `jdbc/Appian` las quita una persona con acceso a la base de datos. Todo, con sus UUID, en
-  `paso3-20261103/objetos-creados.md`. [sesión y persona]
-- En el repositorio, las galerías HTML de `appian-prototipos/galerias/` (1,8 MB, no las cita nadie y se regeneran con
-  `generar_app.py` y `build.py`): entran en la lista. [sesión]
+- **Datos de clientes sin papel de evidencia.** Dentro de esas carpetas, borrar lo que es dato de cliente (nombres de
+  la organización o de personas, el host, volcados de aplicaciones reales) y no cita ningún documento que se conserva,
+  ni directa ni indirectamente. Punto de partida: `paso3-20261103/inventario-paso4.json`, el inventario de solo lectura
+  con su revisión adversarial; sus propuestas «borrar_salvo» no valen tal cual, porque se llevaban evidencia citada
+  (revisión de Codex). Lista exacta registrada antes de borrar y contrastada por Codex. [sesión]
+- **Las tablas `DVG_CATEGORIA` y `DVG_SOLICITUD`** de `jdbc/Appian` (prueba de divergencias, sin valor): las quita una
+  persona con acceso a la base de datos. [persona]
 
 ### Paso 5 · Cierre de la rama
 
