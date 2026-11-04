@@ -131,7 +131,7 @@ Source: [Row considerations for optimized data access](https://docs.appian.com/s
 - ✅ Sync **only the fields the app uses**; every extra field adds weight to every sync and every query.
 - ❌ Don't sync huge text columns if you don't display them; if they exceed 64,000 characters, read/write them through a separate unsynced record type or CDT.
 
-Source: [About Data Sync — Usage considerations](https://docs.appian.com/suite/help/latest/about-data-sync.html) · [About custom record fields (100/40 limit)](https://docs.appian.com/suite/help/latest/custom-record-fields.html#what-are-custom-record-fields)
+Source: [About Data Sync — Usage considerations](https://docs.appian.com/suite/help/latest/about-data-sync.html) · [About custom record fields (ⓥ 100/40 before 26.10)](https://docs.appian.com/suite/help/latest/custom-record-fields.html#what-are-custom-record-fields)
 
 ### 3.4 Keeping synced data current
 

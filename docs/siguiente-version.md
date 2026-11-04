@@ -96,10 +96,10 @@ citan se conserva, no solo su resumen, y se le enseña la lista exacta de lo que
   límites. Aparte, en P9 ter la sesión, tras fallar `EnterWorktree`, siguió con órdenes del plugin que escriben en la
   copia compartida y dejó el proyecto a medias, aunque lo dijo. Si eso molesta, adelantar la frase de `AGENTS.md` al
   fallo del aislamiento. [persona]
-- **Otras novedades de Appian 26.10, sin consumidor todavía** (señaladas por Codex): el ancestro común en el ALM de
-  las expression rules; en agentes, «Stop chat» frente a las otras formas de pararlo, sin prometer que deshaga nada;
-  los tipos nuevos de Task Reports (cinco herramientas) y `updateBehavior` en las relaciones. Se contrastan y se
-  incorporan cuando una tarea las necesite. El Deployment MCP 2.0 existe desde el 2-sep: no es de la 26.10. [flujo]
+- **Otras novedades, sin consumidor todavía** (señaladas por Codex): de Appian 26.10, el ancestro común en el ALM de
+  las expression rules; del DevMCP 26.9.10, no de la plataforma, las cinco herramientas de Task Reports y
+  `updateBehavior` en las relaciones. Se contrastan y se incorporan cuando una tarea las necesite. El Deployment MCP
+  2.0 existe desde el 2-sep: no es de la 26.10. [flujo]
 - **Fila D con otra fuente que la que cita.** Un aviso de `comprobar.py` si la «Decisión» de una fila D cita fuentes y
   ninguna es la de su «Fuente» (es comparar, no entender). Solo si, tras el arreglo de `version --decision`, vuelven a
   aparecer filas así escritas a mano. [flujo]

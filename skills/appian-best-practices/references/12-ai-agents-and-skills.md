@@ -201,8 +201,12 @@ Source: [Design Patterns for Production AI Agents — Multi-agent architectures]
   an output that can't be cast to its type fails the node; the node doesn't support MNI and Agent Inputs
   don't accept a list of maps. ⓥ Up to 26.6 the node returns only Agent Outputs, Run Summary and Run ID;
   from 26.8 it adds success status, error message and AI actions consumed — route on them when available.
-- ⚠️ **Stop** doesn't interrupt a tool that is already running: it completes, then no further model
-  calls are made (*User Canceled*). Tools with side effects must be safe to finish after a stop.
+- ⚠️ **Stop** ⓥ: in a **process** agent it doesn't interrupt a tool that is already running: the tool
+  completes, then no further model calls are made (*User Canceled*). In a **chat** agent (26.10
+  documentation) it ends only the current response: a running tool call is interrupted and doesn't
+  complete, and the conversation continues. The documentation doesn't say that Stop undoes what a tool did
+  or cancels processes it started: don't count on it. Tools with side effects must be safe to finish, or to
+  be cut off, after a stop.
 - ✅ **Retry around the agent, not only inside tools.** Intermittent `EVENT_NOT_FOUND` or `INVALID_TOOL_RESPONSE` errors come from model non-determinism, and "Input is too long" from oversized requests: give the calling process a bounded retry path, sharpen the prompt and tool names, and limit document inputs and `extraInstructions` ([KB-2396](https://community.appian.com/application-design-33/kb-2396-ai-agent-intermittently-fails-with-event-not-found-invalid-tool-response-and-input-too-long-errors-15892)).
 
 Source: [Execute AI Agent Smart Service](https://docs.appian.com/suite/help/latest/Execute_AI_Agent_Smart_Service.html) · [Create and Configure — Stop a running AI agent](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#stop-a-running-ai-agent) · [Design Patterns — Error handling and resilience](https://docs.appian.com/suite/help/latest/agent-studio-design-patterns.html#error-handling-and-resilience) · [Best Practices — Design for human-in-the-loop handoffs](https://docs.appian.com/suite/help/latest/agent-studio-best-practices.html#design-for-human-in-the-loop-handoffs) · [AI Agents FAQ — oversight and sync vs async](https://docs.appian.com/suite/help/latest/ai-agents-faq.html)
