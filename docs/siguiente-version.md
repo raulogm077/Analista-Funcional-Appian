@@ -4,10 +4,10 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** nada en curso. La rama `codex/campana-mejora-20261019` se une a `main` con su PR, por decisión de Raúl del
-4-nov, si la batería de GitHub sale en verde. Hechos: el paso 3 (`evaluaciones.md`, «Paso 3 con el plugin cargado» y
-las filas que cita), el paso 3 bis (el DevMCP 26.9.10 y Appian 26.10) y el paso 4, salvo las tablas `DVG_*`, que quita
-una persona. Lo siguiente, cuando Raúl lo pida: §2 y §3, cada trabajo en su rama (`CLAUDE.md`).
+**Ahora:** la rama `codex/campana-mejora-20261019` se une a `main` con el PR #21, por decisión de Raúl del 4-nov, si la
+batería de GitHub sale en verde. Hechos: el paso 3 (`evaluaciones.md`, «Paso 3 con el plugin cargado» y las filas que
+cita), el paso 3 bis (el DevMCP 26.9.10 y Appian 26.10) y la retirada física del paso 4. Queda lo de §1; lo siguiente,
+cuando Raúl lo pida, §2 y §3, cada trabajo en su rama (`CLAUDE.md`).
 
 ## 1. Del trabajo anterior
 
@@ -15,14 +15,25 @@ una persona. Lo siguiente, cuando Raúl lo pida: §2 y §3, cada trabajo en su r
 
 Raúl autorizó (3-nov) borrar lo que ya no haga falta, sin perder contexto útil, y el 4-nov delegó en Claude decidir qué
 puede servir y qué se borra. La evidencia que citan, directa o indirectamente, este documento, `evaluaciones.md`, la
-memoria y los informes que se conservan se queda, no solo su resumen. Las carpetas de `Pruebas-plugin` se conservan
-por eso; las aplicaciones IFA e IFB de Indra-spain, porque sostienen el ensayo y P6 del paso 3; y las galerías HTML de
-`appian-prototipos/galerias/`, porque tienen lectores y Raúl no confirmó retirarlas (`SUPERVISION-CLAUDE.md`). Los
-datos de clientes que guardan esas carpetas se quedan con ellas: los 1.523 ficheros que los llevan los menciona algún
-otro fichero (`evaluaciones.md`, «Paso 4»). Falta:
+memoria y los informes que se conservan se queda, no solo su resumen. Por eso se conservan las carpetas de
+`Pruebas-plugin`, con los datos de clientes que guardan (decisión prudente, `evaluaciones.md`, «Paso 4»); las
+aplicaciones IFA e IFB de Indra-spain, que sostienen el ensayo y P6 del paso 3; la aplicación DEM, la de pruebas del
+método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias/`. Retirar sus seis salidas generadas
+(HTML y trazabilidad) queda como opción de Raúl, sabiendo que hay que construirlas antes de navegarlas. Las lecciones
+útiles de esas pruebas tienen destino aquí o en `evaluaciones.md`; las que lo tenían pendiente, abajo y en §2. Falta:
 
 - **Las tablas `DVG_CATEGORIA` y `DVG_SOLICITUD`** de `jdbc/Appian` (prueba de divergencias, sin valor): las quita una
   persona con acceso a la base de datos. [persona]
+- **Residuos de la campaña de Codex en Indra-spain**, pendientes de decisión: la aplicación CML, las reglas `DEM_C26_*`
+  y `DEM_E20_*`, las interfaces de laboratorio, las versiones v13 a v15 de `DEM_Dashboard` y las cuentas de QA `dem.*`.
+  Sus listas están en las carpetas de la campaña, que se conservan (`paso3-20261103/inventario-paso4.json` las resume).
+  Orden seguro: antes, decidir cómo dejar `DEM_Dashboard`, porque la v15 depende de `DEM_E20_EnsayoCantidad` y de
+  `CML_CatalogoLaboratorio`, y volver a la v12 deshace el cambio de T3 en EV-02. [persona y sesión]
+- **La vigencia de las decisiones anteriores (L12 del ensayo, `SEGUIMIENTO.md`).** Cuando una D nueva cambia otra, en
+  todo o en parte, `actualizacion.md` §6 no dice que se revise la columna «Vigente» de la anterior: «No» si queda
+  sustituida y «En parte» si conserva cláusulas, con la D nueva. `proyecto.py` escribe siempre «Sí», y `modelo.py` ya
+  admite «En parte». Corrección mínima propuesta por Codex: una frase en la fila D de §6, con el juicio del LLM, sin
+  script ni paso nuevo. Cambia la conducta de la skill: con su prueba con el plugin cargado. [flujo]
 
 ## 2. Cuando se dé su condición
 
@@ -36,7 +47,13 @@ otro fichero (`evaluaciones.md`, «Paso 4»). Falta:
   de llamadas. [flujo]
 - **Dimensiones de QA sin medir:** visual y accesibilidad, roles con cuenta, autorización de servidor, vigencia causal,
   atomicidad y concurrencia. Solo las que necesite la entrega; no crear cuentas ni escribir datos por esta lista. El
-  contraste automático de texto sobre fondo compuesto, si un caso visible lo pide. [pruebas]
+  contraste automático de texto sobre fondo compuesto, si un caso visible lo pide. En T16, Playwright mostró una
+  descripción técnica interna como nombre accesible de una acción (`T16-ensayo-qa/medicion/D-transcripcion.jsonl`,
+  líneas 177 y 247). No se pasó un lector de pantalla: esa parte sigue sin medir. [pruebas]
+- **Dos observaciones de IFB sin contrastar** (`informes-sin-plugin/ESTADO.md`, «Aprendido»). En un Script Task, los
+  `customOutputs` se evalúan con los valores previos al nodo, así que uno que dependa de otro va en otro nodo. Y
+  `a!fromJson` devolvió un escalar con un JSON de un elemento, que hizo fallar un filtro `in`. Lo demás de esa lista ya
+  lo cubre la skill oficial. Se contrastan cuando una tarea los use; hasta entonces, sin regla. [prueba]
 - **LEEME completo y deriva interna** de una aplicación real: siguen sin medir. La extracción masiva sigue detenida y
   `getAgent`, aparcado tras el aviso a Appian. Al reanudarla, decidir si reconoce el parámetro `object` de
   `getObjectDependents` o se queda con el grafo actual (límite en `evaluaciones.md`).
@@ -68,14 +85,17 @@ otro fichero (`evaluaciones.md`, «Paso 4»). Falta:
   aparecer filas así escritas a mano. [flujo]
 - **URL `/help/26.6/`** de `data-fabric.md` y `agents/data-modeler.md`: revisarlas cuando cambie la versión de Appian
   del entorno.
-- **Aviso a Appian** (`aviso-appian-devmcp.md`, en la carpeta de pruebas): revisarlo con el servidor 26.9.5, porque el
-  punto 10 ya está en parte corregido. Añadir la discrepancia de `LCP_TOOL_MODE=readonly` y lo visto en el ensayo: cada
-  copia del servidor borra el `cookies.json` compartido al caducar su sesión (hay un parche local que cada bundle pisa),
-  `listProcessInstances` omite instancias y su «total» cambia, no hay forma de cancelar instancias, el rechazo del MCP
-  por «builds distintas» a mitad de un trabajo y el caso que crea `testInputs`. Y, del 2.6 (26.9.5), un caso
-  observado: en `addPackageObjects`, un lote con una entrada de tipo cambiado devolvió como inexistentes («Could not
-  resolve the object's type… may not exist») también las reglas, constantes e interfaces válidas, que sin ella
-  entraron. Lo envía Raúl. [persona]
+- **Aviso a Appian** (`aviso-appian-devmcp.md`, en la carpeta de pruebas): revisarlo con el DevMCP 26.9.10 (build
+  20261103-144057) y lo comprobado con él (`evaluaciones.md`, «Divergencias con la skill oficial, con el DevMCP
+  26.9.10»), separando lo histórico de lo actual. El punto 10 ya estaba en parte corregido. Añadir la discrepancia de
+  `LCP_TOOL_MODE=readonly` y lo visto en el ensayo. Cada copia del servidor borra el `cookies.json` compartido al
+  caducar su sesión; hay un parche local, y el bundle 26.9.10 tampoco lo corrige. En `listProcessInstances`, el
+  `total` sigue mal con el build nuevo (depende de `limit` y `offset`), y la omisión de instancias, vista con builds
+  anteriores, no se volvió a medir. Tampoco hay forma de cancelar instancias. Faltan además el rechazo del MCP por
+  «builds distintas» a mitad de un trabajo y el caso que crea `testInputs`, que sigue con el build nuevo. Y, del 2.6,
+  con su build histórico 26.9.5, un caso observado: en `addPackageObjects`, un lote con una entrada de tipo cambiado
+  devolvió como inexistentes («Could not resolve the object's type… may not exist») también las reglas, constantes e
+  interfaces válidas, que sin ella entraron. Lo envía Raúl. [persona]
 - **Rama `yaroslav/plantilla-DF-cliente`** en GitHub, solo si Raúl lo pide: 17 commits del 19-oct sin PR, ni en
   `main` ni en esta rama; es independiente de ella. [persona]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
