@@ -4,9 +4,10 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** lo que queda del paso 3 necesita a Raúl en persona, con el guion de
-`Pruebas-plugin/paso3-20261103/PRUEBA.md`: P7 quater (o su alternativa, P7 quinquies, en `PRUEBA-ter.md`), P3 en una
-sesión atendida, P8 y P9. Lo demás del paso 3 está hecho (`evaluaciones.md`). Después, el paso 4.
+**Ahora:** del paso 3, P7 quinquies (`Pruebas-plugin/paso3-20261103/PRUEBA-ter.md`, con el montaje ya preparado), que
+se lanza cuando el equipo tenga memoria y Raúl pida reanudar: Claude Code paró por falta de memoria las pruebas y la
+espera de memoria, e indica no relanzarlas sin él. Después, con Raúl en persona, P3 en una sesión atendida, P8 y P9
+(`PRUEBA.md`). Lo demás del paso 3 está hecho (`evaluaciones.md`). Después, el paso 4.
 
 ## 1. En la rama actual, por orden
 
@@ -18,8 +19,9 @@ clasificador del modo auto (`evaluaciones.md`, «Paso 3 con el plugin cargado»)
 - **Las rectificaciones con fuentes agrupadas.** Corregido en `9d044d4` («Varias fuentes juntas»: la rectificación
   lleva su fila D, a mano si `version --decision` le pondría la primera fuente), con la básica y `pruebas_flujos`
   bien. Falta medirlo en conducta: P7 ter no llegó a aplicar, porque clasificó el punto como ALCANCE+, que pide
-  aprobación, y las filas quedaron sin medir. Se repite en una sesión que atiende Raúl (P7 quater), que resuelve antes
-  la secuencia con EV-02 y da él la aprobación si se la pide. Aparte, el selftest completo sobre ese árbol, adicional
+  aprobación, y las filas quedaron sin medir. Se mide con P7 quinquies: EV-02 Construida y una aprobación ficticia
+  como datos iniciales del montaje, sin ejecutar transiciones (diseño de Codex); la elección es de Claude. P7 quater,
+  con Raúl aprobando en persona, queda como alternativa. Aparte, el selftest completo sobre ese árbol, adicional
   porque `CLAUDE.md` no lo pide para un cambio en una referencia, quedó interrumpido por falta de memoria (437 bien y
   0 mal, sin terminar): no cuenta como verde y no se relanza sin Raúl. [persona y flujo]
 - **P3 en una sesión atendida.** Marcar Construida con `--manual` lo decide una persona y está prohibido en una
