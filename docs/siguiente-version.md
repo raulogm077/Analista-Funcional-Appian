@@ -4,11 +4,12 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** el paso 5, con Raúl. Hechos: el paso 3 (`evaluaciones.md`, «Paso 3 con el plugin cargado» y las filas que
-cita), el paso 3 bis (el DevMCP 26.9.10 y Appian 26.10) y el paso 4 (su fila de `evaluaciones.md`), salvo las tablas
-`DVG_*`, que quita una persona.
+**Ahora:** nada en curso. La rama `codex/campana-mejora-20261019` se une a `main` con su PR, por decisión de Raúl del
+4-nov, si la batería de GitHub sale en verde. Hechos: el paso 3 (`evaluaciones.md`, «Paso 3 con el plugin cargado» y
+las filas que cita), el paso 3 bis (el DevMCP 26.9.10 y Appian 26.10) y el paso 4, salvo las tablas `DVG_*`, que quita
+una persona. Lo siguiente, cuando Raúl lo pida: §2 y §3, cada trabajo en su rama (`CLAUDE.md`).
 
-## 1. En la rama actual, por orden
+## 1. Del trabajo anterior
 
 ### Paso 4 · Residuos de las pruebas
 
@@ -23,16 +24,11 @@ otro fichero (`evaluaciones.md`, «Paso 4»). Falta:
 - **Las tablas `DVG_CATEGORIA` y `DVG_SOLICITUD`** de `jdbc/Appian` (prueba de divergencias, sin valor): las quita una
   persona con acceso a la base de datos. [persona]
 
-### Paso 5 · Cierre de la rama
-
-- **Cierre.** Se sigue en esta única rama y se integra con `main` cuando todo esté probado y validado (Raúl, 3-nov).
-  Antes del PR, poner al día «Trabajo en curso» de `CLAUDE.local.md`. La batería completa pasa en GitHub. Antes de
-  publicar una versión, las siete combinaciones y `pruebas/comprobar_anclas.py` (con
-  red). [persona y sesión]
-- **Copia de seguridad.** La rama no está en GitHub; se sube como copia, sin PR, cuando Raúl lo autorice. [persona]
-
 ## 2. Cuando se dé su condición
 
+- **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
+  `pruebas/comprobar_anclas.py`, con red; la versión, en `.claude-plugin/plugin.json` y en la primera fila de
+  versiones del README. [persona y sesión]
 - **Índice del DOCX.** Evaluar la caché editable solo si una entrega la necesita. [Word]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
   observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se
