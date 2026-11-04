@@ -488,9 +488,12 @@ def estado(a):
         tv = m.version("T")
         empezado, _ = mo.estado_tecnico(m)
         print("Técnico: " + (f"versión {tv[0]}.{tv[1]}" if tv else "sin versión") + ("" if empezado else ", sin empezar"))
-    sig = re.search(r"^## Siguiente paso\s*\n+(.+)", texto, re.M)
-    if sig:
-        print(f"Siguiente paso: {sig.group(1).strip()}")
+    # El apartado entero, hasta el siguiente o el final: un párrafo partido o una lista no se cortan (paso 3)
+    sig = re.search(r"^## Siguiente paso[ \t]*\n(.*?)(?=^## |\Z)", texto, re.M | re.S)
+    lineas = sig.group(1).strip().split("\n") if sig and sig.group(1).strip() else []
+    if lineas:
+        print(f"Siguiente paso: {lineas[0].strip()}"
+              + "".join(f"\n  {l.rstrip()}" if l.strip() else "\n" for l in lineas[1:]))
 
 
 def unidades(ctx):

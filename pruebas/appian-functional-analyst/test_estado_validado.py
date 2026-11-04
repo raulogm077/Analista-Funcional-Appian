@@ -93,5 +93,35 @@ class EstadoValidado(unittest.TestCase):
         self.assertRegex(out, r"EV-01 · .* · Aprobada · fuentes: todas las del análisis inicial · versión: 1\.1, al aprobarla")
 
 
+    def test_siguiente_paso_entero(self):
+        """Paso 3 (4-nov): «estado» enseñaba solo la primera línea de «Siguiente paso», y un apartado vacío daba el
+        título del siguiente."""
+        p = self.proyecto("siguiente")
+        pm = p / "proyecto.md"
+        base = pm.read_text(encoding="utf-8").split("## Siguiente paso")[0]
+        casos = {
+            "varias líneas, una lista y otro apartado detrás": (
+                "## Siguiente paso\n\nEl QA de EV-02 en otra\nsesión, solo con sus .feature:\n- verificar ISS-01;\n"
+                "- preparar su pase.\n\n## Notas\n\nNada que ver.\n",
+                ["Siguiente paso: El QA de EV-02 en otra", "  sesión, solo con sus .feature:", "  - verificar ISS-01;",
+                 "  - preparar su pase."], ["Nada que ver", "## Notas"]),
+            "al final del fichero, sin salto": (
+                "## Siguiente paso\n\nUna línea\ny otra.", ["Siguiente paso: Una línea", "  y otra."], []),
+            "vacío, con otro apartado detrás": (
+                "## Siguiente paso\n\n## Notas\n\nNada que ver.\n", [], ["Nada que ver", "## Notas"]),
+        }
+        for nombre, (seccion, estan, no_estan) in casos.items():
+            with self.subTest(nombre):
+                pm.write_text(base + seccion, encoding="utf-8")
+                c, out = fixture.corre(S / "proyecto.py", "estado", p)
+                self.assertEqual(c, 0, out)
+                lineas = out.splitlines()
+                for x in estan:
+                    self.assertIn(x, lineas)
+                for x in no_estan:
+                    self.assertNotIn(x, out)
+                if not estan:
+                    self.assertFalse([l for l in lineas if l.startswith("Siguiente paso:")], out)
+
 if __name__ == "__main__":
     unittest.main()
