@@ -12,8 +12,8 @@ Claude. Lo que queda después necesita a Raúl en persona: P3 en una sesión ate
 
 ### Paso 3 · Prueba con el plugin cargado desde la carpeta
 
-Hecho el 4-nov en sesiones en segundo plano que arrancó Claude con `claude --bg --plugin-dir` y el permiso
-`Bash(claude --bg:*)` de Raúl (`evaluaciones.md`, «Paso 3 con el plugin cargado»). Falta:
+Hecho el 4-nov en sesiones en segundo plano que arrancó Claude con `claude --bg --plugin-dir`, aceptadas por el
+clasificador del modo auto (`evaluaciones.md`, «Paso 3 con el plugin cargado»). Falta:
 
 - **Las rectificaciones con fuentes agrupadas.** En P7, la copia «juntas» trató en un informe la reunión y el correo que
   la corrige, y no dejó las filas de las dos rectificaciones que pide `ingesta-fuentes.md` §4 (qué se decide, cuándo,
@@ -50,10 +50,13 @@ citan se conserva, no solo su resumen, y se le enseña la lista exacta de lo que
   las aplicaciones IFA e IFB del ensayo con sus datos, y dos instancias activas de `IFA Revisar Fechas Limite` desde el
   24-oct, que se repiten cada día y envían correo; solo las cancela una persona. La de IFB no se puede leer (403). Las
   dos instancias las cancela Raúl; lo demás entra en la lista. [persona y sesión]
-- Del paso 3: en Indra-spain, los dos borradores de paquete de IFA, el del 2.6 (EV-03, con su script) y «PRUEBA PASO 3
-  EV-02 (borrar)» (`90918f3c…`, en `paso3-20261103/objetos-creados.md`). En `Pruebas-plugin/paso3-20261103/`, los
-  proyectos y remotos de prueba. Se conservan `resultados.md`, `PRUEBA.md`, `PRUEBA-bis.md`, `objetos-creados.md`,
-  `validacion-paquete-2.6.json` y el arranque de Codex mientras los cite `evaluaciones.md`. [sesión]
+- De la prueba del 2.6 y del paso 3: en Indra-spain, dos borradores de paquete de IFA, el de la prueba del 2.6
+  («PRUEBA 2.6 EV-03 (borrar)», `2478033f…`, con su script), anterior al paso 3, y el del paso 3 («PRUEBA PASO 3
+  EV-02 (borrar)», `90918f3c…`); los dos, en `paso3-20261103/objetos-creados.md`. En `Pruebas-plugin/paso3-20261103/`,
+  los proyectos y remotos de prueba; fuera, la copia temporal de Codex
+  (`C:\Users\rgmoya\AppData\Local\Temp\codex-factibilidad-d-zuj_i2bw`). Se conserva lo que sostiene el registro:
+  la evidencia que citan, directa o indirectamente, `evaluaciones.md` y `resultados.md` (artefactos y
+  transcripciones incluidos), y lo que necesita esta limpieza (`objetos-creados.md`, con los UUID). [sesión]
 - En el repositorio, las galerías HTML de `appian-prototipos/galerias/` (1,8 MB, no las cita nadie y se regeneran con
   `generar_app.py` y `build.py`): entran en la lista. [sesión]
 
