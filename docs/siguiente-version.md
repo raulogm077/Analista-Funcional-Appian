@@ -4,26 +4,11 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** del paso 3 bis, volver a probar con el DevMCP nuevo las diez observaciones que marca
-`comprobar_divergencias.py`, cuando Codex confirme que el bundle está cargado en los clientes. Después, el paso 4 (su
-inventario de solo lectura ya está en marcha). El paso 3 está hecho (`evaluaciones.md`, «Paso 3 con el plugin
-cargado» y las filas que cita).
+**Ahora:** el paso 4; su inventario de solo lectura está en marcha. Hechos: el paso 3 (`evaluaciones.md`, «Paso 3
+con el plugin cargado» y las filas que cita) y el paso 3 bis, el DevMCP 26.9.10 y Appian 26.10 (Codex instaló el
+bundle; las correcciones de buenas prácticas y las divergencias, en sus filas de `evaluaciones.md`).
 
 ## 1. En la rama actual, por orden
-
-### Paso 3 bis · DevMCP 26.9.10 y Appian 26.10
-
-Petición de Raúl del 4-nov: actualizar el DevMCP con su skill oficial e integrar las novedades de Appian. Codex
-instaló el build 20261103-144057 (SAIL 26.9.10) y la skill oficial, igual en los cuatro clientes, y conservó el parche
-local de `cookies.json`, que el bundle no corrige. Las correcciones de buenas prácticas por la 26.10 están en `79a2233`
-(`evaluaciones.md`). Falta:
-
-- **Las divergencias con la skill oficial, con el build nuevo.** `comprobar_divergencias.py`: las 11 divergencias
-  siguen como estaban en el texto de la oficial y los 20 ficheros citados siguen en ella. Diez observaciones de
-  conducta se vieron con builds anteriores: hay que volver a probarlas en Indra-spain con el nuevo (Raúl autorizó
-  escribir allí para pruebas, 3-nov). No se retira ningún aviso ni rodeo sin probarlo; lo corregido se quita de
-  `14-official-skill-divergences.md` y de `pruebas/divergencias-oficial.json`. Lo que se cree para probarlo entra en el
-  paso 4. [sesión]
 
 ### Paso 4 · Residuos de las pruebas
 
@@ -53,6 +38,11 @@ citan se conserva, no solo su resumen, y se le enseña la lista exacta de lo que
   (`C:\Users\rgmoya\AppData\Local\Temp\codex-factibilidad-d-zuj_i2bw`). Se conserva lo que sostiene el registro:
   la evidencia que citan, directa o indirectamente, `evaluaciones.md` y `resultados.md` (artefactos y
   transcripciones incluidos), y lo que necesita esta limpieza (`objetos-creados.md`, con los UUID). [sesión]
+- Del paso 3 bis, en Indra-spain: la aplicación «DVG Divergencias DevMCP 26.9.10 (borrar)», con sus record types,
+  interfaz y regla de prueba; la aplicación vacía «DVG Prefijo usado (borrar)», con el prefijo DEM; y dos documentos
+  SQL que `createRecordType` dejó en una carpeta de sistema, que no se van con la aplicación. Las tablas `DVG_*` de
+  `jdbc/Appian` las quita una persona con acceso a la base de datos. Todo, con sus UUID, en
+  `paso3-20261103/objetos-creados.md`. [sesión y persona]
 - En el repositorio, las galerías HTML de `appian-prototipos/galerias/` (1,8 MB, no las cita nadie y se regeneran con
   `generar_app.py` y `build.py`): entran en la lista. [sesión]
 
@@ -122,12 +112,13 @@ citan se conserva, no solo su resumen, y se le enseña la lista exacta de lo que
 
 Se empiezan después de terminar las tareas actuales, por indicación de Raúl del 3 de noviembre.
 
-- **Revisión de la versión 26.10.** Contrastar las versiones del entorno Appian y del bundle Dev MCP, la documentación
-  nueva, las herramientas y la skill oficial. Actualizar el comportamiento del plugin con las capacidades nuevas
-  que procedan, retirar indicaciones obsoletas o deprecadas y comprobar que lo que ya funcionaba sigue funcionando.
-  Comprobar ahí si el bundle configura ya el inicio programado de un proceso (mientras, rige L3: lo hace una persona,
-  sin un bucle de temporizador como sustituto) y volver a contrastar el botón «Limpiar» tras uno que valida, que dejó
-  «A value is required» aunque llevara `validationGroup` (laboratorio de la campaña de Codex).
+- **Versión 26.10: lo que queda.** El contraste de versiones, bundle, skill oficial, documentación y herramientas, y
+  la corrección de lo obsoleto en las buenas prácticas y en las divergencias, se hizo el 4-nov (paso 3 bis;
+  `evaluaciones.md`). Queda probar las capacidades en un entorno Appian 26.10 real cuando lo haya. Ahí, mirar si el
+  bundle configura ya el inicio programado de un proceso (mientras, rige L3: lo hace una persona, sin un bucle de
+  temporizador como sustituto) y volver a contrastar el botón «Limpiar» tras uno que valida, que dejó «A value is
+  required» aunque llevara `validationGroup` (laboratorio de la campaña de Codex). Y las novedades sin consumidor de
+  §2.
 - **Desplegar con el MCP de despliegue de Appian.** Raúl, 3-nov: puede ser la siguiente integración, tras el 2.6, para
   desplegar en el siguiente entorno con la autorización de una persona. Es una integración posterior: probar paquetes en
   desarrollo no autoriza desplegar en otro entorno. Según su página
