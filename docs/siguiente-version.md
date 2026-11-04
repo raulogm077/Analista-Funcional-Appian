@@ -4,8 +4,8 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** del paso 3, que `version --decision` ponga en la fila D la fuente que cita «lo nuevo», y medirlo en P7
-septies (`Pruebas-plugin/paso3-20261103/PRUEBA-ter.md`). Después, con Raúl en persona, P3 en una sesión atendida, P8 y
+**Ahora:** del paso 3, medir en P7 septies (`Pruebas-plugin/paso3-20261103/PRUEBA-ter.md`) que, con `9098c95`, las
+filas D de las dos rectificaciones llevan la fuente y la fecha del correo. Después, con Raúl en persona, P3 en una sesión atendida, P8 y
 P9 (`PRUEBA.md`). Lo demás del paso 3 está hecho (`evaluaciones.md`). Después, el paso 4.
 
 ## 1. En la rama actual, por orden
@@ -15,14 +15,12 @@ P9 (`PRUEBA.md`). Lo demás del paso 3 está hecho (`evaluaciones.md`). Después
 Hecho el 4-nov en sesiones en segundo plano que arrancó Claude con `claude --bg --plugin-dir`, aceptadas por el
 clasificador del modo auto (`evaluaciones.md`, «Paso 3 con el plugin cargado»). Falta:
 
-- **La fuente de la fila D de una rectificación.** Con `abed1dd`, P7 sexies regeneró bien los Word y escribió las
-  dos filas D, separadas y con lo que pidió la reunión en «Antes». Pero las dos llevan la fuente y la fecha de la
-  reunión: `version --decision` pone la primera `--fuente`, aunque «lo nuevo» de cada una cite [FU-07], y el agente no
-  aplicó la salvedad «a mano». Ese paso es mecánico. Falta que la fila tome la fuente que cita «lo nuevo», entre las
-  de `--fuente`: si cita varias, la más reciente; si ninguna, la primera. La fecha es la de esa fuente, y las marcas
-  🔒 de un VALIDA citan la de su fila. Con su prueba, el selftest completo y el texto de §6. Después, medirlo en P7
-  septies, con un montaje nuevo y la misma receta. P7 quater, con Raúl aprobando en persona, queda como
-  alternativa. [flujo]
+- **La fuente de la fila D de una rectificación, en conducta.** Con `9098c95`, si «lo nuevo» cita una sola de las de
+  `--fuente`, la fila lleva esa fuente y su fecha. Si cita varias o ninguna, la primera, y la salida lo dice: en ese
+  caso, decidir la fuente sigue en quien aplica. Falta medirlo en P7 septies, con un montaje nuevo y la misma receta.
+  Pasa si las dos filas D llevan la fuente y la fecha del correo, con lo que pidió la reunión y su cita en «Antes», y
+  la comprobación completa sale sin errores; un exit 0 solo no lo acredita. P7 quater, con Raúl aprobando en persona,
+  queda como alternativa. [flujo]
 - **P3 en una sesión atendida.** Marcar Construida con `--manual` lo decide una persona y está prohibido en una
   desatendida. La primera ejecución lo hizo por un error del guion y no cuenta. [persona]
 - **P8, una autorización que llega por otra sesión.** Raúl abre la sesión con su delegación en el primer mensaje.
