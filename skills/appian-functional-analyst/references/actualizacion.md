@@ -254,8 +254,9 @@ le vuelve a preguntar.
   diagramas de estados y de datos se editan en su `.mmd` y se vuelven a pintar con `mermaid.py`
   (`mermaid-diagrams.md`).
 - **decisiones.md**: una fila D por punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE, y otra por cada rectificación
-  entre fuentes del mismo informe (§3, casos frontera), al final; mejor con `version --decision` (la escribe con su
-  número y con la primera `--fuente`), o a mano si la decide otra fuente:
+  entre fuentes del mismo informe (§3, casos frontera), al final; mejor con `version --decision`, que la escribe con
+  su número y con la fuente de `--fuente` que cita «lo nuevo», si cita una sola, y su fecha. Si cita varias o ninguna,
+  la primera, y la salida lo dice: corrígela si la decide otra. O a mano así:
   `| D-01 | 2026-10-08 | FU-05 | CAMBIA | Lo nuevo | Lo de antes [FU-01 00:12:30] | PAN-01 | Sí |`.
 - **Anexo**: `indice.py derivadas <p> --escribir`, si cambia una parte de una pantalla (su nombre o quién la usa) o un
   perfil y el funcional lo lleva; `comprobar.py` avisa si se queda viejo.

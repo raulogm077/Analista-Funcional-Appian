@@ -21,7 +21,7 @@
                                      antes de aplicar un informe que cambia el análisis: la copia, la versión +0.1 en
                                      funcional y técnico, su fila en decisiones.md, cada fuente en «Fuentes procesadas»
                                      y, con --decision (una por punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE, con
-                                     la primera fuente), su fila D
+                                     la fuente que cita «lo nuevo» si es una sola; si no, la primera), su fila D
   proyecto.py entregar <carpeta> [--cambio EV-02] [--word <fichero>]   el Word sale hacia el cliente: «DF entregado»
                                      (el de un cambio, en su fila de Versiones de decisiones.md) y el fichero en
                                      «Entregados»: el de la versión o, con --word, el exacto que se envía (una revisión)
@@ -680,15 +680,36 @@ def prepara_inicial(m, texto_p, texto_d, cat, fuentes):
     return fuentes, primeras, reutiliza
 
 
-def marca_validadas(m, decisiones, fuente):
+def fuente_de_decision(nuevo, fuentes, primera):
+    """La fuente de una fila D: la de --fuente que cita «lo nuevo», si cita una sola; si cita varias o ninguna,
+    `primera`, porque la más reciente no es por fuerza la que decide (ingesta-fuentes.md §4 ordena por rango y después
+    por fecha). Devuelve (fuente, si la dio la cita). Así, con la reunión y el correo que la corrige en un informe, la
+    rectificación que solo cita el correo queda con el correo."""
+    citadas = [f for f in dict.fromkeys(re.findall(r"FU-\d+", nuevo)) if f in fuentes]
+    return (citadas[0], True) if len(citadas) == 1 else (primera, False)
+
+
+def marca_validadas(m, decisiones, fuente_de):
     """Las marcas de un VALIDA: cada pieza de «Afecta a» (los rangos, expandidos) pasa de ✅ o 🔶 a 🔒 en cada comentario
-    de sus líneas, y suma la cita de la fuente. Lo que ya es 🔒, ⚠️ o ❓ no se toca. Devuelve (marcas, piezas, sin pieza)."""
-    pedidas = {x for d in decisiones if d[0].upper() == "VALIDA" for x in mo.ids_en(d[1])}
+    de sus líneas, y suma la cita de la fuente de su fila D (`fuente_de(lo nuevo)`); una línea que cubren varias
+    validaciones (un criterio y su historia, o la misma pieza dos veces) suma las de todas. Lo que ya es 🔒, ⚠️ o ❓ no
+    se toca. Devuelve (marcas, piezas, sin pieza)."""
+    de_pieza = {}
+    for d in decisiones:
+        if d[0].upper() == "VALIDA":
+            fu = fuente_de(d[2])
+            for x in mo.ids_en(d[1]):
+                de_pieza.setdefault(x, [])
+                if fu not in de_pieza[x]:
+                    de_pieza[x].append(fu)
+    pedidas = set(de_pieza)
     piezas = [m.piezas[x] for x in sorted(pedidas) if x in m.piezas and m.piezas[x].doc != "D"
               and not m.piezas[x].anulada]
     lineas = {}
     for p in piezas:
-        lineas.setdefault(p.doc, set()).update(range(p.ini, p.fin))
+        for i in range(p.ini, p.fin):
+            suyas = lineas.setdefault(p.doc, {}).setdefault(i, [])
+            suyas.extend(f for f in de_pieza[p.id] if f not in suyas)
     marcas, tocadas = 0, set()
     for doc, numeros in lineas.items():
         ruta = m.ruta(doc)
@@ -696,15 +717,16 @@ def marca_validadas(m, decisiones, fuente):
         if len(L) != len(m.docs[doc].lineas):
             continue
         for i in sorted(numeros):
-            def cambia(mc):
+            def cambia(mc, suyas=numeros[i]):
                 nonlocal marcas
                 c = mc.group(1)
                 e = mo.estado_en(c)
                 if e not in ("✅", "🔶"):
                     return mc.group(0)
                 c = c.replace(e, "🔒", 1).rstrip()
-                if fuente not in re.findall(r"FU-\d+", c):
-                    c += f"; {fuente}"
+                for fuente in suyas:
+                    if fuente not in re.findall(r"FU-\d+", c):
+                        c += f"; {fuente}"
                 marcas += 1
                 tocadas.add((doc, i))
                 return f"<!--{c if c.startswith(' ') else ' ' + c} -->"
@@ -818,10 +840,16 @@ def version(a):
     ids_d = []
     n = max([int(x) for f in tabla(texto_d, "Decisiones del cliente") for x in re.findall(r"^D-(\d+)", f[0])] or [0])
     ancho_d = mo.ancho_ids(m.piezas, "D")
-    fecha_fu = str(cat[fuente_decision].get("fecha", ""))[:10] or hoy
+
+    def fuente_de(nuevo_txt):
+        return fuente_de_decision(nuevo_txt, fuentes, fuente_decision)[0]
+
+    varias = len(fuentes) > 1
     for tipo, afecta, nuevo_txt, antes in decisiones:
+        fu, por_cita = fuente_de_decision(nuevo_txt, fuentes, fuente_decision)
+        fecha_fu = str(cat[fu].get("fecha", ""))[:10] or hoy
         celdas = [" ".join(x.split()).replace("|", "/") for x in (tipo.upper(), nuevo_txt, antes, afecta)]
-        fila = (f"| D-{n + 1:0{ancho_d}d} | {fecha_fu} | {fuente_decision} | {celdas[0]} | {celdas[1]} | {celdas[2]} | {celdas[3]} "
+        fila = (f"| D-{n + 1:0{ancho_d}d} | {fecha_fu} | {fu} | {celdas[0]} | {celdas[1]} | {celdas[2]} | {celdas[3]} "
                 "| Sí |")
         nuevo_d = anade_fila(texto_d, "Decisiones del cliente", fila)
         if nuevo_d is None:
@@ -829,13 +857,16 @@ def version(a):
             continue
         n += 1
         texto_d = nuevo_d
-        ids_d.append(f"D-{n:0{ancho_d}d}")
+        # con varias fuentes, la salida dice de cuál es cada fila: la que cita «lo nuevo» o, si no la da una sola cita,
+        # la primera, para que lo corrija quien sabe cuál decide
+        ids_d.append(f"D-{n:0{ancho_d}d}" + (f" ({fu}, {fecha_fu}" + ("" if por_cita else ": la primera de --fuente")
+                                             + ")" if varias else ""))
     if ids_d:
         escrito.append(f"{', '.join(ids_d)} en decisiones.md")
     if texto_d != (dec.read_text(encoding="utf-8") if dec.exists() else ""):
         mo.escribe(dec, texto_d)
     if any(d[0].upper() == "VALIDA" for d in decisiones):
-        marcas, n_piezas, sin_pieza = marca_validadas(m, decisiones, fuente_decision)
+        marcas, n_piezas, sin_pieza = marca_validadas(m, decisiones, fuente_de)
         escrito.append(f"{marcas} marcas a 🔒 en {n_piezas} piezas")
         if sin_pieza:
             a_mano.append(f"las marcas 🔒 de {', '.join(sin_pieza)} (VALIDA: no es una pieza del análisis)")
@@ -1316,8 +1347,9 @@ def main():
                                                  "la fila de la versión en decisiones.md")
     s.add_argument("--informe", help="el informe, si no es impacto/<primera fuente>.md (una urgencia: impacto/URG-nn.md)")
     s.add_argument("--decision", nargs=4, action="append", metavar=("TIPO", "AFECTA_A", "LO_NUEVO", "LO_DE_ANTES"),
-                   help="la fila D de un punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE±, con la primera fuente de "
-                        "--fuente; «lo de antes» con su cita")
+                   help="la fila D de un punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE±, con la fuente de --fuente que "
+                        "cita «lo nuevo», si cita una sola, y su fecha (si cita varias o ninguna, la primera); «lo de "
+                        "antes» con su cita")
     s = sub.add_parser("entregar"); s.add_argument("carpeta"); s.set_defaults(f=entregar)
     s.add_argument("--cambio", help="el DF de un cambio (df_docx.js --cambio): se anota en decisiones.md")
     s.add_argument("--word", help="el fichero exacto que se envía, si no es el de la versión: una revisión suya "

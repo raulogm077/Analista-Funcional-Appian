@@ -347,6 +347,51 @@ def main():
            c == 0 and "| D-03 | 2026-10-01 | FU-04 | CAMBIA | Los planos, hasta 30 MB | Hasta 20 MB [FU-01 00:20:10] | "
            "HU-07 | Sí |" in dd and "| D-04 | 2026-10-01 | FU-04 | RESPONDE | Lo firma el responsable | — | PC-03 | Sí |" in dd
            and "D-03, D-04" in out, out + dd)
+        # Varias fuentes en un informe (la reunión y el correo que la corrige): la fila D lleva la fuente de --fuente que
+        # cita «lo nuevo», si cita una sola, y su fecha; si cita varias o ninguna, la primera, y la salida lo dice (la más
+        # reciente no es por fuerza la que decide). Las marcas 🔒 de un VALIDA citan las fuentes de las validaciones que
+        # cubren cada línea (paso 3, P7 sexies: la primera --fuente atribuía a la reunión lo que decidió el correo)
+        juntas = [{"id": "FU-05", "fichero": "reunion.txt", "tipo": "Transcripción", "detalle": "9 intervenciones",
+                   "fecha": "2026-10-20 10:00"},
+                  {"id": "FU-06", "fichero": "correo.eml", "tipo": "Correo", "detalle": "correo «Lo que hablamos ayer»",
+                   "fecha": "2026-10-21 09:15"}]
+        for nombre in ("version varias fuentes", "version varias fuentes valida"):
+            shutil.copytree(EJEMPLO, tmp / nombre)
+            shutil.copytree(pv / "fuentes", tmp / nombre / "fuentes")
+            cat = json.loads((tmp / nombre / "fuentes" / "indice.json").read_text(encoding="utf-8"))
+            (tmp / nombre / "fuentes" / "indice.json").write_text(json.dumps({"fuentes": cat["fuentes"] + juntas}),
+                                                                  encoding="utf-8")
+        pd3 = tmp / "version varias fuentes"
+        c, out = corre(S / "proyecto.py", "version", pd3, "--fuente", "FU-05", "FU-06", "--que", "Centro de coste",
+                       "--decision", "CAMBIA", "HU-07", "Obligatorio solo por encima de 500 € [FU-06]",
+                       "Obligatorio siempre [FU-05 00:03:00]",
+                       "--decision", "CAMBIA", "HU-03", "Lo firma el responsable", "—",
+                       "--decision", "CAMBIA", "HU-02", "La columna, sin filtro [FU-05 00:04:30; FU-06]",
+                       "Columna y filtro [FU-05 00:04:30]")
+        dd = (pd3 / "analisis" / "decisiones.md").read_text(encoding="utf-8")
+        ok("proyecto.py version --decision con varias fuentes: la fila D lleva la que cita «lo nuevo», si es una sola, y "
+           "su fecha; si cita varias o ninguna, la primera, y la salida lo dice",
+           c == 0 and "| D-03 | 2026-10-21 | FU-06 | CAMBIA | Obligatorio solo por encima de 500 € [FU-06] | "
+           "Obligatorio siempre [FU-05 00:03:00] | HU-07 | Sí |" in dd
+           and "| D-04 | 2026-10-20 | FU-05 | CAMBIA | Lo firma el responsable | — | HU-03 | Sí |" in dd
+           and "| D-05 | 2026-10-20 | FU-05 | CAMBIA | La columna, sin filtro [FU-05 00:04:30; FU-06] | " in dd
+           and "D-03 (FU-06, 2026-10-21)" in out and "D-04 (FU-05, 2026-10-20: la primera de --fuente)" in out
+           and "D-05 (FU-05, 2026-10-20: la primera de --fuente)" in out, out + dd)
+        pd4 = tmp / "version varias fuentes valida"
+        editar(pd4 / "analisis" / "funcional.md", "«Adjunte la memoria y el plano».",
+               "«Adjunte la memoria y el plano». <!-- ✅ FU-01 00:05:00 -->")
+        c, out = corre(S / "proyecto.py", "version", pd4, "--fuente", "FU-05", "FU-06", "--que", "Validación",
+                       "--decision", "VALIDA", "HU-01", "Validado [FU-05]", "Borrador [FU-01 00:04:10]",
+                       "--decision", "VALIDA", "HU-01.1", "Validado por correo [FU-06]", "—")
+        ff = (pd4 / "analisis" / "funcional.md").read_text(encoding="utf-8")
+        dd = (pd4 / "analisis" / "decisiones.md").read_text(encoding="utf-8")
+        criterio = next((x for x in ff.splitlines() if x.startswith("- `HU-01.1`")), "")
+        ok("proyecto.py version --decision VALIDA con varias fuentes: cada marca 🔒 cita las fuentes de las validaciones "
+           "que cubren su línea, también la del criterio que cubre su historia",
+           c == 0 and "<!-- 🔒 FU-01 00:04:10; FU-05 -->" in ff.split("**HU-01 ")[1].split("\n")[0]
+           and criterio.endswith("<!-- 🔒 FU-01 00:05:00; FU-05; FU-06 -->")
+           and "| D-03 | 2026-10-20 | FU-05 | VALIDA |" in dd and "| D-04 | 2026-10-21 | FU-06 | VALIDA |" in dd,
+           out + criterio + dd[-400:])
         # L7: --decision VALIDA pone las marcas 🔒 de las piezas de «Afecta a», con rangos, sin tocar lo demás
         pv5 = tmp / "version valida"
         shutil.copytree(EJEMPLO, pv5)
