@@ -141,7 +141,7 @@ Source: https://docs.appian.com/suite/help/latest/recipe-showing-validation-erro
 Source: https://docs.appian.com/suite/help/latest/recipe-configure-buttons-with-conditional-requiredness.html
 
 ### 4.3 `saveInto` with `a!save()` to transform the saved value
-- ✅ Use `a!save(target, value)` in `saveInto` when you need to transform the input before saving it (e.g. `todecimal(save!value)`).
+- ✅ Use `a!save(target, value)` in `saveInto` when you need to transform the input before saving it (e.g. ⓥ from 26.10 `a!toDecimal(value: save!value)`, which returns Decimal Precise, or with `decimalType: "FLOATING"` for a Decimal Floating target; before 26.10, `todecimal(save!value)`, deprecated in 26.10).
 - **Why:** it lets the consuming designer always work with the correct type; `save!value` is the value the user entered.
 - ⚠️ Inside `a!forEach`, save into `fv!item`, not into `local!list[fv!index]`: that is how `a!forEach()` keeps each value on its own row; indexing back into the original array lands values in the wrong rows ([KB-1398](https://community.appian.com/application-design-33/kb-1398-a-foreach-does-not-save-inputs-in-the-order-they-are-entered-662)).
 

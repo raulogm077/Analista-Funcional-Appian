@@ -120,11 +120,15 @@ separately as **Resources**, and new agents start with **no tools enabled** ⓥ.
 - ⚠️ ⓥ **MCP tools (26.6):** only developers with Viewer or higher on the MCP connected system can add
   it, and the agent exposes only the tools you select; authentication is API key or OAuth 2.0 client
   credentials, and only the *tools* primitive is supported. Tools renamed or removed on the server need
-  manual reconfiguration. The **Appian MCP Server** (Appian exposed to external AI clients) authenticates
-  every connection as **one service account** — no per-user identity — so scope that account to the
-  minimum; it works on synced record types and logs every call.
+  manual reconfiguration. The **Appian MCP Server** (Appian exposed to external AI clients; not the Dev MCP)
+  ⓥ authenticated every connection as **one service account** in 26.6, with no per-user identity. The 26.10
+  documentation also offers **OAuth 2.0** (an Authorization Code client with the `mcp` scope), where each
+  request runs with the signed-in user's permissions. A service account API key is a shared credential over
+  every tool that account can see, so scope it to the minimum. Either way the caller needs object security
+  on the design objects exposed as tools. Its data tools query **synced** record types, each enabled
+  individually; in 26.10 requests are **not logged by default** (turn on Platform API trace logging).
 
-Source: [Create and Configure an AI Agent — Prepare your tools and actions](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#before-you-begin-prepare-your-tools-and-resources) · [Create and Configure — Keep it simple](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#4-keep-it-simple) · [Best Practices — Design tools for efficiency](https://docs.appian.com/suite/help/latest/agent-studio-best-practices.html#design-tools-for-efficiency) · [Release notes 26.8 — tools and resources, system tools](https://docs.appian.com/suite/help/latest/Appian_Release_Notes.html#ai-agents) · [MCP tools in AI agents](https://docs.appian.com/suite/help/latest/mcp-tools-ai-agents.html#mcp-tool-security-and-access-control) · [Appian MCP Server — Security model](https://docs.appian.com/suite/help/latest/appian-mcp-server.html#security-model)
+Source: [Create and Configure an AI Agent — Prepare your tools and actions](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#before-you-begin-prepare-your-tools-and-resources) · [Create and Configure — Keep it simple](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#4-keep-it-simple) · [Best Practices — Design tools for efficiency](https://docs.appian.com/suite/help/latest/agent-studio-best-practices.html#design-tools-for-efficiency) · [Release notes 26.8 — tools and resources, system tools](https://docs.appian.com/suite/help/latest/Appian_Release_Notes.html#ai-agents) · [MCP tools in AI agents](https://docs.appian.com/suite/help/latest/mcp-tools-ai-agents.html#mcp-tool-security-and-access-control) · [Appian MCP Server — Security model](https://docs.appian.com/suite/help/latest/appian-mcp-server.html#security-model) · [Enable and configure the Appian MCP Server](https://docs.appian.com/suite/help/latest/enable-configure-mcp-server.html)
 
 ### 3.1 Run limits to design within
 
