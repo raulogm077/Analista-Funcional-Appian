@@ -136,6 +136,10 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
      del mismo tema (`buscar … --tipo PC`): suele haber duplicados.
    - **Validación condicionada** («lo apruebo cuando lo reenvíes con el filtro»): nada pasa a 🔒 hasta que
      llegue esa confirmación.
+   - **La fila de supuestos** (`funcional-plantilla.md` §11): si el cliente valida el DF, o esa fila, es RESPONDE de
+     ella y lo que la cita pasa a 🔒 con lo validado; lo que corrija en esa validación se aplica como cualquier otro
+     punto. Una fuente que corrige alguno sin validar el resto es una respuesta parcial: se aplica lo corregido y la
+     fila sigue con los demás, como propuestos.
    - **Comentario del cliente al DF**: cada comentario es un punto. Un «de acuerdo» sobre una historia o una
      pantalla es VALIDA de esa pieza.
    - Llevar a otra pantalla algo que ya está en otras iguales es COMPLETA; ALCANCE+ es una capacidad que no

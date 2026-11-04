@@ -77,8 +77,8 @@ Historias agrupadas por área (`### Área`). Cada una:
 1. Título `**HU-nn — Verbo y objeto**` con su trazabilidad.
 2. Tabla `Perfil · Pantalla · Paso · Prioridad`. El perfil es el de §2; «Aplicación» si lo hace la propia aplicación
    (sin darla de alta en §2). Pantalla y paso, el ID o «—». Prioridad: Imprescindible
-   o Deseable; si las fuentes no priorizan, la que se propone, inferida (`prioridad 🔶`), y una sola PC para validar la
-   priorización, nunca «Pendiente»; con una aplicación existente (`as-is/`), «—» en lo que ya hace. Si es nueva, cambia o se conserva no se
+   o Deseable; si las fuentes no priorizan, la que se propone, inferida (`prioridad 🔶`), y la priorización propuesta
+   va a la fila de supuestos del 11, nunca «Pendiente»; con una aplicación existente (`as-is/`), «—» en lo que ya hace. Si es nueva, cambia o se conserva no se
    escribe: lo deriva `indice.py cambios` (`cambios.md`). Si la historia corrige un hallazgo, su cita va en la
    trazabilidad, no en el DF: `**HU-02 — …** <!-- ✅ FU-03 00:09:20; [FU-01 H-DAT-01] -->`.
 3. «Como <perfil>, quiero <qué> para <para qué>.»
@@ -90,7 +90,7 @@ Historias agrupadas por área (`### Área`). Cada una:
    (pulsar, rellenar): «cuando la reenvía», no «cuando pulsa Reenviar»; los datos, con el nombre que les da el
    cliente. Un solo «cuando»: si no cabe en una frase, son dos criterios. Los textos literales (un mensaje, un
    estado), entre comillas. Toda acción que borre o anule algo dice su confirmación literal; si no se sabe,
-   va al 11. Lo que depende de la fecha de hoy se escribe con una fecha fija («Dado que hoy es el 15/03/2026…»);
+   se propone y va a la fila de supuestos del 11. Lo que depende de la fecha de hoy se escribe con una fecha fija («Dado que hoy es el 15/03/2026…»);
    el técnico prueba así la lógica que depende de la fecha (caso de prueba de regla, §14); su efecto (no se guarda,
    no arranca el proceso, sale el mensaje) se prueba en su capa. Con las tres partes, un script escribe la prueba de cada criterio en Gherkin, sin interpretarlo. Los
    criterios que ya estaban escritos de otra forma (un análisis anterior, el DF del cliente) se quedan como están
@@ -178,11 +178,18 @@ Se acepta si:
 Una línea por tema, en lenguaje del cliente: personas que la usan y cuántas a la vez, volumen y
 crecimiento, conservación y borrado, carga inicial, horario y tiempo máximo sin servicio, idiomas,
 accesibilidad, móvil, personas de fuera de la organización, quién mantiene las listas, días hábiles o
-naturales. Lo que no se sabe es un PC. De aquí sale el apartado Entorno de la especificación técnica.
+naturales. Lo que no se sabe y cambia la solución, el alcance o una regla de negocio es un PC; lo demás que se propone,
+a la fila de supuestos del 11. De aquí sale el apartado Entorno de la especificación técnica.
 
 ### 11. Pendiente de confirmar
 Tabla con IDs `PC-nn`: `ID · Pregunta · Opciones · A quién · Afecta a`. Una pregunta por fila, cerrada y con opciones
 cuando se puede. Lo respondido se tacha con la decisión que lo responde. El Word solo enseña las abiertas.
+
+Los supuestos van juntos en una sola fila: lo que se propone sin fuente y no cambia la solución, el alcance ni una
+regla de negocio (un texto literal, un dato de entorno, la prioridad propuesta). En «Pregunta», «Damos por buenos estos
+supuestos salvo que nos digáis otra cosa:» y cada uno con su pieza entre paréntesis, separados por punto y coma; en
+«Opciones», «De acuerdo / Indicad cuál cambia». Las piezas que dependen de uno citan esa fila como cualquier PC. Lo que
+cambia la solución, el alcance o una regla de negocio lleva su propia fila.
 
 ```markdown
 | ID | Pregunta | Opciones | A quién | Afecta a |
@@ -191,8 +198,9 @@ cuando se puede. Lo respondido se tacha con la decisión que lo responde. El Wor
 ```
 
 Las preguntas nuevas del prototipo (Q-nn de su trazabilidad) son PC con la PAN en «Afecta a» y
-`<!-- ❓ prototipo Q-03 -->`. Una decisión tomada sin respuesta, en lo que no requiere aprobación, es una PC
-«Supuesto: ¿confirmas que…?», con la opción aplicada primero.
+`<!-- ❓ prototipo Q-03 -->`. Una decisión tomada sin respuesta, en lo que no requiere aprobación, va a la fila de
+supuestos con la opción aplicada; si cambia la solución, el alcance o una regla de negocio, a su propia PC «Supuesto:
+¿confirmas que…?», con la opción aplicada primero.
 
 Lo que ingeniería inversa no pudo verificar y tiene que resolver negocio (un NV de `as-is/` cuyo «Qué hace falta»
 empieza por «Negocio») es también un PC: la pregunta en palabras del cliente, sin objetos de Appian, y la cita en el
