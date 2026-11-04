@@ -4,10 +4,9 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** del paso 3, P7 quinquies (`Pruebas-plugin/paso3-20261103/PRUEBA-ter.md`, con el montaje ya preparado), que
-se lanza cuando el equipo tenga memoria y Raúl pida reanudar: Claude Code paró por falta de memoria las pruebas y la
-espera de memoria, e indica no relanzarlas sin él. Después, con Raúl en persona, P3 en una sesión atendida, P8 y P9
-(`PRUEBA.md`). Lo demás del paso 3 está hecho (`evaluaciones.md`). Después, el paso 4.
+**Ahora:** del paso 3, llevar las dos reglas que P7 quinquies no vio adonde las lee quien aplica, y medirlo en P7
+sexies (`Pruebas-plugin/paso3-20261103/PRUEBA-ter.md`). Después, con Raúl en persona, P3 en una sesión atendida, P8 y
+P9 (`PRUEBA.md`). Lo demás del paso 3 está hecho (`evaluaciones.md`). Después, el paso 4.
 
 ## 1. En la rama actual, por orden
 
@@ -16,14 +15,17 @@ espera de memoria, e indica no relanzarlas sin él. Después, con Raúl en perso
 Hecho el 4-nov en sesiones en segundo plano que arrancó Claude con `claude --bg --plugin-dir`, aceptadas por el
 clasificador del modo auto (`evaluaciones.md`, «Paso 3 con el plugin cargado»). Falta:
 
-- **Las rectificaciones con fuentes agrupadas.** Corregido en `9d044d4` («Varias fuentes juntas»: la rectificación
-  lleva su fila D, a mano si `version --decision` le pondría la primera fuente), con la básica y `pruebas_flujos`
-  bien. Falta medirlo en conducta: P7 ter no llegó a aplicar, porque clasificó el punto como ALCANCE+, que pide
-  aprobación, y las filas quedaron sin medir. Se mide con P7 quinquies: EV-02 Construida y una aprobación ficticia
-  como datos iniciales del montaje, sin ejecutar transiciones (diseño de Codex); la elección es de Claude. P7 quater,
-  con Raúl aprobando en persona, queda como alternativa. Aparte, el selftest completo sobre ese árbol, adicional
-  porque `CLAUDE.md` no lo pide para un cambio en una referencia, quedó interrumpido por falta de memoria (437 bien y
-  0 mal, sin terminar): no cuenta como verde y no se relanza sin Raúl. [persona y flujo]
+- **Las rectificaciones con fuentes agrupadas, y el Word de las otras unidades.** La regla de `9d044d4` («Varias
+  fuentes juntas»: la rectificación lleva su fila D, a mano si `version --decision` le pondría la primera fuente) no
+  pasó en conducta. P7 quinquies aplicó en un informe conjunto, pero sin esas filas: el agente leyó `actualizacion.md`
+  hasta la línea 250, el párrafo está en la 295, y la tabla de §3, que sí leyó, dice NUEVO → sin fila D. En la misma
+  pasada no regeneró el Word de EV-02, Construida y con Word. La regla está en §7 y en `cambios.md` §5, que no leyó, y
+  el paso 8 del `SKILL.md` no nombra los vigentes. Falta llevar la rectificación a §3 (casos frontera) y a la fila D
+  de §6, y los Word vigentes al paso 8 del `SKILL.md`. Sin script, opción ni control nuevos: ver una rectificación
+  entre fuentes es entender, no comparar. Después, medirlo en P7 sexies, un montaje nuevo con la receta de P7
+  quinquies. P7 quater, con Raúl aprobando en persona, queda como alternativa. Aparte, el selftest completo sobre el
+  árbol de `9d044d4`, adicional porque `CLAUDE.md` no lo pide para un cambio en una referencia, quedó interrumpido por
+  falta de memoria (437 bien y 0 mal, sin terminar): no cuenta como verde. [flujo]
 - **P3 en una sesión atendida.** Marcar Construida con `--manual` lo decide una persona y está prohibido en una
   desatendida. La primera ejecución lo hizo por un error del guion y no cuenta. [persona]
 - **P8, una autorización que llega por otra sesión.** Raúl abre la sesión con su delegación en el primer mensaje.
@@ -91,6 +93,10 @@ citan se conserva, no solo su resumen, y se le enseña la lista exacta de lo que
 - **Seguridad de acciones de registro con constante.** Diez acciones no salían a nadie (una vez, sin causa
   demostrada). Contrastarlo escribe en Indra-spain: solo si Raúl lo autoriza; hasta entonces, sin regla. [prueba]
 - **Diagramas.** Reducir los 30/38 avisos residuales solo con una mejora medida, sin relajar detectores.
+- **Un literal propuesto, bajo ✅.** En P7 («juntas») y en P7 quinquies, el texto del aviso «Indica el centro de
+  coste», que ninguna fuente da, quedó en HU-06.2 con ✅ y la fuente del correo. La entrega lo declaraba propuesto, y
+  lo que propone el analista va con 🔶. Es el mismo caso ficticio dos veces. Revisarlo si aparece en otra prueba o en
+  un proyecto real; `comprobar.py` no lo puede ver. [flujo]
 - **URL `/help/26.6/`** de `data-fabric.md` y `agents/data-modeler.md`: revisarlas cuando cambie la versión de Appian
   del entorno.
 - **Aviso a Appian** (`aviso-appian-devmcp.md`, en la carpeta de pruebas): revisarlo con el servidor 26.9.5, porque el
