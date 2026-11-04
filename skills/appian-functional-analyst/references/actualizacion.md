@@ -258,6 +258,8 @@ le vuelve a preguntar.
   su número y con la fuente de `--fuente` que cita «lo nuevo», si cita una sola, y su fecha. Si cita varias o ninguna,
   la primera, y la salida lo dice: corrígela si la decide otra. O a mano así:
   `| D-01 | 2026-10-08 | FU-05 | CAMBIA | Lo nuevo | Lo de antes [FU-01 00:12:30] | PAN-01 | Sí |`.
+  Si la D nueva cambia lo que decidió otra anterior, en la columna «Vigente» de esa anterior pon «No (D-nn)» si queda
+  sustituida entera, o «En parte (D-nn)» si conserva alguna cláusula, con el número de la nueva.
 - **Anexo**: `indice.py derivadas <p> --escribir`, si cambia una parte de una pantalla (su nombre o quién la usa) o un
   perfil y el funcional lo lleva; `comprobar.py` avisa si se queda viejo.
 - **proyecto.md**: el siguiente paso, si cambia (la fuente ya la apuntó `version`).
