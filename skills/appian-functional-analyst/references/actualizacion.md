@@ -70,10 +70,11 @@ que preguntar al cliente, el camino entero (§0-§8). Sin nota, sin `comprobar.p
    quién la usa), `indice.py derivadas <p> --escribir`, sin repetir la pasada.
 
 Después, como en §7: el prototipo y las capturas de las pantallas que cambian, si los hay, y, si ya hay algún Word, los
-vigentes: el completo y el de cada unidad en curso que ya tenga uno, aunque el cambio no sea de esa unidad, porque la
-versión nueva también va en el suyo (`df_docx.js <p>` y `df_docx.js <p> --cambio <U>`; `cambios.md` §5). Ni DT: una
-interfaz, una regla, una constante o un texto no la piden; tampoco el nombre de una acción de registro, si la fila de
-§13 nombra esa parte del record type (`cambios.md` §4).
+vigentes: el completo y el de cada unidad en curso (Abierta, Aprobada o Construida) que ya tenga uno, aunque el cambio
+no sea de esa unidad, porque la versión nueva también va en el suyo (`df_docx.js <p>` y
+`df_docx.js <p> --cambio <U>`; `cambios.md` §5). Ni DT: una interfaz, una regla, una constante o un texto no la
+piden; tampoco el nombre de una acción de registro, si la fila de §13 nombra esa parte del record type
+(`cambios.md` §4).
 
 ## 0. Antes de empezar
 ```bash
@@ -139,6 +140,10 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
      pantalla es VALIDA de esa pieza.
    - Llevar a otra pantalla algo que ya está en otras iguales es COMPLETA; ALCANCE+ es una capacidad que no
      está en ninguna parte.
+   - **Varias fuentes en un informe** (la reunión y el correo que la confirma): si la posterior corrige lo que pidió
+     la anterior, el punto se tipa por lo que queda frente al análisis (NUEVO, COMPLETA…) y, además, cada
+     rectificación lleva su fila D, aunque lo corregido no estuviera en el análisis: la fuente que corrige y su
+     fecha, y en «Antes» lo que pidió la anterior, con su cita (§6).
 
 3. **Dependencias**: lo que hay que revisar si cambian esas piezas, también en el técnico.
    ```bash
@@ -248,8 +253,9 @@ le vuelve a preguntar.
   `appian-diagramas-bpmn`). Si se niega, alguien editó el `.drawio`: primero `diagrama.py comparar`. Los
   diagramas de estados y de datos se editan en su `.mmd` y se vuelven a pintar con `mermaid.py`
   (`mermaid-diagrams.md`).
-- **decisiones.md**: una fila D por punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE, al final; mejor con `version
-  --decision` (la escribe con su número), o a mano así:
+- **decisiones.md**: una fila D por punto CAMBIA, ANULA, RESPONDE, VALIDA o ALCANCE, y otra por cada rectificación
+  entre fuentes del mismo informe (§3, casos frontera), al final; mejor con `version --decision` (la escribe con su
+  número y con la primera `--fuente`), o a mano si la decide otra fuente:
   `| D-01 | 2026-10-08 | FU-05 | CAMBIA | Lo nuevo | Lo de antes [FU-01 00:12:30] | PAN-01 | Sí |`.
 - **Anexo**: `indice.py derivadas <p> --escribir`, si cambia una parte de una pantalla (su nombre o quién la usa) o un
   perfil y el funcional lo lleva; `comprobar.py` avisa si se queda viejo.
@@ -268,7 +274,8 @@ prototipo; después, en este orden:
 - el prototipo: solo las pantallas afectadas, con `appian-prototipos`, y solo sus capturas. Las validadas por
   el cliente (🔒) no se tocan sin el visto bueno del analista;
 - el Word, ya con esas capturas: si ya hay alguno y cambia lo que exporta (también solo su versión), se regeneran ahora
-  los vigentes, el completo y el de cada unidad en curso que ya tenga uno, aunque el cambio no sea de esa unidad
+  los vigentes, el completo y el de cada unidad en curso (Abierta, Aprobada o Construida) que ya tenga uno, aunque el
+  cambio no sea de esa unidad
   (`cambios.md` §5); si no, el primero se genera al enviarlo o si se pide (paso 8 del `SKILL.md`).
 
 ## 8. Entregar
@@ -294,8 +301,6 @@ enseñado es `app-vX.Y.json`, con X.Y la versión del funcional de entonces):
 
 ## Varias fuentes juntas
 En orden de fecha y en un solo informe si tratan lo mismo (la reunión y el correo que la confirma); si no,
-un informe por fuente. Si la posterior corrige algo de la anterior, esa rectificación no se resuelve en silencio aunque
-no cambie nada del análisis base: fila D con la fuente que corrige y su fecha, y lo que decía la anterior, con su cita,
-en «Antes» (`ingesta-fuentes.md` §4). `version --decision` usa la primera `--fuente`: si no es la fuente responsable de
-esa decisión, la fila se escribe a mano (§6). Para arrancar un análisis con muchas reuniones ya acumuladas,
+un informe por fuente. Lo que la posterior corrige de la anterior lleva su fila D aunque no cambie nada del análisis
+base (§3, casos frontera; `ingesta-fuentes.md` §4). Para arrancar un análisis con muchas reuniones ya acumuladas,
 `volumen-grande.md`.
