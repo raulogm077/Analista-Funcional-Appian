@@ -38,14 +38,15 @@ sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fu
 from entorno import escribe  # noqa: E402,F401 (el app.json, con \n en cualquier sistema: escribe(ruta, texto))
 
 
-def usar_marca(marca="appian", carpeta=None):
+def usar_marca(marca=None, carpeta=None):
     """Colores de los helpers según la marca del prototipo: brand-<marca>.json de `carpeta` (la del proyecto, junto al
     app.json en <p>/prototipo/) o, si no está ahí, de assets/ del kit, donde solo está la estándar de Appian («appian»).
+    Sin `marca`, la única brand-<id>.json de `carpeta`, como validate.py y build.py; sin carpeta o sin ninguna, «appian».
     Lo que la marca no define sale de la estándar. Va antes de «from sail_helpers import *», que copia estos nombres al
     importar; sin la llamada, los de la marca estándar (la última línea de este fichero llama a usar_marca())."""
     global _BRAND, PRIMARY, GREEN, NAVY, STATES, CHART, GREY_TXT, SURFACE, LINE, LINE_STRONG, EVENT_TYPES, KANBAN_STATES, ICONO_AVISO
-    from validate import find_brand, contrast  # la misma búsqueda y el mismo aviso que validate.py y build.py
-    propia = find_brand(marca, carpeta)[0]
+    from validate import find_brand, resolve_brand, contrast  # la misma búsqueda y el mismo aviso que validate.py y build.py
+    propia = find_brand(resolve_brand(marca, carpeta), carpeta)[0]
     neutra = find_brand("appian")[0]
     _BRAND = {**neutra, **propia, **{k: {**(neutra.get(k) or {}), **(propia.get(k) or {})} for k in ("site", "palette", "components", "states")}}
     pal = _BRAND["palette"]

@@ -6,8 +6,8 @@ la versión de Appian del cliente (app.appianVersion, schemas/appian-versions.js
 del SAIL Design System (avisos «UX · »).
 
 Uso:  python3 validate.py app.json [--brand <id>] [--quiet] [--anterior app-v1.2.json --confirmadas PAN-02,PAN-05]
-Sin --brand, la marca estándar de Appian (assets/brand-appian.json); con --brand <id>, la del proyecto: brand-<id>.json
-junto al app.json (references/marca.md).
+Sin --brand, la del proyecto si junto al app.json hay una sola brand-<id>.json, y si no hay ninguna, la estándar de
+Appian (assets/brand-appian.json); con --brand <id>, esa (references/marca.md). --brand appian fuerza la estándar.
 Sale con código 1 si hay errores. Los avisos no bloquean. Con --anterior y --confirmadas, cambiar una pantalla confirmada
 por el cliente (su 'ref' lleva uno de esos IDs) o un diálogo que abre es error; --anterior solo no compara nada.
 """
@@ -131,6 +131,21 @@ class Report:
 
     def warn(self, where, msg):
         self.warnings.append(f"AVISO  {where}: {msg}")
+
+
+def resolve_brand(brand_id, spec_dir=None):
+    """El id de la marca: el que se pide o, sin él, la del proyecto si hay una sola brand-<id>.json junto al app.json
+    (lo dice); si no hay ninguna, la estándar de Appian; si hay varias, hay que elegir con --brand."""
+    if brand_id:
+        return brand_id
+    ids = sorted(f.name[len("brand-"):-len(".json")] for f in Path(spec_dir).glob("brand-*.json")) if spec_dir else []
+    if len(ids) > 1:
+        print(f"Hay varias marcas junto al app.json ({', '.join(ids)}): elige una con --brand <id>.", file=sys.stderr)
+        sys.exit(2)
+    if ids:
+        print(f"Marca: {ids[0]} (brand-{ids[0]}.json junto al app.json; --brand appian para la estándar de Appian)")
+        return ids[0]
+    return "appian"
 
 
 def find_brand(brand_id, spec_dir=None):
@@ -1256,7 +1271,7 @@ def check_confirmed(spec, previous, ids, rep, prev_name="el app.json anterior"):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("spec")
-    ap.add_argument("--brand", default="appian", help="id de la marca: brand-<id>.json junto al app.json (por defecto, la estándar de Appian)")
+    ap.add_argument("--brand", default=None, help="id de la marca: brand-<id>.json junto al app.json (sin él, la del proyecto si hay una sola; si no hay ninguna, la estándar de Appian)")
     ap.add_argument("--quiet", action="store_true")
     ap.add_argument("--anterior", help="app.json de la versión anterior (copia app-vX.Y.json) para comparar las pantallas confirmadas")
     ap.add_argument("--confirmadas", help="IDs del análisis de las pantallas confirmadas por el cliente, separados por comas (PAN-02,PAN-05)")
@@ -1267,7 +1282,7 @@ def main():
     utf8_stdio()
     spec = json.loads(Path(a.spec).read_text(encoding="utf-8"))
     spec_dir = Path(a.spec).resolve().parent
-    brand, _ = find_brand(a.brand, spec_dir)
+    brand, _ = find_brand(resolve_brand(a.brand, spec_dir), spec_dir)
     rep = validate(spec, brand, spec_dir)
     if confirmadas:
         prev = json.loads(Path(a.anterior).read_text(encoding="utf-8"))

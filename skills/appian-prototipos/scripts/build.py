@@ -5,8 +5,9 @@ Construye un prototipo navegable (un único HTML autocontenido) a partir de un a
 Uso:
   python3 build.py app.json -o prototipo.html [--brand <id>] [--no-validate]
 
-Sin --brand, la marca estándar de Appian (assets/brand-appian.json, sin logo); con --brand <id>, la del proyecto:
-brand-<id>.json junto al app.json, con su logo si lo tiene (references/marca.md).
+Sin --brand, la del proyecto si junto al app.json hay una sola brand-<id>.json, y si no hay ninguna, la estándar de
+Appian (assets/brand-appian.json, sin logo); con --brand <id>, esa: brand-<id>.json junto al app.json, con su logo si
+lo tiene (references/marca.md). --brand appian fuerza la estándar.
 Genera además <salida>-trazabilidad.md (requisitos ↔ pantallas, preguntas abiertas, supuestos) y, si la marca lleva
 perfil CSS, <salida>-perfil-css.txt.
 El HTML empieza por <title> (sin <html>/<body>) para poder publicarse como Artifact en Claude.ai
@@ -18,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from validate import validate, trace_markdown, find_brand, ux_summary, _lum  # noqa: E402
+from validate import validate, trace_markdown, find_brand, resolve_brand, ux_summary, _lum  # noqa: E402
 from entorno import escribe, utf8_stdio  # noqa: E402
 
 # Open Sans (licencia SIL OFL, assets/fonts/OFL-OpenSans.txt) embebida: el prototipo y sus capturas usan la fuente
@@ -136,9 +137,10 @@ def _strings(o):
             yield from _strings(v)
 
 
-def build(spec_path, out_path, brand_id="appian", do_validate=True):
+def build(spec_path, out_path, brand_id=None, do_validate=True):
     spec = json.loads(Path(spec_path).read_text(encoding="utf-8"))
     spec_dir = Path(spec_path).resolve().parent
+    brand_id = resolve_brand(brand_id, spec_dir)
     brand, brand_dir = find_brand(brand_id, spec_dir)
     if do_validate:
         rep = validate(spec, brand, spec_dir)
@@ -216,7 +218,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("spec")
     ap.add_argument("-o", "--out", default=None)
-    ap.add_argument("--brand", default="appian", help="id de la marca: brand-<id>.json junto al app.json (por defecto, la estándar de Appian)")
+    ap.add_argument("--brand", default=None, help="id de la marca: brand-<id>.json junto al app.json (sin él, la del proyecto si hay una sola; si no hay ninguna, la estándar de Appian)")
     ap.add_argument("--no-validate", action="store_true")
     a = ap.parse_args()
     utf8_stdio()

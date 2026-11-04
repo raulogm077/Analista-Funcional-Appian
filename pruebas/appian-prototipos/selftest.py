@@ -117,6 +117,35 @@ def brands(tmp, built):
         if "logo de prueba" not in (logo or ""):
             probs.append("el HTML no lleva el logo de la marca del proyecto")
     out.append(("marca del proyecto (--brand prueba, junto al app.json): sus colores y su logo", probs))
+    # sin --brand, la única marca junto al app.json, y lo dice; --brand appian fuerza la estándar
+    html2 = carpeta / "prototipo-sin-brand.html"
+    code, salida = run([HERE / "build.py", spec, "-o", html2])
+    probs = []
+    if code or not html2.exists():
+        probs.append(f"build.py sin --brand, con brand-prueba.json al lado, falla:\n{salida[-800:]}")
+    else:
+        if built_with(html2)[0].get("id") != "prueba":
+            probs.append(f"sin --brand y con brand-prueba.json al lado construye con «{built_with(html2)[0].get('id')}»")
+        if "Marca: prueba" not in salida:
+            probs.append("sin --brand no dice qué marca del proyecto usa")
+    html3 = carpeta / "prototipo-appian.html"
+    code, salida = run([HERE / "build.py", spec, "-o", html3, "--brand", "appian"])
+    if code or not html3.exists() or built_with(html3)[0].get("id") != "appian":
+        probs.append(f"--brand appian no fuerza la estándar ({code}):\n{salida[-600:]}")
+    out.append(("sin --brand, la única marca del proyecto (y lo dice); --brand appian, la estándar", probs))
+    # dos marcas junto al app.json y sin --brand: validate.py y build.py piden elegir
+    dos = tmp / "dos marcas"
+    dos.mkdir()
+    (dos / "app.json").write_text(spec.read_text(encoding="utf-8"), encoding="utf-8")
+    sin_logo = {k: v for k, v in MARCA_PRUEBA["site"].items() if k != "logo"}
+    for i in ("prueba", "otra"):
+        (dos / f"brand-{i}.json").write_text(json.dumps({**MARCA_PRUEBA, "id": i, "site": sin_logo}, ensure_ascii=False), encoding="utf-8")
+    probs = []
+    for script, extra in (("build.py", ["-o", dos / "p.html"]), ("validate.py", [])):
+        code, salida = run([HERE / script, dos / "app.json", *extra])
+        if not (code == 2 and "varias marcas" in salida):
+            probs.append(f"{script} con dos marcas y sin --brand sale con {code}:\n{salida[-400:]}")
+    out.append(("dos marcas junto al app.json y sin --brand: error que pide elegir", probs))
     # una marca que no está junto al app.json: error que dice dónde ponerla
     sin = tmp / "sin marca"
     sin.mkdir()
@@ -134,6 +163,13 @@ def brands(tmp, built):
     esperado = ["appian ACCENT", f"{MARCA_PRUEBA['palette']['navy']} {MARCA_PRUEBA['site']['selectedPageHighlightColor']}"]
     probs = [] if code == 0 and lineas[-2:] == esperado else [f"esperaba {esperado} y sale ({code}):\n{salida[-600:]}"]
     out.append(("helpers: marca neutra por defecto y la del proyecto con usar_marca()", probs))
+    # usar_marca() con la carpeta y sin id: la única marca de esa carpeta, como build.py
+    prog = ("import sys; sys.dont_write_bytecode = True; sys.path.insert(0, sys.argv[1]); "
+            "import sail_helpers as s; s.usar_marca(carpeta=sys.argv[2]); print(s._BRAND.get('id'), s.NAVY)")
+    code, salida = run(["-c", prog, HERE, carpeta])
+    esperado = f"prueba {MARCA_PRUEBA['palette']['navy']}"
+    probs = [] if code == 0 and salida.splitlines()[-1:] == [esperado] else [f"esperaba «{esperado}» y sale ({code}):\n{salida[-600:]}"]
+    out.append(("helpers: usar_marca(carpeta=…) sin id, la única marca de la carpeta", probs))
     # al entregar, el perfil CSS es el que deja build.py junto al HTML, también con una marca hecha a mano (sin marca.py)
     paso = re.search(r"### 5\. Entregar\n(.*?)(?=\n## |\Z)", (ROOT / "SKILL.md").read_text(encoding="utf-8"), re.S)
     probs = [] if paso and "`prototipo-<app>-perfil-css.txt`" in paso.group(1) else \
