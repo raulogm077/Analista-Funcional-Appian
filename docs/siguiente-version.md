@@ -4,10 +4,10 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** la rama `codex/campana-mejora-20261019` se une a `main` con el PR #21, por decisión de Raúl del 4-nov, si la
-batería de GitHub sale en verde. Hechos: el paso 3 (`evaluaciones.md`, «Paso 3 con el plugin cargado» y las filas que
-cita), el paso 3 bis (el DevMCP 26.9.10 y Appian 26.10) y la retirada física del paso 4. Queda lo de §1; lo siguiente,
-cuando Raúl lo pida, §2 y §3, cada trabajo en su rama (`CLAUDE.md`).
+**Ahora:** ningún trabajo en curso. La rama `codex/campana-mejora-20261019` se unió a `main` con el PR #21 el 4-nov.
+Hechos: el paso 3 (`evaluaciones.md`, «Paso 3 con el plugin cargado» y las filas que cita), el paso 3 bis (el DevMCP
+26.9.10 y Appian 26.10) y la retirada física del paso 4. Queda lo de §1; lo siguiente, cuando Raúl lo pida, §2 y §3,
+cada trabajo en su rama (`CLAUDE.md`).
 
 ## 1. Del trabajo anterior
 
