@@ -127,6 +127,15 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   `https://docs.appian.com/suite/help/26.10/deployments-view.html#review-deployment-requests`). Cancelar un pipeline
   detiene las promociones siguientes, no un despliegue ya empezado. Hace falta un entorno de destino además de
   Indra-spain. [F9]
+- **Prototipos: repertorio hasta Appian 26.10 y elección UX.** Contrastar `appian-prototipos` con el catálogo oficial
+  de componentes de interfaz hasta 26.10, detectar los ausentes o con soporte parcial y ampliarlos con ejemplos y
+  criterios de cuándo usarlos o evitarlos, para disponer de alternativas usables, accesibles y adaptables. Revisar el
+  impacto en catálogo, esquemas, helpers, runtime, plantillas y galerías, y en sus consumidores (capturas y
+  documentación), preservando la compatibilidad. Extender las pruebas existentes según lo afectado y probar
+  prototipos representativos que combinen elementos actuales y nuevos, sus estados e interacciones. Evaluar también
+  con encargos de prototipo que el agente elige componentes adecuados a la necesidad y al contexto de UX, no solo
+  que se dibujan; corregir los fallos y repetir los casos afectados. Conclusiones y límites, en este seguimiento y
+  en `evaluaciones.md`. [prototipos]
 - **Todas las entradas del plugin.** Inventariar y probar las entradas y variantes documentadas en el README, los
   flujos y los modos de cada skill, tanto su invocación directa como su uso dentro de un flujo.
 - **Ingeniería inversa y refactorización a fondo.** Probar extracción, continuación, deriva, dependencias,
