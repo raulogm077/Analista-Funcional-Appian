@@ -4,10 +4,11 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
-**Ahora:** ningún trabajo en curso. La rama `codex/campana-mejora-20261019` se unió a `main` con el PR #21 el 4-nov.
-Hechos: el paso 3 (`evaluaciones.md`, «Paso 3 con el plugin cargado» y las filas que cita), el paso 3 bis (el DevMCP
-26.9.10 y Appian 26.10) y la retirada física del paso 4. Queda lo de §1; lo siguiente, cuando Raúl lo pida, §2 y §3,
-cada trabajo en su rama (`CLAUDE.md`).
+**Ahora:** rama `claude/pruebas-metodo-20261104`. Hecha la vigencia de las decisiones anteriores (`evaluaciones.md`,
+«El método de punta a punta»). En curso, por decisión de Raúl del 4-nov: el método de punta a punta, que junta «Todas
+las entradas del plugin» y «Agentes y skills, por separado y juntos» (§3). Un proyecto ficticio recorre F1 a F9 y
+construye en una aplicación de prueba nueva de Indra-spain, que Raúl autorizó con datos ficticios, sin exportar ni
+desplegar. Lo de §1 que queda es de una persona.
 
 ## 1. Del trabajo anterior
 
@@ -29,11 +30,6 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   Sus listas están en las carpetas de la campaña, que se conservan (`paso3-20261103/inventario-paso4.json` las resume).
   Orden seguro: antes, decidir cómo dejar `DEM_Dashboard`, porque la v15 depende de `DEM_E20_EnsayoCantidad` y de
   `CML_CatalogoLaboratorio`, y volver a la v12 deshace el cambio de T3 en EV-02. [persona y sesión]
-- **La vigencia de las decisiones anteriores (L12 del ensayo, `SEGUIMIENTO.md`).** Cuando una D nueva cambia otra, en
-  todo o en parte, `actualizacion.md` §6 no dice que se revise la columna «Vigente» de la anterior: «No» si queda
-  sustituida y «En parte» si conserva cláusulas, con la D nueva. `proyecto.py` escribe siempre «Sí», y `modelo.py` ya
-  admite «En parte». Corrección mínima propuesta por Codex: una frase en la fila D de §6, con el juicio del LLM, sin
-  script ni paso nuevo. Cambia la conducta de la skill: con su prueba con el plugin cargado. [flujo]
 
 ## 2. Cuando se dé su condición
 

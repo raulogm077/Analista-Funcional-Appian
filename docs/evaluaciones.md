@@ -5,6 +5,14 @@ Resultados y límites que sirven para decidir sobre el plugin. Los escenarios re
 Lo pendiente se sigue en [siguiente-version.md](siguiente-version.md). Las cifras de cada fila pertenecen
 al commit y al alcance indicados; no se suman controles repetidos ni se trasladan resultados a otro código.
 
+## El método de punta a punta, desde el 4 de noviembre de 2026
+
+Rama `claude/pruebas-metodo-20261104`. Pruebas y evidencia en `Pruebas-plugin/metodo-20261104/`, fuera del repositorio.
+
+| Punto | Commit | Prueba y alcance |
+|---|---|---|
+| Vigencia de las decisiones anteriores (L12 del ensayo) | `f9f2d08` | `actualizacion.md` §6, fila D: si la D nueva cambia lo que decidió otra anterior, la anterior queda «No (D-nn)» o «En parte (D-nn)». Una frase, sin script. `modelo.py` ya leía «No…» como Sustituida y «En parte…» como Vigente; en una copia de bg-2, `ficha` da «Sustituida» y `comprobar.py` sale sin errores. Vecino: Sustituida cuenta como anulada, así que una pieza que cite en texto visible una D sustituida da error en «ninguna pieza vigente remite a una anulada». Es texto que queda viejo, y se corrige. **En conducta pasa** (una pasada, Sonnet 5.5, subagente que lee la rama, encargo neutro; `proyectos/vigencia`, copia de centro-coste-aplicar-3 con un correo nuevo que sustituye D-02 y cambia en parte D-03): D-02 «No (D-04)», D-03 «En parte (D-05)», D-01 «Sí», y `comprobar.py --anterior --impacto` sin errores. Aparte: el encargo daba la aprobación del analista para «lo que requiera aprobación», y la sesión volvió a aprobar EV-03, que había crecido, con esa fuente, aunque `cambios.md` dice que la unidad la aprueba el jefe de proyecto. Lo dijo en su entrega como dudoso. Una pasada y con un encargo ambiguo: sin regla nueva |
+
 ## Pendientes de las pruebas aplicados en la rama, desde el 29 de octubre de 2026
 
 Cada fila es un punto de [siguiente-version.md](siguiente-version.md), con lo que lo respalda.
