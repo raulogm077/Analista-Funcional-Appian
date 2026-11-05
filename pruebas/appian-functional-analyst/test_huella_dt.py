@@ -24,7 +24,7 @@ class HuellaDeLaDecision(unittest.TestCase):
               "| **Por qué** | Prueba (BP 01 §1.1) |\n| **Descartada** | — |\n| **Riesgo** | Ninguno relevante |\n"
               "| **Depende de** | — |\n| **Verificar** | — |\n| **Verificado** | No hace falta |\n\n")
         i = re.search(r"^## 3\. ", t, re.M).start()
-        f.write_text(t[:i] + dt + t[i:], encoding="utf-8", newline="")
+        f.write_bytes((t[:i] + dt + t[i:]).encode("utf-8"))
 
     def test_nombrar_un_objeto_no_cuenta_solo_la_necesidad(self):
         self.preparada()

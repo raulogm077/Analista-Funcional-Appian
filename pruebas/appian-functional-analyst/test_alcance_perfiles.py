@@ -21,7 +21,7 @@ class AlcanceYPerfiles(unittest.TestCase):
         t = f.read_text(encoding="utf-8")
         t = t.replace("| Nuevo | — | | PAN-01 |", "| Nuevo | — | | Base |").replace("| ACT-07 |", "| Base |")
         t = re.sub(r"Estado: [^\n]+", "Estado: completo", t, count=1)
-        f.write_text(t, encoding="utf-8", newline="")
+        f.write_bytes((t).encode("utf-8"))
 
     def linea_14(self, texto):
         return next(l for l in self.p.joinpath("analisis/tecnico.md").read_text(encoding="utf-8").splitlines()
@@ -33,12 +33,12 @@ class AlcanceYPerfiles(unittest.TestCase):
         f = self.p / "analisis/tecnico.md"
         t = f.read_text(encoding="utf-8")
         fuera = self.linea_14("HU-09.1")           # HU-09 no es de la unidad: no se exige
-        f.write_text(t.replace(fuera + "\n", ""), encoding="utf-8", newline="")
+        f.write_bytes((t.replace(fuera + "\n", "")).encode("utf-8"))
         code, out = self.comprueba()
         self.assertNotIn("HU-09.1", out, out)
         self.assertEqual(code, 0, out)
         propia = self.linea_14("HU-07.1")
-        f.write_text(f.read_text(encoding="utf-8").replace(propia + "\n", ""), encoding="utf-8", newline="")
+        f.write_bytes((f.read_text(encoding="utf-8").replace(propia + "\n", "")).encode("utf-8"))
         code, out = self.comprueba()
         self.assertIn("✗ técnico §14: cada criterio de aceptación (de las historias que tocan las unidades): 2 → HU-07.1, HU-07.2", out)
         self.assertEqual(code, 1)
@@ -52,7 +52,7 @@ class AlcanceYPerfiles(unittest.TestCase):
         fila = t.index("\n", j + 1) + 1
         fin = t.index("\n", fila)
         t = t[:fila] + re.sub(r"^\| [^|]+ \|", "| Aplicación |", t[fila:fin]) + t[fin:]
-        f.write_text(t, encoding="utf-8", newline="")
+        f.write_bytes((t).encode("utf-8"))
         code, out = self.comprueba()
         self.assertIn("✓ perfiles de las historias que están en §2", out)
 

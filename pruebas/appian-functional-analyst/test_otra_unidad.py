@@ -24,7 +24,7 @@ class OtraUnidad(unittest.TestCase):
                       "## 10. Integraciones, documentos e IA", 1)
         t = t.replace("## 5. Estados", "En EV-01, mantener la segregación de funciones ya implantada en EV-02.\n\n"
                       "## 5. Estados", 1)
-        f.write_text(t, encoding="utf-8", newline="")
+        f.write_bytes((t).encode("utf-8"))
         m = mo.Proyecto(self.p)
         plan = iss.calcula(m, un.Contexto(m), "EV-01")
         aviso = next(a for a in plan.avisos if "no nombran ningún objeto" in a)
@@ -47,10 +47,10 @@ class OtraUnidad(unittest.TestCase):
         f = self.p / "analisis/tecnico.md"
         self.preparada()
         t = f.read_text(encoding="utf-8")
-        f.write_text(t.replace("## 10. Integraciones, documentos e IA",
-                               "### 9.8 Canales\n\nNo aplica: ningún canal externo en esta prueba.\n\n"
-                               "### 9.9 Canal parcial\n\nNo aplica en este incremento: el canal secundario.\n\n"
-                               "## 10. Integraciones, documentos e IA", 1), encoding="utf-8", newline="")
+        f.write_bytes(t.replace("## 10. Integraciones, documentos e IA",
+                                "### 9.8 Canales\n\nNo aplica: ningún canal externo en esta prueba.\n\n"
+                                "### 9.9 Canal parcial\n\nNo aplica en este incremento: el canal secundario.\n\n"
+                                "## 10. Integraciones, documentos e IA", 1).encode("utf-8"))
         m = mo.Proyecto(self.p)
         plan = iss.calcula(m, un.Contexto(m), "EV-01", estreno=True)
         aviso = next(a for a in plan.avisos if "no nombran ningún objeto" in a)
@@ -65,8 +65,8 @@ class OtraUnidad(unittest.TestCase):
         f = self.p / "analisis/tecnico.md"
         t = f.read_text(encoding="utf-8")
         self.assertIn("Caso de prueba de `AUT_GenerarNumero`", t)
-        f.write_text(t.replace("Caso de prueba de `AUT_GenerarNumero`", "caso de prueba de `AUT_GenerarNumero`"),
-                     encoding="utf-8", newline="")
+        f.write_bytes(t.replace("Caso de prueba de `AUT_GenerarNumero`",
+                                "caso de prueba de `AUT_GenerarNumero`").encode("utf-8"))
         m = mo.Proyecto(self.p)
         plan = iss.calcula(m, un.Contexto(m), "EV-01")
         feature = "".join(i.feature for i in plan.issues)
