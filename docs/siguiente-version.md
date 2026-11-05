@@ -40,6 +40,22 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   `pruebas/comprobar_anclas.py`, con red; la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
 - **Índice del DOCX.** Evaluar la caché editable solo si una entrega la necesita. [Word]
+- **Reaprobación: criterio provisional y reflexión pendiente.** Raúl, 5-nov: si lo que llega cambia lo que hay que
+  construir, se debe aprobar; si no lo cambia, lo valida la IA. Es el criterio provisional, no un mecanismo definitivo
+  ya diseñado y probado. En la campaña, asignar a una unidad aprobada un informe que corregía su validación disparó
+  otra aprobación. El mecanismo usado hasta ahora mira informes nuevos de la unidad, no el significado del cambio;
+  una versión nueva por sí sola no la exige. Revisar cómo aplicar el criterio sin burocracia que no aporte valor.
+  Analizar pros, contras y escenarios: corregir una marca equivocada o una redacción sin efecto, hacer explícito un
+  supuesto, cambiar una regla o un parámetro sin añadir objetos, modificar permisos, datos o integraciones, y cambios
+  que afecten al coste o al riesgo. Comparar la regla por informe, el juicio del analista IA, las señales de cambio en
+  las issues y el aviso al jefe de proyecto sin bloqueo para lo menor. No asumir que mismos IDs u objetos significan
+  mismo encargo, ni que cualquier diferencia de texto cambia la construcción. Valorar quién decide, los errores que
+  puede cometer cada opción, la trazabilidad y la fricción observada. Probar la solución propuesta y dejar a Raúl
+  las conclusiones y sus límites antes de dar el mecanismo por definitivo. Lo que se aplique y pruebe, en
+  `evaluaciones.md`; esta reflexión sigue pendiente. Análisis del 5-nov, con los tres casos de la campaña (FU-08,
+  FU-10 y FU-11), 16 escenarios y cuatro opciones: [`diseno/reaprobacion.md`](diseno/reaprobacion.md). Recomienda la
+  opción 2, que concreta este criterio con topes que comprueba el script y una línea para el JP. Falta que Raúl elija;
+  después, implementarlo y probarlo. [flujo · persona y sesión]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
   observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se
   vuelve a plantear, medir el coste en un incremento real con fuentes del mismo tema, sin deducir ahorro del número
