@@ -1614,8 +1614,8 @@ def _estado_verificado(raiz, uid, issue, marcas=(), manuales=None, permisos=None
             avisos_permisos.append(f"permisos no comprobados de {o.get('pedido')}: {motivo}")
     if any(isinstance(e, dict) and ("permisosInicio" in e or any("visibilidad" in a for a in e.get("acciones", [])))
            for e in issue.esperado.values()) and not repetida_en_qa(raiz, uid, issue):
-        # hasta su QA: con un escenario suyo repetido, lo que le falte al QA lo dice avisos_qa por unidad
-        avisos_permisos.append("acceso efectivo por rol no comprobado: requiere QA con cada rol")
+        # hasta su QA: con un resultado vigente de un escenario suyo, el acceso por rol lo dicen sus guiones
+        avisos_permisos.append("acceso efectivo por rol no comprobado: sin QA vigente; requiere QA con cada rol")
     if manual:
         # El cierre humano suple la lectura estructural. Nunca tapa un fallo vigente de pruebas o QA.
         fallan = [(o, c) for o, c, e in casos(v) + (casos_ausentes(v, issue) if v else [])
@@ -1700,13 +1700,17 @@ def fallos_qa(raiz, uid, issue):
 
 
 def repetida_en_qa(raiz, uid, issue):
-    """Si algún escenario de la issue tiene resultado (pasa o falla) en el último QA de la unidad (qa/<U>/resultado.json)."""
+    """Si algún escenario de la issue tiene un resultado vigente (pasa o falla) en el último QA de la unidad
+    (qa/<U>/resultado.json): de su versión de ahora y repetido esta vez, no conservado de otra (revisión de Codex). Dice
+    que hay QA vigente, no que cubra el acceso de cada rol: eso lo dicen sus guiones."""
     r = pathlib.Path(raiz) / "qa" / uid / "resultado.json"
     try:
         esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") or {} if r.is_file() else {}
     except (ValueError, AttributeError):
         return False
-    return any(isinstance(esc.get(c), dict) and esc[c].get("resultado") in ("pasa", "falla") for c in issue.criterios)
+    vigente = lambda e: (isinstance(e, dict) and e.get("resultado") in ("pasa", "falla") and not e.get("sinRepetir")
+                         and e.get("versionIssue") == issue.version)
+    return any(vigente(esc.get(c)) for c in issue.criterios)
 
 
 def falla_en_qa(raiz, uid, issue, marcas=()):

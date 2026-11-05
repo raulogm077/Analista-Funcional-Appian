@@ -79,6 +79,11 @@ Visibilidad verificable: `EXPRESSION: true()`
         qa.write_text(json.dumps({"escenarios": {issue.criterios[0]: {"resultado": "guion por terminar"}}}),
                       encoding="utf-8")
         self.assertIn(recordatorio, iss.estado(self.p, "EV-01", issue)[1])     # sin repetir, no cuenta
+        # ni un resultado de otra versión de la issue, ni uno conservado sin repetir (revisión de Codex)
+        for e in ({"resultado": "pasa", "versionIssue": "otra"}, {"resultado": "pasa"},
+                  {"resultado": "pasa", "versionIssue": issue.version, "sinRepetir": "la sesión ha caducado"}):
+            qa.write_text(json.dumps({"escenarios": {issue.criterios[0]: e}}), encoding="utf-8")
+            self.assertIn(recordatorio, iss.estado(self.p, "EV-01", issue)[1], e)
         qa.write_text(json.dumps({"escenarios": {issue.criterios[0]: {"resultado": "pasa",
                                                                   "versionIssue": issue.version}}}), encoding="utf-8")
         hecha, motivo = iss.estado(self.p, "EV-01", issue)
