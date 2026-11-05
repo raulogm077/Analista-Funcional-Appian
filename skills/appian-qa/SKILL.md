@@ -150,6 +150,9 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   `sin_fila` pasaría también con una página vacía. Una clave que no existe o una comprobación vacía (`"hay": []`,
   `"texto": [""]`) tampoco valen: el guion sale «por terminar».
 - **`{pasada}`** es distinto en cada escenario de cada repetición; **`{hoy}`**, la fecha.
+- **Subir un fichero** (un campo de subida): el valor es `{fichero:certificado.pdf}`, y el script lo cambia por la ruta
+  de `qa/<U>/ficheros/certificado.pdf`, que se sube con los guiones. Un fichero ficticio y pequeño, nunca uno del
+  cliente. Así un escenario que necesita un documento (subirlo, o que otro lo abra) lleva guion como los demás.
 
 Para que el guion dé lo mismo cada vez:
 - Ninguna referencia que cambie entre cargas: ni `_cId`, ni las que el `--json` marca con `refIsPerRender` (el script

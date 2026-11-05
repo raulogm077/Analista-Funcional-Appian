@@ -360,6 +360,13 @@ def main():
         mal = [que for (args, antes, d), esperado, que in casos if qa_pv.puso_un_valor(args, antes, d) != esperado]
         ok("movedNothing con el valor puesto solo deja de fallar si se vio otro valor antes y ahora está el pedido, "
            "según su tipo", not mal, "; ".join(mal))
+        # campaña del 5-nov: HU-09 no tuvo guion porque no se podía subir un fichero, y su fallo no llegó a resultado.json
+        vals = {"pasada": "7", "_ficheros": str(t.p / "qa" / "EV-01" / "ficheros")}
+        subida = qa_pv.sustituye(["interact", "Certificado", "{fichero:certificado.pdf}", "Curso", "QA {pasada}"], vals)
+        fuera = qa_pv.sustituye("{fichero:../fuera.pdf}", vals)
+        ok("{fichero:<nombre>} es la ruta de qa/<U>/ficheros/<nombre>, sin salir de esa carpeta; {pasada} sigue igual",
+           subida == ["interact", "Certificado", str(t.p / "qa" / "EV-01" / "ficheros" / "certificado.pdf"), "Curso", "QA 7"]
+           and fuera == "{fichero:../fuera.pdf}" and "{_ficheros}" == qa_pv.sustituye("{_ficheros}", vals), str((subida, fuera)))
 
         # lo que la aplicación hace mal: el guion falla y su issue vuelve a pendiente
         def variante(nombre, cambio, esperado, que, resultado="falla", codigo=1):

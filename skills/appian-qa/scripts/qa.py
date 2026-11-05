@@ -380,10 +380,16 @@ def sail_cli():
     return [ruta] if ruta else None
 
 
+RX_FICHERO = re.compile(r"\{fichero:([^{}/\\]+)\}")
+
+
 def sustituye(x, valores):
     if isinstance(x, str):
         for k, v in valores.items():
-            x = x.replace("{" + k + "}", v)
+            if not k.startswith("_"):
+                x = x.replace("{" + k + "}", v)
+        if "_ficheros" in valores:      # {fichero:certificado.pdf}: la ruta de qa/<U>/ficheros/, para subirlo
+            x = RX_FICHERO.sub(lambda m: str(pathlib.Path(valores["_ficheros"]) / m.group(1)), x)
         return x
     if isinstance(x, list):
         return [sustituye(v, valores) for v in x]
@@ -659,7 +665,7 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
         elif parado:
             entrada = sin_repetir(antes.get(esc) or entrada, f"no se ha repetido: {parado}", no_responde=True)
         else:
-            valores = {"pasada": unica(), "hoy": datetime.date.today().isoformat()}
+            valores = {"pasada": unica(), "hoy": datetime.date.today().isoformat(), "_ficheros": str(carpeta / "ficheros")}
             try:
                 Recorrido(g, cuentas, valores).repite()
                 entrada["resultado"] = "pasa"
