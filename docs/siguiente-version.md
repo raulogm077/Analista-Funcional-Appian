@@ -62,7 +62,9 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   FU-10 y FU-11), 16 escenarios y cuatro opciones: [`diseno/reaprobacion.md`](diseno/reaprobacion.md). Recomienda la
   opción 2, que concreta este criterio con topes que comprueba el script y una línea para el JP; lo que añade a su
   criterio son propuestas por contrastar, y el documento dice cuáles. Falta que Raúl elija; después, implementarlo y
-  probarlo. [flujo · persona y sesión]
+  probarlo. De la misma familia, en las verificaciones: un paso manual del técnico que nombra objetos caducó la
+  verificación de ISS-01 aunque no cambiaba lo construido, y en E5-4 la sesión lo reescribió sin nombrarlos para
+  evitarlo, que deja el técnico menos claro (`evaluaciones.md`, «E5, sesiones 2 a 4»). Valorarlo junto a esta reflexión. [flujo · persona y sesión]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
   observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se
   vuelve a plantear, medir el coste en un incremento real con fuentes del mismo tema, sin deducir ahorro del número
