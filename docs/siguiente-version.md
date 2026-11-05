@@ -40,6 +40,13 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   `pruebas/comprobar_anclas.py`, con red; la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
 - **Índice del DOCX.** Evaluar la caché editable solo si una entrega la necesita. [Word]
+- **Un fallo de QA visto a mano no reabre su issue.** Problema: en el QA de EV-01 (campaña del 5-nov), HU-09.2 falló a
+  mano y no tenía guion; no llegó a `qa/<U>/resultado.json` y las issues siguieron «hechas», así que la unidad podía
+  marcarse Construida con un fallo conocido. Lo que lo causó aquí, que el guion no podía subir un fichero, ya está
+  resuelto (`{fichero:<nombre>}`, `evaluaciones.md`). Queda el caso general: un escenario que se ve en pantalla, falla y
+  no puede llevar guion. Qué hacer: decidir cómo se registra (un guion «por terminar» que llega hasta el paso que falla,
+  o una entrada manual que cuente como fallo). Resultado esperado: ningún fallo conocido se pierde entre el QA y el
+  cierre de la unidad. Decide Raúl, porque cambia cómo cierra el QA. [QA · persona]
 - **El DF dice al cliente qué tiene que contestar.** Problema: en E10 (`evaluaciones.md`), quien hizo de cliente con
   el Word entendía la aplicación, pero no sabía de entrada qué se le pedía: las preguntas están al final, en §11, y nada
   lo dice antes. Propuesta: si quedan PC abiertas, `df_docx.js` pone, tras la portada, una frase con cuántas son y
