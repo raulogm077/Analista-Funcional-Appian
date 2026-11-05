@@ -685,6 +685,13 @@ Message are not compatible with autoscale.
   days.
 - A recurring Start Event keeps firing once the model has been published; to stop it, **republish
   without the schedule**.
+- A process started by a timer **runs as the user who last published the model** (its designer), and
+  record-level security applies to its queries as to any other: they return only what that user can see.
+  Publish it with a service account that will not be deactivated and can see those records (a member of the
+  group the security rule admits); a test run by someone outside that group returns nothing, without an error.
+  Source: [Testing and Debugging Process Models — process errors](https://docs.appian.com/suite/help/latest/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors)
+  · [Record-level security](https://docs.appian.com/suite/help/latest/record-level-security.html)
+  · [KB-1027](https://community.appian.com/application-design-33/kb-1027-user-does-not-have-rights-to-perform-this-operation-error-thrown-when-running-a-process-342)
 - A node on the Scheduling tab restarts at every interval **even if earlier instances are still
   running** — guard against overlap.
 - Autoscale: no timer on the Start Event and no recurrence; standalone timers (minimum delay 60 s)
