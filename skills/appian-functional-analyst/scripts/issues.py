@@ -1833,6 +1833,10 @@ def para_construir(m, ctx, plan, issue):
     pendientes = [iid for iid in issue.depende if not estados(plan, m.raiz).get(iid, (False, ""))[0]]
     aviso = [f"ESPERA a {', '.join(pendientes)} antes de construir esta issue.", ""] if pendientes else []
     L = aviso + [issue.texto.split("\n## Terminar\n", 1)[0].rstrip("\n"), ""] + texto_avance(plan, issue) + ["", "## Terminar", "",
+         # la regla de F8 («Los documentos, al día») donde se usa: en E5-2 y E5-3 se verificó antes de que lo decidido
+         # al construir volviera al técnico (campaña del 5-nov); solo en esta salida, no en la issue guardada
+         "Antes de verificar, lo que hayas decidido al construir y el técnico no diga vuelve al análisis (F8, «Los "
+         "documentos, al día»): la verificación compara con el técnico.", "",
          "Con los objetos construidos, en este equipo y desde esta carpeta"
          + (":" if len(ordenes) == 1 else " (no queda otra issue: la segunda orden marca la unidad):"), "", "```"]
     L += ordenes + ["```"] + [f"· {n}" for n in notas]

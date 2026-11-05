@@ -47,5 +47,16 @@ class Comprobaciones14(unittest.TestCase):
                          r"no ve solicitudes de la B \(perfil que puede y perfil que no\)\n")
 
 
+    def test_la_issue_que_se_entrega_recuerda_volver_al_analisis_antes_de_verificar(self):
+        """E5-2 y E5-3: se verificó antes de que lo decidido al construir volviera al técnico. La regla (F8) va donde se
+        usa, en «Terminar» de la issue que se entrega, y no en la guardada, que no cambia su huella."""
+        m, plan = self.preparada()
+        issue = next(i for i in plan.issues if i.criterios)
+        entregada = iss.para_construir(m, un.Contexto(m), plan, issue)
+        frase = "Antes de verificar, lo que hayas decidido al construir y el técnico no diga vuelve al análisis"
+        self.assertIn(frase, entregada.split("## Terminar", 1)[1])
+        self.assertNotIn(frase, issue.texto)
+
+
 if __name__ == "__main__":
     unittest.main()
