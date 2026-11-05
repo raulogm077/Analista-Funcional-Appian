@@ -162,6 +162,9 @@ Para que el guion dé lo mismo cada vez:
   de búsqueda de la rejilla (`"🔍"`) antes de mirarla, para que una fila nueva no quede en otra página.
 - Un «no lo ve» lleva antes la prueba de que existe (en el «dado», quien lo creó lo ve): si no, el guion pasaría
   aunque el alta hubiera fallado.
+- Lo que no debe salir incumple solo la regla que se prueba: en un filtro por fecha de inicio, una solicitud que empieza
+  fuera del rango y acaba dentro. Si lo incumple todo, el guion pasa también con una regla parecida y equivocada (un
+  filtro por la fecha de fin salió verde así).
 - Un escenario que gasta lo que necesita (descartar una alerta que solo crea el proceso diario) comprueba en su «dado»
   que sigue ahí, y ese paso lleva `"gasta": "<lo que gasta>"` (`{"sail": ["show"], "espera": {"hay": ["Descartar alerta
   …"]}, "gasta": "una alerta activa"}`): sin eso, una segunda pasada saldría verde con la fila ya cerrada del histórico.
