@@ -166,6 +166,17 @@ análisis. Quien lea el análisis debe poder ir de cualquier regla a la frase ex
   diapositivas, un estado que no aparece en el ciclo de vida) son PC con
   las dos citas. No las corrijas por tu cuenta.
 
+### Una versión nueva de un documento del equipo (el análisis v2 sobre el v1)
+- Se compara con la anterior **apartado a apartado**, sin contar los números de página del índice ni las rutas de las
+  imágenes, y se mira qué imágenes son nuevas. Un cambio sin más no es una decisión.
+- Se separa lo que **cita una fuente del cliente** (los comentarios de su autor suelen decir «a partir del correo del…»)
+  de lo que **propone el equipo**: lo primero se contrasta con esa fuente, que hay que pedir y catalogar si no está; lo
+  segundo es una propuesta (⚠️) y, si contradice lo acordado con el cliente, una pregunta.
+- Se contrasta lo copiado con su fuente: una tabla pasada de un correo o de un Excel puede llevar errores de copia (una
+  celda que falta, una fila que sobra). Lo que dice el cliente manda sobre la copia.
+- Lo que no cambia también cuenta: si el documento no toca el flujo ni los estados y el DF sigue otro diagrama, la
+  diferencia sigue abierta.
+
 ### Aplicación existente y propuesta de refactorización
 - De `as-is/` se leen `LEEME.md`, los documentos de lo que toca el cambio y `as-is/datos/` (inventario, dependencias,
   hallazgos y lo que no se pudo verificar). Nunca la extracción en bruto.

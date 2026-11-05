@@ -91,3 +91,7 @@ Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no en
   el hueco lleno, o cuyo codo añadiría un cruce.
 - Las URL de la documentación de Appian con versión fija (`/help/26.6/`) en `references/data-fabric.md`,
   `devmcp-setup.md` y `agents/data-modeler.md` son del Appian MCP Server: revisar al cambiar de versión.
+- `leer_fuentes.py`: un Excel del cliente puede marcar con el color de la letra o del relleno lo que el cliente añade (por ejemplo,
+  lo nuevo en otro color), y la conversión a texto lo pierde: valorar marcar esas celdas en el `.md`.
+- Comparar dos versiones de un documento del equipo (apartado a apartado, sin paginación ni rutas de imágenes, con las imágenes
+  nuevas y los comentarios de su autor) se hizo con un script suelto: valorar una orden en el plugin.
