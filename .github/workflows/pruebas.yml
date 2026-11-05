@@ -57,9 +57,9 @@ jobs:
         run: |
           SOLO_DOCUMENTACION='^(README\.md|CLAUDE\.md|docs/.*|\.github/assets/.*)$'
           UNA='{"include":[{"os":"ubuntu-latest","python":"3.12","utf8":"1"}]}'
-          # La última es un Windows como el de un compañero: sin PYTHONUTF8, la consola y los ficheros sin decir la
+          # Python 3.9, en ubuntu-24.04: ubuntu-latest (26.04) ya no lo trae (5-nov-2026). La última es un Windows como el de un compañero: sin PYTHONUTF8, la consola y los ficheros sin decir la
           # codificación van en cp1252 (riesgo 2 del plan)
-          SIETE='{"include":[{"os":"ubuntu-latest","python":"3.9","utf8":"1"},{"os":"ubuntu-latest","python":"3.12","utf8":"1"},{"os":"windows-latest","python":"3.9","utf8":"1"},{"os":"windows-latest","python":"3.12","utf8":"1"},{"os":"macos-latest","python":"3.9","utf8":"1"},{"os":"macos-latest","python":"3.12","utf8":"1"},{"os":"windows-latest","python":"3.12","utf8":"0"}]}'
+          SIETE='{"include":[{"os":"ubuntu-24.04","python":"3.9","utf8":"1"},{"os":"ubuntu-latest","python":"3.12","utf8":"1"},{"os":"windows-latest","python":"3.9","utf8":"1"},{"os":"windows-latest","python":"3.12","utf8":"1"},{"os":"macos-latest","python":"3.9","utf8":"1"},{"os":"macos-latest","python":"3.12","utf8":"1"},{"os":"windows-latest","python":"3.12","utf8":"0"}]}'
           completa=true
           matriz=$UNA
           if [ "$EVENTO" = workflow_dispatch ]; then
