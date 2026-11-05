@@ -24,7 +24,7 @@ class OtraUnidad(unittest.TestCase):
                       "## 10. Integraciones, documentos e IA", 1)
         t = t.replace("## 5. Estados", "En EV-01, mantener la segregación de funciones ya implantada en EV-02.\n\n"
                       "## 5. Estados", 1)
-        f.write_text(t, encoding="utf-8", newline="")
+        f.write_bytes((t).encode("utf-8"))
         m = mo.Proyecto(self.p)
         plan = iss.calcula(m, un.Contexto(m), "EV-01")
         aviso = next(a for a in plan.avisos if "no nombran ningún objeto" in a)
