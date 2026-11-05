@@ -299,3 +299,11 @@ Lo que se aprende mientras se trabaja. Lo que pide un cambio en el plugin que no
   decían si eran de selección única o múltiple, y varias tablas daban sus columnas seguidas en una frase. Pasa a la
   guía del DF (el diagrama manda en estados y acciones; la imagen sale de su .drawio) y a la de pantallas (selección
   única o múltiple siempre; columnas y campos en sub-viñetas, uno por línea).
+- (05/11) Segunda versión del análisis del equipo (v2): casi todo lo nuevo citaba un correo del cliente que no estaba entre
+  las fuentes; hasta pedirlo y catalogarlo, era una propuesta. Con el correo y su Excel se vio qué era del cliente y qué
+  del equipo (el CPG/CIPI no editable, por ejemplo, no estaba en el correo y contradecía las reuniones) y que la v2 había
+  copiado mal una tabla (dos celdas de la documentación de las prórrogas). → pauta nueva en `ingesta-fuentes.md`.
+- (05/11) Una respuesta del cliente puede cambiar lo que el equipo había propuesto sin que nadie lo avise: el catálogo
+  de etiquetas, los documentos que pasan por la firma y las columnas del listado cambiaron respecto a lo que decía el DF.
+  La guía ya manda buscar el texto que queda viejo; aquí hubo que hacerlo en 12 sitios (actividades, pantallas, reglas
+  comunes, un correo).
