@@ -284,10 +284,16 @@ def puso_un_valor(args, antes, d):
     """Si una orden «interact» con pares etiqueta y valor dejó alguno de esos campos con el valor pedido, cuando en la
     página de antes tenía otro: entonces sí cambió algo, aunque SAIL CLI diga movedNothing. Pasa en la primera orden tras
     abrir un formulario de inicio, que devuelve el formulario entero en «changed» y «changedFields» vacío (campaña del
-    5-nov). Poner el valor que ya tenía sigue siendo no cambiar nada."""
+    5-nov). Hace falta ver el valor de antes (si no se sabe, no prueba nada) y que ahora sea el pedido, según su tipo: un
+    texto igual al tecleado o un número igual al índice; null no es «None». Poner el valor que ya tenía sigue siendo no
+    cambiar nada (revisión de Codex)."""
+    def es(v, valor):
+        if isinstance(v, str):
+            return v == valor
+        return isinstance(v, int) and not isinstance(v, bool) and str(v) == valor
     for etiqueta, valor in zip(args[0::2], args[1::2]):
         ahora, previo = valor_de(d, etiqueta), valor_de(antes, etiqueta)
-        if ahora is not NADA and str(ahora) == str(valor) and (previo is NADA or str(previo) != str(valor)):
+        if ahora is not NADA and previo is not NADA and es(ahora, valor) and not es(previo, valor):
             return True
     return False
 

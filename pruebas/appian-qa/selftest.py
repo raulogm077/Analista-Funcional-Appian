@@ -347,6 +347,19 @@ def main():
         ok("la primera orden tras abrir un formulario, con movedNothing pero con el valor puesto, no es un fallo",
            c == 0 and set(resultados().values()) == {"pasa"}, out)
         t.defecto()
+        # la excepción, estrecha (revisión de Codex): hace falta ver el valor de antes y que el de ahora sea el pedido
+        form = lambda **v: {"#t": "FormLayout", "contents": [{"#t": "TextField", "label": k, "value": x} for k, x in v.items()]}
+        casos = [((["Curso", "X"], {"ui": form(Curso="")}, {"changed": [form(Curso="X")]}), True, "de vacío al valor pedido"),
+                 ((["Curso", "X"], {"ui": form(Proveedor="")}, {"changed": [form(Curso="X")]}), False,
+                  "sin ver el valor de antes"),
+                 ((["Curso", "None"], {"ui": form(Curso="")}, {"changed": [form(Curso=None)]}), False, "null no es «None»"),
+                 ((["Curso", "X"], {"ui": form(Curso="X")}, {"changed": [form(Curso="X")]}), False, "el valor que ya tenía")]
+        spec_pv = importlib.util.spec_from_file_location("qa_puso_un_valor", QA)
+        qa_pv = importlib.util.module_from_spec(spec_pv)
+        spec_pv.loader.exec_module(qa_pv)
+        mal = [que for (args, antes, d), esperado, que in casos if qa_pv.puso_un_valor(args, antes, d) != esperado]
+        ok("movedNothing con el valor puesto solo deja de fallar si se vio otro valor antes y ahora está el pedido, "
+           "según su tipo", not mal, "; ".join(mal))
 
         # lo que la aplicación hace mal: el guion falla y su issue vuelve a pendiente
         def variante(nombre, cambio, esperado, que, resultado="falla", codigo=1):
