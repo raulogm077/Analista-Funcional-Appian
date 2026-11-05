@@ -7,7 +7,7 @@ lista no autoriza publicar, desplegar, enviar ni borrar.
 Cada pendiente explica el problema, qué hay que hacer y el resultado esperado, conservando los acuerdos de la
 conversación. Si el detalle ya está bien explicado en otro documento, se enlaza desde el punto en lugar de repetirlo.
 
-**Ahora:** rama `claude/pruebas-metodo-20261104`, subida sin PR. La campaña «el método de punta a punta» (4 y 5 de nov., por decisión de Raúl) recorrió con un proyecto ficticio F1, F2, F4, F8 y F9 en una aplicación de prueba de Indra-spain, más E9 (entradas) y E10 (¿sirve sin IA?): EV-01 y EV-02 construidas, su QA en verde (23 de 23 y 1 de 1) y el borrador del paquete, sin exportar ni desplegar (`evaluaciones.md`, «El método de punta a punta»). Lo que queda es de Raúl: elegir el mecanismo de la reaprobación, la nota del DF para el cliente y el caso general de un fallo de QA visto a mano (§2), y ver lo creado en Indra-spain antes de borrarlo (§1). F5 a F7 siguen en §3.
+**Ahora:** rama `claude/pruebas-metodo-20261104`, subida sin PR. La campaña «el método de punta a punta» (4 y 5 de nov., por decisión de Raúl) recorrió con un proyecto ficticio F1, F2, F4, F8 y F9 en una aplicación de prueba de Indra-spain, más E9 (entradas) y E10 (¿sirve sin IA?): EV-01 y EV-02 construidas, su QA en verde (23 de 23 y 1 de 1) y el borrador del paquete, sin exportar ni desplegar (`evaluaciones.md`, «El método de punta a punta»). La nota del DF para el cliente ya está hecha (5-nov). Lo que queda es de Raúl, con su análisis escrito: elegir el mecanismo de la reaprobación y el caso general de un fallo de QA visto a mano (§2), y ver lo creado en Indra-spain antes de borrarlo (§1). F5 a F7 siguen en §3.
 
 ## 1. Del trabajo anterior
 
@@ -45,13 +45,7 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   general: un escenario que se ve en pantalla, falla y
   no puede llevar guion. Qué hacer: decidir cómo se registra (un guion «por terminar» que llega hasta el paso que falla,
   o una entrada manual que cuente como fallo). Resultado esperado: ningún fallo conocido se pierde entre el QA y el
-  cierre de la unidad. Decide Raúl, porque cambia cómo cierra el QA. [QA · persona]
-- **El DF dice al cliente qué tiene que contestar.** Problema: en E10 (`evaluaciones.md`), quien hizo de cliente con
-  el Word entendía la aplicación, pero no sabía de entrada qué se le pedía: las preguntas están al final, en §11, y nada
-  lo dice antes. Propuesta: si quedan PC abiertas, `df_docx.js` pone, tras la portada, una frase con cuántas son y
-  dónde están, y que se le pide validar el resto. Sale del recuento de §11, sin IA ni plantilla nueva. Resultado
-  esperado: un cliente sabe en la primera página qué contestar y qué validar. Cambia lo que recibe el cliente: decide
-  Raúl si se hace. [Word · persona]
+  cierre de la unidad. Decide Raúl, porque cambia cómo cierra el QA. Raúl pidió analizarlo antes (5-nov): opciones, pros y contras en [`diseno/fallo-qa-a-mano.md`](diseno/fallo-qa-a-mano.md). [QA · persona]
 - **Reaprobación: criterio provisional y reflexión pendiente.** Raúl, 5-nov: si lo que llega cambia lo que hay que
   construir, se debe aprobar; si no lo cambia, lo valida la IA. Es el criterio provisional, no un mecanismo definitivo
   ya diseñado y probado. En la campaña, asignar a una unidad aprobada un informe que corregía su validación disparó
@@ -68,7 +62,7 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   FU-10 y FU-11), 16 escenarios y cuatro opciones: [`diseno/reaprobacion.md`](diseno/reaprobacion.md). Recomienda la
   opción 2, que concreta este criterio con topes que comprueba el script y una línea para el JP; lo que añade a su
   criterio son propuestas por contrastar, y el documento dice cuáles. Falta que Raúl elija; después, implementarlo y
-  probarlo. De la misma familia, en las verificaciones: un paso manual del técnico que nombra objetos caducó la
+  probarlo. El 5-nov Raúl pidió verlo con ejemplos concretos antes de decidir: están en el mismo documento, «Con ejemplos concretos», con una propuesta revisada que separa lo que ve el cliente de lo que aprueba el JP. De la misma familia, en las verificaciones: un paso manual del técnico que nombra objetos caducó la
   verificación de ISS-01 aunque no cambiaba lo construido, y en E5-4 la sesión lo reescribió sin nombrarlos para
   evitarlo, que deja el técnico menos claro (`evaluaciones.md`, «E5, sesiones 2 a 4»). Valorarlo junto a esta reflexión. Otro caso, en E7: los ajustes dentro del encargo de EV-01 (FU-17, FU-18) se aplicaron sin `Cambio:`, para no devolverla a aprobación, y al abrir EV-02 pasaron a contar como suyos («si falta, la fuente es de la única unidad Abierta», `cambios.md`); la sesión les puso `Cambio: EV-01` a mano, y entonces EV-01, ya Construida, salió «ha crecido desde que se aprobó» y `indice.py issues` dejó de dar sus issues y la orden de regresión de F9 (se quitó la marca: con EV-02 ya Aprobada, no hay unidad Abierta que se las lleve). Hoy un ajuste que no cambia el encargo no tiene cómo quedar en su unidad sin pedir otra aprobación. Y con la unidad ya Construida, el técnico de la siguiente (su fila de §14 para HU-04.3, «Otras unidades») y una corrección de redacción en §6 caducaron la verificación de cuatro issues de EV-01 y dejaron sus resultados de QA sin vigencia: se reverificaron y se repitió el QA, todo por script, sin cambio en Appian. [flujo · persona y sesión]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso

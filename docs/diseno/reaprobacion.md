@@ -79,10 +79,110 @@ Límites: hay tres casos reales; los demás escenarios son supuestos. No se ha m
 reaprobación ni cuánto trabajo cambió FU-11. Revisión de Codex (5-nov), aceptada: corrigió las premisas de FU-08, FU-11
 y de lo que pasa con los topes.
 
+## Con ejemplos concretos (Raúl, 5-nov)
+
+Raúl pidió ver cómo se comporta cada opción con cambios reales antes de decidir: un label, un usuario en un grupo, la
+visibilidad de un record, el color de un botón, mover un componente, campos nuevos, una función, una integración, un
+parámetro, una notificación y una validación. Están abajo, con otros que han salido en las pruebas.
+
+### Tres preguntas distintas
+
+Al repasar los ejemplos sale que «reaprobar» mezcla tres cosas que no son lo mismo:
+
+1. **¿Lo tiene que ver el cliente?** Cambia algo que el cliente validó: lo que hace la aplicación, un texto o una regla
+   que vio (una pieza 🔒). Quien responde es el cliente, revalidando, y para eso ya está F2 (la pieza deja de estar 🔒 y
+   entra en la próxima validación). No es cosa del JP.
+2. **¿Lo tiene que aprobar el JP?** Cambia lo que se compromete: el alcance (piezas que entran o salen), el esfuerzo de
+   forma apreciable o el riesgo (datos y su estructura, quién ve o hace qué, otros sistemas, el despliegue).
+3. **Si no es ninguna de las dos**, lo valida la IA (el analista): es coherencia técnica, sin efecto en lo que se
+   compromete ni en lo validado. Es el criterio provisional de Raúl.
+
+La opción 2, tal como estaba arriba, mezcla la 1 y la 2: una errata en una pieza 🔒 bloquea a la espera del JP, cuando
+lo que hace falta es que la vea el cliente. Y el momento importa: con la unidad Abierta todo entra antes de aprobar;
+con la unidad Construida, cualquier cambio en Appian es otra unidad (F3 o F4) con su aprobación. La reaprobación solo
+existe mientras la unidad está Aprobada y se construye.
+
+### Los ejemplos
+
+«Hoy» es lo que hace el plugin, que pide al JP volver a aprobar siempre que el informe lleve `Cambio:`. «Propuesta» es
+lo que haría la propuesta revisada de abajo.
+
+| # | Cambio, con la unidad aprobada y en construcción | ¿Cliente? | ¿JP? | Hoy | Propuesta |
+|---|---|---|---|---|---|
+| 1 | Cambiar el texto de un label | Solo si la pantalla estaba validada | No | Reaprueba | La IA lo valida; si la pantalla estaba 🔒, la pieza vuelve a la próxima validación del cliente, sin parar |
+| 2 | Meter un usuario en un grupo | No | No | Si llega como informe, reaprueba | No es un cambio de la unidad: es operación del entorno (una persona, por el proceso del cliente). Solo si cambia quién pertenece a un perfil es la fila 3 |
+| 3 | Cambiar la visibilidad de un record (quién ve qué filas) | Sí | Sí: seguridad | Reaprueba | Reaprueba y el cliente lo revalida |
+| 4 | Cambiar el color de un botón | No (salvo marca validada) | No | Reaprueba | La IA lo valida |
+| 5 | Mover un componente en una interfaz | Solo si el prototipo estaba validado | No | Reaprueba | Como la fila 1 |
+| 6a | Un campo nuevo que el negocio ve o rellena | Sí | Sí: alcance | Reaprueba | Reaprueba y el cliente lo revalida |
+| 6b | Un campo técnico (auditoría, una clave) antes del primer pase | No | No | Reaprueba | La IA lo valida; va en el script de base de datos del pase como el resto |
+| 6c | Un campo en una tabla que ya tiene datos en producción | No | Sí: datos y despliegue | Es otra unidad (lo construido ya pasó) | Otra unidad, con su aprobación |
+| 7a | Una función nueva que saca lógica que ya existe (refactor) | No | No | Reaprueba | La IA lo valida, con la regresión de lo que la usa |
+| 7b | Una función nueva que añade una regla de negocio | Sí | Sí: alcance | Reaprueba | Reaprueba y el cliente lo revalida |
+| 8 | Una integración nueva | Si cambia lo que hace | Sí: alcance, coste y riesgo | Reaprueba | Reaprueba siempre |
+| 9 | Un parámetro nuevo en una función, mismo comportamiento | No | No | Reaprueba | La IA lo valida, con la regresión de lo que la usa |
+| 10 | Una notificación nueva en un punto del proceso | Sí | Sí: alcance (y destinatarios con datos personales) | Reaprueba | Reaprueba y el cliente lo revalida |
+| 11a | Una validación que el funcional ya pedía y faltaba en el técnico | No | No | Reaprueba | La IA lo valida: es construir lo acordado |
+| 11b | Una validación nueva que no estaba acordada | Sí | Solo si cambia el esfuerzo | Reaprueba | El cliente la revalida; el JP solo si cambia el esfuerzo |
+| 12 | Cambiar el valor de una regla (el límite de 3.000 € a 2.500 €) | Sí | No: no cambia el esfuerzo | Reaprueba | El cliente lo revalida; sin JP |
+| 13 | Cambiar quién puede hacer una acción | Sí | Sí: seguridad | Reaprueba | Reaprueba y el cliente lo revalida |
+| 14 | El cliente confirma un supuesto con el que ya se construye | Ya lo hizo | No | Reaprueba | Pasa: el supuesto queda como hecho |
+| 15 | El cliente contradice un supuesto | Sí | Si cambia el esfuerzo | Reaprueba | Como la 11b o la 7b, según lo que cambie |
+| 16 | Errata en el documento, sin cambio en la aplicación | No | No | Reaprueba | La IA lo valida |
+| 17 | Ajuste técnico que el funcional ya pedía (la vista de consulta, DT-11) | No | No | Hoy se esquiva sin `Cambio:` y luego cuenta para otra unidad (E7) | La IA lo valida y queda en su unidad |
+| 18a | Cuentas de prueba (FU-10) | No | No | Pasó sin `Cambio:` | La IA lo valida |
+| 18b | Origen de datos de desarrollo (FU-11) | No | Solo si cambia el esfuerzo de forma apreciable | Reaprueba | Lo decide el umbral de esfuerzo |
+| 19 | Algo que el Dev MCP no puede hacer y lo hace una persona: más esfuerzo, mismo funcional | No | Sí, si pasa del umbral | No lo ve nadie | Lo decide el umbral de esfuerzo |
+| 20 | Quitar una funcionalidad | Sí | Sí: alcance | Reaprueba | Reaprueba y el cliente lo revalida |
+| 21 | Rendimiento: un índice, la sincronización | No | No, salvo esfuerzo | Reaprueba | La IA lo valida |
+| 22 | Un defecto que encuentra el QA antes de cerrar la unidad | No: no cambia lo acordado | No | No pide nada (F8: se arregla en la aplicación) | Igual |
+| 23 | Corregir el técnico tras construir, sin tocar Appian (E7) | No | No | Caduca las verificaciones de issues hechas | No debería caducarlas: ver «Después de construir» |
+
+### Qué errores comete cada opción
+
+| Opción | Aprueba sin necesidad (burocracia) | Deja pasar lo que debía verse (riesgo) |
+|---|---|---|
+| 1. Como está | Las filas 1, 4, 5, 7a, 9, 11a, 14, 16 y 21: casi la mitad de los ejemplos | Lo que llega sin `Cambio:` (18a, 17) y el esfuerzo que nadie declara (19) |
+| 2. Como estaba arriba | Las filas 1 y 5 con la pieza 🔒, la 12, y lo que una sesión desatendida no puede declarar | Un esfuerzo o una regla mal declarados (es juicio del analista) |
+| 3. Por script | Toda diferencia de objetos: 1, 4, 5, 9 y 21 bloquean igual que una integración | La 12 pesa lo mismo que una errata (es una constante que cambia); el esfuerzo (19) no se ve en los objetos |
+| Propuesta revisada | Ninguna de la lista, si el analista clasifica bien | Lo mismo que la 2: depende del juicio, con topes que lo acotan y la línea que ve el JP |
+
+### La propuesta revisada
+
+- **El informe de impacto responde las tres preguntas.** Con la 1, sus piezas dejan de estar 🔒 y van a la próxima
+  validación del cliente (como en F2), sin parar la construcción. Con la 2, el JP aprueba (como hoy). Si ninguna, lleva
+  `Efecto: sin cambio de alcance, esfuerzo ni riesgo` y lo valida la IA.
+- **Topes que el script comprueba** (no son juicio): no se acepta «sin efecto» si el informe tiene puntos de alcance
+  (ALCANCE±), «Pendiente» o que piden aprobación, ni si cita una DT o pieza de seguridad, datos o integraciones. Hay que
+  comprobar en el código qué de eso se puede saber por las piezas citadas; lo que no, lo declara el analista y se ve en
+  la línea del JP.
+- **Umbral de esfuerzo**: el JP aprueba si el cambio añade una issue o, según la estimación del analista, más de media
+  jornada. Es un número para que la pregunta tenga respuesta, no una medida exacta.
+- **Una línea para el JP**, sin lista que cerrar: «Cambios validados por la IA desde tu aprobación: FU-nn». Se borra sola
+  en la siguiente aprobación.
+- **El ajuste se queda en su unidad**: un informe «sin efecto» lleva `Cambio: EV-nn` y no la hace crecer, así que lo de
+  E7 (FU-17 y FU-18 contados para EV-02) no vuelve a pasar.
+- **Sesión desatendida**: con el criterio de Raúl («si no cambia, lo valida la IA»), puede declarar «sin efecto» sola.
+  Para acotarlo, solo en los tipos de cambio de la tabla que la propuesta da a la IA. Ante la duda, se para como hoy.
+
+**Después de construir.** Corregir el técnico de una unidad Construida sin tocar Appian (fila 23) hoy cambia la versión
+de sus issues y caduca su verificación y su QA: en E7, cuatro issues de EV-01 se reverificaron por un cambio de
+redacción y por la fila de §14 de la unidad siguiente. Propuesta: que la versión de una issue cuente lo que se verifica
+(sus objetos y lo que se espera de ellos) y sus escenarios, no el texto de las notas. Un criterio que cambia sigue
+caducando el QA, porque cambia su escenario.
+
+**Lo que cuesta**: lo de arriba (`unidades.py`, la plantilla del informe, `cambios.md` y una frase en F8), más la
+separación de la pregunta 1, que reutiliza lo de F2, y, si se acepta, la versión de las issues en `issues.py`. Unas
+cuantas pruebas por cada tope. Sin IA en los scripts.
+
 ## Lo que decide Raúl
 
-1. **No cambiar nada por ahora.** Sin cambio de código; el coste de operación (los «de acuerdo» del JP) no está medido.
-   Las erratas, los supuestos confirmados y los ajustes de entorno seguirán pidiendo un «de acuerdo».
-2. **La opción 2** (recomendada). Si se elige, ¿puede una sesión desatendida declarar «sin efecto» por sí sola? La
-   propuesta es que no.
-3. **La opción 3 completa.** Lo más fiable sobre el papel y lo más caro, y no resuelve FU-08 ni las aclaraciones de regla.
+1. **Separar «lo ve el cliente» de «lo aprueba el JP».** Recomendado: es lo que quita las aprobaciones de más sin perder
+   lo que el cliente validó.
+2. **La propuesta revisada, entera o por partes.** Recomendada entera. Lo mínimo útil serían los topes con la línea del
+   JP y que el ajuste se quede en su unidad.
+3. **La sesión desatendida.** ¿Puede declarar «sin efecto» sola en los tipos que la tabla da a la IA? La propuesta dice
+   que sí, por su criterio; la versión anterior decía que no.
+4. **El umbral de esfuerzo.** Propuesto: una issue más o media jornada. Otro número vale; lo que hace falta es uno.
+5. **Después de construir**: que una corrección de redacción no caduque verificaciones ni QA.
+6. **No cambiar nada por ahora**, sabiendo que la mitad de los ejemplos seguirán pidiendo un «de acuerdo» del JP.
