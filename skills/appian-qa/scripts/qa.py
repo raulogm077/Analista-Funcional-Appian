@@ -270,11 +270,17 @@ def componentes(nodo):
 
 
 def valor_de(d, etiqueta):
-    """El valor del campo con esa etiqueta en una respuesta de SAIL CLI (su ui o lo que cambió), o NADA si no está."""
+    """El valor del campo con esa etiqueta en una respuesta de SAIL CLI (su ui o lo que cambió), o NADA si no está. Un
+    campo que está pero sin «value» está vacío (None): así llegan una opción sin elegir y una subida sin fichero. La
+    etiqueta de un layout (FieldLayout, SectionLayout2), que lleva la misma, no es el campo."""
+    vacio = False
     for c in componentes([(d or {}).get("ui"), (d or {}).get("changed")]):
-        if "value" in c and norma(c.get("label", "")) == norma(etiqueta):
+        if norma(c.get("label", "")) != norma(etiqueta):
+            continue
+        if "value" in c:
             return c["value"]
-    return NADA
+        vacio = vacio or "Layout" not in c["#t"]
+    return None if vacio else NADA
 
 
 NADA = object()
@@ -285,11 +291,15 @@ def puso_un_valor(args, antes, d):
     página de antes tenía otro: entonces sí cambió algo, aunque SAIL CLI diga movedNothing. Pasa en la primera orden tras
     abrir un formulario de inicio, que devuelve el formulario entero en «changed» y «changedFields» vacío (campaña del
     5-nov). Hace falta ver el valor de antes (si no se sabe, no prueba nada) y que ahora sea el pedido, según su tipo: un
-    texto igual al tecleado o un número igual al índice; null no es «None». Poner el valor que ya tenía sigue siendo no
-    cambiar nada (revisión de Codex)."""
+    texto igual al tecleado, un número igual al índice o, en una subida, un fichero con el nombre del que se sube; null no
+    es «None». Poner el valor que ya tenía sigue siendo no cambiar nada (revisión de Codex). Un campo vacío (opción sin
+    elegir, subida sin fichero) también es un valor de antes visto: SAIL CLI devuelve igual movedNothing (QA del 5-nov)."""
     def es(v, valor):
         if isinstance(v, str):
             return v == valor
+        if isinstance(v, list):     # una subida: [{fileName, extension, documentId…}]
+            nombre = pathlib.Path(valor).name
+            return any(isinstance(f, dict) and f"{f.get('fileName')}.{f.get('extension')}" == nombre for f in v)
         return isinstance(v, int) and not isinstance(v, bool) and str(v) == valor
     for etiqueta, valor in zip(args[0::2], args[1::2]):
         ahora, previo = valor_de(d, etiqueta), valor_de(antes, etiqueta)

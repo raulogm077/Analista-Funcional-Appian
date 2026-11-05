@@ -354,6 +354,25 @@ def main():
                   "sin ver el valor de antes"),
                  ((["Curso", "None"], {"ui": form(Curso="")}, {"changed": [form(Curso=None)]}), False, "null no es «None»"),
                  ((["Curso", "X"], {"ui": form(Curso="X")}, {"changed": [form(Curso="X")]}), False, "el valor que ya tenía")]
+        # QA del 5-nov, con la forma real del --json: una opción sin elegir y una subida sin fichero vienen sin «value», y
+        # el layout que las envuelve lleva la misma etiqueta
+        campo = lambda t, etq, **v: {"#t": "FormLayout", "contents": [{"#t": "SectionLayout2", "label": etq},
+                                                                     {"#t": t, "label": etq, **v}]}
+        doc = [{"fileName": "certificado", "extension": "pdf", "documentId": {"#t": "CollaborationDocument", "id": 1}}]
+        ruta = str(pathlib.Path("qa") / "EV-01" / "ficheros" / "certificado.pdf")
+        casos += [((["Decisión", "1"], {"ui": campo("RadioButtonField", "Decisión")},
+                    {"changed": [campo("RadioButtonField", "Decisión", value=1)]}), True, "una opción sin elegir, al índice"),
+                  ((["Decisión", "1"], {"ui": campo("RadioButtonField", "Decisión", value=1)},
+                    {"changed": [campo("RadioButtonField", "Decisión", value=1)]}), False, "la opción que ya estaba"),
+                  ((["Certificado", ruta], {"ui": campo("MultipleFileUploadWidget", "Certificado")},
+                    {"changed": [campo("MultipleFileUploadWidget", "Certificado", value=doc)]}), True,
+                   "una subida, con el nombre del fichero"),
+                  ((["Certificado", ruta.replace("certificado", "otro")], {"ui": campo("MultipleFileUploadWidget", "Certificado")},
+                    {"changed": [campo("MultipleFileUploadWidget", "Certificado", value=doc)]}), False,
+                   "una subida con otro nombre"),
+                  ((["Decisión", "1"], {"ui": {"#t": "SectionLayout2", "label": "Decisión"}},
+                    {"changed": [campo("RadioButtonField", "Decisión", value=1)]}), False,
+                   "solo la etiqueta del layout no es ver el campo")]
         spec_pv = importlib.util.spec_from_file_location("qa_puso_un_valor", QA)
         qa_pv = importlib.util.module_from_spec(spec_pv)
         spec_pv.loader.exec_module(qa_pv)
