@@ -479,6 +479,20 @@ def marca_cliente(tmp, built):
     code, salida = run([marca, "crear", *opciones(), "--logo", tmp / "logo-rgba-opaco.png", tmp / "logo rgba opaco"])
     if code or not any("transparencia" in l and "--logo:" in l for l in salida.splitlines() if l.startswith("Aviso:")):
         probs.append(f"un PNG con canal alfa y todo opaco no avisa de que no tiene transparencia (sale con {code}):\n{salida[-400:]}")
+    # transparente en la primera fila y cortada después (declara 2 filas y trae 1): error, no se da por buena al ver el alfa
+    cortada = (b"\x89PNG\r\n\x1a\n" + trozo(b"IHDR", struct.pack(">IIBBBBB", 2, 2, 8, 6, 0, 0, 0))
+               + trozo(b"IDAT", zlib.compress(b"\x00" + b"\x1d\x2b\x4a\x80" * 2)) + trozo(b"IEND", b""))
+    (tmp / "logo-transp-cortada.png").write_bytes(cortada)
+    code, salida = run([marca, "crear", *opciones(), "--logo", tmp / "logo-transp-cortada.png", tmp / "error transp cortada"])
+    if code != 2 or "cortada" not in salida or (tmp / "error transp cortada").exists():
+        probs.append(f"un PNG transparente arriba y cortado después sale con {code} (debe salir con 2 sin escribir):\n{salida[-400:]}")
+    # 16 bits: no se mira su alfa, y se dice que no se ha comprobado (no se da por transparente)
+    rgba16 = (b"\x89PNG\r\n\x1a\n" + trozo(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 16, 6, 0, 0, 0))
+              + trozo(b"IDAT", zlib.compress(b"\x00" + b"\x00\x1d\x00\x2b\x00\x4a\xff\xff")) + trozo(b"IEND", b""))
+    (tmp / "logo-16.png").write_bytes(rgba16)
+    code, salida = run([marca, "crear", *opciones(), "--logo", tmp / "logo-16.png", tmp / "logo 16"])
+    if code or not any("no se ha comprobado" in l for l in salida.splitlines() if l.startswith("Aviso:")):
+        probs.append(f"un PNG de 16 bits no avisa de que su transparencia no se ha comprobado (sale con {code}):\n{salida[-400:]}")
     (tmp / "logo-cortado.png").write_bytes(rgba_opaco[:33])
     destino = tmp / "error cortado"
     code, salida = run([marca, "crear", *opciones(), "--logo", tmp / "logo-cortado.png", destino])
@@ -826,6 +840,34 @@ def avatares(built):
     return out
 
 
+NOMBRE_LOGO = AVATAR.replace(
+    "document.querySelector('.site-user .avatar'); return a ? getComputedStyle(a).color + '|' + a.style.color : 'sin avatar';",
+    "document.querySelector('.site-brand svg'); return a ? a.getAttribute('aria-label') + '|' + a.hasAttribute('aria-labelledby') "
+    "+ '|' + a.getAttribute('role') : 'sin logo';")
+
+
+def nombre_logo(tmp):
+    """[(qué, problemas)] del nombre accesible del logo SVG de la cabecera, en el navegador: el logoAltText de la marca,
+    también si el SVG trae un aria-labelledby, que mandaría sobre aria-label. None si no hay navegador."""
+    d = tmp / "nombre del logo"
+    d.mkdir()
+    (d / "app.json").write_text((ROOT / "templates" / "catalogo-patrones.json").read_text(encoding="utf-8"), encoding="utf-8")
+    marca = {**MARCA_PRUEBA, "id": "n", "site": {**MARCA_PRUEBA["site"], "logo": "logo-n.svg", "logoAltText": "Nombre configurado"}}
+    (d / "brand-n.json").write_text(json.dumps(marca, ensure_ascii=False), encoding="utf-8")
+    (d / "logo-n.svg").write_text("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' aria-labelledby='t'>"
+                                  "<title id='t'>Nombre antiguo</title></svg>", encoding="utf-8")
+    code, salida = run([HERE / "build.py", d / "app.json", "-o", d / "p.html", "--brand", "n"])
+    que = "logo SVG: su nombre accesible es el logoAltText de la marca, aunque traiga un aria-labelledby"
+    if code:
+        return [(que, [f"build.py con la marca del logo sale con {code}:\n{salida[-400:]}"])]
+    code, salida = run(["-c", NOMBRE_LOGO, HERE, d / "p.html"])
+    if code == 2:
+        return None
+    ultima = salida.splitlines()[-1] if salida else ""
+    return [(que, [] if code == 0 and ultima == "Nombre configurado|false|img" else
+             [f"esperaba «Nombre configurado|false|img» (aria-label|aria-labelledby|role) y sale ({code}):\n{salida[-400:]}"])]
+
+
 def main():
     utf8_stdio()
     ok = True
@@ -896,7 +938,7 @@ def main():
             else:
                 ok = False
                 print(f"✗ Contraste ({name}):\n{out}")
-        for que, probs in (avatares(built) or []) if browser else []:
+        for que, probs in ((avatares(built) or []) + (nombre_logo(tmp) or [])) if browser else []:
             ok = ok and not probs
             print(f"✗ Cabecera: {que}\n  " + "\n  ".join(probs) if probs else f"✓ Cabecera: {que}")
         if browser:

@@ -241,9 +241,10 @@ PNG_FIRMA = b"\x89PNG\r\n\x1a\n"
 
 
 def info_png(datos):
-    """(error o None, ¿tiene transparencia?) de un PNG. Error si le falta la cabecera, la imagen o el final. Transparente si
-    lleva un bloque tRNS o, con canal alfa (tipos 4 y 6), si algún píxel no es opaco; en 8 bits sin entrelazar se miran los
-    píxeles, y en otra profundidad o entrelazado se da por transparente sin mirarlos."""
+    """(error o None, ¿tiene transparencia?) de un PNG: True, False o None si no se ha podido comprobar. Error si le falta
+    la cabecera, la imagen o el final, o si su imagen está cortada. Transparente si lleva un bloque tRNS o, con canal alfa
+    (tipos 4 y 6), si algún píxel no es opaco: en 8 bits sin entrelazar se leen todas sus filas; en otra profundidad o
+    entrelazado, None (no se mira)."""
     import struct, zlib
     if len(datos) < 33 or datos[12:16] != b"IHDR":
         return "no es un PNG válido (falta la cabecera IHDR)", False
@@ -269,14 +270,14 @@ def info_png(datos):
     if tipo not in (4, 6):
         return None, False
     if prof != 8 or entrelazado:
-        return None, True
+        return None, None
     try:
         crudo = zlib.decompress(b"".join(idat))
     except zlib.error:
         return "no es un PNG válido (su imagen no se puede leer)", False
     canales = 4 if tipo == 6 else 2
-    fila, previa, i = ancho * canales, bytearray(ancho * canales), 0
-    for _ in range(alto):  # deshace el filtro de cada fila y mira el alfa (el último byte de cada píxel)
+    fila, previa, i, transparente = ancho * canales, bytearray(ancho * canales), 0, False
+    for _ in range(alto):  # deshace el filtro de cada fila y mira el alfa (el último byte de cada píxel), hasta la última
         if i + 1 + fila > len(crudo):
             return "no es un PNG completo (su imagen está cortada)", False
         filtro, linea = crudo[i], bytearray(crudo[i + 1:i + 1 + fila])
@@ -294,10 +295,9 @@ def info_png(datos):
                 p = a + b - c
                 pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
                 linea[x] = (linea[x] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
-        if any(linea[x] < 255 for x in range(canales - 1, fila, canales)):
-            return None, True
+        transparente = transparente or any(linea[x] < 255 for x in range(canales - 1, fila, canales))
         previa = linea
-    return None, False
+    return None, transparente
 
 
 def crear(a):
@@ -331,8 +331,11 @@ def crear(a):
                     errores.append(f"{opcion}: {p} {err}; vuelve a exportarlo")
                     continue
                 pngs[opcion] = datos
-                if not transparente:
+                if transparente is False:
                     avisos.append(f"{opcion}: el PNG {p.name} no tiene transparencia: en la cabecera se verá su fondo; pide uno con fondo transparente")
+                elif transparente is None:
+                    avisos.append(f"{opcion}: no se ha comprobado si el PNG {p.name} tiene transparencia (es de 16 bits o entrelazado): "
+                                  "míralo en la captura de la cabecera")
                 if len(datos) > 100 * 1024:
                     avisos.append(f"{opcion}: el PNG {p.name} pesa {len(datos) // 1024} KB y Appian no admite como logo del Site más de 100 KB; "
                                   "pide uno más ligero")
