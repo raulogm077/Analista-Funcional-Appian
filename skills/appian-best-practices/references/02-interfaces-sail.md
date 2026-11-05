@@ -301,14 +301,14 @@ Source: https://docs.appian.com/suite/help/latest/Tempo_Report_Design.html#usabi
 - ⚠️ Queries against record types (synced or not) **time out after 65 seconds**, just like grids: if you get a timeout, reduce the batch, the fields, or tighten the filters.
 - **Why:** a chart is meant for reading a pattern at a glance; thousands of points are neither readable nor performant.
 
-Source: https://docs.appian.com/suite/help/latest/Column_Chart_Component.html#usage-considerations
+Source: https://docs.appian.com/suite/help/latest/Column_Chart_Component.html#row-limit-for-records-powered-components
 
 ### 5A.5 Asynchronous loading and background matched to the card
 - ✅ Set `loadDataAsync: true` on records-powered charts that are slow to load: the interface displays without waiting for the chart, which shows a placeholder while it loads in the background (see 2.3).
 - ✅ When placing a chart inside a colored card, its background takes on the card's color; text and lines adjust automatically over dark backgrounds.
 - ⚠️ In offline mobile and portals, async data does **not** load in the background: it arrives together with the rest of the interface.
 
-Source: https://docs.appian.com/suite/help/latest/Column_Chart_Component.html#usage-considerations
+Source: https://docs.appian.com/suite/help/latest/Column_Chart_Component.html#using-the-loaddataasync-parameter
 
 > Chart accessibility (a requirement, not optional): every chart needs an equivalent text/grid representation — see 9.5.
 
