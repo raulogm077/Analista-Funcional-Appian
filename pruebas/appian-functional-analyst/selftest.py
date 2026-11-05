@@ -2944,10 +2944,12 @@ def pruebas_issues(tmp):
        and "- `HU-04.1` La tarea aparece a todos los técnicos de la unidad gestora y desaparece para los demás cuando uno "
            "la acepta. → Dos técnicos; aceptar la tarea" in i2 and "## Escenarios (ISS-02.feature) y cómo se comprueban" in i2,
        i2)
-    feature = lee(d / "ISS-02.feature")
+    con_notas = lee(d / "ISS-02.feature")
+    feature = re.sub(r"(?m)^[ ]*# Técnico §14: .*\n", "", con_notas)     # cómo lo prueba §14, como comentario, para el QA
     ok("el .feature: una sola Característica y una Regla por historia; el criterio con dado, cuando y entonces, en sus tres "
-       "pasos; el que aún no los tiene pasa tal cual, con aviso",
-       feature.startswith("# language: es\nCaracterística: EV-01 ISS-02 Registrar una solicitud; Subsanar una solicitud y 3 requisitos más\n\n  Regla: HU-01 Registrar "
+       "pasos; el que aún no los tiene pasa tal cual, con aviso; cada escenario, con lo que dice §14 como comentario",
+       "    Escenario: HU-03.1\n      # Técnico §14: SAIL CLI (QA de la unidad): Subsanar una devuelta\n" in con_notas
+       and feature.startswith("# language: es\nCaracterística: EV-01 ISS-02 Registrar una solicitud; Subsanar una solicitud y 3 requisitos más\n\n  Regla: HU-01 Registrar "
                           "una solicitud\n\n    Escenario: HU-01.1\n      * Sin memoria o sin plano")
        and "\n  Regla: HU-03 Subsanar una solicitud\n\n    Escenario: HU-03.1\n      Dada una solicitud devuelta\n      Cuando "
            "la unidad solicitante la reenvía\n      Entonces vuelve a «En revisión» con el mismo número\n" in feature
@@ -3144,9 +3146,10 @@ def pruebas_issues(tmp):
        and "Reaplicar" not in e1 + e2 and "- **HU-04 Firmar la revisión** (nueva)" in e2
        and "El técnico no cambia para esta issue con EV-02. Lo que ya dice de sus objetos:" in e3
        and "- §7 · Pantalla: PAN-02 · Qué es en Appian: `DEM_SolicitudForm`, formulario de tarea" in e3, e1 + e2 + e3)
-    ok("una issue con una sola historia lleva el .feature de esa historia, sin «Regla»",
+    ok("una issue con una sola historia lleva el .feature de esa historia, sin «Regla», con lo que dice §14 como comentario",
        lee(dv / "ISS-03.feature") == "# language: es\nCaracterística: HU-02 Corregir y reenviar una solicitud devuelta\n\n"
-       "  Escenario: HU-02.2\n    * Al reenviarla vuelve a «Enviada» con el mismo número y sin la firma anterior.\n",
+       "  Escenario: HU-02.2\n    # Técnico §14: Corregir una devuelta y reenviarla\n"
+       "    * Al reenviarla vuelve a «Enviada» con el mismo número y sin la firma anterior.\n",
        lee(dv / "ISS-03.feature"))
     verifica(v, "EV-02", "ISS-01")
     verifica(v, "EV-02", "ISS-02")

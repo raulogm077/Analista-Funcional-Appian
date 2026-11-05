@@ -384,8 +384,15 @@ def lineas_del_tecnico(d):
     abre_sub = False      # aún no se ha leído la primera línea de texto del apartado «### 3.n»
     cont, cabezas, unidas = continuaciones(T.lineas), {}, unidades_de_texto(T.lineas)
     en_13 = {"tabla": False, "reglas": False}    # §13: los pasos manuales van debajo de su tabla
+    valla = None          # la del bloque de código abierto (``` o ~~~, el diagrama Mermaid de §3): va a la Base, sin aviso
     for i, l in enumerate(T.lineas):
         s = T.seccion_de_linea[i]
+        v = re.match(r"^ {0,3}(`{3,}|~{3,})", l)
+        codigo = bool(valla or v)
+        if valla is None and v:
+            valla = v.group(1)
+        elif valla and v and v.group(1)[0] == valla[0] and len(v.group(1)) >= len(valla) and not l.strip()[len(v.group(1)):].strip():
+            valla = None      # se cierra con la misma marca, igual de larga o más, y nada detrás
         if i in cont:      # sigue el párrafo o la viñeta de la línea cabeza: es una sola unidad
             previa = (i, l)
             if cont[i] in cabezas:
@@ -452,7 +459,7 @@ def lineas_del_tecnico(d):
             otra_sub, abre_sub = es_marca_otra_unidad(l) and not l.startswith("|"), False     # «Otra unidad. Una por mes.» abre el apartado: todo él es de otra
         item = {"i": i, "donde": f"§{apartado or s}", "texto": unidas[i], "cabecera": cabecera if fila else None,
                 "otra": otra_sub or es_marca_otra_unidad(l), "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
-                "objetos": objetos, "definidos": definidos, "estado": "", "era": None}
+                "objetos": objetos, "definidos": definidos, "estado": "", "era": None, "codigo": codigo}
         cabezas[i] = item
         if antes:
             previas = antes.get((s, de_bloque[i]), ())
@@ -671,8 +678,9 @@ def que_se_pide(d, issue):
 
 
 def como_se_comprueba(m):
-    """{criterio: «SAIL CLI (QA de la unidad): …» o «Caso de prueba de `X`: …»} de técnico §14: su columna «Con qué»
-    (un caso de prueba guardado o SAIL CLI) y «Cómo se prueba». Sin «Con qué», solo cómo se prueba."""
+    """{criterio: [«SAIL CLI (QA de la unidad): …» o «Caso de prueba de `X`: …»]} de técnico §14, una por cada fila que
+    lo cita (la regla con su caso de prueba y su efecto en la pantalla, en dos filas): su columna «Con qué» (un caso de
+    prueba guardado o SAIL CLI) y «Cómo se prueba». Sin «Con qué», solo cómo se prueba."""
     out = {}
     for _, cab, filas in m.tablas("T", "14"):
         ncab = [mo.normaliza(c) for c in cab]
@@ -683,12 +691,19 @@ def como_se_comprueba(m):
         for f in filas:
             celda = lambda k: limpio(f[k]) if k is not None and k < len(f) and not un.vacio(f[k]) else ""
             metodo = celda(con)
-            if mo.normaliza(metodo).startswith("sail"):
-                metodo = "SAIL CLI (QA de la unidad)"
+            sail = re.match(r"(?i)\s*sail(?:\s+cli)?(?![a-z])\s*(.*)", metodo)
+            if sail:      # con lo que añada la celda: el buzón que se revisa, la cuenta, los datos que prepara
+                metodo = "SAIL CLI (QA de la unidad)" + (f" {sail.group(1)}" if sail.group(1) else "")
             dice = ": ".join(x for x in (metodo, celda(como)) if x)
             for cid in mo.ids_en(f[0] if f else ""):
-                out.setdefault(cid, dice)
+                if dice and dice not in out.setdefault(cid, []):
+                    out[cid].append(dice)
     return out
+
+
+def solo_caso(comprobaciones):
+    """Si todas las comprobaciones de un criterio son casos de prueba de regla: entonces no espera guion de QA."""
+    return bool(comprobaciones) and all(mo.normaliza(x).startswith("caso de prueba") for x in comprobaciones)
 
 
 def escenarios(d, issue, pruebas):
@@ -699,15 +714,17 @@ def escenarios(d, issue, pruebas):
         reglas = [f"`{o}`" for f in issue.filas if any(k in mo.normaliza(f["tipo"]) for k in REGLAS) for o in f["objetos"]]
         return (["Esta issue no cambia criterios ni reglas: no hay pruebas que ejecutar." if issue.sin_pruebas else
                  f"No cambia criterios, pero sí reglas ({', '.join(reglas)}): se prueban con sus casos de prueba."], "", [])
-    L = [f"- `{c}` {limpio(m.criterio(c))} → {pruebas.get(c) or 'sin prueba en técnico §14'}" for c in issue.criterios]
-    caso = {c for c in issue.criterios if mo.normaliza(pruebas.get(c) or "").startswith("caso de prueba")}
+    L = [f"- `{c}` {limpio(m.criterio(c))} → {' · '.join(pruebas.get(c) or ()) or 'sin prueba en técnico §14'}"
+         for c in issue.criterios]
+    caso = {c for c in issue.criterios if solo_caso(pruebas.get(c))}
+    notas = {c: [f"Técnico §14: {x}" for x in pruebas.get(c) or ()] for c in issue.criterios}
     historias = list(dict.fromkeys(m.piezas[c].padre for c in issue.criterios))
     una = len(historias) == 1
     F = ["# language: es", f"Característica: {historias[0]} {m.piezas[historias[0]].titulo}" if una else
          f"Característica: {d.uid} {issue.id} {issue.titulo}"]
     sin = []
     for h in historias:
-        lineas, s = m.escenarios(h, solo=set(issue.criterios), caso=caso)
+        lineas, s = m.escenarios(h, solo=set(issue.criterios), caso=caso, notas=notas)
         sin += s
         F += lineas if una else ["", f"  Regla: {h} {m.piezas[h].titulo}"] + [f"  {l}" if l else l for l in lineas]
     return L, "\n".join(F) + "\n", sin
@@ -1305,13 +1322,14 @@ def calcula(m, ctx, uid, estreno=False):
     plan.manuales = [x for x in manuales_de(m.raiz, uid)
                      if any(i.id == x["issue"] and i.version == x["version"] for i in issues)]
     plan.permisos = permisos_de(m.raiz, uid)  # conservar decisiones caducadas/revocadas para revisión humana
-    if perdidas:
+    avisar = [x for x in perdidas if not x.get("codigo")]     # un bloque de código no es algo que nombrar
+    if avisar:
         corta = lambda t: (t if len(t) <= 60 else t[:57].rstrip() + "…").replace("|", "/")   # noqa: E731
-        plan.avisos.append(f"{len(perdidas)} {'línea' if len(perdidas) == 1 else 'líneas'} del técnico no nombran ningún "
+        plan.avisos.append(f"{len(avisar)} {'línea' if len(avisar) == 1 else 'líneas'} del técnico no nombran ningún "
                            f"objeto ni requisito de las issues de {uid} y van en "
                            + (f"la Base, {base[0].id}" if base is not issues else "todas")
                            + " (que nombren su objeto, o falta en §13): "
-                           + "; ".join(f"{x['donde']} «{corta(limpio(x['texto']).strip('| '))}»" for x in perdidas))
+                           + "; ".join(f"{x['donde']} «{corta(limpio(x['texto']).strip('| '))}»" for x in avisar))
     if len(d.todos) <= 1:     # con un solo objeto no hay nada que repartir: sin aviso de «Para»
         pass
     elif not ctx.con_para:

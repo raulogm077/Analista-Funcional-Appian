@@ -42,6 +42,27 @@ class OtraUnidad(unittest.TestCase):
                                                if m.docs["T"].lineas[i].startswith("| campoajeno")))
 
 
+    def test_un_bloque_de_codigo_va_a_la_base_sin_aviso(self):
+        """Proyecto de formación del 5-nov: el diagrama Mermaid de §3 salía en el aviso línea a línea («```mermaid»,
+        «erDiagram»), que no es algo que la analista pueda nombrar. Sigue yendo a la Base; el texto suelto, también al aviso."""
+        f = self.p / "analisis/tecnico.md"
+        self.preparada()
+        t = f.read_text(encoding="utf-8")
+        f.write_text(t.replace("## 4. Grupos y seguridad",
+                               "```mermaid\nerDiagram\n    ZZPADRE ||--o{ ZZHIJO : tiene\n```\n\n"
+                               "Texto suelto que no nombra nada.\n\n"
+                               "~~~\nZZTILDES dentro\n~~~\n\n"
+                               "Otro texto suelto después del bloque.\n\n## 4. Grupos y seguridad", 1), encoding="utf-8", newline="")
+        m = mo.Proyecto(self.p)
+        plan = iss.calcula(m, un.Contexto(m), "EV-01", estreno=True)
+        aviso = next(a for a in plan.avisos if "no nombran ningún objeto" in a)
+        self.assertIn("Texto suelto que no nombra nada", aviso)
+        self.assertIn("Otro texto suelto después del bloque", aviso)
+        for codigo in ("```", "erDiagram", "ZZPADRE", "ZZTILDES"):
+            self.assertNotIn(codigo, aviso)
+        base_issue = next(i for i in plan.issues if i.comun)
+        self.assertIn("ZZPADRE ||--o{ ZZHIJO", base_issue.texto)
+
     def test_no_aplica_solo_en_su_apartado_no_va_a_la_base_ni_avisa(self):
         """Casos A y B. Una condición parcial no es la marca de la plantilla: sigue en el aviso y en la Base."""
         f = self.p / "analisis/tecnico.md"
