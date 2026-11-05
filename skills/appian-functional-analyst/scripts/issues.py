@@ -1613,7 +1613,8 @@ def _estado_verificado(raiz, uid, issue, marcas=(), manuales=None, permisos=None
         for motivo in motivos if isinstance(motivos, list) else ["diagnóstico de permisos ilegible"]:
             avisos_permisos.append(f"permisos no comprobados de {o.get('pedido')}: {motivo}")
     if any(isinstance(e, dict) and ("permisosInicio" in e or any("visibilidad" in a for a in e.get("acciones", [])))
-           for e in issue.esperado.values()):
+           for e in issue.esperado.values()) and not repetida_en_qa(raiz, uid, issue):
+        # hasta su QA: con un escenario suyo repetido, lo que le falte al QA lo dice avisos_qa por unidad
         avisos_permisos.append("acceso efectivo por rol no comprobado: requiere QA con cada rol")
     if manual:
         # El cierre humano suple la lectura estructural. Nunca tapa un fallo vigente de pruebas o QA.
@@ -1696,6 +1697,16 @@ def fallos_qa(raiz, uid, issue):
     return [(QA, c, ": ".join(str(x) for x in (esc[c].get("paso"), esc[c].get("motivo")) if x))
             for c in issue.criterios if isinstance(esc.get(c), dict) and esc[c].get("resultado") == "falla"
             and esc[c].get("versionIssue", issue.version) == issue.version]
+
+
+def repetida_en_qa(raiz, uid, issue):
+    """Si algún escenario de la issue tiene resultado (pasa o falla) en el último QA de la unidad (qa/<U>/resultado.json)."""
+    r = pathlib.Path(raiz) / "qa" / uid / "resultado.json"
+    try:
+        esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") or {} if r.is_file() else {}
+    except (ValueError, AttributeError):
+        return False
+    return any(isinstance(esc.get(c), dict) and esc[c].get("resultado") in ("pasa", "falla") for c in issue.criterios)
 
 
 def falla_en_qa(raiz, uid, issue, marcas=()):

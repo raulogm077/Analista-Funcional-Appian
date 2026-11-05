@@ -65,6 +65,26 @@ Visibilidad verificable: `EXPRESSION: true()`
         self.assertEqual(accion["nombre"], "Adjuntar informe del organismo")
         self.assertNotIn("visibilidad", accion)
 
+    def test_recordatorio_de_acceso_por_rol_solo_hasta_el_qa(self):
+        # campaña del 5-nov: con el QA ya repetido con cada cuenta, el recordatorio seguía en cada issue y en «construida»;
+        # lo que le falta al QA ya lo dice avisos_qa por unidad
+        _, plan = self.preparada()
+        issue = next(i for i in plan.issues if i.criterios)
+        issue.esperado[issue.objetos[0]]["permisosInicio"] = [{"rol": "initiator", "grupos": ["AUT Técnicos"]}]
+        fixture.verifica(self.p, "EV-01", issue.id)
+        recordatorio = "acceso efectivo por rol no comprobado"
+        self.assertIn(recordatorio, iss.estado(self.p, "EV-01", issue)[1])
+        qa = self.p / "qa" / "EV-01" / "resultado.json"
+        qa.parent.mkdir(parents=True)
+        qa.write_text(json.dumps({"escenarios": {issue.criterios[0]: {"resultado": "guion por terminar"}}}),
+                      encoding="utf-8")
+        self.assertIn(recordatorio, iss.estado(self.p, "EV-01", issue)[1])     # sin repetir, no cuenta
+        qa.write_text(json.dumps({"escenarios": {issue.criterios[0]: {"resultado": "pasa",
+                                                                  "versionIssue": issue.version}}}), encoding="utf-8")
+        hecha, motivo = iss.estado(self.p, "EV-01", issue)
+        self.assertTrue(hecha, motivo)
+        self.assertNotIn(recordatorio, motivo)
+
     def test_sin_tabla_pm_no_cambia_esperado_con_metadata_vacia(self):
         m, _ = self.preparada()
         self.assertEqual(un.Contexto(m).esperado("EV-01")["AUT Tramitar Solicitud"], {"tipo": "processModel"})
