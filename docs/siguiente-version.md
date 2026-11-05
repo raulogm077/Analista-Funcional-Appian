@@ -7,11 +7,7 @@ lista no autoriza publicar, desplegar, enviar ni borrar.
 Cada pendiente explica el problema, qué hay que hacer y el resultado esperado, conservando los acuerdos de la
 conversación. Si el detalle ya está bien explicado en otro documento, se enlaza desde el punto en lugar de repetirlo.
 
-**Ahora:** rama `claude/pruebas-metodo-20261104`. Hecha la vigencia de las decisiones anteriores (`evaluaciones.md`,
-«El método de punta a punta»), probada leyendo la rama y con el plugin cargado. En curso, por decisión de Raúl del 4-nov: el método de punta a punta, que junta «Todas
-las entradas del plugin» y «Agentes y skills, por separado y juntos» (§3). Un proyecto ficticio recorre F1, F2, F4,
-F8 y F9 (F5 a F7 siguen en §3) y construye en una aplicación de prueba nueva de Indra-spain, que Raúl autorizó con datos ficticios, sin exportar ni
-desplegar. Lo de §1 que queda es de una persona.
+**Ahora:** rama `claude/pruebas-metodo-20261104`, subida sin PR. La campaña «el método de punta a punta» (4 y 5 de nov., por decisión de Raúl) recorrió con un proyecto ficticio F1, F2, F4, F8 y F9 en una aplicación de prueba de Indra-spain, más E9 (entradas) y E10 (¿sirve sin IA?): EV-01 y EV-02 construidas, su QA en verde (23 de 23 y 1 de 1) y el borrador del paquete, sin exportar ni desplegar (`evaluaciones.md`, «El método de punta a punta»). Lo que queda es de Raúl: elegir el mecanismo de la reaprobación, la nota del DF para el cliente y el caso general de un fallo de QA visto a mano (§2), y ver lo creado en Indra-spain antes de borrarlo (§1). F5 a F7 siguen en §3.
 
 ## 1. Del trabajo anterior
 
@@ -26,6 +22,7 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 (HTML y trazabilidad) queda como opción de Raúl, sabiendo que hay que construirlas antes de navegarlas. Las lecciones
 útiles de esas pruebas tienen destino aquí o en `evaluaciones.md`; las que lo tenían pendiente, abajo y en §2. Falta:
 
+- **La aplicación de prueba «FOR Formación Externa»** de Indra-spain y lo que lista `Pruebas-plugin/metodo-20261104/objetos-creados.md`, con el paquete borrador: Raúl la ve antes de borrarla (5-nov). Las tablas `FOR_ESTADO`, `FOR_SOLICITUD`, `FOR_CERTIFICADO` y `FOR_MODALIDAD` de `jdbc/Appian` las quita después una persona con acceso a la base de datos. [persona y sesión]
 - **Las tablas `DVG_CATEGORIA` y `DVG_SOLICITUD`** de `jdbc/Appian` (prueba de divergencias, sin valor): las quita una
   persona con acceso a la base de datos. [persona]
 - **Residuos de la campaña de Codex en Indra-spain**, pendientes de decisión: la aplicación CML, las reglas `DEM_C26_*`
@@ -43,7 +40,7 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 - **Un fallo de QA visto a mano no reabre su issue.** Problema: en el QA de EV-01 (campaña del 5-nov), HU-09.2 falló a
   mano y no tenía guion; no llegó a `qa/<U>/resultado.json` y las issues siguieron «hechas», así que la unidad podía
   marcarse Construida con un fallo conocido. Que no llegara al registro se debió a que el guion no podía subir un
-  fichero: el plugin lo admite ya (`{fichero:<nombre>}`, `evaluaciones.md`), sin probar todavía la subida real. El
+  fichero: el plugin lo admite ya (`{fichero:<nombre>}`) y HU-09.1 y HU-09.2 pasan subiendo un PDF ficticio (`evaluaciones.md`). El
   fallo en sí, que Formación no tenía por dónde abrir el certificado, es de diseño y lo corrige DT-11. Queda el caso
   general: un escenario que se ve en pantalla, falla y
   no puede llevar guion. Qué hacer: decidir cómo se registra (un guion «por terminar» que llega hasta el paso que falla,
