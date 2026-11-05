@@ -2371,7 +2371,8 @@ async def cmd_regresion(args) -> int:
         print(f"Regresion sin hacer: {resultado['motivo']}. Detalle: {destino}")
         return EXIT_SIN_PRUEBAS
     print(f"Regresion de {app_obj.get('name')}: {resultado['objetos']} reglas e interfaces "
-          f"({len(resultado['sinCasos'])} sin casos), {resultado['casos']} casos: {resultado['pasan']} pasan, "
+          f"({len(resultado['sinCasos'])} sin casos{': ' + ', '.join(resultado['sinCasos']) if resultado['sinCasos'] else ''}), "
+          f"{resultado['casos']} casos: {resultado['pasan']} pasan, "
           f"{resultado['fallan']} fallan, {resultado['noEvaluables']} no evaluables ({resultado['segundos']} s). "
           f"Detalle: {destino}")
     for linea in resumen_de_pruebas(resultado, solo_fallos=True)[1:]:

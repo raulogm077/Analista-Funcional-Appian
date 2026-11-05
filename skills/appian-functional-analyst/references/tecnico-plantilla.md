@@ -169,7 +169,9 @@ carga inicial en §3.
 
 ### 6. Lógica
 Tabla de reglas de expresión y decisiones `Regla · Entradas · Devuelve · Lógica · Pruebas`, y tabla de
-constantes `Constante · Valor · Cambia por entorno`.
+constantes `Constante · Valor · Cambia por entorno`. «Sí» solo en una constante de tipo primitivo o de correo, las únicas
+que Appian deja marcar como *Environment Specific* y las que van en el ICF (`appian-best-practices/references/04-expression-rules.md`);
+una de grupo que viaja en el paquete conserva su UUID: «No», y lo que cambia por entorno son sus miembros.
 
 ### 7. Interfaces y acciones
 Tabla `Pantalla · Qué es en Appian · Guarda con · Notas`, una fila por PAN: página de site (y de qué tipo),
