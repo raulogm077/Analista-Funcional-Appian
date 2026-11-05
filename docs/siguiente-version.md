@@ -4,6 +4,9 @@ La única lista de lo que falta, en el orden en que se hace: un paso cada vez, y
 Lo hecho, con sus pruebas y límites, pasa a [evaluaciones.md](evaluaciones.md). Cada punto dice a quién toca. Esta
 lista no autoriza publicar, desplegar, enviar ni borrar.
 
+Cada pendiente explica el problema, qué hay que hacer y el resultado esperado, conservando los acuerdos de la
+conversación. Si el detalle ya está bien explicado en otro documento, se enlaza desde el punto en lugar de repetirlo.
+
 **Ahora:** rama `claude/pruebas-metodo-20261104`. Hecha la vigencia de las decisiones anteriores (`evaluaciones.md`,
 «El método de punta a punta»), probada leyendo la rama y con el plugin cargado. En curso, por decisión de Raúl del 4-nov: el método de punta a punta, que junta «Todas
 las entradas del plugin» y «Agentes y skills, por separado y juntos» (§3). Un proyecto ficticio recorre F1, F2, F4,
@@ -123,6 +126,22 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   `https://docs.appian.com/suite/help/26.10/deployments-view.html#review-deployment-requests`). Cancelar un pipeline
   detiene las promociones siguientes, no un despliegue ya empezado. Hace falta un entorno de destino además de
   Indra-spain. [F9]
+- **Solución técnica y diseño de arquitectura.** Revisar la generación de la solución técnica y su profundidad
+  (petición de Raúl, 5-nov). Definir la responsabilidad de un arquitecto experto en Appian que dedique el tiempo
+  necesario a plantearla y la deje suficientemente detallada para la revisión y validación de un arquitecto humano.
+  Aplicar las recomendaciones oficiales de Appian, sus buenas prácticas y patrones de diseño, justificando las
+  decisiones para la eficiencia, la escalabilidad y la gestión de versiones de la aplicación. Incluir su arquitectura,
+  los datos, procesos y componentes, las integraciones y las otras aplicaciones o sistemas con los que se relaciona;
+  contrastar el diseño y sus alternativas antes de darlo por listo para construir.
+  Cuando esté disponible el cerebro corporativo, usar su contexto funcional global y técnico del cliente: componentes
+  reutilizables, integraciones existentes, directrices de arquitectura, capas ya construidas, formatos establecidos
+  y las demás convenciones aplicables, para que la solución encaje con lo que existe.
+  Generar también un diseño técnico Word profesional, alineado con la solución vigente, que explique visualmente
+  cómo está hecha y cómo se integra. Evaluar qué herramientas usar para sus diagramas de arquitectura e integración,
+  su incorporación al Word y su mantenimiento cuando cambie la solución.
+  Probar el impacto de esta revisión en los traspasos y la construcción con casos representativos; recoger las
+  conclusiones y los límites en `evaluaciones.md`, evitando añadir documentación o trámites sin utilidad.
+  [arquitectura y Word]
 - **Prototipos: repertorio hasta Appian 26.10 y elección UX.** Contrastar `appian-prototipos` con el catálogo oficial
   de componentes de interfaz hasta 26.10, detectar los ausentes o con soporte parcial y ampliarlos con ejemplos y
   criterios de cuándo usarlos o evitarlos, para disponer de alternativas usables, accesibles y adaptables. Revisar el
