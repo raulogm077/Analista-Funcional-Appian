@@ -448,7 +448,7 @@ def dialog(sid, title, contents, buttons, req, ref, width="NARROW", openFrom=Non
 # capa de seguridad de Appian que aplica «solo lo ve un perfil» (appian-best-practices 06 §5)
 CAPAS = {"registro": "seguridad de registro del record type (qué filas ve)",
          "campo": "seguridad de campo del record type; en la interfaz, showWhen con a!doesUserHaveAccess() (sin acceso, el campo sale vacío)",
-         "vista": "seguridad de vista de registro",
+         "vista": "seguridad de vista de registro (solo en una vista adicional: la de resumen la ve todo el que ve el registro)",
          "accion": "seguridad de acción de registro (y permiso Initiator en el modelo de proceso)",
          "interfaz": "visibilidad de interfaz (showWhen con a!isUserMemberOfGroup()): solo oculta, no protege; los datos se protegen en el record type"}
 

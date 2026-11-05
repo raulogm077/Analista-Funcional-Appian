@@ -96,10 +96,10 @@ Appian applies record type security in layers, from broadest to most granular. E
 | Object security | Who can view/modify the record type |
 | Record-level security | Which rows each user sees |
 | Field-level security | Which fields each user sees |
-| Record view security | Which views each user sees |
+| Record view security | Which views each user sees. Only the additional views: the Summary view (and News and Related Actions) is seen by anyone who sees the record |
 | Record action security | Which actions each user sees |
 
-Source: [Secure Your Data Fabric — How security layers work together](https://docs.appian.com/suite/help/latest/secure-your-data-fabric.html)
+Source: [Secure Your Data Fabric — How security layers work together](https://docs.appian.com/suite/help/latest/secure-your-data-fabric.html) · [Configure Record Views — Record view security](https://docs.appian.com/suite/help/latest/record-view.html#record-view-security)
 
 ✅ **Always start with the record type's object security: it is mandatory and it is the entry gate.**
 By default, any user with **Viewer** permission on the record type sees **all** rows and **all** fields. The granular layers only restrict from there.
