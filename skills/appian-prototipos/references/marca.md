@@ -21,7 +21,7 @@
 | Fichero | Qué es | Lo usa |
 |---|---|---|
 | `brand-<id>.json` | La marca: el objeto Site con su logo, la tipografía, la paleta, botones y tarjetas, los colores de gráfico, los estados y el perfil CSS | `validate.py`, `build.py` y los helpers |
-| `logo-<id>-on-dark.svg` | El logo para fondo oscuro, el de la cabecera del site (y `logo-<id>-on-light.svg`, el de fondo claro) | El prototipo; en Appian se sube en PNG |
+| `logo-<id>-on-dark.svg` o `.png` | El logo para fondo oscuro, el de la cabecera del site (y `logo-<id>-on-light.svg` o `.png`, el de fondo claro) | El prototipo; en Appian se sube en PNG |
 | `perfil-css-<id>.txt` | El perfil CSS para pegar en Admin Console › Branding › CSS Profiles (el mismo texto que escribe `build.py`) | Quien administra Appian |
 | `marca-<id>.md` | La guía de marca: el Site para copiar tal cual, el perfil CSS y las capacidades que pide, la paleta con el contraste de cada color, botones y tarjetas, estados, gráficos, tipografía, logo, fuentes con su fecha, ajustes de contraste y lo que tiene que confirmar el cliente | Quien construye en Appian y quien diseña las pantallas |
 
@@ -30,7 +30,7 @@
 | Clave | Qué lleva | Lo usa |
 |---|---|---|
 | `id`, `name`, `source` | El `<id>` del nombre del fichero, el nombre de la marca y de dónde salen los valores (URL o documento, con la fecha) | El HTML (`px-brand`) |
-| `site` | Las propiedades del objeto Site, tal cual se copian en Appian: `navigationLayout` (`HEADER_BAR`, `SIDEBAR`), `headerBarStyle` (`MERCURY`, `HELIUM`, `OXYGEN`), `backgroundColor`, `selectedPageHighlightColor`, `accentColor`, `loadingBarColor`, `buttonShape`, `inputShape` y `dialogShape` (`SQUARED`, `SEMI_ROUNDED`, `ROUNDED`), `useUppercase` (etiquetas de botón en mayúsculas), `useUppercasePageTitles` (títulos de página de la cabecera en mayúsculas) y `showUserMenu`. Si la marca tiene logo: `logo` (el SVG para fondo oscuro, junto al JSON) y `logoAltText`. `backgroundColor`, `selectedPageHighlightColor` y `accentColor` son obligatorios | `build.py`, el runtime (cabecera del site) y `validate.py` (contraste) |
+| `site` | Las propiedades del objeto Site, tal cual se copian en Appian: `navigationLayout` (`HEADER_BAR`, `SIDEBAR`), `headerBarStyle` (`MERCURY`, `HELIUM`, `OXYGEN`), `backgroundColor`, `selectedPageHighlightColor`, `accentColor`, `loadingBarColor`, `buttonShape`, `inputShape` y `dialogShape` (`SQUARED`, `SEMI_ROUNDED`, `ROUNDED`), `useUppercase` (etiquetas de botón en mayúsculas), `useUppercasePageTitles` (títulos de página de la cabecera en mayúsculas) y `showUserMenu`. Si la marca tiene logo: `logo` (el SVG o PNG para fondo oscuro, junto al JSON) y `logoAltText`. `backgroundColor`, `selectedPageHighlightColor` y `accentColor` son obligatorios | `build.py`, el runtime (cabecera del site) y `validate.py` (contraste) |
 | `palette` | Colores para usar como hex en SAIL. Los helpers leen `navy` (el oscuro de la marca: cabecera de registro, cabecera «hero», barra lateral), `slate` (texto secundario, 4,5:1 sobre blanco), `steel`, `red` y `greenDark` (tipos de evento del calendario y kanban), `amber` (icono de los avisos `WARN` cuando el ámbar de la marca no llega a 3:1 sobre el fondo de aviso), `lineStrong` (líneas que deben verse, 3:1), `pageBg` (gris de página) y `grayLight` (líneas finas) | Los helpers; `validate.py` avisa de un hex del `app.json` que no es de la marca |
 | `components` | `primaryButton` (estilo y color del botón principal: hex o `ACCENT`), `secondaryButton`, `destructiveButton`, `toolbarButton`, `contentCard` y `pageBackground` (convenciones de la guía) y `chartColorScheme` (series de gráficos en orden, con 3:1 sobre blanco; en la estándar, la última no llega y solo va con etiquetas de datos) | Los helpers (`PRIMARY`, `CHART`), el runtime (botón principal y gráficos sin `colorScheme`) y `validate.py` |
 | `states` | La paleta de estados de toda la app: `neutral`, `enCurso`, `atencion`, `positivo` y `negativo`, cada uno con `tag` (fondo apagado de la etiqueta, hex, con texto `STANDARD` encima) y `enum` (color de icono, texto o barra de gráfico: un enumerado o un hex) | Los helpers (`state_map`, `state_chart_colors`, kanban, revisión de IA) y `validate.py` |
@@ -61,8 +61,8 @@ Las claves que empiezan por `_` son comentarios.
    Con la URL de una hoja de estilo, da sus colores y sus tipografías. Sin red o sin respuesta sale con 2 y lo dice:
    entonces, WebFetch pidiendo los colores en hex, la tipografía y la URL del logo. Con un PDF u otra cosa que no es HTML
    ni CSS (mira el `Content-Type`), también sale con 2 y dice qué es: una guía de marca en PDF se lee con la skill de PDF.
-   El logo se guarda como SVG en `<p>/prototipo/`: el campo `svg`, tal cual, o la descarga de su `url` (si solo hay PNG,
-   SKILL.md, paso 1).
+   El logo se guarda como SVG o PNG transparente en `<p>/prototipo/`: el campo `svg`, tal cual, o la descarga de su `url`
+   (SKILL.md, paso 3).
 3. **Papeles**:
    - `--oscuro`: el color corporativo oscuro, el de la cabecera del site, que lleva texto blanco encima.
    - `--realce`: un color de la marca que se vea sobre el oscuro: la página seleccionada y la barra de carga.
@@ -74,8 +74,10 @@ Las claves que empiezan por `_` son comentarios.
      `SQUARED`, la de Appian: la marca solo cambia lo que dicta el cliente.
    - `--mayusculas si|no`: etiquetas de botón y títulos de página en mayúsculas; por defecto `si`, como el Site de Appian.
    - `--tipografia`: la de la marca, si tiene una propia.
-   - `--logo`: el SVG para fondo oscuro, sin lema; `--logo-claro`, el de fondo claro. Solo SVG: sin él, la marca va sin
-     logo y la guía lo deja pendiente.
+   - `--logo`: el SVG o el PNG con fondo transparente para fondo oscuro, sin lema; `--logo-claro`, el de fondo claro. El SVG
+     sigue siendo lo preferido si existe; un PNG (se reconoce por su firma, no por la extensión) se copia tal cual y avisa si no
+     tiene transparencia, si pesa más de 100 KB o porque su contraste no se mide. Un JPG no vale. Sin logo, la marca va sin él
+     y la guía lo deja pendiente.
 4. **Crear**: `python3 <KIT>/scripts/marca.py crear --id <id> --nombre <nombre> --fuente "<fuente>, <fecha>" --oscuro <hex>
    --realce <hex> --acento <hex> [opciones] <p>/prototipo/`. Lo que no llega a WCAG 2.2 AA lo ajusta cambiando solo la
    luminosidad (matiz y saturación se quedan), en pasos de 0,5 %, y lo dice en la salida y en la guía
@@ -109,7 +111,7 @@ Las claves que empiezan por `_` son comentarios.
      y tooltips (fondo del oscuro, texto blanco). Los radios son los que da `build.py` a cada forma; con `SQUARED`, sin
      radios de botón ni de campo. `validate.py` lo comprueba antes de escribirlo.
    - **Aviso** si el logo no llega a 3:1 sobre el oscuro: hace falta su versión en negativo.
-   - **Sale con 2**, sin escribir nada, si un color no es `#RRGGBB`, si un logo no existe o no es SVG, si el `id` no es
+   - **Sale con 2**, sin escribir nada, si un color no es `#RRGGBB`, si un logo no existe o no es SVG ni PNG, si el `id` no es
      `[a-z0-9-]` o si la carpeta está dentro del plugin (la carpeta que contiene `skills/`). Si no puede escribir un
      fichero, también sale con 2 y dice cuáles llegó a escribir.
 5. **Después**: valida y construye con `--brand <id>`, pasa `contrast_audit.py`, enseña al usuario la cabecera con su

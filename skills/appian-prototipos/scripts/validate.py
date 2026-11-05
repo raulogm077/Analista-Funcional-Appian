@@ -138,7 +138,8 @@ def resolve_brand(brand_id, spec_dir=None):
     (lo dice); si no hay ninguna, la estándar de Appian; si hay varias, hay que elegir con --brand."""
     if brand_id:
         return brand_id
-    ids = sorted(f.name[len("brand-"):-len(".json")] for f in Path(spec_dir).glob("brand-*.json")) if spec_dir else []
+    ids = sorted(f.name[len("brand-"):-len(".json")] for f in Path(spec_dir).glob("brand-*.json") if f.is_file()) if spec_dir else []
+    ids = [x for x in ids if x != "appian"]  # la estándar es siempre la del kit
     if len(ids) > 1:
         print(f"Hay varias marcas junto al app.json ({', '.join(ids)}): elige una con --brand <id>.", file=sys.stderr)
         sys.exit(2)
@@ -150,8 +151,8 @@ def resolve_brand(brand_id, spec_dir=None):
 
 def find_brand(brand_id, spec_dir=None):
     """brand-<id>.json junto al app.json (la marca del proyecto, en <p>/prototipo/) o en assets/ del kit, donde solo está
-    la estándar de Appian («appian»). Devuelve (marca, carpeta de sus ficheros)."""
-    for d in ([Path(spec_dir)] if spec_dir else []) + [ROOT / "assets"]:
+    la estándar de Appian («appian»), que sale siempre de ahí. Devuelve (marca, carpeta de sus ficheros)."""
+    for d in ([Path(spec_dir)] if spec_dir and brand_id != "appian" else []) + [ROOT / "assets"]:
         f = d / f"brand-{brand_id}.json"
         if f.exists():
             return json.loads(f.read_text(encoding="utf-8")), d

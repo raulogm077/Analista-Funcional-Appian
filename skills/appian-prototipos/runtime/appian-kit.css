@@ -67,7 +67,7 @@ svg.ic { width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em; 
 .site { min-height: 100%; display: flex; flex-direction: column; background: var(--gray-bg); }
 .site-hdr { background: var(--hdr-bg); color: var(--hdr-fg); display: flex; align-items: stretch; gap: 24px; padding: 0 20px; min-height: 56px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; }
 .site-brand { display: flex; align-items: center; gap: 12px; padding: 8px 0; white-space: nowrap; }
-.site-brand svg.logo { height: 30px; width: auto; }
+.site-brand svg.logo, .site-brand img.logo { height: 30px; width: auto; display: block; }
 .site-brand .dn { font-weight: 600; font-size: 15px; border-left: 1px solid rgba(255,255,255,.3); padding-left: 12px; }
 .site-brand .dn:first-child { border-left: 0; padding-left: 0; } /* marca sin logo: el nombre del site, sin separador */
 .site-nav { display: flex; align-items: stretch; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }

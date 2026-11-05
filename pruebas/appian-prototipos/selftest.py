@@ -117,7 +117,10 @@ def brands(tmp, built):
         if "logo de prueba" not in (logo or ""):
             probs.append("el HTML no lleva el logo de la marca del proyecto")
     out.append(("marca del proyecto (--brand prueba, junto al app.json): sus colores y su logo", probs))
-    # sin --brand, la única marca junto al app.json, y lo dice; --brand appian fuerza la estándar
+    # sin --brand, la única marca junto al app.json, y lo dice; --brand appian fuerza la estándar del kit, aunque haya un
+    # brand-appian.json junto al app.json; una carpeta llamada brand-….json no cuenta
+    (carpeta / "brand-appian.json").write_text(json.dumps({"id": "homonimo"}), encoding="utf-8")
+    (carpeta / "brand-carpeta.json").mkdir()
     html2 = carpeta / "prototipo-sin-brand.html"
     code, salida = run([HERE / "build.py", spec, "-o", html2])
     probs = []
@@ -411,6 +414,79 @@ def marca_cliente(tmp, built):
             built.append(("catálogo de patrones con la marca de marca.py redondeada", html, spec))
     out.append(("marca.py crear --formas ROUNDED: formas y radios; el botón principal ajustado a 3:1 con su texto a 4,5:1; el "
                 "catálogo construido con ella", probs))
+
+    # 3b. logo en PNG (por su firma, no por la extensión): se copia tal cual; sin transparencia, aviso; un JPG, error
+    import base64, struct, zlib
+
+    def png(tipo, trns=False, relleno=0):
+        trozo = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d))
+        px = {6: b"\x00" + b"\x1d\x2b\x4a\x80" * 2, 2: b"\x00" + b"\x1d\x2b\x4a" * 2}[tipo]
+        extra = trozo(b"tRNS", b"\x00\x00\x00\x00\x00\x00") if trns else b""
+        return (b"\x89PNG\r\n\x1a\n" + trozo(b"IHDR", struct.pack(">IIBBBBB", 2, 1, 8, tipo, 0, 0, 0)) + extra
+                + trozo(b"IDAT", zlib.compress(px)) + (trozo(b"tEXt", b"x" * relleno) if relleno else b"") + trozo(b"IEND", b""))
+    probs = []
+    transparente, opaco, jpg = tmp / "logo-t.dat", tmp / "logo-o.png", tmp / "logo-j.jpg"  # el transparente, sin extensión de PNG
+    transparente.write_bytes(png(6))
+    opaco.write_bytes(png(2))
+    jpg.write_bytes(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00ficticio")
+    carpeta = tmp / "logo png" / "prototipo"
+    code, salida = run([marca, "crear", *opciones(), "--logo", transparente, "--logo-claro", opaco, carpeta])
+    if code:
+        probs.append(f"marca.py crear con logos PNG sale con {code}:\n{salida[-600:]}")
+    else:
+        copia = carpeta / "logo-x-on-dark.png"
+        b = json.loads((carpeta / "brand-x.json").read_text(encoding="utf-8"))
+        if not copia.is_file() or copia.read_bytes() != transparente.read_bytes():
+            probs.append("el PNG para fondo oscuro no está copiado tal cual como logo-x-on-dark.png")
+        if (carpeta / "logo-x-on-light.png").read_bytes() != opaco.read_bytes() or (carpeta / "logo-x-on-dark.svg").exists():
+            probs.append("el PNG para fondo claro no está copiado como logo-x-on-light.png, o se escribió un SVG")
+        if b["site"].get("logo") != "logo-x-on-dark.png":
+            probs.append(f"brand-x.json no lleva el PNG como logo (site.logo: {b['site'].get('logo')})")
+        avisos_logo = [l for l in salida.splitlines() if l.startswith("Aviso:")]
+        if any("transparencia" in l and "--logo:" in l for l in avisos_logo):
+            probs.append(f"avisa de transparencia en un PNG transparente:\n{salida[-600:]}")
+        if not any("transparencia" in l and "--logo-claro:" in l for l in avisos_logo):
+            probs.append(f"no avisa de que el PNG opaco no tiene transparencia:\n{salida[-600:]}")
+        if not any("no se puede medir" in l for l in avisos_logo):
+            probs.append(f"no avisa de que el contraste de un PNG no se mide:\n{salida[-600:]}")
+        guia = (carpeta / "marca-x.md").read_text(encoding="utf-8")
+        if "logo-x-on-dark.png" not in guia or "sube `logo-x-on-dark.png` tal cual" not in guia or "exporta `logo-x-on-dark.png`" in guia:
+            probs.append("marca-x.md no dice que el PNG se sube tal cual al Site")
+        spec, html = carpeta / "app.json", carpeta / "prototipo.html"
+        spec.write_text((ROOT / "templates" / "catalogo-patrones.json").read_text(encoding="utf-8"), encoding="utf-8")
+        code, salida = run([HERE / "build.py", spec, "-o", html, "--brand", "x"])
+        texto = html.read_text(encoding="utf-8") if html.exists() else ""
+        esperado = base64.b64encode(transparente.read_bytes()).decode()
+        if code or f'<img src="data:image/png;base64,{esperado}" alt="Nubarrón Mensajería">' not in texto:
+            probs.append(f"build.py con la marca PNG no incrusta el logo como <img src=data:image/png;base64,... alt=...> (sale con {code}):\n{salida[-400:]}")
+    # un PNG de más de 100 KB avisa; un JPG es un error: sale con 2 y no escribe nada
+    pesado = tmp / "logo-pesado.png"
+    pesado.write_bytes(png(6, relleno=110 * 1024))
+    code, salida = run([marca, "crear", *opciones(), "--logo", pesado, tmp / "logo pesado"])
+    if code or not re.search(r"Aviso: .*100 KB", salida):
+        probs.append(f"un PNG de más de 100 KB no avisa (sale con {code}):\n{salida[-400:]}")
+    destino = tmp / "error jpg"
+    code, salida = run([marca, "crear", *opciones(), "--logo", jpg, destino])
+    if code != 2 or "SVG" not in salida or "PNG" not in salida or destino.exists():
+        probs.append(f"con un JPG como logo, sale con {code}{' y escribe' if destino.exists() else ''} (debe salir con 2, pedir SVG o PNG "
+                     f"transparente y no escribir):\n{salida[-400:]}")
+    # con canal alfa pero todo opaco: avisa igual. La fila va con el filtro Sub (1): el alfa del 2.º píxel, crudo, es 0 y,
+    # deshecho el filtro, 255; si no se deshiciera, parecería transparente. Y un PNG cortado tras IHDR es un error
+    trozo = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d))
+    rgba_opaco = (b"\x89PNG\r\n\x1a\n" + trozo(b"IHDR", struct.pack(">IIBBBBB", 2, 1, 8, 6, 0, 0, 0))
+                  + trozo(b"IDAT", zlib.compress(b"\x01" + b"\x1d\x2b\x4a\xff" + b"\x00\x00\x00\x00")) + trozo(b"IEND", b""))
+    (tmp / "logo-rgba-opaco.png").write_bytes(rgba_opaco)
+    code, salida = run([marca, "crear", *opciones(), "--logo", tmp / "logo-rgba-opaco.png", tmp / "logo rgba opaco"])
+    if code or not any("transparencia" in l and "--logo:" in l for l in salida.splitlines() if l.startswith("Aviso:")):
+        probs.append(f"un PNG con canal alfa y todo opaco no avisa de que no tiene transparencia (sale con {code}):\n{salida[-400:]}")
+    (tmp / "logo-cortado.png").write_bytes(rgba_opaco[:33])
+    destino = tmp / "error cortado"
+    code, salida = run([marca, "crear", *opciones(), "--logo", tmp / "logo-cortado.png", destino])
+    if code != 2 or "completo" not in salida or destino.exists():
+        probs.append(f"un PNG cortado tras su cabecera sale con {code} (debe salir con 2, decir que no está completo y no escribir):\n{salida[-400:]}")
+    out.append(("marca.py crear con logos PNG (por su firma): copiados tal cual, brand-x.json y guía, avisos de transparencia (también "
+                "con alfa todo opaco), peso y contraste; build.py los incrusta en un <img> con su alt; un JPG o un PNG cortado sale "
+                "con 2 sin escribir", probs))
 
     # 4. errores: sale con 2, dice por qué y no escribe nada
     probs = []

@@ -2294,7 +2294,9 @@
       h("div", { class: "site-brand" }, LOGO ? h("span", { html: LOGO, style: { display: "inline-flex" } }) : null, site.displayName ? h("span", { class: "dn" }, site.displayName) : null),
       nav, h("div", { class: "site-user" }, h("span", { class: "uname" }, user.name), h("span", { class: "avatar", title: user.name, style: { color: avatarFg() } }, FILTERS.initials(user.name))));
     NODES.site = { type: "Site", navigationLayout: (BRAND.site || {}).navigationLayout, headerBarStyle: (BRAND.site || {}).headerBarStyle, backgroundColor: (BRAND.site || {}).backgroundColor, selectedPageHighlightColor: (BRAND.site || {}).selectedPageHighlightColor, accentColor: (BRAND.site || {}).accentColor, pages: pages.map((p) => p.title), $note: "Configuración del objeto Site (ver brand-*.json)" };
-    const svg = hdr.querySelector(".site-brand svg"); if (svg) svg.classList.add("logo");
+    const svg = hdr.querySelector(".site-brand svg, .site-brand img"); if (svg) svg.classList.add("logo");
+    const altLogo = (BRAND.site || {}).logoAltText;  // el <img> del PNG ya lo lleva en su alt; el SVG en línea, como imagen con nombre
+    if (svg && altLogo && svg.tagName.toLowerCase() === "svg") { svg.setAttribute("role", "img"); svg.setAttribute("aria-label", altLogo); }
     return h("div", { class: "site" + ((BRAND.site || {}).useUppercase ? " upper" : "") + ((BRAND.site || {}).useUppercasePageTitles ? " upper-titles" : "") }, hdr, h("main", { class: "site-body" }, content));
   }
 

@@ -5,14 +5,14 @@ La configuración de marca de un cliente, para el prototipo y para Appian (refer
 Uso:
   python3 marca.py web <url> [--max-css 10] [--timeout 10]
   python3 marca.py crear --id <id> --nombre <nombre> --fuente "<de dónde sale, con la fecha>" --oscuro <hex>
-      --realce <hex> --acento <hex> [--principal <hex>] [--secundarios <hex,hex…>] [--logo <svg>] [--logo-claro <svg>]
+      --realce <hex> --acento <hex> [--principal <hex>] [--secundarios <hex,hex…>] [--logo <svg|png>] [--logo-claro <svg|png>]
       [--formas SQUARED|SEMI_ROUNDED|ROUNDED] [--mayusculas si|no] [--tipografia <nombre>] [--sin-perfil-css] <carpeta>
 
 web: el lector de la web de la empresa, que está en marca_web.py (su docstring dice qué hace): un JSON con sus colores,
 su theme-color, sus logos y sus tipografías.
 
 crear: escribe en <carpeta> (prototipo/ del proyecto, nunca dentro del plugin) brand-<id>.json, el logo junto a él
-(logo-<id>-on-dark.svg y, con --logo-claro, logo-<id>-on-light.svg), perfil-css-<id>.txt (salvo con --sin-perfil-css) y
+(logo-<id>-on-dark.svg o .png y, con --logo-claro, logo-<id>-on-light.svg o .png), perfil-css-<id>.txt (salvo con --sin-perfil-css) y
 marca-<id>.md, la guía de marca para quien construye. Lo que no llega a WCAG 2.2 AA lo ajusta cambiando solo la
 luminosidad (HLS), en pasos pequeños, y lo dice. Sale con 2 si un dato no vale o un ajuste no llega, sin escribir nada, y
 si no puede escribir un fichero, diciendo cuáles llegó a escribir.
@@ -237,10 +237,75 @@ def sombra_tarjeta(color):
                   lambda x: f"rgba({r}, {g}, {b}, {float(x.group(1)):g})", m.group(1).strip())
 
 
+PNG_FIRMA = b"\x89PNG\r\n\x1a\n"
+
+
+def info_png(datos):
+    """(error o None, ¿tiene transparencia?) de un PNG. Error si le falta la cabecera, la imagen o el final. Transparente si
+    lleva un bloque tRNS o, con canal alfa (tipos 4 y 6), si algún píxel no es opaco; en 8 bits sin entrelazar se miran los
+    píxeles, y en otra profundidad o entrelazado se da por transparente sin mirarlos."""
+    import struct, zlib
+    if len(datos) < 33 or datos[12:16] != b"IHDR":
+        return "no es un PNG válido (falta la cabecera IHDR)", False
+    ancho, alto, prof, tipo = struct.unpack(">IIBB", datos[16:26])
+    entrelazado, pos, idat, trns, fin = datos[28], 8, [], False, False
+    while pos + 8 <= len(datos):
+        n = struct.unpack(">I", datos[pos:pos + 4])[0]
+        nombre, cuerpo = datos[pos + 4:pos + 8], datos[pos + 8:pos + 8 + n]
+        if len(cuerpo) < n:
+            break
+        if nombre == b"IDAT":
+            idat.append(cuerpo)
+        elif nombre == b"tRNS":
+            trns = True
+        elif nombre == b"IEND":
+            fin = True
+            break
+        pos += 12 + n
+    if not idat or not fin:
+        return "no es un PNG completo (le falta la imagen o el final del fichero)", False
+    if trns:
+        return None, True
+    if tipo not in (4, 6):
+        return None, False
+    if prof != 8 or entrelazado:
+        return None, True
+    try:
+        crudo = zlib.decompress(b"".join(idat))
+    except zlib.error:
+        return "no es un PNG válido (su imagen no se puede leer)", False
+    canales = 4 if tipo == 6 else 2
+    fila, previa, i = ancho * canales, bytearray(ancho * canales), 0
+    for _ in range(alto):  # deshace el filtro de cada fila y mira el alfa (el último byte de cada píxel)
+        if i + 1 + fila > len(crudo):
+            return "no es un PNG completo (su imagen está cortada)", False
+        filtro, linea = crudo[i], bytearray(crudo[i + 1:i + 1 + fila])
+        i += 1 + fila
+        for x in range(fila):
+            a = linea[x - canales] if x >= canales else 0
+            b, c = previa[x], (previa[x - canales] if x >= canales else 0)
+            if filtro == 1:
+                linea[x] = (linea[x] + a) & 255
+            elif filtro == 2:
+                linea[x] = (linea[x] + b) & 255
+            elif filtro == 3:
+                linea[x] = (linea[x] + ((a + b) >> 1)) & 255
+            elif filtro == 4:
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                linea[x] = (linea[x] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
+        if any(linea[x] < 255 for x in range(canales - 1, fila, canales)):
+            return None, True
+        previa = linea
+    return None, False
+
+
 def crear(a):
     errores = []
     if not re.fullmatch(r"[a-z0-9-]+", a.id):
         errores.append(f"--id «{a.id}»: solo minúsculas, números y guiones ([a-z0-9-]); va en brand-<id>.json y en --brand")
+    elif a.id == "appian":
+        errores.append("--id appian es la marca estándar del kit (--brand appian la fuerza): elige otro id para la del cliente")
     for opcion, valor in (("--nombre", a.nombre), ("--fuente", a.fuente)):
         if not valor.strip():
             errores.append(f"{opcion} vacío")
@@ -248,7 +313,7 @@ def crear(a):
     secundarios = [x.strip() for x in (a.secundarios or "").split(",") if x.strip()]
     colores += [("--secundarios", x) for x in secundarios]
     errores += [f"{o} «{v}» no es un color #RRGGBB" for o, v in colores if not HEX6.fullmatch(v)]
-    logos = {}
+    logos, pngs, avisos = {}, {}, []
     for opcion, ruta in (("--logo", a.logo), ("--logo-claro", a.logo_claro)):
         if ruta:
             p = Path(ruta)
@@ -256,13 +321,25 @@ def crear(a):
                 errores.append(f"{opcion}: no existe el logo {p}")
                 continue
             try:
-                t = p.read_text(encoding="utf-8", errors="replace")
+                datos = p.read_bytes()
             except OSError as e:
                 errores.append(f"{opcion}: no se puede leer {p} ({e.strerror or e})")
                 continue
+            if datos.startswith(PNG_FIRMA):  # por la firma, no por la extensión
+                err, transparente = info_png(datos)
+                if err:
+                    errores.append(f"{opcion}: {p} {err}; vuelve a exportarlo")
+                    continue
+                pngs[opcion] = datos
+                if not transparente:
+                    avisos.append(f"{opcion}: el PNG {p.name} no tiene transparencia: en la cabecera se verá su fondo; pide uno con fondo transparente")
+                if len(datos) > 100 * 1024:
+                    avisos.append(f"{opcion}: el PNG {p.name} pesa {len(datos) // 1024} KB y Appian no admite como logo del Site más de 100 KB; "
+                                  "pide uno más ligero")
+                continue
+            t = datos.decode("utf-8", errors="replace")
             if not re.search(r"<svg\b", t, re.I):
-                errores.append(f"{opcion}: {p} no es un SVG; si la marca solo lo tiene en PNG o JPG, crea la marca sin {opcion} y pide "
-                               "el SVG (el PNG sirve para el Site de Appian)")
+                errores.append(f"{opcion}: {p} no es SVG ni PNG; hace falta el logo en SVG o en PNG con fondo transparente (un JPG no sirve)")
             logos[opcion] = t
     carpeta = Path(a.carpeta)
     if dentro(carpeta, PLUGIN):
@@ -277,7 +354,7 @@ def crear(a):
     est = json.loads((ROOT / "assets" / "brand-appian.json").read_text(encoding="utf-8"))
     std = json.loads((ROOT / "schemas" / "css-profile-properties.json").read_text(encoding="utf-8"))["appianStandardColors"]
     perfil = not a.sin_perfil_css
-    ajustes, fallos, avisos = [], [], []
+    ajustes, fallos = [], []
 
     def ajusta(rol, color, fondos, minimo, sentido, con_texto=False):
         """fondos: [(hex o lista de hex, cómo se dice)]; de una lista cuenta el que menos contraste da. con_texto: además, el
@@ -349,13 +426,16 @@ def crear(a):
 
     forma = a.formas or "SQUARED"  # la de Appian: la marca solo cambia lo que dicta el cliente
     mayus = (a.mayusculas or "si") == "si"
-    logo, logo_claro = (f"logo-{a.id}-on-dark.svg" if "--logo" in logos else None), (f"logo-{a.id}-on-light.svg" if "--logo-claro" in logos else None)
+    nombre_logo = lambda o, luz: (f"logo-{a.id}-on-{luz}." + ("png" if o in pngs else "svg")) if o in logos or o in pngs else None
+    logo, logo_claro = nombre_logo("--logo", "dark"), nombre_logo("--logo-claro", "light")
     limpios = {o: limpiar_svg(t) for o, t in logos.items()}
     avisos += [f"{o}: se quitan del SVG scripts y atributos de eventos (el prototipo no los ejecuta)" for o, t in logos.items() if limpios[o] != t]
-    peor = min(colores_svg(logos["--logo"]), key=lambda c: contrast(c, oscuro)) if logo else None
+    peor = min(colores_svg(logos["--logo"]), key=lambda c: contrast(c, oscuro)) if "--logo" in logos else None
     if peor and contrast(peor, oscuro) < 3:
         avisos.append(f"el logo lleva {peor}, con {razon(contrast(peor, oscuro))}:1 sobre el oscuro {oscuro} (mínimo 3:1): en la cabecera "
                       "no se verá; hace falta su versión en negativo (para fondo oscuro) en --logo")
+    if "--logo" in pngs:
+        avisos.append(f"el contraste de un PNG no se puede medir como el de un SVG: mira en la captura de la cabecera que el logo se ve sobre el oscuro {oscuro}")
     nombre_cp = a.nombre.replace("*/", "* /")
     tip = (a.tipografia or "").strip()
     site = {"_comment": f"Propiedades del objeto Site para {a.nombre}: el equipo de desarrollo las copia tal cual (marca-{a.id}.md).",
@@ -425,7 +505,7 @@ def crear(a):
 
     guia = guia_md(a, brand, graf, graf_fuera, ajustes, avisos, logo, logo_claro, peor, tip, hoy)
     ficheros = [(f"brand-{a.id}.json", json.dumps(brand, ensure_ascii=False, indent=2) + "\n", "")]
-    ficheros += [(nombre, limpios[opcion], "") for opcion, nombre in (("--logo", logo), ("--logo-claro", logo_claro)) if nombre]
+    ficheros += [(nombre, pngs[opcion] if opcion in pngs else limpios[opcion], "") for opcion, nombre in (("--logo", logo), ("--logo-claro", logo_claro)) if nombre]
     if perfil:
         ficheros.append((f"perfil-css-{a.id}.txt", css_profile_text(brand), " (perfil CSS para Admin Console › Branding › CSS Profiles)"))
     ficheros.append((f"marca-{a.id}.md", guia, " (guía de marca para quien construye)"))
@@ -433,7 +513,10 @@ def crear(a):
     try:
         carpeta.mkdir(parents=True, exist_ok=True)
         for nombre, texto, nota in ficheros:
-            escribe(carpeta / nombre, texto)
+            if isinstance(texto, bytes):  # un logo PNG, tal cual
+                (carpeta / nombre).write_bytes(texto)
+            else:
+                escribe(carpeta / nombre, texto)
             escritos.append((nombre, nota))
     except OSError as e:
         print(f"marca.py crear: no se pudo escribir {e.filename or carpeta} ({e.strerror or e}). Llegaron a escribirse en {carpeta}: "
@@ -539,7 +622,10 @@ def guia_md(a, brand, graf, graf_fuera, ajustes, avisos, logo, logo_claro, peor,
     if ficheros:
         L += ["| Fichero | Para qué |", "|---|---|"] + [f"| `{f}` | {u} |" for f, u in ficheros] + [""]
     nota = "En Appian, el logo del Site es un documento JPG, PNG, BMP o GIF de menos de 100 KB, con fondo transparente (no SVG)"
-    if logo:
+    if logo and logo.endswith(".png"):
+        L.append(f"{nota}: sube `{logo}` tal cual, sin exportarlo. Texto alternativo: «{site['logoAltText']}». Su contraste sobre el oscuro no se ha "
+                 "medido (es un PNG): míralo en la captura de la cabecera.")
+    elif logo:
         r = contrast(peor, site["backgroundColor"])
         L.append(f"{nota}: exporta `{logo}` a PNG. Texto alternativo: «{site['logoAltText']}». Su color con menos contraste sobre el "
                  f"oscuro, `{peor}`, " + (f"llega a {razon(r)}:1 (mínimo 3:1)." if r >= 3 else
@@ -563,7 +649,7 @@ def guia_md(a, brand, graf, graf_fuera, ajustes, avisos, logo, logo_claro, peor,
         hecho.append("Con el perfil, los colores de estado sobre blanco y sobre su fondo y los textos de los campos: 4,5:1.")
     hecho.append("Las series de los gráficos sobre blanco: 3:1.")
     sin_medir = ([f"Los colores secundarios en las barras decorativas (en los gráficos solo van si llegan a 3:1 y caben en las {SERIES} series)."] if any(k.startswith("secundario") for k in pal) else []) \
-        + (["El logo, salvo su color con menos contraste sobre el oscuro (ver «Logo»)."] if logo else [])
+        + (["El logo, salvo su color con menos contraste sobre el oscuro (ver «Logo»)."] if peor else ["El logo, un PNG: míralo en la captura de la cabecera."] if logo else [])
     L += ["", "## Ajustes de contraste", "", "Comprobado con WCAG 2.2 AA, con estos mínimos:", ""] + [f"- {x}" for x in hecho]
     if sin_medir:
         L += ["", "Sin comprobar:", ""] + [f"- {x}" for x in sin_medir]
@@ -574,7 +660,7 @@ def guia_md(a, brand, graf, graf_fuera, ajustes, avisos, logo, logo_claro, peor,
     pend = [f"Que los colores y el logo de {a.nombre} son los vigentes y el papel de cada uno: oscuro, realce, acento y botón principal."]
     if ajustes:
         pend.append("Los colores ajustados por contraste: en Appian sustituyen a los de la marca.")
-    pend.append("El logo en PNG para el Site y el icono del sitio (ICO)." if logo else "El logo para fondo oscuro (SVG para el prototipo; PNG para el Site) y el icono del sitio (ICO).")
+    pend.append("El icono del sitio (ICO)." if logo and logo.endswith(".png") else "El logo en PNG para el Site y el icono del sitio (ICO)." if logo else "El logo para fondo oscuro (SVG o PNG transparente para el prototipo; PNG para el Site) y el icono del sitio (ICO).")
     if any("logo lleva" in x for x in avisos):
         pend.append("La versión en negativo del logo: la de ahora no se ve sobre el oscuro.")
     if cp:
@@ -604,8 +690,8 @@ def main():
     c.add_argument("--acento", required=True, help="color de acento: enlaces, pestañas y botones")
     c.add_argument("--principal", help="color del botón principal (por defecto, ACCENT)")
     c.add_argument("--secundarios", help="otros colores de la marca, separados por comas")
-    c.add_argument("--logo", help="SVG del logo para fondo oscuro (la cabecera del site)")
-    c.add_argument("--logo-claro", help="SVG del logo para fondo claro")
+    c.add_argument("--logo", help="logo para fondo oscuro (la cabecera del site): SVG o PNG con fondo transparente")
+    c.add_argument("--logo-claro", help="logo para fondo claro: SVG o PNG")
     c.add_argument("--formas", choices=FORMAS, help="esquinas de botones, campos y diálogos, como las de su web: rectas, SQUARED "
                                                     "(por defecto, la de Appian); redondeadas, SEMI_ROUNDED; píldora, ROUNDED")
     c.add_argument("--mayusculas", choices=("si", "no"), help="mayúsculas en botones y títulos de página (por defecto, si, como el Site de Appian)")

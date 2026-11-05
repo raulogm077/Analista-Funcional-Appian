@@ -165,7 +165,12 @@ def build(spec_path, out_path, brand_id=None, do_validate=True):
             print(f"La marca «{brand_id}» cita el logo {site['logo']}, que no está en {brand_dir}: ponlo junto a "
                   f"brand-{brand_id}.json o quita «logo» de site si la marca no lleva logo.", file=sys.stderr)
             sys.exit(2)
-        logo = f.read_text(encoding="utf-8")
+        if f.suffix.lower() == ".png":  # un PNG va incrustado en un <img>; un SVG, en línea
+            import base64, html as _html
+            alt = site.get("logoAltText") or brand.get("name") or ""
+            logo = f'<img src="data:image/png;base64,{base64.b64encode(f.read_bytes()).decode()}" alt="{_html.escape(alt, quote=True)}">'
+        else:
+            logo = f.read_text(encoding="utf-8")
     shape = {"SQUARED": "0px", "SEMI_ROUNDED": "4px", "ROUNDED": "999px"}
     dshape = {"SQUARED": "0px", "SEMI_ROUNDED": "8px", "ROUNDED": "16px"}
     prof = css_profile_vars(brand)
