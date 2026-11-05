@@ -82,6 +82,16 @@ Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no en
 - `appian-prototipos`: un helper de secciones desplegables como las de los BPM de algunos clientes (tarjeta con icono,
   chevron y, abierta, la barra decorativa a la izquierda), que en el caso real se hizo en el script del proyecto con
   dos tarjetas por sección y una variable por sección; y una cabecera de registro estructurada con el hito centrado.
+- `appian-prototipos`: para enseñar el proceso entero en una reunión, el prototipo necesitó cuatro cosas que la guía
+  no pide:
+  - «Crear» abre la tarea del primer paso, no la ficha.
+  - Cada acción vuelve con un aviso que dice el estado en que queda (un `map` de la acción al texto), no un genérico
+    «Acción confirmada».
+  - El histórico de los datos de ejemplo recoge también lo que pasa fuera de la tarea: una aprobación de otro órgano,
+    la firma y el envío al sistema externo.
+  - Un guion de la demo con un registro de ejemplo por estado, porque las acciones no cambian los datos.
+
+  Valorar un apartado «Preparar la demo» en la skill y que el guion salga del inventario.
 
 ## Menores
 
