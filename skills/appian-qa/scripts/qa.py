@@ -455,7 +455,7 @@ def defectos(g, nombre):
     mal = [f"falta «{k}»" for k in ("escenario", "dice", "host", "site", "roles") if not g.get(k)]
     mal += [f"«{k}» no es una clave del guion" for k in g if k not in CLAVES]
     if g.get("escenario") and pathlib.Path(nombre).stem != g["escenario"]:
-        mal.append(f"el fichero se llama {nombre} y el escenario es {g['escenario']}")
+        mal.append(f"el fichero se llama {pathlib.Path(nombre).name} y el escenario es {g['escenario']}")
     roles = g.get("roles") if isinstance(g.get("roles"), dict) else {}
     afirma = False
     for parte in PARTES:
@@ -667,7 +667,7 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
         if esc in del_feature:
             entrada["issue"] = del_feature[esc]["issue"]
         g = lee_json(guiones[esc])
-        mal = ["no es un JSON"] if not isinstance(g, dict) else defectos(g, guiones[esc].name)
+        mal = ["no es un JSON"] if not isinstance(g, dict) else defectos(g, guiones[esc])   # la ruta: los ficheros se validan donde se usan
         # lo que dice hoy el escenario: el funcional, que una unidad posterior puede haber cambiado a propósito; sin
         # funcional, el .feature
         hoy = lo_que_dice_hoy(m, esc)

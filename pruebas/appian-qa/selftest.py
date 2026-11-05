@@ -378,6 +378,41 @@ def main():
            and not cambian and len(rechazos) == len(fuera) and "{_ficheros}" == qa_pv.sustituye("{_ficheros}", vals),
            str((subida, cambian, rechazos)))
 
+        # el guion se valida con su carpeta real, no con la de trabajo (revisión de Codex): un enlace dentro de
+        # qa/<U>/ficheros/ que sale de ella deja el guion por terminar antes de mandar nada a SAIL CLI. Windows usa
+        # junction (sin permiso de symlink); si no se puede crear el enlace, la prueba falla, nunca pasa sin medir
+        fuera_dir, enlace = t.p.parent / "fuera", t.p / "qa" / "EV-01" / "ficheros" / "enlace.pdf"
+        fuera_dir.mkdir(parents=True, exist_ok=True)
+        enlace.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            if os.name == "nt":
+                shell = shutil.which("pwsh") or shutil.which("powershell")
+                subprocess.run([shell, "-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference='Stop'; "
+                                "New-Item -ItemType Junction -Path $env:QA_LINK -Target $env:QA_TARGET | Out-Null"],
+                               env=dict(os.environ, QA_LINK=str(enlace), QA_TARGET=str(fuera_dir)), check=True,
+                               capture_output=True, text=True, encoding="utf-8", errors="replace")
+            else:
+                enlace.symlink_to(fuera_dir, target_is_directory=True)
+            hecho = enlace.resolve() == fuera_dir.resolve()
+        except (OSError, TypeError, subprocess.CalledProcessError) as e:
+            hecho = False
+            ok("NO MEDIDO: no se pudo crear el enlace para probar {fichero:} con su carpeta real", False, e)
+        if hecho:
+            antes_ll = llamadas(t)
+            g = json.loads(json.dumps(GUIONES["HU-01.1"]))
+            g["cuando"].append({"sail": ["interact", "Certificado", "{fichero:enlace.pdf}"]})
+            t.guion("HU-01.1", g)
+            c, out = t.repetir("--escenario", "HU-01.1")
+            e = t.resultado()[0]["escenarios"]["HU-01.1"]
+            ok("un enlace en qa/<U>/ficheros/ que sale de ella deja el guion por terminar, validado con la carpeta del "
+               "guion y sin llamar a SAIL CLI", c == 2 and e["resultado"] == "guion por terminar"
+               and "el fichero va solo" in e.get("motivo", "") and llamadas(t) == antes_ll, out)
+            t.guion("HU-01.1", GUIONES["HU-01.1"])
+            if os.name == "nt":
+                os.rmdir(enlace)
+            else:
+                enlace.unlink()
+
         # lo que la aplicación hace mal: el guion falla y su issue vuelve a pendiente
         def variante(nombre, cambio, esperado, que, resultado="falla", codigo=1):
             g = json.loads(json.dumps(GUIONES[nombre]))
