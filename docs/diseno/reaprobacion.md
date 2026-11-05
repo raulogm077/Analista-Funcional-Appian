@@ -21,7 +21,7 @@ En la campaña ha pasado tres veces:
 | Caso | Qué cambió | ¿Cambia alcance o coste? | Qué hizo el plugin |
 |---|---|---|---|
 | FU-08 | HU-02 aparecía validada y dependía de una pregunta abierta: se reescribió como pendiente, con su supuesto en el técnico | Cambia lo validado y su texto; no está demostrado que cambie lo construido: ISS-05 ya pedía que el empleado viera «Cerrada» | Pidió reaprobar, porque el mecanismo lo exige con la etiqueta |
-| FU-10 | Las cuentas de prueba, al técnico §0 | No | La sesión lo registró sin `Cambio:` a propósito, y no lo vio el JP |
+| FU-10 | Las cuentas de prueba, al técnico §0 | No | La sesión lo registró sin `Cambio:` a propósito, y no pidió reaprobación (no consta qué leyó el JP) |
 | FU-11 | El origen de datos de desarrollo pasa a `jdbc/Appian`: sale un objeto de §13 y cambia cómo se crean las tablas | El funcional no; el trabajo técnico, sí (cuánto, sin medir) | Pidió reaprobar. Un «de acuerdo» más del JP |
 
 FU-10 y FU-11 no son iguales (FU-11 cambia el trabajo técnico), pero la diferencia de trato la puso la etiqueta, no lo
@@ -31,7 +31,7 @@ que cambiaban.
 
 | Opción | Pros | Contras |
 |---|---|---|
-| **1. Como está** | Sin código. Todo informe de la unidad pasa por el JP y deja una fuente. En FU-08 hizo que el JP viera una corrección de lo validado | Trata igual una errata que un campo nuevo. Depende de la etiqueta: FU-10 pasó sin que lo viera el JP. Una sesión desatendida se para toda la noche por una errata. No ve los cambios de coste |
+| **1. Como está** | Sin código. Todo informe de la unidad pasa por el JP y deja una fuente. En FU-08 hizo que el JP viera una corrección de lo validado | Trata igual una errata que un campo nuevo. Depende de la etiqueta: FU-10 pasó sin pedir reaprobación. Una sesión desatendida se para toda la noche por una errata. No ve los cambios de coste |
 | **2. «Sin efecto», con topes y aviso (recomendada)** | Quita la reaprobación de lo que no cambia el encargo y no toca nada validado (un literal en una pieza sin 🔒, un supuesto confirmado, las cuentas de prueba). Bloquea donde lo marcan los topes. Deja una línea que el JP puede ver, sin lista que cerrar. Pequeña y sin IA en el script | La primera clasificación es del analista. Los topes dependen de que las demás marcas (pendiente, alcance, 🔒) estén bien puestas: no son una comprobación independiente de su juicio. Una aclaración de regla o un cambio de coste mal declarados pasarían. La línea dice qué informes llegaron después de aprobar, no que el JP los haya visto. Una errata en una pieza 🔒 seguiría bloqueando |
 | 3. Por lo que cambia en las issues, por script | Determinista, igual de noche. Detecta piezas u objetos nuevos aunque falte la etiqueta | Lo más caro (dos scripts y sus pruebas). Comparar huellas no separa una errata de un cambio de comportamiento, y contar piezas deja pasar justo FU-08. No ve el coste |
 | 4. Aviso sin bloqueo para lo menor | No para a nadie y deja constancia | Alguien tiene que decidir qué es menor. Si el aviso es una lista que cerrar, es otro trámite que se acumula |

@@ -25,7 +25,7 @@ class UnaPreguntaPorFila(unittest.TestCase):
 
     def test_avisa_de_dos_preguntas_en_una_fila_sin_error(self):
         code, linea = self.comprueba()
-        self.assertEqual((code, linea), (0, "✓ pendientes de confirmar con una sola pregunta por fila"))
+        self.assertEqual((code, linea), (0, "✓ pendientes de confirmar con una sola pregunta por fila (dos «¿»: revisa si son dos)"))
         f = self.p / "analisis/funcional.md"
         t = f.read_text(encoding="utf-8")
         antes = "| PC-01 | ¿Cuántos años se conservan las solicitudes denegadas? |"
@@ -34,7 +34,14 @@ class UnaPreguntaPorFila(unittest.TestCase):
                      encoding="utf-8", newline="")
         code, linea = self.comprueba()
         self.assertEqual(code, 0)
-        self.assertEqual(linea, "· pendientes de confirmar con una sola pregunta por fila: 1 → PC-01")
+        self.assertEqual(linea, "· pendientes de confirmar con una sola pregunta por fila (dos «¿»: revisa si son dos): 1 → PC-01")
+        # la fila de supuestos puede citar textos propuestos entre «¿…?»: no se mira
+        t = f.read_text(encoding="utf-8")
+        f.write_text(t.replace("| PC-01 | ¿Cuántos años se conservan las denegadas? ¿Se carga el histórico? |",
+                               "| PC-01 | Damos por buenos estos supuestos salvo que nos digáis otra cosa: «¿Cancelar?» al cancelar "
+                               "(HU-03); «¿Archivar?» al archivar (HU-04) |", 1), encoding="utf-8", newline="")
+        code, linea = self.comprueba()
+        self.assertEqual((code, linea), (0, "✓ pendientes de confirmar con una sola pregunta por fila (dos «¿»: revisa si son dos)"))
 
 
 if __name__ == "__main__":

@@ -269,16 +269,17 @@ def comprobar_completo(m, ctx):
         if "a quien" in cab and not mo.sin_comentarios(cel[cab.index("a quien")] if cab.index("a quien") < len(cel) else "").strip(" —-"):
             pc_mal.append(p.id)
     informe("pendientes de confirmar con «A quién»", pc_mal)
-    # una pregunta por fila (funcional-plantilla.md §11): dos «¿» en «Pregunta» son dos decisiones que el cliente no puede
-    # contestar por separado; la fila de supuestos no lleva preguntas (campaña del 5-nov: PC-04 y PC-10, dos proyectos)
+    # una pregunta por fila (funcional-plantilla.md §11): dos «¿» en «Pregunta» suelen ser dos preguntas juntas, que el
+    # cliente no contesta por separado; es un indicio que se revisa, no una prueba (un texto propuesto entre «¿…?» también
+    # cuenta), y la fila de supuestos no se mira (campaña del 5-nov: PC-04 y PC-10 del mismo proyecto, en E2 y en E10)
     varias = []
     for p in m.vigentes("PC"):
         cab = [mo.normaliza(x) for x in mo.celdas(p.cabecera)]
         cel = mo.celdas(m.docs["F"].lineas[p.ini])
         pregunta = mo.sin_comentarios(cel[cab.index("pregunta")]) if "pregunta" in cab and cab.index("pregunta") < len(cel) else ""
-        if pregunta.count("¿") > 1:
+        if pregunta.count("¿") > 1 and not mo.normaliza(pregunta).startswith("damos por buenos"):
             varias.append(p.id)
-    informe("pendientes de confirmar con una sola pregunta por fila", varias, grave=False)
+    informe("pendientes de confirmar con una sola pregunta por fila (dos «¿»: revisa si son dos)", varias, grave=False)
     d_mal = []
     for p in m.por_tipo("D"):
         cab = [mo.normaliza(x) for x in mo.celdas(p.cabecera)]
