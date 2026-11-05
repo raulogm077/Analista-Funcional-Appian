@@ -73,7 +73,7 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   criterio son propuestas por contrastar, y el documento dice cuáles. Falta que Raúl elija; después, implementarlo y
   probarlo. De la misma familia, en las verificaciones: un paso manual del técnico que nombra objetos caducó la
   verificación de ISS-01 aunque no cambiaba lo construido, y en E5-4 la sesión lo reescribió sin nombrarlos para
-  evitarlo, que deja el técnico menos claro (`evaluaciones.md`, «E5, sesiones 2 a 4»). Valorarlo junto a esta reflexión. [flujo · persona y sesión]
+  evitarlo, que deja el técnico menos claro (`evaluaciones.md`, «E5, sesiones 2 a 4»). Valorarlo junto a esta reflexión. Otro caso, en E7: los ajustes dentro del encargo de EV-01 (FU-17, FU-18) se aplicaron sin `Cambio:`, para no devolverla a aprobación, y al abrir EV-02 pasaron a contar como suyos («si falta, la fuente es de la única unidad Abierta», `cambios.md`); la sesión les puso `Cambio: EV-01` a mano. Hoy un ajuste que no cambia el encargo no tiene cómo quedar en su unidad sin pedir otra aprobación. [flujo · persona y sesión]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
   observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se
   vuelve a plantear, medir el coste en un incremento real con fuentes del mismo tema, sin deducir ahorro del número
