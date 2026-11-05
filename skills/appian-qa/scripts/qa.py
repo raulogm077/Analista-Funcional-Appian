@@ -380,16 +380,28 @@ def sail_cli():
     return [ruta] if ruta else None
 
 
-RX_FICHERO = re.compile(r"\{fichero:([^{}/\\]+)\}")
+RX_FICHERO = re.compile(r"\{fichero:([A-Za-z0-9][A-Za-z0-9._-]*)\}")    # el valor entero; un nombre, sin rutas
+
+
+def ruta_fichero(valor, base):
+    """La ruta de {fichero:<nombre>} dentro de qa/<U>/ficheros/, o None si el valor no es solo ese marcador o la ruta,
+    resuelta (con enlaces), sale de esa carpeta."""
+    m = RX_FICHERO.fullmatch(valor)
+    if not m or ".." in m.group(1):
+        return None
+    carpeta = pathlib.Path(base).resolve()
+    ruta = (carpeta / m.group(1)).resolve()
+    return ruta if ruta.parent == carpeta else None
 
 
 def sustituye(x, valores):
     if isinstance(x, str):
+        if "_ficheros" in valores and x.startswith("{fichero:"):    # para subirlo: la ruta de qa/<U>/ficheros/
+            ruta = ruta_fichero(x, valores["_ficheros"])
+            return str(ruta) if ruta else x
         for k, v in valores.items():
             if not k.startswith("_"):
                 x = x.replace("{" + k + "}", v)
-        if "_ficheros" in valores:      # {fichero:certificado.pdf}: la ruta de qa/<U>/ficheros/, para subirlo
-            x = RX_FICHERO.sub(lambda m: str(pathlib.Path(valores["_ficheros"]) / m.group(1)), x)
         return x
     if isinstance(x, list):
         return [sustituye(v, valores) for v in x]
@@ -465,6 +477,11 @@ def defectos(g, nombre):
                 ids = [x for x in orden[1:] if isinstance(x, str) and RX_ID.match(x)]
                 if ids:
                     mal.append(f"{donde}: «{ids[0]}» es un _cId o una ref que cambia en cada carga; usa la etiqueta")
+                malos = [x for x in orden[1:] if isinstance(x, str) and "{fichero:" in x
+                         and ruta_fichero(x, pathlib.Path(nombre).parent / "ficheros") is None]
+                if malos:      # no se manda a SAIL CLI una ruta que sale de qa/<U>/ficheros/
+                    mal.append(f"{donde}: «{malos[0]}»: el fichero va solo, como valor entero, con un nombre de "
+                               "qa/<U>/ficheros/ sin rutas ({fichero:certificado.pdf})")
     for parte in PARTES:
         for k, p in enumerate(g.get(parte) or [], 1):
             if not isinstance(p, dict) or "gasta" not in p:

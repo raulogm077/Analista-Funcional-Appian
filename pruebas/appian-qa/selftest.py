@@ -363,10 +363,20 @@ def main():
         # campaña del 5-nov: HU-09 no tuvo guion porque no se podía subir un fichero, y su fallo no llegó a resultado.json
         vals = {"pasada": "7", "_ficheros": str(t.p / "qa" / "EV-01" / "ficheros")}
         subida = qa_pv.sustituye(["interact", "Certificado", "{fichero:certificado.pdf}", "Curso", "QA {pasada}"], vals)
-        fuera = qa_pv.sustituye("{fichero:../fuera.pdf}", vals)
-        ok("{fichero:<nombre>} es la ruta de qa/<U>/ficheros/<nombre>, sin salir de esa carpeta; {pasada} sigue igual",
-           subida == ["interact", "Certificado", str(t.p / "qa" / "EV-01" / "ficheros" / "certificado.pdf"), "Curso", "QA 7"]
-           and fuera == "{fichero:../fuera.pdf}" and "{_ficheros}" == qa_pv.sustituye("{_ficheros}", vals), str((subida, fuera)))
+        base = (t.p / "qa" / "EV-01" / "ficheros").resolve()
+        # fuera de la carpeta o no como valor entero: no se cambia y el guion no se da por bueno (revisión de Codex)
+        fuera = ["{fichero:../fuera.pdf}", "{fichero:D:fuera.pdf}", "{fichero:..}\\fuera.pdf", "x{fichero:a.pdf}",
+                 "{fichero:a.pdf}/../b.pdf"]
+        cambian = [x for x in fuera if qa_pv.sustituye(x, vals) != x]
+        g_mal = {"escenario": "HU-09.1", "dice": ["x"], "host": HOST, "site": "s", "roles": {"g": "u"}, "dado": [],
+                 "cuando": [{"rol": "g", "sail": ["interact", "Certificado", x]} for x in fuera],
+                 "entonces": [{"rol": "g", "sail": ["load"], "espera": {"completado": True}}]}
+        rechazos = [x for x in qa_pv.defectos(g_mal, "HU-09.1.json") if "el fichero va solo" in x]
+        ok("{fichero:<nombre>} es la ruta de qa/<U>/ficheros/<nombre> como valor entero; lo que sale de esa carpeta no se "
+           "cambia y el guion no se da por bueno; {pasada} sigue igual",
+           subida == ["interact", "Certificado", str(base / "certificado.pdf"), "Curso", "QA 7"]
+           and not cambian and len(rechazos) == len(fuera) and "{_ficheros}" == qa_pv.sustituye("{_ficheros}", vals),
+           str((subida, cambian, rechazos)))
 
         # lo que la aplicación hace mal: el guion falla y su issue vuelve a pendiente
         def variante(nombre, cambio, esperado, que, resultado="falla", codigo=1):
