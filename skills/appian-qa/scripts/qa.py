@@ -269,17 +269,22 @@ def componentes(nodo):
             yield from componentes(v)
 
 
+# los campos que, vacíos, llegan sin «value» en el --json (capturado en real el 5-nov): uno nuevo entra aquí solo con su
+# captura; otro tipo sin «value» sigue siendo NADA, y el paso falla (el lado seguro)
+VACIOS_SIN_VALUE = {"RadioButtonField", "MultipleFileUploadWidget"}
+
+
 def valor_de(d, etiqueta):
     """El valor del campo con esa etiqueta en una respuesta de SAIL CLI (su ui o lo que cambió), o NADA si no está. Un
-    campo que está pero sin «value» está vacío (None): así llegan una opción sin elegir y una subida sin fichero. La
-    etiqueta de un layout (FieldLayout, SectionLayout2), que lleva la misma, no es el campo."""
+    campo de VACIOS_SIN_VALUE que está pero sin «value» está vacío (None). Un layout (FieldLayout, SectionLayout2), que
+    lleva la misma etiqueta, no es el campo: ni su «value» ni su falta cuentan (revisión de Codex)."""
     vacio = False
     for c in componentes([(d or {}).get("ui"), (d or {}).get("changed")]):
-        if norma(c.get("label", "")) != norma(etiqueta):
+        if "Layout" in c["#t"] or norma(c.get("label", "")) != norma(etiqueta):
             continue
         if "value" in c:
             return c["value"]
-        vacio = vacio or "Layout" not in c["#t"]
+        vacio = vacio or c["#t"] in VACIOS_SIN_VALUE
     return None if vacio else NADA
 
 

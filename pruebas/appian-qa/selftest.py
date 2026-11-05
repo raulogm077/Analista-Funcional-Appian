@@ -372,7 +372,15 @@ def main():
                    "una subida con otro nombre"),
                   ((["Decisión", "1"], {"ui": {"#t": "SectionLayout2", "label": "Decisión"}},
                     {"changed": [campo("RadioButtonField", "Decisión", value=1)]}), False,
-                   "solo la etiqueta del layout no es ver el campo")]
+                   "solo la etiqueta del layout no es ver el campo"),
+                  ((["Decisión", "1"], {"ui": {"#t": "SectionLayout2", "label": "Decisión", "value": 0,
+                                               "contents": [{"#t": "RadioButtonField", "label": "Decisión", "value": 0}]}},
+                    {"changed": [{"#t": "FieldLayout", "label": "Decisión", "value": 1,
+                                  "contents": [{"#t": "RadioButtonField", "label": "Decisión", "value": 0}]}]}), False,
+                   "el value de un layout no es el del campo"),
+                  ((["Proveedor", "1"], {"ui": campo("DropdownField", "Proveedor")},
+                    {"changed": [campo("DropdownField", "Proveedor", value=1)]}), False,
+                   "un tipo sin captura de su forma vacía no se da por vacío")]
         spec_pv = importlib.util.spec_from_file_location("qa_puso_un_valor", QA)
         qa_pv = importlib.util.module_from_spec(spec_pv)
         spec_pv.loader.exec_module(qa_pv)
