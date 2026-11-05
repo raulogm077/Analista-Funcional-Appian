@@ -339,6 +339,15 @@ def main():
         c, out = t.repetir()
         ok("y la unidad entera vuelve a pasar", c == 0 and set(resultados().values()) == {"pasa"}, out)
 
+        # campaña del 5-nov: la primera orden tras abrir un formulario de inicio pone el valor, pero SAIL CLI devuelve el
+        # formulario entero en «changed», «changedFields» vacío y movedNothing. Si el campo tenía otro valor y ahora tiene
+        # el pedido, sí cambió algo: el guion pasa. Poner el valor que ya tenía sigue fallando (la variante de abajo)
+        t.defecto(primera_sin_diff=True)
+        c, out = t.repetir()
+        ok("la primera orden tras abrir un formulario, con movedNothing pero con el valor puesto, no es un fallo",
+           c == 0 and set(resultados().values()) == {"pasa"}, out)
+        t.defecto()
+
         # lo que la aplicación hace mal: el guion falla y su issue vuelve a pendiente
         def variante(nombre, cambio, esperado, que, resultado="falla", codigo=1):
             g = json.loads(json.dumps(GUIONES[nombre]))

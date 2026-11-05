@@ -167,10 +167,12 @@ def main():
         disponibles = [o["label"] for o in pagina()["options"] if o.get("verb") == "navigate"]
         if destino.casefold() not in [x.casefold() for x in disponibles]:
             error(f'no navigation target matches "{resto[0]}"; available: ' + ", ".join(f'"{x}"' for x in disponibles))
-        pag.update(pagina="alta" if destino.casefold() == "nueva solicitud" else "revision", campos={}, validaciones=[])
+        pag.update(pagina="alta" if destino.casefold() == "nueva solicitud" else "revision", campos={}, validaciones=[],
+                   recien=True)
         fin(pagina(), kind="navigate", navigated=destino)
     if orden != "interact":
         error(f'unknown command "{orden}" for "sail"')
+    recien = pag.pop("recien", False)     # la primera orden tras abrir un formulario
     actual = pagina()
     refs = [o["ref"] for o in actual["options"]] + [h for o in actual["options"] for h in o.get("handles", [])]
     pares, k = [], 0
@@ -212,6 +214,11 @@ def main():
     resultado = pagina()
     if not cambia:
         resultado["movedNothing"] = True
+    elif defecto.get("primera_sin_diff") and recien:
+        # como el de verdad (campaña del 5-nov): la primera orden tras abrir un formulario de inicio pone el valor, pero
+        # devuelve el formulario entero en «changed», «changedFields» vacío y movedNothing
+        resultado.update(movedNothing=True, changed=[resultado["ui"]])
+        fin(resultado, changedFields=[])
     fin(resultado, changedFields=[] if not cambia else [{"key": "value"}])
 
 

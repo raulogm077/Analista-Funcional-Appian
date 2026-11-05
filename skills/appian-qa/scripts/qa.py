@@ -269,6 +269,29 @@ def componentes(nodo):
             yield from componentes(v)
 
 
+def valor_de(d, etiqueta):
+    """El valor del campo con esa etiqueta en una respuesta de SAIL CLI (su ui o lo que cambió), o NADA si no está."""
+    for c in componentes([(d or {}).get("ui"), (d or {}).get("changed")]):
+        if "value" in c and norma(c.get("label", "")) == norma(etiqueta):
+            return c["value"]
+    return NADA
+
+
+NADA = object()
+
+
+def puso_un_valor(args, antes, d):
+    """Si una orden «interact» con pares etiqueta y valor dejó alguno de esos campos con el valor pedido, cuando en la
+    página de antes tenía otro: entonces sí cambió algo, aunque SAIL CLI diga movedNothing. Pasa en la primera orden tras
+    abrir un formulario de inicio, que devuelve el formulario entero en «changed» y «changedFields» vacío (campaña del
+    5-nov). Poner el valor que ya tenía sigue siendo no cambiar nada."""
+    for etiqueta, valor in zip(args[0::2], args[1::2]):
+        ahora, previo = valor_de(d, etiqueta), valor_de(antes, etiqueta)
+        if ahora is not NADA and str(ahora) == str(valor) and (previo is NADA or str(previo) != str(valor)):
+            return True
+    return False
+
+
 def escalar_json(v):
     return type(v) in (str, int, bool, type(None)) or (type(v) is float and math.isfinite(v))
 
@@ -462,7 +485,7 @@ class Recorrido:
     def rol(self, p):
         return p.get("rol") or next(iter(self.g["roles"]))
 
-    def sail(self, rol, orden, espera=None):
+    def sail(self, rol, orden, espera=None, antes=None):
         sub, args = ORDENES[orden[0]], [str(x) for x in orden[1:]]
         if sub == "load" and "--fresh" not in args:
             args.append("--fresh")
@@ -490,7 +513,8 @@ class Recorrido:
         rechazo = [norma(x) for x in espera.get("texto") or []] if espera else []
         validaciones = [norma(t) for t in textos(d.get("validations"))]
         # sin cambios por una validación que rechaza es lo esperado solo si lo esperado es ese rechazo
-        if d.get("movedNothing") and not any(x in v for x in rechazo for v in validaciones):
+        if d.get("movedNothing") and not any(x in v for x in rechazo for v in validaciones) \
+                and not (sub == "interact" and puso_un_valor(args, antes, d)):
             raise Falla("el servidor aceptó la orden y no cambió nada")
         return sub, d
 
@@ -516,7 +540,7 @@ class Recorrido:
                                 "se puede escribir (dos enlaces con el mismo texto son también un problema de "
                                 "accesibilidad)")
         espera = p.get("espera") or {}
-        _, d = self.sail(rol, orden, espera)
+        _, d = self.sail(rol, orden, espera, antes=pagina)
         # lo que ha hecho este rol desde su último load: si solo es mirar (cargar, buscar, marcar una fila), se puede
         # volver a hacer cuando aún no se ve lo esperado, porque el proceso puede no haber terminado
         hechas = [orden] if ORDENES[orden[0]] == "load" else self.tras_carga.get(rol, []) + [orden]
