@@ -269,6 +269,16 @@ def comprobar_completo(m, ctx):
         if "a quien" in cab and not mo.sin_comentarios(cel[cab.index("a quien")] if cab.index("a quien") < len(cel) else "").strip(" —-"):
             pc_mal.append(p.id)
     informe("pendientes de confirmar con «A quién»", pc_mal)
+    # una pregunta por fila (funcional-plantilla.md §11): dos «¿» en «Pregunta» son dos decisiones que el cliente no puede
+    # contestar por separado; la fila de supuestos no lleva preguntas (campaña del 5-nov: PC-04 y PC-10, dos proyectos)
+    varias = []
+    for p in m.vigentes("PC"):
+        cab = [mo.normaliza(x) for x in mo.celdas(p.cabecera)]
+        cel = mo.celdas(m.docs["F"].lineas[p.ini])
+        pregunta = mo.sin_comentarios(cel[cab.index("pregunta")]) if "pregunta" in cab and cab.index("pregunta") < len(cel) else ""
+        if pregunta.count("¿") > 1:
+            varias.append(p.id)
+    informe("pendientes de confirmar con una sola pregunta por fila", varias, grave=False)
     d_mal = []
     for p in m.por_tipo("D"):
         cab = [mo.normaliza(x) for x in mo.celdas(p.cabecera)]
