@@ -20,18 +20,19 @@ En la campaña ha pasado tres veces:
 
 | Caso | Qué cambió | ¿Cambia alcance o coste? | Qué hizo el plugin |
 |---|---|---|---|
-| FU-08 | HU-02 aparecía validada y dependía de una pregunta abierta: se reescribió, con su supuesto en el técnico | Sí, en parte: cambia lo que hace una historia aprobada | Pidió reaprobar. Correcto |
+| FU-08 | HU-02 aparecía validada y dependía de una pregunta abierta: se reescribió como pendiente, con su supuesto en el técnico | Cambia lo validado y su texto; no está demostrado que cambie lo construido: ISS-05 ya pedía que el empleado viera «Cerrada» | Pidió reaprobar, porque el mecanismo lo exige con la etiqueta |
 | FU-10 | Las cuentas de prueba, al técnico §0 | No | La sesión lo registró sin `Cambio:` a propósito, y no lo vio el JP |
-| FU-11 | El origen de datos de desarrollo pasa a `jdbc/Appian` y sale un objeto de §13 | No el funcional; el trabajo, apenas | Pidió reaprobar. Un «de acuerdo» más del JP |
+| FU-11 | El origen de datos de desarrollo pasa a `jdbc/Appian`: sale un objeto de §13 y cambia cómo se crean las tablas | El funcional no; el trabajo técnico, sí (cuánto, sin medir) | Pidió reaprobar. Un «de acuerdo» más del JP |
 
-Dos casos parecidos (FU-10 y FU-11) se trataron distinto según la etiqueta que puso la sesión.
+FU-10 y FU-11 no son iguales (FU-11 cambia el trabajo técnico), pero la diferencia de trato la puso la etiqueta, no lo
+que cambiaban.
 
 ## Las opciones
 
 | Opción | Pros | Contras |
 |---|---|---|
-| **1. Como está** | Sin código. Todo informe de la unidad pasa por el JP y deja una fuente. En FU-08 el bloqueo estuvo bien | Trata igual una errata que un campo nuevo. Depende de la etiqueta: FU-10 pasó sin que lo viera el JP. Una sesión desatendida se para toda la noche por una errata. No ve los cambios de coste |
-| **2. «Sin efecto», con topes y aviso (recomendada)** | Quita la reaprobación inútil (erratas, marcas, supuestos confirmados, cuentas, el origen de datos de desarrollo). Sigue bloqueando lo que debe. El JP lo ve siempre, sin lista que cerrar. Pequeña y sin IA en el script | La primera clasificación es del analista: una aclaración de regla o un cambio de coste mal declarados pasarían, y solo los vería el JP en la línea del estado |
+| **1. Como está** | Sin código. Todo informe de la unidad pasa por el JP y deja una fuente. En FU-08 hizo que el JP viera una corrección de lo validado | Trata igual una errata que un campo nuevo. Depende de la etiqueta: FU-10 pasó sin que lo viera el JP. Una sesión desatendida se para toda la noche por una errata. No ve los cambios de coste |
+| **2. «Sin efecto», con topes y aviso (recomendada)** | Quita la reaprobación de lo que no cambia el encargo y no toca nada validado (un literal en una pieza sin 🔒, un supuesto confirmado, las cuentas de prueba). Bloquea donde lo marcan los topes. Deja una línea que el JP puede ver, sin lista que cerrar. Pequeña y sin IA en el script | La primera clasificación es del analista. Los topes dependen de que las demás marcas (pendiente, alcance, 🔒) estén bien puestas: no son una comprobación independiente de su juicio. Una aclaración de regla o un cambio de coste mal declarados pasarían. La línea dice qué informes llegaron después de aprobar, no que el JP los haya visto. Una errata en una pieza 🔒 seguiría bloqueando |
 | 3. Por lo que cambia en las issues, por script | Determinista, igual de noche. Detecta piezas u objetos nuevos aunque falte la etiqueta | Lo más caro (dos scripts y sus pruebas). Comparar huellas no separa una errata de un cambio de comportamiento, y contar piezas deja pasar justo FU-08. No ve el coste |
 | 4. Aviso sin bloqueo para lo menor | No para a nadie y deja constancia | Alguien tiene que decidir qué es menor. Si el aviso es una lista que cerrar, es otro trámite que se acumula |
 
@@ -39,6 +40,10 @@ Los tres revisores preferían la 3 combinada con la 4. La síntesis discrepa en 
 distingue lo que importa sin entender el texto, y eso ya no es un script. Por eso recomienda la 2.
 
 ## La opción 2, en concreto
+
+Concreta el criterio provisional de Raúl, pero añade cosas que él no dijo y que son propuestas por contrastar: una
+pregunta fija en el informe, una línea marcada, los topes del script, la línea del estado y que de noche una sesión no
+pueda declarar «sin efecto» por su cuenta. Su criterio («si no cambia, lo valida la IA») no pone esa última restricción.
 
 - El informe de impacto lleva una pregunta fija: «¿Cambia lo que se construye o su esfuerzo?». Si la respuesta es que no,
   lleva la línea `Efecto: sin cambio de alcance ni coste`.
@@ -55,10 +60,11 @@ Cómo se comporta:
 | Escenario | Con la opción 2 |
 |---|---|
 | FU-08 (corregir una historia validada) | Igual que hoy: toca una pieza 🔒 y deja una pregunta abierta, así que se reaprueba |
-| FU-10 y FU-11 (cuentas, origen de datos) | Pasan sin parar y el JP los ve en la línea del estado |
-| Una errata o un literal del cliente | Pasa, con la línea |
+| FU-10 (cuentas de prueba) | Pasa sin parar, con la línea |
+| FU-11 (origen de datos) | Pasa si el analista lo declara sin efecto, y eso es discutible: cambia el trabajo técnico. Es justo el tipo de caso que depende de su juicio |
+| Una errata o un literal del cliente | Pasa con la línea si la pieza no está validada; en una pieza 🔒, bloquea como hoy |
 | El cliente confirma un supuesto con el que ya se construye | Pasa: el supuesto queda como hecho |
-| El cliente contradice un supuesto, o pide un campo nuevo | No se puede declarar «sin efecto»; y, si se hiciera por error, el punto de alcance o aprobación lo para. Se reaprueba |
+| El cliente contradice un supuesto, o pide un campo nuevo | No se puede declarar «sin efecto» con honestidad. Si se hiciera por error, lo para el punto de alcance o aprobación solo si está bien marcado |
 | Sesión desatendida de noche | Sigue si una persona ya declaró «sin efecto»; si no, se para como hoy |
 | Cambia el coste sin cambiar funciones, o se aclara una regla | Ningún automatismo lo ve: depende de la respuesta honesta a la pregunta y de que el JP mire la línea |
 
@@ -69,13 +75,14 @@ que sí, la línea que se borra al reaprobar y la sesión desatendida que no pue
 huellas. Antes, comprobar en el código que se puede saber qué piezas estaban 🔒 al aprobar: si no, ese tope se queda en
 los puntos pendientes, de alcance o de aprobación.
 
-Límites: hay tres casos reales y uno estuvo bien bloqueado; los demás escenarios son supuestos, y no se ha medido cuánto
-cuesta de verdad cada reaprobación.
+Límites: hay tres casos reales; los demás escenarios son supuestos. No se ha medido cuánto cuesta de verdad cada
+reaprobación ni cuánto trabajo cambió FU-11. Revisión de Codex (5-nov), aceptada: corrigió las premisas de FU-08, FU-11
+y de lo que pasa con los topes.
 
 ## Lo que decide Raúl
 
-1. **No cambiar nada por ahora.** No cuesta nada, y FU-08 fue un bloqueo bien puesto. Las erratas, los supuestos
-   confirmados y los ajustes de entorno seguirán pidiendo un «de acuerdo» del JP.
+1. **No cambiar nada por ahora.** Sin cambio de código; el coste de operación (los «de acuerdo» del JP) no está medido.
+   Las erratas, los supuestos confirmados y los ajustes de entorno seguirán pidiendo un «de acuerdo».
 2. **La opción 2** (recomendada). Si se elige, ¿puede una sesión desatendida declarar «sin efecto» por sí sola? La
    propuesta es que no.
 3. **La opción 3 completa.** Lo más fiable sobre el papel y lo más caro, y no resuelve FU-08 ni las aclaraciones de regla.
