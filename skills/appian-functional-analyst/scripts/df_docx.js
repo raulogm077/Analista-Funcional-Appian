@@ -517,6 +517,12 @@ while (i < L.length) {
   else body.push(new Paragraph({ spacing: { after: 100 }, children: runs(text) }));
 }
 
+// Lo que se le pide al cliente, en la primera página: las preguntas abiertas de §11, que el Word ya filtra (E10, 5-nov)
+const pendientes = (() => {
+  const s = md.split(/^## /m).find((t) => /^11\.?\s/.test(t));
+  return s ? { titulo: s.split("\n")[0].replace(/[`*~]/g, "").trim(), n: (s.match(/^\|\s*PC-\d+\s*\|/gm) || []).length } : { n: 0 };
+})();
+
 const portada = [
   new Paragraph({ spacing: { before: 3000, after: 300 }, children: [new TextRun({ text: R ? `Diseño funcional · cambio ${R.unidad}` : "Diseño funcional", size: 28, color: "595959" })] }),
   new Paragraph({ spacing: { after: 400 }, children: [new TextRun({ text: titulo, bold: true, size: 48, color: COLOR })] }),
@@ -524,6 +530,8 @@ const portada = [
   new Paragraph({ children: [new TextRun({ text: cliente ? `Cliente: ${cliente}` : "", size: 24 })] }),
   new Paragraph({ children: [new TextRun({ text: `Versión ${version} · ${estadoDoc}`, size: 24 })] }),
   new Paragraph({ children: [new TextRun({ text: `Fecha: ${fechaVersion}`, size: 24 })] }),
+  ...(pendientes.n ? [new Paragraph({ spacing: { before: 600 }, children: [new TextRun({ size: 24, bold: true, color: COLOR,
+    text: `Os pedimos contestar ${pendientes.n === 1 ? "la pregunta" : `las ${pendientes.n} preguntas`} del apartado «${pendientes.titulo}» y validar el resto del documento.` })] })] : []),
   new Paragraph({ children: [new PageBreak()] }),
   new Paragraph({ spacing: { before: 240, after: 160 }, keepNext: true, keepLines: true, children: [new TextRun({ text: "Índice", size: 32, bold: true, color: COLOR, font: FONT })] }),
   new TableOfContents("Índice", { hyperlink: true, headingStyleRange: "1-3", cachedEntries: entradas }),

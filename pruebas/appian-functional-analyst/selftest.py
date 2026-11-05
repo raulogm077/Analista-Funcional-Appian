@@ -1155,6 +1155,22 @@ Se acepta si:
                     ok("el DF no enseña fuentes, anuladas ni respondidas",
                        "FU-0" not in xml and "HU-11" not in xml and "PC-03" not in xml and "PC-01" in xml
                        and "indice.py" not in xml and "Analista, 2026" not in xml)
+                    # E10 (5-nov): el cliente sabe en la primera página qué contestar; sin preguntas abiertas, nada
+                    s11 = (EJEMPLO / "analisis" / "funcional.md").read_text(encoding="utf-8").split("\n## 11.")[1].split("\n## ")[0]
+                    n = len(re.findall(r"^\|\s*PC-\d+\s*\|", s11, re.M))
+                    texto = re.sub(r"<[^>]+>", "", xml)
+                    pide = re.search(r"Os pedimos contestar (?:la pregunta|las (\d+) preguntas) del apartado «11\. ", texto)
+                    ok("la primera página dice cuántas preguntas abiertas hay y dónde, antes del índice",
+                       n > 0 and pide and int(pide.group(1) or 1) == n and texto.index("Os pedimos") < texto.index("Índice"),
+                       f"{n} abiertas; {texto[:400]}")
+                    sin = tmp / "DF sin preguntas"
+                    shutil.copytree(EJEMPLO, sin)
+                    f = sin / "analisis" / "funcional.md"
+                    f.write_text(re.sub(r"^\|\s*(PC-\d+)\s*\|", r"| ~~\1~~ |", f.read_text(encoding="utf-8"), flags=re.M),
+                                 encoding="utf-8")
+                    d = docx_de(sin, tmp / "sin-preguntas.docx")
+                    ok("sin preguntas abiertas, la primera página no pide contestar nada",
+                       d is not None and "Os pedimos" not in zipfile.ZipFile(d).read("word/document.xml").decode("utf-8"))
                     toc = re.search(r"<w:sdt>.*?</w:sdt>", xml, re.S)
                     ok("el índice del DF lleva sus entradas (soffice no rellena un campo vacío)",
                        toc is not None and "1. Objetivo y alcance" in toc.group(0) and "HU-07 — " in toc.group(0),
