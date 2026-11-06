@@ -1,8 +1,9 @@
 """Prueba de lo que añade Appian 26.10 al kit: que se pinte y se comporte como dice la documentación y que un
 prototipo que declara 26.9 no pueda usarlo.
 
-- a!decimalField; a!tagField LARGE; a!tagItem con borde, icono al final y fondo TRANSPARENT.
-- a!recordKnowledgeGraph: enableLevelSlider empieza en el nivel 1 y abre el 2; selectionSaveInto guarda el registro pulsado.
+- a!decimalField, que con PRECISE (también por defecto) no pierde cifras; a!tagField LARGE; a!tagItem con borde, icono al final y fondo TRANSPARENT.
+- a!recordKnowledgeGraph: enableLevelSlider empieza en el nivel 1 y abre el 2; selectionSaveInto guarda el registro pulsado,
+  con el recordIdentifier de la raíz y sin marcar dos nodos que se llaman igual.
 - a!agentChatField: con showReasoning false, la acción se ve mientras se hace y desaparece al terminar; por defecto, se queda.
 - a!headerContentLayout: contentsWidth limita el contenido y el footer queda abajo si el contenido es corto.
 """
@@ -25,7 +26,7 @@ TAGS = {"type": "a!tagField", "labelPosition": "COLLAPSED", "size": "LARGE", "ta
 GRAFO = {"type": "a!recordKnowledgeGraph", "label": "Relaciones", "recordType": "recordType!X Caso", "recordIdentifier": 1,
          "relationshipLevel": 2, "enableLevelSlider": True, "selectionSaveInto": "local!nodo",
          "$root": {"recordType": "Caso", "name": "C-1"},
-         "$nodes": [{"recordType": "Sede", "name": "Norte", "id": 7}, {"recordType": "Parte", "name": "P-9"},
+         "$nodes": [{"recordType": "Sede", "name": "Norte", "id": 7}, {"recordType": "Sede", "name": "Norte", "id": 8}, {"recordType": "Parte", "name": "P-9"},
                     {"recordType": "Proveedor", "name": "Prov SA", "parent": "P-9"}]}
 ELEGIDO = {"type": "a!textField", "label": "Elegido", "readOnly": True,
            "value": "{local!nodo.recordTypePluralName}|{local!nodo.recordTitle}|{local!nodo.recordIdentifier}"}
@@ -44,13 +45,15 @@ def spec(version):
             "site": {"displayName": "Prueba", "home": "p", "pages": [{"title": "P", "icon": "home", "screen": "p"}]},
             "requirements": [{"id": "C1", "title": "Novedades de 26.10"}],
             "screens": [{"id": "p", "title": "P", "type": "page", "pattern": "P06", "req": ["C1"],
-                         "local": {"local!nodo": None, "local!importe": 12.5},
+                         "local": {"local!nodo": None, "local!importe": 12.5, "local!grande": None, "local!km": None},
                          "interface": {"type": "a!headerContentLayout", "contentsWidth": "NARROW",
                                        "footer": {"type": "a!cardLayout", "contents": [
                                            {"type": "a!richTextDisplayField", "labelPosition": "COLLAPSED", "value": [
                                                {"type": "a!richTextItem", "text": "Pie"}]}]},
                                        "contents": [{"type": "a!decimalField", "label": "Importe", "value": "local!importe",
-                                                     "saveInto": "local!importe", "decimalType": "PRECISE"}]}},
+                                                     "saveInto": "local!importe", "decimalType": "PRECISE"},
+                                                    {"type": "a!decimalField", "label": "Grande", "value": "local!grande", "saveInto": "local!grande"},
+                                                    {"type": "a!decimalField", "label": "Km", "value": "local!km", "saveInto": "local!km", "decimalType": "FLOATING"}]}},
                         {"id": "q", "title": "Q", "type": "page", "pattern": "P06", "req": ["C1"],
                          "local": {"local!nodo": None},
                          "interface": {"type": "a!headerContentLayout",
@@ -99,6 +102,15 @@ def main():
                 fallos.append(f"el footer no queda abajo con poco contenido: {cab}")
             if cab["numero"] != "any":
                 fallos.append(f"a!decimalField no es un campo numérico con decimales: {cab}")
+            # PRECISE (aquí, por defecto) conserva las cifras; FLOATING guarda un número
+            for etiqueta, escrito in (("Grande", "9007199254740993"), ("Km", "124.6")):
+                campo = pg.get_by_label(etiqueta, exact=True)
+                campo.fill(escrito)
+                campo.dispatch_event("change")
+                pg.wait_for_timeout(150)
+                visto = pg.get_by_label(etiqueta, exact=True).input_value()
+                if visto != escrito:
+                    fallos.append(f"a!decimalField «{etiqueta}»: se escribió {escrito} y muestra {visto}")
             pg.evaluate("PROTO.show('q', {})")
             pg.wait_for_timeout(200)
             # etiqueta LARGE con borde por dentro e icono al final
@@ -113,13 +125,20 @@ def main():
             pg.eval_on_selector(".kg-lv input", "el => { el.value = 2; el.dispatchEvent(new Event('input', {bubbles: true})); }")
             pg.wait_for_timeout(200)
             n2 = nodos()
-            if (n1, n2) != (2, 3):
-                fallos.append(f"enableLevelSlider: nodos {n1} en el nivel 1 y {n2} en el 2 (se esperaban 2 y 3)")
-            pg.click(".kg-n:not(.main) >> text=Norte")
+            if (n1, n2) != (3, 4):
+                fallos.append(f"enableLevelSlider: nodos {n1} en el nivel 1 y {n2} en el 2 (se esperaban 3 y 4)")
+            elegido = lambda: pg.evaluate("() => [...document.querySelectorAll('.fld')].map(e => e.textContent).find(t => t.includes('Elegido'))") or ""
+            pg.locator(".kg-n:not(.main)", has_text="Norte").first.click()
             pg.wait_for_timeout(200)
-            elegido = pg.evaluate("() => [...document.querySelectorAll('.fld')].map(e => e.textContent).find(t => t.includes('Elegido'))") or ""
-            if "Sede|Norte|7" not in elegido:
-                fallos.append(f"selectionSaveInto no guarda tipo, título e identificador: «{elegido}»")
+            if "Sede|Norte|7" not in elegido():
+                fallos.append(f"selectionSaveInto no guarda tipo, título e identificador: «{elegido()}»")
+            marcados = pg.evaluate("document.querySelectorAll('.kg-n.sel').length")
+            if marcados != 1:
+                fallos.append(f"selectionSaveInto: {marcados} nodos marcados al pulsar uno de dos que se llaman igual")
+            pg.click(".kg-n.main")
+            pg.wait_for_timeout(200)
+            if "Caso|C-1|1" not in elegido():
+                fallos.append(f"selectionSaveInto en la raíz sin $root.id: no guarda su recordIdentifier: «{elegido()}»")
             # chat: con showReasoning false la acción desaparece al terminar; por defecto se queda
             for i, queda in ((0, False), (1, True)):
                 caso = f"showReasoning {'por defecto' if queda else 'false'}"

@@ -295,9 +295,10 @@ def c_impacto(m, a):
     if ctx.hay and construidas and not a.cambio and not ev_abiertas:   # dónde va: lo dice el script, no el modelo
         sig = 1 + max([int(u.id.split("-")[1]) for u in ctx.unidades if u.id.startswith("EV-")] or [0])
         sugerida = f"EV-{sig:02d}"
-        print(f"  → Ninguna unidad Abierta: si aplicas el cambio, ábrela antes (proyecto.py cambio <p> {sugerida} "
-              f"abrir --titulo \"…\") y pon «Cambio: {sugerida}» en el informe; meterlo en una Aprobada la "
-              "devuelve a aprobación, salvo un retoque «sin efecto» de lo que ella construye (cambios.md §1)")
+        print(f"  → Ninguna unidad Abierta: un retoque «sin efecto» de lo que construye una Aprobada va en ella "
+              f"(cambios.md §1); si no, para aplicar el cambio, ábrela antes (proyecto.py cambio <p> {sugerida} "
+              f"abrir --titulo \"…\") y pon «Cambio: {sugerida}» en el informe: meterlo en una Aprobada la "
+              "devuelve a aprobación")
     # la fila de §13 sin leer §13 (la unidad: --cambio, la única EV Abierta o la que se acaba de sugerir abrir)
     unidad13 = (a.cambio or "").upper() or (ev_abiertas[0] if len(ev_abiertas) == 1 else None) or sugerida
     plan_construccion = ctx.hay and construidas and unidad13 and "T" in m.docs

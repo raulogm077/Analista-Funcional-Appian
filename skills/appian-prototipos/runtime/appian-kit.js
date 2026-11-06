@@ -556,7 +556,14 @@
     const al = { RIGHT: "right", CENTER: "center" }[up(P(n, "align", ctx))];
     const attrs = { class: "inp", id: "f-" + ctx.key, type, value: v == null ? "" : v, placeholder: P(n, "placeholder", ctx), disabled, "aria-label": P(n, "label", ctx), style: al ? `text-align:${al}` : null };
     if (extra) Object.assign(attrs, extra);
-    const commit = (e) => { let val = e.target.value; if (type === "number") val = val === "" ? null : Number(val); if (val === "") val = null; saveInto(n, val, ctx); if (ref && !n.saveInto) writeRef(ref, val); schedule(); };
+    // a!decimalField PRECISE (el valor por defecto) guarda la precisión entera: con más de 15 cifras, que un número de JS
+    // no conserva, se guarda el texto tal cual lo escribió el usuario
+    const precise = n.type === "a!decimalField" && up(P(n, "decimalType", ctx, "PRECISE")) !== "FLOATING";
+    const commit = (e) => {
+      let val = e.target.value;
+      if (type === "number") val = val === "" ? null : precise && val.replace(/[eE].*$/, "").replace(/\D/g, "").replace(/^0+/, "").length > 15 ? val.trim() : Number(val);
+      if (val === "") val = null; saveInto(n, val, ctx); if (ref && !n.saveInto) writeRef(ref, val); schedule();
+    };
     let ctl;
     if (type === "textarea") { ctl = h("textarea", Object.assign(attrs, { rows: n.height === "TALL" ? 8 : n.height === "SHORT" ? 3 : 5, onchange: commit })); ctl.value = v == null ? "" : v; }
     else ctl = h("input", Object.assign(attrs, { onchange: commit }));
@@ -1500,8 +1507,10 @@
     const lvl = slider ? Math.min(max, UI[kLv] || 1) : max;
     const pick = n.selectionSaveInto != null;
     const rootN = n.$root || {};
-    const root = { recordType: interp(rootN.recordType || String(n.recordType || "").replace(/^recordType!/, ""), ctx), name: interp(rootN.name || (ctx.record && (ctx.record.titulo || ctx.record.nombre || ctx.record.codigo)) || "Registro", ctx), icon: rootN.icon || "file-text-o", id: rootN.id != null ? interp(String(rootN.id), ctx) : null };
-    const all = arr(n.$nodes).map((x) => ({ recordType: interp(x.recordType || "", ctx), name: interp(String(x.name || ""), ctx), icon: x.icon || "file-o", parent: x.parent != null ? interp(String(x.parent), ctx) : null, id: x.id != null ? interp(String(x.id), ctx) : null }));
+    // el identificador conserva su tipo (un número sigue siendo número); el de la raíz, si no lo da $root, es recordIdentifier
+    const idOf = (v) => (v == null ? null : typeof v === "string" ? interp(v, ctx) : v);
+    const root = { recordType: interp(rootN.recordType || String(n.recordType || "").replace(/^recordType!/, ""), ctx), name: interp(rootN.name || (ctx.record && (ctx.record.titulo || ctx.record.nombre || ctx.record.codigo)) || "Registro", ctx), icon: rootN.icon || "file-text-o", id: idOf(rootN.id != null ? rootN.id : P(n, "recordIdentifier", ctx)), key: "root" };
+    const all = arr(n.$nodes).map((x, i) => ({ recordType: interp(x.recordType || "", ctx), name: interp(String(x.name || ""), ctx), icon: x.icon || "file-o", parent: x.parent != null ? interp(String(x.parent), ctx) : null, id: idOf(x.id), key: "n" + i }));
     const byName = {}; all.forEach((x) => (byName[x.name] = x));
     const depth = (x, d) => (!x.parent || !byName[x.parent] || d > 10 ? 1 : 1 + depth(byName[x.parent], d + 1));
     const nodes = all.filter((x) => depth(x, 0) <= lvl);
@@ -1528,12 +1537,12 @@
     const edges = placed.map((x) => { const a = pos.get(x); const b = x.parent && byName[x.parent] && pos.get(byName[x.parent]) || { x: 50, y: 50 }; return `<line x1="${b.x}" y1="${b.y}" x2="${a.x}" y2="${a.y}" vector-effect="non-scaling-stroke"/>`; }).join("");
     const svg = h("div", { class: "kg-edges", html: `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${edges}</svg>` });
     const choose = (x) => {
-      UI[kSel] = x.name;
+      UI[kSel] = x.key;   // la identidad del nodo, no su título: dos registros pueden llamarse igual
       saveInto(n, { recordTypeReference: "recordType!" + x.recordType, recordTypePluralName: x.recordType, recordTitle: x.name, recordIdentifier: x.id != null ? x.id : x.name }, ctx, "selectionSaveInto");
       schedule();
     };
-    const nodeEl = (x, p, main) => h("div", { class: "kg-n" + (main ? " main" : "") + (pick ? " pick" : "") + (pick && UI[kSel] === x.name ? " sel" : ""), style: { left: p.x + "%", top: p.y + "%" }, title: `${x.recordType}: ${x.name}`, tabindex: "0",
-      role: pick ? "button" : null, "aria-pressed": pick ? String(UI[kSel] === x.name) : null,
+    const nodeEl = (x, p, main) => h("div", { class: "kg-n" + (main ? " main" : "") + (pick ? " pick" : "") + (pick && UI[kSel] === x.key ? " sel" : ""), style: { left: p.x + "%", top: p.y + "%" }, title: `${x.recordType}: ${x.name}`, tabindex: "0",
+      role: pick ? "button" : null, "aria-pressed": pick ? String(UI[kSel] === x.key) : null,
       onclick: pick ? () => choose(x) : null, onkeydown: pick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(x); } } : null },
       h("span", { class: "kg-i" }, icon(x.icon)), h("span", { class: "kg-t" }, h("span", { class: "kg-rt" }, x.recordType), h("span", { class: "kg-nm" }, x.name)));
     const es = LANG === "es";

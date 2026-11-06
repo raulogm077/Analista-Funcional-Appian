@@ -27,8 +27,9 @@ Cada cambio es una unidad (`EV-nn`, `URG-nn`) en `analisis/cambios.md`. Al aprob
 escribe en `construccion/<U>/` sus issues a partir de la tabla de objetos de técnico §13: lo común en la Base y juntos
 los requisitos que comparten objetos. Si §13 sigue en lista, primero se convierte a tabla. Cada issue lleva qué se
 pide, sus escenarios, objetos, extracto del técnico y supuestos pendientes, en orden de dependencias.
-Lo que llega después de aprobarla vuelve a pedir su aprobación, salvo un retoque «sin efecto», que no cambia alcance,
-esfuerzo ni riesgo: lo valida la IA, queda en la unidad y `proyecto.py estado` se lo enseña al jefe de proyecto
+Lo que se incorpora a ella después de aprobarla, con un informe de impacto, vuelve a pedir su aprobación, salvo un
+retoque «sin efecto», que no cambia alcance, esfuerzo ni riesgo: lo valida la IA, queda en la unidad y
+`proyecto.py estado` se lo enseña al jefe de proyecto
 (`skills/appian-functional-analyst/references/cambios.md` §1).
 Quien construye, persona o agente, pide la siguiente (`indice.py issues <p> <U> --siguiente`), que queda reservada
 con un commit para que nadie más se la lleve, y la construye solo en desarrollo. La issue está hecha cuando pasa su

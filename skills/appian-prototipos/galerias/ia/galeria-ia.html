@@ -73,7 +73,7 @@ svg.ic { width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em; 
 .site { min-height: 100%; display: flex; flex-direction: column; background: var(--gray-bg); }
 .site-hdr { background: var(--hdr-bg); color: var(--hdr-fg); display: flex; align-items: stretch; gap: 24px; padding: 0 20px; min-height: 56px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; }
 .site-brand { display: flex; align-items: center; gap: 12px; padding: 8px 0; white-space: nowrap; }
-.site-brand svg.logo { height: 30px; width: auto; }
+.site-brand svg.logo, .site-brand img.logo { height: 30px; width: auto; display: block; }
 .site-brand .dn { font-weight: 600; font-size: 15px; border-left: 1px solid rgba(255,255,255,.3); padding-left: 12px; }
 .site-brand .dn:first-child { border-left: 0; padding-left: 0; } /* marca sin logo: el nombre del site, sin separador */
 .site-nav { display: flex; align-items: stretch; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }
@@ -95,6 +95,8 @@ svg.ic { width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em; 
 .hcl { min-height: 100%; }
 .hcl-header { }
 .hcl-contents { max-width: 1440px; margin: 0 auto; }
+.hcl.has-ft { display: flex; flex-direction: column; } .hcl.has-ft > .hcl-contents { flex: 1 0 auto; width: 100%; }  /* 26.10: el pie, abajo si el contenido es corto */
+.hcl-contents.w-EXTRA_WIDE { max-width: 1440px; }
 .form { margin: 0 auto; background: var(--form-bg, transparent); }
 .form-title { padding: 20px 0 12px; }
 .form-title h1 { margin: 0; font-size: 26px; font-weight: 600; line-height: 1.25; }
@@ -329,6 +331,8 @@ select.inp { appearance: none; padding-right: 30px; cursor: pointer; }
 .tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .tag { display: inline-block; padding: 2px 10px; border-radius: var(--tag-radius); font-size: 12.5px; font-weight: 600; background: var(--tbg, #eceef0); color: var(--tfg, var(--text)); line-height: 1.6; white-space: nowrap; max-width: 40ch; overflow: hidden; text-overflow: ellipsis; }
 .tags.z-SMALL .tag { font-size: 11.5px; padding: 0 8px; }
+.tags.z-LARGE .tag { font-size: 14px; padding: 4px 12px; }  /* 26.10: texto, relleno e icono a mayor escala */
+.tag > .tag-ic:first-child { margin-inline-end: .3em; } .tag > .tag-ic:last-child { margin-inline-start: .3em; }
 .links { display: flex; gap: 14px; flex-wrap: wrap; }
 .links a, a.lnk { cursor: pointer; text-decoration: none; } .links a:hover, a.lnk:hover { text-decoration: underline; }
 .pbar .trk { height: 8px; background: #e3e6e8; border-radius: 4px; overflow: hidden; } .pbar.THICK .trk { height: 14px; }
@@ -641,6 +645,9 @@ body.px-capture .form-btns.fixed, body.px-capture .hdrtpl.fixed { position: stat
 .kg-tb { position: absolute; top: 8px; right: 8px; display: flex; gap: 2px; background: #fff; border: 1px solid var(--border-light); border-radius: 6px; padding: 2px; z-index: 3; }
 .kg-tb .ib { border: 0; background: none; width: 28px; height: 28px; border-radius: 4px; cursor: pointer; color: var(--text-2); display: grid; place-items: center; }
 .kg-tb .ib:hover { background: var(--hover); color: var(--text); }
+.kg-lv { position: absolute; top: 8px; left: 8px; display: flex; gap: 8px; align-items: center; background: #fff; border: 1px solid var(--border-light); border-radius: 6px; padding: 4px 10px; z-index: 3; font-size: 12px; color: var(--text-2); }
+.kg-lv input { width: 110px; accent-color: var(--accent); } .kg-lv b { color: var(--text); min-width: 1.2em; text-align: center; }
+.kg-n.pick { cursor: pointer; } .kg-n.pick:hover { border-color: var(--accent); } .kg-n.sel { outline: 2px solid var(--accent); outline-offset: 2px; }
 .kg-mini { position: absolute; right: 8px; bottom: 8px; width: 120px; height: 78px; background: #fff; border: 1px solid var(--border); border-radius: 4px; z-index: 3; }
 .kg-mini svg { width: 100%; height: 100%; display: block; } .kg-mini rect { fill: #c3c9cf; } .kg-mini rect.c { fill: var(--accent); } .kg-mini rect.vp { fill: none; stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .chart .lk { cursor: pointer; } .chart rect.lk:hover, .chart circle.lk:hover { filter: brightness(1.12); }
@@ -750,6 +757,10 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
 .tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
 /* un chat que llena su panel, dentro de una card (galerías, columnas): alto fijo razonable */
 .card .aic.h-FILL { height: 480px; }
+/* En un pane el chat reparte su alto con los títulos y desplaza solo los mensajes, incluso en una ventana baja. */
+body:not(.px-capture) .pane > .stack.pane-fill-path { height: 100%; min-height: 0; }
+body:not(.px-capture) .pane .pane-fill-path { flex: 1 1 0; min-height: 0; }
+body:not(.px-capture) .pane .aic.h-FILL { height: auto; min-height: 0; flex: 1 1 0; }
 
 :root {
   --accent: #1d659c;
@@ -1132,6 +1143,33 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
   }
   // $action.step: salta al paso N (1 = primero) del asistente de la pantalla (enlaces «Editar» del paso de revisión)
   function wizardStep(step, ctx) { const base = String(ctx.scope || "").split(":")[0]; UI["wiz:" + base] = Math.max(0, Number(interp(step, ctx)) - 1); }
+  function prototypeUri(uri, ctx) {
+    // Interpolar cada valor antes de serializar impide que un & o = del dato se vuelva otro parámetro.
+    const raw = String(uri || "");
+    if (!raw.startsWith("#ver=")) return interp(raw, ctx);
+    const query = new URLSearchParams(raw.slice(1)), result = new URLSearchParams();
+    for (const [key, value] of query) result.set(key, String(interp(value, ctx) ?? ""));
+    if (!Object.prototype.hasOwnProperty.call(byId, result.get("ver"))) { console.warn("Pantalla no encontrada:", result.get("ver")); return null; }
+    return "#" + result.toString();
+  }
+  function showHash(hash) {
+    const value = String(hash || "").replace(/^#/, "");
+    if (!value.startsWith("ver=")) {
+      try {
+        const id = decodeURIComponent(value);
+        return Object.prototype.hasOwnProperty.call(byId, id) ? showScreen(id) : false;
+      } catch (_) { return false; }
+    }
+    const query = new URLSearchParams(value), id = query.get("ver"), params = Object.create(null);
+    if (!Object.prototype.hasOwnProperty.call(byId, id)) { console.warn("Pantalla no encontrada:", id); return false; }
+    for (const [key, text] of query) {
+      if (key === "ver") continue;
+      // IDs numéricos como en los datasets; códigos con ceros iniciales y enteros grandes siguen siendo texto.
+      const numeric = /^(0|-?[1-9]\d*)$/.test(text) && Number.isSafeInteger(Number(text));
+      params[key] = numeric ? Number(text) : text;
+    }
+    return showScreen(id, { params });
+  }
   function clickable(node, ctx) {
     // a!dynamicLink, a!recordLink, a!startProcessLink, a!safeLink, buttons...
     return (ev) => {
@@ -1142,7 +1180,16 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
         const scr = findScreenForRecord(node.recordType);
         if (scr) return runAction(Object.assign({ goto: scr.id, params: { id: node.identifier }, view: node.dashboard }, node.$action || {}), ctx);
       }
-      if (node.type === "a!safeLink" && node.uri && !node.$action) { window.open(interp(node.uri, ctx), "_blank", "noopener"); return; }
+      if (node.type === "a!safeLink" && node.uri && !node.$action) {
+        const uri = prototypeUri(node.uri, ctx);
+        if (uri == null) return;
+        if (up(P(node, "openLinkIn", ctx, "NEW_TAB")) === "SAME_TAB") {
+          if (String(uri).startsWith("#ver=")) {
+            if (location.hash === uri) showHash(uri); else location.hash = uri;
+          } else location.assign(uri);
+        } else window.open(uri, "_blank", "noopener");
+        return;
+      }
       if (node.type === "a!pageLink" && !node.$action) {
         const pg = String(interp(node.page || "", ctx)).split(/[.!]/).pop().toLowerCase();
         const sp = arr(SPEC.site && SPEC.site.pages).find((x) => [x.id, x.screen, x.label, x.name].filter(Boolean).map((v) => String(v).toLowerCase()).includes(pg));
@@ -1163,9 +1210,12 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
     enterScreen(byId[screenId], route.params);
     window.scrollTo(0, 0);
   }
-  function enterScreen(scr, params) {
+  function setRuleInputs(params) {
     for (const k in S) if (k.startsWith("ri!")) delete S[k];
     if (params) for (const k in params) S["ri!" + k] = params[k];
+  }
+  function enterScreen(scr, params) {
+    setRuleInputs(params);
     const lctx = screenCtx(scr, params);
     // los textos con {expresión} se evalúan también dentro de mapas y listas (p. ej. local!correo.asunto = "Estudio {rv!record.codigo}")
     const init = (v) => (typeof v === "string" ? (v.includes("{") ? interp(v, lctx) : v) : Array.isArray(v) ? v.map(init) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([a, b]) => [a, init(b)])) : v);
@@ -1173,7 +1223,7 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
     delete invalid[scr.id];
     delete UI["wiz:" + scr.id];
   }
-  function back() { if (hist.length) { route = hist.pop(); dialogs = []; } }
+  function back() { if (hist.length) { route = hist.pop(); dialogs = []; setRuleInputs(route.params); } }
   function openDialog(id, params) {
     if (!byId[id]) { console.warn("Diálogo no encontrado:", id); return; }
     dialogs.push({ screen: id, params: params || {} });
@@ -1291,7 +1341,14 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
     const al = { RIGHT: "right", CENTER: "center" }[up(P(n, "align", ctx))];
     const attrs = { class: "inp", id: "f-" + ctx.key, type, value: v == null ? "" : v, placeholder: P(n, "placeholder", ctx), disabled, "aria-label": P(n, "label", ctx), style: al ? `text-align:${al}` : null };
     if (extra) Object.assign(attrs, extra);
-    const commit = (e) => { let val = e.target.value; if (type === "number") val = val === "" ? null : Number(val); if (val === "") val = null; saveInto(n, val, ctx); if (ref && !n.saveInto) writeRef(ref, val); schedule(); };
+    // a!decimalField PRECISE (el valor por defecto) guarda la precisión entera: con más de 15 cifras, que un número de JS
+    // no conserva, se guarda el texto tal cual lo escribió el usuario
+    const precise = n.type === "a!decimalField" && up(P(n, "decimalType", ctx, "PRECISE")) !== "FLOATING";
+    const commit = (e) => {
+      let val = e.target.value;
+      if (type === "number") val = val === "" ? null : precise && val.replace(/[eE].*$/, "").replace(/\D/g, "").replace(/^0+/, "").length > 15 ? val.trim() : Number(val);
+      if (val === "") val = null; saveInto(n, val, ctx); if (ref && !n.saveInto) writeRef(ref, val); schedule();
+    };
     let ctl;
     if (type === "textarea") { ctl = h("textarea", Object.assign(attrs, { rows: n.height === "TALL" ? 8 : n.height === "SHORT" ? 3 : 5, onchange: commit })); ctl.value = v == null ? "" : v; }
     else ctl = h("input", Object.assign(attrs, { onchange: commit }));
@@ -1309,6 +1366,7 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
   R["a!encryptedTextField"] = (n, ctx) => textLike("password", n, ctx);
   R["a!integerField"] = (n, ctx) => textLike("number", n, ctx, { step: 1 });
   R["a!floatingPointField"] = (n, ctx) => textLike("number", n, ctx, { step: "any" });
+  R["a!decimalField"] = (n, ctx) => textLike("number", n, ctx, { step: "any" });  // 26.10; decimalType no cambia cómo se ve
   R["a!paragraphField"] = (n, ctx) => textLike("textarea", n, ctx);
   function dateInput(n, ctx, withTime) {
     const v = getVal(n, ctx);
@@ -1528,8 +1586,13 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
         const B = up(bg);
         const bgc = B === "SECONDARY" ? "#e4e7ea" : color(bg, "var(--accent)");
         const tc = P(t, "textColor", ctx);
-        const fg = tc && up(tc) !== "STANDARD" ? color(tc) : B === "SECONDARY" ? "var(--text)" : solidFg(hexOf(bg) || "#e4e7ea");
-        const tagEl = h("span", { class: "tag", style: { "--tbg": bgc, "--tfg": fg }, title: P(t, "tooltip", ctx) }, P(t, "text", ctx));
+        const fg = tc && up(tc) !== "STANDARD" ? color(tc) : B === "SECONDARY" || B === "TRANSPARENT" ? "var(--text)" : solidFg(hexOf(bg) || "#e4e7ea");
+        // 26.10: borde (por dentro, para no cambiar el tamaño de la etiqueta) e icono decorativo al principio o al final
+        const border = P(t, "showBorder", ctx, false) ? `inset 0 0 0 1px ${color(P(t, "borderColor", ctx, "SECONDARY"), "var(--text-2)")}` : null;
+        const ic = P(t, "icon", ctx) ? icon(P(t, "icon", ctx), "tag-ic") : null;
+        const end = up(P(t, "iconPosition", ctx, "START")) === "END";
+        const tagEl = h("span", { class: "tag", style: { "--tbg": bgc, "--tfg": fg, boxShadow: border }, title: P(t, "tooltip", ctx) },
+          end ? null : ic, P(t, "text", ctx), end ? ic : null);
         return t.link ? h("a", { href: "#", onclick: clickable(t.link, ctx), style: { textDecoration: "none" } }, tagEl) : tagEl;
       }));
     return n.label ? field(n, ctx, tags) : tags;
@@ -2078,12 +2141,15 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
     const debug = kind === "agent" || kind === "df" ? P(n, "debugMode", ctx, false) : false;
     const steps = [];
     if (debug) arr(rep.thoughts).forEach((t) => steps.push({ role: "THOUGHT", text: interp(String(t), ctx) }));
-    if (kind === "agent") arr(rep.tools).forEach((t) => steps.push(Object.assign({ role: "TOOL" }, typeof t === "string" ? { tool: t } : t)));
+    // 26.10, showReasoning: false: cada acción se ve mientras se hace y desaparece al pasar a la siguiente (con debugMode se ven siempre)
+    const fleeting = kind === "agent" && !debug && P(n, "showReasoning", ctx, true) === false;
+    if (kind === "agent") arr(rep.tools).forEach((t) => steps.push(Object.assign({ role: "TOOL" }, typeof t === "string" ? { tool: t } : t, fleeting ? { transient: true } : null)));
     st.busy = true;
     rerender();
     let i = 0;
     const tick = () => {
       if (!st.busy) return; // detenida con el botón Detener
+      if (fleeting) st.msgs = st.msgs.filter((m) => !m.transient);
       if (i < steps.length) { st.msgs.push(steps[i++]); rerender(); st.timer = setTimeout(tick, 600); return; }
       st.msgs.push(rep.content ? { role: "ASSISTANT", content: rep.content } : { role: rep.blocked ? "BLOCKED" : "ASSISTANT", text: interp(String(rep.text || ""), ctx) });
       st.busy = false;
@@ -2092,12 +2158,12 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
     };
     st.timer = setTimeout(tick, 750);
   }
-  function chatStop(st) { if (!st.busy) return; clearTimeout(st.timer); st.busy = false; st.msgs.push({ role: "STOPPED" }); rerender(); }
+  function chatStop(st) { if (!st.busy) return; clearTimeout(st.timer); st.busy = false; st.msgs = st.msgs.filter((m) => !m.transient); st.msgs.push({ role: "STOPPED" }); rerender(); }
   const chatRunning = (n, st) => st.busy || up(n.$state) === "RUNNING";
   function chatMsgs(n, ctx, st, opt, intro, extra) {
     const typing = chatRunning(n, st) ? h("div", { class: "cm a" }, opt.avatar ? h("span", { class: "av", "aria-hidden": "true" }, icon(opt.avatar)) : null, h("div", { class: "typing", role: "status", "aria-label": LANG === "es" ? "Respondiendo" : "Responding" }, h("i"), h("i"), h("i"))) : null;
     const err = up(n.$state) === "UNAVAILABLE" ? h("div", { class: "aic-err", role: "alert" }, icon("exclamation-circle"), AI.unavailable) : null;
-    const all = (extra || []).concat(st.msgs);
+    const all = (extra || []).concat(st.msgs).filter((m) => opt.reasoning !== false || opt.debug || m.role !== "TOOL" || m.transient);
     const box = h("div", { class: "aic-msgs", role: "log", "aria-live": "polite" }, err || [intro, all.map((m, i) => chatMsgEl(m, opt, ctx, `${ctx.key}.m${i}`)), typing]);
     requestAnimationFrame(() => { if (box.isConnected && all.length) box.scrollTop = box.scrollHeight; });
     return box;
@@ -2122,7 +2188,7 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
   // Agent Chat: barra de título con selector de conversaciones, bienvenida, streaming, llamadas a herramientas (entradas y salidas solo en debugMode) y botón Detener
   R["a!agentChatField"] = (n, ctx) => {
     const st = chatState(n, ctx);
-    const opt = { avatar: "magic", debug: P(n, "debugMode", ctx, false) };
+    const opt = { avatar: "magic", debug: P(n, "debugMode", ctx, false), reasoning: P(n, "showReasoning", ctx, true) };
     let picker = null;
     if (P(n, "showSessionPicker", ctx, true)) {
       const sessions = arr(n.$sessions).map((s) => (typeof s === "string" ? { name: interp(s, ctx) } : Object.assign({}, s, { name: interp(s.name || "", ctx) })));
@@ -2214,14 +2280,22 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
   // a!recordKnowledgeGraph (26.8): registro base en el centro y registros relacionados alrededor (hasta relationshipLevel niveles),
   // con etiqueta de tipo de registro y nombre, minimapa (showMiniMap) y controles de zoom. Solo de prototipo:
   //   $root  { recordType, name, icon }   registro base (por defecto, el título del registro de la pantalla)
-  //   $nodes [{ recordType, name, icon, parent }]   relacionados; parent = name de otro nodo (sin parent: primer nivel)
+  //   $nodes [{ recordType, name, icon, parent, id }]   relacionados; parent = name de otro nodo (sin parent: primer nivel)
+  // 26.10: enableLevelSlider empieza en el nivel 1 con un control para abrir hasta relationshipLevel, y selectionSaveInto
+  // guarda el registro pulsado como { recordTypeReference, recordTypePluralName, recordTitle, recordIdentifier }
+  // (en el prototipo, el nombre del tipo es su recordType y el identificador, su id o, si no lo lleva, su name).
   R["a!recordKnowledgeGraph"] = (n, ctx) => {
     const hk = up(P(n, "height", ctx, "AUTO"));
     const H = { SHORT: 280, MEDIUM: 420, TALL: 560 }[hk] || 420;
-    const lvl = Math.max(1, Math.min(10, Number(P(n, "relationshipLevel", ctx, 3)) || 3));
+    const max = Math.max(1, Math.min(10, Number(P(n, "relationshipLevel", ctx, 3)) || 3));
+    const slider = !!P(n, "enableLevelSlider", ctx, false), kLv = "kg:" + ctx.key, kSel = "kgsel:" + ctx.key;
+    const lvl = slider ? Math.min(max, UI[kLv] || 1) : max;
+    const pick = n.selectionSaveInto != null;
     const rootN = n.$root || {};
-    const root = { recordType: interp(rootN.recordType || String(n.recordType || "").replace(/^recordType!/, ""), ctx), name: interp(rootN.name || (ctx.record && (ctx.record.titulo || ctx.record.nombre || ctx.record.codigo)) || "Registro", ctx), icon: rootN.icon || "file-text-o" };
-    const all = arr(n.$nodes).map((x) => ({ recordType: interp(x.recordType || "", ctx), name: interp(String(x.name || ""), ctx), icon: x.icon || "file-o", parent: x.parent != null ? interp(String(x.parent), ctx) : null }));
+    // el identificador conserva su tipo (un número sigue siendo número); el de la raíz, si no lo da $root, es recordIdentifier
+    const idOf = (v) => (v == null ? null : typeof v === "string" ? interp(v, ctx) : v);
+    const root = { recordType: interp(rootN.recordType || String(n.recordType || "").replace(/^recordType!/, ""), ctx), name: interp(rootN.name || (ctx.record && (ctx.record.titulo || ctx.record.nombre || ctx.record.codigo)) || "Registro", ctx), icon: rootN.icon || "file-text-o", id: idOf(rootN.id != null ? rootN.id : P(n, "recordIdentifier", ctx)), key: "root" };
+    const all = arr(n.$nodes).map((x, i) => ({ recordType: interp(x.recordType || "", ctx), name: interp(String(x.name || ""), ctx), icon: x.icon || "file-o", parent: x.parent != null ? interp(String(x.parent), ctx) : null, id: idOf(x.id), key: "n" + i }));
     const byName = {}; all.forEach((x) => (byName[x.name] = x));
     const depth = (x, d) => (!x.parent || !byName[x.parent] || d > 10 ? 1 : 1 + depth(byName[x.parent], d + 1));
     const nodes = all.filter((x) => depth(x, 0) <= lvl);
@@ -2247,12 +2321,23 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
     const placed = nodes.filter((x) => pos.has(x));
     const edges = placed.map((x) => { const a = pos.get(x); const b = x.parent && byName[x.parent] && pos.get(byName[x.parent]) || { x: 50, y: 50 }; return `<line x1="${b.x}" y1="${b.y}" x2="${a.x}" y2="${a.y}" vector-effect="non-scaling-stroke"/>`; }).join("");
     const svg = h("div", { class: "kg-edges", html: `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${edges}</svg>` });
-    const nodeEl = (x, p, main) => h("div", { class: "kg-n" + (main ? " main" : ""), style: { left: p.x + "%", top: p.y + "%" }, title: `${x.recordType}: ${x.name}`, tabindex: "0" }, h("span", { class: "kg-i" }, icon(x.icon)), h("span", { class: "kg-t" }, h("span", { class: "kg-rt" }, x.recordType), h("span", { class: "kg-nm" }, x.name)));
+    const choose = (x) => {
+      UI[kSel] = x.key;   // la identidad del nodo, no su título: dos registros pueden llamarse igual
+      saveInto(n, { recordTypeReference: "recordType!" + x.recordType, recordTypePluralName: x.recordType, recordTitle: x.name, recordIdentifier: x.id != null ? x.id : x.name }, ctx, "selectionSaveInto");
+      schedule();
+    };
+    const nodeEl = (x, p, main) => h("div", { class: "kg-n" + (main ? " main" : "") + (pick ? " pick" : "") + (pick && UI[kSel] === x.key ? " sel" : ""), style: { left: p.x + "%", top: p.y + "%" }, title: `${x.recordType}: ${x.name}`, tabindex: "0",
+      role: pick ? "button" : null, "aria-pressed": pick ? String(UI[kSel] === x.key) : null,
+      onclick: pick ? () => choose(x) : null, onkeydown: pick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(x); } } : null },
+      h("span", { class: "kg-i" }, icon(x.icon)), h("span", { class: "kg-t" }, h("span", { class: "kg-rt" }, x.recordType), h("span", { class: "kg-nm" }, x.name)));
     const es = LANG === "es";
+    const lvLabel = es ? "Niveles de relación" : "Relationship levels";
+    const lv = slider ? h("div", { class: "kg-lv" }, h("span", { "aria-hidden": "true" }, es ? "Niveles" : "Levels"),
+      h("input", { type: "range", min: 1, max, step: 1, value: lvl, "aria-label": lvLabel, oninput: (e) => { UI[kLv] = Number(e.target.value); schedule(); } }), h("b", null, String(lvl))) : null;
     const ib = (ic, label) => h("button", { type: "button", class: "ib", title: label, "aria-label": label }, icon(ic));
     const mini = P(n, "showMiniMap", ctx, true) ? h("div", { class: "kg-mini", "aria-hidden": "true", html: `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><rect x="3" y="3" width="94" height="94" class="vp"/>${placed.map((x) => { const q = pos.get(x); return `<rect x="${q.x - 5}" y="${q.y - 3}" width="10" height="6" rx="2"/>`; }).join("")}<rect x="43" y="46" width="14" height="8" rx="2" class="c"/></svg>` }) : null;
-    const el = h("div", { class: "kg", style: { height: H + "px" }, role: "img", "aria-label": P(n, "accessibilityText", ctx) || P(n, "label", ctx) || root.name },
-      svg, placed.map((x) => nodeEl(x, pos.get(x), false)), nodeEl(root, { x: 50, y: 50 }, true),
+    const el = h("div", { class: "kg", style: { height: H + "px" }, role: pick || slider ? "group" : "img", "aria-label": P(n, "accessibilityText", ctx) || P(n, "label", ctx) || root.name },
+      svg, placed.map((x) => nodeEl(x, pos.get(x), false)), nodeEl(root, { x: 50, y: 50 }, true), lv,
       h("div", { class: "kg-tb" }, ib("search-plus", es ? "Ampliar" : "Zoom in"), ib("search-minus", es ? "Reducir" : "Zoom out"), ib("expand", es ? "Pantalla completa" : "Full screen")), mini);
     return field(n, ctx, el);
   };
@@ -2413,6 +2498,10 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
   R["a!paneLayout"] = (n, ctx) => h("div", { class: "pane-layout" + (P(n, "showPaneDividers", ctx, true) ? " div" : "") }, arr(n.panes).filter((p) => visible(p, ctx)).map((p, i) => {
     const bg = P(p, "backgroundColor", ctx, "WHITE");
     const el = h("div", { class: `pane w-${up(P(p, "width", ctx, "AUTO"))} ${String(bg).startsWith("#") ? "" : "bg-" + up(bg)} ${padCls(P(p, "padding", ctx), "STANDARD")}`, style: String(bg).startsWith("#") ? { background: bg } : null, "data-sail": "a!pane", "data-k": `${ctx.key}.${i}` }, stack(p.contents, ctx, `${ctx.key}.${i}.c`));
+    // Propaga el espacio disponible por los contenedores del chat (también una card), sin fijar píxeles.
+    el.querySelectorAll(".aic.h-FILL").forEach((chat) => {
+      for (let padre = chat.parentElement; padre && padre !== el; padre = padre.parentElement) padre.classList.add("pane-fill-path");
+    });
     NODES[`${ctx.key}.${i}`] = p;
     return el;
   }));
@@ -2510,9 +2599,15 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
   R["a!headerContentLayout"] = (n, ctx) => {
     const bg = P(n, "backgroundColor", ctx, "WHITE");
     const dk = darkProps(bg);
-    return h("div", { class: "hcl " + (String(bg).startsWith("#") ? "" : "bg-" + up(bg)) + (dk ? dk.cls : ""), style: Object.assign({ background: String(bg).startsWith("#") ? bg : null, color: dk ? "#fff" : null }, dk ? dk.vars : null) },
+    // 26.10: contentsWidth limita solo el contenido, centrado (con un panel dentro, siempre FULL); footer, tarjetas o billboards
+    // de borde a borde al final: abajo del todo si el contenido es corto, y debajo del contenido si hay que desplazarse
+    const cw = up(P(n, "contentsWidth", ctx, "FULL"));
+    const pane = arr(n.contents).some((c) => c && c.type === "a!paneLayout");
+    const ft = arr(n.footer).filter((x) => x && visible(x, ctx));
+    return h("div", { class: "hcl " + (String(bg).startsWith("#") ? "" : "bg-" + up(bg)) + (dk ? dk.cls : "") + (ft.length ? " has-ft" : ""), style: Object.assign({ background: String(bg).startsWith("#") ? bg : null, color: dk ? "#fff" : null }, dk ? dk.vars : null) },
       n.header ? h("div", { class: "hcl-header" }, arr(n.header).map((x, i) => render(x, ctx, ctx.key + ".h" + i))) : null,
-      h("div", { class: "hcl-contents" }, h("div", { class: "page-pad", style: { padding: { NONE: "0", EVEN_LESS: "4px", LESS: "8px 12px", MORE: "28px 32px 44px", EVEN_MORE: "40px 48px 56px" }[up(n.contentsPadding)] || null } }, stack(n.contents, ctx, ctx.key + ".c"))));
+      h("div", { class: "hcl-contents" + (cw !== "FULL" && !pane ? " w-" + cw : "") }, h("div", { class: "page-pad", style: { padding: { NONE: "0", EVEN_LESS: "4px", LESS: "8px 12px", MORE: "28px 32px 44px", EVEN_MORE: "40px 48px 56px" }[up(n.contentsPadding)] || null } }, stack(n.contents, ctx, ctx.key + ".c"))),
+      ft.length ? h("div", { class: "hcl-footer" }, ft.map((x, i) => render(x, ctx, ctx.key + ".f" + i))) : null);
   };
   R["a!wizardLayout"] = (n, ctx) => {
     const steps = arr(n.steps).filter((s) => visible(s, ctx));
@@ -3025,7 +3120,9 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
       h("div", { class: "site-brand" }, LOGO ? h("span", { html: LOGO, style: { display: "inline-flex" } }) : null, site.displayName ? h("span", { class: "dn" }, site.displayName) : null),
       nav, h("div", { class: "site-user" }, h("span", { class: "uname" }, user.name), h("span", { class: "avatar", title: user.name, style: { color: avatarFg() } }, FILTERS.initials(user.name))));
     NODES.site = { type: "Site", navigationLayout: (BRAND.site || {}).navigationLayout, headerBarStyle: (BRAND.site || {}).headerBarStyle, backgroundColor: (BRAND.site || {}).backgroundColor, selectedPageHighlightColor: (BRAND.site || {}).selectedPageHighlightColor, accentColor: (BRAND.site || {}).accentColor, pages: pages.map((p) => p.title), $note: "Configuración del objeto Site (ver brand-*.json)" };
-    const svg = hdr.querySelector(".site-brand svg"); if (svg) svg.classList.add("logo");
+    const svg = hdr.querySelector(".site-brand svg, .site-brand img"); if (svg) svg.classList.add("logo");
+    const altLogo = (BRAND.site || {}).logoAltText;  // el <img> del PNG ya lo lleva en su alt; el SVG en línea, como imagen con nombre
+    if (svg && altLogo && svg.tagName.toLowerCase() === "svg") { svg.removeAttribute("aria-labelledby"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", altLogo); }  // aria-labelledby mandaría sobre aria-label
     return h("div", { class: "site" + ((BRAND.site || {}).useUppercase ? " upper" : "") + ((BRAND.site || {}).useUppercasePageTitles ? " upper-titles" : "") }, hdr, h("main", { class: "site-body" }, content));
   }
 
@@ -3128,6 +3225,16 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
 
   /* ---------------- main render ---------------- */
   const root = h("div", { id: "px-root", style: { height: "100%" } });
+  function layoutChatPanes() {
+    const bar = root.querySelector(".px-bar"), b = bar && bar.getBoundingClientRect();
+    const bottom = b && b.height ? Math.min(innerHeight, b.top - 8) : innerHeight;
+    root.querySelectorAll(".pane-layout").forEach((el) => {
+      if (!el.querySelector(".aic.h-FILL")) return;
+      // La barra del prototipo también ocupa espacio visible; en capturas se deja crecer el contenido.
+      el.style.height = capture ? "" : Math.max(0, bottom - el.getBoundingClientRect().top) + "px";
+      el.style.flex = capture ? "" : "0 0 auto";
+    });
+  }
   function rerender() {
     const active = document.activeElement;
     const fid = active && active.id && active.id.startsWith("f-") ? active.id : null;
@@ -3151,6 +3258,7 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
     if (!inspector) tip.hidden = true;
     drawCharts();
     layoutNav();
+    layoutChatPanes();
     window.scrollTo(0, y);
     document.querySelectorAll(".dlg-c").forEach((x, i) => (x.scrollTop = scrolls[i] || 0));
     if (fid) { const el = document.getElementById(fid); if (el) { el.focus({ preventScroll: true }); if (sel && el.setSelectionRange) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
@@ -3160,7 +3268,7 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
   }
   function drawCharts() { document.querySelectorAll(".chart").forEach((c) => c.__draw && c.clientWidth && c.__draw(c.clientWidth)); }
   function layoutNav() { document.querySelectorAll(".hb, .cbr").forEach((c) => c.__layout && c.__layout()); }
-  let rsz; window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { drawCharts(); layoutNav(); }, 120); });
+  let rsz; window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { drawCharts(); layoutNav(); layoutChatPanes(); }, 120); });
   function firstRecordId(scr) { const r = rowsOf(scr.dataset ? "data!" + scr.dataset : "recordType!" + scr.recordType)[0]; return r && r.id; }
   function showScreen(id, opts) {
     opts = opts || {};
@@ -3191,9 +3299,13 @@ select.inp.ph { color: var(--placeholder); } select.inp option { color: var(--te
     for (const [k, v] of [["POSITIVE", "--positive"], ["NEGATIVE", "--negative"], ["WARN", "--warn"], ["INFO", "--info"]]) { const x = cs.getPropertyValue(v).trim(); if (rgbOf(x)) SEMHEX[k] = x; }
     const lk = linkOn((BRAND.site && BRAND.site.backgroundColor) || "#0f203a");
     if (lk) document.documentElement.style.setProperty("--lnk-dark", lk);
-    const hash = (location.hash || "").replace(/^#/, "");
+    const hash = location.hash;
     const home = (SPEC.site && SPEC.site.home) || ((SPEC.site && arr(SPEC.site.pages)[0]) || {}).screen || (screens[0] || {}).id;
-    if (!(hash && showScreen(hash))) { go(home, {}); rerender(); }
+    if (!(hash && showHash(hash))) { go(home, {}); rerender(); }
+    window.addEventListener("hashchange", () => {
+      if (!location.hash) { showScreen(home); return; }
+      showHash(location.hash);
+    });
     if (/capture/.test(location.search)) { capture = true; rerender(); }
   }
 
