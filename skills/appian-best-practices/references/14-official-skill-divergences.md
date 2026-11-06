@@ -7,6 +7,7 @@
 > wins over both skills** (SKILL.md, *Which Source Wins*).
 >
 > Checked against the skill shipped in the DevMCP bundle 26.9.5 (build 20261026-140102) and the 26.9
+> documentation; the markers, again against build 20261103-144057, and the *Decimal input* row against the 26.10
 > documentation. Appian updates that skill often: if the installed skill no longer says what a row
 > attributes to it, the row is obsolete — ignore it and tell the user, who decides whether to update this page.
 
