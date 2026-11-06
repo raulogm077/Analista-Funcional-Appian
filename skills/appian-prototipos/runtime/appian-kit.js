@@ -564,7 +564,8 @@
       if (type === "number") {
         const t = val.trim(), num = Number(t);
         const pierde = t !== "" && (t.replace(/[eE].*$/, "").replace(/\D/g, "").replace(/^0+/, "").length > 15   // más cifras de las que guarda JS
-          || !isFinite(num) || (num === 0 && /[1-9]/.test(t.replace(/[eE].*$/, ""))));                            // desborda, o se queda en 0
+          || !isFinite(num) || (num === 0 && /[1-9]/.test(t.replace(/[eE].*$/, "")))                            // desborda, o se queda en 0
+          || (num !== 0 && Math.abs(num) < 2.2250738585072014e-308));                                          // subnormal: menos de 15 cifras exactas
         val = t === "" ? null : precise && pierde ? t : num;
       }
       if (val === "") val = null; saveInto(n, val, ctx); if (ref && !n.saveInto) writeRef(ref, val); schedule();
@@ -1548,11 +1549,14 @@
     };
     // marcado: el registro guardado en la variable de selectionSaveInto (también el que trae un estado de captura);
     // entre dos iguales, el que se pulsó
-    const savedRef = typeof n.selectionSaveInto === "string" ? refOf({ x: n.selectionSaveInto }, "x", ctx) : null;
+    // la variable donde se guarda: un destino directo, el primero de una lista o el target de un a!save(…, save!value);
+    // si no se puede leer, la marca sale del último nodo pulsado
+    const destino = arr(n.selectionSaveInto).map((t) => (typeof t === "string" ? t : t && t.type === "a!save" && t.value === "save!value" ? t.target : null)).find((t) => typeof t === "string");
+    const savedRef = destino ? refOf({ x: destino }, "x", ctx) : null;
     const saved = savedRef ? readRef(savedRef) : null;
     const same = (x) => !!saved && typeof saved === "object" && saved.recordTitle === x.name && (saved.recordTypePluralName == null || saved.recordTypePluralName === x.recordType)
       && (saved.recordIdentifier == null || String(saved.recordIdentifier) === String(x.id != null ? x.id : x.name));
-    const isSel = (x) => pick && same(x) && (UI[kSel] == null || UI[kSel] === x.key);
+    const isSel = (x) => pick && (savedRef ? same(x) && (UI[kSel] == null || UI[kSel] === x.key) : UI[kSel] === x.key);
     const nodeEl = (x, p, main) => h("div", { class: "kg-n" + (main ? " main" : "") + (pick ? " pick" : "") + (isSel(x) ? " sel" : ""), style: { left: p.x + "%", top: p.y + "%" }, title: `${x.recordType}: ${x.name}`, tabindex: "0",
       role: pick ? "button" : null, "aria-pressed": pick ? String(isSel(x)) : null,
       onclick: pick ? () => choose(x) : null, onkeydown: pick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(x); } } : null },

@@ -71,6 +71,10 @@ def spec(version):
                               ("sin", {}, [ELEGIDO]),
                               ("panel", {"contentsWidth": "NARROW"}, [{"type": "a!paneLayout", "panes": [
                                   {"type": "a!pane", "contents": [ELEGIDO]}, {"type": "a!pane", "contents": [ELEGIDO]}]}]))],
+                        *[{"id": sid, "title": sid, "type": "page", "pattern": "P06", "req": ["C1"], "local": {"local!nodo": None},
+                           "interface": {"type": "a!headerContentLayout", "contents": [dict(GRAFO, selectionSaveInto=destino), ELEGIDO]}}
+                          for sid, destino in (("lista", ["local!nodo"]),
+                                               ("asave", {"type": "a!save", "target": "local!nodo", "value": "save!value"}))],
                         # de paso, visto en la rúbrica de P26: el pie del asistente va como en Appian, Atrás y luego los secundarios
                         {"id": "asis", "title": "Asistente", "type": "form", "pattern": "P04", "req": ["C1"],
                          "interface": {"type": "a!wizardLayout", "secondaryButtons": [{"type": "a!buttonWidget", "label": "Cancelar", "style": "LINK"}],
@@ -121,7 +125,7 @@ def main():
             if cab["numero"] != "any":
                 fallos.append(f"a!decimalField no es un campo numérico con decimales: {cab}")
             # PRECISE (aquí, por defecto) conserva las cifras; FLOATING guarda un número
-            for etiqueta, escrito in (("Grande", "9007199254740993"), ("Grande", "1e-400"), ("Km", "124.6")):
+            for etiqueta, escrito in (("Grande", "9007199254740993"), ("Grande", "1e-400"), ("Grande", "1.1e-323"), ("Km", "124.6")):
                 campo = pg.get_by_label(etiqueta, exact=True)
                 campo.fill(escrito)
                 campo.dispatch_event("change")
@@ -135,6 +139,16 @@ def main():
                 ancho = pg.evaluate("getComputedStyle(document.querySelector('.hcl-contents')).maxWidth")
                 if ancho != esperado:
                     fallos.append(f"cabecera «{sid}»: el contenido tiene max-width {ancho} (se esperaba {esperado})")
+            # selectionSaveInto como lista o como a!save: se guarda y sale marcado un solo nodo
+            for sid in ("lista", "asave"):
+                pg.evaluate(f"PROTO.show('{sid}', {{}})")
+                pg.wait_for_timeout(150)
+                pg.locator(".kg-n:not(.main)", has_text="Norte").first.click()
+                pg.wait_for_timeout(150)
+                sel = pg.evaluate("() => [...document.querySelectorAll('.kg-n:not(.main)')].map((e, i) => e.classList.contains('sel') ? i : -1).filter(i => i >= 0)")
+                guardado = pg.evaluate("() => [...document.querySelectorAll('.fld')].map(e => e.textContent).find(t => t.includes('Elegido'))") or ""
+                if sel != [0] or "Sede|Norte|7" not in guardado:
+                    fallos.append(f"selectionSaveInto «{sid}»: marcados {sel}, guardado «{guardado}» (se esperaba [0] y Sede|Norte|7)")
             pg.evaluate("PROTO.show('asis', {})")
             pg.wait_for_timeout(150)
             pg.locator(".form-btns .grp.pri button").first.click()
