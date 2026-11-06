@@ -33,6 +33,16 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 
 ## 2. Cuando se dé su condición
 
+- **Documentación del repositorio antes de integrar en `main` o publicar una versión.** Petición de Raúl, 5-nov:
+  incorporar al cierre existente una revisión en ambos momentos para que la documentación del propio plugin (no los DF
+  ni los técnicos de las aplicaciones) refleje lo que realmente hace. Dejar claro qué documentos y diagramas revisar
+  según los cambios: README, manual o guías de usuario, guías de instalación y contribución, instrucciones, referencias y flujos de las skills, plantillas y ejemplos, documentación
+  vigente de `docs/` y gráficos del repositorio. En los diagramas, revisar tanto la fuente editable como sus
+  imágenes o exportaciones y los documentos que los incorporan. Contrastar instrucciones, ejemplos, capacidades,
+  límites y enlaces con el código y las pruebas; actualizar lo afectado y resolver contradicciones antes de integrar
+  o publicar. Resultado esperado: quien consulte el repositorio entiende la versión real que recibe, sin confundir
+  propuestas pendientes ni resultados históricos con capacidades actuales. Aprovechar el flujo de cierre existente,
+  sin crear una lista paralela ni un informe por cada cambio. [repositorio · persona y sesión]
 - **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
   `pruebas/comprobar_anclas.py`, con red; la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
