@@ -411,7 +411,7 @@ Aplica la rúbrica en el paso 4 de SKILL.md, con pantallas nuevas o antes de ens
 3. Hay como máximo un botón SOLID, solo la pérdida real de datos va en GHOST rojo, siempre con confirmación, y los botones llevan verbos.
 4. Las cards de contenido son blancas y llevan borde o sombra según el fondo; no hay cards con borde anidadas.
 5. El color tiene significado: la paleta de estados es común, hay como máximo dos colores no neutros por grid y el acento solo aparece en enlaces.
-6. Los grids tienen ≤7 columnas y una acción por celda, ningún texto se parte en más de 2 líneas, las cifras van a la derecha, las celdas vacías llevan «–» y el primer campo enlaza a la ficha.
+6. Los grids tienen ≤7 columnas y una acción por celda, ningún texto se parte en más de 2 líneas, las cifras van a la derecha (en los editables, todo a la izquierda, §7), las celdas vacías llevan «–» y el primer campo enlaza a la ficha.
 7. Los filtros están en la barra del grid (≤4) o en una barra de página; no hay una card-formulario de filtros.
 8. La ficha tiene una cabecera con ≤3 acciones, una franja de datos clave y un hito; las áreas 1:N van en vistas, no en acordeones.
 9. Los datos de la ficha se leen como resumen: etiqueta encima y 2–3 columnas, sin columnas estrechas de valores.

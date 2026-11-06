@@ -561,7 +561,12 @@
     const precise = n.type === "a!decimalField" && up(P(n, "decimalType", ctx, "PRECISE")) !== "FLOATING";
     const commit = (e) => {
       let val = e.target.value;
-      if (type === "number") val = val === "" ? null : precise && val.replace(/[eE].*$/, "").replace(/\D/g, "").replace(/^0+/, "").length > 15 ? val.trim() : Number(val);
+      if (type === "number") {
+        const t = val.trim(), num = Number(t);
+        const pierde = t !== "" && (t.replace(/[eE].*$/, "").replace(/\D/g, "").replace(/^0+/, "").length > 15   // más cifras de las que guarda JS
+          || !isFinite(num) || (num === 0 && /[1-9]/.test(t.replace(/[eE].*$/, ""))));                            // desborda, o se queda en 0
+        val = t === "" ? null : precise && pierde ? t : num;
+      }
       if (val === "") val = null; saveInto(n, val, ctx); if (ref && !n.saveInto) writeRef(ref, val); schedule();
     };
     let ctl;
@@ -1823,12 +1828,13 @@
     const dk = darkProps(bg);
     // 26.10: contentsWidth limita solo el contenido, centrado (con un panel dentro, siempre FULL); footer, tarjetas o billboards
     // de borde a borde al final: abajo del todo si el contenido es corto, y debajo del contenido si hay que desplazarse
-    const cw = up(P(n, "contentsWidth", ctx, "FULL"));
+    // sin contentsWidth, la convención del kit (1440 px); declarado FULL, o con un panel dentro, todo el ancho
+    const cw = n.contentsWidth == null ? null : up(P(n, "contentsWidth", ctx, "FULL"));
     const pane = arr(n.contents).some((c) => c && c.type === "a!paneLayout");
     const ft = arr(n.footer).filter((x) => x && visible(x, ctx));
     return h("div", { class: "hcl " + (String(bg).startsWith("#") ? "" : "bg-" + up(bg)) + (dk ? dk.cls : "") + (ft.length ? " has-ft" : ""), style: Object.assign({ background: String(bg).startsWith("#") ? bg : null, color: dk ? "#fff" : null }, dk ? dk.vars : null) },
       n.header ? h("div", { class: "hcl-header" }, arr(n.header).map((x, i) => render(x, ctx, ctx.key + ".h" + i))) : null,
-      h("div", { class: "hcl-contents" + (cw !== "FULL" && !pane ? " w-" + cw : "") }, h("div", { class: "page-pad", style: { padding: { NONE: "0", EVEN_LESS: "4px", LESS: "8px 12px", MORE: "28px 32px 44px", EVEN_MORE: "40px 48px 56px" }[up(n.contentsPadding)] || null } }, stack(n.contents, ctx, ctx.key + ".c"))),
+      h("div", { class: "hcl-contents" + (cw == null ? "" : " w-" + (pane ? "FULL" : cw)) }, h("div", { class: "page-pad", style: { padding: { NONE: "0", EVEN_LESS: "4px", LESS: "8px 12px", MORE: "28px 32px 44px", EVEN_MORE: "40px 48px 56px" }[up(n.contentsPadding)] || null } }, stack(n.contents, ctx, ctx.key + ".c"))),
       ft.length ? h("div", { class: "hcl-footer" }, ft.map((x, i) => render(x, ctx, ctx.key + ".f" + i))) : null);
   };
   R["a!wizardLayout"] = (n, ctx) => {
@@ -1853,7 +1859,7 @@
     const nextB = !last ? h("button", { type: "button", class: "btn s-SOLID", style: { "--bc": brandPrimary(), "--bfg": solidFg(brandPrimary()) }, disabled: s && P(s, "disableNextButton", ctx, false), onclick: () => { if (inspector) return; if (!checkRequired(sctx.scope)) { invalid[sctx.scope] = true; rerender(); return; } delete invalid[sctx.scope]; UI[k] = cur + 1; rerender(); } }, T.next) : null;
     const lastCtx = Object.assign({}, ctx, { scope: sctx.scope });
     const footer = h("div", { class: "form-btns" + (P(n, "showButtonDivider", ctx, false) || ctx.inDialog ? " divider" : "") + (P(n, "isButtonFooterFixed", ctx, false) ? " fixed" : "") },
-      h("div", { class: "grp" }, arr(n.secondaryButtons).map((b, i) => render(b, lastCtx, ctx.key + ".sb" + i)), prevB),
+      h("div", { class: "grp" }, prevB, arr(n.secondaryButtons).map((b, i) => render(b, lastCtx, ctx.key + ".sb" + i))),  // como Appian: Atrás y, a su lado, los secundarios
       h("div", { class: "grp pri" }, nextB, last ? arr(n.primaryButtons).map((b, i) => render(b, lastCtx, ctx.key + ".pb" + i)) : null));
     ctx.__wizFooter = footer;
     const tb = n.titleBar;

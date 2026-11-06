@@ -6,7 +6,8 @@ prototipo que declara 26.9 no pueda usarlo.
   con el recordIdentifier de la raíz y sin marcar dos nodos que se llaman igual; el nodo guardado sale marcado
   también sin pulsarlo (el estado de una captura).
 - a!agentChatField: con showReasoning false, la acción se ve mientras se hace y desaparece al terminar; por defecto, se queda.
-- a!headerContentLayout: contentsWidth limita el contenido y el footer queda abajo si el contenido es corto.
+- a!headerContentLayout: contentsWidth limita el contenido (FULL declarado, o con un panel dentro, sin límite; sin declarar, la
+  convención del kit de 1440 px) y el footer queda abajo si el contenido es corto.
 """
 import json
 import os
@@ -62,7 +63,19 @@ def spec(version):
                         {"id": "r", "title": "R", "type": "page", "pattern": "P06", "req": ["C1"],
                          "local": {"local!nodo": {"recordTypeReference": "recordType!Sede", "recordTypePluralName": "Sede",
                                                   "recordTitle": "Norte", "recordIdentifier": 8}},
-                         "interface": {"type": "a!headerContentLayout", "contents": [GRAFO]}}]}
+                         "interface": {"type": "a!headerContentLayout", "contents": [GRAFO]}},
+                        *[{"id": sid, "title": sid.upper(), "type": "page", "pattern": "P06", "req": ["C1"],
+                           "interface": dict({"type": "a!headerContentLayout", "contents": contenido}, **ancho)}
+                          for sid, ancho, contenido in (
+                              ("full", {"contentsWidth": "FULL"}, [ELEGIDO]),
+                              ("sin", {}, [ELEGIDO]),
+                              ("panel", {"contentsWidth": "NARROW"}, [{"type": "a!paneLayout", "panes": [
+                                  {"type": "a!pane", "contents": [ELEGIDO]}, {"type": "a!pane", "contents": [ELEGIDO]}]}]))],
+                        # de paso, visto en la rúbrica de P26: el pie del asistente va como en Appian, Atrás y luego los secundarios
+                        {"id": "asis", "title": "Asistente", "type": "form", "pattern": "P04", "req": ["C1"],
+                         "interface": {"type": "a!wizardLayout", "secondaryButtons": [{"type": "a!buttonWidget", "label": "Cancelar", "style": "LINK"}],
+                                       "steps": [{"type": "a!wizardStep", "label": "Uno", "contents": [ELEGIDO]},
+                                                 {"type": "a!wizardStep", "label": "Dos", "contents": [ELEGIDO]}]}}]}
 
 
 def main():
@@ -108,7 +121,7 @@ def main():
             if cab["numero"] != "any":
                 fallos.append(f"a!decimalField no es un campo numérico con decimales: {cab}")
             # PRECISE (aquí, por defecto) conserva las cifras; FLOATING guarda un número
-            for etiqueta, escrito in (("Grande", "9007199254740993"), ("Km", "124.6")):
+            for etiqueta, escrito in (("Grande", "9007199254740993"), ("Grande", "1e-400"), ("Km", "124.6")):
                 campo = pg.get_by_label(etiqueta, exact=True)
                 campo.fill(escrito)
                 campo.dispatch_event("change")
@@ -116,6 +129,19 @@ def main():
                 visto = pg.get_by_label(etiqueta, exact=True).input_value()
                 if visto != escrito:
                     fallos.append(f"a!decimalField «{etiqueta}»: se escribió {escrito} y muestra {visto}")
+            for sid, esperado in (("full", "none"), ("sin", "1440px"), ("panel", "none")):
+                pg.evaluate(f"PROTO.show('{sid}', {{}})")
+                pg.wait_for_timeout(150)
+                ancho = pg.evaluate("getComputedStyle(document.querySelector('.hcl-contents')).maxWidth")
+                if ancho != esperado:
+                    fallos.append(f"cabecera «{sid}»: el contenido tiene max-width {ancho} (se esperaba {esperado})")
+            pg.evaluate("PROTO.show('asis', {})")
+            pg.wait_for_timeout(150)
+            pg.locator(".form-btns .grp.pri button").first.click()
+            pg.wait_for_timeout(150)
+            izquierda = pg.evaluate("() => [...document.querySelectorAll('.form-btns .grp:not(.pri) button')].map(b => b.textContent.trim())")
+            if [t.lower() for t in izquierda[:2]] != ["anterior", "cancelar"]:
+                fallos.append(f"pie del asistente: a la izquierda {izquierda} (Appian pone Atrás y luego los secundarios)")
             pg.evaluate("PROTO.show('q', {})")
             pg.wait_for_timeout(200)
             # etiqueta LARGE con borde por dentro e icono al final
