@@ -7,7 +7,7 @@ lista no autoriza publicar, desplegar, enviar ni borrar.
 Cada pendiente explica el problema, qué hay que hacer y el resultado esperado, conservando los acuerdos de la
 conversación. Si el detalle ya está bien explicado en otro documento, se enlaza desde el punto en lugar de repetirlo.
 
-**Ahora:** rama `claude/pruebas-metodo-20261104`, subida sin PR. La campaña «el método de punta a punta» (4 y 5 de nov., por decisión de Raúl) recorrió con un proyecto ficticio F1, F2, F4, F8 y F9 en una aplicación de prueba de Indra-spain, más E9 (entradas) y E10 (¿sirve sin IA?): EV-01 y EV-02 construidas, su QA en verde (23 de 23 y 1 de 1) y el borrador del paquete, sin exportar ni desplegar (`evaluaciones.md`, «El método de punta a punta»). Hechas el 6-nov, por decisión de Raúl, la nota del DF, la reaprobación «sin efecto» y el registro de QA a mano, y, sin decisiones suyas, lo nuevo de Appian 26.10 en los prototipos, P26 (el agente elige bien los componentes, 14 de 14 en las dos versiones) y el QA a mano leyendo la rama y con el plugin cargado (`evaluaciones.md`). Queda de Raúl ver lo creado en Indra-spain antes de borrarlo (§1); en §2, si los topes de «sin efecto» son demasiado gruesos, la regresión en un evolutivo y la rúbrica UX de los prototipos. F5 a F7 siguen en §3.
+**Ahora:** rama `claude/pruebas-metodo-20261104`, subida sin PR. La campaña «el método de punta a punta» (4 y 5 de nov., por decisión de Raúl) recorrió con un proyecto ficticio F1, F2, F4, F8 y F9 en una aplicación de prueba de Indra-spain, más E9 (entradas) y E10 (¿sirve sin IA?): EV-01 y EV-02 construidas, su QA en verde (23 de 23 y 1 de 1) y el borrador del paquete, sin exportar ni desplegar (`evaluaciones.md`, «El método de punta a punta»). Hechas el 6-nov, por decisión de Raúl, la nota del DF, la reaprobación «sin efecto» y el registro de QA a mano, y, sin decisiones suyas, lo nuevo de Appian 26.10 en los prototipos, P26 (el agente elige bien los componentes, 14 de 14 en las dos versiones) el QA a mano leyendo la rama y con el plugin cargado, y F6 en solo lectura sobre la aplicación FOR, que destapó dos fallos del extractor ya corregidos (`evaluaciones.md`). Queda de Raúl ver lo creado en Indra-spain antes de borrarlo (§1); en §2, si los topes de «sin efecto» son demasiado gruesos, la regresión en un evolutivo y la rúbrica UX de los prototipos. F5 a F7 siguen en §3.
 
 ## 1. Del trabajo anterior
 
@@ -203,7 +203,12 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   verificar cada origen y qué queda sin comprobar. Comprobar la conservación
   del comportamiento y la documentación resultante, y corregir los márgenes de mejora encontrados. Usar como casos de
   evaluación los ocho de `aplazados-codex-20261019/mnt-evaluacion-ciega/revision-ciega.md` (recordatorio repetido entre
-  ejecuciones, selector con límite o inactivos, usuario fijo…): el puntuador de entonces no los veía.
+  ejecuciones, selector con límite o inactivos, usuario fijo…): el puntuador de entonces no los veía. Hecho el 6-nov el
+  primer paso, F6 en solo lectura sobre la aplicación de prueba FOR (`evaluaciones.md`). Quedan de él, menores: el
+  comprobador confunde la aplicación con el site homónimo al resolver una evidencia; el inventario corta la
+  descripción a 100 caracteres en mitad de una palabra; `comprobar_asis` toma por objeto inexistente un patrón como
+  `FOR_ESTADO_*`; los subagentes de la skill no tenían el Docs MCP, solo la web, donde las URL `/latest/` dan 404; y
+  `preflight.json` se rompe si el agente lo reescribe sin UTF-8 en Windows. Para la propia campaña, no para F6.
 - **Agentes y skills, por separado y juntos.** Evaluar qué recibe, decide y entrega cada uno; después, comprobar sus
   relaciones y traspasos dentro del flujo completo, su calidad, fricción y coste. Repetir los casos afectados tras
   las correcciones y recoger las conclusiones en este seguimiento y en `evaluaciones.md`. Caso para `pdf-publisher`:
