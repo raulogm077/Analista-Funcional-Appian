@@ -252,6 +252,23 @@ def test_hallazgo_que_no_existe(tmp_path):
     assert len(errores) == 1 and "04-seguridad-grupos.md:3" in errores[0] and "H-SEG-09" in errores[0], errores
 
 
+def test_homonimos_y_patrones(tmp_path):
+    """Dos objetos con el mismo nombre (la aplicación y su site) tienen cada uno su ficha, y la evidencia de cualquiera
+    de los dos vale; un patrón con asterisco («DEM_ESTADO_*») no es un nombre inventado (F6, 6-nov)."""
+    texto = ("# Arquitectura\n\n| Objeto | Certeza | Evidencia |\n|---|---|---|\n"
+             "| `DEM Solicitud` | ✅ | [`mcp:recordType/DEM Solicitud#fields`](./anexo/recordType/DEM_Solicitud.md) |\n"
+             "| `DEM Solicitud` | ✅ | [`mcp:site/DEM Solicitud#pages`](./anexo/site/DEM_Solicitud.md) |\n\n"
+             "Los estados son las constantes `DEM_ESTADO_*`, y DEM_ESTADO_* en el texto.\n")
+    salida = as_is(tmp_path, {"02-arquitectura.md": texto, "anexo/site/DEM_Solicitud.md": "# DEM Solicitud (site)\n"})
+    inv = salida / "datos" / "inventario.json"
+    datos = json.loads(inv.read_text(encoding="utf-8"))
+    datos["objetos"].append({"nombre": "DEM Solicitud", "tipo": "site", "uuid": "u-s", "anexo": "anexo/site/DEM_Solicitud.md",
+                             "tambien": []})
+    inv.write_text(json.dumps(datos, ensure_ascii=False), encoding="utf-8")
+    errores, _ = comprueba(salida)
+    assert errores == [], errores
+
+
 def test_sin_prefijo_avisa(tmp_path):
     """Sin prefijo en la aplicación, los nombres citados no se pueden comprobar: un aviso lo dice."""
     salida = as_is(tmp_path, {"02-arquitectura.md": "# Arquitectura\n\nLa regla `XYZ_Inventada` calcula el plazo.\n"})

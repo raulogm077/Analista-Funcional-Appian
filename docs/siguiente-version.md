@@ -204,11 +204,9 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   del comportamiento y la documentación resultante, y corregir los márgenes de mejora encontrados. Usar como casos de
   evaluación los ocho de `aplazados-codex-20261019/mnt-evaluacion-ciega/revision-ciega.md` (recordatorio repetido entre
   ejecuciones, selector con límite o inactivos, usuario fijo…): el puntuador de entonces no los veía. Hecho el 6-nov el
-  primer paso, F6 en solo lectura sobre la aplicación de prueba FOR (`evaluaciones.md`). Quedan de él, menores: el
-  comprobador confunde la aplicación con el site homónimo al resolver una evidencia; el inventario corta la
-  descripción a 100 caracteres en mitad de una palabra; `comprobar_asis` toma por objeto inexistente un patrón como
-  `FOR_ESTADO_*`; los subagentes de la skill no tenían el Docs MCP, solo la web, donde las URL `/latest/` dan 404; y
-  `preflight.json` se rompe si el agente lo reescribe sin UTF-8 en Windows. Para la propia campaña, no para F6.
+  primer paso, F6 en solo lectura sobre la aplicación de prueba FOR (`evaluaciones.md`). Quedan de él, menores: los
+  subagentes de la skill no tenían el Docs MCP, solo la web, donde las URL `/latest/` dan 404; y `preflight.json` se
+  rompe si el agente lo reescribe sin UTF-8 en Windows. Para la propia campaña, no para F6.
 - **Agentes y skills, por separado y juntos.** Evaluar qué recibe, decide y entrega cada uno; después, comprobar sus
   relaciones y traspasos dentro del flujo completo, su calidad, fricción y coste. Repetir los casos afectados tras
   las correcciones y recoger las conclusiones en este seguimiento y en `evaluaciones.md`. Caso para `pdf-publisher`:
