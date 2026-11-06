@@ -3,7 +3,8 @@ prototipo que declara 26.9 no pueda usarlo.
 
 - a!decimalField, que con PRECISE (también por defecto) no pierde cifras; a!tagField LARGE; a!tagItem con borde, icono al final y fondo TRANSPARENT.
 - a!recordKnowledgeGraph: enableLevelSlider empieza en el nivel 1 y abre el 2; selectionSaveInto guarda el registro pulsado,
-  con el recordIdentifier de la raíz y sin marcar dos nodos que se llaman igual.
+  con el recordIdentifier de la raíz y sin marcar dos nodos que se llaman igual; el nodo guardado sale marcado
+  también sin pulsarlo (el estado de una captura).
 - a!agentChatField: con showReasoning false, la acción se ve mientras se hace y desaparece al terminar; por defecto, se queda.
 - a!headerContentLayout: contentsWidth limita el contenido y el footer queda abajo si el contenido es corto.
 """
@@ -57,7 +58,11 @@ def spec(version):
                         {"id": "q", "title": "Q", "type": "page", "pattern": "P06", "req": ["C1"],
                          "local": {"local!nodo": None},
                          "interface": {"type": "a!headerContentLayout",
-                                       "contents": [TAGS, GRAFO, ELEGIDO, chat(False), chat(None)]}}]}
+                                       "contents": [TAGS, GRAFO, ELEGIDO, chat(False), chat(None)]}},
+                        {"id": "r", "title": "R", "type": "page", "pattern": "P06", "req": ["C1"],
+                         "local": {"local!nodo": {"recordTypeReference": "recordType!Sede", "recordTypePluralName": "Sede",
+                                                  "recordTitle": "Norte", "recordIdentifier": 8}},
+                         "interface": {"type": "a!headerContentLayout", "contents": [GRAFO]}}]}
 
 
 def main():
@@ -139,6 +144,14 @@ def main():
             pg.wait_for_timeout(200)
             if "Caso|C-1|1" not in elegido():
                 fallos.append(f"selectionSaveInto en la raíz sin $root.id: no guarda su recordIdentifier: «{elegido()}»")
+            # estado guardado sin pulsar (como en una captura): solo el nodo con ese id sale marcado
+            pg.evaluate("PROTO.show('r', {})")
+            pg.wait_for_timeout(200)
+            sel = pg.evaluate("() => [...document.querySelectorAll('.kg-n:not(.main)')].map((e, i) => e.classList.contains('sel') ? i : -1).filter(i => i >= 0)")
+            if sel != [1]:
+                fallos.append(f"selectionSaveInto: con Sede Norte id 8 guardado, salen marcados los nodos {sel} (se esperaba [1])")
+            pg.evaluate("PROTO.show('q', {})")
+            pg.wait_for_timeout(200)
             # chat: con showReasoning false la acción desaparece al terminar; por defecto se queda
             for i, queda in ((0, False), (1, True)):
                 caso = f"showReasoning {'por defecto' if queda else 'false'}"

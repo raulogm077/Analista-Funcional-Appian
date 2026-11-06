@@ -1541,8 +1541,15 @@
       saveInto(n, { recordTypeReference: "recordType!" + x.recordType, recordTypePluralName: x.recordType, recordTitle: x.name, recordIdentifier: x.id != null ? x.id : x.name }, ctx, "selectionSaveInto");
       schedule();
     };
-    const nodeEl = (x, p, main) => h("div", { class: "kg-n" + (main ? " main" : "") + (pick ? " pick" : "") + (pick && UI[kSel] === x.key ? " sel" : ""), style: { left: p.x + "%", top: p.y + "%" }, title: `${x.recordType}: ${x.name}`, tabindex: "0",
-      role: pick ? "button" : null, "aria-pressed": pick ? String(UI[kSel] === x.key) : null,
+    // marcado: el registro guardado en la variable de selectionSaveInto (también el que trae un estado de captura);
+    // entre dos iguales, el que se pulsó
+    const savedRef = typeof n.selectionSaveInto === "string" ? refOf({ x: n.selectionSaveInto }, "x", ctx) : null;
+    const saved = savedRef ? readRef(savedRef) : null;
+    const same = (x) => !!saved && typeof saved === "object" && saved.recordTitle === x.name && (saved.recordTypePluralName == null || saved.recordTypePluralName === x.recordType)
+      && (saved.recordIdentifier == null || String(saved.recordIdentifier) === String(x.id != null ? x.id : x.name));
+    const isSel = (x) => pick && same(x) && (UI[kSel] == null || UI[kSel] === x.key);
+    const nodeEl = (x, p, main) => h("div", { class: "kg-n" + (main ? " main" : "") + (pick ? " pick" : "") + (isSel(x) ? " sel" : ""), style: { left: p.x + "%", top: p.y + "%" }, title: `${x.recordType}: ${x.name}`, tabindex: "0",
+      role: pick ? "button" : null, "aria-pressed": pick ? String(isSel(x)) : null,
       onclick: pick ? () => choose(x) : null, onkeydown: pick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(x); } } : null },
       h("span", { class: "kg-i" }, icon(x.icon)), h("span", { class: "kg-t" }, h("span", { class: "kg-rt" }, x.recordType), h("span", { class: "kg-nm" }, x.name)));
     const es = LANG === "es";
