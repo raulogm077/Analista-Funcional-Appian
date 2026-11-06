@@ -1054,9 +1054,41 @@ def criterios_sin_gherkin(m, ant, nuevas, modif):
             and not mo.pasos_gherkin(m.criterio(i))]
 
 
-def comprobar_requiere(base, puntos):
+RX_SIN_EFECTO = re.compile(r"Efecto:\s*sin cambio de alcance, esfuerzo ni riesgo", re.I)   # cambios.md §1
+
+
+def exencion(m, ruta_imp, t):
+    """La función que dice si un punto del informe es un retoque «sin efecto» (cambios.md §1), con la misma
+    elegibilidad que la regeneración de las issues (unidades.Contexto.sin_efecto): lo declara la cabecera de este
+    informe, que es el de impacto/ del proyecto (no un homónimo de otra carpeta), y todas las unidades de ese punto (su
+    columna «Cambio» o, sin ella, las del informe) están Aprobadas y lo aceptan sin topes. Sin unidades, ningún punto."""
+    ninguno = lambda p: False
+    if not RX_SIN_EFECTO.search("\n".join(t.splitlines()[:5])):
+        return ninguno
+    canon = pathlib.Path(m.raiz) / "impacto" / f"{pathlib.Path(ruta_imp).stem}.md"
+    try:
+        if not canon.is_file() or canon.resolve() != pathlib.Path(ruta_imp).resolve():
+            return ninguno
+    except OSError:
+        return ninguno
+    import unidades as un
+    ctx = un.Contexto(m)
+    if not ctx.hay:
+        return ninguno
+    nombre = canon.stem
+    del_informe = [u.id for u in ctx.unidades if nombre in ctx.informes_de(u.id)]
+
+    def exento(p):
+        us = un.RX_UNIDAD.findall(p.get("cambio", "")) if "cambio" in p else del_informe
+        return bool(us) and all(u in ctx.por_id and ctx.por_id[u].estado == un.APROBADA
+                                and ctx.sin_efecto(nombre, u) == (True, []) for u in us)
+    return exento
+
+
+def comprobar_requiere(base, puntos, exento=lambda p: False):
     """«Requiere» de cada punto: «—» o «Sí (motivo)»; y «Sí» si el punto CAMBIA o ANULA una pieza 🔒 de «Encaja en»
-    (🔒 en base: el análisis antes de aplicar el informe)."""
+    (🔒 en base: el análisis antes de aplicar el informe), salvo en un punto exento, «sin efecto» (exencion()): ese
+    retoque se aplica y la pieza vuelve a la próxima validación del cliente (comprobar_impacto lo comprueba)."""
     formato, sin_si = [], []
     for f in puntos:
         col = next((k for k in f if k.startswith("requiere")), None)
@@ -1066,7 +1098,7 @@ def comprobar_requiere(base, puntos):
         si = re.match(r"si(?!\w)", mo.normaliza(req).strip(" *")) is not None
         if not si and req not in ("—", "-"):
             formato.append(f"punto {f.get('#', '?')} «{req}»")
-        if not si and mo.normaliza(f.get("tipo", "")).strip(" *").startswith(("cambia", "anula")):
+        if not si and not exento(f) and mo.normaliza(f.get("tipo", "")).strip(" *").startswith(("cambia", "anula")):
             validadas = sorted(x for x in mo.ids_en(f.get("encaja en", "")) if x in base.piezas
                                and "🔒" in (base.piezas[x].estado, base.piezas[base.raiz_de(x)].estado))
             if validadas:
@@ -1077,7 +1109,7 @@ def comprobar_requiere(base, puntos):
 
 def comprobar_informe_previo(m, ruta_imp, carpeta_fuentes):
     t, puntos, revision = mo.lee_informe(ruta_imp)
-    comprobar_requiere(m, puntos)
+    comprobar_requiere(m, puntos, exencion(m, ruta_imp, t))
     en_revision = {m.raiz_de(x) for f in revision for x in mo.ids_en(f.get("pieza", ""))}
     faltan = set()
     for f in puntos:
@@ -1143,7 +1175,8 @@ def comprobar_sin_cambios(m, ruta_imp):
 
 def comprobar_impacto(m, ant, ruta_imp, cambios):
     t, puntos, revision = mo.lee_informe(ruta_imp)
-    comprobar_requiere(ant, puntos)
+    exento = exencion(m, ruta_imp, t)
+    comprobar_requiere(ant, puntos, exento)
     revisar, resueltos, sin_cambios = set(), set(), set()
     for f in puntos:
         if "✗" not in f.get("decision", ""):
@@ -1183,6 +1216,17 @@ def comprobar_impacto(m, ant, ruta_imp, cambios):
     tocadas = [i for i in m.piezas if i in ant.piezas and ant.piezas[i].estado == "🔒" and
                (m.piezas[i].estado != "🔒" or sin_coment(m.texto(i)) != sin_coment(ant.texto(i)))]
     informe("lo 🔒 que cambia pasó por un punto aprobado (✔)", sorted(i for i in tocadas if m.raiz_de(i) not in aprobado))
+    exentos = [f for f in puntos if "✗" not in f.get("decision", "") and exento(f)]
+    if exentos:
+        # un retoque «sin efecto» sobre algo 🔒 no espera al cliente: la pieza deja de estar validada y vuelve a su
+        # próxima validación (F2). Si el cambio lo pidió o aprobó el propio cliente («Requiere: Sí», ✔), sigue 🔒
+        piezas = lambda fs: {m.raiz_de(x) for f in fs for col in ("encaja en", "cambio propuesto")
+                             for x in mo.ids_en(f.get(col, ""))}
+        del_cliente = piezas(f for f in exentos if "✔" in f.get("decision", "") and re.match(
+            r"si(?!\w)", mo.normaliza(mo.sin_comentarios(next((f[k] for k in f if k.startswith("requiere")), ""))).strip(" *")))
+        suyas = piezas(exentos) - del_cliente
+        informe("con «sin efecto», lo 🔒 que cambia sin aprobación del cliente vuelve a su próxima validación (✅, no 🔒)",
+                sorted(i for i in tocadas if m.piezas[i].estado == "🔒" and m.raiz_de(i) in suyas))
 
 
 def main():

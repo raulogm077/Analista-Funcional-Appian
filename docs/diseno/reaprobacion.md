@@ -99,8 +99,8 @@ Al repasar los ejemplos sale que «reaprobar» mezcla tres cosas que no son lo m
 
 La opción 2, tal como estaba arriba, mezcla la 1 y la 2: una errata en una pieza 🔒 bloquea a la espera del JP, cuando
 lo que hace falta es que la vea el cliente. Y el momento importa: con la unidad Abierta todo entra antes de aprobar;
-con la unidad Construida, cualquier cambio en Appian es otra unidad (F3 o F4) con su aprobación. La reaprobación solo
-existe mientras la unidad está Aprobada y se construye.
+con la unidad Construida, cualquier cambio en Appian es otra unidad (F3 o F4) con su aprobación. Aun así, hoy la
+reaprobación salta también con la unidad Construida (E7: `issues.calcula` admite Construida y llama a `crecida`).
 
 ### Los ejemplos
 
@@ -115,7 +115,7 @@ lo que haría la propuesta revisada de abajo.
 | 4 | Cambiar el color de un botón | No (salvo marca validada) | No | Reaprueba | La IA lo valida |
 | 5 | Mover un componente en una interfaz | Solo si el prototipo estaba validado | No | Reaprueba | Como la fila 1 |
 | 6a | Un campo nuevo que el negocio ve o rellena | Sí | Sí: alcance | Reaprueba | Reaprueba y el cliente lo revalida |
-| 6b | Un campo técnico (auditoría, una clave) antes del primer pase | No | No | Reaprueba | La IA lo valida; va en el script de base de datos del pase como el resto |
+| 6b | Un campo técnico (auditoría, una clave) antes del primer pase | No | Sí, por el tope de técnico §3 | Reaprueba | Va al JP por el tope de técnico §3, aunque sea pequeño (los topes son gruesos a propósito) |
 | 6c | Un campo en una tabla que ya tiene datos en producción | No | Sí: datos y despliegue | Es otra unidad (lo construido ya pasó) | Otra unidad, con su aprobación |
 | 7a | Una función nueva que saca lógica que ya existe (refactor) | No | No | Reaprueba | La IA lo valida, con la regresión de lo que la usa |
 | 7b | Una función nueva que añade una regla de negocio | Sí | Sí: alcance | Reaprueba | Reaprueba y el cliente lo revalida |
@@ -123,18 +123,18 @@ lo que haría la propuesta revisada de abajo.
 | 9 | Un parámetro nuevo en una función, mismo comportamiento | No | No | Reaprueba | La IA lo valida, con la regresión de lo que la usa |
 | 10 | Una notificación nueva en un punto del proceso | Sí | Sí: alcance (y destinatarios con datos personales) | Reaprueba | Reaprueba y el cliente lo revalida |
 | 11a | Una validación que el funcional ya pedía y faltaba en el técnico | No | No | Reaprueba | La IA lo valida: es construir lo acordado |
-| 11b | Una validación nueva que no estaba acordada | Sí | Solo si cambia el esfuerzo | Reaprueba | El cliente la revalida; el JP solo si cambia el esfuerzo |
-| 12 | Cambiar el valor de una regla (el límite de 3.000 € a 2.500 €) | Sí | No: no cambia el esfuerzo | Reaprueba | El cliente lo revalida; sin JP |
+| 11b | Una validación nueva que no estaba acordada | Sí | Sí: cambia lo acordado | Reaprueba | No es «sin efecto»: JP y cliente |
+| 12 | Cambiar el valor de una regla (el límite de 3.000 € a 2.500 €) | Sí | Sí: cambia lo acordado, aunque no cueste más | Reaprueba | No es «sin efecto»: JP y cliente |
 | 13 | Cambiar quién puede hacer una acción | Sí | Sí: seguridad | Reaprueba | Reaprueba y el cliente lo revalida |
 | 14 | El cliente confirma un supuesto con el que ya se construye | Ya lo hizo | No | Reaprueba | Pasa: el supuesto queda como hecho |
-| 15 | El cliente contradice un supuesto | Sí | Si cambia el esfuerzo | Reaprueba | Como la 11b o la 7b, según lo que cambie |
+| 15 | El cliente contradice un supuesto | Sí | Sí: cambia lo acordado | Reaprueba | No es «sin efecto»: JP y cliente |
 | 16 | Errata en el documento, sin cambio en la aplicación | No | No | Reaprueba | La IA lo valida |
-| 17 | Ajuste técnico que el funcional ya pedía (la vista de consulta, DT-11) | No | No | Hoy se esquiva sin `Cambio:` y luego cuenta para otra unidad (E7) | La IA lo valida y queda en su unidad |
+| 17 | Ajuste técnico que el funcional ya pedía (la vista de consulta, DT-11) | No | No | Hoy se esquiva sin `Cambio:` y luego cuenta para otra unidad (E7) | La IA lo valida y queda en su unidad, si no toca técnico §3, §4 o §10; FU-18 tocaba §4 y va al JP por el tope |
 | 18a | Cuentas de prueba (FU-10) | No | No | Pasó sin `Cambio:` | La IA lo valida |
 | 18b | Origen de datos de desarrollo (FU-11) | No | Solo si cambia el esfuerzo de forma apreciable | Reaprueba | Lo decide el umbral de esfuerzo |
 | 19 | Algo que el Dev MCP no puede hacer y lo hace una persona: más esfuerzo, mismo funcional | No | Sí, si pasa del umbral | No lo ve nadie | Lo decide el umbral de esfuerzo |
 | 20 | Quitar una funcionalidad | Sí | Sí: alcance | Reaprueba | Reaprueba y el cliente lo revalida |
-| 21 | Rendimiento: un índice, la sincronización | No | No, salvo esfuerzo | Reaprueba | La IA lo valida |
+| 21 | Rendimiento: un índice equivalente | No | No, salvo esfuerzo | Reaprueba | La IA lo valida si no toca técnico §3; una sincronización que cambia qué datos se ven y cuándo es de riesgo: JP |
 | 22 | Un defecto que encuentra el QA antes de cerrar la unidad | No: no cambia lo acordado | No | No pide nada (F8: se arregla en la aplicación) | Igual |
 | 23 | Corregir el técnico tras construir, sin tocar Appian (E7) | No | No | Caduca las verificaciones de issues hechas | No debería caducarlas: ver «Después de construir» |
 
@@ -186,3 +186,34 @@ cuantas pruebas por cada tope. Sin IA en los scripts.
 4. **El umbral de esfuerzo.** Propuesto: una issue más o media jornada. Otro número vale; lo que hace falta es uno.
 5. **Después de construir**: que una corrección de redacción no caduque verificaciones ni QA.
 6. **No cambiar nada por ahora**, sabiendo que la mitad de los ejemplos seguirán pidiendo un «de acuerdo» del JP.
+
+## Lo que se aplicó (6-nov)
+
+Raúl eligió aplicar la propuesta revisada, el umbral de «una issue nueva o más de una jornada» y que una sesión
+desatendida declare «sin efecto» en los tipos de la lista. Implementado en `unidades.py` (`sin_efecto`, `crecida`,
+`validados_ia`), `issues.py` (unidad Construida) y `proyecto.py estado` (la línea del JP), descrito en `cambios.md` §1
+«Sin efecto», con `pruebas/appian-functional-analyst/test_sin_efecto.py`.
+
+Ajustes tras la revisión de Codex, aceptados: cambiar una regla acordada o lo que usan otros no es «sin efecto» aunque
+no cueste más (filas 11b, 12 y 15); los topes leen también «T §n» y «Encaja en», no cuentan puntos descartados y, con
+columna «Cambio», solo los de la unidad; con la unidad Construida, un fallo de QA conocido sigue contando aunque cambie
+la versión; y, con la unidad Construida, la verificación anterior solo sigue valiendo si lo único que cambió es §12 o
+§15 del técnico (abajo): lo pedía Codex y lo exigían las pruebas que ya había (`test_secuenciacion.py`).
+
+**Lo que dio el caso real.** Con los dos ajustes de la campaña (FU-17 y FU-18, de E5 y E8) marcados «sin efecto», los
+topes los mandan al JP: FU-17 toca técnico §3 y §4 y una DT de datos; FU-18, técnico §4. Es el lado seguro, pero en esta
+campaña la regla no habría quitado esas dos aprobaciones. Si resulta demasiado grueso, la alternativa es que citar esas
+secciones sea un aviso en la línea del JP en vez de un tope: decide Raúl con más casos.
+
+**Las piezas validadas (🔒).** Aplicado como se aprobó, tras corregir un primer intento que lo dejaba como estaba (lo
+señaló Codex: la protección anterior era lo que había que alinear). Un retoque «sin efecto» sobre algo 🔒 no espera al
+cliente: se aplica, la pieza pasa a ✅ y vuelve a la próxima validación del cliente; `comprobar.py` ya no pide
+«Requiere: Sí (🔒)» en un informe «sin efecto» y comprueba que la pieza deje de estar 🔒 (`actualizacion.md` §3.4 y §5).
+Si el cambio lo pidió o aprobó el propio cliente («Requiere: Sí (🔒)», ✔), sigue 🔒 y no pasa además por el JP: era
+una doble aprobación. Un cambio de alcance, de seguridad o de datos sigue pidiendo decisión.
+
+**Con la unidad Construida, acotado.** La primera versión aceptaba la verificación anterior ante cualquier cambio del
+texto del técnico; Codex demostró, con el técnico real del proyecto de formación, que una instrucción de §7 («el filtro
+se vincula a fechaFin») pasaba por redacción. Ahora solo quedan fuera de la huella de estructura lo que el técnico dice
+en §12 (operación) y §15 (pendientes): una nota allí no caduca la verificación; cualquier otra línea, sí
+(`test_sin_efecto.py`, la pareja con contenido real).

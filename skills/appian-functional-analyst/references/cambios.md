@@ -30,7 +30,31 @@ a tabla de objetos con «Cambio» y «Para» (`tecnico-plantilla.md` §13). Cada
 **Aprobar guarda con qué se aprueba** (la versión y sus informes, en la celda de su ID). Una fuente nueva para una
 unidad Aprobada (otro informe con su `Cambio:`, o un punto «Pendiente») la devuelve a aprobación: `issues` y
 `construida` fallan con «ha crecido desde que se aprobó» hasta que se vuelve a aprobar con `--fuente`. Si no conviene,
-lo nuevo va en otra unidad. Si comparte una pieza aún sin construir, se secuencia: la segunda queda **Abierta** y
+lo nuevo va en otra unidad.
+
+**Sin efecto.** Un informe que no cambia el alcance, el esfuerzo ni el riesgo lleva en la cabecera
+`Efecto: sin cambio de alcance, esfuerzo ni riesgo`, y lo valida la IA: no la devuelve a aprobación, queda en su
+unidad y `proyecto.py estado` lo enseña al JP («validados por la IA desde su aprobación»), sin nada que cerrar. Son
+sin efecto un texto o un label, un color, la posición de un componente, una errata, un refactor que no cambia el
+comportamiento, un supuesto que el cliente confirma, una validación que el funcional ya pedía o un ajuste técnico que
+el funcional ya pedía. No lo son, y van al JP como siempre, lo nuevo o lo que se quita, una regla, aviso, campo o
+integración nuevos, cambiar una regla acordada (aunque no cueste más), quién ve o hace qué, lo que usan otros (un
+parámetro obligatorio, un contrato), los datos y su estructura, y el esfuerzo que añade una issue nueva o más de una
+jornada. El script lo comprueba: no acepta «sin efecto» si el informe tiene un punto de alcance, que requiera
+aprobación (salvo «Sí (🔒)» ya aprobada por el cliente: otra razón aprobada sigue yendo al JP) o «Pendiente» (los descartados no cuentan y, con columna «Cambio», solo los de la unidad), ni si toca
+técnico §3, §4 o §10 («técnico §4» o «T §4») o cita, también en «Encaja en», una DT de datos, seguridad o integración,
+o una INT. Esos topes son gruesos a propósito: un ajuste pequeño que toque esas secciones va al JP. Si el retoque toca
+una pieza 🔒, no espera al cliente: se aplica, la pieza pasa a ✅ y vuelve a su próxima validación (F2), y `comprobar.py`
+lo comprueba; si lo pidió o aprobó el propio cliente («Requiere: Sí (🔒)», ✔), sigue 🔒 y tampoco pasa por el JP. Una
+sesión desatendida puede declararlo en esos tipos; si duda, para.
+
+Con la unidad **Construida**, lo construido solo cambia con otra unidad. Si después solo cambia lo que el técnico dice
+en §12 (operación) o §15 (pendientes), sus issues siguen hechas, con el aviso de que se verificaron con su versión
+anterior; cualquier otro cambio (un requisito, un escenario, otra parte del técnico, una fila de §13, lo que se espera
+de un objeto, una urgencia o un caso exigido) caduca su verificación como siempre. Un fallo de QA conocido sigue
+contando aunque cambie la versión.
+
+Si comparte una pieza aún sin construir, se secuencia: la segunda queda **Abierta** y
 su cambio en el informe previo, sin sustituir todavía el texto funcional o técnico de esa pieza. Primero se construye
 la anterior; después se aplica y se aprueba la segunda unidad entera. No hay aprobación parcial: otras unidades y
 piezas independientes pueden continuar. `--comparte` no permite aprobar dos encargos pendientes con distinto texto

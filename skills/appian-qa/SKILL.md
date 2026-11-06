@@ -207,6 +207,24 @@ y no lleva rutas del equipo de nadie:
 
 Si una pantalla cambió a propósito, se rehace solo su guion.
 
+### A mano
+
+Lo que un guion no puede comprobar (SAIL CLI no descarga un documento, no lee un buzón, no espera a un proceso
+programado ni ve la maquetación) lo mira una persona: un escenario entero o la parte que su guion no cubre (HU-09.2 de
+una prueba: el guion ve el enlace al certificado; abrirlo se mira a mano). Lo que vea se anota, para que un fallo
+conocido entre en los mismos chequeos que un guion que falla: `python3 <skill>/scripts/qa.py a-mano <p> <U> HU-07.1
+--falla "no llega el correo" --quien Ana --por-que "SAIL CLI no lee el buzón"`. Queda en `resultado.json`, en `aMano`,
+aparte del resultado del guion (quién, qué se mira y por qué, y cuándo):
+
+- un **falla** a mano devuelve su issue a pendiente, como un guion que falla, y `repetir` sale con 1 mientras siga así;
+- cuando se corrige, quien lo mira otra vez anota `--pasa --quien Ana` (el porqué ya consta): retira solo ese fallo;
+- ninguno tapa al otro: un guion que pasa no retira el fallo a mano, ni un «pasa» a mano el de un guion; un guion
+  nuevo del mismo escenario tampoco lo retira, porque no demuestra que cubra lo que vio la persona;
+- `repetir` no lo repite: lo conserva y lo enseña aparte, y `proyecto.py estado` lo dice («mirados a mano»), para que en
+  el paso 4 de F9 se sepa qué no ha repetido ningún script.
+
+Solo se anota lo que alguien miró; lo que nadie miró sigue «sin guion», con su aviso al cerrar la unidad.
+
 ## Qué escribe
 
 En `<p>`:

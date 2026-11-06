@@ -302,6 +302,71 @@ def main():
         ok("con su QA pasando, la issue está hecha", iss.estado(t.p, "EV-01", hecha) == (True, "hecha"),
            iss.estado(t.p, "EV-01", hecha))
 
+        # A mano (Raúl, 6-nov): un escenario que no puede llevar guion lo mira una persona; un «falla» bloquea su issue
+        # como un guion, un «pasa» queda con quién y cuándo, y «repetir» los conserva sin repetirlos
+        mano = lambda *x: t.qa("a-mano", str(t.p), "EV-01", *x, sesiones=False)
+        iss02 = issue(iss, "ISS-02", ["HU-02.1", "HU-02.2"])
+        c1, o1 = mano("HU-02.2", "--falla", "no llega", "--quien", "Ana")
+        c3, o3 = mano("HU-02.3", "--pasa", "--quien", "Ana", "--por-que", "y")
+        ok("a mano: pide qué se mira y por qué no lo cubre un guion, y no vale para un caso de prueba",
+           (c1, c3) == (2, 2) and "--por-que" in o1 and "caso de prueba" in o3
+           and "aMano" not in t.resultado()[0], o1 + o3)
+        c, out = mano("HU-02.2", "--falla", "no llega el correo", "--quien", "Ana", "--por-que", "SAIL CLI no lee el buzón")
+        datos = t.resultado()[0]
+        e = datos["aMano"]["HU-02.2"]
+        ok("a mano: un «falla» va aparte, con quién y por qué, sale de «sin guion» y devuelve su issue a pendiente",
+           c == 1 and e["resultado"] == "falla" and e["quien"] == "Ana" and e["issue"] == "ISS-02"
+           and "HU-02.2" not in datos["sinGuion"] and iss.falla_en_qa(t.p, "EV-01", iss02) == ["HU-02.2"], out)
+        # mixto (HU-09.2 de la campaña: el guion ve el enlace, la descarga se mira a mano): ninguno tapa al otro
+        c, out = mano("HU-02.1", "--falla", "el documento no abre", "--quien", "Ana", "--por-que", "la descarga")
+        c2, out2 = t.repetir()
+        datos = t.resultado()[0]
+        ok("a mano en un escenario con guion: el guion sigue pasando, el fallo a mano sigue contando, y repetir lo "
+           "conserva, lo enseña aparte y sale con 1",
+           c == 1 and datos["escenarios"]["HU-02.1"]["resultado"] == "pasa"
+           and datos["aMano"]["HU-02.1"]["resultado"] == "falla" and datos["aMano"]["HU-02.2"]["quien"] == "Ana"
+           and set(iss.falla_en_qa(t.p, "EV-01", iss02)) == {"HU-02.1", "HU-02.2"} and c2 == 1
+           and "HU-02.1 · falla a mano (Ana" in out2 and "no lo repite ningún script" in out2, out + out2)
+        # un guion nuevo para HU-02.2 no borra lo que vio una persona: el guion no demuestra que cubra ese fallo
+        t.guion("HU-02.2", {**GUIONES["HU-02.1"], "escenario": "HU-02.2",
+                            "dice": ["Dada una solicitud devuelta", "Cuando el gestor la corrige", "Entonces vuelve a «Enviada»"]})
+        t.repetir()
+        ok("un guion nuevo del mismo escenario no retira el fallo a mano",
+           t.resultado()[0]["aMano"]["HU-02.2"]["resultado"] == "falla"
+           and "HU-02.2" in iss.falla_en_qa(t.p, "EV-01", iss02), str(t.resultado()[0].get("aMano")))
+        (t.p / "qa" / "EV-01" / "HU-02.2.json").unlink()
+        c, out = mano("HU-02.2", "--pasa", "--quien", "Ana")
+        c1, o1 = mano("HU-02.1", "--pasa", "--quien", "Ana")
+        c2, out2 = t.repetir()
+        ok("a mano: un «pasa» reutiliza el porqué y retira solo ese fallo; con los dos, repetir vuelve a salir con 0",
+           c == 0 and c1 == 0 and t.resultado()[0]["aMano"]["HU-02.2"]["porQue"] == "SAIL CLI no lee el buzón"
+           and iss.falla_en_qa(t.p, "EV-01", iss02) == [] and c2 == 0 and "HU-02.2 · pasa a mano (Ana" in out2,
+           out + o1 + out2)
+        # revisión de Codex: un --falla vacío no se lee como «pasa»; lo de un escenario retirado del análisis no es un
+        # fallo de ahora; y una unidad sin guiones con un fallo a mano lo enseña y sale con 1
+        c, out = mano("HU-02.2", "--falla", " ", "--quien", "Ana")
+        ok("a mano: un --falla vacío no se anota", c == 2 and t.resultado()[0]["aMano"]["HU-02.2"]["resultado"] == "pasa", out)
+        datos = t.resultado()[0]
+        datos["aMano"]["HU-99.9"] = {"resultado": "falla", "motivo": "x", "quien": "Ana", "porQue": "y", "issue": "ISS-09"}
+        escribe(t.p / "qa" / "EV-01" / "resultado.json", a_json(datos))
+        c, out = t.repetir()
+        ok("lo anotado a mano de un escenario que ya no está se conserva, pero no cuenta como fallo",
+           c == 0 and "HU-99.9" in t.resultado()[0]["aMano"] and "ya no está en el análisis" in out, out)
+        escribe(t.p / "construccion" / "EV-02" / "ISS-01.feature",
+                "# language: es\nCaracterística: HU-07 Avisar\n\n  Escenario: HU-07.1\n    Dado un gestor\n"
+                "    Cuando le aprueban\n    Entonces le llega un correo\n")
+        c, out = t.qa("a-mano", str(t.p), "EV-02", "HU-07.1", "--falla", "no llega", "--quien", "Ana", "--por-que",
+                      "SAIL CLI no lee el buzón", sesiones=False)
+        c2, out2 = t.qa("repetir", str(t.p), "EV-02")
+        ok("una unidad sin guiones pero con un fallo a mano lo enseña y sale con 1",
+           c == 1 and c2 == 1 and "HU-07.1 · falla a mano (Ana" in out2, out + out2)
+        shutil.rmtree(t.p / "construccion" / "EV-02")
+        shutil.rmtree(t.p / "qa" / "EV-02")
+        datos = t.resultado()[0]
+        datos.pop("aMano")
+        datos["sinGuion"] = ["HU-02.2"]
+        escribe(t.p / "qa" / "EV-01" / "resultado.json", a_json(datos))       # lo de después, como estaba
+
         # un defecto: falla, con el paso y lo que salió, y su issue vuelve a pendiente
         t.defecto(estado_alta="Borrador")
         c, out = t.repetir()

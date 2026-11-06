@@ -761,6 +761,61 @@ Versión 1.2: PAN-01
                    len(req) == 2 and (all(l.startswith("✓") for l in req) if not falla else
                                       any(l.startswith("✗ " + falla) and ("PAN-01" in l or "punto 1" in l) for l in req)),
                    out)
+        # «sin efecto» (Raúl, 6-nov): un retoque sobre algo 🔒 no espera al cliente, pero la pieza vuelve a su próxima
+        # validación (✅); si el cliente lo pidió o aprobó («Requiere: Sí», ✔), sigue 🔒
+        # con la misma elegibilidad que la regeneración de issues: declarado, sin topes y de una unidad Aprobada (Codex)
+        ve = tmp / "PAN-01 sin efecto"
+        shutil.copytree(v, ve)
+        cambios_md(ve, {"EV-02": "Aprobada"})
+        fve, infe = ve / "analisis" / "funcional.md", ve / "impacto" / "FU-05.md"
+        efecto = plantilla_inf.replace("Análisis base: versión 1.1 · Estado: aplicado en 1.2",
+                                       "Análisis base: versión 1.1 · Cambio: EV-02 · Estado: aplicado en 1.2 · Efecto: sin "
+                                       "cambio de alcance, esfuerzo ni riesgo")
+        anterior = ve / "versiones" / "v1.1"
+        infe.write_text(efecto.format(d="✔").replace("| Sí (🔒) |", "| — |"), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", infe)
+        ok("«sin efecto» sobre algo 🔒 no pide «Requiere: Sí», pero sí que la pieza deje de estar validada",
+           "✓ «Requiere: Sí» en cada punto" in out and "✗ con «sin efecto», lo 🔒 que cambia" in out and "PAN-01" in out, out)
+        texto_f = fve.read_text(encoding="utf-8")
+        cab = next(l for l in texto_f.splitlines() if l.startswith("**PAN-01") and "🔒" in l)
+        fve.write_text(texto_f.replace(cab, cab.replace("🔒", "✅")), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", infe)
+        ok("con la pieza en ✅ (a la próxima validación del cliente), pasa",
+           "✓ con «sin efecto», lo 🔒 que cambia" in out and "✓ lo 🔒 que cambia pasó" in out, out)
+        fve.write_text(texto_f, encoding="utf-8")
+        infe.write_text(efecto.format(d="✔"), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", infe)
+        ok("si el cliente lo aprobó («Requiere: Sí (🔒)», ✔), sigue 🔒", "✓ con «sin efecto», lo 🔒 que cambia" in out, out)
+        # la misma declaración en una unidad que no está Aprobada, o con un tope, no exime: pide «Requiere: Sí» como siempre
+        cambios_md(ve, {"EV-02": "Abierta"})
+        infe.write_text(efecto.format(d="✔").replace("| Sí (🔒) |", "| — |"), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", infe)
+        ok("«sin efecto» en una unidad que no está Aprobada no exime de «Requiere: Sí»",
+           "✗ «Requiere: Sí» en cada punto" in out, out)
+        cambios_md(ve, {"EV-02": "Aprobada"})
+        infe.write_text(efecto.format(d="✔").replace("| Sí (🔒) |", "| Sí (seguridad) |"), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", infe)
+        ok("con un tope («Requiere: Sí (seguridad)»), «sin efecto» no exime de que la pieza siga validada por quien toca",
+           "con «sin efecto»" not in out, out)
+        # por punto (Codex): con columna «Cambio», el retoque de EV-02 (Aprobada) sigue exento aunque otro punto sea de
+        # EV-03 (Abierta, de alcance); y un homónimo fuera de impacto/ no hereda la exención del informe del proyecto
+        cambios_md(ve, {"EV-02": "Aprobada", "EV-03": "Abierta"})
+        por_punto = efecto.format(d="✔").replace(" · Cambio: EV-02", "").replace(
+            "| Revisar también | Requiere | Decisión |", "| Revisar también | Requiere | Decisión | Cambio |").replace(
+            "|---|---|---|---|---|---|---|---|", "|---|---|---|---|---|---|---|---|---|").replace(
+            "| — | Sí (🔒) | ✔ |", "| — | — | ✔ | EV-02 |\n| 2 | ALCANCE+ | Otra columna [FU-05 00:02:00] | PAN-02 | "
+            "PAN-02 con otra columna | — | Sí (alcance) | Pendiente | EV-03 |")
+        infe.write_text(por_punto, encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", infe)
+        ok("por punto: el retoque de la unidad Aprobada sigue exento aunque otro punto sea de otra unidad",
+           "✓ «Requiere: Sí» en cada punto" in out and "✗ con «sin efecto», lo 🔒 que cambia" in out, out)
+        fuera = tmp / "homónimo fuera de impacto" / "FU-05.md"
+        fuera.parent.mkdir(parents=True, exist_ok=True)
+        fuera.write_text(efecto.format(d="✔").replace("| Sí (🔒) |", "| — |"), encoding="utf-8")
+        infe.write_text(efecto.format(d="✔").replace("| Sí (🔒) |", "| — |"), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", fuera)
+        ok("un informe homónimo fuera de impacto/ no hereda la exención: pide «Requiere: Sí» como siempre",
+           "✗ «Requiere: Sí» en cada punto" in out, out)
 
         # 4c. La primera decisión de un proyecto (D-01) es un ID nuevo válido
         inf0 = nuevo / "impacto" / "FU-01.md"
@@ -1333,7 +1388,7 @@ Se acepta si:
                    "test_permisos.py", "test_subtareas.py", "test_revision_inicio.py", "test_revision_consumidores.py",
                    "test_tablas_proyecto.py", "test_huella_dt.py", "test_otra_unidad.py", "test_alcance_perfiles.py",
                    "test_reparto_tecnico.py", "test_estado_validado.py", "test_comprobaciones_14.py",
-                   "test_pc_una_pregunta.py"):
+                   "test_pc_una_pregunta.py", "test_sin_efecto.py"):
         prueba = AQUI / nombre
         if prueba.is_file():
             c, out = corre(prueba)
@@ -2332,8 +2387,9 @@ def pruebas_unidades(tmp):
     ok("lo esperado dice de qué issue y de qué versión es, el tipo de cada objeto y, del record type que se modifica, "
        "solo sus campos nuevos",
        re.fullmatch(r"[0-9a-f]{12}", esp.get("_issue", {}).get("version", "")) is not None
+       and re.fullmatch(r"[0-9a-f]{12}", esp.get("_issue", {}).get("estructura", "")) is not None
        and esp == {"_issue": {"id": "ISS-01", "unidad": "EV-02", "version": esp["_issue"]["version"], "pruebas": True,
-                             "ambito": esp["_issue"]["ambito"]},
+                             "estructura": esp["_issue"]["estructura"], "ambito": esp["_issue"]["ambito"]},
                    "DEM Solicitud": {"tipo": "recordType", "campos": [{"nombre": "firmaRevisor", "tipo": "Text"}]},
                    "DEM_ER_Firma": {"tipo": "expressionRule"}, "DEM_RevisionForm": {"tipo": "interface"},
                    "DEM_SolicitudForm": {"tipo": "interface"}}, json.dumps(esp, ensure_ascii=False))

@@ -8,7 +8,7 @@ qué haces esa recomendación y plantéate si es lo correcto para este flujo, co
 
 El QA de una unidad repite sus escenarios con guiones (`qa.py repetir`) y deja el resultado en `qa/<U>/resultado.json`.
 Ese fichero es lo que miran `indice.py issues` (un escenario que falla devuelve su issue a pendiente),
-`proyecto.py … construida` y el paso 2 de F9. Lo que no está ahí, no existe para el método.
+`proyecto.py … construida` y el paso 2 de F9. Lo que no está ahí no entra en esos chequeos automáticos.
 
 Hay escenarios que no pueden llevar guion: lo que SAIL CLI no hace o no ve. En esta campaña:
 - descargar un documento (el certificado de HU-09.2);
@@ -31,15 +31,15 @@ aplicación es un defecto y va por F4 (lo que se probó en E7).
 |---|---|---|---|
 | A. Entrada manual que cuenta | `qa.py` anota el escenario en `resultado.json`: resultado, motivo, quién lo vio y cuándo, marcado «a mano». Un «falla» a mano devuelve la issue a pendiente, igual que un guion | Un fallo conocido bloquea como cualquier otro. Una sola fuente para `issues`, `construida` y F9. Pequeña: una orden de `qa.py` y que `issues` lea el campo. Sin fichero nuevo | Un «pasa» a mano no se puede repetir solo: vale lo que diga la persona, con fecha. F9 lo repite todo «sin IA» y estos no: tiene que enseñarlos aparte. Se puede usar mal, para no escribir un guion que sí se podía |
 | B. Guion «por terminar» | QA escribe el guion hasta el paso que falla y lo deja «por terminar» | Lo que se puede automatizar queda automatizado | «Por terminar» significa que el guion está incompleto, no que la aplicación falla: por diseño no reabre la issue. La unidad se cierra igual. Mezcla «falta trabajo de QA» con «la aplicación falla» |
-| C. Solo el informe | QA lo escribe en su informe; lo lee quien marca la unidad | Nada nuevo | Depende de que alguien lea el informe. Es lo que falló, y de noche o con IA no lo lee nadie |
+| C. Solo el informe | QA lo escribe en su informe; lo lee quien marca la unidad | Nada nuevo | Depende de que alguien lea el informe: en la campaña lo leyó quien dirigía, pero ningún chequeo lo ve |
 | D. Siempre un defecto por F4 | Un fallo a mano se cataloga como aviso y sigue F4 | Lo prueba F4 y deja traza | Para un fallo dentro de una unidad que aún se construye, F4 es demasiado: abrir otra unidad y otra aprobación por algo que F8 arregla en la misma issue. Es la burocracia que no queremos |
 | E. Que `construida` lea el informe | Un script busca «falla» en el informe del QA | Sin estado nuevo | Leer texto libre es frágil: un «no falla» o un fallo descrito con otras palabras la engaña |
 
 ## Por qué recomendaba la A, y si encaja
 
-Lo que tiene que cumplir el flujo es esto: **un fallo conocido no se pierde entre el QA y el cierre de la unidad**. Solo la
-A lo garantiza sin depender de que alguien lea, y es la que menos añade. Las otras fallan en lo esencial: la B no
-bloquea, la C depende de leer, la D es desproporcionada y la E es frágil.
+Lo que tiene que cumplir el flujo es esto: **un fallo conocido no se pierde entre el QA y el cierre de la unidad**. La A
+es la que lo mete en los chequeos que ya existen; todas, también la A, dependen de que una persona declare lo que vio.
+Las otras se quedan cortas en eso: la B no bloquea, la C depende de leer, la D es desproporcionada y la E es frágil.
 
 Lo que no encajaba, y hay que resolver antes de hacerla:
 
@@ -59,3 +59,24 @@ Lo que no encajaba, y hay que resolver antes de hacerla:
    queda con quién y cuándo. F9 los enseña aparte, como mirados a mano y no repetidos.
 2. **La C**, dejarlo como está. Se asume que un fallo visto a mano depende de que alguien lea el informe.
 3. **Otra**: por ejemplo, la A solo para «falla», sin registrar los «pasa» a mano.
+
+## Lo que se aplicó (6-nov)
+
+Raúl eligió la A, con fallos y comprobaciones. Implementado en `appian-qa/scripts/qa.py` (`qa.py a-mano`), leído por
+`issues.py` (`fallos_qa`, `avisos_qa`) y descrito en `appian-qa/SKILL.md`, «A mano». Lo que pidió la revisión de Codex,
+aceptado:
+
+- **Aparte del guion.** Lo anotado a mano va en `aMano` de `resultado.json`, no encima del resultado del guion. Vale para
+  un escenario entero sin guion y para la parte que su guion no cubre: HU-09.2, cuyo guion ve el enlace, y su descarga,
+  que se mira a mano.
+- **Ninguno tapa al otro.** Un guion que pasa no retira un fallo a mano, ni un «pasa» a mano el fallo de un guion. Un
+  guion nuevo del mismo escenario tampoco lo retira: no demuestra que cubra lo que vio la persona.
+- **Se conserva.** `repetir` reconstruye los escenarios desde los guiones, pero `aMano` lo copia tal cual: ni su fecha,
+  ni quién, ni su versión se renuevan al repetir los demás.
+- **Se retira solo con `--pasa`** de quien lo vuelve a mirar, y retira solo ese.
+- **Cuenta aunque cambie la versión de la issue**: es un fallo conocido hasta que alguien diga que pasa.
+- **F9 lo enseña aparte** («mirados a mano»), sin hacerlo pasar por repetido.
+
+Probado con el SAIL CLI simulado del selftest de QA: «sin por qué», caso de prueba, fallo de un escenario sin guion,
+fallo en uno con guion que pasa, guion nuevo que no lo retira y «pasa» que retira solo el suyo. Límite: no se ha usado
+todavía con una persona mirando un buzón o una descarga reales.

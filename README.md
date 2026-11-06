@@ -27,6 +27,9 @@ Cada cambio es una unidad (`EV-nn`, `URG-nn`) en `analisis/cambios.md`. Al aprob
 escribe en `construccion/<U>/` sus issues a partir de la tabla de objetos de técnico §13: lo común en la Base y juntos
 los requisitos que comparten objetos. Si §13 sigue en lista, primero se convierte a tabla. Cada issue lleva qué se
 pide, sus escenarios, objetos, extracto del técnico y supuestos pendientes, en orden de dependencias.
+Lo que llega después de aprobarla vuelve a pedir su aprobación, salvo un retoque «sin efecto», que no cambia alcance,
+esfuerzo ni riesgo: lo valida la IA, queda en la unidad y `proyecto.py estado` se lo enseña al jefe de proyecto
+(`skills/appian-functional-analyst/references/cambios.md` §1).
 Quien construye, persona o agente, pide la siguiente (`indice.py issues <p> <U> --siguiente`), que queda reservada
 con un commit para que nadie más se la lleve, y la construye solo en desarrollo. La issue está hecha cuando pasa su
 verificación: sus objetos, como dice el técnico, y sus pruebas. La ausencia confirmada de casos exigidos expresamente
@@ -35,7 +38,9 @@ se muestran como avisos. Un retoque que no cambia criterios ni reglas no ejecuta
 reservada con otro contenido, se avisa a quien la tiene y debe releerla. Con todas hechas, el QA recorre la
 unidad con SAIL CLI como cada rol, en otra sesión y solo con sus escenarios, y deja cada recorrido como guion en
 `qa/<U>/`. Un fallo devuelve su issue a pendiente, salvo que una persona marque esa prueba como no necesaria, con motivo
-(`skills/appian-functional-analyst/references/cambios.md` §6). Después, la unidad se marca construida.
+(`skills/appian-functional-analyst/references/cambios.md` §6). Lo que un guion no puede comprobar (un correo, una
+descarga) lo mira una persona y se anota con `qa.py a-mano`: un fallo así también devuelve la issue a pendiente.
+Después, la unidad se marca construida.
 
 Una persona también puede cerrar una issue con `--manual --motivo`: queda «hecha manualmente», permite avanzar a las
 dependientes y caduca si cambia el encargo. Ese cierre no crea una verificación ni elimina un fallo vigente de pruebas

@@ -19,7 +19,9 @@ que preguntar al cliente, el camino entero (§0-§8). Sin nota, sin `comprobar.p
 1. **Catalogar**: si llegó por chat, guardar primero el texto como fuente (`ingesta-fuentes.md` §1).
    `leer_fuentes.py <fichero> -o <p>/fuentes/` y leer la fuente.
 2. **Unidad** (solo si `proyecto.py estado` lista unidades): el retoque va en la unidad Abierta o, si no hay ninguna,
-   en una nueva: `proyecto.py cambio <p> EV-03 abrir --titulo "…"`. Una Aprobada no se toca: volvería a aprobación.
+   en una nueva: `proyecto.py cambio <p> EV-03 abrir --titulo "…"`. Una Aprobada no se toca: volvería a aprobación;
+   salvo un retoque «sin efecto» sobre lo que esa unidad construye, que va en ella con su `Cambio:` y la línea
+   `Efecto:` en la cabecera, y no vuelve a aprobación (`cambios.md` §1, «Sin efecto»).
 3. **Las piezas**, con dos órdenes:
    ```bash
    python3 <skill>/scripts/indice.py ficha <p> PAN-01 --lineas            # las líneas exactas y la cita que trae
@@ -65,6 +67,8 @@ que preguntar al cliente, el camino entero (§0-§8). Sin nota, sin `comprobar.p
    Versión 1.2: PAN-01 modificada · técnico §7 y §13 · D-01
    ```
    Sin unidades, ni «Cambio:» ni «Posible petición de cambio». «Revisar también» y la revisión, con lo que dijo `impacto`.
+   Sobre una unidad ya Aprobada, si no cambia el alcance, el esfuerzo ni el riesgo, la cabecera acaba en
+   `· Efecto: sin cambio de alcance, esfuerzo ni riesgo` y no hace falta volver a aprobarla (`cambios.md` §1, «Sin efecto»).
 7. **Una pasada**: `comprobar.py <p> --fuentes <p>/fuentes/ --anterior <p>/versiones/v1.1 --impacto
    <p>/impacto/FU-04.md`. Si avisa de que el anexo no está al día (cambió el nombre de una parte de una pantalla o
    quién la usa), `indice.py derivadas <p> --escribir`, sin repetir la pasada.
@@ -160,7 +164,9 @@ Convierte la nota en **puntos**: uno por decisión, cambio, dato nuevo, respuest
 4. **Requiere aprobación** si: CAMBIA o ANULA algo 🔒; es ALCANCE+ o ALCANCE−; una fuente interna cambia
    algo decidido con el cliente; dos personas del cliente dicen cosas distintas; o el cambio obliga a
    rediseñar una pantalla validada por el cliente (🔒) o construida (con unidades, lo construido no: abajo). Los
-   retoques (un texto, una columna, el orden) no la requieren.
+   retoques (un texto, una columna, el orden) no la requieren. Sobre una unidad Aprobada, un retoque «sin efecto»
+   (`cambios.md` §1) sobre algo 🔒 tampoco: se aplica y, si no lo pidió o aprobó el cliente, la pieza pasa a ✅ y
+   vuelve a su próxima validación; si lo aprobó él, sigue 🔒.
 
 Al responder un PC, pasa también su ID a `indice.py impacto`: revisa y actualiza su fila de «Supuestos para construir»
 en técnico §13, además de las piezas afectadas.
@@ -221,7 +227,8 @@ pregunta «¿Aplico el informe con estas decisiones?». Con cualquier confirmaci
 cataloga como Aprobación y la de un correo, como Correo; la Decisión la cita igual («✔ FU-09») y la fuente va a «Fuentes
 procesadas». Lo que decide el analista manda: si al aplicar ves un motivo para no seguirlo, pregúntale.
 
-Sin respuesta o en una sesión desatendida: aplica lo que no requiere aprobación; lo que la requiere no se aplica:
+Sin respuesta o en una sesión desatendida: aplica lo que no requiere aprobación (también un retoque «sin efecto»
+sobre algo 🔒: sin aprobación del cliente, vuelve a su próxima validación); lo que la requiere no se aplica:
 queda «Pendiente» en el informe, la pieza no cambia y la cabecera del informe lo dice: «Estado: aplicado en 1.2;
 pendientes de aprobación: puntos 4 y 7», o «Estado: pendiente» si no se ha aplicado nada. Los listan
 `proyecto.py estado` e `indice.py pendientes` («Para decidir (equipo)»). Una decisión explícita del cliente no se

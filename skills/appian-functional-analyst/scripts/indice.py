@@ -297,7 +297,7 @@ def c_impacto(m, a):
         sugerida = f"EV-{sig:02d}"
         print(f"  → Ninguna unidad Abierta: si aplicas el cambio, ábrela antes (proyecto.py cambio <p> {sugerida} "
               f"abrir --titulo \"…\") y pon «Cambio: {sugerida}» en el informe; meterlo en una Aprobada la "
-              "devuelve a aprobación")
+              "devuelve a aprobación, salvo un retoque «sin efecto» de lo que ella construye (cambios.md §1)")
     # la fila de §13 sin leer §13 (la unidad: --cambio, la única EV Abierta o la que se acaba de sugerir abrir)
     unidad13 = (a.cambio or "").upper() or (ev_abiertas[0] if len(ev_abiertas) == 1 else None) or sugerida
     plan_construccion = ctx.hay and construidas and unidad13 and "T" in m.docs

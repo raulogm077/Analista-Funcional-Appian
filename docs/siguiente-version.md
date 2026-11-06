@@ -7,7 +7,7 @@ lista no autoriza publicar, desplegar, enviar ni borrar.
 Cada pendiente explica el problema, qué hay que hacer y el resultado esperado, conservando los acuerdos de la
 conversación. Si el detalle ya está bien explicado en otro documento, se enlaza desde el punto en lugar de repetirlo.
 
-**Ahora:** rama `claude/pruebas-metodo-20261104`, subida sin PR. La campaña «el método de punta a punta» (4 y 5 de nov., por decisión de Raúl) recorrió con un proyecto ficticio F1, F2, F4, F8 y F9 en una aplicación de prueba de Indra-spain, más E9 (entradas) y E10 (¿sirve sin IA?): EV-01 y EV-02 construidas, su QA en verde (23 de 23 y 1 de 1) y el borrador del paquete, sin exportar ni desplegar (`evaluaciones.md`, «El método de punta a punta»). La nota del DF para el cliente ya está hecha (5-nov). Lo que queda es de Raúl, con su análisis escrito: elegir el mecanismo de la reaprobación y el caso general de un fallo de QA visto a mano (§2), y ver lo creado en Indra-spain antes de borrarlo (§1). F5 a F7 siguen en §3.
+**Ahora:** rama `claude/pruebas-metodo-20261104`, subida sin PR. La campaña «el método de punta a punta» (4 y 5 de nov., por decisión de Raúl) recorrió con un proyecto ficticio F1, F2, F4, F8 y F9 en una aplicación de prueba de Indra-spain, más E9 (entradas) y E10 (¿sirve sin IA?): EV-01 y EV-02 construidas, su QA en verde (23 de 23 y 1 de 1) y el borrador del paquete, sin exportar ni desplegar (`evaluaciones.md`, «El método de punta a punta»). Hechas el 6-nov, por decisión de Raúl, la nota del DF, la reaprobación «sin efecto» y el registro de QA a mano (`evaluaciones.md`). Queda de Raúl ver lo creado en Indra-spain antes de borrarlo (§1); en §2, si los topes de «sin efecto» son demasiado gruesos y la regresión en un evolutivo. F5 a F7 siguen en §3.
 
 ## 1. Del trabajo anterior
 
@@ -43,38 +43,30 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   o publicar. Resultado esperado: quien consulte el repositorio entiende la versión real que recibe, sin confundir
   propuestas pendientes ni resultados históricos con capacidades actuales. Aprovechar el flujo de cierre existente,
   sin crear una lista paralela ni un informe por cada cambio. [repositorio · persona y sesión]
+- **Regresión en un evolutivo que toca un área.** Petición de Raúl, 6-nov. Problema: F8 prueba y verifica las issues
+  y hace el QA de la unidad; `verificar` solo alcanza a los consumidores directos con ejecutor, y sus fallos son avisos;
+  F9 pasa todos los casos y los guiones de todas las unidades, pero al final. Falta explicar cómo elegir, durante el
+  evolutivo, los recorridos de otras unidades que pueden romperse por datos, reglas o permisos compartidos (también
+  efectos indirectos), cuándo ampliar por riesgo y qué queda sin medir; un verde de los casos que ya hay no acredita
+  cobertura (E7). Qué hacer: proponer momentos, alcance y selección reutilizando técnico §14, los casos de prueba y los
+  guiones existentes; contrastarlo con un cambio aislado y con otro compartido que afecte a otra área, distinguir fallos
+  previos de regresiones y medir esfuerzo y cobertura. Sin otra ficha, sin repetir toda la interfaz tras cada retoque y
+  sin reducir la regresión que ya pide F9. Resultado esperado: quien construye sabe qué repetir y cuándo, y qué no se ha
+  medido. Diagnóstico de Codex. Análisis con lo medido y cuatro opciones para que decida Raúl:
+  [`diseno/regresion-evolutivo.md`](diseno/regresion-evolutivo.md). [flujo · QA · persona y sesión]
 - **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
   `pruebas/comprobar_anclas.py`, con red; la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
 - **Índice del DOCX.** Evaluar la caché editable solo si una entrega la necesita. [Word]
-- **Un fallo de QA visto a mano no reabre su issue.** Problema: en el QA de EV-01 (campaña del 5-nov), HU-09.2 falló a
-  mano y no tenía guion; no llegó a `qa/<U>/resultado.json` y las issues siguieron «hechas», así que la unidad podía
-  marcarse Construida con un fallo conocido. Que no llegara al registro se debió a que el guion no podía subir un
-  fichero: el plugin lo admite ya (`{fichero:<nombre>}`) y HU-09.1 y HU-09.2 pasan subiendo un PDF ficticio (`evaluaciones.md`). El
-  fallo en sí, que Formación no tenía por dónde abrir el certificado, es de diseño y lo corrige DT-11. Queda el caso
-  general: un escenario que se ve en pantalla, falla y
-  no puede llevar guion. Qué hacer: decidir cómo se registra (un guion «por terminar» que llega hasta el paso que falla,
-  o una entrada manual que cuente como fallo). Resultado esperado: ningún fallo conocido se pierde entre el QA y el
-  cierre de la unidad. Decide Raúl, porque cambia cómo cierra el QA. Raúl pidió analizarlo antes (5-nov): opciones, pros y contras en [`diseno/fallo-qa-a-mano.md`](diseno/fallo-qa-a-mano.md). [QA · persona]
-- **Reaprobación: criterio provisional y reflexión pendiente.** Raúl, 5-nov: si lo que llega cambia lo que hay que
-  construir, se debe aprobar; si no lo cambia, lo valida la IA. Es el criterio provisional, no un mecanismo definitivo
-  ya diseñado y probado. En la campaña, asignar a una unidad aprobada un informe que corregía su validación disparó
-  otra aprobación. El mecanismo usado hasta ahora mira informes nuevos de la unidad, no el significado del cambio;
-  una versión nueva por sí sola no la exige. Revisar cómo aplicar el criterio sin burocracia que no aporte valor.
-  Analizar pros, contras y escenarios: corregir una marca equivocada o una redacción sin efecto, hacer explícito un
-  supuesto, cambiar una regla o un parámetro sin añadir objetos, modificar permisos, datos o integraciones, y cambios
-  que afecten al coste o al riesgo. Comparar la regla por informe, el juicio del analista IA, las señales de cambio en
-  las issues y el aviso al jefe de proyecto sin bloqueo para lo menor. No asumir que mismos IDs u objetos significan
-  mismo encargo, ni que cualquier diferencia de texto cambia la construcción. Valorar quién decide, los errores que
-  puede cometer cada opción, la trazabilidad y la fricción observada. Probar la solución propuesta y dejar a Raúl
-  las conclusiones y sus límites antes de dar el mecanismo por definitivo. Lo que se aplique y pruebe, en
-  `evaluaciones.md`; esta reflexión sigue pendiente. Análisis del 5-nov, con los tres casos de la campaña (FU-08,
-  FU-10 y FU-11), 16 escenarios y cuatro opciones: [`diseno/reaprobacion.md`](diseno/reaprobacion.md). Recomienda la
-  opción 2, que concreta este criterio con topes que comprueba el script y una línea para el JP; lo que añade a su
-  criterio son propuestas por contrastar, y el documento dice cuáles. Falta que Raúl elija; después, implementarlo y
-  probarlo. El 5-nov Raúl pidió verlo con ejemplos concretos antes de decidir: están en el mismo documento, «Con ejemplos concretos», con una propuesta revisada que separa lo que ve el cliente de lo que aprueba el JP. De la misma familia, en las verificaciones: un paso manual del técnico que nombra objetos caducó la
-  verificación de ISS-01 aunque no cambiaba lo construido, y en E5-4 la sesión lo reescribió sin nombrarlos para
-  evitarlo, que deja el técnico menos claro (`evaluaciones.md`, «E5, sesiones 2 a 4»). Valorarlo junto a esta reflexión. Otro caso, en E7: los ajustes dentro del encargo de EV-01 (FU-17, FU-18) se aplicaron sin `Cambio:`, para no devolverla a aprobación, y al abrir EV-02 pasaron a contar como suyos («si falta, la fuente es de la única unidad Abierta», `cambios.md`); la sesión les puso `Cambio: EV-01` a mano, y entonces EV-01, ya Construida, salió «ha crecido desde que se aprobó» y `indice.py issues` dejó de dar sus issues y la orden de regresión de F9 (se quitó la marca: con EV-02 ya Aprobada, no hay unidad Abierta que se las lleve). Hoy un ajuste que no cambia el encargo no tiene cómo quedar en su unidad sin pedir otra aprobación. Y con la unidad ya Construida, el técnico de la siguiente (su fila de §14 para HU-04.3, «Otras unidades») y una corrección de redacción en §6 caducaron la verificación de cuatro issues de EV-01 y dejaron sus resultados de QA sin vigencia: se reverificaron y se repitió el QA, todo por script, sin cambio en Appian. [flujo · persona y sesión]
+- **Reaprobación: si los topes de «sin efecto» son demasiado gruesos.** Aplicado el 6-nov, por decisión de Raúl
+  (`evaluaciones.md`; `diseno/reaprobacion.md`, «Lo que se aplicó»). Problema: un informe «sin efecto» que toca técnico
+  §3, §4 o §10 o cita una DT de datos, seguridad o integración va al JP aunque sea pequeño; con los dos ajustes reales
+  de la campaña (FU-17 y FU-18) la regla no habría quitado esas dos aprobaciones. Qué hacer: con más casos reales, ver si
+  conviene que citar esas secciones sea un aviso en la línea del JP en vez de un tope. Resultado esperado: que los
+  topes paren lo que cambia el riesgo y no lo que solo lo menciona. Mientras la unidad está Aprobada, un paso manual
+  del técnico que nombra objetos sigue caducando su verificación (E5-4): valorarlo a la vez. Mejora posible, de Codex:
+  que la huella de una issue compare las DT por su Decisión y Verificar y las líneas ya limpias, como las imprime, para
+  que un cambio en el Riesgo de una DT o en un comentario no la caduque. Decide Raúl. [flujo · persona]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
   observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se
   vuelve a plantear, medir el coste en un incremento real con fuentes del mismo tema, sin deducir ahorro del número

@@ -32,6 +32,10 @@ ABIERTA, APROBADA, CONSTRUIDA, PRODUCCION, DESCARTADA = ("Abierta", "Aprobada", 
                                                         "Descartada")
 EN_CURSO = (ABIERTA, APROBADA, CONSTRUIDA)      # no han pasado a producción ni se han descartado
 CONSTRUIDAS = (CONSTRUIDA, PRODUCCION)
+# «sin efecto»: lo valida la IA salvo estos topes, que van al JP (cambios.md §1). Secciones del técnico y capas de DT
+RX_SIN_EFECTO = re.compile(r"Efecto:\s*sin cambio de alcance, esfuerzo ni riesgo", re.I)
+SECCIONES_CON_RIESGO = {"3": "datos", "4": "seguridad", "10": "integraciones"}
+CAPAS_CON_RIESGO = ("datos", "seguridad", "integracion")
 COLUMNAS = ["ID", "Título", "Tipo", "Estado", "Aprobada", "Construida", "En producción", "Comparte objetos / decisión"]
 CAMBIAN = ("nuevo", "modifica", "sustituye")    # situaciones de §13 que construyen o cambian algo
 SIN_PIEZAS = ("sin impacto", "proyecto")        # tipos de punto que no cambian el análisis
@@ -355,14 +359,89 @@ class Contexto:
                 out |= mo.ids_en(ma.group(1)) if ma else set()
         return out
 
+    def _capas_dt(self):
+        """{DT-nn: capa normalizada} del técnico (su fila «Capa»)."""
+        if not hasattr(self, "_capas"):
+            f = self.raiz / "analisis" / "tecnico.md"
+            texto = f.read_text(encoding="utf-8") if f.is_file() else ""
+            self._capas = {b.group(1): mo.normaliza(c.group(1)).strip() for b in re.finditer(
+                r"^\*\*(DT-\d+)\b.*?(?=^\*\*DT-\d+|^## |\Z)", texto, re.M | re.S)
+                for c in [re.search(r"\|\s*\*\*Capa\*\*\s*\|\s*([^|\n]+)\|", b.group(0))] if c}
+        return self._capas
+
+    def sin_efecto(self, nombre, uid=None):
+        """(declara, [topes]) de un informe: si su cabecera dice «Efecto: sin cambio de alcance, esfuerzo ni riesgo» y lo
+        que lo impide aunque lo diga. Lo que cambia el alcance, pide aprobación, queda pendiente o toca datos, seguridad
+        o integraciones lo aprueba el JP; lo demás lo valida la IA (cambios.md §1, «Sin efecto»). Cuentan los puntos no
+        descartados (✗) y, si el informe tiene columna «Cambio», solo los de esa unidad; «## Aplicado» es de todo el
+        informe."""
+        t, puntos = next(((t, ps) for n, t, ps, _ in self.informes if n == nombre), ("", []))
+        if not RX_SIN_EFECTO.search("\n".join(t.splitlines()[:5])):
+            return False, []
+        por_punto = any("cambio" in p for p in puntos)
+        puntos = [p for p in puntos if "✗" not in p.get("decision", "")
+                  and not (uid and por_punto and uid not in RX_UNIDAD.findall(p.get("cambio", "")))]
+        topes = []
+        for p in puntos:
+            tipo, req = mo.normaliza(p.get("tipo", "")).strip(" *`"), mo.normaliza(p.get("requiere", "")).strip(" *")
+            if tipo.startswith("alcance"):
+                topes.append(f"punto {p.get('#', '?')} de alcance")
+            # solo una aprobación ya dada (✔) del cliente sobre algo 🔒, «Sí (🔒)», no pide además la del JP; cualquier
+            # otra razón (alcance, seguridad, esfuerzo…), aunque esté aprobada, va al JP (revisión de Codex)
+            aprobado = mo.normaliza(p.get("decision", "")).strip(" *").startswith("✔")
+            solo_cliente = re.fullmatch(r"\s*S[ií]\s*\(\s*🔒\s*\)\s*", mo.sin_comentarios(p.get("requiere", "")))
+            if req and req not in ("—", "-", "no", "ninguno", "nada") and not (aprobado and solo_cliente):
+                topes.append(f"punto {p.get('#', '?')} requiere {p.get('requiere', '').strip()}")
+            if mo.normaliza(p.get("decision", "")).strip(" *").startswith("pendiente"):
+                topes.append(f"punto {p.get('#', '?')} pendiente")
+        # el resumen «Requieren aprobación:» cuenta si no hay puntos con su columna «Requiere», que lo dicen uno a uno
+        r = re.search(r"Requieren aprobaci[oó]n:\s*([^\n]+)", t)
+        if r and not any("requiere" in p for p in puntos) and not mo.normaliza(r.group(1)).strip(" .").startswith("ninguno"):
+            topes.append(f"requieren aprobación: {r.group(1).strip()}")
+        ma = re.search(r"^## Aplicado\s*$(.*?)(?=^## |\Z)", t, re.M | re.S)
+        # con columna «Cambio», «## Aplicado» es de todo el informe: cuentan solo las celdas de sus puntos (como en
+        # piezas_de), para que lo de otra unidad no la pare
+        citado = ("" if por_punto else (ma.group(1) if ma else "")) + " " + " ".join(
+            f"{p.get('encaja en', '')} {p.get('cambio propuesto', '')}" for p in puntos)
+        # cada § es del documento que se nombra antes en el mismo trozo: «técnico §4», «Técnico 1.6 … §4», «T §4»;
+        # en «funcional §4 y técnico §7», solo el §7
+        secciones = set()
+        for trozo in re.split(r"·|\n|;", citado):
+            doc = None
+            for x in re.finditer(r"((?i:funcional|t[eé]cnico)|\bT\b|\bF\b)|§\s*(\d+)", trozo):
+                if x.group(1):
+                    doc = "T" if x.group(1)[0] in "Tt" else "F"
+                elif doc == "T":
+                    secciones.add(x.group(2))
+        topes += [f"toca técnico §{s} ({SECCIONES_CON_RIESGO[s]})" for s in sorted(secciones & set(SECCIONES_CON_RIESGO))]
+        capas = self._capas_dt()
+        topes += [f"{x} es de {capas[x]}" for x in sorted(mo.ids_en(citado))
+                  if x in capas and capas[x].startswith(CAPAS_CON_RIESGO)]
+        topes += [f"{x} es una integración" for x in sorted(mo.ids_en(citado)) if x.startswith("INT-")]
+        return True, list(dict.fromkeys(topes))
+
+    def _despues_de_aprobar(self, uid):
+        u = self.por_id[uid]
+        return [n for n in self.informes_de(uid) if u.aprobada_en and n not in u.aprobada_con]
+
+    def validados_ia(self, uid):
+        """Los informes que llegaron después de aprobar la unidad y no la hacen crecer porque son «sin efecto»: la línea
+        que ve el JP. Se vacía sola al volver a aprobarla."""
+        return [n for n in self._despues_de_aprobar(uid) if self.sin_efecto(n, uid) == (True, [])]
+
     def crecida(self, uid):
         """Lo que impide construir una unidad tal como se aprobó: sus informes que no estaban al aprobarla (si se guardó
-        con qué se aprobó) y sus puntos «Pendiente». [] si nada."""
-        u = self.por_id[uid]
-        nuevos = [n for n in self.informes_de(uid) if u.aprobada_en and n not in u.aprobada_con]
+        con qué se aprobó), salvo los «sin efecto» sin topes, y sus puntos «Pendiente». [] si nada."""
+        nuevos = []
+        for n in self._despues_de_aprobar(uid):
+            declara, topes = self.sin_efecto(n, uid)
+            if not declara:
+                nuevos.append(n)
+            elif topes:
+                nuevos.append(f"{n} dice «sin efecto», pero {', '.join(topes)}")
         pend = [f"{n} punto {p.get('#', '?')} pendiente" for n, t, p in self.puntos_de(uid)
                 if p and mo.normaliza(p.get("decision", "")).strip(" *").startswith("pendiente")]
-        return nuevos + pend
+        return nuevos + [x for x in pend if not any(x.split(" punto")[0] in y for y in nuevos)]
 
     def raices_de(self, uid, aplicadas=True):
         """Las piezas de una unidad con sus fichas: un criterio que cambia toca su historia."""

@@ -21,7 +21,9 @@ Lo esperado y la verificación, que es de donde sale si una issue está hecha (e
                              "<record type o CDT>": {"tipo": "recordType", "campos": [{"nombre": "x", "tipo": "Text"}]},
                              "<record type de una acción>": {"acciones": [{"nombre": "Pedir material", "tipo": "De lista"}]}}
                             «version» es la huella de lo que hay que construir y comprobar (redacta()): cambia si cambia
-                            la issue, no si cambian su orden o su reserva. «pruebas» es false si la issue no cambia
+                            la issue, no si cambian su orden o su reserva. «estructura», lo mismo sin lo que el
+                            técnico dice en §12 y §15: con la unidad Construida, si solo cambia eso, la verificación vale.
+                            «pruebas» es false si la issue no cambia
                             criterios ni reglas: «verificar» no ejecuta entonces ningún caso de prueba.
   verificacion/ISS-nn.json  el resultado de «verificar --esperado»: {"generadoEn", "entorno", "issue": <la de _issue, tal
                             cual>, "aplicacion", "objetos": [{"pedido", "existe", "tipo", "diferencias": {…}, …}],
@@ -597,7 +599,10 @@ def del_tecnico(d, issue, lineas, dts):
     # Una DT añadida como contexto puede enumerar procesos independientes: no implica que se construyan en serie.
     # Las dependencias conservan sus fuentes: la especificación y las DT seleccionadas por su «Necesidad».
     nombra = set().union(*(x["objetos"] for x in van if "dt" not in x or x["donde"] in necesarias))
-    return out, donde, nombra - set(issue.objetos), {x["i"] for x in mias if "dt" not in x}
+    # para la huella de estructura (calcula): todas sus líneas, cambien o no con la unidad, menos §12 y §15
+    operativas = sorted((str(x["donde"]), " ".join(str(x.get("texto", "")).split())) for x in mias
+                        if not re.match(r"§1[25]\b", str(x["donde"])))
+    return out, donde, nombra - set(issue.objetos), {x["i"] for x in mias if "dt" not in x}, operativas
 
 
 # ------------------------------------------------------------------ el texto de una issue
@@ -786,7 +791,7 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
     m, ctx, uid, r = d.m, d.ctx, d.uid, d.resumen
     pide = que_se_pide(d, issue)
     esc, issue.feature, issue.sin_gherkin = escenarios(d, issue, pruebas)
-    tec, donde, _, _ = del_tecnico(d, issue, lineas, dts)
+    tec, donde, _, _, operativas = del_tecnico(d, issue, lineas, dts)
     tec += supuestos_y_reglas(m, issue, pide + tec)
     filas = []
     for f in issue.filas:
@@ -824,7 +829,21 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
                          casos_exigidos(m, issue, d)],
                         ensure_ascii=False, sort_keys=True)
     issue.version = hashlib.sha256(huella.encode("utf-8")).hexdigest()[:12]
+    # lo mismo sin lo que el técnico dice de la operación (§12) y sus pendientes (§15), que no dicen cómo construir: con
+    # la unidad ya construida, si solo cambia eso, su verificación sigue valiendo (verificacion()). El resto del técnico
+    # (una DT, una fila de §7 que dice qué hace un filtro), un requisito, un escenario, una fila de §13, lo que se espera
+    # de un objeto, una urgencia o un caso exigido la caducan como siempre (revisión de Codex)
+    def sin_operacion(fila):    # la columna «Dónde» de la fila, sin §12 ni §15
+        celdas = fila.split("|") if isinstance(fila, str) else []
+        if len(celdas) < 3:
+            return fila
+        quedan = [s.strip() for s in celdas[-2].split(",") if s.strip() and not re.match(r"§1[25]\b", s.strip())]
+        return "|".join(celdas[:-2] + [f" {', '.join(quedan) or '—'} ", celdas[-1]])
+    estructura = json.dumps([issue.requisitos, pide, esc, issue.feature, [sin_operacion(f) for f in filas], operativas,
+                             construido, urgentes_de_encargo,
+                             objetos_esperados, casos_exigidos(m, issue, d)], ensure_ascii=False, sort_keys=True)
     issue.esperado = {"_issue": {"id": issue.id, "unidad": uid, "version": issue.version, "pruebas": not issue.sin_pruebas,
+                                 "estructura": hashlib.sha256(estructura.encode("utf-8")).hexdigest()[:12],
                                  **({"casosExigidos": casos_exigidos(m, issue, d)} if casos_exigidos(m, issue, d) else {})},
                       **objetos_esperados}
     revisar = [un.texto_revision(uid, x, suyos) for x in plan.revisar      # T14: un aviso, no una puerta
@@ -1301,7 +1320,7 @@ def calcula(m, ctx, uid, estreno=False):
     lineas, dts, pruebas = lineas_del_tecnico(d), decisiones(d), como_se_comprueba(m)
     cubiertas = set()
     for i in issues:      # lo que nombra el técnico al hablar de cada una dice con cuáles comparte objetos
-        _, _, i.nombra, suyas = del_tecnico(d, i, lineas, dts)
+        _, _, i.nombra, suyas, _ = del_tecnico(d, i, lineas, dts)
         cubiertas |= suyas
     ordena(issues)
     # lo que el técnico dice para esta unidad (todo, en la construcción inicial; lo nuevo o lo que cambia, si no) y no
@@ -1522,6 +1541,14 @@ def verificacion(raiz, uid, issue):
     if de.get("id") != issue.id or de.get("unidad", uid) != uid:
         return None, f"verificacion/{f.name} no es de esta issue: repite «verificar» con su «esperado»"
     if de.get("version") != issue.version:
+        # con la unidad ya construida, si solo cambió lo que el técnico dice en §12 (operación) o §15 (pendientes), la
+        # verificación sigue valiendo; si cambió cualquier otra cosa (requisito, escenario, otra parte del técnico, fila
+        # de §13, objeto, urgencia o caso), caduca como siempre. Sin «estructura» guardada (verificaciones de antes),
+        # caduca: no se sabe qué cambió
+        estructura = (getattr(issue, "esperado", None) or {}).get("_issue", {}).get("estructura")
+        if de.get("estructura") and de.get("estructura") == estructura and \
+                any(u.id == uid and u.estado in un.CONSTRUIDAS for u in un.leer(raiz) or []):
+            return v, "verificada con su versión anterior: después de construir solo cambió el técnico §12 o §15"
         return None, "ha cambiado desde su última verificación"
     return v, ""
 
@@ -1593,6 +1620,8 @@ def _estado_verificado(raiz, uid, issue, marcas=(), manuales=None, permisos=None
         return True, " · ".join([f"hecha manualmente por {manual['quien']}: {manual['motivo']}" if manual else "hecha", *avisos, *avisos_permisos, *(f"marcada como no necesaria: {o} «{c}»"
                                                       for o, c, _ in fallos_qa(raiz, uid, issue))])
     v, por_que = verificacion(raiz, uid, issue)
+    if v is not None and por_que:   # verificada con su versión anterior, en una unidad ya construida
+        avisos_permisos.append(por_que)
     aceptados = [x for x in (permisos_de(raiz, uid) if permisos is None else permisos)
                 if x["issue"] == issue.id and x["version"] == issue.version and x["estado"] == "Vigente"]
     pendientes_permisos = []
@@ -1690,13 +1719,20 @@ def fallos_qa(raiz, uid, issue):
     falla ninguno."""
     r = pathlib.Path(raiz) / "qa" / uid / "resultado.json"
     try:
-        esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") if r.is_file() else None
-    except (ValueError, AttributeError):
-        esc = None
-    esc = esc if isinstance(esc, dict) else {}
+        todo = json.loads(r.read_text(encoding="utf-8-sig")) if r.is_file() else {}
+    except ValueError:
+        todo = {}
+    todo = todo if isinstance(todo, dict) else {}
+    esc = todo.get("escenarios") if isinstance(todo.get("escenarios"), dict) else {}
+    manos = todo.get("aMano") if isinstance(todo.get("aMano"), dict) else {}
+    # con la unidad ya construida, un fallo no deja de contar porque cambie la versión de la issue (revisión de Codex)
+    cerrada = any(u.id == uid and u.estado in un.CONSTRUIDAS for u in un.leer(raiz) or [])
     return [(QA, c, ": ".join(str(x) for x in (esc[c].get("paso"), esc[c].get("motivo")) if x))
             for c in issue.criterios if isinstance(esc.get(c), dict) and esc[c].get("resultado") == "falla"
-            and esc[c].get("versionIssue", issue.version) == issue.version]
+            and (cerrada or esc[c].get("versionIssue", issue.version) == issue.version)] + [
+        # lo que vio una persona (qa.py a-mano) cuenta hasta que, mirado otra vez, se anota que pasa
+        (QA, c, f"a mano ({manos[c].get('quien')}): {manos[c].get('motivo')}")
+        for c in issue.criterios if isinstance(manos.get(c), dict) and manos[c].get("resultado") == "falla"]
 
 
 def repetida_en_qa(raiz, uid, issue):
@@ -1705,12 +1741,13 @@ def repetida_en_qa(raiz, uid, issue):
     que hay QA vigente, no que cubra el acceso de cada rol: eso lo dicen sus guiones."""
     r = pathlib.Path(raiz) / "qa" / uid / "resultado.json"
     try:
-        esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") or {} if r.is_file() else {}
+        todo = json.loads(r.read_text(encoding="utf-8-sig")) if r.is_file() else {}
+        esc, manos = todo.get("escenarios") or {}, todo.get("aMano") or {}
     except (ValueError, AttributeError):
         return False
     vigente = lambda e: (isinstance(e, dict) and e.get("resultado") in ("pasa", "falla") and not e.get("sinRepetir")
                          and e.get("versionIssue") == issue.version)
-    return any(vigente(esc.get(c)) for c in issue.criterios)
+    return any(vigente(esc.get(c)) or vigente(manos.get(c)) for c in issue.criterios)
 
 
 def falla_en_qa(raiz, uid, issue, marcas=()):
@@ -1735,15 +1772,20 @@ def avisos_qa(raiz, plan):
         return nota + [f"{plan.uid} no tiene QA (qa/{plan.uid}/resultado.json): lo siguiente es el QA de la unidad, en otra "
                 "sesión y solo con sus .feature (appian-qa; F8, paso 8)"]
     try:
-        esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") or {}
+        todo = json.loads(r.read_text(encoding="utf-8-sig"))
+        esc, manos = todo.get("escenarios") or {}, todo.get("aMano") or {}
     except (ValueError, AttributeError):
-        esc = {}
+        esc, manos = {}, {}
     de = lambda c: (esc.get(c) or {}).get("resultado") if isinstance(esc.get(c), dict) else None
-    faltan = [(que, [c for c in escenarios if de(c) == res]) for que, res in
+    faltan = [(que, [c for c in escenarios if de(c) == res and (res or c not in manos)]) for que, res in
               (("sin guion", None), ("desfasados", "desfasado"), ("con el guion por terminar", "guion por terminar"),
                ("sin repetir", "sin repetir"))]
     faltan = [f"{que}: {', '.join(cs)}" for que, cs in faltan if cs]
-    return nota + ([f"el QA de {plan.uid} no está completo ({'; '.join(faltan)}): lo hace QA (appian-qa)"] if faltan else [])
+    # lo que miró una persona (qa.py a-mano): cuenta como el QA, pero no lo repite ningún script (F9, paso 2)
+    a_mano = [f"{c} ({manos[c].get('quien')}, {manos[c].get('resultado')})" for c in escenarios
+              if isinstance(manos.get(c), dict)]
+    return nota + ([f"el QA de {plan.uid} no está completo ({'; '.join(faltan)}): lo hace QA (appian-qa)"] if faltan else []) \
+        + ([f"{plan.uid}: mirados a mano, no los repite ningún script: {', '.join(a_mano)}"] if a_mano else [])
 
 
 def estados(plan, raiz):

@@ -5,6 +5,8 @@
                  repite los guiones de cada unidad (sin <U>, los de todas las de qa/) y escribe qa/<U>/resultado.json
   qa.py sesiones <host> <usuario> … [--sesiones <carpeta> …]
                  la carpeta de sesión de SAIL CLI (--data-dir) de cada cuenta en este equipo, o cómo entrar si no la hay
+  qa.py a-mano   <p> <U> <escenario> (--falla "<motivo>" | --pasa) --quien <nombre> [--por-que "<sin guion porque…>"]
+                 lo que una persona miró de un escenario que no puede llevar guion; un «falla» bloquea como un guion
 
 El guion y el resultado, en SKILL.md («El guion» y «Repetir»). La sesión de cada cuenta se busca por su usuario y su host
 en los session.json de las carpetas de SAIL CLI (--sesiones, o $SAIL_HOME y ~/.sail); el script no entra ni sale. Solo
@@ -650,19 +652,23 @@ def excepciones_qa(raiz, uid, m, iss):
     return excepciones
 
 
+def versiones_de(uid, m, iss):
+    """{issue: versión} de las issues de la unidad, o {} si no se pueden calcular."""
+    if m is None or iss is None:
+        return {}
+    try:
+        ctx = iss.un.Contexto(m)
+        return {i.id: i.version for i in iss.calcula(m, ctx, uid).issues} if uid in ctx.por_id else {}
+    except iss.NoSePuede:
+        return {}
+
+
 def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
     """Repite los guiones de una unidad (con `solo`, nada más que esos escenarios; los demás se quedan como estaban) y
     escribe su resultado. Si SAIL CLI deja de responder, aquí o antes (`parado`), no repite los guiones que quedan.
     Devuelve (resultado, lo repetido esta vez, líneas para la consola, dónde dejó de responder SAIL CLI o None)."""
-    versiones_issues = {}
     _, iss, _ = analisis(raiz)
-    if m is not None and iss is not None:
-        try:
-            ctx = iss.un.Contexto(m)
-            if uid in ctx.por_id:
-                versiones_issues = {i.id: i.version for i in iss.calcula(m, ctx, uid).issues}
-        except iss.NoSePuede:
-            pass
+    versiones_issues = versiones_de(uid, m, iss)
     carpeta = pathlib.Path(raiz) / CARPETA / uid
     fichero = carpeta / RESULTADO
     previo = lee_json(fichero) or {}
@@ -728,8 +734,11 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
                 entrada["versionIssue"] = versiones_issues[entrada["issue"]]
         entrada = {"resultado": entrada.pop("resultado"), **entrada}   # lo primero que se lee
         nuevos[esc] = repetidos[esc] = entrada
+    # lo que miró una persona (qa.py a-mano) va aparte y no lo toca ningún guion: ni uno nuevo ni un «pasa» lo tapan
+    a_mano = previo.get("aMano") if isinstance(previo.get("aMano"), dict) else {}
     resultado = {"unidad": uid, "generadoEn": ahora(), "escenarios": nuevos,
-                 "sinGuion": [e for e, d in del_feature.items() if e not in guiones and not d["caso"]]}
+                 "sinGuion": [e for e, d in del_feature.items() if e not in guiones and e not in a_mano and not d["caso"]],
+                 **({"aMano": a_mano} if a_mano else {})}
     escribe(fichero, json.dumps(resultado, ensure_ascii=False, indent=1) + "\n")
     cuenta = lambda r: sum(1 for e in repetidos.values() if e.get("resultado") == r and not e.get("sinRepetir"))
     sin = sum(1 for e in repetidos.values() if e.get("sinRepetir"))
@@ -760,6 +769,14 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
         L.append(f"  {esc} · lo prueba un caso de prueba de regla (técnico §14), no el QA: aquí no se da por probado")
     for esc in resultado["sinGuion"] if not solo else []:
         L.append(f"  {esc} · sin guion: lo recorre QA (appian-qa)")
+    for esc, e in a_mano.items():
+        if esc not in del_feature:      # el escenario ya no está en el análisis: se guarda, pero no es un fallo de ahora
+            L.append(f"  {esc} · anotado a mano ({e.get('resultado')}, {e.get('quien')}), pero ya no está en el análisis "
+                     f"de {uid}: se conserva como histórico y no cuenta")
+            continue
+        L.append(f"  {esc} · {e.get('resultado')} a mano ({e.get('quien')}, {str(e.get('fecha'))[:10]}; {e.get('porQue')})"
+                 + (f": {e.get('motivo')}" if e.get("motivo") else "") + "; no lo repite ningún script"
+                 + (f" · {e['issue']} sigue pendiente" if e.get("resultado") == "falla" and e.get("issue") else ""))
     if parado and not de_antes:
         L.append(f"  {parado}: se ha parado ahí, sin repetir lo que quedaba; repítelo cuando responda")
     return resultado, repetidos, L, parado
@@ -795,7 +812,8 @@ def repetir(a):
     cuentas = sesiones(a.sesiones)
     codigo, parado = 0, None
     for uid in unidades:
-        if not any(f.name != RESULTADO for f in (raiz / CARPETA / uid).glob("*.json")):
+        hay_mano = bool((lee_json(raiz / CARPETA / uid / RESULTADO) or {}).get("aMano"))   # se enseña también sin guiones
+        if not hay_mano and not any(f.name != RESULTADO for f in (raiz / CARPETA / uid).glob("*.json")):
             esc = escenarios_de(raiz, uid)
             if esc and all(e["caso"] for e in esc.values()):      # no espera guion: los prueba un caso de prueba
                 print(f"{uid} · sus {len(esc)} escenarios los prueba un caso de prueba de regla (@caso-de-prueba): "
@@ -804,16 +822,63 @@ def repetir(a):
             print(f"{uid} · sin guiones en {CARPETA}/{uid}/: su QA está por hacer (appian-qa)")
             codigo = peor(codigo, 2)
             continue
-        _, repetidos, L, parado = repite_unidad(raiz, uid, set(a.escenario or []), cuentas, m, parado)
+        resultado, repetidos, L, parado = repite_unidad(raiz, uid, set(a.escenario or []), cuentas, m, parado)
         print("\n".join(L))
         if a.escenario and not repetidos:
             print(f"  {uid} no tiene guion de {', '.join(a.escenario)}")
             codigo = peor(codigo, 2)
-        if any(e.get("resultado") == "falla" and not e.get("sinRepetir") for e in repetidos.values()):
+        vigentes = escenarios_de(raiz, uid)     # lo anotado a mano de un escenario que ya no está no cuenta
+        a_mano_falla = any(e.get("resultado") == "falla" for x, e in (resultado.get("aMano") or {}).items() if x in vigentes)
+        if a_mano_falla or any(e.get("resultado") == "falla" and not e.get("sinRepetir") for e in repetidos.values()):
             codigo = peor(codigo, 1)
         elif any(e.get("sinRepetir") or e.get("resultado") == POR_TERMINAR for e in repetidos.values()):
             codigo = peor(codigo, 2)
     return codigo
+
+
+def a_mano(a):
+    """Lo que una persona miró de un escenario, o de la parte que su guion no cubre (SAIL CLI no la hace o no la ve):
+    un «falla» devuelve su issue a pendiente como un guion que falla; un «pasa», tras volver a mirarlo, retira solo ese
+    fallo. Va aparte del resultado del guion, y ninguno tapa al otro; no lo repite ningún script: `repetir` lo conserva
+    y lo enseña (SKILL.md, «A mano»)."""
+    raiz = pathlib.Path(a.proyecto)
+    uid, esc = a.unidad, a.escenario
+    carpeta = raiz / CARPETA / uid
+    if a.falla is not None and not a.falla.strip() or not a.quien.strip() or a.por_que is not None and not a.por_que.strip():
+        print("--falla, --quien y --por-que no pueden ir vacíos: un fallo sin motivo no se anota (ni se lee como «pasa»)")
+        return 2
+    del_feature = escenarios_de(raiz, uid)
+    if esc not in del_feature:
+        print(f"{esc} no es un escenario de {uid} (construccion/{uid}/*.feature)")
+        return 2
+    if del_feature[esc]["caso"]:
+        print(f"{esc} lo prueba un caso de prueba de regla (técnico §14), no el QA")
+        return 2
+    fichero = carpeta / RESULTADO
+    previo = lee_json(fichero) or {}
+    manos = previo.get("aMano") if isinstance(previo.get("aMano"), dict) else {}
+    por_que = a.por_que or (manos.get(esc) or {}).get("porQue")
+    if not por_que:
+        print(f"Di qué mira a mano de {esc} y por qué no lo cubre un guion, con --por-que (p. ej. «la descarga del "
+              "certificado: SAIL CLI no sigue un enlace de descarga»)")
+        return 2
+    m, iss, _ = analisis(raiz)
+    entrada = {"resultado": "falla" if a.falla is not None else "pasa", **({"motivo": a.falla.strip()} if a.falla is not None else {}),
+               "issue": del_feature[esc]["issue"], "quien": a.quien.strip(), "porQue": por_que.strip(), "fecha": ahora()}
+    version = versiones_de(uid, m, iss).get(entrada["issue"])
+    if version:
+        entrada["versionIssue"] = version
+    manos[esc] = entrada
+    escs = previo.get("escenarios") if isinstance(previo.get("escenarios"), dict) else {}
+    resultado = {"unidad": uid, "generadoEn": previo.get("generadoEn") or ahora(), "escenarios": escs,
+                 "sinGuion": [e for e, d in del_feature.items() if not d["caso"] and not (carpeta / f"{e}.json").is_file()
+                              and e not in manos],
+                 "aMano": manos}
+    carpeta.mkdir(parents=True, exist_ok=True)
+    escribe(fichero, json.dumps(resultado, ensure_ascii=False, indent=1) + "\n")
+    print(f"{esc} · {entrada['resultado']} a mano ({a.quien})"
+          + (f": {a.falla} · {entrada['issue']} vuelve a pendiente" if a.falla is not None else "") + f" · {fichero.as_posix()}")
+    return 1 if a.falla is not None else 0
 
 
 def ver_sesiones(a):
@@ -841,8 +906,17 @@ def main():
     s.add_argument("host")
     s.add_argument("usuarios", nargs="+")
     s.add_argument("--sesiones", action="append")
+    h = sub.add_parser("a-mano", help="lo que una persona miró de un escenario que no puede llevar guion")
+    h.add_argument("proyecto")
+    h.add_argument("unidad", metavar="U")
+    h.add_argument("escenario")
+    q = h.add_mutually_exclusive_group(required=True)
+    q.add_argument("--falla", metavar="MOTIVO", help="lo que vio que falla: su issue vuelve a pendiente")
+    q.add_argument("--pasa", action="store_true", help="lo miró y pasa")
+    h.add_argument("--quien", required=True, help="quién lo miró")
+    h.add_argument("--por-que", dest="por_que", help="por qué no puede llevar guion (la primera vez)")
     a = ap.parse_args()
-    return repetir(a) if a.cmd == "repetir" else ver_sesiones(a)
+    return {"repetir": repetir, "sesiones": ver_sesiones, "a-mano": a_mano}[a.cmd](a)
 
 
 if __name__ == "__main__":

@@ -29,7 +29,7 @@
       abrir --titulo "…"                    Abierta
       aprobada --fuente FU-nn [--comparte "EV-03 en <objeto>: secuenciar (EV-02 primero)"]
                                             el jefe de proyecto la aprueba; otra vez si ha crecido (una fuente nueva
-                                            para la unidad); sin --fuente, de Construida vuelve a Aprobada. Deja
+                                            para la unidad, salvo una «sin efecto», cambios.md §1); sin --fuente, de Construida vuelve a Aprobada. Deja
                                             escritas sus issues de construcción (construccion/<ID>/, indice.py issues)
                                             y avisa de la DT que una persona revisa antes de construir, si cambia
                                             datos, permisos, procesos en curso o lo que usan otros, o usa IA
@@ -511,6 +511,10 @@ def unidades(ctx):
             vs = vs or (f"{u.aprobada_en[0]}.{u.aprobada_en[1]}, al aprobarla" if u.aprobada_en else "")
         print(f"  {u.id} · {u.titulo} · {u.estado} · fuentes: {', '.join(fu) or '—'} · versión: {vs or '—'}"
               f" · objetos: {', '.join(obj) or '—'}")
+        validados = ctx.validados_ia(u.id)
+        if validados:   # la línea del JP: lo que no la hizo crecer por ser «sin efecto»; se vacía al volver a aprobarla
+            print(f"    validados por la IA desde su aprobación, sin efecto en alcance, esfuerzo ni riesgo: "
+                  f"{', '.join(validados)}")
         for g, objs in ctx.reaplicar(u.id):
             print(f"    reaplicar {g} en {', '.join(objs)} antes de marcarla Construida (--reaplicada {g})")
         for x in avisos_qa(ctx, u.id) if u.estado == un.CONSTRUIDA else []:

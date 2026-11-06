@@ -43,7 +43,8 @@ Construida (paso 9).
 
 **Variante: cambiar una issue ya verificada.** Un ajuste técnico dentro del encargo aprobado se escribe en el técnico
 según su plantilla (un retoque cosmético, sin DT) y se regenera con `indice.py issues <p> <U>`; un informe nuevo o un
-punto Pendiente de la unidad sigue la aprobación o la reasignación de `cambios.md` §1. Caducan las verificaciones de
+punto Pendiente de la unidad sigue la aprobación o la reasignación de `cambios.md` §1, y si su informe es «sin efecto»
+(`cambios.md` §1, «Sin efecto») lleva `Cambio: <U>` y no la devuelve a aprobación. Caducan las verificaciones de
 las issues cuyo encargo cambie; las demás no caducan por esa regeneración, aunque sus fallos vigentes de pruebas o QA
 siguen contando. Comparar en git con la revisión anterior del encargo puede ayudar a ver el cambio, también si ya está
 confirmado. Las subtareas son avance declarado: pueden quedar en «Revisar» y, con la versión actual verificada, no
