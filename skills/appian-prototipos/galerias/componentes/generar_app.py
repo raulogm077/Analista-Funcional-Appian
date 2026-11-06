@@ -1,5 +1,5 @@
-"""Genera galerias/componentes/app.json: catálogo navegable de TODOS los componentes de interfaz de Appian 26.9
-(las 147 funciones de https://docs.appian.com/suite/help/26.9/SAIL_Components.html), agrupados por las categorías de Appian.
+"""Genera galerias/componentes/app.json: catálogo navegable de TODOS los componentes de interfaz de Appian 26.10
+(las 147 funciones de https://docs.appian.com/suite/help/26.10/SAIL_Components.html), agrupados por las categorías de Appian.
 
 Cada demostración lleva el nombre de la función, cuándo usarla según el SAIL Design System y un ejemplo con datos
 ficticios. La prueba del plugin comprueba que el catálogo cubre todas las funciones de schemas/catalogo-appian.json.
@@ -187,7 +187,7 @@ def opener(icon, title, text, action):
 
 # ------------------------------------------------------------------ 1. Diseño de página: layouts, subcomponentes, billboards y plantillas de nivel superior
 p_dis = page("diseno", "Diseño de página", "Layouts para ordenar el contenido y plantillas de página de nivel superior", [
-    demo("Plantillas de nivel superior · a!formLayout · a!wizardLayout · a!paneLayout · a!headerContentLayout", "Cada pantalla empieza con una de estas cuatro. Esta página es un a!headerContentLayout; pulse una tarjeta para ver las otras con sus barras de título.",
+    demo("Plantillas de nivel superior · a!formLayout · a!wizardLayout · a!paneLayout · a!headerContentLayout", "Cada pantalla empieza con una de estas cuatro. Esta página es un a!headerContentLayout (26.10: con pie de página, footer, y ancho del contenido, contentsWidth); pulse una tarjeta para ver las otras con sus barras de título.",
          cards_as_buttons([("file-text-o", "Formulario", "a!formLayout con a!headerTemplateSimple, a!validationMessage y a!buttonLayout", {"goto": "formulario"}),
                            ("list-ol", "Asistente", "a!wizardLayout con a!wizardStep y a!sidebarTemplate", {"goto": "asistente"}),
                            ("columns", "Paneles", "a!paneLayout con a!pane que se desplazan por separado", {"goto": "paneles"}),
@@ -245,6 +245,9 @@ p_dis = page("diseno", "Diseño de página", "Layouts para ordenar el contenido 
                 "overlay": {"type": "a!fullOverlay", "alignVertical": "MIDDLE", "style": "NONE", "padding": "MORE", "contents": [
                     rtd([{"type": "a!richTextItem", "text": "98,7 %", "size": "LARGE_PLUS", "style": "STRONG", "color": GREEN}, "\n", {"type": "a!richTextItem", "text": "incidencias resueltas en plazo en septiembre", "color": "#FFFFFF"}], align="CENTER")]}})]),
 ], local={"local!inicioVentana": "2026-09-30T23:00", "local!finVentana": "2026-09-30T22:00", "local!tabH": 1, "local!tabV": 1})
+# 26.10: pie de página de a!headerContentLayout, de borde a borde y abajo del todo si el contenido es corto
+p_dis["interface"]["footer"] = {"type": "a!cardLayout", "showBorder": False, "padding": "STANDARD", "style": "STANDARD", "contents": [
+    rtd([{"type": "a!richTextItem", "text": "Pie de página (footer, 26.10): galería de componentes con datos ficticios", "color": "SECONDARY", "size": "SMALL"}], align="CENTER")]}
 
 # plantillas de nivel superior: formulario, asistente, paneles y diálogos con barras de título
 scr_form = {"id": "formulario", "title": "Parte de incidencia", "type": "form", "pattern": "P03", "req": ["C1"],
@@ -296,9 +299,9 @@ p_ent = page("entradas", "Entradas y selección", "Campos para escribir, subir, 
                {"type": "a!encryptedTextField", "label": "Código de acceso al almacén", "value": "local!codigo", "saveInto": "local!codigo", "instructions": "Se guarda cifrado"},
                {"type": "a!barcodeField", "label": "Etiqueta del paquete", "value": "local!barcode", "saveInto": "local!barcode", "acceptedTypes": ["CODE128", "QRCODE"], "placeholder": "Escanee o escriba el código"}),
           par("Observaciones", "local!obs", characterLimit=500, showCharacterCount=True, height="SHORT", marginAbove="STANDARD")]),
-    demo("a!integerField · a!floatingPointField · a!dateField · a!dateTimeField", "Números enteros o con decimales (con alineación a la derecha en lectura) y fechas con o sin hora.",
+    demo("a!integerField · a!decimalField · a!dateField · a!dateTimeField", "Números enteros o con decimales (con alineación a la derecha en lectura) y fechas con o sin hora. 26.10: a!decimalField sustituye a a!floatingPointField (obsoleto, mismo aspecto): PRECISE, por defecto, para importes y cálculos exactos; FLOATING para medidas.",
          cols({"type": "a!integerField", "label": "Personas afectadas", "value": "local!personas", "saveInto": "local!personas", "align": "RIGHT"},
-              {"type": "a!floatingPointField", "label": "Importe estimado (€)", "value": "local!importe", "saveInto": "local!importe", "align": "RIGHT"},
+              {"type": "a!decimalField", "label": "Importe estimado (€)", "value": "local!importe", "saveInto": "local!importe", "decimalType": "PRECISE", "align": "RIGHT"},
               date("Fecha del aviso", "local!fecha"),
               {"type": "a!dateTimeField", "label": "Hora de cierre prevista", "value": "local!cierre", "saveInto": "local!cierre"})),
     demo("a!fileUploadField · a!signatureField", "Subir documentos nuevos (zona amplia para arrastrar) y firmar en pantalla. 26.8: color del botón independiente del estilo y firma con línea discontinua.",
@@ -353,13 +356,17 @@ p_vis = page("visualizacion", "Visualización", "Texto, cifras, estados, imágen
                {"type": "a!gaugeField", "label": "Revisión anual", "percentage": 100, "color": "POSITIVE", "primaryText": {"type": "a!gaugeIcon", "icon": "check", "altText": "Completada"}, "secondaryText": "Completada"},
                [{"type": "a!progressBarField", "label": "Ocupación del edificio A", "percentage": 82, "color": "WARN", "style": "THICK"},
                 {"type": "a!progressBarField", "label": "Tornos abiertos", "percentage": 58, "color": "ACCENT"}])]),
-    demo("a!milestoneField · a!stampField · a!tagField · a!tagItem", "Dónde está un proceso, un icono o cifra destacada en un sello y estados en etiquetas de color suave (siempre con texto).",
+    demo("a!milestoneField · a!stampField · a!tagField · a!tagItem", "Dónde está un proceso, un icono o cifra destacada en un sello y estados en etiquetas de color suave (siempre con texto). 26.10: etiquetas con borde, icono, fondo TRANSPARENT y tamaño LARGE.",
          [milestone(["Comunicada", "Asignada", "En curso", "Resuelta", "Cerrada"], 3),
           cols({"type": "a!stampField", "icon": "building", "backgroundColor": NAVY, "contentColor": GREEN, "size": "MEDIUM", "align": "START", "tooltip": "Sede"},
                {"type": "a!stampField", "text": "B2", "backgroundColor": STATES["enCurso"]["tag"], "contentColor": NAVY, "size": "MEDIUM", "align": "START"},
                {"type": "a!tagField", "labelPosition": "COLLAPSED", "tags": [{"type": "a!tagItem", "text": "Pendiente", "backgroundColor": STATES["atencion"]["tag"]}, {"type": "a!tagItem", "text": "En curso", "backgroundColor": STATES["enCurso"]["tag"]},
                                                                            {"type": "a!tagItem", "text": "Resuelta", "backgroundColor": STATES["positivo"]["tag"]}, {"type": "a!tagItem", "text": "Rechazada", "backgroundColor": STATES["negativo"]["tag"]}]},
-               marginAbove="STANDARD")]),
+               marginAbove="STANDARD"),
+          {"type": "a!tagField", "labelPosition": "COLLAPSED", "size": "LARGE", "marginAbove": "STANDARD", "tags": [
+              {"type": "a!tagItem", "text": "Urgente", "backgroundColor": "TRANSPARENT", "showBorder": True, "borderColor": "NEGATIVE", "icon": "exclamation-triangle", "tooltip": "Hay que atenderla hoy"},
+              {"type": "a!tagItem", "text": "Con garantía", "backgroundColor": STATES["positivo"]["tag"], "icon": "check-circle"},
+              {"type": "a!tagItem", "text": "Proveedor externo", "backgroundColor": "TRANSPARENT", "showBorder": True, "icon": "external-link", "iconPosition": "END"}]}]),
     demo("a!messageBanner · a!horizontalLine · a!timeDisplayField", "Avisos que el usuario debe leer antes de seguir, separadores entre bloques y horas sin fecha.",
          [{"type": "a!messageBanner", "primaryText": "Edificio A sin electricidad esta noche", "secondaryText": "De 23:00 a 05:00 por mantenimiento del cuadro general", "backgroundColor": "WARN", "highlightColor": "WARN", "icon": "exclamation-triangle", "shape": "SEMI_ROUNDED", "marginBelow": "STANDARD"},
           {"type": "a!horizontalLine", "weight": "THIN", "color": "SECONDARY"},
@@ -377,12 +384,15 @@ p_vis = page("visualizacion", "Visualización", "Texto, cifras, estados, imágen
              {"type": "a!webVideo", "source": "https://vimeo.com/ejemplo/procedimiento-evacuacion", "tooltip": "Procedimiento de evacuación: puntos de encuentro", "$duration": "2:45"}]}),
     demo("a!webContentField", "Incrustar una página externa (un mapa, un panel de otra herramienta). 26.9: puede pedir cámara y micrófono para videollamadas o verificación de identidad.",
          {"type": "a!webContentField", "label": "Mapa de ocupación de salas", "labelPosition": "COLLAPSED", "source": "https://mapas.example.org/salas/NOR", "height": "SHORT", "showBorder": True, "altText": "Mapa de ocupación de salas de la sede Norte", "$title": "Ocupación de salas · NOR"}),
-    demo("a!recordKnowledgeGraph", "26.8: cómo se relaciona un registro con otros (sede, equipo, parte, proveedor) hasta varios niveles.",
-         {"type": "a!recordKnowledgeGraph", "label": "Relaciones de la incidencia", "labelPosition": "COLLAPSED", "recordType": "recordType!INC Incidencia", "recordIdentifier": 6, "relationshipLevel": 2, "height": "MEDIUM", "showMiniMap": True,
+    demo("a!recordKnowledgeGraph", "26.8: cómo se relaciona un registro con otros (sede, equipo, parte, proveedor) hasta varios niveles. 26.10: el control de niveles empieza en el primero (enableLevelSlider) y el registro que se pulsa se guarda para otros componentes (selectionSaveInto).",
+         [{"type": "a!recordKnowledgeGraph", "label": "Relaciones de la incidencia", "labelPosition": "COLLAPSED", "recordType": "recordType!INC Incidencia", "recordIdentifier": 6, "relationshipLevel": 2, "height": "MEDIUM", "showMiniMap": True,
+          "enableLevelSlider": True, "selectionSaveInto": "local!nodo",
           "$root": {"recordType": "Incidencia", "name": "INC-2026-0426", "icon": "wrench"},
           "$nodes": [{"recordType": "Sede", "name": "OES", "icon": "building"}, {"recordType": "Equipo", "name": "Enfriadora 2", "icon": "cog"}, {"recordType": "Parte de trabajo", "name": "PT-2026-118", "icon": "file-text-o"},
-                     {"recordType": "Proveedor", "name": "Clima Sur S.L.", "icon": "building", "parent": "PT-2026-118"}, {"recordType": "Técnico", "name": "Irene Vega", "icon": "user", "parent": "PT-2026-118"}]}),
-])
+                     {"recordType": "Proveedor", "name": "Clima Sur S.L.", "icon": "building", "parent": "PT-2026-118"}, {"recordType": "Técnico", "name": "Irene Vega", "icon": "user", "parent": "PT-2026-118"}]},
+          {"type": "a!richTextDisplayField", "labelPosition": "COLLAPSED", "marginAbove": "STANDARD", "value": [{"type": "a!richTextItem", "text": "Pulse un registro del grafo para verlo aquí.", "color": "SECONDARY"}], "showWhen": "a!isNullOrEmpty(local!nodo)"},
+          {"type": "a!richTextDisplayField", "labelPosition": "COLLAPSED", "marginAbove": "STANDARD", "value": [{"type": "a!richTextItem", "text": "Seleccionado: {local!nodo.recordTypePluralName} · {local!nodo.recordTitle}", "style": "STRONG"}], "showWhen": "a!isNotNullOrEmpty(local!nodo)"}]),
+], local={"local!nodo": None})
 
 # ------------------------------------------------------------------ 4. Acciones y enlaces
 LINKS = [
@@ -450,7 +460,7 @@ p_grid = page("grids", "Grids y listas", "Datos en tabla, tablas editables e his
            "rows": {"type": "a!forEach", "items": "local!mat", "expression": {"type": "a!gridRowLayout", "contents": [
                {"type": "a!textField", "label": "Material", "value": "fv!item.desc", "saveInto": "fv!item.desc", "placeholder": "Descripción"},
                {"type": "a!integerField", "label": "Cantidad", "value": "fv!item.cant", "saveInto": "fv!item.cant", "align": "RIGHT"},
-               {"type": "a!floatingPointField", "label": "Precio", "value": "fv!item.precio", "saveInto": "fv!item.precio", "align": "RIGHT"},
+               {"type": "a!decimalField", "label": "Precio", "value": "fv!item.precio", "saveInto": "fv!item.precio", "align": "RIGHT"},
                {"type": "a!richTextDisplayField", "value": [{"type": "a!richTextIcon", "icon": "times-circle", "altText": "Quitar", "caption": "Quitar", "color": "SECONDARY", "link": {"type": "a!dynamicLink", "$action": {"remove": {"local!mat": "{fv!index}"}}}, "linkStyle": "STANDALONE"}]}]}}}]),
     demo("a!eventHistoryListField · a!eventData", "Historial de lo que ha pasado en un registro (quién, qué y cuándo) a partir de su event history; con comentarios en tarjeta.",
          {"type": "a!eventHistoryListField", "labelPosition": "COLLAPSED", "eventStyle": "TIMELINE", "commentLayout": "CARD",
@@ -503,8 +513,8 @@ p_graf = page("graficos", "Gráficos", "Comparar, ver tendencias y proporciones.
 
 # ------------------------------------------------------------------ 7. IA y chat
 p_ia = page("ia", "IA y chat", "Conversar con agentes, con los datos, con un registro o con documentos", [
-    demo("a!agentChatField", "26.6: conversación con un agente de IA que usa herramientas (buscar, consultar, preparar borradores). 26.7: forma, borde y botón Detener.",
-         ai_agent_chat("Asistente de operaciones", "agent!INC_OPERACIONES", "Puedo buscar incidencias, resumir su historial y preparar partes de trabajo.", height="MEDIUM", shape="SEMI_ROUNDED", showBorder=True, showSessionPicker=False,
+    demo("a!agentChatField", "26.6: conversación con un agente de IA que usa herramientas (buscar, consultar, preparar borradores). 26.7: forma, borde y botón Detener. 26.10: showReasoning deja a la vista cada acción y su razonamiento (con false, se ve solo la que está en curso).",
+         ai_agent_chat("Asistente de operaciones", "agent!INC_OPERACIONES", "Puedo buscar incidencias, resumir su historial y preparar partes de trabajo.", height="MEDIUM", shape="SEMI_ROUNDED", showBorder=True, showSessionPicker=False, showReasoning=True,
                        **{"$messages": [{"role": "USER", "text": "¿Qué incidencias de climatización siguen abiertas?"}, {"role": "TOOL", "tool": "Buscar incidencias", "text": "1 resultado"},
                                         {"role": "ASSISTANT", "text": "Hay **1 incidencia abierta**: la INC-2026-0426, avería de climatización en la sala de formación C de la sede Oeste, asignada a Irene Vega."}],
                           "$replies": ["He preparado el parte de trabajo de la INC-2026-0426. Revíselo antes de guardarlo."]})),
@@ -532,13 +542,13 @@ scr_rec = {"id": "incidencia", "title": "{rv!record.codigo} · {rv!record.titulo
 
 pages = [p_dis, p_ent, p_vis, p_acc, p_grid, p_graf, p_nav, p_ia]
 extra = [scr_form, scr_wiz, scr_pane, scr_rec, dlg_full, dlg_img]
-spec = {"app": {"name": "Componentes de Appian 26.9", "language": "es", "today": "2026-09-26", "appianVersion": "26.9",
-                "source": "Catálogo SAIL de Appian 26.9 (docs.appian.com/suite/help/26.9/SAIL_Components.html) con datos ficticios"},
-        "site": {"displayName": "Componentes Appian 26.9", "home": pages[0]["id"], "user": {"name": "Lucía Fernández Gil"},
+spec = {"app": {"name": "Componentes de Appian 26.10", "language": "es", "today": "2026-09-26", "appianVersion": "26.10",
+                "source": "Catálogo SAIL de Appian 26.10 (docs.appian.com/suite/help/26.10/SAIL_Components.html) con datos ficticios"},
+        "site": {"displayName": "Componentes Appian 26.10", "home": pages[0]["id"], "user": {"name": "Lucía Fernández Gil"},
                  "pages": [{"title": tt, "icon": ic, "screen": p["id"], **({"includes": ["formulario", "asistente", "paneles"]} if p is p_dis else {})}
                            for p, tt, ic in zip(pages, ["Diseño", "Entradas", "Visualización", "Acciones", "Grids", "Gráficos", "Selectores", "IA"],
                                                 ["th-large", "keyboard-o", "eye", "hand-pointer-o", "table", "bar-chart", "sitemap", "magic"])]},
-        "requirements": [{"id": "C1", "title": "Catálogo completo de componentes de interfaz de Appian 26.9"}],
+        "requirements": [{"id": "C1", "title": "Catálogo completo de componentes de interfaz de Appian 26.10"}],
         "users": [{"id": i, "name": n, "title": t, "supervisor": s, "groups": g} for i, n, t, s, g in USERS],
         "groups": [{"id": i, "name": n, "parent": p, "description": d} for i, n, p, d in GROUPS],
         "documents": [{"id": i, "name": n, "folder": f, "type": ty, "size": sz, "modified": m} for i, n, f, ty, sz, m in DOCS],

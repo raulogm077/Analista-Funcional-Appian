@@ -2,15 +2,15 @@
 
 La fuente de verdad de nombres, parámetros y valores válidos son los schemas de `schemas/` (los mismos que usa la skill appian-sail-generator) más `schemas/prototype-extensions.json`. `validate.py` rechaza cualquier componente, parámetro o valor que no exista en SAIL, cualquier icono que no esté en `schemas/icon-aliases.md` y las anidaciones que Appian no admite (layouts raíz anidados, botones fuera de su layout, layouts o grids en `a!sideBySideItem`, campos editables en columnas de `a!gridField` — y, antes de 26.9, `a!sideBySideLayout` en celdas de grid —, `a!tabLayout` en side-by-side o grids, cabeceras de `a!headerContentLayout` que no sean card o billboard, hijos no válidos de `a!richTextDisplayField`).
 
-## Se renderizan con aspecto Appian: los 147 componentes de Appian 26.9
+## Se renderizan con aspecto Appian: los 147 componentes de Appian 26.10
 
-`schemas/catalogo-appian.json` lista las 147 funciones de interfaz de Appian 26.9 por categoría, como la documentación (docs.appian.com/suite/help/26.9/SAIL_Components.html). La prueba del plugin comprueba que todas están en los schemas, que el runtime las pinta (o las consume su componente padre) y que aparecen en la galería `galerias/componentes/`, donde se ve cómo se configura cada una.
+`schemas/catalogo-appian.json` lista las 147 funciones de interfaz de Appian 26.10 por categoría, como la documentación (docs.appian.com/suite/help/26.10/SAIL_Components.html). Lo que trae una versión posterior a `app.appianVersion` (26.9 si no se declara) es un error del validador: lo de 26.10 solo se usa si el entorno del proyecto ya está en 26.10. La prueba del plugin comprueba que todas están en los schemas, que el runtime las pinta (o las consume su componente padre) y que aparecen en la galería `galerias/componentes/`, donde se ve cómo se configura cada una.
 
-**Plantillas de nivel superior y barras de título**: a!headerContentLayout, a!formLayout (barra de título y botonera fijas, divisores, fondo, validaciones con a!validationMessage, también `validateAfter: "REFRESH"`), a!wizardLayout + a!wizardStep (DOT, LINE, CHEVRON horizontales y verticales, MINIMAL), a!paneLayout + a!pane (también dentro de a!formLayout; cada panel se desplaza por separado), a!headerTemplateSimple, a!headerTemplateFull, a!headerTemplateImage (también como cabecera de diálogo a todo el ancho) y a!sidebarTemplate.
+**Plantillas de nivel superior y barras de título**: a!headerContentLayout (26.10: `contentsWidth`, que limita y centra solo el contenido, y `footer`, tarjetas o billboards de borde a borde al final), a!formLayout (barra de título y botonera fijas, divisores, fondo, validaciones con a!validationMessage, también `validateAfter: "REFRESH"`), a!wizardLayout + a!wizardStep (DOT, LINE, CHEVRON horizontales y verticales, MINIMAL), a!paneLayout + a!pane (también dentro de a!formLayout; cada panel se desplaza por separado), a!headerTemplateSimple, a!headerTemplateFull, a!headerTemplateImage (también como cabecera de diálogo a todo el ancho) y a!sidebarTemplate.
 
 **Layouts**: a!columnsLayout/a!columnLayout (anchos fijos y 1X–10X), a!sideBySideLayout/a!sideBySideItem, a!cardLayout (estilos, barra decorativa, borde y grosor, sombra, alto, enlace; en fondos oscuros los enlaces cambian de color, 26.9), a!cardGroupLayout, a!sectionLayout (color y grosor del divisor, plegable, validaciones), a!boxLayout (26.7: `borderColor`, `borderWeight`, `labelFontWeight`), a!tabLayout/a!tabItem (26.7: `orientation` VERTICAL, `tabWidth` FILL, `loadBehavior` ASYNC), a!billboardLayout + a!barOverlay/a!columnOverlay/a!fullOverlay, a!buttonLayout, a!buttonArrayLayout, a!forEach.
 
-**Entrada**: a!textField, a!paragraphField, a!integerField y a!floatingPointField (con `align`), a!encryptedTextField, a!barcodeField (en web, campo de texto; `masked`), a!dateField, a!dateTimeField, a!fileUploadField (COMPACT/EXPANDED, `buttonStyle` y, desde 26.8, `buttonColor`), **a!signatureField** (26.8: botón «Dibujar firma», cuadro de firma con línea discontinua y firma guardada como imagen), a!styledTextEditorField.
+**Entrada**: a!textField, a!paragraphField, a!integerField, a!decimalField (26.10; `decimalType` PRECISE, por defecto, para importes y cálculos exactos, o FLOATING para medidas) y a!floatingPointField (hasta 26.9; obsoleto desde 26.10, sale del catálogo), todos con `align`, a!encryptedTextField, a!barcodeField (en web, campo de texto; `masked`), a!dateField, a!dateTimeField, a!fileUploadField (COMPACT/EXPANDED, `buttonStyle` y, desde 26.8, `buttonColor`), **a!signatureField** (26.8: botón «Dibujar firma», cuadro de firma con línea discontinua y firma guardada como imagen), a!styledTextEditorField.
 
 **Selección**: a!dropdownField, a!multipleDropdownField, a!radioButtonField, a!checkboxField (y sus variantes ByIndex; `choiceStyle` CARDS), a!booleanCheckboxField, a!toggleField, a!cardChoiceField con a!cardTemplateTile / a!cardTemplateBarTextJustified / a!cardTemplateBarTextStacked.
 
@@ -22,12 +22,12 @@ La fuente de verdad de nombres, parámetros y valores válidos son los schemas d
 
 **Visualización**:
 - Texto: a!richTextDisplayField (a!richTextItem con `style` LIGHT y SEMI_BOLD de 26.7, a!richTextIcon, listas con subniveles, **a!richTextImage** a la altura de la línea), a!headingField.
-- Estados y marcadores: a!stampField, a!tagField + a!tagItem, a!milestoneField.
+- Estados y marcadores: a!stampField, a!tagField + a!tagItem (26.10: tamaño LARGE, fondo TRANSPARENT, `showBorder` con `borderColor` e `icon` al principio o al final; el icono es decorativo y, si significa algo más que el texto, se explica en `tooltip`), a!milestoneField.
 - Indicadores: a!progressBarField, a!gaugeField (a!gaugePercentage, a!gaugeFraction, a!gaugeIcon), a!kpiField (COMPACT, STACKED, ADJACENT; icono en sello; tendencia), a!messageBanner.
 - Imágenes: a!imageField con a!webImage (data: URI), a!documentImage y a!userImage (iniciales con el nombre del usuario).
 - **a!videoField + a!webVideo**: reproductor 16:9 con controles, título y origen; varios vídeos en rejilla.
 - **a!webContentField**: marco con la página externa (dominio, título y esqueleto; el prototipo no la carga), borde y alto.
-- Otros: a!horizontalLine, a!timeDisplayField, a!documentViewerField (páginas, zoom, resaltado), a!recordKnowledgeGraph (26.8).
+- Otros: a!horizontalLine, a!timeDisplayField, a!documentViewerField (páginas, zoom, resaltado), a!recordKnowledgeGraph (26.8; 26.10: `enableLevelSlider`, que empieza en el nivel 1 con un control para abrir hasta `relationshipLevel`, y `selectionSaveInto`, que guarda el registro pulsado como `recordTypeReference`, `recordTypePluralName`, `recordTitle` y `recordIdentifier`; en el prototipo, el identificador es el `id` del nodo de `$nodes` o, si no lo lleva, su `name`).
 
 **Acciones y enlaces**: a!buttonWidget (SOLID, OUTLINE, GHOST, LINK; tamaños; solo icono con `accessibilityText`), a!recordActionField + a!recordActionItem (CARDS, TOOLBAR), a!linkField y los 12 enlaces: a!dynamicLink, a!recordLink, a!pageLink (26.8), a!safeLink, a!startProcessLink (`bannerMessage`, 26.9), a!processTaskLink, a!submitLink, a!documentDownloadLink, a!userRecordLink, a!reportLink, a!newsEntryLink y a!authorizationLink.
 
@@ -35,7 +35,7 @@ La fuente de verdad de nombres, parámetros y valores válidos son los schemas d
 
 **Gráficos**: a!columnChartField, a!barChartField, a!lineChartField, a!areaChartField (también apilado), a!pieChartField, a!scatterChartField, con `categories` + a!chartSeries o `data` + a!xxxChartConfig, a!grouping, a!measure, a!chartReferenceLine (etiqueta legible sobre blanco) y a!colorSchemeCustom. Etiquetas de datos (26.8: dentro de un segmento apilado, blanco o negro según su color), leyenda que filtra (`allowLegendFiltering`) y drilldown (`fv!selection`).
 
-**IA** (conversación simulada con `$messages`, `$replies`, `$sessions`, `$state`): a!agentChatField (26.6; forma, borde y botón Detener de 26.7), a!chatField + a!chatMessage, a!dataFabricChatField + a!suggestedQuestion, a!recordsChatField, a!documentsChatField.
+**IA** (conversación simulada con `$messages`, `$replies`, `$sessions`, `$state`): a!agentChatField (26.6; forma, borde y botón Detener de 26.7; 26.10: `showReasoning`, por defecto true, deja a la vista cada acción del agente; con false se ve solo la que está en curso), a!chatField + a!chatMessage, a!dataFabricChatField + a!suggestedQuestion, a!recordsChatField, a!documentsChatField.
 
 ## Cómo leen el prototipo los desarrolladores
 

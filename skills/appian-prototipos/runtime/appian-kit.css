@@ -89,6 +89,8 @@ svg.ic { width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em; 
 .hcl { min-height: 100%; }
 .hcl-header { }
 .hcl-contents { max-width: 1440px; margin: 0 auto; }
+.hcl.has-ft { display: flex; flex-direction: column; } .hcl.has-ft > .hcl-contents { flex: 1 0 auto; width: 100%; }  /* 26.10: el pie, abajo si el contenido es corto */
+.hcl-contents.w-EXTRA_WIDE { max-width: 1440px; }
 .form { margin: 0 auto; background: var(--form-bg, transparent); }
 .form-title { padding: 20px 0 12px; }
 .form-title h1 { margin: 0; font-size: 26px; font-weight: 600; line-height: 1.25; }
@@ -323,6 +325,8 @@ select.inp { appearance: none; padding-right: 30px; cursor: pointer; }
 .tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .tag { display: inline-block; padding: 2px 10px; border-radius: var(--tag-radius); font-size: 12.5px; font-weight: 600; background: var(--tbg, #eceef0); color: var(--tfg, var(--text)); line-height: 1.6; white-space: nowrap; max-width: 40ch; overflow: hidden; text-overflow: ellipsis; }
 .tags.z-SMALL .tag { font-size: 11.5px; padding: 0 8px; }
+.tags.z-LARGE .tag { font-size: 14px; padding: 4px 12px; }  /* 26.10: texto, relleno e icono a mayor escala */
+.tag > .tag-ic:first-child { margin-inline-end: .3em; } .tag > .tag-ic:last-child { margin-inline-start: .3em; }
 .links { display: flex; gap: 14px; flex-wrap: wrap; }
 .links a, a.lnk { cursor: pointer; text-decoration: none; } .links a:hover, a.lnk:hover { text-decoration: underline; }
 .pbar .trk { height: 8px; background: #e3e6e8; border-radius: 4px; overflow: hidden; } .pbar.THICK .trk { height: 14px; }
@@ -635,6 +639,9 @@ body.px-capture .form-btns.fixed, body.px-capture .hdrtpl.fixed { position: stat
 .kg-tb { position: absolute; top: 8px; right: 8px; display: flex; gap: 2px; background: #fff; border: 1px solid var(--border-light); border-radius: 6px; padding: 2px; z-index: 3; }
 .kg-tb .ib { border: 0; background: none; width: 28px; height: 28px; border-radius: 4px; cursor: pointer; color: var(--text-2); display: grid; place-items: center; }
 .kg-tb .ib:hover { background: var(--hover); color: var(--text); }
+.kg-lv { position: absolute; top: 8px; left: 8px; display: flex; gap: 8px; align-items: center; background: #fff; border: 1px solid var(--border-light); border-radius: 6px; padding: 4px 10px; z-index: 3; font-size: 12px; color: var(--text-2); }
+.kg-lv input { width: 110px; accent-color: var(--accent); } .kg-lv b { color: var(--text); min-width: 1.2em; text-align: center; }
+.kg-n.pick { cursor: pointer; } .kg-n.pick:hover { border-color: var(--accent); } .kg-n.sel { outline: 2px solid var(--accent); outline-offset: 2px; }
 .kg-mini { position: absolute; right: 8px; bottom: 8px; width: 120px; height: 78px; background: #fff; border: 1px solid var(--border); border-radius: 4px; z-index: 3; }
 .kg-mini svg { width: 100%; height: 100%; display: block; } .kg-mini rect { fill: #c3c9cf; } .kg-mini rect.c { fill: var(--accent); } .kg-mini rect.vp { fill: none; stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .chart .lk { cursor: pointer; } .chart rect.lk:hover, .chart circle.lk:hover { filter: brightness(1.12); }

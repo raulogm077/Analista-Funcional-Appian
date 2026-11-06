@@ -9,5 +9,6 @@
   {"tema": "Saving inside `a!forEach()`", "fichero": "references/sail.md", "marcador": "a!save\\(local!lineItems\\[fv!index\\]"},
   {"tema": "Rows per page", "fichero": "references/components/grid-field-instructions.md", "marcador": "10-25 is typical"},
   {"tema": "Formatting amounts", "fichero": "references/interfaces.md", "marcador": "`fixed\\(\\)` or `dollar\\(\\)`"},
-  {"tema": "Wizard step style", "fichero": "references/layouts/wizard-layout-instructions.md", "marcador": "style: \"DOT_VERTICAL\",\\s+// 4\\+ steps"}
+  {"tema": "Wizard step style", "fichero": "references/layouts/wizard-layout-instructions.md", "marcador": "style: \"DOT_VERTICAL\",\\s+// 4\\+ steps"},
+  {"tema": "Decimal input", "fichero": "references/component-reference.md", "marcador": "`a!decimalField` - use `a!floatingPointField`"}
 ]

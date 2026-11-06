@@ -29,6 +29,7 @@ Follow the "Do" column. The file named is where the official skill says it.
 | Rows per page | 10–25 typical (`grid-field-instructions.md`) | 5–10 when the grid shares the page, 50 when it is alone, 25 if unsure | The documentation's figures (doc 02 §5.6) |
 | Formatting amounts | Decimal values display with `dollar()` (`interfaces.md`; also in the examples of `grid-field-instructions.md` and `patterns/kpis.md`) | `dollar()` is deprecated; `a!currency()` localizes the amount for the user's locale | `a!currency()` with the ISO code (doc 02 §10.3) |
 | Wizard step style | Vertical from 4 steps; Minimal for mobile (`wizard-layout-instructions.md`) | Vertical with more than five steps or labels too long for a horizontal milestone; Minimal for one or two steps | The documentation's thresholds (doc 02 §4.6) |
+| Decimal input | `a!decimalField` does not exist: use `a!floatingPointField` (`component-reference.md`; also *Real names* in SKILL.md and the DECIMAL row of `interfaces.md`) | ⓥ From 26.10, `a!decimalField` stores Decimal Precise (default) or Decimal Floating (`decimalType`); `a!floatingPointField` is deprecated | On 26.10 or later, `a!decimalField` with the `decimalType` of the field it saves into (doc 01 §8); `a!floatingPointField` only before 26.10 |
 
 ## 2. Conventions of the official skill this guide narrows
 

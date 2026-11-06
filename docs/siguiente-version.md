@@ -177,7 +177,8 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   prototipos representativos que combinen elementos actuales y nuevos, sus estados e interacciones. Evaluar también
   con encargos de prototipo que el agente elige componentes adecuados a la necesidad y al contexto de UX, no solo
   que se dibujan; corregir los fallos y repetir los casos afectados. Conclusiones y límites, en este seguimiento y
-  en `evaluaciones.md`. [prototipos]
+  en `evaluaciones.md`. Hecha el 6-nov la parte mecánica, lo nuevo de 26.10 en el kit (`evaluaciones.md`): falta el
+  contraste del soporte parcial del resto del catálogo, los criterios de uso y la evaluación con encargos. [prototipos]
 - **Todas las entradas del plugin.** Inventariar y probar las entradas y variantes documentadas en el README, los
   flujos y los modos de cada skill, tanto su invocación directa como su uso dentro de un flujo.
   Incluir un caso representativo del uso real con decenas de reuniones y documentos, hasta construir y comprobar
