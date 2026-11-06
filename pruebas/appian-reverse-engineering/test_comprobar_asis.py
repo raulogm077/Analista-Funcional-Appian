@@ -267,6 +267,13 @@ def test_homonimos_y_patrones(tmp_path):
     inv.write_text(json.dumps(datos, ensure_ascii=False), encoding="utf-8")
     errores, _ = comprueba(salida)
     assert errores == [], errores
+    # cruzadas: el tipo que dice la evidencia manda (Codex, 6-nov)
+    cruzado = ("# Arquitectura\n\n| Objeto | Certeza | Evidencia |\n|---|---|---|\n"
+               "| `DEM Solicitud` | ✅ | [`mcp:recordType/DEM Solicitud#fields`](./anexo/site/DEM_Solicitud.md) |\n"
+               "| `DEM Solicitud` | ✅ | [`mcp:site/DEM Solicitud#pages`](./anexo/recordType/DEM_Solicitud.md) |\n")
+    (salida / "02-arquitectura.md").write_text(cruzado, encoding="utf-8")
+    errores, _ = comprueba(salida)
+    assert [e.split()[1] for e in errores] == ["02-arquitectura.md:5", "02-arquitectura.md:6"], errores
 
 
 def test_sin_prefijo_avisa(tmp_path):

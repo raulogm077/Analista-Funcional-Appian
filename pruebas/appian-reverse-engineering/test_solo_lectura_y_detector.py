@@ -29,7 +29,9 @@ def respuesta(carpeta, response, meta=None):
 @pytest.mark.parametrize("nombre", [
     "list_users", "get_user_details", "listUsers", "list_record_data", "get_record_data", "queryRecordType",
     "queryRecords", "getRecords", "getRecord", "searchRecords", "getRecordTypeData", "getProcessVariables",
-    "get_process_variables", "getTaskData", "queryEntity", "run_sql_query", "getCredentials", "get_api_token"])
+    "get_process_variables", "getTaskData", "queryEntity", "run_sql_query", "getCredentials", "get_api_token",
+    # con «user» y «filter», pero no son los filtros de un record type (Codex, 6-nov): siguen excluidas
+    "getUserByFilter", "list_user_profiles_by_filter", "listRecordTypeUsersByFilter"])
 def test_herramientas_de_datos_excluidas(nombre):
     ok, motivo, _ = POL.safety(nombre, None, True)   # también en modo de confianza
     assert not ok, (nombre, motivo)
@@ -38,7 +40,7 @@ def test_herramientas_de_datos_excluidas(nombre):
 @pytest.mark.parametrize("nombre", [
     "getRecordType", "listRecordTypes", "searchRecordTypes", "getRecordTypeFields", "getRecordActions",
     "getGroupMembers", "getProcessModel", "getProcessHistory", "getInterface", "getObjectDependents",
-    "listRecordTypeUserFilters"])
+    "listRecordTypeUserFilters", "list_record_type_user_filters"])
 def test_herramientas_de_metadatos_permitidas(nombre):
     assert POL.safety(nombre, None, True)[0], nombre
 

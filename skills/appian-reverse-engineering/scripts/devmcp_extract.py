@@ -107,9 +107,10 @@ def now_iso() -> str:
 
 def terminal_auth_error(error: str | None) -> bool:
     """Errores de acceso o login, no pruebas de que un objeto falte. Formas del cliente HTTP y del login browser.
-    Un 403 que dice que algo no está configurado («Record events not configured for this record type», de
-    getRecordEventsConfig desde el Dev MCP 26.9.10) es una respuesta del objeto, no un login caducado: no para."""
-    if re.search(r"(?i)\bnot configured\b", error or ""):
+    El 403 de getRecordEventsConfig (Dev MCP 26.9.10) en un record type sin eventos («Record events not configured
+    for this record type») es una respuesta del objeto, no un login caducado: no para. Solo ese; cualquier otro 401 o
+    403, aunque diga «not configured», sigue parando."""
+    if re.search(r"(?i)\b403\b.*\bRecord events not configured for this record type\b", error or ""):
         return False
     return bool(re.search(
         r"(?i)\bHTTP(?:/\d(?:\.\d)?)?\s*(?:status|error)?\s*[:=]?\s*[\"']?(?:401|403)\b"
@@ -159,6 +160,8 @@ class Policy:
         self.evaluation = set(d["evaluationVerbs"])
         self.read = set(d["readVerbs"])
         self.exceptions = [(re.compile(x["pattern"]), x["role"], x["reason"]) for x in d["allowExceptions"]]
+        # metadatos con una palabra que, por sí sola, los excluiría (los filtros de usuario de un record type)
+        self.metadata = [(re.compile(x["pattern"]), x["reason"]) for x in d.get("metadataExceptions", [])]
         self.excludes = [(re.compile(x["pattern"]), x["reason"]) for x in d["excludePatterns"]]
         self.exclude_tokens = d.get("excludeTokens", [])
         self.roles = [(r["role"], set(r["tokens"])) for r in d["roles"]]
@@ -214,6 +217,9 @@ class Policy:
         hit = self.interaction.intersection(toks)
         if hit:
             return False, f"Interaccion con la interfaz ('{sorted(hit)[0]}').", None
+        for rx, reason in self.metadata:
+            if rx.search(name) or rx.search(unido):
+                return True, reason, None
         motivo = self.excluded_by_tokens(toks)
         if motivo:
             return False, motivo, None

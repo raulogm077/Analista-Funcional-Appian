@@ -91,10 +91,14 @@ def test_500_y_429_siguen_reintentando(error):
 
 
 def test_403_de_algo_no_configurado_no_es_login():
-    """getRecordEventsConfig responde 403 en un record type sin eventos: no es una sesión caducada (F6, 6-nov)."""
+    """getRecordEventsConfig responde 403 en un record type sin eventos: no es una sesión caducada (F6, 6-nov). Solo
+    esa respuesta: otro 401 o 403 que diga «not configured» sigue parando (Codex, 6-nov)."""
     error = "API error (HTTP 403): Record events not configured for this record type"
     assert not dx.terminal_auth_error(error)
     assert not dx.is_transient(error)
+    for otro in ("API error (HTTP 401): OAuth authentication not configured",
+                 "API error (HTTP 403): Access denied; authentication not configured"):
+        assert dx.terminal_auth_error(otro), otro
 
 
 def test_error_403_detiene_reintento_que_ya_esperaba():

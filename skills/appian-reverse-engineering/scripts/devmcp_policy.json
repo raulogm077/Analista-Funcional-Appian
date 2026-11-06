@@ -138,6 +138,12 @@
       "reason": "Renderiza una interfaz con entradas vacias para obtener su arbol de componentes. No hace clic ni envia formularios. El resultado se guarda tal cual, con los valores de la evaluacion."
     }
   ],
+  "metadataExceptions": [
+    {
+      "pattern": "(?i)^(list|get)_?record_?types?_?user_?filters?$",
+      "reason": "Los filtros de usuario de un record type son su configuración (campo, tipo, valores), no datos de personas: se leen aunque el nombre lleve «user». Solo esta familia; cualquier otra con «user» sigue excluida."
+    }
+  ],
   "excludePatterns": [
     {
       "pattern": "(?i)record(data|rows?)|rows$|sqlquery|querydata",
@@ -443,10 +449,7 @@
       "any": [
         "user"
       ],
-      "none": [
-        "filter"
-      ],
-      "reason": "Datos personales de usuarios. Un filtro de usuario de un record type es configuración, no datos de personas: se lee."
+      "reason": "Datos personales de usuarios."
     },
     {
       "any": [

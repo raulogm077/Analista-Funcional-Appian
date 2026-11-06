@@ -192,6 +192,8 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
     for o in inv.get("objetos", []):
         if o.get("anexo"):
             ficha.setdefault(o.get("nombre"), []).append(o.get("anexo"))
+    # (tipo, nombre) → su ficha: con homónimos, la evidencia «mcp:<tipo>/<nombre>» va a la de su tipo
+    ficha_tipo = {(o.get("tipo"), o.get("nombre")): o.get("anexo") for o in inv.get("objetos", []) if o.get("anexo")}
     en_prosa = re.compile(rf"(?<![\w!/]){re.escape(prefijo)}_\w+(?!\w|\*(?!\*))") if prefijo else None   # FOR_ESTADO_* es un patrón, no un nombre (** es negrita)
     con_slug = conocidos | {Path(f).stem for fs in ficha.values() for f in fs}   # en la prosa, también el slug de una ficha
     detalle: dict[str, set] = {}
@@ -252,7 +254,7 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
                     if m.group(0) not in nvs:
                         e(n, f"{m.group(0)} no está en datos/sin-verificar.json")
                 # una evidencia lleva a la ficha de su objeto
-                for nombre, destino in evidencias_de_otro(doc, l, anexo, ficha, salida):
+                for nombre, destino in evidencias_de_otro(doc, l, anexo, ficha, salida, ficha_tipo):
                     e(n, f"la evidencia de «{nombre}» enlaza {destino}, que no es su ficha ({', '.join(ficha[nombre])})")
                 if n not in generado:   # el registro de 09 lo escribe build_registry.py
                     # un hallazgo se cita por su ID, que está en datos/
@@ -282,17 +284,23 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
             [f"{r}:{n} {m}" if n else f"{r}: {m}" for r, n, m in sorted(avisos, key=orden)])
 
 
-def evidencias_de_otro(doc: Path, linea: str, anexo: Path, ficha: dict, salida: Path) -> list[tuple[str, str]]:
+def evidencias_de_otro(doc: Path, linea: str, anexo: Path, ficha: dict, salida: Path,
+                       ficha_tipo: dict | None = None) -> list[tuple[str, str]]:
     """(nombre, destino) de cada evidencia «mcp:<tipo>/<nombre>» de la línea que enlaza una ficha del anexo que no es
-    la de ese objeto (`ficha`: sus anexos en inventario.json; con homónimos, vale la de cualquiera de ellos). Un destino
+    la de ese objeto (`ficha`: sus anexos en inventario.json). Con homónimos (la aplicación y su site) manda el tipo de
+    la evidencia (`ficha_tipo`); si ese tipo no está en el inventario, vale la ficha de cualquiera de ellos. Un destino
     que no es un fichero del anexo lo dicen las comprobaciones de la evidencia y de los enlaces; un nombre sin ficha (la
     aplicación, uno de fuera), nada."""
     out = []
     for m in EVIDENCIA.finditer(linea):
         nombre = m.group(1).strip()
+        tipo = re.search(r"mcp:([^/`\]]+)/", m.group(0))
         destino = (doc.parent / unquote(m.group(2).strip("<>").split("#", 1)[0])).resolve()
-        if nombre in ficha and anexo in destino.parents and destino.is_file() \
-                and destino not in {(salida / f).resolve() for f in ficha[nombre]}:
+        if nombre not in ficha or anexo not in destino.parents or not destino.is_file():
+            continue
+        suya = (ficha_tipo or {}).get((tipo.group(1).strip() if tipo else None, nombre))
+        validas = {(salida / suya).resolve()} if suya else {(salida / f).resolve() for f in ficha[nombre]}
+        if destino not in validas:
             out.append((nombre, destino.relative_to(salida).as_posix()))
     return out
 
