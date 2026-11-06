@@ -58,7 +58,10 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   prototipo nuevo se saltaron la rúbrica de `design-rules.md` §17 «por coste» y lo dijeron; revisaron las capturas a
   ojo. SKILL.md la pide «con pantallas nuevas, o antes de enseñar el prototipo al cliente», con otro agente si lo hay.
   Decide Raúl: pedirla solo antes de enseñar el prototipo al cliente, mantenerla como está o quitarla y quedarse con la
-  revisión de capturas y los avisos del validador. Dos pasadas con el mismo encargo. [prototipos · persona]
+  revisión de capturas y los avisos del validador. Pasada después (P26 bis), encontró en cada prototipo lo que no ven
+  el validador ni las capturas (en uno, dos reglas incumplidas) y dos fallos del propio kit, ya corregidos; cuesta unos
+  5 minutos por prototipo. Mi recomendación: mantenerla y pedirla siempre antes de enseñar el prototipo al cliente.
+  [prototipos · persona]
 - **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
   `pruebas/comprobar_anclas.py`, con red; la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
