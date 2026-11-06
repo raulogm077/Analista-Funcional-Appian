@@ -63,7 +63,7 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   corregidos; tardó entre 4 y 5 minutos por prototipo. Mi recomendación: mantenerla y pedirla siempre antes de enseñar el prototipo al cliente.
   [prototipos · persona]
 - **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
-  `pruebas/comprobar_anclas.py`, con red; la versión, en `.claude-plugin/plugin.json` y en la primera fila de
+  `pruebas/comprobar_anclas.py`, con red (pasado el 6-nov con la documentación ya en 26.10: 0 rotas); la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
 - **Índice del DOCX.** Evaluar la caché editable solo si una entrega la necesita. [Word]
 - **Reaprobación: si los topes de «sin efecto» son demasiado gruesos.** Aplicado el 6-nov, por decisión de Raúl
@@ -204,9 +204,8 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   del comportamiento y la documentación resultante, y corregir los márgenes de mejora encontrados. Usar como casos de
   evaluación los ocho de `aplazados-codex-20261019/mnt-evaluacion-ciega/revision-ciega.md` (recordatorio repetido entre
   ejecuciones, selector con límite o inactivos, usuario fijo…): el puntuador de entonces no los veía. Hecho el 6-nov el
-  primer paso, F6 en solo lectura sobre la aplicación de prueba FOR (`evaluaciones.md`). Quedan de él, menores: los
-  subagentes de la skill no tenían el Docs MCP, solo la web, donde las URL `/latest/` dan 404; y `preflight.json` se
-  rompe si el agente lo reescribe sin UTF-8 en Windows. Para la propia campaña, no para F6.
+  primer paso, F6 en solo lectura sobre la aplicación de prueba FOR (`evaluaciones.md`). Sus fallos, menores
+  incluidos, quedaron corregidos. Para la propia campaña, no para F6.
 - **Agentes y skills, por separado y juntos.** Evaluar qué recibe, decide y entrega cada uno; después, comprobar sus
   relaciones y traspasos dentro del flujo completo, su calidad, fricción y coste. Repetir los casos afectados tras
   las correcciones y recoger las conclusiones en este seguimiento y en `evaluaciones.md`. Caso para `pdf-publisher`:
