@@ -106,7 +106,11 @@ def now_iso() -> str:
 
 
 def terminal_auth_error(error: str | None) -> bool:
-    """Errores de acceso o login, no pruebas de que un objeto falte. Formas del cliente HTTP y del login browser."""
+    """Errores de acceso o login, no pruebas de que un objeto falte. Formas del cliente HTTP y del login browser.
+    Un 403 que dice que algo no está configurado («Record events not configured for this record type», de
+    getRecordEventsConfig desde el Dev MCP 26.9.10) es una respuesta del objeto, no un login caducado: no para."""
+    if re.search(r"(?i)\bnot configured\b", error or ""):
+        return False
     return bool(re.search(
         r"(?i)\bHTTP(?:/\d(?:\.\d)?)?\s*(?:status|error)?\s*[:=]?\s*[\"']?(?:401|403)\b"
         r"|\bstatus(?:_code| code)?\s*[:=]\s*(?:401|403)\b"

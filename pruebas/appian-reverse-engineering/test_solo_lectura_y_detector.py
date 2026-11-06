@@ -37,7 +37,8 @@ def test_herramientas_de_datos_excluidas(nombre):
 
 @pytest.mark.parametrize("nombre", [
     "getRecordType", "listRecordTypes", "searchRecordTypes", "getRecordTypeFields", "getRecordActions",
-    "getGroupMembers", "getProcessModel", "getProcessHistory", "getInterface", "getObjectDependents"])
+    "getGroupMembers", "getProcessModel", "getProcessHistory", "getInterface", "getObjectDependents",
+    "listRecordTypeUserFilters"])
 def test_herramientas_de_metadatos_permitidas(nombre):
     assert POL.safety(nombre, None, True)[0], nombre
 

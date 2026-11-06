@@ -443,7 +443,10 @@
       "any": [
         "user"
       ],
-      "reason": "Datos personales de usuarios."
+      "none": [
+        "filter"
+      ],
+      "reason": "Datos personales de usuarios. Un filtro de usuario de un record type es configuración, no datos de personas: se lee."
     },
     {
       "any": [

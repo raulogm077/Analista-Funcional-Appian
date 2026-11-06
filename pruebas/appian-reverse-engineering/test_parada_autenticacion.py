@@ -90,6 +90,13 @@ def test_500_y_429_siguen_reintentando(error):
     assert ex.sess.n == 2 and ex.interruption is None
 
 
+def test_403_de_algo_no_configurado_no_es_login():
+    """getRecordEventsConfig responde 403 en un record type sin eventos: no es una sesión caducada (F6, 6-nov)."""
+    error = "API error (HTTP 403): Record events not configured for this record type"
+    assert not dx.terminal_auth_error(error)
+    assert not dx.is_transient(error)
+
+
 def test_error_403_detiene_reintento_que_ya_esperaba():
     async def caso():
         class Cliente:
