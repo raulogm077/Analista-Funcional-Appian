@@ -7,7 +7,7 @@ lista no autoriza publicar, desplegar, enviar ni borrar.
 Cada pendiente explica el problema, qué hay que hacer y el resultado esperado, conservando los acuerdos de la
 conversación. Si el detalle ya está bien explicado en otro documento, se enlaza desde el punto en lugar de repetirlo.
 
-**Ahora:** rama `claude/pruebas-metodo-20261104`, subida sin PR. La campaña «el método de punta a punta» (4 y 5 de nov., por decisión de Raúl) recorrió con un proyecto ficticio F1, F2, F4, F8 y F9 en una aplicación de prueba de Indra-spain, más E9 (entradas) y E10 (¿sirve sin IA?): EV-01 y EV-02 construidas, su QA en verde (23 de 23 y 1 de 1) y el borrador del paquete, sin exportar ni desplegar (`evaluaciones.md`, «El método de punta a punta»). Hechas el 6-nov, por decisión de Raúl, la nota del DF, la reaprobación «sin efecto» y el registro de QA a mano, y, sin decisiones suyas, lo nuevo de Appian 26.10 en los prototipos (`evaluaciones.md`). Queda de Raúl ver lo creado en Indra-spain antes de borrarlo (§1); en §2, si los topes de «sin efecto» son demasiado gruesos y la regresión en un evolutivo. F5 a F7 siguen en §3.
+**Ahora:** rama `claude/pruebas-metodo-20261104`, subida sin PR. La campaña «el método de punta a punta» (4 y 5 de nov., por decisión de Raúl) recorrió con un proyecto ficticio F1, F2, F4, F8 y F9 en una aplicación de prueba de Indra-spain, más E9 (entradas) y E10 (¿sirve sin IA?): EV-01 y EV-02 construidas, su QA en verde (23 de 23 y 1 de 1) y el borrador del paquete, sin exportar ni desplegar (`evaluaciones.md`, «El método de punta a punta»). Hechas el 6-nov, por decisión de Raúl, la nota del DF, la reaprobación «sin efecto» y el registro de QA a mano, y, sin decisiones suyas, lo nuevo de Appian 26.10 en los prototipos, P26 (el agente elige bien los componentes, 14 de 14 en las dos versiones) y la pasada de QA a mano con la skill cargada (`evaluaciones.md`). Queda de Raúl ver lo creado en Indra-spain antes de borrarlo (§1); en §2, si los topes de «sin efecto» son demasiado gruesos, la regresión en un evolutivo y la rúbrica UX de los prototipos. F5 a F7 siguen en §3.
 
 ## 1. Del trabajo anterior
 
@@ -54,6 +54,11 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   sin reducir la regresión que ya pide F9. Resultado esperado: quien construye sabe qué repetir y cuándo, y qué no se ha
   medido. Diagnóstico de Codex. Análisis con lo medido y cuatro opciones para que decida Raúl:
   [`diseno/regresion-evolutivo.md`](diseno/regresion-evolutivo.md). [flujo · QA · persona y sesión]
+- **La rúbrica UX de los prototipos, omitida por coste.** En P26 (`evaluaciones.md`), las dos sesiones que hicieron un
+  prototipo nuevo se saltaron la rúbrica de `design-rules.md` §17 «por coste» y lo dijeron; revisaron las capturas a
+  ojo. SKILL.md la pide «con pantallas nuevas, o antes de enseñar el prototipo al cliente», con otro agente si lo hay.
+  Decide Raúl: pedirla solo antes de enseñar el prototipo al cliente, mantenerla como está o quitarla y quedarse con la
+  revisión de capturas y los avisos del validador. Dos pasadas con el mismo encargo. [prototipos · persona]
 - **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
   `pruebas/comprobar_anclas.py`, con red; la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
@@ -177,8 +182,10 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   prototipos representativos que combinen elementos actuales y nuevos, sus estados e interacciones. Evaluar también
   con encargos de prototipo que el agente elige componentes adecuados a la necesidad y al contexto de UX, no solo
   que se dibujan; corregir los fallos y repetir los casos afectados. Conclusiones y límites, en este seguimiento y
-  en `evaluaciones.md`. Hecha el 6-nov la parte mecánica, lo nuevo de 26.10 en el kit (`evaluaciones.md`): falta el
-  contraste del soporte parcial del resto del catálogo, los criterios de uso y la evaluación con encargos. [prototipos]
+  en `evaluaciones.md`. Hecho el 6-nov (`evaluaciones.md`): lo nuevo de 26.10 en el kit, lo que se valida y no se
+  simula (`componentes.md`) y P26, la elección de componentes con encargos (14 de 14 en 26.10 y en 26.9). Queda, si
+  Raúl lo quiere, simular alguno de los parámetros visibles que hoy no se pintan (cabecera fija, mensaje al terminar un
+  proceso…) y medir con un funcional menos explícito. [prototipos]
 - **Todas las entradas del plugin.** Inventariar y probar las entradas y variantes documentadas en el README, los
   flujos y los modos de cada skill, tanto su invocación directa como su uso dentro de un flujo.
   Incluir un caso representativo del uso real con decenas de reuniones y documentos, hasta construir y comprobar
