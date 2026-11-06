@@ -49,7 +49,7 @@ Fuente: [grupos.mmd](diagrams/grupos.mmd)
   Process models: todo sale de su role map, así que la tabla no lleva certeza; la evidencia de cada fila es ese role map.
 -->
 
-Process models: pueden iniciarlos los grupos con cualquier rol salvo Deny ([fuente](https://docs.appian.com/suite/help/latest/process-model-object.html#process-model-security)).
+Process models: pueden iniciarlos los grupos con cualquier rol salvo Deny ([fuente](https://docs.appian.com/suite/help/latest/process-model-object.html#prodlink-security)).
 
 | Process model | Administrator | Editor | Manager | Viewer | Initiator | Deny | Evidencia |
 |---|---|---|---|---|---|---|---|

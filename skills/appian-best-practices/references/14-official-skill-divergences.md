@@ -93,7 +93,7 @@ drop it and tell the user.
 - [Record list](https://docs.appian.com/suite/help/latest/record-list.html#what-is-a-record-list)
 - [Object security — Security inheritance](https://docs.appian.com/suite/help/latest/object-security.html#security-inheritance)
 - [Record Action Security — Security expression](https://docs.appian.com/suite/help/latest/record-action-security.html#security-expression)
-- [Process model object — Process model security](https://docs.appian.com/suite/help/latest/process-model-object.html#process-model-security)
+- [Process model object — Process model security](https://docs.appian.com/suite/help/latest/process-model-object.html#prodlink-security)
 - [Buttons — Position](https://docs.appian.com/suite/help/latest/sail/ux-buttons.html#position)
 - [Grids — Batch size](https://docs.appian.com/suite/help/latest/sail/ux-grids.html#batch-size)
 - [dollar() — deprecated](https://docs.appian.com/suite/help/latest/fnc_text_dollar.html) · [a!currency()](https://docs.appian.com/suite/help/latest/fnc_text_currency.html)

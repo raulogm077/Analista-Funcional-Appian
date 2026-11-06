@@ -144,7 +144,7 @@ Lo que no sepas con certeza de Appian se consulta en el MCP de documentación `a
 - Una duda por consulta, escrita como una frase completa.
 - Vale lo que diga la documentación de la versión del entorno del proyecto (va en la URL: `/help/26.6/`). Si solo lo dice una versión posterior, se avisa de que puede no estar disponible.
 - Lo que se escribe a partir de la respuesta lleva su URL, en la forma `/latest/`.
-- Sin el MCP, se consulta docs.appian.com con WebFetch o WebSearch. Si tampoco se puede, se escribe «sin verificar» y la duda pasa a pendientes.
+- Sin el MCP (también en los subagentes que no lo tengan), se consulta docs.appian.com con WebFetch o WebSearch, con la versión del entorno en la URL (`/suite/help/26.9/…`): `/latest/` es la última versión, que puede haber cambiado el nombre de la página. Si tampoco se puede, se escribe «sin verificar» y la duda pasa a pendientes.
 - Qué conviene hacer (qué mecanismo elegir, cómo diseñarlo) no es una duda de documentación: se consulta en `appian-best-practices`, solo la sección que toca. Esa skill está junto a esta: `python3 <esta skill>/../appian-best-practices/scripts/seccion.py 02 4.8` imprime solo §4.8 del doc 02.
 
 **En el prototipo**, las dudas típicas son si un componente, parámetro o valor existe en `app.appianVersion`, qué admite de verdad un Site, un record type o una acción de registro antes de enseñarlo en una pantalla, y qué poner en los `$note` para desarrollo. Lo que quede sin verificar va a `openQuestions` o a un `$note`.
