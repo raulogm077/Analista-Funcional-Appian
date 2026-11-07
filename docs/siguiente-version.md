@@ -22,7 +22,7 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 (HTML y trazabilidad) queda como opción de Raúl, sabiendo que hay que construirlas antes de navegarlas. Las lecciones
 útiles de esas pruebas tienen destino aquí o en `evaluaciones.md`; las que lo tenían pendiente, abajo y en §2. Falta:
 
-- **La aplicación de prueba «FOR Formación Externa»** de Indra-spain y lo que lista `Pruebas-plugin/metodo-20261104/objetos-creados.md`, con el paquete borrador: Raúl la ve antes de borrarla (5-nov). Las tablas `FOR_ESTADO`, `FOR_SOLICITUD`, `FOR_CERTIFICADO` y `FOR_MODALIDAD` de `jdbc/Appian` las quita después una persona con acceso a la base de datos. [persona y sesión]
+- **La aplicación de prueba «FOR Formación Externa»** de Indra-spain y lo que lista `Pruebas-plugin/metodo-20261104/objetos-creados.md`, con el paquete borrador: Raúl la ve antes de borrarla (5-nov). Desde el 7-nov lleva además EV-01 de la campaña «entender y evolucionar» y dos filas de prueba (`FOR_SOLICITUD` 338 y 339) que el entorno no dejó borrar a la sesión: las borra una persona. Las tablas `FOR_ESTADO`, `FOR_SOLICITUD`, `FOR_CERTIFICADO` y `FOR_MODALIDAD` de `jdbc/Appian` las quita después una persona con acceso a la base de datos. [persona y sesión]
 - **Las tablas `DVG_CATEGORIA` y `DVG_SOLICITUD`** de `jdbc/Appian` (prueba de divergencias, sin valor): las quita una
   persona con acceso a la base de datos. [persona]
 - **Residuos de la campaña de Codex en Indra-spain**, pendientes de decisión: la aplicación CML, las reglas `DEM_C26_*`
@@ -48,7 +48,11 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   roles que puedan verse afectados; transversal o sin acotar, todo), las pruebas de cada issue al construir y la
   regresión seleccionada en el QA del evolutivo; F9, completa. Antes de escribirlo en F8 y en la skill de QA, comparar
   un cambio aislado y otro compartido, midiendo qué detecta y cuánto tarda (`diseno/regresion-evolutivo.md`, «Lo que
-  decidió Raúl»). Se hace dentro de la campaña «entender y evolucionar» de §3. [flujo · QA]
+  decidió Raúl»). Se hace dentro de la campaña «entender y evolucionar» de §3, que ya llegó a construir EV-01 en
+  FOR (`evaluaciones.md`): falta su QA y la medición, que necesitan a Raúl. Las sesiones de SAIL CLI de `dem.gestor`,
+  `dem.gestor2` y `dem.revisor` han caducado (401) y renovarlas pide sus contraseñas:
+  `! SAIL_HOME=~/.sail/indra/<cuenta> sail login indra-spain.appiancloud.com` por cada una; y una segunda cuenta en
+  `FOR Formación` para probar que quien pide no decide (PT-12 de `evolucion-for`). [flujo · QA · persona]
 - **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
   `pruebas/comprobar_anclas.py`, con red (pasado el 6-nov con la documentación ya en 26.10: 0 rotas); la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
