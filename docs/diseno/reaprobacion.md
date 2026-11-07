@@ -217,3 +217,39 @@ texto del técnico; Codex demostró, con el técnico real del proyecto de formac
 se vincula a fechaFin») pasaba por redacción. Ahora solo quedan fuera de la huella de estructura lo que el técnico dice
 en §12 (operación) y §15 (pendientes): una nota allí no caduca la verificación; cualquier otra línea, sí
 (`test_sin_efecto.py`, la pareja con contenido real).
+
+## Contraste previo del criterio por impacto real (7-nov)
+
+Criterio aclarado con Raúl: aprobar el encargo antes de construir; después, los ajustes dentro de lo aprobado,
+sin cambio de alcance, esfuerzo relevante ni riesgo, los valida la IA. Un cambio real necesita decisión antes de
+aplicarse, también si se descubre construyendo o en QA y no llega una fuente externa. Se conserva el umbral ya
+acordado: una issue nueva o más de una jornada. Esta precisión no está implementada aquí.
+
+Contraste de Codex sobre b57dfb8, sin cambiar el código: cinco pruebas actuales de `test_sin_efecto.py` pasan.
+Además, se simularon en memoria las funciones y sus consumidores, quitando únicamente del bloqueo los motivos
+por sección del técnico, capa de DT e INT. Eso no implementa todavía su presentación como avisos.
+
+| Caso sintético | Código actual | Simulación sin esos bloqueos |
+|---|---|---|
+| Aclaración inocua, COMPLETA en técnico §3 | Pide reaprobación | La admite como «sin efecto» |
+| ALCANCE+ | Pide reaprobación | Sigue pidiéndola |
+| Punto Pendiente | Bloquea | Sigue bloqueando |
+| Requiere: Sí (seguridad) | Pide reaprobación | Sigue pidiéndola |
+| Cambio real de permisos mal clasificado «sin efecto», Requiere: — | Lo frena el tope de seguridad | Puede pasar |
+
+El último caso deja el riesgo en el juicio del analista: el script no demuestra que el cambio sea inocuo.
+El motivo de datos, seguridad o integración debe seguir visible para el JP cuando pase a aviso.
+`comprobar.exencion()` usa la misma elegibilidad: hay que conservar las reglas de validación del cliente
+(🔒, vuelta a ✅ y aprobación del cliente ya dada), la unidad Aprobada y la separación entre puntos y proyectos.
+
+Hay otros dos efectos comprobados. Una aclaración de técnico §3 que entra en la issue puede cambiar tanto su
+versión como su estructura y caducar la verificación, en Aprobada y en Construida; retirar la reaprobación no
+quita ese retrabajo. Y `crecida()` mira los informes que llegaron después de aprobar por su nombre: editar uno
+ya incluido en la aprobación no basta para que detecte un cambio real. Es un límite previo, no creado por esta
+simulación. Debe quedar claro cómo se tramita una decisión nueva descubierta al construir, sin inventar una
+fuente externa ni apoyarse solo en reescribir un informe aprobado. F8 ya permite los ajustes dentro del encargo
+mediante técnico y regeneración, sin una fuente o informe nuevos por cada decisión de implementación.
+
+Antes de dar por buena la implementación, contrastar con el plugin cargado el caso inocuo y el cambio real que
+pide aprobación, tanto al incorporar una fuente como durante construcción/QA. Mantener las pruebas existentes,
+los fallos vigentes y F9. El ensayo en memoria no acredita esa conducta ni mide el ahorro de tiempo del flujo.

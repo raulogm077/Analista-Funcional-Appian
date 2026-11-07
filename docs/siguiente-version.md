@@ -74,7 +74,10 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   topes paren lo que cambia el riesgo y no lo que solo lo menciona. Mientras la unidad está Aprobada, un paso manual
   del técnico que nombra objetos sigue caducando su verificación (E5-4): valorarlo a la vez. Mejora posible, de Codex:
   que la huella de una issue compare las DT por su Decisión y Verificar y las líneas ya limpias, como las imprime, para
-  que un cambio en el Riesgo de una DT o en un comentario no la caduque. Decide Raúl. [flujo · persona]
+  que un cambio en el Riesgo de una DT o en un comentario no la caduque. Contraste previo del criterio por impacto
+  real, con sus efectos y límites (7-nov):
+  [análisis de reaprobación](diseno/reaprobacion.md#contraste-previo-del-criterio-por-impacto-real-7-nov).
+  Pendiente de implementación y prueba. [flujo · persona]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
   observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se
   vuelve a plantear, medir el coste en un incremento real con fuentes del mismo tema, sin deducir ahorro del número
@@ -161,22 +164,66 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   `https://docs.appian.com/suite/help/26.10/deployments-view.html#review-deployment-requests`). Cancelar un pipeline
   detiene las promociones siguientes, no un despliegue ya empezado. Hace falta un entorno de destino además de
   Indra-spain. [F9]
-- **Solución técnica y diseño de arquitectura.** Revisar la generación de la solución técnica y su profundidad
-  (petición de Raúl, 5-nov). Definir la responsabilidad de un arquitecto experto en Appian que dedique el tiempo
-  necesario a plantearla y la deje suficientemente detallada para la revisión y validación de un arquitecto humano.
-  Aplicar las recomendaciones oficiales de Appian, sus buenas prácticas y patrones de diseño, justificando las
-  decisiones para la eficiencia, la escalabilidad y la gestión de versiones de la aplicación. Incluir su arquitectura,
-  los datos, procesos y componentes, las integraciones y las otras aplicaciones o sistemas con los que se relaciona;
-  contrastar el diseño y sus alternativas antes de darlo por listo para construir.
-  Cuando esté disponible el cerebro corporativo, usar su contexto funcional global y técnico del cliente: componentes
-  reutilizables, integraciones existentes, directrices de arquitectura, capas ya construidas, formatos establecidos
-  y las demás convenciones aplicables, para que la solución encaje con lo que existe.
-  Generar también un diseño técnico Word profesional, alineado con la solución vigente, que explique visualmente
-  cómo está hecha y cómo se integra. Evaluar qué herramientas usar para sus diagramas de arquitectura e integración,
-  su incorporación al Word y su mantenimiento cuando cambie la solución.
-  Probar el impacto de esta revisión en los traspasos y la construcción con casos representativos; recoger las
-  conclusiones y los límites en `evaluaciones.md`, evitando añadir documentación o trámites sin utilidad.
-  [arquitectura y Word]
+- **Solución técnica y diseño de arquitectura.** Revisar su generación y definir un agente arquitecto experto en
+  diseñar soluciones Appian (petición de Raúl, 5-nov; ampliada el 7-nov). Primero analiza las necesidades, el alcance
+  y las restricciones reales del proyecto y dedica el tiempo necesario a plantear la solución. Ajusta la
+  complejidad y el detalle a esas necesidades, evitando siempre la sobreingeniería.
+  Apoyar al agente en el material oficial vigente de Appian, sus buenas prácticas, patrones de diseño y
+  recomendaciones para aplicaciones eficientes, robustas y escalables, incluida la gestión de versiones. Ante
+  dudas técnicas, consulta el MCP de documentación de Appian. Justificar las decisiones y alternativas relevantes.
+  Cuando esté disponible el cerebro corporativo (punto siguiente), usar su contexto funcional y técnico de la
+  empresa y sus proyectos: directrices de arquitectura, componentes reutilizables, integraciones existentes,
+  capas ya construidas, formatos y convenciones, para que la solución encaje con lo que existe.
+  Definir cómo debe ser el diseño técnico como entregable Word profesional, visual y comprensible para su revisión
+  y validación por un arquitecto o equipo técnico humano. Incluir los gráficos de arquitectura de la solución y
+  sus integraciones con otras aplicaciones o sistemas, un modelo de datos bien definido (entidades, campos,
+  relaciones y restricciones relevantes), los procesos, componentes y demás apartados que el proyecto necesite.
+  Seleccionar el contenido y la profundidad por su utilidad para explicar y revisar la solución.
+  Distinguir los Markdown de trabajo (.md), que aportan contexto y detalle para la IA y el desarrollo, de los
+  entregables Word, que explican de forma estructurada lo que el cliente o el equipo técnico debe comprender y
+  validar. Definir cómo se obtiene y mantiene cada entregable a partir del trabajo vigente, seleccionando la
+  información relevante para sus lectores y evitando abrumarlos con contexto interno sin valor para su revisión.
+  Mantener coherentes el diseño funcional y el técnico, sus diagramas BPM y de arquitectura, el modelo de datos
+  y los prototipos de pantalla, de modo que ambos entregables describan la misma solución.
+  Evaluar las herramientas para los gráficos y su incorporación al Word; incluir como candidato
+  [stack-diagram](https://github.com/caru-ini/stack-diagram), señalado por Raúl. Comprobar su cobertura real de Appian
+  y los sistemas relacionados, la procedencia de los iconos, la claridad de los diagramas y sus formatos para Word,
+  el mantenimiento de las fuentes y gráficos cuando cambie la solución, las dependencias y las licencias.
+  Comparar con las herramientas actuales y decidir con una prueba representativa si aporta valor o se deja fuera.
+  Probar el impacto en las skills, los traspasos y la construcción: que el detalle de trabajo permita desarrollar,
+  que los Word renderizados y sus gráficos se lean y se puedan revisar, y que ambos diseños sigan siendo coherentes
+  cuando cambie el proyecto. Recoger conclusiones y límites en `evaluaciones.md`, evitando documentación o trámites
+  sin utilidad. [arquitectura y Word]
+- **Cerebro corporativo: información saneada y contexto transversal.** Analizar cómo integrar el plugin con un
+  cerebro corporativo que sea la fuente de verdad de la empresa (petición de Raúl, 6-nov; ampliada el 7-nov).
+  Debe reunir información de la empresa, información funcional del proyecto y de otros proyectos realizados,
+  y conocimiento técnico, de arquitectura, integraciones existentes y componentes reutilizables.
+  Definir un agente que analice las reuniones, documentos y demás información entrante y decida, con criterios
+  explícitos, qué aporta conocimiento nuevo, qué actualiza o sustituye, qué no se incorpora y qué necesita
+  aclaración antes de admitirse. Conservar el original, su procedencia y el motivo de la decisión, también cuando
+  la información no se incorpore al conocimiento de referencia.
+  Sanear, clasificar y contrastar el contenido con lo ya registrado, tratando duplicados, rectificaciones y
+  contradicciones. Distinguir hechos, acuerdos, propuestas, dudas e inferencias, teniendo en cuenta la autoridad
+  y el alcance de cada fuente, quién sostiene cada afirmación, su fecha, la empresa, el proyecto y su vigencia.
+  Solo la información saneada se incorpora al conocimiento de referencia; lo contradictorio o sin respaldo
+  suficiente queda identificado y pendiente de aclarar, sin presentarse como hecho confirmado.
+  Definir los criterios de saneamiento y validación, qué puede resolver el agente por sí mismo y qué requiere
+  aclaración, y evaluar las herramientas de integración. Las respuestas o deducciones de los agentes deben pasar
+  por el mismo tratamiento antes de convertirse en conocimiento de referencia.
+  Determinar cómo obtiene cada fase el contexto corporativo pertinente: análisis, diseño funcional y técnico,
+  prototipos, construcción, QA y evolución, aprovechando también el conocimiento de otros proyectos de la empresa.
+  Contemplar además las consultas del equipo mediante sus agentes y las preguntas muy específicas del cliente:
+  responder con precisión y respaldo en fuentes vigentes, dejando claro para qué empresa, proyecto y situación
+  vale la respuesta. Si la evidencia no permite una respuesta correcta y exacta, expresar qué falta o qué sigue
+  sin resolver, y distinguir lo confirmado de lo que falta por comprobar.
+  Identificar el impacto en las skills y los traspasos existentes. Probar la incorporación y reutilización entre
+  proyectos, una reunión que rectifica información anterior, fuentes contradictorias u obsoletas y propuestas
+  que aún no son acuerdos. Comprobar que una rectificación actualiza las respuestas posteriores y que el
+  conocimiento sustituido deja de ofrecerse como vigente; probar también preguntas concretas del equipo y del
+  cliente, con y sin respaldo suficiente.
+  Verificar en esos casos la calidad de la admisión y de las respuestas, su vigencia y trazabilidad. Coordinarlo
+  con el punto de arquitectura anterior; recoger conclusiones y límites en el seguimiento existente, sin añadir
+  documentación ni trámites sin utilidad. [contexto corporativo]
 - **Prototipos: repertorio hasta Appian 26.10 y elección UX.** Contrastar `appian-prototipos` con el catálogo oficial
   de componentes de interfaz hasta 26.10, detectar los ausentes o con soporte parcial y ampliarlos con ejemplos y
   criterios de cuándo usarlos o evitarlos, para disponer de alternativas usables, accesibles y adaptables. Revisar el
@@ -200,7 +247,11 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   planificación y verificación de las refactorizaciones, incluidos errores y recuperación. Recorrer tanto
   `F6 → F3 → F8` (entender y evolucionar) como `F6 → F7 → F8` (entender, refactorizar y construir). Evaluar como
   entradas aplicaciones existentes de Indra-spain y scripts o exportaciones que aporte Raúl, indicando qué permite
-  verificar cada origen y qué queda sin comprobar. Comprobar la conservación
+  verificar cada origen y qué queda sin comprobar. Raúl autoriza (7-nov) usar para estas pruebas en Indra-spain
+  FOR Formación Externa (FOR), IFB Informes y Acciones (IFB) e IFA Informes y Acciones (IFA), también para los
+  recorridos de evolución y refactorización. Elegir la aplicación según el caso que aporte valor, conservando la
+  evidencia de los estados analizados y el registro de objetos creados. Las decisiones de borrado de §1 siguen
+  separadas. Comprobar la conservación
   del comportamiento y la documentación resultante, y corregir los márgenes de mejora encontrados. Usar como casos de
   evaluación los ocho de `aplazados-codex-20261019/mnt-evaluacion-ciega/revision-ciega.md` (recordatorio repetido entre
   ejecuciones, selector con límite o inactivos, usuario fijo…): el puntuador de entonces no los veía. Hecho el 6-nov el
