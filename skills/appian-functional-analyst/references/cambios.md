@@ -33,11 +33,12 @@ unidad Aprobada (otro informe con su `Cambio:`, o un punto «Pendiente») la dev
 lo nuevo va en otra unidad.
 
 **Aprobación por impacto real.** El JP aprueba el encargo antes de construir; después, los ajustes que siguen
-dentro de lo aprobado los resuelve y comprueba la IA. Piden su aprobación, antes de aplicarse, los que cambian lo
+dentro de lo aprobado los resuelve y comprueba la IA. Piden su aprobación antes de construirse los que cambian lo
 acordado sobre el alcance, una regla, quién ve o hace qué, los datos o un contrato de integración (lo que usan otros),
 o añaden esfuerzo relevante (una issue nueva o más de una jornada) o riesgo; también si se descubren construyendo o en
-el QA, aunque no llegue una fuente externa (abajo). Se conservan la validación del cliente, las verificaciones, el QA
-y F9.
+el QA, aunque no llegue una fuente externa (abajo). En una unidad Aprobada, la devuelven a aprobación; en una Abierta
+se escriben como su propuesta y el JP la aprueba entera antes de construir (F3). Se conservan la validación del
+cliente (lo que toca una pieza 🔒 sigue pidiendo la suya), las verificaciones, el QA y F9.
 
 **Sin efecto.** Un informe que no cambia el alcance, el esfuerzo ni el riesgo lleva en la cabecera
 `Efecto: sin cambio de alcance, esfuerzo ni riesgo`, y lo valida la IA: no la devuelve a aprobación, queda en su
