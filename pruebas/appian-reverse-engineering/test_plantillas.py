@@ -103,7 +103,8 @@ def test_que_no_incluye_sin_lineas_fijas():
 
 
 def test_documentacion_de_appian_en_latest():
-    """Lo que acaba en un entregable enlaza la documentación de Appian en la forma /latest/ («Dudas de Appian»)."""
+    """Las plantillas enlazan la documentación de Appian en la forma /latest/, para que no envejezcan entre versiones; lo
+    que se escribe a partir de una consulta lleva la versión consultada («Dudas de Appian»)."""
     versiones = [f"{rel(p)}:{n} {m.group(0)}" for p in PLANTILLAS
                  for n, l in enumerate(p.read_text(encoding="utf-8").splitlines(), 1)
                  for m in re.finditer(r"docs\.appian\.com/suite/help/(?!latest/)[^/\s]+/", l)]

@@ -194,6 +194,11 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
             ficha.setdefault(o.get("nombre"), []).append(o.get("anexo"))
     # (tipo, nombre) → su ficha: con homónimos, la evidencia «mcp:<tipo>/<nombre>» va a la de su tipo
     ficha_tipo = {(o.get("tipo"), o.get("nombre")): o.get("anexo") for o in inv.get("objetos", []) if o.get("anexo")}
+    # la aplicación no está en «objetos»: su ficha es la que escribe build_annex.py (anexo/application/<prefijo>.md)
+    slug_app = app.get("prefijo") or re.sub(r"[^A-Za-z0-9_-]", "_", str(app.get("nombre") or "aplicacion"))
+    if app.get("nombre") and (salida / "anexo" / "application" / f"{slug_app}.md").is_file():
+        ficha.setdefault(app["nombre"], []).append(f"anexo/application/{slug_app}.md")
+        ficha_tipo[("application", app["nombre"])] = f"anexo/application/{slug_app}.md"
     en_prosa = re.compile(rf"(?<![\w!/]){re.escape(prefijo)}_\w+(?!\w|\*(?!\*))") if prefijo else None   # FOR_ESTADO_* es un patrón, no un nombre (** es negrita)
     con_slug = conocidos | {Path(f).stem for fs in ficha.values() for f in fs}   # en la prosa, también el slug de una ficha
     detalle: dict[str, set] = {}

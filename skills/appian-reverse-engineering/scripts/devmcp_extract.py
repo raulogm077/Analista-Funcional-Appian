@@ -110,8 +110,8 @@ def terminal_auth_error(error: str | None) -> bool:
     El 403 de getRecordEventsConfig (Dev MCP 26.9.10) en un record type sin eventos («Record events not configured
     for this record type») es una respuesta del objeto, no un login caducado: no para. Solo ese; cualquier otro 401 o
     403, aunque diga «not configured», sigue parando."""
-    if re.search(r"(?i)\b403\b.*\bRecord events not configured for this record type\b", error or ""):
-        return False
+    if re.fullmatch(r"(?i)\s*API error \(HTTP 403\): Record events not configured for this record type\.?\s*", error or ""):
+        return False   # el mensaje entero: dentro de otro error (un 401, un login caducado) sigue parando
     return bool(re.search(
         r"(?i)\bHTTP(?:/\d(?:\.\d)?)?\s*(?:status|error)?\s*[:=]?\s*[\"']?(?:401|403)\b"
         r"|\bstatus(?:_code| code)?\s*[:=]\s*(?:401|403)\b"
