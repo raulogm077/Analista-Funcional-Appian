@@ -132,7 +132,11 @@ through the design MCP, never through files.
 
 ## Tools
 
-Check what is available in the session; don't invent tools or assume they exist.
+Check what is available in the session; don't invent tools or assume they exist. Write to Appian only through the
+design MCP tools the session has (in Claude Code, deferred ones load with ToolSearch): if they aren't there, say so
+and work as without a design MCP (below). Don't call
+the server with a client of your own or with another skill's scripts (the reverse-engineering extractor runs read-only
+on purpose): that skips the session's permissions and that policy.
 
 **Design MCP (e.g. `appian-dev`) — "how is this actually implemented?"** Inspect and modify real objects,
 dependencies, validate against the environment. Ask for **the specific objects** you need; don't list the
