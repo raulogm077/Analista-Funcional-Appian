@@ -240,7 +240,9 @@ guion que apunte a un `_cId` o a una ref que cambia en cada carga; lo que le fal
    sino el banco de pruebas de la herramienta, con datos ficticios y sin cliente. Propuesta: decirlo como excepción en
    `CLAUDE.md` (T5).
 4. **T1 autorizado** («doy paso con T1», con Codex supervisando): construir la app ficticia en el desarrollo de
-   Indra-spain (`indra-spain.appiancloud.com`), solo con el prefijo `BPS`, y sus dos cuentas de prueba, que crea Raúl.
+   Indra-spain (`indra-spain.appiancloud.com`), solo con el prefijo `BPS`, y sus dos cuentas de prueba. Que las cuentas
+   las cree y las estrene la persona es propuesta de Claude, no decisión de Raúl: `createUser` existe, pero recibe la
+   contraseña como texto en la llamada, y una contraseña no pasa por la conversación.
    T2, T3 y T4 esperan a que la rama `claude/pruebas-metodo-20261104` entre en `main`, porque cambia los mismos
    ficheros (`qa.py`, el `SKILL.md` de `appian-qa`, `devmcp_extract.py`).
 

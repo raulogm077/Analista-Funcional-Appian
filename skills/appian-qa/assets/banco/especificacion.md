@@ -57,8 +57,9 @@ IA ni por ningún fichero):
 - una solicitante, en `BPS Solicitantes`;
 - una aprobadora, en `BPS Aprobadores`.
 
-Con cada una entra en `sail` desde su terminal, en su carpeta de sesión (`sail login <host> --data-dir <carpeta>`, con
-`SAIL_USERNAME` y `SAIL_PASSWORD` solo para esa orden).
+Con cada una entra en `sail` desde su terminal, en la carpeta de sesión común de esa cuenta, `~/.sail/<entorno>/<usuario>`
+(`sail login <host> --data-dir ~/.sail/<entorno>/<usuario>`, con `SAIL_USERNAME` y `SAIL_PASSWORD` solo para esa orden).
+Es donde `qa.py` busca la sesión de cada cuenta; el banco no tiene carpetas propias.
 
 ## Guiones
 
