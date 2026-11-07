@@ -50,9 +50,11 @@ nuevo» de «esto rompe tal pieza».
 | **Qué** | Capas 2 y 3 en el repositorio: `comprobar_bundle.py`, las notas de versión, adaptar el plugin y publicarlo | Capa 1 y las comprobaciones de `qa.py`: pasar su banco de pruebas; si falla, seguir con el `sail` anterior |
 | **Dónde prueba** | En su banco de pruebas | En su banco de pruebas |
 
-El Dev MCP y la skill oficial no se eligen: desde la 26.6.105 el servidor falla al primer uso si no coincide con el
-plugin de Appian del entorno, así que siguen al entorno en cuanto cambia. Lo único que se puede retrasar es `sail`, que
-es un programa aparte (el `INSTALL.txt` del bundle: «unrelated to the MCP server»).
+El servidor del Dev MCP no se elige: desde la 26.6.105 rechaza las llamadas si su `mcp_src_sha` no coincide con el del
+plugin de Appian del entorno (`version_gate.py`), así que sigue al entorno en cuanto cambia. La skill oficial no entra
+en esa comprobación: llega en el mismo bundle y se instala con él, pero su integridad es otra cuestión (su manifiesto,
+capa 2). `sail` es un programa aparte (el `INSTALL.txt` del bundle: «unrelated to the MCP server») y es lo único que se
+puede retrasar a propósito.
 
 ## Capa 1: leer en vivo
 
@@ -61,8 +63,9 @@ es un programa aparte (el `INSTALL.txt` del bundle: «unrelated to the MCP serve
   nombre de herramienta solo donde un script depende de él, y entonces va al inventario.
 - Lo que explica la skill oficial o la ayuda de `sail` **no se copia**: se remite a ello. Ya lo dice `CLAUDE.md` («Lo que
   ya garantizan la skill oficial o el Dev MCP no se repite»); se extiende a SAIL CLI.
-- Si lo instalado contradice lo que dice una skill, **manda lo instalado**, y la sesión lo apunta en
-  `docs/siguiente-version.md`.
+- Si el contrato técnico instalado (el esquema de una herramienta, la ayuda y las opciones de `sail`) contradice lo
+  que dice una skill sobre él, **manda lo instalado**, y la sesión lo apunta en `docs/siguiente-version.md`. Solo eso:
+  las autorizaciones, el método del plugin y las divergencias documentadas (doc 14) siguen vigentes.
 
 **SAIL CLI en `appian-qa`.** Antes de escribir guiones, la IA lee `sail --version`, `sail --help` y la ayuda de cada
 orden que vaya a usar. Esa ayuda está escrita para agentes (valores por tipo de componente, confirmaciones, lotes) y
@@ -166,8 +169,10 @@ repositorio, de los proyectos y de las carpetas de sesión de `sail`, que guarda
 Appian no deja volver atrás: su `setup` sobrescribe `sail` sin guardar el anterior, y el bundle se descarga del plugin
 instalado en el entorno, que sirve el de su versión. Sin copia, si un `sail` nuevo rompe `qa.py`, nadie puede repetir
 sus guiones hasta que el plugin se adapte. Por eso la copia la guarda el plugin, para todos:
-- Cada vez que `qa.py` termina todo en verde (el banco o la regresión de un proyecto), guarda una copia del `sail` con
-  el que lo hizo; solo la última (unos 10 MB).
+- Cada vez que `qa.py` termina todo en verde, guarda una copia del `sail` con el que lo hizo; solo la última (unos
+  10 MB). «Todo en verde» es una pasada completa (el banco entero o todos los guiones de la unidad, sin elegir unos
+  pocos) en la que cada guion pasó: una pasada parcial, con guiones desfasados o sin repetir no promueve la copia,
+  aunque `qa.py` salga con 0.
 - Si un `sail` nuevo falla, `qa.py` lo dice y da la orden para seguir con la copia: `SAIL_CLI=<copia>`, que `qa.py` ya
   admite (`sail_cli()`). No se reinstala nada; cuando el plugin se adapta, se quita la variable.
 
@@ -234,6 +239,10 @@ guion que apunte a un `_cId` o a una ref que cambia en cada carga; lo que le fal
    y eso choca con la letra de `CLAUDE.md` («Ninguna skill lleva un proyecto, tampoco de ejemplo»). No es un proyecto
    sino el banco de pruebas de la herramienta, con datos ficticios y sin cliente. Propuesta: decirlo como excepción en
    `CLAUDE.md` (T5).
+4. **T1 autorizado** («doy paso con T1», con Codex supervisando): construir la app ficticia en el desarrollo de
+   Indra-spain (`indra-spain.appiancloud.com`), solo con el prefijo `BPS`, y sus dos cuentas de prueba, que crea Raúl.
+   T2, T3 y T4 esperan a que la rama `claude/pruebas-metodo-20261104` entre en `main`, porque cambia los mismos
+   ficheros (`qa.py`, el `SKILL.md` de `appian-qa`, `devmcp_extract.py`).
 
 **Raúl, 4-nov:**
 1. ~~Pruebas reales contra IFA Informes y Acciones~~: sustituida por la 2 del 7-nov. IFA no tiene tareas de usuario, y
@@ -255,7 +264,7 @@ guion que apunte a un `_cId` o a una ref que cambia en cada carga; lo que le fal
 | T3 | `appian-qa`: leer la ayuda de `sail`; `sail-inventario.json` y las órdenes desde él; `open`, `tasks` y `reload` en los guiones; `qa.py banco` y la configuración de cada persona; el aviso al arrancar; la copia del último `sail` en verde y `SAIL_CLI`; no actualizar a mitad de una regresión; la versión en `requisitos.py` | Cubre los escenarios con tareas y deja a cualquiera probar y volver atrás |
 | T4 | Simulador al día con lo capturado en T1, sellado con su versión, y sus pruebas en `selftest.py` | Que la batería pruebe el `sail` de verdad |
 | T5 | `CLAUDE.md`: reglas de redacción, la excepción del banco (si Raúl la confirma) y la rutina del mantenedor en lugar de la línea de `comprobar_divergencias.py`; revisar las 7 herramientas citadas en prosa | Que lo nuevo que se escriba no vuelva a fijar nada |
-| T6 | Último paso en `appian-devmcp-update` (skill global de Raúl, fuera del repositorio), en sus cuatro copias: `~/.claude`, `~/.codex`, `~/.copilot` y `~/.gemini/config`. Solo sirve a Raúl | Que su rutina no dependa de acordarse |
+| T6 | Último paso de `appian-devmcp-update` (skill global de Raúl, fuera del repositorio): se cambia una vez, en su `update.sh` común de `~/.claude`, al que remiten las copias de los demás clientes. Solo sirve a Raúl | Que su rutina no dependa de acordarse |
 
 ## Lo que no se hace
 
