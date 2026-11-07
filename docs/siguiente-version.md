@@ -53,13 +53,10 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   `pruebas/comprobar_anclas.py`, con red (pasado el 6-nov con la documentación ya en 26.10: 0 rotas); la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
 - **Índice del DOCX.** Evaluar la caché editable solo si una entrega la necesita. [Word]
-- **Reaprobación por impacto real: validarla con el plugin cargado.** Aplicada el 7-nov por decisión de Raúl
-  ([análisis](diseno/reaprobacion.md#lo-que-se-aplicó-7-nov-aprobación-por-impacto-real); `evaluaciones.md`). Falta
-  lo que pidió: con el plugin cargado, un ajuste inocuo que continúa y un cambio real que pide aprobación, por una
-  fuente nueva y durante la construcción. Aparte, mientras la unidad está Aprobada, un paso manual del técnico que
-  nombra objetos sigue caducando su verificación (E5-4); mejora posible, de Codex: que la huella de una issue compare
-  las DT por su Decisión y Verificar y las líneas ya limpias, para que un cambio en el Riesgo de una DT o en un
-  comentario no la caduque. [flujo]
+- **Huella de una issue y retrabajo.** Mientras la unidad está Aprobada, un paso manual del técnico que nombra objetos
+  sigue caducando su verificación (E5-4), y una aclaración del técnico que entra en la issue también (V6c). Mejora
+  posible, de Codex: que la huella compare las DT por su Decisión y Verificar y las líneas ya limpias, para que un
+  cambio en el Riesgo de una DT o en un comentario no la caduque. Valorarlo con más casos. [flujo]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
   observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se
   vuelve a plantear, medir el coste en un incremento real con fuentes del mismo tema, sin deducir ahorro del número
