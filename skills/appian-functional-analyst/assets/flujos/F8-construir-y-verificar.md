@@ -36,8 +36,10 @@ versión); el técnico si cambia el diseño o la configuración, o ya se puede c
 «pendiente»; el prototipo y sus capturas si cambia una pantalla acordada; el draw.io y su imagen si cambia el proceso, y
 los diagramas Mermaid si cambian estados o datos; el Word, si ya hay alguno y cambia lo que exporta, también solo su versión (`cambios.md` §5). Un
 fallo frente a lo acordado se arregla en la aplicación o sigue la excepción prevista: no se cambia lo acordado para que
-pase, y cambiarlo pasa por su aprobación (`cambios.md` §1). Como tarde, todo al día antes de marcar la unidad
-Construida (paso 9).
+pase, y cambiarlo pasa por su aprobación (`cambios.md` §1). Si lo que se descubre construyendo o en el QA cambia lo
+acordado o añade esfuerzo relevante o riesgo, se para antes de aplicarlo y se escribe en una nota del equipo para el
+analista (`cambios.md` §1, «Lo descubierto al construir o en el QA»). Como tarde, todo al día antes de marcar la
+unidad Construida (paso 9).
 
 **Variante: un retoque cosmético.** El texto de un botón o una etiqueta: una fila «Modifica» en técnico §13, sin DT, una sola issue que dice qué cambia y que no hay pruebas que ejecutar, solo la primera puerta de calidad y sin QA. Si un guion de `qa/` usa el texto que cambia, al repetirlo falla en ese paso y se cambia el texto en el guion. `appian-functional-analyst/references/cambios.md` §4 y `appian-best-practices/SKILL.md` «Calibrate the effort to the change». <!-- (T6, T17) Según el coste medido, se hace a mano en Designer. -->
 

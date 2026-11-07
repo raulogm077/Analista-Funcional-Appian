@@ -43,41 +43,23 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   o publicar. Resultado esperado: quien consulte el repositorio entiende la versión real que recibe, sin confundir
   propuestas pendientes ni resultados históricos con capacidades actuales. Aprovechar el flujo de cierre existente,
   sin crear una lista paralela ni un informe por cada cambio. [repositorio · persona y sesión]
-- **Regresión en un evolutivo que toca un área.** Petición de Raúl, 6-nov. Problema: F8 prueba y verifica las issues
-  y hace el QA de la unidad; `verificar` solo alcanza a los consumidores directos con ejecutor, y sus fallos son avisos;
-  F9 pasa todos los casos y los guiones de todas las unidades, pero al final. Falta explicar cómo elegir, durante el
-  evolutivo, los recorridos de otras unidades que pueden romperse por datos, reglas o permisos compartidos (también
-  efectos indirectos), cuándo ampliar por riesgo y qué queda sin medir; un verde de los casos que ya hay no acredita
-  cobertura (E7). Qué hacer: proponer momentos, alcance y selección reutilizando técnico §14, los casos de prueba y los
-  guiones existentes; contrastarlo con un cambio aislado y con otro compartido que afecte a otra área, distinguir fallos
-  previos de regresiones y medir esfuerzo y cobertura. Sin otra ficha, sin repetir toda la interfaz tras cada retoque y
-  sin reducir la regresión que ya pide F9. Resultado esperado: quien construye sabe qué repetir y cuándo, y qué no se ha
-  medido. Diagnóstico de Codex. Análisis con lo medido y cuatro opciones para que decida Raúl:
-  [`diseno/regresion-evolutivo.md`](diseno/regresion-evolutivo.md). [flujo · QA · persona y sesión]
-- **La rúbrica UX de los prototipos, omitida.** En P26 (`evaluaciones.md`), las dos sesiones que hicieron un
-  prototipo nuevo se saltaron la rúbrica de `design-rules.md` §17 y lo dijeron (una, «por coste»); revisaron las capturas a
-  ojo. SKILL.md la pide «con pantallas nuevas, o antes de enseñar el prototipo al cliente», con otro agente si lo hay.
-  Decide Raúl: pedirla solo antes de enseñar el prototipo al cliente, mantenerla como está o quitarla y quedarse con la
-  revisión de capturas y los avisos del validador. Pasada después (P26 bis), encontró en cada prototipo lo que, en esas
-  pasadas, no detectaron el validador ni las capturas (en uno, dos reglas incumplidas) y dos fallos del propio kit, ya
-  corregidos; tardó entre 4 y 5 minutos por prototipo. Mi recomendación: mantenerla y pedirla siempre antes de enseñar el prototipo al cliente.
-  [prototipos · persona]
+- **Regresión en un evolutivo: medir antes de escribirla.** Decisión de Raúl (7-nov): repetir según el impacto
+  real del cambio (presentación, lo afectado; una regla, acción o filtro, sus casos y los escenarios de otros flujos y
+  roles que puedan verse afectados; transversal o sin acotar, todo), las pruebas de cada issue al construir y la
+  regresión seleccionada en el QA del evolutivo; F9, completa. Antes de escribirlo en F8 y en la skill de QA, comparar
+  un cambio aislado y otro compartido, midiendo qué detecta y cuánto tarda (`diseno/regresion-evolutivo.md`, «Lo que
+  decidió Raúl»). Se hace dentro de la campaña «entender y evolucionar» de §3. [flujo · QA]
 - **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
   `pruebas/comprobar_anclas.py`, con red (pasado el 6-nov con la documentación ya en 26.10: 0 rotas); la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
 - **Índice del DOCX.** Evaluar la caché editable solo si una entrega la necesita. [Word]
-- **Reaprobación: si los topes de «sin efecto» son demasiado gruesos.** Aplicado el 6-nov, por decisión de Raúl
-  (`evaluaciones.md`; `diseno/reaprobacion.md`, «Lo que se aplicó»). Problema: un informe «sin efecto» que toca técnico
-  §3, §4 o §10 o cita una DT de datos, seguridad o integración va al JP aunque sea pequeño; con los dos ajustes reales
-  de la campaña (FU-17 y FU-18) la regla no habría quitado esas dos aprobaciones. Qué hacer: con más casos reales, ver si
-  conviene que citar esas secciones sea un aviso en la línea del JP en vez de un tope. Resultado esperado: que los
-  topes paren lo que cambia el riesgo y no lo que solo lo menciona. Mientras la unidad está Aprobada, un paso manual
-  del técnico que nombra objetos sigue caducando su verificación (E5-4): valorarlo a la vez. Mejora posible, de Codex:
-  que la huella de una issue compare las DT por su Decisión y Verificar y las líneas ya limpias, como las imprime, para
-  que un cambio en el Riesgo de una DT o en un comentario no la caduque. Contraste previo del criterio por impacto
-  real, con sus efectos y límites (7-nov):
-  [análisis de reaprobación](diseno/reaprobacion.md#contraste-previo-del-criterio-por-impacto-real-7-nov).
-  Pendiente de implementación y prueba. [flujo · persona]
+- **Reaprobación por impacto real: validarla con el plugin cargado.** Aplicada el 7-nov por decisión de Raúl
+  ([análisis](diseno/reaprobacion.md#lo-que-se-aplicó-7-nov-aprobación-por-impacto-real); `evaluaciones.md`). Falta
+  lo que pidió: con el plugin cargado, un ajuste inocuo que continúa y un cambio real que pide aprobación, por una
+  fuente nueva y durante la construcción. Aparte, mientras la unidad está Aprobada, un paso manual del técnico que
+  nombra objetos sigue caducando su verificación (E5-4); mejora posible, de Codex: que la huella de una issue compare
+  las DT por su Decisión y Verificar y las líneas ya limpias, para que un cambio en el Riesgo de una DT o en un
+  comentario no la caduque. [flujo]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
   observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se
   vuelve a plantear, medir el coste en un incremento real con fuentes del mismo tema, sin deducir ahorro del número

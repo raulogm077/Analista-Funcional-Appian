@@ -515,6 +515,10 @@ def unidades(ctx):
         if validados:   # la línea del JP: lo que no la hizo crecer por ser «sin efecto»; se vacía al volver a aprobarla
             print(f"    validados por la IA desde su aprobación, sin efecto en alcance, esfuerzo ni riesgo: "
                   f"{', '.join(validados)}")
+            for n in validados:   # lo que citan de datos, seguridad o integraciones no la para, pero el JP lo ve
+                avisos = ctx.avisos_sin_efecto(n, u.id)
+                if avisos:
+                    print(f"      {n} cita {', '.join(avisos)}: revísalo si cambia quién ve qué, los datos o un contrato")
         for g, objs in ctx.reaplicar(u.id):
             print(f"    reaplicar {g} en {', '.join(objs)} antes de marcarla Construida (--reaplicada {g})")
         for x in avisos_qa(ctx, u.id) if u.estado == un.CONSTRUIDA else []:

@@ -1,6 +1,7 @@
 """Reaprobación (Raúl, 6-nov; docs/diseno/reaprobacion.md): un informe «sin efecto» no hace crecer la unidad aprobada
 salvo sus topes, que van al JP; y con la unidad construida, un técnico que cambia después no devuelve sus issues a
-pendiente. Sin red ni Appian."""
+pendiente. Desde el 7-nov (aprobación por impacto real), citar datos, seguridad o integraciones del técnico no la
+para: es un aviso para el JP. Sin red ni Appian."""
 import json
 import re
 import unittest
@@ -36,9 +37,11 @@ class SinEfecto(unittest.TestCase):
         tecnico.write_text(tecnico.read_text(encoding="utf-8") + "\n**DT-99 — Quién ve qué**\n\n| Campo | Contenido |\n"
                            "|---|---|\n| **Capa** | Seguridad |\n", encoding="utf-8")
         ctx = self.informe(aplicado="T §3")
-        self.assertTrue(any("§3 (datos)" in x for x in ctx.crecida("EV-01")), ctx.crecida("EV-01"))
+        self.assertEqual(ctx.crecida("EV-01"), [])
+        self.assertTrue(any("§3 (datos)" in x for x in ctx.avisos_sin_efecto("FU-90", "EV-01")))
         ctx = self.informe(encaja="DT-99", aplicado="técnico §2")
-        self.assertTrue(any("DT-99 es de seguridad" in x for x in ctx.crecida("EV-01")), ctx.crecida("EV-01"))
+        self.assertEqual(ctx.crecida("EV-01"), [])
+        self.assertTrue(any("DT-99 es de seguridad" in x for x in ctx.avisos_sin_efecto("FU-90", "EV-01")))
         descartada = "| 2 | ALCANCE+ | Firmar también [FU-90] | PAN-03 | — | — | Sí (alcance) | ✗ Descartado |\n"
         ctx = self.informe(extra=descartada)
         self.assertEqual(ctx.crecida("EV-01"), [])
@@ -61,6 +64,7 @@ class SinEfecto(unittest.TestCase):
         # un § del funcional no es del técnico: «funcional §4 y técnico §7» no toca seguridad
         ctx = self.informe(aplicado="funcional §4 y técnico §7")
         self.assertEqual(ctx.crecida("EV-01"), [])
+        self.assertEqual(ctx.avisos_sin_efecto("FU-90", "EV-01"), [])
 
     def test_sin_efecto_no_hace_crecer_y_lo_ve_el_jp(self):
         self.preparada()
@@ -77,15 +81,23 @@ class SinEfecto(unittest.TestCase):
                            "|---|---|\n| **Capa** | Seguridad |\n", encoding="utf-8")
         for que, kw, tope in (("alcance", {"tipo": "ALCANCE+"}, "de alcance"),
                               ("requiere aprobación", {"requiere": "Sí (alcance)"}, "requiere"),
-                              ("pendiente", {"decision": "Pendiente"}, "pendiente"),
-                              ("seguridad por sección", {"aplicado": "técnico §4 y §13"}, "§4 (seguridad)"),
-                              ("datos por sección", {"aplicado": "técnico §3"}, "§3 (datos)"),
-                              ("una DT de seguridad", {"aplicado": "técnico §2 · DT-99"}, "DT-99 es de seguridad")):
+                              ("un permiso que cambia", {"requiere": "Sí (seguridad)", "aplicado": "técnico §4"}, "requiere"),
+                              ("pendiente", {"decision": "Pendiente"}, "pendiente")):
             with self.subTest(que):
                 ctx = self.informe(**kw)
                 crece = ctx.crecida("EV-01")
                 self.assertTrue(crece and any(tope in x for x in crece), crece)
                 self.assertEqual(ctx.validados_ia("EV-01"), [])
+        # aprobación por impacto real (Raúl, 7-nov): citar una sección o una DT de riesgo no la para; se le enseña al JP
+        for que, kw, aviso in (("seguridad por sección", {"aplicado": "técnico §4 y §13"}, "§4 (seguridad)"),
+                               ("datos por sección", {"aplicado": "técnico §3"}, "§3 (datos)"),
+                               ("una DT de seguridad", {"aplicado": "técnico §2 · DT-99"}, "DT-99 es de seguridad")):
+            with self.subTest(que):
+                ctx = self.informe(**kw)
+                self.assertEqual(ctx.crecida("EV-01"), [])
+                self.assertEqual(ctx.validados_ia("EV-01"), ["FU-90"])
+                self.assertTrue(any(aviso in x for x in ctx.avisos_sin_efecto("FU-90", "EV-01")),
+                                ctx.avisos_sin_efecto("FU-90", "EV-01"))
         # el cliente ya aprobó (✔) un cambio sobre algo 🔒: no pide además la del JP (sin doble aprobación)
         ctx = self.informe(requiere="Sí (🔒)")
         self.assertEqual(ctx.crecida("EV-01"), [])
@@ -95,6 +107,15 @@ class SinEfecto(unittest.TestCase):
         for razon in ("Sí (seguridad)", "Sí (esfuerzo)", "Sí (🔒, seguridad)"):
             ctx = self.informe(requiere=razon)
             self.assertTrue(any("requiere" in x for x in ctx.crecida("EV-01")), (razon, ctx.crecida("EV-01")))
+
+    def test_el_jp_ve_lo_que_cita(self):
+        """Lo que un «sin efecto» cita de datos, seguridad o integraciones no para la unidad, pero `proyecto.py estado`
+        se lo enseña al JP junto a la línea de validados (Raúl, 7-nov)."""
+        self.preparada()
+        self.informe(aplicado="técnico §4 y §13")
+        code, out = fixture.corre(fixture.S / "proyecto.py", "estado", self.p)
+        self.assertIn("validados por la IA", out, out)
+        self.assertIn("FU-90 cita toca técnico §4 (seguridad)", out, out)
 
     def test_estructura_con_cambios_reales_del_tecnico(self):
         """La pareja que pidió Codex, con el técnico de verdad: una nota de operación (§12) cambia la versión y no la

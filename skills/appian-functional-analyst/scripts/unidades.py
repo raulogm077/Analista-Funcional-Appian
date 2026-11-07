@@ -371,13 +371,22 @@ class Contexto:
 
     def sin_efecto(self, nombre, uid=None):
         """(declara, [topes]) de un informe: si su cabecera dice «Efecto: sin cambio de alcance, esfuerzo ni riesgo» y lo
-        que lo impide aunque lo diga. Lo que cambia el alcance, pide aprobación, queda pendiente o toca datos, seguridad
-        o integraciones lo aprueba el JP; lo demás lo valida la IA (cambios.md §1, «Sin efecto»). Cuentan los puntos no
-        descartados (✗) y, si el informe tiene columna «Cambio», solo los de esa unidad; «## Aplicado» es de todo el
-        informe."""
+        que lo impide aunque lo diga. Lo que cambia el alcance, pide aprobación (su «Requiere») o queda pendiente lo
+        aprueba el JP; lo demás lo valida la IA (cambios.md §1, «Sin efecto»). Citar técnico §3, §4 o §10, una DT de
+        datos, seguridad o integración o una INT no lo impide: es un aviso que el JP ve (avisos_sin_efecto; aprobación
+        por impacto real, cambios.md §1). Cuentan los puntos no descartados (✗) y, si el informe tiene columna
+        «Cambio», solo los de esa unidad; «## Aplicado» es de todo el informe."""
+        declara, topes, _ = self._sin_efecto(nombre, uid)
+        return declara, topes
+
+    def avisos_sin_efecto(self, nombre, uid=None):
+        """Lo que un informe «sin efecto» cita de datos, seguridad o integraciones: no bloquea, se le enseña al JP."""
+        return self._sin_efecto(nombre, uid)[2]
+
+    def _sin_efecto(self, nombre, uid=None):
         t, puntos = next(((t, ps) for n, t, ps, _ in self.informes if n == nombre), ("", []))
         if not RX_SIN_EFECTO.search("\n".join(t.splitlines()[:5])):
-            return False, []
+            return False, [], []
         por_punto = any("cambio" in p for p in puntos)
         puntos = [p for p in puntos if "✗" not in p.get("decision", "")
                   and not (uid and por_punto and uid not in RX_UNIDAD.findall(p.get("cambio", "")))]
@@ -413,12 +422,12 @@ class Contexto:
                     doc = "T" if x.group(1)[0] in "Tt" else "F"
                 elif doc == "T":
                     secciones.add(x.group(2))
-        topes += [f"toca técnico §{s} ({SECCIONES_CON_RIESGO[s]})" for s in sorted(secciones & set(SECCIONES_CON_RIESGO))]
+        avisos = [f"toca técnico §{s} ({SECCIONES_CON_RIESGO[s]})" for s in sorted(secciones & set(SECCIONES_CON_RIESGO))]
         capas = self._capas_dt()
-        topes += [f"{x} es de {capas[x]}" for x in sorted(mo.ids_en(citado))
-                  if x in capas and capas[x].startswith(CAPAS_CON_RIESGO)]
-        topes += [f"{x} es una integración" for x in sorted(mo.ids_en(citado)) if x.startswith("INT-")]
-        return True, list(dict.fromkeys(topes))
+        avisos += [f"{x} es de {capas[x]}" for x in sorted(mo.ids_en(citado))
+                   if x in capas and capas[x].startswith(CAPAS_CON_RIESGO)]
+        avisos += [f"{x} es una integración" for x in sorted(mo.ids_en(citado)) if x.startswith("INT-")]
+        return True, list(dict.fromkeys(topes)), list(dict.fromkeys(avisos))
 
     def _despues_de_aprobar(self, uid):
         u = self.por_id[uid]

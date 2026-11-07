@@ -404,7 +404,7 @@ Solo se diseña IA si el análisis la pide. Si la propones tú, va marcada con `
 
 ## 17. Rúbrica de revisión UX
 
-Aplica la rúbrica en el paso 4 de SKILL.md, con pantallas nuevas o antes de enseñar el prototipo al cliente. Si hay agentes disponibles, que la aplique un agente distinto del que diseñó la pantalla. Puntúa cada criterio como ✅, ⚠️ o ❌ por pantalla, con el motivo.
+Aplica la rúbrica en el paso 4 de SKILL.md, antes de enseñar al cliente un prototipo nuevo o un cambio de estructura, navegación o flujo. Si hay agentes disponibles, que la aplique un agente distinto del que diseñó la pantalla. En pantallas ya revisadas, solo lo que cambia y lo que afecta. Puntúa cada criterio como ✅, ⚠️ o ❌ por pantalla, con el motivo; un ❌ es un incumplimiento concreto de esta guía, y una preferencia de estilo va como ⚠️, sin bloquear.
 
 1. La tarea principal se identifica en 3 segundos y está arriba a la izquierda.
 2. Hay un solo H1 y la jerarquía de títulos es coherente (§3).

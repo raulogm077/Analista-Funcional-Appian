@@ -55,3 +55,22 @@ cueste menos no está demostrado.
 1. **E por defecto y B cuando el impacto es global o incierto**, medidas antes en dos casos (recomendada).
 2. **B siempre**: repetir todos los guiones en el QA de cada unidad, sabiendo que el coste crece con la aplicación.
 3. **A**: dejarlo como está, sabiendo que la regresión se ve en F9.
+
+## Lo que decidió Raúl (7-nov)
+
+La opción 1, con una precisión: repetir según el impacto real del cambio, no por tocar un objeto compartido.
+
+| Cambio | Qué se prueba |
+|---|---|
+| Solo presentación, sin cambiar reglas, datos ni permisos | La pantalla o el componente afectado |
+| Una regla, acción o filtro con impacto delimitado | Sus casos y los escenarios de otros flujos y roles que puedan verse afectados |
+| Transversal, o cuyo impacto no se puede acotar | La regresión completa |
+
+Se analiza qué comportamiento cambia y sus dependencias, también los efectos indirectos; el alcance de las pruebas
+responde al riesgo y al impacto (mantenimiento de pruebas, ASTQB: https://astqb.org/2-3-maintenance-testing/).
+Cuándo: las pruebas de cada issue durante la construcción; la regresión seleccionada, junta en el QA del evolutivo,
+sin pasar toda la batería tras cada retoque; F9 conserva la regresión completa antes del paquete.
+
+Antes de convertirlo en regla: comparar un cambio aislado y otro compartido, midiendo qué detecta cada selección y
+cuánto tarda. Todavía no está demostrado cuánto ahorra.
+

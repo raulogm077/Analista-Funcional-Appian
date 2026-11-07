@@ -253,3 +253,27 @@ mediante técnico y regeneración, sin una fuente o informe nuevos por cada deci
 Antes de dar por buena la implementación, contrastar con el plugin cargado el caso inocuo y el cambio real que
 pide aprobación, tanto al incorporar una fuente como durante construcción/QA. Mantener las pruebas existentes,
 los fallos vigentes y F9. El ensayo en memoria no acredita esa conducta ni mide el ahorro de tiempo del flujo.
+
+## Lo que se aplicó (7-nov): aprobación por impacto real
+
+Decisión de Raúl (7-nov): aprobar el encargo antes de construir y, después, que la IA resuelva los ajustes dentro de
+lo aprobado; pedir aprobación cuando cambie lo acordado sobre alcance, reglas, permisos, datos o contratos de
+integración, o haya esfuerzo relevante (una issue nueva o más de una jornada) o riesgo, también al construir o en el
+QA. Aplicado:
+
+- `unidades.py`: los motivos por sección del técnico (§3, §4, §10), por capa de DT y por INT dejan de bloquear; son
+  avisos (`avisos_sin_efecto`) que `proyecto.py estado` enseña al JP bajo la línea de validados. Siguen bloqueando el
+  alcance, el «Requiere» (salvo «Sí (🔒)» ya aprobado por el cliente) y «Pendiente». `comprobar.exencion()` usa la
+  misma elegibilidad, con las reglas del 🔒 intactas.
+- `cambios.md` §1: «Aprobación por impacto real» y «Lo descubierto al construir o en el QA»: un ajuste dentro de lo
+  aprobado va al técnico y se regenera; un cambio real se para antes de aplicarlo, se escribe en una nota del equipo
+  (`nota-<fecha>-<tema>.md`, que se cataloga como cualquier fuente) y su informe con `Cambio:` devuelve la unidad a
+  aprobación. Así se cubren los dos límites que vio Codex: no hace falta una fuente externa y no basta reescribir un
+  informe ya aprobado. F8 lo remite.
+- Pruebas: `test_sin_efecto.py` (los casos por sección y por DT, ahora avisos; un permiso que cambia con «Requiere»
+  sigue pidiendo aprobación; la línea del JP con el aviso).
+
+Lo que no cambia, y Codex lo señaló: un cambio de permisos mal clasificado como «sin efecto» pasaría, porque lo frena
+lo que declara el analista; por eso el JP ve el aviso. Una aclaración del técnico que entra en una issue sigue
+pudiendo caducar su verificación (retrabajo, no aprobación).
+
