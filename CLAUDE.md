@@ -2,16 +2,24 @@
 
 Repositorio único del plugin. Todo hilo, en la nube o en el equipo de Raúl, parte de aquí y sube aquí.
 
+## Premisas
+
+- Lo usa cualquiera que lo instale. Nada del plugin depende del equipo, las cuentas, las rutas ni los entornos de Raúl (lo suyo va en `CLAUDE.local.md`), y no se entrega sin pasar las pruebas de «Cómo se trabaja».
+- El plugin facilita el trabajo, no lo vigila. Antes de añadir una comprobación, un script, un fichero o un «obligatorio»: ¿qué se rompe si no se añade?, ¿quién lo va a leer y qué decide con ello? Si la respuesta es «nada» o «nadie», no se añade. Lo que ya garantizan la skill oficial `appian`, el Dev MCP o SAIL CLI no se repite.
+- Antes de añadir un paso: ¿de qué color es? Un fichero versionado, un script, una persona o la IA. Lo que da siempre lo mismo con los mismos datos va a un script; la IA, solo donde hay que entender o redactar.
+- ¿Seguiría funcionando sin IA? Lo que el plugin deja en un proyecto (Markdown, Word, scripts, issues, escenarios) tiene que servir también a una persona.
+- Cada sesión paga lo que carga. `SKILL.md` lleva lo que se usa siempre y el detalle va en `references/`, que se lee cuando hace falta; los scripts devuelven un resumen, no un volcado. Un cambio que promete ahorrar llamadas o tokens se mide antes y después con el plugin cargado y se apunta en `docs/evaluaciones.md`.
+- Sin residuos. Lo que no se usa o no aporta se borra o se lleva a su sitio en cuanto se ve, sin esperar a cerrar el trabajo: ficheros sueltos en la raíz, scripts de un día (fuera del repositorio: la carpeta temporal de la sesión o la de la prueba), ramas ya unidas, planes y diseños publicados, diarios y pendientes aplicados. Los borrados, con confirmación; no se escribe lo que nadie vaya a leer.
+
+## Cómo se trabaja
+
 - Antes de empezar, `git pull`. Nunca se copia encima un plugin instalado ni una carpeta suelta: así se perdió trabajo con las dos 0.6.0-alpha.2.
 - Ramas: `main` y una sola de trabajo, la del trabajo en curso, que acumula sus pruebas y arreglos; no se abre otra por cada punto o hallazgo. Mientras se pueda, una sesión cada vez. La rama se sube cuando convenga, como copia de seguridad: sin PR no se prueba nada ni se toca `main`. Si dos sesiones trabajan a la vez, cada una en su copia de la carpeta (worktree) y la principal se queda en `main`.
 - El PR se abre solo cuando Raúl dice que se suba; antes, la sesión le resume qué cambió y qué probó. Un PR por trabajo terminado, no por cada retoque.
 - Los colaboradores siguen `.github/CONTRIBUTING.md`: rama `<nombre>/<tema>`, PR cuando terminan, sin tocar la versión, y entra en `main` solo con la aprobación de Raúl (`.github/CODEOWNERS`).
 - Aquí solo está el código del plugin y sus pruebas. Lo que el plugin genera al trabajar en un proyecto, también en los proyectos de prueba, va a la carpeta de ese proyecto, nunca a este repositorio.
 - Ninguna skill lleva un proyecto, tampoco de ejemplo, ni la marca de un cliente. Las pruebas de cada skill y sus datos ficticios van en `pruebas/<skill>/`, que no entra en el paquete, y la marca de un cliente (`brand-<id>.json` y su logo), en `prototipo/` de su proyecto.
-- El diseño y el plan de la versión en curso, cuando los hay, van en `docs/diseno/` y `docs/plan/` (los de versiones pasadas, en el historial de git), y los resultados de las evaluaciones, en `docs/evaluaciones.md`. Al cerrar un trabajo, retira planes y diseños publicados, diarios, pendientes aplicados y ficheros sin consumidor, con confirmación para los borrados; no escribas lo que nadie vaya a leer.
-- El plugin facilita el trabajo, no lo vigila. Antes de añadir una comprobación, un script, un fichero o un «obligatorio»: ¿qué se rompe si no se añade?, ¿quién lo va a leer y qué decide con ello? Si la respuesta es «nada» o «nadie», no se añade. Lo que ya garantizan la skill oficial `appian` o el Dev MCP no se repite.
-- Antes de añadir un paso: ¿de qué color es? Un fichero versionado, un script, una persona o la IA. Lo que da siempre lo mismo con los mismos datos va a un script; la IA, solo donde hay que entender o redactar.
-- ¿Seguiría funcionando sin IA? Lo que el plugin deja en un proyecto (Markdown, Word, scripts, issues, escenarios) tiene que servir también a una persona.
+- El diseño y el plan de la versión en curso, cuando los hay, van en `docs/diseno/` y `docs/plan/` (los de versiones pasadas, en el historial de git), y los resultados de las evaluaciones, en `docs/evaluaciones.md`.
 - Las lecciones útiles de cada prueba del plugin, con reuniones reales o ficticias, se centralizan en `docs/siguiente-version.md` (pendientes) y `docs/evaluaciones.md` (aplicadas, con pruebas y límites), sin datos del cliente. Antes se mira de dónde viene el fallo (el plugin, Appian, el Dev MCP o la skill oficial, el juicio del modelo o el montaje de la prueba) y se decide si se arregla en el trabajo en curso o queda pendiente: un fallo del modelo o de la plataforma no pide por sí solo una regla nueva. Son el seguimiento vigente: las notas del ensayo aportan evidencia y enlazan esos documentos, no mantienen otra lista de mejoras. Lo demás de la prueba queda fuera del repositorio. Lo que surge fuera de una prueba y no entra en la versión en curso, también va a `docs/siguiente-version.md`.
 - Un cambio en cómo se comporta una skill se prueba, antes de subirlo, con el plugin cargado desde esta carpeta en un proyecto de prueba fuera del repositorio: `claude --plugin-dir <carpeta>`, que sustituye al instalado con el mismo nombre. La app de escritorio no tiene equivalente.
 - Antes de escribir una regla sobre una herramienta del Dev MCP, se mira la herramienta real (su esquema y su respuesta), no lo que debería hacer.
