@@ -120,14 +120,18 @@ En este orden; se salta lo que la pantalla no tiene:
    bloque. Una pantalla compuesta se presenta por partes («se estructura en tres partes: cabecera, tarjetas
    informativas y secciones») y después cada parte en su punto, en ese orden (§6).
 3. **Estado inicial**: qué se ve al entrar, qué viene relleno o seleccionado, qué sección está abierta y cuáles
-   cerradas, qué se ve si no hay ningún registro (la tabla vacía o el mensaje literal).
+   cerradas, qué se ve si no hay ningún registro (la tabla vacía o el mensaje literal). La búsqueda y los filtros,
+   con su valor al entrar: «con la búsqueda vacía y los filtros en su valor por defecto ("Todos")»; nunca «sin
+   búsqueda ni filtros», que no deja claro si no los hay o si no hay ninguno aplicado.
 4. **Elementos de la parte superior**: la barra de búsqueda y filtros («se describe en la sección Búsqueda y
    Filtros») y cada botón con su efecto. Un botón que abre otra pantalla o un modal: «al pulsarlo, se abre el modal
    "Nueva solicitud" (se describe en la pantalla "Nueva solicitud")», sin describir su contenido.
 5. **Columnas o campos**, uno por punto y en el orden en que se ven, cada uno como dice el §5. Siempre como lista:
    una línea «La tabla incluye las siguientes columnas:» (o «… los siguientes campos:») y debajo una sub-viñeta por
    columna o campo, con su nombre y su descripción; nunca seguidos en una frase («La tabla incluye las columnas A, B y
-   C»). Vale para cada tabla y cada bloque de campos, también dentro de un modal o de una sección.
+   C»). Vale para cada tabla y cada bloque de campos, también dentro de un modal o de una sección. En la tabla
+   principal de una pantalla, cada columna dice de dónde viene el dato (otro sistema, un campo del registro, un
+   cálculo), para seguirle la pista y para las pruebas.
 6. **Acciones por fila**: «columna con dos botones por fila: "Ver detalle" y "Borrar"», y cada botón con su efecto;
    si tiene casuística, «el comportamiento detallado se describe en la sección Reglas de Validación».
 7. **Tooltips**: el texto literal entre comillas y qué lo muestra («al pasar el ratón sobre …»).
@@ -206,7 +210,7 @@ Cada elemento, en su punto, con lo que le aplique de su fila:
 
 | Elemento | Qué se dice |
 |---|---|
-| Columna de una tabla | El nombre en mayúsculas (`NÚMERO:`); qué representa; de dónde sale (elegido al crear, calculado, de datos maestros, heredado de otro registro); el formato entre paréntesis («(DD/MM/AAAA)», «(nombre y apellidos)»); qué se ve si está vacío («-»); qué pasa al pulsarlo (vínculo al registro, descarga, copiar). Los valores posibles, entre comillas |
+| Columna de una tabla | El nombre en mayúsculas (`NÚMERO:`); qué representa; de dónde sale (elegido al crear, calculado, de datos maestros, heredado de otro registro, de otro sistema), siempre en la tabla principal de una pantalla; el formato entre paréntesis («(DD/MM/AAAA)», «(nombre y apellidos)»); qué se ve si está vacío («-»); qué pasa al pulsarlo (vínculo al registro, descarga, copiar). Los valores posibles, entre comillas |
 | Campo de un formulario | Nombre; qué es; tipo de control (en un desplegable, un selector o unas casillas, siempre si es de selección única o múltiple): campo de texto libre, área de texto, desplegable de selección única o múltiple, campo combinado de búsqueda y texto libre, botones de opción, casilla de verificación, campo de fecha, campo numérico, importe, carga de ficheros, solo lectura; de dónde salen sus opciones y en qué orden; si se rellena solo y si se puede cambiar; si muestra u oculta otros campos |
 | Botón | El texto literal; dónde está; qué pasa al pulsarlo y después (cambio de estado, correo, se cierra, se abre otra pantalla) |
 | Vínculo | Qué texto lleva y adónde lleva |
@@ -286,6 +290,9 @@ Un catálogo para cuando aparece un tipo de pantalla, no una lista de pantallas 
 - Los nombres de columna de una tabla, en mayúsculas; los de campo, como se ven.
 - Textos literales entre comillas: botones, estados, valores por defecto, mensajes, tooltips, opciones.
 - Siempre el después: toda acción dice qué pasa a continuación.
+- Cada condición dice lo que pasa, con su verbo: «Si la fecha de fin es anterior a la de inicio, se muestra el
+  mensaje de error "La fecha de fin no puede ser anterior a la de inicio."». Nunca la condición seguida del texto sin
+  decir qué es («Si la fecha de fin es anterior: "…"»).
 - Referencias entre paréntesis y por nombre: «(se describe en la pantalla "Nueva solicitud")», «(se describe en la
   sección Reglas de Validación)», «(ver regla común "Plazos")».
 - Las palabras del cliente: si dice «expediente», es «expediente» en todas las pantallas.
@@ -297,7 +304,8 @@ Antes de cerrar una pantalla, con el inventario del §2:
 - [ ] Cada elemento del inventario está descrito o en «pendiente de confirmar».
 - [ ] Lógica General empieza por qué es la pantalla y desde dónde se entra, y dice el estado inicial y qué se ve sin
       registros.
-- [ ] Cada columna dice qué es, de dónde sale, su formato y qué se ve vacía; cada campo, su tipo de control y de
+- [ ] Cada columna dice qué es, de dónde sale (en la tabla principal, siempre: otro sistema, un campo, un cálculo),
+      su formato y qué se ve vacía; cada campo, su tipo de control y de
       dónde salen sus opciones.
 - [ ] Cada desplegable, selector y grupo de casillas dice si es de selección única o múltiple.
 - [ ] Las columnas de cada tabla y los campos de cada bloque van en sub-viñetas, uno por línea, nunca seguidos en una
@@ -307,6 +315,9 @@ Antes de cerrar una pantalla, con el inventario del §2:
       resultados.
 - [ ] Cada columna ordenable tiene su criterio y está el orden por defecto.
 - [ ] Cada campo obligatorio o con formato tiene un mensaje literal por incumplimiento.
+- [ ] Cada condición dice lo que pasa («se muestra el mensaje de error "…"», «el botón se desactiva»), no solo la
+      condición seguida de un texto.
+- [ ] El estado inicial dice el valor de la búsqueda y de cada filtro al entrar (vacía, «Todos»).
 - [ ] Cada borrado o cancelación tiene su confirmación literal.
 - [ ] Lógica General no dice de ningún campo si es obligatorio u opcional, su longitud, sus caracteres, su formato
       admitido, su valor preseleccionado ni ningún mensaje de error; nada de casuística.
@@ -344,7 +355,8 @@ Caso 1: bandeja con solicitudes en distintos estados.
    de espacios a las que el usuario tiene acceso (se detalla en Roles y Permisos).
 2. La información se presenta en formato de tabla, donde cada fila es una solicitud.
 3. Estado inicial de la pantalla:
-   - Al entrar, la tabla muestra todas las solicitudes, sin filtros, ordenadas por número descendente.
+   - Al entrar, la tabla muestra todas las solicitudes, con la búsqueda vacía y los filtros en su valor por defecto
+     ("Todos"), ordenadas por número descendente.
    - Si no existe ninguna solicitud, se muestra el mensaje "Todavía no hay solicitudes.".
 4. En la parte superior se muestran la barra de búsqueda y filtros y los botones "Descargar vista actual" y "Nueva
    solicitud":

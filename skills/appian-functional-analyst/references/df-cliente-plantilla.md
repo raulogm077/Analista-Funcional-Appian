@@ -313,7 +313,12 @@ y los datos maestros quedan reservados a los roles de la tabla.
 |---|---|---|---|
 | Solicitudes | | | |
 | Ver solicitudes | ✓* | ✓ | ✓ |
+| Solicitudes › Nueva solicitud | | | |
 | Crear solicitud | ✓ | | |
+| Solicitud › Documentación | | | |
+| Ver documentación | ✓* | ✓ | ✓ |
+| Añadir documento | ✓ | ✓ | |
+| Solicitud › Acciones de la tarea | | | |
 | Devolver solicitud | | ✓ | ✓ |
 | Resolver solicitud | | | ✓ |
 | Datos maestros | | | |
@@ -328,8 +333,10 @@ y los datos maestros quedan reservados a los roles de la tabla.
   asignación, también pasa a ser visualizador de la solicitud»). «Dónde se define»: datos maestros
   (con la ruta), un campo del registro (quien crea, el asignado) o el sistema de usuarios del cliente. Un rol que no
   entra en la aplicación pero aparece en el proceso, también, con «Solamente informativo».
-- **Matriz**: una columna por rol, en el orden de la tabla. Las filas se agrupan por área o por pantalla: una fila con
-  solo el nombre abre el grupo y debajo van sus acciones, con «✓» donde está permitida (vacía, no permitida). Toda
+- **Matriz**: una columna por rol, en el orden de la tabla. Las filas se agrupan por pantalla y, dentro de cada una,
+  por sus partes, cada parte con su propia fila de grupo «Pantalla › Parte»: las secciones de un registro, los modales
+  que abre una tabla principal, las pestañas de una página. Una fila con solo el nombre abre el grupo y debajo van sus
+  acciones, con «✓» donde está permitida (vacía, no permitida). Toda
   acción descrita en 2.3 está en la matriz, también «Ver sección …». Los matices, con asterisco en la acción o el rol y
   la aclaración debajo, en una línea que empieza por `\*`. Si una columna agrupa varios roles, se dice con asterisco.
 
