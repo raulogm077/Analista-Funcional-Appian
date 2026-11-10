@@ -85,8 +85,7 @@ def _escribir_json(proc, ruta, drawio=None, automatica=False):
     datos = _limpio(proc)
     if drawio is not None:
         datos["colocacion"] = {"modo": "automatica", "huella": dm.Fichero(str(drawio)).huella()} if automatica else {"modo": "manual"}
-    with open(ruta, "w", encoding="utf-8", newline="\n") as f:  # con \n en cualquier sistema
-        f.write(_json_compacto(datos))
+    dm.escribir_texto(ruta, _json_compacto(datos))
 
 
 def _rutas(drawio):
@@ -101,9 +100,6 @@ def _informe_validacion(proc):
     for a in av:
         print(f"aviso: {a}")
     return not err
-
-
-ANCHO_PNG_MAX = 3200   # px del PNG: más no se aprecia en un documento y solo pesa
 
 
 def _pngs(drawio, hojas):
@@ -138,8 +134,7 @@ def _png(drawio):
         aviso = colocacion.aviso_ancho(ancho)
         if aviso:
             print(f"aviso: {aviso}" + (f" ({destino.name})" if len(hojas) > 1 else ""))
-        escala = max(0.75, min(2.0, ANCHO_PNG_MAX / (ancho + 24)))   # nítido en un documento, sin pesar de más
-        trabajos.append((xml, destino, escala))
+        trabajos.append((xml, destino, 2.0))   # conserva el detalle al ampliar el proceso completo
     navegador.pintar_pngs(trabajos)
     # los de cuando tenía otros tramos (o ninguno) ya no son de este diagrama
     viejos = [p for p in _pngs_suyos(drawio) if p not in destinos]
@@ -587,7 +582,13 @@ class Editor:
             etiqueta = colocacion.alto_texto(paso.get("nombre")) + 2 if etiquetas.get(n["paso"]) == lado_ else 0
             hueco = 0 if desplazamiento.startswith("fuera") else colocacion.NOTA_HUECO + etiqueta
             return cy - h / 2 - hueco - alto if lado_ == "arriba" else cy + h / 2 + hueco
-        cabe = lambda lado_: y + 4 <= arriba_de(lado_) and arriba_de(lado_) + alto <= y + hc - 4   # noqa: E731
+        cajas = dm._cajas(self.proc, self.geo)
+
+        def cabe(lado_):
+            ny = arriba_de(lado_)
+            return (y + 4 <= ny and ny + alto <= y + hc - 4
+                    and not any(nx < bx + bw and bx < nx + ancho and ny < by + bh and by < ny + alto
+                                for bx, by, bw, bh in cajas))
         otro = "abajo" if lado == "arriba" else "arriba"
         if not cabe(lado) and cabe(otro) and etiquetas.get(n["paso"]) != otro:
             lado = otro

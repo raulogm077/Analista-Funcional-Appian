@@ -22,7 +22,8 @@ Requiere Playwright para Python (pip install playwright) y un navegador: el Chro
 import json, os, re, sys, argparse
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from pathlib import Path
-from entorno import escribe, utf8_stdio, sync_playwright, launch_browser
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from entorno import escribe, utf8_stdio, sync_playwright, launch_browser  # noqa: E402
 
 
 def ref_de(texto):
@@ -77,8 +78,7 @@ def enlazar(funcional, enlaces):
         lineas[pos:pos] = ["", linea] + ([""] if pos < len(lineas) and lineas[pos].strip() else [])
         puestas.append(codigo)
     if puestas:
-        with open(funcional, "w", encoding="utf-8", newline="\n") as f:
-            f.write("\n".join(lineas))
+        escribe(funcional, "\n".join(lineas))
     return list(dict.fromkeys(puestas)), list(dict.fromkeys(sin_ficha))
 
 

@@ -36,7 +36,10 @@ import shutil
 import struct
 import subprocess
 import sys
+import re
 import tempfile
+import xml.etree.ElementTree as ET
+import zipfile
 import zlib
 from pathlib import Path
 
@@ -98,9 +101,21 @@ def capturas(carpeta: Path):
 
 
 def words(p: Path) -> str:
-    """Los dos Word entregados: el DF 1.0 (desde versiones/v1.0) y el DF del cambio EV-02. «» si están; si no, por qué."""
+    """Los dos Word entregados: el DF 1.0 (desde versiones/v1.0) y el DF del cambio EV-02. «» si están; si no, por qué.
+    proyecto.md ya los lista en «Entregados», y df_docx.js no escribe un nombre entregado: se generan sin esa línea,
+    que vuelve después tal cual."""
     if not shutil.which("node"):
         return "sin Node"
+    pm = p / "proyecto.md"
+    texto = pm.read_bytes()
+    pm.write_bytes(b"".join(l for l in texto.splitlines(keepends=True) if not l.startswith(b"Entregados:")))
+    try:
+        return generar_words(p)
+    finally:
+        pm.write_bytes(texto)
+
+
+def generar_words(p: Path) -> str:
     script = ANALISTA / "df_docx.js"
     with tempfile.TemporaryDirectory(prefix="df 1.0 ") as t:
         t = Path(t)
@@ -131,7 +146,73 @@ def montaje_de(p: Path) -> Path:
 
 
 # ---------------------------------------------------------------- lo que usan los puntuadores de las dos evaluaciones
-DOCUMENTOS = (".docx", ".pdf", ".png")      # el Word, su PDF y las capturas: se regeneran solo al enviar o al construir
+DOCUMENTOS = (".docx", ".pdf", ".png")      # el Word, su PDF y las capturas: se regeneran solo si cambia lo que exportan
+
+
+VERSION_MONTAJE = "1.1"
+FAMILIAS_WORD = ("DF-Solicitudes-de-material", "DF-Solicitudes-de-material-EV-02")   # los vigentes: el completo y EV-02
+W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+
+
+def parrafos_docx(f: Path) -> list[str] | None:
+    """Los párrafos del cuerpo de un .docx en orden, también los de sus tablas, con el guion normal en los IDs
+    (df_docx.js los pone que no se parten); None si no es un Word que se pueda abrir: sin word/document.xml, o con uno
+    que no es el XML de un documento de Word. No valida el resto del Word."""
+    try:
+        with zipfile.ZipFile(f) as z:
+            raiz = ET.fromstring(z.read("word/document.xml"))
+    except (zipfile.BadZipFile, KeyError, OSError, ET.ParseError):
+        return None
+    if raiz.tag != W + "document":
+        return None
+    return ["".join(t.text or "" for t in p.iter(W + "t")).replace("‑", "-") for p in raiz.iter(W + "p")]
+
+
+def ficha(parrafos: list[str], pieza: str) -> str:
+    """El texto de la ficha de una pieza en el Word: desde su título («PAN-01 — …») hasta el de la siguiente ficha. El
+    índice repite los títulos: de las veces que sale, la que lleva más párrafos hasta la siguiente."""
+    tramos = []
+    for i, x in enumerate(parrafos):
+        if x.startswith(f"{pieza} — "):
+            fin = next((k for k in range(i + 1, len(parrafos)) if re.match(r"[A-Z]{2,4}-\d+ — ", parrafos[k])),
+                       len(parrafos))
+            tramos.append(parrafos[i:fin])
+    return "\n".join(max(tramos, key=len)) if tramos else ""
+
+
+def words_al_dia(p: Path, inicio: dict, version: str | None, pantalla: str = "", texto: str = "") -> list[str]:
+    """Lo que falla del Word al día (cambios.md §5, desde el 3-nov-2026). Con Word al montar y versión nueva, los
+    vigentes de esa versión, el completo y el de EV-02 (en curso), que se abren y dicen en la portada su versión exacta y
+    de qué Word son (el completo, además, `texto` en la ficha de `pantalla`), con su PDF de revisión si sale, y nada más
+    regenerado; lo del montaje en entregables/ y prototipo/capturas/, ahí e igual. Sin Word al montar o sin versión
+    nueva, nada regenerado. Lee la portada y una ficha: no valida el resto del Word."""
+    con_word = f"entregables/{WORD_10}" in inicio
+    nuevos = ([f"entregables/{f}-v{version}.docx" for f in FAMILIAS_WORD]
+              if con_word and version and version != VERSION_MONTAJE else [])
+    permitidos = set(nuevos) | {f"entregables/revision/{Path(n).stem}.pdf" for n in nuevos}
+    sobran = [r for r in (x.split(" (nuevo)")[0] for x in regenerados(p, inicio)) if r not in permitidos]
+    mal = [f"regenerado de más: {', '.join(sobran)}"] if sobran else []
+    ahora = huellas(p)
+    mal += [f"falta {r}, que estaba al montar" for r in inicio
+            if r.startswith(("entregables/", "prototipo/capturas/")) and r not in ahora]
+    for i, n in enumerate(nuevos):
+        parrafos = parrafos_docx(p / n) if (p / n).is_file() else None
+        if not (p / n).is_file():
+            mal.append(f"falta {n}: la versión nueva cambia lo que exporta el Word")
+        elif parrafos is None:
+            mal.append(f"{n} no es un Word que se pueda abrir")
+        else:
+            # la portada: su versión exacta (el primer párrafo «Versión …») y de qué Word es (df_docx.js pone «Diseño
+            # funcional» en el completo y «Diseño funcional · cambio EV-02» en el de la unidad)
+            portada = next((x for x in parrafos if x.startswith("Versión ")), "")
+            if not re.match(rf"Versión {re.escape(version)}(?![\d.]*\d)", portada):
+                mal.append(f"{n} no dice «Versión {version}» en la portada")
+            modalidad = "Diseño funcional · cambio EV-02" if i else "Diseño funcional"
+            if modalidad not in parrafos or (not i and any(x.startswith("Diseño funcional · cambio") for x in parrafos)):
+                mal.append(f"{n} no es el Word {'del cambio EV-02' if i else 'completo'} («{modalidad}» en la portada)")
+            if i == 0 and texto and texto not in ficha(parrafos, pantalla):
+                mal.append(f"la ficha de {pantalla} de {n} no dice «{texto}»")
+    return mal
 
 
 def lee_huella(p: Path, montaje: str | None = None) -> dict | None:
@@ -173,6 +254,9 @@ def montar(destino: Path, fuente: Path | None = INCIDENCIA) -> Path:
     if destino.exists() and any(destino.iterdir()):
         raise SystemExit(f"{destino} ya tiene contenido: monta el proyecto en una carpeta nueva")
     shutil.copytree(DATOS, destino, dirs_exist_ok=True)
+    r = corre(sys.executable, ANALISTA / "proyecto.py", "iniciar", destino)
+    if r.returncode:
+        raise SystemExit(f"proyecto.py iniciar falla:\n{r.stdout}{r.stderr}")
     r = corre(sys.executable, ANALISTA / "leer_fuentes.py", *FUENTES, "-o", destino / "fuentes")
     if r.returncode:
         raise SystemExit(f"leer_fuentes.py falla:\n{r.stdout}{r.stderr}")

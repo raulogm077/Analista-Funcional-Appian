@@ -28,8 +28,8 @@ La skill no lee un export: la aplicación se ha extraído en vivo del entorno Ap
 | `dependencies` | Qué referencia este objeto. | Llamadas salientes |
 | `history` | Ejecuciones reales del process model (total, última, fallos). En los documentos llámalo «ejecuciones». | 07, 08, 09 (sin ejecuciones) |
 | `versions` | Historial de versiones (cuándo y por quién). En los documentos llámalo «versiones». | 09 (versionado) |
-| `validation` | Avisos de validación de la plataforma (funciones obsoletas, errores). | 09 |
-| `screen` | Árbol de componentes de la interfaz renderizada con entradas vacías: la única evaluación que permite la política. Appian la evalúa en el servidor (puede ejecutar sus consultas de lectura) y se guarda tal cual: estructura, etiquetas y los valores de esa evaluación. Así aparece en el anexo. | 10 (pantallas), 01 |
+| `validation` | Avisos de validación de la plataforma (funciones obsoletas, errores) y el resultado de los casos de prueba guardados que ejecuta `validateDesignObjects`. | 09 |
+| `screen` | Árbol de componentes de la interfaz renderizada con entradas vacías (la otra evaluación que hace la extracción es la de `validation`). Appian la evalúa en el servidor (puede ejecutar sus consultas de lectura) y se guarda tal cual: estructura, etiquetas y los valores de esa evaluación. Así aparece en el anexo. | 10 (pantallas), 01 |
 | `members` | Miembros de un grupo (grupos y usuarios). | 04 |
 | `other` | Cualquier otra herramienta (p. ej. una nueva que haya añadido Appian). **Ábrela y aprovecha lo que aporte**: seguridad, métricas, configuración… | Donde encaje |
 
@@ -62,7 +62,7 @@ Son una ayuda: ante la duda, **la fuente es el fichero `definition`**.
 
 ## Quién puede iniciar un process model
 
-Según la documentación oficial, para iniciar un process model hace falta **al menos el permiso Initiator**; Administrator, Editor, Manager y Viewer también pueden iniciarlo, y **Deny** no puede hacer nada. Fuente: https://docs.appian.com/suite/help/latest/process-model-object.html#process-model-security
+Según la documentación oficial, para iniciar un process model hace falta **al menos el permiso Initiator**; Administrator, Editor, Manager y Viewer también pueden iniciarlo, y **Deny** no puede hacer nada. Fuente: https://docs.appian.com/suite/help/latest/process-model-object.html#prodlink-security
 
 Los procesos que arranca un temporizador o que se lanzan como subproceso se ejecutan como el usuario que desplegó el process model. Fuente: https://docs.appian.com/suite/help/latest/Testing_and_Debugging_Problems_with_Process_Models.html#issues-that-return-process-errors
 

@@ -20,6 +20,7 @@ import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
+from unittest.mock import patch
 
 sys.dont_write_bytecode = True  # importa issues.py del analista: sin __pycache__ dentro del plugin
 
@@ -60,6 +61,12 @@ Característica: HU-02 Revisar una solicitud
     Dada una solicitud devuelta
     Cuando el gestor la corrige
     Entonces vuelve a «Enviada»
+
+  @caso-de-prueba
+  Escenario: HU-02.3
+    Dado el día 28
+    Cuando un gestor intenta registrar
+    Entonces no puede
 """,
 }
 
@@ -172,6 +179,86 @@ def issue(iss, iid, criterios):
                      situacion={"SIM_Form": "nuevo"})
 
 
+def prueba_campo(qa):
+    """Valores ficticios con la forma del ui de SAIL: la etiqueta no demuestra el valor del campo."""
+    espera = {"campo": {"label": "Cantidad", "valor": ""}}
+
+    def pagina(*campos, **mas):
+        return {"ui": {"#t": "ContentLayout", "contents": list(campos)}, **mas}
+
+    campo = {"#t": "TextField", "label": "Cantidad", "testLabel": "campo-cantidad", "value": ""}
+    ok("campo admite una cadena vacía y la encuentra en ui, aunque options omita value",
+       qa.mal_esperado(espera) == [] and qa.lo_que_falta(espera, pagina(campo, options=[{"label": "Cantidad"}])) == [])
+    contenedor = {"#t": "SectionLayout", "label": "Cantidad", "contents": [campo]}
+    ok("ignora la label del contenedor al resolver un campo",
+       qa.lo_que_falta(espera, {"ui": contenedor}) == [])
+    casos = [
+        ("campo ausente", pagina(), "no está el campo"),
+        ("value ausente", pagina({k: v for k, v in campo.items() if k != "value"}), "valor ausente"),
+        ("null", pagina({**campo, "value": None}), "value null"),
+        ("0", pagina({**campo, "value": 0}), "value 0"),
+        ("false", pagina({**campo, "value": False}), "value false"),
+        ("no vacío", pagina({**campo, "value": "5"}), 'value "5"'),
+        ("etiquetas duplicadas", pagina(campo, dict(campo)), "ambiguo"),
+        ("tipo no soportado", pagina({**campo, "#t": "DropdownWidget"}), "no está el campo"),
+        ("solo options o deltas", pagina(options=[campo], changed=[campo]), "no está el campo"),
+        ("solo el prefijo de la etiqueta", pagina({**campo, "label": "Cantidad extra"}), "no está el campo"),
+    ]
+    for nombre, d, motivo in casos:
+        faltas = qa.lo_que_falta(espera, d)
+        ok(f"campo vacío falla si hay {nombre}, con su motivo", bool(faltas) and motivo in "; ".join(faltas), faltas)
+    por_test = {"campo": {"testLabel": "campo-cantidad", "valor": ""}}
+    ok("testLabel exacto selecciona ParagraphField y distingue labels repetidas con testLabels diferentes",
+       qa.lo_que_falta(por_test, pagina({**campo, "#t": "ParagraphField"},
+                                      {**campo, "testLabel": "otra-cantidad", "value": "5"})) == [])
+    ok("testLabel duplicado también es ambiguo",
+       "ambiguo" in "; ".join(qa.lo_que_falta(por_test, pagina(campo, dict(campo)))))
+    for esperado, actual, pasa in [(0, False, False), (False, 0, False), (0, 0.0, True), (0.0, 0, True),
+                                   (None, None, True), (False, False, True), (None, "", False),
+                                   ("a", "A", False), (" a ", "a", False), ("", [], False)]:
+        ex = {"campo": {"label": "Cantidad", "valor": esperado}}
+        faltas = qa.lo_que_falta(ex, pagina({**campo, "value": actual}))
+        ok(f"campo compara {a_json(esperado).strip()} con {a_json(actual).strip()} por tipo JSON y valor",
+           (not faltas) == pasa, faltas)
+    invalidos = [None, [], {}, {"valor": ""}, {"label": "Cantidad"}, {"label": "", "valor": ""},
+                 {"label": "Cantidad", "testLabel": "campo-cantidad", "valor": ""},
+                 {"label": "Cantidad", "valor": "", "ruta": "$.ui"},
+                 {"label": "Cantidad", "valor": []}, {"label": "Cantidad", "valor": {}},
+                 {"label": "Cantidad", "valor": float("nan")}, {"label": "Cantidad", "valor": float("inf")},
+                 {"label": "Cantidad", "valor": 4}, {"label": "Cantidad", "valor": 0}, {"label": "Cantidad", "valor": False}]
+    ok("campo rechaza selectores y valores mal formados antes de repetir",
+       all(qa.mal_esperado({"campo": c}) for c in invalidos))
+    # Forma real de SAIL CLI: un TextField con teclado numérico da su value como texto.
+    numerico = {**campo, "keyboard": "INTEGER", "value": "4"}
+    ok("campo numérico: el guion lleva el valor como texto y pasa; como número se rechaza antes de repetir",
+       qa.mal_esperado({"campo": {"label": "Cantidad", "valor": "4"}}) == []
+       and qa.lo_que_falta({"campo": {"label": "Cantidad", "valor": "4"}}, pagina(numerico)) == []
+       and "\"4\" y no 4" in "; ".join(qa.mal_esperado({"campo": {"label": "Cantidad", "valor": 4}})))
+    g = json.loads(a_json(GUIONES["HU-01.2"]))
+    g["entonces"] = [{"sail": ["show"], "espera": espera}]
+    ok("campo es una afirmación positiva: basta en entonces", qa.defectos(g, "HU-01.2.json") == [])
+    ok("campo no acepta el ui viejo tras enviar",
+       "antes de enviar" in "; ".join(qa.lo_que_falta(espera, pagina(campo, viewIsStale=True))))
+
+
+def prueba_selector(qa):
+    """«hay» y «no_hay» casan con el principio de una etiqueta hasta el final de una palabra (L17 del ensayo Informes:
+    «Comentar» casaba con «Comentarios» y el QA quitó la comprobación)."""
+    d = {"options": [{"label": "Comentarios", "ref": "Comentarios"}, {"label": "Pendientes (22)", "ref": "Pendientes (22)"}]}
+    ok("«hay» casa por palabra completa: «Pendientes» con «Pendientes (22)», «Comentar» no con «Comentarios»",
+       qa.lo_que_falta({"hay": ["Pendientes", "Comentarios"]}, d) == []
+       and qa.lo_que_falta({"no_hay": ["Comentar"]}, d) == [] and qa.lo_que_falta({"hay": ["Comentar"]}, d))
+    g = json.loads(a_json(GUIONES["HU-02.1"]))
+    g["dado"][-1]["gasta"] = "una solicitud enviada"
+    ok("«gasta» se acepta en el paso del «dado» que comprueba la precondición", qa.defectos(g, "HU-02.1.json") == [])
+    g["dado"][-1].pop("espera")
+    ok("un paso con «gasta» que no comprueba nada deja el guion por terminar",
+       any("«gasta»" in x for x in qa.defectos(g, "HU-02.1.json")))
+    g = json.loads(a_json(GUIONES["HU-02.1"]))
+    g["entonces"][-1]["gasta"] = "una solicitud enviada"
+    ok("«gasta» fuera del «dado» deja el guion por terminar", any("«gasta»" in x for x in qa.defectos(g, "HU-02.1.json")))
+
+
 def main():
     for st in (sys.stdout, sys.stderr):
         st.reconfigure(encoding="utf-8", errors="replace")
@@ -266,10 +353,24 @@ def main():
                  "no component matches", "un error de SAIL CLI, que sale en texto, es el motivo del fallo")
         variante("HU-01.2", lambda g: g["cuando"].append({"sail": ["interact", "Título", ""]}),
                  "no cambió nada", "un paso que el servidor acepta sin cambiar nada falla")
+        variante("HU-01.2", lambda g: g["entonces"][0].update(espera={"texto": ["Importe (€)"]}),
+                 "no cambió nada", "un guardado rechazado no pasa si lo esperado no está en las validaciones (aunque esté en la página)")
+        variante("HU-01.2", lambda g: g["entonces"][0].update(espera={"texto": ["Otra cosa"]}),
+                 "no cambió nada", "ni con una validación ajena a lo esperado")
+        variante("HU-01.2", lambda g: g["entonces"][0].update(espera={"texto": ["indica el título"]}),
+                 "", "sí pasa si lo esperado es el rechazo, en las validaciones", resultado="pasa", codigo=0)
         variante("HU-01.1", lambda g: g["cuando"][-1]["espera"].update(fila={"con": "QA {pasada}", "Estado": "Enviada"}),
                  "tras un «load»", "comprobar la página justo tras enviar el formulario (la de antes) falla y dice por qué")
         variante("HU-01.1", lambda g: g["entonces"][-1]["espera"].update(sin_fila="QA {pasada}"),
                  "hay una fila con", "una fila que no debería estar hace fallar «sin_fila»")
+        variante("HU-01.1", lambda g: g["entonces"][-1]["espera"].update(
+            fila=[{"con": "QA {pasada}"}, {"con": "QA {pasada}", "Estado": "Enviada"}]),
+                 "", "«fila» con una lista: pasa si se cumplen todas", resultado="pasa", codigo=0)
+        variante("HU-01.1", lambda g: g["entonces"][-1]["espera"].update(
+            fila=[{"con": "QA {pasada}", "Estado": "Enviada"}, {"con": "QA {pasada}", "Estado": "Devuelta"}]),
+                 "se esperaba Estado «Devuelta»", "«fila» con una lista: falla si una no se cumple, y dice cuál")
+        variante("HU-01.1", lambda g: g["entonces"][-1]["espera"].update(sin_fila=["nadie", "QA {pasada}"]),
+                 "hay una fila con", "«sin_fila» con una lista: falla si una de ellas está")
         variante("HU-01.1", lambda g: g["cuando"].insert(1, {"sail": ["interact", "Ver detalle"]}),
                  "está 2 veces", "dos enlaces con el mismo texto (nth y of): el paso falla, no se pulsa uno al azar")
         variante("HU-02.1", lambda g: g.update(cuando=[g["cuando"][0], {"rol": "revisor", "sail": ["interact", "🔍", "QA"]},
@@ -314,7 +415,8 @@ def main():
 
         # lo siguiente a la última issue es el QA de la unidad, en otra sesión; marcarla sin QA se avisa, no se impide
         m_, ctx_ = SimpleNamespace(raiz=t.p, tablas=lambda *a, **k: [], docs={}), SimpleNamespace(reaplicar=lambda u: [])
-        ultima = issue(iss, "ISS-02", ["HU-02.1", "HU-02.2"])
+        ultima = issue(iss, "ISS-02", ["HU-02.1", "HU-02.2", "HU-02.3"])
+        ultima.feature = (t.p / "construccion" / "EV-01" / "ISS-02.feature").read_text(encoding="utf-8")   # HU-02.3: caso de prueba
         plan = iss.Plan("EV-01", "Solicitudes", "SIM", [hecha, ultima], [])
         ordenes, notas = iss.orden_de_terminar(m_, ctx_, plan, ultima)
         ok("la última issue de una unidad con escenarios dice que lo siguiente es su QA, en otra sesión, y no pone la orden "
@@ -328,8 +430,9 @@ def main():
            len(ordenes) == 2 and ordenes[1].endswith(" EV-01 construida") and iss.avisos_qa(t.p, sin_escenarios) == [],
            "\n".join(ordenes))
         ok("al marcarla, avisa si a su QA le faltan escenarios (sin guion) o si la unidad no tiene QA",
-           iss.avisos_qa(t.p, plan) == ["el QA de EV-01 no está completo (sin guion: HU-02.2): lo hace QA (appian-qa)"]
-           and "EV-05 no tiene QA" in iss.avisos_qa(t.p, iss.Plan("EV-05", "Otra", "SIM", [ultima], []))[0],
+           iss.avisos_qa(t.p, plan)[1:] == ["el QA de EV-01 no está completo (sin guion: HU-02.2): lo hace QA (appian-qa)"]
+           and "HU-02.3 los prueba un caso de prueba de regla" in iss.avisos_qa(t.p, plan)[0]
+           and "EV-05 no tiene QA" in iss.avisos_qa(t.p, iss.Plan("EV-05", "Otra", "SIM", [ultima], []))[-1],
            iss.avisos_qa(t.p, plan))
 
         # solo se repite en la URL de desarrollo o en la del entorno de corrección de técnico §0, por su etiqueta exacta:
@@ -369,6 +472,46 @@ def main():
         spec = importlib.util.spec_from_file_location("qa_simulado", QA)
         qa = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(qa)
+        prueba_campo(qa)
+        prueba_selector(qa)
+        # Camino CLI: ui tiene value vacío aunque options no lo traiga; falla con otro valor y rechaza el mal esquema.
+        g = json.loads(a_json(GUIONES["HU-01.2"]))
+        g["entonces"].insert(1, {"sail": ["show"], "espera": {"campo": {"label": "Título", "valor": ""}}})
+        t.guion("HU-01.2", g)
+        c, out = t.repetir("--escenario", "HU-01.2")
+        ok("CLI repite la afirmación de campo vacío junto a las comprobaciones anteriores",
+           c == 0 and resultados()["HU-01.2"] == "pasa", out)
+        g["entonces"][1]["espera"]["campo"]["valor"] = "5"
+        t.guion("HU-01.2", g)
+        c, out = t.repetir("--escenario", "HU-01.2")
+        e = t.resultado()[0]["escenarios"]["HU-01.2"]
+        ok("CLI informa el paso y valor que no coincide, sin confundirlo con campo ausente",
+           c == 1 and e["resultado"] == "falla" and e["paso"] == "entonces 2"
+           and 'value "" y se esperaba "5"' in e["motivo"], out)
+        g["entonces"][1]["espera"]["campo"]["testLabel"] = "titulo"
+        t.guion("HU-01.2", g)
+        antes = llamadas(t)
+        c, out = t.repetir("--escenario", "HU-01.2")
+        ok("CLI deja por terminar un campo con ambos selectores y no llama a SAIL",
+           c == 2 and resultados()["HU-01.2"] == "guion por terminar" and llamadas(t) == antes, out)
+        t.guion("HU-01.2", GUIONES["HU-01.2"])
+        t.repetir("--escenario", "HU-01.2")
+        crlf = t.p / "qa" / "crlf.txt"
+        crlf.write_bytes(b"uno\r\ndos\r\n")
+        qa.escribe(crlf, "uno\ntres\n")
+        ok("qa.escribe conserva CRLF al actualizar un destino existente", crlf.read_bytes() == b"uno\r\ntres\r\n")
+        # Se reutiliza el motor de excepciones: una marca humana no falsea el fallo del escenario.
+        falso = {"escenarios": {"HU-01.1": {"resultado": "falla", "paso": "entonces 1", "motivo": "error"}}}
+        marca_qa = {"issue": hecha.id, "version": hecha.version, "objeto": "QA", "caso": "HU-01.1",
+                    "error": "entonces 1: error"}
+        with patch.object(iss.un, "Contexto", return_value=SimpleNamespace(por_id={"EV-01": object()})), \
+             patch.object(iss, "calcula", return_value=SimpleNamespace(issues=[hecha], marcas=[marca_qa])), \
+             patch.object(iss.json, "loads", return_value=falso):
+            ok("QA reconoce la excepción del fallo actual para no anunciar vuelta a pendiente",
+               qa.excepciones_qa(t.p, "EV-01", object(), iss) == {(hecha.id, "HU-01.1")})
+            marca_qa["version"] = "otra"
+            ok("QA no oculta la vuelta a pendiente si cambió la versión de la excepción",
+               qa.excepciones_qa(t.p, "EV-01", object(), iss) == set())
         os.environ.update(SAIL_CLI=str(SIMULADO), SAIL_SIMULADO_APP=str(t.app))
         qa.ESPERA_SAIL = 3
         antes, previo = llamadas(t), t.resultado()[0]["escenarios"]
@@ -487,6 +630,41 @@ def main():
         ok("sin SAIL CLI lo dice y sale con 2", c == 2 and "Sin SAIL CLI" in out, out)
         c, out = t.qa("repetir", str(t.p), "EV-09")
         ok("una unidad sin guiones sale con 2 y lo dice", c == 2 and "EV-09 · sin guiones" in out, out)
+        # una unidad cuyos escenarios son todos de caso de prueba no espera guion: ni pendiente ni pasada
+        solo = ("# language: es\nCaracterística: HU-05 Fecha\n\n  @caso-de-prueba\n  Escenario: HU-05.1\n"
+                "    Dado el día 28\n    Cuando se genera\n    Entonces sale\n")
+        escribe(t.p / "construccion" / "EV-07" / "ISS-01.feature", solo)
+        c, out = t.qa("repetir", str(t.p), "EV-07")
+        ok("una unidad con todos sus escenarios de caso de prueba no queda pendiente: lo dice y sale con 0",
+           c == 0 and "los prueba un caso de prueba" in out and "sin guiones" not in out, out)
+        escribe(t.p / "construccion" / "EV-07" / "ISS-02.feature", solo.replace("@caso-de-prueba\n  ", "")
+                .replace("HU-05.1", "HU-05.2"))
+        c, out = t.qa("repetir", str(t.p), "EV-07")
+        ok("si falta un escenario de pantalla sin guion, sigue diciendo «sin guiones» y sale con 2",
+           c == 2 and "EV-07 · sin guiones" in out, out)
+
+        # una precondición que se gasta («gasta») y ya no está: «sin repetir», no «falla», y su issue no vuelve a
+        # pendiente; el «pasa» anterior se queda, con el aviso
+        t.guion("HU-01.2", GUIONES["HU-01.2"])
+        c, antes = t.repetir("--escenario", "HU-01.2")
+        g = json.loads(a_json(GUIONES["HU-01.2"]))
+        g["dado"] = [{"sail": ["load"], "espera": {"hay": ["Nueva solicitud"]}},
+                     {"sail": ["show"], "espera": {"hay": ["Descartar alerta de prueba"]},
+                      "gasta": "una alerta activa en la solicitud de prueba"}]
+        t.guion("HU-01.2", g)
+        c, out = t.repetir("--escenario", "HU-01.2")
+        e = t.resultado()[0]["escenarios"]["HU-01.2"]
+        ok("si falta lo que gasta cada repetición, el guion sale sin repetir con el porqué y no devuelve su issue",
+           c == 2 and e.get("sinRepetir", "").startswith("falta lo que gasta cada repetición")
+           and e["resultado"] == "pasa" and "vuelve a pendiente" not in out, antes + out + str(e))
+        # otro fallo del «dado», antes de mirar la precondición, sigue siendo un fallo (revisión de Codex, 28-oct)
+        g["dado"][0]["espera"] = {"hay": ["Algo que no está en el panel"]}
+        t.guion("HU-01.2", g)
+        c, out = t.repetir("--escenario", "HU-01.2")
+        e = t.resultado()[0]["escenarios"]["HU-01.2"]
+        ok("un fallo del «dado» que no es la comprobación de «gasta» sale como fallo, en su paso",
+           c == 1 and e["resultado"] == "falla" and e["paso"] == "dado 1" and "sinRepetir" not in e, out + str(e))
+        t.guion("HU-01.2", GUIONES["HU-01.2"])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print(f"\n{'Todo bien' if not fallos else f'{len(fallos)} fallos'}")

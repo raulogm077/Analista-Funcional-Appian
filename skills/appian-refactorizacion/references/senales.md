@@ -23,7 +23,7 @@ los nodos de un proceso y las respuestas de la plataforma (validación, ejecucio
 | CDT y data store en la aplicación; `a!queryEntity`, query rules o Write to Data Store Entity | `datos/inventario.json` (tipos `cdt` y `dataStore`), `03`, expresiones y nodos del anexo | Modelo antiguo: sin relaciones de record ni data fabric | BP 01 §7 |
 | Record type sin sincronizar o legacy | `03`, ficha del record type (origen y acceso) | Sin relaciones ni las funcionalidades que dependen de ellas | BP 01 §2 |
 | Campos que hacen de clave ajena (`…Id`) sin relación declarada | `03`, ficha del record type (`relationships`) | Navegación y consultas a mano entre entidades | BP 01 §4 |
-| Un catálogo guardado como texto libre en varias entidades | `03` | Valores incoherentes entre entidades | BP 01 §1.1 |
+| Un mismo catálogo guardado como texto libre en varias entidades | `03` y fichas de los record types: tipo de los campos; fichas de las interfaces: comparar listas fijas de opciones (`choiceLabels`/`choiceValues`) y seguir cada valor hasta el campo que guarda | Los valores se mantienen en varias pantallas y entidades y pueden divergir; una lista fija en una sola pantalla no basta para afirmarlo | BP 01 §1.1 |
 | Tabla grande sincronizada sin filtros | `03` (volúmenes del data fabric) | Consumo, consultas lentas y límite de filas del tier | BP 01 §3.5 |
 | Historial o auditoría a mano: entidades `*_HIST` o `*_LOG`, escrituras extra en cada proceso | `03`, nodos de escritura en la ficha de los process models | Lógica repetida en cada proceso y sin datos para Process HQ | BP 01 §11 |
 | Seguridad por fila con una expresión (si la trae) | ficha del record type, `04` | Lógica de seguridad que no se hereda ni se prueba por reglas | BP 06 §5.1 |

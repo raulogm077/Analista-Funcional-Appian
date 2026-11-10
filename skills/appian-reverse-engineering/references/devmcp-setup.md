@@ -115,6 +115,20 @@ producción llega un paquete cuyos objetos ha revisado una persona. Cómo se cum
 - **Esta skill** (extracción, `verificar`, `regresion`, `deriva`) es de solo lectura por su política
   (`scripts/devmcp_policy.json`), en cualquier entorno. `verificar` y `regresion` ejecutan casos de prueba que ya
   existen, que no modifican nada: se pasan en desarrollo.
+- **Extracción con datos reales:** añade `--skip "^testInterface$"` tanto a `plan` como a `extract`, también al reextraer.
+  La excepción de la política que permite `testInterface` es para desarrollo con datos ficticios: evaluar una pantalla
+  puede consultar datos y guardarlos en su respuesta `screen`, aunque no se pulse ningún botón. Con la exclusión,
+  documenta las pantallas desde sus definiciones y declara en `LEEME` que no se evaluaron. Si ya había respuestas
+  `screen` guardadas, usa una carpeta de salida nueva: `--skip` no borra una extracción anterior.
+- **Si el acceso o el login se interrumpe:** ante un 401/403 terminal, cierre del navegador o fallo del login, el
+  extractor detiene la cola y los reintentos, conserva lo recibido y devuelve error con un informe parcial. No significa
+  que los objetos falten. Las llamadas ya iniciadas pueden terminar; el extractor no controla el login interno del
+  Dev MCP. Tras resolver la causa, una lectura controlada con `--concurrency 1` limita las llamadas simultáneas,
+  pero no evita por sí sola que el servidor abra el navegador. No reanudes repetidamente una sesión que pide login.
+  Si se interrumpe al listar, `extraccion/extraction_interrupted.json` marca la lectura parcial y conserva el inventario
+  completo anterior; si ya estaba leyendo objetos, lo marca `extraction_report.json`. `verificar` y `deriva` conservan
+  su resultado anterior y escriben al lado `*.interrumpido.json`: mientras su estado sea `partial`, el resultado
+  anterior no corresponde a la última lectura. Una ejecución completa posterior marca ese aviso como `superseded`.
 
 ---
 

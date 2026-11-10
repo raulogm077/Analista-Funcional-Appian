@@ -57,6 +57,7 @@ def test_graph_edges(built):
     assert not any(s == "APP" or t in ("APP", "F_RULES", "F_PM") for s, t, _ in edges)
     orph = {KEY_BY_UUID[u] for u in g["orphans"]}
     assert "PM_HUERF" in orph and "PM_BATCH" not in orph and "SITE" not in orph
+    assert not any(k.startswith("G_") for k in orph)
     assert g["stats"]["edgesByOrigin"].get("dependents", 0) > 0
 
 
@@ -184,6 +185,9 @@ def test_annex(built):
     assert "La extracción no trae la definición" in (anexo / "cdt" / "DEM_SolicitudDTO.md").read_text(encoding="utf-8")
     grafo = (anexo / "grafo.md").read_text(encoding="utf-8")
     assert "| DEM Alta Solicitud | subProcess | DEM Revisar Solicitud | dependents |" in grafo
+    indice = anexo / "indice.md"
+    indice.write_bytes(indice.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
     assert run().returncode == 0                                   # repetible
+    assert b"\r\n" in indice.read_bytes() and b"\r\r\n" not in indice.read_bytes()
     (anexo / "indice.md").write_text("mío", encoding="utf-8")                        # un anexo ajeno no se borra
     assert run().returncode == 2 and (anexo / "interface").exists()

@@ -19,7 +19,12 @@ Puntos (umbral: todos):
                         no la pide (como mucho, «Posible petición de cambio» en el Resumen)
   sin_dt                ninguna DT «Cambio sobre lo construido» nueva: una interfaz no la pide
   comprobar_una_pasada  comprobar.py sin errores ahora, y K = 0
-  sin_word_ni_capturas  ningún .docx, .pdf ni .png nuevo o cambiado desde el montaje (salvo fuentes/)
+  word_al_dia           con Word al montar, los vigentes de la versión nueva, el completo (word_nuevo) y el de EV-02
+                        (word_unidad), con su PDF de revisión si sale: se abren y dicen su versión exacta, y el
+                        completo, el texto nuevo en la ficha de la pantalla (sin validar el resto del Word); y nada
+                        más: los entregados y las
+                        capturas del montaje siguen ahí e iguales (no hay prototipo del que sacarlas); sin Word al
+                        montar, ningún .docx, .pdf ni .png nuevo, cambiado o que falte (salvo fuentes/)
   llamadas              N ≤ tope_llamadas
 
 Imprime cada punto y el total. Sale 0 si se cumplen todos; 1 si no; 2 si falta el proyecto o la huella del montaje.
@@ -120,8 +125,14 @@ def main() -> int:
     punto("comprobar_una_pasada", ok and a.comprobar_con_errores == 0,
           ("sin errores" if ok else f"{len(errores)} con errores" + "".join(f"\n  {x}" for x in errores[:10]))
           + f"; pasadas del agente con errores: {a.comprobar_con_errores}")
-    regen = mt.regenerados(p, huella)
-    punto("sin_word_ni_capturas", not regen, ", ".join(regen) or "ningún Word ni captura nuevos o cambiados")
+    # el Word, al día (cambios.md §5): la versión nueva cambia lo que exportan los vigentes, el completo y el de EV-02
+    # (en curso), que se regeneran; EV-03 aún no tiene. Sin prototipo, las capturas no se tocan, y lo del montaje en
+    # entregables/ y prototipo/capturas/ sigue ahí e igual
+    v = m.version("F")
+    mal = mt.words_al_dia(p, huella, f"{v[0]}.{v[1]}" if v else None, e["pantalla"], e["texto_nuevo"])
+    con_word = f"entregables/{mt.WORD_10}" in huella
+    punto("word_al_dia", not mal, "; ".join(mal)
+          or ("los Word vigentes al día y nada más regenerado" if con_word else "sin Word al montar: nada regenerado"))
     punto("llamadas", a.llamadas <= e["tope_llamadas"], f"{a.llamadas} (tope {e['tope_llamadas']})")
     bien = sum(hechos.values())
     pasa = bien == len(e["puntos"])

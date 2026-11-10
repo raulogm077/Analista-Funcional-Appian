@@ -59,8 +59,12 @@ Los correos `.msg` no se leen de forma fiable: pide el correo como `.eml` o PDF.
 Un repositorio git por proyecto, siempre con la misma forma (la de «Qué escribe», más `as-is/` de ingeniería inversa y
 `qa/` de `appian-qa`): el código vive en Appian y aquí va todo lo demás, también las fuentes. Lo crea `proyecto.py iniciar`.
 `AGENTS.md` y `.agents/workflows/` salen enteros del plugin y no se editan: `proyecto.py iniciar <p>` en un proyecto
-que ya existe los pone al día y no toca nada más. Se trabaja sobre main, sin ramas ni PR, con `git commit` y `git push`
-al terminar; `iniciar` no confirma ni sube nada, y el remoto, privado, lo decide el proyecto.
+que ya existe los pone al día y no toca nada más. Se trabaja sobre main, sin ramas ni PR, con `git commit` y, si hay
+remoto y la persona ha autorizado subir, `git push` al terminar; `iniciar` no confirma ni sube nada, y el remoto, privado, lo decide el proyecto.
+Como el proyecto es un repositorio propio, no hereda la confianza de Claude Code de la carpeta de arriba: para lanzar
+en él sesiones en segundo plano (`claude --bg`), `proyecto.py iniciar <p> --confiar`, con el visto bueno de la persona.
+Una vez en cada equipo: la confianza se guarda en la configuración de cada persona, no en el proyecto; quien abre la
+carpeta con Claude Code y la acepta ya la tiene. Sin ella no arrancan («Workspace not trusted»).
 
 Formatos: `funcional-plantilla.md`, `tecnico-plantilla.md` y la cabecera de `decisiones.md` en
 `assets/plantillas/`. `proyecto.py estado <p>` dice en qué punto está el proyecto: empieza siempre por ahí
@@ -71,7 +75,9 @@ o los flujos, lanza `proyecto.py iniciar <p>` antes de seguir: los añade y no t
 ## Qué escribe
 
 En `<p>`:
-- `proyecto.md`: el estado del proyecto
+- `proyecto.md`: el estado del proyecto; la línea «Unidades» la pone al día `proyecto.py cambio` y el siguiente paso, el analista
+- `.appian-plugin.json`: la ruta local del plugin para resolver scripts y referencias desde cualquier agente;
+  `iniciar` la escribe y git la ignora (cada equipo tiene su ruta).
 - `AGENTS.md`: dónde está cada cosa, las reglas y los flujos; lo genera entero `proyecto.py iniciar`
 - `CLAUDE.md`: solo «@AGENTS.md»; si ya existe, no se toca
 - `.agents/workflows/`: la copia de los flujos del plugin, generada
@@ -110,7 +116,7 @@ El `.drawio`, el `.png` y el `.bpmn` de cada proceso y la imagen de cada `.mmd` 
 | **Actualización** | Ya hay análisis y llega una reunión, un correo o los comentarios al DF | Informe de impacto y cambios puntuales: `actualizacion.md`; un retoque que nadie tiene que aprobar, por su «Camino corto» |
 | **DF del cliente** | Se pide el DF para el cliente sobre la plantilla del equipo, o llega una fuente para un proyecto que lo lleva | `analisis/df-cliente.md` desde las fuentes y, en cada fuente nueva, lo que cambia: «DF del cliente», abajo |
 | **Pantalla suelta** | Alguien explica una pantalla, con o sin captura | Su descripción con `requerimientos-pantallas.md`, en el chat y en el DF del cliente si existe; la ficha PAN y sus historias, en el funcional si existe |
-| **Urgente** | El cliente o el equipo declaran crítico algo de producción | La ficha `impacto/URG-nn.md` y el flujo corto de `urgentes.md`, sin DF ni prototipo |
+| **Urgente** | El cliente o el equipo declaran crítico algo de producción | La ficha `impacto/URG-nn.md` y el flujo corto de `urgentes.md`, sin DF ni prototipo propios |
 
 Di el modo al empezar.
 
@@ -127,7 +133,9 @@ hace cada paso, con qué skill y la referencia que lo detalla. `proyecto.py inic
    python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o <p>/fuentes/
    ```
    Lee `ingesta-fuentes.md` y después **todas** las fuentes antes de escribir: las reuniones posteriores
-   cambian lo anterior. Con muchas fuentes o más de 5 procesos, `volumen-grande.md`.
+   cambian lo anterior. Guarda una nota por fuente (`volumen-grande.md` §1), salvo las cortas (correo o chat);
+   las marcadas explícitamente como duplicadas ya están cubiertas por la fuente indicada en el catálogo.
+   Con muchas fuentes o más de 5 procesos, `volumen-grande.md`.
 2. **Checkpoint.** En un solo mensaje, una o dos líneas por punto: modo y fuentes, problema, perfiles,
    procesos, reglas clave, contradicciones y lo que falta. Termina con «¿Es correcto o ajusto algo antes de
    escribir?». Con cualquier confirmación, sigue. Si el usuario no está, sigue con la lectura más razonable
@@ -150,14 +158,23 @@ hace cada paso, con qué skill y la referencia que lo detalla. `proyecto.py inic
    python3 <skill>/scripts/comprobar.py <p> --fuentes <p>/fuentes/
    ```
    Sin errores antes de entregar. Revisa los avisos: los de redacción se corrigen casi siempre.
-8. **DF en Word**, solo para enviarlo o si se pide (síntesis, evolutivo y refactorización), una vez y, si hay
-   prototipo, después de él, con sus capturas. La primera entrega es la versión 1.0: sube la versión del funcional y del
-   técnico y añade su fila en `decisiones.md`. Nunca sobrescribe uno entregado. Mira algunas páginas del PDF antes de
+8. **DF en Word**: el primero, para enviarlo o si se pide (síntesis, evolutivo y refactorización); desde entonces, cada
+   cambio de lo que exporta, una versión nueva incluida, regenera los vigentes: el completo y el de cada unidad en curso
+   (Abierta, Aprobada o Construida) que ya tenga uno, aunque el cambio no sea de esa unidad (`cambios.md` §5). Si hay
+   prototipo, después de él, con sus capturas. La
+   primera entrega es la versión 1.0:
+   `proyecto.py version <p> --inicial --fuente FU-01 FU-02 --que "Análisis inicial"` lleva el borrador 0.x a
+   1.0, o registra la primera 1.0 ya preparada, con sus fuentes y su fila en `decisiones.md`, sin abrir la 1.1 ni guardar
+   una copia (incluye todas las fuentes procesadas). Conserva el contenido y sus aprobaciones; el técnico sin empezar
+   sigue sin empezar. Si ya se registraron fuentes o hubo actualizaciones del borrador, añade la fila 1.0 y conserva
+   las filas 0.x y sus copias;
+   reúne sus fuentes sin duplicarlas ni cambiar la primera versión en que se procesó cada una.
+   Nunca sobrescribe uno entregado. Mira algunas páginas del PDF antes de
    enviarlo; sin LibreOffice no lo hay ni se saca por otra vía: lo revisa quien lo envía; díselo al entregar.
    ```bash
    node <skill>/scripts/df_docx.js <p> --pdf    # entregables/DF-<proyecto>-v<versión>.docx; el PDF, en revision/
    ```
-9. **Entregar.** Actualiza `proyecto.md` (fuentes procesadas y siguiente paso) y envía el Word y el `funcional.md`
+9. **Entregar.** Actualiza el siguiente paso de `proyecto.md` (las fuentes ya las registró `version --inicial`) y envía el Word y el `funcional.md`
    (SendUserFile en Claude). Cuando el Word sale hacia el cliente, `proyecto.py entregar <p>` apunta «DF entregado» y
    el fichero; nunca en una sesión desatendida. En pocas líneas: modo, historias, pantallas, pendientes de confirmar con el
    cliente y siguiente paso.

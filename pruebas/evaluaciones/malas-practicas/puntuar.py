@@ -41,7 +41,7 @@ FICTICIA = AQUI.parent / "aplicacion-ficticia"
 CLAVES = AQUI / "claves.json"
 PLUGIN = Path(os.environ.get("PLUGIN_A_PROBAR") or AQUI.parents[2]).resolve()
 sys.path.insert(0, str(PLUGIN / "skills" / "appian-refactorizacion" / "scripts"))
-from comprobar_propuesta import FICHA  # noqa: E402  (la ficha que reconoce la comprobación de la skill)
+from comprobar_propuesta import FICHA, fichas as campos_de_comprobacion, lineas  # noqa: E402
 
 MINIMO = 0.9
 
@@ -57,9 +57,11 @@ def apartado(secciones: dict[str, str], nombre: str) -> str:
 
 
 def campo(ficha: str, nombre: str) -> str:
-    """El texto de «- Nombre: …», con las líneas sangradas que lo continúan."""
-    m = re.search(rf"(?m)^[-*]\s*\**{nombre}\**\s*:(.*(?:\n[ \t]+\S.*)*)", ficha)
-    return m.group(1) if m else ""
+    """El texto unido de «- Nombre: …» y sus continuaciones, como en la comprobación."""
+    parsed = campos_de_comprobacion(lineas(ficha))
+    datos = next(iter(parsed.values()), {})
+    valor = datos.get(nombre)
+    return valor[1] if valor else ""
 
 
 def fichas(diagnostico: str) -> dict[str, str]:

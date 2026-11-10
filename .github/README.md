@@ -102,13 +102,15 @@ escribirlo.
 
 ## Cómo trabaja
 
-<img src="assets/como-trabaja.svg" alt="Las fuentes del cliente entran al analista funcional con su informe de impacto; una aplicación existente pasa antes por ingeniería inversa y, si se rehace, por refactorización. El analista escribe el funcional, el técnico y las unidades de cambio; de ahí salen el prototipo, el DF en Word y los diagramas BPMN. Al aprobar una unidad se escriben sus issues: las construye en desarrollo buenas prácticas y las verifica ingeniería inversa; el QA recorre la unidad con SAIL CLI y un fallo devuelve su issue. Desde el paquete no actúa la IA: la regresión y los guiones del QA se repiten con scripts, y una persona revisa el paquete y hace el pase." width="100%">
+<img src="assets/como-trabaja.svg" alt="Las fuentes pasan al analista; una aplicación existente se documenta en solo lectura, conservando la evidencia cuando la extracción es parcial. El análisis produce el técnico, las unidades, el prototipo, el DF y los diagramas. La unidad aprobada genera issues: las piezas compartidas se cambian por turnos y las subtareas guardan avance sin cerrar la issue. Se verifican objetos, pruebas y permisos; la aceptación humana de permisos se limita a la diferencia registrada. El QA recorre cada rol en otra sesión. Los scripts repiten regresión y guiones antes del paquete, que revisa una persona." width="100%">
 
-El detalle, con la estructura de cada proyecto y sus nueve flujos, está en el [manual](../README.md#cómo-trabaja).
+Las piezas compartidas se secuencian entre unidades y las subtareas conservan el avance sin sustituir la verificación
+final. La aceptación humana de permisos queda registrada para la diferencia concreta. El detalle, con la estructura
+de cada proyecto y sus nueve flujos, está en el [manual](../README.md#cómo-trabaja).
 
 ## Desarrollo
 
-<img src="assets/desarrollo.svg" alt="Ocho pasos: git pull, los cambios en una rama, probarlos con --plugin-dir, la comprobación básica antes de cada commit, subir la versión en plugin.json, el PR con merge automático, GitHub pasa la batería completa y lo une, y la versión le llega al equipo con auto-update." width="100%">
+<img src="assets/desarrollo.svg" alt="Actualizar, cambiar en una rama, probar con --plugin-dir y comprobar antes del commit. Abrir PR con autorización; CI pasa batería y PDF real. Integrar con pruebas en verde y aprobación. Antes de publicar, pasar siete combinaciones de sistema y Python, enlaces y paquete. Publicar versión con autorización; el equipo la recibe por auto-update." width="100%">
 
 Los pasos y las reglas del repositorio están en [`CLAUDE.md`](../CLAUDE.md): `main` está protegida y nada entra sin PR
 ni sin las pruebas en verde.

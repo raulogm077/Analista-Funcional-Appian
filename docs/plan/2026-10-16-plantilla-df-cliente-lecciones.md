@@ -7,8 +7,8 @@ qué se cambió por ello. Sin datos del cliente: los ejemplos son genéricos. El
 ## Las fuentes
 
 1. **Las transcripciones de Teams llegan en Word, no en `.vtt`.** Sin reconocerlas, salían como documentos, sin duración
-   ni hablantes, cada una con un formato distinto. → `leer_fuentes.py` las reconoce y pasa toda transcripción a un
-   formato único (`[00:14:32] Hablante: texto`).
+   ni hablantes, cada una con un formato distinto. → `leer_fuentes.py` las reconoce y pasa al formato único
+   (`[00:14:32] Hablante: texto`) las que no traen ya `[hh:mm:ss]`; las que lo traen se guardan tal cual.
 2. **La fecha del fichero no es la de la reunión.** Una reunión cuyo nombre no llevaba fecha tomaba la de la descarga y
    quedaba la última, cuando era de las primeras. → La fecha sale de la cabecera de la transcripción, y las fuentes se
    leen por la columna Fecha del índice, no por su ID.

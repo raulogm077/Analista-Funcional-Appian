@@ -75,8 +75,8 @@ skill no pasa de 1000 bytes.
 ## Qué cambia en lo que ya existía
 
 - `proyecto.py`: solo añade la opción `--df-cliente`; sin ella, el comportamiento es el de antes.
-- `leer_fuentes.py`: las transcripciones en `.txt` pasan al formato único (el mismo que ya tenían las `.vtt`); las
-  marcas de tiempo siguen siendo `[hh:mm:ss]`, así que las citas no cambian.
+- `leer_fuentes.py`: una transcripción en `.txt` que ya trae `[hh:mm:ss]` se guarda tal cual, como en `main`; las que
+  llegan en otra forma (Word de Teams, «Hablante   0:04») pasan al formato único, el mismo de las `.vtt`.
 - python-docx entra como requisito opcional: `requisitos.json`, `requisitos.py`, la tabla del README,
   `pruebas/requisitos-esperado.json` y la instalación en `.github/workflows/pruebas.yml`.
 

@@ -7,7 +7,8 @@ description: "QA de una unidad de cambio Appian ya construida, con SAIL CLI: en 
 
 Prueba una unidad construida como la usaría cada rol, con SAIL CLI, y deja cada recorrido como un guion que un script
 repite sin IA. Prueba lo que se pidió, los escenarios, no lo que entendió quien construyó: no carga la skill oficial de
-Appian ni lee el funcional, las issues ni el técnico, salvo el site y las cuentas de su §0 («Entradas»).
+Appian ni lee el funcional, las issues ni el técnico, salvo el site y las cuentas de su §0 y, en una unidad de solo
+consulta, los datos de carga inicial de su §3 («Entradas»).
 
 `<skill>` es la carpeta de este fichero; `<p>`, la del proyecto, y `<U>`, la unidad (`EV-nn`). En Windows, `python` en
 vez de `python3`.
@@ -34,8 +35,8 @@ PATH como `sail`. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
 ## Cuándo, y cuándo no
 
 - **Con la unidad completa**: todas sus issues hechas. Por unidad, no por issue: un escenario cruza pantallas de varias.
-- **En otra sesión**: una nueva, o un subagente que solo recibe los `.feature`, el site y la cuenta de cada rol, nunca el
-  contexto de quien construyó; también otro agente (el flujo F8 está en `.agents/workflows/` de cada proyecto) o una
+- **En otra sesión**: una nueva, o un subagente que solo recibe los `.feature`, el site y la cuenta de cada rol (y, en
+  una unidad de solo consulta, los datos de carga inicial), nunca el contexto de quien construyó; también otro agente (el flujo F8 está en `.agents/workflows/` de cada proyecto) o una
   persona. Basta un modelo pequeño (medido: Sonnet encontró lo mismo que Opus por un tercio del coste).
 - **Solo en desarrollo**, porque crea datos y lanza procesos; en una urgencia, en el entorno de corrección. `qa.py
   repetir` solo repite contra la «URL de desarrollo» o la «URL del entorno de corrección» de técnico §0: si un guion
@@ -45,7 +46,8 @@ PATH como `sail`. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
 
 ## Entradas
 
-- **Los escenarios**: `construccion/<U>/ISS-nn.feature`. Nada más del proyecto, salvo técnico §0 (abajo).
+- **Los escenarios**: `construccion/<U>/ISS-nn.feature`. Nada más del proyecto, salvo técnico §0 (abajo) y, en una
+  unidad de solo consulta, la tabla de carga inicial de técnico §3: los datos que presuponen sus «dado», no el resto.
 - **El entorno y el site**: el host de desarrollo y el nombre del site en su URL (`/suite/sites/<site>`).
 - **Una cuenta local de Appian por rol** de los escenarios, en desarrollo. Si hace falta comprobar que alguien *no* ve
   algo de otro, dos cuentas del mismo rol.
@@ -66,6 +68,8 @@ Cada orden de SAIL CLI y de `qa.py` se espera en primer plano hasta que termina,
 2. **Por escenario**, en el orden de los `.feature`:
    - **Dado**: prepáralo como lo haría un usuario, desde el site y con la cuenta del rol que lo haría (nunca por el Dev
      MCP ni con SQL). Lo que teclees lleva `{pasada}` (abajo), para que no se confunda con lo de otra vez.
+     En una unidad de solo consulta nadie lo prepara desde el site: el «dado» son los datos de carga inicial. Si falta
+     uno, el guion no pasa: dilo en la entrega, con lo que falta preparar, y el escenario queda sin medir.
    - **Cuando**: recórrelo con la cuenta de su rol, `sail --data-dir <su carpeta> load|navigate|interact <site> …`.
      Para explorar, la salida normal, que es más corta; para comprobar, `--json`.
    - **Entonces**: compruébalo en el `--json`. Tras enviar un formulario, el `--json` trae `completed` y la página de
@@ -83,13 +87,14 @@ Cada orden de SAIL CLI y de `qa.py` se espera en primer plano hasta que termina,
    la que construyó lo que se prepara: míralo antes de reabrir la del escenario.
 4. **Entregar**, en pocas líneas: cada escenario y su resultado, de cada fallo qué se esperaba y qué salió, y lo que SAIL
    CLI no ve (las pantallas que recorrió, para que una persona mire en el navegador cómo se ven). Confirma y sube
-   `qa/<U>/` (`git commit` y `git push`). Con la unidad sin fallos se marca construida; `proyecto.py … construida` avisa,
+   `qa/<U>/` (`git commit` y, si hay remoto y está autorizado subir, `git push`). Con la unidad sin fallos y sus documentos al día (F8) se marca construida; `proyecto.py … construida` avisa,
    sin impedirlo, si falta el QA o está a medias.
 5. **Cerrar las sesiones** al terminar la campaña de QA (la unidad entregada sin fallos y sus guiones repetidos): `sail
    logout --data-dir <su carpeta>` de cada cuenta local. Cierra la sesión en el servidor y borra lo guardado y lo
    tecleado, que es como termina cada prueba; no se hace tras cada escenario porque, para repetir los guiones antes del
-   paquete, quien los repite tiene que volver a entrar con la contraseña. Una sesión importada del Dev MCP no se cierra:
-   no se sabe qué le pasa al Dev MCP.
+   paquete, quien los repite tiene que volver a entrar con la contraseña. Se cierran solo las que abrió esta campaña con
+   `sail login`: las que ya existían las usan otros agentes o la fase siguiente. Una sesión importada del Dev MCP no se
+   cierra: no se sabe qué le pasa al Dev MCP.
 
 ## El guion
 
@@ -124,15 +129,24 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   script busca su sesión en cada equipo (`session.json` bajo `$SAIL_HOME` y `~/.sail`, por usuario y host), así que no
   hay que decir en ningún fichero dónde está la de cada uno.
 - **Un paso**: `{"rol", "sail": [orden y sus argumentos, sin el site], "espera"}`. Las órdenes son `load` (siempre
-  `--fresh`), `navigate`, `interact`, `back` y `show`; `--confirm` va en la orden si el destino lo pide. Una fila de una
+  `--fresh`), `navigate`, `interact`, `back` y `show` (vuelve a leer la última página cargada, sin pedir nada al servidor);
+  `--confirm` va en la orden si el destino lo pide. Una fila de una
   rejilla se marca por su contenido, `{"rol": "revisor", "selecciona": "QA {pasada}"}`, nunca por el número que le dio
   Appian. Con un solo rol, «rol» se puede omitir.
-- **`espera`**: `"completado": true` (el formulario se envió); `"hay"` y `"no_hay"`, refs o etiquetas, o su principio;
+- Para cambiar de página del site: `"sail": ["load", "<página>"]`; `load` sin página recarga la predeterminada.
+- **`espera`**: `"completado": true` (el formulario se envió); `"hay"` y `"no_hay"`, refs o etiquetas, o su principio
+  hasta el final de una palabra («Pendientes» vale para «Pendientes (22)»; «Comentar» no vale para «Comentarios»);
   `"texto"` y `"sin_texto"`, en lo que se ve de la página y en sus validaciones; `"fila": {"con": "…", "<columna>":
-  "<valor o su principio>"}`, una fila de una rejilla que lleva ese texto y tiene esos valores, y `"sin_fila": "…"`,
+  "<valor o su principio, igual>"}`, una fila de una rejilla que lleva ese texto y tiene esos valores, y `"sin_fila": "…"`,
   ninguna fila con ese texto (lo que se buscó también está en la caja de búsqueda: para decir que no se ve, `sin_fila`,
-  no `sin_texto`). Cada paso falla además si SAIL CLI da error o si el servidor no cambió nada.
-- **El «entonces» afirma algo**: al menos un `completado`, `hay`, `texto` o `fila`. Solo con `no_hay`, `sin_texto` o
+  no `sin_texto`). Las dos admiten una lista, para comprobar varias filas en un mismo paso. Cada paso falla además si
+  SAIL CLI da error o si el servidor no cambió nada.
+- **Valor de un campo de texto**: `"campo": {"label": "Cantidad", "valor": ""}` comprueba que el `TextField` o
+  `ParagraphField` del `ui` trae `value` vacío. En vez de `label` se puede usar `testLabel`: exactamente uno, completo
+  y literal. Si no aparece, hay varios componentes con ese selector, el tipo no está soportado o falta `value`, falla;
+  no busca en `options` ni en los cambios. `valor` es texto, como lo da SAIL CLI también en los campos numéricos
+  (`"4"`, no `4`), o `null`; se compara exacto, sin normalizar: `""` y `null` son distintos.
+- **El «entonces» afirma algo**: al menos un `completado`, `hay`, `texto`, `fila` o `campo`. Solo con `no_hay`, `sin_texto` o
   `sin_fila` pasaría también con una página vacía. Una clave que no existe o una comprobación vacía (`"hay": []`,
   `"texto": [""]`) tampoco valen: el guion sale «por terminar».
 - **`{pasada}`** es distinto en cada escenario de cada repetición; **`{hoy}`**, la fecha.
@@ -145,6 +159,11 @@ Para que el guion dé lo mismo cada vez:
   de búsqueda de la rejilla (`"🔍"`) antes de mirarla, para que una fila nueva no quede en otra página.
 - Un «no lo ve» lleva antes la prueba de que existe (en el «dado», quien lo creó lo ve): si no, el guion pasaría
   aunque el alta hubiera fallado.
+- Un escenario que gasta lo que necesita (descartar una alerta que solo crea el proceso diario) comprueba en su «dado»
+  que sigue ahí, y ese paso lleva `"gasta": "<lo que gasta>"` (`{"sail": ["show"], "espera": {"hay": ["Descartar alerta
+  …"]}, "gasta": "una alerta activa"}`): sin eso, una segunda pasada saldría verde con la fila ya cerrada del histórico.
+  Si lo que falta es eso, sale «sin repetir», no «falla», y dice qué preparar; cualquier otro fallo es un fallo.
+  Una comprobación que se quita porque falla no es un «pasa»: el escenario queda sin medir y se dice en la entrega.
 - Dos enlaces con el mismo texto no se distinguen (el `--json` los da con `nth` y `of`): el script no pulsa uno al azar,
   el paso falla. Dilo en la entrega, que además es un problema de accesibilidad. Lo mismo si «selecciona» encuentra
   varias filas.
@@ -177,7 +196,8 @@ y no lleva rutas del equipo de nadie:
   no repite deja de «pasar» (una pantalla que se cuelga no se esconde): sale **sin repetir**, con la fecha de su
   último «pasa» (`ultimoPasa`), y un «falla» se queda. Sin repetir no devuelve la issue a pendiente, pero
   `proyecto.py … construida` y `estado` lo avisan.
-- **sinGuion**: escenarios de la unidad que QA aún no ha recorrido.
+- **sinGuion**: escenarios de la unidad que QA aún no ha recorrido. Los que llevan `@caso-de-prueba` en el `.feature` los prueba un caso de prueba de regla (técnico §14): no
+  esperan guion, y el QA no los da por probados.
 
 Si una pantalla cambió a propósito, se rehace solo su guion.
 

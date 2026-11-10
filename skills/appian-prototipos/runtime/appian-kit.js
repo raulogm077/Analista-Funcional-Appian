@@ -358,6 +358,33 @@
   }
   // $action.step: salta al paso N (1 = primero) del asistente de la pantalla (enlaces «Editar» del paso de revisión)
   function wizardStep(step, ctx) { const base = String(ctx.scope || "").split(":")[0]; UI["wiz:" + base] = Math.max(0, Number(interp(step, ctx)) - 1); }
+  function prototypeUri(uri, ctx) {
+    // Interpolar cada valor antes de serializar impide que un & o = del dato se vuelva otro parámetro.
+    const raw = String(uri || "");
+    if (!raw.startsWith("#ver=")) return interp(raw, ctx);
+    const query = new URLSearchParams(raw.slice(1)), result = new URLSearchParams();
+    for (const [key, value] of query) result.set(key, String(interp(value, ctx) ?? ""));
+    if (!Object.prototype.hasOwnProperty.call(byId, result.get("ver"))) { console.warn("Pantalla no encontrada:", result.get("ver")); return null; }
+    return "#" + result.toString();
+  }
+  function showHash(hash) {
+    const value = String(hash || "").replace(/^#/, "");
+    if (!value.startsWith("ver=")) {
+      try {
+        const id = decodeURIComponent(value);
+        return Object.prototype.hasOwnProperty.call(byId, id) ? showScreen(id) : false;
+      } catch (_) { return false; }
+    }
+    const query = new URLSearchParams(value), id = query.get("ver"), params = Object.create(null);
+    if (!Object.prototype.hasOwnProperty.call(byId, id)) { console.warn("Pantalla no encontrada:", id); return false; }
+    for (const [key, text] of query) {
+      if (key === "ver") continue;
+      // IDs numéricos como en los datasets; códigos con ceros iniciales y enteros grandes siguen siendo texto.
+      const numeric = /^(0|-?[1-9]\d*)$/.test(text) && Number.isSafeInteger(Number(text));
+      params[key] = numeric ? Number(text) : text;
+    }
+    return showScreen(id, { params });
+  }
   function clickable(node, ctx) {
     // a!dynamicLink, a!recordLink, a!startProcessLink, a!safeLink, buttons...
     return (ev) => {
@@ -368,7 +395,16 @@
         const scr = findScreenForRecord(node.recordType);
         if (scr) return runAction(Object.assign({ goto: scr.id, params: { id: node.identifier }, view: node.dashboard }, node.$action || {}), ctx);
       }
-      if (node.type === "a!safeLink" && node.uri && !node.$action) { window.open(interp(node.uri, ctx), "_blank", "noopener"); return; }
+      if (node.type === "a!safeLink" && node.uri && !node.$action) {
+        const uri = prototypeUri(node.uri, ctx);
+        if (uri == null) return;
+        if (up(P(node, "openLinkIn", ctx, "NEW_TAB")) === "SAME_TAB") {
+          if (String(uri).startsWith("#ver=")) {
+            if (location.hash === uri) showHash(uri); else location.hash = uri;
+          } else location.assign(uri);
+        } else window.open(uri, "_blank", "noopener");
+        return;
+      }
       if (node.type === "a!pageLink" && !node.$action) {
         const pg = String(interp(node.page || "", ctx)).split(/[.!]/).pop().toLowerCase();
         const sp = arr(SPEC.site && SPEC.site.pages).find((x) => [x.id, x.screen, x.label, x.name].filter(Boolean).map((v) => String(v).toLowerCase()).includes(pg));
@@ -389,9 +425,12 @@
     enterScreen(byId[screenId], route.params);
     window.scrollTo(0, 0);
   }
-  function enterScreen(scr, params) {
+  function setRuleInputs(params) {
     for (const k in S) if (k.startsWith("ri!")) delete S[k];
     if (params) for (const k in params) S["ri!" + k] = params[k];
+  }
+  function enterScreen(scr, params) {
+    setRuleInputs(params);
     const lctx = screenCtx(scr, params);
     // los textos con {expresión} se evalúan también dentro de mapas y listas (p. ej. local!correo.asunto = "Estudio {rv!record.codigo}")
     const init = (v) => (typeof v === "string" ? (v.includes("{") ? interp(v, lctx) : v) : Array.isArray(v) ? v.map(init) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([a, b]) => [a, init(b)])) : v);
@@ -399,7 +438,7 @@
     delete invalid[scr.id];
     delete UI["wiz:" + scr.id];
   }
-  function back() { if (hist.length) { route = hist.pop(); dialogs = []; } }
+  function back() { if (hist.length) { route = hist.pop(); dialogs = []; setRuleInputs(route.params); } }
   function openDialog(id, params) {
     if (!byId[id]) { console.warn("Diálogo no encontrado:", id); return; }
     dialogs.push({ screen: id, params: params || {} });
@@ -1639,6 +1678,10 @@
   R["a!paneLayout"] = (n, ctx) => h("div", { class: "pane-layout" + (P(n, "showPaneDividers", ctx, true) ? " div" : "") }, arr(n.panes).filter((p) => visible(p, ctx)).map((p, i) => {
     const bg = P(p, "backgroundColor", ctx, "WHITE");
     const el = h("div", { class: `pane w-${up(P(p, "width", ctx, "AUTO"))} ${String(bg).startsWith("#") ? "" : "bg-" + up(bg)} ${padCls(P(p, "padding", ctx), "STANDARD")}`, style: String(bg).startsWith("#") ? { background: bg } : null, "data-sail": "a!pane", "data-k": `${ctx.key}.${i}` }, stack(p.contents, ctx, `${ctx.key}.${i}.c`));
+    // Propaga el espacio disponible por los contenedores del chat (también una card), sin fijar píxeles.
+    el.querySelectorAll(".aic.h-FILL").forEach((chat) => {
+      for (let padre = chat.parentElement; padre && padre !== el; padre = padre.parentElement) padre.classList.add("pane-fill-path");
+    });
     NODES[`${ctx.key}.${i}`] = p;
     return el;
   }));
@@ -2354,6 +2397,16 @@
 
   /* ---------------- main render ---------------- */
   const root = h("div", { id: "px-root", style: { height: "100%" } });
+  function layoutChatPanes() {
+    const bar = root.querySelector(".px-bar"), b = bar && bar.getBoundingClientRect();
+    const bottom = b && b.height ? Math.min(innerHeight, b.top - 8) : innerHeight;
+    root.querySelectorAll(".pane-layout").forEach((el) => {
+      if (!el.querySelector(".aic.h-FILL")) return;
+      // La barra del prototipo también ocupa espacio visible; en capturas se deja crecer el contenido.
+      el.style.height = capture ? "" : Math.max(0, bottom - el.getBoundingClientRect().top) + "px";
+      el.style.flex = capture ? "" : "0 0 auto";
+    });
+  }
   function rerender() {
     const active = document.activeElement;
     const fid = active && active.id && active.id.startsWith("f-") ? active.id : null;
@@ -2377,6 +2430,7 @@
     if (!inspector) tip.hidden = true;
     drawCharts();
     layoutNav();
+    layoutChatPanes();
     window.scrollTo(0, y);
     document.querySelectorAll(".dlg-c").forEach((x, i) => (x.scrollTop = scrolls[i] || 0));
     if (fid) { const el = document.getElementById(fid); if (el) { el.focus({ preventScroll: true }); if (sel && el.setSelectionRange) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
@@ -2386,7 +2440,7 @@
   }
   function drawCharts() { document.querySelectorAll(".chart").forEach((c) => c.__draw && c.clientWidth && c.__draw(c.clientWidth)); }
   function layoutNav() { document.querySelectorAll(".hb, .cbr").forEach((c) => c.__layout && c.__layout()); }
-  let rsz; window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { drawCharts(); layoutNav(); }, 120); });
+  let rsz; window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { drawCharts(); layoutNav(); layoutChatPanes(); }, 120); });
   function firstRecordId(scr) { const r = rowsOf(scr.dataset ? "data!" + scr.dataset : "recordType!" + scr.recordType)[0]; return r && r.id; }
   function showScreen(id, opts) {
     opts = opts || {};
@@ -2417,9 +2471,13 @@
     for (const [k, v] of [["POSITIVE", "--positive"], ["NEGATIVE", "--negative"], ["WARN", "--warn"], ["INFO", "--info"]]) { const x = cs.getPropertyValue(v).trim(); if (rgbOf(x)) SEMHEX[k] = x; }
     const lk = linkOn((BRAND.site && BRAND.site.backgroundColor) || "#0f203a");
     if (lk) document.documentElement.style.setProperty("--lnk-dark", lk);
-    const hash = (location.hash || "").replace(/^#/, "");
+    const hash = location.hash;
     const home = (SPEC.site && SPEC.site.home) || ((SPEC.site && arr(SPEC.site.pages)[0]) || {}).screen || (screens[0] || {}).id;
-    if (!(hash && showScreen(hash))) { go(home, {}); rerender(); }
+    if (!(hash && showHash(hash))) { go(home, {}); rerender(); }
+    window.addEventListener("hashchange", () => {
+      if (!location.hash) { showScreen(home); return; }
+      showHash(location.hash);
+    });
     if (/capture/.test(location.search)) { capture = true; rerender(); }
   }
 

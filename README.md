@@ -20,22 +20,31 @@ Cada proyecto es un repositorio git que crea `proyecto.py iniciar`, siempre con 
 defecto, F5 urgente, F6 ingeniería inversa, F7 refactorización, F8 construir y verificar y F9 pase a producción. Cada
 flujo dice quién hace cada paso y con qué skill, y cita el detalle sin repetirlo. Su única fuente es
 `skills/appian-functional-analyst/assets/flujos/`: volver a lanzar `iniciar` pone al día `AGENTS.md` y los flujos con la
-versión del plugin, sin tocar lo demás.
+versión del plugin, sin tocar el análisis. Además, `.appian-plugin.json`, local e ignorado por git, indica dónde está
+el plugin instalado en ese equipo; `AGENTS.md` lo usa para que una persona u otro agente encuentre los scripts.
 
 Cada cambio es una unidad (`EV-nn`, `URG-nn`) en `analisis/cambios.md`. Al aprobarla el jefe de proyecto, un script
-escribe en `construccion/<U>/` una issue por requisito, con lo que necesita quien la construye y nada más (qué se pide,
-sus escenarios en Gherkin, sus objetos y lo que dice de ellos el técnico), en orden y diciendo cuáles pueden ir a la
-vez. Quien construye, persona o agente, pide la siguiente (`indice.py issues <p> <U> --siguiente`), que queda reservada
+escribe en `construccion/<U>/` sus issues a partir de la tabla de objetos de técnico §13: lo común en la Base y juntos
+los requisitos que comparten objetos. Si §13 sigue en lista, primero se convierte a tabla. Cada issue lleva qué se
+pide, sus escenarios, objetos, extracto del técnico y supuestos pendientes, en orden de dependencias.
+Quien construye, persona o agente, pide la siguiente (`indice.py issues <p> <U> --siguiente`), que queda reservada
 con un commit para que nadie más se la lleve, y la construye solo en desarrollo. La issue está hecha cuando pasa su
-verificación: sus objetos, como dice el técnico, y sus pruebas, los casos de prueba guardados de sus reglas e interfaces
-y de lo que las usa; un retoque que no cambia criterios ni reglas no ejecuta ninguno. Con todas hechas, el QA recorre la
+verificación: sus objetos, como dice el técnico, y sus pruebas. La ausencia confirmada de casos exigidos expresamente
+en técnico §14 mantiene la issue pendiente; la excepción humana lleva motivo. Los fallos en objetos dependientes
+se muestran como avisos. Un retoque que no cambia criterios ni reglas no ejecuta casos. Si se regenera una issue
+reservada con otro contenido, se avisa a quien la tiene y debe releerla. Con todas hechas, el QA recorre la
 unidad con SAIL CLI como cada rol, en otra sesión y solo con sus escenarios, y deja cada recorrido como guion en
 `qa/<U>/`. Un fallo devuelve su issue a pendiente, salvo que una persona marque esa prueba como no necesaria, con motivo
 (`skills/appian-functional-analyst/references/cambios.md` §6). Después, la unidad se marca construida.
 
-Desde el paquete no actúa la IA. Antes de prepararlo, la regresión ejecuta todos los casos de prueba de la aplicación y
-`qa.py` repite sin IA los guiones del QA; quien lo prepara revisa en Compare and Deploy la comparación de sus objetos
-con esos fallos, y `proyecto.py cambio <p> <U> produccion --ref` registra el pase.
+Una persona también puede cerrar una issue con `--manual --motivo`: queda «hecha manualmente», permite avanzar a las
+dependientes y caduca si cambia el encargo. Ese cierre no crea una verificación ni elimina un fallo vigente de pruebas
+o QA sin su propia excepción motivada. Los cierres manuales se revisan antes del paquete.
+
+La IA puede dejar preparado en desarrollo el borrador del paquete; revisarlo, exportarlo y desplegarlo es de una
+persona. Antes de prepararlo, la regresión ejecuta todos los casos de prueba de la aplicación y `qa.py` repite sin IA
+los guiones del QA; una persona revisa en Compare and Deploy la comparación de sus objetos con esos fallos, y
+`proyecto.py cambio <p> <U> produccion --ref` registra el pase.
 
 ## Qué hace cada skill
 
@@ -152,13 +161,19 @@ aplica. Detalle en `skills/appian-reverse-engineering/references/devmcp-setup.md
 
 Cómo se trabaja en este repositorio (la rama, las pruebas, la versión y el PR) está en `CLAUDE.md`. Qué comprueba
 `pruebas/comprobar_plugin.py` lo dice su cabecera; las pruebas de cada skill están en `pruebas/<skill>/` y las
-evaluaciones, en `pruebas/evaluaciones/`. En `docs/`: el diseño y el plan de la versión en curso (`docs/diseno/` y
-`docs/plan/`), los resultados de las evaluaciones (`docs/evaluaciones.md`) y lo pendiente (`docs/siguiente-version.md`).
+evaluaciones, en `pruebas/evaluaciones/`. Las lecciones aprendidas se mantienen en dos documentos:
+[mejoras pendientes](docs/siguiente-version.md), con el cambio o la decisión que falta, y
+[evaluaciones](docs/evaluaciones.md), con lo aplicado, las pruebas y sus límites. Son el seguimiento vigente del
+producto; las notas y los registros de cada ensayo quedan como evidencia en su carpeta de coordinación, fuera del
+repositorio. Cuando hagan falta, el diseño y plan en curso se guardan en `docs/diseno/` y
+`docs/plan/`; los de entregas cerradas se consultan en el historial de git.
 
 ## Versiones
 
 | Versión | Cambios |
 |---|---|
+| 0.8.0-beta.3 | **Word siempre al día, borrador del paquete y Appian 26.10.** Con cada cambio de lo que exporta se regeneran los Word vigentes: el completo y el de cada unidad en curso que ya tenga uno, aunque el cambio no sea de esa unidad. El ajuste técnico dentro del encargo aprobado vuelve al análisis y la IA deja en desarrollo el borrador del paquete (F9), que revisa, exporta y despliega una persona. Las rectificaciones entre fuentes llevan su fila D con la fuente que cita «lo nuevo» (`version --decision`); `estado` enseña el «Siguiente paso» entero; las DT que citan un objeto llegan a su issue y las reservas solo suben al remoto con autorización. `verificar` dice lo que no compara. `AGENTS.md` deja claro que «sobre `main`» no autoriza a rodear el aislamiento de las sesiones en segundo plano. Buenas prácticas al día con Appian 26.10 y el DevMCP 26.9.10 (500/50 campos, Number (Decimal Precise), `a!toDecimal`, «Publish for Analytics & AI», el Appian MCP Server, Stop en proceso y en chat, avisos de Design Guidance por `validateDesignObjects`) y divergencias con la skill oficial probadas de nuevo; 13 anclas de docs.appian.com corregidas tras la 26.10. Prototipos que arrancan con `python -I` |
+| 0.8.0-beta.2 | **Construcción por partes, permisos explícitos y fuentes más seguras.** Las unidades que cambian una misma pieza se secuencian antes de construir; las issues grandes llevan subtareas con avance guardado. Verificar compara los permisos de acciones y de inicio de procesos con el técnico: una diferencia confirmada deja la issue pendiente hasta corregirla o recibir una aceptación humana específica y con motivo; lo que no puede leerse queda sin comprobar. Se refuerzan las pruebas exigidas, los cierres manuales, los avisos de dependencias y la trazabilidad de las fuentes. La ingesta cuenta palabras, detecta fuentes casi duplicadas y conserva los finales de línea. Ingeniería inversa genera inventario y huérfanos por script, conserva el inventario en lecturas parciales y detiene la cola ante problemas de acceso o login. Los procesos grandes se documentan sin repetir secuencias y el enrutado BPMN reduce conexiones ambiguas conservando las rutas editadas a mano. Prototipos con chat ajustado al alto visible y enlaces entre pantallas en otra pestaña. El DF avisa de capturas pendientes y de la revisión del índice al convertir con LibreOffice. |
 | 0.8.0-beta.1 | **Método L.U.C.I.A.: la IA prepara y, desde el paquete, deciden personas, Appian y scripts.** Cada proyecto es un repositorio git (`proyecto.py iniciar`), sobre main y sin ramas, con un `AGENTS.md` generado y los flujos F1 a F9, de la aplicación nueva al pase a producción, en `.agents/workflows/`, para que cualquier persona o agente trabaje igual. Los criterios de aceptación se escriben en Gherkin de una línea (dado, cuando y entonces) y pasan a `.feature` sin IA. Las issues por requisito sustituyen al encargo: con la columna «Para» de técnico §13, `indice.py issues` escribe en `construccion/<U>/` una por requisito, con solo lo que necesita quien construye, en orden y diciendo cuáles van a la vez; `--siguiente` la reserva con un commit. `verificar` ejecuta las pruebas de la issue (los casos de prueba de sus reglas e interfaces y de lo que las usa) y un fallo propio la deja pendiente salvo que una persona lo marque con `--sin-prueba` y motivo; antes del paquete, la regresión de toda la aplicación. Skill nueva, `appian-qa`: el QA de la unidad con SAIL CLI, en otra sesión y solo con sus escenarios, con guiones que `qa.py` repite sin IA. Quien prepara el paquete revisa en Compare and Deploy la comparación de los objetos con los fallos de la regresión y del QA, y `produccion --ref` guarda la referencia del pase. En un proyecto que ya existe: lanzar `proyecto.py iniciar`, que lo pasa a git y le pone `AGENTS.md` y los flujos sin tocar lo demás; las verificaciones del encargo antiguo (`construccion/verificacion/<U>.json`) no cuentan y una unidad aprobada entonces se verifica de nuevo, issue a issue |
 | 0.7.0-beta.4 | **Buenas prácticas, contrastadas con la documentación y con la skill oficial.** Las 37 reglas en las que `appian-best-practices` contradecía a la skill oficial `appian` se han verificado contra docs.appian.com (26.9). Se corrige lo que estaba mal (consulta en `data`, prefijo de los grupos, visibilidad de página, role map del sitio, escribir en línea o con proceso, botón con `a!startProcess`, foco automático, record list en una interfaz) y se precisan alcance, versión y fuente del resto (clave compuesta desde 26.3, `modifiedOn`, `fetchTotalCount`, tamaño de lote). Referencia nueva, `14-official-skill-divergences.md`: 18 puntos en los que la skill oficial no sigue la documentación y qué hacer en cada uno. Las puertas 1 y 4 ya no repiten lo que la skill oficial comprobó al escribir, y `SKILL.md` no exige el MCP de documentación para escribir. A demanda, con red: `pruebas/comprobar_anclas.py` (unas 1.200 citas a la documentación, 0 anclas rotas tras corregir 22) y `pruebas/comprobar_divergencias.py` (qué divergencias ha corregido ya Appian en su skill). Y más ligero: al modificar un objeto se envía el `versionId` leído, para no pisar el cambio de otro; las puertas ya no piden anotar un veredicto con su evidencia (lo que falla se arregla y lo que no se pudo comprobar se dice); la rúbrica UX de prototipos, solo con pantallas nuevas o antes de enseñarlas al cliente |
 | 0.7.0-beta.3 | **Retoques ligeros y menores.** Analista: un retoque que nadie tiene que aprobar va por un camino corto (`actualizacion.md`): `proyecto.py version` hace en una orden la copia, la versión de los dos documentos, sus filas en `decisiones.md` (también las D con `--decision`) y la fuente en `proyecto.md`; el informe se escribe ya aplicado y se comprueba una vez; `indice.py impacto --cambio` dice la fila de técnico §13. Medido a ciegas: de 34, 34 y 47 llamadas a 16, 19 y 21. Ingeniería inversa: el informe de extracción lista las herramientas omitidas con su motivo (`toolsOmitted`), también con `--solo`. Diagramas: la etiqueta de cada salida de una puerta, en su propio tramo. `requisitos.py`: un servidor http ajeno (GitHub, Notion) ya no deja el Appian MCP Server sin comprobar |

@@ -2,9 +2,9 @@
 
 Mide si un retoque sobre algo ya construido sigue siendo ligero con unidades de cambio. El cliente pide cambiar el texto
 de un botón de una pantalla que está en producción: eso no pide aprobación por punto ni DT, se aplica con `comprobar.py`
-sin errores en una sola pasada, no regenera ningún documento y cabe en un tope de llamadas fijado antes de medir. Todo
-es ficticio. Los resultados van a `docs/evaluaciones.md`; el proyecto de prueba, a `$PROYECTOS_PRUEBA`, fuera del
-repositorio.
+sin errores en una sola pasada, regenera solo los Word vigentes, que ya existían y cuya versión cambia, y cabe en un
+tope de llamadas fijado antes de medir. Todo es ficticio. Los resultados van a `docs/evaluaciones.md`; el proyecto de
+prueba, a `$PROYECTOS_PRUEBA`, fuera del repositorio.
 
 ## Lo que hay
 
@@ -52,14 +52,15 @@ repositorio.
 | `sin_aprobacion` | Ningún punto de ese informe pide aprobación («Requiere: Sí…») ni queda «Pendiente». Que esté construido sale, como mucho, en «Posible petición de cambio» del Resumen |
 | `sin_dt` | Ninguna DT «Cambio sobre lo construido» nueva (la de `EV-02` ya estaba) |
 | `comprobar_una_pasada` | `comprobar.py` sin errores, con `--fuentes`, y K = 0 |
-| `sin_word_ni_capturas` | Ningún `.docx`, `.pdf` ni `.png` (salvo en `fuentes/`) nuevo o distinto del montaje: el Word y las capturas se regeneran al enviar o al construir, no con cada fuente |
+| `word_al_dia` | Con Word al montar, los vigentes de la 1.2: el DF completo (`entregables/DF-Solicitudes-de-material-v1.2.docx`) y el de `EV-02`, en curso (`…-EV-02-v1.2.docx`), con su PDF de revisión si sale. Se abren y dicen «Versión 1.2», y el completo, «Pedir material» en la ficha de PAN-01. Nada más: los Word entregados y las capturas siguen ahí y como al montar, porque no hay prototipo del que sacarlas. Sin Word al montar, ningún `.docx`, `.pdf` ni `.png` nuevo, distinto o que falte (salvo en `fuentes/`). Desde que hay un Word, cada cambio de lo que exporta, su versión incluida, lo regenera (`cambios.md` §5). Las pasadas puntuadas antes del 3-nov-2026 lo fueron con `sin_word_ni_capturas` (ningún Word regenerado): no son comparables con las de ahora |
 | `llamadas` | N ≤ 25 |
 
 ## Criterio
 
 Umbral: los seis. Cada punto es un coste que un retoque no necesita (una aprobación, una DT, una vuelta de correcciones,
-un documento regenerado, llamadas de más); con que vuelva uno, el retoque ya no es ligero, que es lo que esta prueba
-mide. `hecho` evita que pase sin hacer el cambio. La puntuación sale 0.
+un documento regenerado de más, llamadas de más); con que vuelva uno, el retoque ya no es ligero, que es lo que esta
+prueba mide. `hecho` evita que pase sin hacer el cambio, y `word_al_dia`, que el Word se quede viejo. La puntuación
+sale 0.
 
 ## El tope: 25 llamadas
 
@@ -78,13 +79,15 @@ desde la 0.7.0-beta.3) lo deja así:
 | Técnico: leer el tramo de §7 a §13 y editar §7 y la fila de §13 | 3 |
 | El informe, ya aplicado, de una vez | 1 |
 | `comprobar.py --anterior --impacto --fuentes` | 1 |
-| **Total** | **16** |
+| Si ya hay Word: los vigentes de la 1.2, el completo y el de `EV-02` (`df_docx.js` y `df_docx.js --cambio EV-02`, `cambios.md` §5) | 2 |
+| **Total** | **16** (18 con Word) |
 
-`prueba_puntuar.py` recorre este camino con las órdenes del plugin y comprueba que son 16 llamadas y que la pasada de
-`comprobar.py` sale sin errores. El tope deja 9 de margen para lo razonable que no está en esa cuenta: `requisitos.py`
-al empezar, `indice.py resumen`, leer `cambios.md`, una búsqueda más o leer una plantilla. Lo que ya no cabe es lo que
-un retoque no necesita: regenerar el Word, el prototipo o las capturas, escribir una DT, presentar puntos para
-aprobarlos, leer el funcional o el técnico enteros o dar una vuelta de correcciones a `comprobar.py`. Cada uno suma de 2
+`prueba_puntuar.py` recorre este camino con las órdenes del plugin y comprueba que son 16 llamadas (18 con Word) y que
+la pasada de `comprobar.py` sale sin errores. El tope deja 7 de margen para lo razonable que no está en esa cuenta:
+`requisitos.py` al empezar, `indice.py resumen`, leer `cambios.md`, una búsqueda más o leer una plantilla. Lo que ya no
+cabe es lo que un retoque no necesita: regenerar lo que no cambia (los Word entregados, las capturas sin prototipo),
+escribir una DT, presentar puntos para aprobarlos, leer el funcional o el técnico enteros o dar una vuelta de
+correcciones a `comprobar.py`. Cada uno suma de 2
 a 10 llamadas. En la 0.7.0-beta.2, con el camino entero (22 llamadas como mínimo), las tres pasadas costaron 34, 34 y 47
 (`docs/evaluaciones.md`).
 
@@ -97,5 +100,7 @@ issue de la unidad nueva, que se escribe al aprobarla.
 
 `python3 prueba_puntuar.py` monta el proyecto, comprueba el caso (PAN-01 construida, ✅ y fuera de `EV-02`, el correo, el
 tope, el camino más corto) y prueba `puntuar.py` con proyectos inventados: ese camino, que pasa, y variantes que no (una
-llamada de más, una pasada con errores, la aprobación por construido, una DT, el Word o una captura regenerados, la fila
-sin unidad o en `EV-02`, nada hecho). Lee el plugin de `PLUGIN_A_PROBAR`.
+llamada de más, una pasada con errores, la aprobación por construido, una DT, una captura regenerada sin prototipo, un
+Word entregado pisado o movido al nombre nuevo, el Word sin poner al día, el DF 1.0 copiado con el nombre de la 1.2, un
+Word vacío o falso o, sin Word al montar, uno nuevo, la fila sin unidad o en `EV-02`, nada hecho). Lee el plugin de
+`PLUGIN_A_PROBAR`. Las 18 llamadas son las del camino simulado, no una medida de un agente.

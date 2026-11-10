@@ -2,7 +2,7 @@
 /*
  * Genera el DF en Word (.docx) a partir del análisis de un proyecto.
  *
- * Uso: node df_docx.js <carpeta del proyecto> [-o entregables/DF-<proyecto>-v1.1.docx] [--pdf]
+ * Uso: node df_docx.js <carpeta del proyecto> [-o <carpeta del proyecto>/entregables/DF-<proyecto>-v1.1.docx] [--pdf]
  *      node df_docx.js <carpeta del proyecto> --cambio EV-02 [--pdf]   el DF de un cambio (DF-<proyecto>-EV-02-v1.1.docx)
  *      node df_docx.js <carpeta del proyecto> --pdf-de <fichero>     solo convierte ese fichero a PDF
  *
@@ -21,7 +21,8 @@
  * *cursiva* y `código`, listas (una viñeta puede seguir en líneas sangradas), tablas, citas (>), imágenes
  * ![pie](ruta.png) con figuras numeradas.
  *
- * No sobrescribe un Word entregado («Entregados» de proyecto.md, que escribe proyecto.py entregar): sale con 1.
+ * No sobrescribe un Word entregado («Entregados» de proyecto.md, que escribe proyecto.py entregar): sale con 1. Si el
+ * de esta versión ya se entregó y solo cambian sus imágenes, la revisión sale con -o (…-v1.1-r2.docx).
  * --pdf y --pdf-de convierten con LibreOffice (soffice) en un perfil temporal que se borra y dejan el PDF en
  * <p>/entregables/revision/.
  *
@@ -52,6 +53,64 @@ if (fs.existsSync(path.join(analisis, "analisis"))) analisis = path.join(analisi
 const raiz = path.basename(analisis) === "analisis" ? path.dirname(analisis) : analisis;
 const REVISION = path.join(raiz, "entregables", "revision");   // los PDF para revisar, dentro del proyecto
 
+// Se ejecuta en el perfil desechable de LibreOffice: actualiza el índice y ajusta enlaces sin guardar el DOCX.
+// Las macros y las actualizaciones externas del documento de entrada quedan desactivadas.
+function macroPdf(fichero, temporal, definitivo, error) {
+  const uri = (f) => require("url").pathToFileURL(f).href;
+  return `Sub Main
+On Error GoTo Fallo
+Dim entrada(3) As New com.sun.star.beans.PropertyValue
+entrada(0).Name = "Hidden": entrada(0).Value = True
+entrada(1).Name = "ReadOnly": entrada(1).Value = True
+entrada(2).Name = "MacroExecutionMode": entrada(2).Value = 0
+entrada(3).Name = "UpdateDocMode": entrada(3).Value = 0
+Dim documento As Object, indices As Object, i As Integer
+documento = StarDesktop.loadComponentFromURL("${uri(fichero)}", "_blank", 0, entrada())
+indices = documento.DocumentIndexes
+For i = 0 To indices.Count - 1
+  indices.getByIndex(i).update()
+Next i
+Dim fabrica As Object, destino As Object, parrafos As Object, parrafo As Object, trozos As Object, trozo As Object, enlace As String
+fabrica = CreateUnoService("com.sun.star.uri.UriReferenceFactory")
+destino = fabrica.parse("${uri(definitivo)}")
+parrafos = documento.Text.createEnumeration()
+Do While parrafos.hasMoreElements()
+  parrafo = parrafos.nextElement()
+  If parrafo.supportsService("com.sun.star.text.Paragraph") Then
+    trozos = parrafo.createEnumeration()
+    Do While trozos.hasMoreElements()
+      trozo = trozos.nextElement()
+      enlace = trozo.HyperLinkURL
+      If Left(LCase(enlace), 7) = "file://" And Right(LCase(enlace), 7) = ".drawio" Then
+        trozo.HyperLinkURL = ""
+        trozo.HyperLinkURL = fabrica.makeRelative(destino, fabrica.parse(enlace), False, False, False).getUriReference()
+      End If
+    Loop
+  End If
+Loop
+Dim calidad(2) As New com.sun.star.beans.PropertyValue
+calidad(0).Name = "UseLosslessCompression": calidad(0).Value = True
+calidad(1).Name = "ReduceImageResolution": calidad(1).Value = False
+calidad(2).Name = "ExportLinksRelativeFsys": calidad(2).Value = True
+Dim salida(1) As New com.sun.star.beans.PropertyValue
+salida(0).Name = "FilterName": salida(0).Value = "writer_pdf_Export"
+salida(1).Name = "FilterData": salida(1).Value = calidad()
+documento.storeToURL("${uri(temporal)}", salida())
+GoTo Terminar
+Fallo:
+Dim canal As Integer
+canal = FreeFile
+Open ConvertFromURL("${uri(error)}") For Output As #canal
+Print #canal, Error$
+Close #canal
+Resume Terminar
+Terminar:
+On Error Resume Next
+documento.close(True)
+StarDesktop.terminate()
+End Sub`;
+}
+
 // PDF con LibreOffice en un perfil y un HOME temporales, que se borran: no deja nada fuera del proyecto ni choca con
 // un LibreOffice abierto
 function aPdf(fichero) {
@@ -61,16 +120,34 @@ function aPdf(fichero) {
   const nombre = path.basename(fichero, path.extname(fichero)) + ".pdf", pdf = path.join(REVISION, nombre);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "df-pdf-"));
   try {   // se convierte en la carpeta temporal y solo si sale bien sustituye al PDF que hubiera
-    const perfil = require("url").pathToFileURL(path.join(tmp, "perfil")).href, salida = path.join(tmp, "salida");
+    const dirPerfil = path.join(tmp, "perfil"), perfil = require("url").pathToFileURL(dirPerfil).href;
+    const salida = path.join(tmp, "salida"), temporal = path.join(salida, nombre), error = path.join(tmp, "error.txt");
     const env = { ...process.env, HOME: tmp, TMPDIR: tmp, TMP: tmp, TEMP: tmp };
     for (const exe of exes.filter(Boolean)) {
-      const r = cp.spawnSync(exe, [`-env:UserInstallation=${perfil}`, "--headless", "--convert-to", "pdf", "--outdir", salida, fichero],
+      const ejecutar = (opciones) => cp.spawnSync(exe, [`-env:UserInstallation=${perfil}`, "--headless", "--nologo", ...opciones],
         { env, encoding: "utf8", timeout: 300000 });
+      // --pdf-de también convierte las diapositivas del cliente: conservan su conversión directa.
+      const word = path.extname(fichero).toLowerCase() === ".docx";
+      let r = ejecutar(word ? ["--terminate_after_init"] : ["--convert-to", "pdf", "--outdir", salida, fichero]);
       if (r.error && r.error.code === "ENOENT") continue;
-      if (!fs.existsSync(path.join(salida, nombre)))
-        return { ok: false, msg: `LibreOffice no ha convertido ${path.basename(fichero)}: ${String(r.stderr || r.stdout || (r.error && r.error.message) || "").trim().slice(-300)}` };
+      // El primer arranque crea la biblioteca Standard; escribir antes haría que LibreOffice la sustituyera.
+      if (word && r.status === 0) {
+        fs.mkdirSync(salida, { recursive: true });
+        const biblioteca = path.join(dirPerfil, "user", "basic", "Standard");
+        fs.mkdirSync(biblioteca, { recursive: true });
+        fs.writeFileSync(path.join(biblioteca, "script.xlb"), '<?xml version="1.0" encoding="UTF-8"?>' +
+          '<library:library xmlns:library="http://openoffice.org/2000/library" library:name="Standard" library:readonly="false" library:passwordprotected="false"><library:element library:name="Module1"/></library:library>');
+        const codigo = macroPdf(fichero, temporal, pdf, error).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        fs.writeFileSync(path.join(biblioteca, "Module1.xba"), '<?xml version="1.0" encoding="UTF-8"?>' +
+          '<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Module1" script:language="StarBasic">' + codigo + '</script:module>');
+        r = ejecutar(["--nodefault", "macro:///Standard.Module1.Main"]);
+      }
+      if (r.status !== 0 || fs.existsSync(error) || !fs.existsSync(temporal)) {
+        const motivo = fs.existsSync(error) ? fs.readFileSync(error, "utf8") : r.stderr || r.stdout || (r.error && r.error.message) || "no se ha generado el PDF";
+        return { ok: false, msg: `LibreOffice no ha convertido ${path.basename(fichero)}: ${String(motivo).trim().slice(-300)}` };
+      }
       fs.mkdirSync(REVISION, { recursive: true });
-      fs.copyFileSync(path.join(salida, nombre), pdf);
+      fs.copyFileSync(temporal, pdf);
       return { ok: true, pdf };
     }
     return { ok: false, sin: true, msg: "Sin LibreOffice (soffice) no hay PDF, y no se saca por otra vía" };
@@ -89,7 +166,7 @@ if (args.includes("--pdf-de")) {
 const D = cargarDocx();
 const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType,
   ImageRun, AlignmentType, TableOfContents, Header, Footer, PageNumber, LevelFormat, BorderStyle, PageBreak,
-  PageOrientation } = D;
+  PageOrientation, ExternalHyperlink } = D;
 const leer = (f) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n") : "");
 const funcional = leer(path.join(analisis, "funcional.md"));
 if (!funcional) { console.error(`No encuentro ${path.join(analisis, "funcional.md")}`); process.exit(2); }
@@ -120,19 +197,26 @@ if (CAMBIO !== null) {
     break;
   }
   if (!R) { console.error("--cambio necesita Python (python3 o python) para leer la unidad con indice.py"); process.exit(2); }
+  const pantallasModificadas = (R.piezas.cambian || []).filter((p) => /^PAN-/.test(p.id)).map((p) => p.id);
+  if (pantallasModificadas.length) console.warn(`AVISO: ${pantallasModificadas.join(", ")}: revisa y regenera sus capturas ` +
+    "antes de entregar el DF. La unidad modifica estas pantallas y el Word no acredita que las imágenes reflejen el cambio.");
 }
 const out = path.resolve(opt("-o", path.join(raiz, "entregables", `DF-${slug}${CAMBIO ? "-" + CAMBIO : ""}-v${version}.docx`)));
 
 // Un Word entregado no se toca: los de «Entregados: a.docx, b.docx» de proyecto.md (proyecto.py entregar)
 const entregados = ((proyecto.match(/^Entregados:\s*(.*)$/m) || [])[1] || "").split(",").map((x) => x.trim()).filter(Boolean);
-if (fs.existsSync(out)) {
-  if (entregados.includes(path.basename(out))) {
-    console.error(`${path.basename(out)} ya se entregó al cliente («Entregados» de proyecto.md): no se sobrescribe ${out}. ` +
-      `Si el análisis ha cambiado, sube la versión; para el PDF de ese Word, --pdf-de ${out}.`);
-    process.exit(1);
-  }
-  console.log(`· ${path.basename(out)} existe y no se ha entregado: se reemplaza`);
+// El nombre de uno entregado queda reservado, aunque falte su fichero, y se compara sin mayúsculas (en Windows,
+// df-….docx es el mismo fichero que DF-….docx)
+if (entregados.some((x) => x.toLowerCase() === path.basename(out).toLowerCase())) {
+  const nombre = path.basename(out, ".docx");
+  const r = nombre.match(/^(.*)-r(\d+)$/);
+  const revision = path.join(path.dirname(out), r ? `${r[1]}-r${Number(r[2]) + 1}.docx` : `${nombre}-r2.docx`);
+  console.error(`${path.basename(out)} ya se entregó al cliente («Entregados» de proyecto.md): no se sobrescribe ni ` +
+    `se vuelve a escribir ${out}. Si el análisis ha cambiado, sube la versión; si solo cambian sus imágenes, saca una ` +
+    `revisión con -o (${revision}, un nombre que no esté en «Entregados»); para el PDF de ese Word, --pdf-de ${out}.`);
+  process.exit(1);
 }
+if (fs.existsSync(out)) console.log(`· ${path.basename(out)} existe y no se ha entregado: se reemplaza`);
 
 // La marca del cliente: su color oscuro (site.backgroundColor, que lleva texto blanco encima) en títulos y
 // cabeceras de tabla; sin marca, los azules de siempre
@@ -187,7 +271,7 @@ function control() {
 
 // El DF de un cambio: «Qué cambia» en un párrafo y, de cada apartado, solo las fichas y filas de la unidad (nuevas y las
 // que cambian) y las historias y pantallas que se conservan pero comparten pantalla o paso con ellas, con su marca
-function delCambio(md, R) {
+function delCambio(md, R, preguntas = null) {
   const marca = {};
   for (const p of R.piezas.cambian) marca[p.id] = "Cambia";
   for (const p of R.piezas.nuevas) marca[p.id] = "Nueva";
@@ -208,17 +292,21 @@ function delCambio(md, R) {
     }
     return res;
   }
+  if (preguntas) for (const id of preguntas) if (!marca[id]) marca[id] = "Se conserva";
   const L = md.split("\n"), out = [];
   const ficha = (l) => (l.match(/^\*\*(?:~~)?([A-Z]+-\d+)(?:~~)?\s+—\s/) || [])[1];
   const fila = (l) => (l.match(/^\|\s*(?:~~)?([A-Z]+-\d+)(?:~~)?\s*\|/) || [])[1];
   let i = 0;
   while (i < L.length && !/^## /.test(L[i])) out.push(L[i++]);   // título y versión
-  const lista = (xs) => xs.map((p) => `- ${p.id} — ${p.titulo}`).join("\n");
+  // El índice incluye decisiones técnicas; el DF sólo resume piezas del funcional.
+  const funcionales = new Set(L.map((l) => ficha(l) || fila(l)).filter(Boolean));
+  const lista = (xs) => xs.filter((p) => funcionales.has(p.id)).map((p) => `- ${p.id} — ${p.titulo}`).join("\n");
   out.push("## Qué cambia", "", `${R.titulo}.`, "");
-  if (R.piezas.nuevas.length) out.push("Nuevo:", "", lista(R.piezas.nuevas), "");
-  if (R.piezas.cambian.length) out.push("Cambia:", "", lista(R.piezas.cambian), "");
-  if (R.piezas.anuladas.length) out.push("Se quita:", "", lista(R.piezas.anuladas), "");
-  out.push(`El resto de la aplicación no cambia: sigue como en la versión ${R.base || "anterior"} de este diseño funcional.`, "");
+  for (const [rotulo, piezas] of [["Nuevo", R.piezas.nuevas], ["Cambia", R.piezas.cambian], ["Se quita", R.piezas.anuladas]]) {
+    const resumen = lista(piezas);
+    if (resumen) out.push(`${rotulo}:`, "", resumen, "");
+  }
+  out.push(`El resto del alcance de este diseño funcional se conserva como en la versión ${R.base || "anterior"}.`, "");
   while (i < L.length) {
     const titulo = L[i++], cuerpo = [];
     while (i < L.length && !/^## /.test(L[i])) cuerpo.push(L[i++]);
@@ -253,7 +341,15 @@ function delCambio(md, R) {
     }
     if (kept.length) out.push(titulo, "", ...kept);
   }
-  return out.join("\n");
+  const resultado = out.join("\n");
+  // Las preguntas citadas deben poder leerse en el mismo DF. La trazabilidad y
+  // las piezas anuladas no amplían el alcance: se buscan después de limpiar.
+  const citadas = new Set(preguntas || []);
+  for (const id of limpiar(resultado).match(/\bPC-\d+\b/g) || []) citadas.add(id);
+  // Una pregunta puede citar otra. Sólo se repite si aparece un ID nuevo;
+  // una cadena queda completa y un ciclo termina al estabilizarse el conjunto.
+  if ([...citadas].some((id) => !preguntas || !preguntas.has(id))) return delCambio(md, R, citadas);
+  return resultado;
 }
 
 const md = control() + "\n" + limpiar(R ? delCambio(funcional, R) : funcional).replace(/^# .+$/m, "");
@@ -339,12 +435,19 @@ function image(file, caption) {
   const buf = fs.readFileSync(p);
   const w = buf.readUInt32BE(16), h = buf.readUInt32BE(20); // PNG IHDR
   const maxW = 640, maxH = 820;
-  let W = maxW, H = Math.round((h * maxW) / w);
-  if (H > maxH) { H = maxH; W = Math.round((w * maxH) / h); }
+  let W = maxW, H = (h * maxW) / w;
+  if (H > maxH) { H = maxH; W = (w * maxH) / h; }
   fig++;
+  const leyenda = [new TextRun({ text: `Figura ${fig} — ${caption}`, italics: true, size: 18 })];
+  const editable = p.replace(/\.png$/i, ".drawio");
+  if (editable !== p && fs.existsSync(editable)) {
+    const link = path.relative(path.dirname(out), editable).split(path.sep).map(encodeURIComponent).join("/");
+    leyenda.push(new TextRun({ text: " · ", size: 18 }),
+      new ExternalHyperlink({ link, children: [new TextRun({ text: "Ver detalle", style: "Hyperlink", size: 18 })] }));
+  }
   return [
     new Paragraph({ alignment: AlignmentType.CENTER, keepNext: true, children: [new ImageRun({ type: "png", data: buf, transformation: { width: W, height: H } })] }),
-    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 200 }, children: [new TextRun({ text: `Figura ${fig} — ${caption}`, italics: true, size: 18 })] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 200 }, children: leyenda }),
   ];
 }
 
@@ -422,7 +525,7 @@ const portada = [
   new Paragraph({ children: [new TextRun({ text: `Versión ${version} · ${estadoDoc}`, size: 24 })] }),
   new Paragraph({ children: [new TextRun({ text: `Fecha: ${fechaVersion}`, size: 24 })] }),
   new Paragraph({ children: [new PageBreak()] }),
-  new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Índice")] }),
+  new Paragraph({ spacing: { before: 240, after: 160 }, keepNext: true, keepLines: true, children: [new TextRun({ text: "Índice", size: 32, bold: true, color: COLOR, font: FONT })] }),
   new TableOfContents("Índice", { hyperlink: true, headingStyleRange: "1-3", cachedEntries: entradas }),
 ];
 

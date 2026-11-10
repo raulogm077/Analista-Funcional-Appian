@@ -25,6 +25,7 @@ sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fu
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import colocacion  # noqa: E402
 import navegador  # noqa: E402
+from texto import escribir as escribir_texto  # noqa: E402
 
 MERMAID_JS = navegador.MERMAID_JS  # assets/mermaid.min.js de esta skill
 
@@ -136,8 +137,7 @@ def main():
                         png = dest / (src.stem + ".png")
                         pg.locator("#out").screenshot(path=str(png))
                         if a.svg:
-                            with open(dest / (src.stem + ".svg"), "w", encoding="utf-8", newline="\n") as fh:
-                                fh.write(res["svg"])
+                            escribir_texto(dest / (src.stem + ".svg"), res["svg"])
                         print(f"OK {f} -> {png}")
                     aviso_ancho(f, res["ancho"])
                 for f in mds:

@@ -272,9 +272,13 @@ if VARIANT == "a":
                   "DECISION": "decisions", "DATA_TYPE": "dataTypes", "DATA_STORE": "dataStores",
                   "AI_AGENT": "aiAgents",
                   "RULE_FOLDER": "folders", "PROCESS_MODEL_FOLDER": "processModelFolders"}
+        # Como el Dev MCP 26.9: cada grupo con {total, items} y los modelos de proceso con el nombre localizado
         out: dict = {}
         for o in app_objects():
-            out.setdefault(groups[o["objType"]], []).append({"uuid": o["uuid"], "name": o["name"]})
+            nombre = {"en_US": o["name"]} if o["objType"] == "PROCESS_MODEL" else o["name"]
+            grupo = out.setdefault(groups[o["objType"]], {"total": 0, "items": []})
+            grupo["items"].append({"uuid": o["uuid"], "name": nombre})
+            grupo["total"] += 1
         return out
 
     register("getApplication", [("uuid", "str", ...)], _app)

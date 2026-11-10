@@ -54,7 +54,7 @@ carriles del diagrama.
 
 ### 3. Proceso
 Por cada proceso, `### 3.n <Proceso>`:
-- La imagen del diagrama, `![Proceso de …](diagramas/<proceso>.png)`, que dibuja `appian-diagramas-bpmn`.
+- La imagen completa del diagrama, `![Proceso de …](diagramas/<proceso>.png)`, que dibuja `appian-diagramas-bpmn`. Aunque quede pequeña, se conserva su resolución para ampliar; el Word añade «Ver detalle» al `.drawio` de la misma carpeta si existe. Entrega ese editable junto al documento, conservando la estructura de carpetas.
 - Una ficha por paso, con el mismo `ACT-nn` que el diagrama. Tabla `Quién · Empieza cuando · Pantalla ·
   Plazo` y un párrafo con lo que hace. Si decide algo, una línea por opción y adónde lleva. Los plazos y
   los avisos (AV-nn) van en el paso, y solo ahí: las historias y los escenarios citan el paso en vez de
@@ -75,8 +75,10 @@ Después de los procesos:
 ### 4. Funcionalidades
 Historias agrupadas por área (`### Área`). Cada una:
 1. Título `**HU-nn — Verbo y objeto**` con su trazabilidad.
-2. Tabla `Perfil · Pantalla · Paso · Prioridad`. Pantalla y paso, el ID o «—». Prioridad: Imprescindible
-   o Deseable; con una aplicación existente (`as-is/`), «—» en lo que ya hace. Si es nueva, cambia o se conserva no se
+2. Tabla `Perfil · Pantalla · Paso · Prioridad`. El perfil es el de §2; «Aplicación» si lo hace la propia aplicación
+   (sin darla de alta en §2). Pantalla y paso, el ID o «—». Prioridad: Imprescindible
+   o Deseable; si las fuentes no priorizan, la que se propone, inferida (`prioridad 🔶`), y una sola PC para validar la
+   priorización, nunca «Pendiente»; con una aplicación existente (`as-is/`), «—» en lo que ya hace. Si es nueva, cambia o se conserva no se
    escribe: lo deriva `indice.py cambios` (`cambios.md`). Si la historia corrige un hallazgo, su cita va en la
    trazabilidad, no en el DF: `**HU-02 — …** <!-- ✅ FU-03 00:09:20; [FU-01 H-DAT-01] -->`.
 3. «Como <perfil>, quiero <qué> para <para qué>.»
@@ -88,7 +90,9 @@ Historias agrupadas por área (`### Área`). Cada una:
    (pulsar, rellenar): «cuando la reenvía», no «cuando pulsa Reenviar»; los datos, con el nombre que les da el
    cliente. Un solo «cuando»: si no cabe en una frase, son dos criterios. Los textos literales (un mensaje, un
    estado), entre comillas. Toda acción que borre o anule algo dice su confirmación literal; si no se sabe,
-   va al 11. Con las tres partes, un script escribe la prueba de cada criterio en Gherkin, sin interpretarlo. Los
+   va al 11. Lo que depende de la fecha de hoy se escribe con una fecha fija («Dado que hoy es el 15/03/2026…»);
+   el técnico prueba así la lógica que depende de la fecha (caso de prueba de regla, §14); su efecto (no se guarda,
+   no arranca el proceso, sale el mensaje) se prueba en su capa. Con las tres partes, un script escribe la prueba de cada criterio en Gherkin, sin interpretarlo. Los
    criterios que ya estaban escritos de otra forma (un análisis anterior, el DF del cliente) se quedan como están
    y se reescriben así cuando cambian.
 
@@ -114,7 +118,8 @@ Una ficha `PAN-nn` por pantalla, vista o diálogo:
 - La captura del prototipo, `![PAN-04 Revisar documentación](../prototipo/capturas/04-revisar.png)`, o
   varias si la pantalla tiene estados que el cliente debe ver (pasos, vistas, errores). Las pone el prototipo.
 - Para qué sirve, quién entra y desde dónde se abre, en una o dos frases.
-- Tabla `Parte · Qué permite · Quién`.
+- Tabla `Parte · Qué permite · Quién`. Lo que ve cada perfil dentro de la pantalla (un filtro, una columna, un botón)
+  va aquí y lleva un criterio en su historia, con su escenario: así llega a la issue de la pantalla y el QA lo prueba.
 - `Historias: HU-04, HU-05.`
 
 ```markdown

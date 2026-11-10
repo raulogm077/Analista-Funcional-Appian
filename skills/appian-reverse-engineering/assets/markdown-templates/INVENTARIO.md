@@ -1,5 +1,7 @@
 <!--
-  Plantilla INVENTARIO — Todos los objetos de la aplicación (orquestador, fase 6).
+  Plantilla INVENTARIO — Todos los objetos de la aplicación (build_inventario.py, fase 6).
+  El script escribe entre inventario:inicio e inventario:fin; conserva Nombre, Para qué y Pantalla por uuid.
+  El analista completa esas celdas; cualquier explicación adicional va fuera de los marcadores.
   Fuentes: <trabajo>/inventory.json (objetos y campos derivados), graph.json («Referencias»: aristas entrantes),
   extraction_plan.json, extraction_report.json y preflight.json (cobertura). Cubre el 100 % de inventory.json.
   El entorno y la fecha de la extracción están en LEEME: aquí no se repiten.
@@ -24,6 +26,8 @@
 # Inventario de la aplicación
 
 > **Responde a:** ¿Qué objetos tiene la aplicación y cuál es el uuid de cada uno? ¿Qué documento explica cada objeto? ¿Para qué sirve cada uno? ¿De qué objetos no hay definición y por qué?
+
+<!-- inventario:inicio -->
 
 > **TL;DR**: {{N}} objetos de {{N}} tipos; {{N}} de {{N}} ({{%}}, sin contar carpetas: `meta.coverage` de summary.json) con definición. Cada objeto con definición enlaza su ficha del anexo, con la definición original.
 > **Volumen**: {{n}} process models · {{n}} interfaces · {{n}} reglas · {{n}} record types · {{n}} otros. {{N}} objetos sin definición (ver [Cobertura](#cobertura-de-la-extracción)).
@@ -150,3 +154,5 @@ Una tabla por cada tipo restante de `counts` (carpetas, documentos, agentes de I
 | `{{nombre}}` | {{tipo}} | {{el Dev MCP no tiene herramienta de definición para este tipo / la llamada falló}} |
 
 {{Anomalías, si las hay, en 1-3 líneas: tipos desconocidos, objetos de otras aplicaciones referenciados, errores de extracción relevantes.}}
+
+<!-- inventario:fin -->

@@ -21,7 +21,9 @@ Puntos de la primera parte (la incidencia):
               «--reaplicada URG-nn», y con «--reaplicada URG-nn» pasa
   estados     EV-01 sigue En producción, EV-02 Aprobada y la URG Abierta: en una sesión desatendida no se aprueba ni se
               pasa nada a producción
-  sin_word_ni_capturas  ningún .docx, .pdf ni .png nuevo o cambiado desde el montaje (salvo fuentes/)
+  word_al_dia  con Word al montar y la versión nueva (la prueba de §14 la sube), los Word vigentes de esa versión,
+              el completo y el de EV-02, que se abren y la dicen, y nada más; los entregados y las capturas, como
+              al montar (cambios.md §5, desde el 3-nov-2026; antes, sin_word_ni_capturas: ningún Word regenerado)
   funcional_sin_cambios  el funcional dice lo mismo que al montarlo, salvo la línea de la versión: un defecto no cambia
               el funcional (la versión sí puede subir, porque la prueba que reproduce el fallo cambia el técnico, R2)
   comprobar   comprobar.py del analista sin errores (con --fuentes)
@@ -31,7 +33,8 @@ Con --ocultas (después del pase a producción):
   ev02_sin_construir  EV-02 sigue Aprobada, EV-01 En producción y la issue de EV-02 sigue con «Reaplicar URG-nn»
   bloqueo_pase  en una copia, EV-02 no pasa a producción, ni a Construida sin «--reaplicada URG-nn»; con ella pasa a
               Construida y después a producción
-  ligereza    ni Word ni capturas nuevos o cambiados, y el funcional sin cambios
+  word_al_dia como en la primera parte
+  ligereza    el funcional sin cambios
   comprobar   comprobar.py sin errores
 
 Umbral («umbral» de esperado.json): los puntos obligatorios se cumplen todos; de los de ligereza se tolera
@@ -109,9 +112,11 @@ def ficha_de(p: Path, u) -> tuple[str, dict]:
 
 def donde_es(campos: dict) -> str:
     """«correccion» o «desarrollo», como lo lee el plugin (unidades.donde_se_corrige); "" si no dice una de las dos o
-    sigue con las dos opciones de la plantilla («Desarrollo / Entorno de corrección»)."""
+    sigue pendiente de decidir o con las dos opciones de la plantilla."""
     valor = norm(campos.get("donde se corrige", ""))
-    return "" if re.search(r"desarrollo\s*[/·|]\s*entorno", valor) else un.donde_se_corrige(campos)
+    sin_elegir = re.match(r"(?:pendiente|por decidir|sin decidir)\b", valor) or re.search(
+        r"desarrollo\s*(?:[/·|]|\bo\b)\s*entorno", valor)
+    return "" if sin_elegir else un.donde_se_corrige(campos)
 
 
 def contenido(texto: str) -> str:
@@ -198,8 +203,9 @@ def visibles(p: Path, huella: dict, esperado: dict, P: Puntuacion, m, ctx):
     malos = [f"{k} {x.estado if x else 'no está'}" for k, x in ve.items() if not x or x.estado != esperado["estados"][k]]
     P.punto("estados", not malos, "; ".join(malos) + f" (se espera {esperado['estados']})" if malos else
             " · ".join(f"{k if k != 'URG' else u.id} {x.estado}" for k, x in ve.items()))
-    regen = mt.regenerados(p, huella)
-    P.punto("sin_word_ni_capturas", not regen, ", ".join(regen) or "ningún Word ni captura nuevos o cambiados")
+    v = m.version("F")
+    mal = mt.words_al_dia(p, huella, f"{v[0]}.{v[1]}" if v else None)
+    P.punto("word_al_dia", not mal, "; ".join(mal) or "los Word vigentes al día y nada más regenerado")
     igual = funcional_igual(p)
     P.punto("funcional_sin_cambios", igual, "el funcional dice lo mismo que al montar (la versión puede subir por la "
             "prueba de técnico §14)" if igual else "el funcional ha cambiado, y un defecto no cambia el funcional")
@@ -228,10 +234,11 @@ def ocultas(p: Path, huella: dict, esperado: dict, P: Puntuacion, m, ctx):
                 f"producción: {'pasa' if c4 == 0 else 'falla'}" + ("" if ok else f" ({nota(s3 if c3 else s4)})"))
     else:
         P.punto("bloqueo_pase", False, "sin URG")
-    regen = mt.regenerados(p, huella)
+    v = m.version("F")
+    mal = mt.words_al_dia(p, huella, f"{v[0]}.{v[1]}" if v else None)
+    P.punto("word_al_dia", not mal, "; ".join(mal) or "los Word vigentes al día y nada más regenerado")
     igual = funcional_igual(p)
-    P.punto("ligereza", not regen and igual, (", ".join(regen) or "ningún Word ni captura nuevos o cambiados")
-            + ("; el funcional dice lo mismo que al montar" if igual else "; el funcional ha cambiado"))
+    P.punto("ligereza", igual, "el funcional dice lo mismo que al montar" if igual else "el funcional ha cambiado")
 
 
 def main() -> int:

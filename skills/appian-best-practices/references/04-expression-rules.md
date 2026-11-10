@@ -116,8 +116,7 @@ Source: [Decisions](https://docs.appian.com/suite/help/latest/Decisions.html) ·
 > **Where the depth lives.** The official Appian skill specifies null handling in full in
 > `references/null-safety-patterns.md`: which functions reject null, the safe pattern for
 > each one, and the casting traps. This section keeps the criterion and what closes the gate. Where its
-> recipes depart from the documentation — short-circuiting in `and()`/`or()`, `a!forEach()` over null,
-> `length()` on a list — doc 14 says which one to follow.
+> recipes depart from the documentation, doc 14 says which one to follow.
 > **Reading this without that skill installed** (against Appian Designer, say): the platform sources
 > cited under each rule are what it is built from, and remain sufficient to apply them.
 
@@ -254,6 +253,7 @@ Source: [Functions and Side Effects — Smart services](https://docs.appian.com/
 - ⚠️ **`intervalds()` overflows** to a negative value above 2,147,483 seconds (~24.8 days): SLA and duration maths over long periods use days or `a!addDateTime()` ([KB-1386](https://community.appian.com/application-design-33/kb-1386-negative-value-returned-for-intervalds-function-when-passing-inputs-amounting-to-greater-than-591-hours-31-minutes-and-23-seconds-651)).
 - ⚠️ **Decimals are IEEE-754 doubles:** a computed value that should end in 5 can round down (`round(123/240*100, 1)`). For money, round in two steps (to 6 decimals, then to the target) or use `roundup`/`rounddown`, and `fixed()` only to display ([KB-1426](https://community.appian.com/application-design-33/kb-1426-unexpected-results-on-decimal-calculations-and-rounding-678)).
 - ✅ **No native UUID function:** build a v4 UUID from `rand()` + `dec2hex()` (lowercase, 8-4-4-4-12) and store it once generated — `rand()` changes on every evaluation ([Appian Max — Generating UUIDs](https://community.appian.com/architecture-29/generating-uuids-guids-15733)).
+- ⚠️ **`append()` takes a list first.** *Seen once in a development environment (Oct 2026); the documentation only shows arrays there.* With a single text first it concatenated: `append("8", {"600", "000"})` gave the text `"8600; 000"`, not a three-item list. Write `append({x}, list)` ([append()](https://docs.appian.com/suite/help/latest/fnc_array_append.html)). It came from formatting an amount by hand, which is the real mistake: amounts go through `a!currency()` (doc 02 §10.3).
 - ⚠️ **Emojis count double:** `left()` counts one as 2 characters and `leftb()` as 2 bytes, so byte-limited truncation for external systems needs `lenb()` checks ([KB-2372](https://community.appian.com/integration-39/kb-2372-known-unexpected-behaviour-of-left-and-leftb-functions-1400)).
 
 ---
@@ -291,3 +291,4 @@ Source: [Functions and Side Effects — Smart services](https://docs.appian.com/
 - Reusing Interfaces (Reusability) — https://docs.appian.com/suite/help/latest/using_interfaces_in_appian.html
 - Parts of an Expression (Comments) — https://docs.appian.com/suite/help/latest/parts-of-an-expression.html
 - Expression Editor (Toolbar actions / Design guidance) — https://docs.appian.com/suite/help/latest/expression-editor.html
+- append() Function — https://docs.appian.com/suite/help/latest/fnc_array_append.html

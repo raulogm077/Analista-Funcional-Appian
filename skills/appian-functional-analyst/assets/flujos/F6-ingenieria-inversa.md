@@ -6,7 +6,7 @@
 | # | Paso | Quién | Con qué | Detalle |
 |---|---|---|---|---|
 | 1 | Comprobar la conexión con el entorno y preguntar qué aplicación es y qué necesita saber el equipo | Script comprueba; IA pregunta; quien lo pide responde | `appian-reverse-engineering` · `devmcp_extract.py doctor` | `appian-reverse-engineering/SKILL.md` «Flujo de trabajo», fase 0, y `appian-reverse-engineering/references/devmcp-setup.md` |
-| 2 | Plan de extracción y extracción | Script | `appian-reverse-engineering` · `devmcp_extract.py plan` y `extract` | `appian-reverse-engineering/SKILL.md` «Flujo de trabajo», fases 1 y 2 |
+| 2 | Plan de extracción y extracción | Script | `appian-reverse-engineering` · `devmcp_extract.py plan` y `extract` | `appian-reverse-engineering/SKILL.md` «Flujo de trabajo», fases 1 y 2. Con datos reales, añade `--skip "^testInterface$"` a ambas órdenes: no evaluar pantallas ni guardar los datos que consulten. |
 | 3 | Modelo, anexo de definiciones y posibles secretos | Script | `appian-reverse-engineering` · `build_model.py`, `build_annex.py` y `detect_secrets.py` | La misma, fase 3 |
 | 4 | Analizar por áreas (funcional, arquitectura, datos, seguridad, integraciones, procesos, pantallas y reglas) y dibujar cada proceso | IA | `appian-reverse-engineering`; `appian-diagramas-bpmn` · `diagrama.py` | La misma, fase 4 |
 | 5 | Pintar los demás diagramas y comprobar los de cada documento | Script | `appian-diagramas-bpmn` · `mermaid.py` | La misma, fase 5 |

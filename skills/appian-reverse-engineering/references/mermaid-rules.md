@@ -30,7 +30,7 @@ Todos en `<salida>/diagrams/`, con nombres en minúsculas, sin acentos ni espaci
 Un diagrama de más de ~1.600 px de ancho no se lee en una página vertical. Las medidas son del Mermaid de la skill de diagramas (11.17.2), con etiquetas de unos 20 caracteres:
 
 - `flowchart TD` por defecto; `LR` solo si es corto (unas 8 cajas en la fila más larga).
-- Cada caja ocupa unos 260 px de ancho: en una fila caben 5. Etiquetas cortas (≤ 50 caracteres, mejor ≤ 25) y en las flechas solo si aportan.
+- Cinco cajas por fila es una orientación, no una garantía de ancho: también cuentan las etiquetas y las conexiones. El criterio es el ancho renderizado (≤ 1.600 px), comprobado con `mermaid.py`. Etiquetas cortas (≤ 50 caracteres, mejor ≤ 25) y en las flechas solo si aportan.
 - **Un `subgraph` cuyos nodos no tienen flechas con nodos de fuera se dibuja en la otra dirección**: en un `flowchart TD`, de izquierda a derecha. Una cadena de 8 cajas dentro de un único `subgraph` mide unos 2.300 px de ancho. Si todo el diagrama, o un grupo que no se une con el resto, va en un `subgraph`, pon `direction TB` dentro de él: la misma cadena mide 300 px. Si el `subgraph` tiene flechas con nodos de fuera, sigue la dirección del diagrama y `direction` no cambia nada.
 - **No unas un `subgraph` con otro** (`C1 --> C2`): sus cajas se apilan en columna y el diagrama crece hacia abajo (seis capas: casi 2.900 px de alto). Une nodo con nodo.
 - Si aun así no cabe, parte el diagrama (por capa, subdominio o tramo del flujo), un fichero por parte.
@@ -38,7 +38,8 @@ Un diagrama de más de ~1.600 px de ancho no se lee en una página vertical. Las
 ### Arquitectura por capas
 
 - `flowchart TD`, un `subgraph` por capa, en el orden de `02` (las Web APIs arriba, con los sites, para que las flechas bajen), y al final un `subgraph` «Sistemas externos» con un nodo por sistema y una flecha desde la integración que lo llama.
-- **Como mucho 5 cajas por capa**: cada capa es una fila (5 cajas, unos 1.350 px; 6, 1.600; 8, 2.100). Si una capa tiene más objetos clave, agrupa los del mismo papel en una caja («Interfaces de listado (12)») o parte el diagrama en `arquitectura-<capa>.mmd`.
+- **Orientación: hasta 5 cajas por capa; límite: 1.600 px renderizados.** Cinco capas con cinco cajas y etiquetas de 20 caracteres pueden medir 1.322 px con cadenas paralelas y 4.442 px si cada caja enlaza con todas las de la capa siguiente. Contar cajas no sustituye a pintar y medir.
+- Si supera el límite, `arquitectura.mmd` ofrece la vista general agrupando objetos del mismo papel («Interfaces de listado (12)»). Cada flecha entre grupos representa dependencias reales, no una relación supuesta entre todos sus miembros. En las tablas de `02` o en los ya previstos `arquitectura-<capa>.mmd` queda el detalle: correspondencia grupo → objetos reales y relaciones origen → destino. En cada detalle, añade solo los nodos de las capas vecinas necesarios para entender esas relaciones; conserva sus identificadores y los enlaces al objeto. La vista general enlaza los detalles: agrupar no elimina dependencias de la documentación.
 - Las flechas, de nodo a nodo entre capas, y cada capa con alguna flecha hacia otra: una capa sin flechas se dibuja en columna.
 - Solo los objetos clave (puntos de entrada, procesos raíz, hubs, records centrales e integraciones); el resto, en las tablas. Máximo 30 nodos.
 

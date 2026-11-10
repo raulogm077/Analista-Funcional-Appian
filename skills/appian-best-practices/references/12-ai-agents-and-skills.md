@@ -120,11 +120,15 @@ separately as **Resources**, and new agents start with **no tools enabled** ⓥ.
 - ⚠️ ⓥ **MCP tools (26.6):** only developers with Viewer or higher on the MCP connected system can add
   it, and the agent exposes only the tools you select; authentication is API key or OAuth 2.0 client
   credentials, and only the *tools* primitive is supported. Tools renamed or removed on the server need
-  manual reconfiguration. The **Appian MCP Server** (Appian exposed to external AI clients) authenticates
-  every connection as **one service account** — no per-user identity — so scope that account to the
-  minimum; it works on synced record types and logs every call.
+  manual reconfiguration. The **Appian MCP Server** (Appian exposed to external AI clients; not the Dev MCP)
+  ⓥ authenticated every connection as **one service account** in 26.6, with no per-user identity. The 26.10
+  documentation also offers **OAuth 2.0** (an Authorization Code client with the `mcp` scope), where each
+  request runs with the signed-in user's permissions. A service account API key is a shared credential over
+  every tool that account can see, so scope it to the minimum. Either way the caller needs object security
+  on the design objects exposed as tools. Its data tools query **synced** record types, each enabled
+  individually; in 26.10 requests are **not logged by default** (turn on Platform API trace logging).
 
-Source: [Create and Configure an AI Agent — Prepare your tools and actions](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#before-you-begin-prepare-your-tools-and-resources) · [Create and Configure — Keep it simple](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#4-keep-it-simple) · [Best Practices — Design tools for efficiency](https://docs.appian.com/suite/help/latest/agent-studio-best-practices.html#design-tools-for-efficiency) · [Release notes 26.8 — tools and resources, system tools](https://docs.appian.com/suite/help/latest/Appian_Release_Notes.html#ai-agents) · [MCP tools in AI agents](https://docs.appian.com/suite/help/latest/mcp-tools-ai-agents.html#mcp-tool-security-and-access-control) · [Appian MCP Server — Security model](https://docs.appian.com/suite/help/latest/appian-mcp-server.html#security-model)
+Source: [Create and Configure an AI Agent — Prepare your tools and actions](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#before-you-begin-prepare-your-tools-and-resources) · [Create and Configure — Keep it simple](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#4-keep-it-simple) · [Best Practices — Design tools for efficiency](https://docs.appian.com/suite/help/latest/agent-studio-best-practices.html#design-tools-for-efficiency) · [Release notes 26.8 — tools and resources, system tools](https://docs.appian.com/suite/help/latest/Appian_Release_Notes.html#ai-agents) · [MCP tools in AI agents](https://docs.appian.com/suite/help/latest/mcp-tools-ai-agents.html#mcp-tool-security-and-access-control) · [Appian MCP Server — Security model](https://docs.appian.com/suite/help/latest/appian-mcp-server.html#security-model) · [Enable and configure the Appian MCP Server](https://docs.appian.com/suite/help/latest/enable-configure-mcp-server.html)
 
 ### 3.1 Run limits to design within
 
@@ -197,8 +201,12 @@ Source: [Design Patterns for Production AI Agents — Multi-agent architectures]
   an output that can't be cast to its type fails the node; the node doesn't support MNI and Agent Inputs
   don't accept a list of maps. ⓥ Up to 26.6 the node returns only Agent Outputs, Run Summary and Run ID;
   from 26.8 it adds success status, error message and AI actions consumed — route on them when available.
-- ⚠️ **Stop** doesn't interrupt a tool that is already running: it completes, then no further model
-  calls are made (*User Canceled*). Tools with side effects must be safe to finish after a stop.
+- ⚠️ **Stop** ⓥ: in a **process** agent it doesn't interrupt a tool that is already running: the tool
+  completes, then no further model calls are made (*User Canceled*). In a **chat** agent (26.10
+  documentation) it ends only the current response: a running tool call is interrupted and doesn't
+  complete, and the conversation continues. The documentation doesn't say that Stop undoes what a tool did
+  or cancels processes it started: don't count on it. Tools with side effects must be safe to finish, or to
+  be cut off, after a stop.
 - ✅ **Retry around the agent, not only inside tools.** Intermittent `EVENT_NOT_FOUND` or `INVALID_TOOL_RESPONSE` errors come from model non-determinism, and "Input is too long" from oversized requests: give the calling process a bounded retry path, sharpen the prompt and tool names, and limit document inputs and `extraInstructions` ([KB-2396](https://community.appian.com/application-design-33/kb-2396-ai-agent-intermittently-fails-with-event-not-found-invalid-tool-response-and-input-too-long-errors-15892)).
 
 Source: [Execute AI Agent Smart Service](https://docs.appian.com/suite/help/latest/Execute_AI_Agent_Smart_Service.html) · [Create and Configure — Stop a running AI agent](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#stop-a-running-ai-agent) · [Design Patterns — Error handling and resilience](https://docs.appian.com/suite/help/latest/agent-studio-design-patterns.html#error-handling-and-resilience) · [Best Practices — Design for human-in-the-loop handoffs](https://docs.appian.com/suite/help/latest/agent-studio-best-practices.html#design-for-human-in-the-loop-handoffs) · [AI Agents FAQ — oversight and sync vs async](https://docs.appian.com/suite/help/latest/ai-agents-faq.html)
@@ -235,7 +243,7 @@ Source: [Execute AI Agent Smart Service](https://docs.appian.com/suite/help/late
 - ✅ Data stays in the designated region unless cross-region inference is configured, and Appian doesn't
   train models on customer data — state this in the solution's compliance section rather than assuming it.
 
-Source: [Auditing AI agent usage](https://docs.appian.com/suite/help/latest/auditing-ai-agent-usage.html) · [Execute Generative AI Skill — Usage considerations](https://docs.appian.com/suite/help/latest/Execute_Generative_AI_Skill_Smart_Service.html#usage-considerations) · [Design Patterns — Security and permissions](https://docs.appian.com/suite/help/latest/agent-studio-design-patterns.html#security-and-permissions) · [Deploy AI Agents — Before you deploy](https://docs.appian.com/suite/help/latest/deploy-ai-agents.html#before-you-deploy) · [Create and Configure an AI Agent — Check access](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#before-you-begin-prepare-your-tools-and-resources) · [AI Guardrails](https://docs.appian.com/suite/help/latest/ai-guardrails.html) · [AI Agent Reference — Logging and auditing](https://docs.appian.com/suite/help/latest/ai-agent-reference.html#ai-agent-tool-behavior) · [Security and Compliance](https://docs.appian.com/suite/help/latest/security-compliance.html) · [Release notes — AI governance](https://docs.appian.com/suite/help/latest/Appian_Release_Notes.html#ai-governance)
+Source: [Auditing AI agent usage](https://docs.appian.com/suite/help/latest/auditing-ai-agent-usage.html) · [Execute Generative AI Skill — Usage considerations](https://docs.appian.com/suite/help/latest/Execute_Generative_AI_Skill_Smart_Service.html#usage-considerations) · [Design Patterns — Security and permissions](https://docs.appian.com/suite/help/latest/agent-studio-design-patterns.html#security-and-permissions) · [Deploy AI Agents — Before you deploy](https://docs.appian.com/suite/help/latest/deploy-ai-agents.html#before-you-deploy) · [Create and Configure an AI Agent — Check access](https://docs.appian.com/suite/help/latest/create-and-configure-ai-agent.html#before-you-begin-prepare-your-tools-and-resources) · [AI Guardrails](https://docs.appian.com/suite/help/latest/ai-guardrails.html) · [AI Agent Reference — Logging and auditing](https://docs.appian.com/suite/help/latest/ai-agent-reference.html#ai-agent-tool-behavior) · [Security and Compliance](https://docs.appian.com/suite/help/latest/security-compliance.html) · [Release notes — AI governance](https://docs.appian.com/suite/help/26.6/Appian_Release_Notes.html#ai-governance)
 
 ---
 

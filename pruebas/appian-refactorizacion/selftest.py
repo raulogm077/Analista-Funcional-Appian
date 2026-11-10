@@ -81,6 +81,68 @@ def main():
            r.stdout + r.stderr)
         ok("comprobar_propuesta.py no deja __pycache__ en la skill", not (SKILL / "scripts" / "__pycache__").exists())
 
+        # Rutas físicas: una raíz o as-is con alias vale; una evidencia que escapa no.
+        # Windows usa junction (no requiere permiso de symlink); otros sistemas, symlink.
+        # Si no se pueden crear enlaces, se declara NO MEDIDO y falla la prueba, nunca PASS.
+        def enlace_directorio(enlace, destino):
+            if os.name == "nt":
+                shell = shutil.which("pwsh") or shutil.which("powershell")
+                if not shell:
+                    raise OSError("no hay PowerShell para crear junctions")
+                subprocess.run([shell, "-NoProfile", "-NonInteractive", "-Command",
+                                "$ErrorActionPreference='Stop'; New-Item -ItemType Junction "
+                                "-Path $env:REFACTOR_LINK -Target $env:REFACTOR_TARGET | Out-Null"],
+                               env=dict(os.environ, REFACTOR_LINK=str(enlace), REFACTOR_TARGET=str(destino)),
+                               check=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
+            else:
+                enlace.symlink_to(destino, target_is_directory=True)
+            if not enlace.exists() or enlace.resolve() != destino.resolve():
+                raise OSError(f"el alias no resuelve al destino: {enlace}")
+
+        try:
+            alias_raiz = tmp / "Alias raíz"
+            enlace_directorio(alias_raiz, p)
+            errores, avisos = cp.comprobar(alias_raiz)
+            ok("raíz del proyecto con alias válido", errores == [] and avisos == [], errores + avisos)
+
+            p_alias, prop_alias = copia()
+            destino_asis = tmp / "Entrada as-is"
+            (p_alias / "as-is").rename(destino_asis)
+            enlace_directorio(p_alias / "as-is", destino_asis)
+            errores, avisos = cp.comprobar(p_alias)
+            ok("as-is con alias válido", errores == [] and avisos == [], errores + avisos)
+
+            cruda_alias = destino_asis / "extraccion" / "inventory.json"
+            cruda_alias.parent.mkdir()
+            cruda_alias.write_text("{}\n", encoding="utf-8")
+            editar(prop_alias, "(../as-is/anexo/cdt/REX_Revision.md)", "(../as-is/extraccion/inventory.json)")
+            errores, avisos = cp.comprobar(p_alias)
+            ok("as-is con alias no permite extracción en bruto",
+               len(errores) == 1 and "extracción" in errores[0] and avisos == [], errores + avisos)
+
+            p_escape, prop_escape = copia()
+            externo = tmp / "Evidencia externa ficticia"
+            externo.mkdir()
+            (externo / "evidencia.md").write_text("Señuelo ficticio fuera de as-is.\n", encoding="utf-8")
+            enlace_directorio(p_escape / "as-is" / "salida", externo)
+            editar(prop_escape, "(../as-is/anexo/processModel/REX_PM_AvisoAnual.md)",
+                   "(../as-is/salida/evidencia.md)")
+            errores, avisos = cp.comprobar(p_escape)
+            ok("alias interno que escapa de as-is se rechaza",
+               len(errores) == 1 and "REF-04" in errores[0] and "evidencia no enlaza" in errores[0] and avisos == [],
+               errores + avisos)
+        except (OSError, subprocess.CalledProcessError) as exc:
+            ok("alias de directorio: NO MEDIDO por limitación del entorno", False,
+               str(exc) + (f"\n{exc.stderr}" if isinstance(exc, subprocess.CalledProcessError) else ""))
+
+        p, prop = copia()
+        (p / "fuera.md").write_text("Señuelo ficticio fuera de as-is.\n", encoding="utf-8")
+        editar(prop, "(../as-is/anexo/processModel/REX_PM_AvisoAnual.md)", "(../as-is/../fuera.md)")
+        errores, avisos = cp.comprobar(p)
+        ok("escape relativo desde as-is se rechaza",
+           len(errores) == 1 and "REF-04" in errores[0] and "evidencia no enlaza" in errores[0] and avisos == [],
+           errores + avisos)
+
         # 2. Los cinco errores que tiene que ver
         da_error("evidencia rota: enlace a una ficha del anexo que no existe",
                  [("anexo/cdt/REX_Revision.md", "anexo/cdt/REX_Revisiones.md")], "REX_Revisiones.md", "no existe")

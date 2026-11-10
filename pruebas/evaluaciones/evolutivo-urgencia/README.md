@@ -77,7 +77,7 @@ el proyecto, y su ficha, `impacto/URG-nn.md` (`references/urgentes.md`).
 | `issue` | Una issue de `EV-02` (`construccion/EV-02/ISS-nn.md`) lleva «Reaplicar URG-nn en `DEM_SolicitudForm`»: las del montaje no lo llevan, así que hay que volver a generarlas (`indice.py issues`). Si la urgencia entra como fuente de `EV-02`, la devuelve a aprobación y sus issues ya no se regeneran |
 | `bloqueo` | En una copia del proyecto, `proyecto.py cambio <copia> EV-02 construida --manual` falla y pide `--reaplicada URG-nn`; con `--reaplicada URG-nn`, pasa |
 | `estados` | `EV-01` sigue En producción, `EV-02` Aprobada y la URG Abierta: en una sesión desatendida no se aprueba ni se pasa nada a producción |
-| `sin_word_ni_capturas` | Ningún `.docx`, `.pdf` ni `.png` (salvo en `fuentes/`) nuevo o distinto del montaje |
+| `word_al_dia` | Con Word al montar y la versión nueva, los Word vigentes de esa versión, el completo y el de `EV-02` (`df_docx.js` y `df_docx.js --cambio EV-02`), que se abren y la dicen, con su PDF de revisión si sale; nada más, y los entregados y las capturas como al montar. Un defecto no cambia el funcional, pero la prueba de §14 sube la versión, que el Word exporta (`cambios.md` §5). Las pasadas puntuadas antes del 3-nov-2026 lo fueron con `sin_word_ni_capturas` (ningún Word regenerado): no son comparables con las de ahora |
 | `funcional_sin_cambios` | El funcional dice lo mismo que al montar, salvo la línea de la versión: un defecto no cambia el funcional. La versión sí sube: la prueba que reproduce el fallo en técnico §14 cambia el técnico (`references/urgentes.md`) |
 | `comprobar` | `comprobar.py` del analista sin errores, con `--fuentes` |
 
@@ -89,23 +89,25 @@ Con `--ocultas`:
 | `cierre` | Su ficha tiene «Cierre» con HF-2026-007 |
 | `ev02_sin_construir` | `EV-02` sigue Aprobada, `EV-01` En producción y la issue de `EV-02` sigue con «Reaplicar URG-nn» |
 | `bloqueo_pase` | En una copia, `EV-02` no pasa a producción, ni a Construida sin `--reaplicada URG-nn`; con ella pasa a Construida y después a producción |
-| `ligereza` | Ni Word ni capturas nuevos o cambiados, y el funcional sin cambios |
+| `word_al_dia` | Como en la primera parte |
+| `ligereza` | El funcional sin cambios |
 | `comprobar` | `comprobar.py` sin errores |
 
 ## Criterio
 
-Obligatorios: `ficha`, `colision`, `donde`, `issue`, `bloqueo`, `estados` y `comprobar` (en las ocultas, `produccion`,
-`cierre`, `ev02_sin_construir`, `bloqueo_pase` y `comprobar`). Son lo que protege la corrección: si falla uno, el pase
+Obligatorios: `ficha`, `colision`, `donde`, `issue`, `bloqueo`, `estados`, `word_al_dia` y `comprobar` (en las
+ocultas, `produccion`, `cierre`, `ev02_sin_construir`, `bloqueo_pase`, `word_al_dia` y `comprobar`). Son lo que protege la corrección: si falla uno, el pase
 de `EV-02` puede pisarla en producción o no queda escrito quién la declaró crítica, dónde se hizo y cuándo se cerró: es
 el riesgo de perder trabajo, que tiene que dar error. `comprobar.py` es la puerta de todas las evaluaciones. No tienen
 margen: cada uno es un paso escrito del flujo corto de `references/urgentes.md` que da un script (`indice.py colision`,
 `indice.py issues`, `proyecto.py cambio`), así que no hay dos lecturas razonables como en `../evolutivo/`, que por eso
 pide el 80 %.
 
-De la ligereza (`sin_word_ni_capturas` y `funcional_sin_cambios`; en las ocultas, `ligereza`) se tolera un fallo:
-regenerar o tocar el funcional cuesta tiempo, pero no pierde trabajo ni construye nada equivocado, y la ligereza la mide
-`../coste-retoque/`. La primera parte pasa con 9/9, o con 8/9 si el que falla es de ligereza; las ocultas, con 6/6 o 5/6
-igual.
+`word_al_dia` es obligatorio desde el 3-nov-2026: el Word al día es una regla del método (`cambios.md` §5), no un
+coste. De la ligereza (`funcional_sin_cambios`; en las ocultas, `ligereza`) se tolera el fallo: tocar el funcional
+cuesta tiempo, pero no pierde trabajo ni construye nada equivocado, y la ligereza la mide `../coste-retoque/`. La
+primera parte pasa con 9/9, o con 8/9 si el que falla es `funcional_sin_cambios`; las ocultas, con 7/7 o 6/7 igual.
+Lo puntuado antes del 3-nov, con `sin_word_ni_capturas` como ligereza, no es comparable.
 
 Las dos puntuaciones salen 0.
 

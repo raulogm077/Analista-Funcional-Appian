@@ -14,7 +14,8 @@ por el cliente (su 'ref' lleva uno de esos IDs) o un diálogo que abre es error;
 import json, re, sys, argparse
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 from pathlib import Path
-from entorno import utf8_stdio
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from entorno import utf8_stdio  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_FILES = ["layouts", "display-components", "input-components", "grid-components", "button-components", "chart-components"]

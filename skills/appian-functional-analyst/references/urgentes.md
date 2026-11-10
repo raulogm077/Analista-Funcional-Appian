@@ -7,7 +7,9 @@ escrito quién y por qué. Lo que nadie declara crítico es un evolutivo priorit
 
 Base (BP 08 §3; Appian, «Deploying an Application Hotfix»): un parche solo con los objetos de la corrección, construido
 sobre una versión igual a producción, llevado después a desarrollo, registrado y con regresión. El riesgo típico: el
-siguiente pase pisa la corrección. Sin DF ni prototipo.
+siguiente pase pisa la corrección. Sin DF ni prototipo propios. Si ejecuta `proyecto.py version` (la prueba de un
+defecto en técnico §14, un «Cambio de comportamiento») y ya hay Word, los vigentes se ponen al día (`cambios.md` §5), y el
+prototipo que ya haya, si cambia una pantalla acordada; una de datos u operación sin versión no cambia ninguno.
 
 ## 1. La ficha: un informe de impacto
 
@@ -43,6 +45,7 @@ Tras `produccion`, `proyecto.py estado` ya no la lista como pendiente.
    los usan** (`as-is/datos/dependencias.json`) con los de las unidades sin pasar a producción y, si hay
    `as-is/datos/deriva.json`, con lo modificado en desarrollo. Si no está la deriva, imprime la orden para pedirla solo de
    esos objetos (sin historial de versiones, lo dice y no supone nada). Copia el resultado en «Colisión».
+   Sin `dependencias.json`, lo que usa esos objetos queda sin comprobar: «desconocida» no equivale a «sin colisión».
 4. **Dónde se corrige.**
    - Sin colisión: en desarrollo. Esos objetos quedan congelados para las unidades en curso hasta el pase (la issue que
      los lleva lo avisa).
@@ -55,7 +58,7 @@ Tras `produccion`, `proyecto.py estado` ya no la lista como pendiente.
      procedimiento) y «Dónde se corrige» dice igualmente una de las dos.
 5. **Despliegue** por el proceso de cambios urgentes del cliente (el plugin no lo gestiona), con la vuelta atrás
    preparada: el paquete con la versión de producción de esos objetos. Restaurar una copia de seguridad es lo último.
-   Antes de desplegar, quien prepara el paquete revisa en Compare and Deploy la comparación de sus objetos, como en un
+   Antes de desplegar, una persona revisa en Compare and Deploy la comparación de sus objetos, como en un
    Merge Request, con los fallos de la regresión (su orden, `indice.py issues <p> URG-nn --regresion`, con el Dev MCP
    del entorno donde se corrige), y lo promueve como el de un evolutivo: el mismo paquete con un ICF por
    entorno y, si el despliegue es directo o por API, con «Require review» en el destino (`cambios.md` §6, paso 7).

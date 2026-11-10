@@ -6,7 +6,7 @@
 | # | Paso | Quién | Con qué | Detalle |
 |---|---|---|---|---|
 | 1 | Ver cómo está el análisis, sin leerlo entero | Script | `appian-functional-analyst` · `indice.py resumen` | `appian-functional-analyst/references/actualizacion.md` §0 |
-| 2 | Catalogar la fuente | Script | `appian-functional-analyst` · `leer_fuentes.py` | `appian-functional-analyst/references/actualizacion.md` §1 |
+| 2 | Si llegó por chat, guardar el texto como fuente; catalogarla | Script | `appian-functional-analyst` · `leer_fuentes.py` | `appian-functional-analyst/references/ingesta-fuentes.md` §1 |
 | 3 | Nota de la fuente; una fuente corta no la lleva | IA | `appian-functional-analyst` | `appian-functional-analyst/references/actualizacion.md` §2 |
 | 4 | Sacar los puntos, dónde encaja cada uno y de qué depende | IA, con lo que imprimen `indice.py buscar`, `ficha` e `impacto` | `appian-functional-analyst` | `appian-functional-analyst/references/actualizacion.md` §3 |
 | 5 | Escribir el informe de impacto, `impacto/FU-nn.md` | IA | `appian-functional-analyst` | `appian-functional-analyst/references/actualizacion.md` §4 |
@@ -15,7 +15,7 @@
 | 8 | Verificar | Script | `appian-functional-analyst` · `comprobar.py --anterior --impacto` | `appian-functional-analyst/references/actualizacion.md` §7 |
 | 9 | Decir qué cambió y qué queda pendiente; el guion de la próxima reunión | IA; Script | `appian-functional-analyst` · `indice.py pendientes` | `appian-functional-analyst/references/actualizacion.md` §8 |
 
-El prototipo y el Word no se rehacen con cada fuente: las pantallas afectadas, después de verificar; el Word, al enviarlo.
+El prototipo y el Word no se rehacen enteros con cada fuente: las pantallas afectadas, después de verificar, y el Word, si ya hay alguno y cambia lo que exporta, también solo su versión (`cambios.md` §5); el primero, al enviarlo.
 
 **Variante: un retoque.** Pocos puntos (un texto, una etiqueta, una columna) y ninguno requiere aprobación: sin nota ni presentación, con el informe ya aplicado y una sola comprobación. `appian-functional-analyst/references/actualizacion.md` «Camino corto».
 

@@ -84,7 +84,7 @@ Es un JSON con un paso y un flujo por línea:
 
 **Notas.** Cada nota de `notas` va unida a su paso con una línea de puntos y sale en el PNG: úsalas para señalar algo que quien lee el diagrama no debe pasar por alto (un riesgo, una duda pendiente).
 
-**Tramos.** `"tramos": true` es para un proceso que ya existe y no se puede partir en subprocesos, porque no los tiene (ingeniería inversa). Si no cabe en una página (1.600 px de ancho), se dibuja en tramos: una página del `.drawio` por tramo, con capas seguidas del flujo, y un PNG por tramo. Cada flujo que pasa de un tramo a otro se corta con un par de eventos de enlace: «Sigue en el tramo N: <paso>» en el tramo de origen y «Viene del tramo M» en el de destino. Los enlaces son del dibujo, no del proceso: `leer`, `comparar` y `bpmn` los deshacen y el `.bpmn` es uno, con todos los pasos. Un plazo o un error va en el tramo de su tarea. Si cabe en una página, no se parte. `crear` y `actualizar` dicen qué pasos lleva cada tramo, una línea por tramo («tramo N: <primer paso> – <último paso> (K pasos)»), y el nombre de cada página dice lo mismo (también tras aceptar un paso renombrado a mano).
+**Tramos, sólo si se piden.** El proceso se dibuja completo por defecto, aunque quede pequeño en el documento; el detalle se consulta ampliando la imagen o abriendo el `.drawio`. `"tramos": true` permite pedir una división explícita: si no cabe en una página (1.600 px de ancho), se dibuja una página del `.drawio` por tramo, con capas seguidas del flujo, y un PNG por tramo. Cada flujo que pasa de un tramo a otro se corta con un par de eventos de enlace: «Sigue en el tramo N: <paso>» en el tramo de origen y «Viene del tramo M: <código y paso de origen>» en el de destino. Los enlaces son del dibujo, no del proceso: `leer`, `comparar` y `bpmn` los deshacen y el `.bpmn` es uno, con todos los pasos. Un plazo o un error va en el tramo de su tarea. Si cabe en una página, no se parte. `crear` y `actualizar` dicen qué pasos lleva cada tramo, una línea por tramo («tramo N: <primer paso> – <último paso> (K pasos)»), y el nombre de cada página dice lo mismo (también tras aceptar un paso renombrado a mano).
 
 **Posición.** `"posicion": [x, y]` en un paso es opcional. Solo la usa ingeniería inversa, cuando lee de Appian dónde está cada nodo, y tiene que venir en todos los pasos para que se use.
 
@@ -125,9 +125,8 @@ Códigos de salida:
 - un código no corresponde a su tipo;
 - un `error` con salidas no está unido a su tarea con un flujo discontinuo, un dato de Appian está en un paso de otro tipo o `interrumpe` no va en un temporizador unido a su tarea;
 - un participante externo no tiene flujos de mensaje;
-- hay más de 20 tareas (salvo con `tramos`).
 
-`crear`, `actualizar` y `png` avisan si el diagrama mide más de 1.600 px de ancho: en una página vertical el texto quedará pequeño. El PNG se limita a unos 3.200 px de ancho. En tramos, cada página cabe a lo ancho.
+`crear`, `actualizar` y `png` avisan si el diagrama mide más de 1.600 px de ancho: en una página vertical el texto quedará pequeño. El PNG conserva el doble de resolución del dibujo, también en procesos grandes, para ampliar sin reducir antes su detalle.
 
 **Qué se niega a hacer:**
 - `crear` no sobrescribe un `.drawio` que ya existe; para cambiarlo, `actualizar`.
@@ -205,7 +204,7 @@ Mientras haya cambios hechos a mano sin aceptar, `actualizar` se niega a tocar e
 - **Plazos:** un `temporizador` unido a la tarea que vigila con un flujo discontinuo. Al exportar a BPMN pasa a ser un evento de borde de esa tarea, que no la interrumpe (en el dibujo, con borde discontinuo). Si al vencer cancela la tarea, `"interrumpe": true` en el temporizador: borde continuo y, en el BPMN, `cancelActivity`. En draw.io va en «Editar datos» del temporizador (`interrumpe` = 1).
 - **Errores:** un `error` unido igual a la tarea en la que salta, y de él, el camino que se sigue. En el BPMN es un evento de borde que la interrumpe. Un `error` suelto y sin salidas se dibuja y se exporta como un fin de error.
 - **Avisos:** un aviso a un perfil del proceso no se dibuja: ya está en la tabla de avisos (AV) y en el paso que lo envía. Uno a un sistema u organismo externo es un flujo de mensaje desde la tarea que lo envía hasta el participante externo. Así ningún aviso añade una columna al diagrama. Un `mensaje` solo va si el proceso que ya existe lo tiene como paso propio (ingeniería inversa).
-- **Tamaño:** con más de 20 tareas, se parte en subprocesos. El proceso principal usa `subproceso` y cada subproceso tiene su diagrama. Un proceso que ya existe sin subprocesos no se parte en subprocesos inventados: va con `"tramos": true`.
+- **Tamaño:** conserva el proceso completo, con la secuencia principal lo más lineal posible. No inventes subprocesos ni uses `tramos` por el número de tareas o para encajarlo en el documento. Los subprocesos responden al contenido del proceso, no al tamaño del dibujo.
 - **Notas:** las explicaciones van en el paso a paso del documento; en `notas`, solo lo que hay que ver en el propio diagrama. Una nota suelta que se deje en draw.io también sale en el PNG: bórrala si no debe verla el cliente.
 
 ## Leer un diagrama
@@ -243,4 +242,4 @@ python3 <skill>/scripts/mermaid.py --md documento.md [otro.md …]          # va
 - **Flujos de mensaje:** van en vertical entre el paso y su participante y pueden cruzar los carriles que hay entre los dos.
 - **Eventos de borde:** en draw.io, un plazo o un error sale como un evento unido a su tarea con línea discontinua. Se puede pegar a la tarea a mano.
 - **Flujos nuevos en un diagrama colocado a mano:** los traza draw.io y pueden cruzar alguna forma. Se retocan en draw.io o se usa `--recolocar`.
-- **Tamaño en un documento vertical:** a partir de unas 12 tareas en fila (más de 1.600 px), el texto queda pequeño en una página vertical. Usa una página apaisada, parte el proceso o, si ya existe, `"tramos": true`.
+- **Tamaño en un documento vertical:** el proceso completo puede quedar pequeño. Conserva la resolución de la imagen al insertarla y enlaza su `.drawio` para consultar el detalle, sin multiplicar las páginas del documento.
