@@ -60,6 +60,15 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 - **Seguridad de acciones de registro con constante.** Diez acciones no salían a nadie (una vez, sin causa
   demostrada). Contrastarlo escribe en Indra-spain: solo si Raúl lo autoriza; hasta entonces, sin regla. [prueba]
 - **Diagramas.** Reducir los 30/38 avisos residuales solo con una mejora medida, sin relajar detectores.
+- **Diagramas: etiquetas de flujo que se pisan.** Dos flujos de mensaje en sentidos contrarios entre una tarea y un
+  participante externo van por la misma vertical y sus etiquetas se superponen; una puerta exclusiva con 4-5 salidas a
+  fines deja etiquetas de salida («PB», «PCP») encima del nombre de un fin. `solapes()` del selftest no mira las
+  etiquetas de flujo, por eso no salta. Primero, que la prueba las mire (con un caso ficticio de cada); después, separar
+  los dos mensajes en `enrutado.py` y desplazar las etiquetas de puerta. Mientras, el SKILL.md pide mirar el PNG y dice
+  cómo sortearlo. [diagramas]
+- **Diagramas: órdenes que faltan** (auditoría del 10-nov): pestañas por fase nativas (`pagina`), `importar` un
+  `.vsdx`, `comparar --con` una referencia, campos `ref` y `supuesto`, carriles por sistema y un PNG por pestaña. El
+  SKILL.md ya explica cómo hacerlo a mano mientras tanto. [diagramas]
 - **Un literal propuesto, bajo ✅.** En P7 («juntas») y en P7 quinquies, el texto del aviso «Indica el centro de
   coste», que ninguna fuente da, quedó en HU-06.2 con ✅ y la fuente del correo. La entrega lo declaraba propuesto, y
   lo que propone el analista va con 🔶. Es el mismo caso ficticio tres veces (también en P7 sexies). En P7 septies el

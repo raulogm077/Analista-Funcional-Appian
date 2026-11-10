@@ -11,7 +11,7 @@ Uso:
   diagrama.py validar proceso.json                          solo valida el JSON
 
 Junto a cada X.drawio viven X.png (para el documento; X-1.png, X-2.png… si está en tramos) y X.json (el proceso según
-el análisis; lo escribe esta herramienta, no se edita a mano). Códigos de salida: 0 bien, 1 error o cambios pendientes,
+el análisis; lo escribe esta herramienta, no se edita a mano). Códigos de salida: 0 bien, 1 error, 3 cambios hechos a mano sin aceptar,
 2 falta un requisito: sin navegador se escribe todo menos el PNG («sin PNG»).
 """
 import argparse, json, os, pathlib, re, sys
@@ -812,7 +812,7 @@ def actualizar(a):
                 print(f"ERROR: {drawio.name} tiene cambios hechos a mano que el análisis aún no recoge.\n"
                       f"Revísalos con: diagrama.py comparar {drawio}\n"
                       "y, cuando el análisis los recoja, acéptalos con --aceptar. (--forzar los pisa.)", file=sys.stderr)
-                return 1
+                return CAMBIOS_A_MANO
     else:
         base = _limpio(ed.proc)
     cambios = dm.cargar_json(a.cambios)
@@ -827,7 +827,7 @@ def actualizar(a):
               "encajo cambios en tramos colocados a mano sin descolocarlos. Haz el cambio en draw.io y después "
               "«comparar --aceptar», o repite con --recolocar para colocar de nuevo todos los tramos (se pierde lo "
               "colocado a mano).", file=sys.stderr)
-        return 1
+        return CAMBIOS_A_MANO
     if automatica:
         avisos = recolocar(ed, nuevo, drawio)
     else:
@@ -931,7 +931,7 @@ def comparar(a):
         _escribir_json(aceptado, js, drawio, automatica=sigue_auto)
         print(f"Aceptado: {js.name} actualizado.")
         return 0 if _imagen(drawio) else 2
-    return 1 if dif else 0
+    return CAMBIOS_A_MANO if dif else 0
 
 
 def png(a):
@@ -957,8 +957,38 @@ def bpmn(a):
     return 0
 
 
+CAMBIOS_A_MANO = 3   # código de salida: hay cambios hechos a mano en draw.io que el análisis no recoge
+
+
+class _SalidaSegura:
+    """La salida estándar, que no se cae si quien la lee la cierra antes (`| head`): sin ella, un BrokenPipeError
+    a mitad de `crear` dejaba el .drawio escrito y el PNG sin hacer."""
+
+    def __init__(self, flujo):
+        self._flujo, self._cerrada = flujo, False
+
+    def write(self, texto):
+        if not self._cerrada:
+            try:
+                return self._flujo.write(texto)
+            except (BrokenPipeError, OSError):
+                self._cerrada = True
+        return len(texto)
+
+    def flush(self):
+        if not self._cerrada:
+            try:
+                self._flujo.flush()
+            except (BrokenPipeError, OSError):
+                self._cerrada = True
+
+    def __getattr__(self, nombre):
+        return getattr(self._flujo, nombre)
+
+
 def main():
     _salida_utf8()
+    sys.stdout = _SalidaSegura(sys.stdout)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="orden", required=True)
     s = sub.add_parser("crear"); s.add_argument("proceso"); s.add_argument("-o"); s.add_argument("--forzar", action="store_true"); s.set_defaults(fn=crear)

@@ -158,7 +158,7 @@ def datos_de_appian(tmp):
     obj.set("nodo", "40")
     g = obj.find("mxCell/mxGeometry"); g.set("y", str(float(g.get("y")) + 10))
     t.write(d, encoding="utf-8")
-    check("ACT-02: nodo «4» → «40»" in run("comparar", d, esperado=1), "comparar: lista un dato de Appian cambiado en draw.io")
+    check("ACT-02: nodo «4» → «40»" in run("comparar", d, esperado=3), "comparar: lista un dato de Appian cambiado en draw.io")
     run("comparar", d, "--aceptar")
     g = json.loads(d.with_suffix(".json").read_text(encoding="utf-8"))
     paso = {p["id"]: p for p in g["pasos"]}
@@ -266,7 +266,7 @@ def interrumpe(tmp):
     t = ET.parse(d)                       # en draw.io, «Editar datos»: se borra el dato
     next(e for e in t.getroot().iter("object") if e.get("id") == "EV-02").attrib.pop("interrumpe")
     t.write(d, encoding="utf-8")
-    check("EV-02: deja de interrumpir su tarea" in run("comparar", d, esperado=1, env=sin),
+    check("EV-02: deja de interrumpir su tarea" in run("comparar", d, esperado=3, env=sin),
           "interrumpe: comparar ve que se ha quitado en draw.io")
     run("comparar", d, "--aceptar", esperado=2, env=sin)
     paso, borde, _ = estado()
@@ -1455,7 +1455,7 @@ def tramos(tmp, con_png=True):
     g = (celda.find("mxCell") if celda.tag == "object" else celda).find("mxGeometry")
     g.set("y", str(float(g.get("y")) + 10))
     t.write(d, encoding="utf-8")
-    out = run("comparar", d, esperado=1, env=env)
+    out = run("comparar", d, esperado=3, env=env)
     check(f"{celda.get('id')} renombrado: «{viejo}» → «Revisar de nuevo»" in out, "tramos: comparar ve un cambio a mano en el tramo 2")
     run("comparar", d, "--aceptar", esperado=con_imagen, env=env)
     js = json.loads(d.with_suffix(".json").read_text(encoding="utf-8"))
@@ -1466,7 +1466,7 @@ def tramos(tmp, con_png=True):
           "tramos: comparar --aceptar cambia el nombre de la página del tramo de un paso renombrado a mano " + nombres[1])
     (tmp / "t2.json").write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-99", "nombre": "Calcular el coste"}}]},
                                             ensure_ascii=False), encoding="utf-8")
-    out = run("actualizar", d, tmp / "t2.json", esperado=1, env=env)
+    out = run("actualizar", d, tmp / "t2.json", esperado=3, env=env)
     check("tramos" in out and "--recolocar" in out and "Calcular el coste" not in d.read_text(encoding="utf-8"),
           "tramos: actualizar se niega a encajar cambios en tramos colocados a mano y dice cómo seguir")
     run("actualizar", d, tmp / "t2.json", "--recolocar", esperado=con_imagen, env=env)
@@ -1590,6 +1590,16 @@ def main():
         sys.path.insert(0, str(SCRIPTS)); import drawio_modelo as dm
         check(dm.comparar(base, leido) == [], "leer: el .drawio devuelve el mismo proceso")
         run("crear", EJEMPLO, "-o", tmp, esperado=1)
+        # salida cortada por una tubería (`crear … | head -1`): el .drawio y el PNG se escriben igual
+        corta = tmp / "tuberia"
+        corta.mkdir()
+        p = subprocess.Popen(CLI + ["crear", str(EJEMPLO), "-o", str(corta)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p.stdout.close()
+        err = p.stderr.read().decode("utf-8", "replace")
+        p.wait()
+        check(p.returncode == 0 and (corta / "solicitud.png").is_file() and "BrokenPipe" not in err,
+              "crear: con la salida cerrada por quien la lee, escribe el .drawio y el PNG y sale con 0"
+              + (f" (sale con {p.returncode}: {err.strip()[-160:]})" if p.returncode else ""))
         # 2. actualizar con colocación automática
         (tmp / "c1.json").write_text(json.dumps({"cambios": [
             {"poner": {"id": "ACT-09", "tipo": "tarea", "carril": "Técnico de la unidad gestora", "nombre": "Pedir aclaraciones"}},
@@ -1629,9 +1639,9 @@ def main():
         co = zlib.compressobj(9, zlib.DEFLATED, -15)
         full.getroot().find("diagram").text = base64.b64encode(co.compress(raw.encode()) + co.flush()).decode()
         full.write(d, encoding="utf-8")
-        run("actualizar", d, tmp / "c1.json", esperado=1)
+        run("actualizar", d, tmp / "c1.json", esperado=3)
         check(True, "actualizar: se niega mientras haya cambios a mano sin aceptar")
-        out = run("comparar", d, esperado=1)
+        out = run("comparar", d, esperado=3)
         check("código asignado: ACT-11" in out and "código asignado: GW-05" in out and "«Revisar la documentación aportada»" in out
               and "flujo nuevo: ACT-01 → ACT-11 «si hay tasas»" in out and "nota en el dibujo (sale en el PNG): «Duda del cliente»" in out,
               "comparar: códigos para lo añadido, etiquetas HTML limpias, notas listadas, fichero comprimido")
