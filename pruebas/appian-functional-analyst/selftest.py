@@ -1544,6 +1544,14 @@ def pruebas_df_cliente_word(tmp):
     ok("df_cliente_docx.py avisa de lo pendiente: el texto «pendiente de confirmar» y las preguntas abiertas",
        "pendiente de confirmar" in out and "PC-01" in out, out)
     xml = zipfile.ZipFile(word).read("word/document.xml").decode("utf-8") if word.is_file() else ""
+    filas_m = re.findall(r"<w:tr[ >].*?</w:tr>", xml, re.S)
+    parte = [tr for tr in filas_m if re.sub(r"<[^>]+>", "", tr) == "Nueva solicitud" and 'w:gridSpan' in tr]
+    pantalla = [tr for tr in filas_m if re.sub(r"<[^>]+>", "", tr) == "Solicitudes" and 'w:gridSpan' in tr]
+    ok("df_cliente_docx.py: en la matriz, la parte de una pantalla («› Nueva solicitud») ocupa la fila, centrada, más "
+       "clara que la pantalla y sin «›»",
+       len(parte) == 1 and 'w:fill="F4F6F8"' in parte[0] and '<w:jc w:val="center"/>' in parte[0]
+       and "<w:b/>" not in parte[0] and len(pantalla) == 1 and 'w:fill="E9EDF0"' in pantalla[0] and "›" not in texto,
+       f"parte: {parte[:1]}")
     ok("df_cliente_docx.py: «pendiente de definición» sale resaltado, como «pendiente de confirmar», y lo avisa",
        re.search(r'<w:highlight w:val="yellow"/>(?:(?!</w:r>).)*<w:t[^>]*>Pendiente de definición', xml, re.S) is not None
        and "«pendiente de definición» 1 veces" in out, out)

@@ -311,14 +311,15 @@ y los datos maestros quedan reservados a los roles de la tabla.
 
 | Acción | Unidad solicitante | Área de autorizaciones | Responsable del área |
 |---|---|---|---|
-| Solicitudes | | | |
+| Bandeja de solicitudes | | | |
 | Ver solicitudes | ✓* | ✓ | ✓ |
-| Solicitudes › Nueva solicitud | | | |
+| › Nueva solicitud | | | |
 | Crear solicitud | ✓ | | |
-| Solicitud › Documentación | | | |
+| Solicitud | | | |
+| › Documentación | | | |
 | Ver documentación | ✓* | ✓ | ✓ |
 | Añadir documento | ✓ | ✓ | |
-| Solicitud › Acciones de la tarea | | | |
+| › Acciones de la tarea | | | |
 | Devolver solicitud | | ✓ | ✓ |
 | Resolver solicitud | | | ✓ |
 | Datos maestros | | | |
@@ -334,9 +335,10 @@ y los datos maestros quedan reservados a los roles de la tabla.
   (con la ruta), un campo del registro (quien crea, el asignado) o el sistema de usuarios del cliente. Un rol que no
   entra en la aplicación pero aparece en el proceso, también, con «Solamente informativo».
 - **Matriz**: una columna por rol, en el orden de la tabla. Las filas se agrupan por pantalla y, dentro de cada una,
-  por sus partes, cada parte con su propia fila de grupo «Pantalla › Parte»: las secciones de un registro, los modales
-  que abre una tabla principal, las pestañas de una página. Una fila con solo el nombre abre el grupo y debajo van sus
-  acciones, con «✓» donde está permitida (vacía, no permitida). Toda
+  por sus partes: las secciones de un registro, los modales que abre una tabla principal, las pestañas de una página.
+  La pantalla, en una fila con solo su nombre; cada parte, debajo, en otra fila con solo su nombre precedido de «› »
+  (`| › Documentación | | |`). En el Word las dos salen centradas y ocupando toda la fila, la de la parte más clara.
+  Debajo de cada una van sus acciones, con «✓» donde está permitida (vacía, no permitida). Toda
   acción descrita en 2.3 está en la matriz, también «Ver sección …». Los matices, con asterisco en la acción o el rol y
   la aclaración debajo, en una línea que empieza por `\*`. Si una columna agrupa varios roles, se dice con asterisco.
 

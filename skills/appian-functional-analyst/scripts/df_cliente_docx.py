@@ -814,8 +814,8 @@ def con_salto(p):
 
 
 def matriz(T, filas):
-    """La matriz de permisos: una columna por rol y, en las filas, los grupos (una fila con solo su nombre) y las
-    acciones, con «✓» donde está permitida."""
+    """La matriz de permisos: una columna por rol y, en las filas, los grupos (una fila con solo su nombre: la pantalla
+    y, si empieza por «› », una de sus partes, más clara) y las acciones, con «✓» donde está permitida."""
     tbl = copy.deepcopy(T.T["matriz"])
     cab = filas[0]
     ajustar_columnas(tbl, len(cab), primera=4070)
@@ -830,7 +830,13 @@ def matriz(T, filas):
         tr = copy.deepcopy(grupo if es_grupo else accion)
         tcs = tr.findall(qn("w:tc"))
         if es_grupo:
-            poner_celda(tcs[0], f[0].strip("*").strip(), conservar=True)
+            nombre = f[0].strip("*").strip()
+            poner_celda(tcs[0], nombre.lstrip("›").strip(), conservar=True)
+            if nombre.startswith("›"):   # una parte de la pantalla (sección, modal, pestaña): centrada, más clara
+                for shd in tr.iter(qn("w:shd")):
+                    shd.set(qn("w:fill"), "F4F6F8")
+                for b in list(tr.iter(qn("w:b"))):
+                    b.getparent().remove(b)
         else:
             for j, tc in enumerate(tcs):
                 v = f[j] if j < len(f) else ""

@@ -154,6 +154,7 @@ Los roles deciden qué información ve cada persona y qué acciones puede hacer 
 |---|---|---|
 | Solicitudes | | |
 | Ver solicitudes | ✓* | ✓ |
+| › Nueva solicitud | | |
 | Crear solicitud | ✓ | |
 | Datos maestros | | |
 | Gestionar espacios | | ✓ |

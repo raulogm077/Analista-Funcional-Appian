@@ -72,41 +72,47 @@ qué se cambió por ello. Sin datos del cliente: los ejemplos son genéricos. El
 26. **La tabla principal dice de dónde viene cada columna** (otro sistema, un campo del registro, un cálculo): sin eso
     no se le sigue la pista al dato ni se prueba. → Guía de pantallas.
 27. **La matriz de permisos, por partes.** Una pantalla grande (un registro con secciones, un listado con sus modales,
-    una página con pestañas) lleva una fila de grupo por parte, «Pantalla › Parte». → Guía del DF.
+    una página con pestañas): la pantalla en una fila centrada y, debajo, cada parte en otra, también centrada y más
+    clara (`| › Parte | | |`). → Guía del DF y `df_cliente_docx.py`.
 28. **Cada condición dice lo que pasa.** «Si X…, se muestra el mensaje de error "…"», no la condición seguida del
     texto: se lee mejor y no hay que adivinar qué es. → Guía de pantallas.
 29. **El estado inicial, sin frases ambiguas.** «Sin búsqueda ni filtros» no deja claro si no los hay o si no hay
-    ninguno aplicado: «con la búsqueda vacía y los filtros en su valor por defecto ("Todos")». → Guía de pantallas.
+    ninguno aplicado: se dice el valor de cada uno al entrar, el que sea (vacía, «Todos» o el filtro que venga
+    aplicado). → Guía de pantallas.
+30. **Una columna o un campo por línea, también al ordenar**, aunque varios compartan criterio. → Guía de pantallas.
+31. **El tipo de campo, dicho como campo.** «Campo de tipo desplegable de selección única con los siguientes
+    valores:» y los valores debajo, o de dónde salen; «campo de texto libre». Nunca solo la lista de valores. → Guía de
+    pantallas.
 
 ## El prototipo
 
-30. **Se puede hacer desde el DF del cliente sin funcional.** El `ref` de cada pantalla es su nombre en 2.3 y las capturas
+32. **Se puede hacer desde el DF del cliente sin funcional.** El `ref` de cada pantalla es su nombre en 2.3 y las capturas
     se llaman como las líneas de imagen del DF, así que el Word las recoge solas.
-31. **Conviene hacer el prototipo antes de cerrar el 2.3.** Al construirlo salen cosas que el DF tiene que contar de otra
+33. **Conviene hacer el prototipo antes de cerrar el 2.3.** Al construirlo salen cosas que el DF tiene que contar de otra
     forma (un listado de 12 columnas que se consolida en 7, filtros en la barra del listado).
-32. **El estilo del cliente manda cuando ya trabaja así.** Si sus otras aplicaciones usan secciones que se abren y se
+34. **El estilo del cliente manda cuando ya trabaja así.** Si sus otras aplicaciones usan secciones que se abren y se
     cierran, con su icono y una marca en la abierta, se mantienen aunque la guía general pida pestañas, y se deja dicho.
-33. **La marca del cliente es un fichero de su proyecto.** Se saca de su web pública o de su guía de marca; el logo se
+35. **La marca del cliente es un fichero de su proyecto.** Se saca de su web pública o de su guía de marca; el logo se
     descarga con permiso; nunca entra en el plugin.
 
 ## El Word y la plantilla
 
-34. **La plantilla original del cliente no sirve tal cual.** Le faltan las piezas que se añadieron a la neutra (nivel de
+36. **La plantilla original del cliente no sirve tal cual.** Le faltan las piezas que se añadieron a la neutra (nivel de
     pantalla, 2.6) y el generador lo dice. Se parte de la neutra y se le pasan sus logos de portada y pie y sus colores.
     → `siguiente-version.md`: una orden que lo haga.
-35. **El PDF no es un entregable.** Quien revisa el DF lo abre en Word; no hace falta LibreOffice.
-36. **Con el Word abierto no se puede regenerar.** El generador lo dice en vez de fallar con un error de Python.
+37. **El PDF no es un entregable.** Quien revisa el DF lo abre en Word; no hace falta LibreOffice.
+38. **Con el Word abierto no se puede regenerar.** El generador lo dice en vez de fallar con un error de Python.
 
 ## Cómo se trabaja
 
-37. **Las piezas de una skill están conectadas.** Un cambio en `proyecto.py`, en una plantilla o en la descripción de la
+39. **Las piezas de una skill están conectadas.** Un cambio en `proyecto.py`, en una plantilla o en la descripción de la
     skill toca flujos, pruebas, el comprobador y otras skills. → Regla en `CLAUDE.md` y `CONTRIBUTING.md`: buscar qué usa
     cada pieza, añadir lo nuevo como opción y con su prueba.
-38. **Añadir un requisito toca cuatro sitios** que tienen que coincidir (`requisitos.json`, `requisitos.py`, la tabla del
+40. **Añadir un requisito toca cuatro sitios** que tienen que coincidir (`requisitos.json`, `requisitos.py`, la tabla del
     README y `requisitos-esperado.json`) y la instalación en el flujo de GitHub.
-39. **Las revisiones de quien conoce al cliente son la mejor fuente para afinar la skill.** Las dos revisiones del caso
+41. **Las revisiones de quien conoce al cliente son la mejor fuente para afinar la skill.** Las dos revisiones del caso
     real dieron diez reglas nuevas que ninguna reunión habría dado.
-40. **Lo que se hace fuera del repositorio se pierde.** Había un primer intento de este trabajo en un plugin aparte que
+42. **Lo que se hace fuera del repositorio se pierde.** Había un primer intento de este trabajo en un plugin aparte que
     nunca llegó a `main`.
-41. **En un Windows corporativo solo puede existir `py`**, ni `python` ni `python3`, y PowerShell puede estar en modo
+43. **En un Windows corporativo solo puede existir `py`**, ni `python` ni `python3`, y PowerShell puede estar en modo
     restringido. → `siguiente-version.md`.

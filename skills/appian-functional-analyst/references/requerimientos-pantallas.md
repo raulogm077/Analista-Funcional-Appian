@@ -121,8 +121,9 @@ En este orden; se salta lo que la pantalla no tiene:
    informativas y secciones») y después cada parte en su punto, en ese orden (§6).
 3. **Estado inicial**: qué se ve al entrar, qué viene relleno o seleccionado, qué sección está abierta y cuáles
    cerradas, qué se ve si no hay ningún registro (la tabla vacía o el mensaje literal). La búsqueda y los filtros,
-   con su valor al entrar: «con la búsqueda vacía y los filtros en su valor por defecto ("Todos")»; nunca «sin
-   búsqueda ni filtros», que no deja claro si no los hay o si no hay ninguno aplicado.
+   con su valor al entrar, el que sea: «con la búsqueda vacía y los filtros en su valor por defecto ("Todos")» o, si
+   alguno viene aplicado, cuál y con qué valor («con el filtro Estado en "En revisión"»). Nunca «sin búsqueda ni
+   filtros», que no deja claro si no los hay o si no hay ninguno aplicado.
 4. **Elementos de la parte superior**: la barra de búsqueda y filtros («se describe en la sección Búsqueda y
    Filtros») y cada botón con su efecto. Un botón que abre otra pantalla o un modal: «al pulsarlo, se abre el modal
    "Nueva solicitud" (se describe en la pantalla "Nueva solicitud")», sin describir su contenido.
@@ -167,7 +168,8 @@ En este orden; se salta lo que la pantalla no tiene:
 
 1. **Orden por defecto**: la columna y el sentido, con lo que significa («por ID descendente, mostrando primero las
    más recientes»).
-2. **Cada columna ordenable**, con su criterio: alfabéticamente de A a Z o de Z a A; de la fecha más antigua a la más
+2. **Cada columna ordenable**, una por sub-viñeta, con su criterio, aunque varias compartan el mismo (nunca
+   «UNIDAD, ESPACIO y ESTADO: alfabéticamente…» en una línea): alfabéticamente de A a Z o de Z a A; de la fecha más antigua a la más
    reciente o al revés; de menor a mayor o al revés; en una columna especial, cómo («agrupando primero las que tienen
    alertas»). Cómo se trata el guion («-»): como valor vacío.
 3. Qué pasa al cambiar el orden: se reordena manteniendo la búsqueda y los filtros; en una tabla con agrupaciones, si
@@ -211,7 +213,7 @@ Cada elemento, en su punto, con lo que le aplique de su fila:
 | Elemento | Qué se dice |
 |---|---|
 | Columna de una tabla | El nombre en mayúsculas (`NÚMERO:`); qué representa; de dónde sale (elegido al crear, calculado, de datos maestros, heredado de otro registro, de otro sistema), siempre en la tabla principal de una pantalla; el formato entre paréntesis («(DD/MM/AAAA)», «(nombre y apellidos)»); qué se ve si está vacío («-»); qué pasa al pulsarlo (vínculo al registro, descarga, copiar). Los valores posibles, entre comillas |
-| Campo de un formulario | Nombre; qué es; tipo de control (en un desplegable, un selector o unas casillas, siempre si es de selección única o múltiple): campo de texto libre, área de texto, desplegable de selección única o múltiple, campo combinado de búsqueda y texto libre, botones de opción, casilla de verificación, campo de fecha, campo numérico, importe, carga de ficheros, solo lectura; de dónde salen sus opciones y en qué orden; si se rellena solo y si se puede cambiar; si muestra u oculta otros campos |
+| Campo de un formulario | Nombre; qué es; tipo de control, siempre dicho como campo («campo de texto libre», «campo de tipo desplegable de selección única», «campo de tipo selector (picker) de selección única con búsqueda predictiva»), y en un desplegable, un selector o unas casillas, si es de selección única o múltiple: campo de texto libre, área de texto, desplegable, selector, campo combinado de búsqueda y texto libre, botones de opción, casilla de verificación, campo de fecha, campo numérico, importe, carga de ficheros, solo lectura. Si sus valores son fijos, «con los siguientes valores:» y debajo uno por sub-viñeta; si salen de otro sitio, de dónde («con los espacios activos de datos maestros»); de dónde salen sus opciones y en qué orden; si se rellena solo y si se puede cambiar; si muestra u oculta otros campos |
 | Botón | El texto literal; dónde está; qué pasa al pulsarlo y después (cambio de estado, correo, se cierra, se abre otra pantalla) |
 | Vínculo | Qué texto lleva y adónde lleva |
 | Icono o indicador | Qué significa cada icono o color y cuándo aparece |
@@ -308,16 +310,19 @@ Antes de cerrar una pantalla, con el inventario del §2:
       su formato y qué se ve vacía; cada campo, su tipo de control y de
       dónde salen sus opciones.
 - [ ] Cada desplegable, selector y grupo de casillas dice si es de selección única o múltiple.
+- [ ] Cada campo dice su tipo como campo («campo de tipo desplegable…», «campo de texto libre») y cada desplegable,
+      «con los siguientes valores:» y los valores debajo, o de dónde salen; nunca solo la lista de valores.
 - [ ] Las columnas de cada tabla y los campos de cada bloque van en sub-viñetas, uno por línea, nunca seguidos en una
       frase.
 - [ ] Cada botón y cada vínculo dicen qué pasa al pulsarlos y después.
 - [ ] Cada filtro dice tipo, selección, opciones, valor por defecto y efecto; está la combinación y el caso sin
       resultados.
-- [ ] Cada columna ordenable tiene su criterio y está el orden por defecto.
+- [ ] Cada columna ordenable tiene su criterio, en su propia línea, y está el orden por defecto.
 - [ ] Cada campo obligatorio o con formato tiene un mensaje literal por incumplimiento.
 - [ ] Cada condición dice lo que pasa («se muestra el mensaje de error "…"», «el botón se desactiva»), no solo la
       condición seguida de un texto.
-- [ ] El estado inicial dice el valor de la búsqueda y de cada filtro al entrar (vacía, «Todos»).
+- [ ] El estado inicial dice el valor de la búsqueda y de cada filtro al entrar (vacía, «Todos» o el que venga
+      aplicado).
 - [ ] Cada borrado o cancelación tiene su confirmación literal.
 - [ ] Lógica General no dice de ningún campo si es obligatorio u opcional, su longitud, sus caracteres, su formato
       admitido, su valor preseleccionado ni ningún mensaje de error; nada de casuística.
@@ -390,11 +395,19 @@ Caso 1: bandeja con solicitudes en distintos estados.
    - La búsqueda es por coincidencia parcial y no distingue entre mayúsculas y minúsculas. Valor por defecto: vacío.
    - Al introducir un texto, la tabla muestra únicamente las solicitudes que contienen ese texto en alguna columna.
 3. La pantalla incluye los siguientes filtros:
-   - Estado: desplegable de selección múltiple. Opciones: "Todos", "En revisión", "Pendiente de subsanar",
-     "Pendiente de resolución", "Autorizada", "Denegada", "Cancelada". Valor por defecto: "Todos".
-     - Al seleccionar uno o varios estados, la tabla muestra únicamente las solicitudes en esos estados.
-   - Espacio: desplegable de selección múltiple. Opciones: los espacios de las solicitudes visibles en la tabla,
-     ordenados alfabéticamente. Valor por defecto: "Todos".
+   - Estado: campo de tipo desplegable de selección múltiple con los siguientes valores:
+     - "Todos"
+     - "En revisión"
+     - "Pendiente de subsanar"
+     - "Pendiente de resolución"
+     - "Autorizada"
+     - "Denegada"
+     - "Cancelada"
+
+     Valor por defecto: "Todos". Al seleccionar uno o varios estados, la tabla muestra únicamente las solicitudes en
+     esos estados.
+   - Espacio: campo de tipo desplegable de selección múltiple con los espacios de las solicitudes visibles en la
+     tabla, ordenados alfabéticamente, y la opción "Todos". Valor por defecto: "Todos".
      - Al seleccionar uno o varios espacios, la tabla muestra únicamente las solicitudes de esos espacios.
 4. En los dos filtros, si se selecciona "Todos", las demás opciones se deseleccionan; si se selecciona otra opción con
    "Todos" seleccionado, "Todos" se deselecciona.
@@ -406,7 +419,9 @@ Caso 1: bandeja con solicitudes en distintos estados.
 1. Por defecto, la tabla se ordena por NÚMERO descendente, mostrando primero las solicitudes más recientes.
 2. Cada columna permite ordenar su contenido en sentido ascendente y descendente:
    - NÚMERO: de menor a mayor, o de mayor a menor.
-   - UNIDAD, ESPACIO y ESTADO: alfabéticamente de A a Z, o de Z a A.
+   - UNIDAD: alfabéticamente de A a Z, o de Z a A.
+   - ESPACIO: alfabéticamente de A a Z, o de Z a A.
+   - ESTADO: alfabéticamente de A a Z, o de Z a A.
    - FECHAS: por la fecha de inicio, de la más antigua a la más reciente, o al revés.
    - FECHA DE RESOLUCIÓN: de la más antigua a la más reciente, o al revés, tratando el guion ("-") como valor vacío.
 3. Al cambiar el orden, la tabla se reordena manteniendo la búsqueda y los filtros vigentes.
@@ -436,11 +451,12 @@ Caso 1: modal vacío, abierto desde la bandeja.
    permite registrar una solicitud de ocupación.
 2. El modal incluye los siguientes campos:
    - Unidad: campo de solo lectura. Muestra la unidad del usuario que crea la solicitud.
-   - Espacio: desplegable de selección única. Opciones: los espacios activos de datos maestros, ordenados
+   - Espacio: campo de tipo desplegable de selección única con los espacios activos de datos maestros, ordenados
      alfabéticamente.
-   - Fecha de inicio y Fecha de fin: campos de fecha (DD/MM/AAAA).
-   - Motivo: área de texto libre.
-   - Documentación: carga de ficheros, para adjuntar la memoria y el plano; admite varios ficheros a la vez.
+   - Fecha de inicio: campo de fecha (DD/MM/AAAA).
+   - Fecha de fin: campo de fecha (DD/MM/AAAA).
+   - Motivo: campo de tipo área de texto libre.
+   - Documentación: campo de carga de ficheros, para adjuntar la memoria y el plano; admite varios ficheros a la vez.
 3. El modal incluye los botones "Cancelar" y "Enviar" en la parte inferior, además del icono de cierre ("X") en la
    esquina superior derecha:
    - "Cancelar" (o el icono "X"): cierra el modal sin guardar.
