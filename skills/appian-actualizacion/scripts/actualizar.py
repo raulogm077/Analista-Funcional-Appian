@@ -33,14 +33,17 @@ Appian no hace. Por este orden:
   2. Lo extrae entero en una carpeta aparte, dentro de la del servidor. Si no se puede, la instalación sigue igual.
   3. Hace la foto de lo instalado y guarda el bundle anterior (lo instalado menos el entorno de `uv`) como
      bundle.tar.gz en la carpeta de esa foto, y lo relee entero antes de darlo por bueno.
-  4. Solo entonces sustituye lo que trae el bundle; lo demás de la carpeta del servidor no se toca. Mientras dura,
-     deja una marca: si se corta, las demás órdenes lo dicen y `instalar` la termina sin repetir la foto ni la copia.
+  4. Solo entonces sustituye lo que trae el bundle y quita lo que el anterior trajo en la raíz y este ya no trae (si
+     lo instaló este script, que lo apunta); lo demás de la carpeta del servidor no se toca. Mientras dura, deja una
+     marca: si se corta, las demás órdenes lo dicen y `instalar`, con ese mismo bundle, la termina sin repetir la
+     foto ni la copia.
   5. Lanza `uv sync`, el `bin/setup-*` del sistema (SAIL CLI) y `bin/install-skills` (la skill oficial: en los
      clientes que detecta Appian y en cada --skills-dir), en ese orden; si uno falla, para ahí y lo dice.
-La misma orden se puede repetir. Repetida con el bundle ya instalado, vuelve a dejar lo que trae, sin foto ni copia:
-un cambio hecho a mano en esas carpetas se pierde. Se guarda un solo bundle anterior. `sail-anterior` saca de él el
-SAIL CLI de este sistema y dice cómo usarlo. El bundle se descarga del propio entorno: --plugin-sha comprueba que es
-el que ese entorno espera, no quién lo hizo.
+La misma orden se puede repetir. Un bundle es el instalado si coinciden su fecha de build y su mcp_src_sha: repetida
+con él, vuelve a dejar lo que trae, sin foto ni copia, y un cambio hecho a mano en esas carpetas se pierde. Se guarda
+un solo bundle anterior. `sail-anterior` saca de él el SAIL CLI de este sistema y dice cómo usarlo. El bundle se
+descarga del propio entorno: --plugin-sha comprueba que es el que ese entorno espera, no quién lo hizo. No hay
+bloqueo entre dos instalaciones: no lances dos a la vez sobre la misma carpeta.
 
 --servidor es la carpeta donde está extraído el bundle; sin él, la de la guía de Appian (~/appian-dev-mcp-server).
 SAIL CLI es `sail` del PATH o el de $SAIL_CLI, como en appian-qa.
@@ -77,8 +80,11 @@ DE_LA_FOTO = ("BUILD-INFO.txt", "skill.bundle-manifest", "sail-help", "devmcp.js
 A_MEDIAS = ".instalando"                    # marca en la carpeta del servidor mientras se sustituye su contenido
 APARTE = ".nuevo"                           # donde se extrae el bundle antes de sustituir nada
 # En la carpeta del servidor, lo que no es del bundle: el entorno que crea `uv sync` y lo que usa `instalar`. Un bundle
-# no puede traerlo, no entra en el bundle anterior que se guarda y no se borra.
+# no puede traerlo, con estas u otras mayúsculas; no entra en el bundle anterior que se guarda y no se borra.
 RESERVADAS = {".venv", A_MEDIAS, APARTE}
+# Nombres que Windows no admite como fichero: un bundle que los trajera no se podría extraer igual en todos los sistemas
+DISPOSITIVOS = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
+SIN_SU_AYUDA = "(sail {orden} --help falló al hacer la foto)"   # la orden está, pero no se pudo leer su ayuda
 # Lo que `instalar` lanza de un bundle, además de `uv sync` sobre su pyproject.toml. Por sistema: cómo llama Appian a su
 # SAIL CLI en bin/, el script que lo instala y el que instala la skill oficial.
 SISTEMAS = {"Windows": ("windows", "setup-windows.bat", "install-skills.bat"),
@@ -100,6 +106,17 @@ def casa():
     return pathlib.Path(os.environ.get("APPIAN_RE_HOME") or pathlib.Path.home()).expanduser().resolve()
 
 
+def leer_json(fichero):
+    """El objeto JSON de un fichero: None si no existe y {} si no se puede leer o no es un objeto."""
+    if not fichero.is_file():
+        return None
+    try:
+        d = json.loads(fichero.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return d if isinstance(d, dict) else {}
+
+
 def claves(texto):
     """Las líneas clave=valor de un BUILD-INFO.txt o de la cabecera de un manifiesto."""
     return dict(l.split("=", 1) for l in texto.splitlines() if "=" in l and not l.startswith("#"))
@@ -108,6 +125,11 @@ def claves(texto):
 def es_build(info):
     """Un BUILD-INFO vale si dice mcp_src_sha y un build_timestamp con su forma (AAAAMMDD-HHMMSS)."""
     return "mcp_src_sha" in info and bool(RX_BUILD.fullmatch(info.get("build_timestamp", "")))
+
+
+def identidad(info):
+    """Lo que distingue un bundle de otro: su fecha de build y su mcp_src_sha, las dos."""
+    return f"{info['build_timestamp']} {info['mcp_src_sha']}"
 
 
 def instalado_en(carpeta):
@@ -187,15 +209,18 @@ def ayuda_de_sail():
         elif dentro and not linea.strip():
             break
         elif dentro and linea.split()[0] not in SIN_AYUDA:
-            ayuda = sail(cli, linea.split()[0], "--help")
-            if ayuda is not None:
-                ayudas[linea.split()[0]] = ayuda
+            orden = linea.split()[0]
+            ayuda = sail(cli, orden, "--help")
+            # si su ayuda falla, la orden sigue en la foto: que falte no se lea después como que Appian la retiró
+            ayudas[orden] = ayuda if ayuda is not None else SIN_SU_AYUDA.format(orden=orden)
     return ayudas
 
 
 def es_catalogo(d):
+    """El contrato del catálogo, el mismo al guardarlo en una foto y al leerlo: lo que usa la comparación."""
     return isinstance(d, dict) and all(
         isinstance(h, dict) and isinstance(h.get("parametros"), dict) and isinstance(h.get("obligatorios"), list)
+        and all(isinstance(p, str) for p in [*h["parametros"], *h["obligatorios"]])
         and isinstance(h.get("descripcion"), str) and isinstance(h.get("esquema"), str) for h in d.values())
 
 
@@ -211,13 +236,13 @@ def leer_catalogo(fichero):
 
 
 def hacer_foto(srv, catalogo=None):
-    """Rehace entera la foto del build instalado y devuelve su carpeta."""
+    """Rehace entera la foto del build instalado y devuelve su carpeta. BUILD-INFO.txt se borra lo primero y se
+    escribe lo último: es lo que dice que la foto está, así que una que se corta a medias no cuenta como hecha."""
     herramientas = leer_catalogo(catalogo) if catalogo else None
     foto = carpeta_fotos(srv) / instalado_en(srv)["build_timestamp"]
     foto.mkdir(parents=True, exist_ok=True)
     for suyo in DE_LA_FOTO:
         borra(foto / suyo)
-    escribe(foto / "BUILD-INFO.txt", (srv / "BUILD-INFO.txt").read_text(encoding="utf-8", errors="replace"))
     manifiesto = srv / "skills" / "appian" / ".bundle-manifest"
     if manifiesto.is_file():
         shutil.copyfile(manifiesto, foto / "skill.bundle-manifest")
@@ -228,13 +253,16 @@ def hacer_foto(srv, catalogo=None):
             escribe(foto / "sail-help" / f"{orden}.txt", texto)
     if herramientas is not None:
         escribe(foto / "devmcp.json", json.dumps(herramientas, ensure_ascii=False, indent=1, sort_keys=True))
+    escribe(foto / "BUILD-INFO.txt", (srv / "BUILD-INFO.txt").read_text(encoding="utf-8", errors="replace"))
     return foto
 
 
 def foto_de(srv, catalogo=None):
-    """La foto del build instalado: la que haya, o una nueva si falta o si se da un catálogo."""
-    foto = carpeta_fotos(srv) / instalado_en(srv)["build_timestamp"]
-    return foto if (foto / "BUILD-INFO.txt").is_file() and not catalogo else hacer_foto(srv, catalogo)
+    """La foto del build instalado: la que haya de ese mismo bundle, o una nueva si falta o si se da un catálogo."""
+    instalado = instalado_en(srv)
+    foto = carpeta_fotos(srv) / instalado["build_timestamp"]
+    hecha = instalado_en(foto) if foto.is_dir() else None
+    return foto if hecha and identidad(hecha) == identidad(instalado) and not catalogo else hacer_foto(srv, catalogo)
 
 
 def leer_foto(foto):
@@ -394,19 +422,24 @@ def sistema():
 
 
 def miembros(tar):
-    """Los miembros de un bundle si se pueden extraer sin riesgo: solo ficheros y carpetas, con una ruta relativa que
-    no sale de donde se extrae y sin ficheros repetidos. Si no, ValueError. No se fía de los filtros de tarfile, que
-    no están en todos los Python que el plugin admite."""
-    todos, vistos = tar.getmembers(), set()
+    """Los miembros de un bundle si se pueden extraer sin riesgo y dan lo mismo en cualquier sistema: solo ficheros y
+    carpetas, con una ruta relativa que no sale de donde se extrae, con nombres que valen en Windows y sin dos que
+    allí serían el mismo (repetidos, o distintos solo en las mayúsculas). Si no, ValueError. No se fía de los filtros
+    de tarfile, que no están en todos los Python que el plugin admite."""
+    todos, formas, ficheros = tar.getmembers(), {}, set()
     for m in todos:
         partes = pathlib.PurePosixPath(m.name).parts
         if not (m.isfile() or m.isdir()):
             raise ValueError(f"«{m.name}» no es un fichero ni una carpeta (un enlace o un dispositivo)")
-        if not partes or ".." in partes or m.name.startswith("/") or "\\" in m.name or ":" in m.name:
-            raise ValueError(f"«{m.name}» no es una ruta dentro de la carpeta donde se extrae")
-        if m.isfile() and partes in vistos:
+        if (not partes or m.name.startswith("/") or "\\" in m.name or ":" in m.name
+                or any(p == ".." or p != p.rstrip(". ") or p.split(".")[0].upper() in DISPOSITIVOS for p in partes)):
+            raise ValueError(f"«{m.name}» no es una ruta dentro de la carpeta donde se extrae que valga en todos los sistemas")
+        for k in range(1, len(partes) + 1):
+            if formas.setdefault(tuple(p.casefold() for p in partes[:k]), partes[:k]) != partes[:k]:
+                raise ValueError(f"«{m.name}» y otra entrada solo se distinguen en las mayúsculas")
+        if m.isfile() and partes in ficheros:
             raise ValueError(f"«{m.name}» viene dos veces")
-        vistos.add(partes)
+        ficheros.add(partes)
     return todos
 
 
@@ -426,7 +459,7 @@ def leer_bundle(fichero, lanza_del_bundle=()):
         fin(2, f"error: {fichero} no es un bundle del Dev MCP (su BUILD-INFO.txt no dice mcp_src_sha y un "
                "build_timestamp con la forma AAAAMMDD-HHMMSS)")
     raiz = sorted({pathlib.PurePosixPath(m.name).parts[0] for m in todos})
-    suyas = sorted(RESERVADAS & set(raiz))
+    suyas = [n for n in raiz if n.casefold() in RESERVADAS]
     faltan = [f for f in lanza_del_bundle if f not in rutas]
     if suyas or faltan:
         fin(2, f"error: {fichero} no tiene la forma de bundle que conoce esta versión del plugin ("
@@ -485,7 +518,8 @@ def cmd_instalar(args):
     bundle = pathlib.Path(args.bundle).expanduser().resolve()
     nuevo, raiz = leer_bundle(bundle, ("pyproject.toml", f"bin/{setup}", f"bin/{skills}"))
     srv = carpeta_servidor(args.servidor)
-    a_medias = (srv / A_MEDIAS).is_file()     # una instalación anterior no terminó de sustituir el servidor
+    marca = leer_json(srv / A_MEDIAS)         # si la hay, una instalación anterior no terminó de sustituir el servidor
+    a_medias = marca is not None
     nueva = not srv.exists() or (srv.is_dir() and not any(srv.iterdir()))
     instalado = instalado_en(srv) if srv.is_dir() else None
     if not nueva and not srv.is_dir():
@@ -499,9 +533,18 @@ def cmd_instalar(args):
     if args.plugin_sha and args.plugin_sha != nuevo["mcp_src_sha"]:
         fin(2, f"error: el bundle es del build {nuevo['build_timestamp']} (mcp_src_sha {nuevo['mcp_src_sha']}) y el "
                f"plugin de tu entorno espera {args.plugin_sha}: descarga el bundle de ese entorno. {sin_tocar}")
-    if instalado and nuevo["build_timestamp"] < instalado["build_timestamp"]:
+    if a_medias and marca.get("build") != identidad(nuevo):
+        fin(2, f"error: la instalación de {srv} se quedó a medias con el build "
+               f"{str(marca.get('build') or 'desconocido').split()[0]}, que no es el de este bundle: termínala con aquel. "
+               f"Si ya no lo tienes, instala este como dice la guía de Appian y borra {srv / A_MEDIAS}.")
+    if instalado and not a_medias and nuevo["build_timestamp"] < instalado["build_timestamp"]:
         fin(2, f"error: el bundle ({nuevo['build_timestamp']}) es más antiguo que lo instalado "
                f"({instalado['build_timestamp']}). {sin_tocar}")
+    if instalado and not a_medias and nuevo["build_timestamp"] == instalado["build_timestamp"] \
+            and nuevo["mcp_src_sha"] != instalado["mcp_src_sha"]:
+        fin(2, f"error: el bundle tiene la misma fecha de build que lo instalado ({nuevo['build_timestamp']}) y otro "
+               f"mcp_src_sha: no se sabe cuál es más nuevo. Instálalo como dice la guía de Appian. {sin_tocar}")
+    mismo = bool(instalado) and identidad(instalado) == identidad(nuevo)
     uv = shutil.which(args.uv or "uv")
     if not uv:
         fin(2, "error: no encuentro `uv`, que instala las dependencias del servidor (la guía de Appian dice cómo "
@@ -510,6 +553,14 @@ def cmd_instalar(args):
         fin(2, f"error: no encuentro `bash`, que lanza los instaladores del bundle. {sin_tocar}")
     if args.catalogo:
         leer_catalogo(args.catalogo)
+    # Lo que el bundle instalado trajo en la raíz y este ya no trae, sobra. Solo se sabe si lo instaló este script, que
+    # lo apunta; al terminar una sustitución que se cortó, es lo que se apuntó en la marca.
+    registro = carpeta_fotos(srv) / "instalado.json"
+    previo = leer_json(registro) or {}
+    sobran = marca.get("sobran") if a_medias else (
+        sorted(set(previo.get("raiz") or []) - set(raiz)) if instalado and previo.get("build") == identidad(instalado) else [])
+    sobran = [n for n in sobran or [] if isinstance(n, str) and n not in ("", ".", "..") and not re.search(r"[/\\:]", n)
+              and n.casefold() not in RESERVADAS]
 
     # Extraer aparte: si el bundle no se puede extraer entero, la instalación sigue como estaba
     aparte = srv / APARTE
@@ -522,7 +573,7 @@ def cmd_instalar(args):
         foto = None
         # La foto y la copia, con el servidor entero. Si se está terminando una sustitución que se cortó, ya se
         # hicieron entonces: repetirlas guardaría como «anterior» un servidor a medio borrar.
-        if instalado and not a_medias and instalado["mcp_src_sha"] != nuevo["mcp_src_sha"]:
+        if instalado and not a_medias and not mismo:
             foto = foto_de(srv, args.catalogo)
             guardar_anterior(srv, foto)
     except (OSError, tarfile.TarError, ValueError) as e:
@@ -535,16 +586,19 @@ def cmd_instalar(args):
         fin(2, f"error: no se pudo preparar la instalación: {e}. {sin_tocar}")
 
     try:
-        escribe(srv / A_MEDIAS, nuevo["build_timestamp"])
+        escribe(srv / A_MEDIAS, json.dumps({"build": identidad(nuevo), "sobran": sobran}))
         for nombre in raiz:
             borra(srv / nombre)
             os.replace(aparte / nombre, srv / nombre)
+        for nombre in sobran:
+            borra(srv / nombre)
         borra(aparte)
+        registro.parent.mkdir(parents=True, exist_ok=True)
+        escribe(registro, json.dumps({"build": identidad(nuevo), "raiz": raiz}))
         (srv / A_MEDIAS).unlink()
-        if foto:   # con el servidor nuevo en su sitio, sobra el bundle de builds más viejos: se guarda uno
-            for vieja in carpeta_fotos(srv).glob("*/bundle.tar.gz"):
-                if vieja.parent != foto:
-                    vieja.unlink()
+        # con el servidor nuevo en su sitio, se guarda un bundle anterior: el del build más reciente
+        for vieja in sorted(carpeta_fotos(srv).glob("*/bundle.tar.gz"))[:-1]:
+            vieja.unlink()
     except OSError as e:
         fin(1, f"error: no se pudo sustituir el servidor en {srv}: {e}\nCierra los clientes de IA que lo tengan en "
                "marcha y repite la misma orden: termina lo que quedó a medias.")
@@ -554,7 +608,7 @@ def cmd_instalar(args):
         print(f"  antes había el build {instalado['build_timestamp']}: su foto y su bundle, en {foto}")
     elif a_medias:
         print("  se ha terminado una instalación que se quedó a medias; la foto y el bundle anterior son los de entonces")
-    elif instalado:
+    elif mismo:
         print("  era el build instalado: se ha vuelto a dejar lo que trae el bundle, sin foto ni copia")
     pasos = [("uv sync", lambda: lanza([uv, "sync"], cwd=srv)), ("SAIL CLI", lambda: del_bundle(srv, setup)),
              ("skill appian", lambda: del_bundle(srv, skills))]
