@@ -157,7 +157,7 @@ Reglas de redacción para todas las skills (van a `CLAUDE.md`):
 
 | No puede depender de | Cómo se resuelve |
 |---|---|
-| Una ruta o un equipo | La carpeta del servidor y `uv` se leen de la configuración MCP de la persona. Si hay varias o ninguna, el script lo dice y pide cuál; no supone una |
+| Una ruta o un equipo | La carpeta del servidor es la de la guía de Appian (`~/appian-dev-mcp-server`) o la que diga la persona (`--servidor`). Si no es una instalación, el script para y lo dice |
 | Un sistema operativo | Un solo script en Python; llama al `setup` y al `install-skills` que trae el bundle para cada sistema |
 | Un cliente de IA | `install-skills` de Appian detecta los suyos; los demás, con la carpeta que diga la persona |
 | Un entorno o una aplicación | El banco se construye en el entorno de cada uno; host y site son variables de los guiones |
@@ -223,7 +223,7 @@ no se hacen; la aplicación de pruebas propia de cada persona se aplaza hasta qu
 | | Qué | Depende de |
 |---|---|---|
 | T1 | Banco `BPS` en Indra-spain: las dos cuentas, las reglas con casos de prueba, los guiones y el esperado del extractor. Lo primero, el envío con validación en la 26.9.15 | Reiniciar el cliente tras la 26.9.15 |
-| T2 | La skill, primero lo que no toca ficheros de otra rama: `actualizar.py` (estado, guardar el bundle anterior, instalar, foto de la skill oficial y de `sail`, informe) con su prueba sobre bundles de mentira. Después, el catálogo: el subcomando nuevo del extractor | El catálogo, que la rama del método entre en `main` |
+| T2 | La skill, primero lo que no toca ficheros de otra rama. **Hecho (11-nov):** `actualizar.py` con `estado`, `foto` e `informe` y su prueba sin Appian; reproduce el informe de la 26.9.15 con las dos fotos reales. **Falta:** `instalar` (con guardar el bundle anterior) y el catálogo, que es el subcomando nuevo del extractor | El catálogo, que la rama del método entre en `main` |
 | T3 | `comprobar` con el banco; en `qa.py`, `tasks`, `open` y `reload`; `appian-qa` lee la ayuda de `sail` | T1, y que la rama `claude/pruebas-metodo-20261104` entre en `main`: cambia los mismos ficheros |
 | T4 | Simuladores al día con lo que enseñe el banco, con su versión | T3 |
 | T5 | `CLAUDE.md`: reglas de redacción, el banco y la rutina del mantenedor; README y requisitos; la skill personal de Raúl se queda en lo suyo (su parche y sus otros clientes) | T2 |

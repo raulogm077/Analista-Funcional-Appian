@@ -5,6 +5,7 @@
       "id": "python",
       "nombre": "Python 3.9 o superior",
       "skills": [
+        "appian-actualizacion",
         "appian-best-practices",
         "appian-diagramas-bpmn",
         "appian-functional-analyst",

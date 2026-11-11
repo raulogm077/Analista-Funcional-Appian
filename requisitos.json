@@ -2,8 +2,8 @@
   {
     "id": "python",
     "nombre": "Python 3.9 o superior",
-    "skills": ["appian-best-practices", "appian-diagramas-bpmn", "appian-functional-analyst", "appian-prototipos",
-               "appian-qa", "appian-refactorizacion", "appian-reverse-engineering"],
+    "skills": ["appian-actualizacion", "appian-best-practices", "appian-diagramas-bpmn", "appian-functional-analyst",
+               "appian-prototipos", "appian-qa", "appian-refactorizacion", "appian-reverse-engineering"],
     "imprescindible": true,
     "solo_pruebas": false,
     "para": "Todos los scripts; el extractor de ingeniería inversa usa 3.10 o superior, que trae uv",
