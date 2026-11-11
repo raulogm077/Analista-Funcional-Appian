@@ -15,7 +15,8 @@ local deja de valer: mientras no sean del mismo build, el Dev MCP rechaza todas 
 - Instala el bundle como manda la guía de Appian. Antes guarda una foto de lo instalado y el bundle anterior, que
   Appian no guarda.
 - Tras instalar, dice qué cambió entre la foto y lo instalado, y qué ficheros del plugin citan lo que cambió.
-- Comprueba, con la extracción de una aplicación de prueba, que el extractor de ingeniería inversa sigue viéndolo todo.
+- Comprueba, con una aplicación de prueba, que el extractor de ingeniería inversa sigue viéndolo todo y que `qa.py`
+  sigue repitiendo sus guiones con el SAIL CLI nuevo.
 - Saca el SAIL CLI del bundle anterior, para seguir con él si el nuevo da problemas.
 
 El informe dice **qué cambió**, no qué se rompió, y no decide qué hacer con cada cambio: eso es leerlo (paso 4). El
@@ -53,13 +54,21 @@ la guía de Appian, añade `--servidor <carpeta>` a cada orden.
    - **Cambió algo que el plugin documenta**: relee los ficheros que da «Lo citan las skills del plugin» y lo que
      dicen de esa herramienta.
    - **Nuevo**: si se usa sin cambiar nada, no hay nada que hacer; si una skill debería usarlo, apúntalo.
-5. **¿Sigue funcionando el extractor?** Con la aplicación del banco construida en tu entorno
-   (`assets/banco/especificacion.md`), extráela con el extractor de `appian-reverse-engineering`
-   (`devmcp_extract.py extract --app <la del banco> --out <carpeta temporal>`) y pasa
-   `python3 <skill>/scripts/actualizar.py comprobar --extraccion <esa carpeta>`. Falla si el extractor deja de ver
-   algún tipo de objeto o si una herramienta da error en todos los tipos, que es lo que pasa cuando el Dev MCP trae
-   herramientas de un tipo que la política del extractor no conoce. Esa misma extracción deja el catálogo para el
-   informe. Los recorridos con SAIL CLI aún no se comprueban.
+5. **¿Sigue funcionando el plugin?** Con la aplicación del banco construida en tu entorno
+   (`assets/banco/especificacion.md`), `python3 <skill>/scripts/actualizar.py comprobar` pasa sus dos mitades, juntas
+   o por separado:
+   - **El extractor**, con `--extraccion <carpeta>`: antes extrae la aplicación del banco con el extractor de
+     `appian-reverse-engineering` (`devmcp_extract.py extract --app <la del banco> --out <carpeta temporal>`). No pasa
+     si el extractor deja de ver algún tipo de objeto o si una herramienta da error en todos los tipos, que es lo que
+     ocurre cuando el Dev MCP trae herramientas de un tipo que la política del extractor no conoce. Esa misma
+     extracción deja el catálogo para el informe.
+   - **`qa.py` con SAIL CLI**, con `--host <tu entorno> --solicitante <usuario>` (y `--aprobador <usuario>` cuando un
+     recorrido lo pida): repite los guiones del banco con `qa.py`, de `appian-qa`, con las cuentas de prueba que le
+     das, que tienen que tener su sesión de `sail` abierta (`qa.py sesiones` dice cómo). El banco aún no trae los
+     recorridos del formulario y las tareas, y lo dice.
+
+   Sale con 0 si pasa lo pedido, 1 si algo no pasa y 2 si algo no se pudo comprobar (una sesión caducada, una
+   extracción que no terminó): eso no es un fallo, pero tampoco un «pasa».
 6. **Si el SAIL CLI nuevo da problemas**: `python3 <skill>/scripts/actualizar.py sail-anterior` saca el del bundle
    anterior y dice cómo seguir con él (`SAIL_CLI`), hasta que el plugin se adapte.
 
@@ -89,3 +98,4 @@ build anterior, su `bundle.tar.gz`.
 | `scripts/actualizar.py` | `estado`, `instalar`, `informe`, `comprobar`, `sail-anterior` y `foto`; su cabecera dice qué lleva una foto y los códigos de salida |
 | `assets/banco/especificacion.md` | Para construir, una vez por entorno, la aplicación ficticia con la que se prueba cada versión de SAIL CLI y del Dev MCP |
 | `assets/banco/esperado.json` | Lo que el extractor tiene que encontrar en esa aplicación; lo lee `comprobar` |
+| `assets/banco/guiones/` | Los recorridos del banco, como guiones de `appian-qa` sin entorno ni cuentas; los repite `comprobar` |

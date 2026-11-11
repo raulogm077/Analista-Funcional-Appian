@@ -7,7 +7,7 @@
                                  [--catalogo FICHERO]
   python3 actualizar.py informe  [--servidor DIR] [--catalogo FICHERO] [--antes DIR] [--despues DIR] [--json]
   python3 actualizar.py sail-anterior [--servidor DIR]
-  python3 actualizar.py comprobar --extraccion DIR
+  python3 actualizar.py comprobar [--extraccion DIR] [--host ENTORNO --solicitante USUARIO [--aprobador USUARIO]]
 
 Una foto es una copia, sin transformar, de lo que un bundle de Appian publica y el plugin usa:
   BUILD-INFO.txt          el build del servidor del Dev MCP
@@ -48,16 +48,20 @@ un solo bundle anterior. `sail-anterior` saca de él el SAIL CLI de este sistema
 descarga del propio entorno: --plugin-sha comprueba que es el que ese entorno espera, no quién lo hizo. No hay
 bloqueo entre dos instalaciones: no lances dos a la vez sobre la misma carpeta.
 
-`comprobar` mira el informe de extraer la aplicación del banco de pruebas (assets/banco/) con el extractor de
-ingeniería inversa: que encuentre al menos los objetos de cada tipo de assets/banco/esperado.json y que ninguna
-herramienta dé error en tres tipos de objeto o más, que es lo que pasa cuando el Dev MCP trae herramientas de un tipo
-que la política del extractor no conoce. Los recorridos con SAIL CLI aún no los comprueba.
+`comprobar` pasa el banco de pruebas (assets/banco/), entero o la parte que se le pida:
+  --extraccion DIR   mira el informe de extraer su aplicación con el extractor de ingeniería inversa: que encuentre al
+                     menos los objetos de cada tipo de assets/banco/esperado.json y que ninguna herramienta dé error en
+                     tres tipos de objeto o más, que es lo que pasa cuando el Dev MCP trae herramientas de un tipo que
+                     la política del extractor no conoce.
+  --host ENTORNO --solicitante USUARIO [--aprobador USUARIO] [--site SITE]
+                     repite con `qa.py`, de appian-qa, los guiones de assets/banco/guiones/ en ese entorno y con esas
+                     cuentas, que tienen que tener su sesión de sail abierta. El banco aún no trae todos sus recorridos.
 
 --servidor es la carpeta donde está extraído el bundle; sin él, la de la guía de Appian (~/appian-dev-mcp-server).
 SAIL CLI es `sail` del PATH o el de $SAIL_CLI, como en appian-qa.
 
 Códigos de salida: 0 bien | 1 instalar: falló después de empezar a sustituir (se puede repetir); comprobar: el
-extractor falla con esta versión | 2 falta algo o uso incorrecto, sin haber tocado la instalación (no la hay, no hay
+banco no pasa | 2 falta algo o uso incorrecto, sin haber tocado la instalación (no la hay, no hay
 foto anterior, un fichero ilegible, un bundle que no vale), o comprobar: no se pudo comprobar.
 """
 import argparse
@@ -72,6 +76,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 
 sys.dont_write_bytecode = True
 
@@ -94,6 +99,11 @@ RESERVADAS = {".venv", A_MEDIAS, APARTE}
 DISPOSITIVOS = {"CON", "PRN", "AUX", "NUL", *(f"{d}{i}" for d in ("COM", "LPT") for i in "123456789¹²³")}
 SIN_SU_AYUDA = "(sail {orden} --help falló al hacer la foto)"   # la orden está, pero no se pudo leer su ayuda
 ESPERADO = pathlib.Path(__file__).resolve().parents[1] / "assets" / "banco" / "esperado.json"
+GUIONES = ESPERADO.parent / "guiones"       # los recorridos del banco, como guiones de appian-qa sin entorno ni cuentas
+UNIDAD_BANCO = "BPS-01"                     # el nombre de unidad con el que qa.py repite esos guiones
+# Lo que el banco aún no recorre; se quita cuando traiga esos guiones
+FALTAN_RECORRIDOS = ("El banco aún no trae los recorridos del formulario, la validación al enviar, la confirmación y "
+                     "las tareas: eso queda sin comprobar.")
 TIPOS_DE_GENERICA = 3   # una herramienta con errores en tantos tipos de objeto no es de ninguno: se probó en todos
 # Lo que `instalar` lanza de un bundle, además de `uv sync` sobre su pyproject.toml. Por sistema: cómo llama Appian a su
 # SAIL CLI en bin/, el script que lo instala y el que instala la skill oficial.
@@ -677,10 +687,12 @@ def cmd_instalar(args):
     pasos += [(f"skill appian en {d}", lambda d=d: del_bundle(srv, skills, "--skills-dir", d)) for d in args.skills_dir]
     for nombre, paso in pasos:
         codigo, salida = paso()
-        editada = re.search(r"not overwriting|LOCAL EDITS", salida)
-        print(f"  {nombre}: " + ("bien" if codigo == 0 and not editada else
-                                 "REVISAR, la copia instalada tiene cambios tuyos y no se ha pisado" if codigo == 0 else "FALLA"))
-        if codigo != 0 or editada:
+        # Los instaladores de Appian avisan sin fallar: la skill instalada tiene cambios de la persona y no se pisa, o
+        # sail queda instalado pero fuera del PATH (en Linux y macOS, si no hay dónde enlazarlo). Se enseña lo que dicen.
+        avisa = codigo == 0 and re.search(r"not overwriting|LOCAL EDITS|^\s*\[!\]|not on your PATH", salida, re.M)
+        print(f"  {nombre}: " + ("bien" if codigo == 0 and not avisa else
+                                 "REVISAR, el instalador de Appian avisa de algo:" if codigo == 0 else "FALLA"))
+        if codigo != 0 or avisa:
             print("\n".join(f"      {l}" for l in salida.splitlines()[-12:]))
         if codigo != 0:
             fin(1, f"error: falló «{nombre}» y no se ha seguido con los pasos siguientes. Arréglalo y repite la misma "
@@ -708,46 +720,101 @@ def cmd_sail_anterior(args):
 
 # ---- El banco de pruebas -------------------------------------------------------------------------------------------
 
-def cmd_comprobar(args):
-    """Mira el informe que deja `devmcp_extract.py extract` sobre la aplicación del banco. 0 si pasa, 1 si no y 2 si no
-    se pudo comprobar: sin informe o con uno que no tiene su forma, o con una extracción que no terminó (una sesión
-    caducada no es un fallo del extractor)."""
-    fichero = pathlib.Path(args.extraccion).expanduser() / "extraccion" / "extraction_report.json"
+def comprueba_extraccion(carpeta):
+    """(resultado, lo que hay que decir) de mirar el informe que deja `devmcp_extract.py extract` sobre la aplicación
+    del banco. «no se pudo» sin informe, con uno que no tiene su forma o con una extracción que no terminó: una sesión
+    caducada no es un fallo del extractor."""
+    fichero = pathlib.Path(carpeta).expanduser() / "extraccion" / "extraction_report.json"
     informe, esperado = leer_json(fichero), leer_json(ESPERADO)
     entero = lambda n: isinstance(n, int) and not isinstance(n, bool) and n >= 0
     minimos = (esperado or {}).get("objetos")
     if not isinstance(minimos, dict) or not minimos or not all(entero(n) and n > 0 for n in minimos.values()):
-        fin(2, f"No se pudo comprobar: {ESPERADO} no dice cuántos objetos de cada tipo se esperan.")
+        return "no se pudo", [f"{ESPERADO} no dice cuántos objetos de cada tipo se esperan."]
     hay, errores, app = (informe or {}).get("objectsByType"), (informe or {}).get("errors"), (informe or {}).get("app")
     if not isinstance(hay, dict) or not all(entero(n) for n in hay.values()) or not isinstance(errores, list) \
             or not all(isinstance(e, dict) and isinstance(e.get("tool"), str) for e in errores) \
             or not isinstance(app, (dict, type(None))):
-        fin(2, f"No se pudo comprobar: {fichero} no es el informe de una extracción. Se hace con `devmcp_extract.py "
-               "extract --app <la aplicación del banco> --out <carpeta>` y aquí se da esa carpeta.")
+        return "no se pudo", [f"{fichero} no es el informe de una extracción. Se hace con `devmcp_extract.py extract "
+                              "--app <la aplicación del banco> --out <carpeta>` y aquí se da esa carpeta."]
     if informe.get("status") != "complete" or informe.get("objectListComplete") is not True:
-        fin(2, f"No se pudo comprobar: la extracción no terminó (estado «{informe.get('status')}»). Si fue por la sesión "
-               "del Dev MCP, entra de nuevo y repítela.")
+        return "no se pudo", [f"la extracción no terminó (estado «{informe.get('status')}»). Si fue por la sesión del Dev "
+                              "MCP, entra de nuevo y repítela."]
     faltan = [f"{tipo}: {hay.get(tipo, 0)} de {minimo}" for tipo, minimo in minimos.items() if hay.get(tipo, 0) < minimo]
     en_tipos = {}
     for e in errores:
         en_tipos.setdefault(e["tool"], set()).add(str(e.get("objectType") or "?"))
     en_varios = sorted(h for h, tipos in en_tipos.items() if len(tipos) >= TIPOS_DE_GENERICA)
-    # Qué extracción es: se comprueba la que se da, no se sabe si es la del banco ni de qué versión del Dev MCP
-    print(f"Extracción de «{(app or {}).get('name', '?')}», del {informe.get('startedAt', '?')}, en "
-          f"{(informe.get('server') or {}).get('url', '?') if isinstance(informe.get('server'), dict) else '?'}: "
-          f"{sum(hay.values())} objetos y {len(errores)} errores")
+    # Qué extracción es: se mira la que se da; no se sabe si es la del banco ni de qué versión del Dev MCP
+    servidor_de = informe.get("server") if isinstance(informe.get("server"), dict) else {}
+    dice = [f"de «{(app or {}).get('name', '?')}», del {informe.get('startedAt', '?')}, en {servidor_de.get('url', '?')}: "
+            f"{sum(hay.values())} objetos y {len(errores)} errores"]
     if faltan:
-        print("  NO PASA, faltan objetos de los que tiene la aplicación del banco: " + "; ".join(faltan))
+        dice.append("faltan objetos de los que tiene la aplicación del banco: " + "; ".join(faltan))
     if en_varios:
-        print(f"  NO PASA, herramientas con errores en {TIPOS_DE_GENERICA} tipos de objeto o más: {', '.join(en_varios)}.\n"
-              "  Mira sus errores en el informe. Si son de un tipo de objeto que la política del extractor "
-              "(devmcp_policy.json) no conoce, es que las prueba en todos; si no, puede ser la sesión o los permisos.")
-    print("  Sin comprobar: los recorridos con SAIL CLI. El banco aún no trae sus guiones.")
+        dice.append(f"herramientas con errores en {TIPOS_DE_GENERICA} tipos de objeto o más: {', '.join(en_varios)}. Mira sus "
+                    "errores en el informe: si son de un tipo de objeto que la política del extractor "
+                    "(devmcp_policy.json) no conoce, es que las prueba en todos; si no, puede ser la sesión o los permisos.")
     if faltan or en_varios:
-        fin(1, "La extracción del banco no pasa.")
+        return "no pasa", dice
     resto = ", ".join(f"{h} ({len(tipos)} tipos)" for h, tipos in sorted(en_tipos.items())) or "ninguno"
-    print(f"  Pasa: están los objetos de cada tipo y ninguna herramienta falla en {TIPOS_DE_GENERICA} tipos o más. "
-          f"Errores que quedan: {resto}.")
+    return "pasa", dice + [f"están los objetos de cada tipo y ninguna herramienta falla en {TIPOS_DE_GENERICA} tipos o más. "
+                           f"Errores que quedan: {resto}."]
+
+
+def comprueba_recorridos(host, site, cuentas):
+    """(resultado, lo que hay que decir) de repetir con `qa.py`, de appian-qa, los guiones del banco. Monta en una
+    carpeta temporal lo que `qa.py` necesita de un proyecto (el entorno, los escenarios y los guiones, con el host, el
+    site y la cuenta de cada rol de quien lo lanza) y la borra al terminar."""
+    qa = PLUGIN / "skills" / "appian-qa" / "scripts" / "qa.py"
+    guiones = [leer_json(f) or {} for f in sorted(GUIONES.glob("*.json"))]
+    if not qa.is_file() or not guiones or not all(
+            isinstance(g.get("escenario"), str) and isinstance(g.get("dice"), list) and isinstance(g.get("roles"), dict)
+            for g in guiones):
+        return "no se pudo", [f"no están `qa.py` de appian-qa o los guiones del banco ({GUIONES})"]
+    sin_cuenta = sorted({rol for g in guiones for rol in g["roles"] if not cuentas.get(rol)})
+    if sin_cuenta:
+        return "no se pudo", ["falta la cuenta de " + ", ".join(f"{r} (--{r})" for r in sin_cuenta)]
+    with tempfile.TemporaryDirectory(prefix="banco-") as tmp:
+        tmp = pathlib.Path(tmp)
+        for carpeta in ("analisis", f"construccion/{UNIDAD_BANCO}", f"qa/{UNIDAD_BANCO}"):
+            (tmp / carpeta).mkdir(parents=True)
+        escribe(tmp / "analisis" / "tecnico.md", "# Especificación técnica\n\n## 0. Entorno\n\n| Dato | Valor |\n|---|---|\n"
+                                                 f"| URL de desarrollo | https://{host}/suite |\n")
+        escribe(tmp / "construccion" / UNIDAD_BANCO / "ISS-01.feature",
+                "# language: es\nCaracterística: Banco de pruebas\n" + "".join(
+                    f"\n  Escenario: {g['escenario']}\n" + "".join(f"    {linea}\n" for linea in g["dice"]) for g in guiones))
+        for g in guiones:
+            suyo = {**g, "host": host, "site": site, "roles": {rol: cuentas[rol] for rol in g["roles"]}}
+            escribe(tmp / "qa" / UNIDAD_BANCO / f"{g['escenario']}.json", json.dumps(suyo, ensure_ascii=False, indent=1))
+        codigo, salida = lanza([sys.executable, qa, "repetir", tmp, UNIDAD_BANCO], cwd=tmp)
+    # De lo que dice qa.py, una línea por escenario: sin la ruta de la carpeta temporal, que ya no existe
+    dice = [l.strip() for l in salida.splitlines() if l.strip() and str(tmp) not in l and tmp.as_posix() not in l]
+    return {0: "pasa", 1: "no pasa"}.get(codigo, "no se pudo"), dice + [FALTAN_RECORRIDOS]
+
+
+def cmd_comprobar(args):
+    """El banco de pruebas: la extracción de su aplicación y sus recorridos con SAIL CLI. 0 si pasa lo que se pidió
+    comprobar, 1 si algo no pasa y 2 si algo no se pudo comprobar. Dice también lo que no se pidió."""
+    if not args.extraccion and not args.host:
+        fin(2, "error: di qué comprobar: --extraccion <carpeta> (la extracción de la aplicación del banco), "
+               "--host <entorno> --solicitante <usuario> (sus recorridos con SAIL CLI), o las dos cosas.")
+    partes = [("La extracción", comprueba_extraccion(args.extraccion) if args.extraccion else None,
+               "no se dio --extraccion"),
+              ("Los recorridos con SAIL CLI", comprueba_recorridos(args.host, args.site, {
+                  "solicitante": args.solicitante, "aprobador": args.aprobador}) if args.host else None,
+               "no se dio --host")]
+    resultados = set()
+    for nombre, hecho, por_que_no in partes:
+        if hecho is None:
+            print(f"{nombre}: sin comprobar ({por_que_no})")
+            continue
+        resultados.add(hecho[0])
+        print(f"{nombre}: {hecho[0].upper()}")
+        print("\n".join(f"  {linea}" for linea in hecho[1]))
+    if "no pasa" in resultados:
+        fin(1, "El banco no pasa.")
+    if "no se pudo" in resultados:
+        fin(2, "No se pudo comprobar todo lo pedido.")
 
 
 # ---- Las demás órdenes --------------------------------------------------------------------------------------------
@@ -825,9 +892,13 @@ def main():
     i.add_argument("--despues", help="carpeta de la foto de después (por defecto, la del build instalado)")
     i.add_argument("--json", action="store_true", help="el informe como datos")
     sub.add_parser("sail-anterior", parents=[comun], help="saca el SAIL CLI del bundle anterior guardado")
-    c = sub.add_parser("comprobar", help="mira la extracción de la aplicación del banco de pruebas")
-    c.add_argument("--extraccion", required=True, metavar="DIR",
+    c = sub.add_parser("comprobar", help="el banco de pruebas: su extracción y sus recorridos con SAIL CLI")
+    c.add_argument("--extraccion", metavar="DIR",
                    help="la carpeta de salida de `devmcp_extract.py extract` sobre la aplicación del banco")
+    c.add_argument("--host", help="el entorno donde está construido el banco, para repetir sus recorridos (sin https://)")
+    c.add_argument("--site", default="bps-banco-pruebas", help="el site del banco (por defecto, bps-banco-pruebas)")
+    c.add_argument("--solicitante", metavar="USUARIO", help="la cuenta de prueba que pide, con sesión de sail abierta")
+    c.add_argument("--aprobador", metavar="USUARIO", help="la cuenta de prueba que aprueba")
     args = p.parse_args()
     {"estado": cmd_estado, "foto": cmd_foto, "instalar": cmd_instalar, "informe": cmd_informe,
      "sail-anterior": cmd_sail_anterior, "comprobar": cmd_comprobar}[args.orden](args)

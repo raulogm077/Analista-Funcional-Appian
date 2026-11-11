@@ -1,0 +1,17 @@
+{
+ "escenario": "BPS-01.1",
+ "dice": ["Dado un solicitante",
+          "Cuando filtra las solicitudes por estado y busca un título que no existe",
+          "Entonces sigue viendo el filtro y ninguna solicitud con ese título"],
+ "host": "",
+ "site": "",
+ "roles": {"solicitante": ""},
+ "dado": [],
+ "cuando": [
+  {"sail": ["load"]},
+  {"sail": ["interact", "Estado", "2"]}
+ ],
+ "entonces": [
+  {"sail": ["interact", "🔍", "QA {pasada}"], "espera": {"hay": ["Estado"], "sin_fila": "QA {pasada}"}}
+ ]
+}

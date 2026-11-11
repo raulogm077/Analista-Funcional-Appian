@@ -26,6 +26,7 @@ import tempfile
 sys.dont_write_bytecode = True
 
 AQUI = pathlib.Path(__file__).resolve().parent
+HOST_BANCO = "dev.ejemplo.test"
 PLUGIN = pathlib.Path(os.environ.get("PLUGIN_A_PROBAR") or AQUI.parents[1]).resolve()
 SKILL = PLUGIN / "skills" / "appian-actualizacion"
 SCRIPT = SKILL / "scripts" / "actualizar.py"
@@ -120,6 +121,8 @@ BAT = '@echo off\r\n>> "%APPIAN_RE_HOME%\\pasos.txt" echo {que} %*\r\n{mas}'
 SH = '#!/bin/bash\necho "{que} $*" >> "$APPIAN_RE_HOME/pasos.txt"\n{mas}'
 EDITADA_BAT = "if defined SKILLS_EDITADA echo LOCAL EDITS DETECTED - not overwriting.\r\n"
 EDITADA_SH = 'if [ -n "${SKILLS_EDITADA:-}" ]; then echo "LOCAL EDITS DETECTED - not overwriting."; fi\n'
+AVISA_BAT = "if defined SETUP_AVISA echo [!] could not update your PATH. Add this directory manually:\r\n"
+AVISA_SH = 'if [ -n "${SETUP_AVISA:-}" ]; then echo "Linked, but /opt/x is not on your PATH. Either add it:"; fi\n'
 FALLA_BAT = 'if exist "%APPIAN_RE_HOME%\\uv-falla" exit /b 3\r\n'
 FALLA_SH = 'if [ -e "$APPIAN_RE_HOME/uv-falla" ]; then echo "no se puede"; exit 3; fi\n'
 
@@ -131,8 +134,9 @@ def bundle_entero(carpeta, n, malo="", mas=None, sin=(), su_info=None, enlace=Fa
         "BUILD-INFO.txt": su_info or info(n), "pyproject.toml": "[project]\nname = 'servidor'\n",
         "src/servidor.py": f"# build {n}\n", f"src/solo_del_{n}.py": "", f"raiz_del_{n}/modulo.py": "",
         "skills/appian/.bundle-manifest": MANIFIESTO.get(n, MANIFIESTO[2]),
-        "bin/setup-windows.bat": BAT.format(que=f"setup {n}", mas=""),
-        "bin/setup-mac.sh": SH.format(que=f"setup {n}", mas=""), "bin/setup-linux.sh": SH.format(que=f"setup {n}", mas=""),
+        "bin/setup-windows.bat": BAT.format(que=f"setup {n}", mas=AVISA_BAT),
+        "bin/setup-mac.sh": SH.format(que=f"setup {n}", mas=AVISA_SH),
+        "bin/setup-linux.sh": SH.format(que=f"setup {n}", mas=AVISA_SH),
         "bin/install-skills.bat": BAT.format(que=f"skills {n}", mas=EDITADA_BAT),
         "bin/install-skills.sh": SH.format(que=f"skills {n}", mas=EDITADA_SH),
         "bin/sail-windows-amd64.exe": f"sail falso {n}", "bin/sail-darwin-arm64": f"sail falso {n}",
@@ -487,7 +491,10 @@ def main():
                   str(sorted(fotos2.glob("*/bundle.tar.gz"))))
         c, out, err = instalar(3, SKILLS_EDITADA="1")
         comprueba("si la skill oficial instalada tiene cambios de la persona, lo dice y no falla",
-                  c == 0 and "skill appian: REVISAR" in out and "LOCAL EDITS" in out, out + err)
+                  c == 0 and "skill appian: REVISAR" in out and "LOCAL EDITS" in out and "SAIL CLI: bien" in out, out + err)
+        c, out, err = instalar(3, SETUP_AVISA="1")
+        comprueba("si el instalador de SAIL CLI termina bien pero avisa (sail fuera del PATH), no se da por bueno sin más",
+                  c == 0 and "SAIL CLI: REVISAR" in out and "PATH" in out and "skill appian: bien" in out, out + err)
 
         print("Después de instalar")
         sail(2)                                          # el SAIL CLI que dejó el bundle 3
@@ -577,26 +584,56 @@ def main():
             return tmp / nombre
 
         c, out, err = lanza("comprobar", "--extraccion", extraccion("extracción buena"), en=vacia)
-        comprueba("con los objetos esperados y errores sueltos, pasa; dice qué errores quedan y lo que aún no comprueba",
-                  c == 0 and "Pasa: están los objetos de cada tipo" in out and "listObjectVersions (2 tipos)" in out
-                  and "Sin comprobar: los recorridos con SAIL CLI" in out, out + err)
+        comprueba("con los objetos esperados y errores sueltos, pasa; dice qué errores quedan y lo que no se pidió comprobar",
+                  c == 0 and "La extracción: PASA" in out and "listObjectVersions (2 tipos)" in out
+                  and "Los recorridos con SAIL CLI: sin comprobar" in out, out + err)
         c, out, err = lanza("comprobar", "--extraccion", extraccion(
             "sin procesos", objectsByType={**minimos, "processModel": 0}), en=vacia)
-        comprueba("si el extractor deja de ver un tipo de objeto, falla y dice cuál",
-                  c == 1 and f"processModel: 0 de {minimos['processModel']}" in out, out + err)
+        comprueba("si el extractor deja de ver un tipo de objeto, no pasa y dice cuál",
+                  c == 1 and "La extracción: NO PASA" in out and f"processModel: 0 de {minimos['processModel']}" in out,
+                  out + err)
         c, out, err = lanza("comprobar", "--extraccion", extraccion("genérica", errors=[
             error("getTaskReport", t) for t in ("constant", "folder", "interface")]), en=vacia)
         comprueba("una herramienta con errores en tres tipos de objeto falla: se está probando en todos",
                   c == 1 and "getTaskReport" in out and "devmcp_policy.json" in out, out + err)
         c, out, err = lanza("comprobar", "--extraccion", extraccion("cortada", status="partial"), en=vacia)
         comprueba("una extracción que no terminó no es un fallo: no se pudo comprobar",
-                  c == 2 and "No se pudo comprobar" in err and "partial" in err, out + err)
+                  c == 2 and "La extracción: NO SE PUDO" in out and "partial" in out, out + err)
         c, out, err = lanza("comprobar", "--extraccion", tmp / "no hay extracción", en=vacia)
-        comprueba("sin informe de extracción, tampoco, y dice cómo se hace", c == 2 and "devmcp_extract.py" in err, err)
+        comprueba("sin informe de extracción, tampoco, y dice cómo se hace",
+                  c == 2 and "NO SE PUDO" in out and "devmcp_extract.py" in out, out + err)
         c, out, err = lanza("comprobar", "--extraccion", extraccion(
             "mal formado", objectsByType={**minimos, "site": "uno"}), en=vacia)
         comprueba("un informe mal formado no cuenta como fallo del extractor: no se pudo comprobar",
-                  c == 2 and "no es el informe de una extracción" in err and "Traceback" not in err, out + err)
+                  c == 2 and "no es el informe de una extracción" in out and "Traceback" not in err, out + err)
+        c, out, err = lanza("comprobar", en=vacia)
+        comprueba("sin decir qué comprobar para con 2 y dice las dos cosas que se pueden pedir",
+                  c == 2 and "--extraccion" in err and "--host" in err, err)
+
+        print("Comprobar los recorridos del banco, con qa.py y el SAIL CLI simulado de appian-qa")
+        simulado = AQUI.parent / "appian-qa" / "sail_simulado.py"
+        sesiones = tmp / "sesiones de sail"
+        (sesiones / "solicitante").mkdir(parents=True)
+        (sesiones / "solicitante" / "session.json").write_text(json.dumps(
+            {"hostname": HOST_BANCO, "username": "qa.solicitante", "cookies": []}), encoding="utf-8")
+        de_qa = {"SAIL_CLI": str(simulado), "SAIL_HOME": str(sesiones), "SAIL_SIMULADO_APP": str(tmp / "app simulada.json")}
+        recorre = lambda *mas: lanza("comprobar", "--host", HOST_BANCO, *mas, en=vacia, **de_qa)
+        c, out, err = recorre("--solicitante", "qa.solicitante")
+        comprueba("repite los guiones del banco con la cuenta que se le da y dice lo que aún no recorre",
+                  c == 0 and "Los recorridos con SAIL CLI: PASA" in out and "BPS-01.1" in out and "pasa" in out
+                  and "aún no trae los recorridos" in out and "La extracción: sin comprobar" in out, out + err)
+        c, out, err = recorre()
+        comprueba("sin la cuenta de un rol no se puede comprobar, y dice cuál falta",
+                  c == 2 and "NO SE PUDO" in out and "--solicitante" in out, out + err)
+        (sesiones / "solicitante" / "session.json").write_text(json.dumps(
+            {"hostname": HOST_BANCO, "username": "qa.solicitante", "cookies": [], "caducada": True}), encoding="utf-8")
+        c, out, err = recorre("--solicitante", "qa.solicitante")
+        comprueba("con la sesión de sail caducada no es un fallo: no se pudo comprobar",
+                  c == 2 and "Los recorridos con SAIL CLI: NO SE PUDO" in out and "Traceback" not in out + err, out + err)
+        c, out, err = lanza("comprobar", "--extraccion", tmp / "sin procesos", "--host", HOST_BANCO,
+                            "--solicitante", "qa.solicitante", en=vacia, **de_qa)
+        comprueba("si una parte no pasa y otra no se pudo comprobar, sale con 1 y dice las dos",
+                  c == 1 and "La extracción: NO PASA" in out and "Los recorridos con SAIL CLI: NO SE PUDO" in out, out + err)
 
     comprueba("no queda __pycache__ en la skill", not list(SKILL.rglob("__pycache__")))
     print(f"\n{'TODO BIEN' if not fallos else f'{len(fallos)} FALLOS'}")
