@@ -241,6 +241,12 @@ Coste: dos invocaciones locales de LibreOffice por DOCX, frente a una; ningún p
 opción ni dependencia de ejecución nueva. Los demás formatos conservan la conversión directa existente.
 El DOCX sigue siendo editable y el proceso completo sigue en una figura: no se añade paginación del diagrama.
 
+## Entrega 0.8.0-beta.3
+
+| Entrega / medida | Resultado útil y límite |
+|---|---|
+| 0.8.0-beta.3, rama `claude/publicar-0.8.0-beta.3` sobre `main` en `2679ca5` | Siete combinaciones PASS sobre `5765b7c` ([matriz](https://github.com/raulogm077/Analista-Funcional-Appian/actions/runs/42055598822)). La matriz sobre `main` falló antes en las tres de Python 3.9, por dos causas que la batería de una máquina (3.12) no podía ver: `ubuntu-latest` es ya Ubuntu 26.04 y no trae 3.9 (se fija `ubuntu-24.04` para esa combinación), y doce escrituras de cuatro ficheros de prueba del analista usaban `write_text(newline=)`, que llega en Python 3.10 (pasan a `write_bytes`). Solo las pruebas: el código del plugin no lo usa. `comprobar_anclas.py`: 1.285 citas a 322 páginas, 13 anclas rotas por la reorganización de la 26.10 y corregidas, 0 tras corregir. Sin prueba de conducta con el plugin cargado en esta entrega: la versión empaqueta lo que ya se probó en el PR #21. |
+
 ## Entrega 0.8.0-beta.2 y trabajo anterior
 
 Este apartado resume resultados históricos; no se han repetido al redactar este corte.

@@ -7,7 +7,7 @@ lista no autoriza publicar, desplegar, enviar ni borrar.
 Cada pendiente explica el problema, qué hay que hacer y el resultado esperado, conservando los acuerdos de la
 conversación. Si el detalle ya está bien explicado en otro documento, se enlaza desde el punto en lugar de repetirlo.
 
-**Ahora:** rama `claude/pruebas-metodo-20261104`, subida sin PR. La campaña «el método de punta a punta» (4 y 5 de nov., por decisión de Raúl) recorrió con un proyecto ficticio F1, F2, F4, F8 y F9 en una aplicación de prueba de Indra-spain, más E9 (entradas) y E10 (¿sirve sin IA?): EV-01 y EV-02 construidas, su QA en verde (23 de 23 y 1 de 1) y el borrador del paquete, sin exportar ni desplegar (`evaluaciones.md`, «El método de punta a punta»). Hechas el 6-nov, por decisión de Raúl, la nota del DF, la reaprobación «sin efecto» y el registro de QA a mano, y, sin decisiones suyas, lo nuevo de Appian 26.10 en los prototipos, P26 (el agente elige bien los componentes, 14 de 14 en las dos versiones) el QA a mano leyendo la rama y con el plugin cargado, y F6 en solo lectura sobre la aplicación FOR, que destapó dos fallos del extractor ya corregidos (`evaluaciones.md`). Queda de Raúl ver lo creado en Indra-spain antes de borrarlo (§1); en §2, si los topes de «sin efecto» son demasiado gruesos, la regresión en un evolutivo y la rúbrica UX de los prototipos. F5 a F7 siguen en §3.
+**Ahora:** rama `claude/pruebas-metodo-20261104`, subida sin PR, con `main` unido (la 0.8.0-beta.3 se publicó el 5-nov sin esta rama). La campaña «el método de punta a punta» (4-7 nov.) recorrió F1-F9 con un proyecto ficticio en la aplicación de prueba FOR de Indra-spain y aplicó las decisiones de Raúl del 7-nov (aprobación por impacto real, rúbrica UX y regresión por impacto, que se mide antes de escribirla); la campaña «entender y evolucionar» llegó a construir EV-01 (C1-C3). Todo en `evaluaciones.md`. Falta C4, el QA de EV-01 y la medición de la regresión (§2), parado por las sesiones de SAIL de las cuentas de prueba. El trabajo «adaptarse a las actualizaciones de Appian» (rama `raul/estrategia-actualizaciones-appian`) espera a que esta rama entre en `main`, porque toca los mismos ficheros.
 
 ## 1. Del trabajo anterior
 
@@ -49,10 +49,26 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   regresión seleccionada en el QA del evolutivo; F9, completa. Antes de escribirlo en F8 y en la skill de QA, comparar
   un cambio aislado y otro compartido, midiendo qué detecta y cuánto tarda (`diseno/regresion-evolutivo.md`, «Lo que
   decidió Raúl»). Se hace dentro de la campaña «entender y evolucionar» de §3, que ya llegó a construir EV-01 en
-  FOR (`evaluaciones.md`): falta su QA y la medición, que necesitan a Raúl. Las sesiones de SAIL CLI de `dem.gestor`,
-  `dem.gestor2` y `dem.revisor` han caducado (401) y renovarlas pide sus contraseñas:
-  `! SAIL_HOME=~/.sail/indra/<cuenta> sail login indra-spain.appiancloud.com` por cada una; y una segunda cuenta en
-  `FOR Formación` para probar que quien pide no decide (PT-12 de `evolucion-for`). [flujo · QA · persona]
+  FOR (`evaluaciones.md`): falta su QA y la medición (`Pruebas-plugin/metodo-20261104/regresion-C4-seleccion.md`).
+  Necesita sesión de SAIL CLI de `dem.gestor` y `dem.revisor`, que dan 401 desde el 7-nov (`dem.gestor2` sigue viva),
+  y de `dem.revisor2`, la segunda cuenta de `FOR Formación` para probar que quien pide no decide (PT-12 de
+  `evolucion-for`): se creó con contraseña temporal y no entra con `sail login` hasta que una persona la cambia en el
+  navegador. Cada cuenta la renueva la persona en su terminal con `login-sail.ps1 <cuenta>` de esa carpeta, que pide la
+  contraseña sin mostrarla. [flujo · QA · persona]
+- **Renovar las sesiones de SAIL de las cuentas de prueba sin improvisar.** En la campaña tres sesiones dejaron de
+  valer y el QA se paró a la espera de la persona. `qa.py sesiones` da por buena una sesión caducada (solo mira que
+  exista su fichero) y el fallo se ve a mitad de `repetir`; la orden que da `como_entrar` no se teclea tal cual en
+  PowerShell, y en bash deja la contraseña en el historial; nada dice que la IA no puede entrar con las cuentas de rol,
+  porque no tiene sus contraseñas (la cuenta propia sí, con `--from-devmcp`). Propuesta, sin aprobar: `qa.py entrar
+  <host> <cuentas>`, que ejecuta la persona en su terminal (pide cada contraseña oculta, la pasa solo al entorno de
+  `sail login` y se niega si no hay terminal), y que `qa.py repetir` compruebe antes de empezar con `sail pages <site>`,
+  que no cambia nada (medido el 7 y el 10-nov: viva, 0; caducada, 1 con 401; sin acceso al site, sin medir).
+  Resultado esperado: una sesión que no vale se ve antes de empezar y se renueva con una orden, sin que la contraseña
+  pase por la IA ni por el historial. Hechos de la prueba: por qué caducaron no se sabe (`dem.gestor2` aguantó tres
+  días sin uso); `createUser` con `temporaryPassword: true` deja la cuenta sin poder entrar por `sail` hasta que se
+  cambia en el navegador (`setpassword`); el bundle 26.9.15 sigue sin `lcp-login`, así que el login de `sail` por
+  navegador no funciona. Toca la misma skill que T3 del diseño de actualizaciones: se hace con él o antes, no dos veces.
+  [QA · Raúl decide]
 - **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
   `pruebas/comprobar_anclas.py`, con red (pasado el 6-nov con la documentación ya en 26.10: 0 rotas); la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]

@@ -42,7 +42,7 @@ class RepartoTecnico(unittest.TestCase):
         for antes, despues in cambios:
             self.assertIn(antes, t)
             t = t.replace(antes, despues, 1)
-        f.write_text(t, encoding="utf-8", newline="")
+        f.write_bytes((t).encode("utf-8"))
         m = mo.Proyecto(self.p)
         return iss.calcula(m, un.Contexto(m), "EV-01")
 
@@ -87,7 +87,7 @@ class RepartoTecnico(unittest.TestCase):
         self.p_ = None
         f = self.p / "analisis/tecnico.md"
         t = f.read_text(encoding="utf-8")
-        f.write_text(t.replace("## 3. Modelo de datos", DT_BASE + "## 3. Modelo de datos", 1), encoding="utf-8", newline="")
+        f.write_bytes((t.replace("## 3. Modelo de datos", DT_BASE + "## 3. Modelo de datos", 1)).encode("utf-8"))
         m = mo.Proyecto(self.p)
         plan = iss.calcula(m, un.Contexto(m), "EV-01")
         self.assertIn("DT-90", self.la_base(plan).texto)
@@ -101,7 +101,7 @@ class RepartoTecnico(unittest.TestCase):
         version_antes = {i.id: i.version for i in antes.issues}
         f = self.p / "analisis/tecnico.md"
         t = f.read_text(encoding="utf-8")
-        f.write_text(t.replace("## 3. Modelo de datos", DT_INTERFAZ + "## 3. Modelo de datos", 1), encoding="utf-8", newline="")
+        f.write_bytes((t.replace("## 3. Modelo de datos", DT_INTERFAZ + "## 3. Modelo de datos", 1)).encode("utf-8"))
         m = mo.Proyecto(self.p)
         plan = iss.calcula(m, un.Contexto(m), "EV-01")
         self.assertNotIn("DT-91", self.la_base(plan).texto)
@@ -115,7 +115,7 @@ class RepartoTecnico(unittest.TestCase):
         t = f.read_text(encoding="utf-8")
         for necesidad in ("HU-01 (la base de datos de solicitudes)", "Base de datos compartida y HU-01"):
             dt = DT_INTERFAZ.replace("| **Necesidad** | HU-01 |", f"| **Necesidad** | {necesidad} |")
-            f.write_text(t.replace("## 3. Modelo de datos", dt + "## 3. Modelo de datos", 1), encoding="utf-8", newline="")
+            f.write_bytes((t.replace("## 3. Modelo de datos", dt + "## 3. Modelo de datos", 1)).encode("utf-8"))
             m = mo.Proyecto(self.p)
             plan = iss.calcula(m, un.Contexto(m), "EV-01")
             self.assertNotIn("DT-91", self.la_base(plan).texto, necesidad)
