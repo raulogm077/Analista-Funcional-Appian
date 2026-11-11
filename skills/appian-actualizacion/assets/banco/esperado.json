@@ -1,0 +1,17 @@
+{
+  "_doc": [
+    "Lo que el extractor de ingeniería inversa tiene que encontrar en la aplicación del banco: cuántos objetos de cada tipo, como mínimo.",
+    "Está escrito a mano a partir de especificacion.md, no sacado de una extracción: si el extractor deja de ver un tipo, aquí se nota.",
+    "Son mínimos porque Appian crea además, por su cuenta, carpetas, un grupo de administradores y una constante.",
+    "Si la especificación gana o pierde un objeto, se cambia aquí a la vez."
+  ],
+  "objetos": {
+    "recordType": 3,
+    "interface": 5,
+    "processModel": 2,
+    "site": 1,
+    "group": 3,
+    "constant": 7,
+    "folder": 1
+  }
+}

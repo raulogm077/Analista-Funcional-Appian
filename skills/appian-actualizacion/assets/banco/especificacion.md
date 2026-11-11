@@ -1,8 +1,10 @@
 # Banco de pruebas de SAIL CLI: la aplicación ficticia
 
 Una aplicación pequeña y ficticia para comprobar, en el entorno de desarrollo de quien use el plugin, que cada versión
-de `sail` sigue funcionando con `qa.py`. No es un proyecto ni un ejemplo de cómo hacer una aplicación: es el banco de
-pruebas de la herramienta. Nombres y datos inventados; nada de un cliente.
+de `sail` sigue funcionando con `qa.py` y que el extractor de ingeniería inversa sigue viendo todos sus objetos con cada
+versión del Dev MCP (`esperado.json` dice cuántos de cada tipo, como mínimo; si esta especificación gana o pierde un
+objeto, se cambia a la vez). No es un proyecto ni un ejemplo de cómo hacer una aplicación: es el banco de pruebas de la
+herramienta. Nombres y datos inventados; nada de un cliente.
 
 Se construye una vez por entorno, con el Dev MCP y siguiendo `appian-best-practices`, en este orden (el de la skill
 oficial). Si el prefijo `BPS` ya está usado en el entorno, se elige otro y se cambia en todos los nombres.

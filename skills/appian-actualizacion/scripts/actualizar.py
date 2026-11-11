@@ -7,6 +7,7 @@
                                  [--catalogo FICHERO]
   python3 actualizar.py informe  [--servidor DIR] [--catalogo FICHERO] [--antes DIR] [--despues DIR] [--json]
   python3 actualizar.py sail-anterior [--servidor DIR]
+  python3 actualizar.py comprobar --extraccion DIR
 
 Una foto es una copia, sin transformar, de lo que un bundle de Appian publica y el plugin usa:
   BUILD-INFO.txt          el build del servidor del Dev MCP
@@ -47,12 +48,17 @@ un solo bundle anterior. `sail-anterior` saca de él el SAIL CLI de este sistema
 descarga del propio entorno: --plugin-sha comprueba que es el que ese entorno espera, no quién lo hizo. No hay
 bloqueo entre dos instalaciones: no lances dos a la vez sobre la misma carpeta.
 
+`comprobar` mira el informe de extraer la aplicación del banco de pruebas (assets/banco/) con el extractor de
+ingeniería inversa: que encuentre al menos los objetos de cada tipo de assets/banco/esperado.json y que ninguna
+herramienta dé error en tres tipos de objeto o más, que es lo que pasa cuando el Dev MCP trae herramientas de un tipo
+que la política del extractor no conoce. Los recorridos con SAIL CLI aún no los comprueba.
+
 --servidor es la carpeta donde está extraído el bundle; sin él, la de la guía de Appian (~/appian-dev-mcp-server).
 SAIL CLI es `sail` del PATH o el de $SAIL_CLI, como en appian-qa.
 
-Códigos de salida: 0 bien | 1 instalar: falló después de empezar a sustituir (se puede repetir) | 2 falta algo o uso
-incorrecto, sin haber tocado la instalación (no la hay, no hay foto anterior, un fichero ilegible, un bundle que no
-vale).
+Códigos de salida: 0 bien | 1 instalar: falló después de empezar a sustituir (se puede repetir); comprobar: el
+extractor falla con esta versión | 2 falta algo o uso incorrecto, sin haber tocado la instalación (no la hay, no hay
+foto anterior, un fichero ilegible, un bundle que no vale), o comprobar: no se pudo comprobar.
 """
 import argparse
 import difflib
@@ -87,6 +93,8 @@ RESERVADAS = {".venv", A_MEDIAS, APARTE}
 # Nombres que Windows no admite como fichero: un bundle que los trajera no se podría extraer igual en todos los sistemas
 DISPOSITIVOS = {"CON", "PRN", "AUX", "NUL", *(f"{d}{i}" for d in ("COM", "LPT") for i in "123456789¹²³")}
 SIN_SU_AYUDA = "(sail {orden} --help falló al hacer la foto)"   # la orden está, pero no se pudo leer su ayuda
+ESPERADO = pathlib.Path(__file__).resolve().parents[1] / "assets" / "banco" / "esperado.json"
+TIPOS_DE_GENERICA = 3   # una herramienta con errores en tantos tipos de objeto no es de ninguno: se probó en todos
 # Lo que `instalar` lanza de un bundle, además de `uv sync` sobre su pyproject.toml. Por sistema: cómo llama Appian a su
 # SAIL CLI en bin/, el script que lo instala y el que instala la skill oficial.
 SISTEMAS = {"Windows": ("windows", "setup-windows.bat", "install-skills.bat"),
@@ -682,6 +690,43 @@ def cmd_sail_anterior(args):
           f"SAIL_CLI con esa ruta; quítala cuando el plugin se haya adaptado al nuevo.")
 
 
+# ---- El banco de pruebas -------------------------------------------------------------------------------------------
+
+def cmd_comprobar(args):
+    """Mira el informe que deja `devmcp_extract.py extract` sobre la aplicación del banco. 0 en verde, 1 si falla y 2 si
+    no se pudo comprobar: sin informe, o con una extracción que no terminó (una sesión caducada no es un fallo)."""
+    fichero = pathlib.Path(args.extraccion).expanduser() / "extraccion" / "extraction_report.json"
+    informe, esperado = leer_json(fichero), leer_json(ESPERADO)
+    if not informe or not isinstance(informe.get("objectsByType"), dict) or not isinstance(informe.get("errors"), list):
+        fin(2, f"No se pudo comprobar: {fichero} no es el informe de una extracción. Se hace con `devmcp_extract.py "
+               "extract --app <la aplicación del banco> --out <carpeta>` y aquí se da esa carpeta.")
+    if not esperado or not isinstance(esperado.get("objetos"), dict):
+        fin(2, f"No se pudo comprobar: no se puede leer {ESPERADO}")
+    if informe.get("status") != "complete" or informe.get("objectListComplete") is not True:
+        fin(2, f"No se pudo comprobar: la extracción no terminó (estado «{informe.get('status')}»). Si fue por la sesión "
+               "del Dev MCP, entra de nuevo y repítela.")
+    hay = informe["objectsByType"]
+    faltan = [f"{tipo}: {hay.get(tipo, 0)} de {minimo}" for tipo, minimo in esperado["objetos"].items()
+              if not isinstance(hay.get(tipo, 0), int) or hay.get(tipo, 0) < minimo]
+    en_tipos = {}
+    for e in informe["errors"]:
+        if isinstance(e, dict) and e.get("tool"):
+            en_tipos.setdefault(str(e["tool"]), set()).add(str(e.get("objectType")))
+    genericas = sorted(h for h, tipos in en_tipos.items() if len(tipos) >= TIPOS_DE_GENERICA)
+    app = (informe.get("app") or {}).get("name", "?")
+    print(f"Extracción de «{app}»: {informe.get('objectCount')} objetos, {informe.get('errorCount')} errores")
+    if faltan:
+        print("  FALLA, el extractor no ve todo lo que tiene la aplicación del banco: " + "; ".join(faltan))
+    if genericas:
+        print(f"  FALLA, herramientas que dan error en {TIPOS_DE_GENERICA} tipos de objeto o más: {', '.join(genericas)}.\n"
+              "  Lo normal es que sean de un tipo que la política del extractor (devmcp_policy.json) no conoce, y las "
+              "prueba en todos.")
+    print("  Sin comprobar: los recorridos con SAIL CLI. El banco aún no trae sus guiones.")
+    if faltan or genericas:
+        fin(1, "El extractor falla con esta versión del Dev MCP.")
+    print("  La extracción, en verde.")
+
+
 # ---- Las demás órdenes --------------------------------------------------------------------------------------------
 
 def cmd_estado(args):
@@ -757,9 +802,12 @@ def main():
     i.add_argument("--despues", help="carpeta de la foto de después (por defecto, la del build instalado)")
     i.add_argument("--json", action="store_true", help="el informe como datos")
     sub.add_parser("sail-anterior", parents=[comun], help="saca el SAIL CLI del bundle anterior guardado")
+    c = sub.add_parser("comprobar", help="mira la extracción de la aplicación del banco de pruebas")
+    c.add_argument("--extraccion", required=True, metavar="DIR",
+                   help="la carpeta de salida de `devmcp_extract.py extract` sobre la aplicación del banco")
     args = p.parse_args()
     {"estado": cmd_estado, "foto": cmd_foto, "instalar": cmd_instalar, "informe": cmd_informe,
-     "sail-anterior": cmd_sail_anterior}[args.orden](args)
+     "sail-anterior": cmd_sail_anterior, "comprobar": cmd_comprobar}[args.orden](args)
 
 
 if __name__ == "__main__":

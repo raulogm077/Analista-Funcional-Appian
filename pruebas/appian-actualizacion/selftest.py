@@ -553,6 +553,37 @@ def main():
         c, out, err = lanza("foto", "--catalogo", del_extractor, en=casa3)
         comprueba("uno al que le falta el esquema de una herramienta para con 2", c == 2 and "no es un catálogo" in err, err)
 
+        print("Comprobar la extracción de la aplicación del banco")
+        minimos = json.loads((SKILL / "assets" / "banco" / "esperado.json").read_text(encoding="utf-8"))["objetos"]
+        error = lambda herramienta, tipo: {"tool": herramienta, "objectType": tipo, "error": "API error (HTTP 404)"}
+
+        def extraccion(nombre, **cambios):
+            informe = {"status": "complete", "objectListComplete": True, "app": {"name": "BPS Banco de pruebas SAIL"},
+                       "objectsByType": dict(minimos), "objectCount": sum(minimos.values()),
+                       "errors": [error("listObjectVersions", "folder"), error("listObjectVersions", "group")]}
+            informe.update(cambios)
+            informe["errorCount"] = len(informe["errors"])
+            (tmp / nombre / "extraccion").mkdir(parents=True)
+            (tmp / nombre / "extraccion" / "extraction_report.json").write_text(json.dumps(informe), encoding="utf-8")
+            return tmp / nombre
+
+        c, out, err = lanza("comprobar", "--extraccion", extraccion("extracción buena"), en=vacia)
+        comprueba("con los objetos esperados y errores sueltos, en verde; y dice lo que aún no comprueba",
+                  c == 0 and "La extracción, en verde" in out and "Sin comprobar: los recorridos con SAIL CLI" in out, out + err)
+        c, out, err = lanza("comprobar", "--extraccion", extraccion(
+            "sin procesos", objectsByType={**minimos, "processModel": 0}), en=vacia)
+        comprueba("si el extractor deja de ver un tipo de objeto, falla y dice cuál",
+                  c == 1 and f"processModel: 0 de {minimos['processModel']}" in out, out + err)
+        c, out, err = lanza("comprobar", "--extraccion", extraccion("genérica", errors=[
+            error("getTaskReport", t) for t in ("constant", "folder", "interface")]), en=vacia)
+        comprueba("una herramienta con errores en tres tipos de objeto falla: se está probando en todos",
+                  c == 1 and "getTaskReport" in out and "devmcp_policy.json" in out, out + err)
+        c, out, err = lanza("comprobar", "--extraccion", extraccion("cortada", status="partial"), en=vacia)
+        comprueba("una extracción que no terminó no es un fallo: no se pudo comprobar",
+                  c == 2 and "No se pudo comprobar" in err and "partial" in err, out + err)
+        c, out, err = lanza("comprobar", "--extraccion", tmp / "no hay extracción", en=vacia)
+        comprueba("sin informe de extracción, tampoco, y dice cómo se hace", c == 2 and "devmcp_extract.py" in err, err)
+
     comprueba("no queda __pycache__ en la skill", not list(SKILL.rglob("__pycache__")))
     print(f"\n{'TODO BIEN' if not fallos else f'{len(fallos)} FALLOS'}")
     sys.exit(1 if fallos else 0)
