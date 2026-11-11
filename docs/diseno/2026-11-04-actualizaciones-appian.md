@@ -235,7 +235,7 @@ no se hacen; la aplicación de pruebas propia de cada persona se aplaza hasta qu
 | T3 | `comprobar` con el banco. **Hecho (11-nov):** la mitad del extractor, que mira el informe de extraer la aplicación del banco contra `esperado.json` y no toca el extractor. **Falta:** los recorridos con SAIL CLI; en `qa.py`, `tasks`, `open` y `reload`; `appian-qa` lee la ayuda de `sail` | T1, y que la rama `claude/pruebas-metodo-20261104` entre en `main`: cambia los mismos ficheros |
 | T4 | Simuladores al día con lo que enseñe el banco, con su versión | T3 |
 | T5 | **Hecho (11-nov):** `CLAUDE.md` con las reglas de redacción, el banco y la rutina de cada bundle. **Falta:** que la skill personal de Raúl se quede en lo suyo (su parche y sus otros clientes, con `--skills-dir`), que es suya y está fuera del repositorio | Raúl |
-| T6 | Lo que deja la 26.9.15 en el plugin. **Hecho (11-nov):** los tipos de informes de tareas, de Tempo y de traducciones en la política del extractor. **Falta:** `objectUuids` en el doc 08, `testCases` y las nueve observaciones de conducta del doc 14, que hay que probar en Appian | Reiniciar; la rama del método, que toca esos documentos |
+| T6 | Lo que deja la 26.9.15 en el plugin. **Hecho (11-nov):** los tipos de informes de tareas, de Tempo y de traducciones en la política del extractor. `addPackageObjects` en el doc 08, con el esquema nuevo leído y sin ejercitar. **Falta:** `testCases` y las nueve observaciones de conducta del doc 14, que hay que probar en Appian | Reiniciar; la rama del método, que toca esos documentos |
 
 ## Lo que no se hace
 

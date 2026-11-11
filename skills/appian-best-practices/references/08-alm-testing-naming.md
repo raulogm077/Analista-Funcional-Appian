@@ -156,14 +156,18 @@ surfaces missing precedents.
 - Source: <https://docs.appian.com/suite/help/latest/prepare-deployment.html#comparing-across-environments> · <https://docs.appian.com/suite/help/latest/continuous-improvements-to-your-application.html>
 
 ✅ **When an AI prepares the package draft through the Dev MCP** (a person still reviews, exports and deploys it):
-take every UUID and type from a list or get response, and judge each `addPackageObjects` call by its body, not its
-status. In one test, a call with one entry of the wrong type also failed every valid rule, constant and interface in
-it with «Could not resolve the object's type… may not exist», while its record types and process models went in;
-resent without that entry, they all went in. Close by checking `getPackage` against what the unit needs (exactly its
+take every UUID from a list or get response, and judge each `addPackageObjects` call by its body, not its status.
+Since Dev MCP 26.9.15 the call takes only UUIDs and infers each object's type (a custom data type goes by its
+qualified name); follow the installed schema. In one test with 26.9.5, which still took a type per entry, a call with
+one entry of the wrong type also failed every valid rule, constant and interface in it with «Could not resolve the
+object's type… may not exist», while its record types and process models went in; resent without that entry, they all
+went in. Whether one bad entry still fails the valid ones is untested with 26.9.15. Close by checking `getPackage`
+against what the unit needs (exactly its
 objects, and its DB scripts and ICF if it has them; it doesn't name process models: match them by UUID), say what is
 still missing, and give the reviewer `validateDesignObjects` run with the `packageUuid`. `icfContent` without
 `key=value` lines is refused: a unit with no per-environment values gets no ICF.
-- Source: Dev MCP 26.9.5 tool schemas and a test package in development (3-Nov-2026).
+- Source: Dev MCP 26.9.5 tool schemas and a test package in development (3-Nov-2026); the `addPackageObjects` schema
+  of Dev MCP 26.9.15 (11-Nov-2026), read but not exercised.
 
 ✅ **Package hygiene that prevents failed imports:** only the **published** process model version is exported (Save & Publish first); every child model must be published; include the record type behind any record action component; add the plug-ins the application references; deploy shared precedent apps first, and allow no circular dependencies between apps. Toward pre-production and Production, deploy the whole application with the same package, DDL, plug-ins and ICF.
 - Source: [KB-1254](https://community.appian.com/application-design-33/kb-1254-latest-changes-in-a-process-model-are-not-included-in-an-export-540) · [KB-1237](https://community.appian.com/application-design-33/kb-1237-generic-error-thrown-when-attempting-to-start-a-process-with-sub-processes-525) · [KB-2104](https://community.appian.com/application-design-33/kb-2104-record-action-component-fails-to-import-properly-due-to-a-missing-precedent-1100) · [KB-2260](https://community.appian.com/how-to-36/kb-2260-how-to-export-application-packages-without-missing-precedents-1244) · [Appian Max — Application Deployment Guide](https://community.appian.com/platform-30/application-deployment-guide-1222)
