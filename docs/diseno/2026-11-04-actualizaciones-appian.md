@@ -55,7 +55,7 @@ porque tras instalar hay que reiniciar el cliente de IA: hasta entonces la sesi�
 | 3 | Script | Comprueba lo que hace falta (Python, `uv`, dónde está instalado el servidor) y que el bundle es el del plugin (`mcp_src_sha`) y no es más antiguo que lo instalado. Si algo falta, para sin tocar nada |
 | 4 | Script | **Foto de antes**: catálogo de herramientas, manifiesto de la skill oficial y ayuda de cada orden de `sail` |
 | 5 | Script | **Guarda el bundle anterior** (lo instalado, sin el entorno virtual). Appian no deja volver atrás y el navegador pisa la descarga vieja |
-| 6 | Script | Solo entonces instala, como dice la guía oficial: extraer, `uv sync`, el `setup` de `sail` de su sistema, `install-skills` y comprobar el Chromium de Playwright |
+| 6 | Script | Solo entonces instala, como dice la guía oficial: extraer, `uv sync`, el `setup` de `sail` de su sistema e `install-skills`. Si falta el Chromium de Playwright lo dice el propio Dev MCP, con la orden que lo instala |
 | 7 | Persona | Reinicia sus clientes de IA |
 
 **Fase 2, comprobar** (tras reiniciar, `actualizar.py comprobar`):
@@ -223,7 +223,7 @@ no se hacen; la aplicación de pruebas propia de cada persona se aplaza hasta qu
 | | Qué | Depende de |
 |---|---|---|
 | T1 | Banco `BPS` en Indra-spain: las dos cuentas, las reglas con casos de prueba, los guiones y el esperado del extractor. Lo primero, el envío con validación en la 26.9.15 | Reiniciar el cliente tras la 26.9.15 |
-| T2 | La skill, primero lo que no toca ficheros de otra rama. **Hecho (11-nov):** `actualizar.py` con `estado`, `foto` e `informe` y su prueba sin Appian; reproduce el informe de la 26.9.15 con las dos fotos reales. **Falta:** `instalar` (con guardar el bundle anterior) y el catálogo, que es el subcomando nuevo del extractor | El catálogo, que la rama del método entre en `main` |
+| T2 | La skill, primero lo que no toca ficheros de otra rama. **Hecho (11-nov):** `actualizar.py` con `estado`, `foto`, `instalar`, `informe` y `sail-anterior`, y su prueba sin Appian; reproduce el informe de la 26.9.15 con las dos fotos reales e instala el bundle real en una carpeta de ensayo, en Windows. **Falta:** el catálogo, que es el subcomando nuevo del extractor | El catálogo, que la rama del método entre en `main` |
 | T3 | `comprobar` con el banco; en `qa.py`, `tasks`, `open` y `reload`; `appian-qa` lee la ayuda de `sail` | T1, y que la rama `claude/pruebas-metodo-20261104` entre en `main`: cambia los mismos ficheros |
 | T4 | Simuladores al día con lo que enseñe el banco, con su versión | T3 |
 | T5 | `CLAUDE.md`: reglas de redacción, el banco y la rutina del mantenedor; README y requisitos; la skill personal de Raúl se queda en lo suyo (su parche y sus otros clientes) | T2 |

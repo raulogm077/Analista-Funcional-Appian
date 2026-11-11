@@ -114,6 +114,51 @@ def bundle(carpeta, n, con_info=True):
     return f
 
 
+# Lo que trae en bin/ un bundle de mentira: los instaladores apuntan lo que hacen en $APPIAN_RE_HOME/pasos.txt
+BAT = '@echo off\r\n>> "%APPIAN_RE_HOME%\\pasos.txt" echo {que} %*\r\n{mas}'
+SH = '#!/bin/bash\necho "{que} $*" >> "$APPIAN_RE_HOME/pasos.txt"\n{mas}'
+EDITADA_BAT = "if defined SKILLS_EDITADA echo LOCAL EDITS DETECTED - not overwriting.\r\n"
+EDITADA_SH = 'if [ -n "${SKILLS_EDITADA:-}" ]; then echo "LOCAL EDITS DETECTED - not overwriting."; fi\n'
+FALLA_BAT = 'if exist "%APPIAN_RE_HOME%\\uv-falla" exit /b 3\r\n'
+FALLA_SH = 'if [ -e "$APPIAN_RE_HOME/uv-falla" ]; then echo "no se puede"; exit 3; fi\n'
+
+
+def bundle_entero(carpeta, n, se_sale=False):
+    """Un bundle como los de Appian, con su servidor, su skill, sus instaladores y un SAIL CLI por sistema."""
+    ficheros = {
+        "BUILD-INFO.txt": info(n), "pyproject.toml": "[project]\nname = 'servidor'\n",
+        "src/servidor.py": f"# build {n}\n", f"src/solo_del_{n}.py": "",
+        "skills/appian/.bundle-manifest": MANIFIESTO.get(n, MANIFIESTO[2]),
+        "bin/setup-windows.bat": BAT.format(que=f"setup {n}", mas=""),
+        "bin/setup-mac.sh": SH.format(que=f"setup {n}", mas=""), "bin/setup-linux.sh": SH.format(que=f"setup {n}", mas=""),
+        "bin/install-skills.bat": BAT.format(que=f"skills {n}", mas=EDITADA_BAT),
+        "bin/install-skills.sh": SH.format(que=f"skills {n}", mas=EDITADA_SH),
+        "bin/sail-windows-amd64.exe": f"sail falso {n}", "bin/sail-darwin-arm64": f"sail falso {n}",
+        "bin/sail-linux-amd64": f"sail falso {n}"}
+    if se_sale:
+        ficheros["../fuera.txt"] = "no debería escribirse"
+    f = carpeta / f"entero-{n}{'-se-sale' if se_sale else ''}.tar.gz"
+    with tarfile.open(f, "w:gz") as t:
+        for nombre, texto in ficheros.items():
+            datos = texto.encode("utf-8")
+            miembro = tarfile.TarInfo(nombre)
+            miembro.size, miembro.mode = len(datos), 0o755
+            t.addfile(miembro, io.BytesIO(datos))
+    return f
+
+
+def uv_falso(carpeta):
+    """Un uv de mentira: apunta lo que le piden y falla si existe $APPIAN_RE_HOME/uv-falla."""
+    if os.name == "nt":
+        f = carpeta / "uv.bat"
+        f.write_bytes(BAT.format(que="uv", mas=FALLA_BAT).encode("utf-8"))
+    else:
+        f = carpeta / "uv"
+        f.write_bytes(SH.format(que="uv", mas=FALLA_SH).encode("utf-8"))
+        f.chmod(0o755)
+    return f
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     if not SCRIPT.is_file():
@@ -135,9 +180,9 @@ def main():
         def sail(n):
             sail_json.write_text(json.dumps(SAIL[n]), encoding="utf-8")
 
-        def lanza(*args, en=casa, con_sail=True):
+        def lanza(*args, en=casa, con_sail=True, **mas):
             entorno = {**os.environ, "APPIAN_RE_HOME": str(en), "SAIL_FALSO": str(sail_json), "PYTHONIOENCODING": "utf-8",
-                       "SAIL_CLI": str(sail_py if con_sail else tmp / "no-hay-sail.py")}
+                       "SAIL_CLI": str(sail_py if con_sail else tmp / "no-hay-sail.py"), **mas}
             r = subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], capture_output=True, env=entorno,
                                stdin=subprocess.DEVNULL, timeout=120)
             return r.returncode, r.stdout.decode("utf-8", "replace"), r.stderr.decode("utf-8", "replace")
@@ -262,6 +307,108 @@ def main():
         c, out, err = lanza("estado", "--servidor", otra)
         comprueba("otra instalación con el mismo nombre de carpeta no ve estas fotos",
                   c == 0 and "Fotos guardadas    ninguna" in out, out + err)
+
+        print("Instalar: lo que para sin tocar nada")
+        casa2 = tmp / "otra casa"
+        casa2.mkdir()
+        srv2, pasos, uv = casa2 / "appian-dev-mcp-server", casa2 / "pasos.txt", uv_falso(tmp)
+        enteros = {n: bundle_entero(tmp, n) for n in (1, 2, 3)}
+        hechos = lambda: pasos.read_text(encoding="utf-8", errors="replace").split("\n") if pasos.is_file() else []
+        instalar = lambda n, *mas, **env: lanza("instalar", enteros[n], "--uv", uv, *mas, en=casa2, **env)
+        sail(1)
+        c, out, err = lanza("instalar", enteros[1], "--uv", tmp / "no-hay-uv", en=casa2)
+        comprueba("sin uv para con 2 y no crea la carpeta del servidor",
+                  c == 2 and "uv" in err and not srv2.exists(), err)
+        c, out, err = lanza("instalar", bundle(tmp, 1, con_info=False), "--uv", uv, en=casa2)
+        comprueba("un fichero que no es un bundle para con 2", c == 2 and not srv2.exists(), err)
+        c, out, err = lanza("instalar", bundle_entero(tmp, 1, se_sale=True), "--uv", uv, en=casa2)
+        comprueba("un bundle con un fichero que se sale de la carpeta para con 2 y no escribe nada",
+                  c == 2 and "se sale" in err and not srv2.exists() and not (casa2 / "fuera.txt").exists(), err)
+        ajena = tmp / "carpeta ajena"
+        ajena.mkdir()
+        (ajena / "algo.txt").write_text("mío", encoding="utf-8")
+        c, out, err = lanza("instalar", enteros[1], "--uv", uv, "--servidor", ajena, en=casa2)
+        comprueba("una carpeta con ficheros que no es una instalación para con 2 y queda como estaba",
+                  c == 2 and "no es una instalación" in err and [p.name for p in ajena.iterdir()] == ["algo.txt"], err)
+
+        print("Instalar: una instalación nueva")
+        cliente = tmp / "cliente de IA"
+        c, out, err = instalar(1, "--skills-dir", cliente)
+        comprueba("extrae el bundle en la carpeta de la guía de Appian",
+                  c == 0 and (srv2 / "src" / "servidor.py").read_text(encoding="utf-8") == "# build 1\n"
+                  and "sha1" in (srv2 / "BUILD-INFO.txt").read_text(encoding="utf-8"), out + err)
+        # cmd pasa con comillas lo que lleva espacios y escribe las tildes de la ruta en la codificación de la consola
+        dados = [h.replace('"', "").strip() for h in hechos() if h.strip()]
+        comprueba("lanza uv sync, el instalador de SAIL CLI y el de la skill, también en la carpeta que se le da",
+                  dados[:3] == ["uv sync", "setup 1", "skills 1"] and len(dados) == 4
+                  and dados[3].startswith("skills 1 --skills-dir ") and dados[3].endswith(cliente.name), str(hechos()))
+        comprueba("sin nada anterior, ni foto ni copia; y dice que hay que reiniciar",
+                  not (casa2 / ".appian-analisis-funcional").exists() and "Reinicia tus clientes" in out, out)
+
+        print("Instalar: una actualización")
+        (srv2 / ".venv").mkdir()
+        (srv2 / ".venv" / "paquete.txt").write_text("instalado por uv", encoding="utf-8")
+        (srv2 / "uv.lock").write_text("candado", encoding="utf-8")
+        (srv2 / "notas mías.txt").write_text("no son del bundle", encoding="utf-8")
+        (srv2 / "src" / "__pycache__").mkdir()
+        (srv2 / "src" / "__pycache__" / "servidor.pyc").write_bytes(b"\0")
+        c, out, err = instalar(3, "--plugin-sha", "sha2")
+        comprueba("un bundle que no es el del plugin del entorno para con 2 y no toca nada",
+                  c == 2 and "No se ha tocado nada" in err and "sha1" in (srv2 / "BUILD-INFO.txt").read_text(encoding="utf-8"),
+                  err)
+        c, out, err = instalar(2, "--plugin-sha", "sha2", "--catalogo", catalogos[1])
+        fotos2 = next((casa2 / ".appian-analisis-funcional" / "actualizaciones").glob("appian-dev-mcp-server-*"), tmp)
+        foto, copia = fotos2 / BUILD[1], fotos2 / BUILD[1] / "bundle.tar.gz"
+        comprueba("antes de instalar hace la foto de lo que había",
+                  c == 0 and all((foto / f).is_file() for f in ("BUILD-INFO.txt", "skill.bundle-manifest", "devmcp.json",
+                                                                "sail-help/interact.txt")), out + err)
+        nombres = set()
+        if copia.is_file():
+            with tarfile.open(copia) as t:
+                nombres = set(t.getnames())
+        comprueba("y guarda el bundle anterior, sin lo que crea uv sync ni restos de ejecutar",
+                  {"BUILD-INFO.txt", "src/solo_del_1.py", "bin/sail-linux-amd64", "notas mías.txt"} <= nombres
+                  and not any(n.startswith(".venv") or n == "uv.lock" or "__pycache__" in n for n in nombres), str(sorted(nombres)))
+        comprueba("sustituye lo que trae el bundle: lo del anterior que ya no viene, desaparece",
+                  (srv2 / "src" / "servidor.py").read_text(encoding="utf-8") == "# build 2\n"
+                  and (srv2 / "src" / "solo_del_2.py").is_file() and not (srv2 / "src" / "solo_del_1.py").exists()
+                  and "sha2" in (srv2 / "BUILD-INFO.txt").read_text(encoding="utf-8"))
+        comprueba("y deja lo demás de la carpeta: el entorno de uv y los ficheros que no son del bundle",
+                  (srv2 / ".venv" / "paquete.txt").is_file() and (srv2 / "uv.lock").is_file()
+                  and (srv2 / "notas mías.txt").is_file())
+        comprueba("dice qué había antes y dónde queda", "antes había el build " + BUILD[1] in out and str(foto) in out, out)
+        c, out, err = instalar(1)
+        comprueba("un bundle más antiguo que lo instalado para con 2 y no toca nada",
+                  c == 2 and "más antiguo" in err and "sha2" in (srv2 / "BUILD-INFO.txt").read_text(encoding="utf-8"), err)
+
+        print("Instalar: un paso falla y se repite")
+        (casa2 / "uv-falla").write_text("", encoding="utf-8")
+        c, out, err = instalar(3)
+        comprueba("si uv sync falla sale con 1, dice cuál y que se puede repetir, y los demás pasos se hacen",
+                  c == 1 and "uv sync: FALLA" in out and "se puede repetir" in err and "setup 3" in "".join(hechos()), out + err)
+        (casa2 / "uv-falla").unlink()
+        c, out, err = instalar(3)
+        comprueba("la misma orden, repetida, termina bien y no hace otra foto ni otra copia",
+                  c == 0 and "era el build instalado" in out and not (fotos2 / BUILD[3]).exists(), out + err)
+        comprueba("se guarda un solo bundle anterior: el del último build",
+                  [p.parent.name for p in sorted(fotos2.glob("*/bundle.tar.gz"))] == [BUILD[2]],
+                  str(sorted(fotos2.glob("*/bundle.tar.gz"))))
+        c, out, err = instalar(3, SKILLS_EDITADA="1")
+        comprueba("si la skill oficial instalada tiene cambios de la persona, lo dice y no falla",
+                  c == 0 and "skill appian: REVISAR" in out and "LOCAL EDITS" in out, out + err)
+
+        print("Después de instalar")
+        sail(2)                                          # el SAIL CLI que dejó el bundle 3
+        c, out, err = lanza("informe", en=casa2)
+        comprueba("el informe compara con la foto que hizo la instalación",
+                  c == 0 and f"Foto: {BUILD[2]} · Instalado: {BUILD[3]}" in out and "SAIL CLI   1.0.0 -> 1.1.0" in out, out + err)
+        c, out, err = lanza("sail-anterior", en=casa2)
+        anterior = fotos2 / BUILD[2] / ("sail.exe" if os.name == "nt" else "sail")
+        comprueba("sail-anterior saca el SAIL CLI de este sistema del bundle guardado y dice cómo usarlo",
+                  c == 0 and anterior.is_file() and anterior.read_bytes() == b"sail falso 2" and "SAIL_CLI" in out
+                  and str(anterior) in out, out + err)
+        c, out, err = lanza("sail-anterior")
+        comprueba("sin bundle anterior guardado para con 2 y dice cuándo se guarda", c == 2 and "instalar" in err, err)
 
     comprueba("no queda __pycache__ en la skill", not list(SKILL.rglob("__pycache__")))
     print(f"\n{'TODO BIEN' if not fallos else f'{len(fallos)} FALLOS'}")
