@@ -183,6 +183,12 @@ Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no en
   lo nuevo en otro color), y la conversión a texto lo pierde: valorar marcar esas celdas en el `.md`.
 - Comparar dos versiones de un documento del equipo (apartado a apartado, sin paginación ni rutas de imágenes, con las imágenes
   nuevas y los comentarios de su autor) se hizo con un script suelto: valorar una orden en el plugin.
+- `leer_fuentes.py`: una ruta con corchetes (`20261110_[INTERNA] Reunión.docx`) que no se encuentra se trata como un
+  patrón de `glob` y, si no coincide con nada, se ignora sin avisar; con una ruta normal sí avisa («no existe»). Pasó con
+  una ruta de estilo POSIX (`/c/...`) en Windows. Avisar también cuando un patrón no coincide con ningún fichero.
+- `leer_fuentes.py`: en una transcripción de Teams en Word sin hablantes, «Participantes» sale con un trozo de una
+  intervención (`[01:10:20] ¿Vale, porque la reu la tenemos a las 10:30 h…` toma «… a las 10» como nombre, por los dos
+  puntos de la hora). La expresión de los participantes debería exigir que tras los dos puntos no siga un número.
 
 ## Menores
 
