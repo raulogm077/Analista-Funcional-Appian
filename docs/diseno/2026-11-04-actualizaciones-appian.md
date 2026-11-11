@@ -112,9 +112,11 @@ eso, la IA reparte cada cambio en tres:
 
 Se revisan también los pendientes que esperan a Appian («mientras el bundle no lo permita, lo hace una persona»).
 
-El catálogo de herramientas lo da el extractor, que ya sabe encontrar la configuración del Dev MCP y conectar, con un
-subcomando nuevo (`catalogo`): devuelve datos, no texto para personas, tiene sus códigos de salida y no extrae nada.
-La skill de actualización solo lee esa salida; no importa nada del interior de otra skill.
+El catálogo de herramientas lo da el extractor, que ya sabe encontrar la configuración del Dev MCP y conectar: al
+planificar cualquier aplicación deja `extraccion/mcp_catalog.json`, y la foto admite ese fichero tal cual. La skill de
+actualización solo lee esa salida; no importa nada del interior de otra skill. Se toma tras reiniciar, con `informe`, y
+esa foto es la de antes en la siguiente actualización: antes de instalar no se puede, porque el servidor viejo ya no
+habla con el entorno. Su límite: el extractor guarda los 500 primeros caracteres de cada descripción.
 
 ### El banco de pruebas
 
@@ -229,11 +231,11 @@ no se hacen; la aplicación de pruebas propia de cada persona se aplaza hasta qu
 | | Qué | Depende de |
 |---|---|---|
 | T1 | Banco `BPS` en Indra-spain: las dos cuentas, las reglas con casos de prueba, los guiones y el esperado del extractor. Lo primero, el envío con validación en la 26.9.15 | Reiniciar el cliente tras la 26.9.15 |
-| T2 | La skill, primero lo que no toca ficheros de otra rama. **Hecho (11-nov):** `actualizar.py` con `estado`, `foto`, `instalar`, `informe` y `sail-anterior`, y su prueba sin Appian (82 comprobaciones), que pasa en GitHub en Windows, macOS y Linux con Python 3.9 y 3.12; reproduce el informe de la 26.9.15 con las dos fotos reales y, en una carpeta de ensayo, instala la 26.9.10, actualiza de verdad a la 26.9.15 y recupera el `sail` 26.9.10, en Windows. En los README, los requisitos y el enrutado, la skill ya figura. **Falta:** el catálogo, que es el subcomando nuevo del extractor, y medir el enrutado con la skill nueva | El catálogo, que la rama del método entre en `main` |
+| T2 | La skill, primero lo que no toca ficheros de otra rama. **Hecho (11-nov):** `actualizar.py` con `estado`, `foto`, `instalar`, `informe` y `sail-anterior`, y su prueba sin Appian (82 comprobaciones), que pasa en GitHub en Windows, macOS y Linux con Python 3.9 y 3.12; reproduce el informe de la 26.9.15 con las dos fotos reales y, en una carpeta de ensayo, instala la 26.9.10, actualiza de verdad a la 26.9.15 y recupera el `sail` 26.9.10, en Windows. En los README, los requisitos y el enrutado, la skill ya figura, con el enrutado medido. El catálogo sale del fichero que ya deja el extractor, sin tocarlo. Resultados en `docs/evaluaciones.md` | — |
 | T3 | `comprobar` con el banco; en `qa.py`, `tasks`, `open` y `reload`; `appian-qa` lee la ayuda de `sail` | T1, y que la rama `claude/pruebas-metodo-20261104` entre en `main`: cambia los mismos ficheros |
 | T4 | Simuladores al día con lo que enseñe el banco, con su versión | T3 |
-| T5 | `CLAUDE.md`: reglas de redacción, el banco y la rutina del mantenedor; la skill personal de Raúl se queda en lo suyo (su parche y sus otros clientes, con `--skills-dir`) | La rama del método, que cambia `CLAUDE.md` |
-| T6 | Lo que deja la 26.9.15 en el plugin: `objectUuids` en el doc 08, `testCases` y las nueve observaciones del doc 14, las decisiones en ingeniería inversa | Reiniciar; la rama del método, que toca esos documentos |
+| T5 | **Hecho (11-nov):** `CLAUDE.md` con las reglas de redacción, el banco y la rutina de cada bundle. **Falta:** que la skill personal de Raúl se quede en lo suyo (su parche y sus otros clientes, con `--skills-dir`), que es suya y está fuera del repositorio | Raúl |
+| T6 | Lo que deja la 26.9.15 en el plugin. **Hecho (11-nov):** los tipos de informes de tareas, de Tempo y de traducciones en la política del extractor. **Falta:** `objectUuids` en el doc 08, `testCases` y las nueve observaciones de conducta del doc 14, que hay que probar en Appian | Reiniciar; la rama del método, que toca esos documentos |
 
 ## Lo que no se hace
 
