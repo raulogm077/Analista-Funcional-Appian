@@ -279,8 +279,9 @@ def main():
         comprueba("ficheros de la skill oficial nuevos, retirados y cambiados",
                   (k.get("nuevos"), k.get("retirados"), k.get("cambiados"))
                   == (["references/decisions.md"], ["references/old.md"], ["SKILL.md"]), str(k))
-        comprueba("la orden cuya ayuda falla en las dos fotos no sale como retirada ni como cambiada",
-                  "rota" not in json.dumps(s), str(s)[:300])
+        rota = s.get("cambiadas", {}).get("rota", {})
+        comprueba("la orden cuya ayuda falla en las dos fotos no sale como retirada: se dice que no se pudo comparar",
+                  rota.get("sin_ayuda") is True and "rota" not in s.get("retiradas", []) + s.get("nuevas", []), str(s)[:300])
         comprueba("versión, órdenes nuevas y retiradas de SAIL CLI",
                   (s.get("antes"), s.get("despues"), s.get("nuevas"), s.get("retiradas"))
                   == ("1.0.0", "1.1.0", ["tasks"], ["old"]), str(s)[:300])
@@ -339,8 +340,8 @@ def main():
         comprueba("si la ayuda de una orden falló en una de las fotos, no se dan sus opciones por quitadas",
                   c == 0 and suya.get("sin_ayuda") is True and suya.get("opciones_quitadas") == [], out[:300] + err)
         c, out, err = lanza("informe", "--antes", foto1, "--despues", sin_ayuda, en=vacia)
-        comprueba("y el informe en texto lo dice", c == 0 and "interact: en una de las dos fotos no se pudo leer su ayuda" in out,
-                  out + err)
+        comprueba("y el informe en texto lo dice",
+                  c == 0 and "interact: en alguna de las dos fotos no se pudo leer su ayuda" in out, out + err)
         c, out, err = lanza("informe", "--antes", tmp, "--despues", foto1)
         comprueba("una carpeta que no es una foto para con 2", c == 2 and "no es una foto" in err, err)
         otra = tmp / "otra instalación" / "appian-dev-mcp-server"
@@ -552,6 +553,14 @@ def main():
         del_extractor.write_text(json.dumps({"tools": [{"name": "sinEsquema"}]}), encoding="utf-8")
         c, out, err = lanza("foto", "--catalogo", del_extractor, en=casa3)
         comprueba("uno al que le falta el esquema de una herramienta para con 2", c == 2 and "no es un catálogo" in err, err)
+        una = {"name": "addThings", "description": "x", "inputSchema": {"properties": {"uuid": {"type": "string"}}}}
+        for que, herramientas, dice in (
+                ("con una herramienta repetida", [una, una], "dos veces"),
+                ("con unos obligatorios que no son una lista", [dict(una, inputSchema={"required": 1})], "con su forma"),
+                ("con unos parámetros que no son un objeto", [dict(una, inputSchema={"properties": [1]})], "con su forma")):
+            del_extractor.write_text(json.dumps({"tools": herramientas}), encoding="utf-8")
+            c, out, err = lanza("foto", "--catalogo", del_extractor, en=casa3)
+            comprueba(f"uno {que} para con 2 y dice por qué", c == 2 and dice in err and "Traceback" not in err, err)
 
         print("Comprobar la extracción de la aplicación del banco")
         minimos = json.loads((SKILL / "assets" / "banco" / "esperado.json").read_text(encoding="utf-8"))["objetos"]
@@ -568,8 +577,9 @@ def main():
             return tmp / nombre
 
         c, out, err = lanza("comprobar", "--extraccion", extraccion("extracción buena"), en=vacia)
-        comprueba("con los objetos esperados y errores sueltos, en verde; y dice lo que aún no comprueba",
-                  c == 0 and "La extracción, en verde" in out and "Sin comprobar: los recorridos con SAIL CLI" in out, out + err)
+        comprueba("con los objetos esperados y errores sueltos, pasa; dice qué errores quedan y lo que aún no comprueba",
+                  c == 0 and "Pasa: están los objetos de cada tipo" in out and "listObjectVersions (2 tipos)" in out
+                  and "Sin comprobar: los recorridos con SAIL CLI" in out, out + err)
         c, out, err = lanza("comprobar", "--extraccion", extraccion(
             "sin procesos", objectsByType={**minimos, "processModel": 0}), en=vacia)
         comprueba("si el extractor deja de ver un tipo de objeto, falla y dice cuál",
@@ -583,6 +593,10 @@ def main():
                   c == 2 and "No se pudo comprobar" in err and "partial" in err, out + err)
         c, out, err = lanza("comprobar", "--extraccion", tmp / "no hay extracción", en=vacia)
         comprueba("sin informe de extracción, tampoco, y dice cómo se hace", c == 2 and "devmcp_extract.py" in err, err)
+        c, out, err = lanza("comprobar", "--extraccion", extraccion(
+            "mal formado", objectsByType={**minimos, "site": "uno"}), en=vacia)
+        comprueba("un informe mal formado no cuenta como fallo del extractor: no se pudo comprobar",
+                  c == 2 and "no es el informe de una extracción" in err and "Traceback" not in err, out + err)
 
     comprueba("no queda __pycache__ en la skill", not list(SKILL.rglob("__pycache__")))
     print(f"\n{'TODO BIEN' if not fallos else f'{len(fallos)} FALLOS'}")

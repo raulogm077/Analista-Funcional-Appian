@@ -111,6 +111,7 @@ def escribe(fichero, texto):
 
 
 def fin(codigo, texto):
+    sys.stdout.flush()   # lo ya dicho, antes que el cierre: si no, al redirigir los dos, el cierre puede salir primero
     print(texto, file=sys.stderr if codigo else sys.stdout)
     sys.exit(codigo)
 
@@ -239,19 +240,31 @@ def es_catalogo(d):
 
 def resumen_del_catalogo(herramientas):
     """El catálogo de una foto a partir del que deja el extractor de ingeniería inversa: de cada herramienta, sus
-    parámetros con su tipo, los obligatorios y una huella de su descripción y de su esquema entero. None si no lo es."""
-    huella = lambda texto: hashlib.sha256(texto.encode("utf-8")).hexdigest()[:12]
+    parámetros con su tipo, los obligatorios y una huella de su descripción y de su esquema entero. ValueError, con lo
+    que no cuadra, si no tiene esa forma. La huella del esquema cambia con cualquier cambio suyo, también de orden o de
+    texto; la de la descripción solo ve lo que guarda el extractor, sus 500 primeros caracteres."""
+    huella = lambda texto: hashlib.sha256(texto.encode("utf-8", "replace")).hexdigest()[:12]
+
+    def tipo(p):   # de un parámetro: su «type», los de su «anyOf», o None si su esquema no lo dice
+        if not isinstance(p, dict):
+            return None
+        varios = p.get("anyOf") if isinstance(p.get("anyOf"), list) else []
+        return p.get("type") or [x.get("type") for x in varios if isinstance(x, dict)] or None
+
     resumen = {}
     for h in herramientas:
-        if not isinstance(h, dict) or not isinstance(h.get("name"), str) or not isinstance(h.get("inputSchema"), dict):
-            return None
-        esquema = h["inputSchema"]
-        propiedades = esquema.get("properties") if isinstance(esquema.get("properties"), dict) else {}
-        tipo = lambda p: p.get("type") or [x.get("type") for x in p.get("anyOf") or [] if isinstance(x, dict)]
-        resumen[h["name"]] = {
-            "parametros": {n: tipo(p) if isinstance(p, dict) else None for n, p in propiedades.items()},
-            "obligatorios": sorted(x for x in esquema.get("required") or [] if isinstance(x, str)),
-            "descripcion": huella(str(h.get("description") or "")), "esquema": huella(json.dumps(esquema, sort_keys=True))}
+        nombre = h.get("name") if isinstance(h, dict) else None
+        esquema = h.get("inputSchema") if isinstance(h, dict) else None
+        if not isinstance(nombre, str) or not nombre or not isinstance(esquema, dict):
+            raise ValueError("una herramienta no tiene «name» o «inputSchema»")
+        propiedades, obligatorios, descripcion = esquema.get("properties", {}), esquema.get("required", []), h.get("description")
+        if nombre in resumen:
+            raise ValueError(f"«{nombre}» viene dos veces")
+        if not isinstance(propiedades, dict) or not isinstance(obligatorios, list) \
+                or not all(isinstance(x, str) for x in obligatorios) or not isinstance(descripcion, (str, type(None))):
+            raise ValueError(f"«{nombre}» no tiene «properties», «required» o «description» con su forma")
+        resumen[nombre] = {"parametros": {n: tipo(p) for n, p in propiedades.items()}, "obligatorios": sorted(obligatorios),
+                           "descripcion": huella(descripcion or ""), "esquema": huella(json.dumps(esquema, sort_keys=True))}
     return resumen
 
 
@@ -264,7 +277,10 @@ def leer_catalogo(fichero):
     except (OSError, ValueError) as e:
         fin(2, f"error: no se puede leer el catálogo {fichero}: {e}")
     if isinstance(d, dict) and isinstance(d.get("tools"), list):
-        d = resumen_del_catalogo(d["tools"])
+        try:
+            d = resumen_del_catalogo(d["tools"])
+        except ValueError as e:
+            fin(2, f"error: {fichero} no es un catálogo del extractor de ingeniería inversa: {e}")
     if not es_catalogo(d):
         fin(2, f"error: {fichero} no es un catálogo: se espera el mcp_catalog.json que deja el extractor de ingeniería "
                "inversa o {herramienta: {\"parametros\": {…}, \"obligatorios\": […], \"descripcion\": huella, "
@@ -372,8 +388,8 @@ def compara_sail(a, b):
     cambiadas = {}
     for o in sorted((set(a) & set(b)) - {"_version"}):
         if SIN_SU_AYUDA.format(orden=o) in (a[o].strip(), b[o].strip()):
-            if a[o] != b[o]:   # en una de las dos fotos no se pudo leer su ayuda: de sus opciones no se sabe nada
-                cambiadas[o] = {"sin_ayuda": True, "opciones_nuevas": [], "opciones_quitadas": [], "lineas": []}
+            # en alguna de las dos fotos no se pudo leer su ayuda: de sus opciones no se sabe nada, y se dice
+            cambiadas[o] = {"sin_ayuda": True, "opciones_nuevas": [], "opciones_quitadas": [], "lineas": []}
         elif a[o] != b[o]:
             lineas = [l for l in difflib.unified_diff(a[o].splitlines(), b[o].splitlines(), lineterm="", n=0)
                       if l[:1] in "+-" and l[:3] not in ("+++", "---")]
@@ -442,7 +458,7 @@ def pinta(inf):
         for o, c in s["cambiadas"].items():
             nombre = "ayuda general" if o == "_general" else o
             if c["sin_ayuda"]:
-                out.append(f"  {nombre}: en una de las dos fotos no se pudo leer su ayuda; no se comparan sus opciones")
+                out.append(f"  {nombre}: en alguna de las dos fotos no se pudo leer su ayuda; no se comparan sus opciones")
                 continue
             out.append(f"  cambia {nombre}: opciones nuevas: {lista(c['opciones_nuevas'])}; quitadas: "
                        f"{lista(c['opciones_quitadas'])}; {len(c['lineas'])} líneas de ayuda distintas")
@@ -693,38 +709,45 @@ def cmd_sail_anterior(args):
 # ---- El banco de pruebas -------------------------------------------------------------------------------------------
 
 def cmd_comprobar(args):
-    """Mira el informe que deja `devmcp_extract.py extract` sobre la aplicación del banco. 0 en verde, 1 si falla y 2 si
-    no se pudo comprobar: sin informe, o con una extracción que no terminó (una sesión caducada no es un fallo)."""
+    """Mira el informe que deja `devmcp_extract.py extract` sobre la aplicación del banco. 0 si pasa, 1 si no y 2 si no
+    se pudo comprobar: sin informe o con uno que no tiene su forma, o con una extracción que no terminó (una sesión
+    caducada no es un fallo del extractor)."""
     fichero = pathlib.Path(args.extraccion).expanduser() / "extraccion" / "extraction_report.json"
     informe, esperado = leer_json(fichero), leer_json(ESPERADO)
-    if not informe or not isinstance(informe.get("objectsByType"), dict) or not isinstance(informe.get("errors"), list):
+    entero = lambda n: isinstance(n, int) and not isinstance(n, bool) and n >= 0
+    minimos = (esperado or {}).get("objetos")
+    if not isinstance(minimos, dict) or not minimos or not all(entero(n) and n > 0 for n in minimos.values()):
+        fin(2, f"No se pudo comprobar: {ESPERADO} no dice cuántos objetos de cada tipo se esperan.")
+    hay, errores, app = (informe or {}).get("objectsByType"), (informe or {}).get("errors"), (informe or {}).get("app")
+    if not isinstance(hay, dict) or not all(entero(n) for n in hay.values()) or not isinstance(errores, list) \
+            or not all(isinstance(e, dict) and isinstance(e.get("tool"), str) for e in errores) \
+            or not isinstance(app, (dict, type(None))):
         fin(2, f"No se pudo comprobar: {fichero} no es el informe de una extracción. Se hace con `devmcp_extract.py "
                "extract --app <la aplicación del banco> --out <carpeta>` y aquí se da esa carpeta.")
-    if not esperado or not isinstance(esperado.get("objetos"), dict):
-        fin(2, f"No se pudo comprobar: no se puede leer {ESPERADO}")
     if informe.get("status") != "complete" or informe.get("objectListComplete") is not True:
         fin(2, f"No se pudo comprobar: la extracción no terminó (estado «{informe.get('status')}»). Si fue por la sesión "
                "del Dev MCP, entra de nuevo y repítela.")
-    hay = informe["objectsByType"]
-    faltan = [f"{tipo}: {hay.get(tipo, 0)} de {minimo}" for tipo, minimo in esperado["objetos"].items()
-              if not isinstance(hay.get(tipo, 0), int) or hay.get(tipo, 0) < minimo]
+    faltan = [f"{tipo}: {hay.get(tipo, 0)} de {minimo}" for tipo, minimo in minimos.items() if hay.get(tipo, 0) < minimo]
     en_tipos = {}
-    for e in informe["errors"]:
-        if isinstance(e, dict) and e.get("tool"):
-            en_tipos.setdefault(str(e["tool"]), set()).add(str(e.get("objectType")))
-    genericas = sorted(h for h, tipos in en_tipos.items() if len(tipos) >= TIPOS_DE_GENERICA)
-    app = (informe.get("app") or {}).get("name", "?")
-    print(f"Extracción de «{app}»: {informe.get('objectCount')} objetos, {informe.get('errorCount')} errores")
+    for e in errores:
+        en_tipos.setdefault(e["tool"], set()).add(str(e.get("objectType") or "?"))
+    en_varios = sorted(h for h, tipos in en_tipos.items() if len(tipos) >= TIPOS_DE_GENERICA)
+    # Qué extracción es: se comprueba la que se da, no se sabe si es la del banco ni de qué versión del Dev MCP
+    print(f"Extracción de «{(app or {}).get('name', '?')}», del {informe.get('startedAt', '?')}, en "
+          f"{(informe.get('server') or {}).get('url', '?') if isinstance(informe.get('server'), dict) else '?'}: "
+          f"{sum(hay.values())} objetos y {len(errores)} errores")
     if faltan:
-        print("  FALLA, el extractor no ve todo lo que tiene la aplicación del banco: " + "; ".join(faltan))
-    if genericas:
-        print(f"  FALLA, herramientas que dan error en {TIPOS_DE_GENERICA} tipos de objeto o más: {', '.join(genericas)}.\n"
-              "  Lo normal es que sean de un tipo que la política del extractor (devmcp_policy.json) no conoce, y las "
-              "prueba en todos.")
+        print("  NO PASA, faltan objetos de los que tiene la aplicación del banco: " + "; ".join(faltan))
+    if en_varios:
+        print(f"  NO PASA, herramientas con errores en {TIPOS_DE_GENERICA} tipos de objeto o más: {', '.join(en_varios)}.\n"
+              "  Mira sus errores en el informe. Si son de un tipo de objeto que la política del extractor "
+              "(devmcp_policy.json) no conoce, es que las prueba en todos; si no, puede ser la sesión o los permisos.")
     print("  Sin comprobar: los recorridos con SAIL CLI. El banco aún no trae sus guiones.")
-    if faltan or genericas:
-        fin(1, "El extractor falla con esta versión del Dev MCP.")
-    print("  La extracción, en verde.")
+    if faltan or en_varios:
+        fin(1, "La extracción del banco no pasa.")
+    resto = ", ".join(f"{h} ({len(tipos)} tipos)" for h, tipos in sorted(en_tipos.items())) or "ninguno"
+    print(f"  Pasa: están los objetos de cada tipo y ninguna herramienta falla en {TIPOS_DE_GENERICA} tipos o más. "
+          f"Errores que quedan: {resto}.")
 
 
 # ---- Las demás órdenes --------------------------------------------------------------------------------------------
