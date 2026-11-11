@@ -15,6 +15,24 @@ def result(items):
     return SimpleNamespace(ok=True, data={"items": items})
 
 
+@pytest.mark.parametrize("nombre, parametro, tipo", [
+    ("getTaskReport", "uuid", "taskReport"), ("getTempoReport", "uuid", "tempoReport"),
+    ("getTranslationSet", "uuid", "translationSet"), ("listTranslationStrings", "translationSetUuid", "translationSet"),
+    ("getDecision", "uuid", "decision")])
+def test_las_herramientas_de_un_tipo_que_la_app_no_tiene_no_se_prueban_en_los_demas(nombre, parametro, tipo):
+    """Visto con el Dev MCP 26.9.15 en una aplicación sin informes ni traducciones: las de informes de tareas y de Tempo y
+    las de traducciones se tomaban por genéricas y se llamaban con cada constante, carpeta, grupo e interfaz (72 errores
+    404 en 29 objetos)."""
+    ex = dx.Extractor(None, dx.Policy(dx.DEFAULT_POLICY), None)
+    ex.catalog = [tool(nombre, parametro), tool("getConstant", "uuid")]
+    ex.classify(ex.base_type_phrases())
+    suya = next(t for t in ex.tools if t.name == nombre)
+    assert (suya.generic, suya.types) == (False, [tipo])
+    objetos = [{"uuid": "demo-constante", "name": "DEM_UNA", "type": "constant"}]
+    ex.classify(ex.type_phrases_for(objetos))
+    assert [(t.name, t_tipo) for t, t_tipo, _ in ex.plan_object_calls(objetos)] == [("getConstant", "constant")]
+
+
 def test_plan_constantes_no_adquieren_herramientas_de_sus_valores():
     ex = dx.Extractor(None, dx.Policy(dx.DEFAULT_POLICY), None)
     ex.catalog = [tool("listConstants", "appUuid")] + [tool("get" + t, "uuid") for t in

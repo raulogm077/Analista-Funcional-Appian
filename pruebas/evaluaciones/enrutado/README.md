@@ -1,8 +1,8 @@
 # Prueba de enrutado
 
 Mide si cada petición entra por la skill que le toca cuando solo se conocen las descripciones de las skills (el
-`description` de cada SKILL.md). Son 35 peticiones como las diría alguien del equipo, sin nombrar la skill: 23 visibles
-en `pruebas/enrutado.json` y 12 en `ocultas/enrutado.json`, que no lee quien ajusta las descripciones hasta medir.
+`description` de cada SKILL.md). Son 40 peticiones como las diría alguien del equipo, sin nombrar la skill: 26 visibles
+en `pruebas/enrutado.json` y 14 en `ocultas/enrutado.json`, que no lee quien ajusta las descripciones hasta medir.
 Formato de las dos: `[{"peticion": "…", "skill": "appian-…"}]`. Los resultados van a `docs/evaluaciones.md`.
 
 ## Lo que hay
@@ -16,6 +16,7 @@ Formato de las dos: `[{"peticion": "…", "skill": "appian-…"}]`. Los resultad
 | `appian-refactorizacion` | 3 | 2 |
 | `appian-best-practices` (dos visibles y la oculta, en inglés) | 4 | 1 |
 | `appian-qa` | 3 | 2 |
+| `appian-actualizacion` | 3 | 2 |
 
 Las seis fronteras entre skills, con su petición visible; las ocultas llevan otra variante de cada una:
 
@@ -32,7 +33,8 @@ Otras visibles tocan una frontera vecina: un cambio en una aplicación ya docume
 analista), «cómo debería estar hecho con buenas prácticas» un módulo con su `as-is/` (13, refactorización), una
 aplicación lenta que se quiere rehacer (19, refactorización) y las capturas para el DF (11, prototipos). Las tres de
 `appian-qa` (21 a 23) piden probar una unidad como cada rol, repetir los recorridos guardados antes del paquete y
-rehacer uno que falla tras un cambio hecho a propósito.
+rehacer uno que falla tras un cambio hecho a propósito. Las tres de
+`appian-actualizacion` (24 a 26) piden instalar el bundle nuevo del Dev MCP, saber qué hay instalado y saber qué cambió.
 
 Un tercer lote, `fronteras/enrutado.json`, trae 8 peticiones de los solapes más probables sin las palabras que delatan
 la skill («as-is», «draw.io», «DF», «prototipo»…; lo comprueba `prueba_puntuar.py`):

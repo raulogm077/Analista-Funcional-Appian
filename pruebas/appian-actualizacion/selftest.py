@@ -536,6 +536,23 @@ def main():
                   c == 0 and c2 == 0 and (srv3 / "docs" / "ahora.txt").is_file() and not (srv3 / "raiz_del_1").exists(),
                   out + err + out2 + err2)
 
+        print("El catálogo que deja el extractor de ingeniería inversa")
+        del_extractor = tmp / "mcp_catalog.json"
+        del_extractor.write_text(json.dumps({"toolCount": 1, "tools": [
+            {"name": "addThings", "description": "Añade cosas.", "allowed": False,
+             "inputSchema": {"type": "object", "required": ["uuid"], "properties": {
+                 "uuid": {"type": "string"}, "tags": {"anyOf": [{"type": "array"}, {"type": "null"}]}}}}]}), encoding="utf-8")
+        c, out, err = lanza("foto", "--catalogo", del_extractor, en=casa3)
+        guardado = next((casa3 / ".appian-analisis-funcional").rglob("devmcp.json"), None)
+        suyo = json.loads(guardado.read_text(encoding="utf-8")).get("addThings", {}) if guardado else {}
+        comprueba("la foto lo admite tal cual y lo resume: parámetros con su tipo, obligatorios y dos huellas",
+                  c == 0 and suyo.get("parametros") == {"uuid": "string", "tags": ["array", "null"]}
+                  and suyo.get("obligatorios") == ["uuid"] and len(suyo.get("descripcion", "")) == 12
+                  and len(suyo.get("esquema", "")) == 12, out + err + str(suyo))
+        del_extractor.write_text(json.dumps({"tools": [{"name": "sinEsquema"}]}), encoding="utf-8")
+        c, out, err = lanza("foto", "--catalogo", del_extractor, en=casa3)
+        comprueba("uno al que le falta el esquema de una herramienta para con 2", c == 2 and "no es un catálogo" in err, err)
+
     comprueba("no queda __pycache__ en la skill", not list(SKILL.rglob("__pycache__")))
     print(f"\n{'TODO BIEN' if not fallos else f'{len(fallos)} FALLOS'}")
     sys.exit(1 if fallos else 0)

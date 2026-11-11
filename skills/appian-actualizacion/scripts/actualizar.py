@@ -15,6 +15,8 @@ Una foto es una copia, sin transformar, de lo que un bundle de Appian publica y 
   devmcp.json             el catálogo de herramientas del Dev MCP, si se da con --catalogo:
                           {herramienta: {"parametros": {nombre: tipo}, "obligatorios": [...],
                                          "descripcion": huella, "esquema": huella}}
+                          --catalogo admite el mcp_catalog.json que deja el extractor de ingeniería inversa
+                          (`devmcp_extract.py plan`, en <salida>/extraccion/) y lo resume así
 Se guardan por instalación y build en ~/.appian-analisis-funcional/actualizaciones/ (con $APPIAN_RE_HOME, en esa
 carpeta personal). `foto` rehace entera la del build instalado: lo que ahora no hay, no queda de antes. `instalar` e
 `informe` usan la que haya de ese build y solo la hacen si falta o si se les da un catálogo. `informe` compara la
@@ -227,14 +229,38 @@ def es_catalogo(d):
         and isinstance(h.get("descripcion"), str) and isinstance(h.get("esquema"), str) for h in d.values())
 
 
+def resumen_del_catalogo(herramientas):
+    """El catálogo de una foto a partir del que deja el extractor de ingeniería inversa: de cada herramienta, sus
+    parámetros con su tipo, los obligatorios y una huella de su descripción y de su esquema entero. None si no lo es."""
+    huella = lambda texto: hashlib.sha256(texto.encode("utf-8")).hexdigest()[:12]
+    resumen = {}
+    for h in herramientas:
+        if not isinstance(h, dict) or not isinstance(h.get("name"), str) or not isinstance(h.get("inputSchema"), dict):
+            return None
+        esquema = h["inputSchema"]
+        propiedades = esquema.get("properties") if isinstance(esquema.get("properties"), dict) else {}
+        tipo = lambda p: p.get("type") or [x.get("type") for x in p.get("anyOf") or [] if isinstance(x, dict)]
+        resumen[h["name"]] = {
+            "parametros": {n: tipo(p) if isinstance(p, dict) else None for n, p in propiedades.items()},
+            "obligatorios": sorted(x for x in esquema.get("required") or [] if isinstance(x, str)),
+            "descripcion": huella(str(h.get("description") or "")), "esquema": huella(json.dumps(esquema, sort_keys=True))}
+    return resumen
+
+
 def leer_catalogo(fichero):
+    """El catálogo de herramientas de un fichero, con el contrato de una foto. Admite el que deja el extractor de
+    ingeniería inversa en `extraccion/mcp_catalog.json` ({"tools": [{"name", "description", "inputSchema"}]}), y lo
+    resume."""
     try:
         d = json.loads(pathlib.Path(fichero).read_text(encoding="utf-8"))
     except (OSError, ValueError) as e:
         fin(2, f"error: no se puede leer el catálogo {fichero}: {e}")
+    if isinstance(d, dict) and isinstance(d.get("tools"), list):
+        d = resumen_del_catalogo(d["tools"])
     if not es_catalogo(d):
-        fin(2, f"error: {fichero} no es un catálogo: se espera {{herramienta: {{\"parametros\": {{…}}, \"obligatorios\": "
-               "[…], \"descripcion\": huella, \"esquema\": huella}}")
+        fin(2, f"error: {fichero} no es un catálogo: se espera el mcp_catalog.json que deja el extractor de ingeniería "
+               "inversa o {herramienta: {\"parametros\": {…}, \"obligatorios\": […], \"descripcion\": huella, "
+               "\"esquema\": huella}}")
     return d
 
 

@@ -55,8 +55,12 @@ la guía de Appian, añade `--servidor <carpeta>` a cada orden.
 5. **Si el SAIL CLI nuevo da problemas**: `python3 <skill>/scripts/actualizar.py sail-anterior` saca el del bundle
    anterior y dice cómo seguir con él (`SAIL_CLI`), hasta que el plugin se adapte.
 
-El catálogo de herramientas entra en la foto cuando se le da (`--catalogo <fichero.json>`). Sin él, el informe compara
-la skill oficial y SAIL CLI, y lo dice. La foto de un build se hace una vez; `actualizar.py foto` la rehace entera.
+**El catálogo de herramientas** entra en la foto cuando se le da, con `--catalogo <fichero>`. Lo deja el extractor de
+`appian-reverse-engineering` al planificar cualquier aplicación del entorno, con el servidor ya reiniciado:
+`devmcp_extract.py plan --app <una aplicación> --out <carpeta temporal>` escribe `extraccion/mcp_catalog.json`, y ese
+fichero es el que se pasa. Hazlo en el paso 4, con `informe --catalogo`: esa foto es la de antes en la siguiente
+actualización. Sin catálogo, el informe compara la skill oficial y SAIL CLI, y lo dice. La foto de un build se hace
+una vez; `actualizar.py foto` la rehace entera.
 
 Un arreglo que hayas hecho a mano en lo que trae el bundle se pierde al instalar. Al actualizar queda en el bundle
 anterior guardado; al repetir la instalación del mismo bundle, no. Mientras se instala no debe haber otra instalación

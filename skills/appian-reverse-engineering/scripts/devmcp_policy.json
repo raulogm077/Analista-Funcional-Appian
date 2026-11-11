@@ -276,6 +276,9 @@
       "decision",
       "decision table"
     ],
+    "taskReport": ["task report"],
+    "tempoReport": ["tempo report"],
+    "translationSet": ["translation set", "translation string"],
     "knowledgeCenter": [
       "knowledge center",
       "community knowledge center"
