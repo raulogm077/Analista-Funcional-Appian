@@ -207,12 +207,13 @@ prueba: formulario, validación, `navigate`, `back`, `open` y las tareas.
 5. Codex, como segunda opinión. La dio el 11-nov sobre un resumen, sin poder leer los ficheros: «adelante con
    cambios», todos recogidos aquí (el resultado en tres estados estrictos, la configuración por instalación y entorno
    sin suponer ninguna, «recuperar el `sail`» en vez de marcha atrás, el catálogo como salida de datos del extractor y
-   acordar la base con la rama del método antes de tocar sus ficheros). Después revisó el código de `actualizar.py`,
-   esta vez entero: «no listo», con tres fallos graves de `instalar` que se corrigieron ese día (una sustitución
-   cortada que no se podía repetir o pisaba la copia buena, la validación del `.tar.gz` y el nombre del build usado
-   como carpeta sin validar) y once mejoras. No se aplicaron dos, y por qué: guardar copia también al repetir la
-   instalación del mismo bundle (obligaría a guardar varias copias; se avisa de que ese caso no la guarda) y un
-   bloqueo entre dos instalaciones a la vez (se dice que no se haga).
+   acordar la base con la rama del método antes de tocar sus ficheros). Después revisó tres veces el código de
+   `actualizar.py`, entero: «no listo» (una sustitución cortada que no se podía repetir o pisaba la copia buena, la
+   validación del `.tar.gz` y el nombre del build usado como carpeta sin validar), «no listo» (nombres que en Windows
+   son el mismo, con qué bundle se reanuda, lo que el bundle anterior deja en la raíz, fotos a medias) y «listo con
+   arreglos», los cuatro aplicados. No se aplicaron dos cosas, y Codex las dio por aceptables para un uso manual:
+   guardar copia también al repetir la instalación del mismo bundle (se avisa de que ese caso no la guarda) y un
+   bloqueo entre dos instalaciones a la vez (se dice que no se haga). Sus revisiones son de lectura: no ejecutó nada.
 
 **Raúl, 7-nov:** un `sail` nuevo se instala y se comprueba, con marcha atrás; los escenarios se pasan en la app ficticia
 del plugin, construida en el entorno de cada uno; T1 autorizado en el desarrollo de Indra-spain, con el prefijo `BPS`.
@@ -228,7 +229,7 @@ no se hacen; la aplicación de pruebas propia de cada persona se aplaza hasta qu
 | | Qué | Depende de |
 |---|---|---|
 | T1 | Banco `BPS` en Indra-spain: las dos cuentas, las reglas con casos de prueba, los guiones y el esperado del extractor. Lo primero, el envío con validación en la 26.9.15 | Reiniciar el cliente tras la 26.9.15 |
-| T2 | La skill, primero lo que no toca ficheros de otra rama. **Hecho (11-nov):** `actualizar.py` con `estado`, `foto`, `instalar`, `informe` y `sail-anterior`, y su prueba sin Appian (67 comprobaciones); reproduce el informe de la 26.9.15 con las dos fotos reales y, en una carpeta de ensayo, actualiza de verdad de la 26.9.10 a la 26.9.15 y recupera el `sail` 26.9.10, en Windows. En los README, los requisitos y el enrutado, la skill ya figura. **Falta:** el catálogo, que es el subcomando nuevo del extractor, y medir el enrutado con la skill nueva | El catálogo, que la rama del método entre en `main` |
+| T2 | La skill, primero lo que no toca ficheros de otra rama. **Hecho (11-nov):** `actualizar.py` con `estado`, `foto`, `instalar`, `informe` y `sail-anterior`, y su prueba sin Appian (82 comprobaciones), que pasa en GitHub en Windows, macOS y Linux con Python 3.9 y 3.12; reproduce el informe de la 26.9.15 con las dos fotos reales y, en una carpeta de ensayo, instala la 26.9.10, actualiza de verdad a la 26.9.15 y recupera el `sail` 26.9.10, en Windows. En los README, los requisitos y el enrutado, la skill ya figura. **Falta:** el catálogo, que es el subcomando nuevo del extractor, y medir el enrutado con la skill nueva | El catálogo, que la rama del método entre en `main` |
 | T3 | `comprobar` con el banco; en `qa.py`, `tasks`, `open` y `reload`; `appian-qa` lee la ayuda de `sail` | T1, y que la rama `claude/pruebas-metodo-20261104` entre en `main`: cambia los mismos ficheros |
 | T4 | Simuladores al día con lo que enseñe el banco, con su versión | T3 |
 | T5 | `CLAUDE.md`: reglas de redacción, el banco y la rutina del mantenedor; la skill personal de Raúl se queda en lo suyo (su parche y sus otros clientes, con `--skills-dir`) | La rama del método, que cambia `CLAUDE.md` |

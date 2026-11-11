@@ -83,7 +83,7 @@ APARTE = ".nuevo"                           # donde se extrae el bundle antes de
 # no puede traerlo, con estas u otras mayúsculas; no entra en el bundle anterior que se guarda y no se borra.
 RESERVADAS = {".venv", A_MEDIAS, APARTE}
 # Nombres que Windows no admite como fichero: un bundle que los trajera no se podría extraer igual en todos los sistemas
-DISPOSITIVOS = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
+DISPOSITIVOS = {"CON", "PRN", "AUX", "NUL", *(f"{d}{i}" for d in ("COM", "LPT") for i in "123456789¹²³")}
 SIN_SU_AYUDA = "(sail {orden} --help falló al hacer la foto)"   # la orden está, pero no se pudo leer su ayuda
 # Lo que `instalar` lanza de un bundle, además de `uv sync` sobre su pyproject.toml. Por sistema: cómo llama Appian a su
 # SAIL CLI en bin/, el script que lo instala y el que instala la skill oficial.
@@ -93,8 +93,11 @@ SISTEMAS = {"Windows": ("windows", "setup-windows.bat", "install-skills.bat"),
 
 
 def escribe(fichero, texto):
-    """Con finales de línea de Unix en cualquier sistema (write_text no admite newline hasta Python 3.10)."""
-    fichero.write_bytes(texto.replace("\r\n", "\n").encode("utf-8"))
+    """Entero o nada: lo escribe aparte y lo pone en su sitio de una vez, para que un corte no deje medio fichero. Con
+    finales de línea de Unix en cualquier sistema (write_text no admite newline hasta Python 3.10)."""
+    parcial = fichero.with_name(fichero.name + ".parcial")
+    parcial.write_bytes(texto.replace("\r\n", "\n").encode("utf-8"))
+    os.replace(parcial, fichero)
 
 
 def fin(codigo, texto):
@@ -334,10 +337,13 @@ def compara_sail(a, b):
     ordenes = lambda x: {o for o in x if not o.startswith("_")}
     cambiadas = {}
     for o in sorted((set(a) & set(b)) - {"_version"}):
-        if a[o] != b[o]:
+        if SIN_SU_AYUDA.format(orden=o) in (a[o].strip(), b[o].strip()):
+            if a[o] != b[o]:   # en una de las dos fotos no se pudo leer su ayuda: de sus opciones no se sabe nada
+                cambiadas[o] = {"sin_ayuda": True, "opciones_nuevas": [], "opciones_quitadas": [], "lineas": []}
+        elif a[o] != b[o]:
             lineas = [l for l in difflib.unified_diff(a[o].splitlines(), b[o].splitlines(), lineterm="", n=0)
                       if l[:1] in "+-" and l[:3] not in ("+++", "---")]
-            cambiadas[o] = {"opciones_nuevas": sorted(opciones(b[o]) - opciones(a[o])),
+            cambiadas[o] = {"sin_ayuda": False, "opciones_nuevas": sorted(opciones(b[o]) - opciones(a[o])),
                             "opciones_quitadas": sorted(opciones(a[o]) - opciones(b[o])), "lineas": lineas}
     return {"antes": version_de_sail(a), "despues": version_de_sail(b), "nuevas": sorted(ordenes(b) - ordenes(a)),
             "retiradas": sorted(ordenes(a) - ordenes(b)), "cambiadas": cambiadas}
@@ -401,6 +407,9 @@ def pinta(inf):
                 f"  órdenes nuevas: {lista(s['nuevas'])} | retiradas: {lista(s['retiradas'])}"]
         for o, c in s["cambiadas"].items():
             nombre = "ayuda general" if o == "_general" else o
+            if c["sin_ayuda"]:
+                out.append(f"  {nombre}: en una de las dos fotos no se pudo leer su ayuda; no se comparan sus opciones")
+                continue
             out.append(f"  cambia {nombre}: opciones nuevas: {lista(c['opciones_nuevas'])}; quitadas: "
                        f"{lista(c['opciones_quitadas'])}; {len(c['lineas'])} líneas de ayuda distintas")
             out += [f"      {l}" for l in c["lineas"][:MAX_LINEAS]]
@@ -559,8 +568,10 @@ def cmd_instalar(args):
     previo = leer_json(registro) or {}
     sobran = marca.get("sobran") if a_medias else (
         sorted(set(previo.get("raiz") or []) - set(raiz)) if instalado and previo.get("build") == identidad(instalado) else [])
+    # ...salvo lo reservado y lo que este bundle sí trae, aunque sea con otras mayúsculas: en Windows sería lo mismo
+    de_este = {n.casefold() for n in raiz} | RESERVADAS
     sobran = [n for n in sobran or [] if isinstance(n, str) and n not in ("", ".", "..") and not re.search(r"[/\\:]", n)
-              and n.casefold() not in RESERVADAS]
+              and n.casefold() not in de_este]
 
     # Extraer aparte: si el bundle no se puede extraer entero, la instalación sigue como estaba
     aparte = srv / APARTE
@@ -586,7 +597,8 @@ def cmd_instalar(args):
         fin(2, f"error: no se pudo preparar la instalación: {e}. {sin_tocar}")
 
     try:
-        escribe(srv / A_MEDIAS, json.dumps({"build": identidad(nuevo), "sobran": sobran}))
+        if not a_medias:   # al terminar una que se cortó, la marca que hay es la buena: no se vuelve a escribir
+            escribe(srv / A_MEDIAS, json.dumps({"build": identidad(nuevo), "sobran": sobran}))
         for nombre in raiz:
             borra(srv / nombre)
             os.replace(aparte / nombre, srv / nombre)
@@ -662,10 +674,12 @@ def cmd_estado(args):
     print(f"Fotos guardadas    {lista(fotos)} en {carpeta_fotos(srv)}")
     if args.bundle:
         nuevo, _ = leer_bundle(args.bundle)
-        if nuevo["mcp_src_sha"] == info["mcp_src_sha"]:
+        if identidad(nuevo) == identidad(info):
             que = "es el instalado"
         elif nuevo["build_timestamp"] < info["build_timestamp"]:
             que = "es MÁS ANTIGUO que el instalado"
+        elif nuevo["build_timestamp"] == info["build_timestamp"]:
+            que = "tiene la misma fecha de build que el instalado y otro mcp_src_sha: `instalar` no lo instala"
         else:
             que = "es más nuevo que el instalado"
         print(f"Bundle             build {nuevo['build_timestamp']} (mcp_src_sha {nuevo['mcp_src_sha']}): {que}")

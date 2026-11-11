@@ -328,6 +328,19 @@ def main():
         c, out, err = lanza("informe", "--antes", foto1, "--despues", fotos / BUILD[2], en=vacia)
         comprueba("con las dos fotos dadas no hace falta la instalación",
                   c == 0 and "nuevas: listDecisions" in out, out + err)
+        sin_ayuda = tmp / "foto sin la ayuda de interact"
+        shutil.copytree(foto1, sin_ayuda)
+        (sin_ayuda / "sail-help" / "interact.txt").write_text("(sail interact --help falló al hacer la foto)", encoding="utf-8")
+        c, out, err = lanza("informe", "--antes", foto1, "--despues", sin_ayuda, "--json", en=vacia)
+        try:
+            suya = json.loads(out)["sail"]["cambiadas"]["interact"]
+        except (ValueError, KeyError, TypeError):
+            suya = {}
+        comprueba("si la ayuda de una orden falló en una de las fotos, no se dan sus opciones por quitadas",
+                  c == 0 and suya.get("sin_ayuda") is True and suya.get("opciones_quitadas") == [], out[:300] + err)
+        c, out, err = lanza("informe", "--antes", foto1, "--despues", sin_ayuda, en=vacia)
+        comprueba("y el informe en texto lo dice", c == 0 and "interact: en una de las dos fotos no se pudo leer su ayuda" in out,
+                  out + err)
         c, out, err = lanza("informe", "--antes", tmp, "--despues", foto1)
         comprueba("una carpeta que no es una foto para con 2", c == 2 and "no es una foto" in err, err)
         otra = tmp / "otra instalación" / "appian-dev-mcp-server"
@@ -451,6 +464,8 @@ def main():
         comprueba("un bundle con la misma fecha de build y otro sha para con 2 y no toca nada",
                   c == 2 and "misma fecha de build" in err and "sha2" in (srv2 / "BUILD-INFO.txt").read_text(encoding="utf-8"),
                   err)
+        c, out, err = lanza("estado", "--bundle", gemelo, en=casa2)
+        comprueba("y estado no lo da por el instalado ni por más nuevo", c == 0 and "misma fecha de build" in out, out + err)
         c, out, err = instalar(1)
         comprueba("un bundle más antiguo que lo instalado para con 2 y no toca nada",
                   c == 2 and "más antiguo" in err and "sha2" in (srv2 / "BUILD-INFO.txt").read_text(encoding="utf-8"), err)
@@ -510,6 +525,16 @@ def main():
                   and [p.parent.name for p in fotos2.glob("*/bundle.tar.gz")] == [BUILD[2]], out + err)
         with tarfile.open(guardada) as t:
             comprueba("y la marca no entra en el bundle guardado", ".instalando" not in t.getnames())
+
+        print("Una carpeta de la raíz que cambia de mayúsculas")
+        casa3 = tmp / "tercera casa"
+        casa3.mkdir()
+        srv3 = casa3 / "appian-dev-mcp-server"
+        c, out, err = lanza("instalar", bundle_entero(tmp, 1, "Docs", mas=[("Docs/antes.txt", "")]), "--uv", uv, en=casa3)
+        c2, out2, err2 = lanza("instalar", bundle_entero(tmp, 2, "docs", mas=[("docs/ahora.txt", "")]), "--uv", uv, en=casa3)
+        comprueba("lo que trae el bundle nuevo no se quita por llamarse casi como lo que traía el anterior",
+                  c == 0 and c2 == 0 and (srv3 / "docs" / "ahora.txt").is_file() and not (srv3 / "raiz_del_1").exists(),
+                  out + err + out2 + err2)
 
     comprueba("no queda __pycache__ en la skill", not list(SKILL.rglob("__pycache__")))
     print(f"\n{'TODO BIEN' if not fallos else f'{len(fallos)} FALLOS'}")
