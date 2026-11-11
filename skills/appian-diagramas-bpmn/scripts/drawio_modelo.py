@@ -472,12 +472,15 @@ def _celda(cid, valor, atributos, geometria, datos_appian=None):
     return f'<mxCell id="{_xml_attr(cid)}" value="{_xml_attr(valor)}" {atributos}>{geometria}</mxCell>'
 
 
-def entrada_mensaje(f, centro, ancho, externos):
+def entrada_mensaje(f, centro, ancho, externos, sitio=0.5, ancho_paso=0):
     """Puntos de salida y entrada de un flujo de mensaje: en vertical entre el paso y su participante externo
-    (que ocupa todo el ancho, desde x=0)."""
+    (que ocupa todo el ancho, desde x=0). `sitio` es dónde toca el borde del paso (de 0 a 1, de izquierda a derecha;
+    `ancho_paso`, su ancho): si un paso tiene varios mensajes, cada uno va por su vertical y no se pisan."""
+    paso = f["de"] if f["a"] in externos else f["a"]
+    x = (centro[paso][0] + (sitio - 0.5) * ancho_paso) / ancho
     if f["a"] in externos:
-        return f"exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX={centro[f['de']][0] / ancho:.4f};entryY=0;entryDx=0;entryDy=0;"
-    return f"exitX={centro[f['a']][0] / ancho:.4f};exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+        return f"exitX={sitio:.4f};exitY=1;exitDx=0;exitDy=0;entryX={x:.4f};entryY=0;entryDx=0;entryDy=0;"
+    return f"exitX={x:.4f};exitY=0;exitDx=0;exitDy=0;entryX={sitio:.4f};entryY=1;entryDx=0;entryDy=0;"
 
 
 def entrada_asociacion(lado, nota=None, paso=None):
@@ -548,7 +551,10 @@ def _sitio_etiqueta(camino, otros=(), etiqueta=None):
     for k in horizontales:
         p = camino[k]
         for a, b in _trozos_libres(p, camino[k + 1], otros):
-            if mejor is None or b - a > mejor[0]:
+            if etiqueta:
+                # sin pisar una forma, la etiqueta de un evento o puerta ni una nota: el hueco más largo del trozo
+                a, b = _hueco_sin_cajas(a, b, p[1], *etiqueta)
+            if b > a and (mejor is None or b - a > mejor[0]):
                 mejor = (b - a, sum(largos[:k]) + abs((a + b) / 2 - p[0]))
     if etiqueta and (mejor is None or mejor[0] < etiqueta[0] + 2 * colocacion.AIRE_ETIQUETA):
         mejor = _sitio_en_vertical(camino, largos, otros, *etiqueta) or mejor
@@ -556,6 +562,43 @@ def _sitio_etiqueta(camino, otros=(), etiqueta=None):
         k = max(horizontales, key=lambda k: largos[k])
         mejor = (0, sum(largos[:k]) + largos[k] / 2)
     return 2 * mejor[1] / sum(largos) - 1
+
+
+def _punto_en(camino, sitio):
+    """El punto del camino en la posición relativa `sitio` de draw.io (de -1, el origen, a 1, el destino)."""
+    largos = [abs(q[0] - p[0]) + abs(q[1] - p[1]) for p, q in zip(camino, camino[1:])]
+    d = (sitio + 1) / 2 * sum(largos)
+    for (p, q), largo in zip(zip(camino, camino[1:]), largos):
+        if d <= largo and largo:
+            f = d / largo
+            return p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f
+        d -= largo
+    return camino[-1]
+
+
+def _pisa(centro, ancho, cajas):
+    """Si la etiqueta de un flujo (`ancho`) con su centro en `centro` pisa alguna de las `cajas` (x, y, w, h)."""
+    x0, y0 = centro[0] - ancho / 2, centro[1] - ALTO_ETIQUETA_FLUJO / 2
+    return any(x0 < x + w and x < x0 + ancho and y0 < y + h and y < y0 + ALTO_ETIQUETA_FLUJO for x, y, w, h in cajas)
+
+
+def _hueco_sin_cajas(a, b, y, ancho, cajas):
+    """El trozo de [a, b] (en x, a la altura `y`) donde la etiqueta de un flujo (`ancho`) cabe entera sin pisar
+    ninguna de las `cajas` (x, y, w, h): el de más sitio para su centro, devuelto de borde a borde de la etiqueta (su
+    centro es el del trozo y su largo, al menos el de la etiqueta); (a, a) si no cabe en ninguno."""
+    semiancho = ancho / 2 + colocacion.AIRE_ETIQUETA
+    semialto = ALTO_ETIQUETA_FLUJO / 2 + colocacion.AIRE_ETIQUETA
+    a, b = min(a, b), max(a, b)
+    libres = [(a + semiancho, b - semiancho)] if b - a >= 2 * semiancho else []
+    for x, cy, w, h in cajas:
+        if cy >= y + semialto or cy + h <= y - semialto:
+            continue
+        lo, hi = x - semiancho, x + w + semiancho
+        libres = [(u, v) for desde, hasta in libres for u, v in ((desde, min(hasta, lo)), (max(desde, hi), hasta)) if v >= u]
+    if not libres:
+        return a, a
+    u, v = max(libres, key=lambda r: r[1] - r[0])
+    return u - semiancho, v + semiancho
 
 
 def _sitio_en_vertical(camino, largos, otros, ancho, cajas):
@@ -646,16 +689,29 @@ def _celdas(proc, geo, pre=""):
     fondo = max((y + h for y, h in (v[:2] for v in geo["carriles"].values())), default=0)
     tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
     caminos = {}          # los de la colocación por capas, para que la etiqueta de uno no quede donde pasa otro
-    if geo.get("etiqueta_en_horizontal"):
+    por_capas = geo.get("etiqueta_en_horizontal")
+    if geo.get("flujos"):   # con Mermaid, para ver si la etiqueta en su sitio de siempre (el centro) pisa algo
         caminos = {i: _camino(centro[f["de"]], TAM[tipo[f["de"]]], geo["flujos"][i - 1], centro[f["a"]], TAM[tipo[f["a"]]])
                    for i, f in enumerate(proc["flujos"], 1)
                    if f["de"] in centro and f["a"] in centro and f["de"] != f["a"] and i - 1 < len(geo["flujos"])}
         cajas = _cajas(proc, geo)
+    mensajes = {}         # paso: los flujos de mensaje que lo tocan, en orden, para que cada uno vaya por su vertical
+    for i, f in enumerate(proc["flujos"], 1):
+        if (f["de"] in ext_id) != (f["a"] in ext_id):
+            mensajes.setdefault(f["de"] if f["a"] in ext_id else f["a"], []).append(i)
     for i, f in enumerate(proc["flujos"], 1):
         st = estilo_flujo(f, ext_id)
         pos = ""
+        desvio = ""
         if f["de"] in ext_id or f["a"] in ext_id:
-            st += entrada_mensaje(f, centro, geo["ancho"], ext_id)
+            paso = f["de"] if f["a"] in ext_id else f["a"]
+            suyos = mensajes.get(paso, [i])
+            k, n = suyos.index(i) if i in suyos else 0, len(suyos)
+            st += entrada_mensaje(f, centro, geo["ancho"], ext_id, (k + 1) / (n + 1), TAM[tipo[paso]][0])
+            if n > 1 and f.get("etiqueta"):
+                # varias verticales juntas: la etiqueta, hacia fuera de la suya, para que no pise la de al lado
+                medio = colocacion.ancho_etiqueta_flujo(f["etiqueta"]) / 2 + 4
+                desvio = f'<mxPoint x="{-medio if k < n / 2 else medio:.0f}" y="0" as="offset"/>'
             # la etiqueta, en el hueco entre los carriles y los participantes, donde no hay otros flujos
             paso, ext = (f["de"], f["a"]) if f["a"] in ext_id else (f["a"], f["de"])
             ys = centro[paso][1] + TAM[tipo[paso]][1] / 2
@@ -667,16 +723,23 @@ def _celdas(proc, geo, pre=""):
         mensaje = f["de"] in ext_id or f["a"] in ext_id
         pts = geo["flujos"][i - 1] if i - 1 < len(geo.get("flujos", [])) and not mensaje else []
         if f.get("etiqueta") and i in caminos:
-            sitio = geo.get("etiquetas_flujo", {}).get(i - 1)
-            if sitio is None:
-                sitio = _sitio_etiqueta(caminos[i], [c for j, c in caminos.items() if j != i],
-                                        (colocacion.ancho_etiqueta_flujo(f["etiqueta"]), cajas))
-            pos = f' x="{sitio:.3f}"' if sitio is not None else pos
+            # su sitio de siempre: el que validó la colocación por capas o, con Mermaid, el centro del flujo; si ahí pisa
+            # una forma, la etiqueta de un evento o una puerta o una nota, se busca otro en el flujo
+            w = colocacion.ancho_etiqueta_flujo(f["etiqueta"])
+            otros = [c for j, c in caminos.items() if j != i]
+            sitio = geo.get("etiquetas_flujo", {}).get(i - 1) if por_capas else 0.0
+            if sitio is None and por_capas:
+                sitio = _sitio_etiqueta(caminos[i], otros, (w, cajas))
+            if sitio is not None and _pisa(_punto_en(caminos[i], sitio), w, cajas):
+                otro = _sitio_etiqueta(caminos[i], otros, (w, cajas))
+                sitio = sitio if otro is None else otro
+            if sitio is not None and (por_capas or sitio):
+                pos = f' x="{sitio:.3f}"'
         arr = ('<Array as="points">' + "".join(f'<mxPoint x="{x:.0f}" y="{y:.0f}"/>' for x, y in pts) + "</Array>") if pts else ""
         de, a = ext_id.get(f["de"], f["de"]), ext_id.get(f["a"], f["a"])
         celdas.append(_celda(f"{pre}F{i:02d}", f.get("etiqueta", ""),
                              f'style="{st}" edge="1" parent="1" source="{_xml_attr(de)}" target="{_xml_attr(a)}"',
-                             f'<mxGeometry{pos} relative="1" as="geometry">{arr}</mxGeometry>', datos(f, DATOS_FLUJO)))
+                             f'<mxGeometry{pos} relative="1" as="geometry">{arr}{desvio}</mxGeometry>', datos(f, DATOS_FLUJO)))
     return celdas
 
 

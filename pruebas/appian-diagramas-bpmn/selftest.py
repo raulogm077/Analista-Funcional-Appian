@@ -8,7 +8,8 @@ etiquetas, los tipos de inicio y tarea, el flujo por defecto, los participantes 
 ancho del PNG. Comprueba también lo que se hace sin navegador, un proceso que no cabe en una página (tramos), que la
 colocación por capas no dibuje conexiones falsas ni deje las etiquetas pegadas a la flecha, que la etiqueta de cada
 salida de una puerta vaya sobre un tramo suyo (también en 1.170 procesos al azar), que la línea de una nota no cruce la
-etiqueta de su paso, el temporizador que interrumpe, los avisos sin capa y el error suelto en BPMN.
+etiqueta de su paso, que ninguna etiqueta de flujo pise nada (con Mermaid y sin navegador), el temporizador que
+interrumpe, los avisos sin capa y el error suelto en BPMN.
 Sale con 0 si todo va bien (tarda unos tres minutos).
 
   python3 pruebas/appian-diagramas-bpmn/selftest.py
@@ -636,6 +637,73 @@ def solapes(drawio):
             if a != b and ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah:
                 out.append(f"{a} / {b}")
     return out
+
+
+def etiquetas_de_flujo(drawio):
+    """Las cajas (texto, (x, y, w, h)) de las etiquetas de los flujos, donde las pinta draw.io: en su posición relativa
+    del trazado (de -1, el origen, a 1, el destino), más su desplazamiento. Los mensajes van en vertical del paso a su
+    participante, por el sitio que dicen exitX y entryX."""
+    import drawio_modelo as dm
+    proc, geo, _ = dm.leer(str(drawio))
+    tam = {p["id"]: dm.TAM[p["tipo"]] for p in proc["pasos"]}
+    raiz = ET.parse(drawio).getroot().find("diagram/mxGraphModel/root")
+    externos, ancho = {}, 0
+    for c in raiz.iter("mxCell"):
+        g = c.find("mxGeometry")
+        if "externo=1" in (c.get("style") or ""):
+            externos[c.get("id")] = float(g.get("y", 0))
+        if "swimlane" in (c.get("style") or ""):
+            ancho = max(ancho, float(g.get("width", 0)))
+    out = []
+    for el in raiz:
+        c, texto = (el, el.get("value")) if el.tag == "mxCell" else (el.find("mxCell"), el.get("label"))
+        if c is None or c.get("edge") != "1" or not texto:
+            continue
+        de, a, g = c.get("source"), c.get("target"), c.find("mxGeometry")
+        estilo = dict(kv.split("=", 1) for kv in (c.get("style") or "").split(";") if "=" in kv)
+        if de in externos or a in externos:
+            paso = a if de in externos else de
+            (cx, cy), (w, h) = geo["pasos"][paso][:2], tam[paso]
+            junto = cx - w / 2 + float(estilo["exitX" if a in externos else "entryX"]) * w, cy + h / 2
+            lejos = float(estilo["entryX" if a in externos else "exitX"]) * ancho, externos[a if a in externos else de]
+            camino = [junto, lejos] if a in externos else [lejos, junto]
+        elif de in geo["pasos"] and a in geo["pasos"]:
+            pts = [(float(q.get("x")), float(q.get("y"))) for q in g.findall("Array/mxPoint")]
+            camino = _camino(geo["pasos"][de][:2], tam[de], pts, geo["pasos"][a][:2], tam[a])
+        else:
+            continue
+        x, y = _punto_a(camino, (float(g.get("x", 0)) + 1) / 2)
+        desvio = g.find("mxPoint[@as='offset']")
+        if desvio is not None:
+            x, y = x + float(desvio.get("x", 0)), y + float(desvio.get("y", 0))
+        w = len(texto) * ANCHO_LETRA_FLUJO + 4
+        out.append((texto, (x - w / 2, y - 7, w, 14)))
+    return out
+
+
+def etiquetas_de_flujo_pisadas(drawio):
+    """Las etiquetas de flujo que pisan a otra, a una forma, a la etiqueta de un evento o una puerta o a una nota."""
+    import drawio_modelo as dm
+    proc, geo, _ = dm.leer(str(drawio))
+    geo = dict(geo, anotaciones=[(cx - w / 2, cy - h / 2, w, h) for cx, cy, w, h in geo.get("anotaciones") or []])
+    cajas = dm._cajas(proc, geo)   # leer da las notas por su centro; _cajas, por su esquina
+    etq = etiquetas_de_flujo(drawio)
+    pisa = lambda a, b: a[0] < b[0] + b[2] and b[0] < a[0] + a[2] and a[1] < b[1] + b[3] and b[1] < a[1] + a[3]
+    out = [f"«{t}» / «{u}»" for i, (t, a) in enumerate(etq) for u, b in etq[i + 1:] if pisa(a, b)]
+    return out + [f"«{t}» / la forma o etiqueta en {tuple(round(v) for v in b)}" for t, a in etq for b in cajas if pisa(a, b)]
+
+
+def etiquetas_que_no_se_pisan(tmp, env=None):
+    """Ninguna etiqueta de flujo pisa nada, en todos los procesos de ejemplo: tampoco cinco salidas de una puerta con
+    sus etiquetas ni dos mensajes entre el mismo paso y el mismo participante (etiquetas_flujo.json)."""
+    sin = env is not None
+    mal = []
+    for origen in sorted((AQUI / "datos").glob("*.json")):
+        d = tmp / origen.stem / f"{origen.stem}.drawio"
+        run("crear", origen, "-o", d, esperado=2 if sin else 0, env=env)
+        mal += [f"{origen.stem}: {m}" for m in etiquetas_de_flujo_pisadas(d)]
+    check(not mal, ("sin navegador" if sin else "con Mermaid") + ": ninguna etiqueta de flujo pisa a otra, a una forma, "
+          "a la etiqueta de un evento o una puerta ni a una nota " + "; ".join(mal))
 
 
 # ---------------------------------------------------------------- conexiones falsas
@@ -1540,6 +1608,7 @@ def main_sin_navegador():
         resolucion_png(tmp / "resolucion")
         conexiones(tmp / "conexiones")
         etiquetas_de_puertas(tmp / "etiquetas")
+        etiquetas_que_no_se_pisan(tmp / "etiquetas de flujo", entorno(sin_navegador=True))
         corredores_ortogonales(tmp / "corredores")
         tramos(tmp / "tramos", con_png=False)
         g3(tmp)
@@ -1571,6 +1640,8 @@ def main():
         resolucion_png(tmp / "resolucion")
         conexiones(tmp / "conexiones")
         etiquetas_de_puertas(tmp / "etiquetas")
+        etiquetas_que_no_se_pisan(tmp / "etiquetas de flujo")
+        etiquetas_que_no_se_pisan(tmp / "etiquetas de flujo sin", entorno(sin_navegador=True))
         corredores_ortogonales(tmp / "corredores")
         png_viejo(tmp / "png viejo")
         tramos(tmp / "tramos")
