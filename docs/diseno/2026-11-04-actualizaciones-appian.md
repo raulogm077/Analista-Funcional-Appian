@@ -1,289 +1,230 @@
 # Adaptarse a las actualizaciones de Appian: diseño
 
-Diseño del 4 de noviembre de 2026, revisado el 7 con las decisiones de Raúl y lo hablado en la sesión de Cowork
-«Sail CLI en terminal». Sobre `main` (`37235be`), con el bundle DevMCP 26.9.10 (build `20261103-144057`) instalado. El
-código empieza cuando Raúl dé paso a T1, que crea objetos en su entorno de desarrollo.
+Diseño del 4 de noviembre de 2026, rehecho el 11 con las decisiones de Raúl de ese día, el análisis de lo que han
+costado las actualizaciones y el primer caso real (el paso del bundle 26.9.10 al 26.9.15). Sobre `main` (`37235be`).
 
 ## El problema
 
-Appian actualiza tres piezas de las que depende el plugin, y lo hace casi cada semana: en cinco semanas hubo cinco
-bundles (builds del 30-sep, 8-oct, 19-oct, 26-oct y 3-nov; de la 26.6.110 a la 26.9.10). Cada bundle trae a la vez:
+Appian actualiza casi cada semana tres piezas de las que depende el plugin, y llegan juntas en un bundle: seis en seis
+semanas, de la 26.6.110 a la 26.9.15.
 
-| Pieza | Qué usa el plugin de ella | Ejemplo de la 26.9.10 |
+| Pieza | Qué usa el plugin de ella | Lo que cambió en la 26.9.15 |
 |---|---|---|
-| **Herramientas del Dev MCP** | Ingeniería inversa y «verificar» (`devmcp_extract.py`); buenas prácticas y la construcción, a través de la IA | 5 herramientas nuevas de informes de tareas (`createTaskReport`…) |
-| **Skill oficial `appian`** | Buenas prácticas remite a ella; el doc 14 recoge en qué contradice a la documentación | 9 reglas nuevas o ampliadas en su `SKILL.md` (`testInputs`, `x[i]` sobre un valor suelto, `a!headerContentLayout`…) |
-| **SAIL CLI (`sail`)** | `appian-qa`: la IA escribe los guiones y `qa.py` los repite sin IA | Órdenes nuevas `tasks` y `preview` (`open` y `reload` ya estaban en la anterior) |
+| **Herramientas del Dev MCP** | Ingeniería inversa y «verificar» (`devmcp_extract.py`); buenas prácticas y la construcción, a través de la IA | 4 herramientas nuevas (decisiones) y 17 esquemas cambiados; nueve exigen ahora un parámetro que antes no, o con otro nombre |
+| **Skill oficial `appian`** | Buenas prácticas remite a ella; el doc 14 recoge en qué contradice a la documentación | `SKILL.md` y un fichero nuevo, `references/decisions.md` |
+| **SAIL CLI (`sail`)** | `appian-qa`: la IA escribe los guiones y `qa.py` los repite sin IA | `interact` valida un envío antes de mandarlo y trae `--no-validate` |
 
-Hoy el plugin se entera tarde y a mano. La skill oficial sí tiene su aviso (`comprobar_divergencias.py`), pero:
-- **SAIL CLI** no tiene ninguno. `qa.py` solo sabe `load`, `navigate`, `interact`, `back` y `show`, y su prueba usa un
-  `sail` simulado que imita la 26.6.110. Si cambia el `--json`, la batería sigue en verde y el QA falla en un proyecto.
-  Sin `tasks` y `open` no hay guion para un escenario con una tarea (enviar y aprobar), que es de los más comunes.
-- **Herramientas del Dev MCP**: `devmcp_extract.py` ya lee el catálogo en cada ejecución, pero nadie avisa de que hay
-  herramientas nuevas que alguna skill podría aprovechar, ni de si una que se cita ha desaparecido.
+Mientras el servidor local y el plugin del entorno no son del mismo build, **el Dev MCP rechaza todas las llamadas**:
+actualizar no es opcional ni se puede retrasar. Y el plugin lo instala cualquiera, cada uno con su equipo, su entorno
+y sus cuentas.
 
-Y el plugin lo instala cualquiera: cada persona tiene su entorno (con su versión del plugin de Appian), su `sail` y sus
-aplicaciones de prueba. Nada de esto puede quedar fijo en el plugin.
+## Lo que se busca
 
-Lo que se busca: que una actualización cueste **un comando y tocar solo lo que señala**, que lo nuevo se aproveche
-sin reescribir skills, y que quien use el plugin pueda comprobar su `sail` en su entorno y volver atrás si falla.
+1. **Que el plugin siga funcionando** tras cada actualización, y que si algo se rompe se sepa ese día y no en un proyecto.
+2. **Que lo nuevo se aproveche**: saber qué trae cada bundle y qué parte del plugin debería usarlo.
+3. **Que sirva a cualquiera** (Raúl, 11-nov): nada atado a un equipo, un sistema, un cliente de IA, un entorno o unas
+   cuentas concretas.
+4. **Una solución limpia**: pocas piezas, cada una con su prueba, sin listas que mantener a mano.
 
-## El principio
+## Lo que han costado las actualizaciones hasta hoy
 
-El plugin **no copia lo que publica Appian: lo lee en vivo, guarda una foto para ver qué cambió y lleva un inventario
-corto de lo que no puede dejar abierto.** Tres capas, las mismas para las tres piezas:
+Del registro (`docs/evaluaciones.md`, `docs/siguiente-version.md`) y de la 26.9.15:
 
-| Capa | Quién | Dev MCP | Skill oficial | SAIL CLI |
-|---|---|---|---|---|
-| **1. Leer en vivo** | IA y scripts, al trabajar | Ya se hace: `devmcp_extract.py` lee el catálogo y clasifica por firma con `devmcp_policy.json` | Ya se hace: buenas prácticas remite a sus ficheros | **Falta**: leer la ayuda de `sail` antes de escribir guiones |
-| **2. Detectar el cambio** | Un script, al llegar un bundle | Catálogo instalado contra la foto | Manifiesto de la skill (huella por fichero) contra la foto | Órdenes, opciones y forma del `--json` contra la foto |
-| **3. Inventario de lo fijo** | Fichero versionado, lo valida el script | Las herramientas que se citan por nombre (7 en la prosa) | Los ficheros de la oficial a los que se remite (ya lo mira `comprobar_divergencias.py`) | Las órdenes que repite `qa.py` y los campos del `--json` que lee |
+| Qué pasó | Ejemplo | Por qué no se vio |
+|---|---|---|
+| Un script se rompe sin avisar | Al pasar al 26.9 el extractor perdía los modelos de proceso: cambió la forma de la respuesta | Sus pruebas usan un Dev MCP simulado. `qa.py` tiene el mismo riesgo: su simulador imita el `sail` 26.6.110 |
+| Lo que el plugin afirma caduca | El doc 10 decía que los avisos de Design Guidance no se podían leer y `validateDesignObjects` ya los daba; con la 26.9.10 cambiaron 3 de 10 observaciones del doc 14 | Nadie relee una afirmación si no falla |
+| Una herramienta nueva no se usa | Los filtros de usuario quedaron excluidos por llevar «user» en el nombre; `sail` trae `tasks`, `open` y `reload` y `qa.py` sigue con cinco órdenes | Nadie avisa de lo nuevo |
 
-Con la capa 1, lo nuevo se usa sin tocar el plugin. Con la 2 se sabe qué cambió. Con la 3 se distingue «hay algo
-nuevo» de «esto rompe tal pieza».
+Donde conduce la IA (construir, revisar, escribir guiones), lo nuevo se ve en cada sesión. Donde conduce un script, la
+respuesta tiene que tener la forma que espera, y lo nuevo solo se aprovecha cambiando el plugin. **El riesgo está en
+los dos scripts que hablan con Appian (`qa.py` y `devmcp_extract.py`) y en lo que el plugin afirma.**
+
+## La solución: una skill del plugin que actualiza y comprueba
+
+Una skill nueva, `appian-actualizacion` (nombre por confirmar), para cualquiera que use el plugin. Hace lo que hoy hace
+la skill personal de Raúl (`appian-devmcp-update`, atada a su equipo) y añade las comprobaciones. Tiene dos fases,
+porque tras instalar hay que reiniciar el cliente de IA: hasta entonces la sesión sigue hablando con el servidor viejo.
+
+**Fase 1, instalar** (un comando, `actualizar.py instalar <bundle>`):
+
+| Paso | Quién | Qué |
+|---|---|---|
+| 1 | IA | Pregunta al Dev MCP la versión del plugin de cada entorno (`getDevMcpVersionInfo` responde aunque lo demás se rechace) |
+| 2 | Persona | Descarga el bundle de su entorno (`/suite/plugins/servlet/stateless/downloads`): pide su sesión |
+| 3 | Script | Comprueba que el bundle es el del plugin (`mcp_src_sha`) y no es más antiguo que lo instalado |
+| 4 | Script | **Foto de antes**: catálogo de herramientas, manifiesto de la skill oficial y ayuda de cada orden de `sail` |
+| 5 | Script | **Guarda el bundle anterior** (lo instalado, sin el entorno virtual). Appian no deja volver atrás y el navegador pisa la descarga vieja |
+| 6 | Script | Instala como dice la guía oficial: extraer, `uv sync`, el `setup` de `sail` de su sistema, `install-skills` y comprobar el Chromium de Playwright |
+| 7 | Persona | Reinicia sus clientes de IA |
+
+**Fase 2, comprobar** (tras reiniciar, `actualizar.py comprobar`):
+
+| Paso | Quién | Qué |
+|---|---|---|
+| 8 | Script | Confirma que servidor y plugin son del mismo build |
+| 9 | Script | **Informe de qué cambió** entre la foto de antes y lo instalado, y qué de ello cita el plugin |
+| 10 | Script | **Banco de pruebas**: repite sus guiones con `qa.py` y extrae la aplicación con `devmcp_extract.py`, contra un resultado esperado |
+| 11 | IA | Lee el informe: clasifica cada cambio, relee lo que el plugin afirma de lo que cambió y dice qué novedad merece usarse |
+
+El resultado dice una de tres cosas: **en verde**, **algo del plugin falla con esta versión** (qué, y cómo seguir con
+el `sail` anterior) o **no se pudo comprobar** (falta el banco, una sesión caducada). Una actualización instalada cuya
+comprobación falla o no se hizo no queda como correcta.
+
+### El informe de qué cambió
+
+Compara dos fotos y es el mismo para las tres piezas. El de la 26.9.15, sacado a mano el 11-nov:
+
+```
+Foto: 26.9.10 (20261103-144057) · Instalado: 26.9.15 (20261109-154835)
+
+DEV MCP   223 -> 227 herramientas
+  nuevas: deleteDecision, getDecision, listDecisions, updateDecision
+  desaparecidas: ninguna
+  cambia el esquema de addPackageObjects: +objectUuids, -objects (obligatorio)
+  cambia el esquema de createExpressionRule: +testCases; description pasa a obligatorio
+  cambia el esquema de getDocumentContent: +savePath (obligatorio)
+  …
+SKILL appian   64 -> 65 ficheros   nuevos: references/decisions.md   cambiados: SKILL.md
+SAIL CLI  órdenes nuevas: ninguna
+  interact: opción nueva --no-validate; un envío con un campo obligatorio vacío se rechaza sin mandarlo
+```
+
+Al cruzarlo con lo que el plugin cita, el informe separa tres cosas:
+
+- **Rompe**: lo que un script o un guion usa ha desaparecido o cambiado. De la 26.9.15: `addPackageObjects` ya no
+  admite `objects` (buenas prácticas, doc 08, habla de «UUID y tipo»), y **posible**, sin probar todavía: un guion que
+  comprueba una validación al enviar, porque `sail` ahora rechaza ese envío en vez de devolver el mensaje.
+- **Cambió algo que el plugin documenta**: se relee. De la 26.9.15: `createExpressionRule` admite `testCases` (el
+  doc 14 describe el caso que deja `testInputs`) y las nueve observaciones de conducta del doc 14 vistas con el build
+  anterior.
+- **Nuevo**: si la IA lo usa sin cambios, nada; si una skill debería usarlo de otra manera, un pendiente con su porqué.
+  De la 26.9.15: las cuatro herramientas de decisiones en ingeniería inversa.
+
+Se revisan también los pendientes que esperan a Appian («mientras el bundle no lo permita, lo hace una persona»).
+
+### El banco de pruebas
+
+Una aplicación ficticia, `BPS`, que cada persona construye **una vez** en su entorno de desarrollo con el Dev MCP,
+siguiendo su especificación. Es el accesorio de la comprobación, así que va con la skill de actualización y no con
+`appian-qa`. Sirve a los dos scripts:
+
+- **`qa.py`**: un guion por tipo de lo que hace `sail` (lista con filtros, formulario con cada tipo de campo y una
+  validación, envío y lectura, confirmación, tarea encadenada, tarea de grupo con otra cuenta).
+- **`devmcp_extract.py`**: extraer `BPS` y comparar con un resultado esperado **escrito a mano** (objetos por tipo,
+  campos, relaciones, casos de prueba), no generado por el propio extractor. Para que ejercite `verificar` y
+  `regresion`, `BPS` gana dos o tres reglas con sus casos de prueba.
+
+Es lo que detecta la rotura que ya hubo: una extracción incompleta o un guion que falla se ven el día de la
+actualización. Sustituye a fotografiar la forma de cada respuesta. El banco cubre lo que contiene: una rotura conocida
+que no reproduzca se queda como caso en la prueba local del script.
+
+Sin banco construido, la comprobación lo dice y se queda en el informe: nunca usa una aplicación de proyecto.
+
+### Volver atrás
+
+El servidor del Dev MCP no se puede retrasar: sigue al plugin del entorno. `sail` sí, porque es un programa aparte. Si
+el banco falla con un `sail` nuevo, la skill saca el `sail` del bundle anterior, que guardó en el paso 5, y da la orden
+para seguir con él (`SAIL_CLI=<ruta>`, que `qa.py` ya admite) hasta que el plugin se adapte.
+
+### Lo que se lee en vivo
+
+Reglas de redacción para todas las skills (van a `CLAUDE.md`):
+
+- Una skill dice **qué hay que conseguir**, no qué herramienta llamar. Un nombre de herramienta solo donde un script
+  depende de él.
+- Lo que explican la skill oficial o la ayuda de `sail` **no se copia**: se remite a ello. `appian-qa` deja de
+  explicar cómo se maneja `sail`; antes de escribir guiones la IA lee `sail --help` y la ayuda de las órdenes que use.
+- Si el esquema de una herramienta o la ayuda de `sail` contradicen lo que dice una skill sobre ellos, **manda lo
+  instalado** y la sesión lo apunta como pendiente. Solo eso: las autorizaciones, el método del plugin y las
+  divergencias documentadas (doc 14) siguen vigentes.
+
+## Genérico: qué no puede tener y cómo se prueba
+
+| No puede depender de | Cómo se resuelve |
+|---|---|
+| Una ruta o un equipo | La carpeta del servidor y `uv` se leen de la configuración MCP de la persona; por defecto, la de la guía oficial (`~/appian-dev-mcp-server`) |
+| Un sistema operativo | Un solo script en Python; llama al `setup` y al `install-skills` que trae el bundle para cada sistema |
+| Un cliente de IA | `install-skills` de Appian detecta los suyos; los demás, con la carpeta que diga la persona |
+| Un entorno o una aplicación | El banco se construye en el entorno de cada uno; host y site son variables de los guiones |
+| Unas cuentas | Dos cuentas de prueba que crea cada persona; el plugin no guarda usuarios ni contraseñas |
+| Arreglos locales | Un parche propio sobre el servidor no entra en el plugin; se avisa de que la instalación lo pisa |
+
+El estado de cada persona (fotos, bundle anterior, resultado del banco) va en `~/.appian-analisis-funcional/`, fuera
+del repositorio, de los proyectos y de las carpetas de sesión de `sail`.
+
+Se prueba sin Appian: `pruebas/appian-actualizacion/selftest.py` instala bundles de mentira (con su `BUILD-INFO`, sus
+`setup` y su manifiesto) en una carpeta personal temporal, en los tres sistemas de la batería de GitHub, y compara
+fotos preparadas. Lo que necesita un entorno (el banco) se prueba en el de quien lo lanza.
 
 ## Quién hace qué
 
-| | Quien mantiene el plugin (Raúl y colaboradores) | Quien usa el plugin |
+| | Quien usa el plugin | Quien lo mantiene, además |
 |---|---|---|
-| **Cuándo** | Al salir un bundle | Al actualizar su `sail`, o cuando `qa.py` avisa |
-| **Qué** | Capas 2 y 3 en el repositorio: `comprobar_bundle.py`, las notas de versión, adaptar el plugin y publicarlo | Capa 1 y las comprobaciones de `qa.py`: pasar su banco de pruebas; si falla, seguir con el `sail` anterior |
-| **Dónde prueba** | En su banco de pruebas | En su banco de pruebas |
+| **Cuándo** | Al salir un bundle | Lo mismo, en una rama del repositorio |
+| **Qué** | Las dos fases. Si el banco falla, sigue con el `sail` anterior y avisa | Corrige lo que rompe, relee lo documentado (`comprobar_divergencias.py`, que sigue aparte), apunta lo nuevo, pone al día los simuladores con lo que el banco enseñó y la versión verificada |
 
-El servidor del Dev MCP no se elige: desde la 26.6.105 rechaza las llamadas si su `mcp_src_sha` no coincide con el del
-plugin de Appian del entorno (`version_gate.py`), así que sigue al entorno en cuanto cambia. La skill oficial no entra
-en esa comprobación: llega en el mismo bundle y se instala con él, pero su integridad es otra cuestión (su manifiesto,
-capa 2). `sail` es un programa aparte (el `INSTALL.txt` del bundle: «unrelated to the MCP server») y es lo único que se
-puede retrasar a propósito.
+**La versión verificada** es una línea en la skill: el bundle con el que el plugin pasó su banco. Con un bundle más
+nuevo, la comprobación lo dice y manda pasar el banco; no impide trabajar.
 
-## Capa 1: leer en vivo
+## Las pruebas de los scripts: simulado y real
 
-**Reglas de redacción** para todas las skills (van a `CLAUDE.md`):
-- Una skill dice **qué hay que conseguir** («leer la interfaz y sus casos de prueba»), no qué herramienta llamar. Un
-  nombre de herramienta solo donde un script depende de él, y entonces va al inventario.
-- Lo que explica la skill oficial o la ayuda de `sail` **no se copia**: se remite a ello. Ya lo dice `CLAUDE.md` («Lo que
-  ya garantizan la skill oficial o el Dev MCP no se repite»); se extiende a SAIL CLI.
-- Si el contrato técnico instalado (el esquema de una herramienta, la ayuda y las opciones de `sail`) contradice lo
-  que dice una skill sobre él, **manda lo instalado**, y la sesión lo apunta en `docs/siguiente-version.md`. Solo eso:
-  las autorizaciones, el método del plugin y las divergencias documentadas (doc 14) siguen vigentes.
+Los simuladores siguen: la batería corre en GitHub sin servidor ni cuentas y provoca lo que en un servidor real no se
+puede (un `sail` colgado, sin red). Lo que cambia es que ahora algo los ata a lo real: cuando el banco enseña una
+diferencia, se corrige el script y su simulador a la vez, y el simulador lleva la versión que imita.
 
-**SAIL CLI en `appian-qa`.** Antes de escribir guiones, la IA lee `sail --version`, `sail --help` y la ayuda de cada
-orden que vaya a usar. Esa ayuda está escrita para agentes (valores por tipo de componente, confirmaciones, lotes) y
-llega con cada versión; `SKILL.md` deja de explicar cómo se maneja `sail` y se queda con lo que es del plugin: el guion,
-las esperas y la repetición. Para no cargar de más cada sesión (la ayuda de `interact` son unas 150 líneas): primero
-`sail --version`; si coincide con la versión con la que se escribieron los guiones de la unidad (se guarda en su
-`resultado.json`), no se lee más; si no, solo la ayuda general y la de las órdenes que vayan a usarse, una vez por sesión.
-
-**Dev MCP.** Lo nuevo lo descubre la IA en la lista de herramientas de cada sesión. Para los scripts, la política de
-`devmcp_policy.json` ya clasifica una herramienta nueva por su nombre; el primer caso a mirar con la foto inicial son los
-`TaskReport` (si `devmcp_extract.py plan` los reconoce como tipo o los toma por genéricos). Cada entorno tiene su versión
-del plugin de Appian, así que dos personas pueden ver catálogos distintos: `devmcp_extract.py` debe seguir si falta una
-herramienta, con un aviso (se comprueba en T2).
-
-## Capa 2: un comando que dice qué cambió
-
-`python3 pruebas/comprobar_bundle.py`, al llegar un bundle. Es del mantenedor: vive en `pruebas/`, que no entra en el
-paquete. Da un solo informe, por pieza. Ejemplo ilustrativo, con lo que sí se comprobó al pasar de la 26.9.5 a la
-26.9.10 (los «…» no se midieron):
-
-```
-Foto: bundle 26.9.5 (20261026-140102) · Instalado: 26.9.10 (20261103-144057)
-
-Dev MCP     nuevas: createTaskReport, getTaskReport, listTaskReports, updateTaskReport, deleteTaskReport
-            cambiadas (parámetros): …            desaparecidas y citadas por el plugin: ninguna
-Skill       ficheros cambiados: SKILL.md, …   → revisar doc 14 (comprobar_divergencias.py)
-SAIL CLI    órdenes nuevas: tasks, preview   opciones nuevas: …
-            forma del --json: …
-Rompe       …
-```
-
-- **La foto** vive en `pruebas/bundle/`, sellada con el commit del bundle y su `mcp_src_sha` (`BUILD-INFO.txt`):
-  - `devmcp.json`: cada herramienta con sus parámetros y una huella de su descripción. Lo saca un subcomando nuevo de
-    `devmcp_extract.py` (`catalogo`), que ya sabe leer el catálogo.
-  - `skill-appian.json`: el `.bundle-manifest` de la skill oficial (SHA-256 por fichero), que dice exactamente qué
-    ficheros cambiaron. Cuando cambia uno que el doc 14 cita, lanza `comprobar_divergencias.py`, que sigue como está.
-  - `sail.json`: versión, órdenes, opciones de cada una y la **forma** del `--json` de cada orden: las rutas de sus
-    campos, nunca sus valores (así no entra nada de un cliente).
-- **La forma del `--json`** no se puede sacar sin servidor. Se captura con `--capturar`, en local y contra el banco de
-  pruebas de quien lo lanza; el resto del script trabaja con lo guardado.
-- **Las notas de versión.** Appian las publica en la ficha del App Market (`appmarket.appian.com/listings/appian-dev-mcp`),
-  con apartados «SAIL CLI» y «Skills» por versión. No separan lo que rompe de lo nuevo, la entrada más reciente no lleva
-  número y la 26.9.10 no figura en el historial: la fuente fiable es la comparación con la foto. La IA las lee después,
-  para clasificar cada línea del informe.
-- **Es un aviso**: sale con 0 salvo que lo que el inventario usa haya desaparecido o cambiado (1), o falten la foto o
-  lo instalado (2). Con `--actualizar-foto` reescribe la foto tras revisar el informe, y eso se confirma en la rama.
-- **En GitHub** (Linux, sin `sail` ni Dev MCP) solo corre la parte sin conexión: que el inventario cuadre con la foto
-  versionada. Lo que necesita lo instalado se salta y lo dice.
-- El simulador de las pruebas (`sail_simulado.py`) lleva la versión que imita; el script avisa si la foto es más nueva
-  que el simulador, porque entonces la batería prueba un `sail` que ya no existe.
-
-## Capa 3: el inventario de lo fijo
-
-Corto y escrito a mano, solo con lo que rompe algo si cambia. Va en dos sitios, según quién lo lea:
-- **`skills/appian-qa/scripts/sail-inventario.json`**, en el paquete, porque `qa.py` lo lee al arrancar en el equipo de
-  cualquiera: las órdenes que admite un guion, cada una con la forma de sus argumentos (con el site o con una URL, si
-  `qa.py` le añade `--fresh`); los campos del `--json` que lee `qa.py` (`status`, `completed`, `viewIsStale`, `ui`,
-  `validations`, `options`, `movedNothing`, `nth`, `of`, `refIsPerRender`…), y la versión de `sail` con la que se
-  verificó el plugin. La lista de órdenes de `qa.py` sale de aquí y deja de estar escrita en el código: añadir una
-  orden es añadir una línea.
-- **`pruebas/bundle/inventario.json`**, solo del mantenedor: las herramientas del Dev MCP citadas por nombre en skills y
-  scripts. La skill oficial no lo necesita: `divergencias-oficial.json` ya lo lleva.
-
-Las órdenes de un guion siguen siendo una **lista cerrada**: los guiones se repiten sin IA y no deben poder hacer
-`login`, `logout` ni un `load` que tire lo tecleado. Lo flexible es que la lista sea un dato que se valida, no código.
-
-## El banco de pruebas de cada persona
-
-Un `sail` nuevo se prueba en una aplicación de pruebas de quien lo lanza, nunca en una fija del plugin:
-1. **La app de pruebas ficticia del plugin**, construida en el entorno de desarrollo de esa persona. Su especificación
-   y sus guiones van en `skills/appian-qa/assets/banco/`; se construye una vez por entorno con el Dev MCP, siguiendo
-   `appian-best-practices`. Nombres y datos ficticios; el host y el site son variables del guion, así que los mismos
-   guiones sirven en cualquier entorno.
-2. **Si no puede o no quiere construirla, una aplicación de pruebas que nombre la persona.** La IA la recorre una vez
-   con `sail`, como hace `appian-qa` con una unidad, y deja los guiones en su carpeta; `qa.py` los repite. Cubre solo lo
-   que esa app ofrece, y el resultado dice qué tipos quedaron sin probar.
-3. Sin ninguna de las dos, `qa.py banco` lo dice y no prueba nada: nunca elige por su cuenta una app de proyecto.
-
-**Lo que cubre la app ficticia**, uno por tipo de lo que documenta `sail` (un tipo nuevo es una línea más):
-
-| Pantalla o acción | Lo que ejercita |
-|---|---|
-| Lista de registros con filtros | `pages`, `load`, filtro de índice, filtro de rango de fechas, búsqueda y orden de la tabla |
-| Formulario de alta (acción de registro) | Texto, número, desplegable, casillas, fecha, fecha y hora, selector de usuario, fichero, una validación que bloquea el envío, `back` |
-| Envío y lectura | Enviar, `reload` y leer lo escrito en la vista del registro |
-| Botón con confirmación | `interact --confirm` |
-| Acción sin formulario de inicio | Encadena a la tarea (cambió en la 26.6.105) |
-| Tarea de usuario asignada a un grupo | `tasks`, `open --accept`, completar la tarea con la otra cuenta |
-
-Dos cuentas locales de prueba (un rol que pide y otro que aprueba), que crea cada persona en su entorno.
-
-**La configuración de cada persona** va en `~/.appian-analisis-funcional/` (nombre a confirmar en T3), fuera del
-repositorio, de los proyectos y de las carpetas de sesión de `sail`, que guardan cookies:
-- `banco-pruebas.json`: por host, el site, el origen (ficticia o propia), el usuario de cada rol (nunca contraseñas) y
-  la versión de `sail` con la que pasó la última vez, con su fecha.
-- `banco/<host>/`: los guiones de una app propia.
-- `sail/`: la copia del último `sail` con el que `qa.py` terminó todo en verde.
-
-## La marcha atrás de `sail`
-
-Appian no deja volver atrás: su `setup` sobrescribe `sail` sin guardar el anterior, y el bundle se descarga del plugin
-instalado en el entorno, que sirve el de su versión. Sin copia, si un `sail` nuevo rompe `qa.py`, nadie puede repetir
-sus guiones hasta que el plugin se adapte. Por eso la copia la guarda el plugin, para todos:
-- Cada vez que `qa.py` termina todo en verde, guarda una copia del `sail` con el que lo hizo; solo la última (unos
-  10 MB). «Todo en verde» es una pasada completa (el banco entero o todos los guiones de la unidad, sin elegir unos
-  pocos) en la que cada guion pasó: una pasada parcial, con guiones desfasados o sin repetir no promueve la copia,
-  aunque `qa.py` salga con 0.
-- Si un `sail` nuevo falla, `qa.py` lo dice y da la orden para seguir con la copia: `SAIL_CLI=<copia>`, que `qa.py` ya
-  admite (`sail_cli()`). No se reinstala nada; cuando el plugin se adapta, se quita la variable.
-
-**Al arrancar**, `qa.py` compara `sail --version` con la versión verificada del inventario, con la del `resultado.json`
-de la unidad y con la última que pasó el banco. Si es otra y no ha pasado el banco, avisa («`sail` 26.10.x no ha pasado
-tu banco de pruebas: `qa.py banco`») y sigue. Si al `sail` instalado le falta una orden del inventario, no repite ese
-guion y lo dice. `requisitos.py` muestra también la versión.
-
-## La rutina de cada actualización
-
-**Quien mantiene el plugin:**
-1. Instala el bundle: Raúl con `appian-devmcp-update`; un colaborador, con el `setup` de Appian. Raúl añade como último
-   paso de su skill lanzar `comprobar_bundle.py` en el repositorio del plugin, en una rama nueva sacada de `main`.
-2. Si cambió `sail`, `--capturar` contra su banco.
-3. La IA lee las notas de versión y clasifica cada línea del informe en corrección, capacidad nueva o cambio de
-   comportamiento. Cada línea va a uno de tres sitios:
-   - **Rompe**: se corrige en esa rama antes de seguir usando la pieza afectada.
-   - **Cambió algo que el plugin documenta** (una guía de la oficial, una divergencia): lo revisa la IA, y lo que Appian
-     haya corregido se quita del plugin.
-   - **Nuevo**: si lo aprovecha la capa 1 sin cambios, no se hace nada; si una skill tendría que usarlo de otra manera
-     (los `TaskReport` en ingeniería inversa, `tasks` en el QA), va como pendiente a `docs/siguiente-version.md`, con su
-     porqué. Una capacidad nueva de `sail` señala además, para los proyectos, los escenarios marcados como «no
-     automatizable» que ya podrían repetirse.
-4. `--actualizar-foto`, la versión verificada en `sail-inventario.json`, commit y PR como cualquier otro trabajo.
-
-Una actualización sin nada que rompa ni nada documentado que cambie se queda en los pasos 1 y 2 y la foto.
-
-**Quien usa el plugin:**
-1. Tras actualizar `sail`, o cuando `qa.py` lo avisa: `qa.py banco`.
-2. En verde, sigue. En rojo, sigue con la copia (`SAIL_CLI`) y se lo cuenta a quien mantiene el plugin.
-3. No actualiza `sail` a mitad de una regresión ni justo antes de preparar un paquete (lo dice `appian-qa`).
-
-## Las pruebas de `qa.py`: simulado y real
-
-El selftest de `appian-qa` usa un `sail` simulado (`sail_simulado.py`), y debe seguir así: la batería corre en GitHub
-sin servidor ni cuentas, no crea datos en ningún entorno, tarda segundos y provoca a voluntad lo que en un servidor
-real no se puede (un `sail` que se cuelga, sin red, que lee su entrada). Lo que falla hoy no es el simulador, sino que
-nada lo ata al `sail` real. Con este diseño, dos niveles:
-
-| Nivel | Dónde y cuándo | Qué prueba |
-|---|---|---|
-| **Simulado** | GitHub y el equipo, en cada cambio | La lógica de `qa.py`: esperas, reintentos, fallos, resultado. El simulador responde con la forma capturada del `sail` real y lleva la versión de la que sale |
-| **Real** | En el equipo, contra el banco de pruebas de quien lo lanza, con cada `sail` nuevo | Que `sail` sigue respondiendo con esa forma (`--capturar`, el mantenedor) y que los guiones del banco pasan (`qa.py banco`, cualquiera) |
-
-Una orden nueva de `sail` no obliga a tocar el simulador: lo hace solo si `qa.py` la va a repetir, y entonces se añaden
-a la vez la línea del inventario, la respuesta capturada, su guion en el banco y su prueba. Para escribir guiones a mano,
-la IA ya la conoce por la ayuda (capa 1).
-
-Es lo que recomienda Appian en la skill oficial (`references/site-testing.md`): leer `sail --help` y la ayuda de cada
-orden una vez en vez de suponer opciones; una cuenta local por rol (`SAIL_USERNAME` y `SAIL_PASSWORD`), «la única
-prueba completa»; `--from-devmcp` para actuar como quien usa el Dev MCP; una `--data-dir` por ejecución a la vez; pulsar
-cada envío y leer después lo escrito. `appian-qa` ya sigue lo de las cuentas, las carpetas y el `--json`, y rechaza un
-guion que apunte a un `_cId` o a una ref que cambia en cada carga; lo que le falta es leer la ayuda (capa 1).
+Con la cuenta propia, sobre `BPS`, las respuestas de `load`, `show`, `reload`, `tasks` e `interact` (búsqueda y filtro)
+tienen la misma forma en la 26.9.10 y en la 26.9.15, y traen lo que `qa.py` lee. Falta lo que pide las cuentas de
+prueba: formulario, validación, `navigate`, `back`, `open` y las tareas.
 
 ## Decisiones
 
-**Raúl, 7-nov:**
-1. **Un `sail` nuevo se instala y se comprueba, con marcha atrás**, en vez de probarlo aparte antes de instalarlo. La
-   marcha atrás queda en el plugin (la copia del último `sail` en verde y `SAIL_CLI`), así que sirve a cualquiera, no
-   solo a quien tiene `appian-devmcp-update`.
-2. **Los escenarios de prueba se pasan en la app ficticia del plugin**, construida en el entorno de cada uno; si no la
-   hay, en una app de pruebas que nombre la persona. El plugin no fija aplicaciones, sites, entornos ni cuentas.
-3. **Por confirmar:** la especificación y los guiones del banco van en el paquete (`skills/appian-qa/assets/banco/`),
-   y eso choca con la letra de `CLAUDE.md` («Ninguna skill lleva un proyecto, tampoco de ejemplo»). No es un proyecto
-   sino el banco de pruebas de la herramienta, con datos ficticios y sin cliente. Propuesta: decirlo como excepción en
-   `CLAUDE.md` (T5).
-4. **T1 autorizado** («doy paso con T1», con Codex supervisando): construir la app ficticia en el desarrollo de
-   Indra-spain (`indra-spain.appiancloud.com`), solo con el prefijo `BPS`, y sus dos cuentas de prueba. Que las cuentas
-   las cree y las estrene la persona es propuesta de Claude, no decisión de Raúl: `createUser` existe, pero recibe la
-   contraseña como texto en la llamada, y una contraseña no pasa por la conversación.
-   T2, T3 y T4 esperan a que la rama `claude/pruebas-metodo-20261104` entre en `main`, porque cambia los mismos
-   ficheros (`qa.py`, el `SKILL.md` de `appian-qa`, `devmcp_extract.py`).
+**Raúl, 11-nov:**
+1. **El enfoque del análisis, aplicado**: pruebas reales de los dos scripts sobre el banco, revisar lo que el plugin
+   afirma y fuera los inventarios escritos a mano.
+2. **Las comprobaciones van con la actualización**, en una skill, y esa skill es del plugin. Su objetivo: que lo use
+   cualquiera sin depender de su equipo ni de sus proyectos, con una solución limpia.
+3. **El banco sale de `appian-qa`** y va con esa skill. **Por confirmar** la letra en `CLAUDE.md`: «ninguna skill lleva
+   un proyecto» no cuenta para el banco de pruebas de una herramienta, ficticio y sin cliente.
+4. **Las cuentas de prueba de su entorno las crea la IA** y guarda sus contraseñas, fuera del repositorio. Es su
+   decisión para su entorno de desarrollo; el plugin no la impone a nadie.
+5. Codex, como segunda opinión.
 
-**Raúl, 4-nov:**
-1. ~~Pruebas reales contra IFA Informes y Acciones~~: sustituida por la 2 del 7-nov. IFA no tiene tareas de usuario, y
-   las aplicaciones de proyecto desaparecen (`ctc-tarjetas`, `cmde-cuadro-mando` y `contratacion-cpr-p6` ya responden
-   «no existe o no tienes permisos»).
-2. **El script vigila también el catálogo del Dev MCP.**
-3. **`comprobar_divergencias.py` sigue aparte**, siempre que la rutina no se vuelva lenta. Medida orientativa, a
-   confirmar en T2: la comparación con la foto y `comprobar_divergencias.py` tardan segundos y no necesitan conexión;
-   leer el catálogo del Dev MCP, del orden de segundos; solo `--capturar` y el banco tardan minutos, y se lanzan una vez
-   por `sail` nuevo, no en el trabajo diario. Si la rutina completa pasa de unos 5 minutos o de un comando, se vuelve a
-   analizar con Raúl.
+**Raúl, 7-nov:** un `sail` nuevo se instala y se comprueba, con marcha atrás; los escenarios se pasan en la app ficticia
+del plugin, construida en el entorno de cada uno; T1 autorizado en el desarrollo de Indra-spain, con el prefijo `BPS`.
+
+**Raúl, 4-nov:** se vigila también el catálogo del Dev MCP; `comprobar_divergencias.py` sigue aparte.
+
+**Lo que cambia respecto al diseño del 7-nov:** `pruebas/comprobar_bundle.py` y la foto versionada en el repositorio
+pasan a ser la skill y las fotos de cada persona; los inventarios a mano (`sail-inventario.json`, `inventario.json`)
+no se hacen; la aplicación de pruebas propia de cada persona se aplaza hasta que alguien la pida.
 
 ## Trabajo, en orden
 
-| | Qué | Por qué en este orden |
+| | Qué | Depende de |
 |---|---|---|
-| T1 | Banco: la especificación de la app ficticia y sus guiones (`skills/appian-qa/assets/banco/`); construirla en el desarrollo de Indra-spain con el Dev MCP; capturar allí el `--json` real de `sail` 26.9.10 de cada orden (`show`, `interact`, `load`, `navigate`, `back`, `tasks`, `open`, `reload`) y compararlo con el simulador | Es el dato del que depende todo lo demás: dice si algo ya se ha roto sin que se vea |
-| T2 | `comprobar_bundle.py`, `pruebas/bundle/` con la foto inicial (26.9.10) y su inventario; subcomando `catalogo` de `devmcp_extract.py` (antes, comprobar que conecta en este equipo: su ayuda habla de `.mcp.json` y aquí el Dev MCP está en `~/.claude.json`) y que siga si falta una herramienta; `--capturar` contra el banco de quien lo lanza | Sin foto no hay qué comparar |
-| T3 | `appian-qa`: leer la ayuda de `sail`; `sail-inventario.json` y las órdenes desde él; `open`, `tasks` y `reload` en los guiones; `qa.py banco` y la configuración de cada persona; el aviso al arrancar; la copia del último `sail` en verde y `SAIL_CLI`; no actualizar a mitad de una regresión; la versión en `requisitos.py` | Cubre los escenarios con tareas y deja a cualquiera probar y volver atrás |
-| T4 | Simulador al día con lo capturado en T1, sellado con su versión, y sus pruebas en `selftest.py` | Que la batería pruebe el `sail` de verdad |
-| T5 | `CLAUDE.md`: reglas de redacción, la excepción del banco (si Raúl la confirma) y la rutina del mantenedor en lugar de la línea de `comprobar_divergencias.py`; revisar las 7 herramientas citadas en prosa | Que lo nuevo que se escriba no vuelva a fijar nada |
-| T6 | Último paso de `appian-devmcp-update` (skill global de Raúl, fuera del repositorio): se cambia una vez, en su `update.sh` común de `~/.claude`, al que remiten las copias de los demás clientes. Solo sirve a Raúl | Que su rutina no dependa de acordarse |
+| T1 | Banco `BPS` en Indra-spain: las dos cuentas, las reglas con casos de prueba, los guiones y el esperado del extractor. Lo primero, el envío con validación en la 26.9.15 | Reiniciar el cliente tras la 26.9.15 |
+| T2 | La skill: `actualizar.py` (estado, foto, instalar, informe) con su prueba sobre bundles de mentira; el catálogo, con un subcomando nuevo del extractor, que ya sabe conectar | — |
+| T3 | `comprobar` con el banco; en `qa.py`, `tasks`, `open` y `reload`; `appian-qa` lee la ayuda de `sail` | T1, y que la rama `claude/pruebas-metodo-20261104` entre en `main`: cambia los mismos ficheros |
+| T4 | Simuladores al día con lo que enseñe el banco, con su versión | T3 |
+| T5 | `CLAUDE.md`: reglas de redacción, el banco y la rutina del mantenedor; README y requisitos; la skill personal de Raúl se queda en lo suyo (su parche y sus otros clientes) | T2 |
+| T6 | Lo que deja la 26.9.15 en el plugin: `objectUuids` en el doc 08, `testCases` y las nueve observaciones del doc 14, las decisiones en ingeniería inversa | Reiniciar; la rama del método, que toca esos documentos |
 
 ## Lo que no se hace
 
-- **Generar skills a partir del bundle.** Lo que hay que entender o decidir lo hace la IA; el script solo avisa.
-- **Depender de `sail` o del Dev MCP en la batería de GitHub.** Corre sin ellos.
-- **Fijar en el plugin aplicaciones, sites, entornos o cuentas de prueba.** Cada persona tiene los suyos.
-- **Probar un `sail` nuevo en una app de proyecto que la persona no haya nombrado.**
-- **`sail preview` en el QA.** Solo funciona en servidores de rama `appian-dev`; los entornos de los proyectos no lo son.
-- **Fijar el plugin a una versión de Appian.** La versión verificada dice desde cuál se ha revisado; no impide usar una
-  más nueva, solo avisa.
+- **Generar skills a partir del bundle.** Lo que hay que entender lo hace la IA; el script instala, compara y prueba.
+- **Depender de `sail` o del Dev MCP en la batería de GitHub.**
+- **Fijar en el plugin aplicaciones, sites, entornos o cuentas.**
+- **Probar en una aplicación de proyecto.**
+- **`sail preview` en el QA**: solo funciona en servidores de rama `appian-dev`.
+- **Fijar el plugin a una versión de Appian.** La versión verificada avisa, no impide.
 
 ## Límites
 
-- Una herramienta que cambia de comportamiento sin cambiar de nombre, de parámetros ni de descripción no la detecta la
-  foto. La cubren los selftest de cada script y las pruebas con proyectos.
-- La forma del `--json` solo se actualiza cuando alguien lanza `--capturar` contra su banco. Si nadie lo hace, el
-  informe lo dice («forma del --json: capturada con la 26.9.10»).
-- Con una app de pruebas propia, el banco cubre solo lo que esa app ofrece.
-- La copia del `sail` anterior solo existe si `qa.py` terminó alguna vez todo en verde en ese equipo.
+- Una herramienta que cambia de conducta sin cambiar de esquema ni de descripción solo la ve el banco, y solo si el
+  banco la ejercita.
+- Un resultado en un entorno no vale para otro con otra versión del plugin de Appian.
+- El `sail` anterior solo existe si la actualización se hizo con la skill.
+- La guía oficial no dice cómo actualizar, solo cómo instalar: borrar el código anterior antes de extraer es decisión
+  de este diseño.
 - Las URL de docs.appian.com con versión fija siguen con `comprobar_anclas.py` antes de publicar.
