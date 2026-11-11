@@ -14,7 +14,7 @@
 ![Skills](https://img.shields.io/badge/skills-7-6b4fbb?style=flat-square)
 ![Sistemas](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-555?style=flat-square)
 
-[Instalación](#instalación) · [Actualizaciones](#actualizaciones) · [Skills](#las-siete-skills) · [Cómo trabaja](#cómo-trabaja) · [Desarrollo](#desarrollo) · [Manual completo](../README.md)
+[Instalación](#instalación) · [Actualizaciones](#actualizaciones) · [Skills](#las-ocho-skills) · [Cómo trabaja](#cómo-trabaja) · [Desarrollo](#desarrollo) · [Manual completo](../README.md)
 
 </div>
 
@@ -83,7 +83,7 @@ en la pestaña Code de la app de escritorio).
 ¿Qué versión tienes? `claude plugin list`. Las novedades de cada versión están en el
 [historial](../README.md#versiones).
 
-## Las siete skills
+## Las ocho skills
 
 Cada petición entra por una sola skill; las demás se usan desde ella y se pasan el trabajo en ficheros del proyecto.
 
@@ -96,6 +96,7 @@ Cada petición entra por una sola skill; las demás se usan desde ella y se pasa
 | `appian-prototipos` | Prototipos navegables con componentes SAIL reales y la marca del cliente o la de Appian | `prototipo/` navegable y capturas para el DF |
 | `appian-best-practices` | Las buenas prácticas oficiales de Appian para diseñar, construir cada issue, revisar y diagnosticar | Decisiones de solución, reglas por dominio y quality gates |
 | `appian-qa` | Recorrer los escenarios de una unidad construida con SAIL CLI como cada rol, en otra sesión | Guiones en `qa/<U>/` que se repiten sin IA antes de cada paquete |
+| `appian-actualizacion` | Instalar cada bundle nuevo del Dev MCP (servidor, skill oficial y SAIL CLI) y saber qué cambió | Lo instalado al día, el bundle anterior guardado y el informe de cambios |
 
 Incluye el MCP público de documentación de Appian: lo que una skill no sabe con certeza, lo consulta antes de
 escribirlo.

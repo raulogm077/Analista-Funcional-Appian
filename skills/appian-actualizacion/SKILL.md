@@ -37,10 +37,12 @@ la guía de Appian, añade `--servidor <carpeta>` a cada orden.
    `https://<su entorno>/suite/plugins/servlet/stateless/downloads`.
 2. **Instalar**, con el visto bueno de la persona, porque sustituye el servidor:
    `python3 <skill>/scripts/actualizar.py instalar <descarga> --plugin-sha <mcpSrcSha>`. Primero comprueba, sin tocar
-   nada, que el bundle vale; después hace la foto de lo instalado y guarda el bundle anterior; y solo entonces
-   sustituye lo que trae el bundle y lanza `uv sync`, el instalador de SAIL CLI y el de la skill oficial. Con
-   `--skills-dir <carpeta>` instala la skill también en un cliente de IA que el instalador de Appian no detecta. Si
-   un paso falla, dice cuál y la misma orden se puede repetir.
+   nada, que el bundle vale, y lo extrae aparte; después hace la foto de lo instalado y guarda el bundle anterior; y
+   solo entonces sustituye lo que trae el bundle y lanza `uv sync`, el instalador de SAIL CLI y el de la skill
+   oficial. Con `--skills-dir <carpeta>` instala la skill también en un cliente de IA que el instalador de Appian no
+   detecta. Si un paso falla, para ahí, dice cuál y la misma orden se puede repetir. Un bundle con otra forma que
+   la que conoce el script no se instala: se instala a mano con la guía de Appian y se avisa a quien mantiene el
+   plugin.
 3. **Reiniciar los clientes de IA.** Hasta entonces la sesión sigue hablando con el servidor anterior y el Dev MCP
    sigue rechazando las llamadas.
 4. **Qué cambió**: `python3 <skill>/scripts/actualizar.py informe`. Compara la foto del build anterior con lo instalado.
@@ -54,10 +56,11 @@ la guía de Appian, añade `--servidor <carpeta>` a cada orden.
    anterior y dice cómo seguir con él (`SAIL_CLI`), hasta que el plugin se adapte.
 
 El catálogo de herramientas entra en la foto cuando se le da (`--catalogo <fichero.json>`). Sin él, el informe compara
-la skill oficial y SAIL CLI, y lo dice. Una foto suelta, sin instalar: `actualizar.py foto`.
+la skill oficial y SAIL CLI, y lo dice. La foto de un build se hace una vez; `actualizar.py foto` la rehace entera.
 
-Un arreglo que hayas hecho a mano dentro de la carpeta del servidor se pierde al instalar: queda en el bundle
-anterior guardado.
+Un arreglo que hayas hecho a mano en lo que trae el bundle se pierde al instalar. Al actualizar queda en el bundle
+anterior guardado; al repetir la instalación del mismo bundle, no. Mientras se instala no debe haber otra instalación
+en marcha sobre la misma carpeta.
 
 ## Qué escribe
 

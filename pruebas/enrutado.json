@@ -90,5 +90,17 @@
   {
     "peticion": "Hemos cambiado a propósito el formulario de alta de expedientes y ahora el recorrido guardado de HU-02.1 falla en el paso del botón. Rehazlo con SAIL CLI para que vuelva a pasar.",
     "skill": "appian-qa"
+  },
+  {
+    "peticion": "El Dev MCP me rechaza todas las herramientas: dice que el servidor y el plugin de Appian son de builds distintos. Ya he descargado el bundle nuevo de mi entorno; instálalo.",
+    "skill": "appian-actualizacion"
+  },
+  {
+    "peticion": "Appian ha sacado otra versión del Dev MCP esta semana. Antes de instalarla quiero saber qué tengo ahora mismo en el equipo: el servidor, SAIL CLI y la skill oficial.",
+    "skill": "appian-actualizacion"
+  },
+  {
+    "peticion": "Ayer instalé el bundle nuevo del Dev MCP. ¿Qué ha cambiado respecto al anterior? Herramientas nuevas, parámetros distintos y si SAIL CLI trae órdenes u opciones nuevas.",
+    "skill": "appian-actualizacion"
   }
 ]

@@ -40,7 +40,7 @@ la skill («as-is», «draw.io», «DF», «prototipo»…; lo comprueba `prueba
 
 Un cuarto lote, `vecinas/enrutado.json`, mide la frontera con skills de fuera del plugin que el usuario puede tener a la
 vez: `vecinas.json` trae sus descripciones tal cual las ve el modelo (hoy `appian-sail-generator` y `docx`), que van en
-el enunciado con las siete y valen como respuesta. Son 13 peticiones, con las palabras de cada frontera (maqueta, SAIL,
+el enunciado con las del plugin y valen como respuesta. Son 13 peticiones, con las palabras de cada frontera (maqueta, SAIL,
 Word, DF): una maqueta para enseñar o validar es de prototipos y el SAIL para pegar, de `appian-sail-generator`; el DF
 en Word lo genera el analista y un Word suelto, `docx`; construir un evolutivo es de buenas prácticas y una incidencia
 urgente la registra el analista. `python3 puntuar.py --enunciado --vecinas` y
@@ -50,7 +50,7 @@ publicada. `vecinas/ocultas.json` trae 10 peticiones más de esa frontera, que n
 
 ## Cómo se hace
 
-1. **El enunciado.** `python3 puntuar.py --enunciado > <carpeta temporal>/enunciado.md`: las siete descripciones, leídas
+1. **El enunciado.** `python3 puntuar.py --enunciado > <carpeta temporal>/enunciado.md`: las descripciones de las skills, leídas
    de `skills/`, y las peticiones visibles, sin la skill esperada.
 2. **El enrutado.** Un agente que no ha visto el repositorio recibe solo ese enunciado y devuelve
    `[{"peticion", "skill"}]` en el mismo orden, una skill por petición. Se guarda como `respuestas.json`, fuera del

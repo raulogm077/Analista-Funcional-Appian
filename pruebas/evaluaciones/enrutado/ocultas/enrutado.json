@@ -46,5 +46,13 @@
   {
     "peticion": "Antes de preparar el paquete para pruebas de la aplicación de becas, vuelve a pasar todos los recorridos ya guardados de sus unidades para comprobar que nada se ha roto, con el script de repetición y sin usar IA. Si alguno falla, marca como pendiente la tarea de construcción de esa unidad.",
     "skill": "appian-qa"
+  },
+  {
+    "peticion": "El administrador ha subido de versión el plugin Appian Dev MCP en nuestro entorno y mi servidor local ya no vale. Tengo el .tar.gz en Descargas: déjalo instalado y dime qué herramientas han cambiado.",
+    "skill": "appian-actualizacion"
+  },
+  {
+    "peticion": "Desde la última versión del Dev MCP, sail se porta distinto al enviar un formulario. ¿Puedo seguir con el sail de la versión anterior mientras lo miramos? No guardé el instalador viejo.",
+    "skill": "appian-actualizacion"
   }
 ]

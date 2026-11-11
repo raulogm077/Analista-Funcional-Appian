@@ -54,8 +54,8 @@ porque tras instalar hay que reiniciar el cliente de IA: hasta entonces la sesi�
 | 2 | Persona | Descarga el bundle de su entorno (`/suite/plugins/servlet/stateless/downloads`): pide su sesión |
 | 3 | Script | Comprueba lo que hace falta (Python, `uv`, dónde está instalado el servidor) y que el bundle es el del plugin (`mcp_src_sha`) y no es más antiguo que lo instalado. Si algo falta, para sin tocar nada |
 | 4 | Script | **Foto de antes**: catálogo de herramientas, manifiesto de la skill oficial y ayuda de cada orden de `sail` |
-| 5 | Script | **Guarda el bundle anterior** (lo instalado, sin el entorno virtual). Appian no deja volver atrás y el navegador pisa la descarga vieja |
-| 6 | Script | Solo entonces instala, como dice la guía oficial: extraer, `uv sync`, el `setup` de `sail` de su sistema e `install-skills`. Si falta el Chromium de Playwright lo dice el propio Dev MCP, con la orden que lo instala |
+| 5 | Script | **Guarda el bundle anterior** (lo instalado, sin el entorno virtual) y lo relee entero. Appian no deja volver atrás y el navegador pisa la descarga vieja |
+| 6 | Script | Solo entonces sustituye el servidor, con el bundle ya extraído aparte y una marca mientras dura: si se corta, la misma orden lo termina sin repetir la foto ni la copia. Después, como dice la guía oficial, `uv sync`, el `setup` de `sail` de su sistema e `install-skills`, y para en el primero que falle. Si falta el Chromium de Playwright lo dice el propio Dev MCP, con la orden que lo instala |
 | 7 | Persona | Reinicia sus clientes de IA |
 
 **Fase 2, comprobar** (tras reiniciar, `actualizar.py comprobar`):
@@ -207,7 +207,12 @@ prueba: formulario, validación, `navigate`, `back`, `open` y las tareas.
 5. Codex, como segunda opinión. La dio el 11-nov sobre un resumen, sin poder leer los ficheros: «adelante con
    cambios», todos recogidos aquí (el resultado en tres estados estrictos, la configuración por instalación y entorno
    sin suponer ninguna, «recuperar el `sail`» en vez de marcha atrás, el catálogo como salida de datos del extractor y
-   acordar la base con la rama del método antes de tocar sus ficheros).
+   acordar la base con la rama del método antes de tocar sus ficheros). Después revisó el código de `actualizar.py`,
+   esta vez entero: «no listo», con tres fallos graves de `instalar` que se corrigieron ese día (una sustitución
+   cortada que no se podía repetir o pisaba la copia buena, la validación del `.tar.gz` y el nombre del build usado
+   como carpeta sin validar) y once mejoras. No se aplicaron dos, y por qué: guardar copia también al repetir la
+   instalación del mismo bundle (obligaría a guardar varias copias; se avisa de que ese caso no la guarda) y un
+   bloqueo entre dos instalaciones a la vez (se dice que no se haga).
 
 **Raúl, 7-nov:** un `sail` nuevo se instala y se comprueba, con marcha atrás; los escenarios se pasan en la app ficticia
 del plugin, construida en el entorno de cada uno; T1 autorizado en el desarrollo de Indra-spain, con el prefijo `BPS`.
@@ -223,10 +228,10 @@ no se hacen; la aplicación de pruebas propia de cada persona se aplaza hasta qu
 | | Qué | Depende de |
 |---|---|---|
 | T1 | Banco `BPS` en Indra-spain: las dos cuentas, las reglas con casos de prueba, los guiones y el esperado del extractor. Lo primero, el envío con validación en la 26.9.15 | Reiniciar el cliente tras la 26.9.15 |
-| T2 | La skill, primero lo que no toca ficheros de otra rama. **Hecho (11-nov):** `actualizar.py` con `estado`, `foto`, `instalar`, `informe` y `sail-anterior`, y su prueba sin Appian; reproduce el informe de la 26.9.15 con las dos fotos reales e instala el bundle real en una carpeta de ensayo, en Windows. **Falta:** el catálogo, que es el subcomando nuevo del extractor | El catálogo, que la rama del método entre en `main` |
+| T2 | La skill, primero lo que no toca ficheros de otra rama. **Hecho (11-nov):** `actualizar.py` con `estado`, `foto`, `instalar`, `informe` y `sail-anterior`, y su prueba sin Appian (67 comprobaciones); reproduce el informe de la 26.9.15 con las dos fotos reales y, en una carpeta de ensayo, actualiza de verdad de la 26.9.10 a la 26.9.15 y recupera el `sail` 26.9.10, en Windows. En los README, los requisitos y el enrutado, la skill ya figura. **Falta:** el catálogo, que es el subcomando nuevo del extractor, y medir el enrutado con la skill nueva | El catálogo, que la rama del método entre en `main` |
 | T3 | `comprobar` con el banco; en `qa.py`, `tasks`, `open` y `reload`; `appian-qa` lee la ayuda de `sail` | T1, y que la rama `claude/pruebas-metodo-20261104` entre en `main`: cambia los mismos ficheros |
 | T4 | Simuladores al día con lo que enseñe el banco, con su versión | T3 |
-| T5 | `CLAUDE.md`: reglas de redacción, el banco y la rutina del mantenedor; README y requisitos; la skill personal de Raúl se queda en lo suyo (su parche y sus otros clientes) | T2 |
+| T5 | `CLAUDE.md`: reglas de redacción, el banco y la rutina del mantenedor; la skill personal de Raúl se queda en lo suyo (su parche y sus otros clientes, con `--skills-dir`) | La rama del método, que cambia `CLAUDE.md` |
 | T6 | Lo que deja la 26.9.15 en el plugin: `objectUuids` en el doc 08, `testCases` y las nueve observaciones del doc 14, las decisiones en ingeniería inversa | Reiniciar; la rama del método, que toca esos documentos |
 
 ## Lo que no se hace

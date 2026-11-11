@@ -17,6 +17,7 @@ import io
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -42,7 +43,7 @@ elif a == ["--help"]:
     for o in [*d["ordenes"], "completion", "help"]:
         print(f"  {o:<11} hace {o}")
     print("\\nFlags:\\n      --json   salida para programas")
-elif len(a) == 2 and a[1] == "--help" and a[0] in d["ordenes"]:
+elif len(a) == 2 and a[1] == "--help" and d["ordenes"].get(a[0]):
     print(d["ordenes"][a[0]])
 else:
     sys.exit(1)
@@ -52,12 +53,12 @@ SAIL = {
     1: {"version": "sail version 1.0.0 (aaa, built 2026-01-01)",
         "ordenes": {"load": AYUDA.format(o="load", flags=""),
                     "interact": AYUDA.format(o="interact", flags="      --confirm   confirma\n      --legacy    viejo\n"),
-                    "old": AYUDA.format(o="old", flags="")}},
+                    "old": AYUDA.format(o="old", flags=""), "rota": None}},      # la ayuda de «rota» falla
     2: {"version": "sail version 1.1.0 (bbb, built 2026-02-01)",
         "ordenes": {"load": AYUDA.format(o="load", flags=""),
                     "interact": AYUDA.format(o="interact", flags="      --confirm       confirma\n      --no-validate   envía igual\n")
                                 + "\nVALIDA LOS ENVÍOS\nUn envío con un obligatorio vacío se rechaza.\n",
-                    "tasks": AYUDA.format(o="tasks", flags="")}},
+                    "tasks": AYUDA.format(o="tasks", flags=""), "rota": None}},
 }
 h = lambda parametros, obligatorios, descripcion="d1", esquema="e1": {
     "parametros": parametros, "obligatorios": obligatorios, "descripcion": descripcion, "esquema": esquema}
@@ -123,10 +124,11 @@ FALLA_BAT = 'if exist "%APPIAN_RE_HOME%\\uv-falla" exit /b 3\r\n'
 FALLA_SH = 'if [ -e "$APPIAN_RE_HOME/uv-falla" ]; then echo "no se puede"; exit 3; fi\n'
 
 
-def bundle_entero(carpeta, n, se_sale=False):
-    """Un bundle como los de Appian, con su servidor, su skill, sus instaladores y un SAIL CLI por sistema."""
+def bundle_entero(carpeta, n, malo="", mas=None, sin=(), su_info=None, enlace=False):
+    """Un bundle como los de Appian, con su servidor, su skill, sus instaladores y un SAIL CLI por sistema. Para los
+    que no valen: `mas` añade miembros, `sin` los quita, `su_info` cambia el BUILD-INFO y `enlace` mete un enlace."""
     ficheros = {
-        "BUILD-INFO.txt": info(n), "pyproject.toml": "[project]\nname = 'servidor'\n",
+        "BUILD-INFO.txt": su_info or info(n), "pyproject.toml": "[project]\nname = 'servidor'\n",
         "src/servidor.py": f"# build {n}\n", f"src/solo_del_{n}.py": "",
         "skills/appian/.bundle-manifest": MANIFIESTO.get(n, MANIFIESTO[2]),
         "bin/setup-windows.bat": BAT.format(que=f"setup {n}", mas=""),
@@ -135,15 +137,18 @@ def bundle_entero(carpeta, n, se_sale=False):
         "bin/install-skills.sh": SH.format(que=f"skills {n}", mas=EDITADA_SH),
         "bin/sail-windows-amd64.exe": f"sail falso {n}", "bin/sail-darwin-arm64": f"sail falso {n}",
         "bin/sail-linux-amd64": f"sail falso {n}"}
-    if se_sale:
-        ficheros["../fuera.txt"] = "no debería escribirse"
-    f = carpeta / f"entero-{n}{'-se-sale' if se_sale else ''}.tar.gz"
+    ficheros = [(k, v) for k, v in ficheros.items() if k not in sin] + list(mas or [])
+    f = carpeta / f"entero-{n}{'-' + malo if malo else ''}.tar.gz"
     with tarfile.open(f, "w:gz") as t:
-        for nombre, texto in ficheros.items():
+        for nombre, texto in ficheros:
             datos = texto.encode("utf-8")
             miembro = tarfile.TarInfo(nombre)
             miembro.size, miembro.mode = len(datos), 0o755
             t.addfile(miembro, io.BytesIO(datos))
+        if enlace:
+            miembro = tarfile.TarInfo("src/enlace")
+            miembro.type, miembro.linkname = tarfile.SYMTYPE, "servidor.py"
+            t.addfile(miembro)
     return f
 
 
@@ -212,11 +217,15 @@ def main():
         print("Foto")
         c, out, err = lanza("informe", "--catalogo", catalogos[1])
         comprueba("un informe sin foto de un build anterior para con 2 y dice cuándo se hace",
-                  c == 2 and "antes de instalar" in err, err)
+                  c == 2 and "antes de sustituir" in err, err)
         c, out, err = lanza("foto", "--catalogo", tmp / "no-existe.json")
         comprueba("un catálogo que no se puede leer para con 2", c == 2 and "catálogo" in err, err)
         c, out, err = lanza("foto", "--catalogo", sail_py)
         comprueba("un catálogo que no es JSON para con 2", c == 2 and "catálogo" in err, err)
+        incompleto = tmp / "incompleto.json"
+        incompleto.write_text('{"unaHerramienta": {}}', encoding="utf-8")
+        c, out, err = lanza("foto", "--catalogo", incompleto)
+        comprueba("un catálogo sin los campos de cada herramienta para con 2", c == 2 and "no es un catálogo" in err, err)
         c, out, err = lanza("foto", "--catalogo", catalogos[1])
         fotos = next((casa / ".appian-analisis-funcional" / "actualizaciones").glob("appian-dev-mcp-server-*"))
         foto1 = fotos / BUILD[1]
@@ -224,8 +233,8 @@ def main():
                   c == 0 and all((foto1 / f).is_file() for f in ("BUILD-INFO.txt", "skill.bundle-manifest", "devmcp.json",
                                                                  "sail-help/_general.txt", "sail-help/_version.txt",
                                                                  "sail-help/interact.txt", "sail-help/old.txt")), out + err)
-        comprueba("sin las órdenes que no son de sail (completion, help)",
-                  not (foto1 / "sail-help" / "help.txt").exists() and not (foto1 / "sail-help" / "completion.txt").exists())
+        comprueba("sin las órdenes que no son de sail (completion, help) ni la que contesta con un error",
+                  not any((foto1 / "sail-help" / f"{o}.txt").exists() for o in ("help", "completion", "rota")))
         comprueba("con finales de línea de Unix aunque sail escriba los de Windows",
                   b"\r" not in (foto1 / "sail-help" / "interact.txt").read_bytes()
                   and b"--legacy" in (foto1 / "sail-help" / "interact.txt").read_bytes())
@@ -277,13 +286,13 @@ def main():
         comprueba("los ficheros del plugin que citan una herramienta que cambió, y solo esas",
                   any(f.startswith("skills/appian-best-practices/") for f in citas.get("validateDesignObjects", []))
                   and "addThings" not in citas and "listDecisions" not in citas, str(citas)[:300])
-        c, out, err = lanza("informe", "--catalogo", catalogos[2])
-        comprueba("el mismo informe, en texto",
+        c, out, err = lanza("informe")
+        comprueba("el mismo informe, en texto, con la foto que ya hay de ese build (sin volver a dar el catálogo)",
                   c == 0 and all(x in out for x in (
                       f"Foto: {BUILD[1]} · Instalado: {BUILD[2]}", "nuevas: listDecisions", "desaparecidas: oldTool",
                       "cambia addThings: parámetros nuevos: objectUuids; quitados: objects; de los nuevos, obligatorios: objectUuids",
                       "pasan a obligatorios: description", "pasan a opcionales: note",
-                      "cambia onlyEnum: solo textos o valores admitidos", "cambia solo la descripción: describeOnly",
+                      "cambia onlyEnum: el esquema, con los mismos parámetros y obligatorios", "cambia solo la descripción: describeOnly",
                       "nuevos: references/decisions.md", "SAIL CLI   1.0.0 -> 1.1.0", "órdenes nuevas: tasks | retiradas: old",
                       "opciones nuevas: --no-validate; quitadas: --legacy", "validateDesignObjects: skills/")), out + err)
 
@@ -291,6 +300,11 @@ def main():
         instala(servidor, 3)                             # el bundle 3: sin SAIL CLI y sin catálogo
         c, out, err = lanza("foto", con_sail=False)
         comprueba("la foto dice qué le falta", c == 0 and "sin SAIL CLI, catálogo del Dev MCP" in out, out + err)
+        lanza("foto", "--catalogo", catalogos[2])
+        c, out, err = lanza("foto", con_sail=False)
+        comprueba("rehacer la foto no deja lo que tenía la anterior de ese build",
+                  c == 0 and not (fotos / BUILD[3] / "sail-help").exists() and not (fotos / BUILD[3] / "devmcp.json").exists()
+                  and (fotos / BUILD[3] / "skill.bundle-manifest").is_file(), out + err)
         c, out, err = lanza("informe", con_sail=False)
         comprueba("el informe la da como «sin foto», no como «sin cambios»",
                   c == 0 and f"Foto: {BUILD[2]} · Instalado: {BUILD[3]}" in out and "DEV MCP    sin foto" in out
@@ -321,9 +335,26 @@ def main():
                   c == 2 and "uv" in err and not srv2.exists(), err)
         c, out, err = lanza("instalar", bundle(tmp, 1, con_info=False), "--uv", uv, en=casa2)
         comprueba("un fichero que no es un bundle para con 2", c == 2 and not srv2.exists(), err)
-        c, out, err = lanza("instalar", bundle_entero(tmp, 1, se_sale=True), "--uv", uv, en=casa2)
-        comprueba("un bundle con un fichero que se sale de la carpeta para con 2 y no escribe nada",
-                  c == 2 and "se sale" in err and not srv2.exists() and not (casa2 / "fuera.txt").exists(), err)
+        malos = {
+            "sin la forma conocida": (bundle(tmp, 1), "no tiene la forma"),
+            "con un fichero que se sale de la carpeta": (
+                bundle_entero(tmp, 1, "se-sale", mas=[("../fuera.txt", "x")]), "no es una ruta dentro"),
+            "con una ruta de Windows que se sale": (
+                bundle_entero(tmp, 1, "barras", mas=[("src\\..\\..\\fuera.txt", "x")]), "no es una ruta dentro"),
+            "con un enlace": (bundle_entero(tmp, 1, "enlace", enlace=True), "no es un fichero ni una carpeta"),
+            "con un fichero repetido": (bundle_entero(tmp, 1, "repetido", mas=[("src/servidor.py", "otro")]), "dos veces"),
+            "que trae el entorno de uv": (bundle_entero(tmp, 1, "venv", mas=[(".venv/pyvenv.cfg", "x")]), "trae .venv"),
+            "sin el instalador de este sistema": (
+                bundle_entero(tmp, 1, "sin-setup", sin=("bin/setup-windows.bat", "bin/setup-mac.sh", "bin/setup-linux.sh")),
+                "le falta bin/setup-"),
+            "con un build que no es una fecha": (
+                bundle_entero(tmp, 1, "build", su_info="build_timestamp=../../fuera\nmcp_src_sha=sha1\n"), "AAAAMMDD-HHMMSS"),
+        }
+        for que, (malo, dice) in malos.items():
+            c, out, err = lanza("instalar", malo, "--uv", uv, en=casa2)
+            comprueba(f"un bundle {que} para con 2 y no escribe nada",
+                      c == 2 and dice in err and not srv2.exists() and not (casa2 / "fuera.txt").exists()
+                      and not (tmp / "fuera.txt").exists(), err)
         ajena = tmp / "carpeta ajena"
         ajena.mkdir()
         (ajena / "algo.txt").write_text("mío", encoding="utf-8")
@@ -354,7 +385,8 @@ def main():
         (srv2 / "src" / "__pycache__" / "servidor.pyc").write_bytes(b"\0")
         c, out, err = instalar(3, "--plugin-sha", "sha2")
         comprueba("un bundle que no es el del plugin del entorno para con 2 y no toca nada",
-                  c == 2 and "No se ha tocado nada" in err and "sha1" in (srv2 / "BUILD-INFO.txt").read_text(encoding="utf-8"),
+                  c == 2 and "No se ha tocado la instalación" in err
+                  and "sha1" in (srv2 / "BUILD-INFO.txt").read_text(encoding="utf-8"),
                   err)
         c, out, err = instalar(2, "--plugin-sha", "sha2", "--catalogo", catalogos[1])
         fotos2 = next((casa2 / ".appian-analisis-funcional" / "actualizaciones").glob("appian-dev-mcp-server-*"), tmp)
@@ -366,17 +398,28 @@ def main():
         if copia.is_file():
             with tarfile.open(copia) as t:
                 nombres = set(t.getnames())
-        comprueba("y guarda el bundle anterior, sin lo que crea uv sync ni restos de ejecutar",
+        comprueba("y guarda el bundle anterior, sin el entorno de uv ni restos de ejecutar",
                   {"BUILD-INFO.txt", "src/solo_del_1.py", "bin/sail-linux-amd64", "notas mías.txt"} <= nombres
-                  and not any(n.startswith(".venv") or n == "uv.lock" or "__pycache__" in n for n in nombres), str(sorted(nombres)))
+                  and not any(n.startswith((".venv", ".nuevo", ".instalando")) or "__pycache__" in n for n in nombres),
+                  str(sorted(nombres)))
         comprueba("sustituye lo que trae el bundle: lo del anterior que ya no viene, desaparece",
                   (srv2 / "src" / "servidor.py").read_text(encoding="utf-8") == "# build 2\n"
                   and (srv2 / "src" / "solo_del_2.py").is_file() and not (srv2 / "src" / "solo_del_1.py").exists()
                   and "sha2" in (srv2 / "BUILD-INFO.txt").read_text(encoding="utf-8"))
         comprueba("y deja lo demás de la carpeta: el entorno de uv y los ficheros que no son del bundle",
                   (srv2 / ".venv" / "paquete.txt").is_file() and (srv2 / "uv.lock").is_file()
-                  and (srv2 / "notas mías.txt").is_file())
-        comprueba("dice qué había antes y dónde queda", "antes había el build " + BUILD[1] in out and str(foto) in out, out)
+                  and (srv2 / "notas mías.txt").is_file() and not (srv2 / ".nuevo").exists()
+                  and not (srv2 / ".instalando").exists())
+        comprueba("dice qué había antes y dónde queda",
+                  "antes había el build " + BUILD[1] in out and str(foto.resolve()) in out, out)
+        dentro = srv2 / "descargas"
+        dentro.mkdir()
+        shutil.copyfile(enteros[3], dentro / "bundle.tar.gz")
+        c, out, err = lanza("instalar", dentro / "bundle.tar.gz", "--uv", uv, en=casa2)
+        comprueba("un bundle guardado dentro de la carpeta del servidor para con 2 y no toca nada",
+                  c == 2 and "dentro de la del servidor" in err
+                  and "sha2" in (srv2 / "BUILD-INFO.txt").read_text(encoding="utf-8"), err)
+        shutil.rmtree(dentro)
         c, out, err = instalar(1)
         comprueba("un bundle más antiguo que lo instalado para con 2 y no toca nada",
                   c == 2 and "más antiguo" in err and "sha2" in (srv2 / "BUILD-INFO.txt").read_text(encoding="utf-8"), err)
@@ -384,12 +427,14 @@ def main():
         print("Instalar: un paso falla y se repite")
         (casa2 / "uv-falla").write_text("", encoding="utf-8")
         c, out, err = instalar(3)
-        comprueba("si uv sync falla sale con 1, dice cuál y que se puede repetir, y los demás pasos se hacen",
-                  c == 1 and "uv sync: FALLA" in out and "se puede repetir" in err and "setup 3" in "".join(hechos()), out + err)
+        comprueba("si uv sync falla sale con 1, dice cuál y que se puede repetir, y no sigue con los demás pasos",
+                  c == 1 and "uv sync: FALLA" in out and "se puede repetir" in err and "setup 3" not in "".join(hechos()),
+                  out + err)
         (casa2 / "uv-falla").unlink()
         c, out, err = instalar(3)
-        comprueba("la misma orden, repetida, termina bien y no hace otra foto ni otra copia",
-                  c == 0 and "era el build instalado" in out and not (fotos2 / BUILD[3]).exists(), out + err)
+        comprueba("la misma orden, repetida, hace los pasos que faltaban y no hace otra foto ni otra copia",
+                  c == 0 and "era el build instalado" in out and not (fotos2 / BUILD[3]).exists()
+                  and "setup 3" in "".join(hechos()), out + err)
         comprueba("se guarda un solo bundle anterior: el del último build",
                   [p.parent.name for p in sorted(fotos2.glob("*/bundle.tar.gz"))] == [BUILD[2]],
                   str(sorted(fotos2.glob("*/bundle.tar.gz"))))
@@ -406,9 +451,26 @@ def main():
         anterior = fotos2 / BUILD[2] / ("sail.exe" if os.name == "nt" else "sail")
         comprueba("sail-anterior saca el SAIL CLI de este sistema del bundle guardado y dice cómo usarlo",
                   c == 0 and anterior.is_file() and anterior.read_bytes() == b"sail falso 2" and "SAIL_CLI" in out
-                  and str(anterior) in out, out + err)
+                  and str(anterior.resolve()) in out, out + err)
         c, out, err = lanza("sail-anterior")
         comprueba("sin bundle anterior guardado para con 2 y dice cuándo se guarda", c == 2 and "instalar" in err, err)
+
+        print("Una sustitución que se quedó a medias")
+        guardada = fotos2 / BUILD[2] / "bundle.tar.gz"
+        antes = (guardada.stat().st_size, guardada.stat().st_mtime_ns)
+        (srv2 / ".instalando").write_text(BUILD[3], encoding="utf-8")     # como si se hubiera cortado al borrar
+        (srv2 / "BUILD-INFO.txt").unlink()
+        (srv2 / "src" / "servidor.py").unlink()
+        c, out, err = lanza("estado", en=casa2)
+        comprueba("las demás órdenes paran con 2 y dicen que se repita instalar", c == 2 and "a medias" in err, err)
+        c, out, err = instalar(3)
+        comprueba("instalar la termina, sin tomar por «anterior» el servidor a medio borrar",
+                  c == 0 and "a medias" in out and not (srv2 / ".instalando").exists()
+                  and (srv2 / "src" / "servidor.py").read_text(encoding="utf-8") == "# build 3\n"
+                  and (guardada.stat().st_size, guardada.stat().st_mtime_ns) == antes
+                  and [p.parent.name for p in fotos2.glob("*/bundle.tar.gz")] == [BUILD[2]], out + err)
+        with tarfile.open(guardada) as t:
+            comprueba("y la marca no entra en el bundle guardado", ".instalando" not in t.getnames())
 
     comprueba("no queda __pycache__ en la skill", not list(SKILL.rglob("__pycache__")))
     print(f"\n{'TODO BIEN' if not fallos else f'{len(fallos)} FALLOS'}")
