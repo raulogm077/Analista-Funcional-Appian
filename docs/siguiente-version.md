@@ -52,8 +52,8 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   FOR (`evaluaciones.md`): falta su QA y la medición (`Pruebas-plugin/metodo-20261104/regresion-C4-seleccion.md`).
   Necesita sesión de SAIL CLI de `dem.gestor` y `dem.revisor`, que dan 401 desde el 7-nov (`dem.gestor2` sigue viva),
   y de `dem.revisor2`, la segunda cuenta de `FOR Formación` para probar que quien pide no decide (PT-12 de
-  `evolucion-for`): se creó con contraseña temporal y no entra con `sail login` hasta que una persona la cambia en el
-  navegador. Cada cuenta la renueva la persona en su terminal con `login-sail.ps1 <cuenta>` de esa carpeta, que pide la
+  `evolucion-for`): se creó con contraseña temporal y con ella `sail login` falla (Appian pide cambiarla); que entre tras
+  cambiarla en el navegador está sin medir. Cada cuenta la renueva la persona en su terminal con `login-sail.ps1 <cuenta>` de esa carpeta, que pide la
   contraseña sin mostrarla. [flujo · QA · persona]
 - **Renovar las sesiones de SAIL de las cuentas de prueba sin improvisar.** En la campaña tres sesiones dejaron de
   valer y el QA se paró a la espera de la persona. `qa.py sesiones` da por buena una sesión caducada (solo mira que
@@ -65,9 +65,9 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   que no cambia nada (medido el 7 y el 10-nov: viva, 0; caducada, 1 con 401; sin acceso al site, sin medir).
   Resultado esperado: una sesión que no vale se ve antes de empezar y se renueva con una orden, sin que la contraseña
   pase por la IA ni por el historial. Hechos de la prueba: por qué caducaron no se sabe (`dem.gestor2` aguantó tres
-  días sin uso); `createUser` con `temporaryPassword: true` deja la cuenta sin poder entrar por `sail` hasta que se
-  cambia en el navegador (`setpassword`); el bundle 26.9.15 sigue sin `lcp-login`, así que el login de `sail` por
-  navegador no funciona. Toca la misma skill que T3 del diseño de actualizaciones: se hace con él o antes, no dos veces.
+  días sin uso); con una cuenta creada por `createUser` con `temporaryPassword: true`, `sail login` falla (Appian redirige a
+  `setpassword`; una medida, sin probar después del cambio); el paquete 26.9.15 no trae `lcp-login` (visto en el
+  disco; el login de `sail` por navegador no se ha probado con esta versión). Toca la misma skill que T3 del diseño de actualizaciones: se hace con él o antes, no dos veces.
   [QA · Raúl decide]
 - **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
   `pruebas/comprobar_anclas.py`, con red (pasado el 6-nov con la documentación ya en 26.10: 0 rotas); la versión, en `.claude-plugin/plugin.json` y en la primera fila de
