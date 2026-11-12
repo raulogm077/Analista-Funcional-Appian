@@ -127,7 +127,7 @@ FALLA_BAT = 'if exist "%APPIAN_RE_HOME%\\uv-falla" exit /b 3\r\n'
 FALLA_SH = 'if [ -e "$APPIAN_RE_HOME/uv-falla" ]; then echo "no se puede"; exit 3; fi\n'
 
 
-def bundle_entero(carpeta, n, malo="", mas=None, sin=(), su_info=None, enlace=False):
+def bundle_entero(carpeta, n, malo="", mas=None, sin=(), su_info=None, enlace=False, punto=False):
     """Un bundle como los de Appian, con su servidor, su skill, sus instaladores y un SAIL CLI por sistema. Para los
     que no valen: `mas` añade miembros, `sin` los quita, `su_info` cambia el BUILD-INFO y `enlace` mete un enlace."""
     ficheros = {
@@ -144,6 +144,10 @@ def bundle_entero(carpeta, n, malo="", mas=None, sin=(), su_info=None, enlace=Fa
     ficheros = [(k, v) for k, v in ficheros.items() if k not in sin] + list(mas or [])
     f = carpeta / f"entero-{n}{'-' + malo if malo else ''}.tar.gz"
     with tarfile.open(f, "w:gz") as t:
+        if punto:                                   # como lo deja `tar -C carpeta .`: la propia raíz, como entrada
+            raiz = tarfile.TarInfo(".")
+            raiz.type, raiz.mode = tarfile.DIRTYPE, 0o755
+            t.addfile(raiz)
         for nombre, texto in ficheros:
             datos = texto.encode("utf-8")
             miembro = tarfile.TarInfo(nombre)
@@ -387,6 +391,9 @@ def main():
             "sin el instalador de este sistema": (
                 bundle_entero(tmp, 1, "sin-setup", sin=("bin/setup-windows.bat", "bin/setup-mac.sh", "bin/setup-linux.sh")),
                 "le falta bin/setup-"),
+            "con un build escrito con otros dígitos": (
+                bundle_entero(tmp, 1, "digitos", su_info="build_timestamp=２０２６０１０１-００００００\nmcp_src_sha=sha1\n"),
+                "AAAAMMDD-HHMMSS"),
             "con un build que no es una fecha": (
                 bundle_entero(tmp, 1, "build", su_info="build_timestamp=../../fuera\nmcp_src_sha=sha1\n"), "AAAAMMDD-HHMMSS"),
         }
@@ -634,6 +641,69 @@ def main():
                             "--solicitante", "qa.solicitante", en=vacia, **de_qa)
         comprueba("si una parte no pasa y otra no se pudo comprobar, sale con 1 y dice las dos",
                   c == 1 and "La extracción: NO PASA" in out and "Los recorridos con SAIL CLI: NO SE PUDO" in out, out + err)
+
+        print("Entradas rotas: ni trazas de Python ni un «no se ha tocado» que no sea verdad")
+        sin_traza = lambda *textos: "Traceback" not in "".join(textos)
+        build3 = lambda: (srv3 / "BUILD-INFO.txt").read_text(encoding="utf-8")
+        cortado, suma = tmp / "cortado.tar.gz", tmp / "suma cambiada.tar.gz"
+        cortado.write_bytes(enteros[3].read_bytes()[:enteros[3].stat().st_size * 6 // 10])
+        datos = bytearray(enteros[3].read_bytes())
+        datos[-6] ^= 0xFF                               # la suma de comprobación del final del .gz
+        suma.write_bytes(bytes(datos))
+        for que, malo in (("cortado, como una descarga a medias", cortado), ("con la suma de comprobación cambiada", suma)):
+            c, out, err = lanza("instalar", malo, "--uv", uv, en=casa3)
+            c2, out2, err2 = lanza("estado", "--bundle", malo, en=casa3)
+            comprueba(f"un bundle {que} para con 2, lo dice y no toca el servidor",
+                      c == 2 and c2 == 2 and "descarga" in err and sin_traza(err, err2) and "sha2" in build3()
+                      and not (srv3 / ".nuevo").exists(), err + err2)
+        c, out, err = lanza("instalar", enteros[3], "--uv", uv, "--plugin-sha", "", en=casa3)
+        comprueba("un --plugin-sha vacío no se salta la comprobación", c == 2 and "No se ha tocado" in err, err)
+
+        registro3 = next((casa3 / ".appian-analisis-funcional").rglob("instalado.json"))
+        apuntado = json.loads(registro3.read_text(encoding="utf-8"))
+        mio = srv3 / "notas mías.txt"
+        mio.write_text("no son del bundle", encoding="utf-8")
+        registro3.write_text(json.dumps({**apuntado, "raiz": apuntado["raiz"] + ["notas mías.txt"]}), encoding="utf-8")
+        c, out, err = lanza("instalar", bundle_entero(tmp, 2, "docs", mas=[("docs/ahora.txt", "")]), "--uv", uv, en=casa3)
+        comprueba("al repetir la instalación del mismo bundle no se quita nada: no hay copia de lo que se quitaría",
+                  c == 0 and mio.is_file(), out + err)
+        registro3.write_text(json.dumps({"build": apuntado["build"], "raiz": 5}), encoding="utf-8")
+        c, out, err = lanza("instalar", enteros[3], "--uv", uv, en=casa3)
+        comprueba("un registro de lo instalado con otra forma se ignora, sin traza",
+                  c == 0 and sin_traza(out, err) and mio.is_file() and "sha3" in build3(), out + err)
+        con_punto = bundle_entero(tmp, 4, "punto", punto=True)
+        (srv3 / ".instalando").write_text(json.dumps({"build": f"{BUILD[4]} sha4", "sobran": 5}), encoding="utf-8")
+        c, out, err = lanza("instalar", con_punto, "--uv", uv, en=casa3)
+        comprueba("una marca de instalación a medias con otra forma para con 2, sin traza",
+                  c == 2 and sin_traza(out, err) and "a medias" in err, out + err)
+        (srv3 / ".instalando").unlink()
+        c, out, err = lanza("instalar", con_punto, "--uv", uv, en=casa3)
+        comprueba("un bundle que trae su propia raíz como entrada («.») se instala", c == 0 and "sha4" in build3(), out + err)
+
+        c, out, err = lanza("informe", "--antes", fotos / BUILD[2], "--despues", foto1, en=vacia)
+        comprueba("un informe con las fotos al revés lo avisa", c == 0 and "OJO" in out and "anterior" in out, out + err)
+        c, out, err = lanza("informe", "--antes", foto1, "--despues", foto1, en=vacia)
+        comprueba("y con dos fotos del mismo build, también", c == 0 and "mismo build" in out, out + err)
+        (fotos / BUILD[2] / "sail-help" / "una carpeta.txt").mkdir()
+        c, out, err = lanza("informe", "--antes", foto1, "--despues", fotos / BUILD[2], en=vacia)
+        comprueba("una carpeta donde iría una ayuda no rompe el informe", c == 0 and sin_traza(out, err), out + err)
+
+        hondo = tmp / "hondo.json"
+        hondo.write_text('{"tools": ' + "[" * 100000 + "]" * 100000 + "}", encoding="utf-8")
+        c, out, err = lanza("foto", "--catalogo", hondo)
+        comprueba("un catálogo demasiado anidado para con 2, sin traza, y la foto que había sigue",
+                  c == 2 and sin_traza(out, err) and (fotos / BUILD[3] / "BUILD-INFO.txt").is_file(), out[:300] + err[:300])
+        suelto = tmp / "suelto.json"
+        suelto.write_text('{"tools": [{"name": "a\\ud800b", "description": "x", "inputSchema": {}}]}', encoding="utf-8")
+        c, out, err = lanza("foto", "--catalogo", suelto, con_sail=False)
+        comprueba("un nombre de herramienta con un carácter que no se puede codificar no rompe la foto",
+                  c == 0 and sin_traza(out, err) and (fotos / BUILD[3] / "devmcp.json").is_file()
+                  and (fotos / BUILD[3] / "BUILD-INFO.txt").is_file(), out + err)
+
+        guardada.write_bytes(guardada.read_bytes()[:200])
+        c, out, err = lanza("sail-anterior", en=casa2)
+        comprueba("sail-anterior con el bundle guardado dañado para con 2, sin traza",
+                  c == 2 and sin_traza(out, err) and "no se pudo sacar" in err, out + err)
 
     comprueba("no queda __pycache__ en la skill", not list(SKILL.rglob("__pycache__")))
     print(f"\n{'TODO BIEN' if not fallos else f'{len(fallos)} FALLOS'}")

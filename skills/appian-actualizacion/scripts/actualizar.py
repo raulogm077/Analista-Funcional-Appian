@@ -37,7 +37,8 @@ Appian no hace. Por este orden:
   3. Hace la foto de lo instalado y guarda el bundle anterior (lo instalado menos el entorno de `uv`) como
      bundle.tar.gz en la carpeta de esa foto, y lo relee entero antes de darlo por bueno.
   4. Solo entonces sustituye lo que trae el bundle y quita lo que el anterior trajo en la raíz y este ya no trae (si
-     lo instaló este script, que lo apunta); lo demás de la carpeta del servidor no se toca. Mientras dura, deja una
+     lo instaló este script, que lo apunta; queda en el bundle anterior guardado); lo demás de la carpeta del servidor
+     no se toca. Mientras dura, deja una
      marca: si se corta, las demás órdenes lo dicen y `instalar`, con ese mismo bundle, la termina sin repetir la
      foto ni la copia.
   5. Lanza `uv sync`, el `bin/setup-*` del sistema (SAIL CLI) y `bin/install-skills` (la skill oficial: en los
@@ -66,6 +67,7 @@ foto anterior, un fichero ilegible, un bundle que no vale), o comprobar: no se p
 """
 import argparse
 import difflib
+import gzip
 import hashlib
 import json
 import os
@@ -77,6 +79,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import zlib
 
 sys.dont_write_bytecode = True
 
@@ -88,7 +91,9 @@ SIN_AYUDA = {"completion", "help"}          # órdenes de sail que no son suyas:
 ESPERA = 60                                 # segundos que se espera a cada orden de sail
 ESPERA_INSTALAR = 900                       # y a cada paso de la instalación (uv sync puede descargar)
 MAX_LINEAS = 12                             # líneas de ayuda cambiadas que enseña el informe por orden
-RX_BUILD = re.compile(r"\d{8}-\d{6}")       # build_timestamp: nombra la carpeta de la foto y ordena los builds
+RX_BUILD = re.compile(r"[0-9]{8}-[0-9]{6}")  # build_timestamp: nombra la carpeta de la foto y ordena los builds
+# Lo que puede fallar al leer un .tar.gz que no está entero o no lo es: una descarga cortada es lo más corriente
+NO_ES_TAR = (OSError, tarfile.TarError, EOFError, zlib.error, ValueError)
 DE_LA_FOTO = ("BUILD-INFO.txt", "skill.bundle-manifest", "sail-help", "devmcp.json")
 A_MEDIAS = ".instalando"                    # marca en la carpeta del servidor mientras se sustituye su contenido
 APARTE = ".nuevo"                           # donde se extrae el bundle antes de sustituir nada
@@ -192,7 +197,18 @@ def borra(ruta):
     if ruta.is_dir() and not ruta.is_symlink():
         shutil.rmtree(ruta, **({"onexc": con_permiso} if sys.version_info >= (3, 12) else {"onerror": con_permiso}))
     elif ruta.exists() or ruta.is_symlink():
-        ruta.unlink()
+        try:
+            ruta.unlink()
+        except PermissionError:
+            os.chmod(ruta, 0o700)
+            ruta.unlink()
+
+
+def nombre_de_raiz(n):
+    """Si n vale como nombre de una entrada de la raíz del servidor en cualquier sistema: el de un fichero o carpeta,
+    sin separadores, sin punto ni espacio final (Windows los quita: sería otro nombre) y sin ser un dispositivo."""
+    return (isinstance(n, str) and n not in ("", ".", "..") and not re.search(r"[/\\:]", n) and n == n.rstrip(". ")
+            and n.split(".")[0].upper() not in DISPOSITIVOS)
 
 
 # ---- SAIL CLI y la foto -----------------------------------------------------------------------------------------
@@ -284,13 +300,10 @@ def leer_catalogo(fichero):
     resume."""
     try:
         d = json.loads(pathlib.Path(fichero).read_text(encoding="utf-8"))
-    except (OSError, ValueError) as e:
-        fin(2, f"error: no se puede leer el catálogo {fichero}: {e}")
-    if isinstance(d, dict) and isinstance(d.get("tools"), list):
-        try:
+        if isinstance(d, dict) and isinstance(d.get("tools"), list):
             d = resumen_del_catalogo(d["tools"])
-        except ValueError as e:
-            fin(2, f"error: {fichero} no es un catálogo del extractor de ingeniería inversa: {e}")
+    except (OSError, ValueError, RecursionError) as e:   # ValueError: no es JSON, no es UTF-8 o no tiene su forma
+        fin(2, f"error: {fichero} no es un catálogo que se pueda leer: {str(e)[:300] or type(e).__name__}")
     if not es_catalogo(d):
         fin(2, f"error: {fichero} no es un catálogo: se espera el mcp_catalog.json que deja el extractor de ingeniería "
                "inversa o {herramienta: {\"parametros\": {…}, \"obligatorios\": […], \"descripcion\": huella, "
@@ -301,22 +314,25 @@ def leer_catalogo(fichero):
 def hacer_foto(srv, catalogo=None):
     """Rehace entera la foto del build instalado y devuelve su carpeta. BUILD-INFO.txt se borra lo primero y se
     escribe lo último: es lo que dice que la foto está, así que una que se corta a medias no cuenta como hecha."""
+    # Primero se reúne todo; solo con todo en la mano se borra la foto que hubiera: si algo falla, la anterior sigue
     herramientas = leer_catalogo(catalogo) if catalogo else None
     foto = carpeta_fotos(srv) / instalado_en(srv)["build_timestamp"]
+    manifiesto = srv / "skills" / "appian" / ".bundle-manifest"
+    textos = {"BUILD-INFO.txt": (srv / "BUILD-INFO.txt").read_text(encoding="utf-8", errors="replace")}
+    if manifiesto.is_file():
+        textos["skill.bundle-manifest"] = manifiesto.read_text(encoding="utf-8", errors="replace")
+    ayudas = ayuda_de_sail()
+    if herramientas is not None:   # en ASCII: un nombre con un carácter que no se puede codificar no rompe la escritura
+        textos["devmcp.json"] = json.dumps(herramientas, indent=1, sort_keys=True)
     foto.mkdir(parents=True, exist_ok=True)
     for suyo in DE_LA_FOTO:
         borra(foto / suyo)
-    manifiesto = srv / "skills" / "appian" / ".bundle-manifest"
-    if manifiesto.is_file():
-        shutil.copyfile(manifiesto, foto / "skill.bundle-manifest")
-    ayudas = ayuda_de_sail()
     if ayudas is not None:
         (foto / "sail-help").mkdir()
         for orden, texto in ayudas.items():
             escribe(foto / "sail-help" / f"{orden}.txt", texto)
-    if herramientas is not None:
-        escribe(foto / "devmcp.json", json.dumps(herramientas, ensure_ascii=False, indent=1, sort_keys=True))
-    escribe(foto / "BUILD-INFO.txt", (srv / "BUILD-INFO.txt").read_text(encoding="utf-8", errors="replace"))
+    for nombre in sorted(textos, key=lambda n: n == "BUILD-INFO.txt"):   # BUILD-INFO.txt, lo último
+        escribe(foto / nombre, textos[nombre])
     return foto
 
 
@@ -332,21 +348,24 @@ def leer_foto(foto):
     """{build, skill, sail, devmcp}; None en la pieza que la foto no tiene."""
     foto = pathlib.Path(foto)
     lee = lambda f: f.read_text(encoding="utf-8", errors="replace")
-    if not (foto / "BUILD-INFO.txt").is_file() or not es_build(claves(lee(foto / "BUILD-INFO.txt"))):
-        fin(2, f"error: {foto} no es una foto (falta BUILD-INFO.txt con mcp_src_sha y build_timestamp)")
-    skill = None
-    if (foto / "skill.bundle-manifest").is_file():
-        skill = {}
-        for linea in lee(foto / "skill.bundle-manifest").splitlines():
-            partes = linea.split(None, 1)
-            if len(partes) == 2 and "=" not in partes[0]:
-                skill[partes[1].strip().lstrip("*")] = partes[0]
-    ayudas = None
-    if (foto / "sail-help").is_dir():
-        ayudas = {f.stem: lee(f) for f in sorted((foto / "sail-help").glob("*.txt"))}
+    try:
+        if not (foto / "BUILD-INFO.txt").is_file() or not es_build(claves(lee(foto / "BUILD-INFO.txt"))):
+            fin(2, f"error: {foto} no es una foto (falta BUILD-INFO.txt con mcp_src_sha y build_timestamp)")
+        skill = None
+        if (foto / "skill.bundle-manifest").is_file():
+            skill = {}
+            for linea in lee(foto / "skill.bundle-manifest").splitlines():
+                partes = linea.split(None, 1)
+                if len(partes) == 2 and "=" not in partes[0]:
+                    skill[partes[1].strip().lstrip("*")] = partes[0]
+        ayudas = None
+        if (foto / "sail-help").is_dir():
+            ayudas = {f.stem: lee(f) for f in sorted((foto / "sail-help").glob("*.txt")) if f.is_file()}
+        build = claves(lee(foto / "BUILD-INFO.txt"))
+    except OSError as e:
+        fin(2, f"error: no se puede leer la foto {foto}: {e}")
     devmcp = leer_catalogo(foto / "devmcp.json") if (foto / "devmcp.json").is_file() else None
-    return {"carpeta": str(foto), "build": claves(lee(foto / "BUILD-INFO.txt")), "skill": skill, "sail": ayudas,
-            "devmcp": devmcp}
+    return {"carpeta": str(foto), "build": build, "skill": skill, "sail": ayudas, "devmcp": devmcp}
 
 
 def foto_anterior(srv, build):
@@ -430,6 +449,12 @@ def compara(a, b):
            "sail": par("sail", compara_sail)}
     d = inf["devmcp"] or {}
     inf["citas"] = citas([*d.get("desaparecidas", []), *d.get("cambiadas", {})])
+    inf["aviso"] = None
+    if inf["despues"]["build"] < inf["antes"]["build"]:
+        inf["aviso"] = ("la foto de «después» es de un build anterior a la de «antes»: lo que sale como nuevo es lo "
+                        "que se quitó, y al revés")
+    elif inf["despues"]["build"] == inf["antes"]["build"]:
+        inf["aviso"] = "las dos fotos son del mismo build"
     return inf
 
 
@@ -438,7 +463,8 @@ def lista(nombres, vacio="ninguna"):
 
 
 def pinta(inf):
-    out = [f"Foto: {inf['antes']['build']} · Instalado: {inf['despues']['build']}", ""]
+    out = [f"Foto: {inf['antes']['build']} · Instalado: {inf['despues']['build']}"]
+    out += [f"OJO: {inf['aviso']}.", ""] if inf["aviso"] else [""]
     d = inf["devmcp"]
     if d is None:
         out.append("DEV MCP    sin foto del catálogo en alguna de las dos: no se compara")
@@ -495,7 +521,9 @@ def miembros(tar):
     carpetas, con una ruta relativa que no sale de donde se extrae, con nombres que valen en Windows y sin dos que
     allí serían el mismo (repetidos, o distintos solo en las mayúsculas). Si no, ValueError. No se fía de los filtros
     de tarfile, que no están en todos los Python que el plugin admite."""
-    todos, formas, ficheros = tar.getmembers(), {}, set()
+    # la carpeta «.» es la propia raíz, como la mete `tar -C carpeta .`: no es una entrada
+    todos = [m for m in tar.getmembers() if not (m.isdir() and not pathlib.PurePosixPath(m.name).parts)]
+    formas, ficheros = {}, set()
     for m in todos:
         partes = pathlib.PurePosixPath(m.name).parts
         if not (m.isfile() or m.isdir()):
@@ -512,18 +540,31 @@ def miembros(tar):
     return todos
 
 
+def leer_hasta_el_final(fichero):
+    """Lee un .tar.gz hasta el final. tarfile para en el último fichero y no mira lo que queda: un bundle cortado en
+    sus últimos bytes o con la suma de comprobación cambiada pasaría por bueno."""
+    with open(fichero, "rb") as f:
+        comprimido = f.read(2) == b"\x1f\x8b"
+    if comprimido:
+        with gzip.open(fichero) as g:
+            while g.read(1 << 20):
+                pass
+
+
 def leer_bundle(fichero, lanza_del_bundle=()):
     """(su BUILD-INFO, lo que trae en la raíz). Para si no es un bundle del Dev MCP que se pueda extraer sin riesgo o,
     para instalarlo, si no trae lo que se va a lanzar de él."""
     try:
+        leer_hasta_el_final(fichero)
         with tarfile.open(fichero) as t:
             todos = miembros(t)
             rutas = {pathlib.PurePosixPath(m.name).as_posix(): m for m in todos if m.isfile()}
             build = claves(t.extractfile(rutas["BUILD-INFO.txt"]).read().decode("utf-8", "replace"))
     except KeyError:
         fin(2, f"error: {fichero} no es un bundle del Dev MCP (no trae BUILD-INFO.txt)")
-    except (OSError, tarfile.TarError, ValueError) as e:
-        fin(2, f"error: {fichero} no es un bundle del Dev MCP que se pueda extraer: {e}")
+    except NO_ES_TAR as e:
+        fin(2, f"error: {fichero} no es un bundle del Dev MCP que se pueda extraer; si es una descarga, puede haberse "
+               f"cortado: vuelve a descargarlo ({str(e)[:200] or type(e).__name__})")
     if not es_build(build):
         fin(2, f"error: {fichero} no es un bundle del Dev MCP (su BUILD-INFO.txt no dice mcp_src_sha y un "
                "build_timestamp con la forma AAAAMMDD-HHMMSS)")
@@ -599,10 +640,10 @@ def cmd_instalar(args):
     if srv in bundle.parents or srv in (casa() / ESTADO).parents or srv == casa() / ESTADO:
         fin(2, f"error: ni el bundle ni la carpeta {casa() / ESTADO} pueden estar dentro de la del servidor ({srv}), que "
                f"es la que se sustituye. {sin_tocar}")
-    if args.plugin_sha and args.plugin_sha != nuevo["mcp_src_sha"]:
+    if args.plugin_sha is not None and args.plugin_sha.strip() != nuevo["mcp_src_sha"]:
         fin(2, f"error: el bundle es del build {nuevo['build_timestamp']} (mcp_src_sha {nuevo['mcp_src_sha']}) y el "
                f"plugin de tu entorno espera {args.plugin_sha}: descarga el bundle de ese entorno. {sin_tocar}")
-    if a_medias and marca.get("build") != identidad(nuevo):
+    if a_medias and (marca.get("build") != identidad(nuevo) or not isinstance(marca.get("sobran"), list)):
         fin(2, f"error: la instalación de {srv} se quedó a medias con el build "
                f"{str(marca.get('build') or 'desconocido').split()[0]}, que no es el de este bundle: termínala con aquel. "
                f"Si ya no lo tienes, instala este como dice la guía de Appian y borra {srv / A_MEDIAS}.")
@@ -626,12 +667,14 @@ def cmd_instalar(args):
     # lo apunta; al terminar una sustitución que se cortó, es lo que se apuntó en la marca.
     registro = carpeta_fotos(srv) / "instalado.json"
     previo = leer_json(registro) or {}
-    sobran = marca.get("sobran") if a_medias else (
-        sorted(set(previo.get("raiz") or []) - set(raiz)) if instalado and previo.get("build") == identidad(instalado) else [])
-    # ...salvo lo reservado y lo que este bundle sí trae, aunque sea con otras mayúsculas: en Windows sería lo mismo
+    antes = previo.get("raiz") if isinstance(previo.get("raiz"), list) else []
+    # Solo en una actualización, que es cuando se guarda antes el bundle anterior: lo que se quita queda en esa copia
+    sobran = marca["sobran"] if a_medias else (
+        antes if instalado and not mismo and previo.get("build") == identidad(instalado) else [])
+    # ...y salvo lo que no es un nombre de la raíz, lo reservado y lo que este bundle sí trae, aunque sea con otras
+    # mayúsculas: en Windows sería lo mismo
     de_este = {n.casefold() for n in raiz} | RESERVADAS
-    sobran = [n for n in sobran or [] if isinstance(n, str) and n not in ("", ".", "..") and not re.search(r"[/\\:]", n)
-              and n.casefold() not in de_este]
+    sobran = sorted({n for n in sobran if nombre_de_raiz(n) and n.casefold() not in de_este})
 
     # Extraer aparte: si el bundle no se puede extraer entero, la instalación sigue como estaba
     aparte = srv / APARTE
@@ -647,7 +690,7 @@ def cmd_instalar(args):
         if instalado and not a_medias and not mismo:
             foto = foto_de(srv, args.catalogo)
             guardar_anterior(srv, foto)
-    except (OSError, tarfile.TarError, ValueError) as e:
+    except NO_ES_TAR as e:
         try:
             borra(aparte)
             if nueva:
@@ -708,12 +751,19 @@ def cmd_sail_anterior(args):
     if not copias:
         fin(2, "error: no hay bundle anterior guardado. Se guarda al instalar con `actualizar.py instalar`.")
     destino = copias[-1].parent / ("sail.exe" if marca == "windows" else "sail")
-    with tarfile.open(copias[-1]) as t:
-        suyo = next((m for m in t.getmembers() if m.isfile() and re.fullmatch(rf"bin/sail-{marca}[^/]*", m.name)), None)
-        if suyo is None:
-            fin(2, f"error: el bundle del build {copias[-1].parent.name} no trae SAIL CLI para este sistema")
-        destino.write_bytes(t.extractfile(suyo).read())
-    os.chmod(destino, 0o755)
+    try:
+        with tarfile.open(copias[-1]) as t:
+            suyo = next((m for m in t.getmembers() if m.isfile() and re.fullmatch(rf"bin/sail-{marca}[^/]*", m.name)),
+                        None)
+            if suyo is None:
+                fin(2, f"error: el bundle del build {copias[-1].parent.name} no trae SAIL CLI para este sistema")
+            binario = t.extractfile(suyo).read()
+        borra(destino)
+        destino.write_bytes(binario)
+        os.chmod(destino, 0o755)
+    except NO_ES_TAR as e:
+        fin(2, f"error: no se pudo sacar SAIL CLI de {copias[-1]}: {str(e)[:200] or type(e).__name__}. Si el fichero "
+               "está dañado, ya no sirve; si es que ese SAIL CLI está en uso, ciérralo y repite.")
     print(f"SAIL CLI del build {copias[-1].parent.name}: {destino}\nPara seguir con él, pon la variable de entorno "
           f"SAIL_CLI con esa ruta; quítala cuando el plugin se haya adaptado al nuevo.")
 
