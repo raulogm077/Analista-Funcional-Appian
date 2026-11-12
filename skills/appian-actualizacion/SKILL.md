@@ -59,7 +59,9 @@ la guía de Appian, añade `--servidor <carpeta>` a cada orden.
    (`assets/banco/especificacion.md`), `python3 <skill>/scripts/actualizar.py comprobar` pasa sus dos mitades, juntas
    o por separado:
    - **El extractor**, con `--extraccion <carpeta>`: antes extrae la aplicación del banco con el extractor de
-     `appian-reverse-engineering` (`devmcp_extract.py extract --app <la del banco> --out <carpeta temporal>`). No pasa
+     `appian-reverse-engineering` (`devmcp_extract.py extract --app <la del banco> --out <carpeta temporal>`), en una
+     carpeta nueva y vacía o con `--refresh`: en una ya usada, el extractor no vuelve a pedir lo que tiene guardado,
+     y lo que se prueba es el servidor nuevo. No pasa
      si faltan objetos de algún tipo, si el modelo que el extractor arma con las respuestas no dice lo que dice la
      especificación (campos, relaciones, tareas, valores) o si hay errores fuera de los que Appian da siempre en esa
      aplicación. Una herramienta con errores en todos los tipos de objeto suele ser de un tipo que la política del
@@ -70,7 +72,10 @@ la guía de Appian, añade `--servidor <carpeta>` a cada orden.
      distinto cada vez.
 
    Sale con 0 si pasa lo pedido, 1 si algo no pasa y 2 si algo no se pudo comprobar (una sesión caducada, una
-   extracción que no terminó): eso no es un fallo, pero tampoco un «pasa».
+   extracción que no terminó): eso no es un fallo, pero tampoco un «pasa». Cada mitad acredita lo suyo y con los
+   datos que se le dan: el banco no usa todas las herramientas ni ejecuta los casos de prueba de sus reglas. Si no
+   pasa, falta saber de quién es: del Dev MCP o SAIL CLI, del extractor o `qa.py`, del guion, de la aplicación o
+   de cómo se montó la prueba.
 6. **Si el SAIL CLI nuevo da problemas**: `python3 <skill>/scripts/actualizar.py sail-anterior` saca el del bundle
    anterior y dice cómo seguir con él (`SAIL_CLI`), hasta que el plugin se adapte.
 
@@ -88,7 +93,9 @@ que repetirlo; si después el servidor pide ese navegador, la misma guía.
 
 Un arreglo que hayas hecho a mano en lo que trae el bundle se pierde al instalar. Al actualizar queda en el bundle
 anterior guardado; al repetir la instalación del mismo bundle, no. Mientras se instala no debe haber otra instalación
-en marcha sobre la misma carpeta.
+en marcha sobre la misma carpeta, ni un recorrido de QA o una construcción que la estén usando: se terminan o se
+paran antes. Después, cada cliente de IA que siga trabajando se reinicia y comprueba su servidor: `estado` dice lo
+que hay en el disco, no lo que otro cliente tiene cargado.
 
 ## Los proyectos que ya estaban hechos
 
@@ -100,8 +107,9 @@ en el paso 5, pero no recorre los proyectos de nadie), y un guion concreto, solo
 - **Lo que existe sigue valiendo** para la versión con que se probó. `qa.py` anota en cada escenario de
   `qa/<U>/resultado.json` con qué SAIL CLI se obtuvo.
 - **Al retomar un proyecto**, `actualizar.py estado --proyecto <p>` dice en una línea con qué versión se probó su QA
-  y cuál hay instalada (de los resultados anteriores a esta anotación no consta). Díselo a la persona y no repitas ni
-  cambies nada hasta que lo pida: una versión distinta informa, no invalida.
+  y cuál hay instalada (de los resultados anteriores a esta anotación no consta). Díselo a la persona y, por la
+  actualización, no repitas su QA ni cambies sus guiones hasta que lo pida: una versión distinta informa, no
+  invalida. Seguir con lo que ya estaba encargado no necesita otro permiso.
 - **Si pide ajustarlo**, se repiten sus guiones (`qa.py repetir`, de `appian-qa`). Lo que pasa queda anotado con la
   versión nueva. De lo que falla se mira primero de quién es: de `qa.py` (se corrige una vez, para todos), de ese
   guion o de la aplicación (solo eso). Un guion no se cambia para que pase.

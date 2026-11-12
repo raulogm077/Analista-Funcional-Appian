@@ -72,6 +72,8 @@ CATALOGO = {
         "onlyEnum": h({"kind": "string"}, []),
         "describeOnly": h({"uuid": "string"}, ["uuid"]),
         "sameTool": h({"uuid": "string"}, ["uuid"]),
+        "getRecordType": h({"uuid": "string"}, ["uuid"]),
+        "getInterface": dict(h({"uuid": "string"}, ["uuid"]), anotaciones={"readOnlyHint": True, "destructiveHint": None}),
         "validateDesignObjects": h({"uuids": "array"}, ["uuids"])},
     2: {"listDecisions": h({"query": ["string", "null"]}, []),
         "addThings": h({"uuid": "string", "objectUuids": "array"}, ["objectUuids", "uuid"], esquema="e2"),
@@ -80,6 +82,8 @@ CATALOGO = {
         "onlyEnum": h({"kind": "string"}, [], esquema="e2"),
         "describeOnly": h({"uuid": "string"}, ["uuid"], descripcion="d2"),
         "sameTool": h({"uuid": "string"}, ["uuid"]),
+        "getRecordType": h({"uuid": "string"}, ["uuid"], descripcion="d2"),
+        "getInterface": dict(h({"uuid": "string"}, ["uuid"]), anotaciones={"readOnlyHint": None, "destructiveHint": None}),
         "validateDesignObjects": h({"uuids": "array", "level": "string"}, ["uuids"], esquema="e2")},
 }
 MANIFIESTO = {
@@ -280,6 +284,16 @@ def main():
         c, out, err = lanza("estado", "--proyecto", proyecto)
         comprueba("con un resultado ilegible no dice que todos sean del instalado, aunque lo sean los que lee",
                   c == 0 and "1 con SAIL CLI 1.0.0" in out and "No se puede leer" in out and "Todos" not in out, out + err)
+        (proyecto / "qa" / "EV-01" / "resultado.json").write_text(json.dumps({"escenarios": {
+            "HU-01": {"resultado": "pasa", "con": {"sail": "1.0.0"}}, "HU-02": {"sinRepetir": "la sesión no vale"},
+            "HU-03": {"resultado": "desfasado"}}}), encoding="utf-8")
+        for k in (2, 3):
+            (proyecto / "qa" / f"EV-0{k}" / "resultado.json").rename(proyecto / "qa" / f"EV-0{k}" / "aparte")
+        c, out, err = lanza("estado", "--proyecto", proyecto)
+        comprueba("con escenarios sin resultado de recorrido lo dice, y no que todos sean del instalado",
+                  c == 0 and "1 con SAIL CLI 1.0.0" in out and "2 sin resultado" in out and "Todos" not in out, out + err)
+        for k in (2, 3):
+            (proyecto / "qa" / f"EV-0{k}" / "aparte").rename(proyecto / "qa" / f"EV-0{k}" / "resultado.json")
         (proyecto / "qa" / "EV-01" / "resultado.json").write_text("{", encoding="utf-8")
         c, out, err = lanza("estado", "--proyecto", proyecto)
         comprueba("si ninguno se puede leer, lo dice: no que no haya QA",
@@ -334,7 +348,7 @@ def main():
                   out[:400] + err)
         comprueba("herramientas nuevas y desaparecidas",
                   d.get("nuevas") == ["listDecisions"] and d.get("desaparecidas") == ["oldTool"]
-                  and (d.get("antes"), d.get("despues")) == (8, 8), str(d)[:400])
+                  and (d.get("antes"), d.get("despues")) == (10, 10), str(d)[:400])
         comprueba("un parámetro que cambia de nombre: uno nuevo y obligatorio, otro quitado",
                   cambiadas.get("addThings", {}).get("parametros_nuevos") == ["objectUuids"]
                   and cambiadas["addThings"]["parametros_quitados"] == ["objects"]
@@ -348,7 +362,7 @@ def main():
         comprueba("un esquema que cambia sin cambiar parámetros",
                   "onlyEnum" in cambiadas and not any(cambiadas["onlyEnum"].values()), str(cambiadas.get("onlyEnum")))
         comprueba("solo la descripción, aparte; lo que no cambia, en ningún sitio",
-                  d.get("solo_descripcion") == ["describeOnly"] and "sameTool" not in json.dumps(inf), str(d)[:300])
+                  d.get("solo_descripcion") == ["describeOnly", "getRecordType"] and "sameTool" not in json.dumps(inf), str(d)[:300])
         comprueba("ficheros de la skill oficial nuevos, retirados y cambiados",
                   (k.get("nuevos"), k.get("retirados"), k.get("cambiados"))
                   == (["references/decisions.md"], ["references/old.md"], ["SKILL.md"]), str(k))
@@ -367,13 +381,19 @@ def main():
         comprueba("los ficheros del plugin que citan una herramienta que cambió, y solo esas",
                   any(f.startswith("skills/appian-best-practices/") for f in citas.get("validateDesignObjects", []))
                   and "addThings" not in citas and "listDecisions" not in citas, str(citas)[:300])
+        comprueba("lo que el servidor declara de una herramienta (solo lectura, destructiva) y cambia, aparte y con sus citas",
+                  d.get("cambian_anotaciones") == ["getInterface"] and "getInterface" not in cambiadas
+                  and "getInterface" not in d.get("solo_descripcion", []) and citas.get("getInterface"),
+                  str(d.get("cambian_anotaciones")) + str(citas)[:300])
+        comprueba("una herramienta de la que solo cambia la descripción también sale con los ficheros que la citan",
+                  citas.get("getRecordType") and "describeOnly" not in citas, str(citas)[:300])
         c, out, err = lanza("informe")
         comprueba("el mismo informe, en texto, con la foto que ya hay de ese build (sin volver a dar el catálogo)",
                   c == 0 and all(x in out for x in (
                       f"Foto: {BUILD[1]} · Instalado: {BUILD[2]}", "nuevas: listDecisions", "desaparecidas: oldTool",
                       "cambia addThings: parámetros nuevos: objectUuids; quitados: objects; de los nuevos, obligatorios: objectUuids",
                       "pasan a obligatorios: description", "pasan a opcionales: note",
-                      "cambia onlyEnum: el esquema, con los mismos parámetros y obligatorios", "cambia solo la descripción: describeOnly",
+                      "cambia onlyEnum: el esquema, con los mismos parámetros y obligatorios", "cambia solo la descripción: describeOnly, getRecordType", "que decide si el extractor la lee: getInterface",
                       "nuevos: references/decisions.md", "SAIL CLI   1.0.0 -> 1.1.0", "órdenes nuevas: tasks | retiradas: old",
                       "opciones nuevas: --no-validate; quitadas: --legacy", "validateDesignObjects: skills/")), out + err)
 

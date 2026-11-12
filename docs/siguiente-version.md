@@ -43,6 +43,7 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   `guiones/BPS-05.1.json`, `"tarea": "Aprobar solicitud: QA {pasada}"`, y en la especificación, que hoy dicen los
   dos el nombre genérico. Hasta entonces el guion pasa mientras solo haya una tarea «Aprobar solicitud» abierta,
   que es lo normal: cada pasada completa la suya. [persona en Designer]
+- **Un guion desfasado de un escenario vigente no debería dejar `qa.py repetir` en 0.** Si el criterio cambia y queda el guion anterior, `repetir` lo marca «desfasado», no lo recorre y sale con 0: quien se fía del código de salida da por repetido un QA que no cubre ese escenario. Lo reprodujo Codex (13-nov, revisión del método con cuatro lectores de contexto limpio). Propuesta, sin aplicar porque cambia el contrato de `appian-qa` y no es de las actualizaciones: salir con 2 (incompleto) cuando el escenario sigue en el análisis, y dejar como histórico, sin contar, el guion de un escenario retirado o anulado. [QA · Raúl decide]
 - **El banco `BPS`: las tareas enseñan «N/A».** «Confirmar envío» y «Aprobar solicitud» enseñan «N/A» en el importe
   y en el comentario del solicitante: la acción pasa `rv!record` al proceso y no trae esos campos. No afecta a los
   guiones. Al corregirlo, que el proceso lea la solicitud por su identificador. [Appian]

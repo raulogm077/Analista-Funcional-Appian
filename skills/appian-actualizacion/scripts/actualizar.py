@@ -90,6 +90,7 @@ ESTADO = ".appian-analisis-funcional"       # la carpeta personal del plugin; el
 GUIA = "appian-dev-mcp-server"              # donde la guía de Appian manda extraer el bundle
 GUIA_WEB = "https://docs.appian.com/suite/help/latest/devmcp.html"
 PLUGIN = pathlib.Path(__file__).resolve().parents[3]
+ANOTACIONES = ("readOnlyHint", "destructiveHint")   # lo que el servidor declara de una herramienta y mira el extractor
 CITAN = (".md", ".py", ".json")             # los ficheros de las skills donde se busca lo que cambió
 SIN_AYUDA = {"completion", "help"}          # órdenes de sail que no son suyas: las pone su biblioteca
 ESPERA = 60                                 # segundos que se espera a cada orden de sail
@@ -290,7 +291,8 @@ def es_catalogo(d):
 
 def resumen_del_catalogo(herramientas):
     """El catálogo de una foto a partir del que deja el extractor de ingeniería inversa: de cada herramienta, sus
-    parámetros con su tipo, los obligatorios y una huella de su descripción y de su esquema entero. ValueError, con lo
+    parámetros con su tipo, los obligatorios, una huella de su descripción y de su esquema entero y lo que el servidor
+    declara de ella y decide si el extractor la lee (ANOTACIONES). ValueError, con lo
     que no cuadra, si no tiene esa forma. La huella del esquema cambia con cualquier cambio suyo, también de orden o de
     texto; la de la descripción solo ve lo que guarda el extractor, sus 500 primeros caracteres."""
     huella = lambda texto: hashlib.sha256(texto.encode("utf-8", "replace")).hexdigest()[:12]
@@ -313,8 +315,10 @@ def resumen_del_catalogo(herramientas):
         if not isinstance(propiedades, dict) or not isinstance(obligatorios, list) \
                 or not all(isinstance(x, str) for x in obligatorios) or not isinstance(descripcion, (str, type(None))):
             raise ValueError(f"«{nombre}» no tiene «properties», «required» o «description» con su forma")
+        declara = h.get("annotations") if isinstance(h.get("annotations"), dict) else {}
         resumen[nombre] = {"parametros": {n: tipo(p) for n, p in propiedades.items()}, "obligatorios": sorted(obligatorios),
-                           "descripcion": huella(descripcion or ""), "esquema": huella(json.dumps(esquema, sort_keys=True))}
+                           "descripcion": huella(descripcion or ""), "esquema": huella(json.dumps(esquema, sort_keys=True)),
+                           "anotaciones": {k: declara.get(k) for k in ANOTACIONES}}
     return resumen
 
 
@@ -413,9 +417,11 @@ def opciones(ayuda):
 
 
 def compara_devmcp(a, b):
-    cambiadas, descripcion = {}, []
+    cambiadas, descripcion, declaran = {}, [], []
     for n in sorted(set(a) & set(b)):
         x, y = a[n], b[n]
+        if "anotaciones" in x and "anotaciones" in y and x["anotaciones"] != y["anotaciones"]:   # las fotos de antes no las traen
+            declaran.append(n)
         px, py, ox, oy = x["parametros"], y["parametros"], set(x["obligatorios"]), set(y["obligatorios"])
         if x["esquema"] != y["esquema"] or px != py or ox != oy:
             comunes = set(px) & set(py)
@@ -428,7 +434,8 @@ def compara_devmcp(a, b):
         elif x["descripcion"] != y["descripcion"]:
             descripcion.append(n)
     return {"antes": len(a), "despues": len(b), "nuevas": sorted(set(b) - set(a)),
-            "desaparecidas": sorted(set(a) - set(b)), "cambiadas": cambiadas, "solo_descripcion": descripcion}
+            "desaparecidas": sorted(set(a) - set(b)), "cambiadas": cambiadas, "solo_descripcion": descripcion,
+            "cambian_anotaciones": declaran}
 
 
 def compara_skill(a, b):
@@ -472,7 +479,8 @@ def compara(a, b):
            "devmcp": par("devmcp", compara_devmcp), "skill": par("skill", compara_skill),
            "sail": par("sail", compara_sail)}
     d = inf["devmcp"] or {}
-    inf["citas"] = citas([*d.get("desaparecidas", []), *d.get("cambiadas", {})])
+    inf["citas"] = citas(sorted({*d.get("desaparecidas", []), *d.get("cambiadas", {}), *d.get("solo_descripcion", []),
+                                 *d.get("cambian_anotaciones", [])}))
     inf["aviso"] = None
     if inf["despues"]["build"] < inf["antes"]["build"]:
         inf["aviso"] = ("la foto de «después» es de un build anterior a la de «antes»: lo que sale como nuevo es lo "
@@ -503,6 +511,9 @@ def pinta(inf):
                 if c[k]]
             out.append(f"  cambia {n}: " + ("; ".join(partes) or "el esquema, con los mismos parámetros y obligatorios"))
         out.append(f"  cambia solo la descripción: {lista(d['solo_descripcion'])}")
+        if d["cambian_anotaciones"]:
+            out.append("  cambia lo que el servidor declara de ella (solo lectura, destructiva), que decide si el extractor "
+                       f"la lee: {lista(d['cambian_anotaciones'])}")
     k = inf["skill"]
     if k is None:
         out += ["", "SKILL appian   sin foto del manifiesto en alguna de las dos: no se compara"]
@@ -966,7 +977,7 @@ def qa_del_proyecto(proyecto, instalado):
     escribe `qa.py`) y cuál hay instalado. No repite ni cambia nada: un resultado de otra versión no dice nada de esta,
     y repetirlo lo decide la persona."""
     de_version = lambda texto: (re.search(r"\bversion\s+(\S+)", texto or "") or [None, None])[1]
-    cuenta, ilegibles = {}, []
+    cuenta, ilegibles, sin_resultado = {}, [], 0
     for f in sorted((proyecto / "qa").glob("*/resultado.json")):
         escenarios = (leer_json(f) or {}).get("escenarios")
         if not isinstance(escenarios, dict):      # cortado, o con otra forma: se dice cuál, no se da por «sin QA»
@@ -978,9 +989,13 @@ def qa_del_proyecto(proyecto, instalado):
                 version = con.get("sail")       # solo vale un texto: cualquier otra cosa es que no consta
                 version = version.strip() if isinstance(version, str) and version.strip() else None
                 cuenta[version] = cuenta.get(version, 0) + 1
+            else:       # sin repetir sin resultado anterior, desfasado o con el guion por terminar
+                sin_resultado += 1
     no_leidos = f" No se puede leer el resultado de {lista(ilegibles)}." if ilegibles else ""
+    if sin_resultado:
+        no_leidos += f" {sin_resultado} sin resultado (sin repetir, desfasados o con el guion por terminar)."
     if not cuenta:
-        return ("no hay resultados que se puedan leer." + no_leidos if ilegibles else
+        return ("no hay resultados que se puedan leer." + no_leidos if ilegibles or sin_resultado else
                 f"no hay escenarios recorridos en {proyecto / 'qa'}.")
     ahora = de_version(instalado)
     partes = [f"{n} con SAIL CLI {v}" for v, n in sorted(cuenta.items(), key=lambda par: str(par[0])) if v]
@@ -993,7 +1008,7 @@ def qa_del_proyecto(proyecto, instalado):
     if otros:      # solo los que se sabe que son de otra: de los que no consta no se dice nada
         return dice + (f" {otros} se recorrieron con otra versión: siguen valiendo para la suya; se repiten con "
                        "`qa.py repetir` si se decide")
-    return dice + (" Todos, con el instalado" if not cuenta.get(None) and not ilegibles else "")
+    return dice + (" Todos, con el instalado" if not cuenta.get(None) and not ilegibles and not sin_resultado else "")
 
 
 def cmd_estado(args):
