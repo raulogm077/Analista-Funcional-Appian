@@ -210,6 +210,18 @@ Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no en
     mis grupos», tarea, registro, asignada a, estado (aceptada o asignada al grupo), recibida y fecha límite. Las
     páginas de la documentación sobre la lista de tareas de Sites dieron 404 (`Tasks_Tab`, `task-reports`); buscar
     las vigentes antes de escribir el patrón.
+    Si el cliente ya tiene una bandeja común en sus otros BPM, se copia su estructura: contadores por grupo, por
+    usuario y completadas (el de la vista activa, resaltado y pulsable), búsqueda, búsqueda avanzada plegable, «Ver las
+    tareas retrasadas», ausencias y exportar; en el grid, la fecha límite en rojo con «Vencida hace N días» debajo y
+    una bandera en las retrasadas.
+  - **Dos datos en la misma línea** de una celda solo caben si la columna es ancha: con nueve o diez columnas se
+    parten y queda peor que dos líneas. Con muchas columnas, el segundo dato va en la segunda línea.
+  - **Importes y fechas sin partir**: la columna de un importe (con «€») o de una fecha necesita el ancho justo para
+    no cortarse en dos líneas.
+  - **Cabeceras de fecha** con su nombre completo («Fecha inicio», «Fecha registro»), no «Inicio» o «Registro», que
+    en una tabla con varias fechas no se distinguen.
+  - **Bloques de un formulario** distinguibles: título más grande con su icono y una línea que separa un bloque de
+    otro; si no, el título parece un campo más.
 
 - `leer_fuentes.py`: un Excel del cliente puede marcar con el color de la letra o del relleno lo que el cliente añade (por ejemplo,
   lo nuevo en otro color), y la conversión a texto lo pierde: valorar marcar esas celdas en el `.md`.
