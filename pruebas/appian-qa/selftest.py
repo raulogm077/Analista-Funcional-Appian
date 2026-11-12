@@ -372,6 +372,8 @@ def main():
         variante("HU-02.1", por_tarea, "", "si el nombre de la tarea lleva lo suyo, se abre esa, aceptada, y ninguna otra",
                  resultado="pasa", codigo=0)
         ok("… una sola apertura", len(abiertas()[antes:]) == 1, str(abiertas()[antes:]))
+        variante("HU-02.1", lambda g: por_tarea(g, "Revisar solicitud"), "no hay ninguna tarea",
+                 "el nombre es el entero: el principio del de otra tarea no vale")
         variante("HU-02.1", lambda g: (por_tarea(g), g["cuando"][0].update(con="No existe {pasada}")),
                  "no es la de este recorrido", "y si su formulario no enseña «con», falla")
         variante("HU-02.1", lambda g: (por_tarea(g), g["cuando"][0].update(rol="gestor")),

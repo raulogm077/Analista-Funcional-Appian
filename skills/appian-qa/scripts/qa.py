@@ -521,7 +521,7 @@ class Recorrido:
         return sub, d
 
     def abre_tarea(self, rol, nombre, con):
-        """La página de la tarea de ese rol que se llama así, ya aceptada. Cuál es se sabe por su nombre, antes de abrir
+        """La página de la tarea de ese rol que se llama exactamente así, ya aceptada. Cuál es se sabe por su nombre, antes de abrir
         nada: abrir una tarea que es solo de ese usuario ya la acepta, así que si varias se llaman así no se abre
         ninguna. «con», un texto que su formulario tiene que enseñar, se comprueba después, en esa única tarea. Como la
         crea un proceso que puede no haber terminado, se vuelve a mirar si aún no está. Tras aceptar se recarga: SAIL
@@ -531,7 +531,7 @@ class Recorrido:
             if intento:
                 time.sleep(PAUSA)
             suyas = [t for t in self.sail(rol, ["tasks"])[1].get("tasks") or [] if isinstance(t, dict)
-                     and t.get("address") and empieza(t.get("name", ""), nombre)]
+                     and t.get("address") and norma(t.get("name", "")) == norma(nombre)]
             if suyas:
                 break
         if len(suyas) != 1:

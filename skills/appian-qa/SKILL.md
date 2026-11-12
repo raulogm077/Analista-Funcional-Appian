@@ -136,7 +136,7 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   `--confirm` va en la orden si el destino lo pide. Una fila de una
   rejilla se marca por su contenido, `{"rol": "revisor", "selecciona": "QA {pasada}"}`, nunca por el número que le dio
   Appian. Una tarea se abre por su nombre, `{"rol": "revisor", "tarea": "Revisar solicitud: QA {pasada}"}`: queda
-  aceptada y en pantalla, lista para rellenarla. Cuál es se sabe por el nombre, antes de abrir nada, porque abrir una
+  aceptada y en pantalla, lista para rellenarla. Cuál es se sabe por el nombre, entero, antes de abrir nada, porque abrir una
   tarea que es de una sola persona ya la acepta: si varias se llaman así, el paso falla sin abrir ninguna. Por eso el
   nombre que se ve de una tarea lleva algo de su caso (el título, un número); si no lo lleva, dilo en la entrega, que
   también le pasa a quien la busca en su lista. «con», opcional, es un texto que su formulario tiene que enseñar. Con
