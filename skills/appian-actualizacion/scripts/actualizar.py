@@ -136,8 +136,14 @@ def fin(codigo, texto):
     sys.exit(codigo)
 
 
+def absoluta(ruta):
+    """La ruta, entera y desde donde está quien lanza la orden. abspath antes de resolve: en Windows, con Python 3.9,
+    resolve() deja relativa una ruta que aún no existe, y los instaladores se lanzan desde otra carpeta."""
+    return pathlib.Path(os.path.abspath(pathlib.Path(ruta).expanduser())).resolve()
+
+
 def casa():
-    return pathlib.Path(os.environ.get("APPIAN_RE_HOME") or pathlib.Path.home()).expanduser().resolve()
+    return absoluta(os.environ.get("APPIAN_RE_HOME") or pathlib.Path.home())
 
 
 def leer_json(fichero):
@@ -174,7 +180,7 @@ def instalado_en(carpeta):
 
 
 def carpeta_servidor(dada):
-    return (pathlib.Path(dada).expanduser() if dada else casa() / GUIA).resolve()
+    return absoluta(dada) if dada else (casa() / GUIA).resolve()
 
 
 def servidor(dada):
@@ -630,7 +636,7 @@ def del_bundle(srv, script, *args):
 def cmd_instalar(args):
     _, setup, skills = sistema()
     sin_tocar = "No se ha tocado la instalación."
-    bundle = pathlib.Path(args.bundle).expanduser().resolve()
+    bundle = absoluta(args.bundle)
     nuevo, raiz = leer_bundle(bundle, ("pyproject.toml", f"bin/{setup}", f"bin/{skills}"))
     srv = carpeta_servidor(args.servidor)
     marca = leer_json(srv / A_MEDIAS)         # si la hay, una instalación anterior no terminó de sustituir el servidor
@@ -743,8 +749,7 @@ def cmd_instalar(args):
               "bórrala a mano o repite la orden")
     pasos = [("uv sync", lambda: lanza([uv, "sync"], cwd=srv)), ("SAIL CLI", lambda: del_bundle(srv, setup)),
              ("skill appian", lambda: del_bundle(srv, skills))]
-    # las carpetas que se dan, desde donde está quien lanza la orden: los instaladores se lanzan desde la del servidor
-    destinos = [pathlib.Path(d).expanduser().resolve() for d in args.skills_dir]
+    destinos = [absoluta(d) for d in args.skills_dir]
     pasos += [(f"skill appian en {d}", lambda d=d: del_bundle(srv, skills, "--skills-dir", d)) for d in destinos]
     # Ningún paso depende de otro, y se hacen todos: en un Mac con Intel o un Linux con ARM el instalador de SAIL CLI
     # se niega (el bundle no trae su binario) y la skill oficial tiene que quedar instalada igual.
@@ -805,7 +810,7 @@ def comprueba_extraccion(carpeta):
     extract`: su informe (los objetos de cada tipo y los errores) y el modelo que el propio extractor construye con las
     respuestas (`build_model.py`), que tiene que decir lo que dice la especificación. «no se pudo» sin informe, con uno
     que no tiene su forma o con una extracción que no terminó: una sesión caducada no es un fallo del extractor."""
-    carpeta = pathlib.Path(carpeta).expanduser().resolve()
+    carpeta = absoluta(carpeta)
     fichero = carpeta / "extraccion" / "extraction_report.json"
     informe, esperado = leer_json(fichero), leer_json(ESPERADO) or {}
     entero = lambda n: isinstance(n, int) and not isinstance(n, bool) and n >= 0

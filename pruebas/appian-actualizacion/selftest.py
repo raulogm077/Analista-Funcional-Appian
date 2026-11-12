@@ -533,6 +533,12 @@ def main():
                   len(dados) == 4 and os.path.isabs(dados[3].split(" --skills-dir ")[-1])
                   and dados[3].endswith("cliente relativo") and str(srv2.name) not in dados[3].split(" --skills-dir ")[-1],
                   str(dados))
+        casa_r = tmp / "casa relativa"
+        casa_r.mkdir()
+        c, out, err = lanza("instalar", enteros[1], "--uv", uv, "--servidor", "servidor relativo", en=casa_r, desde=tmp)
+        comprueba("una carpeta de servidor relativa que aún no existe también se entiende desde donde se lanza la orden",
+                  c == 0 and (tmp / "servidor relativo" / "BUILD-INFO.txt").is_file() and "SAIL CLI: bien" in out
+                  and "skill appian: bien" in out, out + err)
         c, out, err = instalar(3, SETUP_AVISA="1")
         comprueba("si el instalador de SAIL CLI termina bien pero avisa (sail fuera del PATH), no se da por bueno sin más",
                   c == 0 and "SAIL CLI: REVISAR" in out and "PATH" in out and "skill appian: bien" in out, out + err)
