@@ -37,24 +37,18 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 - **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
   `pruebas/comprobar_anclas.py`, con red; la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
-- **`qa.py`: `tasks`, `open` y `reload`, y el guion de la tarea del grupo del banco.** Medido el 12-nov con el banco
-  `BPS`: `sail tasks` da la dirección de cada tarea y `sail open --accept <dirección>` la acepta, pero deja en
-  pantalla el formulario de antes de aceptar: hay que recargar (`reload --fresh`) antes de rellenarlo. Va sobre el
-  `qa.py` de la rama del método, que cambia las mismas funciones. Antes, dos retoques de la aplicación del banco: el
-  nombre de la tarea de aprobación tiene que llevar el título de la solicitud (hoy todas se llaman «Aprobar
-  solicitud» y un guion no puede encontrar la suya), y las dos tareas enseñan «N/A» en el importe y en el comentario
-  del solicitante, porque la acción pasa `rv!record` al proceso y no trae esos campos. Hasta entonces, cada pasada
-  del guion de la confirmación deja una tarea abierta al grupo de aprobadores. [script y Appian, tras unir la rama
-  del método]
+- **El banco `BPS`: las tareas enseñan «N/A».** «Confirmar envío» y «Aprobar solicitud» enseñan «N/A» en el importe
+  y en el comentario del solicitante: la acción pasa `rv!record` al proceso y no trae esos campos. No afecta a los
+  guiones. Al corregirlo, que el proceso lea la solicitud por su identificador. [Appian]
 - **Un proyecto ya construido y con su QA cuando llega un bundle nuevo** (escenario que plantea Raúl, 12-nov). El
   funcional, la solución y los escenarios no caducan por actualizar; se revisa por impacto lo que habla con Appian:
   `qa.py` y sus guiones, el extractor y su política, y lo que el plugin afirma de una versión. Un «pasa» anterior no
   acredita la versión nueva: los guiones del proyecto se repiten con el `sail` nuevo (mirando que `SAIL_CLI` no
   apunte al anterior) y el que falle se adapta por lo que cambió, como el envío con validación de la 26.9.15, sin
-  `--no-validate` por sistema. Lo nuevo que aporte algo (las tareas, con `tasks` y `open`) lo puede usar la IA tras
-  leer su ayuda y probarlo; para que un guion lo repita hace falta que `qa.py` lo entienda. Probado solo con el
-  banco; falta hacerlo una vez con un proyecto real de prueba, conservando su resultado anterior. [método, con el
-  punto anterior]
+  `--no-validate` por sistema. Lo nuevo que aporte algo lo puede usar la IA tras leer su ayuda y probarlo; para que
+  un guion lo repita hace falta que `qa.py` lo entienda, como ya entiende las tareas (paso «tarea»). Probado solo
+  con el banco, con el `sail` anterior y el nuevo; falta hacerlo una vez con un proyecto real de prueba,
+  conservando su resultado anterior. [método]
 - **Índice del DOCX.** Evaluar la caché editable solo si una entrega la necesita. [Word]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
   observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se

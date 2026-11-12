@@ -1,0 +1,35 @@
+{
+ "escenario": "BPS-05.1",
+ "dice": ["Dada una solicitud en borrador que su solicitante envía a aprobación, confirmando el envío",
+          "Cuando un aprobador abre la tarea de esa solicitud, la acepta y la aprueba",
+          "Entonces la solicitud queda aprobada"],
+ "host": "",
+ "site": "",
+ "roles": {"solicitante": "", "aprobador": ""},
+ "dado": [
+  {"rol": "solicitante", "sail": ["load"]},
+  {"rol": "solicitante", "sail": ["navigate", "Nueva solicitud"]},
+  {"rol": "solicitante", "sail": ["interact", "Importe", "-5"],
+   "espera": {"texto": ["El importe tiene que ser mayor que cero"]}},
+  {"rol": "solicitante", "sail": ["interact", "Título", "QA {pasada}", "Importe", "5", "Categoría", "2",
+                                  "Fecha de inicio", "{hoy}"]},
+  {"rol": "solicitante", "sail": ["interact", "Crear solicitud"], "espera": {"completado": true}},
+  {"rol": "solicitante", "sail": ["load"]},
+  {"rol": "solicitante", "sail": ["interact", "🔍", "QA {pasada}"],
+   "espera": {"fila": {"con": "QA {pasada}", "Estado": "Borrador"}}},
+  {"rol": "solicitante", "sail": ["navigate", "QA {pasada}"], "espera": {"hay": ["Enviar a aprobación"]}},
+  {"rol": "solicitante", "sail": ["navigate", "Enviar a aprobación"], "espera": {"texto": ["Confirmar envío"]}},
+  {"rol": "solicitante", "sail": ["interact", "--confirm", "Comentario para el aprobador", "Recorrido del banco",
+                                  "Enviar a aprobación"], "espera": {"completado": true}},
+  {"rol": "solicitante", "sail": ["reload"], "espera": {"campo": {"label": "Estado", "valor": "Pendiente de aprobación"}}}
+ ],
+ "cuando": [
+  {"rol": "aprobador", "tarea": "Aprobar solicitud", "con": "QA {pasada}", "espera": {"hay": ["Guardar decisión"]}},
+  {"rol": "aprobador", "sail": ["interact", "Decisión", "1", "Guardar decisión"], "espera": {"completado": true}}
+ ],
+ "entonces": [
+  {"rol": "solicitante", "sail": ["load"]},
+  {"rol": "solicitante", "sail": ["interact", "🔍", "QA {pasada}"],
+   "espera": {"fila": {"con": "QA {pasada}", "Estado": "Aprobada"}}}
+ ]
+}

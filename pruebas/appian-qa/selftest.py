@@ -359,6 +359,17 @@ def main():
                  "no cambió nada", "ni con una validación ajena a lo esperado")
         variante("HU-01.2", lambda g: g["entonces"][0].update(espera={"texto": ["indica el título"]}),
                  "", "sí pasa si lo esperado es el rechazo, en las validaciones", resultado="pasa", codigo=0)
+        # una tarea: se abre por su nombre y por un texto de su formulario, y queda aceptada y recargada
+        por_tarea = lambda g: g.update(cuando=[{"rol": "revisor", "tarea": "Revisar solicitud", "con": "QA {pasada}",
+                                                "espera": {"hay": ["Devolver"]}}] + g["cuando"][4:])
+        variante("HU-02.1", por_tarea, "", "una tarea se abre por su nombre y un texto de su formulario, aceptada",
+                 resultado="pasa", codigo=0)
+        variante("HU-02.1", lambda g: (por_tarea(g), g["cuando"][0].pop("con")),
+                 "no se sabe cuál abrir", "con varias tareas del mismo nombre y sin «con», no se abre una al azar")
+        variante("HU-02.1", lambda g: (por_tarea(g), g["cuando"][0].update(con="No existe {pasada}")),
+                 "no hay ninguna tarea", "y si ninguna enseña ese texto, falla y lo dice")
+        variante("HU-02.1", lambda g: (por_tarea(g), g["cuando"][0].update(rol="gestor")),
+                 "no hay ninguna tarea", "ni la abre quien no la tiene asignada")
         t.defecto(no_manda=True)       # SAIL CLI 26.9.15: el envío que la validación pararía no se manda, y es un error
         c, out = t.repetir("--escenario", "HU-01.2")
         ok("un envío que SAIL CLI no manda pasa si lo esperado es ese rechazo",

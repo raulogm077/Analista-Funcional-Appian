@@ -771,9 +771,9 @@ def main():
                 g.unlink()
         de_la_copia = {"script": copia / "skills" / "appian-actualizacion" / "scripts" / "actualizar.py"}
         c, out, err = recorre(*cuentas, **de_la_copia)
-        comprueba("repite los guiones del banco con las cuentas que se le dan y dice lo que aún no recorre",
+        comprueba("repite los guiones del banco con las cuentas que se le dan",
                   c == 0 and "Los recorridos con SAIL CLI: PASA" in out and "BPS-01.1 · pasa" in out
-                  and "BPS-06.1 · pasa" in out and "aún no trae el recorrido" in out
+                  and "BPS-06.1 · pasa" in out
                   and "La extracción: sin comprobar" in out, out + err)
         c, out, err = recorre("--solicitante", "qa.solicitante", "--aprobador", "qa.solicitante", **de_la_copia)
         comprueba("si quien no debe ver una acción la ve, el banco no pasa y dice en qué recorrido",

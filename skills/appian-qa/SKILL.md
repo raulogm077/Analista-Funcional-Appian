@@ -129,10 +129,13 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   script busca su sesión en cada equipo (`session.json` bajo `$SAIL_HOME` y `~/.sail`, por usuario y host), así que no
   hay que decir en ningún fichero dónde está la de cada uno.
 - **Un paso**: `{"rol", "sail": [orden y sus argumentos, sin el site], "espera"}`. Las órdenes son `load` (siempre
-  `--fresh`), `navigate`, `interact`, `back` y `show` (vuelve a leer la última página cargada, sin pedir nada al servidor);
+  `--fresh`), `navigate`, `interact`, `back`, `reload` (vuelve a pedir la página en la que se está, por ejemplo el
+  registro tras una acción) y `show` (vuelve a leer la última página cargada, sin pedir nada al servidor);
   `--confirm` va en la orden si el destino lo pide. Una fila de una
   rejilla se marca por su contenido, `{"rol": "revisor", "selecciona": "QA {pasada}"}`, nunca por el número que le dio
-  Appian. Con un solo rol, «rol» se puede omitir.
+  Appian. Una tarea se abre por su nombre, `{"rol": "revisor", "tarea": "Revisar solicitud", "con": "QA {pasada}"}`:
+  queda aceptada y en pantalla, lista para rellenarla. «con» es un texto de su formulario y hace falta si puede haber
+  varias con ese nombre. Con un solo rol, «rol» se puede omitir.
 - Para cambiar de página del site: `"sail": ["load", "<página>"]`; `load` sin página recarga la predeterminada.
 - **`espera`**: `"completado": true` (el formulario se envió); `"hay"` y `"no_hay"`, refs o etiquetas, o su principio
   hasta el final de una palabra («Pendientes» vale para «Pendientes (22)»; «Comentar» no vale para «Comentarios»);

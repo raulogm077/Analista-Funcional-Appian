@@ -59,7 +59,7 @@ bloqueo entre dos instalaciones: no lances dos a la vez sobre la misma carpeta.
                      conoce.
   --host ENTORNO --solicitante USUARIO --aprobador USUARIO [--site SITE]
                      repite con `qa.py`, de appian-qa, los guiones de assets/banco/guiones/ en ese entorno y con esas
-                     cuentas, que tienen que tener su sesión de sail abierta. El banco aún no trae el de la tarea del grupo.
+                     cuentas, que tienen que tener su sesión de sail abierta.
 
 --servidor es la carpeta donde está extraído el bundle; sin él, la de la guía de Appian (~/appian-dev-mcp-server).
 SAIL CLI es `sail` del PATH o el de $SAIL_CLI, como en appian-qa.
@@ -112,9 +112,6 @@ ESPERADO = pathlib.Path(__file__).resolve().parents[1] / "assets" / "banco" / "e
 MODELO = PLUGIN / "skills" / "appian-reverse-engineering" / "scripts" / "build_model.py"   # el que arma el extractor
 GUIONES = ESPERADO.parent / "guiones"       # los recorridos del banco, como guiones de appian-qa sin entorno ni cuentas
 UNIDAD_BANCO = "BPS-01"                     # el nombre de unidad con el que qa.py repite esos guiones
-# Lo que el banco aún no recorre; se quita cuando traiga ese guion
-FALTAN_RECORRIDOS = ("El banco aún no trae el recorrido de la tarea del grupo (`tasks` y `open` de SAIL CLI): eso "
-                     "queda sin comprobar.")
 TIPOS_DE_GENERICA = 3   # una herramienta con errores en tantos tipos de objeto no es de ninguno: se probó en todos
 # Lo que `instalar` lanza de un bundle, además de `uv sync` sobre su pyproject.toml. Por sistema: cómo llama Appian a su
 # SAIL CLI en bin/, el script que lo instala y el que instala la skill oficial.
@@ -934,7 +931,7 @@ def comprueba_recorridos(host, site, cuentas):
         codigo, salida = lanza([sys.executable, qa, "repetir", tmp, UNIDAD_BANCO], cwd=tmp)
     # De lo que dice qa.py, una línea por escenario: sin la ruta de la carpeta temporal, que ya no existe
     dice = [l.strip() for l in salida.splitlines() if l.strip() and str(tmp) not in l and tmp.as_posix() not in l]
-    return {0: "pasa", 1: "no pasa"}.get(codigo, "no se pudo"), dice + [FALTAN_RECORRIDOS]
+    return {0: "pasa", 1: "no pasa"}.get(codigo, "no se pudo"), dice
 
 
 def cmd_comprobar(args):

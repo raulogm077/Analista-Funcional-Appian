@@ -13,6 +13,8 @@ borradores y devuelve las enviadas. Su estado está en el fichero de SAIL_SIMULA
   defecto "lee_stdin": SAIL CLI lee su entrada antes de nada (si se la dejan abierta, espera)
   defecto "no_manda": un envío que la validación pararía no se manda y sale como error (SAIL CLI 26.9.15)
 El panel lleva dos enlaces «Ver detalle», que el --json da con nth y of: no se distinguen.
+Un revisor tiene además una tarea «Revisar solicitud» por cada solicitud enviada (tasks), que se abre por su dirección
+(open) y, como en el de verdad, tras aceptarla (--accept) sigue enseñando el formulario de antes hasta recargar (reload).
 La sesión de cada cuenta, en su --data-dir: session.json ({"hostname", "username", "cookies"}; con "caducada": true, la
 del servidor ya no vale) y la página en la que está (pagina.json).
 """
@@ -58,7 +60,8 @@ def main():
         k = args.index("--data-dir")
         carpeta = pathlib.Path(args[k + 1])
         del args[k:k + 2]
-    args = [a for a in args if a not in ("--json", "--confirm")]
+    acepta = "--accept" in args
+    args = [a for a in args if a not in ("--json", "--confirm", "--accept")]
     fresh = "--fresh" in args
     args = [a for a in args if a != "--fresh"]
     orden, site, resto = args[0], args[1], args[2:]
@@ -122,6 +125,13 @@ def main():
 
     def formulario():
         c = pag["campos"]
+        if pag.get("tarea") and not pag.get("rinde_aceptada"):     # la tarea de un grupo, antes de aceptarla
+            f = next(f for f in app["filas"] if f["Número"] == pag["seleccion"])
+            return {"status": "ok", "site": site, "validations": None,
+                    "options": [{"id": secrets.token_hex(16), "label": "Accept", "ref": "Accept", "verb": "click"}],
+                    "ui": {"#t": "FormLayout", "contents": [
+                        {"#t": "RichText", "text": "You must accept this task before completing it"},
+                        {"#t": "TextField", "label": "Título", "value": f["Título"], "readOnly": True, "disabled": True}]}}
         if pag["pagina"] == "alta":
             campos = [("Título", "text"), ("Importe (€)", "text")]
             botones = ["Enviar", "Guardar borrador", "Cancelar"]
@@ -156,14 +166,32 @@ def main():
         for f in app["filas"]:      # «lento»: la solicitud nueva aparece en la segunda carga
             if f.get("oculta"):
                 f["oculta"] -= 1
-        pag.update(pagina="panel", campos={}, seleccion=None, busqueda="", validaciones=[])
+        pag.update(pagina="panel", campos={}, seleccion=None, busqueda="", validaciones=[], tarea=False)
         fin(panel())
+    if orden == "tasks":
+        suyas = [f for f in app["filas"] if revisor and f["Estado"] == "Enviada"]
+        sale({"site": site, "status": "ok", "tasks": [
+            {"name": "Revisar solicitud", "id": f["Número"], "assignees": ["Revisores"],
+             "address": f'https://{sesion["hostname"]}/suite/sites/{site}/task/{f["Número"]}'} for f in suyas]})
+    if orden == "open":
+        numero = site.rsplit("/task/", 1)[-1]          # en open, lo que sigue a la orden es la dirección
+        site = site.split("/sites/", 1)[-1].split("/", 1)[0]
+        if not (revisor and any(f["Número"] == numero and f["Estado"] == "Enviada" for f in app["filas"])):
+            error(f'could not open the task "{numero}" (status 404)')
+        pag.update(pagina="revision", seleccion=numero, campos={}, validaciones=[], tarea=True, aceptada=acepta,
+                   rinde_aceptada=False)
+        fin(pagina())
+    if orden == "reload":
+        if pag.get("tarea") and pag.get("aceptada"):
+            pag["rinde_aceptada"] = True
+        fin(pagina())
     if orden == "show":
         fin(pagina())
     if orden == "back":
         pag.update(pagina="panel", campos={}, validaciones=[])
         fin(pagina(), location="site page panel")
     if orden in ("navigate", "nav"):
+        pag["tarea"] = False        # se sale de la tarea que hubiera abierta
         destino = resto[0].lstrip("⤴ ").strip()
         disponibles = [o["label"] for o in pagina()["options"] if o.get("verb") == "navigate"]
         if destino.casefold() not in [x.casefold() for x in disponibles]:

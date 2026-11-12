@@ -45,7 +45,8 @@ Una pantalla o acción por cada tipo de lo que documenta `sail` (un tipo nuevo e
 6. **Interfaces**: `BPS_ResumenSolicitud` (vista del registro), `BPS_FormularioSolicitud` (formulario de inicio de la
    nueva solicitud), `BPS_ConfirmarEnvio` (tarea encadenada: un comentario obligatorio, que el proceso exige, y un botón «Enviar a
    aprobación» que lleva confirmación),
-   `BPS_AprobarSolicitud` (tarea del grupo: «Decisión» Aprobar o Rechazar y un comentario) y `BPS_PaginaSolicitudes`
+   `BPS_AprobarSolicitud` (tarea del grupo: «Decisión» Aprobar o Rechazar y un motivo, obligatorio al rechazar; si se
+   aprueba sin motivo, el botón guarda uno, porque el proceso lo exige) y `BPS_PaginaSolicitudes`
    (la tabla de la página, con los filtros, la búsqueda y la acción «Nueva solicitud»).
 7. **Procesos**:
    - `BPS Crear Solicitud`: formulario de inicio; si no se cancela, guarda la solicitud en Borrador con quién y cuándo.
@@ -76,7 +77,7 @@ Es donde `qa.py` busca la sesión de cada cuenta; el banco no tiene carpetas pro
 
 ## Guiones
 
-En `guiones/`, uno o más por fila de «Qué cubre» (falta el de la tarea del grupo). Están escritos tras recorrer la
+En `guiones/`, uno o más por fila de «Qué cubre». Están escritos tras recorrer la
 aplicación con `sail`, como cualquier guion de `appian-qa`, y crean sus propias solicitudes con un título único.
 Van sin entorno ni cuentas: `comprobar` pone los de quien lo lanza y, donde un paso teclea el usuario de un rol
 (`{cuenta de aprobador}`, en el selector de usuario), el suyo. Si se cambia una etiqueta o un mensaje de la

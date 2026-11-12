@@ -32,9 +32,11 @@ ANALISTA = pathlib.Path(__file__).resolve().parents[2] / "appian-functional-anal
 CARPETA, RESULTADO = "qa", "resultado.json"
 PARTES = ("dado", "cuando", "entonces")
 ORDENES = {"load": "load", "navigate": "navigate", "nav": "navigate", "interact": "interact", "back": "back",
-           "show": "show"}
+           "show": "show", "reload": "reload", "tasks": "tasks", "open": "open"}
+DE_TAREA = {"tasks", "open"}    # las que lanza el paso «tarea»: un guion no las escribe (llevan una dirección de un día)
 CLAVES = {"escenario", "dice", "host", "site", "roles", *PARTES}
-CLAVES_PASO = {"rol", "sail", "selecciona", "espera", "gasta"}
+CLAVES_PASO = {"rol", "sail", "selecciona", "tarea", "con", "espera", "gasta"}
+HACE = ("sail", "selecciona", "tarea")   # lo que hace un paso: una orden, marcar una fila o abrir una tarea
 ESPERAS = {"completado", "hay", "no_hay", "texto", "sin_texto", "fila", "sin_fila", "campo"}
 AFIRMA = {"completado", "hay", "texto", "fila", "campo"}  # las negativas solas pasan con una página vacía
 CAMPOS = {"TextField", "ParagraphField"}                 # tipos observados en el ui de SAIL CLI
@@ -42,6 +44,7 @@ POR_TERMINAR, SIN_REPETIR = "guion por terminar", "sin repetir"
 DONDE = ("desarrollo", "corrección")                 # los únicos entornos de técnico §0 donde se repite: SAIL CLI escribe
 ESPERA_SAIL = 120          # segundos que se espera a una orden de SAIL CLI
 REINTENTOS, PAUSA = 3, 2   # lo que aún no se ve se vuelve a mirar hasta 3 veces más, cada 2 segundos
+TAREAS = 10                # cuántas tareas con el mismo nombre se abren, como mucho, para dar con la que se busca
 NIVELES = 3                # hasta dónde se buscan sesiones por debajo de cada carpeta
 RX_ID = re.compile(r"^[0-9a-f]{32}$")    # un _cId o una ref de un solo render (refIsPerRender): cambian en cada carga
 RX_ESCENARIO = re.compile(r"^\s*(?:Escenario|Ejemplo):\s*(\S+)")
@@ -376,7 +379,7 @@ def sustituye(x, valores):
 def solo_mira(orden):
     """Si una orden solo mira: cargar la página, buscar en una rejilla («🔍») o marcar una de sus filas."""
     sub = ORDENES[orden[0]]
-    return sub in ("load", "show") or (sub == "interact" and len(orden) == 3 and orden[1] == "🔍") \
+    return sub in ("load", "show", "reload") or (sub == "interact" and len(orden) == 3 and orden[1] == "🔍") \
         or (sub == "interact" and len(orden) == 2 and str(orden[1])[:1] in "☐☑")
 
 
@@ -424,9 +427,13 @@ def defectos(g, nombre):
     for parte in PARTES:
         for k, p in enumerate(g.get(parte) or [], 1):
             donde = f"{parte} {k}"
-            if not isinstance(p, dict) or ("sail" in p) == ("selecciona" in p):
-                mal.append(f"{donde}: un paso lleva «sail» (la orden) o «selecciona» (una fila)")
+            if not isinstance(p, dict) or sum(k in p for k in HACE) != 1:
+                mal.append(f"{donde}: un paso lleva «sail» (la orden), «selecciona» (una fila) o «tarea» (la que abre)")
                 continue
+            if not all(isinstance(p[k], str) and p[k].strip() for k in ("tarea", "con") if k in p) \
+                    or ("con" in p and "tarea" not in p):
+                mal.append(f"{donde}: «tarea» es el nombre de la tarea y «con», que solo va con ella, un texto de su "
+                           "formulario")
             mal += [f"{donde}: «{c}» no es una clave de un paso" for c in p if c not in CLAVES_PASO]
             mal += [f"{donde}: {x}" for x in (mal_esperado(p["espera"]) if "espera" in p else [])]
             afirma = afirma or (parte == "entonces" and isinstance(p.get("espera"), dict) and bool(AFIRMA & set(p["espera"])))
@@ -434,8 +441,10 @@ def defectos(g, nombre):
             if rol not in roles:
                 mal.append(f"{donde}: el rol «{p.get('rol')}» no está en «roles»")
             orden = p.get("sail")
-            if orden is not None and (not isinstance(orden, list) or not orden or orden[0] not in ORDENES):
-                mal.append(f"{donde}: la orden es una lista que empieza por {', '.join(sorted(set(ORDENES.values())))}")
+            if orden is not None and (not isinstance(orden, list) or not orden or orden[0] not in ORDENES
+                                      or orden[0] in DE_TAREA):
+                mal.append(f"{donde}: la orden es una lista que empieza por "
+                           f"{', '.join(sorted(set(ORDENES.values()) - DE_TAREA))}")
             elif orden is not None:
                 ids = [x for x in orden[1:] if isinstance(x, str) and RX_ID.match(x)]
                 if ids:
@@ -474,9 +483,10 @@ class Recorrido:
 
     def sail(self, rol, orden, espera=None):
         sub, args = ORDENES[orden[0]], [str(x) for x in orden[1:]]
-        if sub == "load" and "--fresh" not in args:
+        if sub in ("load", "reload", "open") and "--fresh" not in args:
             args.append("--fresh")
-        cmd = sail_cli() + ["--json", "--data-dir", str(self.carpeta[rol]), sub, self.g["site"], *args]
+        donde = [] if sub == "open" else [self.g["site"]]     # «open» lleva la dirección, que ya dice el site
+        cmd = sail_cli() + ["--json", "--data-dir", str(self.carpeta[rol]), sub, *donde, *args]
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
                                stdin=subprocess.DEVNULL, timeout=ESPERA_SAIL)
@@ -510,9 +520,41 @@ class Recorrido:
             raise Falla("el servidor aceptó la orden y no cambió nada")
         return sub, d
 
+    def abre_tarea(self, rol, nombre, con):
+        """La página de la tarea de ese rol que se llama así, ya aceptada. Si se da «con», la que enseña ese texto en su
+        formulario: se abren, de la más nueva a la más vieja, las que se llaman así. Como la tarea la crea un proceso
+        que puede no haber terminado, se vuelve a mirar. Tras aceptar se recarga: SAIL CLI deja en pantalla el
+        formulario de antes de aceptar."""
+        suyas = []
+        for intento in range(REINTENTOS + 1):
+            if intento:
+                time.sleep(PAUSA)
+            _, d = self.sail(rol, ["tasks"])
+            suyas = [t for t in d.get("tasks") or [] if isinstance(t, dict) and t.get("address")
+                     and empieza(t.get("name", ""), nombre)]
+            if con is not None:
+                suyas = [t for t in suyas[:TAREAS] if any(
+                    norma(con) in norma(x) for x in textos(self.sail(rol, ["open", t["address"]])[1].get("ui")))]
+            if suyas:
+                break
+        if len(suyas) != 1:
+            de_ella = f"«{nombre}»" + (f" con «{con}»" if con is not None else "")
+            raise Falla(f"no hay ninguna tarea {de_ella}" if not suyas else
+                        f"hay {len(suyas)} tareas {de_ella}: no se sabe cuál abrir (da en «con» un texto que solo tenga "
+                        "la suya, con {pasada})", de_espera=not suyas)
+        self.sail(rol, ["open", "--accept", suyas[0]["address"]])
+        return self.sail(rol, ["reload"])[1]
+
     def paso(self, p):
         p = sustituye(p, self.valores)
         rol = self.rol(p)
+        if "tarea" in p:
+            d = self.abre_tarea(rol, p["tarea"], p.get("con"))
+            self.tras_carga[rol], self.ultima[rol] = [["reload"]], d
+            mal = lo_que_falta(p.get("espera") or {}, d)
+            if mal:
+                raise Falla("; ".join(mal), de_espera=True)
+            return
         pagina = self.ultima.get(rol)
         if "selecciona" in p:
             if pagina is None:
