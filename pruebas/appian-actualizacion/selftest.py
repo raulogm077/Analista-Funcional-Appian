@@ -644,6 +644,15 @@ def main():
             ("constant", "BPS_ESTADO_RECHAZADA"): {"type": "INTEGER", "value": 9}}), en=vacia)
         comprueba("si el modelo no dice lo que dice la especificación, no pasa y dice qué",
                   c == 1 and "BPS_ESTADO_RECHAZADA: value es 9 y la especificación dice 4" in out, out + err)
+        c, out, err = lanza("comprobar", "--extraccion", extraccion("booleano", respuestas={
+            ("constant", "BPS_ESTADO_BORRADOR"): {"type": "BOOLEAN", "value": True}}), en=vacia)
+        comprueba("un «verdadero» no vale por el 1 que dice la especificación",
+                  c == 1 and "BPS_ESTADO_BORRADOR: value es True" in out, out + err)
+        c, out, err = lanza("comprobar", "--extraccion", extraccion("sin permiso", errors=[error(
+            "getRecordEventsConfig", "recordType",
+            "API error (HTTP 401): Unauthorized; diagnostic: Record events not configured for this record type")]), en=vacia)
+        comprueba("un error de permisos que menciona el texto del previsto no es el previsto",
+                  c == 1 and "errores que el banco no espera: getRecordEventsConfig" in out, out + err)
         c, out, err = lanza("comprobar", "--extraccion", extraccion("sin campos", respuestas={
             ("recordType", "BPS Solicitud"): {"fields": [{"name": "id"}], "relationships": []}}), en=vacia)
         comprueba("si el extractor deja de leer los campos de un record type, no pasa",
@@ -705,6 +714,21 @@ def main():
         c, out, err = lanza("instalar", enteros[3], "--uv", uv, "--servidor", dentro_del_estado, en=casa3)
         comprueba("un servidor dentro de la carpeta donde se guardan las fotos para con 2 y no se crea",
                   c == 2 and "al revés" in err and not dentro_del_estado.exists(), err)
+        casa5, fisico = tmp / "quinta casa", tmp / "servidor físico"
+        (casa5 / ".appian-analisis-funcional").mkdir(parents=True)
+        fisico.mkdir()
+        enlace = casa5 / ".appian-analisis-funcional" / "actualizaciones"
+        if os.name == "nt":      # una unión de carpetas: no pide permisos, como sí los pide un enlace simbólico
+            hecho = subprocess.run(["cmd", "/c", "mklink", "/J", str(enlace), str(fisico)], capture_output=True).returncode == 0
+        else:
+            os.symlink(fisico, enlace, target_is_directory=True)
+            hecho = True
+        if hecho:
+            c, out, err = lanza("instalar", enteros[3], "--uv", uv, "--servidor", fisico, en=casa5)
+            comprueba("si la carpeta de las fotos es un enlace que acaba dentro del servidor, para con 2 y no instala",
+                      c == 2 and "al revés" in err and not any(fisico.iterdir()), out + err)
+            if os.name == "nt":
+                os.rmdir(enlace)                          # quita la unión, no lo enlazado
         sin_sha = bundle_entero(tmp, 3, "sin-sha", su_info=f"build_timestamp={BUILD[3]}\nmcp_src_sha=\n")
         c, out, err = lanza("instalar", sin_sha, "--uv", uv, en=casa3)
         comprueba("un bundle con el mcp_src_sha vacío para con 2", c == 2 and "mcp_src_sha" in err and "sha2" in build3(), err)

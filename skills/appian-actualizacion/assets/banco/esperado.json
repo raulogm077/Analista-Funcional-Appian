@@ -4,7 +4,7 @@
     "Está escrito a mano a partir de especificacion.md, no sacado de una extracción: si el extractor deja de ver o de entender algo, aquí se nota.",
     "objetos: cuántos de cada tipo, como mínimo, porque Appian crea además por su cuenta carpetas, un grupo de administradores y una constante.",
     "hechos: lo que el modelo que construye el extractor (inventory.json) tiene que decir de unos objetos, que se buscan por cómo acaba su nombre (el prefijo de la aplicación puede cambiar).",
-    "errores_previstos: los que Appian devuelve en esta aplicación y no son un fallo; cualquier otro hace que no pase.",
+    "errores_previstos: los que Appian devuelve en esta aplicación y no son un fallo, por cómo empieza el mensaje entero; cualquier otro hace que no pase.",
     "Si la especificación gana o pierde un objeto, un campo, una relación o una tarea, se cambia aquí a la vez."
   ],
   "objetos": {
@@ -24,7 +24,7 @@
     {"tipo": "processModel", "nombre_acaba_en": " Enviar a Aprobacion", "campo": "userTaskCount", "vale": 2}
   ],
   "errores_previstos": [
-    {"herramienta": "getRecordEventsConfig", "dice": "Record events not configured"},
-    {"herramienta": "listObjectVersions", "dice": "No version history"}
+    {"herramienta": "getRecordEventsConfig", "empieza_por": "API error (HTTP 403): Record events not configured for this record type"},
+    {"herramienta": "listObjectVersions", "empieza_por": "No version history available for "}
   ]
 }

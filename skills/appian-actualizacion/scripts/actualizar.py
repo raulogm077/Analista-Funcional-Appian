@@ -641,7 +641,8 @@ def cmd_instalar(args):
         fin(2, f"error: {srv} tiene ficheros y no es una instalación del Dev MCP: no se instala encima. "
                "Indica con --servidor la carpeta del servidor, o una vacía para una instalación nueva.")
     suya = casa() / ESTADO
-    if srv in bundle.parents or srv == suya or srv in suya.parents or suya in srv.parents:
+    suyas = {suya.resolve(), carpeta_fotos(srv).resolve()}   # resueltas: un enlace de carpeta puede llevarlas a otro sitio
+    if srv in bundle.parents or any(srv == x or srv in x.parents or x in srv.parents for x in suyas):
         fin(2, f"error: el bundle no puede estar dentro de la carpeta del servidor ({srv}), que es la que se sustituye, "
                f"ni esa carpeta dentro de {suya} o al revés: las fotos y la copia acabarían dentro de lo que guardan. "
                f"{sin_tocar}")
@@ -792,13 +793,14 @@ def comprueba_extraccion(carpeta):
     fichero = carpeta / "extraccion" / "extraction_report.json"
     informe, esperado = leer_json(fichero), leer_json(ESPERADO) or {}
     entero = lambda n: isinstance(n, int) and not isinstance(n, bool) and n >= 0
+    igual = lambda a, b: type(a) is type(b) and a == b     # el mismo valor y del mismo tipo: `true` no es 1
     minimos, hechos, previstos = esperado.get("objetos"), esperado.get("hechos"), esperado.get("errores_previstos")
     if not isinstance(minimos, dict) or not minimos or not all(entero(n) and n > 0 for n in minimos.values()) \
             or not isinstance(hechos, list) or not all(
                 isinstance(h, dict) and all(isinstance(h.get(k), str) for k in ("tipo", "nombre_acaba_en", "campo"))
                 and ("vale" in h) != ("acaba_en" in h) for h in hechos) \
             or not isinstance(previstos, list) or not all(
-                isinstance(e, dict) and isinstance(e.get("herramienta"), str) and isinstance(e.get("dice"), str)
+                isinstance(e, dict) and isinstance(e.get("herramienta"), str) and isinstance(e.get("empieza_por"), str)
                 for e in previstos):
         return "no se pudo", [f"{ESPERADO} no dice con su forma lo que se espera del banco."]
     hay, errores, app = (informe or {}).get("objectsByType"), (informe or {}).get("errors"), (informe or {}).get("app")
@@ -819,7 +821,9 @@ def comprueba_extraccion(carpeta):
     if faltan:
         mal.append("faltan objetos de los que tiene la aplicación del banco: " + "; ".join(faltan))
     # Los errores: los que Appian da en esta aplicación sin que sea un fallo, y los demás
-    previsto = lambda e: any(x["herramienta"] == e["tool"] and x["dice"] in str(e.get("error")) for x in previstos)
+    # por cómo empieza el mensaje entero: uno de sesión o de permisos que solo lo mencione no es el previsto
+    previsto = lambda e: any(x["herramienta"] == e["tool"] and str(e.get("error")).startswith(x["empieza_por"])
+                             for x in previstos)
     en_tipos = {}
     for e in errores:
         if not previsto(e):
@@ -847,7 +851,7 @@ def comprueba_extraccion(carpeta):
             quiere = h["vale"] if "vale" in h else h["acaba_en"]
             if len(suyos) != 1:
                 mal.append(f"el modelo trae {len(suyos)} {h['tipo']} cuyo nombre acaba en «{h['nombre_acaba_en']}», no uno")
-            elif (suyos[0].get(h["campo"]) != quiere) if "vale" in h else not str(suyos[0].get(h["campo"])).endswith(quiere):
+            elif not igual(suyos[0].get(h["campo"]), quiere) if "vale" in h                     else not str(suyos[0].get(h["campo"])).endswith(quiere):
                 mal.append(f"{suyos[0].get('name')}: {h['campo']} es {suyos[0].get(h['campo'])!r} y la especificación dice "
                            f"{quiere!r}")
     if mal:
