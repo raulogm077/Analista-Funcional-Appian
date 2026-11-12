@@ -181,6 +181,15 @@ def uv_falso(carpeta):
     return f
 
 
+def enlaza(enlace, destino):
+    """Un enlace a una carpeta; dice si se pudo. En Windows, una unión de carpetas: no pide permisos, como sí los pide
+    un enlace simbólico."""
+    if os.name == "nt":
+        return subprocess.run(["cmd", "/c", "mklink", "/J", str(enlace), str(destino)], capture_output=True).returncode == 0
+    os.symlink(destino, enlace, target_is_directory=True)
+    return True
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     if not SCRIPT.is_file():
@@ -538,10 +547,29 @@ def main():
                   str(dados))
         casa_r = tmp / "casa relativa"
         casa_r.mkdir()
-        c, out, err = lanza("instalar", enteros[1], "--uv", uv, "--servidor", "servidor relativo", en=casa_r, desde=tmp)
-        comprueba("una carpeta de servidor relativa que aún no existe también se entiende desde donde se lanza la orden",
-                  c == 0 and (tmp / "servidor relativo" / "BUILD-INFO.txt").is_file() and "SAIL CLI: bien" in out
-                  and "skill appian: bien" in out, out + err)
+        c, out, err = lanza("instalar", enteros[1], "--uv", os.path.join(".", uv.name), "--servidor", "servidor relativo",
+                            en=casa_r, desde=tmp)
+        comprueba("una carpeta de servidor relativa que aún no existe y un uv relativo se entienden desde donde se lanza "
+                  "la orden", c == 0 and (tmp / "servidor relativo" / "BUILD-INFO.txt").is_file() and "uv sync: bien" in out
+                  and "SAIL CLI: bien" in out and "skill appian: bien" in out, out + err)
+        con_enlace, otra = tmp / "con enlace", tmp / "otra"
+        con_enlace.mkdir()
+        (otra / "sub").mkdir(parents=True)
+        if enlaza(con_enlace / "enlace", otra / "sub"):
+            c, out, err = lanza("instalar", enteros[1], "--uv", uv, "--servidor", con_enlace / "enlace" / ".." / "servidor",
+                                en=casa_r)
+            donde = con_enlace if os.name == "nt" else otra   # Windows quita el `..` antes de mirar el enlace; los demás, después
+            comprueba("un `..` detrás de un enlace lleva a la carpeta que dice el sistema",
+                      c == 0 and (donde / "servidor" / "BUILD-INFO.txt").is_file(), out + err)
+            if os.name == "nt":
+                os.rmdir(con_enlace / "enlace")           # quita la unión, no lo enlazado
+        perfil = tmp / "perfil"
+        perfil.mkdir()
+        shutil.copy(enteros[1], perfil / "descarga.tar.gz")
+        c, out, err = lanza("estado", "--bundle", "~/descarga.tar.gz", "--servidor", tmp / "servidor relativo", en=casa_r,
+                            HOME=str(perfil), USERPROFILE=str(perfil))
+        comprueba("una ruta con ~ vale en todas las órdenes, no solo al instalar", c == 0 and "es el instalado" in out,
+                  out + err)
         c, out, err = instalar(3, SETUP_AVISA="1")
         comprueba("si el instalador de SAIL CLI termina bien pero avisa (sail fuera del PATH), no se da por bueno sin más",
                   c == 0 and "SAIL CLI: REVISAR" in out and "PATH" in out and "skill appian: bien" in out, out + err)
@@ -760,12 +788,7 @@ def main():
         (casa5 / ".appian-analisis-funcional").mkdir(parents=True)
         fisico.mkdir()
         enlace = casa5 / ".appian-analisis-funcional" / "actualizaciones"
-        if os.name == "nt":      # una unión de carpetas: no pide permisos, como sí los pide un enlace simbólico
-            hecho = subprocess.run(["cmd", "/c", "mklink", "/J", str(enlace), str(fisico)], capture_output=True).returncode == 0
-        else:
-            os.symlink(fisico, enlace, target_is_directory=True)
-            hecho = True
-        if hecho:
+        if enlaza(enlace, fisico):
             c, out, err = lanza("instalar", enteros[3], "--uv", uv, "--servidor", fisico, en=casa5)
             comprueba("si la carpeta de las fotos es un enlace que acaba dentro del servidor, para con 2 y no instala",
                       c == 2 and "al revés" in err and not any(fisico.iterdir()), out + err)

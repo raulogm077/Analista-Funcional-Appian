@@ -138,9 +138,14 @@ def fin(codigo, texto):
 
 
 def absoluta(ruta):
-    """La ruta, entera y desde donde está quien lanza la orden. abspath antes de resolve: en Windows, con Python 3.9,
-    resolve() deja relativa una ruta que aún no existe, y los instaladores se lanzan desde otra carpeta."""
-    return pathlib.Path(os.path.abspath(pathlib.Path(ruta).expanduser())).resolve()
+    """Una ruta que da la persona, entera y desde donde lanza la orden: los instaladores se lanzan desde otra carpeta.
+    Es el tipo de los argumentos que son rutas, así que las órdenes las reciben ya así. En Windows pasa antes por
+    abspath, porque con Python 3.9 resolve() deja relativa una ruta que aún no existe; en los demás sistemas no, porque
+    abspath quita los `..` sin mirar los enlaces y, detrás de un enlace, eso es otra carpeta."""
+    ruta = pathlib.Path(ruta).expanduser()
+    if platform.system() == "Windows":
+        ruta = pathlib.Path(os.path.abspath(ruta))
+    return ruta.resolve()
 
 
 def casa():
@@ -181,7 +186,7 @@ def instalado_en(carpeta):
 
 
 def carpeta_servidor(dada):
-    return absoluta(dada) if dada else (casa() / GUIA).resolve()
+    return dada or (casa() / GUIA).resolve()
 
 
 def servidor(dada):
@@ -637,8 +642,7 @@ def del_bundle(srv, script, *args):
 def cmd_instalar(args):
     _, setup, skills = sistema()
     sin_tocar = "No se ha tocado la instalación."
-    bundle = absoluta(args.bundle)
-    nuevo, raiz = leer_bundle(bundle, ("pyproject.toml", f"bin/{setup}", f"bin/{skills}"))
+    nuevo, raiz = leer_bundle(args.bundle, ("pyproject.toml", f"bin/{setup}", f"bin/{skills}"))
     srv = carpeta_servidor(args.servidor)
     marca = leer_json(srv / A_MEDIAS)         # si la hay, una instalación anterior no terminó de sustituir el servidor
     a_medias = marca is not None
@@ -651,7 +655,7 @@ def cmd_instalar(args):
                "Indica con --servidor la carpeta del servidor, o una vacía para una instalación nueva.")
     suya = casa() / ESTADO
     suyas = {suya.resolve(), carpeta_fotos(srv).resolve()}   # resueltas: un enlace de carpeta puede llevarlas a otro sitio
-    if srv in bundle.parents or any(srv == x or srv in x.parents or x in srv.parents for x in suyas):
+    if srv in args.bundle.parents or any(srv == x or srv in x.parents or x in srv.parents for x in suyas):
         fin(2, f"error: el bundle no puede estar dentro de la carpeta del servidor ({srv}), que es la que se sustituye, "
                f"ni esa carpeta dentro de {suya} o al revés: las fotos y la copia acabarían dentro de lo que guardan. "
                f"{sin_tocar}")
@@ -674,6 +678,9 @@ def cmd_instalar(args):
     if not uv:
         fin(2, "error: no encuentro `uv`, que instala las dependencias del servidor (la guía de Appian dice cómo "
                f"instalarlo). Si no está en el PATH, dime dónde con --uv. {sin_tocar}")
+    # Se lanza desde la carpeta del servidor. Sin resolver enlaces: hay instalaciones de uv que son un enlace a otro
+    # programa, que mira con qué nombre lo llaman.
+    uv = os.path.abspath(uv)
     if not setup.endswith(".bat") and not shutil.which("bash"):
         fin(2, f"error: no encuentro `bash`, que lanza los instaladores del bundle. {sin_tocar}")
     if args.catalogo:
@@ -695,7 +702,7 @@ def cmd_instalar(args):
         srv.mkdir(parents=True, exist_ok=True)
         borra(aparte)
         aparte.mkdir()
-        with tarfile.open(bundle) as t:
+        with tarfile.open(args.bundle) as t:
             t.extractall(aparte, members=miembros(t), **({"filter": "data"} if hasattr(tarfile, "data_filter") else {}))
         foto = None
         # La foto y la copia, con el servidor entero. Si se está terminando una sustitución que se cortó, ya se
@@ -753,8 +760,7 @@ def cmd_instalar(args):
               "bórrala a mano o repite la orden")
     pasos = [("uv sync", lambda: lanza([uv, "sync"], cwd=srv)), ("SAIL CLI", lambda: del_bundle(srv, setup)),
              ("skill appian", lambda: del_bundle(srv, skills))]
-    destinos = [absoluta(d) for d in args.skills_dir]
-    pasos += [(f"skill appian en {d}", lambda d=d: del_bundle(srv, skills, "--skills-dir", d)) for d in destinos]
+    pasos += [(f"skill appian en {d}", lambda d=d: del_bundle(srv, skills, "--skills-dir", d)) for d in args.skills_dir]
     # Ningún paso depende de otro, y se hacen todos: en un Mac con Intel o un Linux con ARM el instalador de SAIL CLI
     # se niega (el bundle no trae su binario) y la skill oficial tiene que quedar instalada igual.
     fallan = []
@@ -762,7 +768,7 @@ def cmd_instalar(args):
         codigo, salida = paso()
         # Sin ninguno de los clientes que Appian detecta, su instalador sale con error. Si la skill va a los que se
         # le dan con --skills-dir, eso no es un fallo: repetir la orden no lo cambiaría.
-        if nombre == "skill appian" and destinos and codigo not in (0, None) and SIN_CLIENTES in salida:
+        if nombre == "skill appian" and args.skills_dir and codigo not in (0, None) and SIN_CLIENTES in salida:
             print(f"  {nombre}: Appian no detecta ninguno de sus clientes; va a los que das con --skills-dir")
             continue
         # Los instaladores de Appian avisan sin fallar: la skill instalada tiene cambios de la persona y no se pisa, la
@@ -814,7 +820,6 @@ def comprueba_extraccion(carpeta):
     extract`: su informe (los objetos de cada tipo y los errores) y el modelo que el propio extractor construye con las
     respuestas (`build_model.py`), que tiene que decir lo que dice la especificación. «no se pudo» sin informe, con uno
     que no tiene su forma o con una extracción que no terminó: una sesión caducada no es un fallo del extractor."""
-    carpeta = absoluta(carpeta)
     fichero = carpeta / "extraccion" / "extraction_report.json"
     informe, esperado = leer_json(fichero), leer_json(ESPERADO) or {}
     entero = lambda n: isinstance(n, int) and not isinstance(n, bool) and n >= 0
@@ -1000,26 +1005,28 @@ def main():
     p = argparse.ArgumentParser(description="Instala un bundle del Dev MCP de Appian y dice qué hay y qué cambió.")
     sub = p.add_subparsers(dest="orden", required=True)
     comun = argparse.ArgumentParser(add_help=False)
-    comun.add_argument("--servidor", help="carpeta donde está extraído el bundle (por defecto, ~/appian-dev-mcp-server)")
+    comun.add_argument("--servidor", type=absoluta,
+                       help="carpeta donde está extraído el bundle (por defecto, ~/appian-dev-mcp-server)")
     e = sub.add_parser("estado", parents=[comun], help="qué hay instalado y qué fotos hay guardadas")
-    e.add_argument("--bundle", help="un bundle descargado, para saber si es más nuevo que lo instalado")
+    e.add_argument("--bundle", type=absoluta, help="un bundle descargado, para saber si es más nuevo que lo instalado")
     f = sub.add_parser("foto", parents=[comun], help="rehace la foto de lo instalado")
     n = sub.add_parser("instalar", parents=[comun], help="instala un bundle, con foto y copia de lo anterior")
-    n.add_argument("bundle", help="el bundle descargado (appian-dev-mcp-server-bundle.tar.gz)")
+    n.add_argument("bundle", type=absoluta, help="el bundle descargado (appian-dev-mcp-server-bundle.tar.gz)")
     n.add_argument("--plugin-sha", help="el mcpSrcSha del plugin de tu entorno: si el bundle es de otro, no se instala")
     n.add_argument("--uv", help="dónde está uv, si no está en el PATH")
-    n.add_argument("--skills-dir", action="append", default=[], metavar="DIR",
+    n.add_argument("--skills-dir", action="append", default=[], metavar="DIR", type=absoluta,
                    help="carpeta de un cliente de IA que el instalador de Appian no detecta; la skill queda en "
                         "DIR/skills/appian (se puede repetir)")
     i = sub.add_parser("informe", parents=[comun], help="qué cambió entre la foto anterior y lo instalado")
     for x in (f, n, i):
-        x.add_argument("--catalogo", help="el catálogo de herramientas del Dev MCP, en JSON, para la foto de lo instalado")
-    i.add_argument("--antes", help="carpeta de la foto de antes (por defecto, la del build anterior)")
-    i.add_argument("--despues", help="carpeta de la foto de después (por defecto, la del build instalado)")
+        x.add_argument("--catalogo", type=absoluta,
+                       help="el catálogo de herramientas del Dev MCP, en JSON, para la foto de lo instalado")
+    i.add_argument("--antes", type=absoluta, help="carpeta de la foto de antes (por defecto, la del build anterior)")
+    i.add_argument("--despues", type=absoluta, help="carpeta de la foto de después (por defecto, la del build instalado)")
     i.add_argument("--json", action="store_true", help="el informe como datos")
     sub.add_parser("sail-anterior", parents=[comun], help="saca el SAIL CLI del bundle anterior guardado")
     c = sub.add_parser("comprobar", help="el banco de pruebas: su extracción y sus recorridos con SAIL CLI")
-    c.add_argument("--extraccion", metavar="DIR",
+    c.add_argument("--extraccion", metavar="DIR", type=absoluta,
                    help="la carpeta de salida de `devmcp_extract.py extract` sobre la aplicación del banco")
     c.add_argument("--host", help="el entorno donde está construido el banco, para repetir sus recorridos (sin https://)")
     c.add_argument("--site", default="bps-banco-pruebas", help="el site del banco (por defecto, bps-banco-pruebas)")
