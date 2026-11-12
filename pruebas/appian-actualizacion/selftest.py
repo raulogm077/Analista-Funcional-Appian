@@ -120,8 +120,13 @@ def bundle(carpeta, n, con_info=True):
 # Lo que trae en bin/ un bundle de mentira: los instaladores apuntan lo que hacen en $APPIAN_RE_HOME/pasos.txt
 BAT = '@echo off\r\n>> "%APPIAN_RE_HOME%\\pasos.txt" echo {que} %*\r\n{mas}'
 SH = '#!/bin/bash\necho "{que} $*" >> "$APPIAN_RE_HOME/pasos.txt"\n{mas}'
-EDITADA_BAT = "if defined SKILLS_EDITADA echo LOCAL EDITS DETECTED - not overwriting.\r\n"
-EDITADA_SH = 'if [ -n "${SKILLS_EDITADA:-}" ]; then echo "LOCAL EDITS DETECTED - not overwriting."; fi\n'
+EDITADA_BAT = ("if defined SKILLS_EDITADA echo LOCAL EDITS DETECTED - not overwriting.\r\n"
+               "if defined SKILLS_ENLACE echo     Skipped - la carpeta de skills is a symlink/junction.\r\n"
+               'if defined SKILLS_SIN_CLIENTES if "%~1"=="" echo No AI client detected.& exit /b 1\r\n')
+EDITADA_SH = ('if [ -n "${SKILLS_EDITADA:-}" ]; then echo "LOCAL EDITS DETECTED - not overwriting."; fi\n'
+              'if [ -n "${SKILLS_ENLACE:-}" ]; then echo "    Skipped — la carpeta de skills is a symlink (-> /y)."; fi\n'
+              'if [ -n "${SKILLS_SIN_CLIENTES:-}" ] && [ $# -eq 0 ]; then echo "No AI client detected (looked for ~/.kiro)."; '
+              'exit 1; fi\n')
 AVISA_BAT = ("if defined SETUP_AVISA echo [!] could not update your PATH. Add this directory manually:\r\n"
              "if defined SETUP_FALLA echo error: this machine is not one the bundle ships a binary for& exit /b 1\r\n")
 AVISA_SH = ('if [ -n "${SETUP_AVISA:-}" ]; then echo "Linked, but /opt/x is not on your PATH. Either add it:"; fi\n'
@@ -197,11 +202,11 @@ def main():
         def sail(n):
             sail_json.write_text(json.dumps(SAIL[n]), encoding="utf-8")
 
-        def lanza(*args, en=casa, con_sail=True, **mas):
+        def lanza(*args, en=casa, con_sail=True, desde=None, **mas):
             entorno = {**os.environ, "APPIAN_RE_HOME": str(en), "SAIL_FALSO": str(sail_json), "PYTHONIOENCODING": "utf-8",
                        "SAIL_CLI": str(sail_py if con_sail else tmp / "no-hay-sail.py"), **mas}
             r = subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], capture_output=True, env=entorno,
-                               stdin=subprocess.DEVNULL, timeout=120)
+                               stdin=subprocess.DEVNULL, timeout=120, cwd=desde)
             return r.returncode, r.stdout.decode("utf-8", "replace"), r.stderr.decode("utf-8", "replace")
 
         print("Sin instalación")
@@ -511,6 +516,23 @@ def main():
         c, out, err = instalar(3, SKILLS_EDITADA="1")
         comprueba("si la skill oficial instalada tiene cambios de la persona, lo dice y no falla",
                   c == 0 and "skill appian: REVISAR" in out and "LOCAL EDITS" in out and "SAIL CLI: bien" in out, out + err)
+        c, out, err = instalar(3, SKILLS_ENLACE="1")
+        comprueba("si el instalador se salta un cliente porque su carpeta de skills es un enlace, no se da por instalada",
+                  c == 0 and "skill appian: REVISAR" in out and "Skipped" in out and "SAIL CLI: bien" in out, out + err)
+        c, out, err = instalar(3, SKILLS_SIN_CLIENTES="1")
+        comprueba("sin ningún cliente de los que detecta Appian y sin --skills-dir, falla y enseña lo que dice su instalador",
+                  c == 1 and "skill appian: FALLA" in out and "No AI client detected" in out and "«skill appian»" in err,
+                  out + err)
+        antes = len(lanzados())
+        c, out, err = instalar(3, "--skills-dir", "cliente relativo", SKILLS_SIN_CLIENTES="1", desde=tmp)
+        dados = [h.replace('"', "").strip() for h in hechos() if h.strip()][antes:]
+        comprueba("con --skills-dir no es un fallo: la skill va al cliente que se da, y repetir no cambiaría nada",
+                  c == 0 and "Appian no detecta ninguno de sus clientes" in out and "FALLA" not in out
+                  and f"skill appian en {(tmp / 'cliente relativo').resolve()}: bien" in out, out + err)
+        comprueba("y una carpeta relativa se entiende desde donde está quien lanza la orden, no desde la del servidor",
+                  len(dados) == 4 and os.path.isabs(dados[3].split(" --skills-dir ")[-1])
+                  and dados[3].endswith("cliente relativo") and str(srv2.name) not in dados[3].split(" --skills-dir ")[-1],
+                  str(dados))
         c, out, err = instalar(3, SETUP_AVISA="1")
         comprueba("si el instalador de SAIL CLI termina bien pero avisa (sail fuera del PATH), no se da por bueno sin más",
                   c == 0 and "SAIL CLI: REVISAR" in out and "PATH" in out and "skill appian: bien" in out, out + err)

@@ -106,6 +106,7 @@ RESERVADAS = {".venv", A_MEDIAS, APARTE}
 # Nombres que Windows no admite como fichero: un bundle que los trajera no se podría extraer igual en todos los sistemas
 DISPOSITIVOS = {"CON", "PRN", "AUX", "NUL", *(f"{d}{i}" for d in ("COM", "LPT") for i in "123456789¹²³")}
 SIN_SU_AYUDA = "(sail {orden} --help falló al hacer la foto)"   # la orden está, pero no se pudo leer su ayuda
+SIN_CLIENTES = "No AI client detected"      # lo que dice install-skills de Appian cuando no encuentra ningún cliente suyo
 ESPERADO = pathlib.Path(__file__).resolve().parents[1] / "assets" / "banco" / "esperado.json"
 MODELO = PLUGIN / "skills" / "appian-reverse-engineering" / "scripts" / "build_model.py"   # el que arma el extractor
 GUIONES = ESPERADO.parent / "guiones"       # los recorridos del banco, como guiones de appian-qa sin entorno ni cuentas
@@ -742,15 +743,24 @@ def cmd_instalar(args):
               "bórrala a mano o repite la orden")
     pasos = [("uv sync", lambda: lanza([uv, "sync"], cwd=srv)), ("SAIL CLI", lambda: del_bundle(srv, setup)),
              ("skill appian", lambda: del_bundle(srv, skills))]
-    pasos += [(f"skill appian en {d}", lambda d=d: del_bundle(srv, skills, "--skills-dir", d)) for d in args.skills_dir]
+    # las carpetas que se dan, desde donde está quien lanza la orden: los instaladores se lanzan desde la del servidor
+    destinos = [pathlib.Path(d).expanduser().resolve() for d in args.skills_dir]
+    pasos += [(f"skill appian en {d}", lambda d=d: del_bundle(srv, skills, "--skills-dir", d)) for d in destinos]
     # Ningún paso depende de otro, y se hacen todos: en un Mac con Intel o un Linux con ARM el instalador de SAIL CLI
     # se niega (el bundle no trae su binario) y la skill oficial tiene que quedar instalada igual.
     fallan = []
     for nombre, paso in pasos:
         codigo, salida = paso()
-        # Los instaladores de Appian avisan sin fallar: la skill instalada tiene cambios de la persona y no se pisa, o
-        # sail queda instalado pero fuera del PATH (en Linux y macOS, si no hay dónde enlazarlo). Se enseña lo que dicen.
-        avisa = codigo == 0 and re.search(r"not overwriting|LOCAL EDITS|^\s*\[!\]|not on your PATH", salida, re.M)
+        # Sin ninguno de los clientes que Appian detecta, su instalador sale con error. Si la skill va a los que se
+        # le dan con --skills-dir, eso no es un fallo: repetir la orden no lo cambiaría.
+        if nombre == "skill appian" and destinos and codigo not in (0, None) and SIN_CLIENTES in salida:
+            print(f"  {nombre}: Appian no detecta ninguno de sus clientes; va a los que das con --skills-dir")
+            continue
+        # Los instaladores de Appian avisan sin fallar: la skill instalada tiene cambios de la persona y no se pisa, la
+        # carpeta de skills de un cliente es un enlace y se la salta, o sail queda instalado pero fuera del PATH (en
+        # Linux y macOS, si no hay dónde enlazarlo). Se enseña lo que dicen.
+        avisa = codigo == 0 and re.search(r"not overwriting|LOCAL EDITS|^\s*Skipped\b|^\s*\[!\]|not on your PATH",
+                                          salida, re.M)
         print(f"  {nombre}: " + ("bien" if codigo == 0 and not avisa else
                                  "REVISAR, el instalador de Appian avisa de algo:" if codigo == 0 else "FALLA"))
         if codigo != 0 or avisa:
