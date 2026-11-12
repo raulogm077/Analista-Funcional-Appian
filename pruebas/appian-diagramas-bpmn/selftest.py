@@ -9,7 +9,8 @@ ancho del PNG. Comprueba también lo que se hace sin navegador, un proceso que n
 colocación por capas no dibuje conexiones falsas ni deje las etiquetas pegadas a la flecha, que la etiqueta de cada
 salida de una puerta vaya sobre un tramo suyo (también en 1.170 procesos al azar), que la línea de una nota no cruce la
 etiqueta de su paso, que ninguna etiqueta de flujo pise nada (con Mermaid y sin navegador), el temporizador que
-interrumpe, los avisos sin capa y el error suelto en BPMN.
+interrumpe, los avisos sin capa, el error suelto en BPMN, el aspecto de las tarjetas (y que los .drawio de antes se
+sigan leyendo) y las salidas de una puerta en abanico, sin cruzarse.
 Sale con 0 si todo va bien (tarda unos tres minutos).
 
   python3 pruebas/appian-diagramas-bpmn/selftest.py
@@ -553,12 +554,14 @@ def nota_a_mano(tmp):
 def nota_entre_filas(tmp):
     """Una nota manual evita cajas existentes cuando el otro lado está libre; no recoloca lo anterior."""
     import copy, diagrama, drawio_modelo as dm
+    medio = dm.TAM["tarea"][1] / 2        # las posiciones salen del alto de una tarea: ACT-02 está en y=325
+    encima, debajo = 325 - medio - 18 - 63, 325 + medio + 18   # la nota (63 de alto) a 18 de la tarea
     for nombre, superior, inferior, nota_previa, esperado in (
-            ("paso arriba", 180, None, False, 383),
-            ("arriba libre", 100, None, False, 204),
-            ("ambos ocupados", 180, 410, False, 204),
-            ("contacto borde", 164, None, False, 204),
-            ("nota arriba", 100, None, True, 383)):
+            ("paso arriba", 180, None, False, debajo),
+            ("arriba libre", 100, None, False, encima),
+            ("ambos ocupados", 180, 410, False, encima),
+            ("contacto borde", encima - medio, None, False, encima),
+            ("nota arriba", 100, None, True, debajo)):
         proc = {"proceso": "Notas entre filas", "carriles": ["Gestor"],
                 "pasos": [{"id": "ACT-01", "tipo": "tarea", "carril": "Gestor", "nombre": "Configurar"},
                           {"id": "ACT-02", "tipo": "tarea", "carril": "Gestor", "nombre": "Activar"}],
@@ -570,7 +573,7 @@ def nota_entre_filas(tmp):
             geo["pasos"]["ACT-03"] = (240, inferior)
         if nota_previa:
             proc["notas"] = [{"paso": "ACT-01", "texto": "Nota anterior"}]
-            geo["anotaciones"] = [(180, 204, 160, 63)]
+            geo["anotaciones"] = [(180, encima, 160, 63)]
         ruta = tmp / (nombre + ".drawio")
         dm.escribir_drawio(proc, geo, str(ruta))
         editor = diagrama.Editor(ruta)
@@ -1587,6 +1590,91 @@ def finales_conservados(tmp):
         check(not malos, f"finales de línea: actualizar y exportar conservan {salto!r}, también con provisional: {malos}")
 
 
+# ---------------------------------------------------------------- aspecto: tarjetas, adornos y el aspecto de antes
+def tema(tmp):
+    """Las tareas son tarjetas con su pictograma (un adorno hijo de la tarea) y el código en una línea aparte; la página
+    lleva cabecera. leer() ignora los adornos y devuelve los nombres de siempre; cambiar el tipo cambia el pictograma; y un
+    .drawio del aspecto de antes (con el marcador BPMN) se sigue leyendo igual y pasa al nuevo al recolocarlo."""
+    import drawio_modelo as dm
+    sin = entorno(sin_navegador=True)
+    d = tmp / "abanico" / "abanico.drawio"
+    run("crear", AQUI / "datos" / "abanico.json", "-o", d, esperado=2, env=sin)
+    proc_json = json.loads((AQUI / "datos" / "abanico.json").read_text(encoding="utf-8"))
+    _, cel = celdas(d)
+    tareas = [p for p in proc_json["pasos"] if p["tipo"] in dm.TAREAS]
+    iconos = [cel.get(p["id"] + "-icono") for p in tareas]
+    check(all(i is not None and i.get("parent") == p["id"] and "adorno=1" in i.get("style", "")
+              and "image=data:image/svg+xml," in i.get("style", "") for i, p in zip(iconos, tareas)),
+          "aspecto: cada tarea lleva su pictograma, hijo de la tarea (se mueve con ella)")
+    check(all(f"tipo={p['tipo']};" in cel[p["id"]].get("style", "") for p in tareas), "aspecto: el tipo va en tipo= del estilo")
+    check(any(c.endswith("cabecera") and "adorno=1" in (cel[c].get("style") or "") for c in cel), "aspecto: cabecera con título")
+    valor = cel["ACT-01"].get("value", "")
+    check("<span" in valor and "[EJ-01.001]" in valor and "monospace" in valor, "aspecto: el código va en su línea, en monoespaciada")
+    proc, _, _ = dm.leer(str(d))
+    check(not dm.comparar(proc_json, proc), "aspecto: leer() ignora los adornos y devuelve los nombres con su código")
+    cambios = tmp / "cambio-tipo.json"
+    cambios.write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-01", "tipo": "manual"}}]}), encoding="utf-8")
+    run("actualizar", d, cambios, esperado=2, env=sin)
+    _, cel = celdas(d)
+    manual = dm._uri_svg((SCRIPTS.parent / "assets" / "iconos" / "manual.svg").read_text(encoding="utf-8"))
+    hijos = [c for c in cel.values() if c.get("parent") == "ACT-01" and dm.es_adorno(c)]
+    check("tipo=manual;" in cel["ACT-01"].get("style", "") and len(hijos) == 1 and manual in hijos[0].get("style", ""),
+          "aspecto: cambiar el tipo de una tarea cambia su pictograma (y no deja el anterior)")
+    run("comparar", d, env=sin)
+    # el aspecto de antes
+    viejo = tmp / "viejo"
+    viejo.mkdir()
+    for ext in (".drawio", ".json"):
+        shutil.copy(AQUI / "datos" / ("tema-anterior" + ext), viejo / ("tema-anterior" + ext))
+    v = viejo / "tema-anterior.drawio"
+    base = json.loads((viejo / "tema-anterior.json").read_text(encoding="utf-8"))
+    proc, _, _ = dm.leer(str(v))
+    check(not dm.comparar(base, proc), "aspecto de antes: un .drawio con el marcador BPMN se lee igual")
+    run("comparar", v, env=sin)
+    cambios.write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-01", "nombre": "Registrar la solicitud"}}]}), encoding="utf-8")
+    run("actualizar", v, cambios, esperado=2, env=sin)
+    _, cel = celdas(v)
+    tareas = [p["id"] for p in base["pasos"] if p["tipo"] in dm.TAREAS]
+    check(all("tipo=" in cel[t].get("style", "") and (t + "-icono") in cel for t in tareas),
+          "aspecto de antes: al recolocarlo pasa al aspecto nuevo")
+
+
+def cruces(drawio):
+    """Pares de flujos de una página cuyos tramos se cruzan (en perpendicular, por dentro de los dos tramos)."""
+    import drawio_modelo as dm
+    proc, geo, _ = dm.leer(str(drawio))
+    caminos = _caminos(proc, geo)
+    out = []
+    for i, (f1, c1) in enumerate(caminos):
+        for f2, c2 in caminos[i + 1:]:
+            for p, q in zip(c1, c1[1:]):
+                for r, s in zip(c2, c2[1:]):
+                    h, v = ((p, q), (r, s)) if abs(p[1] - q[1]) <= 1 else ((r, s), (p, q))
+                    if abs(h[0][1] - h[1][1]) > 1 or abs(v[0][0] - v[1][0]) > 1:
+                        continue
+                    if (min(h[0][0], h[1][0]) + 1 < v[0][0] < max(h[0][0], h[1][0]) - 1
+                            and min(v[0][1], v[1][1]) + 1 < h[0][1] < max(v[0][1], v[1][1]) - 1):
+                        out.append(f"{f1['de']} → {f1['a']} cruza {f2['de']} → {f2['a']}")
+    return sorted(set(out))
+
+
+def abanico(tmp, env=None):
+    """Las salidas de una puerta hacia pasos de su fila que tienen otro paso en medio van en abanico: ninguna se cruza con
+    otra ni pasa por una forma o por el texto de otro objeto, y cada una va por un pasillo más lejos cuanto más lejos está
+    su destino."""
+    import drawio_modelo as dm
+    d = tmp / "abanico.drawio"
+    run("crear", AQUI / "datos" / "abanico.json", "-o", d, esperado=2 if env else 0, env=env)
+    modo = "sin navegador" if env else "Mermaid"
+    mal = conexiones_falsas(d) + solapes(d) + cruces(d)
+    check(not mal, f"abanico ({modo}): las salidas de la puerta no se cruzan ni pisan nada " + "; ".join(mal[:6]))
+    if not env:
+        proc, geo, _ = dm.leer(str(d))
+        pasillos = [pts[0][1] for fl, pts in zip(proc["flujos"], geo["flujos"]) if fl["de"] == "GW-01" and len(pts) == 2]
+        check(len(pasillos) == 4 and pasillos == sorted(pasillos) and len(set(pasillos)) == 4,
+              f"abanico (Mermaid): un pasillo por salida, cada vez más lejos ({pasillos})")
+
+
 def g3(tmp):
     """Lo de la 0.7.0-beta.2 (G3) que no necesita navegador: la nota y la etiqueta de su puerta, el .drawio.tmp, el error
     suelto, la holgura de las etiquetas y las filas por capas, el temporizador que interrumpe, los avisos y el fichero de
@@ -1612,6 +1700,10 @@ def main_sin_navegador():
         corredores_ortogonales(tmp / "corredores")
         tramos(tmp / "tramos", con_png=False)
         g3(tmp)
+        (tmp / "tema").mkdir()
+        tema(tmp / "tema")
+        (tmp / "abanico").mkdir()
+        abanico(tmp / "abanico", entorno(sin_navegador=True))
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}
         (tmp / "malo.json").write_text(json.dumps(malo), encoding="utf-8")
@@ -1647,6 +1739,10 @@ def main():
         tramos(tmp / "tramos")
         tramos(tmp / "tramos sin navegador", con_png=False)
         g3(tmp / "g3")
+        for nombre, prueba in (("tema", tema), ("abanico", abanico),
+                               ("abanico sin", lambda t: abanico(t, entorno(sin_navegador=True)))):
+            (tmp / nombre).mkdir()
+            prueba(tmp / nombre)
         nota_y_etiqueta(tmp / "nota con el motor")
         d = tmp / "solicitud.drawio"
         # 1. crear

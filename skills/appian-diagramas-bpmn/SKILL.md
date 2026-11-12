@@ -38,6 +38,15 @@ En la carpeta que indique quien llama, dentro de `<p>`:
 - `as-is/08-procesos-bpmn/*.json`: el proceso de cada diagrama, de ingeniería inversa; igual que el del analista
 - `as-is/diagrams/*.{png,svg}`: la imagen de cada Mermaid de ingeniería inversa (`mermaid.py`)
 
+## Aspecto del dibujo
+
+- **Tareas:** una tarjeta de 120 × 96 con el pictograma de su tipo arriba (persona, mano, engranaje, guion, subproceso o llamada) y el nombre debajo. Si el nombre acaba en un código entre corchetes (`[EJ-01.001]`), el código va en una línea aparte, en monoespaciada; `leer` devuelve el nombre entero, como siempre.
+- **El tipo de una tarea** va en el estilo (`tipo=manual`), no en un marcador BPMN. Los `.drawio` de antes, con el marcador, se leen igual, y pasan al aspecto actual cuando se recolocan.
+- **Adornos:** el pictograma de cada tarea (hijo de la tarea: se mueve con ella) y la cabecera de la página (título del proceso y leyenda) son imágenes sin texto. `leer` y `comparar` no los cuentan como pasos; no hace falta tocarlos.
+- **Carriles** con el nombre en horizontal, arriba a la izquierda; secuencia en azul, mensajes en gris discontinuo, participantes externos en naranja, y las etiquetas de los flujos en monoespaciada.
+- **Salidas de una puerta hacia su misma fila:** si hay otro paso en medio, van en abanico, cada una por su pasillo y más lejos cuanto más lejos está su destino, sin cruzarse ni pasar por encima de otra forma o de su texto. Si no caben en el carril sin pisar nada, se quedan como las coloca el motor.
+- Los PNG los pinta el visor de draw.io: la imagen es igual a lo que se ve al abrir el `.drawio`.
+
 ## Formato del proceso
 
 Es un JSON con un paso y un flujo por línea:
@@ -196,7 +205,7 @@ Cómo se coloca lo que cambia:
    python3 <skill>/scripts/diagrama.py comparar X.drawio
    ```
    - Da un código (`ACT-`, `GW-`, `EV-`) a lo añadido a mano.
-   - Da forma BPMN a los rectángulos, rombos y círculos.
+   - Da su forma a los rectángulos, rombos y círculos (a un rectángulo, la tarjeta de tarea con su pictograma).
    - Lista qué ha cambiado respecto a `X.json` y las notas de texto sueltas del dibujo. Una nota unida a un paso con una línea pasa a ser una nota del proceso.
 4. **Quien llama actualiza su análisis** con esa lista (el paso a paso y las historias afectadas) y después acepta:
    ```bash
@@ -233,7 +242,7 @@ Si no hay diagrama aprobado, lo que no salga de forma explícita de las fuentes 
 - **Tamaño:** conserva el proceso completo, con la secuencia principal lo más lineal posible. No inventes subprocesos ni uses `tramos` por el número de tareas o para encajarlo en el documento. Los subprocesos responden al contenido del proceso, no al tamaño del dibujo.
 - **Notas:** las explicaciones van en el paso a paso del documento; en `notas`, solo lo que hay que ver en el propio diagrama. Una nota suelta que se deje en draw.io también sale en el PNG: bórrala si no debe verla el cliente.
 - **Detalles técnicos:** esperas, reintentos, colas, middleware o llamadas internas no son pasos del funcional. Si importan al lector, van como nota del paso al que afectan («Detalle técnico: espera de 1 minuto antes de leer las carpetas»).
-- **Códigos del cliente:** si el cliente numera sus tareas o requisitos (por ejemplo, GI-07.01.001), cada tarea los lleva al final del nombre, entre corchetes: «Actualizar el presupuesto [GI-07.02.002]». Los códigos `ACT-nn` siguen siendo los de la skill.
+- **Códigos del cliente:** si el cliente numera sus tareas o requisitos (por ejemplo, EJ-01.001), cada tarea los lleva al final del nombre, entre corchetes: «Actualizar el presupuesto [EJ-02.002]». Los códigos `ACT-nn` siguen siendo los de la skill.
 - **Perfiles:** el carril es el perfil que hace la tarea según la fuente, con el mismo nombre que usa el cliente (DTP, Gerente de proyecto). Si el diagrama aprobado pone el perfil en el nombre de la tarea («DTP: Actualización del presupuesto»), ese perfil es su carril.
 
 ## Un proceso con varias fases en pestañas
@@ -258,7 +267,7 @@ El plugin ya comprueba los requisitos al empezar la sesión, una vez por versió
 
 Para la imagen hacen falta Playwright y un navegador. Con navegador, los pasos se colocan con el motor de carriles de Mermaid (los tramos, siempre por capas). Sin él se hace todo menos la imagen: los pasos se colocan por capas, de izquierda a derecha, con un carril por perfil y sin que nada se pise. `DIAGRAMAS_SIN_NAVEGADOR=1` simula que no hay navegador.
 
-El diagrama no sale del equipo. El motor de colocación (Mermaid, licencia MIT) y el visor de draw.io (licencia Apache 2.0) van en `assets/`. Solo se escribe junto al `.drawio`: ni temporales ni `__pycache__` fuera de ahí.
+El diagrama no sale del equipo. El motor de colocación (Mermaid, licencia MIT), el visor de draw.io (licencia Apache 2.0) y los pictogramas de las tareas (Lucide, licencia ISC) van en `assets/`. Solo se escribe junto al `.drawio`: ni temporales ni `__pycache__` fuera de ahí.
 
 ## Diagramas Mermaid
 

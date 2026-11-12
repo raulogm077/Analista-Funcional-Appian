@@ -98,6 +98,11 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   interfaces válidas, que sin ella entraron. Lo envía Raúl. [persona]
 - **Rama `yaroslav/plantilla-DF-cliente`** en GitHub, solo si Raúl lo pide: 17 commits del 19-oct sin PR, ni en
   `main` ni en esta rama; es independiente de ella. [persona]
+- **Diagramas: variante oscura del PNG.** El aspecto nuevo (tarjetas con pictograma, cabecera y paleta) es solo
+  claro. Una variante oscura, si un documento o una web la pide; el `.drawio` no cambia. [diagramas]
+- **Diagramas: abanico en más casos.** Las salidas en abanico solo cubren las de una puerta hacia su misma fila y a
+  la derecha. Si un proceso real muestra cruces en otros casos (destinos a la izquierda o en otra fila), ampliarlo con
+  su prueba en `selftest.py` (`cruces`). [diagramas]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
 

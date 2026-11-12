@@ -1054,6 +1054,130 @@ def despejar_eventos_de_borde(proc, geo, tam, cabecera):
     return geo
 
 
+ABANICO = 18             # entre dos salidas de una puerta que van en paralelo (cabe la etiqueta de cada una)
+
+
+def _segmentos(camino):
+    return list(zip(camino, camino[1:]))
+
+
+def _se_cortan(a, b):
+    """Si dos tramos ortogonales se cruzan o van uno encima del otro."""
+    (p, q), (r, t) = a, b
+    if p[1] == q[1] and r[0] == t[0]:          # horizontal y vertical
+        return min(p[0], q[0]) < r[0] < max(p[0], q[0]) and min(r[1], t[1]) < p[1] < max(r[1], t[1])
+    if p[0] == q[0] and r[1] == t[1]:
+        return _se_cortan(b, a)
+    if p[1] == q[1] == r[1] == t[1]:           # los dos horizontales, a la misma altura
+        return min(max(p[0], q[0]), max(r[0], t[0])) - max(min(p[0], q[0]), min(r[0], t[0])) > 1
+    if p[0] == q[0] == r[0] == t[0]:
+        return min(max(p[1], q[1]), max(r[1], t[1])) - max(min(p[1], q[1]), min(r[1], t[1])) > 1
+    return False
+
+
+def abanico_de_salidas(proc, geo, tam, eventos, puertas):
+    """Las salidas de una puerta hacia pasos de su misma fila que no se alcanzan en línea recta (hay otro paso en medio)
+    van en abanico: cada una por su pasillo, paralelo a la fila y más lejos cuanto más lejos está su destino, y bajan
+    (o suben) a él. Así no se cruzan entre ellas ni pasan por encima de una forma, de la etiqueta de un evento o una
+    puerta ni de otro flujo, y la etiqueta de cada salida va justo antes de su destino. El abanico va por el lado
+    contrario a la etiqueta de la puerta; la etiqueta de cada destino, al otro lado del abanico. Si no cabe en el carril
+    sin pisar nada, la salida se queda como estaba."""
+    centro = {pid: geo["pasos"][pid][:2] for pid in geo["pasos"]}
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    nombre = {p["id"]: p.get("nombre") for p in proc["pasos"]}
+    carril = {p["id"]: p["carril"] for p in proc["pasos"]}
+    lados = geo.setdefault("etiquetas", {})
+
+    def caja(pid):
+        (cx, cy), (w, h) = centro[pid], tam[tipo[pid]]
+        return (cx - w / 2, cy - h / 2, w, h)
+
+    def caja_etiqueta(pid, lado):
+        if not (lado and nombre.get(pid)) or tipo[pid] not in eventos | puertas:
+            return None
+        cx, cy, (w, h) = *centro[pid], tam[tipo[pid]]
+        alto = alto_texto(nombre[pid])
+        return (cx - ANCHO_ETIQUETA / 2, cy - h / 2 - alto if lado == "arriba" else cy + h / 2, ANCHO_ETIQUETA, alto)
+
+    def camino_de(i, f):
+        pts = geo["flujos"][i] if i < len(geo.get("flujos", [])) else []
+        if f["de"] not in centro or f["a"] not in centro:
+            return []
+        return [tuple(centro[f["de"]])] + [tuple(p) for p in pts] + [tuple(centro[f["a"]])]
+
+    def corta_caja(p, q, c, m=8):
+        # con holgura: un pasillo pegado a una forma parece que entra en ella
+        x, y, w, h = c[0] - m, c[1] - m, c[2] + 2 * m, c[3] + 2 * m
+        if p[0] == q[0]:
+            return x < p[0] < x + w and min(p[1], q[1]) < y + h and max(p[1], q[1]) > y
+        return y < p[1] < y + h and min(p[0], q[0]) < x + w and max(p[0], q[0]) > x
+
+    for g in [p["id"] for p in proc["pasos"] if p["tipo"] in puertas and p["id"] in centro]:
+        gx, gy = centro[g]
+        salidas = []
+        for i, f in enumerate(proc["flujos"]):
+            t = f["a"]
+            if f["de"] != g or t not in centro or t == g or abs(centro[t][1] - gy) > 2 or centro[t][0] <= gx:
+                continue
+            en_medio = any(abs(centro[o][1] - gy) <= 2 and gx < centro[o][0] < centro[t][0] for o in centro if o not in (g, t))
+            if en_medio:
+                salidas.append((centro[t][0], i, t))
+        if not salidas:
+            continue
+        salidas.sort()
+        destinos = {t for _, _, t in salidas}
+        # los eventos y puertas de la fila que el abanico salta: su etiqueta también pasa al otro lado
+        saltados = {o for o in centro if o not in destinos | {g} and tipo[o] in eventos | puertas
+                    and abs(centro[o][1] - gy) <= 2 and gx < centro[o][0] < salidas[-1][0]}
+        girables = destinos | saltados
+        y0, h0 = geo["carriles"][carril[g]][:2]
+        for lado in (("abajo", "arriba") if lados.get(g) != "abajo" else ("arriba", "abajo")):
+            signo = 1 if lado == "abajo" else -1
+            otro = "arriba" if lado == "abajo" else "abajo"
+            ajenos = [i for _, i, _ in salidas]
+            obstaculos = [caja(o) for o in centro if o != g]
+            # la etiqueta de la puerta está al otro lado: no estorba al tronco que sale por este
+            obstaculos += [c for o in centro if o not in girables and (o != g or lados.get(g) == lado)
+                           for c in [caja_etiqueta(o, lados.get(o))] if c]
+            obstaculos += [c for t in girables for c in [caja_etiqueta(t, otro)] if c]
+            obstaculos += [tuple(n) for n in geo.get("anotaciones") or []]
+            lineas = [s for k, f in enumerate(proc["flujos"]) if k not in ajenos for s in _segmentos(camino_de(k, f))]
+            borde = gy + signo * tam[tipo[g]][1] / 2
+            nuevos, y = {}, None
+            for _, i, t in salidas:
+                th = tam[tipo[t]][1]
+                y = (gy + signo * (max(tam[tipo[g]][1], th) / 2 + ABANICO + 8)) if y is None else y + signo * ABANICO
+                while y0 + 30 <= y <= y0 + h0 - 8:
+                    camino = [(gx, borde), (gx, y), (centro[t][0], y), (centro[t][0], centro[t][1] + signo * th / 2)]
+                    tramos_ = _segmentos(camino)
+                    propia = caja(t)  # el último tramo llega a su borde: la holgura no cuenta para ella
+                    libre = not any(corta_caja(p, q, c) for p, q in tramos_ for c in obstaculos if c != propia)
+                    libre = libre and not any(_se_cortan(a, b) for a in tramos_ for b in lineas)
+                    if libre:
+                        break
+                    y += signo * 6
+                else:
+                    nuevos = None
+                    break
+                nuevos[i] = (y, t)
+            if nuevos:
+                for o in saltados:
+                    if lados.get(o):
+                        lados[o] = otro
+                for i, (yy, t) in nuevos.items():
+                    geo["flujos"][i] = [(gx, yy), (centro[t][0], yy)]
+                    if lados.get(t):
+                        lados[t] = otro
+                    # la etiqueta, en el pasillo, justo antes de bajar (o subir) a su destino
+                    th = tam[tipo[t]][1]
+                    l1, l2, l3 = abs(yy - borde), centro[t][0] - gx, abs(yy - centro[t][1]) - th / 2
+                    w = ancho_etiqueta_flujo(proc["flujos"][i].get("etiqueta") or "")
+                    d = l1 + max(l2 - w / 2 - 14, l2 / 2)
+                    geo.setdefault("etiquetas_flujo", {})[i] = 2 * d / (l1 + l2 + l3) - 1
+                break
+    return geo
+
+
 def ajustar(proc, geo, tam, eventos, puertas, cabecera):
     """Todo lo anterior, en orden: lados, separación, notas y externos."""
     usados = lados_usados(proc, geo)
@@ -1072,6 +1196,7 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
             enrutado.mejorar(proc, geo, tam, cabecera)
         despejar_eventos_de_borde(proc, geo, tam, cabecera)
         separar_ida_vuelta(proc, geo, tam, cabecera)
+        abanico_de_salidas(proc, geo, tam, eventos, puertas)
     colocar_externos(proc, geo)
     return geo
 
