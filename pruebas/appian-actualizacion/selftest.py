@@ -433,6 +433,8 @@ def main():
         comprueba("sin nada anterior, ni foto ni copia; apunta lo que trajo el bundle y dice que hay que reiniciar",
                   not list(suyo.rglob("BUILD-INFO.txt")) and not list(suyo.rglob("bundle.tar.gz"))
                   and len(list(suyo.rglob("instalado.json"))) == 1 and "Reinicia tus clientes" in out, out)
+        comprueba("y dice lo que queda en una instalación nueva: los clientes y el navegador, con la guía de Appian",
+                  "es una instalación nueva" in out and "docs.appian.com" in out, out)
 
         print("Instalar: una actualización")
         (srv2 / ".venv").mkdir()
@@ -470,8 +472,9 @@ def main():
                   (srv2 / ".venv" / "paquete.txt").is_file() and (srv2 / "uv.lock").is_file()
                   and (srv2 / "notas mías.txt").is_file() and not (srv2 / ".nuevo").exists()
                   and not (srv2 / ".instalando").exists())
-        comprueba("dice qué había antes y dónde queda",
-                  "antes había el build " + BUILD[1] in out and str(foto.resolve()) in out, out)
+        comprueba("dice qué había antes y dónde queda, y no lo de una instalación nueva",
+                  "antes había el build " + BUILD[1] in out and str(foto.resolve()) in out
+                  and "instalación nueva" not in out, out)
         dentro = srv2 / "descargas"
         dentro.mkdir()
         shutil.copyfile(enteros[3], dentro / "bundle.tar.gz")

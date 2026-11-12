@@ -81,6 +81,11 @@ fichero es el que se pasa. Hazlo en el paso 4, con `informe --catalogo`: esa fot
 actualización. Sin catálogo, el informe compara la skill oficial y SAIL CLI, y lo dice. La foto de un build se hace
 una vez; `actualizar.py foto` la rehace entera.
 
+Una instalación nueva no acaba ahí: la guía de Appian (`https://docs.appian.com/suite/help/latest/devmcp.html`) dice
+cómo dar de alta el servidor en cada cliente de IA y, si se entra por navegador, que es lo habitual, cómo tener el
+navegador que usa el servidor (el suyo, que se descarga una vez, o el Chrome o Edge del equipo). Al actualizar no hay
+que repetirlo; si después el servidor pide ese navegador, la misma guía.
+
 Un arreglo que hayas hecho a mano en lo que trae el bundle se pierde al instalar. Al actualizar queda en el bundle
 anterior guardado; al repetir la instalación del mismo bundle, no. Mientras se instala no debe haber otra instalación
 en marcha sobre la misma carpeta.

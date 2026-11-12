@@ -88,6 +88,7 @@ sys.dont_write_bytecode = True
 
 ESTADO = ".appian-analisis-funcional"       # la carpeta personal del plugin; el nombre, solo aquí
 GUIA = "appian-dev-mcp-server"              # donde la guía de Appian manda extraer el bundle
+GUIA_WEB = "https://docs.appian.com/suite/help/latest/devmcp.html"
 PLUGIN = pathlib.Path(__file__).resolve().parents[3]
 CITAN = (".md", ".py", ".json")             # los ficheros de las skills donde se busca lo que cambió
 SIN_AYUDA = {"completion", "help"}          # órdenes de sail que no son suyas: las pone su biblioteca
@@ -744,6 +745,9 @@ def cmd_instalar(args):
         print("  se ha terminado una instalación que se quedó a medias; la foto y el bundle anterior son los de entonces")
     elif mismo:
         print("  era el build instalado: se ha vuelto a dejar lo que trae el bundle, sin foto ni copia")
+    elif nueva:
+        print("  es una instalación nueva: queda lo que dice la guía de Appian y este script no hace, que es dar de alta "
+              f"el servidor en tus clientes de IA y, si entras por navegador, tener el navegador que usa ({GUIA_WEB})")
     if sin_retirar:
         print(f"  el servidor está sustituido, pero no se pudo retirar la copia de un build más viejo ({sin_retirar}): "
               "bórrala a mano o repite la orden")
