@@ -66,8 +66,8 @@ la guía de Appian, añade `--servidor <carpeta>` a cada orden.
      extractor no conoce. Esa misma extracción deja el catálogo para el informe.
    - **`qa.py` con SAIL CLI**, con `--host <tu entorno> --solicitante <usuario> --aprobador <usuario>`: repite los
      guiones del banco con `qa.py`, de `appian-qa`, con las dos cuentas de prueba que le das, que tienen que tener
-     su sesión de `sail` abierta (`qa.py sesiones` dice cómo). El banco aún no trae los recorridos del formulario
-     y las tareas, y lo dice.
+     su sesión de `sail` abierta (`qa.py sesiones` dice cómo). Crean sus propias solicitudes, con un título
+     distinto cada vez. El banco aún no trae el recorrido de la tarea del grupo, y lo dice.
 
    Sale con 0 si pasa lo pedido, 1 si algo no pasa y 2 si algo no se pudo comprobar (una sesión caducada, una
    extracción que no terminó): eso no es un fallo, pero tampoco un «pasa».

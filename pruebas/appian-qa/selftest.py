@@ -359,6 +359,15 @@ def main():
                  "no cambió nada", "ni con una validación ajena a lo esperado")
         variante("HU-01.2", lambda g: g["entonces"][0].update(espera={"texto": ["indica el título"]}),
                  "", "sí pasa si lo esperado es el rechazo, en las validaciones", resultado="pasa", codigo=0)
+        t.defecto(no_manda=True)       # SAIL CLI 26.9.15: el envío que la validación pararía no se manda, y es un error
+        c, out = t.repetir("--escenario", "HU-01.2")
+        ok("un envío que SAIL CLI no manda pasa si lo esperado es ese rechazo",
+           c == 0 and t.resultado()[0]["escenarios"]["HU-01.2"]["resultado"] == "pasa", out)
+        variante("HU-01.2", lambda g: g["entonces"][0].update(espera={"texto": ["Otra cosa"]}),
+                 "was not sent", "y falla, con lo que dice SAIL CLI, si lo esperado es otra cosa")
+        variante("HU-01.2", lambda g: g["entonces"][0].pop("espera"),
+                 "was not sent", "o si el paso no esperaba ningún rechazo")
+        t.defecto()
         variante("HU-01.1", lambda g: g["cuando"][-1]["espera"].update(fila={"con": "QA {pasada}", "Estado": "Enviada"}),
                  "tras un «load»", "comprobar la página justo tras enviar el formulario (la de antes) falla y dice por qué")
         variante("HU-01.1", lambda g: g["entonces"][-1]["espera"].update(sin_fila="QA {pasada}"),

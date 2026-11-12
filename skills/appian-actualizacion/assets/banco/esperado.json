@@ -22,8 +22,7 @@
     {"tipo": "recordType", "nombre_acaba_en": " Solicitud", "campo": "relationshipCount", "vale": 5},
     {"tipo": "constant", "nombre_acaba_en": "_ESTADO_BORRADOR", "campo": "value", "vale": 1},
     {"tipo": "constant", "nombre_acaba_en": "_ESTADO_RECHAZADA", "campo": "value", "vale": 4},
-    {"tipo": "processModel", "nombre_acaba_en": " Enviar a Aprobacion", "campo": "userTaskCount", "vale": 2},
-    {"tipo": "expressionRule", "nombre_acaba_en": "_MotivoEsObligatorio", "campo": "sailLines", "vale": 1}
+    {"tipo": "processModel", "nombre_acaba_en": " Enviar a Aprobacion", "campo": "userTaskCount", "vale": 2}
   ],
   "errores_previstos": [
     {"herramienta": "getRecordEventsConfig", "empieza_por": "API error (HTTP 403): Record events not configured for this record type"},

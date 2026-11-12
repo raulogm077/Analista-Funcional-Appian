@@ -1,0 +1,23 @@
+{
+ "escenario": "BPS-02.2",
+ "dice": ["Dado un solicitante en el formulario de la nueva solicitud",
+          "Cuando pone un importe negativo e intenta crearla",
+          "Entonces ve que el importe tiene que ser mayor que cero y la solicitud no se crea"],
+ "host": "",
+ "site": "",
+ "roles": {"solicitante": ""},
+ "dado": [],
+ "cuando": [
+  {"sail": ["load"]},
+  {"sail": ["navigate", "Nueva solicitud"]},
+  {"sail": ["interact", "Importe", "-5"], "espera": {"texto": ["El importe tiene que ser mayor que cero"]}},
+  {"sail": ["interact", "Título", "QA {pasada}"]}
+ ],
+ "entonces": [
+  {"sail": ["interact", "Crear solicitud"], "espera": {"texto": ["El importe tiene que ser mayor que cero"]}},
+  {"sail": ["back"], "espera": {"hay": ["Nueva solicitud"]}},
+  {"sail": ["load"]},
+  {"sail": ["interact", "🔍", "QA {pasada}"]},
+  {"sail": ["show"], "espera": {"hay": ["Estado"], "sin_fila": "QA {pasada}"}}
+ ]
+}

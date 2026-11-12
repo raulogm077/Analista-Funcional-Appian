@@ -1,0 +1,30 @@
+{
+ "escenario": "BPS-02.1",
+ "dice": ["Dado un solicitante",
+          "Cuando crea una solicitud con un campo de cada tipo",
+          "Entonces la ve en borrador en la lista y con sus datos en su registro"],
+ "host": "",
+ "site": "",
+ "roles": {"solicitante": "", "aprobador": ""},
+ "dado": [],
+ "cuando": [
+  {"rol": "solicitante", "sail": ["load"]},
+  {"rol": "solicitante", "sail": ["navigate", "Nueva solicitud"]},
+  {"rol": "solicitante", "sail": ["interact", "Importe", "-5"],
+   "espera": {"texto": ["El importe tiene que ser mayor que cero"]}},
+  {"rol": "solicitante", "sail": ["interact", "Título", "QA {pasada}", "Importe", "12.50", "Unidades", "3",
+                                  "Categoría", "2", "Opciones", "1,3", "Fecha de inicio", "{hoy}",
+                                  "Cita previa", "2030-01-15T09:00:00Z", "Comentario", "Recorrido del banco",
+                                  "Adjunto", "adjunto.txt"]},
+  {"rol": "solicitante", "sail": ["interact", "Responsable", "{cuenta de aprobador}"]},
+  {"rol": "solicitante", "sail": ["interact", "▸"]},
+  {"rol": "solicitante", "sail": ["interact", "Crear solicitud"], "espera": {"completado": true}}
+ ],
+ "entonces": [
+  {"rol": "solicitante", "sail": ["load"]},
+  {"rol": "solicitante", "sail": ["interact", "🔍", "QA {pasada}"],
+   "espera": {"fila": {"con": "QA {pasada}", "Categoría": "Material", "Estado": "Borrador"}}},
+  {"rol": "solicitante", "sail": ["navigate", "QA {pasada}"],
+   "espera": {"texto": ["Urgente; Fuera de horario", "Recorrido del banco"], "hay": ["Enviar a aprobación"]}}
+ ]
+}

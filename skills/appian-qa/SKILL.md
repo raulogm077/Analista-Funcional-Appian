@@ -140,7 +140,9 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   "<valor o su principio, igual>"}`, una fila de una rejilla que lleva ese texto y tiene esos valores, y `"sin_fila": "…"`,
   ninguna fila con ese texto (lo que se buscó también está en la caja de búsqueda: para decir que no se ve, `sin_fila`,
   no `sin_texto`). Las dos admiten una lista, para comprobar varias filas en un mismo paso. Cada paso falla además si
-  SAIL CLI da error o si el servidor no cambió nada.
+  SAIL CLI da error o si el servidor no cambió nada, salvo que lo esperado sea ese rechazo: un `texto` que está en la
+  validación que devuelve el servidor o, si SAIL CLI no llega a mandar el envío porque la validación lo pararía, en
+  lo que dice al negarse (de un obligatorio vacío nombra el campo, no el mensaje de la aplicación).
 - **Valor de un campo de texto**: `"campo": {"label": "Cantidad", "valor": ""}` comprueba que el `TextField` o
   `ParagraphField` del `ui` trae `value` vacío. En vez de `label` se puede usar `testLabel`: exactamente uno, completo
   y literal. Si no aparece, hay varios componentes con ese selector, el tipo no está soportado o falta `value`, falla;

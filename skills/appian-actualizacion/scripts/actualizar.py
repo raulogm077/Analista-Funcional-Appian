@@ -59,7 +59,7 @@ bloqueo entre dos instalaciones: no lances dos a la vez sobre la misma carpeta.
                      conoce.
   --host ENTORNO --solicitante USUARIO --aprobador USUARIO [--site SITE]
                      repite con `qa.py`, de appian-qa, los guiones de assets/banco/guiones/ en ese entorno y con esas
-                     cuentas, que tienen que tener su sesión de sail abierta. El banco aún no trae todos sus recorridos.
+                     cuentas, que tienen que tener su sesión de sail abierta. El banco aún no trae el de la tarea del grupo.
 
 --servidor es la carpeta donde está extraído el bundle; sin él, la de la guía de Appian (~/appian-dev-mcp-server).
 SAIL CLI es `sail` del PATH o el de $SAIL_CLI, como en appian-qa.
@@ -112,9 +112,9 @@ ESPERADO = pathlib.Path(__file__).resolve().parents[1] / "assets" / "banco" / "e
 MODELO = PLUGIN / "skills" / "appian-reverse-engineering" / "scripts" / "build_model.py"   # el que arma el extractor
 GUIONES = ESPERADO.parent / "guiones"       # los recorridos del banco, como guiones de appian-qa sin entorno ni cuentas
 UNIDAD_BANCO = "BPS-01"                     # el nombre de unidad con el que qa.py repite esos guiones
-# Lo que el banco aún no recorre; se quita cuando traiga esos guiones
-FALTAN_RECORRIDOS = ("El banco aún no trae los recorridos del formulario, la validación al enviar, la confirmación y "
-                     "las tareas: eso queda sin comprobar.")
+# Lo que el banco aún no recorre; se quita cuando traiga ese guion
+FALTAN_RECORRIDOS = ("El banco aún no trae el recorrido de la tarea del grupo (`tasks` y `open` de SAIL CLI): eso "
+                     "queda sin comprobar.")
 TIPOS_DE_GENERICA = 3   # una herramienta con errores en tantos tipos de objeto no es de ninguno: se probó en todos
 # Lo que `instalar` lanza de un bundle, además de `uv sync` sobre su pyproject.toml. Por sistema: cómo llama Appian a su
 # SAIL CLI en bin/, el script que lo instala y el que instala la skill oficial.
@@ -903,7 +903,8 @@ def comprueba_extraccion(carpeta):
 
 def comprueba_recorridos(host, site, cuentas):
     """(resultado, lo que hay que decir) de repetir con `qa.py`, de appian-qa, los guiones del banco. Monta en una
-    carpeta temporal lo que `qa.py` necesita de un proyecto (el entorno, los escenarios y los guiones, con el host, el
+    carpeta temporal lo que `qa.py` necesita de un proyecto (el entorno, los escenarios, el fichero que sube el guion
+    del formulario y los guiones, con el host, el
     site y la cuenta de cada rol de quien lo lanza) y la borra al terminar."""
     qa = PLUGIN / "skills" / "appian-qa" / "scripts" / "qa.py"
     guiones = [leer_json(f) or {} for f in sorted(GUIONES.glob("*.json"))]
@@ -923,9 +924,13 @@ def comprueba_recorridos(host, site, cuentas):
         escribe(tmp / "construccion" / UNIDAD_BANCO / "ISS-01.feature",
                 "# language: es\nCaracterística: Banco de pruebas\n" + "".join(
                     f"\n  Escenario: {g['escenario']}\n" + "".join(f"    {linea}\n" for linea in g["dice"]) for g in guiones))
+        escribe(tmp / "adjunto.txt", "Fichero ficticio del banco de pruebas.\n")   # el que sube el guion del formulario
         for g in guiones:
             suyo = {**g, "host": host, "site": site, "roles": {rol: cuentas[rol] for rol in g["roles"]}}
-            escribe(tmp / "qa" / UNIDAD_BANCO / f"{g['escenario']}.json", json.dumps(suyo, ensure_ascii=False, indent=1))
+            texto = json.dumps(suyo, ensure_ascii=False, indent=1)
+            for rol, cuenta in suyo["roles"].items():   # «{cuenta de <rol>}»: su usuario, donde un paso lo teclea
+                texto = texto.replace("{cuenta de %s}" % rol, json.dumps(cuenta, ensure_ascii=False)[1:-1])
+            escribe(tmp / "qa" / UNIDAD_BANCO / f"{g['escenario']}.json", texto)
         codigo, salida = lanza([sys.executable, qa, "repetir", tmp, UNIDAD_BANCO], cwd=tmp)
     # De lo que dice qa.py, una línea por escenario: sin la ruta de la carpeta temporal, que ya no existe
     dice = [l.strip() for l in salida.splitlines() if l.strip() and str(tmp) not in l and tmp.as_posix() not in l]
@@ -937,7 +942,7 @@ def cmd_comprobar(args):
     comprobar, 1 si algo no pasa y 2 si algo no se pudo comprobar. Dice también lo que no se pidió."""
     if not args.extraccion and not args.host:
         fin(2, "error: di qué comprobar: --extraccion <carpeta> (la extracción de la aplicación del banco), "
-               "--host <entorno> --solicitante <usuario> (sus recorridos con SAIL CLI), o las dos cosas.")
+               "--host <entorno> --solicitante <usuario> --aprobador <usuario> (sus recorridos con SAIL CLI), o las dos cosas.")
     partes = [("La extracción", comprueba_extraccion(args.extraccion) if args.extraccion else None,
                "no se dio --extraccion"),
               ("Los recorridos con SAIL CLI", comprueba_recorridos(args.host, args.site, {

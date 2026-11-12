@@ -49,6 +49,8 @@ RX_PASO = re.compile(r"^\s*(?:Dad[oa]s?|Cuando|Entonces|Y|E|Pero|\*)\s")
 RX_SIN_SESION = re.compile(r"no session found|status 401|authentication failed", re.I)
 # SAIL CLI no llega al servidor (sin red, sin DNS): como si no respondiera, no dice nada de la aplicación
 RX_SIN_RED = re.compile(r"dial tcp|no such host|TLS handshake timeout|i/o timeout|connection (?:refused|reset)", re.I)
+# Desde SAIL CLI 26.9.15, un envío que la validación del formulario pararía no se manda: sale como error, con el motivo
+RX_NO_ENVIADO = re.compile(r"\bwas not sent\b", re.I)
 RX_ISSUE = re.compile(r"ISS-\d+")
 # Lo que no se ve en la página: identificadores, iconos y textos que Appian solo enseña a veces (el aviso de una rejilla
 # vacía, el de un campo obligatorio, la ayuda emergente, las etiquetas de paginar). Una clave que acaba en «Message» o
@@ -483,6 +485,10 @@ class Recorrido:
                 raise SinRepetir(f"la sesión de {usuario} ha caducado o no vale; {como_entrar(usuario, self.host)}")
             if RX_SIN_RED.search(error):
                 raise NoResponde(f"SAIL CLI no llega a {self.host} a «{sub}» ({error[:300]})")
+            # un envío que no se manda es lo esperado solo si lo esperado es ese rechazo: la página sigue como estaba
+            pedido = [norma(x) for x in (espera or {}).get("texto") or []]
+            if RX_NO_ENVIADO.search(error) and pedido and all(x in norma(error) for x in pedido):
+                return sub, {**(self.ultima.get(rol) or {}), "validations": [error]}
             raise Falla(f"SAIL CLI: {error[:600]}")
         if d.get("status") not in (None, "ok"):
             raise Falla(f"SAIL CLI da «{d.get('status')}»" + (f": {'; '.join(map(str, d['validations']))}"

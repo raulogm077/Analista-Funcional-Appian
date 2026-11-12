@@ -11,6 +11,7 @@ borradores y devuelve las enviadas. Su estado está en el fichero de SAIL_SIMULA
   defecto "cuelga_desde": n, desde la llamada n (contando desde 1) SAIL CLI no responde
   defecto "sin_red": SAIL CLI no llega al servidor (el error de Go sin DNS)
   defecto "lee_stdin": SAIL CLI lee su entrada antes de nada (si se la dejan abierta, espera)
+  defecto "no_manda": un envío que la validación pararía no se manda y sale como error (SAIL CLI 26.9.15)
 El panel lleva dos enlaces «Ver detalle», que el --json da con nth y of: no se distinguen.
 La sesión de cada cuenta, en su --data-dir: session.json ({"hostname", "username", "cookies"}; con "caducada": true, la
 del servidor ya no vale) y la página en la que está (pagina.json).
@@ -193,6 +194,9 @@ def main():
             pag["campos"][objetivo] = valor
         elif objetivo == "Enviar":
             if not pag["campos"].get("Título"):
+                if defecto.get("no_manda"):
+                    error('"Enviar" was not sent: it validates the form before it submits, and a browser stops it here '
+                          'and sends nothing, because of:\n    "Título" — shows "Indica el título y el importe"')
                 pag["validaciones"] = ["Indica el título y el importe"]
                 fin(formulario(), changedFields=[{"key": "validations"}], movedNothing=True)   # como el de verdad
             n = len(app["filas"]) + 1

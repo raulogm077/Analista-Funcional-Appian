@@ -211,10 +211,10 @@ def main():
         def sail(n):
             sail_json.write_text(json.dumps(SAIL[n]), encoding="utf-8")
 
-        def lanza(*args, en=casa, con_sail=True, desde=None, **mas):
+        def lanza(*args, en=casa, con_sail=True, desde=None, script=SCRIPT, **mas):
             entorno = {**os.environ, "APPIAN_RE_HOME": str(en), "SAIL_FALSO": str(sail_json), "PYTHONIOENCODING": "utf-8",
                        "SAIL_CLI": str(sail_py if con_sail else tmp / "no-hay-sail.py"), **mas}
-            r = subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], capture_output=True, env=entorno,
+            r = subprocess.run([sys.executable, str(script), *map(str, args)], capture_output=True, env=entorno,
                                stdin=subprocess.DEVNULL, timeout=120, cwd=desde)
             return r.returncode, r.stdout.decode("utf-8", "replace"), r.stderr.decode("utf-8", "replace")
 
@@ -672,8 +672,6 @@ def main():
             ("processModel", "BPS Enviar a Aprobacion"): {"nodes": [
                 {"name": "Confirmar envío", "type": "User Input Task"}, {"name": "Aprobar solicitud", "type": "User Input Task"},
                 {"name": "Fin", "type": "End Event"}]},
-            ("expressionRule", "BPS_MotivoEsObligatorio"): {
-                "expression": "a!defaultValue(ri!decision, 0) = cons!BPS_ESTADO_RECHAZADA"},
         }
 
         def extraccion(nombre, respuestas=None, **cambios):
@@ -704,7 +702,7 @@ def main():
         c, out, err = lanza("comprobar", "--extraccion", extraccion("extracción buena"), en=vacia)
         comprueba("con los objetos, el modelo y solo los errores previstos, pasa; dice cuáles quedan y lo que no se pidió",
                   c == 0 and "La extracción: PASA" in out and "getRecordEventsConfig, listObjectVersions" in out
-                  and "6 hechos" in out and "Los recorridos con SAIL CLI: sin comprobar" in out, out + err)
+                  and "5 hechos" in out and "Los recorridos con SAIL CLI: sin comprobar" in out, out + err)
         comprueba("y arma el modelo con el constructor del propio extractor",
                   (tmp / "extracción buena" / "extraccion" / "inventory.json").is_file())
         c, out, err = lanza("comprobar", "--extraccion", extraccion(
@@ -761,14 +759,23 @@ def main():
         (sesiones / "aprobador" / "session.json").write_text(json.dumps(
             {"hostname": HOST_BANCO, "username": "qa.revisor", "cookies": []}), encoding="utf-8")
         de_qa = {"SAIL_CLI": str(simulado), "SAIL_HOME": str(sesiones), "SAIL_SIMULADO_APP": str(tmp / "app simulada.json")}
-        recorre = lambda *mas: lanza("comprobar", "--host", HOST_BANCO, *mas, en=vacia, **de_qa)
+        recorre = lambda *mas, **mas_k: lanza("comprobar", "--host", HOST_BANCO, *mas, en=vacia, **de_qa, **mas_k)
         cuentas = ("--solicitante", "qa.solicitante", "--aprobador", "qa.revisor")
-        c, out, err = recorre(*cuentas)
+        # El SAIL CLI simulado es el de appian-qa, que es otra aplicación: sabe contestar a los guiones de la lista y
+        # del permiso. Se repiten con una copia del plugin que solo trae esos dos; los demás, en el entorno de cada uno.
+        copia = tmp / "plugin con dos guiones"
+        for parte in ("appian-actualizacion", "appian-qa/scripts", "appian-functional-analyst/scripts"):
+            shutil.copytree(SCRIPT.parents[2] / parte, copia / "skills" / parte, ignore=shutil.ignore_patterns("__pycache__"))
+        for g in (copia / "skills" / "appian-actualizacion" / "assets" / "banco" / "guiones").glob("*.json"):
+            if g.stem not in ("BPS-01.1", "BPS-06.1"):
+                g.unlink()
+        de_la_copia = {"script": copia / "skills" / "appian-actualizacion" / "scripts" / "actualizar.py"}
+        c, out, err = recorre(*cuentas, **de_la_copia)
         comprueba("repite los guiones del banco con las cuentas que se le dan y dice lo que aún no recorre",
                   c == 0 and "Los recorridos con SAIL CLI: PASA" in out and "BPS-01.1 · pasa" in out
-                  and "BPS-06.1 · pasa" in out and "aún no trae los recorridos" in out
+                  and "BPS-06.1 · pasa" in out and "aún no trae el recorrido" in out
                   and "La extracción: sin comprobar" in out, out + err)
-        c, out, err = recorre("--solicitante", "qa.solicitante", "--aprobador", "qa.solicitante")
+        c, out, err = recorre("--solicitante", "qa.solicitante", "--aprobador", "qa.solicitante", **de_la_copia)
         comprueba("si quien no debe ver una acción la ve, el banco no pasa y dice en qué recorrido",
                   c == 1 and "Los recorridos con SAIL CLI: NO PASA" in out and "BPS-06.1 · falla" in out
                   and "BPS-01.1 · pasa" in out, out + err)
