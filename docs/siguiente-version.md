@@ -178,6 +178,38 @@ Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no en
   - Un guion de la demo con un registro de ejemplo por estado, porque las acciones no cambian los datos.
 
   Valorar un apartado «Preparar la demo» en la skill y que el guion salga del inventario.
+- `appian-prototipos`: lo que pidió cambiar la revisión de diseño de un prototipo antes de una demo con el cliente.
+  Valorar llevarlo a `design-rules.md`, a los helpers y a las plantillas P01, P02 y P07:
+  - **Listados.** Una columna por dato y, como mucho, una línea más debajo, con su icono y en gris (el lote bajo el
+    expediente, el plazo bajo la fecha de inicio); nunca celdas de tres o más líneas. Las columnas, agrupadas por
+    tema (los datos del expediente, juntos). Un único formato de identificador en toda la tabla. Paginación de 10.
+    Si un dato hoy tiene un solo valor pero puede crecer (un tipo con un único valor en esta fase), va como segunda
+    línea de su columna, no como columna propia, y como filtro.
+  - **Búsqueda y filtros.** La búsqueda, encima del grid; los filtros, en su propia tarjeta plegable sobre él, con
+    «Aplicar filtros» y «Limpiar». Hace falta un helper con el estado editado y el aplicado.
+  - **Una columna «Paso»** junto al estado cuando un mismo estado puede darse en dos pasos del flujo.
+  - **Selección única.** Un selector (picker) de un solo valor parece de selección múltiple (ficha con «×»): para
+    elegir uno, desplegable con búsqueda. Si lo que se puede elegir depende de otro campo (los lotes según el tipo
+    de expediente), un desplegable por caso con `showWhen`.
+  - **Opciones no válidas.** Si el usuario espera ver una opción (un subtipo que en este caso no se puede crear), se
+    muestra y, al elegirla, se explica por qué no vale; ocultarla deja al usuario sin saber qué pasa. Lo que no tiene
+    sentido ofrecer (expedientes o lotes no válidos) sí se filtra.
+  - **Ventanas de creación.** Algo más anchas (MEDIUM_PLUS) y con los campos en bloques con título e icono.
+  - **Ficha de un registro.** El progreso (milestone), arriba y a todo el ancho, con el título y el estado; debajo, a
+    la izquierda, una tarjeta plegable «Datos generales» con los datos de solo lectura, cada uno con su icono y los
+    estados como etiqueta; a la derecha, las secciones. Ningún dato repetido en la cabecera, en la tarjeta y en las
+    secciones, ni subtítulos que no aporten. Lo que el usuario marca o edita va en su sección, no en la cabecera.
+  - **Botones en su sección.** Una acción que produce algo de una sección (generar un documento) va en esa sección,
+    visible aunque esté desactivada, con un aviso que dice qué falta para activarla.
+  - **Edición puntual.** Un campo que casi nunca cambia (una ruta) se ve como texto con «Editar», que abre el campo con
+    «Guardar» y «Cancelar».
+  - **Nombres de las fases** del progreso: lo que hace el paso, no el sistema al que se comunica.
+  - **Datos de ejemplo** para enseñar un flujo desde cero: al menos un registro del primer paso sin nada aportado
+    (sin documentos), para que se vea cómo se genera o se sube lo primero.
+  - **Bandeja de tareas** coherente con la lista de tareas de Appian (`a!queryTaskList`): vistas «Asignadas a mí» y «De
+    mis grupos», tarea, registro, asignada a, estado (aceptada o asignada al grupo), recibida y fecha límite. Las
+    páginas de la documentación sobre la lista de tareas de Sites dieron 404 (`Tasks_Tab`, `task-reports`); buscar
+    las vigentes antes de escribir el patrón.
 
 - `leer_fuentes.py`: un Excel del cliente puede marcar con el color de la letra o del relleno lo que el cliente añade (por ejemplo,
   lo nuevo en otro color), y la conversión a texto lo pierde: valorar marcar esas celdas en el `.md`.
