@@ -239,6 +239,19 @@ def main():
         comprueba("un fichero que no es un bundle para con 2", c == 2 and "no es un bundle" in err, err)
         c, out, err = lanza("estado", con_sail=False)
         comprueba("sin SAIL CLI lo dice y sigue", c == 0 and "no está" in out, out + err)
+        proyecto = tmp / "proyecto con QA"
+        (proyecto / "qa" / "EV-01").mkdir(parents=True)
+        (proyecto / "qa" / "EV-01" / "resultado.json").write_text(json.dumps({"unidad": "EV-01", "escenarios": {
+            "HU-01.1": {"resultado": "pasa", "con": {"sail": "0.9.0", "qa": "abc"}},
+            "HU-01.2": {"resultado": "pasa", "con": {"sail": "1.0.0", "qa": "abc"}},
+            "HU-01.3": {"resultado": "falla"}, "HU-01.4": {"resultado": "desfasado"}}}), encoding="utf-8")
+        c, out, err = lanza("estado", "--proyecto", proyecto)
+        comprueba("de un proyecto dice con qué SAIL CLI se obtuvo su QA y cuántos no son del instalado, sin tocarlo",
+                  c == 0 and "1 con SAIL CLI 0.9.0" in out and "1 con SAIL CLI 1.0.0" in out
+                  and "1 sin versión anotada" in out and "instalado, 1.0.0" in out and "2 no se han recorrido" in out,
+                  out + err)
+        c, out, err = lanza("estado", "--proyecto", tmp / "no hay proyecto")
+        comprueba("y de uno sin QA lo dice, sin fallar", c == 0 and "no hay escenarios recorridos" in out, out + err)
 
         print("Foto")
         c, out, err = lanza("informe", "--catalogo", catalogos[1])

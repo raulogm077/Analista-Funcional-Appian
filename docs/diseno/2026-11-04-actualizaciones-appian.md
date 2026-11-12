@@ -197,6 +197,19 @@ prueba: formulario, validación, `navigate`, `back`, `open` y las tareas.
 
 ## Decisiones
 
+**Raúl, 12-nov** (preguntado, tras plantear él que una actualización no puede traer retrabajo en los proyectos ya
+hechos, con una instalación de usuario y proyectos de versiones distintas):
+1. A veces tiene a la vez entornos con el plugin del Dev MCP en builds distintos.
+2. Que lo existente «siga funcionando» es poder repetir su QA y seguir construyendo sobre ello.
+3. La versión con que se probó se anota sola en `qa/<U>/resultado.json`; sin fichero ni orden nuevos.
+4. Al retomar un proyecto probado con otra versión, la sesión avisa y él decide; no se repite ni se cambia nada solo.
+
+De ahí, con la segunda opinión de Codex (compatibilidad por defecto, lo nuevo cuando aporta, ajuste a demanda; la
+versión identifica de dónde sale un resultado, no prueba que sea compatible): `qa.py` anota la procedencia de cada
+escenario recorrido, `estado --proyecto` la compara con lo instalado sin tocar nada, y la skill dice qué se hace y
+qué no con un proyecto ya hecho y con dos builds a la vez. **Sin medir:** dos carpetas de servidor con dos entornos
+reales en builds distintos, y repetir con la versión nueva el QA de un proyecto real anterior.
+
 **Raúl, 11-nov:**
 1. **El enfoque del análisis, aplicado**: pruebas reales de los dos scripts sobre el banco, revisar lo que el plugin
    afirma y fuera los inventarios escritos a mano.

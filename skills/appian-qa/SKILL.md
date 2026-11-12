@@ -195,6 +195,10 @@ y no lleva rutas del equipo de nadie:
  "sinGuion": ["HU-02.1"]}
 ```
 
+Cada escenario recorrido lleva además `"con": {"sail": "<versión>", "qa": "<huella>"}`: la versión de SAIL CLI y el
+`qa.py` con que se obtuvo ese resultado. Un escenario que no se repite conserva el suyo: un «pasa» vale para la versión
+con que se hizo, y repetirlo con otra lo decide la persona (`appian-actualizacion`, «Los proyectos que ya estaban hechos»).
+
 - **pasa** o **falla**: la última vez que se repitió. Lo que pasa con su issue si falla, en
   `appian-functional-analyst/references/cambios.md` §6. El motivo lleva `{pasada}` y `{hoy}`, no lo que valieron: el
   mismo fallo dice lo mismo en cada repetición, y la marca de una persona sigue valiendo para él.

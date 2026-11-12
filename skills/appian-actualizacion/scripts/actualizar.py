@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """actualizar.py - Instala un bundle del Dev MCP de Appian y dice qué hay instalado y qué cambió.
 
-  python3 actualizar.py estado   [--servidor DIR] [--bundle FICHERO]
+  python3 actualizar.py estado   [--servidor DIR] [--bundle FICHERO] [--proyecto DIR]
   python3 actualizar.py foto     [--servidor DIR] [--catalogo FICHERO]
   python3 actualizar.py instalar BUNDLE [--servidor DIR] [--plugin-sha SHA] [--uv RUTA] [--skills-dir DIR]…
                                  [--catalogo FICHERO]
@@ -961,6 +961,28 @@ def cmd_comprobar(args):
 
 # ---- Las demás órdenes --------------------------------------------------------------------------------------------
 
+def qa_del_proyecto(proyecto, instalado):
+    """En una línea, con qué SAIL CLI se obtuvieron los resultados del QA de un proyecto (qa/<U>/resultado.json, que
+    escribe `qa.py`) y cuál hay instalado. No repite ni cambia nada: un resultado de otra versión no dice nada de esta,
+    y repetirlo lo decide la persona."""
+    de_version = lambda texto: (re.search(r"\bversion\s+(\S+)", texto or "") or [None, None])[1]
+    cuenta = {}
+    for f in sorted((proyecto / "qa").glob("*/resultado.json")):
+        for e in ((leer_json(f) or {}).get("escenarios") or {}).values():
+            if isinstance(e, dict) and e.get("resultado") in ("pasa", "falla"):
+                con = e.get("con") if isinstance(e.get("con"), dict) else {}
+                cuenta[con.get("sail")] = cuenta.get(con.get("sail"), 0) + 1
+    if not cuenta:
+        return f"no hay escenarios recorridos en {proyecto / 'qa'}"
+    ahora = de_version(instalado)
+    partes = [f"{n} con SAIL CLI {v}" if v else f"{n} sin versión anotada" for v, n in sorted(
+        cuenta.items(), key=lambda par: str(par[0]))]
+    otros = sum(n for v, n in cuenta.items() if v != ahora)
+    return (f"{', '.join(partes)}; instalado, {ahora or 'no se sabe'}. " + (
+        f"{otros} no se han recorrido con el instalado: siguen valiendo para la versión con que se hicieron; se repiten "
+        "con `qa.py repetir` cuando se decida" if otros else "Todos, con el instalado"))
+
+
 def cmd_estado(args):
     srv = servidor(args.servidor)
     info = instalado_en(srv)
@@ -975,6 +997,8 @@ def cmd_estado(args):
         print(f"Skill appian       versión {claves(texto).get('version', '?')[:12]} en el bundle instalado")
     fotos = sorted(d.name for d in carpeta_fotos(srv).glob("*") if (d / "BUILD-INFO.txt").is_file())
     print(f"Fotos guardadas    {lista(fotos)} en {carpeta_fotos(srv)}")
+    if args.proyecto:
+        print(f"QA del proyecto    {qa_del_proyecto(args.proyecto, version)}")
     if args.bundle:
         nuevo, _ = leer_bundle(args.bundle)
         if identidad(nuevo) == identidad(info):
@@ -1021,6 +1045,8 @@ def main():
                        help="carpeta donde está extraído el bundle (por defecto, ~/appian-dev-mcp-server)")
     e = sub.add_parser("estado", parents=[comun], help="qué hay instalado y qué fotos hay guardadas")
     e.add_argument("--bundle", type=ruta_dada, help="un bundle descargado, para saber si es más nuevo que lo instalado")
+    e.add_argument("--proyecto", type=ruta_dada, metavar="DIR",
+                   help="un proyecto con QA, para saber con qué SAIL CLI se obtuvieron sus resultados")
     f = sub.add_parser("foto", parents=[comun], help="rehace la foto de lo instalado")
     n = sub.add_parser("instalar", parents=[comun], help="instala un bundle, con foto y copia de lo anterior")
     n.add_argument("bundle", type=ruta_dada, help="el bundle descargado (appian-dev-mcp-server-bundle.tar.gz)")

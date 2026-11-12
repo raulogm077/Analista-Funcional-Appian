@@ -338,6 +338,9 @@ def main():
            and "HU-02.1" not in out and iss.estado(t.p, "EV-01", hecha) == (True, "hecha"), out)
         c, out = t.repetir()
         ok("y la unidad entera vuelve a pasar", c == 0 and set(resultados().values()) == {"pasa"}, out)
+        con = [e.get("con") or {} for e in t.resultado()[0]["escenarios"].values()]
+        ok("cada escenario recorrido dice con qué SAIL CLI y con qué qa.py se obtuvo",
+           con and all(x.get("sail") == "9.9.9" and len(str(x.get("qa"))) == 12 for x in con), str(con))
 
         # lo que la aplicación hace mal: el guion falla y su issue vuelve a pendiente
         def variante(nombre, cambio, esperado, que, resultado="falla", codigo=1):

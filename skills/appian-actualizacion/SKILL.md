@@ -32,7 +32,7 @@ instalar hace falta además `uv`, como pide la guía de Appian; si no está, el 
 `<skill>` es la carpeta de esta skill. Si el bundle no está extraído en `~/appian-dev-mcp-server`, que es donde manda
 la guía de Appian, añade `--servidor <carpeta>` a cada orden.
 
-1. **Qué hay.** `python3 <skill>/scripts/actualizar.py estado [--bundle <descarga>]`: el build del servidor, la versión
+1. **Qué hay.** `python3 <skill>/scripts/actualizar.py estado [--bundle <descarga>] [--proyecto <p>]`: el build del servidor, la versión
    de SAIL CLI y de la skill oficial, y si el bundle descargado es más nuevo, el instalado o más antiguo. La versión
    del plugin de Appian de cada entorno la da el Dev MCP: la herramienta que informa de las versiones responde aunque
    las demás se rechacen, y dice el `mcpSrcSha` que espera. El bundle lo descarga la persona, con su sesión, de
@@ -89,6 +89,29 @@ que repetirlo; si después el servidor pide ese navegador, la misma guía.
 Un arreglo que hayas hecho a mano en lo que trae el bundle se pierde al instalar. Al actualizar queda en el bundle
 anterior guardado; al repetir la instalación del mismo bundle, no. Mientras se instala no debe haber otra instalación
 en marcha sobre la misma carpeta.
+
+## Los proyectos que ya estaban hechos
+
+Actualizar no obliga a tocar ningún proyecto. Su análisis, sus escenarios, sus objetos y su documentación no dependen
+de la versión del Dev MCP ni de SAIL CLI. Dependen los guiones de QA, que repite `qa.py` con SAIL CLI, y eso se
+adapta una vez, en `qa.py`, cuando el banco lo detecta (paso 5): no proyecto a proyecto.
+
+- **Lo que existe sigue valiendo** para la versión con que se probó. `qa.py` anota en cada escenario de
+  `qa/<U>/resultado.json` con qué SAIL CLI se obtuvo.
+- **Al retomar un proyecto**, `actualizar.py estado --proyecto <p>` dice en una línea con qué versión se probó su QA
+  y cuál hay instalada. Díselo a la persona y no repitas ni cambies nada hasta que lo pida: una versión distinta
+  informa, no invalida.
+- **Si pide ajustarlo**, se repiten sus guiones (`qa.py repetir`, de `appian-qa`). Lo que pasa queda anotado con la
+  versión nueva. De lo que falla se mira primero de quién es: de `qa.py` (se corrige una vez, para todos), de ese
+  guion o de la aplicación (solo eso). Un guion no se cambia para que pase.
+- **Lo nuevo** (una herramienta, una orden) se usa en el trabajo nuevo cuando aporta, tras leer su esquema o su ayuda
+  instalados. No se rehace lo existente para usarlo ni se abre una tarea por cada novedad.
+
+**Entornos con el plugin del Dev MCP en builds distintos a la vez.** El servidor tiene que ser del build del plugin
+de cada entorno; si no, rechaza las llamadas. Cuando no van a la par, una carpeta de servidor por build: cada orden
+de `actualizar.py` con su `--servidor <carpeta>` (cada carpeta lleva sus fotos y su bundle anterior) y, en la
+configuración de cada cliente de IA, el servidor de cada entorno apuntando a la carpeta de su build (la guía de
+Appian dice cómo se da de alta). SAIL CLI es uno por equipo: queda el del último bundle instalado.
 
 ## Qué escribe
 

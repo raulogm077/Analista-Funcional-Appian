@@ -15,6 +15,7 @@ SAIL_CLI, si existe, es la orden de SAIL CLI que se usa en vez de «sail» (un .
 """
 import argparse
 import datetime
+import hashlib
 import json
 import math
 import os
@@ -56,6 +57,7 @@ RX_SIN_RED = re.compile(r"dial tcp|no such host|TLS handshake timeout|i/o timeou
 # «was not sent» van los motivos, uno por línea: «"Campo" — shows "mensaje"» o «"Campo" — required, and empty»
 RX_NO_ENVIADO = re.compile(r"\bwas not sent\b[^\n]*\n((?:[ \t]+\"[^\n]*\n?)+)", re.I)
 RX_ISSUE = re.compile(r"ISS-\d+")
+RX_VERSION = re.compile(r"\bversion\s+(\S+)")   # «sail version 26.9.15 (…)»
 # Lo que no se ve en la página: identificadores, iconos y textos que Appian solo enseña a veces (el aviso de una rejilla
 # vacía, el de un campo obligatorio, la ayuda emergente, las etiquetas de paginar). Una clave que acaba en «Message» o
 # en «Label» (salvo label e inlineLabel) es de esas.
@@ -82,6 +84,21 @@ class Falla(Exception):
 
 def ahora():
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def procedencia(vista={}):
+    """Con qué se obtiene un resultado: la versión de SAIL CLI (None si no la dice) y la huella de este script, sin
+    contar los finales de línea. Va con cada escenario que se repite: uno que no se repite conserva la suya."""
+    if not vista:
+        try:
+            r = subprocess.run(sail_cli() + ["--version"], capture_output=True, text=True, encoding="utf-8",
+                               errors="replace", stdin=subprocess.DEVNULL, timeout=ESPERA_SAIL)
+            version = RX_VERSION.search(r.stdout) if r.returncode == 0 else None
+        except (OSError, subprocess.TimeoutExpired):
+            version = None
+        codigo = pathlib.Path(__file__).read_bytes().replace(b"\r\n", b"\n")
+        vista.update(sail=version.group(1) if version else None, qa=hashlib.sha256(codigo).hexdigest()[:12])
+    return dict(vista)
 
 
 def escribe(ruta, texto):
@@ -722,6 +739,8 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
                     parado = f"SAIL CLI dejó de responder en {uid} {esc}"
         if "sinRepetir" not in entrada:
             entrada.update(fecha=ahora(), segundos=round(time.time() - inicio, 1))
+            if entrada.get("resultado") in ("pasa", "falla"):     # los que se han recorrido de verdad
+                entrada["con"] = procedencia()
             if entrada.get("issue") in versiones_issues:
                 entrada["versionIssue"] = versiones_issues[entrada["issue"]]
         entrada = {"resultado": entrada.pop("resultado"), **entrada}   # lo primero que se lee

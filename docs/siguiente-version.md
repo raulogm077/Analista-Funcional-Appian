@@ -45,20 +45,10 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 - **El banco `BPS`: las tareas enseñan «N/A».** «Confirmar envío» y «Aprobar solicitud» enseñan «N/A» en el importe
   y en el comentario del solicitante: la acción pasa `rv!record` al proceso y no trae esos campos. No afecta a los
   guiones. Al corregirlo, que el proceso lea la solicitud por su identificador. [Appian]
-- **Un proyecto ya construido y con su QA cuando llega un bundle nuevo** (escenario que plantea Raúl, 12-nov; a la
-  espera de sus respuestas, sin implementar). Propuesta, con la opinión de Codex: compatibilidad por defecto, lo nuevo
-  se usa cuando aporta y un proyecto se ajusta a demanda. Sin orden ni fichero nuevos: que `qa.py` anote en cada
-  escenario de `resultado.json` con qué `sail` y qué `qa.py` se obtuvo (hoy no lo guarda), sin atribuir a la versión
-  nueva lo que no se ha repetido; una diferencia informa, no invalida. Dos entornos con el plugin en builds distintos
-  a la vez piden dos carpetas de servidor, que `instalar` ya admite. El
-  funcional, la solución y los escenarios no caducan por actualizar; se revisa por impacto lo que habla con Appian:
-  `qa.py` y sus guiones, el extractor y su política, y lo que el plugin afirma de una versión. Un «pasa» anterior no
-  acredita la versión nueva: los guiones del proyecto se repiten con el `sail` nuevo (mirando que `SAIL_CLI` no
-  apunte al anterior) y el que falle se adapta por lo que cambió, como el envío con validación de la 26.9.15, sin
-  `--no-validate` por sistema. Lo nuevo que aporte algo lo puede usar la IA tras leer su ayuda y probarlo; para que
-  un guion lo repita hace falta que `qa.py` lo entienda, como ya entiende las tareas (paso «tarea»). Probado solo
-  con el banco, con el `sail` anterior y el nuevo; falta hacerlo una vez con un proyecto real de prueba,
-  conservando su resultado anterior. [método]
+- **Un proyecto ya construido cuando llega un bundle nuevo: lo que falta medir.** El método está en
+  `appian-actualizacion` («Los proyectos que ya estaban hechos») y `qa.py` anota con qué se probó cada escenario.
+  Falta hacerlo una vez de verdad: repetir con la versión nueva el QA de un proyecto real anterior, conservando su
+  resultado de antes; y dos carpetas de servidor con dos entornos en builds distintos. [cuando se dé el caso]
 - **Índice del DOCX.** Evaluar la caché editable solo si una entrega la necesita. [Word]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
   observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se

@@ -57,6 +57,9 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
     args = sys.argv[1:]
+    if args == ["--version"]:
+        print("sail version 9.9.9 (simulado, built 2026-01-01)")
+        sys.exit(0)
     carpeta = None
     if "--data-dir" in args:
         k = args.index("--data-dir")
