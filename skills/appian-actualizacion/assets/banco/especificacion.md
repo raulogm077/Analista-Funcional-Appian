@@ -51,8 +51,7 @@ Una pantalla o acción por cada tipo de lo que documenta `sail` (un tipo nuevo e
 7. **Procesos**:
    - `BPS Crear Solicitud`: formulario de inicio; si no se cancela, guarda la solicitud en Borrador con quién y cuándo.
    - `BPS Enviar a Aprobacion`: sin formulario de inicio. Tarea «Confirmar envío» a quien lo lanza, encadenada desde el
-     inicio; guarda Pendiente de aprobación; tarea «Aprobar solicitud» al grupo `BPS Aprobadores`, cuyo nombre a la vista lleva el título de la
-     solicitud (se pone en Designer; el guion de la tarea la busca por ese nombre); guarda la decisión y
+     inicio; guarda Pendiente de aprobación; tarea «Aprobar solicitud» al grupo `BPS Aprobadores`; guarda la decisión y
      quién la tomó.
 8. **Acciones de `BPS Solicitud`**: «Nueva solicitud» (de la lista, solo `BPS Solicitantes`) y «Enviar a aprobación»
    (del registro, solo en Borrador).
@@ -82,6 +81,8 @@ En `guiones/`, uno o más por fila de «Qué cubre». Están escritos tras recor
 aplicación con `sail`, como cualquier guion de `appian-qa`, y crean sus propias solicitudes con un título único.
 Van sin entorno ni cuentas: `comprobar` pone los de quien lo lanza y, donde un paso teclea el usuario de un rol
 (`{cuenta de aprobador}`, en el selector de usuario), el suyo. Si se cambia una etiqueta o un mensaje de la
-aplicación, se cambia en su guion. El del formulario rellena un campo de cada tipo y comprueba después, en la lista
+aplicación, se cambia en su guion. El de la tarea la busca por su nombre, «Aprobar solicitud», y la completa: si una
+pasada se corta y deja una abierta, la siguiente encuentra dos, no abre ninguna y lo dice; se completa a mano la
+que sobra. El del formulario rellena un campo de cada tipo y comprueba después, en la lista
 y en el registro, el título, la categoría, el estado, las unidades, las casillas y el comentario: el importe, las
 fechas y el responsable se ven con el formato y el nombre de cada entorno, y el fichero no sale en el registro.

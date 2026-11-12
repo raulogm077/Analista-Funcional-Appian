@@ -92,15 +92,16 @@ en marcha sobre la misma carpeta.
 
 ## Los proyectos que ya estaban hechos
 
-Actualizar no obliga a tocar ningún proyecto. Su análisis, sus escenarios, sus objetos y su documentación no dependen
-de la versión del Dev MCP ni de SAIL CLI. Dependen los guiones de QA, que repite `qa.py` con SAIL CLI, y eso se
-adapta una vez, en `qa.py`, cuando el banco lo detecta (paso 5): no proyecto a proyecto.
+Actualizar no obliga a tocar ningún proyecto ni invalida lo que tiene: su análisis, sus escenarios, sus objetos y su
+documentación siguen valiendo. Lo que habla con Appian por un script, sobre todo los guiones de QA que repite `qa.py`
+con SAIL CLI, puede notar el cambio: se adapta en `qa.py`, una vez para todos, cuando se puede (el banco lo detecta
+en el paso 5, pero no recorre los proyectos de nadie), y un guion concreto, solo al retomar su proyecto.
 
 - **Lo que existe sigue valiendo** para la versión con que se probó. `qa.py` anota en cada escenario de
   `qa/<U>/resultado.json` con qué SAIL CLI se obtuvo.
 - **Al retomar un proyecto**, `actualizar.py estado --proyecto <p>` dice en una línea con qué versión se probó su QA
-  y cuál hay instalada. Díselo a la persona y no repitas ni cambies nada hasta que lo pida: una versión distinta
-  informa, no invalida.
+  y cuál hay instalada (de los resultados anteriores a esta anotación no consta). Díselo a la persona y no repitas ni
+  cambies nada hasta que lo pida: una versión distinta informa, no invalida.
 - **Si pide ajustarlo**, se repiten sus guiones (`qa.py repetir`, de `appian-qa`). Lo que pasa queda anotado con la
   versión nueva. De lo que falla se mira primero de quién es: de `qa.py` (se corrige una vez, para todos), de ese
   guion o de la aplicación (solo eso). Un guion no se cambia para que pase.
@@ -111,7 +112,8 @@ adapta una vez, en `qa.py`, cuando el banco lo detecta (paso 5): no proyecto a p
 de cada entorno; si no, rechaza las llamadas. Cuando no van a la par, una carpeta de servidor por build: cada orden
 de `actualizar.py` con su `--servidor <carpeta>` (cada carpeta lleva sus fotos y su bundle anterior) y, en la
 configuración de cada cliente de IA, el servidor de cada entorno apuntando a la carpeta de su build (la guía de
-Appian dice cómo se da de alta). SAIL CLI es uno por equipo: queda el del último bundle instalado.
+Appian dice cómo se da de alta). El `sail` del PATH es el del último bundle instalado; para usar otro en una orden,
+`SAIL_CLI` (`sail-anterior` saca el del bundle guardado).
 
 ## Qué escribe
 

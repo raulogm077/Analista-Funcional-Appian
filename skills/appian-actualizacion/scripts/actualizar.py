@@ -975,12 +975,17 @@ def qa_del_proyecto(proyecto, instalado):
     if not cuenta:
         return f"no hay escenarios recorridos en {proyecto / 'qa'}"
     ahora = de_version(instalado)
-    partes = [f"{n} con SAIL CLI {v}" if v else f"{n} sin versión anotada" for v, n in sorted(
-        cuenta.items(), key=lambda par: str(par[0]))]
-    otros = sum(n for v, n in cuenta.items() if v != ahora)
-    return (f"{', '.join(partes)}; instalado, {ahora or 'no se sabe'}. " + (
-        f"{otros} no se han recorrido con el instalado: siguen valiendo para la versión con que se hicieron; se repiten "
-        "con `qa.py repetir` cuando se decida" if otros else "Todos, con el instalado"))
+    partes = [f"{n} con SAIL CLI {v}" for v, n in sorted(cuenta.items(), key=lambda par: str(par[0])) if v]
+    if cuenta.get(None):
+        partes.append(f"{cuenta[None]} sin que conste con cuál")
+    dice = f"{', '.join(partes)}; instalado, {ahora or 'no se sabe cuál'}."
+    otros = sum(n for v, n in cuenta.items() if v and v != ahora)
+    if not ahora:
+        return dice
+    if otros:      # solo los que se sabe que son de otra: de los que no consta no se dice nada
+        return dice + (f" {otros} se recorrieron con otra versión: siguen valiendo para la suya; se repiten con "
+                       "`qa.py repetir` si se decide")
+    return dice + (" Todos, con el instalado" if not cuenta.get(None) else "")
 
 
 def cmd_estado(args):

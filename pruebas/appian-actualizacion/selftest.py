@@ -248,7 +248,18 @@ def main():
         c, out, err = lanza("estado", "--proyecto", proyecto)
         comprueba("de un proyecto dice con qué SAIL CLI se obtuvo su QA y cuántos no son del instalado, sin tocarlo",
                   c == 0 and "1 con SAIL CLI 0.9.0" in out and "1 con SAIL CLI 1.0.0" in out
-                  and "1 sin versión anotada" in out and "instalado, 1.0.0" in out and "2 no se han recorrido" in out,
+                  and "1 sin que conste con cuál" in out and "instalado, 1.0.0" in out
+                  and "1 se recorrieron con otra versión" in out, out + err)
+        c, out, err = lanza("estado", "--proyecto", proyecto, con_sail=False)
+        comprueba("sin saber qué SAIL CLI hay instalado no compara: ni «otra versión» ni «todos con el instalado»",
+                  c == 0 and "instalado, no se sabe cuál" in out and "otra versión" not in out
+                  and "Todos" not in out, out + err)
+        (proyecto / "qa" / "EV-01" / "resultado.json").write_text(json.dumps({"unidad": "EV-01", "escenarios": {
+            "HU-01.1": {"resultado": "pasa"}, "HU-01.2": {"resultado": "pasa", "con": {"sail": None, "qa": "abc"}}}}),
+            encoding="utf-8")
+        c, out, err = lanza("estado", "--proyecto", proyecto)
+        comprueba("de lo que no consta con qué se recorrió no dice que sea de otra versión ni del instalado",
+                  c == 0 and "2 sin que conste con cuál" in out and "otra versión" not in out and "Todos" not in out,
                   out + err)
         c, out, err = lanza("estado", "--proyecto", tmp / "no hay proyecto")
         comprueba("y de uno sin QA lo dice, sin fallar", c == 0 and "no hay escenarios recorridos" in out, out + err)
