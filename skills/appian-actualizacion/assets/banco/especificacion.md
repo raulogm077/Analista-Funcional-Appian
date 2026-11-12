@@ -37,19 +37,25 @@ Una pantalla o acción por cada tipo de lo que documenta `sail` (un tipo nuevo e
      (texto, 255), `categoriaId`, `estadoId`, `responsable` (usuario), `aprobadoPor` (usuario), `createdBy` (usuario),
      `createdOn` (fecha y hora). Relaciones con `BPS Categoria`, `BPS Estado` y la de usuarios de cada campo de usuario.
    - Filtros de usuario de `BPS Solicitud`: «Estado» (lista de valores del estado) y «Fecha de inicio» (rango).
-5. **Interfaces**: `BPS_ResumenSolicitud` (vista del registro), `BPS_FormularioSolicitud` (formulario de inicio de la
+5. **Reglas de expresión**, cada una con sus casos de prueba guardados (con salida esperada: el valor que vale, el
+   que no y el vacío):
+   - `BPS_ImporteEsValido(importe)`: el importe está informado y es mayor que cero. La usa la validación del
+     formulario.
+   - `BPS_MotivoEsObligatorio(decision)`, en una línea: `a!defaultValue(ri!decision, 0) = cons!BPS_ESTADO_RECHAZADA`.
+     La usa el motivo de la tarea de aprobación.
+6. **Interfaces**: `BPS_ResumenSolicitud` (vista del registro), `BPS_FormularioSolicitud` (formulario de inicio de la
    nueva solicitud), `BPS_ConfirmarEnvio` (tarea encadenada; su botón «Enviar a aprobación» lleva confirmación),
    `BPS_AprobarSolicitud` (tarea del grupo: «Decisión» Aprobar o Rechazar y un comentario) y `BPS_PaginaSolicitudes`
    (la tabla de la página, con los filtros, la búsqueda y la acción «Nueva solicitud»).
-6. **Procesos**:
+7. **Procesos**:
    - `BPS Crear Solicitud`: formulario de inicio; si no se cancela, guarda la solicitud en Borrador con quién y cuándo.
    - `BPS Enviar a Aprobacion`: sin formulario de inicio. Tarea «Confirmar envío» a quien lo lanza, encadenada desde el
      inicio; guarda Pendiente de aprobación; tarea «Aprobar solicitud» al grupo `BPS Aprobadores`; guarda la decisión y
      quién la tomó.
-7. **Acciones de `BPS Solicitud`**: «Nueva solicitud» (de la lista, solo `BPS Solicitantes`) y «Enviar a aprobación»
+8. **Acciones de `BPS Solicitud`**: «Nueva solicitud» (de la lista, solo `BPS Solicitantes`) y «Enviar a aprobación»
    (del registro, solo en Borrador).
-8. **Site** `BPS Banco de pruebas` (`bps-banco-pruebas`) con la página «Solicitudes».
-9. **Seguridad**: `BPS Users` ve los tipos de registro, el site y los procesos; solo `BPS Solicitantes` inicia los dos
+9. **Site** `BPS Banco de pruebas` (`bps-banco-pruebas`) con la página «Solicitudes».
+10. **Seguridad**: `BPS Users` ve los tipos de registro, el site y los procesos; solo `BPS Solicitantes` inicia los dos
    procesos y escribe en la carpeta `BPS Adjuntos` (la subida del fichero). La tarea de aprobación llega por asignación.
 
 ## Cuentas
@@ -58,6 +64,11 @@ Dos cuentas locales de prueba, que crea la persona en la consola de administraci
 IA ni por ningún fichero):
 - una solicitante, en `BPS Solicitantes`;
 - una aprobadora, en `BPS Aprobadores`.
+
+Sin contraseña temporal: una cuenta a la que Appian obliga a cambiar la contraseña al entrar no puede abrir sesión
+con `sail` (`verifying login: … setpassword`) hasta que se cambia en el navegador. Y con un nombre y apellidos que
+no tenga ninguna otra cuenta del entorno: el selector de usuario del formulario las enseña por ese nombre, y dos
+iguales no se distinguen.
 
 Con cada una entra en `sail` desde su terminal, en la carpeta de sesión común de esa cuenta, `~/.sail/<entorno>/<usuario>`
 (`sail login <host> --data-dir ~/.sail/<entorno>/<usuario>`, con `SAIL_USERNAME` y `SAIL_PASSWORD` solo para esa orden).

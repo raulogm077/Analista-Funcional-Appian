@@ -37,6 +37,17 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 - **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
   `pruebas/comprobar_anclas.py`, con red; la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
+- **`qa.py` y el envío que `sail` no manda (26.9.15).** Un paso que pulsa el botón de enviar con un valor no válido
+  y espera el mensaje (`"espera": {"texto": […]}`) falla desde el `sail` 26.9.15: `sail` sale con código 1 y el
+  texto «was not sent: it validates the form before it submits…», sin JSON. Con el 26.9.10 devolvía `status: ok` y
+  `validations`. Medido con el banco `BPS` el 12-nov (`docs/evaluaciones.md`). El arreglo va en `Recorrido.sail()`,
+  sobre el `qa.py` de la rama del método, que cambia esa misma línea: dar el rechazo por esperado solo si el paso
+  espera un texto y ese texto está en lo que dice `sail`. Un obligatorio vacío no trae el mensaje de la aplicación
+  («required, and empty»). Con ese cambio, los guiones del banco que faltan. [script, tras unir la rama del método]
+- **El banco `BPS`: dos retoques de la aplicación.** Las tareas «Confirmar envío» y «Aprobar solicitud» enseñan
+  «N/A» en el importe y en el comentario del solicitante: la acción pasa `rv!record` al proceso y no trae esos
+  campos. Y el nombre de la tarea de aprobación no lleva el título de la solicitud, así que un guion no puede
+  encontrar la suya entre varias. Los dos, antes de escribir el guion de las tareas. [Appian]
 - **Índice del DOCX.** Evaluar la caché editable solo si una entrega la necesita. [Word]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
   observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se

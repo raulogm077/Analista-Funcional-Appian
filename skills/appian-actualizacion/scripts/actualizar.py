@@ -7,7 +7,7 @@
                                  [--catalogo FICHERO]
   python3 actualizar.py informe  [--servidor DIR] [--catalogo FICHERO] [--antes DIR] [--despues DIR] [--json]
   python3 actualizar.py sail-anterior [--servidor DIR]
-  python3 actualizar.py comprobar [--extraccion DIR] [--host ENTORNO --solicitante USUARIO [--aprobador USUARIO]]
+  python3 actualizar.py comprobar [--extraccion DIR] [--host ENTORNO --solicitante USUARIO --aprobador USUARIO]
 
 Una foto es una copia, sin transformar, de lo que un bundle de Appian publica y el plugin usa:
   BUILD-INFO.txt          el build del servidor del Dev MCP
@@ -57,7 +57,7 @@ bloqueo entre dos instalaciones: no lances dos a la vez sobre la misma carpeta.
                      que dice la especificación y que no haya errores fuera de los previstos. Una herramienta con
                      errores en tres tipos de objeto o más suele ser de un tipo que la política del extractor no
                      conoce.
-  --host ENTORNO --solicitante USUARIO [--aprobador USUARIO] [--site SITE]
+  --host ENTORNO --solicitante USUARIO --aprobador USUARIO [--site SITE]
                      repite con `qa.py`, de appian-qa, los guiones de assets/banco/guiones/ en ese entorno y con esas
                      cuentas, que tienen que tener su sesión de sail abierta. El banco aún no trae todos sus recorridos.
 

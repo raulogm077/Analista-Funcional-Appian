@@ -672,6 +672,8 @@ def main():
             ("processModel", "BPS Enviar a Aprobacion"): {"nodes": [
                 {"name": "Confirmar envío", "type": "User Input Task"}, {"name": "Aprobar solicitud", "type": "User Input Task"},
                 {"name": "Fin", "type": "End Event"}]},
+            ("expressionRule", "BPS_MotivoEsObligatorio"): {
+                "expression": "a!defaultValue(ri!decision, 0) = cons!BPS_ESTADO_RECHAZADA"},
         }
 
         def extraccion(nombre, respuestas=None, **cambios):
@@ -702,7 +704,7 @@ def main():
         c, out, err = lanza("comprobar", "--extraccion", extraccion("extracción buena"), en=vacia)
         comprueba("con los objetos, el modelo y solo los errores previstos, pasa; dice cuáles quedan y lo que no se pidió",
                   c == 0 and "La extracción: PASA" in out and "getRecordEventsConfig, listObjectVersions" in out
-                  and "5 hechos" in out and "Los recorridos con SAIL CLI: sin comprobar" in out, out + err)
+                  and "6 hechos" in out and "Los recorridos con SAIL CLI: sin comprobar" in out, out + err)
         comprueba("y arma el modelo con el constructor del propio extractor",
                   (tmp / "extracción buena" / "extraccion" / "inventory.json").is_file())
         c, out, err = lanza("comprobar", "--extraccion", extraccion(
@@ -755,22 +757,31 @@ def main():
         (sesiones / "solicitante").mkdir(parents=True)
         (sesiones / "solicitante" / "session.json").write_text(json.dumps(
             {"hostname": HOST_BANCO, "username": "qa.solicitante", "cookies": []}), encoding="utf-8")
+        (sesiones / "aprobador").mkdir()          # el SAIL CLI simulado no enseña «Nueva solicitud» a un revisor
+        (sesiones / "aprobador" / "session.json").write_text(json.dumps(
+            {"hostname": HOST_BANCO, "username": "qa.revisor", "cookies": []}), encoding="utf-8")
         de_qa = {"SAIL_CLI": str(simulado), "SAIL_HOME": str(sesiones), "SAIL_SIMULADO_APP": str(tmp / "app simulada.json")}
         recorre = lambda *mas: lanza("comprobar", "--host", HOST_BANCO, *mas, en=vacia, **de_qa)
+        cuentas = ("--solicitante", "qa.solicitante", "--aprobador", "qa.revisor")
+        c, out, err = recorre(*cuentas)
+        comprueba("repite los guiones del banco con las cuentas que se le dan y dice lo que aún no recorre",
+                  c == 0 and "Los recorridos con SAIL CLI: PASA" in out and "BPS-01.1 · pasa" in out
+                  and "BPS-06.1 · pasa" in out and "aún no trae los recorridos" in out
+                  and "La extracción: sin comprobar" in out, out + err)
+        c, out, err = recorre("--solicitante", "qa.solicitante", "--aprobador", "qa.solicitante")
+        comprueba("si quien no debe ver una acción la ve, el banco no pasa y dice en qué recorrido",
+                  c == 1 and "Los recorridos con SAIL CLI: NO PASA" in out and "BPS-06.1 · falla" in out
+                  and "BPS-01.1 · pasa" in out, out + err)
         c, out, err = recorre("--solicitante", "qa.solicitante")
-        comprueba("repite los guiones del banco con la cuenta que se le da y dice lo que aún no recorre",
-                  c == 0 and "Los recorridos con SAIL CLI: PASA" in out and "BPS-01.1" in out and "pasa" in out
-                  and "aún no trae los recorridos" in out and "La extracción: sin comprobar" in out, out + err)
-        c, out, err = recorre()
         comprueba("sin la cuenta de un rol no se puede comprobar, y dice cuál falta",
-                  c == 2 and "NO SE PUDO" in out and "--solicitante" in out, out + err)
+                  c == 2 and "NO SE PUDO" in out and "--aprobador" in out and "--solicitante" not in out, out + err)
         (sesiones / "solicitante" / "session.json").write_text(json.dumps(
             {"hostname": HOST_BANCO, "username": "qa.solicitante", "cookies": [], "caducada": True}), encoding="utf-8")
-        c, out, err = recorre("--solicitante", "qa.solicitante")
+        c, out, err = recorre(*cuentas)
         comprueba("con la sesión de sail caducada no es un fallo: no se pudo comprobar",
                   c == 2 and "Los recorridos con SAIL CLI: NO SE PUDO" in out and "Traceback" not in out + err, out + err)
-        c, out, err = lanza("comprobar", "--extraccion", tmp / "sin procesos", "--host", HOST_BANCO,
-                            "--solicitante", "qa.solicitante", en=vacia, **de_qa)
+        c, out, err = lanza("comprobar", "--extraccion", tmp / "sin procesos", "--host", HOST_BANCO, *cuentas,
+                            en=vacia, **de_qa)
         comprueba("si una parte no pasa y otra no se pudo comprobar, sale con 1 y dice las dos",
                   c == 1 and "La extracción: NO PASA" in out and "Los recorridos con SAIL CLI: NO SE PUDO" in out, out + err)
 
