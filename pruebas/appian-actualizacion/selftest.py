@@ -556,20 +556,28 @@ def main():
         con_enlace.mkdir()
         (otra / "sub").mkdir(parents=True)
         if enlaza(con_enlace / "enlace", otra / "sub"):
-            c, out, err = lanza("instalar", enteros[1], "--uv", uv, "--servidor", con_enlace / "enlace" / ".." / "servidor",
-                                en=casa_r)
             donde = con_enlace if os.name == "nt" else otra   # Windows quita el `..` antes de mirar el enlace; los demás, después
-            comprueba("un `..` detrás de un enlace lleva a la carpeta que dice el sistema",
-                      c == 0 and (donde / "servidor" / "BUILD-INFO.txt").is_file(), out + err)
+            shutil.copy(uv, donde / uv.name)
+            tras_enlace = con_enlace / "enlace" / ".."
+            c, out, err = lanza("instalar", enteros[1], "--uv", tras_enlace / uv.name, "--servidor", tras_enlace / "servidor",
+                                en=casa_r)
+            comprueba("un `..` detrás de un enlace lleva a la carpeta que dice el sistema, la del servidor y la de uv",
+                      c == 0 and (donde / "servidor" / "BUILD-INFO.txt").is_file() and "uv sync: bien" in out, out + err)
             if os.name == "nt":
                 os.rmdir(con_enlace / "enlace")           # quita la unión, no lo enlazado
         perfil = tmp / "perfil"
         perfil.mkdir()
         shutil.copy(enteros[1], perfil / "descarga.tar.gz")
-        c, out, err = lanza("estado", "--bundle", "~/descarga.tar.gz", "--servidor", tmp / "servidor relativo", en=casa_r,
-                            HOME=str(perfil), USERPROFILE=str(perfil))
-        comprueba("una ruta con ~ vale en todas las órdenes, no solo al instalar", c == 0 and "es el instalado" in out,
-                  out + err)
+        shutil.copy(uv, perfil / uv.name)
+        en_perfil = dict(en=casa_r, HOME=str(perfil), USERPROFILE=str(perfil))
+        c, out, err = lanza("instalar", "~/descarga.tar.gz", "--uv", f"~/{uv.name}", "--servidor", "~/servidor", **en_perfil)
+        c2, out2, err2 = lanza("estado", "--bundle", "~/descarga.tar.gz", "--servidor", "~/servidor", **en_perfil)
+        comprueba("una ruta con ~ vale en todas las órdenes, y también para uv",
+                  c == 0 and "uv sync: bien" in out and (perfil / "servidor" / "BUILD-INFO.txt").is_file()
+                  and c2 == 0 and "es el instalado" in out2, out + err + out2 + err2)
+        c, out, err = lanza("estado", "--bundle", "~usuario-que-no-existe/descarga.tar.gz", "--servidor", "~/servidor",
+                            **en_perfil)
+        comprueba("una ruta que no se puede entender para con 2 y sin traza", c == 2 and "Traceback" not in err, err)
         c, out, err = instalar(3, SETUP_AVISA="1")
         comprueba("si el instalador de SAIL CLI termina bien pero avisa (sail fuera del PATH), no se da por bueno sin más",
                   c == 0 and "SAIL CLI: REVISAR" in out and "PATH" in out and "skill appian: bien" in out, out + err)

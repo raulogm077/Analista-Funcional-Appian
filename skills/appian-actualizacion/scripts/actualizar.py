@@ -137,15 +137,25 @@ def fin(codigo, texto):
     sys.exit(codigo)
 
 
+def desde_aqui(ruta):
+    """La ruta, entera desde donde se lanza la orden y con sus enlaces sin tocar. En Windows, con abspath: con Python
+    3.9, resolve() deja relativa una ruta que aún no existe. En los demás sistemas solo se le pone delante la carpeta
+    actual: abspath quita los `..` sin mirar los enlaces y, detrás de un enlace, eso es otra carpeta."""
+    return os.path.abspath(ruta) if platform.system() == "Windows" else os.path.join(os.getcwd(), ruta)
+
+
 def absoluta(ruta):
-    """Una ruta que da la persona, entera y desde donde lanza la orden: los instaladores se lanzan desde otra carpeta.
-    Es el tipo de los argumentos que son rutas, así que las órdenes las reciben ya así. En Windows pasa antes por
-    abspath, porque con Python 3.9 resolve() deja relativa una ruta que aún no existe; en los demás sistemas no, porque
-    abspath quita los `..` sin mirar los enlaces y, detrás de un enlace, eso es otra carpeta."""
-    ruta = pathlib.Path(ruta).expanduser()
-    if platform.system() == "Windows":
-        ruta = pathlib.Path(os.path.abspath(ruta))
-    return ruta.resolve()
+    """Una ruta que da la persona, entera y con los enlaces resueltos: los instaladores se lanzan desde otra carpeta."""
+    return pathlib.Path(desde_aqui(pathlib.Path(ruta).expanduser())).resolve()
+
+
+def ruta_dada(texto):
+    """El tipo de los argumentos que son rutas: las órdenes las reciben ya absolutas. Una que no se puede entender (un
+    `~usuario` que no existe, un enlace que da vueltas) la dice argparse, que sale con 2, y no una traza."""
+    try:
+        return absoluta(texto)
+    except (OSError, RuntimeError) as e:
+        raise argparse.ArgumentTypeError(f"no se entiende la ruta {texto!r} ({e})")
 
 
 def casa():
@@ -680,7 +690,7 @@ def cmd_instalar(args):
                f"instalarlo). Si no está en el PATH, dime dónde con --uv. {sin_tocar}")
     # Se lanza desde la carpeta del servidor. Sin resolver enlaces: hay instalaciones de uv que son un enlace a otro
     # programa, que mira con qué nombre lo llaman.
-    uv = os.path.abspath(uv)
+    uv = desde_aqui(uv)
     if not setup.endswith(".bat") and not shutil.which("bash"):
         fin(2, f"error: no encuentro `bash`, que lanza los instaladores del bundle. {sin_tocar}")
     if args.catalogo:
@@ -1005,28 +1015,28 @@ def main():
     p = argparse.ArgumentParser(description="Instala un bundle del Dev MCP de Appian y dice qué hay y qué cambió.")
     sub = p.add_subparsers(dest="orden", required=True)
     comun = argparse.ArgumentParser(add_help=False)
-    comun.add_argument("--servidor", type=absoluta,
+    comun.add_argument("--servidor", type=ruta_dada,
                        help="carpeta donde está extraído el bundle (por defecto, ~/appian-dev-mcp-server)")
     e = sub.add_parser("estado", parents=[comun], help="qué hay instalado y qué fotos hay guardadas")
-    e.add_argument("--bundle", type=absoluta, help="un bundle descargado, para saber si es más nuevo que lo instalado")
+    e.add_argument("--bundle", type=ruta_dada, help="un bundle descargado, para saber si es más nuevo que lo instalado")
     f = sub.add_parser("foto", parents=[comun], help="rehace la foto de lo instalado")
     n = sub.add_parser("instalar", parents=[comun], help="instala un bundle, con foto y copia de lo anterior")
-    n.add_argument("bundle", type=absoluta, help="el bundle descargado (appian-dev-mcp-server-bundle.tar.gz)")
+    n.add_argument("bundle", type=ruta_dada, help="el bundle descargado (appian-dev-mcp-server-bundle.tar.gz)")
     n.add_argument("--plugin-sha", help="el mcpSrcSha del plugin de tu entorno: si el bundle es de otro, no se instala")
-    n.add_argument("--uv", help="dónde está uv, si no está en el PATH")
-    n.add_argument("--skills-dir", action="append", default=[], metavar="DIR", type=absoluta,
+    n.add_argument("--uv", type=os.path.expanduser, help="dónde está uv, si no está en el PATH")
+    n.add_argument("--skills-dir", action="append", default=[], metavar="DIR", type=ruta_dada,
                    help="carpeta de un cliente de IA que el instalador de Appian no detecta; la skill queda en "
                         "DIR/skills/appian (se puede repetir)")
     i = sub.add_parser("informe", parents=[comun], help="qué cambió entre la foto anterior y lo instalado")
     for x in (f, n, i):
-        x.add_argument("--catalogo", type=absoluta,
+        x.add_argument("--catalogo", type=ruta_dada,
                        help="el catálogo de herramientas del Dev MCP, en JSON, para la foto de lo instalado")
-    i.add_argument("--antes", type=absoluta, help="carpeta de la foto de antes (por defecto, la del build anterior)")
-    i.add_argument("--despues", type=absoluta, help="carpeta de la foto de después (por defecto, la del build instalado)")
+    i.add_argument("--antes", type=ruta_dada, help="carpeta de la foto de antes (por defecto, la del build anterior)")
+    i.add_argument("--despues", type=ruta_dada, help="carpeta de la foto de después (por defecto, la del build instalado)")
     i.add_argument("--json", action="store_true", help="el informe como datos")
     sub.add_parser("sail-anterior", parents=[comun], help="saca el SAIL CLI del bundle anterior guardado")
     c = sub.add_parser("comprobar", help="el banco de pruebas: su extracción y sus recorridos con SAIL CLI")
-    c.add_argument("--extraccion", metavar="DIR", type=absoluta,
+    c.add_argument("--extraccion", metavar="DIR", type=ruta_dada,
                    help="la carpeta de salida de `devmcp_extract.py extract` sobre la aplicación del banco")
     c.add_argument("--host", help="el entorno donde está construido el banco, para repetir sus recorridos (sin https://)")
     c.add_argument("--site", default="bps-banco-pruebas", help="el site del banco (por defecto, bps-banco-pruebas)")
