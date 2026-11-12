@@ -364,10 +364,27 @@ def main():
                                                 "espera": {"hay": ["Devolver"]}}] + g["cuando"][4:])
         variante("HU-02.1", por_tarea, "", "una tarea se abre por su nombre y un texto de su formulario, aceptada",
                  resultado="pasa", codigo=0)
+        abiertas = lambda: json.loads(t.app.read_text(encoding="utf-8")).get("abiertas", [])
+        antes = len(abiertas())
+        variante("HU-02.1", por_tarea, "", "con varias del mismo nombre abre solo la más nueva, la suya, y ninguna otra",
+                 resultado="pasa", codigo=0)
+        ok("… dos aperturas de la misma tarea (mirarla y aceptarla), ni una de las demás",
+           len(set(abiertas()[antes:])) == 1 and len(abiertas()[antes:]) == 2, str(abiertas()[antes:]))
+        antes = len(abiertas())
         variante("HU-02.1", lambda g: (por_tarea(g), g["cuando"][0].pop("con")),
                  "no se sabe cuál abrir", "con varias tareas del mismo nombre y sin «con», no se abre una al azar")
+        ok("… ni se abre ninguna para averiguarlo", abiertas()[antes:] == [], str(abiertas()[antes:]))
+        antes = len(abiertas())
         variante("HU-02.1", lambda g: (por_tarea(g), g["cuando"][0].update(con="No existe {pasada}")),
-                 "no hay ninguna tarea", "y si ninguna enseña ese texto, falla y lo dice")
+                 "no es la de este recorrido", "y si la más nueva no enseña ese texto, falla sin abrir las demás")
+        ok("… solo se ha mirado esa", len(abiertas()[antes:]) == 1, str(abiertas()[antes:]))
+        t.defecto(tarea_lenta=True)
+        variante("HU-02.1", por_tarea, "", "si la tarea aceptada aún enseña el formulario de antes, se recarga otra vez",
+                 resultado="pasa", codigo=0)
+        t.defecto(lento=True)
+        variante("HU-01.1", lambda g: g.update(entonces=[{"sail": ["reload"]}] + g["entonces"][1:]),
+                 "", "«reload» también vuelve a mirar si el proceso no ha terminado", resultado="pasa", codigo=0)
+        t.defecto()
         variante("HU-02.1", lambda g: (por_tarea(g), g["cuando"][0].update(rol="gestor")),
                  "no hay ninguna tarea", "ni la abre quien no la tiene asignada")
         t.defecto(no_manda=True)       # SAIL CLI 26.9.15: el envío que la validación pararía no se manda, y es un error

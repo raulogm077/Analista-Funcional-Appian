@@ -134,8 +134,10 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   `--confirm` va en la orden si el destino lo pide. Una fila de una
   rejilla se marca por su contenido, `{"rol": "revisor", "selecciona": "QA {pasada}"}`, nunca por el número que le dio
   Appian. Una tarea se abre por su nombre, `{"rol": "revisor", "tarea": "Revisar solicitud", "con": "QA {pasada}"}`:
-  queda aceptada y en pantalla, lista para rellenarla. «con» es un texto de su formulario y hace falta si puede haber
-  varias con ese nombre. Con un solo rol, «rol» se puede omitir.
+  queda aceptada y en pantalla, lista para rellenarla. Solo se abre una, porque abrir una tarea que es de una sola
+  persona ya la acepta: si hay varias con ese nombre vale la más nueva, que es la que acaba de crear el recorrido, y
+  hace falta «con», un texto que su formulario tiene que enseñar; si no lo enseña, el paso falla. Con un solo rol,
+  «rol» se puede omitir.
 - Para cambiar de página del site: `"sail": ["load", "<página>"]`; `load` sin página recarga la predeterminada.
 - **`espera`**: `"completado": true` (el formulario se envió); `"hay"` y `"no_hay"`, refs o etiquetas, o su principio
   hasta el final de una palabra («Pendientes» vale para «Pendientes (22)»; «Comentar» no vale para «Comentarios»);

@@ -30,6 +30,8 @@
  "entonces": [
   {"rol": "solicitante", "sail": ["load"]},
   {"rol": "solicitante", "sail": ["interact", "🔍", "QA {pasada}"],
-   "espera": {"fila": {"con": "QA {pasada}", "Estado": "Aprobada"}}}
+   "espera": {"fila": {"con": "QA {pasada}", "Estado": "Aprobada"}}},
+  {"rol": "solicitante", "sail": ["navigate", "QA {pasada}"],
+   "espera": {"texto": ["Recorrido del banco | Motivo: Sin comentario"]}}
  ]
 }

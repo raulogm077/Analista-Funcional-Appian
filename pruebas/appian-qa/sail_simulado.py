@@ -11,6 +11,7 @@ borradores y devuelve las enviadas. Su estado está en el fichero de SAIL_SIMULA
   defecto "cuelga_desde": n, desde la llamada n (contando desde 1) SAIL CLI no responde
   defecto "sin_red": SAIL CLI no llega al servidor (el error de Go sin DNS)
   defecto "lee_stdin": SAIL CLI lee su entrada antes de nada (si se la dejan abierta, espera)
+  defecto "tarea_lenta": una tarea aceptada sigue enseñando el formulario de antes en la primera recarga
   defecto "no_manda": un envío que la validación pararía no se manda y sale como error (SAIL CLI 26.9.15)
 El panel lleva dos enlaces «Ver detalle», que el --json da con nth y of: no se distinguen.
 Un revisor tiene además una tarea «Revisar solicitud» por cada solicitud enviada (tasks), que se abre por su dirección
@@ -178,12 +179,18 @@ def main():
         site = site.split("/sites/", 1)[-1].split("/", 1)[0]
         if not (revisor and any(f["Número"] == numero and f["Estado"] == "Enviada" for f in app["filas"])):
             error(f'could not open the task "{numero}" (status 404)')
+        app.setdefault("abiertas", []).append(numero)      # para la prueba: qué tareas se han abierto
         pag.update(pagina="revision", seleccion=numero, campos={}, validaciones=[], tarea=True, aceptada=acepta,
-                   rinde_aceptada=False)
+                   rinde_aceptada=False, recargas=0)
         fin(pagina())
     if orden == "reload":
+        for f in app["filas"]:      # «lento», como en load
+            if f.get("oculta"):
+                f["oculta"] -= 1
+        pag.update(busqueda="", validaciones=[])      # es una página nueva: sin lo que se buscó
         if pag.get("tarea") and pag.get("aceptada"):
-            pag["rinde_aceptada"] = True
+            pag["recargas"] = pag.get("recargas", 0) + 1
+            pag["rinde_aceptada"] = pag["recargas"] > (1 if defecto.get("tarea_lenta") else 0)
         fin(pagina())
     if orden == "show":
         fin(pagina())

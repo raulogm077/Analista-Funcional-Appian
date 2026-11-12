@@ -33,6 +33,7 @@ CARPETA, RESULTADO = "qa", "resultado.json"
 PARTES = ("dado", "cuando", "entonces")
 ORDENES = {"load": "load", "navigate": "navigate", "nav": "navigate", "interact": "interact", "back": "back",
            "show": "show", "reload": "reload", "tasks": "tasks", "open": "open"}
+PIDE_LA_PAGINA = {"load", "reload"}   # las que la piden entera al servidor: desde ellas se puede volver a mirar
 DE_TAREA = {"tasks", "open"}    # las que lanza el paso «tarea»: un guion no las escribe (llevan una dirección de un día)
 CLAVES = {"escenario", "dice", "host", "site", "roles", *PARTES}
 CLAVES_PASO = {"rol", "sail", "selecciona", "tarea", "con", "espera", "gasta"}
@@ -44,7 +45,6 @@ POR_TERMINAR, SIN_REPETIR = "guion por terminar", "sin repetir"
 DONDE = ("desarrollo", "corrección")                 # los únicos entornos de técnico §0 donde se repite: SAIL CLI escribe
 ESPERA_SAIL = 120          # segundos que se espera a una orden de SAIL CLI
 REINTENTOS, PAUSA = 3, 2   # lo que aún no se ve se vuelve a mirar hasta 3 veces más, cada 2 segundos
-TAREAS = 10                # cuántas tareas con el mismo nombre se abren, como mucho, para dar con la que se busca
 NIVELES = 3                # hasta dónde se buscan sesiones por debajo de cada carpeta
 RX_ID = re.compile(r"^[0-9a-f]{32}$")    # un _cId o una ref de un solo render (refIsPerRender): cambian en cada carga
 RX_ESCENARIO = re.compile(r"^\s*(?:Escenario|Ejemplo):\s*(\S+)")
@@ -521,37 +521,44 @@ class Recorrido:
         return sub, d
 
     def abre_tarea(self, rol, nombre, con):
-        """La página de la tarea de ese rol que se llama así, ya aceptada. Si se da «con», la que enseña ese texto en su
-        formulario: se abren, de la más nueva a la más vieja, las que se llaman así. Como la tarea la crea un proceso
-        que puede no haber terminado, se vuelve a mirar. Tras aceptar se recarga: SAIL CLI deja en pantalla el
-        formulario de antes de aceptar."""
+        """La página de la tarea de ese rol que se llama así, ya aceptada. Solo se abre una: abrir una tarea que es solo
+        de ese usuario ya la acepta, así que no se abren varias para buscar. Si varias se llaman igual, vale la más
+        nueva, que es la que acaba de crear el recorrido, y solo si se da «con»: un texto que su formulario tiene que
+        enseñar. Como la crea un proceso que puede no haber terminado, se vuelve a mirar si aún no está. Tras aceptar
+        se recarga: SAIL CLI deja en pantalla el formulario de antes de aceptar."""
         suyas = []
         for intento in range(REINTENTOS + 1):
             if intento:
                 time.sleep(PAUSA)
-            _, d = self.sail(rol, ["tasks"])
-            suyas = [t for t in d.get("tasks") or [] if isinstance(t, dict) and t.get("address")
-                     and empieza(t.get("name", ""), nombre)]
-            if con is not None:
-                suyas = [t for t in suyas[:TAREAS] if any(
-                    norma(con) in norma(x) for x in textos(self.sail(rol, ["open", t["address"]])[1].get("ui")))]
+            suyas = [t for t in self.sail(rol, ["tasks"])[1].get("tasks") or [] if isinstance(t, dict)
+                     and t.get("address") and empieza(t.get("name", ""), nombre)]
             if suyas:
                 break
-        if len(suyas) != 1:
-            de_ella = f"«{nombre}»" + (f" con «{con}»" if con is not None else "")
-            raise Falla(f"no hay ninguna tarea {de_ella}" if not suyas else
-                        f"hay {len(suyas)} tareas {de_ella}: no se sabe cuál abrir (da en «con» un texto que solo tenga "
-                        "la suya, con {pasada})", de_espera=not suyas)
-        self.sail(rol, ["open", "--accept", suyas[0]["address"]])
+        if not suyas:
+            raise Falla(f"no hay ninguna tarea «{nombre}»", de_espera=True)
+        if len(suyas) > 1 and con is None:
+            raise Falla(f"hay {len(suyas)} tareas «{nombre}»: no se sabe cuál abrir (da en «con» un texto que solo "
+                        "enseñe la suya, con {pasada})")
+        suya = suyas[0]["address"]            # SAIL CLI las da de la más nueva a la más vieja
+        if con is not None and not any(norma(con) in norma(x) for x in textos(self.sail(rol, ["open", suya])[1].get("ui"))):
+            raise Falla(f"la tarea «{nombre}» más nueva no enseña «{con}»: no es la de este recorrido")
+        self.sail(rol, ["open", "--accept", suya])
         return self.sail(rol, ["reload"])[1]
 
     def paso(self, p):
         p = sustituye(p, self.valores)
         rol = self.rol(p)
         if "tarea" in p:
+            espera = p.get("espera") or {}
             d = self.abre_tarea(rol, p["tarea"], p.get("con"))
+            mal = lo_que_falta(espera, d)
+            for _ in range(REINTENTOS if mal else 0):     # lo que aún no se ve: se recarga, sin volver a abrir ni aceptar
+                time.sleep(PAUSA)
+                d = self.sail(rol, ["reload"], espera)[1]
+                mal = lo_que_falta(espera, d)
+                if not mal:
+                    break
             self.tras_carga[rol], self.ultima[rol] = [["reload"]], d
-            mal = lo_que_falta(p.get("espera") or {}, d)
             if mal:
                 raise Falla("; ".join(mal), de_espera=True)
             return
@@ -577,11 +584,11 @@ class Recorrido:
         _, d = self.sail(rol, orden, espera)
         # lo que ha hecho este rol desde su último load: si solo es mirar (cargar, buscar, marcar una fila), se puede
         # volver a hacer cuando aún no se ve lo esperado, porque el proceso puede no haber terminado
-        hechas = [orden] if ORDENES[orden[0]] == "load" else self.tras_carga.get(rol, []) + [orden]
+        hechas = [orden] if ORDENES[orden[0]] in PIDE_LA_PAGINA else self.tras_carga.get(rol, []) + [orden]
         self.tras_carga[rol], self.ultima[rol] = hechas, d
         mal = lo_que_falta(espera, d)
         intentos = 0
-        while mal and intentos < REINTENTOS and ORDENES[hechas[0][0]] == "load" and all(map(solo_mira, hechas)):
+        while mal and intentos < REINTENTOS and ORDENES[hechas[0][0]] in PIDE_LA_PAGINA and all(map(solo_mira, hechas)):
             intentos += 1
             time.sleep(PAUSA)
             for o in hechas:
