@@ -42,7 +42,8 @@ la guía de Appian, añade `--servidor <carpeta>` a cada orden.
    nada, que el bundle vale, y lo extrae aparte; después hace la foto de lo instalado y guarda el bundle anterior; y
    solo entonces sustituye lo que trae el bundle y lanza `uv sync`, el instalador de SAIL CLI y el de la skill
    oficial. Con `--skills-dir <carpeta>` instala la skill también en un cliente de IA que el instalador de Appian no
-   detecta. Si un paso falla, para ahí, dice cuál y la misma orden se puede repetir. Un bundle con otra forma que
+   detecta. Esos pasos no dependen uno de otro: se hacen todos y, si alguno falla, dice cuál (por ejemplo, SAIL CLI
+   en un equipo para el que el bundle no trae su binario) y la misma orden se puede repetir. Un bundle con otra forma que
    la que conoce el script no se instala: se instala a mano con la guía de Appian y se avisa a quien mantiene el
    plugin.
 3. **Reiniciar los clientes de IA.** Hasta entonces la sesión sigue hablando con el servidor anterior y el Dev MCP

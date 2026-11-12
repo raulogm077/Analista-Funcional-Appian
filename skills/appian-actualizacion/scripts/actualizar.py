@@ -42,7 +42,8 @@ Appian no hace. Por este orden:
      marca: si se corta, las demás órdenes lo dicen y `instalar`, con ese mismo bundle, la termina sin repetir la
      foto ni la copia.
   5. Lanza `uv sync`, el `bin/setup-*` del sistema (SAIL CLI) y `bin/install-skills` (la skill oficial: en los
-     clientes que detecta Appian y en cada --skills-dir), en ese orden; si uno falla, para ahí y lo dice.
+     clientes que detecta Appian y en cada --skills-dir), en ese orden. Ninguno depende de otro: se hacen todos y,
+     si alguno falla, dice cuáles y sale con 1.
 La misma orden se puede repetir. Un bundle es el instalado si coinciden su fecha de build y su mcp_src_sha: repetida
 con él, vuelve a dejar lo que trae, sin foto ni copia, y un cambio hecho a mano en esas carpetas se pierde. Se guarda
 un solo bundle anterior. `sail-anterior` saca de él el SAIL CLI de este sistema y dice cómo usarlo. El bundle se
@@ -742,6 +743,9 @@ def cmd_instalar(args):
     pasos = [("uv sync", lambda: lanza([uv, "sync"], cwd=srv)), ("SAIL CLI", lambda: del_bundle(srv, setup)),
              ("skill appian", lambda: del_bundle(srv, skills))]
     pasos += [(f"skill appian en {d}", lambda d=d: del_bundle(srv, skills, "--skills-dir", d)) for d in args.skills_dir]
+    # Ningún paso depende de otro, y se hacen todos: en un Mac con Intel o un Linux con ARM el instalador de SAIL CLI
+    # se niega (el bundle no trae su binario) y la skill oficial tiene que quedar instalada igual.
+    fallan = []
     for nombre, paso in pasos:
         codigo, salida = paso()
         # Los instaladores de Appian avisan sin fallar: la skill instalada tiene cambios de la persona y no se pisa, o
@@ -752,8 +756,10 @@ def cmd_instalar(args):
         if codigo != 0 or avisa:
             print("\n".join(f"      {l}" for l in salida.splitlines()[-12:]))
         if codigo != 0:
-            fin(1, f"error: falló «{nombre}» y no se ha seguido con los pasos siguientes. Arréglalo y repite la misma "
-                   "orden: se puede repetir.")
+            fallan.append(nombre)
+    if fallan:
+        fin(1, f"error: falló {lista([f'«{n}»' for n in fallan])}; los demás pasos se han hecho. Mira arriba lo que "
+               "dice cada uno; cuando esté arreglado, repite la misma orden: se puede repetir.")
     print("Reinicia tus clientes de IA: hasta entonces siguen hablando con el servidor anterior. Después, "
           "`actualizar.py informe` dice qué cambió.")
 
@@ -984,7 +990,8 @@ def main():
     n.add_argument("--plugin-sha", help="el mcpSrcSha del plugin de tu entorno: si el bundle es de otro, no se instala")
     n.add_argument("--uv", help="dónde está uv, si no está en el PATH")
     n.add_argument("--skills-dir", action="append", default=[], metavar="DIR",
-                   help="carpeta de un cliente de IA que el instalador de Appian no detecta (se puede repetir)")
+                   help="carpeta de un cliente de IA que el instalador de Appian no detecta; la skill queda en "
+                        "DIR/skills/appian (se puede repetir)")
     i = sub.add_parser("informe", parents=[comun], help="qué cambió entre la foto anterior y lo instalado")
     for x in (f, n, i):
         x.add_argument("--catalogo", help="el catálogo de herramientas del Dev MCP, en JSON, para la foto de lo instalado")

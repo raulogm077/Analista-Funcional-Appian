@@ -122,8 +122,11 @@ BAT = '@echo off\r\n>> "%APPIAN_RE_HOME%\\pasos.txt" echo {que} %*\r\n{mas}'
 SH = '#!/bin/bash\necho "{que} $*" >> "$APPIAN_RE_HOME/pasos.txt"\n{mas}'
 EDITADA_BAT = "if defined SKILLS_EDITADA echo LOCAL EDITS DETECTED - not overwriting.\r\n"
 EDITADA_SH = 'if [ -n "${SKILLS_EDITADA:-}" ]; then echo "LOCAL EDITS DETECTED - not overwriting."; fi\n'
-AVISA_BAT = "if defined SETUP_AVISA echo [!] could not update your PATH. Add this directory manually:\r\n"
-AVISA_SH = 'if [ -n "${SETUP_AVISA:-}" ]; then echo "Linked, but /opt/x is not on your PATH. Either add it:"; fi\n'
+AVISA_BAT = ("if defined SETUP_AVISA echo [!] could not update your PATH. Add this directory manually:\r\n"
+             "if defined SETUP_FALLA echo error: this machine is not one the bundle ships a binary for& exit /b 1\r\n")
+AVISA_SH = ('if [ -n "${SETUP_AVISA:-}" ]; then echo "Linked, but /opt/x is not on your PATH. Either add it:"; fi\n'
+            'if [ -n "${SETUP_FALLA:-}" ]; then echo "error: this machine is not one the bundle ships a binary for" >&2; '
+            'exit 1; fi\n')
 FALLA_BAT = 'if exist "%APPIAN_RE_HOME%\\uv-falla" exit /b 3\r\n'
 FALLA_SH = 'if [ -e "$APPIAN_RE_HOME/uv-falla" ]; then echo "no se puede"; exit 3; fi\n'
 
@@ -486,14 +489,22 @@ def main():
         print("Instalar: un paso falla y se repite")
         (casa2 / "uv-falla").write_text("", encoding="utf-8")
         c, out, err = instalar(3)
-        comprueba("si uv sync falla sale con 1, dice cuál y que se puede repetir, y no sigue con los demás pasos",
-                  c == 1 and "uv sync: FALLA" in out and "se puede repetir" in err and "setup 3" not in "".join(hechos()),
-                  out + err)
+        comprueba("si uv sync falla sale con 1, dice cuál y que se puede repetir, y hace los demás pasos, que no dependen de él",
+                  c == 1 and "uv sync: FALLA" in out and "«uv sync»" in err and "se puede repetir" in err
+                  and "SAIL CLI: bien" in out and "skill appian: bien" in out and "Reinicia" not in out, out + err)
         (casa2 / "uv-falla").unlink()
+        lanzados = lambda: [h.split()[0] for h in hechos() if h.strip()]   # uv, setup o skills, por orden
+        antes = len(lanzados())
         c, out, err = instalar(3)
-        comprueba("la misma orden, repetida, hace los pasos que faltaban y no hace otra foto ni otra copia",
+        comprueba("la misma orden, repetida, vuelve a hacer los pasos y no hace otra foto ni otra copia",
                   c == 0 and "era el build instalado" in out and not (fotos2 / BUILD[3]).exists()
-                  and "setup 3" in "".join(hechos()), out + err)
+                  and lanzados()[antes:] == ["uv", "setup", "skills"], out + err + str(lanzados()[antes:]))
+        antes = len(lanzados())
+        c, out, err = instalar(3, SETUP_FALLA="1")
+        comprueba("si el instalador de SAIL CLI se niega (un equipo sin binario en el bundle), la skill oficial se instala igual",
+                  c == 1 and "SAIL CLI: FALLA" in out and "not one the bundle ships" in out and "skill appian: bien" in out
+                  and "«SAIL CLI»" in err and "«skill appian»" not in err
+                  and lanzados()[antes:] == ["uv", "setup", "skills"], out + err + str(lanzados()[antes:]))
         comprueba("se guarda un solo bundle anterior: el del último build",
                   [p.parent.name for p in sorted(fotos2.glob("*/bundle.tar.gz"))] == [BUILD[2]],
                   str(sorted(fotos2.glob("*/bundle.tar.gz"))))
