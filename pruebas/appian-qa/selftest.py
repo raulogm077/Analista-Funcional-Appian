@@ -365,6 +365,10 @@ def main():
            c == 0 and t.resultado()[0]["escenarios"]["HU-01.2"]["resultado"] == "pasa", out)
         variante("HU-01.2", lambda g: g["entonces"][0].update(espera={"texto": ["Otra cosa"]}),
                  "was not sent", "y falla, con lo que dice SAIL CLI, si lo esperado es otra cosa")
+        variante("HU-01.2", lambda g: g["entonces"][0].update(espera={"texto": ["Enviar"]}),
+                 "was not sent", "o el nombre del botón, que no es un motivo del rechazo")
+        variante("HU-01.2", lambda g: g["entonces"][0].update(sail=["interact", "was not sent"], espera={"texto": ["was not sent"]}),
+                 "no component matches", "y otro error que solo cita esa frase no es un rechazo")
         variante("HU-01.2", lambda g: g["entonces"][0].pop("espera"),
                  "was not sent", "o si el paso no esperaba ningún rechazo")
         t.defecto()

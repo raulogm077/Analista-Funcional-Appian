@@ -11,7 +11,7 @@
   {"sail": ["load"]},
   {"sail": ["navigate", "Nueva solicitud"]},
   {"sail": ["interact", "Importe", "-5"], "espera": {"texto": ["El importe tiene que ser mayor que cero"]}},
-  {"sail": ["interact", "Título", "QA {pasada}"]}
+  {"sail": ["interact", "Título", "QA {pasada}", "Categoría", "2", "Fecha de inicio", "{hoy}"]}
  ],
  "entonces": [
   {"sail": ["interact", "Crear solicitud"], "espera": {"texto": ["El importe tiene que ser mayor que cero"]}},

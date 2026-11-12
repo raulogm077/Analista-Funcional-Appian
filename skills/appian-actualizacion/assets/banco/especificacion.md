@@ -80,4 +80,6 @@ En `guiones/`, uno o más por fila de «Qué cubre» (falta el de la tarea del g
 aplicación con `sail`, como cualquier guion de `appian-qa`, y crean sus propias solicitudes con un título único.
 Van sin entorno ni cuentas: `comprobar` pone los de quien lo lanza y, donde un paso teclea el usuario de un rol
 (`{cuenta de aprobador}`, en el selector de usuario), el suyo. Si se cambia una etiqueta o un mensaje de la
-aplicación, se cambia en su guion.
+aplicación, se cambia en su guion. El del formulario rellena un campo de cada tipo y comprueba después, en la lista
+y en el registro, el título, la categoría, el estado, las unidades, las casillas y el comentario: el importe, las
+fechas y el responsable se ven con el formato y el nombre de cada entorno, y el fichero no sale en el registro.

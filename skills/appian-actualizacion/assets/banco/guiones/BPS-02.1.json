@@ -25,6 +25,8 @@
   {"rol": "solicitante", "sail": ["interact", "🔍", "QA {pasada}"],
    "espera": {"fila": {"con": "QA {pasada}", "Categoría": "Material", "Estado": "Borrador"}}},
   {"rol": "solicitante", "sail": ["navigate", "QA {pasada}"],
-   "espera": {"texto": ["Urgente; Fuera de horario", "Recorrido del banco"], "hay": ["Enviar a aprobación"]}}
+   "espera": {"texto": ["Urgente; Fuera de horario", "Recorrido del banco"], "hay": ["Enviar a aprobación"]}},
+  {"rol": "solicitante", "sail": ["show"], "espera": {"campo": {"label": "Unidades", "valor": "3"}}},
+  {"rol": "solicitante", "sail": ["show"], "espera": {"campo": {"label": "Categoría", "valor": "Material"}}}
  ]
 }
