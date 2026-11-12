@@ -45,7 +45,12 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 - **El banco `BPS`: las tareas enseñan «N/A».** «Confirmar envío» y «Aprobar solicitud» enseñan «N/A» en el importe
   y en el comentario del solicitante: la acción pasa `rv!record` al proceso y no trae esos campos. No afecta a los
   guiones. Al corregirlo, que el proceso lea la solicitud por su identificador. [Appian]
-- **Un proyecto ya construido y con su QA cuando llega un bundle nuevo** (escenario que plantea Raúl, 12-nov). El
+- **Un proyecto ya construido y con su QA cuando llega un bundle nuevo** (escenario que plantea Raúl, 12-nov; a la
+  espera de sus respuestas, sin implementar). Propuesta, con la opinión de Codex: compatibilidad por defecto, lo nuevo
+  se usa cuando aporta y un proyecto se ajusta a demanda. Sin orden ni fichero nuevos: que `qa.py` anote en cada
+  escenario de `resultado.json` con qué `sail` y qué `qa.py` se obtuvo (hoy no lo guarda), sin atribuir a la versión
+  nueva lo que no se ha repetido; una diferencia informa, no invalida. Dos entornos con el plugin en builds distintos
+  a la vez piden dos carpetas de servidor, que `instalar` ya admite. El
   funcional, la solución y los escenarios no caducan por actualizar; se revisa por impacto lo que habla con Appian:
   `qa.py` y sus guiones, el extractor y su política, y lo que el plugin afirma de una versión. Un «pasa» anterior no
   acredita la versión nueva: los guiones del proyecto se repiten con el `sail` nuevo (mirando que `SAIL_CLI` no
