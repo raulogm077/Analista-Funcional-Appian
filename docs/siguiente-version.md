@@ -46,6 +46,15 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   del solicitante, porque la acción pasa `rv!record` al proceso y no trae esos campos. Hasta entonces, cada pasada
   del guion de la confirmación deja una tarea abierta al grupo de aprobadores. [script y Appian, tras unir la rama
   del método]
+- **Un proyecto ya construido y con su QA cuando llega un bundle nuevo** (escenario que plantea Raúl, 12-nov). El
+  funcional, la solución y los escenarios no caducan por actualizar; se revisa por impacto lo que habla con Appian:
+  `qa.py` y sus guiones, el extractor y su política, y lo que el plugin afirma de una versión. Un «pasa» anterior no
+  acredita la versión nueva: los guiones del proyecto se repiten con el `sail` nuevo (mirando que `SAIL_CLI` no
+  apunte al anterior) y el que falle se adapta por lo que cambió, como el envío con validación de la 26.9.15, sin
+  `--no-validate` por sistema. Lo nuevo que aporte algo (las tareas, con `tasks` y `open`) lo puede usar la IA tras
+  leer su ayuda y probarlo; para que un guion lo repita hace falta que `qa.py` lo entienda. Probado solo con el
+  banco; falta hacerlo una vez con un proyecto real de prueba, conservando su resultado anterior. [método, con el
+  punto anterior]
 - **Índice del DOCX.** Evaluar la caché editable solo si una entrega la necesita. [Word]
 - **Coste de agrupar fuentes del mismo tema (2.2).** Medido una vez en el paso 3 (`evaluaciones.md`): es uso
   observado, no coste, y un solo par; tampoco quedó acreditada una calidad equivalente. No se cambia el método. Si se

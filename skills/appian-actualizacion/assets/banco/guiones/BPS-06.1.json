@@ -2,7 +2,7 @@
  "escenario": "BPS-06.1",
  "dice": ["Dado un solicitante que ve la acción «Nueva solicitud»",
           "Cuando un aprobador abre la página de solicitudes",
-          "Entonces ve la tabla con sus filtros y no la acción «Nueva solicitud»"],
+          "Entonces ve el filtro de estado y no la acción «Nueva solicitud»"],
  "host": "",
  "site": "",
  "roles": {"solicitante": "", "aprobador": ""},

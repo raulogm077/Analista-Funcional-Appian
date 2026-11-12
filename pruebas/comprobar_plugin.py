@@ -553,14 +553,14 @@ def comprobar_uv_run():
 
 
 def anota_prueba(nombre, r, ruta, pytest=False, segundos=None):
-    """0 bien y 1 error. Un selftest.py sale con otro código (2) si falta un requisito: aviso. Con pytest, todo lo que
-    no es 0 es un fallo (2: no se pudieron recoger las pruebas)."""
+    """0 bien; lo demás, error. Salvo un selftest.py que sale con 2, que es que falta un requisito: aviso. Con pytest
+    también el 2 es un fallo (no se pudieron recoger las pruebas)."""
     tiempo = f" · {segundos:.2f} s" if segundos is not None else ""
     print(f"Prueba de {nombre}: {'bien' if r.returncode == 0 else f'falla (código {r.returncode})'}{tiempo}", flush=True)
-    if r.returncode == 1 or (r.returncode and pytest):
-        errores.append(f"{ruta} falla:\n" + (r.stdout + r.stderr)[-1500:])
-    elif r.returncode:
+    if r.returncode == 2 and not pytest:
         avisos.append(f"{ruta} no se pudo completar (falta un requisito)")
+    elif r.returncode:      # también una prueba que se corta con otro código: no es un aviso
+        errores.append(f"{ruta} falla:\n" + (r.stdout + r.stderr)[-1500:])
 
 
 def version_de(paquete):

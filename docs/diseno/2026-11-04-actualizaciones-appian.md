@@ -55,14 +55,14 @@ porque tras instalar hay que reiniciar el cliente de IA: hasta entonces la sesi�
 | 3 | Script | Comprueba lo que hace falta (Python, `uv`, dónde está instalado el servidor) y que el bundle es el del plugin (`mcp_src_sha`) y no es más antiguo que lo instalado. Si algo falta, para sin tocar nada |
 | 4 | Script | **Foto de antes**: catálogo de herramientas, manifiesto de la skill oficial y ayuda de cada orden de `sail` |
 | 5 | Script | **Guarda el bundle anterior** (lo instalado, sin el entorno virtual) y lo relee entero. Appian no deja volver atrás y el navegador pisa la descarga vieja |
-| 6 | Script | Solo entonces sustituye el servidor, con el bundle ya extraído aparte y una marca mientras dura: si se corta, la misma orden lo termina sin repetir la foto ni la copia. Después, como dice la guía oficial, `uv sync`, el `setup` de `sail` de su sistema e `install-skills`, y para en el primero que falle. Si falta el Chromium de Playwright lo dice el propio Dev MCP, con la orden que lo instala |
+| 6 | Script | Solo entonces sustituye el servidor, con el bundle ya extraído aparte y una marca mientras dura: si se corta, la misma orden lo termina sin repetir la foto ni la copia. Después, como dice la guía oficial, `uv sync`, el `setup` de `sail` de su sistema e `install-skills`: hace los tres, que no dependen uno de otro, y dice cuáles fallaron. Si falta el Chromium de Playwright lo dice el propio Dev MCP, con la orden que lo instala |
 | 7 | Persona | Reinicia sus clientes de IA |
 
 **Fase 2, comprobar** (tras reiniciar, `actualizar.py comprobar`):
 
 | Paso | Quién | Qué |
 |---|---|---|
-| 8 | Script | Confirma que servidor y plugin son del mismo build. Si no lo son, no comprueba nada más |
+| 8 | IA | Confirma, con la herramienta de versión del Dev MCP, que servidor y plugin son del mismo build (`actualizar.py estado` dice el instalado). Si no lo son, el Dev MCP rechaza las demás llamadas: falta reconectar el servidor en el cliente |
 | 9 | Script | **Informe de qué cambió** entre la foto de antes y lo instalado, y qué de ello cita el plugin |
 | 10 | Script | **Banco de pruebas**: repite sus guiones con `qa.py` y extrae la aplicación con `devmcp_extract.py`, contra un resultado esperado |
 | 11 | IA | Lee el informe: clasifica cada cambio, relee lo que el plugin afirma de lo que cambió y dice qué novedad merece usarse |
