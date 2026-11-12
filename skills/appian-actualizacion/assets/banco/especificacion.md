@@ -51,7 +51,8 @@ Una pantalla o acción por cada tipo de lo que documenta `sail` (un tipo nuevo e
 7. **Procesos**:
    - `BPS Crear Solicitud`: formulario de inicio; si no se cancela, guarda la solicitud en Borrador con quién y cuándo.
    - `BPS Enviar a Aprobacion`: sin formulario de inicio. Tarea «Confirmar envío» a quien lo lanza, encadenada desde el
-     inicio; guarda Pendiente de aprobación; tarea «Aprobar solicitud» al grupo `BPS Aprobadores`; guarda la decisión y
+     inicio; guarda Pendiente de aprobación; tarea «Aprobar solicitud» al grupo `BPS Aprobadores`, cuyo nombre a la vista lleva el título de la
+     solicitud (se pone en Designer; el guion de la tarea la busca por ese nombre); guarda la decisión y
      quién la tomó.
 8. **Acciones de `BPS Solicitud`**: «Nueva solicitud» (de la lista, solo `BPS Solicitantes`) y «Enviar a aprobación»
    (del registro, solo en Borrador).

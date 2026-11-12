@@ -521,11 +521,11 @@ class Recorrido:
         return sub, d
 
     def abre_tarea(self, rol, nombre, con):
-        """La página de la tarea de ese rol que se llama así, ya aceptada. Solo se abre una: abrir una tarea que es solo
-        de ese usuario ya la acepta, así que no se abren varias para buscar. Si varias se llaman igual, vale la más
-        nueva, que es la que acaba de crear el recorrido, y solo si se da «con»: un texto que su formulario tiene que
-        enseñar. Como la crea un proceso que puede no haber terminado, se vuelve a mirar si aún no está. Tras aceptar
-        se recarga: SAIL CLI deja en pantalla el formulario de antes de aceptar."""
+        """La página de la tarea de ese rol que se llama así, ya aceptada. Cuál es se sabe por su nombre, antes de abrir
+        nada: abrir una tarea que es solo de ese usuario ya la acepta, así que si varias se llaman así no se abre
+        ninguna. «con», un texto que su formulario tiene que enseñar, se comprueba después, en esa única tarea. Como la
+        crea un proceso que puede no haber terminado, se vuelve a mirar si aún no está. Tras aceptar se recarga: SAIL
+        CLI deja en pantalla el formulario de antes de aceptar."""
         suyas = []
         for intento in range(REINTENTOS + 1):
             if intento:
@@ -534,16 +534,17 @@ class Recorrido:
                      and t.get("address") and empieza(t.get("name", ""), nombre)]
             if suyas:
                 break
-        if not suyas:
-            raise Falla(f"no hay ninguna tarea «{nombre}»", de_espera=True)
-        if len(suyas) > 1 and con is None:
-            raise Falla(f"hay {len(suyas)} tareas «{nombre}»: no se sabe cuál abrir (da en «con» un texto que solo "
-                        "enseñe la suya, con {pasada})")
-        suya = suyas[0]["address"]            # SAIL CLI las da de la más nueva a la más vieja
-        if con is not None and not any(norma(con) in norma(x) for x in textos(self.sail(rol, ["open", suya])[1].get("ui"))):
-            raise Falla(f"la tarea «{nombre}» más nueva no enseña «{con}»: no es la de este recorrido")
+        if len(suyas) != 1:
+            raise Falla(f"no hay ninguna tarea «{nombre}»" if not suyas else
+                        f"hay {len(suyas)} tareas «{nombre}» y no se abre ninguna: el nombre de la tarea tiene que "
+                        "llevar algo que solo tenga la de este recorrido (su título, con {pasada}), o sobran las "
+                        "de otros recorridos", de_espera=not suyas)
+        suya = suyas[0]["address"]
         self.sail(rol, ["open", "--accept", suya])
-        return self.sail(rol, ["reload"])[1]
+        d = self.sail(rol, ["reload"])[1]
+        if con is not None and not any(norma(con) in norma(x) for x in textos(d.get("ui"))):
+            raise Falla(f"la tarea «{nombre}» no enseña «{con}»: no es la de este recorrido")
+        return d
 
     def paso(self, p):
         p = sustituye(p, self.valores)

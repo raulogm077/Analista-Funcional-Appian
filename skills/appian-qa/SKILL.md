@@ -71,7 +71,9 @@ Cada orden de SAIL CLI y de `qa.py` se espera en primer plano hasta que termina,
      En una unidad de solo consulta nadie lo prepara desde el site: el «dado» son los datos de carga inicial. Si falta
      uno, el guion no pasa: dilo en la entrega, con lo que falta preparar, y el escenario queda sin medir.
    - **Cuando**: recórrelo con la cuenta de su rol, `sail --data-dir <su carpeta> load|navigate|interact <site> …`.
-     Para explorar, la salida normal, que es más corta; para comprobar, `--json`.
+     Para explorar, la salida normal, que es más corta; para comprobar, `--json`. Cómo se maneja cada orden lo dice
+     su ayuda, que es la de la versión instalada: lee `sail --help` y `sail <orden> --help` antes del primer recorrido.
+     Si contradice lo que dice esta skill de SAIL CLI, manda la ayuda, y se dice en la entrega.
    - **Entonces**: compruébalo en el `--json`. Tras enviar un formulario, el `--json` trae `completed` y la página de
      antes (`viewIsStale`): el «entonces» se mira tras un `load`.
    - **Escribe el guion** en `qa/<U>/<escenario>.json` («El guion»), pase o no. Si falla en el «cuando», el guion llega
@@ -133,11 +135,12 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   registro tras una acción) y `show` (vuelve a leer la última página cargada, sin pedir nada al servidor);
   `--confirm` va en la orden si el destino lo pide. Una fila de una
   rejilla se marca por su contenido, `{"rol": "revisor", "selecciona": "QA {pasada}"}`, nunca por el número que le dio
-  Appian. Una tarea se abre por su nombre, `{"rol": "revisor", "tarea": "Revisar solicitud", "con": "QA {pasada}"}`:
-  queda aceptada y en pantalla, lista para rellenarla. Solo se abre una, porque abrir una tarea que es de una sola
-  persona ya la acepta: si hay varias con ese nombre vale la más nueva, que es la que acaba de crear el recorrido, y
-  hace falta «con», un texto que su formulario tiene que enseñar; si no lo enseña, el paso falla. Con un solo rol,
-  «rol» se puede omitir.
+  Appian. Una tarea se abre por su nombre, `{"rol": "revisor", "tarea": "Revisar solicitud: QA {pasada}"}`: queda
+  aceptada y en pantalla, lista para rellenarla. Cuál es se sabe por el nombre, antes de abrir nada, porque abrir una
+  tarea que es de una sola persona ya la acepta: si varias se llaman así, el paso falla sin abrir ninguna. Por eso el
+  nombre que se ve de una tarea lleva algo de su caso (el título, un número); si no lo lleva, dilo en la entrega, que
+  también le pasa a quien la busca en su lista. «con», opcional, es un texto que su formulario tiene que enseñar. Con
+  un solo rol, «rol» se puede omitir.
 - Para cambiar de página del site: `"sail": ["load", "<página>"]`; `load` sin página recarga la predeterminada.
 - **`espera`**: `"completado": true` (el formulario se envió); `"hay"` y `"no_hay"`, refs o etiquetas, o su principio
   hasta el final de una palabra («Pendientes» vale para «Pendientes (22)»; «Comentar» no vale para «Comentarios»);

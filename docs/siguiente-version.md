@@ -37,6 +37,11 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 - **Publicar una versión.** Antes, las siete combinaciones de sistema y Python (Actions → Pruebas → Run workflow) y
   `pruebas/comprobar_anclas.py`, con red; la versión, en `.claude-plugin/plugin.json` y en la primera fila de
   versiones del README. [persona y sesión]
+- **El banco `BPS`: el nombre de la tarea de aprobación, con el título de la solicitud.** En Designer, en el nodo
+  «Aprobar solicitud» de `BPS Enviar a Aprobacion`, el nombre que se ve de la tarea: `="Aprobar solicitud: " &` el
+  título de la solicitud. El Dev MCP solo deja cambiar el nombre del nodo. Después, en `guiones/BPS-05.1.json`,
+  `"tarea": "Aprobar solicitud: QA {pasada}"`, y en la especificación. Hasta entonces el guion pasa mientras solo
+  haya una tarea «Aprobar solicitud» abierta, que es lo normal: cada pasada completa la suya. [persona en Designer]
 - **El banco `BPS`: las tareas enseñan «N/A».** «Confirmar envío» y «Aprobar solicitud» enseñan «N/A» en el importe
   y en el comentario del solicitante: la acción pasa `rv!record` al proceso y no trae esos campos. No afecta a los
   guiones. Al corregirlo, que el proceso lea la solicitud por su identificador. [Appian]

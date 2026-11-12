@@ -359,34 +359,30 @@ def main():
                  "no cambió nada", "ni con una validación ajena a lo esperado")
         variante("HU-01.2", lambda g: g["entonces"][0].update(espera={"texto": ["indica el título"]}),
                  "", "sí pasa si lo esperado es el rechazo, en las validaciones", resultado="pasa", codigo=0)
-        # una tarea: se abre por su nombre y por un texto de su formulario, y queda aceptada y recargada
-        por_tarea = lambda g: g.update(cuando=[{"rol": "revisor", "tarea": "Revisar solicitud", "con": "QA {pasada}",
-                                                "espera": {"hay": ["Devolver"]}}] + g["cuando"][4:])
-        variante("HU-02.1", por_tarea, "", "una tarea se abre por su nombre y un texto de su formulario, aceptada",
-                 resultado="pasa", codigo=0)
+        # una tarea: se sabe cuál es por su nombre, antes de abrir nada; queda aceptada y recargada
         abiertas = lambda: json.loads(t.app.read_text(encoding="utf-8")).get("abiertas", [])
+        por_tarea = lambda g, nombre="Revisar solicitud: QA {pasada}": g.update(cuando=[
+            {"rol": "revisor", "tarea": nombre, "con": "QA {pasada}", "espera": {"hay": ["Devolver"]}}] + g["cuando"][4:])
         antes = len(abiertas())
-        variante("HU-02.1", por_tarea, "", "con varias del mismo nombre abre solo la más nueva, la suya, y ninguna otra",
+        variante("HU-02.1", lambda g: por_tarea(g, "Revisar solicitud"), "no se abre ninguna",
+                 "con varias tareas que se llaman igual no se sabe cuál es la suya, aunque se dé «con»")
+        ok("… y no se abre ninguna para averiguarlo", abiertas()[antes:] == [], str(abiertas()[antes:]))
+        t.defecto(tarea_con_titulo=True)
+        antes = len(abiertas())
+        variante("HU-02.1", por_tarea, "", "si el nombre de la tarea lleva lo suyo, se abre esa, aceptada, y ninguna otra",
                  resultado="pasa", codigo=0)
-        ok("… dos aperturas de la misma tarea (mirarla y aceptarla), ni una de las demás",
-           len(set(abiertas()[antes:])) == 1 and len(abiertas()[antes:]) == 2, str(abiertas()[antes:]))
-        antes = len(abiertas())
-        variante("HU-02.1", lambda g: (por_tarea(g), g["cuando"][0].pop("con")),
-                 "no se sabe cuál abrir", "con varias tareas del mismo nombre y sin «con», no se abre una al azar")
-        ok("… ni se abre ninguna para averiguarlo", abiertas()[antes:] == [], str(abiertas()[antes:]))
-        antes = len(abiertas())
+        ok("… una sola apertura", len(abiertas()[antes:]) == 1, str(abiertas()[antes:]))
         variante("HU-02.1", lambda g: (por_tarea(g), g["cuando"][0].update(con="No existe {pasada}")),
-                 "no es la de este recorrido", "y si la más nueva no enseña ese texto, falla sin abrir las demás")
-        ok("… solo se ha mirado esa", len(abiertas()[antes:]) == 1, str(abiertas()[antes:]))
-        t.defecto(tarea_lenta=True)
+                 "no es la de este recorrido", "y si su formulario no enseña «con», falla")
+        variante("HU-02.1", lambda g: (por_tarea(g), g["cuando"][0].update(rol="gestor")),
+                 "no hay ninguna tarea", "no la abre quien no la tiene asignada")
+        t.defecto(tarea_con_titulo=True, tarea_lenta=True)
         variante("HU-02.1", por_tarea, "", "si la tarea aceptada aún enseña el formulario de antes, se recarga otra vez",
                  resultado="pasa", codigo=0)
         t.defecto(lento=True)
         variante("HU-01.1", lambda g: g.update(entonces=[{"sail": ["reload"]}] + g["entonces"][1:]),
                  "", "«reload» también vuelve a mirar si el proceso no ha terminado", resultado="pasa", codigo=0)
         t.defecto()
-        variante("HU-02.1", lambda g: (por_tarea(g), g["cuando"][0].update(rol="gestor")),
-                 "no hay ninguna tarea", "ni la abre quien no la tiene asignada")
         t.defecto(no_manda=True)       # SAIL CLI 26.9.15: el envío que la validación pararía no se manda, y es un error
         c, out = t.repetir("--escenario", "HU-01.2")
         ok("un envío que SAIL CLI no manda pasa si lo esperado es ese rechazo",

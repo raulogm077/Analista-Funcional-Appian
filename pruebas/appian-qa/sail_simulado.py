@@ -11,6 +11,7 @@ borradores y devuelve las enviadas. Su estado está en el fichero de SAIL_SIMULA
   defecto "cuelga_desde": n, desde la llamada n (contando desde 1) SAIL CLI no responde
   defecto "sin_red": SAIL CLI no llega al servidor (el error de Go sin DNS)
   defecto "lee_stdin": SAIL CLI lee su entrada antes de nada (si se la dejan abierta, espera)
+  defecto "tarea_con_titulo": el nombre de cada tarea lleva el título de su solicitud
   defecto "tarea_lenta": una tarea aceptada sigue enseñando el formulario de antes en la primera recarga
   defecto "no_manda": un envío que la validación pararía no se manda y sale como error (SAIL CLI 26.9.15)
 El panel lleva dos enlaces «Ver detalle», que el --json da con nth y of: no se distinguen.
@@ -172,7 +173,8 @@ def main():
     if orden == "tasks":
         suyas = [f for f in app["filas"] if revisor and f["Estado"] == "Enviada"]
         sale({"site": site, "status": "ok", "tasks": [
-            {"name": "Revisar solicitud", "id": f["Número"], "assignees": ["Revisores"],
+            {"name": "Revisar solicitud" + (f': {f["Título"]}' if defecto.get("tarea_con_titulo") else ""),
+             "id": f["Número"], "assignees": ["Revisores"],
              "address": f'https://{sesion["hostname"]}/suite/sites/{site}/task/{f["Número"]}'} for f in suyas]})
     if orden == "open":
         numero = site.rsplit("/task/", 1)[-1]          # en open, lo que sigue a la orden es la dirección
