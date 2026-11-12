@@ -975,10 +975,13 @@ def qa_del_proyecto(proyecto, instalado):
         for e in escenarios.values():
             if isinstance(e, dict) and e.get("resultado") in ("pasa", "falla"):
                 con = e.get("con") if isinstance(e.get("con"), dict) else {}
-                cuenta[con.get("sail")] = cuenta.get(con.get("sail"), 0) + 1
+                version = con.get("sail")       # solo vale un texto: cualquier otra cosa es que no consta
+                version = version.strip() if isinstance(version, str) and version.strip() else None
+                cuenta[version] = cuenta.get(version, 0) + 1
     no_leidos = f" No se puede leer el resultado de {lista(ilegibles)}." if ilegibles else ""
     if not cuenta:
-        return f"no hay escenarios recorridos en {proyecto / 'qa'}.{no_leidos}"
+        return ("no hay resultados que se puedan leer." + no_leidos if ilegibles else
+                f"no hay escenarios recorridos en {proyecto / 'qa'}.")
     ahora = de_version(instalado)
     partes = [f"{n} con SAIL CLI {v}" for v, n in sorted(cuenta.items(), key=lambda par: str(par[0])) if v]
     if cuenta.get(None):
@@ -990,7 +993,7 @@ def qa_del_proyecto(proyecto, instalado):
     if otros:      # solo los que se sabe que son de otra: de los que no consta no se dice nada
         return dice + (f" {otros} se recorrieron con otra versión: siguen valiendo para la suya; se repiten con "
                        "`qa.py repetir` si se decide")
-    return dice + (" Todos, con el instalado" if not cuenta.get(None) else "")
+    return dice + (" Todos, con el instalado" if not cuenta.get(None) and not ilegibles else "")
 
 
 def cmd_estado(args):
