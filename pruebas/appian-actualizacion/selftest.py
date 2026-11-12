@@ -261,6 +261,13 @@ def main():
         comprueba("de lo que no consta con qué se recorrió no dice que sea de otra versión ni del instalado",
                   c == 0 and "2 sin que conste con cuál" in out and "otra versión" not in out and "Todos" not in out,
                   out + err)
+        for k, roto in enumerate(('{"unidad": "EV-02", "escenarios": [{"resultado": "pasa"}]}', '{"unidad": "EV-0'), 2):
+            (proyecto / "qa" / f"EV-0{k}").mkdir()
+            (proyecto / "qa" / f"EV-0{k}" / "resultado.json").write_text(roto, encoding="utf-8")
+        c, out, err = lanza("estado", "--proyecto", proyecto)
+        comprueba("un resultado cortado o con otra forma se nombra, sin traza y sin perder los demás",
+                  c == 0 and "No se puede leer el resultado de EV-02, EV-03" in out
+                  and "2 sin que conste con cuál" in out and "Traceback" not in err, out + err)
         c, out, err = lanza("estado", "--proyecto", tmp / "no hay proyecto")
         comprueba("y de uno sin QA lo dice, sin fallar", c == 0 and "no hay escenarios recorridos" in out, out + err)
 

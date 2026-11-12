@@ -966,19 +966,24 @@ def qa_del_proyecto(proyecto, instalado):
     escribe `qa.py`) y cuál hay instalado. No repite ni cambia nada: un resultado de otra versión no dice nada de esta,
     y repetirlo lo decide la persona."""
     de_version = lambda texto: (re.search(r"\bversion\s+(\S+)", texto or "") or [None, None])[1]
-    cuenta = {}
+    cuenta, ilegibles = {}, []
     for f in sorted((proyecto / "qa").glob("*/resultado.json")):
-        for e in ((leer_json(f) or {}).get("escenarios") or {}).values():
+        escenarios = (leer_json(f) or {}).get("escenarios")
+        if not isinstance(escenarios, dict):      # cortado, o con otra forma: se dice cuál, no se da por «sin QA»
+            ilegibles.append(f.parent.name)
+            continue
+        for e in escenarios.values():
             if isinstance(e, dict) and e.get("resultado") in ("pasa", "falla"):
                 con = e.get("con") if isinstance(e.get("con"), dict) else {}
                 cuenta[con.get("sail")] = cuenta.get(con.get("sail"), 0) + 1
+    no_leidos = f" No se puede leer el resultado de {lista(ilegibles)}." if ilegibles else ""
     if not cuenta:
-        return f"no hay escenarios recorridos en {proyecto / 'qa'}"
+        return f"no hay escenarios recorridos en {proyecto / 'qa'}.{no_leidos}"
     ahora = de_version(instalado)
     partes = [f"{n} con SAIL CLI {v}" for v, n in sorted(cuenta.items(), key=lambda par: str(par[0])) if v]
     if cuenta.get(None):
         partes.append(f"{cuenta[None]} sin que conste con cuál")
-    dice = f"{', '.join(partes)}; instalado, {ahora or 'no se sabe cuál'}."
+    dice = f"{', '.join(partes)}; instalado, {ahora or 'no se sabe cuál'}.{no_leidos}"
     otros = sum(n for v, n in cuenta.items() if v and v != ahora)
     if not ahora:
         return dice
