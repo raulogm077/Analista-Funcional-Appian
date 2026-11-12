@@ -13,6 +13,7 @@ las órdenes y opciones de SAIL CLI y los ficheros del plugin que citan una herr
 en una foto sale como «sin foto» y no como «sin cambios»; dos instalaciones no mezclan sus fotos; y no queda
 __pycache__ en la skill. Sale con 1 si algo falla.
 """
+import hashlib
 import io
 import json
 import os
@@ -468,7 +469,7 @@ def main():
         shutil.copyfile(enteros[3], dentro / "bundle.tar.gz")
         c, out, err = lanza("instalar", dentro / "bundle.tar.gz", "--uv", uv, en=casa2)
         comprueba("un bundle guardado dentro de la carpeta del servidor para con 2 y no toca nada",
-                  c == 2 and "dentro de la del servidor" in err
+                  c == 2 and "dentro de la carpeta del servidor" in err
                   and "sha2" in (srv2 / "BUILD-INFO.txt").read_text(encoding="utf-8"), err)
         shutil.rmtree(dentro)
         gemelo = bundle_entero(tmp, 2, "gemelo", su_info=f"build_timestamp={BUILD[2]}\nmcp_src_sha=otro\n")
@@ -550,6 +551,10 @@ def main():
         comprueba("lo que trae el bundle nuevo no se quita por llamarse casi como lo que traía el anterior",
                   c == 0 and c2 == 0 and (srv3 / "docs" / "ahora.txt").is_file() and not (srv3 / "raiz_del_1").exists(),
                   out + err + out2 + err2)
+        (tmp / "Mayúsculas").mkdir()
+        distingue = not (tmp / "mayúsculas").exists()    # Linux sí; Windows y lo habitual en macOS, no
+        comprueba("y donde las mayúsculas distinguen, la carpeta antigua, que es otra, se quita",
+                  not distingue or not (srv3 / "Docs").exists(), str(sorted(p.name for p in srv3.iterdir())))
 
         print("El catálogo que deja el extractor de ingeniería inversa")
         del_extractor = tmp / "mcp_catalog.json"
@@ -578,22 +583,50 @@ def main():
 
         print("Comprobar la extracción de la aplicación del banco")
         minimos = json.loads((SKILL / "assets" / "banco" / "esperado.json").read_text(encoding="utf-8"))["objetos"]
-        error = lambda herramienta, tipo: {"tool": herramienta, "objectType": tipo, "error": "API error (HTTP 404)"}
+        error = lambda herramienta, tipo, dice="API error (HTTP 404)": {"tool": herramienta, "objectType": tipo, "error": dice}
+        # Las respuestas del Dev MCP de los objetos que mira el banco, como las guarda el extractor: su build_model.py
+        # arma con ellas el modelo. Ficticias y con lo justo: campos, relaciones, tareas y el valor de dos constantes.
+        RESPUESTAS = {
+            ("recordType", "BPS Solicitud"): {"fields": [{"name": f"campo{k}"} for k in range(15)],
+                                              "relationships": [{"name": f"relacion{k}"} for k in range(5)]},
+            ("constant", "BPS_ESTADO_BORRADOR"): {"type": "INTEGER", "value": 1},
+            ("constant", "BPS_ESTADO_RECHAZADA"): {"type": "INTEGER", "value": 4},
+            ("processModel", "BPS Enviar a Aprobacion"): {"nodes": [
+                {"name": "Confirmar envío", "type": "User Input Task"}, {"name": "Aprobar solicitud", "type": "User Input Task"},
+                {"name": "Fin", "type": "End Event"}]},
+        }
 
-        def extraccion(nombre, **cambios):
+        def extraccion(nombre, respuestas=None, **cambios):
             informe = {"status": "complete", "objectListComplete": True, "app": {"name": "BPS Banco de pruebas SAIL"},
                        "objectsByType": dict(minimos), "objectCount": sum(minimos.values()),
-                       "errors": [error("listObjectVersions", "folder"), error("listObjectVersions", "group")]}
+                       "errors": [error("listObjectVersions", "folder", "No version history available for x"),
+                                  error("listObjectVersions", "group", "No version history available for y"),
+                                  error("getRecordEventsConfig", "recordType",
+                                        "API error (HTTP 403): Record events not configured for this record type")]}
             informe.update(cambios)
             informe["errorCount"] = len(informe["errors"])
-            (tmp / nombre / "extraccion").mkdir(parents=True)
+            raw = tmp / nombre / "extraccion" / "mcp_raw"
+            raw.mkdir(parents=True)
             (tmp / nombre / "extraccion" / "extraction_report.json").write_text(json.dumps(informe), encoding="utf-8")
+            objetos = [{"type": tipo, "uuid": f"uuid-{k}", "name": n} for k, (tipo, n) in enumerate(RESPUESTAS)]
+            (raw / "_objects.json").write_text(json.dumps(
+                {"application": {"uuid": "app-1", "type": "application", "name": "BPS Banco de pruebas SAIL", "prefix": "BPS"},
+                 "objects": objetos}), encoding="utf-8")
+            for o in objetos:   # la carpeta de cada objeto, como la nombra el extractor (rutas.carpeta_objeto)
+                suya = raw / o["type"] / hashlib.sha1(o["uuid"].encode("utf-8")).hexdigest()[:12]
+                suya.mkdir(parents=True)
+                (suya / "get_definition.json").write_text(json.dumps(
+                    {"_meta": {"tool": "get_definition", "role": "definition", "ok": True},
+                     "response": {"name": o["name"], **{**RESPUESTAS, **(respuestas or {})}[(o["type"], o["name"])]}}),
+                    encoding="utf-8")
             return tmp / nombre
 
         c, out, err = lanza("comprobar", "--extraccion", extraccion("extracción buena"), en=vacia)
-        comprueba("con los objetos esperados y errores sueltos, pasa; dice qué errores quedan y lo que no se pidió comprobar",
-                  c == 0 and "La extracción: PASA" in out and "listObjectVersions (2 tipos)" in out
-                  and "Los recorridos con SAIL CLI: sin comprobar" in out, out + err)
+        comprueba("con los objetos, el modelo y solo los errores previstos, pasa; dice cuáles quedan y lo que no se pidió",
+                  c == 0 and "La extracción: PASA" in out and "getRecordEventsConfig, listObjectVersions" in out
+                  and "5 hechos" in out and "Los recorridos con SAIL CLI: sin comprobar" in out, out + err)
+        comprueba("y arma el modelo con el constructor del propio extractor",
+                  (tmp / "extracción buena" / "extraccion" / "inventory.json").is_file())
         c, out, err = lanza("comprobar", "--extraccion", extraccion(
             "sin procesos", objectsByType={**minimos, "processModel": 0}), en=vacia)
         comprueba("si el extractor deja de ver un tipo de objeto, no pasa y dice cuál",
@@ -601,8 +634,20 @@ def main():
                   out + err)
         c, out, err = lanza("comprobar", "--extraccion", extraccion("genérica", errors=[
             error("getTaskReport", t) for t in ("constant", "folder", "interface")]), en=vacia)
-        comprueba("una herramienta con errores en tres tipos de objeto falla: se está probando en todos",
+        comprueba("una herramienta con errores en tres tipos de objeto no pasa: se está probando en todos",
                   c == 1 and "getTaskReport" in out and "devmcp_policy.json" in out, out + err)
+        c, out, err = lanza("comprobar", "--extraccion", extraccion("no lee interfaces", errors=[
+            error("getInterface", "interface", "API error (HTTP 500)")] * 5), en=vacia)
+        comprueba("un error que el banco no espera no pasa, aunque sea de un solo tipo de objeto",
+                  c == 1 and "errores que el banco no espera: getInterface (en interface)" in out, out + err)
+        c, out, err = lanza("comprobar", "--extraccion", extraccion("otro valor", respuestas={
+            ("constant", "BPS_ESTADO_RECHAZADA"): {"type": "INTEGER", "value": 9}}), en=vacia)
+        comprueba("si el modelo no dice lo que dice la especificación, no pasa y dice qué",
+                  c == 1 and "BPS_ESTADO_RECHAZADA: value es 9 y la especificación dice 4" in out, out + err)
+        c, out, err = lanza("comprobar", "--extraccion", extraccion("sin campos", respuestas={
+            ("recordType", "BPS Solicitud"): {"fields": [{"name": "id"}], "relationships": []}}), en=vacia)
+        comprueba("si el extractor deja de leer los campos de un record type, no pasa",
+                  c == 1 and "fieldCount es 1 y la especificación dice 15" in out, out + err)
         c, out, err = lanza("comprobar", "--extraccion", extraccion("cortada", status="partial"), en=vacia)
         comprueba("una extracción que no terminó no es un fallo: no se pudo comprobar",
                   c == 2 and "La extracción: NO SE PUDO" in out and "partial" in out, out + err)
@@ -656,6 +701,13 @@ def main():
             comprueba(f"un bundle {que} para con 2, lo dice y no toca el servidor",
                       c == 2 and c2 == 2 and "descarga" in err and sin_traza(err, err2) and "sha2" in build3()
                       and not (srv3 / ".nuevo").exists(), err + err2)
+        dentro_del_estado = casa3 / ".appian-analisis-funcional" / "un servidor"
+        c, out, err = lanza("instalar", enteros[3], "--uv", uv, "--servidor", dentro_del_estado, en=casa3)
+        comprueba("un servidor dentro de la carpeta donde se guardan las fotos para con 2 y no se crea",
+                  c == 2 and "al revés" in err and not dentro_del_estado.exists(), err)
+        sin_sha = bundle_entero(tmp, 3, "sin-sha", su_info=f"build_timestamp={BUILD[3]}\nmcp_src_sha=\n")
+        c, out, err = lanza("instalar", sin_sha, "--uv", uv, en=casa3)
+        comprueba("un bundle con el mcp_src_sha vacío para con 2", c == 2 and "mcp_src_sha" in err and "sha2" in build3(), err)
         c, out, err = lanza("instalar", enteros[3], "--uv", uv, "--plugin-sha", "", en=casa3)
         comprueba("un --plugin-sha vacío no se salta la comprobación", c == 2 and "No se ha tocado" in err, err)
 

@@ -50,10 +50,12 @@ descarga del propio entorno: --plugin-sha comprueba que es el que ese entorno es
 bloqueo entre dos instalaciones: no lances dos a la vez sobre la misma carpeta.
 
 `comprobar` pasa el banco de pruebas (assets/banco/), entero o la parte que se le pida:
-  --extraccion DIR   mira el informe de extraer su aplicación con el extractor de ingeniería inversa: que encuentre al
-                     menos los objetos de cada tipo de assets/banco/esperado.json y que ninguna herramienta dé error en
-                     tres tipos de objeto o más, que es lo que pasa cuando el Dev MCP trae herramientas de un tipo que
-                     la política del extractor no conoce.
+  --extraccion DIR   mira la extracción de su aplicación hecha con el extractor de ingeniería inversa, contra
+                     assets/banco/esperado.json: que encuentre al menos los objetos de cada tipo, que el modelo que el
+                     extractor arma con las respuestas (lanza su build_model.py, que lo deja en esa carpeta) diga lo
+                     que dice la especificación y que no haya errores fuera de los previstos. Una herramienta con
+                     errores en tres tipos de objeto o más suele ser de un tipo que la política del extractor no
+                     conoce.
   --host ENTORNO --solicitante USUARIO [--aprobador USUARIO] [--site SITE]
                      repite con `qa.py`, de appian-qa, los guiones de assets/banco/guiones/ en ese entorno y con esas
                      cuentas, que tienen que tener su sesión de sail abierta. El banco aún no trae todos sus recorridos.
@@ -104,6 +106,7 @@ RESERVADAS = {".venv", A_MEDIAS, APARTE}
 DISPOSITIVOS = {"CON", "PRN", "AUX", "NUL", *(f"{d}{i}" for d in ("COM", "LPT") for i in "123456789¹²³")}
 SIN_SU_AYUDA = "(sail {orden} --help falló al hacer la foto)"   # la orden está, pero no se pudo leer su ayuda
 ESPERADO = pathlib.Path(__file__).resolve().parents[1] / "assets" / "banco" / "esperado.json"
+MODELO = PLUGIN / "skills" / "appian-reverse-engineering" / "scripts" / "build_model.py"   # el que arma el extractor
 GUIONES = ESPERADO.parent / "guiones"       # los recorridos del banco, como guiones de appian-qa sin entorno ni cuentas
 UNIDAD_BANCO = "BPS-01"                     # el nombre de unidad con el que qa.py repite esos guiones
 # Lo que el banco aún no recorre; se quita cuando traiga esos guiones
@@ -153,7 +156,7 @@ def claves(texto):
 
 def es_build(info):
     """Un BUILD-INFO vale si dice mcp_src_sha y un build_timestamp con su forma (AAAAMMDD-HHMMSS)."""
-    return "mcp_src_sha" in info and bool(RX_BUILD.fullmatch(info.get("build_timestamp", "")))
+    return bool(str(info.get("mcp_src_sha", "")).strip()) and bool(RX_BUILD.fullmatch(info.get("build_timestamp", "")))
 
 
 def identidad(info):
@@ -637,9 +640,11 @@ def cmd_instalar(args):
     if not nueva and instalado is None and not a_medias:
         fin(2, f"error: {srv} tiene ficheros y no es una instalación del Dev MCP: no se instala encima. "
                "Indica con --servidor la carpeta del servidor, o una vacía para una instalación nueva.")
-    if srv in bundle.parents or srv in (casa() / ESTADO).parents or srv == casa() / ESTADO:
-        fin(2, f"error: ni el bundle ni la carpeta {casa() / ESTADO} pueden estar dentro de la del servidor ({srv}), que "
-               f"es la que se sustituye. {sin_tocar}")
+    suya = casa() / ESTADO
+    if srv in bundle.parents or srv == suya or srv in suya.parents or suya in srv.parents:
+        fin(2, f"error: el bundle no puede estar dentro de la carpeta del servidor ({srv}), que es la que se sustituye, "
+               f"ni esa carpeta dentro de {suya} o al revés: las fotos y la copia acabarían dentro de lo que guardan. "
+               f"{sin_tocar}")
     if args.plugin_sha is not None and args.plugin_sha.strip() != nuevo["mcp_src_sha"]:
         fin(2, f"error: el bundle es del build {nuevo['build_timestamp']} (mcp_src_sha {nuevo['mcp_src_sha']}) y el "
                f"plugin de tu entorno espera {args.plugin_sha}: descarga el bundle de ese entorno. {sin_tocar}")
@@ -671,10 +676,8 @@ def cmd_instalar(args):
     # Solo en una actualización, que es cuando se guarda antes el bundle anterior: lo que se quita queda en esa copia
     sobran = marca["sobran"] if a_medias else (
         antes if instalado and not mismo and previo.get("build") == identidad(instalado) else [])
-    # ...y salvo lo que no es un nombre de la raíz, lo reservado y lo que este bundle sí trae, aunque sea con otras
-    # mayúsculas: en Windows sería lo mismo
-    de_este = {n.casefold() for n in raiz} | RESERVADAS
-    sobran = sorted({n for n in sobran if nombre_de_raiz(n) and n.casefold() not in de_este})
+    # ...y salvo lo que no es un nombre de la raíz, lo reservado y lo que este bundle sí trae
+    sobran = sorted({n for n in sobran if nombre_de_raiz(n) and n.casefold() not in RESERVADAS and n not in raiz})
 
     # Extraer aparte: si el bundle no se puede extraer entero, la instalación sigue como estaba
     aparte = srv / APARTE
@@ -706,17 +709,24 @@ def cmd_instalar(args):
             borra(srv / nombre)
             os.replace(aparte / nombre, srv / nombre)
         for nombre in sobran:
-            borra(srv / nombre)
+            # Si solo cambia en las mayúsculas respecto a una entrada nueva, en Windows y en muchos macOS es el mismo
+            # fichero, el recién instalado: ahí no sobra. Donde las mayúsculas distinguen, es otro y sí sobra.
+            if not any(n.casefold() == nombre.casefold() and (srv / nombre).exists()
+                       and os.path.samefile(srv / nombre, srv / n) for n in raiz):
+                borra(srv / nombre)
         borra(aparte)
         registro.parent.mkdir(parents=True, exist_ok=True)
         escribe(registro, json.dumps({"build": identidad(nuevo), "raiz": raiz}))
         (srv / A_MEDIAS).unlink()
-        # con el servidor nuevo en su sitio, se guarda un bundle anterior: el del build más reciente
-        for vieja in sorted(carpeta_fotos(srv).glob("*/bundle.tar.gz"))[:-1]:
-            vieja.unlink()
     except OSError as e:
         fin(1, f"error: no se pudo sustituir el servidor en {srv}: {e}\nCierra los clientes de IA que lo tengan en "
                "marcha y repite la misma orden: termina lo que quedó a medias.")
+    sin_retirar = None
+    try:   # con el servidor nuevo en su sitio, se guarda un bundle anterior: el del build más reciente
+        for vieja in sorted(carpeta_fotos(srv).glob("*/bundle.tar.gz"))[:-1]:
+            vieja.unlink()
+    except OSError as e:
+        sin_retirar = e
 
     print(f"Build {nuevo['build_timestamp']} (mcp_src_sha {nuevo['mcp_src_sha']}) en {srv}")
     if foto:
@@ -725,6 +735,9 @@ def cmd_instalar(args):
         print("  se ha terminado una instalación que se quedó a medias; la foto y el bundle anterior son los de entonces")
     elif mismo:
         print("  era el build instalado: se ha vuelto a dejar lo que trae el bundle, sin foto ni copia")
+    if sin_retirar:
+        print(f"  el servidor está sustituido, pero no se pudo retirar la copia de un build más viejo ({sin_retirar}): "
+              "bórrala a mano o repite la orden")
     pasos = [("uv sync", lambda: lanza([uv, "sync"], cwd=srv)), ("SAIL CLI", lambda: del_bundle(srv, setup)),
              ("skill appian", lambda: del_bundle(srv, skills))]
     pasos += [(f"skill appian en {d}", lambda d=d: del_bundle(srv, skills, "--skills-dir", d)) for d in args.skills_dir]
@@ -771,15 +784,23 @@ def cmd_sail_anterior(args):
 # ---- El banco de pruebas -------------------------------------------------------------------------------------------
 
 def comprueba_extraccion(carpeta):
-    """(resultado, lo que hay que decir) de mirar el informe que deja `devmcp_extract.py extract` sobre la aplicación
-    del banco. «no se pudo» sin informe, con uno que no tiene su forma o con una extracción que no terminó: una sesión
-    caducada no es un fallo del extractor."""
-    fichero = pathlib.Path(carpeta).expanduser() / "extraccion" / "extraction_report.json"
-    informe, esperado = leer_json(fichero), leer_json(ESPERADO)
+    """(resultado, lo que hay que decir) de mirar la extracción de la aplicación del banco que deja `devmcp_extract.py
+    extract`: su informe (los objetos de cada tipo y los errores) y el modelo que el propio extractor construye con las
+    respuestas (`build_model.py`), que tiene que decir lo que dice la especificación. «no se pudo» sin informe, con uno
+    que no tiene su forma o con una extracción que no terminó: una sesión caducada no es un fallo del extractor."""
+    carpeta = pathlib.Path(carpeta).expanduser().resolve()
+    fichero = carpeta / "extraccion" / "extraction_report.json"
+    informe, esperado = leer_json(fichero), leer_json(ESPERADO) or {}
     entero = lambda n: isinstance(n, int) and not isinstance(n, bool) and n >= 0
-    minimos = (esperado or {}).get("objetos")
-    if not isinstance(minimos, dict) or not minimos or not all(entero(n) and n > 0 for n in minimos.values()):
-        return "no se pudo", [f"{ESPERADO} no dice cuántos objetos de cada tipo se esperan."]
+    minimos, hechos, previstos = esperado.get("objetos"), esperado.get("hechos"), esperado.get("errores_previstos")
+    if not isinstance(minimos, dict) or not minimos or not all(entero(n) and n > 0 for n in minimos.values()) \
+            or not isinstance(hechos, list) or not all(
+                isinstance(h, dict) and all(isinstance(h.get(k), str) for k in ("tipo", "nombre_acaba_en", "campo"))
+                and ("vale" in h) != ("acaba_en" in h) for h in hechos) \
+            or not isinstance(previstos, list) or not all(
+                isinstance(e, dict) and isinstance(e.get("herramienta"), str) and isinstance(e.get("dice"), str)
+                for e in previstos):
+        return "no se pudo", [f"{ESPERADO} no dice con su forma lo que se espera del banco."]
     hay, errores, app = (informe or {}).get("objectsByType"), (informe or {}).get("errors"), (informe or {}).get("app")
     if not isinstance(hay, dict) or not all(entero(n) for n in hay.values()) or not isinstance(errores, list) \
             or not all(isinstance(e, dict) and isinstance(e.get("tool"), str) for e in errores) \
@@ -789,26 +810,51 @@ def comprueba_extraccion(carpeta):
     if informe.get("status") != "complete" or informe.get("objectListComplete") is not True:
         return "no se pudo", [f"la extracción no terminó (estado «{informe.get('status')}»). Si fue por la sesión del Dev "
                               "MCP, entra de nuevo y repítela."]
-    faltan = [f"{tipo}: {hay.get(tipo, 0)} de {minimo}" for tipo, minimo in minimos.items() if hay.get(tipo, 0) < minimo]
-    en_tipos = {}
-    for e in errores:
-        en_tipos.setdefault(e["tool"], set()).add(str(e.get("objectType") or "?"))
-    en_varios = sorted(h for h, tipos in en_tipos.items() if len(tipos) >= TIPOS_DE_GENERICA)
     # Qué extracción es: se mira la que se da; no se sabe si es la del banco ni de qué versión del Dev MCP
     servidor_de = informe.get("server") if isinstance(informe.get("server"), dict) else {}
     dice = [f"de «{(app or {}).get('name', '?')}», del {informe.get('startedAt', '?')}, en {servidor_de.get('url', '?')}: "
             f"{sum(hay.values())} objetos y {len(errores)} errores"]
+    mal = []
+    faltan = [f"{tipo}: {hay.get(tipo, 0)} de {minimo}" for tipo, minimo in minimos.items() if hay.get(tipo, 0) < minimo]
     if faltan:
-        dice.append("faltan objetos de los que tiene la aplicación del banco: " + "; ".join(faltan))
+        mal.append("faltan objetos de los que tiene la aplicación del banco: " + "; ".join(faltan))
+    # Los errores: los que Appian da en esta aplicación sin que sea un fallo, y los demás
+    previsto = lambda e: any(x["herramienta"] == e["tool"] and x["dice"] in str(e.get("error")) for x in previstos)
+    en_tipos = {}
+    for e in errores:
+        if not previsto(e):
+            en_tipos.setdefault(e["tool"], set()).add(str(e.get("objectType") or "?"))
+    if en_tipos:
+        mal.append("errores que el banco no espera: " + ", ".join(
+            f"{h} (en {', '.join(sorted(tipos))})" for h, tipos in sorted(en_tipos.items())) + ". Míralos en el informe.")
+    en_varios = sorted(h for h, tipos in en_tipos.items() if len(tipos) >= TIPOS_DE_GENERICA)
     if en_varios:
-        dice.append(f"herramientas con errores en {TIPOS_DE_GENERICA} tipos de objeto o más: {', '.join(en_varios)}. Mira sus "
-                    "errores en el informe: si son de un tipo de objeto que la política del extractor "
-                    "(devmcp_policy.json) no conoce, es que las prueba en todos; si no, puede ser la sesión o los permisos.")
-    if faltan or en_varios:
-        return "no pasa", dice
-    resto = ", ".join(f"{h} ({len(tipos)} tipos)" for h, tipos in sorted(en_tipos.items())) or "ninguno"
-    return "pasa", dice + [f"están los objetos de cada tipo y ninguna herramienta falla en {TIPOS_DE_GENERICA} tipos o más. "
-                           f"Errores que quedan: {resto}."]
+        mal.append(f"de esas, {', '.join(en_varios)} fallan en {TIPOS_DE_GENERICA} tipos de objeto o más: si son de un tipo "
+                   "que la política del extractor (devmcp_policy.json) no conoce, es que las prueba en todos.")
+    # El modelo: lo arma el extractor con las respuestas; es donde se nota si ha dejado de entenderlas
+    codigo, salida = lanza([sys.executable, MODELO, carpeta], cwd=carpeta) if MODELO.is_file() else (None, f"no está {MODELO}")
+    modelo = leer_json(carpeta / "extraccion" / "inventory.json") or {}
+    objetos = modelo.get("objects")
+    if codigo != 0 or not isinstance(objetos, dict):
+        mal.append("el extractor no pudo armar su modelo con las respuestas (build_model.py): "
+                   + " / ".join(salida.splitlines()[-3:]))
+    else:
+        if modelo.get("parseErrors"):
+            mal.append(f"el extractor no supo leer {modelo['parseErrors']} respuestas (parseErrors de inventory.json)")
+        for h in hechos:
+            suyos = [o for o in objetos.get(h["tipo"]) or [] if isinstance(o, dict)
+                     and str(o.get("name", "")).endswith(h["nombre_acaba_en"])]
+            quiere = h["vale"] if "vale" in h else h["acaba_en"]
+            if len(suyos) != 1:
+                mal.append(f"el modelo trae {len(suyos)} {h['tipo']} cuyo nombre acaba en «{h['nombre_acaba_en']}», no uno")
+            elif (suyos[0].get(h["campo"]) != quiere) if "vale" in h else not str(suyos[0].get(h["campo"])).endswith(quiere):
+                mal.append(f"{suyos[0].get('name')}: {h['campo']} es {suyos[0].get(h['campo'])!r} y la especificación dice "
+                           f"{quiere!r}")
+    if mal:
+        return "no pasa", dice + mal
+    quedan = sorted({e["tool"] for e in errores})
+    return "pasa", dice + [f"están los objetos de cada tipo, el modelo dice los {len(hechos)} hechos de la especificación que "
+                           f"se miran y no hay errores fuera de los previstos (quedan los de {', '.join(quedan) or 'ninguna herramienta'})."]
 
 
 def comprueba_recorridos(host, site, cuentas):

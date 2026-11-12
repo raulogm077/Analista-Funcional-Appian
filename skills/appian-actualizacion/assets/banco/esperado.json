@@ -1,9 +1,11 @@
 {
   "_doc": [
-    "Lo que el extractor de ingeniería inversa tiene que encontrar en la aplicación del banco: cuántos objetos de cada tipo, como mínimo.",
-    "Está escrito a mano a partir de especificacion.md, no sacado de una extracción: si el extractor deja de ver un tipo, aquí se nota.",
-    "Son mínimos porque Appian crea además, por su cuenta, carpetas, un grupo de administradores y una constante.",
-    "Si la especificación gana o pierde un objeto, se cambia aquí a la vez."
+    "Lo que el extractor de ingeniería inversa tiene que encontrar en la aplicación del banco.",
+    "Está escrito a mano a partir de especificacion.md, no sacado de una extracción: si el extractor deja de ver o de entender algo, aquí se nota.",
+    "objetos: cuántos de cada tipo, como mínimo, porque Appian crea además por su cuenta carpetas, un grupo de administradores y una constante.",
+    "hechos: lo que el modelo que construye el extractor (inventory.json) tiene que decir de unos objetos, que se buscan por cómo acaba su nombre (el prefijo de la aplicación puede cambiar).",
+    "errores_previstos: los que Appian devuelve en esta aplicación y no son un fallo; cualquier otro hace que no pase.",
+    "Si la especificación gana o pierde un objeto, un campo, una relación o una tarea, se cambia aquí a la vez."
   ],
   "objetos": {
     "recordType": 3,
@@ -13,5 +15,16 @@
     "group": 3,
     "constant": 7,
     "folder": 1
-  }
+  },
+  "hechos": [
+    {"tipo": "recordType", "nombre_acaba_en": " Solicitud", "campo": "fieldCount", "vale": 15},
+    {"tipo": "recordType", "nombre_acaba_en": " Solicitud", "campo": "relationshipCount", "vale": 5},
+    {"tipo": "constant", "nombre_acaba_en": "_ESTADO_BORRADOR", "campo": "value", "vale": 1},
+    {"tipo": "constant", "nombre_acaba_en": "_ESTADO_RECHAZADA", "campo": "value", "vale": 4},
+    {"tipo": "processModel", "nombre_acaba_en": " Enviar a Aprobacion", "campo": "userTaskCount", "vale": 2}
+  ],
+  "errores_previstos": [
+    {"herramienta": "getRecordEventsConfig", "dice": "Record events not configured"},
+    {"herramienta": "listObjectVersions", "dice": "No version history"}
+  ]
 }

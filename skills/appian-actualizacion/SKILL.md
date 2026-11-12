@@ -59,9 +59,10 @@ la guía de Appian, añade `--servidor <carpeta>` a cada orden.
    o por separado:
    - **El extractor**, con `--extraccion <carpeta>`: antes extrae la aplicación del banco con el extractor de
      `appian-reverse-engineering` (`devmcp_extract.py extract --app <la del banco> --out <carpeta temporal>`). No pasa
-     si el extractor deja de ver algún tipo de objeto o si una herramienta da error en todos los tipos, que es lo que
-     ocurre cuando el Dev MCP trae herramientas de un tipo que la política del extractor no conoce. Esa misma
-     extracción deja el catálogo para el informe.
+     si faltan objetos de algún tipo, si el modelo que el extractor arma con las respuestas no dice lo que dice la
+     especificación (campos, relaciones, tareas, valores) o si hay errores fuera de los que Appian da siempre en esa
+     aplicación. Una herramienta con errores en todos los tipos de objeto suele ser de un tipo que la política del
+     extractor no conoce. Esa misma extracción deja el catálogo para el informe.
    - **`qa.py` con SAIL CLI**, con `--host <tu entorno> --solicitante <usuario>` (y `--aprobador <usuario>` cuando un
      recorrido lo pida): repite los guiones del banco con `qa.py`, de `appian-qa`, con las cuentas de prueba que le
      das, que tienen que tener su sesión de `sail` abierta (`qa.py sesiones` dice cómo). El banco aún no trae los
