@@ -642,6 +642,20 @@ def main():
         c, out = t.qa("repetir", str(t.p), "EV-01", "EV-09")
         ok("un fallo (1) pesa más que una unidad sin guiones (2)", c == 1 and "EV-09 · sin guiones" in out, out)
         t.defecto()
+        c, out = t.repetir()
+        ok("un guion desfasado de un escenario que sigue en el análisis deja el QA sin terminar (2): no se ha probado",
+           c == 2 and t.resultado()[0]["escenarios"]["HU-01.1"]["resultado"] == "desfasado"
+           and t.resultado()[0]["escenarios"]["HU-02.1"]["resultado"] == "pasa", out)
+        escribe(f, f.read_text(encoding="utf-8").replace("como «Enviada», con su número", "como «Enviada»"))
+        retirado = t.p / "qa" / "EV-01" / "HU-09.9.json"
+        escribe(retirado, json.dumps(dict(json.loads((t.p / "qa" / "EV-01" / "HU-01.1.json").read_text(encoding="utf-8")),
+                                          escenario="HU-09.9"), ensure_ascii=False))
+        c, out = t.repetir()
+        ok("el guion de un escenario que ya no está en el análisis queda como histórico: no deja el QA sin terminar",
+           c == 0 and t.resultado()[0]["escenarios"]["HU-09.9"]["resultado"] == "desfasado"
+           and "ya no está en el análisis" in out, out)
+        retirado.unlink()
+        escribe(f, f.read_text(encoding="utf-8").replace("como «Enviada»", "como «Enviada», con su número"))
 
         # el escenario de hoy es el del funcional: una unidad posterior que lo cambió a propósito deja el guion
         # desfasado (para rehacerlo), no un fallo que reabra una issue ya en producción

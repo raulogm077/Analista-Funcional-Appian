@@ -665,6 +665,13 @@ def excepciones_qa(raiz, uid, m, iss):
     return excepciones
 
 
+def dice_hoy(m, del_feature, esc):
+    """Lo que dice hoy un escenario: el funcional, que una unidad posterior puede haber cambiado a propósito; sin
+    funcional, el .feature. Vacío si ya no está en el análisis."""
+    hoy = lo_que_dice_hoy(m, esc)
+    return del_feature.get(esc, {}).get("dice") if hoy is None else hoy
+
+
 def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
     """Repite los guiones de una unidad (con `solo`, nada más que esos escenarios; los demás se quedan como estaban) y
     escribe su resultado. Si SAIL CLI deja de responder, aquí o antes (`parado`), no repite los guiones que quedan.
@@ -700,8 +707,7 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
         mal = ["no es un JSON"] if not isinstance(g, dict) else defectos(g, guiones[esc].name)
         # lo que dice hoy el escenario: el funcional, que una unidad posterior puede haber cambiado a propósito; sin
         # funcional, el .feature
-        hoy = lo_que_dice_hoy(m, esc)
-        dice = del_feature.get(esc, {}).get("dice") if hoy is None else hoy
+        dice = dice_hoy(m, del_feature, esc)
         inicio = time.time()
         if mal:
             entrada.update(resultado=POR_TERMINAR, motivo="; ".join(mal))
@@ -826,9 +832,13 @@ def repetir(a):
         if a.escenario and not repetidos:
             print(f"  {uid} no tiene guion de {', '.join(a.escenario)}")
             codigo = peor(codigo, 2)
+        # un guion desfasado de un escenario que sigue en el análisis está por rehacer: ese escenario no se ha probado.
+        # El de uno que ya no está es histórico y no cuenta
+        del_feature = escenarios_de(raiz, uid)
+        por_rehacer = any(e.get("resultado") == "desfasado" and dice_hoy(m, del_feature, esc) for esc, e in repetidos.items())
         if any(e.get("resultado") == "falla" and not e.get("sinRepetir") for e in repetidos.values()):
             codigo = peor(codigo, 1)
-        elif any(e.get("sinRepetir") or e.get("resultado") == POR_TERMINAR for e in repetidos.values()):
+        elif por_rehacer or any(e.get("sinRepetir") or e.get("resultado") == POR_TERMINAR for e in repetidos.values()):
             codigo = peor(codigo, 2)
     return codigo
 

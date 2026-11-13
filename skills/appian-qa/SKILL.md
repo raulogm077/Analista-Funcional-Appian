@@ -202,7 +202,8 @@ con que se hizo, y repetirlo con otra lo decide la persona (`appian-actualizacio
 - **pasa** o **falla**: la última vez que se repitió. Lo que pasa con su issue si falla, en
   `appian-functional-analyst/references/cambios.md` §6. El motivo lleva `{pasada}` y `{hoy}`, no lo que valieron: el
   mismo fallo dice lo mismo en cada repetición, y la marca de una persona sigue valiendo para él.
-- **desfasado**: el escenario ya no dice lo del guion; no cuenta como fallo, y QA lo rehace.
+- **desfasado**: el escenario ya no dice lo del guion; no cuenta como fallo, y QA lo rehace. Mientras el escenario
+  siga en el análisis está por hacer (`repetir` sale con 2); el guion de uno que ya no está queda como histórico.
 - **guion por terminar**: el guion está mal escrito o no llega a afirmar nada en el «entonces»; no devuelve la issue a
   quien construye: lo termina QA.
 - **sinRepetir**: esta vez no se pudo, y dice por qué. Con una sesión caducada se queda el resultado anterior y dice
