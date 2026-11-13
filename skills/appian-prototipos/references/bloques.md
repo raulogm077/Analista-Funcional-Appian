@@ -7,7 +7,7 @@ marca del prototipo (`references/marca.md`).
 
 - Galería navegable con un ejemplo de cada bloque: `galerias/bloques/` (`generar_app.py` → `app.json` → HTML).
 - Los componentes de IA en acción (agente, chat de datos en panel, documento con citas, revisión): `galerias/ia/`.
-- Los 147 componentes de Appian 26.9, uno a uno: `galerias/componentes/`.
+- Los 147 componentes de Appian 26.10, uno a uno: `galerias/componentes/`.
 - Todos funcionan desde **Appian 26.6** salvo que se indique otra versión (§6 y §7).
 
 Uso en un `generar_app.py`:

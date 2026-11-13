@@ -30,7 +30,8 @@
     globales se explican aquí una vez y no son NV; los demás documentos marcan las cifras afectadas con «orientativo
     (ver LEEME)».
   - «Términos de Appian»: un enlace a la documentación oficial por término que usen los documentos, sin definirlo.
-    Quita los que no aparezcan; uno que falte va con la página que dé el Docs MCP, en la forma /latest/.
+    Quita los que no aparezcan; uno que falte va con la página que dé el Docs MCP, con la versión consultada en la URL
+    (/suite/help/<versión>/…).
 -->
 
 # {{meta.appName}}: documentación de ingeniería inversa

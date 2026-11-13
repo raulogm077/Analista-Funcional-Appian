@@ -15,8 +15,8 @@ about the project, discover it (see *Discovering Project Context*); never assume
 
 **Markers in the references:** ✅ do · ❌ avoid · ⚠️ trap · ⓥ version-dependent · ⓣ tier-dependent
 (Advanced/Premium) · **[engineering]** general engineering doctrine with no Appian page (doc 11). Baseline:
-checked against the 26.3 and 26.6 documentation and the release notes up to 26.9 (the rules the official
-skill contests, doc 14, against the 26.9 documentation); each ⓥ names its release.
+checked against the 26.3 and 26.6 documentation and the release notes up to 26.10 (the rules the official
+skill contests, doc 14, against the 26.9 documentation and, for Decimal input, the 26.10 one); each ⓥ names its release.
 
 ## Two modes
 

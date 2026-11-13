@@ -1,8 +1,8 @@
 # Un fallo de QA visto a mano
 
-Análisis para que decida Raúl (5-nov: «esto tenemos que analizarlo bien, porque no me termina de encajar; explícame por
-qué haces esa recomendación y plantéate si es lo correcto para este flujo, con pros y contras»). El punto está en
-`siguiente-version.md` §2. No se ha cambiado nada.
+Análisis que decidió Raúl (5-nov: «esto tenemos que analizarlo bien, porque no me termina de encajar; explícame por
+qué haces esa recomendación y plantéate si es lo correcto para este flujo, con pros y contras»). Eligió la opción A
+el 6-nov y está aplicada (`qa.py a-mano`, descrito en `appian-qa/SKILL.md`, «A mano»; «Lo que se aplicó», abajo).
 
 ## El problema, acotado
 

@@ -1,9 +1,10 @@
 # Cuándo vuelve a aprobación una unidad ya aprobada
 
-Análisis para que decida Raúl (pedido el 5-nov: «analiza pros y contras de cada opción… imagínate diferentes
+Análisis que decidió Raúl (pedido el 5-nov: «analiza pros y contras de cada opción… imagínate diferentes
 posibilidades… sin burocracia de más, solo la que aporte valor»). Su criterio provisional, dicho a Codex el mismo día:
-«si lo que llega cambia lo que hay que construir se debe aprobar, pero si no, lo valida la IA». No se ha cambiado
-nada: el punto está en `siguiente-version.md` §2. Lo hizo un workflow de seis
+«si lo que llega cambia lo que hay que construir se debe aprobar, pero si no, lo valida la IA». Lo decidido se aplicó
+el 6 y el 7-nov («Lo que se aplicó», al final); lo vigente está en `appian-functional-analyst/references/cambios.md` y
+`scripts/unidades.py`. Lo hizo un workflow de seis
 agentes (mecanismo, 16 escenarios, tres revisores con criterios distintos y una síntesis) y lo revisó la sesión que dirige
 la campaña. El detalle completo está en `Pruebas-plugin/metodo-20261104/revisiones/reaprobacion.json`, fuera del
 repositorio.
