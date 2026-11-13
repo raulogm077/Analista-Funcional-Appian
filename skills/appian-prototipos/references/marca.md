@@ -2,7 +2,7 @@
 
 ## Dónde va
 
-- **Por defecto**, el aspecto estándar de Appian: `assets/brand-appian.json`, con los valores por defecto del objeto Site
+- **La estándar de Appian**, cuando el proyecto no tiene marca o se pide `--brand appian`: `assets/brand-appian.json`, con los valores por defecto del objeto Site
   (Appian 26.6), sin logo y sin perfil CSS propio.
 - **La de un cliente** es un fichero de su proyecto, como sus fuentes: `<p>/prototipo/brand-<id>.json`, junto al
   `app.json`, con su logo en la misma carpeta. `<id>` es lo que va en el nombre del fichero y en `--brand`. La saca
