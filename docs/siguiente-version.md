@@ -223,6 +223,27 @@ Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no en
   - **Bloques de un formulario** distinguibles: título más grande con su icono y una línea que separa un bloque de
     otro; si no, el título parece un campo más.
 
+- `appian-prototipos`: **desplegables, selectores y fechas como los componentes de Appian.** El kit dibuja el
+  desplegable múltiple como fichas que crecen con cada valor, el simple con el `<select>` del navegador y la fecha con
+  su calendario nativo, y en una revisión con el equipo nada de eso se parecía a los BPM del cliente. Se pide que la
+  skill use siempre, para todos los desplegables y selectores, un mismo componente; solo cambia si es de selección única
+  o múltiple. Probado en un proyecto con un ajuste local del HTML construido:
+  - **El campo** tiene siempre una línea. Enseña los valores elegidos separados por comas, recortados, y en la
+    selección múltiple «•••», que al pasar el ratón enseña todos. Lleva una «x» para quitarlos y la flecha.
+  - **La lista** lleva buscador (en los filtros, con `searchDisplay: "ON"` o con más de 8 opciones) y una marca en cada
+    opción; las elegidas, resaltadas con el color de la marca.
+  - **Al elegir:** en la múltiple, las opciones se marcan sin cerrar la lista ni pulsar ningún botón; en la única,
+    elegir la cierra. Se cierra al pulsar fuera.
+  - **En los filtros de un listado**, como el filtro de usuario de una lista de registros: la etiqueta dentro del campo,
+    en mayúsculas, y vacío «Cualquiera». En los formularios, la etiqueta encima.
+  - **La fecha:** se puede escribir, y el icono abre un calendario propio (mes, días de lunes a domingo, hoy marcado).
+    En los filtros, una sola fecha de rango («desde – hasta»): en el calendario, el primer día marca el inicio y el
+    segundo, el fin.
+  - **Los selectores con búsqueda** de un solo valor (`a!pickerFieldCustom`) pasan a desplegables con buscador.
+  - **Dónde va:** en el runtime (`choiceSingle`, `choiceMulti` y `dateInput` de `appian-kit.js`) y en `design-rules.md`.
+    Lleva su prueba en el selftest: altura constante, «•••» con todos los valores, la lista que no se cierra al marcar
+    en la múltiple y el rango de fechas. Los selectores de usuarios y grupos (`a!pickerFieldUsers`) no se tocaron.
+
 - `leer_fuentes.py`: un Excel del cliente puede marcar con el color de la letra o del relleno lo que el cliente añade (por ejemplo,
   lo nuevo en otro color), y la conversión a texto lo pierde: valorar marcar esas celdas en el `.md`.
 - Comparar dos versiones de un documento del equipo (apartado a apartado, sin paginación ni rutas de imágenes, con las imágenes
