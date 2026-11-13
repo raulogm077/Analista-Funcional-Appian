@@ -860,6 +860,10 @@ def comprueba_extraccion(carpeta):
     if informe.get("status") != "complete" or informe.get("objectListComplete") is not True:
         return "no se pudo", [f"la extracción no terminó (estado «{informe.get('status')}»). Si fue por la sesión del Dev "
                               "MCP, entra de nuevo y repítela."]
+    total = informe.get("errorCount")
+    if entero(total) and total > len(errores):      # el informe guarda solo los primeros: de los demás no se sabe
+        return "no se pudo", [f"el informe de la extracción trae {len(errores)} de sus {total} errores: no se puede "
+                              "saber si los demás son de los previstos."]
     # Qué extracción es: se mira la que se da; no se sabe si es la del banco ni de qué versión del Dev MCP
     servidor_de = informe.get("server") if isinstance(informe.get("server"), dict) else {}
     dice = [f"de «{(app or {}).get('name', '?')}», del {informe.get('startedAt', '?')}, en {servidor_de.get('url', '?')}: "

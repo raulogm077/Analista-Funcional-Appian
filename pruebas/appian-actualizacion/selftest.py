@@ -749,7 +749,7 @@ def main():
                                   error("getRecordEventsConfig", "recordType",
                                         "API error (HTTP 403): Record events not configured for this record type")]}
             informe.update(cambios)
-            informe["errorCount"] = len(informe["errors"])
+            informe.setdefault("errorCount", len(informe["errors"]))
             raw = tmp / nombre / "extraccion" / "mcp_raw"
             raw.mkdir(parents=True)
             (tmp / nombre / "extraccion" / "extraction_report.json").write_text(json.dumps(informe), encoding="utf-8")
@@ -805,6 +805,9 @@ def main():
         c, out, err = lanza("comprobar", "--extraccion", extraccion("cortada", status="partial"), en=vacia)
         comprueba("una extracción que no terminó no es un fallo: no se pudo comprobar",
                   c == 2 and "La extracción: NO SE PUDO" in out and "partial" in out, out + err)
+        c, out, err = lanza("comprobar", "--extraccion", extraccion("con más errores", errorCount=400), en=vacia)
+        comprueba("un informe que no trae todos sus errores no pasa por los que enseña: no se pudo comprobar",
+                  c == 2 and "La extracción: NO SE PUDO" in out and "3 de sus 400 errores" in out, out + err)
         c, out, err = lanza("comprobar", "--extraccion", tmp / "no hay extracción", en=vacia)
         comprueba("sin informe de extracción, tampoco, y dice cómo se hace",
                   c == 2 and "NO SE PUDO" in out and "devmcp_extract.py" in out, out + err)
