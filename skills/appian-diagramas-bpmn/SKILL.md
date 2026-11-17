@@ -42,8 +42,9 @@ En la carpeta que indique quien llama, dentro de `<p>`:
 
 - **Tareas:** una tarjeta de 120 × 96 con el pictograma de su tipo arriba (persona, mano, engranaje, guion, subproceso o llamada) y el nombre debajo. Si el nombre acaba en un código entre corchetes (`[EJ-01.001]`), el código va en una línea aparte, en monoespaciada; `leer` devuelve el nombre entero, como siempre.
 - **El tipo de una tarea** va en el estilo (`tipo=manual`), no en un marcador BPMN. Los `.drawio` de antes, con el marcador, se leen igual, y pasan al aspecto actual cuando se recolocan.
-- **Adornos:** el pictograma de cada tarea (hijo de la tarea: se mueve con ella) y la cabecera de la página (título del proceso y leyenda) son imágenes sin texto. `leer` y `comparar` no los cuentan como pasos; no hace falta tocarlos.
-- **Carriles** con el nombre en horizontal, arriba a la izquierda; secuencia en azul, mensajes en gris discontinuo, participantes externos en naranja, y las etiquetas de los flujos en monoespaciada.
+- **Adornos:** el pictograma de cada tarea (hijo de la tarea: se mueve con ella), la cuadrícula y la cabecera de la página (título del proceso y leyenda) son imágenes sin texto. `leer` y `comparar` no los cuentan como pasos; no hace falta tocarlos.
+- **Cuadrícula de fondo** de 24 px, como en stack-diagram: otro adorno, detrás de todo, que cubre los carriles y los participantes externos. Sale en el PNG (la cuadrícula del editor de draw.io no sale) y se puede borrar en draw.io sin que cambie el proceso.
+- **Carriles** semitransparentes, para que se vea la cuadrícula, con el nombre en horizontal, arriba a la izquierda; secuencia en azul, mensajes en gris discontinuo, participantes externos en naranja, y las etiquetas de los flujos en monoespaciada.
 - **Salidas de una puerta hacia su misma fila:** si hay otro paso en medio, van en abanico, cada una por su pasillo y más lejos cuanto más lejos está su destino, sin cruzarse ni pasar por encima de otra forma o de su texto. Si no caben en el carril sin pisar nada, se quedan como las coloca el motor.
 - Los PNG los pinta el visor de draw.io: la imagen es igual a lo que se ve al abrir el `.drawio`.
 

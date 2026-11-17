@@ -21,7 +21,7 @@ Este módulo sabe:
 - validar un proceso y comparar dos.
 Solo usa la biblioteca estándar.
 """
-import base64, bisect, copy, html, json, pathlib, re, sys, urllib.parse, zlib
+import base64, bisect, copy, html, json, math, pathlib, re, sys, urllib.parse, zlib
 import xml.etree.ElementTree as ET
 
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
@@ -89,7 +89,7 @@ ID_TRAMO = re.compile(r"^tramo-(\d+)$")
 NOMBRE_TRAMO = re.compile(r"^(.*?) \(tramo \d+ de \d+(?:: .*)?\)$")   # «<proceso> (tramo N de M: <primero> – <último>)»
 # el nombre del carril, en horizontal arriba a la izquierda (como la etiqueta de un grupo), sin cabecera girada
 ESTILO_CARRIL = ("swimlane;horizontal=1;startSize=26;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;align=left;"
-                 f"spacingLeft=12;fontColor={ACENTO};fillColor=#f5f8fe;swimlaneFillColor=#f5f8fe;strokeColor=#a9c0ee;"
+                 f"spacingLeft=12;fontColor={ACENTO};fillColor=#f5f8fe;swimlaneFillColor=#f5f8fe;fillOpacity=50;strokeColor=#a9c0ee;"
                  "swimlaneLine=0;" + FUENTE)
 ESTILO_FLUJO = (f"edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor={ACENTO};strokeWidth=1.6;"
                 f"endArrow=block;endFill=1;endSize=5;fontColor={ACENTO};labelBackgroundColor={PAPEL};fontFamily={MONO};")
@@ -185,6 +185,31 @@ def cabecera(titulo, ancho, mensajes, pre=""):
     return (f'<mxCell id="{pre}cabecera" value="" style="shape=image;image={_uri_svg(svg)};imageAspect=0;adorno=1;'
             f'editable=0;" vertex="1" parent="1"><mxGeometry x="0" y="-68" width="{ancho:.0f}" height="56" '
             'as="geometry"/></mxCell>')
+
+
+CUADRO, RAYA = 24, "#e8ebf1"   # la cuadrícula de papel milimetrado del fondo: paso y color de las líneas
+
+
+def cuadricula(geo, pre=""):
+    """La cuadrícula del fondo, como en stack-diagram: un adorno (imagen sin texto) detrás de todo, que cubre los carriles
+    y los participantes externos con un margen. Sale en el PNG (la del editor de draw.io, no) y leer() la ignora."""
+    franjas = list(geo.get("carriles", {}).values()) + list((geo.get("externos") or {}).values())
+    if not franjas:
+        return ""
+    arriba = min(f[0] for f in franjas) - CUADRO
+    abajo = max(f[0] + f[1] for f in franjas) + CUADRO
+    # cuadros enteros, y la última raya a la derecha y abajo: la cuadrícula no acaba en un cuadro cortado
+    x0 = -CUADRO
+    ancho = math.ceil((geo["ancho"] + 2 * CUADRO) / CUADRO) * CUADRO + 1
+    alto = math.ceil((abajo - arriba) / CUADRO) * CUADRO + 1
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{ancho:.0f}" height="{alto:.0f}" '
+           f'viewBox="0 0 {ancho:.0f} {alto:.0f}"><defs><pattern id="c" width="{CUADRO}" height="{CUADRO}" '
+           f'patternUnits="userSpaceOnUse"><path d="M {CUADRO} 0 L 0 0 0 {CUADRO}" fill="none" stroke="{RAYA}" '
+           f'stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(#c)"/>'
+           f'<path d="M {ancho - 0.5:.1f} 0 V {alto:.0f} M 0 {alto - 0.5:.1f} H {ancho:.0f}" stroke="{RAYA}"/></svg>')
+    return (f'<mxCell id="{pre}cuadricula" value="" style="shape=image;image={_uri_svg(svg)};imageAspect=0;adorno=1;'
+            f'editable=0;movable=0;resizable=0;rotatable=0;deletable=1;" vertex="1" parent="1"><mxGeometry x="{x0:.0f}" '
+            f'y="{arriba:.0f}" width="{ancho:.0f}" height="{alto:.0f}" as="geometry"/></mxCell>')
 
 
 def con_lado(estilo, lado):
@@ -865,6 +890,7 @@ def xml_drawio(paginas):
         hojas.append(f'<diagram id="{"proceso" if uno else f"tramo-{k}"}" name="' + _xml_attr(titulo)
                      + f'"><mxGraphModel grid="1" gridSize="10" page="0" math="0" background="{PAPEL}"><root>'
                      '<mxCell id="0"/><mxCell id="1" parent="0"/>'
+                     + cuadricula(geo, "" if uno else f"t{k}-")
                      + cabecera(titulo, geo["ancho"], any(es_mensaje(f, proc) for f in proc["flujos"]), "" if uno else f"t{k}-")
                      + "".join(_celdas(proc, geo, "" if uno else f"t{k}-"))
                      + "</root></mxGraphModel></diagram>")

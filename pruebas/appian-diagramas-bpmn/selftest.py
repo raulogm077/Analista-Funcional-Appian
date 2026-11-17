@@ -9,8 +9,8 @@ ancho del PNG. Comprueba también lo que se hace sin navegador, un proceso que n
 colocación por capas no dibuje conexiones falsas ni deje las etiquetas pegadas a la flecha, que la etiqueta de cada
 salida de una puerta vaya sobre un tramo suyo (también en 1.170 procesos al azar), que la línea de una nota no cruce la
 etiqueta de su paso, que ninguna etiqueta de flujo pise nada (con Mermaid y sin navegador), el temporizador que
-interrumpe, los avisos sin capa, el error suelto en BPMN, el aspecto de las tarjetas (y que los .drawio de antes se
-sigan leyendo) y las salidas de una puerta en abanico, sin cruzarse.
+interrumpe, los avisos sin capa, el error suelto en BPMN, el aspecto de las tarjetas y la cuadrícula (y que los .drawio de
+antes se sigan leyendo) y las salidas de una puerta en abanico, sin cruzarse.
 Sale con 0 si todo va bien (tarda unos tres minutos).
 
   python3 pruebas/appian-diagramas-bpmn/selftest.py
@@ -1608,6 +1608,19 @@ def tema(tmp):
           "aspecto: cada tarea lleva su pictograma, hijo de la tarea (se mueve con ella)")
     check(all(f"tipo={p['tipo']};" in cel[p["id"]].get("style", "") for p in tareas), "aspecto: el tipo va en tipo= del estilo")
     check(any(c.endswith("cabecera") and "adorno=1" in (cel[c].get("style") or "") for c in cel), "aspecto: cabecera con título")
+    root, _ = celdas(d)
+    orden = [c.get("id") for c in root]
+    rejilla = cel.get("cuadricula")
+    carriles = [c for c in root if "swimlane" in (c.get("style") or "")]
+    def caja(c):
+        g = c.find("mxGeometry")
+        return [float(g.get(k, 0)) for k in ("x", "y", "width", "height")]
+    cubre = rejilla is not None and all(
+        caja(rejilla)[0] <= caja(c)[0] and caja(rejilla)[1] <= caja(c)[1]
+        and caja(c)[0] + caja(c)[2] <= sum(caja(rejilla)[0::2]) and caja(c)[1] + caja(c)[3] <= sum(caja(rejilla)[1::2])
+        for c in carriles)
+    check(rejilla is not None and "adorno=1" in rejilla.get("style", "") and orden.index("cuadricula") == 2 and cubre,
+          "aspecto: cuadrícula de fondo detrás de todo, cubriendo los carriles")
     valor = cel["ACT-01"].get("value", "")
     check("<span" in valor and "[EJ-01.001]" in valor and "monospace" in valor, "aspecto: el código va en su línea, en monoespaciada")
     proc, _, _ = dm.leer(str(d))
