@@ -290,7 +290,7 @@ python3 <skill>/scripts/mermaid.py --md documento.md [otro.md …]          # va
 - **Varias páginas:** solo se lee y se cambia la primera página del `.drawio` o, si va en tramos, sus páginas de tramo («tramo-N»); las demás se conservan. Para un proceso con una pestaña por fase, ver «Un proceso con varias fases en pestañas».
 - **Tramos:** draw.io no une formas de dos páginas, así que un flujo entre dos tramos no se dibuja a mano: se pide con `actualizar` (con `--recolocar` si alguien colocó los tramos a mano). Los enlaces (ENL-nn-S y ENL-nn-E) no se renombran ni se borran sueltos.
 - **Pools:** si los carriles están dentro de un pool, el nombre del pool es el del proceso. Un participante externo es una franja marcada por la herramienta: si en draw.io se dibuja un pool nuevo a mano, se lee como un carril; para un participante nuevo, usa `externo`.
-- **Flujos de mensaje:** van en vertical entre el paso y su participante y pueden cruzar los carriles que hay entre los dos.
+- **Flujos de mensaje:** van en vertical entre el paso y su participante y pueden cruzar los carriles que hay entre los dos; si debajo del paso hay otra forma o su nombre, la rodean con un quiebro.
 - **Eventos de borde:** en draw.io, un plazo o un error sale como un evento unido a su tarea con línea discontinua. Se puede pegar a la tarea a mano.
 - **Flujos nuevos en un diagrama colocado a mano:** los traza draw.io y pueden cruzar alguna forma. Se retocan en draw.io o se usa `--recolocar`.
 - **Tamaño en un documento vertical:** el proceso completo puede quedar pequeño. Conserva la resolución de la imagen al insertarla y enlaza su `.drawio` para consultar el detalle, sin multiplicar las páginas del documento.

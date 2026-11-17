@@ -1146,20 +1146,29 @@ def corredores_ortogonales(tmp):
         if k in (43, 46, 677) and d:
             fallan.append(f"{k}: conserva conexiones falsas")
         if k == 43:
-            # La primera solución libre pasa por y=83. Esta nota ocupa ese
-            # corredor y deja libre la ruta antigua en y=71; el enrutador debe
-            # buscar otra solución o devolverla sin cruzar la nota. El mensaje
-            # al participante externo permanece fuera de la búsqueda.
+            # Una nota sobre el tramo horizontal más largo de la solución sin
+            # ella: el enrutador debe buscar otra o devolver la antigua sin
+            # cruzar la nota. El mensaje al participante externo permanece
+            # fuera de la búsqueda.
+            sin_nota, posiciones_sin, _ = dm.leer(despues)
+            formas = dm._cajas(proc, base)
+            libres = []
+            for fl, camino in _caminos(sin_nota, posiciones_sin):
+                for p, q in zip(camino, camino[1:]):
+                    if abs(p[1] - q[1]) <= 1 and abs(q[0] - p[0]) >= 120:
+                        caja = ((p[0] + q[0]) / 2 - 60, p[1] - 20, 120, 40)
+                        if not any(caja[0] < c[0] + c[2] and caja[0] + caja[2] > c[0] and caja[1] < c[1] + c[3]
+                                   and caja[1] + caja[3] > c[1] for c in formas):
+                            libres.append((abs(q[0] - p[0]), caja))
             con_nota, g_nota = copy.deepcopy(proc), copy.deepcopy(base)
             con_nota["notas"] = [{"paso": "GW-01", "texto": "Nota en el corredor"}]
-            g_nota["anotaciones"] = [(500, 76, 120, 40)]
+            g_nota["anotaciones"] = [max(libres)[1] if libres else (500, 76, 120, 40)]
             con_nota["externos"] = ["Sistema externo"]
             con_nota["flujos"].append({"de": "ACT-04", "a": "Sistema externo", "etiqueta": "Aviso"})
             g_nota["flujos"].append([])
             co.colocar_externos(con_nota, g_nota)
             guardada = copy.deepcopy(g_nota)
             obstaculo = g_nota["anotaciones"][0]
-            sin_nota, posiciones_sin, _ = dm.leer(despues)
             tapa_candidato = any(_cruza(p, q, obstaculo) for fl, camino in _caminos(sin_nota, posiciones_sin)
                                  for p, q in zip(camino, camino[1:]))
             enrutado.mejorar(con_nota, g_nota, dm.TAM, dm.CABECERA)

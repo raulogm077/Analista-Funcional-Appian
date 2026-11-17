@@ -1191,9 +1191,12 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
     # introducir rutas nuevas (p. ej. posiciones importadas de Appian).
     generado = geo.get("etiqueta_en_horizontal") or not all(p.get("posicion") for p in proc["pasos"])
     if generado:
-        if geo.get("etiqueta_en_horizontal"):
-            import enrutado
-            enrutado.mejorar(proc, geo, tam, cabecera)
+        import enrutado
+        if not geo.get("etiqueta_en_horizontal"):
+            enrutado.ortogonalizar(proc, geo, tam)
+            geo["trazado_generado"] = True       # con Mermaid: la herramienta también puede volver a trazarlo
+        enrutado.mejorar(proc, geo, tam, cabecera)
+        geo.pop("trazado_generado", None)
         despejar_eventos_de_borde(proc, geo, tam, cabecera)
         separar_ida_vuelta(proc, geo, tam, cabecera)
         abanico_de_salidas(proc, geo, tam, eventos, puertas)

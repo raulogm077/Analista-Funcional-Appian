@@ -583,6 +583,39 @@ def entrada_mensaje(f, centro, ancho, externos, sitio=0.5, ancho_paso=0):
     return f"exitX={x:.4f};exitY=0;exitDx=0;exitDy=0;entryX={sitio:.4f};entryY=1;entryDx=0;entryDy=0;"
 
 
+
+def _vertical_mensaje(f, centro, tam, geo, externos, sitio, proc, caminos=()):
+    """Por dónde baja un flujo de mensaje de su paso a su participante sin pisar otra forma ni su nombre: (sitio, [])
+    con el sitio del borde del paso más cercano al pedido cuya vertical está libre o, si ninguna lo está, (sitio,
+    puntos) con un quiebro justo debajo del paso hasta la vertical libre más cercana."""
+    paso = f["de"] if f["a"] in externos else f["a"]
+    ext = f["a"] if f["a"] in externos else f["de"]
+    (cx, cy), (w, h) = centro[paso], tam
+    y0, y1 = cy + h / 2, geo["externos"][ext][0]
+    if y1 <= y0:
+        return sitio, []
+    obst = [c for c in _cajas(proc, geo) if not (c[0] <= cx <= c[0] + c[2] and c[1] <= cy <= c[1] + c[3])]
+
+    verticales = [(p[0], min(p[1], q[1]), max(p[1], q[1])) for c in caminos for p, q in zip(c, c[1:]) if abs(p[0] - q[0]) <= 1]
+
+    def libre(x, desde):
+        # ni por una forma o un nombre, ni pegado a la vertical de otro flujo, que parecería el mismo
+        return not any(c[0] - 4 < x < c[0] + c[2] + 4 and c[1] < y1 and c[1] + c[3] > desde for c in obst) and \
+            not any(abs(vx - x) < 12 and a < y1 and b > desde for vx, a, b in verticales)
+    for s in sorted({sitio} | {k / 20 for k in range(2, 19)}, key=lambda s: abs(s - sitio)):
+        if libre(cx + (s - 0.5) * w, y0):
+            return s, []
+    quiebro = y0 + 16
+    if any(c[0] < cx + w / 2 and c[0] + c[2] > cx - w / 2 and c[1] < quiebro + 4 and c[1] + c[3] > y0 for c in obst):
+        return sitio, []
+    x0 = cx + (sitio - 0.5) * w
+    for d in range(int(w / 2) + 12, int(geo["ancho"]), 8):
+        for x in (cx + d, cx - d):
+            if 8 < x < geo["ancho"] - 8 and libre(x, quiebro - 4) and \
+                    not any(c[1] < quiebro < c[1] + c[3] and c[0] < max(x, x0) and c[0] + c[2] > min(x, x0) for c in obst):
+                return sitio, [(x0, quiebro), (x, quiebro)]
+    return sitio, []
+
 def entrada_asociacion(lado, nota=None, paso=None):
     """Línea de la nota a su paso, en vertical por donde se solapan en horizontal; si no se solapan (una nota al lado de
     la etiqueta del paso), desde la esquina de la nota más cercana al paso. `nota` y `paso`: (x, w)."""
@@ -804,13 +837,20 @@ def _celdas(proc, geo, pre=""):
             mensajes.setdefault(f["de"] if f["a"] in ext_id else f["a"], []).append(i)
     for i, f in enumerate(proc["flujos"], 1):
         st = estilo_flujo(f, ext_id)
+        puntos_mensaje = []
         pos = ""
         desvio = ""
         if f["de"] in ext_id or f["a"] in ext_id:
             paso = f["de"] if f["a"] in ext_id else f["a"]
             suyos = mensajes.get(paso, [i])
             k, n = suyos.index(i) if i in suyos else 0, len(suyos)
-            st += entrada_mensaje(f, centro, geo["ancho"], ext_id, (k + 1) / (n + 1), TAM[tipo[paso]][0])
+            sitio, puntos_mensaje = _vertical_mensaje(f, centro, TAM[tipo[paso]], geo, ext_id, (k + 1) / (n + 1), proc,
+                                                     list(caminos.values()))
+            st += entrada_mensaje(f, centro, geo["ancho"], ext_id, sitio, TAM[tipo[paso]][0])
+            if puntos_mensaje:
+                x_libre = puntos_mensaje[-1][0]
+                st = re.sub(r"(entryX|exitX)=[0-9.]+;(entryY=0|exitY=0)",
+                            lambda m: f"{m.group(1)}={x_libre / geo['ancho']:.4f};{m.group(2)}", st)
             if n > 1 and f.get("etiqueta"):
                 # varias verticales juntas: la etiqueta, hacia fuera de la suya, para que no pise la de al lado
                 medio = colocacion.ancho_etiqueta_flujo(f["etiqueta"]) / 2 + 4
@@ -825,6 +865,8 @@ def _celdas(proc, geo, pre=""):
                 pos = f' x="{2 * min(max(frac, 0), 1) - 1:.3f}"'
         mensaje = f["de"] in ext_id or f["a"] in ext_id
         pts = geo["flujos"][i - 1] if i - 1 < len(geo.get("flujos", [])) and not mensaje else []
+        if mensaje and puntos_mensaje:
+            pts = puntos_mensaje if f["a"] in ext_id else puntos_mensaje[::-1]
         if f.get("etiqueta") and i in caminos:
             # su sitio de siempre: el que validó la colocación por capas o, con Mermaid, el centro del flujo; si ahí pisa
             # una forma, la etiqueta de un evento o una puerta o una nota, se busca otro en el flujo
