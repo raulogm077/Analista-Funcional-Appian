@@ -43,6 +43,17 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   o publicar. Resultado esperado: quien consulte el repositorio entiende la versión real que recibe, sin confundir
   propuestas pendientes ni resultados históricos con capacidades actuales. Aprovechar el flujo de cierre existente,
   sin crear una lista paralela ni un informe por cada cambio. [repositorio · persona y sesión]
+- **Que cada punto de esta lista se entienda sin la conversación en la que nació.** Petición de Raúl, 17-nov.
+  Problema: la cabecera ya pide que cada pendiente explique el problema, qué hay que hacer y el resultado esperado,
+  pero quedan puntos de una o dos líneas que no dan contexto para abordarlos sin reconstruir su historia. Por ejemplo,
+  «Índice del DOCX», «Diagramas. Reducir los 30/38 avisos residuales…» o «URL `/help/26.6/`…» no dicen de dónde
+  salen, qué se midió ni qué falta por decidir. Qué hacer: reforzar la regla de la cabecera para que cada punto diga
+  de dónde sale (la prueba o la conversación, la fecha y quién lo pidió), el problema con su evidencia o el enlace a
+  ella, qué hay que hacer, lo ya decidido y lo que falta por decidir, el resultado esperado y a quién toca. Después,
+  repasar los puntos actuales: completar los que no lo cumplan o enlazar el documento que ya lo explica, y proponer a
+  Raúl quitar los que ya nadie sepa explicar. Mirar también si la frase de `CLAUDE.md` que manda apuntar aquí debe
+  decirlo. Resultado esperado: una persona o una sesión nueva que abra un punto puede empezar a trabajar en él sin
+  preguntar de qué se trataba. [repositorio · sesión]
 - **Regresión en un evolutivo: medir antes de escribirla.** Decisión de Raúl (7-nov): repetir según el impacto
   real del cambio (presentación, lo afectado; una regla, acción o filtro, sus casos y los escenarios de otros flujos y
   roles que puedan verse afectados; transversal o sin acotar, todo), las pruebas de cada issue al construir y la
@@ -114,8 +125,10 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   fallo del aislamiento. [persona]
 - **Otras novedades, sin consumidor todavía** (señaladas por Codex): de Appian 26.10, el ancestro común en el ALM de
   las expression rules; del DevMCP 26.9.10, no de la plataforma, las cinco herramientas de Task Reports y
-  `updateBehavior` en las relaciones. Se contrastan y se incorporan cuando una tarea las necesite. El Deployment MCP
-  2.0 existe desde el 2-sep: no es de la 26.10. [flujo]
+  `updateBehavior` en las relaciones; del DevMCP 26.9.20, el catálogo de comprobaciones de `validateDesignObjects`
+  (`readout=true`), los grupos de páginas y el ancho de página en `createSite`/`updateSite` (probados el 17-nov) y,
+  solo en el SDK del bundle y sin herramienta todavía, editar AI skills y leer tipos de datos. Se contrastan y se
+  incorporan cuando una tarea las necesite. El Deployment MCP 2.0 existe desde el 2-sep: no es de la 26.10. [flujo]
 - **Fila D con otra fuente que la que cita.** Un aviso de `comprobar.py` si la «Decisión» de una fila D cita fuentes y
   ninguna es la de su «Fuente» (es comparar, no entender). Solo si, tras el arreglo de `version --decision`, vuelven a
   aparecer filas así escritas a mano. [flujo]
@@ -125,6 +138,49 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   `main` ni en esta rama; es independiente de ella. [persona]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
+
+Los cuatro puntos siguientes salen de probar el DevMCP 26.9.20 (build 20261116-162817) en Indra-spain el 17-nov, con
+una aplicación de prueba ya borrada. Las pruebas y las respuestas literales están en
+`Pruebas-plugin/actualizaciones-devmcp/20261117-26.9.15-a-26.9.20/novedades.md`.
+
+- **El catálogo de comprobaciones no dice qué impide guardar.** Problema: `validateDesignObjects` con `readout=true`
+  devuelve las comprobaciones de calidad del Dev MCP (más de cien) con un campo `enforcement` que dice que las BLOCK
+  rechazan el guardado. En la prueba solo lo hizo `noTerminatingEndEvent` (un fin de proceso que no termina el
+  proceso: 400 «Quality check failed»). Se guardaron sin error objetos con otras cinco claves BLOCK: `unusedRuleInput`,
+  `duplicateRoleMapEntryWarning`, `individualUserDetectedWarning`, `noAdminGroupWarning` y `missing-description`. La
+  tentación sería usar el catálogo para quitar de las puertas de calidad lo que «ya garantiza el Dev MCP»; con estos
+  datos no se puede. Además, algunas comprobaciones (el prefijo del nombre, los grupos de la aplicación) solo salen al
+  validar la aplicación o el paquete, no el objeto suelto. Qué hacer: en `10-quality-gates.md`, junto a la llamada a
+  `validateDesignObjects`, decir que el catálogo dice qué se comprueba y no qué impide guardar, que un objeto guardado
+  puede tener hallazgos de `lint`, y que al cerrar una unidad se valida también la aplicación o el paquete. Quitar de
+  las puertas solo lo que se haya visto rechazar al guardar. Resultado esperado: nadie da un objeto por bueno porque se
+  guardó ni recorta las puertas mirando el catálogo. [buenas prácticas]
+- **Fila 13 de las divergencias (`duplicateRoleMapEntryWarning`): la causa ya está probada.** Problema: toda regla,
+  interfaz y constante que el Dev MCP crea con `appUuid` sale con el aviso «Duplicate entries detected», también en
+  una aplicación recién creada. La fila lo atribuye a que el objeto lleva los grupos de la aplicación además de los que
+  hereda de su carpeta, pero dice que es una deducción sin probar. El 17-nov se probó: al quitar los grupos propios del
+  objeto (roles vacíos y `inheritSecurity: true`, así que solo hereda de la carpeta), o al dejarlos y quitar la herencia
+  (`inheritSecurity: false`), el aviso desaparece, también al validar la aplicación entera. Qué hacer: en la fila 13 de
+  `14-official-skill-divergences.md`, cambiar la deducción por lo probado y dar las dos salidas, sin convertirlas en un
+  paso obligatorio de cada creación: el aviso es MEDIUM y no impide guardar, y la fila ya pide revisar que los grupos y
+  roles coincidan con el diseño. Resultado esperado: quien construye sabe de dónde sale el aviso, no lo toma por un
+  fallo suyo y sabe quitarlo si el proyecto lo pide. [buenas prácticas]
+- **Fila nueva en las divergencias: mover una página de un site entre un grupo y el primer nivel.** Problema: con
+  `updateSite`, mover una página existente (con su `uuid`) fuera de un grupo o dentro de él da HTTP 500 en los dos
+  sentidos («Batch update returned unexpected row count…» y «deleted object would be re-saved by cascade…»), y el
+  site no cambia. Lo que funciona es quitarla y añadirla como página nueva, sin `uuid`. Entonces la página cambia de
+  UUID y de dirección (`kI1hGw` → `v-OAoA`), así que los enlaces guardados a ella dejan de valer. La skill oficial no
+  trata los grupos de páginas, y el doc 09 §2.6 ya avisa de que en Designer moverla también es borrarla y crearla. Qué
+  hacer: una fila en §3 de `14-official-skill-divergences.md` con el síntoma, la salida y la consecuencia para los
+  enlaces. Resultado esperado: quien reorganiza la navegación de un site la mueve sin reintentar el error y avisa
+  antes de que cambie la dirección. [buenas prácticas]
+- **Ingeniería inversa: contar las páginas que hay dentro de los grupos de un site.** Problema: con el DevMCP 26.9.20,
+  `getSite` devuelve un grupo de páginas como una entrada con `kind: GROUP` y sus páginas dentro, en `pages`.
+  `build_model.py` (rama `site`, `pageCount`) cuenta solo el primer nivel, así que un grupo de dos páginas cuenta como
+  una y no cuenta las que lleva dentro. No se sabe cómo devolvía la 26.9.15 un site con grupos. Qué hacer: contar también las
+  páginas de cada grupo (y cuántos grupos hay), mirar si otro script de la skill recorre las páginas de un site, y
+  añadir el caso a `pruebas/appian-reverse-engineering`. Resultado esperado: el inventario y la documentación de una
+  aplicación cuentan y nombran todas las páginas de sus sites. [ingeniería inversa]
 
 ## 3. Campañas posteriores al trabajo actual
 
