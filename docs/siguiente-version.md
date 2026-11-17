@@ -139,9 +139,9 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
 
-Los cuatro puntos siguientes salen de probar el DevMCP 26.9.20 (build 20261116-162817) en Indra-spain el 17-nov, con
-una aplicación de prueba ya borrada. Las pruebas y las respuestas literales están en
-`Pruebas-plugin/actualizaciones-devmcp/20261117-26.9.15-a-26.9.20/novedades.md`.
+Los cinco puntos siguientes salen de probar el DevMCP 26.9.20 (build 20261116-162817) en Indra-spain el 17-nov, con
+una aplicación de prueba ya borrada, y de leer sus release notes. Las pruebas, las respuestas literales y el
+contraste con las release notes están en `Pruebas-plugin/actualizaciones-devmcp/20261117-26.9.15-a-26.9.20/novedades.md`.
 
 - **El catálogo de comprobaciones no dice qué impide guardar.** Problema: `validateDesignObjects` con `readout=true`
   devuelve las comprobaciones de calidad del Dev MCP (más de cien) con un campo `enforcement` que dice que las BLOCK
@@ -177,10 +177,29 @@ una aplicación de prueba ya borrada. Las pruebas y las respuestas literales est
 - **Ingeniería inversa: contar las páginas que hay dentro de los grupos de un site.** Problema: con el DevMCP 26.9.20,
   `getSite` devuelve un grupo de páginas como una entrada con `kind: GROUP` y sus páginas dentro, en `pages`.
   `build_model.py` (rama `site`, `pageCount`) cuenta solo el primer nivel, así que un grupo de dos páginas cuenta como
-  una y no cuenta las que lleva dentro. No se sabe cómo devolvía la 26.9.15 un site con grupos. Qué hacer: contar también las
-  páginas de cada grupo (y cuántos grupos hay), mirar si otro script de la skill recorre las páginas de un site, y
-  añadir el caso a `pruebas/appian-reverse-engineering`. Resultado esperado: el inventario y la documentación de una
-  aplicación cuentan y nombran todas las páginas de sus sites. [ingeniería inversa]
+  una y no cuenta las que lleva dentro. No se sabe cómo devolvía la 26.9.15 un site con grupos. Qué hacer: contar
+  también las páginas de cada grupo (y cuántos grupos hay), mirar si otro script de la skill recorre las páginas de un
+  site, y añadir el caso a `pruebas/appian-reverse-engineering`. Resultado esperado: el inventario y la documentación
+  de una aplicación cuentan y nombran todas las páginas de sus sites. [ingeniería inversa]
+- **Evolutivos: ¿un objeto que ya incumple una comprobación que bloquea rechaza cualquier cambio?** De dónde sale: las
+  release notes de la 26.9.20 dicen que editar un nodo de proceso, o una vista, acción, filtro, campo, relación o fuente
+  de un record type, pasa ahora las mismas comprobaciones de calidad que crear el objeto; Raúl pidió apuntarlo el
+  17-nov. Problema: lo comprobado es que un cambio que introduce un fallo se rechaza (quitar el «terminar proceso» del
+  fin: 400 «Quality check failed»). No se sabe si un objeto que ya traía un fallo marcado BLOCK, porque se hizo en
+  Designer o antes de esta versión, rechaza también un cambio que no tiene nada que ver con ese fallo. Es el caso de
+  las aplicaciones reales de un evolutivo, y de FOR, cuyos record types ya llevan `unrecognizedFieldReference` (BLOCK
+  en el catálogo; fila 11 de las divergencias). La 26.9.15 tuvo un fallo de esta forma: `updateProcessModel`
+  rechazaba todo modelo hecho en Designer. Si pasa, un evolutivo se para en el primer cambio sin que el error apunte a
+  lo que se quería cambiar. Qué hacer: probarlo en una aplicación de usar y tirar de Indra-spain, nunca en FOR, IFA,
+  IFB, DEM ni BPS. Primero, un modelo de proceso que una persona hace en Designer con un fallo común en modelos
+  antiguos, una pasarela XOR con flujos sin etiqueta (`unlabeledGatewayFlow`, BLOCK); después, la sesión cambia por
+  MCP algo que no toca la pasarela (el nombre de otro nodo con `updateProcessModelNode` y la descripción con
+  `updateProcessModel`). Lo mismo con un record type que lleve un hallazgo BLOCK, añadiéndole una vista o un filtro.
+  Falta por decidir: qué hacer si se rechaza (arreglar antes el fallo previo dentro de la issue, o dejarlo a una
+  persona en Designer) y dónde se dice (una fila de las divergencias y el flujo de evolutivos de
+  `appian-best-practices`). Resultado esperado: antes del siguiente evolutivo se sabe si los objetos antiguos con
+  fallos admiten cambios por MCP y qué hacer cuando no. Cuándo: al preparar el siguiente evolutivo sobre una aplicación
+  existente, o antes si un cambio en FOR falla así. [prueba · persona en Designer · buenas prácticas]
 
 ## 3. Campañas posteriores al trabajo actual
 
