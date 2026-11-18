@@ -240,6 +240,11 @@ Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no en
     En los filtros, una sola fecha de rango («desde – hasta»): en el calendario, el primer día marca el inicio y el
     segundo, el fin.
   - **Los selectores con búsqueda** de un solo valor (`a!pickerFieldCustom`) pasan a desplegables con buscador.
+  - **La lista y el calendario flotan sobre la página.** Dentro de un modal, la lista colocada en absoluto bajo el campo
+    la recortaba el cuerpo del modal y no se veían los últimos valores (el subtipo de «Crear trámite», los lotes hijo de
+    otro modal). Se arregló colocándola fija sobre la página según el campo, hacia arriba si abajo no cabe, y
+    recolocándola al desplazar. La prueba: con el modal abierto, todas las opciones se ven (lo que hay en su centro es
+    la propia opción).
   - **Dónde va:** en el runtime (`choiceSingle`, `choiceMulti` y `dateInput` de `appian-kit.js`) y en `design-rules.md`.
     Lleva su prueba en el selftest: altura constante, «•••» con todos los valores, la lista que no se cierra al marcar
     en la múltiple y el rango de fechas. Los selectores de usuarios y grupos (`a!pickerFieldUsers`) no se tocaron.
@@ -254,6 +259,16 @@ Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no en
 - `leer_fuentes.py`: en una transcripción de Teams en Word sin hablantes, «Participantes» sale con un trozo de una
   intervención (`[01:10:20] ¿Vale, porque la reu la tenemos a las 10:30 h…` toma «… a las 10» como nombre, por los dos
   puntos de la hora). La expresión de los participantes debería exigir que tras los dos puntos no siga un número.
+- `proyecto.py version --df-cliente`: si las fuentes ya están en «Fuentes procesadas» con una versión sin el prefijo «DF
+  cliente» (apuntadas a mano, «0.2»), no las reconoce como del DF del cliente y añade otra fila por cada una, con un
+  «Qué es» genérico («Transcripción», «Documento Word») en lugar del que tenía. Debería poner al día la fila que ya
+  existe (la versión) y conservar su descripción e informe, o avisar.
+- `comprobar.py`: una fila de `decisiones.md` con más o menos columnas que su tabla pasa sin aviso. Ocurrió con una D del
+  cliente (8 columnas) escrita en la tabla de decisiones del equipo (6). Avisar de las filas cuyo número de columnas no
+  coincide con la cabecera.
+- Documento de dudas del equipo en Word: tras cada reunión se añadieron preguntas nuevas en otro color, en su apartado, y
+  las respuestas al final de cada pregunta («→ Respuesta 17/11: …»), con un script suelto que copia el formato del
+  párrafo vecino. Pasó tres veces en una semana: valorar una orden que lo haga desde `df-cliente-pendientes.md`.
 
 ## Menores
 
