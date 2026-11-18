@@ -591,11 +591,14 @@ def lados_nota(proc, usados, lados):
     cruzaría), corrida para que los flujos no la crucen. Si no queda otro, el de la etiqueta, pero al lado de ella
     («fuera_izquierda» o «fuera_derecha»): su línea entra en el paso por debajo de la etiqueta."""
     out = []
+    con_nota = {}      # paso: los lados que ya tiene una nota suya, para que la siguiente no la tape
     for n in proc.get("notas") or []:
         u = usados.get(n["paso"], {})
         etiqueta = lados.get(n["paso"])
-        libres = [lado for lado in ("arriba", "abajo") if lado not in u and lado != etiqueta]
-        con_flujos = [lado for lado in ("arriba", "abajo") if lado != etiqueta and _corrida(u.get(lado, set()))]
+        tomados = con_nota.setdefault(n["paso"], set())
+        libres = [lado for lado in ("arriba", "abajo") if lado not in u and lado != etiqueta and lado not in tomados]
+        con_flujos = [lado for lado in ("arriba", "abajo") if lado != etiqueta and lado not in tomados
+                      and _corrida(u.get(lado, set()))]
         if libres:
             out.append((libres[0], "centro"))
         elif con_flujos:
@@ -604,6 +607,7 @@ def lados_nota(proc, usados, lados):
             out.append((etiqueta, "fuera_derecha" if _corrida(u.get(etiqueta, set())) == "derecha" else "fuera_izquierda"))
         else:
             out.append(("arriba", "centro"))
+        tomados.add(out[-1][0])
     return out
 
 

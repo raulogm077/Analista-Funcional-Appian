@@ -287,7 +287,7 @@ def interrumpe(tmp):
 
 
 def avisos(tmp):
-    """T7: un aviso a un perfil del proceso no se dibuja (SKILL.md lo dice) y uno a un sistema externo es un flujo de
+    """T7: un aviso del proceso se dibuja como un `mensaje`, nunca como una nota (SKILL.md lo dice), y uno a un sistema externo es un flujo de
     mensaje desde la tarea, que no añade capa: un proceso de 9 tareas con dos avisos al registro mide lo mismo que sin
     ellos."""
     sin = entorno(sin_navegador=True)
@@ -319,8 +319,18 @@ def avisos(tmp):
           "avisos: los avisos a un sistema externo, flujos de mensaje desde la tarea, no añaden capa "
           f"({', '.join(f'{k}: {v:.0f} px' for k, v in ancho.items())})")
     skill = (SCRIPTS.parent / "SKILL.md").read_text(encoding="utf-8")
-    check("un aviso a un perfil del proceso no se dibuja" in skill.lower() and "en el carril «Aplicación»" not in skill,
-          "avisos: SKILL.md dice que un aviso a un perfil no se dibuja y ya no pide un mensaje en el carril «Aplicación»")
+    sys.path.insert(0, str(SCRIPTS))
+    import colocacion as co
+    dos = {"pasos": [{"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar"}],
+           "notas": [{"paso": "ACT-01", "texto": "Primera"}, {"paso": "ACT-01", "texto": "Segunda"}]}
+    lados = co.lados_nota(dos, {"ACT-01": {"abajo": {0}}}, {})
+    check(lados[0][0] != lados[1][0] or lados[0][1] != lados[1][1],
+          f"dos notas de un mismo paso no van en el mismo sitio, una encima de otra ({lados})")
+    regla = next((l for l in skill.splitlines() if l.startswith("- **Avisos:**")), "")
+    check("se dibuja como un `mensaje`" in regla and "nunca como una nota" in regla and "en su carril" in regla
+          and "correo general" in skill,
+          "avisos: SKILL.md dice que cada aviso va como un mensaje en el carril de quien lo envía, nunca como nota, "
+          "salvo el correo general de tareas asignadas")
 
 
 def cambios_temporales(tmp):

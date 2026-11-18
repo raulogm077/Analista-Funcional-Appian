@@ -91,7 +91,7 @@ Es un JSON con un paso y un flujo por línea:
 | `inicio_mensaje` | El proceso arranca al recibir un aviso | `EV-nn` |
 | `fin` | Evento de fin | `EV-nn` |
 | `temporizador` | Espera o plazo | `EV-nn` |
-| `mensaje` | Aviso que se envía como paso propio (ver «Avisos») | `EV-nn` |
+| `mensaje` | Aviso o correo que envía el proceso (ver «Avisos») | `EV-nn` |
 | `intermedio` | Otro evento intermedio | `EV-nn` |
 | `error` | Error que interrumpe la tarea en la que salta | `EV-nn` |
 
@@ -239,7 +239,12 @@ Si no hay diagrama aprobado, lo que no salga de forma explícita de las fuentes 
 - **Arranque:** `inicio_temporizador` si el proceso arranca solo a una hora o cada cierto tiempo (el nombre dice cuándo: «Cada día a las 08:00»); `inicio_mensaje` si arranca al recibir un aviso.
 - **Plazos:** un `temporizador` unido a la tarea que vigila con un flujo discontinuo. Al exportar a BPMN pasa a ser un evento de borde de esa tarea, que no la interrumpe (en el dibujo, con borde discontinuo). Si al vencer cancela la tarea, `"interrumpe": true` en el temporizador: borde continuo y, en el BPMN, `cancelActivity`. En draw.io va en «Editar datos» del temporizador (`interrumpe` = 1).
 - **Errores:** un `error` unido igual a la tarea en la que salta, y de él, el camino que se sigue. En el BPMN es un evento de borde que la interrumpe. Un `error` suelto y sin salidas se dibuja y se exporta como un fin de error.
-- **Avisos:** un aviso a un perfil del proceso no se dibuja: ya está en la tabla de avisos (AV) y en el paso que lo envía. Uno a un sistema u organismo externo es un flujo de mensaje desde la tarea que lo envía hasta el participante externo. Así ningún aviso añade una columna al diagrama. Un `mensaje` solo va si el proceso que ya existe lo tiene como paso propio (ingeniería inversa).
+- **Avisos:** cada aviso o correo que envía el proceso se dibuja como un `mensaje` (evento de envío con su sobre), nunca como una nota. Va justo después del paso que lo envía y en su carril; su nombre dice a quién y de qué («Aviso al área de negocio: lleva SESAI»), y lo que esté sin confirmar se dice en el nombre («(por confirmar)»).
+  - Si solo sale en un caso, va en la salida de la decisión que corresponda.
+  - Si salta por un plazo, va detrás de un `temporizador` unido a la tarea y termina en un fin propio.
+  - No se dibuja el correo general de la herramienta que avisa a cada grupo de que tiene una tarea asignada.
+  - Uno a un sistema u organismo externo es un flujo de mensaje desde la tarea que lo envía hasta el participante externo.
+  - Todos van también en la tabla de avisos (AV) del documento.
 - **Tamaño:** conserva el proceso completo, con la secuencia principal lo más lineal posible. No inventes subprocesos ni uses `tramos` por el número de tareas o para encajarlo en el documento. Los subprocesos responden al contenido del proceso, no al tamaño del dibujo.
 - **Notas:** las explicaciones van en el paso a paso del documento; en `notas`, solo lo que hay que ver en el propio diagrama. Una nota suelta que se deje en draw.io también sale en el PNG: bórrala si no debe verla el cliente.
 - **Detalles técnicos:** esperas, reintentos, colas, middleware o llamadas internas no son pasos del funcional. Si importan al lector, van como nota del paso al que afectan («Detalle técnico: espera de 1 minuto antes de leer las carpetas»).
