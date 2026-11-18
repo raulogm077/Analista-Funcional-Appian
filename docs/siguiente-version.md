@@ -249,6 +249,26 @@ Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no en
     Lleva su prueba en el selftest: altura constante, «•••» con todos los valores, la lista que no se cierra al marcar
     en la múltiple y el rango de fechas. Los selectores de usuarios y grupos (`a!pickerFieldUsers`) no se tocaron.
 
+- `appian-prototipos` y `appian-functional-analyst`: **la misma lógica de botones y de mensajes de error en todos los
+  formularios.** Pedido tras revisar un prototipo con el equipo; probado en un proyecto con un ajuste local:
+  - **El botón principal** de un formulario o modal («Crear», «Guardar», «Añadir», «Confirmar»…) está desactivado
+    hasta que están informados todos los obligatorios y no hay ningún error en los campos. El obligatorio lleva su
+    asterisco y no hace falta mensaje de «campo vacío».
+  - **Los campos de texto de los que depende un botón** llevan `refreshAfter: "KEYPRESS"`, para que se active mientras
+    se escribe y no al salir del campo. El kit no lo tiene: se añadió en el runtime (`textLike`) un guardado con espera
+    corta que conserva el foco y el cursor.
+  - **Un error de una regla de negocio** sale bajo el campo en cuanto se elige el valor (no al pulsar el botón) y
+    mantiene el botón desactivado.
+  - **El formato del mensaje**, en una o dos frases cortas: el hecho y, si bloquea, qué no se puede hacer («Este
+    expediente ya tiene 2 prórrogas finalizadas o en curso. No se pueden crear más prórrogas.»). Con los nombres de
+    los campos de la pantalla, sin prefijos («Error:», «SIGA:») ni códigos ni cuentas complicadas.
+  - **El error de otro sistema tras una acción** (alta en SIGA, generación de un documento) va en un aviso que se
+    puede cerrar: el título dice qué no se hizo («SIGA no ha creado la incidencia») y el texto, el motivo y qué hacer.
+  - **Dónde va:** las reglas de diseño de `appian-prototipos` (`design-rules.md`) y su validador (un botón principal
+    con obligatorios y sin `disabled` es un aviso), y en el DF las «Reglas de Validación» de cada pantalla, que hoy
+    dicen «si al pulsar "Crear" está vacío, se muestra el mensaje…»: pasan a «"Crear" está desactivado hasta…» y a
+    los mensajes de las reglas de negocio con este formato (`requerimientos-pantallas.md`, `df-cliente-plantilla.md`).
+    Con su prueba en el selftest de cada skill.
 - `leer_fuentes.py`: un Excel del cliente puede marcar con el color de la letra o del relleno lo que el cliente añade (por ejemplo,
   lo nuevo en otro color), y la conversión a texto lo pierde: valorar marcar esas celdas en el `.md`.
 - Comparar dos versiones de un documento del equipo (apartado a apartado, sin paginación ni rutas de imágenes, con las imágenes
