@@ -7,9 +7,20 @@ description: "Dibuja y mantiene los diagramas de proceso BPMN del proyecto en dr
 
 Esta skill es dueña del dibujo de los procesos y de su formato. El contenido (qué pasos hay y quién los hace) lo decide quien la llama: el analista o ingeniería inversa.
 
+`<p>` es la carpeta del proyecto y `<skill>`, la carpeta de esta skill.
+
+## Si te llaman directamente
+
+Cuando el usuario invoca esta skill con fuentes (reuniones, transcripciones, actas, un DF) en vez de con un proceso ya descrito:
+
+- Si el proyecto lleva análisis funcional (hay `analisis/funcional.md` o el usuario lo quiere), el proceso lo describe `appian-functional-analyst`: sigue su paso de diagramas y vuelve aquí para dibujarlo.
+- Si el usuario solo quiere el dibujo, descríbelo tú siguiendo «Partir de lo ya aprobado»: primero el diagrama aprobado, si lo hay; luego las fuentes, de la más reciente a la más antigua, y cada supuesto marcado.
+
+En los dos casos, la respuesta dice de qué fuentes sale el proceso y lista los supuestos y lo pendiente de validar.
+
 ## Ficheros de cada proceso
 
-Van juntos en la misma carpeta (`analisis/diagramas/` o la que indique quien llama). Sin `-o`, `crear` los deja junto al JSON de entrada.
+Van juntos en la misma carpeta (`analisis/diagramas/` o la que indique quien llama). Sin `-o`, `crear` los deja junto al JSON de entrada. `X` es el nombre del fichero JSON que se pasa a `crear` (no el campo `proceso`): ponle al JSON el nombre que deba tener el diagrama.
 
 | Fichero | Qué es |
 |---|---|
@@ -26,6 +37,16 @@ En la carpeta que indique quien llama, dentro de `<p>`:
 - `as-is/08-procesos-bpmn/*.{drawio,png,bpmn}`: los procesos de una aplicación existente
 - `as-is/08-procesos-bpmn/*.json`: el proceso de cada diagrama, de ingeniería inversa; igual que el del analista
 - `as-is/diagrams/*.{png,svg}`: la imagen de cada Mermaid de ingeniería inversa (`mermaid.py`)
+
+## Aspecto del dibujo
+
+- **Tareas:** una tarjeta de 120 × 96 con el pictograma de su tipo arriba (persona, mano, engranaje, guion, subproceso o llamada) y el nombre debajo. Si el nombre acaba en un código entre corchetes (`[EJ-01.001]`), el código va en una línea aparte, en monoespaciada; `leer` devuelve el nombre entero, como siempre.
+- **El tipo de una tarea** va en el estilo (`tipo=manual`), no en un marcador BPMN. Los `.drawio` de antes, con el marcador, se leen igual, y pasan al aspecto actual cuando se recolocan.
+- **Adornos:** el pictograma de cada tarea (hijo de la tarea: se mueve con ella), la cuadrícula y la cabecera de la página (título del proceso y leyenda) son imágenes sin texto. `leer` y `comparar` no los cuentan como pasos; no hace falta tocarlos.
+- **Cuadrícula de fondo** de 24 px, como en stack-diagram: otro adorno, detrás de todo, que cubre los carriles y los participantes externos. Sale en el PNG (la cuadrícula del editor de draw.io no sale) y se puede borrar en draw.io sin que cambie el proceso.
+- **Carriles** semitransparentes, para que se vea la cuadrícula, con el nombre en horizontal, arriba a la izquierda; secuencia en azul, mensajes en gris discontinuo, participantes externos en naranja, y las etiquetas de los flujos en monoespaciada.
+- **Salidas de una puerta hacia su misma fila:** si hay otro paso en medio, van en abanico, cada una por su pasillo y más lejos cuanto más lejos está su destino, sin cruzarse ni pasar por encima de otra forma o de su texto. Si no caben en el carril sin pisar nada, se quedan como las coloca el motor.
+- Los PNG los pinta el visor de draw.io: la imagen es igual a lo que se ve al abrir el `.drawio`.
 
 ## Formato del proceso
 
@@ -70,7 +91,7 @@ Es un JSON con un paso y un flujo por línea:
 | `inicio_mensaje` | El proceso arranca al recibir un aviso | `EV-nn` |
 | `fin` | Evento de fin | `EV-nn` |
 | `temporizador` | Espera o plazo | `EV-nn` |
-| `mensaje` | Aviso que se envía como paso propio (ver «Avisos») | `EV-nn` |
+| `mensaje` | Aviso o correo que envía el proceso (ver «Avisos») | `EV-nn` |
 | `intermedio` | Otro evento intermedio | `EV-nn` |
 | `error` | Error que interrumpe la tarea en la que salta | `EV-nn` |
 
@@ -115,7 +136,8 @@ python3 <skill>/scripts/diagrama.py bpmn X.drawio [-o X.bpmn]                # B
 
 Códigos de salida:
 - **0:** todo ha ido bien.
-- **1:** hay un error o hay cambios pendientes de revisar.
+- **1:** hay un error: el proceso no es válido, falta un fichero o el `.drawio` ya existe. Se corrige y se repite.
+- **3:** hay cambios hechos a mano en draw.io que el análisis no recoge. `comparar` los lista y sale con 3; `actualizar` se niega con 3 hasta que se acepten (`comparar --aceptar`) o, si van en tramos colocados a mano, hasta que se use `--recolocar`.
 - **2:** falta Playwright o un navegador. Solo falta la imagen: `crear`, `actualizar` y `comparar --aceptar` escriben el `.drawio` y el `.json` igual, con la colocación por capas, y avisan «sin PNG»; si había PNG, lo quitan, porque ya no es del dibujo. `png` la genera cuando haya navegador. `leer`, `comparar`, `bpmn` y `validar` no lo necesitan.
 
 `validar`, `crear` y `actualizar` avisan si el proceso está incompleto:
@@ -167,7 +189,7 @@ Pasa solo los cambios, que gasta muchos menos tokens que repetir el proceso ente
 Si algo falla, el `.drawio` no se toca.
 
 Cómo se coloca lo que cambia:
-- **Si nadie ha movido nada en draw.io** desde la última vez, el diagrama se vuelve a colocar entero y queda limpio: ninguna forma, etiqueta o nota pisa a otra, y la etiqueta de un evento o una puerta va al lado por el que no llega ningún flujo.
+- **Si nadie ha movido nada en draw.io** desde la última vez, el diagrama se vuelve a colocar entero: las formas, las notas y las etiquetas de eventos y puertas no se pisan, y la etiqueta de un evento o una puerta va al lado por el que no llega ningún flujo. Las etiquetas de los flujos tampoco: si en su sitio pisan una forma, la etiqueta de un evento o una puerta o una nota, se mueven a otro punto del flujo, y varios mensajes entre la misma tarea y un participante van cada uno por su vertical. **Mira siempre el PNG antes de entregar**: si algo queda apretado, acorta la etiqueta.
 - **Si alguien lo ha colocado a mano**, se respeta. Lo nuevo va a la derecha de su paso anterior y lo que sigue se desplaza para hacer sitio; un participante nuevo va debajo de todo y una nota nueva encima de su paso.
 - **Si está en tramos y alguien los ha colocado a mano**, `actualizar` se niega: el cambio se hace en draw.io (y después `comparar --aceptar`) o con `--recolocar`.
 - `--recolocar` coloca todo de nuevo aunque se haya colocado a mano. Pregunta antes de usarlo.
@@ -184,7 +206,7 @@ Cómo se coloca lo que cambia:
    python3 <skill>/scripts/diagrama.py comparar X.drawio
    ```
    - Da un código (`ACT-`, `GW-`, `EV-`) a lo añadido a mano.
-   - Da forma BPMN a los rectángulos, rombos y círculos.
+   - Da su forma a los rectángulos, rombos y círculos (a un rectángulo, la tarjeta de tarea con su pictograma).
    - Lista qué ha cambiado respecto a `X.json` y las notas de texto sueltas del dibujo. Una nota unida a un paso con una línea pasa a ser una nota del proceso.
 4. **Quien llama actualiza su análisis** con esa lista (el paso a paso y las historias afectadas) y después acepta:
    ```bash
@@ -195,17 +217,51 @@ Mientras haya cambios hechos a mano sin aceptar, `actualizar` se niega a tocar e
 
 **Un `.drawio` sin `X.json`** (hecho a mano o recibido del cliente) se adopta igual: `comparar X.drawio --aceptar` da los códigos y crea `X.json`.
 
+## Partir de lo ya aprobado
+
+Antes de dibujar un proceso a partir de reuniones, transcripciones o notas, busca en la carpeta del proyecto (y en la carpeta de la que cuelga) un diagrama ya aprobado del mismo proceso: `.vsdx`, `.vsd`, `.drawio`, `.bpmn` o imágenes de un DF anterior. Si lo hay, pregunta una vez si es la referencia y parte de él:
+
+1. Pasa su contenido al JSON de la skill: pasos, perfiles, puertas, inicios y fines, y los códigos del cliente (ver «Códigos del cliente»).
+2. Usa las fuentes posteriores (reuniones, demos) solo para lo que ha cambiado desde que se aprobó. Lo que no está en el diagrama aprobado lleva una nota «Pendiente de validar: no está en el diagrama aprobado».
+3. Si las fuentes contradicen el diagrama aprobado, gana el diagrama aprobado y la contradicción se dice en la respuesta.
+
+Si no hay diagrama aprobado, lo que no salga de forma explícita de las fuentes (quién hace una tarea, el orden de dos pasos) es un supuesto: va con una nota «Supuesto: …» en ese paso y se lista en la respuesta para que el usuario lo confirme.
+
+**Leer un Visio (`.vsdx`).** Mientras la skill no tenga una orden para importarlo, se lee sin herramientas externas: es un ZIP. `visio/pages/pages.xml` da el nombre de cada página y su fichero; en cada `visio/pages/pageN.xml`, cada `Shape` tiene su `Master` (el tipo, por nombre en `visio/masters/masters.xml`: Task, Gateway, Start Event, End Event, Collapsed Sub-Process, Pool / Lane, Sequence Flow) y su `Text`; los `Connect` unen cada conector (`FromSheet`, con `BeginX` y `EndX`) con sus formas (`ToSheet`). Con eso se obtienen los pasos, sus etiquetas y los flujos de cada página.
+
+**Comparar con el diagrama aprobado.** Cuando se pida comparar, empareja los pasos por nombre y perfil y da una tabla por punto: qué dice el aprobado, qué dice el generado y cuál acierta. Separa los errores (perfil equivocado, paso que falta) de las diferencias de forma (carriles por sistema o por perfil) y de lo que el generado añade por fuentes posteriores.
+
 ## Cómo se describe un buen proceso
 
 - **Tareas:** verbo en infinitivo y objeto, por ejemplo «Revisar documentación».
 - **Puertas exclusivas:** una pregunta cerrada («¿Completa?») y cada salida con su etiqueta.
-- **Inicio y fin:** un inicio por proceso y un fin por cada resultado de negocio («Solicitud denegada», «Autorización emitida»).
+- **Inicio y fin:** un inicio por cada forma de arrancar el proceso que distinga el negocio (por ejemplo, «Inicio carga manual» por el gerente e «Inicio carga masiva» por la PMO), normalmente uno, y un fin por cada resultado de negocio («Solicitud denegada», «Autorización emitida»).
 - **Arranque:** `inicio_temporizador` si el proceso arranca solo a una hora o cada cierto tiempo (el nombre dice cuándo: «Cada día a las 08:00»); `inicio_mensaje` si arranca al recibir un aviso.
 - **Plazos:** un `temporizador` unido a la tarea que vigila con un flujo discontinuo. Al exportar a BPMN pasa a ser un evento de borde de esa tarea, que no la interrumpe (en el dibujo, con borde discontinuo). Si al vencer cancela la tarea, `"interrumpe": true` en el temporizador: borde continuo y, en el BPMN, `cancelActivity`. En draw.io va en «Editar datos» del temporizador (`interrumpe` = 1).
 - **Errores:** un `error` unido igual a la tarea en la que salta, y de él, el camino que se sigue. En el BPMN es un evento de borde que la interrumpe. Un `error` suelto y sin salidas se dibuja y se exporta como un fin de error.
-- **Avisos:** un aviso a un perfil del proceso no se dibuja: ya está en la tabla de avisos (AV) y en el paso que lo envía. Uno a un sistema u organismo externo es un flujo de mensaje desde la tarea que lo envía hasta el participante externo. Así ningún aviso añade una columna al diagrama. Un `mensaje` solo va si el proceso que ya existe lo tiene como paso propio (ingeniería inversa).
+- **Avisos:** cada aviso o correo que envía el proceso se dibuja como un `mensaje` (evento de envío con su sobre), nunca como una nota. Va justo después del paso que lo envía y en su carril; su nombre dice a quién y de qué («Aviso al área de negocio: lleva SESAI»), y lo que esté sin confirmar se dice en el nombre («(por confirmar)»).
+  - Si solo sale en un caso, va en la salida de la decisión que corresponda.
+  - Si salta por un plazo, va detrás de un `temporizador` unido a la tarea y termina en un fin propio.
+  - No se dibuja el correo general de la herramienta que avisa a cada grupo de que tiene una tarea asignada.
+  - Uno a un sistema u organismo externo es un flujo de mensaje desde la tarea que lo envía hasta el participante externo.
+  - Todos van también en la tabla de avisos (AV) del documento.
 - **Tamaño:** conserva el proceso completo, con la secuencia principal lo más lineal posible. No inventes subprocesos ni uses `tramos` por el número de tareas o para encajarlo en el documento. Los subprocesos responden al contenido del proceso, no al tamaño del dibujo.
 - **Notas:** las explicaciones van en el paso a paso del documento; en `notas`, solo lo que hay que ver en el propio diagrama. Una nota suelta que se deje en draw.io también sale en el PNG: bórrala si no debe verla el cliente.
+- **Detalles técnicos:** esperas, reintentos, colas, middleware o llamadas internas no son pasos del funcional. Si importan al lector, van como nota del paso al que afectan («Detalle técnico: espera de 1 minuto antes de leer las carpetas»).
+- **Códigos del cliente:** si el cliente numera sus tareas o requisitos (por ejemplo, EJ-01.001), cada tarea los lleva al final del nombre, entre corchetes: «Actualizar el presupuesto [EJ-02.002]». Los códigos `ACT-nn` siguen siendo los de la skill.
+- **Perfiles:** el carril es el perfil que hace la tarea según la fuente, con el mismo nombre que usa el cliente (DTP, Gerente de proyecto). Si el diagrama aprobado pone el perfil en el nombre de la tarea («DTP: Actualización del presupuesto»), ese perfil es su carril.
+
+## Un proceso con varias fases en pestañas
+
+Cuando el proceso tiene fases o subprocesos que el cliente ve por separado (o el usuario lo pide), se entrega **un único `.drawio` con una pestaña por fase**, no un fichero por fase. Mientras la skill no lo haga sola:
+
+1. Escribe un JSON por pestaña (`0-alta.json`, `1-<fase>.json`…) en una carpeta temporal, fuera de `<p>`.
+2. Cada pestaña empieza con un inicio por cada sitio del que se llega («Viene de Trabajos previos», «Viene de Documento de alcance (salto de fase)») y termina con un fin por cada sitio al que se sigue («Sigue en Proyecto básico»).
+3. `crear` cada JSON en esa carpeta temporal y revisa cada PNG.
+4. Une las pestañas en `X.drawio`: el `<diagram>` de cada fichero, en orden, dentro de un solo `<mxfile>`, cada uno con un `id` distinto y con su nombre de pestaña.
+5. Entrega solo `X.drawio` en la carpeta de diagramas. Los JSON de cada pestaña se guardan en `<carpeta>/.fuentes/X/` para poder rehacerla.
+
+Para cambiar una pestaña, cambia su JSON, vuelve a `crear` esa pestaña y vuelve a unir. `leer`, `comparar`, `png` y `bpmn` solo trabajan sobre la primera pestaña de un fichero unido.
 
 ## Leer un diagrama
 
@@ -213,11 +269,11 @@ No leas el XML del `.drawio`, que es largo y caro. Usa `leer`, que devuelve el p
 
 ## Requisitos y privacidad
 
-Antes de la primera tarea: `python3 <skill>/../../requisitos.py --skill appian-diagramas-bpmn`. Dice qué falta en el equipo, qué se pierde y cómo se instala. Si falta algo para esta tarea, díselo una vez y sigue. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
+El plugin ya comprueba los requisitos al empezar la sesión, una vez por versión. Solo si una orden sale con 2, ejecuta `python3 <skill>/../../requisitos.py --skill appian-diagramas-bpmn`, que dice qué falta, qué se pierde y cómo se instala; díselo al usuario una vez y sigue. Sin `requisitos.py` (copia suelta), sigue sin comprobar.
 
 Para la imagen hacen falta Playwright y un navegador. Con navegador, los pasos se colocan con el motor de carriles de Mermaid (los tramos, siempre por capas). Sin él se hace todo menos la imagen: los pasos se colocan por capas, de izquierda a derecha, con un carril por perfil y sin que nada se pise. `DIAGRAMAS_SIN_NAVEGADOR=1` simula que no hay navegador.
 
-El diagrama no sale del equipo. El motor de colocación (Mermaid, licencia MIT) y el visor de draw.io (licencia Apache 2.0) van en `assets/`. Solo se escribe junto al `.drawio`: ni temporales ni `__pycache__` fuera de ahí.
+El diagrama no sale del equipo. El motor de colocación (Mermaid, licencia MIT), el visor de draw.io (licencia Apache 2.0) y los pictogramas de las tareas (Lucide, licencia ISC) van en `assets/`. Solo se escribe junto al `.drawio`: ni temporales ni `__pycache__` fuera de ahí.
 
 ## Diagramas Mermaid
 
@@ -236,10 +292,10 @@ python3 <skill>/scripts/mermaid.py --md documento.md [otro.md …]          # va
 
 ## Límites
 
-- **Varias páginas:** solo se lee y se cambia la primera página del `.drawio` o, si va en tramos, sus páginas de tramo («tramo-N»); las demás se conservan.
+- **Varias páginas:** solo se lee y se cambia la primera página del `.drawio` o, si va en tramos, sus páginas de tramo («tramo-N»); las demás se conservan. Para un proceso con una pestaña por fase, ver «Un proceso con varias fases en pestañas».
 - **Tramos:** draw.io no une formas de dos páginas, así que un flujo entre dos tramos no se dibuja a mano: se pide con `actualizar` (con `--recolocar` si alguien colocó los tramos a mano). Los enlaces (ENL-nn-S y ENL-nn-E) no se renombran ni se borran sueltos.
 - **Pools:** si los carriles están dentro de un pool, el nombre del pool es el del proceso. Un participante externo es una franja marcada por la herramienta: si en draw.io se dibuja un pool nuevo a mano, se lee como un carril; para un participante nuevo, usa `externo`.
-- **Flujos de mensaje:** van en vertical entre el paso y su participante y pueden cruzar los carriles que hay entre los dos.
+- **Flujos de mensaje:** van en vertical entre el paso y su participante y pueden cruzar los carriles que hay entre los dos; si debajo del paso hay otra forma o su nombre, la rodean con un quiebro.
 - **Eventos de borde:** en draw.io, un plazo o un error sale como un evento unido a su tarea con línea discontinua. Se puede pegar a la tarea a mano.
 - **Flujos nuevos en un diagrama colocado a mano:** los traza draw.io y pueden cruzar alguna forma. Se retocan en draw.io o se usa `--recolocar`.
 - **Tamaño en un documento vertical:** el proceso completo puede quedar pequeño. Conserva la resolución de la imagen al insertarla y enlaza su `.drawio` para consultar el detalle, sin multiplicar las páginas del documento.

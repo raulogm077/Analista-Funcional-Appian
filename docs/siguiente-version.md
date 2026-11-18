@@ -60,6 +60,9 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 - **Seguridad de acciones de registro con constante.** Diez acciones no salían a nadie (una vez, sin causa
   demostrada). Contrastarlo escribe en Indra-spain: solo si Raúl lo autoriza; hasta entonces, sin regla. [prueba]
 - **Diagramas.** Reducir los 30/38 avisos residuales solo con una mejora medida, sin relajar detectores.
+- **Diagramas: órdenes que faltan** (auditoría del 10-nov): pestañas por fase nativas (`pagina`), `importar` un
+  `.vsdx`, `comparar --con` una referencia, campos `ref` y `supuesto`, carriles por sistema y un PNG por pestaña. El
+  SKILL.md ya explica cómo hacerlo a mano mientras tanto. [diagramas]
 - **Un literal propuesto, bajo ✅.** En P7 («juntas») y en P7 quinquies, el texto del aviso «Indica el centro de
   coste», que ninguna fuente da, quedó en HU-06.2 con ✅ y la fuente del correo. La entrega lo declaraba propuesto, y
   lo que propone el analista va con 🔶. Es el mismo caso ficticio tres veces (también en P7 sexies). En P7 septies el
@@ -95,6 +98,11 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   interfaces válidas, que sin ella entraron. Lo envía Raúl. [persona]
 - **Rama `yaroslav/plantilla-DF-cliente`** en GitHub, solo si Raúl lo pide: 17 commits del 19-oct sin PR, ni en
   `main` ni en esta rama; es independiente de ella. [persona]
+- **Diagramas: variante oscura del PNG.** El aspecto nuevo (tarjetas con pictograma, cabecera y paleta) es solo
+  claro. Una variante oscura, si un documento o una web la pide; el `.drawio` no cambia. [diagramas]
+- **Diagramas: abanico en más casos.** Las salidas en abanico solo cubren las de una puerta hacia su misma fila y a
+  la derecha. Si un proceso real muestra cruces en otros casos (destinos a la izquierda o en otra fila), ampliarlo con
+  su prueba en `selftest.py` (`cruces`). [diagramas]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
 

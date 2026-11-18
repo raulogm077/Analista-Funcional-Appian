@@ -11,7 +11,7 @@ Uso:
   diagrama.py validar proceso.json                          solo valida el JSON
 
 Junto a cada X.drawio viven X.png (para el documento; X-1.png, X-2.png… si está en tramos) y X.json (el proceso según
-el análisis; lo escribe esta herramienta, no se edita a mano). Códigos de salida: 0 bien, 1 error o cambios pendientes,
+el análisis; lo escribe esta herramienta, no se edita a mano). Códigos de salida: 0 bien, 1 error, 3 cambios hechos a mano sin aceptar,
 2 falta un requisito: sin navegador se escribe todo menos el PNG («sin PNG»).
 """
 import argparse, json, os, pathlib, re, sys
@@ -429,16 +429,30 @@ class Editor:
             if el.get("id") in quitar:
                 self.f.root.remove(el)
 
+    def poner_adorno(self, pid, tipo):
+        """Deja el pictograma de la tarjeta de `pid` según su tipo: lo quita si ya no es una tarea, o si la tarea no
+        tiene el aspecto de tarjeta (un .drawio de antes, con el marcador BPMN), y lo pone o cambia si lo es."""
+        for el, cell in list(self.f.celdas()):
+            if cell.get("parent") == pid and dm.es_adorno(cell):
+                self.f.root.remove(el)
+        _, cell = self._cell(pid)
+        adorno = dm.adorno_tarea(pid, tipo)
+        if adorno and dm._estilo(cell.get("style")).get("tipo") == tipo:
+            at, g = adorno
+            c = ET.SubElement(self.f.root, "mxCell", at)
+            ET.SubElement(c, "mxGeometry", g)
+
     def cambiar_paso(self, pid, nuevo, antes):
         el, cell = self._cell(pid)
-        if nuevo.get("nombre", "") != antes["nombre"]:
-            self.f.poner_etiqueta(el, cell, nuevo.get("nombre", ""))
+        if nuevo.get("nombre", "") != antes["nombre"] or nuevo["tipo"] != antes["tipo"]:
+            self.f.poner_etiqueta(el, cell, dm.etiqueta_paso(nuevo["tipo"], nuevo.get("nombre", "")))
         if nuevo["tipo"] != antes["tipo"]:
             cx, cy = self.centro(pid)
             cell.set("style", dm.ESTILO[nuevo["tipo"]])
             w, h = dm.TAM[nuevo["tipo"]]
             g = cell.find("mxGeometry"); g.set("width", str(w)); g.set("height", str(h))
             self.poner_centro(pid, cx, cy)
+            self.poner_adorno(pid, nuevo["tipo"])
         if nuevo["carril"] != antes["carril"]:
             cx, _ = self.centro(pid)
             x, y, w, h = self.carril_caja(nuevo["carril"])
@@ -516,10 +530,12 @@ class Editor:
             cy = self._fila_libre(p["carril"], cx)
         w, h = dm.TAM[p["tipo"]]
         lx, ly = self._origen(self.carril_id(p["carril"]))
-        _, cell = self.f.nueva_celda(p["id"], p.get("nombre", ""), {"style": dm.ESTILO[p["tipo"]], "vertex": "1",
-                                                                     "parent": self.carril_id(p["carril"])}, dm.DATOS_PASO, p)
+        _, cell = self.f.nueva_celda(p["id"], dm.etiqueta_paso(p["tipo"], p.get("nombre", "")),
+                                     {"style": dm.ESTILO[p["tipo"]], "vertex": "1", "parent": self.carril_id(p["carril"])},
+                                     dm.DATOS_PASO, p)
         ET.SubElement(cell, "mxGeometry", {"x": f"{cx - lx - w / 2:.0f}", "y": f"{cy - ly - h / 2:.0f}",
                                            "width": str(w), "height": str(h), "as": "geometry"})
+        self.poner_adorno(p["id"], p["tipo"])
         self.recargar()
 
     def _ensanchar(self, dx):
@@ -594,6 +610,18 @@ class Editor:
             lado = otro
         arriba = lado == "arriba"
         ny = arriba_de(lado)
+        # si aun así roza un paso vecino, se aparta un poco de su paso; si para eso tiene que irse lejos (los dos
+        # lados están ocupados), se queda junto a su paso, que es lo que se entiende al leerlo
+        sitio = ny
+        for _ in range(4):
+            pisa = [(by, bh) for bx, by, bw, bh in cajas
+                    if nx < bx + bw and bx < nx + ancho and sitio < by + bh and by < sitio + alto]
+            if not pisa:
+                break
+            sitio = (min(by for by, _ in pisa) - colocacion.NOTA_HUECO - alto if arriba
+                     else max(by + bh for by, bh in pisa) + colocacion.NOTA_HUECO)
+        if not pisa and abs(sitio - ny) <= 2 * colocacion.NOTA_HUECO and y + 4 <= sitio and sitio + alto <= y + hc - 4:
+            ny = sitio
         nid = self._id_libre("NOTA-")
         cell = ET.SubElement(self.f.root, "mxCell", {"id": nid, "value": n.get("texto", ""), "style": dm.ESTILO_NOTA,
                                                      "vertex": "1", "parent": self.carril_id(paso["carril"])})
@@ -781,9 +809,14 @@ def aplicar(editor, nuevo):
 
 
 def recolocar(editor, nuevo, drawio):
-    """Vuelve a colocar todo el diagrama (nadie lo ha movido a mano), conservando el estilo de lo que ya existía. Las
-    páginas del proceso (una, o una por tramo) se sustituyen por las nuevas; las demás no se tocan."""
-    antes = {el.get("id"): cell.get("style") for el, cell in editor.f.celdas()}
+    """Vuelve a colocar todo el diagrama (nadie lo ha movido a mano), conservando el estilo de lo que ya existía (si ya
+    tenía el aspecto actual; uno de antes pasa al actual). Las páginas del proceso (una, o una por tramo) se sustituyen
+    por las nuevas; las demás no se tocan."""
+    # lo que alguien retocó (colores…) se conserva; un .drawio del aspecto de antes (sin adornos) pasa al nuevo
+    if any(dm.es_adorno(cell) for _, cell in editor.f.celdas()):
+        antes = {el.get("id"): cell.get("style") for el, cell in editor.f.celdas()}
+    else:
+        antes = {}
     tipos_antes = {p["id"]: p["tipo"] for p in editor.proc["pasos"]}
     carril_estilo = {n: antes.get(g[4]) for n, g in editor.geo["carriles"].items()}
     paginas = _colocar(nuevo, posiciones=False)
@@ -812,7 +845,7 @@ def actualizar(a):
                 print(f"ERROR: {drawio.name} tiene cambios hechos a mano que el análisis aún no recoge.\n"
                       f"Revísalos con: diagrama.py comparar {drawio}\n"
                       "y, cuando el análisis los recoja, acéptalos con --aceptar. (--forzar los pisa.)", file=sys.stderr)
-                return 1
+                return CAMBIOS_A_MANO
     else:
         base = _limpio(ed.proc)
     cambios = dm.cargar_json(a.cambios)
@@ -827,7 +860,7 @@ def actualizar(a):
               "encajo cambios en tramos colocados a mano sin descolocarlos. Haz el cambio en draw.io y después "
               "«comparar --aceptar», o repite con --recolocar para colocar de nuevo todos los tramos (se pierde lo "
               "colocado a mano).", file=sys.stderr)
-        return 1
+        return CAMBIOS_A_MANO
     if automatica:
         avisos = recolocar(ed, nuevo, drawio)
     else:
@@ -891,12 +924,15 @@ def comparar(a):
             ed.renombrar_id(viejo, nuevo_id)
             el, cell = ed._cell(nuevo_id)
             estilo = cell.get("style") or ""
-            if "mxgraph.bpmn" not in estilo:  # rectángulo, rombo o círculo de draw.io: se le da la forma BPMN
+            if "mxgraph.bpmn" not in estilo and "tipo=" not in estilo:
+                # rectángulo, rombo o círculo de draw.io: se le da la forma (y, si es una tarea, la tarjeta) de la skill
                 cx, cy = ed.centro(nuevo_id)
                 cell.set("style", dm.ESTILO[tipos[viejo]])
                 w, h = dm.TAM[tipos[viejo]]
                 g = cell.find("mxGeometry"); g.set("width", str(w)); g.set("height", str(h))
                 ed.poner_centro(nuevo_id, cx, cy)
+                ed.f.poner_etiqueta(el, cell, dm.etiqueta_paso(tipos[viejo], ed.f.etiqueta(el, cell)))
+                ed.poner_adorno(nuevo_id, tipos[viejo])
         ed.f.guardar()
         ed.recargar()
     avisos = list(ed.avisos)
@@ -931,7 +967,7 @@ def comparar(a):
         _escribir_json(aceptado, js, drawio, automatica=sigue_auto)
         print(f"Aceptado: {js.name} actualizado.")
         return 0 if _imagen(drawio) else 2
-    return 1 if dif else 0
+    return CAMBIOS_A_MANO if dif else 0
 
 
 def png(a):
@@ -957,8 +993,38 @@ def bpmn(a):
     return 0
 
 
+CAMBIOS_A_MANO = 3   # código de salida: hay cambios hechos a mano en draw.io que el análisis no recoge
+
+
+class _SalidaSegura:
+    """La salida estándar, que no se cae si quien la lee la cierra antes (`| head`): sin ella, un BrokenPipeError
+    a mitad de `crear` dejaba el .drawio escrito y el PNG sin hacer."""
+
+    def __init__(self, flujo):
+        self._flujo, self._cerrada = flujo, False
+
+    def write(self, texto):
+        if not self._cerrada:
+            try:
+                return self._flujo.write(texto)
+            except (BrokenPipeError, OSError):
+                self._cerrada = True
+        return len(texto)
+
+    def flush(self):
+        if not self._cerrada:
+            try:
+                self._flujo.flush()
+            except (BrokenPipeError, OSError):
+                self._cerrada = True
+
+    def __getattr__(self, nombre):
+        return getattr(self._flujo, nombre)
+
+
 def main():
     _salida_utf8()
+    sys.stdout = _SalidaSegura(sys.stdout)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="orden", required=True)
     s = sub.add_parser("crear"); s.add_argument("proceso"); s.add_argument("-o"); s.add_argument("--forzar", action="store_true"); s.set_defaults(fn=crear)
