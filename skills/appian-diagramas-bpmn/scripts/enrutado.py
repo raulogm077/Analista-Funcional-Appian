@@ -1,6 +1,7 @@
 """Mejora conservadora de las rutas generadas (por capas o con Mermaid).
 
-Sin mover pasos, notas ni carriles: primero vuelve a trazar todos los flujos por
+`mover_pasos` puede mover un paso dentro de su carril si así el trazado global cruza menos. `mejorar`, sin mover
+pasos, notas ni carriles: primero vuelve a trazar todos los flujos por
 una rejilla que esquiva formas, nombres, etiquetas y los demás flujos; después
 prueba corredores flujo a flujo. Un cambio solo se conserva si quita conexiones
 ambiguas (un flujo sobre un nombre, una forma o una etiqueta, o dos flujos por la
@@ -123,6 +124,7 @@ def _candidatos(camino, cajas, ancho, alto, cabecera):
 
 CRUCE = 600               # lo que «cuesta» cruzar otro flujo al buscar un camino: preferible dar un rodeo
 CODO = 40                 # cada giro: entre dos caminos igual de largos, el de menos codos
+HUECO = 12                # menos entre dos flujos paralelos y se leen como uno pegado al otro
 SALIDA = 14               # tramo recto junto a cada puerto antes de girar
 
 
@@ -319,6 +321,7 @@ def mejorar(proc, geo, tam, cabecera):
     # solo lo que ha colocado la herramienta (por capas o con Mermaid): una geometría importada o manual, no
     if not geo.get("etiqueta_en_horizontal") and not geo.get("trazado_generado"):
         return geo
+    mermaid = bool(geo.get("trazado_generado"))     # por capas, dos flujos cerca no cuentan: ya va cada uno por su fila
     tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
     flujos = proc["flujos"]
     indices = [i for i, f in enumerate(flujos) if f["de"] in tipo and f["a"] in tipo and f["de"] != f["a"]]
@@ -385,7 +388,7 @@ def mejorar(proc, geo, tam, cabecera):
             cambiados.update(tocados)
 
         def afecta(clave):
-            if clave[0] in ("etiqueta", "juntos", "reserva", "etiquetas"):
+            if clave[0] in ("etiqueta", "juntos", "reserva", "etiquetas", "cerca"):
                 return clave[1] in cambiados or clave[2] in cambiados
             return clave[1] in cambiados
 
@@ -466,6 +469,9 @@ def mejorar(proc, geo, tam, cabecera):
                                     longitudes.add(round(largo))
                 if longitudes:
                     avisos[("juntos", i, j)] = len(longitudes)
+            for j, d in rutas.items():
+                if mermaid and i < j and (i in cambiados or j in cambiados) and _pegados(c, d):
+                    avisos[("cerca", i, j)] = 1
             # Las notas también son obstáculos, aunque el detector histórico no
             # las contaba entre las conexiones falsas.
             for n, box in enumerate(notas if i in cambiados else []):
@@ -644,7 +650,41 @@ def mejorar(proc, geo, tam, cabecera):
     return geo
 
 
-def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None):
+def _sentido(p, q):
+    return (0 if abs(q[0] - p[0]) <= 1 else (1 if q[0] > p[0] else -1),
+            0 if abs(q[1] - p[1]) <= 1 else (1 if q[1] > p[1] else -1))
+
+
+def _a_rejilla(camino, xs, ys, cerca):
+    """Los nodos de la rejilla por los que pasa un camino ortogonal ya trazado, o None si no va por ella."""
+    if len(camino) < 2:
+        return None
+    d0, d1 = _sentido(camino[0], camino[1]), _sentido(camino[-2], camino[-1])
+    if 0 not in d0 or 0 not in d1 or d0 == (0, 0) or d1 == (0, 0):
+        return None
+    clave = [(camino[0][0] + d0[0] * SALIDA, camino[0][1] + d0[1] * SALIDA)] + [tuple(p) for p in camino[1:-1]] + \
+        [(camino[-1][0] - d1[0] * SALIDA, camino[-1][1] - d1[1] * SALIDA)]
+    puntos = []
+    for x, y in clave:
+        i, j = cerca(xs, x), cerca(ys, y)
+        if i is None or j is None:
+            return None
+        puntos.append((i, j))
+    nodos = [puntos[0]]
+    for a, b in zip(puntos, puntos[1:]):
+        if a == b:
+            continue
+        if a[0] != b[0] and a[1] != b[1]:
+            return None
+        paso = (0 if a[0] == b[0] else (1 if b[0] > a[0] else -1), 0 if a[1] == b[1] else (1 if b[1] > a[1] else -1))
+        n = a
+        while n != b:
+            n = (n[0] + paso[0], n[1] + paso[1])
+            nodos.append(n)
+    return nodos
+
+
+def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None, fijas=None, repasar=True, visitas=80000, hueco=4):
     """Vuelve a trazar desde cero los flujos de `indices` por una rejilla, uno tras otro: cada uno, por el camino más
     corto que no atraviesa ninguna caja de `cajas` (formas, sus nombres y notas), no va por la misma recta que otro
     flujo ni gira donde pasa otro, y cruza los menos flujos posibles. Sale y llega por el lado que convenga de cada
@@ -675,13 +715,17 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None):
     for x, y, w, h in cajas:
         xs.update((x - SALIDA, x + w + SALIDA))
         ys.update((y - SALIDA, y + h + SALIDA))
+    puertos_x, puertos_y = set(), set()
     for p in proc["pasos"]:
         for d in lados:
             _, q = puerto(p["id"], d)
-            xs.add(q[0])
-            ys.add(q[1])
+            puertos_x.add(q[0])
+            puertos_y.add(q[1])
+    xs |= puertos_x
+    ys |= puertos_y
 
-    def rejilla(valores, lo, hi):
+    def rejilla(valores, lo, hi, puertos):
+        import bisect
         v = sorted(x for x in valores if lo <= x <= hi)
         out = []
         for a, b in zip(v, v[1:]):
@@ -689,13 +733,19 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None):
             n = int((b - a) // (2 * SALIDA))      # pasillos también por el medio de cada hueco ancho
             out.extend(a + (b - a) * k / n for k in range(1, n))
         out.extend(v[-1:])
-        # dos rectas a menos de 4 px se ven como una
-        limpio = []
-        for x in out:
-            if not limpio or x - limpio[-1] >= 4:
-                limpio.append(x)
-        return limpio
-    xs, ys = rejilla(xs, lo_x, hi_x), rejilla(ys, lo_y, hi_y)
+        # dos rectas a menos de 4 px se ven como una, y a menos de `hueco` (con Mermaid, HUECO), como dos flechas
+        # pegadas: de cada grupo así queda una, y siempre la de un puerto, por donde entra o sale un flujo
+        limpio = sorted({x for x in out if x in puertos}) if hueco > 4 else []
+        for x in sorted(out):
+            k = bisect.bisect_left(limpio, x)
+            if all(abs(limpio[j] - x) >= hueco for j in (k - 1, k) if 0 <= j < len(limpio)):
+                limpio.insert(k, x)
+        final = []
+        for x in limpio:
+            if not final or x - final[-1] >= 4:
+                final.append(x)
+        return final
+    xs, ys = rejilla(xs, lo_x, hi_x, puertos_x), rejilla(ys, lo_y, hi_y, puertos_y)
 
     def cerca(valores, v):
         import bisect
@@ -882,7 +932,7 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None):
         ex = [xs[n[0]] for n in metas]
         ey = [ys[n[1]] for n in metas]
         mejor, final, visitados = math.inf, None, 0
-        while cola and visitados < 80000:
+        while cola and visitados < visitas:
             fc, g, clave = heapq.heappop(cola)
             if fc >= mejor:
                 break
@@ -951,10 +1001,24 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None):
         # primero los que llevan etiqueta, que necesitan un tramo recto para ella; y los cortos antes que los largos
         orden = sorted(indices, key=lambda i: (not flujos[i].get("etiqueta"), abs(geo["pasos"][flujos[i]["de"]][0] - geo["pasos"][flujos[i]["a"]][0])
                                              + abs(geo["pasos"][flujos[i]["de"]][1] - geo["pasos"][flujos[i]["a"]][1]), i))
+    else:
+        orden = list(orden)
+
     def cruces_de(i):
         return sum(1 for n in rutas[i][1] for o in ocupa.get(n, ()) if o[0] != i and
                    {o[1], next(c for j, c in ocupa[n] if j == i)} == {"H", "V"})
 
+    # los de `fijas` ({flujo: camino de borde a borde}) se quedan como estaban, si caben en esta rejilla
+    for i, camino in (fijas or {}).items():
+        nodos = _a_rejilla(camino, xs, ys, cerca)
+        if nodos is None:
+            orden.append(i)
+            continue
+        ls = _sentido(camino[0], camino[1])
+        fin = _sentido(camino[-2], camino[-1])
+        la = (-fin[0], -fin[1])
+        rutas[i] = (0, nodos, ls, la, tuple(camino[0]), tuple(camino[-1]))
+        poner(i, nodos, ls, la)
     for i in orden:
         r = buscar(i)
         if r is None:
@@ -963,7 +1027,7 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None):
         poner(i, r[1], r[4], r[5])
     # después, cada flujo que cruza otro o no tiene sitio para su etiqueta, otra vez con todos los demás ya puestos:
     # el cambio se queda si baja el total de cruces
-    for _ in range(3):
+    for _ in range(3 if repasar else 0):
         cambio = False
         for i in orden:
             antes = cruces_de(i)
@@ -999,3 +1063,240 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None):
                     break
                 hecho += largo
     return out, sitios
+
+
+VISITAS_PRUEBA = 12000     # al probar dónde mover un paso, un camino que cueste más se da por perdido
+TIEMPO_MOVER = 40         # segundos, como mucho, buscando dónde mover un paso para quitar cruces
+
+
+def _obstaculos(proc, geo, tam):
+    """Lo que el trazado global esquiva, medido como queda en el XML: (centros redondeados, cajas, alto)."""
+    import drawio_modelo as dm
+    import colocacion as co
+    centros = {}
+    for p in proc["pasos"]:
+        cx, cy = geo["pasos"][p["id"]][:2]
+        w, h = tam[p["tipo"]]
+        ly = geo["carriles"][p["carril"]][0]
+        x = round(cx - w / 2)
+        y = round(ly) + round(cy - ly - h / 2)
+        centros[p["id"]] = (x + w / 2, y + h / 2)
+    notas = []
+    for n, (x, y, w, h) in zip(proc.get("notas") or [], geo.get("anotaciones") or []):
+        carril = next(p["carril"] for p in proc["pasos"] if p["id"] == n["paso"])
+        ly = geo["carriles"][carril][0]
+        notas.append((round(x), round(ly) + round(y - ly), round(w), round(h)))
+    cajas = dm._cajas(proc, dict(geo, pasos=centros, anotaciones=notas))
+    for p in proc["pasos"]:
+        x, y = centros[p["id"]]
+        w, h = tam[p["tipo"]]
+        cajas.append((x - w / 2 - 6, y - h / 2 - 6, w + 12, h + 12))
+        lado = geo.get("etiquetas", {}).get(p["id"])
+        if lado and p.get("nombre"):
+            lh = co.alto_texto(p["nombre"]) - 6
+            cajas.append((x - co.ANCHO_ETIQUETA / 2 + 4, y - h / 2 - lh if lado == "arriba" else y + h / 2,
+                          co.ANCHO_ETIQUETA - 8, lh))
+    cajas += [(0, y, 24 + 7.5 * len(c), 26) for c, (y, _) in geo["carriles"].items()]
+    alto = max(y + h for y, h in geo["carriles"].values())
+    return centros, list(dict.fromkeys(cajas)), alto
+
+
+def _cruces_de_caminos(caminos, solo=None):
+    """{(i, j): cruces} entre los caminos (de borde a borde); con `solo`, los pares en los que está alguno de esos."""
+    pares = {}
+    claves = sorted(caminos)
+    for a, i in enumerate(claves):
+        for j in claves[a + 1:]:
+            if solo is not None and i not in solo and j not in solo:
+                continue
+            n = 0
+            for p, q in zip(caminos[i], caminos[i][1:]):
+                for r, s in zip(caminos[j], caminos[j][1:]):
+                    for h, h2, v, v2 in ((p, q, r, s), (r, s, p, q)):
+                        if abs(h[1] - h2[1]) <= 1 and abs(v[0] - v2[0]) <= 1 and \
+                                min(h[0], h2[0]) + 1 < v[0] < max(h[0], h2[0]) - 1 and \
+                                min(v[1], v2[1]) + 1 < h[1] < max(v[1], v2[1]) - 1:
+                            n += 1
+            if n:
+                pares[(i, j)] = n
+    return pares
+
+
+def _pegados(c, d):
+    """Si dos caminos van en paralelo a menos de HUECO (sin ir por la misma recta) a lo largo de más de 20 px."""
+    for p, q in zip(c, c[1:]):
+        for r, s in zip(d, d[1:]):
+            for eje in (0, 1):
+                if abs(p[eje] - q[eje]) <= 1 and abs(r[eje] - s[eje]) <= 1 and 1 < abs(p[eje] - r[eje]) < HUECO:
+                    o = 1 - eje
+                    if min(max(p[o], q[o]), max(r[o], s[o])) - max(min(p[o], q[o]), min(r[o], s[o])) > 20:
+                        return True
+    return False
+
+
+def _etiquetas_pisadas(proc, caminos, sitios):
+    """Cuántas etiquetas de flujo cruza otro flujo."""
+    import colocacion as co
+    n = 0
+    for i, sitio in sitios.items():
+        texto = proc["flujos"][i].get("etiqueta")
+        if not texto or i not in caminos:
+            continue
+        x, y = _punto(caminos[i], sitio)
+        w = co.ancho_etiqueta_flujo(texto)
+        caja = (x - w / 2, y - 7, w, 14)
+        n += sum(1 for j, c in caminos.items() if j != i and any(_cruza(p, q, caja) for p, q in zip(c, c[1:])))
+    return n
+
+
+def mover_pasos(proc, geo, tam, cabecera):
+    """Mueve un paso (o un paso con su vecino del mismo carril) dentro de su carril cuando así el trazado global
+    cruza menos flujos: por ejemplo, para que un flujo que baja por una columna no corte el de dos pasos que están
+    en ella. Solo con Mermaid. Deja los flujos ya trazados por la rejilla y devuelve `geo`."""
+    import time
+    import drawio_modelo as dm
+    import colocacion as co
+    if not geo.get("trazado_generado"):     # por capas, cada paso ya está en su fila y su columna
+        return geo
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    carril = {p["id"]: p["carril"] for p in proc["pasos"]}
+    nombre = {p["id"]: p.get("nombre") for p in proc["pasos"]}
+    flujos = proc["flujos"]
+    indices = [i for i, f in enumerate(flujos) if f["de"] in tipo and f["a"] in tipo and f["de"] != f["a"]]
+    if len(indices) < 2:
+        return geo
+
+    def caminos_de(g, centros, rutas):
+        return {i: dm._camino(centros[flujos[i]["de"]], tam[tipo[flujos[i]["de"]]], rutas[i],
+                              centros[flujos[i]["a"]], tam[tipo[flujos[i]["a"]]]) for i in rutas}
+
+    centros, cajas, alto = _obstaculos(proc, geo, tam)
+    r = trazar_todo(proc, dict(geo, pasos=centros), tam, cabecera, alto, cajas, indices, hueco=HUECO)
+    if not r:
+        return geo
+    caminos, sitios = caminos_de(geo, centros, r[0]), r[1]
+    pares = _cruces_de_caminos(caminos)
+
+    def defectos(pares, caminos, sitios):
+        # cada cruce, cada etiqueta que pisa otro flujo y cada par de flujos pegados, lo mismo de malo
+        pegados = sum(1 for i, j in itertools.combinations(sorted(caminos), 2) if _pegados(caminos[i], caminos[j]))
+        return sum(pares.values()) + _etiquetas_pisadas(proc, caminos, sitios) + pegados
+    actual = inicio = defectos(pares, caminos, sitios)
+    if not inicio:
+        return geo
+
+    def cajas_paso(g, pid, m=0):
+        (cx, cy), (w, h) = g["pasos"][pid][:2], tam[tipo[pid]]
+        out = [(cx - w / 2 - m, cy - h / 2 - m, w + 2 * m, h + 2 * m)]
+        lado = g.get("etiquetas", {}).get(pid)
+        if lado and nombre[pid]:
+            a = co.alto_texto(nombre[pid])
+            out.append((cx - co.ANCHO_ETIQUETA / 2, cy - h / 2 - a if lado == "arriba" else cy + h / 2,
+                        co.ANCHO_ETIQUETA, a))
+        out += [tuple(b) for n, b in zip(proc.get("notas") or [], g.get("anotaciones") or []) if n["paso"] == pid]
+        return out
+
+    def solapa(a, b, m=0):
+        return a[0] - m < b[0] + b[2] and a[0] + a[2] + m > b[0] and a[1] - m < b[1] + b[3] and a[1] + a[3] + m > b[1]
+
+    def cabe(g, grupo):
+        for pid in grupo:
+            y, h = g["carriles"][carril[pid]]
+            titulo = (0, y, 24 + 7.5 * len(carril[pid]), 26)
+            for b in cajas_paso(g, pid):
+                if b[1] < y + 6 or b[1] + b[3] > y + h - 6 or b[0] < cabecera + 10 or b[0] + b[2] > g["ancho"] - 10 \
+                        or solapa(b, titulo, 12):
+                    return False
+            for q in tipo:
+                if q not in grupo and any(solapa(a, b, co.SEPARACION_X * 2 / 3)
+                                          for a in cajas_paso(g, pid) for b in cajas_paso(g, q)):
+                    return False
+        return True
+
+    def mover(g, grupo, dx, dy):
+        g = dict(g, pasos=dict(g["pasos"]), anotaciones=list(g.get("anotaciones") or []))
+        for pid in grupo:
+            v = g["pasos"][pid]
+            g["pasos"][pid] = (v[0] + dx, v[1] + dy) + tuple(v[2:])
+        for k, n in enumerate(proc.get("notas") or []):
+            if n["paso"] in grupo and k < len(g["anotaciones"]):
+                x, y, w, h = g["anotaciones"][k]
+                g["anotaciones"][k] = (x + dx, y + dy, w, h)
+        return g
+
+    def probar(g, grupo):
+        centros, cajas, alto = _obstaculos(proc, g, tam)
+        nuevas = [b for pid in grupo for b in cajas_paso(dict(g, pasos=centros), pid, 6)]
+        # de nuevo, los flujos de los pasos movidos y los que pasaban por donde ahora están; los demás, igual
+        otra = [i for i in indices if flujos[i]["de"] in grupo or flujos[i]["a"] in grupo or
+                any(_cruza(p, q, b) for p, q in zip(caminos[i], caminos[i][1:]) for b in nuevas)]
+        r = trazar_todo(proc, dict(g, pasos=centros), tam, cabecera, alto, cajas, otra, orden=otra,
+                        fijas={i: c for i, c in caminos.items() if i not in otra}, visitas=VISITAS_PRUEBA,
+                        hueco=HUECO)
+        if not r:
+            return None
+        nuevos = dict(caminos)
+        nuevos.update(caminos_de(g, centros, {i: r[0][i] for i in otra if i in r[0]}))
+        # una ruta fija que no cabía en la rejilla nueva también se ha trazado de nuevo
+        nuevos.update(caminos_de(g, centros, {i: p for i, p in r[0].items() if i not in otra and
+                                               p != caminos[i][1:-1]}))
+        cambiados = set(otra) | {i for i in r[0] if nuevos[i] != caminos[i]}
+        cuenta = {k: v for k, v in pares.items() if not cambiados.intersection(k)}
+        cuenta.update(_cruces_de_caminos(nuevos, cambiados))
+        return cuenta, nuevos, r[1]
+
+    def candidatos():
+        """Para cada cruce, cada extremo de los dos flujos (solo o con su vecino del carril) se lleva al otro
+        lado del tramo que lo corta: lo justo para quedar fuera, primero lo más cerca."""
+        vistos, out = set(), []
+        for (i, j) in sorted(pares, key=lambda k: -pares[k]):
+            for a, b in ((i, j), (j, i)):
+                for pid in (flujos[a]["de"], flujos[a]["a"]):
+                    vecinos = [f[k] for f in flujos for k in ("de", "a") if pid in (f["de"], f["a"]) and
+                               f[k] != pid and f[k] in tipo and carril[f[k]] == carril[pid]]
+                    for grupo in [(pid,)] + [tuple(sorted((pid, v))) for v in vecinos]:
+                        izq = min(b2[0] for q in grupo for b2 in cajas_paso(geo_actual, q))
+                        der = max(b2[0] + b2[2] for q in grupo for b2 in cajas_paso(geo_actual, q))
+                        arr = min(b2[1] for q in grupo for b2 in cajas_paso(geo_actual, q))
+                        aba = max(b2[1] + b2[3] for q in grupo for b2 in cajas_paso(geo_actual, q))
+                        for p, q in zip(caminos[b], caminos[b][1:]):
+                            if abs(p[0] - q[0]) <= 1 and izq - 200 < p[0] < der + 200:      # tramo vertical
+                                movs = [(p[0] - 30 - der, 0), (p[0] + 30 - izq, 0)]
+                            elif abs(p[1] - q[1]) <= 1 and arr - 120 < p[1] < aba + 120:    # horizontal
+                                movs = [(0, p[1] - 20 - aba), (0, p[1] + 20 - arr)]
+                            else:
+                                continue
+                            for dx, dy in movs:
+                                dx, dy = round(dx / 8) * 8, round(dy / 8) * 8
+                                # un empujón de pocos píxeles solo mueve la rejilla y desalinea el paso
+                                if abs(dx) + abs(dy) >= 24 and abs(dx) <= 320 and abs(dy) <= 160 and (grupo, dx, dy) not in vistos:
+                                    vistos.add((grupo, dx, dy))
+                                    out.append((abs(dx) + abs(dy) + 40 * (len(grupo) - 1), grupo, dx, dy))
+        return [c[1:] for c in sorted(out)]
+
+    geo_actual = geo
+    fin = time.monotonic() + TIEMPO_MOVER
+    mejorado = True
+    while mejorado and time.monotonic() < fin:
+        mejorado = False
+        for grupo, dx, dy in candidatos():
+            if time.monotonic() >= fin:
+                break
+            g = mover(geo_actual, grupo, dx, dy)
+            if not cabe(g, grupo):
+                continue
+            r = probar(g, grupo)
+            if not r or sum(r[0].values()) > sum(pares.values()):
+                continue
+            nuevo = defectos(*r)
+            if nuevo < actual:
+                geo_actual, (pares, caminos, sitios), actual = g, r, nuevo
+                mejorado = True
+                break
+    if actual >= inicio:
+        return geo
+    geo["pasos"], geo["anotaciones"] = geo_actual["pasos"], geo_actual["anotaciones"]
+    for i, c in caminos.items():
+        geo["flujos"][i] = [tuple(p) for p in c[1:-1]]
+    geo["etiquetas_flujo"] = sitios
+    return geo

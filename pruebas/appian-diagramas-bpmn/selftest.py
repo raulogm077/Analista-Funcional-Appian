@@ -1719,6 +1719,42 @@ def g3(tmp):
         prueba(tmp / nombre)
 
 
+def mover_paso():
+    """Con Mermaid, un paso que tapa la columna por la que baja otro flujo se mueve dentro de su carril si así ese flujo
+    no cruza ninguno; por capas no se mueve nada. Caso ficticio: un aviso justo debajo de la tarea a la que llega, con
+    la tarea siguiente debajo del aviso y sin sitio a la derecha para rodearlo."""
+    import copy
+    import drawio_modelo as dm, enrutado
+    proc = {"proceso": "x", "carriles": ["Uno", "Dos", "Tres"], "pasos": [
+        {"id": "ACT-01", "tipo": "tarea", "carril": "Uno", "nombre": "Revisar"},
+        {"id": "ACT-02", "tipo": "tarea", "carril": "Dos", "nombre": "Adjuntar"},
+        {"id": "EV-01", "tipo": "mensaje", "carril": "Dos", "nombre": "Aviso"},
+        {"id": "ACT-03", "tipo": "tarea", "carril": "Tres", "nombre": "Preparar"}],
+        "flujos": [{"de": "ACT-02", "a": "EV-01"}, {"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "ACT-03"}]}
+    geo = {"carriles": {"Uno": (0, 200), "Dos": (200, 200), "Tres": (400, 200)}, "ancho": 570,
+           "pasos": {"ACT-01": (500, 100), "ACT-02": (dm.CABECERA + 100, 300), "EV-01": (500, 300), "ACT-03": (500, 500)},
+           "flujos": [[], [], []], "etiquetas": {"EV-01": "abajo"}, "anotaciones": [], "trazado_generado": True}
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+
+    def cruces_de(g):
+        c, cajas, alto = enrutado._obstaculos(proc, g, dm.TAM)
+        caminos = {i: dm._camino(c[f["de"]], dm.TAM[tipo[f["de"]]], g["flujos"][i], c[f["a"]], dm.TAM[tipo[f["a"]]])
+                   for i, f in enumerate(proc["flujos"])}
+        return sum(enrutado._cruces_de_caminos(caminos).values())
+    c, cajas, alto = enrutado._obstaculos(proc, geo, dm.TAM)
+    antes = dict(geo, flujos=enrutado.trazar_todo(proc, dict(geo, pasos=c), dm.TAM, dm.CABECERA, alto, cajas, [0, 1, 2],
+                                                   hueco=enrutado.HUECO)[0])
+    movido = copy.deepcopy(geo)
+    enrutado.mover_pasos(proc, movido, dm.TAM, dm.CABECERA)
+    check(cruces_de(antes) == 1 and cruces_de(movido) == 0 and movido["pasos"]["EV-01"][0] < 500
+          and movido["pasos"]["EV-01"][1] == 300 and movido["pasos"]["ACT-01"] == geo["pasos"]["ACT-01"],
+          f"mover un paso: el aviso deja libre la columna y ya no se cruza nada ({movido['pasos']['EV-01']})")
+    capas = copy.deepcopy(geo)
+    capas.pop("trazado_generado")
+    enrutado.mover_pasos(proc, capas, dm.TAM, dm.CABECERA)
+    check(capas["pasos"] == geo["pasos"] and capas["flujos"] == geo["flujos"], "mover un paso: por capas no se mueve nada")
+
+
 def main_sin_navegador():
     """Con DIAGRAMAS_SIN_NAVEGADOR=1, lo que se puede hacer sin navegador: dibujar el .drawio (también en tramos),
     leerlo, compararlo, exportar el BPMN y validar."""
@@ -1736,6 +1772,7 @@ def main_sin_navegador():
         tema(tmp / "tema")
         (tmp / "abanico").mkdir()
         abanico(tmp / "abanico", entorno(sin_navegador=True))
+        mover_paso()
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}
         (tmp / "malo.json").write_text(json.dumps(malo), encoding="utf-8")
@@ -1775,6 +1812,7 @@ def main():
                                ("abanico sin", lambda t: abanico(t, entorno(sin_navegador=True)))):
             (tmp / nombre).mkdir()
             prueba(tmp / nombre)
+        mover_paso()
         nota_y_etiqueta(tmp / "nota con el motor")
         d = tmp / "solicitud.drawio"
         # 1. crear

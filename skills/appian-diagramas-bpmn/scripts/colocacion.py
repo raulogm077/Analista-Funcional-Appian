@@ -1199,6 +1199,7 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
         if not geo.get("etiqueta_en_horizontal"):
             enrutado.ortogonalizar(proc, geo, tam)
             geo["trazado_generado"] = True       # con Mermaid: la herramienta también puede volver a trazarlo
+        enrutado.mover_pasos(proc, geo, tam, cabecera)
         enrutado.mejorar(proc, geo, tam, cabecera)
         geo.pop("trazado_generado", None)
         despejar_eventos_de_borde(proc, geo, tam, cabecera)
