@@ -286,9 +286,35 @@ def contornos(proc):
     return out
 
 
+def letra_tarea(nombre, tam=None):
+    """El cuerpo de letra de una tarea para que su nombre quepa en la tarjeta, debajo del pictograma: 11 px y, si no
+    cabe, 10 o 9. La medida es aproximada y por exceso (cada letra, algo más de media letra de ancho)."""
+    w, h = tam or TAM["tarea"]
+    m = CODIGO.match(nombre or "")
+    texto, codigo = (m.group(1), True) if m and m.group(1) else (nombre or "", False)
+    for letra in (11, 10, 9):
+        lineas, actual = 1, 0
+        for palabra in texto.split():
+            largo = len(palabra) * letra * 0.6
+            if actual and actual + letra * 0.3 + largo > w - 10:
+                lineas += 1
+                actual = largo
+            else:
+                actual += (letra * 0.3 if actual else 0) + largo
+        if lineas * letra * 1.2 + (11 if codigo else 0) <= h - 32 - 2:
+            return letra
+    return 9
+
+
 def estilo_paso(p, contorno=None):
-    """El estilo de un paso: el de su tipo con su contorno (de contornos())."""
-    return con_contorno(ESTILO[p["tipo"]], contorno)
+    """El estilo de un paso: el de su tipo con su contorno (de contornos()). Una tarea con un nombre largo, con la
+    letra un poco más pequeña para que quepa."""
+    estilo = ESTILO[p["tipo"]]
+    if p["tipo"] in TAREAS:
+        letra = letra_tarea(p.get("nombre"))
+        if letra != 11:
+            estilo = estilo.replace("fontSize=11;", f"fontSize={letra};", 1)
+    return con_contorno(estilo, contorno)
 
 
 # ---------------------------------------------------------------- proceso (JSON)

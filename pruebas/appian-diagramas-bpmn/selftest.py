@@ -1719,6 +1719,15 @@ def g3(tmp):
         prueba(tmp / nombre)
 
 
+def letra_de_tareas():
+    """El nombre largo de una tarea cabe en la tarjeta con la letra algo más pequeña; uno corto conserva los 11 px."""
+    import drawio_modelo as dm
+    corto = {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar solicitud"}
+    largo = dict(corto, nombre="Revisar la solicitud y preparar el informe con fecha límite (nuevo paso 5)")
+    check("fontSize=11;" in dm.estilo_paso(corto) and "fontSize=10;" in dm.estilo_paso(largo),
+          "tareas: un nombre largo va con letra de 10 px para caber en la tarjeta; uno corto, con la de 11")
+
+
 def mover_paso():
     """Con Mermaid, un paso que tapa la columna por la que baja otro flujo se mueve dentro de su carril si así ese flujo
     no cruza ninguno; por capas no se mueve nada. Caso ficticio: un aviso justo debajo de la tarea a la que llega, con
@@ -1773,6 +1782,7 @@ def main_sin_navegador():
         (tmp / "abanico").mkdir()
         abanico(tmp / "abanico", entorno(sin_navegador=True))
         mover_paso()
+        letra_de_tareas()
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}
         (tmp / "malo.json").write_text(json.dumps(malo), encoding="utf-8")
@@ -1813,6 +1823,7 @@ def main():
             (tmp / nombre).mkdir()
             prueba(tmp / nombre)
         mover_paso()
+        letra_de_tareas()
         nota_y_etiqueta(tmp / "nota con el motor")
         d = tmp / "solicitud.drawio"
         # 1. crear
