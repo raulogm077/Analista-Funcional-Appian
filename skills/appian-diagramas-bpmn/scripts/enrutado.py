@@ -780,9 +780,19 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None, fija
     usos = {}           # (paso, lado) -> {"sale" | "entra": {flujos}}
     rutas = {}
 
+    import colocacion as co
+    tareas = ("tarea", "sistema", "script", "manual", "subproceso", "llamada")
+
+    def de_borde(i):
+        f = flujos[i]
+        return bool(f.get("discontinuo")) and tipo.get(f["de"]) in tareas and tipo.get(f["a"]) in co.BORDE
+
     def amigos(i, j):
         # los que llegan al mismo paso pueden unirse antes y los que salen del mismo, compartir el tronco; pero
-        # este se cobra (`tronco`), para que se separen pronto y cada uno tenga sitio para su etiqueta
+        # este se cobra (`tronco`), para que se separen pronto y cada uno tenga sitio para su etiqueta. La línea
+        # discontinua a un evento de borde no comparte tronco con la salida de la tarea: pegadas, no se distinguen
+        if de_borde(i) != de_borde(j):
+            return False
         return flujos[i]["a"] == flujos[j]["a"] or flujos[i]["de"] == flujos[j]["de"]
 
     def tronco(i, usan):
@@ -879,7 +889,11 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None, fija
         usos.setdefault((flujos[i]["a"], la), {}).setdefault("entra", set()).add(i)
         reservar(i, nodos)
 
-    def coste_lado(d, sale):
+    def coste_lado(d, sale, borde=False):
+        if borde and sale:
+            # un evento de borde va en el borde de arriba o de abajo de su tarea: su línea sale por ahí y deja el
+            # lado derecho a la salida de la tarea
+            return 0 if d[0] == 0 else CRUCE // 2
         natural = (1, 0) if sale else (-1, 0)
         if d == natural:
             return 0
@@ -908,7 +922,7 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None, fija
                 ni, nj = cerca(xs, q[0]), cerca(ys, q[1])
                 if ni is None or nj is None:
                     continue
-                out.append(((ni, nj), d, coste_lado(d, sale) + (CRUCE if mezclar else 0), p))
+                out.append(((ni, nj), d, coste_lado(d, sale, de_borde(i)) + (CRUCE if mezclar else 0), p))
             # con todos los lados ocupados en el otro sentido, compartir uno es mejor que no trazarlo
             return out or (extremos(pid, sale, True) if not mezclar else [])
         salidas, llegadas = extremos(de, True), extremos(a, False)
@@ -1299,4 +1313,84 @@ def mover_pasos(proc, geo, tam, cabecera):
     for i, c in caminos.items():
         geo["flujos"][i] = [tuple(p) for p in c[1:-1]]
     geo["etiquetas_flujo"] = sitios
+    return geo
+
+
+def enderezar(proc, geo, tam):
+    """Un flujo entre dos pasos a la misma altura (o en la misma vertical) va recto si nada se lo impide: ninguna
+    forma, nombre, nota o etiqueta en medio, ningún otro flujo que lo cruce o vaya por encima, y sus dos lados libres
+    de flujos en el otro sentido. El motor deja a veces un rodeo por arriba sin razón, que se lee como un desvío."""
+    import colocacion as co
+    import drawio_modelo as dm
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    flujos = proc["flujos"]
+    validos = [i for i, f in enumerate(flujos) if i < len(geo["flujos"]) and f["de"] in geo["pasos"]
+               and f["a"] in geo["pasos"] and f["de"] != f["a"] and f["de"] in tipo and f["a"] in tipo]
+
+    def ruta(i):
+        f = flujos[i]
+        return dm._camino(geo["pasos"][f["de"]][:2], tam[tipo[f["de"]]], geo["flujos"][i],
+                          geo["pasos"][f["a"]][:2], tam[tipo[f["a"]]])
+
+    for i in validos:
+        f = flujos[i]
+        if not geo["flujos"][i]:
+            continue
+        (ax, ay), (bx, by) = geo["pasos"][f["de"]][:2], geo["pasos"][f["a"]][:2]
+        (aw, ah), (bw, bh) = tam[tipo[f["de"]]], tam[tipo[f["a"]]]
+        if abs(ay - by) <= 1 and abs(ax - bx) > (aw + bw) / 2 + 2 * SALIDA:
+            s = 1 if bx > ax else -1
+            p, q = (ax + s * aw / 2, ay), (bx - s * bw / 2, ay)
+            puntos = [(ax + s * (aw / 2 + SALIDA), ay)]
+        elif abs(ax - bx) <= 1 and abs(ay - by) > (ah + bh) / 2 + 2 * SALIDA:
+            s = 1 if by > ay else -1
+            p, q = (ax, ay + s * ah / 2), (ax, by - s * bh / 2)
+            puntos = [(ax, ay + s * (ah / 2 + SALIDA))]
+        else:
+            continue
+        actual = ruta(i)
+        if len(_limpiar(actual)) <= 2:
+            continue
+        horizontal = p[1] == q[1]
+        cajas = [c for c in dm._cajas(proc, geo)
+                 if not any(abs(c[0] + c[2] / 2 - x) <= 1 and abs(c[1] + c[3] / 2 - y) <= 1 and c[2] <= w + 1
+                            for (x, y), (w, _) in ((geo["pasos"][f["de"]][:2], (aw, ah)), (geo["pasos"][f["a"]][:2], (bw, bh))))]
+        holgura = 4
+        if any(_cruza(p, q, (x - holgura, y - holgura, w + 2 * holgura, h + 2 * holgura)) for x, y, w, h in cajas):
+            continue
+        libre = True
+        for j in validos:
+            if j == i:
+                continue
+            otra = ruta(j)
+            g = flujos[j]
+            # un flujo que entra por el lado por el que este sale, o sale por el lado por el que este entra
+            for extremo, punto in ((otra[0], q), (otra[-1], p)):
+                if abs(extremo[0] - punto[0]) <= 1 and abs(extremo[1] - punto[1]) <= 1:
+                    libre = False
+            for r, t in zip(otra, otra[1:]):
+                if horizontal and r[0] == t[0] and min(p[0], q[0]) - 1 <= r[0] <= max(p[0], q[0]) + 1 \
+                        and min(r[1], t[1]) - HUECO < p[1] < max(r[1], t[1]) + HUECO:
+                    libre = False
+                if not horizontal and r[1] == t[1] and min(p[1], q[1]) - 1 <= r[1] <= max(p[1], q[1]) + 1 \
+                        and min(r[0], t[0]) - HUECO < p[0] < max(r[0], t[0]) + HUECO:
+                    libre = False
+                if horizontal and r[1] == t[1] and abs(r[1] - p[1]) < HUECO and \
+                        min(max(r[0], t[0]), max(p[0], q[0])) > max(min(r[0], t[0]), min(p[0], q[0])):
+                    libre = False
+                if not horizontal and r[0] == t[0] and abs(r[0] - p[0]) < HUECO and \
+                        min(max(r[1], t[1]), max(p[1], q[1])) > max(min(r[1], t[1]), min(p[1], q[1])):
+                    libre = False
+            sitio = geo.get("etiquetas_flujo", {}).get(j)
+            if g.get("etiqueta") and sitio is not None:
+                x, y = _punto(otra, sitio)
+                w = co.ancho_etiqueta_flujo(g["etiqueta"]) + 2 * co.AIRE_ETIQUETA
+                if _cruza(p, q, (x - w / 2, y - 7 - co.AIRE_ETIQUETA, w, 14 + 2 * co.AIRE_ETIQUETA)):
+                    libre = False
+            if not libre:
+                break
+        if libre:
+            geo["flujos"][i] = puntos
+            if f.get("etiqueta"):
+                geo.setdefault("etiquetas_flujo", {})[i] = 0.0
     return geo

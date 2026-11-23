@@ -1799,6 +1799,40 @@ def nota_y_mensaje_apartados():
           f"mensaje: baja por fuera de la etiqueta de otro flujo ({sin} → {con})")
 
 
+def borde_y_recto():
+    """La línea discontinua a un plazo sale por arriba o por abajo de su tarea y no comparte el lado derecho con la
+    salida de la tarea, y un flujo entre dos pasos a la misma altura sin nada en medio va recto. Casos ficticios."""
+    import drawio_modelo as dm, enrutado
+    proc = {"proceso": "x", "carriles": ["A"], "pasos": [
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar"},
+        {"id": "EV-01", "tipo": "temporizador", "carril": "A", "nombre": "10 días"},
+        {"id": "ACT-02", "tipo": "sistema", "carril": "A", "nombre": "Cerrar"}],
+        "flujos": [{"de": "ACT-01", "a": "EV-01", "discontinuo": True}, {"de": "ACT-01", "a": "ACT-02"}]}
+    geo = {"carriles": {"A": (0, 400)}, "ancho": 800, "anotaciones": [], "etiquetas": {"EV-01": "abajo"},
+           "pasos": {"ACT-01": (dm.CABECERA + 100, 200), "EV-01": (dm.CABECERA + 300, 200), "ACT-02": (dm.CABECERA + 300, 340)},
+           "flujos": [[], []]}
+    c, cajas, alto = enrutado._obstaculos(proc, geo, dm.TAM)
+    rutas = enrutado.trazar_todo(proc, dict(geo, pasos=c), dm.TAM, dm.CABECERA, alto, cajas, [0, 1], hueco=enrutado.HUECO)[0]
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    ini = [dm._camino(c[f["de"]], dm.TAM[tipo[f["de"]]], rutas[i], c[f["a"]], dm.TAM[tipo[f["a"]]])[0]
+           for i, f in enumerate(proc["flujos"])]
+    check(ini[0] != ini[1] and abs(ini[0][0] - c["ACT-01"][0]) <= 1,
+          f"borde: la línea al plazo sale por arriba o por abajo de la tarea, no por el lado de su salida ({ini})")
+    proc = {"proceso": "x", "carriles": ["A"], "pasos": [
+        {"id": "EV-01", "tipo": "mensaje", "carril": "A", "nombre": "Aviso"},
+        {"id": "EV-02", "tipo": "fin", "carril": "A", "nombre": "Fin"}], "flujos": [{"de": "EV-01", "a": "EV-02"}]}
+    geo = {"carriles": {"A": (0, 300)}, "ancho": 700, "anotaciones": [], "etiquetas": {"EV-01": "abajo", "EV-02": "abajo"},
+           "pasos": {"EV-01": (300, 150), "EV-02": (500, 150)}, "flujos": [[(340, 150), (340, 110), (500, 110)]]}
+    enrutado.enderezar(proc, geo, dm.TAM)
+    recto = geo["flujos"][0]
+    geo["pasos"]["ACT-09"] = (400, 150)
+    proc["pasos"].append({"id": "ACT-09", "tipo": "tarea", "carril": "A", "nombre": "En medio"})
+    geo["flujos"][0] = [(340, 150), (340, 60), (500, 60)]
+    enrutado.enderezar(proc, geo, dm.TAM)
+    check(all(y == 150 for _, y in recto) and geo["flujos"][0] == [(340, 150), (340, 60), (500, 60)],
+          f"recto: sin nada en medio el rodeo se quita ({recto}); con una forma en medio, se queda")
+
+
 def main_sin_navegador():
     """Con DIAGRAMAS_SIN_NAVEGADOR=1, lo que se puede hacer sin navegador: dibujar el .drawio (también en tramos),
     leerlo, compararlo, exportar el BPMN y validar."""
@@ -1818,6 +1852,7 @@ def main_sin_navegador():
         abanico(tmp / "abanico", entorno(sin_navegador=True))
         mover_paso()
         nota_y_mensaje_apartados()
+        borde_y_recto()
         letra_de_tareas()
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}
@@ -1860,6 +1895,7 @@ def main():
             prueba(tmp / nombre)
         mover_paso()
         nota_y_mensaje_apartados()
+        borde_y_recto()
         letra_de_tareas()
         nota_y_etiqueta(tmp / "nota con el motor")
         d = tmp / "solicitud.drawio"

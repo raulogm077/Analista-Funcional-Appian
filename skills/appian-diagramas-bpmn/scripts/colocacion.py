@@ -1213,6 +1213,7 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
         despejar_eventos_de_borde(proc, geo, tam, cabecera)
         separar_ida_vuelta(proc, geo, tam, cabecera)
         abanico_de_salidas(proc, geo, tam, eventos, puertas)
+        enrutado.enderezar(proc, geo, tam)
     colocar_externos(proc, geo)
     return geo
 
