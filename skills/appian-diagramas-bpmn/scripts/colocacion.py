@@ -25,6 +25,7 @@ SEPARACION_Y = 28        # hueco mínimo entre formas en vertical, dentro de un 
 MARGEN = 16              # hueco mínimo entre una forma y el borde de su carril
 NOTA_ANCHO = 160
 NOTA_HUECO = 18          # distancia entre la nota y su paso (se ve la línea de asociación)
+NOTA_AIRE = 16           # a cada lado de una nota, para que un flujo que pasa junto a ella no la toque
 EXTERNO_ALTO = 60
 EXTERNO_HUECO = 40      # hueco entre carriles y participantes: ahí va la etiqueta del flujo de mensaje
 ANCHO_LEGIBLE = 1600     # más ancho que esto, en una página vertical el texto queda pequeño
@@ -218,6 +219,13 @@ def por_capas(proc, eventos, puertas, cabecera):
     ultima = max(capa.values(), default=0)
     ancho_col = [COLUMNA] * (ultima + 2)
     separacion_hueco = {}
+    for n in proc.get("notas") or []:
+        # el hueco a cada lado de una columna con nota, lejos de la nota: el flujo que baja por él no la toca
+        if n.get("paso") in capa:
+            c, mitad = capa[n["paso"]], ancho_nota(n.get("texto")) / 2 + NOTA_AIRE + 6
+            for k in (c - 1, c):
+                if k >= 0:
+                    ancho_col[k] = max(ancho_col[k], 2 * mitad)
     for i, f in secuencia:
         if f.get("etiqueta") and tipo[f["de"]] in puertas and i not in atras:
             ancho_col[capa[f["de"]]] = max(ancho_col[capa[f["de"]]], ancho_columna_puerta(proc, f))
@@ -660,8 +668,8 @@ def extensiones(proc, lados, notas_lado, tam, eventos, puertas):
             continue
         ancho = ancho_nota(n.get("texto"))
         izq = -x_nota(0, desplazamiento, ancho)
-        e[0] = max(e[0], izq)
-        e[1] = max(e[1], ancho - izq)
+        e[0] = max(e[0], izq + NOTA_AIRE)        # con aire: una flecha que baja junto a la nota no la toca
+        e[1] = max(e[1], ancho - izq + NOTA_AIRE)
         k = 2 if lado == "arriba" else 3
         if desplazamiento.startswith("fuera"):    # al lado de la etiqueta, desde el borde del paso
             e[k] = max(e[k], tam[next(p["tipo"] for p in proc["pasos"] if p["id"] == n["paso"])][1] / 2

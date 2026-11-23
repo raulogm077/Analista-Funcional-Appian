@@ -234,6 +234,7 @@ Si no hay diagrama aprobado, lo que no salga de forma explícita de las fuentes 
 ## Cómo se describe un buen proceso
 
 - **Tareas:** verbo en infinitivo y objeto, por ejemplo «Revisar documentación».
+- **Tareas seguidas del mismo perfil sobre lo mismo** (descargar, rellenar y cargar una plantilla) van en una sola caja («Preparar y cargar la plantilla»), con una nota que diga qué incluye. Se separan solo si entre ellas hay una decisión, una espera u otro perfil, o si el negocio las ve como pasos distintos.
 - **Puertas exclusivas:** una pregunta cerrada («¿Completa?») y cada salida con su etiqueta.
 - **Inicio y fin:** un inicio por cada forma de arrancar el proceso que distinga el negocio (por ejemplo, «Inicio carga manual» por el gerente e «Inicio carga masiva» por la PMO), normalmente uno, y un fin por cada resultado de negocio («Solicitud denegada», «Autorización emitida»).
 - **Arranque:** `inicio_temporizador` si el proceso arranca solo a una hora o cada cierto tiempo (el nombre dice cuándo: «Cada día a las 08:00»); `inicio_mensaje` si arranca al recibir un aviso.
