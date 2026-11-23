@@ -1764,6 +1764,41 @@ def mover_paso():
     check(capas["pasos"] == geo["pasos"] and capas["flujos"] == geo["flujos"], "mover un paso: por capas no se mueve nada")
 
 
+def nota_y_mensaje_apartados():
+    """Una nota que pisa la línea de un flujo (o va pegada a ella) se corre hasta que quede libre, sin dejar de estar
+    sobre su paso, y un mensaje no baja por encima de la etiqueta de un flujo. Casos ficticios."""
+    import drawio_modelo as dm
+    proc = {"proceso": "x", "carriles": ["A"], "pasos": [
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar"},
+        {"id": "ACT-02", "tipo": "tarea", "carril": "A", "nombre": "Preparar"},
+        {"id": "ACT-03", "tipo": "tarea", "carril": "A", "nombre": "Enviar"}],
+        "flujos": [{"de": "ACT-02", "a": "ACT-03"}], "notas": [{"paso": "ACT-01", "texto": "Supuesto"}]}
+    geo = {"carriles": {"A": (0, 600)}, "ancho": 900, "pasos": {"ACT-01": (300, 250), "ACT-02": (460, 450),
+           "ACT-03": (700, 60)}, "flujos": [[(460, 60)]], "anotaciones": [(300, 120, 160, 50)]}
+    dm._apartar_notas(proc, geo)
+    x, _, w, _ = geo["anotaciones"][0]
+    check((x + w <= 460 - dm.AIRE_NOTA or x >= 460 + dm.AIRE_NOTA) and x < 300 + 60 and x + w > 300 - 60,
+          f"nota: se aparta de la línea que bajaba por su borde y sigue sobre su paso ({x}, {x + w})")
+    proc = {"proceso": "x", "carriles": ["A"], "externos": ["E"], "pasos": [
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Publicar"},
+        {"id": "ACT-02", "tipo": "tarea", "carril": "A", "nombre": "Revisar"},
+        {"id": "EV-01", "tipo": "fin", "carril": "A", "nombre": ""}],
+        "flujos": [{"de": "ACT-02", "a": "EV-01", "etiqueta": "No, rechaza"}, {"de": "ACT-01", "a": "E"}]}
+    geo = {"carriles": {"A": (0, 400)}, "ancho": 900, "externos": {"E": (460, 60)},
+           "pasos": {"ACT-01": (300, 100), "ACT-02": (100, 300), "EV-01": (520, 300)}, "flujos": [[], []]}
+    w = dm.colocacion.ancho_etiqueta_flujo("No, rechaza")
+    etiqueta = (300 - w / 2, 300 - dm.ALTO_ETIQUETA_FLUJO / 2, w, dm.ALTO_ETIQUETA_FLUJO)
+    centro = {k: v[:2] for k, v in geo["pasos"].items()}
+
+    def vertical(etiquetas):
+        sitio, pts = dm._vertical_mensaje(proc["flujos"][1], centro, dm.TAM["tarea"], geo, {"E": "externo-1"}, 0.5,
+                                          proc, [], etiquetas)
+        return pts[-1][0] if pts else 300 + (sitio - 0.5) * dm.TAM["tarea"][0]
+    sin, con = vertical([]), vertical([etiqueta])
+    check(etiqueta[0] < sin < etiqueta[0] + w and not etiqueta[0] - 12 < con < etiqueta[0] + w + 12,
+          f"mensaje: baja por fuera de la etiqueta de otro flujo ({sin} → {con})")
+
+
 def main_sin_navegador():
     """Con DIAGRAMAS_SIN_NAVEGADOR=1, lo que se puede hacer sin navegador: dibujar el .drawio (también en tramos),
     leerlo, compararlo, exportar el BPMN y validar."""
@@ -1782,6 +1817,7 @@ def main_sin_navegador():
         (tmp / "abanico").mkdir()
         abanico(tmp / "abanico", entorno(sin_navegador=True))
         mover_paso()
+        nota_y_mensaje_apartados()
         letra_de_tareas()
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}
@@ -1823,6 +1859,7 @@ def main():
             (tmp / nombre).mkdir()
             prueba(tmp / nombre)
         mover_paso()
+        nota_y_mensaje_apartados()
         letra_de_tareas()
         nota_y_etiqueta(tmp / "nota con el motor")
         d = tmp / "solicitud.drawio"

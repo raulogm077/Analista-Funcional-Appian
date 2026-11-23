@@ -610,8 +610,9 @@ def entrada_mensaje(f, centro, ancho, externos, sitio=0.5, ancho_paso=0):
 
 
 
-def _vertical_mensaje(f, centro, tam, geo, externos, sitio, proc, caminos=()):
-    """Por dónde baja un flujo de mensaje de su paso a su participante sin pisar otra forma ni su nombre: (sitio, [])
+def _vertical_mensaje(f, centro, tam, geo, externos, sitio, proc, caminos=(), etiquetas=()):
+    """Por dónde baja un flujo de mensaje de su paso a su participante sin pisar otra forma, su nombre ni la etiqueta
+    de otro flujo (`etiquetas`, sus cajas): (sitio, [])
     con el sitio del borde del paso más cercano al pedido cuya vertical está libre o, si ninguna lo está, (sitio,
     puntos) con un quiebro justo debajo del paso hasta la vertical libre más cercana."""
     paso = f["de"] if f["a"] in externos else f["a"]
@@ -621,12 +622,13 @@ def _vertical_mensaje(f, centro, tam, geo, externos, sitio, proc, caminos=()):
     if y1 <= y0:
         return sitio, []
     obst = [c for c in _cajas(proc, geo) if not (c[0] <= cx <= c[0] + c[2] and c[1] <= cy <= c[1] + c[3])]
+    obst += list(etiquetas)
 
     verticales = [(p[0], min(p[1], q[1]), max(p[1], q[1])) for c in caminos for p, q in zip(c, c[1:]) if abs(p[0] - q[0]) <= 1]
 
     def libre(x, desde):
         # ni por una forma o un nombre, ni pegado a la vertical de otro flujo, que parecería el mismo
-        return not any(c[0] - 4 < x < c[0] + c[2] + 4 and c[1] < y1 and c[1] + c[3] > desde for c in obst) and \
+        return not any(c[0] - 12 < x < c[0] + c[2] + 12 and c[1] < y1 and c[1] + c[3] > desde for c in obst) and \
             not any(abs(vx - x) < 12 and a < y1 and b > desde for vx, a, b in verticales)
     for s in sorted({sitio} | {k / 20 for k in range(2, 19)}, key=lambda s: abs(s - sitio)):
         if libre(cx + (s - 0.5) * w, y0):
@@ -802,6 +804,42 @@ def _cajas(proc, geo):
     return cajas
 
 
+AIRE_NOTA = 10   # entre una nota y la línea de un flujo: más cerca, la línea parece el corchete o pisa el texto
+
+
+def _apartar_notas(proc, geo):
+    """Corre en horizontal cada nota que pisa la línea de un flujo de secuencia (o va pegada a ella) hasta el sitio
+    libre más cercano que no pise otra forma, sin dejar de estar sobre su paso ni salirse de la página."""
+    notas, cajas_notas = proc.get("notas") or [], list(geo.get("anotaciones") or [])
+    if not notas or not geo.get("flujos"):
+        return
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    centro = {pid: geo["pasos"][pid][:2] for pid in geo["pasos"]}
+    tramos = []
+    for i, f in enumerate(proc["flujos"][:len(geo["flujos"])]):
+        if f["de"] in centro and f["a"] in centro and f["de"] != f["a"]:
+            camino = _camino(centro[f["de"]], TAM[tipo[f["de"]]], geo["flujos"][i], centro[f["a"]], TAM[tipo[f["a"]]])
+            tramos += list(zip(camino, camino[1:]))
+
+    def pisa_linea(x, y, w, h):
+        return any(min(p[0], q[0]) < x + w + AIRE_NOTA and max(p[0], q[0]) > x - AIRE_NOTA and
+                   min(p[1], q[1]) < y + h + AIRE_NOTA and max(p[1], q[1]) > y - AIRE_NOTA for p, q in tramos)
+    for k, (n, (x, y, w, h)) in enumerate(zip(notas, cajas_notas)):
+        if not pisa_linea(x, y, w, h):
+            continue
+        pcx, pw = centro[n["paso"]][0], TAM[tipo[n["paso"]]][0]
+        otras = [c for c in _cajas(proc, geo) if c != (x, y, w, h)]
+        for d in sorted(range(-int(w), int(w) + 1, 4), key=abs):
+            nx = x + d
+            if nx < 8 or nx + w > geo["ancho"] - 8 or nx > pcx + pw / 2 - 8 or nx + w < pcx - pw / 2 + 8:
+                continue
+            if not pisa_linea(nx, y, w, h) and not any(nx < c[0] + c[2] and c[0] < nx + w and y < c[1] + c[3] and
+                                                       c[1] < y + h for c in otras):
+                cajas_notas[k] = (nx, y, w, h)
+                geo["anotaciones"] = cajas_notas
+                break
+
+
 def _celdas(proc, geo, pre=""):
     """Las celdas de una página, sin las dos de la raíz. `geo` = {"carriles": {nombre: (y, h)}, "ancho": w,
     "pasos": {id: (cx, cy)} (centro absoluto), "flujos": [[(x, y), ...] por flujo en el orden de proc],
@@ -835,6 +873,7 @@ def _celdas(proc, geo, pre=""):
         celdas.append(f'<mxCell id="{ext_id[e]}" value="{_xml_attr(e)}" style="{ESTILO_EXTERNO}" vertex="1" parent="1">'
                       f'<mxGeometry y="{y:.0f}" width="{geo["ancho"]:.0f}" height="{h:.0f}" as="geometry"/></mxCell>')
     centro = {pid: geo["pasos"][pid][:2] for pid in geo["pasos"]}
+    _apartar_notas(proc, geo)
     for i, (n, caja) in enumerate(zip(proc.get("notas") or [], geo.get("anotaciones") or []), 1):
         x, y, w, h = caja
         carril = next(p["carril"] for p in proc["pasos"] if p["id"] == n["paso"])
@@ -857,6 +896,16 @@ def _celdas(proc, geo, pre=""):
                    for i, f in enumerate(proc["flujos"], 1)
                    if f["de"] in centro and f["a"] in centro and f["de"] != f["a"] and i - 1 < len(geo["flujos"])}
         cajas = _cajas(proc, geo)
+    etiquetas = []        # dónde va la etiqueta de cada flujo de secuencia, para que un mensaje no baje por encima
+    for i, f in enumerate(proc["flujos"], 1):
+        if f.get("etiqueta") and i in caminos:
+            w = colocacion.ancho_etiqueta_flujo(f["etiqueta"])
+            sitio = geo.get("etiquetas_flujo", {}).get(i - 1, None if por_capas else 0.0)
+            if sitio is None:
+                sitio = _sitio_etiqueta(caminos[i], [c for j, c in caminos.items() if j != i], (w, cajas))
+            if sitio is not None:
+                x, y = _punto_en(caminos[i], sitio)
+                etiquetas.append((x - w / 2, y - ALTO_ETIQUETA_FLUJO / 2, w, ALTO_ETIQUETA_FLUJO))
     mensajes = {}         # paso: los flujos de mensaje que lo tocan, en orden, para que cada uno vaya por su vertical
     for i, f in enumerate(proc["flujos"], 1):
         if (f["de"] in ext_id) != (f["a"] in ext_id):
@@ -871,7 +920,7 @@ def _celdas(proc, geo, pre=""):
             suyos = mensajes.get(paso, [i])
             k, n = suyos.index(i) if i in suyos else 0, len(suyos)
             sitio, puntos_mensaje = _vertical_mensaje(f, centro, TAM[tipo[paso]], geo, ext_id, (k + 1) / (n + 1), proc,
-                                                     list(caminos.values()))
+                                                     list(caminos.values()), etiquetas)
             st += entrada_mensaje(f, centro, geo["ancho"], ext_id, sitio, TAM[tipo[paso]][0])
             if puntos_mensaje:
                 x_libre = puntos_mensaje[-1][0]
