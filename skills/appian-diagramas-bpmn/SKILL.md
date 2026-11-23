@@ -251,6 +251,8 @@ Si no hay diagrama aprobado, lo que no salga de forma explícita de las fuentes 
   - No se dibuja el correo general de la herramienta que avisa a cada grupo de que tiene una tarea asignada.
   - Uno a un sistema u organismo externo es un flujo de mensaje desde la tarea que lo envía hasta el participante externo.
   - Todos van también en la tabla de avisos (AV) del documento.
+- **Sistemas que no hablan con el proceso:** un sistema del que una persona descarga a mano un fichero no es un participante externo (sus flujos de mensaje cruzarían todos los carriles sin que haya intercambio): se nombra en la nota de esa tarea manual.
+- **Botones que repiten una acción** (enviar varias veces antes de finalizar) van en la nota de la tarea, no como una vuelta atrás, salvo que el diagrama aprobado la dibuje.
 - **Tamaño:** conserva el proceso completo, con la secuencia principal lo más lineal posible. No inventes subprocesos ni uses `tramos` por el número de tareas o para encajarlo en el documento. Los subprocesos responden al contenido del proceso, no al tamaño del dibujo.
 - **Notas:** las explicaciones van en el paso a paso del documento; en `notas`, solo lo que hay que ver en el propio diagrama. Una nota suelta que se deje en draw.io también sale en el PNG: bórrala si no debe verla el cliente.
 - **Detalles técnicos:** esperas, reintentos, colas, middleware o llamadas internas no son pasos del funcional. Si importan al lector, van como nota del paso al que afectan («Detalle técnico: espera de 1 minuto antes de leer las carpetas»).
