@@ -15,6 +15,7 @@ Cuando el usuario invoca esta skill con fuentes (reuniones, transcripciones, act
 
 - Si el proyecto lleva análisis funcional (hay `analisis/funcional.md` o el usuario lo quiere), el proceso lo describe `appian-functional-analyst`: sigue su paso de diagramas y vuelve aquí para dibujarlo.
 - Si el usuario solo quiere el dibujo, descríbelo tú siguiendo «Partir de lo ya aprobado»: primero el diagrama aprobado, si lo hay; luego las fuentes, de la más reciente a la más antigua, y cada supuesto marcado.
+- Una transcripción que no se entiende (por ejemplo, la de Teams en inglés de una reunión en español) no es una fuente: dilo en la respuesta y no saques de ella pasos ni perfiles.
 
 En los dos casos, la respuesta dice de qué fuentes sale el proceso y lista los supuestos y lo pendiente de validar.
 
@@ -219,11 +220,15 @@ Mientras haya cambios hechos a mano sin aceptar, `actualizar` se niega a tocar e
 
 ## Partir de lo ya aprobado
 
-Antes de dibujar un proceso a partir de reuniones, transcripciones o notas, busca en la carpeta del proyecto (y en la carpeta de la que cuelga) un diagrama ya aprobado del mismo proceso: `.vsdx`, `.vsd`, `.drawio`, `.bpmn` o imágenes de un DF anterior. Si lo hay, pregunta una vez si es la referencia y parte de él:
+Antes de dibujar un proceso a partir de reuniones, transcripciones o notas, busca en la carpeta del proyecto (y en la carpeta de la que cuelga) un diagrama ya aprobado del mismo proceso: `.vsdx`, `.vsd`, `.drawio`, `.bpmn`, un DF en Word o imágenes de un DF anterior. Si no lo encuentras, la respuesta pide el DF aprobado, si existe, antes de dar el diagrama por bueno. Si lo hay, pregunta una vez si es la referencia y parte de él:
 
 1. Pasa su contenido al JSON de la skill: pasos, perfiles, puertas, inicios y fines, y los códigos del cliente (ver «Códigos del cliente»).
 2. Usa las fuentes posteriores (reuniones, demos) solo para lo que ha cambiado desde que se aprobó. Lo que no está en el diagrama aprobado lleva una nota «Pendiente de validar: no está en el diagrama aprobado».
 3. Si las fuentes contradicen el diagrama aprobado, gana el diagrama aprobado y la contradicción se dice en la respuesta.
+
+Antes, compara su fecha y versión con las de las fuentes. Si las fuentes son posteriores y rediseñan el proceso (un evolutivo, otra fase, otros sistemas o perfiles), el aprobado es la versión anterior, no la referencia: dibuja lo que dicen las fuentes, toma del aprobado los nombres del cliente (perfiles, sistemas, estados) y lo que las fuentes no contradicen, marca con «Pendiente de validar» lo del aprobado que las fuentes ya no mencionan y pide el DF de la versión nueva.
+
+**Leer un DF en Word (`.docx`).** También es un ZIP. El flujograma es una imagen de `word/media/`: la que sigue al pie «Flujo de Alto Nivel To-Be» (o el que corresponda) en `word/document.xml`. La tabla del paso a paso da cada paso y su perfil, y el control de versiones, la fecha con la que comparar las fuentes.
 
 Si no hay diagrama aprobado, lo que no salga de forma explícita de las fuentes (quién hace una tarea, el orden de dos pasos) es un supuesto: va con una nota «Supuesto: …» en ese paso y se lista en la respuesta para que el usuario lo confirme.
 
