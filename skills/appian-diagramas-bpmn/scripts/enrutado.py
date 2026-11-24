@@ -126,6 +126,21 @@ def quitar_retrocesos(proc, geo, tam):
             geo["flujos"][i] = nuevo[1:-1]
 
 
+def _tapadas(proc, caminos, sitios):
+    """Cuántas etiquetas de flujo toca otro flujo (con su aire): entonces no se sabe de cuál son."""
+    import colocacion as co
+    flujos = proc["flujos"]
+    n = 0
+    for k, c in caminos.items():
+        if not flujos[k].get("etiqueta") or sitios.get(k) is None:
+            continue
+        x, y = _punto(c, sitios[k])
+        w = co.ancho_etiqueta_flujo(flujos[k]["etiqueta"]) + 2 * co.AIRE_ETIQUETA
+        caja = (x - w / 2, y - 7 - co.AIRE_ETIQUETA, w, 14 + 2 * co.AIRE_ETIQUETA)
+        n += any(_cruza(p, q, caja) for o, d in caminos.items() if o != k for p, q in zip(d, d[1:]))
+    return n
+
+
 def cambiar_de_lado(proc, geo, tam, cabecera):
     """Última pasada: dos flujos que salen o llegan a la misma forma y se cruzan se trazan de nuevo juntos, con los
     demás quietos; si cambiarlos de lado en esa forma deja menos cruces en todo el dibujo, se quedan así."""
@@ -161,19 +176,8 @@ def cambiar_de_lado(proc, geo, tam, cabecera):
             sitios = dict(geo.get("etiquetas_flujo", {}))
             sitios.update({k: r[1][k] for k in (i, j) if k in r[1]})
 
-            def tapadas(cs, sitios):
-                # etiquetas que otro flujo toca: entonces no se sabe de cuál son
-                n = 0
-                for k, c in cs.items():
-                    if not flujos[k].get("etiqueta") or sitios.get(k) is None:
-                        continue
-                    x, y = _punto(c, sitios[k])
-                    w = co.ancho_etiqueta_flujo(flujos[k]["etiqueta"]) + 2 * co.AIRE_ETIQUETA
-                    caja = (x - w / 2, y - 7 - co.AIRE_ETIQUETA, w, 14 + 2 * co.AIRE_ETIQUETA)
-                    n += any(_cruza(p, q, caja) for o, d in cs.items() if o != k for p, q in zip(d, d[1:]))
-                return n
             if sum(_cruces_de_caminos(nuevos).values()) < total and pegados(nuevos) <= pegados(caminos) \
-                    and tapadas(nuevos, sitios) <= tapadas(caminos, geo.get("etiquetas_flujo", {})):
+                    and _tapadas(proc, nuevos, sitios) <= _tapadas(proc, caminos, geo.get("etiquetas_flujo", {})):
                 for k in (i, j):
                     geo["flujos"][k] = r[0][k]
                     if k in r[1]:
@@ -1581,4 +1585,224 @@ def enderezar(proc, geo, tam):
             geo["flujos"][i] = puntos
             if f.get("etiqueta"):
                 geo.setdefault("etiquetas_flujo", {})[i] = 0.0
+    return geo
+
+
+def _mezclados(proc, caminos, centros, tam):
+    """Cuántos lados de una forma tienen a la vez un flujo que sale y otro que entra: se leen como uno solo."""
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    usos = {}
+    for k, c in caminos.items():
+        f = proc["flujos"][k]
+        for pid, punto, uso in ((f["de"], c[0], "sale"), (f["a"], c[-1], "entra")):
+            (x, y), (w, h) = centros[pid][:2], tam[tipo[pid]]
+            lado = ("abajo" if abs(punto[1] - (y + h / 2)) <= 1 else "arriba" if abs(punto[1] - (y - h / 2)) <= 1
+                    else "derecha" if abs(punto[0] - (x + w / 2)) <= 1 else "izquierda")
+            usos.setdefault((pid, lado), set()).add(uso)
+    return sum(1 for u in usos.values() if len(u) > 1)
+
+
+def columnas_rectas(proc, geo, tam, cabecera):
+    """Última pasada: un flujo de una forma a la que tiene justo debajo (o encima), en otro carril, baja recto aunque
+    otros flujos crucen esa columna: se pone recto y se trazan de nuevo los que se lo impiden, con los demás quietos.
+    Se queda si el dibujo no tiene más cruces, ningún flujo más pegado a otro ni ninguna etiqueta más tocada. Así una
+    vuelta atrás no obliga a dar un rodeo al flujo que va de una caja a la siguiente."""
+    import drawio_modelo as dm
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    flujos = proc["flujos"]
+    indices = [i for i, f in enumerate(flujos) if i < len(geo["flujos"]) and f["de"] in tipo and f["a"] in tipo
+               and f["de"] != f["a"]]
+    for i in indices:
+        f = flujos[i]
+        (ax, ay), (bx, by) = geo["pasos"][f["de"]][:2], geo["pasos"][f["a"]][:2]
+        (aw, ah), (bw, bh) = tam[tipo[f["de"]]], tam[tipo[f["a"]]]
+        if f.get("etiqueta") or abs(ax - bx) > 1 or abs(ay - by) <= (ah + bh) / 2 + 2 * SALIDA:
+            continue
+        centros, cajas, alto = _obstaculos(proc, geo, tam)
+
+        def caminos_de(rutas):
+            return {k: dm._camino(centros[flujos[k]["de"]], tam[tipo[flujos[k]["de"]]], rutas[k],
+                                  centros[flujos[k]["a"]], tam[tipo[flujos[k]["a"]]]) for k in rutas}
+        caminos = caminos_de({k: geo["flujos"][k] for k in indices})
+        if len(_limpiar(caminos[i])) <= 2:
+            continue
+        (cx, cya), (_, cyb) = centros[f["de"]], centros[f["a"]]
+        s = 1 if cyb > cya else -1
+        recto = [(cx, cya + s * (ah / 2 + SALIDA))]
+        nuevo = caminos_de({i: recto})[i]
+        p, q = nuevo[0], nuevo[-1]
+
+        def propia(c):
+            return any(c[0] <= x <= c[0] + c[2] and c[1] <= y <= c[1] + c[3] for x, y in (centros[f["de"]], centros[f["a"]]))
+        if any(_cruza(p, q, (c[0] - 4, c[1] - 4, c[2] + 8, c[3] + 8)) for c in cajas if not propia(c)):
+            continue
+        estorban = [j for j in indices if j != i and (
+            _cruces_de_caminos({i: nuevo, j: caminos[j]}) or _pegados(nuevo, caminos[j])
+            or any(abs(e[0] - pt[0]) <= 1 and abs(e[1] - pt[1]) <= 1 for e in (caminos[j][0], caminos[j][-1]) for pt in (p, q)))]
+        if not estorban:
+            r = ({}, {})
+        else:
+            fijas = {k: c for k, c in caminos.items() if k != i and k not in estorban}
+            fijas[i] = nuevo
+            r = trazar_todo(proc, dict(geo, pasos=centros), tam, cabecera, alto, cajas, estorban, orden=estorban,
+                            fijas=fijas, visitas=VISITAS_PRUEBA, hueco=HUECO)
+        if not r or any(flujos[k].get("etiqueta") and k not in r[1] for k in estorban):
+            continue
+        nuevos = dict(caminos)
+        nuevos[i] = nuevo
+        nuevos.update(caminos_de({k: r[0][k] for k in estorban}))
+        sitios = dict(geo.get("etiquetas_flujo", {}))
+        sitios.update(r[1])
+
+        def pegados(cs):
+            return sum(1 for a, b in itertools.combinations(sorted(cs), 2) if _pegados(cs[a], cs[b]))
+        if sum(_cruces_de_caminos(nuevos).values()) <= sum(_cruces_de_caminos(caminos).values()) \
+                and not _cruces_de_caminos(nuevos, solo={i}) and pegados(nuevos) <= pegados(caminos) \
+                and _mezclados(proc, nuevos, centros, tam) <= _mezclados(proc, caminos, centros, tam) \
+                and _tapadas(proc, nuevos, sitios) <= _tapadas(proc, caminos, geo.get("etiquetas_flujo", {})):
+            geo["flujos"][i] = recto
+            for k in estorban:
+                geo["flujos"][k] = r[0][k]
+                if k in r[1]:
+                    geo.setdefault("etiquetas_flujo", {})[k] = r[1][k]
+    return geo
+
+
+def salir_por_lado_libre(proc, geo, tam, cabecera):
+    """Última pasada: un flujo que cruza otros se traza de nuevo solo, con los demás quietos, por si otro lado de su
+    forma lo deja con menos cruces. Si sale o llega a una puerta o un evento, prueba también con el nombre de esa forma
+    al otro lado, cuando ese lado no lo usa ningún otro flujo y el nombre no pisa nada: así una salida que vuelve atrás
+    puede salir por el lado que mira a su destino. Se queda si el dibujo tiene menos cruces, ningún flujo más pegado a
+    otro y ninguna etiqueta ni nombre más tocados."""
+    import drawio_modelo as dm
+    import colocacion as co
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    nombre = {p["id"]: p.get("nombre") or "" for p in proc["pasos"]}
+    flujos = proc["flujos"]
+    indices = [i for i, f in enumerate(flujos) if i < len(geo["flujos"]) and f["de"] in tipo and f["a"] in tipo
+               and f["de"] != f["a"]]
+
+    def caja_nombre(c, pid, lado):
+        (x, y), (w, h) = c, tam[tipo[pid]]
+        lh = co.alto_texto(nombre[pid]) - 6
+        return (x - co.ANCHO_ETIQUETA / 2 + 4, y - h / 2 - lh if lado == "arriba" else y + h / 2, co.ANCHO_ETIQUETA - 8, lh)
+
+    def solapan(a, b):
+        return a[0] < b[0] + b[2] and b[0] < a[0] + a[2] and a[1] < b[1] + b[3] and b[1] < a[1] + a[3]
+
+    def pegados(cs):
+        return sum(1 for a, b in itertools.combinations(sorted(cs), 2) if _pegados(cs[a], cs[b]))
+
+    def juntos(cs):
+        """Pares de flujos que salen o llegan por el mismo punto: comparten tramo y sus etiquetas se confunden."""
+        return sum(1 for a, b in itertools.combinations(sorted(cs), 2) for e, d in ((0, 0), (-1, -1))
+                   if abs(cs[a][e][0] - cs[b][d][0]) <= 1 and abs(cs[a][e][1] - cs[b][d][1]) <= 1)
+    vistos = set()
+    for _ in range(len(indices)):
+        centros, cajas, alto = _obstaculos(proc, geo, tam)
+
+        def caminos_de(rutas):
+            return {k: dm._camino(centros[flujos[k]["de"]], tam[tipo[flujos[k]["de"]]], rutas[k],
+                                  centros[flujos[k]["a"]], tam[tipo[flujos[k]["a"]]]) for k in rutas}
+        caminos = caminos_de({k: geo["flujos"][k] for k in indices})
+        pares = _cruces_de_caminos(caminos)
+        total = sum(pares.values())
+        cruces = Counter()
+        for (a, b), n in pares.items():
+            cruces[a] += n
+            cruces[b] += n
+        sitios0 = geo.get("etiquetas_flujo", {})
+        antes = (pegados(caminos), _tapadas(proc, caminos, sitios0), _mezclados(proc, caminos, centros, tam),
+                 juntos(caminos))
+        cambio = False
+        for i in sorted(cruces, key=lambda k: (-cruces[k], k)):
+            if i in vistos:
+                continue
+            vistos.add(i)
+            f = flujos[i]
+            variantes = [None]
+            for pid in (f["de"], f["a"]):
+                lado = geo.get("etiquetas", {}).get(pid)
+                if not lado or not nombre[pid]:
+                    continue
+                otro = "abajo" if lado == "arriba" else "arriba"
+                (x, y), (w, h) = centros[pid], tam[tipo[pid]]
+                borde = y + h / 2 if otro == "abajo" else y - h / 2
+                # ningún otro flujo por ese lado
+                if any(abs(e[1] - borde) <= 1 and x - w / 2 - 1 <= e[0] <= x + w / 2 + 1
+                       for k, c in caminos.items() if k != i for e in (c[0], c[-1])):
+                    continue
+                nueva = caja_nombre(centros[pid], pid, otro)
+                vieja = caja_nombre(centros[pid], pid, lado)
+                suya = (x - w / 2 - 6, y - h / 2 - 6, w + 12, h + 12)
+                if any(_cruza(p, q, nueva) for k, c in caminos.items() if k != i for p, q in zip(c, c[1:])):
+                    continue
+                # una nota de otro paso que pisaría el nombre pasa al otro lado de su paso, si allí cabe
+                notas = list(geo.get("anotaciones") or [])
+                pisadas = [k for k, c in enumerate(notas) if solapan(nueva, c)]
+                resto = [c for c in cajas if c not in (vieja, suya) and c not in [tuple(notas[k]) for k in pisadas]]
+                if any(solapan(nueva, c) for c in resto):
+                    continue
+                movidas = {}
+                for k in pisadas:
+                    n = proc["notas"][k]
+                    if n["paso"] == pid:
+                        break
+                    (nx, ny, nw, nh), (px, py), (pw, ph) = notas[k], centros[n["paso"]], tam[tipo[n["paso"]]]
+                    ly, lh = geo["carriles"][next(p["carril"] for p in proc["pasos"] if p["id"] == n["paso"])][:2]
+                    arriba = ny + nh / 2 < py
+                    hueco = py - ph / 2 - (ny + nh) if arriba else ny - (py + ph / 2)
+                    # al otro lado de su paso (si ningún flujo usa ese lado) o, en el mismo, apartada a un costado
+                    sitios_nota = [(nx, py + ph / 2 + hueco if arriba else py - ph / 2 - hueco - nh, nw, nh)]
+                    if any(abs(e[1] - (py + (ph / 2 if arriba else -ph / 2))) <= 1 and abs(e[0] - px) <= pw / 2 + 1
+                           for c in caminos.values() for e in (c[0], c[-1])):
+                        sitios_nota = []
+                    sitios_nota += [(x, ny + d, nw, nh) for d in (0, 12, 24, -12, -24)
+                                    for x in (nueva[0] + nueva[2] + 8, nueva[0] - 8 - nw)]
+                    for otra in sitios_nota:
+                        if otra[0] < 8 or otra[0] + nw > geo["ancho"] - 8 or otra[1] < ly + 4 or \
+                                otra[1] + nh > ly + lh - 4 or solapan(otra, nueva) or \
+                                any(solapan(otra, c) for c in resto if c != tuple(notas[k])) or \
+                                any(_cruza(p, q, otra) for c in caminos.values() for p, q in zip(c, c[1:])):
+                            continue
+                        movidas[k] = otra
+                        break
+                    else:
+                        break
+                else:
+                    variantes.append((pid, otro, movidas))
+            for v in variantes:
+                g = geo
+                if v is not None:
+                    notas = [v[2].get(k, c) for k, c in enumerate(geo.get("anotaciones") or [])]
+                    g = dict(geo, etiquetas=dict(geo["etiquetas"], **{v[0]: v[1]}), anotaciones=notas)
+                _, cajas_v, _ = _obstaculos(proc, g, tam)
+                r = trazar_todo(proc, dict(g, pasos=centros), tam, cabecera, alto, cajas_v, [i], orden=[i],
+                                fijas={k: c for k, c in caminos.items() if k != i}, visitas=VISITAS_PRUEBA, hueco=HUECO)
+                if not r or (f.get("etiqueta") and i not in r[1]):
+                    continue
+                nuevos = dict(caminos)
+                nuevos.update(caminos_de({i: r[0][i]}))
+                sitios = dict(sitios0)
+                sitios.update(r[1])
+                if v is not None:
+                    nueva = caja_nombre(centros[v[0]], v[0], v[1])
+                    if any(_cruza(p, q, nueva) for p, q in zip(nuevos[i], nuevos[i][1:])):
+                        continue
+                if sum(_cruces_de_caminos(nuevos).values()) < total and pegados(nuevos) <= antes[0] \
+                        and _tapadas(proc, nuevos, sitios) <= antes[1] and _mezclados(proc, nuevos, centros, tam) <= antes[2] \
+                        and juntos(nuevos) <= antes[3]:
+                    geo["flujos"][i] = r[0][i]
+                    if i in r[1]:
+                        geo.setdefault("etiquetas_flujo", {})[i] = r[1][i]
+                    if v is not None:
+                        geo["etiquetas"][v[0]] = v[1]
+                        for k, c in v[2].items():
+                            geo["anotaciones"][k] = c
+                    cambio = True
+                    break
+            if cambio:
+                break
+        if not cambio:
+            break
     return geo

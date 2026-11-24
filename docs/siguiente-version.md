@@ -61,7 +61,7 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   demostrada). Contrastarlo escribe en Indra-spain: solo si Raúl lo autoriza; hasta entonces, sin regla. [prueba]
 - **Diagramas.** Reducir los 30/38 avisos residuales solo con una mejora medida, sin relajar detectores.
 - **Diagramas: probar las reglas de transcripción y DF** (`evaluaciones.md`, «Diagrama sacado de dos transcripciones de una demo»): con `--plugin-dir`, dar a una sesión transcripciones que citan un DF que no está en la carpeta y comprobar que lo pide antes de dibujar; luego pasarle el DF y comprobar que cambia los «por confirmar» que el DF contesta, toma de él los nombres de sistema y anota su alcance. [diagramas]
-- **El SKILL.md, del mismo commit que los scripts.** Una sesión dibujó con los scripts de una rama y siguió el SKILL.md del plugin instalado, de otra versión, y no aplicó las reglas nuevas (pedir el DF, prefijos «Supuesto:»). Al usar una skill desde una rama o una copia, se lee su SKILL.md de esa misma copia. Si vuelve a pasar, una frase en `CLAUDE.md`. [persona y sesión]
+- **El SKILL.md, del mismo commit que los scripts.** Una sesión dibujó con los scripts de una rama y siguió el SKILL.md del plugin instalado, de otra versión, y no aplicó las reglas nuevas (pedir el DF, prefijos «Supuesto:»). Al usar una skill desde una rama o una copia, se lee su SKILL.md de esa misma copia. Si vuelve a pasar, una frase en `CLAUDE.md`. Segundo caso (24-nov): un hilo dibujó con el plugin instalado en su sesión (0.8.0-beta.3) y no con la rama del PR abierto, y el diagrama salió sin el aspecto nuevo; se rehízo con los scripts de la rama. El encargo de un hilo de diagramas debería decir de qué copia se usan los scripts. [persona y sesión]
 - **Diagramas: órdenes que faltan** (auditoría del 10-nov): pestañas por fase nativas (`pagina`), `importar` un
   `.vsdx`, `comparar --con` una referencia, campos `ref` y `supuesto`, carriles por sistema (un proceso real con cinco participantes externos dedicó la mitad del dibujo a franjas y flechas de mensaje) y un PNG por pestaña. El
   SKILL.md ya explica cómo hacerlo a mano mientras tanto. [diagramas]
@@ -112,8 +112,14 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   caso (24-nov): un circuito de aprobación con tres revisiones que devuelven a la misma tarea; Mermaid lo dejó de
   derecha a izquierda y con cruces largos, y por capas se leía de izquierda a derecha. Tercer caso (24-nov): el
   de inversiones, rehecho con las reglas de estructura, salía con Mermaid de derecha a izquierda y con vueltas largas;
-  se entregó por capas (más ancho, 6.025 px, pero de izquierda a derecha). Alternativa mínima, si medir
+  se entregó por capas (más ancho, 6.025 px, pero de izquierda a derecha). Cuarto caso (24-nov): un ciclo mensual
+  con vueltas a un temporizador intermedio y a la tarea que registra; Mermaid intercalaba el alta con el ciclo y por
+  capas salía en orden. Alternativa mínima, si medir
   las dos cuesta: una opción `--colocacion capas` en `crear` y `actualizar`. [diagramas]
+- **Diagramas: flujos pegados en la colocación por capas.** `mejorar` no cuenta dos flujos cerca cuando coloca por
+  capas («ya va cada uno por su fila»), pero en un proceso real dos verticales de vueltas atrás distintas quedaron a
+  11 px y se leían como una sola línea con cruces (24-nov). Contar también ahí los pegados (`_pegados`, menos de
+  `HUECO`) y medir en los procesos al azar de `selftest.py` si añade cruces. [diagramas]
 - **Diagramas: qué hace Appian con varias salidas de un nodo.** Desde el 24-nov, `validar` avisa de una tarea con
   varias salidas sin puerta, porque en BPMN se siguen todas a la vez, y el SKILL.md pide una puerta exclusiva detrás.
   Falta mirar en el Dev MCP (un process model real) si Appian hace lo mismo, para decir en ingeniería inversa si esas

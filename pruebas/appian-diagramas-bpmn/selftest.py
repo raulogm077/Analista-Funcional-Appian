@@ -1959,6 +1959,74 @@ def borde_y_recto():
           f"recto: sin nada en medio el rodeo se quita ({recto}); con una forma en medio, se queda")
 
 
+def columna_lado_y_mensaje():
+    """Un flujo a la caja de debajo baja recto aunque una vuelta atrás cruce su columna; una salida que cruza otro
+    flujo se traza de nuevo por un lado que no lo cruce; y un mensaje no entra por el punto por el que sale un flujo.
+    Casos ficticios."""
+    import drawio_modelo as dm, enrutado
+    cab = dm.CABECERA
+    # columna: ACT-01 encima de ACT-02, en otro carril; la vuelta de ACT-03 a EV-01 cruza la columna por en medio
+    proc = {"proceso": "x", "carriles": ["A", "B"], "pasos": [
+        {"id": "EV-01", "tipo": "inicio", "carril": "A", "nombre": "Inicio"},
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Registrar"},
+        {"id": "ACT-02", "tipo": "script", "carril": "B", "nombre": "Validar"},
+        {"id": "ACT-03", "tipo": "tarea", "carril": "B", "nombre": "Revisar"}],
+        "flujos": [{"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "ACT-02"}, {"de": "ACT-02", "a": "ACT-03"},
+                   {"de": "ACT-03", "a": "EV-01"}]}
+    geo = {"carriles": {"A": (0, 300), "B": (300, 300)}, "ancho": 900, "anotaciones": [], "etiquetas": {"EV-01": "abajo"},
+           "etiqueta_en_horizontal": True,
+           "pasos": {"EV-01": (cab + 80, 150), "ACT-01": (cab + 300, 150), "ACT-02": (cab + 300, 450), "ACT-03": (cab + 520, 450)},
+           "flujos": [[], [(cab + 300, 88), (cab + 200, 88), (cab + 200, 450)], [],
+                      [(cab + 520, 300), (cab + 80, 300)]]}
+    enrutado.columnas_rectas(proc, geo, dm.TAM, cab)
+    c, _, _ = enrutado._obstaculos(proc, geo, dm.TAM)
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    caminos = {i: dm._camino(c[f["de"]], dm.TAM[tipo[f["de"]]], geo["flujos"][i], c[f["a"]], dm.TAM[tipo[f["a"]]])
+               for i, f in enumerate(proc["flujos"])}
+    recto = enrutado._limpiar(caminos[1])
+    check(len(recto) == 2 and recto[0][0] == recto[1][0] and not enrutado._cruces_de_caminos(caminos),
+          f"columna: baja recto a la caja de debajo y la vuelta atrás rodea sin cruzarlo ({recto}, {geo['flujos'][3]})")
+    # lado libre: el «Sí» de la puerta vuelve a ACT-00 por abajo y cruza la salida de ACT-01 hacia EV-09
+    proc = {"proceso": "x", "carriles": ["A"], "pasos": [
+        {"id": "ACT-00", "tipo": "tarea", "carril": "A", "nombre": "Preparar"},
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar"},
+        {"id": "GW-01", "tipo": "exclusiva", "carril": "A", "nombre": "¿Correcto?"},
+        {"id": "ACT-02", "tipo": "tarea", "carril": "A", "nombre": "Cerrar"},
+        {"id": "EV-09", "tipo": "fin", "carril": "A", "nombre": "Anulado"}],
+        "flujos": [{"de": "ACT-00", "a": "ACT-01"}, {"de": "ACT-01", "a": "GW-01"},
+                   {"de": "GW-01", "a": "ACT-02", "etiqueta": "No"}, {"de": "GW-01", "a": "ACT-00", "etiqueta": "Sí"},
+                   {"de": "ACT-01", "a": "EV-09"}]}
+    geo = {"carriles": {"A": (0, 560)}, "ancho": 1000, "anotaciones": [], "etiqueta_en_horizontal": True,
+           "etiquetas": {"GW-01": "arriba", "EV-09": "abajo"},
+           "pasos": {"ACT-00": (cab + 120, 150), "ACT-01": (cab + 320, 300), "GW-01": (cab + 520, 300),
+                     "ACT-02": (cab + 720, 300), "EV-09": (cab + 320, 470)},
+           "flujos": [[(cab + 320, 150)], [], [], [(cab + 520, 400), (cab + 40, 400), (cab + 40, 150)], []]}
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+
+    def cruces():
+        c, _, _ = enrutado._obstaculos(proc, geo, dm.TAM)
+        return sum(enrutado._cruces_de_caminos({i: dm._camino(c[f["de"]], dm.TAM[tipo[f["de"]]], geo["flujos"][i],
+                                                              c[f["a"]], dm.TAM[tipo[f["a"]]])
+                                                for i, f in enumerate(proc["flujos"])}).values())
+    antes = cruces()
+    enrutado.salir_por_lado_libre(proc, geo, dm.TAM, cab)
+    check(antes == 1 and cruces() == 0, f"lado libre: la vuelta atrás de la puerta deja de cruzar ({antes} → {cruces()})")
+    # mensaje: entra en ACT-01 por abajo, pero ACT-02 está justo debajo y el flujo a ella sale por el centro
+    proc = {"proceso": "x", "carriles": ["A", "B"], "externos": ["E"], "pasos": [
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Registrar"},
+        {"id": "ACT-02", "tipo": "script", "carril": "B", "nombre": "Validar"}],
+        "flujos": [{"de": "ACT-01", "a": "ACT-02"}, {"de": "E", "a": "ACT-01"}]}
+    geo = {"carriles": {"A": (0, 300), "B": (300, 300)}, "ancho": 900, "externos": {"E": (640, 60)},
+           "pasos": {"ACT-01": (300, 150), "ACT-02": (300, 450)}, "flujos": [[], []]}
+    centro = {k: v[:2] for k, v in geo["pasos"].items()}
+    camino = [(300, 198), (300, 402)]
+    sitio, pts = dm._vertical_mensaje(proc["flujos"][1], centro, dm.TAM["tarea"], geo, {"E": "externo-1"}, 0.5,
+                                      proc, [camino], [])
+    x0 = 300 + (sitio - 0.5) * dm.TAM["tarea"][0]
+    check(pts and abs(x0 - 300) >= 12 and (x0 - 300) * (pts[-1][0] - 300) > 0,
+          f"mensaje: entra lejos de la salida del flujo y del lado por el que baja ({sitio}, {pts})")
+
+
 def main_sin_navegador():
     """Con DIAGRAMAS_SIN_NAVEGADOR=1, lo que se puede hacer sin navegador: dibujar el .drawio (también en tramos),
     leerlo, compararlo, exportar el BPMN y validar."""
@@ -1979,6 +2047,7 @@ def main_sin_navegador():
         mover_paso()
         nota_y_mensaje_apartados()
         borde_y_recto()
+        columna_lado_y_mensaje()
         letra_de_tareas()
         estructura()
         retrocesos()
@@ -2024,6 +2093,7 @@ def main():
         mover_paso()
         nota_y_mensaje_apartados()
         borde_y_recto()
+        columna_lado_y_mensaje()
         letra_de_tareas()
         estructura()
         retrocesos()

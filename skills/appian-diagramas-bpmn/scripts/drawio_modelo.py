@@ -698,6 +698,13 @@ def _vertical_mensaje(f, centro, tam, geo, externos, sitio, proc, caminos=(), et
         for x in (cx + d, cx - d):
             if 8 < x < geo["ancho"] - 8 and libre(x, quiebro - 4) and \
                     not any(c[1] < quiebro < c[1] + c[3] and c[0] < max(x, x0) and c[0] + c[2] > min(x, x0) for c in obst):
+                # el tramo corto hasta el quiebro, tampoco por donde sale o llega un flujo de secuencia (se leería como
+                # una flecha con dos puntas): del lado de la vertical libre, para que el quiebro no lo cruce
+                sitios = [s for s in {sitio} | {k / 20 for k in range(2, 19)}
+                          if not any(abs(vx - (cx + (s - 0.5) * w)) < 12 and a < quiebro and b > y0 - 1 for vx, a, b in verticales)]
+                if sitios:
+                    sitio = min(sitios, key=lambda s: (abs(cx + (s - 0.5) * w - x), abs(s - sitio)))
+                    x0 = cx + (sitio - 0.5) * w
                 return sitio, [(x0, quiebro), (x, quiebro)]
     return sitio, []
 
