@@ -446,6 +446,10 @@ class Editor:
         el, cell = self._cell(pid)
         if nuevo.get("nombre", "") != antes["nombre"] or nuevo["tipo"] != antes["tipo"]:
             self.f.poner_etiqueta(el, cell, dm.etiqueta_paso(nuevo["tipo"], nuevo.get("nombre", "")))
+            letra = dm._estilo(cell.get("style")).get("fontSize")
+            if nuevo["tipo"] == antes["tipo"] in dm.TAREAS and letra in ("11", "10", "9"):   # la de la herramienta
+                cell.set("style", cell.get("style").replace(f"fontSize={letra};",
+                                                            f"fontSize={dm.letra_tarea(nuevo.get('nombre'))};", 1))
         if nuevo["tipo"] != antes["tipo"]:
             cx, cy = self.centro(pid)
             cell.set("style", dm.ESTILO[nuevo["tipo"]])
@@ -828,7 +832,12 @@ def recolocar(editor, nuevo, drawio):
         if cid in tipos_antes and tipo_nuevo.get(cid) == tipos_antes[cid] and antes.get(cid):
             # el lado de la etiqueta y el borde de un evento que puede ir en el de una tarea son los nuevos
             contorno = dm._estilo(cell.get("style")).get("outline") if tipo_nuevo[cid] in dm.BORDE else None
-            cell.set("style", dm.con_contorno(dm.con_lado(antes[cid], lados.get(cid)), contorno))
+            estilo = dm.con_contorno(dm.con_lado(antes[cid], lados.get(cid)), contorno)
+            letra = dm._estilo(estilo).get("fontSize")
+            if tipo_nuevo[cid] in dm.TAREAS and letra in ("11", "10", "9"):   # la letra que puso la herramienta, no a mano
+                paso = next(p for p in nuevo["pasos"] if p["id"] == cid)
+                estilo = estilo.replace(f"fontSize={letra};", f"fontSize={dm.letra_tarea(paso.get('nombre'))};", 1)
+            cell.set("style", estilo)
         if cell.get("vertex") == "1" and "swimlane" in (cell.get("style") or "") and carril_estilo.get(cell.get("value")):
             cell.set("style", carril_estilo[cell.get("value")])
     editor.recargar()

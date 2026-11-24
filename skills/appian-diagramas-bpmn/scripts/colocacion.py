@@ -36,7 +36,7 @@ BORDE = ("temporizador", "mensaje", "intermedio", "error")   # eventos que, unid
 
 
 # ---------------------------------------------------------------- colocación de reserva (sin navegador)
-def capas(proc):
+def capas(proc, sin_relevo=frozenset()):
     """Capa de cada paso (el camino más largo desde un paso sin entradas, sin contar las vueltas atrás) y los índices
     de los flujos que vuelven atrás. Los flujos de mensaje no cuentan."""
     ids = [p["id"] for p in proc["pasos"]]
@@ -64,20 +64,46 @@ def capas(proc):
             elif sig[0] not in estado:
                 estado[sig[0]] = 1
                 pila.append((sig[0], iter(salen[sig[0]])))
+    relevo = relevos(proc, atras) - set(sin_relevo)
     capa = {pid: 0 for pid in ids}
     for u in reversed(orden):
         for v, i in salen[u]:
             if i not in atras:
-                capa[v] = max(capa[v], capa[u] + 1)
+                capa[v] = max(capa[v], capa[u] + (0 if i in relevo else 1))
     return capa, atras
 
 
-def por_capas(proc, eventos, puertas, cabecera):
+TAREAS = {"tarea", "sistema", "script", "manual", "subproceso", "llamada"}
+
+
+def relevos(proc, atras):
+    """Los flujos en los que una tarea pasa el trabajo a otra del carril de al lado, que solo llega desde ella: las dos
+    van en la misma columna, una encima de la otra, y el flujo baja (o sube) recto. Así lo que vuelve a la primera no
+    cruza el que va de una a otra."""
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    carril = {p["id"]: p["carril"] for p in proc["pasos"]}
+    fila = {c: k for k, c in enumerate(proc["carriles"])}
+    adelante = [(i, f) for i, f in enumerate(proc["flujos"])
+                if f["de"] in tipo and f["a"] in tipo and i not in atras and not f.get("discontinuo")]
+    salen, entran = defaultdict(list), defaultdict(list)
+    for i, f in adelante:
+        salen[f["de"]].append(i)
+        entran[f["a"]].append(i)
+    out = set()
+    for i, f in adelante:
+        de, a = f["de"], f["a"]
+        if tipo[de] in TAREAS and tipo[a] in TAREAS and len(salen[de]) == 1 and len(entran[a]) == 1 \
+                and abs(fila[carril[de]] - fila[carril[a]]) == 1:
+            out.add(i)
+    return out
+
+
+def por_capas(proc, eventos, puertas, cabecera, sin_relevo=frozenset()):
     """Geometría como la del motor: {"carriles": {nombre: (y, h)}, "pasos": {id: (cx, cy)}, "flujos": [[(x, y)…]],
     "ancho"}. Una columna por capa y, en cada carril, una fila por paso de la misma capa (ordenadas como sus
     predecesores, para que se crucen poco). Un flujo que salta capas ocupa una fila en las capas que cruza y una vuelta
     atrás va por un pasillo debajo de las filas del carril al que vuelve: así ninguno atraviesa un paso."""
-    capa, atras = capas(proc)
+    capa, atras = capas(proc, sin_relevo)
     carril = {p["id"]: p["carril"] for p in proc["pasos"]}
     orden_paso = {p["id"]: k for k, p in enumerate(proc["pasos"])}
     secuencia = [(i, f) for i, f in enumerate(proc["flujos"]) if f["de"] in carril and f["a"] in carril]
@@ -126,6 +152,15 @@ def por_capas(proc, eventos, puertas, cabecera):
                 posicion[e] = indice[nombre] * 1000 + fila[e]
                 libre = fila[e] + max(1, salidas[e])
     bajar_a_su_siguiente(por_capa, previos, lado_de, fila, salidas)
+    # un relevo solo si entre las dos tareas de la columna no queda nada: si no, el flujo no podría bajar recto
+    malos = set()
+    for i in relevos(proc, atras) - set(sin_relevo):
+        de, a = ("paso", proc["flujos"][i]["de"]), ("paso", proc["flujos"][i]["a"])
+        lo, hi = sorted(((indice[lado_de[de]], fila[de]), (indice[lado_de[a]], fila[a])))
+        if any(e not in (de, a) and lo < (indice[lado_de[e]], fila[e]) < hi for e in por_capa[capa[de[1]]]):
+            malos.add(i)
+    if malos:
+        return por_capas(proc, eventos, puertas, cabecera, frozenset(sin_relevo) | malos)
     filas = {c: max([fila[e] + 1 for e in fila if lado_de[e] == c] or [1]) for c in proc["carriles"]}
     geo = {"carriles": {}, "pasos": {}, "flujos": [], "etiqueta_en_horizontal": True}
     y = 0.0
@@ -1214,6 +1249,7 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
         separar_ida_vuelta(proc, geo, tam, cabecera)
         abanico_de_salidas(proc, geo, tam, eventos, puertas)
         enrutado.enderezar(proc, geo, tam)
+        enrutado.quitar_retrocesos(proc, geo, tam)
     colocar_externos(proc, geo)
     return geo
 

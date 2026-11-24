@@ -1776,6 +1776,60 @@ def estructura():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def retrocesos():
+    """Un flujo no va a un lado y, tras un quiebro corto, vuelve hacia el contrario (a la izquierda y luego a la
+    derecha): el tramo anterior se alarga, más allá si así no va pegado a otro flujo, y nunca por encima de una caja.
+    En 120 procesos al azar colocados por capas quedan como mucho 3 (eran 6), las que no se pueden enderezar. Una tarea
+    que pasa el trabajo a otra del carril de al lado va en su columna."""
+    import random
+    import colocacion as co, drawio_modelo as dm, enrutado as en
+    zigzag = [(0, 0), (100, 0), (100, 300), (20, 300), (20, 306), (260, 306), (260, 260), (300, 260)]
+    check(en.sin_retrocesos(zigzag, []) == [(0, 0), (100, 0), (100, 306), (260, 306), (260, 260), (300, 260)],
+          "retrocesos: a la izquierda y luego a la derecha pasa a ser un solo tramo hacia la derecha")
+    pegado = en.sin_retrocesos(zigzag, [], [((40, 303), (140, 303))])
+    check(pegado[2][1] - 303 >= en.HUECO, f"retrocesos: el tramo nuevo no va pegado a otro flujo ({pegado})")
+    check(en.sin_retrocesos(zigzag, [(150, 280, 40, 120)]) == zigzag,
+          "retrocesos: si el tramo nuevo pasaría por una caja, el camino se queda como estaba")
+    vuelta = [(0, 0), (100, 0), (100, 300), (20, 300), (20, 400), (260, 400)]
+    check(en.sin_retrocesos(vuelta, []) == vuelta, "retrocesos: una vuelta larga, que rodea algo, no se toca")
+
+    def cortos(proc, geo):
+        out = []
+        for f, ps in zip(proc["flujos"], geo["flujos"]):
+            if f.get("etiqueta"):
+                continue
+            for a, b, c, d in zip(ps, ps[1:], ps[2:], ps[3:]):
+                for e in (0, 1):
+                    g = 1 - e
+                    if (a[g] == b[g] and c[g] == d[g] and b[e] == c[e] and abs(c[g] - b[g]) < en.RETROCESO
+                            and (b[e] - a[e]) * (d[e] - c[e]) < 0):
+                        out.append(f"{f['de']} → {f['a']}")
+        return out
+    relevo = {"proceso": "x", "carriles": ["A", "B"],
+              "pasos": [{"id": "EV-01", "tipo": "inicio", "carril": "A", "nombre": "Inicio"},
+                        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Adjuntar el informe"},
+                        {"id": "ACT-02", "tipo": "tarea", "carril": "B", "nombre": "Validar el informe"},
+                        {"id": "GW-01", "tipo": "exclusiva", "carril": "B", "nombre": "¿Válido?"},
+                        {"id": "EV-02", "tipo": "fin", "carril": "B", "nombre": "Informe validado"}],
+              "flujos": [{"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "ACT-02"}, {"de": "ACT-02", "a": "GW-01"},
+                         {"de": "GW-01", "a": "EV-02", "etiqueta": "Sí"}, {"de": "GW-01", "a": "ACT-01", "etiqueta": "No"}]}
+    capa, _ = co.capas(relevo)
+    geo = co.ajustar(relevo, co.por_capas(relevo, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA), dm.TAM, dm.FORMAS_EVENTO,
+                     dm.PUERTAS, dm.CABECERA)
+    check(capa["ACT-01"] == capa["ACT-02"] and abs(geo["pasos"]["ACT-01"][0] - geo["pasos"]["ACT-02"][0]) < 1
+          and all(abs(x - geo["pasos"]["ACT-01"][0]) < 1 for x, _ in geo["flujos"][1]),
+          "relevo: una tarea que pasa el trabajo a otra del carril de al lado va en su columna y el flujo baja recto "
+          f"({capa}, {geo['flujos'][1]})")
+    rnd, mal = random.Random(5), []
+    for k in range(120):
+        proc = proceso_aleatorio(rnd, k)
+        geo = co.ajustar(proc, co.por_capas(proc, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA), dm.TAM, dm.FORMAS_EVENTO,
+                         dm.PUERTAS, dm.CABECERA)
+        mal += [f"proceso {k}: {m}" for m in cortos(proc, geo)]
+    # sin esta pasada quedaban 6; las 3 que quedan, el tramo recto pasaría por una forma o pegado a otro flujo
+    check(len(mal) <= 3, f"120 procesos al azar: como mucho 3 vueltas atrás cortas ({len(mal)}) " + "; ".join(mal[:4]))
+
+
 def letra_de_tareas():
     """El nombre largo de una tarea cabe en la tarjeta con la letra algo más pequeña; uno corto conserva los 11 px."""
     import drawio_modelo as dm
@@ -1912,6 +1966,7 @@ def main_sin_navegador():
         borde_y_recto()
         letra_de_tareas()
         estructura()
+        retrocesos()
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}
         (tmp / "malo.json").write_text(json.dumps(malo), encoding="utf-8")
@@ -1956,6 +2011,7 @@ def main():
         borde_y_recto()
         letra_de_tareas()
         estructura()
+        retrocesos()
         nota_y_etiqueta(tmp / "nota con el motor")
         d = tmp / "solicitud.drawio"
         # 1. crear

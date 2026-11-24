@@ -52,6 +52,80 @@ def _limpiar(camino):
     return out
 
 
+RETROCESO = 24            # un quiebro más corto que esto entre dos tramos en sentidos contrarios es una vuelta atrás
+
+
+def _pegado_a(p, q, otros):
+    """Si el tramo p-q va junto a uno de `otros` (paralelo, a menos de HUECO y solapados)."""
+    e = 1 if p[0] == q[0] else 0                  # el eje por el que corre: 0 horizontal, 1 vertical
+    f = 1 - e
+    lo, hi = sorted((p[e], q[e]))
+    for r, t in otros:
+        if r[f] != t[f] or r[e] == t[e]:
+            continue
+        rlo, rhi = sorted((r[e], t[e]))
+        if abs(r[f] - p[f]) < HUECO and min(hi, rhi) - max(lo, rlo) > 1:
+            return True
+    return False
+
+
+def sin_retrocesos(camino, cajas, otros=()):
+    """Quita las vueltas atrás cortas: un tramo que va hacia un lado, un quiebro de menos de RETROCESO y otro tramo
+    que vuelve hacia el lado contrario (a la izquierda y luego a la derecha). El buscador las elige para no cruzar otro
+    flujo, pero se leen peor que el cruce. El tramo anterior se alarga hasta el siguiente, o un poco más allá si así
+    no va pegado a otro flujo (`otros`: sus tramos), y solo si no pasa por ninguna caja."""
+    camino = [tuple(p) for p in camino]
+    cambiado = True
+    while cambiado:
+        cambiado = False
+        for i in range(1, len(camino) - 3):
+            o, a, b, c, d = camino[i - 1:i + 4]
+            for e in (0, 1):                       # e = 0: tramos horizontales y quiebro vertical; 1, al revés
+                f = 1 - e
+                if not (a[f] == b[f] and c[f] == d[f] and b[e] == c[e] and o[e] == a[e]):
+                    continue
+                if abs(c[f] - b[f]) >= RETROCESO or (b[e] - a[e]) * (d[e] - c[e]) >= 0:
+                    continue
+                lejos = 1 if c[f] >= b[f] else -1
+                for nivel in (c[f] + lejos * k * HUECO for k in range(4)):
+                    esquina = (a[0], nivel) if e == 0 else (nivel, a[1])
+                    hasta = (d[0], nivel) if e == 0 else (nivel, d[1])
+                    tramos = [(o, esquina), (esquina, hasta), (hasta, d)]
+                    if any(p != q and _cruza(p, q, caja) for p, q in tramos for caja in cajas):
+                        continue
+                    if any(p != q and _pegado_a(p, q, otros) for p, q in tramos):
+                        continue
+                    camino[i:i + 3] = [esquina, hasta]
+                    camino = _limpiar(camino)
+                    cambiado = True
+                    break
+                if cambiado:
+                    break
+            if cambiado:
+                break
+    return camino
+
+
+def quitar_retrocesos(proc, geo, tam):
+    """Última pasada: sin_retrocesos en cada flujo sin etiqueta (en uno con etiqueta, su sitio va referido al camino y
+    se movería)."""
+    centros, cajas, _ = _obstaculos(proc, geo, tam)
+
+    def dentro(p, caja):
+        return caja[0] <= p[0] <= caja[0] + caja[2] and caja[1] <= p[1] <= caja[1] + caja[3]
+    for i, (f, puntos) in enumerate(zip(proc["flujos"], geo["flujos"])):
+        if f.get("etiqueta") or not puntos or len(puntos) < 3 or f["de"] not in centros or f["a"] not in centros:
+            continue
+        # con el centro de cada extremo, para ver también la vuelta atrás que empieza o acaba junto a su forma
+        o, z = centros[f["de"]], centros[f["a"]]
+        camino = [o] + [tuple(p) for p in puntos] + [z]
+        suyas = [c for c in cajas if not (dentro(o, c) or dentro(z, c))]
+        otros = [(p, q) for j, ps in enumerate(geo["flujos"]) if j != i for p, q in zip(ps, ps[1:])]
+        nuevo = sin_retrocesos(camino, suyas, otros)
+        if nuevo != camino and nuevo[0] == o and nuevo[-1] == z:
+            geo["flujos"][i] = nuevo[1:-1]
+
+
 def _candidatos(camino, cajas, ancho, alto, cabecera):
     """Desvíos de segmentos y corredores entre las cajas, con los mismos puertos."""
     vistos = {tuple(camino)}
