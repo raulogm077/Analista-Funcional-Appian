@@ -17,6 +17,7 @@
   {"patron": "analisis/diagramas/*.mmd", "dueno": "appian-functional-analyst"},
   {"patron": "analisis/diagramas/*.json", "dueno": "appian-functional-analyst", "tambien": ["appian-diagramas-bpmn"]},
   {"patron": "analisis/diagramas/*.{drawio,png,bpmn,svg}", "dueno": "appian-diagramas-bpmn"},
+  {"patron": "analisis/diagramas/supuestos-*.md", "dueno": "appian-diagramas-bpmn"},
   {"patron": "entregables/", "dueno": "appian-functional-analyst"},
   {"patron": "versiones/", "dueno": "appian-functional-analyst"},
   {"patron": "modulos/", "dueno": "appian-functional-analyst"},

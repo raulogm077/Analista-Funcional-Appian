@@ -20,8 +20,11 @@ Cuando el usuario invoca esta skill con fuentes (reuniones, transcripciones, act
 - Una transcripción que no se entiende (por ejemplo, la de Teams en inglés de una reunión en español) no es una fuente: dilo en la respuesta y no saques de ella pasos ni perfiles.
 - Los nombres de sistemas de una transcripción automática no son fiables (un gestor documental puede llegar como «hashtag» o con tres grafías). Tómalos del apartado «Sistemas» del DF; sin DF, escríbelos como se oyen, sin adivinar la grafía, con «Supuesto: nombre por confirmar».
 - Una demo enseña solo lo que se ejecutó ese día: lo que no se llegó a ejecutar (una subida, un justificante, un aviso) va con «Pendiente de validar».
+- Si dos fuentes se contradicen (un dato editable en todos los pasos en una reunión y solo al final en otra posterior), gana la más reciente y la nota del paso cita las dos, con su fecha.
+- Sin DF, el alcance sale de las propias reuniones: la que lo fija («la fase 1 llega hasta…»), con su fecha, va en la nota del inicio, como el «Fuera del alcance» de un DF. Los pasos de otras fases que se comenten no se dibujan.
+- Un ajuste pedido después de la última versión del DF o de la ejecución controlada, que ningún DF recoge todavía (una acción nueva fuera del flujo, un campo que deja de ser editable), va en una nota del paso al que afecta, con «Pendiente de validar (sin DF)», no como paso ni como vuelta atrás.
 
-En los dos casos, la respuesta dice de qué fuentes sale el proceso y lista los supuestos y lo pendiente de validar. Lista también, por cada puerta, la salida que ninguna fuente explica, como pregunta para repasarla con el usuario («¿Y si la solicitud no está completa?»).
+En los dos casos, la respuesta dice de qué fuentes sale el proceso y lista los supuestos y lo pendiente de validar; si no hay diagrama aprobado, lo mismo queda en `supuestos-X.md` (ver «Ficheros de cada proceso»). Lista también, por cada puerta, la salida que ninguna fuente explica, como pregunta para repasarla con el usuario («¿Y si la solicitud no está completa?»).
 
 ## Ficheros de cada proceso
 
@@ -32,6 +35,7 @@ Van juntos en la misma carpeta (`analisis/diagramas/` o la que indique quien lla
 | `X.drawio` | El diagrama. Se abre y se edita en draw.io |
 | `X.png` | La imagen para el documento. La regenera la herramienta. Si el proceso va en tramos, una por tramo: `X-1.png`, `X-2.png`… |
 | `X.json` | El proceso que conoce el análisis. La primera vez puede ser el propio JSON que se pasa a `crear`; después lo mantiene la herramienta y no se edita a mano: los cambios van con `actualizar` |
+| `supuestos-X.md` | Solo si el proceso sale de fuentes y no de un diagrama aprobado. Lo escribe quien dibuja, sin herramienta: las fuentes con su fecha (y el DF que citan y no está, si lo hay), una tabla «paso, supuesto o tema abierto, origen», lo que no se dibuja, los nombres de sistema por confirmar y lo que queda fuera. Sirve para repasarlo con el usuario sin abrir el diagrama |
 | `X.bpmn` | Solo si se exporta con `bpmn`, y uno con el proceso entero aunque vaya en tramos: conserva los tipos de inicio y de tarea, el flujo por defecto, los plazos y los errores, los participantes externos con sus mensajes, las notas, el lado de cada etiqueta y los datos de Appian |
 
 ## Qué escribe
@@ -39,6 +43,7 @@ Van juntos en la misma carpeta (`analisis/diagramas/` o la que indique quien lla
 En la carpeta que indique quien llama, dentro de `<p>`:
 - `analisis/diagramas/*.{drawio,png,bpmn,svg}`: los procesos del análisis y la imagen de cada Mermaid
 - `analisis/diagramas/*.json`: el proceso de cada diagrama, del analista; se reescribe al aceptar lo cambiado a mano
+- `analisis/diagramas/supuestos-*.md`: las fuentes y los supuestos de un proceso sacado de fuentes, sin diagrama aprobado
 - `as-is/08-procesos-bpmn/*.{drawio,png,bpmn}`: los procesos de una aplicación existente
 - `as-is/08-procesos-bpmn/*.json`: el proceso de cada diagrama, de ingeniería inversa; igual que el del analista
 - `as-is/diagrams/*.{png,svg}`: la imagen de cada Mermaid de ingeniería inversa (`mermaid.py`)
