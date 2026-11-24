@@ -7,7 +7,7 @@ lista no autoriza publicar, desplegar, enviar ni borrar.
 Cada pendiente explica el problema, qué hay que hacer y el resultado esperado, conservando los acuerdos de la
 conversación. Si el detalle ya está bien explicado en otro documento, se enlaza desde el punto en lugar de repetirlo.
 
-**Ahora:** la rama `claude/pruebas-metodo-20261104` entra en `main` (24-nov, por decisión de Raúl), con su documentación revisada (`evaluaciones.md`). Trae la campaña «el método de punta a punta» (4-7 nov.: F1-F9 con un proyecto ficticio en la aplicación de prueba FOR de Indra-spain, y las decisiones de Raúl del 7-nov), la campaña «entender y evolucionar» hasta construir EV-01 (C1-C3) y lo aprendido del Dev MCP 26.9.20 (17-nov). Queda C4, el QA de EV-01 y la medición de la regresión (§2), parado por las sesiones de SAIL de las cuentas de prueba. El trabajo «adaptarse a las actualizaciones de Appian» (rama `raul/estrategia-actualizaciones-appian`) y el PR #24 de diagramas se ponen al día sobre `main` después.
+**Ahora:** `main` lleva la campaña «el método de punta a punta» (PR #25, 24-nov) y su C4: el QA de EV-01 en verde y la regresión de un cambio aislado medida (`evaluaciones.md`). Para escribir la regla de regresión falta medir un cambio compartido (§2, lo decide Raúl). El trabajo «adaptarse a las actualizaciones de Appian» (rama `raul/estrategia-actualizaciones-appian`) y el PR #24 de diagramas se ponen al día sobre `main`; al unir el primero, se repiten los cinco guiones de FOR que falló la herramienta (§2).
 
 ## 1. Del trabajo anterior
 
@@ -54,18 +54,22 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   Raúl quitar los que ya nadie sepa explicar. Mirar también si la frase de `CLAUDE.md` que manda apuntar aquí debe
   decirlo. Resultado esperado: una persona o una sesión nueva que abra un punto puede empezar a trabajar en él sin
   preguntar de qué se trataba. [repositorio · sesión]
-- **Regresión en un evolutivo: medir antes de escribirla.** Decisión de Raúl (7-nov): repetir según el impacto
+- **Regresión en un evolutivo: falta medir un cambio compartido.** Decisión de Raúl (7-nov): repetir según el impacto
   real del cambio (presentación, lo afectado; una regla, acción o filtro, sus casos y los escenarios de otros flujos y
   roles que puedan verse afectados; transversal o sin acotar, todo), las pruebas de cada issue al construir y la
   regresión seleccionada en el QA del evolutivo; F9, completa. Antes de escribirlo en F8 y en la skill de QA, comparar
   un cambio aislado y otro compartido, midiendo qué detecta y cuánto tarda (`diseno/regresion-evolutivo.md`, «Lo que
-  decidió Raúl»). Se hace dentro de la campaña «entender y evolucionar» de §3, que ya llegó a construir EV-01 en
-  FOR (`evaluaciones.md`): falta su QA y la medición (`Pruebas-plugin/metodo-20261104/regresion-C4-seleccion.md`).
-  Necesita sesión de SAIL CLI de `dem.gestor` y `dem.revisor`, que dan 401 desde el 7-nov (`dem.gestor2` sigue viva),
-  y de `dem.revisor2`, la segunda cuenta de `FOR Formación` para probar que quien pide no decide (PT-12 de
-  `evolucion-for`): se creó con contraseña temporal y con ella `sail login` falla (Appian pide cambiarla); que entre tras
-  cambiarla en el navegador está sin medir. Cada cuenta la renueva la persona en su terminal con `login-sail.ps1 <cuenta>` de esa carpeta, que pide la
-  contraseña sin mostrarla. [flujo · QA · persona]
+  decidió Raúl»). El aislado ya está medido (C4, `evaluaciones.md`). Falta el compartido: un evolutivo que toque algo
+  que usen varios flujos o roles, con la misma versión de SAIL CLI y de `qa.py` antes y después, todas las cuentas con
+  sesión y un fallo funcional conocido metido a propósito, para ver qué detecta cada pasada (lo pide la revisión de
+  Codex de C4). Qué cambio compartido y en qué aplicación de prueba lo decide Raúl. [flujo · QA · Raúl decide]
+- **Un fallo de QA se clasifica antes de reabrir su issue.** En C4, cinco guiones de FOR fallaron porque SAIL CLI
+  26.9.15 no deja enviar un formulario con un campo obligatorio vacío o con una validación, justo lo que esos guiones
+  provocan para ver el mensaje; `qa.py repetir` devolvió a pendiente ISS-03 e ISS-06 de `formacion` sin que FOR
+  tuviera ningún defecto. La rama `raul/estrategia-actualizaciones-appian` ya trae `RX_NO_ENVIADO` en `qa.py` para
+  leer ese rechazo; al unirla, repetir esos cinco guiones (HU-01.2, 01.3, 01.4, 01.6 y 06.2) y comprobar que el
+  motivo lleva el mensaje esperado (el de HU-01.2 y HU-06.2 solo dice «required, and empty»). Resultado esperado: un
+  cambio de la herramienta no reabre issues que no tienen defecto. [QA · con la rama de actualizaciones]
 - **Renovar las sesiones de SAIL de las cuentas de prueba sin improvisar.** En la campaña tres sesiones dejaron de
   valer y el QA se paró a la espera de la persona. `qa.py sesiones` da por buena una sesión caducada (solo mira que
   exista su fichero) y el fallo se ve a mitad de `repetir`; la orden que da `como_entrar` no se teclea tal cual en
