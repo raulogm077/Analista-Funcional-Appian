@@ -1133,7 +1133,9 @@ def corredores_ortogonales(tmp):
         proc = proceso_aleatorio(rnd, k)
         if k not in elegidos:
             continue
-        with patch.object(enrutado, "mejorar", lambda p, g, t, c: g):
+        # el dibujo sin mejorar: tampoco con la última pasada, que cambia de lado dos flujos de una forma
+        with patch.object(enrutado, "mejorar", lambda p, g, t, c: g), \
+                patch.object(enrutado, "cambiar_de_lado", lambda p, g, t, c: g):
             base = co.ajustar(proc, co.por_capas(proc, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA),
                               dm.TAM, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA)
         nuevo = copy.deepcopy(base)
@@ -1820,14 +1822,27 @@ def retrocesos():
           and all(abs(x - geo["pasos"]["ACT-01"][0]) < 1 for x, _ in geo["flujos"][1]),
           "relevo: una tarea que pasa el trabajo a otra del carril de al lado va en su columna y el flujo baja recto "
           f"({capa}, {geo['flujos'][1]})")
+    from unittest.mock import patch
+    cambiar, cruces = en.cambiar_de_lado, []
+
+    def medido(p, g, t, c):
+        antes = co.cruces(p, g)
+        cambiar(p, g, t, c)
+        cruces.append((antes, co.cruces(p, g)))
+        return g
     rnd, mal = random.Random(5), []
-    for k in range(120):
-        proc = proceso_aleatorio(rnd, k)
-        geo = co.ajustar(proc, co.por_capas(proc, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA), dm.TAM, dm.FORMAS_EVENTO,
-                         dm.PUERTAS, dm.CABECERA)
-        mal += [f"proceso {k}: {m}" for m in cortos(proc, geo)]
+    with patch.object(en, "cambiar_de_lado", medido):
+        for k in range(120):
+            proc = proceso_aleatorio(rnd, k)
+            geo = co.ajustar(proc, co.por_capas(proc, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA), dm.TAM,
+                             dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA)
+            mal += [f"proceso {k}: {m}" for m in cortos(proc, geo)]
     # sin esta pasada quedaban 6; las 3 que quedan, el tramo recto pasaría por una forma o pegado a otro flujo
     check(len(mal) <= 3, f"120 procesos al azar: como mucho 3 vueltas atrás cortas ({len(mal)}) " + "; ".join(mal[:4]))
+    peor = [k for k, (a, d) in enumerate(cruces) if d > a]
+    menos = sum(a - d for a, d in cruces)
+    check(not peor and menos > 0, "120 procesos al azar: cambiar de lado dos flujos de una forma que se cruzan quita "
+          f"cruces ({menos}) y nunca añade ({peor[:4]})")
 
 
 def letra_de_tareas():

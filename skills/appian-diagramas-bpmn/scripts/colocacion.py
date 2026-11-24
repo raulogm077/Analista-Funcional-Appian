@@ -1266,6 +1266,7 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
         abanico_de_salidas(proc, geo, tam, eventos, puertas)
         enrutado.enderezar(proc, geo, tam)
         enrutado.quitar_retrocesos(proc, geo, tam)
+        enrutado.cambiar_de_lado(proc, geo, tam, cabecera)
     colocar_externos(proc, geo)
     return geo
 

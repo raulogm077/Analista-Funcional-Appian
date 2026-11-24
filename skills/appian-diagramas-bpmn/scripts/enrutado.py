@@ -126,6 +126,65 @@ def quitar_retrocesos(proc, geo, tam):
             geo["flujos"][i] = nuevo[1:-1]
 
 
+def cambiar_de_lado(proc, geo, tam, cabecera):
+    """Última pasada: dos flujos que salen o llegan a la misma forma y se cruzan se trazan de nuevo juntos, con los
+    demás quietos; si cambiarlos de lado en esa forma deja menos cruces en todo el dibujo, se quedan así."""
+    import drawio_modelo as dm
+    import colocacion as co
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    flujos = proc["flujos"]
+    indices = [i for i, f in enumerate(flujos) if f["de"] in tipo and f["a"] in tipo and f["de"] != f["a"]]
+    for _ in range(3):
+        centros, cajas, alto = _obstaculos(proc, geo, tam)
+
+        def caminos_de(rutas):
+            return {i: dm._camino(centros[flujos[i]["de"]], tam[tipo[flujos[i]["de"]]], rutas[i],
+                                  centros[flujos[i]["a"]], tam[tipo[flujos[i]["a"]]]) for i in rutas}
+        caminos = caminos_de({i: geo["flujos"][i] for i in indices})
+        pares = _cruces_de_caminos(caminos)
+        total = sum(pares.values())
+        cambio = False
+        for (i, j) in sorted(pares, key=lambda k: -pares[k]):
+            if not {flujos[i]["de"], flujos[i]["a"]} & {flujos[j]["de"], flujos[j]["a"]}:
+                continue
+            r = trazar_todo(proc, dict(geo, pasos=centros), tam, cabecera, alto, cajas, [i, j], orden=[i, j],
+                            fijas={k: c for k, c in caminos.items() if k not in (i, j)}, visitas=VISITAS_PRUEBA,
+                            hueco=HUECO, parejas=True)
+            # una ruta fija que no casaba con la rejilla se ha trazado de nuevo: se mide con la de verdad
+            if not r or any(flujos[k].get("etiqueta") and k not in r[1] for k in (i, j)):
+                continue
+            nuevos = dict(caminos)
+            nuevos.update(caminos_de({k: r[0][k] for k in (i, j)}))
+
+            def pegados(cs):
+                return sum(1 for k in (i, j) for o in cs if o != k and _pegados(cs[k], cs[o]))
+            sitios = dict(geo.get("etiquetas_flujo", {}))
+            sitios.update({k: r[1][k] for k in (i, j) if k in r[1]})
+
+            def tapadas(cs, sitios):
+                # etiquetas que otro flujo toca: entonces no se sabe de cuál son
+                n = 0
+                for k, c in cs.items():
+                    if not flujos[k].get("etiqueta") or sitios.get(k) is None:
+                        continue
+                    x, y = _punto(c, sitios[k])
+                    w = co.ancho_etiqueta_flujo(flujos[k]["etiqueta"]) + 2 * co.AIRE_ETIQUETA
+                    caja = (x - w / 2, y - 7 - co.AIRE_ETIQUETA, w, 14 + 2 * co.AIRE_ETIQUETA)
+                    n += any(_cruza(p, q, caja) for o, d in cs.items() if o != k for p, q in zip(d, d[1:]))
+                return n
+            if sum(_cruces_de_caminos(nuevos).values()) < total and pegados(nuevos) <= pegados(caminos) \
+                    and tapadas(nuevos, sitios) <= tapadas(caminos, geo.get("etiquetas_flujo", {})):
+                for k in (i, j):
+                    geo["flujos"][k] = r[0][k]
+                    if k in r[1]:
+                        geo.setdefault("etiquetas_flujo", {})[k] = r[1][k]
+                cambio = True
+                break
+        if not cambio:
+            break
+    return geo
+
+
 def _candidatos(camino, cajas, ancho, alto, cabecera):
     """Desvíos de segmentos y corredores entre las cajas, con los mismos puertos."""
     vistos = {tuple(camino)}
@@ -758,12 +817,14 @@ def _a_rejilla(camino, xs, ys, cerca):
     return nodos
 
 
-def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None, fijas=None, repasar=True, visitas=80000, hueco=4):
+def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None, fijas=None, repasar=True, visitas=80000, hueco=4,
+                parejas=False):
     """Vuelve a trazar desde cero los flujos de `indices` por una rejilla, uno tras otro: cada uno, por el camino más
     corto que no atraviesa ninguna caja de `cajas` (formas, sus nombres y notas), no va por la misma recta que otro
     flujo ni gira donde pasa otro, y cruza los menos flujos posibles. Sale y llega por el lado que convenga de cada
     forma, sin mezclar en un mismo lado flujos que entran con flujos que salen, y deja sitio a cada etiqueta en un
-    tramo recto. Devuelve ({índice: puntos interiores}, {índice: sitio de su etiqueta, de -1 a 1}) o None si alguno
+    tramo recto. Con `parejas`, prueba además a trazar de nuevo juntos dos flujos de una misma forma que se cruzan,
+    cambiándolos de lado en ella. Devuelve ({índice: puntos interiores}, {índice: sitio de su etiqueta, de -1 a 1}) o None si alguno
     no tiene camino."""
     import heapq
     flujos = proc["flujos"]
@@ -973,7 +1034,7 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None, fija
             return 0
         return 3 * CODO if d == (-natural[0], -natural[1]) else CODO
 
-    def buscar(i):
+    def buscar(i, prohibido=()):
         f = flujos[i]
         de, a = f["de"], f["a"]
         bloq_h, bloq_v = set(bloq_comun[0]), set(bloq_comun[1])
@@ -987,6 +1048,8 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None, fija
         def extremos(pid, sale, mezclar=False):
             out = []
             for d in lados:
+                if (pid, d) in prohibido:
+                    continue
                 uso = usos.get((pid, d), {})
                 if uso.get("entra" if sale else "sale") and not mezclar:
                     continue
@@ -1140,6 +1203,52 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None, fija
                 quitar(i)
             rutas[i] = previa
             poner(i, previa[1], previa[2], previa[3])
+        if not cambio:
+            break
+    # y cada flujo que aún cruza otro, junto con otro que sale o llega a la misma forma, trazados los dos de nuevo:
+    # primero en el orden contrario y, si no basta, el primero sin el lado de esa forma que ocupaba, para que el
+    # otro pueda tomarlo (en una forma, que se cambien de lado dos flujos suele quitar el cruce entre ellos)
+    def lado_en(k, pid):
+        return rutas[k][2] if flujos[k]["de"] == pid else rutas[k][3]
+
+    def probar(i, j, intentos):
+        total = sum(cruces_de(k) for k in rutas) // 2
+        previas, faltaban = {k: rutas[k] for k in (i, j)}, len({i, j} & sin_sitio)
+        for primero, segundo, prohibido in intentos:
+            quitar(i)
+            quitar(j)
+            hecho = []
+            for k, veto in ((primero, prohibido), (segundo, ())):
+                r = buscar(k, veto)
+                if r is None:
+                    break
+                rutas[k] = (r[0], r[1], r[4], r[5], r[2], r[3])
+                poner(k, r[1], r[4], r[5])
+                hecho.append(k)
+            if len(hecho) == 2 and (sum(cruces_de(k) for k in rutas) // 2, len({i, j} & sin_sitio)) < (total, faltaban):
+                return True
+            for k in hecho:
+                quitar(k)
+            for k, previa in previas.items():
+                rutas[k] = previa
+                poner(k, previa[1], previa[2], previa[3])
+        return False
+
+    for _ in range(2 if parejas else 0):
+        cambio = False
+        for i in orden:
+            if not cruces_de(i):
+                continue
+            for j in orden:
+                comunes = {flujos[i]["de"], flujos[i]["a"]} & {flujos[j]["de"], flujos[j]["a"]}
+                if j == i or not comunes:
+                    continue
+                intentos = [(j, i, ())]
+                for pid in comunes:
+                    intentos += [(k, o, {(pid, lado_en(k, pid))}) for k, o in ((i, j), (j, i))]
+                if probar(i, j, intentos):
+                    cambio = True
+                    break
         if not cambio:
             break
     out, sitios = {}, {}
