@@ -110,7 +110,9 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   ninguno; se entregó la de capas (`DIAGRAMAS_SIN_NAVEGADOR=1` al crear y `png` después). Medir los cruces de las dos
   y quedarse con la mejor, con su prueba; mientras, `actualizar` con navegador vuelve a colocar con Mermaid. Segundo
   caso (24-nov): un circuito de aprobación con tres revisiones que devuelven a la misma tarea; Mermaid lo dejó de
-  derecha a izquierda y con cruces largos, y por capas se leía de izquierda a derecha. Alternativa mínima, si medir
+  derecha a izquierda y con cruces largos, y por capas se leía de izquierda a derecha. Tercer caso (24-nov): el
+  de inversiones, rehecho con las reglas de estructura, salía con Mermaid de derecha a izquierda y con vueltas largas;
+  se entregó por capas (más ancho, 6.025 px, pero de izquierda a derecha). Alternativa mínima, si medir
   las dos cuesta: una opción `--colocacion capas` en `crear` y `actualizar`. [diagramas]
 - **Diagramas: fuentes que se contradicen entre sí.** «Partir de lo ya aprobado» dice qué gana entre el DF y las
   reuniones, pero no entre dos reuniones. En un proceso sacado de nueve transcripciones de un año, una fecha era
@@ -131,6 +133,14 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   («Actualizar fecha límite», que reenvía un dato a otro sistema) que aún no está en ningún DF. Propuesta: un ajuste
   así va en una nota del paso al que afecta, con «Pendiente de validar (sin DF)», no como paso ni como vuelta atrás,
   hasta que el DF lo recoja. [diagramas]
+- **Diagramas: qué hace Appian con varias salidas de un nodo.** Desde el 24-nov, `validar` avisa de una tarea con
+  varias salidas sin puerta, porque en BPMN se siguen todas a la vez, y el SKILL.md pide una puerta exclusiva detrás.
+  Falta mirar en el Dev MCP (un process model real) si Appian hace lo mismo, para decir en ingeniería inversa si esas
+  salidas son paralelas o condiciones, y si `bpmn_export.py` debe escribir la condición cuando venga de Appian. [diagramas]
+- **Diagramas: `crear` deja un `.drawio` a medias si falla al guardar el JSON.** Una puerta sin el campo `nombre`
+  rompía `crear` después de escribir el `.drawio` (corregido el 24-nov, con su prueba). «Si algo falla, el `.drawio` no
+  se toca» lo dice el SKILL.md de `actualizar`; en `crear`, escribir los dos ficheros a la vez solo si vuelve a pasar
+  con otra causa. [diagramas]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
 
