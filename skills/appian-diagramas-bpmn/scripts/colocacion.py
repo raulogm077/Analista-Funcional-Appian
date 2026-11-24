@@ -64,12 +64,28 @@ def capas(proc, sin_relevo=frozenset()):
             elif sig[0] not in estado:
                 estado[sig[0]] = 1
                 pila.append((sig[0], iter(salen[sig[0]])))
+    def por_orden(minimo, peso=None):
+        capa = dict(minimo)
+        for u in reversed(orden):
+            for v, i in salen[u]:
+                if i not in atras:
+                    capa[v] = max(capa[v], capa[u] + (peso or {}).get(i, 1))
+        return capa
+    capa = por_orden({pid: 0 for pid in ids})
     relevo = relevos(proc, atras) - set(sin_relevo)
-    capa = {pid: 0 for pid in ids}
-    for u in reversed(orden):
-        for v, i in salen[u]:
-            if i not in atras:
-                capa[v] = max(capa[v], capa[u] + (0 if i in relevo else 1))
+    if relevo:
+        # las dos tareas, en la misma columna. Si de la primera sale algo más (un plazo y lo que le sigue), ella va a la
+        # columna de la segunda y lo que sigue a la segunda, una columna más allá: lo que sale de la primera acaba antes
+        # de que pase por allí ningún otro flujo
+        minimo, peso = {pid: 0 for pid in ids}, {}
+        for i in relevo:
+            de, a = proc["flujos"][i]["de"], proc["flujos"][i]["a"]
+            peso[i] = 0
+            if len(salen[de]) > 1:
+                minimo[de] = capa[a]
+                for _, j in salen[a]:
+                    peso[j] = 2
+        capa = por_orden(minimo, peso)
     return capa, atras
 
 

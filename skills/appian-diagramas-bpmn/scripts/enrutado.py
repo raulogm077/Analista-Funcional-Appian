@@ -1086,8 +1086,13 @@ def trazar_todo(proc, geo, tam, cabecera, alto, cajas, indices, orden=None, fija
         return mejor, nodos, inicio, fin, lado_s, lado_a
 
     if orden is None:
-        # primero los que llevan etiqueta, que necesitan un tramo recto para ella; y los cortos antes que los largos
-        orden = sorted(indices, key=lambda i: (not flujos[i].get("etiqueta"), abs(geo["pasos"][flujos[i]["de"]][0] - geo["pasos"][flujos[i]["a"]][0])
+        # primero los que bajan o suben en recta de una forma a la de debajo (un relevo entre carriles): su único
+        # camino sin codos es ese; luego los que llevan etiqueta, que necesitan un tramo recto para ella; y los
+        # cortos antes que los largos
+        def en_columna(i):
+            (x1, _), (x2, _) = geo["pasos"][flujos[i]["de"]][:2], geo["pasos"][flujos[i]["a"]][:2]
+            return abs(x1 - x2) < 1 and not flujos[i].get("etiqueta")
+        orden = sorted(indices, key=lambda i: (not en_columna(i), not flujos[i].get("etiqueta"), abs(geo["pasos"][flujos[i]["de"]][0] - geo["pasos"][flujos[i]["a"]][0])
                                              + abs(geo["pasos"][flujos[i]["de"]][1] - geo["pasos"][flujos[i]["a"]][1]), i))
     else:
         orden = list(orden)
