@@ -1,12 +1,12 @@
-# Trazabilidad del prototipo · Componentes de Appian 26.9
+# Trazabilidad del prototipo · Componentes de Appian 26.10
 
-Fuente: Catálogo SAIL de Appian 26.9 (docs.appian.com/suite/help/26.9/SAIL_Components.html) con datos ficticios
+Fuente: Catálogo SAIL de Appian 26.10 (docs.appian.com/suite/help/26.10/SAIL_Components.html) con datos ficticios
 
 ## Requisitos → pantallas
 
 | Requisito | Descripción | Pantallas |
 |---|---|---|
-| C1 | Catálogo completo de componentes de interfaz de Appian 26.9 | Diseño de página, Entradas y selección, Visualización, Acciones y enlaces, Grids y listas, Gráficos, Selectores y navegadores, IA y chat, Parte de incidencia, Alta de proveedor, Consola de guardia, Ficha de INC Incidencia, Detalle de la visita, Edificio A |
+| C1 | Catálogo completo de componentes de interfaz de Appian 26.10 | Diseño de página, Entradas y selección, Visualización, Acciones y enlaces, Grids y listas, Gráficos, Selectores y navegadores, IA y chat, Parte de incidencia, Alta de proveedor, Consola de guardia, Ficha de INC Incidencia, Detalle de la visita, Edificio A |
 
 ## Inventario de pantallas
 

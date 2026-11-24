@@ -556,7 +556,20 @@
     const al = { RIGHT: "right", CENTER: "center" }[up(P(n, "align", ctx))];
     const attrs = { class: "inp", id: "f-" + ctx.key, type, value: v == null ? "" : v, placeholder: P(n, "placeholder", ctx), disabled, "aria-label": P(n, "label", ctx), style: al ? `text-align:${al}` : null };
     if (extra) Object.assign(attrs, extra);
-    const commit = (e) => { let val = e.target.value; if (type === "number") val = val === "" ? null : Number(val); if (val === "") val = null; saveInto(n, val, ctx); if (ref && !n.saveInto) writeRef(ref, val); schedule(); };
+    // a!decimalField PRECISE (el valor por defecto) guarda la precisión entera: con más de 15 cifras, que un número de JS
+    // no conserva, se guarda el texto tal cual lo escribió el usuario
+    const precise = n.type === "a!decimalField" && up(P(n, "decimalType", ctx, "PRECISE")) !== "FLOATING";
+    const commit = (e) => {
+      let val = e.target.value;
+      if (type === "number") {
+        const t = val.trim(), num = Number(t);
+        const pierde = t !== "" && (t.replace(/[eE].*$/, "").replace(/\D/g, "").replace(/^0+/, "").length > 15   // más cifras de las que guarda JS
+          || !isFinite(num) || (num === 0 && /[1-9]/.test(t.replace(/[eE].*$/, "")))                            // desborda, o se queda en 0
+          || (num !== 0 && Math.abs(num) < 2.2250738585072014e-308));                                          // subnormal: menos de 15 cifras exactas
+        val = t === "" ? null : precise && pierde ? t : num;
+      }
+      if (val === "") val = null; saveInto(n, val, ctx); if (ref && !n.saveInto) writeRef(ref, val); schedule();
+    };
     let ctl;
     if (type === "textarea") { ctl = h("textarea", Object.assign(attrs, { rows: n.height === "TALL" ? 8 : n.height === "SHORT" ? 3 : 5, onchange: commit })); ctl.value = v == null ? "" : v; }
     else ctl = h("input", Object.assign(attrs, { onchange: commit }));
@@ -574,6 +587,7 @@
   R["a!encryptedTextField"] = (n, ctx) => textLike("password", n, ctx);
   R["a!integerField"] = (n, ctx) => textLike("number", n, ctx, { step: 1 });
   R["a!floatingPointField"] = (n, ctx) => textLike("number", n, ctx, { step: "any" });
+  R["a!decimalField"] = (n, ctx) => textLike("number", n, ctx, { step: "any" });  // 26.10; decimalType no cambia cómo se ve
   R["a!paragraphField"] = (n, ctx) => textLike("textarea", n, ctx);
   function dateInput(n, ctx, withTime) {
     const v = getVal(n, ctx);
@@ -793,8 +807,13 @@
         const B = up(bg);
         const bgc = B === "SECONDARY" ? "#e4e7ea" : color(bg, "var(--accent)");
         const tc = P(t, "textColor", ctx);
-        const fg = tc && up(tc) !== "STANDARD" ? color(tc) : B === "SECONDARY" ? "var(--text)" : solidFg(hexOf(bg) || "#e4e7ea");
-        const tagEl = h("span", { class: "tag", style: { "--tbg": bgc, "--tfg": fg }, title: P(t, "tooltip", ctx) }, P(t, "text", ctx));
+        const fg = tc && up(tc) !== "STANDARD" ? color(tc) : B === "SECONDARY" || B === "TRANSPARENT" ? "var(--text)" : solidFg(hexOf(bg) || "#e4e7ea");
+        // 26.10: borde (por dentro, para no cambiar el tamaño de la etiqueta) e icono decorativo al principio o al final
+        const border = P(t, "showBorder", ctx, false) ? `inset 0 0 0 1px ${color(P(t, "borderColor", ctx, "SECONDARY"), "var(--text-2)")}` : null;
+        const ic = P(t, "icon", ctx) ? icon(P(t, "icon", ctx), "tag-ic") : null;
+        const end = up(P(t, "iconPosition", ctx, "START")) === "END";
+        const tagEl = h("span", { class: "tag", style: { "--tbg": bgc, "--tfg": fg, boxShadow: border }, title: P(t, "tooltip", ctx) },
+          end ? null : ic, P(t, "text", ctx), end ? ic : null);
         return t.link ? h("a", { href: "#", onclick: clickable(t.link, ctx), style: { textDecoration: "none" } }, tagEl) : tagEl;
       }));
     return n.label ? field(n, ctx, tags) : tags;
@@ -1343,12 +1362,15 @@
     const debug = kind === "agent" || kind === "df" ? P(n, "debugMode", ctx, false) : false;
     const steps = [];
     if (debug) arr(rep.thoughts).forEach((t) => steps.push({ role: "THOUGHT", text: interp(String(t), ctx) }));
-    if (kind === "agent") arr(rep.tools).forEach((t) => steps.push(Object.assign({ role: "TOOL" }, typeof t === "string" ? { tool: t } : t)));
+    // 26.10, showReasoning: false: cada acción se ve mientras se hace y desaparece al pasar a la siguiente (con debugMode se ven siempre)
+    const fleeting = kind === "agent" && !debug && P(n, "showReasoning", ctx, true) === false;
+    if (kind === "agent") arr(rep.tools).forEach((t) => steps.push(Object.assign({ role: "TOOL" }, typeof t === "string" ? { tool: t } : t, fleeting ? { transient: true } : null)));
     st.busy = true;
     rerender();
     let i = 0;
     const tick = () => {
       if (!st.busy) return; // detenida con el botón Detener
+      if (fleeting) st.msgs = st.msgs.filter((m) => !m.transient);
       if (i < steps.length) { st.msgs.push(steps[i++]); rerender(); st.timer = setTimeout(tick, 600); return; }
       st.msgs.push(rep.content ? { role: "ASSISTANT", content: rep.content } : { role: rep.blocked ? "BLOCKED" : "ASSISTANT", text: interp(String(rep.text || ""), ctx) });
       st.busy = false;
@@ -1357,12 +1379,12 @@
     };
     st.timer = setTimeout(tick, 750);
   }
-  function chatStop(st) { if (!st.busy) return; clearTimeout(st.timer); st.busy = false; st.msgs.push({ role: "STOPPED" }); rerender(); }
+  function chatStop(st) { if (!st.busy) return; clearTimeout(st.timer); st.busy = false; st.msgs = st.msgs.filter((m) => !m.transient); st.msgs.push({ role: "STOPPED" }); rerender(); }
   const chatRunning = (n, st) => st.busy || up(n.$state) === "RUNNING";
   function chatMsgs(n, ctx, st, opt, intro, extra) {
     const typing = chatRunning(n, st) ? h("div", { class: "cm a" }, opt.avatar ? h("span", { class: "av", "aria-hidden": "true" }, icon(opt.avatar)) : null, h("div", { class: "typing", role: "status", "aria-label": LANG === "es" ? "Respondiendo" : "Responding" }, h("i"), h("i"), h("i"))) : null;
     const err = up(n.$state) === "UNAVAILABLE" ? h("div", { class: "aic-err", role: "alert" }, icon("exclamation-circle"), AI.unavailable) : null;
-    const all = (extra || []).concat(st.msgs);
+    const all = (extra || []).concat(st.msgs).filter((m) => opt.reasoning !== false || opt.debug || m.role !== "TOOL" || m.transient);
     const box = h("div", { class: "aic-msgs", role: "log", "aria-live": "polite" }, err || [intro, all.map((m, i) => chatMsgEl(m, opt, ctx, `${ctx.key}.m${i}`)), typing]);
     requestAnimationFrame(() => { if (box.isConnected && all.length) box.scrollTop = box.scrollHeight; });
     return box;
@@ -1387,7 +1409,7 @@
   // Agent Chat: barra de título con selector de conversaciones, bienvenida, streaming, llamadas a herramientas (entradas y salidas solo en debugMode) y botón Detener
   R["a!agentChatField"] = (n, ctx) => {
     const st = chatState(n, ctx);
-    const opt = { avatar: "magic", debug: P(n, "debugMode", ctx, false) };
+    const opt = { avatar: "magic", debug: P(n, "debugMode", ctx, false), reasoning: P(n, "showReasoning", ctx, true) };
     let picker = null;
     if (P(n, "showSessionPicker", ctx, true)) {
       const sessions = arr(n.$sessions).map((s) => (typeof s === "string" ? { name: interp(s, ctx) } : Object.assign({}, s, { name: interp(s.name || "", ctx) })));
@@ -1479,14 +1501,22 @@
   // a!recordKnowledgeGraph (26.8): registro base en el centro y registros relacionados alrededor (hasta relationshipLevel niveles),
   // con etiqueta de tipo de registro y nombre, minimapa (showMiniMap) y controles de zoom. Solo de prototipo:
   //   $root  { recordType, name, icon }   registro base (por defecto, el título del registro de la pantalla)
-  //   $nodes [{ recordType, name, icon, parent }]   relacionados; parent = name de otro nodo (sin parent: primer nivel)
+  //   $nodes [{ recordType, name, icon, parent, id }]   relacionados; parent = name de otro nodo (sin parent: primer nivel)
+  // 26.10: enableLevelSlider empieza en el nivel 1 con un control para abrir hasta relationshipLevel, y selectionSaveInto
+  // guarda el registro pulsado como { recordTypeReference, recordTypePluralName, recordTitle, recordIdentifier }
+  // (en el prototipo, el nombre del tipo es su recordType y el identificador, su id o, si no lo lleva, su name).
   R["a!recordKnowledgeGraph"] = (n, ctx) => {
     const hk = up(P(n, "height", ctx, "AUTO"));
     const H = { SHORT: 280, MEDIUM: 420, TALL: 560 }[hk] || 420;
-    const lvl = Math.max(1, Math.min(10, Number(P(n, "relationshipLevel", ctx, 3)) || 3));
+    const max = Math.max(1, Math.min(10, Number(P(n, "relationshipLevel", ctx, 3)) || 3));
+    const slider = !!P(n, "enableLevelSlider", ctx, false), kLv = "kg:" + ctx.key, kSel = "kgsel:" + ctx.key;
+    const lvl = slider ? Math.min(max, UI[kLv] || 1) : max;
+    const pick = n.selectionSaveInto != null;
     const rootN = n.$root || {};
-    const root = { recordType: interp(rootN.recordType || String(n.recordType || "").replace(/^recordType!/, ""), ctx), name: interp(rootN.name || (ctx.record && (ctx.record.titulo || ctx.record.nombre || ctx.record.codigo)) || "Registro", ctx), icon: rootN.icon || "file-text-o" };
-    const all = arr(n.$nodes).map((x) => ({ recordType: interp(x.recordType || "", ctx), name: interp(String(x.name || ""), ctx), icon: x.icon || "file-o", parent: x.parent != null ? interp(String(x.parent), ctx) : null }));
+    // el identificador conserva su tipo (un número sigue siendo número); el de la raíz, si no lo da $root, es recordIdentifier
+    const idOf = (v) => (v == null ? null : typeof v === "string" ? interp(v, ctx) : v);
+    const root = { recordType: interp(rootN.recordType || String(n.recordType || "").replace(/^recordType!/, ""), ctx), name: interp(rootN.name || (ctx.record && (ctx.record.titulo || ctx.record.nombre || ctx.record.codigo)) || "Registro", ctx), icon: rootN.icon || "file-text-o", id: idOf(rootN.id != null ? rootN.id : P(n, "recordIdentifier", ctx)), key: "root" };
+    const all = arr(n.$nodes).map((x, i) => ({ recordType: interp(x.recordType || "", ctx), name: interp(String(x.name || ""), ctx), icon: x.icon || "file-o", parent: x.parent != null ? interp(String(x.parent), ctx) : null, id: idOf(x.id), key: "n" + i }));
     const byName = {}; all.forEach((x) => (byName[x.name] = x));
     const depth = (x, d) => (!x.parent || !byName[x.parent] || d > 10 ? 1 : 1 + depth(byName[x.parent], d + 1));
     const nodes = all.filter((x) => depth(x, 0) <= lvl);
@@ -1512,12 +1542,33 @@
     const placed = nodes.filter((x) => pos.has(x));
     const edges = placed.map((x) => { const a = pos.get(x); const b = x.parent && byName[x.parent] && pos.get(byName[x.parent]) || { x: 50, y: 50 }; return `<line x1="${b.x}" y1="${b.y}" x2="${a.x}" y2="${a.y}" vector-effect="non-scaling-stroke"/>`; }).join("");
     const svg = h("div", { class: "kg-edges", html: `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${edges}</svg>` });
-    const nodeEl = (x, p, main) => h("div", { class: "kg-n" + (main ? " main" : ""), style: { left: p.x + "%", top: p.y + "%" }, title: `${x.recordType}: ${x.name}`, tabindex: "0" }, h("span", { class: "kg-i" }, icon(x.icon)), h("span", { class: "kg-t" }, h("span", { class: "kg-rt" }, x.recordType), h("span", { class: "kg-nm" }, x.name)));
+    const choose = (x) => {
+      UI[kSel] = x.key;   // la identidad del nodo, no su título: dos registros pueden llamarse igual
+      saveInto(n, { recordTypeReference: "recordType!" + x.recordType, recordTypePluralName: x.recordType, recordTitle: x.name, recordIdentifier: x.id != null ? x.id : x.name }, ctx, "selectionSaveInto");
+      schedule();
+    };
+    // marcado: el registro guardado en la variable de selectionSaveInto (también el que trae un estado de captura);
+    // entre dos iguales, el que se pulsó
+    // la variable donde se guarda: un destino directo, el primero de una lista o el target de un a!save(…, save!value);
+    // si no se puede leer, la marca sale del último nodo pulsado
+    const destino = arr(n.selectionSaveInto).map((t) => (typeof t === "string" ? t : t && t.type === "a!save" && t.value === "save!value" ? t.target : null)).find((t) => typeof t === "string");
+    const savedRef = destino ? refOf({ x: destino }, "x", ctx) : null;
+    const saved = savedRef ? readRef(savedRef) : null;
+    const same = (x) => !!saved && typeof saved === "object" && saved.recordTitle === x.name && (saved.recordTypePluralName == null || saved.recordTypePluralName === x.recordType)
+      && (saved.recordIdentifier == null || String(saved.recordIdentifier) === String(x.id != null ? x.id : x.name));
+    const isSel = (x) => pick && (savedRef ? same(x) && (UI[kSel] == null || UI[kSel] === x.key) : UI[kSel] === x.key);
+    const nodeEl = (x, p, main) => h("div", { class: "kg-n" + (main ? " main" : "") + (pick ? " pick" : "") + (isSel(x) ? " sel" : ""), style: { left: p.x + "%", top: p.y + "%" }, title: `${x.recordType}: ${x.name}`, tabindex: "0",
+      role: pick ? "button" : null, "aria-pressed": pick ? String(isSel(x)) : null,
+      onclick: pick ? () => choose(x) : null, onkeydown: pick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(x); } } : null },
+      h("span", { class: "kg-i" }, icon(x.icon)), h("span", { class: "kg-t" }, h("span", { class: "kg-rt" }, x.recordType), h("span", { class: "kg-nm" }, x.name)));
     const es = LANG === "es";
+    const lvLabel = es ? "Niveles de relación" : "Relationship levels";
+    const lv = slider ? h("div", { class: "kg-lv" }, h("span", { "aria-hidden": "true" }, es ? "Niveles" : "Levels"),
+      h("input", { type: "range", min: 1, max, step: 1, value: lvl, "aria-label": lvLabel, oninput: (e) => { UI[kLv] = Number(e.target.value); schedule(); } }), h("b", null, String(lvl))) : null;
     const ib = (ic, label) => h("button", { type: "button", class: "ib", title: label, "aria-label": label }, icon(ic));
     const mini = P(n, "showMiniMap", ctx, true) ? h("div", { class: "kg-mini", "aria-hidden": "true", html: `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><rect x="3" y="3" width="94" height="94" class="vp"/>${placed.map((x) => { const q = pos.get(x); return `<rect x="${q.x - 5}" y="${q.y - 3}" width="10" height="6" rx="2"/>`; }).join("")}<rect x="43" y="46" width="14" height="8" rx="2" class="c"/></svg>` }) : null;
-    const el = h("div", { class: "kg", style: { height: H + "px" }, role: "img", "aria-label": P(n, "accessibilityText", ctx) || P(n, "label", ctx) || root.name },
-      svg, placed.map((x) => nodeEl(x, pos.get(x), false)), nodeEl(root, { x: 50, y: 50 }, true),
+    const el = h("div", { class: "kg", style: { height: H + "px" }, role: pick || slider ? "group" : "img", "aria-label": P(n, "accessibilityText", ctx) || P(n, "label", ctx) || root.name },
+      svg, placed.map((x) => nodeEl(x, pos.get(x), false)), nodeEl(root, { x: 50, y: 50 }, true), lv,
       h("div", { class: "kg-tb" }, ib("search-plus", es ? "Ampliar" : "Zoom in"), ib("search-minus", es ? "Reducir" : "Zoom out"), ib("expand", es ? "Pantalla completa" : "Full screen")), mini);
     return field(n, ctx, el);
   };
@@ -1779,9 +1830,16 @@
   R["a!headerContentLayout"] = (n, ctx) => {
     const bg = P(n, "backgroundColor", ctx, "WHITE");
     const dk = darkProps(bg);
-    return h("div", { class: "hcl " + (String(bg).startsWith("#") ? "" : "bg-" + up(bg)) + (dk ? dk.cls : ""), style: Object.assign({ background: String(bg).startsWith("#") ? bg : null, color: dk ? "#fff" : null }, dk ? dk.vars : null) },
+    // 26.10: contentsWidth limita solo el contenido, centrado (con un panel dentro, siempre FULL); footer, tarjetas o billboards
+    // de borde a borde al final: abajo del todo si el contenido es corto, y debajo del contenido si hay que desplazarse
+    // sin contentsWidth, la convención del kit (1440 px); declarado FULL, o con un panel dentro, todo el ancho
+    const cw = n.contentsWidth == null ? null : up(P(n, "contentsWidth", ctx, "FULL"));
+    const pane = arr(n.contents).some((c) => c && c.type === "a!paneLayout");
+    const ft = arr(n.footer).filter((x) => x && visible(x, ctx));
+    return h("div", { class: "hcl " + (String(bg).startsWith("#") ? "" : "bg-" + up(bg)) + (dk ? dk.cls : "") + (ft.length ? " has-ft" : ""), style: Object.assign({ background: String(bg).startsWith("#") ? bg : null, color: dk ? "#fff" : null }, dk ? dk.vars : null) },
       n.header ? h("div", { class: "hcl-header" }, arr(n.header).map((x, i) => render(x, ctx, ctx.key + ".h" + i))) : null,
-      h("div", { class: "hcl-contents" }, h("div", { class: "page-pad", style: { padding: { NONE: "0", EVEN_LESS: "4px", LESS: "8px 12px", MORE: "28px 32px 44px", EVEN_MORE: "40px 48px 56px" }[up(n.contentsPadding)] || null } }, stack(n.contents, ctx, ctx.key + ".c"))));
+      h("div", { class: "hcl-contents" + (cw == null ? "" : " w-" + (pane ? "FULL" : cw)) }, h("div", { class: "page-pad", style: { padding: { NONE: "0", EVEN_LESS: "4px", LESS: "8px 12px", MORE: "28px 32px 44px", EVEN_MORE: "40px 48px 56px" }[up(n.contentsPadding)] || null } }, stack(n.contents, ctx, ctx.key + ".c"))),
+      ft.length ? h("div", { class: "hcl-footer" }, ft.map((x, i) => render(x, ctx, ctx.key + ".f" + i))) : null);
   };
   R["a!wizardLayout"] = (n, ctx) => {
     const steps = arr(n.steps).filter((s) => visible(s, ctx));
@@ -1805,7 +1863,7 @@
     const nextB = !last ? h("button", { type: "button", class: "btn s-SOLID", style: { "--bc": brandPrimary(), "--bfg": solidFg(brandPrimary()) }, disabled: s && P(s, "disableNextButton", ctx, false), onclick: () => { if (inspector) return; if (!checkRequired(sctx.scope)) { invalid[sctx.scope] = true; rerender(); return; } delete invalid[sctx.scope]; UI[k] = cur + 1; rerender(); } }, T.next) : null;
     const lastCtx = Object.assign({}, ctx, { scope: sctx.scope });
     const footer = h("div", { class: "form-btns" + (P(n, "showButtonDivider", ctx, false) || ctx.inDialog ? " divider" : "") + (P(n, "isButtonFooterFixed", ctx, false) ? " fixed" : "") },
-      h("div", { class: "grp" }, arr(n.secondaryButtons).map((b, i) => render(b, lastCtx, ctx.key + ".sb" + i)), prevB),
+      h("div", { class: "grp" }, prevB, arr(n.secondaryButtons).map((b, i) => render(b, lastCtx, ctx.key + ".sb" + i))),  // como Appian: Atrás y, a su lado, los secundarios
       h("div", { class: "grp pri" }, nextB, last ? arr(n.primaryButtons).map((b, i) => render(b, lastCtx, ctx.key + ".pb" + i)) : null));
     ctx.__wizFooter = footer;
     const tb = n.titleBar;
@@ -2294,7 +2352,9 @@
       h("div", { class: "site-brand" }, LOGO ? h("span", { html: LOGO, style: { display: "inline-flex" } }) : null, site.displayName ? h("span", { class: "dn" }, site.displayName) : null),
       nav, h("div", { class: "site-user" }, h("span", { class: "uname" }, user.name), h("span", { class: "avatar", title: user.name, style: { color: avatarFg() } }, FILTERS.initials(user.name))));
     NODES.site = { type: "Site", navigationLayout: (BRAND.site || {}).navigationLayout, headerBarStyle: (BRAND.site || {}).headerBarStyle, backgroundColor: (BRAND.site || {}).backgroundColor, selectedPageHighlightColor: (BRAND.site || {}).selectedPageHighlightColor, accentColor: (BRAND.site || {}).accentColor, pages: pages.map((p) => p.title), $note: "Configuración del objeto Site (ver brand-*.json)" };
-    const svg = hdr.querySelector(".site-brand svg"); if (svg) svg.classList.add("logo");
+    const svg = hdr.querySelector(".site-brand svg, .site-brand img"); if (svg) svg.classList.add("logo");
+    const altLogo = (BRAND.site || {}).logoAltText;  // el <img> del PNG ya lo lleva en su alt; el SVG en línea, como imagen con nombre
+    if (svg && altLogo && svg.tagName.toLowerCase() === "svg") { svg.removeAttribute("aria-labelledby"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", altLogo); }  // aria-labelledby mandaría sobre aria-label
     return h("div", { class: "site" + ((BRAND.site || {}).useUppercase ? " upper" : "") + ((BRAND.site || {}).useUppercasePageTitles ? " upper-titles" : "") }, hdr, h("main", { class: "site-body" }, content));
   }
 

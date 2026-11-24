@@ -26,7 +26,7 @@ La skill no lee un export: la aplicación se ha extraído en vivo del entorno Ap
 | `definition` | La definición del objeto (SAIL, nodos, campos, páginas…). Es la fuente principal. | Todos los documentos |
 | `dependents` | Quién referencia a este objeto, con *breadcrumb* (p. ej. «Interface Definition: Line 19»). | Callers, impacto |
 | `dependencies` | Qué referencia este objeto. | Llamadas salientes |
-| `history` | Ejecuciones reales del process model (total, última, fallos). En los documentos llámalo «ejecuciones». | 07, 08, 09 (sin ejecuciones) |
+| `history` | Ejecuciones reales del process model (total, última, fallos). En los documentos llámalo «ejecuciones». El total es el que informa la API (`listProcessInstances`), que depende de la página pedida (`appian-best-practices`, doc 14 §3): escríbelo como «total informado por la API, sin verificar» y da como dato las ejecuciones observadas en la muestra. | 07, 08, 09 (sin ejecuciones) |
 | `versions` | Historial de versiones (cuándo y por quién). En los documentos llámalo «versiones». | 09 (versionado) |
 | `validation` | Avisos de validación de la plataforma (funciones obsoletas, errores) y el resultado de los casos de prueba guardados que ejecuta `validateDesignObjects`. | 09 |
 | `screen` | Árbol de componentes de la interfaz renderizada con entradas vacías (la otra evaluación que hace la extracción es la de `validation`). Appian la evalúa en el servidor (puede ejecutar sus consultas de lectura) y se guarda tal cual: estructura, etiquetas y los valores de esa evaluación. Así aparece en el anexo. | 10 (pantallas), 01 |

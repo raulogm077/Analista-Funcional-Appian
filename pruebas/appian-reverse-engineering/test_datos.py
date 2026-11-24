@@ -144,3 +144,17 @@ def test_objetos_que_no_estan(project):
     p = subprocess.run([sys.executable, str(DATOS), str(project.out)], capture_output=True, text=True, encoding="utf-8")
     assert p.returncode == 1 and "DEM_ER_Inventada" in p.stderr and "DEM Solicitud (record type)" in p.stderr, p.stderr
     assert (datos / "hallazgos.json").read_text(encoding="utf-8") == antes   # no escribe nada
+
+
+def test_inventario_corta_por_palabra():
+    """La descripción del inventario se corta a 100 caracteres sin partir una palabra, con «…» (F6, 6-nov:
+    «FOR_ImporteDentroD»)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("build_inventario", SKILL / "scripts" / "build_inventario.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    texto = "Comprueba que el importe está dentro del límite con FOR_ImporteDentroDelLimite antes de guardar la solicitud"
+    corto = mod.corta(texto)
+    assert len(corto) <= 101 and corto.endswith("…") and "FOR_ImporteDentroD…" not in corto, corto
+    assert texto.startswith(corto[:-1]) and texto[len(corto) - 1] == " ", corto
+    assert mod.corta("breve") == "breve"

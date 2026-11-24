@@ -114,10 +114,11 @@ def nombre_citado(s: str, prefijo: str, conocidos: set) -> str | None:
     entera, lo que hay antes de «.», «#», «(» o «[» (un campo, un ancla, una llamada o un índice) y lo que hay antes de
     lo primero que no admite el nombre de una regla, una interfaz o una constante, que es como se lee una expresión
     SAIL (`cons!X & "/ruta"`). Vale el primero de `conocidos`, porque otros objetos sí admiten esos caracteres (una Web
-    API, un grupo con «&»); si no hay ninguno, el último. Un patrón que solo es el prefijo («DEM_*») no cita nada."""
+    API, un grupo con «&»); si no hay ninguno, el último. Un patrón con asterisco («DEM_*», «DEM_ESTADO_*») no cita
+    nada."""
     s = re.sub(r"^[A-Za-z]+!(\{[^}]*\})?", "", s.strip().strip("'\""))   # rule!X, recordType!{uuid}X
     patron = rf"{re.escape(prefijo)}[_ ]\S"
-    if not re.match(patron, s):
+    if not re.match(patron, s) or "*" in s.split(maxsplit=1)[0]:
         return None
     cortes = [s.rstrip(), re.split(r"[.#(\[]", s, maxsplit=1)[0].rstrip(), NO_NOMBRE.split(s, 1)[0].rstrip()]
     nombre = next((c for c in cortes if c in conocidos), cortes[-1])
@@ -187,9 +188,19 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
                 {f.get("nombre") for f in _json(salida / "datos" / "dependencias.json").get("fueraDeLaAplicacion", [])}
     nvs = {n.get("id") for n in _json(salida / "datos" / "sin-verificar.json").get("sinVerificar", [])}
     hallazgos = {h.get("id") for h in _json(salida / "datos" / "hallazgos.json").get("hallazgos", [])}
-    ficha = {o.get("nombre"): o.get("anexo") for o in inv.get("objetos", []) if o.get("anexo")}
-    en_prosa = re.compile(rf"(?<![\w!/]){re.escape(prefijo)}_\w+") if prefijo else None
-    con_slug = conocidos | {Path(f).stem for f in ficha.values()}   # en la prosa, también el slug de una ficha
+    ficha: dict[str, list[str]] = {}   # nombre → sus fichas: dos objetos pueden llamarse igual (la aplicación y su site)
+    for o in inv.get("objetos", []):
+        if o.get("anexo"):
+            ficha.setdefault(o.get("nombre"), []).append(o.get("anexo"))
+    # (tipo, nombre) → su ficha: con homónimos, la evidencia «mcp:<tipo>/<nombre>» va a la de su tipo
+    ficha_tipo = {(o.get("tipo"), o.get("nombre")): o.get("anexo") for o in inv.get("objetos", []) if o.get("anexo")}
+    # la aplicación no está en «objetos»: su ficha es la que escribe build_annex.py (anexo/application/<prefijo>.md)
+    slug_app = app.get("prefijo") or re.sub(r"[^A-Za-z0-9_-]", "_", str(app.get("nombre") or "aplicacion"))
+    if app.get("nombre") and (salida / "anexo" / "application" / f"{slug_app}.md").is_file():
+        ficha.setdefault(app["nombre"], []).append(f"anexo/application/{slug_app}.md")
+        ficha_tipo[("application", app["nombre"])] = f"anexo/application/{slug_app}.md"
+    en_prosa = re.compile(rf"(?<![\w!/]){re.escape(prefijo)}_\w+(?!\w|\*(?!\*))") if prefijo else None   # FOR_ESTADO_* es un patrón, no un nombre (** es negrita)
+    con_slug = conocidos | {Path(f).stem for fs in ficha.values() for f in fs}   # en la prosa, también el slug de una ficha
     detalle: dict[str, set] = {}
     for lista in (_json(work_dir(salida) / "inventory.json").get("objects") or {}).values():
         for o in lista:
@@ -248,8 +259,8 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
                     if m.group(0) not in nvs:
                         e(n, f"{m.group(0)} no está en datos/sin-verificar.json")
                 # una evidencia lleva a la ficha de su objeto
-                for nombre, destino in evidencias_de_otro(doc, l, anexo, ficha, salida):
-                    e(n, f"la evidencia de «{nombre}» enlaza {destino}, que no es su ficha ({ficha[nombre]})")
+                for nombre, destino in evidencias_de_otro(doc, l, anexo, ficha, salida, ficha_tipo):
+                    e(n, f"la evidencia de «{nombre}» enlaza {destino}, que no es su ficha ({', '.join(ficha[nombre])})")
                 if n not in generado:   # el registro de 09 lo escribe build_registry.py
                     # un hallazgo se cita por su ID, que está en datos/
                     for m in HALLAZGO.finditer(l):
@@ -278,16 +289,23 @@ def comprobar(salida: Path) -> tuple[list[str], list[str]]:
             [f"{r}:{n} {m}" if n else f"{r}: {m}" for r, n, m in sorted(avisos, key=orden)])
 
 
-def evidencias_de_otro(doc: Path, linea: str, anexo: Path, ficha: dict, salida: Path) -> list[tuple[str, str]]:
+def evidencias_de_otro(doc: Path, linea: str, anexo: Path, ficha: dict, salida: Path,
+                       ficha_tipo: dict | None = None) -> list[tuple[str, str]]:
     """(nombre, destino) de cada evidencia «mcp:<tipo>/<nombre>» de la línea que enlaza una ficha del anexo que no es
-    la de ese objeto (`ficha`: su anexo en inventario.json). Un destino que no es un fichero del anexo lo dicen las
-    comprobaciones de la evidencia y de los enlaces; un nombre sin ficha (la aplicación, uno de fuera), nada."""
+    la de ese objeto (`ficha`: sus anexos en inventario.json). Con homónimos (la aplicación y su site) manda el tipo de
+    la evidencia (`ficha_tipo`); si ese tipo no está en el inventario, vale la ficha de cualquiera de ellos. Un destino
+    que no es un fichero del anexo lo dicen las comprobaciones de la evidencia y de los enlaces; un nombre sin ficha (la
+    aplicación, uno de fuera), nada."""
     out = []
     for m in EVIDENCIA.finditer(linea):
         nombre = m.group(1).strip()
+        tipo = re.search(r"mcp:([^/`\]]+)/", m.group(0))
         destino = (doc.parent / unquote(m.group(2).strip("<>").split("#", 1)[0])).resolve()
-        if nombre in ficha and anexo in destino.parents and destino.is_file() \
-                and destino != (salida / ficha[nombre]).resolve():
+        if nombre not in ficha or anexo not in destino.parents or not destino.is_file():
+            continue
+        suya = (ficha_tipo or {}).get((tipo.group(1).strip() if tipo else None, nombre))
+        validas = {(salida / suya).resolve()} if suya else {(salida / f).resolve() for f in ficha[nombre]}
+        if destino not in validas:
             out.append((nombre, destino.relative_to(salida).as_posix()))
     return out
 

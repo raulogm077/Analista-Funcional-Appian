@@ -150,6 +150,9 @@ Un fichero JSON por escenario, `qa/<U>/HU-01.1.json`. Ejemplo ficticio:
   `sin_fila` pasaría también con una página vacía. Una clave que no existe o una comprobación vacía (`"hay": []`,
   `"texto": [""]`) tampoco valen: el guion sale «por terminar».
 - **`{pasada}`** es distinto en cada escenario de cada repetición; **`{hoy}`**, la fecha.
+- **Subir un fichero** (un campo de subida): el valor es `{fichero:certificado.pdf}`, y el script lo cambia por la ruta
+  de `qa/<U>/ficheros/certificado.pdf`, que se sube con los guiones. Un fichero ficticio y pequeño, nunca uno del
+  cliente. Así un escenario que necesita un documento (subirlo, o que otro lo abra) lleva guion como los demás.
 
 Para que el guion dé lo mismo cada vez:
 - Ninguna referencia que cambie entre cargas: ni `_cId`, ni las que el `--json` marca con `refIsPerRender` (el script
@@ -159,6 +162,9 @@ Para que el guion dé lo mismo cada vez:
   de búsqueda de la rejilla (`"🔍"`) antes de mirarla, para que una fila nueva no quede en otra página.
 - Un «no lo ve» lleva antes la prueba de que existe (en el «dado», quien lo creó lo ve): si no, el guion pasaría
   aunque el alta hubiera fallado.
+- Lo que no debe salir incumple solo la regla que se prueba: en un filtro por fecha de inicio, una solicitud que empieza
+  fuera del rango y acaba dentro. Si lo incumple todo, el guion pasa también con una regla parecida y equivocada (un
+  filtro por la fecha de fin salió verde así).
 - Un escenario que gasta lo que necesita (descartar una alerta que solo crea el proceso diario) comprueba en su «dado»
   que sigue ahí, y ese paso lleva `"gasta": "<lo que gasta>"` (`{"sail": ["show"], "espera": {"hay": ["Descartar alerta
   …"]}, "gasta": "una alerta activa"}`): sin eso, una segunda pasada saldría verde con la fila ya cerrada del histórico.
@@ -200,6 +206,24 @@ y no lleva rutas del equipo de nadie:
   esperan guion, y el QA no los da por probados.
 
 Si una pantalla cambió a propósito, se rehace solo su guion.
+
+### A mano
+
+Lo que un guion no puede comprobar (SAIL CLI no descarga un documento, no lee un buzón, no espera a un proceso
+programado ni ve la maquetación) lo mira una persona: un escenario entero o la parte que su guion no cubre (HU-09.2 de
+una prueba: el guion ve el enlace al certificado; abrirlo se mira a mano). Lo que vea se anota, para que un fallo
+conocido entre en los mismos chequeos que un guion que falla: `python3 <skill>/scripts/qa.py a-mano <p> <U> HU-07.1
+--falla "no llega el correo" --quien Ana --por-que "SAIL CLI no lee el buzón"`. Queda en `resultado.json`, en `aMano`,
+aparte del resultado del guion (quién, qué se mira y por qué, y cuándo):
+
+- un **falla** a mano devuelve su issue a pendiente, como un guion que falla, y `repetir` sale con 1 mientras siga así;
+- cuando se corrige, quien lo mira otra vez anota `--pasa --quien Ana` (el porqué ya consta): retira solo ese fallo;
+- ninguno tapa al otro: un guion que pasa no retira el fallo a mano, ni un «pasa» a mano el de un guion; un guion
+  nuevo del mismo escenario tampoco lo retira, porque no demuestra que cubra lo que vio la persona;
+- `repetir` no lo repite: lo conserva y lo enseña aparte, y `proyecto.py estado` lo dice («mirados a mano»), para que en
+  el paso 4 de F9 se sepa qué no ha repetido ningún script.
+
+Solo se anota lo que alguien miró; lo que nadie miró sigue «sin guion», con su aviso al cerrar la unidad.
 
 ## Qué escribe
 
