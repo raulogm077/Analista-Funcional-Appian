@@ -1,4 +1,4 @@
-"""Reaprobación (Raúl, 6-nov; docs/diseno/reaprobacion.md): un informe «sin efecto» no hace crecer la unidad aprobada
+"""Reaprobación (Raúl, 6-nov; docs/diseno/reaprobacion.md (retirado al integrar en `main`; en el historial de git hasta `d843e66`)): un informe «sin efecto» no hace crecer la unidad aprobada
 salvo sus topes, que van al JP; y con la unidad construida, un técnico que cambia después no devuelve sus issues a
 pendiente. Desde el 7-nov (aprobación por impacto real), citar datos, seguridad o integraciones del técnico no la
 para: es un aviso para el JP. Sin red ni Appian."""
