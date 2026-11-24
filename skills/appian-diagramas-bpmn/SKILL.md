@@ -15,11 +15,13 @@ Cuando el usuario invoca esta skill con fuentes (reuniones, transcripciones, act
 
 - Si el proyecto lleva análisis funcional (hay `analisis/funcional.md` o el usuario lo quiere), el proceso lo describe `appian-functional-analyst`: sigue su paso de diagramas y vuelve aquí para dibujarlo.
 - Si el usuario solo quiere el dibujo, descríbelo tú siguiendo «Partir de lo ya aprobado»: primero el diagrama aprobado, si lo hay; luego las fuentes, de la más reciente a la más antigua, y cada supuesto marcado.
+- **Antes de dibujar**, fija qué lo dispara, qué cosa trata (una solicitud, un expediente, un pedido), en qué resultados acaba y qué queda fuera. Si a mitad del proceso cambia la cosa que se trata (un lote mensual frente a cada expediente del lote), es otro proceso o un subproceso. Describe primero el camino normal de principio a fin y después, paso a paso, qué puede salir distinto.
+- **El lenguaje hablado esconde el proceso.** Una frase sin sujeto («se revisa y se sube») no dice quién lo hace: el carril es un supuesto. «Si», «cuando» y «salvo que» anuncian una puerta; «normalmente» o «a veces», una puerta cuya otra salida nadie ha contado, que queda como pregunta; «luego lo mira el jefe», un cambio de carril; «el sistema» sin nombre, un sistema por confirmar.
 - Una transcripción que no se entiende (por ejemplo, la de Teams en inglés de una reunión en español) no es una fuente: dilo en la respuesta y no saques de ella pasos ni perfiles.
 - Los nombres de sistemas de una transcripción automática no son fiables (un gestor documental puede llegar como «hashtag» o con tres grafías). Tómalos del apartado «Sistemas» del DF; sin DF, escríbelos como se oyen, sin adivinar la grafía, con «Supuesto: nombre por confirmar».
 - Una demo enseña solo lo que se ejecutó ese día: lo que no se llegó a ejecutar (una subida, un justificante, un aviso) va con «Pendiente de validar».
 
-En los dos casos, la respuesta dice de qué fuentes sale el proceso y lista los supuestos y lo pendiente de validar.
+En los dos casos, la respuesta dice de qué fuentes sale el proceso y lista los supuestos y lo pendiente de validar. Lista también, por cada puerta, la salida que ninguna fuente explica, como pregunta para repasarla con el usuario («¿Y si la solicitud no está completa?»).
 
 ## Ficheros de cada proceso
 
@@ -104,7 +106,7 @@ Es un JSON con un paso y un flujo por línea:
 
 **Participantes externos.** Un sistema u organismo con el que solo se intercambian mensajes (un ERP, un registro público), sin pasos propios en el proceso, va en `externos`: se dibuja como una franja debajo de los carriles. Un flujo entre un paso y un externo es un flujo de mensaje (línea discontinua con círculo y flecha hueca), en cualquiera de los dos sentidos.
 
-**Flujo por defecto.** `"defecto": true` marca la salida que se toma cuando no se cumple ninguna otra (una barra en el origen). Solo en puertas exclusivas o inclusivas, o en tareas con varias salidas, y una por paso.
+**Flujo por defecto.** `"defecto": true` marca la salida que se toma cuando no se cumple ninguna otra (una barra en el origen). Solo en puertas exclusivas o inclusivas, y una por paso. Se admite en una tarea con varias salidas por los diagramas de antes, pero una tarea con varios resultados va seguida de una puerta (ver «Cómo se describe un buen proceso»).
 
 **Notas.** Cada nota de `notas` va unida a su paso con una línea de puntos y sale en el PNG: úsalas para señalar algo que quien lee el diagrama no debe pasar por alto (un riesgo, una duda pendiente).
 
@@ -150,6 +152,9 @@ Códigos de salida:
 - un código no corresponde a su tipo;
 - un `error` con salidas no está unido a su tarea con un flujo discontinuo, un dato de Appian está en un paso de otro tipo o `interrumpe` no va en un temporizador unido a su tarea;
 - un participante externo no tiene flujos de mensaje;
+- una tarea tiene varias salidas sin puerta (en BPMN se siguen todas a la vez), una puerta une y divide a la vez o una exclusiva que divide no lleva pregunta;
+- los caminos que abre una paralela o una inclusiva se juntan en algo que no es una puerta del mismo tipo, o los de una exclusiva, en una paralela (que esperaría a todos y pararía el proceso);
+- dos tareas se llaman igual.
 
 `crear`, `actualizar` y `png` avisan si el diagrama mide más de 1.600 px de ancho: en una página vertical el texto quedará pequeño. El PNG conserva el doble de resolución del dibujo, también en procesos grandes, para ampliar sin reducir antes su detalle.
 
@@ -199,7 +204,7 @@ Cómo se coloca lo que cambia:
 
 ## Edición en una reunión
 
-1. **Se abre `X.drawio` en draw.io** (Desktop, app.diagrams.net o la integración de SharePoint/OneDrive) y se cambia con el usuario:
+1. **Se abre `X.drawio` en draw.io** (Desktop, app.diagrams.net o la integración de SharePoint/OneDrive), se recorre con el usuario (el camino normal, cada puerta con sus preguntas y cada fin) y se cambia con él:
    - mover, renombrar y arrastrar pasos de un carril a otro;
    - unir con flechas;
    - añadir formas de la biblioteca BPMN (Más formas → BPMN General) o formas básicas: un rectángulo es una tarea, un rombo una decisión y un círculo un inicio o un fin.
@@ -245,10 +250,11 @@ Si no hay diagrama aprobado, lo que no salga de forma explícita de las fuentes 
 
 ## Cómo se describe un buen proceso
 
-- **Tareas:** verbo en infinitivo y objeto, por ejemplo «Revisar documentación».
+- **Tareas:** verbo en infinitivo y objeto, por ejemplo «Revisar documentación», no «Revisión de documentación». Sin verbos que no dicen qué cambia («Gestionar», «Tratar», «Procesar», «Realizar»), sin el perfil en el nombre (para eso está el carril) y sin nombrar un estado como tarea: «Solicitud aprobada» es un fin. Dos tareas no se llaman igual: el nombre dice qué hace cada perfil («Revisar el pedido», «Dar el visto bueno al pedido»).
 - **Tareas seguidas del mismo perfil sobre lo mismo** (descargar, rellenar y cargar una plantilla) van en una sola caja («Preparar y cargar la plantilla»), con una nota que diga qué incluye. Se separan solo si entre ellas hay una decisión, una espera u otro perfil, o si el negocio las ve como pasos distintos.
-- **Puertas exclusivas:** una pregunta cerrada («¿Completa?») y cada salida con su etiqueta.
-- **Inicio y fin:** un inicio por cada forma de arrancar el proceso que distinga el negocio (por ejemplo, «Inicio carga manual» por el gerente e «Inicio carga masiva» por la PMO), normalmente uno, y un fin por cada resultado de negocio («Solicitud denegada», «Autorización emitida»).
+- **Puertas exclusivas:** una pregunta cerrada («¿Completa?») y cada salida, una respuesta. La puerta no decide: la decisión es la tarea anterior («Revisar la solicitud») y la puerta pregunta por su resultado. Una tarea con varios resultados («Validar» o «Devolver») va seguida de una puerta exclusiva, no con varias salidas: en BPMN, las salidas de una tarea se siguen todas a la vez. La puerta que solo une caminos no lleva nombre.
+- **Abrir y cerrar caminos:** lo que abre una puerta paralela o inclusiva se cierra con otra del mismo tipo, o cada camino acaba en su fin; nunca se juntan en una puerta exclusiva ni directamente en una tarea. Una puerta no une y divide a la vez: primero una que une y luego otra que divide.
+- **Inicio y fin:** un inicio por cada forma de arrancar el proceso que distinga el negocio (por ejemplo, «Inicio carga manual» por el gerente e «Inicio carga masiva» por la PMO), normalmente uno, y un fin por cada resultado de negocio («Solicitud denegada», «Autorización emitida»). El inicio nombra el hecho que lo dispara («Solicitud recibida») y el fin, el estado en que queda, en participio.
 - **Arranque:** `inicio_temporizador` si el proceso arranca solo a una hora o cada cierto tiempo (el nombre dice cuándo: «Cada día a las 08:00»); `inicio_mensaje` si arranca al recibir un aviso.
 - **Plazos:** un `temporizador` unido a la tarea que vigila con un flujo discontinuo. Al exportar a BPMN pasa a ser un evento de borde de esa tarea, que no la interrumpe (en el dibujo, con borde discontinuo). Si al vencer cancela la tarea, `"interrumpe": true` en el temporizador: borde continuo y, en el BPMN, `cancelActivity`. En draw.io va en «Editar datos» del temporizador (`interrumpe` = 1).
 - **Errores:** un `error` unido igual a la tarea en la que salta, y de él, el camino que se sigue. En el BPMN es un evento de borde que la interrumpe. Un `error` suelto y sin salidas se dibuja y se exporta como un fin de error.
@@ -256,14 +262,15 @@ Si no hay diagrama aprobado, lo que no salga de forma explícita de las fuentes 
   - Si solo sale en un caso, va en la salida de la decisión que corresponda.
   - Si salta por un plazo, va detrás de un `temporizador` unido a la tarea y termina en un fin propio.
   - No se dibuja el correo general de la herramienta que avisa a cada grupo de que tiene una tarea asignada.
-  - Uno a un sistema u organismo externo es un flujo de mensaje desde la tarea que lo envía hasta el participante externo.
+  - Uno a un sistema u organismo externo es un flujo de mensaje desde la tarea que lo envía hasta el participante externo, con el nombre del mensaje («Consulta de la empresa»).
   - Todos van también en la tabla de avisos (AV) del documento.
 - **Sistemas que no hablan con el proceso:** un sistema del que una persona descarga a mano un fichero no es un participante externo (sus flujos de mensaje cruzarían todos los carriles sin que haya intercambio): se nombra en la nota de esa tarea manual.
 - **Botones que repiten una acción** (enviar varias veces antes de finalizar) van en la nota de la tarea, no como una vuelta atrás, salvo que el diagrama aprobado la dibuje.
-- **Tamaño:** conserva el proceso completo, con la secuencia principal lo más lineal posible. No inventes subprocesos ni uses `tramos` por el número de tareas o para encajarlo en el documento. Los subprocesos responden al contenido del proceso, no al tamaño del dibujo.
+- **Tamaño:** conserva el proceso completo, con la secuencia principal lo más lineal posible. No inventes subprocesos ni uses `tramos` por el número de tareas o para encajarlo en el documento. Los subprocesos responden al contenido del proceso, no al tamaño del dibujo. Si pasa de unos 50 pasos, la respuesta propone, sin hacerlo, un nivel superior con un subproceso o una pestaña por fase de negocio, y lo decide el usuario.
+- **Subproceso con varios fines:** la puerta que lo sigue lleva las mismas etiquetas que sus fines («Aprobado», «Rechazado»), para que los dos diagramas se lean igual.
 - **Notas:** las explicaciones van en el paso a paso del documento; en `notas`, solo lo que hay que ver en el propio diagrama. Una nota suelta que se deje en draw.io también sale en el PNG: bórrala si no debe verla el cliente.
 - **Detalles técnicos:** esperas, reintentos, colas, middleware o llamadas internas no son pasos del funcional. Si importan al lector, van como nota del paso al que afectan («Detalle técnico: espera de 1 minuto antes de leer las carpetas»).
-- **Códigos del cliente:** si el cliente numera sus tareas o requisitos (por ejemplo, EJ-01.001), cada tarea los lleva al final del nombre, entre corchetes: «Actualizar el presupuesto [EJ-02.002]». Los códigos `ACT-nn` siguen siendo los de la skill.
+- **Códigos del cliente:** si el cliente numera sus tareas o requisitos (por ejemplo, EJ-01.001), cada tarea los lleva al final del nombre, entre corchetes: «Actualizar el presupuesto [EJ-02.002]». Cualquier otra referencia al DF («paso 5 del DF») va igual, entre corchetes al final, o en una nota, nunca entre paréntesis en el nombre. Los códigos `ACT-nn` siguen siendo los de la skill.
 - **Perfiles:** el carril es el perfil que hace la tarea según la fuente, con el mismo nombre que usa el cliente (DTP, Gerente de proyecto). Si el diagrama aprobado pone el perfil en el nombre de la tarea («DTP: Actualización del presupuesto»), ese perfil es su carril.
 
 ## Un proceso con varias fases en pestañas

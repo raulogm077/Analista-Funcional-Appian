@@ -531,7 +531,64 @@ def validar(proc):
             av.append(f"{pid}: temporizador solo se usa en un paso de tipo temporizador o inicio_temporizador")
         if es_si(p.get("interrumpe")) and (p["tipo"] != "temporizador" or not unido):
             av.append(f"{pid}: interrumpe solo se usa en un temporizador unido a su tarea con un flujo discontinuo")
+    av += _avisos_de_estructura(pasos, ent, sal)
     return err, av
+
+
+def _avisos_de_estructura(pasos, ent, sal):
+    """Reglas de estilo de BPMN que dan siempre lo mismo con los mismos datos: una tarea con varias salidas sin puerta
+    (en BPMN se siguen todas a la vez), una puerta que une y divide a la vez, una exclusiva que divide sin pregunta,
+    caminos que se juntan en una puerta de otro tipo que la que los abrió y dos tareas con el mismo nombre."""
+    av = []
+    secuencia = {pid: [f for f in sal.get(pid, []) if not f.get("discontinuo")] for pid in pasos}
+    for pid, p in pasos.items():
+        salen = secuencia[pid]
+        if p["tipo"] in TAREAS and len(salen) > 1:
+            av.append(f"{pid} ({p.get('nombre', '')}) tiene {len(salen)} salidas sin puerta: en BPMN se siguen todas a la "
+                      "vez; si es una decisión, pon detrás una puerta exclusiva con la pregunta, y si van a la vez, una paralela")
+        if p["tipo"] in PUERTAS and len(ent.get(pid, [])) > 1 and len(salen) > 1:
+            av.append(f"{pid}: une y divide a la vez; pon antes una puerta que solo una los caminos")
+        if p["tipo"] in ("exclusiva", "inclusiva") and len(salen) > 1 and not str(p.get("nombre") or "").strip().endswith("?"):
+            av.append(f"{pid} ({p.get('nombre') or 'sin nombre'}): una puerta que divide lleva una pregunta cerrada («¿Completa?»)")
+    # caminos que abre una puerta y se juntan en una de otro tipo: una paralela cerrada con una exclusiva repite lo que
+    # sigue, y una exclusiva cerrada con una paralela bloquea el proceso
+    def alcanza(desde, sin, hacia_atras=False):
+        vistos, pila = set(), [desde]
+        while pila:
+            n = pila.pop()
+            if n in vistos or n == sin or n not in pasos:
+                continue
+            vistos.add(n)
+            pila += ([f["de"] for f in ent.get(n, []) if not f.get("discontinuo")] if hacia_atras
+                     else [f["a"] for f in secuencia.get(n, [])])
+        return vistos
+    for pid, p in pasos.items():
+        salen = secuencia[pid]
+        if p["tipo"] not in PUERTAS or len(salen) < 2:
+            continue
+        ramas = [alcanza(f["a"], pid) for f in salen]
+        en_bucle = set().union(*(alcanza(f["de"], None, hacia_atras=True) for f in ent.get(pid, [])))   # lo que vuelve antes de la puerta
+        comunes = {n for n in set().union(*ramas) if sum(n in r for r in ramas) > 1} - en_bucle
+        propios = (set().union(*ramas) - comunes) | {pid}  # lo que va por una sola rama
+        for n in sorted(comunes):
+            if sum(f["de"] in propios for f in ent.get(n, [])) < 2:
+                continue                                   # no es donde se juntan, sino algo posterior
+            q = pasos[n]
+            if p["tipo"] in ("paralela", "inclusiva") and q["tipo"] != p["tipo"]:
+                av.append(f"los caminos que abre {pid} ({p['tipo']}) se juntan en {n}, que no es una puerta {p['tipo']}: "
+                          f"ciérralos con una puerta {p['tipo']}")
+            elif p["tipo"] == "exclusiva" and q["tipo"] == "paralela":
+                av.append(f"los caminos que abre {pid} (exclusiva) se juntan en {n}, una puerta paralela que esperaría a "
+                          "todos: el proceso se quedaría parado")
+    nombres = {}
+    for pid, p in pasos.items():
+        if p["tipo"] in TAREAS and p.get("nombre"):
+            sin_codigo = re.sub(r"\s*\[[^\]]*\]\s*$", "", p["nombre"]).strip().lower()   # el código del cliente no cuenta
+            nombres.setdefault(sin_codigo, []).append(pid)
+    for ids in nombres.values():
+        if len(ids) > 1:
+            av.append(f"{', '.join(ids)} se llaman igual («{pasos[ids[0]]['nombre']}»): el nombre dice qué hace cada una")
+    return av
 
 
 # ---------------------------------------------------------------- tramos
@@ -1564,11 +1621,11 @@ def comparar(antes, despues):
             out.append(("carril", f"carril quitado: «{c}»"))
     for pid, p in pd.items():
         if pid not in pa:
-            out.append(("paso", f"paso nuevo: {pid} {p['tipo']} «{p['nombre']}» en «{p['carril']}»"))
+            out.append(("paso", f"paso nuevo: {pid} {p['tipo']} «{p.get('nombre', '')}» en «{p['carril']}»"))
             continue
         q = pa[pid]
-        if q["nombre"] != p["nombre"]:
-            out.append(("paso", f"{pid} renombrado: «{q['nombre']}» → «{p['nombre']}»"))
+        if q.get("nombre", "") != p.get("nombre", ""):
+            out.append(("paso", f"{pid} renombrado: «{q.get('nombre', '')}» → «{p.get('nombre', '')}»"))
         if q["tipo"] != p["tipo"]:
             out.append(("paso", f"{pid} cambia de tipo: {q['tipo']} → {p['tipo']}"))
         if q["carril"] != p["carril"] and renombrado.get(q["carril"]) != p["carril"]:

@@ -54,7 +54,7 @@ def _limpio(proc, geo=None):
     se pide, con posiciones."""
     pasos = []
     for p in proc["pasos"]:
-        q = {**{k: p[k] for k in ("id", "tipo", "carril", "nombre")}, **dm.datos_json(p, dm.DATOS_PASO)}
+        q = {**{k: p.get(k, "") for k in ("id", "tipo", "carril", "nombre")}, **dm.datos_json(p, dm.DATOS_PASO)}
         if geo is not None and p["id"] in geo["pasos"]:
             q["posicion"] = [round(v) for v in geo["pasos"][p["id"]][:2]]
         pasos.append(q)

@@ -1719,6 +1719,63 @@ def g3(tmp):
         prueba(tmp / nombre)
 
 
+def estructura():
+    """Avisos de estilo de validar: una tarea con varias salidas sin puerta (en BPMN se siguen todas), una puerta que une
+    y divide, una exclusiva sin pregunta, caminos que se cierran con una puerta de otro tipo y dos tareas con el mismo
+    nombre. Un proceso bien hecho, con una vuelta atrás y una paralela cerrada con otra, no da ninguno."""
+    import drawio_modelo as dm
+    def paso(i, t, n=""):
+        return {"id": i, "tipo": t, "carril": "A", "nombre": n}
+    bueno = {"proceso": "x", "carriles": ["A"],
+             "pasos": [paso("EV-01", "inicio", "Solicitud recibida"), paso("ACT-01", "tarea", "Registrar la solicitud"),
+                       paso("GW-01", "exclusiva"), paso("ACT-02", "tarea", "Revisar la solicitud"),
+                       paso("GW-02", "exclusiva", "¿Completa?"), paso("GW-03", "paralela"),
+                       paso("ACT-03", "sistema", "Avisar al registro"), paso("ACT-04", "tarea", "Archivar la copia"),
+                       paso("GW-04", "paralela"), paso("EV-02", "fin", "Solicitud resuelta")],
+             "flujos": [{"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "GW-01"}, {"de": "GW-01", "a": "ACT-02"},
+                        {"de": "ACT-02", "a": "GW-02"}, {"de": "GW-02", "a": "GW-01", "etiqueta": "No"},
+                        {"de": "GW-02", "a": "GW-03", "etiqueta": "Sí"}, {"de": "GW-03", "a": "ACT-03"},
+                        {"de": "GW-03", "a": "ACT-04"}, {"de": "ACT-03", "a": "GW-04"}, {"de": "ACT-04", "a": "GW-04"},
+                        {"de": "GW-04", "a": "EV-02"}]}
+    err, av = dm.validar(bueno)
+    check(not err and not av, f"validar: un proceso bien estructurado no da avisos de estilo ({av})")
+    malo = json.loads(json.dumps(bueno))
+    pasos = {p["id"]: p for p in malo["pasos"]}
+    pasos["GW-02"]["nombre"] = "Completa"                          # sin pregunta
+    pasos["GW-04"]["tipo"] = "exclusiva"                           # paralela cerrada con exclusiva
+    pasos["ACT-04"]["nombre"] = "Revisar la solicitud [EJ-01.002]"  # nombre repetido: el código del cliente no cuenta
+    malo["flujos"] = [f for f in malo["flujos"] if f["de"] != "ACT-01"] + [
+        {"de": "ACT-01", "a": "GW-01"}, {"de": "ACT-01", "a": "EV-02", "etiqueta": "Duplicada"}]   # tarea con dos salidas
+    malo["flujos"] = [f for f in malo["flujos"] if f["de"] != "EV-01"] + [{"de": "EV-01", "a": "GW-01"}]
+    malo["flujos"].append({"de": "GW-01", "a": "EV-02", "etiqueta": "Urgente"})                  # GW-01 une y divide
+    _, av = dm.validar(malo)
+    texto = "\n".join(av)
+    check("ACT-01 (Registrar la solicitud) tiene 2 salidas sin puerta" in texto and "GW-01: une y divide" in texto
+          and "GW-02 (Completa): una puerta que divide lleva una pregunta" in texto
+          and "los caminos que abre GW-03 (paralela) se juntan en GW-04" in texto
+          and "ACT-02, ACT-04 se llaman igual" in texto,
+          "validar: avisa de tarea con varias salidas, puerta que une y divide, exclusiva sin pregunta, paralela "
+          f"cerrada con otra puerta y nombres repetidos ({av})")
+    bloqueo = json.loads(json.dumps(bueno))
+    {p["id"]: p for p in bloqueo["pasos"]}["GW-03"]["tipo"] = "exclusiva"
+    {p["id"]: p for p in bloqueo["pasos"]}["GW-03"]["nombre"] = "¿Urgente?"
+    for f in bloqueo["flujos"]:
+        if f["de"] == "GW-03":
+            f["etiqueta"] = "Sí" if f["a"] == "ACT-03" else "No"
+    _, av = dm.validar(bloqueo)
+    check(any("GW-03 (exclusiva) se juntan en GW-04, una puerta paralela" in a for a in av),
+          f"validar: avisa de una exclusiva cerrada con una paralela, que bloquea el proceso ({av})")
+    sin_nombre = json.loads(json.dumps(bueno))                     # la puerta que solo une no lleva el campo nombre
+    del {p["id"]: p for p in sin_nombre["pasos"]}["GW-04"]["nombre"]
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="diagramas-estructura-"))
+    try:
+        (tmp / "union.json").write_text(json.dumps(sin_nombre, ensure_ascii=False), encoding="utf-8")
+        run("crear", tmp / "union.json", "-o", tmp / "d", esperado=2, env=entorno(sin_navegador=True))
+        check((tmp / "d" / "union.json").is_file(), "crear: una puerta sin el campo nombre no rompe el JSON del proceso")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def letra_de_tareas():
     """El nombre largo de una tarea cabe en la tarjeta con la letra algo más pequeña; uno corto conserva los 11 px."""
     import drawio_modelo as dm
@@ -1854,6 +1911,7 @@ def main_sin_navegador():
         nota_y_mensaje_apartados()
         borde_y_recto()
         letra_de_tareas()
+        estructura()
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}
         (tmp / "malo.json").write_text(json.dumps(malo), encoding="utf-8")
@@ -1897,6 +1955,7 @@ def main():
         nota_y_mensaje_apartados()
         borde_y_recto()
         letra_de_tareas()
+        estructura()
         nota_y_etiqueta(tmp / "nota con el motor")
         d = tmp / "solicitud.drawio"
         # 1. crear
