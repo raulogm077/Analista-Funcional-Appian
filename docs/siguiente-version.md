@@ -108,7 +108,29 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 - **Diagramas: elegir la colocación con menos cruces.** En un proceso real con tres vueltas atrás a la misma tarea
   (rechazos y errores que vuelven a «Rellenar la plantilla»), Mermaid dejó muchos cruces y la colocación por capas
   ninguno; se entregó la de capas (`DIAGRAMAS_SIN_NAVEGADOR=1` al crear y `png` después). Medir los cruces de las dos
-  y quedarse con la mejor, con su prueba; mientras, `actualizar` con navegador vuelve a colocar con Mermaid. [diagramas]
+  y quedarse con la mejor, con su prueba; mientras, `actualizar` con navegador vuelve a colocar con Mermaid. Segundo
+  caso (24-nov): un circuito de aprobación con tres revisiones que devuelven a la misma tarea; Mermaid lo dejó de
+  derecha a izquierda y con cruces largos, y por capas se leía de izquierda a derecha. Alternativa mínima, si medir
+  las dos cuesta: una opción `--colocacion capas` en `crear` y `actualizar`. [diagramas]
+- **Diagramas: fuentes que se contradicen entre sí.** «Partir de lo ya aprobado» dice qué gana entre el DF y las
+  reuniones, pero no entre dos reuniones. En un proceso sacado de nueve transcripciones de un año, una fecha era
+  editable en todos los pasos en una reunión de noviembre y dejaba de serlo en una de julio, tras la ejecución
+  controlada. Propuesta: una frase en «Si te llaman directamente»: gana la más reciente y la nota cita las dos, con su
+  fecha. Cambia la conducta: con su prueba con el plugin cargado. [diagramas]
+- **Diagramas: el fichero de fuentes y supuestos.** En cuatro procesos reales se entregó, junto al diagrama, un
+  `supuestos-<proceso>.md` con la misma forma: fuentes con su fecha, tabla «paso, supuesto o tema abierto, origen»,
+  nombres de sistema por confirmar y «Fuera del flujo». La skill solo pide listar los supuestos en la respuesta, que
+  se pierde con la sesión, y el fichero le sirve también a una persona sin IA. Propuesta: que la skill lo describa en
+  «Ficheros de cada proceso» como salida cuando el proceso sale de fuentes y no de un diagrama aprobado, sin script.
+  [diagramas]
+- **Diagramas: alcance sin DF.** Una reunión de arranque repasó las seis fases del proceso y el proyecto era solo la
+  primera, sin un DF que dijera su «Fuera del alcance». Propuesta: sin DF, el alcance se toma de las propias
+  reuniones (la que lo fija, con su fecha) y va en la nota del inicio, igual que el «Fuera del alcance» del DF; los
+  pasos de otras fases no se dibujan. [diagramas]
+- **Diagramas: ajustes posteriores sin DF.** Tras la ejecución controlada se pidió una acción fuera del flujo
+  («Actualizar fecha límite», que reenvía un dato a otro sistema) que aún no está en ningún DF. Propuesta: un ajuste
+  así va en una nota del paso al que afecta, con «Pendiente de validar (sin DF)», no como paso ni como vuelta atrás,
+  hasta que el DF lo recoja. [diagramas]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
 
