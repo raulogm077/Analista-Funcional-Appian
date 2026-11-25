@@ -298,8 +298,14 @@ def crear(a):
         return 1
     paginas = _colocar(proc, modo=getattr(a, "colocacion", "auto"))
     drawio, png, js = _rutas(destino)
+    antes = drawio.read_bytes() if drawio.exists() else None
     dm.escribir_paginas(paginas, drawio)
-    _escribir_json(proc, js, drawio, automatica=True, motor=getattr(a, "colocacion", "auto"))
+    try:
+        _escribir_json(proc, js, drawio, automatica=True, motor=getattr(a, "colocacion", "auto"))
+    except OSError as e:     # sin su .json, el .drawio no se podría actualizar: se deja como estaba
+        drawio.write_bytes(antes) if antes is not None else drawio.unlink()
+        print(f"ERROR: no se pudo guardar {js} ({e.strerror}); {drawio} se deja como estaba.", file=sys.stderr)
+        return 1
     modo = paginas[0][1].get("modo")
     print(f"OK {drawio}" + (f" ({len(paginas)} tramos)" if len(paginas) > 1 else "")
           + (f" (colocado {'con Mermaid' if modo == 'mermaid' else 'por capas'})" if modo else "") + f"\n   {js}")

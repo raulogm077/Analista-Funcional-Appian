@@ -1906,6 +1906,19 @@ def nota_y_mensaje_apartados():
     x, _, w, _ = geo["anotaciones"][0]
     check((x + w <= 460 - dm.AIRE_NOTA or x >= 460 + dm.AIRE_NOTA) and x < 300 + 60 and x + w > 300 - 60,
           f"nota: se aparta de la línea que bajaba por su borde y sigue sobre su paso ({x}, {x + w})")
+    # entre dos líneas más juntas que su ancho y con la llegada a su paso justo debajo: más estrecha y un poco más arriba
+    proc = {"proceso": "x", "carriles": ["A"], "pasos": [
+        {"id": f"ACT-0{i}", "tipo": "tarea", "carril": "A", "nombre": n} for i, n in enumerate(
+            ("Clasificar", "Revisar", "Generar", "Archivar"), 1)],
+        "flujos": [{"de": "ACT-02", "a": "ACT-01"}, {"de": "ACT-03", "a": "ACT-04"}],
+        "notas": [{"paso": "ACT-01", "texto": "Un correo por cada destinatario con todas sus líneas marcadas"}]}
+    geo = {"carriles": {"A": (0, 700)}, "ancho": 900, "pasos": {"ACT-01": (300, 330), "ACT-02": (500, 60),
+           "ACT-03": (220, 640), "ACT-04": (220, 60)}, "flujos": [[(380, 60), (380, 270), (300, 270)], []],
+           "anotaciones": [(220, 203, 160, 63)]}
+    dm._apartar_notas(proc, geo)
+    x, y, w, h = geo["anotaciones"][0]
+    check(x >= 220 + dm.AIRE_NOTA and x + w <= 380 - dm.AIRE_NOTA and y + h <= 270 - dm.AIRE_NOTA and y >= 30,
+          f"nota: entre dos líneas más juntas que ella se estrecha y se separa de la que llega a su paso ({x}, {y}, {w}, {h})")
     proc = {"proceso": "x", "carriles": ["A"], "externos": ["E"], "pasos": [
         {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Publicar"},
         {"id": "ACT-02", "tipo": "tarea", "carril": "A", "nombre": "Revisar"},
@@ -2127,6 +2140,14 @@ def ordenes_nuevas(tmp, env=None):
     check(not pegados, f"flujos pegados: por capas, dos salidas de una puerta no bajan a menos de {en.HUECO} px ({pegados})")
 
 
+def crear_sin_json(tmp):
+    """Si `crear` no puede guardar el .json, no deja un .drawio a medias: sin su .json no se podría actualizar."""
+    (tmp / "solicitud.json").mkdir(parents=True)
+    out = run("crear", AQUI / "datos" / "solicitud.json", "-o", tmp / "solicitud.drawio", esperado=1)
+    check(not (tmp / "solicitud.drawio").exists() and "no se pudo guardar" in out,
+          "crear: si no puede guardar el .json, no deja el .drawio a medias")
+
+
 def main_sin_navegador():
     """Con DIAGRAMAS_SIN_NAVEGADOR=1, lo que se puede hacer sin navegador: dibujar el .drawio (también en tramos),
     leerlo, compararlo, exportar el BPMN y validar."""
@@ -2151,6 +2172,7 @@ def main_sin_navegador():
         letra_de_tareas()
         estructura()
         retrocesos()
+        crear_sin_json(tmp / "sin json")
         ordenes_nuevas(tmp / "ordenes", entorno(sin_navegador=True))
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}
@@ -2198,6 +2220,7 @@ def main():
         letra_de_tareas()
         estructura()
         retrocesos()
+        crear_sin_json(tmp / "sin json")
         ordenes_nuevas(tmp / "ordenes")
         nota_y_etiqueta(tmp / "nota con el motor")
         d = tmp / "solicitud.drawio"

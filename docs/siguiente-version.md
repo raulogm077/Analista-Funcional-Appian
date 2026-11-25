@@ -125,10 +125,18 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   varias salidas sin puerta, porque en BPMN se siguen todas a la vez, y el SKILL.md pide una puerta exclusiva detrás.
   Falta mirar en el Dev MCP (un process model real) si Appian hace lo mismo, para decir en ingeniería inversa si esas
   salidas son paralelas o condiciones, y si `bpmn_export.py` debe escribir la condición cuando venga de Appian. [diagramas]
-- **Diagramas: `crear` deja un `.drawio` a medias si falla al guardar el JSON.** Una puerta sin el campo `nombre`
-  rompía `crear` después de escribir el `.drawio` (corregido el 24-nov, con su prueba). «Si algo falla, el `.drawio` no
-  se toca» lo dice el SKILL.md de `actualizar`; en `crear`, escribir los dos ficheros a la vez solo si vuelve a pasar
-  con otra causa. [diagramas]
+- **Diagramas: la línea de un plazo por la misma recta que la salida de su tarea.** En una prueba con el plugin
+  cargado (25-nov, proceso ficticio por capas), la entrada a la tarea ocupaba su lado de abajo; la línea discontinua
+  al plazo salió por arriba, rodeó la tarea y bajó por la misma vertical por la que subía su salida hacia la puerta
+  (60 px pegadas). `mejorar` la deja así aunque `trazar_todo` no deja que dos flujos ajenos compartan tramo, y
+  `separar_pegados` no lo ve (`_pegados` excluye la misma recta) ni puede apartarla sin un cruce. Mirar en qué paso de
+  `mejorar` entran los dos caminos sin pasar por esa regla; lo natural era la salida por arriba (la puerta está arriba)
+  y el plazo por la derecha. Relacionado con 4.20 del recopilatorio (dos plazos que comparten tramo). [diagramas]
+- **Diagramas: tareas seguidas del mismo perfil cuando el aprobado las separa.** En la misma prueba, partiendo de un
+  DF anterior, se dejaron «Lanzar» y «Adjuntar el extracto» en dos cajas «igual que en el DF». `buen-proceso.md` las
+  junta salvo que el negocio las vea como pasos distintos, y `fuentes.md` toma del aprobado «lo que las fuentes no
+  contradicen». Decir cuál gana cuando el aprobado es la versión anterior; en RRHH-007, con el DF como referencia,
+  se juntaron con una nota. [diagramas]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
 

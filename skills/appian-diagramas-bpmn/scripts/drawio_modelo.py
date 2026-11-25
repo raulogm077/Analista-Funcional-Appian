@@ -893,7 +893,8 @@ AIRE_NOTA = 10   # entre una nota y la línea de un flujo: más cerca, la línea
 
 def _apartar_notas(proc, geo):
     """Corre en horizontal cada nota que pisa la línea de un flujo de secuencia (o va pegada a ella) hasta el sitio
-    libre más cercano que no pise otra forma, sin dejar de estar sobre su paso ni salirse de la página."""
+    libre más cercano que no pise otra forma, sin dejar de estar sobre su paso ni salirse de la página. Si no cabe a
+    su ancho, la estrecha; si la línea pasa entre ella y su paso, la aleja un poco de él, dentro de su carril."""
     notas, cajas_notas = proc.get("notas") or [], list(geo.get("anotaciones") or [])
     if not notas or not geo.get("flujos"):
         return
@@ -911,18 +912,24 @@ def _apartar_notas(proc, geo):
     for k, (n, (x, y, w, h)) in enumerate(zip(notas, cajas_notas)):
         if not pisa_linea(x, y, w, h):
             continue
-        pcx, pw = centro[n["paso"]][0], TAM[tipo[n["paso"]]][0]
+        pcx, (pw, ph) = centro[n["paso"]][0], TAM[tipo[n["paso"]]]
         otras = [c for c in _cajas(proc, geo) if c != (x, y, w, h)]
-        for d in sorted(range(-int(w), int(w) + 1, 4), key=abs):
-            nx = x + d
-            if nx < 8 or nx + w > geo["ancho"] - 8 or nx > pcx + pw / 2 - 8 or nx + w < pcx - pw / 2 + 8:
+        arriba = y + h / 2 < centro[n["paso"]][1]
+        ly, lh = next(geo["carriles"][p["carril"]] for p in proc["pasos"] if p["id"] == n["paso"])
+        # si a su ancho no cabe entre dos líneas, más estrecha (y más alta, sin acercarse a su paso); si la línea
+        # pasa entre la nota y su paso, un poco más lejos de él, sin salirse del carril
+        for nw, dy, d in ((nw, dy, d) for nw in range(int(w), 103, -8) for dy in range(0, 41, 4)
+                          for d in sorted(range(-nw, nw + 1, 4), key=abs)):
+            nh = h if nw == int(w) else max(36, colocacion.alto_texto(n.get("texto"), nw) + 12)
+            ny, nx = (y + h - nh - dy) if arriba else (y + dy), x + (w - nw) / 2 + d
+            if (ny < min(y, ly + 30) or ny + nh > max(y + h, ly + lh - 4) or nx < 8 or nx + nw > geo["ancho"] - 8
+                    or nx > pcx + pw / 2 - 8 or nx + nw < pcx - pw / 2 + 8):
                 continue
-            if not pisa_linea(nx, y, w, h) and not any(nx < c[0] + c[2] and c[0] < nx + w and y < c[1] + c[3] and
-                                                       c[1] < y + h for c in otras):
-                cajas_notas[k] = (nx, y, w, h)
+            if not pisa_linea(nx, ny, nw, nh) and not any(nx < c[0] + c[2] and c[0] < nx + nw and ny < c[1] + c[3]
+                                                          and c[1] < ny + nh for c in otras):
+                cajas_notas[k] = (nx, ny, nw, nh)
                 geo["anotaciones"] = cajas_notas
                 break
-
 
 def _celdas(proc, geo, pre=""):
     """Las celdas de una página, sin las dos de la raíz. `geo` = {"carriles": {nombre: (y, h)}, "ancho": w,
